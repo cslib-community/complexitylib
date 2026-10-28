@@ -459,8 +459,7 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
     have hprob := (hA a).2
     rw [MultiTapePTM.eval_runClosed_eq_map_coins, BitString.uniformList_map_apply,
       two_thirds_le_div_iff] at hprob
-    dsimp only [DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError, BoundedErrorAt,
-      outcomeCount]
+    dsimp only [DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError, BoundedErrorAt]
     rw [heval]
     constructor
     · intro (ha : a ∈ A)

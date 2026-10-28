@@ -49,6 +49,7 @@ polynomial time with error at most `2 ^ (-q(n))` for every polynomial `q`
 
 ## Main results
 
+* `Cslib.Complexity.ErrorExponentAt.congr`: extensionality for per-instance error-exponent bounds.
 * `Cslib.Complexity.BoundedErrorAt.repeatMajority`,
   `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError.repeatMajority`: `12 q(n)` majority
   votes reduce the error to `2 ^ (-q(n))`.
@@ -77,10 +78,11 @@ variable {α : Type}
 /-- `V` gives the answer `b` with error at most `2 ^ (-q(n))` on the instance `a`, using random
 strings whose length is `p` evaluated at the length `n` of the encoded instance: the random strings
 `r` of length `p n` with `V (a, r) = !b` make up at most a `2 ^ (-q n)` fraction. -/
-@[reducible]
-def ErrorExponentAt (enc : α ↪ List Bool) (q p : Polynomial ℕ) (V : α × List Bool → Bool)
+abbrev ErrorExponentAt (enc : α ↪ List Bool) (q p : Polynomial ℕ) (V : α × List Bool → Bool)
     (a : α) (b : Bool) : Prop :=
-  2 ^ q.eval (enc a).length * outcomeCount V a (p.eval (enc a).length) (!b) ≤
+  2 ^ q.eval (enc a).length *
+    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      V (a, List.ofFn r) = !b).card ≤
     2 ^ p.eval (enc a).length
 
 /-- An error-exponent bound at an instance depends only on the verifier's values on strings of
@@ -89,7 +91,12 @@ theorem ErrorExponentAt.congr {enc : α ↪ List Bool} {q p : Polynomial ℕ}
     {V W : α × List Bool → Bool} {a : α} {b : Bool} (h : ErrorExponentAt enc q p V a b)
     (hVW : ∀ r : Fin (p.eval (enc a).length) → Bool, V (a, List.ofFn r) = W (a, List.ofFn r)) :
     ErrorExponentAt enc q p W a b := by
-  rwa [ErrorExponentAt, ← outcomeCount_congr hVW]
+  have hcard : (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      V (a, List.ofFn r) = !b).card =
+    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      W (a, List.ofFn r) = !b).card :=
+    congrArg Finset.card (Finset.filter_congr fun r _ => by rw [hVW r])
+  rwa [ErrorExponentAt, ← hcard]
 
 /-- **Per-instance error reduction for bounded error**: the strict majority of `12 q(n)` runs of a
 verifier on independent blocks of random bits errs from `b` on at most a `2 ^ (-q(n))` fraction of
@@ -98,7 +105,7 @@ theorem BoundedErrorAt.repeatMajority {enc : α ↪ List Bool} {p : Polynomial �
     {V : α × List Bool → Bool} {a : α} {b : Bool} (h : BoundedErrorAt enc p V a b)
     (q : Polynomial ℕ) :
     ErrorExponentAt enc q (12 * q * p) (Complexity.repeatMajority enc (6 * q) p V) a b := by
-  unfold ErrorExponentAt outcomeCount
+  unfold ErrorExponentAt
   have hlen : (12 * q * p).eval (enc a).length =
       2 * (6 * q).eval (enc a).length * p.eval (enc a).length := by
     simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
@@ -124,11 +131,13 @@ theorem BoundedErrorAt.repeatMajority {enc : α ↪ List Bool} {p : Polynomial �
 theorem ErrorExponentAt.boundedErrorAt {enc : α ↪ List Bool} {q p : Polynomial ℕ}
     {V : α × List Bool → Bool} {a : α} {b : Bool} (h : ErrorExponentAt enc q p V a b)
     (hq : 2 ≤ q.eval (enc a).length) : BoundedErrorAt enc p V a b := by
-  have hsum := outcomeCount_add_outcomeCount_not V a (p.eval (enc a).length) b
-  have h4 : 2 ^ 2 ≤ 2 ^ q.eval (enc a).length := Nat.pow_le_pow_right (by norm_num) hq
-  have hle := (Nat.mul_le_mul_right _ h4).trans h
-  unfold BoundedErrorAt
-  omega
+  refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le
+    (fun r => V (a, List.ofFn r) = b) ?_
+  have hnot : (univ.filter fun r : BitString (p.eval (enc a).length) => ¬V (a, List.ofFn r) = b) =
+      univ.filter fun r : BitString (p.eval (enc a).length) => V (a, List.ofFn r) = !b :=
+    filter_congr fun _ _ => by cases b <;> simp
+  rw [hnot]
+  exact (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) hq)).trans h
 
 namespace PromiseProblem
 
@@ -203,14 +212,15 @@ theorem inter_mem_BPP {A B : Set α} (hA : A ∈ BPP enc) (hB : B ∈ BPP enc) :
   obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_BPP_iff_forall_decidesWithErrorExponent.1 hB 3
   refine mem_BPP.2 ⟨p₁ + p₂, andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂,
     by fun_prop, fun a => ?_⟩
-  have hs₁ := outcomeCount_true_add_outcomeCount_false V₁ a (p₁.eval (enc a).length)
-  have hs₂ := outcomeCount_true_add_outcomeCount_false V₂ a (p₂.eval (enc a).length)
-  have hs := outcomeCount_true_add_outcomeCount_false
-    (andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) a ((p₁ + p₂).eval (enc a).length)
-  have hc : outcomeCount (andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) a
-      ((p₁ + p₂).eval (enc a).length) true =
-      outcomeCount V₁ a (p₁.eval (enc a).length) true *
-        outcomeCount V₂ a (p₂.eval (enc a).length) true := by
+  have hs₁ := acceptCount_add_card_filter_eq_false (V := V₁) (a := a) (n := p₁.eval (enc a).length)
+  have hs₂ := acceptCount_add_card_filter_eq_false (V := V₂) (a := a) (n := p₂.eval (enc a).length)
+  have hs := acceptCount_add_card_filter_eq_false
+    (V := andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) (a := a)
+    (n := (p₁ + p₂).eval (enc a).length)
+  have hc : acceptCount (andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) a
+      ((p₁ + p₂).eval (enc a).length) =
+      acceptCount V₁ a (p₁.eval (enc a).length) *
+        acceptCount V₂ a (p₂.eval (enc a).length) := by
     rw [Polynomial.eval_add]
     exact acceptCount_andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂ a (p₂.eval (enc a).length)
   constructor
@@ -219,26 +229,28 @@ theorem inter_mem_BPP {A B : Set α} (hA : A ∈ BPP enc) (hB : B ∈ BPP enc) :
     have e₂ := (h₂ a).1 ha.2
     simp only [ErrorExponentAt, Bool.not_true, Polynomial.eval_ofNat] at e₁ e₂
     have f₁ : 7 * 2 ^ p₁.eval (enc a).length ≤
-        8 * outcomeCount V₁ a (p₁.eval (enc a).length) true := by omega
+        8 * acceptCount V₁ a (p₁.eval (enc a).length) := by omega
     have f₂ : 7 * 2 ^ p₂.eval (enc a).length ≤
-        8 * outcomeCount V₂ a (p₂.eval (enc a).length) true := by omega
+        8 * acceptCount V₂ a (p₂.eval (enc a).length) := by omega
     unfold BoundedErrorAt
-    rw [hc, Polynomial.eval_add, pow_add]
+    rw [← acceptCount, hc, Polynomial.eval_add, pow_add]
     nlinarith [Nat.mul_le_mul f₁ f₂]
   · intro ha
-    have hacc : 8 * outcomeCount (andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) a
-        ((p₁ + p₂).eval (enc a).length) true ≤ 2 ^ (p₁ + p₂).eval (enc a).length := by
+    have hacc : 8 * acceptCount (andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂) a
+        ((p₁ + p₂).eval (enc a).length) ≤ 2 ^ (p₁ + p₂).eval (enc a).length := by
       rw [hc, Polynomial.eval_add, pow_add]
       by_cases ha₁ : a ∈ A
       · have ha₂ : a ∉ B := fun hb => ha ⟨ha₁, hb⟩
         have e₂ := (h₂ a).2 ha₂
         simp only [ErrorExponentAt, Bool.not_false, Polynomial.eval_ofNat] at e₂
-        have hb₁ : outcomeCount V₁ a (p₁.eval (enc a).length) true ≤
+        rw [← acceptCount] at e₂
+        have hb₁ : acceptCount V₁ a (p₁.eval (enc a).length) ≤
             2 ^ p₁.eval (enc a).length := by omega
         nlinarith [Nat.mul_le_mul hb₁ e₂]
       · have e₁ := (h₁ a).2 ha₁
         simp only [ErrorExponentAt, Bool.not_false, Polynomial.eval_ofNat] at e₁
-        have hb₂ : outcomeCount V₂ a (p₂.eval (enc a).length) true ≤
+        rw [← acceptCount] at e₁
+        have hb₂ : acceptCount V₂ a (p₂.eval (enc a).length) ≤
             2 ^ p₂.eval (enc a).length := by omega
         nlinarith [Nat.mul_le_mul e₁ hb₂]
     unfold BoundedErrorAt

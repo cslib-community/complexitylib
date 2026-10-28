@@ -321,7 +321,6 @@ theorem mem_AM_of_card_certifiedSet {N c : Polynomial ℕ} {R : α × List Bool 
       (5 * N.eval (enc a).length + T.eval (enc a).length) + m.eval (enc a).length := by simp
   have hQ : (5 * N + T + 5 * c).eval (enc a).length = 5 * N.eval (enc a).length +
       T.eval (enc a).length + 5 * c.eval (enc a).length := by simp
-  dsimp only [arthurMerlinAcceptCount, arthurMerlinRejectCount]
   rw [hP, hQ]
   simp only [forall_verifier_eq_false_iff, exists_verifier_iff]
   set n := (enc a).length

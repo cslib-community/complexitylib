@@ -37,10 +37,10 @@ private theorem head_mem_MA_direct : {w : List Bool | w.headD false = true} ∈ 
     decide
   refine ⟨1, 1, fun x => x.1.headD false, by fun_prop, fun w => ⟨fun hw => ?_, fun hw y => ?_⟩⟩
   · refine ⟨fun _ => true, ?_⟩
-    dsimp only [BoundedErrorAt, outcomeCount]
+    dsimp only [BoundedErrorAt]
     rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
     exact hcard w
-  · dsimp only [BoundedErrorAt, outcomeCount]
+  · dsimp only [BoundedErrorAt]
     rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
     exact hcard w
 

@@ -83,7 +83,7 @@ theorem exists_SharpP_testBit_of_mem_BPOp_ParityP {L : Set α}
     rw [length_encPair, hZp, Polynomial.eval_comp]
     simp [hr]
   obtain ⟨hyes, hno⟩ := hdec a
-  dsimp only [BoundedErrorAt, outcomeCount] at hyes hno
+  dsimp only [BoundedErrorAt] at hyes hno
   simp only [decide_eq_true_eq, decide_eq_false_iff_not, hL',
     hZlen _ List.length_ofFn] at hyes hno
   simp only

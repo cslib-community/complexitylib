@@ -64,7 +64,8 @@ is closed under polynomially bounded existential quantification (`MAM = AM`,
 * `Cslib.Complexity.IsMerlinArthurVerifier.repeatMajority`,
   `Cslib.Complexity.mem_MA_iff_exists_forall_errorExponent`: error reduction for `MA`, with the
   proof length fixed before the error.
-* `Cslib.Complexity.IsArthurMerlinVerifier.repeatMajority`,
+* `Cslib.Complexity.isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent`,
+  `Cslib.Complexity.IsArthurMerlinVerifier.repeatMajority`,
   `Cslib.Complexity.mem_AM_iff_forall_errorExponent`: error reduction for `AM`.
 * `Cslib.Complexity.MA_subset_AM`, `Cslib.Complexity.NP_subset_AM`,
   `Cslib.Complexity.BPP_subset_AM`.
@@ -172,10 +173,12 @@ non-member at most such a fraction have one. -/
 def IsArthurMerlinVerifierWithErrorExponent (enc : α ↪ List Bool) (e p q : Polynomial ℕ)
     (V : α × List Bool → Bool) (A : Set α) : Prop :=
   ∀ a, (a ∈ A → 2 ^ e.eval (enc a).length *
-      arthurMerlinRejectCount V a (p.eval (enc a).length) (q.eval (enc a).length) ≤
+      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+        ∀ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn r ++ List.ofFn y) = false).card ≤
       2 ^ p.eval (enc a).length) ∧
     (a ∉ A → 2 ^ e.eval (enc a).length *
-      arthurMerlinAcceptCount V a (p.eval (enc a).length) (q.eval (enc a).length) ≤
+      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+        ∃ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn r ++ List.ofFn y) = true).card ≤
       2 ^ p.eval (enc a).length)
 
 /-- An Arthur–Merlin verifier has error exponent `e` iff its reply-existence slice decides with
@@ -186,7 +189,7 @@ theorem isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent
       DecidesWithErrorExponent enc e p (arthurMerlinSlice enc q V) A := by
   simp only [IsArthurMerlinVerifierWithErrorExponent, DecidesWithErrorExponent,
     PromiseProblem.SolvesWithErrorExponent, ErrorExponentAt, Bool.not_true, Bool.not_false,
-    arthurMerlinAcceptCount_eq_outcomeCount, arthurMerlinRejectCount_eq_outcomeCount]
+    arthurMerlinSlice, decide_eq_true_iff, decide_eq_false_iff_not, not_exists, Bool.not_eq_true]
   rfl
 
 /-- The strict majority of `2 r(n)` parallel runs of an Arthur–Merlin verifier `V`, where `n` is the
@@ -347,7 +350,7 @@ theorem MA_subset_AM : MA enc ⊆ AM enc := by
           (List.ofFn r ++ List.ofFn y).take (P.eval (enc a).length) =
         List.ofFn y ++ List.ofFn r := by
     rw [List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn]
-  simp only [arthurMerlinAcceptCount, arthurMerlinRejectCount, hswap]
+  simp only [hswap]
   have h4 : 4 ≤ 2 ^ (q + 2).eval (enc a).length := by
     simp only [Polynomial.eval_add, Polynomial.eval_ofNat, pow_add]
     exact Nat.le_mul_of_pos_left _ (by positivity)
@@ -437,7 +440,7 @@ theorem MA_subset_SBP : MA enc ⊆ SBP enc := by
   · -- the good proof alone is accepted with three quarters of the random strings
     intro ha
     obtain ⟨y, hy⟩ := (h' a).1 ha
-    dsimp only [ErrorExponentAt, outcomeCount, Bool.not_true] at hy
+    dsimp only [ErrorExponentAt, Bool.not_true] at hy
     rw [Polynomial.eval_add, Polynomial.eval_ofNat] at hy
     exact three_mul_two_pow_le_four_mul_sum W a y hy
   · -- all proofs together are accepted with at most a quarter of the random strings
@@ -446,7 +449,7 @@ theorem MA_subset_SBP : MA enc ⊆ SBP enc := by
       (f := fun u : Fin (q.eval (enc a).length) → Bool =>
         acceptCount (fun x => W (x.1, List.ofFn u ++ x.2)) a (P.eval (enc a).length))
       fun u => ?_
-    simpa only [ErrorExponentAt, outcomeCount, Bool.not_false, acceptCount, Polynomial.eval_add,
+    simpa only [ErrorExponentAt, Bool.not_false, acceptCount, Polynomial.eval_add,
       Polynomial.eval_ofNat] using (h' a).2 ha u
 
 /-! ### Existential quantification -/
@@ -556,7 +559,7 @@ theorem mem_AM_of_exists {B : Set (α × List Bool)} (hB : B ∈ AM (encPair enc
       computableInPolyTime_existsAMVerifier hVB (pB.comp L) p, fun a => ?_⟩
   -- the verifier reads the word and runs the verifier of the pairs
   rw [Polynomial.eval_add]
-  simp only [arthurMerlinAcceptCount, arthurMerlinRejectCount, existsAMVerifier_ofFn_append]
+  simp only [existsAMVerifier_ofFn_append]
   -- the error bounds of the pairs, at the length of the encoded instance
   have herr (w : BitString (p.eval (enc a).length)) := by
     have h := hB' (a, List.ofFn w)

@@ -80,10 +80,10 @@ theorem decidesWithBoundedError_orAnd : DecidesWithBoundedError encBits 2 orAnd 
     decide
   rcases ha : a.headD false
   · refine ⟨fun h => absurd (ha.symm.trans h) Bool.false_ne_true, fun _ => ?_⟩
-    simp only [BoundedErrorAt, outcomeCount, orAnd, ha, Bool.false_eq_true, ↓reduceIte]
+    simp only [BoundedErrorAt, orAnd, ha, Bool.false_eq_true, ↓reduceIte]
     exact hand _ (Polynomial.eval_ofNat 2 _)
   · refine ⟨fun _ => ?_, fun h => absurd ha h⟩
-    simp only [BoundedErrorAt, outcomeCount, orAnd, ha, ↓reduceIte]
+    simp only [BoundedErrorAt, orAnd, ha, ↓reduceIte]
     exact hor _ (Polynomial.eval_ofNat 2 _)
 
 /-- Majority votes of `12 q(n)` runs of `orAnd` decide `startsTrue` with error at most

@@ -118,11 +118,10 @@ theorem BPP_subset_SBP : BPP enc ⊆ SBP enc := by
   change (a ∈ A → _ ≤ 3 * acceptCount V a (p.eval (enc a).length)) ∧ _
   constructor <;> intro ha
   · have := h.1 ha
-    unfold outcomeCount at this
     lia
   · have := h.2 ha
     change 2 * (3 * acceptCount V a (p.eval (enc a).length)) < _
-    change _ * acceptCount V a (p.eval (enc a).length) ≤ _ at this
+    rw [← acceptCount] at this
     lia
 
 /-- The integer gap `2f - k + 1` is positive exactly on members, including zero thresholds. -/
@@ -218,7 +217,7 @@ theorem inter_mem_SBP_of_mem_BPP (hA : A ∈ SBP enc) (hB : B ∈ BPP enc) :
   have hD : 0 < 2 ^ q.eval (enc a).length := by positivity
   have hp1 : 1 ≤ 2 ^ p.eval (enc a).length := Nat.one_le_pow _ _ (by decide)
   have h := hB a
-  simp only [ErrorExponentAt, Bool.not_true, Bool.not_false, outcomeCount,
+  simp only [ErrorExponentAt, Bool.not_true, Bool.not_false,
     Polynomial.eval_add, Polynomial.eval_ofNat, pow_add] at h
   change (a ∈ A ∩ B → 3 * (k a * 2 ^ q.eval (enc a).length) ≤ 4 * (f a * c a)) ∧
     (a ∉ A ∩ B → 2 * (4 * (f a * c a)) < 3 * (k a * 2 ^ q.eval (enc a).length))

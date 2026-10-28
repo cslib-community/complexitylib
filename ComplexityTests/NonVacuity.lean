@@ -92,7 +92,7 @@ example : (Set.univ : Set (List Bool)) ∈ NP encBits :=
 
 example : (∅ : Set (List Bool)) ∈ BPP encBits :=
   ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ => by
-      simp only [BoundedErrorAt, outcomeCount, Polynomial.eval_zero, pow_zero, mul_one]
+      simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
       exact le_trans (by norm_num : 2 ≤ 3 * 1)
         (Nat.mul_le_mul_left 3 (Finset.card_pos.2
           ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩
@@ -109,7 +109,7 @@ example : (⊤ : Language Bool) ∈ PPoly :=
 example : (⊥ : Language Bool) ∈ PPoly :=
   mem_PPolyOn_encBits_iff.1 (BPP_subset_PPolyOn ⟨0, fun _ => false, .const false,
     fun _ => ⟨fun h => h.elim, fun _ => by
-      simp only [BoundedErrorAt, outcomeCount, Polynomial.eval_zero, pow_zero, mul_one]
+      simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
       exact le_trans (by norm_num : 2 ≤ 3 * 1)
         (Nat.mul_le_mul_left 3 (Finset.card_pos.2
           ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩)

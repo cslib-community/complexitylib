@@ -175,7 +175,7 @@ theorem mem_PromiseBPP_iff_exists_isPPTOn : Q ∈ PromiseBPP enc ↔
       fun a => ⟨fun ha => ?_, fun ha => ?_⟩⟩
     · have hp : (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (enc a).length =
           c * ((enc a).length + 1) ^ d := by simp
-      dsimp only [BoundedErrorAt, outcomeCount]
+      dsimp only [BoundedErrorAt]
       rw [hp]
       have hprob := hyes a ha
       rw [hlaw a, uniformList_acceptCount_toReal (V := fun x => evalM x.1 x.2),
@@ -186,7 +186,7 @@ theorem mem_PromiseBPP_iff_exists_isPPTOn : Q ∈ PromiseBPP enc ↔
       exact_mod_cast h3
     · have hp : (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (enc a).length =
           c * ((enc a).length + 1) ^ d := by simp
-      dsimp only [BoundedErrorAt, outcomeCount]
+      dsimp only [BoundedErrorAt]
       rw [hp]
       have hprob := hno a ha
       have hmap : ProbComp.eval (Bool.not <$> M a) =

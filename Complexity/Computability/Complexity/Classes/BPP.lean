@@ -44,8 +44,6 @@ The probability is written as a count over the random strings, which are functio
 
 ## Main definitions
 
-* `Cslib.Complexity.outcomeCount`: the number of strings of a given length on which a verifier
-  gives a specified Boolean answer.
 * `Cslib.Complexity.BoundedErrorAt`: the per-instance bounded-error condition for a specified
   Boolean answer.
 * `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError`: the bounded-error condition on a
@@ -55,6 +53,8 @@ The probability is written as a count over the random strings, which are functio
 
 ## Main results
 
+* `Cslib.Complexity.BoundedErrorAt.congr`, `Cslib.Complexity.BoundedErrorAt.not`: extensionality
+  and negation for per-instance bounded error.
 * `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError.compl`,
   `Cslib.Complexity.DecidesWithBoundedError.compl`: negating the verifier solves the complement
   with bounded error.
@@ -79,48 +79,14 @@ open Turing.MultiTapeTM
 
 variable {α : Type}
 
-/-- The number of strings `r` of length `n` with `V (a, r) = b`. -/
-@[reducible]
-def outcomeCount (V : α × List Bool → Bool) (a : α) (n : ℕ) (b : Bool) : ℕ :=
-  (Finset.univ.filter fun r : Fin n → Bool => V (a, List.ofFn r) = b).card
-
-/-- Verifiers that agree on an instance and all strings of length `n` have the same outcome counts
-at length `n`. -/
-theorem outcomeCount_congr {V W : α × List Bool → Bool} {a : α} {n : ℕ} {b : Bool}
-    (h : ∀ r : Fin n → Bool, V (a, List.ofFn r) = W (a, List.ofFn r)) :
-    outcomeCount V a n b = outcomeCount W a n b :=
-  congrArg Finset.card (Finset.filter_congr fun r _ => by rw [h r])
-
-/-- Negating the verifier negates the counted outcome. -/
-theorem outcomeCount_not (V : α × List Bool → Bool) (a : α) (n : ℕ) (b : Bool) :
-    outcomeCount (fun x => !V x) a n b = outcomeCount V a n (!b) :=
-  congrArg Finset.card (Finset.filter_congr fun _ _ => Bool.not_eq_eq_eq_not)
-
-/-- The strings of length `n` on which `V` gives `b` and those on which it gives `!b` partition all
-`2 ^ n` strings. -/
-theorem outcomeCount_add_outcomeCount_not (V : α × List Bool → Bool) (a : α) (n : ℕ) (b : Bool) :
-    outcomeCount V a n b + outcomeCount V a n (!b) = 2 ^ n := by
-  have h := Finset.card_filter_add_card_filter_not (s := Finset.univ)
-    fun r : Fin n → Bool => V (a, List.ofFn r) = b
-  have hnot : (Finset.univ.filter fun r : Fin n → Bool => ¬V (a, List.ofFn r) = b) =
-      Finset.univ.filter fun r : Fin n → Bool => V (a, List.ofFn r) = !b :=
-    Finset.filter_congr fun _ _ => by cases b <;> simp
-  simpa only [outcomeCount, hnot, Finset.card_univ, Fintype.card_fun, Fintype.card_bool,
-    Fintype.card_fin] using h
-
-/-- The strings of length `n` that `V` accepts together with `a` and those it rejects partition all
-`2 ^ n` strings. -/
-theorem outcomeCount_true_add_outcomeCount_false (V : α × List Bool → Bool) (a : α) (n : ℕ) :
-    outcomeCount V a n true + outcomeCount V a n false = 2 ^ n :=
-  outcomeCount_add_outcomeCount_not V a n true
-
 /-- `V` gives the answer `b` with bounded error on the instance `a`, using random strings whose
 length is `p` evaluated at the length of the encoded instance: at least two thirds of the random
 strings `r` of length `p (enc a).length` give `V (a, r) = b`. -/
-@[reducible]
-def BoundedErrorAt (enc : α ↪ List Bool) (p : Polynomial ℕ) (V : α × List Bool → Bool)
+abbrev BoundedErrorAt (enc : α ↪ List Bool) (p : Polynomial ℕ) (V : α × List Bool → Bool)
     (a : α) (b : Bool) : Prop :=
-  2 * 2 ^ p.eval (enc a).length ≤ 3 * outcomeCount V a (p.eval (enc a).length) b
+  2 * 2 ^ p.eval (enc a).length ≤
+    3 * (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      V (a, List.ofFn r) = b).card
 
 /-- Bounded error at an instance depends only on the verifier's values on strings of length
 `p(|a|)`. -/
@@ -128,13 +94,24 @@ theorem BoundedErrorAt.congr {enc : α ↪ List Bool} {p : Polynomial ℕ}
     {V W : α × List Bool → Bool} {a : α} {b : Bool} (h : BoundedErrorAt enc p V a b)
     (hVW : ∀ r : Fin (p.eval (enc a).length) → Bool, V (a, List.ofFn r) = W (a, List.ofFn r)) :
     BoundedErrorAt enc p W a b := by
-  rwa [BoundedErrorAt, ← outcomeCount_congr hVW]
+  have hcard : (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      V (a, List.ofFn r) = b).card =
+    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      W (a, List.ofFn r) = b).card :=
+    congrArg Finset.card (Finset.filter_congr fun r _ => by rw [hVW r])
+  rwa [BoundedErrorAt, ← hcard]
 
 /-- Negating the verifier negates the bounded-error answer at `a`. -/
 theorem BoundedErrorAt.not {enc : α ↪ List Bool} {p : Polynomial ℕ}
     {V : α × List Bool → Bool} {a : α} {b : Bool} (h : BoundedErrorAt enc p V a b) :
     BoundedErrorAt enc p (fun x => !V x) a (!b) := by
-  rwa [BoundedErrorAt, outcomeCount_not, Bool.not_not]
+  have hcard : (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      (!V (a, List.ofFn r)) = !b).card =
+    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
+      V (a, List.ofFn r) = b).card :=
+    congrArg Finset.card
+      (Finset.filter_congr fun _ _ => by rw [Bool.not_eq_eq_eq_not, Bool.not_not])
+  rwa [BoundedErrorAt, hcard]
 
 namespace PromiseProblem
 
@@ -229,8 +206,8 @@ theorem P_subset_BPP : P enc ⊆ BPP enc := by
   rintro A ⟨f, hf, hA⟩
   refine ⟨0, fun x => f x.1, hf.comp (.fst enc encBits),
     fun a => ⟨fun ha => ?_, fun ha => ?_⟩⟩
-  · simp [BoundedErrorAt, outcomeCount, (hA a).mp ha]
+  · simp [BoundedErrorAt, (hA a).mp ha]
   · have : f a = false := by simpa [hA a] using ha
-    simp [BoundedErrorAt, outcomeCount, this]
+    simp [BoundedErrorAt, this]
 
 end Cslib.Complexity
