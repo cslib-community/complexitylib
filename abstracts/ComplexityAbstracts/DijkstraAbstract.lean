@@ -9,30 +9,34 @@ Authors: Renfei Zhou
 import ComplexityAbstracts.Check
 import ComplexityAbstracts.DijkstraBridge
 
-/-! # Dijkstra's algorithm: shortest paths in `O((m + 1) log n)` time
+/-! # Dijkstra's algorithm: shortest paths in `O((m + 1) log n)` and `O(m + n log n)` time
 
 Given a directed graph with `n` vertices, `m` edges and natural-number edge weights, and a source
 vertex `s`, the single-source shortest-path problem asks for the distance from `s` to every
-vertex. Dijkstra's algorithm with a binary heap solves it in `O((m + 1) log n)` time. The theorem
-below states this bound for a program on the word RAM, with the graph given by adjacency lists.
+vertex. On the word RAM, with the graph given by adjacency lists, Dijkstra's algorithm solves it in
+`O((m + 1) log n)` time with a binary heap (`dijkstra_logLinear`) and in `O(m + n log n)` time with
+Fredman and Tarjan's Fibonacci heap (`dijkstra_fibonacci`). The theorems below state both bounds.
 
 The graph, its distances, the input and output layouts, the word-size condition and the machine are
 all defined here from scratch. The machine, defined in the appendix, is the word RAM over the exact
 basis of operations: each operation computes its exact value, and an instruction faults instead of
 producing `x - y` for `y > x`, `x / 0`, `x % 0`, or a value that is not a word. Apart from `Runs`,
-its definitions are those of `WordRAMAbstract`. To check that the theorem says what is claimed, a
-reader only needs to inspect the definitions and the theorem statement in this file. Lean checks the
-proof through `DijkstraBridge`, which proves that the distance here is the library's and that the
+its definitions are those of `WordRAMAbstract`. To check that the theorems say what is claimed, a
+reader only needs to inspect the definitions and theorem statements in this file. Lean checks the
+proofs through `DijkstraBridge`, which proves that the distance here is the library's and that the
 machine here runs as the library's word RAM `Cslib.WordRAM` over its exact basis, and applies the
-library theorem `Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement`. `#check_abstract` checks
-mechanically that every definition and theorem statement here depends only on this file, Lean,
-Mathlib and upstream CSLib.
+library theorems `Cslib.Algorithms.WordRAM.Dijkstra.logLinearStatement` and
+`Cslib.Algorithms.WordRAM.Dijkstra.fibonacciStatement`. `#check_abstract` checks mechanically that
+every definition and theorem statement here depends only on this file, Lean, Mathlib and upstream
+CSLib.
 
 ## References
 
 * [E. W. Dijkstra, *A note on two problems in connexion with graphs*][Dijkstra1959]
+* [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
+  algorithms*][FredmanTarjan1987]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009], Section 24.3.
+  Algorithms*][CLRS2009], Chapters 19 and 24.3.
 -/
 
 namespace ComplexityAbstracts.DijkstraAbstract
@@ -249,11 +253,11 @@ holds when `k` steps of the relation `R` lead from `s` to `t`: `s = t` for `k = 
 def Runs (w : ℕ) (p : Program r) : State r → State r → ℕ → Prop :=
   Relation.RelatesInSteps fun s t => step w p s = .next t
 
-/-! ## Main theorem -/
+/-! ## Main theorems -/
 
-/-- **Dijkstra's algorithm.** Some program `p` of the word RAM defined in the representation
-details (over the exact basis), with some number `r` of registers, and some constant `K` satisfy
-the following.
+/-- **Dijkstra's algorithm (binary heap).** Some program `p` of the word RAM defined in the
+representation details (over the exact basis), with some number `r` of registers, and some constant
+`K` satisfy the following.
 For every graph `G` with `n` vertices and `m` edges and largest weight `W`, every source `s`, and
 every word size `w` with `8 (n + m + 2) (W + 2) < 2 ^ w`: started on the input `encode G s`, the
 program runs for `steps` steps to a state `t` whose next instruction is `halt`, executes
@@ -276,8 +280,31 @@ theorem dijkstra_logLinear :
     (by constructor <;> simp_all [step, DijkstraBridge.haltsVia, AluOp.eval])
     State.mem (fun _ _ _ => rfl) (W := @IsWalk) ⟨fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl⟩
 
+/-- **Dijkstra's algorithm (Fibonacci heap).** Some program `p` of the word RAM defined in the
+representation details (over the exact basis), with some number `r` of registers, and some constant
+`K` satisfy the following.
+For every graph `G` with `n` vertices and `m` edges and largest weight `W`, every source `s`, and
+every word size `w` with `8 (n + m + 2) (W + 2) < 2 ^ w`: started on the input `encode G s`, the
+program runs for `steps` steps to a state `t` whose next instruction is `halt`, executes
+`steps + 1 ≤ K (m + n (Nat.log 2 n + 1))` instructions in all, and then holds at `outAddr G v`
+the encoded distance from `s` to `v`, for every vertex `v`. -/
+theorem dijkstra_fibonacci :
+    ∃ r, ∃ p : Program r, ∃ K, ∀ (n : ℕ) (G : Graph n) (s : Fin n) (w : ℕ),
+      8 * (n + numEdges G + 2) * (maxWeight G + 2) < 2 ^ w →
+      ∃ t steps, Runs w p (init (encode G s)) t steps ∧
+        (∃ v, step w p t = .halt v) ∧
+        steps + 1 ≤ K * (numEdges G + n * (Nat.log 2 n + 1)) ∧
+        ∀ v : Fin n, t.mem (outAddr G v) = encodeDist (dist G s v) :=
+  DijkstraBridge.fibonacci
+    ⟨AluOp, .add, .sub, .mul, .div, .mod, .and, .or, .xor, .shl, .shr, @AluOp.rec, AluOp.eval,
+      Instr, .const, .copy, .alu, .width, .load, .store, .jump, .branchEq, .branchLt, .halt,
+      @Instr.rec, State, .mk, Outcome, .next, .halt, .fault, step,
+      DijkstraBridge.haltsVia Instr State Outcome step fun f g a o => o.rec f g a, fun _ _ => True⟩
+    (by constructor <;> simp_all [step, DijkstraBridge.haltsVia, AluOp.eval])
+    State.mem (fun _ _ _ => rfl) (W := @IsWalk) ⟨fun _ _ _ => Iff.rfl, fun _ _ _ _ _ => Iff.rfl⟩
+
 /--
-info: abstract audit passed for `ComplexityAbstracts.DijkstraAbstract`: 218 root
+info: abstract audit passed for `ComplexityAbstracts.DijkstraAbstract`: 219 root
 declarations, 229 dependencies checked
 -/
 #guard_msgs (whitespace := lax) in

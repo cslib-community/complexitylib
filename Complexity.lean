@@ -47,6 +47,9 @@ public import Complexity.Algorithms.ThreeSum.ChanHe.Sizes
 public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
+public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
+public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
+public import Complexity.Algorithms.WordRAM.Dijkstra.FibonacciStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.Invariant
@@ -91,6 +94,14 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap
 public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Model
 public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Program
 public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Sift
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Consolidate
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Cut
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Forest
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Model
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Program
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Trees
 public import Complexity.Algorithms.WordRAM.Queue.Basic
 public import Complexity.Algorithms.WordRAM.Queue.Dynamic
 public import Complexity.Algorithms.WordRAM.Queue.Model
