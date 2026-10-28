@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -23,8 +23,14 @@ This restates `CountingNativeEndpoint.exists_declaredCounter` on the plain formu
 relabels the variables densely, declares their number, and runs the declared counter. The
 resource bounds are folded into `ComputableInO`.
 
+More generally, `CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared` composes
+`CountingNativeEndpoint.exists_declaredCounter` with any polynomial-time reduction
+`g : α → ℕ × CNF ℕ` and polynomial-time validity guard `valid : α → Bool`.
+
 ## Main results
 
+* `CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared`: compose the declared `k`-CNF
+  counter with any polynomial-time reduction and validity guard.
 * `CountingNativeEndpoint.exists_modelCounter`: the bounded-width model counter.
 
 ## References
@@ -35,6 +41,127 @@ resource bounds are folded into `ComputableInO`.
 namespace Cslib.Complexity.CountingNativeEndpoint
 
 open Cslib.Logic.PL Turing.MultiTapeTM SubexponentialSAT
+
+/-- General composition of `CountingNativeEndpoint.exists_declaredCounter` with any polynomial-time
+reduction `g : α → ℕ × CNF ℕ` and polynomial-time validity guard `valid : α → Bool`. -/
+public theorem exists_counter_of_polyTime_toDeclared {α : Type} {encA : α ↪ List Bool} (k : ℕ)
+    {g : α → ℕ × CNF ℕ} (hg : ComputableInPolyTime g encA (encPair encUnary encCNF))
+    {valid : α → Bool} (hvalid : ComputableInPolyTime valid encA encBool)
+    (hvalid_imp : ∀ x, valid x = true → CNF.validDeclaredInput k (g x).1 (g x).2 = true) :
+    ∃ (count : α → ℕ) (T S : α → ℕ) (A c e a b : ℕ),
+      ComputableInO count encA encNat T S ∧
+      (∀ x, count x = if valid x then (g x).2.modelCountOn (Finset.range (g x).1) else 0) ∧
+      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (g x).1) *
+        (((encA x).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x, S x ≤ a * ((encA x).length + 1) ^ b) := by
+  obtain ⟨count₀, T₀, S₀, A, c₀, e₀, a₀, b₀, hcount₀, hspec₀, hT₀, hS₀⟩ :=
+    exists_declaredCounter k
+  obtain ⟨dg, _, hdg⟩ := hg.tidy.exists_degree
+  obtain ⟨dv, _, hdv⟩ := hvalid.tidy.exists_degree
+  obtain ⟨p, q, hp⟩ := hg.polyBounded_length.exists_le
+  have hcomp := hcount₀.comp (ComputableInO.of_tidy hdg.inO)
+  have hite := (ComputableInO.of_tidy hdv.inO).ite hcomp (ComputableInO.const (encIn := encA) 0)
+  let P (x : α) := ((encA x).length + 1) ^ dv + ((encA x).length + 1) ^ dg + (encA x).length
+  let T (x : α) := P x + T₀ (g x)
+  let S (x : α) := P x + S₀ (g x)
+  refine ⟨fun x => if valid x then count₀ (g x) else 0, T, S, A,
+    3 + c₀ * (p + 1) ^ e₀, dv + dg + 1 + q * e₀,
+    3 + a₀ * (p + 1) ^ b₀, dv + dg + 1 + q * b₀,
+    (hite.mono 1 (fun x => ?_) (fun x => ?_)).of_enc_eq (fun _ => rfl),
+    fun x => ?_, fun x => ?_, fun x => ?_⟩
+  · dsimp only [T, P]
+    split_ifs <;> omega
+  · dsimp only [S, P]
+    split_ifs <;> omega
+  · dsimp only
+    split_ifs with hx
+    · have hvalid' := hvalid_imp x hx
+      simp [hspec₀ (g x), hvalid']
+    · rfl
+  · let Y : ℕ := (encA x).length + 1
+    have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
+    have hlen : (encPair encUnary encCNF (g x)).length + 1 ≤ (p + 1) * Y ^ q := by
+      have h1 : (encPair encUnary encCNF (g x)).length ≤ p * Y ^ q := hp x
+      have h2 : 1 ≤ Y ^ q := Nat.one_le_pow _ _ hY1
+      nlinarith
+    have hpow : ((encPair encUnary encCNF (g x)).length + 1) ^ e₀ ≤
+        (p + 1) ^ e₀ * Y ^ (q * e₀) := by
+      calc _ ≤ ((p + 1) * Y ^ q) ^ e₀ := Nat.pow_le_pow_left hlen e₀
+        _ = _ := by rw [mul_pow, pow_mul]
+    let E := dv + dg + 1 + q * e₀
+    have hP_le : P x ≤ 3 * Y ^ E := by
+      have h1 : Y ^ dv ≤ Y ^ E := Nat.pow_le_pow_right hY1 (by dsimp [E]; omega)
+      have h2 : Y ^ dg ≤ Y ^ E := Nat.pow_le_pow_right hY1 (by dsimp [E]; omega)
+      have hE0 : E ≠ 0 := by dsimp [E]; omega
+      have h3 : (encA x).length ≤ Y ^ E :=
+        (Nat.le_succ _).trans (Nat.le_self_pow hE0 Y)
+      change Y ^ dv + Y ^ dg + (encA x).length ≤ 3 * Y ^ E
+      omega
+    have hqe : Y ^ (q * e₀) ≤ Y ^ E := Nat.pow_le_pow_right hY1 (by dsimp [E]; omega)
+    let X : ℝ := (2 : ℝ) ^ ((A : ℝ) * interpolationScale (g x).1)
+    let YR : ℝ := ((encA x).length : ℝ) + 1
+    have hYR_eq : (Y : ℝ) = YR := by dsimp [Y, YR]; push_cast; rfl
+    have hX1 : (1 : ℝ) ≤ X :=
+      Real.one_le_rpow (by norm_num) (mul_nonneg (Nat.cast_nonneg A) (interpolationScale_nonneg _))
+    have hT₀_le : (T₀ (g x) : ℝ) ≤
+        ((c₀ * (p + 1) ^ e₀ : ℕ) : ℝ) * (X * YR ^ E) + c₀ := by
+      have h0 := hT₀ (g x)
+      have hpow_le : ((encPair encUnary encCNF (g x)).length + 1) ^ e₀ ≤
+          (p + 1) ^ e₀ * Y ^ E := hpow.trans (Nat.mul_le_mul_left _ hqe)
+      have hpowR : (((encPair encUnary encCNF (g x)).length : ℝ) + 1) ^ e₀ ≤
+          (((p + 1) ^ e₀ : ℕ) : ℝ) * YR ^ E := by
+        rw [← hYR_eq]
+        exact_mod_cast hpow_le
+      have h1 := mul_le_mul_of_nonneg_left hpowR (by positivity : (0 : ℝ) ≤ X)
+      have h2 := mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg c₀)
+      have hcast : ((c₀ * (p + 1) ^ e₀ : ℕ) : ℝ) = (c₀ : ℝ) * (((p + 1) ^ e₀ : ℕ) : ℝ) := by
+        push_cast; rfl
+      rw [hcast]
+      linarith
+    have hP_R : (P x : ℝ) ≤ 3 * (X * YR ^ E) := by
+      have hPR : (P x : ℝ) ≤ 3 * YR ^ E := by
+        rw [← hYR_eq]
+        exact_mod_cast hP_le
+      have hYR_nonneg : (0 : ℝ) ≤ YR ^ E := by dsimp [YR]; positivity
+      have hXY : YR ^ E ≤ X * YR ^ E := le_mul_of_one_le_left hYR_nonneg hX1
+      linarith
+    have hc_le : (c₀ : ℝ) ≤ ((3 + c₀ * (p + 1) ^ e₀ : ℕ) : ℝ) := by
+      have : 1 ≤ (p + 1) ^ e₀ := Nat.one_le_pow _ _ (Nat.le_add_left 1 p)
+      exact_mod_cast (by nlinarith : c₀ ≤ 3 + c₀ * (p + 1) ^ e₀)
+    have hadd : (3 : ℝ) + ((c₀ * (p + 1) ^ e₀ : ℕ) : ℝ) = ((3 + c₀ * (p + 1) ^ e₀ : ℕ) : ℝ) := by
+      push_cast; rfl
+    change ((P x + T₀ (g x) : ℕ) : ℝ) ≤
+      ((3 + c₀ * (p + 1) ^ e₀ : ℕ) : ℝ) * (X * YR ^ E) + ((3 + c₀ * (p + 1) ^ e₀ : ℕ) : ℝ)
+    rw [Nat.cast_add, ← hadd, add_mul]
+    linarith
+  · let Y : ℕ := (encA x).length + 1
+    have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
+    have hlen : (encPair encUnary encCNF (g x)).length + 1 ≤ (p + 1) * Y ^ q := by
+      have h1 : (encPair encUnary encCNF (g x)).length ≤ p * Y ^ q := hp x
+      have h2 : 1 ≤ Y ^ q := Nat.one_le_pow _ _ hY1
+      nlinarith
+    have hpow : ((encPair encUnary encCNF (g x)).length + 1) ^ b₀ ≤
+        (p + 1) ^ b₀ * Y ^ (q * b₀) := by
+      calc _ ≤ ((p + 1) * Y ^ q) ^ b₀ := Nat.pow_le_pow_left hlen b₀
+        _ = _ := by rw [mul_pow, pow_mul]
+    let B := dv + dg + 1 + q * b₀
+    have hP_le : P x ≤ 3 * Y ^ B := by
+      have h1 : Y ^ dv ≤ Y ^ B := Nat.pow_le_pow_right hY1 (by dsimp [B]; omega)
+      have h2 : Y ^ dg ≤ Y ^ B := Nat.pow_le_pow_right hY1 (by dsimp [B]; omega)
+      have hB0 : B ≠ 0 := by dsimp [B]; omega
+      have h3 : (encA x).length ≤ Y ^ B :=
+        (Nat.le_succ _).trans (Nat.le_self_pow hB0 Y)
+      change Y ^ dv + Y ^ dg + (encA x).length ≤ 3 * Y ^ B
+      omega
+    have hqb : Y ^ (q * b₀) ≤ Y ^ B := Nat.pow_le_pow_right hY1 (by dsimp [B]; omega)
+    have hS₀_le : S₀ (g x) ≤ a₀ * (p + 1) ^ b₀ * Y ^ B := by
+      calc S₀ (g x) ≤ a₀ * ((encPair encUnary encCNF (g x)).length + 1) ^ b₀ := hS₀ (g x)
+        _ ≤ a₀ * ((p + 1) ^ b₀ * Y ^ B) :=
+            Nat.mul_le_mul_left a₀ (hpow.trans (Nat.mul_le_mul_left _ hqb))
+        _ = a₀ * (p + 1) ^ b₀ * Y ^ B := by rw [Nat.mul_assoc]
+    change P x + S₀ (g x) ≤ (3 + a₀ * (p + 1) ^ b₀) * Y ^ B
+    rw [Nat.add_mul]
+    omega
 
 /-- Dense relabeling followed by declaring the number of variables. -/
 private theorem computableInPolyTime_declareDense :

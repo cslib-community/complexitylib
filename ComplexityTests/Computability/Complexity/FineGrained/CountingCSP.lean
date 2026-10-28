@@ -1,25 +1,25 @@
 /-
-Copyright (c) 2026 OpenAI, Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: OpenAI, Samuel Schlesinger
+Authors: Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.FineGrained.BooleanCSP
+public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 
 /-!
-# Tests for bounded-arity Boolean `#CSP` compilation, counting, and subexponential decision
+# Tests for bounded-arity CSP definitions, CNF compilation, counting, and subexponential decision
 
 Concrete execution and non-vacuity checks for `CSP.toCNF`, `CSP.toCNFBounded`, `CSP.modelCountOn`,
-`CSP.modelCount`, `CSP.exists_declaredCounter`, `CSP.exists_modelCounter`, and
-`CSP.decidableInSubexpTime_KCSP`.
+`CSP.modelCount` (over both Boolean and finite non-Boolean domains), `CSP.exists_declaredCounter`,
+`CSP.exists_modelCounter`, and `CSP.decidableInSubexpTime_KCSP`.
 -/
 
 @[expose] public section
 
-namespace Cslib.Complexity.Tests.BooleanCSP
+namespace Cslib.Complexity.Tests.CountingCSP
 
 open Cslib.Logic.PL Turing.MultiTapeTM SubexponentialSAT
 
@@ -48,7 +48,7 @@ def sampleCSP : CSP SampleRel ℕ :=
 def unsatRepeatedScopeCSP : CSP SampleRel ℕ :=
   [((false, true), [4, 4])]
 
-example : (enumBoolLists 3).length = 8 := by decide
+example : (BitString.enumList 3).length = 8 := by decide
 
 -- `sampleCSP`:
 -- 1. `2 ^^ 5 ^^ 9 = true` and `2 != 5` forces `2 ≠ 5` (2 choices) and `9 = false` (1 choice).
@@ -74,11 +74,37 @@ example : unsatRepeatedScopeCSP.modelCount sampleSem = 0 := by decide
 example : CSP.modelCount sampleSem ([] : CSP SampleRel ℕ) = 1 := by decide
 example : CSP.modelCountOn sampleSem ([] : CSP SampleRel ℕ) (Finset.range 3) = 8 := by decide
 
--- Polynomial-time compilation check.
+-- Domain-polymorphic `CSP.modelCount` over a finite non-Boolean domain (`Fin 3`):
+-- 3-coloring of a triangle `[((), [0, 1]), ((), [1, 2]), ((), [0, 2])]` has `3 * 2 * 1 = 6` models.
+def neqFin3 : Unit → List (Fin 3) → Bool
+  | (), [a, b] => decide (a ≠ b)
+  | (), _ => false
+
+def triangle3ColorCSP : CSP Unit ℕ :=
+  [((), [10, 20]), ((), [20, 30]), ((), [10, 30])]
+
+example : triangle3ColorCSP.modelCount neqFin3 = 6 := by decide
+example : triangle3ColorCSP.denseRelabel.modelCount neqFin3 = 6 := by decide
+
+-- Polynomial-time compilation check (finite relation alphabet corollary).
 example :
     ComputableInPolyTime (CSP.toCNFBounded 3 sampleSem)
       (encCSP encSampleRel encNat) encCNF :=
-  CSP.computableInPolyTime_toCNFBounded encSampleRel encNat 3 sampleSem
+  CSP.computableInPolyTime_toCNFBounded_of_finite encSampleRel encNat 3 sampleSem
+
+-- Polynomial-time compilation check on an infinite relation type (`Bool × List Bool`).
+def taggedSem (r : Bool × List Bool) (_w : List Bool) : Bool := r.1
+
+theorem computableInPolyTime_taggedSem :
+    ComputableInPolyTime (fun p : (Bool × List Bool) × List Bool => taggedSem p.1 p.2)
+      (encPair (encPair encBool encBits) encBits) encBool :=
+  (ComputableInPolyTime.fst encBool encBits).comp (ComputableInPolyTime.fst _ _)
+
+example :
+    ComputableInPolyTime (CSP.toCNFBounded 3 taggedSem)
+      (encCSP (encPair encBool encBits) encNat) encCNF :=
+  CSP.computableInPolyTime_toCNFBounded (encPair encBool encBits) encNat 3 taggedSem
+    computableInPolyTime_taggedSem
 
 -- Non-vacuity of declared-variable exact `#CSP` counter.
 example :
@@ -89,22 +115,25 @@ example :
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
         (((encPair encUnary (encCSP encSampleRel encNat) x).length : ℝ) + 1) ^ e) + c) ∧
       (∀ x, S x ≤ a * ((encPair encUnary (encCSP encSampleRel encNat) x).length + 1) ^ b) :=
-  CSP.exists_declaredCounter encSampleRel 3 sampleSem
+  CSP.exists_declaredCounter_of_finite encSampleRel 3 sampleSem
 
--- Non-vacuity of occurring-variable exact `#CSP` counter.
+-- Non-vacuity of occurring-variable exact `#CSP` counter (general polynomial-time `sem`).
 example :
-    ∃ (count : CSP SampleRel ℕ → ℕ) (T S : CSP SampleRel ℕ → ℕ) (A c e a b : ℕ),
-      ComputableInO count (encCSP encSampleRel encNat) encNat T S ∧
-      (∀ F : CSP SampleRel ℕ, (∀ c ∈ F, c.2.length ≤ 3) → count F = F.modelCount sampleSem) ∧
-      (∀ F : CSP SampleRel ℕ,
+    ∃ (count : CSP (Bool × List Bool) ℕ → ℕ) (T S : CSP (Bool × List Bool) ℕ → ℕ) (A c e a b : ℕ),
+      ComputableInO count (encCSP (encPair encBool encBits) encNat) encNat T S ∧
+      (∀ F : CSP (Bool × List Bool) ℕ,
+        (∀ c ∈ F, c.2.length ≤ 3) → count F = F.modelCount taggedSem) ∧
+      (∀ F : CSP (Bool × List Bool) ℕ,
         (T F : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale F.numVars) *
-          (((encCSP encSampleRel encNat F).length : ℝ) + 1) ^ e) + c) ∧
-      (∀ F : CSP SampleRel ℕ, S F ≤ a * ((encCSP encSampleRel encNat F).length + 1) ^ b) :=
-  CSP.exists_modelCounter encSampleRel encNat 3 sampleSem
+          (((encCSP (encPair encBool encBits) encNat F).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ F : CSP (Bool × List Bool) ℕ,
+        S F ≤ a * ((encCSP (encPair encBool encBits) encNat F).length + 1) ^ b) :=
+  CSP.exists_modelCounter (encPair encBool encBits) encNat 3 taggedSem
+    computableInPolyTime_taggedSem
 
 -- Non-vacuity of subexponential decision for bounded-arity Boolean CSP.
 example :
     DecidableInSubexpTime (CSP.KCSP 3 sampleSem) (encCSP encSampleRel encNat) CSP.numVars :=
-  CSP.decidableInSubexpTime_KCSP encSampleRel encNat 3 sampleSem
+  CSP.decidableInSubexpTime_KCSP_of_finite encSampleRel encNat 3 sampleSem
 
-end Cslib.Complexity.Tests.BooleanCSP
+end Cslib.Complexity.Tests.CountingCSP
