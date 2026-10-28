@@ -394,7 +394,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
   extend signed-program compilation to division/remainder ([#1360]); transfer of Anthropic's
-  modular machine and 3SUM/APSP algorithms; size-based width
+  modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394]) has the
+  Convolution-3SUM/Exact Triangle correctness reduction and a native one-weight kernel, but still
+  needs charged matrix-building loops, Chan–He preprocessing, the fast Exact Triangle solver and
+  full time/width composition; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); randomized selection; transfer of cell-probe lower
@@ -518,3 +521,4 @@ not planned, not as proved.
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
 [#1360]: https://github.com/cslib-community/complexitylib/issues/1360
+[#1394]: https://github.com/cslib-community/complexitylib/issues/1394

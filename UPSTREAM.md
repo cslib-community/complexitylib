@@ -146,6 +146,19 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and register bank. This is forward correctness, not reflection of source
   faults. Division/remainder remain in [#1360](https://github.com/cslib-community/complexitylib/issues/1360);
   transfer from Anthropic's modular signed machine and its 3SUM/APSP algorithms remains separate.
+* **Direct 3SUM adaptation.** `Algorithms/ThreeSum/Convolution.lean` adapts the explicit
+  Convolution-3SUM to Exact Triangle correctness reduction from Anthropic's
+  [`formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp),
+  `Sec3/Theorem21a/Convolution.lean`. The three weight matrices use the original formulas;
+  an explicit nonnegative magnitude bound also handles empty input. The native selection/store
+  kernel in `Algorithms/WordRAM/ThreeSum/Weight.lean` directly adapts `pickStmt`/`putStmt` from
+  `Programs/Sec3/Theorem21a/Convolution/Fill.lean`, reusing the unsigned machine and signed
+  encoding/subtraction. It charges at most 28 instructions at width `w + 2` once arguments and
+  the signed index are supplied. This is no machine-to-machine bridge, complete reduction,
+  or subquadratic 3SUM theorem. Index computation, matrix traversal, Chan–He preprocessing,
+  fast Exact Triangle and full input/time/width composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright
+  and attribution are retained; the new native proof and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
