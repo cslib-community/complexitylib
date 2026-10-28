@@ -37,9 +37,15 @@ public import Complexity.Algorithms.Streaming.CountMin.Basic
 public import Complexity.Algorithms.Streaming.CountMin.LinearHash
 public import Complexity.Algorithms.Streaming.CountMin.Probability
 public import Complexity.Algorithms.Streaming.CountMin.Program
+public import Complexity.Algorithms.ThreeSum.ArrayPacking
+public import Complexity.Algorithms.ThreeSum.ChanHe.Collisions
+public import Complexity.Algorithms.ThreeSum.ChanHe.Defs
 public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
+public import Complexity.Algorithms.ThreeSum.ChanHe.Recursion
+public import Complexity.Algorithms.ThreeSum.ChanHe.Sizes
 public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
+public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
 public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram
@@ -2053,6 +2059,7 @@ public import Complexity.Foundations.Data.Code.SudanInterpolant
 public import Complexity.Foundations.Data.Fin.Append
 public import Complexity.Foundations.Data.Fin.Order
 public import Complexity.Foundations.Data.Fin.Tuple
+public import Complexity.Foundations.Data.Finset.Average
 public import Complexity.Foundations.Data.Finset.Expect
 public import Complexity.Foundations.Data.Finset.Markov
 public import Complexity.Foundations.Data.Finset.Quantile
@@ -2179,6 +2186,7 @@ public import Complexity.Foundations.NumberTheory.AKS.Criterion
 public import Complexity.Foundations.NumberTheory.AKS.Introspective
 public import Complexity.Foundations.NumberTheory.AKS.SmallR
 public import Complexity.Foundations.NumberTheory.Harmonic
+public import Complexity.Foundations.NumberTheory.PrimeCounting
 public import Complexity.Foundations.Order.BooleanSubalgebra
 public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.UpperLower

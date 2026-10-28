@@ -7,87 +7,86 @@ Authors: Erik Demaine
 import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
 
 /-!
-# Distinct-position preprocessing and three-array packing regressions
+# Nonvacuous clients of the core Chan–He reduction
 
-These examples check multiplicities, finite frontend enumeration and array tags. They assert no
-machine running time for the frontend.
+These tests exercise collisions and failed candidates, light-element arrays and signed padding,
+recursion, and the correctness theorem composed with the distinct-position frontend.
 -/
 
 namespace ComplexityTests.ThreeSumChanHe
 
-open Cslib.Algorithms.ThreeSum
-open Cslib.Algorithms.ThreeSum.ChanHe
-open Finset
+open Cslib.Algorithms.ThreeSum Cslib.Algorithms.ThreeSum.ChanHe
 
-private def repeated (i : Fin 3) : ℤ := if i = 0 then -2 else 1
+-- Each unordered collision contributes both ordered pairs; negative residues are included.
+example : coll {-3, 1, 2} 4 = 2 ∧ heavy {-3, 1, 2} 4 = {-3, 1} := by decide
+example : light {-3, 1, 2} 4 = {2} := by decide
+example : coll {-3, 1, 2} 0 = 0 ∧ heavy {-3, 1, 2} 0 = ∅ := by decide
 
-/-- Three different positions may contain repeated values. -/
-example : HasSolution repeated := by unfold HasSolution; decide
+-- The first candidate 2 fails: 2*7 > 3*1*2²; the next candidate 3 succeeds.
+private def candidates : Finset ℕ := {2, 3, 5, 7, 11, 13, 17}
+example : firstP candidates 1 {0, 2} {0, 2} {0, 2} = 3 := by decide
+example : secondP candidates 1 {0, 2} {0, 2} {0, 2} 3 = 2 := by decide
+example : modulus candidates 1 {0, 2} {0, 2} {0, 2} = 6 := by decide
+example : firstP ∅ 1 {0} {0} {0} = 1 := by decide
 
-/-- Two zeros are insufficient, whereas three zeros solve distinct-position 3SUM. -/
-example : ¬HasSolution (fun _ : Fin 2 => (0 : ℤ)) ∧
-    HasSolution (fun _ : Fin 3 => (0 : ℤ)) := by simp only [HasSolution]; decide
+-- A real instance of the simultaneous-prime theorem, with all hypotheses discharged.
+example : ∀ S ∈ ([{-3, 1, 2}, {0}, {-2}] : List (Finset ℤ)),
+    coll S (modulus candidates (labelBits 3) {-3, 1, 2} {0} {-2}) * candidates.card ^ 2 ≤
+      9 * labelBits 3 ^ 2 * S.card ^ 2 := by
+  exact (modulus_spec (by decide : candidates.Nonempty) (by decide)
+    (by unfold Bdd; decide : Bdd 3 {-3, 1, 2}) (by unfold Bdd; decide : Bdd 3 {0})
+    (by unfold Bdd; decide : Bdd 3 {-2})).2.2
 
-/-- A single occurrence of 1 cannot be reused to manufacture the solution `1 + 1 - 2 = 0`. -/
-example : ¬HasSolution (fun i : Fin 2 => if i = 0 then (-2 : ℤ) else 1) := by
+-- -1 + 2 - 1 = 0. The sum of residues 4+2 wraps, so the third array needs its second copy.
+example : arrXY {-1} 5 2 4 = -1 ∧ arrXY {2} 5 2 2 = 2 ∧
+    arrZ {-1} 5 2 1 = 1 ∧ arrZ {-1} 5 2 6 = 1 ∧ arrZ {-1} 5 2 10 = -5 := by decide
+
+example : HasConvolutionSolution 10 (arrXY {-1} 5 2) (arrXY {2} 5 2) (arrZ {-1} 5 2) :=
+  ⟨4, 2, by decide, by decide⟩
+
+-- A colliding set has no light representative at that residue; the padding is rejected.
+example : arrXY {-3, 1} 4 3 1 = 7 ∧ arrZ {-3, 1} 4 3 3 = -7 := by decide
+example : ¬HasConvolutionSolution 8 (arrXY {-3, 1} 4 3) (arrXY {0} 4 3)
+    (arrZ {-1} 4 3) := by
+  rw [node_correct (by decide : 1 ≤ 4) (by decide : 2 * 4 ≤ 8)
+    (by unfold Bdd; decide : Bdd 3 {-3, 1}) (by unfold Bdd; decide : Bdd 3 {0})
+    (by unfold Bdd; decide : Bdd 3 {-1})]
+  unfold HasThreeSetSolution
+  decide
+
+example : (nodes candidates 1 0 {0} {0} {0}).length = 0 ∧
+    nodes candidates 1 2 ∅ {0} {0} = [] := by decide
+
+-- The replacement invariant is satisfiable and forces emptiness once the height is reached.
+example : Replaced 2 3 0 {-3, 1} := .zero (by unfold Bdd; decide) (by decide)
+example {T : Finset ℤ} (h : Replaced 2 3 (height 2) T) : T = ∅ := h.eq_empty le_rfl
+
+private def yes : Fin 3 → ℤ := ![-2, 1, 1]
+private def no : Fin 3 → ℤ := ![1, 1, 1]
+
+example : ∃ y ∈ instances 3 2 yes, Convolution (8 * mPar 3 4 ^ 2) y :=
+  (instances_correct 3 2 (by decide) yes (by decide)).mp (by unfold HasSolution yes; decide)
+
+example : ¬∃ y ∈ instances 3 1 no, Convolution (8 * mPar 3 2 ^ 2) y := by
+  rw [← instances_correct 3 1 (by decide) no (by decide)]
+  unfold HasSolution no
+  decide
+
+example : ∃ y ∈ instances 3 0 (fun _ => 0), Convolution (8 * mPar 3 0 ^ 2) y :=
+  (instances_correct 3 0 (by decide) (fun _ => 0) (by decide)).mp
+    (by unfold HasSolution; decide)
+
+example : ¬∃ y ∈ instances 2 0 (fun _ => 0), Convolution (8 * mPar 2 0 ^ 2) y := by
+  rw [← instances_correct 2 0 (by decide) (fun _ => 0) (by decide)]
   unfold HasSolution
   decide
 
-/-- The repeated-value branch retains the multiplicity needed for two ones. -/
-example : twiceSet repeated = {2} ∧ zeroSet repeated = ∅ := by decide
+example : allNodes 0 0 (Fin.elim0 : Fin 0 → ℤ) = [] := by decide
 
-/-- The dedicated zero branch distinguishes two and three occurrences of zero. -/
-example : zeroSet (fun _ : Fin 2 => (0 : ℤ)) = ∅ ∧
-    zeroSet (fun _ : Fin 3 => (0 : ℤ)) = {0} := by decide
+example : (instances 3 2 yes).length ≤
+    (2 * labelBits 4 ^ 2 + 2) * (2 * Nat.log 2 3 + 2) ^ 5 := length_instances_le ..
 
-/-- On this input the frontend list has 34 entries, including the repeated-value instance. -/
-example : (inputs 2 repeated).length = 34 ∧
-    ({2}, {0}, {-2, 1}) ∈ inputs 2 repeated := by decide
-
-/-- The public frontend theorem supplies a real bounded yes-instance for a repeated-value input. -/
-example : ∃ T ∈ inputs 2 repeated, HasSol T.1 T.2.1 T.2.2 ∧
-    #T.1 ≤ 3 ∧ #T.2.1 ≤ 3 ∧ #T.2.2 ≤ 3 ∧
-      Bdd 4 T.1 ∧ Bdd 4 T.2.1 ∧ Bdd 4 T.2.2 := by
-  have hx : ∀ i, |repeated i| ≤ (2 : ℤ) := by
-    intro i
-    unfold repeated
-    split_ifs <;> decide
-  obtain ⟨T, hT, hs⟩ := (threeSum_iff_exists_mem_inputs hx).mp
-    (by unfold HasSolution; decide : HasSolution repeated)
-  exact ⟨T, hT, hs, (mem_inputs_iff.mp hT).bounds (by decide) hx⟩
-
-/-- The binary-digit branch separates three distinct values without manufacturing multiplicities. -/
-example : ∃ T₁ T₂ T₃, IsInput 1 (fun i : Fin 3 => (i.val : ℤ) - 1) T₁ T₂ T₃ ∧
-    HasSol T₁ T₂ T₃ := by
-  apply (threeSum_iff_exists_input (U := 1) ?_).mp (by unfold HasSolution; decide)
-  intro i
-  have hi := i.isLt
-  rw [abs_le]
-  constructor <;> omega
-
-/-- Tagging preserves an actual solution at positions `4i+1`, `4j+2`, `4(i+j)+3`. -/
-example : oneArray 3 (fun _ => -2) (fun _ => 3) (fun _ => 1) 1 = 8 ∧
-    oneArray 3 (fun _ => -2) (fun _ => 3) (fun _ => 1) 2 = 33 ∧
-    oneArray 3 (fun _ => -2) (fun _ => 3) (fun _ => 1) 3 = 41 := by decide
-
-/-- The packed array is a nonvacuous client of both correctness and magnitude bounds. -/
-example : Convolution 4 (oneArray 3 (fun _ => -2) (fun _ => 3) (fun _ => 1)) ∧
-    ∀ u < 4, |oneArray 3 (fun _ => -2) (fun _ => 3) (fun _ => 1) u| ≤ (100 : ℤ) := by
-  constructor
-  · exact oneArray_correct (N := 1) (by intros; decide) (by intros; decide)
-      (by intros; decide) |>.mp ⟨0, 0, by decide, by decide⟩
-  · intro u hu
-    exact abs_oneArray_le (N := 1) (by intros; decide) (by intros; decide) (by intros; decide) hu
-
-/-- When all three arrays are 1, the tags create no false solution; empty arrays also stay empty. -/
-example : ¬Convolution 4 (oneArray 1 (fun _ => 1) (fun _ => 1) (fun _ => 1)) ∧
-    ¬Convolution 0 (oneArray 0 (fun _ => 0) (fun _ => 0) (fun _ => 0)) := by
-  constructor
-  · intro h
-    obtain ⟨i, j, _, he⟩ := (oneArray_correct (N := 1)
-      (by intros; decide) (by intros; decide) (by intros; decide)).mpr h
-    exact (by decide : (1 : ℤ) + 1 ≠ 1) he
-  · rintro ⟨i, j, h, _⟩
-    omega
+example {y : ℕ → ℤ} (hy : y ∈ instances 3 2 yes) (i : ℕ) : |y i| ≤ 280 := by
+  exact abs_instances_le (by decide : 1 ≤ 3) (by decide : ∀ i, |yes i| ≤ (2 : ℤ)) hy i
 
 end ComplexityTests.ThreeSumChanHe

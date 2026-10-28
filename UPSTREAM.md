@@ -158,15 +158,19 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Given its arguments in registers, it writes one instance in at most `131*t² + 5` instructions
   at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
   preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
-  `Algorithms/ThreeSum/ChanHe/FromNumbers.lean` adds the elementary distinct-position frontend
-  (including repeated values), its finite list of three-set instances, and three-array convolution
-  packing into the existing one-array predicate. These are mathematical preprocessing interfaces,
-  without a machine running-time bound. The existing signed and unsigned APIs were reused;
-  no source machine or separate run semantics were copied.
-  The full reduction host, core Chan–He prime searches and heavy-element recursion, fast Exact
-  Triangle, native preprocessing and full input/time/width composition remain in
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright
-  and attribution are retained; the new native proofs and representation choices are local.
+  `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
+  frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical
+  reduction: minimum-prime searches, collision/heavy-element bounds, light-element arrays, bounded
+  ternary recursion and composition with the frontend. At polynomial magnitudes it gives explicit
+  length, count and magnitude bounds; `scanPairs` counts candidate-prime/element pairs and is not
+  a charged running time. Generic finite-average and prime-counting lemmas live in Foundations.
+  See milestone [#1435](https://github.com/cslib-community/complexitylib/issues/1435).
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics
+  were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
+  input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
