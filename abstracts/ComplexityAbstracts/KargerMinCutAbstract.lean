@@ -65,21 +65,24 @@ The recursive `FastCut` theorems (`kargerSteinFastCut` and `kargerSteinHighProb`
 `[KargerStein1996]`, Section 4 ("The Recursive Contraction Algorithm"): Figure 6
 (`Recursive-Contract`), Lemma 4.1 (`O(n ^ 2 log n)` running time), Lemma 4.2 (`O(n ^ 2)` space in
 the matrix representation), Lemma 4.3 (`Omega(1 / log n)` single-tree success probability via
-equation (2)), and Theorem 4.4 (`O(n ^ 2 log ^ 3 n)` high-probability minimum cut via `O(log ^ 2 n)`
-independent repetitions) (paraphrase). Relative to `[KargerStein1996]`, Section 4, this
-formalization makes four explicit design choices: (1) instead of `ceil(1 + k / sqrt 2)` (Figure 6),
-each internal node (`k >= 7`) contracts to the least integer `t >= 2` with
-`k * (k - 1) <= 2 * t * (t - 1)` (which is never larger than `ceil(1 + k / sqrt 2)` and strictly
-smaller at e.g. `k = 8`, where `t = 6` versus `7`, while preserving survival probability
-`>= 1 / 2`); (2) at leaves `2 <= k <= 6`, instead of deterministic brute-force cut enumeration, the
-program runs one randomized contraction down to `2` vertices (matching Figure 6 and Lemma 4.3
-equation (2)'s `1 / 15 = 2 / 30` base case, which keeps each leaf `O(1)` without a separate
-enumeration routine and yields the `+ 15` denominator term in `1 / (Nat.log 2 n + 15)`); (3) the
-step constants `2500` and `2600`, the denominator offset `15`, the concrete trial count
-`R = (Nat.log 2 n + 15) * (Nat.log 2 n + 2)`, and the `1 / (2 * n)` failure target are our own
-concrete choices (Theorem 4.4 states `O(log ^ 2 n)` repetitions asymptotically); and (4) the integer
-quadratic potential `(k - 4) ^ 2` bounding recursion depth, leaf count, and internal work without
-`Real.sqrt` or `Real.log` is original to this formalization.
+equation (2)), and the minimum-cut-value part of Theorem 4.4 (paraphrase). Theorem 4.4 finds all
+minimum cuts with high probability in `O(n ^ 2 log ^ 3 n)` time and `O(m log(n ^ 2 / m))` space;
+`kargerSteinHighProb` proves that the returned value is `minCut W` except with probability at
+most `1 / (2 * n)`, within the `O(n ^ 2)` matrix workspace. As in Figure 6, a leaf
+(`2 <= k <= 6`) runs one randomized contraction down to `2` vertices; the cutoff follows
+equation (2) and the remark at the end of the proof of Lemma 4.3 (recurse for `n >= 7`), whereas
+Figure 6 itself tests "fewer than 6 vertices". The `15` in `1 / (Nat.log 2 n + 15)` is the
+source's constant: equation (2)'s base-case probability `1 / 15` gives
+`p_k = 4 / (z_k + 1) >= 2 / (30 + k)` (from `z_0 = 59` and `z_k < 59 + 2 k` for `k >= 1` in the
+proof of Lemma 4.3), evaluated at recursion depth at most `2 * Nat.log 2 n`. This formalization
+makes three design choices of its own: (1) instead of `ceil(1 + k / sqrt 2)` (Figure 6), each
+internal node (`k >= 7`) contracts to the least integer `t >= 2` with
+`k * (k - 1) <= 2 * t * (t - 1)` (never larger than `ceil(1 + k / sqrt 2)`, and strictly smaller
+at e.g. `k = 8`, where `t = 6` versus `7`, while keeping survival probability `>= 1 / 2`); (2) the
+step constants `2500` and `2600`, the trial count `R = (Nat.log 2 n + 15) * (Nat.log 2 n + 2)`,
+and the `1 / (2 * n)` failure target are our own (the proof of Theorem 4.4 uses `O(log ^ 2 n)`
+repetitions); and (3) the integer quadratic potential `(k - 4) ^ 2` bounding recursion depth, leaf
+count, and internal work without `Real.sqrt` or `Real.log` is original to this formalization.
 
 At word size `w`, a *word* is a natural number below `2 ^ w`, and `Nat.log 2 n` denotes
 `floor(log_2 n)` (with `0` at `0`). The Karger (1993) theorems assume `3 * (Nat.log 2 n + 1) ≤ w`
@@ -459,7 +462,8 @@ Figure 6 and Lemmas 4.1–4.3).** One fixed 24-register program recursively cont
 `6 * (n * n)` `rand` calls, preserving the input matrix and all memory outside
 `[2 + n * n, 2 + 27 * (n * n))`. Internal nodes (`k >= 7`) contract to the least `t >= 2` with
 `k * (k - 1) <= 2 * t * (t - 1)` (an integer variant of Figure 6's `ceil(1 + k / sqrt 2)`), and
-leaves (`k <= 6`) run one randomized contraction down to `2` vertices (producing the `+ 15` term).
+leaves (`k <= 6`) run one randomized contraction down to `2` vertices, as in Figure 6 (equation
+(2)'s base-case probability `1 / 15` gives the `+ 15` term).
 Every branch outputs a genuine non-trivial cut weight `≥ minCut W`, and when `0 < minCut W`
 (excluded only for proof convenience) it outputs `minCut W` with probability at least
 `1 / (Nat.log 2 n + 15)`. -/
@@ -501,8 +505,9 @@ theorem kargerSteinFastCut :
       simp_all [AluOp.eval, Comp.bind, Comp.eval, Comp.CallsAtMost,
         stepRand, runRand])
 
-/-- **High-probability Karger–Stein global minimum cut (`O(n ^ 2 log ^ 3 n)` time,
-`[KargerStein1996]`, Section 4, Theorem 4.4).** One fixed 24-register program runs our concrete
+/-- **High-probability Karger–Stein global minimum cut (`O(n ^ 2 log ^ 3 n)` time, the
+minimum-cut-value part of `[KargerStein1996]`, Section 4, Theorem 4.4).** One fixed 24-register
+program runs our concrete
 parameter choice `R = (Nat.log 2 n + 15) * (Nat.log 2 n + 2)` independent `FastCut` trees on
 `n :: flattenMatrix W` (`n ≥ 2`) at word size `w ≥ 4 * (Nat.log 2 n + 1)` with
 `totalDoubledWeight W < 2 ^ w` within `2600 * n ^ 2 * (Nat.log 2 n + 15) * (Nat.log 2 n + 2) ^ 2`

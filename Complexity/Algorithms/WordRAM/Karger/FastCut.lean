@@ -15,8 +15,8 @@ public import Complexity.Languages.Probabilistic.QueryCount.Support
 # Mathematical recurrences and quadratic potential for Karger–Stein (`FastCut`)
 
 Combinatorial, arithmetic, and probabilistic foundations for the Karger–Stein recursive global
-minimum cut algorithm (`[KargerStein1996]`, Section 4, Figure 6, Lemmas 4.1–4.3, and Theorem 4.4;
-paraphrase) on the randomized word RAM.
+minimum cut algorithm (`[KargerStein1996]`, Section 4, Figure 6, Lemmas 4.1–4.3, and the
+minimum-cut-value part of Theorem 4.4; paraphrase) on the randomized word RAM.
 
 ## Design notes and deviations from `[KargerStein1996]`
 
@@ -25,22 +25,26 @@ paraphrase) on the randomized word RAM.
    (Section 4, Lemma 4.3). We instead define `fastCutThreshold k` as the smallest integer `t ≥ 2`
    satisfying `k * (k - 1) ≤ 2 * t * (t - 1)`. This integer deviation directly enforces Lemma 4.3's
    `≥ 1 / 2` per-branch survival inequality without square roots or divisions; it is never larger
-   than `⌈k / √2 + 1⌉` and is strictly smaller at `k = 8` (`t = 6` vs `7`).
-2. **Contraction base case at `k ≤ 6`:** at `2 ≤ k ≤ 6`, each leaf runs one random contraction down
-   to `2` vertices (matching `[KargerStein1996]`, Section 4, Figure 6 and Lemma 4.3, equation (2),
-   with survival probability `≥ 2 / (k * (k - 1)) ≥ 2 / 30 = 1 / 15`) rather than the deterministic
-   base case noted in Lemma 4.3's remark, avoiding a separate brute-force cut-enumeration routine
-   and producing the `+ 15` denominator offset in `1 / (Nat.log 2 n + 15)`.
+   than `⌈k / √2 + 1⌉` and is strictly smaller at e.g. `k = 8` (`t = 6` vs `7`).
+2. **Base case at `k ≤ 6`, as in the source:** each leaf runs one random contraction down to
+   `2` vertices, the base case `G' ← Contract(G, 2)` of `[KargerStein1996]`, Section 4,
+   Figure 6. The cutoff follows equation (2) and the remark at the end of the proof of Lemma 4.3
+   (recurse for `n ≥ 7`); Figure 6 itself tests "fewer than 6 vertices". A leaf keeps a fixed
+   minimum cut with probability `≥ 2 / (k * (k - 1)) ≥ 2 / 30`, equation (2)'s base-case bound
+   `1 / 15`. The `15` in `1 / (Nat.log 2 n + 15)` is the source's constant: the proof of
+   Lemma 4.3 sets `z₀ = 59` and shows `z_k < 59 + 2 * k` for `k ≥ 1`, so
+   `p_k = 4 / (z_k + 1) ≥ 2 / (30 + k)`; at depth at most `2 * Nat.log 2 n` this is
+   `1 / (Nat.log 2 n + 15)`.
 3. **Concrete Word-RAM constants and trial schedule (`fastCutTrials`):** `[KargerStein1996]`,
-   Section 4, Lemmas 4.1–4.3 and Theorem 4.4 state asymptotic `O(n ^ 2 log n)` time, `O(n ^ 2)`
-   space, `Ω(1 / log n)` single-tree success probability, and `O(log ^ 2 n)` repetitions for high
-   probability; the explicit coefficients in `fastCutNodeTime`, `fastCutScratch`,
-   `1 / (Nat.log 2 n + 15)`, `fastCutTrials n = (Nat.log 2 n + 15) * (Nat.log 2 n + 2)`, and the
-   `1 / (2 * n)` failure target are concrete parameter choices of this formalization.
+   Section 4, Lemmas 4.1–4.3 state asymptotic `O(n ^ 2 log n)` time, `O(n ^ 2)` space and
+   `Ω(1 / log n)` single-tree success probability, and the proof of Theorem 4.4 repeats the
+   algorithm `O(log ^ 2 n)` times; the explicit coefficients in `fastCutNodeTime` and
+   `fastCutScratch`, the trial schedule `fastCutTrials n = (Nat.log 2 n + 15) * (Nat.log 2 n + 2)`
+   and the `1 / (2 * n)` failure target are concrete parameter choices of this formalization.
 4. **Elementary quadratic potential `Φ(k) = (k - 4) ^ 2`:** `two_mul_pot_threshold_le` proves
    `2 * (fastCutThreshold k - 4) ^ 2 ≤ (k - 4) ^ 2` for all `k ≥ 7` via integer arithmetic
    (`49 * 2 = 98 < 100 = 10 ^ 2`), replacing real-valued recurrence unrolling in
-   `[KargerStein1996]`, Section 4, Lemmas 4.1–4.2.
+   `[KargerStein1996]`, Section 4, Lemmas 4.1–4.3.
 
 ## Main definitions
 
@@ -70,8 +74,8 @@ paraphrase) on the randomized word RAM.
   `Cslib.Algorithms.WordRAM.Karger.fastCutHighProb_failure_le`: elementary `ENNReal` probability
   recurrence `1 - (1 - 1 / s) ^ 2 ≥ 2 / (s + 1)` giving `≥ 1 / (Nat.log 2 n + 15)` single-tree
   success (`[KargerStein1996]`, Section 4, Lemma 4.3; paraphrase) and `≤ 1 / (2 * n)` amplified
-  failure (`[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase) without `Real.log` or
-  `Real.exp`.
+  failure (the minimum-cut-value part of `[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase)
+  without `Real.log` or `Real.exp`.
 
 ## References
 
@@ -99,7 +103,7 @@ def fastCutThresholdAux (k : ℕ) : ℕ → ℕ → ℕ
 /-- Pure-integer Karger–Stein contraction threshold: for `k ≥ 7`, the smallest `t ≥ 2` such that
 `k * (k - 1) ≤ 2 * t * (t - 1)`, ensuring `((t * (t - 1)) / (k * (k - 1)) : ℝ≥0∞) ≥ 1 / 2`
 (`[KargerStein1996]`, Section 4, Lemma 4.3; paraphrase). This integer deviation from Figure 6's
-`⌈k / √2 + 1⌉` is never larger and is strictly smaller at `k = 8` (`t = 6` vs `7`). -/
+`⌈k / √2 + 1⌉` is never larger and is strictly smaller at e.g. `k = 8` (`t = 6` vs `7`). -/
 def fastCutThreshold (k : ℕ) : ℕ :=
   fastCutThresholdAux k k 2
 
@@ -682,8 +686,8 @@ theorem root_hit_prob_eq (n : ℕ) :
 
 /-- Concrete `O(log ^ 2 n)` trial schedule `(Nat.log 2 n + 15) * (Nat.log 2 n + 2)` used by
 `fastCutHighProbProgram` to achieve failure probability `≤ 1 / (2 * n)` (instantiating the
-asymptotic `O(log ^ 2 n)` repetition count in `[KargerStein1996]`, Section 4, Theorem 4.4;
-paraphrase). -/
+asymptotic `O(log ^ 2 n)` repetition count in the proof of `[KargerStein1996]`, Section 4,
+Theorem 4.4; paraphrase). -/
 def fastCutTrials (n : ℕ) : ℕ :=
   (Nat.log 2 n + 15) * (Nat.log 2 n + 2)
 

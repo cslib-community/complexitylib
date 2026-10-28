@@ -47,8 +47,6 @@ depth `b = 0` via `LoopSegment.finish`.
 
 ## References
 
-* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009]
 * [D. R. Karger and C. Stein, *A New Approach to the Minimum Cut Problem*][KargerStein1996]
 -/
 

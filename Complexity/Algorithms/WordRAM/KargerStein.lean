@@ -19,7 +19,8 @@ public import Complexity.Computability.WordRAM.Time
 # Karger–Stein's recursive `FastCut` algorithm on the word RAM
 
 Implements the Karger–Stein recursive randomized global minimum cut algorithm (`[KargerStein1996]`,
-Section 4, Figure 6, Lemmas 4.1–4.3, and Theorem 4.4; paraphrase) on `n`-vertex weighted undirected
+Section 4, Figure 6, Lemmas 4.1–4.3, and the minimum-cut-value part of Theorem 4.4; paraphrase) on
+`n`-vertex weighted undirected
 multigraphs (`n ≥ 2`, `IsMultigraph W`) over `Cslib.WordRAM.Basis.standard` using `r = 24`
 registers and an explicit iterative frame stack in `O(n ^ 2)` scratch words (`≤ 26 * n ^ 2` stack
 words plus `n ^ 2` input words, matching Section 4, Lemma 4.2), providing two machine-level
@@ -29,18 +30,20 @@ endpoints on `n :: flattenMatrix W`:
    Figure 6 and Lemmas 4.1–4.3; paraphrase):** contracts recursively from `k ≥ 7` down to the
    pure-integer threshold `t = fastCutThreshold k` (smallest `t ≥ 2` with `k * (k - 1) ≤ 2 * t *
    (t - 1)`, an integer deviation from Figure 6's `⌈k / √2 + 1⌉` that is never larger and is
-   strictly smaller at `k = 8`, where `t = 6` vs `7`) along two independent branches, switches at
-   `k ≤ 6` to a single contraction down to `2` supervertices (matching Figure 6 and Lemma 4.3,
-   equation (2), with leaf survival probability `≥ 2 / (k * (k - 1)) ≥ 2 / 30 = 1 / 15` rather than
-   a deterministic brute-force cut-enumeration routine, which keeps the leaf `O(1)` and produces the
-   `+ 15` denominator offset), halts within `fastCutTime n = 2500 * n ^ 2 * (Nat.log 2 n + 2)`
+   strictly smaller at e.g. `k = 8`, where `t = 6` vs `7`) along two independent branches, switches
+   at `k ≤ 6` to a single contraction down to `2` supervertices (the source's base case: Figure 6's
+   `Contract(G, 2)` with the size-7 cutoff of equation (2); a leaf keeps a fixed minimum cut with
+   probability `≥ 2 / (k * (k - 1)) ≥ 1 / 15`, equation (2)'s base-case bound, which is where the
+   `15` comes from), halts within `fastCutTime n = 2500 * n ^ 2 * (Nat.log 2 n + 2)`
    (`O(n ^ 2 log n)`) steps and `fastCutNodeQueries n ≤ 6 * n ^ 2` (`O(n ^ 2)`) `rand` calls with a
    genuine non-trivial cut weight `cutWeight W C ≥ minCut W` on every supported path, modifies only
    `[2 + n ^ 2, 2 + 27 * n ^ 2)`, and achieves `minCut W` with probability at least
    `1 / (Nat.log 2 n + 15)` whenever `0 < minCut W` (excluded only for proof convenience; when
    `minCut W = 0`, any non-trivial zero-weight cut is already optimal).
 2. **Amplified high-probability global minimum cut (`fastCutHighProbProgram`, `r = 24`,
-   `[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase):** executes our concrete `O(log ^ 2 n)`
+   `[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase, the value part only: the source finds
+   all minimum cuts in `O(m log(n ^ 2 / m))` space; we prove the returned value is `minCut W` except
+   with probability `≤ 1 / (2 * n)`):** executes our concrete `O(log ^ 2 n)`
    trial schedule `fastCutTrials n = (Nat.log 2 n + 15) * (Nat.log 2 n + 2)` of independent
    `FastCut` trees reusing the same `[2 + n ^ 2, 2 + 27 * n ^ 2)` scratch arena, halts within
    `fastCutHighProbTime n = 2600 * n ^ 2 * (Nat.log 2 n + 15) * (Nat.log 2 n + 2) ^ 2`
@@ -70,7 +73,7 @@ endpoints on `n :: flattenMatrix W`:
   `Cslib.Algorithms.WordRAM.Karger.fastCutHighProbProgram_failure_le_inv_n`: worst-case
   `O(n ^ 2 log ^ 3 n)` step bound, pathwise non-trivial cut realization, `Modifies` frame, and
   `1 / (2 * n)` (`1 / n`) failure probability upper bound for `fastCutHighProbProgram`
-  (`[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase).
+  (the minimum-cut-value part of `[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase).
 
 ## References
 
@@ -3748,7 +3751,7 @@ theorem fastCutHighProbCode_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     exact (hfail_l hmin_pos).trans (fastCutHighProb_failure_le n)
 
 /-- **Amplified `O(n ^ 2 log ^ 3 n)` high-probability Karger–Stein (`fastCutHighProbProgram`,
-`[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase).**
+the minimum-cut-value part of `[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase).**
 At word size `w ≥ logWidth 4 n` when `2 ≤ n` and `totalDoubledWeight W < 2 ^ w`:
 1. `fastCutHighProbProgram` halts within
    `fastCutHighProbTime n = 2600 * n ^ 2 * (Nat.log 2 n + 15) * (Nat.log 2 n + 2) ^ 2` steps;
