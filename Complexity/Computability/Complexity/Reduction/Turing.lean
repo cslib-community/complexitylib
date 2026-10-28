@@ -16,7 +16,11 @@ public import Complexity.Computability.Complexity.Classes.PP.Closure
 public import Complexity.Computability.Complexity.Classes.Space
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.OneOne
+public import Complexity.Computability.Complexity.Reduction.TruthTableVariants
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
 # Polynomial-time Turing reductions and the Turing bridge
@@ -47,6 +51,17 @@ oracle for `B` within polynomial time [Ladner, Lynch and Selman][LadnerLynchSelm
   reductions (`≤ₘ ⇒ ≤_T`).
 * `Cslib.Complexity.PolyTimeOneOneReducible.polyTimeTuringReducible`: one-one reductions are Turing
   reductions (`≤₁ ⇒ ≤_T`).
+* `Cslib.Complexity.computableInPolyTimeWithOracle_map_mem`,
+  `Cslib.Complexity.computableInPolyTimeWithOracle_truthTableAnswers`: answering a polynomial-time
+  batch of oracle queries in polynomial time relative to the oracle.
+* `Cslib.Complexity.PolyTimeTruthTableReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeKTruthTableReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeBTTReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimePTTReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeDTTReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeCTTReducible.polyTimeTuringReducible`: truth-table, `k`-truth-table,
+  bounded, positive, disjunctive, and conjunctive truth-table reductions are Turing reductions
+  (`≤_tt, ≤_{k-tt}, ≤_btt, ≤_ptt, ≤_dtt, ≤_ctt ⇒ ≤_T`).
 * `Cslib.Complexity.PolyTimeTuringReducible.refl`: reflexivity.
 * `Cslib.Complexity.PolyTimeReducible.trans_turing`: pre-composition with a many-one reduction
   (`≤ₘ ∘ ≤_T ⇒ ≤_T`).
@@ -126,6 +141,160 @@ theorem PolyTimeReducible.polyTimeTuringReducible
 theorem PolyTimeOneOneReducible.polyTimeTuringReducible
     (h : PolyTimeOneOneReducible encA encB A B) : PolyTimeTuringReducible encA encB A B :=
   h.polyTimeReducible.polyTimeTuringReducible
+
+/-! ### Truth-table reductions are Turing reductions -/
+
+/-- One step of `queryWords`: ask the first remaining word, and append whether its reply begins
+with `true` to the accumulated answer word. -/
+private def queryWordsStep (s : List (List Bool) × List Bool) :
+    WordQueryComp Unit (List (List Bool) × List Bool) :=
+  if s.1.isEmpty then pure s else
+    (fun reply => (s.1.tail, s.2 ++ [reply == [true]])) <$>
+      (List.take 1 <$> OracleComp.query ((), s.1.headD []))
+
+/-- Ask the oracle every word of the list, in order, and collect the one-bit answers. -/
+private def queryWords (words : List (List Bool)) : WordQueryComp Unit (List Bool) :=
+  Prod.snd <$> OracleComp.iterate words.length queryWordsStep (words, [])
+
+private theorem interpret_queryWordsStep (s : List (List Bool) × List Bool) :
+    OracleComp.interpret ProbOracleComp.query (queryWordsStep s) =
+      if s.1.isEmpty then pure s else
+        (fun reply => (s.1.tail, s.2 ++ [reply == [true]])) <$>
+          (List.take 1 <$> ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+            ((), s.1.headD [])) := by
+  unfold queryWordsStep
+  split <;> simp [OracleComp.interpret_map, OracleComp.interpret_query]
+
+/-- Asking every word of a list and collecting the one-bit answers is strict oracle PPT: each step
+pops one word from the framed list and appends one bit to the answer word, so the encoded state
+never grows. -/
+private theorem isOraclePPTOn_queryWords :
+    Probability.IsOraclePPTOn (encList encBits) encBits
+      (fun words => OracleComp.interpret ProbOracleComp.query (queryWords words)) := by
+  simp only [queryWords, OracleComp.interpret_map, OracleComp.interpret_iterate]
+  refine Probability.IsOraclePPTOn.map (Probability.IsOraclePPTOn.iterate_of_bounded_growth
+    (stateEncoding := encPair (encList encBits) encBits) (by fun_prop) (by fun_prop) ?_
+    (growth := 0) ?_) (by fun_prop)
+  · simp only [interpret_queryWordsStep]
+    refine Probability.IsOraclePPTOn.cond (by fun_prop)
+      (ComputableTidilyInPolyTime.id'.isOraclePPTOn) ?_
+    exact Probability.IsOraclePPTOn.map_with
+      (Probability.IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop))
+      (by fun_prop)
+  · intro state next hnext
+    rw [interpret_queryWordsStep] at hnext
+    obtain ⟨words, acc⟩ := state
+    cases words with
+    | nil => rw [OracleComp.eq_of_mem_supportWith_pure hnext]; simp
+    | cons word words =>
+      obtain ⟨reply, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
+      simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton,
+        List.tail_cons, length_encList, List.map_cons, List.sum_cons]
+      omega
+
+open Classical in
+private theorem interpret_id_queryWordsStep (O : Set (List Bool)) (word : List Bool)
+    (words : List (List Bool)) (acc : List Bool) :
+    OracleComp.interpret (m := Id) (languageOracle O) (queryWordsStep (word :: words, acc)) =
+      (words, acc ++ [decide (word ∈ O)]) := by
+  simp only [queryWordsStep, List.isEmpty_cons, Bool.false_eq_true, ite_false]
+  change (fun reply : List Bool => (words, acc ++ [reply == [true]]))
+    (List.take 1 (languageOracle O ((), word))) = _
+  rw [languageOracle_apply]
+  cases decide (word ∈ O) <;> rfl
+
+open Classical in
+private theorem interpret_queryWords (O : Set (List Bool)) (words : List (List Bool)) :
+    OracleComp.interpret (m := Id) (languageOracle O) (queryWords words) =
+      words.map fun word => decide (word ∈ O) := by
+  have key : ∀ (words : List (List Bool)) (acc : List Bool),
+      OracleComp.interpret (m := Id) (languageOracle O)
+        (OracleComp.iterate words.length queryWordsStep (words, acc)) =
+        ([], acc ++ words.map fun word => decide (word ∈ O)) := by
+    intro words
+    induction words with
+    | nil => intro acc; simp only [List.length_nil, List.map_nil, List.append_nil]; rfl
+    | cons word words ih =>
+      intro acc
+      rw [List.length_cons, OracleComp.iterate_succ_bind, OracleComp.interpret_bind]
+      change OracleComp.interpret (m := Id) (languageOracle O)
+        (OracleComp.iterate words.length queryWordsStep
+          (OracleComp.interpret (m := Id) (languageOracle O)
+            (queryWordsStep (word :: words, acc)))) = _
+      rw [interpret_id_queryWordsStep, ih]
+      simp [List.append_assoc]
+  unfold queryWords
+  rw [OracleComp.interpret_map, key]
+  simp only [List.nil_append]
+  rfl
+
+open Classical in
+/-- Evaluating membership in `O` across a list of words is computable in polynomial time relative
+to `O`. -/
+theorem computableInPolyTimeWithOracle_map_mem (O : Set (List Bool)) :
+    ComputableInPolyTimeWithOracle O
+      (fun words : List (List Bool) => words.map fun word => decide (word ∈ O))
+      (encList encBits) encBits :=
+  ⟨queryWords, isOraclePPTOn_queryWords, interpret_queryWords O⟩
+
+/-- Computing the semantic answer word `truthTableAnswers (q ⁻¹' B) r` of a polynomial-time batch
+of queries `(r, q)` is polynomial time relative to the encoded oracle language `encB '' B`. -/
+theorem computableInPolyTimeWithOracle_truthTableAnswers {r : α → ℕ} {q : α × ℕ → β}
+    (hr : ComputableInPolyTime r encA encUnary)
+    (hq : ComputableInPolyTime q (encPair encA encUnary) encB) :
+    ComputableInPolyTimeWithOracle (encB '' B) (truthTableAnswers (q ⁻¹' B) r) encA encBits := by
+  classical
+  have hbatch : ComputableInPolyTime
+      (fun a => (List.range (r a)).map fun i => encB (q (a, i))) encA (encList encBits) :=
+    .of_tidy (ComputableTidilyInPolyTime.mapWithInput
+      (ComputableTidilyInPolyTime.range.comp hr.tidy) hq.tidy.encoded)
+  have hq_mem := (computableInPolyTimeWithOracle_map_mem (encB '' B)).preprocess hbatch
+  convert hq_mem using 2
+  rw [truthTableAnswers_eq_map_range, List.map_map]
+  refine List.map_congr_left fun i _ => ?_
+  simp
+
+/-- **Every polynomial-time truth-table reduction is a polynomial-time Turing reduction**
+(`≤_tt ⇒ ≤_T`) [Ladner, Lynch and Selman][LadnerLynchSelman1975]. -/
+theorem PolyTimeTruthTableReducible.polyTimeTuringReducible
+    (h : PolyTimeTruthTableReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B := by
+  obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
+  exact ⟨fun a => d (a, truthTableAnswers (q ⁻¹' B) r a),
+    (computableInPolyTimeWithOracle_truthTableAnswers (B := B) hr hq).map_with
+      (g := fun a ans => d (a, ans)) hd, hA⟩
+
+/-- Every `k`-truth-table reduction is a polynomial-time Turing reduction (`≤_{k-tt} ⇒ ≤_T`). -/
+theorem PolyTimeKTruthTableReducible.polyTimeTuringReducible {k : ℕ}
+    (h : PolyTimeKTruthTableReducible k encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeBTTReducible.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every bounded truth-table reduction is a polynomial-time Turing reduction (`≤_btt ⇒ ≤_T`). -/
+theorem PolyTimeBTTReducible.polyTimeTuringReducible
+    (h : PolyTimeBTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every positive truth-table reduction is a polynomial-time Turing reduction (`≤_ptt ⇒ ≤_T`). -/
+theorem PolyTimePTTReducible.polyTimeTuringReducible
+    (h : PolyTimePTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every disjunctive truth-table reduction is a polynomial-time Turing reduction
+(`≤_dtt ⇒ ≤_T`). -/
+theorem PolyTimeDTTReducible.polyTimeTuringReducible
+    (h : PolyTimeDTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every conjunctive truth-table reduction is a polynomial-time Turing reduction
+(`≤_ctt ⇒ ≤_T`). -/
+theorem PolyTimeCTTReducible.polyTimeTuringReducible
+    (h : PolyTimeCTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
 
 /-- Every problem reduces to itself under polynomial-time Turing reductions. -/
 @[refl]
