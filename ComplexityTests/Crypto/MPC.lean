@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Protocols.MPC.Basic
+import Complexity.Crypto.Protocols.MPC.SharedMul
 import Mathlib.Algebra.Ring.BooleanRing
 import Mathlib.Data.ZMod.Basic
 
@@ -457,5 +458,25 @@ theorem not_perfectSemiHonestPrivate_independentCoinProtocol
   have h01 := hIdealAgree res hres
   rw [h0, h1] at h01
   exact Bool.false_ne_true h01
+
+/-! ### Ideal $\text{OT}_1^4$, 2-party shared multiplication, and $m$-party pairwise reduction -/
+
+example : fin4ToBoolPair (boolPairToFin4 (true, false)) = (true, false) := by decide
+
+example : (orderedPairs 3).length = 3 := by decide
+
+example (I : Finset (Fin 2)) (x : Fin 2 → Bool × Bool) :
+    ProbComp.eval (idealJoint (sharedMulFunctionality 2) I (twoPartyMulSim I) x) =
+      twoPartyMulProtocol.realJoint ot14World I x :=
+  perfectSemiHonestPrivate_twoPartyMul I x
+
+example (x : Fin 3 → Bool × Bool) (r : OrderedPair 3 → Bool) :
+    (∑ i : Fin 3, realOut x r i) = (∑ i : Fin 3, (x i).1) * (∑ i : Fin 3, (x i).2) :=
+  sum_realOut x r
+
+example (I : Finset (Fin 3)) (x : Fin 3 → Bool × Bool) :
+    ProbComp.eval (idealJoint (sharedMulFunctionality 3) I (multiPartyMulSim 3 I) x) =
+      (multiPartyMulProtocol 3).realJoint (sharedMulWorld 2) I x :=
+  perfectSemiHonestPrivate_multiPartyMul 3 I x
 
 end ComplexityTests.Crypto.MPC

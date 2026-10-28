@@ -1840,6 +1840,7 @@ public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
 public import Complexity.Crypto.Protocols.MPC.Basic
+public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
