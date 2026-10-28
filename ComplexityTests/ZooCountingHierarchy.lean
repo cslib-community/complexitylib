@@ -26,14 +26,16 @@ private theorem tail_reduces_head : PolyTimeReducible encBits encBits
     {w : List Bool | w.tail.headD false = true} {w | w.headD false = true} :=
   ⟨List.tail, by fun_prop, fun _ => Iff.rfl⟩
 
+/-- A `US` no-instance may have two accepting witnesses, rather than zero. -/
+example : (∅ : Set (List Bool)) ∈ US encBits :=
+  ⟨2, SharpP.natCast_mem 2, fun _ => by norm_num⟩
+
 /-- `US` and `CeqP` memberships, intersection closure, and reduction pullback. -/
 example :
     {w : List Bool | w.headD false = true} ∈ CeqP encBits ∧
-    (∅ : Set (List Bool)) ∈ US encBits ∧
     {w : List Bool | w.headD false = true} ∩ Set.univ ∈ US encBits ∧
     {w : List Bool | w.tail.headD false = true} ∈ US encBits :=
   ⟨US_subset_CeqP head_mem_US,
-    ⟨2, SharpP.natCast_mem 2, fun _ => by norm_num⟩,
     inter_mem_US head_mem_US ⟨1, SharpP.one_mem, fun _ => by simp⟩,
     tail_reduces_head.mem_US head_mem_US⟩
 

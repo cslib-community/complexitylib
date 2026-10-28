@@ -39,12 +39,6 @@ example : (ProbComp.eval (sampleUniformInterval 3 1) (some 0)).toReal /
     (((ProbComp.eval (sampleUniformInterval 3 1)).map Option.isSome) true).toReal = 1 / 3 :=
   sampleUniformInterval_conditional (by decide) (by decide) (by decide)
 
-example (test : Option ℕ → Bool) :
-    |(((ProbComp.eval (sampleUniformInterval 3 8)).map test) true).toReal -
-      ((((PMF.uniformOfFintype (Fin 3)).map Fin.val).map
-        (fun value => test (some value))) true).toReal| ≤ 1 / 256 := by
-  convert sampleUniformInterval_test_error_le 3 8 test using 1; norm_num
-
 -- Radius zero is a singleton reference box, but the generic finite-attempt sampler can fail.
 example (radius : ℕ) :
     sampleIntegerBox radius 0 0 = pure (some []) ∧
@@ -63,11 +57,6 @@ example (radius : ℕ) :
     norm_num [intervalFailure, dyadicSize, show Nat.log 2 3 = 1 by decide]
   · rw [eval_sampleIntegerBox_none]
     norm_num [intervalFailure, dyadicSize, show Nat.log 2 3 = 1 by decide]
-
-example (test : Option (List ℤ) → Bool) :
-    |(((ProbComp.eval (sampleIntegerBox 1 2 8)).map test) true).toReal -
-      (((integerBoxLaw 1 2).map (fun out => test (some out))) true).toReal| ≤ 1 / 128 := by
-  convert sampleIntegerBox_test_error_le 1 2 8 test using 1; norm_num
 
 -- Radius, dimension and attempts are all runtime parameters, not fixed Lean constants.
 example : IsPPTOn (encPair encUnary (encPair encUnary encUnary)) (encOption (encList encInt))

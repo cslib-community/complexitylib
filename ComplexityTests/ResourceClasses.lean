@@ -39,12 +39,13 @@ example :
     mem_BPP_iff_exists_mem_BPTIME.mp (P_subset_BPP headD_mem_P),
     mem_NP_iff_exists_mem_NTIME.mp (P_subset_NP headD_mem_P)⟩
 
-/-- The diagonal problem, outside `P`, is decided within time `O(2 ^ (4 n))`, so it lies in
-`NTIME (2 ^ (4 n))`, `E`, `NE`, and `NEXP`. -/
+/-- The diagonal problem, outside `P`, is decided within time `O(2 ^ (4 n))`. -/
 theorem setOf_diagonal_mem_DTIME :
     {x | diagonal x = true} ∈ DTIME encBits fun n => 2 ^ (4 * n) :=
   setOf_mem_DTIME_of_computableInO computableInO_diagonal fun _ => le_rfl
 
+/-- The diagonal problem lies in `NTIME (2 ^ (4 n))`, `E`, `NE`, and `NEXP`, separating `E` from
+`P`. -/
 example :
     {x | diagonal x = true} ∈ NTIME encBits (fun n => 2 ^ (4 * n)) ∧
     {x | diagonal x = true} ∈ E encBits ∧
