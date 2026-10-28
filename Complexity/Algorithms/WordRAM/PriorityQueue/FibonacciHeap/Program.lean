@@ -31,10 +31,27 @@ bounds, and memory/register framing lemmas.
 * `[base + 7 * n, base + 8 * n)`: `inHeap[0..n-1]` (`0` = absent, `1` = present)
 * `[base + 8 * n, base + 9 * n + 1)`: `cons[0..n]` (degree-consolidation table, `0` = empty)
 
+## Main definitions
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.rFib`, `space`, `potential`, `charge`:
+  register count (`42`), memory footprint (`9 * n + 1`), integer potential, and per-operation
+  amortized charges.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.code`, `dispatchCode`: structured
+  `PQCode .exact rFib` bundle and unified operation dispatcher.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibInv`: full machine-state invariant over
+  `Data rFib`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibInv.supported`, `potential_supported`:
+  register and memory framing for `SubroutineDS`.
+
 ## References
 
 * [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
   algorithms*][FredmanTarjan1987]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 19][CLRS2009]
 -/
 
 @[expose] public section

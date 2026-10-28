@@ -23,7 +23,8 @@ The theorems below state this guarantee on the word RAM over the exact basis of 
 caller-chosen contiguous block `[base, base + 9 n + 1)` of `9 n + 1` words:
 
 * `fibonacciHeap_amortized` initializes an empty heap on zeroed `[base, base + 9 n + 1)` in `O(1)`
-  instructions and executes any valid sequence of operations in
+  instructions and executes any valid sequence of `m_q` queries, `m_ins` insertions, `m_dec` key
+  decreases, and `m_ext` minimum extractions in
   `O(m_q + m_ins + m_dec + m_ext (log n + 1))` total instructions;
 * `fibonacciHeap_amortized_reusable` initializes an empty heap on arbitrary `w`-bit memory in
   `O(n + 1)` instructions and achieves the same amortized operation bound.
@@ -330,7 +331,8 @@ programs `p_init` and `p_op` over `r` registers on the exact word RAM, and a con
 for all `n`, `K_max`, `base`, `w`, `w`-bit memory `mem₀` zeroed on `[base, base + 9 n + 1)` with
 `base + (9 n + 1) < 2 ^ w` and `K_max < 2 ^ w`, and every admissible sequence `ops` starting from
 `emptyQueue n`: `p_init` halts in `t_init + 1 ≤ K` instructions without modifying memory outside
-`[base, base + 9 n + 1)`, and `p_op` executes `ops` in
+`[base, base + 9 n + 1)`, and `p_op` executes `ops` (with `m_q = numQueries ops`,
+`m_ins = numInserts ops`, `m_dec = numDecreaseKeys ops`, and `m_ext = numExtractMins ops`) in
 `t_ops ≤ K (m_q + m_ins + m_dec + m_ext (Nat.log 2 n + 1))` total instructions while producing every
 exact `stepOp` result and leaving memory outside `[base, base + 9 n + 1)` unchanged. -/
 theorem fibonacciHeap_amortized :
@@ -381,7 +383,8 @@ theorem fibonacciHeap_amortized :
 word-size conditions (`base + (9 n + 1) < 2 ^ w`, `K_max < 2 ^ w`, and every cell of `mem₀` below
 `2 ^ w`), without assuming `[base, base + 9 n + 1)` is initially zeroed, `p_init` clears the block
 and initializes an empty heap in `t_init + 1 ≤ K (n + 1)` instructions, and `p_op` executes `ops` in
-`t_ops ≤ K (m_q + m_ins + m_dec + m_ext (Nat.log 2 n + 1))` instructions while preserving memory
+`t_ops ≤ K (numQueries ops + numInserts ops + numDecreaseKeys ops +
+numExtractMins ops * (Nat.log 2 n + 1))` instructions while preserving memory
 outside `[base, base + 9 n + 1)`. -/
 theorem fibonacciHeap_amortized_reusable :
     ∃ r, ∃ p_init p_op : Program r, ∃ K,

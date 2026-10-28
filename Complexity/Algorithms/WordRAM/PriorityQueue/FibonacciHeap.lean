@@ -47,7 +47,8 @@ integer potential `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotentia
   standalone `Stateful.Amortized` certificate and adaptive-client bound over `Basis.standard`.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.run_ops_exact_fresh`,
   `run_ops_exact_reusable`: standalone end-to-end `Basis.exact` flat-program execution theorems
-  bounding total halting instructions by
+  bounding total halting instructions for `m_q` queries, `m_ins` insertions, `m_dec` key
+  decreases, and `m_ext` minimum extractions by
   `421 * (1 + m_q + m_ins + m_dec + m_ext * (Nat.log 2 n + 1))` (plus `421 * n` on dirty memory).
 
 ## References

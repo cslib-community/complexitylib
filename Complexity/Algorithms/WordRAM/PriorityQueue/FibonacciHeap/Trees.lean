@@ -14,7 +14,7 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Model
 
 This file defines the raw field view `RawState n` of a static-array Fibonacci heap together with an
 inductive rose-tree witness `FHTree n` whose children lists record the chronological linking order
-used in Fredman and Tarjan's child-loss rank invariant (`[FredmanTarjan1987]`).
+used in Fredman and Tarjan's child-loss rank invariant [Fredman and Tarjan][FredmanTarjan1987].
 
 Representing trees inductively rather than by pointer reachability makes framing across disjoint
 subtrees structural: `ValidSubtree` inspects `par`, `left`, and `right` only at strict descendants
@@ -37,6 +37,13 @@ consolidation table leave existing subtrees valid by direct structural induction
   `T.deg ≤ 2 * Nat.log 2 m + 1` and `T.deg + 1 ≤ m` whenever `T.size ≤ m`.
 * `ValidRoot.singleton`, `ValidRoot.link`: creation of singleton root trees and degree-preserving
   root linking during consolidation.
+
+## References
+
+* [M. L. Fredman and R. E. Tarjan, *Fibonacci Heaps and Their Uses in Improved Network Optimization
+  Algorithms*][FredmanTarjan1987]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 19][CLRS2009]
 -/
 
 @[expose] public section

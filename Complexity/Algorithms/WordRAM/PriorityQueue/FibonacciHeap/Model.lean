@@ -19,7 +19,8 @@ public import Mathlib.Logic.Relation
 # Mathematical model of a static-array Fibonacci heap
 
 This file develops the pure-Lean invariants and structural lemmas underlying the static-array
-Word-RAM Fibonacci heap (`[FredmanTarjan1987]`, `[CLRS2009]` Chapter 19):
+Word-RAM Fibonacci heap [Fredman and Tarjan][FredmanTarjan1987]
+[Cormen et al., Chapter 19][CLRS2009]:
 
 1. **Strict lexicographic priority order (`PrioLT`):** Compares `(handle, key)` pairs by key first
    and handle index second, matching `IndexedMinPQ.PrioLE` on distinct handles.
@@ -30,6 +31,21 @@ Word-RAM Fibonacci heap (`[FredmanTarjan1987]`, `[CLRS2009]` Chapter 19):
    `1 + ∑_{i < k} fib ((i - 1) + 2) = fib (k + 2)` and `2 ^ m ≤ fib (2 * m + 2)`, deriving
    `d ≤ 2 * Nat.log 2 n + 1` from `fib (d + 2) ≤ n` without real numbers or floating-point
    logarithms.
+
+## Main definitions
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.PrioLT`: strict `(key, handle)` priority
+  order on `Fin n × ℕ`.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.ChainLinks`, `IsCircList`: pointer-level
+  invariants for circular doubly-linked lists over `Fin n → ℕ`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.IsCircList.singleton`,
+  `IsCircList.insertAfter`, `IsCircList.rotate_to`, `IsCircList.remove`: circular-list operations.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.fib_sum_pred_add_two`,
+  `deg_le_two_mul_log_add_one`: pure-`ℕ` Fibonacci child-rank sum and `2 * Nat.log 2 n + 1` degree
+  bound.
 
 ## References
 
@@ -337,7 +353,7 @@ theorem IsCircList.remove {n : ℕ} {left right : Fin n → ℕ} {L : List (Fin 
 
 /-! ## Pure-`ℕ` Fibonacci rank and degree bounds -/
 
-/-- Fundamental Fibonacci rank identity (`[FredmanTarjan1987]`, Lemma 1):
+/-- Fundamental Fibonacci rank identity ([Fredman and Tarjan][FredmanTarjan1987], Lemma 1):
 `1 + ∑_{i < k} fib ((i - 1) + 2) = fib (k + 2)` in `ℕ` (where `0 - 1 = 0`). -/
 theorem fib_sum_pred_add_two (k : ℕ) :
     1 + ∑ i ∈ Finset.range k, Nat.fib ((i - 1) + 2) = Nat.fib (k + 2) := by

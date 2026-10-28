@@ -25,7 +25,26 @@ under `potential = 80 * (numRoots + 2 * numMarked)`):
 * **Cascading cuts (`decreaseKeyCode_exec`):** Applies `ExecWithin.loop_potential_retain` to pay
   every cascading-cut iteration (`≤ 50` instructions including loop step) out of the `-80` drop in
   `potential`, marks the stopping non-root ancestor (`+160`), updates `minRootReg`, and restores
-  `FibInv` within amortized charge `334 ≤ tDec n`.
+  `FibInv` within amortized charge `330` (`335 ≤ tDec n` including dispatch).
+
+## Main definitions
+
+* `cutNodeCode` and `decreaseKeyCode` are defined in `FibonacciHeap/Program.lean` and verified here
+  against `CutInv` and `FibInv`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.cutNodeCode_raw`, `cutNode_forest`:
+  single-edge pointer and forest cut specifications.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.decreaseKeyCode_exec`: `O(1)` amortized
+  `decreaseKey` specification with cascading cuts.
+
+## References
+
+* [M. L. Fredman and R. E. Tarjan, *Fibonacci Heaps and Their Uses in Improved Network Optimization
+  Algorithms*][FredmanTarjan1987]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 19][CLRS2009]
 -/
 
 @[expose] public section

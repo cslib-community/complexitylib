@@ -21,8 +21,29 @@ This file lifts the single-tree model of `Trees.lean` to the full multi-root for
 * **Full heap invariant (`FibRawInv`):** Relates `s : IndexedMinPQ.State n` to `st : RawState n`
   with exact domain, key, size, root-count, marked-count, `minRoot`, and `cons`-zeroing invariants,
   proving `IndexedMinPQ.findMin` agreement (`FibRawInv.findMin_eq_some`) and scalar bounds.
-* **Transient invariants (`CutInv`, `ConsInv`):** Loop invariants for cascading cuts in
-  `decreaseKey` and degree-indexed root consolidation in `extractMin`.
+* **Transient cut invariant (`CutInv`):** Loop invariant for cascading cuts during `decreaseKey`,
+  allowing a single `pending` ancestor whose child was just severed.
+
+## Main definitions
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibRawInv`: full multi-root forest
+  representation invariant relating `IndexedMinPQ.State n` to `RawState n`.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.CutInv`: transient forest invariant during
+  cascading cuts in `decreaseKey`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.ValidSubtree.exists_cut`: severing a
+  non-root node splits its enclosing tree into a valid root tree and a `pending`-parent tree.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.FibRawInv.findMin_eq_some`: `minRoot`
+  identifies the exact `IndexedMinPQ.findMin` element.
+
+## References
+
+* [M. L. Fredman and R. E. Tarjan, *Fibonacci Heaps and Their Uses in Improved Network Optimization
+  Algorithms*][FredmanTarjan1987]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 19][CLRS2009]
 -/
 
 @[expose] public section

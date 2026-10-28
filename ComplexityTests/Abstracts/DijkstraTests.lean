@@ -12,8 +12,7 @@ import ComplexityAbstracts.DijkstraAbstract
 # Non-vacuity tests for `ComplexityAbstracts.DijkstraAbstract`
 
 Instantiates both `dijkstra_logLinear` and `dijkstra_fibonacci` on a concrete weighted directed
-graph with parallel edges and checks the encoded distances of a zero-edge walk and a reachable
-multi-hop target.
+graph with parallel edges and checks the encoded source distance and concrete instruction bounds.
 -/
 
 namespace ComplexityTests.Abstracts.DijkstraTests
