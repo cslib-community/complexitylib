@@ -174,8 +174,16 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Set.EqOn`; no additional weighted-triangle predicate or source machine is introduced.
   This is the mathematical interface milestone
   [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
-  preprocessing/time claim or solver. Modular hashing/false-positive splitting and tensor/sparse
-  query programs remain in #1394, alongside the native and asymptotic composition below.
+  preprocessing/time claim or solver. `Algorithms/ExactTriangle/{Weights,Hashing}.lean` now adapts
+  the modular counting/coefficient identities, minimum-count prime and uniform false-positive
+  bound from `Sec3/Theorem17/Hashing.lean`, using supplied matrices and the existing decision
+  predicate. Its integer-square window characterisation supports later native enumeration.
+  The quotient/coefficient API lives in `Foundations/RingTheory/CyclicIntRing.lean`; the uniform
+  all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
+  the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
+  statements, not native instructions or an assumed solver. See
+  [#1442](https://github.com/cslib-community/complexitylib/issues/1442). Residue/chunk/piece splitting,
+  witness recovery and tensor/sparse query programs remain in #1394, alongside native composition.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics
   were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
   input/time/width/asymptotic composition remain in

@@ -1,7 +1,9 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import Complexity.Algorithms.ExactTriangle.Defs
+public import Complexity.Algorithms.ExactTriangle.Hashing
 public import Complexity.Algorithms.ExactTriangle.Lopsided
+public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -2190,6 +2192,7 @@ public import Complexity.Foundations.NumberTheory.AKS.Introspective
 public import Complexity.Foundations.NumberTheory.AKS.SmallR
 public import Complexity.Foundations.NumberTheory.Harmonic
 public import Complexity.Foundations.NumberTheory.PrimeCounting
+public import Complexity.Foundations.NumberTheory.PrimeWindow
 public import Complexity.Foundations.Order.BooleanSubalgebra
 public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.UpperLower
@@ -2200,6 +2203,7 @@ public import Complexity.Foundations.Probability.SecondMoment
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Relation.InductiveCounting
 public import Complexity.Foundations.Relation.RelatesWithinSteps
+public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.Semantics.Stateful.Amortized
 public import Complexity.Foundations.Semantics.Stateful.Basic
 public import Complexity.Foundations.Semantics.Stateful.Composition
