@@ -650,27 +650,29 @@ end PQCode
 /-! ## `PQPackage`: Parametric priority-queue implementation bundle -/
 
 /-- A priority-queue implementation over basis `B` with uniform `PQCode B r_pq`, memory footprint
-`space n`, per-operation amortized instruction charges `T_* n`, and parametric `SubroutineDS`
+`space n`, per-operation amortized instruction charges `*Time n`, and parametric `SubroutineDS`
 certificates supporting arbitrary concrete potentials `potential : Data r_pq → ℕ`. -/
 structure PQPackage (B : Basis) (r_pq : ℕ) where
   /-- Uniform priority-queue code and register convention. -/
   code : PQCode B r_pq
   /-- Memory footprint size on `n` handles (`[base, base + space n)`). -/
   space : ℕ → ℕ
-  /-- Every priority queue on `n` handles reserves at least `n + 1` words (`1 ≤ space n`). -/
+  /-- Every priority queue on `n` handles reserves at least `n + 1` words (`n + 1 ≤ space n`), so
+  handle arguments `v < n` fit in `w` bits via `Fits w (base + space n)` in `PQCode.arguments_fit`.
+  -/
   space_lower : ∀ n, n + 1 ≤ space n
   /-- Fresh-initialization instruction bound (`initFresh`). -/
-  T_init : ℕ → ℕ
+  initTime : ℕ → ℕ
   /-- Amortized instruction bound for `isEmpty`. -/
-  T_empty : ℕ → ℕ
+  emptyTime : ℕ → ℕ
   /-- Amortized instruction bound for `getKey`. -/
-  T_get : ℕ → ℕ
+  getTime : ℕ → ℕ
   /-- Amortized instruction bound for `insert`. -/
-  T_ins : ℕ → ℕ
+  insertTime : ℕ → ℕ
   /-- Amortized instruction bound for `decreaseKey`. -/
-  T_dec : ℕ → ℕ
+  decreaseTime : ℕ → ℕ
   /-- Amortized instruction bound for `extractMin`. -/
-  T_ext : ℕ → ℕ
+  extractTime : ℕ → ℕ
   /-- Parametric `SubroutineDS` certificate whenever `base + space n` and `K_max` fit in `w` bits.
   -/
   cert : ∀ {n K_max w base : ℕ}, Fits w (base + space n) → Fits w K_max →
@@ -679,9 +681,9 @@ structure PQPackage (B : Basis) (r_pq : ℕ) where
   /-- Certificate footprint agrees with `space n`. -/
   cert_space : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max),
     (cert hS hK).space = space n
-  /-- Fresh initialization runs within `T_init n` instructions. -/
+  /-- Fresh initialization runs within `initTime n` instructions. -/
   cert_initTime : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max),
-    (cert hS hK).initTime ≤ T_init n
+    (cert hS hK).initTime ≤ initTime n
   /-- Empty priority queue starts with `initPotential = 0`. -/
   cert_initPotential : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max),
     (cert hS hK).initPotential = 0
@@ -693,25 +695,23 @@ structure PQPackage (B : Basis) (r_pq : ℕ) where
     (cert hS hK).decode = code.decode
   /-- Amortized charge bound for `isEmpty`. -/
   charge_isEmpty : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max)
-    (s : IndexedMinPQ.State n), (cert hS hK).charge s .isEmpty ≤ T_empty n
+    (s : IndexedMinPQ.State n), (cert hS hK).charge s .isEmpty ≤ emptyTime n
   /-- Amortized charge bound for `getKey`. -/
   charge_getKey : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max)
-    (s : IndexedMinPQ.State n) (v : Fin n), (cert hS hK).charge s (.getKey v) ≤ T_get n
+    (s : IndexedMinPQ.State n) (v : Fin n), (cert hS hK).charge s (.getKey v) ≤ getTime n
   /-- Amortized charge bound for `insert`. -/
   charge_insert : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max)
     (s : IndexedMinPQ.State n) (v : Fin n) (k : ℕ),
-    (cert hS hK).charge s (.insert v k) ≤ T_ins n
+    (cert hS hK).charge s (.insert v k) ≤ insertTime n
   /-- Amortized charge bound for `decreaseKey`. -/
   charge_decreaseKey : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max)
     (s : IndexedMinPQ.State n) (v : Fin n) (k : ℕ),
-    (cert hS hK).charge s (.decreaseKey v k) ≤ T_dec n
+    (cert hS hK).charge s (.decreaseKey v k) ≤ decreaseTime n
   /-- Amortized charge bound for `extractMin`. -/
   charge_extractMin : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max)
-    (s : IndexedMinPQ.State n), (cert hS hK).charge s .extractMin ≤ T_ext n
+    (s : IndexedMinPQ.State n), (cert hS hK).charge s .extractMin ≤ extractTime n
 
 namespace PQPackage
-
-attribute [nolint defsWithUnderscore] T_init T_empty T_get T_ins T_dec T_ext
 
 /-- Translate a `PQPackage` along any basis simulation. -/
 def mapSimulates {B B' : Basis} {r_pq : ℕ} (φ : B.Simulates B') (pkg : PQPackage B r_pq) :
@@ -719,12 +719,12 @@ def mapSimulates {B B' : Basis} {r_pq : ℕ} (φ : B.Simulates B') (pkg : PQPack
   code := pkg.code.mapSimulates φ
   space := pkg.space
   space_lower := pkg.space_lower
-  T_init := pkg.T_init
-  T_empty := pkg.T_empty
-  T_get := pkg.T_get
-  T_ins := pkg.T_ins
-  T_dec := pkg.T_dec
-  T_ext := pkg.T_ext
+  initTime := pkg.initTime
+  emptyTime := pkg.emptyTime
+  getTime := pkg.getTime
+  insertTime := pkg.insertTime
+  decreaseTime := pkg.decreaseTime
+  extractTime := pkg.extractTime
   cert hS hK := (pkg.cert hS hK).mapSimulates φ
   cert_space := pkg.cert_space
   cert_initTime := pkg.cert_initTime

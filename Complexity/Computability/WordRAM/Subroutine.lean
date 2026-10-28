@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.Heap
+public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Foundations.Semantics.Stateful.Amortized
 
 /-!
@@ -21,9 +22,10 @@ inside structured outer algorithms (`Code.rename`, `ExecWithin`).
 A data structure is packaged once as a `SubroutineCode B r_ds k_init` and certified by a
 `SubroutineDS` bundle. From that single proof, this file derives:
 
-1. **Defined-evaluation basis simulation (`Basis.Simulates`):** Non-faulting executions over
-   `Basis.exact` lift instruction-for-instruction to `Basis.standard`
-   (`Basis.Simulates.exactStandard`), bridging exact-basis algorithms and standard-basis
+1. **Defined-evaluation basis lifting (`SubroutineCode.mapSimulates`, `SubroutineDS.mapSimulates`,
+   `SubroutineDS.toStandard`):** Non-faulting executions over `Basis.exact` lift
+   instruction-for-instruction to `Basis.standard` via `Basis.Simulates.exactStandard` from
+   `Complexity.Computability.WordRAM.MapOp`, bridging exact-basis algorithms and standard-basis
    `DynamicProgram` realizations.
 2. **Standalone `Stateful` projections:** `toDynamicProgram`, `toCertificate`, `toAmortized`,
    `toBound`, and adaptive-client corollaries.
@@ -36,6 +38,25 @@ A data structure is packaged once as a `SubroutineCode B r_ds k_init` and certif
 5. **Potential-retaining loop rule (`ExecWithin.loop_potential_retain`):** Retains exit potential
    `+ Φ z` across inner loops so stored data-structure credit survives nested loops.
 
+## Main definitions
+
+* `Cslib.WordRAM.SubroutineCode`, `Cslib.WordRAM.SubroutineDS`: uniform relocatable machine code and
+  unified standalone / inline specification and resource certificate for a Word-RAM data structure.
+* `Cslib.WordRAM.SubroutineCode.initFresh`, `Cslib.WordRAM.SubroutineCode.initClear`: `O(1)` fresh
+  initialization on zeroed memory and generic `O(space)` dirty-memory re-initialization.
+* `Cslib.WordRAM.SubroutineDS.toDynamicProgram`, `Cslib.WordRAM.SubroutineDS.toCertificate`:
+  standalone `.standard`-basis `DynamicProgram` and `DynamicCertificate` projections.
+
+## Main results
+
+* `Cslib.WordRAM.ExecWithin.loop_potential_retain`: potential-retaining loop rule for nested loops.
+* `Cslib.WordRAM.SubroutineDS.toAmortized`, `Cslib.WordRAM.SubroutineDS.toBound`,
+  `Cslib.WordRAM.SubroutineDS.run_client_amortized`, `Cslib.WordRAM.SubroutineDS.run_client_bound`:
+  standalone amortized and worst-case instruction bounds over `Basis.standard`.
+* `Cslib.WordRAM.SubroutineDS.initFresh_rename`, `Cslib.WordRAM.SubroutineDS.initClear_rename`,
+  `Cslib.WordRAM.SubroutineDS.call_rename`, `Cslib.WordRAM.SubroutineDS.frame_caller`: relocated
+  inline initialization, inline operation calls, and bidirectional register/memory framing.
+
 ## References
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
@@ -46,124 +67,6 @@ A data structure is packaged once as a `SubroutineCode B r_ds k_init` and certif
 @[expose] public section
 
 namespace Cslib.WordRAM
-
-open Cslib.Circuits
-
-/-! ## Defined-evaluation basis simulation -/
-
-/-- `B` is simulated by `B'` on defined evaluations when every non-faulting operation in `B`
-evaluates to the same value in `B'` without introducing `ReadsWidth`. Unlike `Basis.Hom`, `B'` may
-define values on inputs where `B` faults (such as `Basis.exact` vs `Basis.standard`). -/
-structure Basis.Simulates (B B' : Basis) extends B.toSignature.Hom B'.toSignature where
-  /-- Every defined operation value in `B` is preserved in `B'`. -/
-  eval_some (w : ℕ) (f : B.Op) (args : Fin (B.Arity f) → ℕ) {v : ℕ} :
-    B.interp w f args = some v →
-    B'.interp w (toHom f) (fun a => args (Fin.cast (toHom.arity_eq f) a)) = some v
-  /-- Simulation does not introduce word-size reads. -/
-  readsWidth_of_map (f : B.Op) : B'.ReadsWidth (toHom f) → B.ReadsWidth f
-
-namespace Basis.Simulates
-
-variable {B B' B'' : Basis}
-
-/-- Image of an operation symbol under a simulation. -/
-abbrev map (φ : B.Simulates B') (f : B.Op) : B'.Op := φ.toHom f
-
-/-- Simulation preserves operation arity. -/
-theorem arity_map (φ : B.Simulates B') (f : B.Op) : B'.Arity (φ.map f) = B.Arity f :=
-  φ.toHom.arity_eq f
-
-/-- Identity basis simulation. -/
-protected def id (B : Basis) : B.Simulates B where
-  toHom := Signature.Hom.id _
-  eval_some _ _ _ {_} h := h
-  readsWidth_of_map _ h := h
-
-/-- Composition of basis simulations. -/
-def comp (ψ : B'.Simulates B'') (φ : B.Simulates B') : B.Simulates B'' where
-  toHom := ψ.toHom.comp φ.toHom
-  eval_some w f args {_} h := ψ.eval_some w (φ.toHom f) _ (φ.eval_some w f args h)
-  readsWidth_of_map f h := φ.readsWidth_of_map f (ψ.readsWidth_of_map _ h)
-
-/-- Every exact basis homomorphism induces a defined-evaluation simulation. -/
-def ofHom (φ : B.Hom B') : B.Simulates B' where
-  toHom := φ.toHom
-  eval_some w f args {_} h := (φ.preserves w f args).trans h
-  readsWidth_of_map := φ.readsWidth_of_map
-
-/-- Every non-faulting `Basis.exact` operation evaluates to the same value in `Basis.standard`. -/
-def exactStandard : Basis.Simulates .exact .standard where
-  toHom :=
-    { toFun := id
-      arity_eq := fun _ => rfl }
-  eval_some w f args {v} h := by
-    cases f with
-    | width => exact h
-    | bin b =>
-      cases b <;>
-        dsimp only [Basis.exact, Basis.standard, StandardOp.evalExact, StandardOp.eval,
-          BinOp.evalExact, BinOp.eval] at h ⊢ <;>
-        (try split_ifs at h) <;> exact h
-  readsWidth_of_map _ h := h
-
-end Basis.Simulates
-
-/-- Translate a data instruction along a basis simulation. -/
-def Op.mapSimulates {B B' : Basis} {r : ℕ} (φ : B.Simulates B') : Op B r → Op B' r
-  | .const d v => .const d v
-  | .copy d s => .copy d s
-  | .alu f d args => .alu (φ.map f) d fun a => args (Fin.cast (φ.arity_map f) a)
-  | .load d a => .load d a
-  | .store a s => .store a s
-
-/-- Translate a structured program along a basis simulation. -/
-def Code.mapSimulates {B B' : Basis} {r : ℕ} (φ : B.Simulates B') : Code B r → Code B' r
-  | .op o => .op (o.mapSimulates φ)
-  | .seq c₁ c₂ => .seq (c₁.mapSimulates φ) (c₂.mapSimulates φ)
-  | .branch c pos neg => .branch c (pos.mapSimulates φ) (neg.mapSimulates φ)
-  | .loop c body => .loop c (body.mapSimulates φ)
-  | .rand dst src => .rand dst src
-
-/-- Translating along a basis simulation preserves compiled program size. -/
-@[simp]
-theorem Code.size_mapSimulates {B B' : Basis} {r : ℕ} (φ : B.Simulates B') (c : Code B r) :
-    (c.mapSimulates φ).size = c.size := by
-  induction c <;> simp_all [Code.mapSimulates]
-
-/-- Any non-faulting evaluation of a data instruction is preserved under `Op.mapSimulates`. -/
-theorem Op.eval_mapSimulates_of_some {B B' : Basis} {r w : ℕ} (φ : B.Simulates B')
-    {o : Op B r} {x y : Data r} (h : o.eval w x = some y) :
-    (o.mapSimulates φ).eval w x = some y := by
-  cases o with
-  | alu f d args =>
-    rw [Op.eval_alu] at h
-    obtain ⟨v, hv, hput⟩ := Option.bind_eq_some_iff.mp h
-    rw [Op.mapSimulates, Op.eval_alu]
-    have hv' : B'.interp w (φ.map f)
-        (x.regs ∘ fun a => args (Fin.cast (φ.arity_map f) a)) = some v :=
-      φ.eval_some w f (x.regs ∘ args) hv
-    rw [hv', Option.bind_some]
-    exact hput
-  | _ => exact h
-
-/-- Non-faulting structured executions transfer instruction-for-instruction along `Simulates`. -/
-theorem Exec.mapSimulates {B B' : Basis} {r w : ℕ} (φ : B.Simulates B')
-    {c : Code B r} {x y : Data r} {n : ℕ} (h : Exec w c x y n) :
-    Exec w (c.mapSimulates φ) x y n := by
-  induction h with
-  | op ho => exact .op (Op.eval_mapSimulates_of_some φ ho)
-  | seq _ _ ih₁ ih₂ => exact .seq ih₁ ih₂
-  | branch_pos hc _ ih => exact .branch_pos hc ih
-  | branch_neg hc _ ih => exact .branch_neg hc ih
-  | loop_exit hc => exact .loop_exit hc
-  | loop_iter hc _ _ ihb ihl => exact .loop_iter hc ihb ihl
-
-/-- Bounded-step structured executions transfer along `Simulates`. -/
-theorem ExecWithin.mapSimulates {B B' : Basis} {r w T : ℕ} (φ : B.Simulates B')
-    {c : Code B r} {x y : Data r} (h : ExecWithin w c x y T) :
-    ExecWithin w (c.mapSimulates φ) x y T :=
-  let ⟨n, hn, he⟩ := h
-  ⟨n, hn, he.mapSimulates φ⟩
 
 /-! ## Potential-retaining loop rule and general helpers -/
 

@@ -59,12 +59,12 @@ private theorem fits_pq_space {G : ListInstance} {w : ℕ}
   nlinarith [Nat.zero_le G.maxWeight]
 
 private theorem binaryHeap_dijkstra_bound (G : ListInstance) :
-    PriorityQueue.BinaryHeap.pkg.T_init G.n +
-      PriorityQueue.BinaryHeap.pkg.T_ins G.n + 28 +
-      min G.n (G.m + 1) * (PriorityQueue.BinaryHeap.pkg.T_ext G.n +
-        PriorityQueue.BinaryHeap.pkg.T_empty G.n + 20) +
-      min G.n G.m * (PriorityQueue.BinaryHeap.pkg.T_ins G.n + 20) +
-      G.m * (PriorityQueue.BinaryHeap.pkg.T_dec G.n + 20) ≤
+    PriorityQueue.BinaryHeap.pkg.initTime G.n +
+      PriorityQueue.BinaryHeap.pkg.insertTime G.n + 28 +
+      min G.n (G.m + 1) * (PriorityQueue.BinaryHeap.pkg.extractTime G.n +
+        PriorityQueue.BinaryHeap.pkg.emptyTime G.n + 20) +
+      min G.n G.m * (PriorityQueue.BinaryHeap.pkg.insertTime G.n + 20) +
+      G.m * (PriorityQueue.BinaryHeap.pkg.decreaseTime G.n + 20) ≤
       200 * (G.m + 1) * (Nat.log 2 G.n + 1) := by
   dsimp only [PriorityQueue.BinaryHeap.pkg, PriorityQueue.BinaryHeap.tEmpty,
     PriorityQueue.BinaryHeap.tIns, PriorityQueue.BinaryHeap.tDec, PriorityQueue.BinaryHeap.tExt]

@@ -57,12 +57,9 @@ open Cslib.Algorithms.Lean
 /-- Memory footprint size (`3 * N + 1` words) of an indexed binary heap over `N` handles. -/
 def space (N : ℕ) : ℕ := 3 * N + 1
 
+/-- The binary-heap footprint on `N` handles is at least `N + 1` words. -/
 theorem space_lower (N : ℕ) : N + 1 ≤ space N := by
   unfold space; omega
-
-/-- Reflexive lexicographic priority comparison on `(handle, key) : ℕ × ℕ`, reusing
-`IndexedMinPQ.RawPrioLE`. -/
-abbrev EntryLE (a b : ℕ × ℕ) : Prop := IndexedMinPQ.RawPrioLE a b
 
 /-- Strict lexicographic priority comparison on `(handle, key) : ℕ × ℕ`. -/
 def EntryLT (a b : ℕ × ℕ) : Prop :=
@@ -71,20 +68,18 @@ def EntryLT (a b : ℕ × ℕ) : Prop :=
 instance instDecidableEntryLT (a b : ℕ × ℕ) : Decidable (EntryLT a b) := by
   unfold EntryLT; infer_instance
 
-theorem EntryLE.refl (a : ℕ × ℕ) : EntryLE a a :=
-  IndexedMinPQ.RawPrioLE.refl a
+/-- Strict priority order `EntryLT` implies weak priority order `IndexedMinPQ.RawPrioLE`. -/
+theorem EntryLT.le {a b : ℕ × ℕ} (h : EntryLT a b) : IndexedMinPQ.RawPrioLE a b := by
+  dsimp only [EntryLT, IndexedMinPQ.RawPrioLE] at *; omega
 
-theorem EntryLE.trans {a b c : ℕ × ℕ} (hab : EntryLE a b) (hbc : EntryLE b c) : EntryLE a c :=
-  IndexedMinPQ.RawPrioLE.trans hab hbc
+/-- Negation of `EntryLT` is the converse weak priority order `IndexedMinPQ.RawPrioLE`. -/
+theorem not_entryLT {a b : ℕ × ℕ} : ¬EntryLT a b ↔ IndexedMinPQ.RawPrioLE b a := by
+  dsimp only [EntryLT, IndexedMinPQ.RawPrioLE]; omega
 
-theorem EntryLT.le {a b : ℕ × ℕ} (h : EntryLT a b) : EntryLE a b := by
-  dsimp only [EntryLT, EntryLE, IndexedMinPQ.RawPrioLE] at *; omega
-
-theorem not_entryLT {a b : ℕ × ℕ} : ¬EntryLT a b ↔ EntryLE b a := by
-  dsimp only [EntryLT, EntryLE, IndexedMinPQ.RawPrioLE]; omega
-
-theorem entryLE_of_key_le {u k₁ k₂ : ℕ} (h : k₁ ≤ k₂) : EntryLE (u, k₁) (u, k₂) := by
-  dsimp only [EntryLE, IndexedMinPQ.RawPrioLE]; omega
+/-- Decreasing a handle's key improves its priority under `IndexedMinPQ.RawPrioLE`. -/
+theorem entryLE_of_key_le {u k₁ k₂ : ℕ} (h : k₁ ≤ k₂) :
+    IndexedMinPQ.RawPrioLE (u, k₁) (u, k₂) := by
+  dsimp only [IndexedMinPQ.RawPrioLE]; omega
 
 /-- The `(handle, key)` pair stored at 1-based heap position `i`. -/
 def heapEntry (N base : ℕ) (mem : ℕ → ℕ) (i : ℕ) : ℕ × ℕ :=
@@ -94,6 +89,7 @@ def heapEntry (N base : ℕ) (mem : ℕ → ℕ) (i : ℕ) : ℕ × ℕ :=
 def stateOfMem (N base : ℕ) (mem : ℕ → ℕ) : IndexedMinPQ.State N :=
   fun v => if mem (base + 2 * N + 1 + v.val) = 0 then none else some (mem (base + v.val))
 
+/-- `stateOfMem` depends only on memory cells inside `(Block.mk base (space N)).footprint`. -/
 theorem stateOfMem_congr {N base : ℕ} {m₁ m₂ : ℕ → ℕ}
     (h : ∀ a ∈ (Block.mk base (space N)).footprint, m₁ a = m₂ a) :
     stateOfMem N base m₁ = stateOfMem N base m₂ := by
@@ -120,22 +116,22 @@ structure HeapShape (N base sz : ℕ) (mem : ℕ → ℕ) : Prop where
   vertex_pos : ∀ v < N, mem (base + 2 * N + 1 + v) ≠ 0 →
     mem (base + N + mem (base + 2 * N + 1 + v)) = v
 
-/-- Heap order under `EntryLE`: every child `2 ≤ i ≤ sz` has priority at least that of its parent
-`i / 2`. -/
+/-- Heap order under `IndexedMinPQ.RawPrioLE`: every child `2 ≤ i ≤ sz` has priority at least that
+of its parent `i / 2`. -/
 def Ordered (f : ℕ → ℕ × ℕ) (sz : ℕ) : Prop :=
-  ∀ i, 2 ≤ i → i ≤ sz → EntryLE (f (i / 2)) (f i)
+  ∀ i, 2 ≤ i → i ≤ sz → IndexedMinPQ.RawPrioLE (f (i / 2)) (f i)
 
 /-- Heap order except possibly between `k` and its parent `k / 2` (`siftUp` invariant). -/
 def UpOrdered (f : ℕ → ℕ × ℕ) (sz k : ℕ) : Prop :=
   ∀ i, 2 ≤ i → i ≤ sz →
-    (i ≠ k → EntryLE (f (i / 2)) (f i)) ∧
-    (i / 2 = k → 2 ≤ k → EntryLE (f (k / 2)) (f i))
+    (i ≠ k → IndexedMinPQ.RawPrioLE (f (i / 2)) (f i)) ∧
+    (i / 2 = k → 2 ≤ k → IndexedMinPQ.RawPrioLE (f (k / 2)) (f i))
 
 /-- Heap order except possibly between `k` and its children (`siftDown` invariant). -/
 def DownOrdered (f : ℕ → ℕ × ℕ) (sz k : ℕ) : Prop :=
   ∀ i, 2 ≤ i → i ≤ sz →
-    (i / 2 ≠ k → EntryLE (f (i / 2)) (f i)) ∧
-    (i / 2 = k → 2 ≤ k → EntryLE (f (k / 2)) (f i))
+    (i / 2 ≠ k → IndexedMinPQ.RawPrioLE (f (i / 2)) (f i)) ∧
+    (i / 2 = k → 2 ≤ k → IndexedMinPQ.RawPrioLE (f (k / 2)) (f i))
 
 /-- **Full binary-heap invariant**: structural bijection plus lexicographic heap order. -/
 structure HeapInv (N base sz : ℕ) (mem : ℕ → ℕ) : Prop extends HeapShape N base sz mem where
@@ -146,6 +142,7 @@ section InvariantLemmas
 
 variable {N base S : ℕ} {mem : ℕ → ℕ}
 
+/-- `HeapInv` depends only on memory cells inside `(Block.mk base (space N)).footprint`. -/
 theorem HeapInv.congr_mem {m₂ : ℕ → ℕ} (h : HeapInv N base S mem)
     (hm : ∀ a ∈ (Block.mk base (space N)).footprint, m₂ a = mem a) :
     HeapInv N base S m₂ := by
@@ -225,14 +222,14 @@ theorem HeapInv.findMin_eq_root (h : HeapInv N base S mem) (hS : 1 ≤ S) :
     IndexedMinPQ.findMin (stateOfMem N base mem) =
       some (⟨mem (base + N + 1), h.vertex_lt 1 le_rfl hS⟩, mem (base + mem (base + N + 1))) := by
   have key : ∀ i, 1 ≤ i → i ≤ S →
-      EntryLE (heapEntry N base mem 1) (heapEntry N base mem i) := by
+      IndexedMinPQ.RawPrioLE (heapEntry N base mem 1) (heapEntry N base mem i) := by
     intro i
     induction i using Nat.strong_induction_on with
     | _ i ih =>
       intro h1 h2
       rcases Nat.lt_or_ge i 2 with hi | hi
       · obtain rfl : i = 1 := by omega
-        exact EntryLE.refl _
+        exact IndexedMinPQ.RawPrioLE.refl _
       · exact (ih (i / 2) (by omega) (by omega) (by omega)).trans (h.ordered i hi h2)
   rw [IndexedMinPQ.findMin_eq_some_iff]
   refine ⟨?_, fun v k' hsv => ?_⟩
@@ -244,7 +241,7 @@ theorem HeapInv.findMin_eq_root (h : HeapInv N base S mem) (hS : 1 ≤ S) :
       subst hsv
       have hle := key (mem (base + 2 * N + 1 + v.val)) (Nat.one_le_iff_ne_zero.2 hp)
         (h.pos_le v.val v.isLt)
-      dsimp only [heapEntry, EntryLE] at hle ⊢
+      dsimp only [heapEntry] at hle ⊢
       rw [h.vertex_pos v.val v.isLt hp] at hle
       exact hle
 
@@ -311,12 +308,12 @@ theorem HeapInv.decrease (h : HeapInv N base S mem) {v c : ℕ} (hv : v < N)
     · simp only [heapEntry, hin, he, ↓reduceIte, m', Function.update_self]
     · have hne : base + mem (base + N + j) ≠ base + v := by omega
       simp only [heapEntry, hin, he, ↓reduceIte, m', Function.update_of_ne hne]
-  have hle' : ∀ j, EntryLE (heapEntry N base m' j) (heapEntry N base mem j) := by
+  have hle' : ∀ j, IndexedMinPQ.RawPrioLE (heapEntry N base m' j) (heapEntry N base mem j) := by
     intro j
     rw [hval]
     split_ifs with h1
     · simp only [heapEntry, h1]; exact entryLE_of_key_le hle
-    · exact EntryLE.refl _
+    · exact IndexedMinPQ.RawPrioLE.refl _
   have heq : ∀ j, 1 ≤ j → j ≤ S → j ≠ mem (base + 2 * N + 1 + v) →
       heapEntry N base m' j = heapEntry N base mem j := by
     intro j h1 h2 hj
