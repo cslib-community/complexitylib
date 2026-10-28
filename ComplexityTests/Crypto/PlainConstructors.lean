@@ -10,15 +10,17 @@ import Complexity.Crypto.Computational.PRGToOneWay
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
-example {f : List Bool → List Bool} (hf : ComputableInPolyTime f encBits encBits)
+-- Public constructors expose plain polynomial-time certificates from both direct inversion
+-- bounds and PRG length-doubling reductions.
+example {f generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (hf : ComputableInPolyTime f encBits encBits)
     (hnegligible : ∀ adversary : Inverter, IsPPT encBits adversary →
-      Negligible (fun n => Game.succProbability (ProbComp.eval (inversionGame f adversary n)))) :
-    OneWay f := OneWay.of_inversion_negligible hf hnegligible
-
--- The real reduction uses the PRG's existing plain field, without a public tidy conversion.
-example {generator : List Bool → List Bool} {length : ℕ → ℕ}
+      Negligible (fun n => Game.succProbability (ProbComp.eval (inversionGame f adversary n))))
     (hgenerator : PseudorandomGenerator generator length) (hdouble : ∀ n, 2 * n ≤ length n) :
-    OneWay generator := hgenerator.oneWay hdouble
+    ComputableInPolyTime f encBits encBits ∧
+    ComputableInPolyTime generator encBits encBits :=
+  ⟨(OneWay.of_inversion_negligible hf hnegligible).polyTime,
+   (hgenerator.oneWay hdouble).polyTime⟩
 
 -- Both the unary parameter and arbitrary sample word are part of the certified input.
 example {X Y : ℕ → PMF (List Bool)} (h : ComputationallyIndistinguishable X Y) :

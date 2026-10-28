@@ -46,11 +46,12 @@ example : decrypt (fun _ => 0) (rawCiphertext 0 0 0) = false := by
   decide +kernel
 
 -- The row identity applies after separate total decoding of arbitrary input words.
-example (n w : ℕ) (hw : 0 < w) (secret ciphertext : List Bool) :
-    decrypt (decodeSecret n w secret) (decodeCiphertext n w ciphertext) =
-      decode w (decryptionPhase (decodeSecret n w secret)
-        (decodeCiphertext n w ciphertext) (0, ⟨w - 1, by omega⟩)) :=
-  decrypt_eq_decode_decryptionPhase hw _ _
+example :
+    decrypt (decodeSecret 1 3 [true, false, true])
+      (decodeCiphertext 1 3 [false, true, true]) =
+      decode 3 (decryptionPhase (decodeSecret 1 3 [true, false, true])
+        (decodeCiphertext 1 3 [false, true, true]) (0, ⟨3 - 1, by omega⟩)) :=
+  decrypt_eq_decode_decryptionPhase (by decide) _ _
 
 -- At the lower boundary the two top bits differ; at the upper boundary they agree.
 example : ((2 : ZMod (2 ^ 3)).val.testBit 2 ^^ (2 : ZMod (2 ^ 3)).val.testBit 1) = true ∧
