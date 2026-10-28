@@ -2,6 +2,7 @@ The 3SUM/Exact Triangle reductions, finite counting/tensor lemmas and native pro
 Complexity/Algorithms/ExactTriangle/{Defs,Weights,Lopsided,Hashing,Splitting,Witnesses}.lean,
 Complexity/Algorithms/MatrixMultiplication/Schonhage/,
 Complexity/Algorithms/ThreeSum/,
+Complexity/Algorithms/WordRAM/ExactTriangle/,
 Complexity/Algorithms/WordRAM/ThreeSum/,
 Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/,
 Complexity/Foundations/Algebra/{FiniteMagnitude,GeometricTail}.lean,
