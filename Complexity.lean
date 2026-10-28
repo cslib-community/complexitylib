@@ -109,6 +109,10 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
+public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Loop
+public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Prepare
+public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Program
+public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Width
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Call
@@ -1636,6 +1640,7 @@ public import Complexity.Computability.WordRAM.RAMInput
 public import Complexity.Computability.WordRAM.Randomized.Defs
 public import Complexity.Computability.WordRAM.Randomized.Expected
 public import Complexity.Computability.WordRAM.Randomized.Structured
+public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
 public import Complexity.Computability.WordRAM.Signed.Comparison
 public import Complexity.Computability.WordRAM.Signed.Compile

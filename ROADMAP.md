@@ -423,9 +423,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   matrix builder and the complete finite mathematical Chan–He reduction ([#1435]), including
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
-  and the selected-prime false-positive bound ([#1442]) are proved mathematically; it still needs
-  residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
-  Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
+  and the selected-prime false-positive bound ([#1442]) are proved mathematically. The charged
+  native Convolution host ([#1524]) initializes from the ordinary input and runs every generated
+  instance, conditional on a concrete solver's execution, correctness and frame theorem. Remaining
+  work includes residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs,
+  native Chan–He preprocessing, the fast Exact Triangle solver and full input/time/width/
   asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
@@ -553,3 +555,4 @@ not planned, not as proved.
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
+[#1524]: https://github.com/cslib-community/complexitylib/issues/1524
