@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Control
+public import Complexity.Computability.WordRAM.Heap
 
 /-!
 # Computed child-frame writes
@@ -53,6 +54,7 @@ theorem exec_push {w : ℕ} (x : Data registers) (h0 : x.regs nil = 0)
           (x.regs leafPrefix + x.regs term * x.regs stride))
         (x.regs frames + x.regs nextLevel * 4 + 2) (x.regs stride * 10))
         (x.regs frames + x.regs nextLevel * 4 + 3) 0 ∧
+      Modifies (Block.mk (x.regs frames + x.regs nextLevel * 4) 4).footprint x.mem y.mem ∧
       (∀ i, ¬PushLocal i → y.regs i = x.regs i) := by
   let f := x.regs frames + x.regs nextLevel * 4
   let p := x.regs leafPrefix + x.regs term * x.regs stride
@@ -76,7 +78,17 @@ theorem exec_push {w : ℕ} (x : Data registers) (h0 : x.regs nil = 0)
       nextLevel, leafPrefix, term, stride, ten, one, frameWidth, childCount, nil,
       Fin.mk.injEq, Nat.add_zero]
   have he := hexact.within
-  refine ⟨y, he, ?_, by simp [y], ?_, ?_, ?_, rfl,
+  have hmod : Modifies (Block.mk f 4).footprint x.mem y.mem := by
+    intro c hc
+    have hnot : ¬(f ≤ c ∧ c < f + 4) := by
+      simpa only [Block.mem_footprint, Block.Owns, Block.base, Block.length] using hc
+    have h0' : c ≠ f := by omega
+    have h1' : c ≠ f + 1 := by omega
+    have h2' : c ≠ f + 2 := by omega
+    have h3' : c ≠ f + 3 := by omega
+    simp only [y, Data.set_mem, Data.write_mem, Function.update_of_ne h3',
+      Function.update_of_ne h2', Function.update_of_ne h1', Function.update_of_ne h0']
+  refine ⟨y, he, ?_, by simp [y], ?_, ?_, ?_, rfl, hmod,
     fun i hi => he.regs_eq (push_preserves i hi)⟩
   all_goals simp +decide [y, f, p, s, childFrame, temporary₂, childPrefix, childStride,
     address, level, mode]

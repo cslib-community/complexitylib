@@ -5,6 +5,11 @@ Authors: Erik Demaine
 -/
 
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Root
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Report
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.EmptyChild
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Finish
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Return
 
 -- Full controller regressions evaluate the actual native interpreter at elaboration time.
 set_option linter.hashCommand false
@@ -15,6 +20,62 @@ open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 
 namespace ComplexityTests.SchonhagePruned
+
+private def leafData : Data registers where
+  regs i := match i.val with
+    | 10 => 1 | 11 => 3 | 12 => 4 | 18 => 8 | 19 => 12 | 20 => 13 | 21 => 14
+    | 24 => 1 | 25 => 1 | 26 => 10 | 27 => 9 | 28 => 4 | _ => 0
+  mem a := if a = 3 then encode (-3) else if a = 4 then encode 2 else
+    if a = 8 then 1 else if a = 10 then 1 else if a = 13 then 41 else 0
+
+private theorem leafData_parameters : KernelRegs 0 8 3 4 leafData := by
+  constructor <;> rfl
+
+-- A concrete negative-product node discharges the general invariant, signed and address
+-- premises. Its returned memory is attached to the same charged native loop execution.
+example : ∃ y, ExecWithin 7 controller leafData y 8194 ∧ y.mem 13 = encode (-6) ∧
+    y.mem 100 = 0 := by
+  let S : Finset (Cslib.Algorithms.MatrixMultiplication.Schonhage.OutStr 0) := {Fin.elim0}
+  obtain ⟨y, hregs, _, _, hactive, _, _, hvalue, hframe, _, hrun⟩ :=
+    exec_node_zero (w := 5) (p := 0) (E := 0) (a := -3) (b := 2)
+      (by decide) (by decide) (by decide) S leafData leafData_parameters
+      rfl rfl rfl (by simp [leafData, S]) rfl rfl rfl rfl
+      (by
+        intro q hq
+        have he : q = 0 := by omega
+        subst q
+        decide) (by decide)
+  have hexit : ExecWithin 7 controller y y 2 :=
+    ExecWithin.loop_exit (by simp only [Cond.holds_lt, hregs.nil_eq, hactive]; decide)
+  refine ⟨y, ?_, ?_, ?_⟩
+  · simpa only [traceWeight_zero, S, Finset.card_singleton] using hrun y 2 hexit
+  · have hv := hvalue Fin.elim0 (Finset.mem_singleton_self _)
+    simpa [Cslib.Algorithms.MatrixMultiplication.Schonhage.Pruned.result,
+      Cslib.Algorithms.MatrixMultiplication.Schonhage.Pruned.run,
+      Finset.piecewise, S] using hv
+  · exact (hframe 100 (by decide)).trans rfl
+
+-- An empty leaf performs its real controller return without overwriting the old value cell.
+example : ∃ y, ExecWithin 7 controller (leafData.write 8 0) y 47 ∧ y.mem 13 = 41 := by
+  let x := leafData.write 8 0
+  obtain ⟨y, hy, hmem, _, _, hactive, hreg⟩ := exec_leafStep (w := 5) (p := 0)
+    (a := -3) (b := 2) (by decide) (by decide) (by decide) x
+    rfl rfl rfl rfl rfl rfl rfl rfl (by decide)
+  have hy0 : y.regs nil = 0 := (hreg nil (by decide)).trans rfl
+  have he : ExecWithin 7 controller x y 47 := ExecWithin.loop_once
+    (by decide) hy (by simp only [Cond.holds_lt, hy0, hactive]; decide)
+  refine ⟨y, he, ?_⟩
+  rw [hmem]
+  rfl
+
+-- Naming the reporting body and controller loop changes no native control-code tree.
+example : report = ram[
+    index ← #0; while index < queryCount do [
+      address ← queries + index; query ← *address;
+      address ← values + query; temporary ← *address;
+      address ← output + index; *address ← temporary; index ← index + one ] ] := rfl
+
+example : controller = ram[ while nil < active do [ ⟪step⟫ ] ] := rfl
 
 -- Query codes use least-significant-first digits and retain the encoder's wildcard digit nine.
 example : queryAt (L := 2) (90 : Fin 100) = ![.z 0 0, .z0] := by decide +kernel

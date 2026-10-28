@@ -276,18 +276,23 @@ def step : Code .standard registers := ram[
   if mode = nil then [ ⟪enter⟫ ] else [
     if mode = one then [ ⟪dispatch⟫ ] else [ ⟪accumulate⟫ ] ] ]
 
+/-- One actual lookup and indexed output store, including the reporting counter. -/
+def reportStep : Code .standard registers := ram[
+  address ← queries + index; query ← *address;
+  address ← values + query; temporary ← *address;
+  address ← output + index; *address ← temporary; index ← index + one ]
+
 /-- Report results in the original input query order, including repeated queries. -/
 def report : Code .standard registers := ram[
-  index ← #0;
-  while index < queryCount do [
-    address ← queries + index; query ← *address;
-    address ← values + query; temporary ← *address;
-    address ← output + index; *address ← temporary; index ← index + one ] ]
+  index ← #0; while index < queryCount do [ ⟪reportStep⟫ ] ]
 
 /-- The common stack evaluator after powers and caller parameters have been initialized. -/
+def controller : Code .standard registers := ram[
+  while nil < active do [ ⟪step⟫ ] ]
+
+/-- Evaluate the computed root, then report the original query list. -/
 def work : Code .standard registers := ram[
-  ⟪locate⟫; ⟪rootList⟫;
-  while nil < active do [ ⟪step⟫ ]; ⟪report⟫ ]
+  ⟪locate⟫; ⟪rootList⟫; ⟪controller⟫; ⟪report⟫ ]
 
 /-- Generic native evaluator with explicit pointer arguments and a fresh timestamp epoch. -/
 def kernel : Code .standard registers := ram[ ⟪powers⟫; ⟪work⟫ ]

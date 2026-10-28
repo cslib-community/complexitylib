@@ -49,6 +49,23 @@ theorem ScanMemory.card_le {mem : ℕ → ℕ} {out stamps epoch capacity : ℕ}
   have hs : S ⊆ Finset.range capacity := fun q hq => Finset.mem_range.mpr (h.bounded q hq)
   simpa using Finset.card_le_card hs
 
+/-- Agreement on the occupied list and timestamp directory preserves the scan invariant.
+Unoccupied list cells have no specified meaning and need not agree. -/
+theorem ScanMemory.congr {mem mem' : ℕ → ℕ} {out stamps epoch capacity : ℕ} {S : Finset ℕ}
+    (h : ScanMemory mem out stamps epoch capacity S)
+    (hlist : ∀ i < S.card, mem' (out + i) = mem (out + i))
+    (hstamp : ∀ q < capacity, mem' (stamps + q) = mem (stamps + q)) :
+    ScanMemory mem' out stamps epoch capacity S := by
+  refine ⟨h.bounded, ?_, ?_, ?_⟩
+  · intro q hq
+    rw [hstamp q hq]
+    exact h.stamp_le q hq
+  · intro q hq
+    rw [hstamp q hq]
+    exact h.marked q hq
+  · obtain ⟨v, hv, hrange, hreal⟩ := h.listed
+    exact ⟨v, hv, hrange, fun i => (hlist i i.isLt).trans (hreal i)⟩
+
 /-- An unseen valid code leaves a free output cell for its insertion. -/
 theorem ScanMemory.card_lt_of_notMem {mem : ℕ → ℕ} {out stamps epoch capacity : ℕ}
     {S : Finset ℕ} (h : ScanMemory mem out stamps epoch capacity S) {q : ℕ}
