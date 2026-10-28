@@ -23,6 +23,9 @@ resolution beyond this property [Scheder, p. 3][Scheder2021]. [Hertli][Hertli201
 [Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005], whose `s`-bounded resolution only
 considers clauses of at most `s` literals.
 
+PPZ and PPSZ are both rounds with values proposed by an oracle (`Cslib.Complexity.PPZ.roundWith`):
+PPZ asks for unit clauses, PPSZ for w-implied values (`implied`).
+
 ## Main definitions
 
 * `Cslib.Complexity.PPSZ.WImplied`: a subformula of at most `w` clauses implies `x = b` under
@@ -66,24 +69,18 @@ noncomputable def implied (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bo
 /-- One step of PPSZ on `x`: the implied value if there is one, and a uniform bit otherwise. -/
 noncomputable def step (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bool) (x : Fin n) :
     PMF Bool :=
-  match implied φ w τ x with
-  | some b => PMF.pure b
-  | none => Cslib.Probability.PMF.uniformOfFintype Bool
+  PPZ.stepWith (implied φ w) τ x
 
 /-- **The first `i` steps of a PPSZ round** in the order `π`: the variable `π j` is processed at
-step `j`. -/
+step `j`. This is the run of PPZ (`Cslib.Complexity.PPZ.runWith`) with w-implication in place
+of unit clauses. -/
 noncomputable def run (φ : CNF (Fin n)) (w : ℕ) (π : Equiv.Perm (Fin n)) :
-    ℕ → PMF (Fin n → Option Bool)
-  | 0 => PMF.pure fun _ => none
-  | i + 1 =>
-    if h : i < n then
-      (run φ w π i).bind fun τ =>
-        (step φ w τ (π ⟨i, h⟩)).map fun b => Function.update τ (π ⟨i, h⟩) (some b)
-    else run φ w π i
+    ℕ → PMF (Fin n → Option Bool) :=
+  PPZ.runWith (implied φ w) π
 
 /-- **One round of PPSZ** with w-implication: process all variables in a uniformly random
 order. -/
 noncomputable def round (φ : CNF (Fin n)) (w : ℕ) : PMF (Fin n → Option Bool) :=
-  (Cslib.Probability.PMF.uniformOfFintype (Equiv.Perm (Fin n))).bind fun π => run φ w π n
+  PPZ.roundWith (implied φ w)
 
 end Cslib.Complexity.PPSZ
