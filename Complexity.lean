@@ -914,6 +914,7 @@ public import Complexity.Computability.Complexity.Reduction.ManyOne
 public import Complexity.Computability.Complexity.Reduction.OneOne
 public import Complexity.Computability.Complexity.Reduction.TruthTable
 public import Complexity.Computability.Complexity.Reduction.TruthTableVariants
+public import Complexity.Computability.Complexity.Reduction.Turing
 public import Complexity.Computability.DecisionTree.AffineScore
 public import Complexity.Computability.DecisionTree.Basic
 public import Complexity.Computability.DecisionTree.CanonicalTree
