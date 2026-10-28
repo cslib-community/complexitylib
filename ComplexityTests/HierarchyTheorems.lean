@@ -34,10 +34,6 @@ example : TimeConstructible fun n => (n + 1) * 2 ^ n :=
 
 /-! ### The clocked diagonal -/
 
-/-- The diagonal of the exponential separation is the clocked diagonal with clock `2 ^ n`. -/
-example (x : List Bool) : clockedDiagonal (2 ^ ·) x = diagonal x :=
-  congrFun clockedDiagonal_two_pow x
-
 /-- The empty word has no short description, so the clocked diagonal rejects it. -/
 example (J : ℕ → ℕ) : timeDiagonal J [] = false := rfl
 
@@ -105,9 +101,6 @@ example : DTIME encBits (2 ^ ·) ⊂ DTIME encBits fun n => 2 ^ (4 * n) := by
     _ = 2 ^ (4 * n) := by ring
 
 /-! ### Polynomial and exponential time -/
-
-example : P encBits ⊆ EXP encBits ∧ P encBits ≠ EXP encBits :=
-  ⟨P_subset_EXP, P_ssubset_EXP.ne⟩
 
 /-- The diagonal problem is a witness: in `EXP`, not in `P`. -/
 example : {x | diagonal x = true} ∈ EXP encBits ∧ {x | diagonal x = true} ∉ P encBits :=

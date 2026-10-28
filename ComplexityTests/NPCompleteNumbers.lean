@@ -40,28 +40,21 @@ theorem mem_Knapsack_iff_sublists {x : List (ℕ × ℕ) × ℕ × ℕ} :
 
 /-! ### Headline results -/
 
-private theorem head_mem_NP : {w : List Bool | w.headD false = true} ∈ NP encBits :=
-  P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
-
 example : SubsetSum ∈ NP (encPair (encList encNat) encNat) ∧
-    PolyTimeReducible encBits (encPair (encList encNat) encNat)
-      {w : List Bool | w.headD false = true} SubsetSum :=
-  ⟨SubsetSum_npComplete.1, SubsetSum_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF (encPair (encList encNat) encNat) SAT SubsetSum :=
+  ⟨SubsetSum_npComplete.1, SubsetSum_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : Partition ∈ NP (encList encNat) ∧
-    PolyTimeReducible encBits (encList encNat)
-      {w : List Bool | w.headD false = true} Partition :=
-  ⟨Partition_npComplete.1, Partition_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF (encList encNat) SAT Partition :=
+  ⟨Partition_npComplete.1, Partition_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : Knapsack ∈ NP encKnapsack ∧
-    PolyTimeReducible encBits encKnapsack
-      {w : List Bool | w.headD false = true} Knapsack :=
-  ⟨Knapsack_npComplete.1, Knapsack_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF encKnapsack SAT Knapsack :=
+  ⟨Knapsack_npComplete.1, Knapsack_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : ZeroOneIP ∈ NP (encList (encPair (encList encNat) encNat)) ∧
-    PolyTimeReducible encBits (encList (encPair (encList encNat) encNat))
-      {w : List Bool | w.headD false = true} ZeroOneIP :=
-  ⟨ZeroOneIP_npComplete.1, ZeroOneIP_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF (encList (encPair (encList encNat) encNat)) SAT ZeroOneIP :=
+  ⟨ZeroOneIP_npComplete.1, ZeroOneIP_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : PolyTimeReducible encCNF (encList encNat) ThreeSAT Partition :=
   polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Partition
@@ -89,9 +82,8 @@ example : ComputableInPolyTime (fun l : List ℕ => decide (l.sum < 2 ^ l.length
 
 /-! ### Binary comparison -/
 
-example : ∃ i < (6 : ℕ).size, (5 : ℕ).testBit i = false ∧ (6 : ℕ).testBit i = true ∧
-    ∀ j < (5 : ℕ).size + (6 : ℕ).size, i < j → (5 : ℕ).testBit j = (6 : ℕ).testBit j :=
-  (Nat.lt_iff_exists_testBit 5 6).mp (by decide)
+example : (5 : ℕ) < 6 :=
+  (Nat.lt_iff_exists_testBit 5 6).mpr ⟨1, by decide, by decide, by decide, by decide⟩
 
 /-! ### `SubsetSum` -/
 

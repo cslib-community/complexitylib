@@ -21,24 +21,19 @@ open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Headline complexity class results -/
 
-private theorem head_mem_NP : {w : List Bool | w.headD false = true} ∈ NP encBits :=
-  P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
-
 -- Each NP-completeness theorem witnesses both membership in `NP` and a polynomial-time
--- reduction from the concrete non-trivial language `head_mem_NP`.
+-- reduction from `SAT`.
 example : ThreeSAT ∈ NP encCNF ∧
-    PolyTimeReducible encBits encCNF {w : List Bool | w.headD false = true} ThreeSAT :=
-  ⟨ThreeSAT_npComplete.1, ThreeSAT_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF encCNF SAT ThreeSAT :=
+  ⟨ThreeSAT_npComplete.1, ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : IndependentSet ∈ NP (encPair encGraph encNat) ∧
-    PolyTimeReducible encBits (encPair encGraph encNat)
-      {w : List Bool | w.headD false = true} IndependentSet :=
-  ⟨IndependentSet_npComplete.1, IndependentSet_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF (encPair encGraph encNat) SAT IndependentSet :=
+  ⟨IndependentSet_npComplete.1, IndependentSet_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : Clique ∈ NP (encPair encGraph encNat) ∧
-    PolyTimeReducible encBits (encPair encGraph encNat)
-      {w : List Bool | w.headD false = true} Clique :=
-  ⟨Clique_npComplete.1, Clique_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF (encPair encGraph encNat) SAT Clique :=
+  ⟨Clique_npComplete.1, Clique_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : PolyTimeReducible encCNF (encPair encGraph encNat) SAT Clique :=
   polyTimeReducible_SAT_IndependentSet.trans polyTimeReducible_IndependentSet_Clique

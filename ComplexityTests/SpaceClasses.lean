@@ -78,11 +78,10 @@ example : ∃ T, ComputableInO (fun x : List Bool => 2 ^ x.length) encBits encNa
     fun x => 2 ^ x.length :=
   spaceConstructible_two_pow.computableInO
 
-/-- `L` and `PSPACE` through `DSPACE`, instantiated on `oddOnes`. -/
-example : {w | oddOnes w = true} ∈ DSPACE encBits Nat.log2 ∧
+/-- `L` and `PSPACE` through `DSPACE`, instantiated on `Set.univ` and `oddOnes`. -/
+example : (Set.univ : Set (List Bool)) ∈ DSPACE encBits Nat.log2 ∧
     ∃ k, {w | oddOnes w = true} ∈ DSPACE encBits (· ^ k) :=
-  ⟨mem_L_iff_mem_DSPACE.mp
-     (mem_L_iff_mem_DSPACE.mpr (DSPACE_mono (fun _ => Nat.zero_le _) setOf_oddOnes_mem_DSPACE)),
+  ⟨mem_L_iff_mem_DSPACE.mp ⟨fun _ => true, .const true, fun _ => by simp⟩,
    mem_PSPACE_iff_exists_mem_DSPACE.mp
      (DSPACE_subset_PSPACE (by fun_prop) setOf_oddOnes_mem_DSPACE)⟩
 

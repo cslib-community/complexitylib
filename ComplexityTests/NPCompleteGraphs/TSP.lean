@@ -16,16 +16,13 @@ Concrete, boundary, and `fun_prop` checks for `TSP`, its verifier, and the reduc
 
 namespace ComplexityTests.NPCompleteGraphs.TSP
 
-open Cslib.Complexity Turing.MultiTapeTM
+open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Headline results -/
 
-private theorem head_mem_NP : {w : List Bool | w.headD false = true} ∈ NP encBits :=
-  P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
-
 example : TSP ∈ NP encTSP ∧
-    PolyTimeReducible encBits encTSP {w : List Bool | w.headD false = true} TSP :=
-  ⟨TSP_npComplete.1, TSP_npComplete.2 encBits _ head_mem_NP⟩
+    PolyTimeReducible encCNF encTSP SAT TSP :=
+  ⟨TSP_npComplete.1, TSP_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : PolyTimeReducible encGraph encTSP DirHamCycle TSP :=
   polyTimeReducible_DirHamCycle_HamCycle.trans polyTimeReducible_HamCycle_TSP

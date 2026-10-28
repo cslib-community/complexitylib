@@ -21,10 +21,8 @@ open Cslib.Complexity Turing.MultiTapeTM
 
 /-! ### Headline complexity class results -/
 
-example : DirHamPath ∩ DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat)) ∧
-    HamPath ∩ HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
-  ⟨inter_mem_NP DirHamPath.mem_NP DirHamPath.mem_NP,
-   inter_mem_NP HamPath.mem_NP HamPath.mem_NP⟩
+example : DirHamPath ∩ HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
+  inter_mem_NP DirHamPath.mem_NP HamPath.mem_NP
 
 example : DirHamCycle ∪ HamCycle ∈ NP encGraph :=
   union_mem_NP DirHamCycle.mem_NP HamCycle.mem_NP
