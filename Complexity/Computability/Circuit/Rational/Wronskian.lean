@@ -322,13 +322,6 @@ lemma wronskian_linearCombination {K : Type*} [CommRing K] {h : ℕ}
   congr 1
   exact (C.map_det A).symm
 
-lemma basis_toMatrix_det_ne_zero {K M : Type*} [Field K] [AddCommGroup M]
-    [Module K M] {h : ℕ} (b b' : Basis (Fin h) K M) :
-    (b.toMatrix b').det ≠ 0 := by
-  have hh := congrArg Matrix.det (b.toMatrix_mul_toMatrix_flip b')
-  rw [Matrix.det_mul, Matrix.det_one] at hh
-  exact left_ne_zero_of_mul_eq_one hh
-
 lemma wronskian_basis_change {K : Type*} [Field K] {h : ℕ}
     {V : Submodule K K[X]} (b b' : Basis (Fin h) K V) :
     wronskianFamily (fun j => (b' j : K[X])) =
@@ -442,9 +435,11 @@ lemma wronskian_basis_rootMultiplicity {K : Type*} [Field K] [CharZero K]
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) :
     (wronskianFamily (fun j => (b' j : K[X]))).rootMultiplicity a =
       (wronskianFamily (fun j => (b j : K[X]))).rootMultiplicity a := by
+  let := b.invertibleToMatrix b'
   rw [wronskian_basis_change b b', rootMultiplicity_mul
     (mul_ne_zero (wronskian_basis_ne_zero d b hV)
-      (C_ne_zero.mpr (basis_toMatrix_det_ne_zero b b'))), rootMultiplicity_C, add_zero]
+      (C_ne_zero.mpr (Matrix.isUnit_det_of_invertible (b.toMatrix b')).ne_zero)),
+    rootMultiplicity_C, add_zero]
 
 /-- The Wronskian order bound for distinct points of a characteristic-zero
 field and order-echelon bases. The triangular sum is exactly binom(h,2). -/

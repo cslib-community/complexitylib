@@ -102,4 +102,19 @@ example : PolyTimePTTReducible encBits encBits
     by_cases h₀ : false :: false :: w ∈ B <;> by_cases h₁ : true :: false :: w ∈ B <;>
       by_cases h₂ : false :: true :: w ∈ B <;> simp [List.ofFn_succ, h₀, h₁, h₂]
 
+/-- Composing the exclusive-or reduction with itself: four queries `b₁ :: b₂ :: w`. -/
+example : PolyTimeKTruthTableReducible 4 encBits encBits
+    {w | (false :: w ∈ {v | (false :: v ∈ B) ≠ (true :: v ∈ B)}) ≠
+      (true :: w ∈ {v | (false :: v ∈ B) ≠ (true :: v ∈ B)})} B := by
+  have h : ∀ B' : Set (List Bool), PolyTimeKTruthTableReducible 2 encBits encBits
+      {w | (false :: w ∈ B') ≠ (true :: w ∈ B')} B' := fun B' => by
+    classical
+    refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1,
+      fun x => x.2.headD false ^^ (x.2.drop 1).headD false, by fun_prop, by fun_prop, by fun_prop,
+      fun _ => le_rfl, fun w => ?_⟩
+    simp only [truthTableAnswers, Set.mem_preimage]
+    by_cases h₀ : false :: w ∈ B' <;> by_cases h₁ : true :: w ∈ B' <;>
+      simp [List.ofFn_succ, h₀, h₁]
+  exact (h _).trans (h B)
+
 end Cslib.Complexity.Tests.ReductionVariants

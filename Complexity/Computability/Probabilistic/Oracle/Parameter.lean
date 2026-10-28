@@ -91,14 +91,16 @@ theorem IsOraclePPT.query_bounds (h : IsOraclePPT output program) :
 
 /-- Supply a closed stateful handler to a parameterized oracle program. The result retains the
 final private state, and a local invariant charges reply length and all added encoded storage. -/
-theorem IsOraclePPT.run_interpret_preprocess {Caller State : Type} [Finite Operation]
-    {input : Caller ↪ List Bool} {stateEncoding : State ↪ List Bool}
+theorem IsOraclePPT.run_interpret_preprocess {Caller State : Type}
+    {input : Caller ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool}
+    {stateEncoding : State ↪ List Bool}
     {handler : Caller → Operation × List Bool → State → ProbComp (List Bool × State)}
     {prepare : Caller → ℕ × List Bool} {initial : Caller → State}
     {resources : Caller → List Bool → ℕ} (hprogram : IsOraclePPT output program)
     (hprepare : ComputableTidilyInPolyTime prepare input (encPair encUnary encBits))
     (hhandler : IsPPTOn
-      (encPair input (encPair (encPair (encFinite Operation) encBits) stateEncoding))
+      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
@@ -120,7 +122,8 @@ result retains the handler's final state and every external oracle's state, and 
 invariant charges reply length and all added encoded storage. -/
 theorem IsOraclePPT.run_interpret_preprocess_open {External Caller State : Type}
     [DecidableEq External] [Finite External] {input : Caller ↪ List Bool}
-    {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool}
+    {stateEncoding : State ↪ List Bool}
     {handler : Caller → Operation × List Bool → State →
       WordOracleComp External (List Bool × State)}
     {prepare : Caller → ℕ × List Bool} {initial : Caller → State}

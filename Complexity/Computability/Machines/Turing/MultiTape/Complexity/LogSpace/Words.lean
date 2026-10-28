@@ -36,7 +36,7 @@ framing the first value; the work space is the sum of the two
 
 ## References
 
-* [M. Sipser, *Introduction to the Theory of Computation*, Section 8.4][Sipser2013]
+* [M. Sipser, *Introduction to the Theory of Computation*, Section 8.5][Sipser2013]
 -/
 
 public section

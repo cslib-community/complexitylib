@@ -175,7 +175,8 @@
       "foundations": [
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation",
-        "ComplexityAbstracts.Randomized"
+        "ComplexityAbstracts.Randomized",
+        "ComplexityAbstracts.GSW"
       ]
     },
     {

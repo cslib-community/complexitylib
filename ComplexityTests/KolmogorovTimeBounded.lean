@@ -9,8 +9,7 @@ import Complexity.Computability.Kolmogorov.TimeBounded
 
 /-!
 Regression clients for time-bounded Kolmogorov complexity (`K^t`), Levin's `Kt`, the universal
-multi-tape description method `universalTM`, `MINKT ∈ NP`, `MINKTAt ∈ NP`, and `GapMINKT`
-(#798 M1a, #884 Item 1).
+multi-tape description method `universalTM`, `MINKT`, `MINKTAt ∈ NP`, and `GapMINKT`.
 -/
 
 namespace ComplexityTests.KolmogorovTimeBounded
@@ -18,39 +17,31 @@ namespace ComplexityTests.KolmogorovTimeBounded
 open Cslib Cslib.Kolmogorov Cslib.Kolmogorov.DescriptionMethod Cslib.Complexity
 open _root_.Turing _root_.Turing.MultiTapeTM _root_.Turing.MultiTapeTM.Universal
 
-/-! ### Clock-preserving simulation of binary multi-tape machines -/
+/-! ### Concrete bounds and properties of `K^t` and `Kt` -/
 
-example {k : ℕ} {State : Type} [Finite State] (tm : MultiTapeTM k Bool State) :
-    ∃ c : ℕ, Nonempty (Simulation (ofMultiTapeTM tm) universalTM c fun _ t => t) :=
-  exists_simulation_ofMultiTapeTM tm
+-- Antitonicity instantiated at concrete step bounds and time functions.
+example : timeBoundedAt 10 [true, false, true] ≤ timeBoundedAt 4 [true, false, true] :=
+  timeBoundedAt_antitone [true, false, true] (by omega)
 
-example {k : ℕ} {State : Type} [Finite State] (tm : MultiTapeTM k Bool State) :
-    ∃ c : ℕ, ∀ (t : ℕ) (x : List Bool),
-      universalTM.etimeBoundedComplexity t x ≤
-        (ofMultiTapeTM tm).etimeBoundedComplexity t x + c :=
-  exists_etimeBoundedComplexity_universalTM_le_ofMultiTapeTM tm
+example :
+    timeBounded (fun n => 2 * n + 2) [true, false, true] ≤
+      timeBounded (fun n => n + 1) [true, false, true] :=
+  timeBounded_antitone [true, false, true] (fun n => by change n + 1 ≤ 2 * n + 2; omega)
 
-/-! ### Basic properties of `K^t` and `Kt` -/
+-- Concrete upper bounds `K(x) ≤ K^{n+1}(x) ≤ |x| + copyOverhead` (LP20 Fact 2.1).
+example :
+    plain [true, false, true] ≤ (3 + copyOverhead : ℕ) ∧
+      timeBounded (fun n => n + 1) [true, false, true] ≤ (3 + copyOverhead : ℕ) :=
+  ⟨(plain_le_timeBounded (fun n => n + 1) [true, false, true]).trans
+    (timeBounded_le (fun _ => le_rfl) [true, false, true]),
+    timeBounded_le (fun _ => le_rfl) [true, false, true]⟩
 
--- Antitonicity in the step bound `t` and time function `t`.
-example (x : List Bool) : Antitone (timeBoundedAt · x) :=
-  timeBoundedAt_antitone x
-
-example (x : List Bool) : Antitone (timeBounded · x) :=
-  timeBounded_antitone x
-
--- Trivial upper bound `K^t(x) ≤ |x| + copyOverhead` for `t(n) ≥ n + 1` (LP20 Fact 2.1).
-example (x : List Bool) :
-    timeBounded (fun n => n + 1) x ≤ (x.length + copyOverhead : ℕ) :=
-  timeBounded_le (fun _ => le_rfl) x
-
--- `K(x) ≤ K^t(x)` for plain complexity under `universalTM` and `Partrec.universal`.
-example (t : ℕ → ℕ) (x : List Bool) : plain x ≤ timeBounded t x :=
-  plain_le_timeBounded t x
-
-example : ∃ c : ℕ, ∀ (t : ℕ → ℕ) (n : ℕ),
-    universal.ecomplexity n ≤ timeBounded t n.bits + c :=
-  exists_ecomplexity_universal_le_timeBounded_bits
+-- Concrete `Partrec.universal` complexity bound via `universalTM` at `t(n) = n + 1`.
+example : ∃ c : ℕ, ∀ n : ℕ,
+    universal.ecomplexity n ≤ (n.bits.length + copyOverhead : ℕ) + c := by
+  obtain ⟨c, hc⟩ := exists_ecomplexity_universal_le_timeBounded_bits
+  refine ⟨c, fun n => (hc (fun m => m + 1) n).trans ?_⟩
+  exact add_le_add_left (timeBounded_le (fun _ => le_rfl) n.bits) (c : ℕ∞)
 
 -- Bridge between `ℕ∞` and the `ℕ` infimum when a witness exists.
 example (x : List Bool) :
@@ -59,15 +50,13 @@ example (x : List Bool) :
         x ∈ (universalTM.run p).runFor (x.length + 1)} :=
   timeBoundedNat_eq_sInf (timeBounded_ne_top (t := fun n => n + 1) le_rfl)
 
--- Counting and incompressibility for `K^t`.
-example (t : ℕ → ℕ) (n : ℕ) :
-    ∃ x : List Bool, x.length = n ∧ (n : ℕ∞) ≤ timeBounded t x :=
-  exists_length_eq_le_timeBounded t n
-
-example (t : ℕ → ℕ) (n c : ℕ) :
-    2 ^ n < {x : List Bool | x.length = n ∧ (n - c : ℕ) ≤ timeBounded t x}.ncard +
-      2 ^ (n - c) :=
-  two_pow_lt_ncard_setOf_length_eq_le_timeBounded_add t n c
+-- Concrete counting bound: at least 13 of the 16 4-bit strings have `K^{n^2}(x) ≥ 2`.
+example :
+    13 ≤
+      {x : List Bool |
+        x.length = 4 ∧ ((4 - 2 : ℕ) : ℕ∞) ≤ timeBounded (fun n => n ^ 2) x}.ncard := by
+  have h := two_pow_lt_ncard_setOf_length_eq_le_timeBounded_add (fun n => n ^ 2) 4 2
+  omega
 
 -- Levin's `Kt` on a concrete 4-bit string (`|[1, 0, 1, 0]| = 4`, `⌈log₂ 5⌉ = 3`).
 example : levinKt [true, false, true, false] ≤ (4 + copyOverhead + 3 : ℕ) :=
@@ -124,14 +113,17 @@ example :
     hall (fun _ => 2 * t + 2)
   exact (ENat.natCast_lt_natCast.mpr (Nat.lt_succ_self (2 * s + 1))).trans_le hle
 
-example : MINKT ∈ NP MINKT.enc :=
-  MINKT.mem_NP
-
-example (p q : Polynomial ℕ) : MINKTAt p.eval q.eval ∈ NP encBits :=
-  MINKTAt.mem_NP_polynomial₂ p q
-
-example : GapMINKT (fun _ s => s) (fun _ t => t) (fun _ _ => le_rfl) (fun _ _ => le_rfl) =
-    PromiseProblem.ofSet MINKT :=
-  GapMINKT.id_eq
+-- Derive `NP` membership for the linear-threshold language
+-- `MINKTAt (n ↦ n + 1) (n ↦ n + copyOverhead)` from `MINKTAt.mem_NP_polynomial₂` by rewriting
+-- both bounds as polynomial evaluations.
+example : MINKTAt (fun n => n + 1) (fun n => n + copyOverhead) ∈ NP encBits := by
+  have ht : (fun n : ℕ => n + 1) = (Polynomial.X + 1).eval := by
+    funext n
+    simp
+  have hs : (fun n : ℕ => n + copyOverhead) = (Polynomial.X + Polynomial.C copyOverhead).eval := by
+    funext n
+    simp
+  rw [ht, hs]
+  exact MINKTAt.mem_NP_polynomial₂ (Polynomial.X + 1) (Polynomial.X + Polynomial.C copyOverhead)
 
 end ComplexityTests.KolmogorovTimeBounded

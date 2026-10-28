@@ -8,6 +8,7 @@ Authors: Samuel Schlesinger
 
 import ComplexityAbstracts.CryptographyBridge
 import ComplexityAbstracts.Randomized
+import ComplexityAbstracts.GSW
 import Complexity.Crypto.Computational.Homomorphic.GSW.FullyHomomorphic
 
 /-! # Bridge for fully homomorphic encryption from GSW
@@ -29,6 +30,7 @@ namespace ComplexityTests.Abstracts.GSWFHEBridge
 
 open Cslib Cslib.ProbComp Cslib.Probability Turing.MultiTapeTM
 open Cslib.Crypto Cslib.Crypto.Homomorphic
+open ComplexityTests.Abstracts.GSW
 
 def logSize (security : ℕ) : ℕ := 1 + Nat.clog 2 (security + 2)
 
@@ -43,49 +45,6 @@ def samples (security : ℕ) : ℕ := rows security + 2 * security
 def secretWidth (security : ℕ) : ℕ := dimension security * width security
 
 def ciphertextWidth (security : ℕ) : ℕ := rows security * rows security
-
-def lowBits (w value : ℕ) : List Bool := (List.range w).map value.testBit
-
-def rowHead (n w : ℕ) (inputs : List ℕ × (List (List ℕ) × List ℤ)) (i : ℕ) : ℕ :=
-  (((((List.range n).map fun j =>
-    (inputs.2.1.getD i []).getD j 0 * inputs.1.getD j 0).sum : ℕ) +
-      inputs.2.2.getD i 0 : ℤ) % (2 ^ w : ℤ)).toNat
-
-def publicWord (n m w : ℕ) (inputs : List ℕ × (List (List ℕ) × List ℤ)) : List Bool :=
-  (List.range m).flatMap fun i =>
-    lowBits w (rowHead n w inputs i) ++
-      (List.range n).flatMap fun j => lowBits w ((inputs.2.1.getD i []).getD j 0 % 2 ^ w)
-
-def secretWord (n w : ℕ) (secret : List ℕ) : List Bool :=
-  (List.range n).flatMap fun j => lowBits w (secret.getD j 0 % 2 ^ w)
-
-def matrixEntry (cols w : ℕ) (word : List Bool) (i j : ℕ) : ℕ :=
-  ((word.drop ((i * cols + j) * w) ++ List.replicate w false).take w).foldr Nat.bit 0
-
-def ciphertextEntry (n m w : ℕ) (publicKey : List Bool) (message : Bool)
-    (coins : List (List (List Bool))) (i k j : ℕ) : ℕ :=
-  ((if i = j then message.toNat * 2 ^ k else 0) +
-    ((List.range m).map fun r =>
-      if ((coins.getD i []).getD k []).getD r false then
-        matrixEntry (n + 1) w publicKey r j else 0).sum) % 2 ^ w
-
-def ciphertextWord (n m w : ℕ) (publicKey : List Bool) (message : Bool)
-    (coins : List (List (List Bool))) : List Bool :=
-  (List.range (n + 1)).flatMap fun i =>
-    (List.range w).flatMap fun k =>
-      (List.range (n + 1)).flatMap fun j =>
-        lowBits w (ciphertextEntry n m w publicKey message coins i k j)
-
-noncomputable def independentList {α : Type} (count : ℕ) (law : PMF α) : PMF (List α) :=
-  (List.replicate count ()).mapM (fun _ => law)
-
-noncomputable def residueLaw (w : ℕ) : PMF ℕ :=
-  (Cslib.Probability.PMF.uniformOfFintype (Fin (2 ^ w))).map Fin.val
-
-noncomputable def errorLaw (noiseWidth : ℕ) : PMF ℤ := do
-  let positive ← Randomized.uniformBits noiseWidth
-  let negative ← Randomized.uniformBits noiseWidth
-  return (positive.count true : ℤ) - negative.count true
 
 noncomputable def keyGeneration (security : ℕ) : PMF (List Bool × List Bool) := do
   let secret ← independentList (dimension security) (residueLaw (width security))

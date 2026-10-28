@@ -622,17 +622,6 @@ theorem sum_modelCountOn_countingLeaves (θ : ℕ → ℕ) (ψ : ClauseSet V) (d
 
 /-! ### Bridges to `CNF` formulas and `CNF.modelCountOn` -/
 
-/-- Round-tripping `φ : CNF V` through `toClauseSet` and `toCNF` preserves `modelCountOn` on any
-declared variable set. -/
-@[simp]
-theorem modelCountOn_toCNF_toClauseSet (φ : CNF V) (declared : Finset V) :
-    φ.toClauseSet.toCNF.modelCountOn declared = φ.modelCountOn declared := by
-  unfold CNF.modelCountOn
-  congr 1
-  ext σ
-  simp only [mem_filter, mem_univ, true_and, ClauseSet.eval_toCNF_eq_true_iff,
-    CNF.sat_toClauseSet_iff]
-
 /-- Clause-set reduction `reduce` preserves `modelCountOn` on any declared variable set. -/
 @[simp]
 theorem modelCountOn_toCNF_reduce (ψ : ClauseSet V) (declared : Finset V) :

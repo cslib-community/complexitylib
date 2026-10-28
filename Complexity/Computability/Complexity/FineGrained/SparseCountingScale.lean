@@ -69,51 +69,6 @@ namespace Cslib.Complexity.SubexponentialSAT
 open Filter Asymptotics
 open scoped Topology
 
-/-! ### Positivity of the shifted interpolation scale -/
-
-private theorem exp_one_lt_add_sixteen (n : ℕ) : Real.exp 1 < (n : ℝ) + 16 := by
-  have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
-  linarith [Real.exp_one_lt_d9]
-
-private theorem one_lt_log_add_sixteen (n : ℕ) : 1 < Real.log ((n : ℝ) + 16) := by
-  rw [← Real.log_exp 1]
-  exact Real.log_lt_log (Real.exp_pos 1) (exp_one_lt_add_sixteen n)
-
-private theorem log_add_sixteen_pos (n : ℕ) : 0 < Real.log ((n : ℝ) + 16) :=
-  zero_lt_one.trans (one_lt_log_add_sixteen n)
-
-private theorem log_log_add_sixteen_pos (n : ℕ) : 0 < Real.log (Real.log ((n : ℝ) + 16)) :=
-  Real.log_pos (one_lt_log_add_sixteen n)
-
-private theorem one_lt_log_log_add_sixteen {n : ℕ} (hn : 16 ≤ n) :
-    1 < Real.log (Real.log ((n : ℝ) + 16)) := by
-  have hn' : (32 : ℝ) ≤ (n : ℝ) + 16 := by linarith [show (16 : ℝ) ≤ n from Nat.cast_le.mpr hn]
-  have hexp3 : Real.exp 3 < 32 := by
-    have h3 : Real.exp 3 = Real.exp 1 ^ 3 := by
-      simpa only [Nat.cast_ofNat, mul_one] using Real.exp_nat_mul 1 3
-    have hpow : Real.exp 1 ^ 3 < (3 : ℝ) ^ 3 :=
-      pow_lt_pow_left₀ (by linarith [Real.exp_one_lt_d9]) (Real.exp_pos 1).le (by decide)
-    linarith
-  have hlog : Real.exp 1 < Real.log ((n : ℝ) + 16) := by
-    rw [← Real.log_exp (Real.exp 1)]
-    refine Real.log_lt_log (Real.exp_pos _) ?_
-    exact (Real.exp_lt_exp.mpr (by linarith [Real.exp_one_lt_d9])).trans_le (hexp3.le.trans hn')
-  rw [← Real.log_exp 1]
-  exact Real.log_lt_log (Real.exp_pos 1) hlog
-
-/-- At `n = 0`, the interpolation scale vanishes. -/
-@[simp]
-theorem interpolationScale_zero : interpolationScale 0 = 0 := by
-  simp only [interpolationScale, CharP.cast_eq_zero, zero_mul, zero_div]
-
-/-- The interpolation scale is strictly positive for `1 ≤ n`. -/
-theorem interpolationScale_pos {n : ℕ} (hn : 1 ≤ n) : 0 < interpolationScale n := by
-  unfold interpolationScale
-  have hn' : (0 : ℝ) < n := Nat.cast_pos.mpr hn
-  have hll : 0 < Real.log (Real.log ((n : ℝ) + 16)) := log_log_add_sixteen_pos n
-  have hl : 0 < Real.sqrt (Real.log ((n : ℝ) + 16)) := Real.sqrt_pos.mpr (log_add_sixteen_pos n)
-  positivity
-
 namespace SparseCountingScale
 
 open ReplacementParams
@@ -532,9 +487,8 @@ theorem isLittleO_log_pow_interpolationScale (d : ℕ) :
     linarith [show (16 : ℝ) ≤ n from Nat.cast_le.mpr hn, show u n = (n : ℝ) + 16 from rfl]
   have h3 : (fun n : ℕ => (n : ℝ)) =O[atTop]
       (fun n : ℕ => (n : ℝ) * Real.log (Real.log (u n)) ^ 2) := by
-    refine IsBigO.of_bound 1 ?_
-    filter_upwards [eventually_ge_atTop 16] with n hn
-    have hsq : 1 ≤ Real.log (Real.log (u n)) ^ 2 := by nlinarith [one_lt_log_log_add_sixteen hn]
+    refine IsBigO.of_bound 1 (Eventually.of_forall fun n => ?_)
+    have hsq : 1 ≤ Real.log (Real.log (u n)) ^ 2 := by nlinarith [one_lt_log_log_add_sixteen n]
     rw [one_mul, Real.norm_of_nonneg (Nat.cast_nonneg n), Real.norm_of_nonneg (by positivity)]
     exact le_mul_of_one_le_right (Nat.cast_nonneg n) hsq
   have h4 := (h1.trans_isBigO (h2.trans h3)).mul_isBigO

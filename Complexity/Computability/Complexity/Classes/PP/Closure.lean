@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.NP
 public import Complexity.Computability.Complexity.Classes.PP
+public import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
@@ -24,6 +25,7 @@ accepts exactly when the verifier accepts at most half of its random strings. He
 
 ## Main results
 
+* `Cslib.Complexity.P_subset_PP`: `P ⊆ PP`.
 * `Cslib.Complexity.NP_subset_PP`, `Cslib.Complexity.coNP_subset_PP`.
 * `Cslib.Complexity.compl_mem_PP`, `Cslib.Complexity.PP_eq_preimage_compl_PP`: closure under
   complement.
@@ -71,6 +73,10 @@ theorem NP_subset_PP : NP enc ⊆ PP enc := by
   have heval : (p + 1).eval (enc a).length = p.eval (enc a).length + 1 := by simp
   rw [heval, hcount, hA a, ← acceptCount_pos_iff, pow_succ]
   omega
+
+/-- **`P ⊆ PP`**: `P ⊆ NP` and `NP ⊆ PP`. -/
+theorem P_subset_PP : P enc ⊆ PP enc :=
+  P_subset_NP.trans NP_subset_PP
 
 /-- **`PP` is closed under complement** [Gill][Gill1977]. On random strings `b₁ :: b₂ :: w`,
 accept when `b₁ = b₂ = false` and on `b₁ = false, b₂ = true` only for `w` all zeros, and reject

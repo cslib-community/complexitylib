@@ -148,22 +148,23 @@ open MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
 
 /-- A finite-alphabet Mathlib certificate gives tidy CSLib polynomial-time computation under
 the standard binary encodings of its input and output words. -/
-theorem computableTidilyInPolyTime {α β αΓ βΓ : Type} [Finite αΓ] [Finite βΓ]
+theorem computableTidilyInPolyTime {α β αΓ βΓ : Type} [Finite αΓ]
+    {encA : αΓ ↪ List Bool} {encB : βΓ ↪ List Bool}
     {ea : α → List αΓ} {eb : β → List βΓ} {f : α → β}
     (h : TM2ComputableInPolyTime ea eb f) [∀ k, Finite (h.tm.Γ k)]
     (ha : Function.Injective ea) (hb : Function.Injective eb) :
     ComputableTidilyInPolyTime f
-      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList (encFinite αΓ)))
-      ((⟨eb, hb⟩ : β ↪ List βΓ).trans (encList (encFinite βΓ))) := by
+      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
+      ((⟨eb, hb⟩ : β ↪ List βΓ).trans (encList encB)) := by
   have hinput : ComputableTidilyInPolyTime ea
-      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList (encFinite αΓ)))
-      (encList (encFinite αΓ)) := of_eq fun _ => rfl
+      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
+      (encList encA) := of_eq fun _ => rfl
   have hmap := (map (of_finite h.inputAlphabet.symm
     (encB := encFinite (h.tm.Γ h.tm.k₀)))).comp hinput
   have hrun := (TM2.run_polyTime h.tm h.time).comp hmap
   have hstacks := TM2.cfg_stacks.comp hrun
   have hout := (dpi_apply (fun k => encList (encFinite (h.tm.Γ k))) h.tm.k₁).comp hstacks
-  have hword := (map (of_finite h.outputAlphabet (encB := encFinite βΓ))).comp hout
+  have hword := (map (of_finite h.outputAlphabet (encB := encB))).comp hout
   apply hword.of_enc_eq
   intro a
   have heval := TM2.iterate_stepTotal_of_evals h.tm _ _ _ (h.outputsFun a)
@@ -175,6 +176,6 @@ theorem computableTidilyInPolyTime {α β αΓ βΓ : Type} [Finite αΓ] [Finit
     simpa [haltList] using houtput
   dsimp only [Function.comp_def, Function.Embedding.trans_apply]
   simp only [List.length_map]
-  exact congrArg (encList (encFinite βΓ)) hresult.symm
+  exact congrArg (encList encB) hresult.symm
 
 end Turing.TM2ComputableInPolyTime

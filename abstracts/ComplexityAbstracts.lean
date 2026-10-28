@@ -19,6 +19,7 @@ import ComplexityAbstracts.FaginAbstract
 import ComplexityAbstracts.FaginBridge
 import ComplexityAbstracts.FormulaBoundsAbstract
 import ComplexityAbstracts.FormulaBoundsBridge
+import ComplexityAbstracts.GSW
 import ComplexityAbstracts.GSWFHEAbstract
 import ComplexityAbstracts.GSWFHEBridge
 import ComplexityAbstracts.GSWSecurityAbstract

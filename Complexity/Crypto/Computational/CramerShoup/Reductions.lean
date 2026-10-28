@@ -527,7 +527,7 @@ private theorem isPPTOn_run_cramerShoupPhase1Oracle
     (hd : ComputableTidilyInPolyTime d encIn F.encDesc)
     (hsk : ComputableTidilyInPolyTime sk encIn encCramerShoupSK)
     (hpk : ComputableTidilyInPolyTime pk encIn encBits) :
-    IsPPTOn encIn (encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit))
+    IsPPTOn encIn (encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit))
       (fun a => (OracleComp.interpret
         (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase1Oracle H isElem (d a) (sk a)))
@@ -537,9 +537,9 @@ private theorem isPPTOn_run_cramerShoupPhase1Oracle
   have hreply := F.computableTidilyInPolyTime_cramerShoupPhase1Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hp1) (computableTidilyInPolyTime_comp hsk hp1) hp2
   have hE1 := ComputableTidilyInPolyTime.fst encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hE2 := ComputableTidilyInPolyTime.snd encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hreplyIn := F.computableTidilyInPolyTime_cramerShoupPhase1Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hE1) (computableTidilyInPolyTime_comp hsk hE1)
     hE2.fst'.snd'
@@ -570,7 +570,7 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (hsk : ComputableTidilyInPolyTime sk encIn encCramerShoupSK)
     (hstate : ComputableTidilyInPolyTime state encIn encBits)
     (hct : ComputableTidilyInPolyTime ct encIn encBits) :
-    IsPPTOn encIn (encPair encBool (encFinite Unit))
+    IsPPTOn encIn (encPair encBool (encFinEnum Unit))
       (fun a => (OracleComp.interpret
         (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
           (F.cramerShoupPhase2Oracle H isElem (d a) (sk a) (ct a)))
@@ -581,9 +581,9 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (computableTidilyInPolyTime_comp hd hp1) (computableTidilyInPolyTime_comp hsk hp1)
     (computableTidilyInPolyTime_comp hct hp1) hp2
   have hE1 := ComputableTidilyInPolyTime.fst encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hE2 := ComputableTidilyInPolyTime.snd encIn
-    (encPair (encPair (encFinite Unit) encBits) (encFinite Unit))
+    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hreplyIn := F.computableTidilyInPolyTime_cramerShoupPhase2Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hE1) (computableTidilyInPolyTime_comp hsk hE1)
     (computableTidilyInPolyTime_comp hct hE1) hE2.fst'.snd'
@@ -625,9 +625,9 @@ private theorem isPPTOn_run_cramerShoupCollisionPhase2Oracle
     (computableTidilyInPolyTime_comp hd hp1) (computableTidilyInPolyTime_comp hsk hp1)
     (computableTidilyInPolyTime_comp hct hp1) hp2
   have hE1 := ComputableTidilyInPolyTime.fst encIn
-    (encPair (encPair (encFinite Unit) encBits) (encOption encBits))
+    (encPair (encPair (encFinEnum Unit) encBits) (encOption encBits))
   have hE2 := ComputableTidilyInPolyTime.snd encIn
-    (encPair (encPair (encFinite Unit) encBits) (encOption encBits))
+    (encPair (encPair (encFinEnum Unit) encBits) (encOption encBits))
   have hreplyIn := F.computableTidilyInPolyTime_cramerShoupCollisionPhase2Reply hH hisElem
     (computableTidilyInPolyTime_comp hd hE1) (computableTidilyInPolyTime_comp hsk hE1)
     (computableTidilyInPolyTime_comp hct hE1) hE2.fst'.snd'
@@ -718,7 +718,7 @@ theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
         F.cramerShoupMsgToDDHDistinguisher encodeMsg H isElem adversary bit p.1 p.2) := by
   let E0 := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   let E1 := encPair E0 encCramerShoupSK
-  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit)
+  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit)
   have hn0 := ComputableTidilyInPolyTime.fst encUnary
     (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   have hd0 := (ComputableTidilyInPolyTime.snd encUnary
@@ -830,7 +830,7 @@ theorem isPPTOn_cramerShoupMsgToCollisionFinder
   let EExp := encPair encNat (encPair encNat encNat)
   let E1 := encPair E0 EExp
   let E2 := encPair E1 encCramerShoupSK
-  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinite Unit)
+  let EChoice := encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit)
   let E3 := encPair E2 EChoice
   have habc := F.isPPTOn_sampleCramerShoupTripleExponents
     (ComputableTidilyInPolyTime.fst encUnary F.encDesc)

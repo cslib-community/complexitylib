@@ -9,6 +9,10 @@ module
 
 public import Complexity.Computability.Complexity.Reduction.TruthTable
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 
 /-!
 # Bounded, disjunctive, conjunctive and positive truth-table reductions
@@ -21,8 +25,8 @@ Restrictions of polynomial-time truth-table reductions
 * a **disjunctive** (**conjunctive**) truth-table reduction accepts exactly when some (every)
   query is in the target set, so it needs no combiner;
 * a **positive** truth-table reduction has a combiner that is monotone in the answers. Positivity
-  is taken semantically, as a monotone polynomial-time combiner, as in Selman's positive
-  reductions; it is not the syntactic notion of a Boolean formula built from `∧` and `∨`.
+  is taken semantically, as a monotone polynomial-time combiner; it is not the syntactic notion
+  of a Boolean formula built from `∧` and `∨`.
 
 ## Main definitions
 
@@ -44,6 +48,11 @@ Restrictions of polynomial-time truth-table reductions
   `Cslib.Complexity.PolyTimePTTReducible.polyTimeTruthTableReducible`.
 * `Cslib.Complexity.polyTimeDTTReducible_iff_polyTimeCTTReducible_compl`: disjunctive reductions
   of `L` to `B` are the conjunctive reductions of `Lᶜ` to `Bᶜ`.
+* Transitivity: `Cslib.Complexity.PolyTimeTruthTableReducible.trans`,
+  `Cslib.Complexity.PolyTimeKTruthTableReducible.trans` (`k`- and `k'`-query reductions compose to a
+  `k * k'`-query reduction), `Cslib.Complexity.PolyTimeBTTReducible.trans`,
+  `Cslib.Complexity.PolyTimeDTTReducible.trans`, `Cslib.Complexity.PolyTimeCTTReducible.trans`,
+  `Cslib.Complexity.PolyTimePTTReducible.trans`.
 * Reflexivity and closure of `P` for each reducibility.
 
 ## References
@@ -128,6 +137,153 @@ theorem PolyTimeBTTReducible.mem_P (h : PolyTimeBTTReducible encA encB L B) (hB 
     L ∈ P encA :=
   h.polyTimeTruthTableReducible.mem_P hB
 
+variable {γ : Type} {encC : γ ↪ List Bool} {C : Set γ}
+
+/-! ### Composition of truth-table reductions
+
+The composite of `(r, q, d)` from `L` to `B` and `(r', q', d')` from `B` to `C` asks, for each
+first-stage query `q (a, i)`, its second-stage queries in a block of `M a ≥ r' (q (a, i))`
+positions starting at `i * M a`, and evaluates `d'` on each block and `d` on the results. -/
+
+/-- Indexing a flattened list whose blocks all have length `M`. -/
+private theorem getElem?_flatMap_of_length_eq {ι δ : Type*} (l : List ι) (f : ι → List δ) (M : ℕ)
+    (hf : ∀ x ∈ l, (f x).length = M) {i j : ℕ} (hi : i < l.length) (hj : j < M) :
+    (l.flatMap f)[i * M + j]? = (f l[i])[j]? := by
+  induction l generalizing i with
+  | nil => simp at hi
+  | cons x l ih =>
+    have hx := hf x (by simp)
+    rw [List.flatMap_cons]
+    cases i with
+    | zero =>
+      simp only [zero_mul, zero_add, List.getElem_cons_zero]
+      rw [List.getElem?_append_left (by omega)]
+    | succ i =>
+      rw [List.getElem?_append_right (by rw [hx]; nlinarith), hx]
+      have : (i + 1) * M + j - M = i * M + j := by rw [Nat.succ_mul]; omega
+      rw [this, ih (fun y hy => hf y (by simp [hy])) (by simpa using hi)]
+      simp
+
+/-- A block of a word of answers. -/
+private theorem take_drop_ofFn {n : ℕ} (g : Fin n → Bool) (s c : ℕ) (h : s + c ≤ n) :
+    ((List.ofFn g).drop s).take c = List.ofFn fun j : Fin c => g ⟨s + j, by omega⟩ := by
+  apply List.ext_getElem
+  · simp; omega
+  · intro k h₁ h₂
+    simp [List.getElem_take, List.getElem_drop]
+
+/-- Queries of the composite: every second-stage query of every first-stage query, in blocks of
+`M a` (some may be unused). -/
+private def ttCompQueries (r : α → ℕ) (q : α × ℕ → β) (q' : β × ℕ → γ) (M : α → ℕ) (a : α) :
+    List γ :=
+  (List.range (r a)).flatMap fun i => (List.range (M a)).map fun j => q' (q (a, i), j)
+
+private def ttCompQuery (r : α → ℕ) (q : α × ℕ → β) (q' : β × ℕ → γ) (M : α → ℕ) (x : α × ℕ) : γ :=
+  (ttCompQueries r q q' M x.1)[x.2]?.getD (q' (q (x.1, 0), 0))
+
+private def ttCompCombiner (r : α → ℕ) (q : α × ℕ → β) (d : α × List Bool → Bool) (r' : β → ℕ)
+    (d' : β × List Bool → Bool) (M : α → ℕ) (x : α × List Bool) : Bool :=
+  d (x.1, (List.range (r x.1)).map fun i =>
+    d' (q (x.1, i), (x.2.drop (i * M x.1)).take (r' (q (x.1, i)))))
+
+private theorem ttComp_spec {r : α → ℕ} {q : α × ℕ → β} {d : α × List Bool → Bool} {r' : β → ℕ}
+    {q' : β × ℕ → γ} {d' : β × List Bool → Bool} {M : α → ℕ}
+    (hL : ∀ a, a ∈ L ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true)
+    (hB : ∀ b, b ∈ B ↔ d' (b, truthTableAnswers (q' ⁻¹' C) r' b) = true)
+    (hM : ∀ a, ∀ i < r a, r' (q (a, i)) ≤ M a) (a : α) :
+    a ∈ L ↔ ttCompCombiner r q d r' d' M
+      (a, truthTableAnswers (ttCompQuery r q q' M ⁻¹' C) (fun a => r a * M a) a) = true := by
+  classical
+  rw [hL a, ttCompCombiner, truthTableAnswers_eq_map_range]
+  dsimp only
+  suffices hmap : ((List.range (r a)).map fun i => d' (q (a, i),
+      ((truthTableAnswers (ttCompQuery r q q' M ⁻¹' C) (fun a => r a * M a) a).drop
+        (i * M a)).take (r' (q (a, i))))) =
+      (List.range (r a)).map fun i => decide ((a, i) ∈ q ⁻¹' B) by rw [hmap]
+  refine List.map_congr_left fun i hi => ?_
+  rw [List.mem_range] at hi
+  have hlen : ∀ x ∈ List.range (r a),
+      ((List.range (M a)).map fun j => q' (q (a, x), j)).length = M a :=
+    fun _ _ => by simp
+  have hblock : ((truthTableAnswers (ttCompQuery r q q' M ⁻¹' C) (fun a => r a * M a) a).drop
+      (i * M a)).take (r' (q (a, i))) = truthTableAnswers (q' ⁻¹' C) r' (q (a, i)) := by
+    rw [truthTableAnswers, take_drop_ofFn _ _ _ (by have := hM a i hi; nlinarith)]
+    apply List.ofFn_inj.mpr
+    funext j
+    have hj : j.1 < M a := lt_of_lt_of_le j.2 (hM a i hi)
+    simp only [Set.mem_preimage, ttCompQuery, ttCompQueries]
+    rw [getElem?_flatMap_of_length_eq _ _ _ hlen (by simpa using hi) hj]
+    simp [hj]
+  rw [hblock]
+  cases h : d' (q (a, i), truthTableAnswers (q' ⁻¹' C) r' (q (a, i))) <;> simp [hB, h]
+
+private theorem computableInPolyTime_ttCompQuery {r : α → ℕ} {q : α × ℕ → β} {q' : β × ℕ → γ}
+    {M : α → ℕ} (hr : ComputableInPolyTime r encA encUnary)
+    (hq : ComputableInPolyTime q (encPair encA encUnary) encB)
+    (hq' : ComputableInPolyTime q' (encPair encB encUnary) encC)
+    (hM : ComputableInPolyTime M encA encUnary) :
+    ComputableInPolyTime (ttCompQuery r q q' M) (encPair encA encUnary) encC := by
+  unfold ttCompQuery ttCompQueries
+  fun_prop
+
+private theorem computableInPolyTime_ttCompCombiner {r : α → ℕ} {q : α × ℕ → β}
+    {d : α × List Bool → Bool} {r' : β → ℕ} {d' : β × List Bool → Bool} {M : α → ℕ}
+    (hr : ComputableInPolyTime r encA encUnary)
+    (hq : ComputableInPolyTime q (encPair encA encUnary) encB)
+    (hd : ComputableInPolyTime d (encPair encA encBits) encBool)
+    (hr' : ComputableInPolyTime r' encB encUnary)
+    (hd' : ComputableInPolyTime d' (encPair encB encBits) encBool)
+    (hM : ComputableInPolyTime M encA encUnary) :
+    ComputableInPolyTime (ttCompCombiner r q d r' d' M) (encPair encA encBits) encBool := by
+  unfold ttCompCombiner
+  fun_prop
+
+/-- A polynomial-time block size `M` bounding the number of second-stage queries of every
+first-stage query. -/
+private theorem exists_ttComp_bound {r : α → ℕ} {q : α × ℕ → β} {r' : β → ℕ}
+    (hr : ComputableInPolyTime r encA encUnary)
+    (hq : ComputableInPolyTime q (encPair encA encUnary) encB)
+    (hr' : ComputableInPolyTime r' encB encUnary) :
+    ∃ M : α → ℕ, ComputableInPolyTime M encA encUnary ∧ ∀ a, ∀ i < r a, r' (q (a, i)) ≤ M a :=
+  ⟨fun a => ((List.range (r a)).flatMap fun i => List.range (r' (q (a, i)))).length,
+    by fun_prop, fun a i hi => by
+      simp only [List.length_flatMap, List.length_range]
+      exact List.le_sum_of_mem (List.mem_map.mpr ⟨i, List.mem_range.mpr hi, rfl⟩)⟩
+
+/-- **Truth-table reductions compose.** -/
+@[trans]
+theorem PolyTimeTruthTableReducible.trans (hLB : PolyTimeTruthTableReducible encA encB L B)
+    (hBC : PolyTimeTruthTableReducible encB encC B C) :
+    PolyTimeTruthTableReducible encA encC L C := by
+  obtain ⟨r, q, d, hr, hq, hd, hL⟩ := hLB
+  obtain ⟨r', q', d', hr', hq', hd', hB⟩ := hBC
+  obtain ⟨M, hM, hcM⟩ := exists_ttComp_bound hr hq hr'
+  exact ⟨fun a => r a * M a, ttCompQuery r q q' M, ttCompCombiner r q d r' d' M, by fun_prop,
+    computableInPolyTime_ttCompQuery hr hq hq' hM,
+    computableInPolyTime_ttCompCombiner hr hq hd hr' hd' hM, ttComp_spec hL hB hcM⟩
+
+/-- Composing a `k`-truth-table and a `k'`-truth-table reduction gives a `k * k'`-truth-table
+reduction. -/
+theorem PolyTimeKTruthTableReducible.trans {k k' : ℕ}
+    (hLB : PolyTimeKTruthTableReducible k encA encB L B)
+    (hBC : PolyTimeKTruthTableReducible k' encB encC B C) :
+    PolyTimeKTruthTableReducible (k * k') encA encC L C := by
+  obtain ⟨r, q, d, hr, hq, hd, hrk, hL⟩ := hLB
+  obtain ⟨r', q', d', hr', hq', hd', hrk', hB⟩ := hBC
+  have hM : ComputableInPolyTime (fun _ : α => k') encA encUnary := .const k'
+  exact ⟨fun a => r a * k', ttCompQuery r q q' fun _ => k', ttCompCombiner r q d r' d' fun _ => k',
+    by fun_prop, computableInPolyTime_ttCompQuery hr hq hq' hM,
+    computableInPolyTime_ttCompCombiner hr hq hd hr' hd' hM,
+    fun a => Nat.mul_le_mul_right k' (hrk a), ttComp_spec hL hB fun _ _ _ => hrk' _⟩
+
+/-- **Bounded truth-table reductions compose.** -/
+@[trans]
+theorem PolyTimeBTTReducible.trans (hLB : PolyTimeBTTReducible encA encB L B)
+    (hBC : PolyTimeBTTReducible encB encC B C) : PolyTimeBTTReducible encA encC L C :=
+  let ⟨_, h₁⟩ := hLB
+  let ⟨_, h₂⟩ := hBC
+  ⟨_, h₁.trans h₂⟩
+
 /-! ### Disjunctive and conjunctive truth-table reductions -/
 
 /-- `a ∈ L` exactly when some of the `r a` queries `q (a, i)` is in `B`. -/
@@ -181,6 +337,46 @@ theorem PolyTimeCTTReducible.refl (encA : α ↪ List Bool) (L : Set α) :
     PolyTimeCTTReducible encA encA L L :=
   (PolyTimeReducible.refl encA L).polyTimeCTTReducible
 
+/-- Composing disjunctive reductions: the queries of the composite are all second-stage queries of
+all first-stage queries, listed in order; the composite accepts when one of them is in `C`. -/
+@[trans]
+theorem PolyTimeDTTReducible.trans
+    (hLB : PolyTimeDTTReducible encA encB L B) (hBC : PolyTimeDTTReducible encB encC B C) :
+    PolyTimeDTTReducible encA encC L C := by
+  obtain ⟨r, q, hr, hq, hL⟩ := hLB
+  obtain ⟨r', q', hr', hq', hB⟩ := hBC
+  let Q : α → List γ := fun a => (List.range (r a)).flatMap fun i =>
+    (List.range (r' (q (a, i)))).map fun j => q' (q (a, i), j)
+  have hQ : ComputableInPolyTime Q encA (encList encC) := by fun_prop
+  refine ⟨fun a => (Q a).length, fun x => (Q x.1)[x.2]?.getD (q' (q (x.1, 0), 0)),
+    by fun_prop, by fun_prop, fun a => ?_⟩
+  have hmem : (∃ c ∈ Q a, c ∈ C) ↔ ∃ t < (Q a).length, (Q a)[t]?.getD (q' (q (a, 0), 0)) ∈ C := by
+    constructor
+    · rintro ⟨c, hc, hcC⟩
+      obtain ⟨t, ht, rfl⟩ := List.getElem_of_mem hc
+      exact ⟨t, ht, by simpa [List.getElem?_eq_getElem ht] using hcC⟩
+    · rintro ⟨t, ht, htC⟩
+      exact ⟨_, List.getElem_mem ht, by simpa [List.getElem?_eq_getElem ht] using htC⟩
+  rw [← hmem, hL a]
+  simp only [Q, List.mem_flatMap, List.mem_range, List.mem_map, hB]
+  constructor
+  · rintro ⟨i, hi, j, hj, hjC⟩
+    exact ⟨_, ⟨i, hi, j, hj, rfl⟩, hjC⟩
+  · rintro ⟨c, ⟨i, hi, j, hj, rfl⟩, hcC⟩
+    exact ⟨i, hi, j, hj, hcC⟩
+
+/-- Composing conjunctive reductions, by duality with disjunctive reductions. -/
+@[trans]
+theorem PolyTimeCTTReducible.trans
+    (hLB : PolyTimeCTTReducible encA encB L B) (hBC : PolyTimeCTTReducible encB encC B C) :
+    PolyTimeCTTReducible encA encC L C := by
+  have h := polyTimeDTTReducible_iff_polyTimeCTTReducible_compl (encA := encA) (encB := encC)
+    (L := Lᶜ) (B := Cᶜ)
+  rw [compl_compl, compl_compl] at h
+  refine h.mp (PolyTimeDTTReducible.trans (encB := encB) (B := Bᶜ) ?_ ?_)
+  · rwa [polyTimeDTTReducible_iff_polyTimeCTTReducible_compl, compl_compl, compl_compl]
+  · rwa [polyTimeDTTReducible_iff_polyTimeCTTReducible_compl, compl_compl, compl_compl]
+
 /-! ### Positive truth-table reductions -/
 
 /-- A truth-table reduction whose combiner is monotone in the answers: turning answers from
@@ -199,20 +395,6 @@ theorem PolyTimePTTReducible.polyTimeTruthTableReducible (h : PolyTimePTTReducib
     PolyTimeTruthTableReducible encA encB L B :=
   let ⟨r, q, d, hr, hq, hd, _, hL⟩ := h
   ⟨r, q, d, hr, hq, hd, hL⟩
-
-/-- The disjunction of an answer word is computable in polynomial time. -/
-private theorem computableInPolyTime_any_answers :
-    ComputableInPolyTime (fun x : α × List Bool => x.2.any id) (encPair encA encBits) encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.anyWithEncoding (encA := encBool) (encL := encBits)
-    (test := fun p : α × Bool => p.2) (.snd encA encBool) (.fst encA encBits)
-    (.snd encA encBits))
-
-/-- The conjunction of an answer word is computable in polynomial time. -/
-private theorem computableInPolyTime_all_answers :
-    ComputableInPolyTime (fun x : α × List Bool => x.2.all id) (encPair encA encBits) encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.allWithEncoding (encA := encBool) (encL := encBits)
-    (test := fun p : α × Bool => p.2) (.snd encA encBool) (.fst encA encBits)
-    (.snd encA encBits))
 
 private theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
     u.any id ≤ v.any id := by
@@ -234,7 +416,7 @@ private theorem all_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (·
 theorem PolyTimeDTTReducible.polyTimePTTReducible (h : PolyTimeDTTReducible encA encB L B) :
     PolyTimePTTReducible encA encB L B := by
   obtain ⟨r, q, hr, hq, hL⟩ := h
-  refine ⟨r, q, fun x => x.2.any id, hr, hq, computableInPolyTime_any_answers,
+  refine ⟨r, q, fun x => x.2.any id, hr, hq, by fun_prop,
     fun _ _ _ huv => any_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hL a]
   simp [truthTableAnswers, List.any_eq_true, List.mem_ofFn, Fin.exists_iff]
@@ -243,7 +425,7 @@ theorem PolyTimeDTTReducible.polyTimePTTReducible (h : PolyTimeDTTReducible encA
 theorem PolyTimeCTTReducible.polyTimePTTReducible (h : PolyTimeCTTReducible encA encB L B) :
     PolyTimePTTReducible encA encB L B := by
   obtain ⟨r, q, hr, hq, hL⟩ := h
-  refine ⟨r, q, fun x => x.2.all id, hr, hq, computableInPolyTime_all_answers,
+  refine ⟨r, q, fun x => x.2.all id, hr, hq, by fun_prop,
     fun _ _ _ huv => all_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hL a]
   simp [truthTableAnswers, List.all_eq_true, List.mem_ofFn, Fin.forall_iff]
@@ -272,5 +454,29 @@ theorem PolyTimeCTTReducible.mem_P (h : PolyTimeCTTReducible encA encB L B) (hB 
 theorem PolyTimePTTReducible.mem_P (h : PolyTimePTTReducible encA encB L B) (hB : B ∈ P encB) :
     L ∈ P encA :=
   h.polyTimeTruthTableReducible.mem_P hB
+
+/-- The composite combiner is monotone when both combiners are. -/
+private theorem ttCompCombiner_mono {r : α → ℕ} {q : α × ℕ → β} {d : α × List Bool → Bool}
+    {r' : β → ℕ} {d' : β × List Bool → Bool} {M : α → ℕ}
+    (hd : ∀ a u v, List.Forall₂ (· ≤ ·) u v → d (a, u) ≤ d (a, v))
+    (hd' : ∀ b u v, List.Forall₂ (· ≤ ·) u v → d' (b, u) ≤ d' (b, v)) (a : α)
+    (u v : List Bool) (huv : List.Forall₂ (· ≤ ·) u v) :
+    ttCompCombiner r q d r' d' M (a, u) ≤ ttCompCombiner r q d r' d' M (a, v) := by
+  refine hd _ _ _ ?_
+  rw [List.forall₂_map_left_iff, List.forall₂_map_right_iff]
+  refine List.forall₂_same.mpr fun i _ => hd' _ _ _ ?_
+  exact List.forall₂_take _ (List.forall₂_drop _ huv)
+
+/-- **Positive truth-table reductions compose.** -/
+@[trans]
+theorem PolyTimePTTReducible.trans (hLB : PolyTimePTTReducible encA encB L B)
+    (hBC : PolyTimePTTReducible encB encC B C) : PolyTimePTTReducible encA encC L C := by
+  obtain ⟨r, q, d, hr, hq, hd, hdm, hL⟩ := hLB
+  obtain ⟨r', q', d', hr', hq', hd', hdm', hB⟩ := hBC
+  obtain ⟨M, hM, hcM⟩ := exists_ttComp_bound hr hq hr'
+  exact ⟨fun a => r a * M a, ttCompQuery r q q' M, ttCompCombiner r q d r' d' M, by fun_prop,
+    computableInPolyTime_ttCompQuery hr hq hq' hM,
+    computableInPolyTime_ttCompCombiner hr hq hd hr' hd' hM,
+    ttCompCombiner_mono hdm hdm', ttComp_spec hL hB hcM⟩
 
 end Cslib.Complexity
