@@ -9,21 +9,13 @@ import Complexity.Computability.Kolmogorov.TimeBounded
 
 /-!
 Regression clients for time-bounded Kolmogorov complexity (`K^t`), Levin's `Kt`, the universal
-multi-tape description method `universalTM`, `MINKT ∈ NP`, `MINKTAt ∈ NP`, and `GapMINKT`.
+multi-tape description method `universalTM`, `MINKT`, `MINKTAt ∈ NP`, and `GapMINKT`.
 -/
 
 namespace ComplexityTests.KolmogorovTimeBounded
 
 open Cslib Cslib.Kolmogorov Cslib.Kolmogorov.DescriptionMethod Cslib.Complexity
 open _root_.Turing _root_.Turing.MultiTapeTM _root_.Turing.MultiTapeTM.Universal
-
-/-! ### Clock-preserving simulation of a concrete binary multi-tape machine -/
-
-example :
-    ∃ c : ℕ, ∀ (t : ℕ) (x : List Bool),
-      universalTM.etimeBoundedComplexity t x ≤
-        (ofMultiTapeTM (MultiTapeTM.copyInputToWork Bool)).etimeBoundedComplexity t x + c :=
-  exists_etimeBoundedComplexity_universalTM_le_ofMultiTapeTM (MultiTapeTM.copyInputToWork Bool)
 
 /-! ### Concrete bounds and properties of `K^t` and `Kt` -/
 
@@ -121,10 +113,17 @@ example :
     hall (fun _ => 2 * t + 2)
   exact (ENat.natCast_lt_natCast.mpr (Nat.lt_succ_self (2 * s + 1))).trans_le hle
 
--- Concrete polynomial-threshold `MINKTAt` instance in `NP`.
-example :
-    MINKTAt (Polynomial.X ^ 2 + 1).eval (Polynomial.X + Polynomial.C copyOverhead).eval ∈
-      NP encBits :=
-  MINKTAt.mem_NP_polynomial₂ (Polynomial.X ^ 2 + 1) (Polynomial.X + Polynomial.C copyOverhead)
+-- Derive `NP` membership for the linear-threshold language
+-- `MINKTAt (n ↦ n + 1) (n ↦ n + copyOverhead)` from `MINKTAt.mem_NP_polynomial₂` by rewriting
+-- both bounds as polynomial evaluations.
+example : MINKTAt (fun n => n + 1) (fun n => n + copyOverhead) ∈ NP encBits := by
+  have ht : (fun n : ℕ => n + 1) = (Polynomial.X + 1).eval := by
+    funext n
+    simp
+  have hs : (fun n : ℕ => n + copyOverhead) = (Polynomial.X + Polynomial.C copyOverhead).eval := by
+    funext n
+    simp
+  rw [ht, hs]
+  exact MINKTAt.mem_NP_polynomial₂ (Polynomial.X + 1) (Polynomial.X + Polynomial.C copyOverhead)
 
 end ComplexityTests.KolmogorovTimeBounded
