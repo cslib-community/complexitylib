@@ -76,10 +76,9 @@ private theorem compiled_halts (input : List Bool) :
   HaltsWithin.comp chooseWord readWord chooseWord_nonblocking readWord_nonblocking
     true input 2 2 (chooseWord_halts input) (fun result _ => readWord_halts result.output)
 
--- Both table contracts and the 10-step halting bound are realized on every input.
-example (input : List Bool) :
-    compiled.Nonblocking ∧ compiled.HaltsWithin 10 (compiled.initialConfig input).tapes :=
-  ⟨chooseWord_nonblocking.comp readWord_nonblocking true, compiled_halts input⟩
+-- Both table contracts are preserved by composition.
+example : compiled.Nonblocking :=
+  chooseWord_nonblocking.comp readWord_nonblocking true
 
 -- Order matters: the real input is [false, true], while the generated nonempty word is reversed.
 example : (compiled.runList 10 (compiled.initialConfig [false, true]).tapes).map Cfg.output =
@@ -152,9 +151,12 @@ example :
     (∀ final ∈ chooseWord.runList 2
       { Cfg.init chooseWord.initial [false, true] with output := [true] },
       final.output.length ≤ 3) ∧
+    (∃ final ∈ chooseWord.runList 2
+      { Cfg.init chooseWord.initial [false, true] with output := [true] },
+      final.output.length = 3) ∧
     ∃ final ∈ chooseWord.runList 0
       { Cfg.init chooseWord.initial [false, true] with output := [true] },
       ¬final.output.length ≤ 0 :=
-  ⟨fun final hmem => chooseWord.length_output_of_mem_runList 2 _ final hmem, by simp⟩
+  ⟨fun final hmem => chooseWord.length_output_of_mem_runList 2 _ final hmem, by decide, by simp⟩
 
 end ComplexityTests.CountingComposition

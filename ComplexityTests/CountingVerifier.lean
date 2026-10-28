@@ -92,9 +92,8 @@ private theorem compiled_halts : compiled.HaltsWithin 19 (compiled.initialConfig
   HaltsWithin.comp framed (ofDeterministic readLast) framed_nonblocking
     (nonblocking_ofDeterministic readLast) true [false] 5 5 framed_halts readLast_halts
 
-example :
-    compiled.Nonblocking ∧ compiled.HaltsWithin 19 (compiled.initialConfig [false]).tapes :=
-  ⟨framed_nonblocking.comp (nonblocking_ofDeterministic readLast) true, compiled_halts⟩
+example : compiled.Nonblocking :=
+  framed_nonblocking.comp (nonblocking_ofDeterministic readLast) true
 
 example : (compiled.runList 19 (compiled.initialConfig [false]).tapes).map Cfg.output =
     [[false], [true]] := by

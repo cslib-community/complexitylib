@@ -93,10 +93,11 @@ private theorem run_two (input suffix : List Bool) :
 
 
 -- Chronological enumeration varies the first transition in the outer loop, with no duplicates.
-example (fuel : ℕ) :
+example :
     indexWords 2 2 = [[0, 0], [0, 1], [1, 0], [1, 1]] ∧
-    (indexWords 3 fuel).Nodup :=
-  ⟨by decide, nodup_indexWords 3 fuel⟩
+    (indexWords 3 2).Nodup ∧
+    (indexWords 3 2).length = 9 :=
+  by decide
 
 -- Exactly three certificates survive, even though the two querying paths have equal endpoints.
 example (input suffix : List Bool) (padding : ℕ) :

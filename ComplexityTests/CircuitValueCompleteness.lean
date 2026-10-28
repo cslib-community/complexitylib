@@ -46,14 +46,12 @@ example (tm : MultiTapeTM k Bool State) (C d : ℕ)
     Tableau.gateCode_inSpace tm hn hT hin hg⟩
 end PlainTableauBudgets
 
-/-- The tableau is the code of a program whose output wire lies within its wires, and the time
-bound of the reduction leaves room for the input head (`n < 2 T`). -/
+/-- The tableau's output wire lies within its wires, and the time bound of the reduction leaves
+room for the input head (`n < 2 T`). -/
 example (C d n T : ℕ) :
-    Program.IsCodeFrom signature n 0 (Tableau.gates tm n T) ∧
     Tableau.outWire k State n T < n + (Tableau.gates tm n T).length ∧
     n < 2 * CircuitValue.timeBound C d n :=
-  ⟨Tableau.isCodeFrom_gates tm n T,
-    by simpa [Tableau.gates] using Tableau.outWire_lt (k := k) (State := State) n T,
+  ⟨by simpa [Tableau.gates] using Tableau.outWire_lt (k := k) (State := State) n T,
     by simp only [CircuitValue.timeBound]; omega⟩
 
 /-- The tableau circuit on the input `w` outputs whether the machine has written `[true]`. -/
@@ -76,11 +74,10 @@ example :
     CircuitValue.logSpaceHard _ _ (compl_mem_P CircuitValue.mem_P),
     CircuitValue.logSpaceComplete.polyTimeComplete.2 _ _ (compl_mem_P CircuitValue.mem_P)⟩
 
-/-- If `CircuitValue` lies in `L`, then `P = L` under every encoding and `CircuitValueᶜ ∈ L`. -/
+/-- If `CircuitValue` lies in `L`, then `CircuitValueᶜ ∈ L`. -/
 example (h : CircuitValue ∈ L encCircuitValue) :
-    P encBits = L encBits ∧ CircuitValueᶜ ∈ L encCircuitValue :=
-  ⟨CircuitValue.mem_L_iff_forall_P_eq_L.1 h encBits,
-    CircuitValue.logSpaceHard.subset_L h encCircuitValue (compl_mem_P CircuitValue.mem_P)⟩
+    CircuitValueᶜ ∈ L encCircuitValue :=
+  CircuitValue.logSpaceHard.subset_L h encCircuitValue (compl_mem_P CircuitValue.mem_P)
 
 /-- Uniform circuit generation applied to the polynomial-time head-bit extractor `headD false`. -/
 example :

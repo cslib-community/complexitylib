@@ -45,15 +45,23 @@ example :
 /-! ### Non-vacuity: concrete `IsMultiproverProof` instance -/
 
 -- Every single-prover interactive proof embeds into a two-prover interactive proof via channel 0,
--- so `GraphNonIsomorphism` has an honest 2-prover pair achieving acceptance probability `1` and
--- belongs to `MIP₂`, `MIP`, and `NEXP` alongside `TQBF`.
-example {x : Graph × Graph} (hx : x ∈ GraphNonIsomorphism) :
-    ∃ P : Fin 2 → Prover Unit,
-      1 ≤ acceptProb
-        (WordOracleComp.singleOracle (0 : Fin 2) (GraphNonIsomorphism.verifier x))
-        (Prover.independent P) :=
-  (GraphNonIsomorphism.isInteractiveProof_verifier.isMultiproverProof_singleOracle
-    (0 : Fin 2)).complete x hx
+-- giving `GraphNonIsomorphism` completeness `1`, soundness `(17 / 32) ^ 2`, and membership in
+-- `MIP₂`, `MIP`, and `NEXP` alongside `TQBF`.
+example (x : Graph × Graph) :
+    (x ∈ GraphNonIsomorphism →
+      ∃ P : Fin 2 → Prover Unit,
+        1 ≤ acceptProb
+          (WordOracleComp.singleOracle (0 : Fin 2) (GraphNonIsomorphism.verifier x))
+          (Prover.independent P)) ∧
+    (x ∉ GraphNonIsomorphism →
+      ∀ P : Fin 2 → Prover Unit,
+        acceptProb
+          (WordOracleComp.singleOracle (0 : Fin 2) (GraphNonIsomorphism.verifier x))
+          (Prover.independent P) ≤ (17 / 32) ^ 2) :=
+  ⟨(GraphNonIsomorphism.isInteractiveProof_verifier.isMultiproverProof_singleOracle
+      (0 : Fin 2)).complete x,
+    (GraphNonIsomorphism.isInteractiveProof_verifier.isMultiproverProof_singleOracle
+      (0 : Fin 2)).sound x⟩
 
 example :
     GraphNonIsomorphism ∈ MIP₂ (encPair encGraph encGraph) ∧
