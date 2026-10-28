@@ -13,7 +13,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Wo
 /-!
 # Tests for unary arithmetic in logarithmic space
 
-Composite arithmetic on unary numbers, discharged by `fun_prop` alone with the instances of
+Composite arithmetic on unary numbers and list lengths, discharged by `fun_prop` alone with the
+instances of
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/CounterProgram/Unary.lean`.
 -/
 
@@ -51,5 +52,10 @@ example : ComputableInLogSpace (fun p : ℕ × ℕ => p.1 * p.1 + p.2) (encPair 
     encNat :=
   CounterProgram.Unary.computableInLogSpace_binary (F := fun a b => a * a + b)
     (.add (.mul (.reg 0) (.reg 0)) (.reg 1)) 2 (fun _ _ => rfl) fun a b => by nlinarith
+
+/-- Comparing the length of a list with its head. -/
+example : ComputableInLogSpace (fun l : List ℕ => decide (l.length * l.length ≤ l.headD 0))
+    (encList encUnary) encBool := by
+  fun_prop
 
 end ComplexityTests.LogSpaceUnary

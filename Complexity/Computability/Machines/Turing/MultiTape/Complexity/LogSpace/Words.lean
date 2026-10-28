@@ -46,7 +46,7 @@ unary numbers, as well as bounded-count batch evaluation (`map_range_const`, `ma
   `Turing.MultiTapeTM.ComputableInLogSpace.pair`: concatenation and pairing.
 * `Turing.MultiTapeTM.ComputableInLogSpace.optionSome`, `.optionGetD`: option operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.listSingleton`, `.listCons`, `.listAppend`,
-  `.listHeadD`: framed-list operations.
+  `.listHeadD`, `.listLength`: framed-list operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.bitsAppend`, `.bitsHeadD`, `.bitsMap`, `.bitsFoldl`,
   `.bitsAll`, `.bitsAny`: bit-word operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.unaryAdd`, `.unaryMulConst`, `.unaryLeConst`,
@@ -264,6 +264,34 @@ theorem listHeadD (d : β) :
     ComputableInLogSpace (fun l : List β => l.headD d) (encList encOut) encOut :=
   of_isEmpty_ite d (fun l hl => by cases l <;> simp_all)
     (of_unframe fun ⟨l, hl⟩ => by cases l <;> simp at hl ⊢)
+
+/-- The transducer counting the frames of a word in unary: in state `false` it reads a marker, and
+emits `true` at an end marker; in state `true` it skips the bit after a `true` marker. -/
+private def frameCountT : Transducer Bool Bool where
+  q₀ := false
+  step
+    | false, true => (true, [])
+    | false, false => (false, [true])
+    | true, _ => (false, [])
+  final _ := []
+  length_step_le q a := by cases q <;> cases a <;> simp
+  length_final_le _ := by simp
+
+private theorem frameCountT_run_frame (w rest : List Bool) :
+    frameCountT.run false (frame w ++ rest) = true :: frameCountT.run false rest := by
+  induction w with
+  | nil => rfl
+  | cons b w ih => simpa [frame_cons, Transducer.run_cons, frameCountT] using ih
+
+/-- The length of a framed list, in unary, in logarithmic space. -/
+theorem listLength : ComputableInLogSpace (fun l : List β => l.length) (encList encOut) encUnary :=
+  frameCountT.computableInLogSpace fun l => by
+    induction l with
+    | nil => rfl
+    | cons b l ih =>
+      change _ = frameCountT.run false _ at ih ⊢
+      rw [encList_cons, frameCountT_run_frame, ← ih]
+      simp [List.replicate_succ]
 
 /-- Concatenating two bit words computed in logarithmic space from a common input. -/
 theorem bitsAppend {f₁ f₂ : α → List Bool}
@@ -520,6 +548,7 @@ theorem ite_decide {encC : Bool ↪ List Bool} {p : α → Prop} {_ : DecidableP
   (ite hp hf hg).congr_fun fun a => by by_cases h : p a <;> simp [h]
 
 attribute [fun_prop] pair ite optionSome optionGetD listSingleton listCons listAppend listHeadD
+  listLength
   bitsAppend bitsHeadD bitsMap bitsFoldl bitsAll bitsAny unaryAdd unaryMulConst unaryLeConst
 
 end Turing.MultiTapeTM.ComputableInLogSpace
