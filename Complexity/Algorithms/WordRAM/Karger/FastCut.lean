@@ -9,7 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Karger.Graph
-public import Complexity.Computability.WordRAM.Randomized.LoopSegment
+public import Complexity.Languages.Probabilistic.QueryCount.Support
 
 /-!
 # Mathematical recurrences and quadratic potential for Karger–Stein (`FastCut`)
@@ -171,19 +171,6 @@ theorem fastCutThreshold_lt_of_lt {k m : ℕ} (hk : 4 ≤ k) (hm2 : 2 ≤ m)
     (hmlt : m < fastCutThreshold k) :
     2 * m * (m - 1) < k * (k - 1) :=
   (fastCutThresholdAux_spec hk (by omega) (by omega)).2.2.2 m hm2 hmlt
-
-private theorem fastCutThreshold_eq_of_bounds {k r : ℕ} (hk : 4 ≤ k) (hr2 : 2 ≤ r)
-    (hge : k * (k - 1) ≤ 2 * r * (r - 1))
-    (hmin : ∀ m, 2 ≤ m → m < r → 2 * m * (m - 1) < k * (k - 1)) :
-    r = fastCutThreshold k := by
-  apply le_antisymm
-  · by_contra hgt
-    have hlt : fastCutThreshold k < r := Nat.lt_of_not_ge hgt
-    exact absurd (fastCutThreshold_spec hk)
-      (not_le_of_gt (hmin (fastCutThreshold k) (fastCutThreshold_ge_two hk) hlt))
-  · by_contra hlt'
-    have hlt : r < fastCutThreshold k := Nat.lt_of_not_ge hlt'
-    exact absurd hge (not_le_of_gt (fastCutThreshold_lt_of_lt hk hr2 hlt))
 
 /-- For `k ≥ 7`, the contraction threshold satisfies `6 ≤ fastCutThreshold k`. -/
 theorem fastCutThreshold_ge_six {k : ℕ} (hk : 7 ≤ k) :
@@ -707,45 +694,13 @@ theorem fastCutTrials_pos (n : ℕ) :
   unfold fastCutTrials
   nlinarith
 
-private theorem bernoulli_pow_nat (d j : ℕ) :
-    d ^ (j + 1) + (j + 1) * d ^ j ≤ (d + 1) ^ (j + 1) := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    calc
-      d ^ (j + 2) + (j + 2) * d ^ (j + 1)
-        ≤ (d ^ (j + 1) + (j + 1) * d ^ j) * (d + 1) := by
-          have : (d ^ (j + 1) + (j + 1) * d ^ j) * (d + 1) =
-              (d ^ (j + 2) + (j + 2) * d ^ (j + 1)) + (j + 1) * d ^ j := by ring
-          rw [this]
-          exact Nat.le_add_right _ _
-      _ ≤ (d + 1) ^ (j + 1) * (d + 1) := Nat.mul_le_mul_right (d + 1) ih
-      _ = (d + 1) ^ (j + 2) := by ring
-
-private theorem two_mul_pred_pow_le_pow {m : ℕ} (hm : 1 ≤ m) :
-    2 * (m - 1) ^ m ≤ m ^ m := by
-  rcases eq_or_lt_of_le hm with rfl | hgt
-  · simp
-  · obtain ⟨d, rfl⟩ : ∃ d, m = d + 1 := ⟨m - 1, by omega⟩
-    simp only [Nat.add_sub_cancel]
-    have hbern := bernoulli_pow_nat d d
-    have hle : d ^ (d + 1) ≤ (d + 1) * d ^ d := by
-      have : d ^ (d + 1) = d * d ^ d := by ring
-      rw [this]
-      exact Nat.mul_le_mul_right (d ^ d) (Nat.le_succ d)
-    omega
-
 private theorem one_sub_inv_pow_le_half {M : ℕ} (hM1 : 1 ≤ M) :
     ((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / (M : ℝ≥0∞)) ^ M ≤ (1 : ℝ≥0∞) / 2 := by
-  rw [one_sub_inv_nat hM1]
+  rw [one_sub_inv_nat hM1, ennreal_div_pow]
   have hM_pow0 : ((M : ℝ≥0∞) ^ M) ≠ 0 := pow_ne_zero M (by exact_mod_cast (by omega : M ≠ 0))
   have hM_powt : ((M : ℝ≥0∞) ^ M) ≠ ⊤ := ENNReal.pow_ne_top (ENNReal.natCast_ne_top M)
   have h20 : (2 : ℝ≥0∞) ≠ 0 := by norm_num
   have h2t : (2 : ℝ≥0∞) ≠ ⊤ := by norm_num
-  have hdiv_pow : (((M - 1 : ℕ) : ℝ≥0∞) / (M : ℝ≥0∞)) ^ M =
-      ((M - 1 : ℕ) : ℝ≥0∞) ^ M / (M : ℝ≥0∞) ^ M := by
-    simp only [div_eq_mul_inv, mul_pow, ENNReal.inv_pow]
-  rw [hdiv_pow]
   rw [ENNReal.div_le_iff_le_mul (Or.inl hM_pow0) (Or.inl hM_powt)]
   rw [← ENNReal.mul_div_right_comm]
   rw [ENNReal.le_div_iff_mul_le (Or.inl h20) (Or.inl h2t), one_mul, mul_comm]
