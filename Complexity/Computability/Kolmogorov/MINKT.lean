@@ -25,8 +25,7 @@ unary), and defines Hirahara's promise problem `Cslib.Kolmogorov.GapMINKT`.
 
 ## Threshold conventions
 
-Following the design recorded in [#798](https://github.com/cslib-community/complexitylib/issues/798),
-both standard formulations of the time-bounded Kolmogorov complexity decision problem are provided
+Both standard formulations of the time-bounded Kolmogorov complexity decision problem are provided
 and bridged:
 
 * **Thresholds in the instance (`Cslib.Kolmogorov.MINKT`):**
