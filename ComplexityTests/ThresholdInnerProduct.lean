@@ -32,10 +32,17 @@ example (n : ℕ) :
       (Finset.univ : Finset (Fin n → Bool)).card = 2 ^ n :=
   ⟨fun x hx y _ => by rw [Finset.mem_singleton.mp hx]; simp [Bool.zero_eq_false], by simp⟩
 
--- A nonempty true rectangle exercises the other color and satisfies the rectangle bound.
-example : ({fun _ : Fin 1 => true} : Finset (Fin 1 → Bool)).card *
-    ({fun _ : Fin 1 => true} : Finset (Fin 1 → Bool)).card ≤ 2 ^ 1 :=
-  card_mul_le_two_pow_of_dotProduct_eq _ _ true (by decide)
+-- A size-2 slice `{![true, false], ![true, true]}` forces any `true`-monochromatic partner `B`
+-- on the 2-bit cube to have `B.card ≤ 2`.
+example (B : Finset (Fin 2 → Bool))
+    (h : ∀ x ∈ ({![true, false], ![true, true]} : Finset (Fin 2 → Bool)),
+      ∀ y ∈ B, x ⬝ᵥ y = true) :
+    B.card ≤ 2 := by
+  have hmul := card_mul_le_two_pow_of_dotProduct_eq
+    ({![true, false], ![true, true]} : Finset (Fin 2 → Bool)) B true h
+  have hcard : ({![true, false], ![true, true]} : Finset (Fin 2 → Bool)).card = 2 := by decide
+  rw [hcard, Fintype.card_fin] at hmul
+  omega
 
 -- All rectangles and both colors on the two-coordinate cube: 16*16*2 = 512 cases.
 example (A B : Finset (Fin 2 → Bool)) (b : Bool) :
@@ -112,37 +119,51 @@ example (t : DecisionTree (SeparableComparison (Fin 3 → Bool) (Fin 3 → Bool)
     simpa using t.two_pow_le_leafCount_sq_of_dotProduct ht
   nlinarith
 
--- Decision-list, node-count, rank, and energy bounds on `andTree` and `twoBitTree`.
+-- Decision-list, node-count, rank, and energy bounds on `andTree`, `twoBitTree`, and arbitrary
+-- decision lists.
 private theorem andTree_isDecisionList : andTree.IsDecisionList :=
   Or.inl ⟨rfl, trivial⟩
 
-example : 2 ≤ (andTree.nodeCount + 1) ^ 2 ∧ 2 ≤ (andTree.depth + 1) ^ 2 := by
-  refine ⟨?_, ?_⟩
+example : andTree.nodeCount = 1 ∧ andTree.depth = 1 ∧
+    2 ≤ (andTree.nodeCount + 1) ^ 2 ∧ 2 ≤ (andTree.depth + 1) ^ 2 := by
+  refine ⟨rfl, rfl, ?_, ?_⟩
   · simpa using andTree.two_pow_le_nodeCount_add_one_sq_of_dotProduct andTree_computes
   · simpa using andTree.two_pow_le_depth_add_one_sq_of_isDecisionList_dotProduct
       andTree_isDecisionList andTree_computes
 
+-- Every decision list computing 3-bit inner product has depth at least 2.
+example (t : DecisionTree (SeparableComparison (Fin 3 → Bool) (Fin 3 → Bool)) Bool)
+    (hdl : t.IsDecisionList) (ht : ∀ x y, t.eval (fun q => q.eval x y) = x ⬝ᵥ y) :
+    2 ≤ t.depth := by
+  have h : 8 ≤ (t.depth + 1) ^ 2 := by
+    simpa using t.two_pow_le_depth_add_one_sq_of_isDecisionList_dotProduct hdl ht
+  nlinarith
+
+private theorem twoBitTree_stats :
+    twoBitTree.depth = 2 ∧ twoBitTree.rank = 2 ∧ twoBitTree.energy = 2 :=
+  ⟨rfl, rfl, rfl⟩
+
 example :
     4 ≤ (∑ j ∈ Finset.range (twoBitTree.rank + 1), twoBitTree.depth.choose j) ^ 2 ∧
-      4 ≤ (∑ j ∈ Finset.range (twoBitTree.energy + 1), twoBitTree.depth.choose j) ^ 2 :=
-  ⟨by simpa using twoBitTree.two_pow_le_sum_choose_rank_sq_of_dotProduct twoBitTree_computes,
-    by simpa using twoBitTree.two_pow_le_sum_choose_energy_sq_of_dotProduct twoBitTree_computes⟩
+      4 ≤ (∑ j ∈ Finset.range (twoBitTree.energy + 1), twoBitTree.depth.choose j) ^ 2 ∧
+      (1 : ℝ) ≤ 2 * Real.logb 2 (Real.exp 1) ∧
+      2 / Real.exp 1 * (2 : ℝ) ^ (1 / 2 : ℝ) ≤ 2 := by
+  have hlog_r := twoBitTree.le_rank_mul_logb_depth_of_dotProduct twoBitTree_computes
+  have hrpow_e := twoBitTree.energy_mul_rpow_le_depth_of_dotProduct twoBitTree_computes
+  rw [twoBitTree_stats.1, twoBitTree_stats.2.1] at hlog_r
+  rw [twoBitTree_stats.1, twoBitTree_stats.2.2] at hrpow_e
+  refine ⟨by simpa using twoBitTree.two_pow_le_sum_choose_rank_sq_of_dotProduct twoBitTree_computes,
+    by simpa using twoBitTree.two_pow_le_sum_choose_energy_sq_of_dotProduct twoBitTree_computes,
+    by simpa using hlog_r,
+    by norm_num at hrpow_e ⊢; exact hrpow_e⟩
 
 example :
-    (1 : ℝ) ≤
-        twoBitTree.rank * Real.logb 2 (Real.exp 1 * twoBitTree.depth / twoBitTree.rank) ∧
-      twoBitTree.rank / Real.exp 1 * (2 : ℝ) ^ ((2 : ℝ) / (2 * twoBitTree.rank)) ≤
-        twoBitTree.depth :=
-  ⟨by simpa using twoBitTree.le_rank_mul_logb_depth_of_dotProduct twoBitTree_computes,
-    by simpa using twoBitTree.rank_mul_rpow_le_depth_of_dotProduct twoBitTree_computes⟩
-
-example :
-    (1 : ℝ) ≤
-        twoBitTree.energy * Real.logb 2 (Real.exp 1 * twoBitTree.depth / twoBitTree.energy) ∧
-      twoBitTree.energy / Real.exp 1 * (2 : ℝ) ^ ((2 : ℝ) / (2 * twoBitTree.energy)) ≤
-        twoBitTree.depth :=
-  ⟨by simpa using twoBitTree.le_energy_mul_logb_depth_of_dotProduct twoBitTree_computes,
-    by simpa using twoBitTree.energy_mul_rpow_le_depth_of_dotProduct twoBitTree_computes⟩
+    twoBitTree.rank / Real.exp 1 * (2 : ℝ) ^ ((2 : ℝ) / (2 * twoBitTree.rank)) ≤
+        twoBitTree.depth ∧
+      (1 : ℝ) ≤
+        twoBitTree.energy * Real.logb 2 (Real.exp 1 * twoBitTree.depth / twoBitTree.energy) :=
+  ⟨by simpa using twoBitTree.rank_mul_rpow_le_depth_of_dotProduct twoBitTree_computes,
+    by simpa using twoBitTree.le_energy_mul_logb_depth_of_dotProduct twoBitTree_computes⟩
 
 -- Bi-monotone comparison tree computing 1-bit inner product via `BiMonotoneComparison.ofMin`.
 private noncomputable def andBiQuery :

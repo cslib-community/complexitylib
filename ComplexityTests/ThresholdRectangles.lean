@@ -137,11 +137,12 @@ example : unbalanced.IsDecisionList ∧ unbalanced.rank ≤ 1 := by
   exact ⟨hdl, hdl.rank_le_one⟩
 
 example :
-    unbalanced.leafCount ≤
+    unbalanced.leafCount =
         ∑ j ∈ Finset.range (unbalanced.rank + 1), unbalanced.depth.choose j ∧
-      unbalanced.leafCount ≤
+      unbalanced.leafCount <
         ∑ j ∈ Finset.range (unbalanced.energy + 1), unbalanced.depth.choose j :=
-  ⟨unbalanced.leafCount_le_sum_choose_rank, unbalanced.leafCount_le_sum_choose_energy⟩
+  ⟨le_antisymm unbalanced.leafCount_le_sum_choose_rank (by decide),
+    lt_of_le_of_ne unbalanced.leafCount_le_sum_choose_energy (by decide)⟩
 
 -- Concrete `BiMonotoneComparison` queries using `ofMax` and `ofMin`.
 private noncomputable def maxCompare : BiMonotoneComparison (Fin 5) (Fin 7) :=

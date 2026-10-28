@@ -102,12 +102,13 @@ example : (attainableTranscripts trueGate).card = 1 := by
     simpa using h
   · exact Finset.card_pos.mpr ⟨transcript trueGate Fin.elim0, by simp [mem_attainableTranscripts]⟩
 
--- A bound larger than the available number of coordinates is also accepted.
+-- Combining the binomial transcript bound with `inputActivity_le_card` and `card_filter_weight_le`
+-- bounds the number of attainable transcripts by `2 ^ (inputGates p).card`.
 example {n g : ℕ} (p : Program signature n g) :
-    (attainableTranscripts p).card ≤
-      ∑ j ∈ range ((inputGates p).card + 4), (inputGates p).card.choose j := by
-  apply card_attainableTranscripts_le_sum_choose_of_le
-  exact (inputActivity_le_card p).trans (Nat.le_add_right _ 3)
+    (attainableTranscripts p).card ≤ 2 ^ (inputGates p).card := by
+  refine (card_attainableTranscripts_le_sum_choose_of_le p (inputActivity_le_card p)).trans ?_
+  rw [← Fintype.card_coe (inputGates p), ← card_filter_weight_le]
+  exact (card_le_univ _).trans_eq (by simp)
 
 example {n g : ℕ} (p : Program signature n g) : inputActivity p ≤ g :=
   (inputActivity_le_gateActivity p).trans (gateActivity_le p)
