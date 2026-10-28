@@ -495,14 +495,14 @@ theorem RPReducible.mem_PromiseBPP (hXY : RPReducible encA encB X Y)
     have hsum := acceptCount_add_card_filter_eq_false (V := V) (a := b)
       (n := p.eval (encB b).length)
     have h := (hYV b).1 hb
-    simp only [Polynomial.eval_ofNat] at h
+    simp only [ErrorExponentAt, outcomeCount, Bool.not_true, Polynomial.eval_ofNat] at h
     have h' : (7 : ℝ) * 2 ^ p.eval (encB b).length ≤ 8 * acceptCount V b (p.eval (encB b).length) :=
       by exact_mod_cast (by omega)
     linarith
   have hMno (b : β) (hb : b ∈ Y.no) : Pr[M b] ≤ 1 / 8 := by
     rw [probability_sampleList_verifier, div_le_iff₀ (by positivity)]
     have h := (hYV b).2 hb
-    simp only [Polynomial.eval_ofNat] at h
+    simp only [ErrorExponentAt, outcomeCount, Bool.not_false, Polynomial.eval_ofNat] at h
     rw [← acceptCount] at h
     have h' : (8 : ℝ) * acceptCount V b (p.eval (encB b).length) ≤ 2 ^ p.eval (encB b).length :=
       by exact_mod_cast h

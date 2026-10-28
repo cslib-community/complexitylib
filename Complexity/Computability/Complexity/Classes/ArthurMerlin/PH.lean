@@ -145,7 +145,8 @@ theorem isAlternatingVerifier_sigmaTwoVerifier {e q k p : Polynomial ℕ} {W : �
     obtain ⟨y, hy⟩ := (h a).1 ha
     have hS : 2 ^ e.eval (enc a).length * #(univ.filter fun r : BitString (p.eval (enc a).length) =>
         W (a, List.ofFn y ++ List.ofFn r) = true)ᶜ ≤ 2 ^ p.eval (enc a).length := by
-      simpa only [compl_filter, Bool.not_eq_true] using hy
+      simpa only [compl_filter, Bool.not_eq_true, ErrorExponentAt, outcomeCount, Bool.not_true]
+        using hy
     obtain ⟨u, hu⟩ := BitString.exists_forall_exists_add_mem_of_two_pow_mul_card_compl_le _ hS
       (hcover _)
     refine ⟨List.ofFn y ++ List.ofFn (BitString.blocksEquiv.symm u), by simp, fun w hw => ?_⟩
@@ -238,7 +239,8 @@ theorem isAlternatingVerifier_piTwoVerifier {e k p q : Polynomial ℕ} {W : α �
     have hS : 2 ^ e.eval (enc a).length * #(univ.filter fun r : BitString (p.eval (enc a).length) =>
         ∃ y : BitString (q.eval (enc a).length), W (a, List.ofFn r ++ List.ofFn y) = true)ᶜ ≤
         2 ^ p.eval (enc a).length := by
-      simpa only [compl_filter, not_exists, Bool.not_eq_true] using (h a).1 ha
+      simpa only [compl_filter, not_exists, Bool.not_eq_true, arthurMerlinRejectCount] using
+        (h a).1 ha
     obtain ⟨r, hr⟩ := BitString.exists_forall_add_notMem_of_two_pow_mul_card_le _ hS (hshifts _)
       (BitString.block (BitString.ofList (k.eval (enc a).length * p.eval (enc a).length) w))
     have hY (i : Fin (k.eval (enc a).length)) : ∃ y : BitString (q.eval (enc a).length),

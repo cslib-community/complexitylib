@@ -80,6 +80,8 @@ theorem noisyHeadVerifier_decides :
     DecidesWithBoundedError encBits (Polynomial.C 2) noisyHeadVerifier
       {x : List Bool | x.headD false = true} := by
   intro a
+  dsimp only [DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError, BoundedErrorAt,
+    outcomeCount]
   generalize hm : (Polynomial.C 2).eval (encBits a).length = m
   have hm2 : m = 2 := by rw [← hm, Polynomial.eval_C]
   subst hm2

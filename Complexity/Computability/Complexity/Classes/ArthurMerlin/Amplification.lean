@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.ArthurMerlin
+public import Complexity.Computability.Complexity.Classes.BPP.Amplification
 public import Complexity.Computability.Complexity.Classes.RepeatedTrials
 public import Complexity.Computability.Complexity.Classes.SBP
 public import Complexity.Foundations.Data.BitString.WordCount
@@ -97,12 +98,10 @@ member some proof is rejected on at most a `2 ^ (-e(n))` fraction of the random 
 non-member every proof is accepted on at most such a fraction. -/
 def IsMerlinArthurVerifierWithErrorExponent (enc : α ↪ List Bool) (e q p : Polynomial ℕ)
     (V : α × List Bool → Bool) (A : Set α) : Prop :=
-  ∀ a, (a ∈ A → ∃ y : Fin (q.eval (enc a).length) → Bool, 2 ^ e.eval (enc a).length *
-      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn y ++ List.ofFn r) = false).card ≤ 2 ^ p.eval (enc a).length) ∧
-    (a ∉ A → ∀ y : Fin (q.eval (enc a).length) → Bool, 2 ^ e.eval (enc a).length *
-      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn y ++ List.ofFn r) = true).card ≤ 2 ^ p.eval (enc a).length)
+  ∀ a, (a ∈ A → ∃ y : Fin (q.eval (enc a).length) → Bool,
+      ErrorExponentAt enc e p (fun z => V (z.1, List.ofFn y ++ z.2)) a true) ∧
+    (a ∉ A → ∀ y : Fin (q.eval (enc a).length) → Bool,
+      ErrorExponentAt enc e p (fun z => V (z.1, List.ofFn y ++ z.2)) a false)
 
 /-- The strict majority of `2 r(n)` runs of a Merlin–Arthur verifier `V` on one proof, where `n` is
 the length of the encoded instance: the string is a proof of `q(n)` bits followed by `2 r(n)`
@@ -123,16 +122,14 @@ theorem computableInPolyTime_merlinArthurRepeat {V : α × List Bool → Bool}
   unfold merlinArthurRepeat repeatMajority repeatVotes
   fun_prop
 
-/-- On a proof followed by `2 r(n)` rows of `p(n)` bits, the majority vote compares the number of
-rows accepted with the proof with `r(n)`. -/
-private theorem merlinArthurRepeat_ofFn_append_ofFn {q r p : Polynomial ℕ}
+/-- On a proof of length `q(n)` followed by a random string `w`, `merlinArthurRepeat` is
+`repeatMajority` with that proof fixed. -/
+private theorem merlinArthurRepeat_ofFn_append {q r p : Polynomial ℕ}
     {V : α × List Bool → Bool}
-    (a : α) (y : Fin (q.eval (enc a).length) → Bool)
-    (x : BitString (2 * r.eval (enc a).length * p.eval (enc a).length)) :
-    merlinArthurRepeat enc q r p V (a, List.ofFn y ++ List.ofFn x) = decide (r.eval (enc a).length <
-      #{i | V (a, List.ofFn y ++ List.ofFn (BitString.block x i)) = true}) := by
+    (a : α) (y : Fin (q.eval (enc a).length) → Bool) (w : List Bool) :
+    merlinArthurRepeat enc q r p V (a, List.ofFn y ++ w) =
+      repeatMajority enc r p (fun z => V (z.1, List.ofFn y ++ z.2)) (a, w) := by
   rw [merlinArthurRepeat, List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn]
-  exact repeatMajority_ofFn (V := fun z => V (z.1, List.ofFn y ++ z.2)) a x
 
 /-- **Error reduction for `MA`** [Babai][Babai1985]. The strict majority of `12 e(n)` runs of a
 Merlin–Arthur verifier with one proof, on independent blocks of random bits, errs on at most a
@@ -140,50 +137,18 @@ Merlin–Arthur verifier with one proof, on independent blocks of random bits, e
 theorem IsMerlinArthurVerifier.repeatMajority {q p : Polynomial ℕ} {V : α × List Bool → Bool}
     (h : IsMerlinArthurVerifier enc q p V A) (e : Polynomial ℕ) :
     IsMerlinArthurVerifierWithErrorExponent enc e q (12 * e * p)
-      (merlinArthurRepeat enc q (6 * e) p V) A := by
-  intro a
-  have hlen : (12 * e * p).eval (enc a).length =
-      2 * (6 * e).eval (enc a).length * p.eval (enc a).length := by
-    simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
-    ring
-  have hR : (6 * e).eval (enc a).length = 6 * e.eval (enc a).length := by simp
-  rw [hlen]
-  constructor
-  · -- on a member, the good proof is rejected only when at most `R` runs accept
-    intro ha
-    obtain ⟨y, hy⟩ := (h a).1 ha
-    refine ⟨y, (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
-      (BitString.two_pow_mul_card_filter_card_filter_block_le hR
-        (fun s => V (a, List.ofFn y ++ List.ofFn s) = true) hy)⟩
-    rw [mem_filter, merlinArthurRepeat_ofFn_append_ofFn, decide_eq_false_iff_not, not_lt] at hx
-    exact mem_filter.2 ⟨mem_univ _, hx.2⟩
-  · -- on a non-member, every proof is accepted only when at most `R` runs reject
-    intro ha y
-    refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
-      (BitString.two_pow_mul_card_filter_card_filter_block_le hR
-        (fun s => V (a, List.ofFn y ++ List.ofFn s) = false) ((h a).2 ha y))
-    rw [mem_filter, merlinArthurRepeat_ofFn_append_ofFn, decide_eq_true_iff] at hx
-    have hsum := card_filter_add_card_filter_not (s := (univ : Finset (Fin (2 *
-      (6 * e).eval (enc a).length))))
-      fun i => V (a, List.ofFn y ++ List.ofFn (BitString.block x i)) = true
-    simp only [Bool.not_eq_true, card_univ, Fintype.card_fin] at hsum
-    refine mem_filter.2 ⟨mem_univ _, ?_⟩
-    omega
+      (merlinArthurRepeat enc q (6 * e) p V) A :=
+  fun a => ⟨fun ha => let ⟨y, hy⟩ := (h a).1 ha
+      ⟨y, (hy.repeatMajority e).congr fun _ => (merlinArthurRepeat_ofFn_append a y _).symm⟩,
+    fun ha y => (((h a).2 ha y).repeatMajority e).congr fun _ =>
+      (merlinArthurRepeat_ofFn_append a y _).symm⟩
 
 /-- Error at most `2 ^ (-e(n)) ≤ 1 / 4` is error at most `1 / 3`. -/
 theorem IsMerlinArthurVerifierWithErrorExponent.isMerlinArthurVerifier {e q p : Polynomial ℕ}
     {V : α × List Bool → Bool} (h : IsMerlinArthurVerifierWithErrorExponent enc e q p V A)
-    (he : ∀ n, 2 ≤ e.eval n) : IsMerlinArthurVerifier enc q p V A := fun a => by
-  have h4 : 4 ≤ 2 ^ e.eval (enc a).length :=
-    (Nat.pow_le_pow_right (by norm_num) (he _) : 2 ^ 2 ≤ _)
-  constructor
-  · intro ha
-    obtain ⟨y, hy⟩ := (h a).1 ha
-    refine ⟨y, BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_⟩
-    simpa only [Bool.not_eq_true] using (Nat.mul_le_mul_right _ h4).trans hy
-  · intro ha y
-    refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    simpa only [Bool.not_eq_false] using (Nat.mul_le_mul_right _ h4).trans ((h a).2 ha y)
+    (he : ∀ n, 2 ≤ e.eval n) : IsMerlinArthurVerifier enc q p V A :=
+  fun a => ⟨fun ha => let ⟨y, hy⟩ := (h a).1 ha; ⟨y, hy.boundedErrorAt (he _)⟩,
+    fun ha y => ((h a).2 ha y).boundedErrorAt (he _)⟩
 
 /-- **Error reduction for `MA`** [Babai][Babai1985]: a problem is in `MA` exactly when, for some
 polynomial proof length `q` and every polynomial `e`, it has a polynomial-time Merlin–Arthur
@@ -192,17 +157,11 @@ before the error, so the error can be made smaller than `2 ^ (-q(n))`. -/
 theorem mem_MA_iff_exists_forall_errorExponent :
     A ∈ MA enc ↔ ∃ q : Polynomial ℕ, ∀ e : Polynomial ℕ, ∃ (p : Polynomial ℕ)
       (V : α × List Bool → Bool), ComputableInPolyTime V (encPair enc encBits) encBool ∧
-        IsMerlinArthurVerifierWithErrorExponent enc e q p V A := by
-  have this : A ∈ MA enc ↔ ∃ q : Polynomial ℕ, ∀ e : Polynomial ℕ, ∃ (p : Polynomial ℕ)
-      (V : α × List Bool → Bool), ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-      IsMerlinArthurVerifierWithErrorExponent enc e q p V A := by
-    rw [mem_MA]
-    refine ⟨fun ⟨q, p, V, hV, h⟩ => ⟨q, fun e => ⟨12 * e * p, _,
-      (computableInPolyTime_merlinArthurRepeat hV _ _ _).tidy, h.repeatMajority e⟩⟩,
-      fun ⟨q, h⟩ => ?_⟩
-    obtain ⟨p, V, hV, h⟩ := h 2
-    exact ⟨q, p, V, (.of_tidy hV), h.isMerlinArthurVerifier fun _ => by simp⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+        IsMerlinArthurVerifierWithErrorExponent enc e q p V A :=
+  ⟨fun ⟨q, p, V, hV, h⟩ => ⟨q, fun e => ⟨12 * e * p, _,
+      computableInPolyTime_merlinArthurRepeat hV _ _ _, h.repeatMajority e⟩⟩,
+    fun ⟨q, h⟩ => let ⟨p, V, hV, h⟩ := h 2
+      ⟨q, p, V, hV, h.isMerlinArthurVerifier fun _ => by simp⟩⟩
 
 /-! ### Error reduction for `AM` -/
 
@@ -213,13 +172,22 @@ non-member at most such a fraction have one. -/
 def IsArthurMerlinVerifierWithErrorExponent (enc : α ↪ List Bool) (e p q : Polynomial ℕ)
     (V : α × List Bool → Bool) (A : Set α) : Prop :=
   ∀ a, (a ∈ A → 2 ^ e.eval (enc a).length *
-      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        ∀ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn r ++ List.ofFn y) = false).card ≤
+      arthurMerlinRejectCount V a (p.eval (enc a).length) (q.eval (enc a).length) ≤
       2 ^ p.eval (enc a).length) ∧
     (a ∉ A → 2 ^ e.eval (enc a).length *
-      (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        ∃ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn r ++ List.ofFn y) = true).card ≤
+      arthurMerlinAcceptCount V a (p.eval (enc a).length) (q.eval (enc a).length) ≤
       2 ^ p.eval (enc a).length)
+
+/-- An Arthur–Merlin verifier has error exponent `e` iff its reply-existence slice decides with
+error exponent `e`. -/
+theorem isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent
+    {e p q : Polynomial ℕ} {V : α × List Bool → Bool} :
+    IsArthurMerlinVerifierWithErrorExponent enc e p q V A ↔
+      DecidesWithErrorExponent enc e p (arthurMerlinSlice enc q V) A := by
+  simp only [IsArthurMerlinVerifierWithErrorExponent, DecidesWithErrorExponent,
+    PromiseProblem.SolvesWithErrorExponent, ErrorExponentAt, Bool.not_true, Bool.not_false,
+    arthurMerlinAcceptCount_eq_outcomeCount, arthurMerlinRejectCount_eq_outcomeCount]
+  rfl
 
 /-- The strict majority of `2 r(n)` parallel runs of an Arthur–Merlin verifier `V`, where `n` is the
 length of the encoded instance: the string consists of `2 r(n)` random rows of `p(n)` bits followed
@@ -284,6 +252,23 @@ theorem exists_arthurMerlinRepeat_ofFn_append_ofFn_iff {r p q : Polynomial ℕ}
     simp only [z, hi, ↓reduceDIte]
     exact hi.choose_spec
 
+private theorem arthurMerlinSlice_arthurMerlinRepeat {e p q : Polynomial ℕ}
+    {V : α × List Bool → Bool} (a : α)
+    (x : Fin ((12 * e * p).eval (enc a).length) → Bool) :
+    repeatMajority enc (6 * e) p (arthurMerlinSlice enc q V) (a, List.ofFn x) =
+      arthurMerlinSlice enc (12 * e * q) (arthurMerlinRepeat enc (6 * e) p q V)
+        (a, List.ofFn x) := by
+  have hlen (s : Polynomial ℕ) : (12 * e * s).eval (enc a).length =
+      2 * (6 * e).eval (enc a).length * s.eval (enc a).length := by
+    simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
+    ring
+  revert x
+  rw [hlen p]
+  intro x
+  rw [repeatMajority_ofFn, arthurMerlinSlice, hlen q]
+  simp only [arthurMerlinSlice, decide_eq_true_iff,
+    exists_arthurMerlinRepeat_ofFn_append_ofFn_iff]
+
 /-- **Error reduction for `AM`** [Babai][Babai1985]. The strict majority of `12 e(n)` parallel runs
 of an Arthur–Merlin verifier, on independent blocks of random bits answered independently, errs on
 at most a `2 ^ (-e(n))` fraction of the random strings. -/
@@ -291,61 +276,18 @@ theorem IsArthurMerlinVerifier.repeatMajority {p q : Polynomial ℕ} {V : α × 
     (h : IsArthurMerlinVerifier enc p q V A) (e : Polynomial ℕ) :
     IsArthurMerlinVerifierWithErrorExponent enc e (12 * e * p) (12 * e * q)
       (arthurMerlinRepeat enc (6 * e) p q V) A := by
-  intro a
-  have hlen (s : Polynomial ℕ) : (12 * e * s).eval (enc a).length =
-      2 * (6 * e).eval (enc a).length * s.eval (enc a).length := by
-    simp only [Polynomial.eval_mul, Polynomial.eval_ofNat]
-    ring
-  have hR : (6 * e).eval (enc a).length = 6 * e.eval (enc a).length := by simp
-  rw [hlen p, hlen q]
-  -- the amplified acceptance condition is a majority vote of the original one
-  have hacc (x : BitString (2 * (6 * e).eval (enc a).length * p.eval (enc a).length)) :
-      (∃ y : BitString (2 * (6 * e).eval (enc a).length * q.eval (enc a).length),
-        arthurMerlinRepeat enc (6 * e) p q V (a, List.ofFn x ++ List.ofFn y) = true) ↔
-      (6 * e).eval (enc a).length < #{i | ∃ z : Fin (q.eval (enc a).length) → Bool,
-        V (a, List.ofFn (BitString.block x i) ++ List.ofFn z) = true} :=
-    exists_arthurMerlinRepeat_ofFn_append_ofFn_iff a x
-  constructor
-  · -- on a member, no reply is accepted only when at most `R` rows have an accepted reply
-    intro ha
-    refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
-      (BitString.two_pow_mul_card_filter_card_filter_block_le hR
-        (fun s => ∃ z : Fin (q.eval (enc a).length) → Bool,
-          V (a, List.ofFn s ++ List.ofFn z) = true) ((h a).1 ha))
-    have hx := (mem_filter.1 hx).2
-    refine mem_filter.2 ⟨mem_univ _, not_lt.1 fun hlt => ?_⟩
-    obtain ⟨y, hy⟩ := (hacc x).2 hlt
-    rw [hx y] at hy
-    exact Bool.false_ne_true hy
-  · -- on a non-member, some reply is accepted only when at most `R` rows have none
-    intro ha
-    refine (Nat.mul_le_mul_left _ (card_le_card fun x hx => ?_)).trans
-      (BitString.two_pow_mul_card_filter_card_filter_block_le hR
-        (fun s => ∀ z : Fin (q.eval (enc a).length) → Bool,
-          V (a, List.ofFn s ++ List.ofFn z) = false) ((h a).2 ha))
-    have hx := (hacc x).1 (mem_filter.1 hx).2
-    have hsum := card_filter_add_card_filter_not (s := (univ : Finset (Fin (2 *
-      (6 * e).eval (enc a).length))))
-      fun i => ∃ z : Fin (q.eval (enc a).length) → Bool,
-        V (a, List.ofFn (BitString.block x i) ++ List.ofFn z) = true
-    simp only [not_exists, Bool.not_eq_true, card_univ, Fintype.card_fin] at hsum
-    refine mem_filter.2 ⟨mem_univ _, ?_⟩
-    omega
+  rw [isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent]
+  have h' := (isArthurMerlinVerifier_iff_decidesWithBoundedError.1 h).repeatMajority e
+  exact fun a => ⟨fun ha => ((h' a).1 ha).congr (arthurMerlinSlice_arthurMerlinRepeat a),
+    fun ha => ((h' a).2 ha).congr (arthurMerlinSlice_arthurMerlinRepeat a)⟩
 
 /-- Error at most `2 ^ (-e(n)) ≤ 1 / 4` is error at most `1 / 3`. -/
 theorem IsArthurMerlinVerifierWithErrorExponent.isArthurMerlinVerifier {e p q : Polynomial ℕ}
     {V : α × List Bool → Bool} (h : IsArthurMerlinVerifierWithErrorExponent enc e p q V A)
-    (he : ∀ n, 2 ≤ e.eval n) : IsArthurMerlinVerifier enc p q V A := fun a => by
-  have h4 : 4 ≤ 2 ^ e.eval (enc a).length :=
-    (Nat.pow_le_pow_right (by norm_num) (he _) : 2 ^ 2 ≤ _)
-  constructor
-  · intro ha
-    refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    simpa only [not_exists, Bool.not_eq_true] using (Nat.mul_le_mul_right _ h4).trans ((h a).1 ha)
-  · intro ha
-    refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    simpa only [not_forall, Bool.not_eq_false] using
-      (Nat.mul_le_mul_right _ h4).trans ((h a).2 ha)
+    (he : ∀ n, 2 ≤ e.eval n) : IsArthurMerlinVerifier enc p q V A :=
+  isArthurMerlinVerifier_iff_decidesWithBoundedError.2
+    ((isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent.1
+      h).solvesWithBoundedError he)
 
 /-- **Error reduction for `AM`** [Babai][Babai1985]: a problem is in `AM` exactly when, for every
 polynomial `e`, it has a polynomial-time Arthur–Merlin verifier with error at most
@@ -353,16 +295,11 @@ polynomial `e`, it has a polynomial-time Arthur–Merlin verifier with error at 
 theorem mem_AM_iff_forall_errorExponent :
     A ∈ AM enc ↔ ∀ e : Polynomial ℕ, ∃ (p q : Polynomial ℕ) (V : α × List Bool → Bool),
       ComputableInPolyTime V (encPair enc encBits) encBool ∧
-        IsArthurMerlinVerifierWithErrorExponent enc e p q V A := by
-  have this : A ∈ AM enc ↔ ∀ e : Polynomial ℕ, ∃ (p q : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-      IsArthurMerlinVerifierWithErrorExponent enc e p q V A := by
-    rw [mem_AM]
-    refine ⟨fun ⟨p, q, V, hV, h⟩ e => ⟨12 * e * p, 12 * e * q, _,
-      (computableInPolyTime_arthurMerlinRepeat hV _ _ _).tidy, h.repeatMajority e⟩, fun h => ?_⟩
-    obtain ⟨p, q, V, hV, h⟩ := h 2
-    exact ⟨p, q, V, (.of_tidy hV), h.isArthurMerlinVerifier fun _ => by simp⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+        IsArthurMerlinVerifierWithErrorExponent enc e p q V A :=
+  ⟨fun ⟨p, q, V, hV, h⟩ e => ⟨12 * e * p, 12 * e * q, _,
+      computableInPolyTime_arthurMerlinRepeat hV _ _ _, h.repeatMajority e⟩,
+    fun h => let ⟨p, q, V, hV, h⟩ := h 2
+      ⟨p, q, V, hV, h.isArthurMerlinVerifier fun _ => by simp⟩⟩
 
 /-! ### `MA ⊆ AM` -/
 
@@ -410,7 +347,7 @@ theorem MA_subset_AM : MA enc ⊆ AM enc := by
           (List.ofFn r ++ List.ofFn y).take (P.eval (enc a).length) =
         List.ofFn y ++ List.ofFn r := by
     rw [List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn]
-  simp only [hswap]
+  simp only [arthurMerlinAcceptCount, arthurMerlinRejectCount, hswap]
   have h4 : 4 ≤ 2 ^ (q + 2).eval (enc a).length := by
     simp only [Polynomial.eval_add, Polynomial.eval_ofNat, pow_add]
     exact Nat.le_mul_of_pos_left _ (by positivity)
@@ -500,6 +437,7 @@ theorem MA_subset_SBP : MA enc ⊆ SBP enc := by
   · -- the good proof alone is accepted with three quarters of the random strings
     intro ha
     obtain ⟨y, hy⟩ := (h' a).1 ha
+    dsimp only [ErrorExponentAt, outcomeCount, Bool.not_true] at hy
     rw [Polynomial.eval_add, Polynomial.eval_ofNat] at hy
     exact three_mul_two_pow_le_four_mul_sum W a y hy
   · -- all proofs together are accepted with at most a quarter of the random strings
@@ -508,7 +446,8 @@ theorem MA_subset_SBP : MA enc ⊆ SBP enc := by
       (f := fun u : Fin (q.eval (enc a).length) → Bool =>
         acceptCount (fun x => W (x.1, List.ofFn u ++ x.2)) a (P.eval (enc a).length))
       fun u => ?_
-    simpa only [acceptCount, Polynomial.eval_add, Polynomial.eval_ofNat] using (h' a).2 ha u
+    simpa only [ErrorExponentAt, outcomeCount, Bool.not_false, acceptCount, Polynomial.eval_add,
+      Polynomial.eval_ofNat] using (h' a).2 ha u
 
 /-! ### Existential quantification -/
 
@@ -617,7 +556,7 @@ theorem mem_AM_of_exists {B : Set (α × List Bool)} (hB : B ∈ AM (encPair enc
       computableInPolyTime_existsAMVerifier hVB (pB.comp L) p, fun a => ?_⟩
   -- the verifier reads the word and runs the verifier of the pairs
   rw [Polynomial.eval_add]
-  simp only [existsAMVerifier_ofFn_append]
+  simp only [arthurMerlinAcceptCount, arthurMerlinRejectCount, existsAMVerifier_ofFn_append]
   -- the error bounds of the pairs, at the length of the encoded instance
   have herr (w : BitString (p.eval (enc a).length)) := by
     have h := hB' (a, List.ofFn w)

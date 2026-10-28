@@ -539,7 +539,8 @@ theorem PH_subset_BPOp_ParityP : PH enc ⊆ BPOp enc (ParityP (encPair enc encBi
       (s := (univ : Finset (Fin (ρ.eval (enc a).length) → Bool)))
       (fun r => Odd (acceptCount (fun x => W (x.1, List.ofFn r ++ x.2)) a (ζ.eval (enc a).length)))
     simp only [card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] at hsplit
-    simp only [hL', Set.mem_ofPred_eq, decide_eq_true_eq, decide_eq_false_iff_not]
+    simp only [BoundedErrorAt, outcomeCount, hL', Set.mem_ofPred_eq, decide_eq_true_eq,
+      decide_eq_false_iff_not]
     rw [← hLV a] at ha
     constructor
     · intro (haL : a ∈ L)

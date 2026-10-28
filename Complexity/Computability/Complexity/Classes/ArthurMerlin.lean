@@ -53,10 +53,15 @@ the second level of the polynomial hierarchy in
 ## Main definitions
 
 * `Cslib.Complexity.IsMerlinArthurVerifier`, `Cslib.Complexity.MA`.
+* `Cslib.Complexity.arthurMerlinAcceptCount`, `Cslib.Complexity.arthurMerlinRejectCount`,
+  `Cslib.Complexity.arthurMerlinSlice`: per-instance Arthur–Merlin coin counts and reply-existence
+  verifier.
 * `Cslib.Complexity.IsArthurMerlinVerifier`, `Cslib.Complexity.AM`.
 
 ## Main results
 
+* `Cslib.Complexity.isArthurMerlinVerifier_iff_decidesWithBoundedError`: an Arthur–Merlin verifier
+  is a bounded-error decider when composed with existential quantification over Merlin's reply.
 * `Cslib.Complexity.NP_subset_MA`, `Cslib.Complexity.BPP_subset_MA`.
 * `Cslib.Complexity.PolyTimeReducible.mem_MA`, `Cslib.Complexity.PolyTimeReducible.mem_AM`:
   closure under polynomial-time many-one reductions.
@@ -85,12 +90,10 @@ makes at least two thirds of the random strings `r` accepted, `V (a, y ++ r) = t
 non-member every proof leaves at least two thirds of the random strings rejected. -/
 def IsMerlinArthurVerifier (enc : α ↪ List Bool) (q p : Polynomial ℕ) (V : α × List Bool → Bool)
     (A : Set α) : Prop :=
-  ∀ a, (a ∈ A → ∃ y : Fin (q.eval (enc a).length) → Bool, 2 * 2 ^ p.eval (enc a).length ≤
-      3 * (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn y ++ List.ofFn r) = true).card) ∧
-    (a ∉ A → ∀ y : Fin (q.eval (enc a).length) → Bool, 2 * 2 ^ p.eval (enc a).length ≤
-      3 * (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn y ++ List.ofFn r) = false).card)
+  ∀ a, (a ∈ A → ∃ y : Fin (q.eval (enc a).length) → Bool,
+      BoundedErrorAt enc p (fun z => V (z.1, List.ofFn y ++ z.2)) a true) ∧
+    (a ∉ A → ∀ y : Fin (q.eval (enc a).length) → Bool,
+      BoundedErrorAt enc p (fun z => V (z.1, List.ofFn y ++ z.2)) a false)
 
 /-- The problems with polynomial-time Merlin–Arthur verifiers, with polynomially long proofs and
 random strings, with respect to the encoding `enc` of instances [Babai][Babai1985]. -/
@@ -105,6 +108,38 @@ theorem mem_MA : A ∈ MA enc ↔ ∃ (q p : Polynomial ℕ) (V : α × List Boo
 
 /-! ### Arthur–Merlin -/
 
+/-- The number of random strings `r` of length `m` for which some reply `y` of length `n` is
+accepted by `V` on `a`. -/
+@[reducible]
+def arthurMerlinAcceptCount (V : α × List Bool → Bool) (a : α) (m n : ℕ) : ℕ :=
+  (univ.filter fun r : Fin m → Bool =>
+    ∃ y : Fin n → Bool, V (a, List.ofFn r ++ List.ofFn y) = true).card
+
+/-- The number of random strings `r` of length `m` for which every reply `y` of length `n` is
+rejected by `V` on `a`. -/
+@[reducible]
+def arthurMerlinRejectCount (V : α × List Bool → Bool) (a : α) (m n : ℕ) : ℕ :=
+  (univ.filter fun r : Fin m → Bool =>
+    ∀ y : Fin n → Bool, V (a, List.ofFn r ++ List.ofFn y) = false).card
+
+/-- Whether some reply `y` of length `q(|x.1|)` is accepted by `V` on `(x.1, x.2 ++ y)`. -/
+def arthurMerlinSlice (enc : α ↪ List Bool) (q : Polynomial ℕ) (V : α × List Bool → Bool)
+    (x : α × List Bool) : Bool :=
+  decide (∃ y : Fin (q.eval (enc x.1).length) → Bool, V (x.1, x.2 ++ List.ofFn y) = true)
+
+theorem arthurMerlinAcceptCount_eq_outcomeCount (enc : α ↪ List Bool) (q : Polynomial ℕ)
+    (V : α × List Bool → Bool) (a : α) (m : ℕ) :
+    arthurMerlinAcceptCount V a m (q.eval (enc a).length) =
+      outcomeCount (arthurMerlinSlice enc q V) a m true := by
+  simp only [arthurMerlinAcceptCount, outcomeCount, arthurMerlinSlice, decide_eq_true_iff]
+
+theorem arthurMerlinRejectCount_eq_outcomeCount (enc : α ↪ List Bool) (q : Polynomial ℕ)
+    (V : α × List Bool → Bool) (a : α) (m : ℕ) :
+    arthurMerlinRejectCount V a m (q.eval (enc a).length) =
+      outcomeCount (arthurMerlinSlice enc q V) a m false := by
+  simp only [arthurMerlinRejectCount, outcomeCount, arthurMerlinSlice, decide_eq_false_iff_not,
+    not_exists, Bool.not_eq_true]
+
 /-- `V` is an Arthur–Merlin verifier for `A`, with random strings of length `p` and replies of
 length `q`, both evaluated at the length of the encoded instance: on a member `a` at least two
 thirds of the random strings `r` have a reply `y` with `V (a, r ++ y) = true`; on a non-member at
@@ -112,11 +147,20 @@ least two thirds of them have none. -/
 def IsArthurMerlinVerifier (enc : α ↪ List Bool) (p q : Polynomial ℕ) (V : α × List Bool → Bool)
     (A : Set α) : Prop :=
   ∀ a, (a ∈ A → 2 * 2 ^ p.eval (enc a).length ≤
-      3 * (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        ∃ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn r ++ List.ofFn y) = true).card) ∧
+      3 * arthurMerlinAcceptCount V a (p.eval (enc a).length) (q.eval (enc a).length)) ∧
     (a ∉ A → 2 * 2 ^ p.eval (enc a).length ≤
-      3 * (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        ∀ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn r ++ List.ofFn y) = false).card)
+      3 * arthurMerlinRejectCount V a (p.eval (enc a).length) (q.eval (enc a).length))
+
+/-- An Arthur–Merlin verifier is a bounded-error decider when composed with existential
+quantification over Merlin's reply. -/
+theorem isArthurMerlinVerifier_iff_decidesWithBoundedError {p q : Polynomial ℕ}
+    {V : α × List Bool → Bool} :
+    IsArthurMerlinVerifier enc p q V A ↔
+      DecidesWithBoundedError enc p (arthurMerlinSlice enc q V) A := by
+  simp only [IsArthurMerlinVerifier, DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError,
+    BoundedErrorAt, arthurMerlinAcceptCount_eq_outcomeCount,
+    arthurMerlinRejectCount_eq_outcomeCount]
+  rfl
 
 /-- The problems with polynomial-time Arthur–Merlin verifiers, with polynomially long random
 strings and replies, with respect to the encoding `enc` of instances
@@ -147,9 +191,11 @@ theorem NP_subset_MA : NP enc ⊆ MA enc := by
   · obtain ⟨w, hw, hVw⟩ := (hA a).1 ha
     refine ⟨BitString.ofList _ w, two_mul_two_pow_le_card_filter_of_eq_zero
       (Polynomial.eval_zero) _ fun r => ?_⟩
+    dsimp only
     rw [BitString.ofFn_ofList hw,
       List.eq_nil_of_length_eq_zero (by simp : (List.ofFn r).length = 0), List.append_nil, hVw]
   · refine two_mul_two_pow_le_card_filter_of_eq_zero (Polynomial.eval_zero) _ fun r => ?_
+    dsimp only
     rw [List.eq_nil_of_length_eq_zero (by simp : (List.ofFn r).length = 0), List.append_nil]
     by_contra hVy
     exact ha ((hA a).2 ⟨_, List.length_ofFn, by simpa using hVy⟩)
@@ -218,6 +264,7 @@ theorem PolyTimeReducible.mem_MA {encB : β ↪ List Bool} {B : Set β}
   obtain ⟨q, p, V, hV, hVB⟩ := hB
   obtain ⟨Q, P, V', hV', hQe, hPe, hsplit⟩ := exists_truncated_verifier hf.tidy q p hV.tidy
   refine ⟨Q, P, V', .of_tidy hV', fun a => ?_⟩
+  dsimp only [BoundedErrorAt, outcomeCount]
   simp only [hsplit]
   constructor
   · intro ha
@@ -257,7 +304,7 @@ theorem PolyTimeReducible.mem_AM {encB : β ↪ List Bool} {B : Set β}
           V (f a, (List.ofFn r).take (p.eval (encB (f a)).length) ++ List.ofFn y) = false :=
     BitString.forall_take_ofFn_iff (hQe a)
       (g := fun w => V (f a, (List.ofFn r).take (p.eval (encB (f a)).length) ++ w) = false)
-  simp only [hsplit, hex, hall]
+  simp only [arthurMerlinAcceptCount, arthurMerlinRejectCount, hsplit, hex, hall]
   exact ⟨fun ha => two_mul_two_pow_le_card_filter_take (hPe a)
       (fun w => ∃ y : Fin (q.eval (encB (f a)).length) → Bool, V (f a, w ++ List.ofFn y) = true)
       ((hVB (f a)).1 ((hAB a).1 ha)),

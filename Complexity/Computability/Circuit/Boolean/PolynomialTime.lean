@@ -179,6 +179,7 @@ theorem BPP_subset_PPolyOn : Complexity.BPP enc ⊆ PPolyOn enc := by
     (polynomiallyBounded_complexity_framedSlice hL' (by fun_prop)) (encodes enc)
     (encodesMember enc A) fun n x ⟨a, ha⟩ => by
       have h := hdec a
+      dsimp only [Complexity.BoundedErrorAt, Complexity.outcomeCount] at h
       rw [ha, List.length_ofFn] at h
       by_cases haA : a ∈ A
       · rw [(encodesMember_eq_true_iff ha).2 haA]

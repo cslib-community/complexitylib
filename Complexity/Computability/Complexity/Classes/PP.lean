@@ -77,16 +77,18 @@ strings accepts the members of its problem, and only them, on more than half. -/
 theorem DecidesWithBoundedError.decidesByMajority {p : Polynomial ℕ} {V : α × List Bool → Bool}
     {A : Set α} (h : DecidesWithBoundedError enc p V A) : DecidesByMajority enc p V A := by
   intro a
-  have hsum := acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := p.eval (enc a).length)
+  have hsum := outcomeCount_true_add_outcomeCount_false V a (p.eval (enc a).length)
   have hpos := Nat.one_le_two_pow (n := p.eval (enc a).length)
+  change a ∈ A ↔ 2 ^ p.eval (enc a).length < 2 * outcomeCount V a (p.eval (enc a).length) true
   constructor
   · intro ha
     have := (h a).1 ha
-    rw [← acceptCount] at this
+    unfold BoundedErrorAt at this
     omega
   · intro hlt
     by_contra ha
     have := (h a).2 ha
+    unfold BoundedErrorAt at this
     omega
 
 /-- **`BPP ⊆ PP`.** -/

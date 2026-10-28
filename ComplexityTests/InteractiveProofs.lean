@@ -126,7 +126,7 @@ example (a : List Bool) :
 
 example : (∅ : Set (List Bool)) ∈ IP encBits :=
   BPP_subset_IP _ ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ => by
-    simp only [Polynomial.eval_zero, pow_zero, mul_one]
+    simp only [BoundedErrorAt, outcomeCount, Polynomial.eval_zero, pow_zero, mul_one]
     exact le_trans (by norm_num : 2 ≤ 3 * 1)
       (Nat.mul_le_mul_left 3 (Finset.card_pos.2
         ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩
