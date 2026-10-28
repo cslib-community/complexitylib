@@ -239,7 +239,7 @@ def productDepth (F : SPFormula K n) : ℕ :=
   simp [productDepth]
 
 /-- The formula `0` has product-depth zero. -/
-@[simp] theorem productDepth_zero : (zero : SPFormula K n).productDepth = 0 := by
+theorem productDepth_zero : (zero : SPFormula K n).productDepth = 0 := by
   simp [productDepth]
 
 /-- The product-depth is at most the depth. -/
@@ -285,7 +285,7 @@ noncomputable def polynomial (F : SPFormula K n) : MvPolynomial (Fin n) K :=
   rfl
 
 /-- The formula `0` computes `0`. -/
-@[simp] theorem polynomial_zero : (zero : SPFormula K n).polynomial = 0 := by
+theorem polynomial_zero : (zero : SPFormula K n).polynomial = 0 := by
   simp [zero]
 
 /-- Evaluating the polynomial computed by a formula at a point of a commutative `K`-algebra is
