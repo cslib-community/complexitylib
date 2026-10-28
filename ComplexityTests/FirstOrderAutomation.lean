@@ -30,34 +30,20 @@ section QF
 
 variable {L : Language} (R : L.Relations 2) (S : L.Relations 1)
 
-example : (∼(rel₂ R (0 : Fin 2) 1) ⊔ varEq 0 1 ⇔ rel₁ S 0 ⊓ ⊤ : L.Formula (Fin 2)).IsQF := by
-  fo_qf
-
-example :
-    (Formula.iInf fun i : Fin 3 => (rel₂ R i 0).relabel Fin.succ : L.Formula (Fin 4)).IsQF := by
-  fo_qf
-
-example : (le R (0 : Fin 2) 1 ⟹ lt R 1 0 : L.Formula (Fin 2)).IsQF := by
-  fo_qf
-
-example {φ : L.Formula (Fin 1)} (hφ : φ.IsQF) : (atVar φ (2 : Fin 3) ⊓ ∼(atVar φ 0)).IsQF := by
-  fo_qf
-
-example {L' : Language} [L'.IsRelational] {I : Interpretation L L' (Fin 2)} (hI : I.IsQF)
-    {φ : L'.Formula (Fin 3)} (hφ : φ.IsQF) :
-    (I.onFormula φ ⊓ I.domain.relabel fun i => (0, i)).IsQF := by
-  fo_qf
-
-example [L.IsRelational] : ((Interpretation.id L).comp (Interpretation.id L)).IsQF := by
-  fo_qf
-
-example {L' : Language} {I : Interpretation L L' (Fin 2)} (hI : I.IsQF) {n : ℕ}
-    (R' : L'.Relations n) : (I.rel R' ⟹ ∼(I.rel R')).IsQF := by
-  fo_qf
-
-example {N N' L' : Language} {I : Projection N N' L L' (Fin 2)} (hI : I.IsQF) {n : ℕ}
-    (R' : L'.Relations n) : ((I.rel R').not.relabel id).IsQF ∧ I.numeric.IsQF := by
-  exact ⟨by fo_qf, by fo_qf⟩
+example [L.IsRelational] {φ : L.Formula (Fin 1)} (hφ : φ.IsQF)
+    {L' : Language} [L'.IsRelational] {I : Interpretation L L' (Fin 2)} (hI : I.IsQF)
+    {ψ : L'.Formula (Fin 3)} (hψ : ψ.IsQF) {n : ℕ} (R' : L'.Relations n)
+    {N N' : Language} {P : Projection N N' L L' (Fin 2)} (hP : P.IsQF) :
+    (∼(rel₂ R (0 : Fin 2) 1) ⊔ varEq 0 1 ⇔ rel₁ S 0 ⊓ ⊤ : L.Formula (Fin 2)).IsQF ∧
+    (Formula.iInf fun i : Fin 3 => (rel₂ R i 0).relabel Fin.succ : L.Formula (Fin 4)).IsQF ∧
+    (le R (0 : Fin 2) 1 ⟹ lt R 1 0 : L.Formula (Fin 2)).IsQF ∧
+    (atVar φ (2 : Fin 3) ⊓ ∼(atVar φ 0)).IsQF ∧
+    (I.onFormula ψ ⊓ I.domain.relabel fun i => (0, i)).IsQF ∧
+    ((Interpretation.id L).comp (Interpretation.id L)).IsQF ∧
+    (I.rel R' ⟹ ∼(I.rel R')).IsQF ∧
+    ((P.rel R').not.relabel id).IsQF ∧
+    P.numeric.IsQF :=
+  ⟨by fo_qf, by fo_qf, by fo_qf, by fo_qf, by fo_qf, by fo_qf, by fo_qf, by fo_qf, by fo_qf⟩
 
 /-- Without a hypothesis, an abstract interpretation is not known to be quantifier-free. -/
 example {L' : Language} (_I : Interpretation L L' (Fin 2)) : True := by
@@ -71,19 +57,16 @@ example : ¬ (∀' R.boundedFormula₂ &0 &0 : L.Sentence).IsQF := by
 
 end QF
 
-/-- Concrete interpretations are split by relation symbol and unfolded. -/
-example : complementEdges.IsQF := by fo_qf
-
-example : (complementEdges.comp complementSize).IsQF := by fo_qf
-
-example (N : Language) : (Projection.offDiagonalComplement N).toInterpretation.IsQF := by fo_qf
-
-example : ((Projection.offDiagonalComplement Language.empty).comp
-    (Projection.offDiagonalComplement Language.empty)).IsQF := by
-  fo_qf
-
-/-- Closure under isomorphism is registered in the same rule set. -/
-example : IsoClosed Clique.{0} := by fo_iso_closed
+/-- Concrete interpretations are split by relation symbol and unfolded, and closure under
+isomorphism is registered in the same rule set. -/
+example (N : Language) :
+    complementEdges.IsQF ∧
+    (complementEdges.comp complementSize).IsQF ∧
+    (Projection.offDiagonalComplement N).toInterpretation.IsQF ∧
+    ((Projection.offDiagonalComplement Language.empty).comp
+      (Projection.offDiagonalComplement Language.empty)).IsQF ∧
+    IsoClosed Clique.{0} :=
+  ⟨by fo_qf, by fo_qf, by fo_qf, by fo_qf, by fo_iso_closed⟩
 
 /-- Restrict a structure to the elements of its size relation. -/
 def restrictToSize : Interpretation sizedGraph sizedGraph Unit where
@@ -375,17 +358,17 @@ section Subformulas
 /-- `∀ x, ¬ x ~ x`: a graph has no loops. -/
 private def noLoops : Language.graph.Sentence := ∀' ∼(adj.boundedFormula₂ &0 &0)
 
-example : (subformulas noLoops).Finite := finite_subformulas _
-
-/-- The body of the quantifier, its atom and `⊥` are subformulas. -/
-example : ⟨1, ∼(adj.boundedFormula₂ &0 &0)⟩ ∈ subformulas noLoops :=
-  mem_subformulas_of_all (self_mem_subformulas _)
-
-example : ⟨1, adj.boundedFormula₂ &0 &0⟩ ∈ subformulas noLoops :=
-  mem_subformulas_of_imp_left (mem_subformulas_of_all (self_mem_subformulas _))
-
-example : ⟨1, ⊥⟩ ∈ subformulas noLoops :=
-  mem_subformulas_of_imp_right (mem_subformulas_of_all (self_mem_subformulas _))
+/-- Finiteness of `subformulas noLoops`, and membership of the body of the quantifier, its atom,
+and `⊥`. -/
+example :
+    (subformulas noLoops).Finite ∧
+    ⟨1, ∼(adj.boundedFormula₂ &0 &0)⟩ ∈ subformulas noLoops ∧
+    ⟨1, adj.boundedFormula₂ &0 &0⟩ ∈ subformulas noLoops ∧
+    ⟨1, ⊥⟩ ∈ subformulas noLoops :=
+  ⟨finite_subformulas _,
+    mem_subformulas_of_all (self_mem_subformulas _),
+    mem_subformulas_of_imp_left (mem_subformulas_of_all (self_mem_subformulas _)),
+    mem_subformulas_of_imp_right (mem_subformulas_of_all (self_mem_subformulas _))⟩
 
 end Subformulas
 
