@@ -897,6 +897,7 @@ public import Complexity.Computability.Complexity.Problems.USTCON
 public import Complexity.Computability.Complexity.Problems.VertexCover
 public import Complexity.Computability.Complexity.ProofSystem
 public import Complexity.Computability.Complexity.Reduction
+public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.ManyOne
 public import Complexity.Computability.Complexity.Reduction.OneOne
 public import Complexity.Computability.Complexity.Reduction.TruthTable
