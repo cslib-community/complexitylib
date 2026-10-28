@@ -23,9 +23,10 @@ Checks enforced by default (see AGENTS.md):
 6. Every citation key in a docstring is a `references.bib` key. A citation is a bracketed segment
    (`[Key]`, `[Key, Theorem 2]`, `[Key; Other]`, or the reference in `[text][Key]`) that has the
    shape of the repository's keys: letters, a two- to four-digit year or number, and an optional
-   letter suffix (`AroraBarak09`, `NISTFIPS203`, `Ilango2020FOCS`). Code spans, fenced code, math,
-   escaped brackets, inline links `[text](target)` and block quotes (`> ...`, which quote a
-   source's own citations) are not scanned. Keys without digits are not recognized.
+   letter suffix (`AroraBarak09`, `NISTFIPS203`, `Ilango2020FOCS`), opened at the start of a
+   line or after whitespace or punctuation, not after a word character (`xs[i10]`). Code spans,
+   fenced code, math, escaped brackets, inline links `[text](target)` and block quotes (`> ...`,
+   which quote a source's own citations) are not scanned. Keys without digits are not recognized.
 
 Opt-in heuristic checks:
 7. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
@@ -87,8 +88,10 @@ DOC_INLINE_RE = re.compile(
 WHITESPACE_RUN_RE = re.compile(r"\S+")
 # The shape of every `references.bib` key except the year-less `MilewskiDao`.
 CITATION_KEY_RE = re.compile(r"[A-Za-z]+[0-9]{2,4}[A-Za-z]*")
-# A bracketed span not preceded by `\` or `!` and not followed by `(` (a link the masks missed).
-DOC_BRACKET_RE = re.compile(r"(?<![\\!])\[([^\[\]]*)\](?!\()")
+# A bracketed span that starts a line or follows whitespace or punctuation other than `\` and
+# `!`, so that indexing such as `xs[i10]` is not a citation, and is not followed by `(` (a link
+# the masks missed).
+DOC_BRACKET_RE = re.compile(r"(?<![\w\\!])\[([^\[\]]*)\](?!\()")
 DOC_BLOCKQUOTE_RE = re.compile(r"^[ \t]*>.*$", re.M)
 CITATION_SEGMENT_RE = re.compile(r"[^;,]+")
 

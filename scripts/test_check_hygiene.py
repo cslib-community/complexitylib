@@ -318,6 +318,13 @@ class CitationTests(unittest.TestCase):
                "```lean\nexample := xs[Foo2020]\n```\n")
         self.assertEqual(self.citations(doc), [])
 
+    def test_brackets_after_a_word_character_are_not_citations(self) -> None:
+        # Indexing and subscripts written outside backticks; a bracket after `)` still counts.
+        doc = ("xs[i10], H[SHA256], A_n[Foo2020], α[x10] and f(x)[Bar2021].\n[Sipser2013] (see\n"
+               "[AroraBarak09]), \"[Ilango2020FOCS]\" and —[Baz2022].")
+        self.assertEqual(self.citations(doc),
+                         ["Bar2021", "Sipser2013", "AroraBarak09", "Ilango2020FOCS", "Baz2022"])
+
     def test_unknown_key_reports_file_line_and_key(self) -> None:
         # #1415 cited `[BussHay1991]` without a bibliography entry.
         raw = ("/-! # Title\n\nSee [Sipser2013].\n-/\n\n"
