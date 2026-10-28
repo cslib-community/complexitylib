@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Foundations.BooleanAnalysis.Bernoulli
 public import Mathlib.Data.Fintype.Perm
 public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
@@ -60,6 +61,8 @@ PPSZ recursion (`Q_le_bernoulliProb`)
 * `Cslib.Complexity.PPSZ.card_filter_placedBefore_div_factorial_eq_integral`: the probability of
   any event on the set placed before `x` is `∫₀¹ bernoulliProb (univ.erase x) r E dr`
   (original).
+* `Cslib.Complexity.PPSZ.bernoulliProb_eq_bernoulliAverage`: `bernoulliProb` is the
+  `BitString.bernoulliAverage` of the indicator of the event, over masks `U → Bool`.
 * `Cslib.Complexity.PPSZ.bernoulliProb_mul_le`: the Harris inequality for increasing events.
 * `Cslib.Complexity.PPSZ.prod_le_bernoulliProb_forall_or`: Lemma 7 of the paper, for a fixed
   `r`, with all `qᵢ = r` [Paturi, Pudlák, Saks, Zane, Lemma 7][PaturiPudlakSaksZane2005].
@@ -86,7 +89,7 @@ open Finset
 `Q k 0 r = 0` and
 `Q k (d + 1) r = (r + (1 - r) * Q k d r) ^ (k - 1)`. For a critical clause tree of degree at most
 `k - 1` and depth `d`, it bounds the probability of a cut when each variable is placed before the
-root with probability `r`. -/
+root with probability `r`. The uppercase name follows the paper's `Q_k^{(d)}`. -/
 noncomputable def Q (k : ℕ) : ℕ → ℝ → ℝ
   | 0, _ => 0
   | d + 1, r => (r + (1 - r) * Q k d r) ^ (k - 1)
@@ -249,7 +252,13 @@ variable {α : Type*}
 open Classical in
 /-- **Independent inclusion.** The probability that a random subset of `U`, containing each
 element independently with probability `r`, satisfies `E`: the sum of the weights
-`r ^ |S| * (1 - r) ^ (|U| - |S|)` over the subsets `S ⊆ U` that satisfy `E`. -/
+`r ^ |S| * (1 - r) ^ (|U| - |S|)` over the subsets `S ⊆ U` that satisfy `E`.
+
+This is the measure of `BitString.bernoulliAverage` carried by subsets of `U` instead of masks
+`U → Bool`: `bernoulliProb_eq_bernoulliAverage` identifies the two through the bijection between
+subsets of `U` and their indicator masks. We keep the `Finset` carrier because the events of PPSZ
+are monotone families of variable sets and Mathlib's FKG inequality `fkg`, which gives the Harris
+inequality `bernoulliProb_mul_le`, is stated on the lattice `Finset α`. -/
 noncomputable def bernoulliProb (U : Finset α) (r : ℝ) (E : Finset α → Prop) : ℝ :=
   ∑ S ∈ U.powerset with E S, r ^ #S * (1 - r) ^ (#U - #S)
 
@@ -290,6 +299,41 @@ theorem bernoulliProb_le_one (hr : r ∈ Set.Icc (0 : ℝ) 1) : bernoulliProb U 
   rw [← bernoulliProb_true U r, bernoulliProb_eq_sum, bernoulliProb_eq_sum]
   exact sum_le_sum_of_subset_of_nonneg (monotone_filter_right _ fun _ _ _ => trivial)
     fun _ _ _ => mul_nonneg (pow_nonneg hr.1 _) (pow_nonneg (sub_nonneg.2 hr.2) _)
+
+/-- **Masks and subsets.** `bernoulliProb U r E` is the expectation, under
+`BitString.bernoulliAverage` at rate `r`, of the indicator of `E` evaluated at the subset
+`{a ∈ U | s a}` of `U` selected by a mask `s : U → Bool`. -/
+theorem bernoulliProb_eq_bernoulliAverage [DecidableEq α] (U : Finset α) (r : ℝ)
+    (E : Finset α → Prop) [DecidablePred E] :
+    bernoulliProb U r E = BitString.bernoulliAverage r fun s : U → Bool =>
+      if E (({i | s i} : Finset U).map (Function.Embedding.subtype (· ∈ U))) then 1 else 0 := by
+  rw [bernoulliProb_eq_sum, sum_filter]
+  unfold BitString.bernoulliAverage BitString.bernoulliWeight
+  symm
+  refine sum_nbij' (fun s => ({i | s i} : Finset U).map (Function.Embedding.subtype (· ∈ U)))
+    (fun S i => decide (i.1 ∈ S)) ?_ ?_ ?_ ?_ ?_
+  · intro s _
+    rw [mem_powerset]
+    intro a ha
+    obtain ⟨i, -, rfl⟩ := mem_map.1 ha
+    exact i.2
+  · intro _ _
+    exact mem_univ _
+  · intro s _
+    funext i
+    simp
+  · intro S hS
+    rw [mem_powerset] at hS
+    ext a
+    simp only [mem_map, mem_filter, mem_univ, true_and, decide_eq_true_eq,
+      Function.Embedding.coe_subtype]
+    exact ⟨fun ⟨i, hi, he⟩ => he ▸ hi, fun ha => ⟨⟨a, hS ha⟩, ha, rfl⟩⟩
+  · intro s _
+    have hc : #({i | ¬ s i} : Finset U) = #U - #({i | s i} : Finset U) := by
+      have h := card_filter_add_card_filter_not (s := (univ : Finset U)) (fun i => s i)
+      rw [card_univ, Fintype.card_coe] at h
+      omega
+    rw [prod_ite, prod_const, prod_const, card_map, hc, mul_ite, mul_one, mul_zero]
 
 /-- The probability of an event is a polynomial in `r`, hence continuous. -/
 @[fun_prop]

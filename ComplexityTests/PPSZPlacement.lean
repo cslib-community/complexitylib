@@ -79,6 +79,19 @@ example : #(univ.filter fun π : Equiv.Perm (Fin 3) => (1 : Fin 3) ∈ placedBef
     linarith
   exact_mod_cast this
 
+/-! ### Masks and subsets -/
+
+/-- Through the bridge to masks, `BitString.bernoulliAverage_coordinate` gives the probability
+that a fixed element is included. -/
+example {U : Finset ℕ} {v : ℕ} (hv : v ∈ U) (r : ℝ) : bernoulliProb U r (fun S => v ∈ S) = r := by
+  rw [bernoulliProb_eq_bernoulliAverage]
+  refine Eq.trans ?_ (Cslib.BitString.bernoulliAverage_coordinate r (⟨v, hv⟩ : U))
+  congr 1
+  funext s
+  have h : v ∈ ({i | s i} : Finset U).map (Function.Embedding.subtype (· ∈ U)) ↔ s ⟨v, hv⟩ := by
+    simp [hv]
+  simp only [h]
+
 /-! ### Harris and the recursion step -/
 
 /-- Two increasing events on three variables. -/
