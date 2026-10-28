@@ -27,12 +27,24 @@ Concrete tests for `Complexity.Languages.Probabilistic.Sharing` and
    which party 0 sends `x 0` to party 1 while computing the constant functionality `constFalseFunc`,
    proved `∀ S, ¬ PerfectSemiHonestPrivate leakyProtocol noOracleWorld
    (Functionality.ofDeterministic constFalseFunc) S`.
-5. **Negative test 2 (`not_perfectSemiHonestPrivate_independentCoinProtocol`, Goldreich
-   Counterexample 1, print p. 621):** a randomized functionality `coinBroadcastFunc` outputting a
-   shared random bit `(b, b)` (`b ← ProbComp.uniform Bool`) versus `independentCoinProtocol` where
-   each party outputs its own independent random coin, proved
-   `∀ S, ¬ PerfectSemiHonestPrivate independentCoinProtocol noOracleWorld coinBroadcastFunc S`
-   (exercising the joint view-and-output requirement of Eq. 7.40 / Eqs. 7.9–7.10).
+5. **Negative test 2 (`not_perfectSemiHonestPrivate_goldreichCounterexample1`, Goldreich
+   Section 7.2.2.1, print p. 621, Counterexample 1):** the randomized functionality
+   `((), ()) ↦ (r, false)` (`goldreichCounterexample1Func`, modeling
+   $(1^n, 1^n) \mapsto (r, \lambda)$ for uniform $r$) and the 1-round protocol
+   `goldreichCounterexample1Protocol` in which party 0 samples a uniform bit `r`, sends `r` to
+   party 1, and outputs `r`, while party 1 outputs `false`.
+   We prove that:
+   - `goldreichCounterexample1Protocol` computes `goldreichCounterexample1Func`
+     (`eval_snd_goldreichCounterexample1Protocol`);
+   - party 1's marginal view (`I = {1}`) is simulated by a uniform received bit, satisfying the
+     marginal-view equation Eq. 7.8 (`eval_goldreichCounterexample1MarginalSim1`);
+   - yet `∀ S, ¬ PerfectSemiHonestPrivate goldreichCounterexample1Protocol noOracleWorld
+     goldreichCounterexample1Func S` (`not_perfectSemiHonestPrivate_goldreichCounterexample1`),
+     because in every real execution party 1's view determines party 0's output, violating the
+     joint view-and-output equation Eq. 7.10 / Eq. 7.40 at `I = {1}`.
+6. **Negative test 3 (`not_perfectSemiHonestPrivate_independentCoinProtocol`, output-correctness
+   failure at `I = ∅`):** `coinBroadcastFunc` outputting `(b, b)` versus `independentCoinProtocol`
+   where each party outputs its own independent random coin, refuted at `I = ∅`.
 -/
 
 namespace ComplexityTests.Crypto.MPC
@@ -112,7 +124,7 @@ theorem perfectSemiHonestPrivate_xorProtocol :
   apply perfectSemiHonestPrivate_of_deterministic
   · intro I x
     simp only [xorSim, xorProtocol, xorStep1, xorStep2, Protocol.evalWith_eq,
-      ProbComp.pi_succ, ProbComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
+      OracleComp.pi_succ, OracleComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
       ProbComp.eval_pure, Steps.append, Steps.mapState, Steps.evalWith_message,
       Steps.evalWith_done, PMF.pure_bind, PMF.pure_map]
     refine congrArg PMF.pure (funext fun (i : I) => ?_)
@@ -128,7 +140,7 @@ theorem perfectSemiHonestPrivate_xorProtocol :
       simp [xorFunc, Round.deliverMessage, sub_eq_add_neg]
   · intro x r hr
     simp only [xorProtocol, xorStep1, xorStep2, Protocol.evalWith_eq,
-      ProbComp.pi_succ, ProbComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
+      OracleComp.pi_succ, OracleComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
       ProbComp.eval_pure, Steps.append, Steps.mapState, Steps.evalWith_message,
       Steps.evalWith_done, PMF.pure_bind, PMF.pure_map, PMF.mem_support_pure_iff] at hr
     subst hr
@@ -185,7 +197,7 @@ theorem perfectSemiHonestPrivate_oracleXorProtocol :
   apply perfectSemiHonestPrivate_of_deterministic
   · intro I x
     simp only [oracleXorSim, oracleXorProtocol, xorOracleWorld, Protocol.evalWith_eq,
-      ProbComp.pi_succ, ProbComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
+      OracleComp.pi_succ, OracleComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
       ProbComp.eval_pure, Steps.evalWith_oracle, Steps.evalWith_done,
       PMF.pure_bind, PMF.pure_map]
     refine congrArg PMF.pure (funext fun (i : I) => ?_)
@@ -194,7 +206,7 @@ theorem perfectSemiHonestPrivate_oracleXorProtocol :
     rfl
   · intro x r hr
     simp only [oracleXorProtocol, xorOracleWorld, Protocol.evalWith_eq,
-      ProbComp.pi_succ, ProbComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
+      OracleComp.pi_succ, OracleComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
       ProbComp.eval_pure, Steps.evalWith_oracle, Steps.evalWith_done,
       PMF.pure_bind, PMF.pure_map, PMF.mem_support_pure_iff] at hr
     subst hr
@@ -253,12 +265,14 @@ theorem not_perfectSemiHonestPrivate_leakyProtocol
   have hReal0 :
       (leakyProtocol.realJoint noOracleWorld I x₀).map leakyExtractMsg1 = PMF.pure false := by
     simp [Protocol.realJoint, leakyProtocol, Protocol.evalWith_eq,
+      OracleComp.pi_succ, OracleComp.pi_zero,
       ProbComp.eval_pure, Steps.evalWith_message, Steps.evalWith_done,
       PMF.pure_bind, PMF.pure_map, leakyExtractMsg1,
       Round.deliverMessage, x₀]
   have hReal1 :
       (leakyProtocol.realJoint noOracleWorld I x₁).map leakyExtractMsg1 = PMF.pure true := by
     simp [Protocol.realJoint, leakyProtocol, Protocol.evalWith_eq,
+      OracleComp.pi_succ, OracleComp.pi_zero,
       ProbComp.eval_pure, Steps.evalWith_message, Steps.evalWith_done,
       PMF.pure_bind, PMF.pure_map, leakyExtractMsg1,
       Round.deliverMessage, x₁]
@@ -268,10 +282,135 @@ theorem not_perfectSemiHonestPrivate_leakyProtocol
   have hApp := congrArg (fun p : PMF Bool => p true) hFalseEqTrue
   simp at hApp
 
-/-! ### Negative test 2: Goldreich Counterexample 1 (CUP print p. 621) -/
+/-! ### Negative test 2: Goldreich Counterexample 1 (Section 7.2.2.1, CUP print p. 621) -/
 
-/-- Randomized 2-party functionality `((), ()) ↦ (b, b)` for a uniform bit `b` (Goldreich Section
-7.2.2.1, p. 621, first counterexample). -/
+/-- Goldreich's Counterexample 1 functionality (Section 7.2.2.1, CUP print p. 621):
+`((), ()) ↦ (r, false)` for a uniform bit `r` (with the empty output $\lambda$ modeled as
+`false`). -/
+noncomputable def goldreichCounterexample1Func :
+    Functionality 2 (fun _ => Unit) (fun _ => Bool) :=
+  fun _ => (fun b => ![b, false]) <$> ProbComp.uniform Bool
+
+/-- Goldreich's Counterexample 1 protocol (Section 7.2.2.1, CUP print p. 621): party 0 picks a
+uniform bit `r`, sends `r` to party 1, and outputs `r`, while party 1 outputs `false`. -/
+noncomputable def goldreichCounterexample1Protocol :
+    Protocol 2 noOracleSpec leakySchedule
+      (fun _ => Unit) (fun _ => Bool) (fun _ => Bool) where
+  sampleCoins i := if i = 0 then ProbComp.uniform Bool else pure false
+  steps :=
+    .message (sender := 0) (receiver := 1) (fun st => st.2)
+      (.done fun i st => if i = 0 then st.1.2 else false)
+
+/-- `goldreichCounterexample1Protocol` computes `goldreichCounterexample1Func` with zero error: its
+joint output distribution equals `ProbComp.eval (goldreichCounterexample1Func x)`. -/
+theorem eval_snd_goldreichCounterexample1Protocol (x : Fin 2 → Unit) :
+    (goldreichCounterexample1Protocol.evalWith noOracleWorld x).map Prod.snd =
+      ProbComp.eval (goldreichCounterexample1Func x) := by
+  simp only [goldreichCounterexample1Protocol, goldreichCounterexample1Func,
+    Protocol.evalWith_eq, OracleComp.pi_succ, OracleComp.pi_zero,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+    Steps.evalWith_message, Steps.evalWith_done,
+    Protocol.outputOfView, Steps.outputAt,
+    ↓reduceIte, Fin.succ_ne_zero,
+    PMF.bind_bind, PMF.pure_bind, PMF.pure_map, PMF.map_bind]
+  rw [PMF.map]
+  refine congrArg (ProbComp.eval (ProbComp.uniform Bool)).bind (funext fun b => ?_)
+  refine congrArg PMF.pure (funext fun i => ?_)
+  fin_cases i <;> rfl
+
+/-- Marginal simulator for party 1 (`I = {1}`) in `goldreichCounterexample1Protocol` (satisfying
+Goldreich Eq. 7.8 on p. 620): samples a uniform received bit `b ← ProbComp.uniform Bool`. -/
+noncomputable def goldreichCounterexample1MarginalSim1 :
+    CoalitionSimulator leakySchedule (fun _ => Unit)
+      (fun _ => Bool) (fun _ => Bool) ({1} : Finset (Fin 2)) :=
+  fun _ _ =>
+    (fun (b : Bool) (_ : ({1} : Finset (Fin 2))) =>
+      { input := ()
+        coins := false
+        received := (fun _ => b, ()) }) <$> ProbComp.uniform Bool
+
+/-- Party 1's marginal view distribution in `goldreichCounterexample1Protocol` equals the output of
+`goldreichCounterexample1MarginalSim1` (so the marginal-view equation Eq. 7.8 on p. 620 holds for
+party 1). -/
+theorem eval_goldreichCounterexample1MarginalSim1 (x : Fin 2 → Unit)
+    (yI : ({1} : Finset (Fin 2)) → Bool) :
+    ProbComp.eval (goldreichCounterexample1MarginalSim1 (({1} : Finset (Fin 2)).restrict x) yI) =
+      (goldreichCounterexample1Protocol.evalWith noOracleWorld x).map
+        (fun res => ({1} : Finset (Fin 2)).restrict res.1) := by
+  simp only [goldreichCounterexample1MarginalSim1, goldreichCounterexample1Protocol,
+    Protocol.evalWith_eq, OracleComp.pi_succ, OracleComp.pi_zero,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+    Steps.evalWith_message, Steps.evalWith_done,
+    ↓reduceIte, Fin.succ_ne_zero,
+    PMF.bind_bind, PMF.pure_bind, PMF.pure_map, PMF.map_bind]
+  rw [PMF.map]
+  refine congrArg (ProbComp.eval (ProbComp.uniform Bool)).bind (funext fun b => ?_)
+  refine congrArg PMF.pure (funext fun ⟨i, hi⟩ => ?_)
+  have hi1 : i = 1 := Finset.mem_singleton.mp hi
+  subst hi1
+  refine PartyView.ext rfl rfl (Prod.ext ?_ rfl)
+  refine Round.received_message_ext fun _ => rfl
+
+/-- No simulator can make `goldreichCounterexample1Protocol` satisfy `PerfectSemiHonestPrivate` for
+`goldreichCounterexample1Func` (Goldreich Eq. 7.10 on p. 620 / Eq. 7.40 on p. 696): at `I = {1}`,
+party 1's received message in every real execution equals party 0's output `res.2 0`, whereas in
+the ideal execution `S {1}` receives only `((), false)` independently of `res.2 0`. -/
+theorem not_perfectSemiHonestPrivate_goldreichCounterexample1
+    (S : (I : Finset (Fin 2)) →
+      CoalitionSimulator leakySchedule (fun _ => Unit)
+        (fun _ => Bool) (fun _ => Bool) I) :
+    ¬ PerfectSemiHonestPrivate goldreichCounterexample1Protocol noOracleWorld
+        goldreichCounterexample1Func S := by
+  intro hPriv
+  let I : Finset (Fin 2) := {1}
+  let x : Fin 2 → Unit := fun _ => ()
+  have hRealEq :
+      ∀ res ∈ (goldreichCounterexample1Protocol.realJoint noOracleWorld I x).support,
+        (res.1 ⟨1, by simp [I]⟩).received.1 rfl = res.2 0 := by
+    intro res hres
+    simp only [Protocol.realJoint, goldreichCounterexample1Protocol, Protocol.evalWith_eq,
+      OracleComp.pi_succ, OracleComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
+      ProbComp.eval_pure, Steps.evalWith_message, Steps.evalWith_done,
+      Protocol.outputOfView, Steps.outputAt, ↓reduceIte, Fin.succ_ne_zero,
+      PMF.pure_bind, PMF.pure_map, PMF.mem_support_map_iff, PMF.mem_support_bind_iff,
+      PMF.mem_support_pure_iff] at hres
+    obtain ⟨_, ⟨b, _, rfl⟩, rfl⟩ := hres
+    rfl
+  let yFalse : (i : I) → Bool := fun _ => false
+  obtain ⟨v, hv⟩ := (ProbComp.eval (S I (I.restrict x) yFalse)).support_nonempty
+  have hRestrict : ∀ b : Bool, I.restrict (![b, false] : Fin 2 → Bool) = yFalse := by
+    intro b
+    ext ⟨i, hi⟩
+    have hi1 : i = 1 := Finset.mem_singleton.mp hi
+    subst hi1
+    rfl
+  have hIdealMem : ∀ b : Bool,
+      (v, (![b, false] : Fin 2 → Bool)) ∈
+        (ProbComp.eval (idealJoint goldreichCounterexample1Func I (S I) x)).support := by
+    intro b
+    simp only [idealJoint, goldreichCounterexample1Func, ProbComp.eval_bind, ProbComp.eval_map,
+      ProbComp.eval_pure, PMF.mem_support_bind_iff, PMF.mem_support_map_iff,
+      PMF.mem_support_pure_iff]
+    refine ⟨![b, false], ⟨b, ?_, rfl⟩, v, ?_, rfl⟩
+    · simp [ProbComp.eval_uniform]
+    · rw [hRestrict b]
+      exact hv
+  have hMemFalse : (v, (![false, false] : Fin 2 → Bool)) ∈
+      (goldreichCounterexample1Protocol.realJoint noOracleWorld I x).support := by
+    rw [← hPriv I x]
+    exact hIdealMem false
+  have hMemTrue : (v, (![true, false] : Fin 2 → Bool)) ∈
+      (goldreichCounterexample1Protocol.realJoint noOracleWorld I x).support := by
+    rw [← hPriv I x]
+    exact hIdealMem true
+  have hEqFalse : (v ⟨1, by simp [I]⟩).received.1 rfl = false := hRealEq _ hMemFalse
+  have hEqTrue : (v ⟨1, by simp [I]⟩).received.1 rfl = true := hRealEq _ hMemTrue
+  rw [hEqFalse] at hEqTrue
+  exact Bool.false_ne_true hEqTrue
+
+/-! ### Negative test 3: output-correctness failure at `I = ∅` -/
+
+/-- Randomized 2-party functionality `((), ()) ↦ (b, b)` for a uniform bit `b`. -/
 noncomputable def coinBroadcastFunc : Functionality 2 (fun _ => Unit) (fun _ => Bool) :=
   fun _ => (fun b _ => b) <$> ProbComp.uniform Bool
 

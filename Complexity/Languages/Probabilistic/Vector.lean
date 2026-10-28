@@ -69,7 +69,7 @@ def pi : {m : ℕ} → {α : Fin m → Type v} →
     (programs : (i : Fin 0) → OracleComp spec (α i)) :
     pi programs = pure (fun i => i.elim0) := rfl
 
-@[simp] theorem pi_succ {m : ℕ} {α : Fin (m + 1) → Type v}
+theorem pi_succ {m : ℕ} {α : Fin (m + 1) → Type v}
     (programs : (i : Fin (m + 1)) → OracleComp spec (α i)) :
     pi programs =
       (programs 0 >>= fun first => Fin.cons first <$> pi (fun i : Fin m => programs i.succ)) := rfl
@@ -110,7 +110,7 @@ theorem replicateFin_eq_pi (count : ℕ) (program : OracleComp spec α) :
 @[simp] theorem replicateFin_zero (program : OracleComp spec α) :
     replicateFin 0 program = pure Fin.elim0 := rfl
 
-@[simp] theorem replicateFin_succ (count : ℕ) (program : OracleComp spec α) :
+theorem replicateFin_succ (count : ℕ) (program : OracleComp spec α) :
     replicateFin (count + 1) program =
       (program >>= fun first => Fin.cons first <$> replicateFin count program) := rfl
 
@@ -129,24 +129,6 @@ namespace ProbComp
 open Probability
 
 variable {α : Type}
-
-/-- Specialization of `OracleComp.pi` to `ProbComp`. -/
-abbrev pi {m : ℕ} {α : Fin m → Type} (programs : (i : Fin m) → ProbComp (α i)) :
-    ProbComp ((i : Fin m) → α i) :=
-  OracleComp.pi programs
-
-/-- Specialization of `OracleComp.piRestrict` to `ProbComp`. -/
-abbrev piRestrict {m : ℕ} {α : Fin m → Type} (I : Finset (Fin m))
-    (programs : (i : I) → ProbComp (α i.1)) : ProbComp ((i : I) → α i.1) :=
-  OracleComp.piRestrict I programs
-
-@[simp] theorem pi_zero {α : Fin 0 → Type} (programs : (i : Fin 0) → ProbComp (α i)) :
-    pi programs = pure (fun i => i.elim0) := rfl
-
-@[simp] theorem pi_succ {m : ℕ} {α : Fin (m + 1) → Type}
-    (programs : (i : Fin (m + 1)) → ProbComp (α i)) :
-    pi programs =
-      (programs 0 >>= fun first => Fin.cons first <$> pi (fun i : Fin m => programs i.succ)) := rfl
 
 /-- A tuple is in the support of `pi programs` if and only if each coordinate is in the support of
 its coordinate program. -/

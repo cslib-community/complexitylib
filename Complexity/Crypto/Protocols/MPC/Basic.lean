@@ -323,7 +323,7 @@ def Protocol.run {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     (x : (i : Fin m) → In i) :
     ProbOracleComp spec.toOracleSpec
       (((i : Fin m) → PartyView In Coins sc i) × ((i : Fin m) → Out i)) := do
-  let r ← ProbOracleComp.sample (ProbComp.pi proto.sampleCoins)
+  let r ← ProbOracleComp.sample (OracleComp.pi proto.sampleCoins)
   let recv ← proto.steps.run (fun i => (x i, r i))
   let views : (i : Fin m) → PartyView In Coins sc i := fun i => ⟨x i, r i, recv i⟩
   return (views, fun i => proto.outputOfView i (views i))
@@ -474,7 +474,7 @@ theorem Protocol.evalWith_eq {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m
     {In Coins Out : Fin m → Type} (proto : Protocol m spec sc In Coins Out)
     (W : MultiOracleWorld spec) (x : (i : Fin m) → In i) :
     proto.evalWith W x =
-      (ProbComp.eval (ProbComp.pi proto.sampleCoins)).bind fun r =>
+      (ProbComp.eval (OracleComp.pi proto.sampleCoins)).bind fun r =>
         (proto.steps.evalWith W (fun i => (x i, r i))).map fun recv =>
           let views : (i : Fin m) → PartyView In Coins sc i := fun i => ⟨x i, r i, recv i⟩
           (views, fun i => proto.outputOfView i (views i)) := by

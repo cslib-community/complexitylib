@@ -50,12 +50,11 @@ This file defines generic additive secret sharing over any finite commutative gr
 ## References
 
 * [O. Goldreich, *Foundations of Cryptography, Volume 2: Basic Applications*][Goldreich2004],
-  Section 7.5.3.1 (print pp. 705–706).
+  Section 7.5.2.3 (Construction 7.5.10, Step 1), print pp. 705–706.
 -/
 
 @[expose] public section
 
-open scoped BigOperators
 open Cslib.Probability
 
 namespace Cslib.ProbComp
