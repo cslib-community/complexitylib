@@ -183,6 +183,33 @@ index links to canonical definitions rather than keeping a second set.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
 
+### Reducibilities and the structure of complete sets
+
+- **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
+  not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
+  Ladner, Lynch and Selman, and its separations.
+- **Sparse and tally sets:** SPARSE and TALLY; `P/poly = P^SPARSE` (Meyer), extending
+  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse set that is NP-hard under many-one
+  reductions gives `P = NP` (Mahaney), as does a sparse coNP-hard set (Fortune) and a sparse NP-hard
+  set under bounded truth-table reductions (Ogihara and Watanabe).
+- **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
+  so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
+  hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
+  reductions (Berman); and the isomorphism theorem for sets complete under AC⁰ reductions (Agrawal,
+  Allender and Rudich).
+- **Autoreducibility and mitoticity:** for nontrivial sets, `m`-autoreducible equals `m`-mitotic, so
+  every NP-complete set splits into two NP-complete sets (Glaßer, Pavan, Selman and Zhang);
+  separations of complexity classes by autoreducibility (Buhrman, Fortnow, van Melkebeek and
+  Torenvliet).
+- **Uniform diagonalization** (Schöning), which generalizes Ladner's theorem.
+- **Selectivity and downward self-reducibility:** downward self-reducible sets lie in PSPACE.
+  P-selective sets (Selman): a P-selective NP-complete set gives `P = NP`, P-selective sets lie in
+  `P/poly` (Ko), and self-reducible P-selective sets lie in P.
+- **Low and high hierarchies in NP** (Schöning): sparse NP sets lie in `Low₂` (Ko and Schöning), and
+  so does graph isomorphism, via graph non-isomorphism in AM.
+- **Immunity:** immune and bi-immune sets, P-bi-immune sets in EXP (Balcázar and Schöning), and
+  almost-everywhere hardness.
+
 ### Counting and modular classes
 
 - The Another Solution Problem (ASP) framework: solution-preserving reductions with explicit
@@ -514,6 +541,7 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
+[#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435

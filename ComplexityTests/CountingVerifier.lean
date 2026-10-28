@@ -88,12 +88,12 @@ private theorem readLast_halts : ∀ result ∈ runList framed 5 (framed.initial
 
 private noncomputable def compiled := (ofDeterministic readLast).comp framed true
 
-example : compiled.Nonblocking :=
-  framed_nonblocking.comp (nonblocking_ofDeterministic readLast) true
-
 private theorem compiled_halts : compiled.HaltsWithin 19 (compiled.initialConfig [false]).tapes :=
   HaltsWithin.comp framed (ofDeterministic readLast) framed_nonblocking
     (nonblocking_ofDeterministic readLast) true [false] 5 5 framed_halts readLast_halts
+
+example : compiled.Nonblocking :=
+  framed_nonblocking.comp (nonblocking_ofDeterministic readLast) true
 
 example : (compiled.runList 19 (compiled.initialConfig [false]).tapes).map Cfg.output =
     [[false], [true]] := by
@@ -103,25 +103,24 @@ example : (compiled.runList 19 (compiled.initialConfig [false]).tapes).map Cfg.o
   simp only [framed, ofDeterministic, frameOne, readLast, MultiTapeTM.tr_ofTr]
   decide
 
-example : compiled.acceptCount 19 (compiled.initialConfig [false]).tapes = 1 := by
+private theorem compiled_acceptCount :
+    compiled.acceptCount 19 (compiled.initialConfig [false]).tapes = 1 := by
   unfold acceptCount compiled
   rw [branchCount_comp framed (ofDeterministic readLast) framed_nonblocking
     (nonblocking_ofDeterministic readLast) true [false] 5 5 framed_halts readLast_halts]
   simp only [framed, ofDeterministic, frameOne, readLast, MultiTapeTM.tr_ofTr]
   decide
 
-example : compiled.rejectCount 19 (compiled.initialConfig [false]).tapes = 1 := by
+-- Waiting after the first halt introduces no new accepting or rejecting branches.
+example (padding : ℕ) :
+    compiled.acceptCount (19 + padding) (compiled.initialConfig [false]).tapes = 1 ∧
+    compiled.rejectCount 19 (compiled.initialConfig [false]).tapes = 1 := by
+  refine ⟨(compiled_halts.branchCount_eq (by lia) _).trans compiled_acceptCount, ?_⟩
   unfold rejectCount compiled
   rw [branchCount_comp framed (ofDeterministic readLast) framed_nonblocking
     (nonblocking_ofDeterministic readLast) true [false] 5 5 framed_halts readLast_halts]
   simp only [framed, ofDeterministic, frameOne, readLast, MultiTapeTM.tr_ofTr]
   decide
-
--- Waiting after the first halt introduces no new accepting or rejecting branches.
-example (padding : ℕ) : compiled.acceptCount (19 + padding)
-    (compiled.initialConfig [false]).tapes = compiled.acceptCount 19
-      (compiled.initialConfig [false]).tapes :=
-  compiled_halts.branchCount_eq (by lia) _
 
 -- The full construction is inhabited with no witness bits: one accepting branch, zero rejecting.
 example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
@@ -132,7 +131,7 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
   simpa only [MultiTapeTM.encBits_apply, Polynomial.eval_zero, Complexity.acceptCount_true,
     pow_zero, Nat.sub_self] using
     exists_verifier_counting_machine MultiTapeTM.encBits 0 (fun _ => true)
-    (.of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.const true))
+    (.const true)
 
 -- Four distinct witnesses may have the identical Boolean output; all four occurrences count.
 example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
@@ -143,7 +142,7 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
   simpa only [MultiTapeTM.encBits_apply, Polynomial.eval_C, Complexity.acceptCount_true,
     Nat.reducePow, Nat.sub_self] using
     exists_verifier_counting_machine MultiTapeTM.encBits (Polynomial.C 2) (fun _ => true)
-    (.of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.const true))
+    (.const true)
 
 -- The all-rejecting empty witness is still a terminal branch, and supplies the zero #P function.
 example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
@@ -154,6 +153,6 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCT
   simpa only [MultiTapeTM.encBits_apply, Polynomial.eval_zero, Complexity.acceptCount_false,
     pow_zero, Nat.sub_zero] using
     exists_verifier_counting_machine MultiTapeTM.encBits 0 (fun _ => false)
-    (.of_tidy (MultiTapeTM.ComputableTidilyInPolyTime.const false))
+    (.const false)
 
 end ComplexityTests.CountingVerifier
