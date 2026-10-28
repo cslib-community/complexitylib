@@ -38,7 +38,6 @@ namespace Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
 open Cslib.WordRAM
 open Cslib.Algorithms.Lean
 open Reg
-open scoped Cslib.Algorithms.WordRAM.PriorityQueue.Notation
 
 section Order
 

@@ -40,7 +40,6 @@ every word width `w` with `Fits w (base + space n)` and `Fits w K_max` (includin
 namespace Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
 
 open Cslib.WordRAM
-open scoped Cslib.Algorithms.WordRAM.PriorityQueue.Notation
 
 /-- Total register count of the standalone binary heap (`5` persistent + `20` caller/scratch). -/
 abbrev rBin : ℕ := 25

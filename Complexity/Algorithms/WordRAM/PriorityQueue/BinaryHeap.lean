@@ -55,7 +55,6 @@ namespace Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap
 
 open Cslib.WordRAM
 open Cslib.Algorithms.Lean
-open Cslib.Algorithms.WordRAM.PriorityQueue.Notation
 open Reg
 
 /-- Concrete representation invariant of the standalone binary heap at `base` on `n` handles. -/

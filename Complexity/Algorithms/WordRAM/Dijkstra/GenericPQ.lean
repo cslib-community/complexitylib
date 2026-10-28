@@ -7,7 +7,6 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode
 public import Complexity.Algorithms.WordRAM.PriorityQueue.Basic
 public import Complexity.Computability.WordRAM.Compile

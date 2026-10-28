@@ -47,8 +47,6 @@ public import Complexity.Algorithms.ThreeSum.ChanHe.Sizes
 public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
-public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
-public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.Invariant
@@ -1600,6 +1598,7 @@ public import Complexity.Computability.WordRAM.Controller
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
+public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.Generic
 public import Complexity.Computability.WordRAM.Heap
