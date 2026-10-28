@@ -101,10 +101,13 @@ example (label : AffinePlaneFamilyLabel (ZMod 257) 257) :
     arithmeticExpanderRotate (1, 0, label) = (0, label) := rfl
 
 -- The positive-gap family itself has the uniform machine certificate, independently of size.
+local instance : FinEnum (ZMod 257) :=
+  FinEnum.ofEquiv (Fin 257) (ZMod.finEquiv 257).toEquiv.symm
+
 example : ComputableTidilyInPolyTime arithmeticExpanderRotate
     (encPair encUnary (encPair encUnary
-      (encFinite (AffinePlaneFamilyLabel (ZMod 257) 257))))
-    (encPair encUnary (encFinite (AffinePlaneFamilyLabel (ZMod 257) 257))) :=
+      (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))))
+    (encPair encUnary (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))) :=
   polytime_arithmeticExpanderRotate _
 
 end ComplexityTests.PCPExpander
