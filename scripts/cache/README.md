@@ -47,16 +47,16 @@ existing hard-linked cache objects. Merge groups do not publish to GCS: the norm
 `main` run remains the only public-cache writer. This makes its outputs available sooner to
 following builds while preserving the public cache's authorization boundary.
 
-- **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF=1` (or `true`, via
-  `gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
+- **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF` to `1` or `true`
+  (`gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
   restoration without a commit; `scripts/cache_handoff.py` also honors `DISABLE_BUILD_HANDOFF` in
-  its environment as a defence in depth.
-- **Trace and warning retention.** The handoff archive preserves `.trace` files alongside `.olean`
-  and native outputs so Lake's input-hash checks see the exact merge-group build traces. Lake does
-  not replay compiler diagnostics for up-to-date modules, so `--wfail` does not re-emit warnings on
-  `main` for modules restored from the merge group; this is safe because the producer merge-group
-  run only stages the handoff after `lake build --wfail --iofail` and `lake test --wfail --iofail`
-  have already succeeded on that exact commit and platform.
+  its environment (treating any value other than empty, `0`, `false`, or `no` as disabled) as a
+  defence in depth.
+- **Trace and warning retention.** The handoff archive preserves `.trace` files, which record both
+  the input hashes and each module's build log. Lake replays a saved log when it treats a restored
+  module as up to date, so `main` still shows the merge-group warnings and `lake build --wfail`
+  still fails on them. The producer also stages the handoff only after its own `--wfail --iofail`
+  build and tests have passed on the same commit and platform.
 - **Interrupted swap fallback.** `install_build` moves any existing `.lake/build` aside to a
   staging backup before renaming the unpacked directory into place, rolling back if the rename
   fails. If the process is killed between moving the previous `.lake/build` aside and completing
