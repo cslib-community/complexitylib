@@ -29,18 +29,15 @@ private def weights : signature.Op → ℕ
   | .and => 3
   | .or => 5
 
--- Overlapping and repeated selectors still compare the selected functions.
-example : ∀ x : BitString 3,
-    (Formula.equalBits ![2, 0, 2] ![0, 0, 0]).eval interpretation x = true ↔ x 2 = x 0 := by
-  decide +kernel
-
-example (x : BitString 0) :
-    (Formula.equalBits (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0).eval interpretation x = true := rfl
-
-example : (Formula.equalBits (![2, 0, 2] : Fin 3 → Fin 3) ![0, 0, 0]).cost weights = 97 := by
-  decide +kernel
-
-example : (Formula.equalBits (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0).cost weights = 13 := rfl
+-- Overlapping, repeated, and empty selectors for `Formula.equalBits`, and their weighted gate
+-- costs.
+example (x₀ : BitString 0) :
+    (∀ x : BitString 3,
+      (Formula.equalBits ![2, 0, 2] ![0, 0, 0]).eval interpretation x = true ↔ x 2 = x 0) ∧
+    (Formula.equalBits (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0).eval interpretation x₀ = true ∧
+    (Formula.equalBits (![2, 0, 2] : Fin 3 → Fin 3) ![0, 0, 0]).cost weights = 97 ∧
+    (Formula.equalBits (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0).cost weights = 13 :=
+  ⟨by decide +kernel, rfl, by decide +kernel, rfl⟩
 
 private def key : Fin 1 → Fin 2 := fun _ => 0
 
@@ -87,23 +84,24 @@ example : value ((broadcastCircuit metadataKey 1 3 2).eval interpretation metada
 #eval ((broadcastCircuit (Fin.elim0 : Fin 0 → Fin 1) 0 3 1).evalVector interpretation
   ![false, true, true, false, true, false]).toArray
 
--- Empty value fields preserve every input bit but retain shared key-test costs.
-example : ∀ x : BitString 8,
-    (broadcastCircuit key 1 4 0).eval interpretation x = x := by
+-- Empty value fields preserve every input bit while retaining shared key-test costs; weighted
+-- costs and sizes match across empty/non-empty counts, widths, and keys.
+example :
+    (∀ x : BitString 8, (broadcastCircuit key 1 4 0).eval interpretation x = x) ∧
+      (broadcastCircuit key 1 4 0).program.cost weights = 134 ∧
+      (broadcastCircuit key 1 0 3).program.cost weights = 33 ∧
+      (broadcastCircuit key 1 0 0).program.cost weights = 0 ∧
+      (broadcastCircuit key 1 4 2).program.cost weights = 300 ∧
+      (broadcastCircuit key 1 4 2).size = 56 ∧
+      (broadcastCircuit (Fin.elim0 : Fin 0 → Fin 1) 0 3 2).program.cost weights = 167 := by
+  refine ⟨?_, by decide +kernel, by decide +kernel, rfl, by decide +kernel, by decide +kernel,
+    by decide +kernel⟩
   intro x
   funext i
   obtain ⟨⟨record, bit⟩, rfl⟩ := (finProdFinEquiv (m := 4) (n := 2)).surjective i
   simpa only [header, directProductInput, Function.comp_apply, Fin.castAdd_zero,
     Fin.cast_refl, id_eq] using
     congrFun (eval_broadcastCircuit_header (width := 0) key 1 x record) bit
-
-example : (broadcastCircuit key 1 4 0).program.cost weights = 134 := by decide +kernel
-example : (broadcastCircuit key 1 0 3).program.cost weights = 33 := by decide +kernel
-example : (broadcastCircuit key 1 0 0).program.cost weights = 0 := rfl
-example : (broadcastCircuit key 1 4 2).program.cost weights = 300 := by decide +kernel
-example : (broadcastCircuit key 1 4 2).size = 56 := by decide +kernel
-example : (broadcastCircuit (Fin.elim0 : Fin 0 → Fin 1) 0 3 2).program.cost weights = 167 := by
-  decide +kernel
 
 /-- info: #[] -/
 #guard_msgs in
@@ -115,21 +113,20 @@ private def sortKey {h k : ℕ} (key : Fin k → Fin h) (tag : Fin h) (width : �
   Circuit.wiring signature (Fin.snoc (α := fun _ => Fin (h + width))
     (Fin.castAdd width ∘ key) (Fin.castAdd width tag))
 
-example {h k width depth : ℕ} (key : Fin k → Fin h) (tag : Fin h)
-    (x : BitString (BitonicSort.arity depth * (h + width)))
-    (destination : Fin (BitonicSort.arity depth))
-    (htag : header ((keyedSortCircuit (sortKey key tag width) depth true).eval interpretation x)
-      destination tag = true) (bit : Fin width) :
-    let sorted := (keyedSortCircuit (sortKey key tag width) depth true).eval interpretation x
-    value ((broadcastCircuit key tag (BitonicSort.arity depth) width).eval interpretation sorted)
+example (x : BitString (BitonicSort.arity 2 * (3 + 2)))
+    (destination : Fin (BitonicSort.arity 2))
+    (htag : header ((keyedSortCircuit (sortKey metadataKey 1 2) 2 true).eval interpretation x)
+      destination 1 = true) (bit : Fin 2) :
+    let sorted := (keyedSortCircuit (sortKey metadataKey 1 2) 2 true).eval interpretation x
+    value ((broadcastCircuit metadataKey 1 (BitonicSort.arity 2) 2).eval interpretation sorted)
       destination bit = true ↔
-      ∃ source, header sorted source ∘ key = header sorted destination ∘ key ∧
-        header sorted source tag = false ∧ value sorted source bit = true := by
+      ∃ source, header sorted source ∘ metadataKey = header sorted destination ∘ metadataKey ∧
+        header sorted source 1 = false ∧ value sorted source bit = true := by
   dsimp only
-  apply eval_broadcastCircuit_value_eq_true_iff key tag _ _ destination htag bit
+  apply eval_broadcastCircuit_value_eq_true_iff metadataKey 1 _ _ destination htag bit
   simpa only [sortKey, Circuit.eval_wiring, Fin.comp_snoc, Function.comp_assoc,
     Function.comp_apply, header] using
-    monotone_keyedSortCircuit (sortKey key tag width) depth x
+    monotone_keyedSortCircuit (sortKey metadataKey 1 2) 2 x
 
 -- Compare the whole unsorted scan with a direct existential over constant-key intervals.
 -- Also check the all-source OR specification whenever the input is sorted and tagged destination.
