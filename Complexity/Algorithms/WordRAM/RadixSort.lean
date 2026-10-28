@@ -16,6 +16,7 @@ public import Complexity.Computability.WordRAM.Time
 The input is the ordinary native list of unsigned words. The code reads its length and the
 physical word width, and uses that width as an explicit key-bit bound. The lower-level
 `deduplicateCode` accepts a smaller caller-supplied bit bound when known.
+The standard-input wrapper's charged bound is `O(n * w)` for positive `n` and `w`.
 
 The key array starts at `1+2n`, the count array at `1+3n`; the return value is their common
 logical length. The two sorting buffers occupy `[1,1+2n)`. The implementation accepts repeated
@@ -78,6 +79,7 @@ theorem input_exec {w : ℕ} (xs : List ℕ) (hinput : InputFits w xs)
       Block.HoldsList (1 + 2 * xs.length) (rs.map Prod.fst) y.mem ∧
       Block.HoldsList (1 + 3 * xs.length) (rs.map Prod.snd) y.mem ∧
       (rs.map Prod.fst).Nodup ∧
+      (rs.map Prod.fst).Pairwise (· < ·) ∧
       (∀ k, k ∈ rs.map Prod.fst ↔ k ∈ xs) ∧
       (∀ p ∈ rs, 0 < p.2 ∧ xs.count p.1 = p.2) ∧
       Modifies (Block.mk 1 (4 * xs.length)).footprint (Data.init xs : Data 16).mem y.mem := by
@@ -97,10 +99,10 @@ theorem input_exec {w : ℕ} (xs : List ℕ) (hinput : InputFits w xs)
     change (Data.init xs : Data 16).mem (1 + i.val) = xs[i.val]
     rw [Nat.add_comm, Data.init_mem_succ]
     simp only [List.getD, List.getElem?_eq_getElem i.isLt, Option.getD_some]
-  obtain ⟨y, rs, he, hyout, hyrk, hyrc, hnodup, hset, hcount, hframe⟩ :=
+  obtain ⟨y, rs, he, hyout, hyrk, hyrc, hnodup, hordered, hset, hcount, hframe⟩ :=
     deduplicate_exec xs u hn hs hd hb hm hinput.2 hinput.2 hfit (fits_self w) h2
   obtain ⟨steps, hsteps, hexec⟩ := hi.seq he
-  refine ⟨y, rs, steps, hexec, ?_, by omega, hyrk, hyrc, hnodup, hset, hcount, hframe⟩
+  refine ⟨y, rs, steps, hexec, ?_, by omega, hyrk, hyrc, hnodup, hordered, hset, hcount, hframe⟩
   simpa only [program, inputCode, hyout, State.init, x] using hexec.executes Deduplicate.out
 
 end Cslib.Algorithms.WordRAM.RadixSort

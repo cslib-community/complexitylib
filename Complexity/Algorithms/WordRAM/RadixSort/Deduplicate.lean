@@ -66,6 +66,7 @@ theorem deduplicate_exec {w base keyBits : ℕ} (xs : List ℕ) (x : Data 16)
       Block.HoldsList (base + 2 * xs.length) (rs.map Prod.fst) y.mem ∧
       Block.HoldsList (base + 3 * xs.length) (rs.map Prod.snd) y.mem ∧
       (rs.map Prod.fst).Nodup ∧
+      (rs.map Prod.fst).Pairwise (· < ·) ∧
       (∀ k, k ∈ rs.map Prod.fst ↔ k ∈ xs) ∧
       (∀ p ∈ rs, 0 < p.2 ∧ xs.count p.1 = p.2) ∧
       Modifies (Block.mk base (4 * xs.length)).footprint x.mem y.mem := by
@@ -106,7 +107,7 @@ theorem deduplicate_exec {w base keyBits : ℕ} (xs : List ℕ) (x : Data 16)
     (by rw [hlen]; exact hfit.of_le (by omega)) (h2.of_le (by omega))
   have heq : base + 2 * xs.length + xs.length = base + 3 * xs.length := by omega
   refine ⟨y, rs, ?_, hyout, hyrk, by simpa only [hlen, heq] using hyrc,
-    hrs.keys_nodup, ?_, ?_, ?_⟩
+    hrs.keys_nodup, List.pairwise_map.mpr hrs.ordered, ?_, ?_, ?_⟩
   · have hall := hinit.seq (hu.seq (hl.seq hy))
     apply hall.mono
     simp only [deduplicateTime, timeBound, hlen]

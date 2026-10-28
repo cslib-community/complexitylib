@@ -46,10 +46,10 @@ private def observe (w fuel : ℕ) (xs : List ℕ) : Option (List ℕ × List �
 #guard_msgs in
 #eval decide (observe 2 4 [2] = none)
 
--- A raw unsigned input beyond the declared physical word bound faults as well.
+-- Key overflow faults even when the singleton's four-buffer layout fits.
 /-- info: true -/
 #guard_msgs in
-#eval decide (observe 2 4 [4] = none)
+#eval decide (observe 4 5 [16] = none)
 
 -- The assembled program is executed using the ordinary native initial state.
 /-- info: true -/
@@ -65,3 +65,11 @@ example : RadixSort.passes 0 [0, 0] = [0, 0] ∧
 
 -- One finite instruction list is used at every input length and word width.
 example : RadixSort.program.length = 81 := by decide +kernel
+
+-- Clients recover strict unsigned key order directly from the complete input contract.
+example (w : ℕ) (xs : List ℕ) (hinput : InputFits w xs)
+    (hfit : Fits w (1 + 4 * xs.length)) (h2 : Fits w 2) :
+    ∃ keys : List ℕ, keys.Pairwise (· < ·) ∧ ∀ k, k ∈ keys ↔ k ∈ xs := by
+  obtain ⟨_, rs, _, _, _, _, _, _, _, hordered, hset, _, _⟩ :=
+    RadixSort.input_exec xs hinput hfit h2
+  exact ⟨rs.map Prod.fst, hordered, hset⟩
