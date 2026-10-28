@@ -112,6 +112,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountTriple
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Modulus
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues

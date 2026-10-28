@@ -424,8 +424,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
   and the selected-prime false-positive bound ([#1442]) are proved mathematically. Native parameter,
-  collision-counting, prime-table and collision-tested minimum-search programs have explicit local
-  fit/frame/cost contracts ([#1446]); frontend enumeration, heavy extraction, recursive traversal,
+  collision-counting, prime-table, minimum-search and complete two-prime modulus programs have
+  explicit local fit/frame/cost contracts ([#1446]); frontend enumeration, heavy extraction, recursive traversal,
   packed output and global preprocessing width/time composition remain. It still needs
   residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
   Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
