@@ -58,12 +58,13 @@ example : Narrow ∪ SAT ∈ FPT encCNF CNF.numVars :=
 
 /-! ### Bounded parameters -/
 
-/-- `SAT ∈ FPT` or `SAT ∈ XP` for a constant parameter is equivalent to `SAT ∈ P`. -/
-example : (SAT ∈ FPT encCNF fun _ => 7) ↔ SAT ∈ P encCNF := by
-  rw [FPT_eq_P_of_le (K := 7) fun _ => le_rfl]
+/-- Constant-parameter `FPT` and `XP` both collapse to `P`, so they coincide and contain
+`Narrow`. -/
+example : FPT encCNF (fun _ => 7) = XP encCNF (fun _ => 5) :=
+  (FPT_eq_P_of_le (K := 7) fun _ => le_rfl).trans (XP_eq_P_of_le (K := 5) fun _ => le_rfl).symm
 
-example : (SAT ∈ XP encCNF fun _ => 5) ↔ SAT ∈ P encCNF := by
-  rw [XP_eq_P_of_le (K := 5) fun _ => le_rfl]
+example : Narrow ∈ XP encCNF (fun _ => 5) :=
+  (XP_eq_P_of_le (K := 5) fun _ => le_rfl).symm ▸ narrow_mem_P
 
 /-! ### An fpt-reduction from 3SAT to SAT -/
 
