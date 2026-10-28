@@ -69,7 +69,7 @@ The encoding of the source's model, with edge constants on the sum gates and siz
   `Cslib.Circuits.Arithmetic.sigmaPiInterpretation`: their meaning in a commutative semiring.
 * `Cslib.Circuits.Arithmetic.SigmaPiOp.mulCost`: product gates cost one.
 * `Cslib.Circuits.Arithmetic.SPFormula`: formulas over `sigmaPiSignature K`, with the helpers
-  `SPFormula.add`, `SPFormula.mul` and `SPFormula.const`.
+  `SPFormula.add`, `SPFormula.mul`, `SPFormula.const` and `SPFormula.zero`.
 * `Cslib.Circuits.Arithmetic.SPFormula.productDepth`: the largest number of product gates on a
   root-to-leaf path.
 * `Cslib.Circuits.Arithmetic.SPFormula.polynomial`: the polynomial computed formally.
@@ -204,6 +204,11 @@ abbrev mul {m : ℕ} (F : Fin m → SPFormula K n) : SPFormula K n :=
 abbrev const (a : K) : SPFormula K n :=
   .gate (.const a) Fin.elim0
 
+/-- The formula `0`: a sum gate without arguments. It computes `0` and is set-multilinear on every
+set of blocks (`SPFormula.isSetMultilinear_zero`). -/
+abbrev zero : SPFormula K n :=
+  add (m := 0) Fin.elim0 Fin.elim0
+
 /-! ### Product-depth and size
 
 The size of a formula is the generic `Cslib.Circuits.Formula.nodeCount`, the size in the sense of
@@ -233,12 +238,20 @@ def productDepth (F : SPFormula K n) : ℕ :=
 @[simp] theorem productDepth_const (a : K) : (const a : SPFormula K n).productDepth = 0 := by
   simp [productDepth]
 
+/-- The formula `0` has product-depth zero. -/
+@[simp] theorem productDepth_zero : (zero : SPFormula K n).productDepth = 0 := by
+  simp [productDepth]
+
 /-- The product-depth is at most the depth. -/
 theorem productDepth_le_depth (F : SPFormula K n) : F.productDepth ≤ F.depth :=
   F.depthWith_le_depth SigmaPiOp.mulCost_le_one
 
 /-- A constant is one node; the size of the source counts constant leaves. -/
 @[simp] theorem nodeCount_const (a : K) : (const a : SPFormula K n).nodeCount = 1 :=
+  rfl
+
+/-- The formula `0` is one node. -/
+@[simp] theorem nodeCount_zero : (zero : SPFormula K n).nodeCount = 1 :=
   rfl
 
 /-! ### The computed polynomial -/
@@ -270,6 +283,10 @@ noncomputable def polynomial (F : SPFormula K n) : MvPolynomial (Fin n) K :=
 /-- A constant computes the constant polynomial. -/
 @[simp] theorem polynomial_const (a : K) : (const a : SPFormula K n).polynomial = C a :=
   rfl
+
+/-- The formula `0` computes `0`. -/
+@[simp] theorem polynomial_zero : (zero : SPFormula K n).polynomial = 0 := by
+  simp [zero]
 
 /-- Evaluating the polynomial computed by a formula at a point of a commutative `K`-algebra is
 evaluating the formula there. -/
@@ -356,6 +373,11 @@ theorem isSetMultilinear_mul_iff {m : ℕ} {F : Fin m → SPFormula K n} {S : Fi
     exact ⟨_, ‹_›, ‹_›, rfl⟩
   · rintro ⟨T, hT, hF, rfl⟩
     exact .mul F T hT hF
+
+/-- The formula `0`, a sum gate without arguments, is set-multilinear on every set of blocks. -/
+theorem isSetMultilinear_zero (S : Finset (Fin d)) :
+    IsSetMultilinear blk (zero : SPFormula K n) S :=
+  .add _ _ S fun j => j.elim0
 
 /-- A set-multilinear formula on `S` computes a homogeneous polynomial of degree `#S`
 (original). -/

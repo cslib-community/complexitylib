@@ -11,7 +11,7 @@ import Complexity.Computability.Circuit.Arithmetic.SigmaPi
 
 Product-depths, node counts and polynomials of small formulas, among them a single sum gate of
 fan-in four, of product-depth zero and five nodes, and set-multilinearity holding for
-`x₀ * (2 x₁ + 3 x₂)` and failing for the square `x₀ * x₀`.
+`x₀ * (2 x₁ + 3 x₂)` and the formula `0`, and failing for the square `x₀ * x₀`.
 -/
 
 namespace ComplexityTests.ArithmeticSigmaPi
@@ -92,5 +92,14 @@ example (S : Finset (Fin 1)) : ¬ sq.IsSetMultilinear (fun _ => 0) S := by
   have h₁ := SPFormula.isSetMultilinear_input_iff.1 (hF 1)
   have := hT (show (0 : Fin 2) ≠ 1 by decide)
   simp_all [Function.onFun]
+
+/-- The formula `0` is one node of product-depth zero, computes `0`, and is set-multilinear on
+both blocks. -/
+example : (SPFormula.zero : SPFormula ℚ 3).nodeCount = 1 ∧
+    (SPFormula.zero : SPFormula ℚ 3).productDepth = 0 ∧
+    (SPFormula.zero : SPFormula ℚ 3).polynomial = 0 ∧
+    (SPFormula.zero : SPFormula ℚ 3).IsSetMultilinear blk Finset.univ :=
+  ⟨SPFormula.nodeCount_zero, SPFormula.productDepth_zero, SPFormula.polynomial_zero,
+    SPFormula.isSetMultilinear_zero _⟩
 
 end ComplexityTests.ArithmeticSigmaPi

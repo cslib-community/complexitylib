@@ -47,6 +47,8 @@ multiplicativity. The dimensions are counted by `MvPolynomial.card_blockChoice`.
 
 * `Cslib.Circuits.Arithmetic.relMatrix`: the relative-rank coefficient matrix.
 * `Cslib.Circuits.Arithmetic.relRank`: the normalized relative rank, a real number.
+* `Cslib.Circuits.Arithmetic.blockChoiceCongr`: a renaming of the variables along their blocks,
+  acting on choices of one variable per block.
 
 ## Main results
 
@@ -57,13 +59,16 @@ multiplicativity. The dimensions are counted by `MvPolynomial.card_blockChoice`.
 * `Cslib.Circuits.Arithmetic.relRank_smul_le`, `relRank_smul`: scalar multiples.
 * `Cslib.Circuits.Arithmetic.relRank_mul_le`, `Cslib.Circuits.Arithmetic.relRank_prod_le`:
   multiplicativity, as an inequality.
+* `Cslib.Circuits.Arithmetic.relMatrix_rename`, `Cslib.Circuits.Arithmetic.relRank_rename`:
+  renaming the variables along their blocks permutes the rows and columns, and keeps the relative
+  rank.
 
 ## References
 
 * [N. Limaye, S. Srinivasan, S. Tavenas, *Superpolynomial lower bounds against low-depth algebraic
   circuits*][LimayeSrinivasanTavenas2021], §2.1, pp. 6–7, Claim 7. Parametrizing the measure by a
-  block map and two arbitrary sets of blocks, instead of by a word, is original to this
-  formalization.
+  block map and two arbitrary sets of blocks, instead of by a word, and its invariance under
+  renaming, are original to this formalization.
 -/
 
 @[expose] public section
@@ -133,6 +138,49 @@ theorem relMatrix_mul {blk : σ → Fin d} {A B S T : Finset (Fin d)} {f g : MvP
     relMatrix_apply, MvPolynomial.coeff_mul_blockMonomial hf hg hST hA hB]
 
 end Matrix
+
+/-! ### Renaming the variables along their blocks -/
+
+section Rename
+
+variable {τ : Type*} {blk : σ → Fin d} {blk' : τ → Fin d}
+
+/-- A renaming of the variables that respects the blocks maps choices of one variable per block
+to choices of one variable per block. -/
+@[simps]
+def blockChoiceCongr (e : σ ≃ τ) (he : ∀ x, blk' (e x) = blk x) (S : Finset (Fin d)) :
+    BlockChoice blk S ≃ BlockChoice blk' S where
+  toFun x i := ⟨e (x i), (he _).trans (x i).2⟩
+  invFun y i := ⟨e.symm (y i), by rw [← he, e.apply_symm_apply]; exact (y i).2⟩
+  left_inv x := by
+    funext i
+    simp
+  right_inv y := by
+    funext i
+    simp
+
+/-- The monomial of a renamed choice is the renamed monomial. -/
+theorem blockMonomial_blockChoiceCongr (e : σ ≃ τ) (he : ∀ x, blk' (e x) = blk x)
+    (S : Finset (Fin d)) (x : BlockChoice blk S) :
+    blockMonomial blk' S (blockChoiceCongr e he S x) =
+      Finsupp.mapDomain e (blockMonomial blk S x) := by
+  simp [blockMonomial, Finsupp.mapDomain_finsetSum]
+
+/-- The relative-rank matrix of a renamed polynomial is the relative-rank matrix of the
+polynomial, with rows and columns renamed. -/
+theorem relMatrix_rename [CommSemiring K] (e : σ ≃ τ) (he : ∀ x, blk' (e x) = blk x)
+    (A B : Finset (Fin d)) (f : MvPolynomial σ K) :
+    relMatrix blk' A B (rename e f) =
+      (relMatrix blk A B f).submatrix (blockChoiceCongr e he A).symm
+        (blockChoiceCongr e he B).symm := by
+  ext r c
+  obtain ⟨r, rfl⟩ := (blockChoiceCongr e he A).surjective r
+  obtain ⟨c, rfl⟩ := (blockChoiceCongr e he B).surjective c
+  rw [relMatrix_apply, Matrix.submatrix_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply,
+    relMatrix_apply, blockMonomial_blockChoiceCongr, blockMonomial_blockChoiceCongr,
+    ← Finsupp.mapDomain_add, coeff_rename_mapDomain _ e.injective]
+
+end Rename
 
 section Rank
 
@@ -303,6 +351,14 @@ theorem relRank_prod_le {ι : Type*} (s : Finset ι) {f : ι → MvPolynomial σ
     have hsub : T i ⊆ s.biUnion T := Finset.subset_biUnion_of_mem T hi
     rw [Finset.inter_assoc, Finset.inter_eq_right.2 hsub, Finset.inter_assoc,
       Finset.inter_eq_right.2 hsub]
+
+/-- **The relative rank is invariant under renaming the variables along their blocks**
+(original). -/
+theorem relRank_rename {τ : Type*} [Fintype τ] {blk' : τ → Fin d} (e : σ ≃ τ)
+    (he : ∀ x, blk' (e x) = blk x) (A B : Finset (Fin d)) (f : MvPolynomial σ K) :
+    relRank blk' A B (rename e f) = relRank blk A B f := by
+  rw [relRank, relRank, relMatrix_rename e he, Matrix.rank_submatrix,
+    Fintype.card_congr (blockChoiceCongr e he A), Fintype.card_congr (blockChoiceCongr e he B)]
 
 end Rank
 
