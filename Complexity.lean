@@ -119,6 +119,7 @@ public import Complexity.Computability.Circuit.Arithmetic.Hessian
 public import Complexity.Computability.Circuit.Arithmetic.Hessian.SourceComplexity
 public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Power
+public import Complexity.Computability.Circuit.Arithmetic.SigmaPi
 public import Complexity.Computability.Circuit.Arithmetic.VNP
 public import Complexity.Computability.Circuit.Arithmetic.VP
 public import Complexity.Computability.Circuit.Arithmetic.Waring
@@ -390,6 +391,7 @@ public import Complexity.Computability.Circuit.Erase
 public import Complexity.Computability.Circuit.Evaluation
 public import Complexity.Computability.Circuit.FanIn
 public import Complexity.Computability.Circuit.Formula
+public import Complexity.Computability.Circuit.Formula.NodeCount
 public import Complexity.Computability.Circuit.Frontier.AverageCase
 public import Complexity.Computability.Circuit.Frontier.BoundedFanIn
 public import Complexity.Computability.Circuit.Frontier.BranchingProgram
