@@ -35,7 +35,7 @@ number of satisfying assignments on declared variables is exactly preserved.
   conversion for natural numbers.
 * `Cslib.Logic.PL.FiniteCSP.toCNF`: canonical polynomial-time compilation of a finite-domain CSP
   with `n` variables into a CNF formula.
-* `Cslib.Logic.PL.FiniteCSP.modelCountOn`: count of domain assignments on a declared finite set
+* `Cslib.Logic.PL.FiniteCSP.CSP.modelCountOn`: count of domain assignments on a declared finite set
   of variables that satisfy the CSP.
 
 ## Main results
