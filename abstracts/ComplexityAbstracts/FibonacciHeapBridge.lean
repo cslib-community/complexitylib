@@ -19,7 +19,8 @@ satisfying `WordRAMBridge.Laws S` and every priority-queue presentation `P` sati
 that the compiled library programs `initFreshProg`, `initClearProg` and `opProg` of
 `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap` realize `RunsOps` within the claimed
 `O(1)` / `O(n)` initialization bounds and `O(m_q + m_ins + m_dec + m_ext (log n + 1))` amortized
-operation bound.
+operation bound (for `m_q` queries, `m_ins` insertions, `m_dec` key decreases, and `m_ext` minimum
+extractions).
 
 ## Main results
 

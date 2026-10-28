@@ -13,7 +13,8 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
 # Degree-indexed root consolidation and `extractMin` for a Fibonacci heap
 
 This file proves the correctness, memory-safety, and `O(log n)` amortized instruction bound of
-`scatterRootCode` and `extractMinCode` (`[FredmanTarjan1987]`, `[CLRS2009]` Section 19.2):
+`scatterRootCode` and `extractMinCode` [Fredman and Tarjan][FredmanTarjan1987]
+[Cormen et al., Section 19.2][CLRS2009]:
 
 * **Degree-table invariant (`SlotInv`):** Tracks the subset `slotTrees` of consolidated root trees
   currently stored in `cons[0..maxDeg]`, maintaining pairwise-distinct degrees, `maxDeg ≤
@@ -27,6 +28,25 @@ This file proves the correctness, memory-safety, and `O(log n)` amortized instru
   `cons`, and scans only `0 .. maxDeg` (`≤ 2 * Nat.log 2 n + 2` slots) to rebuild the root circular
   list and `minRootReg` while restoring `cons = 0` in `t + potential y ≤ 410 * (Nat.log 2 n + 1) +
   potential x` instructions.
+
+## Main definitions
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.SlotInv`: consolidation-table invariant
+  tracking distinct-degree root trees in `cons[0..maxDeg]`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.scatterRootCode_exec`: amortized root
+  scattering and equal-degree linking specification.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.extractMinCode_exec`: `O(log n)` amortized
+  `extractMin` specification.
+
+## References
+
+* [M. L. Fredman and R. E. Tarjan, *Fibonacci Heaps and Their Uses in Improved Network Optimization
+  Algorithms*][FredmanTarjan1987]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Section 19.2][CLRS2009]
 -/
 
 @[expose] public section
@@ -93,7 +113,7 @@ theorem deg_bounds_of_extra {n : ℕ} {st : RawState n} {T : FHTree n} {z : Fin 
     (hT.deg_bounds (m := n) (by omega)).1
   exact ⟨hd_log, by omega⟩
 
-theorem nodup_eraseIdx {α : Type*} :
+private theorem nodup_eraseIdx {α : Type*} :
     ∀ {L : List α} (i : ℕ), L.Nodup → (L.eraseIdx i).Nodup
   | [], _, _ => List.nodup_nil
   | _ :: _, 0, h => (List.nodup_cons.mp h).2
@@ -105,14 +125,14 @@ theorem nodup_eraseIdx {α : Type*} :
     obtain ⟨j, hj, _, rfl⟩ := mem_eraseIdx_exists_idx tl i a hm
     exact ha (List.getElem_mem hj)
 
-theorem map_eraseIdx_eq {α β : Type*} (f : α → β) :
+private theorem map_eraseIdx_eq {α β : Type*} (f : α → β) :
     ∀ (L : List α) (i : ℕ), (L.eraseIdx i).map f = (L.map f).eraseIdx i
   | [], _ => rfl
   | _ :: _, 0 => rfl
   | _ :: tl, i + 1 => by
     simp only [List.eraseIdx_cons_succ, List.map_cons, map_eraseIdx_eq f tl i]
 
-theorem length_eraseIdx_add_one {α : Type*} :
+private theorem length_eraseIdx_add_one {α : Type*} :
     ∀ (L : List α) (i : ℕ), i < L.length → (L.eraseIdx i).length + 1 = L.length
   | [], _, hi => absurd hi (Nat.not_lt_zero _)
   | _ :: _, 0, _ => rfl

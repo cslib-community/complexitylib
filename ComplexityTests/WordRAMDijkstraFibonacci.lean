@@ -94,4 +94,21 @@ example : ((fibDijkstra.eval 10 32 (.init edgeless.encode)).map fun yn =>
     some ([1, 0], true) := by
   decide +kernel
 
+/-- Non-vacuity of `fibonacciStatement` (`O(m + n log n)`) on `graph`. -/
+example : ∃ r, ∃ p : Program .exact r, ∃ K t steps,
+    Runs 10 p (.init graph.encode) t steps ∧
+    (∃ v, step 10 p t = .halt v) ∧
+    steps + 1 ≤ K * (4 + 3 * 2) ∧
+    t.data.mem (graph.outAddr graph.source) = 1 := by
+  obtain ⟨r, p, K, h⟩ := fibonacciStatement
+  obtain ⟨t, steps, hr, hh, hle, hd⟩ := h graph 10 fits_graph
+  have hm : graph.m = 4 := by decide
+  have hn : graph.n = 3 := rfl
+  have hlog : Nat.log 2 graph.n = 1 := Nat.log_eq_of_pow_le_of_lt_pow (by decide) (by decide)
+  rw [hm, hlog, hn] at hle
+  refine ⟨r, p, K, t, steps, hr, hh, hle, ?_⟩
+  rw [hd]
+  exact (congrArg encodeDist (graph.toInstance.dist_self graph.toInstance.source)).trans
+    (by simp [encodeDist])
+
 end WordRAMDijkstraFibonacciTests

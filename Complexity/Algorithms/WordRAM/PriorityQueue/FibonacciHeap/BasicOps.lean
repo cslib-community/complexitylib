@@ -17,6 +17,27 @@ This file proves the exact-Word-RAM specifications for:
   `insert`, `decreaseKey`, and `extractMin`;
 * `allocSpan`, `initSetup`, and `incCur` (`O(1)` fresh initialization on zeroed memory);
 * `isEmptyCode`, `getKeyCode`, and `insertCode`.
+
+## Main definitions
+
+* Shared code fragments are defined in `FibonacciHeap/Program.lean` and verified here against
+  `FibInv`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.prioLTFlag_exec`,
+  `insertIntoNonEmptyList_exec`, `addRootAndUpdateMin_exec`: shared list and priority primitives.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.allocSpan_exec`, `initSetup_exec`,
+  `incCur_eval`: initialization specifications for `SubroutineDS`.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.isEmptyCode_exec`, `getKeyCode_exec`,
+  `insertCode_exec`: `O(1)` query and amortized insertion specifications.
+
+## References
+
+* [M. L. Fredman and R. E. Tarjan, *Fibonacci Heaps and Their Uses in Improved Network Optimization
+  Algorithms*][FredmanTarjan1987]
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 19][CLRS2009]
 -/
 
 @[expose] public section
@@ -25,41 +46,6 @@ namespace Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap
 
 open Cslib.WordRAM
 open Cslib.Algorithms.Lean
-
-/-! ## Continuation-passing step helpers for `Basis.exact` -/
-
-theorem seq_exactAdd {w T : ℕ} {d i j : Fin rFib} {rest : Code .exact rFib}
-    {x z : Data rFib} (hfit : Fits w (x.regs i + x.regs j))
-    (hrest : ExecWithin w rest (x.set d (x.regs i + x.regs j)) z T) :
-    ExecWithin w (.seq (.op (.exactBin .add d i j)) rest) x z (1 + T) :=
-  (execWithin_exactAdd hfit).seq hrest
-
-theorem seq_exactSub {w T : ℕ} {d i j : Fin rFib} {rest : Code .exact rFib}
-    {x z : Data rFib} (hle : x.regs j ≤ x.regs i) (hfit : Fits w (x.regs i - x.regs j))
-    (hrest : ExecWithin w rest (x.set d (x.regs i - x.regs j)) z T) :
-    ExecWithin w (.seq (.op (.exactBin .sub d i j)) rest) x z (1 + T) :=
-  (execWithin_exactSub hle hfit).seq hrest
-
-theorem seq_const {w T v : ℕ} {d : Fin rFib} {rest : Code .exact rFib}
-    {x z : Data rFib} (hfit : Fits w v)
-    (hrest : ExecWithin w rest (x.set d v) z T) :
-    ExecWithin w (.seq (.op (.const d v)) rest) x z (1 + T) :=
-  (ExecWithin.const hfit).seq hrest
-
-theorem seq_copy {w T : ℕ} {d s : Fin rFib} {rest : Code .exact rFib}
-    {x z : Data rFib} (hrest : ExecWithin w rest (x.set d (x.regs s)) z T) :
-    ExecWithin w (.seq (.op (.copy d s)) rest) x z (1 + T) :=
-  ExecWithin.copy.seq hrest
-
-theorem seq_load {w T : ℕ} {d a : Fin rFib} {rest : Code .exact rFib}
-    {x z : Data rFib} (hrest : ExecWithin w rest (x.set d (x.mem (x.regs a))) z T) :
-    ExecWithin w (.seq (.op (.load d a)) rest) x z (1 + T) :=
-  ExecWithin.load.seq hrest
-
-theorem seq_store {w T : ℕ} {a s : Fin rFib} {rest : Code .exact rFib}
-    {x z : Data rFib} (hrest : ExecWithin w rest (x.write (x.regs a) (x.regs s)) z T) :
-    ExecWithin w (.seq (.op (.store a s)) rest) x z (1 + T) :=
-  ExecWithin.store.seq hrest
 
 theorem owns_arr_addr {n base k idx : ℕ} (hk : k < 8) (hidx : idx < n) :
     base ≤ base + k * n + idx ∧ base + k * n + idx < base + space n := by
@@ -76,7 +62,7 @@ theorem owns_cons_addr {n base d : ℕ} (hd : d ≤ n) :
 /-! ## Shared primitives: `prioLTFlag`, `insertIntoNonEmptyList`, `addRootAndUpdateMin` -/
 
 /-- `prioLTFlag uReg kuReg vReg kvReg flagReg` sets `flagReg ← 1` iff `(u, ku)` strictly precedes
-`(v, kv)` under `PrioLT`, and `0` otherwise, within `5` instructions. -/
+`(v, kv)` under `PrioLT`, and `0` otherwise, within `6` instructions. -/
 theorem prioLTFlag_exec {n base w : ℕ} {x : Data rFib} (hbr : BaseRegs n base x)
     (uReg kuReg vReg kvReg flagReg : Fin rFib) :
     let ltProp := x.regs kuReg < x.regs kvReg ∨
