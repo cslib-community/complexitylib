@@ -183,7 +183,8 @@ example :
     have heq := numGroups_eq_findGreatest n
     rw [hg, ite_eq_right_iff.mpr fun h => absurd h hnu0] at heq
     exact heq.symm
-  exact ⟨hg, hfg, numGroups_sq_mul_le n, lt_succ_numGroups_sq_mul (by rw [hnu]; norm_num)⟩
+  exact ⟨hg, hfg, ReplacementParams.sq_mul_pow_four_le_clog n,
+    ReplacementParams.clog_lt_succ_sq_mul_pow_four (by rw [hnu]; norm_num)⟩
 
 /-! ### 5. Plain `ComputableInPolyTime` compositions via `fun_prop` -/
 

@@ -131,11 +131,6 @@ families and full-input native runtime.
   2012); strict-PPT samplers for integer boxes; identification security under SIS; efficiency
   certificates for the simulator and extractor; full interactive-view simulation; SIS for
   general moduli; module SIS and module LWE toward Dilithium-style schemes, as theory.
-- **Symmetric:** Carter–Wegman word-level `IsOraclePPT` PRF reduction wrappers, `MACScheme`
-  packaging for randomized Carter–Wegman, and a computational nonce-MAC interface ([#736]); the
-  Naor–Reingold PRF from DDH (efficient lazy-sampling
-  reduction and `PseudorandomFunction` bridge; algebraic/tree evaluation and distributional
-  prefix-hybrid bound landed) ([#1093]).
 - **General:** reusable adaptive reductions, public-key encryption, universal-instance zero
   knowledge, hard-core predicates and hardness amplification, and connections to learning and
   average-case hardness.
@@ -393,8 +388,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
-  extend signed-program compilation to division/remainder ([#1360]); transfer of Anthropic's
-  modular machine and 3SUM/APSP algorithms; size-based width
+  transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
+  has the Convolution-3SUM/Exact Triangle correctness reduction and a native one-weight kernel, but
+  still needs charged matrix-building loops, Chan–He preprocessing, the fast Exact Triangle solver
+  and full time/width composition; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); randomized selection; transfer of cell-probe lower
@@ -489,7 +486,6 @@ not planned, not as proved.
 [#640]: https://github.com/cslib-community/complexitylib/issues/640
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
-[#736]: https://github.com/cslib-community/complexitylib/issues/736
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
@@ -513,8 +509,7 @@ not planned, not as proved.
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
 [#1047]: https://github.com/cslib-community/complexitylib/issues/1047
 [#1079]: https://github.com/cslib-community/complexitylib/issues/1079
-[#1093]: https://github.com/cslib-community/complexitylib/issues/1093
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
-[#1360]: https://github.com/cslib-community/complexitylib/issues/1360
+[#1394]: https://github.com/cslib-community/complexitylib/issues/1394

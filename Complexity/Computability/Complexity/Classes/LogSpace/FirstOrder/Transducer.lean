@@ -951,7 +951,7 @@ private def program : CounterProgram where
   registers := registerCount v' d I
 
 /-- A polynomial exponent bounding every register of the transducer. -/
-private def exponent : ℕ := regExponent v + d * (maxArity v' + 1) + 1
+private def exponent : ℕ := v.maxArity + d * (maxArity v' + 1) + 1
 
 end Program
 
@@ -1055,9 +1055,9 @@ theorem computableInLogSpace_encodedMapWith :
   have hpow (k : ℕ) (hk : k ≤ exponent v v' d) : a.1 ^ k ≤ B :=
     (Nat.pow_le_pow_left ((card_le_length_encStructure a).trans (Nat.le_succ _)) k).trans
       (Nat.pow_le_pow_right (Nat.succ_pos _) hk)
-  have hE : regExponent v ≤ exponent v v' d := by unfold exponent; omega
+  have hE : v.maxArity ≤ exponent v v' d := by unfold exponent; omega
   have hwB : (encStructure a).length ≤ B :=
-    (length_le_pow_regExponent v a).trans (Nat.pow_le_pow_right (Nat.succ_pos _) hE)
+    (length_le_pow_maxArity v a).trans (Nat.pow_le_pow_right (Nat.succ_pos _) hE)
   have hnB : a.1 ≤ B := (card_le_length_encStructure a).trans hwB
   have hdE : d ≤ exponent v v' d := by
     have := Nat.mul_le_mul_left d (show 1 ≤ maxArity v' + 1 by omega)

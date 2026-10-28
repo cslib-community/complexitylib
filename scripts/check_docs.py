@@ -77,14 +77,20 @@ LOCKED_KEYS = ("type", "url", "rev", "subDir")
 
 def check_project(project, label, generator_name, root_packages, toolchain):
     """Check a documentation project that shares the library's toolchain and package checkouts."""
-    manifest = json.loads((ROOT / project / "lake-manifest.json").read_text())
+    lockfile = f"{project}/lake-manifest.json"
+    manifest = json.loads((ROOT / lockfile).read_text())
     packages = {p["name"].strip("«»"): p for p in manifest["packages"]}
     for package in root_packages:
         locked = packages.get(package["name"])
-        require(locked is not None, f"{label} lockfile omits {package['name']}")
+        require(locked is not None,
+                f"{label} lockfile omits {package['name']}; copy its entry from "
+                f"lake-manifest.json into {lockfile}")
         for key in LOCKED_KEYS:
             require(package.get(key) == locked.get(key),
-                    f"{label} lockfile differs for {package['name']}: {key}")
+                    f"{label} lockfile differs for {package['name']}: {key} is "
+                    f"{json.dumps(locked.get(key))} in {lockfile} but "
+                    f"{json.dumps(package.get(key))} in lake-manifest.json; update {lockfile} "
+                    f"to match the root pin")
     require((ROOT / project / "lean-toolchain").read_text().strip() == toolchain,
             f"{label} toolchain differs from the library")
     config = tomllib.loads((ROOT / project / "lakefile.toml").read_text())

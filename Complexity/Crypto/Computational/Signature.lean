@@ -186,7 +186,7 @@ theorem isPPTOn_eufCmaGame (S : SignatureScheme) {adversary : Forger}
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × (List Bool × List Bool)) × ((Unit × List Bool) × List (List Bool)) =>
         S.signingOracle pair.1.2.2 pair.2.1 pair.2.2) := by
@@ -292,7 +292,7 @@ theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forg
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × (List Bool × List Bool)) × ((Unit × List Bool) × List (List Bool)) =>
         S.oneTimeSigningOracle pair.1.2.2 pair.2.1 pair.2.2) := by
@@ -508,7 +508,7 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
   have hbound := hbound.tidy
   have hhandler : IsOraclePPTOn
       (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinite Unit) encBits) encBool))
+        (encPair (encPair (encFinEnum Unit) encBits) encBool))
       (encPair encBits encBool)
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         oneTimeFilterHandler bound pair.1 pair.2.1 pair.2.2) := by
@@ -516,13 +516,13 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
     have hprep1 : ComputableTidilyInPolyTime
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => (p.1.1, p.2.1.2.length))
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         (encPair encUnary encUnary) := by
       polytime
     have hbound' := hbound.comp hprep1
     have hq : IsOraclePPTOn
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         encBits
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
           List.take (bound p.1.1 p.2.1.2.length) <$> ProbOracleComp.query ((), p.2.1.2)) :=
@@ -532,14 +532,14 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
       polytime
     have hyes : IsOraclePPTOn
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         (encPair encBits encBool)
         (fun _ => pure ([], true)) :=
       (ComputableTidilyInPolyTime.const ([], true)).isOraclePPTOn (Operation := Unit)
     have hcond : ComputableTidilyInPolyTime
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.2.2)
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         encBool := by
       polytime
     exact IsOraclePPTOn.cond hcond hyes (hq.map hpair)

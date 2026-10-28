@@ -80,8 +80,9 @@ example : {w : List Bool | w.headD false = true} ∈ ModP 6 encBits :=
 example : {w : List Bool | w.tail.headD false = true} ∈ ModP 6 encBits :=
   tail_reduces_head.mem_ModP (P_subset_ModP (by decide) head_mem_P)
 
-example : ModP 2 encBits = ParityP encBits := ModP_two
-example : ModP 0 encBits = NP encBits := ModP_zero
+example : {w : List Bool | w.headD false = true} ∈ ParityP encBits :=
+  ModP_two ▸ P_subset_ModP (by decide) head_mem_P
+example : SAT ∈ ModP 0 encCNF := ModP_zero.symm ▸ SAT.mem_NP
 example : (∅ : Set (List Bool)) ∈ ModP 1 encBits := mem_ModP_one.mpr rfl
 example : Set.univ ∉ ModP 1 encBits := by simp [mem_ModP_one]
 

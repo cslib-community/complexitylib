@@ -121,7 +121,7 @@ theorem isPPT_prfIdealGame {adversary : OracleDistinguisher}
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
             (fun request => cachedRandomFunctionOracle pair.1 request.2))
               (adversary pair.1 [])).run []) := by
-    apply hadversary.run_interpret_preprocess
+    apply hadversary.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
       (prepare := fun pair : ℕ × List Bool => (pair.1, []))
       (resources := fun pair query => 4 * query.length + 2 * pair.1 + 3)
       (by fun_prop) (by fun_prop) (by fun_prop)

@@ -162,7 +162,7 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
   have hdecode := requestDecoder.computableInPolyTime
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair (encFinite Unit) encBits) (encList (encPair encUnary encBits))))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList (encPair encUnary encBits))))
       (encPair encBits (encList (encPair encUnary encBits)))
       (fun pair : (ℕ × (List Bool × List Bool)) ×
           ((Unit × List Bool) × List (ℕ × List Bool)) =>

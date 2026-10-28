@@ -66,15 +66,13 @@ example : pointWordsOfTables [[[0, 0], [2, 0]], [[4, 2], [0, 6]]] = [] := by
 example : pointWord 0 1 2 1 1 1 1 = [] := by decide +kernel
 example : pointWords 0 1 2 1 1 1 1 = [] := by decide +kernel
 
-example :
-    pointWord 0 1 (CyclotomicRing.dimension 0) (CyclotomicRing.degree 0) 1 1 1 =
-      (ExecutableGenerator.atPoint 0 1 0 ![1, 1, 1]).elim [] encodeTuple :=
-  pointWord_eq 0 1 0 ![1, 1, 1]
+example : (ExecutableGenerator.atPoint 0 1 0 ![1, 1, 1]).elim [] encodeTuple = [] := by
+  rw [← pointWord_eq 0 1 0 ![1, 1, 1]]
+  decide +kernel
 
-example :
-    pointWords 1 2 (CyclotomicRing.dimension 1) (CyclotomicRing.degree 1) 1 2 3 =
-      ((ExecutableGenerator.atPoint 1 2 1 ![1, 2, 3]).map encodeTuple).toList :=
-  pointWords_eq 1 2 1 ![1, 2, 3]
+example : ((ExecutableGenerator.atPoint 0 1 0 ![1, 1, 1]).map encodeTuple).toList = [] := by
+  rw [← pointWords_eq 0 1 0 ![1, 1, 1]]
+  decide +kernel
 
 /-- info: true -/
 #guard_msgs in
@@ -84,23 +82,21 @@ example :
 /-! ### Polynomial-time certificates -/
 
 example :
-    ComputableTidilyInPolyTime pointWordOfTables
-      (encList (encList (encList encIntBin))) encBits :=
-  pointWordOfTables_polytime.tidy
+    ComputableInPolyTime (fun p : ℕ × ℕ => pointWordOfTables (liftRows p.1 p.2 p.1 p.2 p.1 p.2 p.1))
+      (encPair encUnary encUnary) encBits := by
+  fun_prop
 
 example :
-    ComputableTidilyInPolyTime pointWordsOfTables
-      (encList (encList (encList encIntBin))) (encList encBits) :=
-  pointWordsOfTables_polytime.tidy
+    ComputableInPolyTime
+      (fun p : ℕ × ℕ => pointWordsOfTables (liftRows p.1 p.2 p.1 p.2 p.1 p.2 p.1))
+      (encPair encUnary encUnary) (encList encBits) := by
+  fun_prop
 
 example :
-    ComputableTidilyInPolyTime
-      (fun q : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ =>
-        pointWord q.1 q.2.1 q.2.2.1 q.2.2.2.1 q.2.2.2.2.1 q.2.2.2.2.2.1 q.2.2.2.2.2.2)
-      (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
-        (encPair encUnary (encPair encUnary encUnary))))))
-      encBits :=
-  pointWord_polytime.tidy
+    ComputableInPolyTime
+      (fun p : ℕ × ℕ => pointWord p.1 p.2 p.1 p.2 p.1 p.2 p.1)
+      (encPair encUnary encUnary) encBits := by
+  fun_prop
 
 /-! ### Axioms -/
 

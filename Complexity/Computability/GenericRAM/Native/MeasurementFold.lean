@@ -30,7 +30,7 @@ loop. The generic callback may grow its accumulator: polynomial whole-loop works
 actual all-prefix accumulator invariant, not just a polynomial per-visit certificate.
 
 This is the measurement-VALUE enumeration of [OpenAI2026ETH], Lemma 3.2 and Proposition 3.4
-(pp. 22–26), runtime M0.4 of #1226. It is not formal mode-exponent enumeration, subset-pair
+(pp. 22–26). It is not formal mode-exponent enumeration, subset-pair
 traversal, rational coefficient accumulation or a complete runtime/ETH result.
 -/
 

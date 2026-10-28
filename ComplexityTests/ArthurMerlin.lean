@@ -37,9 +37,11 @@ private theorem head_mem_MA_direct : {w : List Bool | w.headD false = true} ∈ 
     decide
   refine ⟨1, 1, fun x => x.1.headD false, by fun_prop, fun w => ⟨fun hw => ?_, fun hw y => ?_⟩⟩
   · refine ⟨fun _ => true, ?_⟩
+    dsimp only [BoundedErrorAt]
     rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
     exact hcard w
-  · rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
+  · dsimp only [BoundedErrorAt]
+    rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
     exact hcard w
 
 example : {w : List Bool | w.headD false = true} ∈ AM encBits := MA_subset_AM head_mem_MA_direct
@@ -104,5 +106,17 @@ example (h : PolyTimeReducible encCNF (encPair encGraph encGraph) SAT GraphIsomo
     PH encBits = SigmaP 2 encBits :=
   PH_eq_SigmaP_two_of_npComplete_GraphIsomorphism
     ⟨GraphIsomorphism.mem_NP, CookLevin.SAT_npHard.trans h⟩
+
+/-- `IsArthurMerlinVerifier` and `IsArthurMerlinVerifierWithErrorExponent` reduce to `BPP`'s
+bounded-error and error-exponent predicates on `arthurMerlinSlice`. -/
+example {p q : Polynomial ℕ} {V : List Bool × List Bool → Bool} {A : Set (List Bool)} :
+    IsArthurMerlinVerifier encBits p q V A ↔
+      DecidesWithBoundedError encBits p (arthurMerlinSlice encBits q V) A :=
+  isArthurMerlinVerifier_iff_decidesWithBoundedError
+
+example {e p q : Polynomial ℕ} {V : List Bool × List Bool → Bool} {A : Set (List Bool)} :
+    IsArthurMerlinVerifierWithErrorExponent encBits e p q V A ↔
+      DecidesWithErrorExponent encBits e p (arthurMerlinSlice encBits q V) A :=
+  isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent
 
 end ComplexityTests.ArthurMerlin

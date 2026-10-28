@@ -120,11 +120,14 @@ example : DSPACE encBits (fun n => n + 1) ⊂ DSPACE encBits fun n => (n + 1) ^ 
       filter_upwards [eventually_ge_atTop c] with n hc
       nlinarith
 
-/-- Constant space is strictly within linear space. -/
-example : DSPACE encBits (· ^ 0) ⊂ DSPACE encBits (· ^ 1) := DSPACE_pow_ssubset_DSPACE_pow_succ 0
+/-- Polynomial space powers form a strict chain
+(`DSPACE(n^0) ⊂ DSPACE(n^1) ⊂ DSPACE(n^2) ⊂ DSPACE(n^3)`). -/
+example : DSPACE encBits (· ^ 0) ⊂ DSPACE encBits (· ^ 3) :=
+  (DSPACE_pow_ssubset_DSPACE_pow_succ 0).trans
+    ((DSPACE_pow_ssubset_DSPACE_pow_succ 1).trans (DSPACE_pow_ssubset_DSPACE_pow_succ 2))
 
-example : DSPACE encBits (· ^ 2) ⊂ DSPACE encBits (· ^ 3) := DSPACE_pow_ssubset_DSPACE_pow_succ 2
-
-example : L encBits ⊂ PSPACE encBits := L_ssubset_PSPACE
+/-- Strict inclusion `L ⊂ PSPACE` yields an explicit language in `PSPACE \ L`. -/
+example : ∃ A ∈ PSPACE encBits, A ∉ L encBits :=
+  Set.exists_of_ssubset L_ssubset_PSPACE
 
 end ComplexityTests.SpaceHierarchy

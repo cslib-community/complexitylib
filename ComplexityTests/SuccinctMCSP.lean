@@ -17,42 +17,29 @@ namespace ComplexityTests.SuccinctMCSP
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
 
-/-! ### Signature checks -/
-
-example {n : ℕ} (samples : Finset (BitString n × Bool)) :
-    complexity interpretation (single (SuccinctMCSP.sampleFunction samples)) ≤
-      samples.card * (2 * n + 3) + 1 :=
-  SuccinctMCSP.complexity_sampleFunction_le samples
-
-example (x : SuccinctMCSP.Instance) :
-    x ∈ SuccinctMCSP ↔
-      ∃ c : Circuit signature x.arity 1,
-        c.size ≤ MCSP.sampleBudget x.arity x.samples.card x.threshold ∧
-        ∀ p ∈ x.samples, c.eval interpretation p.1 0 = p.2 :=
-  SuccinctMCSP.mem_iff_exists_circuit_le_sampleBudget
-
-example : SuccinctMCSP ∈ NP SuccinctMCSP.enc :=
-  SuccinctMCSP.mem_NP
-
-example : SuccinctMCSP ∈ NP SuccinctMCSP.encBinary :=
-  SuccinctMCSP.mem_NP_encBinary
-
-example : ComputableInPolyTime SuccinctMCSP.rawVerifier
-    (encPair
-      (encPair (encPair encUnary (encList (encPair encBits encBool))) encNat)
-      encBits)
-    encBool :=
-  SuccinctMCSP.computableInPolyTime_rawVerifier
-
-example : ComputableInPolyTime SuccinctMCSP.verifier
-    (encPair SuccinctMCSP.enc encBits) encBool :=
-  SuccinctMCSP.computableInPolyTime_verifier
-
-example : ComputableInPolyTime SuccinctMCSP.verifier
-    (encPair SuccinctMCSP.encBinary encBits) encBool :=
-  SuccinctMCSP.computableInPolyTime_verifier_encBinary
-
 /-! ### Concrete instances and verifier checks -/
+
+/-- The 1-input negation sample set `{(![false], true), (![true], false)}`. -/
+def notSamples : Finset (BitString 1 × Bool) :=
+  {(![false], true), (![true], false)}
+
+/-- `sampleFunction notSamples` evaluates to `true` on `![false]` and `false` on `![true]`. -/
+example :
+    SuccinctMCSP.sampleFunction notSamples ![false] = true ∧
+      SuccinctMCSP.sampleFunction notSamples ![true] = false := by
+  decide
+
+/-- The sparse synthesis bound `complexity_sampleFunction_le` bounds `sampleFunction notSamples`
+by `2 * (2 * 1 + 3) + 1 = 11` gates. -/
+example : complexity interpretation (single (SuccinctMCSP.sampleFunction notSamples)) ≤ 11 := by
+  have hcard : notSamples.card = 2 := by decide
+  simpa [hcard] using SuccinctMCSP.complexity_sampleFunction_le notSamples
+
+/-- Canonical sample enumeration `rawSamples` orders `notSamples` by input bitstring (`[false]` then
+`[true]`). -/
+example :
+    SuccinctMCSP.rawSamples ⟨1, notSamples, 1⟩ = [([false], true), ([true], false)] := by
+  decide
 
 /-- An instance with empty samples on `1` input is a yes-instance at threshold `0`. -/
 example : (⟨1, ∅, 0⟩ : SuccinctMCSP.Instance) ∈ SuccinctMCSP :=
@@ -70,10 +57,6 @@ example : (⟨1, {(![false], false)}, 0⟩ : SuccinctMCSP.Instance) ∈ Succinct
 example (s : ℕ) :
     (⟨1, {(![false], true), (![false], false)}, s⟩ : SuccinctMCSP.Instance) ∉ SuccinctMCSP :=
   SuccinctMCSP.notMem_of_mem_samples (y := ![false]) (by simp) (by simp)
-
-/-- The 1-input negation sample set `{(![false], true), (![true], false)}`. -/
-def notSamples : Finset (BitString 1 × Bool) :=
-  {(![false], true), (![true], false)}
 
 -- The verifier accepts the 1-gate NOT certificate on `notSamples` at threshold 1.
 example : SuccinctMCSP.verifier

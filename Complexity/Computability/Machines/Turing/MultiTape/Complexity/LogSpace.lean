@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
 public import Cslib.Computability.Machines.Turing.MultiTape.ConfigBound
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
@@ -65,8 +66,11 @@ tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
   polynomially long values.
 * `Turing.MultiTapeTM.ComputableInLogSpace.comp`: logspace functions compose.
 * `Turing.MultiTapeTM.ComputableInLogSpace.id`, `Turing.MultiTapeTM.ComputableInLogSpace.const`,
-  `Turing.MultiTapeTM.ComputableInLogSpace.of_finite`: logspace functions in zero space.
-* `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
+  `Turing.MultiTapeTM.ComputableInLogSpace.of_finite`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.congr`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.of_eq`: logspace functions in zero space and congruence.
+* `Turing.MultiTapeTM.ComputableInLogSpace.computableInPolyTime`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
   computable in polynomial time.
 * `Turing.MultiTapeTM.Transducer.computableInLogSpace`: functions computed by finite-state
   transducers are computable in logarithmic space.
@@ -228,6 +232,12 @@ theorem ComputableInLogSpace.computableTidilyInPolyTime {f : α → β}
     (.const c'),
     (PolyBounded.const c').mul (hlog.add (.const 1)), hc'⟩
 
+/-- **Logspace functions are computable in polynomial time.** -/
+theorem ComputableInLogSpace.computableInPolyTime {f : α → β}
+    (h : ComputableInLogSpace f encIn encMid) : ComputableInPolyTime f encIn encMid :=
+  let ⟨_, _, ⟨t, ht, htb⟩, ⟨s, hs, hsb⟩, h⟩ := h.computableTidilyInPolyTime
+  ⟨t, s, ht, hs, (h.mono htb hsb).computableInTimeAndSpace⟩
+
 /-- The binary length of `m + 1` is at least `log₂ m + 1`. -/
 private theorem log2_succ_le_length_encNat (m : ℕ) : Nat.log2 m + 1 ≤ (encNat (m + 1)).length := by
   rw [encNat_apply, Nat.size_eq_bits_len, Nat.succ_le_iff, Nat.lt_size]
@@ -278,6 +288,29 @@ theorem ComputableInLogSpace.comp {g : β → γ} {f : α → β}
 /-- The identity is computable in logarithmic space, indeed in zero space. -/
 theorem ComputableInLogSpace.id : ComputableInLogSpace (fun a : α => a) encIn encIn :=
   ⟨_, 0, computableInTimeAndSpace_id.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
+
+/-- A function whose encoded values agree with those of a logspace function is computable in
+logarithmic space, by the same machine. -/
+theorem ComputableInLogSpace.congr {f : α → β} {g : α → γ}
+    (hf : ComputableInLogSpace f encIn encMid) (h : ∀ a, encOut (g a) = encMid (f a)) :
+    ComputableInLogSpace g encIn encOut := by
+  obtain ⟨t, c, k, State, hS, tm, htm⟩ := hf
+  refine ⟨t, c, k, State, hS, tm, fun a => ?_⟩
+  rw [h a]
+  exact htm a
+
+/-- A function pointwisely equal to a logspace function is computable in logarithmic space, by the
+same machine. -/
+theorem ComputableInLogSpace.congr_fun {f g : α → β}
+    (hf : ComputableInLogSpace f encIn encMid) (h : ∀ a, g a = f a) :
+    ComputableInLogSpace g encIn encMid :=
+  hf.congr fun a => congrArg encMid (h a)
+
+/-- A function whose encoded values equal its encoded arguments is computable in logarithmic
+space, indeed in zero space. -/
+theorem ComputableInLogSpace.of_eq {f : α → β} (h : ∀ a, encMid (f a) = encIn a) :
+    ComputableInLogSpace f encIn encMid :=
+  ComputableInLogSpace.id.congr h
 
 /-- Constant functions are computable in logarithmic space, indeed in zero space. -/
 theorem ComputableInLogSpace.const (b : β) : ComputableInLogSpace (fun _ : α => b) encIn encMid :=
