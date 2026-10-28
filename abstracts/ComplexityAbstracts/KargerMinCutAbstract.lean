@@ -32,11 +32,14 @@ minimum cuts, and the correctness, resource bounds, and success/failure probabil
    contractions in `33 * n ^ 4 * (Nat.log 2 n + 2)` worst-case steps, missing `minCut W` with
    probability at most `1 / (2 * n)` whenever `0 < minCut W`.
 
-The single-trial bound `2 / (n * (n - 1))` formalizes `[Karger1993]`, Section 2, Theorem 2.1 and
-Corollary 2.1, `[KargerStein1996]`, Section 2, Lemma 2.1, Theorem 2.2, and Corollary 2.3,
-Section 2.1, Corollary 2.4, and Section 3 ("Implementing the Contraction Algorithm", Section 3.1,
-Lemma 3.1 and Section 3.2, Corollary 3.2), and `[MitzenmacherUpfal2017]`, Section 1.5, Theorem 1.8
-(paraphrase), where the source's `C(n, 2)⁻¹` is written `2 / (n * (n - 1))`. Relative to
+The single-trial bound `2 / (n * (n - 1))` formalizes `[KargerStein1996]`, Section 2, Theorem 2.2
+(via Lemma 2.1; Section 2.1, Corollary 2.4 for weighted graphs), `[Karger1993]`, Section 2,
+Theorem 2.1 (whose proof computes the exact product `C(n, 2)⁻¹`; the statement is asymptotic), and
+`[MitzenmacherUpfal2017]`, Section 1.5, Theorem 1.8 (paraphrase), where the source's `C(n, 2)⁻¹` is
+written `2 / (n * (n - 1))`. The `O(n ^ 2)` step bounds follow the adjacency-matrix and
+degree-array implementation of `[KargerStein1996]`, Section 3 (Section 3.2, Corollary 3.2), and
+`kargerAmplified` and `kargerHighProb` instantiate the `O(n ^ 2 log n)`-trial amplification of
+`[Karger1993]`, Section 2, Corollary 2.1 (paraphrase). Relative to
 `[KargerStein1996]`, Section 3, our program uses two implementation variants: (a) whereas
 Section 3.1 draws twice (`u` proportional to `D[u]` then `v` proportional to `W[u, v]`), one
 unit-cost `rand` draw in `{0, …, S - 1}` resolved by prefix sums over `rowDeg` and `W[u, v]`

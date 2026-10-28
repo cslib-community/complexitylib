@@ -46,10 +46,10 @@ multigraphs represented as symmetric zero-diagonal adjacency matrices `W : Fin n
     using one uniform draw `r ∈ Fin S` (`S = totalDoubledWeight W = ∑ u, rowDeg W u`) resolved by
     prefix sums over `rowDeg` then row weights `W u v`, achieving the same `2 * W u v / S`
     distribution;
-  - `[KargerStein1996]`, Section 3.2, Corollary 3.2 updates the `n × n` matrix in `O(n)` time per
-    contraction; our `embedCompact` / `contractMatrix` swap-compacts active slot `k - 1` into the
-    removed slot `v` so each contraction on `k` active supervertices scans only `0..k - 1` (`O(k)`
-    time);
+  - `[KargerStein1996]`, Section 3.2 (Figure 5) updates the `n × n` matrix in `O(n)` time per
+    contraction (hence Corollary 3.2's `O(n ^ 2)` total); our `embedCompact` / `contractMatrix`
+    swap-compacts active slot `k - 1` into the removed slot `v` so each contraction on `k` active
+    supervertices scans only `0..k - 1` (`O(k)` time);
   - `highProbTrials n = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the elementary `Real.exp`-free
     Bernoulli bound `highProb_failure_le` (`≤ 1 / (2 * n)`) are our own concrete parameter choices
     instantiating the `O(n ^ 2 log n)` repeated-trial amplification of `[Karger1993]`, Section 2,
