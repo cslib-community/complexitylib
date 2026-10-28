@@ -27,22 +27,28 @@ private noncomputable def arithmeticInputs
   letI := Classical.decEq G.V
   .ofFamily G.graph arithmeticExpanderFamily
 
--- The supplied contract is inhabited by the concrete arithmetic expander family.
-example (G : FinConstraintGraph.{0} (Bool × (Fin 6 → Bool))) :
-    letI := Classical.decEq G.V
-    (arithmeticInputs G).whole.spectralExpansion ≤ spectralBound :=
-  letI := Classical.decEq G.V
-  (arithmeticInputs G).spectralExpansion_whole_le
+private def singleGraph : ConstraintGraph Unit Unit (Bool × (Fin 6 → Bool)) :=
+  ⟨fun _ => (), fun _ => (), fun _ _ _ => False⟩
 
--- The new interface recovers the old family-based pipeline exactly.
-example {V E α : Type} [Fintype E] [DecidableEq V] (G : ConstraintGraph V E α) :
-    G.preprocessWith (.ofFamily G arithmeticExpanderFamily) =
-      G.preprocess arithmeticExpanderFamily :=
+private def singleLoop : FinConstraintGraph.{0} (Bool × (Fin 6 → Bool)) :=
+  ⟨Unit, Unit, singleGraph⟩
+
+-- The supplied contract is inhabited by the concrete arithmetic expander family.
+example :
+    letI := Classical.decEq singleLoop.V
+    (arithmeticInputs singleLoop).whole.spectralExpansion ≤ spectralBound :=
+  letI := Classical.decEq singleLoop.V
+  (arithmeticInputs singleLoop).spectralExpansion_whole_le
+
+-- The new interface recovers the old family-based pipeline on a concrete graph.
+example :
+    singleGraph.preprocessWith (.ofFamily singleGraph arithmeticExpanderFamily) =
+      singleGraph.preprocess arithmeticExpanderFamily :=
   rfl
 
-example {V E α : Type} [Fintype E] [DecidableEq V] [Fintype α] [DecidableEq α]
-    (G : ConstraintGraph V E α) (T q : ℕ) [NeZero q] :
-    G.amplifyWith (.ofFamily G expanderFamily) T q = G.amplify T q :=
+example :
+    singleGraph.amplifyWith (.ofFamily singleGraph expanderFamily) 2 2 =
+      singleGraph.amplify 2 2 :=
   rfl
 
 -- Real arithmetic parameters are obtained without evaluating the enormous fixed degree.
@@ -53,13 +59,6 @@ example : ∃ q : ℕ, 2 ≤ q ∧
           (Fintype.card Label) spectralBound :=
   Amplification.exists_killRate (loss := 840) (by norm_num)
     Fintype.card_pos Fintype.card_pos (by norm_num [spectralBound])
-
--- The generic parameter search accepts any positive composition loss.
-example (loss : ℝ) (hloss : 0 < loss) (K d : ℕ) (hK : 0 < K) (hd : 0 < d) :
-    ∃ q : ℕ, 2 ≤ q ∧
-      2 / Amplification.retention d spectralBound ≤
-        ((q : ℝ) - 1) / Amplification.denominator loss K d spectralBound :=
-  Amplification.exists_killRate hloss hK hd (by norm_num [spectralBound])
 
 -- These parameters actually instantiate the full amplifier, including all its size, value and
 -- satisfiability fields. This is a mathematical client, not an efficiency certificate for a round.

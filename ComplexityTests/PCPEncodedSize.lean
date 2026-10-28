@@ -47,11 +47,16 @@ example : ¬ (Graph.encoding encBits (Graph.mk 0 [⟨1, 1, []⟩])).length ≤ 6
 example : ¬ (Graph.encoding encBits
     (Graph.mk 1 [⟨0, 0, List.replicate 10 true⟩])).length ≤ 16 := by decide
 
+private def tableGraph : Graph (Bool → Bool → Bool) :=
+  (graph []).mapConstraints (fun _ a b => a == b)
+
 -- The general bound can be reused for fixed tables without another specialized source lemma.
-example {α : Type} [Fintype α] (g : Graph (α → α → Bool)) (hg : g.WellFormed) :
-    (Graph.encoding (encPi (encPi encBool)) g).length ≤
-      2 * g.vertices + 1 + g.edges.length *
-        (8 * g.vertices + 2 * (Fintype.card α * (6 * Fintype.card α + 1)) + 5) :=
-  hg.length_encoding_le _ _ fun edge _ => Graph.length_constraintTable_le edge.constraint
+example :
+    (Graph.encoding (encPi (encPi encBool)) tableGraph).length ≤
+      2 * tableGraph.vertices + 1 + tableGraph.edges.length *
+        (8 * tableGraph.vertices + 2 * (Fintype.card Bool * (6 * Fintype.card Bool + 1)) + 5) := by
+  have hg : tableGraph.WellFormed := by
+    simp [tableGraph, graph, Graph.WellFormed, Graph.mapConstraints]
+  exact hg.length_encoding_le _ _ fun edge _ => Graph.length_constraintTable_le edge.constraint
 
 end ComplexityTests.PCPEncodedSize

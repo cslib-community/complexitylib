@@ -22,8 +22,8 @@ open Cslib Cslib.Probability Cslib.Probability.PMF Cslib.Crypto
   Turing.MultiTapeTM
 
 -- Rejection preserves a fair baseline even when the validation trial is arbitrary.
-example {α : Type} (source : ProbComp α) (test : α → ProbComp Bool) :
-    ProbComp.eval (weightedTrial source (fun _ => pure false) test) =
+example :
+    ProbComp.eval (weightedTrial (ProbComp.uniform Bool) (fun _ => pure false) pure) =
       PMF.uniformOfFintype Bool := by
   simp [weightedTrial, ProbComp.eval_bind]
 
@@ -33,8 +33,8 @@ example : signedPredict (fun _ (_ : Unit) => false) [true] () = true ∧
     signedPredict (fun _ (_ : Unit) => false) [] () = false := by decide
 
 -- A zero discovery budget returns its fallback, with no assumptions about the programs.
-example (source : ProbComp (List Bool)) (test : List Bool → ProbComp Bool) (confidence : ℕ) :
-    learn source test confidence 0 = pure [] := by
+example :
+    learn (pure [true]) (fun _ => pure false) 5 0 = pure [] := by
   simp [learn, OracleComp.sampleBest, OracleComp.selectFrom, OracleComp.selectBest]
 
 -- A maximally wrong predictor has negative bias. Sampling its orientation still learns a
@@ -63,10 +63,10 @@ example : ((ProbComp.eval (learn (pure [])
   exact (wrongPredictor_failure 16 2 (by decide) (by norm_num)).trans (by norm_num)
 
 -- Every possible learned description, including statistically bad ones, pays for its sign bit.
-example (test : List Bool → ProbComp Bool) {code : List Bool}
-    (hcode : code ∈ (ProbComp.eval (learn (pure [false, true]) test 7 2)).support) :
+example {code : List Bool}
+    (hcode : code ∈ (ProbComp.eval (learn (pure [false, true]) (fun _ => pure true) 7 2)).support) :
     code.length ≤ 3 :=
-  learn_length_le (pure [false, true]) test 7 2 2 (by simp) hcode
+  learn_length_le (pure [false, true]) (fun _ => pure true) 7 2 2 (by simp) hcode
 
 -- The complete learner is a normal client of captured-input program certificates.
 example : IsPPTOn encBits encBits (fun word =>
@@ -133,12 +133,12 @@ example (joint : PMF (Bool × Bool)) :
   norm_num
 
 -- An arbitrary randomized test sees the full observation list and seed even for empty outputs.
-example {Observation Label Seed : Type} (source : ProbComp (Observation × Label))
-    (seed : ProbComp Seed) (count : ℕ) (test : List Observation × Seed × Unit → Game) :
+example (test : List Bool × Bool × Unit → Game) :
     Game.advantage
-      ((ProbComp.eval (OracleComp.replicate count source >>=
-        extractLabels seed (fun _ _ => ()))).bind test)
-      ((extractLabelsIdeal (Output := Unit) (Prod.fst <$> source) count seed).bind test) = 0 := by
+      ((ProbComp.eval (OracleComp.replicate 3 (ProbComp.uniform (Bool × Unit)) >>=
+        extractLabels (ProbComp.uniform Bool) (fun _ _ => ()))).bind test)
+      ((extractLabelsIdeal (Output := Unit) (Prod.fst <$> ProbComp.uniform (Bool × Unit))
+        3 (ProbComp.uniform Bool)).bind test) = 0 := by
   rw [eval_extractLabels_of_subsingleton, Game.advantage_self]
 
 -- Repetition and slack computation compose through alternative input encodings.

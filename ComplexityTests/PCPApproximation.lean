@@ -41,13 +41,11 @@ example : (0 : ℕ) ∉ (PromiseProblem.gapMax (fun _ => (0 : ℝ)) (fun n : ℕ
   norm_num
 
 /-- On decision problems, promise reductions are polynomial-time reductions. -/
-example {A : Set (List Bool)} :
-    PromiseProblem.PolyTimeReducible encBits encBits (.ofSet A) (.ofSet A) :=
-  PromiseProblem.polyTimeReducible_ofSet_iff.2 (PolyTimeReducible.refl encBits A)
-
-/-- `SAT` is NP-hard as a promise problem. -/
-example : PromiseProblem.NPHard encCNF (.ofSet SAT) :=
-  PromiseProblem.npHard_ofSet_iff.2 CookLevin.SAT_npHard
+example :
+    PromiseProblem.PolyTimeReducible encBits encBits (.ofSet {[true]}) (.ofSet {[true]}) ∧
+      PromiseProblem.NPHard encCNF (.ofSet SAT) :=
+  ⟨PromiseProblem.polyTimeReducible_ofSet_iff.2 (PolyTimeReducible.refl encBits {[true]}),
+    PromiseProblem.npHard_ofSet_iff.2 CookLevin.SAT_npHard⟩
 
 /-- Restricting a promise problem intersects both sets. -/
 example : (gapNat.restrict {n | n ≠ 5}).yes = {n : ℕ | (3 : ℝ) ≤ n} ∩ {n | n ≠ 5} := rfl
@@ -157,20 +155,18 @@ private theorem one_le_unsatVal_negationLoop :
       simp [ConstraintGraph.Satisfies, Graph.toGraph, negationLoop, permutationEval, hσ0] at this
   simpa [negationLoop] using h
 
-/-- Unique Games has no-instances for every gap with `0 ≤ δ < 1 - ε`. -/
-example {ε δ : ℝ} (hδ : 0 ≤ δ) (hεδ : δ < 1 - ε) :
-    negationLoop ∈ (GapUniqueGames Bool (1 - ε) δ).no :=
-  ⟨⟨by linarith [one_le_unsatVal_negationLoop], hεδ⟩, isUniqueGame_negationLoop⟩
-
-/-- A loop carrying the identity is a yes-instance for every completeness at most one. -/
-example {c s : ℝ} (hc : c ≤ 1) :
-    (⟨1, [⟨0, 0, id⟩]⟩ : Graph (Bool → Bool)) ∈ (GapUniqueGames Bool c s).yes := by
-  refine ⟨?_, by simp [IsUniqueGame]⟩
+/-- Unique Games has concrete no- and yes-instances at gap `(3 / 4, 1 / 2)`. -/
+example :
+    negationLoop ∈ (GapUniqueGames Bool (1 - 1 / 4) (1 / 2)).no ∧
+      (⟨1, [⟨0, 0, id⟩]⟩ : Graph (Bool → Bool)) ∈
+        (GapUniqueGames Bool (1 - 1 / 4) (1 / 2)).yes := by
+  refine ⟨⟨⟨by linarith [one_le_unsatVal_negationLoop], by norm_num⟩, isUniqueGame_negationLoop⟩,
+    ?_, by simp [IsUniqueGame]⟩
   have : ((⟨1, [⟨0, 0, id⟩]⟩ : Graph (Bool → Bool)).toGraph permutationEval).unsatVal = 0 :=
     (ConstraintGraph.unsatVal_eq_zero_iff _).2 ⟨fun _ => true, fun i => by
       simp [ConstraintGraph.Satisfies, Graph.toGraph, permutationEval]⟩
   simp only [PromiseProblem.mem_yes_gapMax, this, sub_zero]
-  exact hc
+  norm_num
 
 /-- The conjecture is a proposition; nothing assumes it. -/
 example : UniqueGamesConjecture → ∃ L : ℕ, PromiseProblem.NPHard

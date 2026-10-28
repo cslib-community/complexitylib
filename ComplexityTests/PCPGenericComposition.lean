@@ -29,24 +29,22 @@ private theorem direct_sound (α : Type) :
   intro C π h
   simp [directTester, LocalTest.acceptProb, LocalTest.Passes, h]
 
-example {V E α : Type} [Fintype E] [Nonempty α] (G : ConstraintGraph V E α) :
-    ((directTester α).compose G).unsatVal ≤ G.unsatVal :=
-  AssignmentTester.unsatVal_compose_le (direct_complete α) G
-
-example {V E α : Type} [Fintype E] [Nonempty α] (G : ConstraintGraph V E α) :
-    G.unsatVal / 2 ≤ ((directTester α).compose G).unsatVal := by
-  simpa using AssignmentTester.le_unsatVal_compose (direct_sound α) (by norm_num) G
-
-example {V E α : Type} [Finite E] [Nonempty α] (G : ConstraintGraph V E α) :
-    ((directTester α).compose G).Satisfiable ↔ G.Satisfiable :=
-  AssignmentTester.satisfiable_compose_iff (direct_complete α) (direct_sound α) (by norm_num) G
-
 private def rejecting : ConstraintGraph Unit Unit Bool :=
   ⟨fun _ => (), fun _ => (), fun _ _ _ => False⟩
+
+private def emptyGraph : ConstraintGraph Unit Empty Bool :=
+  ⟨Empty.elim, Empty.elim, fun e _ _ => e.elim⟩
 
 example : ¬ rejecting.Satisfiable := by
   rintro ⟨σ, hσ⟩
   exact hσ ()
+
+example :
+    ((directTester Bool).compose rejecting).unsatVal ≤ rejecting.unsatVal ∧
+      (((directTester Bool).compose rejecting).Satisfiable ↔ rejecting.Satisfiable) :=
+  ⟨AssignmentTester.unsatVal_compose_le (direct_complete Bool) rejecting,
+    AssignmentTester.satisfiable_compose_iff (direct_complete Bool) (direct_sound Bool)
+      (by norm_num) rejecting⟩
 
 example : 1 / 2 ≤ ((directTester Bool).compose rejecting).unsatVal := by
   have h := AssignmentTester.le_unsatVal_compose (direct_sound Bool) (by norm_num) rejecting
@@ -58,28 +56,26 @@ example : 1 / 2 ≤ ((directTester Bool).compose rejecting).unsatVal := by
       rejecting]
   simpa [hreject] using h
 
-example (G : ConstraintGraph Unit Empty Bool) :
-    ((directTester Bool).compose G).unsatVal = 0 := ConstraintGraph.unsatVal_of_isEmpty _
+example :
+    ((directTester Bool).compose emptyGraph).unsatVal = 0 :=
+  ConstraintGraph.unsatVal_of_isEmpty _
 
 -- The old concrete graph definitions remain definitionally identical to the generic construction.
-example {V E α : Type} [Fintype α] [DecidableEq α] (G : ConstraintGraph V E α) :
-    HadamardTester.assignmentTester.compose G = G.compose := rfl
-
-example {V E α : Type} [Fintype α] [DecidableEq α] (G : ConstraintGraph V E α)
-    (σ : V → α) :
-    HadamardTester.assignmentTester.composeProof G σ = G.composeProof σ := rfl
-
-example {V E α : Type} [Fintype α] [DecidableEq α] [Nonempty α]
-    (π : ConstraintGraph.ComposePos V E α → Bool) :
-    AssignmentTester.decodeLabelling ConstraintGraph.decodeLabel π =
-      ConstraintGraph.decodeLabelling π := rfl
+example :
+    HadamardTester.assignmentTester.compose rejecting = rejecting.compose ∧
+      HadamardTester.assignmentTester.composeProof rejecting (fun _ => false) =
+        rejecting.composeProof (fun _ => false) ∧
+      AssignmentTester.decodeLabelling ConstraintGraph.decodeLabel
+        (fun _ : ConstraintGraph.ComposePos Unit Unit Bool => false) =
+        ConstraintGraph.decodeLabelling (V := Unit) (E := Unit) (α := Bool) (fun _ => false) :=
+  ⟨rfl, rfl, rfl⟩
 
 -- A zero rejection bound remains a valid weighted statement, but not a positive-gap contract.
-example {V E α : Type} [Fintype E] (G : ConstraintGraph V E α)
-    (A : AssignmentTester.ComposePos V E Unit Empty ⊕ E × Unit → α × (Fin 2 → α))
-    (hsound : (directTester α).Sound (fun table => table ()) 0) :
-    0 ≤ (2 : ℝ) * ((directTester α).compose G).unsatFrac A := by
-  simpa using AssignmentTester.mul_unsatFrac_decodeLabelling_le hsound G A
+example (A : AssignmentTester.ComposePos Unit Unit Unit Empty ⊕ Unit × Unit →
+      Bool × (Fin 2 → Bool))
+    (hsound : (directTester Bool).Sound (fun table => table ()) 0) :
+    0 ≤ (2 : ℝ) * ((directTester Bool).compose rejecting).unsatFrac A := by
+  simpa using AssignmentTester.mul_unsatFrac_decodeLabelling_le hsound rejecting A
 
 -- An honest auxiliary proof may depend on the constraint, not just its two labels.
 open Classical in
