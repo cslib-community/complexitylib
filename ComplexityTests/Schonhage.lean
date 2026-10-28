@@ -64,7 +64,7 @@ example : (leaves innerQuery).card = 10 := by decide
 
 example : Pruned.totalSize (encodingL left) (encodingR right) innerQuery = 11 := by decide
 
--- The shared private leaf of these two outputs is included only once.
+-- The shared contributing leaf of these two outputs is included only once.
 private def mixedQuery : Finset (OutStr 1) := {![.z 0 0], ![.z0]}
 
 example : (leaves mixedQuery).card = 10 := by decide
