@@ -298,7 +298,8 @@ theorem forestNodes_nodup_disjoint {n : ℕ} {ts : List (FHTree n)} (hnd : (fore
 /-! ## Subtree and root invariants -/
 
 /-- Structural heap-order, child-list, and chronological rank invariant on a subtree `T`
-([Fredman and Tarjan][FredmanTarjan1987], Lemma 1, p. 604; [Cormen et al.][CLRS2009], Lemma 19.1).
+(`hrank`, a strengthening of [Fredman and Tarjan][FredmanTarjan1987], Lemma 1, p. 604;
+[Cormen et al.][CLRS2009], Lemma 19.1).
 When `pending = some w`, `w` has just lost a child during cascading cuts and is permitted one extra
 unit of slack before either being cut itself (`mark w = 1`) or becoming marked (`mark w = 0`). -/
 inductive ValidSubtree {n : ℕ} (st : RawState n) (pending : Option (Fin n)) : FHTree n → Prop where
@@ -451,7 +452,7 @@ private theorem fib_range_le_forestNodes {n : ℕ} :
     omega
 
 /-- Fredman–Tarjan subtree size lower bound ([Fredman and Tarjan][FredmanTarjan1987], Corollary 1,
-p. 604; [Cormen et al.][CLRS2009], Corollary 19.5): in any subtree with no pending cascading cut,
+p. 604; [Cormen et al.][CLRS2009], Lemma 19.4): in any subtree with no pending cascading cut,
 `Nat.fib (T.deg + 2) ≤ T.size`. -/
 theorem ValidSubtree.fib_le_size {n : ℕ} {st : RawState n} {T : FHTree n}
     (hT : ValidSubtree st none T) : Nat.fib (T.deg + 2) ≤ T.size := by

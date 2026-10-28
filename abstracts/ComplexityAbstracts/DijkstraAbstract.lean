@@ -36,7 +36,7 @@ CSLib.
 * [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
   algorithms*][FredmanTarjan1987], Section 2, Theorem 1 (p. 604) and Section 4 (pp. 609–610).
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
-  Algorithms*][CLRS2009], Chapters 19 and 24.3 (p. 662).
+  Algorithms*][CLRS2009], Chapter 19 and Section 24.3 (p. 662).
 -/
 
 namespace ComplexityAbstracts.DijkstraAbstract

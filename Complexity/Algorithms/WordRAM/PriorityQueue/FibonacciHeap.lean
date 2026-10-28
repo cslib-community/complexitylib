@@ -21,7 +21,7 @@ This file assembles the standalone static-array Word-RAM Fibonacci heap
 
 Over `n` vertex handles in a contiguous memory block `[base, base + 9 * n + 1)` with concrete
 integer potential `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotential = 0`,
-[Fredman and Tarjan][FredmanTarjan1987], Section 2, Theorem 1, p. 604;
+[Fredman and Tarjan][FredmanTarjan1987], Section 2, p. 604 (the potential defined before Theorem 1);
 [Cormen et al.][CLRS2009], Section 19.1, eq. (19.1)):
 
 * `initFresh` initializes an empty heap on zeroed `[base, base + 9 * n + 1)` in `O(1)` (`≤ 26`)
@@ -40,8 +40,9 @@ integer potential `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotentia
   over `Basis.exact`.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.pkg`, `pkgStd`: `PQPackage` bundles over
   `Basis.exact` and `Basis.standard` for plug-and-play graph algorithms (such as Dijkstra).
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.initFreshProg`, `initClearProg`, `opProg`:
-  compiled flat `Program .exact rFib` artifacts for standalone multi-operation execution.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.initFreshProg`, `initClearProg`, `opProg`,
+  `initRegs`, `prepareRegs`, `RunsOps`: compiled flat `Program .exact rFib` artifacts, register
+  calling conventions, and sequential execution predicate for standalone multi-operation execution.
 
 ## Main results
 

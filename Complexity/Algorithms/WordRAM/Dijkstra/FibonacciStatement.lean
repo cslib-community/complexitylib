@@ -15,7 +15,7 @@ public import Complexity.Algorithms.WordRAM.Dijkstra.HeapStatement
 This file states what a single-source shortest-path program on the word RAM must satisfy to
 achieve the Fredman–Tarjan running-time bound of Dijkstra's algorithm with a Fibonacci heap
 [Dijkstra][Dijkstra1959] [Fredman and Tarjan][FredmanTarjan1987]
-[Cormen et al., Chapters 19 and 24.3][CLRS2009].
+[Cormen et al., Chapter 19 and Section 24.3][CLRS2009].
 
 Because memory past the input starts at `0`, the priority-queue and distance arrays require only
 `O(1)` fresh initialization, and the algorithm extracts at most `min n (m + 1)` reachable vertices

@@ -39,7 +39,8 @@ statement here depends on implementation modules.
 ## References
 
 * [M. L. Fredman and R. E. Tarjan, *Fibonacci heaps and their uses in improved network optimization
-  algorithms*][FredmanTarjan1987], Section 2, Theorem 1 (p. 604).
+  algorithms*][FredmanTarjan1987], Section 2, p. 604 (the potential defined before Theorem 1) and
+  Theorem 1.
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to
   Algorithms*][CLRS2009], Section 19.1, eq. (19.1), and Sections 19.2–19.4.
 -/
