@@ -144,6 +144,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalAdmitted
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalCall
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalChildren
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalCost
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalDeliver
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalEmission
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalEmissionFrame
