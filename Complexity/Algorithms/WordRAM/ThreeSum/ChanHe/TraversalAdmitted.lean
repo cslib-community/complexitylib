@@ -43,8 +43,8 @@ theorem emit_admitted {a : Arena} {w : ℕ} (x : Data 128) (e : Entry)
   rcases hc with ⟨hm, hΛ, hU, hN, hb, hcard, ht, hstack, hcap, hz, hone⟩
   have hsum := envelope_ge_sum a.ceiling a.n a.m a.Λ a.U a.N
   have hbound {z : ℤ} (hz : z.natAbs ≤ envelope a.ceiling a.n a.m a.Λ a.U a.N) :
-      GenericRAM.Signed.Fits w z := NodePacking.signed_fits_of_natAbs_le hw.2.2 hz
-  have hunsigned := NodePacking.unsigned_fits_of_signed hw.2.2
+      GenericRAM.Signed.Fits w z := GenericRAM.Signed.Fits.of_natAbs_le hw.2.2 hz
+  have hunsigned := Signed.unsigned_fits_of_signed hw.2.2
   have hlen (j : Fin 3) : x.regs (arrayLength j) ≤ a.n := by
     rw [hl.2.2]
     exact hv.length_le j

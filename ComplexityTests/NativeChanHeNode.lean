@@ -149,22 +149,29 @@ example : ∃ y, ExecWithin 34 program (input empty 1 2 0) y
 
 private def singletonValues (j : Fin 3) (_ : ℕ) : ℤ := ![-1, 0, 1] j
 
--- A nonempty signed instance also satisfies every premise of the complete semantic theorem.
-example : ∃ y, ExecWithin 34 program (input singleton 3 6 1) y 3328 ∧
-    Output (layout (input singleton 3 6 1)) singletonValues
-      (input singleton 3 6 1).mem y.mem ∧ Parameters (input singleton 3 6 1) y := by
-  apply exec_spec _ _ (by decide) (by decide) (by decide)
-  · intro j
-    fin_cases j <;> decide
-  · intro j i hi
-    rw [show (layout (input singleton 3 6 1)).U = 1 by decide]
-    fin_cases j <;> norm_num [singletonValues]
-  · intro j i hi
-    have hi0 : i = 0 := by
-      fin_cases j <;> norm_num [layout, input, singleton, length, source] at hi <;> omega
-    subst i
-    fin_cases j <;> decide
-  · intro j i hi k hk _
-    fin_cases j <;> norm_num [layout, input, singleton, length, source] at hi hk <;> omega
+-- A nonempty square-length client reads the final packed cell from the actual native state.
+example : ∃ y, ExecWithin 34 program (input singleton 1 2 1) y 1792 ∧
+    Output (layout (input singleton 1 2 1)) singletonValues
+      (input singleton 1 2 1).mem y.mem ∧ Parameters (input singleton 1 2 1) y ∧
+    y.mem ((layout (input singleton 1 2 1)).packed + 7) =
+      Signed.encode ((node (layout (input singleton 1 2 1)) singletonValues).oneArray 1 7) := by
+  have hclient : ∃ y, ExecWithin 34 program (input singleton 1 2 1) y 1792 ∧
+      Output (layout (input singleton 1 2 1)) singletonValues
+        (input singleton 1 2 1).mem y.mem ∧ Parameters (input singleton 1 2 1) y := by
+    apply exec_spec _ _ (by decide) (by decide) (by decide)
+    · intro j
+      fin_cases j <;> decide
+    · intro j i hi
+      rw [show (layout (input singleton 1 2 1)).U = 1 by decide]
+      fin_cases j <;> norm_num [singletonValues]
+    · intro j i hi
+      have hi0 : i = 0 := by
+        fin_cases j <;> norm_num [layout, input, singleton, length, source] at hi <;> omega
+      subst i
+      fin_cases j <;> decide
+    · intro j i hi k hk _
+      fin_cases j <;> norm_num [layout, input, singleton, length, source] at hi hk <;> omega
+  obtain ⟨y, he, ho, hp⟩ := hclient
+  exact ⟨y, he, ho, hp, ho.packed_square (m := 1) (by decide) (by decide)⟩
 
 end ComplexityTests.NativeChanHeNode

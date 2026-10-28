@@ -28,6 +28,7 @@ For injective input arrays its counter is exactly the existing Chan–He `coll`.
 
 * `Count.exec`: execution in at most `34n + 5M + 18` native instructions.
 * `Count.exec_coll`: the counter equals the existing mathematical collision count.
+* `Count.memory_before`: cells below the two workspace blocks retain their contents.
 
 ## References
 
@@ -101,6 +102,12 @@ theorem preserves_parameters (i : Fin 28)
 def memory (mem : ℕ → ℕ) (values : ℕ → ℤ) (n M scratch dst : ℕ) : ℕ → ℕ :=
   Histogram.memory (Residues.memory mem values M scratch n)
     (fun i => (values i % (M : ℤ)).toNat) dst M n
+
+/-- Neither the residue array nor the histogram modifies an earlier memory cell. -/
+theorem memory_before (mem : ℕ → ℕ) (values : ℕ → ℤ) (n M scratch dst a : ℕ)
+    (hs : a < scratch) (hd : a < dst) : memory mem values n M scratch dst a = mem a := by
+  simp [memory, Histogram.memory, Residues.memory, show ¬(dst ≤ a ∧ a < dst + M) by omega,
+    show ¬(scratch ≤ a ∧ a < scratch + n) by omega]
 
 /-- Complete native collision counting, including residue computation, clearing the histogram
 and register setup. Input, scratch and histogram blocks occur in that order and are disjoint.

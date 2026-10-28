@@ -20,7 +20,7 @@ explicit allocation and caller registers 46–55 are preserved.
 ## Main results
 
 * `NodePacking.exec_spec`: complete native execution and exact semantic readback.
-* `NodePacking.packed_length_square`: the preprocessing specialization has `8m²` cells.
+* `NodePacking.Output.packed_square`: exact native readback at the common `8m²` length.
 * `NodePacking.abs_oneArray_le`: the node magnitude bound is `60U+40`.
 
 These programs and composition proofs are original. The mathematical comparator is the
@@ -103,17 +103,11 @@ theorem abs_oneArray_le (L : Layout) (values : Fin 3 → ℕ → ℤ)
   Cslib.Algorithms.ThreeSum.ChanHe.Node.abs_oneArray_le
     (bdd_image L values hbdd 0) (bdd_image L values hbdd 1) (bdd_image L values hbdd 2) u
 
-/-- The full preprocessing's common group count gives exactly its existing packed length. -/
-theorem packed_length_square (m : ℕ) : 4 * (2 * m ^ 2) = 8 * m ^ 2 := by omega
-
-/-- The square specialization is admissible whenever the parent supplies `M ≤ m²`. -/
-theorem square_admissible {M m : ℕ} (hM : M ≤ m ^ 2) : 2 * M ≤ 2 * m ^ 2 := by omega
-
 /-- Exact readback at the full preprocessing's common length, with no extra padding assumption. -/
 theorem Output.packed_square {L : Layout} {values : Fin 3 → ℕ → ℤ}
     {before after : ℕ → ℕ} (h : Output L values before after)
     {m : ℕ} (hN : L.N = 2 * m ^ 2) {u : ℕ} (hu : u < 8 * m ^ 2) :
     after (L.packed + u) = encode ((node L values).oneArray L.U u) :=
-  h.packed u (by rw [hN, packed_length_square]; exact hu)
+  h.packed u (by rw [hN]; omega)
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.NodePacking

@@ -86,7 +86,7 @@ theorem root_exec {a : Arena} {w : ℕ} (e : Entry) (ns : List (ℕ × Node)) (x
       out.map Prod.snd = ns.map Prod.snd ++ e.task.output (Nat.primesLE a.m) a.Λ ∧
       (∀ p < a.stack, y.mem p = x.mem p) ∧
       ∀ i : Fin 128, 109 ≤ i.val → y.regs i = x.regs i := by
-  have hunsigned := NodePacking.unsigned_fits_of_signed hw.2.2
+  have hunsigned := Signed.unsigned_fits_of_signed hw.2.2
   have hsum := envelope_ge_sum a.ceiling a.n a.m a.Λ a.U a.N
   have h2 : Fits (w + 2) 2 := hunsigned.of_le (by omega)
   have hcap : Fits (w + 2) (a.stack + a.capacity) := hunsigned.of_le (by

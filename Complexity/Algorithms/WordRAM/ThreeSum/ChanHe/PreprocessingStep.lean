@@ -66,7 +66,7 @@ theorem execute_next_root {a : Traversal.Arena} {w U : ℕ} {l : Frontend.Layout
     change l.descriptors + 2 * (3 * s.index + 2) + 2 ≤ l.endpoint at hd
     omega
   have hsum := Traversal.envelope_ge_sum a.ceiling a.n a.m a.Λ a.U a.N
-  have hfit := (NodePacking.unsigned_fits_of_signed hw.2.2).of_le (haddr.trans (by omega))
+  have hfit := (Signed.unsigned_fits_of_signed hw.2.2).of_le (haddr.trans (by omega))
   obtain ⟨p, hp, hloaded, hmem, hpr⟩ := loadRoot_exec x h.bounded hi h.current
     h.descriptors h.levels h.stride h.one hfit h.frontend
   have pheap : p.regs Traversal.heap = x.regs Traversal.heap := hpr _ (by decide) (by decide)

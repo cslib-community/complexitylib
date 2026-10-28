@@ -159,18 +159,4 @@ theorem Layout.tag_bounds (L : Layout) (j : Fin 3) :
     L.U ≤ L.tag j ∧ L.tag j ≤ 4 * L.gap := by
   fin_cases j <;> simp +decide [Layout.tag, Layout.gap] <;> omega
 
-/-- A signed fit for a nonnegative envelope also covers every integer bounded by it. -/
-theorem signed_fits_of_natAbs_le {w B : ℕ} (hfit : GenericRAM.Signed.Fits w (B : ℤ))
-    {z : ℤ} (hz : z.natAbs ≤ B) : GenericRAM.Signed.Fits w z := by
-  obtain ⟨hw, hlo, hhi⟩ := hfit
-  have habs := abs_le.mp (show |z| ≤ (B : ℤ) by
-    rw [← Int.natCast_natAbs]
-    exact_mod_cast hz)
-  exact ⟨hw, by omega, by omega⟩
-
-/-- One signed envelope suffices for every unsigned intermediate at the execution width. -/
-theorem unsigned_fits_of_signed {w B : ℕ} (hfit : GenericRAM.Signed.Fits w (B : ℤ)) :
-    Fits (w + 2) B :=
-  ((encode_fits hfit).mono (by omega)).of_le (by simp [Signed.encode]; omega)
-
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.NodePacking

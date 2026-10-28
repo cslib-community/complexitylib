@@ -111,7 +111,7 @@ theorem setup_fits {κ n w : ℕ} (hw : width κ n ≤ w) (retained : ℕ → �
     dsimp only [a, arena]
     omega
   have hready := arena_ready hw retained
-  have hword := NodePacking.unsigned_fits_of_signed hready.2.2
+  have hword := Signed.unsigned_fits_of_signed hready.2.2
   have hw3 : 3 ≤ w := (three_le_width κ n).trans hw
   rw [show w - 2 + 2 = w by omega] at hword
   have cover {v : ℕ} (hv : v ≤ 3 * S) : Fits w v := hword.of_le (by
