@@ -16,6 +16,10 @@ open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 
 namespace ComplexityTests.SchonhagePruned
 
+-- Query codes use least-significant-first digits and retain the encoder's wildcard digit nine.
+example : queryAt (L := 2) (90 : Fin 100) = ![.z 0 0, .z0] := by decide +kernel
+example : (requested (L := 2) ([90, 9, 90] : List (Fin 100))).card = 2 := by decide +kernel
+
 private def observe (w L fuel : ℕ) (a b : Fin (10 ^ L) → ℤ) (qs : List (Fin (10 ^ L))) :=
   (program.eval w fuel (State.init (input L a b qs) : State registers).data).map fun (y, time) =>
     ((List.range qs.length).map fun i => decode (y.mem (outputBase L qs.length + i)), time)

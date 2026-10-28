@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Control
 
 /-!
 # Sparse initialization of requested accumulators
@@ -32,20 +33,22 @@ open Cslib.WordRAM Finset
 
 /-- Clear precisely the addresses named in the processed prefix of an explicit query list. -/
 def zeroQueryPrefix (mem : ℕ → ℕ) (base : ℕ) (input : ℕ → ℕ) (k : ℕ) : ℕ → ℕ :=
-  fun a => if a ∈ (range k).image (fun i => base + input i) then 0 else mem a
+  ((range k).image (fun i => base + input i)).piecewise (fun _ => 0) mem
 
 /-- Clearing no requests leaves memory unchanged. -/
 @[simp]
 theorem zeroQueryPrefix_zero (mem : ℕ → ℕ) (base : ℕ) (input : ℕ → ℕ) :
-    zeroQueryPrefix mem base input 0 = mem := by ext a; simp [zeroQueryPrefix]
+    zeroQueryPrefix mem base input 0 = mem := by
+  funext a
+  simp only [zeroQueryPrefix, Finset.range_zero, Finset.image_empty, Finset.piecewise,
+    Finset.notMem_empty, ↓reduceIte]
 
 /-- One additional listed request is exactly one memory store, including repeated requests. -/
 theorem zeroQueryPrefix_succ (mem : ℕ → ℕ) (base : ℕ) (input : ℕ → ℕ) (k : ℕ) :
     zeroQueryPrefix mem base input (k + 1) =
       Function.update (zeroQueryPrefix mem base input k) (base + input k) 0 := by
-  ext a
-  by_cases ha : a = base + input k <;>
-    simp [zeroQueryPrefix, range_add_one, image_insert, ha]
+  unfold zeroQueryPrefix
+  rw [Finset.range_add_one, Finset.image_insert, Finset.piecewise_insert]
 
 /-- Every cell outside the concrete value directory is preserved by a bounded prefix. -/
 theorem zeroQueryPrefix_outside {mem : ℕ → ℕ} {base capacity k : ℕ} {input : ℕ → ℕ}
@@ -58,7 +61,14 @@ theorem zeroQueryPrefix_outside {mem : ℕ → ℕ} {base capacity k : ℕ} {inp
     change base ≤ base + input i ∧ base + input i < base + capacity
     have := hcode i (mem_range.mp hi)
     omega
-  simp only [zeroQueryPrefix, hnot, ↓reduceIte]
+  simp only [zeroQueryPrefix, piecewise, hnot, ↓reduceIte]
+
+/-- Every requested value in the processed prefix is actually zero in the resulting memory. -/
+theorem zeroQueryPrefix_at {mem : ℕ → ℕ} {base k i : ℕ} {input : ℕ → ℕ} (hi : i < k) :
+    zeroQueryPrefix mem base input k (base + input i) = 0 := by
+  have hmem : base + input i ∈ (range k).image (fun j => base + input j) :=
+    mem_image.mpr ⟨i, mem_range.mpr hi, rfl⟩
+  simp only [zeroQueryPrefix, piecewise, hmem, ↓reduceIte]
 
 /-- Registers modified by sparse clearing. -/
 def ClearLocal (i : Fin registers) : Prop := i = address ∨ i = query ∨ i = index
@@ -149,5 +159,50 @@ theorem exec_clearRequested {w N capacity : ℕ} (x : Data registers) (input : �
     (hsetup.seq hloop).mono (by omega)
   refine ⟨y, he, hindex, ?_, hread y hIy, fun i hi => he.regs_eq (clear_preserves i hi)⟩
   simpa only [hindex] using hIy.2.1
+
+/-- Registers changed by a complete internal-node initialization. -/
+def ClearValuesLocal (i : Fin registers) : Prop := ClearLocal i ∨ AdvanceLocal i
+
+instance (i : Fin registers) : Decidable (ClearValuesLocal i) :=
+  inferInstanceAs (Decidable (ClearLocal i ∨ AdvanceLocal i))
+
+private theorem clearValues_preserves (i : Fin registers) :
+    ¬ClearValuesLocal i → clearValues.Preserves i := by decide +kernel +revert
+
+/-- Sparse clearing and actual stored-frame initialization together cost `7 N + 8` instructions.
+The source list is preserved; the only additional memory write is its frame's fourth word. -/
+theorem exec_clearValues {w N capacity : ℕ} (x : Data registers) (input : ℕ → ℕ)
+    (hN : x.regs count = N)
+    (hinput : ∀ i < N, x.mem (x.regs listBase + i) = input i)
+    (hcode : ∀ i < N, input i < capacity)
+    (hsep : x.regs listBase + N ≤ x.regs valueBase ∨
+      x.regs valueBase + capacity ≤ x.regs listBase)
+    (hframeSep : x.regs frame + 4 ≤ x.regs listBase ∨
+      x.regs listBase + N ≤ x.regs frame)
+    (h0 : x.regs nil = 0) (h1 : x.regs one = 1) (h4 : x.regs frameWidth = 4)
+    (hw : Fits w (x.regs listBase + N + x.regs valueBase + capacity + N + 2))
+    (hf : Fits w (x.regs frame + 4)) :
+    ∃ y, ExecWithin w clearValues x y (7 * N + 8) ∧ y.regs index = N ∧
+      y.regs term = 0 ∧ y.regs mode = 1 ∧
+      y.mem = Function.update (zeroQueryPrefix x.mem (x.regs valueBase) input N)
+        (x.regs frame + 3) 0 ∧
+      (∀ i < N, y.mem (x.regs listBase + i) = input i) ∧
+      (∀ i, ¬ClearValuesLocal i → y.regs i = x.regs i) := by
+  obtain ⟨z, hz, hindex, hmem, hread, hregs⟩ :=
+    exec_clearRequested x input hN hinput hcode hsep h0 h1 hw
+  have hframe := hregs frame (by decide)
+  obtain ⟨y, hy, hterm, hmode, hmem', hregs'⟩ := exec_clearValuesFinish z
+    ((hregs one (by decide)).trans h1) ((hregs frameWidth (by decide)).trans h4)
+    (by simpa only [hframe] using hf)
+  have he : ExecWithin w clearValues x y (7 * N + 8) := (hz.seq hy).mono (by omega)
+  have hm : y.mem = Function.update z.mem (x.regs frame + 3) 0 := by
+    simpa only [hframe] using hmem'
+  refine ⟨y, he, (hregs' index (by decide)).trans hindex, hterm, hmode,
+    by rw [hm, hmem], ?_, fun i hi => he.regs_eq (clearValues_preserves i hi)⟩
+  intro i hi
+  have hne : x.regs listBase + i ≠ x.regs frame + 3 := by
+    rcases hframeSep with h | h <;> omega
+  rw [hm, Function.update_of_ne hne]
+  exact hread i hi
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery

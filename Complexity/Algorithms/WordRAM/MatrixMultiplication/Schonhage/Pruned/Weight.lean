@@ -37,6 +37,32 @@ def traceWeight {n : ℕ} (S : Finset (OutStr n)) : ℕ :=
   4096 * (Pruned.totalSize (fun _ => 0) (fun _ => 0) S +
     (Pruned.calls n (fun _ => 0) (fun _ => 0) S).card)
 
+/-- A timestamp budget for a node with `n` levels remaining. A leaf scans no children;
+an internal node scans ten children, each of which may use its own recursive budget. -/
+def epochAllowance (n : ℕ) : ℕ := 2 * (10 ^ n - 1)
+
+/-- A leaf needs no new child-set timestamp. -/
+@[simp]
+theorem epochAllowance_zero : epochAllowance 0 = 0 := rfl
+
+/-- Ten fresh child scans and all ten recursive budgets fit in the parent's allowance. -/
+theorem epochAllowance_succ (n : ℕ) :
+    10 * (1 + epochAllowance n) ≤ epochAllowance (n + 1) := by
+  have hp : 1 ≤ (10 : ℕ) ^ n := Nat.one_le_pow n _ (by decide)
+  unfold epochAllowance
+  rw [pow_succ]
+  omega
+
+/-- Every partial traversal of the ten children fits the same concrete timestamp allowance. -/
+theorem mul_epochAllowance_le {n k : ℕ} (hk : k ≤ 10) :
+    k * (1 + epochAllowance n) ≤ epochAllowance (n + 1) :=
+  (Nat.mul_le_mul_right _ hk).trans (epochAllowance_succ n)
+
+/-- The timestamp budget is bounded by twice the original leaf-array size. -/
+theorem epochAllowance_le (n : ℕ) : epochAllowance n ≤ 2 * 10 ^ n := by
+  unfold epochAllowance
+  omega
+
 /-- The weight of the zero-depth root, including the empty-query boundary. -/
 theorem traceWeight_zero (S : Finset (OutStr 0)) : traceWeight S = 4096 * (S.card + 1) := by
   simp [traceWeight, Pruned.totalSize, Pruned.calls, Pruned.run]

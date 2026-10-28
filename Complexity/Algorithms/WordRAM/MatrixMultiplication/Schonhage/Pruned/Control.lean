@@ -66,6 +66,24 @@ instance (i : Fin registers) : Decidable (AdvanceLocal i) :=
 private theorem advance_preserves (i : Fin registers) :
     ¬AdvanceLocal i → advance.Preserves i := by decide +kernel +revert
 
+/-- Store a term already in its register and switch to dispatch, charging all four operations. -/
+theorem exec_storeTerm {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
+    (h4 : x.regs frameWidth = 4) (hf : Fits w (x.regs frame + 4)) :
+    ∃ y, ExecWithin w storeTerm x y 4 ∧ y.regs mode = 1 ∧
+      y.mem = Function.update x.mem (x.regs frame + 3) (x.regs term) ∧
+      (∀ i, i ≠ address → i ≠ mode → y.regs i = x.regs i) := by
+  have hmode : Fits w 1 := hf.of_le (by omega)
+  have hadd : Fits w (x.regs frame + 3) := hf.of_le (by omega)
+  let y := ((((x.set address (x.regs frame + 4)).set address (x.regs frame + 3)).write
+    (x.regs frame + 3) (x.regs term)).set mode 1)
+  have hsub : x.regs frame + 4 - 1 = x.regs frame + 3 := by omega
+  have he : ExecWithin w storeTerm x y 4 := by
+    ram_eval [storeTerm, y, h1, h4, hf, hmode, hadd, hsub, address, mode, one,
+      frame, frameWidth, term, Fin.mk.injEq]
+  refine ⟨y, he, by simp [y], rfl, ?_⟩
+  intro i ha hm
+  exact he.regs_eq (by decide +kernel +revert)
+
 /-- The term increment, frame-word address computation, store and phase assignment take five
 instructions. Only the fourth frame word changes in memory. -/
 theorem exec_advance {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
@@ -75,15 +93,37 @@ theorem exec_advance {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
       y.regs mode = 1 ∧
       y.mem = Function.update x.mem (x.regs frame + 3) (x.regs term + 1) ∧
       (∀ i, ¬AdvanceLocal i → y.regs i = x.regs i) := by
-  have hmode : Fits w 1 := ht.of_le (by omega)
-  have hadd : Fits w (x.regs frame + 3) := hf.of_le (by omega)
-  let y := (((((x.set term (x.regs term + 1)).set address (x.regs frame + 4)).set
-    address (x.regs frame + 3)).write (x.regs frame + 3) (x.regs term + 1)).set mode 1)
-  have hsub : x.regs frame + 4 - 1 = x.regs frame + 3 := by omega
-  have he : ExecWithin w advance x y 5 := by
-    ram_eval [advance, y, h1, h4, ht, hf, hmode, hadd, hsub, term, address, mode, one,
-      frame, frameWidth, Fin.mk.injEq]
-  refine ⟨y, he, ?_, by simp [y], rfl, fun i hi => he.regs_eq (advance_preserves i hi)⟩
-  simp +decide [y, term, address, mode]
+  let z := x.set term (x.regs term + 1)
+  have hpre : ExecWithin w (ram[ term ← term + one ]) x z 1 := by
+    ram_eval [z, h1, ht]
+  obtain ⟨y, hy, hm, hmem, hreg⟩ := exec_storeTerm z
+    (by simpa +decide [z, one, term] using h1)
+    (by simpa +decide [z, frameWidth, term] using h4)
+    (by simpa +decide [z, frame, term] using hf)
+  have he : ExecWithin w advance x y 5 := hpre.seq hy
+  refine ⟨y, he, ?_, hm, ?_, fun i hi => he.regs_eq (advance_preserves i hi)⟩
+  · simpa [z] using hreg term (by decide) (by decide)
+  · simpa +decide [z, frame, term] using hmem
+
+private theorem clearFinish_preserves (i : Fin registers) :
+    ¬AdvanceLocal i → clearValuesFinish.Preserves i := by decide +kernel +revert
+
+/-- Initialization uses the same actual frame store as advancement, with a zero term counter. -/
+theorem exec_clearValuesFinish {w : ℕ} (x : Data registers) (h1 : x.regs one = 1)
+    (h4 : x.regs frameWidth = 4) (hf : Fits w (x.regs frame + 4)) :
+    ∃ y, ExecWithin w clearValuesFinish x y 5 ∧ y.regs term = 0 ∧ y.regs mode = 1 ∧
+      y.mem = Function.update x.mem (x.regs frame + 3) 0 ∧
+      (∀ i, ¬AdvanceLocal i → y.regs i = x.regs i) := by
+  let z := x.set term 0
+  have hpre : ExecWithin w (ram[ term ← #0 ] : Code .standard registers) x z 1 := by
+    ram_eval [z]
+  obtain ⟨y, hy, hm, hmem, hreg⟩ := exec_storeTerm z
+    (by simpa +decide [z, one, term] using h1)
+    (by simpa +decide [z, frameWidth, term] using h4)
+    (by simpa +decide [z, frame, term] using hf)
+  have he : ExecWithin w clearValuesFinish x y 5 := hpre.seq hy
+  refine ⟨y, he, ?_, hm, ?_, fun i hi => he.regs_eq (clearFinish_preserves i hi)⟩
+  · simpa [z] using hreg term (by decide) (by decide)
+  · simpa +decide [z, frame, term] using hmem
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery

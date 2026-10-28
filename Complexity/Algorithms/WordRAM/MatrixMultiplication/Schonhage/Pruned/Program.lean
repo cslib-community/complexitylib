@@ -193,11 +193,17 @@ def clearValueStep : Code .standard registers := ram[
 def clearRequested : Code .standard registers := ram[
   index ← #0; while index < count do [ ⟪clearValueStep⟫ ] ]
 
+/-- Store the actual next-term counter and enter the frame's dispatch phase. -/
+def storeTerm : Code .standard registers := ram[
+  address ← frame + frameWidth; address ← address - one;
+  *address ← term; mode ← #1 ]
+
+/-- Initialize the stored next-term counter after sparse accumulator clearing. -/
+def clearValuesFinish : Code .standard registers := ram[ term ← #0; ⟪storeTerm⟫ ]
+
 /-- Initialize requested values and the frame's next-term counter. -/
 def clearValues : Code .standard registers := ram[
-  ⟪clearRequested⟫;
-  term ← #0; address ← frame + frameWidth; address ← address - one;
-  *address ← term; mode ← #1 ]
+  ⟪clearRequested⟫; ⟪clearValuesFinish⟫ ]
 
 /-- Entry phase: multiply at a leaf; otherwise initialize the requested accumulators. -/
 def enter : Code .standard registers := ram[
@@ -208,8 +214,7 @@ def buildChild : Code .standard registers := scan true
 
 /-- Advance the parent's term after an empty child or after accumulating its returned values. -/
 def advance : Code .standard registers := ram[
-  term ← term + one; address ← frame + frameWidth; address ← address - one;
-  *address ← term; mode ← #1 ]
+  term ← term + one; ⟪storeTerm⟫ ]
 
 /-- Push a nonempty child, with the exact least-significant-first leaf leafPrefix. -/
 def push : Code .standard registers := ram[
@@ -242,15 +247,21 @@ def addValueStore : Code .standard registers := ram[
 def addValue : Code .standard registers := ram[
   ⟪addValueLoad⟫; ⟪add⟫; ⟪addValueStore⟫ ]
 
-/-- Traverse the parent requests once to consume a returned child's values. -/
-def accumulate : Code .standard registers := ram[
-  index ← #0;
-  while index < count do [
-    address ← listBase + index; query ← *address; digit ← query % ten;
-    if digit = nine then [ ⟪addValue⟫ ] else [
-      if digit = term then [ ⟪addValue⟫ ] else [ temporary ← temporary ] ];
-    index ← index + one ];
-  ⟪advance⟫ ]
+/-- Select the returned child by the same two real digit comparisons as child construction. -/
+def accumulateDispatch : Code .standard registers := ram[
+  if digit = nine then [ ⟪addValue⟫ ] else [
+    if digit = term then [ ⟪addValue⟫ ] else [ temporary ← temporary ] ] ]
+
+/-- Load, dispatch and advance one actual parent query. -/
+def accumulateStep : Code .standard registers := ram[
+  ⟪scanLoad⟫; ⟪accumulateDispatch⟫; index ← index + one ]
+
+/-- Consume a returned child's values at the explicitly listed contributing parent queries. -/
+def accumulateLoop : Code .standard registers := ram[
+  index ← #0; while index < count do [ ⟪accumulateStep⟫ ] ]
+
+/-- Traverse the parent requests once, then advance the stored term counter. -/
+def accumulate : Code .standard registers := ram[ ⟪accumulateLoop⟫; ⟪advance⟫ ]
 
 /-- One explicit-stack controller step. Every branch and frame address is native work. -/
 def step : Code .standard registers := ram[

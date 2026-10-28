@@ -53,6 +53,36 @@ def outputDigits : Fin 10 ≃ OutVar where
 def queryIndex {L : ℕ} (w : OutStr L) : Fin (10 ^ L) :=
   finFunctionFinEquiv fun i => outputDigits.symm (w i)
 
+/-- Decode a supplied finite query code with the existing executable digit enumeration. -/
+def queryAt {L : ℕ} (q : Fin (10 ^ L)) : OutStr L :=
+  fun i => outputDigits ((finFunctionFinEquiv.symm q) i)
+
+/-- Encoding a decoded query returns the actual supplied code. -/
+@[simp]
+theorem queryIndex_queryAt {L : ℕ} (q : Fin (10 ^ L)) : queryIndex (queryAt q) = q := by
+  simp only [queryIndex, queryAt, Equiv.symm_apply_apply, Equiv.apply_symm_apply]
+
+/-- Decoding a query's code returns every output coordinate unchanged. -/
+@[simp]
+theorem queryAt_queryIndex {L : ℕ} (w : OutStr L) : queryAt (queryIndex w) = w := by
+  funext i
+  simp only [queryAt, queryIndex, Equiv.symm_apply_apply, Equiv.apply_symm_apply]
+
+/-- The requested output set is computed from the ordinary initialized list of query codes.
+Repeated list entries are allowed and will be reported in their original order. -/
+def requested {L : ℕ} (qs : List (Fin (10 ^ L))) : Finset (OutStr L) :=
+  qs.toFinset.image queryAt
+
+/-- The request set's numerical image is precisely the set of supplied numerical codes. -/
+theorem image_queryIndex_requested {L : ℕ} (qs : List (Fin (10 ^ L))) :
+    (requested qs).image (fun w => (queryIndex w).val) = qs.toFinset.image Fin.val := by
+  simp only [requested, Finset.image_image, Function.comp_def, queryIndex_queryAt]
+
+/-- Every supplied list entry is one of the requested mathematical outputs. -/
+theorem queryAt_mem_requested {L : ℕ} {qs : List (Fin (10 ^ L))} {q : Fin (10 ^ L)}
+    (hq : q ∈ qs) : queryAt q ∈ requested qs :=
+  Finset.mem_image.mpr ⟨q, List.mem_toFinset.mpr hq, rfl⟩
+
 /-- A query's code is the leaf-array address of its private leaf. -/
 theorem queryIndex_privateLeaf {L : ℕ} (w : OutStr L) :
     queryIndex w = Encoding.leafIndex (privateLeaf w) := rfl
