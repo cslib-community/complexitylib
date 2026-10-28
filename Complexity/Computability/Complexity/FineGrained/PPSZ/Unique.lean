@@ -86,6 +86,14 @@ theorem Q_le_bernoulliProb_cut {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bo
   · rintro d p - S -
     exact cut_succ C S d p
 
+/-- The variables placed before `x` are the variables PPZ and PPSZ have processed when they reach
+`x`. (`placedBefore` is defined separately in the formula-free file
+`Complexity.Computability.Complexity.FineGrained.PPSZ.Placement`.) -/
+theorem placedBefore_eq_prefixSet (π : Equiv.Perm (Fin n)) (x : Fin n) :
+    placedBefore π x = PPZ.prefixSet π (π.symm x) := by
+  ext y
+  rw [mem_placedBefore, PPZ.mem_prefixSet, Fin.lt_def]
+
 /-- **Every variable is forced with probability at least `qbar k h`**
 [Paturi, Pudlák, Saks, Zane, Lemmas 6 and 7 and p. 351][PaturiPudlakSaksZane2005], for PPSZ with
 w-implication as in [Scheder, Lemma 3.2][Scheder2021]. Let `σ` be an `h`-isolated satisfying
@@ -104,16 +112,19 @@ theorem qbar_le_card_filter_forced_div_factorial {k h w : ℕ} {φ : CNF (Fin n)
   refine div_le_div_of_nonneg_right ?_ (Nat.cast_nonneg _)
   refine Nat.cast_le.mpr (card_le_card fun π hπ => ?_)
   rw [mem_filter] at hπ ⊢
-  exact ⟨hπ.1, (forced_iff_wImplied hσ).mpr (wImplied_of_cut hσ hC hlen hw hπ.2)⟩
+  refine ⟨hπ.1, (forced_iff_wImplied hσ).mpr ?_⟩
+  rw [← placedBefore_eq_prefixSet]
+  exact wImplied_of_cut hσ hC hlen hw hπ.2
 
 /-- **PPSZ finds isolated solutions**, the analogue for w-implication of the finite-depth bound of
-[Paturi, Pudlák, Saks, Zane, Theorem 7][PaturiPudlakSaksZane2005] before its estimate of
-`qbar k h` (Lemma 8 of the paper). Let `σ` be an `h`-isolated satisfying assignment of a CNF
-formula on `n` variables whose clauses have at most `k` literals, and let
-`w ≥ ∑ i < h, (k - 1) ^ i`. Then one round of PPSZ with w-implication outputs `σ` with probability
-at least `2^{-(1 - qbar k h) n}`. The paper assumes `k ≥ 3` and uses `s`-bounded resolution with
-`s ≥ k ^ h` in place of w-implication; this finite form, with no assumption on `k`, is
-original. -/
+[Paturi, Pudlák, Saks, Zane, Theorem 7 (p. 344)][PaturiPudlakSaksZane2005] in the form
+`Q_T ≥ qbar k h` of p. 351, before its estimate of `qbar k h` (Lemma 8 of the paper). Let `σ` be
+an `h`-isolated satisfying assignment of a CNF formula on `n` variables whose clauses have at most
+`k` literals, and let `w ≥ ∑ i < h, (k - 1) ^ i`. Then one round of PPSZ with w-implication
+outputs `σ` with probability at least `2^{-(1 - qbar k h) n}`. The paper assumes `k ≥ 3` and uses
+`s`-bounded resolution with `s ≥ k ^ h` in place of w-implication; only the bound on `w`, the
+number of nodes of depth less than `h`, and the reduction from random placements to random orders
+are original. -/
 theorem round_success_of_isolated {k h w : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
     (hσ : φ.eval σ = true) (hiso : IsIsolated φ σ h) (hlen : ∀ c ∈ φ, c.length ≤ k)
     (hw : ∑ i ∈ range h, (k - 1) ^ i ≤ w) :
@@ -125,8 +136,11 @@ theorem round_success_of_isolated {k h w : ℕ} {φ : CNF (Fin n)} {σ : Fin n �
 [Paturi, Pudlák, Saks, Zane, Theorem 7][PaturiPudlakSaksZane2005] and
 [Scheder, Theorem 1.3][Scheder2021]. If `σ` is the only satisfying assignment of a CNF formula on
 `n` variables whose clauses have at most `k` literals and `w ≥ ∑ i < h, (k - 1) ^ i`, one round
-of PPSZ with w-implication outputs `σ` with probability at least `2^{-(1 - qbar k h) n}`. The
-sources state the limit `h → ∞` of this bound; this finite form is original. -/
+of PPSZ with w-implication outputs `σ` with probability at least `2^{-(1 - qbar k h) n}`. Like
+[Paturi, Pudlák, Saks, Zane, Theorem 7 (p. 344)][PaturiPudlakSaksZane2005], this is a
+finite-depth bound; the `qbar k h` form is the w-implication analogue of its chain
+`Q_T ≥ qbar k h` on p. 351. Only the bound on `w` and the reduction from random placements to
+random orders are original. -/
 theorem round_success_of_unique {k h w : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
     (hσ : φ.eval σ = true) (huniq : ∀ τ, φ.eval τ = true → τ = σ)
     (hlen : ∀ c ∈ φ, c.length ≤ k) (hw : ∑ i ∈ range h, (k - 1) ^ i ≤ w) :

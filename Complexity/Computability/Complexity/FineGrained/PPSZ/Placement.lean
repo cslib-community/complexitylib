@@ -201,13 +201,19 @@ theorem integral_sum_mul_pow (c : ℕ → ℝ) (m : ℕ) :
 theorem qbar_three_two : qbar 3 2 = 31 / 70 := by
   let c : ℕ → ℝ := fun i => [0, 0, 1, 2, -1, -2, 1].getD i 0
   rw [qbar, intervalIntegral.integral_congr (g := fun r => ∑ i ∈ range 7, c i * r ^ i)
-    fun r _ => by norm_num [Q_succ, sum_range_succ, c]; ring, integral_sum_mul_pow]
+    fun r _ => by
+      simp only [Q_succ, Q_zero, sum_range_succ, sum_range_zero, c, List.getD_cons_succ,
+        List.getD_cons_zero]
+      ring, integral_sum_mul_pow]
   norm_num [sum_range_succ, c]
 
 /-! ### The Beta integral -/
 
 /-- **The Beta integral** `∫₀¹ r ^ i * (1 - r) ^ j dr = i! * j! / (i + j + 1)!`, by induction on
-`j`. -/
+`j`. This is the value `B(i + 1, j + 1)` of the Beta function at natural numbers. Mathlib has the
+general form, `ProbabilityTheory.beta α β = Γ(α) Γ(β) / Γ(α + β)` with
+`ProbabilityTheory.beta_eq_betaIntegralReal` relating it to `Complex.betaIntegral`, but that
+integral uses complex powers, so for natural exponents the elementary induction is shorter. -/
 theorem integral_pow_mul_one_sub_pow (i j : ℕ) :
     ∫ r in (0 : ℝ)..1, r ^ i * (1 - r) ^ j =
       (i.factorial * j.factorial : ℝ) / (i + j + 1).factorial := by
@@ -508,7 +514,10 @@ section Placement
 
 variable {n : ℕ}
 
-/-- The variables placed before `x` by the order `π`, in which `π j` is placed at step `j`. -/
+/-- The variables placed before `x` by the order `π`, in which `π j` is placed at step `j`. This is
+`PPZ.prefixSet π (π.symm x)` (`placedBefore_eq_prefixSet`, in
+`Complexity.Computability.Complexity.FineGrained.PPSZ.Unique`); it is defined separately because
+this file does not depend on formulas or on PPZ. -/
 def placedBefore (π : Equiv.Perm (Fin n)) (x : Fin n) : Finset (Fin n) :=
   univ.filter fun y => π.symm y < π.symm x
 

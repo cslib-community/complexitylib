@@ -79,6 +79,11 @@ theorem ψ_isolated : IsIsolated ψ (fun _ => true) 2 := by
   unfold IsIsolated
   decide
 
+/-- The all-true solution is not `3`-isolated: flipping all three variables gives the other
+solution. -/
+example : ¬IsIsolated ψ (fun _ => true) 3 := fun h =>
+  h Finset.univ Finset.univ_nonempty (by decide) (by decide)
+
 /-- The headline applies to the isolated, non-unique solution. -/
 example : (2 : ℝ) ^ (-(39 / 70 * 3 : ℝ)) ≤ ((round ψ 3) fun _ => some true).toReal := by
   have h := round_success_of_isolated (w := 3) ψ_sat ψ_isolated ψ_len (by decide)

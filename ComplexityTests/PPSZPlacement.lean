@@ -31,7 +31,10 @@ example : qbar 3 1 < qbar 3 2 ∧ qbar 3 2 < qbar 2 1 := by
 theorem qbar_four_two : qbar 4 2 = 39653 / 120120 := by
   let c : ℕ → ℝ := fun i => [0, 0, 0, 1, 0, 3, -3, 3, -6, 4, -3, 3, -1].getD i 0
   rw [qbar, intervalIntegral.integral_congr (g := fun r => ∑ i ∈ range 13, c i * r ^ i)
-    fun r _ => by norm_num [Q_succ, sum_range_succ, c]; ring, integral_sum_mul_pow]
+    fun r _ => by
+      simp only [Q_succ, Q_zero, sum_range_succ, sum_range_zero, c, List.getD_cons_succ,
+        List.getD_cons_zero]
+      ring, integral_sum_mul_pow]
   norm_num [sum_range_succ, c]
 
 /-- The bound grows with the depth. -/

@@ -359,8 +359,8 @@ theorem wImplied_of_cut {k h w : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
 labelled in `A`, then `x = σ x` is `w`-implied under `σ` restricted to `A`. [Scheder][Scheder2021]
 builds the tree for a unique satisfying assignment; here it only needs to exist, which
 `h`-isolation guarantees (`exists_isCriticalTree`). For bounded resolution in place of
-`w`-implication, the corresponding statement is [Paturi, Pudlák, Saks, Zane, Lemma 4]
-[PaturiPudlakSaksZane2005]. -/
+`w`-implication, the corresponding statements are
+[Paturi, Pudlák, Saks, Zane, Definition 1 and Lemma 4][PaturiPudlakSaksZane2005]. -/
 theorem wImplied_of_forall_descends {k h w : ℕ} (hk : 3 ≤ k) {φ : CNF (Fin n)}
     {σ : Fin n → Bool} {C : List (Fin n) → Clause (Fin n)} (hσ : φ.eval σ = true)
     (hC : IsCriticalTree φ σ h C) (hlen : ∀ c ∈ φ, c.length ≤ k) (hw : (k - 1) ^ (h + 1) ≤ w)
