@@ -127,6 +127,7 @@ public import Complexity.Computability.Circuit.Arithmetic.VP
 public import Complexity.Computability.Circuit.Arithmetic.Waring
 public import Complexity.Computability.Circuit.Arithmetic.Waring.Basic
 public import Complexity.Computability.Circuit.Arithmetic.Waring.Compilation
+public import Complexity.Computability.Circuit.Arithmetic.Word
 public import Complexity.Computability.Circuit.Balanced
 public import Complexity.Computability.Circuit.Basic
 public import Complexity.Computability.Circuit.BipartiteMatching
