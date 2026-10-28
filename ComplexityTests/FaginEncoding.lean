@@ -66,45 +66,39 @@ def nullaryVocabulary : Vocabulary nullaryLanguage where
 /-- The edge: two vertices, adjacent both ways, no loops. -/
 def edge : EncodedStructure := (2, [ [false, true, true, false] ])
 
-example : graphVocabulary.WellFormed edge := by decide +kernel
-example : graphVocabulary.checkShape edge = true := by decide +kernel
-
-/-- The empty graph has an empty adjacency table. -/
-example : graphVocabulary.WellFormed (0, [ [] ]) := by decide +kernel
-
-/-- A missing table, a surplus table, and a table of the wrong length are malformed. -/
-example : ¬ graphVocabulary.WellFormed (2, []) := by decide +kernel
-example : ¬ graphVocabulary.WellFormed (2, [ [false, true, true, false], [] ]) := by decide +kernel
-example : ¬ graphVocabulary.WellFormed (2, [ [false, true, true] ]) := by decide +kernel
-example : ¬ graphVocabulary.WellFormed (0, []) := by decide +kernel
-
-/-- A nullary relation has a one-bit table, even on the empty structure. -/
-example : nullaryVocabulary.WellFormed (0, [ [true] ]) := by decide +kernel
-example : nullaryVocabulary.WellFormed (3, [ [false] ]) := by decide +kernel
-example : ¬ nullaryVocabulary.WellFormed (0, [ [] ]) := by decide +kernel
-example : ¬ nullaryVocabulary.WellFormed (3, [ [false, false] ]) := by decide +kernel
+/-- Well-formedness and shape checks for graphs and nullary relations across empty, valid, and
+malformed tables. -/
+example :
+    graphVocabulary.WellFormed edge ∧
+    graphVocabulary.checkShape edge = true ∧
+    graphVocabulary.WellFormed (0, [ [] ]) ∧
+    ¬ graphVocabulary.WellFormed (2, []) ∧
+    ¬ graphVocabulary.WellFormed (2, [ [false, true, true, false], [] ]) ∧
+    ¬ graphVocabulary.WellFormed (2, [ [false, true, true] ]) ∧
+    ¬ graphVocabulary.WellFormed (0, []) ∧
+    nullaryVocabulary.WellFormed (0, [ [true] ]) ∧
+    nullaryVocabulary.WellFormed (3, [ [false] ]) ∧
+    ¬ nullaryVocabulary.WellFormed (0, [ [] ]) ∧
+    ¬ nullaryVocabulary.WellFormed (3, [ [false, false] ]) := by
+  decide +kernel
 
 /-! ### Decoding -/
 
-/-- The nullary relation holds in the decoded structure exactly when its bit is set. -/
-example : (nullaryVocabulary.decode (0, [ [true] ])).RelMap nullarySymbol ![] := by
-  rw [Vocabulary.relMap_decode]
-  decide +kernel
-
-example : ¬ (nullaryVocabulary.decode (3, [ [false] ])).RelMap nullarySymbol ![] := by
-  rw [Vocabulary.relMap_decode]
-  decide +kernel
+/-- The nullary relation holds in the decoded structure exactly when its bit is set, and malformed
+inputs are never in a query language. -/
+example (K : Set (Bundled Language.graph.Structure)) :
+    (nullaryVocabulary.decode (0, [ [true] ])).RelMap nullarySymbol ![] ∧
+    ¬ (nullaryVocabulary.decode (3, [ [false] ])).RelMap nullarySymbol ![] ∧
+    (2, [ [false, true, true] ]) ∉ graphVocabulary.queryLanguage K := by
+  refine ⟨?_, ?_, fun h => absurd h.1 (by decide +kernel)⟩
+  · rw [Vocabulary.relMap_decode]; decide +kernel
+  · rw [Vocabulary.relMap_decode]; decide +kernel
 
 /-- The edge decodes to the complete graph on two vertices. -/
 theorem relMap_decode_edge (x y : Fin 2) :
     (graphVocabulary.decode edge).RelMap adj ![x, y] ↔ x ≠ y := by
   rw [Vocabulary.relMap_decode]
   fin_cases x <;> fin_cases y <;> decide +kernel
-
-/-- Malformed inputs are never in a query language. -/
-example (K : Set (Bundled Language.graph.Structure)) :
-    (2, [ [false, true, true] ]) ∉ graphVocabulary.queryLanguage K :=
-  fun h => absurd h.1 (by decide +kernel)
 
 /-! ### Encoding -/
 

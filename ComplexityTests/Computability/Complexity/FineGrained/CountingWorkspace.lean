@@ -86,34 +86,22 @@ example : ∃ T S : CNF ℕ → ℕ,
       (a := 1) (b := d) (fun _ _ _ _ => by simp)
   exact ⟨T, S, hTS, hS⟩
 
-/-- The width-one guard rejects the tautological two-literal clause. At width two, its variable
-remains declared after normalization, so the remaining unit leaf contributes two. -/
-example : search 2 1 1 1 leafProbe [[(7, true)], [(99, true), (99, false)]] = 0 := by
-  decide
-
-example : search 2 2 2 1 leafProbe [[(7, true)], [(99, true), (99, false)]] = 2 := by
-  decide
-
-/-- The two leaf calls contribute `4 * 1` and `1 * 1`; the terminal empty stack retains count 5. -/
-example : (step 2 2 leafProbe)^[3] (init 2 flowerWithTautology) = (3, ([], 5)) := by
-  decide
-
-example : (step 2 2 leafProbe)^[4] (init 2 flowerWithTautology) = (3, ([], 5)) := by
-  decide
-
-example : search 2 2 2 2 leafProbe flowerWithTautology = 5 := by decide
-
-example : search 2 1 0 1 leafProbe ([] : CNF ℕ) = 1 := by decide
-example : search 2 1 0 1 leafProbe ([[]] : CNF ℕ) = 0 := by decide
-example : search 2 1 0 1 leafProbe [[(1000, true)]] = 0 := by decide
-
-/-- Equal variable cardinality does not mean equal encoded input size: label bits are charged. -/
-example : CNF.numVars [[(0, true)]] = CNF.numVars [[(1000, true)]] ∧
-    (encCNF [[(0, true)]]).length < (encCNF [[(1000, true)]]).length := by
-  decide
-
-/-- A resource certificate alone does not assert correct model counting. -/
-example : leafProbe [[(0, true), (1, true)]] = 1 ∧
-    CNF.modelCount [[(0, true), (1, true)]] = 3 := by decide
+/-- Width guards, declared-variable normalization, terminal stack stability, encoded label-size
+distinction, and diagnostic vs. exact model-count comparison. -/
+example :
+    search 2 1 1 1 leafProbe [[(7, true)], [(99, true), (99, false)]] = 0 ∧
+    search 2 2 2 1 leafProbe [[(7, true)], [(99, true), (99, false)]] = 2 ∧
+    (step 2 2 leafProbe)^[3] (init 2 flowerWithTautology) = (3, ([], 5)) ∧
+    (step 2 2 leafProbe)^[4] (init 2 flowerWithTautology) = (3, ([], 5)) ∧
+    search 2 2 2 2 leafProbe flowerWithTautology = 5 ∧
+    search 2 1 0 1 leafProbe ([] : CNF ℕ) = 1 ∧
+    search 2 1 0 1 leafProbe ([[]] : CNF ℕ) = 0 ∧
+    search 2 1 0 1 leafProbe [[(1000, true)]] = 0 ∧
+    (CNF.numVars [[(0, true)]] = CNF.numVars [[(1000, true)]] ∧
+      (encCNF [[(0, true)]]).length < (encCNF [[(1000, true)]]).length) ∧
+    (leafProbe [[(0, true), (1, true)]] = 1 ∧
+      CNF.modelCount [[(0, true), (1, true)]] = 3) :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, by decide,
+   by decide, by decide⟩
 
 end Cslib.Complexity.Tests.CountingWorkspace
