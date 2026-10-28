@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Classes.RP
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
 /-! Error reduction for `BPP` and `RP` and `RP ⊆ BPP`, with concrete repeated deciders whose error
 is genuinely reduced. -/
@@ -56,12 +57,12 @@ theorem decidesWithOneSidedError_head :
     decide
   exact key _ Polynomial.eval_one
 
-/-- Repeating the first-bit decider on `q(n)` blocks errs with probability at most
-`2 ^ (-q(n))`. -/
-example (q : Polynomial ℕ) :
-    DecidesWithOneSidedErrorExponent encBits q (q * 1)
-      (repeatAny encBits q 1 fun x => x.2.headD false) Set.univ :=
-  decidesWithOneSidedError_head.repeatAny q
+/-- Repeating the first-bit decider on `2` blocks reduces one-sided error to at most `1 / 4`,
+which in turn satisfies one-sided error. -/
+example :
+    DecidesWithOneSidedError encBits (2 * 1)
+      (repeatAny encBits 2 1 fun x => x.2.headD false) Set.univ :=
+  (decidesWithOneSidedError_head.repeatAny 2).solvesWithOneSidedError fun _ => by simp
 
 /-- Accepting when one of the first two random bits is `true` decides every problem containing
 all instances with bounded error: three quarters of the random strings are accepted. -/
@@ -75,41 +76,41 @@ theorem decidesWithBoundedError_or :
     decide
   exact key _ (Polynomial.eval_ofNat 2 _)
 
-/-- Majority votes of `12 q(n)` runs err with probability at most `2 ^ (-q(n))`. -/
-example (q : Polynomial ℕ) :
-    DecidesWithErrorExponent encBits q (12 * q * 2)
-      (repeatMajority encBits (6 * q) 2 fun x => x.2.headD false || x.2.getD 1 false)
+/-- Majority votes of `24` runs reduce error to at most `1 / 4`, which in turn satisfies bounded
+error. -/
+example :
+    DecidesWithBoundedError encBits (12 * 2 * 2)
+      (repeatMajority encBits (6 * 2) 2 fun x => x.2.headD false || x.2.getD 1 false)
       Set.univ :=
-  decidesWithBoundedError_or.repeatMajority q
-
-/-- Error at most `1 / 4` is bounded error. -/
-example {α : Type} {enc : α ↪ List Bool} {p : Polynomial ℕ} {V : α × List Bool → Bool}
-    {A : Set α} (h : DecidesWithErrorExponent enc 2 p V A) : DecidesWithBoundedError enc p V A :=
-  h.solvesWithBoundedError fun _ => by simp
+  (decidesWithBoundedError_or.repeatMajority 2).solvesWithBoundedError fun _ => by simp
 
 /-! ### Class-level error reduction -/
 
-example {α : Type} (enc : α ↪ List Bool) (A : Set α) :
-    A ∈ BPP enc ↔ ∀ q : Polynomial ℕ, ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableInPolyTime V (encPair enc encBits) encBool ∧
-        DecidesWithErrorExponent enc q p V A :=
-  mem_BPP_iff_forall_decidesWithErrorExponent
+private theorem univ_mem_RP : (Set.univ : Set (List Bool)) ∈ RP encBits :=
+  ⟨1, fun x => x.2.headD false, by fun_prop, decidesWithOneSidedError_head⟩
 
-example {α : Type} (enc : α ↪ List Bool) (A : Set α) :
-    A ∈ RP enc ↔ ∀ q : Polynomial ℕ, ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableInPolyTime V (encPair enc encBits) encBool ∧
-        DecidesWithOneSidedErrorExponent enc q p V A :=
-  mem_RP_iff_forall_decidesWithOneSidedErrorExponent
+private theorem empty_mem_coRP : (∅ : Set (List Bool)) ∈ coRP encBits := by
+  rw [mem_coRP, Set.compl_empty]
+  exact univ_mem_RP
 
-/-- Problems in `BPP` are decided with error below `2 ^ (-n)` on instances of length `n`, as
+example : (Set.univ : Set (List Bool)) ∈ BPP encBits ∧ (∅ : Set (List Bool)) ∈ BPP encBits := by
+  have hsub : RP encBits ∪ coRP encBits ⊆ BPP encBits :=
+    Set.union_subset RP_subset_BPP coRP_subset_BPP
+  exact ⟨hsub (Or.inl univ_mem_RP), hsub (Or.inr empty_mem_coRP)⟩
+
+/-- Problems in `BPP` are decided with error below `2 ^ (-(n + 1))` on instances of length `n`, as
 needed for Adleman's theorem. -/
-example {α : Type} (enc : α ↪ List Bool) (A : Set α) (hA : A ∈ BPP enc) :
-    ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableInPolyTime V (encPair enc encBits) encBool ∧
-        DecidesWithErrorExponent enc (.X + 1) p V A :=
-  mem_BPP_iff_forall_decidesWithErrorExponent.1 hA _
+example :
+    ∃ (p : Polynomial ℕ) (V : List Bool × List Bool → Bool),
+      ComputableInPolyTime V (encPair encBits encBits) encBool ∧
+        DecidesWithErrorExponent encBits (Polynomial.X + 1) p V Set.univ :=
+  mem_BPP_iff_forall_decidesWithErrorExponent.1 (RP_subset_BPP univ_mem_RP) (Polynomial.X + 1)
 
-example {α : Type} (enc : α ↪ List Bool) : RP enc ∪ coRP enc ⊆ BPP enc :=
-  Set.union_subset RP_subset_BPP coRP_subset_BPP
+/-- Problems in `RP` are decided with one-sided error below `2 ^ (-(n + 1))`. -/
+example :
+    ∃ (p : Polynomial ℕ) (V : List Bool × List Bool → Bool),
+      ComputableInPolyTime V (encPair encBits encBits) encBool ∧
+        DecidesWithOneSidedErrorExponent encBits (Polynomial.X + 1) p V Set.univ :=
+  mem_RP_iff_forall_decidesWithOneSidedErrorExponent.1 univ_mem_RP (Polynomial.X + 1)
 
 end ComplexityTests.ResourceClasses3

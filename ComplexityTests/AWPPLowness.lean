@@ -39,19 +39,19 @@ example : PPWithOracle (Set.univ : Set (List Bool)) encBits = PP encBits :=
   PPWithOracle_eq_PP_of_mem_AWPP univ_mem encBits
 
 /-- Lowness is uniform over the instance type and its injective encoding. -/
-example {α : Type} (enc : α ↪ List Bool) {A : Set (List Bool)} (hA : A ∈ AWPP encBits) :
-    PPWithOracle A enc = PP enc := PPWithOracle_eq_PP_of_mem_AWPP hA enc
+example : PPWithOracle (Set.univ : Set (List Bool)) encBool = PP encBool :=
+  PPWithOracle_eq_PP_of_mem_AWPP univ_mem encBool
 
 /-- A nonempty AWPP oracle admits weights even when every query is truncated to the empty word
 and the requested error exponent is zero. Bounds still cover arbitrary replay words. -/
 example : ∃ H ∈ GapP (encPair encBits encBits), ∃ R : List Bool → ℕ,
-    ComputableTidilyInPolyTime R encBits encUnary ∧ ∀ a w,
+    ComputableInPolyTime R encBits encUnary ∧ ∀ a w,
       let D := (2 : ℤ) ^ R a
       (0 ≤ H (a, w) ∧ H (a, w) ≤ D) ∧ D - H (a, w) ≤ D := by
   obtain ⟨H, hH, R, hR, hb⟩ := exists_AWPP_queryWeights univ_mem
     (T := fun _ : List Bool => 0) (e := fun _ : List Bool => 0)
-    (.of_tidy (ComputableTidilyInPolyTime.const 0)) (.of_tidy (ComputableTidilyInPolyTime.const 0))
-  refine ⟨H, hH, R, hR.tidy, fun a w => ⟨(hb a w).1, ?_⟩⟩
+    (.const 0) (.const 0)
+  refine ⟨H, hH, R, hR, fun a w => ⟨(hb a w).1, ?_⟩⟩
   simpa only [pow_zero, one_mul] using (hb a w).2.1 (Set.mem_univ _)
 
 end ComplexityTests.AWPPLowness
