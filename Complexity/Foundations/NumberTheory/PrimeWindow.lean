@@ -1,6 +1,5 @@
 /-
-Copyright (c) 2020 Patrick Stevens. All rights reserved.
-Copyright (c) 2026 Anthropic, PBC. All rights reserved.
+Copyright (c) 2020 Patrick Stevens, 2026 Anthropic, PBC. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Patrick Stevens, Bolton Bailey, Anthropic, PBC
 -/
@@ -48,7 +47,6 @@ namespace Nat
 
 private theorem one_le_log_of_three_le {x : ℝ} (hx : 3 ≤ x) : 1 ≤ Real.log x :=
   (Real.le_log_iff_exp_le (by linarith)).2 (Real.exp_one_lt_three.le.trans hx)
-
 
 /-- The primes `p` with `n < p ≤ 2n`: the primes that Bertrand's postulate is about. -/
 private def bertrandPrimes (n : ℕ) : Finset ℕ := (Ioc n (2 * n)).filter Nat.Prime

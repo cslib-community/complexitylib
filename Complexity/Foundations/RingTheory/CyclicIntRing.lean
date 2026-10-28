@@ -80,5 +80,4 @@ theorem coeff_x_pow (hp : p ≠ 0) (k r : ℕ) :
 
 end CyclicIntRing
 
-
 end Cslib

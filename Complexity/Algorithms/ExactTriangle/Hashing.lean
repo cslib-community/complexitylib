@@ -43,7 +43,8 @@ The modular reduction is part of [AlmanWilliams2026, Section 3].
 Direct adaptation of [Anthropic's
 Hashing.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/Theorem17/Hashing.lean),
 with the minimal count/selection definitions extracted from its `PaperStatements.lean`.
-Source-derived prose below is paraphrased. The source pin is
+The declaration docstrings describe the Lean definitions and statements in local notation.
+The source pin is
 `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
 -/
 
@@ -52,16 +53,20 @@ Source-derived prose below is paraphrased. The source pin is
 namespace Cslib.Algorithms.ExactTriangle
 
 open Classical in
-/-- Primes in the half-open window `[sqrt D / 2, sqrt D)`. -/
+/-- Prime numbers in the half-open real interval `[sqrt D / 2, sqrt D)`.
+-/
 noncomputable def primesInRange (D : ℕ) : Finset ℕ :=
   (Finset.range D).filter fun p => p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℝ) < Real.sqrt D
 
-/-- Number of triangles whose sum vanishes modulo `p`. -/
+/-- Count vertex triples whose three edge weights have sum congruent to zero modulo `p`.
+-/
 def countZeroMod {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (p : ℕ) : ℕ :=
   (Finset.univ.filter fun t : Fin n × Fin n × Fin n =>
     weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≡ 0 [ZMOD (p : ℤ)]).card
 
-/-- A window prime minimises the modular count over all window primes. -/
+/-- A prime in `primesInRange D` whose modular-zero count is minimal among all primes in that
+window. Tied minima all satisfy this predicate.
+-/
 def IsSelectedPrime {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (D p : ℕ) : Prop :=
   p ∈ primesInRange D ∧ ∀ q ∈ primesInRange D,
     countZeroMod wAB wBC wAC p ≤ countZeroMod wAB wBC wAC q
@@ -81,8 +86,8 @@ private theorem toNat_emod_lt {p : ℕ} (hp : 0 < p) (u : ℤ) : (u % (p : ℤ))
 /-!
 ### The primes in the range -/
 
-/-- Proof of Theorem 17, a prime p ∈ [√D/2, √D): the primes in the range are the primes `p` with
-`√D/2 ≤ p < √D`.  (The bound `p < D` in the definition excludes none of them.)
+/-- Window membership is equivalent to primality and the two real endpoint inequalities. The
+finite enumeration bound in `primesInRange` excludes no member of the interval.
 -/
 theorem mem_primesInRange {D p : ℕ} :
     p ∈ primesInRange D ↔ p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℝ) < Real.sqrt D := by
@@ -93,7 +98,9 @@ theorem mem_primesInRange {D p : ℕ} :
   have hsq : p ^ 2 < D := by exact_mod_cast (Real.lt_sqrt (Nat.cast_nonneg p)).1 h.2.2
   exact (Nat.le_self_pow two_ne_zero p).trans_lt hsq
 
-/-- Window membership is an exact integer-square test, suitable for native enumeration. -/
+/-- Characterize window membership using primality and integer-square inequalities, including the
+closed lower and open upper endpoints.
+-/
 theorem mem_primesInRange_iff_sq {D p : ℕ} :
     p ∈ primesInRange D ↔ p.Prime ∧ D ≤ 4 * p ^ 2 ∧ p ^ 2 < D := by
   rw [mem_primesInRange]
@@ -111,7 +118,8 @@ theorem mem_primesInRange_iff_sq {D p : ℕ} :
     have h : (D : ℝ) ≤ 4 * (p : ℝ) ^ 2 := by exact_mod_cast hlo
     nlinarith
 
-/-- A computable finite enumeration of exactly the same half-open prime window. -/
+/-- Enumerate the real prime window using a decidable filter of the integers below `D`.
+-/
 theorem primesInRange_eq_filter (D : ℕ) :
     primesInRange D = (Finset.range D).filter fun p => p.Prime ∧ D ≤ 4 * p ^ 2 ∧ p ^ 2 < D := by
   ext p
@@ -137,20 +145,26 @@ section Counting
 
 variable {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ)
 
-/-- A false positive of p is a triple (a,b,c) with S(a,b,c) ≠ 0 and p ∣ S(a,b,c). -/
+/-- A vertex triple has a nonzero integer weight sum that is congruent to zero modulo `p`.
+-/
 abbrev IsFalsePositive (p : ℕ) (t : Fin n × Fin n × Fin n) : Prop :=
   weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≠ 0 ∧ (p : ℤ) ∣ weightSum wAB wBC wAC t.1 t.2.1 t.2.2
 
-/-- let falsePositiveCount(p) denote the number of false positives of p. -/
+/-- Count vertex triples satisfying `IsFalsePositive` for the supplied three weight matrices and
+modulus.
+-/
 def falsePositiveCount (p : ℕ) : ℕ :=
   (Finset.univ.filter fun t : Fin n × Fin n × Fin n => IsFalsePositive wAB wBC wAC p t).card
 
-/-- zeroCount, the number of zero triangles. -/
+/-- Count vertex triples whose three supplied edge weights sum to zero as an integer.
+-/
 def zeroCount : ℕ :=
   (Finset.univ.filter fun t : Fin n × Fin n × Fin n => weightSum wAB wBC wAC t.1 t.2.1 t.2.2 =
       0).card
 
-/-- A positive zero count is exactly the existing Exact Triangle decision predicate. -/
+/-- The zero-triple count is positive exactly when the supplied matrices satisfy
+`HasZeroTriangle`.
+-/
 theorem zeroCount_pos_iff : 0 < zeroCount wAB wBC wAC ↔ HasZeroTriangle wAB wBC wAC := by
   classical
   simp only [zeroCount, Finset.card_pos, HasZeroTriangle]
@@ -160,8 +174,8 @@ theorem zeroCount_pos_iff : 0 < zeroCount wAB wBC wAC ↔ HasZeroTriangle wAB wB
   · rintro ⟨a, b, c, h⟩
     exact ⟨(a, b, c), Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩⟩
 
-/-- This number is the number of false positives falsePositiveCount(p) plus zeroCount, the number of
-zero triangles, which does not depend on p.
+/-- Partition the modular-zero triples into false positives and exact zero-sum triples. The
+exact-zero count is independent of the modulus.
 -/
 theorem countZeroMod_eq (p : ℕ) : (countZeroMod wAB wBC wAC) p = (falsePositiveCount wAB wBC
     wAC) p + (zeroCount wAB wBC wAC) := by
@@ -173,17 +187,21 @@ theorem countZeroMod_eq (p : ℕ) : (countZeroMod wAB wBC wAC) p = (falsePositiv
   by_cases h0 : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 = 0 <;>
     simp [IsFalsePositive, Int.modEq_zero_iff_dvd, h0]
 
-/-- let P[a,c] := x^{w(a,c) mod p}, a matrix over `ℤ[x]/(x^p − 1)`.  `w mod p` is the residue in
-`{0, …, p − 1}`.
+/-- Encode the A–C weight at `(a,c)` as a power of the cyclic polynomial generator, with exponent
+equal to its nonnegative residue modulo `p`.
 -/
 noncomputable def matP (p : ℕ) : Matrix (Fin n) (Fin n) (CyclicIntRing p) :=
   Matrix.of fun a c => CyclicIntRing.x p ^ (wAC a c % (p : ℤ)).toNat
 
-/-- and Q[c,b] := x^{w(b,c) mod p}. -/
+/-- Encode the B–C weight at `(b,c)` in matrix position `(c,b)`. This orientation makes the
+product sum over the middle index `c`.
+-/
 noncomputable def matQ (p : ℕ) : Matrix (Fin n) (Fin n) (CyclicIntRing p) :=
   Matrix.of fun c b => CyclicIntRing.x p ^ (wBC b c % (p : ℤ)).toNat
 
-/-- the coefficient of x^r in (PQ)[a,b] is the number of c ∈ C with w(a,c) + w(b,c) ≡ r (mod p). -/
+/-- For a nonzero modulus and a residue `r < p`, the coefficient of degree `r` in the cyclic
+matrix product counts middle vertices whose two incident weights sum to `r` modulo `p`.
+-/
 theorem coeff_matP_mul_matQ {p : ℕ} (hp : p ≠ 0) (a b : Fin n) (r : ℕ) (hr : r < p) :
     CyclicIntRing.coeff hp r ((matP wAC p * matQ wBC p) a b) =
       ((Finset.univ.filter fun c : Fin n =>
@@ -200,8 +218,8 @@ theorem coeff_matP_mul_matQ {p : ℕ} (hp : p ≠ 0) (a b : Fin n) (r : ℕ) (hr
   refine Finset.sum_congr rfl fun c _ => ?_
   simp only [eq_add_toNat_emod_iff hp hr]
 
-/-- then falsePositiveCount(p) + zeroCount is the sum over the pairs (a,b) ∈ A × B of the
-coefficient of x^{−w(a,b) mod p} in (PQ)[a,b].
+/-- Recover the total modular-zero count from the cyclic matrix product by summing, over `(a,b)`,
+the coefficient at the residue of `-wAB a b`.
 -/
 theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
     (((falsePositiveCount wAB wBC wAC) p + (zeroCount wAB wBC wAC) : ℕ) : ℤ) =
@@ -235,7 +253,8 @@ theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
 
 end Counting
 
-/-- the fewer than √D primes in the range. -/
+/-- For `D ≥ 16`, the number of primes in `primesInRange D` is strictly less than `sqrt D`.
+-/
 theorem card_primesInRange_lt (D : ℕ) (hD : 16 ≤ D) :
     ((primesInRange D).card : ℝ) < Real.sqrt D := by
   have hpos : 0 < Real.sqrt D := by linarith [four_le_sqrt hD]
@@ -259,15 +278,17 @@ section Selection
 
 variable {n D p : ℕ} {κ : ℝ} (wAB wBC wAC : Fin n → Fin n → ℤ)
 
-/-- There is a prime to select. -/
+/-- For every `D ≥ 16` and every three supplied weight matrices, the prime window contains a
+minimum of the modular-zero count.
+-/
 theorem exists_isSelectedPrime (D : ℕ) (hD : 16 ≤ D) : ∃ p, IsSelectedPrime wAB wBC wAC D p := by
   obtain ⟨q, hq⟩ :=
     Nat.exists_prime_half_le_and_lt (Real.sqrt D) (four_le_sqrt hD)
   exact Finset.exists_min_image (primesInRange D) (countZeroMod wAB wBC wAC) ⟨q,
       mem_primesInRange.2 hq⟩
 
-/-- We select the prime with the smallest count, which is also the prime with the fewest false
-positives.
+/-- A selected minimum of the modular-zero count also minimizes the false-positive count over the
+same prime window.
 -/
 theorem IsSelectedPrime.falsePositiveCount_le {wAB wBC wAC : Fin n → Fin n → ℤ} (hp :
     IsSelectedPrime wAB wBC wAC D p) :
@@ -282,9 +303,8 @@ theorem IsSelectedPrime.falsePositiveCount_le {wAB wBC wAC : Fin n → Fin n →
 ### The bound on the number of false positives of the selected prime -/
 
 open Classical in
-/-- a triple with S(a,b,c) ≠ 0 is a false positive exactly of the primes in the range that divide
-S(a,b,c).  Since 0 < |S(a,b,c)| ≤ 3n^ν and these primes are at least √D/2, there are at most
-log_{√D/2}(3n^ν) of them.
+/-- For a fixed nonzero-sum triple and edge weights bounded by `n^κ`, bound the number of window
+primes accepting that triple by the base-`sqrt D / 2` logarithm of `3*n^κ`.
 -/
 theorem card_falsePositive_primes_le (hD : 16 ≤ D) (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ))
     (t : Fin n × Fin n × Fin n) (ht : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≠ 0) :
@@ -316,8 +336,9 @@ theorem card_falsePositive_primes_le (hD : 16 ≤ D) (hT : WeightsBoundedBy wAB 
   rw [Real.le_logb_iff_rpow_le (by linarith) hY, Real.rpow_natCast]
   exact hpow.trans hprod
 
-/-- Hence the numbers of false positives of all the primes in the range add up to at most n³
-log_{√D/2}(3n^ν).
+/-- Sum the per-triple prime-divisibility bound over all `n^3` triples. For `D ≥ 16`, `κ ≥ 1` and
+edge weights bounded by `n^κ`, the sum of false-positive counts is at most `n^3 * logb (sqrt D /
+2) (3*n^κ)`.
 -/
 theorem sum_falsePositiveCount_le (hD : 16 ≤ D) (hκ : 1 ≤ κ) (hT : WeightsBoundedBy wAB wBC wAC
     ((n : ℝ) ^ κ)) :
@@ -356,11 +377,9 @@ theorem sum_falsePositiveCount_le (hD : 16 ≤ D) (hκ : 1 ≤ κ) (hT : Weights
 
 end Selection
 
-/-- By the prime number theorem there are Ω(√D/log D) primes in the range.
-
-NOTE.  The modular reduction needs this for every `D ≥ 16`, not only for large `D`, and so it is
-stated.  It follows from a counting form of Bertrand's postulate; the prime number theorem is
-not needed.
+/-- There is a universal positive `c` such that every window with `D ≥ 16` contains at least `c *
+sqrt D / log D` primes. The proof uses the all-window counting form of Bertrand’s postulate from
+`PrimeWindow`, with no prime-number-theorem assumption.
 -/
 theorem exists_le_card_primesInRange :
     ∃ c : ℝ, 0 < c ∧ ∀ D : ℕ, 16 ≤ D →
@@ -369,7 +388,9 @@ theorem exists_le_card_primesInRange :
   exact ⟨c, hc, fun D hD => hcount D hD _
     fun _ hp hge hlt => mem_primesInRange.2 ⟨hp, hge, hlt⟩⟩
 
-/-- falsePositiveCount(p) is at most the average over them, multiplied out. -/
+/-- Multiply the selected prime’s minimum false-positive count by the number of window primes to
+obtain a bound by the sum of their false-positive counts.
+-/
 theorem IsSelectedPrime.falsePositiveCount_mul_card_le_sum {n D p : ℕ} {wAB wBC wAC : Fin n →
     Fin n → ℤ}
     (hp : IsSelectedPrime wAB wBC wAC D p) :
@@ -378,7 +399,8 @@ theorem IsSelectedPrime.falsePositiveCount_mul_card_le_sum {n D p : ℕ} {wAB wB
   rw [mul_comm, ← smul_eq_mul]
   exact Finset.card_nsmul_le_sum _ _ _ hp.falsePositiveCount_le
 
-/-- log D = O(log(√D/2)) for D ≥ 16. -/
+/-- For `D ≥ 16`, compare `log D` with four times `log (sqrt D / 2)`.
+-/
 theorem log_le_four_mul_log_sqrt_div_two (D : ℕ) (hD : 16 ≤ D) :
     Real.log D ≤ 4 * Real.log (Real.sqrt D / 2) := by
   have hD16 : (16 : ℝ) ≤ D := by exact_mod_cast hD
@@ -391,9 +413,9 @@ theorem log_le_four_mul_log_sqrt_div_two (D : ℕ) (hD : 16 ≤ D) :
   rw [Real.log_div hsqrt.ne' (by norm_num), Real.log_sqrt (by linarith)]
   linarith [hlog16]
 
-/-- falsePositiveCount(p) is at most the average over them, so [...] falsePositiveCount(p) = O(n³
-log(3n^ν)/√D): if there are at least `c √D/log D` primes in the range, then
-`falsePositiveCount(p) ≤ (4/c) n³ log(3n^κ)/√D`.
+/-- For `16 ≤ D ≤ n`, `κ ≥ 1` and edge weights bounded by `n^κ`, a positive pointwise prime-count
+lower bound `c * sqrt D / log D` gives every selected prime at most `(4/c) * n^3 * log (3*n^κ) /
+sqrt D` false positives.
 -/
 theorem falsePositiveCount_le_of_le_card_primesInRange {n D p : ℕ} {κ c : ℝ}
     (wAB wBC wAC : Fin n → Fin n → ℤ) (hc : 0 < c)
@@ -435,7 +457,9 @@ theorem falsePositiveCount_le_of_le_card_primesInRange {n D p : ℕ} {κ c : ℝ
     _ ≤ (n : ℝ) ^ 3 * (4 * Real.log Y / Real.log D) * Real.log D := by gcongr
     _ = 4 * (n : ℝ) ^ 3 * Real.log Y := by field_simp
 
-/-- falsePositiveCount(p) = O(n³ log(3n^ν)/√D) = O(ν n³ log n/√D). -/
+/-- There is a universal `C ≥ 1` such that, for `16 ≤ D ≤ n`, `κ ≥ 1` and edge weights bounded by
+`n^κ`, every selected prime has at most `C * κ * n^3 * log n / sqrt D` false positives.
+-/
 theorem exists_falsePositiveCount_le :
     ∃ C : ℝ, 1 ≤ C ∧ ∀ {n D p : ℕ} {κ : ℝ}, 16 ≤ D → D ≤ n → 1 ≤ κ → ∀ wAB wBC wAC : Fin n → Fin
         n → ℤ,
@@ -461,17 +485,18 @@ theorem exists_falsePositiveCount_le :
         gcongr
         exact le_max_right _ _
 
-/-- A name for the constant in falsePositiveCount(p) = [...] = O(ν n³ log n/√D), for the bounds on
-running times that are built on this one.
+/-- A universal real constant witnessing `exists_falsePositiveCount_le`. It depends on none of the
+input dimensions, weight matrices, exponent or selected prime, and is at least one.
 -/
 noncomputable def Hashing.falsePositiveConst : ℝ := Classical.choose exists_falsePositiveCount_le
 
-/-- The constant is at least 1. -/
+/-- The universal false-positive constant `Hashing.falsePositiveConst` is at least one.
+-/
 theorem Hashing.one_le_falsePositiveConst : 1 ≤ Hashing.falsePositiveConst :=
   (Classical.choose_spec exists_falsePositiveCount_le).1
 
-/-- falsePositiveCount(p) = [...] = O(ν n³ log n/√D), with `Hashing.falsePositiveConst` as the
-constant.
+/-- For `16 ≤ D ≤ n`, `κ ≥ 1` and edge weights bounded by `n^κ`, bound every selected prime’s
+false-positive count by `Hashing.falsePositiveConst * κ * n^3 * log n / sqrt D`.
 -/
 theorem Hashing.falsePositiveCount_le_const_mul {n D p : ℕ} {κ : ℝ} (hD : 16 ≤ D) (hDn : D ≤ n)
     (hκ : 1 ≤ κ) (wAB wBC wAC : Fin n → Fin n → ℤ) (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ))
