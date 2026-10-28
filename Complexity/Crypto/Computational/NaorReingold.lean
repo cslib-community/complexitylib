@@ -395,27 +395,6 @@ theorem computableInPolyTime_naorReingoldWordEval :
 
 /-! ### Naor–Reingold PRF prefix hybrids and security reduction (Exercise 10.4(b)) -/
 
-/-- The `k`-bit prefix of an `n`-bit string `x : BitString n`, padded with `false` if `j ≥ n`. -/
-def naorReingoldTakePrefix {n : ℕ} (k : ℕ) (x : BitString n) : BitString k :=
-  fun j => if h : j.1 < n then x ⟨j.1, h⟩ else false
-
-@[simp]
-theorem naorReingoldTakePrefix_self {n : ℕ} (x : BitString n) :
-    naorReingoldTakePrefix n x = x := by
-  funext j
-  simp [naorReingoldTakePrefix, j.isLt]
-
-@[simp]
-theorem init_naorReingoldTakePrefix_succ {n k : ℕ} (x : BitString n) :
-    Fin.init (naorReingoldTakePrefix (k + 1) x) = naorReingoldTakePrefix k x := by
-  funext j
-  simp [Fin.init, naorReingoldTakePrefix]
-
-@[simp]
-theorem last_naorReingoldTakePrefix_succ {n k : ℕ} (hk : k < n) (x : BitString n) :
-    naorReingoldTakePrefix (k + 1) x (Fin.last k) = x ⟨k, hk⟩ := by
-  simp [Fin.last, naorReingoldTakePrefix, hk]
-
 /-- Suffix exponent product `∏ i : Fin n, if k ≤ i.1 ∧ x i then α i else 1` from depth `k` to `n`.
 -/
 def naorReingoldSuffixExp (d : F.Desc) {n : ℕ} (k : ℕ)
@@ -477,7 +456,7 @@ and multiply by the remaining suffix exponent product from `k` to `n`. -/
 def naorReingoldHybridEval (d : F.Desc) {n : ℕ} (k : ℕ)
     (B : BitString k → ZMod (F.order d)) (α : Fin n → ZMod (F.order d)) (x : BitString n) :
     F.Carrier d :=
-  (B (naorReingoldTakePrefix k x) * F.naorReingoldSuffixExp d k α x) • F.generator d
+  (B (BitString.zeroExtend (d' := k) x) * F.naorReingoldSuffixExp d k α x) • F.generator d
 
 /-- Run an adaptive oracle distinguisher `adv` against a deterministic function
 `fn : BitString n → F.Carrier d`. -/
@@ -605,7 +584,8 @@ def naorReingoldTableEval (d : F.Desc) {n : ℕ} (k : ℕ) (hk : k < n)
     (T : BitString k → F.Carrier d × F.Carrier d) (α : Fin n → ZMod (F.order d))
     (x : BitString n) : F.Carrier d :=
   F.naorReingoldSuffixExp d (k + 1) α x •
-    if x ⟨k, hk⟩ then (T (naorReingoldTakePrefix k x)).2 else (T (naorReingoldTakePrefix k x)).1
+    if x ⟨k, hk⟩ then (T (BitString.zeroExtend (d' := k) x)).2
+    else (T (BitString.zeroExtend (d' := k) x)).1
 
 /-- Level-`k` Multi-DDH test induced by a Naor–Reingold PRF adversary `adv`: draw suffix exponents
 `α ← PMF.uniformOfFintype (Fin n → ZMod (F.order d))` and run `adv` against
@@ -674,11 +654,11 @@ theorem multiDDHIdealTupleLaw_naorReingoldLevelTest (d : F.Desc) {n : ℕ} (k : 
   congr 1; funext α
   congr 1; funext x
   rw [naorReingoldTableEval, naorReingoldHybridEval]
-  have hpref : prefixTableEquiv (ZMod (F.order d)) k B (naorReingoldTakePrefix (k + 1) x) =
-      if x ⟨k, hk⟩ then (B (naorReingoldTakePrefix k x)).2
-      else (B (naorReingoldTakePrefix k x)).1 := by
-    rw [prefixTableEquiv_apply, init_naorReingoldTakePrefix_succ,
-      last_naorReingoldTakePrefix_succ hk]
+  have hpref : prefixTableEquiv (ZMod (F.order d)) k B (BitString.zeroExtend (d' := k + 1) x) =
+      if x ⟨k, hk⟩ then (B (BitString.zeroExtend (d' := k) x)).2
+      else (B (BitString.zeroExtend (d' := k) x)).1 := by
+    rw [prefixTableEquiv_apply, BitString.init_zeroExtend_succ,
+      BitString.last_zeroExtend_succ hk]
   rw [hpref]
   rcases Bool.eq_false_or_eq_true (x ⟨k, hk⟩) with hxk | hxk <;>
     simp [hxk, smul_smul, mul_comm]

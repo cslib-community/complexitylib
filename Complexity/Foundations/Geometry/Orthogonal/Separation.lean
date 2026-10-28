@@ -24,6 +24,7 @@ that an incidence route avoids a nonincident vertex.
 
 ## Main definitions
 
+* `Cslib.Orthogonal.consecutiveContact`: permitted shared bend between two segments.
 * `Cslib.Orthogonal.segmentContactCheck`: check permitted contacts between two closed segments.
 * `Cslib.Orthogonal.routeBoxDisjoint`: check whether two route bounding boxes are disjoint.
 * `Cslib.Orthogonal.routeContactCheck`: check permitted contacts between continuous route supports.
@@ -46,6 +47,10 @@ This finite bounding-box certificate is an elementary geometric construction.
 @[expose] public section
 
 namespace Cslib.Orthogonal
+
+/-- A pair of different segments may meet only at a consecutive shared bend. -/
+def consecutiveContact (a b : Point × Point) : List Point :=
+  if a.2 = b.1 then [a.2] else if b.2 = a.1 then [a.1] else []
 
 /-- A finite sufficient test that two segments meet only at listed grid points. It accepts
 disjoint bounding boxes or a singleton intersection belonging to `allowed`. -/

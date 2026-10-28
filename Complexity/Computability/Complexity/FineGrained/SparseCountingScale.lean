@@ -39,9 +39,10 @@ domain `m ≤ C_B * ⌈log₂ n⌉ ^ β * n`) and Proposition 6.4 (across all `n
 
 ## Main results
 
-* `sq_mul_pow_four_le_clog`, `clog_lt_succ_sq_mul_pow_four`, `le_numGroups_iff`,
-  `numGroups_eq_iff`: exact integer comparison characterization
-  `s_n² ν_n⁴ ≤ λ_n < (s_n + 1)² ν_n⁴` for `s_n = ReplacementParams.numGroups n`.
+* `numGroups_floor_bounds`, `le_numGroups_iff`, `numGroups_eq_iff`: exact integer comparison
+  characterization `s_n² ν_n⁴ ≤ λ_n < (s_n + 1)² ν_n⁴` for `s_n = ReplacementParams.numGroups n`
+  (from `ReplacementParams.sq_mul_pow_four_le_clog` and
+  `ReplacementParams.clog_lt_succ_sq_mul_pow_four`).
 * `two_le_numGroups_of_clog_ge`, `eventually_two_le_numGroups`, `tendsto_numGroups_atTop`:
   `2 ≤ numGroups n` permanently once `640000 ≤ ⌈log₂ n⌉`, and `numGroups n → ∞`.
 * `isBigO_div_numGroups_interpolationScale`, `eventually_div_numGroups_le`,
@@ -158,34 +159,6 @@ theorem numGroups_le_clog (n : ℕ) : numGroups n ≤ Nat.clog 2 n :=
 /-- `numGroups n ≤ n` for every natural number `n`. -/
 theorem numGroups_le_self (n : ℕ) : numGroups n ≤ n :=
   (numGroups_le_clog n).trans (clog_two_le_self n)
-
-/-- Lower integer comparison bound: `s_n² ν_n⁴ ≤ λ_n` for every `n`. -/
-theorem sq_mul_pow_four_le_clog (n : ℕ) :
-    numGroups n ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 ≤ Nat.clog 2 n := by
-  set lam := Nat.clog 2 n
-  set nu := Nat.clog 2 lam
-  have hsq : (numGroups n * nu ^ 2) ^ 2 ≤ lam.sqrt ^ 2 :=
-    Nat.pow_le_pow_left (Nat.div_mul_le_self lam.sqrt (nu ^ 2)) 2
-  have hsqrt : lam.sqrt ^ 2 ≤ lam := by simpa only [sq] using Nat.sqrt_le lam
-  calc
-    numGroups n ^ 2 * nu ^ 4 = (numGroups n * nu ^ 2) ^ 2 := by ring
-    _ ≤ lam := hsq.trans hsqrt
-
-/-- Upper integer comparison bound: `λ_n < (s_n + 1)² ν_n⁴` whenever `1 ≤ ν_n` (`3 ≤ n`). -/
-theorem clog_lt_succ_sq_mul_pow_four {n : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :
-    Nat.clog 2 n < (numGroups n + 1) ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 := by
-  set lam := Nat.clog 2 n
-  set nu := Nat.clog 2 lam
-  have hdiv : lam.sqrt + 1 ≤ (numGroups n + 1) * nu ^ 2 := by
-    have hlt : lam.sqrt < nu ^ 2 * (numGroups n + 1) :=
-      Nat.lt_mul_div_succ lam.sqrt (pow_pos hnu 2)
-    rw [mul_comm] at hlt
-    omega
-  have hsqrt : lam < (lam.sqrt + 1) ^ 2 := by simpa only [sq] using Nat.lt_succ_sqrt lam
-  calc
-    lam < (lam.sqrt + 1) ^ 2 := hsqrt
-    _ ≤ ((numGroups n + 1) * nu ^ 2) ^ 2 := Nat.pow_le_pow_left hdiv 2
-    _ = (numGroups n + 1) ^ 2 * nu ^ 4 := by ring
 
 /-- Combined floor characterization `s_n² ν_n⁴ ≤ λ_n < (s_n + 1)² ν_n⁴` for `1 ≤ ν_n`. -/
 theorem numGroups_floor_bounds {n : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :

@@ -33,6 +33,7 @@ Boolean functions, are combined with `^^`.
 
 * `Cslib.BitString.equivFin`: the numbering of the strings of `n` bits by `Fin (2 ^ n)`.
 * `Cslib.BitString.fstBits`, `Cslib.BitString.sndBits`: the two parts of an appended word.
+* `Cslib.BitString.zeroExtend`: prefix / zero-extension of a bit string to another length.
 * `Cslib.BitString.indexBits`: a finite index represented in `⌈log₂ n⌉` bits.
 
 ## Main results
@@ -45,6 +46,9 @@ Boolean functions, are combined with `^^`.
 * `Cslib.BitString.fstBits_apply`, `Cslib.BitString.sndBits_apply`,
   `Cslib.BitString.fstBits_append`, `Cslib.BitString.sndBits_append`,
   `Cslib.BitString.append_fstBits_sndBits`: splitting and reassembling an appended word.
+* `Cslib.BitString.zeroExtend_self`, `Cslib.BitString.init_zeroExtend_succ`,
+  `Cslib.BitString.last_zeroExtend_succ`, `Cslib.BitString.zeroExtend_injective`: properties of
+  `Cslib.BitString.zeroExtend`.
 * `Cslib.BitString.indexBits_injective`: distinct finite indices have distinct encodings.
 * `Cslib.BitString.add_self`, `Cslib.BitString.add_cancel_left`,
   `Cslib.BitString.add_cancel_right`: every bit string is its own negative.
@@ -143,6 +147,36 @@ def sndBits {a b : ℕ} (x : BitString (a + b)) : BitString b :=
 @[simp] theorem append_fstBits_sndBits {a b : ℕ} (x : BitString (a + b)) :
     Fin.append (fstBits x) (sndBits x) = x :=
   (Fin.appendEquiv a b).apply_symm_apply x
+
+/-- The `d'`-bit prefix or zero-extension of a point `x : BitString d`, padded with `false` on
+coordinates `i ≥ d`. -/
+def zeroExtend {d d' : ℕ} (x : BitString d) : BitString d' :=
+  fun i => if h : i.val < d then x ⟨i.val, h⟩ else false
+
+@[simp]
+theorem zeroExtend_self {d : ℕ} (x : BitString d) :
+    zeroExtend (d' := d) x = x := by
+  funext j
+  simp [zeroExtend, j.isLt]
+
+@[simp]
+theorem init_zeroExtend_succ {d k : ℕ} (x : BitString d) :
+    Fin.init (zeroExtend (d' := k + 1) x) = zeroExtend (d' := k) x := by
+  funext j
+  simp [Fin.init, zeroExtend]
+
+@[simp]
+theorem last_zeroExtend_succ {d k : ℕ} (hk : k < d) (x : BitString d) :
+    zeroExtend (d' := k + 1) x (Fin.last k) = x ⟨k, hk⟩ := by
+  simp [Fin.last, zeroExtend, hk]
+
+/-- Extension by zeros from `BitString d` to `BitString d'` is injective when `d ≤ d'`. -/
+theorem zeroExtend_injective {d d' : ℕ} (h : d ≤ d') :
+    Function.Injective (zeroExtend (d := d) (d' := d')) := by
+  intro x y hxy
+  funext i
+  have := congrFun hxy ⟨i.val, by omega⟩
+  simpa [zeroExtend, i.isLt] using this
 
 /-- Comparing words of `n + 1` bits: `x ≤ y` when the last bit of `x` is below that of `y`, or when
 they are equal and `x ≤ y` on the first `n` bits. -/
