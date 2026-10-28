@@ -23,17 +23,20 @@ namespace ComplexityTests.TuringAutoreducible
 
 /-- The empty language in `P` is polynomial-time Turing autoreducible. -/
 example : PolyTimeTuringAutoreducible encBits (∅ : Set (List Bool)) :=
-  mem_P.polyTimeTuringAutoreducible (show (∅ : Set (List Bool)) ∈ P encBits from
+  polyTimeTuringAutoreducible_of_mem_P (show (∅ : Set (List Bool)) ∈ P encBits from
     ⟨fun _ => false, by fun_prop, fun _ => by simp⟩)
 
 /-- The universal language `Set.univ` in `P` is polynomial-time Turing autoreducible. -/
 example : PolyTimeTuringAutoreducible encBits (Set.univ : Set (List Bool)) :=
-  mem_P.polyTimeTuringAutoreducible (show (Set.univ : Set (List Bool)) ∈ P encBits from
+  polyTimeTuringAutoreducible_of_mem_P (show (Set.univ : Set (List Bool)) ∈ P encBits from
     ⟨fun _ => true, by fun_prop, fun _ => by simp⟩)
 
+/-- The language of even-length bitstrings. -/
+def paritySet : Set (List Bool) := {w : List Bool | w.length % 2 = 0}
+
 /-- Prepending two bits is a fixed-point-free length-parity-preserving map, yielding a
-Turing autoreduction. -/
-example : PolyTimeTuringAutoreducible encBits {w : List Bool | w.length % 2 = 0} := by
+Turing autoreduction on the parity language. -/
+theorem paritySet_autoreducible : PolyTimeTuringAutoreducible encBits paritySet := by
   have hf : ComputableInPolyTime (fun w : List Bool => false :: false :: w) encBits encBits := by
     fun_prop
   have hne : ∀ w : List Bool, false :: false :: w ≠ w := by
@@ -47,9 +50,8 @@ example : PolyTimeTuringAutoreducible encBits {w : List Bool | w.length % 2 = 0}
     omega
   exact polyTimeTuringAutoreducible_of_polyTimeReducible_fixedPointFree hf hne hA
 
-/-- Every Turing autoreducible language is Turing reducible to itself. -/
-example {A : Set (List Bool)} (h : PolyTimeTuringAutoreducible encBits A) :
-    PolyTimeTuringReducible encBits encBits A A :=
-  h.polyTimeTuringReducible
+/-- The parity language is Turing reducible to itself via its autoreduction. -/
+example : PolyTimeTuringReducible encBits encBits paritySet paritySet :=
+  paritySet_autoreducible.polyTimeTuringReducible
 
 end ComplexityTests.TuringAutoreducible

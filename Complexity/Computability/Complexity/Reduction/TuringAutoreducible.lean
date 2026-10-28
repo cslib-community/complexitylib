@@ -17,8 +17,8 @@ public import Complexity.Computability.Complexity.Reduction.Turing
 # Polynomial-time Turing autoreducibility
 
 A set `A` is **polynomial-time Turing autoreducible** if it can be decided in polynomial time
-by an oracle machine that never queries its own input (Ambos-Spies 1984; Buhrman et al. 2000;
-[Ladner, Lynch and Selman][LadnerLynchSelman1975]).
+by an oracle machine that never queries its own input ([Ambos-Spies 1984][AmbosSpies1984];
+[Buhrman, Fortnow, van Melkebeek and Torenvliet 2000][BuhrmanFortnowVanMelkebeekTorenvliet2000]).
 
 ## Main definitions
 
@@ -34,16 +34,16 @@ by an oracle machine that never queries its own input (Ambos-Spies 1984; Buhrman
 * `Cslib.Complexity.polyTimeTuringAutoreducible_of_polyTimeReducible_fixedPointFree`: every
   fixed-point-free polynomial-time many-one reduction of `A` to `A` induces a polynomial-time
   Turing autoreduction.
-* `Cslib.Complexity.mem_P.polyTimeTuringAutoreducible`: every language `A ∈ P` is unconditionally
+* `Cslib.Complexity.polyTimeTuringAutoreducible_of_mem_P`: every language `A ∈ P` is unconditionally
   polynomial-time Turing autoreducible (via a 0-query program). This sharply contrasts with
-  many-one autoreducibility, where singleton and co-singleton languages in `P` are strictly
+  many-one autoreducibility, where singleton and co-singleton languages in `P` are
   not many-one autoreducible.
 
 ## References
 
-* [R. E. Ladner, N. A. Lynch, A. L. Selman, *A comparison of polynomial time
-  reducibilities*][LadnerLynchSelman1975]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [K. Ambos-Spies, *P-mitotic sets*][AmbosSpies1984]
+* [H. Buhrman, L. Fortnow, D. van Melkebeek, L. Torenvliet, *Separating Complexity Classes
+  Using Autoreducibility*][BuhrmanFortnowVanMelkebeekTorenvliet2000]
 -/
 
 @[expose] public section
@@ -112,7 +112,7 @@ theorem polyTimeTuringAutoreducible_of_polyTimeReducible_fixedPointFree
 
 /-- **Every problem in `P` is polynomial-time Turing autoreducible.** The decider makes zero
 oracle queries, so the no-self-query condition is vacuously satisfied. -/
-theorem mem_P.polyTimeTuringAutoreducible
+theorem polyTimeTuringAutoreducible_of_mem_P
     (hA : A ∈ P encA) : PolyTimeTuringAutoreducible encA A := by
   obtain ⟨f, hf, h_dec⟩ := hA
   refine ⟨fun a => pure (f a), ?_, fun a q hq => ?_, fun a => ?_⟩
