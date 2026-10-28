@@ -57,6 +57,25 @@ bound `2^{-(1 - 1/k) n}` carries over (`round_success_ppz`).
 
 @[expose] public section
 
+namespace Cslib.Complexity.PPZ
+
+variable {n : ℕ}
+
+/-- A restriction of `σ` agrees with `σ` where it is defined. -/
+theorem eq_of_restrict_eq_some {σ : Fin n → Bool} {D : Finset (Fin n)} {y : Fin n} {b : Bool}
+    (h : restrict σ D y = some b) : σ y = b := by
+  simp only [restrict] at h
+  split_ifs at h
+  exact Option.some_injective _ h
+
+/-- Once all `n` variables are processed, the restriction of `σ` is all of `σ`. -/
+theorem restrict_prefixSet_self (σ : Fin n → Bool) (π : Equiv.Perm (Fin n)) :
+    restrict σ (prefixSet π n) = fun x => some (σ x) := by
+  funext y
+  simp [restrict, mem_prefixSet]
+
+end Cslib.Complexity.PPZ
+
 namespace Cslib.Complexity.PPSZ
 
 open Cslib.Logic.PL
@@ -176,14 +195,6 @@ theorem eq_none_of_mem_support_run {φ : CNF (Fin n)} {w : ℕ} {π : Equiv.Perm
       exact ih hτ' fun hy' => hy (by rw [mem_prefixSet] at hy' ⊢; omega)
     · exact ih hτ fun hy' => hy (by rw [mem_prefixSet] at hy' ⊢; omega)
 
-/-- A restriction of `σ` agrees with `σ` where it is defined. -/
-theorem restrict_agree (σ : Fin n → Bool) (D : Finset (Fin n)) :
-    ∀ y b, restrict σ D y = some b → σ y = b := by
-  intro y b hy
-  simp only [restrict] at hy
-  split_ifs at hy
-  exact Option.some_injective _ hy
-
 /-- The number of unforced variables among the first `i` steps of the run in the order `π` that
 agrees with `σ`: at these steps PPSZ chooses a uniform bit. -/
 noncomputable def unforcedCount (φ : CNF (Fin n)) (w : ℕ) (σ : Fin n → Bool)
@@ -270,7 +281,7 @@ theorem run_apply_restrict {φ : CNF (Fin n)} {w : ℕ} {σ : Fin n → Bool} (h
         · rw [step_of_implied_eq_none hU]
           simp [Cslib.Probability.PMF.uniformOfFintype_apply]
         · obtain ⟨b, hb⟩ := Option.ne_none_iff_exists'.mp hU
-          rw [step_of_implied_eq_some hb, implied_eq hσ (restrict_agree σ _) hb]
+          rw [step_of_implied_eq_some hb, implied_eq hσ (fun _ _ => PPZ.eq_of_restrict_eq_some) hb]
           simp
       · intro b hb
         rw [ite_eq_right]
@@ -301,8 +312,9 @@ def Forced (φ : CNF (Fin n)) (w : ℕ) (σ : Fin n → Bool) (π : Equiv.Perm (
     Prop :=
   implied φ w (restrict σ (prefixSet π (π.symm x))) x ≠ none
 
-noncomputable instance (φ : CNF (Fin n)) (w : ℕ) (σ : Fin n → Bool) (π : Equiv.Perm (Fin n))
-    (x : Fin n) : Decidable (Forced φ w σ π x) := by
+/-- `Forced` is decidable, classically through `implied`. -/
+noncomputable instance instDecidableForced (φ : CNF (Fin n)) (w : ℕ) (σ : Fin n → Bool)
+    (π : Equiv.Perm (Fin n)) (x : Fin n) : Decidable (Forced φ w σ π x) := by
   unfold Forced
   infer_instance
 
@@ -315,7 +327,7 @@ theorem forced_iff_wImplied {φ : CNF (Fin n)} {w : ℕ} {σ : Fin n → Bool} (
   rw [implied_ne_none_iff]
   constructor
   · rintro ⟨b, hb⟩
-    rwa [hb.eq hσ (restrict_agree σ _)]
+    rwa [hb.eq hσ fun _ _ => PPZ.eq_of_restrict_eq_some]
   · exact fun h => ⟨σ x, h⟩
 
 /-- The unforced variables of a whole run are the variables that are not forced. -/
@@ -339,15 +351,10 @@ Lemma 2][PaturiPudlakSaksZane2005]: one round outputs a satisfying assignment `�
 theorem round_apply_eq {φ : CNF (Fin n)} {w : ℕ} {σ : Fin n → Bool} (hσ : φ.eval σ = true) :
     ((round φ w) fun x => some (σ x)).toReal =
       ∑ π : Equiv.Perm (Fin n), ((n.factorial : ℝ))⁻¹ * (1 / 2 : ℝ) ^ unforcedCount φ w σ π n := by
-  have hrestrict : ∀ π : Equiv.Perm (Fin n),
-      restrict σ (prefixSet π n) = fun x => some (σ x) := by
-    intro π
-    funext y
-    simp [restrict, mem_prefixSet]
   rw [round, PMF.bind_apply, tsum_fintype, ENNReal.toReal_sum (fun π _ => ENNReal.mul_ne_top
     (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _))]
   refine sum_congr rfl fun π _ => ?_
-  rw [← hrestrict π, run_apply_restrict hσ π le_rfl, ENNReal.toReal_mul,
+  rw [← PPZ.restrict_prefixSet_self σ π, run_apply_restrict hσ π le_rfl, ENNReal.toReal_mul,
     Cslib.Probability.PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast,
     Fintype.card_perm, Fintype.card_fin, ENNReal.toReal_pow, ENNReal.toReal_inv]
   norm_num
@@ -367,8 +374,9 @@ private theorem half_pow_avg_le {ι : Type*} [Fintype ι] {N : ℝ} (hN : 0 < N)
     rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num), mul_comm]
   exact hprod ▸ hamgm
 
-/-- **The success probability in terms of forcing probabilities** [Paturi, Pudlák, Saks, Zane,
-Lemma 3][PaturiPudlakSaksZane2005]: one round outputs a satisfying assignment `σ` with probability
+/-- **The success probability in terms of forcing probabilities**, after
+[Paturi, Pudlák, Saks, Zane, Lemma 3][PaturiPudlakSaksZane2005], in the w-implication form of
+[Scheder, eq. (1)][Scheder2021]: one round outputs a satisfying assignment `σ` with probability
 at least `2^{-n + ∑ₓ Pr_π[x forced]}`, where `Pr_π[x forced]` is the fraction of the `n!` orders
 in which `x` is forced. -/
 theorem round_apply_ge {φ : CNF (Fin n)} {w : ℕ} {σ : Fin n → Bool} (hσ : φ.eval σ = true) :
@@ -472,14 +480,10 @@ assignment with at least the probability that one round of PPZ does. -/
 theorem ppz_round_apply_le {φ : CNF (Fin n)} {w : ℕ} (hw : 1 ≤ w) {σ : Fin n → Bool}
     (hσ : φ.eval σ = true) :
     PPZ.round φ (fun x => some (σ x)) ≤ round φ w (fun x => some (σ x)) := by
-  have hrestrict : ∀ π : Equiv.Perm (Fin n),
-      restrict σ (prefixSet π n) = fun x => some (σ x) := by
-    intro π
-    funext y
-    simp [restrict, mem_prefixSet]
   rw [PPZ.round, round, PMF.bind_apply, PMF.bind_apply]
   refine ENNReal.tsum_le_tsum fun π => mul_le_mul_right ?_ _
-  rw [← hrestrict π, PPZ.run_apply_restrict hσ π le_rfl, run_apply_restrict hσ π le_rfl]
+  rw [← PPZ.restrict_prefixSet_self σ π, PPZ.run_apply_restrict hσ π le_rfl,
+    run_apply_restrict hσ π le_rfl]
   exact pow_le_pow_right_of_le_one' (ENNReal.inv_le_one.mpr one_le_two)
     (unforcedCount_le_ppz hw σ π n)
 

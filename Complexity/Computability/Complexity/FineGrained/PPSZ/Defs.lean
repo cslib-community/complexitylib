@@ -18,7 +18,10 @@ when that value is *w-implied*: some subformula of at most `w` clauses, together
 already chosen, forces it. Otherwise the variable is set uniformly at random. This is PPSZ with
 w-implication [Hertli, Definition 3][Hertli2011] [Scheder, Algorithm 1][Scheder2021]; the analysis
 of [Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005] uses nothing about its bounded
-resolution beyond this property [Scheder, p. 4][Scheder2021].
+resolution beyond this property [Scheder, p. 3][Scheder2021]. [Hertli][Hertli2011] calls this
+*s-implication*: his `s` is our `w`, a number of clauses. It is unrelated to the `s` of
+[Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005], whose `s`-bounded resolution only
+considers clauses of at most `s` literals.
 
 ## Main definitions
 
