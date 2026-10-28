@@ -122,6 +122,7 @@ public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinear
+public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.SigmaPi
 public import Complexity.Computability.Circuit.Arithmetic.VNP
 public import Complexity.Computability.Circuit.Arithmetic.VP
