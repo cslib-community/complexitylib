@@ -261,8 +261,8 @@ private theorem sum_alpha_small_orders_le (m : ℕ) :
   · simp [alpha, saving]
   · exact (sum_alpha_small_orders_lt m hm).le
 
-/-- In the proof of Lemma 11: We use |U| α_d for the orders d ≤ m/9 and β_d for the orders
-d > m/9. -/
+/-- Split the order sum at `m / 9`, applying the query-dependent estimate below the cutoff
+and the layout-dependent estimate above it. -/
 private theorem card_leaves_le_split {L m : ℕ} (U : Finset (OutStr L))
     (hU : ∀ w ∈ U, (innerSetO w).card = m) :
     (leaves U).card

@@ -1937,7 +1937,6 @@ public import Complexity.Foundations.Combinatorics.AffineDisperser.IndependentSo
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Threshold
 public import Complexity.Foundations.Combinatorics.BalancedSchedules
 public import Complexity.Foundations.Combinatorics.BinomialTail
-public import Complexity.Foundations.Combinatorics.BinomialUpperBound
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
