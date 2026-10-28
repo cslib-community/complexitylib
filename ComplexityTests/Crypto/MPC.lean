@@ -19,15 +19,25 @@ Concrete tests for `Complexity.Languages.Probabilistic.Sharing` and
    `eval_restrict_sampleAdditiveShares`.
 2. **2-party XOR protocol in `noOracleWorld`:** a concrete 2-round point-to-point protocol built
    with `Steps.append` in which party 0 sends `x 0` to party 1, party 1 sends `x 1` to party 0, and
-   both output `x 0 + x 1`. Because each party `i` can reconstruct the other party's input from its
-   own input `x i` and output `y i = x 0 + x 1` as `y i - x i`, the protocol satisfies
-   `PerfectSemiHonestPrivate` against every static coalition `I : Finset (Fin 2)` by
-   `perfectSemiHonestPrivate_of_deterministic`.
+   both output `x 0 + x 1`, proved `PerfectSemiHonestPrivate` against every static coalition
+   `I : Finset (Fin 2)` by `perfectSemiHonestPrivate_of_deterministic`.
+3. **2-party oracle-aided XOR protocol (`oracleXorProtocol`):** a 1-round `Round.oracle` protocol
+   exercising `Round.deliverOracle` and `Steps.evalWith_oracle`, proved `PerfectSemiHonestPrivate`.
+4. **Negative test 1 (`not_perfectSemiHonestPrivate_leakyProtocol`):** a leaky 1-round protocol in
+   which party 0 sends `x 0` to party 1 while computing the constant functionality `constFalseFunc`,
+   proved `∀ S, ¬ PerfectSemiHonestPrivate leakyProtocol noOracleWorld
+   (Functionality.ofDeterministic constFalseFunc) S`.
+5. **Negative test 2 (`not_perfectSemiHonestPrivate_independentCoinProtocol`, Goldreich
+   Counterexample 1, print p. 621):** a randomized functionality `coinBroadcastFunc` outputting a
+   shared random bit `(b, b)` (`b ← ProbComp.uniform Bool`) versus `independentCoinProtocol` where
+   each party outputs its own independent random coin, proved
+   `∀ S, ¬ PerfectSemiHonestPrivate independentCoinProtocol noOracleWorld coinBroadcastFunc S`
+   (exercising the joint view-and-output requirement of Eq. 7.40 / Eqs. 7.9–7.10).
 -/
 
 namespace ComplexityTests.Crypto.MPC
 
-open Cslib Cslib.Probability Cslib.ProbComp Cslib.Crypto.MPC
+open Cslib Cslib.Probability Cslib.ProbComp Cslib.Crypto.Protocols.MPC
 
 /-! ### Additive secret sharing tests -/
 
@@ -130,5 +140,183 @@ example :
     PerfectSemiHonestPrivateProper xorProtocol noOracleWorld
       (Functionality.ofDeterministic xorFunc) xorSim :=
   perfectSemiHonestPrivate_xorProtocol.proper
+
+/-! ### Positive test with a 2-party oracle round (`Round.oracle` / `Steps.evalWith_oracle`) -/
+
+/-- A 2-ary oracle specification where each of the 2 slots submits a `Bool` and receives a
+`Bool`. -/
+abbrev xorOracleSpec : MultiOracleSpec where
+  Op := Unit
+  arity _ := 2
+  Query _ _ := Bool
+  Answer _ _ := Bool
+
+/-- The world for `xorOracleSpec` that returns `q 0 + q 1` to both slots. -/
+def xorOracleWorld : MultiOracleWorld xorOracleSpec :=
+  fun () q => pure (fun _ => q 0 + q 1)
+
+/-- Single-round oracle schedule in which parties 0 and 1 jointly query `xorOracleSpec`. -/
+abbrev oracleXorSchedule : Schedule 2 xorOracleSpec :=
+  [.oracle () (Function.Embedding.refl (Fin 2))]
+
+/-- One-round oracle protocol where each party submits its input bit to `xorOracleSpec` and outputs
+its received answer part. -/
+def oracleXorProtocol : Protocol 2 xorOracleSpec oracleXorSchedule
+    (fun _ => Bool) (fun _ => Unit) (fun _ => Bool) where
+  sampleCoins _ := pure ()
+  steps :=
+    .oracle (fun _ st => st.1)
+      (.done fun i st => st.2 i rfl)
+
+/-- Simulator for `oracleXorProtocol`: places party `i`'s output `yI i` into its oracle answer
+record. -/
+def oracleXorSim (I : Finset (Fin 2)) :
+    CoalitionSimulator oracleXorSchedule (fun _ => Bool) (fun _ => Unit) (fun _ => Bool) I :=
+  fun xI yI =>
+    pure fun i =>
+      { input := xI i
+        coins := ()
+        received := (fun _ _ => yI i, ()) }
+
+/-- `oracleXorProtocol` is perfectly semi-honest private in `xorOracleWorld`. -/
+theorem perfectSemiHonestPrivate_oracleXorProtocol :
+    PerfectSemiHonestPrivate oracleXorProtocol xorOracleWorld
+      (Functionality.ofDeterministic xorFunc) oracleXorSim := by
+  apply perfectSemiHonestPrivate_of_deterministic
+  · intro I x
+    simp only [oracleXorSim, oracleXorProtocol, xorOracleWorld, Protocol.evalWith_eq,
+      ProbComp.pi_succ, ProbComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
+      ProbComp.eval_pure, Steps.evalWith_oracle, Steps.evalWith_done,
+      PMF.pure_bind, PMF.pure_map]
+    refine congrArg PMF.pure (funext fun (i : I) => ?_)
+    refine PartyView.ext rfl rfl (Prod.ext ?_ rfl)
+    refine Round.received_oracle_ext fun s hs => ?_
+    rfl
+  · intro x r hr
+    simp only [oracleXorProtocol, xorOracleWorld, Protocol.evalWith_eq,
+      ProbComp.pi_succ, ProbComp.pi_zero, ProbComp.eval_bind, ProbComp.eval_map,
+      ProbComp.eval_pure, Steps.evalWith_oracle, Steps.evalWith_done,
+      PMF.pure_bind, PMF.pure_map, PMF.mem_support_pure_iff] at hr
+    subst hr
+    rfl
+
+/-! ### Negative test 1: leaky protocol fails `PerfectSemiHonestPrivate` for every simulator -/
+
+/-- One-round schedule in which party 0 sends a `Bool` to party 1. -/
+abbrev leakySchedule : Schedule 2 noOracleSpec :=
+  [.message 0 1 Bool]
+
+/-- Constant functionality `constFalseFunc x i = false`. -/
+def constFalseFunc (_ : Fin 2 → Bool) (_ : Fin 2) : Bool :=
+  false
+
+/-- Leaky protocol for `constFalseFunc`: party 0 sends its private input `x 0` to party 1, and both
+parties output `false`. -/
+def leakyProtocol : Protocol 2 noOracleSpec leakySchedule
+    (fun _ => Bool) (fun _ => Unit) (fun _ => Bool) where
+  sampleCoins _ := pure ()
+  steps :=
+    .message (sender := 0) (receiver := 1) (fun st => st.1)
+      (.done fun _ _ => false)
+
+/-- Extract the bit that party 1 received in round 0 from a `{1}`-coalition joint outcome. -/
+def leakyExtractMsg1
+    (res : ((i : ({1} : Finset (Fin 2))) →
+      PartyView (fun _ => Bool) (fun _ => Unit) leakySchedule i) × (Fin 2 → Bool)) : Bool :=
+  (res.1 ⟨1, by simp⟩).received.1 rfl
+
+/-- No simulator can make `leakyProtocol` satisfy `PerfectSemiHonestPrivate` for `constFalseFunc`:
+on inputs `![false, false]` and `![true, false]`, party 1's input and output are identical so the
+ideal distribution for `I = {1}` is identical, whereas party 1's real view receives `false` vs
+`true`. -/
+theorem not_perfectSemiHonestPrivate_leakyProtocol
+    (S : (I : Finset (Fin 2)) →
+      CoalitionSimulator leakySchedule (fun _ => Bool) (fun _ => Unit) (fun _ => Bool) I) :
+    ¬ PerfectSemiHonestPrivate leakyProtocol noOracleWorld
+        (Functionality.ofDeterministic constFalseFunc) S := by
+  intro hPriv
+  let I : Finset (Fin 2) := {1}
+  let x₀ : Fin 2 → Bool := ![false, false]
+  let x₁ : Fin 2 → Bool := ![true, false]
+  have h0 := congrArg (PMF.map leakyExtractMsg1) (hPriv I x₀)
+  have h1 := congrArg (PMF.map leakyExtractMsg1) (hPriv I x₁)
+  have hIdealEq :
+      idealJoint (Functionality.ofDeterministic constFalseFunc) I (S I) x₀ =
+        idealJoint (Functionality.ofDeterministic constFalseFunc) I (S I) x₁ := by
+    have hx : I.restrict x₀ = I.restrict x₁ := by
+      ext ⟨i, hi⟩
+      have hi1 : i = 1 := Finset.mem_singleton.mp hi
+      subst hi1
+      rfl
+    have hy : constFalseFunc x₀ = constFalseFunc x₁ := rfl
+    simp [idealJoint, Functionality.ofDeterministic, hx, hy]
+  have hReal0 :
+      (leakyProtocol.realJoint noOracleWorld I x₀).map leakyExtractMsg1 = PMF.pure false := by
+    simp [Protocol.realJoint, leakyProtocol, Protocol.evalWith_eq,
+      ProbComp.eval_pure, Steps.evalWith_message, Steps.evalWith_done,
+      PMF.pure_bind, PMF.pure_map, leakyExtractMsg1,
+      Round.deliverMessage, x₀]
+  have hReal1 :
+      (leakyProtocol.realJoint noOracleWorld I x₁).map leakyExtractMsg1 = PMF.pure true := by
+    simp [Protocol.realJoint, leakyProtocol, Protocol.evalWith_eq,
+      ProbComp.eval_pure, Steps.evalWith_message, Steps.evalWith_done,
+      PMF.pure_bind, PMF.pure_map, leakyExtractMsg1,
+      Round.deliverMessage, x₁]
+  rw [hIdealEq] at h0
+  have hFalseEqTrue : (PMF.pure false : PMF Bool) = PMF.pure true := by
+    rw [← hReal0, ← h0, h1, hReal1]
+  have hApp := congrArg (fun p : PMF Bool => p true) hFalseEqTrue
+  simp at hApp
+
+/-! ### Negative test 2: Goldreich Counterexample 1 (CUP print p. 621) -/
+
+/-- Randomized 2-party functionality `((), ()) ↦ (b, b)` for a uniform bit `b` (Goldreich Section
+7.2.2.1, p. 621, first counterexample). -/
+noncomputable def coinBroadcastFunc : Functionality 2 (fun _ => Unit) (fun _ => Bool) :=
+  fun _ => (fun b _ => b) <$> ProbComp.uniform Bool
+
+/-- Zero-round protocol where each party independently samples a uniform bit `r i` and outputs `r i`
+without communicating. Each singleton coalition's marginal view matches its marginal output, yet
+the joint output distribution is independent rather than equal. -/
+noncomputable def independentCoinProtocol :
+    Protocol 2 noOracleSpec [] (fun _ => Unit) (fun _ => Bool) (fun _ => Bool) where
+  sampleCoins _ := ProbComp.uniform Bool
+  steps := .done fun _ st => st.2
+
+/-- No simulator can make `independentCoinProtocol` satisfy `PerfectSemiHonestPrivate` for
+`coinBroadcastFunc`, because in the ideal execution the two parties' outputs always agree
+(`y 0 = y 1`), whereas in the real execution `![false, true]` occurs in the support of the joint
+outputs. -/
+theorem not_perfectSemiHonestPrivate_independentCoinProtocol
+    (S : (I : Finset (Fin 2)) →
+      CoalitionSimulator (spec := noOracleSpec) []
+        (fun _ => Unit) (fun _ => Bool) (fun _ => Bool) I) :
+    ¬ PerfectSemiHonestPrivate independentCoinProtocol noOracleWorld coinBroadcastFunc S := by
+  intro hPriv
+  have hIdealAgree :
+      ∀ res ∈ (ProbComp.eval (idealJoint coinBroadcastFunc ∅ (S ∅) (fun _ => ()))).support,
+        res.2 0 = res.2 1 := by
+    intro res hres
+    simp only [idealJoint, coinBroadcastFunc, ProbComp.eval_bind, ProbComp.eval_map,
+      ProbComp.eval_pure, PMF.mem_support_bind_iff, PMF.mem_support_map_iff,
+      PMF.mem_support_pure_iff] at hres
+    obtain ⟨y, ⟨b, _, rfl⟩, v, _, rfl⟩ := hres
+    rfl
+  have hRealDisagree :
+      ∃ res ∈ (independentCoinProtocol.realJoint noOracleWorld ∅ (fun _ => ())).support,
+        res.2 0 = false ∧ res.2 1 = true := by
+    simp only [Protocol.realJoint, independentCoinProtocol, Protocol.evalWith_eq,
+      Protocol.outputOfView, Steps.outputAt, Steps.evalWith_done,
+      PMF.pure_map, PMF.mem_support_map_iff, PMF.mem_support_bind_iff,
+      PMF.mem_support_pure_iff]
+    refine ⟨_, ⟨_, ⟨![false, true], ?_, rfl⟩, rfl⟩, rfl, rfl⟩
+    rw [ProbComp.mem_support_pi_iff]
+    intro i
+    simp [ProbComp.eval_uniform]
+  obtain ⟨res, hres, h0, h1⟩ := hRealDisagree
+  rw [← hPriv ∅ (fun _ => ())] at hres
+  have h01 := hIdealAgree res hres
+  rw [h0, h1] at h01
+  exact Bool.false_ne_true h01
 
 end ComplexityTests.Crypto.MPC

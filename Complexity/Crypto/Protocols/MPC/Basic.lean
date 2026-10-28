@@ -19,7 +19,7 @@ calls (`MultiOracleSpec`), together with Goldreich's joint view-and-output defin
 semi-honest privacy against static coalitions (`PerfectSemiHonestPrivate`).
 
 Each party's view (`PartyView`) is derived from the protocol execution: it records only that
-party's own input `x i`, its own private coins `r i` drawn from `Π.sampleCoins i`, the messages
+party's own input `x i`, its own private coins `r i` drawn from `proto.sampleCoins i`, the messages
 addressed to `i`, and the oracle answer parts for slots assigned to `i`. In `Round.Received`,
 message delivery to `receiver` has type `(i = receiver) → Msg` and oracle answer delivery has
 type `(s : Fin (spec.arity op)) → (parties s = i) → spec.Answer op s`, so parties outside the
@@ -29,35 +29,46 @@ deterministically from its own `PartyView`.
 
 ## Main definitions
 
-* `Cslib.Crypto.MPC.MultiOracleSpec`, `Cslib.Crypto.MPC.MultiOracleSpec.toOracleSpec`,
-  `Cslib.Crypto.MPC.MultiOracleWorld`, `Cslib.Crypto.MPC.noOracleSpec`,
-  `Cslib.Crypto.MPC.noOracleWorld`: `k`-ary ideal oracle specifications and memoryless worlds.
-* `Cslib.Crypto.MPC.Round`, `Cslib.Crypto.MPC.Schedule`, `Cslib.Crypto.MPC.Round.Received`,
-  `Cslib.Crypto.MPC.Schedule.Received`, `Cslib.Crypto.MPC.PartyView`: synchronous communication
-  schedules and derived per-party views.
-* `Cslib.Crypto.MPC.Steps`, `Cslib.Crypto.MPC.Protocol`, `Cslib.Crypto.MPC.Protocol.outputOfView`,
-  `Cslib.Crypto.MPC.Steps.mapState`, `Cslib.Crypto.MPC.Steps.append`,
-  `Cslib.Crypto.MPC.Steps.run`, `Cslib.Crypto.MPC.Protocol.run`,
-  `Cslib.Crypto.MPC.Protocol.evalWith`, `Cslib.Crypto.MPC.Protocol.realJoint`: local step-by-step
-  party strategies and their real execution semantics.
-* `Cslib.Crypto.MPC.Functionality`, `Cslib.Crypto.MPC.Functionality.ofDeterministic`,
-  `Cslib.Crypto.MPC.CoalitionSimulator`, `Cslib.Crypto.MPC.idealJoint`,
-  `Cslib.Crypto.MPC.PerfectSemiHonestPrivate`, `Cslib.Crypto.MPC.PerfectSemiHonestPrivateProper`:
-  ideal joint view-and-output execution and perfect semi-honest privacy.
+* `Cslib.Crypto.Protocols.MPC.MultiOracleSpec`,
+  `Cslib.Crypto.Protocols.MPC.MultiOracleSpec.toOracleSpec`,
+  `Cslib.Crypto.Protocols.MPC.MultiOracleWorld`,
+  `Cslib.Crypto.Protocols.MPC.MultiOracleWorld.handler`,
+  `Cslib.Crypto.Protocols.MPC.noOracleSpec`,
+  `Cslib.Crypto.Protocols.MPC.noOracleWorld`: `k`-ary ideal oracle specifications and memoryless
+  worlds.
+* `Cslib.Crypto.Protocols.MPC.Round`, `Cslib.Crypto.Protocols.MPC.Schedule`,
+  `Cslib.Crypto.Protocols.MPC.Round.Received`, `Cslib.Crypto.Protocols.MPC.Schedule.Received`,
+  `Cslib.Crypto.Protocols.MPC.PartyView`: synchronous communication schedules and derived
+  per-party views.
+* `Cslib.Crypto.Protocols.MPC.Steps`, `Cslib.Crypto.Protocols.MPC.Protocol`,
+  `Cslib.Crypto.Protocols.MPC.Protocol.outputOfView`,
+  `Cslib.Crypto.Protocols.MPC.Steps.mapState`, `Cslib.Crypto.Protocols.MPC.Steps.append`,
+  `Cslib.Crypto.Protocols.MPC.Steps.run`, `Cslib.Crypto.Protocols.MPC.Protocol.run`,
+  `Cslib.Crypto.Protocols.MPC.Protocol.evalWith`, `Cslib.Crypto.Protocols.MPC.Protocol.realJoint`:
+  local step-by-step party strategies and their real execution semantics.
+* `Cslib.Crypto.Protocols.MPC.Functionality`,
+  `Cslib.Crypto.Protocols.MPC.Functionality.ofDeterministic`,
+  `Cslib.Crypto.Protocols.MPC.CoalitionSimulator`, `Cslib.Crypto.Protocols.MPC.idealJoint`,
+  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate`,
+  `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivateProper`: ideal joint view-and-output
+  execution and perfect semi-honest privacy.
 
 ## Main results
 
-* `Cslib.Crypto.MPC.Schedule.Received.split_append`,
-  `Cslib.Crypto.MPC.Schedule.Received.append_split`: splitting and concatenating received
-  transcripts along concatenated schedules.
-* `Cslib.Crypto.MPC.Protocol.evalWith_eq`, `Cslib.Crypto.MPC.Steps.evalWith_done`,
-  `Cslib.Crypto.MPC.Steps.evalWith_message`, `Cslib.Crypto.MPC.Steps.evalWith_oracle`: structural
-  evaluation rules for protocols and steps.
-* `Cslib.Crypto.MPC.PerfectSemiHonestPrivate.proper`: full-coalition privacy implies
+* `Cslib.Crypto.Protocols.MPC.Schedule.Received.split_append`,
+  `Cslib.Crypto.Protocols.MPC.Schedule.Received.append_split`: splitting and concatenating
+  received transcripts along concatenated schedules.
+* `Cslib.Crypto.Protocols.MPC.Protocol.evalWith_eq`,
+  `Cslib.Crypto.Protocols.MPC.Steps.evalWith_done`,
+  `Cslib.Crypto.Protocols.MPC.Steps.evalWith_message`,
+  `Cslib.Crypto.Protocols.MPC.Steps.evalWith_oracle`: structural evaluation rules for protocols
+  and steps.
+* `Cslib.Crypto.Protocols.MPC.PerfectSemiHonestPrivate.proper`: full-coalition privacy implies
   proper-coalition privacy.
-* `Cslib.Crypto.MPC.perfectSemiHonestPrivate_of_deterministic`: for deterministic functionalities,
-  matching the marginal coalition view distribution together with output correctness on the support
-  yields full joint view-and-output privacy.
+* `Cslib.Crypto.Protocols.MPC.perfectSemiHonestPrivate_of_deterministic`: for deterministic
+  functionalities, matching the marginal coalition view distribution (Eq. 7.39, cf. Eqs. 7.7–7.8)
+  together with output correctness on the support yields full joint view-and-output privacy
+  (Eq. 7.40, cf. Eqs. 7.9–7.10).
 
 ## References
 
@@ -68,7 +79,7 @@ deterministically from its own `PartyView`.
 
 @[expose] public section
 
-namespace Cslib.Crypto.MPC
+namespace Cslib.Crypto.Protocols.MPC
 
 open Probability
 
@@ -94,6 +105,14 @@ abbrev MultiOracleSpec.toOracleSpec (spec : MultiOracleSpec) :
 abbrev MultiOracleWorld (spec : MultiOracleSpec) :=
   (op : spec.Op) → ((s : Fin (spec.arity op)) → spec.Query op s) →
     ProbComp ((s : Fin (spec.arity op)) → spec.Answer op s)
+
+/-- Combined `PMF` handler for `ProbOracleComp spec.toOracleSpec` in a memoryless world `W`. -/
+noncomputable def MultiOracleWorld.handler {spec : MultiOracleSpec}
+    (W : MultiOracleWorld spec) :
+    (q : ℕ ⊕ (Σ op : spec.Op, (s : Fin (spec.arity op)) → spec.Query op s)) →
+      PMF (probOracleSpec spec.toOracleSpec q) :=
+  ProbOracleComp.handler (spec := spec.toOracleSpec) ProbComp.unifOracle
+    (fun q => ProbComp.eval (W q.1 q.2))
 
 /-- The empty multi-party oracle specification (plain point-to-point channel model). -/
 def noOracleSpec : MultiOracleSpec where
@@ -313,10 +332,7 @@ def Protocol.run {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
 noncomputable def Steps.evalWith {m : ℕ} {spec : MultiOracleSpec} {State Out : Fin m → Type}
     {sc : Schedule m spec} (steps : Steps State Out sc) (W : MultiOracleWorld spec)
     (st : (i : Fin m) → State i) : PMF ((i : Fin m) → sc.Received i) :=
-  OracleComp.evalWith
-    (OracleComp.sumHandler (spec₁ := unifSpec) (spec₂ := spec.toOracleSpec)
-      ProbComp.unifOracle (fun q => ProbComp.eval (W q.1 q.2)))
-    (steps.run st)
+  OracleComp.evalWith W.handler (steps.run st)
 
 @[simp] theorem Steps.evalWith_done {m : ℕ} {spec : MultiOracleSpec} {State Out : Fin m → Type}
     (output : (i : Fin m) → State i → Out i) (W : MultiOracleWorld spec)
@@ -344,17 +360,15 @@ noncomputable def Steps.evalWith {m : ℕ} {spec : MultiOracleSpec} {State Out :
       (ProbComp.eval (W op (fun s => query s (st (parties s))))).bind fun ans =>
         (next.evalWith W (fun i => (st i, Round.deliverOracle parties ans i))).map
           (fun r_tail i => (Round.deliverOracle parties ans i, r_tail i)) := by
-  simp [Steps.evalWith, Steps.run, ProbOracleComp.query, OracleComp.sumHandler, bind_pure_comp]
+  simp [Steps.evalWith, Steps.run, MultiOracleWorld.handler, ProbOracleComp.query,
+    ProbOracleComp.handler, bind_pure_comp]
 
 /-- Evaluate `proto.run x` against `W : MultiOracleWorld spec` via `OracleComp.evalWith`. -/
 noncomputable def Protocol.evalWith {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins Out : Fin m → Type} (proto : Protocol m spec sc In Coins Out)
     (W : MultiOracleWorld spec) (x : (i : Fin m) → In i) :
     PMF (((i : Fin m) → PartyView In Coins sc i) × ((i : Fin m) → Out i)) :=
-  OracleComp.evalWith
-    (OracleComp.sumHandler (spec₁ := unifSpec) (spec₂ := spec.toOracleSpec)
-      ProbComp.unifOracle (fun q => ProbComp.eval (W q.1 q.2)))
-    (proto.run x)
+  OracleComp.evalWith W.handler (proto.run x)
 
 /-- Precompose a step-by-step protocol computation with a local state transformation `f`. -/
 def Steps.mapState {m : ℕ} {spec : MultiOracleSpec} {A B Out : Fin m → Type}
@@ -464,7 +478,8 @@ theorem Protocol.evalWith_eq {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m
         (proto.steps.evalWith W (fun i => (x i, r i))).map fun recv =>
           let views : (i : Fin m) → PartyView In Coins sc i := fun i => ⟨x i, r i, recv i⟩
           (views, fun i => proto.outputOfView i (views i)) := by
-  simp [Protocol.evalWith, Protocol.run, Steps.evalWith, ProbOracleComp.sample_eq_liftLeft,
+  simp [Protocol.evalWith, Protocol.run, Steps.evalWith, MultiOracleWorld.handler,
+    ProbOracleComp.handler_eq_sumHandler, ProbOracleComp.sample_eq_liftLeft,
     ProbComp.eval_eq_evalWith, bind_pure_comp]
 
 /-- Every supported outcome of `proto.evalWith W x` has outputs equal to `proto.outputOfView` of its
@@ -483,7 +498,7 @@ theorem Protocol.snd_eq_outputOfView_of_mem_support_evalWith {m : ℕ} {spec : M
   rfl
 
 /-- Real joint distribution of the coalition `I`'s views and all `m` parties' outputs when running
-`proto` in world `W` on inputs `x` (Goldreich Eq. 7.40, p. 697). -/
+`proto` in world `W` on inputs `x` (Goldreich Def. 7.5.1, Eq. 7.40, p. 696). -/
 noncomputable def Protocol.realJoint {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins Out : Fin m → Type} (proto : Protocol m spec sc In Coins Out)
     (W : MultiOracleWorld spec) (I : Finset (Fin m)) (x : (i : Fin m) → In i) :
@@ -509,8 +524,8 @@ abbrev CoalitionSimulator {m : ℕ} {spec : MultiOracleSpec} (sc : Schedule m sp
     (In Coins Out : Fin m → Type) (I : Finset (Fin m)) :=
   ((i : I) → In i) → ((i : I) → Out i) → ProbComp ((i : I) → PartyView In Coins sc i)
 
-/-- Ideal joint view-and-output sampler (Goldreich Def. 7.2.1 Eq. 7.10, p. 620; Def. 7.5.1
-Eq. 7.40, p. 697): samples the full functionality output `y ← f x`, feeds the coalition's inputs
+/-- Ideal joint view-and-output sampler (Goldreich Def. 7.2.1 Eqs. 7.9–7.10, p. 620; Def. 7.5.1
+Eq. 7.40, p. 696): samples the full functionality output `y ← f x`, feeds the coalition's inputs
 and outputs to the simulator `S`, and returns `(v, y)`. -/
 def idealJoint {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins Out : Fin m → Type} (f : Functionality m In Out) (I : Finset (Fin m))
@@ -520,7 +535,8 @@ def idealJoint {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
   let v ← S (I.restrict x) (I.restrict y)
   return (v, y)
 
-/-- Perfect semi-honest privacy for all static coalitions `I : Finset (Fin m)`. -/
+/-- Perfect semi-honest privacy for all static coalitions `I : Finset (Fin m)`
+(Goldreich Def. 7.5.1, Eq. 7.40, p. 696; cf. Def. 7.2.1, Eqs. 7.9–7.10, p. 620). -/
 def PerfectSemiHonestPrivate {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins Out : Fin m → Type} (proto : Protocol m spec sc In Coins Out)
     (W : MultiOracleWorld spec) (f : Functionality m In Out)
@@ -546,9 +562,11 @@ theorem PerfectSemiHonestPrivate.proper
     PerfectSemiHonestPrivateProper proto W f S :=
   fun I _ x => h I x
 
-/-- Bridge lemma (Goldreich Def. 7.2.1 Eq. 7.9, p. 620; Def. 7.5.1 Eq. 7.39, p. 697): for a
-deterministic functionality `f`, simulating the marginal coalition view distribution together with
-perfect output correctness on the support yields full joint view-and-output privacy. -/
+/-- Bridge lemma (Goldreich Def. 7.5.1, Eqs. 7.39–7.40, p. 696; cf. Def. 7.2.1, Eqs. 7.7–7.10,
+p. 620, and equivalence remark on p. 621): for a deterministic functionality `f`, matching the
+marginal coalition view distribution (Eq. 7.39, cf. Eqs. 7.7–7.8) together with perfect output
+correctness on the support yields full joint view-and-output privacy (Eq. 7.40, cf. Eqs. 7.9–7.10).
+-/
 theorem perfectSemiHonestPrivate_of_deterministic
     {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec} {In Coins Out : Fin m → Type}
     (proto : Protocol m spec sc In Coins Out) (W : MultiOracleWorld spec)
@@ -565,4 +583,4 @@ theorem perfectSemiHonestPrivate_of_deterministic
   refine PMF.map_congr_on_support (proto.evalWith W x) _ _ fun r hr => ?_
   simp [Prod.map, hOut x r hr]
 
-end Cslib.Crypto.MPC
+end Cslib.Crypto.Protocols.MPC
