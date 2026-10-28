@@ -167,9 +167,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Native numeric parameter computation, signed-residue/histogram counting, trial-division prime
   tables, collision-tested least-prime scans and complete two-prime modulus selection also use
   the existing `WordRAM.Code`/`ExecWithin` APIs. Their explicit local fit, frame and charged-cost
-  contracts do not yet compose the complete preprocessing from input through frontend, heavy sets,
-  recursion and packed output. Global logarithmic width and subquadratic preprocessing bounds
-  remain in #1446.
+  contracts are composed by a fixed 128-register bounded traversal with an explicit seven-word
+  stack frame and exact preorder packed output. The traversal consumes a root descriptor and
+  runtime fuel; its polynomial local envelope derives kernel fits and charges every stack,
+  descriptor and address operation. It does not invoke a Convolution-3SUM solver. Composition
+  from initialized input through all frontend roots, global logarithmic width and subquadratic
+  preprocessing bounds remain in #1446. These components do not affect the curated headlines.
 
   `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
   frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical

@@ -429,8 +429,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   ([#1482]) starts from initialized signed input and produces exact compact root descriptors with
   derived logarithmic width and uniform `Oκ((n+1) log²(n+2))` charged cost. The complete native
   one-node component ([#1481]) computes all residues/histograms, three compact heavy arrays and
-  exact packed output in linear time. Their integration, native recursive traversal ([#1512])
-  and global preprocessing width/time composition remain. It still needs
+  exact packed output in linear time. Native bounded recursive traversal ([#1512]) executes those
+  components with an explicit stack, exact preorder output, polynomial local fit/frame contracts
+  and charged ternary-tree bounds. Initialized-input forest integration and global preprocessing
+  width/time composition remain. It still needs
   residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
   Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
   asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
