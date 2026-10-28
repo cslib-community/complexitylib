@@ -27,17 +27,6 @@ theorem headD_mem_P : {w : List Bool | w.headD false = true} ∈ P encBits :=
 
 /-! ### Time classes -/
 
-example {α : Type} (enc : α ↪ List Bool) (A : Set α) :
-    A ∈ NP enc ↔ ∃ k, A ∈ NTIME enc (· ^ k) :=
-  mem_NP_iff_exists_mem_NTIME
-
-example {α : Type} (enc : α ↪ List Bool) (A : Set α) :
-    A ∈ BPP enc ↔ ∃ k, A ∈ BPTIME enc (· ^ k) :=
-  mem_BPP_iff_exists_mem_BPTIME
-
-example {α : Type} (enc : α ↪ List Bool) (t : ℕ → ℕ) : DTIME enc t ⊆ NTIME enc t :=
-  DTIME_subset_NTIME
-
 /-- A fair-coin machine decides everything with bounded error in polynomial time: the
 bounded-error condition on fair-coin machines is satisfiable. -/
 example : ∃ k, (Set.univ : Set (List Bool)) ∈ BPTIME encBits (· ^ k) :=
@@ -71,14 +60,18 @@ example : {x | diagonal x = true} ∈ NTIME encBits fun n => 2 ^ (4 * n) :=
 
 /-! ### Exponential time -/
 
-example {α : Type} (enc : α ↪ List Bool) : P enc ⊆ E enc ∧ E enc ⊆ EXP enc :=
-  ⟨P_subset_E, E_subset_EXP⟩
+example : {w : List Bool | w.headD false = true} ∈ E encBits ∧
+    {w : List Bool | w.headD false = true} ∈ EXP encBits :=
+  ⟨P_subset_E headD_mem_P, E_subset_EXP (P_subset_E headD_mem_P)⟩
 
-example {α : Type} (enc : α ↪ List Bool) : NP enc ⊆ NE enc ∧ NE enc ⊆ NEXP enc :=
-  ⟨NP_subset_NE, NE_subset_NEXP⟩
+example : {w : List Bool | w.headD false = true} ∈ NE encBits ∧
+    {w : List Bool | w.headD false = true} ∈ NEXP encBits :=
+  ⟨NP_subset_NE (P_subset_NP headD_mem_P),
+   NE_subset_NEXP (NP_subset_NE (P_subset_NP headD_mem_P))⟩
 
-example {α : Type} (enc : α ↪ List Bool) : E enc ⊆ NE enc ∧ EXP enc ⊆ NEXP enc :=
-  ⟨E_subset_NE, EXP_subset_NEXP⟩
+example : {x | diagonal x = true} ∈ NE encBits ∧ {x | diagonal x = true} ∈ NEXP encBits :=
+  ⟨E_subset_NE (mem_E_iff.mpr ⟨4, setOf_diagonal_mem_DTIME⟩),
+   EXP_subset_NEXP setOf_diagonal_mem_EXP⟩
 
 /-- The diagonal problem, outside `P`, is in linear exponential time `E`, with `k = 4`. -/
 example : {x | diagonal x = true} ∈ E encBits := mem_E_iff.mpr ⟨4, setOf_diagonal_mem_DTIME⟩
@@ -87,12 +80,7 @@ example : {x | diagonal x = true} ∈ E encBits := mem_E_iff.mpr ⟨4, setOf_dia
 example : {x | diagonal x = true} ∈ NE encBits ∧ {x | diagonal x = true} ∉ P encBits :=
   ⟨mem_NE_iff.mpr ⟨4, DTIME_subset_NTIME setOf_diagonal_mem_DTIME⟩, diagonal_notMem_P⟩
 
-example : {w : List Bool | w.headD false = true} ∈ NE encBits :=
-  NP_subset_NE (P_subset_NP headD_mem_P)
-
 /-! ### `ZPP` -/
-
-example {α : Type} (enc : α ↪ List Bool) : ZPP enc = RP enc ∩ coRP enc := ZPP_eq_RP_inter_coRP
 
 /-- Answering `some true` on every random string decides everything with zero error: the
 zero-error condition is satisfiable. -/
@@ -106,17 +94,20 @@ theorem univ_mem_ZPP : (Set.univ : Set (List Bool)) ∈ ZPP encBits :=
 example : (∅ : Set (List Bool)) ∈ ZPP encBits := by
   simpa using compl_mem_ZPP univ_mem_ZPP
 
-example : (Set.univ : Set (List Bool)) ∈ RP encBits ∩ coRP encBits :=
-  ZPP_eq_RP_inter_coRP ▸ univ_mem_ZPP
+example : (Set.univ : Set (List Bool)) ∈ RP encBits ∩ coRP encBits ∧
+    (∅ : Set (List Bool)) ∈ RP encBits ∩ coRP encBits :=
+  ⟨ZPP_eq_RP_inter_coRP ▸ univ_mem_ZPP,
+   ZPP_eq_RP_inter_coRP ▸ by simpa using compl_mem_ZPP univ_mem_ZPP⟩
 
 /-! ### Probabilistic inclusions -/
 
-example {α : Type} (enc : α ↪ List Bool) : P enc ⊆ BPP enc := P_subset_BPP
+example : {w : List Bool | w.headD false = true} ∈ BPP encBits :=
+  P_subset_BPP headD_mem_P
 
-example {α : Type} (enc : α ↪ List Bool) : NP enc ⊆ PP enc := NP_subset_PP
-
-example {α : Type} (enc : α ↪ List Bool) (A : Set α) (hA : A ∈ PP enc) : Aᶜ ∈ PP enc :=
-  compl_mem_PP hA
+example : {w : List Bool | w.headD false = true} ∈ PP encBits ∧
+    {w : List Bool | w.headD false = true}ᶜ ∈ PP encBits :=
+  ⟨NP_subset_PP (P_subset_NP headD_mem_P),
+   compl_mem_PP (NP_subset_PP (P_subset_NP headD_mem_P))⟩
 
 /-- `coNP ⊆ PP`, by closure under complement. -/
 example {α : Type} (enc : α ↪ List Bool) : coNP enc ⊆ PP enc := fun A hA => by
@@ -124,12 +115,15 @@ example {α : Type} (enc : α ↪ List Bool) : coNP enc ⊆ PP enc := fun A hA =
 
 /-! ### Space and exponential time -/
 
-/-- The chain `P ⊆ NP ⊆ PSPACE ⊆ EXP`. -/
-example {α : Type} (enc : α ↪ List Bool) :
-    P enc ⊆ NP enc ∧ NP enc ⊆ PSPACE enc ∧ PSPACE enc ⊆ EXP enc :=
-  ⟨P_subset_NP, NP_subset_PSPACE, PSPACE_subset_EXP⟩
+/-- The chain `P ⊆ NP ⊆ PSPACE ⊆ EXP` instantiated on `headD_mem_P`. -/
+example : {w : List Bool | w.headD false = true} ∈ NP encBits ∧
+    {w : List Bool | w.headD false = true} ∈ PSPACE encBits ∧
+    {w : List Bool | w.headD false = true} ∈ EXP encBits :=
+  ⟨P_subset_NP headD_mem_P, NP_subset_PSPACE (P_subset_NP headD_mem_P),
+   PSPACE_subset_EXP (NP_subset_PSPACE (P_subset_NP headD_mem_P))⟩
 
-example {α : Type} (enc : α ↪ List Bool) : PH enc ⊆ PSPACE enc := PH_subset_PSPACE
+example : {w : List Bool | w.headD false = true} ∈ PSPACE encBits :=
+  PH_subset_PSPACE (P_subset_PH headD_mem_P)
 
 /-- `coNP ⊆ PSPACE`, by closure under complement. -/
 example {α : Type} (enc : α ↪ List Bool) : coNP enc ⊆ PSPACE enc := fun A hA => by
@@ -139,6 +133,6 @@ example {α : Type} (enc : α ↪ List Bool) : coNP enc ⊆ PSPACE enc := fun A 
 length in a `PSPACE` problem. -/
 example {B : Set (List Bool × List Bool)} (hB : B ∈ PSPACE (encPair encBits encBits)) :
     {x | ∃ w : List Bool, w.length = x.length ∧ (x, w) ∈ B} ∈ PSPACE encBits :=
-  setOf_exists_mem_PSPACE hB (.of_tidy (ComputableTidilyInPolyTime.encoding_length encBits))
+  setOf_exists_mem_PSPACE hB (ComputableInPolyTime.encoding_length encBits)
 
 end ComplexityTests.ResourceClasses

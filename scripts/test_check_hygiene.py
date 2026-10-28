@@ -296,6 +296,67 @@ class BibliographyTests(unittest.TestCase):
         self.assertEqual(check_hygiene.check_bibliography(text), [])
 
 
+class CitationTests(unittest.TestCase):
+    keys = frozenset({"AroraBarak09", "Ilango2020FOCS", "Sipser2013"})
+
+    def citations(self, doc: str) -> list[str]:
+        return [key for _, key in check_hygiene.docstring_citations(doc)]
+
+    def test_citation_forms(self) -> None:
+        doc = ("See [Sipser2013], [AroraBarak09, Theorem 2.1], [Ilango2020FOCS; Sipser2013] and\n"
+               "[Arora and Barak, Section 3][AroraBarak09] or [*Title*, Section 4]\n"
+               "  [Khrapchenko1971b]; [NISTFIPS203].")
+        self.assertEqual(self.citations(doc), [
+            "Sipser2013", "AroraBarak09", "Ilango2020FOCS", "Sipser2013", "AroraBarak09",
+            "Khrapchenko1971b", "NISTFIPS203",
+        ])
+
+    def test_text_that_is_not_a_citation(self) -> None:
+        doc = ("MCSP[s], [Section 4], [n], [x1], `xs[Foo2020]`, $v[Foo2020]$, \\[Foo2020\\],\n"
+               "[Foo2020](https://example.com), ![Foo2020](image.png) and AC[2].\n"
+               "> **Definition 43** (Average-case MCSP [HS17]). Quoted from the source.\n"
+               "```lean\nexample := xs[Foo2020]\n```\n")
+        self.assertEqual(self.citations(doc), [])
+
+    def test_brackets_after_a_word_character_are_not_citations(self) -> None:
+        # Indexing and subscripts written outside backticks; a bracket after `)` still counts.
+        doc = ("xs[i10], H[SHA256], A_n[Foo2020], α[x10] and f(x)[Bar2021].\n[Sipser2013] (see\n"
+               "[AroraBarak09]), \"[Ilango2020FOCS]\" and —[Baz2022].")
+        self.assertEqual(self.citations(doc),
+                         ["Bar2021", "Sipser2013", "AroraBarak09", "Ilango2020FOCS", "Baz2022"])
+
+    def test_unknown_key_reports_file_line_and_key(self) -> None:
+        # #1415 cited `[BussHay1991]` without a bibliography entry.
+        raw = ("/-! # Title\n\nSee [Sipser2013].\n-/\n\n"
+               "/-- Shown in [BussHay1991, Theorem 3] and [AroraBarak09]. -/\n"
+               "theorem t : True := trivial\n"
+               "-- [Comment2020] is not a docstring.\n")
+        self.assertEqual(
+            check_hygiene.check_docstring_citations(raw, pathlib.Path("Complexity/X.lean"),
+                                                    self.keys),
+            ["Complexity/X.lean:6: docstring cites `BussHay1991`, which is not a key in "
+             "references.bib (add the entry, or escape the brackets `\\[...\\]` if it is not a "
+             "citation)"])
+
+    def test_check_file_checks_citations_only_with_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            path = root / "ComplexityTests/X.lean"
+            path.parent.mkdir()
+            path.write_text("/-- [Missing2024] -/\ntheorem t : True := trivial\n",
+                            encoding="utf-8")
+            self.assertEqual(check_hygiene.check_file(path, root=root), [])
+            errors = check_hygiene.check_file(path, root=root, bib_keys=self.keys)
+            self.assertEqual(len(errors), 1)
+            self.assertTrue(errors[0].startswith(
+                "ComplexityTests/X.lean:1: docstring cites `Missing2024`"), errors)
+
+    def test_bibliography_keys(self) -> None:
+        text = "@book{ AroraBarak09,\n}\n@misc{Sipser2013,\n  note = {@inline{Not, a key}}\n}\n"
+        self.assertEqual(check_hygiene.bibliography_keys(text),
+                         frozenset({"AroraBarak09", "Sipser2013"}))
+
+
 class CheckHygieneCLITests(unittest.TestCase):
     def setUp(self) -> None:
         tmp = tempfile.TemporaryDirectory()
@@ -345,6 +406,16 @@ class CheckHygieneCLITests(unittest.TestCase):
         self.assertIn(f"ERROR: {self.bad}:1: forbidden `sorry`\n", result.stderr)
         self.assertNotIn("no source files", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
+
+    def test_explicit_path_checks_citations_against_the_repository_bibliography(self) -> None:
+        cited = self.root / "Cited.lean"
+        cited.write_text("/-- [Sipser2013], [BussHay1991] -/\ntheorem t : True := trivial\n",
+                         encoding="utf-8")
+        result = self.run_checker(cited)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn(f"ERROR: {cited}:1: docstring cites `BussHay1991`", result.stderr)
+        self.assertNotIn("Sipser2013", result.stderr)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import Complexity.Algorithms.ExactTriangle.Defs
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -36,6 +37,9 @@ public import Complexity.Algorithms.Streaming.CountMin.Basic
 public import Complexity.Algorithms.Streaming.CountMin.LinearHash
 public import Complexity.Algorithms.Streaming.CountMin.Probability
 public import Complexity.Algorithms.Streaming.CountMin.Program
+public import Complexity.Algorithms.ThreeSum.ChanHe.FromNumbers
+public import Complexity.Algorithms.ThreeSum.Convolution
+public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
 public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram
@@ -85,6 +89,10 @@ public import Complexity.Algorithms.WordRAM.Queue.Model
 public import Complexity.Algorithms.WordRAM.Quicksort
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
+public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
+public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
+public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
+public import Complexity.Algorithms.WordRAM.ThreeSum.Weight
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Call
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Init
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Init.Table
@@ -379,6 +387,7 @@ public import Complexity.Computability.Circuit.Frontier.AverageCase
 public import Complexity.Computability.Circuit.Frontier.BoundedFanIn
 public import Complexity.Computability.Circuit.Frontier.BranchingProgram
 public import Complexity.Computability.Circuit.Frontier.Compiler
+public import Complexity.Computability.Circuit.Frontier.Compiler.CNF
 public import Complexity.Computability.Circuit.Frontier.Compiler.Network
 public import Complexity.Computability.Circuit.Frontier.Correlation
 public import Complexity.Computability.Circuit.Frontier.Correlation.Asymptotics
@@ -512,6 +521,7 @@ public import Complexity.Computability.Circuit.Rational.SmallExpansion
 public import Complexity.Computability.Circuit.Rational.Wronskian
 public import Complexity.Computability.Circuit.ReedMullerDecoding
 public import Complexity.Computability.Circuit.Replication
+public import Complexity.Computability.Circuit.SatCount
 public import Complexity.Computability.Circuit.SignatureHom
 public import Complexity.Computability.Circuit.Simulation
 public import Complexity.Computability.Circuit.SimulationContext
@@ -773,12 +783,14 @@ public import Complexity.Computability.Complexity.Fagin.Verifier
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
+public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeModelCount
 public import Complexity.Computability.Complexity.FineGrained.CountingParameterBounds
 public import Complexity.Computability.Complexity.FineGrained.CountingScale
+public import Complexity.Computability.Complexity.FineGrained.CountingScaleBounds
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsification
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUniform
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
@@ -789,6 +801,7 @@ public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSc
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFCountingAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFHermiteRecovery
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
+public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
 public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
@@ -913,11 +926,13 @@ public import Complexity.Computability.Complexity.ProofSystem
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.Autoreducibility
 public import Complexity.Computability.Complexity.Reduction.Isomorphism
+public import Complexity.Computability.Complexity.Reduction.LogSpaceTruthTable
 public import Complexity.Computability.Complexity.Reduction.ManyOne
 public import Complexity.Computability.Complexity.Reduction.OneOne
 public import Complexity.Computability.Complexity.Reduction.TruthTable
 public import Complexity.Computability.Complexity.Reduction.TruthTableVariants
 public import Complexity.Computability.Complexity.Reduction.Turing
+public import Complexity.Computability.Complexity.Reduction.TuringAutoreducible
 public import Complexity.Computability.DecisionTree.AffineScore
 public import Complexity.Computability.DecisionTree.Basic
 public import Complexity.Computability.DecisionTree.CanonicalTree
@@ -1734,6 +1749,8 @@ public import Complexity.Crypto.Computational.MerkleSignature.Security
 public import Complexity.Crypto.Computational.MerkleTree
 public import Complexity.Crypto.Computational.MerkleTree.Binding
 public import Complexity.Crypto.Computational.NaorReingold
+public import Complexity.Crypto.Computational.NaorReingold.PRF
+public import Complexity.Crypto.Computational.NaorReingold.Security
 public import Complexity.Crypto.Computational.OneWay
 public import Complexity.Crypto.Computational.OneWay.Amplification
 public import Complexity.Crypto.Computational.OneWay.BPP

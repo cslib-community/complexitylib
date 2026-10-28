@@ -799,10 +799,13 @@ class CheckConfigTests(unittest.TestCase):
         return {"name": name, "type": "git", "url": f"https://example.com/{name}", "rev": rev,
                 "inputRev": input_rev, "subDir": None}
 
-    def check(self):
+    def write_manifests(self):
         for project, packages in self.manifests.items():
             (self.root / project / "lake-manifest.json").write_text(
                 json.dumps({"packages": packages}))
+
+    def check(self):
+        self.write_manifests()
         check_docs.check_config()
 
     def assert_failure(self, message):
@@ -815,7 +818,34 @@ class CheckConfigTests(unittest.TestCase):
 
     def test_guide_lockfile_follows_the_library(self):
         self.manifests["guide"][1]["rev"] = "b"
-        self.assert_failure("Guide lockfile differs for cslib: rev")
+        self.assert_failure(
+            'Guide lockfile differs for cslib: rev is "b" in guide/lake-manifest.json but "a" in '
+            "lake-manifest.json; update guide/lake-manifest.json to match the root pin")
+
+    def test_root_pin_bump_requires_documentation_lockfiles(self):
+        # #1372 moved the root cslib pin without the docs projects' lockfiles (#1397).
+        self.manifests[""][0]["rev"] = "b"
+        self.assert_failure(
+            'Documentation lockfile differs for cslib: rev is "a" in docbuild/lake-manifest.json '
+            'but "b" in lake-manifest.json; update docbuild/lake-manifest.json to match the '
+            "root pin")
+
+    def test_root_dependency_must_be_locked(self):
+        self.manifests[""].append(self.package("mathlib", "x"))
+        self.assert_failure(
+            "Documentation lockfile omits mathlib; copy its entry from lake-manifest.json into "
+            "docbuild/lake-manifest.json")
+
+    def test_command_line_reports_drift(self):
+        self.manifests[""][0]["rev"] = "b"
+        stderr = io.StringIO()
+        with patch("sys.argv", ["check_docs.py", "--config-only"]), \
+                patch("sys.stderr", stderr), self.assertRaises(SystemExit) as raised:
+            self.write_manifests()
+            check_docs.main()
+        self.assertEqual(raised.exception.code, 1)
+        self.assertIn("Documentation check failed: Documentation lockfile differs for cslib: rev",
+                      stderr.getvalue())
 
     def test_verso_tag_follows_the_toolchain(self):
         (self.root / "guide/lakefile.toml").write_text(

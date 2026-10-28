@@ -86,10 +86,6 @@ def commonEndpoints (e f : ℕ × Variable × Route) : List Point :=
   (if e.1 = f.1 then [clausePosition e.1] else []) ++
     (if e.2.1 = f.2.1 then [variablePosition e.2.1] else [])
 
-/-- A pair of different segments may meet only at a consecutive shared bend. -/
-def consecutiveContact (a b : Point × Point) : List Point :=
-  if a.2 = b.1 then [a.2] else if b.2 = a.1 then [a.1] else []
-
 private def LocalSpec (e : ℕ × Variable × Route) : Prop :=
   (e.1 < 78 ∧ e.2.2.head? = some (clausePosition e.1) ∧
     e.2.2.getLast? = some (variablePosition e.2.1)) ∧

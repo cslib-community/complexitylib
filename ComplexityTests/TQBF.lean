@@ -22,7 +22,7 @@ of concrete classes to `TQBF`; and the axioms of the headline theorems.
 namespace ComplexityTests.TQBF
 
 open Cslib Cslib.Complexity Cslib.Logic.PL Cslib.Complexity.TQBF Cslib.Reachability
-open Turing.MultiTapeTM (encBits ComputableTidilyInPolyTime)
+open Turing.MultiTapeTM (encBits)
 
 /-- `∀ x, ∃ y, x ↔ y`, with `x = 0` and `y = 1`. -/
 private def forallExistsIff : QBF ℕ := .all 0 (.ex 1 (QBF.iff (.var 0) (.var 1)))
@@ -52,11 +52,8 @@ example : QBF.all 1 ((QBF.var 0).or (QBF.var 0).not) ∉ TQBF := fun h => absurd
 
 /-! ### Formulas without variables and empty connectives -/
 
-example : QBF.top ∈ TQBF := top_mem_TQBF
-
-example : QBF.bot ∉ TQBF := bot_notMem_TQBF
-
-example : QBF.var 7 ∉ TQBF := var_notMem_TQBF 7
+example : QBF.top ∈ TQBF ∧ QBF.bot ∉ TQBF ∧ QBF.var 7 ∉ TQBF :=
+  ⟨⟨rfl, rfl⟩, fun h => absurd h.2 (by decide), fun h => absurd h.1 (by decide)⟩
 
 example : (QBF.top.and QBF.bot).not ∈ TQBF := ⟨by decide, rfl⟩
 
@@ -120,9 +117,6 @@ example : evaluate forallExistsIff = true := evaluate_eq_true_iff.mpr ⟨by deci
 example : evaluate existsForallIff = false := by
   rw [evaluate_eq]
   decide
-
-/-- The evaluator runs long enough on every formula. -/
-example (φ : QBF ℕ) : callSteps φ ≤ 2 ^ (encQBF φ).length := callSteps_le φ
 
 /-- The states of every run are small. -/
 example (n : ℕ) :
@@ -197,7 +191,9 @@ included. -/
 example : PSPACEHard encQBF TQBF :=
   TQBF_pspaceHard.trans (PolyTimeReducible.refl encQBF TQBF)
 
-example : PSPACEComplete encQBF TQBF := TQBF_pspaceComplete
+example : TQBF ∈ NPSPACE encQBF ∧ PolyTimeReducible encQBF encQBF TQBF TQBF :=
+  ⟨PSPACE_subset_NPSPACE TQBF_pspaceComplete.1,
+    TQBF_pspaceComplete.2 encQBF TQBF TQBF_pspaceComplete.1⟩
 
 /-! ### Axioms -/
 

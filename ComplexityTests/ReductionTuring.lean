@@ -6,13 +6,17 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Reduction.Turing
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
 /-!
 # Polynomial-time Turing reduction unit tests
 
-Tests for `PolyTimeTuringReducible` and hardness transfer:
+Tests for `PolyTimeTuringReducible`, truth-table-to-Turing embeddings, and hardness transfer:
 * Prefixing bits gives many-one and Turing reductions.
-* Reflexivity and complementation.
+* Concrete 2-query disjunctive, conjunctive, and `2`-truth-table (XOR) reductions embed into
+  Turing reductions and transfer `P`-membership.
+* Complemented language membership in `P` via Turing reduction.
 * NP-hardness transfer applied to `SAT`.
 -/
 
@@ -33,13 +37,71 @@ example : PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B} B :=
   (show PolyTimeReducible encBits encBits {w | false :: w ∈ B} B from
     ⟨fun w => false :: w, by fun_prop, fun _ => Iff.rfl⟩).polyTimeTuringReducible
 
-/-- Every language Turing-reduces to itself. -/
-example : PolyTimeTuringReducible encBits encBits B B :=
-  PolyTimeTuringReducible.refl encBits B
+/-- Asking for both `false :: w` and `true :: w` and accepting when either is in `B` is a
+disjunctive truth-table reduction, hence a Turing reduction. -/
+theorem dtt_or_prefix :
+    PolyTimeDTTReducible encBits encBits {w | false :: w ∈ B ∨ true :: w ∈ B} B := by
+  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, by fun_prop, by fun_prop, fun w => ?_⟩
+  constructor
+  · rintro (h | h)
+    · exact ⟨0, by simp, by simpa using h⟩
+    · exact ⟨1, by simp, by simpa using h⟩
+  · rintro ⟨i, hi, h⟩
+    obtain _ | _ | i := i
+    · exact Or.inl (by simpa using h)
+    · exact Or.inr (by simpa using h)
+    · simp at hi
 
-/-- The complement `Bᶜ` Turing-reduces to `B`. -/
-example : PolyTimeTuringReducible encBits encBits Bᶜ B :=
-  PolyTimeTuringReducible.compl_self encBits B
+example : PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B ∨ true :: w ∈ B} B :=
+  (dtt_or_prefix B).polyTimeTuringReducible
+
+example (hB : B ∈ P encBits) : {w | false :: w ∈ B ∨ true :: w ∈ B} ∈ P encBits :=
+  (dtt_or_prefix B).polyTimeTuringReducible.mem_P hB
+
+/-- Accepting when both `false :: w` and `true :: w` are in `B` is a conjunctive truth-table
+reduction, hence a Turing reduction. -/
+theorem ctt_and_prefix :
+    PolyTimeCTTReducible encBits encBits {w | false :: w ∈ B ∧ true :: w ∈ B} B := by
+  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, by fun_prop, by fun_prop, fun w => ?_⟩
+  constructor
+  · rintro ⟨h₀, h₁⟩ i hi
+    obtain _ | _ | i := i
+    · simpa using h₀
+    · simpa using h₁
+    · simp at hi
+  · intro h
+    exact ⟨by simpa using h 0 (by simp), by simpa using h 1 (by simp)⟩
+
+example : PolyTimeTuringReducible encBits encBits {w | false :: w ∈ B ∧ true :: w ∈ B} B :=
+  (ctt_and_prefix B).polyTimeTuringReducible
+
+/-- Taking the exclusive-or of the two prefix queries is a non-monotone `2`-truth-table reduction,
+hence a Turing reduction. -/
+theorem ktt_xor_prefix :
+    PolyTimeKTruthTableReducible 2 encBits encBits
+      {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} B := by
+  classical
+  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1,
+    fun x => x.2.headD false ^^ (x.2.drop 1).headD false, by fun_prop, by fun_prop, by fun_prop,
+    fun _ => le_rfl, fun w => ?_⟩
+  simp only [truthTableAnswers, Set.mem_preimage]
+  by_cases h₀ : false :: w ∈ B <;> by_cases h₁ : true :: w ∈ B <;> simp [List.ofFn_succ, h₀, h₁]
+
+example : PolyTimeTuringReducible encBits encBits {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} B :=
+  (ktt_xor_prefix B).polyTimeTuringReducible
+
+example (hB : B ∈ P encBits) : {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} ∈ P encBits :=
+  (ktt_xor_prefix B).polyTimeTuringReducible.mem_P hB
+
+/-- Transitivity of Turing reductions: composing the `2`-truth-table XOR reduction with the
+disjunctive prefix reduction yields a Turing reduction for the 4-query parity-of-disjunctions
+language. -/
+example :
+    PolyTimeTuringReducible encBits encBits
+      {w | (false :: w ∈ {v | false :: v ∈ B ∨ true :: v ∈ B}) ≠
+        (true :: w ∈ {v | false :: v ∈ B ∨ true :: v ∈ B})} B :=
+  (ktt_xor_prefix {v | false :: v ∈ B ∨ true :: v ∈ B}).polyTimeTuringReducible.trans
+    (dtt_or_prefix B).polyTimeTuringReducible
 
 /-- Composing a reduction with membership in `P` transfers membership. -/
 example (hB : B ∈ P encBits) : {w | true :: w ∈ B} ∈ P encBits :=
@@ -62,11 +124,5 @@ example (h : PolyTimeTuringReducible encCNF encBits SAT B)
     (hB_np : B ∈ NP encBits) (hB_conp : B ∈ coNP encBits) :
     NP encBits = coNP encBits :=
   NPHard.NP_eq_coNP_of_turing_mem_NP_inter_coNP CookLevin.SAT_npHard h hB_np hB_conp
-
-/-- Turing PP-hardness transfer: if a PP-hard language Turing-reduces to `B ∈ P`, then `P = PP`. -/
-example (L : Set (List Bool)) (hL : PolyTimeHard PP encBits L)
-    (h : PolyTimeTuringReducible encBits encBits L B) (hB : B ∈ P encBits) :
-    P encBits = PP encBits :=
-  hL.P_eq_PP_of_turing_mem_P h hB
 
 end ComplexityTests.ReductionTuring

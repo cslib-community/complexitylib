@@ -80,7 +80,7 @@ $\mathcal{E}_s$.
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_hashedElGamalCipherCPAGameOn_le_demGameOn`:
   two-distinguisher and single hidden-bit distinguisher quantitative bounds for Theorem 11.5
   (matching Equation `(11.14)` of [BonehShoup2023], p. 449), together with the native
-  approximate-sampling (`sampleElGamalExp`, adding `4 / 2 ^ n`) bridge to standalone
+  approximate-sampling (`sampleExp`, adding `4 / 2 ^ n`) bridge to standalone
   symmetric-cipher security (`Encryption.demGameOn`).
 * `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_hashedElGamalCipherCPAGameOn` and its
   `DEMOneTimeINDCPAOn` / `linearHashKDF` specializations
@@ -972,7 +972,7 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn {F : PrimeOrderGroupFamily}
 /-- One-time symmetric-cipher reduction adversary $\mathcal{B}_s$ for general-cipher Hashed ElGamal
 ([BonehShoup2023], Section 11.5.2, proof of Theorem 11.5, p. 451): given an efficiently samplable
 group-description generator `setupProb : ℕ → ProbComp F.Desc` and a PKE adversary `adversary`,
-`choose n _` samples `d ← setupProb n` and `a, b ← F.sampleElGamalExp n d`, sets
+`choose n _` samples `d ← setupProb n` and `a, b ← F.sampleExp n d`, sets
 `u = encode (a • g)` and `v = encode (b • g)`, runs `choice ← adversary.choose n (d, u)`, and saves
 `(v, choice.2)`; `guess n state ctSym` unpacks `(v, st)` and runs
 `adversary.guess n st (v, ctSym)`. -/
@@ -981,8 +981,8 @@ noncomputable def hashedElGamalCipherToDEMAdversary {Msg : Type}
     (adversary : Encryption.AdversaryOf Msg) : Encryption.AdversaryOf Msg where
   choose n _ := do
     let d ← setupProb n
-    let a ← F.sampleElGamalExp n d
-    let b ← F.sampleElGamalExp n d
+    let a ← F.sampleExp n d
+    let b ← F.sampleExp n d
     let u := F.encodeElGamalPublicKey (d, a)
     let v := F.encodeElGamalPublicKey (d, b)
     let choice ← adversary.choose n (encPair F.encDesc encBits (d, u))
@@ -1082,15 +1082,15 @@ theorem isPPT_hashedElGamalCipherToDEMAdversary {Msg : Type} {encMsg : Msg ↪ L
   refine ⟨?_, hA.guess.preprocess hargG⟩
   unfold Probability.IsPPT hashedElGamalCipherToDEMAdversary
   exact (hsetup.preprocess hn0).bind_with
-    ((F.isPPTOn_sampleElGamalExp hn1 hd1).bind_with
-      ((F.isPPTOn_sampleElGamalExp hn2 hd2).bind_with
+    ((F.isPPTOn_sampleExp hn1 hd1).bind_with
+      ((F.isPPTOn_sampleExp hn2 hd2).bind_with
         (hchoose3.bind_with hret4.isPPTOn)))
 
 /-- For each bit `bit : Bool`, the Game 2 distribution `hashedElGamalCipherUniformKeyGameOn` over
 `fun m => ProbComp.eval (setupProb m)` with `keyLen n = n` is within `2 / 2 ^ n` in
 `Game.advantage` of the standalone one-time symmetric experiment `Encryption.demGameOn` on
 `hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)` (two approximate exponent
-draws via `sampleElGamalExp`, each within `1 / 2 ^ n` of uniform). -/
+draws via `sampleExp`, each within `1 / 2 ^ n` of uniform). -/
 theorem advantage_hashedElGamalCipherUniformKeyGameOn_demGameOn_le {Msg : Type}
     (valid validSym : ℕ → List Bool → Msg → Msg → Bool)
     (setupProb : ℕ → ProbComp F.Desc) (keyLen : ℕ → ℕ)
@@ -1135,8 +1135,8 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demGameOn_le {Msg : Type}
         (Encryption.demGameOn validSym encryptSym
           (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) bit n) =
       (ProbComp.eval (setupProb n)).bind fun d =>
-        (ProbComp.eval (F.sampleElGamalExp n d)).bind fun a =>
-          (ProbComp.eval (F.sampleElGamalExp n d)).bind fun b =>
+        (ProbComp.eval (F.sampleExp n d)).bind fun a =>
+          (ProbComp.eval (F.sampleExp n d)).bind fun b =>
             k d (a : ZMod (F.order d)) (b : ZMod (F.order d)) := by
     simp only [Encryption.demGameOn, hashedElGamalCipherToDEMAdversary,
       Encryption.AdversaryOf.restrict, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -1167,12 +1167,12 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demGameOn_le {Msg : Type}
   rw [Game.advantage_comm]
   refine (Game.advantage_triangle _
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-      (ProbComp.eval (F.sampleElGamalExp n d)).bind fun b =>
+      (ProbComp.eval (F.sampleExp n d)).bind fun b =>
         k d α (b : ZMod (F.order d))) _).trans ?_
-  have h1 := F.advantage_bind_sampleElGamalExp_le n d (fun α =>
-    (ProbComp.eval (F.sampleElGamalExp n d)).bind fun b => k d α (b : ZMod (F.order d)))
+  have h1 := F.advantage_bind_sampleExp_le n d (fun α =>
+    (ProbComp.eval (F.sampleExp n d)).bind fun b => k d α (b : ZMod (F.order d)))
   have h2 := Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _
-    (fun α => F.advantage_bind_sampleElGamalExp_le n d (k d α))
+    (fun α => F.advantage_bind_sampleExp_le n d (k d α))
   calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
     _ = 2 / 2 ^ n := by ring
 
@@ -1243,7 +1243,7 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn {Msg : Type}
 /-- **Native approximate-sampling version of Equation `(11.14)` for Theorem 11.5 via DDH,
 `SecureKDF`, and standalone symmetric-cipher security (`Encryption.demGameOn`)** ([BonehShoup2023],
 Section 11.5.2, Theorem 11.5, Equation `(11.14)`, p. 449): combining the exact PMF-level Equation
-`(11.14)` bound `advantage_hashedElGamalCipherCPAGameOn_le_two_mul` with the `sampleElGamalExp`
+`(11.14)` bound `advantage_hashedElGamalCipherCPAGameOn_le_two_mul` with the `sampleExp`
 Game 2 bridge `advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn` adds `4 / 2 ^ n` for the
 two approximate exponent draws per branch:
 $$\mathsf{SSadv}[\mathcal{A}, \mathcal{E}_{\mathrm{EG}}] \le

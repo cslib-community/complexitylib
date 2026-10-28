@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check documentation pins
         run: python3 scripts/check_docs.py --config-only
+      # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
+      - uses: ./.github/actions/install-lean
       - uses: leanprover/lean-action@v1
         with:
           auto-config: "false"

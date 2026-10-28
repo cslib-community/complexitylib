@@ -26,31 +26,46 @@ open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Headline complexity class results -/
 
-example : VertexCover ∈ NP (encPair encGraph encNat) := VertexCover.mem_NP
-example : NPHard (encPair encGraph encNat) VertexCover := VertexCover_npHard
-example : NPComplete (encPair encGraph encNat) VertexCover := VertexCover_npComplete
+example : VertexCover ∈ NP (encPair encGraph encNat) ∧
+    PolyTimeReducible encCNF (encPair encGraph encNat) SAT VertexCover :=
+  ⟨VertexCover_npComplete.1, VertexCover_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example (k : ℕ) : KColoring k ∈ NP encGraph := KColoring.mem_NP k
-example : NPHard encGraph ThreeColoring := ThreeColoring_npHard
-example : NPComplete encGraph ThreeColoring := ThreeColoring_npComplete
-example : NPComplete encGraph (KColoring 4) := KColoring_npComplete (by norm_num)
+example : KColoring 2 ∈ NP encGraph ∧ KColoring 5 ∈ NP encGraph :=
+  ⟨KColoring.mem_NP 2, KColoring.mem_NP 5⟩
 
-example : PolyTimeReducible encCNF encGraph ThreeSAT ThreeColoring :=
-  polyTimeReducible_ThreeSAT_ThreeColoring
+example : ThreeColoring ∈ NP encGraph ∧
+    PolyTimeReducible encCNF encGraph SAT ThreeColoring :=
+  ⟨ThreeColoring_npComplete.1, ThreeColoring_npComplete.2 encCNF SAT SAT.mem_NP⟩
+
+example : KColoring 4 ∈ NP encGraph ∧
+    PolyTimeReducible encCNF encGraph SAT (KColoring 4) :=
+  ⟨(KColoring_npComplete (by norm_num)).1,
+    (KColoring_npComplete (by norm_num)).2 encCNF SAT SAT.mem_NP⟩
+
+example : PolyTimeReducible encCNF encGraph SAT ThreeColoring :=
+  ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP |>.trans polyTimeReducible_ThreeSAT_ThreeColoring
 
 example : PolyTimeReducible encCNF (encPair encGraph encNat) SAT VertexCover :=
   polyTimeReducible_SAT_IndependentSet.trans polyTimeReducible_IndependentSet_VertexCover
 
-example : NPComplete (encPair encGraph (encPair encNat encNat)) DirHamPath :=
-  DirHamPath_npComplete
-example : NPComplete encGraph DirHamCycle := DirHamCycle_npComplete
-example : NPComplete (encPair encGraph (encPair encNat encNat)) HamPath := HamPath_npComplete
-example : NPComplete encGraph HamCycle := HamCycle_npComplete
-example : NPHard encTSP TSP := TSP_npHard
-example : NPComplete encTSP TSP := TSP_npComplete
+example : DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat)) ∧
+    PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath :=
+  ⟨DirHamPath_npComplete.1, DirHamPath_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example : PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) ThreeSAT DirHamPath :=
-  polyTimeReducible_ThreeSAT_DirHamPath
+example : DirHamCycle ∈ NP encGraph ∧
+    PolyTimeReducible encCNF encGraph SAT DirHamCycle :=
+  ⟨DirHamCycle_npComplete.1, DirHamCycle_npComplete.2 encCNF SAT SAT.mem_NP⟩
+
+example : HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) ∧
+    PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT HamPath :=
+  ⟨HamPath_npComplete.1, HamPath_npComplete.2 encCNF SAT SAT.mem_NP⟩
+
+example : HamCycle ∈ NP encGraph ∧
+    PolyTimeReducible encCNF encGraph SAT HamCycle :=
+  ⟨HamCycle_npComplete.1, HamCycle_npComplete.2 encCNF SAT SAT.mem_NP⟩
+
+example : PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath :=
+  ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP |>.trans polyTimeReducible_ThreeSAT_DirHamPath
 
 /-! ### Compositional `fun_prop` synthesis -/
 

@@ -21,19 +21,9 @@ namespace ComplexityTests.NSPACE
 
 open Cslib Cslib.Complexity
 
-example {α : Type} (enc : α ↪ List Bool) : NSPACE enc Nat.log2 = coNSPACE enc Nat.log2 :=
-  NSPACE_eq_coNSPACE fun _ => le_rfl
-
-example {α : Type} (enc : α ↪ List Bool) : NSPACE enc id = coNSPACE enc id :=
-  NSPACE_eq_coNSPACE Nat.log2_le_self
-
 example {α : Type} (enc : α ↪ List Bool) :
     NSPACE enc (fun n => n ^ 2) = coNSPACE enc (fun n => n ^ 2) :=
   NSPACE_eq_coNSPACE fun n => (Nat.log2_le_self n).trans (Nat.le_self_pow (by omega) n)
-
-example {α : Type} (enc : α ↪ List Bool) : NL enc = NSPACE enc Nat.log2 := NL_eq_NSPACE
-
-example {α : Type} (enc : α ↪ List Bool) : NL enc = coNL enc := NL_eq_coNL
 
 /-- Directed connectivity is in nondeterministic logarithmic space. -/
 theorem stcon_mem_log : STCON ∈ NSPACE encSTCON Nat.log2 :=
@@ -45,6 +35,12 @@ theorem stcon_mem_linear : STCON ∈ NSPACE encSTCON id :=
 
 -- The complements, by the theorem.
 example : STCONᶜ ∈ NSPACE encSTCON Nat.log2 := compl_mem_NSPACE (fun _ => le_rfl) stcon_mem_log
+
+example : STCON ∈ coNSPACE encSTCON Nat.log2 :=
+  (NSPACE_eq_coNSPACE (s := Nat.log2) fun _ => le_rfl) ▸ stcon_mem_log
+
+example : STCON ∈ coNL encSTCON :=
+  NL_eq_coNL (enc := encSTCON) ▸ STCON.mem_NL
 
 example : STCONᶜ ∈ NSPACE encSTCON id := compl_mem_NSPACE Nat.log2_le_self stcon_mem_linear
 

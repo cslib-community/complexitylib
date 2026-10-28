@@ -25,8 +25,8 @@ halt returns the encoded signed output and is included in the simulation bound.
 ## Main results
 
 * `ToWordRAM.runs_compile_input`: run-prefix simulation preserving all memory and registers.
-* `ToWordRAM.executes_compile_input`: every successful supported source execution transfers
-  with two extra bits and at most `32 * t + 5` target instructions.
+* `ToWordRAM.executes_compile_input`: every successful source execution transfers with two
+  extra bits and at most `32 * t + 5` target instructions.
 
 ## References
 
@@ -48,8 +48,7 @@ def prologue : Code .standard (r + 9) := ram[
   zero ← #0; two ← #2; left ← *zero; left ← left * two; *zero ← left ]
 
 /-- The complete program, with a charged header conversion and fixed-size instruction blocks.
-Callers supply `input.map encode` and decode the returned word, including for nonnegative values.
-Correctness is guaranteed only for `SupportedProgram`; division/remainder use placeholders. -/
+Callers supply `input.map encode` and decode the returned word, including for nonnegative values. -/
 def compile (p : GenericRAM.Program model r) : WordRAM.Program .standard (r + 9) :=
   prologue.assemble 0 ++ compileFrom (prologue (r := r)).size 0 p
 
@@ -107,11 +106,11 @@ private theorem prepared_runs {w : ℕ} {input : List ℤ} (hi : Signed.InputFit
 charged header preparation and the translated instruction counter. This supports clients
 whose observable output is a memory block rather than just the returned register. -/
 theorem runs_compile_input {w n : ℕ} {p : GenericRAM.Program model r}
-    (hp : SupportedProgram p) {input : List ℤ} (hi : Signed.InputFits w input)
+    {input : List ℤ} (hi : Signed.InputFits w input)
     {t : GenericRAM.State model r} (hr : GenericRAM.Runs w p (Signed.initial input) t n) :
     ∃ y k, k ≤ 32 * n + 5 ∧ WordRAM.Runs (w + 2) (compile p)
       (WordRAM.State.init (input.map encode)) ⟨entry 5 t.pc, y⟩ k ∧ Represents w t.data y := by
-  obtain ⟨y, k, hk, he, hyr⟩ := runs_compile hp (prologue.assemble 0) (prepared_represents hi) hr
+  obtain ⟨y, k, hk, he, hyr⟩ := runs_compile (prologue.assemble 0) (prepared_represents hi) hr
   have htail : WordRAM.Runs (w + 2) (compile p) ⟨5, prepared input⟩ ⟨entry 5 t.pc, y⟩ k := by
     simpa [compile, prologue, Code.size, entry, Signed.initial] using he
   exact ⟨y, 5 + k, by omega, (prepared_runs hi p).trans htail, hyr⟩
@@ -131,14 +130,14 @@ theorem inputFits_encode {w : ℕ} {input : List ℤ} (hi : Signed.InputFits w i
     exact (encode_fits (hi.2 z hz)).mono (by omega)
 
 /-- Complete execution, starting from the ordinary unsigned input convention, costs at most
-`32 * t + 5` instructions at width `w + 2` and returns the encoded signed output. Source
-division/remainder and reflection of source faults are not claimed. -/
+`32 * t + 5` instructions at width `w + 2` and returns the encoded signed output. Forward
+correctness transfers successful runs without claiming reflection of source faults. -/
 theorem executes_compile_input {w n : ℕ} {p : GenericRAM.Program model r}
-    (hp : SupportedProgram p) {input : List ℤ} (hi : Signed.InputFits w input) {v : ℤ}
+    {input : List ℤ} (hi : Signed.InputFits w input) {v : ℤ}
     (hr : GenericRAM.Executes w p (Signed.initial input) v n) :
     ∃ k ≤ 32 * n + 5, WordRAM.Executes (w + 2) (compile p)
       (WordRAM.State.init (input.map encode)) (encode v) k := by
-  obtain ⟨k, hk, he⟩ := executes_compile hp (prologue.assemble 0) (prepared_represents hi) hr
+  obtain ⟨k, hk, he⟩ := executes_compile (prologue.assemble 0) (prepared_represents hi) hr
   have htail : WordRAM.Executes (w + 2) (compile p) ⟨5, prepared input⟩ (encode v) k := by
     simpa [compile, prologue, Code.size, entry, Signed.initial] using he
   refine ⟨5 + k, by omega, ?_⟩

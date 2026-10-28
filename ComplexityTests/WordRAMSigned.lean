@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 import Complexity.Computability.WordRAM.Signed.Arithmetic
@@ -10,8 +10,10 @@ import Complexity.Computability.WordRAM.Signed.Arithmetic
 # Signed arithmetic regressions
 
 Run the assembled unsigned programs, including their halting instruction. Exercise both signed
-endpoints, cancellation, negative results, multiplication by zero, one-bit signed words and
-overflow exclusions. A caller with unrelated registers and memory checks the preservation API.
+endpoints, cancellation, negative results, multiplication by zero, Euclidean division and
+remainder across all sign combinations, total zero-divisor conventions, one-bit signed words and
+overflow exclusions (including minimum/`-1` division). A caller with unrelated registers and
+memory checks the preservation API.
 -/
 
 namespace ComplexityTests.WordRAMSigned
@@ -110,6 +112,79 @@ example : ∃ n ≤ 15, Executes 6 ((multiply (r := 1)).program result)
     ⟨0, inputs (-8) 1⟩ (encode (-8)) n := by
   obtain ⟨y, ⟨n, hn, he⟩, hv, _⟩ := exec_multiply (w := 4) (a := -8) (b := 1)
     (by decide) (by decide) (by decide) (inputs (-8) 1) (by rfl) (by rfl)
+  exact ⟨n + 1, by omega, hv ▸ he.executes result⟩
+
+/-- Euclidean division and remainder across all four sign combinations, with nonzero remainders. -/
+example : answer divide 6 7 3 = some (encode 2) ∧
+    answer modulo 6 7 3 = some (encode 1) ∧
+    answer divide 6 7 (-3) = some (encode (-2)) ∧
+    answer modulo 6 7 (-3) = some (encode 1) ∧
+    answer divide 6 (-7) 3 = some (encode (-3)) ∧
+    answer modulo 6 (-7) 3 = some (encode 2) ∧
+    answer divide 6 (-7) (-3) = some (encode 3) ∧
+    answer modulo 6 (-7) (-3) = some (encode 2) := by
+  decide
+
+/-- Exact multiples across all four sign combinations and zero-dividend sign normalization. -/
+example : answer divide 6 6 3 = some (encode 2) ∧
+    answer modulo 6 6 3 = some (encode 0) ∧
+    answer divide 6 6 (-3) = some (encode (-2)) ∧
+    answer modulo 6 6 (-3) = some (encode 0) ∧
+    answer divide 6 (-6) 3 = some (encode (-2)) ∧
+    answer modulo 6 (-6) 3 = some (encode 0) ∧
+    answer divide 6 (-6) (-3) = some (encode 2) ∧
+    answer modulo 6 (-6) (-3) = some (encode 0) ∧
+    answer divide 6 0 (-3) = some (encode 0) ∧
+    answer modulo 6 0 (-3) = some (encode 0) := by
+  decide
+
+/-- Lean's total zero-divisor conventions: `a / 0 = 0` and `a % 0 = a`, including `a < 0`. -/
+example : answer divide 6 7 0 = some (encode 0) ∧
+    answer divide 6 (-8) 0 = some (encode 0) ∧
+    answer divide 6 0 0 = some (encode 0) ∧
+    answer modulo 6 7 0 = some (encode 7) ∧
+    answer modulo 6 (-8) 0 = some (encode (-8)) ∧
+    answer modulo 6 0 0 = some (encode 0) := by
+  decide
+
+/-- Asymmetric negative endpoint `-8` at `w = 4` (both as dividend and as divisor), the
+minimum/`-1` signed division overflow exclusion, and one-bit signed words (`w = 1`). -/
+example : answer divide 6 (-8) 3 = some (encode (-3)) ∧
+    answer modulo 6 (-8) 3 = some (encode 1) ∧
+    answer divide 6 (-8) (-3) = some (encode 3) ∧
+    answer modulo 6 (-8) (-3) = some (encode 1) ∧
+    answer divide 6 (-7) (-8) = some (encode 1) ∧
+    answer modulo 6 (-7) (-8) = some (encode 1) ∧
+    ¬Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) / -1) ∧
+    Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) % -1) ∧
+    answer divide 6 (-8) (-1) = some (encode 8) ∧
+    answer modulo 6 (-8) (-1) = some (encode 0) ∧
+    answer divide 3 (-1) (-1) = some (encode 1) ∧
+    answer divide 3 (-1) 0 = some (encode 0) ∧
+    answer modulo 3 (-1) (-1) = some (encode 0) ∧
+    answer modulo 3 (-1) 0 = some (encode (-1)) := by
+  decide
+
+/-- Division and remainder preserve the caller frame and obey their halting instruction bounds. -/
+example : ∃ y, ExecWithin 6 divide caller y 20 ∧
+    decode (y.regs result) = -2 ∧ y.regs (9 : Fin 10) = 37 ∧
+    y.regs left = encode (-8) ∧ y.mem 11 = 11 := by
+  obtain ⟨y, hy, hv, hf⟩ := exec_divide (w := 4) (a := -8) (b := 7)
+    (by decide) (by decide) caller (by rfl) (by rfl)
+  refine ⟨y, hy, ?_, ?_, ?_, ?_⟩
+  · simpa only [hv, Cslib.GenericRAM.Signed.Arithmetic.eval, decode_encode] using
+      (show (-8 : ℤ) / 7 = -2 by decide)
+  · rw [hf.2 9 (by decide)]
+    rfl
+  · rw [hf.2 left (by decide)]
+    rfl
+  · rw [hf.1]
+    rfl
+
+example : ∃ n ≤ 14, Executes 6 ((modulo (r := 1)).program result)
+    ⟨0, inputs (-8) 7⟩ (encode 6) n := by
+  obtain ⟨y, ⟨n, hn, he⟩, hv, _⟩ := exec_modulo (w := 4) (a := -8) (b := 7)
+    (by decide) (by decide) (inputs (-8) 7) (by rfl) (by rfl)
   exact ⟨n + 1, by omega, hv ▸ he.executes result⟩
 
 end ComplexityTests.WordRAMSigned

@@ -26,7 +26,7 @@ noncomputable def queryVerifier (A : Set (List Bool)) (x : List Bool × List Boo
 theorem queryVerifier_polyTime (A : Set (List Bool)) :
     ComputableInPolyTimeWithOracle A (queryVerifier A) (encPair encBits encBits) encBool :=
   (computableInPolyTimeWithOracle_mem A).preprocess
-    (.of_tidy (ComputableTidilyInPolyTime.fst encBits encBits))
+    (ComputableInPolyTime.fst encBits encBits)
 
 /-- A genuine query counts one empty witness on members and zero on nonmembers. -/
 noncomputable def queryCount (A : Set (List Bool)) (w : List Bool) : ℕ :=
@@ -45,7 +45,7 @@ example (A : Set (List Bool)) : A ∈ PPWithOracle A encBits := by
 off the oracle. -/
 example (A : Set (List Bool)) : Aᶜ ∈ PPWithOracle A encBits := by
   refine ⟨0, fun x => !queryVerifier A x,
-    (queryVerifier_polyTime A).map (.of_tidy ComputableTidilyInPolyTime.bool_not), fun w => ?_⟩
+    (queryVerifier_polyTime A).map ComputableInPolyTime.bool_not, fun w => ?_⟩
   simp only [Polynomial.eval_zero, pow_zero, acceptCount_zero, queryVerifier]
   by_cases hw : w ∈ A <;> simp [hw]
 
@@ -65,7 +65,7 @@ noncomputable def tieVerifier (A : Set (List Bool)) : List Bool × List Bool →
 theorem tieVerifier_polyTime (A : Set (List Bool)) :
     ComputableInPolyTimeWithOracle A (tieVerifier A) (encPair encBits encBits) encBool :=
   computableInPolyTimeWithOracle_selectVerifier (queryVerifier_polyTime A)
-    ((queryVerifier_polyTime A).map (.of_tidy ComputableTidilyInPolyTime.bool_not))
+    ((queryVerifier_polyTime A).map ComputableInPolyTime.bool_not)
 
 theorem tieVerifier_count (A : Set (List Bool)) (w : List Bool) :
     acceptCount (tieVerifier A) w 1 = 1 := by
@@ -89,7 +89,7 @@ noncomputable def queryGap (A : Set (List Bool)) (w : List Bool) : ℤ :=
 theorem queryGap_mem (A : Set (List Bool)) : queryGap A ∈ GapPWithOracle A encBits :=
   ⟨queryCount A, queryCount_mem A, _,
     ⟨0, fun x => !queryVerifier A x,
-      (queryVerifier_polyTime A).map (.of_tidy ComputableTidilyInPolyTime.bool_not), fun _ => rfl⟩,
+      (queryVerifier_polyTime A).map ComputableInPolyTime.bool_not, fun _ => rfl⟩,
     fun _ => by simp [queryGap]⟩
 
 example : queryGap {w | w = [true]} [true] = 1 ∧

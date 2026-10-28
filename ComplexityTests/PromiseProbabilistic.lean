@@ -109,11 +109,13 @@ theorem solvesWithBoundedError_partialSingletonBit :
   intro a
   refine ⟨fun ha => ?_, fun ha => ?_⟩
   · obtain rfl : a = [true] := ha
+    dsimp only [BoundedErrorAt]
     generalize hk : (1 : Polynomial ℕ).eval (encBits [true]).length = k
     rw [Polynomial.eval_one] at hk
     subst hk
     decide
   · obtain rfl : a = [false] := ha
+    dsimp only [BoundedErrorAt]
     generalize hk : (1 : Polynomial ℕ).eval (encBits [false]).length = k
     rw [Polynomial.eval_one] at hk
     subst hk

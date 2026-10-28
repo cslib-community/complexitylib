@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Complexity.Classes.NP.Closure
 import Complexity.Computability.Complexity.Problems.Hamiltonian
 import Complexity.Tactic.PolyTime
 
@@ -20,38 +21,42 @@ open Cslib.Complexity Turing.MultiTapeTM
 
 /-! ### Headline complexity class results -/
 
-example : DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat)) := DirHamPath.mem_NP
-example : DirHamCycle ∈ NP encGraph := DirHamCycle.mem_NP
-example : HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) := HamPath.mem_NP
-example : HamCycle ∈ NP encGraph := HamCycle.mem_NP
+example : DirHamPath ∩ HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
+  inter_mem_NP DirHamPath.mem_NP HamPath.mem_NP
 
--- Certificates are quadratic in the encoded instance.
-example : IsVerifier (encPair encGraph (encPair encNat encNat)) (Polynomial.X ^ 2)
-    DirHamPath.verifier DirHamPath := DirHamPath.isVerifier
-example : IsVerifier encGraph (Polynomial.X ^ 2) HamCycle.verifier HamCycle := HamCycle.isVerifier
+example : DirHamCycle ∪ HamCycle ∈ NP encGraph :=
+  union_mem_NP DirHamCycle.mem_NP HamCycle.mem_NP
+
+-- Certificates are quadratic in the encoded instance: every positive instance has a witness of
+-- length `len ^ 2`.
+example {x : Graph × ℕ × ℕ} (hx : x ∈ DirHamPath) :
+    ∃ w : List Bool,
+      w.length = (encPair encGraph (encPair encNat encNat) x).length ^ 2 ∧
+        DirHamPath.verifier (x, w) = true := by
+  simpa using (DirHamPath.isVerifier x).mp hx
+
+example {G : Graph} (hG : G ∈ HamCycle) :
+    ∃ w : List Bool,
+      w.length = (encGraph G).length ^ 2 ∧ HamCycle.verifier (G, w) = true := by
+  simpa using (HamCycle.isVerifier G).mp hG
 
 /-! ### Compositional `fun_prop` synthesis -/
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime DirHamPath.verifier
+example : ComputableInPolyTime DirHamPath.verifier
     (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime DirHamCycle.verifier (encPair encGraph encBits) encBool := by
+example : ComputableInPolyTime DirHamCycle.verifier (encPair encGraph encBits) encBool := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime HamPath.verifier
+example : ComputableInPolyTime HamPath.verifier
     (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime HamCycle.verifier (encPair encGraph encBits) encBool := by
+example : ComputableInPolyTime HamCycle.verifier (encPair encGraph encBits) encBool := by
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime (fun x : List ℕ × List Bool => Graph.decodeVertexList x.1 x.2)
+example : ComputableInPolyTime (fun x : List ℕ × List Bool => Graph.decodeVertexList x.1 x.2)
     (encPair (encList encNat) encBits) (encList encNat) := by
   fun_prop
 

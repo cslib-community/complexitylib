@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 module
@@ -13,19 +13,20 @@ public import Complexity.Computability.WordRAM.Signed.Comparison
 /-!
 # Translating signed RAM data operations and tests
 
-Arithmetic is restricted to addition, subtraction and multiplication. The existing source
+All five operations of `GenericRAM.Signed.Arithmetic` (addition, subtraction, multiplication,
+Euclidean division and Euclidean remainder), together with constants, copies, memory operations
+and signed comparisons, are translated to unsigned word-RAM code. The existing source
 interpreter, including its signed range and address checks, determines successful source
 steps. The target blocks operate on the separate register bank and encode every memory value.
 
 ## Main definitions
 
-* `ToWordRAM.SupportedOp`: the supported source data operations.
 * `ToWordRAM.arithmeticCode`, `ToWordRAM.compileOp`: unsigned instruction blocks.
 * `ToWordRAM.compileCond`: comparison returning a Boolean word and a constant one.
 
 ## Main results
 
-* `ToWordRAM.exec_compileOp`: successful source data operations transfer within twenty steps.
+* `ToWordRAM.exec_compileOp`: successful source data operations transfer within twenty-three steps.
 * `ToWordRAM.exec_compileCond`: signed comparisons transfer with a preserved source state.
 
 ## References
@@ -42,21 +43,13 @@ open WordRAM.Signed
 
 variable {r : ℕ}
 
-/-- The signed arithmetic fragment excludes division and remainder. -/
-def SupportedOp : GenericRAM.Op model r → Prop
-  | .alu f .. => f = .add ∨ f = .sub ∨ f = .mul
-  | _ => True
-
-/-- Decidability of membership in the supported data fragment. -/
-instance (o : GenericRAM.Op model r) : Decidable (SupportedOp o) := by
-  cases o <;> unfold SupportedOp <;> infer_instance
-
-/-- Choose a proved arithmetic block. Unsupported operations have no correctness guarantee. -/
+/-- Unsigned instruction block implementing each of the five signed arithmetic operations. -/
 def arithmeticCode : Arithmetic → Code .standard (r + 9)
   | .add => WordRAM.Signed.add
   | .sub => subtract
   | .mul => multiply
-  | .div | .mod => .op (.copy result result)
+  | .div => divide
+  | .mod => modulo
 
 /-- Decode a nonnegative signed address into scratch register `left`. -/
 def addressCode (a : Fin r) : Code .standard (r + 9) :=
@@ -94,16 +87,23 @@ private theorem encoded_fits {w : ℕ} {v : ℤ} (h : Signed.Fits w v) :
     WordRAM.Fits (w + 2) (encode v) := (encode_fits h).mono (by omega)
 
 private theorem exec_arithmetic {w : ℕ} {a b : ℤ} (f : Arithmetic)
-    (hf : f = .add ∨ f = .sub ∨ f = .mul)
     (ha : Signed.Fits w a) (hb : Signed.Fits w b) (hv : Signed.Fits w (f.eval a b))
     (x : WordRAM.Data (r + 9)) (hxa : x.regs left = encode a) (hxb : x.regs right = encode b) :
-    ∃ y, ExecWithin (w + 2) (arithmeticCode f) x y 17 ∧
+    ∃ y, ExecWithin (w + 2) (arithmeticCode f) x y 20 ∧
       y.regs result = encode (f.eval a b) ∧ Frame x y := by
-  rcases hf with rfl | rfl | rfl
-  · obtain ⟨y, hy, hv, hf⟩ := exec_add ha hb x hxa hxb
+  cases f with
+  | add =>
+    obtain ⟨y, hy, hv, hf⟩ := exec_add ha hb x hxa hxb
     exact ⟨y, hy.mono (by decide), hv, hf⟩
-  · exact exec_subtract ha hb x hxa hxb
-  · obtain ⟨y, hy, hv, hf⟩ := exec_multiply ha hb hv x hxa hxb
+  | sub =>
+    obtain ⟨y, hy, hv, hf⟩ := exec_subtract ha hb x hxa hxb
+    exact ⟨y, hy.mono (by decide), hv, hf⟩
+  | mul =>
+    obtain ⟨y, hy, hv, hf⟩ := exec_multiply ha hb hv x hxa hxb
+    exact ⟨y, hy.mono (by decide), hv, hf⟩
+  | div => exact exec_divide ha hb x hxa hxb
+  | mod =>
+    obtain ⟨y, hy, hv, hf⟩ := exec_modulo ha hb x hxa hxb
     exact ⟨y, hy.mono (by decide), hv, hf⟩
 
 /-- Nonnegative signed addresses are decoded in two instructions without changing source data. -/
@@ -150,12 +150,12 @@ theorem exec_operands {w : ℕ} {s : GenericRAM.Data model r} {x : WordRAM.Data 
   exact ⟨y, (hfirst.seq hsecond).within, by simp [y, q, left, right], by simp [y],
     hq.scratch (i := right) (by simp) _⟩
 
-/-- Every successful supported source data operation has an unsigned implementation in
-at most twenty instructions at width `w + 2`. Aliased source/destination registers are allowed. -/
+/-- Every successful source data operation has an unsigned implementation in at most
+twenty-three instructions at width `w + 2`. Aliased source/destination registers are allowed. -/
 theorem exec_compileOp {w : ℕ} {s t : GenericRAM.Data model r} {x : WordRAM.Data (r + 9)}
-    (o : GenericRAM.Op model r) (ho : SupportedOp o) (hx : Represents w s x)
+    (o : GenericRAM.Op model r) (hx : Represents w s x)
     (he : o.eval w s = some t) :
-    ∃ y, ExecWithin (w + 2) (compileOp o) x y 20 ∧ Represents w t y := by
+    ∃ y, ExecWithin (w + 2) (compileOp o) x y 23 ∧ Represents w t y := by
   cases o with
   | const d c =>
     by_cases hc : Signed.Fits w c
@@ -172,14 +172,14 @@ theorem exec_compileOp {w : ℕ} {s t : GenericRAM.Data model r} {x : WordRAM.Da
     refine ⟨x.set (bank d) (encode (s.regs i)), ?_, hx.set d hi⟩
     simpa only [compileOp, hx.regs] using
       (Exec.copy (B := .standard) (w := w + 2) (x := x) (d := bank d) (s := bank i)).within.mono
-        (by decide : 1 ≤ 20)
+        (by decide : 1 ≤ 23)
   | alu f d args =>
     by_cases hv : Signed.Fits w (f.eval (s.regs (args 0)) (s.regs (args 1)))
     · have ht : s.set d (f.eval (s.regs (args 0)) (s.regs (args 1))) = t := by
         simpa [GenericRAM.Op.eval, model, GenericRAM.Data.put, hv, Function.comp_def] using he
       subst t
       obtain ⟨z, hpre, hza, hzb, hz⟩ := exec_operands hx (args 0) (args 1)
-      obtain ⟨y, hy, hyr, hyf⟩ := exec_arithmetic f ho (hx.fits _) (hx.fits _) hv z hza hzb
+      obtain ⟨y, hy, hyr, hyf⟩ := exec_arithmetic f (hx.fits _) (hx.fits _) hv z hza hzb
       have hyrep := hz.of_frame hyf
       refine ⟨y.set (bank d) (encode (f.eval (s.regs (args 0)) (s.regs (args 1)))), ?_,
         hyrep.set d hv⟩

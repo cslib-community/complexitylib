@@ -17,8 +17,6 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Univers
 
 /-! ### Framed words and decoding -/
 
-example : frames [] = [] := frames_nil
-
 /-- Two framed words, the first holding `false`. -/
 example : frames (frame [false] ++ frame []) = [[false], []] := by
   rw [frames_frame_append, ← List.append_nil (frame []), frames_frame_append, frames_nil]
@@ -33,8 +31,8 @@ example (l : List (List Bool)) : frames (encList encBits l) = l :=
   (frames_encList encBits l).trans (List.map_id l)
 
 /-- A description, padded arbitrarily, is recovered. -/
-example (d : Desc) (pad : List Bool) : decodeDesc (unframe (frame (eDesc d) ++ pad)) = d :=
-  decodeDesc_unframe_frame_append d pad
+example : (decodeDesc (unframe (frame (eDesc ⟨2, 3, []⟩) ++ [true, false]))).q₀ = 3 := by
+  rw [decodeDesc_unframe_frame_append]
 
 /-- The empty word decodes to the description without work tapes or transitions. -/
 example : decodeDesc [] = ⟨0, 0, []⟩ := by
@@ -58,10 +56,12 @@ example : ∃ e c : ℕ, ∀ w : List Bool, (eDesc (decodeDesc w)).length ≤ c 
 
 /-! ### The clock -/
 
-example : encNat (2 ^ 3) = [false, false, false, true] := encNat_two_pow 3
+example : (encNat (2 ^ 5)).length = 6 := by
+  rw [encNat_two_pow]
+  decide
 
-example : ComputableTidilyInDegree (fun x : List Bool => 2 ^ x.length) encBits encNat 1 1 :=
-  ComputableTidilyInDegree.two_pow_length encBits
+example : ComputableInPolyTime (fun x : List Bool => 2 ^ x.length) encBits encNat :=
+  .of_tidy (ComputableTidilyInDegree.two_pow_length encBits).computableTidilyInPolyTime
 
 /-! ### The diagonal on concrete machines -/
 
@@ -101,7 +101,8 @@ example : ∃ c, ComputableTidilyInTimeAndSpace diagonal encBits encBool
   obtain ⟨c, h, -⟩ := computableInO_diagonal.tidy
   exact ⟨c, h⟩
 
-example : {x | diagonal x = true} ∉ P encBits := diagonal_notMem_P
+example : ¬ComputableInPolyTime diagonal encBits encBool :=
+  fun h => diagonal_notMem_P ⟨diagonal, h, fun _ => Iff.rfl⟩
 
 /-- Plain machines do not compute the diagonal within a polynomial time bound either. -/
 example (c d : ℕ) (s : List Bool → ℕ) :

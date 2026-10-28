@@ -92,14 +92,12 @@ private theorem run_two (input suffix : List Bool) :
 
 
 
--- The fixed machine has finite control, a uniform arity bound, and no stuck local views.
-example : Finite Phase := inferInstance
-example : ∀ state symbol work answers, (machine.tr state symbol work answers).length ≤ 3 := bounded
-example : ∀ state symbol work answers, machine.tr state symbol work answers ≠ [] := nonblocking
-
--- Chronological enumeration varies the first transition in the outer loop.
-example : indexWords 2 2 = [[0, 0], [0, 1], [1, 0], [1, 1]] := by decide
-example (fuel : ℕ) : (indexWords 3 fuel).Nodup := nodup_indexWords 3 fuel
+-- Chronological enumeration varies the first transition in the outer loop, with no duplicates.
+example :
+    indexWords 2 2 = [[0, 0], [0, 1], [1, 0], [1, 1]] ∧
+    (indexWords 3 2).Nodup ∧
+    (indexWords 3 2).length = 9 :=
+  by decide
 
 -- Exactly three certificates survive, even though the two querying paths have equal endpoints.
 example (input suffix : List Bool) (padding : ℕ) :
@@ -162,11 +160,10 @@ example (input suffix : List Bool) :
 
 -- Invalid local indices and nonzero post-halt padding are excluded, not counted as rejections.
 example (input suffix : List Bool) :
-    machine.replayResult (machine.initialConfig input) [3] (record suffix) (0, []) = none := rfl
-example (input suffix : List Bool) :
-    machine.replayResult (machine.initialConfig input) [1, 1] (record suffix) (0, []) = none := rfl
-example (input suffix : List Bool) :
-    machine.replayResult (machine.initialConfig input) [0, 1] (record suffix) (0, []) = none := rfl
+    machine.replayResult (machine.initialConfig input) [3] (record suffix) (0, []) = none ∧
+    machine.replayResult (machine.initialConfig input) [1, 1] (record suffix) (0, []) = none ∧
+    machine.replayResult (machine.initialConfig input) [0, 1] (record suffix) (0, []) = none :=
+  ⟨rfl, rfl, rfl⟩
 
 example (input suffix : List Bool) :
     machine.replayResult (machine.initialConfig input) [0, 0, 0] (record suffix) (0, []) =
@@ -181,14 +178,12 @@ private def stuck : MultiTapeMachine 0 Bool Unit Unit List where
 -- No halting claim follows from an empty result list. Fuel zero still retains the live input.
 example (input : List Bool) :
     stuck.runOccurrenceTrace 0 (stuck.initialConfig input) (record []) (0, []) =
-      [(([], stuck.initialConfig input), (0, []))] := rfl
-example (input : List Bool) :
-    stuck.runOccurrenceTrace 1 (stuck.initialConfig input) (record []) (0, []) = [] := rfl
-example (input : List Bool) :
+      [(([], stuck.initialConfig input), (0, []))] ∧
+    stuck.runOccurrenceTrace 1 (stuck.initialConfig input) (record []) (0, []) = [] ∧
     stuck.replayResult (stuck.initialConfig input) [] (record []) (0, []) =
-      some (([], stuck.initialConfig input), (0, [])) := rfl
-example (input : List Bool) :
-    stuck.replayResult (stuck.initialConfig input) [0] (record []) (0, []) = none := rfl
+      some (([], stuck.initialConfig input), (0, [])) ∧
+    stuck.replayResult (stuck.initialConfig input) [0] (record []) (0, []) = none :=
+  ⟨rfl, rfl, rfl, rfl⟩
 
 
 example (input suffix : List Bool) :

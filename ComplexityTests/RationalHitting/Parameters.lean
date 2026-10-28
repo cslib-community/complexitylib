@@ -39,8 +39,9 @@ example : (hittingList 2 1).dimension = 131072 := by decide
 
 /-! ### Certifiable forms -/
 
-example : Parameters.ambientDimension 1 1 = 2 ^ Nat.clog 2 (threshold 1 1 + 1) :=
-  Parameters.ambientDimension_eq 1 1
+example : 2 ^ Nat.clog 2 (threshold 1 1 + 1) = 256 := by
+  rw [← Parameters.ambientDimension_eq 1 1]
+  decide
 
 example (n s : ℕ) : 2 * CyclotomicRing.degree (Parameters.exponent n s) =
     Parameters.ambientDimension n s := by
@@ -49,41 +50,43 @@ example (n s : ℕ) : 2 * CyclotomicRing.degree (Parameters.exponent n s) =
 
 /-! ### Certificates -/
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => generatorParameters p.1 p.2)
-    (encPair encUnary encUnary)
-    (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
-      (encPair encUnary encUnary))))) := computableInPolyTime_generatorParameters.tidy
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (hittingList p.1 p.2).dimension)
-    (encPair encUnary encUnary) encUnary := computableInPolyTime_hittingList_dimension.tidy
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (hittingList p.1 p.2).dimension)
-    (encPair encUnary encUnary) encNat := computableInPolyTime_hittingList_dimension_binary.tidy
-
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The registered certificates compose under `fun_prop`, here on the shifted input of the final
 -- generator.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime (fun p : ℕ × ℕ => generatorParameters (p.1 + 1) (p.2 + 1))
+    (encPair encUnary encUnary)
+    (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
+      (encPair encUnary encUnary))))) :=
+  computableInPolyTime_generatorParameters.comp (g := fun p : ℕ × ℕ => (p.1 + 1, p.2 + 1))
+    (by fun_prop)
+
+example : ComputableInPolyTime (fun p : ℕ × ℕ => (hittingList (p.1 + 1) (p.2 + 1)).dimension)
+    (encPair encUnary encUnary) encUnary :=
+  computableInPolyTime_hittingList_dimension.comp (g := fun p : ℕ × ℕ => (p.1 + 1, p.2 + 1))
+    (by fun_prop)
+
+example : ComputableInPolyTime (fun p : ℕ × ℕ => (hittingList (p.1 + 1) (p.2 + 1)).dimension + 1)
+    (encPair encUnary encUnary) encNat :=
+  (ComputableInPolyTime.of_tidy computableTidilyInPolyTime_succ).comp
+    (computableInPolyTime_hittingList_dimension_binary.comp
+      (g := fun p : ℕ × ℕ => (p.1 + 1, p.2 + 1)) (by fun_prop))
+
+example : ComputableInPolyTime
     (fun p : ℕ × ℕ => Parameters.gridSize (p.1 + 1) (p.2 + 1)) (encPair encUnary encUnary)
     encUnary := by
-  apply ComputableInPolyTime.tidy
-  apply computableInPolyTime_gridSize <;> exact .of_tidy (by fun_prop)
+  apply computableInPolyTime_gridSize <;> fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × ℕ => Parameters.truncation (p.1 + 1) (p.2 + 1) *
       CyclotomicRing.degree (Parameters.exponent (p.1 + 1) (p.2 + 1)))
     (encPair encUnary encUnary) encUnary := by
-  have ht : ComputableTidilyInPolyTime
+  have ht : ComputableInPolyTime
       (fun p : ℕ × ℕ => Parameters.truncation (p.1 + 1) (p.2 + 1))
       (encPair encUnary encUnary) encUnary := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_truncation <;> exact .of_tidy (by fun_prop)
-  have hd : ComputableTidilyInPolyTime
+    apply computableInPolyTime_truncation <;> fun_prop
+  have hd : ComputableInPolyTime
       (fun p : ℕ × ℕ => CyclotomicRing.degree (Parameters.exponent (p.1 + 1) (p.2 + 1)))
       (encPair encUnary encUnary) encUnary := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_degree <;> exact .of_tidy (by fun_prop)
+    apply computableInPolyTime_degree <;> fun_prop
   fun_prop
 
 end ComplexityTests.RationalHitting.Parameters

@@ -16,7 +16,12 @@ public import Complexity.Computability.Complexity.Classes.PP.Closure
 public import Complexity.Computability.Complexity.Classes.Space
 public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Reduction.OneOne
+public import Complexity.Computability.Complexity.Reduction.TruthTableVariants
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
 # Polynomial-time Turing reductions and the Turing bridge
@@ -47,7 +52,26 @@ oracle for `B` within polynomial time [Ladner, Lynch and Selman][LadnerLynchSelm
   reductions (`≤ₘ ⇒ ≤_T`).
 * `Cslib.Complexity.PolyTimeOneOneReducible.polyTimeTuringReducible`: one-one reductions are Turing
   reductions (`≤₁ ⇒ ≤_T`).
+* `Cslib.Complexity.computableInPolyTimeWithOracle_map_mem`,
+  `Cslib.Complexity.computableInPolyTimeWithOracle_truthTableAnswers`: answering a polynomial-time
+  batch of oracle queries in polynomial time relative to the oracle.
+* `Cslib.Complexity.PolyTimeTruthTableReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeKTruthTableReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeBTTReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimePTTReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeDTTReducible.polyTimeTuringReducible`,
+  `Cslib.Complexity.PolyTimeCTTReducible.polyTimeTuringReducible`: truth-table, `k`-truth-table,
+  bounded, positive, disjunctive, and conjunctive truth-table reductions are Turing reductions
+  (`≤_tt, ≤_{k-tt}, ≤_btt, ≤_ptt, ≤_dtt, ≤_ctt ⇒ ≤_T`).
 * `Cslib.Complexity.PolyTimeTuringReducible.refl`: reflexivity.
+* `Cslib.Complexity.ComputableInPolyTimeWithOracle.of_mem_PWithOracle`,
+  `Cslib.Complexity.PWithOracle_subset_of_mem_PWithOracle`,
+  `Cslib.Complexity.NPWithOracle_subset_of_mem_PWithOracle`: oracle substitution when the oracle
+  language itself belongs to `P^O`.
+* `Cslib.Complexity.PolyTimeTuringReducible.mem_PWithOracle`: `P^O` is closed under Turing
+  reductions to word languages.
+* `Cslib.Complexity.PolyTimeTuringReducible.trans`: transitivity of polynomial-time Turing
+  reductions through word languages (`≤_T ∘ ≤_T ⇒ ≤_T`).
 * `Cslib.Complexity.PolyTimeReducible.trans_turing`: pre-composition with a many-one reduction
   (`≤ₘ ∘ ≤_T ⇒ ≤_T`).
 * `Cslib.Complexity.PolyTimeTuringReducible.compl_left`: complementation of the source language.
@@ -126,6 +150,314 @@ theorem PolyTimeReducible.polyTimeTuringReducible
 theorem PolyTimeOneOneReducible.polyTimeTuringReducible
     (h : PolyTimeOneOneReducible encA encB A B) : PolyTimeTuringReducible encA encB A B :=
   h.polyTimeReducible.polyTimeTuringReducible
+
+/-! ### Truth-table reductions are Turing reductions -/
+
+/-- One step of `queryWords`: ask the first remaining word, and append whether its reply begins
+with `true` to the accumulated answer word. -/
+private def queryWordsStep (s : List (List Bool) × List Bool) :
+    WordQueryComp Unit (List (List Bool) × List Bool) :=
+  if s.1.isEmpty then pure s else
+    (fun reply => (s.1.tail, s.2 ++ [reply == [true]])) <$>
+      (List.take 1 <$> OracleComp.query ((), s.1.headD []))
+
+/-- Ask the oracle every word of the list, in order, and collect the one-bit answers. -/
+private def queryWords (words : List (List Bool)) : WordQueryComp Unit (List Bool) :=
+  Prod.snd <$> OracleComp.iterate words.length queryWordsStep (words, [])
+
+private theorem interpret_queryWordsStep (s : List (List Bool) × List Bool) :
+    OracleComp.interpret ProbOracleComp.query (queryWordsStep s) =
+      if s.1.isEmpty then pure s else
+        (fun reply => (s.1.tail, s.2 ++ [reply == [true]])) <$>
+          (List.take 1 <$> ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+            ((), s.1.headD [])) := by
+  unfold queryWordsStep
+  split <;> simp [OracleComp.interpret_map, OracleComp.interpret_query]
+
+/-- Asking every word of a list and collecting the one-bit answers is strict oracle PPT: each step
+pops one word from the framed list and appends one bit to the answer word, so the encoded state
+never grows. -/
+private theorem isOraclePPTOn_queryWords :
+    Probability.IsOraclePPTOn (encList encBits) encBits
+      (fun words => OracleComp.interpret ProbOracleComp.query (queryWords words)) := by
+  simp only [queryWords, OracleComp.interpret_map, OracleComp.interpret_iterate]
+  refine Probability.IsOraclePPTOn.map (Probability.IsOraclePPTOn.iterate_of_bounded_growth
+    (stateEncoding := encPair (encList encBits) encBits) (by fun_prop) (by fun_prop) ?_
+    (growth := 0) ?_) (by fun_prop)
+  · simp only [interpret_queryWordsStep]
+    refine Probability.IsOraclePPTOn.cond (by fun_prop)
+      (ComputableTidilyInPolyTime.id'.isOraclePPTOn) ?_
+    exact Probability.IsOraclePPTOn.map_with
+      (Probability.IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop))
+      (by fun_prop)
+  · intro state next hnext
+    rw [interpret_queryWordsStep] at hnext
+    obtain ⟨words, acc⟩ := state
+    cases words with
+    | nil => rw [OracleComp.eq_of_mem_supportWith_pure hnext]; simp
+    | cons word words =>
+      obtain ⟨reply, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
+      simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton,
+        List.tail_cons, length_encList, List.map_cons, List.sum_cons]
+      omega
+
+open Classical in
+private theorem interpret_id_queryWordsStep (O : Set (List Bool)) (word : List Bool)
+    (words : List (List Bool)) (acc : List Bool) :
+    OracleComp.interpret (m := Id) (languageOracle O) (queryWordsStep (word :: words, acc)) =
+      (words, acc ++ [decide (word ∈ O)]) := by
+  simp only [queryWordsStep, List.isEmpty_cons, Bool.false_eq_true, ite_false]
+  change (fun reply : List Bool => (words, acc ++ [reply == [true]]))
+    (List.take 1 (languageOracle O ((), word))) = _
+  rw [languageOracle_apply]
+  cases decide (word ∈ O) <;> rfl
+
+open Classical in
+private theorem interpret_queryWords (O : Set (List Bool)) (words : List (List Bool)) :
+    OracleComp.interpret (m := Id) (languageOracle O) (queryWords words) =
+      words.map fun word => decide (word ∈ O) := by
+  have key : ∀ (words : List (List Bool)) (acc : List Bool),
+      OracleComp.interpret (m := Id) (languageOracle O)
+        (OracleComp.iterate words.length queryWordsStep (words, acc)) =
+        ([], acc ++ words.map fun word => decide (word ∈ O)) := by
+    intro words
+    induction words with
+    | nil => intro acc; simp only [List.length_nil, List.map_nil, List.append_nil]; rfl
+    | cons word words ih =>
+      intro acc
+      rw [List.length_cons, OracleComp.iterate_succ_bind, OracleComp.interpret_bind]
+      change OracleComp.interpret (m := Id) (languageOracle O)
+        (OracleComp.iterate words.length queryWordsStep
+          (OracleComp.interpret (m := Id) (languageOracle O)
+            (queryWordsStep (word :: words, acc)))) = _
+      rw [interpret_id_queryWordsStep, ih]
+      simp [List.append_assoc]
+  unfold queryWords
+  rw [OracleComp.interpret_map, key]
+  simp only [List.nil_append]
+  rfl
+
+open Classical in
+/-- Evaluating membership in `O` across a list of words is computable in polynomial time relative
+to `O`. -/
+theorem computableInPolyTimeWithOracle_map_mem (O : Set (List Bool)) :
+    ComputableInPolyTimeWithOracle O
+      (fun words : List (List Bool) => words.map fun word => decide (word ∈ O))
+      (encList encBits) encBits :=
+  ⟨queryWords, isOraclePPTOn_queryWords, interpret_queryWords O⟩
+
+/-- Computing the semantic answer word `truthTableAnswers (q ⁻¹' B) r` of a polynomial-time batch
+of queries `(r, q)` is polynomial time relative to the encoded oracle language `encB '' B`. -/
+theorem computableInPolyTimeWithOracle_truthTableAnswers {r : α → ℕ} {q : α × ℕ → β}
+    (hr : ComputableInPolyTime r encA encUnary)
+    (hq : ComputableInPolyTime q (encPair encA encUnary) encB) :
+    ComputableInPolyTimeWithOracle (encB '' B) (truthTableAnswers (q ⁻¹' B) r) encA encBits := by
+  classical
+  have hbatch : ComputableInPolyTime
+      (fun a => (List.range (r a)).map fun i => encB (q (a, i))) encA (encList encBits) :=
+    .of_tidy (ComputableTidilyInPolyTime.mapWithInput
+      (ComputableTidilyInPolyTime.range.comp hr.tidy) hq.tidy.encoded)
+  have hq_mem := (computableInPolyTimeWithOracle_map_mem (encB '' B)).preprocess hbatch
+  convert hq_mem using 2
+  rw [truthTableAnswers_eq_map_range, List.map_map]
+  refine List.map_congr_left fun i _ => ?_
+  simp
+
+/-- **Every polynomial-time truth-table reduction is a polynomial-time Turing reduction**
+(`≤_tt ⇒ ≤_T`) [Ladner, Lynch and Selman][LadnerLynchSelman1975]. -/
+theorem PolyTimeTruthTableReducible.polyTimeTuringReducible
+    (h : PolyTimeTruthTableReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B := by
+  obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
+  exact ⟨fun a => d (a, truthTableAnswers (q ⁻¹' B) r a),
+    (computableInPolyTimeWithOracle_truthTableAnswers (B := B) hr hq).map_with
+      (g := fun a ans => d (a, ans)) hd, hA⟩
+
+/-- Every `k`-truth-table reduction is a polynomial-time Turing reduction (`≤_{k-tt} ⇒ ≤_T`). -/
+theorem PolyTimeKTruthTableReducible.polyTimeTuringReducible {k : ℕ}
+    (h : PolyTimeKTruthTableReducible k encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeBTTReducible.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every bounded truth-table reduction is a polynomial-time Turing reduction (`≤_btt ⇒ ≤_T`). -/
+theorem PolyTimeBTTReducible.polyTimeTuringReducible
+    (h : PolyTimeBTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every positive truth-table reduction is a polynomial-time Turing reduction (`≤_ptt ⇒ ≤_T`). -/
+theorem PolyTimePTTReducible.polyTimeTuringReducible
+    (h : PolyTimePTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every disjunctive truth-table reduction is a polynomial-time Turing reduction
+(`≤_dtt ⇒ ≤_T`). -/
+theorem PolyTimeDTTReducible.polyTimeTuringReducible
+    (h : PolyTimeDTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-- Every conjunctive truth-table reduction is a polynomial-time Turing reduction
+(`≤_ctt ⇒ ≤_T`). -/
+theorem PolyTimeCTTReducible.polyTimeTuringReducible
+    (h : PolyTimeCTTReducible encA encB A B) :
+    PolyTimeTuringReducible encA encB A B :=
+  h.polyTimeTruthTableReducible.polyTimeTuringReducible
+
+/-! ### Oracle substitution and transitivity of Turing reductions -/
+
+/-- One simulated instruction of a finite oracle machine `machine` when each query to its oracle is
+answered by running the deterministic oracle program `prog`. -/
+private def oracleAnswerStep {k : ℕ} {Control : Type}
+    (machine : Turing.MultiTapePTM k Bool Control Unit)
+    (prog : List Bool → WordQueryComp Unit Bool)
+    (cfg : Turing.MultiTapeMachine.FiniteConfig k Bool Control Unit) :
+    WordQueryComp Unit (Turing.MultiTapeMachine.FiniteConfig k Bool Control Unit) :=
+  if (machine.pendingQuery cfg).isSome then
+    (fun b => machine.receiveBit (cfg, b)) <$> prog (machine.pendingRequest cfg)
+  else
+    pure (machine.localStep cfg)
+
+private theorem interpret_oracleAnswerStep {k : ℕ} {Control : Type}
+    (machine : Turing.MultiTapePTM k Bool Control Unit)
+    (prog : List Bool → WordQueryComp Unit Bool)
+    (cfg : Turing.MultiTapeMachine.FiniteConfig k Bool Control Unit) :
+    OracleComp.interpret ProbOracleComp.query (oracleAnswerStep machine prog cfg) =
+      if (machine.pendingQuery cfg).isSome then
+        (fun b => machine.receiveBit (cfg, b)) <$>
+          OracleComp.interpret ProbOracleComp.query (prog (machine.pendingRequest cfg))
+      else
+        pure (machine.localStep cfg) := by
+  unfold oracleAnswerStep
+  split <;> simp [OracleComp.interpret_map]
+
+private theorem isOraclePPTOn_oracleAnswerStep {k : ℕ} {Control : Type} [Finite Control]
+    (machine : Turing.MultiTapePTM k Bool Control Unit)
+    {prog : List Bool → WordQueryComp Unit Bool}
+    (hprog : Probability.IsOraclePPTOn encBits encBool
+      (fun w => OracleComp.interpret ProbOracleComp.query (prog w))) :
+    Probability.IsOraclePPTOn encFiniteConfig encFiniteConfig
+      (fun cfg =>
+        OracleComp.interpret ProbOracleComp.query (oracleAnswerStep machine prog cfg)) := by
+  simp only [interpret_oracleAnswerStep]
+  exact Probability.IsOraclePPTOn.cond
+    ((ComputableTidilyInPolyTime.of_finite Option.isSome).comp machine.pendingQuery_pt)
+    ((hprog.preprocess machine.pendingRequest_pt).map_with
+      (f := fun cfg b => machine.receiveBit (cfg, b)) machine.receiveBit_pt)
+    machine.localStep_pt.isOraclePPTOn
+
+private theorem spaceBound_of_mem_support_oracleAnswerStep {k : ℕ} {Control : Type}
+    (machine : Turing.MultiTapePTM k Bool Control Unit)
+    (prog : List Bool → WordQueryComp Unit Bool)
+    {inputSize steps : ℕ}
+    {cfg next : Turing.MultiTapeMachine.FiniteConfig k Bool Control Unit}
+    (hcfg : Turing.MultiTapeMachine.FiniteConfig.SpaceBound inputSize steps 1 cfg)
+    (hnext : next ∈ OracleComp.support
+      (OracleComp.interpret ProbOracleComp.query (oracleAnswerStep machine prog cfg))) :
+    Turing.MultiTapeMachine.FiniteConfig.SpaceBound inputSize (steps + 1) 1 next := by
+  rw [interpret_oracleAnswerStep] at hnext
+  split_ifs at hnext with hq
+  · obtain ⟨b, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
+    have hstep := machine.spaceBound_answerStep (fun _ => b) hcfg
+    rw [machine.answerStep_bit (fun _ => b)] at hstep
+    simpa [hq] using hstep
+  · rw [OracleComp.eq_of_mem_supportWith_pure hnext]
+    have hstep := machine.spaceBound_answerStep (fun _ => false) hcfg
+    rw [machine.answerStep_bit (fun _ => false)] at hstep
+    simpa [hq] using hstep
+
+private theorem interpret_id_oracleAnswerStep {k : ℕ} {Control : Type}
+    (machine : Turing.MultiTapePTM k Bool Control Unit)
+    {prog : List Bool → WordQueryComp Unit Bool} {O : Set (List Bool)} {g : List Bool → Bool}
+    (hg : ∀ w, OracleComp.interpret (m := Id) (languageOracle O) (prog w) = g w)
+    (cfg : Turing.MultiTapeMachine.FiniteConfig k Bool Control Unit) :
+    OracleComp.interpret (m := Id) (languageOracle O) (oracleAnswerStep machine prog cfg) =
+      machine.answerStep (fun q => [g q.2]) cfg := by
+  rw [machine.answerStep_bit]
+  unfold oracleAnswerStep
+  split_ifs with hq
+  · rw [OracleComp.interpret_map, hg]
+    rfl
+  · rfl
+
+open Classical in
+/-- **Oracle substitution for polynomial-time Boolean computations**: if an oracle language `O₁`
+belongs to `P^{O₂}` and `f : α → Bool` is computable in polynomial time relative to `O₁`, then
+`f` is computable in polynomial time relative to `O₂`. -/
+theorem ComputableInPolyTimeWithOracle.of_mem_PWithOracle {O₁ O₂ : Set (List Bool)} {f : α → Bool}
+    (hO₁ : O₁ ∈ PWithOracle O₂ encBits)
+    (hf : ComputableInPolyTimeWithOracle O₁ f encA encBool) :
+    ComputableInPolyTimeWithOracle O₂ f encA encBool := by
+  obtain ⟨g, ⟨prog, hprog, hg⟩, hgO₁⟩ := hO₁
+  have hg' : g = fun w => decide (w ∈ O₁) := funext fun w =>
+    Bool.eq_iff_iff.mpr ⟨fun h => decide_eq_true ((hgO₁ w).mpr h),
+      fun h => (hgO₁ w).mp (of_decide_eq_true h)⟩
+  subst hg'
+  obtain ⟨program, hcert, hprogram⟩ := hf
+  obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
+  obtain ⟨cf, hcf⟩ := length_encFiniteConfig_le (k := k) (State := Fin m) (Oracle := Unit)
+  have hcount : ComputableTidilyInPolyTime (fun a => c * ((encA a).length + 1) ^ d) encA
+      encUnary :=
+    ((ComputableTidilyInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
+      (ComputableTidilyInPolyTime.encoding_length encA)).of_enc_eq fun a => by simp
+  have hinit : ComputableTidilyInPolyTime
+      (fun a => Turing.MultiTapeMachine.FiniteConfig.init (k := k) (Oracle := Unit)
+        machine.initial (encA a))
+      encA encFiniteConfig :=
+    ComputableTidilyInPolyTime.finiteConfig_init (by fun_prop) _
+  have hbound : PolyBounded (fun a => (encA a).length)
+      (fun a => cf * ((encA a).length + c * ((encA a).length + 1) ^ d + 1 + 1)) :=
+    PolyBounded.mono (PolyBounded.of_polynomiallyBounded (fun a => (encA a).length)
+      (bound := fun L => cf * (L + c * (L + 1) ^ d + 1 + 1)) (by fun_prop)) fun _ => le_rfl
+  have hit := (Probability.IsOraclePPTOn.iterate_spec hcount hinit
+    (isOraclePPTOn_oracleAnswerStep machine hprog)
+    (fun a i cfg => Turing.MultiTapeMachine.FiniteConfig.SpaceBound (encA a).length i 1 cfg)
+    (fun _ => Turing.MultiTapeMachine.FiniteConfig.spaceBound_init _ _ _)
+    (fun _ _ _ _ hinv _ hnext =>
+      spaceBound_of_mem_support_oracleAnswerStep machine prog hinv hnext)
+    hbound
+    (fun _ _ _ hi hinv => (hcf _ _ _ _ hinv).trans (Nat.mul_le_mul_left cf (by omega)))).1
+  refine ⟨fun a => (fun cfg => cfg.tapes.output.headD false) <$>
+    OracleComp.iterate (c * ((encA a).length + 1) ^ d) (oracleAnswerStep machine prog)
+      (Turing.MultiTapeMachine.FiniteConfig.init machine.initial (encA a)), ?_, fun a => ?_⟩
+  · simp only [OracleComp.interpret_map, OracleComp.interpret_iterate]
+    exact hit.map (by fun_prop)
+  · rw [OracleComp.interpret_map, OracleComp.interpret_id_iterate]
+    simp only [interpret_id_oracleAnswerStep machine hg]
+    change ((machine.answerStep (languageOracle O₁))^[c * ((encA a).length + 1) ^ d]
+      (Turing.MultiTapeMachine.FiniteConfig.init machine.initial (encA a))).tapes.output.headD
+        false = f a
+    rw [← machine.interpret_run_pure_false, hrun a (languageOracle O₁), ← hprogram a]
+    simp
+
+/-- If `O₁ ∈ P^{O₂}`, then `P^{O₁} ⊆ P^{O₂}`. -/
+theorem PWithOracle_subset_of_mem_PWithOracle {O₁ O₂ : Set (List Bool)}
+    (hO₁ : O₁ ∈ PWithOracle O₂ encBits) (enc : α ↪ List Bool) :
+    PWithOracle O₁ enc ⊆ PWithOracle O₂ enc :=
+  fun _ ⟨f, hf, hL⟩ => ⟨f, hf.of_mem_PWithOracle hO₁, hL⟩
+
+/-- If `O₁ ∈ P^{O₂}`, then `NP^{O₁} ⊆ NP^{O₂}`. -/
+theorem NPWithOracle_subset_of_mem_PWithOracle {O₁ O₂ : Set (List Bool)}
+    (hO₁ : O₁ ∈ PWithOracle O₂ encBits) (enc : α ↪ List Bool) :
+    NPWithOracle O₁ enc ⊆ NPWithOracle O₂ enc :=
+  fun _ ⟨p, V, hV, hL⟩ => ⟨p, V, hV.of_mem_PWithOracle hO₁, hL⟩
+
+/-- **`P` relative to an oracle is closed under polynomial-time Turing reductions to word
+languages.** -/
+theorem PolyTimeTuringReducible.mem_PWithOracle {B O : Set (List Bool)}
+    (hAB : PolyTimeTuringReducible encA encBits A B) (hB : B ∈ PWithOracle O encBits) :
+    A ∈ PWithOracle O encA := by
+  rw [polyTimeTuringReducible_bits_iff_mem_PWithOracle] at hAB
+  exact PWithOracle_subset_of_mem_PWithOracle hB encA hAB
+
+/-- **Polynomial-time Turing reductions through word languages compose (`≤_T ∘ ≤_T ⇒ ≤_T`).** -/
+@[trans]
+theorem PolyTimeTuringReducible.trans {B : Set (List Bool)}
+    (hAB : PolyTimeTuringReducible encA encBits A B)
+    (hBC : PolyTimeTuringReducible encBits encL B L) :
+    PolyTimeTuringReducible encA encL A L :=
+  hAB.mem_PWithOracle hBC
 
 /-- Every problem reduces to itself under polynomial-time Turing reductions. -/
 @[refl]

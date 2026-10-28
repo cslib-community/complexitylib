@@ -178,6 +178,37 @@ theorem numGroups_eq_floor (n : ℕ) :
       exact_mod_cast hlam_lt
     exact (Real.sqrt_lt' (by positivity)).mpr hlam_rlt
 
+/-- Lower integer comparison bound: `r² ν⁴ ≤ λ` for every `n`, where `r = numGroups n`,
+`λ = Nat.clog 2 n`, and `ν = Nat.clog 2 λ` ([OpenAI2026ETH], Proposition 6.4, pp. 43–44). -/
+theorem sq_mul_pow_four_le_clog (n : ℕ) :
+    numGroups n ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 ≤ Nat.clog 2 n := by
+  set lam := Nat.clog 2 n
+  set nu := Nat.clog 2 lam
+  have hsq : (numGroups n * nu ^ 2) ^ 2 ≤ lam.sqrt ^ 2 :=
+    Nat.pow_le_pow_left (Nat.div_mul_le_self lam.sqrt (nu ^ 2)) 2
+  have hsqrt : lam.sqrt ^ 2 ≤ lam := by simpa only [sq] using Nat.sqrt_le lam
+  calc
+    numGroups n ^ 2 * nu ^ 4 = (numGroups n * nu ^ 2) ^ 2 := by ring
+    _ ≤ lam := hsq.trans hsqrt
+
+/-- Upper integer comparison bound: `λ < (r + 1)² ν⁴` whenever `1 ≤ ν` (`3 ≤ n`), where
+`r = numGroups n`, `λ = Nat.clog 2 n`, and `ν = Nat.clog 2 λ`
+([OpenAI2026ETH], Proposition 6.4, pp. 43–44). -/
+theorem clog_lt_succ_sq_mul_pow_four {n : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :
+    Nat.clog 2 n < (numGroups n + 1) ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 := by
+  set lam := Nat.clog 2 n
+  set nu := Nat.clog 2 lam
+  have hdiv : lam.sqrt + 1 ≤ (numGroups n + 1) * nu ^ 2 := by
+    have hlt : lam.sqrt < nu ^ 2 * (numGroups n + 1) :=
+      Nat.lt_mul_div_succ lam.sqrt (pow_pos hnu 2)
+    rw [mul_comm] at hlt
+    omega
+  have hsqrt : lam < (lam.sqrt + 1) ^ 2 := by simpa only [sq] using Nat.lt_succ_sqrt lam
+  calc
+    lam < (lam.sqrt + 1) ^ 2 := hsqrt
+    _ ≤ ((numGroups n + 1) * nu ^ 2) ^ 2 := Nat.pow_le_pow_left hdiv 2
+    _ = (numGroups n + 1) ^ 2 * nu ^ 4 := by ring
+
 /-- `numNodes n` agrees with the real floor `⌊λ / (128 ν)⌋₊` for every `n`. -/
 theorem numNodes_eq_floor (n : ℕ) :
     numNodes n = ⌊(Nat.clog 2 n : ℝ) / (128 * Nat.clog 2 (Nat.clog 2 n))⌋₊ := by

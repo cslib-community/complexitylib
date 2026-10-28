@@ -33,8 +33,8 @@ def isHalf (x : ℕ × ℕ) : Bool := decide (x.2 + x.2 = x.1)
 theorem isHalf_iff (n m : ℕ) : isHalf (n, m) = true ↔ m + m = n := by
   simp [isHalf]
 
-theorem computableTidilyInPolyTime_isHalf :
-    ComputableTidilyInPolyTime isHalf (encPair encUnary encUnary) encBool := by
+theorem computableInPolyTime_isHalf :
+    ComputableInPolyTime isHalf (encPair encUnary encUnary) encBool := by
   unfold isHalf
   fun_prop
 
@@ -44,24 +44,23 @@ theorem isVerifier_even : IsVerifier encUnary (2 * Polynomial.X + 1)
   isVerifier_witnessVerifier Decoder.unary isHalf_iff fun _ m h => ⟨m, h, by simp; omega⟩
 
 example : {n | ∃ m, m + m = n} ∈ NP encUnary :=
-  mem_NP_of_witness Decoder.unary (p := Polynomial.X) (.of_tidy computableTidilyInPolyTime_isHalf)
+  mem_NP_of_witness Decoder.unary (p := Polynomial.X) computableInPolyTime_isHalf
     isHalf_iff
     fun _ m h => ⟨m, h, by simp; omega⟩
 
 example : encUnary '' {n | ∃ m, m + m = n} ∈ NP encBits :=
   mem_NP_image Decoder.unary
     (mem_NP_of_witness Decoder.unary (p := Polynomial.X)
-      (.of_tidy computableTidilyInPolyTime_isHalf) isHalf_iff fun _ m h => ⟨m, h, by simp; omega⟩)
+      computableInPolyTime_isHalf isHalf_iff fun _ m h => ⟨m, h, by simp; omega⟩)
 
--- In: the framed witness `2` for `4`, padded to the certificate length `2 * 4 + 1`.
-example : (frame (encUnary 2) ++ List.replicate 4 false).length = 2 * 4 + 1 := rfl
-example : witnessVerifier Decoder.unary isHalf (4, frame (encUnary 2) ++ List.replicate 4 false) =
-    true := rfl
-
--- Bits after the framed witness are ignored.
+-- In: the framed witness `2` for `4`, padded to the certificate length `2 * 4 + 1`; bits after
+-- the framed witness are ignored.
 example :
+    (frame (encUnary 2) ++ List.replicate 4 false).length = 2 * 4 + 1 ∧
+    witnessVerifier Decoder.unary isHalf (4, frame (encUnary 2) ++ List.replicate 4 false) = true ∧
     witnessVerifier Decoder.unary isHalf (4, frame (encUnary 2) ++ [true, true, false, true]) =
-      true := rfl
+      true :=
+  ⟨rfl, rfl, rfl⟩
 
 -- Out: no certificate of any length is accepted for `3`.
 example (w : List Bool) : witnessVerifier Decoder.unary isHalf (3, w) = false := by
@@ -76,9 +75,11 @@ example : 3 ∉ {n | ∃ m, m + m = n} := by
 
 -- Malformed certificates are rejected. The unterminated frame of nine `true` bits reads as the
 -- witness `4` of `8`, but it is not a framed encoding followed by padding, so it is rejected.
-example : unframe (List.replicate 9 true) = List.replicate 4 true := rfl
-example : isHalf (8, 4) = true := rfl
-example : witnessVerifier Decoder.unary isHalf (8, List.replicate 9 true) = false := rfl
+example :
+    unframe (List.replicate 9 true) = List.replicate 4 true ∧
+    isHalf (8, 4) = true ∧
+    witnessVerifier Decoder.unary isHalf (8, List.replicate 9 true) = false :=
+  ⟨rfl, rfl, rfl⟩
 
 -- In general a certificate is accepted only if it is a framed witness followed by any bits.
 example (n : ℕ) (w : List Bool) (h : witnessVerifier Decoder.unary isHalf (n, w) = true) :
@@ -86,14 +87,14 @@ example (n : ℕ) (w : List Bool) (h : witnessVerifier Decoder.unary isHalf (n, 
   obtain ⟨m, v, hw, hm⟩ := witnessVerifier_eq_true_iff.1 h
   exact ⟨m, v, hw, (isHalf_iff n m).1 hm⟩
 
--- A certificate starting with the end marker frames the witness `0`, whatever follows.
-example : witnessVerifier Decoder.unary isHalf (4, false :: List.replicate 8 true) = false := rfl
-example : witnessVerifier Decoder.unary isHalf (0, false :: List.replicate 8 true) = true := rfl
-
--- Boundary: the shortest certificate for `0` is the empty frame `[false]`; the empty word frames
--- nothing and is rejected.
-example : witnessVerifier Decoder.unary isHalf (0, [false]) = true := rfl
-example : witnessVerifier Decoder.unary isHalf (0, []) = false := rfl
+-- A certificate starting with the end marker frames the witness `0`, whatever follows; the
+-- shortest certificate for `0` is `[false]`, while `[]` frames nothing and is rejected.
+example :
+    witnessVerifier Decoder.unary isHalf (4, false :: List.replicate 8 true) = false ∧
+    witnessVerifier Decoder.unary isHalf (0, false :: List.replicate 8 true) = true ∧
+    witnessVerifier Decoder.unary isHalf (0, [false]) = true ∧
+    witnessVerifier Decoder.unary isHalf (0, []) = false :=
+  ⟨rfl, rfl, rfl, rfl⟩
 
 /-! ### Subset witnesses: distinct entries -/
 
@@ -113,29 +114,27 @@ theorem isVerifier_distinctEntries : IsVerifier (encPair (encList encNat) encNat
   · simp [hasCount, List.toFinset_card_of_nodup hl]
 
 example : DistinctEntries ∈ NP (encPair (encList encNat) encNat) :=
-  mem_NP_of_subsetWitness (check := hasCount) (.of_tidy (ComputableTidilyInPolyTime.fst _ _))
-    (.of_tidy ((ComputableTidilyInPolyTime.unary_to_binary.comp
-      ((ComputableTidilyInPolyTime.length_list encNat).comp (ComputableTidilyInPolyTime.snd _ _))
-      ).decide_eq' (by fun_prop)))
+  mem_NP_of_subsetWitness (check := hasCount) (ComputableInPolyTime.fst _ _)
+    (by unfold hasCount; fun_prop)
     fun x l hl _ => by simp [hasCount, List.toFinset_card_of_nodup hl]
 
--- In: the mask selects `1` and `2`.
+-- In: the mask `[true, false, true]` selects `1` and `2`, while a repeated entry is selected only
+-- at its first occurrence (`[true, true, false]` selects only `[1]`).
 example :
     subsetVerifier (fun x : List ℕ × ℕ => x.1) hasCount (([1, 1, 2], 2), [true, false, true]) =
-      true := rfl
-
--- A repeated entry is selected only at its first occurrence.
-example : selectDistinct [1, 1, 2] [true, true, false] = [1] := rfl
-example :
+      true ∧
+    selectDistinct [1, 1, 2] [true, true, false] = [1] ∧
     subsetVerifier (fun x : List ℕ × ℕ => x.1) hasCount (([1, 1, 2], 2), [true, true, false]) =
-      false := rfl
+      false :=
+  ⟨rfl, rfl, rfl⟩
 
--- Missing mask bits are `false`, and bits beyond the candidates are ignored.
-example : selectDistinct [1, 1, 2] [false, false, true, true, true] = [2] := rfl
-example : selectDistinct [1, 1, 2] [] = [] := rfl
-
--- Boundary: the empty set of the empty list.
-example : subsetVerifier (fun x : List ℕ × ℕ => x.1) hasCount (([], 0), []) = true := rfl
+-- Missing mask bits are `false`, bits beyond the candidates are ignored, and the empty set of the
+-- empty list is accepted.
+example :
+    selectDistinct [1, 1, 2] [false, false, true, true, true] = [2] ∧
+    selectDistinct [1, 1, 2] [] = [] ∧
+    subsetVerifier (fun x : List ℕ × ℕ => x.1) hasCount (([], 0), []) = true :=
+  ⟨rfl, rfl, rfl⟩
 
 -- Out: `[1, 1]` has a single distinct entry, so no certificate is accepted.
 example : ¬∃ w : List Bool, w.length = Polynomial.X.eval (encPair (encList encNat) encNat
@@ -150,28 +149,30 @@ example : ¬∃ w : List Bool, w.length = Polynomial.X.eval (encPair (encList en
 
 /-! ### Full masks -/
 
--- The full mask selects each entry at its first occurrence.
-example : selectDistinct [3, 5, 3, 7] (List.replicate 4 true) = [3, 5, 7] := rfl
-example : Graph.distinctVertices ([2, 1, 2, 1], []) = [2, 1] := rfl
+-- The full mask selects each entry at its first occurrence, so its length counts the distinct
+-- elements (`[3, 5, 3, 7].toFinset.card = 3`).
 example :
-    (selectDistinct [3, 5, 3, 7] (List.replicate 4 true)).length = [3, 5, 3, 7].toFinset.card :=
-  length_selectDistinct_replicate _
+    selectDistinct [3, 5, 3, 7] (List.replicate 4 true) = [3, 5, 7] ∧
+    Graph.distinctVertices ([2, 1, 2, 1], []) = [2, 1] ∧
+    [3, 5, 3, 7].toFinset.card = 3 :=
+  ⟨rfl, rfl, (length_selectDistinct_replicate [3, 5, 3, 7]).symm.trans rfl⟩
 
 /-! ### Vertex covers through the subset verifier -/
 
 /-- The path `1 - 2 - 3`. -/
 def path3 : Graph := ([1, 2, 3], [(1, 2), (2, 3)])
 
--- In: the middle vertex covers both edges.
-example : VertexCover.verifier ((path3, 1), [false, true, false]) = true := rfl
--- Out: an end vertex leaves an edge uncovered, and a cover of the wrong size is rejected.
-example : VertexCover.verifier ((path3, 1), [true, false, false]) = false := rfl
-example : VertexCover.verifier ((path3, 1), [true, true, false]) = false := rfl
--- A repeated declared vertex is selected only at its first occurrence.
-example : VertexCover.verifier (((([2, 2, 1, 3], [(1, 2), (2, 3)]) : Graph), 1),
-    [true, true, false, false]) = true := rfl
-example : VertexCover.verifier (((([2, 2, 1, 3], [(1, 2), (2, 3)]) : Graph), 1),
-    [false, true, false, false]) = false := rfl
+-- The middle vertex covers both edges; an end vertex or wrong size is rejected; a repeated
+-- declared vertex is selected only at its first occurrence.
+example :
+    VertexCover.verifier ((path3, 1), [false, true, false]) = true ∧
+    VertexCover.verifier ((path3, 1), [true, false, false]) = false ∧
+    VertexCover.verifier ((path3, 1), [true, true, false]) = false ∧
+    VertexCover.verifier (((([2, 2, 1, 3], [(1, 2), (2, 3)]) : Graph), 1),
+      [true, true, false, false]) = true ∧
+    VertexCover.verifier (((([2, 2, 1, 3], [(1, 2), (2, 3)]) : Graph), 1),
+      [false, true, false, false]) = false :=
+  ⟨rfl, rfl, rfl, rfl, rfl⟩
 
 /-! ### Unary blocks -/
 

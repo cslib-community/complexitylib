@@ -26,6 +26,12 @@ CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, L
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
 complete set on every run, although `.lake` usually has most of it.
 
+The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
+about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
+not download the toolchain. On a miss, `.github/actions/install-lean` installs them with bounded
+retries and saves the entry before any Lake command runs, so it never contains the local artifact
+cache above.
+
 ## Merge-queue handoff
 
 After all required checks pass, a merge-group run packages its root `.lake/build` outputs in a

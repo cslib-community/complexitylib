@@ -19,10 +19,6 @@ A uniformly random function into a finite additive group has uniform differences
 inputs. Negating the complete function preserves its uniform law, and hence the same bound.
 These are information-theoretic laws; they make no efficient-sampling claim.
 
-The uniform-function proof is moved from `Complexity.Crypto.Protocols.Cipher.LubyRackoff`.
-The negated-function proof is extracted from the reviewed #1099 contribution by
-`worker-jetski-fb3f7966`; the proof bodies and their assumptions are retained.
-
 ## Main results
 
 * `Cslib.Probability.isDeltaUniversalHash_uniformOfFintype`: uniform functions are Δ-universal.

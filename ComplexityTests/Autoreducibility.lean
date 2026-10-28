@@ -62,16 +62,35 @@ theorem coSingleton_mitotic : PolyTimeManyOneMitotic encBits ({[]}ᶜ : Set (Lis
 
 -- `{[]}ᶜ` is disjunctive, 1-truth-table, bounded truth-table, and truth-table autoreducible.
 example : PolyTimeDTTAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
-  coSingleton_mitotic.polyTimeDTTAutoreducible
+  coSingleton_mitotic.polyTimeDTTMitotic.polyTimeDTTAutoreducible
 
 example : PolyTimeKTruthTableAutoreducible 1 encBits ({[]}ᶜ : Set (List Bool)) :=
-  coSingleton_mitotic.polyTimeKTruthTableAutoreducible_one
+  coSingleton_mitotic.polyTimeKTruthTableMitotic_one.polyTimeKTruthTableAutoreducible
+
+example : PolyTimeKTruthTableAutoreducible 2 encBits ({[]}ᶜ : Set (List Bool)) :=
+  (coSingleton_mitotic.polyTimeKTruthTableMitotic_one.mono
+    (by decide : 1 ≤ 2)).polyTimeKTruthTableAutoreducible
 
 example : PolyTimeBTTAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
-  coSingleton_mitotic.polyTimeBTTAutoreducible
+  coSingleton_mitotic.polyTimeBTTMitotic.polyTimeBTTAutoreducible
 
 example : PolyTimeTruthTableAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
-  coSingleton_mitotic.polyTimeTruthTableAutoreducible
+  coSingleton_mitotic.polyTimeTruthTableMitotic.polyTimeTruthTableAutoreducible
+
+-- By complement closure, the singleton `{[]}` is 1-truth-table, bounded truth-table,
+-- and truth-table autoreducible, and its complement is conjunctive truth-table autoreducible.
+example : PolyTimeKTruthTableAutoreducible 1 encBits ({[]} : Set (List Bool)) := by
+  simpa using coSingleton_mitotic.polyTimeKTruthTableAutoreducible_one.compl
+
+example : PolyTimeBTTAutoreducible encBits ({[]} : Set (List Bool)) := by
+  simpa using coSingleton_mitotic.polyTimeBTTAutoreducible.compl
+
+example : PolyTimeTruthTableAutoreducible encBits ({[]} : Set (List Bool)) := by
+  simpa using coSingleton_mitotic.polyTimeTruthTableAutoreducible.compl
+
+example : PolyTimeCTTAutoreducible encBits ({[]} : Set (List Bool)) := by
+  simpa using polyTimeDTTAutoreducible_iff_polyTimeCTTAutoreducible_compl.mp
+    coSingleton_mitotic.polyTimeDTTAutoreducible
 
 -- However, `{[]}ᶜ` is strictly not many-one autoreducible, because its complement is a singleton.
 example : ¬ PolyTimeManyOneAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=

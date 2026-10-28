@@ -25,7 +25,7 @@ private theorem head_mem_P : {w : List Bool | w.headD false = true} ∈ P encBit
   ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
 private theorem tail_mem_P : {w : List Bool | w.tail.headD false = true} ∈ P encBits :=
-  ⟨fun w => w.tail.headD false, .of_tidy (by fun_prop), fun _ => Iff.rfl⟩
+  ⟨fun w => w.tail.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
 example : {w : List Bool | w.headD false = true} ∩ {w | w.tail.headD false = true} ∈ P encBits :=
   inter_mem_P head_mem_P tail_mem_P
@@ -45,7 +45,7 @@ example : {w : List Bool | w.headD false = true} ∆ {w | w.tail.headD false = t
 /-- A variable-length precomposition preserves the count `2 ^ |tail w|` without a padding factor. -/
 example : (fun w : List Bool => 2 ^ w.tail.length) ∈ SharpP encBits := by
   simpa [Function.comp_def] using SharpP.comp_mem (SharpP.two_pow_mem (enc := encBits) Polynomial.X)
-    (.of_tidy (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop))
+    (show ComputableInPolyTime List.tail encBits encBits by fun_prop)
 
 /-- Requiring padding to be false gives exactly one extension, including zero padding. -/
 example (n : ℕ) : acceptCount
@@ -57,7 +57,7 @@ example (n : ℕ) : acceptCount
 example : (fun w : List Bool => (2 ^ w.tail.length : ℕ) - (1 : ℤ)) ∈ GapP encBits := by
   simpa [Function.comp_def] using GapP.comp_mem
     (GapP.natCast_sub_natCast_mem (SharpP.two_pow_mem (enc := encBits) Polynomial.X) SharpP.one_mem)
-    (.of_tidy (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop))
+    (show ComputableInPolyTime List.tail encBits encBits by fun_prop)
 
 example : {w : List Bool | w.headD false = true} ∈ UP encBits := P_subset_UP head_mem_P
 
@@ -89,7 +89,8 @@ example : (([] : CNF ℕ), ([] : CNF ℕ)) ∉ SATUNSAT := by
   rintro ⟨-, h⟩
   exact h ⟨fun _ => true, rfl⟩
 
-example : DPComplete (encPair encCNF encCNF) SATUNSAT := SATUNSAT_dpComplete
+example : PolyTimeReducible encCNF (encPair encCNF encCNF) (SAT ∩ UNSAT) SATUNSAT :=
+  SATUNSAT_dpComplete.2 encCNF (SAT ∩ UNSAT) ⟨SAT, SAT.mem_NP, UNSAT, UNSAT_mem_coNP, rfl⟩
 
 example : (SATUNSAT ∩ SATUNSAT) ∈ DP (encPair encCNF encCNF) :=
   inter_mem_DP SATUNSAT_dpComplete.1 SATUNSAT_dpComplete.1

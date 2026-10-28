@@ -617,7 +617,7 @@ theorem exists_fin_selectBestTestRow (countSys : List (List Bool) → ℕ)
   obtain ⟨γ, hγ⟩ := exists_fin_of_lt_candidateTupleCount hjStar
   exact ⟨γ, by rw [hrow, hγ, materializeTestRow_ofFn]⟩
 
-/-! ### Row counts, widths, weights, and CNF `#1234` bridge for `greedyParityRows` -/
+/-! ### Row counts, widths, weights, and CNF bridge for `greedyParityRows` -/
 
 @[simp] theorem length_greedyParityRowsAt (countSys : List (List Bool) → ℕ)
     (m P : ℕ) (initRows : List (List Bool)) (i : ℕ) :
@@ -688,7 +688,8 @@ theorem length_encList_greedyParityRowsAt (countSys : List (List Bool) → ℕ)
     rw [greedyParityRowsAt_succ, encList_append, List.length_append, ih, encList_cons, encList_nil,
       List.append_nil, length_frame, encBits_apply, length_selectBestTestRow]; ring
 
-/-- **Exact bridge from `greedyParityRows` to `CNF.numPassing_greedy` (`#1234`, Lemma 6.2).**
+/-- **Exact bridge from `greedyParityRows` to `CNF.numPassing_greedy`**
+([OpenAI2026ETH], Lemma 6.2).
 Under `hn : 1 ≤ Fintype.card V` and `hP : 1 ≤ P`, when `initRows` has row width `φ.length`,
 `countSys` computes `numPassing φ.violations` on width-`φ.length` candidate row lists of length at
 most `initRows.length + 3 * Fintype.card V` whose appended rows have weight `≤ P`, and `initRows`

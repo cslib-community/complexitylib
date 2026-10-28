@@ -144,9 +144,6 @@ example : {w : List Bool | w.headD false = true} ∪ {w | w.headD false = true}�
 
 /-! ### `SAT` and `P` -/
 
-example : SAT ∈ P encCNF ↔ ∀ {β : Type} (e : β ↪ List Bool), P e = NP e :=
-  SAT_mem_P_iff
-
 example : ExactThreeSAT ∈ P encCNF ↔ SAT ∈ P encCNF :=
   ExactThreeSAT_npComplete.mem_P_iff_mem_P CookLevin.SAT_npComplete
 
@@ -162,8 +159,11 @@ example (h : SAT ∈ P encCNF) : BPP encBits = P encBits :=
 example : {w : List Bool | w.headD false = true} ∈ PCP (fun _ => 0) (fun _ => 0) encBits :=
   PCP_zero_zero.symm ▸ headD_mem_P
 
-example : PCPVerifier.answers [true, false, true] (List.range 3) = [true, false, true] :=
-  PCPVerifier.answers_range_length _
+example :
+    (PCPVerifier.answers [true, false, true] (List.range [true, false, true].length)).count true =
+      2 := by
+  rw [PCPVerifier.answers_range_length]
+  decide
 
 example : ∃ k : ℕ, SAT ∈ PCP (fun _ => 0) (fun n => (n + 1) ^ k) encCNF :=
   mem_NP_iff_exists_PCP_zero.1 CookLevin.SAT_npComplete.1

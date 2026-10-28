@@ -157,7 +157,7 @@ theorem compl_mem_L (h : A ∈ L enc) : Aᶜ ∈ L enc :=
 logarithmic space repeats no configuration it can read, of which there are polynomially many. -/
 theorem L_subset_P : L enc ⊆ P enc := by
   rintro A ⟨f, hf, hA⟩
-  exact ⟨f, .of_tidy hf.computableTidilyInPolyTime, hA⟩
+  exact ⟨f, hf.computableInPolyTime, hA⟩
 
 /-- **Deterministic logarithmic space is within polynomial space.** -/
 theorem L_subset_PSPACE : L enc ⊆ PSPACE enc := by
@@ -206,7 +206,7 @@ theorem LogSpaceReducible.compl (h : LogSpaceReducible enc encB A B) :
 /-- **Logspace reductions are polynomial-time reductions.** -/
 theorem LogSpaceReducible.polyTimeReducible (h : LogSpaceReducible enc encB A B) :
     PolyTimeReducible enc encB A B :=
-  ManyOneReducibleBy.mono (fun _ hf => .of_tidy hf.computableTidilyInPolyTime) h
+  ManyOneReducibleBy.mono (fun _ hf => hf.computableInPolyTime) h
 
 /-- `B` is hard for the class `C` under logspace many-one reductions: every problem in `C`, with
 any encoding of its instances, reduces to `B` in logarithmic space. This is `HardUnder` for

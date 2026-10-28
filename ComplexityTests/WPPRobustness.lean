@@ -19,13 +19,13 @@ private def language : Set (List Bool) := {w | w.headD false = true}
 private def gap (w : List Bool) : ℤ := if w.headD false then -1 else 0
 
 private theorem gap_mem : gap ∈ GapP encBits := mem_GapP_of_polyTime
-  (.of_tidy (by unfold gap; fun_prop))
+  (by unfold gap; fun_prop)
 
 private def targets (n : ℕ) : List ℤ := -1 :: -1 :: List.replicate n (-2)
 
 private theorem targets_polyTime :
-    ComputableInPolyTime targets encUnary (encList encIntBin) :=
-  .of_tidy (by unfold targets; fun_prop)
+    ComputableInPolyTime targets encUnary (encList encIntBin) := by
+  unfold targets; fun_prop
 
 private theorem targets_nonzero (n : ℕ) : (0 : ℤ) ∉ targets n := by simp [targets]
 
@@ -43,8 +43,7 @@ example : language ∈ LWPP encBits :=
 
 example : language ∈ WPP encBits :=
   mem_WPP_of_polyTime_targets gap_mem
-    (targets_polyTime.comp
-      (ComputableTidilyInPolyTime.encoding_length encBits).computableInPolyTime)
+    (targets_polyTime.comp (ComputableInPolyTime.encoding_length encBits))
     (fun w => targets_nonzero w.length) accepts rejects
 
 -- The plain characterization consumes a growing list certificate with unary input length.
@@ -55,8 +54,7 @@ example : language ∈ LWPP encBits :=
 -- A plain list certificate can be used directly in the uniform interpolation product theorem.
 example : (fun w => ((targets w.length).map (fun z => z - gap w)).prod) ∈ GapP encBits :=
   GapP.prod_sub_mem
-    (targets_polyTime.comp
-      (ComputableTidilyInPolyTime.encoding_length encBits).computableInPolyTime)
+    (targets_polyTime.comp (ComputableInPolyTime.encoding_length encBits))
     gap_mem
 
 example : [true] ∈ language ∧ [false] ∉ language := by simp [language]

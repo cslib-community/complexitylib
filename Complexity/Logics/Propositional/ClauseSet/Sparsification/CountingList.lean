@@ -259,16 +259,6 @@ theorem toClauseSet_countingNext {θ : ℕ → ℕ} {k : ℕ} {ψ : CNF V} (h : 
       (choice θ k ψ).1 (choice θ k ψ).2.toFinset b :=
   toClauseSet_countingChild h.nodup _ _ b
 
-/-- A formula and the canonical CNF of its clause set have the same declared-variable model
-count. -/
-theorem modelCountOn_toCNF_toClauseSet (ψ : CNF V) (declared : Finset V) :
-    ψ.toClauseSet.toCNF.modelCountOn declared = ψ.modelCountOn declared := by
-  simp only [CNF.modelCountOn]
-  congr 1
-  ext σ
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, ClauseSet.eval_toCNF_eq_true_iff,
-    CNF.sat_toClauseSet_iff]
-
 /-- **Additive model-count conservation for `countingChild`.** On any formula `ψ` without repeated
 literals in its clauses, the declared-variable model count equals the sum of the counts of its two
 counting children. -/

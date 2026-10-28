@@ -605,6 +605,11 @@ asserts, with one decryption circuit family chosen before the depth and budget. 
 theorem leveled_witness (hLWE : DecisionLWE) :
     ∃ circuit : ∀ security, Circuits.Circuit Circuits.Boolean.signature
         ((3 * secretWidth security + 1) + (ciphertextWidth security + 1)) 1,
+      Computation.PolyTime
+        (fun security =>
+          (⟨(3 * secretWidth security + 1) + (ciphertextWidth security + 1), circuit security⟩ :
+            Σ k, Circuits.Circuit Circuits.Boolean.signature k 1))
+        Encoding.encUnary (Circuits.Boolean.encCircuit 1) ∧
       PolynomiallyBounded (fun security => (circuit security).size) ∧
       PolynomiallyBounded (fun security => 3 * secretWidth security + 1) ∧
       PolynomiallyBounded (fun security => ciphertextWidth security + 1) ∧
@@ -666,7 +671,7 @@ theorem leveled_witness (hLWE : DecisionLWE) :
   have hkeyGen := GSW.DepthParameters.isPPTOn_keyGen
   have hencrypt := GSW.DepthParameters.isPPTOn_encrypt
   have hevaluate := GSW.DepthParameters.isPPTOn_evaluate
-  obtain ⟨circuits, hsize, hcircuits⟩ := Leveled.exists_decrypt_circuits D hD
+  obtain ⟨circuits, hgen, hsize, hcircuits⟩ := GSW.DepthParameters.exists_leveled_decrypt_circuits
   obtain ⟨hsecret, hciphertext, hkgJoint, hencJoint, hdecJoint, hevalJoint⟩ :=
     Leveled.schemeFamily_spec D hkeyGen hencrypt hevaluate
       GSW.DepthParameters.computableInPolyTime_decryptionCircuits
@@ -702,7 +707,7 @@ theorem leveled_witness (hLWE : DecisionLWE) :
         (Leveled.computableInPolyTime_scheme_decrypt D hD budget)
         (Leveled.isPPTOn_scheme_evaluate hencrypt D hD hevaluate budget hb),
       chosenMessageSecure_of_indCPA hsecure⟩
-  refine ⟨circuits, hsize, hsecret, hciphertext,
+  refine ⟨circuits, CryptographyBridge.polyTime_iff.mpr hgen.tidy, hsize, hsecret, hciphertext,
     nativeInDepth_of hkgJoint hencJoint hdecJoint hevalJoint,
     fun d => hforBudget (fun _ => d) (by fun_prop),
     fun budget hbudget =>
@@ -712,7 +717,13 @@ theorem leveled_witness (hLWE : DecisionLWE) :
 /-- **The library's fixed-key scheme witnesses `fullyHomomorphic`**, with GSW's own decryption
 circuits `GSW.DepthParameters.decryptionCircuits.circuit`. -/
 theorem fullyHomomorphic_witness (hLWE : DecisionLWE) (hcircular : CircularSecure) :
-    PolynomiallyBounded
+    Computation.PolyTime
+        (fun security =>
+          (⟨secretWidth security + ciphertextWidth security,
+              GSW.DepthParameters.decryptionCircuits.circuit security⟩ :
+            Σ k, Circuits.Circuit Circuits.Boolean.signature k 1))
+        Encoding.encUnary (Circuits.Boolean.encCircuit 1) ∧
+      PolynomiallyBounded
         (fun security => (GSW.DepthParameters.decryptionCircuits.circuit security).size) ∧
       PolynomiallyBounded secretWidth ∧ PolynomiallyBounded ciphertextWidth ∧
       (∀ security, ProbComp.eval
@@ -731,7 +742,9 @@ theorem fullyHomomorphic_witness (hLWE : DecisionLWE) (hcircular : CircularSecur
       hdecrypt, hevaluate, hsecure⟩ :=
     GSW.DepthParameters.fullyHomomorphic_of_decisionLWE_of_circularSecure
       (decisionLWE_iff.mp hLWE) (circularSecure_iff.mp hcircular)
-  exact ⟨hsize, hsecret, hciphertext, fixedKey_keyGen, fixedKey_encryptsAndDecrypts,
+  exact ⟨CryptographyBridge.polyTime_iff.mpr
+      GSW.DepthParameters.computableInPolyTime_decryptionCircuits.tidy,
+    hsize, hsecret, hciphertext, fixedKey_keyGen, fixedKey_encryptsAndDecrypts,
     (FixedKey.decryptionCircuits GSW.DepthParameters.decryptionCircuits).correct,
     homomorphic_of_correct hcorrect fun security C _ => hpermitted security C,
     fixedWidths_of_fixedWidth hwidth fun security C _ => hpermitted security C,
@@ -748,6 +761,11 @@ theorem leveled {unframe dropFrame : List Bool → List Bool}
     ∃ (circuit : ∀ security, Circuits.Circuit Circuits.Boolean.signature
         ((3 * secretWidth security + 1) + (ciphertextWidth security + 1)) 1)
       (E : ℕ → Homomorphic.Scheme),
+      Computation.PolyTime
+        (fun security =>
+          (⟨(3 * secretWidth security + 1) + (ciphertextWidth security + 1), circuit security⟩ :
+            Σ k, Circuits.Circuit Circuits.Boolean.signature k 1))
+        Encoding.encUnary (Circuits.Boolean.encCircuit 1) ∧
       PolynomiallyBounded (fun security => (circuit security).size) ∧
       PolynomiallyBounded (fun security => 3 * secretWidth security + 1) ∧
       PolynomiallyBounded (fun security => ciphertextWidth security + 1) ∧
@@ -781,8 +799,8 @@ theorem leveled {unframe dropFrame : List Bool → List Bool}
           Native S ∧ ChosenMessageSecure S := by
   obtain rfl : unframe = Turing.MultiTapeTM.unframe := funext hunframe
   obtain rfl : dropFrame = Turing.MultiTapeTM.dropFrame := funext hdropFrame
-  obtain ⟨circuit, hsize, hsecret, hciphertext, hjoint, hd, hbudget⟩ := leveled_witness hLWE
-  exact ⟨circuit, _, hsize, hsecret, hciphertext, hjoint, hd, fun budget hb =>
+  obtain ⟨circuit, hgen, hsize, hsecret, hciphertext, hjoint, hd, hbudget⟩ := leveled_witness hLWE
+  exact ⟨circuit, _, hgen, hsize, hsecret, hciphertext, hjoint, hd, fun budget hb =>
     ⟨_, hbudget budget hb⟩⟩
 
 theorem fullyHomomorphic {unframe : List Bool → List Bool}
@@ -790,6 +808,11 @@ theorem fullyHomomorphic {unframe : List Bool → List Bool}
     (hLWE : DecisionLWE) (hcircular : CircularSecure) :
     ∃ circuit : ∀ security, Circuits.Circuit Circuits.Boolean.signature
         (secretWidth security + ciphertextWidth security) 1,
+      Computation.PolyTime
+        (fun security =>
+          (⟨secretWidth security + ciphertextWidth security, circuit security⟩ :
+            Σ k, Circuits.Circuit Circuits.Boolean.signature k 1))
+        Encoding.encUnary (Circuits.Boolean.encCircuit 1) ∧
       PolynomiallyBounded (fun security => (circuit security).size) ∧
       PolynomiallyBounded secretWidth ∧ PolynomiallyBounded ciphertextWidth ∧
       ∃ S : Homomorphic.Scheme,
@@ -800,7 +823,7 @@ theorem fullyHomomorphic {unframe : List Bool → List Bool}
         FixedWidths S (fun _ _ => True) secretWidth ciphertextWidth ∧
         Native S ∧ ChosenMessageSecure S := by
   obtain rfl : unframe = Turing.MultiTapeTM.unframe := funext hunframe
-  obtain ⟨hsize, hsecret, hciphertext, h⟩ := fullyHomomorphic_witness hLWE hcircular
-  exact ⟨_, hsize, hsecret, hciphertext, _, h⟩
+  obtain ⟨hgen, hsize, hsecret, hciphertext, h⟩ := fullyHomomorphic_witness hLWE hcircular
+  exact ⟨_, hgen, hsize, hsecret, hciphertext, _, h⟩
 
 end ComplexityTests.Abstracts.GSWFHEBridge
