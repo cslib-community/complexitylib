@@ -45,14 +45,16 @@ unary numbers, as well as bounded-count batch evaluation (`map_range_const`, `ma
   `Turing.MultiTapeTM.ComputableInLogSpace.fst`, `Turing.MultiTapeTM.ComputableInLogSpace.snd`,
   `Turing.MultiTapeTM.ComputableInLogSpace.pair`: concatenation and pairing.
 * `Turing.MultiTapeTM.ComputableInLogSpace.optionSome`, `.optionGetD`: option operations.
-* `Turing.MultiTapeTM.ComputableInLogSpace.listSingleton`, `.listAppend`, `.listHeadD`:
-  framed-list operations.
+* `Turing.MultiTapeTM.ComputableInLogSpace.listSingleton`, `.listCons`, `.listAppend`,
+  `.listHeadD`: framed-list operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.bitsAppend`, `.bitsHeadD`, `.bitsMap`, `.bitsFoldl`,
   `.bitsAll`, `.bitsAny`: bit-word operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.unaryAdd`, `.unaryMulConst`, `.unaryLeConst`,
   `.unaryBoundedMap`: unary-number operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.map_range_const`, `.map_range_of_le`,
   `.mapToBits_range_const`, `.mapToBits_range_of_le`: bounded-count batch evaluation.
+* `Turing.MultiTapeTM.ComputableInLogSpace.fst'`, `.snd'`: projections of a computed pair, in the
+  form used by `fun_prop`, with which the closure rules and word operations above are registered.
 
 ## References
 
@@ -235,6 +237,15 @@ theorem optionGetD (d : β) :
 theorem listSingleton :
     ComputableInLogSpace (fun b : β => [b]) encOut (encList encOut) :=
   of_frame fun b => by simp [encList_cons, encList_nil]
+
+/-- Prepending a computed element to a computed framed list in logarithmic space. -/
+theorem listCons {f₁ : α → β} {f₂ : α → List β} (h₁ : ComputableInLogSpace f₁ encIn encOut)
+    (h₂ : ComputableInLogSpace f₂ encIn (encList encOut)) :
+    ComputableInLogSpace (fun a => f₁ a :: f₂ a) encIn (encList encOut) :=
+  append
+    ((of_frame (encIn := encOut) (encOut := encFramed encOut) (f := fun b => b)
+      fun _ => rfl).comp h₁)
+    h₂ fun _ => rfl
 
 /-- Concatenating two framed lists computed in logarithmic space from a common input. -/
 theorem listAppend {f₁ f₂ : α → List β}
@@ -463,5 +474,26 @@ theorem mapToBits_range_of_le (k : ℕ) {r : α → ℕ} {f : α × ℕ → Bool
       simp [heq]
     refine (ite_subtype hle htrue hfalse).congr_fun fun a => ?_
     split_ifs <;> rfl
+
+/-! ### Automation
+
+The closure rules for pairing, projections and case distinctions, and the word operations, are
+registered with `fun_prop`. Projections are stated for a computed pair, so the pair certificate
+fixes the encodings of the components. -/
+
+/-- The first component of a computed pair, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem fst' {f : α → β₁ × β₂} (hf : ComputableInLogSpace f encIn (encPair enc₁ enc₂)) :
+    ComputableInLogSpace (fun a => (f a).1) encIn enc₁ :=
+  (fst enc₁ enc₂).comp hf
+
+/-- The second component of a computed pair, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem snd' {f : α → β₁ × β₂} (hf : ComputableInLogSpace f encIn (encPair enc₁ enc₂)) :
+    ComputableInLogSpace (fun a => (f a).2) encIn enc₂ :=
+  (snd enc₁ enc₂).comp hf
+
+attribute [fun_prop] pair ite optionSome optionGetD listSingleton listCons listAppend listHeadD
+  bitsAppend bitsHeadD bitsMap bitsFoldl bitsAll bitsAny unaryAdd unaryMulConst unaryLeConst
 
 end Turing.MultiTapeTM.ComputableInLogSpace

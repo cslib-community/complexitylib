@@ -72,6 +72,9 @@ tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
 * `Turing.MultiTapeTM.ComputableInLogSpace.computableInPolyTime`,
   `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
   computable in polynomial time.
+* `Turing.MultiTapeTM.ComputableInLogSpace.comp'`: composition in the form used by `fun_prop`, for
+  which `ComputableInLogSpace` is registered, with the inclusion in polynomial time as a one-way
+  transition.
 * `Turing.MultiTapeTM.Transducer.computableInLogSpace`: functions computed by finite-state
   transducers are computable in logarithmic space.
 * `Turing.MultiTapeTM.polyBounded_log`: logarithmic bounds are polynomially bounded.
@@ -322,6 +325,26 @@ theorem ComputableInLogSpace.of_finite [Finite α] (f : α → β) :
     ComputableInLogSpace f encIn encMid :=
   let ⟨_, h⟩ := computableInTimeAndSpace_of_finite (encIn := encIn) (encOut := encMid) f
   ⟨_, 0, h.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
+
+/-! ### Automation
+
+`ComputableInLogSpace` is a `fun_prop` predicate. The identity, constants and composition are its
+core rules; pairing, projections, case distinctions and word operations are registered in
+`Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Words.lean`, and the
+counter-program primitives in
+`Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/CounterProgram/Words.lean`.
+The inclusion in polynomial time is a one-way transition rule: a logspace certificate closes a
+plain polynomial-time goal, and there is no rule back, so the search has no cycle. -/
+
+attribute [fun_prop] ComputableInLogSpace ComputableInLogSpace.id ComputableInLogSpace.const
+  ComputableInLogSpace.computableInPolyTime
+
+/-- Composition, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem ComputableInLogSpace.comp' {g : β → γ} {f : α → β}
+    (hg : ComputableInLogSpace g encMid encOut) (hf : ComputableInLogSpace f encIn encMid) :
+    ComputableInLogSpace (fun a => g (f a)) encIn encOut :=
+  hg.comp hf
 
 /-- Doubling one false bit gives its marker followed by `false`. -/
 @[simp] theorem doubled_false : doubled [false] = [true, false] := rfl
