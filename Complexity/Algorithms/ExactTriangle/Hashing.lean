@@ -39,6 +39,7 @@ asserted. The supplied three matrices retain the existing `HasZeroTriangle` sema
 
 ## References
 
+The modular reduction is part of [AlmanWilliams2026, Section 3].
 Direct adaptation of [Anthropic's
 Hashing.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/Theorem17/Hashing.lean),
 with the minimal count/selection definitions extracted from its `PaperStatements.lean`.

@@ -36,6 +36,7 @@ fast solver or subquadratic running time.
 
 ## References
 
+The lopsided matrix interface is used in [AlmanWilliams2026, Section 3].
 Adapted from [Anthropic's MatrixLanguage.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/MatrixLanguage.lean)
 and the lopsided definitions in [PaperStatements.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/PaperStatements.lean#L798-L852).
 The adaptation uses `Set.EqOn`, pointwise signed parts, and direct finite cardinalities.
