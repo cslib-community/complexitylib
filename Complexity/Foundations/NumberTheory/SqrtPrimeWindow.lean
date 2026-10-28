@@ -22,6 +22,7 @@ open upper endpoints. Counting reuses the general prime-window estimates.
 
 ## Main results
 
+* `Real.four_le_sqrt_natCast`: the shared endpoint bound for natural parameters at least 16.
 * `Nat.mem_sqrtPrimeWindow`, `Nat.mem_sqrtPrimeWindow_iff_sq`: membership tests.
 * `Nat.sqrtPrimeWindow_eq_filter`: an integer-only enumeration.
 * `Nat.card_sqrtPrimeWindow_lt_sqrt`: the upper cardinality bound.
@@ -34,6 +35,10 @@ Adapted from the prime-window definitions and estimates in
 -/
 
 @[expose] public section
+
+/-- The real square root of a natural window parameter at least 16 is at least four. -/
+theorem Real.four_le_sqrt_natCast {D : ℕ} (hD : 16 ≤ D) : 4 ≤ Real.sqrt (D : ℝ) :=
+  Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD)
 
 namespace Nat
 

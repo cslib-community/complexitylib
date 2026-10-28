@@ -282,8 +282,7 @@ theorem falsePositiveCount_add_one_mul_pieceSize_le {κ : ℝ} (wAB wBC wAC : Fi
     (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ)) (hp : IsSelectedPrime wAB wBC wAC D p) :
     ((falsePositiveCount wAB wBC wAC p : ℝ) + 1) * (pieceSize D g : ℝ)
       ≤ (2 * falsePositiveConst + 2) * (κ * (n : ℝ) ^ 3 * Real.log n / (g : ℝ)) := by
-  have hsqrt : 4 ≤ Real.sqrt (D : ℝ) :=
-    Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD)
+  have hsqrt : 4 ≤ Real.sqrt (D : ℝ) := Real.four_le_sqrt_natCast hD
   have hn : (16 : ℝ) ≤ n := by exact_mod_cast hD.trans hDn
   have hlog : 1 ≤ Real.log n :=
     (Real.le_log_iff_exp_le (by linarith)).2 (Real.exp_one_lt_three.le.trans (by linarith))

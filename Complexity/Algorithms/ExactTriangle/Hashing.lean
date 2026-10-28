@@ -78,7 +78,7 @@ private theorem eq_add_toNat_emod_iff {p r : ℕ} (hp : p ≠ 0) (hr : r < p) (u
     ← Int.add_emod]
 
 /-!
-### Counting the triples with `S(a,b,c) ≡ 0 (mod p)` -/
+### Counting triples with a vanishing modular weight sum -/
 
 section Counting
 
@@ -121,7 +121,8 @@ theorem countZeroMod_eq (p : ℕ) : (countZeroMod wAB wBC wAC) p = (falsePositiv
   classical
   simp only [countZeroMod, falsePositiveCount, zeroCount, Finset.card_filter, ←
       Finset.sum_add_distrib]
-  -- A triple with `p ∣ S(a,b,c)` is a zero triangle or a false positive, and not both.
+  -- A triple whose `weightSum` is divisible by `p` is a zero triangle or a false positive,
+  -- and not both.
   refine Finset.sum_congr rfl fun t _ => ?_
   by_cases h0 : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 = 0 <;>
     simp [IsFalsePositive, Int.modEq_zero_iff_dvd, h0]
@@ -178,8 +179,8 @@ theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
     Finset.card_filter]
   push_cast
   refine Finset.sum_congr rfl fun c _ => ?_
-  -- `S(a,b,c) ≡ 0` says the same as `w(a,c) + w(b,c) ≡ -w(a,b)`, and `-w(a,b)` is congruent to its
-  -- residue.
+  -- A zero `weightSum` modulo `p` means `wAC a c + wBC b c ≡ -wAB a b`, and the right side
+  -- is congruent to its residue.
   have hres : (-wAB a b) % (p : ℤ) ≡ -wAB a b [ZMOD (p : ℤ)] := Int.mod_modEq _ _
   have hiff : weightSum wAB wBC wAC a b c ≡ 0 [ZMOD (p : ℤ)] ↔
       wAC a c + wBC b c ≡ ((((-wAB a b) % (p : ℤ)).toNat : ℕ) : ℤ) [ZMOD (p : ℤ)] := by
@@ -204,9 +205,7 @@ variable {n D p : ℕ} {κ : ℝ} (wAB wBC wAC : Fin n → Fin n → ℤ)
 minimum of the modular-zero count.
 -/
 theorem exists_isSelectedPrime (D : ℕ) (hD : 16 ≤ D) : ∃ p, IsSelectedPrime wAB wBC wAC D p := by
-  have hsqrt : (4 : ℝ) ≤ Real.sqrt D := Real.le_sqrt_of_sq_le (by
-    norm_num
-    exact_mod_cast hD)
+  have hsqrt : (4 : ℝ) ≤ Real.sqrt D := Real.four_le_sqrt_natCast hD
   obtain ⟨q, hq⟩ :=
     Nat.exists_prime_half_le_and_lt (Real.sqrt D) hsqrt
   exact Finset.exists_min_image (Nat.sqrtPrimeWindow D) (countZeroMod wAB wBC wAC) ⟨q,
@@ -235,8 +234,7 @@ theorem card_falsePositive_primes_le (hD : 16 ≤ D) (hT : WeightsBoundedBy wAB 
     (t : Fin n × Fin n × Fin n) (ht : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≠ 0) :
     (((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
       ≤ Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
-  have hsqrt := (Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD) :
-    (4 : ℝ) ≤ Real.sqrt (D : ℝ))
+  have hsqrt := Real.four_le_sqrt_natCast hD
   set divisors := (Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t
   have hmem : ∀ p ∈ divisors,
       p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℤ) ∣ weightSum wAB wBC wAC t.1 t.2.1 t.2.2 := by
@@ -244,7 +242,7 @@ theorem card_falsePositive_primes_le (hD : 16 ≤ D) (hT : WeightsBoundedBy wAB 
     obtain ⟨hrange, -, hdvd⟩ := Finset.mem_filter.1 hp
     obtain ⟨hprime, hge, -⟩ := Nat.mem_sqrtPrimeWindow.1 hrange
     exact ⟨hprime, hge, hdvd⟩
-  -- The product of these primes divides `S(a,b,c)`, so it is at most `|S(a,b,c)| ≤ 3n^κ`.
+  -- Their product divides the nonzero `weightSum`, whose absolute value is at most `3n^κ`.
   have hdvd : ∏ p ∈ divisors, p ∣ (weightSum wAB wBC wAC t.1 t.2.1 t.2.2).natAbs :=
     Finset.prod_primes_dvd _ (fun p hp => (hmem p hp).1.prime)
       fun p hp => Int.natCast_dvd.1 (hmem p hp).2.2
@@ -271,8 +269,7 @@ theorem sum_falsePositiveCount_le (hD : 16 ≤ D) (hκ : 1 ≤ κ) (hT : Weights
     ((∑ p ∈ Nat.sqrtPrimeWindow D, (falsePositiveCount wAB wBC wAC) p : ℕ) : ℝ)
       ≤ (n : ℝ) ^ 3 * Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
   classical
-  have hsqrt := (Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD) :
-    (4 : ℝ) ≤ Real.sqrt (D : ℝ))
+  have hsqrt := Real.four_le_sqrt_natCast hD
   -- Count the pairs (prime, false positive of that prime) triple by triple.
   have hswap : ∑ p ∈ Nat.sqrtPrimeWindow D, (falsePositiveCount wAB wBC wAC) p =
       ∑ t : Fin n × Fin n × Fin n,
@@ -334,7 +331,7 @@ private theorem log_le_four_mul_log_sqrt_div_two (D : ℕ) (hD : 16 ≤ D) :
 lower bound `c * sqrt D / log D` gives every selected prime at most `(4/c) * n^3 * log (3*n^κ) /
 sqrt D` false positives.
 -/
-theorem falsePositiveCount_le_of_card_sqrtPrimeWindow_lower_bound {n D p : ℕ} {κ c : ℝ}
+theorem falsePositiveCount_le_of_le_card_sqrtPrimeWindow {n D p : ℕ} {κ c : ℝ}
     (wAB wBC wAC : Fin n → Fin n → ℤ) (hc : 0 < c)
     (hcard : c * (Real.sqrt D / Real.log D) ≤ ((Nat.sqrtPrimeWindow D).card : ℝ)) (hD : 16 ≤ D)
     (hDn : D ≤ n) (hκ : 1 ≤ κ) (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ)) (hp :
@@ -346,8 +343,7 @@ theorem falsePositiveCount_le_of_card_sqrtPrimeWindow_lower_bound {n D p : ℕ} 
   set r := Real.sqrt D
   set Y := 3 * (n : ℝ) ^ κ with hY
   set numPrimes := (Nat.sqrtPrimeWindow D).card
-  have hr : 4 ≤ r := (Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD) :
-    (4 : ℝ) ≤ Real.sqrt (D : ℝ))
+  have hr : 4 ≤ r := Real.four_le_sqrt_natCast hD
   have hn : (16 : ℝ) ≤ n := by exact_mod_cast hD.trans hDn
   have hlogD_pos : 0 < Real.log D := Real.log_pos (by exact_mod_cast (by omega : 1 < D))
   have hlogr_pos : 0 < Real.log (r / 2) := Real.log_pos (by linarith)
@@ -396,7 +392,7 @@ theorem exists_falsePositiveCount_le :
     linarith [hlog3]
   calc ((falsePositiveCount wAB wBC wAC) p : ℝ) ≤ 4 / c * ((n : ℝ) ^ 3 * Real.log (3 * (n : ℝ) ^
       κ) / Real.sqrt D) :=
-        (falsePositiveCount_le_of_card_sqrtPrimeWindow_lower_bound wAB wBC wAC)
+        (falsePositiveCount_le_of_le_card_sqrtPrimeWindow wAB wBC wAC)
           hc (hcard D hD) hD hDn hκ hT hp
     _ ≤ 4 / c * ((n : ℝ) ^ 3 * (2 * κ * Real.log n) / Real.sqrt D) := by gcongr
     _ = 8 / c * (κ * (n : ℝ) ^ 3 * Real.log n / Real.sqrt D) := by ring

@@ -155,8 +155,7 @@ theorem sqrt_lt_sOf_add_one (D : ℕ) : Real.sqrt D < (sOf D : ℝ) + 1 :=
 
 /-- `s > 0` because `D ≥ 16`. -/
 private theorem sOf_pos (hD : 16 ≤ D) : (0 : ℝ) < sOf D := by
-  linarith [(Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD) :
-    (4 : ℝ) ≤ Real.sqrt (D : ℝ)), sqrt_lt_sOf_add_one D]
+  linarith [Real.four_le_sqrt_natCast hD, sqrt_lt_sOf_add_one D]
 
 /-- The bound `⌈s/g⌉` on the size of a piece is at least 1. -/
 theorem pieceSize_pos (hD : 16 ≤ D) (hg1 : 1 ≤ g) : 0 < pieceSize D g := by
@@ -263,8 +262,7 @@ private theorem sq_lt_mul_queryCap_add (hD : 16 ≤ D) (hDn : D ≤ n)
   set r := Real.sqrt D with hr
   set δ := (sOf D : ℝ) + 1 - r with hδ
   set x := (n : ℝ) ^ 2 / r with hx
-  have hr4 : 4 ≤ r := (Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD) :
-    (4 : ℝ) ≤ Real.sqrt (D : ℝ))
+  have hr4 : 4 ≤ r := Real.four_le_sqrt_natCast hD
   have hxr : x * r = (n : ℝ) ^ 2 := div_mul_cancel₀ _ (by linarith)
   have hx3 : r ^ 3 ≤ x := by
     rw [hx, le_div_iff₀ (by linarith)]
@@ -298,10 +296,8 @@ private theorem sq_lt_mul_queryCap_add (hD : 16 ≤ D) (hDn : D ≤ n)
 because D ≥ 16, and √D ≤ √n ≤ 2n/3 because D ≤ n and we may assume n ≥ 3". -/
 theorem le_sOf_and_sqrt_le (hD : 16 ≤ D) (hDn : D ≤ n) :
     3 * Real.sqrt D / 4 ≤ (sOf D : ℝ) ∧ Real.sqrt D ≤ 2 * (n : ℝ) / 3 := by
-  have hsqrtD := (Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD) :
-    (4 : ℝ) ≤ Real.sqrt (D : ℝ))
-  have hsqrtn := (Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD.trans hDn) :
-    (4 : ℝ) ≤ Real.sqrt (n : ℝ))
+  have hsqrtD := Real.four_le_sqrt_natCast hD
+  have hsqrtn := Real.four_le_sqrt_natCast (hD.trans hDn)
   constructor
   · calc 3 * Real.sqrt D / 4 ≤ Real.sqrt D - 1 := by linarith
       _ ≤ (sOf D : ℝ) := by linarith [sqrt_lt_sOf_add_one D]
