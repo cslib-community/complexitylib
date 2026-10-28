@@ -49,8 +49,11 @@ by an oracle machine that never queries its own input ([Ambos-Spies 1984][AmbosS
   polynomial-time Turing autoreducibility.
 * `Cslib.Complexity.PolyTimeTruthTableMitotic.polyTimeTuringAutoreducible`,
   `Cslib.Complexity.PolyTimeBTTMitotic.polyTimeTuringAutoreducible`,
+  `Cslib.Complexity.PolyTimeKTruthTableMitotic.polyTimeTuringAutoreducible`,
+  `Cslib.Complexity.PolyTimeDTTMitotic.polyTimeTuringAutoreducible`,
   `Cslib.Complexity.PolyTimeManyOneMitotic.polyTimeTuringAutoreducible`: every truth-table,
-  bounded truth-table, or many-one mitotic set is polynomial-time Turing autoreducible.
+  bounded truth-table, `k`-truth-table, disjunctive truth-table, or many-one mitotic set is
+  polynomial-time Turing autoreducible.
 * `Cslib.Complexity.polyTimeTuringAutoreducible_of_mem_P`: every language `A ∈ P` is unconditionally
   polynomial-time Turing autoreducible (via a 0-query program). This sharply contrasts with
   many-one autoreducibility, where singleton and co-singleton languages in `P` are

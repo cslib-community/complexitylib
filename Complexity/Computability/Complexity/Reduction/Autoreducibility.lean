@@ -53,10 +53,11 @@ A set is **mitotic** if it can be split by an easy separator `S` into two disjoi
   `not_polyTimeManyOneAutoreducible_compl_singleton`).
 * Exact characterizations: a set in `P` (or `L`) is many-one autoreducible if and only if neither
   it nor its complement is a singleton.
-* Mitoticity implies autoreducibility ([Ambos-Spies 1984][AmbosSpies1984], Proposition 2.3): every
-  `dtt`-, `k-tt`-, `btt`-, or `tt`-mitotic set is correspondingly `dtt`-, `k-tt`-, `btt`-, or
-  `tt`-autoreducible unconditionally, and a polynomial-time many-one mitotic set is many-one
-  autoreducible if and only if its complement is not a singleton.
+* Mitoticity implies autoreducibility (standard argument of [Ambos-Spies 1984][AmbosSpies1984]
+  adapted to truth-table reductions): every `dtt`-, `k-tt`-, `btt`-, or `tt`-mitotic set is
+  correspondingly `dtt`-, `k-tt`-, `btt`-, or `tt`-autoreducible unconditionally, and a
+  polynomial-time many-one mitotic set is many-one autoreducible if and only if its complement
+  is not a singleton.
 
 ## References
 
@@ -602,7 +603,13 @@ def PolyTimeManyOneMitotic (encA : α ↪ List Bool) (A : Set α) : Prop :=
 def LogSpaceManyOneMitotic (encA : α ↪ List Bool) (A : Set α) : Prop :=
   MitoticWith (L encA) (LogSpaceReducible encA encA) A
 
-/-- `A` is `k`-truth-table mitotic. -/
+/-- `A` is `k`-truth-table mitotic.
+
+Note that for `k ≥ 2`, `PolyTimeKTruthTableReducible k` is not transitive (composition uses up to
+`k²` queries), so this definition via `MitoticWith` requires only `A ≡ᵖ_k-tt A ∩ S` and
+`A ≡ᵖ_k-tt A \ S` rather than pairwise three-way equivalence `A ≡ᵖ_k-tt A ∩ S ≡ᵖ_k-tt A \ S`.
+This weaker hypothesis suffices for
+`PolyTimeKTruthTableMitotic.polyTimeKTruthTableAutoreducible`. -/
 def PolyTimeKTruthTableMitotic (k : ℕ) (encA : α ↪ List Bool) (A : Set α) : Prop :=
   MitoticWith (P encA) (PolyTimeKTruthTableReducible k encA encA) A
 
@@ -822,9 +829,10 @@ private theorem mitoticCombiner_spec {S : Set α} {s : α → Bool} (hsS : ∀ a
     by_cases hqA : q₂ (a, i) ∈ A <;> cases hqS : s (q₂ (a, i)) <;> simp [hqA]
 
 /-- **Every polynomial-time disjunctive truth-table mitotic set is disjunctive truth-table
-autoreducible**, unconditionally [Ambos-Spies 1984][AmbosSpies1984]. Queries landing on the same
-side of the separator `S` as the input `a` cannot belong to the opposite piece (`A ∩ S` when
-`a ∉ S`, or `A ∖ S` when `a ∈ S`) and are filtered out before querying `A`. -/
+autoreducible**, unconditionally (standard argument of [Ambos-Spies 1984][AmbosSpies1984] adapted
+to `dtt` reductions). Queries landing on the same side of the separator `S` as the input `a`
+cannot belong to the opposite piece (`A ∩ S` when `a ∉ S`, or `A ∖ S` when `a ∈ S`) and are
+filtered out before querying `A`. -/
 theorem PolyTimeDTTMitotic.polyTimeDTTAutoreducible (h : PolyTimeDTTMitotic encA A) :
     PolyTimeDTTAutoreducible encA A := by
   obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, hr₁, hq₁, hA₁⟩, -⟩, ⟨⟨r₂, q₂, hr₂, hq₂, hA₂⟩, -⟩⟩ := h
@@ -868,7 +876,8 @@ theorem PolyTimeDTTMitotic.polyTimeDTTAutoreducible (h : PolyTimeDTTMitotic encA
       Set.mem_sdiff, hsS, Bool.not_eq_true, and_comm]
 
 /-- **Every polynomial-time `k`-truth-table mitotic set is `k`-truth-table autoreducible**,
-unconditionally [Ambos-Spies 1984][AmbosSpies1984]. -/
+unconditionally (standard argument of [Ambos-Spies 1984][AmbosSpies1984] adapted to `k-tt`
+reductions). -/
 theorem PolyTimeKTruthTableMitotic.polyTimeKTruthTableAutoreducible {k : ℕ}
     (h : PolyTimeKTruthTableMitotic k encA A) :
     PolyTimeKTruthTableAutoreducible k encA A := by
@@ -892,7 +901,8 @@ theorem PolyTimeKTruthTableMitotic.polyTimeKTruthTableAutoreducible {k : ℕ}
     fun a => mitoticCombiner_spec hsS hA₁ hA₂ a⟩
 
 /-- **Every polynomial-time bounded truth-table mitotic set is bounded truth-table autoreducible**,
-unconditionally ([Ambos-Spies 1984][AmbosSpies1984], Proposition 2.3). -/
+unconditionally (standard argument of [Ambos-Spies 1984][AmbosSpies1984] adapted to `btt`
+reductions). -/
 theorem PolyTimeBTTMitotic.polyTimeBTTAutoreducible (h : PolyTimeBTTMitotic encA A) :
     PolyTimeBTTAutoreducible encA A := by
   obtain ⟨S, hS, ⟨⟨k₁, h₁⟩, ⟨k₁', h₁'⟩⟩, ⟨⟨k₂, h₂⟩, ⟨k₂', h₂'⟩⟩⟩ := h
@@ -906,7 +916,8 @@ theorem PolyTimeBTTMitotic.polyTimeBTTAutoreducible (h : PolyTimeBTTMitotic encA
   exact ⟨k, hmit.polyTimeKTruthTableAutoreducible⟩
 
 /-- **Every polynomial-time truth-table mitotic set is truth-table autoreducible**,
-unconditionally ([Ambos-Spies 1984][AmbosSpies1984], Proposition 2.3). -/
+unconditionally (standard argument of [Ambos-Spies 1984][AmbosSpies1984] adapted to `tt`
+reductions). -/
 theorem PolyTimeTruthTableMitotic.polyTimeTruthTableAutoreducible
     (h : PolyTimeTruthTableMitotic encA A) :
     PolyTimeTruthTableAutoreducible encA A := by
