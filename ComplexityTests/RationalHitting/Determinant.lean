@@ -21,17 +21,7 @@ namespace ComplexityTests.RationalHitting.Determinant
 open Turing MultiTapeTM
 open Cslib.Circuits.Rational
 
-/-! ### Concrete values -/
-
-example : detRows [[2, 1], [1, 3]] = 5 := by decide +kernel
-example : detRows [[1, 2], [3, 4]] = -2 := by decide +kernel
-example : detRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] = 24 := by decide +kernel
--- A singular matrix.
-example : detRows [[1, 2, 3], [4, 5, 6], [7, 8, 9]] = 0 := by decide +kernel
--- Dimension zero.
-example : detRows [] = 1 := by decide +kernel
--- A ragged input is padded with zeros and truncated to the number of rows: `!![1, 2; 3, 0]`.
-example : detRows [[1, 2, 99], [3]] = -6 := by decide +kernel
+/-! ### Concrete values, correctness, and size bounds -/
 
 /-- info: [5, -2, 24, 0, 1, -6, 1] -/
 #guard_msgs in
@@ -40,50 +30,47 @@ example : detRows [[1, 2, 99], [3]] = -6 := by decide +kernel
   detRows [], detRows [[1, 2, 99], [3]],
   detRows (rowsOf (1 : Matrix (Fin 4) (Fin 4) ℤ))]
 
-/-! ### Correctness -/
-
-example : (ofRows [[2, 1], [1, 3]]).det = 5 := by
-  rw [← detRows_eq_det_ofRows]
-  decide +kernel
-
--- The list program computes a `Matrix.det` in the kernel.
-example : (!![2, -1, 0; 1, 3, 2; 0, 1, 4] : Matrix (Fin 3) (Fin 3) ℤ).det = 24 := by
-  rw [← detRows_eq]
-  decide +kernel
-
-example : detRows [[1, 2, 99], [3]] = (!![1, 2; 3, 0] : Matrix (Fin 2) (Fin 2) ℤ).det :=
-  detRows_eq_det_of_rowEntry _ rfl fun i j => by fin_cases i <;> fin_cases j <;> decide +kernel
-
-/-! ### Size bounds -/
-
--- The hypotheses of the stage bounds hold on a concrete input.
-example (k i j : ℕ) :
-    (rowEntry (stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] k) i j).natAbs <
-      2 ^ (3 + k * (1 + 3 + 3)) :=
-  natAbs_rowEntry_stagesRows_lt (natAbs_rowEntry_lt (by decide +kernel)) k i j
-
-example (k : ℕ) {row : List ℤ} (hrow : row ∈ stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] k)
-    {z : ℤ} (hz : z ∈ row) : intBits z ≤ 3 + k * (1 + 3 + 3) + 1 :=
-  intBits_le_of_mem_stagesRows (by decide +kernel) k hrow hz
-
--- The final stage of that input and its bit lengths.
 /-- info: ([[24, 0, 0], [0, 0, 0], [0, 0, 0]], [[6, 1, 1], [1, 1, 1], [1, 1, 1]]) -/
 #guard_msgs in
 #eval (stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] 2,
   (stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] 2).map (·.map intBits))
 
-example : intBits 0 = 1 ∧ intBits 1 = 2 ∧ intBits (-5) = 4 := by decide +kernel
+example (A : List (List ℤ)) (k i j : ℕ)
+    {row : List ℤ} (hrow : row ∈ stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] k)
+    {z : ℤ} (hz : z ∈ row) (hik : i ≤ k) :
+    (detRows [[2, 1], [1, 3]] = 5 ∧ detRows [[1, 2], [3, 4]] = -2 ∧
+      detRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] = 24 ∧
+      detRows [[1, 2, 3], [4, 5, 6], [7, 8, 9]] = 0 ∧
+      detRows [] = 1 ∧ detRows [[1, 2, 99], [3]] = -6) ∧
+    detRows (rowsOf !![2, 1; 1, 3]) = (!![2, 1; 1, 3] : Matrix (Fin 2) (Fin 2) ℤ).det ∧
+    detRows A = (ofRows A).det ∧
+    (!![2, -1, 0; 1, 3, 2; 0, 1, 4] : Matrix (Fin 3) (Fin 3) ℤ).det = 24 ∧
+    detRows [[1, 2, 99], [3]] = (!![1, 2; 3, 0] : Matrix (Fin 2) (Fin 2) ℤ).det ∧
+    (rowEntry (stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] k) i j).natAbs <
+      2 ^ (3 + k * (1 + 3 + 3)) ∧
+    intBits z ≤ 3 + k * (1 + 3 + 3) + 1 ∧
+    (intBits 0 = 1 ∧ intBits 1 = 2 ∧ intBits (-5) = 4) ∧
+    (encList (encList encIntBin) (stagesRows [[2, -1, 0], [1, 3, 2], [0, 1, 4]] i)).length ≤
+      stageTableBound
+        (encList (encList encIntBin) [[2, -1, 0], [1, 3, 2], [0, 1, 4]]).length k := by
+  refine ⟨by decide +kernel, detRows_eq _, detRows_eq_det_ofRows A, ?_,
+    detRows_eq_det_of_rowEntry _ rfl fun i j => by fin_cases i <;> fin_cases j <;> decide +kernel,
+    natAbs_rowEntry_stagesRows_lt (natAbs_rowEntry_lt (by decide +kernel)) k i j,
+    intBits_le_of_mem_stagesRows (by decide +kernel) k hrow hz,
+    by decide +kernel, length_encList_stagesRows_le _ hik⟩
+  rw [← detRows_eq]
+  decide +kernel
 
 /-! ### Polynomial-time certificate -/
 
--- The registered certificate composes under `fun_prop`.
-example : ComputableInPolyTime
-    (fun p : List (List ℤ) × List (List ℤ) => detRows p.1 * detRows p.2)
-    (encPair (encList (encList encIntBin)) (encList (encList encIntBin))) encIntBin := by
-  fun_prop
-
-example : ComputableInPolyTime (List.map detRows)
-    (encList (encList (encList encIntBin))) (encList encIntBin) := by
-  fun_prop
+attribute [local fun_prop] ComputableInPolyTime.tidy in
+example :
+    ComputableInPolyTime detRows (encList (encList encIntBin)) encIntBin ∧
+    ComputableInPolyTime
+      (fun p : List (List ℤ) × List (List ℤ) => detRows p.1 * detRows p.2)
+      (encPair (encList (encList encIntBin)) (encList (encList encIntBin))) encIntBin ∧
+    ComputableInPolyTime (List.map detRows)
+      (encList (encList (encList encIntBin))) (encList encIntBin) :=
+  ⟨detRows_polytime, .of_tidy (by fun_prop), .of_tidy (by fun_prop)⟩
 
 end ComplexityTests.RationalHitting.Determinant
