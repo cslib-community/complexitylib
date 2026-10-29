@@ -11,6 +11,8 @@ public import Complexity.Computability.Complexity.Problems.IndependentSet
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Cliques
@@ -58,7 +60,7 @@ first-order interpretations.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableTidilyInPolyTime
+open Turing.MultiTapeTM
 
 /-- The graphs with a clique of `m` of their vertices. -/
 def Clique : Set (Graph × ℕ) :=
@@ -115,18 +117,46 @@ theorem compl_mem_Clique_iff (G : Graph) (m : ℕ) :
   simp_rw [IndependentSet, Set.mem_ofPred_eq, ← SimpleGraph.isNClique_compl, ← induced_compl]
   rfl
 
-/-- Complementing a graph on its declared vertices is polynomial-time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_compl :
-    ComputableTidilyInPolyTime compl encGraph encGraph := by
-  unfold compl encGraph
-  fun_prop
-
 /-- Complementing a graph on its declared vertices is polynomial-time with the graph encoding. -/
 @[fun_prop]
 theorem computableInPolyTime_compl :
-    ComputableInPolyTime compl encGraph encGraph :=
-  .of_tidy computableTidilyInPolyTime_compl
+    ComputableInPolyTime compl encGraph encGraph := by
+  unfold compl encGraph
+  have hne : ComputableInPolyTime
+      (fun x : (Graph × ℕ) × ℕ => decide (x.1.2 ≠ x.2))
+      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      encBool := by
+    simpa only [ne_eq, decide_not, Function.comp_def] using
+      ComputableInPolyTime.bool_not.comp
+        (ComputableInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
+  have h1 : ComputableInPolyTime
+      (fun x : (Graph × ℕ) × ℕ => decide ((x.1.2, x.2) ∉ x.1.1.2))
+      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      encBool := by fun_prop
+  have h2 : ComputableInPolyTime
+      (fun x : (Graph × ℕ) × ℕ => decide ((x.2, x.1.2) ∉ x.1.1.2))
+      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      encBool := by fun_prop
+  have hpred : ComputableInPolyTime
+      (fun x : (Graph × ℕ) × ℕ =>
+        decide (x.1.2 ≠ x.2 ∧ (x.1.2, x.2) ∉ x.1.1.2 ∧ (x.2, x.1.2) ∉ x.1.1.2))
+      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      encBool := by
+    simpa only [Bool.decide_and, Function.comp_def] using
+      ComputableInPolyTime.bool_and.comp
+        (hne.prod (ComputableInPolyTime.bool_and.comp (h1.prod h2)))
+  exact (ComputableInPolyTime.fst _ _).prod
+    (ComputableInPolyTime.flatMapWithInput (ComputableInPolyTime.fst _ _)
+      (ComputableInPolyTime.mapWithInput
+        (ComputableInPolyTime.filterWithInput
+          ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _)) hpred)
+        (by fun_prop)))
+
+/-- Complementing a graph on its declared vertices is polynomial-time. -/
+@[fun_prop]
+theorem computableTidilyInPolyTime_compl :
+    ComputableTidilyInPolyTime compl encGraph encGraph :=
+  computableInPolyTime_compl.tidy
 
 end Graph
 

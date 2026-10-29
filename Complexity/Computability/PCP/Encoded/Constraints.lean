@@ -120,11 +120,9 @@ theorem isPolyTime_constraintTable [Fintype α] {alphabet : α ↪ List Bool}
     (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
     ComputableInPolyTime eval enc (encPi (encPi encBool)) := by
-  have heval := heval.tidy
-  refine .of_tidy ?_
-  apply ComputableTidilyInPolyTime.pi
+  apply ComputableInPolyTime.pi
   intro a
-  apply ComputableTidilyInPolyTime.pi
+  apply ComputableInPolyTime.pi
   intro b
   exact heval.comp (.prod (.id' (encIn := enc)) (.prod (.const a) (.const b)))
 

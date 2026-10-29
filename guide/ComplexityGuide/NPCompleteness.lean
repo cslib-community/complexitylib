@@ -14,6 +14,7 @@ import Complexity.Computability.Complexity.Problems.Hamiltonian.Undirected
 import Complexity.Computability.Complexity.Problems.IntegerProgramming
 import Complexity.Computability.Complexity.Problems.Knapsack
 import Complexity.Computability.Complexity.Problems.Partition
+import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
 import Complexity.Computability.Complexity.Problems.SubsetSum
 import Complexity.Computability.Complexity.Problems.TSP
@@ -256,6 +257,37 @@ Here is the tree, with the reduction for each edge and the completeness theorem 
   For original size `S = clauses + literal occurrences + 1`, its grid sides are at most
   `13440*S`; formula size, route count, segment count and Manhattan wire length are quadratic
   in `S` ({name}`toDrawnPlanarThreeSAT_fits`, {name}`toDrawnPlanarThreeSAT_costs`).
+* Positive 1-in-3SAT and positive 1-in-E3SAT are NP-complete, with or without the restriction
+  that each variable occurs at most three times ({name}`PositiveOneInThreeSAT_npComplete`,
+  {name}`PositiveOneInExactThreeSAT_npComplete`, {name}`PositiveOneInThreeSATThree_npComplete`,
+  {name}`PositiveOneInExactThreeSATThree_npComplete`). Positive means no negated literals;
+  exactly one literal occurrence must be true in each clause. E3 requires exactly three
+  distinct variables per clause. The same compiler {name}`toPositiveOneInExactThreeSATThree`
+  produces this strongest syntax and, on valid 3SAT inputs, preserves counts on occurring
+  variables ({name}`oneModelCount_toPositiveOneInExactThreeSATThree`). For `m` source clauses
+  and `ℓ` literal occurrences, it produces at most `169*(m + ℓ)` clauses and `507*(m + ℓ)`
+  occurrences ({name}`size_toPositiveOneInExactThreeSATThree`).
+* Planar positive 1-in-E3SAT-3 is NP-hard both with an existential drawing
+  ({name}`PlanarPositiveOneInExactThreeSATThree_npHard`) and with its actual drawing supplied
+  ({name}`DrawnPlanarPositiveOneInExactThreeSATThree_npHard`). The width-at-most-three planar
+  variant is also NP-hard ({name}`PlanarPositiveOneInThreeSATThree_npHard`). These endpoints
+  assert NP-hardness; the NP membership proofs above concern the nonplanar languages.
+  The local positive replacement scales supplied grid sides from `W,H` to at most
+  `1080000*(W + 1),1080000*(H + 1)` ({name}`SAT.ExactOne.positiveDrawing_fits`), with
+  constant-factor formula and drawing costs ({name}`SAT.ExactOne.positiveDrawing_costs`).
+  Composed with ordinary 3SAT planarization, grid sides remain linear and formula size,
+  vertices, routes, segments and Manhattan wire length remain quadratic in
+  `S = clauses + literal occurrences + 1`
+  ({name}`toDrawnPlanarPositiveOneInExactThreeSATThree_fits`,
+  {name}`toDrawnPlanarPositiveOneInExactThreeSATThree_costs`).
+  The full compiler {name}`toDrawnPlanarPositiveOneInExactThreeSATThree` computes the actual
+  formula, binary coordinates and route lists in native polynomial time
+  ({name}`computableInPolyTime_toDrawnPlanarPositiveOneInExactThreeSATThree`). On valid 3SAT
+  inputs it preserves the exact model count
+  ({name}`oneModelCount_toPlanarPositiveOneInExactThreeSATThree`).
+  The positive gadgets follow
+  [Hunt et al., Theorem 3.8](https://arxiv.org/pdf/cs/9809017v1), Figures 3.4–3.5;
+  their satisfying extensions are unique.
 * Subset sum reduces to partition ({name}`polyTimeReducible_SubsetSum_Partition`,
   {name}`Partition_npComplete`), knapsack ({name}`polyTimeReducible_SubsetSum_Knapsack`,
   {name}`Knapsack_npComplete`) and zero-one integer programming

@@ -145,6 +145,19 @@
       "namespace": "ComplexityTests.Abstracts.FormulaBoundsAbstract"
     },
     {
+      "id": "constant-depth-arithmetic",
+      "title": "Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic circuits for IMM need superpolynomial size",
+      "module": "ComplexityAbstracts.ConstantDepthArithmeticAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.ConstantDepthArithmeticAbstract.superpolynomial"
+      ],
+      "supporting_theorems": [
+        "ComplexityAbstracts.ConstantDepthArithmeticAbstract.explicit_bound"
+      ],
+      "summary": "Over every field, simple algebraic circuits (product gates reading distinct wires) of constant product-depth computing iterated matrix multiplication of d = ⌊log₂ ⌊log₂ n⌋⌋ generic n × n matrices need more than n^c gates for every c and all large n.",
+      "scope": "Any field, formal polynomials, unbounded fan-in sum and product gates, product gates reading distinct wires, size counting all gates; explicit non-asymptotic bound with exponent d^(1/(4^Δ-1)); constant product-depth Δ and the single value d = ⌊log₂ ⌊log₂ n⌋⌋; nonuniform."
+    },
+    {
       "id": "cryptography",
       "title": "One-way functions yield pseudorandom generators and adaptive functions",
       "module": "ComplexityAbstracts.CryptographyAbstract",

@@ -242,7 +242,7 @@ theorem computableInPolyTime_check :
   have hle : ComputableInPolyTime
       (fun ip : Instance × List Bool => decide (ip.2.length ≤ ip.1.size))
       (encPair enc encBits) encBool :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_le).comp (hlen.prod hsize)
+    unary_le.comp (hlen.prod hsize)
   exact bool_and.comp (hle.prod (hrun.decide_eq' hsome))
 
 /-- **`MINKT` is in `NP`** ([Ko][Ko1991]; [Hirahara][Hirahara2018]): a witness for `(x, 1^t, 1^s)`

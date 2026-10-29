@@ -132,28 +132,36 @@ theorem query_repeatedEdgeVerifier_lt (width repeats : ℕ)
   obtain ⟨i, _, hi⟩ := List.mem_flatMap.mp hindex
   exact query_edgeVerifier_lt width decode eval hg _ hi
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Repetition charges construction of every query, every extracted bit block, and every verdict. -/
 theorem polyTime_repeatedEdgeVerifier (width repeats : ℕ) (decode : (Fin width → Bool) → α)
     {enc : C ↪ List Bool} {alphabet : α ↪ List Bool} {eval : C → α → α → Bool}
     (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
     (repeatedEdgeVerifier width repeats decode eval).PolyTime (encoding enc) := by
-  have heval := heval.tidy
-  obtain ⟨_, hqueries, hverdict⟩ := polyTime_edgeVerifier width decode (.of_tidy heval)
-  have hqueries := hqueries.tidy
-  have hverdict := hverdict.tidy
-  refine ⟨.of_tidy ?_, .of_tidy ?_, .of_tidy ?_⟩
-  · apply ComputableTidilyInPolyTime.unary_to_binary.comp
-    change ComputableTidilyInPolyTime (fun g : Graph C => repeats * Nat.clog 2 g.edges.length)
-      (encoding enc) encUnary
-    fun_prop
-  · unfold repeatedEdgeVerifier
-    dsimp only
-    fun_prop
-  · unfold repeatedEdgeVerifier
-    dsimp only
-    fun_prop
+  obtain ⟨_, hqueries, hverdict⟩ := polyTime_edgeVerifier width decode heval
+  have hclog : ComputableInPolyTime (fun g : Graph C => (edgeVerifier width decode eval).coins g)
+      (encoding enc) encUnary :=
+    (ComputableInPolyTime.unary_clog_const 2).comp
+      ((ComputableInPolyTime.length_list (Edge.encoding enc)).comp (isPolyTime_edges .id'))
+  refine ⟨?_, ?_, ?_⟩
+  · exact ComputableInPolyTime.unary_to_binary.comp
+      (ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const repeats).prod hclog))
+  · exact ComputableInPolyTime.flatMapWithInput
+      (.const (encOut := encList encUnary) (List.range repeats))
+      (hqueries.comp
+        (((ComputableInPolyTime.fst _ _).fst').prod
+          (ComputableInPolyTime.bitsRowWithInput
+            (hclog.comp ((ComputableInPolyTime.fst _ _).fst'))
+            (.snd _ _) ((ComputableInPolyTime.fst _ _).snd'))))
+  · exact ComputableInPolyTime.allWithInput
+      (.const (encOut := encList encUnary) (List.range repeats))
+      (hverdict.comp
+        ((((ComputableInPolyTime.fst _ _).fst'.fst').prod
+          (ComputableInPolyTime.bitsRowWithInput
+            (hclog.comp ((ComputableInPolyTime.fst _ _).fst'.fst'))
+            (.snd _ _) ((ComputableInPolyTime.fst _ _).fst'.snd'))).prod
+          (ComputableInPolyTime.bitsRowWithInput
+            (.const (2 * width)) (.snd _ _) ((ComputableInPolyTime.fst _ _).snd'))))
 
 /-- Disjoint random blocks make the repeated acceptance mass the power of the single-check mass. -/
 theorem acceptProb_repeatedEdgeVerifier (width repeats : ℕ)

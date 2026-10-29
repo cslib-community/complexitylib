@@ -31,11 +31,12 @@ fast solver or subquadratic running time.
 
 * `LopsidedGraph.matX_mul_matY_apply`: entries count common middle neighbors.
 * `LopsidedGraph.matX_mul_matY_apply_ne_zero_iff`: nonzero entries detect common neighbors.
-* `LopsidedGraph.zero_one`: the converse for zero/one matrices.
-* `LopsidedGraph.entries_from_counts`: bounded signed products from `4 * β²` counts.
+* `LopsidedGraph.mul_apply_eq_commonNeighborCount_ofMatrices`: the converse for zero/one matrices.
+* `LopsidedGraph.mul_apply_eq_sum_signedBitInstance_counts`: signed products from `4 * β²` counts.
 
 ## References
 
+The lopsided matrix interface is used in [AlmanWilliams2026, Section 3].
 Adapted from [Anthropic's MatrixLanguage.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec3/MatrixLanguage.lean)
 and the lopsided definitions in [PaperStatements.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/PaperStatements.lean#L798-L852).
 The adaptation uses `Set.EqOn`, pointwise signed parts, and direct finite cardinalities.
@@ -73,7 +74,7 @@ noncomputable def commonNeighborCount {n : ℕ} (I : LopsidedGraph n) (a b : Fin
   (Finset.univ.filter fun v : I.M => I.adjA a v ∧ I.adjB v b).card
 
 /-- Two thin matrices describe adjacency where their entries equal one.
-The counting theorem `zero_one` requires all entries to be zero or one. -/
+The theorem `mul_apply_eq_commonNeighborCount_ofMatrices` requires zero/one entries. -/
 def ofMatrices {n D : ℕ} (X : Matrix (Fin n) (Fin D) ℤ)
     (Y : Matrix (Fin D) (Fin n) ℤ) (W : Finset (Fin n × Fin n)) : LopsidedGraph n where
   M := Fin D
@@ -180,16 +181,15 @@ theorem counting_eqOn_iff (ans : Fin n × Fin n → ℕ) :
   simp only [Set.EqOn, matX_mul_matY_apply, Nat.cast_inj]
 
 /-- Counts on queried edges provide their detection answers. -/
-theorem detection_eqOn_of_counting (ans : Fin n × Fin n → ℕ)
+theorem detection_iff_of_counting (ans : Fin n × Fin n → ℕ)
     (h : Set.EqOn ans (fun q => I.commonNeighborCount q.1 q.2) (I.W : Set _)) :
-    Set.EqOn (fun q => ans q ≠ 0) (fun q => I.HasCommonNeighbor q.1 q.2) (I.W : Set _) := by
+    ∀ q ∈ I.W, ans q ≠ 0 ↔ I.HasCommonNeighbor q.1 q.2 := by
   intro q hq
-  change (ans q ≠ 0) = I.HasCommonNeighbor q.1 q.2
-  apply propext
   rw [h hq, commonNeighborCount_ne_zero_iff]
 
 /-- For zero/one matrices, each product entry is the count in the graph they describe. -/
-theorem zero_one {n D : ℕ} (X : Matrix (Fin n) (Fin D) ℤ) (Y : Matrix (Fin D) (Fin n) ℤ)
+theorem mul_apply_eq_commonNeighborCount_ofMatrices {n D : ℕ}
+    (X : Matrix (Fin n) (Fin D) ℤ) (Y : Matrix (Fin D) (Fin n) ℤ)
     (W : Finset (Fin n × Fin n)) (hX : ∀ a j, X a j = 0 ∨ X a j = 1)
     (hY : ∀ j b, Y j b = 0 ∨ Y j b = 1) (a b : Fin n) :
     (X * Y) a b = ((ofMatrices X Y W).commonNeighborCount a b : ℤ) := by
@@ -203,8 +203,8 @@ theorem zero_one {n D : ℕ} (X : Matrix (Fin n) (Fin D) ℤ) (Y : Matrix (Fin D
 Every instance has exactly `D` middle vertices and the original queried edges `W`. -/
 def signedBitInstance (X : Matrix (Fin n) (Fin D) ℤ) (Y : Matrix (Fin D) (Fin n) ℤ)
     (W : Finset (Fin n × Fin n)) (negativeX negativeY : Bool) (i j : ℕ) : LopsidedGraph n :=
-  ofMatrices (IntMatrix.bit (if negativeX then (X.map negPart) else (X.map posPart)) i)
-    (IntMatrix.bit (if negativeY then (Y.map negPart) else (Y.map posPart)) j) W
+  ofMatrices (Matrix.bit (if negativeX then (X.map negPart) else (X.map posPart)) i)
+    (Matrix.bit (if negativeY then (Y.map negPart) else (Y.map posPart)) j) W
 
 /-- The finite family of sign/digit instances for a magnitude width `β`.
 Different slots may describe the same graph. -/
@@ -223,18 +223,19 @@ private theorem mul_apply_eq_sum_counts {n D : ℕ} (X : Matrix (Fin n) (Fin D) 
     (Y : Matrix (Fin D) (Fin n) ℤ) (W : Finset (Fin n × Fin n)) (β : ℕ)
     (hX : ∀ a j, 0 ≤ X a j ∧ X a j < 2 ^ β) (hY : ∀ j b, 0 ≤ Y j b ∧ Y j b < 2 ^ β) (a b : Fin n) :
     (X * Y) a b = ∑ i ∈ Finset.range β, ∑ j ∈ Finset.range β, (2 : ℤ) ^ (i + j) *
-      ((ofMatrices (IntMatrix.bit X i) (IntMatrix.bit Y j) W).commonNeighborCount a b : ℤ) := by
-  rw [IntMatrix.product X Y β hX hY, Matrix.sum_apply]
+      ((ofMatrices (Matrix.bit X i) (Matrix.bit Y j) W).commonNeighborCount a b : ℤ) := by
+  rw [Matrix.mul_eq_sum_two_pow_smul_bit_mul_bit X Y β hX hY, Matrix.sum_apply]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [Matrix.sum_apply]
   refine Finset.sum_congr rfl fun j _ => ?_
-  rw [Matrix.smul_apply, smul_eq_mul, zero_one _ _ W (IntMatrix.bit_eq_zero_or_one X i)
-    (IntMatrix.bit_eq_zero_or_one Y j)]
+  rw [Matrix.smul_apply, smul_eq_mul, mul_apply_eq_commonNeighborCount_ofMatrices _ _ W
+    (Matrix.bit_eq_zero_or_one X i)
+    (Matrix.bit_eq_zero_or_one Y j)]
 
 /-- Signed bounded product entries are weighted sums of four count instances per digit
 pair, with signs `+, −, −, +`. Only counts at the same queried edge are needed. The absolute
 bounds are strict; `β = 0` therefore permits only zero entries. -/
-theorem entries_from_counts {n D : ℕ} (X : Matrix (Fin n) (Fin D) ℤ)
+theorem mul_apply_eq_sum_signedBitInstance_counts {n D : ℕ} (X : Matrix (Fin n) (Fin D) ℤ)
     (Y : Matrix (Fin D) (Fin n) ℤ) (W : Finset (Fin n × Fin n)) (β : ℕ)
     (hX : ∀ a j, |X a j| < 2 ^ β) (hY : ∀ j b, |Y j b| < 2 ^ β) (a b : Fin n) :
     (X * Y) a b = ∑ i ∈ Finset.range β, ∑ j ∈ Finset.range β, (2 : ℤ) ^ (i + j) *
@@ -247,10 +248,10 @@ theorem entries_from_counts {n D : ℕ} (X : Matrix (Fin n) (Fin D) ℤ)
         + ((signedBitInstance X Y W true true i j).commonNeighborCount
             a b : ℤ)) := by
   simp only [signedBitInstance, Bool.false_eq_true, ↓reduceIte]
-  obtain ⟨hXpos, hXneg⟩ := IntMatrix.parts_lt X hX
-  obtain ⟨hYpos, hYneg⟩ := IntMatrix.parts_lt Y hY
+  obtain ⟨hXpos, hXneg⟩ := Matrix.map_posPart_lt_and_map_negPart_lt X hX
+  obtain ⟨hYpos, hYneg⟩ := Matrix.map_posPart_lt_and_map_negPart_lt Y hY
   -- `XY` is a signed sum of the four products of a part of `X` and a part of `Y`.
-  conv_lhs => rw [IntMatrix.parts X, IntMatrix.parts Y]
+  conv_lhs => rw [Matrix.eq_map_posPart_sub_map_negPart X, Matrix.eq_map_posPart_sub_map_negPart Y]
   rw [Matrix.sub_mul, Matrix.mul_sub, Matrix.mul_sub]
   simp only [Matrix.sub_apply]
   rw [mul_apply_eq_sum_counts _ _ W β hXpos hYpos,

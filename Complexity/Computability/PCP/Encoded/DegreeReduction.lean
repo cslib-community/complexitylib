@@ -114,7 +114,6 @@ theorem isPolyTime_degreeReduceDarts {graph : Input → Graph C}
     (isPolyTime_halfEdges hgraph) hbody
   simpa only [degreeReduceDarts, List.product, choices] using h
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every output edge is computed uniformly in the input graph and dart. -/
 @[fun_prop]
 theorem isPolyTime_degreeReduceEdge {graph : Input → Graph C}
@@ -128,12 +127,8 @@ theorem isPolyTime_degreeReduceEdge {graph : Input → Graph C}
     ComputableInPolyTime
       (fun x => (graph x).degreeReduceEdge fallback rotate (dart x))
       input (Edge.encoding (encOption (encPair encBool enc))) := by
-  have hgraph := hgraph.tidy
-  have hdart := hdart.tidy
-  have hrotate := hrotate.tidy
-  refine .of_tidy ?_
   unfold degreeReduceEdge
-  polytime
+  fun_prop
 
 /-- The whole edge-list construction is uniformly polynomial-time, including all cloud
 scans, searches, rotation calls, copying, and storage of the resulting graph. -/

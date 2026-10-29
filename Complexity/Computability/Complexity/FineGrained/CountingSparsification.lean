@@ -12,16 +12,16 @@ public import Complexity.Logics.Propositional.CNF.ModelCount.Declared
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingSearch
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Mathlib.Data.Nat.Size
 
 /-!
 # Algorithmic counting sparsification on native machines
@@ -133,7 +133,8 @@ theorem modelCount_le_two_pow_numVars {V : Type*} [DecidableEq V] (ψ : CNF V) :
 
 theorem length_encNat_le_of_le_two_pow {acc n : ℕ} (h : acc ≤ 2 ^ n) :
     (encNat acc).length ≤ n + 1 := by
-  refine (ComputableTidilyInO.length_encNat_mono h).trans ?_
+  refine (show (encNat acc).length ≤ (encNat (2 ^ n)).length by
+    simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h).trans ?_
   rw [encNat_two_pow, List.length_append, List.length_replicate, List.length_singleton]
 
 /-! ### The counting-sparsification search -/
@@ -520,66 +521,82 @@ theorem search_eq_modelCount (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
-private theorem computableTidilyInPolyTime_isSparse_head (M K : ℕ) :
-    ComputableTidilyInPolyTime
+@[local fun_prop]
+private theorem computableInPolyTime_listIsEmpty {β : Type} (enc : β ↪ List Bool) :
+    ComputableInPolyTime List.isEmpty (encList enc) encBool := by
+  have heq : (List.isEmpty : List β → Bool) = fun l => decide (l.length = 0) := by
+    funext l; cases l <;> simp
+  rw [heq]
+  fun_prop
+
+@[local fun_prop]
+private theorem computableInPolyTime_listTail {β : Type} (enc : β ↪ List Bool) :
+    ComputableInPolyTime List.tail (encList enc) (encList enc) := by
+  have heq : (List.tail : List β → List β) = fun l => l.drop 1 := by
+    funext l; cases l <;> rfl
+  rw [heq]
+  exact (dropUnary (encA := enc)).comp (id'.prod (const 1))
+
+private theorem computableInPolyTime_isSparse_head (M K : ℕ) :
+    ComputableInPolyTime
       (fun s : State => isSparse (countingThreshold M) K (s.2.1.headD []))
       encState encBool := by
-  have h := (computableInPolyTime_isSparse encNat
-    (computableInPolyTime_countingThreshold_le M) K).tidy
-  have hH : ComputableTidilyInPolyTime (fun s : State => s.2.1.headD []) encState encCNF := by
+  have h := computableInPolyTime_isSparse encNat
+    (computableInPolyTime_countingThreshold_le M) K
+  have hH : ComputableInPolyTime (fun s : State => s.2.1.headD []) encState encCNF := by
     unfold encState
     fun_prop
   exact h.comp hH
 
-private theorem computableTidilyInPolyTime_inner (M K : ℕ) :
-    ComputableTidilyInPolyTime (fun s : State =>
+private theorem computableInPolyTime_inner (M K : ℕ) :
+    ComputableInPolyTime (fun s : State =>
       (s.1, (countingNext (countingThreshold M) K (s.2.1.headD []) false ::
         countingNext (countingThreshold M) K (s.2.1.headD []) true :: s.2.1.tail, s.2.2)))
       encState encState := by
-  have h := (computableInPolyTime_countingNext encNat
-    (computableInPolyTime_countingThreshold_le M) K).tidy
+  have h := computableInPolyTime_countingNext encNat
+    (computableInPolyTime_countingThreshold_le M) K
   unfold encState encCNF
   fun_prop
 
-private theorem computableTidilyInPolyTime_leafUpdate :
-    ComputableTidilyInPolyTime (fun p : State × ℕ => leafUpdate p.1 p.2)
+private theorem computableInPolyTime_leafUpdate :
+    ComputableInPolyTime (fun p : State × ℕ => leafUpdate p.1 p.2)
       (encPair encState encNat) encState := by
-  have hvars := SAT.computableInPolyTime_distinctVars.tidy
+  have hvars := SAT.computableInPolyTime_distinctVars
   have heq : (fun p : State × ℕ => leafUpdate p.1 p.2) = fun p =>
       (p.1.1, (p.1.2.1.tail,
-        if decide (2 ^ p.1.1 ≤ p.1.2.2 +
-            2 ^ (p.1.1 - (p.1.2.1.headD []).distinctVars.length) * p.2) then
+        if !(decide (p.1.2.2 +
+            2 ^ (p.1.1 - (p.1.2.1.headD []).distinctVars.length) * p.2 < 2 ^ p.1.1)) then
           2 ^ p.1.1
         else
           p.1.2.2 + 2 ^ (p.1.1 - (p.1.2.1.headD []).distinctVars.length) * p.2)) := by
     funext p
-    simp [leafUpdate, leafWeight, min_def]
+    simp only [leafUpdate, leafWeight, min_def, Bool.not_eq_true', decide_eq_false_iff_not,
+      not_lt]
   rw [heq]
   unfold encState encCNF
   fun_prop
 
-private theorem computableTidilyInPolyTime_init (k : ℕ) :
-    ComputableTidilyInPolyTime (init k) encCNF encState := by
-  have hvars := SAT.computableInPolyTime_distinctVars.tidy
-  have hnorm := (computableInPolyTime_countingNormalize encNat).tidy
+private theorem computableInPolyTime_init (k : ℕ) :
+    ComputableInPolyTime (init k) encCNF encState := by
+  have hvars := SAT.computableInPolyTime_distinctVars
+  have hnorm := computableInPolyTime_countingNormalize encNat
   unfold init root encState encCNF
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-private theorem computableTidilyInPolyTime_rounds (B : ℕ) :
-    ComputableTidilyInPolyTime (rounds B) encCNF encNat := by
-  have hvars := SAT.computableInPolyTime_distinctVars.tidy
+private theorem computableInPolyTime_rounds (B : ℕ) :
+    ComputableInPolyTime (rounds B) encCNF encNat := by
+  have hvars := SAT.computableInPolyTime_distinctVars
   have h := unary_div_const B
   unfold rounds
   fun_prop
 
 /-- Separate step time and workspace: a polynomial in the encoded state and counter-output
 lengths, plus the corresponding resource of `g` when it runs on a sparse head formula. -/
-private theorem exists_computableTidilyInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u : CNF ℕ → ℕ}
-    (hg : ComputableTidilyInO g encCNF encNat t u) :
-    ∃ d, ComputableTidilyInO (step M K g) encState encState
+private theorem exists_computableInO_step (M K : ℕ) {g : CNF ℕ → ℕ} {t u : CNF ℕ → ℕ}
+    (hg : ComputableInO g encCNF encNat t u) :
+    ∃ d, ComputableInO (step M K g) encState encState
       (fun s => ((encState s).length + 1) ^ d +
         if s.2.1.isEmpty = false ∧
             isSparse (countingThreshold M) K (s.2.1.headD []) = true then
@@ -592,14 +609,14 @@ private theorem exists_computableTidilyInO_step (M K : ℕ) {g : CNF ℕ → ℕ
           u (s.2.1.headD []) +
             ((encState s).length + (encNat (g (s.2.1.headD []))).length + 1) ^ d
         else 0) := by
-  obtain ⟨dE, eE, hE⟩ := (show ComputableTidilyInPolyTime (fun s : State => s.2.1.isEmpty) encState
+  obtain ⟨dE, eE, hE⟩ := (show ComputableInPolyTime (fun s : State => s.2.1.isEmpty) encState
     encBool by unfold encState; fun_prop).exists_degree
   obtain ⟨dI, eI, hI⟩ := (id' (encIn := encState)).exists_degree
-  obtain ⟨dS, eS, hS⟩ := (computableTidilyInPolyTime_isSparse_head M K).exists_degree
-  obtain ⟨dH, eH, hH⟩ := (show ComputableTidilyInPolyTime (fun s : State => s.2.1.headD []) encState
+  obtain ⟨dS, eS, hS⟩ := (computableInPolyTime_isSparse_head M K).exists_degree
+  obtain ⟨dH, eH, hH⟩ := (show ComputableInPolyTime (fun s : State => s.2.1.headD []) encState
     encCNF by unfold encState; fun_prop).exists_degree
-  obtain ⟨dN, eN, hN⟩ := (computableTidilyInPolyTime_inner M K).exists_degree
-  obtain ⟨dU, eU, hU⟩ := computableTidilyInPolyTime_leafUpdate.exists_degree
+  obtain ⟨dN, eN, hN⟩ := (computableInPolyTime_inner M K).exists_degree
+  obtain ⟨dU, eU, hU⟩ := computableInPolyTime_leafUpdate.exists_degree
   set D := dE + dI + dS + dH + dN + dU + 1
   have hE' := (hE.mono (d' := D) (e' := eE) (by omega) le_rfl).inO
   have hI' := (hI.mono (d' := D) (e' := eI) (by omega) le_rfl).inO
@@ -735,11 +752,11 @@ private noncomputable def leafTime (K M L_coeff : ℕ) (δ : ℝ) (c e : ℕ) (�
 include hM hK in
 /-- The same prefix invariant bounds step time and workspace separately, including the terminal
 empty stack, capped accumulator, retained declared-variable count, and binary loop clock. -/
-private theorem exists_computableTidilyInO_search_resources (hM2 : 2 ≤ M)
+private theorem exists_computableInO_search_resources (hM2 : 2 ≤ M)
     {k B L_coeff : ℕ} (hkK : k ≤ K)
     (hTB : CountingTreeBound M K B L_coeff hM hK)
     {g : CNF ℕ → ℕ} {t u R Q : CNF ℕ → ℕ}
-    (hg : ComputableTidilyInO g encCNF encNat t u)
+    (hg : ComputableInO g encCNF encNat t u)
     (hg_le : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
       isSparse (countingThreshold M) K ψ = true → g ψ ≤ 2 ^ ψ.numVars)
     (ht : ∀ φ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
@@ -750,7 +767,7 @@ private theorem exists_computableTidilyInO_search_resources (hM2 : 2 ≤ M)
       isSparse (countingThreshold M) K ψ = true →
       ψ.length ≤ occBound K M * φ.numVars + 1 →
       (encCNF ψ).length ≤ nodeBound K L_coeff φ → u ψ ≤ Q φ) :
-    ∃ d dn di, ComputableTidilyInO (search M K k B g) encCNF encNat
+    ∃ d dn di, ComputableInO (search M K k B g) encCNF encNat
       (fun φ => ((encCNF φ).length + 1) ^ dn + ((encCNF φ).length + 1) ^ di +
         (rounds B φ + 1) * (2 * (2 * stateBound K L_coeff φ + 1) ^ d +
           R φ +
@@ -758,9 +775,9 @@ private theorem exists_computableTidilyInO_search_resources (hM2 : 2 ≤ M)
       (fun φ => ((encCNF φ).length + 1) ^ dn + ((encCNF φ).length + 1) ^ di +
         (2 * (2 * stateBound K L_coeff φ + 1) ^ d + Q φ) +
         stateBound K L_coeff φ + (encNat (rounds B φ)).length) := by
-  obtain ⟨d, hstep⟩ := exists_computableTidilyInO_step M K hg
-  obtain ⟨dn, en, hn⟩ := (computableTidilyInPolyTime_rounds B).exists_degree
-  obtain ⟨di, ei, hi⟩ := (computableTidilyInPolyTime_init k).exists_degree
+  obtain ⟨d, hstep⟩ := exists_computableInO_step M K hg
+  obtain ⟨dn, en, hn⟩ := (computableInPolyTime_rounds B).exists_degree
+  obtain ⟨di, ei, hi⟩ := (computableInPolyTime_init k).exists_degree
   have hround (v V : CNF ℕ → ℕ)
       (hv : ∀ φ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
         isSparse (countingThreshold M) K ψ = true →
@@ -814,8 +831,8 @@ private theorem exists_computableTidilyInO_search_resources (hM2 : 2 ≤ M)
     rw [heq]
     exact length_encState_le hM hK hkK hstk hacc hmem
   exact ⟨d, dn, di,
-    (ComputableInO.iterate hn.inO.computableInO hi.inO.computableInO hstep.computableInO
-      (hround t R ht) (hround u Q hu) hstate).tidy.snd'.snd'⟩
+    (ComputableInO.iterate hn.inO hi.inO hstep
+      (hround t R ht) (hround u Q hu) hstate).snd'.snd'⟩
 
 
 private theorem le_leafTime {K M L_coeff : ℕ} {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
@@ -836,19 +853,19 @@ private theorem le_leafTime {K M L_coeff : ℕ} {δ : ℝ} (hδ : 0 ≤ δ) {c e
 
 include hM hK in
 /-- **The time and space of the rounds.** Under `CountingTreeBound`, given a total leaf routine `g`
-with `hg : ComputableTidilyInO g encCNF encNat t t` and global bound `ht` holding for every
+with `hg : ComputableInO g encCNF encNat t t` and global bound `ht` holding for every
 `ψ : CNF ℕ`, `search M K k B g` runs within time equal to initialization plus `rounds B φ + 1`
 times the per-round bound (a polynomial in `stateBound`, plus `leafTime`, plus the binary
 round-counter step cost), and within space equal to initialization/round-count space plus the
 per-round bound (including `leafTime`, since `hg` bounds both time and space of `g` by `t`). -/
-private theorem exists_computableTidilyInO_search (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
+private theorem exists_computableInO_search_rounds (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k ≤ K)
     (hTB : CountingTreeBound M K B L_coeff hM hK)
-    {g : CNF ℕ → ℕ} {t : CNF ℕ → ℕ} (hg : ComputableTidilyInO g encCNF encNat t t)
+    {g : CNF ℕ → ℕ} {t : CNF ℕ → ℕ} (hg : ComputableInO g encCNF encNat t t)
     (hg_le : ∀ ψ : CNF ℕ, (∀ c ∈ ψ, c.length ≤ k) →
       isSparse (countingThreshold M) K ψ = true → g ψ ≤ 2 ^ ψ.numVars)
     {δ : ℝ} (hδ : 0 ≤ δ) {c e : ℕ}
     (ht : ∀ ψ : CNF ℕ, (t ψ : ℝ) ≤ c * (2 ^ (δ * ψ.length) * ((encCNF ψ).length + 1) ^ e) + c) :
-    ∃ d dn di, ComputableTidilyInO (search M K k B g) encCNF encNat
+    ∃ d dn di, ComputableInO (search M K k B g) encCNF encNat
       (fun φ => ((encCNF φ).length + 1) ^ dn + ((encCNF φ).length + 1) ^ di +
         (rounds B φ + 1) * (2 * (2 * stateBound K L_coeff φ + 1) ^ d +
           leafTime K M L_coeff δ c e φ +
@@ -856,7 +873,7 @@ private theorem exists_computableTidilyInO_search (hM2 : 2 ≤ M) {k B L_coeff :
       (fun φ => ((encCNF φ).length + 1) ^ dn + ((encCNF φ).length + 1) ^ di +
         (2 * (2 * stateBound K L_coeff φ + 1) ^ d + leafTime K M L_coeff δ c e φ) +
         stateBound K L_coeff φ + (encNat (rounds B φ)).length) := by
-  apply exists_computableTidilyInO_search_resources hM hK hM2 hkK hTB hg hg_le <;>
+  apply exists_computableInO_search_resources hM hK hM2 hkK hTB hg hg_le <;>
     intro φ ψ _ _ hlen henc <;> exact le_leafTime hδ (ht ψ) hlen henc
 
 private theorem search_time_bound (K M B L_coeff d dn di : ℕ)
@@ -1060,14 +1077,14 @@ theorem exists_computableInO_search (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k
         C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * δ) * φ.numVars) *
           (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ := by
   obtain ⟨d, dn, di, h⟩ :=
-    exists_computableTidilyInO_search hM hK hM2 hkK hTB hg.tidy hg_le hδ ht
+    exists_computableInO_search_rounds hM hK hM2 hkK hTB hg hg_le hδ ht
   obtain ⟨C₀, E, hT⟩ := search_time_bound K M B L_coeff d dn di hδ c e
   set T : CNF ℕ → ℕ := fun φ =>
     ((encCNF φ).length + 1) ^ dn + ((encCNF φ).length + 1) ^ di +
       (rounds B φ + 1) * (2 * (2 * stateBound K L_coeff φ + 1) ^ d +
         leafTime K M L_coeff δ c e φ +
         stateBound K L_coeff φ + ((encNat (rounds B φ)).length + 1) ^ 2)
-  have h_mono : ComputableTidilyInO (search M K k B g) encCNF encNat T T :=
+  have h_mono : ComputableInO (search M K k B g) encCNF encNat T T :=
     h.mono_le (fun _ => le_rfl) fun φ => by
       dsimp only [T]
       have h1 : 2 * (2 * stateBound K L_coeff φ + 1) ^ d + leafTime K M L_coeff δ c e φ +
@@ -1083,7 +1100,7 @@ theorem exists_computableInO_search (hM2 : 2 ≤ M) {k B L_coeff : ℕ} (hkK : k
         (Nat.succ_pos (rounds B φ))
       simp only [Nat.succ_eq_add_one] at h2
       omega
-  exact ⟨T, C₀, E, .of_tidy h_mono, hT⟩
+  exact ⟨T, C₀, E, h_mono, hT⟩
 
 theorem polyBounded_nodeBound (K L_coeff : ℕ) :
     PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) (nodeBound K L_coeff) := by
@@ -1135,14 +1152,14 @@ theorem exists_computableInO_search_polySpace (hM2 : 2 ≤ M) {k B L_coeff : ℕ
       ∀ φ : CNF ℕ, (T φ : ℝ) ≤
         C₀ * ((2 : ℝ) ^ ((1 / B + occBound K M * δ) * φ.numVars) *
           (((encCNF φ).length : ℝ) + 1) ^ E) + C₀ := by
-  obtain ⟨d, dn, di, h⟩ := exists_computableTidilyInO_search_resources hM hK hM2 hkK hTB
-    hg.tidy hg_le (R := leafTime K M L_coeff δ c e)
+  obtain ⟨d, dn, di, h⟩ := exists_computableInO_search_resources hM hK hM2 hkK hTB
+    hg hg_le (R := leafTime K M L_coeff δ c e)
     (Q := fun φ => a * (nodeBound K L_coeff φ + 1) ^ b)
     (fun _ ψ hw hsp hlen henc => le_leafTime hδ (ht ψ hw hsp) hlen henc)
     (fun _ ψ hw hsp _ henc => (hs ψ hw hsp).trans
       (Nat.mul_le_mul_left a (Nat.pow_le_pow_left (Nat.add_le_add_right henc 1) b)))
   obtain ⟨C₀, E, hT⟩ := search_time_bound K M B L_coeff d dn di hδ c e
-  refine ⟨_, _, C₀, E, .of_tidy h, ?_, hT⟩
+  refine ⟨_, _, C₀, E, h, ?_, hT⟩
   have hclock : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length)
       (fun φ => (encNat (rounds B φ)).length) := by
     refine (PolyBounded.self.add (PolyBounded.const 3)).mono fun φ => ?_

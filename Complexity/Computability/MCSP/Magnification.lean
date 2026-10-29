@@ -170,7 +170,7 @@ def agreesOnPoint (n s : ℕ) (p w₀ w₁ w x : List Bool) : Bool :=
     (evalCertificate n s w x ==
       if x.getD p.length false then evalCertificate n s w₁ x else evalCertificate n s w₀ x)
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- `agreesOnPoint` is computable in polynomial time when `n` and `s` are given in unary. -/
 theorem computableInPolyTime_agreesOnPoint {γ : Type} {encIn : γ ↪ List Bool}
     {n s : γ → ℕ} {p w₀ w₁ w x : γ → List Bool}
@@ -183,20 +183,17 @@ theorem computableInPolyTime_agreesOnPoint {γ : Type} {encIn : γ ↪ List Bool
     (hx : ComputableInPolyTime x encIn encBits) :
     ComputableInPolyTime
       (fun a => agreesOnPoint (n a) (s a) (p a) (w₀ a) (w₁ a) (w a) (x a)) encIn encBool := by
-  refine .of_tidy ?_
-  have hp_t := hp.tidy
-  have hx_t := hx.tidy
-  have hin : ComputableTidilyInPolyTime (fun a => (p a).isPrefixOf (x a)) encIn encBool := by
+  have hin : ComputableInPolyTime (fun a => (p a).isPrefixOf (x a)) encIn encBool := by
     simp only [isPrefixOf_eq_take_beq]
-    exact (bitsTakeWithInput hx_t (length_bits.comp hp_t)).beq hp_t
-  have hbit : ComputableTidilyInPolyTime
+    exact (bitsTakeWithInput hx (length_bits.comp hp)).beq hp
+  have hbit : ComputableInPolyTime
       (fun a => (x a).getD (p a).length false) encIn encBool :=
-    bitsGetDWithInput hx_t (length_bits.comp hp_t) false
-  have hew := (computableInPolyTime_evalCertificate hn hs hw hx).tidy
-  have hew₀ := (computableInPolyTime_evalCertificate hn hs hw₀ hx).tidy
-  have hew₁ := (computableInPolyTime_evalCertificate hn hs hw₁ hx).tidy
+    bitsGetDWithInput hx (length_bits.comp hp) false
+  have hew := computableInPolyTime_evalCertificate hn hs hw hx
+  have hew₀ := computableInPolyTime_evalCertificate hn hs hw₀ hx
+  have hew₁ := computableInPolyTime_evalCertificate hn hs hw₁ hx
   unfold agreesOnPoint
-  exact bool_or.comp ((bool_not.comp hin).prod (hew.beq (hbit.cond hew₁ hew₀)))
+  exact bool_or.comp ((bool_not.comp hin).prod (hew.beq (ite' hbit hew₁ hew₀)))
 
 /-- Whether the candidate circuit `w` agrees on the subcube `p` with the child certificates `w₀`
 (on `p ++ [false]`) and `w₁` (on `p ++ [true]`) at every `n`-bit input. -/
@@ -279,93 +276,85 @@ private theorem PPolyOn_imp {α : Type} {enc : α ↪ List Bool} {P Q : α → P
   rw [h]
   exact PPolyOn.sup (PPolyOn.compl hP) hQ
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 private theorem computableInPolyTime_mergeCert₀ :
     ComputableInPolyTime mergeCert₀ encMerge encBits := by
-  refine .of_tidy ?_
-  have hn : ComputableTidilyInPolyTime (fun a : MergeInput => a.1.1.1) encMerge encUnary :=
+  have hn : ComputableInPolyTime (fun a : MergeInput => a.1.1.1) encMerge encUnary :=
     (fst encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-  have hs : ComputableTidilyInPolyTime (fun a : MergeInput => a.1.1.2) encMerge encUnary :=
+  have hs : ComputableInPolyTime (fun a : MergeInput => a.1.1.2) encMerge encUnary :=
     (snd encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-  have hcert : ComputableTidilyInPolyTime
+  have hcert : ComputableInPolyTime
       (fun a : MergeInput => certLength a.1.1.1 a.1.1.2) encMerge encUnary := by
     unfold certLength
     fun_prop
   unfold mergeCert₀
   exact bitsTakeWithInput (bitsDropWithInput (snd encHeader encBits) (const 1)) hcert
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 private theorem computableInPolyTime_mergeCert₁ :
     ComputableInPolyTime mergeCert₁ encMerge encBits := by
-  refine .of_tidy ?_
-  have hn : ComputableTidilyInPolyTime (fun a : MergeInput => a.1.1.1) encMerge encUnary :=
+  have hn : ComputableInPolyTime (fun a : MergeInput => a.1.1.1) encMerge encUnary :=
     (fst encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-  have hs : ComputableTidilyInPolyTime (fun a : MergeInput => a.1.1.2) encMerge encUnary :=
+  have hs : ComputableInPolyTime (fun a : MergeInput => a.1.1.2) encMerge encUnary :=
     (snd encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-  have hcert : ComputableTidilyInPolyTime
+  have hcert : ComputableInPolyTime
       (fun a : MergeInput => certLength a.1.1.1 a.1.1.2) encMerge encUnary := by
     unfold certLength
     fun_prop
-  have hdrop : ComputableTidilyInPolyTime
+  have hdrop : ComputableInPolyTime
       (fun a : MergeInput => stateWidth a.1.1.1 a.1.1.2 + 1) encMerge encUnary := by
     unfold stateWidth
     fun_prop
   unfold mergeCert₁
   exact bitsTakeWithInput (bitsDropWithInput (snd encHeader encBits) hdrop) hcert
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 private theorem isMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) :
     {q : MergeInput × List Bool |
       IsMergedCert q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
       PPolyOn (encPair encMerge encBits) := by
   let encQ := encPair encMerge encBits
-  have hq1 : ComputableTidilyInPolyTime (fun q : MergeInput × List Bool => q.1) encQ encMerge :=
+  have hq1 : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1) encQ encMerge :=
     fst encMerge encBits
-  have hn_t : ComputableTidilyInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.1)
-      encQ encUnary :=
-    (fst encUnary encUnary).comp ((fst _ _).comp ((fst encHeader encBits).comp hq1))
-  have hs_t : ComputableTidilyInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.2)
-      encQ encUnary :=
-    (snd encUnary encUnary).comp ((fst _ _).comp ((fst encHeader encBits).comp hq1))
   have hn : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.1) encQ encUnary :=
-    .of_tidy hn_t
+    (fst encUnary encUnary).comp ((fst _ _).comp ((fst encHeader encBits).comp hq1))
   have hs : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.2) encQ encUnary :=
-    .of_tidy hs_t
+    (snd encUnary encUnary).comp ((fst _ _).comp ((fst encHeader encBits).comp hq1))
   have hp : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.1.2.1) encQ encBits :=
-    .of_tidy ((fst encBits encUnary).comp ((snd _ _).comp ((fst encHeader encBits).comp hq1)))
+    (fst encBits encUnary).comp ((snd _ _).comp ((fst encHeader encBits).comp hq1))
   have hw₀ : ComputableInPolyTime (fun q : MergeInput × List Bool => mergeCert₀ q.1) encQ encBits :=
-    computableInPolyTime_mergeCert₀.comp (.of_tidy hq1)
+    computableInPolyTime_mergeCert₀.comp hq1
   have hw₁ : ComputableInPolyTime (fun q : MergeInput × List Bool => mergeCert₁ q.1) encQ encBits :=
-    computableInPolyTime_mergeCert₁.comp (.of_tidy hq1)
+    computableInPolyTime_mergeCert₁.comp hq1
   have hw : ComputableInPolyTime (fun q : MergeInput × List Bool => q.2) encQ encBits :=
-    .of_tidy (snd encMerge encBits)
-  have hcert_t : ComputableTidilyInPolyTime
+    snd encMerge encBits
+  have hcert : ComputableInPolyTime
       (fun q : MergeInput × List Bool => certLength q.1.1.1.1 q.1.1.1.2) encQ encUnary := by
     unfold certLength
     fun_prop
   have hlen : {q : MergeInput × List Bool | q.2.length = certLength q.1.1.1.1 q.1.1.1.2} ∈
       PPolyOn encQ := by
     simpa [decide_eq_true_eq] using PPolyOn_of_computableInPolyTime
-      (.of_tidy (decide_eq' (length_bits.comp (snd encMerge encBits)) hcert_t))
+      (decide_eq' (length_bits.comp (snd encMerge encBits)) hcert)
   have hvalid : {q : MergeInput × List Bool | validCertificate q.1.1.1.1 q.1.1.1.2 q.2 = true} ∈
       PPolyOn encQ :=
     PPolyOn_of_computableInPolyTime (computableInPolyTime_validCertificate hn hs hw)
   let encQX := encPair encQ encBits
   have hqx1 : ComputableInPolyTime (fun r : (MergeInput × List Bool) × List Bool => r.1)
-      encQX encQ := .of_tidy (fst encQ encBits)
+      encQX encQ := fst encQ encBits
   have hagrees_pt : {r : (MergeInput × List Bool) × List Bool |
       agreesOnPoint r.1.1.1.1.1 r.1.1.1.1.2 r.1.1.1.2.1
         (mergeCert₀ r.1.1) (mergeCert₁ r.1.1) r.1.2 r.2 = true} ∈ PPolyOn encQX :=
     PPolyOn_of_computableInPolyTime (computableInPolyTime_agreesOnPoint
       (hn.comp hqx1) (hs.comp hqx1) (hp.comp hqx1) (hw₀.comp hqx1) (hw₁.comp hqx1)
-      (hw.comp hqx1) (.of_tidy (snd encQ encBits)))
+      (hw.comp hqx1) (snd encQ encBits))
   have hagrees : {q : MergeInput × List Bool |
       AgreesWithChildren q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
       PPolyOn encQ :=
     PPolyOn.forall_of_computableInPolyTime_length hNP hn hagrees_pt
   exact PPolyOn.inf hlen (PPolyOn.inf hvalid hagrees)
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 private theorem isMinMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) :
     {q : MergeInput × List Bool |
       IsMinMergedCert q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
@@ -383,7 +372,7 @@ private theorem isMinMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBit
         {q : MergeInput × List Bool |
           IsMergedCert q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} :=
       ⟨fun r => (r.1.1, r.2),
-        .of_tidy (((fst encMerge encBits).comp (fst encQ encBits)).prod (snd encQ encBits)),
+        ((fst encMerge encBits).comp (fst encQ encBits)).prod (snd encQ encBits),
         fun _ => Iff.rfl⟩
     exact hred.mem_PPolyOn hmerged
   have hwordLt : {r : (MergeInput × List Bool) × List Bool |
@@ -391,18 +380,17 @@ private theorem isMinMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBit
     have hcomp : ComputableInPolyTime
         (fun r : (MergeInput × List Bool) × List Bool => !BitString.wordLt r.2 r.1.2)
         encQW encBool :=
-      .of_tidy (bool_not.comp (bitsWordLt
-        (snd encQ encBits) ((snd encMerge encBits).comp (fst encQ encBits))))
+      bool_not.comp (bitsWordLt
+        (snd encQ encBits) ((snd encMerge encBits).comp (fst encQ encBits)))
     simpa [Bool.not_eq_true'] using PPolyOn_of_computableInPolyTime hcomp
   have hcert_q : ComputableInPolyTime
       (fun q : MergeInput × List Bool => certLength q.1.1.1.1 q.1.1.1.2) encQ encUnary := by
-    refine .of_tidy ?_
-    have hq1 : ComputableTidilyInPolyTime (fun q : MergeInput × List Bool => q.1) encQ encMerge :=
+    have hq1 : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1) encQ encMerge :=
       fst encMerge encBits
-    have hn : ComputableTidilyInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.1)
+    have hn : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.1)
         encQ encUnary :=
       (fst encUnary encUnary).comp ((fst _ _).comp ((fst encHeader encBits).comp hq1))
-    have hs : ComputableTidilyInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.2)
+    have hs : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.1.1.2)
         encQ encUnary :=
       (snd encUnary encUnary).comp ((fst _ _).comp ((fst encHeader encBits).comp hq1))
     unfold certLength
@@ -414,7 +402,7 @@ private theorem isMinMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBit
     PPolyOn.forall_of_computableInPolyTime_length hNP hcert_q (PPolyOn_imp hmerged' hwordLt)
   exact PPolyOn.inf hmerged hforall
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- **Under `NP ⊆ P/poly`, `CircuitMinMergeLanguage` has polynomial-size circuits.** Since
 `CircuitMinMergeLanguage` is defined by bounded existential and universal quantifiers over
 polynomial-time predicates, nonuniform quantifier elimination puts it in `PPolyOn encMerge`
@@ -422,39 +410,37 @@ polynomial-time predicates, nonuniform quantifier elimination puts it in `PPolyO
 theorem circuitMinMergeLanguage_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) :
     CircuitMinMergeLanguage ∈ PPolyOn encMerge := by
   let encQ := encPair encMerge encBits
-  have hn_a : ComputableTidilyInPolyTime (fun a : MergeInput => a.1.1.1) encMerge encUnary :=
+  have hn_a : ComputableInPolyTime (fun a : MergeInput => a.1.1.1) encMerge encUnary :=
     (fst encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-  have hs_a : ComputableTidilyInPolyTime (fun a : MergeInput => a.1.1.2) encMerge encUnary :=
+  have hs_a : ComputableInPolyTime (fun a : MergeInput => a.1.1.2) encMerge encUnary :=
     (snd encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
   have hcert_a : ComputableInPolyTime
       (fun a : MergeInput => certLength a.1.1.1 a.1.1.2) encMerge encUnary := by
-    refine .of_tidy ?_
     unfold certLength
     fun_prop
   have hok : {a : MergeInput | mergeOk₀ a = true ∧ mergeOk₁ a = true} ∈ PPolyOn encMerge := by
-    have hok₀ : ComputableTidilyInPolyTime mergeOk₀ encMerge encBool :=
+    have hok₀ : ComputableInPolyTime mergeOk₀ encMerge encBool :=
       bitsGetDWithInput (snd encHeader encBits) (const 0) false
-    have hsw : ComputableTidilyInPolyTime
+    have hsw : ComputableInPolyTime
         (fun a : MergeInput => stateWidth a.1.1.1 a.1.1.2) encMerge encUnary := by
       unfold stateWidth certLength
       fun_prop
-    have hok₁ : ComputableTidilyInPolyTime mergeOk₁ encMerge encBool :=
+    have hok₁ : ComputableInPolyTime mergeOk₁ encMerge encBool :=
       bitsGetDWithInput (snd encHeader encBits) hsw false
-    simpa [Bool.and_eq_true] using
-      PPolyOn_of_computableInPolyTime (.of_tidy (bool_and' hok₀ hok₁))
-  have hj_q : ComputableTidilyInPolyTime
+    simpa [Bool.and_eq_true] using PPolyOn_of_computableInPolyTime (bool_and' hok₀ hok₁)
+  have hj_q : ComputableInPolyTime
       (fun q : MergeInput × List Bool => q.1.1.2.2) encQ encUnary :=
     (snd encBits encUnary).comp ((snd _ _).comp
       ((fst encHeader encBits).comp (fst encMerge encBits)))
   have hbit_q : {q : MergeInput × List Bool |
       (q.1.1.2.2 == 0 || q.2.getD (q.1.1.2.2 - 1) false) = true} ∈ PPolyOn encQ := by
-    have hj0 : ComputableTidilyInPolyTime
+    have hj0 : ComputableInPolyTime
         (fun q : MergeInput × List Bool => q.1.1.2.2 == 0) encQ encBool :=
       hj_q.beq (const 0)
-    have hget : ComputableTidilyInPolyTime
+    have hget : ComputableInPolyTime
         (fun q : MergeInput × List Bool => q.2.getD (q.1.1.2.2 - 1) false) encQ encBool :=
       bitsGetDWithInput (snd encMerge encBits) (unary_sub.comp (hj_q.prod (const 1))) false
-    exact PPolyOn_of_computableInPolyTime (.of_tidy (bool_or.comp (hj0.prod hget)))
+    exact PPolyOn_of_computableInPolyTime (bool_or.comp (hj0.prod hget))
   have hex : {a : MergeInput | ∃ w : List Bool, w.length = certLength a.1.1.1 a.1.1.2 ∧
       (IsMinMergedCert a.1.1.1 a.1.1.2 a.1.2.1 (mergeCert₀ a) (mergeCert₁ a) w ∧
         (a.1.2.2 == 0 || w.getD (a.1.2.2 - 1) false) = true)} ∈ PPolyOn encMerge :=

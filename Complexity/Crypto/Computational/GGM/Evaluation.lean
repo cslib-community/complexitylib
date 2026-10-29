@@ -9,7 +9,6 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
-import Complexity.Tactic.PolyTime
 
 /-!
 # Evaluating the GGM tree
@@ -25,7 +24,7 @@ This module proves evaluation and size properties. Pseudorandomness requires the
 oracle hybrid argument in addition to these facts.
 
 The functional construction is ported from the cslib `crypto` branch at
-`5ff69ca93402e7c947208dc56396d6d86203ccd8`; efficiency uses the existing tidy machine calculus.
+`5ff69ca93402e7c947208dc56396d6d86203ccd8`; efficiency uses the plain machine calculus.
 
 ## Main definitions
 
@@ -141,7 +140,10 @@ theorem computableInPolyTime_selectChild {α : Type} {input : α ↪ List Bool}
     ComputableInPolyTime (fun a => selectChild (width a) (expansion a) (bit a))
       input encBits := by
   unfold selectChild
-  polytime
+  exact hbit.ite
+    (ComputableInPolyTime.bitsTakeWithInput
+      (ComputableInPolyTime.bitsDropWithInput hexpansion hwidth) hwidth)
+    (ComputableInPolyTime.bitsTakeWithInput hexpansion hwidth)
 
 /-- Computing one child invokes the certified generator and slices its output. -/
 @[fun_prop]
@@ -158,9 +160,14 @@ theorem computableInPolyTime_eval {generator : List Bool → List Bool}
     (hgenerator : ComputableInPolyTime generator encBits encBits) :
     ComputableInPolyTime (fun pair : List Bool × List Bool => eval generator pair.1 pair.2)
       (encPair encBits encBits) encBits := by
-  have hstep := computableInPolyTime_child hgenerator
-  have hgrowth := length_child_le generator
   unfold eval
-  polytime
+  exact ComputableInPolyTime.foldl' (encA := encBool) (encL := encBits) (encB := encBits)
+    (ComputableInPolyTime.snd encBits encBits)
+    (ComputableInPolyTime.fst encBits encBits)
+    (computableInPolyTime_child hgenerator)
+    (B := fun pair : List Bool × List Bool => (encPair encBits encBits pair).length)
+    PolyBounded.self fun pair i _ => by
+      simp only [encBits_apply, length_encPair]
+      exact (length_eval_le generator pair.1 (pair.2.take i)).trans (by omega)
 
 end Cslib.Crypto.GGM

@@ -11,7 +11,6 @@ public import Complexity.Computability.Complexity.Classes.Operators
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.BitString.WordCount
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # The class parity-P
@@ -134,18 +133,14 @@ variable {enc : α ↪ List Bool} {L : Set α}
 theorem mem_ParityP : L ∈ ParityP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
     ComputableInPolyTime V (encPair enc encBits) encBool ∧
       ∀ a, a ∈ L ↔ Odd (acceptCount V a (p.eval (enc a).length)) := by
-  have this : L ∈ ParityP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableInPolyTime V (encPair enc encBits) encBool ∧ ∀ a, a ∈ L ↔ Odd
-      (acceptCount V a (p.eval (enc a).length)) := by
-    classical
-    constructor
-    · rintro ⟨p, L', ⟨f, hf, hL'⟩, h⟩
-      refine ⟨p, f, hf, fun a => (h a).trans ?_⟩
-      rw [acceptCount_congr (W := f) fun w => by simp [hL' (a, w)]]
-    · rintro ⟨p, V, hV, h⟩
-      refine ⟨p, {x | V x = true}, ⟨V, hV, fun _ => Iff.rfl⟩, fun a => (h a).trans ?_⟩
-      exact Iff.of_eq (congrArg Odd (acceptCount_congr (W := V) (fun w => by simp) _).symm)
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  classical
+  constructor
+  · rintro ⟨p, L', ⟨f, hf, hL'⟩, h⟩
+    refine ⟨p, f, hf, fun a => (h a).trans ?_⟩
+    rw [acceptCount_congr (W := f) fun w => by simp [hL' (a, w)]]
+  · rintro ⟨p, V, hV, h⟩
+    refine ⟨p, {x | V x = true}, ⟨V, hV, fun _ => Iff.rfl⟩, fun a => (h a).trans ?_⟩
+    exact Iff.of_eq (congrArg Odd (acceptCount_congr (W := V) (fun w => by simp) _).symm)
 
 /-- **`⊕P` through `#P`**: a problem is in `⊕P` exactly when it is the set of instances where some
 function in `#P` is odd. -/

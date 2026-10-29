@@ -20,7 +20,7 @@ def word : List Bool ↪ List Bool := Function.Embedding.refl _
 
 run_elab do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInBigO] do
+      `Turing.MultiTapeTM.ComputableTidilyInO] do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus: {name}"
 

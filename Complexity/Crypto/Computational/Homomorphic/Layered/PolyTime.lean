@@ -13,9 +13,11 @@ public import Complexity.Computability.Circuit.Boolean.Layered.PolyTime
 import Complexity.Computability.Probabilistic.Adaptive
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Tactic.PolyTime
 
 /-!
 # Uniform polynomial-time evaluation of encrypted layers
@@ -59,12 +61,12 @@ variable {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ}
   {layer : α → List Boolean.Layered.Node}
 
 include hD in
-private theorem computableTidilyInPolyTime_decryptionArity :
-    ComputableTidilyInPolyTime (fun n => secretWidth n + ciphertextWidth n) encUnary encUnary := by
-  have hview : ComputableTidilyInPolyTime
+private theorem computableInPolyTime_decryptionArity :
+    ComputableInPolyTime (fun n => secretWidth n + ciphertextWidth n) encUnary encUnary := by
+  have hview : ComputableInPolyTime
       (fun C : Σ m, Circuit Boolean.signature m 1 => (C.1, C.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
-  exact (hview.comp hD.tidy).fst'
+  exact (hview.comp hD).fst'
 
 include hencrypt hevaluate hD in
 /-- Execute the actual node program, including binary lookups and unconditional truncation. -/
@@ -77,18 +79,15 @@ theorem isPPTOn_evaluateNode
     (hnode : ComputableInPolyTime node input Boolean.Layered.encNode) :
     IsPPTOn input encBits
       (fun a => evaluateNode D (n a) (pk a) (encryptedKey a) (inputs a) (node a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hek
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hinputs
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hnode
-  have hcode := Boolean.Layered.computableInPolyTime_nodeCode.tidy.comp hnode
-  have hfirst : ComputableTidilyInPolyTime
+  have hcode := Boolean.Layered.computableInPolyTime_nodeCode.comp hnode
+  have hfirst : ComputableInPolyTime
       (fun a => (inputs a).getD (node a).code.2.1 []) input encBits :=
-    ComputableTidilyInPolyTime.listGetD_binary (encA := encBits) [] hinputs (by fun_prop)
-  have hsecond : ComputableTidilyInPolyTime
+    ComputableInPolyTime.listGetD_binary (encA := encBits) [] hinputs (by fun_prop)
+  have hsecond : ComputableInPolyTime
       (fun a => (inputs a).getD (node a).code.2.2 []) input encBits :=
-    ComputableTidilyInPolyTime.listGetD_binary (encA := encBits) [] hinputs (by fun_prop)
+    ComputableInPolyTime.listGetD_binary (encA := encBits) [] hinputs (by fun_prop)
+  have hcond1 := hcode.fst'.fst'
+  have hcond2 := hcode.fst'.snd'
   have hraw : IsPPTOn input encBits (fun a =>
       if (node a).code.1.1 then
         if (node a).code.1.2 then
@@ -96,19 +95,17 @@ theorem isPPTOn_evaluateNode
             ((inputs a).getD (node a).code.2.1 []) ((inputs a).getD (node a).code.2.2 [])
         else refresh D (n a) (pk a) (encryptedKey a) ((inputs a).getD (node a).code.2.1 [])
       else E.encrypt (n a) (pk a) (node a).code.1.2) := by
-    apply IsPPTOn.cond hcode.fst'.fst'
-    · apply IsPPTOn.cond hcode.fst'.snd'
-      · exact isPPTOn_refreshNand hencrypt hevaluate D hD (.of_tidy hn) (.of_tidy hpk)
-          (.of_tidy hek) (.of_tidy hfirst) (.of_tidy hsecond)
-      · exact isPPTOn_refresh hencrypt hevaluate D hD (.of_tidy hn) (.of_tidy hpk)
-          (.of_tidy hek) (.of_tidy hfirst)
-    · exact hencrypt.preprocess (.of_tidy (hn.prod (hpk.prod hcode.fst'.snd')))
-  have hcap := (computableTidilyInPolyTime_decryptionArity D hD).comp hn
+    apply IsPPTOn.cond (by polytime)
+    · apply IsPPTOn.cond (by polytime)
+      · exact isPPTOn_refreshNand hencrypt hevaluate D hD hn hpk hek hfirst hsecond
+      · exact isPPTOn_refresh hencrypt hevaluate D hD hn hpk hek hfirst
+    · exact hencrypt.preprocess (hn.prod (hpk.prod hcond2))
+  have hcap := (computableInPolyTime_decryptionArity D hD).comp hn
   have hbounded := hraw.map_with (f := fun a ciphertext =>
     ciphertext.take (secretWidth (n a) + ciphertextWidth (n a)))
-    (.of_tidy (ComputableTidilyInPolyTime.bitsTake.comp
-      ((ComputableTidilyInPolyTime.snd input encBits).prod
-        (hcap.comp (ComputableTidilyInPolyTime.fst input encBits)))))
+    (ComputableInPolyTime.bitsTakeWithInput
+      (ComputableInPolyTime.snd input encBits)
+      (hcap.comp (ComputableInPolyTime.fst input encBits)))
   apply hbounded.congr
   intro a
   cases node a <;> rfl
@@ -124,14 +121,16 @@ theorem isPPTOn_evaluateLayer
     (hlayer : ComputableInPolyTime layer input (encList Boolean.Layered.encNode)) :
     IsPPTOn input (encList encBits)
       (fun a => evaluateLayer D (n a) (pk a) (encryptedKey a) (inputs a) (layer a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hek
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hinputs
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hlayer
-  apply IsPPTOn.mapMWith (element := Boolean.Layered.encNode)
-  · apply isPPTOn_evaluateNode D hencrypt hevaluate hD <;> fun_prop
-  · exact hlayer
+  have hpairs : ComputableInPolyTime
+      (fun a => (layer a).map fun b => (a, b))
+      input (encList (encPair input Boolean.Layered.encNode)) :=
+    ComputableInPolyTime.mapWithInput hlayer .id'
+  have hstep : IsPPTOn (encPair input Boolean.Layered.encNode) encBits
+      (fun p => evaluateNode D (n p.1) (pk p.1) (encryptedKey p.1) (inputs p.1) p.2) := by
+    apply isPPTOn_evaluateNode D hencrypt hevaluate hD <;> fun_prop
+  apply (hstep.mapM.preprocess hpairs).congr
+  intro a
+  simp only [evaluateLayer, List.mapM_map, Function.comp_def]
 
 variable {publicKeys : α → List (List Bool)} {encryptedKeys : α → List (List (List Bool))}
   {layers : α → List (List Boolean.Layered.Node)} {state : α → ℕ × List (List Bool)}
@@ -149,20 +148,16 @@ theorem isPPTOn_evaluateLayerStep
     IsPPTOn input (encPair encUnary (encList encBits))
       (fun a =>
         evaluateLayerStep D (n a) (publicKeys a) (encryptedKeys a) (layers a) (state a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpks
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at heks
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hlayers
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hstate
-  have hpk := (ComputableTidilyInPolyTime.listGetD (encA := encBits) []).comp
+  have hpk := (ComputableInPolyTime.listGetD (encA := encBits) []).comp
     (hpks.prod hstate.fst')
-  have hek := (ComputableTidilyInPolyTime.listGetD (encA := encList encBits) []).comp
+  have hek := (ComputableInPolyTime.listGetD (encA := encList encBits) []).comp
     (heks.prod hstate.fst')
-  have hlayer := (ComputableTidilyInPolyTime.listGetD
+  have hlayer := (ComputableInPolyTime.listGetD
     (encA := encList Boolean.Layered.encNode) []).comp (hlayers.prod hstate.fst')
-  exact (isPPTOn_evaluateLayer D hencrypt hevaluate hD (.of_tidy hn) (.of_tidy hpk) (.of_tidy hek)
-    (.of_tidy hstate.snd') (.of_tidy hlayer)).pair
-    (show ComputableTidilyInPolyTime (fun a => (state a).1 + 1) input encUnary by fun_prop)
+  have hnextIdx : ComputableInPolyTime (fun a => (state a).1 + 1) input encUnary := by fun_prop
+  exact (isPPTOn_evaluateLayer D hencrypt hevaluate hD hn hpk hek
+    hstate.snd' hlayer).map_with
+    ((hnextIdx.comp (ComputableInPolyTime.fst _ _)).prod (ComputableInPolyTime.snd _ _))
 
 include hencrypt hevaluate hD in
 /-- Evaluate all layers with a strict polynomial clock in their full public encoding. The state
@@ -178,31 +173,34 @@ theorem isPPTOn_evaluateLayers
       (encList (encList Boolean.Layered.encNode))) :
     IsPPTOn input (encList encBits)
       (fun a => evaluateLayers D (n a) (publicKeys a) (encryptedKeys a) (inputs a) (layers a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpks
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at heks
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hinputs
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hlayers
-  have hcap := (computableTidilyInPolyTime_decryptionArity D hD).comp hn
-  have hencoded : ComputableTidilyInPolyTime
+  have hcap := (computableInPolyTime_decryptionArity D hD).comp hn
+  have hencoded : ComputableInPolyTime
       (fun a => (encList (encList Boolean.Layered.encNode) (layers a)).length)
-      input encUnary := (ComputableTidilyInPolyTime.length (encL := encBits) encBool).comp
-        hlayers.encoded
+      input encUnary := ComputableInPolyTime.length_bits.comp
+        (hlayers.of_enc_eq fun _ => rfl)
   let growth (a : α) := 2 + (encList (encList Boolean.Layered.encNode) (layers a)).length *
     (2 * (secretWidth (n a) + ciphertextWidth (n a)) + 1)
-  have hgrowth : ComputableTidilyInPolyTime growth input encUnary := by
+  have hgrowth : ComputableInPolyTime growth input encUnary := by
     dsimp only [growth]
     fun_prop
+  have hgrowth_poly : PolyBounded (fun a => (input a).length) growth := by
+    simpa only [encUnary_apply, List.length_replicate] using hgrowth.polyBounded_length
   have hstep : IsPPTOn (encPair input (encPair encUnary (encList encBits)))
       (encPair encUnary (encList encBits))
       (fun p : α × (ℕ × List (List Bool)) =>
         evaluateLayerStep D (n p.1) (publicKeys p.1) (encryptedKeys p.1) (layers p.1) p.2) := by
     apply isPPTOn_evaluateLayerStep D hencrypt hevaluate hD <;> fun_prop
+  have hcount : ComputableInPolyTime (fun a => (layers a).length) input encUnary :=
+    (ComputableInPolyTime.length_list (encList Boolean.Layered.encNode)).comp hlayers
+  have hinit : ComputableInPolyTime (fun a => (0, inputs a)) input
+      (encPair encUnary (encList encBits)) :=
+    (ComputableInPolyTime.const 0).prod hinputs
   have hloop := IsPPTOn.iterateWith_of_bounded_growth
     (stateEncoding := encPair encUnary (encList encBits))
+    (count := fun a => (layers a).length)
+    (initial := fun a => (0, inputs a))
     (step := fun a => evaluateLayerStep D (n a) (publicKeys a) (encryptedKeys a) (layers a))
-    ((ComputableTidilyInPolyTime.length (encList Boolean.Layered.encNode)).comp hlayers)
-    ((ComputableTidilyInPolyTime.const 0).prod hinputs) hstep hgrowth.polyBounded
+    (by polytime) (by polytime) hstep hgrowth_poly
     (fun a state next hnext => ?_)
   · exact hloop.map (ComputableInPolyTime.snd encUnary (encList encBits))
   rw [evaluateLayerStep, ProbComp.eval_map, PMF.mem_support_map_iff] at hnext

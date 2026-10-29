@@ -14,9 +14,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.It
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
-import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Mathlib.Data.List.GetD
@@ -54,7 +51,7 @@ public section
 
 namespace Cslib.Circuits.Boolean
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 local notation "Code" => List (Op × List ℕ) × List ℕ
 
@@ -170,7 +167,18 @@ private theorem shiftCodeWire_bits (n offset wire bound : ℕ)
   unfold shiftCodeWire
   split
   · omega
-  · exact (ComputableTidilyInO.length_encNat_add_le wire offset).trans (Nat.add_le_add_right h _)
+  · induction offset with
+    | zero => simpa using h
+    | succ k ih =>
+      have hsize : (wire + k + 1).size ≤ (wire + k).size + 1 := by
+        refine Nat.size_le.mpr ?_
+        rw [pow_succ]
+        have := Nat.lt_size_self (wire + k)
+        have := Nat.one_le_two_pow (n := (wire + k).size)
+        omega
+      rw [← Nat.add_assoc, length_encNat_eq_size]
+      rw [length_encNat_eq_size] at ih
+      omega
 
 private theorem wireBitsLe_append (n : ℕ) {c d : Code} {a b : ℕ}
     (hc : WireBitsLe c a) (hd : WireBitsLe d b) :
@@ -199,7 +207,9 @@ private theorem compCodeWire_bits (n : ℕ) {c : Code} {wire a b : ℕ}
   · rename_i h
     rw [List.getD_eq_getElem _ _ h]
     exact (hc.2 _ (List.getElem_mem h)).trans (by omega)
-  · have hsub := (ComputableTidilyInO.length_encNat_mono (Nat.sub_le wire c.2.length)).trans hi
+  · have hsub : (encNat (wire - c.2.length)).length ≤ b := by
+      refine (?_ : (encNat (wire - c.2.length)).length ≤ (encNat wire).length).trans hi
+      simpa only [length_encNat_eq_size] using Nat.size_le_size (Nat.sub_le wire c.2.length)
     have hgate := (length_encNat_le_self c.1.length).trans (gates_le_codeMass c)
     have hsum := length_encNat_add_le_add n c.1.length
     have htotal := length_encNat_add_le_add (n + c.1.length) (wire - c.2.length)
@@ -303,32 +313,31 @@ private theorem length_encoding_of_bounds {c : Code} {M W : ℕ}
 
 private theorem computedGetD {α β : Type} {encIn : α ↪ List Bool} {enc : β ↪ List Bool}
     {values : α → List β} {index : α → ℕ} {fallback : α → β}
-    (hv : ComputableTidilyInPolyTime values encIn (encList enc))
-    (hi : ComputableTidilyInPolyTime index encIn encUnary)
-    (hf : ComputableTidilyInPolyTime fallback encIn enc) :
-    ComputableTidilyInPolyTime (fun a => (values a).getD (index a) (fallback a)) encIn enc := by
+    (hv : ComputableInPolyTime values encIn (encList enc))
+    (hi : ComputableInPolyTime index encIn encUnary)
+    (hf : ComputableInPolyTime fallback encIn enc) :
+    ComputableInPolyTime (fun a => (values a).getD (index a) (fallback a)) encIn enc := by
   have hhead := (head? enc).comp ((dropUnary (encA := enc)).comp (hv.prod hi))
   simpa only [Function.comp_def, List.head?_drop, List.getD_eq_getElem?_getD] using
     optionGetDWithInput hhead hf
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 private theorem computable_intervalRow {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {op unit : α → Code} {leaves : α → List Code}
     {rows : α → List (List Code)}
-    (hn : ComputableTidilyInPolyTime n enc encNat)
-    (hop : ComputableTidilyInPolyTime op enc encCode)
-    (hu : ComputableTidilyInPolyTime unit enc encCode)
-    (hl : ComputableTidilyInPolyTime leaves enc (encList encCode))
-    (hr : ComputableTidilyInPolyTime rows enc (encList (encList encCode))) :
-    ComputableTidilyInPolyTime (fun a => intervalRow (n a) (op a) (unit a) (leaves a) (rows a))
+    (hn : ComputableInPolyTime n enc encNat)
+    (hop : ComputableInPolyTime op enc encCode)
+    (hu : ComputableInPolyTime unit enc encCode)
+    (hl : ComputableInPolyTime leaves enc (encList encCode))
+    (hr : ComputableInPolyTime rows enc (encList (encList encCode))) :
+    ComputableInPolyTime (fun a => intervalRow (n a) (op a) (unit a) (leaves a) (rows a))
       enc (encList encCode) := by
   have hlen := (length_list (encList encCode)).comp hr
   have hhalf := (unary_div_const 2).comp hlen
-  have hrest : ComputableTidilyInPolyTime (fun a => (rows a).length - (rows a).length / 2)
+  have hrest : ComputableInPolyTime (fun a => (rows a).length - (rows a).length / 2)
       enc encUnary := by fun_prop
   have hleft := (listGetD (encA := encList encCode) []).comp (hr.prod hhalf)
   have hright := (listGetD (encA := encList encCode) []).comp (hr.prod hrest)
-  have hbody : ComputableTidilyInPolyTime
+  have hbody : ComputableInPolyTime
       (fun p : α × ℕ =>
         if (rows p.1).length = 1 then (leaves p.1).getD p.2 (unit p.1)
         else if p.2 + (rows p.1).length ≤ (leaves p.1).length then
@@ -342,13 +351,13 @@ private theorem computable_intervalRow {α : Type} {enc : α ↪ List Bool}
     have hleaf := computedGetD (hl.comp hfst) hs (hu.comp hfst)
     have hlc := computedGetD (hleft.comp hfst) hs (hu.comp hfst)
     have hrc := computedGetD (hright.comp hfst)
-      (show ComputableTidilyInPolyTime
+      (show ComputableInPolyTime
         (fun p : α × ℕ => p.2 + (rows p.1).length / 2) (encPair enc encUnary) encUnary from
           by fun_prop) (hu.comp hfst)
     fun_prop
-  have hrange : ComputableTidilyInPolyTime (fun a => List.range ((leaves a).length + 1))
+  have hrange : ComputableInPolyTime (fun a => List.range ((leaves a).length + 1))
       enc (encList encUnary) := by fun_prop
-  exact mapWith hbody id' hrange
+  exact mapWithInput hrange hbody
 
 private theorem intervalRow_getD (n : ℕ) (op unit : Code) (leaves : List Code)
     (rows : List (List Code)) (start : ℕ) (hs : start ≤ leaves.length) :
@@ -566,20 +575,15 @@ no well-formedness, fixed arity or assumed construction-runtime bound is require
     (hl : ComputableInPolyTime leaves enc (encList encCode)) :
     ComputableInPolyTime (fun a => balancedCode (n a) (op a) (unit a) (leaves a))
       enc encCode := by
-  have hn := hn.tidy
-  have hop := hop.tidy
-  have hu := hu.tidy
-  have hl := hl.tidy
-  refine .of_tidy ?_
   let rowsEnc := encList (encList encCode)
   let init (a : α) := [List.replicate ((leaves a).length + 1) (unit a)]
   let step (a : α) (rows : List (List Code)) :=
     rows ++ [intervalRow (n a) (op a) (unit a) (leaves a) rows]
   have hcount := (length_list encCode).comp hl
-  have hi : ComputableTidilyInPolyTime init enc rowsEnc := by
+  have hi : ComputableInPolyTime init enc rowsEnc := by
     dsimp only [init, rowsEnc]
     fun_prop
-  have hs : ComputableTidilyInPolyTime (fun p : α × List (List Code) => step p.1 p.2)
+  have hs : ComputableInPolyTime (fun p : α × List (List Code) => step p.1 p.2)
       (encPair enc rowsEnc) rowsEnc := by
     have hf := fst enc rowsEnc
     have hr := snd enc rowsEnc
@@ -592,23 +596,23 @@ no well-formedness, fixed arity or assumed construction-runtime bound is require
     have hoplen := (encoding_length encCode).comp hop
     have hulen := (encoding_length encCode).comp hu
     have hllen := (encoding_length (encList encCode)).comp hl
-    have hB : ComputableTidilyInPolyTime (fun a => inputBudget (op a) (unit a) (leaves a))
+    have hB : ComputableInPolyTime (fun a => inputBudget (op a) (unit a) (leaves a))
         enc encUnary := by unfold inputBudget; fun_prop
-    have hM : ComputableTidilyInPolyTime
+    have hM : ComputableInPolyTime
         (fun a => (2 * (leaves a).length + 1) * inputBudget (op a) (unit a) (leaves a))
         enc encUnary := by fun_prop
-    have hW : ComputableTidilyInPolyTime
+    have hW : ComputableInPolyTime
         (fun a => (2 * (leaves a).length + 1) *
           (inputBudget (op a) (unit a) (leaves a) + (encNat (n a)).length +
             3 * ((2 * (leaves a).length + 1) * inputBudget (op a) (unit a) (leaves a)) + 2))
         enc encUnary := by fun_prop
-    have hC : ComputableTidilyInPolyTime
+    have hC : ComputableInPolyTime
         (fun a => entryBound (n a) (op a) (unit a) (leaves a)) enc encUnary := by
-      have hp : ComputableTidilyInPolyTime
+      have hp : ComputableInPolyTime
           (fun p : ℕ × ℕ => 2 * p.1 * (19 + 2 * p.1 * (2 * p.2 + 1)) + 1 +
             p.1 * (2 * p.2 + 1)) (encPair encUnary encUnary) encUnary := by fun_prop
       exact hp.comp (hM.prod hW)
-    have hp : ComputableTidilyInPolyTime
+    have hp : ComputableInPolyTime
         (fun p : ℕ × ℕ => (p.1 + 1) * (2 * ((p.1 + 1) * (2 * p.2 + 1)) + 1))
         (encPair encUnary encUnary) encUnary := by fun_prop
     exact polyBounded (hp.comp (hcount.prod hC))
@@ -616,7 +620,7 @@ no well-formedness, fixed arity or assumed construction-runtime bound is require
     (init := init) (step := step) id' hcount hi hs hb (fun a count hcount =>
       intervalTables_bound (n a) (op a) (unit a) (leaves a) count hcount)
   have hrow := (listGetD (encA := encList encCode) []).comp (ht.prod hcount)
-  change ComputableTidilyInPolyTime (fun a =>
+  change ComputableInPolyTime (fun a =>
     ((intervalTables (n a) (op a) (unit a) (leaves a) (leaves a).length).getD
       (leaves a).length []).getD 0 (unit a)) enc encCode
   exact computedGetD hrow (const 0) hu

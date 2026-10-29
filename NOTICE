@@ -1,16 +1,15 @@
-The 3SUM/Exact Triangle reductions, finite counting/tensor lemmas and native programs in
+The 3SUM/Exact Triangle reductions, finite counting/tensor lemmas and native matrix builder in
 Complexity/Algorithms/ExactTriangle/{Defs,Weights,Lopsided,Hashing,Splitting,Witnesses}.lean,
 Complexity/Algorithms/MatrixMultiplication/Schonhage/,
 Complexity/Algorithms/ThreeSum/,
 Complexity/Algorithms/WordRAM/ThreeSum/,
-Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/,
 Complexity/Foundations/Algebra/{FiniteMagnitude,GeometricTail}.lean,
 Complexity/Foundations/Combinatorics/FunctionPlaces.lean,
 Complexity/Foundations/Data/Finset/{Average,OrderGlue,Quotient}.lean,
 Complexity/Foundations/Data/Int/Residue.lean,
 Complexity/Foundations/Data/Nat/CeilDiv.lean,
 Complexity/Foundations/Data/Matrix/{IntegerBits,PairChunks}.lean and
-Complexity/Foundations/NumberTheory/{PrimeCounting,PrimeWindow}.lean and
+Complexity/Foundations/NumberTheory/{PrimeCounting,PrimeWindow,SqrtPrimeWindow}.lean and
 Complexity/Foundations/RingTheory/CyclicIntRing.lean are adapted from
 anthropics/formal-math, 3sum-apsp, revision
 16a5ce41304fcdaea4e0be7c132e1c361dc26da5.
@@ -28,6 +27,10 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 The prime-window proof also adapts Mathlib/NumberTheory/Bertrand.lean,
 Copyright (c) 2020 Patrick Stevens; authors Patrick Stevens, Bolton Bailey,
 under the Apache License, Version 2.0.
+
+The shared tensor encoder in
+Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/
+is also part of the Anthropic adaptation described above.
 
 The native shared-band preparation selectively adapts the band-array and all-band
 organization from that same pinned source. Anthropic, PBC credit is retained in

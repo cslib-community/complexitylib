@@ -40,6 +40,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and their helpers) and the blocks marked `@9cce4cc7` in older copies come from a later local
   rewrite of the branch that is not yet published; `scripts/upstream_sync.py` reports them
   against the published head until it is. The rest of the branch is still copied at `@7f7c0696`.
+* **Universal simulation.** The local universal interpreter preserves Christian Reitwiessner’s
+  description format and execution semantics. Its resource certificates now separate
+  transition-description size and binary input-head length from the copied configuration;
+  `Universal/Input` uses the existing native streaming fold to emit a selected input symbol
+  without repeatedly copying list tails. Retain these local improvements when synchronizing
+  `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
+  This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
 * **Polynomial bounds.** The tidy calculus's size-parameterized `PolyBounded` adapts CSLib's
   `PolynomiallyBounded` and shares its closure API. Coordinate this adaptation with the tidy
   branch; preserve it when resynchronizing the vendored files.
@@ -147,6 +154,37 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   theorems preserve the complete source memory and register bank. This is forward correctness,
   not reflection of source faults; transfer from Anthropic's modular signed machine and its
   3SUM/APSP algorithms remains separate.
+* **Native shared tensor encoder.** `Algorithms/WordRAM/MatrixMultiplication/Schonhage/` implements the complete shared left/right
+  encoding milestone ([#1493](https://github.com/cslib-community/complexitylib/issues/1493)).
+  Fixed standard-WordRAM code with 32 registers transforms one coordinate at a time between
+  two disjoint `10^L` buffers. It starts from `State.init` with a depth header and `7^L`
+  sign-and-magnitude words, computes all public `encodingL`/`encodingR` values, and preserves
+  the input and every cell outside the two buffers. Mathlib's `finFunctionFinEquiv` supplies
+  least-significant-first string numbering. All stages, powers, indices, address arithmetic,
+  signed add/subtract blocks and the final output copy cost at most `240*(L+1)*10^L`
+  instructions; halt adds one. Signed operands have magnitude bounded from the original
+  input by `7^L*A < 2^(w-1)`; the explicit natural bound `L+64+64*10^L` must fit target width
+  `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
+  signed kernels, without a copied source machine or a whole-program simulation hypothesis.
+  The existing array-copy interface is retained, with a narrow generalization for disjoint
+  blocks in either address order or identical blocks.
+  This is the encoder component only; band/tile preparation and full native composition remain
+  in [#1394](https://github.com/cslib-community/complexitylib/issues/1394).
+* **Native shared-band preparation.** The native shared-band preparation component
+  ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
+  `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
+  count by a charged loop, and decodes each band-array index into the original row/column and
+  thin-dimension coordinates. Real matrix bounds are checked before row-major multiplication.
+  Each shared row/column band calls the unchanged encoder once; tiles refer to its catalogue
+  block in the existing leaf order. The fixed 96-register standard code starts from actual
+  `State.init` scalar/matrix input, charges snapshot and restoration of the complete original
+  prefix, and preserves arbitrary outside memory. All counter/address fits follow from an
+  explicit original-parameter word budget; signed fits follow from the original entry bound.
+  Its complete instruction bound, including halt, is
+  `81920*(L+1)*N²/(4^m)^(1/18)` when `L=19m` and `N≥(4^m)^18`. Native power, ordered-filter,
+  finite-digit and row-major list lemmas live in small topic modules; the existing mathematical
+  layout, matrix and encoding interfaces are reused. No source machine or call/time oracle
+  is introduced.
 * **Direct 3SUM adaptation.** `Algorithms/ThreeSum/Convolution.lean` adapts the explicit
   Convolution-3SUM to Exact Triangle correctness reduction from Anthropic's
   [`formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp),
@@ -159,7 +197,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
   preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics
-  were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
+  were copied. `Algorithms/WordRAM/ThreeSum/Host/` adds the complete charged native host: ordinary
+  header initialization, polynomial magnitude computation, square root, consecutive matrix layout,
+  all `2t` instances and a finite solver program in a disjoint register bank. Its initialized run
+  theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
+  The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
+  This remains conditional on the supplied solver's native execution/correctness/frame theorem;
+  it does not establish a fast solver. Native Chan–He preprocessing, fast Exact Triangle and full
   input/time/width/asymptotic composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
@@ -177,14 +221,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   common-neighbor counts as product entries, detection, the zero/one converse, and signed products
   from `4 * β²` count instances with the original queried edges. Its digit identities live in
   `Foundations/Data/Matrix/IntegerBits.lean`, reuse Mathlib's pointwise positive/negative parts,
-  and give an explicit `Nat.log 2 U + 1` magnitude-bit bound including zero. Query answers use
-  `Set.EqOn`; no additional weighted-triangle predicate or source machine is introduced.
+  with descriptive lemmas in `Cslib.Matrix`. The scalar magnitude-bit bound, including zero,
+  lives in `Foundations/Data/Int/LogBounds.lean`. Count answers use `Set.EqOn`; detection
+  consumes a direct iff on queried edges. No additional weighted-triangle predicate or source
+  machine is introduced.
   This is the mathematical interface milestone
   [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
   preprocessing/time claim or solver. `Algorithms/ExactTriangle/{Weights,Hashing}.lean` now adapts
   the modular counting/coefficient identities, minimum-count prime and uniform false-positive
   bound from `Sec3/Theorem17/Hashing.lean`, using supplied matrices and the existing decision
-  predicate. Its integer-square window characterisation supports later native enumeration.
+  predicate. The application-independent `Nat.sqrtPrimeWindow` API lives in
+  `Foundations/NumberTheory/SqrtPrimeWindow.lean`; its integer-square characterization supports
+  native enumeration, and splitting and witness recovery reuse it.
   The quotient/coefficient API lives in `Foundations/RingTheory/CyclicIntRing.lean`; the uniform
   all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
   the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
@@ -207,39 +255,12 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and finite-sum bounds live in small Foundations modules. Mathlib `Finset.orderEmbOfFin` indexes
   both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
   problem-statement universe or solver/time hypothesis is imported.
-  `Algorithms/WordRAM/MatrixMultiplication/Schonhage/` implements the complete shared left/right
-  encoding milestone ([#1493](https://github.com/cslib-community/complexitylib/issues/1493)).
-  Fixed standard-WordRAM code with 32 registers transforms one coordinate at a time between
-  two disjoint `10^L` buffers. It starts from `State.init` with a depth header and `7^L`
-  sign-and-magnitude words, computes all public `encodingL`/`encodingR` values, and preserves
-  the input and every cell outside the two buffers. Mathlib's `finFunctionFinEquiv` supplies
-  least-significant-first string numbering. All stages, powers, indices, address arithmetic,
-  signed add/subtract blocks and the final output copy cost at most `240*(L+1)*10^L`
-  instructions; halt adds one. Signed operands have magnitude bounded from the original
-  input by `7^L*A < 2^(w-1)`; the explicit natural bound `L+64+64*10^L` must fit target width
-  `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
-  signed kernels, without a copied source machine or a whole-program simulation hypothesis.
-  The existing array-copy interface is retained, with a narrow generalization for disjoint
-  blocks in either address order or identical blocks.
-  The native shared-band preparation component
-  ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
-  `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
-  count by a charged loop, and decodes each band-array index into the original row/column and
-  thin-dimension coordinates. Real matrix bounds are checked before row-major multiplication.
-  Each shared row/column band calls the unchanged encoder once; tiles refer to its catalogue
-  block in the existing leaf order. The fixed 96-register standard code starts from actual
-  `State.init` scalar/matrix input, charges snapshot and restoration of the complete original
-  prefix, and preserves arbitrary outside memory. All counter/address fits follow from an
-  explicit original-parameter word budget; signed fits follow from the original entry bound.
-  Its complete instruction bound, including halt, is
-  `81920*(L+1)*N²/(4^m)^(1/18)` when `L=19m` and `N≥(4^m)^18`. Native power, ordered-filter,
-  finite-digit and row-major list lemmas live in small topic modules; the existing mathematical
-  layout, matrix and encoding interfaces are reused. No source machine or call/time oracle
-  is introduced. Native pruned and sparse-query programs, the full reduction host, native
-  Chan–He preprocessing, fast Exact Triangle and full input/time/width/asymptotic composition,
-  including the improved Section 4 route needed for exponent 1.9992, remain in
-  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright
-  and attribution are retained; the native proofs and representation choices are local.
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
+  Tensor/sparse query programs, the full reduction host, native Chan–He preprocessing, fast Exact
+  Triangle and full input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
