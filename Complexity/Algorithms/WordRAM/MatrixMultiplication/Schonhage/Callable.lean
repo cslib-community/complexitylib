@@ -28,7 +28,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Calla
   arbitrary query occurrences and dirty scratch, with exact local-input restoration and full
   outside-window frame. A bounded caller state supplies physical word validity throughout.
 * `CallableProduct.runs_wide`: actual `State.init` input fit, same-data prefix `Runs` and charged
-  halt at every physical width above `256*clog₂(base+N+Q+P+5)`, for caller-word bound `P`.
+  halt at every physical width at least `256*clog₂(base+N+Q+P+5)`, for caller-word bound `P`.
 * `CallableProduct.runs_caller`, `CallableProduct.caller_prefix_bounded`: the corresponding
   callable flat run and every-prefix physical fit with `P` bounding all initial caller words,
   including dirty memory words loaded before the real remainder. In initialized clients,

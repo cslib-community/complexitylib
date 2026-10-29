@@ -377,7 +377,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   three times the original product charge plus `2048*(N*D+Q+1)`. Distinct-set sparsity retains
   the additive occurrence charge; `Q*2^m≤N²` gives `17301504*(19m+1)*N²/D^(1/18)`.
   The window is at most `(2*(N+Q+3))^128`; this deliberately large polynomial address-space
-  reservation is not a claim about a tightly packed physical allocation. Every width above
+  reservation is not a claim about a tightly packed physical allocation. Every width at least
   `256*clog₂(base+N+Q+P+5)` suffices for initialized callers with prefix words bounded by `P`.
   The arbitrary dirty-caller interface uses `P` to bound every initial register and memory
   word, including words loaded before the actual remainder; native prefix bounds then follow

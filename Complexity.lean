@@ -1967,6 +1967,7 @@ public import Complexity.Computability.USTCON.Reader.Invariant
 public import Complexity.Computability.USTCON.Space
 public import Complexity.Computability.WordRAM.Allocation
 public import Complexity.Computability.WordRAM.ArrayAppend
+public import Complexity.Computability.WordRAM.ArrayNormalize
 public import Complexity.Computability.WordRAM.Basis
 public import Complexity.Computability.WordRAM.Compile
 public import Complexity.Computability.WordRAM.Controller
@@ -1999,7 +2000,6 @@ public import Complexity.Computability.WordRAM.Multiword.Sub
 public import Complexity.Computability.WordRAM.Multiword.Transfer
 public import Complexity.Computability.WordRAM.Multiword.Workspace
 public import Complexity.Computability.WordRAM.Native
-public import Complexity.Computability.WordRAM.Normalize
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power

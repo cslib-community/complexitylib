@@ -7,7 +7,7 @@ Authors: Erik Demaine
 -- upstream: local-only (tests)
 
 import Complexity.Computability.WordRAM.MemoryWindow
-import Complexity.Computability.WordRAM.Normalize
+import Complexity.Computability.WordRAM.ArrayNormalize
 import Mathlib.Tactic.FinCases
 
 /-! # Dirty-memory, dynamic-base and frame clients for actual memory-window code -/

@@ -37,7 +37,7 @@ theorem windowSize_le (N Q : ℕ) : windowSize N Q ≤ (2 * (N + Q + 3)) ^ 128 :
   have h := Nat.pow_le_pow_left hceil 128
   simpa only [windowSize, sourceWidth, ← pow_mul, Nat.mul_comm 128] using h
 
-/-- Every physical width above a positive logarithmic threshold admits the complete runtime
+/-- Every physical width at least a positive logarithmic threshold admits the complete runtime
 window and all setup/return addresses. No intermediate-fit certificate is needed. -/
 theorem physical_fits {W b N Q : ℕ}
     (hW : 256 * Nat.clog 2 (b + N + Q + 5) ≤ W) :

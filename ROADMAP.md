@@ -525,7 +525,7 @@ each statement against the numbered result. Organize modules by subject, not cha
   Setup/return adds at most `2048*(N*D+Q+1)` to three times the original product charge. At
   `D=4^m`, `L=19m`, `D^18≤N` and `Q*2^m≤N²`, the full charge including halt is at most
   `17301504*(19m+1)*N²/D^(1/18)`. Distinct-set sparsity retains an additive occurrence charge.
-  Every width above `256*clog₂(base+N+Q+P+5)` suffices for initialized caller-word bound `P`.
+  Every width at least `256*clog₂(base+N+Q+P+5)` suffices for initialized caller-word bound `P`.
   The reserved window is at most `(2*(N+Q+3))^128` and is not bulk-initialized. Actual ET-record
   reads, matrix/query placement, producer-readback composition and the full [#1394] endpoint
   remain open.

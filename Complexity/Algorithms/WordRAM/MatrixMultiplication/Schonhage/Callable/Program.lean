@@ -10,7 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.ThinWidth
 public import Complexity.Algorithms.WordRAM.NatClog
 public import Complexity.Computability.WordRAM.MemoryWindow
-public import Complexity.Computability.WordRAM.Normalize
+public import Complexity.Computability.WordRAM.ArrayNormalize
 public import Complexity.Computability.WordRAM.Power
 
 /-!
