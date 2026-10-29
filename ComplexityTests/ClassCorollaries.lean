@@ -124,11 +124,12 @@ theorem univ_mem_FewP_two : (Set.univ : Set (List Bool)) ∈ FewP encBits :=
   ⟨fun _ => 2, ⟨1, fun _ => true, .const true, fun _ => by simp⟩, 2, fun _ => by simp,
     fun _ => by simp⟩
 
-/-- Both `P → UP → FewP` and a two-witness `FewP` certificate place `Set.univ` in `SPP`. -/
-example :
-    (Set.univ : Set (List Bool)) ∈ SPP encBits ∧
-    (Set.univ : Set (List Bool)) ∈ SPP encBits :=
-  ⟨FewP_subset_SPP (UP_subset_FewP (P_subset_UP univ_mem_P)),
-   FewP_subset_SPP univ_mem_FewP_two⟩
+/-- `P ⊆ UP ⊆ FewP ⊆ SPP` places `Set.univ` in `SPP`. -/
+example : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
+  FewP_subset_SPP (UP_subset_FewP (P_subset_UP univ_mem_P))
+
+/-- A two-witness `FewP` certificate also places `Set.univ` in `SPP`. -/
+example : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
+  FewP_subset_SPP univ_mem_FewP_two
 
 end ComplexityTests.ClassCorollaries
