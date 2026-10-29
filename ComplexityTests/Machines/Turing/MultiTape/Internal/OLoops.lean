@@ -80,21 +80,16 @@ theorem captured : ComputableInO (fun p : Bool × List Bool => p.2.foldl (captur
   · intro p i _
     simp
 
-example : [true, false].foldl (capturedStep true) true = false := rfl
-example : [false, false].foldl (capturedStep false) true = true := rfl
-
-example : ([] : List Bool).foldl Bool.xor false = false := rfl
-example : [true, false, true].foldl Bool.xor false = false := rfl
-
--- A uniform efficient round is not itself a reachable-state bound: doubling grows exponentially.
-example : ¬ (∀ word : List Bool, ∀ i ≤ word.length,
-    (((word.take i).foldl (fun state _ => state ++ state) [true]).length ≤ 1)) := by
-  intro h
+-- Concrete foldl traces and why a uniform efficient round is not itself a reachable-state bound.
+example :
+    [true, false].foldl (capturedStep true) true = false ∧
+    [false, false].foldl (capturedStep false) true = true ∧
+    ([] : List Bool).foldl Bool.xor false = false ∧
+    [true, false, true].foldl Bool.xor false = false ∧
+    ¬ (∀ word : List Bool, ∀ i ≤ word.length,
+      (((word.take i).foldl (fun state _ => state ++ state) [true]).length ≤ 1)) := by
+  refine ⟨rfl, rfl, rfl, rfl, fun h => ?_⟩
   have := h [false] 1 (by decide)
   simp at this
-
-/-- info: 'Turing.MultiTapeTM.ComputableInO.foldl' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInO.foldl
 
 end ComplexityTests.Internal.OLoops

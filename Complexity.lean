@@ -815,6 +815,8 @@ public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSc
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Basic
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Defs
 public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
@@ -1649,6 +1651,7 @@ public import Complexity.Crypto.Computational.CramerShoup.Scheme
 public import Complexity.Crypto.Computational.DiffieHellman
 public import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
+public import Complexity.Crypto.Computational.DiffieHellman.Order
 public import Complexity.Crypto.Computational.DiscreteLog
 public import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 public import Complexity.Crypto.Computational.ElGamal
