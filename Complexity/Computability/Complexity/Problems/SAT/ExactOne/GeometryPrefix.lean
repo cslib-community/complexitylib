@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 module
@@ -41,11 +41,13 @@ open Orthogonal
 
 namespace LocalGeometry
 
-/-- Check only consecutive segment pairs for two proper routes. Listed points already belong
-to such segments, so including their separate degenerate pieces would duplicate this work. -/
+/-- Check only consecutive segment pairs for two proper routes after a bounding-box precheck.
+Listed points already belong to such segments, so including their separate degenerate pieces
+would duplicate this work. -/
 def segmentRouteContactCheck (allowed : List Point) (r s : Route) : Bool :=
-  r.consecutivePairs.all fun e => s.consecutivePairs.all fun f =>
-    segmentContactCheck allowed e.1 e.2 f.1 f.2
+  routeBoxDisjoint r s ||
+    (r.consecutivePairs.all fun e => s.consecutivePairs.all fun f =>
+      segmentContactCheck allowed e.1 e.2 f.1 f.2)
 
 /-- Consecutive-segment checking controls the full real support of proper routes. -/
 theorem segmentRouteContactCheck_sound {allowed : List Point} {r s : Route}
@@ -53,10 +55,13 @@ theorem segmentRouteContactCheck_sound {allowed : List Point} {r s : Route}
     (h : segmentRouteContactCheck allowed r s = true) {p : ℝ × ℝ}
     (hp : p ∈ support r) (hq : p ∈ support s) :
     ∃ q ∈ allowed, p = realPoint q := by
-  obtain ⟨e, he, hp⟩ := mem_support_segment hr hp
-  obtain ⟨f, hf, hq⟩ := mem_support_segment hs hq
-  exact segmentContactCheck_sound
-    (List.all_eq_true.mp (List.all_eq_true.mp h e he) f hf) hp hq
+  rw [segmentRouteContactCheck, Bool.or_eq_true] at h
+  rcases h with hbox | hseg
+  · exact False.elim (Set.disjoint_left.mp (disjoint_support_of_routeBoxDisjoint hbox) hp hq)
+  · obtain ⟨e, he, hp⟩ := mem_support_segment hr hp
+    obtain ⟨f, hf, hq⟩ := mem_support_segment hs hq
+    exact segmentContactCheck_sound
+      (List.all_eq_true.mp (List.all_eq_true.mp hseg e he) f hf) hp hq
 
 /-- The closed polygonal boundary of a local cell. -/
 def boundaryRoute (g : LocalGeometry) : Route :=
@@ -97,7 +102,7 @@ def PrefixCheck (g : LocalGeometry) : Prop :=
   (∀ e ∈ g.incidenceRoutes, ∀ i : Fin g.clausePositions.length, i.val ≠ e.1 →
     routeContactCheck [] e.2.2 [g.clausePosition i] = true) ∧
   ∀ e ∈ g.incidenceRoutes,
-    routeContactCheck [g.variablePosition e.2.1] e.2.2 g.boundaryRoute = true
+    segmentRouteContactCheck [g.variablePosition e.2.1] e.2.2 g.boundaryRoute = true
 
 instance (g : LocalGeometry) : Decidable (PrefixCheck g) := by
   unfold PrefixCheck
@@ -161,7 +166,8 @@ theorem prefix_boundary_contact {g : LocalGeometry} (h : PrefixCheck g)
     {e : LocalIncidence} (he : e ∈ g.incidenceRoutes)
     {p : ℝ × ℝ} (hp : p ∈ support e.2.2) (hq : p ∈ support g.boundaryRoute) :
     p = realPoint (g.variablePosition e.2.1) := by
-  obtain ⟨q, hq, hpq⟩ := routeContactCheck_sound (h.2.2.2.2.2.2 e he) hp hq
+  obtain ⟨q, hq, hpq⟩ := segmentRouteContactCheck_sound (prefix_incidence_length h he)
+    (by simp [boundaryRoute]) (h.2.2.2.2.2.2 e he) hp hq
   exact List.mem_singleton.mp hq ▸ hpq
 
 end LocalGeometry
