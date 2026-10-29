@@ -472,7 +472,8 @@ private theorem varIncidence_listScopeFamily_augScopes_le (n' : ℕ) (eqs' : Lis
         ← (List.ofFn_eq_map.symm.trans (List.ofFn_getElem (xs := scopes))), List.countP_map]
     exact List.countP_congr fun i _ => by simp only [Function.comp_apply, Fin.getElem_fin]
   rw [hdeg]
-  exact le_foldl_max_of_mem (List.mem_map_of_mem (List.mem_range.mpr v.isLt))
+  exact List.le_max_of_mem (l := 0 :: (List.range n').map (varDegree · eqs'))
+    (List.mem_cons_of_mem 0 (List.mem_map_of_mem (List.mem_range.mpr v.isLt)))
 
 private theorem card_listScopeFamily_augScopes_le (n' : ℕ) (eqs' : List (List (List ℕ))) :
     let augScopes := withNeutralScopesList (eqs'.map equationVars) n'
@@ -489,7 +490,7 @@ private theorem card_listScopeFamily_augScopes_le (n' : ℕ) (eqs' : List (List 
     have hsc := listScopeFamily_map_equationVars n' eqs' ⟨g.1, hg⟩
     change listScopeFamily n' scopes g = _ at hsc
     rw [hsc, card_equationScope_toFinsetEquation, branchMaxFactorWidth]
-    exact le_foldl_max_of_mem (List.mem_map_of_mem (List.getElem_mem hg))
+    exact List.le_max_of_mem (List.mem_cons_of_mem _ (List.mem_map_of_mem (List.getElem_mem hg)))
   · dsimp only [withNeutralScope]
     rw [card_singleton]
     exact one_le_branchMaxFactorWidth n' eqs'

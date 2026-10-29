@@ -277,7 +277,7 @@ private theorem pmf_map_true_le_one_sub_of_imp_false {α : Type*} (q : PMF α) (
     ((q.map P) true).toReal ≤ 1 - ((q.map Q) true).toReal := by
   have hle : (q.map P) true ≤ (q.map Q) false := by
     rw [PMF.map_apply, PMF.map_apply]
-    refine ENNReal.tsum_le_tsum fun v => ?_
+    refine tsum_le_tsum fun v => ?_
     by_cases hp : P v = true
     · have hq : Q v = false := hdisj v hp
       simp [hp, hq]
@@ -292,7 +292,7 @@ private theorem pmf_map_true_le_of_imp_true {α : Type*} (q : PMF α) (P Q : α 
     ((q.map P) true).toReal ≤ ((q.map Q) true).toReal := by
   apply ENNReal.toReal_mono (PMF.apply_ne_top _ _)
   rw [PMF.map_apply, PMF.map_apply]
-  refine ENNReal.tsum_le_tsum fun v => ?_
+  refine tsum_le_tsum fun v => ?_
   by_cases hp : P v = true
   · have hq : Q v = true := himp v hp
     simp [hp, hq]

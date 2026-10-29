@@ -148,7 +148,7 @@ theorem acceptProb_eq_acceptProbWith (verifier : WordOracleComp Operation Bool)
 /-- The acceptance probability sums the masses of the accepting outcomes over final states. -/
 theorem acceptProb_eq_tsum (verifier : WordOracleComp Operation Bool) (P : Prover Operation) :
     acceptProb verifier P = ∑' s, P.run verifier P.init (true, s) := by
-  rw [acceptProb, PMF.map_apply, ENNReal.tsum_prod', tsum_bool]
+  rw [acceptProb, PMF.map_apply, tsum_prod', tsum_bool]
   simp
 
 /-- Private coins drawn before any message average the acceptance probabilities of the

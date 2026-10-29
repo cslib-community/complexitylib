@@ -11,14 +11,14 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTi
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeClosure
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
-import Mathlib.Data.Nat.Bitwise
-import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 
 /-!
 # Direct polynomial-time binary arithmetic
 
-The existing carry folds and bit-position scan are certified using plain machine closure.
+The existing carry folds are certified using plain machine closure.
 Reachable word states are bounded by the encoded input length, not the numeric operands.
+Strict comparison is the linear zip-transducer certificate of `BinaryComparison`.
 Captured multiplication uses the original shift-and-add fold over the first operand's bits,
 with the unchanged full-prefix state bound; its pair certificate remains private.
 -/
@@ -39,54 +39,14 @@ theorem binary_add : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
     (PolyBounded.of_forall_le 1 2 (fun _ => by simp))
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 
-/-- Strict comparison by scanning binary bit positions, never the numeric operand range. -/
+/-- Strict comparison of binary naturals, from the linear zip-transducer certificate
+`Turing.MultiTapeTM.computableInTimeAndSpace_natLt`. -/
 @[fun_prop]
 theorem binary_lt : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 < p.2))
-    (encPair encNat encNat) encBool := by
-  have hbits : ComputableInPolyTime Nat.bits encNat encBits := of_eq fun _ => rfl
-  have hlen : ComputableInPolyTime (fun n : ℕ => n.bits.length) encNat encUnary :=
-    Internal.DecoderWords.unary_degree.computableInPolyTime.comp hbits
-  have hwords : ComputableInDegree (fun p : ℕ × ℕ => p.1.bits ++ p.2.bits)
-      (encPair encNat encNat) encBits 1 1 :=
-    (ComputableInDegree.fst encNat encNat).append (ComputableInDegree.snd encNat encNat)
-      (fun _ => rfl)
-  have hsum : ComputableInPolyTime (fun p : ℕ × ℕ => p.1.bits.length + p.2.bits.length)
-      (encPair encNat encNat) encUnary := by
-    simpa only [Function.comp_def, List.length_append] using
-      Internal.DecoderWords.unary_degree.computableInPolyTime.comp hwords.computableInPolyTime
-  have hscan : ComputableInPolyTime (fun p : ℕ × ℕ =>
-      (List.range p.2.bits.length).any fun i =>
-        !p.1.bits.getD i false && p.2.bits.getD i false &&
-          (List.range (p.1.bits.length + p.2.bits.length)).all fun j =>
-            decide (j ≤ i) || p.1.bits.getD j false == p.2.bits.getD j false)
-      (encPair encNat encNat) encBool := by
-    simp only [List.any_eq_not_all_not]
-    apply bool_not.comp
-    apply allWithInput (range.comp (hlen.comp (snd encNat encNat)))
-    apply bool_not.comp
-    let input := encPair (encPair encNat encNat) encUnary
-    have hlist := range.comp (hsum.comp (fst (encPair encNat encNat) encUnary))
-    have hhigh : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
-        (List.range (p.1.1.bits.length + p.1.2.bits.length)).all fun j =>
-          decide (j ≤ p.2) || p.1.1.bits.getD j false == p.1.2.bits.getD j false)
-        input encBool := by
-      apply allWithInput hlist
-      fun_prop
-    have hflags : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
-        !p.1.1.bits.getD p.2 false && p.1.2.bits.getD p.2 false) input encBool := by
-      fun_prop
-    exact bool_and.comp (hflags.prod hhigh)
-  refine hscan.of_enc_eq fun p => congrArg encBool ?_
-  have hbit (k i : ℕ) : k.bits.getD i false = k.testBit i := by
-    rw [Nat.testBit_eq_inth, ← List.getD_default_eq_getI]
-    rfl
-  rw [Bool.eq_iff_iff, decide_eq_true_iff, Nat.lt_iff_exists_testBit]
-  simp only [hbit, Nat.size_eq_bits_len, List.any_eq_true, List.mem_range, Bool.and_eq_true,
-    Bool.not_eq_true', List.all_eq_true, Bool.or_eq_true, decide_eq_true_eq, beq_iff_eq]
-  refine exists_congr fun i => and_congr_right fun _ => ?_
-  rw [and_assoc]
-  refine and_congr_right fun _ => and_congr_right fun _ => forall₂_congr fun j _ => ?_
-  rw [← Nat.not_le, imp_iff_not_or, not_not]
+    (encPair encNat encNat) encBool :=
+  (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natLt).computableInPolyTime
+    (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
+    (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 
 private theorem binaryMulPair :
     ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat := by

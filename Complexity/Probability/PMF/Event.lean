@@ -73,7 +73,7 @@ theorem toOuterMeasure_ne_top (p : PMF α) (event : Set α) : p.toOuterMeasure e
 /-- An event has probability at most one. -/
 theorem toOuterMeasure_le_one (p : PMF α) (event : Set α) : p.toOuterMeasure event ≤ 1 := by
   rw [PMF.toOuterMeasure_apply, ← p.tsum_coe]
-  exact ENNReal.tsum_le_tsum (fun a => Set.indicator_apply_le (fun _ => le_rfl))
+  exact tsum_le_tsum (fun a => Set.indicator_apply_le (fun _ => le_rfl))
 
 /-- The event that `f a` deviates from `m` by at least `ε` is covered by the upper tail
 `m + ε ≤ f a` and the lower tail `f a ≤ m - ε`. -/
@@ -111,7 +111,7 @@ theorem toOuterMeasure_apply_toReal [Fintype α] (p : PMF α) (event : Set α) :
 theorem toOuterMeasure_toReal_add_compl (p : PMF α) (event : Set α) :
     (p.toOuterMeasure event).toReal + (p.toOuterMeasure eventᶜ).toReal = 1 := by
   have h : p.toOuterMeasure event + p.toOuterMeasure eventᶜ = 1 := by
-    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_add]
+    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
     convert p.tsum_coe using 1
     congr 1
     funext a
@@ -154,7 +154,7 @@ theorem toOuterMeasure_bind_failure_le (p : PMF α) (kernel : α → PMF β)
   rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply]
   calc
     _ ≤ ∑' a, ((preᶜ).indicator p a + p a * error) := by
-      apply ENNReal.tsum_le_tsum
+      apply tsum_le_tsum
       intro a
       by_cases ha : a ∈ pre
       · simp only [Set.indicator_of_notMem (show a ∉ preᶜ by simpa), zero_add]
@@ -165,7 +165,7 @@ theorem toOuterMeasure_bind_failure_le (p : PMF α) (kernel : α → PMF β)
       · simp only [Set.indicator_of_mem (show a ∈ preᶜ from ha)]
         exact (mul_le_mul_of_nonneg_left (toOuterMeasure_le_one (kernel a) failure)
           zero_le).trans (by simp)
-    _ = _ := by rw [ENNReal.tsum_add, ENNReal.tsum_mul_right, p.tsum_coe, one_mul]
+    _ = _ := by rw [tsum_add, ENNReal.tsum_mul_right, p.tsum_coe, one_mul]
 
 /-- The real-valued error rule for a randomized continuation. -/
 theorem toOuterMeasure_bind_failure_toReal_le (p : PMF α) (kernel : α → PMF β)
@@ -193,7 +193,7 @@ theorem toOuterMeasure_bind_ge_mul (p : PMF α) (kernel : α → PMF β)
   classical
   have hle : p.toOuterMeasure pre * ENNReal.ofReal s₂ ≤ (p.bind kernel).toOuterMeasure event := by
     rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
-    refine ENNReal.tsum_le_tsum fun a => ?_
+    refine tsum_le_tsum fun a => ?_
     by_cases ha : a ∈ pre
     · simp only [Set.indicator_of_mem ha]
       by_cases hs : a ∈ p.support
@@ -242,7 +242,7 @@ theorem map_true_mono (p : PMF α) {E F : α → Bool}
     (h : ∀ a ∈ p.support, E a = true → F a = true) :
     (p.map E) true ≤ (p.map F) true := by
   rw [PMF.map_apply, PMF.map_apply]
-  refine ENNReal.tsum_le_tsum fun a => ?_
+  refine tsum_le_tsum fun a => ?_
   by_cases ha : a ∈ p.support
   · by_cases hE : true = E a
     · simp [← hE, h a ha hE.symm]
@@ -253,8 +253,8 @@ theorem map_true_mono (p : PMF α) {E F : α → Bool}
 theorem map_true_le_add (p : PMF α) {E A B : α → Bool}
     (h : ∀ a ∈ p.support, E a = true → A a = true ∨ B a = true) :
     (p.map E) true ≤ (p.map A) true + (p.map B) true := by
-  rw [PMF.map_apply, PMF.map_apply, PMF.map_apply, ← ENNReal.tsum_add]
-  refine ENNReal.tsum_le_tsum fun a => ?_
+  rw [PMF.map_apply, PMF.map_apply, PMF.map_apply, ← tsum_add]
+  refine tsum_le_tsum fun a => ?_
   by_cases ha : a ∈ p.support
   · by_cases hE : true = E a
     · rcases h a ha hE.symm with hA | hB

@@ -34,6 +34,7 @@ Framed-list and option rules infer the payload encoding from the representation 
 
 * `Turing.MultiTapeTM.ComputableInDegree.foldl'`,
   `Turing.MultiTapeTM.ComputableInDegree.foldlWith`: plain left folds with degree bounds.
+* `Turing.MultiTapeTM.ComputableInDegree.natSucc`: binary successor with degrees one.
 * `Turing.MultiTapeTM.computableInDegree_add`, `Turing.MultiTapeTM.computableInDegree_mul`:
   plain binary addition (quadratic) and multiplication (cubic).
 * `Turing.MultiTapeTM.ComputableInO.comp_enc`: reuse a bit-word computation on encoded
@@ -304,6 +305,11 @@ private lemma run_copy_fin3 (T : Transducer Bool (Fin 3)) (hT : ∀ b, T.step 2 
   induction w with
   | nil => simp [hf]
   | cons b w ih => simp [hT, ih]
+
+/-- Binary successor has cost and output degree one, from the transducer certificate
+`computableInTimeAndSpace_succ`. -/
+theorem natSucc : ComputableInDegree (· + 1) encNat encNat 1 1 :=
+  of_linear .natSucc
 
 /-- Adding one on unary-magnitude signed integers. -/
 theorem int_succ : ComputableInDegree (· + 1) encInt encInt 1 1 := by

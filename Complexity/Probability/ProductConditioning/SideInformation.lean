@@ -186,7 +186,7 @@ theorem sideJoint_apply (μ : PMF T) (J : T → PMF ((∀ i, β i) × V)) (t : T
       exact hx (Prod.ext (congrArg Prod.snd h).symm (congrArg (·.2) (congrArg Prod.fst h)).symm)
   · intro t' ht'
     rw [PMF.map_apply]
-    refine mul_eq_zero_of_right _ (ENNReal.tsum_eq_zero.mpr fun x => ite_eq_right fun h => ?_)
+    refine mul_eq_zero_of_right _ (tsum_eq_zero_iff.mpr fun x => ite_eq_right fun h => ?_)
     exact absurd (congrArg (·.1) (congrArg Prod.fst h)) (Ne.symm ht')
 
 /-- The pairs `(u, v)` that complete `(t, v)` to an outcome in `W`. -/

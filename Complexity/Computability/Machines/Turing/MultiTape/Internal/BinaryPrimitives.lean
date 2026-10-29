@@ -8,21 +8,24 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
 /-!
 # Direct binary counter resource certificates
 
-The original carry, borrow and leading-zero normalization folds compute successor and predecessor.
-Their time is quadratic and their charged workspace linear in the binary input length. The zero
-test uses the existing empty-word machine. All round certificates are plain; normalization occurs
-only when the internal machine combinators construct the fold.
+The original borrow and leading-zero normalization folds compute the predecessor. Its time is
+quadratic and its charged workspace linear in the binary input length. The successor's
+certificate here is a weakening of the streaming transducer `computableInTimeAndSpace_succ`; the
+carry rounds remain as the shared step of binary addition. The zero test uses the existing
+empty-word machine. All round certificates are plain; normalization occurs only when the internal
+machine combinators construct the fold.
 
 ## Main results
 
-* `ComputableInO.succStep`, `ComputableInO.succFinish`: shared linear carry-round certificates.
+* `ComputableInO.succStep`, `ComputableInO.succFinish`: shared linear carry-round certificates
+  for binary addition.
 * `ComputableInO.natSucc`, `ComputableInO.natPred`: quadratic-time, linear-space binary counters.
 * `ComputableInO.natIsZero`: linear zero testing.
 -/
@@ -143,19 +146,13 @@ theorem foldl_bits {β : Type} {encB : β ↪ List Bool} {init : β} {step : β 
   · simp only [encBits_apply]
     nlinarith
 
-/-- Binary successor with the original quadratic clock and linear output-charged workspace. -/
+/-- Binary successor within the quadratic clock and linear charged workspace used by its
+clients, weakened from the linear-time, zero-work-space transducer certificate
+`computableInTimeAndSpace_succ`. -/
 theorem natSucc :
     ComputableInO (· + 1) encNat encNat (fun n => ((encNat n).length + 1) ^ 2)
-      (fun n => (encNat n).length + 1) := by
-  have hfold := foldl_bits (init := (true, [])) succStep 3 fun l i => by
-    rw [NatSucc.length_encAcc, NatSucc.length_foldl_succStep]
-    simp only [List.length_nil, Nat.zero_add]
-    have := List.length_take_le' i l
-    omega
-  have h := (succFinish.comp_linear hfold).of_encIn_eq (encD := encNat) Nat.bits (fun _ => rfl)
-  refine h.of_enc_eq fun n => ?_
-  simp only [encNat_apply, encBits_apply, Function.comp_apply, NatSucc.succFinish_foldl,
-    List.nil_append, NatSucc.bits_succ]
+      (fun n => (encNat n).length + 1) :=
+  (of_linear .natSucc).mono_le (fun n => by simp only [encNat_apply]; nlinarith) fun _ => by omega
 
 /-- Binary predecessor keeps zero at zero and preserves the original independent resource bounds. -/
 theorem natPred :

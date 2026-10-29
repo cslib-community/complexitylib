@@ -34,9 +34,8 @@ multiplication are Christian Reitwiessner's degree-bounded
 machines (`Turing.MultiTapeTM.computableTidilyInDegree_add`,
 `Turing.MultiTapeTM.computableTidilyInDegree_mul`). A list is summed by a left fold whose
 accumulator grows by at most one digit more than the length of the element added. Powers of two are
-computed from a unary exponent by repeated doubling. Strict comparison scans bit positions: `m < n`
-exactly when some position holds a one in `n` and a zero in `m` and all higher positions agree
-(`Nat.lt_of_testBit`); the scan is quadratic in the number of digits. The verifiers and reductions
+computed from a unary exponent by repeated doubling. Strict comparison is the linear-time zip
+transducer of `Turing.MultiTapeTM.computableInTimeAndSpace_natLt`. The verifiers and reductions
 of the number problems (`Cslib.Complexity.SubsetSum` and its relatives) are built from these.
 
 Truncated subtraction is schoolbook subtraction: a left fold over the digit pairs of both operands
@@ -240,31 +239,11 @@ theorem binary_two_pow : ComputableTidilyInPolyTime (fun k : ℕ => 2 ^ k) encUn
       lia)
   simpa only [hfold] using h
 
-/-- Strict comparison of binary naturals by scanning bit positions. -/
+/-- Strict comparison of binary naturals, from the linear zip-transducer certificate. -/
 @[fun_prop]
 theorem binary_lt : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.1 < p.2))
-    (encPair encNat encNat) encBool := by
-  have hscan : ComputableTidilyInPolyTime (fun p : ℕ × ℕ =>
-      (List.range p.2.bits.length).any fun i =>
-        !p.1.bits.getD i false && p.2.bits.getD i false &&
-          (List.range (p.1.bits.length + p.2.bits.length)).all fun j =>
-            decide (j ≤ i) || p.1.bits.getD j false == p.2.bits.getD j false)
-      (encPair encNat encNat) encBool := by
-    apply anyWithInput (by fun_prop)
-    refine bool_and' (by fun_prop) ?_
-    apply allWithInput (by fun_prop)
-    fun_prop
-  refine hscan.of_enc_eq fun p => congrArg encBool ?_
-  have hbit (k i : ℕ) : k.bits.getD i false = k.testBit i := by
-    rw [Nat.testBit_eq_inth, ← List.getD_default_eq_getI]
-    rfl
-  rw [Bool.eq_iff_iff, decide_eq_true_iff, Nat.lt_iff_exists_testBit]
-  simp only [hbit, Nat.size_eq_bits_len, List.any_eq_true, List.mem_range, Bool.and_eq_true,
-    Bool.not_eq_true', List.all_eq_true, Bool.or_eq_true, decide_eq_true_eq, beq_iff_eq]
-  refine exists_congr fun i => and_congr_right fun _ => ?_
-  rw [and_assoc]
-  refine and_congr_right fun _ => and_congr_right fun _ => forall₂_congr fun j _ => ?_
-  rw [← Nat.not_le, imp_iff_not_or, not_not]
+    (encPair encNat encNat) encBool :=
+  ComputableInPolyTime.binary_lt.tidy
 
 /-- Comparison of binary naturals. -/
 @[fun_prop]

@@ -276,7 +276,9 @@ from `sample_k : (s : Fin k) → ProbComp (Coins_k s)`. -/
     else
       pure (fun h' : parties s = i => (h h').elim)
 
-private theorem eval_pi_sampleSlotCoins {k m : ℕ} (parties : Fin k ↪ Fin m)
+/-- Joint distribution of `sampleSlotCoins parties sample_k` across all `m` outer parties equals the
+pushforward of `OracleComp.pi sample_k` along `pushTuple parties`. -/
+theorem eval_pi_sampleSlotCoins {k m : ℕ} (parties : Fin k ↪ Fin m)
     {Coins_k : Fin k → Type} (sample_k : (s : Fin k) → ProbComp (Coins_k s)) :
     ProbComp.eval (OracleComp.pi (sampleSlotCoins parties sample_k)) =
       (ProbComp.eval (OracleComp.pi sample_k)).map (pushTuple parties) := by

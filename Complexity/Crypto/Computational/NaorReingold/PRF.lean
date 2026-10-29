@@ -337,12 +337,6 @@ private theorem uniformList_map_parseNaorReingoldTape (count expWidth hashLen : 
   have hlen := Cslib.BitString.length_of_mem_support_uniformList hback
   simp only [Function.comp_def, List.take_of_length_le hlen.le]
 
-private theorem iid_uniformOfFintype {α : Type*} [Fintype α] [Nonempty α] (m : ℕ) :
-    PMF.iid (PMF.uniformOfFintype α) m = PMF.uniformOfFintype (Fin m → α) := by
-  ext v
-  simp [PMF.iid_apply, PMF.uniformOfFintype_apply, Fintype.card_fin,
-    ENNReal.inv_pow, Nat.cast_pow]
-
 private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ → ℕ)
     (desc : ℕ → F.Desc) (bound : F.Desc → ℕ) (expWidth : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ)

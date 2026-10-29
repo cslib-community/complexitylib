@@ -1629,7 +1629,7 @@ private theorem step_bad_prfCipherForgetfulWithBadOracle_le (n : ℕ) (bit : Boo
             {x | x.2.2 = true}
         ≤ ∑' r, (BitString.uniformList n) r *
             {r : List Bool | (cache.lookup r).isSome}.indicator 1 r := by
-          refine ENNReal.tsum_le_tsum fun r => mul_le_mul_of_nonneg_left ?_ zero_le
+          refine tsum_le_tsum fun r => mul_le_mul_of_nonneg_left ?_ zero_le
           by_cases hr : (cache.lookup r).isSome = true
           · rw [Set.indicator_of_mem (show r ∈ {r : List Bool | (cache.lookup r).isSome} from hr),
               Pi.one_apply]
@@ -1697,7 +1697,7 @@ private theorem bad_prfCipherForgetfulWithBadOracle_le {α : Type} (n : ℕ) (bi
               (cont y.1)).run y.2).toOuterMeasure {x | x.2.2 = true}
           ≤ ∑' y, ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
               (prfCipherForgetfulWithBadOracle n bit) (Sum.inl m) (cache, false) y * B := by
-            refine ENNReal.tsum_le_tsum fun y => ?_
+            refine tsum_le_tsum fun y => ?_
             by_cases hy : y ∈ (ProbOracleComp.handler
                 (fun m => StateT.lift (ProbComp.unifOracle m))
                 (prfCipherForgetfulWithBadOracle n bit) (Sum.inl m) (cache, false)).support
@@ -1749,10 +1749,10 @@ private theorem bad_prfCipherForgetfulWithBadOracle_le {α : Type} (n : ℕ) (bi
           ≤ ∑' y, prfCipherForgetfulWithBadOracle n bit request (cache, false) y *
               ({x : List Bool × (List (List Bool × List Bool) × Bool) |
                 x.2.2 = true}.indicator 1 y + K) :=
-            ENNReal.tsum_le_tsum hterm
+            tsum_le_tsum hterm
         _ = (prfCipherForgetfulWithBadOracle n bit request (cache, false)).toOuterMeasure
               {x | x.2.2 = true} + K := by
-            simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe,
+            simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe,
               one_mul, PMF.toOuterMeasure_apply]
             congr 1
             refine tsum_congr fun y => ?_
