@@ -29,14 +29,14 @@ as formulas are. Its product-depth (`SPCircuit.productDepth`) is the generic wei
 nothing.
 
 **Size.** `Cslib.Circuits.Circuit.size` counts the gates, constants included, but not the `N`
-input wires, so the node count of the source is `C.size + N`. In the source a gate is a node of a
-graph, and its children are a *set* of nodes. A program line, in contrast, may read a wire several
-times. For sum gates this is harmless: the edge constants of repeated wires add up. For product
-gates it is not: a single product gate reading the same input `m` times computes `x ^ m` at cost
-one, which a graph without multiple edges cannot do. So, as in the source, product gates read
-pairwise distinct wires (`SPCircuit.IsSimple`; this convention is original to this
-formalization). Measuring the size instead by the wires read would allow multiple edges without a
-hypothesis, but would depart from the source's node count.
+input wires, so the node count of the source is `C.size + N`. The source's circuits are directed
+acyclic graphs without multiple edges (our reading of §1 and footnote 1). A program line, in
+contrast, may read a wire several times. For sum gates this is harmless: the edge constants of
+repeated wires add up. For product gates it is not: a single product gate reading the same input
+`m` times computes `x ^ m` at cost one, which a graph without multiple edges cannot do. So product
+gates read pairwise distinct wires (`SPCircuit.IsSimple`), this formalization's rendering of the
+absence of multiple edges, an original convention. Measuring the size instead by the wires read
+would allow multiple edges without a hypothesis, but would depart from the source's node count.
 
 **Unfolding.** A circuit unfolds into a formula computing the same polynomial
 (`SPCircuit.toSPFormula`): unfold its output into a tree (`Cslib.Circuits.Circuit.toFormula`) and
@@ -45,8 +45,8 @@ merge consecutive sum gates (`SPFormula.flatten`). The product-depth does not in
 most `(C.size + N + 1) ^ (2 Δ + 1)` nodes (`SPCircuit.nodeCount_toSPFormula_le`, original): along a
 path of the formula sum and product gates alternate, a sum gate reads at most one formula for each
 of the `C.size + N` wires and a product gate at most `C.size + N` distinct wires. The source uses
-such a step without proof, with the bound `s ^ (2Δ)` [LimayeSrinivasanTavenas2021, Lemma 15, §5,
-p. 11], which depends on the size convention.
+such a step without proof, with the bound `s ^ (2Δ)` [LimayeSrinivasanTavenas2021, proof of
+Lemma 15, §5, p. 12], which depends on the size convention.
 
 ## Main definitions
 
@@ -73,7 +73,7 @@ p. 11], which depends on the size convention.
 
 * [N. Limaye, S. Srinivasan, S. Tavenas, *Superpolynomial lower bounds against low-depth algebraic
   circuits*][LimayeSrinivasanTavenas2021], ECCC TR21-081 revision 1, §1, p. 1, footnote 1, and
-  Lemma 15 (§5, p. 11)
+  the proof of Lemma 15 (§5, p. 12)
 -/
 
 @[expose] public section
@@ -166,7 +166,7 @@ theorem nodeCount_toSPFormula_le [Semiring K] {C : SPCircuit K N} (hC : C.IsSimp
     cases w with
     | input i => cases hw
     | gate k =>
-      rw [Program.wireFormula_gate, p.gateFormula_eq_lines] at hw
+      rw [Program.wireFormula_gate, p.gateFormula_eq_gate] at hw
       have hop : (p.lines k).op = .mul m := (Formula.gate.inj hw).1
       have hcard := Fintype.card_le_of_injective _ (hC k m hop)
       rw [Fintype.card_fin, Wire.card, hop] at hcard
@@ -194,9 +194,9 @@ theorem productDepth_toCircuit_le (F : SPFormula K N) :
 theorem isSimple_toCircuit {F : SPFormula K N} (hF : F.IsSimple) :
     SPCircuit.IsSimple F.toCircuit := by
   intro k m hop
-  have h := Formula.gateFormula_toCircuit SPFormula.IsSimple
+  have h := Formula.gateFormula_toCircuit_of_closed SPFormula.IsSimple
     (fun _ _ j h => by cases h with | gate _ _ _ h => exact h j) hF k
-  rw [Program.gateFormula_eq_lines] at h
+  rw [Program.gateFormula_eq_gate] at h
   cases h with
   | gate _ _ hmul _ => exact (hmul m hop).of_comp
 

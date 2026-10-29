@@ -44,21 +44,23 @@ superpolynomial bounds for `ω(1) ≤ d ≤ poly(n)` at constant `Δ` (remark af
 * the field is arbitrary, by the set-multilinearization of [Forbes2024, Cor. 27], used in
   `SPFormula.two_rpow_le_of_imm`, in place of the source's Proposition 9 (§3, p. 8), which needs
   characteristic `0` or larger than `d`;
-* the constants are explicit, with the exponent `d ^ (1 / (4 ^ Δ - 1))`, the source's Lemma 15
-  (§5, p. 11) at product-depth `2 Δ`. At `Δ = 1` this is `d ^ (1 / 3)`, not the source's `√d`;
+* the constants are explicit, with the exponent `d ^ (1 / (4 ^ Δ - 1))`: the source's Lemma 15
+  (§5, p. 11) at product-depth `2 Δ`, the doubling made in its proof of Corollary 4 (§5, p. 12).
+  At `Δ = 1` this is `d ^ (1 / 3)`, not the `√d` of its Lemma 13 (p. 10) and Corollary 4;
 * the superpolynomial form is stated at the single value `d = ⌊log₂ ⌊log₂ n⌋⌋` and at constant
   `Δ`; the asymptotic exponent `d ^ exp (-O(Δ))` at growing `Δ`, the range of `d` up to
   `poly(n)` and the `0/1`-substitution remark are not formalized;
-* circuits are simple: product gates read pairwise distinct wires, as in a graph without multiple
-  edges (`Complexity.Computability.Circuit.Arithmetic.SPCircuit`).
+* circuits are simple: product gates read pairwise distinct wires, an original rendering of the
+  source's graphs without multiple edges
+  (`Complexity.Computability.Circuit.Arithmetic.SPCircuit`).
 
 **Original.** The explicit statements and their constants, the circuit-to-formula bound and the
 asymptotic derivation.
 
 ## Main results
 
-* `Cslib.Circuits.Arithmetic.smCost_le_two_pow`: `smCost d ≤ 2 ^ ((2 b + 1) (d + 1) + 2)` when
-  `d + 1 ≤ 2 ^ b`.
+* `Cslib.Circuits.Arithmetic.SPFormula.smCost_le_two_pow`:
+  `smCost d ≤ 2 ^ ((2 b + 1) (d + 1) + 2)` when `d + 1 ≤ 2 ^ b`.
 * `Cslib.Circuits.Arithmetic.SPCircuit.two_rpow_le_of_imm`: the explicit lower bound for circuits.
 * `Cslib.Circuits.Arithmetic.SPCircuit.eventually_pow_lt_size_of_imm`: the superpolynomial lower
   bound.
@@ -69,7 +71,7 @@ asymptotic derivation.
 
 * [N. Limaye, S. Srinivasan, S. Tavenas, *Superpolynomial lower bounds against low-depth algebraic
   circuits*][LimayeSrinivasanTavenas2021], ECCC TR21-081 revision 1: Theorem 1 (p. 1),
-  Corollary 4 (p. 4), Proposition 9 (§3, p. 8), Lemma 15 (§5, p. 11)
+  Corollary 4 (p. 4) and its proof (§5, p. 12), Proposition 9 (§3, p. 8), Lemma 15 (§5, p. 11)
 * [M. A. Forbes, *Low-depth algebraic circuit lower bounds over any field*][Forbes2024],
   Corollary 27 (p. 31:14)
 -/
@@ -82,7 +84,7 @@ open MvPolynomial Filter
 
 /-- The size factor of set-multilinearization is at most exponential in `d log d`:
 `smCost d ≤ 2 ^ ((2 b + 1) (d + 1) + 2)` when `d + 1 ≤ 2 ^ b`. -/
-theorem smCost_le_two_pow {d b : ℕ} (hd : d + 1 ≤ 2 ^ b) :
+theorem SPFormula.smCost_le_two_pow {d b : ℕ} (hd : d + 1 ≤ 2 ^ b) :
     SPFormula.smCost d ≤ 2 ^ ((2 * b + 1) * (d + 1) + 2) := by
   have h1 : 2 * (d + 1) ^ 2 ≤ 2 ^ (2 * b + 1) :=
     calc 2 * (d + 1) ^ 2 ≤ 2 * (2 ^ b) ^ 2 := by gcongr
@@ -165,7 +167,7 @@ private theorem pow_lt_size_of_imm [Field K] [NeZero n] {Δ c L : ℕ} (hΔ : 1 
   have h := two_rpow_le_of_imm e hdL h2L hΔ hC hCΔ hCP
   -- the right side is at most `2 ^ (L A)`
   have hsm : SPFormula.smCost d ^ Δ ≤ 2 ^ L := by
-    refine (Nat.pow_le_pow_left (smCost_le_two_pow hdd) Δ).trans ?_
+    refine (Nat.pow_le_pow_left (SPFormula.smCost_le_two_pow hdd) Δ).trans ?_
     rw [← pow_mul]
     refine Nat.pow_le_pow_right two_pos ?_
     have h4 : (2 * d + 1) * (d + 1) + 2 ≤ 4 * (d + 1) ^ 2 := by nlinarith

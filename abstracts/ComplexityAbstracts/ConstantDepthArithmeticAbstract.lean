@@ -18,8 +18,9 @@ constant product-depth `Δ` computing iterated matrix multiplication `IMM_{n,d}`
 entry of a product of `d` generic `n × n` matrices) need superpolynomial size, over fields of
 characteristic `0` or larger than `d`. Forbes extended the result to every field.
 
-Here, over every field `K` and at every fixed `Δ` and exponent `c`, for all large `n` and
-`d = ⌊log₂ ⌊log₂ n⌋⌋`, every such circuit has more than `n ^ c` gates (`superpolynomial`). The
+Here, over every field `K` and at every fixed `Δ` and exponent `c`, for all sufficiently large `n`
+(the filter `∀ᶠ n in Filter.atTop`) and `d = ⌊log₂ ⌊log₂ n⌋⌋`, every such simple circuit, one
+whose product gates read distinct wires, has more than `n ^ c` gates (`superpolynomial`). The
 explicit bound behind it is `explicit_bound`. It is stated for `10 d ≤ k` and `2 ^ k ≤ n`:
 
 `2 ^ (k (d ^ (1 / (4 ^ Δ - 1)) / 20 - 1 / 2))`
@@ -35,17 +36,23 @@ computing `∏ j, x j`, and a constant gate `const a`, for every arity `m`. The 
 explicitly allowed below, together with the weighted depth `Cslib.Circuits.Circuit.depthWith`.
 
 * **Polynomial.** A circuit computes a polynomial *formally*: it is evaluated in
-  `MvPolynomial (Fin N) K` at the variables (`polynomial`). Over a finite field this is stronger
-  than computing a function.
+  `MvPolynomial (Fin N) K` at the variables (`polynomial`). The lower bound is for this
+  syntactic notion (formal polynomials), as in the source.
 * **Product-depth.** `productDepth` charges one for product gates and nothing for sum and
   constant gates.
 * **Size.** `C.size` counts every gate, constants included; the `N` inputs are not counted.
-* **Simplicity.** A product gate reads pairwise distinct wires (`IsSimple`), as in a graph
-  without multiple edges, the model of the source. Without it one product gate would compute
-  `x ^ m` from one input. Sum gates may read a wire several times.
+* **Simplicity.** A product gate reads pairwise distinct wires (`IsSimple`). We read the source's
+  circuits as graphs without multiple edges; `IsSimple` is this formalization's rendering of that,
+  an original convention. Without it one product gate would compute `x ^ m` from one input. Sum
+  gates may read a wire several times.
 * **Variables.** The `d n ^ 2` variables `(i, a, c)` of `IMM_{n,d}`, the entry `(a, c)` of the
-  `i`-th matrix, are in bijection `e` with the inputs. A renaming that is not a bijection could
-  pad the circuit with unused inputs; the explicit bound allows any renaming.
+  `i`-th matrix, are in bijection `e` with the inputs. A renaming that is not injective lets two
+  distinct inputs rename to the same variable `v`, so a product gate reading both computes `v ^ 2`
+  at cost one, circumventing `IsSimple`. The bijection also bounds the number of inputs by
+  `N = d n ^ 2`, which the proof needs. The explicit bound tolerates any renaming `e` only because
+  it pays for `N` in the factor `(s + N + 1)`. An injective renaming loses nothing: adding unused
+  inputs changes neither the size, the product-depth nor the renamed polynomial, and extends it to
+  a bijection (this padding argument is not formalized).
 
 **Relation to the source.** Limaye, Srinivasan and Tavenas state their Theorem 1 over fields of
 characteristic `0` or larger than `d`, for growing `Δ`, with `d = o(log N)` and size

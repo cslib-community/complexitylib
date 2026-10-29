@@ -36,12 +36,13 @@ depth are formulas of logarithmic depth and polynomial size [Jukna, Chapter 6][J
   as deep as the output, so no deeper than the circuit.
 * `Cslib.Circuits.Circuit.size_toFormula_lt`: under bounded fan-in, its size is at most exponential
   in the depth of the circuit.
-* `Cslib.Circuits.Program.gateFormula_eq_lines`,
+* `Cslib.Circuits.Program.gateFormula_eq_gate`,
   `Cslib.Circuits.Program.exists_wireFormula_eq_of_eq_gate`: the formula of a gate is its operation
   applied to the formulas of the wires it reads, so the formulas of the wires are closed under
   taking arguments.
-* `Cslib.Circuits.Formula.toFormula_toCircuit`, `Cslib.Circuits.Formula.gateFormula_toCircuit`:
-  the circuit of a formula unfolds to the formula, and the formulas of its gates are subformulas.
+* `Cslib.Circuits.Formula.toFormula_toCircuit`,
+  `Cslib.Circuits.Formula.gateFormula_toCircuit_of_closed`: the circuit of a formula unfolds to
+  the formula, and the formulas of its gates are subformulas.
 
 ## References
 
@@ -96,7 +97,7 @@ wires. -/
   cases w <;> simp
 
 /-- The formula of a gate is its operation applied to the formulas of the wires its line reads. -/
-theorem Program.gateFormula_eq_lines (p : Program σ n g) (k : Fin g) :
+theorem Program.gateFormula_eq_gate (p : Program σ n g) (k : Fin g) :
     p.gateFormula k = .gate (p.lines k).op fun a => p.wireFormula ((p.lines k).wires a) := by
   induction p with
   | empty => exact k.elim0
@@ -119,7 +120,7 @@ theorem Program.exists_wireFormula_eq_of_eq_gate (p : Program σ n g) {w : Wire 
   cases w with
   | input i => cases h
   | gate k =>
-    rw [wireFormula_gate, gateFormula_eq_lines] at h
+    rw [wireFormula_gate, gateFormula_eq_gate] at h
     cases h
     exact ⟨_, rfl⟩
 
@@ -254,9 +255,9 @@ end Circuit
 
 /-- The formulas of the gates of `p` continued by `q` on the inputs are formulas of gates of `p`
 or of `q`. -/
-theorem Program.gateFormula_append_input {g₁ g₂ : ℕ} (P : Formula σ n → Prop)
-    (p : Program σ n g₁) (q : Program σ n g₂) (hp : ∀ k, P (p.gateFormula k))
-    (hq : ∀ k, P (q.gateFormula k)) (k : Fin (g₁ + g₂)) :
+theorem Program.gateFormula_append_input_of_forall {g₁ g₂ : ℕ}
+    (P : Formula σ n → Prop) (p : Program σ n g₁) (q : Program σ n g₂)
+    (hp : ∀ k, P (p.gateFormula k)) (hq : ∀ k, P (q.gateFormula k)) (k : Fin (g₁ + g₂)) :
     P ((p.append Wire.input q).gateFormula k) := by
   induction k using Fin.addCases with
   | left k =>
@@ -283,13 +284,14 @@ theorem Program.gateFormula_append_input {g₁ g₂ : ℕ} (P : Formula σ n →
       exact (Program.wireFormula_append_castAdd _ _ _ _).trans (ih _ j)
 
 /-- The formulas of the gates of circuits side by side are formulas of gates of the circuits. -/
-theorem Circuit.gateFormula_pi (P : Formula σ n → Prop) {m : ℕ} (cs : Fin m → Circuit σ n 1)
-    (h : ∀ j k, P ((cs j).program.gateFormula k)) (k : Fin (Circuit.pi cs).size) :
+theorem Circuit.gateFormula_pi_of_forall (P : Formula σ n → Prop) {m : ℕ}
+    (cs : Fin m → Circuit σ n 1) (h : ∀ j k, P ((cs j).program.gateFormula k))
+    (k : Fin (Circuit.pi cs).size) :
     P ((Circuit.pi cs).program.gateFormula k) := by
   induction m with
   | zero => exact k.elim0
   | succ m ih =>
-    exact Program.gateFormula_append_input P _ _ (ih _ fun j => h _) (h _) k
+    exact Program.gateFormula_append_input_of_forall P _ _ (ih _ fun j => h _) (h _) k
 
 /-- The circuit of a formula unfolds to the formula. -/
 @[simp] theorem Formula.toFormula_toCircuit (F : Formula σ n) : F.toCircuit.toFormula 0 = F := by
@@ -306,7 +308,7 @@ theorem Circuit.gateFormula_pi (P : Formula σ n → Prop) {m : ℕ} (cs : Fin m
 
 /-- The formulas of the gates of the circuit of a formula `F` are subformulas of `F`: they satisfy
 every property of `F` inherited by the arguments of operation nodes. -/
-theorem Formula.gateFormula_toCircuit (P : Formula σ n → Prop)
+theorem Formula.gateFormula_toCircuit_of_closed (P : Formula σ n → Prop)
     (hP : ∀ op args j, P (.gate op args) → P (args j)) {F : Formula σ n} (hF : P F)
     (k : Fin F.toCircuit.size) : P (F.toCircuit.program.gateFormula k) := by
   induction F with
@@ -320,6 +322,6 @@ theorem Formula.gateFormula_toCircuit (P : Formula σ n → Prop)
     | cast k =>
       change P ((Program.gate _ _).gateFormula k.castSucc)
       rw [Program.gateFormula_gate_castSucc]
-      exact Circuit.gateFormula_pi P _ (fun j => ih j (hP op args j hF)) k
+      exact Circuit.gateFormula_pi_of_forall P _ (fun j => ih j (hP op args j hF)) k
 
 end Cslib.Circuits

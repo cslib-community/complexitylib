@@ -15,8 +15,8 @@ Verifies that the public definitions of `ConstantDepthArithmeticAbstract` are th
 `IMM_{1,1}` is the variable `(0, 0, 0)`, and that the hypotheses of the headline are satisfiable
 at every size: for all `n ≥ 1` and `d`, the circuit of the sum over paths is simple, of
 product-depth one, and computes `IMM_{n,d}` with its variables in bijection with the inputs
-(`Cslib.Circuits.Arithmetic.SPCircuit.exists_isSimple_imm`). The headline is instantiated at
-`Δ = 2` and `c = 3`.
+(`Cslib.Circuits.Arithmetic.SPCircuit.exists_isSimple_imm`); at `n = d = 2` that circuit has `9`
+gates on `8` inputs.
 -/
 
 namespace ComplexityTests.Abstracts.ConstantDepthArithmeticTests
@@ -56,13 +56,12 @@ example (K : Type*) [Field K] (n d Δ : ℕ) [NeZero n] (hΔ : 1 ≤ Δ) :
   obtain ⟨C, simple, depth, -, computes⟩ := SPCircuit.exists_isSimple_imm K n d
   exact ⟨_, immVarEquiv n d, C, simple, depth.trans hΔ, computes⟩
 
-/-- The headline at product-depth two and exponent three. -/
-example : ∀ᶠ n in Filter.atTop, ∀ [NeZero n] {N : ℕ}
-    (e : Fin N ≃ Fin (Nat.log 2 (Nat.log 2 n)) × Fin n × Fin n) (C : ArithCircuit ℚ N),
-    IsSimple C → productDepth C ≤ 2 →
-    MvPolynomial.rename e (polynomial C) =
-      ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm ℚ n (Nat.log 2 (Nat.log 2 n)) →
-    n ^ 3 < C.size :=
-  superpolynomial ℚ 2 3
+/-- At `n = d = 2`, the sum over paths is a simple circuit of `9` gates on `8` inputs computing
+`IMM_{2,2}`. -/
+example : ∃ C : ArithCircuit ℚ 8, IsSimple C ∧ productDepth C ≤ 1 ∧ C.size = 9 ∧
+    MvPolynomial.rename (immVarEquiv 2 2) (polynomial C) =
+      ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm ℚ 2 2 := by
+  obtain ⟨C, simple, depth, size, computes⟩ := SPCircuit.exists_isSimple_imm ℚ 2 2
+  exact ⟨C, simple, depth, size, computes⟩
 
 end ComplexityTests.Abstracts.ConstantDepthArithmeticTests

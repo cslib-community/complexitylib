@@ -29,10 +29,10 @@ with `#S ≤ B` and every product gate in `S` of fan-in at most `B`, then `flatt
 `flatten F` the sum and product gates alternate, a sum gate has at most `#S` arguments, one for
 each distinct non-sum subformula, and a product gate at most `B`.
 
-This is the step, left implicit in [LimayeSrinivasanTavenas2021, Lemma 15, §5, p. 11] ("by
-expanding it, we can transform it to a set-multilinear formula of size at most `s ^ (2Δ)`"), that
-turns a circuit of product-depth `Δ` into a formula of polynomial size; the circuits are unfolded
-in `Complexity.Computability.Circuit.Arithmetic.SPCircuit`.
+This is the step, left implicit in the proof of [LimayeSrinivasanTavenas2021, Lemma 15, §5, p. 12]
+("by expanding it, we can transform it to a set-multilinear formula of size at most `s ^ (2Δ)`"),
+that turns a circuit of product-depth `Δ` into a formula of polynomial size; the circuits are
+unfolded in `Complexity.Computability.Circuit.Arithmetic.SPCircuit`.
 
 ## Main definitions
 
@@ -53,7 +53,8 @@ in `Complexity.Computability.Circuit.Arithmetic.SPCircuit`.
 ## References
 
 * [N. Limaye, S. Srinivasan, S. Tavenas, *Superpolynomial lower bounds against low-depth algebraic
-  circuits*][LimayeSrinivasanTavenas2021], ECCC TR21-081 revision 1, Lemma 15 (§5, p. 11)
+  circuits*][LimayeSrinivasanTavenas2021], ECCC TR21-081 revision 1, proof of Lemma 15 (§5,
+  p. 12)
 -/
 
 @[expose] public section
@@ -156,6 +157,8 @@ theorem productDepth_flatten_le (F : SPFormula K n) : (flatten F).productDepth �
 product gate is itself with flattened arguments. Sum gates are never used. -/
 private noncomputable def key : SPFormula K n → SPFormula K n
   | .input i => .input i
+  -- A placeholder: sum gates of `S` are never in a combination, and `S.image key` still has at
+  -- most `#S` elements, so the bound of `card_support_linComb_le` is unaffected.
   | .gate (.add _ _) _ => zero
   | .gate (.mul _) args => mul fun j => flatten (args j)
   | .gate (.const a) _ => const a
@@ -207,7 +210,7 @@ theorem nodeCount_ofFinsupp_le {f : SPFormula K n →₀ K} {B e : ℕ} (hf : f.
 
 variable {B : ℕ}
 
-/-- **Size of the flattened formula** (original): let `F` lie in a set `S` of formulas closed
+/-- **Size of the terms of a combination** (original): let `F` lie in a set `S` of formulas closed
 under taking arguments, with `#S ≤ B` and every product gate of `S` of fan-in at most `B`. Every
 formula of the combination of `F` has at most `(B + 1) ^ (2 * F.productDepth)` nodes. -/
 theorem nodeCount_le_of_mem_support_linComb

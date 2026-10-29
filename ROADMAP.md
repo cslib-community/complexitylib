@@ -320,11 +320,12 @@ certified DPLL solver runtimes.
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
   hitting-list matrices.
-- **Algebraic complexity** ([#891]): the rest of Limaye–Srinivasan–Tavenas. Proved: constant
-  product-depth circuits computing iterated matrix multiplication need superpolynomial size over any
-  field, at `d = ⌊log₂ ⌊log₂ n⌋⌋`, from an explicit bound with exponent `d ^ (1 / (4 ^ Δ - 1))`.
-  Remaining: their semantic set-multilinear model, growing `Δ` with exponent `d ^ exp(-O(Δ))` (`√d`
-  at `Δ = 1`), the full range of `d` and the `0/1`-substitution remark. Also the
+- **Algebraic complexity** ([#891]): the rest of Limaye–Srinivasan–Tavenas. Proved: simple
+  circuits (product gates reading distinct wires) of constant product-depth computing iterated
+  matrix multiplication need superpolynomial size over any field, at `d = ⌊log₂ ⌊log₂ n⌋⌋`, from an
+  explicit bound with exponent `d ^ (1 / (4 ^ Δ - 1))`. Remaining: their semantic set-multilinear
+  model; growing `Δ` with exponent `d ^ exp(-O(Δ))`; the `√d` bound at `Δ = 1` (LST Lemma 13 and
+  Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
   fields of characteristic other than two; formula and branching-program models, identity testing,
