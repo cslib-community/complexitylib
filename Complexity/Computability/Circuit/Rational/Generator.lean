@@ -193,8 +193,7 @@ private def conditions {n : ℕ} (N e : ℕ) (f : Formula n) :
     f.certificates.map fun h =>
       PencilCertificates.determinant (CyclotomicRing.character e) N (finPencil h)
 
-private lemma condition_nonzero {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n)
-    (hf : Circuits.Formula.nodeCount f ≤ s)
+private lemma condition_nonzero {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.nodeCount ≤ s)
     (hnz : Nonzero f)
     (hN : 1 ≤ N) (hMN : CyclotomicRing.dimension e = N + 2 * (n + 1) ^ 3 * (2 * s + 1))
     (hM : (2 * s + 1) * (2 * (n + 1) ^ 3 * (2 * s + 1)) < CyclotomicRing.dimension e) :
@@ -229,8 +228,7 @@ private lemma condition_nonzero {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n)
       (2 * s + 1) d hb.1 hb.2 hN hMN hM hd Y
     exact (finPencil_unit _ _ h).mpr (hcert h hh)
 
-private lemma condition_degree {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n)
-    (hf : Circuits.Formula.nodeCount f ≤ s) :
+private lemma condition_degree {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (hf : f.nodeCount ≤ s) :
     (conditions N e f).length ≤ s + 2 ∧
     ∀ p ∈ conditions N e f, p.totalDegree ≤ 3 * (2 * s + 1) * (CyclotomicRing.dimension e) ^ 2 := by
   refine ⟨?_, ?_⟩
