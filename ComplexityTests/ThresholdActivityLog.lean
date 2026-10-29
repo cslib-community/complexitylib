@@ -16,6 +16,32 @@ open Cslib.Circuits.Boolean.WeightedThreshold
 
 universe u
 
+-- Real parameters include nonintegral choices; the general bound also permits radius > q.
+example : (7 : ℝ) ≤ Real.exp 2 * (3 / 2) ^ 2 := by
+  have h := sum_choose_le_exp_mul_pow 3 2 (3 / 2) (by norm_num)
+  norm_num [sum_range_succ, Nat.choose] at h ⊢
+  exact h
+
+example : (2 : ℝ) ≤ Real.exp (1 / 2) * 2 ^ 4 := by
+  have h := sum_choose_le_exp_mul_pow 1 4 2 (by norm_num)
+  norm_num [sum_range_succ, Nat.choose] at h ⊢
+  exact h
+
+-- These radii lie above half the dimension, including the full-radius endpoint.
+example : (15 : ℝ) ≤ (Real.exp 1 * 4 / 3) ^ 3 := by
+  have h := sum_choose_le_exp_one_mul_div_pow (q := 4) (e := 3) (by decide)
+  norm_num [sum_range_succ, Nat.choose] at h ⊢
+  exact h
+
+example : (16 : ℝ) ≤ Real.exp 1 ^ 4 := by
+  have h := sum_choose_le_exp_one_mul_div_pow (q := 4) (e := 4) le_rfl
+  norm_num [sum_range_succ, Nat.choose] at h ⊢
+  exact h
+
+example (q : ℕ) : (∑ j ∈ range (0 + 1), (q.choose j : ℝ)) ≤
+    (Real.exp 1 * q / 0) ^ (0 : ℕ) :=
+  sum_choose_le_exp_one_mul_div_pow (Nat.zero_le q)
+
 -- Combining `card_attainableTranscripts_le_sum_choose_of_le` with `sum_choose_le_exp_mul_pow`
 -- at `t = 2` bounds the number of attainable transcripts for any activity bound `e`,
 -- even when `e > (inputGates p).card`.
@@ -58,6 +84,24 @@ example : ¬ 2 ^ 4 ≤ (∑ j ∈ range (1 + 1), Nat.choose 1 j) ^ 2 := by
 example (m : ℕ) (h : 2 ^ m ≤ (∑ j ∈ range (1 + 1), Nat.choose 1 j) ^ 2) :
     (m : ℝ) / 2 ≤ Real.logb 2 (Real.exp 1) := by
   simpa using le_mul_logb_of_two_pow_le_sum_choose_sq (m := m) (q := 1) (e := 1) le_rfl h
+
+example : (3 : ℝ) / 2 ≤ Real.logb 2 (Real.exp 1 * 2) := by
+  simpa using le_mul_logb_of_two_pow_le_sum_choose_sq (m := 3) (q := 2) (e := 1)
+    (by decide) (by decide)
+
+example : 1 / Real.exp 1 * (2 : ℝ) ^ (3 / 2 : ℝ) ≤ 2 := by
+  simpa using mul_rpow_le_of_two_pow_le_sum_choose_sq (m := 3) (q := 2) (e := 1)
+    (by decide) (by decide)
+
+example : (7 : ℝ) / 2 ≤ 3 * Real.logb 2 (Real.exp 1 * 4 / 3) := by
+  simpa using le_mul_logb_of_two_pow_le_sum_choose_sq (m := 7) (q := 4) (e := 3)
+    (by decide) (by decide)
+
+example : 3 / Real.exp 1 * (2 : ℝ) ^ (7 / 6 : ℝ) ≤ 4 := by
+  have h := mul_rpow_le_of_two_pow_le_sum_choose_sq (m := 7) (q := 4) (e := 3)
+    (by decide) (by decide)
+  norm_num at h ⊢
+  exact h
 
 example :
     (0 : ℝ) / 2 ≤ (0 : ℝ) * Real.logb 2 (Real.exp 1 * 0 / 0) ∧
@@ -109,9 +153,7 @@ example :
   rw [andCircuit_inputActivity.1, andCircuit_inputActivity.2] at hlog hrpow
   exact ⟨by simpa using hlog, by simpa using hrpow⟩
 
--- This native example has maximum total activity equal to its full gate count, so the
--- circuit-level total-activity bounds reduce to the same `1 / 2 ≤ logb 2 e` and `2 ^ (1/2) ≤ e`
--- inequalities after substituting `andCircuit_gateActivity` and `andCircuit.size = 1`.
+-- This native example has maximum total activity equal to its full gate count.
 private theorem andCircuit_gateActivity : gateActivity andCircuit.program = 1 := by
   have hpos := inputActivity_pos_of_dotProduct andCircuit.program
     (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm (fun z => z 0) (by decide)
@@ -120,6 +162,7 @@ private theorem andCircuit_gateActivity : gateActivity andCircuit.program = 1 :=
   have hcard : gateActivity andCircuit.program ≤ 1 := gateActivity_le andCircuit.program
   omega
 
+-- Substitution reduces the total-activity bounds to the same numeric log/rpow inequalities.
 example :
     gateActivity andCircuit.program = andCircuit.size ∧
       (1 : ℝ) / 2 ≤ Real.logb 2 (Real.exp 1) ∧

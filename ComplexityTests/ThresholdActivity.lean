@@ -33,6 +33,11 @@ example : ((univ : Finset (Fin 3)).image (fun _ => fun _ : Fin 2 => false)).card
     simpa using h
   · exact Finset.card_pos.mpr (univ_nonempty.image _)
 
+-- Empty families still satisfy the image bound, including zero-dimensional words.
+example (e : ℕ) : ((∅ : Finset Bool).image (fun _ => fun _ : Fin 0 => false)).card ≤
+    ∑ j ∈ range (e + 1), Nat.choose 0 j :=
+  card_image_le_sum_choose _ _ (fun _ h => False.elim (notMem_empty _ h))
+
 example (f : Bool → Fin 2 → Bool) : (univ.image f).card ≤ 4 := by
   have h := card_image_le_sum_choose (univ : Finset Bool) f (e := 5) fun x _ =>
     (weight_le (f x)).trans (by decide)
@@ -112,5 +117,24 @@ example {n g : ℕ} (p : Program signature n g) :
 
 example {n g : ℕ} (p : Program signature n g) : inputActivity p ≤ g :=
   (inputActivity_le_gateActivity p).trans (gateActivity_le p)
+
+-- Evaluate the combined transcript bound on the gate-only fixture: no input-reading gates.
+example : (attainableTranscripts trueGate).card ≤ 1 := by
+  have h := card_attainableTranscripts_le_sum_choose_of_le trueGate
+    (inputActivity_le_card trueGate)
+  have hbound : (attainableTranscripts trueGate).card ≤ 2 ^ (inputGates trueGate).card := by
+    refine h.trans ?_
+    rw [← Fintype.card_coe (inputGates trueGate), ← card_filter_weight_le]
+    exact (card_le_univ _).trans_eq (by simp)
+  simpa [inputGates] using hbound
+
+example : inputActivity trueGate ≤ 1 :=
+  (inputActivity_le_gateActivity trueGate).trans (gateActivity_le trueGate)
+
+-- The radius exceeds the fixture's zero input-reading gates; the binomial sum is still one.
+example : (attainableTranscripts trueGate).card ≤
+    ∑ j ∈ range ((inputGates trueGate).card + 4), (inputGates trueGate).card.choose j := by
+  apply card_attainableTranscripts_le_sum_choose_of_le
+  exact (inputActivity_le_card trueGate).trans (Nat.le_add_right _ 3)
 
 end ThresholdActivity
