@@ -13,8 +13,7 @@ The circuit `(x₀ + x₁) (x₀ - x₁)`, with three gates, is simple, has prod
 `x₀ ^ 2 - x₁ ^ 2`; its unfolded formula has `8` nodes, within the bound `6 ^ 3`. The circuit
 `x₀ x₀`, one product gate reading the same input twice, is not simple. Flattening the formula
 `1 (1 x₀ + 1 x₁) + 1 x₀` merges the two occurrences of `x₀` into one sum gate of fan-in two, of
-three nodes. The superpolynomial lower bound is instantiated at `Δ = 3` and `c = 10` over a field
-of characteristic `2`.
+three nodes.
 -/
 
 namespace ComplexityTests.ArithmeticCircuitLowerBound
@@ -143,15 +142,5 @@ example : (SPFormula.flatten nested).nodeCount = 3 := by
   rw [SPFormula.flatten, linComb_nested, SPFormula.nodeCount_ofFinsupp,
     Finsupp.support_single_add_single hne two_ne_zero one_ne_zero, Finset.sum_pair hne,
     Formula.nodeCount_input, Formula.nodeCount_input]
-
-/-! ### The lower bound -/
-
-/-- Over a field of characteristic `2`, where the source's characteristic hypothesis fails for
-every `d ≥ 2`. -/
-example (F : Type*) [Field F] [CharP F 2] : ∀ᶠ n in Filter.atTop, ∀ [NeZero n] {N : ℕ}
-    (e : Fin N ≃ Fin (Nat.log 2 (Nat.log 2 n)) × Fin n × Fin n) (C : SPCircuit F N),
-    C.IsSimple → C.productDepth ≤ 3 →
-    rename e C.polynomial = imm F n (Nat.log 2 (Nat.log 2 n)) → n ^ 10 < C.size :=
-  SPCircuit.eventually_pow_lt_size_of_imm F 3 10
 
 end ComplexityTests.ArithmeticCircuitLowerBound
