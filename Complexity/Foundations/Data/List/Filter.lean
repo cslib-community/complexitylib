@@ -1,13 +1,14 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Mathlib.Data.Finset.Basic
 import Mathlib.Data.List.GetD
 
 /-!
@@ -20,6 +21,8 @@ They are generalized from the canonical incidence-path occupancy proofs.
 
 * `List.two_le_filter_contains_iff`.
 * `List.exists_other_index_of_two_le_filter_contains`.
+* `List.toFinset_filter_not_mem`: filtering `C` by non-membership in `H` takes the set difference
+  `C.toFinset \ H.toFinset`.
 -/
 
 @[expose] public section
@@ -104,5 +107,14 @@ theorem exists_other_index_of_two_le_filter_contains {α : Type*} [DecidableEq �
   by_cases hji : j = i
   · exact ⟨k, hk, by omega, hpk⟩
   · exact ⟨j, hj, hji, hpj⟩
+
+/-- Filtering `C` by non-membership in `H` takes the set difference `C.toFinset \ H.toFinset`. -/
+theorem toFinset_filter_not_mem {α : Type*} [DecidableEq α] (C H : List α) :
+    (C.filter fun l => !H.any (· == l)).toFinset = C.toFinset \ H.toFinset := by
+  ext l
+  rw [List.mem_toFinset, List.mem_filter, Finset.mem_sdiff, List.mem_toFinset, List.mem_toFinset]
+  refine and_congr_right fun _ => ?_
+  rw [Bool.not_eq_true', List.any_eq_false]
+  exact ⟨fun h hl => h l hl (beq_self_eq_true l), fun h l' hl' heq => h (beq_iff_eq.mp heq ▸ hl')⟩
 
 end List

@@ -8,8 +8,11 @@ import Complexity.Computability.Circuit.Boolean.Synthesis
 import Complexity.Computability.Complexity.Classes.LogSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
+import Complexity.Foundations.Data.BitString.Affine
 import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.List.Filter
 import Complexity.Foundations.Data.Nat.Asymptotics
+import Complexity.Foundations.Data.Nat.Div
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
 import Mathlib.Tactic.FinCases
@@ -17,6 +20,7 @@ import Mathlib.Tactic.FinCases
 /-! General lemmas in their library homes: the costs of projections and the one-gate lower bound
 for circuits on two and three inputs, the decoders of binary numbers and Booleans on encoded and
 malformed words, the nondeterministic space predicate, the parity of a symmetric difference,
+affine Boolean forms and step sums over `𝔽₂`, set difference via list filtering, block modular sums,
 and logarithmic bounds, with their boundary cases. -/
 
 namespace ComplexityTests.Consolidation
@@ -123,5 +127,37 @@ example : Nat.log 0 (5 + 1) ≤ Nat.log 0 5 + 1 ∧ Nat.log 2 (0 + 1) ≤ Nat.lo
 /-- `m * ⌊log_b n⌋ ≤ n + m * m` holds in both regimes (`⌊log_b n⌋ ≤ m` and `m < ⌊log_b n⌋`). -/
 example : 3 * Nat.log 2 5 ≤ 5 + 3 * 3 ∧ 2 * Nat.log 2 16 ≤ 16 + 2 * 2 :=
   ⟨Nat.mul_log_le_add_sq Nat.one_lt_two 3 5, Nat.mul_log_le_add_sq Nat.one_lt_two 2 16⟩
+
+/-! ### Affine forms, list filtering and block modular sums -/
+
+/-- A function of bits depending only on `{0, 2}` and preserving sums of three points is affine. -/
+example : ∃ T ⊆ ({0, 2} : Finset ℕ), ∀ u : ℕ → Bool,
+    (true + u 0 + u 2) = (true + (0 : ℕ → Bool) 0 + (0 : ℕ → Bool) 2) + ∑ j ∈ T, u j :=
+  BitString.exists_affine_of_add_add (M := {0, 2}) (g := fun u => true + u 0 + u 2)
+    (fun u u' h => by simp [h 0 (by simp), h 2 (by simp)])
+    (fun u u' u'' => by
+      simp only [Pi.add_apply]
+      cases u 0 <;> cases u' 0 <;> cases u'' 0 <;>
+        cases u 2 <;> cases u' 2 <;> cases u'' 2 <;> rfl)
+
+/-- Prefix parity accumulation from a step recurrence. -/
+example (f : ℕ → Bool) :
+    let z : ℕ → Bool := fun j => true + ∑ j' ∈ Finset.range j, f j'
+    ∀ j ≤ 3, z j = true + ∑ j' ∈ Finset.range j, f j' :=
+  BitString.eq_add_sum_of_step (z := fun j => true + ∑ j' ∈ Finset.range j, f j')
+    (by simp)
+    (fun j _ => by simp [Finset.sum_range_succ, ← add_assoc]; rfl)
+
+/-- Filtering a list by non-membership in `H` takes the `Finset` difference. -/
+example :
+    (([1, 2, 2, 3].filter fun l => !([2, 4].any (· == l))).toFinset : Finset ℕ) =
+      ([1, 2, 2, 3].toFinset \ [2, 4].toFinset) :=
+  List.toFinset_filter_not_mem [1, 2, 2, 3] [2, 4]
+
+/-- Summing over `n` blocks of length `ℓ` at offset `i < ℓ`. -/
+example (F : ℕ → ℕ) :
+    ∑ q ∈ Finset.range (3 * 4), (if q % 4 = 2 then F q else 0) =
+      ∑ k ∈ Finset.range 3, F (k * 4 + 2) :=
+  Nat.sum_range_mul_ite_mod 3 (by decide : 2 < 4) F
 
 end ComplexityTests.Consolidation
