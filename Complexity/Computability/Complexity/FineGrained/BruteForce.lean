@@ -90,7 +90,7 @@ theorem search_eq_true_iff (φ : CNF ℕ) : search φ = true ↔ φ ∈ SAT := b
 
 end BruteForce
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- **`SAT` by exhaustive search**: `SAT` is decidable within time `2 ^ n` times a polynomial in the
 length of the encoded formula, on formulas with `n` variables. -/
 theorem SAT_decidableInExpTime_one : DecidableInExpTime SAT encCNF CNF.numVars 1 := by
@@ -101,11 +101,10 @@ theorem SAT_decidableInExpTime_one : DecidableInExpTime SAT encCNF CNF.numVars 1
   have hf : ComputableInPolyTime
       (fun q : CNF ℕ × ℕ => ((q.1, q.1.distinctVars), q.2))
       (encPair encCNF encNat) (encPair (encPair encCNF (encList encNat)) encNat) := by
-    have := SAT.computableInPolyTime_distinctVars.tidy
-    exact .of_tidy (by fun_prop)
+    have := SAT.computableInPolyTime_distinctVars
+    fun_prop
   have hν : ComputableInPolyTime CNF.numVars encCNF encUnary := by
-    have := SAT.computableInPolyTime_distinctVars.tidy
-    refine .of_tidy ?_
+    have := SAT.computableInPolyTime_distinctVars
     have heq : (CNF.numVars : CNF ℕ → ℕ) = fun φ => φ.distinctVars.length := by
       funext φ; exact φ.length_distinctVars.symm
     rw [heq]
@@ -119,7 +118,7 @@ theorem SAT_decidableInExpTime_one : DecidableInExpTime SAT encCNF CNF.numVars 1
   simpa using hB.of_exhaustiveSearch hf hν hfA (c := 0) (fun _ _ => Nat.zero_le _)
     (M := 1) (K := 0) (fun φ => by simp) le_rfl
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- Checking that every clause has at most `k` literals is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_all_length_le (k : ℕ) :
