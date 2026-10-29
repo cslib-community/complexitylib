@@ -40,86 +40,6 @@ variable {P W D α : Type}
   {label : D ↪ List Bool} {alphabet : α ↪ List Bool}
   {rotate : P × (W × D) → W × D} {rel : P × ((W × D) × (α × α)) → Bool}
 
-private theorem polytime_finTail (T : ℕ) :
-    ComputableInPolyTime (@Fin.tail T (fun _ => D)) (encPi label) (encPi label) :=
-  pi fun i => pi_apply label i.succ
-
-private theorem polytime_finSnoc (T : ℕ) :
-    ComputableInPolyTime (fun p : (Fin T → D) × D => Fin.snoc p.1 p.2)
-      (encPair (encPi label) label) (encPi label) := by
-  apply pi
-  intro i
-  refine Fin.lastCases ?_ (fun j => ?_) i
-  · simpa only [Fin.snoc_last] using snd (encPi label) label
-  · simpa only [Fin.snoc_castSucc, Function.comp_def] using
-      (pi_apply label j).comp (fst (encPi label) label)
-
-private theorem polytime_finTake {T n : ℕ} (hn : n ≤ T) :
-    ComputableInPolyTime (Fin.take n hn (α := fun _ => D)) (encPi label) (encPi label) :=
-  pi fun i => pi_apply label (i.castLE hn)
-
-private theorem polytime_powRotWithInput
-    (hrotate : ComputableInPolyTime rotate
-      (encPair input (encPair vertex label)) (encPair vertex label)) (T : ℕ) :
-    ComputableInPolyTime (RotationMap.powRotWithInput rotate T)
-      (encPair input (encPair vertex (encPi label))) (encPair vertex (encPi label)) := by
-  induction T with
-  | zero => exact snd _ _
-  | succ T ih =>
-    have hhead : ComputableInPolyTime
-        (fun p : P × (W × (Fin (T + 1) → D)) => rotate (p.1, p.2.1, p.2.2 0))
-        (encPair input (encPair vertex (encPi label))) (encPair vertex label) :=
-      hrotate.comp ((fst _ _).prod
-        (((snd _ _).fst').prod ((pi_apply label 0).comp ((snd _ _).snd'))))
-    have hrest := ih.comp ((fst _ _).prod (hhead.fst'.prod
-      ((polytime_finTail (label := label) T).comp ((snd _ _).snd'))))
-    exact hrest.fst'.prod ((polytime_finSnoc (label := label) T).comp (hrest.snd'.prod hhead.snd'))
-
-private theorem polytime_walkAtWithInput
-    (hrotate : ComputableInPolyTime rotate
-      (encPair input (encPair vertex label)) (encPair vertex label)) (T m : ℕ) :
-    ComputableInPolyTime
-      (fun p : P × (W × (Fin T → D)) => RotationMap.walkAtWithInput rotate p m)
-      (encPair input (encPair vertex (encPi label))) vertex :=
-  ((polytime_powRotWithInput hrotate (min m T)).comp
-    ((fst _ _).prod (((snd _ _).fst').prod
-      ((polytime_finTake (Nat.min_le_right m T)).comp ((snd _ _).snd'))))).fst'
-
-private theorem polytime_killedPowRotWithInput
-    (hrotate : ComputableInPolyTime rotate
-      (encPair input (encPair vertex label)) (encPair vertex label))
-    (T q : ℕ) [NeZero q] (signal : Fin q ↪ List Bool) :
-    ComputableInPolyTime
-      (RotationMap.killedPowRotWithInput rotate T q)
-      (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
-      (encPair vertex (encPair (encPi label) (encPi signal))) := by
-  have hbranch (c : Fin T → Fin q) : ComputableInPolyTime
-      (fun p : P × (W × ((Fin T → D) × (Fin T → Fin q))) =>
-        RotationMap.killedPowRotWithInput rotate T q (p.1, p.2.1, p.2.2.1, c))
-      (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
-      (encPair vertex (encPair (encPi label) (encPi signal))) := by
-    have hwalk : ComputableInPolyTime
-        (fun p : P × (W × ((Fin T → D) × (Fin T → Fin q))) =>
-          RotationMap.powRotWithInput rotate (killTime c)
-            (p.1, p.2.1, Fin.take _ (killTime_le c) p.2.2.1))
-        (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
-        (encPair vertex (encPi label)) :=
-      (polytime_powRotWithInput hrotate (killTime c)).comp
-        ((fst _ _).prod (((snd _ _).fst').prod
-          ((polytime_finTake (killTime_le c)).comp ((snd _ _).snd'.fst'))))
-    dsimp only [RotationMap.killedPowRotWithInput]
-    apply hwalk.fst'.prod
-    apply prod ?_ (const c)
-    apply pi
-    intro i
-    by_cases hi : i.val < killTime c
-    · simpa only [dite_eq_left hi, Function.comp_def] using
-        (pi_apply label ⟨i.val, hi⟩).comp hwalk.snd'
-    · simpa only [dite_eq_right hi, Function.comp_def] using
-        (pi_apply label i).comp ((snd input _).snd'.fst')
-  exact ((snd input (encPair vertex (encPair (encPi label) (encPi signal)))).snd'.snd').finite_cases
-    hbranch
-
 variable [Fintype D]
 
 /-- The runtime graph, vertex, complete walk and both opinion tables are all stored explicitly. -/
@@ -147,7 +67,7 @@ theorem isPolyTime_powerRelationWithInput
     have hreturned : ComputableInPolyTime
         (fun p : PowerInput P W D α T q => killedPowRotWithInput rotate T q (p.1, p.2.1.1, s))
         enc (encPair vertex (encPair (encPi label) (encPi signal))) :=
-      (polytime_killedPowRotWithInput hrotate T q signal).comp
+      (ComputableInPolyTime.rotationMap_killedPowRotWithInput hrotate T q signal).comp
         ((fst _ _).prod (((snd _ _).fst'.fst').prod (const s)))
     let check (p : PowerInput P W D α T q) (i : Fin T) : Bool :=
       if i.val < killTime s.2 then
@@ -160,7 +80,7 @@ theorem isPolyTime_powerRelationWithInput
       by_cases hi : i.val < killTime s.2
       · have hwalk : ComputableInPolyTime
             (fun p : PowerInput P W D α T q => walkAtWithInput rotate (p.1, p.2.1.1, s.1) i.val)
-            enc vertex := (polytime_walkAtWithInput hrotate T i.val).comp
+            enc vertex := (ComputableInPolyTime.rotationMap_walkAtWithInput hrotate T i.val).comp
           ((fst _ _).prod (((snd _ _).fst'.fst').prod (const s.1)))
         have hleft : ComputableInPolyTime
             (fun p : PowerInput P W D α T q => p.2.2.1 (.take i.val i.isLt.le s.1))
