@@ -42,14 +42,14 @@ variable {k : ℕ} {Symbol State : Type*} {input : List Symbol}
 def window (t : RawTape Symbol) (pos : ℤ) : Finset ℤ :=
   Finset.Icc (pos - t.left.length) (pos + t.right.length)
 
-@[simp] private theorem card_window (t : RawTape Symbol) (pos : ℤ) :
+@[simp] theorem card_window (t : RawTape Symbol) (pos : ℤ) :
     (t.window pos).card = t.span := by
   rw [window, Int.card_Icc]
   unfold span
   omega
 
 /-- A tape step stores precisely its previous window and its new head position. -/
-private theorem window_step (t : RawTape Symbol) (a : Option (Option Symbol) × SignType) (pos : ℤ) :
+theorem window_step (t : RawTape Symbol) (a : Option (Option Symbol) × SignType) (pos : ℤ) :
     (t.step a).window (pos + a.2) = insert (pos + a.2) (t.window pos) := by
   ext z
   simp only [window, Finset.mem_Icc, Finset.mem_insert]
@@ -66,7 +66,7 @@ private theorem window_step (t : RawTape Symbol) (a : Option (Option Symbol) × 
   | some q => (tm.tr q c.inputSymbol c.workTapeSymbols).workTapes i
 
 /-- The effective action gives the exact new head position, including after halting. -/
-private theorem nativeAction_pos (tm : MultiTapeTM k Symbol State)
+theorem nativeAction_pos (tm : MultiTapeTM k Symbol State)
     (c : Cfg k Symbol State input) (i : Fin k) :
     (tm.step c).workTapePos i = c.workTapePos i + (nativeAction tm c i).2 := by
   cases hs : c.state with
@@ -74,7 +74,7 @@ private theorem nativeAction_pos (tm : MultiTapeTM k Symbol State)
   | some q => rw [tm.step_of_state hs]; simp [nativeAction, hs, Action.apply]
 
 /-- Raw tape semantics follows the native step, also at halted configurations. -/
-private theorem Represents.nativeStep {t : RawTape Symbol} {tm : MultiTapeTM k Symbol State}
+theorem Represents.nativeStep {t : RawTape Symbol} {tm : MultiTapeTM k Symbol State}
     {c : Cfg k Symbol State input} {i : Fin k}
     (h : t.Represents (c.workTapes i) (c.workTapePos i)) :
     (t.step (nativeAction tm c i)).Represents
@@ -104,7 +104,8 @@ theorem represents_run (tm : MultiTapeTM k Symbol State) (input : List Symbol) (
   | zero => exact Represents.init
   | succ n ih => rw [run, runFrom_succ]; exact ih.nativeStep
 
-private theorem visited_succ (tm : MultiTapeTM k Symbol State)
+/-- Advancing a deterministic run by one step inserts the new head position into the visited set. -/
+theorem visited_succ (tm : MultiTapeTM k Symbol State)
     (c : Cfg k Symbol State input) (n : ℕ) (i : Fin k) :
     (MultiTapeNTM.RunPath.ofDeterministic tm c (n + 1)).visitedByTapeHead i =
       insert ((tm.runFrom c (n + 1)).workTapePos i)

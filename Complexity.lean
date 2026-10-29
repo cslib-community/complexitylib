@@ -146,6 +146,8 @@ public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
 public import Complexity.Algorithms.WordRAM.PrefixSums.Update
+public import Complexity.Algorithms.WordRAM.PrimeTable
+public import Complexity.Algorithms.WordRAM.PrimeTrial
 public import Complexity.Algorithms.WordRAM.PriorityQueue.Basic
 public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap
 public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Model
@@ -172,10 +174,16 @@ public import Complexity.Algorithms.WordRAM.RadixSort.Scan
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CollisionTest
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Collisions
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountCall
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountTriple
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Loop
 public import Complexity.Algorithms.WordRAM.ThreeSum.Host.Prepare
@@ -252,6 +260,7 @@ public import Complexity.Computability.Circuit.Boolean.BinaryCost
 public import Complexity.Computability.Circuit.Boolean.BitBlast
 public import Complexity.Computability.Circuit.Boolean.BoundedError
 public import Complexity.Computability.Circuit.Boolean.Braverman.Approximation
+public import Complexity.Computability.Circuit.Boolean.Braverman.Fooling
 public import Complexity.Computability.Circuit.Boolean.Braverman.Gates
 public import Complexity.Computability.Circuit.Boolean.Broadcast
 public import Complexity.Computability.Circuit.Boolean.CarryLookahead
