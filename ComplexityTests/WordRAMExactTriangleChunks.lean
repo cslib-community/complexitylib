@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Erik Demaine
 -/
 
+import Complexity.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks
 import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
 import Complexity.Computability.WordRAM.Compile
@@ -82,6 +83,93 @@ example : ∃ y t, t ≤ 104 ∧
   · exact (hframe 34 (by rw [hd, hcount]; decide)).trans (congrFun hmem 34)
 
 end Chunk
+
+namespace Catalogue
+
+open Cslib.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
+
+private def boot : Code .standard 32 := ram[
+  one ← #1; addr ← #1; counts ← *addr; addr ← addr + one; queries ← *addr;
+  addr ← addr + one; size ← *addr; addr ← addr + one; modulus ← *addr;
+  addr ← addr + one; dst ← *addr; addr ← addr + one; capacity ← *addr ]
+
+private def input : List ℕ :=
+  [7, 10, 2, 3, 35, 2] ++ [0, 3, 4] ++ List.range 24 ++ [99] ++
+    List.replicate 12 88 ++ [77]
+
+private def code : Code .standard 32 := .seq boot program
+
+private def observe : Option (List (ℕ × ℕ × ℕ) × List ℕ) :=
+  (code.eval 8 8 (.init input)).map fun yn =>
+    ((List.range (yn.1.regs written)).map (fun k =>
+      (yn.1.mem (35 + 3 * k), yn.1.mem (35 + 3 * k + 1), yn.1.mem (35 + 3 * k + 2))),
+      [yn.1.regs heap, yn.1.mem 7, yn.1.mem 8, yn.1.mem 9, yn.1.mem 10,
+        yn.1.mem 34, yn.1.mem 47])
+
+/-- Empty classes consume no descriptor slots; the odd class has a shortened last chunk.
+The count table, query words and both outside sentinels survive. -/
+example : observe = some
+    ([(1, 18, 2), (1, 22, 1), (2, 26, 2), (2, 30, 2)], [47, 0, 3, 4, 0, 99, 77]) := by
+  decide
+
+private def classSize (r : ℕ) : ℕ := if r = 1 then 3 else if r = 2 then 4 else 0
+
+/-- The same four actual descriptors follow from the general theorem and an initialized
+compiled run, with all count, separation and width premises discharged. -/
+example : ∃ y t, t ≤ 287 ∧
+    Runs 8 (code.program written) (State.init input) ⟨code.size, y⟩ (t - 1) ∧
+    Executes 8 (code.program written) (State.init input) 4 t ∧
+    y.mem 35 = 1 ∧ y.mem 39 = 22 ∧ y.mem 40 = 1 ∧ y.mem 45 = 30 ∧
+    y.mem 47 = 77 ∧ y.mem 10 = 0 := by
+  obtain ⟨b, hb, hregs, hmem⟩ : ∃ b,
+      ExecWithin 8 boot (.init input) b 13 ∧
+        (b.regs counts = 7 ∧ b.regs queries = 10 ∧ b.regs size = 2 ∧
+          b.regs modulus = 3 ∧ b.regs dst = 35 ∧ b.regs capacity = 2) ∧
+        b.mem = (Data.init input : Data 32).mem := by
+    refine ⟨?b, ?run, ?args, ?memory⟩
+    case run => ram_eval [boot, input, Data.init, Fits]
+    case args => decide
+    case memory => rfl
+  obtain ⟨hcount, hq, hn, hp, hd, hcap⟩ := hregs
+  obtain ⟨y, hy, hycount, hyheap, -, hcells, hframe⟩ := exec (w := 8) b classSize
+    (by
+      intro r hr
+      rw [hp] at hr
+      rw [hcount, hmem]
+      interval_cases r <;> decide)
+    (by
+      intro r hr
+      rw [hp] at hr
+      rw [hn]
+      interval_cases r <;> decide)
+    (by rw [hcap]; decide) (by rw [hcount, hp, hd]; decide)
+    (by rw [hq, hp, hn, hd]; decide)
+    (by rw [hd, hp, hn, hcount, hq]; decide)
+  have hwritten : y.regs written = 4 := by
+    simpa [hcap, hp, before, classSize, Finset.sum_range_succ,
+      Nat.ceilDiv_eq_add_pred_div] using hycount
+  have first := hcells 1 (by rw [hp]; decide) 0 (by rw [hcap]; decide)
+  have second := hcells 1 (by rw [hp]; decide) 1 (by rw [hcap]; decide)
+  have last := hcells 2 (by rw [hp]; decide) 1 (by rw [hcap]; decide)
+  obtain ⟨t, ht, he⟩ := hb.seq hy
+  have hr := he.runs (pc := 0) (p := code.program written)
+    (Program.Contains.self _).append_left
+  have ht' : t ≤ 286 := by simpa only [hp, hn] using ht
+  refine ⟨y, t + 1, by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · simpa only [code, State.init, Nat.zero_add, Nat.add_sub_cancel] using hr
+  · simpa only [code, State.init, hwritten] using he.executes written
+  · simpa [hd, hcap, before, classSize, Finset.sum_range_succ,
+      Nat.ceilDiv_eq_add_pred_div] using first.1
+  · simpa [hd, hq, hn, hcap, before, classSize, Finset.sum_range_succ,
+      Nat.ceilDiv_eq_add_pred_div] using second.2.1
+  · simpa [hd, hcap, before, classSize, Finset.sum_range_succ,
+      Nat.ceilDiv_eq_add_pred_div] using second.2.2
+  · simpa [hd, hq, hn, hcap, before, classSize, Finset.sum_range_succ,
+      Nat.ceilDiv_eq_add_pred_div] using last.2.1
+  · exact (hframe 47 (by rw [hd, hwritten]; decide)).trans (congrFun hmem 47)
+  · exact (hframe 10 (by rw [hd, hwritten]; decide)).trans (congrFun hmem 10)
+
+end Catalogue
 
 namespace Params
 

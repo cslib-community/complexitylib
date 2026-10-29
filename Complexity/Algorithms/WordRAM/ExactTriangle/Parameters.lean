@@ -56,15 +56,14 @@ abbrev area : Fin 15 := 13
 /-- Constant one, outside the square-root register bank. -/
 abbrev one : Fin 15 := 14
 
-/-- The first six registers are reserved for the existing square-root kernel. -/
-def sqrtReg (i : Fin 6) : Fin 15 := ⟨i.val, by omega⟩
+private abbrev sqrtReg : Fin 6 → Fin 15 := Fin.castLE (by decide)
 
 private theorem sqrtReg_injective : Function.Injective sqrtReg := by
   intro i j h
   exact Fin.ext (congrArg (fun k : Fin 15 => k.val) h)
 
 /-- Reused charged integer square root. -/
-def squareRoot : Code .standard 15 := NatSqrt.program.rename sqrtReg
+def squareRoot : Code .standard 15 := NatSqrt.program.rename (Fin.castLE (by decide))
 
 /-- Runtime arithmetic between the square roots. -/
 def between : Code .standard 15 := ram[

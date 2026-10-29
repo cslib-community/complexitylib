@@ -80,10 +80,17 @@ public import Complexity.Algorithms.WordRAM.Dijkstra.Statement
 public import Complexity.Algorithms.WordRAM.DynamicArray
 public import Complexity.Algorithms.WordRAM.ElementDistinctness
 public import Complexity.Algorithms.WordRAM.ElementDistinctnessRAM
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Catalogue
+public import Complexity.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Classes
+public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
+public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationInput
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationSpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.QueryScan
 public import Complexity.Algorithms.WordRAM.ExactTriangle.QuerySpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ResidueClasses
@@ -1069,6 +1076,7 @@ public import Complexity.Computability.GenericRAM.Native.MeasurementFold
 public import Complexity.Computability.GenericRAM.Native.Nat
 public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
+public import Complexity.Computability.GenericRAM.Signed.Fits
 public import Complexity.Computability.GenericRAM.Simulation.Finite
 public import Complexity.Computability.GenericRAM.Simulation.Run
 public import Complexity.Computability.GenericRAM.Simulation.Turing
@@ -1739,6 +1747,7 @@ public import Complexity.Computability.WordRAM.Structured
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
+public import Complexity.Computability.WordRAM.Width
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment

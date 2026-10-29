@@ -435,11 +435,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
-  Native ExactTriangle preparation ([#1532]) has checked parameter, residue-class/query,
-  chunk-descriptor and zero/one matrix kernels, including initialized signed-weight class
-  execution. Its complete catalogue, width and aggregate preparation composition remain open.
-  Band/tile preparation, native pruned/sparse-query programs, native Chan–He preprocessing, the reduction
-  host, the fast Exact Triangle solver and full
+  Native ExactTriangle preparation ([#1532]) proves initialized execution of the complete
+  computed catalogue and zero/one instance matrices, exact finite readback, logarithmic width,
+  polynomial prefix words and address space, and a `690n²Dg` charged bound in the source's
+  admissible parameter regime. Prime selection and solving the prepared instances remain separate.
+  Remaining integration connects band/tile preparation, native pruned/sparse-query programs,
+  native Chan–He preprocessing, the reduction host and the fast Exact Triangle solver, with full
   input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
   size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded

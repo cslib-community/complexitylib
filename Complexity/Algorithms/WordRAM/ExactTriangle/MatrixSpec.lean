@@ -23,6 +23,8 @@ weights, as produced by the existing native signed-residue kernel.
 * `MatrixSpec.left_entry`: left adjacency is `label ≡ weight + rho`.
 * `MatrixSpec.right_entry`: right adjacency is `label ≡ -weight`.
 * `MatrixSpec.left_padding`, `MatrixSpec.right_padding`: padded middle positions are zero.
+* `MatrixSpec.left_lopInstance`, `MatrixSpec.right_lopInstance`: raw matrix ones are exactly
+  the corresponding edges of the existing finite lopsided instance.
 -/
 
 @[expose] public section
@@ -106,5 +108,41 @@ theorem right_padding (A : Args) (R : ℕ → ℕ) (b : Fin A.n) (middle : Fin A
   have hn : 0 < A.n := Nat.pos_of_ne_zero (by intro h; simpa [h] using b.isLt)
   simp only [entry, ↓reduceIte, flat_div hn b.isLt,
     show ¬middle.val / A.p < A.length by omega]
+
+/-- Active left cells are precisely the adjacency of the existing finite lopsided instance.
+The source-array equation relates original weights to their actual Euclidean residues, and
+the local-to-original vertex equation identifies the selected piece coordinate. -/
+theorem left_lopInstance (A : Args) (R : ℕ → ℕ)
+    (wAB wBC wAC : Fin A.n → Fin A.n → ℤ) (g chunk k : ℕ) (rho : Fin A.p)
+    (hrho : A.rho = rho.val) (a c : Fin A.n) (v : Fin A.length) (label : Fin A.p)
+    (hpiece : c ∈ piece A.n A.D g k) (hvertex : A.first + v.val = c.val)
+    (hpad : A.length * A.p ≤ A.D)
+    (hR : ∀ a c, R (a.val * A.n + c.val) = (wAC a c).natMod A.p) :
+    entry false A R (a.val * A.D + (v.val * A.p + label.val)) = 1 ↔
+      (lopInstance wAB wBC wAC A.D g A.p (rho, chunk, k)).adjA
+        a (⟨c, hpiece⟩, label) := by
+  have hload : R (a.val * A.n + A.first + v.val) = (wAC a c).natMod A.p := by
+    rw [Nat.add_assoc, hvertex]
+    exact hR a c
+  rw [left_entry A R a v label hpad (wAC a c) hload, hrho]
+  simp only [lopInstance]
+  split_ifs <;> simp_all
+
+/-- Active right cells are precisely the adjacency of the same finite lopsided instance;
+the stored right matrix uses its original B–C row and local middle vertex. -/
+theorem right_lopInstance (A : Args) (R : ℕ → ℕ)
+    (wAB wBC wAC : Fin A.n → Fin A.n → ℤ) (g chunk k : ℕ) (rho : Fin A.p)
+    (b c : Fin A.n) (v : Fin A.length) (label : Fin A.p)
+    (hpiece : c ∈ piece A.n A.D g k) (hvertex : A.first + v.val = c.val)
+    (hR : ∀ b c, R (b.val * A.n + c.val) = (wBC b c).natMod A.p) :
+    entry true A R ((v.val * A.p + label.val) * A.n + b.val) = 1 ↔
+      (lopInstance wAB wBC wAC A.D g A.p (rho, chunk, k)).adjB
+        (⟨c, hpiece⟩, label) b := by
+  have hload : R (b.val * A.n + A.first + v.val) = (wBC b c).natMod A.p := by
+    rw [Nat.add_assoc, hvertex]
+    exact hR b c
+  rw [right_entry A R b v label (wBC b c) hload]
+  simp only [lopInstance]
+  split_ifs <;> simp_all
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.MatrixSpec

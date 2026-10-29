@@ -59,15 +59,14 @@ abbrev addr : Fin 20 := 17
 /-- Capacity in words of a query block. -/
 abbrev stride : Fin 20 := 18
 
-/-- The scanner occupies the first twelve registers. -/
-def scanReg (i : Fin 12) : Fin 20 := ⟨i.val, by omega⟩
+private abbrev scanReg : Fin 12 → Fin 20 := Fin.castLE (by decide)
 
 private theorem scanReg_injective : Function.Injective scanReg := by
   intro i j h
   exact Fin.ext (congrArg (fun k : Fin 20 => k.val) h)
 
 /-- Reuse the certified scanner with a disjoint register bank for the outer loop. -/
-def scan : Code .standard 20 := QueryScan.program.rename scanReg
+def scan : Code .standard 20 := QueryScan.program.rename (Fin.castLE (by decide))
 
 /-- Compute the class's output pointer, scan, record its count, and advance. -/
 def body : Code .standard 20 :=

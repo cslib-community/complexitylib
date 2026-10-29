@@ -194,6 +194,20 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
   retain the source's exact real floor/ceiling specifications through checked bridges.
+  `Algorithms/WordRAM/ExactTriangle/` implements the complete initialized preparation component
+  ([#1532](https://github.com/cslib-community/complexitylib/issues/1532)). Fixed sixty-four-register
+  code of at most 641 flat instructions consumes raw `(D,g,n,p)` headers and signed-encoded
+  A–B, B–C and A–C weights. It computes the residue classes, query chunks and records and writes
+  both padded instance matrices. These matrices contain raw unsigned zero/one words; a signed
+  product consumer must charge their conversion. The supplied positive modulus is not selected
+  by this program. In the source regime `16 ≤ D ≤ n`, `1 ≤ g` and `p` in the square-root prime
+  window, actual initialized execution including halt costs at most `690n²Dg`. Every sufficiently
+  wide physical machine has the same output. Under `D,g,p ≤ n` and input magnitudes bounded by
+  `(n+2)^κ`, sufficient width is at most `(κ+18)clog₂(n+2)`, and every prefix's words and address
+  support are bounded by `(n+2)^(κ+19)`. The generic width and signed-fit topic modules are reused
+  unchanged from #1537 and #1552. These are actual execution and fit proofs, without supplied
+  layout, execution or solver contracts. Product composition #1581 and the full #1394 endpoint
+  remain separate.
   `Algorithms/MatrixMultiplication/Schonhage/` adapts the tensor-recursion core from the same pin's
   `Sec2/{Lemma6,Recursion,Lemma7_8,Lemma10}.lean`: the ten-term polynomial identity with explicit
   error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
