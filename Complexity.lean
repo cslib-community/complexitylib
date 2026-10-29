@@ -148,7 +148,9 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.Hashing.KWise
 public import Complexity.Algorithms.WordRAM.Hashing.MultiplyShift
+public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
 public import Complexity.Algorithms.WordRAM.Histogram
 public import Complexity.Algorithms.WordRAM.Karger.Contract
 public import Complexity.Algorithms.WordRAM.Karger.FastCut
