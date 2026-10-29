@@ -46,39 +46,44 @@ example : ((paths single).filter fun r => r.contains (3, 4)).length ≤ 1 :=
 example : ((paths single).filter fun r => r.contains (3, 4)).length = 1 := by decide +kernel
 
 -- Canonical path certificates are available from the shared path API alone.
-example (φ : CNF ℕ) : paths φ = (Cslib.Complexity.SAT.incidenceGraph φ).unitPaths :=
-  paths_eq_unitPaths φ
+private def singleOccurrence : Occurrence ℕ := (0, 0, (0, true))
 
-example (φ : CNF ℕ) (o : Occurrence ℕ) : occurrencePath φ o =
-    (Cslib.Complexity.SAT.incidenceGraph φ).unitPath
-      ((Cslib.Logic.PL.occurrences φ).idxOf o) := occurrencePath_eq_unitPath φ o
+private theorem single_mem : singleOccurrence ∈ Cslib.Logic.PL.occurrences single := by decide
 
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    (Cslib.Logic.PL.occurrences φ).idxOf o < (Cslib.Complexity.SAT.incidenceGraph φ).2.length :=
-  occurrence_index_lt ho
+-- The one incidence edge yields one 33-point path in both APIs.
+example : (paths single).map List.length = [33] := by
+  rw [paths_eq_unitPaths]
+  decide +kernel
 
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    (occurrencePath φ o).head? =
-        some (Cslib.Orthogonal.Layout.center (φ.distinctVars.idxOf o.2.2.1)) ∧
-      (occurrencePath φ o).getLast? =
-        some (Cslib.Orthogonal.Layout.center (φ.distinctVars.length + o.1)) :=
-  occurrencePath_endpoints ho
+example : (occurrencePath single singleOccurrence).length = 33 := by
+  rw [occurrencePath_eq_unitPath]
+  decide +kernel
 
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    (occurrencePath φ o).Nodup := occurrencePath_nodup ho
+example :
+    (Cslib.Logic.PL.occurrences single).idxOf singleOccurrence = 0 ∧
+    (Cslib.Logic.PL.occurrences single).idxOf singleOccurrence < 1 :=
+  ⟨by decide, occurrence_index_lt single_mem⟩
 
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    occurrencePath φ o ≠ [] := occurrencePath_ne_nil ho
+-- The source center is (4, 4), and the only clause center is (12, 12).
+example :
+    (occurrencePath single singleOccurrence).head? = some (4, 4) ∧
+    (occurrencePath single singleOccurrence).getLast? = some (12, 12) := by
+  convert occurrencePath_endpoints single_mem using 1 <;> decide +kernel
 
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    2 ≤ (occurrencePath φ o).length := occurrencePath_length_ge_two ho
+example :
+    (occurrencePath single singleOccurrence).Nodup ∧
+    occurrencePath single singleOccurrence ≠ [] ∧
+    2 ≤ (occurrencePath single singleOccurrence).length :=
+  ⟨occurrencePath_nodup single_mem, occurrencePath_ne_nil single_mem,
+    occurrencePath_length_ge_two single_mem⟩
 
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ)
-    {e : Cslib.Orthogonal.Point × Cslib.Orthogonal.Point}
-    (he : e ∈ (occurrencePath φ o).consecutivePairs) :
-    Cslib.Orthogonal.length e.1 e.2 = 1 := occurrencePath_unit ho he
+-- The first and last segments are actual unit steps, not supplied path hypotheses.
+example : Cslib.Orthogonal.length (4, 4) (3, 4) = 1 :=
+  occurrencePath_unit single_mem (e := ((4, 4), (3, 4))) (by decide +kernel)
 
-example {φ : CNF ℕ} {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    let r := occurrencePath φ o
+example :
+    let r := occurrencePath single singleOccurrence
+    r.getD (r.length - 2) (0, 0) = (11, 12) ∧
+    r.getLastD (0, 0) = (12, 12) ∧
     Cslib.Orthogonal.length (r.getD (r.length - 2) (0, 0)) (r.getLastD (0, 0)) = 1 :=
-  occurrencePath_last_unit ho
+  ⟨by decide +kernel, by decide +kernel, occurrencePath_last_unit single_mem⟩
