@@ -565,15 +565,4 @@ theorem CSP.modelCountOn_toBoolean (q : ℕ) [Inhabited (Fin q)] (N : ℕ)
     rw [hdef, ← heval, hinv]
     exact hσ
 
-/-- Backward-compatible abbreviation for `CSP.bitWidth`. -/
-abbrev bitWidth := CSP.bitWidth
-
-/-- Backward-compatible abbreviation for `CSP.semBoolean`. -/
-abbrev semBoolean (q : ℕ) (sem : Rel → List (Fin q) → Bool) :=
-  CSP.semBoolean q sem
-
-/-- Backward-compatible abbreviation for `CSP.toBoolean`. -/
-abbrev toBooleanCSP (q : ℕ) (N : ℕ) (F : CSP Rel ℕ) : CSP (Option Rel) ℕ :=
-  F.toBoolean q N
-
 end Cslib.Logic.PL

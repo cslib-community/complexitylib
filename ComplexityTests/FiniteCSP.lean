@@ -26,12 +26,12 @@ open Cslib.Complexity
 namespace ComplexityTests.FiniteCSP
 
 -- Bit width computation
-example : bitWidth 1 = 1 := by decide
-example : bitWidth 2 = 1 := by decide
-example : bitWidth 3 = 2 := by decide
-example : bitWidth 4 = 2 := by decide
-example : bitWidth 5 = 3 := by decide
-example : bitWidth 8 = 3 := by decide
+example : CSP.bitWidth 1 = 1 := by decide
+example : CSP.bitWidth 2 = 1 := by decide
+example : CSP.bitWidth 3 = 2 := by decide
+example : CSP.bitWidth 4 = 2 := by decide
+example : CSP.bitWidth 5 = 3 := by decide
+example : CSP.bitWidth 8 = 3 := by decide
 
 -- Binary encoding round-trips
 example : lowBits 2 0 = [false, false] := by decide
@@ -62,27 +62,29 @@ example : triangleCSP.modelCountOn (semNeq 2) (Finset.range 3) = 0 := by decide
 
 -- Model counts on compiled Boolean CSP
 example :
-    (toBooleanCSP 3 3 triangleCSP).modelCountOn (semBoolean 3 (semNeq 3)) (Finset.range 6) = 6 := by
+    (triangleCSP.toBoolean 3 3).modelCountOn (CSP.semBoolean 3 (semNeq 3))
+      (Finset.range 6) = 6 := by
   decide
 
 example :
-    (toBooleanCSP 3 3 pathCSP).modelCountOn (semBoolean 3 (semNeq 3)) (Finset.range 6) = 12 := by
+    (pathCSP.toBoolean 3 3).modelCountOn (CSP.semBoolean 3 (semNeq 3)) (Finset.range 6) = 12 := by
   decide
 
 example :
-    (toBooleanCSP 2 3 triangleCSP).modelCountOn (semBoolean 2 (semNeq 2)) (Finset.range 3) = 0 := by
+    (triangleCSP.toBoolean 2 3).modelCountOn (CSP.semBoolean 2 (semNeq 2))
+      (Finset.range 3) = 0 := by
   decide
 
 -- Model count equivalence theorem application
 example :
-    (toBooleanCSP 3 3 triangleCSP).modelCountOn (semBoolean 3 (semNeq 3)) (Finset.range 6) =
+    (triangleCSP.toBoolean 3 3).modelCountOn (CSP.semBoolean 3 (semNeq 3)) (Finset.range 6) =
     triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) :=
   CSP.modelCountOn_toBoolean 3 3 (semNeq 3) triangleCSP (by decide)
 
 -- Width and variable bounds
-example : (toBooleanCSP 3 3 triangleCSP).all (fun c => c.2.length ≤ 4) = true := by decide
-example : (toBooleanCSP 3 3 triangleCSP).vars.all (fun v => decide (v < 6)) = true := by decide
-example : CSP.validDeclaredCSP 4 6 (toBooleanCSP 3 3 triangleCSP) = true := by decide
+example : (triangleCSP.toBoolean 3 3).all (fun c => c.2.length ≤ 4) = true := by decide
+example : (triangleCSP.toBoolean 3 3).vars.all (fun v => decide (v < 6)) = true := by decide
+example : CSP.validDeclaredCSP 4 6 (triangleCSP.toBoolean 3 3) = true := by decide
 
 -- Satisfiability and unsatisfiability checks
 example : 0 < triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) := by decide

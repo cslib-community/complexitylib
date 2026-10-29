@@ -19,11 +19,14 @@ This module connects finite-domain constraint satisfaction problems
 Boolean CSPs (`Cslib.Complexity.CSP.exists_declaredCounter_of_finite`).
 
 For any fixed finite domain size `q` and arity bound `k`, each domain variable is compiled into
-`b = bitWidth q` Boolean variables, yielding an equivalent Boolean CSP instance of constraint scope
-length at most `max 1 k * b` on `N * b` declared variables. Evaluating the bounded-arity Boolean
-CSP counter on the compiled Boolean instance computes the exact declared-variable model count
-in subexponential time and polynomial space ([OpenAI2026ETH], Corollary C.2 / Theorem 1.1,
-paraphrased and extended to finite domains via binary validity constraints).
+`b = CSP.bitWidth q` Boolean variables. The Boolean instance has constraint scope length at most
+`max 1 k * b` on `N * b` declared variables. Evaluating the bounded-arity Boolean
+CSP counter on the compiled Boolean instance computes the exact declared-variable model count.
+Its time bound has factor `2^(A * interpolationScale (N * b))` multiplied by a polynomial in the
+compiled Boolean encoding length; space is polynomial in that compiled encoding length
+([OpenAI2026ETH], Corollary C.2 / Theorem 1.1, paraphrased and extended to finite domains via binary
+validity constraints). No bound on the compilation cost or on the compiled encoding length in
+terms of the native finite-domain input is proved here; those remain open in #1326, Milestone 2.
 
 ## Main results
 
@@ -52,10 +55,12 @@ compiled Boolean instance `(x.1 * CSP.bitWidth q, x.2.toBoolean q x.1)` computes
 declared-variable model count `x.2.modelCountOn sem (Finset.range x.1)` for every valid
 finite-domain instance `x` of constraint width at most `k`.
 
-This transfer lemma establishes the mathematical equivalence between finite-domain model counting
-and the bounded-arity Boolean counting endpoint ([OpenAI2026ETH], Corollary C.2 / Theorem 1.1).
-The polynomial-time Turing machine compilation step connecting native finite-domain encodings to
-the Boolean compilation is deferred to a follow-up. -/
+This is a one-way counting transfer through the Boolean endpoint ([OpenAI2026ETH], Corollary C.2 /
+Theorem 1.1). The machine consumes the compiled Boolean encoding: time has factor
+`2^(A * interpolationScale (N * b))` times a polynomial in that encoding length, and space is
+polynomial in that length. Bounding the compiled encoding in terms of the native finite-domain
+input, proving `toBoolean` polynomial-time and composing it into a counter on native encodings
+remain open in #1326, Milestone 2. -/
 public theorem CSP.exists_declaredCounter_toBoolean {Rel : Type} [Finite Rel]
     (encRel : Rel ↪ List Bool) (q : ℕ) [Inhabited (Fin q)] (k : ℕ)
     (sem : Rel → List (Fin q) → Bool) :
