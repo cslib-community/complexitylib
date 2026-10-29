@@ -542,46 +542,35 @@ theorem reduce_mem_iff (x : List (ℕ × ℕ) × CNF ℕ) :
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 variable {γ : Type} {encIn : γ ↪ List Bool}
 
 @[fun_prop]
 theorem computableInPolyTime_topNode {j : γ → ℕ}
     (hj : ComputableInPolyTime j encIn encUnary) :
-    ComputableInPolyTime (fun x => topNode (j x)) encIn encNat := by
-  have hj := hj.tidy
-  exact .of_tidy
-    (unary_to_binary.comp (show ComputableTidilyInPolyTime (fun x => Nat.pair 0 (j x)) _ _ by
-    fun_prop))
+    ComputableInPolyTime (fun x => topNode (j x)) encIn encNat :=
+  unary_to_binary.comp (show ComputableInPolyTime (fun x => Nat.pair 0 (j x)) _ _ by fun_prop)
 
 @[fun_prop]
 theorem computableInPolyTime_valueNode {j : γ → ℕ} {b : γ → Bool}
     (hj : ComputableInPolyTime j encIn encUnary)
     (hb : ComputableInPolyTime b encIn encBool) :
-    ComputableInPolyTime (fun x => valueNode (j x) (b x)) encIn encNat := by
-  have hj := hj.tidy
-  have hb := hb.tidy
-  exact .of_tidy (unary_to_binary.comp (show ComputableTidilyInPolyTime
-    (fun x => Nat.pair 1 (Nat.pair (j x) (b x).toNat)) _ _ by fun_prop))
+    ComputableInPolyTime (fun x => valueNode (j x) (b x)) encIn encNat :=
+  unary_to_binary.comp (show ComputableInPolyTime
+    (fun x => Nat.pair 1 (Nat.pair (j x) (b x).toNat)) _ _ by fun_prop)
 
 @[fun_prop]
 theorem computableInPolyTime_bottomNode {j : γ → ℕ}
     (hj : ComputableInPolyTime j encIn encUnary) :
-    ComputableInPolyTime (fun x => bottomNode (j x)) encIn encNat := by
-  have hj := hj.tidy
-  exact .of_tidy
-    (unary_to_binary.comp (show ComputableTidilyInPolyTime (fun x => Nat.pair 2 (j x)) _ _ by
-    fun_prop))
+    ComputableInPolyTime (fun x => bottomNode (j x)) encIn encNat :=
+  unary_to_binary.comp (show ComputableInPolyTime (fun x => Nat.pair 2 (j x)) _ _ by fun_prop)
 
 @[fun_prop]
 theorem computableInPolyTime_clauseNode {i : γ → ℕ}
     (hi : ComputableInPolyTime i encIn encUnary) :
-    ComputableInPolyTime (fun x => clauseNode (i x)) encIn encNat := by
-  have hi := hi.tidy
-  exact .of_tidy
-    (unary_to_binary.comp (show ComputableTidilyInPolyTime (fun x => Nat.pair 4 (i x)) _ _ by
-    fun_prop))
+    ComputableInPolyTime (fun x => clauseNode (i x)) encIn encNat :=
+  unary_to_binary.comp (show ComputableInPolyTime (fun x => Nat.pair 4 (i x)) _ _ by fun_prop)
 
 @[fun_prop]
 theorem computableInPolyTime_diamondArcs {j : γ → ℕ}
@@ -610,87 +599,19 @@ theorem computableInPolyTime_literalArcs {xs : γ → List ℕ} {i : γ → ℕ}
   simp only [List.decide_mem_eq_any]
   fun_prop
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_topNode
-    {j : γ → ℕ}
-    (hj : ComputableTidilyInPolyTime j encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => topNode (j x)) encIn encNat :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_topNode (.of_tidy hj)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_valueNode
-    {j : γ → ℕ} {b : γ → Bool}
-    (hj : ComputableTidilyInPolyTime j encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encBool) :
-    ComputableTidilyInPolyTime (fun x => valueNode (j x) (b x)) encIn encNat :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_valueNode (.of_tidy hj) (.of_tidy hb)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_bottomNode
-    {j : γ → ℕ}
-    (hj : ComputableTidilyInPolyTime j encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => bottomNode (j x)) encIn encNat :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_bottomNode (.of_tidy hj)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_clauseNode
-    {i : γ → ℕ}
-    (hi : ComputableTidilyInPolyTime i encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => clauseNode (i x)) encIn encNat :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_clauseNode (.of_tidy hi)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_diamondArcs
-    {j : γ → ℕ}
-    (hj : ComputableTidilyInPolyTime j encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => diamondArcs (j x)) encIn
-      (encList (encPair encNat encNat)) :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_diamondArcs (.of_tidy hj)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_lastIdx
-    {xs : γ → List ℕ} {v : γ → ℕ}
-    (hxs : ComputableTidilyInPolyTime xs encIn (encList encNat))
-    (hv : ComputableTidilyInPolyTime v encIn encNat) :
-    ComputableTidilyInPolyTime (fun x => lastIdx (xs x) (v x)) encIn encUnary :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_lastIdx (.of_tidy hxs) (.of_tidy hv)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_literalArcs
-    {xs : γ → List ℕ} {i : γ → ℕ}
-    {c : γ → Clause ℕ} (hxs : ComputableTidilyInPolyTime xs encIn (encList encNat))
-    (hi : ComputableTidilyInPolyTime i encIn encUnary)
-    (hc : ComputableTidilyInPolyTime c encIn (encList (encPair encNat encBool))) :
-    ComputableTidilyInPolyTime (fun x => literalArcs (xs x) (i x) (c x)) encIn
-      (encList (encPair encNat encNat)) :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_literalArcs (.of_tidy hxs) (.of_tidy hi)
-      (.of_tidy hc)))
-
 /-- The graph of a formula is polynomial-time in its quantified variables and its clauses. -/
 @[fun_prop]
 theorem computableInPolyTime_formulaGraph {xs : γ → List ℕ} {ψ : γ → CNF ℕ}
     (hxs : ComputableInPolyTime xs encIn (encList encNat))
     (hψ : ComputableInPolyTime ψ encIn encCNF) :
     ComputableInPolyTime (fun x => formulaGraph (xs x) (ψ x)) encIn encGraph := by
-  have hxs := hxs.tidy
-  have hψ := hψ.tidy
-  refine .of_tidy ?_
   unfold formulaGraph formulaArcs encGraph
   unfold encCNF at hψ
   fun_prop
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_formulaGraph
-    {xs : γ → List ℕ} {ψ : γ → CNF ℕ}
-    (hxs : ComputableTidilyInPolyTime xs encIn (encList encNat))
-    (hψ : ComputableTidilyInPolyTime ψ encIn encCNF) :
-    ComputableTidilyInPolyTime (fun x => formulaGraph (xs x) (ψ x)) encIn encGraph :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_formulaGraph (.of_tidy hxs) (.of_tidy hψ)))
-
 /-- **The reduction is polynomial-time.** -/
 theorem computableInPolyTime_reduce :
     ComputableInPolyTime reduce encPrenexCNF (encPair encGraph encNat) := by
-  refine .of_tidy ?_
   unfold reduce QBF.roundVars encPrenexCNF
   simp only [List.decide_mem_eq_any]
   unfold encCNF

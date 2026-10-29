@@ -771,22 +771,13 @@ theorem evalWith_pairsSteps {m : ℕ} {L : List (OrderedPair m)} (hL : L.Nodup)
       _ = _ := by
           rw [hcongr, PMF.uniformOfFintype_update p]
 
-private theorem eval_pi_pure_unit (m : ℕ) :
-    ProbComp.eval (OracleComp.pi (fun _ : Fin m => (pure () : ProbComp Unit))) =
-      PMF.pure (fun _ => ()) := by
-  ext r
-  rw [ProbComp.eval_pi, PMF.pi_apply]
-  have hr : r = fun _ => () := funext fun _ => rfl
-  subst hr
-  simp
-
 theorem evalWith_multiPartyMulProtocol (m : ℕ) (x : Fin m → Bool × Bool) :
     (multiPartyMulProtocol m).evalWith (sharedMulWorld 2) x =
       (PMF.uniformOfFintype (OrderedPair m → Bool)).map fun r =>
         (fun i => viewOfRow i (x i) (matrixOfCoins x r i), realOut x r) := by
   rw [Protocol.evalWith_eq]
   change (ProbComp.eval (OracleComp.pi (fun _ : Fin m => (pure () : ProbComp Unit)))).bind _ = _
-  rw [eval_pi_pure_unit, PMF.pure_bind]
+  rw [ProbComp.eval_pi_pure, PMF.pure_bind]
   simp only [multiPartyMulProtocol, Steps.evalWith_mapState,
     evalWith_pairsSteps (nodup_orderedPairs m), PMF.map_comp]
   refine congrArg (PMF.map · (PMF.uniformOfFintype (OrderedPair m → Bool))) (funext fun r => ?_)
