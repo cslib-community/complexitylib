@@ -409,13 +409,24 @@ lemma countSym_inO {α : Type} {enc : α ↪ List Bool} {p k cur : α → ℕ} {
 public lemma wTime_le' (c : WCtx) : wTime c ≤ 2 * ((eWCtx c).length + 1) ^ 3 := by
   have ht := length_le_length_encList eTape c.1.2.workTapes
   have hd := length_le_length_encList (encPair eKey eAct) c.1.1.table
-  have hl : c.1.2.workTapes.length + c.1.1.table.length + 1 ≤ 2 * ((eWCtx c).length + 1) := by
+  have hl : c.1.2.workTapes.length + c.1.1.table.length + 1 ≤ (eWCtx c).length + 1 := by
     simp only [length_encPair, eCfg_apply, eDesc_apply] at ht hd ⊢
     omega
+  have hdesc : (eDesc c.1.1).length + 1 ≤ (eWCtx c).length + 1 := by
+    simp only [length_encPair]
+    omega
+  have hpos : (encNat c.1.2.inputPos).length + 1 ≤ (eWCtx c).length + 1 := by
+    simp only [length_encPair, eCfg_apply]
+    omega
+  have hproduct := Nat.mul_le_mul_right ((eWCtx c).length + 1) (Nat.mul_le_mul hl hdesc)
+  have hdigits := Nat.pow_le_pow_left hpos 2
+  have hsquare : ((eWCtx c).length + 1) ^ 2 ≤ ((eWCtx c).length + 1) ^ 3 :=
+    Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
   unfold wTime
-  calc _ ≤ 2 * ((eWCtx c).length + 1) * ((eWCtx c).length + 1) ^ 2 :=
-        Nat.mul_le_mul_right _ hl
-    _ = 2 * ((eWCtx c).length + 1) ^ 3 := by ring
+  calc _ ≤ ((eWCtx c).length + 1) * ((eWCtx c).length + 1) * ((eWCtx c).length + 1) +
+          ((eWCtx c).length + 1) ^ 2 := Nat.add_le_add hproduct hdigits
+    _ = ((eWCtx c).length + 1) ^ 3 + ((eWCtx c).length + 1) ^ 2 := by ring
+    _ ≤ 2 * ((eWCtx c).length + 1) ^ 3 := by omega
 
 /-- A step of `g`, with the symbol found by the countdown. -/
 public lemma stepG_inO :

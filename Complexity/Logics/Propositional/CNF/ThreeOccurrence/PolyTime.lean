@@ -35,7 +35,7 @@ binary natural labels are never expanded into unary labels.
 
 namespace Cslib.Logic.PL.CNF
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM
 
 variable {V : Type} (enc : V ↪ List Bool)
 
@@ -56,7 +56,6 @@ private theorem implicationCycle_eq_zip (vs : List V) :
 theorem computableInPolyTime_implicationCycle :
     ComputableInPolyTime (implicationCycle (V := V)) (encList enc)
       (encList (encList (encPair enc encBool))) := by
-  refine .of_tidy ?_
   rw [show (implicationCycle (V := V)) =
     (fun vs => (vs.zip (vs.tail ++ vs.take 1)).map
       (fun p => [(p.1, false), (p.2, true)])) from funext implicationCycle_eq_zip]
@@ -68,18 +67,15 @@ theorem computableInPolyTime_occurrenceClauses :
     ComputableInPolyTime (occurrenceClauses (V := V))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair (encPair enc (encPair encUnary encUnary)) encBool))) := by
-  refine .of_tidy ?_
   unfold occurrenceClauses
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Splitting is polynomial-time, with no unary expansion of original variable labels. -/
 @[fun_prop]
 theorem computableInPolyTime_toThreeOccurrence [DecidableEq V] :
     ComputableInPolyTime (toThreeOccurrence (V := V))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair (encPair enc (encPair encUnary encUnary)) encBool))) := by
-  refine .of_tidy ?_
   unfold toThreeOccurrence occurrenceCopies
   fun_prop
 

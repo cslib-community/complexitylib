@@ -16,8 +16,9 @@ import Complexity.Computability.Circuit.Boolean.PolynomialTime
 import Complexity.Computability.Circuit.Boolean.Substitution
 import Complexity.Computability.Complexity.Classes.BPP.Derandomization.Generator
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
-import Complexity.Tactic.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 
 /-!
 # Derandomizing BPP from average-case hardness
@@ -129,7 +130,11 @@ private theorem computableInPolyTime_nwDecider_of_params {α : Type} (enc : α �
         (fun x => t (enc x).length - 1) (fun x => p.eval (enc x).length))
       enc encBool := by
   intro t b
-  have hlog : ComputableInPolyTime (fun x => t (enc x).length) enc encUnary := by fun_prop
+  have hlog2 : ComputableInPolyTime (fun x => Nat.log 2 (enc x).length) enc encUnary :=
+    ComputableInPolyTime.binary_log_two.comp
+      (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.encoding_length enc))
+  have hlog : ComputableInPolyTime (fun x => t (enc x).length) enc encUnary := by
+    dsimp only [t]; fun_prop
   have hbudget (d : ℕ) : PolyBounded (fun x => (enc x).length) fun x =>
       2 ^ (d * t (enc x).length) := by
     refine PolyBounded.of_polynomiallyBounded (fun x => (enc x).length)

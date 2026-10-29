@@ -13,9 +13,10 @@ public import Complexity.Computability.Complexity.Problems.ThreeSATThree.Countin
 public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
 import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
 /-!
 # Bounded-occurrence reductions for fine-grained decision and model counting
@@ -353,17 +354,17 @@ private theorem exists_computableInO_guardOccurrenceCounter_resources (k : ℕ)
         if (ψ.all fun c => decide (c.length ≤ k)) then
           ((encCNF ψ).length + 1) ^ d + sf (toThreeOccurrenceDense ψ)
         else ((encCNF ψ).length + 1) ^ d) := by
-  obtain ⟨dc, ec, hc⟩ := (computableInPolyTime_all_length_le k).tidy.exists_degree
-  obtain ⟨dr, er, hr⟩ := computableInPolyTime_toThreeOccurrenceDense.tidy.exists_degree
+  obtain ⟨dc, ec, hc⟩ := (computableInPolyTime_all_length_le k).exists_degree
+  obtain ⟨dr, er, hr⟩ := computableInPolyTime_toThreeOccurrenceDense.exists_degree
   obtain ⟨dz, ez, hz⟩ :=
-    (show ComputableTidilyInPolyTime (fun _ : CNF ℕ => (0 : ℕ)) encCNF encNat
+    (show ComputableInPolyTime (fun _ : CNF ℕ => (0 : ℕ)) encCNF encNat
       by fun_prop).exists_degree
   set d := dc + dr + dz + 1
   have hcO := (hc.mono (d' := d) (e' := ec) (by omega) le_rfl).inO
   have hrO := (hr.mono (d' := d) (e' := er) (by omega) le_rfl).inO
   have hzO := (hz.mono (d' := d) (e' := ez) (by omega) le_rfl).inO
   obtain ⟨l, hl⟩ := hrO.length_le
-  exact ⟨d, l, hl, .of_tidy (hcO.ite (hf.tidy.comp hrO) hzO)⟩
+  exact ⟨d, l, hl, hcO.ite (hf.comp hrO) hzO⟩
 
 private theorem guardOccurrenceCounter_time_bound (k d l : ℕ) {tf : CNF ℕ → ℕ}
     (hl : ∀ ψ : CNF ℕ, (encCNF (toThreeOccurrenceDense ψ)).length ≤

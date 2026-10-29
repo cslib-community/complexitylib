@@ -13,7 +13,6 @@ public import Complexity.Computability.Complexity.Problems.TQBF.Closed
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 public import Complexity.Languages.Probabilistic.Iteration
 public import Complexity.Languages.Probabilistic.Oracle.Support
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
@@ -238,164 +237,129 @@ noncomputable def loop (I : LoopInput) : WordOracleComp Unit VState :=
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
-/-! Tidy views of the plain certificates of `Words`, for tidy `fun_prop` below. -/
+private lemma listTail_pt {α γ : Type} {enc : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {list : γ → List α} (hlist : ComputableInPolyTime list encIn (encList enc)) :
+    ComputableInPolyTime (fun x => (list x).tail) encIn (encList enc) := by
+  simpa only [Function.comp_def, List.drop_one] using
+    (dropUnary (encA := enc)).comp (hlist.prod (const 1))
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_subMod {γ : Type} {encIn : γ ↪ List Bool}
-    {p a b : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (ha : ComputableTidilyInPolyTime a encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => subMod (p x) (a x) (b x)) encIn encUnary :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_subMod (.of_tidy hp) (.of_tidy ha)
-      (.of_tidy hb)))
+private lemma listIsEmpty_pt {α γ : Type} {enc : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {list : γ → List α} (hlist : ComputableInPolyTime list encIn (encList enc)) :
+    ComputableInPolyTime (fun x => (list x).isEmpty) encIn encBool := by
+  have heq : (fun x => (list x).isEmpty) = fun x => decide ((list x).length = 0) := by
+    funext x
+    cases list x <;> rfl
+  rw [heq]
+  exact ((length_list enc).comp hlist).decide_eq' (const 0)
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_hornerMod {γ : Type} {encIn : γ ↪ List Bool}
-    {p z : γ → ℕ} {l : γ → List ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hz : ComputableTidilyInPolyTime z encIn encUnary)
-    (hl : ComputableTidilyInPolyTime l encIn (encList encUnary)) :
-    ComputableTidilyInPolyTime (fun x => hornerMod (p x) (z x) (l x)) encIn encUnary :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_hornerMod (.of_tidy hp) (.of_tidy hz)
-      (.of_tidy hl)))
+private lemma listHeadD_pt {α γ : Type} {enc : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    (fallback : α) {list : γ → List α}
+    (hlist : ComputableInPolyTime list encIn (encList enc)) :
+    ComputableInPolyTime (fun x => (list x).headD fallback) encIn enc :=
+  (headD fallback).comp hlist
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_lookupPt {γ : Type} {encIn : γ ↪ List Bool}
-    {pt : γ → List (ℕ × ℕ)} {w : γ → ℕ}
-    (hpt : ComputableTidilyInPolyTime pt encIn (encList (encPair encNat encUnary)))
-    (hw : ComputableTidilyInPolyTime w encIn encNat) :
-    ComputableTidilyInPolyTime (fun x => lookupPt (pt x) (w x)) encIn encUnary :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_lookupPt (.of_tidy hpt) (.of_tidy hw)))
+private lemma unary_mod'_pt {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hb : ComputableInPolyTime b encIn encUnary) :
+    ComputableInPolyTime (fun x => a x % b x) encIn encUnary :=
+  unary_mod.comp (ha.prod hb)
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_normPt {γ : Type} {encIn : γ ↪ List Bool}
-    {p : γ → ℕ} {xs : γ → List ℕ}
-    {pt : γ → List (ℕ × ℕ)} (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hxs : ComputableTidilyInPolyTime xs encIn (encList encNat))
-    (hpt : ComputableTidilyInPolyTime pt encIn (encList (encPair encNat encUnary))) :
-    ComputableTidilyInPolyTime (fun x => normPt (p x) (xs x) (pt x)) encIn
-      (encList (encPair encNat encUnary)) :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_normPt (.of_tidy hp) (.of_tidy hxs)
-      (.of_tidy hpt)))
+private lemma unary_decide_eq_pt {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hb : ComputableInPolyTime b encIn encUnary) :
+    ComputableInPolyTime (fun x => decide (a x = b x)) encIn encBool :=
+  ha.decide_eq' hb
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_updatePt {γ : Type} {encIn : γ ↪ List Bool}
-    {p : γ → ℕ} {xs : γ → List ℕ}
-    {pt : γ → List (ℕ × ℕ)} {v z : γ → ℕ} (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hxs : ComputableTidilyInPolyTime xs encIn (encList encNat))
-    (hpt : ComputableTidilyInPolyTime pt encIn (encList (encPair encNat encUnary)))
-    (hv : ComputableTidilyInPolyTime v encIn encNat)
-    (hz : ComputableTidilyInPolyTime z encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => updatePt (p x) (xs x) (pt x) (v x) (z x)) encIn
-      (encList (encPair encNat encUnary)) :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_updatePt (.of_tidy hp) (.of_tidy hxs)
-      (.of_tidy hpt) (.of_tidy hv) (.of_tidy hz)))
+attribute [local fun_prop] ComputableInPolyTime.bool_and' listTail_pt listIsEmpty_pt listHeadD_pt
+  unary_mod'_pt unary_decide_eq_pt computableInPolyTime_connectiveMod
+  computableInPolyTime_operatorMod
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_width {γ : Type} {encIn : γ ↪ List Bool}
-    {p : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => width (p x)) encIn encUnary :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_width (.of_tidy hp)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_replyLimit {γ : Type} {encIn : γ ↪ List Bool}
-    {p D : γ → ℕ}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hD : ComputableTidilyInPolyTime D encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => replyLimit (p x) (D x)) encIn encUnary :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_replyLimit (.of_tidy hp) (.of_tidy hD)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_decodeReply {γ : Type} {encIn : γ ↪ List Bool}
-    {p D : γ → ℕ} {word : γ → List Bool}
-    (hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (hD : ComputableTidilyInPolyTime D encIn encUnary)
-    (hword : ComputableTidilyInPolyTime word encIn encBits) :
-    ComputableTidilyInPolyTime (fun x => decodeReply (p x) (D x) (word x)) encIn
-      (encList encUnary) :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_decodeReply (.of_tidy hp) (.of_tidy hD)
-      (.of_tidy hword)))
-
-@[local fun_prop] private lemma xs_pt :
-    ComputableTidilyInPolyTime StepData.xs encStepData (encList encNat) := by
+private lemma xs_pt :
+    ComputableInPolyTime StepData.xs encStepData (encList encNat) := by
   unfold StepData.xs
   fun_prop
 
-@[local fun_prop] private lemma modulus_pt :
-    ComputableTidilyInPolyTime StepData.modulus encStepData encUnary := by
+private lemma modulus_pt :
+    ComputableInPolyTime StepData.modulus encStepData encUnary := by
   unfold StepData.modulus
   fun_prop
 
-@[local fun_prop] private lemma degree_pt :
-    ComputableTidilyInPolyTime StepData.degree encStepData encUnary := by
+private lemma degree_pt :
+    ComputableInPolyTime StepData.degree encStepData encUnary := by
   unfold StepData.degree
   fun_prop
 
-@[local fun_prop] private lemma tokens_pt :
-    ComputableTidilyInPolyTime (fun a : StepData => a.2.1) encStepData (encList encArithToken) := by
+private lemma tokens_pt :
+    ComputableInPolyTime (fun a : StepData => a.2.1) encStepData (encList encArithToken) := by
   fun_prop
 
-@[local fun_prop] private lemma head_pt :
-    ComputableTidilyInPolyTime StepData.head encStepData encArithToken := by
+attribute [local fun_prop] xs_pt modulus_pt degree_pt tokens_pt
+
+private lemma head_pt :
+    ComputableInPolyTime StepData.head encStepData encArithToken := by
   unfold StepData.head
   fun_prop
 
-@[local fun_prop] private lemma top_pt :
-    ComputableTidilyInPolyTime StepData.top encStepData encClaim := by
+private lemma top_pt :
+    ComputableInPolyTime StepData.top encStepData encClaim := by
   unfold StepData.top
   fun_prop
 
-@[local fun_prop] private lemma below_pt :
-    ComputableTidilyInPolyTime StepData.below encStepData (encList encClaim) := by
+private lemma below_pt :
+    ComputableInPolyTime StepData.below encStepData (encList encClaim) := by
   unfold StepData.below
   fun_prop
 
-@[local fun_prop] private lemma message_pt :
-    ComputableTidilyInPolyTime message encStepData encBits := by
-  unfold message
-  exact (encode (encPair (encList encArithToken) encPt)).comp (by fun_prop)
+attribute [local fun_prop] head_pt top_pt below_pt
 
-@[local fun_prop] private lemma reject_pt :
-    ComputableTidilyInPolyTime reject encStepData encVState := by
+private lemma message_pt :
+    ComputableInPolyTime message encStepData encBits := by
+  unfold message
+  exact encoding_comp (by fun_prop)
+
+private lemma reject_pt :
+    ComputableInPolyTime reject encStepData encVState := by
   unfold reject
   fun_prop
 
-@[local fun_prop] private lemma replyOf_pt :
-    ComputableTidilyInPolyTime (fun pair : StepData × List Bool => replyOf pair.1 pair.2)
+private lemma replyOf_pt :
+    ComputableInPolyTime (fun pair : StepData × List Bool => replyOf pair.1 pair.2)
       (encPair encStepData encBits) (encList encUnary) := by
   unfold replyOf
   fun_prop
 
+attribute [local fun_prop] message_pt reject_pt replyOf_pt
+
 private lemma binNext_pt (o : ArithQBF.Connective) :
-    ComputableTidilyInPolyTime (fun pair : StepData × List Bool => binNext o pair.1 pair.2)
+    ComputableInPolyTime (fun pair : StepData × List Bool => binNext o pair.1 pair.2)
       (encPair encStepData encBits) encVState := by
-  have h0 : ComputableTidilyInPolyTime
+  have h0 : ComputableInPolyTime
       (fun pair : StepData × List Bool => (replyOf pair.1 pair.2).getD 0 0)
       (encPair encStepData encBits) encUnary :=
-    (listGetD 0).comp (replyOf_pt.prod (const 0))
-  have h1 : ComputableTidilyInPolyTime
+    listGetDWithInput replyOf_pt (const 0) 0
+  have h1 : ComputableInPolyTime
       (fun pair : StepData × List Bool => (replyOf pair.1 pair.2).getD 1 0)
       (encPair encStepData encBits) encUnary :=
-    (listGetD 0).comp (replyOf_pt.prod (const 1))
-  cases o <;> unfold binNext <;> simp only [connectiveMod] <;> fun_prop
+    listGetDWithInput replyOf_pt (const 1) 0
+  unfold binNext
+  fun_prop
 
 private lemma opCheck_pt (o : ArithQBF.Operator) :
-    ComputableTidilyInPolyTime (fun pair : StepData × List Bool => opCheck o pair.1 pair.2)
+    ComputableInPolyTime (fun pair : StepData × List Bool => opCheck o pair.1 pair.2)
       (encPair encStepData encBits) encBool := by
-  cases o <;> unfold opCheck <;> simp only [operatorMod] <;> fun_prop
+  unfold opCheck
+  fun_prop
 
 private lemma opNext_pt :
-    ComputableTidilyInPolyTime (fun q : (StepData × List Bool) × ℕ => opNext q.1.1 q.1.2 q.2)
+    ComputableInPolyTime (fun q : (StepData × List Bool) × ℕ => opNext q.1.1 q.1.2 q.2)
       (encPair (encPair encStepData encBits) encUnary) encVState := by
   unfold opNext
   fun_prop
 
 private lemma ask_pt : IsOraclePPTOn encStepData encBits ask :=
-  IsOraclePPTOn.query_take () message_pt (by fun_prop)
+  IsOraclePPTOn.query_take' () message_pt (by fun_prop)
 
 private lemma opCont_pt (o : ArithQBF.Operator) :
     IsOraclePPTOn (encPair encStepData encBits) encVState (fun pair => opCont o pair.1 pair.2) := by
@@ -403,20 +367,20 @@ private lemma opCont_pt (o : ArithQBF.Operator) :
   have hsample : IsOraclePPTOn (Operation := Unit) (encPair encStepData encBits) encUnary
       (fun pair : StepData × List Bool => ProbOracleComp.sample (sampleMod pair.1.modulus)) :=
     (isPPTOn_sampleMod (by fun_prop)).isOraclePPTOn
-  exact IsOraclePPTOn.cond (opCheck_pt o) (hsample.map_with opNext_pt)
-    ((ComputableTidilyInPolyTime.isOraclePPTOn (f := fun pair : StepData × List Bool =>
+  exact IsOraclePPTOn.cond' (opCheck_pt o) (hsample.map_with' opNext_pt)
+    ((ComputableInPolyTime.isOraclePPTOn (f := fun pair : StepData × List Bool =>
       reject pair.1) (by fun_prop)))
 
 private lemma stepAt_pt (k : ArithQBF.Kind) :
     IsOraclePPTOn encStepData encVState (stepAt k) := by
   cases k
-  · exact ComputableTidilyInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail, a.below,
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail, a.below,
       decide (lookupPt a.top.1 a.head.2 % a.modulus = a.top.2 % a.modulus))) (by fun_prop)
-  · exact ComputableTidilyInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail, a.below,
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail, a.below,
       decide (1 % a.modulus = a.top.2 % a.modulus))) (by fun_prop)
-  · exact ComputableTidilyInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail, a.below,
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail, a.below,
       decide (0 % a.modulus = a.top.2 % a.modulus))) (by fun_prop)
-  · exact ComputableTidilyInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail,
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.2.1.tail,
       (normPt a.modulus a.xs a.top.1, subMod a.modulus 1 a.top.2) :: a.below, true))
       (by fun_prop)
   · exact ask_pt.bind_with (binNext_pt .and).isOraclePPTOn
@@ -429,10 +393,10 @@ private lemma stepAt_pt (k : ArithQBF.Kind) :
 private theorem isOraclePPTOn_step :
     IsOraclePPTOn encStepData encVState (fun a : StepData => step a.1 a.2) := by
   unfold step
-  exact IsOraclePPTOn.cond (by fun_prop)
-    (IsOraclePPTOn.finite_cases (tagEncoding := encFinEnum ArithQBF.Kind)
+  exact IsOraclePPTOn.cond' (by fun_prop)
+    (IsOraclePPTOn.finite_cases' (tagEncoding := encFinEnum ArithQBF.Kind)
       (tag := fun a : StepData => a.head.1) (branch := stepAt) (by fun_prop) stepAt_pt)
-    (ComputableTidilyInPolyTime.isOraclePPTOn (f := fun a : StepData => a.2) (by fun_prop))
+    (ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => a.2) (by fun_prop))
 
 end PolyTime
 
@@ -551,9 +515,9 @@ theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {n
 
 section LoopPolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
-private lemma init_pt : ComputableTidilyInPolyTime init encLoopInput encVState := by
+private lemma init_pt : ComputableInPolyTime init encLoopInput encVState := by
   unfold init
   fun_prop
 
@@ -576,7 +540,7 @@ private lemma growth_polyBounded :
 /-- **The machine is strict oracle PPT** in its encoded input. -/
 private theorem isOraclePPTOn_loop : IsOraclePPTOn encLoopInput encVState loop := by
   unfold loop
-  exact IsOraclePPTOn.iterateWith_of_bounded_growth (count := fun I => I.2.length) (by fun_prop)
+  exact IsOraclePPTOn.iterateWith_of_bounded_growth' (count := fun I => I.2.length) (by fun_prop)
     init_pt isOraclePPTOn_step growth_polyBounded
     fun I st _ h => length_encVState_le_of_mem_support_step I st h
 
@@ -627,32 +591,45 @@ theorem lt_modulus (ψ : QBF ℕ) : primeBound ψ < modulus ψ := (prime_modulus
 
 section VerifierPolyTime
 
-open ComputableTidilyInPolyTime TQBF
+open ComputableInPolyTime TQBF
 
-@[local fun_prop] private lemma tokens_pt : ComputableTidilyInPolyTime QBF.tokens encQBF
-    (encList encToken) :=
-  computableInPolyTime_tokens.tidy
+private lemma cond_pt {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
+    {c : α → Bool} {f g : α → β}
+    (hc : ComputableInPolyTime c encIn encBool)
+    (hf : ComputableInPolyTime f encIn encOut)
+    (hg : ComputableInPolyTime g encIn encOut) :
+    ComputableInPolyTime (fun x => if c x then f x else g x) encIn encOut :=
+  ite hc hf hg
 
-@[local fun_prop] private lemma isQuantifier_pt :
-    ComputableTidilyInPolyTime QBF.Kind.isQuantifier encKind encBool := of_finite _
+private lemma qbf_tokens_pt : ComputableInPolyTime QBF.tokens encQBF (encList encToken) :=
+  computableInPolyTime_tokens
 
-@[local fun_prop] private lemma arith_pt :
-    ComputableTidilyInPolyTime QBF.Kind.arith encKind (encFinEnum ArithQBF.Kind) := of_finite _
+private lemma isQuantifier_pt :
+    ComputableInPolyTime QBF.Kind.isQuantifier encKind encBool := of_finite _
 
-@[local fun_prop] private lemma lin_pt {α : Type} {enc : α ↪ List Bool} :
-    ComputableTidilyInPolyTime (fun _ : α => ArithQBF.Kind.lin) enc (encFinEnum ArithQBF.Kind) :=
+private lemma arith_pt :
+    ComputableInPolyTime QBF.Kind.arith encKind (encFinEnum ArithQBF.Kind) := of_finite _
+
+private lemma lin_pt {α : Type} {enc : α ↪ List Bool} :
+    ComputableInPolyTime (fun _ : α => ArithQBF.Kind.lin) enc (encFinEnum ArithQBF.Kind) :=
   const _
 
-private lemma linVars_pt : ComputableTidilyInPolyTime linVars encQBF (encList encNat) := by
+attribute [local fun_prop] cond_pt qbf_tokens_pt isQuantifier_pt arith_pt lin_pt
+
+private lemma linVars_pt : ComputableInPolyTime linVars encQBF (encList encNat) := by
   unfold linVars
   fun_prop
 
-private lemma modulus_qbf_pt : ComputableTidilyInPolyTime modulus encQBF encUnary := by
-  unfold modulus primeBound
-  exact findGreatest (by fun_prop) (unary_decide_prime.comp (snd _ _))
+private lemma modulus_qbf_pt : ComputableInPolyTime modulus encQBF encUnary := by
+  have hbnd : ComputableInPolyTime (fun ψ => 2 * primeBound ψ) encQBF encUnary := by
+    unfold primeBound
+    fun_prop
+  unfold modulus
+  exact .of_tidy (ComputableTidilyInPolyTime.findGreatest hbnd.tidy
+    (ComputableTidilyInPolyTime.unary_decide_prime.comp (.snd _ _)))
 
-private lemma loopInput_pt : ComputableTidilyInPolyTime loopInput encQBF encLoopInput := by
-  have hexpand : ComputableTidilyInPolyTime (fun p : QBF ℕ × (QBF.Kind × ℕ) =>
+private lemma loopInput_pt : ComputableInPolyTime loopInput encQBF encLoopInput := by
+  have hexpand : ComputableInPolyTime (fun p : QBF ℕ × (QBF.Kind × ℕ) =>
       QBF.expandToken (linVars p.1) p.2) (encPair encQBF encToken) (encList encArithToken) := by
     have := linVars_pt
     unfold QBF.expandToken
@@ -666,9 +643,9 @@ private lemma loopInput_pt : ComputableTidilyInPolyTime loopInput encQBF encLoop
 realizes it against every stateful prover. -/
 theorem isOraclePPTOn_verifier : IsOraclePPTOn encQBF encBool verifier := by
   unfold verifier
-  exact IsOraclePPTOn.cond computableInPolyTime_decide_closed.tidy
-    ((isOraclePPTOn_loop.preprocess loopInput_pt).map (by fun_prop))
-    (ComputableTidilyInPolyTime.isOraclePPTOn (f := fun _ : QBF ℕ => false) (const false))
+  exact IsOraclePPTOn.cond' computableInPolyTime_decide_closed
+    ((isOraclePPTOn_loop.preprocess' loopInput_pt).map' (by fun_prop))
+    (ComputableInPolyTime.isOraclePPTOn (f := fun _ : QBF ℕ => false) (const false))
 
 end VerifierPolyTime
 

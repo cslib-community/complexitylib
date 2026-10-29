@@ -12,7 +12,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
 
 /-!
@@ -459,7 +458,7 @@ namespace VertexCover.Buss
 
 /-! ### Running time -/
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 /-- Computing a degree is polynomial-time, with the degree in unary. -/
 @[fun_prop]
@@ -525,46 +524,32 @@ and converted to binary to compare it with the binary target. -/
 @[fun_prop]
 theorem computableInPolyTime_accept :
     ComputableInPolyTime accept (encPair encGraph encNat) encBool := by
-  refine .of_tidy ?_
   unfold accept
-  have := computableInPolyTime_high.tidy
-  have := computableInPolyTime_active.tidy
-  have := computableInPolyTime_cap.tidy
-  exact bool_and' (bool_and'
-    ((unary_to_binary.comp computableInPolyTime_cap.tidy).decide_eq' (snd _ _)) (by fun_prop))
-    (by fun_prop)
+  refine bool_and' (bool_and' ?_ (by fun_prop)) (by fun_prop)
+  exact ((unary_to_binary.comp computableInPolyTime_cap).beq (snd _ _)).of_enc_eq
+    fun _ => by simp [beq_eq_decide]
 
 /-- Listing the kernel edges is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_edges :
     ComputableInPolyTime edges (encPair encGraph encNat)
       (encList (encPair encNat encNat)) := by
-  have hact := computableInPolyTime_active.tidy
-  have hact1 : ComputableTidilyInPolyTime (fun p : (Graph × ℕ) × ℕ => active p.1)
-      (encPair (encPair encGraph encNat) encUnary) (encList encNat) :=
-    hact.comp (fst _ _)
-  have hact2 : ComputableTidilyInPolyTime (fun p : ((Graph × ℕ) × ℕ) × ℕ => active p.1.1)
-      (encPair (encPair (encPair encGraph encNat) encUnary) encUnary) (encList encNat) :=
-    hact1.comp (fst _ _)
   unfold edges
-  refine ComputableInPolyTime.flatMapWithInput (.of_tidy (by fun_prop)) ?_
-  refine ComputableInPolyTime.mapWithInput
-    (ComputableInPolyTime.filterWithInput (.of_tidy (by fun_prop)) ?_)
-    (.of_tidy (by fun_prop))
-  exact Graph.computableInPolyTime_adjBool_comp (.of_tidy (by fun_prop))
-    (ComputableInPolyTime.listGetDWithInput (.of_tidy hact2) (.of_tidy (by fun_prop)) 0)
-    (ComputableInPolyTime.listGetDWithInput (.of_tidy hact2) (.of_tidy (by fun_prop)) 0)
+  refine flatMapWithInput (by fun_prop) ?_
+  refine mapWithInput (filterWithInput (by fun_prop) ?_) (by fun_prop)
+  exact Graph.computableInPolyTime_adjBool_comp (by fun_prop)
+    (listGetDWithInput (by fun_prop) (by fun_prop) 0)
+    (listGetDWithInput (by fun_prop) (by fun_prop) 0)
 
 /-- Building the kernel graph is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_graph :
     ComputableInPolyTime graph (encPair encGraph encNat) encGraph := by
-  refine .of_tidy ?_
-  have hV : ComputableTidilyInPolyTime (fun x : Graph × ℕ => List.range (numVertices x))
+  have hV : ComputableInPolyTime (fun x : Graph × ℕ => List.range (numVertices x))
       (encPair encGraph encNat) (encList encNat) := by
     simpa only [Function.comp_def, List.map_id'] using
-      (map unary_to_binary).comp (range.comp computableInPolyTime_numVertices.tidy)
-  exact (hV.prod computableInPolyTime_edges.tidy).of_enc_eq fun _ => rfl
+      (map unary_to_binary).comp (range.comp computableInPolyTime_numVertices)
+  exact (hV.prod computableInPolyTime_edges).of_enc_eq fun _ => rfl
 
 end VertexCover.Buss
 
@@ -615,12 +600,11 @@ theorem length_encode_bussKernel_le (x : Graph × ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_bussKernel :
     ComputableInPolyTime bussKernel (encPair encGraph encNat) (encPair encGraph encNat) := by
-  refine .of_tidy ?_
   unfold bussKernel
-  exact computableInPolyTime_accept.tidy.cond
-    (computableInPolyTime_graph.tidy.prod
-      (ComputableTidilyInPolyTime.unary_to_binary.comp computableInPolyTime_param.tidy))
-    (ComputableTidilyInPolyTime.const _)
+  exact ComputableInPolyTime.ite' computableInPolyTime_accept
+    (computableInPolyTime_graph.prod
+      (ComputableInPolyTime.unary_to_binary.comp computableInPolyTime_param))
+    (ComputableInPolyTime.const _)
 
 /-- Buss's kernel has target at most `k`, or `1`. -/
 theorem bussKernel_snd_le (x : Graph × ℕ) : (bussKernel x).2 ≤ max x.2 1 := by

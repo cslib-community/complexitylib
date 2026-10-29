@@ -13,6 +13,8 @@ import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Directed Hamiltonian paths and cycles are NP-hard
@@ -72,7 +74,7 @@ vertex that no arc enters. The top of the first diamond is such a vertex
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 namespace SAT
 
@@ -182,10 +184,10 @@ namespace SAT
 /-! ### Polynomial-time reductions -/
 
 /-- The detours of the diamond graph are computable in polynomial time. -/
-private theorem computableTidilyInPolyTime_diamondDetours :
-    ComputableTidilyInPolyTime diamondDetours encCNF (encList Diamond.encDetour) := by
-  have hvars := computableInPolyTime_vars.tidy
-  unfold diamondDetours
+private theorem computableInPolyTime_diamondDetours :
+    ComputableInPolyTime diamondDetours encCNF (encList Diamond.encDetour) := by
+  have hvars := computableInPolyTime_vars
+  unfold diamondDetours encCNF
   fun_prop
 
 /-- The diamond graph is computable in polynomial time: node labels are computed in unary from
@@ -193,16 +195,18 @@ diamond, row, clause and first-occurrence indices, then converted to binary. -/
 @[fun_prop]
 theorem computableInPolyTime_diamondGraph :
     ComputableInPolyTime diamondGraph encCNF encGraph :=
-  (Diamond.computableInPolyTime_graph
-    (.of_tidy ((length_list encNat).comp computableInPolyTime_vars.tidy))
-    (.of_tidy ((length_list _).comp (fst _ _))) (.of_tidy (length_list _))
-      (.of_tidy computableTidilyInPolyTime_diamondDetours))
+  Diamond.computableInPolyTime_graph
+    ((length_list encNat).comp computableInPolyTime_vars)
+    ((length_list _).comp (fst _ _)) (length_list _)
+    computableInPolyTime_diamondDetours
 
 /-- The reduction `toDirHamPath` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toDirHamPath :
     ComputableInPolyTime toDirHamPath encCNF (encPair encGraph (encPair encNat encNat)) := by
   have hvars := computableInPolyTime_vars
+  have hlen : ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary :=
+    (length_list encNat).comp hvars
   unfold toDirHamPath
   fun_prop
 
@@ -216,10 +220,10 @@ theorem toDirHamCycle_mem_iff (φ : CNF ℕ) : toDirHamCycle φ ∈ DirHamCycle 
 @[fun_prop]
 theorem computableInPolyTime_toDirHamCycle :
     ComputableInPolyTime toDirHamCycle encCNF encGraph :=
-  (Diamond.computableInPolyTime_cycleGraph
-    (.of_tidy ((length_list encNat).comp computableInPolyTime_vars.tidy))
-    (.of_tidy ((length_list _).comp (fst _ _))) (.of_tidy (length_list _))
-      (.of_tidy computableTidilyInPolyTime_diamondDetours))
+  Diamond.computableInPolyTime_cycleGraph
+    ((length_list encNat).comp computableInPolyTime_vars)
+    ((length_list _).comp (fst _ _)) (length_list _)
+    computableInPolyTime_diamondDetours
 
 end SAT
 

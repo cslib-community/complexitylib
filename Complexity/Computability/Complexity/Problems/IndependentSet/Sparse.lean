@@ -13,6 +13,7 @@ import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Foundations.Data.List.Counting
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # A reduction of linear size to independent sets
@@ -61,7 +62,7 @@ linear in `m` for fixed `k`.
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 namespace SAT
 
@@ -450,39 +451,38 @@ computed in unary from clause, position and variable indices, then converted to 
 @[fun_prop]
 theorem computableInPolyTime_toSparseIndependentSet :
     ComputableInPolyTime toSparseIndependentSet encCNF (encPair encGraph encNat) := by
-  refine .of_tidy ?_
-  have hdv : ComputableTidilyInPolyTime CNF.distinctVars
+  have hdv : ComputableInPolyTime CNF.distinctVars
       (encList (encList (encPair encNat encBool))) (encList encNat) :=
-    (CNF.computableInPolyTime_distinctVars encNat).tidy
-  have hlit : ComputableTidilyInPolyTime (fun p : CNF ℕ × Literal ℕ => literalVertex p.1 p.2)
+    CNF.computableInPolyTime_distinctVars encNat
+  have hlit : ComputableInPolyTime (fun p : CNF ℕ × Literal ℕ => literalVertex p.1 p.2)
       (encPair (encList (encList (encPair encNat encBool))) (encPair encNat encBool)) encNat := by
     unfold literalVertex
     exact unary_to_binary.comp (by fun_prop)
-  have hocc : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => occurrenceVertex p.1 p.2)
+  have hocc : ComputableInPolyTime (fun p : ℕ × ℕ => occurrenceVertex p.1 p.2)
       (encPair encUnary encUnary) encNat := by
     unfold occurrenceVertex
     exact unary_to_binary.comp (by fun_prop)
-  have hk : ComputableTidilyInPolyTime
+  have hk : ComputableInPolyTime
       (fun φ : CNF ℕ => φ.distinctVars.length + φ.length)
       (encList (encList (encPair encNat encBool))) encNat :=
     unary_to_binary.comp (unary_add.comp (((length_list encNat).comp hdv).prod (length_list _)))
-  have hV : ComputableTidilyInPolyTime vertices (encList (encList (encPair encNat encBool)))
+  have hV : ComputableInPolyTime vertices (encList (encList (encPair encNat encBool)))
       (encList encNat) := by
     unfold vertices
     fun_prop
-  have hE₁ : ComputableTidilyInPolyTime literalEdges (encList (encList (encPair encNat encBool)))
+  have hE₁ : ComputableInPolyTime literalEdges (encList (encList (encPair encNat encBool)))
       (encList (encPair encNat encNat)) := by
     unfold literalEdges
     fun_prop
-  have hE₂ : ComputableTidilyInPolyTime cliqueEdges (encList (encList (encPair encNat encBool)))
+  have hE₂ : ComputableInPolyTime cliqueEdges (encList (encList (encPair encNat encBool)))
       (encList (encPair encNat encNat)) := by
     unfold cliqueEdges
     fun_prop
-  have hE₃ : ComputableTidilyInPolyTime conflictEdges (encList (encList (encPair encNat encBool)))
+  have hE₃ : ComputableInPolyTime conflictEdges (encList (encList (encPair encNat encBool)))
       (encList (encPair encNat encNat)) := by
     unfold conflictEdges
     fun_prop
-  have hE : ComputableTidilyInPolyTime edges (encList (encList (encPair encNat encBool)))
+  have hE : ComputableInPolyTime edges (encList (encList (encPair encNat encBool)))
       (encList (encPair encNat encNat)) := by
     unfold edges
     fun_prop

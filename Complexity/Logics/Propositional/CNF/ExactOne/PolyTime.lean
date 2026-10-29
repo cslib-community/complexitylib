@@ -54,8 +54,6 @@ theorem Clause.atMostOneOccurrences_eq_flatMap (c : Clause V) :
     rw [ih]
     rfl
 
-attribute [local fun_prop] ComputableInPolyTime.tidy
-
 /-- The positional pair clauses can be emitted in polynomial time. -/
 @[fun_prop]
 theorem Clause.computableInPolyTime_atMostOneOccurrences (enc : V ↪ List Bool) :
@@ -66,7 +64,6 @@ theorem Clause.computableInPolyTime_atMostOneOccurrences (enc : V ↪ List Bool)
         [Std.Sat.Literal.negate p.1, Std.Sat.Literal.negate l] :=
     funext Clause.atMostOneOccurrences_eq_flatMap
   rw [he]
-  refine .of_tidy ?_
   fun_prop
 
 /-- Exact-one clause encoding is polynomial-time for any fixed variable encoding. -/
@@ -83,7 +80,6 @@ theorem CNF.computableInPolyTime_oneEncoding (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.oneEncoding (V := V))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair enc encBool))) := by
-  refine .of_tidy ?_
   unfold CNF.oneEncoding
   fun_prop
 
@@ -111,37 +107,37 @@ private theorem clause_eq_selected (i : ℕ) (c : Clause V) :
   rcases c with _ | ⟨p, _ | ⟨q, _ | ⟨r, rest⟩⟩⟩ <;>
     simp [clause, selectedLiteral, List.getD]
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableInPolyTime_selectedLiteral (enc : V ↪ List Bool) (k : ℕ) :
-    ComputableTidilyInPolyTime (fun p : ℕ × Clause V => selectedLiteral p.1 k p.2)
+    ComputableInPolyTime (fun p : ℕ × Clause V => selectedLiteral p.1 k p.2)
       (encPair encUnary (encList (encPair enc encBool)))
       (encPair (encVariable enc) encBool) := by
-  have hm : ComputableTidilyInPolyTime (fun p : ℕ × Clause V => p.2.map lift)
+  have hm : ComputableInPolyTime (fun p : ℕ × Clause V => p.2.map lift)
       (encPair encUnary (encList (encPair enc encBool)))
       (encList (encPair (encVariable enc) encBool)) := by
     unfold lift encVariable
     fun_prop
-  have hl : ComputableTidilyInPolyTime (fun p : ℕ × Clause V => p.2.length)
+  have hl : ComputableInPolyTime (fun p : ℕ × Clause V => p.2.length)
       (encPair encUnary (encList (encPair enc encBool))) encUnary := by fun_prop
-  have hg : ComputableTidilyInPolyTime
+  have hg : ComputableInPolyTime
       (fun p : ℕ × Clause V => (p.2.map lift).getD k (padding 0 0))
       (encPair encUnary (encList (encPair enc encBool)))
       (encPair (encVariable enc) encBool) :=
-    (ComputableTidilyInPolyTime.listGetD (encA := encPair (encVariable enc) encBool)
+    (ComputableInPolyTime.listGetD (encA := encPair (encVariable enc) encBool)
       (encL := encList (encPair (encVariable enc) encBool)) (padding 0 0)).comp
-      (hm.prod (ComputableTidilyInPolyTime.const k))
-  have hp : ComputableTidilyInPolyTime (fun p : ℕ × Clause V => padding p.1 k)
+      (hm.prod (ComputableInPolyTime.const k))
+  have hp : ComputableInPolyTime (fun p : ℕ × Clause V => padding p.1 k)
       (encPair encUnary (encList (encPair enc encBool)))
       (encPair (encVariable enc) encBool) := by
     unfold padding aux encVariable
     fun_prop
   unfold selectedLiteral
-  exact ComputableTidilyInPolyTime.ite_decide
-    (ComputableTidilyInPolyTime.unary_lt' (ComputableTidilyInPolyTime.const k) hl) hg hp
+  exact ComputableInPolyTime.ite_decide
+    (ComputableInPolyTime.unary_lt' (ComputableInPolyTime.const k) hl) hg hp
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableInPolyTime_core (enc : V ↪ List Bool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ℕ × Literal (Variable V) × Literal (Variable V) × Literal (Variable V) =>
         core p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair (encPair (encVariable enc) encBool)
@@ -150,9 +146,9 @@ private theorem computableInPolyTime_core (enc : V ↪ List Bool) :
   unfold core aux encVariable ExactOneGadget.disjunctionClauses Std.Sat.Literal.negate
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableInPolyTime_forcePadding (enc : V ↪ List Bool) (k : ℕ) :
-    ComputableTidilyInPolyTime (fun i : ℕ => forcePadding (V := V) i k) encUnary
+    ComputableInPolyTime (fun i : ℕ => forcePadding (V := V) i k) encUnary
       (encList (encList (encPair (encVariable enc) encBool))) := by
   unfold forcePadding aux encVariable ExactOneGadget.forceFalseClauses
   fun_prop
@@ -163,7 +159,6 @@ theorem computableInPolyTime_clause (enc : V ↪ List Bool) :
     ComputableInPolyTime (fun p : ℕ × Clause V => clause p.1 p.2)
       (encPair encUnary (encList (encPair enc encBool)))
       (encList (encList (encPair (encVariable enc) encBool))) := by
-  refine .of_tidy ?_
   have hs : (fun p : ℕ × Clause V => clause p.1 p.2) = fun p =>
       core p.1 (selectedLiteral p.1 0 p.2) (selectedLiteral p.1 1 p.2)
         (selectedLiteral p.1 2 p.2) ++
@@ -180,8 +175,6 @@ theorem computableInPolyTime_formula (enc : V ↪ List Bool) :
     ComputableInPolyTime (formula (V := V))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair (encVariable enc) encBool))) := by
-  have hc := (computableInPolyTime_clause enc).tidy
-  refine .of_tidy ?_
   unfold formula
   fun_prop
 
@@ -197,16 +190,61 @@ variable {V : Type}
 def encVariable (enc : V ↪ List Bool) : Variable V ↪ List Bool :=
   encSum enc (encPair (encPair encUnary encUnary) encUnary)
 
+@[local fun_prop]
+private theorem computableInPolyTime_zipIdx {α : Type} (enc : α ↪ List Bool) :
+    ComputableInPolyTime (fun list : List α => list.zipIdx)
+      (encList enc) (encList (encPair enc encUnary)) := by
+  fun_prop
+
+private theorem computableInPolyTime_positiveLiteral (enc : V ↪ List Bool) :
+    ComputableInPolyTime
+      (fun p : (ℕ × Clause V) × (Literal V × ℕ) => positiveLiteral p.1.1 p.2.2 p.2.1)
+      (encPair (encPair encUnary (encList (encPair enc encBool)))
+        (encPair (encPair enc encBool) encUnary))
+      (encPair (encVariable enc) encBool) := by
+  unfold positiveLiteral auxiliary encVariable
+  fun_prop
+
+private theorem computableInPolyTime_complementBlock (enc : V ↪ List Bool) :
+    ComputableInPolyTime
+      (fun p : (ℕ × Clause V) × (Literal V × ℕ) => complementBlock p.1.1 p.2.2 p.2.1)
+      (encPair (encPair encUnary (encList (encPair enc encBool)))
+        (encPair (encPair enc encBool) encUnary))
+      (encList (encList (encPair (encVariable enc) encBool))) := by
+  unfold complementBlock auxiliary encVariable
+    ExactOneGadget.complementClauses ExactOneGadget.forceFalseClauses
+  fun_prop
+
+private theorem computableInPolyTime_clauseClauses (enc : V ↪ List Bool) :
+    ComputableInPolyTime (fun p : ℕ × Clause V => clauseClauses p.1 p.2)
+      (encPair encUnary (encList (encPair enc encBool)))
+      (encList (encList (encPair (encVariable enc) encBool))) := by
+  have hzip : ComputableInPolyTime (fun p : ℕ × Clause V => p.2.zipIdx)
+      (encPair encUnary (encList (encPair enc encBool)))
+      (encList (encPair (encPair enc encBool) encUnary)) :=
+    (computableInPolyTime_zipIdx (encPair enc encBool)).comp'
+      (ComputableInPolyTime.snd encUnary (encList (encPair enc encBool)))
+  exact ComputableInPolyTime.listAppend'
+    (ComputableInPolyTime.cons'
+      (ComputableInPolyTime.mapWithInput hzip (computableInPolyTime_positiveLiteral enc))
+      (ComputableInPolyTime.const []))
+    (ComputableInPolyTime.flatMapWithInput hzip (computableInPolyTime_complementBlock enc))
+
 /-- Eliminating all negative occurrences is native polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_formula (enc : V ↪ List Bool) :
     ComputableInPolyTime (formula (V := V))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair (encVariable enc) encBool))) := by
-  refine .of_tidy ?_
-  unfold formula clauseClauses complementBlock positiveLiteral auxiliary encVariable
-    ExactOneGadget.complementClauses ExactOneGadget.forceFalseClauses
-  fun_prop
+  have hzip := computableInPolyTime_zipIdx (encList (encPair enc encBool))
+  have hswap : ComputableInPolyTime
+      (fun p : CNF V × (Clause V × ℕ) => (p.2.2, p.2.1))
+      (encPair (encList (encList (encPair enc encBool)))
+        (encPair (encList (encPair enc encBool)) encUnary))
+      (encPair encUnary (encList (encPair enc encBool))) := by
+    fun_prop
+  exact ComputableInPolyTime.flatMapWithInput hzip
+    ((computableInPolyTime_clauseClauses enc).comp' hswap)
 
 end Cslib.Logic.PL.CNF.PositiveExactOne
 
@@ -238,7 +276,7 @@ theorem computableInPolyTime_formula [DecidableEq V] (enc : V ↪ List Bool) :
   have hu := (CNF.isPolyTime_compact (encVariable enc)).comp
     (computableInPolyTime_rawFormula enc)
   have hi : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat :=
-    .of_tidy ComputableTidilyInPolyTime.unary_to_binary
+    ComputableInPolyTime.unary_to_binary
   have hr := (CNF.computableInPolyTime_relabel hi).comp hu
   have he (ψ : CNF ℕ) : ψ.relabel (fun n : ℕ => n) = ψ := CNF.relabel_id ψ
   change ComputableInPolyTime (fun φ => (rawFormula φ).compact) _ _

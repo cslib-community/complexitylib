@@ -189,10 +189,12 @@ example {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
       (fun _ _ => if n = 0 then 48 else 28) Stack.Controller.code := by
   stateful
 
-@[fun_prop, program_certificate]
+@[program_certificate]
 private theorem nonuniform_positive_polytime :
     ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id :=
   Stack.Controller.positive_polytime.computableInPolyTime
+
+attribute [local fun_prop] nonuniform_positive_polytime
 
 example :
     UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧

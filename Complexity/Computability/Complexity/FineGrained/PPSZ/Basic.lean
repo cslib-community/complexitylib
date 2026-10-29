@@ -129,6 +129,21 @@ theorem implied_eq_some {φ : CNF (Fin n)} {w : ℕ} {σ : Fin n → Bool} (hσ 
   obtain ⟨b', hb'⟩ := Option.ne_none_iff_exists'.mp (implied_ne_none_iff.mpr ⟨b, h⟩)
   rw [hb', ← implied_eq hσ hτ hb', h.eq hσ hτ]
 
+/-- Under a partial assignment with a satisfying extension `σ`, no value is implied on `x` exactly
+when `x = σ x` is not w-implied. -/
+theorem implied_eq_none_iff {φ : CNF (Fin n)} {w : ℕ} {σ : Fin n → Bool} (hσ : φ.eval σ = true)
+    {τ : Fin n → Option Bool} (hτ : ∀ y b, τ y = some b → σ y = b) {x : Fin n} :
+    implied φ w τ x = none ↔ ¬ WImplied φ w τ x (σ x) := by
+  constructor
+  · intro h hI
+    rw [implied_eq_some hσ hτ hI] at h
+    cases h
+  · intro h
+    by_contra hne
+    obtain ⟨b, hb⟩ := implied_ne_none_iff.1 hne
+    rw [hb.eq hσ hτ] at h
+    exact h hb
+
 /-! ### Runs -/
 
 /-- The number of unforced variables among the first `i` steps of the run in the order `π` that

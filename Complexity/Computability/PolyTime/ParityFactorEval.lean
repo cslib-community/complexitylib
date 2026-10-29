@@ -1025,30 +1025,36 @@ theorem length_encIntBin_evalParityFactorJet_le {J ℓ : ℕ} {Δ : ℤ} {yJet r
 
 section PolyTime
 
-open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
+open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
 @[local fun_prop]
-private theorem tidy_listGetDWithInput {β : Type} {encB : β ↪ List Bool}
-    {l : α → List β} {i : α → ℕ}
-    (hl : ComputableTidilyInPolyTime l encIn (encList encB))
-    (hi : ComputableTidilyInPolyTime i encIn encUnary) (d : β) :
-    ComputableTidilyInPolyTime (fun x => (l x).getD (i x) d) encIn encB :=
-  (listGetD (encA := encB) (encL := encList encB) d).comp (hl.prod hi)
-
-@[local fun_prop]
 private theorem length_listIntBin {l : α → List ℤ}
-    (hl : ComputableTidilyInPolyTime l encIn (encList encIntBin)) :
-    ComputableTidilyInPolyTime (fun x => (l x).length) encIn encUnary :=
+    (hl : ComputableInPolyTime l encIn (encList encIntBin)) :
+    ComputableInPolyTime (fun x => (l x).length) encIn encUnary :=
   (length_list encIntBin).comp hl
 
-@[local fun_prop]
-private theorem unary_decide_eq_tidy {a b : α → ℕ}
-    (ha : ComputableTidilyInPolyTime a encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => decide (a x = b x)) encIn encBool :=
-  (decide_eq encUnary).comp (ha.prod hb)
+private theorem cons_polytime {β : Type} {encB : β ↪ List Bool} {head : α → β} {tail : α → List β}
+    (hh : ComputableInPolyTime head encIn encB)
+    (ht : ComputableInPolyTime tail encIn (encList encB)) :
+    ComputableInPolyTime (fun x => head x :: tail x) encIn (encList encB) :=
+  (show ComputableInPolyTime (fun p : β × List β => p.1 :: p.2)
+    (encPair encB (encList encB)) (encList encB) by fun_prop).comp (hh.prod ht)
+
+private theorem listAppend_polytime {β : Type} {encB : β ↪ List Bool} {l r : α → List β}
+    (hl : ComputableInPolyTime l encIn (encList encB))
+    (hr : ComputableInPolyTime r encIn (encList encB)) :
+    ComputableInPolyTime (fun x => l x ++ r x) encIn (encList encB) :=
+  (show ComputableInPolyTime (fun p : List β × List β => p.1 ++ p.2)
+    (encPair (encList encB) (encList encB)) (encList encB) by fun_prop).comp (hl.prod hr)
+
+private theorem intBin_pow_polytime {base : α → ℤ} {exp : α → ℕ}
+    (hb : ComputableInPolyTime base encIn encIntBin)
+    (he : ComputableInPolyTime exp encIn encUnary) :
+    ComputableInPolyTime (fun x => base x ^ exp x) encIn encIntBin :=
+  (show ComputableInPolyTime (fun p : ℤ × ℕ => p.1 ^ p.2)
+    (encPair encIntBin encUnary) encIntBin by fun_prop).comp (hb.prod he)
 
 /-- `polyNorm1 l` is bounded exponentially in `(encList encIntBin l).length`. -/
 theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
@@ -1067,7 +1073,7 @@ theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
     (hp : ComputableInPolyTime p encIn (encList encIntBin))
     (hq : ComputableInPolyTime q encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => polyAdd (p x) (q x)) encIn (encList encIntBin) := by
-  have hp := hp.tidy; have hq := hq.tidy; refine .of_tidy ?_; unfold polyAdd; fun_prop
+  unfold polyAdd; fun_prop
 
 /-- Polynomial-time certificate for `cauchyCoeff`. -/
 @[fun_prop] theorem computableInPolyTime_cauchyCoeff {p q : α → List ℤ} {k : α → ℕ}
@@ -1075,37 +1081,32 @@ theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
     (hq : ComputableInPolyTime q encIn (encList encIntBin))
     (hk : ComputableInPolyTime k encIn encUnary) :
     ComputableInPolyTime (fun x => cauchyCoeff (p x) (q x) (k x)) encIn encIntBin := by
-  have hp := hp.tidy; have hq := hq.tidy; have hk := hk.tidy
-  refine .of_tidy ?_; unfold cauchyCoeff; fun_prop
+  unfold cauchyCoeff; fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Compositional plain polynomial-time certificate for `mulZJet`. -/
 @[fun_prop] theorem computableInPolyTime_mulZJet {J : α → ℕ} {u v : α → List ℤ}
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hu : ComputableInPolyTime u encIn (encList encIntBin))
     (hv : ComputableInPolyTime v encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => mulZJet (J x) (u x) (v x)) encIn (encList encIntBin) := by
-  have hJ := hJ.tidy; have hu := hu.tidy; have hv := hv.tidy
-  refine .of_tidy ?_; unfold mulZJet; fun_prop
+  unfold mulZJet; fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Polynomial-time certificate for `polyMul`. -/
 @[fun_prop] theorem computableInPolyTime_polyMul {p q : α → List ℤ}
     (hp : ComputableInPolyTime p encIn (encList encIntBin))
     (hq : ComputableInPolyTime q encIn (encList encIntBin)) :
-    ComputableInPolyTime (fun x => polyMul (p x) (q x)) encIn (encList encIntBin) := by
-  have hp' := hp.tidy; have hq' := hq.tidy
-  exact computableInPolyTime_mulZJet (.of_tidy (by fun_prop)) hp hq
+    ComputableInPolyTime (fun x => polyMul (p x) (q x)) encIn (encList encIntBin) :=
+  computableInPolyTime_mulZJet (by fun_prop) hp hq
 
 /-- Polynomial-time certificate for monic division by $Y^2 - Y$ (`divModByH`). -/
 @[fun_prop] theorem computableInPolyTime_divModByH {p : α → List ℤ}
     (hp : ComputableInPolyTime p encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => divModByH (p x))
       encIn (encPair (encList encIntBin) (encPair encIntBin encIntBin)) := by
-  have hp := hp.tidy; refine .of_tidy ?_; unfold divModByH
-  have hrev : ComputableTidilyInPolyTime (fun x => (p x).reverse) encIn (encList encIntBin) := by
+  unfold divModByH
+  have hrev : ComputableInPolyTime (fun x => (p x).reverse) encIn (encList encIntBin) := by
     fun_prop
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun p : (List ℤ × (ℤ × ℤ)) × ℤ => ParityFactorEval.divModByHStep p.1 p.2)
       (encPair (encPair (encList encIntBin) (encPair encIntBin encIntBin)) encIntBin)
       (encPair (encList encIntBin) (encPair encIntBin encIntBin)) := by
@@ -1136,15 +1137,15 @@ attribute [local fun_prop] ComputableInPolyTime.tidy in
   have hb_enc := length_encIntBin_le_of_natAbs_le (by omega : st.2.2.natAbs ≤ 2 ^ (2 * L))
   rw [length_encPair, length_encPair]; dsimp only [bound]; omega
 
-private theorem taylorInvOneSubPow_tidy {ℓ : α → ℕ}
-    (hℓ : ComputableTidilyInPolyTime ℓ encIn encUnary) :
-    ComputableTidilyInPolyTime
+private theorem taylorInvOneSubPow_polytime {ℓ : α → ℕ}
+    (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
+    ComputableInPolyTime
       (fun x => ParityFactorEval.taylorInvOneSubPow (ℓ x)) encIn (encList encIntBin) := by
   unfold ParityFactorEval.taylorInvOneSubPow
   have hcnt := unary_sub.comp (hℓ.prod (const 1))
-  have hinit : ComputableTidilyInPolyTime (fun x => List.replicate (ℓ x) (1 : ℤ))
+  have hinit : ComputableInPolyTime (fun x => List.replicate (ℓ x) (1 : ℤ))
       encIn (encList encIntBin) := by fun_prop
-  have hstep : ComputableTidilyInPolyTime ParityFactorEval.prefixSumPoly
+  have hstep : ComputableInPolyTime ParityFactorEval.prefixSumPoly
       (encList encIntBin) (encList encIntBin) := by
     unfold ParityFactorEval.prefixSumPoly; fun_prop
   let bound (k : ℕ) : ℕ := k * (4 * k + 5)
@@ -1156,12 +1157,12 @@ private theorem taylorInvOneSubPow_tidy {ℓ : α → ℕ}
     length_encIntBin_le_of_natAbs_le (hmem z hz)).trans_eq
     (by rw [hlen]; dsimp only [bound]; ring)
 
-private theorem oneSubPow_tidy {ℓ : α → ℕ}
-    (hℓ : ComputableTidilyInPolyTime ℓ encIn encUnary) :
-    ComputableTidilyInPolyTime
+private theorem oneSubPow_polytime {ℓ : α → ℕ}
+    (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
+    ComputableInPolyTime
       (fun x => ParityFactorEval.oneSubPow (ℓ x)) encIn (encList encIntBin) := by
   unfold ParityFactorEval.oneSubPow
-  have hstep := (computableInPolyTime_polyMul (.of_tidy (const [1, -1])) (.of_tidy id')).tidy
+  have hstep := computableInPolyTime_polyMul (const [1, -1]) id'
   let bound (k : ℕ) : ℕ := (2 * k + 1) * (2 * k + 5)
   have hpoly : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) :=
     (((PolyBounded.const 2).mul hℓ.polyBounded).add (.const 1)).mul
@@ -1177,30 +1178,28 @@ private theorem oneSubPow_tidy {ℓ : α → ℕ}
 @[fun_prop] theorem computableInPolyTime_parityPolyCoeffs {ℓ : α → ℕ}
     (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
     ComputableInPolyTime (fun x => parityPolyCoeffs (ℓ x)) encIn (encList encIntBin) := by
-  have hℓ := hℓ.tidy; refine .of_tidy ?_
   simp_rw [show ∀ k, parityPolyCoeffs k =
       if decide (k = 0) then []
       else polyMul (ParityFactorEval.oneSubPow k) (ParityFactorEval.taylorInvOneSubPow k) from
     fun k => by simp only [parityPolyCoeffs, decide_eq_true_eq]]
-  exact (unary_decide_eq_tidy hℓ (const 0)).ite' (const [])
-    (computableInPolyTime_polyMul (.of_tidy (oneSubPow_tidy hℓ))
-      (.of_tidy (taylorInvOneSubPow_tidy hℓ))).tidy
+  exact (decide_eq' hℓ (const 0)).ite' (const [])
+    (computableInPolyTime_polyMul (oneSubPow_polytime hℓ) (taylorInvOneSubPow_polytime hℓ))
 
 /-- Compositional plain polynomial-time certificate for `parityLinearCoeffs`. -/
 @[fun_prop] theorem computableInPolyTime_parityLinearCoeffs {ℓ : α → ℕ}
     (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
     ComputableInPolyTime (fun x => parityLinearCoeffs (ℓ x))
       encIn (encList (encPair encIntBin encIntBin)) := by
-  have hpoly_coeffs := (computableInPolyTime_parityPolyCoeffs hℓ).tidy
-  have hℓ := hℓ.tidy; refine .of_tidy ?_; unfold parityLinearCoeffs
-  have hdm : ComputableTidilyInPolyTime (fun s : List ℤ × List (ℤ × ℤ) => divModByH s.1)
+  have hpoly_coeffs := computableInPolyTime_parityPolyCoeffs hℓ
+  unfold parityLinearCoeffs
+  have hdm : ComputableInPolyTime (fun s : List ℤ × List (ℤ × ℤ) => divModByH s.1)
       (encPair (encList encIntBin) (encList (encPair encIntBin encIntBin)))
       (encPair (encList encIntBin) (encPair encIntBin encIntBin)) :=
-    (computableInPolyTime_divModByH (.of_tidy (fst _ _))).tidy
-  have hstep : ComputableTidilyInPolyTime ParityFactorEval.parityDivStep
+    computableInPolyTime_divModByH (fst _ _)
+  have hstep : ComputableInPolyTime ParityFactorEval.parityDivStep
       (encPair (encList encIntBin) (encList (encPair encIntBin encIntBin)))
       (encPair (encList encIntBin) (encList (encPair encIntBin encIntBin))) :=
-    hdm.fst'.prod (listAppend' (snd _ _) (cons' hdm.snd' (const [])))
+    hdm.fst'.prod (listAppend_polytime (snd _ _) (cons_polytime hdm.snd' (const [])))
   let bElem (k : ℕ) : ℕ := 7 * (k * k) + 2
   let bound (k : ℕ) : ℕ :=
     2 * (4 * k * (2 * bElem k + 1)) + 1 + k * (2 * (3 * bElem k + 1) + 1)
@@ -1233,14 +1232,14 @@ private theorem oneSubPow_tidy {ℓ : α → ℕ}
 /-- Standalone plain polynomial-time certificate for `parityLinearCoeffs` on unary $\ell$. -/
 theorem parityLinearCoeffs_polytime :
     ComputableInPolyTime parityLinearCoeffs encUnary (encList (encPair encIntBin encIntBin)) :=
-  computableInPolyTime_parityLinearCoeffs (.of_tidy id')
+  computableInPolyTime_parityLinearCoeffs id'
 
 /-- Compositional polynomial-time certificate for `truncZJet`. -/
 @[fun_prop] theorem computableInPolyTime_truncZJet {J : α → ℕ} {u : α → List ℤ}
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hu : ComputableInPolyTime u encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => truncZJet (J x) (u x)) encIn (encList encIntBin) := by
-  have hJ := hJ.tidy; have hu := hu.tidy; refine .of_tidy ?_; unfold truncZJet; fun_prop
+  unfold truncZJet; fun_prop
 
 /-- Compositional plain polynomial-time certificate for `powZJet`. -/
 @[fun_prop] theorem computableInPolyTime_powZJet {J s : α → ℕ} {u : α → List ℤ}
@@ -1248,13 +1247,12 @@ theorem parityLinearCoeffs_polytime :
     (hu : ComputableInPolyTime u encIn (encList encIntBin))
     (hs : ComputableInPolyTime s encIn encUnary) :
     ComputableInPolyTime (fun x => powZJet (J x) (u x) (s x)) encIn (encList encIntBin) := by
-  have hinit := (computableInPolyTime_truncZJet hJ (.of_tidy (const [1]))).tidy
-  have hJ := hJ.tidy; have hu := hu.tidy; have hs := hs.tidy; refine .of_tidy ?_; unfold powZJet
-  have hstep : ComputableTidilyInPolyTime
+  have hinit := computableInPolyTime_truncZJet hJ (const [1])
+  unfold powZJet
+  have hstep : ComputableInPolyTime
       (fun p : (ℕ × List ℤ) × List ℤ => mulZJet p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary (encList encIntBin)) (encList encIntBin)) (encList encIntBin) :=
-    (computableInPolyTime_mulZJet
-      (.of_tidy (fst _ _).fst') (.of_tidy (fst _ _).snd') (.of_tidy (snd _ _))).tidy
+    computableInPolyTime_mulZJet (fst _ _).fst' (fst _ _).snd' (snd _ _)
   let bElem (Lu k : ℕ) : ℕ := 2 * Lu * k + 2
   let bound (n Lu k : ℕ) : ℕ := n * (2 * bElem Lu k + 1)
   have hpb_bound : PolyBounded (fun x => (encIn x).length)
@@ -1279,7 +1277,7 @@ theorem parityLinearCoeffs_polytime :
 theorem singleton_intBin_polytime {z : α → ℤ}
     (hz : ComputableInPolyTime z encIn encIntBin) :
     ComputableInPolyTime (fun x => [z x]) encIn (encList encIntBin) :=
-  .of_tidy (cons' hz.tidy (const []))
+  cons_polytime hz (const [])
 
 private theorem parityFactorColJet_polytime {J ℓ s : α → ℕ} {Δ : α → ℤ}
     {yJet hJet : α → List ℤ} {coeffs : α → List (ℤ × ℤ)}
@@ -1294,12 +1292,14 @@ private theorem parityFactorColJet_polytime {J ℓ s : α → ℕ} {Δ : α → 
       encIn (encList encIntBin) := by
   have hab : ComputableInPolyTime (fun x => (coeffs x).getD (s x) (0, 0))
       encIn (encPair encIntBin encIntBin) :=
-    ComputableInPolyTime.listGetDWithInput hcoeffs hs (0, 0)
-  have hexp := unary_mul.comp ((const 2).prod
-    (unary_sub.comp ((unary_sub.comp (hℓ.tidy.prod (const 1))).prod hs.tidy)))
-  have hscale := singleton_intBin_polytime (.of_tidy (intBin_pow' hΔ.tidy hexp))
+    listGetDWithInput hcoeffs hs (0, 0)
+  have hexp : ComputableInPolyTime (fun x => 2 * (ℓ x - 1 - s x)) encIn encUnary :=
+    (show ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.2)
+      (encPair encUnary encUnary) encUnary by fun_prop).comp
+      ((const 2).prod (unary_sub.comp ((unary_sub.comp (hℓ.prod (const 1))).prod hs)))
+  have hscale := singleton_intBin_polytime (intBin_pow_polytime hΔ hexp)
   have hlin := computableInPolyTime_polyAdd
-    (singleton_intBin_polytime (ComputableInPolyTime.intBin_mul' hΔ hab.fst'))
+    (singleton_intBin_polytime (intBin_mul' hΔ hab.fst'))
     (computableInPolyTime_polyMul (singleton_intBin_polytime hab.snd')
       (computableInPolyTime_truncZJet hJ hyJet))
   unfold ParityFactorEval.colJet
@@ -1314,15 +1314,16 @@ private theorem parityFactorCols_polytime {J ℓ : α → ℕ} {Δ : α → ℤ}
       encIn (encList (encList encIntBin)) := by
   have hcoeffs := computableInPolyTime_parityLinearCoeffs hℓ
   have hyT := computableInPolyTime_truncZJet hJ hyJet
+  have hnegΔ := (show ComputableInPolyTime (fun z : ℤ => -z)
+    encIntBin encIntBin by fun_prop).comp hΔ
   have hhJet := computableInPolyTime_mulZJet hJ hyT
-    (computableInPolyTime_polyAdd hyT
-      (singleton_intBin_polytime (.of_tidy (intBin_neg.comp hΔ.tidy))))
+    (computableInPolyTime_polyAdd hyT (singleton_intBin_polytime hnegΔ))
   have hp1 : ComputableInPolyTime (Prod.fst (α := α) (β := ℕ))
-      (encPair encIn encUnary) encIn := .of_tidy (fst _ _)
-  have hstep := (parityFactorColJet_polytime
+      (encPair encIn encUnary) encIn := fst _ _
+  have hstep := parityFactorColJet_polytime
     (hJ.comp hp1) (hℓ.comp hp1) (hΔ.comp hp1) (hyJet.comp hp1)
-    (hcoeffs.comp hp1) (hhJet.comp hp1) (.of_tidy (snd _ _))).tidy
-  exact .of_tidy (mapWithInput (range.comp hℓ.tidy) hstep)
+    (hcoeffs.comp hp1) (hhJet.comp hp1) (snd _ _)
+  exact mapWithInput (range.comp hℓ) hstep
 
 /-- **Compositional plain polynomial-time certificate for `evalParityFactorJet`**
 ([OpenAI2026ETH], Appendix B.2) on unary $(J, \ell)$ and binary $(\Delta, \text{yJet})$. -/

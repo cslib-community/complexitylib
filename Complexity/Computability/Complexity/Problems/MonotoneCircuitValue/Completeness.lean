@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Complexity.Problems.MonotoneCircuitValue
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Circuit.Monotone.DualRail
-import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 
 /-!
 # The monotone circuit value problem is `P`-complete
@@ -63,7 +62,7 @@ its decider rather than by translating the given circuit directly.
 
 namespace Cslib.Complexity.MonotoneCircuitValue
 
-open Turing MultiTapeTM Circuits Circuits.Boolean ComputableTidilyInSpace CircuitValue
+open Turing MultiTapeTM Circuits Circuits.Boolean ComputableInSpace CircuitValue
 
 /-! ### The translated gates in the De Morgan basis -/
 
@@ -94,25 +93,19 @@ variable {α : Type} {encIn : α ↪ List Bool} {Bs : α → ℕ}
 
 /-- **The translated gates within a budget**, from a gate within the budget. -/
 private theorem dualGateDM_inSpace (b : Bool) {g : α → Boolean.Op × List ℕ}
-    (hg : ComputableTidilyInSpace g encIn encGate Bs) (hin : (fun x => (encIn x).length) ≼ Bs) :
-    ComputableTidilyInSpace (fun x => dualGateDM b (g x)) encIn encGate Bs := by
+    (hg : ComputableInSpace g encIn encGate Bs) (hin : (fun x => (encIn x).length) ≼ Bs) :
+    ComputableInSpace (fun x => dualGateDM b (g x)) encIn encGate Bs := by
   have hop := fst' hg
   have hargs := snd' hg
-  have hhead : ComputableTidilyInSpace (fun l : List ℕ => l.headD 0) (encList encNat) encNat
-      fun l => (encList encNat l).length :=
-    of_inO (.of_linear (Internal.NormalForm.linear (ListEncoding.headD 0)))
-  have htail : ComputableTidilyInSpace List.tail (encList encNat) (encList encNat)
-      fun l => (encList encNat l).length :=
-    of_inO (.of_linear (Internal.NormalForm.linear (ListEncoding.tail encNat)))
-  have ha := budget_comp_linear hhead hargs
-  have hb := budget_comp_linear hhead (budget_comp_linear htail hargs)
-  have hrail (c : Bool) {w : α → ℕ} (hw : ComputableTidilyInSpace w encIn encNat Bs) :
-      ComputableTidilyInSpace (fun x => Monotone.railWire c (w x)) encIn encNat Bs :=
+  have ha := budget_headD 0 hargs
+  have hb := budget_headD 0 (budget_tail hargs)
+  have hrail (c : Bool) {w : α → ℕ} (hw : ComputableInSpace w encIn encNat Bs) :
+      ComputableInSpace (fun x => Monotone.railWire c (w x)) encIn encNat Bs :=
     (budget_natAdd (budget_natMul (budget_const (encB := encNat) 2 hin) hw)
       (budget_const (encB := encNat) (if c then 1 else 2) hin)).of_enc_eq fun _ => rfl
   have hnil := budget_const (encB := encList encNat) ([] : List ℕ) hin
-  have hcons {a : α → ℕ} {L : α → List ℕ} (ha : ComputableTidilyInSpace a encIn encNat Bs)
-      (hL : ComputableTidilyInSpace L encIn (encList encNat) Bs) :=
+  have hcons {a : α → ℕ} {L : α → List ℕ} (ha : ComputableInSpace a encIn encNat Bs)
+      (hL : ComputableInSpace L encIn (encList encNat) Bs) :=
     budget_cons ha hL
   have hargs' := budget_ite
     (budget_finite (encC := encBool) (fun op => decide (Boolean.signature.Arity op = 0)) hop) hnil
@@ -223,42 +216,34 @@ variable {α : Type} {encIn : α ↪ List Bool} {Bs : α → ℕ}
 include hin
 
 private theorem dualChunk_inSpace {n j : α → ℕ}
-    (hn : ComputableTidilyInSpace n encIn encNat Bs)
-    (hj : ComputableTidilyInSpace j encIn encNat Bs) :
-    ComputableTidilyInSpace (fun x => dualChunk tm C d (n x) (j x)) encIn encBits Bs := by
-  have hg := (Tableau.gateCode_inSpace tm (.of_tidy hn) (timeBound_inSpace C d hin (.of_tidy hn))
-    hin
-    (.of_tidy hj)).tidy
-  have hframe : ComputableTidilyInSpace (fun g => frame (encGate g)) encGate encBits
-      fun g => (encGate g).length :=
-    of_inO (.of_linear (.of_frame fun _ => rfl))
+    (hn : ComputableInSpace n encIn encNat Bs)
+    (hj : ComputableInSpace j encIn encNat Bs) :
+    ComputableInSpace (fun x => dualChunk tm C d (n x) (j x)) encIn encBits Bs := by
+  have hg := Tableau.gateCode_inSpace tm hn (timeBound_inSpace C d hin hn) hin hj
   have hrail (b : Bool) := budget_comp_linear doubled_inSpace
     (budget_comp_linear doubled_inSpace
-      (budget_comp_linear (g := fun g => frame (encGate g)) hframe (dualGateDM_inSpace b hg hin)))
+      (budget_comp_linear (ComputableInSpace.frame encGate) (dualGateDM_inSpace b hg hin)))
   exact ((hrail true).append (hrail false) (g := fun x => dualChunk tm C d (n x) (j x))
     (encD := encBits) fun _ => rfl).weaken (.add (.refl _) (.refl _))
 
 private theorem dualTrailer_inSpace {n : α → ℕ}
-    (hn : ComputableTidilyInSpace n encIn encNat Bs) :
-    ComputableTidilyInSpace (fun x => (dualSpec tm C d).trailer (n x)) encIn encBits Bs := by
-  have hT := (timeBound_inSpace C d hin (.of_tidy hn)).tidy
-  have ho : ComputableTidilyInSpace (fun x => Tableau.outWire k State (n x)
+    (hn : ComputableInSpace n encIn encNat Bs) :
+    ComputableInSpace (fun x => (dualSpec tm C d).trailer (n x)) encIn encBits Bs := by
+  have hT := timeBound_inSpace C d hin hn
+  have ho : ComputableInSpace (fun x => Tableau.outWire k State (n x)
       (timeBound C d (n x))) encIn encNat Bs :=
     budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-      (budget_natMul hT (Tableau.blockSize_inSpace (k := k) (State := State) (.of_tidy hT)
-        hin).tidy))
-      (budget_natAdd (Tableau.gfStart_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy
+      (budget_natMul hT (Tableau.blockSize_inSpace (k := k) (State := State) hT hin)))
+      (budget_natAdd (Tableau.gfStart_inSpace (k := k) (State := State) hT hin)
         (budget_const _ hin))
-  have hr : ComputableTidilyInSpace (fun x => Monotone.railWire true
+  have hr : ComputableInSpace (fun x => Monotone.railWire true
       (Tableau.outWire k State (n x) (timeBound C d (n x)))) encIn encNat Bs :=
     budget_natAdd (budget_natMul (budget_const 2 hin) ho) (budget_const 1 hin)
-  have hframe : ComputableTidilyInSpace (fun m => frame (encNat m)) encNat encBits
-      fun m => (encNat m).length := of_inO (.of_linear (.of_frame fun _ => rfl))
   have hmid := budget_comp_linear doubled_inSpace
-    (budget_comp_linear (g := fun m => frame (encNat m)) hframe hr)
+    (budget_comp_linear (ComputableInSpace.frame encNat) hr)
   have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
-    (g := fun x => [true, false] ++ doubled (frame (encNat (Monotone.railWire true
-      (Tableau.outWire k State (n x) (timeBound C d (n x)))))))
+    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat
+      (Monotone.railWire true (Tableau.outWire k State (n x) (timeBound C d (n x)))))))
     (encD := encBits) fun _ => rfl
   exact ((h₁.weaken (.add (.refl _) (.refl _))).append
     (budget_const (encB := encBits) [false, true] hin)
@@ -277,14 +262,13 @@ theorem computableInLogSpace_dualTableauInstance :
       simp only [encNat_apply, List.length_cons, List.length_nil, zero_add, add_zero,
         Order.add_one_le_iff]
       omega
-  have hs := (ComputableTidilyInSpace.fst encNat3 encBool).weaken hin
+  have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)
   refine (dualSpec tm C d).computableInLogSpace
     (encMonotoneCircuitValue_dualTableauInstance tm C d)
-    (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin (.of_tidy hn)))
-    (.of_tidy (dualChunk_inSpace tm C d hin hn hi)) (.of_tidy (dualTrailer_inSpace tm C d hin hn))
-      ?_
+    (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin hn))
+    (dualChunk_inSpace tm C d hin hn hi) (dualTrailer_inSpace tm C d hin hn) ?_
   change PolynomiallyBounded fun n => Tableau.numGates k State (timeBound C d n)
   simp only [Tableau.numGates, Tableau.blockSize, Tableau.colStart, Tableau.gfStart,
     Tableau.globStart, Tableau.numCols, timeBound]
@@ -297,10 +281,10 @@ positive and negative rails of its decider's tableau. -/
 theorem logSpaceReducible_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set α}
     (hA : A ∈ P enc) : LogSpaceReducible enc encMonotoneCircuitValue A MonotoneCircuitValue := by
   obtain ⟨f, hfpoly, hAf⟩ := hA
-  obtain ⟨t, s, ht, -, k, State, hfin, tm, htm⟩ := hfpoly.tidy
+  obtain ⟨t, _, ht, -, k, State, hfin, tm, htm⟩ := hfpoly
   have := Fintype.ofFinite State
   classical
-  obtain ⟨C, d, htle⟩ := ht.exists_le
+  obtain ⟨C, d, htle⟩ := polynomiallyBounded_iff_le.mp ht
   refine ⟨fun a => dualTableauInstance tm C d (enc a),
     (computableInLogSpace_dualTableauInstance tm C d).comp (computableInLogSpace_frame enc),
     fun a => ?_⟩
@@ -308,12 +292,12 @@ theorem logSpaceReducible_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set
   simp only [tableauInstance]
   have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
   rw [Tableau.eval_circuit tm (by simp only [timeBound]; omega), hw]
-  obtain ⟨hhalt, hout⟩ := ComputesTidilyInTimeAndSpace.runFrom_initCfg (htm a)
-  have hle : t a ≤ timeBound C d (enc a).length := by
-    have := htle a
+  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
+    have := htle (enc a).length
     simp only [timeBound]
     omega
-  rw [MultiTapeTM.runFrom_eq_of_halt tm _ hle hhalt, hout, encBool_apply]
+  obtain ⟨-, hout⟩ := (htm a).runFrom_of_le hle
+  rw [hout, encBool_apply]
   cases f a <;> simp [OutView.ofList]
 
 /-- Monotone circuit value is `P`-hard under logarithmic-space reductions [Goldschlager1977]. -/

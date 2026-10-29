@@ -20,17 +20,17 @@ open Cslib Cslib.Algorithms.ExactTriangle
 private def ab (a _ : Fin 2) : ℤ := if a = 0 then 0 else 2
 private def z (_ _ : Fin 2) : ℤ := 0
 
-private theorem window16 : primesInRange 16 = {2, 3} := by
-  rw [primesInRange_eq_filter]
+private theorem window16 : Nat.sqrtPrimeWindow 16 = {2, 3} := by
+  rw [Nat.sqrtPrimeWindow_eq_filter]
   decide
 
 -- Both endpoints matter: prime 2 is admitted at the lower endpoint for D=16;
 -- prime 5 is excluded at the upper endpoint for D=25, and prime 3 is admitted there.
-example : 2 ∈ primesInRange 16 ∧ 5 ∉ primesInRange 25 ∧ 3 ∈ primesInRange 25 := by
-  simp only [mem_primesInRange_iff_sq]
+example : 2 ∈ Nat.sqrtPrimeWindow 16 ∧ 5 ∉ Nat.sqrtPrimeWindow 25 ∧ 3 ∈ Nat.sqrtPrimeWindow 25 := by
+  simp only [Nat.mem_sqrtPrimeWindow_iff_sq]
   decide
 
-example : 2 ∉ primesInRange 17 := by rw [mem_primesInRange_iff_sq]; decide
+example : 2 ∉ Nat.sqrtPrimeWindow 17 := by rw [Nat.mem_sqrtPrimeWindow_iff_sq]; decide
 
 example : countZeroMod ab z z 2 = 8 ∧ countZeroMod ab z z 3 = 4 := by
   unfold countZeroMod weightSum ab z
@@ -104,8 +104,8 @@ example : ¬WeightsBoundedBy (fun _ _ : Fin 1 => (0 : ℤ)) (fun _ _ => 0) (fun 
 
 -- The full bound's n,D,kappa hypotheses and input bound have a concrete witness.
 example : (falsePositiveCount (fun _ _ : Fin 16 => 0) (fun _ _ => 0) (fun _ _ => 0) 2 : ℝ) ≤
-    Hashing.falsePositiveConst * (1 * (16 : ℝ) ^ 3 * Real.log 16 / Real.sqrt 16) := by
-  apply Hashing.falsePositiveCount_le_const_mul (by decide : 16 ≤ 16) (by decide : 16 ≤ 16)
+    falsePositiveConst * (1 * (16 : ℝ) ^ 3 * Real.log 16 / Real.sqrt 16) := by
+  apply falsePositiveCount_le_const_mul (by decide : 16 ≤ 16) (by decide : 16 ≤ 16)
     (by norm_num : (1 : ℝ) ≤ 1)
   · norm_num [WeightsBoundedBy]
   · refine ⟨by rw [window16]; decide, ?_⟩

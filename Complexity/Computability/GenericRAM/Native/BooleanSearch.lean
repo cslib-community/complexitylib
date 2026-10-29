@@ -53,7 +53,7 @@ variable {C : Type}
 /-- Retain the context and the first match, using the existing list-search step. -/
 @[expose] def step (test : C × List Bool → Bool)
     (p : (ℕ × List Bool) × (C × Option (List Bool))) : C × Option (List Bool) :=
-  (p.2.1, ComputableTidilyInDegree.findStep test p.2.1 p.2.2 p.1.2)
+  (p.2.1, if p.2.2.isSome then p.2.2 else if test (p.2.1, p.1.2) then some p.1.2 else none)
 
 /-- Prefix state: binary index, unary width, context and at most one matching word. -/
 @[expose] def runPrefix (test : C × List Bool → Bool) (p : C × ℕ) (j : ℕ) :
@@ -67,14 +67,18 @@ After finding a match the traversal retains it and makes no further calls to the
 
 private theorem foldl_step (test : C × List Bool → Bool) (ctx : C)
     (words : List (List Bool)) (acc : Option (List Bool)) :
-    words.foldl (fun s w => (s.1, ComputableTidilyInDegree.findStep test s.1 s.2 w))
+    words.foldl
+        (fun (s : C × Option (List Bool)) w =>
+          (s.1, if s.2.isSome then s.2 else if test (s.1, w) then some w else none))
         (ctx, acc) =
-      (ctx, words.foldl (ComputableTidilyInDegree.findStep test ctx) acc) := by
+      (ctx, acc.or (words.find? fun w => test (ctx, w))) := by
   induction words generalizing acc with
-  | nil => rfl
+  | nil => simp
   | cons w words ih =>
-    simp only [List.foldl_cons]
-    exact ih _
+    rw [List.foldl_cons, ih]
+    cases acc with
+    | some v => simp
+    | none => cases h : test (ctx, w) <;> simp [h]
 
 /-- Every prefix retains the original context and the first match among the visited words.
 The list on the right is specification-only, not a stored traversal history. -/
@@ -83,13 +87,15 @@ theorem prefix_accumulator (test : C × List Bool → Bool) (p : C × ℕ) (j : 
       (p.1, ((List.range j).map (lowBits p.2)).find? fun w => test (p.1, w)) := by
   rw [runPrefix, BooleanFold.prefix_accumulator]
   change (List.range j).foldl
-    (fun s i => (s.1, ComputableTidilyInDegree.findStep test s.1 s.2 (lowBits p.2 i)))
+    (fun (s : C × Option (List Bool)) i =>
+      (s.1, if s.2.isSome then s.2
+        else if test (s.1, lowBits p.2 i) then some (lowBits p.2 i) else none))
       (p.1, none) = _
   have hm := List.foldl_map (f := lowBits p.2)
     (g := fun (s : C × Option (List Bool)) w =>
-      (s.1, ComputableTidilyInDegree.findStep test s.1 s.2 w))
+      (s.1, if s.2.isSome then s.2 else if test (s.1, w) then some w else none))
     (l := List.range j) (init := (p.1, none))
-  rw [← hm, foldl_step, ComputableTidilyInDegree.foldl_findStep, Option.none_or]
+  rw [← hm, foldl_step, Option.none_or]
 
 /-- The streaming result has exactly the first-match semantics of the existing enumeration. -/
 theorem run_eq_find? (test : C × List Bool → Bool) (p : C × ℕ) :

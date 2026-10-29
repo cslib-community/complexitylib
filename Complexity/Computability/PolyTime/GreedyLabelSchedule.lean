@@ -13,6 +13,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
@@ -567,6 +568,10 @@ private theorem length_encNat_le_self (k : ℕ) : (encNat k).length ≤ k := by
   rw [encNat_apply, Nat.size_eq_bits_len]; exact Nat.size_le_self k
 
 /-- Encoded bit-length bound for an incidence list `edges` with endpoints `< m` and `< n`. -/
+private theorem length_encNat_mono {a b : ℕ} (h : a ≤ b) :
+    (encNat a).length ≤ (encNat b).length := by
+  simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h
+
 theorem length_encEdges_le_of_lt {n m : ℕ} {edges : List (ℕ × ℕ)}
     (h : ∀ e ∈ edges, e.1 < m ∧ e.2 < n) :
     (encList (encPair encNat encNat) edges).length ≤
@@ -575,8 +580,8 @@ theorem length_encEdges_le_of_lt {n m : ℕ} {edges : List (ℕ × ℕ)}
   have hle : ∀ x ∈ edges.map (fun e => 2 * (encPair encNat encNat e).length + 1),
       x ≤ 6 * (encNat (n + m)).length + 3 := by
     intro x hx; obtain ⟨e, he, rfl⟩ := List.mem_map.mp hx; obtain ⟨hf, hv⟩ := h e he
-    have h1 := ComputableTidilyInO.length_encNat_mono (by omega : e.1 ≤ n + m)
-    have h2 := ComputableTidilyInO.length_encNat_mono (by omega : e.2 ≤ n + m)
+    have h1 := length_encNat_mono (by omega : e.1 ≤ n + m)
+    have h2 := length_encNat_mono (by omega : e.2 ≤ n + m)
     rw [length_encPair]; omega
   simpa only [List.length_map, smul_eq_mul] using
     List.sum_le_length_nsmul _ (6 * (encNat (n + m)).length + 3) hle
@@ -753,29 +758,29 @@ theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ} (hs : s ≤ p
 @[fun_prop] theorem computableInPolyTime_slotOfIndex :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => slotOfIndex p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) encNat) (encOption (encPair encBool encUnary)) := by
+  let eIn := encPair (encPair encUnary encUnary) encNat
   have hsCap : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => min (p.1.1 + p.1.2) p.2)
-      (encPair (encPair encUnary encUnary) encNat) encUnary := by fun_prop
-  refine .of_tidy ?_
-  have hsCapT := hsCap.tidy; let eIn := encPair (encPair encUnary encUnary) encNat
-  have hnBin : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1) eIn encNat :=
-    ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)
-  have hnmBin : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1 + p.1.2) eIn encNat :=
-    ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)
-  have hsBin : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2) eIn encNat := by fun_prop
-  have hlt1 := ComputableTidilyInPolyTime.binary_lt' hsBin hnBin
-  have hlt2 := ComputableTidilyInPolyTime.binary_lt' hsBin hnmBin
-  have hb1 : ComputableTidilyInPolyTime
+      eIn encUnary := by unfold eIn; fun_prop
+  have hnBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1) eIn encNat :=
+    ComputableInPolyTime.unary_to_binary.comp (by unfold eIn; fun_prop)
+  have hnmBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1 + p.1.2) eIn encNat :=
+    ComputableInPolyTime.unary_to_binary.comp (by unfold eIn; fun_prop)
+  have hsBin : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2) eIn encNat := by
+    unfold eIn; fun_prop
+  have hlt1 := ComputableInPolyTime.binary_lt' hsBin hnBin
+  have hlt2 := ComputableInPolyTime.binary_lt' hsBin hnmBin
+  have hb1 : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => (some (false, min (p.1.1 + p.1.2) p.2) : Option (Bool × ℕ)))
       eIn (encOption (encPair encBool encUnary)) := by fun_prop
-  have hb2 : ComputableTidilyInPolyTime
+  have hb2 : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => (some (true, min (p.1.1 + p.1.2) p.2 - p.1.1) : Option (Bool × ℕ)))
-      eIn (encOption (encPair encBool encUnary)) := by fun_prop
-  convert ComputableTidilyInPolyTime.ite_decide hlt1 hb1
-    (ComputableTidilyInPolyTime.ite_decide hlt2 hb2 (ComputableTidilyInPolyTime.const none)) using 1
-  funext p; unfold slotOfIndex
+      eIn (encOption (encPair encBool encUnary)) := by unfold eIn; fun_prop
+  refine (hlt1.ite' hb1 (hlt2.ite' hb2 (.const none))).of_enc_eq fun p => ?_
+  unfold slotOfIndex
   by_cases h1 : p.2 < p.1.1
-  · simp only [h1, ↓reduceIte]
-  · by_cases h2 : p.2 < p.1.1 + p.1.2 <;> simp only [h1, h2, ↓reduceIte]
+  · simp only [h1, decide_true, ↓reduceIte]
+  · by_cases h2 : p.2 < p.1.1 + p.1.2 <;>
+      simp only [h1, h2, decide_true, decide_false, Bool.false_eq_true, ↓reduceIte]
 
 private abbrev OuterAcc : Type :=
   ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ)))
@@ -795,20 +800,18 @@ private theorem computableInPolyTime_pendingSlotOfState :
       (fun st : OuterSt => slotOfIndex st.2.1.1.1 st.2.1.1.2.1 st.1) encOuterSt encSlotOpt :=
     computableInPolyTime_slotOfIndex.comp
       (show ComputableInPolyTime (fun st : OuterSt => ((st.2.1.1.1, st.2.1.1.2.1), st.1))
-          encOuterSt (encPair (encPair encUnary encUnary) encNat) from
-        .of_tidy (by unfold encOuterSt encOuterAcc encScheduleParams; fun_prop))
-  have hrd := computableInPolyTime_readSlotSchedule.tidy; refine .of_tidy ?_
-  have hslT := hsl.tidy; unfold pendingSlotOfState encSlotOpt
-  refine ComputableTidilyInPolyTime.optionElimWithInput hslT
-    (ComputableTidilyInPolyTime.const none) ?_
-  have his : ComputableTidilyInPolyTime
+          encOuterSt (encPair (encPair encUnary encUnary) encNat) by
+        unfold encOuterSt encOuterAcc encScheduleParams; fun_prop)
+  unfold pendingSlotOfState encSlotOpt
+  refine ComputableInPolyTime.optionElimWithInput hsl (.const none) ?_
+  have his : ComputableInPolyTime
       (fun q : OuterSt × (Bool × ℕ) => (readSlotSchedule q.2 q.1.2.2).isSome)
       (encPair encOuterSt (encPair encBool encUnary)) encBool :=
-    ComputableTidilyInPolyTime.optionIsSome (hrd.comp
-      (show ComputableTidilyInPolyTime (fun q : OuterSt × (Bool × ℕ) => (q.2, q.1.2.2))
+    ComputableInPolyTime.optionIsSome (computableInPolyTime_readSlotSchedule.comp
+      (show ComputableInPolyTime (fun q : OuterSt × (Bool × ℕ) => (q.2, q.1.2.2))
         (encPair encOuterSt (encPair encBool encUnary)) _ by
         unfold encOuterSt encOuterAcc; fun_prop))
-  exact his.cond (ComputableTidilyInPolyTime.const none) (by fun_prop)
+  exact his.ite' (.const none) (by fun_prop)
 
 private def streamSlotInOfOuter (q : OuterSt × (Bool × ℕ)) : StreamSlotIn :=
   (((q.1.2.1.1.1, q.1.2.1.1.2.2), q.1.2.1.2), (q.2, q.1.2.2))
@@ -818,7 +821,6 @@ private def finishGreedySlotStep (q : (OuterSt × (Bool × ℕ)) × List ℕ) : 
 
 private theorem computableInPolyTime_streamSlotInOfOuter :
     ComputableInPolyTime streamSlotInOfOuter encOuterSlot encStreamSlotIn := by
-  refine .of_tidy ?_
   unfold streamSlotInOfOuter encOuterSlot encOuterSt encOuterAcc encScheduleParams encStreamSlotIn
     encScoreParams
   fun_prop
@@ -829,9 +831,9 @@ private theorem computableInPolyTime_finishGreedySlotStep :
     (show ComputableInPolyTime (fun q : _ => ((q.1.2, some q.2), q.1.1.2.2)) encFinIn
         (encPair (encPair (encPair encBool encUnary) (encOption (encList encNat)))
           encPartialSchedules) by
-      refine .of_tidy ?_; unfold encFinIn encOuterSlot encOuterSt encOuterAcc; fun_prop)
+      unfold encFinIn encOuterSlot encOuterSt encOuterAcc; fun_prop)
   exact (show ComputableInPolyTime (fun q : _ => q.1.1.2.1) encFinIn encScheduleParams by
-    refine .of_tidy ?_; unfold encFinIn encOuterSlot encOuterSt encOuterAcc; fun_prop).prod hupd
+    unfold encFinIn encOuterSlot encOuterSt encOuterAcc; fun_prop).prod hupd
 
 private noncomputable def mkGreedyStepCert
     (cPend : NativeCertificate pendingSlotOfState encOuterSt encSlotOpt)
@@ -866,16 +868,15 @@ private def finalizeBalancedSchedules (q : OuterAcc) : List (List ℕ) × List (
 
 private theorem computableInPolyTime_outerCount :
     ComputableInPolyTime outerCount encScheduleParams encNat := by
-  refine .of_tidy ?_; unfold outerCount encScheduleParams
-  exact ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)
+  unfold outerCount encScheduleParams
+  exact ComputableInPolyTime.unary_to_binary.comp (by fun_prop)
 
 private theorem computableInPolyTime_outerInit :
     ComputableInPolyTime outerInit encScheduleParams encOuterAcc := by
-  refine .of_tidy ?_; unfold outerInit encOuterAcc encScheduleParams encPartialSchedules; fun_prop
+  unfold outerInit encOuterAcc encScheduleParams encPartialSchedules; fun_prop
 
 private theorem computableInPolyTime_finalizeBalancedSchedules :
     ComputableInPolyTime finalizeBalancedSchedules encOuterAcc encOutWords := by
-  refine .of_tidy ?_
   unfold finalizeBalancedSchedules normalizeEmptyFactorSchedules encOuterAcc encScheduleParams
     encPartialSchedules encOutWords
   let eEdges := encList (encPair encNat encNat)
@@ -883,36 +884,36 @@ private theorem computableInPolyTime_finalizeBalancedSchedules :
     (encPair (encPair encNat encNat) eEdges)
   let eOpt := encOption (encList encNat)
   let eIn := encPair ePar (encPair (encList eOpt) (encList eOpt))
-  have hvar : ComputableTidilyInPolyTime
+  have hvar : ComputableInPolyTime
       (fun q : OuterAcc => q.2.1.map fun o => o.getD (List.replicate q.1.1.2.2 0))
       eIn (encList (encList encNat)) := by fun_prop
-  have hraw2 : ComputableTidilyInPolyTime
+  have hraw2 : ComputableInPolyTime
       (fun q : OuterAcc => q.2.2.map fun o => o.getD (List.replicate q.1.1.2.2 0))
       eIn (encList (encList encNat)) := by fun_prop
-  have hfac : ComputableTidilyInPolyTime
+  have hfac : ComputableInPolyTime
       (fun q : OuterAcc =>
         (List.range (q.2.2.map fun o => o.getD (List.replicate q.1.1.2.2 0)).length).map fun f =>
           if q.1.2.2.any (fun e => decide (e.1 = f)) then
             (q.2.2.map fun o => o.getD (List.replicate q.1.1.2.2 0)).getD f []
           else List.replicate q.1.1.2.2 0)
       eIn (encList (encList encNat)) := by
-    refine ComputableTidilyInPolyTime.mapWithInput
-      (ComputableTidilyInPolyTime.range.comp
-        ((ComputableTidilyInPolyTime.length (encList encNat)).comp hraw2)) ?_
-    have hany : ComputableTidilyInPolyTime
+    refine ComputableInPolyTime.mapWithInput
+      (ComputableInPolyTime.range.comp
+        ((ComputableInPolyTime.length_list (encList encNat)).comp hraw2)) ?_
+    have hany : ComputableInPolyTime
         (fun r : OuterAcc × ℕ => r.1.1.2.2.any fun e => decide (e.1 = r.2))
         (encPair eIn encUnary) encBool :=
-      ComputableTidilyInPolyTime.anyWithInput (by fun_prop)
-        (ComputableTidilyInPolyTime.decide_eq' (by fun_prop)
-          (ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)))
-    have hthen : ComputableTidilyInPolyTime
+      ComputableInPolyTime.anyWithInput (by fun_prop)
+        (ComputableInPolyTime.decide_eq' (by fun_prop)
+          (ComputableInPolyTime.unary_to_binary.comp (by fun_prop)))
+    have hthen : ComputableInPolyTime
         (fun r : OuterAcc × ℕ =>
           (r.1.2.2.map fun o => o.getD (List.replicate r.1.1.1.2.2 0)).getD r.2 [])
         (encPair eIn encUnary) (encList encNat) :=
-      (ComputableTidilyInPolyTime.listGetD []).comp
-        ((hraw2.comp (ComputableTidilyInPolyTime.fst _ _)).prod
-          (ComputableTidilyInPolyTime.snd _ _))
-    exact hany.cond hthen (by fun_prop)
+      (ComputableInPolyTime.listGetD []).comp
+        ((hraw2.comp (ComputableInPolyTime.fst _ _)).prod
+          (ComputableInPolyTime.snd _ _))
+    exact hany.ite' hthen (by fun_prop)
   exact hvar.prod hfac
 
 private noncomputable def mkOuterAccCert
@@ -1154,7 +1155,7 @@ private theorem mkOuterAccCert_bounds
   · have hmaxRT : RT ≤ bOuter L + (L + 1) ^ 2 + (rq + 1) * pStep L := by
       refine NativeCertificate.maxRoundTime_le _ _ _ fun s hs => ?_
       have hs_len : (encNat (runAt s).1).length ≤ L := by
-        rw [IndexFold.run_index]; exact (ComputableTidilyInO.length_encNat_mono hs).trans hlIdx
+        rw [IndexFold.run_index]; exact (length_encNat_mono hs).trans hlIdx
       have hsq := Nat.pow_le_pow_left (Nat.add_le_add_right hs_len 1) 2
       have hstL := hbOuter s hs
       have hcbT : cStep.time (runAt s) ≤ (rq + 1) * pStep L := (hStep p s hs).1
@@ -1182,7 +1183,7 @@ private theorem mkOuterAccCert_bounds
   · have hmaxRS : RS ≤ bOuter L + (L + 1) + pStep L := by
       refine NativeCertificate.maxRoundSpace_le _ _ _ fun s hs => ?_
       have hs_len : (encNat (runAt s).1).length ≤ L := by
-        rw [IndexFold.run_index]; exact (ComputableTidilyInO.length_encNat_mono hs).trans hlIdx
+        rw [IndexFold.run_index]; exact (length_encNat_mono hs).trans hlIdx
       have hstL := hbOuter s hs
       have hcbS : cStep.space (runAt s) ≤ pStep L := (hStep p s hs).2
       change (encOuterSt (runAt s)).length + ((encNat (runAt s).1).length + 1) +

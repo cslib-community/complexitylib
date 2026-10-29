@@ -15,42 +15,28 @@ open Finset Cslib.BitString Cslib.Logic.PL
 
 /-! ### Clause-falsification monomials: empty, tautological, and repeated-literal clauses -/
 
-/-- The empty clause compiles to the constant-`1` monomial `{∅}`. -/
-example : Clause.falsifyMonomials ([] : Clause (Fin 2)) = {∅} := by
-  decide
-
 /-- A tautological clause containing `(0, true)` and `(0, false)` compiles to `∅`, even when
 another variable is present. -/
 def tautClause : Clause (Fin 2) := [(0, true), (1, true), (0, false)]
-
-example : tautClause.falsifyMonomials = ∅ := by
-  decide
-
-example (σ : Fin 2 → Bool) :
-    ∑ M ∈ tautClause.falsifyMonomials, monomial (ZMod 2) M σ = 0 ∧
-      bitVal (ZMod 2) (!tautClause.eval σ) = 0 := by
-  have h0 : tautClause.falsifyMonomials = ∅ :=
-    Clause.falsifyMonomials_eq_empty_of_tautology (v := 0) (by decide) (by decide)
-  rw [← Clause.sum_falsifyMonomials, h0]
-  simp
 
 /-- Repeated literals in `(x₀ ∨ x₀ ∨ ¬x₁)` collapse to the two monomials `{1}` and `{0, 1}`
 (`x₁ + x₀ x₁`), strictly below the uncollapsed `2 ^ 3 = 8` bound. -/
 def dupClause : Clause (Fin 2) := [(0, true), (0, true), (1, false)]
 
-example : dupClause.falsifyMonomials = {{1}, {0, 1}} := by
-  decide
-
-example : #dupClause.falsifyMonomials = 2 ∧ #dupClause.falsifyMonomials < 2 ^ dupClause.length := by
-  decide
-
-/-- On the sole falsifying assignment `![false, true]`, `dupClause.falsifyMonomials` evaluates to
-`1` in `ZMod 2`, and on `![true, true]` the two monomials `{1}` and `{0, 1}` both evaluate to `1`
-and cancel to `0` over `ZMod 2`. -/
-example :
-    ∑ M ∈ dupClause.falsifyMonomials, monomial (ZMod 2) M ![false, true] = 1 ∧
-      ∑ M ∈ dupClause.falsifyMonomials, monomial (ZMod 2) M ![true, true] = 0 := by
-  decide
+example (σ : Fin 2 → Bool) :
+    Clause.falsifyMonomials ([] : Clause (Fin 2)) = {∅} ∧
+    tautClause.falsifyMonomials = ∅ ∧
+    (∑ M ∈ tautClause.falsifyMonomials, monomial (ZMod 2) M σ = 0 ∧
+      bitVal (ZMod 2) (!tautClause.eval σ) = 0) ∧
+    dupClause.falsifyMonomials = {{1}, {0, 1}} ∧
+    (#dupClause.falsifyMonomials = 2 ∧ #dupClause.falsifyMonomials < 2 ^ dupClause.length) ∧
+    (∑ M ∈ dupClause.falsifyMonomials, monomial (ZMod 2) M ![false, true] = 1 ∧
+      ∑ M ∈ dupClause.falsifyMonomials, monomial (ZMod 2) M ![true, true] = 0) := by
+  refine ⟨by decide, by decide, ?_, by decide, by decide, by decide⟩
+  have h0 : tautClause.falsifyMonomials = ∅ :=
+    Clause.falsifyMonomials_eq_empty_of_tautology (v := 0) (by decide) (by decide)
+  rw [← Clause.sum_falsifyMonomials, h0]
+  simp
 
 /-! ### Mod-`2` monomial cancellation across clauses in a parity row -/
 
@@ -59,66 +45,45 @@ clause `0` has falsification monomials `{{1}, {0, 1}}` and clause `1` has `{{1}}
 def cancelFormula : CNF (Fin 3) :=
   [[(0, true), (1, false)], [(1, false)]]
 
-/-- Under the all-ones parity row `![true, true]`, the shared monomial `{1}` occurs twice and
-cancels modulo `2`, leaving only `{0, 1}`. -/
-example : cancelFormula.parityRowMonomials ![true, true] = {{0, 1}} := by
-  decide
-
-/-- Under `σ = ![false, true, false]`, both clauses are violated (`violations = ![true, true]`), so
-their violation parity is `false` and the compiled single-monomial equation `x₀ x₁ = 0` holds! -/
-example :
-    cancelFormula.eval ![false, true, false] = false ∧
-      (∀ e, cancelFormula.violations ![false, true, false] e = true) ∧
-      ∑ M ∈ cancelFormula.parityRowMonomials ![true, true],
-        monomial (ZMod 2) M ![false, true, false] = 0 := by
-  decide
-
-/-- Adding the two unit rows `![true, false]` and `![false, true]` produces the symmetric
-difference `{{1}, {0, 1}} ∆ {{1}} = {{0, 1}}`. -/
-example :
-    cancelFormula.parityRowMonomials (![true, false] + ![false, true]) =
-      symmDiff (cancelFormula.parityRowMonomials ![true, false])
-        (cancelFormula.parityRowMonomials ![false, true]) ∧
-      symmDiff (cancelFormula.parityRowMonomials ![true, false])
-        (cancelFormula.parityRowMonomials ![false, true]) = {{0, 1}} :=
-  ⟨CNF.parityRowMonomials_add _ _ _, by decide⟩
-
 /-- A test list with repeated clause index `((0, true), (1, true), (0, true))` cancels clause `0`
 in `testRow`, leaving weight `1 ≤ 3` and monomial set `{{1}}`. -/
 def cancelTestList : Fin 3 → Fin cancelFormula.length × Bool :=
   ![(⟨0, by decide⟩, true), (⟨1, by decide⟩, true), (⟨0, by decide⟩, true)]
 
 example :
-    weight (testRow cancelTestList) = 1 ∧
-      cancelFormula.parityRowMonomials (testRow cancelTestList) = {{1}} := by
-  decide
+    cancelFormula.parityRowMonomials ![true, true] = {{0, 1}} ∧
+    (cancelFormula.eval ![false, true, false] = false ∧
+      (∀ e, cancelFormula.violations ![false, true, false] e = true) ∧
+      ∑ M ∈ cancelFormula.parityRowMonomials ![true, true],
+        monomial (ZMod 2) M ![false, true, false] = 0) ∧
+    (cancelFormula.parityRowMonomials (![true, false] + ![false, true]) =
+      symmDiff (cancelFormula.parityRowMonomials ![true, false])
+        (cancelFormula.parityRowMonomials ![false, true]) ∧
+      symmDiff (cancelFormula.parityRowMonomials ![true, false])
+        (cancelFormula.parityRowMonomials ![false, true]) = {{0, 1}}) ∧
+    (weight (testRow cancelTestList) = 1 ∧
+      cancelFormula.parityRowMonomials (testRow cancelTestList) = {{1}}) :=
+  ⟨by decide, by decide, ⟨CNF.parityRowMonomials_add _ _ _, by decide⟩, by decide⟩
 
 /-! ### Exact `N(A) = #F + D(A)` decomposition and common-zero agreement with `modelCountOn` -/
 
 /-- `cancelFormula` (`(x₀ ∨ ¬x₁) ∧ ¬x₁` on `Fin 3`, with `x₂` free) has `4` satisfying assignments
-(`x₁ = false`, any `x₀, x₂`). Under the single parity row `![true, true]` (`x₀ x₁ = 0`), `6`
-assignments pass: `4` satisfying ones plus `2` nonsatisfying ones (`x₀ = false, x₁ = true`, any
-`x₂`). -/
+(`x₁ = false`, any `x₀, x₂`). Under `![true, true]`, `6` assignments pass (`4` satisfying plus `2`
+nonsatisfying); adding `![false, true]` eliminates the remaining bad assignments. -/
 example :
-    cancelFormula.modelCountOn Finset.univ = 4 ∧
+    (cancelFormula.modelCountOn Finset.univ = 4 ∧
       #{σ : Fin 3 → Bool |
           ∀ r ∈ ([![true, true]] : List (Fin cancelFormula.length → Bool)),
             ∑ M ∈ cancelFormula.parityRowMonomials r, monomial (ZMod 2) M σ = 0} = 6 ∧
       #{σ : Fin 3 → Bool |
           cancelFormula.eval σ = false ∧
-            PassesTests cancelFormula.violations [![true, true]] σ} = 2 := by
-  decide
-
-/-- Adding the second independent parity row `![false, true]` (`x₁ = 0`) eliminates the remaining
-bad assignments, so the common-zero count equals `cancelFormula.modelCountOn Finset.univ = 4`
-(which differs from `cancelFormula.modelCount = 2` because variable `2` is declared but unused). -/
-example :
-    #{σ : Fin 3 → Bool |
+            PassesTests cancelFormula.violations [![true, true]] σ} = 2) ∧
+    (#{σ : Fin 3 → Bool |
         ∀ r ∈ ([![true, true], ![false, true]] : List (Fin cancelFormula.length → Bool)),
           ∑ M ∈ cancelFormula.parityRowMonomials r, monomial (ZMod 2) M σ = 0} =
       cancelFormula.modelCountOn Finset.univ ∧
       cancelFormula.modelCountOn Finset.univ = 4 ∧
-      cancelFormula.modelCount = 2 := by
+      cancelFormula.modelCount = 2) := by
   decide
 
 /-- Zero-variable (`Fin 0`) boundary: the empty formula has `modelCountOn Finset.univ = 1`, while

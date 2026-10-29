@@ -7,7 +7,8 @@ Authors: Karn Seth
 import Complexity.Computability.Complexity.FineGrained.PPSZ.CriticalTree
 
 /-! Critical clause trees for PPSZ: an explicit tree of height two whose cuts force a variable,
-and a cut that exists only at depth two. -/
+a cut that exists only at depth two, and a tree rooted at one variable for a solution that is not
+isolated, which has no critical clause tree. -/
 
 namespace ComplexityTests.PPSZCriticalTree
 
@@ -77,5 +78,26 @@ example : WImplied φ 8 (PPZ.restrict (fun _ => true) ∅) 1 true :=
     (fun c hc => (φ_len c hc).trans (by decide)) (by decide) fun s hs => by
       obtain ⟨y, hy, hyA⟩ := cut_iff_forall_descends.mp cut_two s hs
       exact ⟨y, List.mem_append_left _ hy, hyA⟩
+
+/-! ### A tree rooted at one variable -/
+
+/-- The formula `x₀` on two variables: the solution `x₀ = x₁ = true` is not isolated, since
+flipping `x₁` keeps it a solution. -/
+def χ : CNF (Fin 2) := [[(0, true)]]
+
+/-- No critical clause tree of height one exists: the root path `[x₁]` has no violated clause. -/
+theorem not_isCriticalTree (C : List (Fin 2) → Clause (Fin 2)) :
+    ¬IsCriticalTree χ (fun _ => true) 1 C := fun hC => by
+  obtain ⟨hmem, heval⟩ := hC [1] (by simp) (by simp)
+  simp only [χ, List.mem_singleton] at hmem
+  rw [hmem] at heval
+  simp only [Clause.eval, List.any_cons, List.any_nil, Bool.or_false, Literal.eval] at heval
+  simp [flipOn_apply_of_notMem (show (0 : Fin 2) ∉ ({1} : Finset (Fin 2)) by decide)] at heval
+
+/-- The clause `x₀` labels a critical clause tree of every height rooted at `x₀`: every root path
+through `x₀` flips `x₀`. -/
+theorem isCriticalTreeAt_χ (h : ℕ) :
+    IsCriticalTreeAt χ (fun _ => true) 0 h fun _ => [(0, true)] := fun p hp _ =>
+  ⟨by simp [χ], by simp [Clause.eval, flipOn_apply_of_mem (List.mem_toFinset.mpr hp)]⟩
 
 end ComplexityTests.PPSZCriticalTree
