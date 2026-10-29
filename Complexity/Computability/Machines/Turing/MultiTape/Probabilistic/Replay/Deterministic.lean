@@ -84,7 +84,7 @@ def relabel (e : State ≃ State') (machine : MultiTapePTM k Symbol State Oracle
 variable [DecidableEq Oracle]
 
 /-- Relabelling commutes with the run program, for every coin and request program. -/
-private theorem runConfigFrom_relabel {Query : Type} {spec : OracleSpec.{0, 0} Query}
+theorem runConfigFrom_relabel {Query : Type} {spec : OracleSpec.{0, 0} Query}
     (e : State ≃ State')
     (machine : MultiTapePTM k Symbol State Oracle) (coin : OracleComp spec Bool)
     (query : Oracle → List Symbol → OracleComp spec (List Symbol)) (fuel : ℕ)

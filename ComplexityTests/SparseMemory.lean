@@ -45,31 +45,31 @@ example (a v d : ℕ) :
    by simpa using congrFun (read_insert d a v ∅) a, rfl⟩
 
 example :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : (ℕ × SparseMemory ℕ ℕ) × ℕ => read q.2 q.1.1 q.1.2)
       (readEncoding encNat encNat) encNat (readTime encNat encNat) (readSpace encNat encNat) ∧
-    ComputableTidilyInO
+    ComputableInO
       (fun q : (ℕ × Bool) × SparseMemory ℕ Bool => q.2.insert q.1.1 q.1.2)
       (writeEncoding encNat encBool) (encoding encNat encBool)
       (writeTime encNat encBool) (writeSpace encNat encBool) ∧
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun q : (ℕ × SparseMemory ℕ Bool) × Bool => read q.2 q.1.1 q.1.2)
       (readEncoding encNat encBool) encBool ∧
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun q : (ℕ × Bool) × SparseMemory ℕ Bool => q.2.insert q.1.1 q.1.2)
       (writeEncoding encNat encBool) (encoding encNat encBool) :=
   ⟨read_inO encNat encNat, insert_inO encNat encBool, by fun_prop, by fun_prop⟩
 
 -- Compose actual native machines: prepare the write, keep its address, then read it back.
 example (q : (ℕ × ℕ) × SparseMemory ℕ ℕ) :
-    (∃ T S, ComputableTidilyInO
+    (∃ T S, ComputableInO
       (fun q : (ℕ × ℕ) × SparseMemory ℕ ℕ => read 0 q.1.1 (q.2.insert q.1.1 q.1.2))
       (writeEncoding encNat encNat) encNat T S) ∧
     read 0 q.1.1 (q.2.insert q.1.1 q.1.2) = q.1.2 := by
-  have hb := ComputableTidilyInO.fst (encPair encNat encNat) (encoding encNat encNat)
+  have hb := ComputableInO.fst (encPair encNat encNat) (encoding encNat encNat)
   have hw := insert_inO encNat encNat
   have hp := (hb.fst'.prod hw).prod
-    (ComputableTidilyInO.const (encIn := writeEncoding encNat encNat) (encMid := encNat) 0)
+    (ComputableInO.const (encIn := writeEncoding encNat encNat) (encMid := encNat) 0)
   exact ⟨⟨_, _, (read_inO encNat encNat).comp hp⟩,
     by simpa using congrFun (read_insert 0 q.1.1 q.1.2 q.2) q.1.1⟩
 
@@ -77,7 +77,7 @@ example (q : (ℕ × ℕ) × SparseMemory ℕ ℕ) :
 theorem large_address_native :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (tm : Turing.MultiTapeTM k Bool State)
       (t s : ℕ),
-    tm.ComputesTidilyInTimeAndSpace (readEncoding encNat encNat ((high, sample), 0))
+    tm.ComputesInTimeAndSpace (readEncoding encNat encNat ((high, sample), 0))
       (encNat 7) t s := by
   obtain ⟨c, ⟨k, State, hfinite, tm, htm⟩, _⟩ := read_inO encNat encNat
   refine ⟨k, State, hfinite, tm,

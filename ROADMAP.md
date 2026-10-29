@@ -429,6 +429,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   kept separate; and develop general open-program composition. Use Cook–Levin and GGM as
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
+- **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table and
+  collision-tested minimum-search programs have explicit local fit/frame/cost contracts.
+  Frontend enumeration, heavy extraction, recursive traversal, packed output and global
+  preprocessing width/time composition remain.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
@@ -634,7 +638,9 @@ not planned, not as proved.
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
+[#1446]: https://github.com/cslib-community/complexitylib/issues/1446
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
+[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
