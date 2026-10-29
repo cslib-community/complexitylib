@@ -21,8 +21,8 @@ in the inverse of the error. This settles a conjecture of Linial and Nisan.
 The theorem below takes one parameter `q ≥ 1` for the size, the fan-in and the error: a circuit of
 depth at most `d`, with at most `2 ^ q` gates, each of fan-in less than `2 ^ q`, is fooled with
 error `2 ^ (-q)` by every `(64 q) ^ ((2 d + 3) (d + 7) + 1)`-wise independent distribution. Taking
-`q` at least `log₂` of the size, of the fan-in and of the inverse of the error `ε`, this is
-`k = (log (m / ε)) ^ O(d²)` for circuits of size `m` with fan-in at most `m`, the form of
+`q ≥ log₂ (fan-in + 1)` and `q` at least `log₂` of the size and of the inverse of the error `ε`,
+this is `k = (log (m / ε)) ^ O(d²)` for circuits of size `m` with fan-in at most `m`, the form of
 Braverman's theorem. The explicit constants and exponent are our own and are weaker than
 Braverman's: the proof uses a Linial–Mansour–Nisan bound with exponent `1 / (d + 1)`.
 

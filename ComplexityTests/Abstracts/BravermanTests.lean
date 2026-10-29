@@ -8,20 +8,23 @@ Authors: Karn Seth
 
 import ComplexityAbstracts.BravermanAbstract
 import Complexity.Computability.Circuit.Pi
+import ComplexityTests.BravermanFooling
 import Complexity.Probability.PMF.Expect
 
 /-! # Concrete clients and non-vacuity checks for the Braverman abstract
 
 Verifies that the circuit semantics of `BravermanAbstract` is the library's, that its
-`k`-wise independence is the library's (`Cslib.BitString.IsKWiseIndependent`), that the xor sample
-space on three bits is pairwise but not `3`-wise independent, and that the hypotheses of the
-headline are satisfiable: the one-gate circuit `AND₃` with `q = 2` and depth `1`, under the
-uniform distribution, which is `k`-wise independent for every `k`.
+`k`-wise independence is the library's (`Cslib.BitString.IsKWiseIndependent`), and that the
+headline applies to a distribution that is not uniform: the uniform distribution on the strings of
+`K + 1` bits with even parity is `K`-wise but not `(K + 1)`-wise independent, and for every `K` at
+least the headline's independence at `q = 2` and depth `1`, the headline bounds the probability
+that `AND` of its first three bits is true. The even-parity distribution and the circuit are shared
+with `ComplexityTests.BravermanFooling`.
 -/
 
 namespace ComplexityTests.Abstracts.BravermanTests
 
-open ComplexityAbstracts.BravermanAbstract
+open ComplexityAbstracts.BravermanAbstract ComplexityTests.BravermanFooling
 open Finset Cslib Cslib.BitString Cslib.Probability Cslib.Circuits Cslib.Circuits.Boolean
 open scoped BigOperators
 
@@ -31,55 +34,38 @@ example : meaning = Unbounded.interpretation :=
 example {n k : ℕ} (X : PMF (Fin n → Bool)) : KWiseIndependent k X ↔ IsKWiseIndependent k X :=
   ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.symm
 
-/-- The uniform distribution is `k`-wise independent for every `k`. -/
-theorem kWiseIndependent_uniform {n : ℕ} (k : ℕ) :
-    KWiseIndependent k (PMF.uniformOfFintype (Fin n → Bool)) :=
+-- The uniform distribution is `k`-wise independent for every `k`.
+example {n : ℕ} (k : ℕ) : KWiseIndependent k (PMF.uniformOfFintype (Fin n → Bool)) :=
   ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.1
     (isKWiseIndependent_uniformOfFintype k)
 
-/-- The xor sample space: two random bits and their sum. -/
-private def xorSample : (Fin 2 → Bool) →+ Fin 3 → Bool where
-  toFun s := ![s 0, s 1, s 0 + s 1]
-  map_zero' := by decide
-  map_add' := by decide
-
-/-- The distribution of the xor sample. -/
-private noncomputable def X : PMF (Fin 3 → Bool) :=
-  (PMF.uniformOfFintype (Fin 2 → Bool)).map fun s => xorSample s
-
--- The xor sample is pairwise independent: any two of its bits are uniform.
-example : KWiseIndependent 2 X :=
+/-- The even-parity distribution on `K + 1` bits is `K`-wise independent: any `K` of its bits are
+uniform. -/
+theorem kWiseIndependent_evenParity (K : ℕ) : KWiseIndependent K (evenParity (K + 1)) :=
   ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.1
-    (isKWiseIndependentHash_of_surjective xorSample (by decide)).isKWiseIndependent_map
+    (isKWiseIndependent_evenParity K)
 
--- It is not `3`-wise independent: every sample has even parity.
-example : ¬KWiseIndependent 3 X := by
-  intro h'
-  have h := ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.2 h'
-  have hb : bias X univ = 1 := by
-    rw [bias, X, PMF.sum_map_mul]
-    simp only [chi_eq_signVal_parityOn]
-    rw [← Cslib.Probability.PMF.sum_toReal (PMF.uniformOfFintype (Fin 2 → Bool))]
-    refine sum_congr rfl fun s _ => ?_
-    rw [show parityOn univ (xorSample s) = false by revert s; decide, signVal_false, mul_one]
-  have := h univ ⟨0, mem_univ _⟩ (by simp)
-  rw [hb, abs_one] at this
-  norm_num at this
+-- It is not `(K + 1)`-wise independent: every sample has even parity.
+example (K : ℕ) : ¬KWiseIndependent (K + 1) (evenParity (K + 1)) := fun h =>
+  not_isKWiseIndependent_evenParity K
+    (ComplexityAbstracts.BravermanBridge.isKWiseIndependent_iff_map_restrict.2 h)
 
-/-- The one-gate circuit computing `AND₃`. -/
-abbrev and3 : Circuit ACBasis 3 1 := Circuit.oneGate (.and 3) id
-
--- The headline applies to `AND₃` with `q = 2` and depth `1` under the uniform distribution.
-example (k : ℕ) (hk : 128 ^ 41 ≤ k) :
-    |probabilityTrue (PMF.uniformOfFintype (Fin 3 → Bool)) and3 - fractionTrue and3| ≤
+-- The headline applies to `AND` of the first three of `K + 1` bits, with `q = 2` and depth `1`,
+-- under the even-parity distribution for every
+-- `K ≥ 128 ^ 41 = (64 · 2) ^ ((2 · 1 + 3) (1 + 7) + 1)`.
+example (K : ℕ) (hK : 128 ^ 41 ≤ K) :
+    |probabilityTrue (evenParity (K + 1))
+        (and3 (Nat.succ_le_succ ((by norm_num : 2 ≤ 128 ^ 41).trans hK))) -
+      fractionTrue (and3 (Nat.succ_le_succ ((by norm_num : 2 ≤ 128 ^ 41).trans hK)))| ≤
       1 / 2 ^ 2 :=
-  braverman (d := 1) (q := 2) (by norm_num) and3 (by decide) (by decide)
-    (Circuit.depth_oneGate _ _).le _ (kWiseIndependent_uniform k) (by norm_num at hk ⊢; exact hk)
+  braverman (d := 1) (q := 2) (by norm_num) _ (and3_fanInAtMost _)
+    (by rw [Circuit.size_oneGate]; norm_num) (Circuit.depth_oneGate _ _).le _
+    (kWiseIndependent_evenParity K) (by norm_num at hK ⊢; exact hK)
 
 -- `AND₃` is true on one of the eight inputs.
-example : fractionTrue and3 = 1 / 8 := by
-  rw [fractionTrue, show (univ.filter fun x : Fin 3 → Bool => and3.eval meaning x 0 = true).card = 1
-    by decide]
+example : fractionTrue (and3 (le_refl 3)) = 1 / 8 := by
+  rw [fractionTrue, show (univ.filter fun x : Fin 3 → Bool =>
+    (and3 (le_refl 3)).eval meaning x 0 = true).card = 1 by decide]
   norm_num
 
 end ComplexityTests.Abstracts.BravermanTests
