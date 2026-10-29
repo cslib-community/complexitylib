@@ -64,7 +64,7 @@ example :
   decide
 
 example :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : List Bool × List Bool => machine.replayOutput p.1 p.2)
       (encPair encBits encBits) encBits ∧
     ComputableTidilyInPolyTime

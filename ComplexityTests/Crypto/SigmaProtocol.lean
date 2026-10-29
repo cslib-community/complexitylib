@@ -57,19 +57,18 @@ example : ((10 : ZMod 11), (4 : ZMod 11)) ∈
       3 3).support :=
   (PMF.mem_support_map_iff _ _ _).mpr ⟨4, PMF.mem_support_uniformOfFintype 4, by decide⟩
 
-/-- At every challenge, the simulation has the honest law for the witness `7`. -/
+/-- At every challenge and under a uniform challenge, the simulation has the honest law for the
+witness `7`. -/
 example (c : ZMod 11) :
     linearSimulate (fun _ : ZMod 11 => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι 3 c =
-      (schnorr ι (2 : ZMod 11)).transcript 7 3 c :=
-  schnorr_specialHVZK.transcript_eq 7 3 (by decide) c
-
-/-- With a uniform challenge, simulated and honest conversations have the same law. -/
-example : (schnorr ι (2 : ZMod 11)).conversation 7 3 = do
-    let c ← PMF.uniformOfFintype (ZMod 11)
-    let tz ← linearSimulate (fun _ : ZMod 11 => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2)
-      id ι 3 c
-    return (tz.1, c, tz.2) :=
-  schnorr_specialHVZK.conversation_eq (by decide)
+      (schnorr ι (2 : ZMod 11)).transcript 7 3 c ∧
+    (schnorr ι (2 : ZMod 11)).conversation 7 3 = do
+      let c ← PMF.uniformOfFintype (ZMod 11)
+      let tz ← linearSimulate (fun _ : ZMod 11 => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2)
+        id ι 3 c
+      return (tz.1, c, tz.2) :=
+  ⟨schnorr_specialHVZK.transcript_eq 7 3 (by decide) c,
+   schnorr_specialHVZK.conversation_eq (by decide)⟩
 
 /-! ### Schnorr in the subgroup of order `11` of `(ZMod 23)ˣ`
 
@@ -99,13 +98,12 @@ example : (schnorr ι (root 2)).Accepts (root 13) (root 9) 6 3 := by decide
 /-- The extractor recovers the discrete logarithm `7` of `13` to the base `2`. -/
 example : linearExtract ι (root 13) (root 9) 3 (4 : ZMod 11) 6 3 = 7 := by decide +kernel
 
-example : linearExtract ι (root 13) (root 9) 3 (4 : ZMod 11) 6 3 • root 2 = root 13 :=
-  schnorr_specialSoundness _ _ _ _ _ _ (by decide) (by decide) (by decide)
-
 example (c : ZMod 11) :
+    linearExtract ι (root 13) (root 9) 3 (4 : ZMod 11) 6 3 • root 2 = root 13 ∧
     linearSimulate (fun _ : G => LinearMap.toSpanSingleton (ZMod 11) G (root 2)) id ι (root 13)
       c = (schnorr ι (root 2)).transcript 7 (root 13) c :=
-  schnorr_specialHVZK.transcript_eq 7 _ (by decide) c
+  ⟨schnorr_specialSoundness _ _ _ _ _ _ (by decide) (by decide) (by decide),
+   schnorr_specialHVZK.transcript_eq 7 _ (by decide) c⟩
 
 /-! ### Okamoto and Chaum–Pedersen in `ZMod 11`
 
@@ -175,19 +173,18 @@ example : orExtract (linearExtract (Y := ZMod 11) ι) (linearExtract (Y := ZMod 
     ((5, 7, 6) : ZMod 11 × ZMod 11 × ZMod 11) 2 (9, 2, 6) = .inl 7 := by
   decide +kernel
 
-/-- The composite simulators are perfect for the composite relations. -/
+/-- The composite simulators and completeness properties hold for the composite relations. -/
 example : (orProof (schnorr ι (2 : ZMod 11)) (schnorr ι (2 : ZMod 11))
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)
     (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)).SpecialHVZK
       (orRelation (fun α u => α • (2 : ZMod 11) = u) fun α u => α • (2 : ZMod 11) = u)
       (orSimulate
         (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)
-        (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)) :=
-  orProof_specialHVZK schnorr_specialHVZK schnorr_specialHVZK
-
-example : (andProof (schnorr ι (2 : ZMod 11)) (chaumPedersen ι (2 : ZMod 11))).Complete
-    fun x y => x.1 • (2 : ZMod 11) = y.1 ∧
-      (x.2 • (2 : ZMod 11) = y.2.2.1 ∧ x.2 • y.2.1 = y.2.2.2) :=
-  andProof_complete schnorr_complete chaumPedersen_complete
+        (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod 11) (ZMod 11) 2) id ι)) ∧
+    (andProof (schnorr ι (2 : ZMod 11)) (chaumPedersen ι (2 : ZMod 11))).Complete
+      fun x y => x.1 • (2 : ZMod 11) = y.1 ∧
+        (x.2 • (2 : ZMod 11) = y.2.2.1 ∧ x.2 • y.2.1 = y.2.2.2) :=
+  ⟨orProof_specialHVZK schnorr_specialHVZK schnorr_specialHVZK,
+   andProof_complete schnorr_complete chaumPedersen_complete⟩
 
 end ComplexityTests.Crypto.SigmaProtocol

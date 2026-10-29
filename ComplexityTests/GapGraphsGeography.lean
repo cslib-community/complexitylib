@@ -28,33 +28,29 @@ open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 private noncomputable def gapNat : PromiseProblem ℕ :=
   PromiseProblem.gapMin (fun n => (n : ℝ)) (fun _ => 1) (fun _ => 3)
 
-example : (0 : ℕ) ∈ gapNat.yes := by norm_num [gapNat]
-
-example : (5 : ℕ) ∈ gapNat.no := by norm_num [gapNat]
-
-/-- `2` is in neither set: it is outside the promise. -/
-example : (2 : ℕ) ∉ gapNat.yes ∧ (2 : ℕ) ∉ gapNat.no := by norm_num [gapNat]
-
-/-- With instance-dependent thresholds `c n = n` and `s n = 2 n`, the instance `0` has `c 0 = s 0`
-and is never a no-instance. -/
-example : (0 : ℕ) ∉ (PromiseProblem.gapMin (fun _ => (7 : ℝ)) (fun n : ℕ => (n : ℝ))
-    (fun n : ℕ => 2 * (n : ℝ))).no := by
-  norm_num
+/-- Yes-, no-, and out-of-promise instances of `gapNat` and threshold-equality boundary. -/
+example :
+    (0 : ℕ) ∈ gapNat.yes ∧
+    (5 : ℕ) ∈ gapNat.no ∧
+    (2 : ℕ) ∉ gapNat.yes ∧
+    (2 : ℕ) ∉ gapNat.no ∧
+    (0 : ℕ) ∉ (PromiseProblem.gapMin (fun _ => (7 : ℝ)) (fun n : ℕ => (n : ℝ))
+      (fun n : ℕ => 2 * (n : ℝ))).no := by
+  norm_num [gapNat]
 
 /-! ### Values of graphs -/
 
-/-- A single vertex is an independent set. -/
-example : 1 ≤ Graph.indepNum ([0], []) :=
-  Graph.le_indepNum_iff.2 ⟨{⟨0, by simp⟩}, by simp, rfl⟩
-
-/-- A graph without declared vertices has independence number `0` and vertex cover number `0`. -/
-example : Graph.indepNum ([], []) = 0 ∧ Graph.vertexCoverNum ([], []) = 0 := by
+/-- Independence number, vertex cover number, and complement clique number on small graphs. -/
+example :
+    1 ≤ Graph.indepNum ([0], []) ∧
+    Graph.indepNum ([], []) = 0 ∧
+    Graph.vertexCoverNum ([], []) = 0 ∧
+    (Graph.compl ([0], [])).cliqueNum = Graph.indepNum ([0], []) := by
   have h := Graph.indepNum_le_card ([], [])
   simp only [List.toFinset_nil, Finset.card_empty, Nat.le_zero] at h
-  exact ⟨h, by rw [Graph.vertexCoverNum_eq_card_sub_indepNum, h]; rfl⟩
-
-/-- Complementing a graph exchanges independent sets and cliques. -/
-example (G : Graph) : G.compl.cliqueNum = G.indepNum := Graph.cliqueNum_compl G
+  exact ⟨Graph.le_indepNum_iff.2 ⟨{⟨0, by simp⟩}, by simp, rfl⟩,
+    h, by rw [Graph.vertexCoverNum_eq_card_sub_indepNum, h]; rfl,
+    Graph.cliqueNum_compl ([0], [])⟩
 
 /-! ### Yes- and no-instances at the constants of the hardness theorems -/
 
@@ -75,11 +71,6 @@ private theorem contradiction_mem_no :
   simp only [GapExactThreeSAT.contradiction, List.mem_cons, List.not_mem_nil, or_false] at hc
   rcases hc with rfl | rfl <;> rfl
 
-/-- The gap problem of MAX-3SAT has a yes- and a no-instance with clauses of three literals. -/
-example :
-    satFormula ∈ (GapThreeSAT s₀).yes ∧ GapExactThreeSAT.contradiction ∈ (GapThreeSAT s₀).no :=
-  ⟨satFormula_mem_yes.1, contradiction_mem_no.1⟩
-
 /-- A reduction of promise problems carries yes- and no-instances. -/
 private theorem nonempty_of_polyTimeReducible {α β : Type} {encA : α ↪ List Bool}
     {encB : β ↪ List Bool} {X : PromiseProblem α} {Y : PromiseProblem β}
@@ -88,17 +79,21 @@ private theorem nonempty_of_polyTimeReducible {α β : Type} {encA : α ↪ List
   let ⟨f, _, hyes, hno⟩ := h
   ⟨⟨f a, hyes ha⟩, ⟨f b, hno hb⟩⟩
 
-example : (∃ x, x ∈ (GapIndependentSet s₀).yes) ∧ ∃ x, x ∈ (GapIndependentSet s₀).no :=
-  nonempty_of_polyTimeReducible (polyTimeReducible_GapThreeSAT_GapIndependentSet (by norm_num))
-    satFormula_mem_yes.1 contradiction_mem_no.1
-
-example : (∃ x, x ∈ (GapClique s₀).yes) ∧ ∃ x, x ∈ (GapClique s₀).no :=
-  nonempty_of_polyTimeReducible ((polyTimeReducible_GapThreeSAT_GapIndependentSet
-    (by norm_num)).trans polyTimeReducible_GapIndependentSet_GapClique)
-    satFormula_mem_yes.1 contradiction_mem_no.1
-
-example : (∃ x, x ∈ (GapVertexCover (1 + 1 / (3 * 2 ^ 78))).yes) ∧
-    ∃ x, x ∈ (GapVertexCover (1 + 1 / (3 * 2 ^ 78))).no := by
+/-- Yes- and no-instances for `GapThreeSAT`, `GapIndependentSet`, `GapClique`, and
+`GapVertexCover`. -/
+example :
+    satFormula ∈ (GapThreeSAT s₀).yes ∧
+    GapExactThreeSAT.contradiction ∈ (GapThreeSAT s₀).no ∧
+    ((∃ x, x ∈ (GapIndependentSet s₀).yes) ∧ ∃ x, x ∈ (GapIndependentSet s₀).no) ∧
+    ((∃ x, x ∈ (GapClique s₀).yes) ∧ ∃ x, x ∈ (GapClique s₀).no) ∧
+    ((∃ x, x ∈ (GapVertexCover (1 + 1 / (3 * 2 ^ 78))).yes) ∧
+      ∃ x, x ∈ (GapVertexCover (1 + 1 / (3 * 2 ^ 78))).no) := by
+  refine ⟨satFormula_mem_yes.1, contradiction_mem_no.1,
+    nonempty_of_polyTimeReducible (polyTimeReducible_GapThreeSAT_GapIndependentSet (by norm_num))
+      satFormula_mem_yes.1 contradiction_mem_no.1,
+    nonempty_of_polyTimeReducible ((polyTimeReducible_GapThreeSAT_GapIndependentSet
+      (by norm_num)).trans polyTimeReducible_GapIndependentSet_GapClique)
+      satFormula_mem_yes.1 contradiction_mem_no.1, ?_⟩
   have h := polyTimeReducible_GapExactThreeSAT_GapVertexCover (s := s₀) (by norm_num)
   rw [show (1 + (1 - s₀) / 2 : ℝ) = 1 + 1 / (3 * 2 ^ 78) by norm_num] at h
   exact nonempty_of_polyTimeReducible h satFormula_mem_yes contradiction_mem_no
@@ -152,13 +147,12 @@ private theorem notMem_TQBFCNF_free :
   rw [TQBFCNF, Set.mem_ofPred_eq, mem_TQBF]
   decide
 
-example : GeneralizedGeography.reduce ([(0, 1)], [[(0, true)]]) ∈ GeneralizedGeography :=
-  (GeneralizedGeography.reduce_mem_iff _).2 mem_TQBFCNF_ex
-
-example : GeneralizedGeography.reduce ([(0, 1)], [[(1, true)]]) ∉ GeneralizedGeography :=
-  fun h => notMem_TQBFCNF_all ((GeneralizedGeography.reduce_mem_iff _).1 h)
-
-example : GeneralizedGeography.reduce ([(0, 1)], [[(2, false)]]) ∉ GeneralizedGeography :=
-  fun h => notMem_TQBFCNF_free ((GeneralizedGeography.reduce_mem_iff _).1 h)
+example :
+    GeneralizedGeography.reduce ([(0, 1)], [[(0, true)]]) ∈ GeneralizedGeography ∧
+    GeneralizedGeography.reduce ([(0, 1)], [[(1, true)]]) ∉ GeneralizedGeography ∧
+    GeneralizedGeography.reduce ([(0, 1)], [[(2, false)]]) ∉ GeneralizedGeography :=
+  ⟨(GeneralizedGeography.reduce_mem_iff _).2 mem_TQBFCNF_ex,
+    fun h => notMem_TQBFCNF_all ((GeneralizedGeography.reduce_mem_iff _).1 h),
+    fun h => notMem_TQBFCNF_free ((GeneralizedGeography.reduce_mem_iff _).1 h)⟩
 
 end ComplexityTests.GapGraphsGeography

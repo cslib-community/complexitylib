@@ -21,7 +21,7 @@ local notation "Alphabet" => (Bool × (Fin 6 → Bool))
 local notation "Constraint" => (Alphabet → Alphabet → Bool)
 
 variable {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Constraint}
-  (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool))))
+  (hgraph : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool))))
   (hwellFormed : ∀ x, (graph x).WellFormed)
 
 example : ComputableInPolyTime (fun x => (graph x).arithmeticAmplify)
@@ -76,9 +76,7 @@ example : (rejectingEdge.arithmeticAmplify).WellFormed :=
     subst edge
     exact ⟨by decide, by decide⟩)
 
-example : 0 < gap := gap_pos
-
-example : gap = 1 / (2 : ℝ) ^ 61 := rfl
+example : 0 < gap ∧ gap = 1 / (2 : ℝ) ^ 61 := ⟨gap_pos, rfl⟩
 
 -- Two parallel rejecting constraints force a complete round, beyond the zero-round clients.
 -- We instantiate its semantic contract without attempting to materialize its enormous tables.

@@ -39,17 +39,10 @@ theorem computableInPolyTime_xorCompress :
 -- Ordinary importing clients can use the plain `ComputableInPolyTime` certificates for
 -- `padOrTake`, `mdBlocks`, `merkleDamgard`, `extractMerkleDamgardCollision`,
 -- `validCompressionInput`, and `isCollision` directly:
-example : ComputableInPolyTime (fun p : ℕ × List Bool => padOrTake p.1 p.2)
-    (encPair encUnary encBits) encBits :=
-  computableInPolyTime_padOrTake
-
-example : ComputableInPolyTime (fun p : ℕ × List Bool => mdBlocks p.1 p.2)
+example : ComputableInPolyTime (fun p : ℕ × List Bool => mdBlocks p.1 (padOrTake p.1 p.2))
     (encPair encUnary encBits) (encList encBits) :=
-  computableInPolyTime_mdBlocks
-
-example : ComputableInPolyTime (fun p : ℕ × List Bool => validCompressionInput p.1 p.2)
-    (encPair encUnary encBits) encBool :=
-  computableInPolyTime_validCompressionInput
+  computableInPolyTime_mdBlocks.comp
+    ((ComputableInPolyTime.fst _ _).prod computableInPolyTime_padOrTake)
 
 example : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool × List Bool =>
@@ -123,7 +116,7 @@ theorem not_collisionResistant_constHash : ¬ CollisionResistant constHash := by
   have hPPT : IsPPT (encPair encBits encBits) finder := by
     change IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun _ => pure ([false], [true]))
-    exact (ComputableTidilyInPolyTime.const ([false], [true])).isPPTOn
+    exact (ComputableInPolyTime.const ([false], [true])).isPPTOn
   refine not_collisionResistantOn_of_le_succProbability one_ne_zero finder hPPT fun n => ?_
   have heval : ProbComp.eval (collisionGame constHash (fun _ _ => true) finder n) =
       PMF.pure true := by

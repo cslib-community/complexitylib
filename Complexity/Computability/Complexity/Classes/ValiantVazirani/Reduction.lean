@@ -113,34 +113,15 @@ def reduce (x : CNF ℕ × List Bool) : CNF ℕ :=
 
 /-! ### Polynomial time -/
 
-private theorem computableTidilyInPolyTime_stepClauses :
-    ComputableTidilyInPolyTime (fun p : Bool × Var × Var × Var =>
-      stepClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encBool (encPair encVar (encPair encVar encVar)))
-      (encList (encList (encPair encVar encBool))) := by
-  unfold stepClauses encVar
-  fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_stepClauses
-
 /-- Building the clauses of one step is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_stepClauses :
     ComputableInPolyTime (fun p : Bool × Var × Var × Var =>
       stepClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encBool (encPair encVar (encPair encVar encVar)))
-      (encList (encList (encPair encVar encBool))) :=
-  .of_tidy (computableTidilyInPolyTime_stepClauses)
-
-private theorem computableTidilyInPolyTime_rowClauses :
-    ComputableTidilyInPolyTime (fun p : List ℕ × ℕ × List Bool × Bool =>
-      rowClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair (encList encNat) (encPair encUnary (encPair encBits encBool)))
       (encList (encList (encPair encVar encBool))) := by
-  unfold rowClauses encVar
+  unfold stepClauses encVar
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_rowClauses
 
 /-- Building the clauses of one equation is polynomial-time. -/
 @[fun_prop]
@@ -148,25 +129,18 @@ theorem computableInPolyTime_rowClauses :
     ComputableInPolyTime (fun p : List ℕ × ℕ × List Bool × Bool =>
       rowClauses p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair (encList encNat) (encPair encUnary (encPair encBits encBool)))
-      (encList (encList (encPair encVar encBool))) :=
-  .of_tidy (computableTidilyInPolyTime_rowClauses)
-
-private theorem computableTidilyInPolyTime_hashCNF :
-    ComputableTidilyInPolyTime (fun p : List ℕ × ℕ × List Bool => hashCNF p.1 p.2.1 p.2.2)
-      (encPair (encList encNat) (encPair encUnary encBits))
       (encList (encList (encPair encVar encBool))) := by
-  unfold hashCNF
+  unfold rowClauses encVar
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_hashCNF
 
 /-- Building all equations is polynomial-time, with the number of equations in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_hashCNF :
     ComputableInPolyTime (fun p : List ℕ × ℕ × List Bool => hashCNF p.1 p.2.1 p.2.2)
       (encPair (encList encNat) (encPair encUnary encBits))
-      (encList (encList (encPair encVar encBool))) :=
-  .of_tidy (computableTidilyInPolyTime_hashCNF)
+      (encList (encList (encPair encVar encBool))) := by
+  unfold hashCNF
+  fun_prop
 
 /-- The selector ranges over the dyadic range of `φ.vars.length + 2`: the least power of two
 above it. -/
@@ -197,7 +171,6 @@ followed by the raw random bits. -/
 @[fun_prop]
 theorem computableInPolyTime_reduce :
     ComputableInPolyTime reduce (encPair encCNF encBits) encCNF := by
-  refine .of_tidy ?_
   have h : reduce = fun x : CNF ℕ × List Bool =>
       reduceWith x.1 (BitString.boundedBinaryValue (2 * x.1.vars.length + 5)
         (x.2.take (Nat.log 2 (x.1.vars.length + 2) + 1)))
@@ -205,18 +178,18 @@ theorem computableInPolyTime_reduce :
     funext x
     rw [reduce, binaryValue_take_hashBits]
     rfl
-  have hvars : ComputableTidilyInPolyTime (fun x : CNF ℕ × List Bool => x.1.vars)
+  have hvars : ComputableInPolyTime (fun x : CNF ℕ × List Bool => x.1.vars)
       (encPair (encList (encList (encPair encNat encBool))) encBits) (encList encNat) :=
-    (CNF.computableInPolyTime_vars encNat).tidy.comp (by fun_prop)
-  have hinl : ComputableTidilyInPolyTime
+    (CNF.computableInPolyTime_vars encNat).comp (by fun_prop)
+  have hinl : ComputableInPolyTime
       (fun x : CNF ℕ × List Bool => CNF.relabel (Sum.inl : ℕ → ℕ ⊕ ℕ × ℕ) x.1)
       (encPair (encList (encList (encPair encNat encBool))) encBits)
       (encList (encList (encPair (encSum encNat (encPair encUnary encUnary)) encBool))) :=
-    (CNF.computableInPolyTime_relabel (.of_tidy (by fun_prop))).tidy.comp (by fun_prop)
-  have hsplit : ComputableTidilyInPolyTime (CNF.relabel splitVarToNat)
+    (CNF.computableInPolyTime_relabel (by fun_prop)).comp (by fun_prop)
+  have hsplit : ComputableInPolyTime (CNF.relabel splitVarToNat)
       (encList (encList (encPair (encSum encNat (encPair encUnary encUnary)) encBool)))
       (encList (encList (encPair encNat encBool))) :=
-    (CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat).tidy
+    CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat
   rw [h]
   unfold reduceWith encCNF
   fun_prop

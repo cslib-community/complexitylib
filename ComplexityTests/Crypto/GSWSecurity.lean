@@ -109,22 +109,30 @@ example : IsPPTOn encUnary (encPair encBits encBits)
     Parameters.computableInPolyTime_samples Parameters.computableInPolyTime_width
     Parameters.computableInPolyTime_noise
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => encryptSerialized (Parameters.dimension p.1) (Parameters.samples p.1)
       (Parameters.width p.1) p.2.1 p.2.2) :=
-  isPPTOn_encryptSerialized (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-    fun_prop))
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+  isPPTOn_encryptSerialized (by fun_prop) (by fun_prop) (by fun_prop)
+    (by fun_prop) (by fun_prop)
 
 -- No separate encryption-efficiency, security-of-encryption, or zero-noise premise is supplied.
 example
     (hLWE : DecisionLWE Parameters.dimension Parameters.samples Parameters.width
       (fun k => noiseLaw (Parameters.width k) (Parameters.noise k))) :
-    Encryption.INDCPA
-      (fun k => keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
-        (Parameters.width k) (Parameters.noise k))
-      (fun k => encryptSerialized (Parameters.dimension k) (Parameters.samples k)
-        (Parameters.width k)) := Parameters.indCPA hLWE
+    Negligible (fun k =>
+      Game.advantage
+        (ProbComp.eval (Encryption.game
+          (fun k => keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
+            (Parameters.width k) (Parameters.noise k))
+          (fun k => encryptSerialized (Parameters.dimension k) (Parameters.samples k)
+            (Parameters.width k))
+          adaptiveAdversary false k))
+        (ProbComp.eval (Encryption.game
+          (fun k => keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
+            (Parameters.width k) (Parameters.noise k))
+          (fun k => encryptSerialized (Parameters.dimension k) (Parameters.samples k)
+            (Parameters.width k))
+          adaptiveAdversary true k))) :=
+  Parameters.indCPA hLWE adaptiveAdversary adaptiveAdversary_isPPT
 
 end ComplexityTests.GSWSecurity

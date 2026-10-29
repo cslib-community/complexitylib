@@ -90,7 +90,7 @@ example (adversary : ℕ → ℕ → List Bool → ProbComp Bool)
       Game.advantage (ProbComp.eval (sampleList n >>= adversary n index))
         (ProbComp.eval (sampleList n >>= adversary n index)) ≤ ε n := by
   apply ComputationallyIndistinguishable.uniform_bound
-    (ComputationallyIndistinguishable.refl _) (by ppt) (by ppt) (.of_tidy (by fun_prop))
+    (ComputationallyIndistinguishable.refl _) (by ppt) (by ppt) (by fun_prop)
       adversary hadversary
 
 -- The uniform test accepts captured data and a computed challenge in ordinary functional form.

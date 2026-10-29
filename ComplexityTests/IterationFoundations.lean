@@ -52,17 +52,15 @@ example (f : Empty → Empty) : Nat.card (Set.range fun T : ℕ => f^[T]) = 1 :=
   rw [card_range_iterate]
   simp [maxTransientDepth, cyclePeriod]
 
--- Two powers agree exactly as `iterate_eq_iterate_iff` says; distinct small powers differ.
+-- Distinct small powers differ (`iterate_injective_below`); a repeat on `toZero` bounds the
+-- transient depth plus cycle length; and the canonical cycle label lies on the cycle.
 example (f : Fin 4 → Fin 4) (i j : Fin (maxTransientDepth f + cyclePeriod f)) (h : i ≠ j) :
-    f^[i.val] ≠ f^[j.val] := fun he => h (iterate_injective_below f he)
-
--- A repeat bounds the transient plus the cycle.
-example (f : Fin 5 → Fin 5) (x : Fin 5) (h : f^[2] x = f^[4] x) :
-    transientDepth f x + cycleLength f x ≤ 4 :=
-  transientDepth_add_cycleLength_le_of_iterate_eq f x (by decide) h
-
--- The canonical cycle label lies on the cycle, here that of a fixed point.
-example : canonicalCycle (id : Fin 3 → Fin 3) 2 ∈ cycleSet id 2 := canonicalCycle_mem _ _
+    f^[i.val] ≠ f^[j.val] ∧
+    transientDepth toZero 1 + cycleLength toZero 1 ≤ 2 ∧
+    canonicalCycle (id : Fin 3 → Fin 3) 2 ∈ cycleSet id 2 :=
+  ⟨fun he => h (iterate_injective_below f he),
+   transientDepth_add_cycleLength_le_of_iterate_eq toZero 1 (i := 1) (j := 2) (by decide) rfl,
+   canonicalCycle_mem _ _⟩
 
 /-! ### Checkpoints -/
 
@@ -100,22 +98,18 @@ private def succInterpretation : Interpretation succSignature ℕ := fun _ x => 
 private def succCircuit : Circuit succSignature 1 1 :=
   ⟨.gate .empty ⟨(), fun _ => .input 0⟩, fun _ => .gate 0⟩
 
-example : (succCircuit.iterate 3).eval succInterpretation ![4] = ![7] := by
-  rw [Circuit.eval_iterate]
-  decide
-
--- Exact arbitrary weighted cost and size, including zero steps.
-example : (succCircuit.iterate 5).program.cost (fun _ => 7) = 35 := by
-  rw [Circuit.cost_program_iterate]; rfl
-
-example : (succCircuit.iterate 0).size = 0 ∧ (succCircuit.iterate 4).size = 4 := by
-  simp [succCircuit]
-
--- Retaining the orbit prefix costs one copy per transition, and nothing for zero steps.
-example (t : ℕ) : Synthesis succInterpretation (inputs 1)
-    (Synthesis.stages (fun j => Set.range fun i (x : Fin 1 → ℕ) =>
-      (succCircuit.eval succInterpretation)^[j] x i) t) (t * succCircuit.size) :=
-  Synthesis.orbit (s := inputs 1) succCircuit (fun x => x) (fun i => Set.mem_range_self i) t
+-- Evaluation, exact weighted cost, size (including zero steps), and retained orbit prefixes.
+example (t : ℕ) :
+    (succCircuit.iterate 3).eval succInterpretation ![4] = ![7] ∧
+    (succCircuit.iterate 5).program.cost (fun _ => 7) = 35 ∧
+    ((succCircuit.iterate 0).size = 0 ∧ (succCircuit.iterate 4).size = 4) ∧
+    Synthesis succInterpretation (inputs 1)
+      (Synthesis.stages (fun j => Set.range fun i (x : Fin 1 → ℕ) =>
+        (succCircuit.eval succInterpretation)^[j] x i) t) (t * succCircuit.size) :=
+  ⟨by rw [Circuit.eval_iterate]; decide,
+   by rw [Circuit.cost_program_iterate]; rfl,
+   by simp [succCircuit],
+   Synthesis.orbit (s := inputs 1) succCircuit (fun x => x) (fun i => Set.mem_range_self i) t⟩
 
 /-! ### Axioms -/
 

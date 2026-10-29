@@ -235,9 +235,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `81920*(L+1)*N²/(4^m)^(1/18)` when `L=19m` and `N≥(4^m)^18`. Native power, ordered-filter,
   finite-digit and row-major list lemmas live in small topic modules; the existing mathematical
   layout, matrix and encoding interfaces are reused. No source machine or call/time oracle
-  is introduced. Native pruned and sparse-query programs, native preprocessing/solvers and
-  full input/time/width composition, including the
-  improved Section 4 route to exponent 1.9992, remain in #1394.
+  is introduced. Native pruned and sparse-query programs, the full reduction host, native
+  Chan–He preprocessing, fast Exact Triangle and full input/time/width/asymptotic composition,
+  including the improved Section 4 route needed for exponent 1.9992, remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright
+  and attribution are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.

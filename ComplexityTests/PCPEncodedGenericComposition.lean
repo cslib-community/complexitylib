@@ -7,7 +7,6 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.PCP.Encoded.GenericComposition
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! A non-Boolean assignment tester client for the shared executable composition engine. -/
 
@@ -94,9 +93,7 @@ example :
   · intro i
     fin_cases i <;> simp [queries]
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun g : Graph (Fin 2 → Fin 2 → Bool) =>
       toyImplementation.composeTabulated slotNumber [()] queries g)
     (Graph.encoding (encPi (encPi encBool)))
