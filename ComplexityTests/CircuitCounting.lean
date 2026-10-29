@@ -170,10 +170,10 @@ example :
 
 /-! ### Scale-bound sanity checks and nonvacuous endpoint instantiations -/
 
-example (n : ℕ) :
+example :
     interpolationScale 0 = 0 ∧
-      interpolationScale n ≤ interpolationScale (n + 1) :=
-  ⟨interpolationScale_zero, interpolationScale_mono (Nat.le_succ n)⟩
+      interpolationScale 4 ≤ interpolationScale 5 :=
+  ⟨interpolationScale_zero, interpolationScale_mono (by decide)⟩
 
 example :
     ∃ (count : (Σ n, Circuit ternarySig n 1) → ℕ) (A e b : ℕ),

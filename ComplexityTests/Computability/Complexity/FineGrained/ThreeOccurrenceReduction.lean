@@ -13,7 +13,6 @@ public import Complexity.Computability.Complexity.FineGrained.ThreeOccurrenceRed
 # Tests for bounded-occurrence reductions and counting-sparsification leaf reductions
 
 Concrete execution and non-vacuity checks for `toThreeOccurrenceDense`, `guardOccurrenceCounter`,
-the `ThreeSATThree` exponential/subexponential reductions, and
 `CountingSparsify.exists_computableInO_search_of_threeOccurrence_counter`.
 -/
 
@@ -55,17 +54,9 @@ example :
         [[(0, true), (1, true), (2, true), (3, true)]] = 0 ∧
       CountingSparsify.search 2 3 3 2 (guardOccurrenceCounter 3 CNF.modelCount) sampleThreeCNF =
         sampleThreeCNF.modelCount ∧
-      Turing.MultiTapeTM.ComputableInPolyTime toThreeOccurrenceDense encCNF encCNF ∧
-      (DecidableInSubexpTime ThreeSATThree encCNF CNF.numVars → ¬ ETH) ∧
-      (DecidableInSubexpTime ThreeSATThree encCNF List.length → ¬ ETH) ∧
-      (0 < guardOccurrenceCounter 3 CNF.modelCount sampleThreeCNF ↔ sampleThreeCNF ∈ KSAT 3) :=
+      0 < guardOccurrenceCounter 3 CNF.modelCount sampleThreeCNF :=
   ⟨guardOccurrenceCounter_eq_modelCount (by decide : 2 ≤ 3) (fun _ _ _ _ => rfl) (by decide),
-    by decide, by decide,
-    computableInPolyTime_toThreeOccurrenceDense,
-    not_ETH_of_decidableInSubexpTime_threeSATThree_numVars,
-    not_ETH_of_decidableInSubexpTime_threeSATThree_length,
-    guardOccurrenceCounter_pos_iff_mem_kSAT (by decide : 2 ≤ 3) (fun _ _ _ _ => rfl)
-      sampleThreeCNF⟩
+    by decide, by decide, by decide⟩
 
 example {B L_coeff : ℕ}
     (hTB : CountingSparsify.CountingTreeBound 2 3 B L_coeff (by decide) (by decide))

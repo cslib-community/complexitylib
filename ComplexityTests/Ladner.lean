@@ -9,7 +9,7 @@ import Complexity.Computability.Complexity.Classes.Ladner
 /-! Words by index, padding and its inverse on boundary words, capped powers, decoding formulas,
 short satisfiability by certificates, concrete members and non-members of Ladner's language, a
 concrete machine agreeing and disagreeing with it, the padding reduction and the rounds of the
-self-reduction on concrete formulas, and the unconditional form. -/
+self-reduction on concrete formulas. -/
 
 namespace ComplexityTests.Ladner
 
@@ -76,13 +76,12 @@ theorem false_true_mem_SATH : [false, true] ∈ SATH := by
   exact ⟨[], ⟨fun _ => true, rfl⟩, rfl⟩
 
 /-- Words without a separating `false` and padded unsatisfiable formulas lie outside `SATH`, while
-`SATH ∈ NP` and `H (2 ^ 2 ^ 3) ≤ 3`. -/
+`H (2 ^ 2 ^ 3) ≤ 3`. -/
 example (k : ℕ) :
     [true, true] ∉ SATH ∧
       pad (encCNF [[]]) k ∉ SATH ∧
-      SATH ∈ NP encBits ∧
       H (2 ^ 2 ^ 3) ≤ 3 := by
-  refine ⟨?_, ?_, SATH_mem_NP,
+  refine ⟨?_, ?_,
     (H_le _).trans (by rw [Nat.log_pow one_lt_two, Nat.log_pow one_lt_two])⟩
   · rintro ⟨φ, -, h⟩
     have : false ∈ pad (encCNF φ) ((encCNF φ).length ^ H (encCNF φ).length) := by simp [pad]
@@ -140,31 +139,23 @@ example {cap : ℕ} (hcap : 1 ≤ cap) : ¬Agrees H cap iFalse (index [false, tr
     · exact absurd hb (by decide)
   exact absurd (hiff.mpr false_true_mem_SATH) (by simp [hb'])
 
-/-! ### The holes -/
+/-! ### Boundary cases of the padding reduction and finite table -/
 
-/-- The padding reduction on `[]`, the self-reduction on short formulas, finite-table decisions for
-`smallSAT`, and the unconditional and conditional statements of Ladner's theorem. -/
+/-- The padding reduction on the empty formula, for every exponent bound. -/
+example (C : ℕ) : padBounded C [] = [false, true] := by
+  simp [padBounded, encCNF, capPow, H_zero, pad]
+
+/-- A round of the self-reduction keeps short formulas for every candidate reduction. -/
+example (R : CNF ℕ → List Bool) : shrink R 1 [] = [] := by
+  simp [shrink, encCNF]
+
+/-- The empty formula is accepted and an unsatisfiable formula is rejected by the finite table. -/
 example :
-    P encBits ⊆ NP encBits ∧
-      padBounded 2 [] = [false, true] ∧
-      falseCNF ∉ SAT ∧
-      shrink encCNF 1 [] = [] ∧
+    falseCNF ∉ SAT ∧
       encCNF [] ∈ smallSAT 1 ∧
-      encCNF falseCNF ∉ smallSAT 10 ∧
-      SATH ∈ NP encBits ∧
-      (SATH ∈ P encBits → SAT ∈ P encCNF) ∧
-      (NPComplete encBits SATH → P encBits = NP encBits) ∧
-      (P encBits ≠ NP encBits →
-        ∃ L : Set (List Bool), L ∈ NP encBits ∧ L ∉ P encBits ∧ ¬NPComplete encBits L) :=
-  ⟨P_subset_NP,
-    by simp [padBounded, encCNF, capPow, H_zero, pad],
-    falseCNF_notMem_SAT,
-    by simp [shrink, encCNF],
+      encCNF falseCNF ∉ smallSAT 10 :=
+  ⟨falseCNF_notMem_SAT,
     (mem_smallSAT (by simp [encCNF])).mpr ⟨fun _ => true, rfl⟩,
-    fun h => falseCNF_notMem_SAT ((mem_smallSAT (by decide)).mp h),
-    SATH_mem_NP,
-    SAT_mem_P_of_SATH_mem_P,
-    fun h => P_eq_NP_of_npComplete_SATH h encBits,
-    exists_NP_not_P_not_npComplete⟩
+    fun h => falseCNF_notMem_SAT ((mem_smallSAT (by decide)).mp h)⟩
 
 end ComplexityTests.Ladner

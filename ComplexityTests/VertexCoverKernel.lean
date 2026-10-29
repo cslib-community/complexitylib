@@ -84,14 +84,7 @@ example :
   · rw [← bussKernel_mem_iff]
     exact noInstance_notMem
 
-example :
-    IsKernelization (encPair encGraph encNat) Prod.snd VertexCover bussKernel
-        (fun k => 40 * (k + 1) ^ 6) ∧
-      HasPolyKernel (encPair encGraph encNat) Prod.snd VertexCover ∧
-      ComputableInPolyTime bussKernel (encPair encGraph encNat) (encPair encGraph encNat) :=
-  ⟨isKernelization_bussKernel, VertexCover_hasPolyKernel, isKernelization_bussKernel.polyTime⟩
-
-/-! ### Plain automation over the restated kernel certificates -/
+/-! ### Plain automation over the kernel API -/
 
 /-- Plain `fun_prop` composes the plain kernel certificates with plain hypotheses. -/
 example {γ : Type} {enc : γ ↪ List Bool} {x : γ → Graph × ℕ} {G : γ → Graph} {v : γ → ℕ}

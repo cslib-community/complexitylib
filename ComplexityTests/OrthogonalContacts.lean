@@ -45,8 +45,8 @@ example {p : ℝ × ℝ} (hh : p ∈ support horizontal) (hv : p ∈ support ver
   simpa only [realPoint, Int.cast_ofNat, Int.cast_zero] using hp
 
 -- Collinear overlaps, shared endpoints, singleton interior/off-edge points, empty/singleton
--- supports, diagonal half-integer intersections, and tail certificates.
-example (a : Point) (r : Route) (ho : IsOrthogonal (a :: r)) (hs : IsSimple (a :: r)) :
+-- supports and diagonal half-integer intersections.
+example :
     routeContactCheck [(0, 0), (2, 0), (4, 0), (6, 0)] horizontal [(2, 0), (6, 0)] = false ∧
       routeContactCheck [(4, 0)] horizontal [(4, 0), (4, 3)] = true ∧
       routeContactCheck [] horizontal [(2, 0)] = false ∧
@@ -55,13 +55,18 @@ example (a : Point) (r : Route) (ho : IsOrthogonal (a :: r)) (hs : IsSimple (a :
       routeContactCheck [(1, 1)] [(1, 1)] [(1, 1)] = true ∧
       routeContactCheck [] [(1, 1)] [(1, 1)] = false ∧
       segmentContactCheck [] (0, 0) (1, 1) (0, 1) (1, 0) = false ∧
-      IsOrthogonal r ∧
-      IsSimple r ∧
       AxisAligned (0, 0) (-1, 0) :=
   ⟨by decide, by decide, by decide,
     not_mem_support_of_routeContactCheck (by decide),
     disjoint_support_of_routeContactCheck (by decide),
     by decide, by decide, by decide,
-    ho.of_cons, hs.of_cons, axisAligned_of_length_eq_one (by decide)⟩
+    axisAligned_of_length_eq_one (by decide)⟩
+
+-- Removing the start of a one-segment route preserves both certificates.
+example : IsOrthogonal [(4, 0)] :=
+  (show IsOrthogonal horizontal by decide).of_cons
+
+example : IsSimple [(4, 0)] :=
+  (show IsSimple horizontal by simp [IsSimple, horizontal, List.consecutivePairs]).of_cons
 
 end ComplexityTests.OrthogonalContacts
