@@ -1,6 +1,7 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import Complexity.Algorithms.ExactTriangle.Defs
+public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -83,8 +84,10 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
 public import Complexity.Algorithms.WordRAM.Karger.Contract
+public import Complexity.Algorithms.WordRAM.Karger.FastCut
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.KargerMinCut
+public import Complexity.Algorithms.WordRAM.KargerStein
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
@@ -829,6 +832,8 @@ public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSc
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Basic
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Defs
 public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
@@ -1641,6 +1646,7 @@ public import Complexity.Computability.WordRAM.RAM
 public import Complexity.Computability.WordRAM.RAMInput
 public import Complexity.Computability.WordRAM.Randomized.Defs
 public import Complexity.Computability.WordRAM.Randomized.Expected
+public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
 public import Complexity.Computability.WordRAM.Signed.Comparison
@@ -1663,6 +1669,7 @@ public import Complexity.Crypto.Computational.CramerShoup.Scheme
 public import Complexity.Crypto.Computational.DiffieHellman
 public import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
+public import Complexity.Crypto.Computational.DiffieHellman.Order
 public import Complexity.Crypto.Computational.DiscreteLog
 public import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 public import Complexity.Crypto.Computational.ElGamal
@@ -1862,6 +1869,7 @@ public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
 public import Complexity.Crypto.Protocols.MPC.Basic
 public import Complexity.Crypto.Protocols.MPC.CircuitEval
+public import Complexity.Crypto.Protocols.MPC.Composition
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
@@ -2105,6 +2113,7 @@ public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.SelectDistinct
 public import Complexity.Foundations.Data.Matrix.Binary
+public import Complexity.Foundations.Data.Matrix.IntegerBits
 public import Complexity.Foundations.Data.Matrix.Permanent
 public import Complexity.Foundations.Data.Matrix.Reindex
 public import Complexity.Foundations.Data.Matrix.TotallyRegular

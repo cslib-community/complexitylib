@@ -65,20 +65,20 @@ theorem ComputableInPolyTimeWithOracle.of_polyTimeReducible {A B : Set (List Boo
         (fun pair : α × (Unit × List Bool) × Unit =>
           (fun r => (r, ())) <$> (List.take 1 <$> ProbOracleComp.query
             (spec := fun _ : Unit × List Bool => List Bool) ((), g pair.2.1.2))) :=
-      (IsOraclePPTOn.query_take () (request := fun pair : α × (Unit × List Bool) × Unit =>
-        g pair.2.1.2) (limit := fun _ => 1) (hg.tidy.comp (by fun_prop)) (by fun_prop)).map
+      (IsOraclePPTOn.query_take' () (request := fun pair : α × (Unit × List Bool) × Unit =>
+        g pair.2.1.2) (limit := fun _ => 1) (hg.comp (by fun_prop)) (by fun_prop)).map'
         (by fun_prop)
-    have hsub := hcert.run_interpret_preprocess_open (State := Unit)
+    have hsub := hcert.run_interpret_preprocess_open' (State := Unit)
       (handler := fun _ q _ => (fun r => (r, ())) <$> (List.take 1 <$> ProbOracleComp.query
         (spec := fun _ : Unit × List Bool => List Bool) ((), g q.2)))
       (prepare := id) (initial := fun _ => ()) (resources := fun _ _ => 1)
-      ComputableTidilyInPolyTime.id' hhandler (ComputableTidilyInPolyTime.const ())
-      (fun _ _ => True) (fun _ => trivial) (ComputableTidilyInPolyTime.const 1)
+      ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ())
+      (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.const 1)
       (fun a request state _ result hresult => by
         obtain ⟨r, hr, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
         obtain ⟨r', -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hr
         exact ⟨trivial, List.length_take_le _ _, Nat.le_add_right _ _⟩)
-    refine (hsub.map (ComputableTidilyInPolyTime.fst output (encFinEnum Unit))).congr
+    refine (hsub.map' (ComputableInPolyTime.fst output (encFinEnum Unit))).congr
       fun a State oracle s => ?_
     congr 2
     rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]

@@ -17,7 +17,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!
@@ -147,18 +146,17 @@ private theorem eventually_clock_le (i : ℕ) :
 /-- **If `SATH` is in `P`, then `H` is bounded**: some index of a machine deciding `SATH` has a
 clock exceeding its polynomial time bound, and from some point on `H` is at most that index. -/
 theorem exists_H_le_of_mem_P (h : SATH ∈ P encBits) : ∃ C, ∀ n, H n ≤ C := by
-  obtain ⟨f, hfpoly, hf⟩ := mem_P.mp h
-  obtain ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩ := hfpoly.tidy
+  obtain ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩ := mem_P.mp h
   have := Fintype.ofFinite State
   let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x)).output = [f x] :=
-    ComputesTidilyInTimeAndSpace.runFrom_initCfg (htm x)
-  obtain ⟨c, e, hle⟩ := ht.exists_le
+  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x.length)).Halted ∧
+      (tm.runFrom (tm.initCfg x) (t x.length)).output = [f x] :=
+    (htm x).runFrom_of_le le_rfl
+  obtain ⟨c, e, hle⟩ := (PolyBounded.of_polynomiallyBounded List.length ht).exists_le
   obtain ⟨i, hi, hdesc⟩ := exists_index_ge (desc eS eBit tm) (c + e)
   -- the clock of the index exceeds the time bound
-  have hclock (x : List Bool) : t x ≤ clock i x.length := by
-    calc t x ≤ c * (x.length + 1) ^ e := hle x
+  have hclock (x : List Bool) : t x.length ≤ clock i x.length := by
+    calc t x.length ≤ c * (x.length + 1) ^ e := hle x
       _ ≤ 2 ^ i * (x.length + 1) ^ i :=
           Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
             (Nat.pow_le_pow_right (by omega) (by omega))
@@ -181,8 +179,7 @@ noncomputable def padBounded (C : ℕ) (φ : CNF ℕ) : List Bool :=
 
 private theorem computableInPolyTime_padBounded (C : ℕ) :
     ComputableInPolyTime (padBounded C) encCNF encBits := by
-  have henc : ComputableInPolyTime (fun φ => encCNF φ) encCNF encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.encode encCNF)
+  have henc : ComputableInPolyTime (fun φ => encCNF φ) encCNF encBits := .of_eq fun _ => rfl
   unfold padBounded pad
   fun_prop
 
@@ -329,8 +326,7 @@ table. -/
 theorem SAT_mem_P_of_reducible_of_tendsto (hR : PolyTimeReducible encCNF encBits SAT SATH)
     (hH : Filter.Tendsto H Filter.atTop Filter.atTop) : SAT ∈ P encCNF := by
   obtain ⟨R, hRpoly, hR⟩ := hR
-  have hRtidy := hRpoly.tidy
-  obtain ⟨c, d, hRlen⟩ := hRtidy.polyBounded_length.exists_le
+  obtain ⟨c, d, hRlen⟩ := hRpoly.polyBounded_length.exists_le
   simp only [encBits_apply] at hRlen
   obtain ⟨M, hM⟩ := Filter.eventually_atTop.mp (Filter.tendsto_atTop.mp hH (d + 1))
   set N := max ((encCNF falseCNF).length + 1) (max M (c * 2 ^ d + 1)) with hN
@@ -343,13 +339,12 @@ theorem SAT_mem_P_of_reducible_of_tendsto (hR : PolyTimeReducible encCNF encBits
     have helse : ComputableInPolyTime (fun φ => (padCheck H (R φ)).getD falseCNF)
         encCNF encCNF := by
       fun_prop
-    have := helse.tidy
     unfold shrink
-    exact .of_tidy (by fun_prop)
+    fun_prop
   -- the rounds preserve satisfiability and shorten the formula to below `N`
-  obtain ⟨hreduce, hinv⟩ := ComputableTidilyInPolyTime.iterate_spec
+  obtain ⟨hreduce, hinv⟩ := ComputableInPolyTime.iterate_spec
     (count := fun φ => (encCNF φ).length) (init := fun φ => φ) (step := shrink R N)
-    (by fun_prop) ComputableTidilyInPolyTime.id' hshrink.tidy
+    (by fun_prop) ComputableInPolyTime.id' hshrink
     (fun φ k ψ => (ψ ∈ SAT ↔ φ ∈ SAT) ∧ (encCNF ψ).length ≤ max ((encCNF φ).length - k) (N - 1))
     (fun φ => ⟨Iff.rfl, by omega⟩)
     (fun φ k ψ _ ⟨hsat, hlen⟩ => by
@@ -363,12 +358,14 @@ theorem SAT_mem_P_of_reducible_of_tendsto (hR : PolyTimeReducible encCNF encBits
     (fun φ k ψ _ ⟨_, hlen⟩ => by omega)
   refine ⟨fun φ => (smallSAT N).any fun w => decide (encCNF (selfReduce R N φ) = w), ?_,
     fun φ => ?_⟩
-  · have hdec : ComputableTidilyInPolyTime
-        (fun φ => (smallSAT N).any fun w => decide (encCNF φ = w)) encCNF encBool :=
-      ComputableTidilyInPolyTime.anyConst _ fun w _ =>
-        (ComputableTidilyInPolyTime.decide_eq encBits).comp
-          ((ComputableTidilyInPolyTime.encode encCNF).prod (ComputableTidilyInPolyTime.const w))
-    exact .of_tidy (hdec.comp hreduce)
+  · have hdec : ComputableInPolyTime
+        (fun φ => (smallSAT N).any fun w => decide (encCNF φ = w)) encCNF encBool := by
+      simpa only [Function.comp_def, List.any_eq_not_all_not] using
+        ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.allConst (smallSAT N) fun w _ =>
+          ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.decide_eq'
+            (ComputableInPolyTime.of_eq (f := fun φ : CNF ℕ => encCNF φ) (encOut := encBits)
+              fun _ => rfl) (.const w)))
+    exact hdec.comp hreduce
   · obtain ⟨hsat, hlen⟩ := hinv φ
     have hmem := mem_smallSAT (N := N) (φ := selfReduce R N φ) (by rw [selfReduce]; omega)
     rw [selfReduce] at hmem
