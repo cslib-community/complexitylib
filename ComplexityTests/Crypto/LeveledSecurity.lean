@@ -118,7 +118,6 @@ private theorem encrypt_ppt : IsPPTOn (encPair encUnary (encPair encBits encBool
   dsimp only [fixture]
   ppt
 
-@[fun_prop]
 private theorem stateBit_poly : ComputableInPolyTime stateBit encBits encBool := by
   have hcontext := publicKeyDecoder.computableInPolyTime
   dsimp only [encPublicKey] at hcontext
@@ -138,6 +137,8 @@ private theorem stateBit_poly : ComputableInPolyTime stateBit encBits encBool :=
   unfold stateBit
   simpa only [Function.comp_def] using
     ComputableInPolyTime.bool_xor.comp (hfirst.prod hnonce)
+
+attribute [local fun_prop] stateBit_poly
 
 private theorem adversary_ppt : adversary.IsPPT := by
   constructor <;> dsimp only [adversary] <;> ppt

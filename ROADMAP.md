@@ -168,9 +168,12 @@ index links to canonical definitions rather than keeping a second set.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
-- A tight time hierarchy, which needs a linear-overhead tape-indexed simulation, and the
-  `f log f` hierarchy with its simulation bound. The space hierarchy for `log n ≤ g n`, which
-  needs a universal simulation that does not hold its input.
+- **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
+  degrees `1 ≤ a < b`. Remaining targets include the general deterministic `f log f` hierarchy
+  with its simulation bound ([#800]), noninteger polynomial degrees and finer logarithmic
+  gaps, and sharp nondeterministic and alternating time hierarchies with certified simulators.
+- The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
+  its input.
 - **Space:** Savitch bounds for general space-constructible functions.
 - **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
   `BPL ⊆ L²` and Saks–Zhou.
@@ -424,13 +427,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
   and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
-  witness recovery ([#1447]) are proved mathematically. Native parameter, collision-counting,
+  witness recovery ([#1447]) are proved mathematically. The tensor identity, full recursion,
+  shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
+  bounds, with the empty zero-depth root handled explicitly. Native parameter, collision-counting,
   prime-table, collision-tested minimum-search and complete two-prime modulus programs have
-  explicit local fit/frame/cost contracts ([#1446]); frontend enumeration, heavy extraction, recursive traversal, packed output
-  and global preprocessing width/time composition remain. It still needs tensor/sparse-query
-  programs, native Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and
-  full input/time/width/asymptotic composition, then the improved Section 4 route to exponent
-  1.9992; size-based width
+  explicit local fit/frame/cost contracts ([#1446]); frontend enumeration, heavy extraction,
+  recursive traversal, packed output and global preprocessing width/time composition remain.
+  It still needs tiling and sparse leaf bounds, native tensor/sparse-query programs, native Chan–He
+  preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
+  asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
@@ -541,6 +546,7 @@ not planned, not as proved.
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
+[#800]: https://github.com/cslib-community/complexitylib/issues/800
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
 [#884]: https://github.com/cslib-community/complexitylib/issues/884
@@ -576,3 +582,5 @@ not planned, not as proved.
 [#1446]: https://github.com/cslib-community/complexitylib/issues/1446
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
+[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
+[#1572]: https://github.com/cslib-community/complexitylib/issues/1572
