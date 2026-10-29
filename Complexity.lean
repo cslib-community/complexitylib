@@ -88,6 +88,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationAdjacency
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationInput
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationSpec
