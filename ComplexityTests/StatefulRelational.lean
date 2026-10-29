@@ -21,7 +21,7 @@ backend realization and amortized analysis (`RelRealization`, `RelBound`, `RelAm
 
 @[expose] public section
 
-namespace Cslib.Stateful.Tests
+namespace ComplexityTests.StatefulRelational
 
 open Cslib.Stateful
 
@@ -144,7 +144,7 @@ theorem allocTwoAndFreeFirst_hoare :
 
 /-- Concrete first-fit implementation of `TwoSlotAlloc`: `alloc` chooses slot `0` when free and
 slot `1` otherwise, recording `1` unit of execution trace cost per operation. -/
-def firstFitExec : RelExecution TwoSlotAlloc (Bool × Bool) ℕ
+def firstFitExec : Execution TwoSlotAlloc (Bool × Bool) ℕ
   | c, .alloc, i, c', n =>
     n = 1 ∧
     if c.1 = false then i = 0 ∧ c' = (true, c.2)
@@ -199,7 +199,7 @@ theorem firstFitAmortized :
 `RelAmortized.run_client_amortized` and `RelSpec.CostHoare.realize_amortized`. -/
 theorem firstFit_allocTwoAndFreeFirst_executes :
     ∃ v c' traces s' tr,
-      RelExecutes firstFitExec allocTwoAndFreeFirst (false, false) v c' traces ∧
+      Executes firstFitExec allocTwoAndFreeFirst (false, false) v c' traces ∧
       TwoSlotAlloc.ClientRun (false, false) allocTwoAndFreeFirst v s' tr ∧
       firstFitRealization.rep s' c' ∧
       (v.1 ≠ v.2 ∧ (if v.1 = 0 then s'.1 = false else s'.2 = false)) ∧
@@ -238,4 +238,4 @@ theorem counterTwice_relHoare :
   subst hs
   exact ⟨⟨trivial, trivial, trivial⟩, rfl, rfl⟩
 
-end Cslib.Stateful.Tests
+end ComplexityTests.StatefulRelational

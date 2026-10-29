@@ -52,9 +52,8 @@ deterministic counterparts on `D`.
 * `Cslib.Stateful.RelSpec.ClientRun`, `Cslib.Stateful.RelSpec.DemonicValid`,
   `Cslib.Stateful.RelSpec.Hoare`, `Cslib.Stateful.RelSpec.CostHoare`: adaptive client runs,
   demonic admissibility, and compositional Hoare / CostHoare triples.
-* `Cslib.Stateful.RelExecution`, `Cslib.Stateful.RelExecutes`,
-  `Cslib.Stateful.RelRealization`, `Cslib.Stateful.RelBound`, `Cslib.Stateful.RelAmortized`:
-  native execution traces, angelic representation simulation, and potential-method certificates.
+* `Cslib.Stateful.RelRealization`, `Cslib.Stateful.RelBound`, `Cslib.Stateful.RelAmortized`:
+  angelic representation simulation and potential-method certificates over `Execution` / `Executes`.
 
 ## Main results
 
@@ -127,6 +126,19 @@ theorem exists_step [D.Total] {s : D.State} {o : D.Op} (hv : D.valid s o) :
 /-- The polynomial operation signature `⟨D.Op, D.Result⟩`. -/
 abbrev signature : PFunctor.{v, w} := ⟨D.Op, D.Result⟩
 
+instance : Coe RelSpec.{u, v, w} PFunctor.{v, w} := ⟨RelSpec.signature⟩
+
+/-- Project the operation signature `(D.Op, D.Result)` of a relational specification to a
+canonical `Stateful.Spec` with `State := Empty`, allowing signature-only constructions over
+`Stateful.Spec` (such as `WordRAM.DynamicProgram`) to apply directly to `D : RelSpec`. -/
+abbrev toSpec : Spec.{0, v, w} where
+  State := Empty
+  Op := D.Op
+  Result := D.Result
+  step s := s.elim
+
+instance : Coe RelSpec.{u, v, w} Spec.{0, v, w} := ⟨RelSpec.toSpec⟩
+
 /-- An adaptive client over `D`: each continuation may branch on the observed operation result. -/
 abbrev Client (α : Type y) : Type (max v w y) := D.signature.FreeM α
 
@@ -158,8 +170,6 @@ abbrev Spec.toRelSpec (D : Spec.{u, v, w}) : RelSpec.{u, v, w} where
   Result := D.Result
   step s o s' a := (s', a) = D.step s o
   valid := D.valid
-
-instance : Coe Spec.{u, v, w} RelSpec.{u, v, w} := ⟨Spec.toRelSpec⟩
 
 namespace Spec
 
@@ -858,74 +868,14 @@ theorem toRelSpec_costHoare_iff (charge : D.State → D.Op → ℕ) (pre : D.Sta
 
 end Spec
 
-/-! ## Native backend executions (`RelExecution`, `RelExecutes`), `RelRealization`, `RelAmortized`
--/
-
-/-- A concrete backend execution relation for a relational specification `D : RelSpec`. -/
-abbrev RelExecution (D : RelSpec.{u, v, w}) (C Trace : Type x) :=
-  C → (o : D.Op) → D.Result o → C → Trace → Prop
-
-/-- Adaptive client execution collecting native execution evidence in call order over a
-relational specification `D : RelSpec`. -/
-inductive RelExecutes {D : RelSpec.{u, v, w}} {C τ : Type x} {α : Type y}
-    (exec : RelExecution D C τ) : D.Client α → C → α → C → List τ → Prop
-  | pure (a c) : RelExecutes exec (.pure a) c a c []
-  | call {o k c a c' trace b c'' traces} :
-      exec c o a c' trace → RelExecutes exec (k a) c' b c'' traces →
-      RelExecutes exec (.liftBind o k) c b c'' (trace :: traces)
-
-/-- Sequential client execution splits its native trace at the call boundary. -/
-theorem relExecutes_bind_iff {D : RelSpec.{u, v, w}} {C τ : Type x} {α β : Type y}
-    (exec : RelExecution D C τ) (p : D.Client α) (k : α → D.Client β)
-    {c c' : C} {b : β} {ts : List τ} :
-    RelExecutes exec (p.bind k) c b c' ts ↔
-      ∃ a mid front back, RelExecutes exec p c a mid front ∧
-        RelExecutes exec (k a) mid b c' back ∧ ts = front ++ back := by
-  induction p generalizing c ts with
-  | pure a =>
-    constructor
-    · intro h; exact ⟨a, c, [], ts, .pure a c, h, rfl⟩
-    · rintro ⟨a', mid, front, back, hp, hk, ht⟩
-      cases hp
-      simpa only [ht, List.nil_append, PFunctor.FreeM.bind] using hk
-  | liftBind o cont ih =>
-    change RelExecutes exec (.liftBind o fun a => (cont a).bind k) c b c' ts ↔ _
-    constructor
-    · intro h
-      cases h with
-      | call ho rest =>
-        obtain ⟨a, mid, front, back, hp, hk, ht⟩ := (ih _).mp rest
-        exact ⟨a, mid, _, back, .call ho hp, hk, by simp [ht]⟩
-    · rintro ⟨a, mid, front, back, hp, hk, ht⟩
-      cases hp with
-      | call ho rest =>
-        have hrest := (ih _).mpr ⟨a, mid, _, back, rest, hk, rfl⟩
-        have h := RelExecutes.call (k := fun a => (cont a).bind k) ho hrest
-        simpa only [ht, List.cons_append] using h
-
-private theorem Spec.toRelSpec_relExecutes_imp {D : Spec.{u, v, w}} {C τ : Type x} {α : Type y}
-    {exec : Execution D C τ} {p : D.toRelSpec.Client α} {c : C} {a : α} {c' : C}
-    {traces : List τ} (h : RelExecutes (D := D.toRelSpec) exec p c a c' traces) :
-    Executes exec p c a c' traces := by
-  induction h with
-  | pure a c => exact .pure a c
-  | call ho _ ih => exact .call ho ih
-
-/-- On `D.toRelSpec`, `RelExecutes` coincides with `Executes`. -/
-theorem Spec.toRelSpec_relExecutes_iff {D : Spec.{u, v, w}} {C τ : Type x} {α : Type y}
-    (exec : Execution D C τ) (p : D.Client α) (c : C) (a : α) (c' : C) (traces : List τ) :
-    RelExecutes (D := D.toRelSpec) exec p c a c' traces ↔ Executes exec p c a c' traces := by
-  refine ⟨Spec.toRelSpec_relExecutes_imp, fun h => ?_⟩
-  induction h with
-  | pure a c => exact RelExecutes.pure (D := D.toRelSpec) a c
-  | call ho _ ih => exact RelExecutes.call (D := D.toRelSpec) ho ih
+/-! ## Angelic backend realizations (`RelRealization`, `RelBound`, `RelAmortized`) -/
 
 /-- Angelic semantic realization of a relational specification `D : RelSpec`:
 * `total`: every represented state and admissible operation admits a native execution;
 * `correct`: every native execution from a represented state on an admissible operation realizes
   *some* permitted abstract post-state `s'` with `D.step s o s' a ∧ rep s' c'`. -/
 structure RelRealization (D : RelSpec.{u, v, w}) {C τ : Type x}
-    (exec : RelExecution D C τ) where
+    (exec : Execution D C τ) where
   /-- Representation invariant linking abstract states to concrete backend states. -/
   rep : D.State → C → Prop
   /-- Existence of a native execution for every represented state and admissible operation. -/
@@ -937,13 +887,13 @@ structure RelRealization (D : RelSpec.{u, v, w}) {C τ : Type x}
 namespace RelRealization
 
 variable {D : RelSpec.{u, v, w}} {C τ : Type x} {α : Type y}
-  {exec : RelExecution D C τ} (R : RelRealization D exec)
+  {exec : Execution D C τ} (R : RelRealization D exec)
 
 /-- From related states, every native execution of a demonically admissible client realizes a
 valid `ClientRun` ending in a related state. -/
 theorem correct_client {p : D.Client α} {s : D.State} {c c' : C} {a : α}
     {traces : List τ} (hr : R.rep s c) (hv : D.DemonicValid s p)
-    (he : RelExecutes exec p c a c' traces) :
+    (he : Executes exec p c a c' traces) :
     ∃ s' tr, D.ClientRun s p a s' tr ∧ R.rep s' c' ∧ traces.length = tr.length := by
   induction he generalizing s with
   | pure a c =>
@@ -959,7 +909,7 @@ theorem correct_client {p : D.Client α} {s : D.State} {c c' : C} {a : α}
 valid `ClientRun` ending in a related state. -/
 theorem exists_executes (p : D.Client α) {s : D.State} {c : C} (hr : R.rep s c)
     (hv : D.DemonicValid s p) :
-    ∃ a c' traces s' tr, RelExecutes exec p c a c' traces ∧
+    ∃ a c' traces s' tr, Executes exec p c a c' traces ∧
       D.ClientRun s p a s' tr ∧ R.rep s' c' ∧ traces.length = tr.length := by
   induction hv generalizing c with
   | pure s a =>
@@ -986,17 +936,17 @@ def Realization.toRelRealization {D : Spec.{u, v, w}} {C τ : Type x}
 /-- Every native execution of a verified demonic `Hoare` client satisfies its abstract
 postcondition in a related final state. -/
 theorem RelSpec.Hoare.realize {D : RelSpec.{u, v, w}} {C Trace : Type x} {α : Type y}
-    {exec : RelExecution D C Trace} (R : RelRealization D exec)
+    {exec : Execution D C Trace} (R : RelRealization D exec)
     {pre : D.State → Prop} {post : α → D.State → Prop} {p : D.Client α}
     (h : D.Hoare pre p post) {s : D.State} {c c' : C} {a : α} {traces : List Trace}
-    (hp : pre s) (hr : R.rep s c) (he : RelExecutes exec p c a c' traces) :
+    (hp : pre s) (hr : R.rep s c) (he : Executes exec p c a c' traces) :
     ∃ s' tr, D.ClientRun s p a s' tr ∧ R.rep s' c' ∧ post a s' := by
   obtain ⟨hv, hpost⟩ := h s hp
   obtain ⟨s', tr, hrun, hr', _⟩ := R.correct_client hr hv he
   exact ⟨s', tr, hrun, hr', hpost a s' tr hrun⟩
 
 /-- Per-operation worst-case resource certificate over a relational realization `R`. -/
-def RelBound {D : RelSpec.{u, v, w}} {C τ : Type x} {exec : RelExecution D C τ}
+def RelBound {D : RelSpec.{u, v, w}} {C τ : Type x} {exec : Execution D C τ}
     (R : RelRealization D exec) (weight : τ → ℕ) (charge : D.State → D.Op → ℕ) : Prop :=
   ∀ {s c o a c' trace}, R.rep s c → D.valid s o → exec c o a c' trace →
     weight trace ≤ charge s o
@@ -1013,7 +963,7 @@ for every native operation execution from `R.rep s c` on an admissible `o`, ther
 permitted abstract post-state `s'` satisfying `D.step s o s' a`, `R.rep s' c'`, and the
 single-step potential inequality `weight trace + potential s' c' ≤ charge s o + potential s c`. -/
 structure RelAmortized {D : RelSpec.{u, v, w}} {C Trace : Type x}
-    {exec : RelExecution D C Trace} (R : RelRealization D exec) (weight : Trace → ℕ)
+    {exec : Execution D C Trace} (R : RelRealization D exec) (weight : Trace → ℕ)
     (potential : D.State → C → ℕ) (charge : D.State → D.Op → ℕ) : Prop where
   /-- Angelic single-step potential inequality witnessing a permitted post-state `s'`. -/
   step : ∀ {s c o a c' trace}, R.rep s c → D.valid s o → exec c o a c' trace →
@@ -1023,19 +973,19 @@ structure RelAmortized {D : RelSpec.{u, v, w}} {C Trace : Type x}
 namespace RelAmortized
 
 variable {D : RelSpec.{u, v, w}} {C Trace : Type x} {α : Type y}
-  {exec : RelExecution D C Trace} {R : RelRealization D exec}
+  {exec : Execution D C Trace} {R : RelRealization D exec}
   {weight : Trace → ℕ} {potential : D.State → C → ℕ} {charge : D.State → D.Op → ℕ}
   (A : RelAmortized R weight potential charge)
 
 include A in
 /-- **Amortized telescoping along adaptive clients (`executes_le`).**
-For any demonically admissible client `p` and native execution `RelExecutes exec p c a c' traces`,
+For any demonically admissible client `p` and native execution `Executes exec p c a c' traces`,
 there exist a final abstract state `s'` and transcript `tr` such that `D.ClientRun s p a s' tr`,
 `R.rep s' c'`, and
 `total weight traces + potential s' c' ≤ D.totalCost charge s tr + potential s c`. -/
 theorem executes_le {p : D.Client α} {s : D.State} {c c' : C} {a : α}
     {traces : List Trace} (hr : R.rep s c) (hv : D.DemonicValid s p)
-    (he : RelExecutes exec p c a c' traces) :
+    (he : Executes exec p c a c' traces) :
     ∃ s' tr, D.ClientRun s p a s' tr ∧ R.rep s' c' ∧
       traces.length = tr.length ∧
       total weight traces + potential s' c' ≤
@@ -1052,16 +1002,13 @@ theorem executes_le {p : D.Client α} {s : D.State} {c c' : C} {a : α}
     simp only [total_cons, RelSpec.totalCost_cons]
     omega
 
-/-- Alias for `RelAmortized.executes_le` matching `Amortized.client`. -/
-abbrev client := @executes_le
-
 include A in
 /-- **Existence, correctness, and amortized bound (`run_client_amortized`).**
 From related initial states, every demonically admissible client `p` admits a native execution
 satisfying `D.ClientRun`, `R.rep`, and the telescoping potential bound. -/
 theorem run_client_amortized (p : D.Client α) {s : D.State} {c : C}
     (hr : R.rep s c) (hv : D.DemonicValid s p) :
-    ∃ a c' traces s' tr, RelExecutes exec p c a c' traces ∧
+    ∃ a c' traces s' tr, Executes exec p c a c' traces ∧
       D.ClientRun s p a s' tr ∧ R.rep s' c' ∧
       traces.length = tr.length ∧
       total weight traces + potential s' c' ≤
@@ -1069,17 +1016,6 @@ theorem run_client_amortized (p : D.Client α) {s : D.State} {c : C}
   obtain ⟨a, c', traces, _, _, he, _, _, _⟩ := R.exists_executes p hr hv
   obtain ⟨s', tr, hrun, hr', hlen, hpot⟩ := A.executes_le hr hv he
   exact ⟨a, c', traces, s', tr, he, hrun, hr', hlen, hpot⟩
-
-include A in
-/-- Alias for `RelAmortized.run_client_amortized` matching `Amortized.exists_executes`. -/
-theorem exists_executes (p : D.Client α) {s : D.State} {c : C}
-    (hr : R.rep s c) (hv : D.DemonicValid s p) :
-    ∃ a c' traces s' tr, RelExecutes exec p c a c' traces ∧
-      D.ClientRun s p a s' tr ∧ R.rep s' c' ∧
-      traces.length = tr.length ∧
-      total weight traces + potential s' c' ≤
-        D.totalCost charge s tr + potential s c :=
-  A.run_client_amortized p hr hv
 
 /-- A worst-case `RelBound` is a zero-potential `RelAmortized` certificate. -/
 theorem of_relBound (B : RelBound R weight charge) :
@@ -1104,7 +1040,7 @@ theorem Amortized.toRelAmortized {D : Spec.{u, v, w}} {C Trace : Type x}
 namespace RelBound
 
 variable {D : RelSpec.{u, v, w}} {C τ : Type x} {α : Type y}
-  {exec : RelExecution D C τ} {R : RelRealization D exec}
+  {exec : Execution D C τ} {R : RelRealization D exec}
   {weight : τ → ℕ} {charge : D.State → D.Op → ℕ}
   (B : RelBound R weight charge)
 
@@ -1112,7 +1048,7 @@ include B in
 /-- Under a worst-case `RelBound`, every native execution of a demonically admissible client has
 total weight at most `D.totalCost charge s tr` for some valid `ClientRun` transcript `tr`. -/
 theorem client {p : D.Client α} {s : D.State} {c c' : C} {a : α} {traces : List τ}
-    (hr : R.rep s c) (hv : D.DemonicValid s p) (he : RelExecutes exec p c a c' traces) :
+    (hr : R.rep s c) (hv : D.DemonicValid s p) (he : Executes exec p c a c' traces) :
     ∃ s' tr, D.ClientRun s p a s' tr ∧ R.rep s' c' ∧
       traces.length = tr.length ∧
       total weight traces ≤ D.totalCost charge s tr := by
@@ -1124,7 +1060,7 @@ include B in
 meeting the total charge bound. -/
 theorem exists_executes (p : D.Client α) {s : D.State} {c : C}
     (hr : R.rep s c) (hv : D.DemonicValid s p) :
-    ∃ a c' traces s' tr, RelExecutes exec p c a c' traces ∧
+    ∃ a c' traces s' tr, Executes exec p c a c' traces ∧
       D.ClientRun s p a s' tr ∧ R.rep s' c' ∧
       traces.length = tr.length ∧
       total weight traces ≤ D.totalCost charge s tr := by
@@ -1137,13 +1073,13 @@ end RelBound
 /-- Transport a demonic `CostHoare` triple through a `RelAmortized` certificate to bound native
 execution weight plus final potential by `budget s + potential s c`. -/
 theorem RelSpec.CostHoare.realize_amortized {D : RelSpec.{u, v, w}} {C τ : Type x} {α : Type y}
-    {exec : RelExecution D C τ} {R : RelRealization D exec}
+    {exec : Execution D C τ} {R : RelRealization D exec}
     {weight : τ → ℕ} {potential : D.State → C → ℕ} {charge : D.State → D.Op → ℕ}
     {pre : D.State → Prop} {post : α → D.State → Prop} {budget : D.State → ℕ}
     {p : D.Client α} (A : RelAmortized R weight potential charge)
     (h : D.CostHoare charge pre p post budget) {s : D.State} {c c' : C}
     {a : α} {traces : List τ} (hs : pre s) (hr : R.rep s c)
-    (he : RelExecutes exec p c a c' traces) :
+    (he : Executes exec p c a c' traces) :
     ∃ s' tr, D.ClientRun s p a s' tr ∧ R.rep s' c' ∧ post a s' ∧
       total weight traces + potential s' c' ≤ budget s + potential s c := by
   obtain ⟨hv, hpost⟩ := h.1 s hs
@@ -1153,13 +1089,13 @@ theorem RelSpec.CostHoare.realize_amortized {D : RelSpec.{u, v, w}} {C τ : Type
 
 /-- Transport a demonic `CostHoare` triple through a worst-case `RelBound` certificate. -/
 theorem RelSpec.CostHoare.realize {D : RelSpec.{u, v, w}} {C τ : Type x} {α : Type y}
-    {exec : RelExecution D C τ} {R : RelRealization D exec}
+    {exec : Execution D C τ} {R : RelRealization D exec}
     {weight : τ → ℕ} {charge : D.State → D.Op → ℕ}
     {pre : D.State → Prop} {post : α → D.State → Prop} {budget : D.State → ℕ}
     {p : D.Client α} (B : RelBound R weight charge)
     (h : D.CostHoare charge pre p post budget) {s : D.State} {c c' : C}
     {a : α} {traces : List τ} (hs : pre s) (hr : R.rep s c)
-    (he : RelExecutes exec p c a c' traces) :
+    (he : Executes exec p c a c' traces) :
     (∃ s', R.rep s' c' ∧ post a s') ∧ total weight traces ≤ budget s := by
   obtain ⟨s', _, _, hr', hpost, hpot⟩ :=
     h.realize_amortized (RelAmortized.of_relBound B) hs hr he
@@ -1167,13 +1103,13 @@ theorem RelSpec.CostHoare.realize {D : RelSpec.{u, v, w}} {C τ : Type x} {α : 
 
 /-- Existence of a native execution satisfying a demonic `CostHoare` contract under `RelBound`. -/
 theorem RelSpec.CostHoare.exists_executes {D : RelSpec.{u, v, w}} {C τ : Type x} {α : Type y}
-    {exec : RelExecution D C τ} {R : RelRealization D exec}
+    {exec : Execution D C τ} {R : RelRealization D exec}
     {weight : τ → ℕ} {charge : D.State → D.Op → ℕ}
     {pre : D.State → Prop} {post : α → D.State → Prop} {budget : D.State → ℕ}
     {p : D.Client α} (B : RelBound R weight charge)
     (h : D.CostHoare charge pre p post budget) {s : D.State} {c : C}
     (hs : pre s) (hr : R.rep s c) :
-    ∃ a c' traces, RelExecutes exec p c a c' traces ∧
+    ∃ a c' traces, Executes exec p c a c' traces ∧
       (∃ s', R.rep s' c' ∧ post a s') ∧ total weight traces ≤ budget s := by
   obtain ⟨a, c', traces, _, _, he, _, _, _⟩ := R.exists_executes p hr (h.1 s hs).1
   exact ⟨a, c', traces, he, h.realize B hs hr he⟩
