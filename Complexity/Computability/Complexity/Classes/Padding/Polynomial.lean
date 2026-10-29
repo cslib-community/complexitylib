@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.Time
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolynomialPadding
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -57,16 +57,16 @@ theorem DTIME_pow_mul_subset_of_subset_max {a b k : ℕ} (hb : 2 ≤ b) (hk : 1 
   let guard (x : List Bool) := decide (((unframe x).length + 1) ^ k ≤ x.length)
   let B : Set (List Bool) :=
     {x | (if guard x then indicator A (unframe x) else false) = true}
-  have hu : ComputableTidilyInO unframe encBits encBits
+  have hu : ComputableInO unframe encBits encBits
       (fun x => x.length) (fun x => x.length) :=
     .of_linear (.of_unframe fun _ => rfl)
-  have hdec := (computableInO_polynomialPaddingGuard k).tidy.ite
-    ((computableInO_indicator_of_mem_DTIME hA).tidy.comp hu)
-    (ComputableTidilyInO.const (encMid := encBool) false)
+  have hdec := (computableInO_polynomialPaddingGuard k).ite
+    ((computableInO_indicator_of_mem_DTIME hA).comp hu)
+    (ComputableInO.const (encMid := encBool) false)
   have hB : B ∈ DTIME encBits (fun n => (n + 1) ^ b) := by
     refine setOf_mem_DTIME_of_computableInO
-      (.of_tidy (hdec.mono (T' := fun x => (x.length + 1) ^ b)
-        (S' := fun x => (x.length + 1) ^ b) 4 (fun x => ?_) fun x => ?_)) (fun _ => le_rfl)
+      (hdec.mono (T' := fun x => (x.length + 1) ^ b)
+        (S' := fun x => (x.length + 1) ^ b) 4 (fun x => ?_) fun x => ?_) (fun _ => le_rfl)
     all_goals
       have hlen : x.length ≤ (x.length + 1) ^ b :=
         (Nat.le_succ _).trans (Nat.le_self_pow (by omega) _)

@@ -76,7 +76,7 @@ with fewer than three vertices have no Hamiltonian cycle and are mapped to a fix
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Instances of the traveling salesman problem, a distance matrix given by its rows and a budget,
 encoded by framed lists of binary distances and a binary budget. -/
@@ -129,6 +129,19 @@ theorem tourLength_eq_sum (D : List (List ℕ)) (p : List ℕ) :
 
 /-! ### Membership in `NP` -/
 
+private theorem listGetD_binary {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {l : γ → List α} {i : γ → ℕ} (d : α)
+    (hl : ComputableInPolyTime l encIn (encList encA))
+    (hi : ComputableInPolyTime i encIn encNat) :
+    ComputableInPolyTime (fun x => (l x).getD (i x) d) encIn encA := by
+  have heq : (fun x => (l x).getD (i x) d) = fun x => (l x).getD (min (l x).length (i x)) d := by
+    funext x
+    rcases le_total (l x).length (i x) with h | h
+    · rw [Nat.min_eq_left h, List.getD_eq_default _ _ h, List.getD_eq_default _ _ le_rfl]
+    · rw [Nat.min_eq_right h]
+  rw [heq]
+  exact listGetDWithInput hl (binary_min_unary' ((length_list encA).comp hl) hi) d
+
 /-- The length of a tour is polynomial-time in the distance matrix and the tour, both with binary
 entries: it is a binary sum over the positions of the tour, and a city beyond the matrix is looked
 up at an index capped by the number of rows. -/
@@ -136,7 +149,6 @@ up at an index capped by the number of rows. -/
 theorem computableInPolyTime_tourLength :
     ComputableInPolyTime (fun x : List (List ℕ) × List ℕ => tourLength x.1 x.2)
       (encPair (encList (encList encNat)) (encList encNat)) encNat := by
-  refine .of_tidy ?_
   have heq : (fun x : List (List ℕ) × List ℕ => tourLength x.1 x.2) = fun x =>
       ((List.range x.2.length).map fun k =>
         dist x.1 ((x.2 ++ [x.2.headD 0]).getD k 0)
@@ -144,13 +156,14 @@ theorem computableInPolyTime_tourLength :
     funext ⟨D, p⟩
     cases p <;> rw [tourLength_eq_sum] <;> rfl
   rw [heq]
-  refine binary_sum.comp (mapWithInput (by fun_prop) ?_)
-  have hq : ComputableTidilyInPolyTime
+  have hsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
+  refine hsum.comp (mapWithInput (range.comp ((length_list encNat).comp (snd _ _))) ?_)
+  have hq : ComputableInPolyTime
       (fun q : (List (List ℕ) × List ℕ) × ℕ => q.1.2 ++ [q.1.2.headD 0])
       (encPair (encPair (encList (encList encNat)) (encList encNat)) encUnary)
       (encList encNat) := by
     fun_prop
-  have hrow : ComputableTidilyInPolyTime
+  have hrow : ComputableInPolyTime
       (fun q : (List (List ℕ) × List ℕ) × ℕ =>
         q.1.1.getD ((q.1.2 ++ [q.1.2.headD 0]).getD q.2 0) [])
       (encPair (encPair (encList (encList encNat)) (encList encNat)) encUnary)
@@ -187,23 +200,22 @@ theorem isVerifier : IsVerifier encTSP (Polynomial.X ^ 2) verifier TSP := by
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encTSP encBits) encBool := by
-  refine .of_tidy ?_
-  have hV : ComputableTidilyInPolyTime (fun x : List (List ℕ) × ℕ => List.range x.1.length) encTSP
+  have hV : ComputableInPolyTime (fun x : List (List ℕ) × ℕ => List.range x.1.length) encTSP
       (encList encNat) := by
     unfold encTSP
-    simpa only [Function.comp_def, List.map_id'] using (map unary_to_binary).comp
+    simpa only [List.map_id', Function.comp_def] using mapWithInput (f := fun _ i => i)
       (range.comp ((length_list (encList encNat)).comp (fst (encList (encList encNat)) encNat)))
-  have hD : ComputableTidilyInPolyTime (fun q : (List (List ℕ) × ℕ) × List ℕ => q.1.1)
+      (unary_to_binary.comp (snd _ _))
+  have hD : ComputableInPolyTime (fun q : (List (List ℕ) × ℕ) × List ℕ => q.1.1)
       (encPair encTSP (encList encNat)) (encList (encList encNat)) := by
     unfold encTSP
     exact (fst _ _).comp (fst _ _)
-  have hb : ComputableTidilyInPolyTime (fun q : (List (List ℕ) × ℕ) × List ℕ => q.1.2)
+  have hb : ComputableInPolyTime (fun q : (List (List ℕ) × ℕ) × List ℕ => q.1.2)
       (encPair encTSP (encList encNat)) encNat := by
     unfold encTSP
     exact (snd _ _).comp (fst _ _)
-  have hlen := computableInPolyTime_tourLength.tidy.comp (hD.prod (snd _ (encList encNat)))
-  exact (Graph.computableInPolyTime_verifyOrdering (.of_tidy hV)
-    (.of_tidy (binary_le' hlen hb))).tidy
+  have hlen := computableInPolyTime_tourLength.comp (hD.prod (snd _ (encList encNat)))
+  exact Graph.computableInPolyTime_verifyOrdering hV (binary_le' hlen hb)
 
 /-- `TSP` belongs to `NP`. -/
 theorem mem_NP : TSP ∈ NP encTSP :=
@@ -385,18 +397,17 @@ theorem toTSP_mem_iff (G : Graph) : toTSP G ∈ TSP ↔ G ∈ HamCycle := by
 and the distances and the budget are written in binary. -/
 @[fun_prop]
 theorem computableInPolyTime_toTSP : ComputableInPolyTime toTSP encGraph encTSP := by
-  refine .of_tidy ?_
-  have hV : ComputableTidilyInPolyTime Graph.distinctVertices encGraph (encList encNat) :=
-    Graph.computableInPolyTime_distinctVertices.tidy
-  have hn : ComputableTidilyInPolyTime (fun G : Graph => G.distinctVertices.length) encGraph
+  have hV : ComputableInPolyTime Graph.distinctVertices encGraph (encList encNat) :=
+    Graph.computableInPolyTime_distinctVertices
+  have hn : ComputableInPolyTime (fun G : Graph => G.distinctVertices.length) encGraph
       encUnary := (length_list _).comp hV
-  have hrow : ComputableTidilyInPolyTime
+  have hrow : ComputableInPolyTime
       (fun p : Graph × ℕ => p.1.distinctVertices.map fun v => if p.1.adjBool p.2 v then 1 else 2)
       (encPair encGraph encNat) (encList encNat) :=
     mapWithInput (hV.comp (fst _ _))
-      (cond Graph.computableInPolyTime_adjBool.tidy (const 1) (const 2))
+      (Graph.computableInPolyTime_adjBool.ite (const 1) (const 2))
   unfold toTSP encTSP
-  exact ite_decide (unary_lt' hn (const 3)) (const _)
+  exact (unary_lt' hn (const 3)).ite_decide (const _)
     ((mapWithInput hV hrow).prod (unary_to_binary.comp hn))
 
 end HamCycle

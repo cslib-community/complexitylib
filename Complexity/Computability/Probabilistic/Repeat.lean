@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Tactic.PolyTime.Init
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Strict PPT bounded repetition
@@ -34,7 +35,8 @@ type nor its encoding needs a finite range.
 ## References
 
 Adapted from Computability/Probabilistic/Repeat.lean on the cslib `crypto` branch at
-`5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the existing flat-seed law and tidy list calculus.
+`5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the existing flat-seed law and plain list
+calculus.
 -/
 
 @[expose] public section
@@ -51,21 +53,23 @@ theorem IsPPTOn.replicate {α β : Type} {input : α ↪ List Bool} {output : β
     (hprogram : IsPPTOn input output program)
     (hcount : ComputableInPolyTime count input encUnary) :
     IsPPTOn input (encList output) (fun a => OracleComp.replicate (count a) (program a)) := by
-  have hcount := hcount.tidy
   obtain ⟨c, d, evaluate, hevaluate, hlaw⟩ := hprogram.exists_seeded_evaluator
   let budget (a : α) := c * ((input a).length + 1) ^ d
-  have hbudget : ComputableTidilyInPolyTime budget input encUnary := by
+  have hbudget : ComputableInPolyTime budget input encUnary := by
     dsimp only [budget]
     fun_prop
-  have hrows : ComputableTidilyInPolyTime (fun p : α × List Bool =>
+  have hrows : ComputableInPolyTime (fun p : α × List Bool =>
       BitString.listRows (count p.1) (budget p.1) p.2)
       (encPair input encBits) (encList encBits) := by fun_prop
-  have hmap := ComputableTidilyInPolyTime.mapWith hevaluate
-    (ComputableTidilyInPolyTime.fst input encBits) hrows
-  have hcoins := (ComputableInPolyTime.of_tidy
-    (ComputableTidilyInPolyTime.unary_mul.comp (hcount.prod hbudget))).sampleList
+  have heval : ComputableInPolyTime (fun p : (α × List Bool) × List Bool => evaluate p.1.1 p.2)
+      (encPair (encPair input encBits) encBits) output :=
+    (ComputableInPolyTime.of_tidy hevaluate).comp
+      (((ComputableInPolyTime.fst input encBits).comp (ComputableInPolyTime.fst _ _)).prod
+        (ComputableInPolyTime.snd _ _))
+  have hmap := ComputableInPolyTime.mapWithInput (f := fun q row => evaluate q.1 row) hrows heval
+  have hcoins := (ComputableInPolyTime.unary_mul' hcount hbudget).sampleList
   apply (hcoins.map_with (f := fun a coins =>
-    (BitString.listRows (count a) (budget a) coins).map (evaluate a)) (.of_tidy hmap)).congr
+    (BitString.listRows (count a) (budget a) coins).map (evaluate a)) hmap).congr
   intro a
   simpa only [ProbComp.eval_map, BitString.eval_sampleList, Function.comp_def] using
     (ProbComp.eval_replicate_of_uniformList (count a) (budget a)

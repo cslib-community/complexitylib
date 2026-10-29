@@ -45,11 +45,13 @@ the number of satisfying assignments on declared variables is exactly preserved.
 
 * `Cslib.Logic.PL.CSP.all_length_le_toBoolean`: constraint scope length bound
   `max 1 k * bitWidth q`.
-* `Cslib.Logic.PL.CSP.vars_toBoolean_subset`: all variables bounded by `N * bitWidth q`.
+* `Cslib.Logic.PL.CSP.vars_toBoolean_subset`, `Cslib.Logic.PL.CSP.numVars_toBoolean_le`: all
+  variables bounded by `N * bitWidth q`.
 * `Cslib.Logic.PL.CSP.validDeclaredCSP_toBoolean`: validity of compiled Boolean CSP on declared
   variables.
-* `Cslib.Logic.PL.CSP.modelCountOn_toBoolean`: exact equality of declared-variable model
-  counts between the finite-domain CSP and its Boolean compilation.
+* `Cslib.Logic.PL.CSP.modelCountOn_toBoolean`, `Cslib.Logic.PL.CSP.satisfiable_toBoolean`: exact
+  equality of declared-variable model counts and satisfiability equivalence between the
+  finite-domain CSP and its Boolean compilation.
 
 ## References
 
@@ -564,5 +566,39 @@ theorem CSP.modelCountOn_toBoolean (q : ℕ) [Inhabited (Fin q)] (N : ℕ)
     have hdef := eval_congr_default sem F hvars (decodeAssign q N hq σ) ⟨0, hq⟩
     rw [hdef, ← heval, hinv]
     exact hσ
+
+/-- The number of distinct occurring variables in `F.toBoolean q N` is at most
+`N * CSP.bitWidth q`. -/
+theorem CSP.numVars_toBoolean_le {q N : ℕ} {F : CSP Rel ℕ}
+    (hvars : ∀ v ∈ F.vars, v < N) :
+    (F.toBoolean q N).numVars ≤ N * CSP.bitWidth q := by
+  have hsub : (F.toBoolean q N).vars.toFinset ⊆ Finset.range (N * CSP.bitWidth q) := by
+    intro x hx
+    exact Finset.mem_range.mpr (CSP.vars_toBoolean_subset hvars x (List.mem_toFinset.mp hx))
+  simpa only [CSP.numVars, Finset.card_range] using Finset.card_le_card hsub
+
+private theorem modelCountOn_range_pos_iff {D Rel' : Type*} [Fintype D] [Inhabited D]
+    {sem' : Rel' → List D → Bool} {G : CSP Rel' ℕ} {M : ℕ}
+    (hG : ∀ v ∈ G.vars, v < M) :
+    0 < G.modelCountOn sem' (Finset.range M) ↔ G.Satisfiable sem' := by
+  rw [CSP.modelCountOn, Finset.card_pos, Finset.filter_nonempty_iff]
+  constructor
+  · rintro ⟨σ, -, hσ⟩
+    exact ⟨_, hσ⟩
+  · rintro ⟨σ, hσ⟩
+    refine ⟨fun v => σ v.1, Finset.mem_univ _, ?_⟩
+    refine (CSP.eval_congr fun v hv => ?_).trans hσ
+    have hv' : v ∈ Finset.range M := Finset.mem_range.mpr (hG v hv)
+    simp [hv']
+
+/-- `F.toBoolean q N` is satisfiable under `CSP.semBoolean q sem` if and only if `F` is
+satisfiable under `sem`, whenever all occurring variables of `F` are `< N`. -/
+@[simp]
+theorem CSP.satisfiable_toBoolean (q : ℕ) [Inhabited (Fin q)] (N : ℕ)
+    (sem : Rel → List (Fin q) → Bool) (F : CSP Rel ℕ) (hvars : ∀ v ∈ F.vars, v < N) :
+    (F.toBoolean q N).Satisfiable (CSP.semBoolean q sem) ↔ F.Satisfiable sem := by
+  rw [← modelCountOn_range_pos_iff (CSP.vars_toBoolean_subset hvars),
+    CSP.modelCountOn_toBoolean q N sem F hvars,
+    modelCountOn_range_pos_iff hvars]
 
 end Cslib.Logic.PL

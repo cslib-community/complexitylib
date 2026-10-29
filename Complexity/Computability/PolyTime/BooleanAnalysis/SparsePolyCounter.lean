@@ -489,15 +489,22 @@ theorem exists_threshold_checkBranchFeasible_eq_true (N₀_branch : ℕ) {β₀ 
 
 section PolyTimeHelpers
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 local notation "CPT" => ComputableInPolyTime
-local notation "CTPT" => ComputableTidilyInPolyTime
 
-private theorem tidy_unaryFoldMax (init : ℕ) :
-    CTPT (fun l : List ℕ => l.foldl max init) (encList encUnary) encUnary := by
+private theorem unaryToBin : CPT id encUnary encNat := by fun_prop
+
+private theorem binLe {α : Type} {encIn : α ↪ List Bool} {l r : α → ℕ}
+    (hl : CPT l encIn encNat) (hr : CPT r encIn encNat) :
+    CPT (fun x => decide (l x ≤ r x)) encIn encBool :=
+  (show CPT (fun p : ℕ × ℕ => decide (p.1 ≤ p.2)) (encPair encNat encNat) encBool by
+    fun_prop).comp (hl.prod hr)
+
+private theorem unaryFoldMax (init : ℕ) :
+    CPT (fun l : List ℕ => l.foldl max init) (encList encUnary) encUnary := by
   refine foldl' (encA := encUnary) (encL := encList encUnary) (encB := encUnary)
     (list := id) (init := fun _ => init) (step := max)
-    id' (const init) unary_max (B := fun l => init + (encList encUnary l).length)
+    id' (const init) (by fun_prop) (B := fun l => init + (encList encUnary l).length)
     ((PolyBounded.const init).add .self) (fun l i _ => ?_)
   simp only [encUnary_apply, List.length_replicate]
   refine foldl_max_le_iff.mpr ⟨Nat.le_add_right _ _, fun x hx => ?_⟩
@@ -509,20 +516,20 @@ private theorem tidy_unaryFoldMax (init : ℕ) :
 theorem computableInPolyTime_checkVarsLt :
     CPT (fun p : ℕ × List (List (List ℕ)) => checkVarsLt p.1 p.2)
       (encPair encUnary encSys) encBool := by
-  refine .of_tidy ?_; unfold checkVarsLt
-  have hm : CTPT (fun q : ℕ × List ℕ => q.2.all fun v => decide (v < q.1))
+  unfold checkVarsLt
+  have hm : CPT (fun q : ℕ × List ℕ => q.2.all fun v => decide (v < q.1))
       (encPair encUnary (encList encNat)) encBool :=
-    allWithInput (snd _ _) (binary_lt' (snd _ _) (unary_to_binary.comp ((fst _ _).fst')))
-  have heq : CTPT (fun q : ℕ × List (List ℕ) => q.2.all fun m => m.all fun v => decide (v < q.1))
+    allWithInput (snd _ _) (binary_lt' (snd _ _) (unaryToBin.comp ((fst _ _).fst')))
+  have heq : CPT (fun q : ℕ × List (List ℕ) => q.2.all fun m => m.all fun v => decide (v < q.1))
       (encPair encUnary encEq) encBool :=
     allWithInput (snd _ _) (hm.comp (((fst _ _).fst').prod (snd _ _)))
   exact allWithInput (snd _ _) (heq.comp (((fst _ _).fst').prod (snd _ _)))
 
-private theorem tidy_checkCanonicalMonomial :
-    CTPT checkCanonicalMonomial (encList encNat) encBool := by
+private theorem computableInPolyTime_checkCanonicalMonomial :
+    CPT checkCanonicalMonomial (encList encNat) encBool := by
   unfold checkCanonicalMonomial; let encP1 := encPair (encList encNat) encUnary
   have hget := listGetD (encA := encNat) (encL := encList encNat) 0
-  have hinner : CTPT
+  have hinner : CPT
       (fun p : List ℕ × ℕ => (List.range p.2).all fun j => decide (p.1.getD j 0 < p.1.getD p.2 0))
       encP1 encBool :=
     allWithInput (range.comp (snd (encList encNat) encUnary))
@@ -530,29 +537,31 @@ private theorem tidy_checkCanonicalMonomial :
         (hget.comp (((fst encP1 encUnary).fst').prod ((fst encP1 encUnary).snd'))))
   exact allWithInput (range.comp (length_list encNat)) hinner
 
-private theorem tidy_checkCanonicalEquation : CTPT checkCanonicalEquation encEq encBool := by
+private theorem computableInPolyTime_checkCanonicalEquation :
+    CPT checkCanonicalEquation encEq encBool := by
   unfold checkCanonicalEquation; let encP1 := encPair encEq encUnary
   have hget := listGetD (encA := encList encNat) (encL := encEq) []
-  have hneq := bool_not.comp ((decide_eq (encList encNat)).comp
-    ((hget.comp (((fst encP1 encUnary).fst').prod (snd encP1 encUnary))).prod
-      (hget.comp (((fst encP1 encUnary).fst').prod ((fst encP1 encUnary).snd')))))
-  have hinner : CTPT (fun p : List (List ℕ) × ℕ =>
+  have hneq := bool_not.comp (decide_eq'
+    (hget.comp (((fst encP1 encUnary).fst').prod (snd encP1 encUnary)))
+    (hget.comp (((fst encP1 encUnary).fst').prod ((fst encP1 encUnary).snd'))))
+  have hinner : CPT (fun p : List (List ℕ) × ℕ =>
       (List.range p.2).all fun j => !decide (p.1.getD j [] = p.1.getD p.2 [])) encP1 encBool :=
     allWithInput (range.comp (snd encEq encUnary)) hneq
   exact bool_and' (allWithInput (range.comp (length_list (encList encNat))) hinner)
-    (allWithInput id' (tidy_checkCanonicalMonomial.comp (snd encEq (encList encNat))))
+    (allWithInput id' (computableInPolyTime_checkCanonicalMonomial.comp
+      (snd encEq (encList encNat))))
 
 @[fun_prop]
 theorem computableInPolyTime_checkCanonicalSystem : CPT checkCanonicalSystem encSys encBool :=
-  .of_tidy (allWithInput id' (tidy_checkCanonicalEquation.comp (snd encSys encEq)))
+  allWithInput id' (computableInPolyTime_checkCanonicalEquation.comp (snd encSys encEq))
 
 @[fun_prop]
 theorem computableInPolyTime_scopeWidthOn :
     CPT (fun p : ℕ × List (List ℕ) => scopeWidthOn p.1 p.2) (encPair encUnary encEq) encUnary := by
-  refine .of_tidy ?_; unfold scopeWidthOn; let encIn := encPair encUnary encEq
+  unfold scopeWidthOn; let encIn := encPair encUnary encEq
   have hmem := decide_mem (fst (encList encNat) encUnary)
-    (unary_to_binary.comp (snd (encList encNat) encUnary))
-  have hany : CTPT (fun q : (ℕ × List (List ℕ)) × ℕ => q.1.2.any fun m => decide (q.2 ∈ m))
+    (unaryToBin.comp (snd (encList encNat) encUnary))
+  have hany : CPT (fun q : (ℕ × List (List ℕ)) × ℕ => q.1.2.any fun m => decide (q.2 ∈ m))
       (encPair encIn encUnary) encBool :=
     anyWithInput ((fst encIn encUnary).snd')
       (hmem.comp ((snd (encPair encIn encUnary) (encList encNat)).prod
@@ -560,52 +569,57 @@ theorem computableInPolyTime_scopeWidthOn :
   exact countPWithInput (range.comp (fst encUnary encEq)) hany
 
 @[fun_prop]
-theorem computableInPolyTime_sysMaxDegree : CPT sysMaxDegree encSys encUnary :=
-  .of_tidy ((tidy_unaryFoldMax 0).comp ((map (length_list encNat)).comp (flatten (encList encNat))))
+theorem computableInPolyTime_sysMaxDegree : CPT sysMaxDegree encSys encUnary := by
+  unfold sysMaxDegree
+  have hmap : CPT (List.map List.length) encEq (encList encUnary) :=
+    mapWithInput (f := fun (_ : List (List ℕ)) (m : List ℕ) => m.length) id'
+      ((length_list encNat).comp (snd encEq (encList encNat)))
+  exact (unaryFoldMax 0).comp (hmap.comp (show CPT List.flatten encSys encEq by fun_prop))
 
 @[fun_prop]
 theorem computableInPolyTime_branchMaxFactorIncidence :
     CPT (fun p : ℕ × List (List (List ℕ)) => branchMaxFactorIncidence p.1 p.2)
       (encPair encUnary encSys) encNat := by
-  refine .of_tidy ?_; unfold branchMaxFactorIncidence; let encIn := encPair encUnary encSys
-  have hlist : CTPT (fun p : ℕ × List (List (List ℕ)) => (List.range p.1).map fun v =>
+  unfold branchMaxFactorIncidence; let encIn := encPair encUnary encSys
+  have hlist : CPT (fun p : ℕ × List (List (List ℕ)) => (List.range p.1).map fun v =>
       varDegree v p.2) encIn (encList encUnary) :=
-    mapWithInput (range.comp (fst encUnary encSys)) (computableInPolyTime_varDegree.tidy.comp
-      ((unary_to_binary.comp (snd encIn encUnary)).prod ((fst encIn encUnary).snd')))
-  exact unary_to_binary.comp (unary_add.comp (((tidy_unaryFoldMax 0).comp hlist).prod (const 1)))
+    mapWithInput (range.comp (fst encUnary encSys)) (computableInPolyTime_varDegree.comp
+      ((unaryToBin.comp (snd encIn encUnary)).prod ((fst encIn encUnary).snd')))
+  exact unaryToBin.comp (unary_add.comp (((unaryFoldMax 0).comp hlist).prod (const 1)))
 
 @[fun_prop]
 theorem computableInPolyTime_branchMaxFactorWidth :
     CPT (fun p : ℕ × List (List (List ℕ)) => branchMaxFactorWidth p.1 p.2)
       (encPair encUnary encSys) encNat := by
-  refine .of_tidy ?_; unfold branchMaxFactorWidth; let encIn := encPair encUnary encSys
-  have hsc := computableInPolyTime_scopeWidthOn.tidy
-  have hlist : CTPT (fun p : ℕ × List (List (List ℕ)) => p.2.map (scopeWidthOn p.1))
+  unfold branchMaxFactorWidth; let encIn := encPair encUnary encSys
+  have hsc := computableInPolyTime_scopeWidthOn
+  have hlist : CPT (fun p : ℕ × List (List (List ℕ)) => p.2.map (scopeWidthOn p.1))
       encIn (encList encUnary) :=
     mapWithInput (snd encUnary encSys) (hsc.comp (((fst encIn encEq).fst').prod (snd encIn encEq)))
-  exact unary_to_binary.comp ((tidy_unaryFoldMax 1).comp hlist)
+  exact unaryToBin.comp ((unaryFoldMax 1).comp hlist)
 
 @[fun_prop]
 theorem computableInPolyTime_branchAugmentedIncidence :
     CPT (fun p : ℕ × List (List (List ℕ)) => branchAugmentedIncidence p.1 p.2)
       (encPair encUnary encSys) encNat := by
-  refine .of_tidy ?_; unfold branchAugmentedIncidence; let encIn := encPair encUnary encSys
-  have hlist : CTPT (fun p : ℕ × List (List (List ℕ)) => p.2.map (scopeWidthOn p.1))
+  unfold branchAugmentedIncidence; let encIn := encPair encUnary encSys
+  have hlist : CPT (fun p : ℕ × List (List (List ℕ)) => p.2.map (scopeWidthOn p.1))
       encIn (encList encNat) :=
-    mapWithInput (snd encUnary encSys) (unary_to_binary.comp
-      (computableInPolyTime_scopeWidthOn.tidy.comp
+    mapWithInput (snd encUnary encSys) (unaryToBin.comp
+      (computableInPolyTime_scopeWidthOn.comp
         (((fst encIn encEq).fst').prod (snd encIn encEq))))
-  exact binary_add' (binary_sum.comp hlist) (unary_to_binary.comp (fst encUnary encSys))
+  exact binary_add.comp (((show CPT List.sum (encList encNat) encNat by fun_prop).comp hlist).prod
+    (unaryToBin.comp (fst encUnary encSys)))
 
 @[fun_prop]
 theorem computableInPolyTime_prepareBranchEvalInput :
     CPT prepareBranchEvalInput (encPair encUnary encSys) encBranchEvalInput := by
-  have hn_u := ComputableInPolyTime.fst encUnary encSys
-  have hn_b := (ComputableInPolyTime.of_tidy unary_to_binary).comp hn_u
-  have heqs := ComputableInPolyTime.snd encUnary encSys
+  have hn_u := fst encUnary encSys
+  have hn_b := unaryToBin.comp hn_u
+  have heqs := snd encUnary encSys
   have hk' := computableInPolyTime_sysMaxDegree.comp heqs
   have hβ := ParameterCheck.computableInPolyTime_chooseBeta_apply
-    (ComputableInPolyTime.binary_clog_two_nat.comp hn_b)
+    (binary_clog_two_nat.comp hn_b)
     computableInPolyTime_branchMaxFactorIncidence computableInPolyTime_branchMaxFactorWidth
   have hr := ParameterCheck.computableInPolyTime_numGroups.comp hn_b
   have hQ := ParameterCheck.computableInPolyTime_numNodes.comp hn_b
@@ -620,61 +634,56 @@ theorem computableInPolyTime_prepareBranchEvalInput :
 @[fun_prop]
 theorem computableInPolyTime_checkBranchFeasible (N₀_branch : ℕ) :
     CPT (checkBranchFeasible N₀_branch) (encPair encUnary encSys) encBool := by
-  have hn_b := (ComputableInPolyTime.of_tidy unary_to_binary).comp
-    (ComputableInPolyTime.fst encUnary encSys)
+  have hn_b := unaryToBin.comp (fst encUnary encSys)
   have hguard : CPT (fun p : ℕ × List (List (List ℕ)) =>
       decide (N₀_branch ≤ p.1) && checkVarsLt p.1 p.2 && checkCanonicalSystem p.2)
       (encPair encUnary encSys) encBool :=
-    .of_tidy (bool_and' (bool_and'
-      (binary_le' (const N₀_branch) (unary_to_binary.comp (fst encUnary encSys)))
-      computableInPolyTime_checkVarsLt.tidy)
-      (computableInPolyTime_checkCanonicalSystem.tidy.comp (snd encUnary encSys)))
+    bool_and' (bool_and'
+      (binLe (const N₀_branch) hn_b)
+      computableInPolyTime_checkVarsLt)
+      (computableInPolyTime_checkCanonicalSystem.comp (snd encUnary encSys))
   have hβ := ParameterCheck.computableInPolyTime_chooseBeta_apply
-    (ComputableInPolyTime.binary_clog_two_nat.comp hn_b)
+    (binary_clog_two_nat.comp hn_b)
     computableInPolyTime_branchMaxFactorIncidence computableInPolyTime_branchMaxFactorWidth
   have hsched := ParameterCheck.computableInPolyTime_checkScheduleFeasible_apply hn_b
     computableInPolyTime_branchAugmentedIncidence computableInPolyTime_branchMaxFactorIncidence
     computableInPolyTime_branchMaxFactorWidth hβ
-  have hand : CPT (fun r : Bool × Bool => r.1 && r.2) (encPair encBool encBool) encBool :=
-    .of_tidy (of_finite _)
-  exact (hand.comp (hguard.prod hsched)).of_enc_eq fun _ => rfl
+  exact (hguard.bool_and' hsched).of_enc_eq fun _ => rfl
 
 @[fun_prop]
 theorem computableInPolyTime_checkTopFeasible (N₀_top : ℕ) :
     CPT (checkTopFeasible N₀_top) encSparseSystemInput encBool := by
   unfold encSparseSystemInput; let encP := encPair encUnary (encPair encNat encNat)
-  have hn_u := ComputableInPolyTime.fst encUnary (encPair encP encSys)
-  have hn_b := (ComputableInPolyTime.of_tidy unary_to_binary).comp hn_u
-  have hrest := ComputableInPolyTime.snd encUnary (encPair encP encSys)
-  have hparam := (ComputableInPolyTime.fst encP encSys).comp hrest
-  have heqs := (ComputableInPolyTime.snd encP encSys).comp hrest
-  have hk_b := (ComputableInPolyTime.of_tidy unary_to_binary).comp
-    ((ComputableInPolyTime.fst encUnary (encPair encNat encNat)).comp hparam)
-  have hsb := (ComputableInPolyTime.snd encUnary (encPair encNat encNat)).comp hparam
-  have hs_b := (ComputableInPolyTime.fst encNat encNat).comp hsb
-  have hb₀ := (ComputableInPolyTime.snd encNat encNat).comp hsb
-  have hS_len := (ComputableInPolyTime.of_tidy (unary_to_binary.comp (length_list encNat))).comp
-    (HeavyBranchFold.computableInPolyTime_heavyVarList_comp hn_u hb₀ heqs)
-  have hdeg_b := (ComputableInPolyTime.of_tidy unary_to_binary).comp
-    (computableInPolyTime_sysMaxDegree.comp heqs)
+  have hn_u := fst encUnary (encPair encP encSys)
+  have hn_b := unaryToBin.comp hn_u
+  have hrest := snd encUnary (encPair encP encSys)
+  have hparam := (fst encP encSys).comp hrest
+  have heqs := (snd encP encSys).comp hrest
+  have hk_b := unaryToBin.comp ((fst encUnary (encPair encNat encNat)).comp hparam)
+  have hsb := (snd encUnary (encPair encNat encNat)).comp hparam
+  have hs_b := (fst encNat encNat).comp hsb
+  have hb₀ := (snd encNat encNat).comp hsb
+  have hS_len := unaryToBin.comp ((length_list encNat).comp
+    (HeavyBranchFold.computableInPolyTime_heavyVarList_comp hn_u hb₀ heqs))
+  have hdeg_b := unaryToBin.comp (computableInPolyTime_sysMaxDegree.comp heqs)
   have hvars := computableInPolyTime_checkVarsLt.comp (hn_u.prod heqs)
   have hcan := computableInPolyTime_checkCanonicalSystem.comp heqs
-  exact .of_tidy (bool_and' (bool_and' (bool_and' (bool_and' (bool_and'
-    (binary_le' (const N₀_top) hn_b.tidy) (binary_le' (const 1) hs_b.tidy)) hvars.tidy)
-    hcan.tidy) (binary_le' hdeg_b.tidy hk_b.tidy))
-    (binary_le' hS_len.tidy (binary_div' hn_b.tidy hs_b.tidy)))
+  exact bool_and' (bool_and' (bool_and' (bool_and' (bool_and'
+    (binLe (const N₀_top) hn_b) (binLe (const 1) hs_b)) hvars)
+    hcan) (binLe hdeg_b hk_b))
+    (binLe hS_len (binary_div.comp (hn_b.prod hs_b)))
 
 @[fun_prop]
 theorem computableInPolyTime_toBranchInput :
     CPT toBranchInput encSparseSystemInput HeavyBranchFold.encBranchInput := by
   unfold toBranchInput encSparseSystemInput HeavyBranchFold.encBranchInput
   let encParam := encPair encUnary (encPair encNat encNat)
-  have hn_u := ComputableInPolyTime.fst encUnary (encPair encParam encSys)
-  have hrest := ComputableInPolyTime.snd encUnary (encPair encParam encSys)
-  have hb₀ := (ComputableInPolyTime.snd encNat encNat).comp
-    ((ComputableInPolyTime.snd encUnary (encPair encNat encNat)).comp
-      ((ComputableInPolyTime.fst encParam encSys).comp hrest))
-  have heqs := (ComputableInPolyTime.snd encParam encSys).comp hrest
+  have hn_u := fst encUnary (encPair encParam encSys)
+  have hrest := snd encUnary (encPair encParam encSys)
+  have hb₀ := (snd encNat encNat).comp
+    ((snd encUnary (encPair encNat encNat)).comp
+      ((fst encParam encSys).comp hrest))
+  have heqs := (snd encParam encSys).comp hrest
   exact hn_u.prod ((HeavyBranchFold.computableInPolyTime_heavyVarList_comp hn_u hb₀ heqs).prod heqs)
 
 @[fun_prop]
@@ -682,18 +691,16 @@ theorem computableInPolyTime_mkPaperSparseInput :
     CPT (fun p : (ℕ × ℕ) × List (List (List ℕ)) => mkPaperSparseInput p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) encSys) encSparseSystemInput := by
   unfold mkPaperSparseInput encSparseSystemInput
-  have hn_u := (ComputableInPolyTime.fst encUnary encUnary).comp
-    (ComputableInPolyTime.fst (encPair encUnary encUnary) encSys)
-  have hk_u := (ComputableInPolyTime.snd encUnary encUnary).comp
-    (ComputableInPolyTime.fst (encPair encUnary encUnary) encSys)
-  have heqs := ComputableInPolyTime.snd (encPair encUnary encUnary) encSys
-  have hn_b := (ComputableInPolyTime.of_tidy unary_to_binary).comp hn_u
+  have hn_u := (fst encUnary encUnary).comp (fst (encPair encUnary encUnary) encSys)
+  have hk_u := (snd encUnary encUnary).comp (fst (encPair encUnary encUnary) encSys)
+  have heqs := snd (encPair encUnary encUnary) encSys
+  have hn_b := unaryToBin.comp hn_u
   have hM := computableInPolyTime_branchAugmentedIncidence.comp (hn_u.prod heqs)
   have hmax1 : CPT (fun x : ℕ => max 1 x) encNat encNat :=
-    .of_tidy (((binary_le' (const 1) id').ite' id' (const 1)).of_enc_eq fun x =>
-      congrArg encNat (by split_ifs with hx <;> simp only [decide_eq_true_eq] at hx <;> omega))
+    ((binLe (const 1) id').ite' id' (const 1)).of_enc_eq fun x =>
+      congrArg encNat (by split_ifs with hx <;> simp only [decide_eq_true_eq] at hx <;> omega)
   have hs := hmax1.comp (ParameterCheck.computableInPolyTime_heavyIncidenceCutoff_apply
-    (.of_tidy (const 1)) hn_b)
+    (const 1) hn_b)
   have hb₀ := hmax1.comp (ParameterCheck.computableInPolyTime_heavyIncidenceCutoff_apply hM hn_b)
   exact hn_u.prod ((hk_u.prod (hs.prod hb₀)).prod heqs)
 
@@ -1161,7 +1168,7 @@ theorem computableInPolyTime_compileContextParityInput (k_deg : ℕ)
   have hrows := ComputableInPolyTime.snd encC (encList encBits)
   have hk : ComputableInPolyTime (fun _ : C × List (List Bool) => k_deg)
       (encPair encC (encList encBits)) encUnary :=
-    .of_tidy (ComputableTidilyInPolyTime.const k_deg)
+    ComputableInPolyTime.const k_deg
   have hsys := (computableInPolyTime_compileParitySystemBounded k_deg (encRow := encBits)).comp
     ((hφ.comp hctx).prod hrows)
   exact (hn.comp hctx).prod ((hk.prod ((hs.comp hctx).prod (hb.comp hctx))).prod hsys)
