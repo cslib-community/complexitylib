@@ -11,16 +11,19 @@ public import Complexity.Computability.Complexity.HardnessEncoding.Program
 public import Complexity.Computability.Complexity.AffineDisperser.PolyTime
 public import Complexity.Computability.Complexity.Classes.BPP.Derandomization.Generator
 public import Complexity.Computability.Complexity.Classes.EXP
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # The worst-case-to-average-case encoding is computable in exponential time
 
 The program `Cslib.HardnessEncoding.encodedProgram` is certified in the polynomial-time calculus of
-tidy multi-tape machines, on padded inputs: with the length parameter `min |y| ⌊log₂ p⌋` for a
+multi-tape machines, on padded inputs: with the length parameter `min |y| ⌊log₂ p⌋` for a
 unary padding `p`, every loop of the program runs over at most `p ^ O(1)` elements, and the
 decider of `L`, computable in time `2 ^ O(n)`, is called on words of length at most `⌊log₂ p⌋`
 (`Cslib.HardnessEncoding.computableInPolyTime_paddedProgram`). With the padding
@@ -51,7 +54,7 @@ is in `E` (`Cslib.HardnessEncoding.encodedLanguage_mem_E`, by
 
 namespace Cslib.HardnessEncoding
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime Cslib.AffineDisperser
+open Turing.MultiTapeTM ComputableInPolyTime Cslib.AffineDisperser
 
 /-! ### Field arithmetic -/
 
@@ -84,7 +87,7 @@ private def lagrangeStep (par : (List (List (List Bool)) × ℕ) × (List Bool �
 
 /-- **The Lagrange numerator is polynomial-time**, uniformly in the table, the width, the nodes,
 the node and the point: a fold over the nodes whose states are field elements. -/
-private theorem computableTidilyInPolyTime_lagrangeNum : ComputableTidilyInPolyTime
+private theorem computableInPolyTime_lagrangeNum : ComputableInPolyTime
     (fun p : ((List (List (List Bool)) × ℕ) × List (List Bool)) × (List Bool × List Bool) =>
       lagrangeNum p.1.1.1 p.1.1.2 p.1.2 p.2.1 p.2.2)
     (encPair (encPair (encPair encTable encUnary) (encList encBits)) (encPair encBits encBits))
@@ -95,19 +98,20 @@ private theorem computableTidilyInPolyTime_lagrangeNum : ComputableTidilyInPolyT
         fieldMul q.1.1.1.1 q.1.2 (Cslib.BitString.listXor q.1.1.1.2 [q.1.1.2.2, q.2]))
       (encPair (encPair encLagrangePar encBits) encBits) encBits := by
     fun_prop
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun q : (((List (List (List Bool)) × ℕ) × (List Bool × List Bool)) × List Bool) ×
           List Bool => lagrangeStep q.1.1 q.1.2 q.2)
       (encPair (encPair encLagrangePar encBits) encBits) encBits := by
-    have := helse.tidy
     unfold lagrangeStep
-    fun_prop
-  have hlen : ComputableTidilyInPolyTime
+    exact ite_decide
+      (decide_eq' (snd _ _) ((fst _ _).comp ((snd _ _).comp ((fst _ _).comp (fst _ _)))))
+      ((snd _ _).comp (fst _ _)) helse
+  have hlen : ComputableInPolyTime
       (fun p : ((List (List (List Bool)) × ℕ) × List (List Bool)) × (List Bool × List Bool) =>
         p.1.1.1.length)
       (encPair (encPair (encPair encTable encUnary) (encList encBits)) (encPair encBits encBits))
-      encUnary := by
-    fun_prop
+      encUnary :=
+    (length_list (encList encBits)).comp ((fst _ _).comp ((fst _ _).comp (fst _ _)))
   have h := foldlWith_of_bounded_growth (encA := encBits) (encL := encList encBits)
     (encIn := encPair (encPair (encPair encTable encUnary) (encList encBits))
       (encPair encBits encBits)) (encP := encLagrangePar)
@@ -135,10 +139,8 @@ theorem computableInPolyTime_lagrangeNum' {α : Type} {input : α ↪ List Bool}
     (ht : ComputableInPolyTime t input encBits) :
     ComputableInPolyTime (fun x => lagrangeNum (tab x) (w x) (E x) (a x) (t x)) input
       encBits := by
-  refine .of_tidy ?_
   simpa only [Function.comp_def] using
-    computableTidilyInPolyTime_lagrangeNum.comp
-      (((htab.tidy.prod hw.tidy).prod hE.tidy).prod (ha.tidy.prod ht.tidy))
+    computableInPolyTime_lagrangeNum.comp (((htab.prod hw).prod hE).prod (ha.prod ht))
 
 /-- A Lagrange basis polynomial at a point, as a composition rule. -/
 @[fun_prop]
@@ -164,29 +166,49 @@ private abbrev encTermIn : ((((List (List (List Bool)) × ℕ) × ℕ) × ℕ) �
 
 /-- **A term of the extension is polynomial-time**: a fold over the `M` blocks whose states are
 field elements. -/
-private theorem computableTidilyInPolyTime_termVal : ComputableTidilyInPolyTime
+private theorem computableInPolyTime_termVal : ComputableInPolyTime
     (fun p : (((List (List (List Bool)) × ℕ) × ℕ) × ℕ) ×
         ((List (List Bool) × List (List Bool)) × List Bool) =>
       termVal p.1.1.1.1 p.1.1.1.2 p.1.1.2 p.1.2 p.2.1.1 p.2.1.2 p.2.2) encTermIn encBits := by
-  have hlen : ComputableTidilyInPolyTime
-      (fun p : (((List (List (List Bool)) × ℕ) × ℕ) × ℕ) ×
-        ((List (List Bool) × List (List Bool)) × List Bool) => p.1.1.1.1.length)
-      encTermIn encUnary := by
-    fun_prop
+  let encQ := encPair (encPair encTermIn encBits) encUnary
+  have htabP : ComputableInPolyTime (fun p => p.1.1.1.1) encTermIn encTable :=
+    (fst _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _)))
+  have hlen : ComputableInPolyTime (fun p => p.1.1.1.1.length) encTermIn encUnary :=
+    (length_list (encList encBits)).comp htabP
+  have hqP : ComputableInPolyTime (fun q => q.1.1) encQ encTermIn :=
+    (fst _ _).comp (fst _ _)
+  have htabQ : ComputableInPolyTime (fun q => q.1.1.1.1.1.1) encQ encTable := htabP.comp hqP
+  have hwQ : ComputableInPolyTime (fun q => q.1.1.1.1.1.2) encQ encUnary :=
+    ((snd _ _).comp ((fst _ _).comp ((fst _ _).comp (fst _ _)))).comp hqP
+  have hbQ : ComputableInPolyTime (fun q => q.1.1.1.1.2) encQ encUnary :=
+    ((snd _ _).comp ((fst _ _).comp (fst _ _))).comp hqP
+  have hEQ : ComputableInPolyTime (fun q => q.1.1.2.1.1) encQ (encList encBits) :=
+    ((fst _ _).comp ((fst _ _).comp (snd _ _))).comp hqP
+  have hxsQ : ComputableInPolyTime (fun q => q.1.1.2.1.2) encQ (encList encBits) :=
+    ((snd _ _).comp ((fst _ _).comp (snd _ _))).comp hqP
+  have hzQ : ComputableInPolyTime (fun q => q.1.1.2.2) encQ encBits :=
+    ((snd _ _).comp (snd _ _)).comp hqP
+  have haccQ : ComputableInPolyTime (fun q => q.1.2) encQ encBits :=
+    (snd _ _).comp (fst _ _)
+  have hiQ : ComputableInPolyTime (fun q => q.2) encQ encUnary := snd _ _
   have hstep : ComputableInPolyTime
       (fun q : ((((((List (List (List Bool)) × ℕ) × ℕ) × ℕ) ×
           ((List (List Bool) × List (List Bool)) × List Bool)) × List Bool) × ℕ) =>
         fieldMul q.1.1.1.1.1.1 q.1.2 (lagrangeVal q.1.1.1.1.1.1 q.1.1.1.1.1.2 q.1.1.2.1.1
           (BitString.listBlock q.1.1.1.1.2 q.1.1.2.2 q.2) (q.1.1.2.1.2.getD q.2 [])))
-      (encPair (encPair encTermIn encBits) encUnary) encBits := by
+      encQ encBits := by
     unfold BitString.listBlock
-    fun_prop
+    exact computableInPolyTime_fieldMul' htabQ haccQ (computableInPolyTime_lagrangeVal' htabQ hwQ
+      hEQ (bitsTakeWithInput (bitsDropWithInput hzQ (unary_mul.comp (hiQ.prod hbQ))) hbQ)
+      (listGetDWithInput hxsQ hiQ []))
+  have hM : ComputableInPolyTime (fun p => p.1.2) encTermIn encUnary :=
+    (snd _ _).comp (fst _ _)
   have h := foldlWithInput_of_bounded_growth (encIn := encTermIn) (encA := encUnary)
     (encL := encList encUnary) (encB := encBits)
     (list := fun p => List.range p.1.2) (init := fun _ => [true])
     (step := fun p acc i => fieldMul p.1.1.1.1 acc (lagrangeVal p.1.1.1.1 p.1.1.1.2 p.2.1.1
       (BitString.listBlock p.1.1.2 p.2.2 i) (p.2.1.2.getD i [])))
-    (by fun_prop) ⟨by fun_prop, hstep.tidy, inferInstance, inferInstance⟩
+    (const [true]) ⟨unary_range' hM, hstep, inferInstance, inferInstance⟩
     (growth := fun p => p.1.1.1.1.length) ⟨hlen.polyBounded, fun p state value _ => by
       simp [length_fieldMul]⟩
   unfold termVal
@@ -206,10 +228,9 @@ theorem computableInPolyTime_termVal' {α : Type} {input : α ↪ List Bool}
     (hz : ComputableInPolyTime z input encBits) :
     ComputableInPolyTime (fun x => termVal (tab x) (w x) (b x) (M x) (E x) (xs x) (z x))
       input encBits := by
-  refine .of_tidy ?_
-  simpa only [Function.comp_def] using computableTidilyInPolyTime_termVal.comp
-    ((((htab.tidy.prod hw.tidy).prod hb.tidy).prod hM.tidy).prod
-      ((hE.tidy.prod hxs.tidy).prod hz.tidy))
+  simpa only [Function.comp_def] using
+    computableInPolyTime_termVal.comp
+      ((((htab.prod hw).prod hb).prod hM).prod ((hE.prod hxs).prod hz))
 
 /-- **The low-degree extension at a point is polynomial-time**, as a composition rule. -/
 @[fun_prop]
@@ -261,10 +282,13 @@ private theorem polyBounded_two_pow_mul_padLength (c : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_padLength :
     ComputableInPolyTime padLength (encPair encBits encUnary) encUnary := by
-  refine .of_tidy ?_
   unfold padLength
-  have := unary_log_two
-  fun_prop
+  have h1 : ComputableInPolyTime (fun x : List Bool × ℕ => x.1.length)
+      (encPair encBits encUnary) encUnary := length_bits.comp (fst _ _)
+  have h2 : ComputableInPolyTime (fun x : List Bool × ℕ => Nat.log 2 x.2)
+      (encPair encBits encUnary) encUnary :=
+    binary_log_two.comp (unary_to_binary.comp (snd _ _))
+  simpa only [Nat.min_def] using ite_decide (unary_le' h1 h2) h1 h2
 
 /-- **The padded program is polynomial-time**, for any function `gL` on bit words computable in
 time `2 ^ O(n)`: every loop runs over at most `p ^ O(1)` elements for the padding `p`, the modulus
@@ -290,7 +314,7 @@ theorem computableInPolyTime_paddedProgram (M : ℕ) {gL : List Bool → Bool} {
   -- the enumerations
   have hE : ComputableInPolyTime (fun x => BitString.enumList (blockLength M (padLength x)))
       (encPair encBits encUnary) (encList encBits) :=
-    ComputableInPolyTime.bitsEnumList_of_polyBounded hb
+    bitsEnumList_of_polyBounded hb
       ((polyBounded_two_pow_mul_padLength 1).mono fun x => by
         rw [one_mul]
         exact Nat.pow_le_pow_right (by norm_num) (hbℓ x))
@@ -300,7 +324,7 @@ theorem computableInPolyTime_paddedProgram (M : ℕ) {gL : List Bool → Bool} {
   have hEn : ComputableInPolyTime
       (fun x => BitString.enumList (M * blockLength M (padLength x)))
       (encPair encBits encUnary) (encList encBits) :=
-    ComputableInPolyTime.bitsEnumList_of_polyBounded hMb
+    bitsEnumList_of_polyBounded hMb
       ((polyBounded_two_pow_mul_padLength 1).mono fun x => by
         rw [one_mul]
         exact Nat.pow_le_pow_right (by norm_num) (hMbℓ x))
@@ -313,12 +337,10 @@ theorem computableInPolyTime_paddedProgram (M : ℕ) {gL : List Bool → Bool} {
       (fun x => (BitString.enumList (M * blockLength M (padLength x))).filter
         fun z => gL (z.take (M * blockLength M (padLength x))))
       (encPair encBits encUnary) (encList encBits) :=
-    ComputableInPolyTime.filterWithInput hEn htest
+    filterWithInput hEn htest
   -- the modulus, among the codes below `2 ^ (w + 1) ≤ 2 p + 2`
   have hpow : ComputableInPolyTime (fun x => 2 ^ (4 * blockLength M (padLength x) + 1))
       (encPair encBits encUnary) encUnary := by
-    refine .of_tidy ?_
-    have := hb.tidy
     refine binary_to_unary_bounded (binary_two_pow.comp (by fun_prop))
       (bound := fun x => 2 * x.2 + 2) (by fun_prop) fun x => ?_
     have h1 := two_pow_padLength_le x
@@ -326,20 +348,22 @@ theorem computableInPolyTime_paddedProgram (M : ℕ) {gL : List Bool → Bool} {
       Nat.pow_le_pow_right (by norm_num) (h4bℓ x)
     rw [pow_succ]
     omega
+  have h4b : ComputableInPolyTime (fun x => 4 * blockLength M (padLength x))
+      (encPair encBits encUnary) encUnary := by
+    fun_prop
   have hmod : ComputableInPolyTime (fun x => modulusBits (4 * blockLength M (padLength x)))
       (encPair encBits encUnary) encBits := by
-    unfold modulusBits
-    have := computableInPolyTime_bits_unary
-    fun_prop
+    simpa only [modulusBits, Function.comp_def] using
+      computableInPolyTime_bits_unary.comp
+        (computableInPolyTime_leastIrreducibleCode.comp (hpow.prod h4b))
   have htab : ComputableInPolyTime (fun x => fieldTable (4 * blockLength M (padLength x)))
       (encPair encBits encUnary) encTable := by
     unfold fieldTable
     exact computableInPolyTime_powerMulTable.comp hmod
-  have := hb.tidy
-  have hbp : ComputableTidilyInPolyTime
-      (fun p : (List Bool × ℕ) × ℕ => blockLength M (padLength p.1))
+  have h4bp : ComputableInPolyTime
+      (fun p : (List Bool × ℕ) × ℕ => 4 * blockLength M (padLength p.1))
       (encPair (encPair encBits encUnary) encUnary) encUnary :=
-    hb.tidy.comp (fst _ _)
+    h4b.comp (fst _ _)
   have helse : ComputableInPolyTime (fun x : List Bool × ℕ =>
       traceBit (BitString.listBlock (4 * blockLength M (padLength x)) x.1 M)
         (ldeVal (fieldTable (4 * blockLength M (padLength x)))
@@ -351,13 +375,15 @@ theorem computableInPolyTime_paddedProgram (M : ℕ) {gL : List Bool → Bool} {
             (BitString.listBlock (4 * blockLength M (padLength x)) x.1))))
       (encPair encBits encUnary) encBool := by
     unfold BitString.listBlock
-    refine computableInPolyTime_traceBit' (.of_tidy (by fun_prop))
-      (computableInPolyTime_ldeVal' htab (.of_tidy (by fun_prop)) hb (.of_tidy (by fun_prop))
-        hE hpts ?_)
-    exact ComputableInPolyTime.mapWithInput (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
-  have := helse.tidy
+    refine computableInPolyTime_traceBit'
+      (bitsTakeWithInput (bitsDropWithInput (fst _ _) (unary_mul.comp ((const M).prod h4b))) h4b)
+      (computableInPolyTime_ldeVal' htab h4b hb (const M) hE hpts ?_)
+    exact mapWithInput (unary_range' (const M))
+      (bitsTakeWithInput
+        (bitsDropWithInput ((fst _ _).comp (fst _ _)) (unary_mul.comp ((snd _ _).prod h4bp)))
+        h4bp)
   unfold paddedProgram encodedProgram encodedProgramAt
-  exact .of_tidy (by fun_prop)
+  exact ite_decide (decide_eq' hb (const 0)) (const false) helse
 
 end Cslib.HardnessEncoding
 

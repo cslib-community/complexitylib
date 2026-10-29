@@ -91,7 +91,7 @@
  "Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/Replay/Simulation.lean": 7,
  "Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/ReplayInput.lean": 2,
  "Complexity/Computability/Machines/Turing/MultiTape/SingleTape.lean": 2,
- "Complexity/Computability/Machines/Turing/MultiTape/Universal/Complexity.lean": 7,
+ "Complexity/Computability/Machines/Turing/MultiTape/Universal/Complexity.lean": 6,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/Compose.lean": 7,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/Decode.lean": 1,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/InPlace.lean": 9,

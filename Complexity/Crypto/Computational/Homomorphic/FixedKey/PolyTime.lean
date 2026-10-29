@@ -61,23 +61,22 @@ The key generator has no circuit-size or depth parameter. -/
 theorem isPPTOn_keyGen
     (hn : ComputableInPolyTime n input encUnary) :
     IsPPTOn input (encPair encBits encBits) (fun a => keyGen E (n a)) := by
-  have hn := hn.tidy
-  apply (hkeyGen.preprocess (.of_tidy hn)).bind_with
+  apply (hkeyGen.preprocess hn).bind_with
   have hbits := Scheme.isPPTOn_encryptBits hencrypt
-    (.of_tidy (show ComputableTidilyInPolyTime
+    (show ComputableInPolyTime
       (fun p : α × (List Bool × List Bool) => n p.1)
-      (encPair input (encPair encBits encBits)) encUnary by fun_prop))
-    (.of_tidy (ComputableTidilyInPolyTime.snd _ _).fst')
-    (.of_tidy (ComputableTidilyInPolyTime.snd _ _).snd')
+      (encPair input (encPair encBits encBits)) encUnary by fun_prop)
+    (ComputableInPolyTime.snd _ _).fst'
+    (ComputableInPolyTime.snd _ _).snd'
   simpa only [bind_pure_comp] using hbits.map_with
-    (.of_tidy (show ComputableTidilyInPolyTime
+    (show ComputableInPolyTime
       (fun p : (α × (List Bool × List Bool)) × List (List Bool) =>
         (encPublicKey (p.1.2.1, p.2), p.1.2.2))
       (encPair (encPair input (encPair encBits encBits)) (encList encBits))
       (encPair encBits encBits) from
-      (((ComputableTidilyInPolyTime.fst _ _).snd'.fst'.prod
-        (ComputableTidilyInPolyTime.snd _ _)).encoded).prod
-          (ComputableTidilyInPolyTime.fst _ _).snd'.snd'))
+      (((ComputableInPolyTime.fst _ _).snd'.fst'.prod
+        (ComputableInPolyTime.snd _ _)).of_enc_eq fun _ => rfl).prod
+          (ComputableInPolyTime.fst _ _).snd'.snd')
 
 include hencrypt in
 /-- Decode any public word and encrypt under the decoded base public key. -/
@@ -87,11 +86,8 @@ theorem isPPTOn_encrypt {bit : α → Bool}
     (hpk : ComputableInPolyTime pk input encBits)
     (hbit : ComputableInPolyTime bit input encBool) :
     IsPPTOn input encBits (fun a => encrypt E (n a) (pk a) (bit a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hbit
-  have hpublic := publicKeyDecoder.computableInPolyTime.tidy.comp hpk
-  exact hencrypt.preprocess (.of_tidy (hn.prod (hpublic.fst'.prod hbit)))
+  have hpublic := publicKeyDecoder.computableInPolyTime.comp hpk
+  exact hencrypt.preprocess (hn.prod (hpublic.fst'.prod hbit))
 
 variable {secretWidth ciphertextWidth : ℕ → ℕ}
   (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -108,18 +104,22 @@ theorem computableInPolyTime_decrypt
     (hsk : ComputableInPolyTime sk input encBits)
     (hc : ComputableInPolyTime ciphertext input encBits) :
     ComputableInPolyTime (fun a => decrypt D (n a) (sk a) (ciphertext a))
-      input encBool := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hsk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hc
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
-  exact (Boolean.computableInPolyTime_evalCircuit (.of_tidy (hD.tidy.comp hn)) (.of_tidy
-    (hsk.bitsAppend
-    hc))).tidy
+      input encBool :=
+  Boolean.computableInPolyTime_evalCircuit (hD.comp hn) (hsk.bitsAppend hc)
 
 variable (hevaluate : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
     encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
+
+private theorem computableInPolyTime_replicate {β : Type} {encB : β ↪ List Bool}
+    {count : α → ℕ} {value : α → β}
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hvalue : ComputableInPolyTime value input encB) :
+    ComputableInPolyTime (fun a => List.replicate (count a) (value a)) input (encList encB) := by
+  simpa only [List.map_const', List.length_range, Function.comp_def] using
+    ComputableInPolyTime.mapWithInput (f := fun a _ => value a)
+      (ComputableInPolyTime.range.comp hcount)
+      (hvalue.comp (ComputableInPolyTime.fst input encUnary))
 
 include hencrypt hevaluate hD in
 /-- Compute the actual output depth, repeat the public artifact, and run the compiler and
@@ -137,19 +137,13 @@ theorem isPPTOn_evaluateCircuit {inputCount : α → ℕ}
     IsPPTOn input (encList encBits)
       (fun a => evaluateCircuit D (n a) (pk a) (encryptedKey a) (inputs a)
         (inputCount a) (code a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hek
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hinputs
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcount
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcode
-  have hdepth := (Boolean.computableInPolyTime_depthCode (.of_tidy hcount) (.of_tidy hcode)).tidy
-  have hrepeats : ComputableTidilyInPolyTime
+  have hdepth := Boolean.computableInPolyTime_depthCode hcount hcode
+  have hrepeats : ComputableInPolyTime
       (fun a => 2 * Boolean.depthCode (inputCount a) (code a)) input encUnary := by fun_prop
-  exact Scheme.isPPTOn_evaluateCircuit D hencrypt hevaluate hD (.of_tidy hn)
-    (.of_tidy (ComputableTidilyInPolyTime.replicate hrepeats hpk))
-    (.of_tidy (ComputableTidilyInPolyTime.replicate hrepeats hek))
-    (.of_tidy hinputs) (.of_tidy hcount) (.of_tidy hcode)
+  exact Scheme.isPPTOn_evaluateCircuit D hencrypt hevaluate hD hn
+    (computableInPolyTime_replicate hrepeats hpk)
+    (computableInPolyTime_replicate hrepeats hek)
+    hinputs hcount hcode
 
 include hencrypt hevaluate hD in
 /-- One uniform native certificate evaluates all finite circuits under the same public artifact.
@@ -162,29 +156,27 @@ theorem isPPTOn_evaluate {c : α → Σ m, Circuit Boolean.signature m 1}
     (hc : ComputableInPolyTime c input (Boolean.encCircuit 1))
     (hinputs : ComputableInPolyTime inputs input (encList encBits)) :
     IsPPTOn input encBits (fun a => evaluate D (n a) (pk a) (c a) (inputs a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hc
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hinputs
-  have hpublic := publicKeyDecoder.computableInPolyTime.tidy.comp hpk
-  have hview : ComputableTidilyInPolyTime
+  have hpublic := publicKeyDecoder.computableInPolyTime.comp hpk
+  have hview : ComputableInPolyTime
       (fun C : Σ m, Circuit Boolean.signature m 1 => (C.1, C.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
   have hparts := hview.comp hc
-  exact (isPPTOn_evaluateCircuit hencrypt D hD hevaluate (.of_tidy hn)
-    (.of_tidy hpublic.fst') (.of_tidy hpublic.snd') (.of_tidy hinputs)
-    (.of_tidy hparts.fst') (.of_tidy hparts.snd')).map (ComputableInPolyTime.headD [])
+  exact (isPPTOn_evaluateCircuit hencrypt D hD hevaluate hn
+    hpublic.fst' hpublic.snd' hinputs
+    hparts.fst' hparts.snd').map (ComputableInPolyTime.headD [])
 
 include hD in
 /-- Unary input arity in the emitted decryption circuit bounds both unchanged widths
 polynomially in the security parameter. No separate width-computability premise is needed. -/
 theorem polynomiallyBounded_widths :
     PolynomiallyBounded secretWidth ∧ PolynomiallyBounded ciphertextWidth := by
-  have hview : ComputableTidilyInPolyTime
+  have hview : ComputableInPolyTime
       (fun c : Σ m, Circuit Boolean.signature m 1 => (c.1, c.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
   have htotal : PolynomiallyBounded (fun n => secretWidth n + ciphertextWidth n) :=
-    (hview.fst'.comp hD.tidy).polynomiallyBounded
+    (show PolyBounded (fun n : ℕ => n) (fun n => secretWidth n + ciphertextWidth n) by
+      simpa only [encUnary_apply, List.length_replicate, Function.comp_def] using
+        (hview.fst'.comp hD).polyBounded_length).polynomiallyBounded
   exact ⟨htotal.mono_of_le (fun n => Nat.le_add_right (secretWidth n) (ciphertextWidth n)),
     htotal.mono_of_le (fun n => Nat.le_add_left (ciphertextWidth n) (secretWidth n))⟩
 
@@ -192,12 +184,15 @@ include hD in
 /-- A uniform native circuit generator also bounds the number of decryption gates. -/
 theorem polynomiallyBounded_decryptionSize :
     PolynomiallyBounded (fun n => (D.circuit n).size) := by
-  have hview : ComputableTidilyInPolyTime
+  have hview : ComputableInPolyTime
       (fun c : Σ m, Circuit Boolean.signature m 1 => (c.1, c.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
+  have hlen : ComputableInPolyTime (fun n => (D.circuit n).code.1.length) encUnary encUnary :=
+    (ComputableInPolyTime.length_list Boolean.encGate).comp (hview.snd'.fst'.comp hD)
   have hlength : PolynomiallyBounded (fun n => (D.circuit n).code.1.length) :=
-    ((ComputableTidilyInPolyTime.length_list Boolean.encGate).comp
-      (hview.snd'.fst'.comp hD.tidy)).polynomiallyBounded
+    (show PolyBounded (fun n : ℕ => n) (fun n => (D.circuit n).code.1.length) by
+      simpa only [encUnary_apply, List.length_replicate] using
+        hlen.polyBounded_length).polynomiallyBounded
   exact hlength.mono_of_le (fun n => (Circuit.length_code_fst (D.circuit n)).ge)
 
 include hkeyGen hencrypt in
@@ -205,7 +200,7 @@ include hkeyGen hencrypt in
 @[fun_prop]
 theorem isPPTOn_scheme_keyGen :
     IsPPTOn encUnary (encPair encBits encBits) (scheme D).keyGen :=
-  isPPTOn_keyGen hkeyGen hencrypt (.of_tidy (by fun_prop))
+  isPPTOn_keyGen hkeyGen hencrypt (by fun_prop)
 
 include hencrypt in
 /-- The constructed scheme's actual encryption algorithm is strict PPT. -/

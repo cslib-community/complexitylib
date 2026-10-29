@@ -323,14 +323,19 @@ certified DPLL solver runtimes.
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
   hitting-list matrices.
-- **Algebraic complexity** ([#891]): Limaye–Srinivasan–Tavenas constant-depth lower bounds; the
-  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the
-  permanent has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the
-  permanent over fields of characteristic other than two; formula and branching-program models,
-  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
-  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms
-  at depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
-  construction costs certified separately from gate counts.
+- **Algebraic complexity** ([#891]): the rest of Limaye–Srinivasan–Tavenas. Proved: simple
+  circuits (product gates reading distinct wires) of constant product-depth computing iterated
+  matrix multiplication need superpolynomial size over any field, at `d = ⌊log₂ ⌊log₂ n⌋⌋`, from an
+  explicit bound with exponent `d ^ (1 / (4 ^ Δ - 1))`. Remaining: their semantic set-multilinear
+  model; growing `Δ` with exponent `d ^ exp(-O(Δ))`; the `√d` bound at `Δ = 1` (LST Lemma 13 and
+  Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
+  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
+  has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
+  fields of characteristic other than two; formula and branching-program models, identity testing,
+  hitting sets, and tensor and rank methods, including partial-derivative measures (Nisan–Wigderson
+  depth-3 bounds and shifted partials) and the depth-reduction chasms at depth four (Agrawal–Vinay)
+  and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform construction costs certified
+  separately from gate counts.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -399,6 +404,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ## Machines, RAM and data structures
 
+- **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
+  with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
+  The current interpreter has a stronger polynomial certificate and a streaming input lookup;
+  the buffered representation, its native cleanup routines and their amortized bounds remain.
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.
@@ -415,6 +424,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   kept separate; and develop general open-program composition. Use Cook–Levin and GGM as
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
+- **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table and
+  collision-tested minimum-search and complete two-prime modulus programs have explicit local
+  fit/frame/cost contracts.
+  Frontend enumeration, heavy extraction, recursive traversal, packed output and global
+  preprocessing width/time composition remain.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
@@ -429,13 +443,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
   witness recovery ([#1447]) are proved mathematically. The tensor identity, full recursion,
   shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
-  bounds, with the empty zero-depth root handled explicitly. Native parameter, collision-counting,
-  prime-table, collision-tested minimum-search and complete two-prime modulus programs have
-  explicit local fit/frame/cost contracts ([#1446]); frontend enumeration, heavy extraction,
-  recursive traversal, packed output and global preprocessing width/time composition remain.
-  It still needs tiling and sparse leaf bounds, native tensor/sparse-query programs, native Chan–He
-  preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
-  asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
+  bounds, with the empty zero-depth root handled explicitly. It still needs tiling and sparse
+  leaf bounds, native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
+  host, the fast Exact Triangle solver and full
+  input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
+  size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the

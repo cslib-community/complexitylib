@@ -39,7 +39,7 @@ The circuit encoding records its input count in unary and its wire indices in bi
 namespace Cslib.Crypto.Homomorphic
 
 open Cslib.Circuits Cslib.Circuits.Boolean
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 private theorem code_wiring_left (n : ℕ) :
     (Circuit.wiring signature (Fin.castAdd n : Fin n → Fin (n + n))).code =
@@ -65,30 +65,28 @@ private theorem code_augmentNand {n : ℕ} (D : Circuit signature n 1) :
     code_wiring_left, code_wiring_right]
   rfl
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-private theorem computableTidilyInPolyTime_augmentCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableInPolyTime_augmentCode {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {code : α → List (Op × List ℕ) × List ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hcode : ComputableTidilyInPolyTime code enc encCode) :
-    ComputableTidilyInPolyTime (fun a => augmentCode (n a) (code a)) enc encCode := by
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hcode : ComputableInPolyTime code enc encCode) :
+    ComputableInPolyTime (fun a => augmentCode (n a) (code a)) enc encCode := by
   have hnBinary := unary_to_binary.comp hn
-  have hindices : ComputableTidilyInPolyTime (fun a => List.range (n a))
+  have hindices : ComputableInPolyTime (fun a => List.range (n a))
       enc (encList encNat) := by
     simpa only [Function.comp_def, List.map_id'] using
       unary_to_binary.map.comp (range.comp hn)
-  have hleft : ComputableTidilyInPolyTime (fun a => ([], List.range (n a)))
+  have hleft : ComputableInPolyTime (fun a => ([], List.range (n a)))
       enc encCode := (const []).prod hindices
-  have hright : ComputableTidilyInPolyTime
+  have hright : ComputableInPolyTime
       (fun a => ([], (List.range (n a)).map (fun i => n a + i))) enc encCode := by
-    apply ComputableTidilyInPolyTime.prod (const [])
+    apply ComputableInPolyTime.prod (const [])
     apply mapWithInput hindices
-    fun_prop
+    exact binary_add.comp ((hnBinary.comp (fst _ _)).prod (snd _ _))
   unfold augmentCode
-  apply ComputableInPolyTime.tidy
-  apply computableInPolyTime_compCode (.of_tidy (by fun_prop)) (.of_tidy (const _))
-  apply computableInPolyTime_appendCode (.of_tidy (by fun_prop))
-  · exact computableInPolyTime_compCode (.of_tidy (by fun_prop)) (.of_tidy hcode) (.of_tidy hleft)
-  · exact computableInPolyTime_compCode (.of_tidy (by fun_prop)) (.of_tidy hcode) (.of_tidy hright)
+  apply computableInPolyTime_compCode (by fun_prop) (const _)
+  apply computableInPolyTime_appendCode (by fun_prop)
+  · exact computableInPolyTime_compCode (by fun_prop) hcode hleft
+  · exact computableInPolyTime_compCode (by fun_prop) hcode hright
 
 /-- Generate the concrete NAND augmentation in uniform polynomial time. The input arity and
 all gates, wire indices and output references are read and written through `encCircuit 1`. -/
@@ -96,13 +94,12 @@ all gates, wire indices and output references are read and written through `encC
     ComputableInPolyTime
       (fun D : Σ n, Circuit signature n 1 => ⟨D.1 + D.1, augmentNand D.2⟩)
       (encCircuit 1) (encCircuit 1) := by
-  refine .of_tidy ?_
-  have hview : ComputableTidilyInPolyTime
+  have hview : ComputableInPolyTime
       (fun D : Σ n, Circuit signature n 1 => (D.1, D.2.code))
       (encCircuit 1) (encPair encUnary encCode) := .of_eq fun _ => rfl
   have hn := hview.fst'
-  have hcode := computableTidilyInPolyTime_augmentCode hn hview.snd'
-  have hcount : ComputableTidilyInPolyTime (fun D : Σ n, Circuit signature n 1 => D.1 + D.1)
+  have hcode := computableInPolyTime_augmentCode hn hview.snd'
+  have hcount : ComputableInPolyTime (fun D : Σ n, Circuit signature n 1 => D.1 + D.1)
       (encCircuit 1) encUnary := by fun_prop
   exact (hcount.prod hcode).of_enc_eq (fun D => by
     simp only [encCircuit_apply, code_augmentNand])
