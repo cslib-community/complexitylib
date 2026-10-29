@@ -866,9 +866,12 @@ public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSc
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.AssignSL
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Basic
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.CriticalTree
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Defs
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Frozen
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.General
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.GeneralK
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Limit
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Placement
@@ -2476,6 +2479,7 @@ public import Complexity.Logics.Propositional.QBF.Arithmetization
 public import Complexity.Logics.Propositional.Resolution
 public import Complexity.Logics.Propositional.Resolution.Pigeonhole
 public import Complexity.Logics.Propositional.Resolution.Proof
+public import Complexity.Logics.Propositional.Resolution.Restrict
 public import Complexity.Logics.Propositional.Resolution.SizeWidth
 public import Complexity.Logics.Propositional.Resolution.TreeLike
 public import Complexity.Logics.Propositional.Resolution.Tseitin
