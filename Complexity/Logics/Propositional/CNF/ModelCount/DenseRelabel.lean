@@ -58,7 +58,7 @@ natural-number indices (`encCNF`).
 
 namespace Cslib.Logic.PL.CNF
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {V : Type*} [DecidableEq V]
 
@@ -176,21 +176,15 @@ section PolyTime
 
 variable {W : Type} [DecidableEq W]
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Dense relabeling is polynomial-time into unary variable indices for any variable encoding. -/
 @[fun_prop]
 theorem computableInPolyTime_denseRelabel_unary (enc : W ↪ List Bool) :
     ComputableInPolyTime (CNF.denseRelabel (V := W))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair encUnary encBool))) := by
-  have hd : ComputableTidilyInPolyTime (CNF.distinctVars (V := W))
-      (encList (encList (encPair enc encBool))) (encList enc) :=
-    (CNF.computableInPolyTime_distinctVars enc).tidy
-  refine .of_tidy ?_
   unfold CNF.denseRelabel CNF.relabel Clause.relabel Prod.map
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Dense relabeling is polynomial-time into binary natural-number variable indices (`encCNF`) for
 any variable encoding. -/
 @[fun_prop]
@@ -198,20 +192,20 @@ theorem computableInPolyTime_denseRelabel (enc : W ↪ List Bool) :
     ComputableInPolyTime (CNF.denseRelabel (V := W))
       (encList (encList (encPair enc encBool)))
       Cslib.Complexity.encCNF := by
-  have h1 : ComputableTidilyInPolyTime (CNF.denseRelabel (V := W))
+  have h1 : ComputableInPolyTime (CNF.denseRelabel (V := W))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair encUnary encBool))) :=
-    (computableInPolyTime_denseRelabel_unary enc).tidy
-  have h2 : ComputableTidilyInPolyTime (CNF.relabel (id : ℕ → ℕ))
+    computableInPolyTime_denseRelabel_unary enc
+  have h2 : ComputableInPolyTime (CNF.relabel (id : ℕ → ℕ))
       (encList (encList (encPair encUnary encBool)))
       (encList (encList (encPair encNat encBool))) :=
-    (CNF.computableInPolyTime_relabel (encV := encUnary) (encW := encNat)
-      (.of_tidy unary_to_binary)).tidy
+    CNF.computableInPolyTime_relabel (encV := encUnary) (encW := encNat)
+      unary_to_binary
   have heq : (CNF.denseRelabel (V := W)) = fun φ => (CNF.denseRelabel φ).relabel id := by
     funext φ
     exact (CNF.relabel_id _).symm
   rw [heq]
-  exact .of_tidy (h2.comp h1)
+  exact h2.comp h1
 
 end PolyTime
 

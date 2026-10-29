@@ -225,10 +225,15 @@ def npVerifier (enc : α ↪ List Bool) (p : Polynomial ℕ) (V : α × List Boo
 /-- The one-message verifier of a polynomial-time `NP` verifier is strict oracle PPT: it reads only
 a polynomially long prefix of the prover's reply. -/
 private theorem isOraclePPTOn_npVerifier {p : Polynomial ℕ} {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
     IsOraclePPTOn enc encBool (npVerifier enc p V) := by
   unfold npVerifier
-  fun_prop
+  refine IsOraclePPTOn.map_with' (IsOraclePPTOn.query_take' () (by fun_prop) ?_) ?_
+  · exact (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length enc)
+  · refine ComputableInPolyTime.bool_and' ?_ (by simpa only [Prod.mk.eta] using hV)
+    exact (ComputableInPolyTime.length_bits.comp (.snd enc encBits)).decide_eq'
+      (((ComputableInPolyTime.unary_eval p).comp
+        (ComputableInPolyTime.encoding_length enc)).comp (.fst enc encBits))
 
 /-- Sending a certificate of the right length makes the verifier accept exactly when `V` accepts
 the certificate. -/
@@ -242,7 +247,7 @@ theorem acceptProb_npVerifier_const {p : Polynomial ℕ} {V : α × List Bool �
 /-- **`NP ⊆ IP`**, with one message, completeness `1` and soundness error `0`. -/
 theorem NP_subset_IP (enc : α ↪ List Bool) : NP enc ⊆ IP enc := by
   rintro A ⟨p, V, hV, hA⟩
-  refine mem_IP_of (isOraclePPTOn_npVerifier (p := p) hV.tidy) (c := 1) (s := 0)
+  refine mem_IP_of (isOraclePPTOn_npVerifier (p := p) hV) (c := 1) (s := 0)
     ⟨fun a ha => ?_, fun a ha P => ?_⟩ (ENNReal.div_le_of_le_mul (by norm_num)) bot_le
   · obtain ⟨w, hw, hVw⟩ := (hA a).1 ha
     refine ⟨Prover.const w, ?_⟩

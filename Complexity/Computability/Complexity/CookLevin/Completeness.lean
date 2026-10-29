@@ -41,14 +41,12 @@ open Turing Turing.MultiTapeTM Cslib.Logic.PL
 /-- Every NP problem reduces to SAT in polynomial time through its verifier's tableau. -/
 theorem SAT_npHard : NPHard encCNF SAT := by
   intro α enc A hA
-  obtain ⟨p, V, hVpoly, hV⟩ := mem_NP.mp hA
-  obtain ⟨t, s, ht, -, k, State, hfin, tm, htm⟩ := hVpoly.tidy
-  obtain ⟨c, d, ht⟩ := ht.exists_le
+  obtain ⟨p, V, ⟨t, _, ht, -, k, State, hfin, tm, htm⟩, hV⟩ := mem_NP.mp hA
+  obtain ⟨c, d, ht⟩ := polynomiallyBounded_iff_le.mp ht
   have := Fintype.ofFinite State
   classical
-  refine ⟨reduce tm p c d enc, (computableInPolyTime_reduce tm p c d enc), fun a =>
-    (reduce_mem_SAT_iff_of_computesTidily (s := s) hV ?_ a).symm⟩
-  exact htm.mono (fun x => ht x) (fun _ => le_rfl)
+  exact ⟨reduce tm p c d enc, computableInPolyTime_reduce tm p c d enc, fun a =>
+    (reduce_mem_SAT_iff hV a fun w _ => (htm (a, w)).runFrom_of_le (ht _)).symm⟩
 
 /-- **Cook–Levin:** SAT is NP-complete. -/
 theorem SAT_npComplete : NPComplete encCNF SAT :=

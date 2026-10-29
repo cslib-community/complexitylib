@@ -120,7 +120,7 @@ public theorem mono_le {f : α → β} {T' S' : α → ℕ} (h : ComputableTidil
   h.mono 1 (fun a => by have := hT a; omega) fun a => by have := hS a; omega
 
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
--- vendored: `weaken` and `of_bigO` below, from that revision's `Complexity/BigO`
+-- vendored: `weaken` below, from that revision's `Complexity/BigO`
 
 /-- Weakening the bounds, up to constant factors. -/
 public theorem weaken {f : α → β} {T' S' : α → ℕ} (h : ComputableTidilyInO f encIn encMid T S)
@@ -129,17 +129,6 @@ public theorem weaken {f : α → β} {T' S' : α → ℕ} (h : ComputableTidily
   let ⟨k₂, h₂⟩ := hS
   h.mono (k₁ + k₂) (fun a => (h₁ a).trans (Nat.mul_le_mul_right _ (Nat.le_add_right _ _)))
     fun a => (h₂ a).trans (Nat.mul_le_mul_right _ (Nat.le_add_left _ _))
-
-/-- Bounds up to constant factors. -/
-public theorem of_bigO {f : α → β} {t s : α → ℕ}
-    (hf : ComputableTidilyInTimeAndSpace f encIn encMid t s) (ht : t ≼ T) (hs : s ≼ S)
-    (hl : (fun a => (encMid (f a)).length) ≼ S) : ComputableTidilyInO f encIn encMid T S :=
-  let ⟨k₁, h₁⟩ := ht
-  let ⟨k₂, h₂⟩ := hs
-  let ⟨k₃, h₃⟩ := hl
-  of_bounds hf (k₁ + k₂ + k₃) (fun a => (h₁ a).trans (Nat.mul_le_mul_right _ (by omega)))
-    (fun a => (h₂ a).trans (Nat.mul_le_mul_right _ (by omega)))
-    fun a => (h₃ a).trans (Nat.mul_le_mul_right _ (by omega))
 
 /-- The encoded values are within the space bound. -/
 public theorem length_le {f : α → β} (h : ComputableTidilyInO f encIn encMid T S) :
@@ -251,7 +240,7 @@ public theorem of_enc_eq {f : α → β} {g : α → γ} (hf : ComputableTidilyI
   ⟨c, hf.of_enc_eq h, fun a => (h a).symm ▸ hl a⟩
 
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
--- vendored: `of_encIn_eq`, `of_equiv` and `to_equiv` below, from that revision's `Complexity/BigO`
+-- vendored: `of_encIn_eq` below, from that revision's `Complexity/BigO`
 
 /-- A function computed on another encoding of its input, with the same words. -/
 public theorem of_encIn_eq {α' : Type} {encIn' : α' ↪ List Bool} {f : α → β} (e : α' → α)
@@ -259,19 +248,6 @@ public theorem of_encIn_eq {α' : Type} {encIn' : α' ↪ List Bool} {f : α →
     ComputableTidilyInO (fun a => f (e a)) encIn' encMid (fun a => T (e a)) fun a => S (e a) :=
   let ⟨c, ⟨k, S', hS', tm, htm⟩, hl⟩ := hf
   ⟨c, ⟨k, S', hS', tm, fun a => henc a ▸ htm (e a)⟩, fun a => hl (e a)⟩
-
-/-- A function on the encoding of its input through an equivalence. -/
-public theorem of_equiv {α' : Type} (e : α' ≃ α) {f : α → β}
-    (hf : ComputableTidilyInO f encIn encMid T S) :
-    ComputableTidilyInO (fun a => f (e a)) (encOfEquiv e encIn) encMid (fun a => T (e a))
-      fun a => S (e a) :=
-  hf.of_encIn_eq e fun _ => rfl
-
-/-- A function into the encoding of its values through an equivalence. -/
-public theorem to_equiv {β' : Type} (e : β' ≃ β) {f : α → β}
-    (hf : ComputableTidilyInO f encIn encMid T S) :
-    ComputableTidilyInO (fun a => e.symm (f a)) encIn (encOfEquiv e encMid) T S :=
-  hf.of_enc_eq fun a => by simp
 
 /-- A function computed within the length of its encoded value, after one computed within `T` and
 `S`, is computed within `T` and `S`. -/
@@ -593,45 +569,5 @@ public theorem mapWith {f : π × α → β} {Tf Sf : π × α → ℕ}
 end Lists
 
 end ComputableTidilyInO
-
--- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
--- vendored: the `ComputableTidilyInBigO` block below, from that revision's `Complexity/BigO`
-
-/-- `f` is tidily computable within time `O(T a)` and space `O(S a)` on the input `a`. Unlike
-`Turing.MultiTapeTM.ComputableTidilyInO`, nothing is said of the length of the encoded value. -/
-@[expose] public def ComputableTidilyInBigO {α β : Type*} (f : α → β) (encIn : α ↪ List Bool)
-    (encOut : β ↪ List Bool) (T S : α → ℕ) : Prop :=
-  ∃ c, ComputableTidilyInTimeAndSpace f encIn encOut (fun a => c * (T a + 1))
-    fun a => c * (S a + 1)
-
-section BigO
-
-variable {α β : Type*} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
-  {T S T' S' t s : α → ℕ}
-
-/-- Bounds up to constant factors. -/
-public theorem ComputableTidilyInBigO.of_bounds
-    (h : ComputableTidilyInTimeAndSpace f encIn encOut t s) (ht : t ≼ T) (hs : s ≼ S) :
-    ComputableTidilyInBigO f encIn encOut T S :=
-  let ⟨k₁, h₁⟩ := ht
-  let ⟨k₂, h₂⟩ := hs
-  ⟨k₁ + k₂, h.mono (fun a => (h₁ a).trans (Nat.mul_le_mul_right _ (Nat.le_add_right _ _)))
-    fun a => (h₂ a).trans (Nat.mul_le_mul_right _ (Nat.le_add_left _ _))⟩
-
-/-- Weakening the bounds, up to constant factors. -/
-public theorem ComputableTidilyInBigO.weaken (h : ComputableTidilyInBigO f encIn encOut T S)
-    (hT : T ≼ T') (hS : S ≼ S') : ComputableTidilyInBigO f encIn encOut T' S' :=
-  let ⟨c, hc⟩ := h
-  .of_bounds hc ((BigOLe.const_mul c (u := fun a => T a + 1)
-    (.of_le_linear 1 1 fun _ => by omega)).trans hT)
-    ((BigOLe.const_mul c (u := fun a => S a + 1) (.of_le_linear 1 1 fun _ => by omega)).trans hS)
-
-/-- A tidily computable function is computable. -/
-public theorem ComputableTidilyInBigO.computableInBigO
-    (h : ComputableTidilyInBigO f encIn encOut T S) : ComputableInBigO f encIn encOut T S :=
-  let ⟨c, hc⟩ := h
-  ⟨c, hc.computableInTimeAndSpace⟩
-
-end BigO
 
 end Turing.MultiTapeTM

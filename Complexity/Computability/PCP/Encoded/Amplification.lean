@@ -43,7 +43,7 @@ intermediate and output tables. Exact interpretations require complete duplicate
 
 namespace Cslib.PCP.Encoded.Graph
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime Cslib.PCP.HadamardTester
+open Turing.MultiTapeTM Cslib.PCP.HadamardTester
 
 variable {C α D : Type} [Fintype α] [DecidableEq α] [Fintype D] [DecidableEq D]
   {width : ℕ}

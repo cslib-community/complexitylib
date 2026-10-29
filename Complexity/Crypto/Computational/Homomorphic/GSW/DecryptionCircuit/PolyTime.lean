@@ -37,7 +37,7 @@ public section
 namespace Cslib.Crypto.Homomorphic.GSW.DecryptionCircuit
 
 open Circuits Circuits.Boolean
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 local notation "Code" => List (Op × List ℕ) × List ℕ
 
@@ -149,67 +149,65 @@ theorem code_eq_code (n w : ℕ) : code n w = (circuit n w).code := by
     rfl
 
 private theorem native_rowCode :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => rowCode p.1 p.2)
+    ComputableInPolyTime (fun p : ℕ × ℕ => rowCode p.1 p.2)
       (encPair encUnary encUnary) encCode := by
-  have hwire : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
+  have hwire : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
       p.1.1 * p.1.2 + (p.1.2 - 1) * ((p.1.1 + 1) * p.1.2) + p.2)
       (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-  exact (const (encMid := encList encGate) []).prod
-    (mapWith hwire id' (range.comp (snd _ _)))
+  exact (const (encOut := encList encGate) []).prod
+    (mapWithInput (range.comp (snd _ _)) hwire)
 
 private theorem native_productInputsCode :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => productInputsCode p.1 p.2)
+    ComputableInPolyTime (fun p : ℕ × ℕ => productInputsCode p.1 p.2)
       (encPair encUnary encUnary) encCode := by
-  have hlen : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 * p.2)
+  have hlen : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.2)
       (encPair encUnary encUnary) encUnary := by fun_prop
-  have hwire : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
+  have hwire : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
       p.1.1 * p.1.2 + (p.1.2 - 1) * ((p.1.1 + 1) * p.1.2) + (p.1.2 + p.2))
       (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-  have hr : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => List.range (p.1 * p.2))
+  have hr : ComputableInPolyTime (fun p : ℕ × ℕ => List.range (p.1 * p.2))
       (encPair encUnary encUnary) (encList encNat) := by
     simpa only [Function.comp_def, List.map_id_fun', id_eq] using
       unary_to_binary.map.comp (range.comp hlen)
-  exact (const (encMid := encList encGate) []).prod
-    (listAppend' hr (mapWith hwire id' (range.comp hlen)))
+  exact (const (encOut := encList encGate) []).prod
+    (listAppend' hr (mapWithInput (range.comp hlen) hwire))
 
 private theorem native_decoderCode :
-    ComputableTidilyInPolyTime decoderCode encUnary encCode := by
-  have hw : ComputableTidilyInPolyTime (fun w : ℕ => w) encUnary encNat := unary_to_binary
-  have ht : ComputableTidilyInPolyTime (fun w : ℕ =>
+    ComputableInPolyTime decoderCode encUnary encCode := by
+  have hw : ComputableInPolyTime (fun w : ℕ => w) encUnary encNat := unary_to_binary
+  have ht : ComputableInPolyTime (fun w : ℕ =>
       formulaCode w ((Formula.input (n := 2) 0).xor (.input 1)) ![w - 1, w - 2])
       encUnary encCode := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_formulaCode _ (.of_tidy hw)
+    apply computableInPolyTime_formulaCode _ hw
     intro i
-    apply ComputableInPolyTime.of_tidy
     fin_cases i
-    · change ComputableTidilyInPolyTime (fun w : ℕ => w - 1) _ encNat
+    · change ComputableInPolyTime (fun w : ℕ => w - 1) _ encNat
       fun_prop
-    · change ComputableTidilyInPolyTime (fun w : ℕ => w - 2) _ encNat
+    · change ComputableInPolyTime (fun w : ℕ => w - 2) _ encNat
       fun_prop
   unfold decoderCode
   fun_prop
 
 private theorem native_code :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => code p.1 p.2)
+    ComputableInPolyTime (fun p : ℕ × ℕ => code p.1 p.2)
       (encPair encUnary encUnary) encCode := by
-  have hn : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => inputWidth p.1 p.2)
+  have hn : ComputableInPolyTime (fun p : ℕ × ℕ => inputWidth p.1 p.2)
       (encPair encUnary encUnary) encNat := by fun_prop
-  have hi : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => Modular.innerProductCode p.1 p.2)
+  have hi : ComputableInPolyTime (fun p : ℕ × ℕ => Modular.innerProductCode p.1 p.2)
       (encPair encUnary encUnary) encCode := by
     simpa only [Modular.innerProductCode_eq_code] using
-      Modular.computableInPolyTime_innerProduct.tidy
-  have hs : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => Modular.subtractCode p.2)
+      Modular.computableInPolyTime_innerProduct
+  have hs : ComputableInPolyTime (fun p : ℕ × ℕ => Modular.subtractCode p.2)
       (encPair encUnary encUnary) encCode := by
     simpa only [Modular.subtractCode_eq_code, Function.comp_def] using
-      Modular.computableInPolyTime_subtract.tidy.comp (snd _ _)
+      Modular.computableInPolyTime_subtract.comp (snd _ _)
   have hd := native_decoderCode.comp (snd encUnary encUnary)
-  have hbody := (computableInPolyTime_compCode (.of_tidy hn) (.of_tidy hd)
-    (computableInPolyTime_compCode (.of_tidy hn) (.of_tidy hs)
-      (computableInPolyTime_appendCode (.of_tidy hn) (.of_tidy native_rowCode)
-        (computableInPolyTime_compCode (.of_tidy hn) (.of_tidy hi) (.of_tidy
-          native_productInputsCode))))).tidy
-  change ComputableTidilyInPolyTime (fun p : ℕ × ℕ =>
+  have hbody := computableInPolyTime_compCode hn hd
+    (computableInPolyTime_compCode hn hs
+      (computableInPolyTime_appendCode hn native_rowCode
+        (computableInPolyTime_compCode hn hi
+          native_productInputsCode)))
+  change ComputableInPolyTime (fun p : ℕ × ℕ =>
     if p.2 = 0 then ([(Op.const false, [])], [inputWidth p.1 p.2])
     else compCode (inputWidth p.1 p.2) (decoderCode p.2)
       (compCode (inputWidth p.1 p.2) (Modular.subtractCode p.2)
@@ -221,13 +219,13 @@ private theorem native_code :
 /-- One native polynomial-time algorithm generates the full decryptor from unary parameters. -/
 theorem computableInPolyTime_code :
     ComputableInPolyTime (fun p : ℕ × ℕ => code p.1 p.2)
-      (encPair encUnary encUnary) encCode := native_code.computableInPolyTime
+      (encPair encUnary encUnary) encCode := native_code
 
 private theorem native_circuit :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ =>
+    ComputableInPolyTime (fun p : ℕ × ℕ =>
       (⟨inputWidth p.1 p.2, circuit p.1 p.2⟩ : Σ m, Circuit signature m 1))
       (encPair encUnary encUnary) (encCircuit 1) := by
-  have hn : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => inputWidth p.1 p.2)
+  have hn : ComputableInPolyTime (fun p : ℕ × ℕ => inputWidth p.1 p.2)
       (encPair encUnary encUnary) encUnary := by fun_prop
   exact (hn.prod native_code).of_enc_eq (fun p => by
     simp only [encCircuit_apply, code_eq_code])
@@ -236,7 +234,7 @@ private theorem native_circuit :
 theorem computableInPolyTime_circuit :
     ComputableInPolyTime (fun p : ℕ × ℕ =>
       (⟨inputWidth p.1 p.2, circuit p.1 p.2⟩ : Σ m, Circuit signature m 1))
-      (encPair encUnary encUnary) (encCircuit 1) := native_circuit.computableInPolyTime
+      (encPair encUnary encUnary) (encCircuit 1) := native_circuit
 
 /-- Generate the complete layered NAND augmentation, including its schedule and selectors. -/
 theorem computableInPolyTime_layeredAugment :
@@ -244,11 +242,11 @@ theorem computableInPolyTime_layeredAugment :
       Layered.compile (inputWidth p.1 p.2 + inputWidth p.1 p.2)
         (augmentNand (circuit p.1 p.2)).code)
       (encPair encUnary encUnary) Layered.encCompiled := by
-  have ha := computableInPolyTime_augmentNand.tidy.comp native_circuit
-  have hview : ComputableTidilyInPolyTime
+  have ha := computableInPolyTime_augmentNand.comp native_circuit
+  have hview : ComputableInPolyTime
       (fun D : Σ m, Circuit signature m 1 => (D.1, D.2.code))
       (encCircuit 1) (encPair encUnary encCode) := .of_eq fun _ => rfl
   have hv := hview.comp ha
-  exact (Layered.computableInPolyTime_compile (.of_tidy hv.fst') (.of_tidy hv.snd'))
+  exact Layered.computableInPolyTime_compile hv.fst' hv.snd'
 
 end Cslib.Crypto.Homomorphic.GSW.DecryptionCircuit

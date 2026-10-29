@@ -36,6 +36,13 @@ depth are formulas of logarithmic depth and polynomial size [Jukna, Chapter 6][J
   as deep as the output, so no deeper than the circuit.
 * `Cslib.Circuits.Circuit.size_toFormula_lt`: under bounded fan-in, its size is at most exponential
   in the depth of the circuit.
+* `Cslib.Circuits.Program.gateFormula_eq_gate`,
+  `Cslib.Circuits.Program.exists_wireFormula_eq_of_eq_gate`: the formula of a gate is its operation
+  applied to the formulas of the wires it reads, so the formulas of the wires are closed under
+  taking arguments.
+* `Cslib.Circuits.Formula.toFormula_toCircuit`,
+  `Cslib.Circuits.Formula.gateFormula_toCircuit_of_closed`: the circuit of a formula unfolds to
+  the formula, and the formulas of its gates are subformulas.
 
 ## References
 
@@ -88,6 +95,34 @@ wires. -/
 @[simp] theorem Program.wireFormula_gate_castSucc (p : Program σ n g) (line : Line σ n g)
     (w : Wire n g) : (p.gate line).wireFormula w.castSucc = p.wireFormula w := by
   cases w <;> simp
+
+/-- The formula of a gate is its operation applied to the formulas of the wires its line reads. -/
+theorem Program.gateFormula_eq_gate (p : Program σ n g) (k : Fin g) :
+    p.gateFormula k = .gate (p.lines k).op fun a => p.wireFormula ((p.lines k).wires a) := by
+  induction p with
+  | empty => exact k.elim0
+  | @gate g p line ih =>
+    induction k using Fin.lastCases with
+    | last =>
+      rw [gateFormula_gate_last, lines_gate_last]
+      simp only [Line.mapWires_op, Line.mapWires_wires, Wire.Renaming.castSucc_apply,
+        wireFormula_gate_castSucc]
+    | cast k =>
+      rw [gateFormula_gate_castSucc, ih, lines_gate_castSucc]
+      simp only [Line.mapWires_op, Line.mapWires_wires, Wire.Renaming.castSucc_apply,
+        wireFormula_gate_castSucc]
+
+/-- The arguments of the root of the formula of a wire are formulas of wires: the formulas of the
+wires of a program are closed under taking arguments. -/
+theorem Program.exists_wireFormula_eq_of_eq_gate (p : Program σ n g) {w : Wire n g} {op : σ.Op}
+    {args : Fin (σ.Arity op) → Formula σ n} (h : p.wireFormula w = .gate op args)
+    (j : Fin (σ.Arity op)) : ∃ w', p.wireFormula w' = args j := by
+  cases w with
+  | input i => cases h
+  | gate k =>
+    rw [wireFormula_gate, gateFormula_eq_gate] at h
+    cases h
+    exact ⟨_, rfl⟩
 
 /-- The formula of a gate computes the gate. -/
 @[simp] theorem Program.eval_gateFormula (I : Interpretation σ U) (p : Program σ n g)
@@ -180,5 +215,113 @@ theorem Circuit.size_toFormula_lt {r : ℕ} (hr : ∀ op, σ.Arity op ≤ r) (hr
     (Nat.pow_le_pow_right (by omega) (C.depth_toFormula_le j))
 
 end Circuit
+
+/-! ### Unfolding the circuit of a formula -/
+
+/-- Continuing `p` by `q` leaves the formulas of the wires of `p` unchanged. -/
+@[simp] theorem Program.wireFormula_append_castAdd {k g₁ g₂ : ℕ} (p : Program σ n g₁)
+    (feed : Fin k → Wire n g₁) (q : Program σ k g₂) (w : Wire n g₁) :
+    (p.append feed q).wireFormula (w.castAdd g₂) = p.wireFormula w := by
+  induction q with
+  | empty => cases w <;> rfl
+  | @gate g₂ q line ih =>
+    have h : w.castAdd (g₂ + 1) = (w.castAdd g₂).castSucc := by cases w <;> rfl
+    rw [h]
+    exact (wireFormula_gate_castSucc (p.append feed q) _ _).trans ih
+
+/-- Continuing `p` by `q` on the inputs, a wire of `q` unfolds to its formula in `q`. -/
+@[simp] theorem Program.wireFormula_append_input_appendedWire {g₁ g₂ : ℕ} (p : Program σ n g₁)
+    (q : Program σ n g₂) (w : Wire n g₂) :
+    (p.append Wire.input q).wireFormula (appendedWire Wire.input w) = q.wireFormula w := by
+  induction q with
+  | empty =>
+    cases w with
+    | input i => rfl
+    | gate j => exact j.elim0
+  | @gate g₂ q line ih =>
+    cases w with
+    | input i => rfl
+    | gate j =>
+      induction j using Fin.lastCases with
+      | last =>
+        change (p.append Wire.input q |>.gate _).gateFormula (Fin.last (g₁ + g₂)) = _
+        rw [gateFormula_gate_last, wireFormula_gate, gateFormula_gate_last]
+        simp only [Line.mapWires_op, Line.mapWires_wires, ih]
+      | cast j =>
+        change (p.append Wire.input q |>.gate _).wireFormula (appendedWire Wire.input
+          (Wire.gate j)).castSucc = _
+        rw [wireFormula_gate_castSucc, ih, wireFormula_gate, wireFormula_gate,
+          gateFormula_gate_castSucc]
+
+/-- The formulas of the gates of `p` continued by `q` on the inputs are formulas of gates of `p`
+or of `q`. -/
+theorem Program.gateFormula_append_input_of_forall {g₁ g₂ : ℕ}
+    (P : Formula σ n → Prop) (p : Program σ n g₁) (q : Program σ n g₂)
+    (hp : ∀ k, P (p.gateFormula k)) (hq : ∀ k, P (q.gateFormula k)) (k : Fin (g₁ + g₂)) :
+    P ((p.append Wire.input q).gateFormula k) := by
+  induction k using Fin.addCases with
+  | left k =>
+    simpa using congrArg P (wireFormula_append_castAdd p Wire.input q (.gate k)) ▸ hp k
+  | right k =>
+    simpa using congrArg P (wireFormula_append_input_appendedWire p q (.gate k)) ▸ hq k
+
+/-- Output `j` of circuits side by side unfolds to the output of the `j`-th circuit. -/
+@[simp] theorem Circuit.toFormula_pi {m : ℕ} (cs : Fin m → Circuit σ n 1) (j : Fin m) :
+    (Circuit.pi cs).toFormula j = (cs j).toFormula 0 := by
+  induction m with
+  | zero => exact j.elim0
+  | succ m ih =>
+    induction j using Fin.lastCases with
+    | last =>
+      rw [toFormula, Circuit.pi, Circuit.append]
+      dsimp only
+      rw [show Fin.last m = Fin.natAdd m 0 from rfl, Fin.append_right]
+      exact Program.wireFormula_append_input_appendedWire _ _ _
+    | cast j =>
+      rw [toFormula, Circuit.pi, Circuit.append]
+      dsimp only
+      rw [show j.castSucc = Fin.castAdd 1 j from rfl, Fin.append_left]
+      exact (Program.wireFormula_append_castAdd _ _ _ _).trans (ih _ j)
+
+/-- The formulas of the gates of circuits side by side are formulas of gates of the circuits. -/
+theorem Circuit.gateFormula_pi_of_forall (P : Formula σ n → Prop) {m : ℕ}
+    (cs : Fin m → Circuit σ n 1) (h : ∀ j k, P ((cs j).program.gateFormula k))
+    (k : Fin (Circuit.pi cs).size) :
+    P ((Circuit.pi cs).program.gateFormula k) := by
+  induction m with
+  | zero => exact k.elim0
+  | succ m ih =>
+    exact Program.gateFormula_append_input_of_forall P _ _ (ih _ fun j => h _) (h _) k
+
+/-- The circuit of a formula unfolds to the formula. -/
+@[simp] theorem Formula.toFormula_toCircuit (F : Formula σ n) : F.toCircuit.toFormula 0 = F := by
+  induction F with
+  | input i => rfl
+  | gate op args ih =>
+    change (Program.gate _ _).gateFormula (Fin.last _) = _
+    rw [Program.gateFormula_gate_last]
+    simp only [Line.mapWires_op, Line.mapWires_wires]
+    congr 1
+    funext a
+    exact (Program.wireFormula_append_castAdd _ _ Program.empty _).trans
+      ((Circuit.toFormula_pi _ a).trans (ih a))
+
+/-- The formulas of the gates of the circuit of a formula `F` are subformulas of `F`: they satisfy
+every property of `F` inherited by the arguments of operation nodes. -/
+theorem Formula.gateFormula_toCircuit_of_closed (P : Formula σ n → Prop)
+    (hP : ∀ op args j, P (.gate op args) → P (args j)) {F : Formula σ n} (hF : P F)
+    (k : Fin F.toCircuit.size) : P (F.toCircuit.program.gateFormula k) := by
+  induction F with
+  | input i => exact k.elim0
+  | gate op args ih =>
+    change Fin ((Circuit.pi fun a => (args a).toCircuit).size + 1) at k
+    induction k using Fin.lastCases with
+    | last =>
+      change P ((gate op args).toCircuit.toFormula 0)
+      rwa [toFormula_toCircuit]
+    | cast k =>
+      change P ((Program.gate _ _).gateFormula k.castSucc)
+      rw [Program.gateFormula_gate_castSucc]
+      exact Circuit.gateFormula_pi_of_forall P _ (fun j => ih j (hP op args j hF)) k
 
 end Cslib.Circuits

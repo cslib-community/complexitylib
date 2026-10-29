@@ -168,9 +168,12 @@ index links to canonical definitions rather than keeping a second set.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
-- A tight time hierarchy, which needs a linear-overhead tape-indexed simulation, and the
-  `f log f` hierarchy with its simulation bound. The space hierarchy for `log n ≤ g n`, which
-  needs a universal simulation that does not hold its input.
+- **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
+  degrees `1 ≤ a < b`. Remaining targets include the general deterministic `f log f` hierarchy
+  with its simulation bound ([#800]), noninteger polynomial degrees and finer logarithmic
+  gaps, and sharp nondeterministic and alternating time hierarchies with certified simulators.
+- The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
+  its input.
 - **Space:** Savitch bounds for general space-constructible functions.
 - **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
   `BPL ⊆ L²` and Saks–Zhou.
@@ -320,14 +323,19 @@ certified DPLL solver runtimes.
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
   hitting-list matrices.
-- **Algebraic complexity** ([#891]): Limaye–Srinivasan–Tavenas constant-depth lower bounds; the
-  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the
-  permanent has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the
-  permanent over fields of characteristic other than two; formula and branching-program models,
-  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
-  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms
-  at depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
-  construction costs certified separately from gate counts.
+- **Algebraic complexity** ([#891]): the rest of Limaye–Srinivasan–Tavenas. Proved: simple
+  circuits (product gates reading distinct wires) of constant product-depth computing iterated
+  matrix multiplication need superpolynomial size over any field, at `d = ⌊log₂ ⌊log₂ n⌋⌋`, from an
+  explicit bound with exponent `d ^ (1 / (4 ^ Δ - 1))`. Remaining: their semantic set-multilinear
+  model; growing `Δ` with exponent `d ^ exp(-O(Δ))`; the `√d` bound at `Δ = 1` (LST Lemma 13 and
+  Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
+  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
+  has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
+  fields of characteristic other than two; formula and branching-program models, identity testing,
+  hitting sets, and tensor and rank methods, including partial-derivative measures (Nisan–Wigderson
+  depth-3 bounds and shifted partials) and the depth-reduction chasms at depth four (Agrawal–Vinay)
+  and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform construction costs certified
+  separately from gate counts.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -417,6 +425,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
+- **Shared native matrix encoders** ([#1493]): compute all `10^L` leaf values from `7^L`
+  signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
+  with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
+- **Native shared-band preparation** ([#1523]): computes deterministic subset tables and a valid
+  layout, prepares padded signed matrix bands, invokes both shared encoders for every band, and
+  restores the original initialized input. Fixed 96-register code has a charged bound, including
+  halt, of `4096*(L+1)*(1+N*4^m+2^L+2*numBands*10^L)+1`; at `L=19m`, `N≥(4^m)^18`, it is at most
+  `81920*(L+1)*N²/(4^m)^(1/18)`.
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
   transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
   has the Convolution-3SUM/Exact Triangle correctness reduction, a charged native single-instance
@@ -428,15 +444,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
   bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
   ([#1463]) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
-  sparse encoding/leaf/passed-set totals. Those counts are not native instruction costs.
-  The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
-  signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
-  with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
-  Native shared-band preparation ([#1523]) computes deterministic subset tables and a valid layout,
-  prepares padded signed matrix bands, invokes both shared encoders for every band, and restores the
-  original initialized input. Fixed 96-register code has a complete charged bound
-  `4096*(L+1)*(1+N*4^m+2^L+2*numBands*10^L)`; at `L=19m`, `N≥(4^m)^18`, including halt, this is at most
-  `81920*(L+1)*N²/(4^m)^(1/18)`. Native pruned/sparse-query programs, native Chan–He preprocessing, the reduction
+  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. It still
+  needs native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
   host, the fast Exact Triangle solver and full
   input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
   size-based width
@@ -550,6 +559,7 @@ not planned, not as proved.
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
+[#800]: https://github.com/cslib-community/complexitylib/issues/800
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
 [#884]: https://github.com/cslib-community/complexitylib/issues/884
@@ -588,3 +598,4 @@ not planned, not as proved.
 [#1463]: https://github.com/cslib-community/complexitylib/issues/1463
 [#1493]: https://github.com/cslib-community/complexitylib/issues/1493
 [#1523]: https://github.com/cslib-community/complexitylib/issues/1523
+[#1572]: https://github.com/cslib-community/complexitylib/issues/1572

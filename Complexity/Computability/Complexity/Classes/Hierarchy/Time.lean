@@ -46,7 +46,10 @@ The native universal machine simulates `J` steps of a description of length `B` 
 `timeDiagonal J` is in `DTIME ((n + 1) ^ 5 * (J n + 1) ^ 3)` for a time-constructible clock `J`
 (`Cslib.Complexity.setOf_timeDiagonal_mem_DTIME`). It is not in `DTIME f` when every `c * f n + c`
 is eventually below `J n`, by the diagonal argument
-(`Cslib.Complexity.setOf_timeDiagonal_notMem_DTIME`). Hence `DTIME f ⊂ DTIME g`
+(`Cslib.Complexity.setOf_timeDiagonal_notMem_DTIME`). In fact each constant need only be beaten
+at arbitrarily large lengths (`Cslib.Complexity.setOf_timeDiagonal_notMem_DTIME_of_frequently_le`);
+this also yields noninclusion when the bounds are incomparable at other lengths.
+Hence `DTIME f ⊂ DTIME g`
 [Arora and Barak, Theorem 3.1][AroraBarak09], [Sipser, Theorem 9.10][Sipser2013]:
 
 * when such a time-constructible clock `J` has `(n + 1) ^ 5 * (J n + 1) ^ 3 ≤ g n` eventually
@@ -57,7 +60,10 @@ is eventually below `J n`, by the diagonal argument
 
 The polynomial gap is the overhead of the native universal machine, which is polynomial in the
 description and in the clock. The textbook gap `f n * log (f n) = o(g n)` needs a simulation with
-logarithmic overhead and is not claimed here.
+logarithmic overhead and is not claimed here. `Hierarchy.LogClock` reduces the clock inflation
+to `f n * (Nat.size (f n) + 1)`. `Hierarchy.Polynomial` uses native padding to prove strictness
+between every pair of distinct positive integer polynomial degrees, despite this
+interpreter overhead.
 
 ## Main definitions
 
@@ -70,6 +76,9 @@ logarithmic overhead and is not claimed here.
 * `Cslib.Complexity.setOf_timeDiagonal_mem_DTIME`,
   `Cslib.Complexity.setOf_timeDiagonal_notMem_DTIME`: the clocked diagonal is decidable within
   the time of the universal machine, and not within time `O(f)` for clocks beyond every `O(f)`.
+* `Cslib.Complexity.setOf_timeDiagonal_notMem_DTIME_of_frequently_le`,
+  `Cslib.Complexity.DTIME_not_subset_DTIME_of_clock`: the clock need only dominate each constant
+  at arbitrarily large favorable lengths.
 * `Cslib.Complexity.DTIME_ssubset_DTIME_of_clock`: the time hierarchy theorem, for a clock.
 * `Cslib.Complexity.DTIME_ssubset_DTIME`: the time hierarchy theorem, for a time-constructible
   bound.
@@ -292,43 +301,46 @@ theorem computableInO_timeDiagonal {J : ℕ → ℕ} (hJ : TimeConstructible J) 
       · omega
   simpa only [computableInO_iff_computableTidilyInO] using this
 
-/-- **The diagonal argument for time.** The problem of the clocked diagonal is not decidable within
-time `O(f)` when every `c * f n + c` is eventually below the clock: on its own description, padded
-to a short one beyond the point where the clock dominates, a machine deciding it would answer the
-negation of its answer. -/
-theorem setOf_timeDiagonal_notMem_DTIME {f J : ℕ → ℕ}
-    (hJ : ∀ c, ∀ᶠ n in atTop, c * f n + c ≤ J n) :
+/-- **Diagonalization at arbitrarily large favorable lengths.** The clock need only dominate
+each linear bound infinitely often. A description can be padded to every sufficiently large
+length, so the diagonal argument does not require eventual domination or monotonicity. -/
+theorem setOf_timeDiagonal_notMem_DTIME_of_frequently_le {f J : ℕ → ℕ}
+    (hJ : ∀ c, ∃ᶠ n in atTop, c * f n + c ≤ J n) :
     {x | timeDiagonal J x = true} ∉ DTIME encBits f := by
   rintro ⟨c₁, c₂, s, hA⟩
   obtain ⟨g, ⟨k, State, hfinite, tm, htm⟩, hg⟩ := decidableInTimeAndSpace_iff.mp hA
   have := Fintype.ofFinite State
   let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  obtain ⟨N, hN⟩ := eventually_atTop.mp (hJ (max c₁ c₂))
-  -- the description, padded beyond `N` and to a length where it is short
-  suffices ∀ pad : List Bool, N + 2 ^ (eDesc (desc eS eBit tm)).length ≤ pad.length → False from
-    this (List.replicate _ false) (List.length_replicate ..).ge
-  intro pad hpad
-  have hpow := Nat.one_le_two_pow (n := (eDesc (desc eS eBit tm)).length)
-  have hlen : (frame (eDesc (desc eS eBit tm)) ++ pad).length =
-      2 * (eDesc (desc eS eBit tm)).length + 1 + pad.length := by
-    rw [List.length_append, length_frame]
+  let code := eDesc (desc eS eBit tm)
+  obtain ⟨n, hn, htime⟩ := frequently_atTop.mp (hJ (max c₁ c₂))
+    (2 * code.length + 1 + 2 ^ code.length)
+  have hbase : 2 * code.length + 1 ≤ n := (Nat.le_add_right _ _).trans hn
+  have hcode : 2 ^ code.length ≤ n := (Nat.le_add_left _ _).trans hn
+  let pad := List.replicate (n - (2 * code.length + 1)) false
+  have hlen : (frame code ++ pad).length = n := by
+    simp only [List.length_append, length_frame, pad, List.length_replicate]
+    omega
   have hshort : Diagonal.shortDesc (frame (eDesc (desc eS eBit tm)) ++ pad) = true := by
     rw [Diagonal.shortDesc, unframe_frame_append, hlen]
-    exact decide_eq_true (by omega)
+    exact decide_eq_true hcode
   have htime : c₁ * f (frame (eDesc (desc eS eBit tm)) ++ pad).length + c₂ ≤
       J (frame (eDesc (desc eS eBit tm)) ++ pad).length := by
-    have := hN _ (show N ≤ (frame (eDesc (desc eS eBit tm)) ++ pad).length by omega)
-    have h₁ : c₁ * f (frame (eDesc (desc eS eBit tm)) ++ pad).length ≤
-        max c₁ c₂ * f (frame (eDesc (desc eS eBit tm)) ++ pad).length :=
-      Nat.mul_le_mul_right _ (le_max_left _ _)
-    have h₂ : c₂ ≤ max c₁ c₂ := le_max_right _ _
-    omega
+    rw [hlen]
+    exact (Nat.add_le_add (Nat.mul_le_mul_right _ (le_max_left _ _))
+      (le_max_right _ _)).trans htime
   obtain ⟨hhalt, hout⟩ := (htm _).runFrom_of_le htime
   have hd := clockedDiagonal_desc eS tm pad J hhalt hout
   have hgx := hg (frame (eDesc (desc eS eBit tm)) ++ pad)
   simp only [Set.mem_ofPred_eq, timeDiagonal, hshort, ↓reduceIte, hd] at hgx
   revert hgx
   cases g (frame (eDesc (desc eS eBit tm)) ++ pad) <;> decide
+
+/-- **The diagonal argument for time.** Eventual domination of every linear time bound is a
+sufficient special case of diagonalization at arbitrarily large favorable lengths. -/
+theorem setOf_timeDiagonal_notMem_DTIME {f J : ℕ → ℕ}
+    (hJ : ∀ c, ∀ᶠ n in atTop, c * f n + c ≤ J n) :
+    {x | timeDiagonal J x = true} ∉ DTIME encBits f :=
+  setOf_timeDiagonal_notMem_DTIME_of_frequently_le fun c => (hJ c).frequently
 
 /-- The problem of the clocked diagonal is decidable within time
 `O((n + 1) ^ 5 * (J n + 1) ^ 3)`. -/
@@ -338,6 +350,25 @@ theorem setOf_timeDiagonal_mem_DTIME {J : ℕ → ℕ} (hJ : TimeConstructible J
     (t := fun n => (n + 1) ^ 5 * (J n + 1) ^ 3) fun _ => le_rfl
 
 /-! ### The time hierarchy theorem -/
+
+/-- **Time-class noninclusion from a clock.** Infinitely many favorable lengths for each constant
+suffice to separate the upper class from `DTIME f`. Unlike strict inclusion, this statement needs
+no comparison between `f` and `g` at the other lengths. -/
+theorem DTIME_not_subset_DTIME_of_clock {f g J : ℕ → ℕ} (hJ : TimeConstructible J)
+    (hfJ : ∀ c, ∃ᶠ n in atTop, c * f n + c ≤ J n)
+    (hg : ∀ᶠ n in atTop, (n + 1) ^ 5 * (J n + 1) ^ 3 ≤ g n) :
+    ¬DTIME encBits g ⊆ DTIME encBits f := fun h =>
+  setOf_timeDiagonal_notMem_DTIME_of_frequently_le hfJ
+    (h (DTIME_mono_of_eventually_le hg (setOf_timeDiagonal_mem_DTIME hJ)))
+
+/-- **A hierarchy for irregular bounds.** The clock must dominate the lower bound only
+infinitely often for each constant. Eventual `f ≤ g` supplies the inclusion separately. -/
+theorem DTIME_ssubset_DTIME_of_frequently_clock {f g J : ℕ → ℕ} (hJ : TimeConstructible J)
+    (hfJ : ∀ c, ∃ᶠ n in atTop, c * f n + c ≤ J n)
+    (hfg : ∀ᶠ n in atTop, f n ≤ g n)
+    (hg : ∀ᶠ n in atTop, (n + 1) ^ 5 * (J n + 1) ^ 3 ≤ g n) :
+    DTIME encBits f ⊂ DTIME encBits g :=
+  ⟨DTIME_mono_of_eventually_le hfg, DTIME_not_subset_DTIME_of_clock hJ hfJ hg⟩
 
 /-- **The time hierarchy theorem, for a clock.** If a time-constructible clock `J` eventually
 exceeds every `c * f n + c`, then `DTIME f` is strictly contained in every `DTIME g` with

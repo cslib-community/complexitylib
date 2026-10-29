@@ -334,19 +334,17 @@ theorem mem_E : MKtP ∈ E (encPair encBits encUnary) := by
     have hN := snd encBits encUnary
     have hunf : ComputableInPolyTime (fun yN : List Bool × ℕ => unframe yN.1)
         (encPair encBits encUnary) encBits :=
-      (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unframe).comp hy
+      unframe.comp hy
     have hdrop : ComputableInPolyTime (fun yN : List Bool × ℕ => (dropFrame yN.1).length)
         (encPair encBits encUnary) encUnary :=
-      (encoding_length encBits).comp
-        ((ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.dropFrame).comp hy)
+      (encoding_length encBits).comp (dropFrame.comp hy)
     exact computableInPolyTime_boundedSearch.comp (hunf.prod (hdrop.prod hN))
   obtain ⟨c, hc⟩ := mem_E_iff.mp (setOf_mem_E_of_computableInPolyTime_pad hΨ)
   let g : List Bool × ℕ → List Bool := fun xk => encPair encBits encUnary xk
   have hgO : ComputableInO g (encPair encBits encUnary) encBits
       (fun xk => (encPair encBits encUnary xk).length)
       (fun xk => (encPair encBits encUnary xk).length) :=
-    .of_tidy (ComputableTidilyInO.of_linear
-      (.of_eq (f := g) (encIn := encPair encBits encUnary) (encMid := encBits) fun _ => rfl))
+    ComputableInO.of_eq fun _ => rfl
   have hpre : g ⁻¹' {y : List Bool | Ψ (y, 2 ^ y.length) = true} ∈
       DTIME (encPair encBits encUnary) (fun n => 2 ^ ((c + 1) * n)) := by
     refine preimage_mem_DTIME (C := 2) hc hgO fun xk => ?_
