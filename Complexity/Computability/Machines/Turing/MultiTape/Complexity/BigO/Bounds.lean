@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -94,6 +95,19 @@ namespace Turing.MultiTapeTM
 
 variable {α β : Type*} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
   {T S T' S' t s : α → ℕ}
+
+/-- **Polynomial time gives polynomial charged bounds**: a function computable in polynomial time is
+computable within time `O(T)` and space `O(S)` for bounds polynomial in the length of the encoded
+input, namely the time of a realizing machine and the sum of its time and space. -/
+public theorem ComputableInPolyTime.exists_computableInO (h : ComputableInPolyTime f encIn encOut) :
+    ∃ T S, PolyBounded (fun a => (encIn a).length) T ∧ PolyBounded (fun a => (encIn a).length) S ∧
+      ComputableInO f encIn encOut T S := by
+  obtain ⟨t, s, ht, hs, h⟩ := h
+  exact ⟨_, _, .of_polynomiallyBounded _ ht,
+    (PolyBounded.of_polynomiallyBounded _ ht).add (.of_polynomiallyBounded _ hs),
+    .of_bounds h 1 (fun _ => by omega) (fun _ => by omega) fun a => by
+      have := h.length_le a
+      omega⟩
 
 /-- Bounds up to constant factors. -/
 public theorem ComputableInBigO.of_bounds (h : ComputableInTimeAndSpace f encIn encOut t s)
