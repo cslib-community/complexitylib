@@ -628,8 +628,9 @@ private theorem siftDownBody_spec {K C : ℕ} {y : Data rBin}
     hK (by omega) (by omega) hCS hfit (hm₁ ▸ hshape)
   rw [hm₁] at hz
   refine ⟨z, (he₁.seq he₂).mono (by norm_num), fun i hi => ?_, hz⟩
-  refine (hfr₂ i fun h => hi ?_).trans (hfr₁ i fun h => hi ?_) <;>
-  · simp only [List.mem_cons, List.not_mem_nil, or_false] at h ⊢; tauto
+  refine (hfr₂ i fun h => hi ?_).trans (hfr₁ i fun h => hi ?_)
+  · exact (by decide : [t, vk, dk, k, l] ⊆ [k, p, vk, vp, dk, dp, t, l]) h
+  · exact (by decide : [p, t, vp, dp, vk, dk] ⊆ [k, p, vk, vp, dk, dp, t, l]) h
 
 private structure DownInv (N base S : ℕ) (x y : Data rBin) : Prop where
   frame : ∀ i ∉ [k, p, vk, vp, dk, dp, t, l, szp], y.regs i = x.regs i
@@ -704,7 +705,7 @@ theorem siftDown_spec {K : ℕ} {x : Data rBin}
     have hfr' : ∀ i ∉ [k, p, vk, vp, dk, dp, t, l, szp], z.regs i = x.regs i := by
       intro i hi
       refine (hfr i fun h => hi ?_).trans (hr i hi)
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at h ⊢; tauto
+      exact List.mem_append_left [szp] h
     have hzs : z.regs szp = S + 1 := (hfr szp (by decide)).trans hsz'
     have hμ : downMeasure S y = Nat.log 2 (S + 1) + 1 - Nat.log 2 (y.regs l) := by
       simp only [downMeasure]; exact ite_eq_left hc

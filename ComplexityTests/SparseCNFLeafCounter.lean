@@ -38,21 +38,23 @@ private abbrev leafExh (N₀ : ℕ) (x : (ℕ × ℕ) × CNF ℕ) : ℕ :=
 
 /-! ### 1. Degenerate, Unit-Clause, Unused-Variable, and Guard Boundary Cases -/
 
-example : declExh 2 ((0, 1), []) = 1 ∧ leafExh 2 ((0, 1), []) = 1 := by decide
-example : declExh 2 ((3, 1), []) = 8 ∧ leafExh 2 ((3, 1), []) = 1 := by decide
-example : declExh 4 ((1, 1), [[(0, true)]]) = 1 ∧ leafExh 4 ((1, 1), [[(0, true)]]) = 1 := by decide
-example : declExh 4 ((3, 1), [[(0, true)]]) = 4 ∧ leafExh 4 ((3, 1), [[(0, true)]]) = 1 := by decide
-example : declExh 2 ((0, 1), [[]]) = 0 ∧ leafExh 2 ((0, 1), [[]]) = 0 := by decide
-example : declExh 2 ((4, 1), [[(0, true)], []]) = 0 ∧
-    leafExh 2 ((4, 1), [[(0, true)], []]) = 0 := by decide
-example : declExh 2 ((5, 2), [[(0, true), (1, true), (2, true), (3, true)]]) = 0 := by decide
-example : declExh 2 ((2, 2), [[(2, true)]]) = 0 := by decide
-example : declExh 2 ((2, 1), [[(0, true)], [(1, true)], [(0, false), (1, false)]]) = 0 ∧
-    leafExh 2 ((2, 1), [[(0, true)], [(1, true)], [(0, false), (1, false)]]) = 0 := by decide
-example : declExh 2 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 0 ∧
-    leafExh 2 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 0 := by decide
-example : declExh 3 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 2 ∧
-    leafExh 3 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 1 := by decide
+example :
+    (declExh 2 ((0, 1), []) = 1 ∧ leafExh 2 ((0, 1), []) = 1) ∧
+    (declExh 2 ((3, 1), []) = 8 ∧ leafExh 2 ((3, 1), []) = 1) ∧
+    (declExh 4 ((1, 1), [[(0, true)]]) = 1 ∧ leafExh 4 ((1, 1), [[(0, true)]]) = 1) ∧
+    (declExh 4 ((3, 1), [[(0, true)]]) = 4 ∧ leafExh 4 ((3, 1), [[(0, true)]]) = 1) ∧
+    (declExh 2 ((0, 1), [[]]) = 0 ∧ leafExh 2 ((0, 1), [[]]) = 0) ∧
+    (declExh 2 ((4, 1), [[(0, true)], []]) = 0 ∧
+      leafExh 2 ((4, 1), [[(0, true)], []]) = 0) ∧
+    declExh 2 ((5, 2), [[(0, true), (1, true), (2, true), (3, true)]]) = 0 ∧
+    declExh 2 ((2, 2), [[(2, true)]]) = 0 ∧
+    (declExh 2 ((2, 1), [[(0, true)], [(1, true)], [(0, false), (1, false)]]) = 0 ∧
+      leafExh 2 ((2, 1), [[(0, true)], [(1, true)], [(0, false), (1, false)]]) = 0) ∧
+    (declExh 2 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 0 ∧
+      leafExh 2 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 0) ∧
+    (declExh 3 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 2 ∧
+      leafExh 3 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 1) := by
+  decide
 
 /-! ### 2. Multi-Clause Sparse `3`-CNF Across Fallback, Pipeline Primitives, and Fast Path -/
 
@@ -61,37 +63,32 @@ example : declExh 3 ((2, 1), [[(0, true)], [(0, true)], [(0, true)]]) = 2 ∧
 def psi3 : CNF ℕ :=
   [[(0, true), (1, false), (2, true)], [(0, false), (2, true)], [(1, true), (2, false)]]
 
-example : psi3.modelCount = 3 := by decide
-example : psi3.modelCountOn (Finset.range 4) = 6 := by decide
-example : declExh 5 ((4, 1), psi3) = 6 := by decide
-example : leafExh 5 ((4, 1), psi3) = 3 := by decide
-example : entersSparseFastPath 3 2 4 1 psi3 = true := by decide
-example : (initialTestsRows 3 1).length ≤ 12 ∧ ∀ r ∈ initialTestsRows 3 1, r.length = 3 := by decide
-example :
-    let initRows := initialTestsRows 3 1
-    let rows := greedyParityRows
-      (fun r => compiledRowCounter 3 countSystemExhaustive ((4, psi3), r)) 1 3 1 initRows
-    compiledRowCounter 3 countSystemExhaustive ((4, psi3), rows) = 6 := by decide
-
-example : declExh 2 ((4, 1), psi3) = 6 := by
-  have hw : ∀ c ∈ psi3, c.length ≤ 3 := by decide
-  have hsub : psi3.vars.toFinset ⊆ Finset.range 4 := by decide
-  rw [declExh, sparseCNFDeclaredCounter_exhaustive_eq_modelCountOn (NOf := Prod.fst)
-    (BOf := Prod.snd) (p := (4, 1)) hw hsub (Or.inl (by decide))]
-  decide
-
-example : leafExh 2 ((4, 1), psi3) = 3 := by
-  have hw : ∀ c ∈ psi3, c.length ≤ 3 := by decide
-  have hsub : psi3.vars.toFinset ⊆ Finset.range 4 := by decide
-  rw [leafExh, sparseCNFLeafCounter_exhaustive_eq_modelCount (NOf := Prod.fst)
-    (BOf := Prod.snd) (p := (4, 1)) hw hsub (Or.inl (by decide))]
-  decide
-
 example (x : (ℕ × ℕ) × CNF ℕ) :
-    sparseCNFDeclaredCounter Prod.fst Prod.snd 3 2 (fun _ => 999) x ≤ 2 ^ x.1.1 ∧
-    sparseCNFLeafCounter Prod.fst Prod.snd 3 2 (fun _ => 999) x ≤ 2 ^ x.2.numVars :=
-  ⟨sparseCNFDeclaredCounter_le_two_pow _ _ _ _ _ x,
+    psi3.modelCount = 3 ∧
+    psi3.modelCountOn (Finset.range 4) = 6 ∧
+    declExh 5 ((4, 1), psi3) = 6 ∧
+    leafExh 5 ((4, 1), psi3) = 3 ∧
+    entersSparseFastPath 3 2 4 1 psi3 = true ∧
+    ((initialTestsRows 3 1).length ≤ 12 ∧ ∀ r ∈ initialTestsRows 3 1, r.length = 3) ∧
+    (let initRows := initialTestsRows 3 1
+      let rows := greedyParityRows
+        (fun r => compiledRowCounter 3 countSystemExhaustive ((4, psi3), r)) 1 3 1 initRows
+      compiledRowCounter 3 countSystemExhaustive ((4, psi3), rows) = 6) ∧
+    declExh 2 ((4, 1), psi3) = 6 ∧
+    leafExh 2 ((4, 1), psi3) = 3 ∧
+    (sparseCNFDeclaredCounter Prod.fst Prod.snd 3 2 (fun _ => 999) x ≤ 2 ^ x.1.1 ∧
+      sparseCNFLeafCounter Prod.fst Prod.snd 3 2 (fun _ => 999) x ≤ 2 ^ x.2.numVars) := by
+  have hw : ∀ c ∈ psi3, c.length ≤ 3 := by decide
+  have hsub : psi3.vars.toFinset ⊆ Finset.range 4 := by decide
+  refine ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, ?_, ?_,
+    sparseCNFDeclaredCounter_le_two_pow _ _ _ _ _ x,
     sparseCNFLeafCounter_le_two_pow_numVars _ _ _ _ _ x⟩
+  · rw [declExh, sparseCNFDeclaredCounter_exhaustive_eq_modelCountOn (NOf := Prod.fst)
+      (BOf := Prod.snd) (p := (4, 1)) hw hsub (Or.inl (by decide))]
+    decide
+  · rw [leafExh, sparseCNFLeafCounter_exhaustive_eq_modelCount (NOf := Prod.fst)
+      (BOf := Prod.snd) (p := (4, 1)) hw hsub (Or.inl (by decide))]
+    decide
 
 /-! ### 3. Concrete Native Certificate & Split `ComputableInO` Instantiations -/
 
@@ -104,17 +101,16 @@ private def CheckSplitComputableInO (f : (ℕ × ℕ) × CNF ℕ → ℕ) : Prop
         (sparseCNFTimeBound encNB Prod.fst Prod.snd 3 16 poly qInit R)
         (fun x => poly (encPair encNB encCNF x).length)
 
-example : CheckSplitComputableInO (declExh 16) ∧ CheckSplitComputableInO (leafExh 16) :=
-  ⟨computableInO_sparseCNFDeclaredCounter 3 16 (by fun_prop) (by fun_prop)
-      countSystemExhaustiveCertificate polyBounded_countSystemExhaustive_space,
-    computableInO_sparseCNFLeafCounter 3 16 (by fun_prop) (by fun_prop)
-      countSystemExhaustiveCertificate polyBounded_countSystemExhaustive_space⟩
-
 example :
+    (CheckSplitComputableInO (declExh 16) ∧ CheckSplitComputableInO (leafExh 16)) ∧
     PolyBounded (fun x : (ℕ × ℕ) × CNF ℕ => (encPair encNB encCNF x).length)
       (sparseCNFLeafCertificate (encP := encNB) (NOf := Prod.fst) (BOf := Prod.snd) 3 16
         (by fun_prop) (by fun_prop) countSystemExhaustiveCertificate).space :=
-  polyBounded_sparseCNFLeafCertificate_space 3 16 (by fun_prop) (by fun_prop)
-    countSystemExhaustiveCertificate polyBounded_countSystemExhaustive_space
+  ⟨⟨computableInO_sparseCNFDeclaredCounter 3 16 (by fun_prop) (by fun_prop)
+      countSystemExhaustiveCertificate polyBounded_countSystemExhaustive_space,
+    computableInO_sparseCNFLeafCounter 3 16 (by fun_prop) (by fun_prop)
+      countSystemExhaustiveCertificate polyBounded_countSystemExhaustive_space⟩,
+   polyBounded_sparseCNFLeafCertificate_space 3 16 (by fun_prop) (by fun_prop)
+     countSystemExhaustiveCertificate polyBounded_countSystemExhaustive_space⟩
 
 end ComplexityTests.SparseCNFLeafCounter

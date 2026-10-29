@@ -42,31 +42,27 @@ example : ∃ c : Circuit signature 4 2,
     (fun i => ⟨⟨i + 2, by omega⟩, funext fun x =>
       (getLsbD_word (fun j : Fin 2 => x ⟨j + 2, by omega⟩) i).symm⟩)).exists_circuit_outputs
 
--- Table selection is exact in range and all-false out of range.
-example : selectBits (BitVec.ofNat 2 1) ![![true, false], ![false, true]] = ![false, true] := by
-  decide
-
-example : selectBits (BitVec.ofNat 2 3) ![![true, false], ![false, true]] = ![false, false] := by
-  decide
-
--- Positions beyond the index range are never selected, so oversized tables do not alias.
-example : selectBits (BitVec.ofNat 1 0) ![![true, false], ![false, false], ![false, true]] =
-    ![true, false] := by
+-- Table selection is exact in range, all-false out of range, and never selects positions beyond
+-- the index range.
+example :
+    selectBits (BitVec.ofNat 2 1) ![![true, false], ![false, true]] = ![false, true] ∧
+    selectBits (BitVec.ofNat 2 3) ![![true, false], ![false, true]] = ![false, false] ∧
+    selectBits (BitVec.ofNat 1 0) ![![true, false], ![false, false], ![false, true]] =
+      ![true, false] := by
   decide
 
 /-! ### Residues and records -/
 
--- An orbit repeating between times 2 and 5: time 10 is the time 4 in `[2, 5)`.
-example : (repeatWordIndex 10 5 (BitVec.ofNat 3 2) (BitVec.ofNat 3 5)).toNat = 4 := by decide
-
--- Equal states collide unless a record is padding or both are identical.
-example : Record.collision (Record.query (n := 1) (w := 2) ![true] 0)
-    (Record.stored ![true] ![false]) = true := by decide
-
-example : Record.collision (Record.query (n := 1) (w := 2) ![true] 0)
-    (Record.query ![true] 0) = false := by decide
-
-example : Record.collision (Record.pad (n := 1) (w := 2)) Record.pad = false := by decide
+-- An orbit repeating between times 2 and 5: time 10 is the time 4 in `[2, 5)`, and equal states
+-- collide unless a record is padding or both are identical.
+example :
+    (repeatWordIndex 10 5 (BitVec.ofNat 3 2) (BitVec.ofNat 3 5)).toNat = 4 ∧
+    Record.collision (Record.query (n := 1) (w := 2) ![true] 0)
+      (Record.stored ![true] ![false]) = true ∧
+    Record.collision (Record.query (n := 1) (w := 2) ![true] 0)
+      (Record.query ![true] 0) = false ∧
+    Record.collision (Record.pad (n := 1) (w := 2)) Record.pad = false := by
+  decide
 
 /-! ### Fixed powers -/
 
@@ -143,27 +139,22 @@ example (c : Circuit signature 3 3) (T : ℕ) : ∃ out : Circuit signature 3 3,
 
 /-! ### Universal step map, in-place machines, and sequential squaring -/
 
--- Zero-gate (`G = 0`) round of the universal map on the identity circuit.
+-- Zero-gate (`G = 0`), exact (`G = 1`), and padded (`G = 3 > flip.size`) rounds of the universal
+-- map simulate `Circuit.id` and `flip`.
 example (x : BitString 1) :
     (Universal.step interpretation)^[0 + 1]
       (Universal.start (Universal.describe 0 (Circuit.id signature 1) .not) x) =
     Universal.start (Universal.describe 0 (Circuit.id signature 1) .not)
-      ((Circuit.id signature 1).eval interpretation x) :=
-  Universal.step_round interpretation (Circuit.id signature 1) .not le_rfl x
-
--- One round of `1 + 1` steps of the universal map simulates `flip`.
-example (x : BitString 1) :
+      ((Circuit.id signature 1).eval interpretation x) ∧
     (Universal.step interpretation)^[1 + 1]
       (Universal.start (Universal.describe 1 flip .not) x) =
-    Universal.start (Universal.describe 1 flip .not) (flip.eval interpretation x) :=
-  Universal.step_round interpretation flip .not le_rfl x
-
--- Padded (`G = 3 > flip.size`) round of the universal map simulates `flip`.
-example (x : BitString 1) :
+    Universal.start (Universal.describe 1 flip .not) (flip.eval interpretation x) ∧
     (Universal.step interpretation)^[3 + 1]
       (Universal.start (Universal.describe 3 flip .not) x) =
     Universal.start (Universal.describe 3 flip .not) (flip.eval interpretation x) :=
-  Universal.step_round interpretation flip .not (by decide) x
+  ⟨Universal.step_round interpretation (Circuit.id signature 1) .not le_rfl x,
+   Universal.step_round interpretation flip .not le_rfl x,
+   Universal.step_round interpretation flip .not (by decide) x⟩
 
 -- Concrete instantiation of `Universal.universal_power_circuit` for `T = 1` on `flip`.
 example : ∃ d : Circuit signature 1 1,
@@ -256,10 +247,6 @@ example (q : ℕ)
     flip (fun z _ => by rw [collideMachine_step, eval_flip]) (Circuit.id signature 1) (fun _ => rfl)
 
 -- Sequential squaring modulo `M = 1`, at `T = 0`, and on a non-unit residue modulo `M = 15`.
-example (T : ℕ) (x : ZMod 1) :
-    (fun y : ZMod 1 => y ^ 2)^[T] x = x ^ SequentialSquaring.reducedExponent 1 T :=
-  SequentialSquaring.iterate_square_reduced squarefree_one T x
-
 private theorem squarefree_15 : Squarefree (15 : ℕ) := by
   rintro (_ | _ | _ | _ | d) ⟨k, hk⟩
   · omega
@@ -271,40 +258,39 @@ private theorem squarefree_15 : Squarefree (15 : ℕ) := by
     · nlinarith
 
 -- `3 : ZMod 15` is a non-unit, yet satisfies `pow_carmichael_succ` and `iterate_square_reduced`
--- (including at `T = 0`).
-example : ¬ IsUnit (3 : ZMod 15) := by
+-- (including at `T = 0`, alongside `M = 1`).
+example (T : ℕ) (x : ZMod 15) :
+    (fun y : ZMod 1 => y ^ 2)^[T] (0 : ZMod 1) =
+      (0 : ZMod 1) ^ SequentialSquaring.reducedExponent 1 T ∧
+    ¬ IsUnit (3 : ZMod 15) ∧
+    (3 : ZMod 15) ^ (SequentialSquaring.carmichael 15 + 1) = (3 : ZMod 15) ∧
+    (fun y : ZMod 15 => y ^ 2)^[0] (3 : ZMod 15) =
+      (3 : ZMod 15) ^ SequentialSquaring.reducedExponent 15 0 ∧
+    (fun y : ZMod 15 => y ^ 2)^[T] x = x ^ SequentialSquaring.reducedExponent 15 T := by
+  refine ⟨SequentialSquaring.iterate_square_reduced squarefree_one T 0, ?_,
+    SequentialSquaring.pow_carmichael_succ squarefree_15 3,
+    SequentialSquaring.iterate_square_reduced squarefree_15 0 3,
+    SequentialSquaring.iterate_square_reduced squarefree_15 T x⟩
   rintro ⟨u, hu⟩
   have h := congrArg (fun z : ZMod 15 => (5 : ZMod 15) * z) hu
   have h0 : (5 : ZMod 15) * 3 = 0 := by decide
   have h5 : (5 : ZMod 15) ≠ 0 := by decide
   have hu0 : (5 : ZMod 15) * (u : ZMod 15) = 0 := h.trans h0
-  have := (Units.mul_left_eq_zero u).mp hu0
-  exact h5 this
-
-example : (3 : ZMod 15) ^ (SequentialSquaring.carmichael 15 + 1) = (3 : ZMod 15) :=
-  SequentialSquaring.pow_carmichael_succ squarefree_15 3
-
-example : (fun y : ZMod 15 => y ^ 2)^[0] (3 : ZMod 15) =
-    (3 : ZMod 15) ^ SequentialSquaring.reducedExponent 15 0 :=
-  SequentialSquaring.iterate_square_reduced squarefree_15 0 3
-
-example (T : ℕ) (x : ZMod 15) :
-    (fun y : ZMod 15 => y ^ 2)^[T] x = x ^ SequentialSquaring.reducedExponent 15 T :=
-  SequentialSquaring.iterate_square_reduced squarefree_15 T x
+  exact h5 ((Units.mul_left_eq_zero u).mp hu0)
 
 -- Non-squarefree boundary (`M = 4`): `x ^ (λ(4) + 1) = x` fails at the nilpotent residue `2`.
-example : ¬ Squarefree (4 : ℕ) := by
-  intro h
-  have h2 := Nat.isUnit_iff.mp (h 2 ⟨1, by ring⟩)
-  omega
-
-example : (2 : ZMod 4) ^ (SequentialSquaring.carmichael 4 + 1) ≠ (2 : ZMod 4) := by
-  obtain ⟨k, hk⟩ : ∃ k, SequentialSquaring.carmichael 4 + 1 = k + 2 :=
-    ⟨SequentialSquaring.carmichael 4 - 1, by
-      have := SequentialSquaring.carmichael_pos 4
-      omega⟩
-  rw [hk, pow_add, show (2 : ZMod 4) ^ 2 = 0 by decide, mul_zero]
-  decide
+example :
+    ¬ Squarefree (4 : ℕ) ∧
+    (2 : ZMod 4) ^ (SequentialSquaring.carmichael 4 + 1) ≠ (2 : ZMod 4) := by
+  refine ⟨fun h => ?_, ?_⟩
+  · have h2 := Nat.isUnit_iff.mp (h 2 ⟨1, by ring⟩)
+    omega
+  · obtain ⟨k, hk⟩ : ∃ k, SequentialSquaring.carmichael 4 + 1 = k + 2 :=
+      ⟨SequentialSquaring.carmichael 4 - 1, by
+        have := SequentialSquaring.carmichael_pos 4
+        omega⟩
+    rw [hk, pow_add, show (2 : ZMod 4) ^ 2 = 0 by decide, mul_zero]
+    decide
 
 /-! ### Compressed-forest reachability, hitting time, and visit schedules -/
 
@@ -342,28 +328,24 @@ example : ∃ out : Circuit signature 2 (visitScheduleWidth 1),
 
 /-! ### Hard-power counting, modular counters and prime-cycle permutations -/
 
--- Linear-size circuit for the 2-bit modular-counter step.
-example : ∃ c : Circuit signature (2 + 2) (2 + 2),
-    c.Computes interpretation (counterStep 2) ∧ c.size ≤ 50 * 2 + 20 :=
-  counterStep_circuit 2
-
--- Exponential lower bound for some power of the 64-bit modular counter.
-example : ∃ c : Circuit signature (64 + 64) (64 + 64),
-    c.size ≤ 50 * (64 + 1) ∧ Function.Bijective (c.eval interpretation) ∧
-    ∃ T < ModulusCounter.period 64,
-      ∀ out : Circuit signature (64 + 64) (64 + 64),
-        out.Computes interpretation (c.eval interpretation)^[T] →
-          2 ^ 64 / (1024 * (64 + 1)) < out.size :=
-  counter_power_lower_bound 64 (by decide)
-
--- Almost all counter powers at width k = 64 are hard.
-example : (easyCounterPowers 64 (lowerBudget 64)).card * 2 ^ (2 ^ (64 - 1)) ≤
-    ModulusCounter.period 64 :=
-  almost_all_counter_powers_hard 64 (by decide)
-
--- Least common multiple below 5 is strictly less than 4 ^ 5.
-example : lcmBelow 5 < 4 ^ 5 :=
-  lcmBelow_lt_four_pow 5 (by decide)
+-- Linear-size circuit for the 2-bit modular-counter step, exponential lower bound and density of
+-- hard powers for the 64-bit modular counter, and least common multiple bound below 5.
+example :
+    (∃ c : Circuit signature (2 + 2) (2 + 2),
+      c.Computes interpretation (counterStep 2) ∧ c.size ≤ 50 * 2 + 20) ∧
+    (∃ c : Circuit signature (64 + 64) (64 + 64),
+      c.size ≤ 50 * (64 + 1) ∧ Function.Bijective (c.eval interpretation) ∧
+      ∃ T < ModulusCounter.period 64,
+        ∀ out : Circuit signature (64 + 64) (64 + 64),
+          out.Computes interpretation (c.eval interpretation)^[T] →
+            2 ^ 64 / (1024 * (64 + 1)) < out.size) ∧
+    (easyCounterPowers 64 (lowerBudget 64)).card * 2 ^ (2 ^ (64 - 1)) ≤
+      ModulusCounter.period 64 ∧
+    lcmBelow 5 < 4 ^ 5 :=
+  ⟨counterStep_circuit 2,
+   counter_power_lower_bound 64 (by decide),
+   almost_all_counter_powers_hard 64 (by decide),
+   lcmBelow_lt_four_pow 5 (by decide)⟩
 
 /-- Non-vacuous concrete `PrimeCycleData` instance from the hash-class construction. -/
 noncomputable def samplePrimeCycleData : PrimeCycleData 1 3 :=
@@ -372,25 +354,21 @@ noncomputable def samplePrimeCycleData : PrimeCycleData 1 3 :=
 example : Function.Bijective samplePrimeCycleData.step :=
   samplePrimeCycleData.step_bijective
 
--- Batched modular-counter power for r = 2 blocks of width 2 * 2 = 4.
-example (T : ℕ) :
-    ∃ out : Circuit signature (2 * (2 + 2)) (2 * (2 + 2)),
-      out.Computes interpretation (counterBatchPower T) ∧
-        out.size ≤ 40000 * (2 + 1) ^ 3 * (2 ^ 2 + 2) :=
-  batched_counter_power T 2 (by decide)
-
--- Empty batch (r = 0) and zero-width (k = 0) boundary cases of batched_counter_power.
+-- Batched modular-counter power for r = 2 blocks of width 2 * 2 = 4, plus empty-batch (r = 0) and
+-- zero-width (k = 0) boundary cases.
 example (T k : ℕ) :
-    ∃ out : Circuit signature (0 * (k + k)) (0 * (k + k)),
+    (∃ out : Circuit signature (2 * (2 + 2)) (2 * (2 + 2)),
+      out.Computes interpretation (counterBatchPower T) ∧
+        out.size ≤ 40000 * (2 + 1) ^ 3 * (2 ^ 2 + 2)) ∧
+    (∃ out : Circuit signature (0 * (k + k)) (0 * (k + k)),
       out.Computes interpretation (counterBatchPower (r := 0) (k := k) T) ∧
-        out.size ≤ 40000 * (k + 1) ^ 3 * (2 ^ k + 0) :=
-  batched_counter_power T 0 (Nat.zero_le _)
-
-example (T : ℕ) :
-    ∃ out : Circuit signature (1 * (0 + 0)) (1 * (0 + 0)),
+        out.size ≤ 40000 * (k + 1) ^ 3 * (2 ^ k + 0)) ∧
+    (∃ out : Circuit signature (1 * (0 + 0)) (1 * (0 + 0)),
       out.Computes interpretation (counterBatchPower (r := 1) (k := 0) T) ∧
-        out.size ≤ 40000 * (0 + 1) ^ 3 * (2 ^ 0 + 1) :=
-  batched_counter_power T 1 (by decide)
+        out.size ≤ 40000 * (0 + 1) ^ 3 * (2 ^ 0 + 1)) :=
+  ⟨batched_counter_power T 2 (by decide),
+   batched_counter_power T 0 (Nat.zero_le _),
+   batched_counter_power T 1 (by decide)⟩
 
 /-- Two-block `2 * (2 + 2)`-bit state with active block 0 `(modulus = 3, residue = 2)` and
 inactive zero-modulus block 1 `(modulus = 0, residue = 1)`. -/
@@ -421,16 +399,18 @@ theorem power_one_two_ne_id : ModulusCounter.power (k := 2) 1 ≠ id := by
 
 example (c : Circuit signature (2 * (2 + 2)) (2 * (2 + 2)))
     (hc : c.Computes interpretation (counterBatchPower (r := 2) (k := 2) 1)) :
-    2 ≤ c.size :=
-  counterBatch_size_ge_of_ne_id 1 power_one_two_ne_id c hc
-
-example (c : Circuit signature (2 * (2 + 2)) (2 * (2 + 2)))
-    (hc : c.Computes interpretation (counterBatchPower (r := 2) (k := 2) 1)) :
     (∃ out : Circuit signature (2 + 2) (2 + 2),
       out.Computes interpretation (ModulusCounter.power 1) ∧ out.size ≤ c.size) ∧
     2 ≤ c.size := by
-  obtain ⟨hsingle, hbatch⟩ := counterBatch_lower_bounds 1 two_pos c hc
-  exact ⟨hsingle, hbatch power_one_two_ne_id⟩
+  obtain ⟨hsingle, _⟩ := counterBatch_lower_bounds 1 two_pos c hc
+  exact ⟨hsingle, counterBatch_size_ge_of_ne_id 1 power_one_two_ne_id c hc⟩
+
+-- The combined theorem also supplies its independent per-block lower-bound route.
+example (c : Circuit signature (2 * (2 + 2)) (2 * (2 + 2)))
+    (hc : c.Computes interpretation (counterBatchPower (r := 2) (k := 2) 1)) :
+    2 ≤ c.size := by
+  obtain ⟨_, hbatch⟩ := counterBatch_lower_bounds 1 two_pos c hc
+  exact hbatch power_one_two_ne_id
 
 -- Combined upper and lower bounds for batched hard counter powers at k = 64.
 example :
