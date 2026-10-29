@@ -605,6 +605,7 @@ private theorem positiveSourcePositions :
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ =>
         (Sum.inl (Sum.inl p.2) : CNF.PositiveExactOneCompile.Variable ℕ))
       (encPair encInput encNat) encRawVariable := by
+    apply ComputableInPolyTime.tidy
     unfold encRawVariable DrawingFinitePolyTime.encRawVariable
       CNF.PositiveExactOneCompile.encVariable CNF.PositiveExactOne.encVariable
       CNF.FromSAT.encVariable

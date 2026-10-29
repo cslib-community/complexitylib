@@ -625,8 +625,8 @@ private lemma modulus_qbf_pt : ComputableInPolyTime modulus encQBF encUnary := b
     unfold primeBound
     fun_prop
   unfold modulus
-  exact .of_tidy (ComputableTidilyInPolyTime.findGreatest hbnd.tidy
-    (ComputableTidilyInPolyTime.unary_decide_prime.comp (.snd _ _)))
+  exact ComputableInPolyTime.findGreatest hbnd
+    (ComputableInPolyTime.unary_decide_prime.comp (.snd _ _))
 
 private lemma loopInput_pt : ComputableInPolyTime loopInput encQBF encLoopInput := by
   have hexpand : ComputableInPolyTime (fun p : QBF ℕ × (QBF.Kind × ℕ) =>

@@ -44,47 +44,6 @@ open Probability Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α : Type} {input : α ↪ List Bool} {n m w η i k j : α → ℕ}
 
-private theorem computableInPolyTime_matrixBinaryEntry {β : Type} {encIn : β ↪ List Bool}
-    {cols width row col : β → ℕ} {word : β → List Bool}
-    (_hcols : ComputableInPolyTime cols encIn encUnary)
-    (hwidth : ComputableInPolyTime width encIn encUnary)
-    (hword : ComputableInPolyTime word encIn encBits)
-    (_hrow : ComputableInPolyTime row encIn encUnary)
-    (_hcol : ComputableInPolyTime col encIn encUnary) :
-    ComputableInPolyTime
-      (fun a => Matrix.binaryEntry (cols a) (width a) (word a) (row a) (col a))
-      encIn encNat :=
-  bitsToNat.comp (bitsRowWithInput hwidth (by fun_prop) hword)
-
-private theorem computableInPolyTime_intBin_emodNat'
-    {value : α → ℤ} {modulus : α → ℕ}
-    (hvalue : ComputableInPolyTime value input encIntBin)
-    (hmodulus : ComputableInPolyTime modulus input encNat) :
-    ComputableInPolyTime (fun a => (value a % (modulus a : ℤ)).toNat) input encNat := by
-  have hsign : ComputableInPolyTime (fun a => decide (value a < 0)) input encBool :=
-    ((headD (encA := encBool) (encL := encBits) false).comp hvalue.encoding_comp).of_enc_eq
-      fun a => by simp
-  have habs : ComputableInPolyTime (fun a => (value a).natAbs) input encNat :=
-    (bitsTail.comp hvalue.encoding_comp).of_enc_eq fun a => by simp
-  have hrem := binary_mod.comp (habs.prod hmodulus)
-  have h := hsign.ite'
-    (binary_mod.comp ((binary_sub.comp (hmodulus.prod hrem)).prod hmodulus)) hrem
-  refine h.of_enc_eq fun a => congrArg encNat ?_
-  by_cases hz : value a < 0
-  · simp only [Function.comp_apply, hz, decide_true, ↓reduceIte]
-    by_cases hq : modulus a = 0
-    · simp only [hq, Nat.cast_zero, Int.emod_zero, Nat.zero_sub, Nat.mod_zero]
-      omega
-    · rw [Int.emod_natAbs_of_neg hz hq]
-      split_ifs with hdiv
-      · simp [Int.emod_eq_zero_of_dvd hdiv]
-      · have hlt : (value a % (modulus a : ℤ)).toNat < modulus a := by
-          have := Int.emod_lt_of_pos (value a) (by omega : 0 < (modulus a : ℤ))
-          omega
-        rw [Nat.sub_sub_self hlt.le, Nat.mod_eq_of_lt hlt]
-  · simp only [Function.comp_apply, hz, decide_false, Bool.false_eq_true, ↓reduceIte]
-    exact (Int.emod_natAbs_of_nonneg (by omega : 0 ≤ value a)).symm
-
 /-- Compute a public row's leading residue from arbitrary binary inputs and signed errors. -/
 @[fun_prop]
 theorem computableInPolyTime_publicRowHead {inputs : α → SerializedKeyInputs}
@@ -113,7 +72,7 @@ theorem computableInPolyTime_publicRowHead {inputs : α → SerializedKeyInputs}
     (encPair encIntBin encIntBin) encIntBin by fun_prop).comp
       ((intBin_natCast.comp hsum).prod herror)
   simpa only [Function.comp_apply, Nat.cast_pow, Nat.cast_ofNat] using
-    computableInPolyTime_intBin_emodNat' hadd (binary_pow' (const 2) hw)
+    intBin_emodNat' hadd (binary_pow' (const 2) hw)
 
 /-- Construct the entire public word, charging the runtime number and width of every entry. -/
 @[fun_prop]
@@ -177,7 +136,7 @@ theorem computableInPolyTime_encryptEntry
       (encPair input encUnary) encNat := by
     apply ((bitsGetD false).comp
       ((hcoinsRow.comp (fst input encUnary)).prod (snd input encUnary))).ite'
-    · exact computableInPolyTime_matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
+    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
         (snd input encUnary) (by fun_prop)
     · exact const 0
   have hsum := (show ComputableInPolyTime List.sum (encList encNat) encNat by fun_prop).comp

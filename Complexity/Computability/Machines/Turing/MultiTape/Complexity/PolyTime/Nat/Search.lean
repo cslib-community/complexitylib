@@ -9,8 +9,10 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Mathlib.Data.Nat.Find
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Polynomial-time bounded search
@@ -25,18 +27,18 @@ The ordinary Mathlib specification of `Nat.findGreatest` remains available to cl
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.findGreatest`: exact total bounded search with
+* `Turing.MultiTapeTM.ComputableInPolyTime.findGreatest`: exact total bounded search with
   uniform polynomial time in the caller's input encoding.
 
 ## References
 
 Adapted from Cslib/Computability/Probabilistic/Search.lean on the cslib `crypto` branch at
-`5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the tidy deterministic calculus.
+`5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the plain deterministic calculus.
 -/
 
 @[expose] public section
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 private theorem findGreatest_eq_findD (predicate : ℕ → Prop) [DecidablePred predicate]
     (bound : ℕ) : Nat.findGreatest predicate bound =
@@ -53,13 +55,13 @@ Both the bound and the predicate are certified uniformly in the original input. 
 @[fun_prop]
 theorem findGreatest {α : Type} {input : α ↪ List Bool} {bound : α → ℕ}
     {predicate : α → ℕ → Prop} [∀ a, DecidablePred (predicate a)]
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hpredicate : ComputableTidilyInPolyTime (fun p : α × ℕ => decide (predicate p.1 p.2))
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hpredicate : ComputableInPolyTime (fun p : α × ℕ => decide (predicate p.1 p.2))
       (encPair input encUnary) encBool) :
-    ComputableTidilyInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
+    ComputableInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
       input encUnary := by
   simp only [findGreatest_eq_findD]
   have hlist := listReverseWithInput (range.comp (unary_add.comp (hbound.prod (const 1))))
   exact (findWithInput hlist hpredicate).optionGetDWithInput (const 0)
 
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+end Turing.MultiTapeTM.ComputableInPolyTime

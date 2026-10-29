@@ -8,27 +8,29 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Mathlib.Data.Nat.Prime.Defs
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Primality of unary naturals by trial division
 
 A natural `p` is prime exactly when `2 ≤ p` and no `m` with `2 ≤ m < p` divides it
-(`Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_prime_eq`). Testing every candidate below
+(`Turing.MultiTapeTM.ComputableInPolyTime.decide_prime_eq`). Testing every candidate below
 `p` takes time polynomial in `p`, hence in the length of its unary encoding
-(`Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_decide_prime`).
+(`Turing.MultiTapeTM.ComputableInPolyTime.unary_decide_prime`).
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_prime_eq`: primality by trial division.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_decide_prime`: in polynomial time.
+* `Turing.MultiTapeTM.ComputableInPolyTime.decide_prime_eq`: primality by trial division.
+* `Turing.MultiTapeTM.ComputableInPolyTime.unary_decide_prime`: in polynomial time.
 -/
 
 @[expose] public section
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Primality by trial division. -/
 theorem decide_prime_eq (p : ℕ) : decide p.Prime =
@@ -45,8 +47,8 @@ theorem decide_prime_eq (p : ℕ) : decide p.Prime =
 /-- Primality of a unary natural, by trial division. -/
 @[fun_prop]
 theorem unary_decide_prime :
-    ComputableTidilyInPolyTime (fun p : ℕ => decide p.Prime) encUnary encBool := by
+    ComputableInPolyTime (fun p : ℕ => decide p.Prime) encUnary encBool := by
   simp_rw [decide_prime_eq]
   fun_prop
 
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+end Turing.MultiTapeTM.ComputableInPolyTime

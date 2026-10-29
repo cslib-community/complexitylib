@@ -25,11 +25,11 @@ example (z : ℤ) : (z % 1).toNat = 0 := by simp
 
 -- Both operands may grow; the modulus is binary rather than enumerated or supplied in unary.
 example : ComputableInPolyTime (fun p : ℤ × ℕ => (p.1 % (p.2 : ℤ)).toNat)
-    (encPair encIntBin encNat) encNat :=
-  .of_tidy (by fun_prop)
+    (encPair encIntBin encNat) encNat := by
+  fun_prop
 
 -- The composition rule includes every operand of the signed difference and the modulus.
 example : ComputableInPolyTime
     (fun p : (ℤ × ℤ) × ℕ => ((p.1.1 - p.1.2) % (p.2 : ℤ)).toNat)
-    (encPair (encPair encIntBin encIntBin) encNat) encNat :=
-  .of_tidy (by fun_prop)
+    (encPair (encPair encIntBin encIntBin) encNat) encNat := by
+  fun_prop
