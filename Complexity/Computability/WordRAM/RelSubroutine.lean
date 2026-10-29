@@ -25,7 +25,7 @@ to relational specifications (`Stateful.RelSpec`):
    `Stateful.RelRealization` directly via `Exec.unique`.
 2. **Unified standalone and inline relational subroutine certificates (`RelSubroutineDS`):**
    Extends `SubroutineBase P D.Result D.valid w base params s₀` over `D : Stateful.RelSpec`,
-   inheriting `toDynamicProgram`, `initFresh_exec`, `initFresh_rename`, `zeroFillCode_exec`,
+   inheriting `toDynamicProgram`, `initFresh_exec`, `initFresh_rename`,
    `initClear_exec`, `initClear_rename`, `frame_caller`, and `prepareRegs` without duplication,
    omitting `rep_unique` (since concrete potential `potential : Data r_ds → ℕ` depends only on
    machine data), and existentially quantifying over `(s', a)` with `D.step s o s' a` in
@@ -266,7 +266,7 @@ end SubroutineCode
 at word width `w`, base address `base`, runtime parameters `params`, and initial state `s₀`.
 
 Extends `SubroutineBase P D.Result D.valid w base params s₀` (inheriting `toDynamicProgram`,
-`initFresh_exec`, `initFresh_rename`, `zeroFillCode_exec`, `initClear_exec`, `initClear_rename`,
+`initFresh_exec`, `initFresh_rename`, `initClear_exec`, `initClear_rename`,
 `frame_caller`, and `prepareRegs`), omits `rep_unique` (because concrete potential
 `potential : Data r_ds → ℕ` depends only on machine data), and existentially quantifies over a
 permitted outcome `(s', a)` satisfying `D.step s o s' a` in `step_exec`. -/

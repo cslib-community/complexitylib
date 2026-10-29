@@ -14,6 +14,10 @@ public import Complexity.Computability.WordRAM.Trace
 /-!
 # Fixed-program implementations of dynamic data structures
 
+`DynamicProgram` depends only on the existing `PFunctor` operation signature and its instruction
+basis, which defaults to `.standard`. Deterministic and relational specifications supply their
+signatures by coercion; correctness certificates retain the actual specification separately.
+
 An implementation has one structured program, one output register, and a register-only calling
 convention. Each call replaces designated input registers with encoded words, preserving all
 other registers and the entire memory. Argument encoding, external delivery, and result decoding
@@ -77,9 +81,9 @@ variable {r : ℕ} {D : Stateful.Spec.{u, v, z}}
 /-- A single program serving an operation signature through a fixed register calling convention.
 Deterministic and relational stateful specifications supply their signatures by coercion;
 the program itself makes no assumption about abstract states or permitted transitions. -/
-structure DynamicProgram (S : PFunctor.{v, z}) (r : ℕ) where
+structure DynamicProgram (S : PFunctor.{v, z}) (r : ℕ) (B : Basis := .standard) where
   /-- The same code is executed for every operation. -/
-  code : Code .standard r
+  code : Code B r
   /-- Register returned by the final halt instruction. -/
   output : Fin r
   /-- Registers overwritten by externally supplied operation arguments. -/
@@ -91,7 +95,7 @@ structure DynamicProgram (S : PFunctor.{v, z}) (r : ℕ) where
 
 namespace DynamicProgram
 
-variable {S : PFunctor.{v, z}} (P : DynamicProgram S r)
+variable {S : PFunctor.{v, z}} {B : Basis} (P : DynamicProgram S r B)
 
 /-- Deliver operation arguments without changing maintained memory or non-input registers. -/
 def prepare (o : S.A) (x : Data r) : Data r where
@@ -183,7 +187,7 @@ theorem ExecOp.unique {w : ℕ} {x y y' : Data r} {o : S.A} {a a' : S.B o}
   exact ⟨rfl, Option.some.inj (ha.symm.trans ha'), ht.trans ht'.symm⟩
 
 /-- A call's final state and instruction count agree with any structured execution of the code. -/
-theorem ExecOp.eq_of_exec {P : DynamicProgram S r} {w : ℕ} {x y z : Data r} {o : S.A}
+theorem ExecOp.eq_of_exec {P : DynamicProgram S r B} {w : ℕ} {x y z : Data r} {o : S.A}
     {a : S.B o} {trace : OperationTrace} {m : ℕ} (he : P.ExecOp w x o a y trace)
     (h : Exec w P.code (P.prepare o x) z m) :
     y = z ∧ trace.instructions = m + 1 := by
