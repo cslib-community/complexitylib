@@ -10,9 +10,10 @@ module
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import Complexity.Computability.Complexity.FineGrained.CountingScaleBounds
 import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
 /-!
 # Subexponential model counting for bounded-width CNF formulas
@@ -67,11 +68,11 @@ public theorem exists_counter_of_polyTime_toDeclared {α : Type} {encA : α ↪ 
       (∀ x, S x ≤ a * ((encA x).length + 1) ^ b) := by
   obtain ⟨count₀, T₀, S₀, A, c₀, e₀, a₀, b₀, hcount₀, hspec₀, hT₀, hS₀⟩ :=
     exists_declaredCounter k
-  obtain ⟨dg, _, hdg⟩ := hg.tidy.exists_degree
-  obtain ⟨dv, _, hdv⟩ := hvalid.tidy.exists_degree
+  obtain ⟨dg, _, hdg⟩ := hg.exists_degree
+  obtain ⟨dv, _, hdv⟩ := hvalid.exists_degree
   obtain ⟨p, q, hp⟩ := hg.polyBounded_length.exists_le
-  have hcomp := hcount₀.comp (ComputableInO.of_tidy hdg.inO)
-  have hite := (ComputableInO.of_tidy hdv.inO).ite hcomp (ComputableInO.const (encIn := encA) 0)
+  have hcomp := hcount₀.comp hdg.inO
+  have hite := hdv.inO.ite hcomp (ComputableInO.const (encIn := encA) 0)
   let P (x : α) := ((encA x).length + 1) ^ dv + ((encA x).length + 1) ^ dg + (encA x).length
   let T (x : α) := P x + T₀ (g x)
   let S (x : α) := P x + S₀ (g x)
@@ -195,11 +196,10 @@ public theorem exists_modelCounter (k : ℕ) :
         (fun φ => ((encCNF φ).length + 1) ^ b) := by
   obtain ⟨count, T, S, A, c, e, a, b, hcount, hspec, hT, hS⟩ := exists_declaredCounter k
   set g : CNF ℕ → ℕ × CNF ℕ := fun φ => (φ.denseRelabel.numVars, φ.denseRelabel)
-  obtain ⟨d, _, hd⟩ :=
-    ComputableTidilyInPolyTime.exists_degree computableInPolyTime_declareDense.tidy
+  obtain ⟨d, _, hd⟩ := computableInPolyTime_declareDense.exists_degree
   obtain ⟨p, q, hp⟩ := computableInPolyTime_declareDense.polyBounded_length.exists_le
   refine ⟨fun φ => count (g φ), A, q * e + d, q * b + d, fun φ hφ => ?_,
-    (hcount.comp (ComputableInO.of_tidy hd.inO)).mono
+    (hcount.comp hd.inO).mono
       (c * (p + 1) ^ e + 1 + c + a * (p + 1) ^ b + 1) (fun φ => ?_) (fun φ => ?_)⟩
   · have hw : ∀ cl ∈ φ.denseRelabel, cl.length ≤ k :=
       (CNF.all_length_le_denseRelabel φ).mpr hφ
@@ -278,19 +278,19 @@ public theorem exists_shiftedCounter_of_polyTime_toCNF {α : Type} {encA : α �
         (fun x => ⌈(2 : ℝ) ^ ((A : ℝ) * interpolationScale (μ x))⌉₊ *
           ((encA x).length + 1) ^ e)
         (fun x => ((encA x).length + 1) ^ b) := by
-  open ComputableTidilyInPolyTime in
+  open ComputableInPolyTime in
   set fCNF : α → CNF ℕ := fun x => if valid x then φ x else []
-  have hfCNF_poly : ComputableTidilyInPolyTime fCNF encA encCNF :=
-    hvalid.tidy.cond hφ.tidy (const [])
+  have hfCNF_poly : ComputableInPolyTime fCNF encA encCNF :=
+    hvalid.ite hφ (const [])
   set fPow : α → ℕ := fun x => if valid x then 2 ^ shift x else 0
-  have hfPow_poly : ComputableTidilyInPolyTime fPow encA encNat :=
-    hvalid.tidy.cond (binary_two_pow.comp hshift.tidy) (const 0)
+  have hfPow_poly : ComputableInPolyTime fPow encA encNat :=
+    hvalid.ite (binary_two_pow.comp hshift) (const 0)
   obtain ⟨d₁, _, hfCNF_deg⟩ := hfCNF_poly.exists_degree
   obtain ⟨p, q, hfCNF_len⟩ := hfCNF_poly.polyBounded_length.exists_le
   obtain ⟨d₂, _, hfPow_deg⟩ := hfPow_poly.exists_degree
-  obtain ⟨d₃, _, hmul_deg⟩ := binary_mul.exists_degree
+  obtain ⟨d₃, _, hmul_deg⟩ := (binary_mul' (fst encNat encNat) (snd encNat encNat)).exists_degree
   obtain ⟨countCNF, A₀, e₀, b₀, hcountCNF_spec, hcountCNF_inO⟩ := exists_modelCounter k
-  have hsub := hcountCNF_inO.tidy.comp hfCNF_deg.inO
+  have hsub := hcountCNF_inO.comp hfCNF_deg.inO
   have hpair := hfPow_deg.inO.prod hsub
   obtain ⟨c_pair, hpair_len⟩ := hpair.length_le
   have htot := hmul_deg.inO.comp hpair
@@ -302,7 +302,7 @@ public theorem exists_shiftedCounter_of_polyTime_toCNF {α : Type} {encA : α �
   let b : ℕ := B₁ + B₁ * d₃
   let C_bound : ℕ := 2 + K * (p + 1) ^ e₀ + (p + 1) ^ b₀ + M ^ d₃ + 1
   refine ⟨fun x => fPow x * countCNF (fCNF x), A, e, b, fun x => ?_,
-    (htot.mono C_bound (fun x => ?_) (fun x => ?_)).computableInO⟩
+    htot.mono C_bound (fun x => ?_) (fun x => ?_)⟩
   · dsimp only [fPow, fCNF]
     split_ifs with hvx
     · rw [hcountCNF_spec (φ x) (hvalid_imp x hvx).1]

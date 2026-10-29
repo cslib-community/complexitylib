@@ -16,7 +16,7 @@ import Complexity.Computability.Complexity.Problems.ThreeSATThree.Syntax
 import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # #3SAT and #3SAT-3 are #P-complete
@@ -78,8 +78,8 @@ theorem sharpThreeSAT_toSharpThreeSAT (φ : CNF ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_toSharpThreeSAT :
     ComputableInPolyTime toSharpThreeSAT encCNF encCNF :=
-  .of_tidy ((CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat).tidy.comp
-    (CNF.isPolyTime_toExact3CNF encNat).tidy)
+  (CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat).comp
+    (CNF.isPolyTime_toExact3CNF encNat)
 
 /-- **`#SAT` reduces parsimoniously to `#3SAT`.** -/
 theorem parsimoniousReducible_SharpSAT_SharpThreeSAT :
@@ -92,13 +92,11 @@ unsatisfiable formula `[[]]`. -/
 private theorem parsimoniousReducible_guard {g : CNF ℕ → Bool}
     (hg : ComputableInPolyTime g encCNF encBool) :
     ParsimoniousReducible encCNF encCNF (fun φ => if g φ then SharpSAT φ else 0) SharpSAT := by
-  refine ⟨fun φ => if g φ then φ else [[]], ?_, fun φ => ?_⟩
-  · exact .of_tidy (ComputableTidilyInPolyTime.cond (encB := encCNF) (yes := fun φ => φ)
-      (no := fun _ => [[]]) hg.tidy (by fun_prop) (by fun_prop))
-  · by_cases h : g φ = true
-    · simp only [h, ↓reduceIte]
-    · simp only [h, Bool.false_eq_true, ↓reduceIte]
-      decide
+  refine ⟨fun φ => if g φ then φ else [[]], hg.ite (by fun_prop) (by fun_prop), fun φ => ?_⟩
+  by_cases h : g φ = true
+  · simp only [h, ↓reduceIte]
+  · simp only [h, Bool.false_eq_true, ↓reduceIte]
+    decide
 
 /-- **`#3SAT` is `#P`-complete** [Valiant][Valiant1979]. -/
 theorem SharpThreeSAT_sharpPComplete : SharpPComplete encCNF SharpThreeSAT :=

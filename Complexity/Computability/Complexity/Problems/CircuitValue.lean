@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Boolean.EvaluationTime
 public import Complexity.Computability.Complexity.Classes.P
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # The circuit value problem
@@ -85,7 +86,6 @@ private theorem eval_eq_evalOutput (x : Σ n, Circuit signature n 1 × BitString
   rw [Circuit.eval_eq_evalOutput]
   rfl
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Evaluating a circuit on an input is polynomial-time, on the encoding `encCircuitValue`. -/
 @[fun_prop]
 theorem computableInPolyTime_eval :

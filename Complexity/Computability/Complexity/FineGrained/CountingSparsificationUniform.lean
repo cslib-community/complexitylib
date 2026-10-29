@@ -10,8 +10,9 @@ module
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 
@@ -150,7 +151,7 @@ private theorem computableInPolyTime_validDeclaredInput_uniform (k : ℕ) {NOf :
   have hlt : ComputableInPolyTime
       (fun x : (P × CNF ℕ) × ℕ => decide (x.2 < NOf x.1.1))
       (encPair (encPair encP encCNF) encNat) encBool :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_lt).comp
+    ComputableInPolyTime.binary_lt.comp
       ((ComputableInPolyTime.snd _ _).prod
         (hNbin.comp ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _))))
   have hs : ComputableInPolyTime
@@ -175,8 +176,8 @@ private theorem polyTime_inO {α β : Type} {encA : α ↪ List Bool} {encB : β
     {f : α → β} (hf : ComputableInPolyTime f encA encB) :
     ∃ d, ComputableInO f encA encB
       (fun x => ((encA x).length + 1) ^ d) (fun x => ((encA x).length + 1) ^ d) := by
-  obtain ⟨d, e, h⟩ := hf.tidy.exists_degree
-  exact ⟨d, .of_tidy h.inO⟩
+  obtain ⟨d, _, h⟩ := hf.exists_degree
+  exact ⟨d, h.inO⟩
 
 private theorem computableInPolyTime_finish {NOf : P → ℕ}
     (hN : ComputableInPolyTime NOf encP encUnary) :

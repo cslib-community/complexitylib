@@ -40,6 +40,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and their helpers) and the blocks marked `@9cce4cc7` in older copies come from a later local
   rewrite of the branch that is not yet published; `scripts/upstream_sync.py` reports them
   against the published head until it is. The rest of the branch is still copied at `@7f7c0696`.
+* **Universal simulation.** The local universal interpreter preserves Christian Reitwiessner’s
+  description format and execution semantics. Its resource certificates now separate
+  transition-description size and binary input-head length from the copied configuration;
+  `Universal/Input` uses the existing native streaming fold to emit a selected input symbol
+  without repeatedly copying list tails. Retain these local improvements when synchronizing
+  `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
+  This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
 * **Polynomial bounds.** The tidy calculus's size-parameterized `PolyBounded` adapts CSLib's
   `PolynomiallyBounded` and shares its closure API. Coordinate this adaptation with the tidy
   branch; preserve it when resynchronizing the vendored files.
@@ -224,14 +231,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   common-neighbor counts as product entries, detection, the zero/one converse, and signed products
   from `4 * β²` count instances with the original queried edges. Its digit identities live in
   `Foundations/Data/Matrix/IntegerBits.lean`, reuse Mathlib's pointwise positive/negative parts,
-  and give an explicit `Nat.log 2 U + 1` magnitude-bit bound including zero. Query answers use
-  `Set.EqOn`; no additional weighted-triangle predicate or source machine is introduced.
+  with descriptive lemmas in `Cslib.Matrix`. The scalar magnitude-bit bound, including zero,
+  lives in `Foundations/Data/Int/LogBounds.lean`. Count answers use `Set.EqOn`; detection
+  consumes a direct iff on queried edges. No additional weighted-triangle predicate or source
+  machine is introduced.
   This is the mathematical interface milestone
   [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
   preprocessing/time claim or solver. `Algorithms/ExactTriangle/{Weights,Hashing}.lean` now adapts
   the modular counting/coefficient identities, minimum-count prime and uniform false-positive
   bound from `Sec3/Theorem17/Hashing.lean`, using supplied matrices and the existing decision
-  predicate. Its integer-square window characterisation supports later native enumeration.
+  predicate. The application-independent `Nat.sqrtPrimeWindow` API lives in
+  `Foundations/NumberTheory/SqrtPrimeWindow.lean`; its integer-square characterization supports
+  native enumeration, and splitting and witness recovery reuse it.
   The quotient/coefficient API lives in `Foundations/RingTheory/CyclicIntRing.lean`; the uniform
   all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
   the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
@@ -240,8 +251,21 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
-  retain the source's exact real floor/ceiling specifications through checked bridges. The existing
-  signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
+  retain the source's exact real floor/ceiling specifications through checked bridges.
+  `Algorithms/MatrixMultiplication/Schonhage/` adapts the tensor-recursion core from the same pin's
+  `Sec2/{Lemma6,Recursion,Lemma7_8,Lemma10}.lean`: the ten-term polynomial identity with explicit
+  error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
+  Its pure finite recursion traces are not native machine semantics or charged instruction costs.
+  The zero-depth empty-query root exception is explicit, with an unconditional root-or-leaf API.
+  See [#1459](https://github.com/cslib-community/complexitylib/issues/1459). The complete finite
+  thin-product component ([#1463](https://github.com/cslib-community/complexitylib/issues/1463))
+  adapts `Sec2/{Levels,Lemma9,Tiling,Orders,Lemma11,Theorem5}` and needed finite magnitude bounds.
+  Layouts contain only indexing choices, whose existence is proved; sparse bounds are derived
+  from exact contributing-leaf counts. Generic function-position counts, ordered gluing, binomial
+  and finite-sum bounds live in small Foundations modules. Mathlib `Finset.orderEmbOfFin` indexes
+  both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
+  problem-statement universe or solver/time hypothesis is imported.
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
   Tensor/sparse query programs, the full reduction host, fast Exact Triangle and full
   input/time/width/asymptotic composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
@@ -325,6 +349,7 @@ agreement during upstream review.
 | `Foundations/Combinatorics/{FiniteCover,Hoeffding,Hypergeometric,PowersetTail,Sunflower}` | Consider Mathlib combinatorics; probabilistic-method lemmas belong near `Combinatorics/Probabilistic`. |
 | `Foundations/Data/Finset/Expect` | Product-type expectation helpers extracted from `Foundations/Combinatorics/Expander/Products` (#317); Mathlib candidates. |
 | `Foundations/Data/Finset/Markov` | Mathlib candidate: `Algebra/Order/BigOperators/Group/Finset` (`Finset.card_filter_mul_le_sum`, `Finset.mul_card_filter_le_sum`). |
+| `Foundations/Data/Finset/OrderGlue` | Follow-up to #1496: rename the generic `forall_level_iff`, `exists_innerLevel`, `outerLevel_notMem` and `filter_glue` using order-embedding/complement terminology (for example `forall_iff_orderEmb_and_compl`), retaining this topic module. Migrate the concrete `Schonhage/Levels` and `Schonhage/Batch` clients together with the active native band-preparation client; defer that API migration until the latter is stable. |
 | `Foundations/Data/Matrix/Permanent` | Mathlib candidate: Laplace expansion of the permanent along row and column 0, beside `LinearAlgebra/Matrix/Permanent` (mirroring `Matrix.det_succ_row_zero`). |
 | `Foundations/LinearAlgebra/{Rank,Matrix/CutRank,Matrix/Lindsey}` | Mathlib candidates: `LinearAlgebra/Dimension/LinearMap` and `LinearAlgebra/Matrix/Rank`; placement of Lindsey's lemma needs agreement. |
 | `Probability/PairwiseIndependentHash/Shift` | Consider integration into `PairwiseIndependentHash`. |

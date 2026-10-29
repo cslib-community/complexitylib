@@ -1005,73 +1005,144 @@ theorem sum_row_natAbs_auxReplacementRowCoeffs_le {Q r A₀ R : ℕ} (hQ : 0 < Q
 /-! ### 5. Plain polynomial-time certificates (Lemma 4.7, p. 34) -/
 
 section PolyTime
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
-local notation "CTPT" => ComputableTidilyInPolyTime
+local notation "CPT" => ComputableInPolyTime
 local notation "encDigits" => encPair (encList encNat) (encList encNat)
 
 variable {α : Type} {input : α ↪ List Bool}
 
-@[local fun_prop] private theorem tidy_listGetDWithInput {β : Type} {encB : β ↪ List Bool}
-    {list : α → List β} {idx : α → ℕ} (hl : CTPT list input (encList encB))
-    (hi : CTPT idx input encUnary) (d : β) : CTPT (fun x => (list x).getD (idx x) d) input encB :=
-  (listGetD d).comp (hl.prod hi)
-@[local fun_prop] private theorem tidy_range' {n : α → ℕ} (hn : CTPT n input encUnary) :
-    CTPT (fun a => List.range (n a)) input (encList encUnary) := range.comp hn
-@[local fun_prop] private theorem tidy_unary_add' {l r : α → ℕ} (hl : CTPT l input encUnary)
-    (hr : CTPT r input encUnary) : CTPT (fun a => l a + r a) input encUnary :=
-  unary_add.comp (hl.prod hr)
-@[local fun_prop] private theorem tidy_unary_sub' {l r : α → ℕ} (hl : CTPT l input encUnary)
-    (hr : CTPT r input encUnary) : CTPT (fun a => l a - r a) input encUnary :=
+@[local fun_prop] private theorem er_cond {β : Type} {encB : β ↪ List Bool}
+    {c : α → Bool} {yes no : α → β} (hc : CPT c input encBool)
+    (hyes : CPT yes input encB) (hno : CPT no input encB) :
+    CPT (fun a => if c a then yes a else no a) input encB := hc.ite' hyes hno
+@[local fun_prop] private theorem er_ite_decide {β : Type} {encB : β ↪ List Bool}
+    {cond : α → Prop} [∀ a, Decidable (cond a)] {yes no : α → β}
+    (hc : CPT (fun a => decide (cond a)) input encBool)
+    (hyes : CPT yes input encB) (hno : CPT no input encB) :
+    CPT (fun a => if cond a then yes a else no a) input encB := by
+  simpa only [decide_eq_true_eq] using er_cond hc hyes hno
+@[local fun_prop] private theorem er_bool_not {x : α → Bool} (hx : CPT x input encBool) :
+    CPT (fun a => !(x a)) input encBool := bool_not.comp hx
+@[local fun_prop] private theorem er_bool_and {l r : α → Bool}
+    (hl : CPT l input encBool) (hr : CPT r input encBool) :
+    CPT (fun a => l a && r a) input encBool := bool_and.comp (hl.prod hr)
+@[local fun_prop] private theorem er_decide_and {l r : α → Prop}
+    [∀ a, Decidable (l a)] [∀ a, Decidable (r a)]
+    (hl : CPT (fun a => decide (l a)) input encBool)
+    (hr : CPT (fun a => decide (r a)) input encBool) :
+    CPT (fun a => decide (l a ∧ r a)) input encBool := by
+  simpa only [Bool.decide_and, Function.comp_def] using er_bool_and hl hr
+@[local fun_prop] private theorem er_decide_ne {β : Type} {encB : β ↪ List Bool}
+    [DecidableEq β] {l r : α → β} (hl : CPT l input encB) (hr : CPT r input encB) :
+    CPT (fun a => decide (l a ≠ r a)) input encBool := by
+  simpa only [Function.comp_def, _root_.decide_not] using bool_not.comp (hl.decide_eq' hr)
+@[local fun_prop] private theorem er_allWithInput {β : Type} {encB : β ↪ List Bool}
+    {test : α → β → Bool} {list : α → List β} (hl : CPT list input (encList encB))
+    (ht : CPT (fun p : α × β => test p.1 p.2) (encPair input encB) encBool) :
+    CPT (fun a => (list a).all (test a)) input encBool := allWithEncoding ht id' hl
+@[local fun_prop] private theorem er_listReverse {β : Type} {encB : β ↪ List Bool}
+    {l : α → List β} (hl : CPT l input (encList encB)) :
+    CPT (fun a => (l a).reverse) input (encList encB) :=
+  (show CPT List.reverse (encList encB) (encList encB) by fun_prop).comp hl
+@[local fun_prop] private theorem er_listAppend {β : Type} {encB : β ↪ List Bool}
+    {l r : α → List β} (hl : CPT l input (encList encB)) (hr : CPT r input (encList encB)) :
+    CPT (fun a => l a ++ r a) input (encList encB) :=
+  (show CPT (fun p : List β × List β => p.1 ++ p.2)
+    (encPair (encList encB) (encList encB)) (encList encB) by fun_prop).comp (hl.prod hr)
+@[local fun_prop] private theorem er_cons {β : Type} {encB : β ↪ List Bool}
+    {h : α → β} {t : α → List β} (hh : CPT h input encB) (ht : CPT t input (encList encB)) :
+    CPT (fun a => h a :: t a) input (encList encB) :=
+  (show CPT (fun p : β × List β => p.1 :: p.2)
+    (encPair encB (encList encB)) (encList encB) by fun_prop).comp (hh.prod ht)
+@[local fun_prop] private theorem er_replicate {β : Type} {encB : β ↪ List Bool}
+    {count : α → ℕ} {val : α → β} (hc : CPT count input encUnary) (hv : CPT val input encB) :
+    CPT (fun a => List.replicate (count a) (val a)) input (encList encB) := by
+  simpa only [Function.comp_def, List.map_const', List.length_range] using
+    mapWithInput (f := fun a _ => val a) (range.comp hc) (hv.comp (fst input encUnary))
+@[local fun_prop] private theorem er_range {n : α → ℕ} (hn : CPT n input encUnary) :
+    CPT (fun a => List.range (n a)) input (encList encUnary) := range.comp hn
+@[local fun_prop] private theorem er_unary_add {l r : α → ℕ} (hl : CPT l input encUnary)
+    (hr : CPT r input encUnary) : CPT (fun a => l a + r a) input encUnary :=
+  (show CPT (fun p : ℕ × ℕ => p.1 + p.2) (encPair encUnary encUnary) encUnary by fun_prop).comp
+    (hl.prod hr)
+@[local fun_prop] private theorem er_unary_sub {l r : α → ℕ} (hl : CPT l input encUnary)
+    (hr : CPT r input encUnary) : CPT (fun a => l a - r a) input encUnary :=
   unary_sub.comp (hl.prod hr)
-@[local fun_prop] private theorem tidy_unary_max' {l r : α → ℕ} (hl : CTPT l input encUnary)
-    (hr : CTPT r input encUnary) : CTPT (fun a => max (l a) (r a)) input encUnary :=
-  unary_max.comp (hl.prod hr)
-@[local fun_prop] private theorem tidy_binary_factorial' {n : α → ℕ} (hn : CTPT n input encUnary) :
-    CTPT (fun a => (n a).factorial) input encNat := binary_factorial.comp hn
-@[local fun_prop] private theorem tidy_intBin_natCast' {n : α → ℕ} (hn : CTPT n input encNat) :
-    CTPT (fun a => (n a : ℤ)) input encIntBin := intBin_natCast.comp hn
-@[local fun_prop] private theorem tidy_intBin_natCast_unary {n : α → ℕ}
-    (hn : CTPT n input encUnary) : CTPT (fun a => (n a : ℤ)) input encIntBin :=
+@[local fun_prop] private theorem er_unary_mul {l r : α → ℕ} (hl : CPT l input encUnary)
+    (hr : CPT r input encUnary) : CPT (fun a => l a * r a) input encUnary :=
+  (show CPT (fun p : ℕ × ℕ => p.1 * p.2) (encPair encUnary encUnary) encUnary by fun_prop).comp
+    (hl.prod hr)
+@[local fun_prop] private theorem er_unary_max {l r : α → ℕ} (hl : CPT l input encUnary)
+    (hr : CPT r input encUnary) : CPT (fun a => max (l a) (r a)) input encUnary :=
+  (show CPT (fun p : ℕ × ℕ => max p.1 p.2) (encPair encUnary encUnary) encUnary by fun_prop).comp
+    (hl.prod hr)
+@[local fun_prop] private theorem er_binary_pow {b e : α → ℕ} (hb : CPT b input encNat)
+    (he : CPT e input encUnary) : CPT (fun a => b a ^ e a) input encNat := binary_pow' hb he
+@[local fun_prop] private theorem er_binary_div {l r : α → ℕ} (hl : CPT l input encNat)
+    (hr : CPT r input encNat) : CPT (fun a => l a / r a) input encNat :=
+  binary_div.comp (hl.prod hr)
+@[local fun_prop] private theorem er_binary_mod {l r : α → ℕ} (hl : CPT l input encNat)
+    (hr : CPT r input encNat) : CPT (fun a => l a % r a) input encNat :=
+  binary_mod.comp (hl.prod hr)
+@[local fun_prop] private theorem er_binary_factorial {n : α → ℕ} (hn : CPT n input encUnary) :
+    CPT (fun a => (n a).factorial) input encNat :=
+  (show CPT Nat.factorial encUnary encNat by fun_prop).comp hn
+@[local fun_prop] private theorem er_intBin_natCast {n : α → ℕ} (hn : CPT n input encNat) :
+    CPT (fun a => (n a : ℤ)) input encIntBin := intBin_natCast.comp hn
+@[local fun_prop] private theorem er_intBin_natCast_unary {n : α → ℕ}
+    (hn : CPT n input encUnary) : CPT (fun a => (n a : ℤ)) input encIntBin :=
   intBin_natCast.comp (unary_to_binary.comp hn)
-@[local fun_prop] private theorem tidy_intBin_neg' {x : α → ℤ} (hx : CTPT x input encIntBin) :
-    CTPT (fun a => -x a) input encIntBin := intBin_neg.comp hx
-@[local fun_prop] private theorem tidy_intBin_sum' {l : α → List ℤ}
-    (hl : CTPT l input (encList encIntBin)) : CTPT (fun a => (l a).sum) input encIntBin :=
-  intBin_sum.comp hl
-@[local fun_prop] private theorem tidy_intBin_prod' {l : α → List ℤ}
-    (hl : CTPT l input (encList encIntBin)) : CTPT (fun a => (l a).prod) input encIntBin :=
-  intBin_prod.comp hl
-@[local fun_prop] private theorem tidy_length_listIntBin {l : α → List ℤ}
-    (hl : CTPT l input (encList encIntBin)) : CTPT (fun a => (l a).length) input encUnary :=
+@[local fun_prop] private theorem er_intBin_add {l r : α → ℤ} (hl : CPT l input encIntBin)
+    (hr : CPT r input encIntBin) : CPT (fun a => l a + r a) input encIntBin :=
+  (show CPT (fun p : ℤ × ℤ => p.1 + p.2) (encPair encIntBin encIntBin) encIntBin by fun_prop).comp
+    (hl.prod hr)
+@[local fun_prop] private theorem er_intBin_sub {l r : α → ℤ} (hl : CPT l input encIntBin)
+    (hr : CPT r input encIntBin) : CPT (fun a => l a - r a) input encIntBin :=
+  intBin_sub.comp (hl.prod hr)
+@[local fun_prop] private theorem er_intBin_neg {x : α → ℤ} (hx : CPT x input encIntBin) :
+    CPT (fun a => -x a) input encIntBin :=
+  (show CPT (fun z : ℤ => -z) encIntBin encIntBin by fun_prop).comp hx
+@[local fun_prop] private theorem er_intBin_pow {b : α → ℤ} {e : α → ℕ}
+    (hb : CPT b input encIntBin) (he : CPT e input encUnary) :
+    CPT (fun a => b a ^ e a) input encIntBin :=
+  (show CPT (fun p : ℤ × ℕ => p.1 ^ p.2) (encPair encIntBin encUnary) encIntBin by fun_prop).comp
+    (hb.prod he)
+@[local fun_prop] private theorem er_intBin_sum {l : α → List ℤ}
+    (hl : CPT l input (encList encIntBin)) : CPT (fun a => (l a).sum) input encIntBin :=
+  (show CPT List.sum (encList encIntBin) encIntBin by fun_prop).comp hl
+@[local fun_prop] private theorem er_intBin_prod {l : α → List ℤ}
+    (hl : CPT l input (encList encIntBin)) : CPT (fun a => (l a).prod) input encIntBin :=
+  (show CPT List.prod (encList encIntBin) encIntBin by fun_prop).comp hl
+@[local fun_prop] private theorem er_length_listIntBin {l : α → List ℤ}
+    (hl : CPT l input (encList encIntBin)) : CPT (fun a => (l a).length) input encUnary :=
   (length_list encIntBin).comp hl
-@[local fun_prop] private theorem tidy_radixDigit {r idx s : α → ℕ} (hr : CTPT r input encNat)
-    (hidx : CTPT idx input encNat) (hs : CTPT s input encUnary) :
-    CTPT (fun a => Cslib.Radix.digit (r a) (idx a) (s a)) input encNat := by
+@[local fun_prop] private theorem er_radixDigit {r idx s : α → ℕ} (hr : CPT r input encNat)
+    (hidx : CPT idx input encNat) (hs : CPT s input encUnary) :
+    CPT (fun a => Cslib.Radix.digit (r a) (idx a) (s a)) input encNat := by
   simp_rw [Cslib.Radix.digit_eq_div_pow_mod]; fun_prop
-@[local fun_prop] private theorem tidy_min_D_cap {D_cap Q r : α → ℕ}
-    (hD : CTPT D_cap input encUnary) (hQ : CTPT Q input encUnary) (hr : CTPT r input encUnary) :
-    CTPT (fun a => min (D_cap a) (r a ^ (2 * Q a))) input encUnary := by
-  have hr_bin : CTPT r input encNat := unary_to_binary.comp hr
-  have hpow : CTPT (fun a => r a ^ (2 * Q a)) input encNat := by fun_prop
-  exact (ComputableInPolyTime.binary_min_unary'
-    hD.computableInPolyTime hpow.computableInPolyTime).tidy
+@[local fun_prop] private theorem er_min_D_cap {D_cap Q r : α → ℕ}
+    (hD : CPT D_cap input encUnary) (hQ : CPT Q input encUnary) (hr : CPT r input encUnary) :
+    CPT (fun a => min (D_cap a) (r a ^ (2 * Q a))) input encUnary := by
+  have hr_bin : CPT r input encNat := unary_to_binary.comp hr
+  have hpow : CPT (fun a => r a ^ (2 * Q a)) input encNat := by fun_prop
+  exact binary_min_unary' hD hpow
 
-@[local fun_prop] private theorem tidy_decodeAuxDigits {Q r idx : α → ℕ}
-    (hQ : CTPT Q input encUnary) (hr : CTPT r input encNat) (hidx : CTPT idx input encNat) :
-    CTPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encDigits := by
+@[local fun_prop] private theorem er_decodeAuxDigits {Q r idx : α → ℕ}
+    (hQ : CPT Q input encUnary) (hr : CPT r input encNat) (hidx : CPT idx input encNat) :
+    CPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encDigits := by
   unfold decodeAuxDigits; fun_prop
-@[local fun_prop] private theorem tidy_decodeAuxDigits_unary {Q r idx : α → ℕ}
-    (hQ : CTPT Q input encUnary) (hr : CTPT r input encUnary) (hidx : CTPT idx input encUnary) :
-    CTPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encDigits :=
-  tidy_decodeAuxDigits hQ (unary_to_binary.comp hr) (unary_to_binary.comp hidx)
-@[local fun_prop] private theorem tidy_eigenvecDigits {Q : α → ℕ} {β u : α → List ℕ × List ℕ}
-    (hQ : CTPT Q input encUnary) (hβ : CTPT β input encDigits) (hu : CTPT u input encDigits) :
-    CTPT (fun a => eigenvecDigits (Q a) (β a) (u a)) input encIntBin := by
+@[local fun_prop] private theorem er_decodeAuxDigits_unary {Q r idx : α → ℕ}
+    (hQ : CPT Q input encUnary) (hr : CPT r input encUnary) (hidx : CPT idx input encUnary) :
+    CPT (fun a => decodeAuxDigits (Q a) (r a) (idx a)) input encDigits :=
+  er_decodeAuxDigits hQ (unary_to_binary.comp hr) (unary_to_binary.comp hidx)
+@[local fun_prop] private theorem er_eigenvecDigits {Q : α → ℕ} {β u : α → List ℕ × List ℕ}
+    (hQ : CPT Q input encUnary) (hβ : CPT β input encDigits) (hu : CPT u input encDigits) :
+    CPT (fun a => eigenvecDigits (Q a) (β a) (u a)) input encIntBin := by
   unfold eigenvecDigits pairBasisNat; fun_prop
-@[local fun_prop] private theorem tidy_antisymCountDigits {Q : α → ℕ} {β : α → List ℕ × List ℕ}
-    (hQ : CTPT Q input encUnary) (hβ : CTPT β input encDigits) :
-    CTPT (fun a => antisymCountDigits (Q a) (β a)) input encUnary := by
+@[local fun_prop] private theorem er_antisymCountDigits {Q : α → ℕ} {β : α → List ℕ × List ℕ}
+    (hQ : CPT Q input encUnary) (hβ : CPT β input encDigits) :
+    CPT (fun a => antisymCountDigits (Q a) (β a)) input encUnary := by
   unfold antisymCountDigits; fun_prop
 
 /-- `decodeAuxDigits` is computable in polynomial time from unary `Q` and binary `(r, idx)`. -/
@@ -1080,42 +1151,42 @@ variable {α : Type} {input : α ↪ List Bool}
     (hidx : ComputableInPolyTime idx input encNat) :
     ComputableInPolyTime (fun a => decodeAuxDigits (Q a) (r a) (idx a))
       input (encPair (encList encNat) (encList encNat)) :=
-  .of_tidy (tidy_decodeAuxDigits hQ.tidy hr.tidy hidx.tidy)
+  er_decodeAuxDigits hQ hr hidx
 
 /-- `encodeAuxDigits` is computable in polynomial time from binary `r` and digit lists `u`. -/
 @[fun_prop] theorem computableInPolyTime_encodeAuxDigits {r : α → ℕ} {u : α → List ℕ × List ℕ}
     (hr : ComputableInPolyTime r input encNat)
     (hu : ComputableInPolyTime u input (encPair (encList encNat) (encList encNat))) :
-    ComputableInPolyTime (fun a => encodeAuxDigits (r a) (u a)) input encNat :=
-  .of_tidy <| by
-    have hr' := hr.tidy; have hu' := hu.tidy
-    have hlist : CTPT (fun a => ((u a).1 ++ (u a).2).reverse) input (encList encNat) := by fun_prop
-    have hstep : CTPT (fun q : (ℕ × ℕ) × ℕ => q.2 + q.1.1 * q.1.2)
-        (encPair (encPair encNat encNat) encNat) encNat := by fun_prop
-    have hfold := foldlWith_of_bounded_growth
-      (encP := encNat) (encA := encNat) (encL := encList encNat) (encB := encNat)
-      (par := r) (list := fun a => ((u a).1 ++ (u a).2).reverse) (init := fun _ => 0)
-      (step := fun base acc d => d + base * acc) hr' hlist (.const 0) hstep
-      (growth := fun a => (encList encNat ((u a).1 ++ (u a).2).reverse).length +
-        (encNat (r a)).length + 1)
-      ((hlist.polyBounded_length.add hr'.polyBounded_length).add (.const 1)) (fun a acc d hd => by
-        have hd_len := SizedListEncoding.length_elem_le (encA := encNat) (encL := encList encNat)
-          ((u a).1 ++ (u a).2).reverse d hd
-        have hadd := Nat.size_add_le_max d (r a * acc); have hmul := Nat.size_mul_le (r a) acc
-        simp only [encNat_apply, Nat.size_eq_bits_len] at hd_len ⊢; omega)
-    simpa only [encodeAuxDigits, List.foldl_reverse, Nat.ofDigits_eq_foldr, Nat.cast_id] using hfold
+    ComputableInPolyTime (fun a => encodeAuxDigits (r a) (u a)) input encNat := by
+  have hlist : CPT (fun a => ((u a).1 ++ (u a).2).reverse) input (encList encNat) := by fun_prop
+  have hstep : CPT (fun q : (ℕ × ℕ) × ℕ => q.2 + q.1.1 * q.1.2)
+      (encPair (encPair encNat encNat) encNat) encNat :=
+    binary_add.comp ((snd _ _).prod
+      (binary_mul' ((fst encNat encNat).comp (fst _ _)) ((snd encNat encNat).comp (fst _ _))))
+  have hfold := foldlWith_of_bounded_growth
+    (encP := encNat) (encA := encNat) (encL := encList encNat) (encB := encNat)
+    (par := r) (list := fun a => ((u a).1 ++ (u a).2).reverse) (init := fun _ => 0)
+    (step := fun base acc d => d + base * acc) hr hlist (.const 0) hstep
+    (growth := fun a => (encList encNat ((u a).1 ++ (u a).2).reverse).length +
+      (encNat (r a)).length + 1)
+    ((hlist.polyBounded_length.add hr.polyBounded_length).add (.const 1)) (fun a acc d hd => by
+      have hd_len := SizedListEncoding.length_elem_le (encA := encNat) (encL := encList encNat)
+        ((u a).1 ++ (u a).2).reverse d hd
+      have hadd := Nat.size_add_le_max d (r a * acc); have hmul := Nat.size_mul_le (r a) acc
+      simp only [encNat_apply, Nat.size_eq_bits_len] at hd_len ⊢; omega)
+  simpa only [encodeAuxDigits, List.foldl_reverse, Nat.ofDigits_eq_foldr, Nat.cast_id] using hfold
 
 /-- `commonDenom Q R = (R - 1)! * Q!` is computable in polynomial time from unary `(Q, R)`. -/
 @[fun_prop] theorem computableInPolyTime_commonDenom {Q R : α → ℕ}
     (hQ : ComputableInPolyTime Q input encUnary) (hR : ComputableInPolyTime R input encUnary) :
-    ComputableInPolyTime (fun a => commonDenom (Q a) (R a)) input encNat :=
-  .of_tidy <| by have := hQ.tidy; have := hR.tidy; unfold commonDenom; fun_prop
+    ComputableInPolyTime (fun a => commonDenom (Q a) (R a)) input encNat := by
+  unfold commonDenom; fun_prop
 
 /-- `(commonDenom Q R : ℤ)` is computable in polynomial time in `encIntBin` from unary `(Q, R)`. -/
 theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
     (hQ : ComputableInPolyTime Q input encUnary) (hR : ComputableInPolyTime R input encUnary) :
     ComputableInPolyTime (fun a => (commonDenom (Q a) (R a) : ℤ)) input encIntBin :=
-  .of_tidy (intBin_natCast.comp (computableInPolyTime_commonDenom hQ hR).tidy)
+  intBin_natCast.comp (computableInPolyTime_commonDenom hQ hR)
 
 /-- `auxMeasurementRowsBounded` (`C^B`) is computable in polynomial time from unary
 `(D_cap, Q, r, A₀, R)`. -/
@@ -1124,23 +1195,21 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
     (hr : ComputableInPolyTime r input encUnary) (hA₀ : ComputableInPolyTime A₀ input encUnary)
     (hR : ComputableInPolyTime R input encUnary) :
     ComputableInPolyTime (fun a => auxMeasurementRowsBounded (D_cap a) (Q a) (r a) (A₀ a) (R a))
-      input (encList (encList encIntBin)) :=
-  .of_tidy <| by
-    have := hD.tidy; have := hQ.tidy; have := hr.tidy; have := hA₀.tidy; have := hR.tidy
-    unfold auxMeasurementRowsBounded auxMeasurementIndicesBounded; dsimp only; fun_prop
+      input (encList (encList encIntBin)) := by
+  unfold auxMeasurementRowsBounded auxMeasurementIndicesBounded; dsimp only; fun_prop
 
-@[local fun_prop] private theorem tidy_orbitWeightStep {m : α → ℕ} {c : α → ℤ} {f : α → List ℤ}
-    (hm : CTPT m input encUnary) (hc : CTPT c input encIntBin)
-    (hf : CTPT f input (encList encIntBin)) :
-    CTPT (fun a => orbitWeightStep (m a) (c a) (f a)) input (encList encIntBin) := by
+@[local fun_prop] private theorem er_orbitWeightStep {m : α → ℕ} {c : α → ℤ} {f : α → List ℤ}
+    (hm : CPT m input encUnary) (hc : CPT c input encIntBin)
+    (hf : CPT f input (encList encIntBin)) :
+    CPT (fun a => orbitWeightStep (m a) (c a) (f a)) input (encList encIntBin) := by
   unfold orbitWeightStep; fun_prop
 
-@[local fun_prop] private theorem tidy_fallingOrbitWeights {m A₀ j : α → ℕ}
-    (hm : CTPT m input encUnary) (hA₀ : CTPT A₀ input encUnary) (hj : CTPT j input encUnary) :
-    CTPT (fun a => fallingOrbitWeights (m a) (A₀ a) (j a)) input (encList encIntBin) := by
+@[local fun_prop] private theorem er_fallingOrbitWeights {m A₀ j : α → ℕ}
+    (hm : CPT m input encUnary) (hA₀ : CPT A₀ input encUnary) (hj : CPT j input encUnary) :
+    CPT (fun a => fallingOrbitWeights (m a) (A₀ a) (j a)) input (encList encIntBin) := by
   let stepFn : (ℕ × ℕ) → List ℤ → ℕ → List ℤ := fun par f a =>
     orbitWeightStep par.1 (2 * ((par.2 : ℤ) + (a : ℤ))) f
-  have hstep : CTPT (fun q : ((ℕ × ℕ) × List ℤ) × ℕ => stepFn q.1.1 q.1.2 q.2)
+  have hstep : CPT (fun q : ((ℕ × ℕ) × List ℤ) × ℕ => stepFn q.1.1 q.1.2 q.2)
       (encPair (encPair (encPair encUnary encUnary) (encList encIntBin)) encUnary)
       (encList encIntBin) := by dsimp only [stepFn]; fun_prop
   have pm := hm.polyBounded; have pA := hA₀.polyBounded; have pj := hj.polyBounded
@@ -1151,8 +1220,8 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
   exact foldlWith (encP := encPair encUnary encUnary) (encA := encUnary)
     (encL := encList encUnary) (encB := encList encIntBin) (par := fun a => (m a, A₀ a))
     (list := fun a => List.range (j a)) (init := fun a => (1 : ℤ) :: List.replicate (m a) 0)
-    (step := stepFn) (hm.prod hA₀) (tidy_range' hj)
-    (cons' (.const 1) (replicate hm (.const 0))) hstep hB fun a i _ => by
+    (step := stepFn) (hm.prod hA₀) (er_range hj)
+    (er_cons (.const 1) (er_replicate hm (.const 0))) hstep hB fun a i _ => by
       rw [List.take_range]
       change (encList encIntBin (fallingOrbitWeights (m a) (A₀ a) (min i (j a)))).length ≤ _
       set k := min i (j a); have hk : k ≤ j a := Nat.min_le_right i (j a)
@@ -1166,38 +1235,38 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
         omega
       · rw [length_fallingOrbitWeights]
 
-@[local fun_prop] private theorem tidy_isSwapOrbitDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
-    (hQ : CTPT Q input encUnary) (hu : CTPT u input encDigits) (hy : CTPT y input encDigits) :
-    CTPT (fun a => isSwapOrbitDigits (Q a) (u a) (y a)) input encBool := by
+@[local fun_prop] private theorem er_isSwapOrbitDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
+    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
+    CPT (fun a => isSwapOrbitDigits (Q a) (u a) (y a)) input encBool := by
   unfold isSwapOrbitDigits; fun_prop
-@[local fun_prop] private theorem tidy_offDiagCountDigits {Q : α → ℕ} {u : α → List ℕ × List ℕ}
-    (hQ : CTPT Q input encUnary) (hu : CTPT u input encDigits) :
-    CTPT (fun a => offDiagCountDigits (Q a) (u a)) input encUnary := by
+@[local fun_prop] private theorem er_offDiagCountDigits {Q : α → ℕ} {u : α → List ℕ × List ℕ}
+    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) :
+    CPT (fun a => offDiagCountDigits (Q a) (u a)) input encUnary := by
   unfold offDiagCountDigits; fun_prop
-@[local fun_prop] private theorem tidy_mismatchCountDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
-    (hQ : CTPT Q input encUnary) (hu : CTPT u input encDigits) (hy : CTPT y input encDigits) :
-    CTPT (fun a => mismatchCountDigits (Q a) (u a) (y a)) input encUnary := by
+@[local fun_prop] private theorem er_mismatchCountDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
+    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
+    CPT (fun a => mismatchCountDigits (Q a) (u a) (y a)) input encUnary := by
   unfold mismatchCountDigits; fun_prop
-@[local fun_prop] private theorem tidy_eqAuxDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
-    (hQ : CTPT Q input encUnary) (hu : CTPT u input encDigits) (hy : CTPT y input encDigits) :
-    CTPT (fun a => eqAuxDigits (Q a) (u a) (y a)) input encBool := by
+@[local fun_prop] private theorem er_eqAuxDigits {Q : α → ℕ} {u y : α → List ℕ × List ℕ}
+    (hQ : CPT Q input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
+    CPT (fun a => eqAuxDigits (Q a) (u a) (y a)) input encBool := by
   unfold eqAuxDigits; fun_prop
-@[local fun_prop] private theorem tidy_m0ScaledIntDigits {Q A₀ R : α → ℕ}
-    {u y : α → List ℕ × List ℕ} (hQ : CTPT Q input encUnary) (hA₀ : CTPT A₀ input encUnary)
-    (hR : CTPT R input encUnary) (hu : CTPT u input encDigits) (hy : CTPT y input encDigits) :
-    CTPT (fun a => m0ScaledIntDigits (Q a) (A₀ a) (R a) (u a) (y a)) input encIntBin := by
+@[local fun_prop] private theorem er_m0ScaledIntDigits {Q A₀ R : α → ℕ}
+    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hA₀ : CPT A₀ input encUnary)
+    (hR : CPT R input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
+    CPT (fun a => m0ScaledIntDigits (Q a) (A₀ a) (R a) (u a) (y a)) input encIntBin := by
   unfold m0ScaledIntDigits; dsimp only; fun_prop
 
-@[local fun_prop] private theorem tidy_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
-    {u y : α → List ℕ × List ℕ} (hQ : CTPT Q input encUnary) (hu : CTPT u input encDigits)
-    (hy : CTPT y input encDigits) :
-    CTPT (fun a => mismatchAnnihilatorCoeffsDigits (Q a) (u a) (y a))
+@[local fun_prop] private theorem er_mismatchAnnihilatorCoeffsDigits {Q : α → ℕ}
+    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hu : CPT u input encDigits)
+    (hy : CPT y input encDigits) :
+    CPT (fun a => mismatchAnnihilatorCoeffsDigits (Q a) (u a) (y a))
       input (encList encIntBin) := by
   unfold mismatchAnnihilatorCoeffsDigits
   let stepFn : ((List ℕ × List ℕ) × (List ℕ × List ℕ)) → List ℤ → ℕ → List ℤ := fun par p s =>
     if par.2.1.getD s 0 = par.1.2.getD s 0 then p.map (((s : ℤ) + 1) * ·)
     else mulLinearSub p ((s : ℤ) + 1)
-  have hstep : CTPT
+  have hstep : CPT
       (fun q : (((List ℕ × List ℕ) × (List ℕ × List ℕ)) × List ℤ) × ℕ => stepFn q.1.1 q.1.2 q.2)
       (encPair (encPair (encPair encDigits encDigits) (encList encIntBin)) encUnary)
       (encList encIntBin) := by dsimp only [stepFn]; unfold mulLinearSub; fun_prop
@@ -1208,7 +1277,7 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
       (((PolyBounded.const 2).mul (((pQ.mul pQ).add pQ).add (.const 3))).add (.const 1))
   refine foldlWith (encP := encPair encDigits encDigits) (encA := encUnary)
     (encL := encList encUnary) (encB := encList encIntBin) (step := stepFn) (hu.prod hy)
-    (range.comp hQ) (init := fun _ => [1]) (by fun_prop) hstep hB ?_
+    (range.comp hQ) (init := fun _ => [1]) (const [1]) hstep hB ?_
   intro a i _; rw [List.take_range]
   have hfold_eq : (List.range (min i (Q a))).foldl (stepFn (u a, y a)) [1] =
       mismatchAnnihilatorCoeffsDigits (min i (Q a)) (u a) (y a) := rfl
@@ -1230,10 +1299,10 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
     omega
   · exact Nat.mul_le_mul_right _
       ((length_mismatchAnnihilatorCoeffsDigits_le k _ _).trans (by omega))
-@[local fun_prop] private theorem tidy_auxReplacementRowCoeffsDigits {Q A₀ R : α → ℕ}
-    {u y : α → List ℕ × List ℕ} (hQ : CTPT Q input encUnary) (hA₀ : CTPT A₀ input encUnary)
-    (hR : CTPT R input encUnary) (hu : CTPT u input encDigits) (hy : CTPT y input encDigits) :
-    CTPT (fun a => auxReplacementRowCoeffsDigits (Q a) (A₀ a) (R a) (u a) (y a))
+@[local fun_prop] private theorem er_auxReplacementRowCoeffsDigits {Q A₀ R : α → ℕ}
+    {u y : α → List ℕ × List ℕ} (hQ : CPT Q input encUnary) (hA₀ : CPT A₀ input encUnary)
+    (hR : CPT R input encUnary) (hu : CPT u input encDigits) (hy : CPT y input encDigits) :
+    CPT (fun a => auxReplacementRowCoeffsDigits (Q a) (A₀ a) (R a) (u a) (y a))
       input (encList encIntBin) := by
   unfold auxReplacementRowCoeffsDigits; dsimp only; fun_prop
 
@@ -1246,7 +1315,7 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
     (hy : ComputableInPolyTime y input (encPair (encList encNat) (encList encNat))) :
     ComputableInPolyTime (fun a => auxReplacementRowCoeffsDigits (Q a) (A₀ a) (R a) (u a) (y a))
       input (encList encIntBin) :=
-  .of_tidy (tidy_auxReplacementRowCoeffsDigits hQ.tidy hA₀.tidy hR.tidy hu.tidy hy.tidy)
+  er_auxReplacementRowCoeffsDigits hQ hA₀ hR hu hy
 
 /-- `auxReplacementRowCoeffsIdx` is computable in polynomial time per `(u_idx, y_idx)` pair from
 unary `(Q, A₀, R)` and binary `(r, u_idx, y_idx)`. -/
@@ -1269,10 +1338,8 @@ is computable in polynomial time from unary `(D_cap, Q, r, A₀, R)` (Lemma 4.7,
     (hr : ComputableInPolyTime r input encUnary) (hA₀ : ComputableInPolyTime A₀ input encUnary)
     (hR : ComputableInPolyTime R input encUnary) :
     ComputableInPolyTime (fun a => auxReplacementTableBounded (D_cap a) (Q a) (r a) (A₀ a) (R a))
-      input (encList (encList (encList encIntBin))) :=
-  .of_tidy <| by
-    have := hD.tidy; have := hQ.tidy; have := hr.tidy; have := hA₀.tidy; have := hR.tidy
-    unfold auxReplacementTableBounded auxReplacementRowCoeffsIdx; dsimp only; fun_prop
+      input (encList (encList (encList encIntBin))) := by
+  unfold auxReplacementTableBounded auxReplacementRowCoeffsIdx; dsimp only; fun_prop
 
 end PolyTime
 end Cslib.LinearAlgebra

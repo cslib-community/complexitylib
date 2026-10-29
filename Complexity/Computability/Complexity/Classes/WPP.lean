@@ -367,7 +367,7 @@ theorem mem_LWPP_of_polyTime_index {g : α → ℤ} {f : ℕ → ℤ} {k : α �
       ((ComputableInPolyTime.unary_eval p).prod (.const 1))
   let F (n : ℕ) : ℤ := ((List.range (bound n)).map f).prod
   have hF : ComputableInPolyTime F encUnary encIntBin :=
-    ComputableTidilyInPolyTime.intBin_prod.computableInPolyTime.comp
+    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
       ((ComputableInPolyTime.map hf).comp
         (ComputableInPolyTime.range.comp hbound))
   have hFn (n : ℕ) : F n ≠ 0 := List.prod_ne_zero (by simp [hn])
@@ -382,7 +382,7 @@ theorem mem_LWPP_of_polyTime_index {g : α → ℤ} {f : ℕ → ℤ} {k : α �
       (ComputableInPolyTime.decide_eq' (.snd enc encUnary) (hk.comp (.fst enc encUnary)))).of_enc_eq
       fun x => congrArg encBool (by simp)
   have hh : ComputableInPolyTime h enc encIntBin :=
-    ComputableTidilyInPolyTime.intBin_prod.computableInPolyTime.comp
+    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
       ((ComputableInPolyTime.map hf).comp
         (ComputableInPolyTime.filterWithInput hlist htest))
   have hmul (a : α) : f (k a) * h a = F (enc a).length := by

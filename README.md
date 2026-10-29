@@ -16,8 +16,13 @@ mathematics. See [Contributing](CONTRIBUTING.md) to propose, implement, or revie
 
 ## Start here
 
+The [guide](https://www.cslib.io/complexitylib/guide/) introduces the library through checked Lean
+examples. For setup or a particular task, start below.
+
 | I want to… | Start with… |
 | --- | --- |
+| Use Complexitylib in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
+| Build or edit this repository | [Build a checkout](#build-a-checkout) |
 | Certify functional programs and loops | [PolyTime examples](ComplexityTests/PolyTimeTactic.lean) |
 | State P/NP membership or prove a problem NP-complete | [Checked plain examples](ComplexityTests/NPCompleteness.lean), then [Clique](Complexity/Computability/Complexity/Problems/Clique.lean) |
 | Construct circuits for polynomial-time function families | [Uniform circuit examples](ComplexityTests/UniformCircuits.lean) |
@@ -66,11 +71,18 @@ the selection is not an exhaustive API reference.
 ## Build and use
 
 The package is named `complexitylib`; imports begin with `Complexity.`. Most declaration
-namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`. Use the version in
-[lean-toolchain](lean-toolchain) and the pinned dependencies in [lakefile.toml](lakefile.toml).
-From a checkout:
+namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`.
+
+### Build a checkout
+
+Install [Lean and its tools](https://lean-lang.org/install/) (including `elan` and `lake`), Git,
+and Python 3.11+. The commands below assume Bash. Elan selects the Lean and Lake version from
+[lean-toolchain](lean-toolchain); [lakefile.toml](lakefile.toml) and
+[lake-manifest.json](lake-manifest.json) record the dependency versions.
 
 ```bash
+git clone https://github.com/cslib-community/complexitylib.git
+cd complexitylib
 scripts/build.sh --wfail --iofail
 ```
 
@@ -82,9 +94,52 @@ Repeated bootstrap calls for the same checkout state reuse a ten-minute attempt 
 Use `scripts/cache/ensure.sh --refresh` to retry immediately. See
 [scripts/cache/README.md](scripts/cache/README.md) for how the caches work and what they trust.
 
-Import the specific modules you need. `import Complexity` imports the whole library.
+Import the specific modules you need. `import Complexity` imports the whole library. To contribute,
+follow [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[validation sequence](AGENTS.md#validation-sequence).
 
-To build searchable API documentation from the module docstrings (Python 3.11+):
+### Use from another Lean project
+
+APIs are still evolving, so pin a full commit SHA. Choose a revision from the
+[commit history](https://github.com/cslib-community/complexitylib/commits/main/), and copy the
+contents of its `lean-toolchain` into your project's `lean-toolchain`. Use the toolchain from
+that same revision when adding or updating the dependency.
+
+For a project using `lakefile.toml`, add the following entry, replacing `<commit SHA>` with the
+chosen full SHA:
+
+```toml
+[[require]]
+name = "complexitylib"
+git = "https://github.com/cslib-community/complexitylib"
+rev = "<commit SHA>"
+```
+
+CSLib and Mathlib are transitive dependencies. If your project already requires either one,
+first align those requirements with the versions in Complexitylib's `lake-manifest.json` at
+the chosen revision.
+
+Then run the commands below from your project directory. When changing existing direct
+dependency pins, include those package names in the update command: for example,
+`lake update complexitylib cslib mathlib` when changing both. Updating only `complexitylib`
+leaves the other direct dependencies locked.
+
+```bash
+lake update complexitylib
+lake build
+```
+
+Commit the resulting `lake-manifest.json` along with the Lake configuration and `lean-toolchain`.
+Use the `Complexity.` imports shown in the [checked examples](#start-here).
+
+### Build the documentation
+
+Run the following commands from the repository root. For a cold checkout, first restore the
+available caches with `scripts/cache/ensure.sh`.
+
+#### API reference
+
+To build searchable API documentation from the module docstrings:
 
 ```bash
 python3 scripts/check_docs.py --config-only
@@ -97,6 +152,8 @@ Open `http://localhost:8000` to browse and search. The **API documentation** wor
 `main` to the [API documentation site](https://www.cslib.io/complexitylib/) nightly.
 A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
 the directory argument above with the extracted artifact directory.
+
+#### Checked guide
 
 The [guide](guide/ComplexityGuide.lean) introduces the library area by area, with Lean examples
 that are checked against the library whenever the guide is built. It is written with
@@ -112,14 +169,14 @@ The first build compiles Verso and links the guide's generator, which takes a fe
 [/guide/](https://www.cslib.io/complexitylib/guide/). The **Guide** workflow builds
 pull requests that change the guide and uploads the pages as a `guide` artifact.
 
+## Project information
+
 This is the canonical CSLib-based Complexitylib. The renamed historical
 [pre-CSLib implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available
 with archival pending; it has a different API, and some developments remain to be ported. The temporary
 repository and package name `complexitylib2` was retired when this repository moved to CSLib
 Community. Downstream projects using that package name should change it to `complexitylib`; Lean
-imports remain unchanged. APIs are still evolving, so downstream projects should pin a commit.
-
-## Project information
+imports remain unchanged.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `Complexity.` to `Cslib.`. Acceptance requires

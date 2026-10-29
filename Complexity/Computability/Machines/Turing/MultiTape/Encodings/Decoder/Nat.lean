@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decod
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 public import Mathlib.Data.List.DropRight
+import Complexity.Foundations.Data.List.Append
 import Complexity.Foundations.Data.Nat.Bits
 import Mathlib.Data.Nat.Size
 
@@ -26,17 +27,6 @@ namespace Turing.MultiTapeTM
 
 /-! ### Binary digits -/
 
-private theorem rdropWhile_append {α : Type*} (p : α → Bool) (l₁ l₂ : List α) :
-    (l₁ ++ l₂).rdropWhile p =
-      if l₂.rdropWhile p = [] then l₁.rdropWhile p else l₁ ++ l₂.rdropWhile p := by
-  simp only [List.rdropWhile, List.reverse_append, List.dropWhile_append]
-  by_cases h : l₂.reverse.dropWhile p = []
-  · simp [h]
-  · simp [h]
-
-private theorem bits_eq_nil_iff {n : ℕ} : n.bits = [] ↔ n = 0 := by
-  rw [← List.length_eq_zero_iff, Nat.size_eq_bits_len, Nat.size_eq_zero]
-
 /-- Binary digits, least significant first, read as a number. -/
 def ofBits (w : List Bool) : ℕ := w.foldr Nat.bit 0
 
@@ -45,7 +35,7 @@ theorem bits_ofBits (w : List Bool) : (ofBits w).bits = w.rdropWhile (!·) := by
   induction w with
   | nil => simp [ofBits]
   | cons b w ih =>
-    rw [ofBits, List.foldr_cons, ← ofBits, ← List.singleton_append, rdropWhile_append, ← ih]
+    rw [ofBits, List.foldr_cons, ← ofBits, ← List.singleton_append, List.rdropWhile_append, ← ih]
     by_cases h : ofBits w = 0 ∧ b = false
     · obtain ⟨h₀, rfl⟩ := h
       simp [h₀]
@@ -53,7 +43,7 @@ theorem bits_ofBits (w : List Bool) : (ofBits w).bits = w.rdropWhile (!·) := by
       by_cases h₀ : ofBits w = 0
       · obtain rfl : b = true := by simpa [h₀] using h
         simp [h₀, List.rdropWhile_singleton]
-      · simp only [bits_eq_nil_iff, h₀, ↓reduceIte]
+      · simp only [Nat.bits_eq_nil_iff, h₀, ↓reduceIte]
         rfl
 
 namespace Decoder

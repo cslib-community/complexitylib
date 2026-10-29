@@ -94,7 +94,7 @@ theorem computableInSpace_eval : ∃ t, ComputableInBigO
     have hs : (encState (machine.run (encInstance I) j).state).length ≤
         stateBudget (machine.run (encInstance I) j).state := by
       simp only [stateBudget, stepBudget, encStepInT, length_encPair, encState_apply]; omega
-    have hp := ComputableTidilyInO.length_encNat_mono hpos
+    have hp := length_encNat_mono hpos
     simp only [ReadMachine.stateS, length_encPair]
     change _ + 2 * (2 * (encState (machine.run (encInstance I) j).state).length + 1 + _) + 4 ≤ _
     omega
@@ -120,7 +120,7 @@ theorem spaceBound_add_length_le_log_mul_log_log {I : Instance}
   have hℓL : I.ell < L := ell_lt_length_encNat_length_encInstance hH
   have hHL : I.height < L := height_lt_length_encNat_length_encInstance hℓ
   have hℓM : (encNat I.ell).length ≤ M :=
-    ComputableTidilyInO.length_encNat_mono hℓL.le
+    length_encNat_mono hℓL.le
   have hsp : spaceBound I.ell I.height ≤ (2 * L) * (2 * M) := by
     rw [spaceBound]
     exact Nat.mul_le_mul (by omega) (by omega)

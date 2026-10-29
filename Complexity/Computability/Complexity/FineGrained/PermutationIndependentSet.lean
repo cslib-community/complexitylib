@@ -124,7 +124,7 @@ using a library proof based on monotone threshold enumeration (`Tuple.sort` and
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 public section
 
@@ -806,39 +806,45 @@ theorem mem_ThreeColoring_iff_exists_bpisOfColoring (H : Graph) :
 /-! ### Polynomial-time computability of the reduction -/
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_listGetDWithInput
-    {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {list : γ → List α} {index : γ → ℕ} (d : α)
-    (hlist : ComputableTidilyInPolyTime list encIn (encList encA))
-    (hindex : ComputableTidilyInPolyTime index encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => (list x).getD (index x) d) encIn encA :=
-  (listGetD d).comp (hlist.prod hindex)
+private theorem computableInPolyTime_unary_log_two :
+    ComputableInPolyTime (Nat.log 2) encUnary encUnary :=
+  binary_log_two.comp unary_to_binary
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_unary_div'
+private theorem computableInPolyTime_bool_toUnary :
+    ComputableInPolyTime Bool.toNat encBool encUnary :=
+  of_finite _
+
+@[local fun_prop]
+private theorem computableInPolyTime_nat_bits :
+    ComputableInPolyTime Nat.bits encNat encBits :=
+  of_eq fun _ => rfl
+
+@[local fun_prop]
+private theorem computableInPolyTime_unary_div'
     {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableTidilyInPolyTime a encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => a x / b x) encIn encUnary :=
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hb : ComputableInPolyTime b encIn encUnary) :
+    ComputableInPolyTime (fun x => a x / b x) encIn encUnary :=
   unary_div.comp (ha.prod hb)
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_unary_mod'
+private theorem computableInPolyTime_unary_mod'
     {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableTidilyInPolyTime a encIn encUnary)
-    (hb : ComputableTidilyInPolyTime b encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => a x % b x) encIn encUnary :=
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hb : ComputableInPolyTime b encIn encUnary) :
+    ComputableInPolyTime (fun x => a x % b x) encIn encUnary :=
   unary_mod.comp (ha.prod hb)
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_blockSize :
-    ComputableTidilyInPolyTime blockSize encUnary encUnary := by
+private theorem computableInPolyTime_blockSize :
+    ComputableInPolyTime blockSize encUnary encUnary := by
   unfold blockSize
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_numAssignments :
-    ComputableTidilyInPolyTime numAssignments encUnary encUnary := by
+private theorem computableInPolyTime_numAssignments :
+    ComputableInPolyTime numAssignments encUnary encUnary := by
   obtain ⟨hefficient, hspec⟩ := iterate_spec (count := fun n => 2 * blockSize n)
     (init := fun _ => 1) (step := fun state => state * 2)
     (encIn := encUnary) (encState := encUnary)
@@ -853,210 +859,207 @@ private theorem computableTidilyInPolyTime_numAssignments :
   exact (hspec n).symm
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_numBlocks :
-    ComputableTidilyInPolyTime numBlocks encUnary encUnary := by
+private theorem computableInPolyTime_numBlocks :
+    ComputableInPolyTime numBlocks encUnary encUnary := by
   unfold numBlocks
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_wordLen :
-    ComputableTidilyInPolyTime wordLen encUnary encUnary := by
+private theorem computableInPolyTime_wordLen :
+    ComputableInPolyTime wordLen encUnary encUnary := by
   unfold wordLen
   fun_prop
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_searchBits :
-    ComputableTidilyInPolyTime searchBits encUnary encUnary := by
+/-- Computing `searchBits` is polynomial-time in the plain machine model. -/
+@[fun_prop]
+theorem computableInPolyTime_searchBits :
+    ComputableInPolyTime searchBits encUnary encUnary := by
   unfold searchBits
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_extractColor
+private theorem computableInPolyTime_extractColor
     {γ : Type} {encIn : γ ↪ List Bool} {c u : γ → ℕ}
-    (hc : ComputableTidilyInPolyTime c encIn encUnary)
-    (_hu : ComputableTidilyInPolyTime u encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => extractColor (c x) (u x)) encIn encUnary := by
-  have hc_bin : ComputableTidilyInPolyTime c encIn encNat := unary_to_binary.comp hc
+    (hc : ComputableInPolyTime c encIn encUnary)
+    (_hu : ComputableInPolyTime u encIn encUnary) :
+    ComputableInPolyTime (fun x => extractColor (c x) (u x)) encIn encUnary := by
+  have hc_bin : ComputableInPolyTime c encIn encNat := unary_to_binary.comp hc
   unfold extractColor
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_validAssignment
+private theorem computableInPolyTime_validAssignment
     {γ : Type} {encIn : γ ↪ List Bool} {b c : γ → ℕ}
-    (_hb : ComputableTidilyInPolyTime b encIn encUnary)
-    (_hc : ComputableTidilyInPolyTime c encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => validAssignment (b x) (c x)) encIn encBool := by
+    (_hb : ComputableInPolyTime b encIn encUnary)
+    (_hc : ComputableInPolyTime c encIn encUnary) :
+    ComputableInPolyTime (fun x => validAssignment (b x) (c x)) encIn encBool := by
   unfold validAssignment
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_thresholdOf
+private theorem computableInPolyTime_thresholdOf
     {γ : Type} {encIn : γ ↪ List Bool} {n L r v : γ → ℕ}
-    (_hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (_hL : ComputableTidilyInPolyTime L encIn encUnary)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hv : ComputableTidilyInPolyTime v encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => thresholdOf (n x) (L x) (r x) (v x)) encIn encUnary := by
+    (_hn : ComputableInPolyTime n encIn encUnary)
+    (_hL : ComputableInPolyTime L encIn encUnary)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hv : ComputableInPolyTime v encIn encUnary) :
+    ComputableInPolyTime (fun x => thresholdOf (n x) (L x) (r x) (v x)) encIn encUnary := by
   unfold thresholdOf
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_bucketOf
+private theorem computableInPolyTime_bucketOf
     {γ : Type} {encIn : γ ↪ List Bool} {B n L r j : γ → ℕ}
-    (_hB : ComputableTidilyInPolyTime B encIn encUnary)
-    (_hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (_hL : ComputableTidilyInPolyTime L encIn encUnary)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hj : ComputableTidilyInPolyTime j encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => bucketOf (B x) (n x) (L x) (r x) (j x))
+    (_hB : ComputableInPolyTime B encIn encUnary)
+    (_hn : ComputableInPolyTime n encIn encUnary)
+    (_hL : ComputableInPolyTime L encIn encUnary)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hj : ComputableInPolyTime j encIn encUnary) :
+    ComputableInPolyTime (fun x => bucketOf (B x) (n x) (L x) (r x) (j x))
       encIn encUnary := by
   unfold bucketOf
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_colorAt
+private theorem computableInPolyTime_colorAt
     {γ : Type} {encIn : γ ↪ List Bool} {N r j u : γ → ℕ}
-    (_hN : ComputableTidilyInPolyTime N encIn encUnary)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hj : ComputableTidilyInPolyTime j encIn encUnary)
-    (_hu : ComputableTidilyInPolyTime u encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => colorAt (N x) (r x) (j x) (u x)) encIn encUnary := by
+    (_hN : ComputableInPolyTime N encIn encUnary)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hj : ComputableInPolyTime j encIn encUnary)
+    (_hu : ComputableInPolyTime u encIn encUnary) :
+    ComputableInPolyTime (fun x => colorAt (N x) (r x) (j x) (u x)) encIn encUnary := by
   unfold colorAt
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_consistencyEdges :
-    ComputableTidilyInPolyTime consistencyEdges encUnary
+private theorem computableInPolyTime_consistencyEdges :
+    ComputableInPolyTime consistencyEdges encUnary
       (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
   unfold consistencyEdges
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_invalidBucketEdges :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => invalidBucketEdges p.1 p.2)
+private theorem computableInPolyTime_invalidBucketEdges :
+    ComputableInPolyTime (fun p : ℕ × ℕ => invalidBucketEdges p.1 p.2)
       (encPair encUnary encNat)
       (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
   unfold invalidBucketEdges
   fun_prop
 
-private theorem computableTidilyInPolyTime_bool_or'
+private theorem computableInPolyTime_bool_or'
     {α : Type} {encA : α ↪ List Bool} {left right : α → Bool}
-    (hleft : ComputableTidilyInPolyTime left encA encBool)
-    (hright : ComputableTidilyInPolyTime right encA encBool) :
-    ComputableTidilyInPolyTime (fun a => left a || right a) encA encBool :=
+    (hleft : ComputableInPolyTime left encA encBool)
+    (hright : ComputableInPolyTime right encA encBool) :
+    ComputableInPolyTime (fun a => left a || right a) encA encBool :=
   bool_or.comp (hleft.prod hright)
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_innerConflictTest
+private theorem computableInPolyTime_innerConflictTest
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ j₂ : γ → ℕ}
-    (_hN : ComputableTidilyInPolyTime N encIn encUnary)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (_hq : ComputableTidilyInPolyTime q encIn encUnary)
-    (_hj₁ : ComputableTidilyInPolyTime j₁ encIn encUnary)
-    (_hj₂ : ComputableTidilyInPolyTime j₂ encIn encUnary) :
-    ComputableTidilyInPolyTime
+    (_hN : ComputableInPolyTime N encIn encUnary)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hp : ComputableInPolyTime p encIn encUnary)
+    (_hq : ComputableInPolyTime q encIn encUnary)
+    (_hj₁ : ComputableInPolyTime j₁ encIn encUnary)
+    (_hj₂ : ComputableInPolyTime j₂ encIn encUnary) :
+    ComputableInPolyTime
       (fun x => innerConflictTest (N x) (r x) (p x) (q x) (j₁ x) (j₂ x))
       encIn encBool := by
   unfold innerConflictTest
-  exact bool_and' (computableTidilyInPolyTime_bool_or' (by fun_prop) (by fun_prop)) (by fun_prop)
+  exact bool_and' (computableInPolyTime_bool_or' (by fun_prop) (by fun_prop)) (by fun_prop)
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_innerConflictBuckets
+private theorem computableInPolyTime_innerConflictBuckets
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ : γ → ℕ}
-    (_hN : ComputableTidilyInPolyTime N encIn encUnary)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (_hq : ComputableTidilyInPolyTime q encIn encUnary)
-    (_hj₁ : ComputableTidilyInPolyTime j₁ encIn encUnary) :
-    ComputableTidilyInPolyTime
+    (_hN : ComputableInPolyTime N encIn encUnary)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hp : ComputableInPolyTime p encIn encUnary)
+    (_hq : ComputableInPolyTime q encIn encUnary)
+    (_hj₁ : ComputableInPolyTime j₁ encIn encUnary) :
+    ComputableInPolyTime
       (fun x => innerConflictBuckets (N x) (r x) (p x) (q x) (j₁ x))
       encIn (encList encUnary) := by
   unfold innerConflictBuckets
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_innerConflictEdges
+private theorem computableInPolyTime_innerConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q j₁ : γ → ℕ}
-    (_hN : ComputableTidilyInPolyTime N encIn encUnary)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (_hq : ComputableTidilyInPolyTime q encIn encUnary)
-    (_hj₁ : ComputableTidilyInPolyTime j₁ encIn encUnary) :
-    ComputableTidilyInPolyTime
+    (_hN : ComputableInPolyTime N encIn encUnary)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hp : ComputableInPolyTime p encIn encUnary)
+    (_hq : ComputableInPolyTime q encIn encUnary)
+    (_hj₁ : ComputableInPolyTime j₁ encIn encUnary) :
+    ComputableInPolyTime
       (fun x => innerConflictEdges (N x) (r x) (p x) (q x) (j₁ x))
       encIn (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
   unfold innerConflictEdges
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_pairConflictEdges
+private theorem computableInPolyTime_pairConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {N r p q : γ → ℕ}
-    (_hN : ComputableTidilyInPolyTime N encIn encUnary)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hp : ComputableTidilyInPolyTime p encIn encUnary)
-    (_hq : ComputableTidilyInPolyTime q encIn encUnary) :
-    ComputableTidilyInPolyTime
+    (_hN : ComputableInPolyTime N encIn encUnary)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hp : ComputableInPolyTime p encIn encUnary)
+    (_hq : ComputableInPolyTime q encIn encUnary) :
+    ComputableInPolyTime
       (fun x => pairConflictEdges (N x) (r x) (p x) (q x))
       encIn (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
   unfold pairConflictEdges
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_vertexConflictEdges
+private theorem computableInPolyTime_vertexConflictEdges
     {γ : Type} {encIn : γ ↪ List Bool} {H : γ → Graph} {r p : γ → ℕ}
-    (hH : ComputableTidilyInPolyTime H encIn encGraph)
-    (_hr : ComputableTidilyInPolyTime r encIn encNat)
-    (_hp : ComputableTidilyInPolyTime p encIn encUnary) :
-    ComputableTidilyInPolyTime
+    (hH : ComputableInPolyTime H encIn encGraph)
+    (_hr : ComputableInPolyTime r encIn encNat)
+    (_hp : ComputableInPolyTime p encIn encUnary) :
+    ComputableInPolyTime
       (fun x => vertexConflictEdges (H x) (r x) (p x))
       encIn (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
-  have hverts : ComputableTidilyInPolyTime (fun x => (H x).1) encIn (encList encNat) :=
+  have hverts : ComputableInPolyTime (fun x => (H x).1) encIn (encList encNat) :=
     (fst (encList encNat) (encList (encPair encNat encNat))).comp hH
-  have hlen : ComputableTidilyInPolyTime (fun x => (H x).1.length) encIn encUnary :=
-    (length encNat).comp hverts
+  have hlen : ComputableInPolyTime (fun x => (H x).1.length) encIn encUnary :=
+    (length_list encNat).comp hverts
   unfold vertexConflictEdges
   fun_prop
 
 @[local fun_prop]
-private theorem computableTidilyInPolyTime_conflictEdges :
-    ComputableTidilyInPolyTime (fun p : Graph × ℕ => conflictEdges p.1 p.2)
+private theorem computableInPolyTime_conflictEdges :
+    ComputableInPolyTime (fun p : Graph × ℕ => conflictEdges p.1 p.2)
       (encPair encGraph encNat)
       (encList (encPair (encPair encUnary encUnary) (encPair encUnary encUnary))) := by
-  have hH : ComputableTidilyInPolyTime (fun p : Graph × ℕ => p.1)
+  have hH : ComputableInPolyTime (fun p : Graph × ℕ => p.1)
       (encPair encGraph encNat) encGraph := fst encGraph encNat
-  have hverts : ComputableTidilyInPolyTime (fun p : Graph × ℕ => p.1.1)
+  have hverts : ComputableInPolyTime (fun p : Graph × ℕ => p.1.1)
       (encPair encGraph encNat) (encList encNat) :=
     (fst (encList encNat) (encList (encPair encNat encNat))).comp hH
-  have hlen : ComputableTidilyInPolyTime (fun p : Graph × ℕ => p.1.1.length)
-      (encPair encGraph encNat) encUnary := (length encNat).comp hverts
+  have hlen : ComputableInPolyTime (fun p : Graph × ℕ => p.1.1.length)
+      (encPair encGraph encNat) encUnary := (length_list encNat).comp hverts
   unfold conflictEdges
-  fun_prop
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_bpisOfColoring :
-    ComputableTidilyInPolyTime bpisOfColoring (encPair encGraph encNat)
-      encBipartitePermutationGraph := by
-  have hH : ComputableTidilyInPolyTime (fun p : Graph × ℕ => p.1)
-      (encPair encGraph encNat) encGraph := fst encGraph encNat
-  have hverts : ComputableTidilyInPolyTime (fun p : Graph × ℕ => p.1.1)
-      (encPair encGraph encNat) (encList encNat) :=
-    (fst (encList encNat) (encList (encPair encNat encNat))).comp hH
-  have hlen : ComputableTidilyInPolyTime (fun x : Graph × ℕ => x.1.1.length)
-      (encPair encGraph encNat) encUnary := (length encNat).comp hverts
-  unfold bpisOfColoring encBipartitePermutationGraph
   fun_prop
 
 /-- Constructing `bpisOfColoring (H, r)` is polynomial-time in the plain machine model. -/
 @[fun_prop]
 theorem computableInPolyTime_bpisOfColoring :
     ComputableInPolyTime bpisOfColoring (encPair encGraph encNat)
-      encBipartitePermutationGraph :=
-  .of_tidy computableTidilyInPolyTime_bpisOfColoring
+      encBipartitePermutationGraph := by
+  have hH : ComputableInPolyTime (fun p : Graph × ℕ => p.1)
+      (encPair encGraph encNat) encGraph := fst encGraph encNat
+  have hverts : ComputableInPolyTime (fun p : Graph × ℕ => p.1.1)
+      (encPair encGraph encNat) (encList encNat) :=
+    (fst (encList encNat) (encList (encPair encNat encNat))).comp hH
+  have hlen : ComputableInPolyTime (fun x : Graph × ℕ => x.1.1.length)
+      (encPair encGraph encNat) encUnary := (length_list encNat).comp hverts
+  unfold bpisOfColoring encBipartitePermutationGraph
+  fun_prop
 
-private theorem computableTidilyInPolyTime_toBinary :
-    ComputableTidilyInPolyTime id encBipartitePermutationGraph
+/-- Converting a `BipartitePermutationGraph` from unary to binary coordinate encoding is
+polynomial-time in the plain machine model. -/
+@[fun_prop]
+theorem computableInPolyTime_toBinary :
+    ComputableInPolyTime id encBipartitePermutationGraph
       encBipartitePermutationGraphBinary := by
   have heq : (id : BipartitePermutationGraph → BipartitePermutationGraph) =
       fun G => (G.1, G.2.map fun e => ((e.1.1, e.1.2), (e.2.1, e.2.2))) := by
@@ -1066,34 +1069,20 @@ private theorem computableTidilyInPolyTime_toBinary :
   unfold encBipartitePermutationGraph encBipartitePermutationGraphBinary
   fun_prop
 
-/-- Converting a `BipartitePermutationGraph` from unary to binary coordinate encoding is
-polynomial-time in the plain machine model. -/
-@[fun_prop]
-theorem computableInPolyTime_toBinary :
-    ComputableInPolyTime id encBipartitePermutationGraph
-      encBipartitePermutationGraphBinary :=
-  .of_tidy computableTidilyInPolyTime_toBinary
-
 /-- Constructing `bpisOfColoring (H, r)` under binary coordinate encoding is polynomial-time in the
 plain machine model. -/
 @[fun_prop]
 theorem computableInPolyTime_bpisOfColoring_binary :
     ComputableInPolyTime bpisOfColoring (encPair encGraph encNat)
       encBipartitePermutationGraphBinary :=
-  .of_tidy (computableTidilyInPolyTime_toBinary.comp computableTidilyInPolyTime_bpisOfColoring)
-
-/-- Computing `searchBits` is polynomial-time in the plain machine model. -/
-@[fun_prop]
-theorem computableInPolyTime_searchBits :
-    ComputableInPolyTime searchBits encUnary encUnary :=
-  .of_tidy computableTidilyInPolyTime_searchBits
+  computableInPolyTime_toBinary.comp computableInPolyTime_bpisOfColoring
 
 /-- Computing `searchBits H.1.length` from a graph `H` is polynomial-time in the plain machine
 model. -/
 @[fun_prop]
 theorem computableInPolyTime_searchBits_length :
     ComputableInPolyTime (fun H : Graph => searchBits H.1.length) encGraph encUnary := by
-  refine .of_tidy (computableTidilyInPolyTime_searchBits.comp ?_)
+  refine computableInPolyTime_searchBits.comp ?_
   unfold encGraph
   fun_prop
 

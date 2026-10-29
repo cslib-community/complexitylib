@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingDeletion
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 public section
 
@@ -119,33 +120,73 @@ example : ¬ ∃ D ∈ petals first 2 {(1, true)}, D ⊆ ({(1, false), (3, true)
 example : {(1, false)} ∈ countingIntro first 2 {(1, true)} true \ (first ∪ root) ∧
     ({(1, false)} : Finset (Literal (Fin 9))) ⊂ {(1, false), (3, true)} := by decide
 
-example : ((countingIntro first 2 {(1, true)} true \ (first ∪ root)).filter
-    fun D => D.card = 1).card = 3 := by decide
+private theorem second_true_unit_insertions :
+    ((countingIntro first 2 {(1, true)} true \ (first ∪ root)).filter
+      fun D => D.card = 1).card = 3 := by decide
 
-example : (first.filter fun C => C ∉ root ∧ C.card = 2 ∧ C ∉ nodes true 2).card ≤ 12 := by
-  exact card_counting_deleted_marked_le θpos 2 (nodes true) sizes hearts (dirs true)
+private theorem second_false_unit_insertions :
+    ((countingIntro first 2 {(1, true)} false \ (first ∪ root)).filter
+      fun D => D.card = 1).card = 1 := by decide
+
+-- Combining `card_counting_deleted_marked_le` with the exact unit insertion counts (`3` on the B
+-- branch and `1` on the A branch) bounds the marked width-2 deletions at step `m = 1` by `12` and
+-- `4`, while the actual deleted counts are `2` and `1`.
+example :
+    (first.filter fun C => C ∉ root ∧ C.card = 2 ∧ C ∉ nodes true 2).card ≤ 12 ∧
+      (first.filter fun C => C ∉ root ∧ C.card = 2 ∧ C ∉ nodes false 2).card = 1 ∧
+      (first.filter fun C => C ∉ root ∧ C.card = 2 ∧ C ∉ nodes false 2).card ≤ 4 := by
+  have htrue := card_counting_deleted_marked_le θpos 2 (nodes true) sizes hearts (dirs true)
     (steps true) (choices true) rootReduced (m := 1) (by omega) 2
-
-example : (first.filter fun C => C ∉ root ∧ C.card = 2 ∧ C ∉ nodes false 2).card = 1 := by decide
-
-example : (first.filter fun C => C ∉ root ∧ C.card = 2 ∧ C ∉ nodes false 2).card ≤ 4 := by
-  exact card_counting_deleted_marked_le θpos 2 (nodes false) sizes hearts (dirs false)
+  have hfalse := card_counting_deleted_marked_le θpos 2 (nodes false) sizes hearts (dirs false)
     (steps false) (choices false) rootReduced (m := 1) (by omega) 2
+  simp only [Nat.Ico_succ_singleton, sum_singleton] at htrue hfalse
+  change _ ≤ 2 * 2 ^ 1 * ((countingIntro first 2 {(1, true)} true \ (first ∪ root)).filter
+    fun D => D.card = 1).card at htrue
+  change _ ≤ 2 * 2 ^ 1 * ((countingIntro first 2 {(1, true)} false \ (first ∪ root)).filter
+    fun D => D.card = 1).card at hfalse
+  rw [second_true_unit_insertions] at htrue
+  rw [second_false_unit_insertions] at hfalse
+  exact ⟨htrue, by decide, hfalse⟩
 
--- Unit deletions have zero charge: Ico 1 1 is empty.
-example : (first.filter fun C => C ∉ root ∧ C.card = 1 ∧ C ∉ nodes true 2).card ≤ 0 := by
-  exact card_counting_deleted_marked_le θpos 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (choices true) rootReduced (m := 1) (by omega) 1
+-- Unit deletions have zero charge (`Ico 1 1` is empty), so `card_counting_deleted_marked_le` at
+-- `j = 1` implies that every marked unit clause in `first` survives into `nodes tail 2`.
+example (tail : Bool) (C : Finset (Literal (Fin 9)))
+    (hfirst : C ∈ first) (hroot : C ∉ root) (hcard : C.card = 1) :
+    C ∈ nodes tail 2 := by
+  by_contra hgone
+  have hle := card_counting_deleted_marked_le θpos 2 (nodes tail) sizes hearts (dirs tail)
+    (steps tail) (choices tail) rootReduced (m := 1) (by omega) 1
+  have hmem : C ∈ first.filter (fun D => D ∉ root ∧ D.card = 1 ∧ D ∉ nodes tail 2) :=
+    mem_filter.mpr ⟨hfirst, hroot, hcard, hgone⟩
+  have hpos : 0 < (first.filter fun D => D ∉ root ∧ D.card = 1 ∧ D ∉ nodes tail 2).card :=
+    card_pos.mpr ⟨C, hmem⟩
+  simp only [Ico_self, sum_empty] at hle
+  change (first.filter fun D => D ∉ root ∧ D.card = 1 ∧ D ∉ nodes tail 2).card ≤ 0 at hle
+  omega
 
-example : ∃ D ∈ nodes true 2, D ⊆ ({(0, true), (1, false), (3, true)} :
-    Finset (Literal (Fin 9))) :=
-  exists_mem_counting_node_subset 2 (nodes true) sizes hearts (dirs true) (steps true)
-    (t := 2) le_rfl (by decide)
+-- Because `{(0, true), (1, false), (3, true)} ∉ nodes true 2`, the subclause witness provided by
+-- `exists_mem_counting_node_subset` must be a strict subclause of width at most `2`.
+example : ∃ D ∈ nodes true 2,
+    D ⊂ ({(0, true), (1, false), (3, true)} : Finset (Literal (Fin 9))) ∧ D.card ≤ 2 := by
+  obtain ⟨D, hD, hsub⟩ :=
+    exists_mem_counting_node_subset 2 (nodes true) sizes hearts (dirs true) (steps true)
+      (t := 2) le_rfl (C := {(0, true), (1, false), (3, true)}) (by decide)
+  have hne : D ≠ {(0, true), (1, false), (3, true)} := by
+    rintro rfl
+    revert hD; decide
+  have hssub : D ⊂ {(0, true), (1, false), (3, true)} := ssubset_of_subset_of_ne hsub hne
+  have hlt : D.card < ({(0, true), (1, false), (3, true)} : Finset (Literal (Fin 9))).card :=
+    card_lt_card hssub
+  have h3 : ({(0, true), (1, false), (3, true)} : Finset (Literal (Fin 9))).card = 3 := by decide
+  exact ⟨D, hD, hssub, by omega⟩
 
 -- Empty variables and an empty root clause need no inhabitance at a zero-length prefix.
-example : ∃ D ∈ ({∅} : ClauseSet Empty), D ⊆ (∅ : Finset (Literal Empty)) :=
-  exists_mem_counting_node_subset 0 (fun _ => ({∅} : ClauseSet Empty)) id
-    (fun _ => ∅) (fun _ => false) (by intro i hi; omega) (t := 0) le_rfl (by decide)
+example : ∃ D ∈ ({∅} : ClauseSet Empty), D = ∅ := by
+  obtain ⟨D, hD, hsub⟩ :=
+    exists_mem_counting_node_subset 0 (fun _ => ({∅} : ClauseSet Empty)) id
+      (fun _ => ∅) (fun _ => false) (by intro i hi; omega) (t := 0) le_rfl
+      (C := (∅ : Finset (Literal Empty))) (by decide)
+  exact ⟨D, hD, subset_empty.mp hsub⟩
 
 -- The FULL insertion balance still needs nontautology. In this reduced, legal-choice root,
 -- one newly introduced width-two petal is immediately removed by the added negated unit.

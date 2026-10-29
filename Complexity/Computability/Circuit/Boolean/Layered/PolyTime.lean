@@ -55,8 +55,7 @@ theorem computableInPolyTime_nodeConst :
 @[fun_prop]
 theorem computableInPolyTime_nodeCopy :
     ComputableInPolyTime Node.copy encNat encNode := by
-  refine .of_tidy ?_
-  have h : ComputableTidilyInPolyTime (fun i : ℕ => ((true, false), i, 0)) encNat
+  have h : ComputableInPolyTime (fun i : ℕ => ((true, false), i, 0)) encNat
       (encPair (encPair encBool encBool) (encPair encNat encNat)) := by fun_prop
   exact h.of_enc_eq fun _ => rfl
 
@@ -65,8 +64,7 @@ theorem computableInPolyTime_nodeCopy :
 theorem computableInPolyTime_nodeNand :
     ComputableInPolyTime (fun p : ℕ × ℕ => Node.nand p.1 p.2)
       (encPair encNat encNat) encNode := by
-  refine .of_tidy ?_
-  have h : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => ((true, true), p))
+  have h : ComputableInPolyTime (fun p : ℕ × ℕ => ((true, true), p))
       (encPair encNat encNat) (encPair (encPair encBool encBool) (encPair encNat encNat)) := by
     fun_prop
   exact h.of_enc_eq fun _ => rfl
@@ -78,27 +76,24 @@ theorem computableInPolyTime_nodeEval {α : Type} {input : α ↪ List Bool}
     (hnode : ComputableInPolyTime node input encNode)
     (hinputs : ComputableInPolyTime inputs input encBits) :
     ComputableInPolyTime (fun a => (node a).eval (inputs a)) input encBool := by
-  refine .of_tidy ?_
-  have hnode := hnode.tidy
-  have hinputs := hinputs.tidy
-  have hcode := computableInPolyTime_nodeCode.tidy.comp hnode
-  have hfirst : ComputableTidilyInPolyTime
+  have hcode := computableInPolyTime_nodeCode.comp hnode
+  have hfirst : ComputableInPolyTime
       (fun a => (inputs a).getD (node a).code.2.1 false) input encBool :=
-    ComputableTidilyInPolyTime.listGetD_binary (encA := encBool) false hinputs (by fun_prop)
-  have hsecond : ComputableTidilyInPolyTime
+    ComputableInPolyTime.listGetD_binary (encA := encBool) false hinputs (by fun_prop)
+  have hsecond : ComputableInPolyTime
       (fun a => (inputs a).getD (node a).code.2.2 false) input encBool :=
-    ComputableTidilyInPolyTime.listGetD_binary (encA := encBool) false hinputs (by fun_prop)
-  have h : ComputableTidilyInPolyTime (fun a =>
+    ComputableInPolyTime.listGetD_binary (encA := encBool) false hinputs (by fun_prop)
+  have h : ComputableInPolyTime (fun a =>
       if (node a).code.1.1 then
         if (node a).code.1.2 then
           !((inputs a).getD (node a).code.2.1 false &&
             (inputs a).getD (node a).code.2.2 false)
         else (inputs a).getD (node a).code.2.1 false
       else (node a).code.1.2) input encBool :=
-    hcode.fst'.fst'.cond
-      (hcode.fst'.snd'.cond
-        (ComputableTidilyInPolyTime.bool_not.comp
-          (ComputableTidilyInPolyTime.bool_and.comp (hfirst.prod hsecond))) hfirst)
+    hcode.fst'.fst'.ite
+      (hcode.fst'.snd'.ite
+        (ComputableInPolyTime.bool_not.comp
+          (ComputableInPolyTime.bool_and.comp (hfirst.prod hsecond))) hfirst)
       hcode.fst'.snd'
   convert h using 1
   funext a
@@ -111,13 +106,9 @@ theorem computableInPolyTime_evalLayer {α : Type} {input : α ↪ List Bool}
     (hlayer : ComputableInPolyTime layer input (encList encNode))
     (hinputs : ComputableInPolyTime inputs input encBits) :
     ComputableInPolyTime (fun a => evalLayer (inputs a) (layer a)) input encBits := by
-  have hlayer := hlayer.tidy
-  have hinputs := hinputs.tidy
-  refine .of_tidy ?_
-  apply ComputableTidilyInPolyTime.listToBits.comp
-  apply ComputableTidilyInPolyTime.mapWithInput hlayer
-  apply ComputableInPolyTime.tidy
-  apply computableInPolyTime_nodeEval <;> exact .of_tidy (by fun_prop)
+  apply ComputableInPolyTime.listToBits.comp
+  apply ComputableInPolyTime.mapWithInput hlayer
+  apply computableInPolyTime_nodeEval <;> fun_prop
 
 /-- Free output selection is polynomial even for malformed binary indices. -/
 @[fun_prop]
@@ -126,12 +117,9 @@ theorem computableInPolyTime_select {α : Type} {input : α ↪ List Bool}
     (hinputs : ComputableInPolyTime inputs input encBits)
     (houtputs : ComputableInPolyTime outputs input (encList encNat)) :
     ComputableInPolyTime (fun a => select (inputs a) (outputs a)) input encBits := by
-  have hinputs := hinputs.tidy
-  have houtputs := houtputs.tidy
-  refine .of_tidy ?_
-  apply ComputableTidilyInPolyTime.listToBits.comp
-  apply ComputableTidilyInPolyTime.mapWithInput houtputs
-  exact ComputableTidilyInPolyTime.listGetD_binary false (by fun_prop) (by fun_prop)
+  apply ComputableInPolyTime.listToBits.comp
+  apply ComputableInPolyTime.mapWithInput houtputs
+  exact ComputableInPolyTime.listGetD_binary false (by fun_prop) (by fun_prop)
 
 /-- Read the last layer's length, or retain the computed input width for an empty schedule. -/
 @[fun_prop]
@@ -140,16 +128,13 @@ theorem computableInPolyTime_outputWidth {α : Type} {input : α ↪ List Bool}
     (hn : ComputableInPolyTime inputCount input encUnary)
     (hlayers : ComputableInPolyTime layers input (encList (encList encNode))) :
     ComputableInPolyTime (fun a => outputWidth (inputCount a) (layers a)) input encUnary := by
-  have hn := hn.tidy
-  have hlayers := hlayers.tidy
-  refine .of_tidy ?_
   have heq (n : ℕ) (ls : List (List Node)) :
       outputWidth n ls = ((n :: ls.map List.length).reverse).headD 0 := by
     induction ls using List.reverseRecOn with
     | nil => simp
     | append_singleton ls layer _ => simp [outputWidth_append]
-  have hlengths := (ComputableTidilyInPolyTime.length_list encNode).map.comp hlayers
-  have h := ComputableTidilyInPolyTime.listHeadDWithInput 0
+  have hlengths := (ComputableInPolyTime.length_list encNode).map.comp hlayers
+  have h := (ComputableInPolyTime.headD (encA := encUnary) 0).comp
     ((hn.cons' hlengths).listReverseWithInput)
   simpa only [heq, Function.comp_def] using h
 

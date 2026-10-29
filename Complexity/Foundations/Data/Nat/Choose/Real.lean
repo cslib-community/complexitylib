@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Anthropic, PBC, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger, OpenAI
+Authors: Samuel Schlesinger, OpenAI, Anthropic, PBC, Erik Demaine
 -/
 
 module
@@ -34,6 +34,7 @@ generating-function bound, motivated by the geometric thresholds in Appendix A.3
 
 * `Cslib.sum_choose_le_exp_mul_pow`: a real-parameter generating-function bound.
 * `Cslib.sum_choose_le_exp_one_mul_div_pow`: the bound with parameter `q / e`.
+* `Nat.choose_le_exp_mul_div_pow`: its single-binomial-coefficient consequence, for all `n, k`.
 * `Cslib.sum_choose_le_two_rpow_div`: the geometric tail under an exact integer budget test.
 * `Cslib.sum_choose_le_two_pow_div_add_one`: its natural-number rounded form.
 * `Cslib.le_mul_logb_of_two_pow_le_sum_choose_sq`: the logarithmic consequence.
@@ -112,6 +113,33 @@ theorem sum_choose_le_exp_one_mul_div_pow {q e : ℕ} (heq : e ≤ q) :
     _ = (Real.exp 1 * q / e) ^ e := by
         rw [mul_div_assoc, mul_pow, ← Real.exp_nat_mul]
         simp
+
+end Cslib
+
+namespace Nat
+
+/-- A single binomial coefficient is at most `(exp 1 * n / k)^k`, including `k = 0`.
+This follows from `Cslib.sum_choose_le_exp_one_mul_div_pow` when `k ≤ n`; otherwise the
+coefficient vanishes. The statement is also present in
+[Anthropic's formal source](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Util/Choose.lean#L52-L53);
+this proof reuses the partial-sum bound. -/
+theorem choose_le_exp_mul_div_pow (n k : ℕ) :
+    (n.choose k : ℝ) ≤ (Real.exp 1 * (n : ℝ) / (k : ℝ)) ^ k := by
+  by_cases hkn : k ≤ n
+  · calc
+      (n.choose k : ℝ) ≤ ∑ j ∈ Finset.range (k + 1), (n.choose j : ℝ) :=
+        Finset.single_le_sum (fun j _ => Nat.cast_nonneg (n.choose j))
+          (Finset.mem_range.mpr (by omega))
+      _ ≤ (Real.exp 1 * (n : ℝ) / (k : ℝ)) ^ k :=
+        Cslib.sum_choose_le_exp_one_mul_div_pow hkn
+  · rw [choose_eq_zero_of_lt (by omega), cast_zero]
+    positivity
+
+end Nat
+
+namespace Cslib
+
+open Finset
 
 /-- For any input size `N`, the tail with dimension `C * N` and radius `Γ * N / M` is at most
 `2 ^ (N / B)` when the exact integer test `B * Γ * ⌈log₂ (4 * C * M)⌉ ≤ M` holds.

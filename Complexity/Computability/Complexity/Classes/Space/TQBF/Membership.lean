@@ -14,19 +14,18 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedItera
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # `TQBF` is in polynomial space
 
 The evaluator of `Cslib.Computability.Complexity.Classes.Space.TQBF.Evaluation` runs its stack
 machine for `2 ^ L` steps on a formula whose encoding has length `L`. This file bounds its time
-and space in the quantitative calculus of tidy computability
-(`Turing.MultiTapeTM.ComputableTidilyInO`), charging every stored frame, the input, the counter of
+and space in the quantitative calculus of plain computability
+(`Turing.MultiTapeTM.ComputableInO`), charging every stored frame, the input, the counter of
 the rounds and every copy.
 
 The states of the machine are encoded by framed tuples (`Cslib.Complexity.TQBF.encState`). A step
@@ -37,7 +36,7 @@ the stack holds at most `L` frames, each storing a token and a suffix of the tok
 so every state has an encoding of length `O((L + 1) ^ 2)`
 (`Cslib.Complexity.TQBF.length_encState_le`). The rounds are counted by a binary counter of
 `L + 1` digits, from `2 ^ L` written in linear time
-(`Turing.MultiTapeTM.ComputableTidilyInDegree.two_pow_length`), so the evaluator runs in space
+(`Turing.MultiTapeTM.ComputableInDegree.two_pow_length`), so the evaluator runs in space
 polynomial in `L` and in time `2 ^ L` times a polynomial in `L`
 (`Cslib.Complexity.TQBF.exists_computableInO_evaluate`). Hence `TQBF ∈ PSPACE`
 [Sipser, Theorem 8.9][Sipser2013] [Arora and Barak, Theorem 4.13][AroraBarak09].
@@ -101,57 +100,67 @@ def encState : State ↪ List Bool :=
 
 section Step
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 /-- The fields of a state, the identity on encoded values. -/
 @[local fun_prop] private lemma fields_pt :
-    ComputableTidilyInPolyTime State.fields encState encStateFields :=
+    ComputableInPolyTime State.fields encState encStateFields :=
   of_eq fun _ => rfl
 
 /-- A state from its fields, the identity on encoded values. -/
 @[local fun_prop] private lemma stateMk_pt :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : List (QBF.Kind × ℕ) × List Frame × Option Bool × Bool =>
         State.mk p.1 p.2.1 p.2.2.1 p.2.2.2) encStateFields encState :=
   of_eq fun _ => rfl
 
 /-- The fields of a frame, the identity on encoded values. -/
 @[local fun_prop] private lemma frameFields_pt :
-    ComputableTidilyInPolyTime Frame.fields encFrame encFrameFields :=
+    ComputableInPolyTime Frame.fields encFrame encFrameFields :=
   of_eq fun _ => rfl
 
 /-- A frame from its fields, the identity on encoded values. -/
 @[local fun_prop] private lemma frameMk_pt :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (QBF.Kind × ℕ) × Option Bool × List (QBF.Kind × ℕ) => Frame.mk p.1 p.2.1 p.2.2)
       encFrameFields encFrame :=
   of_eq fun _ => rfl
 
+@[local fun_prop] private lemma stateMk_comp_pt {α : Type} {encIn : α ↪ List Bool}
+    {f₁ : α → List (QBF.Kind × ℕ)} {f₂ : α → List Frame}
+    {f₃ : α → Option Bool} {f₄ : α → Bool}
+    (h₁ : ComputableInPolyTime f₁ encIn (encList encToken))
+    (h₂ : ComputableInPolyTime f₂ encIn (encList encFrame))
+    (h₃ : ComputableInPolyTime f₃ encIn (encOption encBool))
+    (h₄ : ComputableInPolyTime f₄ encIn encBool) :
+    ComputableInPolyTime (fun a => State.mk (f₁ a) (f₂ a) (f₃ a) (f₄ a)) encIn encState :=
+  stateMk_pt.comp (h₁.prod (h₂.prod (h₃.prod h₄)))
+
 @[local fun_prop] private lemma input_pt :
-    ComputableTidilyInPolyTime State.input encState (encList encToken) :=
+    ComputableInPolyTime State.input encState (encList encToken) :=
   (fst _ _).comp fields_pt
 
 @[local fun_prop] private lemma stack_pt :
-    ComputableTidilyInPolyTime State.stack encState (encList encFrame) :=
+    ComputableInPolyTime State.stack encState (encList encFrame) :=
   ((fst _ _).comp (snd _ _)).comp fields_pt
 
 @[local fun_prop] private lemma value_pt :
-    ComputableTidilyInPolyTime State.value encState (encOption encBool) :=
+    ComputableInPolyTime State.value encState (encOption encBool) :=
   ((fst _ _).comp ((snd _ _).comp (snd _ _))).comp fields_pt
 
-@[local fun_prop] private lemma ok_pt : ComputableTidilyInPolyTime State.ok encState encBool :=
+@[local fun_prop] private lemma ok_pt : ComputableInPolyTime State.ok encState encBool :=
   ((snd _ _).comp ((snd _ _).comp (snd _ _))).comp fields_pt
 
 @[local fun_prop] private lemma token_pt :
-    ComputableTidilyInPolyTime Frame.token encFrame encToken :=
+    ComputableInPolyTime Frame.token encFrame encToken :=
   (fst _ _).comp frameFields_pt
 
 @[local fun_prop] private lemma first_pt :
-    ComputableTidilyInPolyTime Frame.first encFrame (encOption encBool) :=
+    ComputableInPolyTime Frame.first encFrame (encOption encBool) :=
   ((fst _ _).comp (snd _ _)).comp frameFields_pt
 
 @[local fun_prop] private lemma rest_pt :
-    ComputableTidilyInPolyTime Frame.rest encFrame (encList encToken) :=
+    ComputableInPolyTime Frame.rest encFrame (encList encToken) :=
   ((snd _ _).comp (snd _ _)).comp frameFields_pt
 
 /-- The next token, or `(top, 0)` when the input is empty. -/
@@ -212,63 +221,62 @@ private theorem assignment_eq (stack : List Frame) (v : ℕ) :
   cases stack.find? (Frame.binds v) <;> rfl
 
 @[local fun_prop] private lemma head_pt :
-    ComputableTidilyInPolyTime State.head encState encToken := by
+    ComputableInPolyTime State.head encState encToken := by
   unfold State.head
   fun_prop
 
 @[local fun_prop] private lemma top_pt :
-    ComputableTidilyInPolyTime State.top encState encFrame := by
+    ComputableInPolyTime State.top encState encFrame := by
   unfold State.top
   fun_prop
 
-@[local fun_prop] private lemma ret_pt : ComputableTidilyInPolyTime State.ret encState encBool := by
+@[local fun_prop] private lemma ret_pt : ComputableInPolyTime State.ret encState encBool := by
   unfold State.ret
   fun_prop
 
 /-- Whether a frame quantifies over a variable is polynomial-time. -/
 @[local fun_prop] private lemma binds_pt :
-    ComputableTidilyInPolyTime (fun p : ℕ × Frame => Frame.binds p.1 p.2)
+    ComputableInPolyTime (fun p : ℕ × Frame => Frame.binds p.1 p.2)
       (encPair encNat encFrame) encBool := by
   unfold Frame.binds
-  have hk : ComputableTidilyInPolyTime (fun k : QBF.Kind => (k == .ex || k == .all)) encKind
+  have hk : ComputableInPolyTime (fun k : QBF.Kind => (k == .ex || k == .all)) encKind
       encBool := of_finite _
   fun_prop
 
 /-- Whether the next variable is bound, by a search of the stack. -/
 @[local fun_prop] private lemma bound_pt :
-    ComputableTidilyInPolyTime (fun s : State => (lookup s.stack s.head.2).isSome) encState
+    ComputableInPolyTime (fun s : State => (lookup s.stack s.head.2).isSome) encState
       encBool := by
   simp only [isSome_lookup]
-  have h : ComputableTidilyInPolyTime (fun p : State × Frame => Frame.binds p.1.head.2 p.2)
+  have h : ComputableInPolyTime (fun p : State × Frame => Frame.binds p.1.head.2 p.2)
       (encPair encState encFrame) encBool :=
     binds_pt.comp (g := fun p : State × Frame => (p.1.head.2, p.2)) (by fun_prop)
   exact optionIsSome (findWithInput stack_pt h)
 
 /-- The value of the next variable, by a search of the stack. -/
 @[local fun_prop] private lemma assignment_pt :
-    ComputableTidilyInPolyTime (fun s : State => assignment s.stack s.head.2) encState encBool := by
+    ComputableInPolyTime (fun s : State => assignment s.stack s.head.2) encState encBool := by
   simp only [assignment_eq]
-  have h : ComputableTidilyInPolyTime (fun p : State × Frame => Frame.binds p.1.head.2 p.2)
+  have h : ComputableInPolyTime (fun p : State × Frame => Frame.binds p.1.head.2 p.2)
       (encPair encState encFrame) encBool :=
     binds_pt.comp (g := fun p : State × Frame => (p.1.head.2, p.2)) (by fun_prop)
   exact optionElimWithInput (findWithInput stack_pt h) (const false) (by fun_prop)
 
 /-- A step reading a token is polynomial-time. -/
 private lemma readStep_pt (k : QBF.Kind) :
-    ComputableTidilyInPolyTime (readStep k) encState encState := by
+    ComputableInPolyTime (readStep k) encState encState := by
   cases k <;> unfold readStep <;> fun_prop
 
 /-- A step returning a value is polynomial-time. -/
 private lemma retStep_pt (k : QBF.Kind) (second : Bool) :
-    ComputableTidilyInPolyTime (retStep k second) encState encState := by
+    ComputableInPolyTime (retStep k second) encState encState := by
   cases k <;> cases second <;> unfold retStep <;> fun_prop
 
 /-- **A step of the evaluator is polynomial-time** in the encoded state. -/
 theorem computableInPolyTime_step : ComputableInPolyTime step encState encState := by
-  refine .of_tidy ?_
   rw [show step = _ from funext step_eq]
-  refine cond (optionIsSome value_pt) (cond (listIsEmpty' encFrame |>.comp stack_pt) id' ?_)
-    (cond (listIsEmpty' encToken |>.comp input_pt) (by fun_prop) ?_)
+  refine ite (optionIsSome value_pt) (ite (by fun_prop) id' ?_)
+    (ite (by fun_prop) (by fun_prop) ?_)
   · exact finite_cases (tagEncoding := encPair encKind encBool)
       (tag := fun s => (s.top.token.1, s.top.first.isSome))
       (branch := fun t => retStep t.1 t.2) (by fun_prop) fun t => retStep_pt t.1 t.2
@@ -276,13 +284,13 @@ theorem computableInPolyTime_step : ComputableInPolyTime step encState encState 
       (by fun_prop) readStep_pt
 
 /-- The initial state is polynomial-time: its encoding frames the encoded formula. -/
-private lemma init_pt : ComputableTidilyInPolyTime init encQBF encState := by
-  have h : ComputableTidilyInPolyTime QBF.tokens encQBF (encList encToken) := of_eq fun _ => rfl
+private lemma init_pt : ComputableInPolyTime init encQBF encState := by
+  have h : ComputableInPolyTime QBF.tokens encQBF (encList encToken) := of_eq fun _ => rfl
   unfold init
   fun_prop
 
 /-- The answer of a state is polynomial-time. -/
-private lemma answer_pt : ComputableTidilyInPolyTime State.answer encState encBool := by
+private lemma answer_pt : ComputableInPolyTime State.answer encState encBool := by
   unfold State.answer
   fun_prop
 
@@ -340,71 +348,66 @@ the polynomial space of a step; the time charges every round
 theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF encBool
     (fun φ => 2 ^ (encQBF φ).length * ((encQBF φ).length + 1) ^ e)
     fun φ => ((encQBF φ).length + 1) ^ e := by
-  have this : ∃ e, ComputableTidilyInO evaluate encQBF encBool
-      (fun φ => 2 ^ (encQBF φ).length * ((encQBF φ).length + 1) ^ e) fun φ =>
-      ((encQBF φ).length + 1) ^ e := by
-    obtain ⟨d, e, hstep⟩ := computableInPolyTime_step.exists_degree
-    obtain ⟨d₀, e₀, hinit⟩ := init_pt.exists_degree
-    obtain ⟨d₁, e₁, hans⟩ := answer_pt.exists_degree
-    have hn := (ComputableTidilyInDegree.two_pow_length encQBF).inO_one
-    have hiter := (ComputableInO.iterate hn.computableInO hinit.inO.computableInO
-      hstep.inO
-      (R := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
-      (Q := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
-      (B := fun φ => 16 * ((encQBF φ).length + 1) ^ 2)
-      (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
-        (length_encState_le (good_iterate_step φ k)) 1) d)
-      (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
-        (length_encState_le (good_iterate_step φ k)) 1) d)
-      (fun φ k _ => length_encState_le (good_iterate_step φ k))).tidy
-    have h := hans.inO.comp hiter
-    refine ⟨2 * (d + d₀ + d₁) + 2, ?_⟩
-    refine (h.mono (17 ^ (d + d₁) * 64) (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => rfl
-    all_goals
-      simp only [encNat_two_pow, List.length_append, List.length_replicate,
-        List.length_singleton]
-      have hgood := length_encState_le (good_iterate_step φ (2 ^ (encQBF φ).length))
-      generalize step^[2 ^ (encQBF φ).length] (init φ) = s at hgood ⊢
-      generalize (encQBF φ).length = L at hgood ⊢
-      set E := 2 * (d + d₀ + d₁) + 2
-      have hP : 1 ≤ L + 1 := by omega
-      have hpow (a : ℕ) (ha : a ≤ E / 2) :
-          (16 * (L + 1) ^ 2 + 1) ^ a ≤ 17 ^ a * (L + 1) ^ E := by
-        calc (16 * (L + 1) ^ 2 + 1) ^ a ≤ (17 * (L + 1) ^ 2) ^ a :=
-              Nat.pow_le_pow_left (by linarith only [Nat.one_le_pow 2 (L + 1) hP]) a
-          _ = 17 ^ a * (L + 1) ^ (2 * a) := by rw [Nat.mul_pow, ← pow_mul]
-          _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (pow_le_pow_of_le hP (by omega))
-      have hR := hpow d (by omega)
-      have hA : ((encState s).length + 1) ^ d₁ ≤ 17 ^ d₁ * (L + 1) ^ E :=
-        (Nat.pow_le_pow_left (by omega) d₁).trans (hpow d₁ (by omega))
-      have hM1 : L + 1 ≤ (L + 1) ^ E := by
-        simpa using pow_le_pow_of_le hP (show 1 ≤ E by omega)
-      have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
-      have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
-      have hK : 17 ^ d ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
-      have hK₁ : 17 ^ d₁ ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
-      have hN : 1 ≤ 2 ^ L := Nat.one_le_two_pow
-      have hsq : (L + 1 + 1) ^ 2 ≤ 4 * (L + 1) ^ 2 := by
-        nlinarith only [Nat.zero_le L]
-      generalize (16 * (L + 1) ^ 2 + 1) ^ d = X at *
-      generalize ((encState s).length + 1) ^ d₁ = A at *
-      generalize (L + 1) ^ E = M at *
-      generalize (L + 1) ^ 2 = Q at *
-      generalize (L + 1) ^ d₀ = D at *
-      generalize 17 ^ (d + d₁) = K at *
-      generalize 2 ^ L = N at *
-      have hX : X ≤ K * M := hR.trans (Nat.mul_le_mul_right _ hK)
-      have hA' : A ≤ K * M := hA.trans (Nat.mul_le_mul_right _ hK₁)
-      have hK1 : 1 ≤ K := le_trans (Nat.one_le_pow _ _ (by norm_num)) hK
-      have hKM : M ≤ K * M := Nat.le_mul_of_pos_left _ hK1
-    · have hround : X + 16 * Q + (L + 1 + 1) ^ 2 ≤ 21 * (K * M) := by omega
-      have hrounds := Nat.mul_le_mul_left (N + 1) hround
-      have hNM : K * M ≤ N * (K * M) := Nat.le_mul_of_pos_left _ hN
-      linarith only [hM1, hM0, hKM, hA', hrounds, hNM, Nat.zero_le K,
-        Nat.zero_le (N * (K * M))]
-    · have : K * 64 * (M + 1) = 64 * (K * M) + 64 * K := by ring
-      omega
-  simpa only [computableInO_iff_computableTidilyInO] using this
+  obtain ⟨d, e, hstep⟩ := computableInPolyTime_step.exists_degree
+  obtain ⟨d₀, e₀, hinit⟩ := init_pt.exists_degree
+  obtain ⟨d₁, e₁, hans⟩ := answer_pt.exists_degree
+  have hn := (ComputableInDegree.two_pow_length encQBF).inO_one
+  have hiter := ComputableInO.iterate hn hinit.inO hstep.inO
+    (R := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
+    (Q := fun φ => (16 * ((encQBF φ).length + 1) ^ 2 + 1) ^ d)
+    (B := fun φ => 16 * ((encQBF φ).length + 1) ^ 2)
+    (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
+      (length_encState_le (good_iterate_step φ k)) 1) d)
+    (fun φ k _ => Nat.pow_le_pow_left (Nat.add_le_add_right
+      (length_encState_le (good_iterate_step φ k)) 1) d)
+    (fun φ k _ => length_encState_le (good_iterate_step φ k))
+  have h := hans.inO.comp hiter
+  refine ⟨2 * (d + d₀ + d₁) + 2, ?_⟩
+  refine (h.mono (17 ^ (d + d₁) * 64) (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => rfl
+  all_goals
+    simp only [encNat_two_pow, List.length_append, List.length_replicate,
+      List.length_singleton]
+    have hgood := length_encState_le (good_iterate_step φ (2 ^ (encQBF φ).length))
+    generalize step^[2 ^ (encQBF φ).length] (init φ) = s at hgood ⊢
+    generalize (encQBF φ).length = L at hgood ⊢
+    set E := 2 * (d + d₀ + d₁) + 2
+    have hP : 1 ≤ L + 1 := by omega
+    have hpow (a : ℕ) (ha : a ≤ E / 2) :
+        (16 * (L + 1) ^ 2 + 1) ^ a ≤ 17 ^ a * (L + 1) ^ E := by
+      calc (16 * (L + 1) ^ 2 + 1) ^ a ≤ (17 * (L + 1) ^ 2) ^ a :=
+            Nat.pow_le_pow_left (by linarith only [Nat.one_le_pow 2 (L + 1) hP]) a
+        _ = 17 ^ a * (L + 1) ^ (2 * a) := by rw [Nat.mul_pow, ← pow_mul]
+        _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (pow_le_pow_of_le hP (by omega))
+    have hR := hpow d (by omega)
+    have hA : ((encState s).length + 1) ^ d₁ ≤ 17 ^ d₁ * (L + 1) ^ E :=
+      (Nat.pow_le_pow_left (by omega) d₁).trans (hpow d₁ (by omega))
+    have hM1 : L + 1 ≤ (L + 1) ^ E := by
+      simpa using pow_le_pow_of_le hP (show 1 ≤ E by omega)
+    have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
+    have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
+    have hK : 17 ^ d ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
+    have hK₁ : 17 ^ d₁ ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
+    have hN : 1 ≤ 2 ^ L := Nat.one_le_two_pow
+    have hsq : (L + 1 + 1) ^ 2 ≤ 4 * (L + 1) ^ 2 := by
+      nlinarith only [Nat.zero_le L]
+    generalize (16 * (L + 1) ^ 2 + 1) ^ d = X at *
+    generalize ((encState s).length + 1) ^ d₁ = A at *
+    generalize (L + 1) ^ E = M at *
+    generalize (L + 1) ^ 2 = Q at *
+    generalize (L + 1) ^ d₀ = D at *
+    generalize 17 ^ (d + d₁) = K at *
+    generalize 2 ^ L = N at *
+    have hX : X ≤ K * M := hR.trans (Nat.mul_le_mul_right _ hK)
+    have hA' : A ≤ K * M := hA.trans (Nat.mul_le_mul_right _ hK₁)
+    have hK1 : 1 ≤ K := le_trans (Nat.one_le_pow _ _ (by norm_num)) hK
+    have hKM : M ≤ K * M := Nat.le_mul_of_pos_left _ hK1
+  · have hround : X + 16 * Q + (L + 1 + 1) ^ 2 ≤ 21 * (K * M) := by omega
+    have hrounds := Nat.mul_le_mul_left (N + 1) hround
+    have hNM : K * M ≤ N * (K * M) := Nat.le_mul_of_pos_left _ hN
+    linarith only [hM1, hM0, hKM, hA', hrounds, hNM, Nat.zero_le K,
+      Nat.zero_le (N * (K * M))]
+  · have : K * 64 * (M + 1) = 64 * (K * M) + 64 * K := by ring
+    omega
 
 end Cslib.Complexity.TQBF
 

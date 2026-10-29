@@ -188,12 +188,9 @@ theorem isPPTOn_sampleKeyInputsSerialized
     (hη : ComputableInPolyTime η input encUnary) :
     IsPPTOn input encSerializedKeyInputs
       (fun a => sampleKeyInputsSerialized (n a) (m a) (w a) (η a)) := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hη := hη.tidy
-  have hsecret := hw.sampleBinaryNat.replicate (.of_tidy hn)
-  have hpublicPart := hsecret.replicate (.of_tidy hm)
-  have herror := hη.sampleCenteredBinomial.replicate (.of_tidy hm)
+  have hsecret := hw.sampleBinaryNat.replicate hn
+  have hpublicPart := hsecret.replicate hm
+  have herror := (isPPTOn_sampleCenteredBinomial.preprocess hη).replicate hm
   unfold sampleKeyInputsSerialized encSerializedKeyInputs
   ppt
 
@@ -206,10 +203,7 @@ theorem isPPTOn_sampleCoinsSerialized
     (hw : ComputableInPolyTime w input encUnary) :
     IsPPTOn input encSerializedCoins
       (fun a => sampleCoinsSerialized (n a) (m a) (w a)) := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hw := hw.tidy
-  exact (((isPPTOn_uniform_bool input).replicate_bool (.of_tidy hm)).replicate
-    (.of_tidy hw)).replicate (by fun_prop)
+  exact (((isPPTOn_uniform_bool input).replicate_bool hm).replicate
+    hw).replicate (by fun_prop)
 
 end Cslib.Crypto.Homomorphic.GSW

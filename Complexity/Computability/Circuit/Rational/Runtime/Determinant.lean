@@ -463,7 +463,7 @@ theorem intBits_step_le {A F : List (List ℤ)} {b e : ℕ}
 
 /-! ### Polynomial-time certificate -/
 
-open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
+open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
 
 /-- Every stage table `stagesRows A k` has `A.length` rows. -/
 @[simp] lemma length_stagesRows (A : List (List ℤ)) (k : ℕ) :
@@ -528,23 +528,20 @@ private lemma polyBounded_stageTableBound {α : Type} {size L k : α → ℕ}
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Padding or truncating a list of rows to a square table is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_squareRows :
     ComputableInPolyTime squareRows
       (encList (encList encIntBin)) (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateTable (.of_tidy (length_list _)) (.of_tidy (length_list _))
-    (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable (length_list _) (length_list _) (by fun_prop)
 
 @[local fun_prop]
 private theorem dropUnary_list {β : Type} {encB : β ↪ List Bool} {l : α → List β} {n : α → ℕ}
-    (hl : ComputableTidilyInPolyTime l encIn (encList encB))
-    (hn : ComputableTidilyInPolyTime n encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => (l x).drop (n x)) encIn (encList encB) :=
+    (hl : ComputableInPolyTime l encIn (encList encB))
+    (hn : ComputableInPolyTime n encIn encUnary) :
+    ComputableInPolyTime (fun x => (l x).drop (n x)) encIn (encList encB) :=
   (dropUnary (encA := encB)).comp (hl.prod hn)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing the diagonal terms summed in one Bird stage is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_traceTerms {A F : α → List (List ℤ)} {i : α → ℕ}
@@ -553,13 +550,8 @@ theorem computableInPolyTime_traceTerms {A F : α → List (List ℤ)} {i : α �
     (hi : ComputableInPolyTime i encIn encUnary) :
     ComputableInPolyTime (fun x => traceTerms (A x) (F x) (i x))
       encIn (encList encIntBin) := by
-  have hA := hA.tidy
-  have hF := hF.tidy
-  have hi := hi.tidy
-  refine .of_tidy ?_
   unfold traceTerms; fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing the product terms summed in one Bird stage is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_productTerms {A F : α → List (List ℤ)} {i j : α → ℕ}
@@ -569,11 +561,6 @@ theorem computableInPolyTime_productTerms {A F : α → List (List ℤ)} {i j : 
     (hj : ComputableInPolyTime j encIn encUnary) :
     ComputableInPolyTime (fun x => productTerms (A x) (F x) (i x) (j x))
       encIn (encList encIntBin) := by
-  have hA := hA.tidy
-  have hF := hF.tidy
-  have hi := hi.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
   unfold productTerms; fun_prop
 
 /-- Computing one entry of a Bird stage is polynomial-time. -/
@@ -601,13 +588,11 @@ theorem computableInPolyTime_stagesRows {A : α → List (List ℤ)} {k : α →
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
     (hk : ComputableInPolyTime k encIn encUnary) :
     ComputableInPolyTime (fun x => stagesRows (A x) (k x))
-      encIn (encList (encList encIntBin)) := by
-  have hA := hA.tidy
-  have hk := hk.tidy
-  exact .of_tidy (iterateWith hA hk (computableInPolyTime_squareRows.tidy.comp hA)
-    computableInPolyTime_stepRows.tidy
+      encIn (encList (encList encIntBin)) :=
+  iterateWith hA hk (computableInPolyTime_squareRows.comp hA)
+    computableInPolyTime_stepRows
     (polyBounded_stageTableBound hA.polyBounded_length hk.polyBounded)
-    fun x _ hi => length_encList_stagesRows_le (A x) hi)
+    fun x _ hi => length_encList_stagesRows_le (A x) hi
 
 private lemma detRows_eq_ite (A : List (List ℤ)) :
     detRows A =

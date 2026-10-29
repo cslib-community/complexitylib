@@ -61,47 +61,56 @@ def loaded : FiniteState model 2 := { (stored.set 1 0).set 1 3 with pc := 2 }
 /-- State reached after taking the false branch to the halt instruction. -/
 def halting : FiniteState model 2 := { loaded with pc := 3 }
 
-example : FiniteState.step (M := model) 4 client (stored.set 1 0) = some (.inl loaded) := rfl
-example : FiniteState.step (M := model) 8 client (stored.set 1 0) = some (.inl loaded) := rfl
-example : FiniteState.step (M := model) 4 client loaded = some (.inl halting) := rfl
-example : FiniteState.step (M := model) 8 client halting = some (.inr 3) := rfl
+example :
+    FiniteState.step (M := model) 4 client (stored.set 1 0) = some (.inl loaded) ∧
+    FiniteState.step (M := model) 8 client (stored.set 1 0) = some (.inl loaded) ∧
+    FiniteState.step (M := model) 4 client loaded = some (.inl halting) ∧
+    FiniteState.step (M := model) 8 client halting = some (.inr 3) :=
+  ⟨rfl, rfl, rfl, rfl⟩
 
--- A valid jump beyond the program faults on the next fetch, not on the jump.
-example : FiniteState.step (M := model) 8 [.jump 5] (initial 0 0 0) =
-    some (.inl { initial 0 0 0 with pc := 5 }) := rfl
-example : FiniteState.step (M := model) 8 [.jump 5] { initial 0 0 0 with pc := 5 } = none := rfl
--- An invalid current or continuing label faults immediately.
-example : FiniteState.step (M := model) 0 [.halt 0] (initial 0 0 0) = none := rfl
-example : FiniteState.step (M := model) 4 [.jump 4] (initial 0 0 0) = none := rfl
-example : FiniteState.step (M := model) 1 [.op (.copy 0 0)] (initial 0 0 0) = none := rfl
--- Halt does not validate a successor label.
-example : FiniteState.step (M := model) 1 [.halt 0] (initial 0 0 0) = some (.inr 0) := rfl
+-- A valid jump beyond the program faults on the next fetch, not on the jump; an invalid
+-- current or continuing label faults immediately; and halt does not validate a successor label.
+example :
+    FiniteState.step (M := model) 8 [.jump 5] (initial 0 0 0) =
+      some (.inl { initial 0 0 0 with pc := 5 }) ∧
+    FiniteState.step (M := model) 8 [.jump 5] { initial 0 0 0 with pc := 5 } = none ∧
+    FiniteState.step (M := model) 0 [.halt 0] (initial 0 0 0) = none ∧
+    FiniteState.step (M := model) 4 [.jump 4] (initial 0 0 0) = none ∧
+    FiniteState.step (M := model) 1 [.op (.copy 0 0)] (initial 0 0 0) = none ∧
+    FiniteState.step (M := model) 1 [.halt 0] (initial 0 0 0) = some (.inr 0) :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 -- Address extraction and loaded/source value validation are independent failure paths.
-example : FiniteState.step (M := model) 4 [.op (.load 1 0)] (initial 4 0 0) = none := rfl
-example : FiniteState.step (M := model) 4 [.op (.load 1 0)] (initial 0 0 4) = none := rfl
-example : FiniteState.step (M := model) 4 [.op (.store 0 1)] (initial 4 0 0) = none := rfl
-example : FiniteState.step (M := model) 4 [.op (.store 0 1)] (initial 0 4 0) = none := rfl
-example : FiniteState.step (M := model) 4 [.op (.copy 0 1)] (initial 0 4 0) = none := rfl
-example : FiniteState.step (M := model) 4 [.halt 1] (initial 0 4 0) = none := rfl
-example : FiniteState.step (M := model) 4 [.op (.const 1 4)] (initial 0 0 0) = none := rfl
-example : FiniteState.step (M := model) 4 [.op (.alu () 1 ![0, 1])] (initial 2 2 0) = none := rfl
+example :
+    FiniteState.step (M := model) 4 [.op (.load 1 0)] (initial 4 0 0) = none ∧
+    FiniteState.step (M := model) 4 [.op (.load 1 0)] (initial 0 0 4) = none ∧
+    FiniteState.step (M := model) 4 [.op (.store 0 1)] (initial 4 0 0) = none ∧
+    FiniteState.step (M := model) 4 [.op (.store 0 1)] (initial 0 4 0) = none ∧
+    FiniteState.step (M := model) 4 [.op (.copy 0 1)] (initial 0 4 0) = none ∧
+    FiniteState.step (M := model) 4 [.halt 1] (initial 0 4 0) = none ∧
+    FiniteState.step (M := model) 4 [.op (.const 1 4)] (initial 0 0 0) = none ∧
+    FiniteState.step (M := model) 4 [.op (.alu () 1 ![0, 1])] (initial 2 2 0) = none :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 -- False advances; a failed test faults. These cannot share a Boolean-only handler.
-example : FiniteState.step (M := model) 4 [.branch (.test () ![0, 1]) 0] (initial 0 1 0) =
-    some (.inl (initial 0 1 0)) := rfl
-example : FiniteState.step (M := model) 4 [.branch (.test () ![0, 1]) 0] (initial 2 1 0) =
-    some (.inl { initial 2 1 0 with pc := 1 }) := rfl
-example : FiniteState.step (M := model) 4 [.branch (.test () ![0, 1]) 0]
-    (initial 0 4 0) = none := rfl
+example :
+    FiniteState.step (M := model) 4 [.branch (.test () ![0, 1]) 0] (initial 0 1 0) =
+      some (.inl (initial 0 1 0)) ∧
+    FiniteState.step (M := model) 4 [.branch (.test () ![0, 1]) 0] (initial 2 1 0) =
+      some (.inl { initial 2 1 0 with pc := 1 }) ∧
+    FiniteState.step (M := model) 4 [.branch (.test () ![0, 1]) 0]
+      (initial 0 4 0) = none :=
+  ⟨rfl, rfl, rfl⟩
 
 -- A model may distinguish admissible produced values from legal moves.
 /-- A model where produced values can be admissible although all moves fail. -/
 abbrev rejectMoves : Model := { model with validMove := fun _ _ => false }
 private def noMoves : FiniteState rejectMoves 1 := ⟨0, ![0], 0, ∅⟩
-example : FiniteState.step (M := rejectMoves) 4 [.op (.const 0 2)] noMoves =
-    some (.inl { noMoves.set 0 2 with pc := 1 }) := rfl
-example : FiniteState.step (M := rejectMoves) 4 [.op (.copy 0 0)] noMoves = none := rfl
+example :
+    FiniteState.step (M := rejectMoves) 4 [.op (.const 0 2)] noMoves =
+      some (.inl { noMoves.set 0 2 with pc := 1 }) ∧
+    FiniteState.step (M := rejectMoves) 4 [.op (.copy 0 0)] noMoves = none :=
+  ⟨rfl, rfl⟩
 
 -- Empty register tuples are permitted when no instruction needs a register.
 example : FiniteState.step (M := model) 4 ([.jump 0] : Program model 0) ⟨0, Fin.elim0, 0, ∅⟩ =
@@ -125,7 +134,7 @@ noncomputable def clientCertificate :
 
 /-- One finite native machine implements the fixed client across all runtime configurations. -/
 theorem client_step_inO :
-    ComputableTidilyInO (fun q : ℕ × FiniteState model 2 => FiniteState.step q.1 client q.2)
+    ComputableInO (fun q : ℕ × FiniteState model 2 => FiniteState.step q.1 client q.2)
       (FiniteState.inputEncoding encoding) (FiniteState.resultEncoding encoding)
       (FiniteState.stepTime encoding nativePrimitives client)
       (FiniteState.stepSpace encoding nativePrimitives client) :=
@@ -136,7 +145,7 @@ and invalid `k = 0`) without fixing the configuration in its transition table. -
 theorem uniform_machine_across_configs :
     ∃ (c k : ℕ) (State : Type) (_ : Finite State) (tm : Turing.MultiTapeTM k Bool State),
       (∀ q : ℕ × FiniteState model 2,
-        tm.ComputesTidilyInTimeAndSpace
+        tm.ComputesInTimeAndSpace
           (FiniteState.inputEncoding encoding q)
           (FiniteState.resultEncoding encoding (FiniteState.step q.1 client q.2))
           (c * (FiniteState.stepTime encoding nativePrimitives client q + 1))
@@ -147,15 +156,16 @@ theorem uniform_machine_across_configs :
   obtain ⟨c, ⟨k, State, hfin, tm, htm⟩, _⟩ := client_step_inO
   exact ⟨c, k, State, hfin, tm, htm, rfl, rfl, rfl⟩
 
-/-- Encoded finite-state length is bounded by control, register bound, default, and store size. -/
-example (s : FiniteState model 2) {b : ℕ} (hb : ∀ i, (encNat (s.regs i)).length ≤ b) :
-    (FiniteState.encoding encoding s).length ≤
-      2 * (encNat s.pc).length + 2 * 2 * (2 * b + 1) +
-        2 * (encNat s.default).length +
-        (SparseMemory.entries s.memory).length *
-          (4 * SparseMemory.maxKeyLength encNat s.memory +
-            2 * SparseMemory.maxValueLength encNat s.memory + 3) + 3 :=
-  FiniteState.length_encoding_le encoding s hb
+/-- Encoded finite-state length on `stored` is bounded by control, register bound, default, and
+store size. -/
+example :
+    (FiniteState.encoding encoding stored).length ≤
+      2 * (encNat stored.pc).length + 2 * 2 * (2 * 2 + 1) +
+        2 * (encNat stored.default).length +
+        (SparseMemory.entries stored.memory).length *
+          (4 * SparseMemory.maxKeyLength encNat stored.memory +
+            2 * SparseMemory.maxValueLength encNat stored.memory + 3) + 3 :=
+  FiniteState.length_encoding_le encoding stored (by decide)
 
 /-- Primitive bundle whose constant certificate carries an exponential resource bound `2 ^ k`. -/
 noncomputable def expPrimitives : model.NativePrimitives encoding where
@@ -220,32 +230,28 @@ def clientLoaded : FiniteState model 2 := { stored.set 1 3 with pc := 2 }
 /-- State reached after taking the false branch to the halt instruction. -/
 def clientHalting : FiniteState model 2 := { clientLoaded with pc := 3 }
 
-example : FiniteState.run (M := model) 4 client 0 (initial 0 3 0) =
-    some (.inl (initial 0 3 0)) := rfl
-example : FiniteState.run (M := model) 4 client 1 (initial 0 3 0) =
-    some (.inl stored) := rfl
-example : FiniteState.run (M := model) 4 client 2 (initial 0 3 0) =
-    some (.inl clientLoaded) := rfl
-example : FiniteState.run (M := model) 4 client 3 (initial 0 3 0) =
-    some (.inl clientHalting) := rfl
-example : FiniteState.run (M := model) 4 client 4 (initial 0 3 0) =
-    some (.inr 3) := rfl
-example : FiniteState.run (M := model) 4 client 5 (initial 0 3 0) =
-    some (.inr 3) := rfl
-example : FiniteState.eval (M := model) 4 client 3 (initial 0 3 0) = none := rfl
-example : FiniteState.eval (M := model) 4 client 4 (initial 0 3 0) = some 3 := rfl
-example : FiniteState.eval (M := model) 4 client 5 (initial 0 3 0) = some 3 := rfl
-example : FiniteState.run (M := model) 2 client 1 (initial 0 3 0) = none := rfl
+example :
+    FiniteState.run (M := model) 4 client 0 (initial 0 3 0) = some (.inl (initial 0 3 0)) ∧
+    FiniteState.run (M := model) 4 client 1 (initial 0 3 0) = some (.inl stored) ∧
+    FiniteState.run (M := model) 4 client 2 (initial 0 3 0) = some (.inl clientLoaded) ∧
+    FiniteState.run (M := model) 4 client 3 (initial 0 3 0) = some (.inl clientHalting) ∧
+    FiniteState.run (M := model) 4 client 4 (initial 0 3 0) = some (.inr 3) ∧
+    FiniteState.run (M := model) 4 client 5 (initial 0 3 0) = some (.inr 3) ∧
+    FiniteState.eval (M := model) 4 client 3 (initial 0 3 0) = none ∧
+    FiniteState.eval (M := model) 4 client 4 (initial 0 3 0) = some 3 ∧
+    FiniteState.eval (M := model) 4 client 5 (initial 0 3 0) = some 3 ∧
+    FiniteState.run (M := model) 2 client 1 (initial 0 3 0) = none :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 -- Finite multi-step runs refine operational `Executes` and bound sparse-memory growth.
-example : ∃ m ≤ 4, Executes (M := model) 4 client (initial 0 3 0).denote 3 m :=
-  FiniteState.executes_of_run_eq_inr (M := model) (k := 4) (p := client) (n := 4)
-    (s := initial 0 3 0) rfl
-
-example {k t : ℕ} {s s' : FiniteState model 2}
-    (h : FiniteState.run k client t s = some (.inl s')) :
-    (SparseMemory.entries s'.memory).length ≤ (SparseMemory.entries s.memory).length + t :=
-  FiniteState.length_entries_run_le h
+example :
+    (∃ m ≤ 4, Executes (M := model) 4 client (initial 0 3 0).denote 3 m) ∧
+    (SparseMemory.entries stored.memory).length ≤
+      (SparseMemory.entries (initial 0 3 0).memory).length + 1 :=
+  ⟨FiniteState.executes_of_run_eq_inr (M := model) (k := 4) (p := client) (n := 4)
+    (s := initial 0 3 0) rfl,
+   FiniteState.length_entries_run_le
+    (rfl : FiniteState.run (M := model) 4 client 1 (initial 0 3 0) = some (.inl stored))⟩
 
 /-- `runTime` and `runSpace` dominate every active intermediate step's `stepTime` and `stepSpace`,
 preserving nonpolynomial primitive bounds across multi-step runs. -/
@@ -264,8 +270,6 @@ theorem retained_exponential_run_bound (k : ℕ) (hk : 1 ≤ k) :
       (FiniteState.le_runSpace_of_run_eq_inl encoding expPrimitives
         [.op (.const 0 1)] (Nat.zero_le 1) hrun)⟩
 
-open Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
 /-- Six-instruction program that sets register `0` to `0`, stores its input `x` (initially in
 register `1`) at sparse address `0`, loads it back into register `0`, adds registers `0` and `1`
 via the model ALU, branches to the halt label, and returns `x + x`. -/
@@ -281,13 +285,13 @@ def doubleInit (x : ℕ) : FiniteState model 2 :=
 noncomputable def doubleInitCert :
     NativeCertificate doubleInit encNat (FiniteState.encoding encoding) :=
   FiniteState.initConstCertificate (r := 2) encoding
-    (NativeCertificate.linear (.of_tidy ComputableTidilyInDegree.id'.inO_one))
+    (NativeCertificate.linear ComputableInDegree.id'.inO_one)
     (NativeCertificate.const 0)
     (NativeCertificate.const ∅)
 
 theorem doubleInitCert_isPolynomial : doubleInitCert.IsPolynomial :=
   FiniteState.initConstCertificate_isPolynomial (r := 2) encoding _ _ _
-    (NativeCertificate.linear_isPolynomial (.of_tidy ComputableTidilyInDegree.id'.inO_one))
+    (NativeCertificate.linear_isPolynomial ComputableInDegree.id'.inO_one)
     (NativeCertificate.const_isPolynomial 0)
     (NativeCertificate.const_isPolynomial ∅)
 
@@ -296,16 +300,16 @@ theorem doubleInitCert_isPolynomial : doubleInitCert.IsPolynomial :=
 def doubleConfig (x : ℕ) : ℕ := (x + x) + 6
 
 theorem doubleConfig_polyTime :
-    ComputableTidilyInPolyTime doubleConfig encNat encNat := by
-  have hid := of_eq (encIn := encNat) fun _ => rfl
-  exact binary_add.comp ((binary_add.comp (hid.prod hid)).prod (const 6))
+    ComputableInPolyTime doubleConfig encNat encNat := by
+  unfold doubleConfig
+  fun_prop
 
 /-- Native certificate for `doubleConfig`. -/
 noncomputable def doubleConfigCert : NativeCertificate doubleConfig encNat encNat :=
-  .ofPolyTime (.of_tidy doubleConfig_polyTime)
+  .ofPolyTime doubleConfig_polyTime
 
 theorem doubleConfigCert_isPolynomial : doubleConfigCert.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial (.of_tidy doubleConfig_polyTime)
+  NativeCertificate.ofPolyTime_isPolynomial doubleConfig_polyTime
 
 /-- Constant step budget `6` for `doubleProgram`. -/
 noncomputable def doubleStepsCert : NativeCertificate (fun _ : ℕ => 6) encNat encNat :=
@@ -345,27 +349,27 @@ noncomputable def doubleTransportCert :
   FiniteState.transportCertificate encoding nativePrimitives doubleProgram
     doubleStepsCert doubleConfigCert doubleInitCert doubleProgram_executes
 
-/-- Whole-run explicit `ComputableTidilyInO` bound transported from `doubleProgram`. -/
+/-- Whole-run explicit `ComputableInO` bound transported from `doubleProgram`. -/
 theorem double_inO :
-    ComputableTidilyInO (fun x : ℕ => x + x) encNat encNat
+    ComputableInO (fun x : ℕ => x + x) encNat encNat
       doubleTransportCert.time doubleTransportCert.space :=
   FiniteState.transport_inO encoding nativePrimitives doubleProgram
     doubleStepsCert doubleConfigCert doubleInitCert doubleProgram_executes
 
-/-- Automatic `ComputableTidilyInPolyTime` transport for `doubleProgram` via
+/-- Automatic `ComputableInPolyTime` transport for `doubleProgram` via
 `FiniteState.transport_polyTime_of_le_const`. -/
 theorem double_polyTime :
-    ComputableTidilyInPolyTime (fun x : ℕ => x + x) encNat encNat :=
+    ComputableInPolyTime (fun x : ℕ => x + x) encNat encNat :=
   FiniteState.transport_polyTime_of_le_const encoding nativePrimitives doubleProgram
     doubleStepsCert doubleConfigCert doubleInitCert doubleProgram_executes
     nativePrimitives_isPolynomial
     doubleStepsCert_isPolynomial doubleConfigCert_isPolynomial doubleInitCert_isPolynomial
     6 (fun _ => le_rfl)
 
-/-- Automatic `ComputableTidilyInPolyTime` single-step simulation for `doubleProgram` via
+/-- Automatic `ComputableInPolyTime` single-step simulation for `doubleProgram` via
 `FiniteState.step_polyTime`. -/
 theorem double_step_polyTime :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun q : ℕ × FiniteState model 2 => FiniteState.step q.1 doubleProgram q.2)
       (FiniteState.inputEncoding encoding) (FiniteState.resultEncoding encoding) :=
   FiniteState.step_polyTime encoding nativePrimitives doubleProgram nativePrimitives_isPolynomial
@@ -395,13 +399,13 @@ noncomputable def wordDoubleInitCert :
     NativeCertificate wordDoubleInit encNat
       (FiniteState.encoding Cslib.WordRAM.Basis.standard.encoding) :=
   FiniteState.initConstCertificate (r := 2) Cslib.WordRAM.Basis.standard.encoding
-    (NativeCertificate.linear (.of_tidy ComputableTidilyInDegree.id'.inO_one))
+    (NativeCertificate.linear ComputableInDegree.id'.inO_one)
     (NativeCertificate.const 0)
     (NativeCertificate.const ∅)
 
 theorem wordDoubleInitCert_isPolynomial : wordDoubleInitCert.IsPolynomial :=
   FiniteState.initConstCertificate_isPolynomial (r := 2) Cslib.WordRAM.Basis.standard.encoding _ _ _
-    (NativeCertificate.linear_isPolynomial (.of_tidy ComputableTidilyInDegree.id'.inO_one))
+    (NativeCertificate.linear_isPolynomial ComputableInDegree.id'.inO_one)
     (NativeCertificate.const_isPolynomial 0)
     (NativeCertificate.const_isPolynomial ∅)
 
@@ -409,9 +413,9 @@ theorem wordDoubleInitCert_isPolynomial : wordDoubleInitCert.IsPolynomial :=
 def wordDoubleWidth (x : ℕ) : ℕ := x.size + 2
 
 theorem wordDoubleWidth_polyTime :
-    ComputableInPolyTime wordDoubleWidth encNat encUnary :=
-  .of_tidy <| ComputableTidilyInPolyTime.unary_add.comp
-    (ComputableInPolyTime.binary_size.tidy.prod (ComputableTidilyInPolyTime.const 2))
+    ComputableInPolyTime wordDoubleWidth encNat encUnary := by
+  unfold wordDoubleWidth
+  fun_prop
 
 /-- Native certificate for `wordDoubleWidth`. -/
 noncomputable def wordDoubleWidthCert : NativeCertificate wordDoubleWidth encNat encUnary :=

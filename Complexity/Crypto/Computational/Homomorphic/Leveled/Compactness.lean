@@ -107,12 +107,11 @@ theorem exists_decrypt_circuits :
               (BitString.ofList ((3 * secretWidth n + 1) + (ciphertextWidth n + 1))
                 (sk ++ ciphertext)) 0 =
             (scheme D budget).decrypt n sk ciphertext := by
-  have hdecrypt : ComputableTidilyInPolyTime
+  have hdecrypt : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => decrypt D p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBool := by
-    apply ComputableInPolyTime.tidy
     apply computableInPolyTime_decrypt D hD <;> fun_prop
-  obtain ⟨L, hL, hdecryptL⟩ := Boolean.PPoly.exists_of_polyTime (.of_tidy hdecrypt)
+  obtain ⟨L, hL, hdecryptL⟩ := Boolean.PPoly.exists_of_polyTime hdecrypt
   obtain ⟨c, p, hp, hc⟩ := Boolean.mem_PPoly_iff_exists_circuits.mp hL
   let K := fun n => 3 * secretWidth n + 1
   let C := fun n => ciphertextWidth n + 1
@@ -165,49 +164,52 @@ theorem exists_uniform_decrypt_circuits
             (BitString.ofList ((3 * secretWidth n + 1) + (ciphertextWidth n + 1))
               (sk ++ ciphertext)) 0 =
           (scheme D budget).decrypt n sk ciphertext := by
-  have hview : ComputableTidilyInPolyTime
+  have hview : ComputableInPolyTime
       (fun c : Σ m, Circuit Boolean.signature m 1 => (c.1, c.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
-  have htotal : ComputableTidilyInPolyTime
+  have htotal : ComputableInPolyTime
       (fun n => secretWidth n + ciphertextWidth n) encUnary encUnary :=
-    hview.fst'.comp hD.tidy
-  have hsec : ComputableTidilyInPolyTime secretWidth encUnary encUnary := hsecret.tidy
-  have hciph : ComputableTidilyInPolyTime ciphertextWidth encUnary encUnary := by
+    hview.fst'.comp hD
+  have hciph : ComputableInPolyTime ciphertextWidth encUnary encUnary := by
     simpa only [Nat.add_sub_cancel_left] using
-      (show ComputableTidilyInPolyTime
+      (show ComputableInPolyTime
         (fun n => (secretWidth n + ciphertextWidth n) - secretWidth n) encUnary encUnary by
         fun_prop)
   let K := fun n => 3 * secretWidth n + 1
   let W := fun n => K n + (ciphertextWidth n + 1)
-  have hK : ComputableTidilyInPolyTime K encUnary encUnary := by dsimp [K]; fun_prop
-  have hW : ComputableTidilyInPolyTime W encUnary encUnary := by dsimp [W]; fun_prop
+  have hK : ComputableInPolyTime K encUnary encUnary := by dsimp [K]; fun_prop
+  have hW : ComputableInPolyTime W encUnary encUnary := by dsimp [W]; fun_prop
   let decryptConcat (p : ℕ × List Bool) : Bool :=
     decrypt D p.1 (p.2.take (K p.1)) (p.2.drop (K p.1))
   have hdecryptConcat : ComputableInPolyTime decryptConcat (encPair encUnary encBits) encBool := by
-    have hklen : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => K p.1)
+    have hklen : ComputableInPolyTime (fun p : ℕ × List Bool => K p.1)
         (encPair encUnary encBits) encUnary :=
-      hK.comp (ComputableTidilyInPolyTime.fst encUnary encBits)
-    have hw : ComputableTidilyInPolyTime (Prod.snd : ℕ × List Bool → List Bool)
+      hK.comp (ComputableInPolyTime.fst encUnary encBits)
+    have hw : ComputableInPolyTime (Prod.snd : ℕ × List Bool → List Bool)
         (encPair encUnary encBits) encBits :=
-      ComputableTidilyInPolyTime.snd encUnary encBits
+      ComputableInPolyTime.snd encUnary encBits
     exact computableInPolyTime_decrypt D hD
-      (.of_tidy (ComputableTidilyInPolyTime.fst encUnary encBits))
-      (.of_tidy (ComputableTidilyInPolyTime.bitsTakeWithInput hw hklen))
-      (.of_tidy (ComputableTidilyInPolyTime.bitsDropWithInput hw hklen))
+      (ComputableInPolyTime.fst encUnary encBits)
+      (ComputableInPolyTime.bitsTakeWithInput hw hklen)
+      (ComputableInPolyTime.bitsDropWithInput hw hklen)
   let F (p : ℕ × List Bool) : List Bool := [decryptConcat p]
   have hF : ComputableInPolyTime F (encPair encUnary encBits) encBits :=
-    .of_tidy (hdecryptConcat.tidy.of_enc_eq fun _ => rfl)
+    hdecryptConcat.of_enc_eq fun _ => rfl
   obtain ⟨circuits, hcode, hcorrect⟩ :=
     Complexity.CircuitValue.exists_uniformCircuitFamily
-      (n := W) (m := fun _ => 1) (.of_tidy hW) (by fun_prop) hF
+      (n := W) (m := fun _ => 1) hW (by fun_prop) hF
   have hgen : ComputableInPolyTime
       (fun n => (⟨W n, circuits n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1) :=
-    .of_tidy ((hW.prod hcode.tidy).of_enc_eq fun n => by simp only [Boolean.encCircuit_apply])
+    (hW.prod hcode).of_enc_eq fun n => by simp only [Boolean.encCircuit_apply]
   have hsize : PolynomiallyBounded (fun n => (circuits n).size) := by
+    have hlen_unary : ComputableInPolyTime (fun n => (circuits n).code.1.length)
+        encUnary encUnary :=
+      (ComputableInPolyTime.length_list Boolean.encGate).comp hcode.fst'
     have hlength : PolynomiallyBounded (fun n => (circuits n).code.1.length) :=
-      ((ComputableTidilyInPolyTime.length_list Boolean.encGate).comp
-        hcode.tidy.fst').polynomiallyBounded
+      (show PolyBounded (fun n : ℕ => n) (fun n => (circuits n).code.1.length) by
+        simpa only [encUnary_apply, List.length_replicate] using
+          hlen_unary.polyBounded_length).polynomiallyBounded
     exact hlength.mono_of_le fun n => (Circuit.length_code_fst (circuits n)).ge
   refine ⟨circuits, hgen, hsize, ?_⟩
   intro budget n sk ciphertext hsk hciphertext
