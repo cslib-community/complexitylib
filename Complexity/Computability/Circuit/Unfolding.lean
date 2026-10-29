@@ -36,6 +36,10 @@ depth are formulas of logarithmic depth and polynomial size [Jukna, Chapter 6][J
   as deep as the output, so no deeper than the circuit.
 * `Cslib.Circuits.Circuit.size_toFormula_lt`: under bounded fan-in, its size is at most exponential
   in the depth of the circuit.
+* `Cslib.Circuits.Program.gateFormula_eq_lines`,
+  `Cslib.Circuits.Program.exists_wireFormula_eq_of_eq_gate`: the formula of a gate is its operation
+  applied to the formulas of the wires it reads, so the formulas of the wires are closed under
+  taking arguments.
 
 ## References
 
@@ -88,6 +92,34 @@ wires. -/
 @[simp] theorem Program.wireFormula_gate_castSucc (p : Program σ n g) (line : Line σ n g)
     (w : Wire n g) : (p.gate line).wireFormula w.castSucc = p.wireFormula w := by
   cases w <;> simp
+
+/-- The formula of a gate is its operation applied to the formulas of the wires its line reads. -/
+theorem Program.gateFormula_eq_lines (p : Program σ n g) (k : Fin g) :
+    p.gateFormula k = .gate (p.lines k).op fun a => p.wireFormula ((p.lines k).wires a) := by
+  induction p with
+  | empty => exact k.elim0
+  | @gate g p line ih =>
+    induction k using Fin.lastCases with
+    | last =>
+      rw [gateFormula_gate_last, lines_gate_last]
+      simp only [Line.mapWires_op, Line.mapWires_wires, Wire.Renaming.castSucc_apply,
+        wireFormula_gate_castSucc]
+    | cast k =>
+      rw [gateFormula_gate_castSucc, ih, lines_gate_castSucc]
+      simp only [Line.mapWires_op, Line.mapWires_wires, Wire.Renaming.castSucc_apply,
+        wireFormula_gate_castSucc]
+
+/-- The arguments of the root of the formula of a wire are formulas of wires: the formulas of the
+wires of a program are closed under taking arguments. -/
+theorem Program.exists_wireFormula_eq_of_eq_gate (p : Program σ n g) {w : Wire n g} {op : σ.Op}
+    {args : Fin (σ.Arity op) → Formula σ n} (h : p.wireFormula w = .gate op args)
+    (j : Fin (σ.Arity op)) : ∃ w', p.wireFormula w' = args j := by
+  cases w with
+  | input i => cases h
+  | gate k =>
+    rw [wireFormula_gate, gateFormula_eq_lines] at h
+    cases h
+    exact ⟨_, rfl⟩
 
 /-- The formula of a gate computes the gate. -/
 @[simp] theorem Program.eval_gateFormula (I : Interpretation σ U) (p : Program σ n g)
