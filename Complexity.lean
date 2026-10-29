@@ -103,6 +103,11 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.Karger.Contract
+public import Complexity.Algorithms.WordRAM.Karger.FastCut
+public import Complexity.Algorithms.WordRAM.Karger.Graph
+public import Complexity.Algorithms.WordRAM.KargerMinCut
+public import Complexity.Algorithms.WordRAM.KargerStein
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Controller
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Copy
@@ -114,11 +119,6 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Heade
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Input
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Stage
-public import Complexity.Algorithms.WordRAM.Karger.Contract
-public import Complexity.Algorithms.WordRAM.Karger.FastCut
-public import Complexity.Algorithms.WordRAM.Karger.Graph
-public import Complexity.Algorithms.WordRAM.KargerMinCut
-public import Complexity.Algorithms.WordRAM.KargerStein
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
