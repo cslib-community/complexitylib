@@ -416,8 +416,8 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 - **Native distinct-position frontend** ([#1482]): initialized signed input produces exact
   compact root descriptors, with derived logarithmic width and uniform
-  `Oκ((n+1) log²(n+2))` charged cost. Full preprocessing still needs heavy-extraction and
-  packed-node integration, recursive traversal, packed output and global width/time composition.
+  `Oκ((n+1) log²(n+2))` charged cost. This frontend is composed into the complete native
+  preprocessing and the conditional ordinary host described below.
 - **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
   with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
   The current interpreter has a stronger polynomial certificate and a streaming input lookup;
@@ -475,10 +475,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   shared encodings and pruned-evaluation core ([#1459](https://github.com/cslib-community/complexitylib/issues/1459)) include exact visited-leaf and passed-set
   bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
   ([#1463](https://github.com/cslib-community/complexitylib/issues/1463)) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
-  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. It still
-  needs native tensor/sparse-query programs, native fast-backend composition, the reduction
-  host, the fast Exact Triangle solver and full
-  input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
+  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. Complete
+  native preprocessing and the conditional ordinary host with an exhaustive reference callee
+  are available. Native pruned/sparse-query backend composition, a concrete fast Exact Triangle solver
+  and the unconditional fast input/time/width/asymptotic bound remain, including the improved
+  Section 4 route to exponent 1.9992;
   size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
