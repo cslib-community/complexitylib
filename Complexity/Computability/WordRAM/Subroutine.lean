@@ -328,7 +328,7 @@ def mapSimulates (φ : B.Simulates B') (C : SubroutineBase P Result valid w base
 /-- Project a `.standard`-basis `SubroutineBase` to a standalone `DynamicProgram`. -/
 def toDynamicProgram {P_std : SubroutineCode .standard r_ds k_init}
     (C : SubroutineBase P_std Result valid w base params s₀) :
-    DynamicProgram { State := Empty, Op := O, Result := Result, step := Empty.elim } r_ds where
+    DynamicProgram ⟨O, Result⟩ r_ds where
   code := P_std.code
   output := P_std.output
   input := P_std.input
@@ -626,14 +626,6 @@ section Standard
 
 variable {P_std : SubroutineCode .standard r_ds k_init}
   (C : SubroutineDS P_std D w base params s₀)
-
-/-- Project a `.standard`-basis `SubroutineDS` to its underlying standalone `DynamicProgram`. -/
-def toDynamicProgram : DynamicProgram D r_ds where
-  code := P_std.code
-  output := P_std.output
-  input := P_std.input
-  encode := C.encode
-  decode := C.decode
 
 /-- Project a `.standard`-basis `SubroutineDS` to a standalone `DynamicCertificate`. -/
 def toCertificate : DynamicCertificate C.toDynamicProgram w where
