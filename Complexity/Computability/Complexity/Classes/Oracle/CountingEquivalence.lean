@@ -67,16 +67,16 @@ theorem PWithPPOracle_subset_PWithSharpPOracle :
   obtain ⟨f, hf, p, hp⟩ := exists_SharpP_testBit_of_mem_PP hB
   let request : List Bool → List Bool :=
     fun w => encPair encBits encNat (w, p.eval w.length)
-  have hrequest : ComputableTidilyInPolyTime request encBits encBits :=
-    ComputableTidilyInPolyTime.encoded
-      (ComputableTidilyInPolyTime.id'.prod
-        (ComputableTidilyInPolyTime.unary_to_binary.comp
-          (by fun_prop : ComputableTidilyInPolyTime
+  have hrequest : ComputableInPolyTime request encBits encBits :=
+    ComputableInPolyTime.encoding_comp
+      (ComputableInPolyTime.id'.prod
+        (ComputableInPolyTime.unary_to_binary.comp
+          (by fun_prop : ComputableInPolyTime
             (fun w : List Bool => p.eval w.length) encBits encUnary)))
   let handler : Unit × List Bool → WordQueryComp Unit (List Bool) :=
     fun q => List.take 1 <$> OracleComp.query ((), request q.2)
   refine ⟨β, encβ, f, hf, fun a => OracleComp.interpret handler (program a),
-    hprogram.interpret_bitQueries hrequest, fun A hA a => ?_⟩
+    hprogram.interpret_bitQueries hrequest.tidy, fun A hA a => ?_⟩
   let B' : Set (List Bool) := request ⁻¹' A
   have hB' : ∀ b, encβ b ∈ B' ↔ b ∈ B := fun b =>
     (hA b (p.eval (encβ b).length)).trans (hp b).symm

@@ -29,39 +29,41 @@ def medianFirst : BinaryTree Nat := build [4, 2, 6, 1, 3, 5, 7]
 def sortedFirst : BinaryTree Nat := build [1, 2, 3, 4, 5, 6, 7]
 
 -- Deleting the root replaces it by its successor, the leftmost key of the right subtree.
-example : erase 4 medianFirst =
-    .node 5 (.node 2 (.node 1 .nil .nil) (.node 3 .nil .nil)) (.node 6 .nil (.node 7 .nil .nil)) :=
-  rfl
-example : elements (erase 4 medianFirst) = {1, 2, 3, 5, 6, 7} := by decide
-example : elements (erase 4 medianFirst) = (elements medianFirst).erase 4 :=
-  elements_erase (ordered_build _) 4
-example : Ordered (erase 4 medianFirst) := ordered_erase (ordered_build _) 4
-example : eraseVisits 4 medianFirst = 3 := rfl
+example :
+    erase 4 medianFirst =
+        .node 5 (.node 2 (.node 1 .nil .nil) (.node 3 .nil .nil))
+          (.node 6 .nil (.node 7 .nil .nil)) ∧
+      elements (erase 4 medianFirst) = {1, 2, 3, 5, 6, 7} ∧
+      elements (erase 4 medianFirst) = (elements medianFirst).erase 4 ∧
+      Ordered (erase 4 medianFirst) ∧
+      eraseVisits 4 medianFirst = 3 :=
+  ⟨rfl, by decide, elements_erase (ordered_build _) 4, ordered_erase (ordered_build _) 4, rfl⟩
 
--- On the right spine, deletion walks the search path plus one successor visit.
-example : eraseVisits 4 sortedFirst = 5 := rfl
-example : eraseVisits 7 sortedFirst = 7 := rfl
-example : (erase 4 sortedFirst).height = 6 := rfl
-example : (erase 7 sortedFirst).height = 6 := rfl
-example : contains 4 (erase 4 sortedFirst) = false := rfl
-example : contains 5 (erase 4 sortedFirst) = true := rfl
+-- On the right spine, deletion walks the search path plus one successor visit; a leaf or a node
+-- without a right subtree is spliced out directly.
+example :
+    eraseVisits 4 sortedFirst = 5 ∧
+      eraseVisits 7 sortedFirst = 7 ∧
+      (erase 4 sortedFirst).height = 6 ∧
+      (erase 7 sortedFirst).height = 6 ∧
+      contains 4 (erase 4 sortedFirst) = false ∧
+      contains 5 (erase 4 sortedFirst) = true ∧
+      erase 1 medianFirst =
+        .node 4 (.node 2 .nil (.node 3 .nil .nil))
+          (.node 6 (.node 5 .nil .nil) (.node 7 .nil .nil)) ∧
+      erase 5 (build [5]) = .nil ∧
+      erase 5 (build [5, 3]) = .node 3 .nil .nil :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
--- A leaf or a node without a right subtree is spliced out directly.
-example : erase 1 medianFirst =
-    .node 4 (.node 2 .nil (.node 3 .nil .nil)) (.node 6 (.node 5 .nil .nil) (.node 7 .nil .nil)) :=
-  rfl
-example : erase 5 (build [5]) = .nil := rfl
-example : erase 5 (build [5, 3]) = .node 3 .nil .nil := rfl
-
--- Deleting an absent key preserves shape as well as contents, including on the empty tree.
-example : erase 8 medianFirst = medianFirst := rfl
-example : erase 8 medianFirst = medianFirst := erase_eq_of_notMem (by decide)
-example : erase 0 (.nil : BinaryTree Nat) = .nil := rfl
-example : eraseVisits 8 sortedFirst = 7 := rfl
-
--- Deletion followed by reinsertion restores the set, though not necessarily the shape.
-example : elements (insert 4 (erase 4 medianFirst)) = elements medianFirst := by decide
-example : insert 4 (erase 4 medianFirst) ≠ medianFirst := by decide
+-- Deleting an absent key preserves shape as well as contents, and deletion followed by reinsertion
+-- restores the set without necessarily restoring the tree shape.
+example :
+    erase 8 medianFirst = medianFirst ∧
+      erase 0 (.nil : BinaryTree Nat) = .nil ∧
+      eraseVisits 8 sortedFirst = 7 ∧
+      elements (insert 4 (erase 4 medianFirst)) = elements medianFirst ∧
+      insert 4 (erase 4 medianFirst) ≠ medianFirst :=
+  ⟨erase_eq_of_notMem (by decide), rfl, rfl, by decide, by decide⟩
 
 /--
 info: 'Cslib.Algorithms.Lean.SearchTree.eraseVisits_le_height' depends on axioms: [propext, Quot.sound]

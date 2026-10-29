@@ -97,7 +97,7 @@ variable {α β : Type} {enc : α ↪ List Bool} {output : β ↪ List Bool} {A 
 theorem compl_mem_PWithOracle {L : Set α} (hL : L ∈ PWithOracle A enc) :
     Lᶜ ∈ PWithOracle A enc := by
   obtain ⟨f, hf, hL⟩ := hL
-  refine ⟨fun a => !f a, hf.map (.of_tidy (by fun_prop)), fun a => ?_⟩
+  refine ⟨fun a => !f a, hf.map (by fun_prop), fun a => ?_⟩
   rw [Set.mem_compl_iff, hL a]
   cases h : f a <;> simp [h]
 
@@ -107,7 +107,7 @@ theorem inter_mem_PWithOracle {L₁ L₂ : Set α} (h₁ : L₁ ∈ PWithOracle 
   obtain ⟨f₁, hf₁, hL₁⟩ := h₁
   obtain ⟨f₂, hf₂, hL₂⟩ := h₂
   refine ⟨fun a => f₁ a && f₂ a, (hf₁.prod hf₂).map (g := fun p => p.1 && p.2)
-    (.of_tidy (by fun_prop)),
+    (by fun_prop),
     fun a => ?_⟩
   rw [Set.mem_inter_iff, hL₁ a, hL₂ a, Bool.and_eq_true]
 
@@ -117,7 +117,7 @@ theorem union_mem_PWithOracle {L₁ L₂ : Set α} (h₁ : L₁ ∈ PWithOracle 
   obtain ⟨f₁, hf₁, hL₁⟩ := h₁
   obtain ⟨f₂, hf₂, hL₂⟩ := h₂
   refine ⟨fun a => f₁ a || f₂ a, (hf₁.prod hf₂).map (g := fun p => p.1 || p.2)
-    (.of_tidy (by fun_prop)),
+    (by fun_prop),
     fun a => ?_⟩
   rw [Set.mem_union, hL₁ a, hL₂ a, Bool.or_eq_true]
 
@@ -159,64 +159,64 @@ private def replayAcceptCount (machine : MultiTapePTM k Bool Control Operation)
 private theorem replayStepFactor_mem_SharpP [Finite Control] [Finite Operation]
     (machine : MultiTapePTM k Bool Control Operation) {input : α → List Bool}
     {fYes fNo : List Bool → ℕ}
-    (hinput : ComputableTidilyInPolyTime input enc encBits)
+    (hinput : ComputableInPolyTime input enc encBits)
     (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits) :
     replayStepFactor machine input fYes fNo ∈ SharpP (encPair (encPair enc encBits) encUnary) := by
   let _ := Fintype.ofFinite Operation
   let cfg : (α × List Bool) × ℕ → FiniteConfig k Bool Control Operation :=
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
-  have hcfg : ComputableTidilyInPolyTime cfg
+  have hcfg : ComputableInPolyTime cfg
       (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.replayPrefix_pt.comp (g := fun x : (α × List Bool) × ℕ =>
+    machine.computableInPolyTime_replayPrefix.comp (g := fun x : (α × List Bool) × ℕ =>
       ((input x.1.1, x.1.2), x.2)) (by fun_prop)
-  have hquery : ComputableTidilyInPolyTime
+  have hquery : ComputableInPolyTime
       (fun x => (machine.pendingQuery (cfg x)).isSome)
       (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableTidilyInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp hcfg)
-  have hreq : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.of_finite Option.isSome).comp
+      (machine.pendingQuery_pt.computableInPolyTime.comp hcfg)
+  have hreq : ComputableInPolyTime
       (fun x => machine.pendingRequest (cfg x))
       (encPair (encPair enc encBits) encUnary) encBits :=
-    machine.pendingRequest_pt.comp hcfg
-  have hbit : ComputableTidilyInPolyTime
+    machine.pendingRequest_pt.computableInPolyTime.comp hcfg
+  have hbit : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  exact SharpP.ite_mem (.of_tidy hquery)
-    (SharpP.ite_mem (.of_tidy hbit) (SharpP.comp_mem hYes (.of_tidy hreq))
-      (SharpP.comp_mem hNo (.of_tidy hreq)))
-    (SharpP.ite_mem (.of_tidy hbit) SharpP.zero_mem SharpP.one_mem)
+  exact SharpP.ite_mem hquery
+    (SharpP.ite_mem hbit (SharpP.comp_mem hYes hreq)
+      (SharpP.comp_mem hNo hreq))
+    (SharpP.ite_mem hbit SharpP.zero_mem SharpP.one_mem)
 
 private theorem replayPathCount_mem_SharpP [Finite Control] [Finite Operation]
     (machine : MultiTapePTM k Bool Control Operation) {input : α → List Bool}
     {fYes fNo : List Bool → ℕ}
-    (hinput : ComputableTidilyInPolyTime input enc encBits)
+    (hinput : ComputableInPolyTime input enc encBits)
     (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits) :
     replayPathCount machine input fYes fNo ∈ SharpP (encPair enc encBits) :=
   SharpP.prod_range_mem (replayStepFactor_mem_SharpP machine hinput hYes hNo)
-    (r := fun x : α × List Bool => x.2.length) (.of_tidy (by fun_prop))
+    (r := fun x : α × List Bool => x.2.length) (by fun_prop)
 
 private theorem replayAcceptCount_mem_SharpP [Finite Control] [Finite Operation]
     (machine : MultiTapePTM k Bool Control Operation) {input : α → List Bool}
     {T : α → ℕ} {fYes fNo : List Bool → ℕ} {P : α × List Bool → Bool}
-    (hinput : ComputableTidilyInPolyTime input enc encBits)
-    (hT : ComputableTidilyInPolyTime T enc encUnary)
+    (hinput : ComputableInPolyTime input enc encBits)
+    (hT : ComputableInPolyTime T enc encUnary)
     (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits)
-    (hP : ComputableTidilyInPolyTime P (encPair enc encBits) encBool) :
+    (hP : ComputableInPolyTime P (encPair enc encBits) encBool) :
     replayAcceptCount machine input T fYes fNo P ∈ SharpP enc := by
   have hpath := replayPathCount_mem_SharpP machine hinput hYes hNo
-  have hout : ComputableTidilyInPolyTime
+  have hout : ComputableInPolyTime
       (fun x : α × List Bool => P (x.1, machine.replayOutput (input x.1) x.2))
       (encPair enc encBits) encBool := by
-    have hpair : ComputableTidilyInPolyTime
+    have hpair : ComputableInPolyTime
         (fun x : α × List Bool => (input x.1, x.2))
         (encPair enc encBits) (encPair encBits encBits) := by fun_prop
-    exact hP.comp ((ComputableTidilyInPolyTime.fst enc encBits).prod
-      (machine.replayOutput_pt.comp hpair))
+    exact hP.comp ((ComputableInPolyTime.fst enc encBits).prod
+      (machine.computableInPolyTime_replayOutput.comp hpair))
   have hmask : (fun x : α × List Bool =>
       if P (x.1, machine.replayOutput (input x.1) x.2) then 1 else 0) ∈
       SharpP (encPair enc encBits) :=
-    SharpP.ite_mem (.of_tidy hout) SharpP.one_mem SharpP.zero_mem
-  exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hmask) (.of_tidy hT)
+    SharpP.ite_mem hout SharpP.one_mem SharpP.zero_mem
+  exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hmask) hT
 
 private theorem replayStepFactor_pos_iff (machine : MultiTapePTM k Bool Control Operation)
     (input : α → List Bool) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
@@ -387,14 +387,14 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_NP {f : α → β} {P : α ×
   have hNo' (q : List Bool) : g q = false ↔ 0 < fNo q := by
     simp only [g, decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo q]
   let T : α → ℕ := fun a => c * ((enc a).length + 1) ^ d
-  have hT : ComputableTidilyInPolyTime T enc encUnary :=
-    ((ComputableTidilyInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableTidilyInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
-  have hinput : ComputableTidilyInPolyTime (fun a : α => enc a) enc encBits :=
-    ComputableTidilyInPolyTime.id'
+  have hT : ComputableInPolyTime T enc encUnary :=
+    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
+      (ComputableInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
+  have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
+    ComputableInPolyTime.id'
   refine mem_NP_iff_exists_SharpP.mpr
     ⟨replayAcceptCount machine (fun a => enc a) T fYes fNo P,
-      replayAcceptCount_mem_SharpP machine hinput hT hYes_mem hNo_mem hP.tidy, fun a => ?_⟩
+      replayAcceptCount_mem_SharpP machine hinput hT hYes_mem hNo_mem hP, fun a => ?_⟩
   rw [replayAcceptCount_pos_iff machine (fun a => enc a) T hYes' hNo' P a,
     machine.replayOutput_oracleReplies g (T a) (enc a)]
   have hrun_a := hrun a (languageOracle A)
@@ -417,7 +417,7 @@ theorem PWithOracle_subset_NP (hA_np : A ∈ NP encBits) (hA_conp : A ∈ coNP e
     PWithOracle A enc ⊆ NP enc := by
   rintro L ⟨f, hf, hL⟩
   have hP : ComputableInPolyTime (fun x : α × List Bool => decide (x.2 = [true]))
-      (encPair enc encBits) encBool := .of_tidy (by fun_prop)
+      (encPair enc encBits) encBool := by fun_prop
   have hmem := hf.encoded_mem_NP hA_np hA_conp hP
   convert hmem using 1
   ext a
@@ -472,9 +472,9 @@ theorem NPWithOracle_subset_NP_of_PWithOracle_subset_NP
     ⟨V, hV, fun _ => Iff.rfl⟩
   obtain ⟨F, hF, hFV⟩ := mem_NP_iff_exists_SharpP.mp (h hV_mem)
   have hFV' (x : α × List Bool) : 0 < F x ↔ V x = true := (hFV x).symm
-  have hr : ComputableTidilyInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by
+  have hr : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by
     fun_prop
-  refine mem_NP_iff_exists_SharpP.mpr ⟨_, SharpP.sum_bits_mem hF (.of_tidy hr), fun a => ?_⟩
+  refine mem_NP_iff_exists_SharpP.mpr ⟨_, SharpP.sum_bits_mem hF hr, fun a => ?_⟩
   rw [Finset.sum_pos_iff, hL a]
   simp only [mem_univ, true_and, hFV']
   constructor
@@ -580,13 +580,13 @@ theorem ComputableInPolyTimeWithOracle.encoded_mem_UP {f : α → β} {P : α ×
     rw [show (0 < fNo q) ↔ fNo q = 1 by omega]
     simp only [g, decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo_iff q]
   let T : α → ℕ := fun a => c * ((enc a).length + 1) ^ d
-  have hT : ComputableTidilyInPolyTime T enc encUnary :=
-    ((ComputableTidilyInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableTidilyInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
-  have hinput : ComputableTidilyInPolyTime (fun a : α => enc a) enc encBits :=
-    ComputableTidilyInPolyTime.id'
+  have hT : ComputableInPolyTime T enc encUnary :=
+    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
+      (ComputableInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
+  have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
+    ComputableInPolyTime.id'
   refine ⟨replayAcceptCount machine (fun a => enc a) T fYes fNo P,
-    replayAcceptCount_mem_SharpP machine hinput hT hYes_mem hNo_mem hP.tidy,
+    replayAcceptCount_mem_SharpP machine hinput hT hYes_mem hNo_mem hP,
     fun a => ?_, fun a => ?_⟩
   · rw [replayAcceptCount_eq_ite_of_le_one machine (fun a => enc a) T hYes_le hNo_le hYes' hNo' P a]
     split_ifs <;> omega
@@ -616,7 +616,7 @@ theorem PWithOracle_subset_UP (hA_up : A ∈ UP encBits) (hA_coup : A ∈ coUP e
     PWithOracle A enc ⊆ UP enc := by
   rintro L ⟨f, hf, hL⟩
   have hP : ComputableInPolyTime (fun x : α × List Bool => decide (x.2 = [true]))
-      (encPair enc encBits) encBool := .of_tidy (by fun_prop)
+      (encPair enc encBits) encBool := by fun_prop
   have hmem := hf.encoded_mem_UP hA_up hA_coup hP
   convert hmem using 1
   ext a

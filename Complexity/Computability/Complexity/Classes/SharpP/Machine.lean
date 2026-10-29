@@ -113,10 +113,7 @@ private theorem verdictCount_mem_SharpP [Finite State]
       (show width < 2 ^ width from Nat.lt_two_pow_self).le)
   refine ⟨clock * Polynomial.C width,
     fun p => Checker.checkBinary machine width verdict (enc p.1, p.2), ?_, ?_⟩
-  · exact .of_tidy <|
-      (Checker.computableTidilyInPolyTime_checkBinary machine width verdict).comp
-        (((ComputableTidilyInPolyTime.fst enc encBits).encoded).prod
-          (ComputableTidilyInPolyTime.snd enc encBits))
+  · exact (Checker.computableInPolyTime_checkBinary machine width verdict).comp (by fun_prop)
   · intro a
     simp only [Polynomial.eval_mul, Polynomial.eval_C]
     exact (Checker.acceptCount_checkBinary machine hwidth (enc a) (hcodes (enc a))

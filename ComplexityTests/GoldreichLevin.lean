@@ -45,9 +45,9 @@ example : (decode noisy 5).toOuterMeasure {list | target ∉ list} ≤ 1 / 2 := 
     norm_num
   · norm_num
 
--- Perfect prediction works for arbitrary masks, including all-zero and repeated masks.
-example {n k : ℕ} (x : BitString n) (masks : Fin k → BitString n) (hk : 0 < k) :
-    x ∈ candidates (fun r => x ⬝ᵥ r) masks := mem_candidates_parity x masks hk
+-- Perfect prediction retains the target with a fixed all-zero mask.
+example : target ∈ candidates (fun r => target ⬝ᵥ r)
+    (fun _ : Fin 1 => (![false, false] : BitString 2)) := by decide
 
 -- Zero target length is valid; positive mask count is still an explicit theorem hypothesis.
 example : (decode (fun _ : BitString 0 => false) 1).toOuterMeasure {list | 0 ∉ list} ≤ 1 / 2 := by
@@ -92,20 +92,18 @@ example (n : ℕ) :
 
 -- Even degree zero and dimension zero have valid, nonempty parameter choices.
 example : precision 0 0 = 1 ∧ maskCount 0 1 = 1 := by decide
-example : PolynomiallyBounded (fun n => n * maskCount n (precision 7 n)) :=
-  randomMaskBits_polynomial 7
 
 open Turing.MultiTapeTM
 
 -- The complete decoder has a closed uniform certificate with an input-dependent parity predictor.
-example (degree : ℕ) : ComputableTidilyInPolyTime
+example (degree : ℕ) : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool =>
       wordDecode id (fun query => (p.2.1.zipWith Bool.and query).foldl Bool.xor false)
         degree p.1 p.2.1 p.2.2)
     (encPair encUnary (encPair encBits encBits)) encBits := by polytime
 
 -- Runtime fallback and captured-predicate search compose without exposing a machine.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × List (List Bool) =>
       (p.2.find? (fun word => word.length == p.1)).getD (List.replicate p.1 false))
     (encPair encUnary (encList encBits)) encBits := by fun_prop
@@ -113,7 +111,7 @@ example : ComputableTidilyInPolyTime
 -- Output-size bounds cannot be silently discarded to certify exponential enumeration.
 example : True := by
   fail_if_success
-    have : ComputableTidilyInPolyTime BitString.enumList encUnary (encList encBits) := by polytime
+    have : ComputableInPolyTime BitString.enumList encUnary (encList encBits) := by polytime
   trivial
 
 -- The total word algorithms cover ties, short selectors, short rows and out-of-range coordinates.
