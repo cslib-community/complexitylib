@@ -10,9 +10,10 @@ module
 public import Complexity.Computability.Complexity.FineGrained.CountingScale
 public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Logics.Propositional.CNF.ModelCount.DenseRelabel
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
 /-!
 # From sublinear interpolation-scale counting to `satExponent k = 0`, `¬ETH`, and `¬SETH`
@@ -145,15 +146,10 @@ theorem DecidableInSubexpTime.of_computableInO_interpolationScale {α : Type} {e
 
 /-! ### From dense-variable model counting to `DecidableInSubexpTime (KSAT k)` -/
 
-open ComputableTidilyInPolyTime in
 private theorem computableInPolyTime_pos_nat :
-    ComputableInPolyTime (fun n : ℕ => decide (0 < n)) encNat encBool := by
-  have heq : (fun n : ℕ => decide (0 < n)) = fun n => !(n == 0) := by
-    funext n
-    cases n <;> rfl
-  rw [heq]
-  refine .of_tidy ?_
-  fun_prop
+    ComputableInPolyTime (fun n : ℕ => decide (0 < n)) encNat encBool :=
+  ComputableInPolyTime.binary_lt.comp
+    ((ComputableInPolyTime.const 0).prod ComputableInPolyTime.id')
 
 /-- **From dense-variable model counting at `interpolationScale` to subexponential `k`-SAT.**
 Suppose `count : CNF ℕ → ℕ` runs in time
@@ -171,12 +167,11 @@ theorem DecidableInSubexpTime.KSAT_of_dense_modelCount_interpolationScale {k : �
     (ht : ∀ ψ : CNF ℕ, (t ψ : ℝ) ≤
       c * ((2 : ℝ) ^ (A₀ * interpolationScale ψ.numVars) * (((encCNF ψ).length : ℝ) + 1) ^ e) + c) :
     DecidableInSubexpTime (KSAT k) encCNF CNF.numVars := by
-  have hcount_tidy := hcount.tidy
-  obtain ⟨dpos, _, hpos⟩ := computableInPolyTime_pos_nat.tidy.exists_degree
+  obtain ⟨dpos, _, hpos⟩ := computableInPolyTime_pos_nat.exists_degree
   have hposO := hpos.inO
-  obtain ⟨l, hl⟩ := hcount_tidy.length_le_time
+  obtain ⟨l, hl⟩ := hcount.length_le_time
   have hcomp : ComputableInO (fun ψ : CNF ℕ => decide (0 < count ψ)) encCNF encBool _ _ :=
-    .of_tidy (hposO.comp hcount_tidy)
+    hposO.comp hcount
   let B : Set (CNF ℕ) := {ψ | decide (0 < count ψ) = true}
   have hB_subexp : DecidableInSubexpTime B encCNF CNF.numVars := by
     set A₁ : ℝ := max A₀ 0 * (dpos + 1)

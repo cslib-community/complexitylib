@@ -145,9 +145,9 @@ theorem ETH.not_decidableInSubexpTime_Clique (h : ETH) :
     ¬DecidableInSubexpTime Clique (encPair encGraph encNat) fun x => x.1.1.length :=
   h.not_decidableInSubexpTime_of_reduction (f := fun φ =>
       ((SAT.toSparseIndependentSet φ).1.compl, (SAT.toSparseIndependentSet φ).2))
-    (.of_tidy ((show ComputableTidilyInPolyTime (fun x : Graph × ℕ => (x.1.compl, x.2))
+    ((show ComputableInPolyTime (fun x : Graph × ℕ => (x.1.compl, x.2))
       (encPair encGraph encNat) (encPair encGraph encNat) by fun_prop).comp
-        SAT.computableInPolyTime_toSparseIndependentSet.tidy))
+        SAT.computableInPolyTime_toSparseIndependentSet)
     (fun φ _ => (Graph.compl_mem_Clique_iff _ _).trans (SAT.toSparseIndependentSet_mem_iff φ))
     (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ

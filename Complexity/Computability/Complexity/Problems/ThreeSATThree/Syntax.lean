@@ -57,14 +57,12 @@ theorem syntaxCheck_iff (φ : CNF ℕ) :
     · simp [List.count_eq_zero.mpr hm]
   · exact fun h => ⟨h.1, fun v _ => h.2 v⟩
 
-attribute [local fun_prop] ComputableInPolyTime.tidy
-
 /-- The syntactic guard is computed in native polynomial time under binary CNF encoding. -/
 @[fun_prop]
 theorem computableInPolyTime_syntaxCheck :
     ComputableInPolyTime syntaxCheck encCNF encBool := by
-  refine .of_tidy ?_
   unfold syntaxCheck encCNF
+  simp only [List.count_eq_countP]
   fun_prop
 
 end Cslib.Complexity.ThreeSATThree

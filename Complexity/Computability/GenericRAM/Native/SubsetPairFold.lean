@@ -23,6 +23,7 @@ import Mathlib.Algebra.Ring.Parity
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Nat.Choose.Sum
+import Mathlib.Data.Nat.Size
 
 /-!
 # Combinatorial subset-pair unranking and streaming folds
@@ -640,21 +641,25 @@ abbrev encParams : (ℕ × ℕ) ↪ List Bool := encPair encUnary encUnary
 /-- Encoding for decoded `(indE, indU, negSign)` triples. -/
 abbrev encDecodedPair : DecodedPair ↪ List Bool := encPair encBits (encPair encBits encBool)
 
-section TidyProofs
+section PlainProofs
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
-private theorem pascalTable_tidy :
-    ComputableTidilyInPolyTime pascalTable encUnary (encList (encList encNat)) := by
+/-- `pascalTable` is computable in polynomial time from `n` in unary. -/
+@[fun_prop, program_certificate] theorem pascalTable_polyTime :
+    ComputableInPolyTime pascalTable encUnary (encList (encList encNat)) := by
   let encRow := encList encNat; let encTab := encList encRow
-  have hinit : ComputableTidilyInPolyTime (fun n : ℕ => [1 :: List.replicate n 0])
+  have hrep0 : ComputableInPolyTime (fun n : ℕ => List.replicate n 0) encUnary encRow :=
+    ((map (const (encIn := encUnary) (encOut := encNat) 0)).comp range).of_enc_eq fun n => by
+      dsimp only [encRow]; simp [List.map_const']
+  have hinit : ComputableInPolyTime (fun n : ℕ => [1 :: List.replicate n 0])
       encUnary encTab :=
-    ((const (encMid := encNat) 1).cons' (replicate id' (const 0))).cons' (const [])
-  have hstep : ComputableTidilyInPolyTime (fun p : ℕ × List (List ℕ) => Internal.pascalStep p.1 p.2)
+    ((const (encOut := encNat) 1).cons' hrep0).cons' (const [])
+  have hstep : ComputableInPolyTime (fun p : ℕ × List (List ℕ) => Internal.pascalStep p.1 p.2)
       (encPair encUnary encTab) encTab := by
     let encP := encPair encUnary encTab
-    have hprev := (headD (encA := encRow) []).comp ((listReverse encRow).comp (snd encUnary encTab))
-    have hmap : ComputableTidilyInPolyTime (fun p : ℕ × List (List ℕ) => (List.range p.1).map
+    have hprev := (headD (encA := encRow) []).comp (listReverseWithInput (snd encUnary encTab))
+    have hmap : ComputableInPolyTime (fun p : ℕ × List (List ℕ) => (List.range p.1).map
         fun s => if s == 0 then 1
           else (p.2.reverse.headD []).getD (s - 1) 0 + (p.2.reverse.headD []).getD s 0)
         encP encRow := by
@@ -662,8 +667,8 @@ private theorem pascalTable_tidy :
       have hq_prev := hprev.comp (fst encP encUnary); have hq_s := snd encP encUnary
       have hleft := (listGetD (encA := encNat) 0).comp
         (hq_prev.prod (unary_sub.comp (hq_s.prod (const 1))))
-      exact (unary_beq hq_s (const 0)).cond (const 1)
-        (binary_add' hleft ((listGetD (encA := encNat) 0).comp (hq_prev.prod hq_s)))
+      have hright := (listGetD (encA := encNat) 0).comp (hq_prev.prod hq_s)
+      exact (hq_s.beq (const 0)).ite (const 1) (binary_add.comp (hleft.prod hright))
     exact listAppend' (snd encUnary encTab) (hmap.cons' (const []))
   exact iterateWith (par := fun n : ℕ => n + 1) (count := fun n : ℕ => n)
     (init := fun n : ℕ => [1 :: List.replicate n 0]) (step := Internal.pascalStep)
@@ -684,12 +689,17 @@ private theorem pascalTable_tidy :
         rw [hrentry s hs]; exact length_encNat_choose_le (by omega) s
       · rw [hlen]; exact Nat.mul_le_mul_right _ (Nat.add_le_add_right hk 1))
 
-private theorem subsetPairCount_tidy :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => subsetPairCount p.1 p.2) encParams encNat := by
+/-- `subsetPairCount` is computable in polynomial time from `(n, q)` in unary. -/
+@[fun_prop, program_certificate] theorem subsetPairCount_polyTime :
+    ComputableInPolyTime (fun p : ℕ × ℕ => subsetPairCount p.1 p.2) encParams encNat := by
   have hfst := fst encUnary encUnary; have hsnd := snd encUnary encUnary
-  have hrow := (listGetD (encA := encList encNat) []).comp ((pascalTable_tidy.comp hfst).prod hfst)
-  have hcnt := unary_add.comp ((unary_min.comp (hsnd.prod hfst)).prod (const 1))
-  refine binary_sum.comp (mapWithInput (range.comp hcnt) ?_); have hq_s := snd encParams encUnary
+  have hrow := (listGetD (encA := encList encNat) []).comp
+    ((pascalTable_polyTime.comp hfst).prod hfst)
+  have humin : ComputableInPolyTime (fun p : ℕ × ℕ => min p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by fun_prop
+  have hcnt := unary_add.comp ((humin.comp (hsnd.prod hfst)).prod (const 1))
+  have hbsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
+  refine hbsum.comp (mapWithInput (range.comp hcnt) ?_); have hq_s := snd encParams encUnary
   exact binary_mul' (binary_two_pow.comp hq_s)
     ((listGetD (encA := encNat) 0).comp ((hrow.comp (fst encParams encUnary)).prod hq_s))
 
@@ -700,16 +710,21 @@ private theorem length_bucketState_le (rowN : List ℕ) (n j i L : ℕ)
   have hspec := foldl_bucketStep_spec rowN i j; dsimp only at hspec
   split_ifs at hspec with hlt
   · obtain ⟨s, off, hres, hs_lt, _, hj_eq⟩ := hspec
-    have hoff_len := (ComputableTidilyInO.length_encNat_mono (by omega : off ≤ j)).trans hj_le
+    have hoff_le : (encNat off).length ≤ (encNat j).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size (by omega : off ≤ j)
+    have hoff_len := hoff_le.trans hj_le
     rw [hres]
     simp only [length_encPair, encOption_some, List.length_cons, encUnary_apply,
       List.length_replicate]; omega
-  · have hsub_len := (ComputableTidilyInO.length_encNat_mono
-      (Nat.sub_le j (∑ s ∈ Finset.range i, 2 ^ s * rowN.getD s 0))).trans hj_le
+  · have hsub_le :
+        (encNat (j - ∑ s ∈ Finset.range i, 2 ^ s * rowN.getD s 0)).length ≤ (encNat j).length := by
+      simpa [Nat.size_eq_bits_len] using
+        Nat.size_le_size (Nat.sub_le j (∑ s ∈ Finset.range i, 2 ^ s * rowN.getD s 0))
+    have hsub_len := hsub_le.trans hj_le
     rw [hspec]; simp only [length_encPair, encOption_none, List.length_nil]; omega
 
-private theorem bucketStep_tidy :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_bucketStep :
+    ComputableInPolyTime
       (fun q : (List ℕ × (ℕ × Option (ℕ × ℕ))) × ℕ => Internal.bucketStep q.1.1 q.1.2 q.2)
       (encPair (encPair (encList encNat) (encPair encNat (encOption (encPair encUnary encNat))))
         encUnary)
@@ -723,11 +738,18 @@ private theorem bucketStep_tidy :
     ((listGetD (encA := encNat) 0).comp (hrow.prod hs))
   have hsome := hrem.prod ((optionSome (encPair encUnary encNat)).comp (hs.prod hrem))
   have hnone := (binary_sub' hrem hcap).prod
-    (const (encIn := encQ) (encMid := encOpt) (none : Option (ℕ × ℕ)))
-  exact hst.snd'.optionIsSome.cond hst ((binary_lt' hrem hcap).ite_decide hsome hnone)
+    (const (encIn := encQ) (encOut := encOpt) (none : Option (ℕ × ℕ)))
+  have hinner : ComputableInPolyTime
+      (fun q : (List ℕ × (ℕ × Option (ℕ × ℕ))) × ℕ =>
+        if q.1.2.1 < 2 ^ q.2 * q.1.1.getD q.2 0 then (q.1.2.1, some (q.2, q.1.2.1))
+        else (q.1.2.1 - 2 ^ q.2 * q.1.1.getD q.2 0, none))
+      encQ encSt := by
+    dsimp only [encQ, encSt, encOpt]
+    simpa only [Function.comp_def, decide_eq_true_eq] using (binary_lt' hrem hcap).ite hsome hnone
+  exact hst.snd'.optionIsSome.ite hst hinner
 
-private theorem findBucket_tidy :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_findBucket :
+    ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => Internal.findBucket p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair encParams encNat) (encList (encList encNat)))
       (encOption (encPair encUnary encNat)) := by
@@ -737,12 +759,14 @@ private theorem findBucket_tidy :
   have hn := hp1.fst'.fst'; have hq := hp1.fst'.snd'
   have hpar := (listGetD (encA := encList encNat) []).comp
     ((snd (encPair encParams encNat) encTab).prod hn)
-  have hlist := range.comp (unary_add.comp ((unary_min.comp (hq.prod hn)).prod (const 1)))
-  have hinit : ComputableTidilyInPolyTime
+  have humin : ComputableInPolyTime (fun p : ℕ × ℕ => min p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by fun_prop
+  have hlist := range.comp (unary_add.comp ((humin.comp (hq.prod hn)).prod (const 1)))
+  have hinit : ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => (p.1.2, (none : Option (ℕ × ℕ)))) encIn encSt :=
     hp1.snd'.prod (const none)
   have hfold := foldlWith (encA := encUnary) (encL := encList encUnary) (encP := encList encNat)
-    (encB := encSt) hpar hlist hinit bucketStep_tidy
+    (encB := encSt) hpar hlist hinit computableInPolyTime_bucketStep
     (B := fun p => 6 * (encIn p).length + 6) (((PolyBounded.const 6).mul .self).add (.const 6))
     (fun p i hi => by
       dsimp only [Function.comp_apply] at hi ⊢
@@ -758,14 +782,14 @@ private theorem findBucket_tidy :
         (by omega) hj_le hn_le)
   exact hfold.snd'
 
-private theorem unrankComb_tidy :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_unrankComb :
+    ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => Internal.unrankComb p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair encParams encNat) (encList (encList encNat))) encBits := by
   let encTab := encList (encList encNat); let encIn := encPair (encPair encParams encNat) encTab
   let encSt := encPair (encPair encUnary encNat) encBits
   have hp1 := fst (encPair encParams encNat) encTab
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun q : (List (List ℕ) × ((ℕ × ℕ) × List Bool)) × ℕ =>
         Internal.unrankCombStep q.1.1 q.1.2 q.2)
       (encPair (encPair encTab encSt) encUnary) encSt := by
@@ -775,36 +799,40 @@ private theorem unrankComb_tidy :
     have hk := hst.fst'.fst'; have hr := hst.fst'.snd'; have hbits := hst.snd'
     have hc := (listGetD (encA := encNat) 0).comp
       (((listGetD (encA := encList encNat) []).comp (htab.prod hm)).prod hk)
-    exact (binary_lt' hr hc).ite_decide ((hk.prod hr).prod (bitsAppend hbits (const [false])))
-      (((unary_sub.comp (hk.prod (const 1))).prod
-        (binary_sub' hr hc)).prod (bitsAppend hbits (const [true])))
-  have hinit : ComputableTidilyInPolyTime
+    dsimp only [encSt]
+    simpa only [Internal.unrankCombStep, Function.comp_def, decide_eq_true_eq] using
+      (binary_lt' hr hc).ite ((hk.prod hr).prod (bitsAppend hbits (const [false])))
+        (((unary_sub.comp (hk.prod (const 1))).prod
+          (binary_sub' hr hc)).prod (bitsAppend hbits (const [true])))
+  have hinit : ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => ((p.1.1.2, p.1.2), ([] : List Bool)))
       encIn encSt := (hp1.fst'.snd'.prod hp1.snd').prod (const [])
   refine (foldlWith_of_bounded_growth (encIn := encIn) (encP := encTab) (encA := encUnary)
     (encL := encList encUnary) (encB := encSt) (par := Prod.snd)
     (list := fun p => (List.range p.1.1.1).reverse) (init := fun p => ((p.1.1.2, p.1.2), []))
     (step := Internal.unrankCombStep) (snd (encPair encParams encNat) encTab)
-    ((listReverse encUnary).comp (range.comp hp1.fst'.fst')) hinit hstep
+    (listReverseWithInput (range.comp hp1.fst'.fst')) hinit hstep
     (growth := fun _ => 1) (.const 1) fun p state m _ => ?_).snd'
   simp only [encSt, Internal.unrankCombStep]; split_ifs
   · simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton]; omega
-  · have := ComputableTidilyInO.length_encNat_mono
-      (Nat.sub_le state.1.2 ((p.2.getD m []).getD state.1.1 0))
+  · have : (encNat (state.1.2 - (p.2.getD m []).getD state.1.1 0)).length ≤
+        (encNat state.1.2).length := by
+      simpa [Nat.size_eq_bits_len] using
+        Nat.size_le_size (Nat.sub_le state.1.2 ((p.2.getD m []).getD state.1.1 0))
     simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
       List.length_append, List.length_singleton]; omega
 
-private theorem scatterMask_tidy :
-    ComputableTidilyInPolyTime (fun p : List Bool × ℕ => Internal.scatterMask p.1 p.2)
+private theorem computableInPolyTime_scatterMask :
+    ComputableInPolyTime (fun p : List Bool × ℕ => Internal.scatterMask p.1 p.2)
       (encPair encBits encNat) encBits := by
   let encSt := encPair encNat encBits
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun q : (ℕ × List Bool) × Bool => Internal.scatterStep q.1 q.2)
       (encPair encSt encBool) encSt := by
     have hmask := (fst encSt encBool).fst'; have hbits := (fst encSt encBool).snd'
-    have hyes := (binary_div' hmask (const 2)).prod
+    have hyes := (binary_div.comp (hmask.prod (const 2))).prod
       (bitsAppend hbits (bitsCons (binary_testBit hmask (const 0)) (const [])))
-    exact (snd encSt encBool).cond hyes (hmask.prod (bitsAppend hbits (const [false])))
+    exact (snd encSt encBool).ite hyes (hmask.prod (bitsAppend hbits (const [false])))
   refine (foldl_of_bounded_growth (encIn := encPair encBits encNat) (encA := encBool)
     (encL := encBits) (encB := encSt) (list := Prod.fst) (init := fun p => (p.2, []))
     (step := Internal.scatterStep) (fst encBits encNat) ((snd encBits encNat).prod (const []))
@@ -812,46 +840,36 @@ private theorem scatterMask_tidy :
   simp only [encSt, Internal.scatterStep]; cases bitE
   · simp only [Bool.false_eq_true, ↓reduceIte, length_encPair, encBits_apply,
       List.length_append, List.length_singleton]; omega
-  · have := ComputableTidilyInO.length_encNat_mono (Nat.div_le_self state.1 2)
+  · have : (encNat (state.1 / 2)).length ≤ (encNat state.1).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size (Nat.div_le_self state.1 2)
     simp only [↓reduceIte, length_encPair, encBits_apply, List.length_append,
       List.length_singleton]; omega
-
-private theorem unrankSubsetPair_tidy :
-    ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => unrankSubsetPair p.1.1 p.1.2 p.2)
-      (encPair encParams encNat) encDecodedPair := by
-  let encIn := encPair encParams encNat
-  have hn_in := (fst encParams encNat).fst'; have htab := pascalTable_tidy.comp hn_in
-  have hfb := findBucket_tidy.comp (id'.prod htab)
-  have hzeros := (bitsReplicate false).comp hn_in
-  have hfall := hzeros.prod (hzeros.prod (const (encMid := encBool) false))
-  have hq_fst := fst encIn (encPair encUnary encNat)
-  have hq_snd := snd encIn (encPair encUnary encNat)
-  have hq_pow := binary_two_pow.comp hq_snd.fst'
-  have hq_indE := unrankComb_tidy.comp
-    ((((hn_in.comp hq_fst).prod hq_snd.fst').prod (binary_div' hq_snd.snd' hq_pow)).prod
-      (htab.comp hq_fst))
-  have hq_indU := scatterMask_tidy.comp (hq_indE.prod (binary_mod' hq_snd.snd' hq_pow))
-  have hq_diff := unary_sub.comp
-    ((bitsCountWithInput hq_indE (const true)).prod (bitsCountWithInput hq_indU (const true)))
-  have hq_sign := (binary_mod' (unary_to_binary.comp hq_diff) (const 2)).beq (const 1)
-  exact optionElimWithInput hfb hfall (hq_indE.prod (hq_indU.prod hq_sign))
-
-end TidyProofs
-
-/-- `pascalTable` is computable in polynomial time from `n` in unary. -/
-@[fun_prop, program_certificate] theorem pascalTable_polyTime :
-    ComputableInPolyTime pascalTable encUnary (encList (encList encNat)) :=
-  .of_tidy pascalTable_tidy
-
-/-- `subsetPairCount` is computable in polynomial time from `(n, q)` in unary. -/
-@[fun_prop, program_certificate] theorem subsetPairCount_polyTime :
-    ComputableInPolyTime (fun p : ℕ × ℕ => subsetPairCount p.1 p.2) encParams encNat :=
-  .of_tidy subsetPairCount_tidy
 
 /-- `unrankSubsetPair` is computable in polynomial time from `(n, q)` in unary and `j` in binary. -/
 @[fun_prop, program_certificate] theorem unrankSubsetPair_polyTime :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => unrankSubsetPair p.1.1 p.1.2 p.2)
-      (encPair encParams encNat) encDecodedPair := .of_tidy unrankSubsetPair_tidy
+      (encPair encParams encNat) encDecodedPair := by
+  let encIn := encPair encParams encNat
+  have hn_in := (fst encParams encNat).fst'; have htab := pascalTable_polyTime.comp hn_in
+  have hfb := computableInPolyTime_findBucket.comp (id'.prod htab)
+  have hrepF : ComputableInPolyTime (fun n : ℕ => List.replicate n false) encUnary encBits := by
+    fun_prop
+  have hzeros := hrepF.comp hn_in
+  have hfall := hzeros.prod (hzeros.prod (const (encOut := encBool) false))
+  have hq_fst := fst encIn (encPair encUnary encNat)
+  have hq_snd := snd encIn (encPair encUnary encNat)
+  have hq_pow := binary_two_pow.comp hq_snd.fst'
+  have hq_indE := computableInPolyTime_unrankComb.comp
+    ((((hn_in.comp hq_fst).prod hq_snd.fst').prod (binary_div.comp (hq_snd.snd'.prod hq_pow))).prod
+      (htab.comp hq_fst))
+  have hq_indU := computableInPolyTime_scatterMask.comp
+    (hq_indE.prod (binary_mod.comp (hq_snd.snd'.prod hq_pow)))
+  have hq_diff := unary_sub.comp
+    ((bitsCountWithInput hq_indE (const true)).prod (bitsCountWithInput hq_indU (const true)))
+  have hq_sign := (binary_mod.comp ((unary_to_binary.comp hq_diff).prod (const 2))).beq (const 1)
+  exact optionElimWithInput hfb hfall (hq_indE.prod (hq_indU.prod hq_sign))
+
+end PlainProofs
 
 /-- Native certificate for `pascalTable`, selected via `NativeCertificate.ofPolyTime`. -/
 noncomputable def pascalTableCertificate :
@@ -1047,7 +1065,9 @@ private theorem exists_decodeOverhead :
     have := (h₁ (n, q)).trans (Nat.mul_le_mul_left c₁ (Nat.pow_le_pow_left hlen d₁))
     have := (h₂ (n, q)).trans (Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left hlen d₂)); omega
   · dsimp only
-    have := (ComputableTidilyInO.length_encNat_mono hj).trans (length_encNat_subsetPairCount_le n q)
+    have hj_len : (encNat j).length ≤ (encNat (subsetPairCount n q)).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size hj
+    have := hj_len.trans (length_encNat_subsetPairCount_le n q)
     have hlen : (encPair encParams encNat ((n, q), j)).length + 1 ≤ 6 * (n + q) + 5 := by
       simp only [encParams, length_encPair, encUnary_apply, List.length_replicate]; omega
     have := (h₃ ((n, q), j)).trans (Nat.mul_le_mul_left c₃ (Nat.pow_le_pow_left hlen d₃))

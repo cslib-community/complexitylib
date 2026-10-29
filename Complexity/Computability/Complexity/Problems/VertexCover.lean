@@ -14,6 +14,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Le
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Vertex covers
@@ -77,7 +79,7 @@ first-order interpretations.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The graphs with a vertex cover of `k` of their vertices: `k` declared vertices meeting every
 edge between two declared vertices [Karp1972]. -/
@@ -167,30 +169,30 @@ the binary target is compared with it by saturating decoding. -/
 theorem computableInPolyTime_toVertexCover :
     ComputableInPolyTime toVertexCover (encPair encGraph encNat)
       (encPair encGraph encNat) := by
-  refine .of_tidy ?_
-  have hn : ComputableTidilyInPolyTime (fun x : Graph × ℕ => x.1.1.toFinset.card)
+  have hn : ComputableInPolyTime (fun x : Graph × ℕ => x.1.1.toFinset.card)
       (encPair encGraph encNat) encUnary := by
     simp_rw [← Graph.length_distinctVertices]
     exact (length_list encNat).comp
-      (Graph.computableInPolyTime_distinctVertices.tidy.comp (fst _ _))
+      (Graph.computableInPolyTime_distinctVertices.comp (fst _ _))
   -- `min n m`, decoded from the binary target under the unary cap `n`.
-  have hmin : ComputableTidilyInPolyTime
+  have hmin : ComputableInPolyTime
       (fun x : Graph × ℕ => Cslib.BitString.boundedBinaryValue x.1.1.toFinset.card
         (encNat x.2).reverse) (encPair encGraph encNat) encUnary :=
-    bitsBoundedBinaryValueWithInput hn (bitsReverse.comp ((encode encNat).comp (snd _ _)))
+    bitsBoundedBinaryValueWithInput hn (bitsReverse.comp (encoding_comp (snd _ _)))
   have heq : toVertexCover = fun x : Graph × ℕ =>
-      (x.1, if Cslib.BitString.boundedBinaryValue x.1.1.toFinset.card (encNat x.2).reverse = x.2
+      (x.1, if decide (Cslib.BitString.boundedBinaryValue x.1.1.toFinset.card
+          (encNat x.2).reverse = x.2)
         then x.1.1.toFinset.card -
           Cslib.BitString.boundedBinaryValue x.1.1.toFinset.card (encNat x.2).reverse
         else x.1.1.toFinset.card + 1) := by
     funext x
-    simp only [toVertexCover, encNat_apply, Cslib.BitString.boundedBinaryValue_eq,
+    simp only [toVertexCover, Bool.decide_iff, encNat_apply, Cslib.BitString.boundedBinaryValue_eq,
       Cslib.BitString.binaryValue_reverse_bits, min_eq_right_iff]
     split_ifs with h
     · rw [min_eq_right h]
     · rfl
   rw [heq]
-  refine (fst _ _).prod (ite_decide ((unary_to_binary.comp hmin).decide_eq' (snd _ _))
+  refine (fst _ _).prod (ite ((unary_to_binary.comp hmin).decide_eq' (snd _ _))
     (unary_to_binary.comp (unary_sub.comp (hn.prod hmin)))
     (unary_to_binary.comp (unary_add.comp (hn.prod (const 1)))))
 
@@ -241,33 +243,32 @@ theorem isCover_eq_true_iff {G : Graph} {C : List ℕ} :
     exact (h u hu v hv ⟨huv, Or.inl he⟩).resolve_left huC
 
 /-- Testing whether an edge is uncovered is polynomial-time. -/
-private theorem computableTidilyInPolyTime_isUncoveredEdge :
-    ComputableTidilyInPolyTime
+@[local fun_prop]
+private theorem computableInPolyTime_isUncoveredEdge :
+    ComputableInPolyTime
       (fun p : (Graph × List ℕ) × (ℕ × ℕ) => isUncoveredEdge p.1.1 p.1.2 p.2)
       (encPair (encPair encGraph (encList encNat)) (encPair encNat encNat)) encBool := by
   unfold isUncoveredEdge encGraph
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_isUncoveredEdge
 
 /-- Listing the uncovered edges is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_uncoveredEdges :
     ComputableInPolyTime (fun p : Graph × List ℕ => uncoveredEdges p.1 p.2)
       (encPair encGraph (encList encNat)) (encList (encPair encNat encNat)) := by
-  refine .of_tidy ?_
-  have hE : ComputableTidilyInPolyTime (fun p : Graph × List ℕ => p.1.2)
+  have hE : ComputableInPolyTime (fun p : Graph × List ℕ => p.1.2)
       (encPair encGraph (encList encNat)) (encList (encPair encNat encNat)) := by
     unfold encGraph
     fun_prop
-  exact filterWithInput hE computableTidilyInPolyTime_isUncoveredEdge
+  exact filterWithInput hE computableInPolyTime_isUncoveredEdge
 
 /-- Testing whether `C` is a cover of `G` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_isCover :
     ComputableInPolyTime (fun p : Graph × List ℕ => isCover p.1 p.2)
-      (encPair encGraph (encList encNat)) encBool :=
-  .of_tidy ((listIsEmpty' (encPair encNat encNat)).comp computableInPolyTime_uncoveredEdges.tidy)
+      (encPair encGraph (encList encNat)) encBool := by
+  unfold isCover
+  fun_prop
 
 /-- The verifier for `VertexCover`, a subset verifier (`Cslib.Complexity.subsetVerifier`): select
 distinct declared vertices by the certificate mask, check that their count equals `k`, and check
@@ -296,13 +297,11 @@ theorem isVerifier :
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
-  refine .of_tidy ?_
-  refine (computableInPolyTime_subsetVerifier (encγ := encNat)
-    (.of_tidy (by unfold encGraph; fun_prop))
-    (.of_tidy (bool_and' ?_ (computableInPolyTime_isCover.tidy.comp
-      (((fst _ _).comp (fst _ _)).prod (snd _ _)))))).tidy
-  exact (((ComputableInPolyTime.length_list_binary encNat).tidy.comp (snd _ _)).decide_eq'
-    (by fun_prop))
+  refine computableInPolyTime_subsetVerifier (encγ := encNat)
+    (by unfold encGraph; fun_prop)
+    (bool_and' ?_ (computableInPolyTime_isCover.comp
+      (((fst _ _).comp (fst _ _)).prod (snd _ _))))
+  exact ((length_list_binary encNat).comp (snd _ _)).decide_eq' (by fun_prop)
 
 /-- `VertexCover` belongs to `NP`. -/
 theorem mem_NP : VertexCover ∈ NP (encPair encGraph encNat) :=

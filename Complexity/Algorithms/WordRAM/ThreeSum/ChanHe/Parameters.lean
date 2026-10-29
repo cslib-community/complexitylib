@@ -193,8 +193,233 @@ private theorem time_zero (n U : ℕ) : time 0 n U - 20 = 44 + 5 * Nat.sqrt n +
   dsimp [time]
   omega
 
-set_option maxHeartbeats 300000 in
--- Measured 256376 heartbeats for the twelve native segments and explicit register frames.
+private theorem exec_calculate_tail {w n U : ℕ} (k : Data 24)
+    (k_len : k.regs len = n) (k_magnitude : k.regs magnitude = U)
+    (k_digits : k.regs digits = Cslib.Algorithms.ThreeSum.labelBits (2 * U))
+    (k_padding : k.regs padding = 4 * U + 1)
+    (k_want : k.regs want = Cslib.Algorithms.ThreeSum.ChanHe.wPar n (2 * U))
+    (k_primeBound : k.regs primeBound = Cslib.Algorithms.ThreeSum.ChanHe.mPar n (2 * U))
+    (k_logLen : k.regs logLen = Nat.log 2 n)
+    (k_one : k.regs one = 1) (k_two : k.regs two = 2) (k_three : k.regs three = 3)
+    (k_eight : k.regs eight = 8)
+    (hfit : Fits w (Math.budget n U)) :
+    ∃ p, ExecWithin w
+      (.seq (ram[ quotient ← logLen + two ])
+      (.seq (NatClog.program.rename (logRegisters height))
+      (ram[ fuel ← three * height; fuel ← fuel - two; packedLen ← primeBound * primeBound;
+        packedLen ← eight * packedLen ])))
+      k p (10 + 5 * Cslib.Algorithms.ThreeSum.ChanHe.height n) ∧
+      Output n U p ∧ p.mem = k.mem := by
+  let Λ := Cslib.Algorithms.ThreeSum.labelBits (2 * U)
+  let h := Cslib.Algorithms.ThreeSum.ChanHe.height n
+  let wp := Cslib.Algorithms.ThreeSum.ChanHe.wPar n (2 * U)
+  let m := Cslib.Algorithms.ThreeSum.ChanHe.mPar n (2 * U)
+  change k.regs digits = Λ at k_digits
+  change k.regs want = wp at k_want
+  change k.regs primeBound = m at k_primeBound
+  have eh : Cslib.Algorithms.ThreeSum.ChanHe.fuel n = 3 * h - 2 := rfl
+  have hh : h ≤ Nat.log 2 n + 2 := Math.height_le n
+  have hl := Nat.log_le_self 2 n
+  have fitn (v : ℕ) (hv : v ≤ 4 * n + 64) : Fits w v :=
+    hfit.of_le (by dsimp [Math.budget]; omega)
+  have f2 : Fits w 2 := fitn _ (by omega)
+  have flog2 : Fits w (Nat.log 2 n + 2) := fitn _ (by omega)
+  have flog3 : Fits w (Nat.log 2 n + 2 + 1) := fitn _ (by omega)
+  have fh : Fits w (h + 1) := fitn _ (by omega)
+  have f3h : Fits w (3 * h) := fitn _ (by omega)
+  have ffuel : Fits w (Cslib.Algorithms.ThreeSum.ChanHe.fuel n) :=
+    fitn _ (by dsimp [Cslib.Algorithms.ThreeSum.ChanHe.fuel]; omega)
+  have fm2 : Fits w (m * m) := hfit.of_le (by dsimp [Math.budget]; nlinarith)
+  have fN : Fits w (8 * m ^ 2) := hfit.of_le (by dsimp [Math.budget]; nlinarith)
+  have fNm : Fits w (8 * (m * m)) := by simpa only [pow_two] using fN
+  let l := (k.set quotient (Nat.log 2 n + 2))
+  have el : ExecWithin w (ram[ quotient ← logLen + two ]) k l 1 := by
+    ram_eval [l, k_logLen, k_two, flog2, quotient, logLen, two, Fin.mk.injEq]
+  have l_magnitude : l.regs magnitude = U := by
+    simpa +decide [l, quotient, magnitude] using k_magnitude
+  have l_three : l.regs three = 3 := by
+    simpa +decide [l, quotient, three] using k_three
+  have l_eight : l.regs eight = 8 := by
+    simpa +decide [l, quotient, eight] using k_eight
+  have l_padding : l.regs padding = 4 * U + 1 := by
+    simpa +decide [l, quotient, padding] using k_padding
+  have l_digits : l.regs digits = Λ := by
+    simpa +decide [l, quotient, digits] using k_digits
+  have l_len : l.regs len = n := by
+    simpa +decide [l, quotient, len] using k_len
+  have l_want : l.regs want = wp := by
+    simpa +decide [l, quotient, want] using k_want
+  have l_primeBound : l.regs primeBound = m := by
+    simpa +decide [l, quotient, primeBound] using k_primeBound
+  have l_one : l.regs one = 1 := by
+    simpa +decide [l, quotient, one] using k_one
+  have l_two : l.regs two = 2 := by
+    simpa +decide [l, quotient, two] using k_two
+  have l_quotient : l.regs quotient = Nat.log 2 n + 2 := by
+    simp +decide [l, quotient]
+  have l_mem : l.mem = k.mem := rfl
+  obtain ⟨o, eo, o_height, o_mem, o_one, o_two⟩ :=
+    NatClog.exec_rename (logRegisters height) (by decide) l f2
+      (by simpa only [logRegisters, NatClog.arg, Matrix.cons_val_zero, l_quotient] using flog3)
+      (by simpa only [logRegisters, NatClog.arg, Matrix.cons_val_zero, l_quotient, h,
+        Cslib.Algorithms.ThreeSum.ChanHe.height] using fh)
+  simp only [logRegisters, NatClog.arg, NatClog.result, NatClog.one, NatClog.two,
+    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val,
+      l_quotient] at eo o_height o_one o_two
+  change o.regs height = h at o_height
+  change ExecWithin w _ l o (5 * h + 5) at eo
+  have o_magnitude : o.regs magnitude = U := (eo.regs_eq (by decide)).trans l_magnitude
+  have o_three : o.regs three = 3 := (eo.regs_eq (by decide)).trans l_three
+  have o_eight : o.regs eight = 8 := (eo.regs_eq (by decide)).trans l_eight
+  have o_padding : o.regs padding = 4 * U + 1 := (eo.regs_eq (by decide)).trans l_padding
+  have o_digits : o.regs digits = Λ := (eo.regs_eq (by decide)).trans l_digits
+  have o_len : o.regs len = n := (eo.regs_eq (by decide)).trans l_len
+  have o_want : o.regs want = wp := (eo.regs_eq (by decide)).trans l_want
+  have o_primeBound : o.regs primeBound = m := (eo.regs_eq (by decide)).trans l_primeBound
+  have o_memory : o.mem = k.mem := o_mem.trans l_mem
+  let p := ((((o.set fuel (3 * h)).set fuel (Cslib.Algorithms.ThreeSum.ChanHe.fuel n)).set packedLen
+    (m * m)).set packedLen (8 * m ^ 2))
+  have ep : ExecWithin w (ram[ fuel ← three * height; fuel ← fuel - two;
+    packedLen ← primeBound * primeBound; packedLen ← eight * packedLen ]) o p 4 := by
+    ram_eval [p, o_three, o_height, o_two, o_primeBound, o_eight, ← eh, f3h, ffuel, fm2, fNm,
+      fuel, three, height, two, packedLen, primeBound, eight, Fin.mk.injEq, pow_two, Data.set,
+      Function.update_idem]
+  have p_magnitude : p.regs magnitude = U := by
+    simpa +decide [p, fuel, packedLen, magnitude] using o_magnitude
+  have p_padding : p.regs padding = 4 * U + 1 := by
+    simpa +decide [p, fuel, packedLen, padding] using o_padding
+  have p_digits : p.regs digits = Λ := by
+    simpa +decide [p, fuel, packedLen, digits] using o_digits
+  have p_len : p.regs len = n := by
+    simpa +decide [p, fuel, packedLen, len] using o_len
+  have p_want : p.regs want = wp := by
+    simpa +decide [p, fuel, packedLen, want] using o_want
+  have p_primeBound : p.regs primeBound = m := by
+    simpa +decide [p, fuel, packedLen, primeBound] using o_primeBound
+  have p_height : p.regs height = h := by
+    simpa +decide [p, fuel, packedLen, height] using o_height
+  have p_fuel : p.regs fuel = Cslib.Algorithms.ThreeSum.ChanHe.fuel n := by
+    simp +decide [p, fuel, packedLen]
+  have p_packedLen : p.regs packedLen = 8 * m ^ 2 := by
+    simp +decide [p, fuel, packedLen]
+  have p_mem : p.mem = k.mem := o_memory
+  refine ⟨p, (el.seq (eo.seq ep)).mono (by omega), ?_, p_mem⟩
+  exact ⟨p_len, p_magnitude, p_digits, p_height, p_fuel, p_want, p_primeBound, p_packedLen,
+    p_padding⟩
+
+private theorem exec_calculate_suffix {w n U : ℕ} (f : Data 24)
+    (f_len : f.regs len = n) (f_magnitude : f.regs magnitude = U)
+    (f_digits : f.regs digits = Cslib.Algorithms.ThreeSum.labelBits (2 * U))
+    (f_padding : f.regs padding = 4 * U + 1)
+    (f_want : f.regs want = Cslib.Algorithms.ThreeSum.ChanHe.wPar n (2 * U))
+    (f_wantSucc : f.regs wantSucc = Cslib.Algorithms.ThreeSum.ChanHe.wPar n (2 * U) + 1)
+    (f_temp : f.regs temp = Nat.log 2 (Cslib.Algorithms.ThreeSum.ChanHe.wPar n (2 * U) + 1))
+    (f_one : f.regs one = 1) (f_two : f.regs two = 2) (f_three : f.regs three = 3)
+    (f_four : f.regs four = 4) (f_eight : f.regs eight = 8)
+    (hfit : Fits w (Math.budget n U)) :
+    ∃ p, ExecWithin w
+      (.seq (ram[ temp ← two * temp; temp ← temp + four; primeBound ← wantSucc * temp ])
+      (.seq (ram[ quotient ← len ])
+      (.seq (NatLog.program.rename (logRegisters logLen))
+      (.seq (ram[ quotient ← logLen + two ])
+      (.seq (NatClog.program.rename (logRegisters height))
+      (ram[ fuel ← three * height; fuel ← fuel - two; packedLen ← primeBound * primeBound;
+        packedLen ← eight * packedLen ]))))))
+      f p (19 + 4 * Nat.log 2 n + 5 * Cslib.Algorithms.ThreeSum.ChanHe.height n) ∧
+      Output n U p ∧ p.mem = f.mem := by
+  let Λ := Cslib.Algorithms.ThreeSum.labelBits (2 * U)
+  let h := Cslib.Algorithms.ThreeSum.ChanHe.height n
+  let wp := Cslib.Algorithms.ThreeSum.ChanHe.wPar n (2 * U)
+  let m := Cslib.Algorithms.ThreeSum.ChanHe.mPar n (2 * U)
+  change f.regs digits = Λ at f_digits
+  change f.regs want = wp at f_want
+  change f.regs wantSucc = wp + 1 at f_wantSucc
+  change f.regs temp = Nat.log 2 (wp + 1) at f_temp
+  have em : m = (wp + 1) * (2 * Nat.log 2 (wp + 1) + 4) := rfl
+  have hf : 2 * Nat.log 2 (wp + 1) + 4 ≤ m := Math.factor_le n U
+  have hl := Nat.log_le_self 2 n
+  have hml : Fits w m := hfit.of_le (by dsimp [Math.budget]; nlinarith)
+  have fitm (v : ℕ) (hv : v ≤ m) : Fits w v := hml.of_le hv
+  have fitn (v : ℕ) (hv : v ≤ 4 * n + 64) : Fits w v :=
+    hfit.of_le (by dsimp [Math.budget]; omega)
+  have f2 : Fits w 2 := fitn _ (by omega)
+  have f2log : Fits w (2 * Nat.log 2 (wp + 1)) := fitm _ (by omega)
+  have ff : Fits w (2 * Nat.log 2 (wp + 1) + 4) := fitm _ hf
+  have fn : Fits w n := fitn _ (by omega)
+  have flogn : Fits w (Nat.log 2 n + 1) := fitn _ (by omega)
+  let g := (((f.set temp (2 * Nat.log 2 (wp + 1))).set temp
+    (2 * Nat.log 2 (wp + 1) + 4)).set primeBound m)
+  have eg : ExecWithin w (ram[ temp ← two * temp; temp ← temp + four;
+    primeBound ← wantSucc * temp ]) f g 3 := by
+    ram_eval [g, f_two, f_temp, f_four, f_wantSucc, ← em, f2log, ff, hml, temp, two, four,
+      primeBound, wantSucc, Fin.mk.injEq, Data.set, Function.update_idem]
+  have g_magnitude : g.regs magnitude = U := by
+    simpa +decide [g, temp, primeBound, magnitude] using f_magnitude
+  have g_three : g.regs three = 3 := by
+    simpa +decide [g, temp, primeBound, three] using f_three
+  have g_eight : g.regs eight = 8 := by
+    simpa +decide [g, temp, primeBound, eight] using f_eight
+  have g_padding : g.regs padding = 4 * U + 1 := by
+    simpa +decide [g, temp, primeBound, padding] using f_padding
+  have g_digits : g.regs digits = Λ := by
+    simpa +decide [g, temp, primeBound, digits] using f_digits
+  have g_len : g.regs len = n := by
+    simpa +decide [g, temp, primeBound, len] using f_len
+  have g_want : g.regs want = wp := by
+    simpa +decide [g, temp, primeBound, want] using f_want
+  have g_one : g.regs one = 1 := by
+    simpa +decide [g, temp, primeBound, one] using f_one
+  have g_two : g.regs two = 2 := by
+    simpa +decide [g, temp, primeBound, two] using f_two
+  have g_primeBound : g.regs primeBound = m := by
+    simp +decide [g, temp, primeBound]
+  have g_mem : g.mem = f.mem := rfl
+  let j := (g.set quotient (n))
+  have ej : ExecWithin (B := .standard) w (ram[ quotient ← len ]) g j 1 := by
+    ram_eval [j, g_len]
+  have j_magnitude : j.regs magnitude = U := by
+    simpa +decide [j, quotient, magnitude] using g_magnitude
+  have j_three : j.regs three = 3 := by
+    simpa +decide [j, quotient, three] using g_three
+  have j_eight : j.regs eight = 8 := by
+    simpa +decide [j, quotient, eight] using g_eight
+  have j_padding : j.regs padding = 4 * U + 1 := by
+    simpa +decide [j, quotient, padding] using g_padding
+  have j_digits : j.regs digits = Λ := by
+    simpa +decide [j, quotient, digits] using g_digits
+  have j_len : j.regs len = n := by
+    simpa +decide [j, quotient, len] using g_len
+  have j_want : j.regs want = wp := by
+    simpa +decide [j, quotient, want] using g_want
+  have j_one : j.regs one = 1 := by
+    simpa +decide [j, quotient, one] using g_one
+  have j_two : j.regs two = 2 := by
+    simpa +decide [j, quotient, two] using g_two
+  have j_primeBound : j.regs primeBound = m := by
+    simpa +decide [j, quotient, primeBound] using g_primeBound
+  have j_quotient : j.regs quotient = n := by
+    simp +decide [j, quotient]
+  have j_mem : j.mem = f.mem := g_mem
+  obtain ⟨k, ek, k_logLen, k_mem, k_one, k_two⟩ :=
+    NatLog.exec_rename (logRegisters logLen) (by decide) j f2
+      (by simpa only [logRegisters, NatLog.arg, Matrix.cons_val_zero, j_quotient] using fn)
+      (by simpa only [logRegisters, NatLog.arg, Matrix.cons_val_zero, j_quotient, h] using flogn)
+  simp only [logRegisters, NatLog.arg, NatLog.result, NatLog.one, NatLog.two,
+    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val,
+      j_quotient] at ek k_logLen k_one k_two
+  have k_magnitude : k.regs magnitude = U := (ek.regs_eq (by decide)).trans j_magnitude
+  have k_three : k.regs three = 3 := (ek.regs_eq (by decide)).trans j_three
+  have k_eight : k.regs eight = 8 := (ek.regs_eq (by decide)).trans j_eight
+  have k_padding : k.regs padding = 4 * U + 1 := (ek.regs_eq (by decide)).trans j_padding
+  have k_digits : k.regs digits = Λ := (ek.regs_eq (by decide)).trans j_digits
+  have k_len : k.regs len = n := (ek.regs_eq (by decide)).trans j_len
+  have k_want : k.regs want = wp := (ek.regs_eq (by decide)).trans j_want
+  have k_primeBound : k.regs primeBound = m := (ek.regs_eq (by decide)).trans j_primeBound
+  have k_memory : k.mem = f.mem := k_mem.trans j_mem
+  obtain ⟨p, etail, hout, p_mem⟩ := exec_calculate_tail k k_len k_magnitude k_digits k_padding
+    k_want k_primeBound k_logLen k_one k_two k_three k_eight hfit
+  refine ⟨p, (eg.seq (ej.seq (ek.seq etail))).mono (by omega), hout, p_mem.trans k_memory⟩
+
 private theorem exec_calculate {w n U : ℕ} (x : Data 24)
     (hlen : x.regs len = n) (hU : x.regs magnitude = U)
     (h1 : x.regs one = 1) (h2 : x.regs two = 2) (h3 : x.regs three = 3)
@@ -210,13 +435,9 @@ private theorem exec_calculate {w n U : ℕ} (x : Data 24)
     congr 2
     omega
   have ew : wp = 5 * Λ * (Nat.sqrt n + 1) := rfl
-  have em : m = (wp + 1) * (2 * Nat.log 2 (wp + 1) + 4) := rfl
-  have eh : Cslib.Algorithms.ThreeSum.ChanHe.fuel n = 3 * h - 2 := rfl
   have hd : 5 * Λ ≤ wp := Math.digits_le n U
   have hw : wp + 1 ≤ m := Math.want_le n U
   have hf : 2 * Nat.log 2 (wp + 1) + 4 ≤ m := Math.factor_le n U
-  have hh : h ≤ Nat.log 2 n + 2 := Math.height_le n
-  have hl := Nat.log_le_self 2 n
   have hroot := Nat.sqrt_le_self n
   have hml : Fits w m := hfit.of_le (by dsimp [Math.budget]; nlinarith)
   have fitm (v : ℕ) (hv : v ≤ m) : Fits w v := hml.of_le hv
@@ -224,7 +445,6 @@ private theorem exec_calculate {w n U : ℕ} (x : Data 24)
     hfit.of_le (by dsimp [Math.budget]; omega)
   have fitn (v : ℕ) (hv : v ≤ 4 * n + 64) : Fits w v :=
     hfit.of_le (by dsimp [Math.budget]; omega)
-  have f1 : Fits w 1 := fitu _ (by omega)
   have f2 : Fits w 2 := fitu _ (by omega)
   have f4U : Fits w (4 * U) := fitu _ (by omega)
   have fpad : Fits w (4 * U + 1) := fitu _ (by omega)
@@ -237,19 +457,6 @@ private theorem exec_calculate {w n U : ℕ} (x : Data 24)
   have fwp : Fits w wp := fitm _ (by omega)
   have fwps : Fits w (wp + 1) := fitm _ hw
   have flogwp : Fits w (Nat.log 2 (wp + 1) + 1) := fitm _ (by omega)
-  have f2log : Fits w (2 * Nat.log 2 (wp + 1)) := fitm _ (by omega)
-  have ff : Fits w (2 * Nat.log 2 (wp + 1) + 4) := fitm _ hf
-  have fn : Fits w n := fitn _ (by omega)
-  have flogn : Fits w (Nat.log 2 n + 1) := fitn _ (by omega)
-  have flog2 : Fits w (Nat.log 2 n + 2) := fitn _ (by omega)
-  have flog3 : Fits w (Nat.log 2 n + 2 + 1) := fitn _ (by omega)
-  have fh : Fits w (h + 1) := fitn _ (by omega)
-  have f3h : Fits w (3 * h) := fitn _ (by omega)
-  have ffuel : Fits w (Cslib.Algorithms.ThreeSum.ChanHe.fuel n) :=
-    fitn _ (by dsimp [Cslib.Algorithms.ThreeSum.ChanHe.fuel]; omega)
-  have fm2 : Fits w (m * m) := hfit.of_le (by dsimp [Math.budget]; nlinarith)
-  have fN : Fits w (8 * m ^ 2) := hfit.of_le (by dsimp [Math.budget]; nlinarith)
-  have fNm : Fits w (8 * (m * m)) := by simpa only [pow_two] using fN
   let a := ((x.set quotient (4 * U)).set padding (4 * U + 1))
   have ea : ExecWithin w (ram[ quotient ← four * magnitude; padding ← quotient + one ]) x a 2 := by
     ram_eval [a, h4, hU, h1, f4U, fpad, four, magnitude, one, quotient, padding,
@@ -339,8 +546,6 @@ private theorem exec_calculate {w n U : ℕ} (x : Data 24)
     simpa +decide [e, temp, want, wantSucc, quotient, three] using d_three
   have e_four : e.regs four = 4 := by
     simpa +decide [e, temp, want, wantSucc, quotient, four] using d_four
-  have e_five : e.regs five = 5 := by
-    simpa +decide [e, temp, want, wantSucc, quotient, five] using d_five
   have e_eight : e.regs eight = 8 := by
     simpa +decide [e, temp, want, wantSucc, quotient, eight] using d_eight
   have e_padding : e.regs padding = 4 * U + 1 := by
@@ -349,14 +554,10 @@ private theorem exec_calculate {w n U : ℕ} (x : Data 24)
     simpa +decide [e, temp, want, wantSucc, quotient, digits] using d_digits
   have e_two : e.regs two = 2 := by
     simpa +decide [e, temp, want, wantSucc, quotient, two] using d_two
-  have e_root : e.regs root = Nat.sqrt n := by
-    simpa +decide [e, temp, want, wantSucc, quotient, root] using d_root
   have e_one : e.regs one = 1 := by
     simpa +decide [e, temp, want, wantSucc, quotient, one] using d_one
   have e_len : e.regs len = n := by
     simpa +decide [e, temp, want, wantSucc, quotient, len] using d_len
-  have e_temp : e.regs temp = Nat.sqrt n + 1 := by
-    simp +decide [e, temp, want, wantSucc, quotient]
   have e_want : e.regs want = wp := by
     simp +decide [e, temp, want, wantSucc, quotient]
   have e_wantSucc : e.regs wantSucc = wp + 1 := by
@@ -373,236 +574,19 @@ private theorem exec_calculate {w n U : ℕ} (x : Data 24)
   have f_magnitude : f.regs magnitude = U := (ef.regs_eq (by decide)).trans e_magnitude
   have f_three : f.regs three = 3 := (ef.regs_eq (by decide)).trans e_three
   have f_four : f.regs four = 4 := (ef.regs_eq (by decide)).trans e_four
-  have f_five : f.regs five = 5 := (ef.regs_eq (by decide)).trans e_five
   have f_eight : f.regs eight = 8 := (ef.regs_eq (by decide)).trans e_eight
   have f_padding : f.regs padding = 4 * U + 1 := (ef.regs_eq (by decide)).trans e_padding
   have f_digits : f.regs digits = Λ := (ef.regs_eq (by decide)).trans e_digits
-  have f_root : f.regs root = Nat.sqrt n := (ef.regs_eq (by decide)).trans e_root
   have f_len : f.regs len = n := (ef.regs_eq (by decide)).trans e_len
   have f_want : f.regs want = wp := (ef.regs_eq (by decide)).trans e_want
   have f_wantSucc : f.regs wantSucc = wp + 1 := (ef.regs_eq (by decide)).trans e_wantSucc
   have f_memory : f.mem = x.mem := f_mem.trans e_mem
-  let g := (((f.set temp (2 * Nat.log 2 (wp + 1))).set temp
-    (2 * Nat.log 2 (wp + 1) + 4)).set primeBound m)
-  have eg : ExecWithin w (ram[ temp ← two * temp; temp ← temp + four;
-    primeBound ← wantSucc * temp ]) f g 3 := by
-    ram_eval [g, f_two, f_temp, f_four, f_wantSucc, ← em, f2log, ff, hml, temp, two, four,
-      primeBound, wantSucc, Fin.mk.injEq, Data.set, Function.update_idem]
-  have g_magnitude : g.regs magnitude = U := by
-    simpa +decide [g, temp, primeBound, magnitude] using f_magnitude
-  have g_three : g.regs three = 3 := by
-    simpa +decide [g, temp, primeBound, three] using f_three
-  have g_four : g.regs four = 4 := by
-    simpa +decide [g, temp, primeBound, four] using f_four
-  have g_five : g.regs five = 5 := by
-    simpa +decide [g, temp, primeBound, five] using f_five
-  have g_eight : g.regs eight = 8 := by
-    simpa +decide [g, temp, primeBound, eight] using f_eight
-  have g_padding : g.regs padding = 4 * U + 1 := by
-    simpa +decide [g, temp, primeBound, padding] using f_padding
-  have g_digits : g.regs digits = Λ := by
-    simpa +decide [g, temp, primeBound, digits] using f_digits
-  have g_root : g.regs root = Nat.sqrt n := by
-    simpa +decide [g, temp, primeBound, root] using f_root
-  have g_len : g.regs len = n := by
-    simpa +decide [g, temp, primeBound, len] using f_len
-  have g_want : g.regs want = wp := by
-    simpa +decide [g, temp, primeBound, want] using f_want
-  have g_wantSucc : g.regs wantSucc = wp + 1 := by
-    simpa +decide [g, temp, primeBound, wantSucc] using f_wantSucc
-  have g_temp : g.regs temp = 2 * Nat.log 2 (wp + 1) + 4 := by
-    simp +decide [g, temp, primeBound]
-  have g_one : g.regs one = 1 := by
-    simpa +decide [g, temp, primeBound, one] using f_one
-  have g_two : g.regs two = 2 := by
-    simpa +decide [g, temp, primeBound, two] using f_two
-  have g_primeBound : g.regs primeBound = m := by
-    simp +decide [g, temp, primeBound]
-  have g_mem : g.mem = x.mem := f_memory
-  let j := (g.set quotient (n))
-  have ej : ExecWithin (B := .standard) w (ram[ quotient ← len ]) g j 1 := by
-    ram_eval [j, g_len]
-  have j_magnitude : j.regs magnitude = U := by
-    simpa +decide [j, quotient, magnitude] using g_magnitude
-  have j_three : j.regs three = 3 := by
-    simpa +decide [j, quotient, three] using g_three
-  have j_four : j.regs four = 4 := by
-    simpa +decide [j, quotient, four] using g_four
-  have j_five : j.regs five = 5 := by
-    simpa +decide [j, quotient, five] using g_five
-  have j_eight : j.regs eight = 8 := by
-    simpa +decide [j, quotient, eight] using g_eight
-  have j_padding : j.regs padding = 4 * U + 1 := by
-    simpa +decide [j, quotient, padding] using g_padding
-  have j_digits : j.regs digits = Λ := by
-    simpa +decide [j, quotient, digits] using g_digits
-  have j_root : j.regs root = Nat.sqrt n := by
-    simpa +decide [j, quotient, root] using g_root
-  have j_len : j.regs len = n := by
-    simpa +decide [j, quotient, len] using g_len
-  have j_want : j.regs want = wp := by
-    simpa +decide [j, quotient, want] using g_want
-  have j_wantSucc : j.regs wantSucc = wp + 1 := by
-    simpa +decide [j, quotient, wantSucc] using g_wantSucc
-  have j_temp : j.regs temp = 2 * Nat.log 2 (wp + 1) + 4 := by
-    simpa +decide [j, quotient, temp] using g_temp
-  have j_one : j.regs one = 1 := by
-    simpa +decide [j, quotient, one] using g_one
-  have j_two : j.regs two = 2 := by
-    simpa +decide [j, quotient, two] using g_two
-  have j_primeBound : j.regs primeBound = m := by
-    simpa +decide [j, quotient, primeBound] using g_primeBound
-  have j_quotient : j.regs quotient = n := by
-    simp +decide [j, quotient]
-  have j_mem : j.mem = x.mem := g_mem
-  obtain ⟨k, ek, k_logLen, k_mem, k_one, k_two⟩ :=
-    NatLog.exec_rename (logRegisters logLen) (by decide) j f2
-      (by simpa only [logRegisters, NatLog.arg, Matrix.cons_val_zero, j_quotient] using fn)
-      (by simpa only [logRegisters, NatLog.arg, Matrix.cons_val_zero, j_quotient, h] using flogn)
-  simp only [logRegisters, NatLog.arg, NatLog.result, NatLog.one, NatLog.two,
-    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val,
-      j_quotient] at ek k_logLen k_one k_two
-  have k_magnitude : k.regs magnitude = U := (ek.regs_eq (by decide)).trans j_magnitude
-  have k_three : k.regs three = 3 := (ek.regs_eq (by decide)).trans j_three
-  have k_four : k.regs four = 4 := (ek.regs_eq (by decide)).trans j_four
-  have k_five : k.regs five = 5 := (ek.regs_eq (by decide)).trans j_five
-  have k_eight : k.regs eight = 8 := (ek.regs_eq (by decide)).trans j_eight
-  have k_padding : k.regs padding = 4 * U + 1 := (ek.regs_eq (by decide)).trans j_padding
-  have k_digits : k.regs digits = Λ := (ek.regs_eq (by decide)).trans j_digits
-  have k_root : k.regs root = Nat.sqrt n := (ek.regs_eq (by decide)).trans j_root
-  have k_len : k.regs len = n := (ek.regs_eq (by decide)).trans j_len
-  have k_want : k.regs want = wp := (ek.regs_eq (by decide)).trans j_want
-  have k_wantSucc : k.regs wantSucc = wp + 1 := (ek.regs_eq (by decide)).trans j_wantSucc
-  have k_temp : k.regs temp = 2 * Nat.log 2 (wp + 1) + 4 := (ek.regs_eq (by decide)).trans j_temp
-  have k_primeBound : k.regs primeBound = m := (ek.regs_eq (by decide)).trans j_primeBound
-  have k_memory : k.mem = x.mem := k_mem.trans j_mem
-  let l := (k.set quotient (Nat.log 2 n + 2))
-  have el : ExecWithin w (ram[ quotient ← logLen + two ]) k l 1 := by
-    ram_eval [l, k_logLen, k_two, flog2, quotient, logLen, two, Fin.mk.injEq]
-  have l_magnitude : l.regs magnitude = U := by
-    simpa +decide [l, quotient, magnitude] using k_magnitude
-  have l_three : l.regs three = 3 := by
-    simpa +decide [l, quotient, three] using k_three
-  have l_four : l.regs four = 4 := by
-    simpa +decide [l, quotient, four] using k_four
-  have l_five : l.regs five = 5 := by
-    simpa +decide [l, quotient, five] using k_five
-  have l_eight : l.regs eight = 8 := by
-    simpa +decide [l, quotient, eight] using k_eight
-  have l_padding : l.regs padding = 4 * U + 1 := by
-    simpa +decide [l, quotient, padding] using k_padding
-  have l_digits : l.regs digits = Λ := by
-    simpa +decide [l, quotient, digits] using k_digits
-  have l_root : l.regs root = Nat.sqrt n := by
-    simpa +decide [l, quotient, root] using k_root
-  have l_len : l.regs len = n := by
-    simpa +decide [l, quotient, len] using k_len
-  have l_want : l.regs want = wp := by
-    simpa +decide [l, quotient, want] using k_want
-  have l_wantSucc : l.regs wantSucc = wp + 1 := by
-    simpa +decide [l, quotient, wantSucc] using k_wantSucc
-  have l_temp : l.regs temp = 2 * Nat.log 2 (wp + 1) + 4 := by
-    simpa +decide [l, quotient, temp] using k_temp
-  have l_primeBound : l.regs primeBound = m := by
-    simpa +decide [l, quotient, primeBound] using k_primeBound
-  have l_logLen : l.regs logLen = Nat.log 2 n := by
-    simpa +decide [l, quotient, logLen] using k_logLen
-  have l_one : l.regs one = 1 := by
-    simpa +decide [l, quotient, one] using k_one
-  have l_two : l.regs two = 2 := by
-    simpa +decide [l, quotient, two] using k_two
-  have l_quotient : l.regs quotient = Nat.log 2 n + 2 := by
-    simp +decide [l, quotient]
-  have l_mem : l.mem = x.mem := k_memory
-  obtain ⟨o, eo, o_height, o_mem, o_one, o_two⟩ :=
-    NatClog.exec_rename (logRegisters height) (by decide) l f2
-      (by simpa only [logRegisters, NatClog.arg, Matrix.cons_val_zero, l_quotient] using flog3)
-      (by simpa only [logRegisters, NatClog.arg, Matrix.cons_val_zero, l_quotient, h,
-        Cslib.Algorithms.ThreeSum.ChanHe.height] using fh)
-  simp only [logRegisters, NatClog.arg, NatClog.result, NatClog.one, NatClog.two,
-    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val,
-      l_quotient] at eo o_height o_one o_two
-  change o.regs height = h at o_height
-  change ExecWithin w _ l o (5 * h + 5) at eo
-  have o_magnitude : o.regs magnitude = U := (eo.regs_eq (by decide)).trans l_magnitude
-  have o_three : o.regs three = 3 := (eo.regs_eq (by decide)).trans l_three
-  have o_four : o.regs four = 4 := (eo.regs_eq (by decide)).trans l_four
-  have o_five : o.regs five = 5 := (eo.regs_eq (by decide)).trans l_five
-  have o_eight : o.regs eight = 8 := (eo.regs_eq (by decide)).trans l_eight
-  have o_padding : o.regs padding = 4 * U + 1 := (eo.regs_eq (by decide)).trans l_padding
-  have o_digits : o.regs digits = Λ := (eo.regs_eq (by decide)).trans l_digits
-  have o_root : o.regs root = Nat.sqrt n := (eo.regs_eq (by decide)).trans l_root
-  have o_len : o.regs len = n := (eo.regs_eq (by decide)).trans l_len
-  have o_want : o.regs want = wp := (eo.regs_eq (by decide)).trans l_want
-  have o_wantSucc : o.regs wantSucc = wp + 1 := (eo.regs_eq (by decide)).trans l_wantSucc
-  have o_temp : o.regs temp = 2 * Nat.log 2 (wp + 1) + 4 := (eo.regs_eq (by decide)).trans l_temp
-  have o_primeBound : o.regs primeBound = m := (eo.regs_eq (by decide)).trans l_primeBound
-  have o_logLen : o.regs logLen = Nat.log 2 n := (eo.regs_eq (by decide)).trans l_logLen
-  have o_memory : o.mem = x.mem := o_mem.trans l_mem
-  let p := ((((o.set fuel (3 * h)).set fuel (Cslib.Algorithms.ThreeSum.ChanHe.fuel n)).set packedLen
-    (m * m)).set packedLen (8 * m ^ 2))
-  have ep : ExecWithin w (ram[ fuel ← three * height; fuel ← fuel - two;
-    packedLen ← primeBound * primeBound; packedLen ← eight * packedLen ]) o p 4 := by
-    ram_eval [p, o_three, o_height, o_two, o_primeBound, o_eight, ← eh, f3h, ffuel, fm2, fNm,
-      fuel, three, height, two, packedLen, primeBound, eight, Fin.mk.injEq, pow_two, Data.set,
-      Function.update_idem]
-  have p_magnitude : p.regs magnitude = U := by
-    simpa +decide [p, fuel, packedLen, magnitude] using o_magnitude
-  have p_three : p.regs three = 3 := by
-    simpa +decide [p, fuel, packedLen, three] using o_three
-  have p_four : p.regs four = 4 := by
-    simpa +decide [p, fuel, packedLen, four] using o_four
-  have p_five : p.regs five = 5 := by
-    simpa +decide [p, fuel, packedLen, five] using o_five
-  have p_eight : p.regs eight = 8 := by
-    simpa +decide [p, fuel, packedLen, eight] using o_eight
-  have p_padding : p.regs padding = 4 * U + 1 := by
-    simpa +decide [p, fuel, packedLen, padding] using o_padding
-  have p_digits : p.regs digits = Λ := by
-    simpa +decide [p, fuel, packedLen, digits] using o_digits
-  have p_root : p.regs root = Nat.sqrt n := by
-    simpa +decide [p, fuel, packedLen, root] using o_root
-  have p_len : p.regs len = n := by
-    simpa +decide [p, fuel, packedLen, len] using o_len
-  have p_want : p.regs want = wp := by
-    simpa +decide [p, fuel, packedLen, want] using o_want
-  have p_wantSucc : p.regs wantSucc = wp + 1 := by
-    simpa +decide [p, fuel, packedLen, wantSucc] using o_wantSucc
-  have p_temp : p.regs temp = 2 * Nat.log 2 (wp + 1) + 4 := by
-    simpa +decide [p, fuel, packedLen, temp] using o_temp
-  have p_primeBound : p.regs primeBound = m := by
-    simpa +decide [p, fuel, packedLen, primeBound] using o_primeBound
-  have p_logLen : p.regs logLen = Nat.log 2 n := by
-    simpa +decide [p, fuel, packedLen, logLen] using o_logLen
-  have p_height : p.regs height = h := by
-    simpa +decide [p, fuel, packedLen, height] using o_height
-  have p_one : p.regs one = 1 := by
-    simpa +decide [p, fuel, packedLen, one] using o_one
-  have p_two : p.regs two = 2 := by
-    simpa +decide [p, fuel, packedLen, two] using o_two
-  have p_fuel : p.regs fuel = Cslib.Algorithms.ThreeSum.ChanHe.fuel n := by
-    simp +decide [p, fuel, packedLen]
-  have p_packedLen : p.regs packedLen = 8 * m ^ 2 := by
-    simp +decide [p, fuel, packedLen]
-  have p_mem : p.mem = x.mem := o_memory
-  refine ⟨p, ?_, ?_, p_mem⟩
-  · exact (ea.seq
-      (eb.seq
-      (ec.seq
-      (ed.seq
-      (ee.seq
-      (ef.seq
-      (eg.seq
-      (ej.seq
-      (ek.seq
-      (el.seq
-      (eo.seq
-      (ep)))))))))))).mono (by
-      rw [time_zero]
-      dsimp only [wp, h]
-      exact le_of_eq (by ring))
-  · exact ⟨p_len, p_magnitude, p_digits, p_height, p_fuel, p_want, p_primeBound, p_packedLen,
-    p_padding⟩
+  obtain ⟨p, esuffix, hout, p_mem⟩ := exec_calculate_suffix f f_len f_magnitude f_digits f_padding
+    f_want f_wantSucc f_temp f_one f_two f_three f_four f_eight hfit
+  refine ⟨p, (ea.seq (eb.seq (ec.seq (ed.seq (ee.seq (ef.seq esuffix)))))).mono (by
+    rw [time_zero]
+    dsimp only [wp, h]
+    exact le_of_eq (by ring)), hout, p_mem.trans f_memory⟩
 
 /-- Read the native unsigned header and compute all parameters, preserving every memory cell.
 This local theorem is discharged from a logarithmic width in `runs_input`. -/

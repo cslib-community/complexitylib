@@ -215,8 +215,13 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
-- The Another Solution Problem (ASP) framework: solution-preserving reductions with explicit
-  polynomial-time solution bijections, and applications to SAT and planar SAT.
+- The Another Solution Problem (ASP) framework: certify polynomial-time forward and inverse
+  witness maps. The parsimonious reductions to positive exact-one SAT and its planar
+  three-occurrence variants already preserve counts over occurring variables; the new local
+  replacements have constant-factor growth and preserve the earlier linear grid sides and
+  quadratic planar costs. See the [reduction catalogue](guide/ComplexityGuide/NPCompleteness.lean)
+  for the completed NP-completeness and NP-hardness endpoints. Exact count preservation alone
+  does not supply the ASP runtime certificates.
 - Counting reductions and further oracle results preserving exact multiplicities; permanent
   #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's
   approximate counting.
@@ -442,8 +447,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
   witness recovery ([#1447]) are proved mathematically. The tensor identity, full recursion,
   shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
-  bounds, with the empty zero-depth root handled explicitly. It still needs tiling and sparse
-  leaf bounds, native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
+  bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
+  ([#1463](https://github.com/cslib-community/complexitylib/issues/1463)) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
+  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. It still
+  needs native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
   host, the fast Exact Triangle solver and full
   input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
   size-based width
@@ -451,6 +458,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
   Horn-SAT, 2SAT, matching and domino-tiling clients.
+- **Conditional Convolution-3SUM host** ([#1524]): the charged native host initializes from the
+  ordinary input and runs every generated instance, conditional on a concrete solver's execution,
+  correctness and frame theorem. This completes the conditional host milestone. Integrating the
+  concrete fast Exact Triangle solver and the full input/time/width/asymptotic reduction remains
+  open under [#1394].
 - **Stateful algorithms and data structures:** Word-RAM controllers for larger adaptive and
   iterative clients, including the two-stack queue and timeline-editing controllers; reusable
   allocation and deallocation, shrinking, and live and peak space accounting; ownership and
@@ -594,4 +606,5 @@ not planned, not as proved.
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1459]: https://github.com/cslib-community/complexitylib/issues/1459
+[#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
