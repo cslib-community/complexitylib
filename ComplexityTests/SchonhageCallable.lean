@@ -8,6 +8,7 @@ Authors: Erik Demaine
 
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Width
 
+-- VM checks exercise actual code alongside the separate kernel-checked general execution.
 set_option linter.hashCommand false
 
 namespace ComplexityTests.SchonhageCallable
@@ -18,11 +19,15 @@ open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
 private def observe {m N : ℕ} (caller : List ℕ)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
-    (qs : List (Fin N × Fin N)) : Option (List ℤ × Bool) :=
+    (qs : List (Fin N × Fin N)) (dirtyWorkspace : Bool := false) : Option (List ℤ × Bool) :=
   let original := (State.init (CallableProduct.input caller X Y qs) : State 163).data
   let b := CallableProduct.inputBase caller
   let sentinel := b + CallableProduct.windowSize N qs.length + 7
-  let initial := original.write sentinel 91
+  let dirty : Data 163 := ⟨original.regs, fun a =>
+    if dirtyWorkspace && decide (b + QueriedProduct.inputEnd m N qs.length ≤ a ∧
+        a < b + CallableProduct.windowSize N qs.length)
+      then 2 * CallableProduct.windowSize N qs.length + 27 else original.mem a⟩
+  let initial := dirty.write sentinel 91
   (CallableProduct.entryProgram.eval 512 1024 initial).map fun (y, _) =>
     ((List.range qs.length).map (fun i => Signed.decode (y.mem (y.regs 0 + i))),
       decide ((∀ a < b, y.mem a = original.mem a) ∧
@@ -36,6 +41,11 @@ private def observe {m N : ℕ} (caller : List ℕ)
 -- Actual empty query and zero-product cases still restore the caller and local input.
 #guard observe [23] (m := 0) (N := 1) (fun _ _ => 1) (fun _ _ => 0) [] == some ([], true)
 #guard observe [] (m := 0) (N := 1) (fun _ _ => 1) (fun _ _ => 0) [(0, 0)] == some ([0], true)
+
+-- A preexisting caller workspace can contain physical words larger than the source modulus.
+-- This is a supplied dirty caller state; the callee performs no bulk fill or clearing.
+#guard observe [17, 29] (m := 0) (N := 1) (fun _ _ => 1) (fun _ _ => 1)
+    [(0, 0), (0, 0)] true == some ([1, 1], true)
 
 private def X : Matrix (Fin 1) (Fin (D 0)) ℤ := fun _ _ => 1
 private def Y : Matrix (Fin (D 0)) (Fin 1) ℤ := fun _ _ => 1
@@ -71,8 +81,11 @@ example : ∃ y n,
   · simpa [CallableProduct.input, CallableProduct.inputBase, State.init, Data.init] using
       hf 3 (Or.inl (by decide))
 
--- The actual computed reservation has a sharp physical-width boundary for this input.
+-- The numerical reservation/admission budget has a strict width boundary for this input.
 example : Fits 387 (4 + 4 * CallableProduct.windowSize 1 1 + 1024) ∧
     ¬Fits 386 (4 + 4 * CallableProduct.windowSize 1 1 + 1024) := by decide +kernel
+
+-- Empty query lists are admitted at positive geometry; zero N fails the explicit thin premise.
+example : ¬D 0 ^ 18 ≤ 0 := by decide +kernel
 
 end ComplexityTests.SchonhageCallable

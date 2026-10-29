@@ -323,6 +323,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   The window is at most `(2*(N+Q+3))^128`; this deliberately large polynomial address-space
   reservation is not a claim about a tightly packed physical allocation. Every width above
   `256*clog₂(base+N+Q+P+5)` suffices for initialized callers with prefix words bounded by `P`.
+  The arbitrary dirty-caller interface uses `P` to bound every initial register and memory
+  word, including words loaded before the actual remainder; native prefix bounds then follow
+  from that derived physical admission. Initialized scratch is zero, so its `P` only needs
+  to bound the protected caller prefix. The generic compiler theorem remains separate from
+  the concrete thin-geometry admission and saving.
   The real ET-record/matrix/query adapter and whole solver remain subsequent work under #1394.
   Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow

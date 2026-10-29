@@ -18,7 +18,7 @@ memory need not already be normalized. This small topic module avoids adding an 
 specific transformation to the allocation API.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM.ArrayNormalize
 
@@ -38,12 +38,12 @@ abbrev value : Fin 7 := 5
 abbrev one : Fin 7 := 6
 
 /-- Normalize one cell with five actual native instructions. -/
-def body : Code .standard 7 := ram[
+@[expose] def body : Code .standard 7 := ram[
   address ← base + index; value ← *address; value ← value % modulus;
   *address ← value; index ← index + one ]
 
 /-- Fixed code for in-place normalization of an interval supplied in registers. -/
-def program : Code .standard 7 :=
+@[expose] def program : Code .standard 7 :=
   .seq (ram[ index ← #0; one ← #1 ]) (.loop (.lt index length) body)
 
 /-- Mathematical memory after normalizing a prefix; this is not a machine operation. -/

@@ -140,6 +140,16 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandR
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandSplit
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandTables
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandThin
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Bounds
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Core
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Flat
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Input
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Program
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Return
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Setup
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Width
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Controller
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Copy
@@ -1856,6 +1866,7 @@ public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.InputArray
 public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.MapOp
+public import Complexity.Computability.WordRAM.MemoryWindow
 public import Complexity.Computability.WordRAM.Multiword
 public import Complexity.Computability.WordRAM.Multiword.Arithmetic
 public import Complexity.Computability.WordRAM.Multiword.Bank
@@ -1873,6 +1884,7 @@ public import Complexity.Computability.WordRAM.Multiword.Sub
 public import Complexity.Computability.WordRAM.Multiword.Transfer
 public import Complexity.Computability.WordRAM.Multiword.Workspace
 public import Complexity.Computability.WordRAM.Native
+public import Complexity.Computability.WordRAM.Normalize
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power
