@@ -16,26 +16,29 @@ private def initial (input : List Bool) : Cfg 0 Bool Unit input :=
   Cfg.init guessMachine.initial input
 
 -- An empty input has one singleton halt, no discarded binary choice and no zero-step halt.
-example : guessMachine.branches 0 (initial []) = ∅ := by decide
-example : guessMachine.branches 1 (initial []) = {[0]} := by decide
-example : guessMachine.runBranch (initial []) [0, 0] = none := by decide
-example : guessMachine.HaltsWithin 1 (initial []) := haltsWithin []
+example :
+    guessMachine.branches 0 (initial []) = ∅ ∧
+    guessMachine.branches 1 (initial []) = {[0]} ∧
+    guessMachine.runBranch (initial []) [0, 0] = none ∧
+    guessMachine.HaltsWithin 1 (initial []) :=
+  ⟨by decide, by decide, by decide, haltsWithin []⟩
 
--- Both bit occurrences exist, with distinct outputs and no additional final coin.
-example : guessMachine.branches 2 (initial [false]) = {[0, 0], [1, 0]} := by decide
-example : guessMachine.branchCount (· == [false]) 2 (initial [true]) = 1 := by decide
-example : guessMachine.branchCount (· == [true]) 2 (initial [true]) = 1 := by decide
-example : guessMachine.branches 1 (initial [true]) = ∅ := by decide
-example : guessMachine.runBranch (initial [true]) [2, 0] = none := by decide
-example : guessMachine.runBranch (initial [true]) [1, 1] = none := by decide
-example : guessMachine.runBranch (initial [true]) [1, 0, 0] = none := by decide
-
--- A longer mixed witness is written in chronological choice order.
-example : (guessMachine.runBranch (initial [false, false, true]) [1, 0, 1, 0]).map
-    Cfg.output = some [true, false, true] := by decide
-example : (guessMachine.branches 4 (initial [false, false, true])).card = 8 := by decide
-example : guessMachine.branchCount (fun word => word.headD false) 4
-    (initial [false, false, true]) = 4 := by decide
+-- Both bit occurrences exist, with distinct outputs and no additional final coin, and a longer
+-- mixed witness is written in chronological choice order.
+example :
+    guessMachine.branches 2 (initial [false]) = {[0, 0], [1, 0]} ∧
+    guessMachine.branchCount (· == [false]) 2 (initial [true]) = 1 ∧
+    guessMachine.branchCount (· == [true]) 2 (initial [true]) = 1 ∧
+    guessMachine.branches 1 (initial [true]) = ∅ ∧
+    guessMachine.runBranch (initial [true]) [2, 0] = none ∧
+    guessMachine.runBranch (initial [true]) [1, 1] = none ∧
+    guessMachine.runBranch (initial [true]) [1, 0, 0] = none ∧
+    (guessMachine.runBranch (initial [false, false, true]) [1, 0, 1, 0]).map
+      Cfg.output = some [true, false, true] ∧
+    (guessMachine.branches 4 (initial [false, false, true])).card = 8 ∧
+    guessMachine.branchCount (fun word => word.headD false) 4
+      (initial [false, false, true]) = 4 := by
+  decide
 
 example (input : List Bool) (fuel : ℕ) (h : input.length + 1 ≤ fuel)
     (verdict : List Bool → Bool) :
@@ -45,13 +48,22 @@ example (input : List Bool) (fuel : ℕ) (h : input.length + 1 ≤ fuel)
   rw [(haltsWithin input).branchCount_eq h verdict]
   exact GuessMachine.branchCount_eq input verdict
 
--- The List handler preserves duplicates, singleton instructions and an empty choice list.
-example : OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
-    (chooseOccurrence [true, true]) = [true, true] := interpret_chooseOccurrence _
-example : OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
-    (chooseOccurrence [false]) = [false] := interpret_chooseOccurrence _
-example : OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
-    (chooseOccurrence ([] : List Bool)) = [] := interpret_chooseOccurrence _
+-- The List handler preserves duplicates, singleton instructions, an empty choice list, and output
+-- multiplicity.
+example :
+    OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
+      (chooseOccurrence [true, true]) = [true, true] ∧
+    OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
+      (chooseOccurrence [false]) = [false] ∧
+    OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
+      (chooseOccurrence ([] : List Bool)) = [] ∧
+    (OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
+      (Cfg.output <$> guessMachine.runProgram 1 (initial []))).count [] = 1 ∧
+    (OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
+      (Cfg.output <$> guessMachine.runProgram 2 (initial [false]))).count [] = 0 :=
+  ⟨interpret_chooseOccurrence _, interpret_chooseOccurrence _, interpret_chooseOccurrence _,
+    by simpa [initial] using count_interpret_output [] [],
+    by simpa [initial] using count_interpret_output [false] []⟩
 
 example (input word : List Bool) (h : word.length = input.length) :
     (OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
@@ -59,14 +71,6 @@ example (input word : List Bool) (h : word.length = input.length) :
       1 := by
   unfold initial
   rw [count_interpret_output, ite_eq_left h]
-
-example : (OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
-    (Cfg.output <$> guessMachine.runProgram 1 (initial []))).count [] = 1 := by
-  simpa [initial] using count_interpret_output [] []
-
-example : (OracleComp.interpret (fun n => List.ofFn (id : Fin n → Fin n))
-    (Cfg.output <$> guessMachine.runProgram 2 (initial [false]))).count [] = 0 := by
-  simpa [initial] using count_interpret_output [false] []
 
 /--
 info: 'Turing.MultiTapeCTM.interpret_chooseOccurrence' depends on axioms: [propext, Quot.sound]

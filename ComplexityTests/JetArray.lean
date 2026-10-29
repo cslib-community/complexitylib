@@ -27,119 +27,75 @@ open Turing MultiTapeTM
 /-! ### Shared rectangular table lookup and tabulation (`PolyTime.Int.Table`) -/
 
 example :
-    let T := tabulateTable 2 3 fun i j => (10 * i + j : ℤ) - 5
+    (let T := tabulateTable 2 3 fun i j => (10 * i + j : ℤ) - 5
     T = [[-5, -4, -3], [5, 6, 7]] ∧
       rowEntry T 1 2 = 7 ∧
       rowEntry T 2 0 = 0 ∧
-      rowEntry T 0 3 = 0 := by
-  decide +kernel
-
-example :
+      rowEntry T 0 3 = 0) ∧
     tabulateTable 2 3 (rowEntry [[1, 2, -1], [3, 0, 4]]) = [[1, 2, -1], [3, 0, 4]] :=
-  tabulateTable_rowEntry ⟨rfl, by decide +kernel⟩
+  ⟨by decide +kernel, tabulateTable_rowEntry ⟨rfl, by decide +kernel⟩⟩
 
-example :
-    ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × JetRows =>
-        tabulateTable p.1.1 p.1.2 fun i j => rowEntry p.2 j i)
-      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
-
-/-! ### Concrete 2D truncation and rectangular arithmetic -/
+/-! ### Concrete 2D truncation, rectangular arithmetic, boundary dimensions, and algebraic laws -/
 
 -- (1 + 2V - V^2 + (3 + 4V^2)z) * (2 - 3V + V^2 + (-1 + 5V + 2V^2)z) mod (z^2, V^3)
 -- drops z^2 and V^3, V^4 terms, leaving (2 + V - 7V^2) + (5 - 6V + 24V^2)z.
 example :
     convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]] =
-      [[2, 1, -7], [5, -6, 24]] := by
-  decide +kernel
-
--- Rectangular J = 3, ℓ = 2 linear and shift operations.
-example :
+      [[2, 1, -7], [5, -6, 24]] ∧
     addJet 3 2 [[1, -2], [3, 4], [-5, 6]] [[2, 2], [-1, 0], [5, -3]] =
-      [[3, 0], [2, 4], [0, 3]] := by
-  decide +kernel
-
-example :
+      [[3, 0], [2, 4], [0, 3]] ∧
     subJet 3 2 [[1, -2], [3, 4], [-5, 6]] [[2, 2], [-1, 0], [5, -3]] =
-      [[-1, -4], [4, 4], [-10, 9]] := by
-  decide +kernel
-
-example :
+      [[-1, -4], [4, 4], [-10, 9]] ∧
     smulJet 3 2 (-3) [[1, -2], [0, 4], [-5, 6]] =
-      [[-3, 6], [0, -12], [15, -18]] := by
-  decide +kernel
-
--- Shifts drop the highest power z^(J-1) / V^(ℓ-1) and reach zeroJet after J / ℓ steps.
-example :
+      [[-3, 6], [0, -12], [15, -18]] ∧
     shiftZJet 3 2 [[1, 2], [3, 4], [5, 6]] = [[0, 0], [1, 2], [3, 4]] ∧
-      shiftZJet 3 2 (shiftZJet 3 2 (shiftZJet 3 2 [[1, 2], [3, 4], [5, 6]])) =
-        zeroJet 3 2 := by
-  decide +kernel
-
-example :
+    shiftZJet 3 2 (shiftZJet 3 2 (shiftZJet 3 2 [[1, 2], [3, 4], [5, 6]])) =
+      zeroJet 3 2 ∧
     shiftVJet 2 3 [[1, 2, 3], [4, 5, 6]] = [[0, 1, 2], [0, 4, 5]] ∧
-      shiftVJet 2 3 (shiftVJet 2 3 (shiftVJet 2 3 [[1, 2, 3], [4, 5, 6]])) =
-        zeroJet 2 3 := by
-  decide +kernel
-
-/-! ### Boundary dimensions (`J = 0`, `ℓ = 0`) and ragged inputs -/
-
-example :
+    shiftVJet 2 3 (shiftVJet 2 3 (shiftVJet 2 3 [[1, 2, 3], [4, 5, 6]])) =
+      zeroJet 2 3 ∧
     zeroJet 0 3 = [] ∧
-      convJet 0 3 [[1, 2, 3]] [[4, 5, 6]] = [] ∧
-      zeroJet 3 0 = [[], [], []] ∧
-      convJet 3 0 [[1], [2], [3]] [[4], [5], [6]] = [[], [], []] ∧
-      constJet 0 0 42 = [] ∧
-      constJet 2 0 42 = [[], []] := by
-  decide +kernel
-
--- Ragged inputs pad missing entries with 0 and ignore extra rows/columns outside J × ℓ.
-example :
+    convJet 0 3 [[1, 2, 3]] [[4, 5, 6]] = [] ∧
+    zeroJet 3 0 = [[], [], []] ∧
+    convJet 3 0 [[1], [2], [3]] [[4], [5], [6]] = [[], [], []] ∧
+    constJet 0 0 42 = [] ∧
+    constJet 2 0 42 = [[], []] ∧
     addJet 2 2 [[1, 99, 100], [], [7, 8]] [[10], [20, 30, 40]] =
       [[11, 99], [20, 30]] := by
   decide +kernel
 
-/-! ### Algebraic laws on nontrivial rectangular arrays -/
-
 example :
-    let A := [[1, -2], [3, 4], [-5, 1]]
+    (let A := [[1, -2], [3, 4], [-5, 1]]
     let B := [[2, 1], [-1, 3], [0, -2]]
     let C := [[-3, 2], [1, 0], [4, -1]]
     convJet 3 2 (convJet 3 2 A B) C = convJet 3 2 A (convJet 3 2 B C) ∧
       convJet 3 2 A (addJet 3 2 B C) = addJet 3 2 (convJet 3 2 A B) (convJet 3 2 A C) ∧
-      convJet 3 2 (constJet 3 2 1) A = A := by
-  decide +kernel
-
-example :
+      convJet 3 2 (constJet 3 2 1) A = A) ∧
     convJet 2 3 (constJet 2 3 1) [[1, 2, -1], [3, 0, 4]] = [[1, 2, -1], [3, 0, 4]] :=
-  constJet_one_convJet ⟨rfl, by decide +kernel⟩
+  ⟨by decide +kernel, constJet_one_convJet ⟨rfl, by decide +kernel⟩⟩
 
 /-! ### Coefficient-norm and bit-length bounds -/
 
--- Strict norm decrease under cancellation/truncation, and tightness when no terms truncate.
+-- Strict norm decrease under cancellation/truncation, tightness when no terms truncate,
+-- and nonvacuous instantiation of `size_natAbs_rowEntry_convJet_le` and
+-- `length_encIntBin_mem_convJet_le` on 2 × 3 inputs with magnitudes ≤ 5 (`size ≤ 3`).
 example :
-    jetL1Norm [[1, 2, -1], [3, 0, 4]] = 11 ∧
+    (jetL1Norm [[1, 2, -1], [3, 0, 4]] = 11 ∧
       jetL1Norm [[2, -3, 1], [-1, 5, 2]] = 14 ∧
       jetL1Norm (convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]]) = 45 ∧
       jetL1Norm (convJet 2 3 [[1, 2, 0], [3, 0, 0]] [[0, 1, 0], [0, 0, 0]]) =
-        jetL1Norm [[1, 2, 0], [3, 0, 0]] * jetL1Norm [[0, 1, 0], [0, 0, 0]] := by
-  decide +kernel
-
--- Nonvacuous instantiation of `size_natAbs_rowEntry_convJet_le` and
--- `length_encIntBin_mem_convJet_le` on 2 × 3 inputs with magnitudes ≤ 5 (`size ≤ 3`).
-example (j u : ℕ) :
-    (rowEntry (convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]]) j u).natAbs.size ≤
-      3 + 3 + (2 * 3).size :=
-  size_natAbs_rowEntry_convJet_le (bA := 3) (bB := 3) (by decide +kernel) (by decide +kernel) j u
-
-example {row : List ℤ}
-    (hrow : row ∈ convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]])
-    {z : ℤ} (hz : z ∈ row) :
-    (encIntBin z).length ≤ 3 + 3 + (2 * 3).size + 1 :=
-  length_encIntBin_mem_convJet_le (bA := 3) (bB := 3)
-    (by decide +kernel) (by decide +kernel) hrow hz
+        jetL1Norm [[1, 2, 0], [3, 0, 0]] * jetL1Norm [[0, 1, 0], [0, 0, 0]]) ∧
+    (∀ j u : ℕ,
+      (rowEntry (convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]]) j u).natAbs.size ≤
+        3 + 3 + (2 * 3).size) ∧
+    ∀ {row : List ℤ},
+      row ∈ convJet 2 3 [[1, 2, -1], [3, 0, 4]] [[2, -3, 1], [-1, 5, 2]] →
+      ∀ {z : ℤ}, z ∈ row → (encIntBin z).length ≤ 3 + 3 + (2 * 3).size + 1 :=
+  ⟨by decide +kernel,
+    fun j u => size_natAbs_rowEntry_convJet_le (bA := 3) (bB := 3)
+      (by decide +kernel) (by decide +kernel) j u,
+    fun hrow _ hz => length_encIntBin_mem_convJet_le (bA := 3) (bB := 3)
+      (by decide +kernel) (by decide +kernel) hrow hz⟩
 
 /-- info: ([[2, 1, -7], [5, -6, 24]], 45, [[3, 2, 4], [4, 4, 6]]) -/
 #guard_msgs in
@@ -153,6 +109,11 @@ example {row : List ℤ}
 -- with plain `ComputableInPolyTime` (no `Tidy` types).
 example :
     ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × JetRows =>
+        tabulateTable p.1.1 p.1.2 fun i j => rowEntry p.2 j i)
+      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
+      (encList (encList encIntBin)) ∧
+    ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × JetRows) × JetRows =>
         let J := p.1.1.1
         let ℓ := p.1.1.2
@@ -162,7 +123,7 @@ example :
           (subJet J ℓ (shiftVJet J ℓ A) (constJet J ℓ 3)))
       (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
         (encList (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  fun_prop
+      (encList (encList encIntBin)) :=
+  ⟨by fun_prop, by fun_prop⟩
 
 end ComplexityTests.JetArray

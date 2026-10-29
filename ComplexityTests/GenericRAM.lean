@@ -40,12 +40,12 @@ private def program : Program model 2 :=
   [.op (.const 0 true), .op (.const 1 false), .op (.store 0 1),
     .op (.alu () 1 ![1]), .op (.load 1 0), .halt 1]
 
-example : run () program 6 initial = some (false, 6) := by decide
-
-example : Executes () program initial false 6 :=
-  Executes.of_run (by decide : run () program 6 initial = some (false, 6))
-
-example : step () [.branch (.test () ![]) 2, .halt 0, .halt 1] initial = .fault := by
-  rfl
+example :
+    run () program 6 initial = some (false, 6) ∧
+    Executes () program initial false 6 ∧
+    step () [.branch (.test () ![]) 2, .halt 0, .halt 1] initial = .fault :=
+  ⟨by decide,
+   Executes.of_run (by decide : run () program 6 initial = some (false, 6)),
+   rfl⟩
 
 end ComplexityTests.GenericRAM

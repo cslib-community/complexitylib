@@ -50,6 +50,7 @@ polynomial time, the space is polynomial (`Cslib.Reachability.exists_polyBounded
 
 * `Cslib.Reachability.Savitch.computableTidilyInO_roundStep`: the time and space of a round.
 * `Cslib.Reachability.computableTidilyInO_savitch`: the time and space of Savitch's algorithm.
+* `Cslib.Reachability.computableInO_savitch`: the same bounds for plain certificates.
 * `Cslib.Reachability.exists_polyBounded_space_savitch`: Savitch's algorithm in polynomial space.
 
 ## References
@@ -793,6 +794,24 @@ theorem computableTidilyInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
     simp only [stateBound] at h₁ ⊢
     nlinarith
   · rw [roundStep_iterate, savitch, answer_eq]
+
+/-- `computableTidilyInO_savitch` for plain certificates. -/
+theorem computableInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
+    {edge : π → List Bool → List Bool → Bool} {Te Se : π × List Bool × List Bool → ℕ}
+    (hedge : ComputableInO (fun q : π × List Bool × List Bool => edge q.1 q.2.1 q.2.2)
+      (encPair encP (encPair encBits encBits)) encBool Te Se)
+    {par : γ → π} {width depth : γ → ℕ} {src dst : γ → List Bool} {Tin Sin : γ → ℕ}
+    (hin : ComputableInO (fun x => (par x, width x, depth x, src x, dst x)) encIn
+      (encArgs encP) Tin Sin)
+    (hsrc : ∀ x, (src x).length = width x) (hdst : ∀ x, (dst x).length = width x) :
+    ComputableInO (fun x => savitch (edge (par x)) (width x) (depth x) (src x) (dst x))
+      encIn encBool
+      (fun x => Tin x + 2 ^ ((width x + 2) * (depth x + 1)) *
+        (((depth x + 1) * (depth x + width x + 1) + (encP (par x)).length + 1) ^ 2 +
+          edgeMax Te (par x) (width x)))
+      fun x => Sin x + (depth x + 1) * (depth x + width x + 1) + (encP (par x)).length +
+        edgeMax Se (par x) (width x) :=
+  (computableTidilyInO_savitch hedge.tidy hin.tidy hsrc hdst).computableInO
 
 /-- **Savitch's algorithm in polynomial space.** If the edge test is tidily computable in
 polynomial time, and the parameter, the width and depth in unary, and endpoints of width `w` are

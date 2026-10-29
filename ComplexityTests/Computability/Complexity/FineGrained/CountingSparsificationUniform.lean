@@ -38,43 +38,41 @@ private def twoUnits : CNF ℕ := [[(0, true)], [(1, true)]]
 private def MOf (_ : Context) : ℕ := countingThresholdBase 2 1
 private def BOf (_ : Context) : ℕ := 1
 
-example : declaredProbe ((true, 3), unitFormula) = 4 := by decide
-example : normalizeDeclaredLeaf Prod.snd declaredProbe ((true, 3), unitFormula) = 1 := by decide
-example : normalizeDeclaredLeaf Prod.snd declaredProbe ((false, 3), unitFormula) = 0 := by decide
-
-example : searchDeclaredWith Prod.snd MOf BOf 2 2 declaredProbe (true, 3) unitFormula = 8 := by
-  decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) unitFormula = 4 := by decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (false, 3) unitFormula = 0 := by decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 1) unitFormula = 1 := by decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 0) [] = 1 := by decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) [] = 8 := by decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) [[]] = 0 := by decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) [[(0, true), (0, false)]] = 8 := by
-  decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 1) [[(1, true)]] = 0 := by decide
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3)
-    [[(0, true), (1, true), (2, true)]] = 0 := by decide
-
+-- Concrete checks on `declaredProbe`, `normalizeDeclaredLeaf`, `searchDeclaredWith`, and `rounds`.
 -- The probe is not a model counter for arbitrary formulas: two independent units have one model.
-example : searchDeclaredWith Prod.snd MOf BOf 2 2
-    (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 2) twoUnits = 2 := by decide
-example : ([(false, false), (false, true), (true, false), (true, true)].filter
-    (fun a => twoUnits.eval fun v => if v = 0 then a.1 else a.2)).length = 1 := by decide
-
--- The same runtime binary clock routine sees different divisors, retaining its binary output.
-example : rounds 1 twoUnits = 16 ∧ rounds 2 twoUnits = 8 ∧
-    (encNat (rounds 1 twoUnits)).length = 5 := by decide
-example : rounds 0 ([] : CNF ℕ) = 4 := by decide
+example :
+    declaredProbe ((true, 3), unitFormula) = 4 ∧
+    normalizeDeclaredLeaf Prod.snd declaredProbe ((true, 3), unitFormula) = 1 ∧
+    normalizeDeclaredLeaf Prod.snd declaredProbe ((false, 3), unitFormula) = 0 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2 declaredProbe (true, 3) unitFormula = 8 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) unitFormula = 4 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (false, 3) unitFormula = 0 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 1) unitFormula = 1 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 0) [] = 1 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) [] = 8 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) [[]] = 0 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3) [[(0, true), (0, false)]] = 8 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 1) [[(1, true)]] = 0 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 3)
+      [[(0, true), (1, true), (2, true)]] = 0 ∧
+    searchDeclaredWith Prod.snd MOf BOf 2 2
+      (normalizeDeclaredLeaf Prod.snd declaredProbe) (true, 2) twoUnits = 2 ∧
+    ([(false, false), (false, true), (true, false), (true, true)].filter
+      (fun a => twoUnits.eval fun v => if v = 0 then a.1 else a.2)).length = 1 ∧
+    rounds 1 twoUnits = 16 ∧
+    rounds 2 twoUnits = 8 ∧
+    (encNat (rounds 1 twoUnits)).length = 5 ∧
+    rounds 0 ([] : CNF ℕ) = 4 := by
+  decide
 example (payload : Bool) (N : ℕ) (φ : CNF ℕ) :
     (encInput ((payload, N), φ)).length = 2 * N + 7 + (encCNF φ).length := by
   simp only [encInput, encContext, length_encPair, encUnary_apply, List.length_replicate,
@@ -176,10 +174,11 @@ private theorem varying_comparison : ComputableInPolyTime
     ((hM.comp (ComputableInPolyTime.fst encContext (encPair encUnary encUnary))).prod
       (ComputableInPolyTime.snd encContext (encPair encUnary encUnary)))
 
-example : searchDeclaredWith Prod.snd varyingM varyingB 2 2 occurringProbe
-    (true, 3) unitFormula = 4 := by decide
-example : searchDeclaredWith Prod.snd varyingM varyingB 2 2 occurringProbe
-    (false, 3) unitFormula = 0 := by decide
+example :
+    searchDeclaredWith Prod.snd varyingM varyingB 2 2 occurringProbe (true, 3) unitFormula = 4 ∧
+    searchDeclaredWith Prod.snd varyingM varyingB 2 2 occurringProbe
+      (false, 3) unitFormula = 0 := by
+  decide
 
 -- One whole-search machine sees both budgets and arbitrarily large unary declared sizes.
 -- An exponential leaf-time allowance still produces polynomial whole-search workspace.

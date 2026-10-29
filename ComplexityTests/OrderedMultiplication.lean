@@ -28,65 +28,37 @@ instance : Fact (2 ≤ 257) := ⟨by decide⟩
 instance : Fact (2 ≤ 1000) := ⟨by decide⟩
 instance : Fact (2 ≤ 262145) := ⟨by decide⟩
 
-/-- Zero and one work in the minimum canonical universe. -/
-example : (multiplication L).Realize (![0, 1, 0] : Fin 3 → Fin 2) := by
-  rw [realize_multiplication]
-  decide
-
-example : (multiplication L).Realize (![1, 0, 0] : Fin 3 → Fin 2) := by
-  rw [realize_multiplication]
-  decide
-
-example : (multiplication L).Realize (![1, 1, 1] : Fin 3 → Fin 2) := by
-  rw [realize_multiplication]
-  decide
-
-example : ¬(multiplication L).Realize (![1, 1, 0] : Fin 3 → Fin 2) := by
-  rw [realize_multiplication]
-  decide
-
-/-- The ordinary product can exist in an odd-sized universe. -/
-example : (multiplication L).Realize (![2, 2, 4] : Fin 3 → Fin 5) := by
-  rw [realize_multiplication]
-  decide
-
-/-- Every candidate is rejected if the product exceeds an odd-sized universe. -/
-example (z : Fin 3) : ¬(multiplication L).Realize ![2, 2, z] :=
-  not_realize_multiplication_of_le _ (by change 3 ≤ 4; decide)
-
-/-- The final input covered by the fixed finite branch. -/
-example : (multiplication L).Realize (![255, 1, 255] : Fin 3 → Fin 256) := by
-  rw [realize_multiplication]
-  decide
-
-/-- The first input requiring packed witnesses, at the first large universe. -/
-example : (multiplication L).Realize (![256, 1, 256] : Fin 3 → Fin 257) := by
-  rw [realize_multiplication]
-  decide
-
-example : (multiplication L).Realize (![256, 0, 0] : Fin 3 → Fin 257) := by
-  rw [realize_multiplication]
-  decide
-
-example (z : Fin 257) : ¬(multiplication L).Realize ![256, 2, z] :=
-  not_realize_multiplication_of_le _ (by change 257 ≤ 512; decide)
-
-/-- Packed multiplication in a universe strictly between consecutive powers of two. -/
-example : (multiplication L).Realize (![300, 3, 900] : Fin 3 → Fin 1000) := by
-  rw [realize_multiplication]
-  decide
-
-example (z : Fin 1000) : ¬(multiplication L).Realize ![300, 4, z] :=
-  not_realize_multiplication_of_le _ (by change 1000 ≤ 1200; decide)
-
-/-- Dense inputs require nonzero carries spanning several blocks. -/
-example : (multiplication L).Realize (![511, 511, 261121] : Fin 3 → Fin 262145) := by
-  rw [realize_multiplication]
-  decide
-
-/-- The uniqueness theorem has an explicit, nonvacuous bounded-product client. -/
-example : ∃! z : Fin 1000, (multiplication L).Realize ![300, 3, z] :=
-  existsUnique_multiplication 300 3 (by decide)
+/-- Realization, overflow rejection, packed-witness boundaries, and uniqueness of `multiplication L`
+across `Fin 2`, `Fin 3`, `Fin 5`, `Fin 256`, `Fin 257`, `Fin 1000`, and `Fin 262145`. -/
+example (z₃ : Fin 3) (z₂₅₇ : Fin 257) (z₁₀₀₀ : Fin 1000) :
+    (multiplication L).Realize (![0, 1, 0] : Fin 3 → Fin 2) ∧
+    (multiplication L).Realize (![1, 0, 0] : Fin 3 → Fin 2) ∧
+    (multiplication L).Realize (![1, 1, 1] : Fin 3 → Fin 2) ∧
+    ¬(multiplication L).Realize (![1, 1, 0] : Fin 3 → Fin 2) ∧
+    (multiplication L).Realize (![2, 2, 4] : Fin 3 → Fin 5) ∧
+    ¬(multiplication L).Realize ![2, 2, z₃] ∧
+    (multiplication L).Realize (![255, 1, 255] : Fin 3 → Fin 256) ∧
+    (multiplication L).Realize (![256, 1, 256] : Fin 3 → Fin 257) ∧
+    (multiplication L).Realize (![256, 0, 0] : Fin 3 → Fin 257) ∧
+    ¬(multiplication L).Realize ![256, 2, z₂₅₇] ∧
+    (multiplication L).Realize (![300, 3, 900] : Fin 3 → Fin 1000) ∧
+    ¬(multiplication L).Realize ![300, 4, z₁₀₀₀] ∧
+    (multiplication L).Realize (![511, 511, 261121] : Fin 3 → Fin 262145) ∧
+    (∃! z : Fin 1000, (multiplication L).Realize ![300, 3, z]) :=
+  ⟨by rw [realize_multiplication]; decide,
+    by rw [realize_multiplication]; decide,
+    by rw [realize_multiplication]; decide,
+    by rw [realize_multiplication]; decide,
+    by rw [realize_multiplication]; decide,
+    not_realize_multiplication_of_le _ (by change 3 ≤ 4; decide),
+    by rw [realize_multiplication]; decide,
+    by rw [realize_multiplication]; decide,
+    by rw [realize_multiplication]; decide,
+    not_realize_multiplication_of_le _ (by change 257 ≤ 512; decide),
+    by rw [realize_multiplication]; decide,
+    not_realize_multiplication_of_le _ (by change 1000 ≤ 1200; decide),
+    by rw [realize_multiplication]; decide,
+    existsUnique_multiplication 300 3 (by decide)⟩
 
 /-- The formula composes with ordinary variable relabeling. -/
 example (v : Fin 4 → Fin 1000) :

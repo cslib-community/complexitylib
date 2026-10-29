@@ -150,8 +150,7 @@ theorem L_subset_NL : L enc ⊆ NL enc := by
 functions. -/
 theorem compl_mem_L (h : A ∈ L enc) : Aᶜ ∈ L enc :=
   let ⟨f, hf, hA⟩ := h
-  ⟨fun a => !f a, (ComputableInLogSpace.of_finite (encIn := encBool) not).comp hf,
-    fun a => by simp [hA a]⟩
+  ⟨fun a => !f a, by fun_prop, fun a => by simp [hA a]⟩
 
 /-- **Logarithmic space is within polynomial time**: a deterministic machine that halts within
 logarithmic space repeats no configuration it can read, of which there are polynomially many. -/

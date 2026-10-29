@@ -346,7 +346,8 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
   exact schnorrGroups.advantage_cramerShoupGroupCCA2Game_le (fun _ => PMF.pure d23)
     testHash isSchnorrElem hmem adversary Q₁ Q₂ hQ n 11 (by decide) hm
 
-/-- End-to-end `Encryption.INDCCA2On` instantiation for `schnorrGroups`. -/
+/-- Conditional API client over a parameterized group family. This does not assert DDH security
+for the fixed finite fixture `d23`; the group-order lower bound must grow with the parameter. -/
 example {H : schnorrGroups.Desc × List Bool → List Bool}
     {isElem : schnorrGroups.Desc × List Bool → Bool}
     {d : ℕ → schnorrGroups.Desc}
@@ -363,5 +364,9 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
       (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupEncryptProb H d)
       (schnorrGroups.cramerShoupDecryptOpt H isElem d) :=
   hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv
+
+-- A fixed nonzero inverse-order bound cannot supply the asymptotic security premise.
+example : ¬ Negligible (fun _ : ℕ => (1 / 11 : ℝ≥0)) :=
+  not_negligible_const (by norm_num)
 
 end ComplexityTests.Crypto.CramerShoup

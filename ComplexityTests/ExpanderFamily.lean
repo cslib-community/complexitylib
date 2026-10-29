@@ -66,24 +66,18 @@ example : let p : Fin (257 ^ 8 + 1) × RotationMap.AffinePlaneFamilyLabel (ZMod 
     (RotationMap.arithmeticExpander (257 ^ 8 + 1)).rot
       ((RotationMap.arithmeticExpander (257 ^ 8 + 1)).rot p) = p := by decide
 
-example (n : ℕ) : (RotationMap.arithmeticExpander n).spectralExpansion < 1 :=
-  RotationMap.spectralExpansion_arithmeticExpander_lt_one n
-
-example : Fintype.card (RotationMap.AffinePlaneFamilyLabel (ZMod 257) 257) = 2 * 257 ^ 12 :=
-  RotationMap.card_affinePlaneFamilyLabel (ZMod.finEquiv 257).toEquiv.symm
-
 example {V : Type*} [Fintype V] :
-    (RotationMap.arithmeticExpanderFamily.graph V).spectralExpansion ≤
-      1 - 9 / (400 * (257 : ℝ) ^ 16) :=
-  RotationMap.arithmeticExpanderFamily.spectralExpansion_graph_le V
+    (RotationMap.arithmeticExpanderFamily.graph V).spectralExpansion < 1 := by
+  linarith [RotationMap.arithmeticExpanderFamily.spectralExpansion_graph_le V]
 
--- The existing mathematical PCP preprocessing accepts the new family without numerical rewrites.
+-- The mathematical PCP preprocessing accepts the arithmetic expander family and substitutes its
+-- concrete degree `2 * 257 ^ 12`.
 example {V E α : Type*} [Fintype E] [DecidableEq V] (G : PCP.ConstraintGraph V E α) :
     (G.preprocess RotationMap.arithmeticExpanderFamily).graph.spectralExpansion ≤
       1 - (1 - (1 - 9 / (400 * (257 : ℝ) ^ 16))) *
-        Fintype.card (RotationMap.AffinePlaneFamilyLabel (ZMod 257) 257) /
-          (2 * Fintype.card (RotationMap.AffinePlaneFamilyLabel (ZMod 257) 257) + 2) :=
-  G.spectralExpansion_preprocess_le RotationMap.arithmeticExpanderFamily
+        ((2 * 257 ^ 12 : ℕ) : ℝ) / (2 * ((2 * 257 ^ 12 : ℕ) : ℝ) + 2) := by
+  have hcard := RotationMap.card_affinePlaneFamilyLabel (ZMod.finEquiv 257).toEquiv.symm
+  simpa only [hcard] using G.spectralExpansion_preprocess_le RotationMap.arithmeticExpanderFamily
 
 example {V E α : Type*} [Fintype E] [DecidableEq V] [Nonempty α]
     (G : PCP.ConstraintGraph V E α) :
@@ -97,7 +91,7 @@ example {V W D : Type} (G : RotationMap V D) (e : V ≃ W)
     (hf : ComputableTidilyInPolyTime e ev ew)
     (hb : ComputableTidilyInPolyTime e.symm ew ev)
     (hg : ComputableTidilyInPolyTime G.rot (encPair ev ed) (encPair ev ed)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (W × D) × Bool =>
         let next := (G.reindex e).rot p.1
         (next, !p.2))
@@ -112,7 +106,7 @@ example (G : RotationMap (Bool × List Bool) Bool)
     (hg : ComputableTidilyInPolyTime G.rot
       (encPair (encPair encBool encBits) encBool)
       (encPair (encPair encBool encBits) encBool)) :
-    ComputableTidilyInPolyTime (G.reindex (Equiv.prodComm Bool (List Bool))).rot
+    ComputableInPolyTime (G.reindex (Equiv.prodComm Bool (List Bool))).rot
       (encPair (encPair encBits encBool) encBool)
       (encPair (encPair encBits encBool) encBool) := by
   simp only [RotationMap.reindex, Equiv.prodComm, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]

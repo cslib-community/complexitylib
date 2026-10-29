@@ -251,11 +251,9 @@ time. -/
 @[fun_prop]
 theorem computableInPolyTime_map_ne_zero :
     ComputableInPolyTime (fun l : List ℕ => l.map (· != 0)) (encList encUnary) encBits := by
-  have hbit : ComputableTidilyInPolyTime (fun n : ℕ => n != 0) encUnary encBool := by
-    convert bool_not.comp ComputableTidilyInDegree.unary_isZero.computableTidilyInPolyTime using 1
-    funext n
-    cases n <;> rfl
-  exact .of_tidy (listToBits.comp (ComputableTidilyInPolyTime.map hbit))
+  have hbit : ComputableInPolyTime (fun n : ℕ => n != 0) encUnary encBool :=
+    .bne .id' (.const 0)
+  exact ComputableInPolyTime.listToBits.comp (.map hbit)
 
 /-- Plain polynomial-time certificate for the universal simulator with a unary step budget. -/
 @[fun_prop]
