@@ -47,19 +47,19 @@ def bitsZMod2 : ZMod 2 ≃+ BitString 1 where
     funext i
     fin_cases a <;> fin_cases b <;> rfl
 
-/-- Over the two-element field the powering space on two bits has bias exactly `(2 - 1) / 2` at
-`{0, 1}`: the polynomial `1 + X` has one root among two field elements, so the bound of
+/-- Over the two-element field the powering space on two bits has bias `1 / 2` at `{0, 1}`:
+the polynomial `1 + X` has one root among two field elements, so the bound of
 `isSmallBias_powering` is attained. -/
-example : bias ((PMF.uniformOfFintype (ZMod 2 × ZMod 2)).map (powering bitsZMod2 2)) univ =
-    1 / 2 := by
-  rw [bias_powering]
-  have : #({x : ZMod 2 | ∑ i : Fin 2, x ^ (i : ℕ) = 0} : Finset (ZMod 2)) = 1 := by decide
-  rw [dens, this]
-  simp
-
-example : IsSmallBias ((2 - 1 : ℕ) / Fintype.card (ZMod 2) : ℝ)
-    ((PMF.uniformOfFintype (ZMod 2 × ZMod 2)).map (powering bitsZMod2 2)) :=
-  isSmallBias_powering bitsZMod2
+example :
+    bias ((PMF.uniformOfFintype (ZMod 2 × ZMod 2)).map (powering bitsZMod2 2)) univ = 1 / 2 ∧
+      IsSmallBias (1 / 2 : ℝ)
+        ((PMF.uniformOfFintype (ZMod 2 × ZMod 2)).map (powering bitsZMod2 2)) := by
+  refine ⟨?_, ?_⟩
+  · rw [bias_powering]
+    have : #({x : ZMod 2 | ∑ i : Fin 2, x ^ (i : ℕ) = 0} : Finset (ZMod 2)) = 1 := by decide
+    rw [dens, this]
+    simp
+  · simpa using isSmallBias_powering bitsZMod2 (n := 2)
 
 /-- Twenty bits of seed stretch to a thousand bits of bias below `1 / 1000`. -/
 example : ∃ g : BitString (2 * 20) → BitString 1000,

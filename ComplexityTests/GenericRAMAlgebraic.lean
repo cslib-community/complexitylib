@@ -60,44 +60,49 @@ example : run 3 (sumStore ℝ (fun a b => some (decide (a < b)))) 6
   convert sumStore_run ℝ (fun a b => some (decide (a < b))) 3 4 using 1
   norm_num
 
--- The prime-field instance executes, including reduction modulo the characteristic.
-example : run 3 (sumStore (ZMod 5) (fun _ _ => none)) 6
-    (sumStart (ZMod 5) (fun _ _ => none) 3 4) = some (.inr 2, 6) := by decide
+-- The prime-field instance executes (including reduction modulo the characteristic), while too
+-- little fuel does not claim success.
+example :
+    run 3 (sumStore (ZMod 5) (fun _ _ => none)) 6
+      (sumStart (ZMod 5) (fun _ _ => none) 3 4) = some (.inr 2, 6) ∧
+    run 3 (sumStore (ZMod 5) (fun _ _ => none)) 5
+      (sumStart (ZMod 5) (fun _ _ => none) 3 4) = none := by
+  decide
 
--- Halting needs its own instruction; too little fuel does not claim success.
-example : run 3 (sumStore (ZMod 5) (fun _ _ => none)) 5
-    (sumStart (ZMod 5) (fun _ _ => none) 3 4) = none := by decide
-
--- Rational syntax is available for reals, but not arbitrary real literals.
-example (q : ℚ) : Algebraic.real.constant 3 (.rational q) = some (.inr (q : ℝ)) := by
-  simp [Algebraic.real, Algebraic.model, Algebraic.constant, Rat.cast_def, q.den_ne_zero]
-
--- A denominator that vanishes in the field faults rather than interpreting inverse zero.
-example : (Algebraic.primeField 5).constant 3 (.rational (mkRat 1 5)) = none := by decide
-
--- A field value is never an address, including an integral value such as zero.
-example : Algebraic.real.address 3 (.inr 0) = none := rfl
-example : (Algebraic.primeField 5).address 3 (.inr 0) = none := rfl
-example : (Algebraic.primeField 5).address 3 (.inl 8) = none := by decide
+-- Rational syntax is available for reals, while a denominator that vanishes in the field faults
+-- rather than interpreting inverse zero, and a field value (or out-of-range word) is never an
+-- address.
+example (q : ℚ) :
+    Algebraic.real.constant 3 (.rational q) = some (.inr (q : ℝ)) ∧
+    (Algebraic.primeField 5).constant 3 (.rational (mkRat 1 5)) = none ∧
+    Algebraic.real.address 3 (.inr 0) = none ∧
+    (Algebraic.primeField 5).address 3 (.inr 0) = none ∧
+    (Algebraic.primeField 5).address 3 (.inl 8) = none :=
+  ⟨by simp [Algebraic.real, Algebraic.model, Algebraic.constant, Rat.cast_def, q.den_ne_zero],
+   by decide, rfl, rfl, by decide⟩
 
 -- Zero divisors, mixed tags, underflow and overflow are actual primitive/instruction faults.
-example : (Algebraic.primeField 5).evalOp 3 .div ![.inr 1, .inr 0] = none := by decide
-example : (Algebraic.primeField 5).evalOp 3 .div ![.inr 4, .inr 2] =
-    some (.inr 2) := by
+example :
+    (Algebraic.primeField 5).evalOp 3 .div ![.inr 1, .inr 0] = none ∧
+    (Algebraic.primeField 5).evalOp 3 .div ![.inr 4, .inr 2] = some (.inr 2) ∧
+    (Algebraic.primeField 5).evalOp 3 .add ![.inl 1, .inr 2] = none ∧
+    (Algebraic.primeField 5).evalOp 3 .wordSub ![.inl 1, .inl 2] = none ∧
+    (Algebraic.primeField 5).evalOp 3 .toField ![.inl 8] = none ∧
+    step 3 ([.op (.alu .wordAdd 0 ![0, 1])] : Program (Algebraic.primeField 5) 2)
+      ⟨0, ⟨![.inl 7, .inl 1], fun _ => .inl 0⟩⟩ = .fault := by
+  refine ⟨by decide, ?_, by decide, by decide, by decide, rfl⟩
   have h : (4 : ZMod 5) / 2 = 2 := (div_eq_iff (by decide)).2 (by decide)
   change some (Sum.inr ((4 : ZMod 5) / 2)) = some (Sum.inr (2 : ZMod 5))
   rw [h]
-example : (Algebraic.primeField 5).evalOp 3 .add ![.inl 1, .inr 2] = none := by decide
-example : (Algebraic.primeField 5).evalOp 3 .wordSub ![.inl 1, .inl 2] = none := by decide
-example : (Algebraic.primeField 5).evalOp 3 .toField ![.inl 8] = none := by decide
-example : step 3 ([.op (.alu .wordAdd 0 ![0, 1])] : Program (Algebraic.primeField 5) 2)
-    ⟨0, ⟨![.inl 7, .inl 1], fun _ => .inl 0⟩⟩ = .fault := by rfl
 
 -- Field order is present only in the real instance; finite fields offer equality.
-example : Algebraic.real.evalTest 3 .lt ![.inr 2, .inr 3] = some true := by
-  simp! [Algebraic.real, Algebraic.model, Algebraic.evalTest, Algebraic.admissible,
-    Fin.forall_fin_two, show (2 : ℝ) < 3 by norm_num]
-example : (Algebraic.primeField 5).evalTest 3 .lt ![.inr 2, .inr 3] = none := by decide
+example :
+    Algebraic.real.evalTest 3 .lt ![.inr 2, .inr 3] = some true ∧
+    (Algebraic.primeField 5).evalTest 3 .lt ![.inr 2, .inr 3] = none :=
+  ⟨by
+     simp! [Algebraic.real, Algebraic.model, Algebraic.evalTest, Algebraic.admissible,
+       Fin.forall_fin_two, show (2 : ℝ) < 3 by norm_num],
+   by decide⟩
 
 /-- A real ordered branch skips a failing answer and returns the larger input. -/
 noncomputable def orderedBranch : Program Algebraic.real 2 :=
@@ -110,11 +115,13 @@ example : run 2 orderedBranch 2 ⟨0, ⟨![.inr 2, .inr 3], fun _ => .inl 0⟩�
     Fin.forall_fin_two, show (2 : ℝ) < 3 by norm_num]
 
 -- Empty programs and out-of-range control labels fault even with available fuel.
-example : step 3 ([] : Program (Algebraic.primeField 5) 1)
-    ⟨0, Data.init (.inl 0) (fun _ => .inl 0)⟩ = .fault := by rfl
-example : step 0 ([.jump 1] : Program (Algebraic.primeField 5) 0)
-    ⟨0, Data.init (.inl 0) (fun _ => .inl 0)⟩ = .fault := by rfl
-example : step 3 ([.halt 0] : Program (Algebraic.primeField 5) 1)
-    ⟨0, Data.init (.inl 8) (fun _ => .inl 0)⟩ = .fault := by rfl
+example :
+    step 3 ([] : Program (Algebraic.primeField 5) 1)
+      ⟨0, Data.init (.inl 0) (fun _ => .inl 0)⟩ = .fault ∧
+    step 0 ([.jump 1] : Program (Algebraic.primeField 5) 0)
+      ⟨0, Data.init (.inl 0) (fun _ => .inl 0)⟩ = .fault ∧
+    step 3 ([.halt 0] : Program (Algebraic.primeField 5) 1)
+      ⟨0, Data.init (.inl 8) (fun _ => .inl 0)⟩ = .fault :=
+  ⟨rfl, rfl, rfl⟩
 
 end GenericRAMAlgebraicTests

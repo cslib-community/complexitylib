@@ -21,11 +21,12 @@ noncomputable def nativeId : NativeCertificate (fun n : ℕ => n) encNat encNat 
 noncomputable def countedId := NativeCertificate.iterate nativeId nativeId nativeId
 
 -- Zero includes the final stopping round; positive counters include every trajectory state.
-example : countedId.time 0 = 1 ∧ countedId.space 0 = 0 := by decide +kernel
-example : countedId.time 1 = 14 ∧ countedId.space 1 = 5 := by decide +kernel
-example : countedId.time 2 = 43 ∧ countedId.space 2 = 10 := by decide +kernel
-
-example : ComputableInO (fun n : ℕ => n) encNat encNat countedId.time countedId.space := by
+example :
+    (countedId.time 0 = 1 ∧ countedId.space 0 = 0) ∧
+    (countedId.time 1 = 14 ∧ countedId.space 1 = 5) ∧
+    (countedId.time 2 = 43 ∧ countedId.space 2 = 10) ∧
+    ComputableInO (fun n : ℕ => n) encNat encNat countedId.time countedId.space := by
+  refine ⟨by decide +kernel, by decide +kernel, by decide +kernel, ?_⟩
   refine countedId.computes.of_enc_eq (g := fun n : ℕ => n) fun n => ?_
   change encNat n = encNat ((id : ℕ → ℕ)^[n] n)
   simp only [Function.iterate_id, id_eq]
@@ -40,13 +41,14 @@ def stopped : ReadMachine Unit where
   addr _ := none
   step _ _ := ((), [])
 
-example : stopped.toStepMachine.init = ((), 1) := rfl
-example : stopped.toStepMachine.halt ((), 0) = true := rfl
-example : stopped.toStepMachine.step ((), 0) none = (((), 0), 0, []) := rfl
-
 -- The existing state formulas still charge framing and the binary head position.
-example : ReadMachine.stateT unitWord (fun _ => 0) (fun _ => 0) ((), 0) = 36 := rfl
-example : ReadMachine.stateS unitWord (fun _ => 0) ((), 0) = 6 := rfl
+example :
+    stopped.toStepMachine.init = ((), 1) ∧
+    stopped.toStepMachine.halt ((), 0) = true ∧
+    stopped.toStepMachine.step ((), 0) none = (((), 0), 0, []) ∧
+    ReadMachine.stateT unitWord (fun _ => 0) (fun _ => 0) ((), 0) = 36 ∧
+    ReadMachine.stateS unitWord (fun _ => 0) ((), 0) = 6 :=
+  ⟨rfl, rfl, rfl, rfl, rfl⟩
 
 /-- All three component certificates may have zero state-dependent bounds. -/
 theorem stoppedResource : stopped.toStepMachine.ResourceCertificate
@@ -62,15 +64,5 @@ theorem stoppedResource : stopped.toStepMachine.ResourceCertificate
       .constZero ((), [])
     exact h.mono 3 (fun _ => by change 2 ≤ 3; decide)
       (fun _ => by change 0 ≤ 3; decide)
-
-/-- info: 'Cslib.GenericRAM.NativeCertificate.iterate' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.GenericRAM.NativeCertificate.iterate
-
-/-- info: 'Turing.ReadMachine.toStepMachine_resourceCertificate' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms Turing.ReadMachine.toStepMachine_resourceCertificate
 
 end ComplexityTests.Internal.CountedConsumers

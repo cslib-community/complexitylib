@@ -235,7 +235,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `81920*(L+1)*N²/(4^m)^(1/18)` when `L=19m` and `N≥(4^m)^18`. Native power, ordered-filter,
   finite-digit and row-major list lemmas live in small topic modules; the existing mathematical
   layout, matrix and encoding interfaces are reused. No source machine or call/time oracle
-  is introduced.
+  is introduced. Anthropic's copyright and attribution are retained; the native proofs and
+  representation choices are local.
   The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is also original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing

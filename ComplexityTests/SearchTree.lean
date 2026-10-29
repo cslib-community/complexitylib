@@ -42,76 +42,82 @@ theorem elements_build (xs : List Nat) : elements (build xs) = xs.toFinset := by
   simpa only [build, insertAll_run, Finset.empty_union] using h
 
 -- These shapes represent exactly the same set, with satisfiable strict ordering invariants.
-example : Ordered medianFirst := ordered_build _
-example : Ordered sortedFirst := ordered_build _
-example : elements medianFirst = elements sortedFirst := by decide
-example : (elements medianFirst).card = 7 := by decide
-example : medianFirst.height = 3 := rfl
-example : sortedFirst.height = 7 := rfl
+example :
+    Ordered medianFirst ∧
+      Ordered sortedFirst ∧
+      elements medianFirst = elements sortedFirst ∧
+      (elements medianFirst).card = 7 ∧
+      medianFirst.height = 3 ∧
+      sortedFirst.height = 7 :=
+  ⟨ordered_build _, ordered_build _, by decide, by decide, rfl, rfl⟩
 
--- Searching for the maximum or for a missing larger key traverses three versus seven nodes.
-example : contains 7 medianFirst = true := rfl
-example : contains 8 medianFirst = false := rfl
-example : searchVisits 7 medianFirst = 3 := rfl
-example : searchVisits 7 sortedFirst = 7 := rfl
-example : searchVisits 8 medianFirst = 3 := rfl
-example : searchVisits 8 sortedFirst = 7 := rfl
-example : (insert 8 sortedFirst).height = 8 := rfl
-
--- Duplicate insertion preserves shape as well as contents.
-example : insert 4 medianFirst = medianFirst := rfl
-example : insert 4 medianFirst = medianFirst :=
-  insert_eq_self (ordered_build _) (by decide)
+-- Searching for the maximum or for a missing larger key traverses three versus seven nodes, and
+-- duplicate insertion preserves shape as well as contents.
+example :
+    contains 7 medianFirst = true ∧
+      contains 8 medianFirst = false ∧
+      searchVisits 7 medianFirst = 3 ∧
+      searchVisits 7 sortedFirst = 7 ∧
+      searchVisits 8 medianFirst = 3 ∧
+      searchVisits 8 sortedFirst = 7 ∧
+      (insert 8 sortedFirst).height = 8 ∧
+      insert 4 medianFirst = medianFirst :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, insert_eq_self (ordered_build _) (by decide)⟩
 
 -- Successor is strict, can start from an absent key, and reports exhaustion.
-example : minimum medianFirst = some 1 := rfl
-example : successor 0 medianFirst = some 1 := rfl
-example : successor 4 medianFirst = some 5 := rfl
-example : successor 7 medianFirst = none := rfl
-example : successor 100 medianFirst = none := rfl
-example : successor 3 (build [2, 4, 6]) = some 4 := rfl
-example : successor 4 (build [2, 4, 6]) = some 6 := rfl
-example : successorVisits 7 sortedFirst = 7 := rfl
-example : minimumVisits sortedFirst = 1 := rfl
+example :
+    minimum medianFirst = some 1 ∧
+      successor 0 medianFirst = some 1 ∧
+      successor 4 medianFirst = some 5 ∧
+      successor 7 medianFirst = none ∧
+      successor 100 medianFirst = none ∧
+      successor 3 (build [2, 4, 6]) = some 4 ∧
+      successor 4 (build [2, 4, 6]) = some 6 ∧
+      successorVisits 7 sortedFirst = 7 ∧
+      minimumVisits sortedFirst = 1 :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 -- Empty queries and singleton boundaries are total.
-example : minimum (.nil : BinaryTree Nat) = none := rfl
-example : successor 0 (.nil : BinaryTree Nat) = none := rfl
-example : searchVisits 0 (.nil : BinaryTree Nat) = 0 := rfl
-example : run (.nil : BinaryTree Nat) (.liftBind (.insert 5) .pure) =
-    ((), BinaryTree.node 5 .nil .nil, [0]) := rfl
-example : successor 5 (build [5]) = none := rfl
-example : successor 4 (build [5]) = some 5 := rfl
+example :
+    minimum (.nil : BinaryTree Nat) = none ∧
+      successor 0 (.nil : BinaryTree Nat) = none ∧
+      searchVisits 0 (.nil : BinaryTree Nat) = 0 ∧
+      run (.nil : BinaryTree Nat) (.liftBind (.insert 5) .pure) =
+        ((), BinaryTree.node 5 .nil .nil, [0]) ∧
+      successor 5 (build [5]) = none ∧
+      successor 4 (build [5]) = some 5 :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
--- The exact native trace counts minimum and the answer-dependent successor separately.
-example : (run medianFirst firstTwo).1 = (some 1, some 2) := rfl
-example : (run medianFirst firstTwo).2.2 = [3, 3] := rfl
-example : (run sortedFirst firstTwo).1 = (some 1, some 2) := rfl
-example : (run sortedFirst firstTwo).2.2 = [1, 2] := rfl
-example : (run (.nil : BinaryTree Nat) firstTwo).1 = (none, none) := rfl
-example : (run (.nil : BinaryTree Nat) firstTwo).2.2 = [0] := rfl
-example : (run (build [5]) firstTwo).1 = (some 5, none) := rfl
+-- The exact native trace counts minimum and the answer-dependent successor separately, and agrees
+-- with finite-set semantics through the shared realization theorem.
+example :
+    (run medianFirst firstTwo).1 = (some 1, some 2) ∧
+      (run medianFirst firstTwo).2.2 = [3, 3] ∧
+      (run sortedFirst firstTwo).1 = (some 1, some 2) ∧
+      (run sortedFirst firstTwo).2.2 = [1, 2] ∧
+      (run (.nil : BinaryTree Nat) firstTwo).1 = (none, none) ∧
+      (run (.nil : BinaryTree Nat) firstTwo).2.2 = [0] ∧
+      (run (build [5]) firstTwo).1 = (some 5, none) ∧
+      (run medianFirst firstTwo).1 = ((spec Nat).runClient (elements medianFirst) firstTwo).1 :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, (run_correct firstTwo ⟨ordered_build _, rfl⟩).1⟩
 
--- Native computation and finite-set semantics agree through the shared realization theorem.
-example : (run medianFirst firstTwo).1 =
-    ((spec Nat).runClient (elements medianFirst) firstTwo).1 :=
-  (run_correct firstTwo ⟨ordered_build _, rfl⟩).1
-
-example (xs : List Nat) :
-    ∃ t ns, Executes Exec ((insertAll xs).bind fun _ => firstTwo) .nil
-        ((spec Nat).runClient ∅ ((insertAll xs).bind fun _ => firstTwo)).1 t ns ∧
-      Rep ((spec Nat).runClient ∅ ((insertAll xs).bind fun _ => firstTwo)).2.1 t ∧
+example :
+    ∃ t ns, Executes Exec ((insertAll [4, 2, 6]).bind fun _ => firstTwo) .nil
+        ((spec Nat).runClient ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)).1 t ns ∧
+      Rep ((spec Nat).runClient ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)).2.1 t ∧
       total id ns ≤ (spec Nat).totalCost (fun s _ => s.card) ∅
-        ((spec Nat).runClient ∅ ((insertAll xs).bind fun _ => firstTwo)).2.2 :=
+        ((spec Nat).runClient ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)).2.2 :=
   realized_client _ rep_empty
 
--- A malformed tree demonstrates why query correctness requires Ordered.
+-- A malformed tree demonstrates why query correctness requires Ordered, and a finite-set
+-- cardinality bound does not imply a logarithmic-height bound.
 private def malformed : BinaryTree Nat := .node 0 (.node 1 .nil .nil) .nil
-example : 1 ∈ elements malformed := by decide
-example : contains 1 malformed = false := rfl
-example : ¬ Ordered malformed := by simp [malformed, Ordered, elements]
 
--- A finite-set/cardinality bound must not be mistaken for a logarithmic-height assertion.
-example : ¬ sortedFirst.height ≤ 3 := by decide
+example :
+    1 ∈ elements malformed ∧
+      contains 1 malformed = false ∧
+      ¬ Ordered malformed ∧
+      ¬ sortedFirst.height ≤ 3 :=
+  ⟨by decide, rfl, by simp [malformed, Ordered, elements], by decide⟩
 
 end ComplexityTests.SearchTree

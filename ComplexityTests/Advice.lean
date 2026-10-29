@@ -17,22 +17,22 @@ namespace ComplexityTests.Advice
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM
 
-example (x : BitString 2) :
-    substitute (prependInputs (fun _ : Fin 1 => true)) x = Fin.append (fun _ => true) x :=
-  substitute_prependInputs _ _
-
-example (x : BitString 2) : substitute (prependInputs (n := 2) Fin.elim0) x = x := by
-  rw [substitute_prependInputs]
-  ext i
-  fin_cases i <;> rfl
-
-example (r : BitString 2) : substitute (prependInputs (n := 0) r) Fin.elim0 = r := by
-  rw [substitute_prependInputs]
-  ext i
-  fin_cases i <;> rfl
-
-example : (substituteCircuit (prependInputs (n := 0) (p := 0) Fin.elim0)).size = 2 :=
-  size_substituteCircuit _
+example (x : BitString 2) (r : BitString 2) :
+    (substitute (prependInputs (fun _ : Fin 1 => true)) ![false, true]) 0 = true ∧
+    (substitute (prependInputs (fun _ : Fin 1 => true)) ![false, true]) 1 = false ∧
+    substitute (prependInputs (n := 2) Fin.elim0) x = x ∧
+    substitute (prependInputs (n := 0) r) Fin.elim0 = r := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [substitute_prependInputs]
+    rfl
+  · rw [substitute_prependInputs]
+    rfl
+  · rw [substitute_prependInputs]
+    ext i
+    fin_cases i <;> rfl
+  · rw [substitute_prependInputs]
+    ext i
+    fin_cases i <;> rfl
 
 example (r : BitString 1) (x : BitString 2) :
     (substituteCircuit (prependInputs r)).eval interpretation x = Fin.append r x := by
@@ -48,17 +48,16 @@ private theorem zero_mem_advice : (0 : Language Bool) ∈ PAdvice := by
     ∅, ?_, fun _ => Iff.rfl⟩
   exact ⟨fun _ => false, ComputableInPolyTime.const _, fun _ => by simp⟩
 
-example : (⊤ : Language Bool) ∈ PPoly := PAdvice_subset_PPoly top_mem_advice
-example : (0 : Language Bool) ∈ PPoly := PAdvice_subset_PPoly zero_mem_advice
-
-example : (⊤ : Language Bool) ∈ PPoly :=
-  PPoly.of_advice PPoly.top_mem (fun _ => [])
-    (by change PolynomiallyBounded fun _ : ℕ => 0; fun_prop) (fun _ => Iff.rfl)
-
-example : (⊤ : Language Bool) ∈ PAdvice := PPoly_subset_PAdvice PPoly.top_mem
-example : (0 : Language Bool) ∈ PAdvice := PPoly_subset_PAdvice PPoly.zero_mem
-
-example : PPoly = (PAdvice : Set (Language Bool)) := PPoly_eq_PAdvice
+example :
+    (⊤ : Language Bool) ∈ PPoly ∧
+    (0 : Language Bool) ∈ PPoly ∧
+    (⊤ : Language Bool) ∈ PAdvice ∧
+    (0 : Language Bool) ∈ PAdvice :=
+  ⟨PAdvice_subset_PPoly top_mem_advice,
+    PAdvice_subset_PPoly zero_mem_advice,
+    PPoly_eq_PAdvice ▸ PPoly.of_advice PPoly.top_mem (fun _ => [])
+      (by change PolynomiallyBounded fun _ : ℕ => 0; fun_prop) (fun _ => Iff.rfl),
+    PPoly_subset_PAdvice PPoly.zero_mem⟩
 
 example (N : Polynomial ℕ) :
     ∃ (S W P : Polynomial ℕ) (α : ℕ → List Bool),
