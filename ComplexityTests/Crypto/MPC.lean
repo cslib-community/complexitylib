@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Crypto.Protocols.MPC.Basic
 import Complexity.Crypto.Protocols.MPC.CircuitEval
 import Complexity.Crypto.Protocols.MPC.Composition
@@ -791,35 +792,74 @@ example :
     PMF.pure ([true], ()) :=
   rfl
 
-/-- Bridge lemma (`Protocol.eval_runEncoded_eq_evalWith_map`) instantiated on
-`gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit`. -/
-example (x : Fin 2 → BitString 1) :
-    (Cslib.ProbOracleComp.runWith ot14WordHandler
-      ((gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit).runEncoded
-        (encGMWPartyView 2 1 1 1 randomizedAndCoinCircuit)
-        (fun _ y => List.ofFn y) x) ()).map Prod.fst =
-    ((gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit).evalWith ot14World x).map
-      (encodeViewsAndOutputs
-        (encGMWPartyView 2 1 1 1 randomizedAndCoinCircuit)
-        (fun _ y => List.ofFn y)) :=
-  Protocol.eval_runEncoded_eq_evalWith_map
-    (encGMWPartyView 2 1 1 1 randomizedAndCoinCircuit)
-    (fun _ y => List.ofFn y)
-    (gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit) x
+/-- Concrete behavioral consequence of the bridge lemma (`Protocol.eval_runEncoded_eq_evalWith_map`)
+and `perfectSemiHonestPrivate_twoPartyMul` at `I = ∅`: on input `![(true, true), (false, false)]`
+(where `(a₀ + a₁) * (b₀ + b₁) = true * true = true`), every word produced by
+`twoPartyMulProtocol.runEncoded` (with empty view encoding and 1-bit output encoding) under
+`ot14WordHandler` encodes a pair of complementary shares `[[b], [!b]]`. -/
+example {res : List Bool × Unit}
+    (hres : res ∈ (Cslib.ProbOracleComp.runWith ot14WordHandler
+      (twoPartyMulProtocol.runEncoded
+        (fun _ _ => []) (fun _ b => [b]) ![(true, true), (false, false)]) ()).support) :
+    ∃ b : Bool,
+      res.1 =
+        Turing.MultiTapeTM.encPair
+          (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encBits)
+          (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encBits)
+          ([[], []], [[b], [!b]]) := by
+  have hfst : res.1 ∈ ((Cslib.ProbOracleComp.runWith ot14WordHandler
+      (twoPartyMulProtocol.runEncoded
+        (fun _ _ => []) (fun _ b => [b])
+        ![(true, true), (false, false)]) ()).map Prod.fst).support :=
+    (PMF.mem_support_map_iff _ _ _).mpr ⟨res, hres, rfl⟩
+  rw [Protocol.eval_runEncoded_eq_evalWith_map, PMF.mem_support_map_iff] at hfst
+  obtain ⟨⟨v, y⟩, hvy, hres1⟩ := hfst
+  have hpriv := congrArg (PMF.map Prod.snd)
+    (perfectSemiHonestPrivate_twoPartyMul ∅ ![(true, true), (false, false)])
+  have hy_mem : y ∈ ((twoPartyMulProtocol.realJoint
+      ot14World ∅ ![(true, true), (false, false)]).map Prod.snd).support := by
+    rw [Protocol.realJoint, PMF.map_comp, PMF.mem_support_map_iff]
+    exact ⟨(v, y), hvy, rfl⟩
+  rw [← hpriv] at hy_mem
+  simp only [idealJoint, sharedMulFunctionality, ProbComp.eval_bind,
+    ProbComp.eval_pure, PMF.map_bind, PMF.pure_map,
+    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hy_mem
+  obtain ⟨y, hy', _, _, rfl⟩ := hy_mem
+  have hsum : y 0 + y 1 = (true + false) * (true + false) := by
+    simpa [Fin.sum_univ_two] using ProbComp.sum_sampleAdditiveShares _ hy'
+  have hb₁ : y 1 = !(y 0) := by
+    revert hsum
+    generalize y 0 = b₀
+    generalize y 1 = b₁
+    intro hsum
+    revert b₀ b₁ hsum
+    decide
+  refine ⟨y 0, ?_⟩
+  rw [← hres1]
+  simp only [encodeViewsAndOutputs, List.finRange_succ, List.finRange_zero,
+    List.map_cons, List.map_nil, Fin.succ_zero_eq_one, hb₁]
 
-/-- Concrete end-to-end instantiation of Theorem 7.5.12
+/-- For `F (a, w) = w.tail` at `a = 1` (`m = 2`, `coins = n = k = id`), `encodeCoinsAndInputs 2 1 1`
+packs `[b₀, b₁, c]`, whose tail `[b₁, c]` assigns party 1's private input bit `b₁` to party 0's
+output and the shared random coin bit `c` to party 1's output. -/
+example (b₀ b₁ c : Bool) :
+    (encodeCoinsAndInputs 2 1 1 ![c] ![![b₀], ![b₁]]).tail = [b₁, c] :=
+  rfl
+
+/-- Concrete end-to-end instantiation of the proper-coalition variant of Theorem 7.5.12
 (`exists_perfectSemiHonestPrivate_ot14_of_polyTime`) on the polynomial-time family indexed by
-`a : ℕ` (`encUnary`) with `m = 2`, `coins a = a`, `n a = a`, `k a = a`, and projection functionality
-`F (a, w) = w`. -/
+`a : ℕ` (`encUnary`) with `m = 2`, `coins a = a`, `n a = a`, `k a = a`, and cross-party /
+coin-dependent shift functionality `F (a, w) = w.tail` (under which party 0's output depends on
+party 1's input and party 1's output depends on the shared coins for `a ≥ 1`). -/
 example :
     ∃ C : (a : ℕ) → Cslib.Circuits.Circuit Boolean.signature (2 * a + a) (2 * a),
       Turing.MultiTapeTM.ComputableInPolyTime (fun a => (C a).code)
         Turing.MultiTapeTM.encUnary Boolean.encCode ∧
       (∀ a (xr : Fin (2 * a + a) → Bool) (j : Fin (2 * a)),
-        (C a).eval Boolean.interpretation xr j = (List.ofFn xr).getD j.val false) ∧
+        (C a).eval Boolean.interpretation xr j = (List.ofFn xr).tail.getD j.val false) ∧
       (∀ a, PerfectSemiHonestPrivateProper
         (gmwOT14RandomizedProtocol 2 a a a (C a)) ot14World
-        (wordRandomizedFunctionality 2 id id id Prod.snd a)
+        (wordRandomizedFunctionality 2 id id id (fun p : ℕ × List Bool => p.2.tail) a)
         (gmwOT14RandomizedSim 2 a a a (C a))) ∧
       Cslib.Probability.IsOraclePPTOn
         (encFamilyRunInput Turing.MultiTapeTM.encUnary 2 id)
@@ -839,7 +879,9 @@ example :
     Turing.MultiTapeTM.ComputableInPolyTime.id'
     Turing.MultiTapeTM.ComputableInPolyTime.id'
     Turing.MultiTapeTM.ComputableInPolyTime.id'
-    (Turing.MultiTapeTM.ComputableInPolyTime.snd
-      Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
+    (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy
+      (Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTail.comp
+        (Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
+          Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)))
 
 end ComplexityTests.Crypto.MPC

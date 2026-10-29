@@ -44,8 +44,10 @@ computable family of $m$-party randomized functionalities specified by a word-le
    `ot14WordHandler` yields the exact distribution of `(Π.evalWith ot14World x).map
    (encodeViewsAndOutputs encView encOut)`.
 3. **Uniform Efficiency Certificates:** Over `Sigma`-packaged family inputs `FamilyRunInput` and
-   `FamilySimInput`, `isOraclePPTOn_gmwOT14RandomizedProtocol` certifies that the word-encoded
-   execution of `gmwOT14RandomizedProtocol` is `Cslib.Probability.IsOraclePPTOn`, and
+   `FamilySimInput`, `isOraclePPTOn_gmwOT14RandomizedProtocol` certifies that the centralized joint
+   word-encoded execution `Protocol.runEncoded` of `gmwOT14RandomizedProtocol` across all `m`
+   parties is `Cslib.Probability.IsOraclePPTOn` (note that this certifies the joint word-level
+   runner rather than separate per-party local PPT strategies), and
    `isPPTOn_gmwOT14RandomizedSim` certifies that for every static coalition `I : Finset (Fin m)`,
    the encoded view simulator `gmwOT14RandomizedSim` is `Cslib.Probability.IsPPTOn`. Because
    `gmwCircuitProtocol` (Construction 7.5.10, p. 706) includes one `sharedMulSpec m` share-refresh
@@ -55,14 +57,18 @@ computable family of $m$-party randomized functionalities specified by a word-le
    `sharedMulSpec m` call into $m(m-1)/2$ pairwise `ot14Spec` calls (adding
    $m \cdot k(a) \cdot m(m-1)/2$ calls in Step 3, polynomial in
    $m, n(a), k(a), (C\,a).\text{size}$).
-4. **End-to-End Completeness (`exists_perfectSemiHonestPrivate_ot14_of_polyTime`):** Combines
-   uniform circuit compilation, proper-coalition perfect semi-honest privacy in `ot14World`
+4. **End-to-End Completeness (`exists_perfectSemiHonestPrivate_ot14_of_polyTime`):** Formalizes a
+   **proper-coalition variant** of Goldreich's Theorem 7.5.12, combining uniform circuit
+   compilation, proper-coalition perfect semi-honest privacy in `ot14World`
    (`PerfectSemiHonestPrivateProper`), and uniform `IsOraclePPTOn` / `IsPPTOn` efficiency. The
    proper-coalition quantifier `I ≠ Finset.univ` is narrower than Goldreich's Definition 7.5.1 and
-   Theorem 7.5.12 (which quantify over all `I ⊆ [m]`, p. 696, treating `I = [m]` as trivial on
-   pp. 697, 703), because under the joint view-and-output equation Eq. 7.40 for randomized
-   functionalities, `I = Finset.univ` is not satisfied when coin shares are simulated independently
-   of the output.
+   Theorem 7.5.12 (which quantify over all `I ⊆ [m]`, p. 696; Goldreich's text on pp. 697 and 703
+   treats `I = [m]` as trivial without restricting that remark to deterministic functionalities or
+   to the view-only Eq. 7.39). Under the joint view-and-output equation Eq. 7.40 for randomized
+   functionalities, `I = Finset.univ` is not vacuous: the canonical independent-coin-share simulator
+   `randomizedWrapperSim` is refuted at `I = Finset.univ` by
+   `not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ`, and any full-coalition simulator
+   receiving only `(x, y)` would have to sample coin shares whose XOR `r` satisfies `g(r, x) = y`.
 
 ## Main definitions
 
@@ -83,18 +89,18 @@ computable family of $m$-party randomized functionalities specified by a word-le
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.MPC.Protocol.eval_runEncoded_eq_evalWith_map`: bridge lemma relating
-  `Protocol.runEncoded` under `ot14WordHandler` to `Protocol.evalWith ot14World`.
-* `Cslib.Crypto.Protocols.MPC.computableInPolyTime_code_comp_xorPreludeCircuit`: uniform
-  polynomial-time code compilation of `(C a).comp (xorPreludeCircuit m (n a) (coins a))`.
+* `Cslib.Crypto.Protocols.MPC.Steps.runWith_runEncoded_eq_evalWith`,
+  `Cslib.Crypto.Protocols.MPC.Protocol.eval_runEncoded_eq_evalWith_map`: bridge lemmas relating
+  `Steps.runEncoded` / `Protocol.runEncoded` under `ot14WordHandler` to `evalWith ot14World`.
 * `Cslib.Crypto.Protocols.MPC.isOraclePPTOn_gmwOT14RandomizedProtocol`: uniform `IsOraclePPTOn`
-  certificate for `Protocol.runEncoded` applied to `gmwOT14RandomizedProtocol`.
+  certificate for the joint word-level runner `Protocol.runEncoded` applied to
+  `gmwOT14RandomizedProtocol`.
 * `Cslib.Crypto.Protocols.MPC.isPPTOn_gmwOT14RandomizedSim`: uniform `IsPPTOn` certificate for
   `gmwOT14RandomizedSim`.
-* `Cslib.Crypto.Protocols.MPC.exists_perfectSemiHonestPrivate_ot14_of_polyTime`: Theorem 7.5.12
-  (Section 7.5.2.4, print p. 707; generalizing Theorem 7.3.11, Section 7.3.4, print p. 648),
-  polynomial-time completeness of $\text{OT}_1^4$ for $m$-party semi-honest computation against
-  every proper coalition `I ≠ Finset.univ`.
+* `Cslib.Crypto.Protocols.MPC.exists_perfectSemiHonestPrivate_ot14_of_polyTime`: proper-coalition
+  variant of Theorem 7.5.12 (Section 7.5.2.4, print p. 707; generalizing Theorem 7.3.11, Section
+  7.3.4, print p. 648), establishing polynomial-time completeness of $\text{OT}_1^4$ for $m$-party
+  semi-honest computation against every proper coalition `I ≠ Finset.univ`.
 
 ## References
 
@@ -105,7 +111,7 @@ computable family of $m$-party randomized functionalities specified by a word-le
   Section 7.5.2.3 (Construction 7.5.10, p. 706), and Section 7.5.2.4 (Theorem 7.5.12, p. 707).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.MPC
 
@@ -115,14 +121,14 @@ open Cslib.Probability Cslib.ProbComp Cslib.Circuits Turing.MultiTapeTM
 
 /-- Encode `x : Fin m → BitString n` and shared coin tape `r : BitString coins` as the
 `m * n + coins`-bit list `List.ofFn (Fin.append (BitString.blocksEquiv.symm x) r)`. -/
-def encodeCoinsAndInputs (m coins n : ℕ) (r : BitString coins)
+@[expose] def encodeCoinsAndInputs (m coins n : ℕ) (r : BitString coins)
     (x : Fin m → BitString n) : List Bool :=
   List.ofFn (Fin.append ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := n)).symm x) r)
 
 /-- Randomized `m`-party functionality family induced by a word-level function
 `F : α × List Bool → List Bool` with `coins a` random bits, `n a`-bit party inputs, and `k a`-bit
 party outputs. -/
-noncomputable def wordRandomizedFunctionality {α : Type} (m : ℕ)
+@[expose] noncomputable def wordRandomizedFunctionality {α : Type} (m : ℕ)
     (coins n k : α → ℕ) (F : α × List Bool → List Bool) (a : α) :
     Functionality m (fun _ => BitString (n a)) (fun _ => BitString (k a)) :=
   randomizedFunctionality (coins a) (fun r x i j =>
@@ -131,18 +137,18 @@ noncomputable def wordRandomizedFunctionality {α : Type} (m : ℕ)
 /-- Serialize a typed `ot14Spec` query `q : (s : Fin 2) → ot14Spec.Query () s` as a 6-bit word:
 the sender's four table bits `q 0 0, q 0 1, q 0 2, q 0 3` followed by the receiver's two selector
 bits `(fin4ToBoolPair (q 1)).1, (fin4ToBoolPair (q 1)).2`. -/
-def encodeOT14Query (q : (s : Fin 2) → ot14Spec.Query () s) : List Bool :=
+@[expose] def encodeOT14Query (q : (s : Fin 2) → ot14Spec.Query () s) : List Bool :=
   [q 0 0, q 0 1, q 0 2, q 0 3, (fin4ToBoolPair (q 1)).1, (fin4ToBoolPair (q 1)).2]
 
 /-- Stateful word-oracle handler realizing `ot14World` on 6-bit requests produced by
 `encodeOT14Query`: returns the selected sender bit `[req.getD idx false]` while leaving the `Unit`
 state unchanged. -/
-noncomputable def ot14WordHandler : Unit × List Bool → StateT Unit PMF (List Bool) :=
+@[expose] noncomputable def ot14WordHandler : Unit × List Bool → StateT Unit PMF (List Bool) :=
   fun (_, req) s =>
     let idx := boolPairToFin4 (req.getD 4 false, req.getD 5 false)
     PMF.pure ([req.getD idx.val false], s)
 
-@[simp] theorem boolPairToFin4_fin4ToBoolPair (idx : Fin 4) :
+@[simp] private theorem boolPairToFin4_fin4ToBoolPair (idx : Fin 4) :
     boolPairToFin4 (fin4ToBoolPair idx) = idx := by
   fin_cases idx <;> decide
 
@@ -163,7 +169,7 @@ private theorem ot14WordHandler_encodeOT14Query (q : (s : Fin 2) → ot14Spec.Qu
 
 /-- Decode a 1-bit word-oracle reply `rep : List Bool` into an `ot14Spec` answer tuple:
 returns `()` to slot `0` and `rep.headD false` to slot `1`. -/
-def decodeOT14Reply (rep : List Bool) : (s : Fin 2) → ot14Spec.Answer () s :=
+@[expose] def decodeOT14Reply (rep : List Bool) : (s : Fin 2) → ot14Spec.Answer () s :=
   Fin.cases () (fun _ => rep.headD false)
 
 @[simp] private theorem ot14Answer_eq (q : (s : Fin 2) → ot14Spec.Query () s) :
@@ -171,7 +177,7 @@ def decodeOT14Reply (rep : List Bool) : (s : Fin 2) → ot14Spec.Answer () s :=
 
 /-- Execute `steps : Steps State Out sc` over `ot14Spec` in `WordOracleComp Unit`, translating each
 `.oracle` round into a 1-bit `ProbOracleComp.query` call with payload `encodeOT14Query`. -/
-def Steps.runEncoded {m : ℕ} {State Out : Fin m → Type} {sc : Schedule m ot14Spec}
+@[expose] def Steps.runEncoded {m : ℕ} {State Out : Fin m → Type} {sc : Schedule m ot14Spec}
     (steps : Steps State Out sc) (st : (i : Fin m) → State i) :
     WordOracleComp Unit ((i : Fin m) → sc.Received i) :=
   match steps with
@@ -192,7 +198,7 @@ def Steps.runEncoded {m : ℕ} {State Out : Fin m → Type} {sc : Schedule m ot1
 /-- Encode a complete `(views, outputs)` execution outcome into a single bit string `List Bool`
 by pairing the framed list of all `m` encoded party views with the framed list of all `m` encoded
 party outputs. -/
-def encodeViewsAndOutputs {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
+@[expose] def encodeViewsAndOutputs {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins Out : Fin m → Type}
     (encView : (i : Fin m) → PartyView In Coins sc i → List Bool)
     (encOut : (i : Fin m) → Out i → List Bool)
@@ -204,7 +210,7 @@ def encodeViewsAndOutputs {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m sp
 /-- Generic word-level execution of `proto.run x` in `WordOracleComp Unit (List Bool)`, translating
 each `ot14Spec` query to a word-oracle call and encoding the resulting `(views, outputs)` pair
 via `(encView, encOut)`. -/
-def Protocol.runEncoded {m : ℕ} {sc : Schedule m ot14Spec} {In Coins Out : Fin m → Type}
+@[expose] def Protocol.runEncoded {m : ℕ} {sc : Schedule m ot14Spec} {In Coins Out : Fin m → Type}
     (encView : (i : Fin m) → PartyView In Coins sc i → List Bool)
     (encOut : (i : Fin m) → Out i → List Bool)
     (proto : Protocol m ot14Spec sc In Coins Out) (x : (i : Fin m) → In i) :
@@ -249,7 +255,7 @@ theorem Protocol.eval_runEncoded_eq_evalWith_map {m : ℕ} {sc : Schedule m ot14
   simp [Steps.runWith_runEncoded_eq_evalWith, PMF.map_bind, PMF.bind_map, PMF.map_comp,
     Function.comp_def, Protocol.outputOfView]
 
-@[simp] theorem Steps.runEncoded_mapState {m : ℕ} {State State' Out : Fin m → Type}
+@[simp] private theorem Steps.runEncoded_mapState {m : ℕ} {State State' Out : Fin m → Type}
     {sc : Schedule m ot14Spec} (f : (i : Fin m) → State i → State' i)
     (steps : Steps State' Out sc) (st : (i : Fin m) → State i) :
     (steps.mapState f).runEncoded st = steps.runEncoded (fun i => f i (st i)) := by
@@ -260,7 +266,7 @@ theorem Protocol.eval_runEncoded_eq_evalWith_map {m : ℕ} {sc : Schedule m ot14
   | oracle query next ih =>
     simp [Steps.mapState, Steps.runEncoded, ih]
 
-@[simp] theorem Steps.runEncoded_append {m : ℕ} {State Mid Out : Fin m → Type}
+@[simp] private theorem Steps.runEncoded_append {m : ℕ} {State Mid Out : Fin m → Type}
     {sc₁ sc₂ : Schedule m ot14Spec}
     (steps₁ : Steps State Mid sc₁)
     (steps₂ : Steps Mid Out sc₂)
@@ -279,7 +285,7 @@ theorem Protocol.eval_runEncoded_eq_evalWith_map {m : ℕ} {sc : Schedule m ot14
     simp [Steps.append, Steps.runEncoded, ih, Steps.outputAt,
       Schedule.Received.append]
 
-@[simp] theorem Steps.runEncoded_embed {k m : ℕ} (parties : Fin k ↪ Fin m)
+@[simp] private theorem Steps.runEncoded_embed {k m : ℕ} (parties : Fin k ↪ Fin m)
     (Outer : Fin m → Type) {State_k Out_k : Fin k → Type} {sc : Schedule k ot14Spec}
     (steps : Steps State_k Out_k sc)
     (st : (i : Fin m) → Outer i × ((s : Fin k) → (parties s = i) → State_k s)) :
@@ -311,7 +317,7 @@ abbrev FamilySimInput (α : Type) (m : ℕ) (n k : α → ℕ) (I : Finset (Fin 
 
 /-- Injective bit-list encoding of `FamilyRunInput α m n`: pairs `enc a` with the packed `m * n a`
 party input bits `List.ofFn (BitString.blocksEquiv.symm x)`. -/
-def encFamilyRunInput {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n : α → ℕ) :
+@[expose] def encFamilyRunInput {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n : α → ℕ) :
     FamilyRunInput α m n ↪ List Bool where
   toFun inp :=
     encPair enc encBits
@@ -327,12 +333,12 @@ def encFamilyRunInput {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n : α →
 
 /-- Pad a coalition-indexed bitstring tuple `vI : (i : I) → BitString len` with `0` outside `I`
 and serialize the resulting `m` blocks of width `len` to a `m * len`-bit list. -/
-def extendCoalitionBits {m len : ℕ} (I : Finset (Fin m)) (vI : (i : I) → BitString len) :
+private def extendCoalitionBits {m len : ℕ} (I : Finset (Fin m)) (vI : (i : I) → BitString len) :
     List Bool :=
   List.ofFn ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := len)).symm
     (GMWCircuit.extendByZero I vI))
 
-theorem extendCoalitionBits_injective {m len : ℕ} (I : Finset (Fin m)) :
+private theorem extendCoalitionBits_injective {m len : ℕ} (I : Finset (Fin m)) :
     Function.Injective (extendCoalitionBits (len := len) I) := by
   intro u v h
   have h1 := Cslib.BitString.blocksEquiv.symm.injective (List.ofFn_injective h)
@@ -360,7 +366,7 @@ def encFamilySimInput {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n k : α �
 
 /-- Serialize party `i`'s `twoPartyMulProtocol` subcoins along any `sharedMulSpec 2` schedule `sc`:
 appends `[c_head 0 h]` at each `.oracle () parties` round where `parties 0 = i`. -/
-def encOTSubCoins {m : ℕ} :
+private def encOTSubCoins {m : ℕ} :
     (sc : Schedule m (sharedMulSpec 2)) → (i : Fin m) →
       Schedule.SubCoins (spec₁ := sharedMulSpec 2)
         (fun _ : Unit => Fin.cases Bool (fun _ => Unit)) sc i → List Bool
@@ -372,7 +378,7 @@ def encOTSubCoins {m : ℕ} :
 /-- Serialize party `i`'s received `ot14Spec` oracle answers along
 `Schedule.compose (fun _ => twoPartyMulSchedule) sc`: appends `[r_head 1 h]` at each
 `.oracle () parties` round where `parties 1 = i`. -/
-def encOTOracleAnswers {m : ℕ} :
+private def encOTOracleAnswers {m : ℕ} :
     (sc : Schedule m (sharedMulSpec 2)) → (i : Fin m) →
       (Schedule.compose (fun _ => twoPartyMulSchedule) sc).Received i → List Bool
   | [], _, () => []
@@ -382,14 +388,14 @@ def encOTOracleAnswers {m : ℕ} :
 
 /-- Double schedule composition from `sharedMulSpec m` to `ot14Spec` via `multiPartyMulSchedule m`
 and `twoPartyMulSchedule`. -/
-@[reducible] def otMulCompose {m : ℕ} (sc : Schedule m (sharedMulSpec m)) :
+@[reducible] private def otMulCompose {m : ℕ} (sc : Schedule m (sharedMulSpec m)) :
     Schedule m ot14Spec :=
   Schedule.compose (fun _ => twoPartyMulSchedule)
     (Schedule.compose (fun _ => multiPartyMulSchedule m) sc)
 
 /-- Split a received transcript along `((pairsSchedule L).map (Round.embed parties) ++ rest₁)`
 composed with `twoPartyMulSchedule`. -/
-def splitPairsOTReceived {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : Fin m) :
+private def splitPairsOTReceived {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : Fin m) :
     (L : List (OrderedPair m)) → {rest₁ rest₂ : Schedule m (sharedMulSpec 2)} →
       ((Schedule.compose (fun _ => twoPartyMulSchedule) rest₁).Received i →
         (Schedule.compose (fun _ => twoPartyMulSchedule) rest₂).Received i × α) →
@@ -404,7 +410,7 @@ def splitPairsOTReceived {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : 
 
 /-- Split a received transcript along `otMulCompose (a ++ b)` into transcripts along
 `otMulCompose a` and `otMulCompose b`. -/
-def splitOTMulCompose {m : ℕ} :
+private def splitOTMulCompose {m : ℕ} :
     (a b : Schedule m (sharedMulSpec m)) → (i : Fin m) →
       (otMulCompose (a ++ b)).Received i →
       (otMulCompose a).Received i × (otMulCompose b).Received i
@@ -417,7 +423,7 @@ def splitOTMulCompose {m : ℕ} :
 
 /-- Serialize party `i`'s Step 1 received share messages along
 `GMWCircuit.msgSchedule (BitString N) L`. -/
-def encPairsMsgReceived {m N : ℕ} (i : Fin m) :
+private def encPairsMsgReceived {m N : ℕ} (i : Fin m) :
     (L : List (Fin m × Fin m)) →
       (otMulCompose (GMWCircuit.msgSchedule (spec := sharedMulSpec m) (BitString N) L)).Received i →
       List Bool
@@ -426,7 +432,7 @@ def encPairsMsgReceived {m N : ℕ} (i : Fin m) :
     (if h : i = p.2 then List.ofFn (r_head h) else []) ++ encPairsMsgReceived i L r_tail
 
 /-- Skip one expanded `multiPartyMulSchedule m` block of `ot14Spec` oracle answers. -/
-def dropPairsOTReceived {m : ℕ} (parties : Fin m ↪ Fin m) (i : Fin m) :
+private def dropPairsOTReceived {m : ℕ} (parties : Fin m ↪ Fin m) (i : Fin m) :
     (L : List (OrderedPair m)) → {rest : Schedule m (sharedMulSpec 2)} →
       (Schedule.compose (fun _ => twoPartyMulSchedule)
         ((pairsSchedule L).map (Round.embed parties) ++ rest)).Received i →
@@ -435,7 +441,7 @@ def dropPairsOTReceived {m : ℕ} (parties : Fin m ↪ Fin m) (i : Fin m) :
   | _ :: L, _, (_, r_tail) => dropPairsOTReceived parties i L r_tail
 
 /-- Serialize party `i`'s received bits along `gatherSchedule m recipient S`. -/
-def encGatherOTReceived {m : ℕ} (recipient i : Fin m) :
+private def encGatherOTReceived {m : ℕ} (recipient i : Fin m) :
     (S : List (Fin m)) →
       (otMulCompose (GMWCircuit.gatherSchedule m recipient S)).Received i → List Bool
   | [], () => []
@@ -443,7 +449,7 @@ def encGatherOTReceived {m : ℕ} (recipient i : Fin m) :
     (if h : i = recipient then [r_head h] else []) ++ encGatherOTReceived recipient i S r_tail
 
 /-- Serialize party `i`'s Step 3 received output-share messages along `outCoordsSchedule m L`. -/
-def encOutCoordsMsgReceived {m k : ℕ} (i : Fin m) :
+private def encOutCoordsMsgReceived {m k : ℕ} (i : Fin m) :
     (L : List (Fin m × Fin k)) →
       (otMulCompose (GMWCircuit.outCoordsSchedule m L)).Received i → List Bool
   | [], () => []
@@ -477,8 +483,9 @@ def encGMWPartyView (m coins n k : ℕ)
             (gmwCircuitSchedule m (n + coins) k (C.comp (xorPreludeCircuit m n coins))))
           (Schedule.compose (fun _ => multiPartyMulSchedule m)
             (gmwCircuitSchedule m (n + coins) k (C.comp (xorPreludeCircuit m n coins)))) j)
-      (otMulCompose
-        (gmwCircuitSchedule m (n + coins) k (C.comp (xorPreludeCircuit m n coins)))) i) :
+      (Schedule.compose (fun _ => twoPartyMulSchedule)
+        (Schedule.compose (fun _ => multiPartyMulSchedule m)
+          (gmwCircuitSchedule m (n + coins) k (C.comp (xorPreludeCircuit m n coins))))) i) :
     List Bool :=
   let N := n + coins
   let D := C.comp (xorPreludeCircuit m n coins)
@@ -501,7 +508,7 @@ def encGMWPartyView (m coins n k : ℕ)
 
 /-- Encode a coalition view tuple `vI : (i : I) → PartyView In Coins sc i.1` into `List Bool`
 by listing `encView i (vI ⟨i, hi⟩)` for `i ∈ I` and `[]` for `i ∉ I`. -/
-def encodeCoalitionView {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
+@[expose] def encodeCoalitionView {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins : Fin m → Type}
     (encView : (i : Fin m) → PartyView In Coins sc i → List Bool)
     (I : Finset (Fin m)) (vI : (i : I) → PartyView In Coins sc i.1) : List Bool :=
@@ -516,31 +523,31 @@ open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableTidilyInPolyTime
 
 /-- Raw circuit code of `XORPrelude.xorBitAtCircuit coins c`. -/
-def xorBitAtCode (coins c : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
+private def xorBitAtCode (coins c : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
   ([(.or, [c, c + coins]),
     (.and, [c, c + coins]),
     (.not, [(coins + coins) + 1]),
     (.and, [coins + coins, (coins + coins) + 2])],
    [(coins + coins) + 3])
 
-theorem code_xorBitAtCircuit (coins : ℕ) (c : Fin coins) :
+private theorem code_xorBitAtCircuit (coins : ℕ) (c : Fin coins) :
     (XORPrelude.xorBitAtCircuit coins c).code = xorBitAtCode coins c.val := by
   simp [XORPrelude.xorBitAtCircuit, Program.appendXor, Circuit.code, Line.code, xorBitAtCode,
     Nat.add_comm]
 
 /-- Raw circuit code of `XORPrelude.zeroBitStringCircuit w coins`. -/
-def zeroBitStringCode (w coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
+private def zeroBitStringCode (w coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
   ([(.const false, [])], List.replicate coins w)
 
-theorem code_zeroBitStringCircuit (w coins : ℕ) :
+private theorem code_zeroBitStringCircuit (w coins : ℕ) :
     (XORPrelude.zeroBitStringCircuit w coins).code = zeroBitStringCode w coins := by
   simp [XORPrelude.zeroBitStringCircuit, Circuit.code, Line.code, zeroBitStringCode]
 
 /-- Raw circuit code of `XORPrelude.xorBitStringsCircuit coins`. -/
-def xorBitStringsCode (coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
+private def xorBitStringsCode (coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
   bundleCode (coins + coins) 4 ((List.range coins).map (xorBitAtCode coins))
 
-theorem code_xorBitStringsCircuit (coins : ℕ) :
+private theorem code_xorBitStringsCircuit (coins : ℕ) :
     (XORPrelude.xorBitStringsCircuit coins).code = xorBitStringsCode coins := by
   have hmap : (List.range coins).map (xorBitAtCode coins) =
       List.ofFn (fun c : Fin coins => (XORPrelude.xorBitAtCircuit coins c).code) := by
@@ -550,7 +557,7 @@ theorem code_xorBitStringsCircuit (coins : ℕ) :
     bundleCode_code (XORPrelude.xorBitAtCircuit coins) 4 (fun _ => rfl)]
 
 /-- Raw circuit code of `XORPrelude.sumBlocksCircuit m coins`. -/
-def sumBlocksCode : (m coins : ℕ) → List (Boolean.Op × List ℕ) × List ℕ
+private def sumBlocksCode : (m coins : ℕ) → List (Boolean.Op × List ℕ) × List ℕ
   | 0, coins => zeroBitStringCode (0 * coins) coins
   | m + 1, coins =>
     compCode ((m + 1) * coins) (xorBitStringsCode coins)
@@ -559,7 +566,7 @@ def sumBlocksCode : (m coins : ℕ) → List (Boolean.Op × List ℕ) × List �
           ([], List.range (m * coins)))
         ([], (List.range coins).map (fun c => c + coins * m)))
 
-theorem code_sumBlocksCircuit (m coins : ℕ) :
+private theorem code_sumBlocksCircuit (m coins : ℕ) :
     (XORPrelude.sumBlocksCircuit m coins).code = sumBlocksCode m coins := by
   induction m with
   | zero =>
@@ -581,30 +588,30 @@ theorem code_sumBlocksCircuit (m coins : ℕ) :
       code_xorBitStringsCircuit, ih, hw₁, hw₂]
 
 /-- Raw circuit code of `XORPrelude.extractInputsCircuit m n coins`. -/
-def extractInputsCode (m n coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
+private def extractInputsCode (m n coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
   ([], (List.range (m * n)).map fun idx => idx % n + (n + coins) * (idx / n))
 
-theorem code_extractInputsCircuit (m n coins : ℕ) :
+private theorem code_extractInputsCircuit (m n coins : ℕ) :
     (XORPrelude.extractInputsCircuit m n coins).code = extractInputsCode m n coins :=
   Circuit.code_wiring_eq_map fun idx => by
     simp [finProdFinEquiv_apply_val, finProdFinEquiv_symm_apply]
 
 /-- Raw circuit code of `XORPrelude.extractCoinsCircuit m n coins`. -/
-def extractCoinsCode (m n coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
+private def extractCoinsCode (m n coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
   ([], (List.range (m * coins)).map fun idx => (n + idx % coins) + (n + coins) * (idx / coins))
 
-theorem code_extractCoinsCircuit (m n coins : ℕ) :
+private theorem code_extractCoinsCircuit (m n coins : ℕ) :
     (XORPrelude.extractCoinsCircuit m n coins).code = extractCoinsCode m n coins :=
   Circuit.code_wiring_eq_map fun idx => by
     simp [finProdFinEquiv_apply_val, finProdFinEquiv_symm_apply]
 
 /-- Raw circuit code of `xorPreludeCircuit m n coins`. -/
-def xorPreludeCode (m n coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
+private def xorPreludeCode (m n coins : ℕ) : List (Boolean.Op × List ℕ) × List ℕ :=
   appendCode (m * (n + coins))
     (extractInputsCode m n coins)
     (compCode (m * (n + coins)) (sumBlocksCode m coins) (extractCoinsCode m n coins))
 
-theorem code_xorPreludeCircuit (m n coins : ℕ) :
+private theorem code_xorPreludeCircuit (m n coins : ℕ) :
     (xorPreludeCircuit m n coins).code = xorPreludeCode m n coins := by
   simp only [xorPreludeCircuit, xorPreludeCode, ← appendCode_code, ← compCode_code,
     code_extractInputsCircuit, code_sumBlocksCircuit, code_extractCoinsCircuit]
@@ -735,7 +742,7 @@ end XORPreludeCode
 
 /-- The circuit code of `xorPreludeCircuit m (n a) (coins a)` is constructible in uniform
 polynomial time from `a : α`. -/
-theorem computableInPolyTime_code_xorPreludeCircuit {α : Type} {enc : α ↪ List Bool}
+private theorem computableInPolyTime_code_xorPreludeCircuit {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) {n coins : α → ℕ}
     (hn : ComputableInPolyTime n enc Turing.MultiTapeTM.encUnary)
     (hcoins : ComputableInPolyTime coins enc Turing.MultiTapeTM.encUnary) :
@@ -748,7 +755,7 @@ theorem computableInPolyTime_code_xorPreludeCircuit {α : Type} {enc : α ↪ Li
 /-- Composing a polynomial-time constructible circuit family `C a` with `xorPreludeCircuit` yields
 a polynomial-time constructible circuit family
 `(C a).comp (xorPreludeCircuit m (n a) (coins a))`. -/
-theorem computableInPolyTime_code_comp_xorPreludeCircuit {α : Type} {enc : α ↪ List Bool}
+private theorem computableInPolyTime_code_comp_xorPreludeCircuit {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) {n coins k : α → ℕ}
     {C : (a : α) → Cslib.Circuits.Circuit Boolean.signature (m * n a + coins a) (m * k a)}
     (hn : ComputableInPolyTime n enc Turing.MultiTapeTM.encUnary)
@@ -777,7 +784,7 @@ open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableTidilyInPolyTime
 
 /-- Binary encoding of `Fin m` via `Fin.val`. -/
-def encFin (m : ℕ) : Fin m ↪ List Bool :=
+private def encFin (m : ℕ) : Fin m ↪ List Bool :=
   Function.Embedding.trans ⟨Fin.val, Fin.val_injective⟩ encNat
 
 private theorem length_encList_tail_le {Item : Type} (enc : Item ↪ List Bool)
@@ -882,7 +889,7 @@ private theorem isPPTOn_pi_sampleList {α : Type} {input : α ↪ List Bool}
     simp [ProbComp.eval_bind, ProbComp.eval_map]
 
 /-- Left monadic fold over a list in `OracleComp spec`. -/
-def foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
+private def foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
     (singleStep : Item → Acc → OracleComp spec Acc) :
     List Item → Acc → OracleComp spec Acc
   | [], acc => pure acc
@@ -890,17 +897,17 @@ def foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
     let acc' ← singleStep x acc
     foldlMList singleStep rest acc'
 
-@[simp] theorem foldlMList_nil {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
+@[simp] private theorem foldlMList_nil {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
     (singleStep : Item → Acc → OracleComp spec Acc) (acc : Acc) :
     foldlMList singleStep [] acc = pure acc := rfl
 
-@[simp] theorem foldlMList_cons {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
+@[simp] private theorem foldlMList_cons {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
     (singleStep : Item → Acc → OracleComp spec Acc) (x : Item) (rest : List Item) (acc : Acc) :
     foldlMList singleStep (x :: rest) acc = (do
       let acc' ← singleStep x acc
       foldlMList singleStep rest acc') := rfl
 
-@[simp] theorem foldlMList_append {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
+@[simp] private theorem foldlMList_append {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
     (singleStep : Item → Acc → OracleComp spec Acc) (L₁ L₂ : List Item) (acc : Acc) :
     foldlMList singleStep (L₁ ++ L₂) acc = (do
       let acc₁ ← foldlMList singleStep L₁ acc
@@ -911,12 +918,12 @@ def foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
 
 /-- Single iteration step on `List Item × Acc` that consumes the head element (with `fallback` on
 `[]`) and advances to `tail`. -/
-def stepList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type} (fallback : Item)
+private def stepList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type} (fallback : Item)
     (singleStep : Item → Acc → OracleComp spec Acc)
     (st : List Item × Acc) : OracleComp spec (List Item × Acc) :=
   (fun acc' => (st.1.tail, acc')) <$> singleStep (st.1.headD fallback) st.2
 
-theorem iterate_stepList_eq_foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
+private theorem iterate_stepList_eq_foldlMList {ι : Type} {spec : OracleSpec ι} {Item Acc : Type}
     (fallback : Item) (singleStep : Item → Acc → OracleComp spec Acc)
     (L : List Item) (acc : Acc) :
     Prod.snd <$> OracleComp.iterate L.length (stepList fallback singleStep) (L, acc) =
@@ -1010,7 +1017,7 @@ private theorem isPPTOn_foldlMList_of_bounded_growth
 
 /-- Private sampling in `ProbOracleComp` binds directly on `ProbComp.eval` without touching the
 external oracle state `s`. -/
-theorem runWith_sample_bind {ι : Type} {spec : ι → Type} {α β State : Type}
+private theorem runWith_sample_bind {ι : Type} {spec : ι → Type} {α β State : Type}
     (oracle : (i : ι) → StateT State PMF (spec i))
     (d : ProbComp α) (k : α → ProbOracleComp spec β) (s : State) :
     ProbOracleComp.runWith oracle (ProbOracleComp.sample d >>= k) s =
@@ -1020,7 +1027,7 @@ theorem runWith_sample_bind {ι : Type} {spec : ι → Type} {α β State : Type
 
 /-- Private coin draws `ProbOracleComp.sample d` commute with arbitrary stateful oracle
 computations `m` under `ProbOracleComp.runWith`. -/
-theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ State : Type}
+private theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ State : Type}
     (oracle : (i : ι) → StateT State PMF (spec i))
     (d : ProbComp α) (m : ProbOracleComp spec β) (k : α → β → ProbOracleComp spec γ)
     (s : State) :
@@ -1038,7 +1045,7 @@ theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ State : T
 /-- Replacing a private sample `d₁` with `f <$> d₂` when
 `ProbComp.eval d₁ = (ProbComp.eval d₂).map f` preserves `ProbOracleComp.runWith` under every
 stateful oracle. -/
-theorem runWith_sample_congr {ι : Type} {spec : ι → Type} {α β γ State : Type}
+private theorem runWith_sample_congr {ι : Type} {spec : ι → Type} {α β γ State : Type}
     (oracle : (i : ι) → StateT State PMF (spec i))
     (d₁ : ProbComp α) (d₂ : ProbComp β) (f : β → α)
     (heval : ProbComp.eval d₁ = (ProbComp.eval d₂).map f)
@@ -1066,14 +1073,15 @@ private theorem isPPTOn_sampleAdditiveShares (m : ℕ) :
   isPPTOn_of_finite_uniform encBool (encFinite (Fin m → Bool)) (ProbComp.completeShares m)
 
 /-- The `N`-bit additive share sent by party `s` to party `i` in Step 1 of `gmwCircuitProtocol`. -/
-def step1SenderShare (m N : ℕ) (xr_s c1_s : List Bool) (i : Fin m) : List Bool :=
+private def step1SenderShare (m N : ℕ) (xr_s c1_s : List Bool) (i : Fin m) : List Bool :=
   (List.range N).map fun j =>
     ProbComp.completeShares m (xr_s.getD j false)
       (Cslib.BitString.ofList (m - 1) (Cslib.BitString.listRow (m - 1) j c1_s)) i
 
 /-- Initial input-wire list (and Step 1 received share transcript) of party `i` in
 `gmwCircuitProtocol`. -/
-def step1Wires (m N : ℕ) (x_bits r_bits c1_bits : Fin m → List Bool) (i : Fin m) : List Bool :=
+private def step1Wires (m N : ℕ) (x_bits r_bits c1_bits : Fin m → List Bool) (i : Fin m) :
+    List Bool :=
   (List.finRange m).flatMap fun s =>
     step1SenderShare m N (x_bits s ++ r_bits s) (c1_bits s) i
 
@@ -1115,7 +1123,7 @@ private theorem computableTidilyInPolyTime_step1Wires {α : Type} {input : α �
 
 /-- One pairwise $\text{OT}_1^4$ invocation in `twoPartyMulProtocol` at pair `p : OrderedPair m`
 under `Steps.runEncoded`, returning `(c₀, ans_v) : Bool × Bool`. -/
-noncomputable def realPairCall (m : ℕ) (p : OrderedPair m) (x : Fin m → Bool × Bool) :
+private noncomputable def realPairCall (m : ℕ) (p : OrderedPair m) (x : Fin m → Bool × Bool) :
     WordOracleComp Unit (Bool × Bool) :=
   ProbOracleComp.sample (ProbComp.uniform Bool) >>= fun c₀ =>
     (fun raw => (c₀, raw.headD false)) <$>
@@ -1158,7 +1166,7 @@ private theorem isOraclePPTOn_realPairCall (m : ℕ) (p : OrderedPair m) :
   exact hc₀.bind hsecond
 
 /-- Sequential execution of `realPairCall m p x` along `L : List (OrderedPair m)`. -/
-noncomputable def realPairsCalls (m : ℕ) (x : Fin m → Bool × Bool) :
+private noncomputable def realPairsCalls (m : ℕ) (x : Fin m → Bool × Bool) :
     List (OrderedPair m) → WordOracleComp Unit (OrderedPair m → Bool × Bool)
   | [] => pure (fun _ => (false, false))
   | p :: L =>
@@ -1195,7 +1203,7 @@ private theorem length_flatten_ite_singleton_le {α : Type} (L : List α)
 
 /-- Deterministic extraction of `(ans, ot_c_delta, ot_a_delta)` from one `multiPartyMulProtocol m`
 invocation given the pair transcript `tr : OrderedPair m → Bool × Bool`. -/
-def realSharedMulPure (m : ℕ) (x : Fin m → Bool × Bool) (tr : OrderedPair m → Bool × Bool) :
+private def realSharedMulPure (m : ℕ) (x : Fin m → Bool × Bool) (tr : OrderedPair m → Bool × Bool) :
     (Fin m → Bool) × (Fin m → List Bool) × (Fin m → List Bool) :=
   (fun i =>
     m • ((x i).1 * (x i).2) +
@@ -1206,7 +1214,7 @@ def realSharedMulPure (m : ℕ) (x : Fin m → Bool × Bool) (tr : OrderedPair m
 
 /-- Deterministic extraction of `(ot_c_delta, ot_a_delta)` from one simulated `multiPartyMulSim m I`
 invocation composed with `twoPartyMulSim`. -/
-def simSharedMulPure (m : ℕ) [NeZero m] (I : Finset (Fin m))
+private def simSharedMulPure (m : ℕ) [NeZero m] (I : Finset (Fin m))
     (x : Fin m → Bool × Bool) (ans : Fin m → Bool) (r : OrderedPair m → Bool) :
     (Fin m → List Bool) × (Fin m → List Bool) :=
   let x₀ := MultiPartyMul.extendIn I (I.restrict x)
@@ -1220,15 +1228,15 @@ def simSharedMulPure (m : ℕ) [NeZero m] (I : Finset (Fin m))
       if p.1.2 = i then [MultiPartyMul.matrixOfCoins x₀ rSim i p.1.1] else []).flatten)
 
 /-- Step 2 accumulator `(wires, ot_coins, ot_ans)`. -/
-abbrev Step2Acc (m : ℕ) : Type :=
+private abbrev Step2Acc (m : ℕ) : Type :=
   (Fin m → List Bool) × (Fin m → List Bool) × (Fin m → List Bool)
 
 /-- Encoding of `Step2Acc m`. -/
-noncomputable def encStep2Acc (m : ℕ) : Step2Acc m ↪ List Bool :=
+private noncomputable def encStep2Acc (m : ℕ) : Step2Acc m ↪ List Bool :=
   encPair (encPi encBits) (encPair (encPi encBits) (encPi encBits))
 
 /-- Append per-party Step 2 deltas `(w_delta, ot_c_delta, ot_a_delta)` to `acc : Step2Acc m`. -/
-def appendStep2Acc (m : ℕ) (acc delta : Step2Acc m) : Step2Acc m :=
+private def appendStep2Acc (m : ℕ) (acc delta : Step2Acc m) : Step2Acc m :=
   (fun i => acc.1 i ++ delta.1 i,
    fun i => acc.2.1 i ++ delta.2.1 i,
    fun i => acc.2.2 i ++ delta.2.2 i)
@@ -1278,7 +1286,7 @@ private theorem length_encStep2Acc_appendStep2Acc_le (m : ℕ) (acc delta : Step
   omega
 
 /-- Extract `(op, x)` from `(gate, acc)` for Step 2 gate evaluation. -/
-def extractGateCoreInput (m : ℕ) (st : (Boolean.Op × List ℕ) × Step2Acc m) :
+private def extractGateCoreInput (m : ℕ) (st : (Boolean.Op × List ℕ) × Step2Acc m) :
     Boolean.Op × (Fin m → Bool × Bool) :=
   (st.1.1, fun s =>
     ((st.2.1 s).getD (st.1.2.getD 0 0) false,
@@ -1321,14 +1329,14 @@ private theorem computableTidilyInPolyTime_extractGateCoreInput (m : ℕ) :
 
 /-- Format the per-party Step 2 deltas `(w_delta, ot_c_delta, ot_a_delta)` for an `.and`
 (`isOr = false`) or `.or` (`isOr = true`) gate. -/
-def finishMulGate (m : ℕ) (isOr : Bool) (x : Fin m → Bool × Bool)
+private def finishMulGate (m : ℕ) (isOr : Bool) (x : Fin m → Bool × Bool)
     (res : (Fin m → Bool) × (Fin m → List Bool) × (Fin m → List Bool)) :
     Step2Acc m :=
   (fun i => [if isOr then (x i).1 + (x i).2 + res.1 i else res.1 i],
    res.2.1, res.2.2)
 
 /-- Finite-input core of one real Step 2 gate evaluation. -/
-noncomputable def realGateCore (m : ℕ) [NeZero m] (p : Boolean.Op × (Fin m → Bool × Bool)) :
+private noncomputable def realGateCore (m : ℕ) [NeZero m] (p : Boolean.Op × (Fin m → Bool × Bool)) :
     WordOracleComp Unit (Step2Acc m) :=
   match p.1 with
   | .const b =>
@@ -1363,7 +1371,7 @@ private theorem isOraclePPTOn_realGateCore (m : ℕ) [NeZero m] :
       (of_finite (fun tr => finishMulGate m true x (realSharedMulPure m x tr))))
 
 /-- Finite-input core of one simulated Step 2 gate evaluation. -/
-noncomputable def simGateCore (m : ℕ) [NeZero m] (I : Finset (Fin m))
+private noncomputable def simGateCore (m : ℕ) [NeZero m] (I : Finset (Fin m))
     (p : Boolean.Op × (Fin m → Bool × Bool)) :
     ProbComp (Step2Acc m) :=
   match p.1 with
@@ -1415,7 +1423,8 @@ private theorem isPPTOn_simGateCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
   | or => exact hmul true x
 
 /-- Single Step 2 gate transition in `realRunWord`. -/
-noncomputable def realGateStep (m : ℕ) [NeZero m] (gate : Boolean.Op × List ℕ) (acc : Step2Acc m) :
+private noncomputable def realGateStep (m : ℕ) [NeZero m] (gate : Boolean.Op × List ℕ)
+    (acc : Step2Acc m) :
     WordOracleComp Unit (Step2Acc m) :=
   appendStep2Acc m acc <$> realGateCore m (extractGateCoreInput m (gate, acc))
 
@@ -1463,7 +1472,7 @@ private theorem realGateStep_growth (m : ℕ) [NeZero m]
       first | (simp; done) | exact length_flatten_ite_singleton_le _ _ _
 
 /-- Single Step 2 gate transition in `simRunWord`. -/
-noncomputable def simGateStep (m : ℕ) [NeZero m] (I : Finset (Fin m))
+private noncomputable def simGateStep (m : ℕ) [NeZero m] (I : Finset (Fin m))
     (gate : Boolean.Op × List ℕ) (acc : Step2Acc m) :
     ProbComp (Step2Acc m) :=
   appendStep2Acc m acc <$> simGateCore m I (extractGateCoreInput m (gate, acc))
@@ -1516,19 +1525,19 @@ private theorem simGateStep_growth (m : ℕ) [NeZero m] (I : Finset (Fin m))
       first | (simp; done) | exact length_flatten_ite_singleton_le _ _ _
 
 /-- Step 3 item `(r_party, a_shares, y_bit)` for output coordinate `(r_party, j)`. -/
-abbrev OutItem (m : ℕ) : Type :=
+private abbrev OutItem (m : ℕ) : Type :=
   Fin m × (Fin m → Bool) × Bool
 
 /-- Step 3 accumulator `(ot_coins, ot_ans, out_msgs, y_out)`. -/
-abbrev Step3Acc (m : ℕ) : Type :=
+private abbrev Step3Acc (m : ℕ) : Type :=
   (Fin m → List Bool) × (Fin m → List Bool) × (Fin m → List Bool) × (Fin m → List Bool)
 
 /-- Encoding of `Step3Acc m`. -/
-noncomputable def encStep3Acc (m : ℕ) : Step3Acc m ↪ List Bool :=
+private noncomputable def encStep3Acc (m : ℕ) : Step3Acc m ↪ List Bool :=
   encPair (encPi encBits) (encPair (encPi encBits) (encPair (encPi encBits) (encPi encBits)))
 
 /-- Append per-party Step 3 deltas `(ot_c_delta, ot_a_delta, msg_delta, y_delta)` to `acc`. -/
-def appendStep3Acc (m : ℕ) (acc delta : Step3Acc m) : Step3Acc m :=
+private def appendStep3Acc (m : ℕ) (acc delta : Step3Acc m) : Step3Acc m :=
   (fun i => acc.1 i ++ delta.1 i,
    fun i => acc.2.1 i ++ delta.2.1 i,
    fun i => acc.2.2.1 i ++ delta.2.2.1 i,
@@ -1573,7 +1582,7 @@ private theorem length_encStep3Acc_appendStep3Acc_le (m : ℕ) (acc delta : Step
 /-- Build the list of `m * k` Step 3 items `(r_party, a_shares, y_bit)` from the designated output
 wire indices `outputs : List ℕ`, final wire lists `wires : Fin m → List Bool`, and target output
 bits `y_bits : Fin m → List Bool`. -/
-def buildOutItems (m k : ℕ) (I : Finset (Fin m))
+private def buildOutItems (m k : ℕ) (I : Finset (Fin m))
     (outputs : List ℕ) (wires y_bits : Fin m → List Bool) :
     List (OutItem m) :=
   (List.finRange m).flatMap fun r =>
@@ -1631,7 +1640,7 @@ private theorem computableTidilyInPolyTime_buildOutItems {α : Type} {input : α
 
 /-- Format the per-party Step 3 deltas `(ot_c_delta, ot_a_delta, msg_delta, y_delta)` for recipient
 `r_party : Fin m`. -/
-def finishOutStep (m : ℕ) (r_party : Fin m)
+private def finishOutStep (m : ℕ) (r_party : Fin m)
     (res : (Fin m → Bool) × (Fin m → List Bool) × (Fin m → List Bool)) :
     Step3Acc m :=
   (res.2.1,
@@ -1640,7 +1649,7 @@ def finishOutStep (m : ℕ) (r_party : Fin m)
    fun i => if i = r_party then [∑ s : Fin m, res.1 s] else [])
 
 /-- Finite-input core of one real Step 3 output-coordinate refresh and reconstruction. -/
-noncomputable def realOutCore (m : ℕ) [NeZero m] (item : OutItem m) :
+private noncomputable def realOutCore (m : ℕ) [NeZero m] (item : OutItem m) :
     WordOracleComp Unit (Step3Acc m) :=
   (fun tr =>
     finishOutStep m item.1
@@ -1661,7 +1670,7 @@ private theorem isOraclePPTOn_realOutCore (m : ℕ) [NeZero m] :
         (realSharedMulPure m (fun s => (item.2.1 s, GMWCircuit.constShare true s)) tr))))
 
 /-- Finite-input core of one simulated Step 3 output-coordinate refresh and reconstruction. -/
-noncomputable def simOutCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) (item : OutItem m) :
+private noncomputable def simOutCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) (item : OutItem m) :
     ProbComp (Step3Acc m) := do
   let ans ← ProbComp.sampleAdditiveShares m item.2.2
   let r ← ProbComp.uniform (OrderedPair m → Bool)
@@ -1694,7 +1703,7 @@ private theorem isPPTOn_simOutCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
   exact hans.bind hot
 
 /-- Single Step 3 output-coordinate transition in `realRunWord`. -/
-noncomputable def realOutStep (m : ℕ) [NeZero m] (item : OutItem m) (acc : Step3Acc m) :
+private noncomputable def realOutStep (m : ℕ) [NeZero m] (item : OutItem m) (acc : Step3Acc m) :
     WordOracleComp Unit (Step3Acc m) :=
   appendStep3Acc m acc <$> realOutCore m item
 
@@ -1730,7 +1739,7 @@ private theorem realOutStep_growth (m : ℕ) [NeZero m]
   · intro i; dsimp only [finishOutStep]; split_ifs <;> simp
 
 /-- Single Step 3 output-coordinate transition in `simRunWord`. -/
-noncomputable def simOutStep (m : ℕ) [NeZero m] (I : Finset (Fin m))
+private noncomputable def simOutStep (m : ℕ) [NeZero m] (I : Finset (Fin m))
     (item : OutItem m) (acc : Step3Acc m) :
     ProbComp (Step3Acc m) :=
   appendStep3Acc m acc <$> simOutCore m I item
@@ -1773,7 +1782,7 @@ private theorem simOutStep_growth (m : ℕ) [NeZero m] (I : Finset (Fin m))
 
 /-- Assemble party `i`'s 7-tuple view word from its 7 `List Bool` components, matching
 `encGMWPartyView`. -/
-def packPartyViewWord {m : ℕ}
+private def packPartyViewWord {m : ℕ}
     (x_bits r_bits c1_bits ot_coins in_shares ot_ans out_msgs : Fin m → List Bool)
     (i : Fin m) : List Bool :=
   encPair
@@ -1785,7 +1794,7 @@ def packPartyViewWord {m : ℕ}
 /-- Assemble the final `List Bool` output of `Protocol.runEncoded` from all 8 `Fin m → List Bool`
 components `(x_bits, r_bits, c1_bits, in_shares)` and
 `acc3 = (ot_coins, ot_ans, out_msgs, y_out)`. -/
-def packRealOutput (m : ℕ)
+private def packRealOutput (m : ℕ)
     (x_bits r_bits c1_bits in_shares : Fin m → List Bool)
     (acc3 : Step3Acc m) : List Bool :=
   encPair (encList encBits) (encList encBits)
@@ -1795,7 +1804,7 @@ def packRealOutput (m : ℕ)
 
 /-- Assemble the final `List Bool` output of `encodeCoalitionView` from `(x_bits, r_bits, c1_bits,
 in_shares)` and `acc3 = (ot_coins, ot_ans, out_msgs, y_out)`. -/
-def packSimOutput (m : ℕ) (I : Finset (Fin m))
+private def packSimOutput (m : ℕ) (I : Finset (Fin m))
     (x_bits r_bits c1_bits in_shares : Fin m → List Bool)
     (acc3 : Step3Acc m) : List Bool :=
   encList encBits
@@ -2198,7 +2207,7 @@ private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
 `gmwOT14RandomizedSim` -/
 
 /-- Concatenate `twoPartyMulProtocol` subcoin records along `sc₁ ++ sc₂`. -/
-def joinSubCoins2 {m : ℕ} :
+private def joinSubCoins2 {m : ℕ} :
     (sc₁ sc₂ : Schedule m (sharedMulSpec 2)) → (i : Fin m) →
       Schedule.SubCoins (spec₁ := sharedMulSpec 2)
         (fun _ : Unit => Fin.cases Bool (fun _ => Unit)) sc₁ i →
@@ -2213,7 +2222,7 @@ def joinSubCoins2 {m : ℕ} :
 
 /-- Concatenate received transcripts along
 `Schedule.compose (fun _ => twoPartyMulSchedule) (sc₁ ++ sc₂)`. -/
-def joinReceived2 {m : ℕ} :
+private def joinReceived2 {m : ℕ} :
     (sc₁ sc₂ : Schedule m (sharedMulSpec 2)) → (i : Fin m) →
       (Schedule.compose (fun _ => twoPartyMulSchedule) sc₁).Received i →
       (Schedule.compose (fun _ => twoPartyMulSchedule) sc₂).Received i →
@@ -2266,7 +2275,7 @@ def joinReceived2 {m : ℕ} :
 
 /-- Join a received transcript along `((pairsSchedule L).map (Round.embed parties) ++ rest₁)`
 with `b` into a transcript along `((pairsSchedule L).map (Round.embed parties) ++ rest₂)`. -/
-def joinPairsOTReceived {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : Fin m) :
+private def joinPairsOTReceived {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : Fin m) :
     (L : List (OrderedPair m)) → {rest₁ rest₂ : Schedule m (sharedMulSpec 2)} →
       ((Schedule.compose (fun _ => twoPartyMulSchedule) rest₁).Received i → α →
         (Schedule.compose (fun _ => twoPartyMulSchedule) rest₂).Received i) →
@@ -2281,7 +2290,7 @@ def joinPairsOTReceived {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : F
 
 /-- Join received transcripts along `otMulCompose a` and `otMulCompose b` into
 `otMulCompose (a ++ b)`. -/
-def joinOTMulCompose {m : ℕ} :
+private def joinOTMulCompose {m : ℕ} :
     (a b : Schedule m (sharedMulSpec m)) → (i : Fin m) →
       (otMulCompose a).Received i → (otMulCompose b).Received i →
       (otMulCompose (a ++ b)).Received i
@@ -2398,7 +2407,7 @@ private theorem encOTOracleAnswers_joinPairsOTReceived {m : ℕ} {α : Type}
 
 /-- Join `twoPartyMulProtocol` subcoin records along
 `((pairsSchedule L).map (Round.embed parties) ++ rest₁)`. -/
-def joinPairsOTSubCoins {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : Fin m) :
+private def joinPairsOTSubCoins {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : Fin m) :
     (L : List (OrderedPair m)) → {rest₁ rest₂ : Schedule m (sharedMulSpec 2)} →
       (Schedule.SubCoins (spec₁ := sharedMulSpec 2)
         (fun _ : Unit => Fin.cases Bool (fun _ => Unit)) rest₁ i → α →
@@ -2417,7 +2426,7 @@ def joinPairsOTSubCoins {m : ℕ} {α : Type} (parties : Fin m ↪ Fin m) (i : F
 
 /-- Join `twoPartyMulProtocol` subcoin records along
 `Schedule.compose (fun _ => multiPartyMulSchedule m) (a ++ b)`. -/
-def joinOTSubCoins {m : ℕ} :
+private def joinOTSubCoins {m : ℕ} :
     (a b : Schedule m (sharedMulSpec m)) → (i : Fin m) →
       Schedule.SubCoins (spec₁ := sharedMulSpec 2)
         (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
@@ -2486,7 +2495,7 @@ private theorem encOTSubCoins_joinPairsOTSubCoins {m : ℕ} {α : Type}
 
 /-- Inline word-oracle execution of `Steps.compose (fun _ => twoPartyMulProtocol) steps₂`,
 sampling each `twoPartyMulProtocol` sender coin `c₀ : Bool` on the fly at each `.oracle` round. -/
-noncomputable def runOTSteps {m : ℕ} {State Out : Fin m → Type}
+private noncomputable def runOTSteps {m : ℕ} {State Out : Fin m → Type}
     {sc₂ : Schedule m (sharedMulSpec 2)}
     (steps₂ : Steps State Out sc₂) (st : (i : Fin m) → State i) :
     WordOracleComp Unit
@@ -2866,7 +2875,7 @@ private theorem joinPairsOTSubCoins_joinSubCoins2 {m : ℕ} {α : Type}
     rw [ih c_tail]
 
 /-- Canonical unit subcoin record for `multiPartyMulProtocol m` (whose `Coins` type is `Unit`). -/
-def unitSubCoins {m : ℕ} :
+private def unitSubCoins {m : ℕ} :
     (sc : Schedule m (sharedMulSpec m)) → (i : Fin m) →
       Schedule.SubCoins (spec₁ := sharedMulSpec m) (fun _ _ => Unit) sc i
   | [], _ => ()
@@ -2915,7 +2924,7 @@ private theorem eval_pi_sampleSubCoins_multiPartyMul {m : ℕ}
 
 /-- Inline word-oracle execution of `steps : Steps State Out sc` composed with
 `multiPartyMulProtocol m` and `twoPartyMulProtocol`. -/
-noncomputable def runSharedMulSteps {m : ℕ} {State Out : Fin m → Type}
+private noncomputable def runSharedMulSteps {m : ℕ} {State Out : Fin m → Type}
     {sc : Schedule m (sharedMulSpec m)}
     (steps : Steps State Out sc) (st : (i : Fin m) → State i) :
     WordOracleComp Unit
@@ -3026,7 +3035,7 @@ private theorem runSharedMulSteps_append {m : ℕ} {State Mid Out : Fin m → Ty
 
 /-- Deterministic coalition simulator expansion along `sc₂ : Schedule m (sharedMulSpec 2)`
 for `twoPartyMulSim`. -/
-def detExpandOTSim {m : ℕ} (I : Finset (Fin m)) :
+private def detExpandOTSim {m : ℕ} (I : Finset (Fin m)) :
     (sc₂ : Schedule m (sharedMulSpec 2)) →
       ((i : I) → sc₂.Received i.1) →
       (i : I) →
@@ -3091,7 +3100,7 @@ private theorem detExpandOTSim_append {m : ℕ} (I : Finset (Fin m))
 
 /-- Simulated subcoins and `ot14Spec` received transcripts along `steps : Steps State Out sc`
 for coalition `I`. -/
-noncomputable def simSharedMulSteps {m : ℕ} [NeZero m] {State Out : Fin m → Type}
+private noncomputable def simSharedMulSteps {m : ℕ} [NeZero m] {State Out : Fin m → Type}
     {sc : Schedule m (sharedMulSpec m)} (I : Finset (Fin m))
     (steps : Steps State Out sc)
     (stI : (i : I) → State i.1) (recvI : (i : I) → sc.Received i.1) :
@@ -3886,7 +3895,7 @@ private theorem step1Wires_ofFn {m n coins : ℕ}
 
 /-- Serialize a party's wire valuation `w : Wire n g → Bool` into a list of `n + g` bits
 (input wires followed by gate wires). -/
-def wireToList {n g : ℕ} (w : Wire n g → Bool) : List Bool :=
+private def wireToList {n g : ℕ} (w : Wire n g → Bool) : List Bool :=
   List.ofFn (fun j : Fin n => w (.input j)) ++ List.ofFn (fun j : Fin g => w (.gate j))
 
 @[simp] private theorem wireToList_elim_elim0 {n : ℕ} (x_in : Fin n → Bool) :
@@ -3953,7 +3962,7 @@ private theorem extractGateCoreInput_or {m n g : ℕ}
     exact getD_wireToList_toNat (w s) (wires 1)
 
 /-- Pack the output of `runSharedMulSteps` on a Step 2 schedule into `Step2Acc m`. -/
-def packStep2 {m n g : ℕ} {sc : Schedule m (sharedMulSpec m)}
+private def packStep2 {m n g : ℕ} {sc : Schedule m (sharedMulSpec m)}
     (res : ((i : Fin m) →
         Schedule.SubCoins (spec₁ := sharedMulSpec 2)
           (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
@@ -4048,12 +4057,12 @@ private theorem runSharedMulSteps_progSteps {m n g : ℕ} [NeZero m]
 
 /-- Project `acc : Step2Acc m` to all parties' wire lists and the coalition `I`'s $\text{OT}_1^4$
 subcoins and oracle answers. -/
-def projStep2Acc {m : ℕ} (I : Finset (Fin m)) (acc : Step2Acc m) :
+private def projStep2Acc {m : ℕ} (I : Finset (Fin m)) (acc : Step2Acc m) :
     (Fin m → List Bool) × ((i : I) → List Bool) × ((i : I) → List Bool) :=
   (acc.1, I.restrict acc.2.1, I.restrict acc.2.2)
 
 /-- Projected single-gate transition on `projStep2Acc I acc`. -/
-noncomputable def simGateStepProj (m : ℕ) [NeZero m] (I : Finset (Fin m))
+private noncomputable def simGateStepProj (m : ℕ) [NeZero m] (I : Finset (Fin m))
     (gate : Boolean.Op × List ℕ)
     (accI : (Fin m → List Bool) × ((i : I) → List Bool) × ((i : I) → List Bool)) :
     ProbComp ((Fin m → List Bool) × ((i : I) → List Bool) × ((i : I) → List Bool)) :=
@@ -4324,7 +4333,7 @@ private theorem singleCoordSteps_eq_append {m k : ℕ} [NeZero m] (coord : Fin m
         (List.finRange m)) := rfl
 
 /-- Identity element of `appendStep3Acc m`. -/
-def zeroStep3Acc (m : ℕ) : Step3Acc m :=
+private def zeroStep3Acc (m : ℕ) : Step3Acc m :=
   (fun _ => [], fun _ => [], fun _ => [], fun _ => [])
 
 @[simp] private theorem appendStep3Acc_zero_left {m : ℕ} (acc : Step3Acc m) :
@@ -4369,7 +4378,7 @@ private theorem foldlMList_simOutStep_eq_map {m : ℕ} [NeZero m] (I : Finset (F
     exact congrArg (· <$> _) (funext fun a => appendStep3Acc_assoc acc delta a)
 
 /-- Convert a list `L : List (Fin m × Fin k)` of output coordinates into `List (OutItem m)`. -/
-def itemsOfCoords {m k : ℕ} (I : Finset (Fin m))
+private def itemsOfCoords {m k : ℕ} (I : Finset (Fin m))
     (a_table : Fin m → Fin m → BitString k) (y : Fin m → BitString k)
     (L : List (Fin m × Fin k)) : List (OutItem m) :=
   L.map fun coord =>
@@ -4405,7 +4414,7 @@ private theorem buildOutItems_eq_itemsOfCoords {m n k : ℕ} (I : Finset (Fin m)
 
 /-- Pack per-party output bit lists `y_list : Fin m → List Bool` along `L : List (Fin m × Fin k)`
 into `Fin m → BitString k`. -/
-def listToBitString {m k : ℕ} :
+private def listToBitString {m k : ℕ} :
     (L : List (Fin m × Fin k)) → (Fin m → List Bool) → Fin m → BitString k
   | [], _ => 0
   | coord :: L, y_list =>
@@ -4414,7 +4423,7 @@ def listToBitString {m k : ℕ} :
 
 /-- Extract party `i`'s output bits along `L : List (Fin m × Fin k)` from
 `y_out : Fin m → BitString k`. -/
-def extractOutBits {m k : ℕ} (L : List (Fin m × Fin k)) (y_out : Fin m → BitString k)
+private def extractOutBits {m k : ℕ} (L : List (Fin m × Fin k)) (y_out : Fin m → BitString k)
     (i : Fin m) : List Bool :=
   (L.map fun coord => if i = coord.1 then [y_out coord.1 coord.2] else []).flatten
 
@@ -5799,7 +5808,7 @@ private theorem eval_simSharedMulSteps_gmwCircuitSim {m coins n k : ℕ} [NeZero
         (GMWCircuit.deliverInputShares xr c₁ i.1) =
       st i.1 := by
     have hxr_i : Fin.append (xI i) (rI i) = xr i.1 := by
-      simp [xr, i.2]
+      simp [xr, GMWCircuit.extendByZero, i.2]
     rw [hxr_i, GMWCircuit.outputAt_inputShareSteps]
   dsimp only [gmwCircuitProtocol]
   simp_rw [simSharedMulSteps_append, hstep1, pure_bind, hout1_at]
@@ -5986,8 +5995,10 @@ end PolyTimeRunner
 
 open Turing.MultiTapeTM Cslib.Circuits
 
-/-- Uniform oracle-PPT certificate for the `m`-party $\text{OT}_1^4$-hybrid GMW protocol family
-`gmwOT14RandomizedProtocol` executed via `Protocol.runEncoded`. -/
+/-- Uniform oracle-PPT certificate for the centralized joint word-level runner `Protocol.runEncoded`
+applied to the `m`-party $\text{OT}_1^4$-hybrid GMW protocol family `gmwOT14RandomizedProtocol`
+(certifying the joint word-level execution across all `m` parties over `encFamilyRunInput enc m n`
+rather than separate per-party local PPT strategies). -/
 theorem isOraclePPTOn_gmwOT14RandomizedProtocol {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) [NeZero m] {coins n k : α → ℕ}
     {C : (a : α) → Circuit Boolean.signature (m * n a + coins a) (m * k a)}
@@ -6025,18 +6036,23 @@ theorem isPPTOn_gmwOT14RandomizedSim {α : Type} {enc : α ↪ List Bool}
   exact (PolyTimeRunner.isPPTOn_simRunWord m I hcoins.tidy hn.tidy hk.tidy hD.tidy).congr
     (PolyTimeRunner.eval_simRunWord_eq_gmwOT14RandomizedSim m coins n k C I)
 
-/-- Theorem 7.5.12 (Goldreich Section 7.5.2.4, p. 707; generalizing Theorem 7.3.11, Section 7.3.4,
-p. 648): every polynomial-time `m`-party randomized functionality family `F` is privately reducible
-to $\text{OT}_1^4$ in the semi-honest model against every proper static coalition `I ≠ Finset.univ`,
-with uniform polynomial-time circuit family `C`, uniform `IsOraclePPTOn` protocol execution via
-`Protocol.runEncoded` (linked to `Protocol.evalWith ot14World` by
-`Protocol.eval_runEncoded_eq_evalWith_map`), and uniform `IsPPTOn` coalition simulators.
+/-- Proper-coalition variant of Theorem 7.5.12 (Goldreich Section 7.5.2.4, p. 707; generalizing
+Theorem 7.3.11, Section 7.3.4, p. 648): every polynomial-time `m`-party randomized functionality
+family `F` is privately reducible to $\text{OT}_1^4$ in the semi-honest model against every proper
+static coalition `I ≠ Finset.univ`, with uniform polynomial-time circuit family `C`, uniform
+`IsOraclePPTOn` joint word-level protocol execution via `Protocol.runEncoded` (linked to
+`Protocol.evalWith ot14World` by `Protocol.eval_runEncoded_eq_evalWith_map`), and uniform
+`IsPPTOn` coalition simulators.
 
 Note that the proper-coalition quantifier `I ≠ Finset.univ` (`PerfectSemiHonestPrivateProper`) is
 narrower than Goldreich's Definition 7.5.1 and Theorem 7.5.12 (which quantify over all `I ⊆ [m]`,
-p. 696, treating `I = [m]` as trivial on pp. 697, 703), because under the joint view-and-output
-equation Eq. 7.40 for randomized functionalities, `I = Finset.univ` is not satisfied when coin
-shares are simulated independently of the output. -/
+p. 696; Goldreich's text on pp. 697 and 703 treats `I = [m]` as trivial without restricting that
+remark to deterministic functionalities or to the view-only Eq. 7.39). Under the joint
+view-and-output equation Eq. 7.40 for randomized functionalities, `I = Finset.univ` is not vacuous:
+the canonical independent-coin-share simulator `randomizedWrapperSim` is refuted at
+`I = Finset.univ` by `not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ`, and any
+full-coalition simulator receiving only `(x, y)` would have to sample coin shares whose XOR `r`
+satisfies `g(r, x) = y`. -/
 theorem exists_perfectSemiHonestPrivate_ot14_of_polyTime {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) [NeZero m] {coins n k : α → ℕ} {F : α × List Bool → List Bool}
     (hcoins : ComputableInPolyTime coins enc encUnary)

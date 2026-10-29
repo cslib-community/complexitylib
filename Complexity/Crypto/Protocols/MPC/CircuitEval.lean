@@ -153,13 +153,13 @@ and applying `finish` at `.done`. -/
   (msgStepsWith finish (allPairs m)).mapState (fun _ toSend => (toSend, 0))
 
 /-- Sum of party `i`'s received message updates along `L`. -/
-@[expose] def sumReceivedMsgs {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [AddCommMonoid Msg] :
+private def sumReceivedMsgs {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [AddCommMonoid Msg] :
     (L : List (Fin m × Fin m)) → (i : Fin m) →
       (msgSchedule (spec := spec) Msg L).Received i → Fin m → Msg
   | [], _, _ => 0
   | p :: L, i, r => extractMsg p i r.1 + sumReceivedMsgs L i r.2
 
-@[simp] theorem outputAt_msgStepsWith {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
+@[simp] private theorem outputAt_msgStepsWith {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
     [AddCommMonoid Msg] {Out : Fin m → Type}
     (finish : (i : Fin m) → (Fin m → Msg) → Out i)
     (L : List (Fin m × Fin m)) (i : Fin m)
@@ -210,13 +210,13 @@ private theorem evalWith_msgStepsWith {m : ℕ} {spec : MultiOracleSpec} {Msg : 
     simp [msgStepsWith, ih, deliverMessage_eq_receivedMsgOfInbox (fun s => (st s).1) p,
       receivedScheduleOfInbox]
 
-@[simp] theorem extractMsg_receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
+@[simp] private theorem extractMsg_receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
     [AddCommMonoid Msg] (p : Fin m × Fin m) (i : Fin m) (inbox_i : Fin m → Msg) :
     extractMsg (spec := spec) p i (receivedMsgOfInbox p i inbox_i) =
       if i = p.2 then Pi.single p.1 (inbox_i p.1) else 0 := by
   by_cases h : i = p.2 <;> simp [extractMsg, receivedMsgOfInbox, h]
 
-@[simp] theorem sumReceivedMsgs_receivedScheduleOfInbox {m : ℕ} {spec : MultiOracleSpec}
+@[simp] private theorem sumReceivedMsgs_receivedScheduleOfInbox {m : ℕ} {spec : MultiOracleSpec}
     {Msg : Type} [AddCommMonoid Msg] (i : Fin m) (inbox_i : Fin m → Msg) :
     sumReceivedMsgs (spec := spec) (allPairs m) i
       (receivedScheduleOfInbox i inbox_i (allPairs m)) = inbox_i := by
@@ -239,7 +239,7 @@ p. 706, with the completing share placed at `⊤ : Fin m`). -/
     Fin m → BitString n :=
   ProbComp.completeShares m x_s (fun k j => c_s j k)
 
-@[simp] theorem shareInputBits_apply (m n : ℕ) (x_s : BitString n)
+theorem shareInputBits_apply (m n : ℕ) (x_s : BitString n)
     (c_s : Fin n → Fin (m - 1) → Bool) (r : Fin m) (j : Fin n) :
     shareInputBits m n x_s c_s r j = ProbComp.completeShares m (x_s j) (c_s j) r := by
   dsimp [shareInputBits, ProbComp.completeShares]
@@ -247,7 +247,9 @@ p. 706, with the completing share placed at `⊤ : Fin m`). -/
   · rfl
   · simp [Finset.sum_apply]
 
-@[simp] theorem sum_shareInputBits (m n : ℕ) [NeZero m] (x_s : BitString n)
+attribute [local simp] shareInputBits_apply
+
+@[simp] private theorem sum_shareInputBits (m n : ℕ) [NeZero m] (x_s : BitString n)
     (c_s : Fin n → Fin (m - 1) → Bool) :
     ∑ r : Fin m, shareInputBits m n x_s c_s r = x_s :=
   ProbComp.sum_completeShares m x_s (fun k j => c_s j k)
@@ -297,11 +299,13 @@ private theorem evalWith_inputShareSteps {m n : ℕ} (W : MultiOracleWorld (shar
   simp only [inputShareSteps, allToAllStepsWith, Steps.evalWith_mapState, evalWith_msgStepsWith]
   rfl
 
-@[simp] theorem outputAt_inputShareSteps {m n : ℕ}
+theorem outputAt_inputShareSteps {m n : ℕ}
     (x : (i : Fin m) → BitString n) (c : (i : Fin m) → Fin n → Fin (m - 1) → Bool) (i : Fin m) :
     (inputShareSteps m n).outputAt i (x i, c i) (deliverInputShares x c i) =
       BitString.blocksEquiv.symm (fun s => shareInputBits m n (x s) (c s) i) := by
   simp [inputShareSteps, allToAllStepsWith, deliverInputShares]
+
+attribute [local simp] outputAt_inputShareSteps
 
 theorem sum_outputAt_inputShareSteps {m n : ℕ} [NeZero m]
     (x : (i : Fin m) → BitString n) (c : (i : Fin m) → Fin n → Fin (m - 1) → Bool)
@@ -321,32 +325,36 @@ theorem sum_outputAt_inputShareSteps {m n : ℕ} [NeZero m]
     Wire inputCount (g + 1) → Bool :=
   Wire.lastCases lastBit w
 
-@[simp] theorem extendWire_last {inputCount g : ℕ} (lastBit : Bool)
+theorem extendWire_last {inputCount g : ℕ} (lastBit : Bool)
     (w : Wire inputCount g → Bool) :
     extendWire lastBit w (.gate (Fin.last g)) = lastBit := by
   simp [extendWire, Wire.lastCases]
 
-@[simp] theorem extendWire_castSucc {inputCount g : ℕ} (lastBit : Bool)
+attribute [local simp] extendWire_last
+
+theorem extendWire_castSucc {inputCount g : ℕ} (lastBit : Bool)
     (w : Wire inputCount g → Bool) (wire : Wire inputCount g) :
     extendWire lastBit w wire.castSucc = w wire := by
   cases wire <;> simp [extendWire, Wire.lastCases]
+
+attribute [local simp] extendWire_castSucc
 
 /-- Canonical additive share of a public Boolean constant `b : Bool`: party `0` holds `b` and all
 other parties hold `false`. -/
 @[expose] def constShare {m : ℕ} [NeZero m] (b : Bool) (i : Fin m) : Bool :=
   if i = 0 then b else 0
 
-@[simp] theorem sum_constShare {m : ℕ} [NeZero m] (b : Bool) :
+@[simp] private theorem sum_constShare {m : ℕ} [NeZero m] (b : Bool) :
     ∑ i : Fin m, constShare b i = b := by
   simp [constShare]
 
-theorem bool_not_eq_add_true (a : Bool) : (!a) = a + true := by
+private theorem bool_not_eq_add_true (a : Bool) : (!a) = a + true := by
   cases a <;> rfl
 
-theorem bool_and_eq_mul (a b : Bool) : (a && b) = a * b := by
+private theorem bool_and_eq_mul (a b : Bool) : (a && b) = a * b := by
   cases a <;> cases b <;> rfl
 
-theorem bool_or_eq_add_add_mul (a b : Bool) : (a || b) = a + b + a * b := by
+private theorem bool_or_eq_add_add_mul (a b : Bool) : (a || b) = a + b + a * b := by
   cases a <;> cases b <;> rfl
 
 /-- Schedule for evaluating a single gate `line : Line Boolean.signature inputCount g`.
@@ -447,7 +455,7 @@ private theorem deliverMulOracle_eq_deliverSelfShare {m : ℕ} (ans : Fin m → 
         (p.trace Boolean.interpretation x_flat (wires 0) *
           p.trace Boolean.interpretation x_flat (wires 1))
 
-theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
+private theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
     (x_flat : Fin inputCount → Bool) (p : Program Boolean.signature inputCount g)
     (line : Line Boolean.signature inputCount g)
     (w : (i : Fin m) → Wire inputCount g → Bool)
@@ -643,7 +651,7 @@ applying `finish` at `.done`. -/
   | [], _, _ => 0
   | s :: S, i, recv => extractBitFor s r i recv.1 + sumGatherBits r S i recv.2
 
-@[simp] theorem outputAt_gatherStepsWith {m : ℕ} {spec : MultiOracleSpec}
+@[simp] private theorem outputAt_gatherStepsWith {m : ℕ} {spec : MultiOracleSpec}
     {State Out : Fin m → Type} (r : Fin m)
     (finish : (i : Fin m) → State i → Bool → Out i)
     (S : List (Fin m)) (i : Fin m) (st_i : State i × Bool × Bool)
@@ -676,13 +684,13 @@ private theorem evalWith_gatherStepsWith {m : ℕ} {spec : MultiOracleSpec}
   | cons s S ih =>
     simp [gatherStepsWith, ih, deliverGather]
 
-@[simp] theorem extractBitFor_deliverMessage {m : ℕ} {spec : MultiOracleSpec}
+@[simp] private theorem extractBitFor_deliverMessage {m : ℕ} {spec : MultiOracleSpec}
     (s r i : Fin m) (b : Bool) :
     extractBitFor (spec := spec) s r i (Round.deliverMessage b i) =
       if i = r then b else 0 := by
   by_cases h : i = r <;> simp [extractBitFor, h]
 
-@[simp] theorem sumGatherBits_deliverGather {m : ℕ} {spec : MultiOracleSpec}
+theorem sumGatherBits_deliverGather {m : ℕ} {spec : MultiOracleSpec}
     (r : Fin m) (ans : Fin m → Bool) (i : Fin m) :
     sumGatherBits (spec := spec) r (List.finRange m) i
       (deliverGather r ans (List.finRange m) i) =
@@ -698,6 +706,8 @@ private theorem evalWith_gatherStepsWith {m : ℕ} {spec : MultiOracleSpec}
   by_cases h : i = r
   · simp [h]
   · simp [h]
+
+attribute [local simp] sumGatherBits_deliverGather
 
 private theorem deliverGather_eq_of_ne {m : ℕ} {spec : MultiOracleSpec} {r i : Fin m}
     (hne : i ≠ r) (ans₁ ans₂ : Fin m → Bool) (S : List (Fin m)) :
@@ -760,12 +770,14 @@ private theorem evalWith_singleCoordSteps {m k : ℕ} [NeZero m] (coord : Fin m 
   simp [singleCoordSteps, sharedMulWorld, sharedMulFunctionality, hst, hmul_one,
     evalWith_gatherStepsWith, deliverCoord_eq, Round.deliverOracle, PMF.map, Function.comp_def]
 
-@[simp] theorem outputAt_singleCoordSteps {m k : ℕ} [NeZero m] (coord : Fin m × Fin k)
+theorem outputAt_singleCoordSteps {m k : ℕ} [NeZero m] (coord : Fin m × Fin k)
     (ans : Fin m → Bool)
     (st_i : (Fin m → BitString k) × BitString k) (i : Fin m) :
     (singleCoordSteps m k coord).outputAt i st_i (deliverCoord coord.1 ans i) =
       (st_i.1, st_i.2 + if i = coord.1 then Pi.single coord.2 (∑ s : Fin m, ans s) else 0) := by
   by_cases h : i = coord.1 <;> simp [singleCoordSteps, Steps.outputAt, deliverCoord, h]
+
+attribute [local simp] outputAt_singleCoordSteps
 
 /-- Schedule for refreshing and reconstructing a list `L : List (Fin m × Fin k)` of output
 coordinates. -/
@@ -890,12 +902,12 @@ parties by padding parties outside `I` with `0`. -/
     (j : Fin m) : α :=
   if hj : j ∈ I then vI ⟨j, hj⟩ else 0
 
-@[simp] theorem extendByZero_of_mem {m : ℕ} {α : Type} [Zero α] (I : Finset (Fin m))
+@[simp] private theorem extendByZero_of_mem {m : ℕ} {α : Type} [Zero α] (I : Finset (Fin m))
     (vI : (i : I) → α) {j : Fin m} (hj : j ∈ I) :
     extendByZero I vI j = vI ⟨j, hj⟩ := by
   simp [extendByZero, hj]
 
-@[simp] theorem extendByZero_univ {m : ℕ} {α : Type} [Zero α] (v : Fin m → α) :
+@[simp] private theorem extendByZero_univ {m : ℕ} {α : Type} [Zero α] (v : Fin m → α) :
     extendByZero Finset.univ (Finset.univ.restrict v) = v := by
   ext j
   simp [extendByZero]
@@ -1068,7 +1080,7 @@ refreshed output shares via `.message` rounds. -/
 namespace GMWCircuit
 
 /-- Type of party `i`'s view in `gmwCircuitProtocol m n k C`. -/
-abbrev GMWCircuitView (m n k : ℕ)
+private abbrev GMWCircuitView (m n k : ℕ)
     (C : Cslib.Circuits.Circuit Boolean.signature (m * n) (m * k)) (i : Fin m) : Type :=
   PartyView (fun _ => BitString n) (fun _ => Fin n → Fin (m - 1) → Bool)
     (gmwCircuitSchedule m n k C) i
@@ -1079,7 +1091,9 @@ abbrev GMWCircuitView (m n k : ℕ)
 @[expose] noncomputable def gmwCircuitRealViews (m n k : ℕ)
     (C : Cslib.Circuits.Circuit Boolean.signature (m * n) (m * k))
     (x : (i : Fin m) → BitString n) (y : (i : Fin m) → BitString k) :
-    ProbComp ((i : Fin m) → GMWCircuitView m n k C i) := do
+    ProbComp ((i : Fin m) →
+      PartyView (fun _ => BitString n) (fun _ => Fin n → Fin (m - 1) → Bool)
+        (gmwCircuitSchedule m n k C) i) := do
   let c ← OracleComp.pi (fun _ : Fin m => ProbComp.uniform (Fin n → Fin (m - 1) → Bool))
   let r_prog ← progDist m (BitString.blocksEquiv.symm x) C.program
   let r_out ← outputDist m k y
