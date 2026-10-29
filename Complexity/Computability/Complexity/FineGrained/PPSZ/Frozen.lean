@@ -45,11 +45,14 @@ analysis of [Hertli][Hertli2011] uses.
   `w ≥ ∑ i < h, (k - 1) ^ i` and `x` is frozen, then `guessProb φ w T σ x ≤ 1 - qbar k h`
   (`guessProb_le_of_frozen`), the bound of the unique case
   (`qbar_le_card_filter_forced_div_factorial`). For the unmodified algorithm this is the
-  finite-depth form of [Scheder, Steinberger, Theorem 4 (p. 9:4)][SchederSteinberger2017], which
-  they attribute to Paturi, Pudlák, Saks and Zane: w-implication of depth `h` has error at most
-  `1 - qbar k h` against formulas with clauses of at most `k` literals. Hertli's bound for his
-  modified algorithm, [Hertli, Theorem 6 (p. 4)][Hertli2011], which he only sketches, follows
-  from it by monotonicity (`guessProb_le_of_subset`), since the modified algorithm fixes more
+  frozen-variable part of the finite-depth form of
+  [Scheder, Steinberger, Theorem 4 (p. 9:4)][SchederSteinberger2017], which they attribute to
+  Paturi, Pudlák, Saks and Zane: under w-implication of depth `h`, against formulas with clauses
+  of at most `k` literals, a frozen variable is guessed with probability at most `1 - qbar k h`.
+  Their error notion (Definition 2) also covers liquid variables, which this bound does not.
+  Hertli's bound for his modified algorithm, [Hertli, Theorem 6 (p. 4)][Hertli2011], which he only
+  sketches, follows from it by monotonicity (`guessProb_le_of_subset`), since the modified
+  algorithm fixes more
   variables of `σ` before `x`. Here the critical clause tree is built on the restricted formula
   `φ.restrictBy τ` and rooted at `x` (`IsCriticalTreeAt`): flipping `x` and other unassigned
   variables gives an extension of `τ` that disagrees with `σ` on `x`, which falsifies `φ` since
@@ -337,9 +340,9 @@ theorem exists_isCriticalTreeAt_restrictBy (hσ : φ.eval σ = true) (hfr : Froz
   choose C hC using key'
   exact ⟨C, fun p hxp _ => hC p hxp⟩
 
-/-- **The guess bound for frozen variables**, for the unmodified algorithm the finite-depth form of
-[Scheder, Steinberger, Theorem 4 (p. 9:4)][SchederSteinberger2017], which they attribute to
-Paturi, Pudlák, Saks and Zane; Hertli's bound for his modified algorithm,
+/-- **The guess bound for frozen variables**, for the unmodified algorithm the frozen-variable part
+of the finite-depth form of [Scheder, Steinberger, Theorem 4 (p. 9:4)][SchederSteinberger2017],
+which they attribute to Paturi, Pudlák, Saks and Zane; Hertli's bound for his modified algorithm,
 [Hertli, Theorem 6 (p. 4)][Hertli2011], follows from it by `guessProb_le_of_subset`. Let `σ`
 satisfy `φ`, whose clauses have at most `k` literals, let `w ≥ ∑ i < h, (k - 1) ^ i`, and let `x`
 be frozen under `σ` restricted to `T`. Then `x` is guessed in at most a `1 - qbar k h` fraction of
