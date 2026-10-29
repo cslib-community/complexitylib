@@ -128,7 +128,7 @@ theorem truthTable_mem_WPP (hA : A ∈ WPP (encPair enc encUnary))
   have hF (a) : (∏ i ∈ range (r a), f (a, i)) ≠ 0 :=
     prod_ne_zero_iff.mpr fun i _ => hn (a, i)
   refine ⟨answerGap g f r d, answerGap_mem hg (mem_GapP_of_polyTime hf) hr hd,
-    _, .of_tidy (ComputableTidilyInPolyTime.intBin_prod_range hf.tidy hr.tidy), hF, ?_, ?_⟩
+    _, ComputableInPolyTime.intBin_prod_range hf hr, hF, ?_, ?_⟩
   · intro a
     rw [answerGap_eq hR hA]
     split_ifs <;> simp
@@ -151,9 +151,8 @@ theorem truthTable_mem_LWPP (hA : A ∈ LWPP (encPair enc encUnary))
   obtain ⟨p, hb⟩ := hr.polyBounded.exists_polynomial
   let T (x : ℕ × ℕ) := ∏ i ∈ range x.2, f (2 * x.1 + 1 + i)
   have hT : ComputableInPolyTime T (encPair encUnary encUnary) encIntBin := by
-    have hf := hf.tidy
-    refine .of_tidy (ComputableTidilyInPolyTime.intBin_prod_range
-      (f := fun x : (ℕ × ℕ) × ℕ => f (2 * x.1.1 + 1 + x.2)) ?_ ?_) <;> fun_prop
+    refine ComputableInPolyTime.intBin_prod_range
+      (f := fun x : (ℕ × ℕ) × ℕ => f (2 * x.1.1 + 1 + x.2)) ?_ ?_ <;> fun_prop
   have hp : ComputableInPolyTime (fun n => p.eval n + 1) encUnary encUnary := by fun_prop
   apply mem_LWPP_of_indexed_targets (answerGap_mem hg (mem_GapP_of_polyTime hF) hr hd) hT hp
   · intro n k _

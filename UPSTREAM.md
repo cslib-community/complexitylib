@@ -40,6 +40,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and their helpers) and the blocks marked `@9cce4cc7` in older copies come from a later local
   rewrite of the branch that is not yet published; `scripts/upstream_sync.py` reports them
   against the published head until it is. The rest of the branch is still copied at `@7f7c0696`.
+* **Universal simulation.** The local universal interpreter preserves Christian Reitwiessner’s
+  description format and execution semantics. Its resource certificates now separate
+  transition-description size and binary input-head length from the copied configuration;
+  `Universal/Input` uses the existing native streaming fold to emit a selected input symbol
+  without repeatedly copying list tails. Retain these local improvements when synchronizing
+  `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
+  This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
 * **Polynomial bounds.** The tidy calculus's size-parameterized `PolyBounded` adapts CSLib's
   `PolynomiallyBounded` and shares its closure API. Coordinate this adaptation with the tidy
   branch; preserve it when resynchronizing the vendored files.
@@ -199,7 +206,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
-  retain the source's exact real floor/ceiling specifications through checked bridges. The existing
+  retain the source's exact real floor/ceiling specifications through checked bridges.
+  `Algorithms/MatrixMultiplication/Schonhage/` adapts the tensor-recursion core from the same pin's
+  `Sec2/{Lemma6,Recursion,Lemma7_8,Lemma10}.lean`: the ten-term polynomial identity with explicit
+  error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
+  Its pure finite recursion traces are not native machine semantics or charged instruction costs.
+  The zero-depth empty-query root exception is explicit, with an unconditional root-or-leaf API.
+  See [#1459](https://github.com/cslib-community/complexitylib/issues/1459); tiling/sparse leaf bounds
+  remain in #1394.
+  The existing
   signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
   Tensor/sparse query programs, the full reduction host, native Chan–He preprocessing, fast Exact
   Triangle and full input/time/width/asymptotic composition remain in

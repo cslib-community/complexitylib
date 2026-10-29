@@ -51,7 +51,7 @@ it is not a claim about the paper's hardness parameters.
 
 namespace Cslib.Crypto.Homomorphic.GSW.Parameters
 
-open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableTidilyInPolyTime
+open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 open scoped NNReal
 
 /-- Number of secret coordinates. -/
@@ -194,22 +194,28 @@ theorem computableInPolyTime_modulus :
   rw [hmodulus]
   fun_prop
 
+private theorem polynomiallyBounded_of_unary {f : ℕ → ℕ}
+    (hf : ComputableInPolyTime f encUnary encUnary) : PolynomiallyBounded f :=
+  (show PolyBounded (fun n : ℕ => n) f by
+    simpa only [encUnary_apply, List.length_replicate] using
+      hf.polyBounded_length).polynomiallyBounded
+
 /-- Every numerical parameter, including the modulus, is polynomially bounded. -/
 theorem polynomiallyBounded_parameters :
     PolynomiallyBounded dimension ∧ PolynomiallyBounded noise ∧ PolynomiallyBounded width ∧
       PolynomiallyBounded rows ∧ PolynomiallyBounded samples ∧ PolynomiallyBounded modulus :=
-  ⟨computableInPolyTime_dimension.tidy.polynomiallyBounded,
-    computableInPolyTime_noise.tidy.polynomiallyBounded,
-    computableInPolyTime_width.tidy.polynomiallyBounded,
-    computableInPolyTime_rows.tidy.polynomiallyBounded,
-    computableInPolyTime_samples.tidy.polynomiallyBounded,
-    computableInPolyTime_modulus.tidy.polynomiallyBounded⟩
+  ⟨polynomiallyBounded_of_unary computableInPolyTime_dimension,
+    polynomiallyBounded_of_unary computableInPolyTime_noise,
+    polynomiallyBounded_of_unary computableInPolyTime_width,
+    polynomiallyBounded_of_unary computableInPolyTime_rows,
+    polynomiallyBounded_of_unary computableInPolyTime_samples,
+    polynomiallyBounded_of_unary computableInPolyTime_modulus⟩
 
 /-- The exact shared-public-matrix error bound is negligible for this positive-noise family. -/
 theorem negligible_statistical_error :
     Negligible (fun security => (rows security : ℝ≥0) *
       NNReal.sqrt ((2 : ℝ≥0) ^ rows security / 2 ^ samples security)) :=
-  negligible_mul_sqrt_pow_two_div_pow_two computableInPolyTime_rows.tidy.polynomiallyBounded
+  negligible_mul_sqrt_pow_two_div_pow_two (polynomiallyBounded_of_unary computableInPolyTime_rows)
     (Filter.Eventually.of_forall entropy_margin)
 
 end Cslib.Crypto.Homomorphic.GSW.Parameters

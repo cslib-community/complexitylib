@@ -36,7 +36,7 @@ public section
 
 namespace Cslib.Circuits.Boolean.Modular
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 local notation "Code" => List (Op × List ℕ) × List ℕ
 
@@ -93,31 +93,26 @@ theorem subtractCode_eq_code (w : ℕ) : subtractCode w = (subtract w).code := b
 /-- Full generation is polynomial-time in unary width, including binary gate and output indices. -/
 @[fun_prop] theorem computableInPolyTime_subtract :
     ComputableInPolyTime (fun w => (subtract w).code) encUnary encCode := by
-  apply ComputableInPolyTime.of_tidy
-  have hn : ComputableTidilyInPolyTime (fun w : ℕ => w + w) encUnary encNat := by fun_prop
-  have hr : ComputableTidilyInPolyTime (fun w : ℕ => ([], List.range w)) encUnary encCode :=
-    by
-      simpa only [Function.comp_def, List.map_id_fun', id_eq] using
-        (const (encMid := encList encGate) []).prod (unary_to_binary.map.comp range)
-  have hnot : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => notCode p.1 p.2)
+  have hn : ComputableInPolyTime (fun w : ℕ => w + w) encUnary encNat :=
+    unary_to_binary.comp (by fun_prop)
+  have hr : ComputableInPolyTime (fun w : ℕ => ([], List.range w)) encUnary encCode := by
+    simpa only [Function.comp_def, List.map_id_fun', id_eq] using
+      (const (encOut := encList encGate) []).prod (unary_to_binary.map.comp range)
+  have hnot : ComputableInPolyTime (fun p : ℕ × ℕ => notCode p.1 p.2)
       (encPair encUnary encUnary) encCode := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_formulaCode _ (.of_tidy (by fun_prop))
+    apply computableInPolyTime_formulaCode _ (unary_to_binary.comp (by fun_prop))
     intro i
-    apply ComputableInPolyTime.of_tidy
-    change ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + p.2) _ encNat
-    fun_prop
-  have ht : ComputableTidilyInPolyTime (fun w : ℕ => ([(Op.const true, [])], [w + w]))
+    change ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2) _ encNat
+    exact unary_to_binary.comp (by fun_prop)
+  have ht : ComputableInPolyTime (fun w : ℕ => ([(Op.const true, [])], [w + w]))
       encUnary encCode := (const _).prod (hn.cons' (const []))
-  have hi := (computableInPolyTime_appendCode (.of_tidy hn)
-    (computableInPolyTime_appendCode (.of_tidy hn) (.of_tidy hr)
-      (computableInPolyTime_appendCodes (.of_tidy hn) (.of_tidy (mapWith hnot id' range))))
-        (.of_tidy ht)).tidy
-  have h := (computableInPolyTime_compCode (.of_tidy hn) (.of_tidy hr)
-    (computableInPolyTime_compCode (.of_tidy hn) computableInPolyTime_carryLookahead (.of_tidy
-      hi))).tidy
+  have hi := computableInPolyTime_appendCode hn
+    (computableInPolyTime_appendCode hn hr
+      (computableInPolyTime_appendCodes hn (mapWithInput range hnot))) ht
+  have h := computableInPolyTime_compCode hn hr
+    (computableInPolyTime_compCode hn computableInPolyTime_carryLookahead hi)
   simp_rw [← subtractCode_eq_code]
-  change ComputableTidilyInPolyTime (fun w => compCode (w + w) ([], List.range w)
+  change ComputableInPolyTime (fun w => compCode (w + w) ([], List.range w)
     (compCode (w + w) (carryLookahead w).code (inputsCode w))) encUnary encCode
   simpa only [inputsCode, Function.comp_def, List.map_id_fun', id_eq] using h
 

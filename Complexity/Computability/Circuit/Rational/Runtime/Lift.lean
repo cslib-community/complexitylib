@@ -377,7 +377,7 @@ theorem intBits_le_of_mem_liftRows_parameters {n s t p r : ℕ} (ht : t ≤ Para
 
 /-! ### Polynomial-time certificates -/
 
-open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
+open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
 
 /-- Upper bound on the bit length of any entry of `coeffRow c i` for `i ≤ k`, where `L` is the
 encoded length of `c`. -/
@@ -424,15 +424,15 @@ variable {α : Type} {encIn : α ↪ List Bool}
 
 @[local fun_prop]
 private theorem listGetD_intBin {l : α → List ℤ} {i : α → ℕ}
-    (hl : ComputableTidilyInPolyTime l encIn (encList encIntBin))
-    (hi : ComputableTidilyInPolyTime i encIn encUnary) (d : ℤ) :
-    ComputableTidilyInPolyTime (fun x => (l x).getD (i x) d) encIn encIntBin :=
+    (hl : ComputableInPolyTime l encIn (encList encIntBin))
+    (hi : ComputableInPolyTime i encIn encUnary) (d : ℤ) :
+    ComputableInPolyTime (fun x => (l x).getD (i x) d) encIn encIntBin :=
   (listGetD (encA := encIntBin) d).comp (hl.prod hi)
 
 @[local fun_prop]
 private theorem intBin_of_unary {n : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n encIn encUnary) :
-    ComputableTidilyInPolyTime (fun x => (n x : ℤ)) encIn encIntBin :=
+    (hn : ComputableInPolyTime n encIn encUnary) :
+    ComputableInPolyTime (fun x => (n x : ℤ)) encIn encIntBin :=
   intBin_natCast.comp (unary_to_binary.comp hn)
 
 /-- Equality testing of two unary-encoded natural-number functions is computable in polynomial
@@ -441,10 +441,8 @@ time. -/
 theorem unary_decide_eq {a b : α → ℕ}
     (ha : ComputableInPolyTime a encIn encUnary)
     (hb : ComputableInPolyTime b encIn encUnary) :
-    ComputableInPolyTime (fun x => decide (a x = b x)) encIn encBool := by
-  have ha := ha.tidy
-  have hb := hb.tidy
-  exact .of_tidy ((decide_eq encUnary).comp (ha.prod hb))
+    ComputableInPolyTime (fun x => decide (a x = b x)) encIn encBool :=
+  ha.decide_eq' hb
 
 /-- One shift-and-add step of the coefficient recurrence is polynomial-time. -/
 @[fun_prop]
@@ -452,9 +450,6 @@ theorem computableInPolyTime_shiftAddRow {c : α → ℤ} {l : α → List ℤ}
     (hc : ComputableInPolyTime c encIn encIntBin)
     (hl : ComputableInPolyTime l encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => shiftAddRow (c x) (l x)) encIn (encList encIntBin) := by
-  have hc := hc.tidy
-  have hl := hl.tidy
-  refine .of_tidy ?_
   unfold shiftAddRow
   fun_prop
 
@@ -464,15 +459,12 @@ unary degree `k`. -/
 theorem computableInPolyTime_coeffRow {c : α → ℤ} {k : α → ℕ}
     (hc : ComputableInPolyTime c encIn encIntBin)
     (hk : ComputableInPolyTime k encIn encUnary) :
-    ComputableInPolyTime (fun x => coeffRow (c x) (k x)) encIn (encList encIntBin) := by
-  have hc := hc.tidy
-  have hk := hk.tidy
-  exact .of_tidy (iterateWith hc hk (const [1])
-    (computableInPolyTime_shiftAddRow (.of_tidy (fst _ _)) (.of_tidy (snd _ _))).tidy
+    ComputableInPolyTime (fun x => coeffRow (c x) (k x)) encIn (encList encIntBin) :=
+  iterateWith hc hk (const [1])
+    (computableInPolyTime_shiftAddRow (fst _ _) (snd _ _))
     (polyBounded_coeffRowBound hc.polyBounded_length hk.polyBounded)
-    fun x _ hi => length_encList_coeffRow_le (c x) hi)
+    fun x _ hi => length_encList_coeffRow_le (c x) hi
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing the table of coefficient rows `coeffRows c M` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_coeffRows {c : α → ℤ} {M : α → ℕ}
@@ -480,9 +472,6 @@ theorem computableInPolyTime_coeffRows {c : α → ℤ} {M : α → ℕ}
     (hM : ComputableInPolyTime M encIn encUnary) :
     ComputableInPolyTime (fun x => coeffRows (c x) (M x))
       encIn (encList (encList encIntBin)) := by
-  have hc := hc.tidy
-  have hM := hM.tidy
-  refine .of_tidy ?_
   unfold coeffRows
   fun_prop
 
@@ -503,7 +492,6 @@ theorem computableInPolyTime_testTerm {M u v q : α → ℕ} {minus plus : α �
   unfold testTerm
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing the list of summands of a Taylor test matrix entry is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_testTerms {M u v : α → ℕ} {minus plus : α → List (List ℤ)}
@@ -517,17 +505,9 @@ theorem computableInPolyTime_testTerms {M u v : α → ℕ} {minus plus : α →
     ComputableInPolyTime
       (fun x => testTerms (M x) (minus x) (plus x) (t x) (u x) (v x))
       encIn (encList encIntBin) := by
-  have hM := hM.tidy
-  have hminus := hminus.tidy
-  have hplus := hplus.tidy
-  have ht := ht.tidy
-  have hu := hu.tidy
-  have hv := hv.tidy
-  refine .of_tidy ?_
   unfold testTerms
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing one entry of the integer Taylor test matrix is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_testEntry {M N u v : α → ℕ} {minus plus : α → List (List ℤ)}
@@ -542,14 +522,6 @@ theorem computableInPolyTime_testEntry {M N u v : α → ℕ} {minus plus : α �
     ComputableInPolyTime
       (fun x => testEntry (M x) (N x) (minus x) (plus x) (t x) (u x) (v x))
       encIn encIntBin := by
-  have hM := hM.tidy
-  have hN := hN.tidy
-  have hminus := hminus.tidy
-  have hplus := hplus.tidy
-  have ht := ht.tidy
-  have hu := hu.tidy
-  have hv := hv.tidy
-  refine .of_tidy ?_
   unfold testEntry
   fun_prop
 
@@ -574,11 +546,6 @@ theorem computableInPolyTime_signedCoeff {Dg z i j : α → ℕ}
     (hj : ComputableInPolyTime j encIn encUnary) :
     ComputableInPolyTime (fun x => signedCoeff (Dg x) (z x) (i x) (j x))
       encIn encIntBin := by
-  have hDg := hDg.tidy
-  have hz := hz.tidy
-  have hi := hi.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
   unfold signedCoeff
   fun_prop
 
@@ -603,7 +570,6 @@ theorem computableInPolyTime_liftTerm {M Dg u v i j a k : α → ℕ}
   unfold liftTerm
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing the inner list of summands of an integer lift entry is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_liftTerms {M Dg u v i j a : α → ℕ}
@@ -621,21 +587,9 @@ theorem computableInPolyTime_liftTerms {M Dg u v i j a : α → ℕ}
     ComputableInPolyTime
       (fun x => liftTerms (M x) (Dg x) (T x) (p x) (r x) (u x) (v x) (i x) (j x) (a x))
       encIn (encList encIntBin) := by
-  have hM := hM.tidy
-  have hDg := hDg.tidy
-  have hT := hT.tidy
-  have hp := hp.tidy
-  have hr := hr.tidy
-  have hu := hu.tidy
-  have hv := hv.tidy
-  have hi := hi.tidy
-  have hj := hj.tidy
-  have ha := ha.tidy
-  refine .of_tidy ?_
   unfold liftTerms
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing the list of inner sums of an integer lift entry is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_liftSums {M Dg u v i j : α → ℕ}
@@ -652,16 +606,6 @@ theorem computableInPolyTime_liftSums {M Dg u v i j : α → ℕ}
     ComputableInPolyTime
       (fun x => liftSums (M x) (Dg x) (T x) (p x) (r x) (u x) (v x) (i x) (j x))
       encIn (encList encIntBin) := by
-  have hM := hM.tidy
-  have hDg := hDg.tidy
-  have hT := hT.tidy
-  have hp := hp.tidy
-  have hr := hr.tidy
-  have hu := hu.tidy
-  have hv := hv.tidy
-  have hi := hi.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
   unfold liftSums
   fun_prop
 
@@ -699,7 +643,6 @@ theorem computableInPolyTime_liftTable {M Dg : α → ℕ}
   unfold liftTable
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing all `n + 1` integer lift tables `liftRows n N M Dg t p r` at a grid point is
 polynomial-time from unary parameters and coordinates. -/
 @[fun_prop]
@@ -714,14 +657,6 @@ theorem computableInPolyTime_liftRows {n N M Dg t p r : α → ℕ}
     ComputableInPolyTime
       (fun x => liftRows (n x) (N x) (M x) (Dg x) (t x) (p x) (r x))
       encIn (encList (encList (encList encIntBin))) := by
-  have hn := hn.tidy
-  have hN := hN.tidy
-  have hM := hM.tidy
-  have hDg := hDg.tidy
-  have ht := ht.tidy
-  have hp := hp.tidy
-  have hr := hr.tidy
-  refine .of_tidy ?_
   unfold liftRows
   fun_prop
 

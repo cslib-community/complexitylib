@@ -244,7 +244,10 @@ private theorem bounds_aux {n A D N J L I E cD cO M K : ℕ} (hJ : 1 ≤ J)
         (hM2.trans hM25).trans (Nat.le_mul_of_pos_right _ (Nat.pow_pos hJ))
       omega
     have hU₁' : (J + 1) * (stepBound D N J + runBound D N J + (n + 1 + 1) ^ 2) ≤
-        100000 * (M ^ 5 * J ^ 3) := hU₁.trans (le_of_eq (by ring))
+        100000 * (M ^ 5 * J ^ 3) := hU₁.trans (by
+          have hm := Nat.mul_le_mul (Nat.pow_le_pow_right hM1 (show 4 ≤ 5 by omega))
+            (Nat.pow_le_pow_right hJ (show 2 ≤ 3 by omega))
+          nlinarith)
     rw [hK]
     generalize M ^ 5 * J ^ 3 = X at hA hU₁' hIn2 hO2 ⊢
     linarith
