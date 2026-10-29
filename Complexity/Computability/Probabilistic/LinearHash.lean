@@ -25,9 +25,7 @@ The full extractor charges sampling, hashing and copying its complete public see
 
 ## Main results
 
-* `Cslib.BitString.LinearHash.computableInPolyTime_wordHash`,
-  `Cslib.BitString.LinearHash.computableTidilyInPolyTime_wordHash`: deterministic hashing and its
-  tidy `fun_prop` variant.
+* `Cslib.BitString.LinearHash.computableInPolyTime_wordHash`: deterministic hashing.
 * `Cslib.BitString.LinearHash.isPPTOn_extract`: the complete seeded sampler.
 
 ## References
@@ -43,8 +41,8 @@ namespace Cslib.BitString.LinearHash
 open Probability Turing.MultiTapeTM
 
 /-- Hash efficiently available words, with all dimensions computed in unary. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_wordHash {α : Type} {encode : α ↪ List Bool}
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_wordHash {α : Type} {encode : α ↪ List Bool}
     {count : α → ℕ} {seed input : α → List Bool}
     (hcount : ComputableTidilyInPolyTime count encode encUnary)
     (hseed : ComputableTidilyInPolyTime seed encode encBits)

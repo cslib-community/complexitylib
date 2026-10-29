@@ -194,7 +194,9 @@ theorem computableInPolyTime_modulus :
   rw [hmodulus]
   fun_prop
 
-private theorem polynomiallyBounded_of_unary {f : ℕ → ℕ}
+/-- Any function computable in polynomial time with unary input and unary output is polynomially
+bounded. -/
+theorem polynomiallyBounded_of_unary {f : ℕ → ℕ}
     (hf : ComputableInPolyTime f encUnary encUnary) : PolynomiallyBounded f :=
   (show PolyBounded (fun n : ℕ => n) f by
     simpa only [encUnary_apply, List.length_replicate] using

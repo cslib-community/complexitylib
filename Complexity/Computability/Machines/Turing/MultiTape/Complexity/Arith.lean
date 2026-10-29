@@ -10,6 +10,8 @@ module
 public import Mathlib.Data.Nat.Size
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Arithmetic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -30,59 +32,19 @@ the second factor shifted by the digits read, adding the shifted factor for ever
 
 namespace Turing.MultiTapeTM
 
-open NatSucc
-
-
-open NatAdd ComputableTidilyInDegree
+open ComputableTidilyInDegree
 
 /-- **Addition is tidily computable in quadratic time and space**, in the binary encoding. -/
 public theorem computableTidilyInDegree_add :
     ComputableTidilyInDegree (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat 2 1 := by
-  let encS := encPair encBool (encPair encBits encBits)
-  -- a round of the first fold
-  have hstep : ComputableTidilyInDegree (fun p : _ × Bool => addStep p.1 p.2)
-      (encPair encS encBool) encS 1 1 := by
-    have hs := fst encS encBool
-    have hr := hs.snd'.fst'
-    have habc := (snd encS encBool).prod (((headD (enc₁ := encBool) false).comp hr).prod hs.fst')
-    have hcarry := (of_finite (encIn := encPair encBool (encPair encBool encBool))
-      (encMid := encBool) fun t : Bool × Bool × Bool => carry t.1 t.2.1 t.2.2).comp habc
-    have hdigit := (of_finite (encIn := encPair encBool (encPair encBool encBool))
-      (encMid := encBool) fun t : Bool × Bool × Bool => t.1 ^^ (t.2.1 ^^ t.2.2)).comp habc
-    exact (hcarry.prod ((tail (enc₁ := encBool)).comp hr |>.prod
-      (hs.snd'.snd'.append hdigit (encOut := encBits) fun _ => rfl))).mono
-  have hsize : DegreeBounded (fun p : ℕ × ℕ => (encPair encNat encNat p).length)
-      (fun p => 2 * (encPair encNat encNat p).length + 4) 1 :=
-    (DegreeBounded.self.smul 2).add_const 4
-  -- the first fold, over the digits of the first summand
-  have hfold := foldl' (encL := encBits) (encB := encS)
-    (list := fun p : ℕ × ℕ => p.1.bits) (init := fun p => (false, p.2.bits, []))
-    (of_eq (encIn := encNat) (encMid := encBits) (f := Nat.bits) (fun _ => rfl) |>.comp
-      (fst encNat encNat))
-    ((const false).prod ((of_eq (encIn := encNat) (encMid := encBits) (f := Nat.bits)
-      (fun _ => rfl) |>.comp (snd encNat encNat)).prod (const [])))
-    hstep hsize ?_
-  rotate_left
-  · intro p i hi
-    obtain ⟨h₁, h₂⟩ := length_foldl_addStep (p.1.bits.take i) (false, p.2.bits, [])
-    simp only [encS, length_encPair, encBool_apply, List.length_singleton, encBits_apply,
-      encNat_apply, List.length_take, List.length_nil] at h₁ h₂ ⊢
-    omega
-  -- the second fold adds the carry to the rest of the second summand
-  have hfin : ComputableTidilyInDegree (fun s : Bool × List Bool × List Bool =>
-      succFinish (s.2.1.foldl succStep (s.1, s.2.2))) encS encBits 2 1 := by
-    have hs := of_eq (encIn := encS) (encMid := encS) (f := id) fun _ => rfl
-    refine ((of_linear linear_succFinish).comp (foldl' (encL := encBits) (encB := encAcc)
-      hs.snd'.fst' (hs.fst'.prod hs.snd'.snd')
-      (of_linear linear_succStep) (B := fun s => (encS s).length + 3)
-      (DegreeBounded.self.add_const 3) fun s i hi => ?_)).mono
-    simp only [length_foldl_succStep, encS, length_encPair, encBool_apply, id_eq,
-      List.length_singleton, encBits_apply, List.length_take]
-    omega
-  refine ((hfin.comp hfold).of_enc_eq fun p => ?_).mono
-  simp only [Function.comp_apply, encBits_apply, encNat_apply]
-  rw [succFinish_foldl, ← foldl_addStep, List.nil_append, addBits_bits]
-  rfl
+  obtain ⟨c, hc, hl⟩ := Internal.NormalForm.inO ComputableInO.natAdd
+  have hT : DegreeBounded (fun p => (encPair encNat encNat p).length)
+      (fun p => ((encPair encNat encNat p).length + 1) ^ 2) 2 := ⟨1, fun _ => by simp⟩
+  have hS : DegreeBounded (fun p => (encPair encNat encNat p).length)
+      (fun p => (encPair encNat encNat p).length + 1) 1 := ⟨1, fun _ => by simp⟩
+  have ht := (hT.add_const 1).smul c
+  have hs := (hS.add_const 1).smul c
+  exact ⟨⟨_, _, ht, hs.mono_deg (by decide), hc⟩, hs.mono hl⟩
 
 
 open NatMul in

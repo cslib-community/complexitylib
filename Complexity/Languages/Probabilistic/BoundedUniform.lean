@@ -187,7 +187,7 @@ private theorem retry_some (bound value : ℕ) (next : PMF (Option ℕ)) :
           simp [hib, hiv]
   change (∑' i, μ i * (if i < bound then PMF.pure (some i) else next) (some value)) = _
   simp_rw [hterm]
-  rw [ENNReal.tsum_add]
+  rw [tsum_add]
   simp only [tsum_ite_eq]
   rw [show μ bound = (intervalFailure bound : ℝ≥0∞) from eval_sampleBoundedIndex_sentinel bound]
   by_cases hv : value < bound
@@ -342,7 +342,7 @@ private theorem uniformFin_nat_apply (bound value : ℕ) [NeZero bound] :
     · intro i hi
       have : value ≠ i.val := fun h => hi (Fin.ext h.symm)
       simp [this]
-  · rw [ENNReal.tsum_eq_zero.mpr]
+  · rw [tsum_eq_zero_iff.mpr]
     · simp [hv]
     · intro i
       have : value ≠ i.val := by omega
@@ -364,7 +364,7 @@ theorem eval_sampleUniformInterval_some_eq (bound attempts value : ℕ) [NeZero 
 private theorem tsum_option_eq {α : Type} (f : Option α → ℝ≥0∞) :
     ∑' x, f x = f none + ∑' x, f (some x) := by
   rw [← (Equiv.optionEquivSumPUnit.{0, 0} α).symm.tsum_eq f]
-  rw [ENNReal.summable.tsum_sum ENNReal.summable]
+  rw [CompleteLattice.summable.tsum_sum CompleteLattice.summable]
   simp [add_comm]
 
 private theorem optional_map_density {α β : Type} (μ : PMF (Option α)) (ν : PMF α)

@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -18,7 +19,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Views and their codes in polynomial time
@@ -50,14 +50,15 @@ the accepting code are polynomial-time.
 ## Main results
 
 * `Turing.MultiTapeNTM.viewStepB_iff`: the test decides `Turing.MultiTapeNTM.ViewStep`.
-* `Turing.MultiTapeNTM.computableTidilyInPolyTime_viewStepB`: the test is polynomial-time.
+* `Turing.MultiTapeNTM.computableInPolyTime_viewStepB`: the test is polynomial-time.
+* `Turing.MultiTapeNTM.computableInPolyTime_decodeView`: reading the view of a computed code is
+  polynomial-time.
 * `Turing.MultiTapeNTM.accepts_iff_reflTransGen_codeStep`: acceptance is reachability of the
   accepting code.
-* `Turing.MultiTapeNTM.computableTidilyInPolyTime_codeEdge`: the edge test is polynomial-time.
 * `Turing.MultiTapeNTM.computableInPolyTime_codeEdge`,
   `Turing.MultiTapeNTM.computableInPolyTime_viewCode_initView`,
   `Turing.MultiTapeNTM.computableInPolyTime_acceptCode`: the edge test, the initial code and the
-  accepting code are polynomial-time, for plain certificates.
+  accepting code are polynomial-time.
 
 ## References
 
@@ -73,8 +74,8 @@ open MultiTapeTM
 namespace MultiTapeTM.ComputableTidilyInPolyTime
 
 /-- The output summary is polynomial-time on raw words. -/
-@[fun_prop]
-theorem outputClass :
+@[local fun_prop]
+private theorem outputClass :
     ComputableTidilyInPolyTime MultiTapeNTM.outputClass encBits encBits := by
   have h : MultiTapeNTM.outputClass = fun word : List Bool =>
       if decide (word = []) then [] else if decide (word = [true]) then [true] else [false] := by
@@ -85,14 +86,31 @@ theorem outputClass :
   fun_prop
 
 /-- Summarizing the output of a configuration is polynomial-time. -/
-@[fun_prop]
-theorem finiteCfg_summarizeOutput {k : ℕ} {State : Type} [Finite State] :
+@[local fun_prop]
+private theorem finiteCfg_summarizeOutput {k : ℕ} {State : Type} [Finite State] :
     ComputableTidilyInPolyTime (FiniteCfg.summarizeOutput (k := k) (State := State)) encFiniteCfg
       encFiniteCfg := by
   unfold FiniteCfg.summarizeOutput
   fun_prop
 
 end MultiTapeTM.ComputableTidilyInPolyTime
+
+namespace MultiTapeTM.ComputableInPolyTime
+
+/-- The output summary is polynomial-time on raw words. -/
+@[fun_prop]
+theorem outputClass :
+    ComputableInPolyTime MultiTapeNTM.outputClass encBits encBits :=
+  ComputableTidilyInPolyTime.outputClass.computableInPolyTime
+
+/-- Summarizing the output of a configuration is polynomial-time. -/
+@[fun_prop]
+theorem finiteCfg_summarizeOutput {k : ℕ} {State : Type} [Finite State] :
+    ComputableInPolyTime (FiniteCfg.summarizeOutput (k := k) (State := State)) encFiniteCfg
+      encFiniteCfg :=
+  ComputableTidilyInPolyTime.finiteCfg_summarizeOutput.computableInPolyTime
+
+end MultiTapeTM.ComputableInPolyTime
 
 namespace MultiTapeNTM
 
@@ -115,7 +133,7 @@ theorem viewStepB_iff {finite next : FiniteCfg k Bool State} :
   · simp only [List.any_eq_true, decide_eq_true_eq, mem_actions]
 
 /-- **The step test is polynomial-time** in the encoded pair of views. -/
-theorem computableTidilyInPolyTime_viewStepB :
+private theorem computableTidilyInPolyTime_viewStepB :
     ComputableTidilyInPolyTime ntm.viewStepB (encPair encFiniteCfg encFiniteCfg) encBool := by
   classical
   -- branch on the finite key of the first view
@@ -145,8 +163,13 @@ theorem computableTidilyInPolyTime_viewStepB :
     · exact ComputableTidilyInPolyTime.decide_eq' hsnd hfst
     · refine ComputableTidilyInPolyTime.anyConst _ fun action _ => ?_
       exact ComputableTidilyInPolyTime.decide_eq' hsnd
-        ((ComputableTidilyInPolyTime.finiteCfg_summarizeOutput.comp
+        ((ComputableInPolyTime.finiteCfg_summarizeOutput.tidy.comp
           (ComputableTidilyInPolyTime.finiteCfg_step action)).comp hfst)
+
+/-- **The step test is polynomial-time** in the encoded pair of views. -/
+theorem computableInPolyTime_viewStepB :
+    ComputableInPolyTime ntm.viewStepB (encPair encFiniteCfg encFiniteCfg) encBool :=
+  ntm.computableTidilyInPolyTime_viewStepB.computableInPolyTime
 
 /-! ### Codes of views -/
 
@@ -277,15 +300,22 @@ section Certificate
 variable {α : Type} {encA : α ↪ List Bool}
 
 /-- Reading the view of a computed code is polynomial-time. -/
-theorem computableTidilyInPolyTime_decodeView {code : α → List Bool}
+private theorem computableTidilyInPolyTime_decodeView {code : α → List Bool}
     (hcode : ComputableTidilyInPolyTime code encA encBits) :
     ComputableTidilyInPolyTime (fun a => decodeView (k := k) (State := State) (code a)) encA
       (encOption encFiniteCfg) := by
   simp only [decodeView_eq]
   exact (ComputableTidilyInPolyTime.headD true |>.comp hcode).cond (.const none)
     ((ComputableTidilyInPolyTime.optionSome _).comp
-      (ComputableTidilyInPolyTime.decodeFiniteCfg.comp (ComputableTidilyInPolyTime.unframe.comp
+      (ComputableInPolyTime.decodeFiniteCfg.tidy.comp (ComputableTidilyInPolyTime.unframe.comp
       (ComputableTidilyInPolyTime.tail (encA := encBool) |>.comp hcode))))
+
+/-- Reading the view of a computed code is polynomial-time. -/
+theorem computableInPolyTime_decodeView {code : α → List Bool}
+    (hcode : ComputableInPolyTime code encA encBits) :
+    ComputableInPolyTime (fun a => decodeView (k := k) (State := State) (code a)) encA
+      (encOption encFiniteCfg) :=
+  (computableTidilyInPolyTime_decodeView hcode.tidy).computableInPolyTime
 
 /-- The edge test by cases on the decoded views and the tag of the second code. -/
 theorem codeEdge_eq (code next : List Bool) : ntm.codeEdge code next =
@@ -303,7 +333,7 @@ theorem codeEdge_eq (code next : List Bool) : ntm.codeEdge code next =
     · rfl
 
 /-- **The edge test of codes is polynomial-time.** -/
-theorem computableTidilyInPolyTime_codeEdge
+private theorem computableTidilyInPolyTime_codeEdge
     {code next : α → List Bool} (hcode : ComputableTidilyInPolyTime code encA encBits)
     (hnext : ComputableTidilyInPolyTime next encA encBits) :
     ComputableTidilyInPolyTime (fun a => ntm.codeEdge (code a) (next a)) encA encBool := by
@@ -323,7 +353,7 @@ theorem computableTidilyInPolyTime_codeEdge
     exact ntm.computableTidilyInPolyTime_viewStepB.comp
       ((hsnd.comp (ComputableTidilyInPolyTime.fst _ _)).prod (ComputableTidilyInPolyTime.snd _ _))
 
-/-- `computableTidilyInPolyTime_codeEdge` for plain certificates. -/
+/-- **The edge test of codes is polynomial-time.** -/
 theorem computableInPolyTime_codeEdge
     {code next : α → List Bool} (hcode : ComputableInPolyTime code encA encBits)
     (hnext : ComputableInPolyTime next encA encBits) :
@@ -332,7 +362,7 @@ theorem computableInPolyTime_codeEdge
 
 /-- The code of the initial view of a computed input is polynomial-time, for a polynomial-time
 width. -/
-theorem computableTidilyInPolyTime_viewCode_initView {width : α → ℕ} {word : α → List Bool}
+private theorem computableTidilyInPolyTime_viewCode_initView {width : α → ℕ} {word : α → List Bool}
     (hwidth : ComputableTidilyInPolyTime width encA encUnary)
     (hword : ComputableTidilyInPolyTime word encA encBits) :
     ComputableTidilyInPolyTime (fun a => viewCode (width a) (ntm.initView (word a))) encA
@@ -341,7 +371,8 @@ theorem computableTidilyInPolyTime_viewCode_initView {width : α → ℕ} {word 
   exact ComputableTidilyInPolyTime.bitsAppend (left := fun _ => [false]) (.const _)
     (ComputableTidilyInPolyTime.bitsPadWord hwidth hinit.encoded)
 
-/-- `computableTidilyInPolyTime_viewCode_initView` for plain certificates. -/
+/-- The code of the initial view of a computed input is polynomial-time, for a polynomial-time
+width. -/
 theorem computableInPolyTime_viewCode_initView {width : α → ℕ} {word : α → List Bool}
     (hwidth : ComputableInPolyTime width encA encUnary)
     (hword : ComputableInPolyTime word encA encBits) :
@@ -349,7 +380,7 @@ theorem computableInPolyTime_viewCode_initView {width : α → ℕ} {word : α �
   (computableTidilyInPolyTime_viewCode_initView hwidth.tidy hword.tidy).computableInPolyTime
 
 /-- The accepting code of a polynomial-time width is polynomial-time. -/
-theorem computableTidilyInPolyTime_acceptCode {width : α → ℕ}
+private theorem computableTidilyInPolyTime_acceptCode {width : α → ℕ}
     (hwidth : ComputableTidilyInPolyTime width encA encUnary) :
     ComputableTidilyInPolyTime (fun a => acceptCode (width a)) encA encBits := by
   have hlength : ComputableTidilyInPolyTime (fun a => 2 * width a + 2) encA encUnary :=
@@ -359,7 +390,7 @@ theorem computableTidilyInPolyTime_acceptCode {width : α → ℕ}
         (ComputableTidilyInPolyTime.const 2))
   exact (ComputableTidilyInPolyTime.bitsReplicate true).comp hlength
 
-/-- `computableTidilyInPolyTime_acceptCode` for plain certificates. -/
+/-- The accepting code of a polynomial-time width is polynomial-time. -/
 theorem computableInPolyTime_acceptCode {width : α → ℕ}
     (hwidth : ComputableInPolyTime width encA encUnary) :
     ComputableInPolyTime (fun a => acceptCode (width a)) encA encBits :=

@@ -95,7 +95,8 @@ theorem countingDepthCoeff_le_mul_pow {k M : ℕ} (hM : 1 ≤ M) :
       rw [← sum_mul]
       exact (Nat.mul_assoc _ _ _).symm
 
-private abbrev Accepts (k B m : ℕ) : Prop :=
+/-- Acceptance predicate for a candidate dyadic exponent `m` at width `k` and parameter `B`. -/
+abbrev CountingExponentAccepts (k B m : ℕ) : Prop :=
   countingBChoiceCoeff k ≤ 2 ^ m ∧
     B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k (2 ^ m) * 2 ^ m) ≤
       2 ^ m
@@ -143,7 +144,7 @@ private theorem gamma_le_two_pow_offset {k : ℕ} (hk : 2 ≤ k) :
   exact hgo.trans Nat.lt_two_pow_self.le
 
 private theorem candidate_accepts {k B : ℕ} (hk : 2 ≤ k) :
-    Accepts k B (candidateExponent k B) := by
+    CountingExponentAccepts k B (candidateExponent k B) := by
   let L := Nat.clog 2 B
   have hL : Nat.clog 2 (L + 1) ≤ L := Nat.clog_le_of_le_pow Nat.lt_two_pow_self
   have hm : candidateExponent k B ≤ offset k + 2 * L := by
@@ -177,7 +178,7 @@ private theorem candidate_accepts {k B : ℕ} (hk : 2 ≤ k) :
       ring
 
 private theorem exists_accepts {k : ℕ} (hk : 2 ≤ k) (B : ℕ) :
-    ∃ m, Accepts k B m := ⟨candidateExponent k B, candidate_accepts hk⟩
+    ∃ m, CountingExponentAccepts k B m := ⟨candidateExponent k B, candidate_accepts hk⟩
 
 /-- The first dyadic `M ≥ Γ` passing Appendix A.3's exact test for error budget `σ = 1/B`.
 Widths at most one and the out-of-domain input `B = 0` use the total default `2`. The existence

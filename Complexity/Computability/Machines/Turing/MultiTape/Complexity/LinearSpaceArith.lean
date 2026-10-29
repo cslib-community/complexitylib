@@ -7,24 +7,22 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
-public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 public import Mathlib.Data.Nat.Size
 
 /-!
 # Arithmetic in binary within linear work space
 
-Addition of binary naturals, by iterating the successor with a binary counter. The time is
-polynomial in the values, not in their lengths, but the work space is linear in the lengths of the
-encodings. This suits space-bounded algorithms, where only the work space matters.
+Binary addition reexports the shared consuming schoolbook certificate: time is quadratic in the
+encoded input length and charged workspace is linear. The remaining facts bound lengths of
+arithmetic outputs and identify successor iteration, for clients with fixed workspace budgets.
 
 ## Main results
 
 * `Turing.MultiTapeTM.length_encNat_mono`, `.length_encNat_add_le_add`, `.length_encNat_mul_le`:
   monotonicity and lengths of sums and products in binary.
-* `Turing.MultiTapeTM.ComputableInO.natAdd`: addition in binary within linear work space.
+* `Turing.MultiTapeTM.ComputableInO.natAdd`: binary addition in quadratic time and linear space.
 -/
 
 @[expose] public section
@@ -67,43 +65,12 @@ namespace ComputableInO
 
 theorem iterate_succ_eq (k n : ℕ) : (· + 1)^[k] n = n + k := by simp
 
-/-- **Addition in binary**, within linear work space. -/
-public theorem natAdd :
-    ComputableInO (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat
-      (fun p => (p.2 + 1) * ((encPair encNat encNat p).length + 2) ^ 2)
-      fun p => (encPair encNat encNat p).length + 1 := by
-  have hle (p : ℕ × ℕ) (k : ℕ) (hk : k ≤ p.2) :
-      (encNat ((· + 1)^[k] p.1)).length ≤ (encNat p.1).length + (encNat p.2).length + 1 := by
-    rw [iterate_succ_eq]
-    exact (Turing.MultiTapeTM.length_encNat_mono (by omega : p.1 + k ≤ p.1 + p.2)).trans
-      (length_encNat_add_le_add _ _)
-  have h := ComputableInO.iterate (n := fun p : ℕ × ℕ => p.2) (init := fun p => p.1)
-    (step := (· + 1)) (snd encNat encNat) (fst encNat encNat) ComputableInO.natSucc
-    (R := fun p => ((encNat p.1).length + (encNat p.2).length + 2) ^ 2)
-    (Q := fun p => (encNat p.1).length + (encNat p.2).length + 2)
-    (B := fun p => (encNat p.1).length + (encNat p.2).length + 1)
-    (fun p k hk => Nat.pow_le_pow_left (by have := hle p k hk; omega) 2)
-    (fun p k hk => by have := hle p k hk; omega) (fun p k hk => hle p k hk)
-  refine (h.mono 8 (fun p => ?_) fun p => ?_).of_enc_eq fun p => by rw [iterate_succ_eq]
-  · simp only [length_encPair]
-    nlinarith [Nat.zero_le ((encNat p.1).length), Nat.zero_le ((encNat p.2).length),
-      Nat.zero_le (p.2 * (encNat p.1).length), Nat.zero_le (p.2 * (encNat p.2).length)]
-  · simp only [length_encPair]
-    omega
-
 end ComputableInO
 
 namespace ComputableTidilyInO
 
 theorem iterate_succ_eq (k n : ℕ) : (· + 1)^[k] n = n + k :=
   ComputableInO.iterate_succ_eq k n
-
-/-- **Addition in binary**, within linear work space. -/
-public theorem natAdd :
-    ComputableTidilyInO (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat
-      (fun p => (p.2 + 1) * ((encPair encNat encNat p).length + 2) ^ 2)
-      fun p => (encPair encNat encNat p).length + 1 :=
-  ComputableInO.natAdd.tidy
 
 end ComputableTidilyInO
 

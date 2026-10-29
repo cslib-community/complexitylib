@@ -1417,7 +1417,8 @@ private theorem isPPTOn_simGateCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
     exact hans.bind hot
   refine (IsPPTOn.finite_cases
     (tagEncoding := encFinite (Boolean.Op × (Fin m → Bool × Bool)))
-    (tag := id) (branch := fun choice _ => simGateCore m I choice) id' ?_).congr
+    (tag := id) (branch := fun choice _ => simGateCore m I choice)
+    ComputableInPolyTime.id' ?_).congr
     fun _ => rfl
   rintro ⟨op, x⟩
   cases op with
@@ -1685,7 +1686,8 @@ private theorem isPPTOn_simOutCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
     IsPPTOn (encFinite (OutItem m)) (encStep3Acc m) (simOutCore m I) := by
   refine (IsPPTOn.finite_cases
     (tagEncoding := encFinite (OutItem m))
-    (tag := id) (branch := fun item _ => simOutCore m I item) id' ?_).congr
+    (tag := id) (branch := fun item _ => simOutCore m I item)
+    ComputableInPolyTime.id' ?_).congr
     fun _ => rfl
   intro item
   have hans : IsPPTOn (encFinite (OutItem m)) (encFinite (Fin m → Bool))
@@ -2561,80 +2563,6 @@ private theorem runOTSteps_append {m : ℕ} {State Mid Out : Fin m → Type}
   | oracle query next ih =>
     simp [Steps.append, runOTSteps, ih, joinSubCoins2, joinReceived2]
 
-private theorem eval_pi_single {m : ℕ} {β : Type} (i₀ : Fin m) (p : ProbComp β) :
-    ProbComp.eval (OracleComp.pi fun i : Fin m =>
-      if h : i₀ = i then
-        (fun (c : β) (_ : i₀ = i) => c) <$> p
-      else
-        pure (fun h' : i₀ = i => (h h').elim)) =
-      (ProbComp.eval p).map (fun (c : β) (i : Fin m) (_ : i₀ = i) => c) := by
-  induction m with
-  | zero => exact i₀.elim0
-  | succ m ih =>
-    refine Fin.cases ?_ (fun j₀ => ?_) i₀
-    · have h00 : (if h : (0 : Fin (m + 1)) = 0 then
-          (fun (c : β) (_ : (0 : Fin (m + 1)) = 0) => c) <$> p
-        else
-          pure (fun h' : (0 : Fin (m + 1)) = 0 => (h h').elim)) =
-          (fun (c : β) (_ : (0 : Fin (m + 1)) = 0) => c) <$> p := rfl
-      have hrest : (fun i : Fin m =>
-          if h : (0 : Fin (m + 1)) = i.succ then
-            (fun (c : β) (_ : (0 : Fin (m + 1)) = i.succ) => c) <$> p
-          else
-            pure (fun h' : (0 : Fin (m + 1)) = i.succ => (h h').elim)) =
-          fun i : Fin m =>
-            pure (fun h' : (0 : Fin (m + 1)) = i.succ => (Fin.succ_ne_zero i h'.symm).elim) := by
-        funext i
-        have hne : ¬ ((0 : Fin (m + 1)) = i.succ) := fun h => Fin.succ_ne_zero i h.symm
-        simp [hne]
-      rw [OracleComp.pi_succ, h00, hrest]
-      simp only [eval_pi_pure, ProbComp.eval_bind, ProbComp.eval_map, PMF.pure_map,
-        PMF.bind_map, Function.comp_def]
-      refine congrArg (PMF.map · (ProbComp.eval p)) (funext fun c => ?_)
-      ext i h
-      refine Fin.cases (fun _ => rfl) (fun j hj => (Fin.succ_ne_zero j hj.symm).elim) i h
-    · have h0 : ¬ (j₀.succ = (0 : Fin (m + 1))) := Fin.succ_ne_zero j₀
-      have h0_Br : (if h : j₀.succ = (0 : Fin (m + 1)) then
-          (fun (c : β) (_ : j₀.succ = 0) => c) <$> p
-        else
-          pure (fun h' : j₀.succ = 0 => (h h').elim)) =
-          pure (fun h' : j₀.succ = 0 => (h0 h').elim) := by
-        simp [h0]
-      have hrest : (fun i : Fin m =>
-          if h : j₀.succ = i.succ then
-            (fun (c : β) (_ : j₀.succ = i.succ) => c) <$> p
-          else
-            pure (fun h' : j₀.succ = i.succ => (h h').elim)) =
-          fun i : Fin m =>
-            (fun (f : (j₀ = i) → β) (h' : j₀.succ = i.succ) => f (Fin.succ_inj.1 h')) <$>
-              (if h : j₀ = i then
-                (fun (c : β) (_ : j₀ = i) => c) <$> p
-              else
-                pure (fun h' : j₀ = i => (h h').elim)) := by
-        funext i
-        by_cases h : j₀ = i
-        · subst h
-          simp [Functor.map_map]
-        · have hs : ¬ (j₀.succ = i.succ) := fun hs => h (Fin.succ_inj.1 hs)
-          simp [hs, h]
-      rw [OracleComp.pi_succ, h0_Br, hrest]
-      simp only [ProbComp.eval_pi_map, ih j₀,
-        ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, PMF.pure_bind, PMF.map_comp]
-      refine congrArg (PMF.map · (ProbComp.eval p)) (funext fun c => ?_)
-      ext i h
-      refine Fin.cases (fun h0' => (h0 h0').elim) (fun _ _ => rfl) i h
-
-private theorem eval_pi_sampleSlotCoins {k m : ℕ} (parties : Fin k ↪ Fin m)
-    {Coins_k : Fin k → Type} (sample_k : (s : Fin k) → ProbComp (Coins_k s)) :
-    ProbComp.eval (OracleComp.pi (Composition.sampleSlotCoins parties sample_k)) =
-      (ProbComp.eval (OracleComp.pi sample_k)).map (Composition.pushTuple parties) := by
-  unfold Composition.sampleSlotCoins
-  rw [eval_pi_comm]
-  have hpi := ProbComp.eval_pi_congr fun s : Fin k =>
-    (eval_pi_single (parties s) (sample_k s)).trans (ProbComp.eval_map _ _).symm
-  rw [hpi, ProbComp.eval_pi_map, PMF.map_comp]
-  rfl
-
 private theorem eval_pi_twoPartyMulSampleCoins :
     ProbComp.eval (OracleComp.pi twoPartyMulProtocol.sampleCoins) =
       ProbComp.eval (twoPartyMulCoins <$> ProbComp.uniform Bool) := by
@@ -2792,7 +2720,7 @@ private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState 
             (Composition.pushTuple parties (twoPartyMulCoins c₀) i, c_tail i)) <$>
             OracleComp.pi
               (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol) rest)) := by
-      simp only [Composition.sampleSubCoins, eval_pi_pair, eval_pi_sampleSlotCoins,
+      simp only [Composition.sampleSubCoins, eval_pi_pair, Composition.eval_pi_sampleSlotCoins,
         eval_pi_twoPartyMulSampleCoins, ProbComp.eval_bind, ProbComp.eval_map,
         PMF.bind_map, PMF.map_comp, Function.comp_def]
     rw [runWith_sample_congr_eq oracle _ _ hpi, ProbOracleComp.sample_bind, bind_assoc]

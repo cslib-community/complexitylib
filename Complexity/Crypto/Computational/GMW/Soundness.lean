@@ -562,7 +562,7 @@ theorem acceptProb_gmwVerifier_le {α : Type} {generator : List Bool → List Bo
           P.init x * ProbOracleComp.acceptProbWith P.respond (step2 r x.1) x.2
         ≤ ∑' x, ProbOracleComp.runWith P.respond
             (List.take (K * m) <$> ProbOracleComp.query ((), r)) P.init x * (1 / 8) :=
-          ENNReal.tsum_le_tsum fun x => mul_le_mul_right (hstep2_le r x.1 x.2 hbind) _
+          tsum_le_tsum fun x => mul_le_mul_right (hstep2_le r x.1 x.2 hbind) _
       _ = (∑' x, ProbOracleComp.runWith P.respond
             (List.take (K * m) <$> ProbOracleComp.query ((), r)) P.init x) * (1 / 8) :=
           ENNReal.tsum_mul_right
@@ -591,9 +591,9 @@ theorem acceptProb_gmwVerifier_le {α : Type} {generator : List Bool → List Bo
   calc
     ∑' r, BitString.uniformList m r * acceptProb (step1 r) P
       ≤ ∑' r, (({r | ¬ NaorBinding generator s r}.indicator (BitString.uniformList m) r) +
-          BitString.uniformList m r * (1 / 8)) := ENNReal.tsum_le_tsum hterm_le
+          BitString.uniformList m r * (1 / 8)) := tsum_le_tsum hterm_le
     _ = (∑' r, {r | ¬ NaorBinding generator s r}.indicator (BitString.uniformList m) r) +
-          ∑' r, BitString.uniformList m r * (1 / 8) := ENNReal.tsum_add
+          ∑' r, BitString.uniformList m r * (1 / 8) := tsum_add
     _ = naorBindingProb generator length s + 1 / 8 := by
         rw [← PMF.toOuterMeasure_apply, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
         rfl

@@ -52,7 +52,7 @@ theorem mem_PSPACE_of_recognizesInSpace {k : ℕ} {State : Type} [Finite State]
     A ∈ PSPACE enc := by
   obtain ⟨c, d, hcd⟩ := hs.exists_le
   obtain ⟨t, s', hs', hdecide⟩ := ntm.exists_polyBounded_space_savitchDecide enc c d
-  exact ⟨fun a => ntm.savitchDecide c d (enc a), ⟨t, s', hs', hdecide.computableInTimeAndSpace⟩,
+  exact ⟨fun a => ntm.savitchDecide c d (enc a), ⟨t, s', hs', hdecide⟩,
     fun a => (hA a).2.trans (MultiTapeNTM.savitchDecide_eq_true_iff (hA a).1 (hcd a)).symm⟩
 
 /-- **Savitch's theorem for polynomial space**: every problem decided by a nondeterministic

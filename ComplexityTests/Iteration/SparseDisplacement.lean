@@ -34,7 +34,7 @@ example :
 private def editedCounter : Equiv.Perm (BitVec 2) :=
   (Equiv.swap 0 1).trans (Equiv.addRight 1)
 
-private theorem editedCounter_disagreement [Fintype (BitVec 2)] :
+private theorem editedCounter_disagreement :
     disagreement editedCounter (fun x => x + 1) = {0, 1} := by
   ext x
   simp only [mem_disagreement, Finset.mem_insert, Finset.mem_singleton]

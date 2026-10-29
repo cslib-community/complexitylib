@@ -15,22 +15,86 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeComposi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Subtraction
 import Mathlib.Tactic.Linarith
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.ZipTransducer
 
-/-! # Quadratic schoolbook binary subtraction and comparison
+/-! # Binary subtraction and comparison
 
 The existing borrow algorithm runs through consuming input-word cursors, so every round costs
 only a linear amount and there are at most as many rounds as input digits. The plain machine
 certificate retains quadratic time and linear output-charged workspace, independently of the
-numeric operands. Comparison tests that same result; no qualitative polynomial-time bridge is
-used to establish either resource bound.
+numeric operands.
+
+Comparison is computed by one zip transducer (`Turing.MultiTapeTM.ZipTransducer`) that reads both
+operands in lockstep, least significant digit first, and remembers whether the digits read so far
+compare as less than. It runs in linear time and in work space linear in the first operand.
 
 ## Main results
 
 * `ComputableInO.natSub`: truncated subtraction in quadratic time and linear charged space.
-* `ComputableInO.natLt`: strict comparison with the same independent resource bounds.
+* `Turing.MultiTapeTM.computableInTimeAndSpace_natLt`: strict comparison within
+  `3 * (encPair encNat encNat p).length + 1` steps and `(encNat p.1).length + 2` work-tape cells.
+* `Turing.MultiTapeTM.ComputableInLinearTimeAndSpace.natLt`: its linear form.
+* `ComputableInO.natLt`: strict comparison with the bounds of `ComputableInO.natSub`.
 -/
 
 @[expose] public section
+namespace Turing.MultiTapeTM
+
+/-- Strict comparison as a zip transducer. The state records whether the digits read so far,
+which are the low-order digits, compare as less than; a differing digit overrides it. -/
+private def ltZip : ZipTransducer Bool where
+  q₀ := false
+  step c x := (if x.1.getD false = x.2.getD false then c else x.2.getD false, [])
+  final c := [c]
+  length_step_le _ _ := by simp
+  length_final_le _ := by simp
+
+private lemma run_ltZip (c : Bool) (u v : List Bool) :
+    ltZip.run c u v = [decide (ofBits u < ofBits v ∨ ofBits u = ofBits v ∧ c = true)] := by
+  induction u generalizing v c with
+  | nil =>
+    induction v generalizing c with
+    | nil => cases c <;> simp [ltZip, ofBits]
+    | cons b v ih =>
+      rw [ZipTransducer.run_nil_cons, ih]
+      simp only [ltZip, ofBits, List.foldr_cons, List.foldr_nil, Nat.bit_val, List.nil_append,
+        List.cons.injEq, and_true, decide_eq_decide]
+      cases b <;> cases c <;> simp <;> omega
+  | cons a u ih =>
+    cases v with
+    | nil =>
+      rw [ZipTransducer.run_cons_nil, ih]
+      simp only [ltZip, ofBits, List.foldr_cons, List.foldr_nil, Nat.bit_val, List.nil_append,
+        List.cons.injEq, and_true, decide_eq_decide]
+      cases a <;> cases c <;> simp
+    | cons b v =>
+      rw [ZipTransducer.run_cons_cons, ih]
+      simp only [ltZip, ofBits, List.foldr_cons, Nat.bit_val, List.nil_append,
+        List.cons.injEq, and_true, decide_eq_decide]
+      cases a <;> cases b <;> cases c <;> simp <;> omega
+
+private lemma encBool_natLt (p : ℕ × ℕ) :
+    encBool (decide (p.1 < p.2)) = ltZip.run ltZip.q₀ (encNat p.1) (encNat p.2) := by
+  have h (n : ℕ) : ofBits n.bits = n := Nat.foldr_bit_bits n
+  rw [encBool_apply, encNat_apply, encNat_apply, run_ltZip, h, h]
+  simp [ltZip]
+
+/-- **Binary comparison in linear time.** One zip transducer decides `a < b` from
+`encPair encNat encNat (a, b)` within `3 * (encPair encNat encNat p).length + 1` steps and
+`(encNat p.1).length + 2` work-tape cells. -/
+public theorem computableInTimeAndSpace_natLt :
+    ComputableInTimeAndSpace (fun p : ℕ × ℕ => decide (p.1 < p.2)) (encPair encNat encNat) encBool
+      (fun p => 3 * (encPair encNat encNat p).length + 1) (fun p => (encNat p.1).length + 2) :=
+  ltZip.computableInTimeAndSpace encBool_natLt
+
+/-- Binary comparison in linear time and work space, from `computableInTimeAndSpace_natLt`. -/
+public theorem ComputableInLinearTimeAndSpace.natLt :
+    ComputableInLinearTimeAndSpace (fun p : ℕ × ℕ => decide (p.1 < p.2))
+      (encPair encNat encNat) encBool :=
+  ltZip.computableInLinearTimeAndSpace encBool_natLt
+
+end Turing.MultiTapeTM
+
 namespace Turing.MultiTapeTM.ComputableInO
 
 private abbrev encCursor :=
@@ -124,18 +188,14 @@ public theorem natSub :
     rw [heq]
     exact congrArg encNat (BinarySub.sub_eq (p.2, p.1))
 
-/-- **The strict order in binary.** -/
+/-- **The strict order in binary**, from the linear zip-transducer certificate
+`Turing.MultiTapeTM.computableInTimeAndSpace_natLt`. -/
 public theorem natLt :
     ComputableInO (fun p : ℕ × ℕ => decide (p.1 < p.2)) (encPair encNat encNat) encBool
       (fun p => ((encPair encNat encNat p).length + 1) ^ 2)
-      fun p => (encPair encNat encNat p).length + 1 := by
-  have hnot : ComputableInO (fun b : Bool => !b) encBool encBool
-      (fun b => (encBool b).length) fun b => (encBool b).length :=
-    (ComputableInDegree.of_finite (encIn := encBool) (encMid := encBool) _).inO_one
-  refine (hnot.comp_linear (natIsZero.comp_linear natSub)).of_enc_eq fun p => ?_
-  simp only [Function.comp_apply]
-  congr 1
-  by_cases h : p.1 < p.2 <;> simp [h] <;> omega
-
+      fun p => (encPair encNat encNat p).length + 1 :=
+  (of_linear ComputableInLinearTimeAndSpace.natLt).mono 1
+    (fun p => by have := Nat.le_self_pow two_ne_zero ((encPair encNat encNat p).length + 1); omega)
+    (fun _ => by omega)
 
 end Turing.MultiTapeTM.ComputableInO

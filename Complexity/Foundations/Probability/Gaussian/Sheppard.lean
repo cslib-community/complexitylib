@@ -308,7 +308,7 @@ theorem measureReal_stdGaussian_mem_uIoc_le_angle {u v : E} (huv : ‖u‖ = ‖
       simp only [hu, hv, inner_zero_left, uIoc_of_le le_rfl, Ioc_self, mem_empty_iff_false,
         ofPred_false, measureReal_empty]
       exact div_nonneg (InnerProductGeometry.angle_nonneg _ _) pi_pos.le
-    · rw [eq_neg_of_add_eq_zero_right hne, InnerProductGeometry.angle_self_neg_of_nonzero hu,
+    · rw [eq_neg_of_add_eq_zero_right hne, InnerProductGeometry.angle_self_neg_of_ne_zero hu,
         div_self pi_ne_zero]
       exact measureReal_le_one
   · rw [InnerProductGeometry.angle_eq_two_mul_arctan huv hne]

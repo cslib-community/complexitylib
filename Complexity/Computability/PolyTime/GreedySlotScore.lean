@@ -85,6 +85,7 @@ normalizers `numEdges * C` or `Q * n` by `1`.
 namespace Cslib.BalancedSchedules
 
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
+open ComputableTidilyInO (length_encNat_mono)
 open scoped BigOperators
 
 /-! ### Section 1: Radix-`r` candidate word decoder and bijections -/
@@ -214,10 +215,6 @@ theorem mem_candidateScheduleList {r : ℕ} (hr : 1 ≤ r) (Q : ℕ) (a : Fin Q 
   let j := finFunctionFinEquiv a; refine List.mem_map.mpr ⟨j.val, List.mem_range.mpr j.isLt, ?_⟩
   rw [wordToSchedule_decodeLabelWord_eq_finFunctionFinEquiv_symm hr Q j]
   exact Equiv.symm_apply_apply _ _
-
-private theorem length_encNat_mono {a b : ℕ} (h : a ≤ b) :
-    (encNat a).length ≤ (encNat b).length := by
-  simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h
 
 /-- Encoded bit-length bound for any word of length `Q` with digits `< max r 1`. -/
 theorem length_encList_word_le {Q r : ℕ} {w : List ℕ} (hlen : w.length = Q)
@@ -936,6 +933,7 @@ end
 public section
 namespace Cslib.BalancedSchedules
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
+open ComputableTidilyInO (length_encNat_mono)
 
 /-- All-prefix live-state bit-length bound for the inner `IndexFold.run selectSlotStep` loop across
 every visited prefix `j ≤ r ^ Q` (never multiplying workspace by `r ^ Q`). -/
@@ -1119,21 +1117,6 @@ noncomputable def streamBestSlotCertificate :
     (NativeCertificate.ofPolyTime computableInPolyTime_streamSlotInit)
     (NativeCertificate.ofPolyTime computableInPolyTime_selectSlotStep)
     (NativeCertificate.ofPolyTime computableInPolyTime_extractBestSlotWord)
-
-private theorem exists_mono_poly {α : Type} {size u : α → ℕ} (hu : PolyBounded size u) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧ ∀ a, u a ≤ p (size a) := by
-  obtain ⟨c, d, h⟩ := hu.exists_le
-  exact ⟨fun n => c * (n + 1) ^ d, by fun_prop,
-    fun _ _ hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hxy 1) d), h⟩
-
-private theorem exists_mono_poly_cert {α β : Type} {f : α → β}
-    {ei : α ↪ List Bool} {eo : β ↪ List Bool} (hf : ComputableInPolyTime f ei eo) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧
-      ∀ a, (NativeCertificate.ofPolyTime hf).time a ≤ p (ei a).length ∧
-        (NativeCertificate.ofPolyTime hf).space a ≤ p (ei a).length := by
-  have hc := NativeCertificate.ofPolyTime_isPolynomial hf
-  obtain ⟨p, hp, hmono, hle⟩ := exists_mono_poly (hc.1.add hc.2)
-  exact ⟨p, hp, hmono, fun a => ⟨by have := hle a; omega, by have := hle a; omega⟩⟩
 
 private theorem streamSlotIn_parts_le (a : StreamSlotIn) :
     a.1.1.1 ≤ (encStreamSlotIn a).length ∧ a.1.1.2 ≤ (encStreamSlotIn a).length ∧

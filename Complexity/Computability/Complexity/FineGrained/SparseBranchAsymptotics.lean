@@ -92,20 +92,9 @@ public section
 namespace Cslib.Complexity.SubexponentialSAT.ReplacementParams
 
 open Cslib.Complexity.SubexponentialSAT
+open Cslib.Logic.PL (clog_two_le_two_mul_of_le_two_mul)
 
 /-! ### 1. Free-variable (`n / 2 ≤ n' ≤ n`) to original-variable (`n`) `rowCost` transfer -/
-
-private theorem clog_two_le_two_mul_of_le_two_mul {n n' : ℕ} (hn : n ≤ 2 * n') (hn' : 2 ≤ n') :
-    Nat.clog 2 n ≤ 2 * Nat.clog 2 n' := by
-  have h1 : 1 ≤ Nat.clog 2 n' :=
-    (Nat.lt_clog_iff_pow_lt one_lt_two).mpr (by omega : 2 ^ 0 < n')
-  have h2 : n ≤ 2 ^ (Nat.clog 2 n' + 1) := by
-    calc n ≤ 2 * n' := hn
-      _ ≤ 2 * 2 ^ Nat.clog 2 n' := Nat.mul_le_mul_left 2 (Nat.le_pow_clog one_lt_two n')
-      _ = 2 ^ (Nat.clog 2 n' + 1) := (pow_succ' 2 _).symm
-  have h3 : Nat.clog 2 n ≤ Nat.clog 2 n' + 1 :=
-    (Nat.clog_le_iff_le_pow one_lt_two).mpr h2
-  omega
 
 /-- **Section 5.5 free-variable `rowCost` transfer (printed p. 39):**
 Whenever `n ≤ 2 * n'`, `n' ≤ n`, and `hF : Feasible β n' b_occ w_width M'`, the free-variable

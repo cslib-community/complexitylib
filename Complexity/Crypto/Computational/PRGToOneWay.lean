@@ -107,7 +107,7 @@ theorem succProbability_uniformList_test_le {generator : List Bool → List Bool
     split_ifs with hr
     · exact PMF.coe_le_one _ _
     simp only [test, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_apply, PMF.pure_apply]
-    refine le_of_eq (ENNReal.tsum_eq_zero.2 fun x => ?_)
+    refine le_of_eq (tsum_eq_zero_iff.2 fun x => ?_)
     have hne : generator x ≠ List.ofFn r := fun hx => hr <| mem_image.2
       ⟨x, hP x (by rw [← hlen x, hx, List.length_ofFn]), hx⟩
     simp [hne]

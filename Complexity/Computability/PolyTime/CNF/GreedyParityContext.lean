@@ -70,66 +70,6 @@ namespace Cslib.Logic.PL.CNF.GreedyContext
 open Finset Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
 variable {C : Type} {encC : C ↪ List Bool}
 
-private def candRowOfState (s : ℕ × SelectBestAcc) : List Bool :=
-  materializeTestRow s.2.1.1 (decodeTestTuple s.2.1.1 s.2.1.2 s.1)
-
-private theorem computableInPolyTime_candRowOfState :
-    ComputableInPolyTime candRowOfState (encPair encNat encSelectBestAcc) encBits := by
-  unfold candRowOfState encSelectBestAcc
-  let encRest := encPair (encList encBits) (encOption (encPair encBits encNat))
-  let encAcc := encPair (encPair encUnary encUnary) encRest
-  have hj := ComputableInPolyTime.fst encNat encAcc
-  have hmP := (ComputableInPolyTime.fst (encPair encUnary encUnary) encRest).comp
-    (ComputableInPolyTime.snd encNat encAcc)
-  have hm := (ComputableInPolyTime.fst encUnary encUnary).comp hmP
-  have hP := (ComputableInPolyTime.snd encUnary encUnary).comp hmP
-  exact computableInPolyTime_materializeTestRow' hm (computableInPolyTime_decodeTestTuple' hm hP hj)
-
-private def augCandidateRows (s : ℕ × SelectBestAcc) : List (List Bool) :=
-  s.2.2.1 ++ [candRowOfState s]
-
-private theorem computableInPolyTime_augCandidateRows :
-    ComputableInPolyTime augCandidateRows (encPair encNat encSelectBestAcc) (encList encBits) := by
-  unfold augCandidateRows
-  have hcand := computableInPolyTime_candRowOfState
-  unfold encSelectBestAcc at hcand ⊢
-  let encRest := encPair (encList encBits) (encOption (encPair encBits encNat))
-  have hrows := (ComputableInPolyTime.fst (encList encBits) _).comp
-    ((ComputableInPolyTime.snd (encPair encUnary encUnary) encRest).comp
-      (ComputableInPolyTime.snd encNat (encPair (encPair encUnary encUnary) encRest)))
-  exact (ComputableInPolyTime.snoc encBits).comp (hrows.prod hcand)
-
-private def finishSelectBestStep (p : (ℕ × SelectBestAcc) × ℕ) : SelectBestAcc :=
-  let candRow := candRowOfState p.1
-  let nextBest := p.1.2.2.2.elim (some (candRow, p.2)) fun best =>
-    if decide (p.2 < best.2) then some (candRow, p.2) else some best
-  (p.1.2.1, (p.1.2.2.1, nextBest))
-
-private theorem computableInPolyTime_finishSelectBestStep :
-    ComputableInPolyTime finishSelectBestStep
-      (encPair (encPair encNat encSelectBestAcc) encNat) encSelectBestAcc := by
-  unfold finishSelectBestStep
-  have hcand0 := computableInPolyTime_candRowOfState
-  unfold encSelectBestAcc at hcand0 ⊢
-  let eBest := encPair encBits encNat; let encRest := encPair (encList encBits) (encOption eBest)
-  let encAcc := encPair (encPair encUnary encUnary) encRest
-  let encIn := encPair (encPair encNat encAcc) encNat
-  have hs := ComputableInPolyTime.fst (encPair encNat encAcc) encNat
-  have hval := ComputableInPolyTime.snd (encPair encNat encAcc) encNat
-  have hacc := (ComputableInPolyTime.snd encNat encAcc).comp hs
-  have hmP := (ComputableInPolyTime.fst (encPair encUnary encUnary) encRest).comp hacc
-  have hrest := (ComputableInPolyTime.snd (encPair encUnary encUnary) encRest).comp hacc
-  have hrows := (ComputableInPolyTime.fst (encList encBits) (encOption eBest)).comp hrest
-  have hbestOpt := (ComputableInPolyTime.snd (encList encBits) (encOption eBest)).comp hrest
-  have hsomeCand := (ComputableInPolyTime.optionSome eBest).comp ((hcand0.comp hs).prod hval)
-  refine hmP.prod (hrows.prod
-    (ComputableInPolyTime.optionElimWithInput hbestOpt hsomeCand ?_))
-  have hq_in := ComputableInPolyTime.fst encIn eBest
-  have hq_best := ComputableInPolyTime.snd encIn eBest
-  exact (ComputableInPolyTime.binary_lt' (hval.comp hq_in)
-    ((ComputableInPolyTime.snd encBits encNat).comp hq_best)).ite (hsomeCand.comp hq_in)
-      ((ComputableInPolyTime.optionSome eBest).comp hq_best)
-
 private def augment (s : ℕ × C × SelectBestAcc) : C × List (List Bool) :=
   (s.2.1, augCandidateRows (s.1, s.2.2))
 
@@ -315,21 +255,6 @@ theorem count_greedy_eq_card_sat {V : Type*} [Fintype V] [DecidableEq V]
       (Fintype.card V) φ.length P initRows) =
       #{σ : V → Bool | φ.eval σ = true} :=
   countSys_greedyParityRows_eq_card_sat φ hn hP hinit_len hcount hinit
-
-private theorem exists_mono_poly {α : Type} {size u : α → ℕ} (hu : PolyBounded size u) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧ ∀ a, u a ≤ p (size a) := by
-  obtain ⟨c, d, h⟩ := hu.exists_le
-  exact ⟨fun n => c * (n + 1) ^ d, by fun_prop,
-    fun _ _ hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hxy 1) d), h⟩
-
-private theorem exists_mono_poly_cert {α β : Type} {f : α → β}
-    {ei : α ↪ List Bool} {eo : β ↪ List Bool} (hf : ComputableInPolyTime f ei eo) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧
-      ∀ a, (NativeCertificate.ofPolyTime hf).time a ≤ p (ei a).length ∧
-        (NativeCertificate.ofPolyTime hf).space a ≤ p (ei a).length := by
-  have hc := NativeCertificate.ofPolyTime_isPolynomial hf
-  obtain ⟨p, hp, hmono, hle⟩ := exists_mono_poly (hc.1.add hc.2)
-  exact ⟨p, hp, hmono, fun a => ⟨by have := hle a; omega, by have := hle a; omega⟩⟩
 
 private theorem input_le (c : C) (m P : ℕ) (rows : List (List Bool)) :
     (encC c).length ≤ (encInput encC (c, m, P, rows)).length ∧

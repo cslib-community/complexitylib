@@ -691,7 +691,7 @@ def dynamicProgram (n K_max : ℕ) : DynamicProgram (IndexedMinPQ.spec n K_max) 
   output := pqCode.output
   input := pqCode.input
   encode := pqCode.encode
-  decode := pqCode.decode
+  decode := pqCode.decode (K_max := K_max)
 
 /-- Standalone `.standard`-basis `DynamicCertificate` for the binary min-heap. -/
 def certificate {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :

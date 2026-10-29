@@ -208,7 +208,7 @@ theorem computableTidilyInPolyTime_viewSucc :
   · rcases tag with ⟨_ | state, symbol, work⟩
     · exact ComputableTidilyInPolyTime.const []
     · exact ComputableTidilyInPolyTime.mapConst _ fun action _ =>
-        ComputableTidilyInPolyTime.finiteCfg_summarizeOutput.comp
+        ComputableInPolyTime.finiteCfg_summarizeOutput.tidy.comp
           (ComputableTidilyInPolyTime.finiteCfg_step action)
 
 /-- Under a logarithmic space bound, the number of rounds that decides acceptance is at most a

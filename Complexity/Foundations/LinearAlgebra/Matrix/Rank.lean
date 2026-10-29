@@ -87,7 +87,7 @@ theorem exists_eq_mul_rank (A : Matrix m n K) :
     (b.sum_repr (col j))
   simp only [Submodule.coe_sum, Submodule.coe_smul, Finset.sum_apply, Pi.smul_apply,
     smul_eq_mul] at h
-  simpa [mul_apply, col, mul_comm] using h.symm
+  simpa [Matrix.mul_apply, col, mul_comm] using h.symm
 
 /-- The natural rank of a finite matrix agrees with the cardinal rank of its linear map. -/
 theorem natCast_rank_eq_rank_toLin' [DecidableEq n] (M : Matrix m n K) :

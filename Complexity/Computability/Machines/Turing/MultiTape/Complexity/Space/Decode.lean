@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Tape
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Encoding
 public import Complexity.Foundations.Data.StackTape
@@ -30,12 +31,15 @@ folded into a canonical tape by `StackTape.cons`, last cell first.
 ## Main definitions
 
 * `Turing.MultiTapeTM.decodeStackTape`, `Turing.MultiTapeTM.decodeBiTape`: decoders of tapes.
+* `Turing.MultiTapeTM.decodeTapes`: the decoder of a fixed finite family of tapes.
 * `Turing.MultiTapeTM.decodeFiniteCfg`: the decoder of finite configurations.
 
 ## Main results
 
 * `Turing.MultiTapeTM.decodeFiniteCfg_encFiniteCfg`: decoding inverts the encoding.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.decodeFiniteCfg`: decoding is polynomial-time.
+* `Turing.MultiTapeTM.ComputableInPolyTime.decodeTapes`: decoding a fixed finite family of
+  tapes is polynomial-time.
+* `Turing.MultiTapeTM.ComputableInPolyTime.decodeFiniteCfg`: decoding is polynomial-time.
 
 ## Implementation notes
 
@@ -266,7 +270,7 @@ namespace ComputableTidilyInPolyTime
 variable {α : Type} {input : α ↪ List Bool}
 
 /-- Emitting the bits of the framed cells is linear-time. -/
-theorem cellsTransducer_run : ComputableTidilyInPolyTime
+private theorem cellsTransducer_run : ComputableTidilyInPolyTime
     (cellsTransducer.run cellsTransducer.q₀) encBits encBits :=
   of_linear (cellsTransducer.computableTidilyInLinearTimeAndSpace fun _ => rfl)
 
@@ -278,8 +282,9 @@ private theorem stackStep_eq (state : Option Bool × StackTape Bool) (bit : Bool
   rcases state with ⟨_ | _, _⟩ <;> rfl
 
 /-- A step of the stack-tape fold is polynomial-time: it branches on its finite part. -/
-theorem stackStep : ComputableTidilyInPolyTime (fun p : (Option Bool × StackTape Bool) × Bool =>
-    Turing.MultiTapeTM.stackStep p.1 p.2)
+private theorem stackStep :
+    ComputableTidilyInPolyTime (fun p : (Option Bool × StackTape Bool) × Bool =>
+      Turing.MultiTapeTM.stackStep p.1 p.2)
     (encPair (encPair (encOption encBool) (encStackTape encBool)) encBool)
     (encPair (encOption encBool) (encStackTape encBool)) := by
   simp only [stackStep_eq]
@@ -297,7 +302,7 @@ theorem stackStep : ComputableTidilyInPolyTime (fun p : (Option Bool × StackTap
   · exact (const _).prod (stackTape_cons (const _) htape)
 
 /-- **Decoding a stack tape is polynomial-time.** -/
-theorem decodeStackTape :
+private theorem decodeStackTape :
     ComputableTidilyInPolyTime MultiTapeTM.decodeStackTape encBits (encStackTape encBool) := by
   have hbits := bitsReverse.comp cellsTransducer_run
   have hfold := foldl' (encA := encBool) (encL := encBits) hbits (const (none, StackTape.nil))
@@ -327,34 +332,35 @@ theorem decodeStackTape :
   exact (snd (encOption encBool) (encStackTape encBool)).comp hfold
 
 /-- Decoding a cell is polynomial-time. -/
-theorem decodeCell :
+private theorem decodeCell :
     ComputableTidilyInPolyTime MultiTapeTM.decodeCell encBits (encOption encBool) := by
   unfold Turing.MultiTapeTM.decodeCell
   exact (listIsEmpty (encA := encBool)).cond (const none)
     ((optionSome encBool).comp ((headD false).comp (tail (encA := encBool))))
 
 /-- **Decoding a two-sided tape is polynomial-time.** -/
-theorem decodeBiTape :
+private theorem decodeBiTape :
     ComputableTidilyInPolyTime MultiTapeTM.decodeBiTape encBits (encBiTape encBool) :=
   biTape_mk (decodeCell.comp unframe) (decodeStackTape.comp (unframe.comp dropFrame))
     (decodeStackTape.comp (dropFrame.comp dropFrame))
 
 /-- Dropping a fixed number of frames is polynomial-time. -/
-theorem dropFrame_iterate (n : ℕ) :
+private theorem dropFrame_iterate (n : ℕ) :
     ComputableTidilyInPolyTime (MultiTapeTM.dropFrame^[n]) encBits encBits := by
   induction n with
   | zero => exact id'
   | succ n ih => simpa only [Function.iterate_succ'] using dropFrame.comp ih
 
 /-- Decoding a family of tapes is polynomial-time. -/
-theorem decodeTapes (k : ℕ) : ComputableTidilyInPolyTime (MultiTapeTM.decodeTapes k) encBits
-    (encPi (encBiTape encBool)) :=
+private theorem decodeTapes (k : ℕ) :
+    ComputableTidilyInPolyTime (MultiTapeTM.decodeTapes k) encBits
+      (encPi (encBiTape encBool)) :=
   pi fun _ => decodeBiTape.comp (unframe.comp (dropFrame_iterate _))
 
 variable {k : ℕ} {State : Type} [Finite State]
 
 /-- **Decoding a finite configuration is polynomial-time.** -/
-theorem decodeFiniteCfg : ComputableTidilyInPolyTime
+private theorem decodeFiniteCfg : ComputableTidilyInPolyTime
     (MultiTapeTM.decodeFiniteCfg (k := k) (State := State)) encBits encFiniteCfg := by
   have hlength := length encBool (encL := encBits)
   have hstate : ComputableTidilyInPolyTime (fun word =>
@@ -369,5 +375,31 @@ theorem decodeFiniteCfg : ComputableTidilyInPolyTime
     (dropFrame.comp (dropFrame.comp (dropFrame.comp dropFrame)))
 
 end ComputableTidilyInPolyTime
+
+namespace ComputableInPolyTime
+
+/-- **Decoding a stack tape is polynomial-time.** -/
+theorem decodeStackTape :
+    ComputableInPolyTime MultiTapeTM.decodeStackTape encBits (encStackTape encBool) :=
+  ComputableTidilyInPolyTime.decodeStackTape.computableInPolyTime
+
+/-- **Decoding a two-sided tape is polynomial-time.** -/
+theorem decodeBiTape :
+    ComputableInPolyTime MultiTapeTM.decodeBiTape encBits (encBiTape encBool) :=
+  ComputableTidilyInPolyTime.decodeBiTape.computableInPolyTime
+
+/-- Decoding a fixed finite family of tapes is polynomial-time. -/
+theorem decodeTapes (k : ℕ) :
+    ComputableInPolyTime (MultiTapeTM.decodeTapes k) encBits (encPi (encBiTape encBool)) :=
+  (ComputableTidilyInPolyTime.decodeTapes k).computableInPolyTime
+
+variable {k : ℕ} {State : Type} [Finite State]
+
+/-- **Decoding a finite configuration is polynomial-time.** -/
+theorem decodeFiniteCfg : ComputableInPolyTime
+    (MultiTapeTM.decodeFiniteCfg (k := k) (State := State)) encBits encFiniteCfg :=
+  ComputableTidilyInPolyTime.decodeFiniteCfg.computableInPolyTime
+
+end ComputableInPolyTime
 
 end Turing.MultiTapeTM

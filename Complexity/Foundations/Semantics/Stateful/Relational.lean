@@ -128,17 +128,6 @@ abbrev signature : PFunctor.{v, w} := ⟨D.Op, D.Result⟩
 
 instance : Coe RelSpec.{u, v, w} PFunctor.{v, w} := ⟨RelSpec.signature⟩
 
-/-- Project the operation signature `(D.Op, D.Result)` of a relational specification to a
-canonical `Stateful.Spec` with `State := Empty`, allowing signature-only constructions over
-`Stateful.Spec` (such as `WordRAM.DynamicProgram`) to apply directly to `D : RelSpec`. -/
-abbrev toSpec : Spec.{0, v, w} where
-  State := Empty
-  Op := D.Op
-  Result := D.Result
-  step s := s.elim
-
-instance : Coe RelSpec.{u, v, w} Spec.{0, v, w} := ⟨RelSpec.toSpec⟩
-
 /-- An adaptive client over `D`: each continuation may branch on the observed operation result. -/
 abbrev Client (α : Type y) : Type (max v w y) := D.signature.FreeM α
 

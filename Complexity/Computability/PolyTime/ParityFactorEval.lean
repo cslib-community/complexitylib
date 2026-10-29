@@ -1049,7 +1049,7 @@ private theorem listAppend_polytime {β : Type} {encB : β ↪ List Bool} {l r :
   (show ComputableInPolyTime (fun p : List β × List β => p.1 ++ p.2)
     (encPair (encList encB) (encList encB)) (encList encB) by fun_prop).comp (hl.prod hr)
 
-private theorem intBin_pow_polytime {base : α → ℤ} {exp : α → ℕ}
+theorem intBin_pow_polytime {base : α → ℤ} {exp : α → ℕ}
     (hb : ComputableInPolyTime base encIn encIntBin)
     (he : ComputableInPolyTime exp encIn encUnary) :
     ComputableInPolyTime (fun x => base x ^ exp x) encIn encIntBin :=

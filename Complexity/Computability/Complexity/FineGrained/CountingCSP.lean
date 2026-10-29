@@ -95,8 +95,9 @@ variable {Rel V : Type}
 
 open Cslib.Logic.PL.CSP ComputableInPolyTime
 
+/-- Zip framed lists in polynomial time. -/
 @[local fun_prop]
-private theorem computableInPolyTime_zip {α β : Type}
+theorem computableInPolyTime_zip {α β : Type}
     (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
     ComputableInPolyTime (fun p : List α × List β => p.1.zip p.2)
       (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) := by
