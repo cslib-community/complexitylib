@@ -7,6 +7,10 @@ in `.lake/packages/cslib/` after fetching dependencies. [AGENTS.md](AGENTS.md) d
 repository's workflow, file layout, proof, validation and review requirements. Upstream
 submissions follow the target repository's current process.
 
+For setup, start with [Build a checkout](README.md#build-a-checkout). The
+[guide](https://www.cslib.io/complexitylib/guide/) and
+[checked examples](README.md#start-here) introduce the APIs before you change them.
+
 ## Proposing and contributing work
 
 Use this repository's Issues or pull requests to agree on a substantial development

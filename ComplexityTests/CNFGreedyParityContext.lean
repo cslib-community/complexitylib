@@ -35,18 +35,17 @@ private noncomputable def cert := NativeCertificate.ofPolyTime count_polyTime
 private def unitContext : Context := (false, [])
 private def tautContext : Context := (true, [true, false])
 
-example :
-    selectBestTestRow (fun r => count (unitContext, r)) 1 1 [] = [true] := by decide
-example : selectBestTestRow (fun r => count (tautContext, r)) 1 1 [] = [false] := by decide
-
 -- Context changes actual execution, including the final count. Enumeration ties still retain
 -- the first row after the unit clause has been enforced.
-example : greedyParityRows (fun r => count (unitContext, r)) 1 1 1 [] =
-    [[true], [false], [false]] := by decide
-example : greedyParityRows (fun r => count (tautContext, r)) 1 1 1 [] =
-    [[false], [false], [false]] := by decide
-example : count (unitContext, greedyParityRows (fun r => count (unitContext, r)) 1 1 1 []) = 1 ∧
-    count (tautContext, greedyParityRows (fun r => count (tautContext, r)) 1 1 1 []) = 2 := by
+example :
+    selectBestTestRow (fun r => count (unitContext, r)) 1 1 [] = [true] ∧
+    selectBestTestRow (fun r => count (tautContext, r)) 1 1 [] = [false] ∧
+    greedyParityRows (fun r => count (unitContext, r)) 1 1 1 [] =
+      [[true], [false], [false]] ∧
+    greedyParityRows (fun r => count (tautContext, r)) 1 1 1 [] =
+      [[false], [false], [false]] ∧
+    (count (unitContext, greedyParityRows (fun r => count (unitContext, r)) 1 1 1 []) = 1 ∧
+      count (tautContext, greedyParityRows (fun r => count (tautContext, r)) 1 1 1 []) = 2) := by
   decide
 
 -- The joint runtime encoding charges every captured payload bit even with no outer rounds.
@@ -58,19 +57,17 @@ theorem context_encoding_charges_payload (payload : List Bool) :
   simp only [GreedyContext.encGreedyInput, length_encPair, encBits_apply, List.length_nil]
   omega
 
--- Arbitrarily long captured payloads remain in the encoded joint input even at zero rounds.
+-- Arbitrarily long captured payloads remain in the encoded joint input even at zero rounds, and
+-- the empty tuple space has a zero-row fallback while P = 0 has one empty tuple.
 example :
     (GreedyContext.encGreedyInput encContext
       ((false, List.replicate 11 true), 0, 1, 1, [])).length =
-    (GreedyContext.encGreedyInput encContext (unitContext, 0, 1, 1, [])).length + 22 := by decide
-example :
+      (GreedyContext.encGreedyInput encContext (unitContext, 0, 1, 1, [])).length + 22 ∧
     greedyParityRows (fun r => count ((false, List.replicate 11 true), r)) 0 1 1 [[true]] =
-    [[true]] := rfl
-
--- The empty tuple space has a zero-row fallback; P = 0 has exactly one empty tuple.
-example : selectBestTestRow (fun r => count (unitContext, r)) 0 1 [[true]] = [] := by decide
-example : selectBestTestRow (fun r => count (tautContext, r)) 3 0 [] =
-    [false, false, false] := by decide
+      [[true]] ∧
+    selectBestTestRow (fun r => count (unitContext, r)) 0 1 [[true]] = [] ∧
+    selectBestTestRow (fun r => count (tautContext, r)) 3 0 [] = [false, false, false] := by
+  decide
 
 -- This is one joint-input certificate, not a separate certificate selected for each context.
 example : ComputableInPolySpace
@@ -136,22 +133,18 @@ example (c : Context) :
     (fun _ h => nomatch h) (fun rows hw hl _ => count_agrees c rows hw (by simpa using hl))
     (fun σ _ he => support c σ he)
 
--- A mismatched counter cannot supply the correctness premise.
+-- Counterexamples when the counter is mismatched, `P = 0`, or `|V| = 0`.
 example :
-    let bad := fun _ : Context × List (List Bool) => 9
-    bad (unitContext, greedyParityRows (fun r => bad (unitContext, r)) 1 1 1 []) = 9 ∧
-      #{σ : Fin 1 → Bool | (formula unitContext).eval σ = true} = 1 := by decide
-
--- Omitting P ≥ 1 leaves the unit-clause model count unchanged at 2 instead of its true value 1.
-example : count (unitContext, greedyParityRows (fun r => count (unitContext, r)) 1 1 0 []) = 2 ∧
-    #{σ : Fin 1 → Bool | (formula unitContext).eval σ = true} = 1 := by decide
-
--- Omitting |V| ≥ 1: the false zero-variable formula has no models, but zero rounds retain
--- the unique empty assignment as passing. This is not a counter-agreement failure.
-example :
-    let φ : CNF (Fin 0) := [[]]
-    let ctr := fun rows : List (List Bool) => numPassing φ.violations (rows.map (ofList φ.length))
-    ctr (greedyParityRows ctr 0 1 1 []) = 1 ∧
-      #{σ : Fin 0 → Bool | φ.eval σ = true} = 0 := by decide
+    (let bad := fun _ : Context × List (List Bool) => 9;
+      bad (unitContext, greedyParityRows (fun r => bad (unitContext, r)) 1 1 1 []) = 9 ∧
+        #{σ : Fin 1 → Bool | (formula unitContext).eval σ = true} = 1) ∧
+    (count (unitContext, greedyParityRows (fun r => count (unitContext, r)) 1 1 0 []) = 2 ∧
+      #{σ : Fin 1 → Bool | (formula unitContext).eval σ = true} = 1) ∧
+    (let φ : CNF (Fin 0) := [[]];
+      let ctr := fun rows : List (List Bool) =>
+        numPassing φ.violations (rows.map (ofList φ.length));
+      ctr (greedyParityRows ctr 0 1 1 []) = 1 ∧
+        #{σ : Fin 0 → Bool | φ.eval σ = true} = 0) := by
+  decide
 
 end ComplexityTests.CNFGreedyParityContext
