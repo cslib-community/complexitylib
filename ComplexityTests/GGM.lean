@@ -161,8 +161,8 @@ example (generator : List Bool → List Bool) :
             GGM.reduction generator siblings (fun _ => 2) 1)) :=
   GGM.reduction_advantage generator siblings (fun _ => 2) 1 (siblings_queryBounds 1)
 
--- Any PRG, including the strict zero-width convention, supplies an adaptive PRF whose evaluator is
--- polynomial-time computable.
+-- The conditional PRG-to-PRF theorem supplies the family; its certificate projects the evaluator
+-- bound. This example checks API use, rather than a concrete secure generator.
 example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (h : PseudorandomGenerator generator length) :
     ∃ family : List Bool → List Bool → List Bool,

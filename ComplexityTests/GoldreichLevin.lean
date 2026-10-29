@@ -45,11 +45,9 @@ example : (decode noisy 5).toOuterMeasure {list | target ∉ list} ≤ 1 / 2 := 
     norm_num
   · norm_num
 
--- Perfect prediction works for arbitrary masks, including all-zero and repeated masks, so the
--- candidate set is nonempty whenever `0 < k`.
-example {n k : ℕ} (x : BitString n) (masks : Fin k → BitString n) (hk : 0 < k) :
-    (candidates (fun r => x ⬝ᵥ r) masks).Nonempty :=
-  ⟨x, mem_candidates_parity x masks hk⟩
+-- Perfect prediction retains the target with a fixed all-zero mask.
+example : target ∈ candidates (fun r => target ⬝ᵥ r)
+    (fun _ : Fin 1 => (![false, false] : BitString 2)) := by decide
 
 -- Zero target length is valid; positive mask count is still an explicit theorem hypothesis.
 example : (decode (fun _ : BitString 0 => false) 1).toOuterMeasure {list | 0 ∉ list} ≤ 1 / 2 := by

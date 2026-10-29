@@ -76,9 +76,9 @@ example : LinearHash.wordHash 2 [] [] = [false, false] := by decide
 -- Seed length depends on the declared width, even when the sample list is malformed.
 example {output : List (List Bool) × List Bool × List Bool}
     (h : output ∈ (ProbComp.eval (extractWordLabels 3 2 [([true], false)])).support) :
-    output.1 = [[true]] ∧ (output.2.1 ++ output.2.2).length = 8 := by
+    output.1 = [[true]] ∧ output.2.1.length = 6 ∧ output.2.2.length = 2 := by
   obtain ⟨h1, h2, h3⟩ := extractMatrixLabels_result 3 2 id [([true], false)] h
-  exact ⟨h1, by simp [h2, h3]⟩
+  exact ⟨h1, h2, h3⟩
 
 -- Variable-length observations remain distinct after padding; the full matrix is public.
 example {output : List Bool}

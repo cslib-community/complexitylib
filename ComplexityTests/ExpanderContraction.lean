@@ -52,6 +52,10 @@ example : threeVertices.lazy.spectralExpansion ≤ 63 / 64 := by
 example : RotationMap.finSlotDecode (m := 5) ((0, 1) : Fin 3 × Fin 2) = some 3 :=
   (RotationMap.isPartialInv_finSlots (by decide : 5 ≤ 2 * 3) 3 (0, 1)).mpr (by decide)
 
+-- Zero-size contractions are total, without an arbitrary inhabitant of the vertex type.
+example : Function.IsPartialInv (RotationMap.finSlotEncode (by decide : 0 ≤ 0 * 0))
+    (RotationMap.finSlotDecode (m := 0)) := RotationMap.isPartialInv_finSlots _
+
 -- Actual finite witnesses for the complete contraction certificate.
 example : ComputableInPolyTime threeVertices.rot
     (encPair (encFinEnum (Fin 3)) (encPair (encFinEnum (Fin 2)) (encFinEnum (Fin 5))))

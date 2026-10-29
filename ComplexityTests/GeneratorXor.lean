@@ -90,19 +90,13 @@ example : ((uniformList 2).map (candidate 1)).bind (fun challenge =>
     (uniformList 4).map (GeneratorXor.generate 2 2 3 candidate) :=
   GeneratorXor.real_distribution 2 2 3 candidate ⟨1, by decide⟩
 
--- Uniformity places no efficiency or quality requirement on the other candidate: every word in the
--- support has length 3.
-example (other : List Bool → List Bool) {w : List Bool}
-    (hw : w ∈ ((uniformList 3).bind (fun challenge =>
-      (uniformList 4).map (GeneratorXor.generate 2 2 3
-        (fun i seed => if i = 0 then challenge else other seed)))).support) :
-    w.length = 3 := by
-  have heq : (uniformList 3).bind (fun challenge =>
+-- The whole output law is uniform, without efficiency or quality assumptions on the other
+-- candidate.
+example (other : List Bool → List Bool) :
+    (uniformList 3).bind (fun challenge =>
       (uniformList 4).map (GeneratorXor.generate 2 2 3
         (fun i seed => if i = 0 then challenge else other seed))) = uniformList 3 :=
-    GeneratorXor.ideal_distribution 2 2 3 (fun _ => other) ⟨0, by decide⟩
-  rw [heq] at hw
-  exact length_of_mem_support_uniformList hw
+  GeneratorXor.ideal_distribution 2 2 3 (fun _ => other) ⟨0, by decide⟩
 
 example (adversary : List Bool → ProbComp Bool) :
     Game.advantage
