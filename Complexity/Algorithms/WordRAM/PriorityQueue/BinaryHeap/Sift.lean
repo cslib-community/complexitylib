@@ -54,7 +54,7 @@ private theorem Ordered.upOrdered_one (h : Ordered f S) : UpOrdered f S 1 :=
   fun i hi hiS => ⟨fun _ => h i hi hiS, fun _ h2 => absurd h2 (by omega)⟩
 
 private theorem UpOrdered.swap (h : UpOrdered f S a) (ha : 2 ≤ a) (haS : a ≤ S)
-    (hlt : EntryLT (f a) (f (a / 2))) (hga : g a = f (a / 2)) (hgp : g (a / 2) = f a)
+    (hlt : IndexedMinPQ.RawPrioLT (f a) (f (a / 2))) (hga : g a = f (a / 2)) (hgp : g (a / 2) = f a)
     (hgo : ∀ i, 1 ≤ i → i ≤ S → i ≠ a → i ≠ a / 2 → g i = f i) :
     UpOrdered g S (a / 2) := by
   intro i hi hiS
@@ -92,7 +92,7 @@ private theorem DownOrdered.ordered (h : DownOrdered f S a)
 
 private theorem DownOrdered.swap (h : DownOrdered f S a) (hc : c / 2 = a) (hcS : c ≤ S)
     (hmin : ∀ i, 2 ≤ i → i ≤ S → i / 2 = a → IndexedMinPQ.RawPrioLE (f c) (f i))
-    (hlt : EntryLT (f c) (f a)) (hga : g a = f c) (hgc : g c = f a)
+    (hlt : IndexedMinPQ.RawPrioLT (f c) (f a)) (hga : g a = f c) (hgc : g c = f a)
     (hgo : ∀ i, 1 ≤ i → i ≤ S → i ≠ a → i ≠ c → g i = f i) :
     DownOrdered g S c := by
   intro i hi hiS
@@ -193,33 +193,37 @@ private theorem HeapShape.swap {mem : ℕ → ℕ} {a b : ℕ} (h : HeapShape N 
 private theorem cmpEntries_spec (vA dA vB dB : Fin rBin) {y : Data rBin}
     (hzero : y.regs zero = 0) (hone : y.regs one = 1) :
     ExecWithin w (cmpEntries vA dA vB dB) y
-      (y.set t (if EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) then 1 else 0)) 6 := by
+      (y.set t (if IndexedMinPQ.RawPrioLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB)
+        then 1 else 0)) 6 := by
   by_cases h1 : y.regs dA < y.regs dB
-  · have hp : EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := Or.inl h1
+  · have hp : IndexedMinPQ.RawPrioLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := Or.inl h1
     simp only [hp, ↓reduceIte]
     ram_exact_eval [cmpEntries, hzero, hone, h1]
   · by_cases h2 : y.regs dA = y.regs dB
     · by_cases h3 : y.regs vA < y.regs vB
-      · have hp : EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := Or.inr ⟨h2, h3⟩
+      · have hp : IndexedMinPQ.RawPrioLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) :=
+          Or.inr ⟨h2, h3⟩
         simp only [hp, ↓reduceIte]
         ram_exact_eval [cmpEntries, hzero, hone, h2, h3, lt_irrefl]
-      · have hp : ¬EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := by
-          dsimp only [EntryLT]; omega
+      · have hp : ¬IndexedMinPQ.RawPrioLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := by
+          dsimp only [IndexedMinPQ.RawPrioLT]; omega
         simp only [hp, ↓reduceIte]
         ram_exact_eval [cmpEntries, hzero, hone, h2, h3, lt_irrefl]
-    · have hp : ¬EntryLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := by
-        dsimp only [EntryLT]; omega
+    · have hp : ¬IndexedMinPQ.RawPrioLT (y.regs vA, y.regs dA) (y.regs vB, y.regs dB) := by
+        dsimp only [IndexedMinPQ.RawPrioLT]; omega
       simp only [hp, ↓reduceIte]
       ram_exact_eval [cmpEntries, hzero, hone, h1, h2]
 
 private theorem cmpKP_spec {y : Data rBin} (hzero : y.regs zero = 0) (hone : y.regs one = 1) :
     ExecWithin w cmpKP y
-      (y.set t (if EntryLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp) then 1 else 0)) 6 :=
+      (y.set t (if IndexedMinPQ.RawPrioLT (y.regs vk, y.regs dk) (y.regs vp, y.regs dp)
+        then 1 else 0)) 6 :=
   cmpEntries_spec vk dk vp dp hzero hone
 
 private theorem cmpPK_spec {y : Data rBin} (hzero : y.regs zero = 0) (hone : y.regs one = 1) :
     ExecWithin w cmpPK y
-      (y.set t (if EntryLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk) then 1 else 0)) 6 :=
+      (y.set t (if IndexedMinPQ.RawPrioLT (y.regs vp, y.regs dp) (y.regs vk, y.regs dk)
+        then 1 else 0)) 6 :=
   cmpEntries_spec vp dp vk dk hzero hone
 
 end SwapAndCompare
@@ -251,11 +255,11 @@ private theorem siftUpBody_spec {K : ℕ} {y : Data rBin}
     (hshape : HeapShape N base S y.mem) :
     ∃ z, ExecWithin w siftUpBody y z 26 ∧
       (∀ i ∉ [k, p, vk, vp, dk, dp, t], z.regs i = y.regs i) ∧
-      (EntryLT (heapEntry N base y.mem K) (heapEntry N base y.mem (K / 2)) ∧
+      (IndexedMinPQ.RawPrioLT (heapEntry N base y.mem K) (heapEntry N base y.mem (K / 2)) ∧
         z.regs k = K / 2 ∧
         z.mem = swapMem N base y.mem K (K / 2) (y.mem (base + N + K))
           (y.mem (base + N + K / 2)) ∨
-       ¬EntryLT (heapEntry N base y.mem K) (heapEntry N base y.mem (K / 2)) ∧
+       ¬IndexedMinPQ.RawPrioLT (heapEntry N base y.mem K) (heapEntry N base y.mem (K / 2)) ∧
         z.regs k = 1 ∧ z.mem = y.mem) := by
   have hSN := hshape.size_le
   have hsp : space N = 3 * N + 1 := rfl
@@ -283,13 +287,14 @@ private theorem siftUpBody_spec {K : ℕ} {y : Data rBin}
   have e₁ : ExecWithin w upLoad y y₁ 9 := by
     ram_exact_eval [upLoad, y₁, hone, hbase, hhb, hk, hvk, hvp, shiftRight_one, f₁, f₂, f₃, f₄, f₅]
   have ecmp : ExecWithin w cmpKP y₁
-      (y₁.set t (if EntryLT (VK, y.mem (base + VK)) (VP, y.mem (base + VP)) then 1 else 0)) 6 := by
+      (y₁.set t (if IndexedMinPQ.RawPrioLT (VK, y.mem (base + VK)) (VP, y.mem (base + VP))
+        then 1 else 0)) 6 := by
     simpa +decide [y₁] using cmpKP_spec (w := w) (y := y₁)
       (by simp +decide [y₁, hzero]) (by simp +decide [y₁, hone])
   have hentK : heapEntry N base y.mem K = (VK, y.mem (base + VK)) := by simp [heapEntry, hvk]
   have hentP : heapEntry N base y.mem (K / 2) = (VP, y.mem (base + VP)) := by simp [heapEntry, hvp]
   rw [hentK, hentP, hvk, hvp]
-  by_cases hlt : EntryLT (VK, y.mem (base + VK)) (VP, y.mem (base + VP))
+  by_cases hlt : IndexedMinPQ.RawPrioLT (VK, y.mem (base + VK)) (VP, y.mem (base + VP))
   · simp only [hlt, ↓reduceIte] at ecmp
     let y₂ := y₁.set t 1
     obtain ⟨z, e₂, hzk, hzm⟩ : ∃ z, ExecWithin w upSwap y₂ z 9 ∧ z.regs k = K / 2 ∧
@@ -362,7 +367,8 @@ theorem siftUp_spec {K : ℕ} {x : Data rBin}
       · rw [hzk, Nat.log_div_base]; omega
     · refine ⟨z, he, ⟨hfr', by omega, by omega, hzm ▸ hy.shape, ?_, ?_, ?_⟩, ?_⟩
       · rw [hzk, hzm]
-        exact (hy.ordered.ordered (fun _ _ => not_entryLT.mp hlt)).upOrdered_one
+        exact (hy.ordered.ordered
+          (fun _ _ => IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE.mp hlt)).upOrdered_one
       · intro v hv; rw [hzm]; exact hy.pos v hv
       · intro a ha; rw [hzm]; exact hy.outside a ha
       · rw [hzk, Nat.log_one_right]; exact hlog
@@ -386,7 +392,7 @@ section SiftDown
 variable {N base S w : ℕ}
 
 private def minChild (f : ℕ → ℕ × ℕ) (S a : ℕ) : ℕ :=
-  if 2 * a + 1 ≤ S ∧ EntryLT (f (2 * a + 1)) (f (2 * a)) then 2 * a + 1 else 2 * a
+  if 2 * a + 1 ≤ S ∧ IndexedMinPQ.RawPrioLT (f (2 * a + 1)) (f (2 * a)) then 2 * a + 1 else 2 * a
 
 private theorem minChild_spec {f : ℕ → ℕ × ℕ} {a : ℕ} (ha : 2 * a ≤ S) :
     (minChild f S a = 2 * a ∨ minChild f S a = 2 * a + 1) ∧ minChild f S a ≤ S ∧
@@ -400,7 +406,7 @@ private theorem minChild_spec {f : ℕ → ℕ × ℕ} {a : ℕ} (ha : 2 * a ≤
   · refine ⟨Or.inl rfl, ha, fun i hiS hia => ?_⟩
     rcases (by omega : i = 2 * a ∨ i = 2 * a + 1) with rfl | rfl
     · exact IndexedMinPQ.RawPrioLE.refl _
-    · exact not_entryLT.mp fun hlt => h ⟨hiS, hlt⟩
+    · exact IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE.mp fun hlt => h ⟨hiS, hlt⟩
 
 private def chooseLeft : Code .exact rBin := ram_exact[
   p ← l;
@@ -458,7 +464,7 @@ private theorem siftDownChoose_spec {K : ℕ} {y : Data rBin}
     have e₂ : ExecWithin w chooseRightLoad y₁ y₂ 4 := by
       ram_exact_eval [chooseRightLoad, y₂, y₁, hbase, hhb, hvr, f₄, f₅]
     have ecmp : ExecWithin w cmpKP y₂
-        (y₂.set t (if EntryLT (VR, y.mem (base + VR)) (VL, y.mem (base + VL))
+        (y₂.set t (if IndexedMinPQ.RawPrioLT (VR, y.mem (base + VR)) (VL, y.mem (base + VL))
           then 1 else 0)) 6 := by
       simpa +decide [y₂, y₁] using cmpKP_spec (w := w) (y := y₂)
         (by simp +decide [y₂, y₁, hzero]) (by simp +decide [y₂, y₁, hone])
@@ -466,7 +472,7 @@ private theorem siftDownChoose_spec {K : ℕ} {y : Data rBin}
       simp [heapEntry, hvl]
     have hentR : heapEntry N base y.mem (2 * K + 1) = (VR, y.mem (base + VR)) := by
       simp [heapEntry, hvr]
-    by_cases h₂ : EntryLT (VR, y.mem (base + VR)) (VL, y.mem (base + VL))
+    by_cases h₂ : IndexedMinPQ.RawPrioLT (VR, y.mem (base + VR)) (VL, y.mem (base + VL))
     · simp only [h₂, ↓reduceIte] at ecmp
       have hC : minChild (heapEntry N base y.mem) S K = 2 * K + 1 := by
         unfold minChild; exact ite_eq_left ⟨by omega, by rw [hentR, hentL]; exact h₂⟩
@@ -531,10 +537,10 @@ private theorem siftDownSink_spec {K C : ℕ} {y : Data rBin}
     (hshape : HeapShape N base S y.mem) :
     ∃ z, ExecWithin w siftDownSink y z 22 ∧
       (∀ i ∉ [t, vk, dk, k, l], z.regs i = y.regs i) ∧
-      (EntryLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
+      (IndexedMinPQ.RawPrioLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
         z.regs k = C ∧ z.regs l = 2 * C ∧
         z.mem = swapMem N base y.mem K C (y.mem (base + N + K)) (y.mem (base + N + C)) ∨
-       ¬EntryLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
+       ¬IndexedMinPQ.RawPrioLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
         z.regs k = K ∧ z.regs l = S + 1 ∧ z.mem = y.mem) := by
   have hSN := hshape.size_le
   have hsp : space N = 3 * N + 1 := rfl
@@ -563,11 +569,12 @@ private theorem siftDownSink_spec {K C : ℕ} {y : Data rBin}
   have hentC : heapEntry N base y.mem C = (VC, y.mem (base + VC)) := by simp [heapEntry, hvc]
   rw [hentC] at hdp
   have ecmp : ExecWithin w cmpPK y₁
-      (y₁.set t (if EntryLT (VC, y.mem (base + VC)) (VK, y.mem (base + VK)) then 1 else 0)) 6 := by
+      (y₁.set t (if IndexedMinPQ.RawPrioLT (VC, y.mem (base + VC)) (VK, y.mem (base + VK))
+        then 1 else 0)) 6 := by
     simpa +decide [y₁, hvp, hdp] using cmpPK_spec (w := w) (y := y₁)
       (by simp +decide [y₁, hzero]) (by simp +decide [y₁, hone])
   rw [hentC, hentK, hvk, hvc]
-  by_cases hlt : EntryLT (VC, y.mem (base + VC)) (VK, y.mem (base + VK))
+  by_cases hlt : IndexedMinPQ.RawPrioLT (VC, y.mem (base + VC)) (VK, y.mem (base + VK))
   · simp only [hlt, ↓reduceIte] at ecmp
     let y₂ := y₁.set t 1
     have hc : (Cond.lt zero t).Holds y₂ := by simp +decide [Cond.holds_lt, y₂, y₁, hzero]
@@ -603,10 +610,10 @@ private theorem siftDownBody_spec {K C : ℕ} {y : Data rBin}
     (hshape : HeapShape N base S y.mem) (hC : C = minChild (heapEntry N base y.mem) S K) :
     ∃ z, ExecWithin w siftDownBody y z 44 ∧
       (∀ i ∉ [k, p, vk, vp, dk, dp, t, l], z.regs i = y.regs i) ∧
-      (EntryLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
+      (IndexedMinPQ.RawPrioLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
         z.regs k = C ∧ z.regs l = 2 * C ∧
         z.mem = swapMem N base y.mem K C (y.mem (base + N + K)) (y.mem (base + N + C)) ∨
-       ¬EntryLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
+       ¬IndexedMinPQ.RawPrioLT (heapEntry N base y.mem C) (heapEntry N base y.mem K) ∧
         z.regs k = K ∧ z.regs l = S + 1 ∧ z.mem = y.mem) := by
   obtain ⟨z₁, he₁, hfr₁, hm₁, hp₁, hvp₁, hdp₁⟩ :=
     siftDownChoose_spec hzero hone hbase hhb hl hszp hK hKS hfit hshape
@@ -723,7 +730,8 @@ theorem siftDown_spec {K : ℕ} {x : Data rBin}
     · refine ⟨z, he, ⟨hfr', hzs, by omega, by omega, hzm ▸ hy.shape, Or.inr ⟨hzl, ?_⟩, ?_, ?_⟩,
         ?_⟩
       · rw [hzm]
-        exact hdo.ordered fun i _ hiS hia => (not_entryLT.mp hlt).trans (hmin i hiS hia)
+        exact hdo.ordered fun i _ hiS hia =>
+          (IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE.mp hlt).trans (hmin i hiS hia)
       · intro v hv; rw [hzm]; exact hy.pos v hv
       · intro a ha; rw [hzm]; exact hy.outside a ha
       · have : Nat.log 2 (y.regs l) ≤ Nat.log 2 (S + 1) := Nat.log_mono_right (by omega)

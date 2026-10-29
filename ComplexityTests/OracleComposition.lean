@@ -29,8 +29,11 @@ private theorem adaptive_isOraclePPTOn : IsOraclePPTOn encBits encBits adaptive 
   unfold adaptive
   fun_prop
 
--- The same program has a clean realization, as every strict certificate does.
-example : IsTidyOraclePPTOn encBits encBits adaptive := adaptive_isOraclePPTOn.isTidyOraclePPTOn
+-- On the empty input, the certificate bounds both the query count and request lengths.
+example : ∃ c d : ℕ, (adaptive []).IsQueryBounded (c * 1 ^ d) ∧
+    (adaptive []).QueriesSatisfy fun request => request.2.length ≤ c * 1 ^ d := by
+  obtain ⟨c, d, h⟩ := adaptive_isOraclePPTOn.query_bounds
+  exact ⟨c, d, by simpa using h []⟩
 
 /-- A stateful handler whose reply depends on the number of calls answered so far. -/
 private noncomputable def counting (reply : ℕ → List Bool) (_ : Bool × List Bool) :
@@ -73,7 +76,7 @@ private noncomputable def collectStep (bits : List Bool) : WordOracleComp Unit (
 example : IsOraclePPTOn encUnary encBits
     (fun n => OracleComp.iterate n collectStep []) := by
   refine IsOraclePPTOn.iterate_of_bounded_growth (count := fun n => n) (initial := fun _ => [])
-    ComputableTidilyInPolyTime.id' (.const []) (by unfold collectStep; fun_prop) (growth := 1) ?_
+    (by fun_prop) (.const []) (by unfold collectStep; fun_prop) (growth := 1) ?_
   intro bits next hnext
   obtain ⟨prefix_, hprefix, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
   obtain ⟨reply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hprefix
