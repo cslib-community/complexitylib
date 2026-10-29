@@ -246,6 +246,7 @@ public import Complexity.Computability.Circuit.Boolean.BoundedError
 public import Complexity.Computability.Circuit.Boolean.Braverman.Approximation
 public import Complexity.Computability.Circuit.Boolean.Braverman.Fooling
 public import Complexity.Computability.Circuit.Boolean.Braverman.Gates
+public import Complexity.Computability.Circuit.Boolean.Braverman.Resilience
 public import Complexity.Computability.Circuit.Boolean.Broadcast
 public import Complexity.Computability.Circuit.Boolean.CarryLookahead
 public import Complexity.Computability.Circuit.Boolean.CarryLookahead.PolyTime
@@ -2638,6 +2639,7 @@ public import Complexity.Probability.ProductConditioning
 public import Complexity.Probability.ProductConditioning.SideInformation
 public import Complexity.Probability.Quantile
 public import Complexity.Probability.RejectionSampling
+public import Complexity.Probability.Resilience
 public import Complexity.Probability.Rewinding
 public import Complexity.Probability.Shearer
 public import Complexity.Probability.SmallBias
