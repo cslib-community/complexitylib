@@ -155,4 +155,52 @@ def positions (φ : CNF ℕ) : List Point :=
 /-- Incidence routes ordered by clauses and by literal positions. -/
 def routes (φ : CNF ℕ) : List Route := (placedClauses φ).flatMap fun c => c.2.2
 
+/-- A point receives an ordinary ring exactly when a retained path uses it outside a crossing. -/
+theorem mem_ordinaryCells (φ : CNF ℕ) (p : Point) :
+    p ∈ ordinaryCells φ ↔
+      (∃ r ∈ paths φ, p ∈ r.dropLast) ∧ p ∉ crossingSites φ := by
+  simp [ordinaryCells, mem_selectDistinct_replicate, List.mem_flatMap]
+
+/-- No ordinary ring is emitted twice. -/
+theorem ordinaryCells_nodup (φ : CNF ℕ) : (ordinaryCells φ).Nodup :=
+  nodup_selectDistinct _ _
+
+/-- The compiler's presented signal always has the shared inner access position. -/
+theorem signal_position (sites : List Point) (p q : Point) (l : Fin 2) :
+    variablePosition (signal sites p q l) =
+      cellOrigin 120 p + PairedPorts.variablePosition (side p q) l := by
+  simp only [signal, port, variablePosition]
+  split_ifs <;> rfl
+
+/-- Actual accesses are translations of the fixed paired-port accesses. -/
+theorem access_eq_translate (sites : List Point) (p q : Point) (l : Fin 2) :
+    access sites p q l = translate (cellOrigin 120 p) (PairedPorts.accessRoute (side p q) l) := by
+  rw [access, signal_position]
+  simp only [boundary, PairedPorts.accessRoute, translate, List.map_cons, List.map_nil]
+  simp only [add_comm]
+
+/-- Local template of the final incidence route inside a clause cell. -/
+def finalLocalRoute (s : Fin 4) : Route :=
+  [(120, 120), PairedPorts.spokeElbow s, PairedPorts.boundaryPort s (PairedPorts.spokeLane s),
+    cellOrigin 120 (PairedPorts.neighbor s) +
+      PairedPorts.variablePosition (PairedPorts.oppositeSide s) (PairedPorts.spokeLane s)]
+
+/-- Actual final literal routes are translations of `finalLocalRoute`. -/
+theorem finalRoute_eq_translate (sites : List Point) {p q : Point}
+    (h : Orthogonal.length p q = 1) :
+    [center q, cellOrigin 120 q + PairedPorts.spokeElbow (side q p),
+      boundary q (side q p) (PairedPorts.spokeLane (side q p)),
+      variablePosition (signal sites p q (PairedPorts.spokeLane (side q p)))] =
+      translate (cellOrigin 120 q) (finalLocalRoute (side q p)) := by
+  rw [signal_position]
+  have hrev : Orthogonal.length q p = 1 := by
+    simp only [Orthogonal.length] at h ⊢
+    omega
+  rcases q with ⟨x, y⟩
+  rcases PlanarCompile.unit_neighbor_cases hrev with rfl | rfl | rfl | rfl <;>
+    simp [translate, finalLocalRoute, side, PlanarCompile.side, center, PlanarCompile.center,
+      boundary, cellOrigin, PairedPorts.neighbor, PairedPorts.oppositeSide,
+      PairedPorts.variablePosition, PairedPorts.boundaryPort, PairedPorts.spokeLane,
+      PairedPorts.spokeElbow, PairedPorts.offset, Prod.ext_iff] <;> omega
+
 end Cslib.Complexity.SAT.ParsimoniousPlanar

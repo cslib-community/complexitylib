@@ -17,6 +17,7 @@ import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.BitString.InitialTests
 import Complexity.Foundations.Data.BitString.Parity.DotProduct
 import Complexity.Foundations.Data.List.OfFn
+import Complexity.Foundations.Data.Nat.CeilDiv
 import Complexity.Probability.SmallBias.Random
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -64,10 +65,6 @@ open Finset Cslib.BitString Cslib.GenericRAM Cslib.Probability.PMF Turing.MultiT
 
 /-! ### Lemma 6.1 integer parameter schedule -/
 private abbrev mu (m : ℕ) : ℕ := Nat.log 2 m + 1
-private theorem le_ceilDiv_mul {a b : ℕ} (ha : 1 ≤ a) (hb : 0 < b) : a ≤ (a + b - 1) / b * b := by
-  have := Nat.div_add_mod (a + b - 1) b; have := Nat.mod_lt (a + b - 1) hb
-  have : a + b - 1 + 1 = a + b := by omega
-  nlinarith
 
 /-- Cayley degree `d_G = min(m, D₀)` (`D₀ = initialRowWeightBound B m`) of [OpenAI2026ETH],
 Lemma 6.1. -/
@@ -90,9 +87,11 @@ theorem dG_pos {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : 0 < dG m B := by
   unfold dG initialRowWeightBound
   have : 0 < 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3 := by positivity
   omega
-theorem le_qG_mul_dG {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : m ≤ qG m B * dG m B :=
-  (le_ceilDiv_mul hm (dG_pos hm hB)).trans
-    (Nat.mul_le_mul_right _ (Nat.le_pow_clog (by decide : 1 < 2) _))
+theorem le_qG_mul_dG {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : m ≤ qG m B * dG m B := by
+  have hd := dG_pos hm hB
+  exact (Nat.le_ceilDiv_mul hd).trans (by
+    rw [Nat.ceilDiv_eq_add_pred_div]
+    exact Nat.mul_le_mul_right _ (Nat.le_pow_clog (by decide : 1 < 2) _))
 theorem qG_mul_dG_lt_two_mul {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) : qG m B * dG m B < 2 * m := by
   have hd := dG_pos hm hB; set k := (m + dG m B - 1) / dG m B
   rcases le_or_gt k 1 with hk | hk
@@ -156,8 +155,9 @@ private theorem hDist_succ_eq {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) :
   have := (Nat.le_div_iff_mul_le hM).2 hle; unfold hDist; dsimp only [mu] at *; omega
 theorem dG_le_hDist_succ_mul {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤ B) :
     dG m B ≤ (hDist m B + 1) * (100 * B * (Nat.log 2 m + 1)) := by
-  change dG m B ≤ (hDist m B + 1) * (100 * B * mu m); rw [hDist_succ_eq hm hB]
-  exact le_ceilDiv_mul (dG_pos hm hB) (by positivity)
+  change dG m B ≤ (hDist m B + 1) * (100 * B * mu m)
+  rw [hDist_succ_eq hm hB, ← Nat.ceilDiv_eq_add_pred_div]
+  exact Nat.le_ceilDiv_mul (by positivity)
 
 private abbrev encMB : ℕ × ℕ ↪ List Bool := encPair encUnary encUnary
 section
@@ -1070,7 +1070,9 @@ private theorem exists_localMatrix_params {m B : ℕ} (hm : 1 ≤ m) (hB : 1 ≤
   have hd_lt : dG m B < 2 ^ mu m :=
     (Nat.min_le_left _ _).trans_lt (Nat.lt_pow_succ_log_self (by decide : 1 < 2) m)
   have hmu_h : mu m * hDist m B < cG m B := by
-    have hc_ge : dG m B ≤ cG m B * (8 * B) := le_ceilDiv_mul (dG_pos hm hB) (by omega)
+    have hc_ge : dG m B ≤ cG m B * (8 * B) := by
+      rw [cG, ← Nat.ceilDiv_eq_add_pred_div]
+      exact Nat.le_ceilDiv_mul (by omega)
     have hle := Nat.mul_div_le (dG m B + 100 * B * mu m - 1) (100 * B * mu m)
     rw [← hDist_succ_eq hm hB] at hle; have := dG_pos hm hB
     have : dG m B + 100 * B * mu m - 1 + 1 = dG m B + 100 * B * mu m := by omega

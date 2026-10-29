@@ -84,31 +84,6 @@ variable {V : Type*} [DecidableEq V] {θ : ℕ → ℕ}
 
 /-! ### Clause-set properties of `countingChild` -/
 
-/-- The flower `flower ψ c H` is disjoint from both counting children `countingChild ψ c H b`:
-on `false` every flower clause strictly contains `H`, and on `true` every flower clause `C`
-strictly contains its petal `C \ H`. -/
-theorem disjoint_flower_countingChild {ψ : ClauseSet V} {c : ℕ} {H : Finset (Literal V)}
-    (h : Heavy θ ψ c H) (b : Bool) :
-    Disjoint (flower ψ c H) (countingChild ψ c H b) := by
-  rw [Finset.disjoint_left]
-  intro C hC hCchild
-  obtain ⟨-, hcard, hH⟩ := mem_flower.mp hC
-  cases b with
-  | false =>
-    have hmin := (mem_reduce.mp hCchild).2
-    refine hmin H (mem_union_right _ (by simp [intro])) (ssubset_of_subset_of_ne hH ?_)
-    intro heq
-    have := h.2.1
-    rw [heq, hcard] at this
-    exact lt_irrefl _ this
-  | true =>
-    have hmin := (mem_reduce.mp hCchild).2
-    refine hmin (C \ H)
-      (mem_union_left _ (mem_union_right _ (mem_petals.mpr ⟨C, hC, rfl⟩)))
-      (sdiff_ssubset hH ?_)
-    rw [← card_pos]
-    exact h.1
-
 /-- Every clause of `countingChild ψ c H true` belongs to `(ψ \ flower ψ c H) ∪ petals ψ c H ∪
 negatedHeartUnits H`. -/
 private theorem countingChild_true_subset {ψ : ClauseSet V} {c : ℕ} {H : Finset (Literal V)}
@@ -118,7 +93,7 @@ private theorem countingChild_true_subset {ψ : ClauseSet V} {c : ℕ} {H : Fins
   rcases mem_union.mp (reduce_subset _ hC) with hC' | hCu
   · rcases mem_union.mp hC' with hCψ | hCp
     · refine mem_union_left _ (mem_union_left _ (mem_sdiff.mpr ⟨hCψ, fun hF => ?_⟩))
-      exact disjoint_left.mp (disjoint_flower_countingChild h true) hF hC
+      exact disjoint_left.mp (disjoint_flower_countingChild ψ h.1 h.2.1 true) hF hC
     · exact mem_union_left _ (mem_union_right _ hCp)
   · exact mem_union_right _ hCu
 
@@ -129,23 +104,8 @@ private theorem countingChild_false_subset {ψ : ClauseSet V} {c : ℕ} {H : Fin
   intro C hC
   rcases mem_union.mp (reduce_subset _ hC) with hCψ | hCH
   · refine mem_union_left _ (mem_sdiff.mpr ⟨hCψ, fun hF => ?_⟩)
-    exact disjoint_left.mp (disjoint_flower_countingChild h false) hF hC
+    exact disjoint_left.mp (disjoint_flower_countingChild ψ h.1 h.2.1 false) hF hC
   · exact mem_union_right _ hCH
-
-/-- Counting children keep the clause width `≤ k` when `1 ≤ k`. -/
-theorem card_le_of_mem_countingChild (hθ : ∀ j, 1 ≤ θ j) {ψ : ClauseSet V} {c k : ℕ}
-    (hk1 : 1 ≤ k) {H : Finset (Literal V)} (h : Heavy θ ψ c H) (hk : ∀ C ∈ ψ, C.card ≤ k)
-    {b : Bool} {C : Finset (Literal V)} (hC : C ∈ countingChild ψ c H b) : C.card ≤ k := by
-  cases b with
-  | false => exact card_le_of_mem_child hθ h hk hC
-  | true =>
-    rcases mem_union.mp (countingChild_true_subset h hC) with hC' | hCu
-    · rcases mem_union.mp hC' with hCψ | hCp
-      · exact hk C (mem_sdiff.mp hCψ).1
-      · obtain ⟨D, hD, rfl⟩ := mem_petals.mp hCp
-        exact (card_le_card sdiff_subset).trans (hk D (flower_subset ψ c H hD))
-    · rw [card_of_mem_negatedHeartUnits hCu]
-      exact hk1
 
 /-- Each counting child increases the number of clauses by at most `k`: the flower `F` is removed
 from `ψ` while at most `|F| + |H| ≤ |F| + k` clauses are added. -/
@@ -277,7 +237,7 @@ theorem exists_isLeafWord (hθ : ∀ j, 1 ≤ j → 2 ≤ θ j) (s : σ) :
       exact ⟨false :: w, hs, hw⟩
 
 /-- Node words preserve clause width `≤ k` when `1 ≤ k`. -/
-theorem IsNodeWord.card_le_of_mem_walk (hθ : ∀ j, 1 ≤ θ j) {k : ℕ} (hk1 : 1 ≤ k) {s : σ}
+theorem IsNodeWord.card_le_of_mem_walk (hθ : ∀ j, 1 ≤ θ j) {k : ℕ} (_hk1 : 1 ≤ k) {s : σ}
     (hk : ∀ C ∈ R.toClauseSet s, C.card ≤ k) {w : List Bool} (hw : R.IsNodeWord s w) :
     ∀ C ∈ R.toClauseSet (R.walk s w), C.card ≤ k := by
   induction w generalizing s with
@@ -286,11 +246,11 @@ theorem IsNodeWord.card_le_of_mem_walk (hθ : ∀ j, 1 ≤ θ j) {k : ℕ} (hk1 
     obtain ⟨c, H, hch, hnext⟩ := R.exists_choice_next s hw.1
     refine ih (fun C hC => ?_) hw.2
     rw [hnext b] at hC
-    exact card_le_of_mem_countingChild hθ hk1 hch.1 hk hC
+    exact card_le_of_mem_countingChild hch.1.1 hch.1.2.1 (hch.1.flower_nonempty hθ) hk hC
 
 /-- Along a node word `w` from a state of width `≤ k` (`1 ≤ k`), the number of clauses increases by
 at most `k * w.length`. -/
-theorem IsNodeWord.card_walk_le (hθ : ∀ j, 1 ≤ θ j) {k : ℕ} (hk1 : 1 ≤ k) {s : σ}
+theorem IsNodeWord.card_walk_le (hθ : ∀ j, 1 ≤ θ j) {k : ℕ} (_hk1 : 1 ≤ k) {s : σ}
     (hk : ∀ C ∈ R.toClauseSet s, C.card ≤ k) {w : List Bool} (hw : R.IsNodeWord s w) :
     (R.toClauseSet (R.walk s w)).card ≤ (R.toClauseSet s).card + k * w.length := by
   induction w generalizing s with
@@ -300,7 +260,7 @@ theorem IsNodeWord.card_walk_le (hθ : ∀ j, 1 ≤ θ j) {k : ℕ} (hk1 : 1 ≤
     have hk_next : ∀ C ∈ R.toClauseSet (R.next s b), C.card ≤ k := by
       intro C hC
       rw [hnext b] at hC
-      exact card_le_of_mem_countingChild hθ hk1 hch.1 hk hC
+      exact card_le_of_mem_countingChild hch.1.1 hch.1.2.1 (hch.1.flower_nonempty hθ) hk hC
     have hcard_next : (R.toClauseSet (R.next s b)).card ≤ (R.toClauseSet s).card + k := by
       rw [hnext b]
       exact card_countingChild_le hθ hch.1 hk b

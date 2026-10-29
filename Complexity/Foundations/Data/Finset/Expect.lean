@@ -68,7 +68,9 @@ random tuple leaves its average unchanged (`Fintype.expect_expect_update`).
 * `Fintype.expect_boole`, `Fintype.expect_boole_sq`, `Fintype.expect_boole_mem`,
   `Fintype.expect_boole_mem_sq`: the average of an indicator (or its square) is a density.
 * `Fintype.mul_dens_filter_le_expect`: Markov's inequality for a uniform average.
-* `Fintype.sq_expect_le_dens_mul_expect_sq`: the second moment method for a uniform average.
+* `Fintype.sq_expect_le_dens_mul_expect_sq`,
+  `Fintype.sq_expect_le_dens_mul_expect_sq_of_eq_zero`: the second moment method for a uniform
+  average.
 * `Fintype.expect_add_sq_le`, `Fintype.expect_sq_le_of_expect_mul_le`: second-moment bounds from
   triangle and Cauchy–Schwarz inequalities.
 -/
@@ -295,6 +297,19 @@ theorem sq_expect_le_dens_mul_expect_sq [Semifield 𝕜] [LinearOrder 𝕜] [IsS
   have h₁ : 𝔼 i, (if f i ≠ 0 then (1 : 𝕜) else 0) * f i = 𝔼 i, f i :=
     expect_congr rfl fun i _ ↦ by split_ifs <;> simp_all
   rwa [h₁, expect_boole_sq] at h
+
+/-- By the second moment method (`Fintype.sq_expect_le_dens_mul_expect_sq`), the squared average
+of a function vanishing outside `C` is at most the density of `C` times its second moment. -/
+theorem sq_expect_le_dens_mul_expect_sq_of_eq_zero [Semifield 𝕜] [LinearOrder 𝕜]
+    [IsStrictOrderedRing 𝕜] [ExistsAddOfLE 𝕜] {C : Finset ι} {f : ι → 𝕜}
+    (hf : ∀ i ∉ C, f i = 0) :
+    (𝔼 i, f i) ^ 2 ≤ (dens C : 𝕜) * 𝔼 i, f i ^ 2 := by
+  classical
+  refine (sq_expect_le_dens_mul_expect_sq f).trans ?_
+  have hsub : ({i : ι | f i ≠ 0} : Finset ι) ⊆ C := fun i hi =>
+    by_contra fun hiC => (mem_filter.mp hi).2 (hf i hiC)
+  exact mul_le_mul_of_nonneg_right (by exact_mod_cast dens_le_dens hsub)
+    (expect_nonneg fun _ _ => sq_nonneg _)
 
 section LinearOrderedField
 

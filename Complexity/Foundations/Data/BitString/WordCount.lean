@@ -10,6 +10,7 @@ module
 public import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.ZMod.Basic
 public import Mathlib.Order.PiLex
@@ -59,7 +60,8 @@ represent sets of words.
 * `Cslib.BitString.two_pow_mul_card_filter_card_filter_block_le`: majority votes of `12 e` blocks
   err on at most a `2 ^ (-e)` fraction.
 * `Cslib.BitString.card_filter_listRows_all`: counting words by a condition on each row.
-* `Cslib.BitString.card_filter_not_any`, `Cslib.BitString.card_filter_all`: the constant words.
+* `Cslib.BitString.not_any_ofFn_eq_true_iff`, `Cslib.BitString.card_filter_not_any`,
+  `Cslib.BitString.card_filter_all`: the constant words.
 * `Cslib.BitString.ofFn_decide_lt`: the unary word of `k` bits `true` among `K`.
 * `Cslib.BitString.wordLt_ofFn_iff`: `wordLt` is the lexicographic order.
 * `Cslib.BitString.odd_prod_iff`, `Cslib.BitString.odd_one_add_prod_one_add`: parity of products
@@ -188,15 +190,19 @@ theorem card_filter_ofFn_succ (n : ℕ) (g : List Bool → Prop) [DecidablePred 
   rw [hmap, card_filter, Fintype.sum_prod_type, Fintype.sum_bool]
   simp only [card_filter]
 
+/-- A bit string `w` has no `true` bits in `List.ofFn w` if and only if `w = 0`. -/
+theorem not_any_ofFn_eq_true_iff {n : ℕ} (w : Fin n → Bool) :
+    (!(List.ofFn w).any fun b => b) = true ↔ w = 0 := by
+  simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, List.mem_ofFn,
+    forall_exists_index, forall_apply_eq_imp_iff, Bool.not_eq_true]
+  exact ⟨fun h => funext h, fun h i => congrFun h i⟩
+
 /-- Only the word of `false`s has no bit `true`. -/
 theorem card_filter_not_any (n : ℕ) :
     (univ.filter fun w : Fin n → Bool => (!(List.ofFn w).any fun b => b) = true).card = 1 := by
   rw [card_eq_one]
-  refine ⟨fun _ => false, ext fun w => ?_⟩
-  simp only [mem_filter, mem_univ, true_and, Bool.not_eq_eq_eq_not, Bool.not_true,
-    List.any_eq_false, List.mem_ofFn, forall_exists_index, forall_apply_eq_imp_iff,
-    mem_singleton, Bool.not_eq_true]
-  exact ⟨fun h => funext h, fun h i => by rw [h]⟩
+  refine ⟨0, ext fun w => ?_⟩
+  simp only [mem_filter, mem_univ, true_and, not_any_ofFn_eq_true_iff, mem_singleton]
 
 /-- Only the word of `true`s has all bits `true`. -/
 theorem card_filter_all (n : ℕ) :

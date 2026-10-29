@@ -35,13 +35,6 @@ namespace Turing.MultiTapeTM.ComputableInO
 variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}
   {encOut : γ ↪ List Bool}
 
-/-- Absorb an additive constant into the factor of `n + 1`. -/
-private theorem le_mul_succ {u A B C n : ℕ} (h : u ≤ A * (n + 1) + B) (hC : A + B ≤ C) :
-    u ≤ C * (n + 1) := by
-  have hB : B ≤ B * (n + 1) := Nat.le_mul_of_pos_right B (Nat.succ_pos n)
-  have : A * (n + 1) + B ≤ (A + B) * (n + 1) := by rw [Nat.add_mul]; omega
-  exact h.trans (this.trans (Nat.mul_le_mul_right _ hC))
-
 /-- **Composition** within time `O(T₁ a + T₂ (g a))` and space `O(S₁ a + S₂ (g a))`, through the
 machine-level composition of tidy machines. -/
 theorem comp {f : β → γ} {g : α → β} {T₁ S₁ : α → ℕ} {T₂ S₂ : β → ℕ}
@@ -59,7 +52,8 @@ theorem comp {f : β → γ} {g : α → β} {T₁ S₁ : α → ℕ} {T₂ S₂
     have e : (6 * c₁ + c₂) * (T₁ a + T₂ (g a) + 1) =
         6 * (c₁ * (T₁ a + T₂ (g a) + 1)) + c₂ * (T₁ a + T₂ (g a) + 1) := by ring
     beta_reduce
-    exact le_mul_succ (A := 6 * c₁ + c₂) (B := 6 * max k₁ k₂ + 20) (by omega) le_rfl
+    exact Internal.NormalForm.le_mul_succ (A := 6 * c₁ + c₂) (B := 6 * max k₁ k₂ + 20) (by omega)
+      le_rfl
   · -- the intermediate word is within the space bound of `g`
     have hm := l₁ a
     have := Nat.mul_le_mul_left c₁ (by omega : S₁ a + 1 ≤ S₁ a + S₂ (g a) + 1)
@@ -67,7 +61,8 @@ theorem comp {f : β → γ} {g : α → β} {T₁ S₁ : α → ℕ} {T₂ S₂
     have e : (6 * c₁ + c₂) * (S₁ a + S₂ (g a) + 1) =
         6 * (c₁ * (S₁ a + S₂ (g a) + 1)) + c₂ * (S₁ a + S₂ (g a) + 1) := by ring
     beta_reduce
-    exact le_mul_succ (A := 6 * c₁ + c₂) (B := 6 * max k₁ k₂ + 20) (by omega) le_rfl
+    exact Internal.NormalForm.le_mul_succ (A := 6 * c₁ + c₂) (B := 6 * max k₁ k₂ + 20) (by omega)
+      le_rfl
   · have := Nat.mul_le_mul_left c₂ (by omega : S₂ (g a) + 1 ≤ S₁ a + S₂ (g a) + 1)
     exact (l₂ (g a)).trans (this.trans (Nat.mul_le_mul_right _ (by omega)))
 
@@ -94,7 +89,7 @@ theorem ite {encC : Bool ↪ List Bool} {c : α → Bool} {f g : α → β}
     have := Nat.mul_le_mul_left c₀ (by omega : X + 1 ≤ X + Y + 1)
     have := Nat.mul_le_mul_left c' (by omega : Y + 1 ≤ X + Y + 1)
     have e : (c₀ + c') * (X + Y + 1) = c₀ * (X + Y + 1) + c' * (X + Y + 1) := by ring
-    exact le_mul_succ (A := c₀ + c') (B := d') (by omega) (by omega)
+    exact Internal.NormalForm.le_mul_succ (A := c₀ + c') (B := d') (by omega) (by omega)
   refine ⟨c₀ + c₁ + c₂ + k, ⟨K, Q, inferInstance, tm,
     fun x => ((h x).mono ?_ ?_).computesInTimeAndSpace⟩, fun x => ?_⟩
   · beta_reduce

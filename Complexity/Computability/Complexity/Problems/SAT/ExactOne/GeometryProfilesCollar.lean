@@ -345,4 +345,16 @@ theorem profileCollarRoute_outer_boundary_contact (p : ClauseProfile)
       (collarRoute_in_innerBox _ (profile_prefix_incidence_bounds p h he) hz)
     exact False.elim (List.not_mem_nil hq)
 
+/-- If every point of a route lies in the `180000`-by-`180000` inner square, then every point of
+its collared route lies in the `540000`-by-`540000` outer square. -/
+theorem collarRoute_points_bounds (reflected : Bool) {r : Route}
+    (hr : ∀ q ∈ r, 0 ≤ q.1 ∧ q.1 ≤ 180000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 180000) :
+    ∀ q ∈ collarRoute reflected r,
+      0 ≤ q.1 ∧ q.1 ≤ 540000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 540000 := by
+  intro q hq
+  rw [collarRoute_eq_map] at hq
+  obtain ⟨a, ha, rfl⟩ := List.mem_map.mp hq
+  have hb := hr a ha
+  cases reflected <;> dsimp [collarPoint, collarOffset, mirrorPoint] <;> omega
+
 end Cslib.Complexity.SAT.ExactOne

@@ -122,15 +122,6 @@ theorem access_disjoint {p q : Port} (h : p ≠ q) :
     Disjoint (support (accessRoute p.1 p.2)) (support (accessRoute q.1 q.2)) :=
   disjoint_support_of_routeContactCheck (access_disjoint_check p q h)
 
-private theorem mem_support_pair {a b : Point} {p : ℝ × ℝ} :
-    p ∈ support [a, b] ↔ p ∈ segment a b := by
-  rw [support_cons_cons]
-  change (p ∈ segment a b ∨ p ∈ support [b]) ↔ _
-  have hright : realPoint b ∈ segment a b := _root_.right_mem_segment ℝ _ _
-  have hs : p ∈ support [b] ↔ p = realPoint b := by simp [support, List.consecutivePairs]
-  rw [hs]
-  exact ⟨fun h => h.elim id (fun h => h ▸ hright), Or.inl⟩
-
 /-- An access stays in the cell and touches its boundary only at the designated port. -/
 theorem access_boundary_isolation {s : Fin 4} {l : Fin 2} {p : ℝ × ℝ}
     (hp : p ∈ support (accessRoute s l)) :
