@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Output
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
 
 /-!
 # Native parsimonious guess-and-verify machines
@@ -158,7 +159,7 @@ theorem exists_framedGuess_machine (enc : α ↪ List Bool) (p : Polynomial ℕ)
 occurrences; all branches halt at one polynomial clock in the original encoded input length. -/
 theorem exists_verifier_machine (enc : α ↪ List Bool) (p : Polynomial ℕ)
     (verifier : α × List Bool → Bool)
-    (hverify : ComputableTidilyInPolyTime verifier (encPair enc encBits) encBool) :
+    (hverify : ComputableInPolyTime verifier (encPair enc encBits) encBool) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeCTM k Bool State)
       (clock : Polynomial ℕ), machine.Nonblocking ∧ ∀ a,
         machine.HaltsWithin (clock.eval (enc a).length) (machine.initialConfig (enc a)).tapes ∧
@@ -167,8 +168,8 @@ theorem exists_verifier_machine (enc : α ↪ List Bool) (p : Polynomial ℕ)
           ((BitString.enumList (p.eval (enc a).length)).map
             (fun word => encBool (verifier (a, word)))) := by
   obtain ⟨ks, State, hfinite, source, sourceClock, hnon, hs⟩ := exists_framedGuess_machine enc p
-  obtain ⟨t, s, ht, _, kv, VerifyState, hfinite', nativeVerifier, hv⟩ := hverify
-  obtain ⟨c, d, ht⟩ := ht.exists_le
+  obtain ⟨c, d, kv, VerifyState, hfinite', nativeVerifier, hv⟩ :=
+    Internal.NormalForm.polyTime hverify
   let consumer := ofDeterministic nativeVerifier
   let compiled := consumer.comp source true
   let verifyClock : Polynomial ℕ := C c * (2 * X + 1 + p + 1) ^ d
@@ -180,9 +181,11 @@ theorem exists_verifier_machine (enc : α ↪ List Bool) (p : Polynomial ℕ)
         (verifyClock.eval (enc a).length) =
       wordsCfg (encPair enc encBits (a, word)) none (fun _ => [])
         (encBool (verifier (a, word))) := by
-    have htime : t (a, word) ≤ verifyClock.eval (enc a).length := by
-      simpa only [verifyClock, eval_mul, eval_C, eval_pow, eval_add, eval_X, eval_one,
-        eval_ofNat, length_encPair, encBits_apply, hword] using ht (a, word)
+    have htime : c * ((encPair enc encBits (a, word)).length + 1) ^ d ≤
+        verifyClock.eval (enc a).length := by
+      simp only [verifyClock, eval_mul, eval_C, eval_pow, eval_add, eval_X, eval_one,
+        eval_ofNat, length_encPair, encBits_apply, hword]
+      exact le_rfl
     exact ((hv (a, word)).mono htime le_rfl).runFrom_initCfg_eq
   have hsecond : ∀ result ∈ source.runList (sourceClock.eval (enc a).length)
       (source.initialConfig (enc a)).tapes,

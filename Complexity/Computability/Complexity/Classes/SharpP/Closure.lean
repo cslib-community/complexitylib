@@ -251,7 +251,7 @@ theorem SharpP.comp_mem {β : Type} {encB : β ↪ List Bool} {f : β → ℕ} {
   obtain ⟨q, W, hW, hWB⟩ := mem_SharpP.mp hf
   have h := mem_SharpP_of_polyTime_length
     (V := fun x => W (g x.1, x.2))
-    (r := fun a => q.eval (encB (g a)).length) ((by fun_prop)) ((by fun_prop))
+    (r := fun a => q.eval (encB (g a)).length) (by fun_prop) (by fun_prop)
   change (fun a => acceptCount W (g a) (q.eval (encB (g a)).length)) ∈ SharpP enc at h
   simpa only [← hWB, Function.comp_def] using h
 

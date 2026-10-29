@@ -30,56 +30,50 @@ open scoped ENNReal
 instance : Fact (Nat.Prime 3) := ⟨by decide⟩
 
 /-- The affine maps `ZMod 3 → ZMod 3` are `1 / 3`-universal, two-universal, and
-`1 / 3`-Δ-universal. -/
-example : IsUniversalHash
-    (PMF.uniformOfFintype (Matrix (Fin 1) (Fin 1) (ZMod 3) × (Fin 1 → ZMod 3))) affineHash
-    (Fintype.card (Fin 1 → ZMod 3) : ℝ≥0∞)⁻¹ :=
-  isPairwiseIndependentHash_affineHash.isUniversalHash
+`1 / 3`-Δ-universal; Boolean `2 × 3` matrices are `1 / 4`-XOR-universal and `1 / 4`-universal;
+and subset sums with weights in `ZMod 5` are `1 / 5`-Δ-universal on binary words of length `2`. -/
+example :
+    IsUniversalHash
+      (PMF.uniformOfFintype (Matrix (Fin 1) (Fin 1) (ZMod 3) × (Fin 1 → ZMod 3))) affineHash
+      (Fintype.card (Fin 1 → ZMod 3) : ℝ≥0∞)⁻¹ ∧
+    IsTwoUniversal
+      (PMF.uniformOfFintype (Matrix (Fin 1) (Fin 1) (ZMod 3) × (Fin 1 → ZMod 3))) affineHash ∧
+    IsDeltaUniversalHash
+      (PMF.uniformOfFintype (Matrix (Fin 1) (Fin 1) (ZMod 3) × (Fin 1 → ZMod 3)))
+      affineHash (Fintype.card (Fin 1 → ZMod 3) : ℝ≥0∞)⁻¹ ∧
+    IsDeltaUniversalHash (PMF.uniformOfFintype (Fin 2 → BitString 3))
+      BitString.LinearHash.hash (4 : ℝ≥0∞)⁻¹ ∧
+    IsUniversalHash (PMF.uniformOfFintype (Fin 2 → BitString 3)) BitString.LinearHash.hash
+      (4 : ℝ≥0∞)⁻¹ ∧
+    IsDeltaUniversalHash (PMF.uniformOfFintype (Fin 2 → ZMod 5))
+      (BitString.SubsetSum.hash (ι := Fin 2)) (5 : ℝ≥0∞)⁻¹ := by
+  refine ⟨isPairwiseIndependentHash_affineHash.isUniversalHash,
+    isPairwiseIndependentHash_affineHash.isTwoUniversal,
+    isPairwiseIndependentHash_affineHash.isDeltaUniversalHash,
+    ?_, ?_, ?_⟩
+  · simpa using BitString.LinearHash.isDeltaUniversalHash 3 2
+  · simpa using (BitString.LinearHash.isDeltaUniversalHash 3 2).isUniversalHash
+  · simpa using BitString.SubsetSum.isDeltaUniversalHash (ι := Fin 2) (G := ZMod 5)
 
-example : IsTwoUniversal
-    (PMF.uniformOfFintype (Matrix (Fin 1) (Fin 1) (ZMod 3) × (Fin 1 → ZMod 3))) affineHash :=
-  isPairwiseIndependentHash_affineHash.isTwoUniversal
-
-example : IsDeltaUniversalHash
-    (PMF.uniformOfFintype (Matrix (Fin 1) (Fin 1) (ZMod 3) × (Fin 1 → ZMod 3)))
-    affineHash (Fintype.card (Fin 1 → ZMod 3) : ℝ≥0∞)⁻¹ :=
-  isPairwiseIndependentHash_affineHash.isDeltaUniversalHash
-
-/-- Boolean `2 × 3` matrices are `1 / 4`-XOR-universal, hence `1 / 4`-universal. -/
-example : IsDeltaUniversalHash (PMF.uniformOfFintype (Fin 2 → BitString 3))
-    BitString.LinearHash.hash (4 : ℝ≥0∞)⁻¹ := by
-  simpa using BitString.LinearHash.isDeltaUniversalHash 3 2
-
-example : IsUniversalHash (PMF.uniformOfFintype (Fin 2 → BitString 3)) BitString.LinearHash.hash
-    (4 : ℝ≥0∞)⁻¹ := by
-  simpa using (BitString.LinearHash.isDeltaUniversalHash 3 2).isUniversalHash
-
-/-- Subset sums with weights in `ZMod 5` are `1 / 5`-Δ-universal on binary words of length `2`. -/
-example : IsDeltaUniversalHash (PMF.uniformOfFintype (Fin 2 → ZMod 5))
-    (BitString.SubsetSum.hash (ι := Fin 2)) (5 : ℝ≥0∞)⁻¹ := by
-  simpa using BitString.SubsetSum.isDeltaUniversalHash (ι := Fin 2) (G := ZMod 5)
-
-/-- A constant family always collides, so it is not universal for any bound below `1`. -/
-example : ¬IsUniversalHash (PMF.uniformOfFintype Bool) (fun _ (_ : Bool) => (0 : ZMod 2))
-    (1 / 2) := fun h => by
-  have h := h false true (by decide)
-  rw [PMF.toOuterMeasure_uniformOfFintype] at h
-  have h' := ENNReal.toReal_mono (by norm_num) h
-  norm_num at h'
-
-/-- Selecting one of two input bits with a uniform key collides on `(0, 0)` and `(1, 0)` with
-probability exactly `1 / 2`, so the family is `1 / 2`-universal and nothing smaller. -/
-example : (PMF.uniformOfFintype Bool).toOuterMeasure
-    {key | (if key then (false, false).1 else (false, false).2) =
-      (if key then (true, false).1 else (true, false).2)} = 2⁻¹ := by
-  rw [PMF.toOuterMeasure_uniformOfFintype]
-  simp [Finset.filter_insert, Finset.filter_singleton]
-
-example : IsUniversalHash (PMF.uniformOfFintype Bool)
-    (fun key (input : Bool × Bool) => if key then input.1 else input.2)
-    (Fintype.card Bool : ℝ≥0∞)⁻¹ :=
-  isTwoUniversal_iff_sum_ite_le.mpr <| by
-    rintro ⟨a, b⟩ ⟨c, d⟩ hne
+/-- A constant family always collides, so it is not universal for any bound below `1`;
+selecting one of two input bits with a uniform key collides on `(0, 0)` and `(1, 0)` with
+probability `1 / 2` and is `1 / 2`-universal. -/
+example :
+    ¬IsUniversalHash (PMF.uniformOfFintype Bool) (fun _ (_ : Bool) => (0 : ZMod 2)) (1 / 2) ∧
+    (PMF.uniformOfFintype Bool).toOuterMeasure
+      {key | (if key then (false, false).1 else (false, false).2) =
+        (if key then (true, false).1 else (true, false).2)} = 2⁻¹ ∧
+    IsUniversalHash (PMF.uniformOfFintype Bool)
+      (fun key (input : Bool × Bool) => if key then input.1 else input.2)
+      (Fintype.card Bool : ℝ≥0∞)⁻¹ := by
+  refine ⟨fun h => ?_, ?_, isTwoUniversal_iff_sum_ite_le.mpr <| ?_⟩
+  · have h := h false true (by decide)
+    rw [PMF.toOuterMeasure_uniformOfFintype] at h
+    have h' := ENNReal.toReal_mono (by norm_num) h
+    norm_num at h'
+  · rw [PMF.toOuterMeasure_uniformOfFintype]
+    simp [Finset.filter_insert, Finset.filter_singleton]
+  · rintro ⟨a, b⟩ ⟨c, d⟩ hne
     cases a <;> cases b <;> cases c <;> cases d <;>
       norm_num [Fintype.sum_bool, PMF.uniformOfFintype_apply] at *
 
@@ -87,46 +81,44 @@ example : IsUniversalHash (PMF.uniformOfFintype Bool)
 
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
-/-- `Hpoly` of `(1, 2)` at the key `3` is `3 ^ 2 + 1 · 3 + 2 = 14 = 4`, and `Hxpoly` is
-`3 · 4 = 2`. -/
-example : polyHash (3 : ZMod 5) [1, 2] = 4 := by decide
-example : xpolyHash (3 : ZMod 5) [1, 2] = 2 := by decide
+/-- `Hpoly` of `(1, 2)` at key `3` is `4`, `Hxpoly` is `2`, and `()` and `(0)` collide at key `1`
+but not at key `2`. -/
+example :
+    -- At key 3, Hpoly is 3² + 3 + 2 = 14 = 4 modulo 5; Hxpoly is 3 · 4 = 2.
+    polyHash (3 : ZMod 5) [1, 2] = 4 ∧
+    xpolyHash (3 : ZMod 5) [1, 2] = 2 ∧
+    -- The key power separates [] and [0] at key 2; at key 1, 1 = 1 + 0.
+    polyHash (1 : ZMod 5) [] = polyHash 1 [0] ∧
+    polyHash (2 : ZMod 5) [] ≠ polyHash 2 [0] := by decide
 
-/-- The messages `()` and `(0)` collide exactly at the key `1`, where `1 = 1 + 0`: the leading
-power of the key separates messages of different lengths elsewhere. -/
-example : polyHash (1 : ZMod 5) [] = polyHash 1 [0] := by decide
-example : polyHash (2 : ZMod 5) [] ≠ polyHash 2 [0] := by decide
-
-/-- Messages of length at most `2` collide with probability at most `2 / 5`. -/
-example : IsUniversalHash (PMF.uniformOfFintype (ZMod 5))
-    (fun k (m : {m : List (ZMod 5) // m.length ≤ 2}) => polyHash k m) (2 / 5) := by
-  simpa using isUniversalHash_polyHash (F := ZMod 5) 2
-
-example : IsDeltaUniversalHash (PMF.uniformOfFintype (ZMod 5))
-    (fun k (m : {m : List (ZMod 5) // m.length ≤ 2}) => xpolyHash k m) (3 / 5) := by
+/-- Messages of length at most `2` collide with probability at most `2 / 5` under `polyHash`,
+and `xpolyHash` is `3 / 5`-Δ-universal. -/
+example :
+    IsUniversalHash (PMF.uniformOfFintype (ZMod 5))
+      (fun k (m : {m : List (ZMod 5) // m.length ≤ 2}) => polyHash k m) (2 / 5) ∧
+    IsDeltaUniversalHash (PMF.uniformOfFintype (ZMod 5))
+      (fun k (m : {m : List (ZMod 5) // m.length ≤ 2}) => xpolyHash k m) (3 / 5) := by
+  refine ⟨by simpa using isUniversalHash_polyHash (F := ZMod 5) 2, ?_⟩
   have h := isDeltaUniversalHash_xpolyHash (F := ZMod 5) 2
   norm_num at h
   exact h
 
 /-! ### Multiply-shift on `4`-bit words -/
 
-/-- With the multiplier `2 · 3 + 1 = 7`, the inputs `3` and `1` have products `21 = 5 (mod 16)`
-and `7`, whose top two bits are both `01`; with the multiplier `3`, the products `9` and `3`
-differ in them. -/
-example : multiplyShift 4 2 3 3 = 1 ∧ multiplyShift 4 2 3 1 = 1 := by decide
-example : multiplyShift 4 2 1 3 = 2 ∧ multiplyShift 4 2 1 1 = 0 := by decide
-
-/-- Half of the eight multipliers make `3` and `1` collide in the top two bits: the bound
-`2 ^ (4 - 2) = 4`, a probability of `2 / 2 ^ 2`, is attained. -/
-example : (Finset.univ.filter fun b => multiplyShift 4 2 b 3 = multiplyShift 4 2 b 1).card = 4 := by
-  decide
-
-example : (Finset.univ.filter fun b => multiplyShift 4 2 b 3 = multiplyShift 4 2 b 1).card ≤
-    2 ^ (4 - 2) :=
-  card_filter_multiplyShift_eq_le (by norm_num) (by norm_num) (by decide)
-
-example : IsUniversalHash (PMF.uniformOfFintype (Fin (2 ^ (4 - 1)))) (multiplyShift 4 2)
-    (2 / 2 ^ 2) :=
-  isUniversalHash_multiplyShift (by norm_num) (by norm_num)
+/-- Multiply-shift evaluations and collision counts on `4`-bit words: half of the eight
+multipliers make `3` and `1` collide in the top two bits, matching `2 ^ (4 - 2) = 4`. -/
+example :
+    -- Multiplier 2 · 3 + 1 = 7 gives products 21 ≡ 5 (mod 16) and 7, both with top bits 01.
+    multiplyShift 4 2 3 3 = 1 ∧ multiplyShift 4 2 3 1 = 1 ∧
+    -- Multiplier 3 gives products 9 and 3, which differ in the top two bits.
+    multiplyShift 4 2 1 3 = 2 ∧ multiplyShift 4 2 1 1 = 0 ∧
+    (Finset.univ.filter fun b => multiplyShift 4 2 b 3 = multiplyShift 4 2 b 1).card = 4 ∧
+    (Finset.univ.filter fun b => multiplyShift 4 2 b 3 = multiplyShift 4 2 b 1).card ≤
+      2 ^ (4 - 2) ∧
+    IsUniversalHash (PMF.uniformOfFintype (Fin (2 ^ (4 - 1)))) (multiplyShift 4 2)
+      (2 / 2 ^ 2) :=
+  ⟨by decide, by decide, by decide, by decide, by decide,
+    card_filter_multiplyShift_eq_le (by norm_num) (by norm_num) (by decide),
+    isUniversalHash_multiplyShift (by norm_num) (by norm_num)⟩
 
 end ComplexityTests.HashFamily

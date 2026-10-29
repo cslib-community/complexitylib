@@ -34,20 +34,17 @@ open Cslib Cslib.AffineDisperser Cslib.AffineDisperser.Explicit Module
 
 /-! ### Small identities -/
 
--- One affine form in one Boolean variable: the cube sum is its linear coefficient.
-example (a b : ZMod 2) :
-    ∑ c : Fin 1 → ZMod 2, ∏ _p : Fin 1, (a + ∑ v, c v • b) = b := by
-  rw [sum_cube_prod_affine_eq_permanent (κ := Fin 1) (fun _ => a) (fun _ _ => b)]
-  simp [Matrix.permanent_unique]
-
--- The first Moore determinant is the vector itself: `∑_{c ∈ 𝔽₂} (a + c u) = u`.
-example (a u : GaloisField 2 3) :
-    ∑ c : Fin 1 → ZMod 2, (a + ∑ l, c l • (fun _ => u) l) ^ (2 ^ 1 - 1) = u := by
-  rw [sum_cube_pow_eq_det_mooreMatrix]
-  simp [mooreMatrix, Matrix.det_unique]
-
--- In characteristic two the determinant is the permanent.
-example (M : Matrix (Fin 3) (Fin 3) (ZMod 2)) : M.det = M.permanent := M.det_eq_permanent_of_charTwo
+-- One affine form in one Boolean variable, the first Moore determinant, and determinant = permanent
+-- in characteristic two on an explicit 3×3 matrix.
+example (a b : ZMod 2) (a' u : GaloisField 2 3) :
+    (∑ c : Fin 1 → ZMod 2, ∏ _p : Fin 1, (a + ∑ v, c v • b)) = b ∧
+      (∑ c : Fin 1 → ZMod 2, (a' + ∑ l, c l • (fun _ => u) l) ^ (2 ^ 1 - 1)) = u ∧
+      (!![(1 : ZMod 2), 1, 0; 0, 1, 1; 1, 0, 1]).det =
+        (!![(1 : ZMod 2), 1, 0; 0, 1, 1; 1, 0, 1]).permanent :=
+  ⟨by rw [sum_cube_prod_affine_eq_permanent (κ := Fin 1) (fun _ => a) (fun _ _ => b)]
+      simp [Matrix.permanent_unique],
+    by rw [sum_cube_pow_eq_det_mooreMatrix]; simp [mooreMatrix, Matrix.det_unique],
+    (!![(1 : ZMod 2), 1, 0; 0, 1, 1; 1, 0, 1]).det_eq_permanent_of_charTwo⟩
 
 theorem strictAnti_three_sub : StrictAnti fun i : Fin 3 => 3 - (i : ℕ) := fun i j hij =>
   show 3 - (j : ℕ) < 3 - (i : ℕ) by have := j.2; have : (i : ℕ) < j := hij; omega
@@ -116,12 +113,9 @@ theorem polyOfCode_one : polyOfCode 1 = 1 := by
 theorem polyOfCode_two : polyOfCode 2 = Polynomial.X := by
   simpa [polyOfCode_one] using polyOfCode_two_mul_add 1 0
 
--- The code `3 = 11₂` gives `1 + X`.
-example : polyOfCode 3 = 1 + Polynomial.X := by
-  simpa [polyOfCode_one, ZMod.val_one] using polyOfCode_two_mul_add 1 1
-
--- The least irreducible polynomial of degree `1` is `X`, with code `2`.
-example : leastIrreducible 1 = Polynomial.X := by
+-- The code `3 = 11₂` gives `1 + X`, and the least irreducible polynomial of degree `1` is `X`.
+example : polyOfCode 3 = 1 + Polynomial.X ∧ leastIrreducible 1 = Polynomial.X := by
+  refine ⟨by simpa [polyOfCode_one, ZMod.val_one] using polyOfCode_two_mul_add 1 1, ?_⟩
   obtain ⟨m, h1, h2, heq, hmin⟩ := exists_code_leastIrreducible one_ne_zero
   have hm : m = 2 := by
     by_contra hm
@@ -146,11 +140,10 @@ example (K : Subfield (GaloisField 2 35)) (hK : K ≠ ⊤) : Nat.card K ≤ 2 ^ 
 
 /-! ### Choosing the primes -/
 
-example : primesIoc 20 80 = [23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79] := by
-  decide
-
--- The greedy choice with budget `100` takes `5` (budget `20`), then `7` (budget `2`).
-example : selectBelow 100 [5, 7, 11, 13] = [5, 7] := by
+-- Primes in `(20, 80]` and greedy prime selection with budget `100`.
+example :
+    primesIoc 20 80 = [23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79] ∧
+      selectBelow 100 [5, 7, 11, 13] = [5, 7] := by
   decide
 
 /-! ### The explicit disperser on `2 ^ 60` bits -/

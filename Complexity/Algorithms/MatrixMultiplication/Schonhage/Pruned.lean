@@ -42,7 +42,8 @@ hold without that qualification.
 Part of [AlmanWilliams2026, Section 2]. Direct mathematical adaptation of
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Definitions are selectively extracted from that pin's `PaperStatements.lean`; no machine
-semantics or running-time statement is imported. Source-derived prose is paraphrased below.
+semantics or running-time statement is imported. The docstrings below explain the local
+declarations in our own words.
 -/
 
 @[expose] public section
@@ -51,21 +52,18 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-- Section 2.4.2: for a set S of output strings and an output variable z, the slice S_z is the
-set of output strings w' with z w' ∈ S.
--/
+/-- Retain the tails of requested tuples whose first coordinate equals `z`. -/
 def sliceSet {n : ℕ} (S : Finset (OutStr (n + 1))) (z : OutVar) : Finset (OutStr n) :=
   univ.filter fun w' => (Fin.cons z w' : OutStr (n + 1)) ∈ S
 
-/-- Section 2.4.2, step (2) of `Pruned.result`: let S_λ be the union of the slices S_z over the z
-to which λ contributes.
+/-- The requests for a child label are the union of slices for output coordinates to which that
+label contributes.
 -/
 def childSet {n : ℕ} (S : Finset (OutStr (n + 1))) (lam : Term) : Finset (OutStr n) :=
   (univ.filter fun z => lam.Contributes z).biUnion fun z => sliceSet S z
 
-/-- A call of `Pruned.result`.  `vertex` is the vertex `τ₁⋯τ_k` at which it is made, as the pair
-of its depth `k` and the string of terms.  `passed` is the set that is passed to it, as the pair
-of the length of its strings and the set.
+/-- One mathematical call record, pairing its label-sequence position with the request set
+supplied there. The dependent pairs retain the two tuple lengths.
 -/
 structure PrunedCall where
   /-- The call depth and the terms identifying its vertex.
@@ -75,9 +73,7 @@ structure PrunedCall where
 -/
   passed : Σ n, Finset (OutStr n)
 
-/-- The same call, seen from one level higher: the vertex `τ₁⋯τ_k` below the child `λ` is the
-vertex `λ τ₁⋯τ_k`.
--/
+/-- Embed a child call into its parent by prepending the child label to its recorded vertex. -/
 def PrunedCall.under (lam : Term) (c : PrunedCall) : PrunedCall where
   vertex := ⟨c.vertex.1 + 1, (Fin.cons lam c.vertex.2 : Vertex (c.vertex.1 + 1))⟩
   passed := c.passed
@@ -105,31 +101,24 @@ def Pruned.run : (n : ℕ) → (Leaf n → ℤ) → (Leaf n → ℤ) → Finset 
       ⟨⟨0, Fin.elim0⟩, ⟨n + 1, S⟩⟩ ::ₘ
         univ.val.bind fun lam => ((R lam).2).map (PrunedCall.under lam))
 
-/-- The array that `Pruned.result(S)` returns.
--/
+/-- Project the output values from the pruned recursion and discard the call multiset. -/
 def Pruned.result (n : ℕ) (encA encB : Leaf n → ℤ) (S : Finset (OutStr n)) : OutStr n → ℤ :=
   (Pruned.run n encA encB S).1
 
-/-- All the calls that `Pruned.result(S)` makes, itself included, each with the set passed to it.
--/
+/-- Project the multiset of call records, retaining repetitions and the root record. -/
 def Pruned.calls (n : ℕ) (encA encB : Leaf n → ℤ) (S : Finset (OutStr n)) : Multiset PrunedCall :=
   (Pruned.run n encA encB S).2
 
-/-- The leaves that `Pruned.result(U)`, called at the root, visits: the vertices at depth `L`
-among its calls.
--/
+/-- A leaf is visited when some recorded call has that full-depth vertex. -/
 def Pruned.Visits {L : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L)) (τ : Leaf L) : Prop :=
   ∃ c ∈ Pruned.calls L encA encB U, c.vertex = ⟨L, τ⟩
 
-/-- The total size of the sets passed to the calls that `Pruned.result(U)` makes.
--/
+/-- Add the cardinalities of the request sets carried by all call records, with multiplicity. -/
 def Pruned.totalSize {L : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L)) : ℕ :=
   ((Pruned.calls L encA encB U).map fun c => c.passed.2.card).sum
 
-/-- Section 2.4.3: the leaves contributing to an output string with inner set Q are the 10^m
-leaves that choose any term at each of the m levels of Q, but P_ij at every level outside Q where
-the output string has z_ij. We call the one that chooses P₀ at every level of Q the private leaf
-of the output string.
+/-- Choose the private label at every output coordinate. The resulting leaf is relevant to that
+output tuple and distinguishes it from every other output tuple.
 -/
 def privateLeaf {L : ℕ} (w : OutStr L) : Leaf L := fun ℓ => (w ℓ).privateTerm
 
@@ -144,21 +133,18 @@ def computeEncoding {α : Type} [Fintype α] (c : Term → α → ℤ) :
   | 0, a, _ => a Fin.elim0
   | L + 1, a, τ => computeEncoding c L (fun u' => ∑ s, c (τ 0) s * sliceAt a s u') (Fin.tail τ)
 
-/-- At the leaf `τ` the procedure of Section 2.4.1 stores `∑_u a[u] ∏_ℓ c_{τ_ℓ}(u_ℓ)`.
--/
+/-- Recursive encoding agrees with the closed coefficient-product formula `encodeWith`. -/
 theorem computeEncoding_eq_encodeWith {α : Type} [Fintype α] (c : Term → α → ℤ) {L : ℕ}
     (a : (Fin L → α) → ℤ) (τ : Leaf L) : computeEncoding c L a τ = encodeWith c τ a := by
   induction L with
   | zero => rw [computeEncoding, encodeWith_zero]
   | succ n ih => rw [computeEncoding, ih, ← encodeWith_cons, Fin.cons_self_tail]
 
-/-- The procedure of Section 2.4.1 computes the encoding of `a`.
--/
+/-- Specializing recursive encoding to `phi` gives the existing left-encoding array. -/
 theorem computeEncoding_phi {L : ℕ} (a : LeftStr L → ℤ) : computeEncoding phi L a = encodingL a :=
   funext (computeEncoding_eq_encodeWith phi a)
 
-/-- The procedure of Section 2.4.1 computes the encoding of `b`.
--/
+/-- Specializing recursive encoding to `psi` gives the existing right-encoding array. -/
 theorem computeEncoding_psi {L : ℕ} (b : RightStr L → ℤ) : computeEncoding psi L b = encodingR b :=
   funext (computeEncoding_eq_encodeWith psi b)
 
@@ -171,30 +157,28 @@ theorem mem_sliceSet {n : ℕ} (S : Finset (OutStr (n + 1))) (z : OutVar) (w' : 
     w' ∈ sliceSet S z ↔ (Fin.cons z w' : OutStr (n + 1)) ∈ S := by
   simp [sliceSet]
 
-/-- Section 2.4.2, step (2): i.e., S_{P_ij} := S_{z_ij} ∪ S_{z₀}.
--/
+/-- An indexed child combines the matching outer slice with the inner slice of the request set. -/
 theorem childSet_P {n : ℕ} (S : Finset (OutStr (n + 1))) (i j : Fin 3) :
     childSet S (.P i j) = sliceSet S (.z i j) ∪ sliceSet S .z0 := by
   have hz : (univ.filter fun z => (Term.P i j).Contributes z) = {.z i j, .z0} := by
     decide +revert
   rw [childSet, hz, biUnion_insert, singleton_biUnion]
 
-/-- Section 2.4.2, step (2): and S_{P₀} := S_{z₀}.
--/
+/-- The distinguished child needs only the inner slice of the request set. -/
 theorem childSet_P0 {n : ℕ} (S : Finset (OutStr (n + 1))) :
     childSet S .P0 = sliceSet S .z0 := by
   have hz : (univ.filter fun z => Term.P0.Contributes z) = {.z0} := by decide
   rw [childSet, hz, singleton_biUnion]
 
-/-- Section 2.4.2, step (4): These restrictions make sense, since S_{z_ij} ⊆ S_{P_ij} and S_{z₀} ⊆
-S_λ for every λ, by step (2): `S_z ⊆ S_λ` whenever `λ` contributes to `z`.
+/-- Every requested suffix in a relevant output slice belongs to the corresponding child request
+set.
 -/
 theorem sliceSet_subset_childSet {n : ℕ} (S : Finset (OutStr (n + 1))) {lam : Term} {z : OutVar}
     (h : lam.Contributes z) : sliceSet S z ⊆ childSet S lam :=
   subset_biUnion_of_mem (fun z => sliceSet S z) (mem_filter.mpr ⟨mem_univ z, h⟩)
 
-/-- In the proof of Lemma 10: S_λ consists of the last L-k-1 variables of each string in S such
-that λ contributes to the first variable of that string.
+/-- A suffix belongs to a child request set precisely when it comes from a requested parent tuple
+whose leading coordinate is relevant to that child label.
 -/
 theorem mem_childSet {n : ℕ} {S : Finset (OutStr (n + 1))} {lam : Term} {w' : OutStr n} :
     w' ∈ childSet S lam ↔ ∃ w ∈ S, lam.Contributes (w 0) ∧ Fin.tail w = w' := by
@@ -207,7 +191,8 @@ theorem mem_childSet {n : ℕ} {S : Finset (OutStr (n + 1))} {lam : Term} {w' : 
 
 /-! ### Lemma 10, first claim: the values -/
 
-/-- The array `C_λ` of step (3) of `Pruned.result`; it is the zero array if `S_λ = ∅`.
+/-- Evaluate a child on its requested suffixes, using the zero array when that child has no
+requests.
 -/
 def Pruned.childResult {n : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Finset (OutStr (n + 1)))
     (lam : Term) : OutStr n → ℤ :=
@@ -215,8 +200,7 @@ def Pruned.childResult {n : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Finset 
     Pruned.result n (sliceAt encA lam) (sliceAt encB lam) (childSet S lam)
   else 0
 
-/-- Steps (2) to (4) of `Pruned.result`, written out.
--/
+/-- Unfold the pruned values once, exposing the child arrays used for decoding. -/
 theorem Pruned.result_succ {n : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Finset (OutStr (n + 1))) :
     Pruned.result (n + 1) encA encB S = S.piecewise (fun w =>
       match w 0 with
@@ -224,8 +208,8 @@ theorem Pruned.result_succ {n : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Fin
       | .z0 => ∑ lam, Pruned.childResult encA encB S lam (Fin.tail w)) 0 := by
   simp only [Pruned.result, Pruned.run, Pruned.childResult, apply_ite Prod.fst]
 
-/-- Step (4) of `Pruned.result` at one string: the entry at `w ∈ S` is the sum of the `C_λ`, at
-the rest of `w`, over the terms `λ` that contribute to the first variable of `w`.
+/-- At a requested tuple, decoding sums child values at its tail over labels relevant to its
+leading coordinate; every unrequested tuple has value zero.
 -/
 theorem Pruned.result_succ_apply {n : ℕ} (encA encB : Leaf (n + 1) → ℤ)
     (S : Finset (OutStr (n + 1))) (w : OutStr (n + 1)) :
@@ -235,9 +219,8 @@ theorem Pruned.result_succ_apply {n : ℕ} (encA encB : Leaf (n + 1) → ℤ)
   rw [Pruned.result_succ, Finset.piecewise, Term.sum_contributes]
   rfl
 
-/-- What `Pruned.result` returns, for arbitrary arrays in place of the two encodings: at each
-string of `S`, the sum, over the leaves contributing to it, of the product of the two numbers
-looked up at the leaf in step (1).
+/-- For arbitrary supplied leaf arrays, the pruned result is zero off the request set and is a sum
+of relevant leaf products on that set.
 -/
 theorem Pruned.result_eq_piecewise_sum {n : ℕ} (encA encB : Leaf n → ℤ) (S : Finset (OutStr n)) :
     Pruned.result n encA encB S
@@ -289,21 +272,19 @@ theorem Pruned.result_eq_piecewise_full {n : ℕ} (a : LeftStr n → ℤ) (b : R
 
 /-! ### Lemma 10, second claim: the calls that are made and the sets passed to them -/
 
-/-- Section 2.3.2: a vertex τ₁ ⋯ τ_k contributes to an output string w if τ_ℓ contributes to w_ℓ
-at every level ℓ ≤ k.  Only `k ≤ L` occurs; the hypothesis `h` is there so that `w_ℓ` makes sense.
+/-- Test relevance for an initial label sequence against the matching prefix of an output tuple.
+Longer label sequences fail the depth condition.
 -/
 def Vertex.Contributes {k L : ℕ} (τ : Vertex k) (w : OutStr L) : Prop :=
   ∀ (ℓ : Fin k) (h : (ℓ : ℕ) < L), (τ ℓ).Contributes (w ⟨ℓ, h⟩)
 
-/-- Section 2.3.2: for a vertex at depth `L`, that is, a leaf, contributes to means that `τ_ℓ`
-contributes to `w_ℓ` at every level.
--/
+/-- At full depth, vertex relevance coincides with the existing leaf-relevance predicate. -/
 theorem Vertex.contributes_iff_leaf {L : ℕ} (τ : Leaf L) (w : OutStr L) :
     Vertex.Contributes τ w ↔ Leaf.Contributes τ w :=
   ⟨fun h ℓ => h ℓ ℓ.2, fun h ℓ _ => h ℓ⟩
 
-/-- The vertex `λ τ₁⋯τ_k` contributes to `w` if and only if `λ` contributes to the first variable
-of `w` and `τ₁⋯τ_k` contributes to the rest of `w`.
+/-- Decompose relevance of a nonempty vertex into relevance of its head and relevance of its
+tail.
 -/
 theorem Vertex.contributes_cons {k L : ℕ} {lam : Term} {τ : Vertex k} {w : OutStr (L + 1)} :
     Vertex.Contributes (Fin.cons lam τ : Vertex (k + 1)) w
@@ -316,7 +297,8 @@ theorem Vertex.contributes_cons {k L : ℕ} {lam : Term} {τ : Vertex k} {w : Ou
     | zero => exact h0
     | succ i => exact h1 i (Nat.lt_of_succ_lt_succ h)
 
-/-- The calls made by the child `λ` of `Pruned.result(S)`: none if `S_λ = ∅`.
+/-- Obtain a child call multiset from its recursion, or the empty multiset when its request set is
+empty.
 -/
 def Pruned.childCalls {n : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Finset (OutStr (n + 1)))
     (lam : Term) : Multiset PrunedCall :=
@@ -324,16 +306,14 @@ def Pruned.childCalls {n : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Finset (
     Pruned.calls n (sliceAt encA lam) (sliceAt encB lam) (childSet S lam)
   else 0
 
-/-- The calls made by `Pruned.result(S)`: the call itself, and the calls made by the children `λ`
-with `S_λ ≠ ∅`.
--/
+/-- Unfold call recording into the parent record and the embedded records from nonempty children. -/
 theorem Pruned.calls_succ {n : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Finset (OutStr (n + 1))) :
     Pruned.calls (n + 1) encA encB S = ⟨⟨0, Fin.elim0⟩, ⟨n + 1, S⟩⟩ ::ₘ
       univ.val.bind fun lam => (Pruned.childCalls encA encB S lam).map (.under lam) := by
   simp only [Pruned.calls, Pruned.run, Pruned.childCalls, apply_ite Prod.snd]
 
-/-- The calls of `Pruned.result(S)`, one level unfolded (steps (2) and (3)): the call itself, and
-for each term `λ` with `S_λ ≠ ∅` the calls of `Pruned_λ(S_λ)`.
+/-- Membership in the positive-depth call multiset means being the root record or an embedded call
+of some nonempty child.
 -/
 theorem Pruned.mem_calls_succ {n : ℕ} {encA encB : Leaf (n + 1) → ℤ}
     {S : Finset (OutStr (n + 1))} {c : PrunedCall} :
@@ -373,9 +353,7 @@ private theorem PrunedCall.vertex_under_eq_iff {lam : Term} {c : PrunedCall} {k 
     obtain rfl := eq_of_heq h
     simp [PrunedCall.under]
 
-/-- `Pruned.result(U)`, called at the root, calls the vertex `τ`.  For a leaf this is
-`Pruned.Visits`.
--/
+/-- A vertex is called when its depth and label tuple occur in the recorded call multiset. -/
 def Pruned.Called {L k : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L)) (τ : Vertex k) :
     Prop :=
   ∃ c ∈ Pruned.calls L encA encB U, c.vertex = ⟨k, τ⟩
@@ -389,8 +367,8 @@ theorem Pruned.called_root {L : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (O
   | zero => exact ⟨_, Multiset.mem_singleton_self _, rfl⟩
   | succ n => exact ⟨_, Pruned.mem_calls_succ.mpr (.inl rfl), rfl⟩
 
-/-- Step (3): a vertex `λ τ'` below the root is called exactly if `S_λ ≠ ∅` and the child `λ`
-calls `τ'`.
+/-- A non-root vertex is called exactly when its leading child has requests and the tail vertex is
+called within that child.
 -/
 theorem Pruned.called_succ {n k : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : Finset (OutStr (n + 1)))
     (τ : Vertex (k + 1)) :
@@ -406,8 +384,8 @@ theorem Pruned.called_succ {n k : ℕ} (encA encB : Leaf (n + 1) → ℤ) (S : F
     exact ⟨c'.under (τ 0), Pruned.mem_calls_succ.mpr (.inr ⟨τ 0, hne, c', hc', rfl⟩),
       PrunedCall.vertex_under_eq_iff.mpr ⟨rfl, hc'τ⟩⟩
 
-/-- The vertex `λ τ'` contributes to a string of `S` exactly if `τ'` contributes to a string of
-`S_λ`.
+/-- Existence of a requested tuple relevant to a cons vertex reduces to the same question for the
+tail vertex and the child request set.
 -/
 private theorem exists_contributes_childSet {n k : ℕ} (S : Finset (OutStr (n + 1)))
     (τ : Vertex (k + 1)) :
@@ -423,9 +401,8 @@ private theorem exists_contributes_childSet {n k : ℕ} (S : Finset (OutStr (n +
   · rintro ⟨w, hw, hτ⟩
     exact ⟨_, mem_childSet.mpr ⟨w, hw, ((hcons w).mp hτ).1, rfl⟩, ((hcons w).mp hτ).2⟩
 
-/-- A vertex at depth `k ≤ L` is called by `Pruned.result(U)` if and only if it is the root or it
-contributes to some string of `U` (proof of Lemma 10).  The induction follows the recursion: the
-vertex `λ τ'` is called by `Pruned.result(U)` exactly if `τ'` is called by `Pruned.result(U_λ)`.
+/-- For vertices within the recursion depth, being called is equivalent to being the root or being
+relevant to at least one requested tuple.
 -/
 theorem Pruned.called_iff_root_or {L k : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L))
     (hkL : k ≤ L) (τ : Vertex k) :
@@ -451,12 +428,9 @@ theorem Pruned.called_iff_root_or {L k : ℕ} (encA encB : Leaf L → ℤ) (U : 
         · exact absurd hk (Nat.succ_ne_zero k)
         · exact ⟨⟨w', hw'⟩, ihτ.mpr (.inr ⟨w', hw', hτ'⟩)⟩
 
-/-- In the proof of Lemma 10: the vertex is called if and only if this set is nonempty, that is,
-if and only if the vertex contributes to some string of `U`.
-
-NOTE.  As printed this fails for the root when `U = ∅` (the root is always called).  The
-hypothesis `hk` excludes only that case.  `hkL` says that `τ` is a vertex of the recursion tree,
-whose depth is at most `L` (Section 2.3.1); the type `Vertex k` exists for every `k`.
+/-- Away from the empty-request root exception, a vertex within the recursion depth is called
+exactly when some requested tuple is relevant to it. The hypothesis `hk` admits every
+positive-depth vertex and also admits the root when requests are nonempty.
 -/
 theorem Pruned.called_iff {L k : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L))
     (hk : 1 ≤ k ∨ U.Nonempty) (hkL : k ≤ L) (τ : Vertex k) :
@@ -518,10 +492,8 @@ private theorem mem_iff_root {L : ℕ} (U : Finset (OutStr L)) (w' : OutStr L) :
   simp only [isSuffixFrom_zero]
   exact ⟨fun h => ⟨w', h, fun ℓ => ℓ.elim0, rfl⟩, fun ⟨_, hw, _, h⟩ => h ▸ hw⟩
 
-/-- Proof of Lemma 10 (announced in Section 2.4.2): the set passed to the vertex τ₁⋯τ_k consists
-of the suffixes w_{k+1}⋯w_L of the strings w of U to which the vertex contributes.  For a call
-`c`, `c.vertex.1` is the depth `k`, `c.vertex.2` the vertex, `c.passed.1` the length `L - k` of
-the strings passed, and `c.passed.2` the set passed.
+/-- A recorded call receives exactly the suffixes of original requests relevant to its vertex. Its
+recorded remaining length and depth identify the suffix position.
 -/
 theorem Pruned.mem_passed_iff {L : ℕ} {encA encB : Leaf L → ℤ} {U : Finset (OutStr L)}
     {c : PrunedCall} (hc : c ∈ Pruned.calls L encA encB U) (w' : OutStr c.passed.1) :
@@ -554,8 +526,8 @@ theorem Pruned.visits_iff_root_or_mem_leaves {L : ℕ} (encA encB : Leaf L → �
   simpa only [mem_leaves, Vertex.contributes_iff_leaf] using
     Pruned.called_iff_root_or encA encB U (le_refl L) τ
 
-/-- **Lemma 10**, second claim.  The leaves it visits are exactly those of leaves(U).  The
-hypothesis `0 < L ∨ U.Nonempty` is explained at `pruned_spec`.
+/-- With positive depth or nonempty requests, the visited-leaf set is exactly `leaves U`. The
+unconditional root case is given separately by `Pruned.visits_iff_root_or_mem_leaves`.
 -/
 theorem Pruned.visits_iff_mem_leaves {L : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L))
     (h : 0 < L ∨ U.Nonempty) (τ : Leaf L) : Pruned.Visits encA encB U τ ↔ τ ∈ leaves U :=
@@ -565,7 +537,8 @@ theorem Pruned.visits_iff_mem_leaves {L : ℕ} (encA encB : Leaf L → ℤ) (U :
 
 /-! ### Lemma 10, third claim: the total size of the sets passed -/
 
-/-- The leaf `λ τ'` is in `leaves(S)` if and only if `τ'` is in `leaves(S_λ)`.
+/-- Membership in a positive-depth relevant-leaf set reduces to membership of the tail in the
+child relevant-leaf set.
 -/
 theorem mem_leaves_succ {n : ℕ} {S : Finset (OutStr (n + 1))} {τ : Leaf (n + 1)} :
     τ ∈ leaves S ↔ Fin.tail τ ∈ leaves (childSet S (τ 0)) := by
@@ -578,8 +551,8 @@ theorem mem_leaves_succ {n : ℕ} {S : Finset (OutStr (n + 1))} {τ : Leaf (n + 
     obtain ⟨w, hw, h0, rfl⟩ := mem_childSet.mp hw'
     exact ⟨w, hw, Leaf.contributes_succ.mpr ⟨h0, h1⟩⟩
 
-/-- `leaves(S)` is the disjoint union, over the terms `λ`, of the leaves `λ τ'` with `τ'` in
-`leaves(S_λ)`.
+/-- Count relevant leaves by summing the relevant-leaf counts of all children; distinct leading
+labels keep these families disjoint.
 -/
 theorem card_leaves_succ {n : ℕ} (S : Finset (OutStr (n + 1))) :
     (leaves S).card = ∑ lam, (leaves (childSet S lam)).card := by
@@ -604,9 +577,8 @@ theorem privateLeaf_injective {L : ℕ} : Function.Injective (privateLeaf (L := 
   have hterm : Function.Injective OutVar.privateTerm := by decide
   fun _ _ h => funext fun ℓ => hterm (congrFun h ℓ)
 
-/-- The map of the proof of Lemma 10, at the root: an output string goes to the leaf that picks
-`P_ij` where the string has `z_ij` and `P₀` where it has `z₀`.  The leaf contributes to the string
-and determines it, so a set of output strings is no larger than its set of leaves.
+/-- The private-leaf injection bounds the number of requested tuples by the number of their
+relevant leaves.
 -/
 theorem card_le_card_leaves {n : ℕ} (S : Finset (OutStr n)) : S.card ≤ (leaves S).card := by
   refine card_le_card_of_injOn privateLeaf (fun w hw => ?_) privateLeaf_injective.injOn
@@ -663,8 +635,8 @@ private theorem sum_sizeAt (s : Multiset PrunedCall) (N : ℕ) (h : ∀ c ∈ s,
     rw [ih fun c' hc' => h c' (Multiset.mem_cons_of_mem hc'), sum_ite_eq,
       ite_eq_left (mem_range.mpr (h c (Multiset.mem_cons_self c s)))]
 
-/-- End of the proof of Lemma 10: the sets passed to the vertices at each of the L+1 depths have
-total size at most |leaves(U)|.
+/-- At any fixed depth, the sum of all passed request-set cardinalities is bounded by the root
+request set's relevant-leaf count.
 -/
 theorem Pruned.sum_card_passed_le {L : ℕ} (encA encB : Leaf L → ℤ) (U : Finset (OutStr L)) (k : ℕ) :
     (((Pruned.calls L encA encB U).filter fun c => c.vertex.1 = k).map fun c => c.passed.2.card).sum

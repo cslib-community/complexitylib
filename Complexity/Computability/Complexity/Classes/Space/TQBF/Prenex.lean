@@ -80,7 +80,7 @@ def TQBFCNF : Set (List (ℕ × ℕ) × CNF ℕ) := {x | QBF.rounds x.1 (QBF.ofC
 
 namespace TQBF
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 variable {γ : Type} {encIn : γ ↪ List Bool}
 
@@ -241,24 +241,23 @@ theorem prenexReduce_mem_TQBFCNF_iff {kV : ℕ} {StateV : Type} [Fintype StateV]
 theorem computableInPolyTime_prenexReduce {kV : ℕ} {StateV : Type} [Fintype StateV]
     [DecidableEq StateV] (tmV : MultiTapeTM kV Bool StateV) (cV dV : ℕ) :
     Turing.MultiTapeTM.ComputableInPolyTime (prenexReduce enc p tmV cV dV) enc encPrenexCNF := by
-  refine .of_tidy ?_
-  have htab := (CookLevin.computableInPolyTime_tableau tmV).tidy
+  have htab := CookLevin.computableInPolyTime_tableau tmV
   have hframe := bitsFrame enc
-  have hp : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
+  have hp : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
     (unary_eval p).comp (encoding_length enc)
-  have hd : ComputableTidilyInPolyTime (fun _ : α => dummyVar) enc encNat := const _
-  have hvars : ComputableTidilyInPolyTime (CNF.vars (V := CookLevin.Var kV StateV))
+  have hd : ComputableInPolyTime (fun _ : α => dummyVar) enc encNat := const _
+  have hvars : ComputableInPolyTime (CNF.vars (V := CookLevin.Var kV StateV))
       (encList (encList (encPair CookLevin.encVar encBool))) (encList CookLevin.encVar) :=
-    (CNF.computableInPolyTime_vars _).tidy
-  have hrelabel : ComputableTidilyInPolyTime (CNF.relabel (tabVar (k := kV) (State := StateV)))
+    CNF.computableInPolyTime_vars _
+  have hrelabel : ComputableInPolyTime (CNF.relabel (tabVar (k := kV) (State := StateV)))
       (encList (encList (encPair CookLevin.encVar encBool)))
       (encList (encList (encPair encNat encBool))) :=
-    (CNF.computableInPolyTime_relabel computableInPolyTime_tabVar).tidy
-  have htabVar := (computableInPolyTime_tabVar (k := kV) (State := StateV)).tidy
-  have hcertVar := (CookLevin.computableInPolyTime_cert (k := kV) (State := StateV)).tidy
-  have hcert : ComputableTidilyInPolyTime (fun q : ℕ × ℕ => certVar q.1 q.2)
+    CNF.computableInPolyTime_relabel computableInPolyTime_tabVar
+  have htabVar := computableInPolyTime_tabVar (k := kV) (State := StateV)
+  have hcertVar := CookLevin.computableInPolyTime_cert (k := kV) (State := StateV)
+  have hcert : ComputableInPolyTime (fun q : ℕ × ℕ => certVar q.1 q.2)
       (encPair encUnary encUnary) encNat :=
-    (computableInPolyTime_certVar (.of_tidy (.fst _ _)) (.of_tidy (.snd _ _))).tidy
+    computableInPolyTime_certVar (.fst _ _) (.snd _ _)
   unfold prenexReduce gameTableau prenexPairs prenexMatrix gamePairs baseVars certLinkCNF
     encPrenexCNF encCNF
   fun_prop

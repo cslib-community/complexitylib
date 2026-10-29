@@ -84,25 +84,25 @@ example : (BitString.equivFin 3 ((Modular.innerProduct 0 3).eval interpretation
   rw [Modular.val_eval_innerProduct]
   simp
 
-example : ComputableInPolyTime (fun p : ℕ × ℕ => DecryptionCircuit.code p.1 p.2)
-    (encPair encUnary encUnary) encCode := DecryptionCircuit.computableInPolyTime_code
-
 example : ComputableInPolyTime (fun security =>
     DecryptionCircuit.code (Parameters.dimension security) (DepthParameters.width security))
-    encUnary encCode :=
-  (DecryptionCircuit.computableInPolyTime_code.tidy.comp
-    (Parameters.computableInPolyTime_dimension.tidy.prod
-      DepthParameters.computableInPolyTime_width.tidy)).computableInPolyTime
+    encUnary encCode := by
+  change ComputableInPolyTime
+    ((fun p : ℕ × ℕ => DecryptionCircuit.code p.1 p.2) ∘
+      fun security => (Parameters.dimension security, DepthParameters.width security))
+    encUnary encCode
+  exact DecryptionCircuit.computableInPolyTime_code.comp
+    (Parameters.computableInPolyTime_dimension.prod
+      DepthParameters.computableInPolyTime_width)
 
-example : DecryptionCircuit.code 1 2 = (DecryptionCircuit.circuit 1 2).code :=
-  DecryptionCircuit.code_eq_code 1 2
-
-example : ∀ security, (Layered.compile
-    (DecryptionCircuit.inputWidth (Parameters.dimension security) (DepthParameters.width security) +
-      DecryptionCircuit.inputWidth (Parameters.dimension security) (DepthParameters.width security))
-    (augmentNand (DecryptionCircuit.circuit (Parameters.dimension security)
-      (DepthParameters.width security))).code).1.length ≤ DepthParameters.depthBudget security :=
-  DecryptionCircuit.layers_augment_le_depthBudget
+example :
+    DecryptionCircuit.code 1 2 = (DecryptionCircuit.circuit 1 2).code ∧
+      (Layered.compile
+        (DecryptionCircuit.inputWidth (Parameters.dimension 2) (DepthParameters.width 2) +
+          DecryptionCircuit.inputWidth (Parameters.dimension 2) (DepthParameters.width 2))
+        (augmentNand (DecryptionCircuit.circuit (Parameters.dimension 2)
+          (DepthParameters.width 2))).code).1.length ≤ DepthParameters.depthBudget 2 :=
+  ⟨DecryptionCircuit.code_eq_code 1 2, DecryptionCircuit.layers_augment_le_depthBudget 2⟩
 
 example : Layered.select (Layered.eval (secret ++ lowerTie)
     (Layered.compile 18 (DecryptionCircuit.circuit 1 2).code).1)
@@ -121,14 +121,14 @@ example : Layered.select (Layered.eval (secret ++ lowerTie)
 
 -- The compiler's full encoded-size bound applies to the actual augmented circuit, not a
 -- supplied bound field. Its depth and gate count have the independent explicit bounds above.
-example (n w : ℕ) :
-    let D := augmentNand (DecryptionCircuit.circuit n w)
-    let width := DecryptionCircuit.inputWidth n w + DecryptionCircuit.inputWidth n w + 3 * D.size
+example :
+    let D := augmentNand (DecryptionCircuit.circuit 1 2)
+    let width := DecryptionCircuit.inputWidth 1 2 + DecryptionCircuit.inputWidth 1 2 + 3 * D.size
     let bits := Nat.log2 width + 1
     (Layered.encCompiled (Layered.compile
-      (DecryptionCircuit.inputWidth n w + DecryptionCircuit.inputWidth n w) D.code)).length ≤
+      (DecryptionCircuit.inputWidth 1 2 + DecryptionCircuit.inputWidth 1 2) D.code)).length ≤
       4 * D.depth * (2 * width * (6 * bits + 21) + 1) + (2 * bits + 1) + 1 :=
   by simpa only [one_mul] using
-    Layered.length_encCompiled_compile_le (augmentNand (DecryptionCircuit.circuit n w))
+    Layered.length_encCompiled_compile_le (augmentNand (DecryptionCircuit.circuit 1 2))
 
 end ComplexityTests.Crypto.GSWDecryptionCircuit

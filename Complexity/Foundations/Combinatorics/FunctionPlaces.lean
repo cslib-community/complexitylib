@@ -23,10 +23,9 @@ public import Mathlib.Data.Fintype.BigOperators
 
 ## References
 
-Adapted selectively from [AlmanWilliams2026, Section 2] and
+Adapted selectively from
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
-Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. These are finite mathematical
-counts and identities; they give no native program or instruction-cost certificate.
+Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
 -/
 
 @[expose] public section

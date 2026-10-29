@@ -18,7 +18,7 @@ generate complete binary circuit codes at growing widths and at arbitrary binary
 namespace ComplexityTests.CarryLookahead
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 -- At width zero the carry is the sole output, whereas the modular output is empty.
 example (c : Bool) :
@@ -89,29 +89,33 @@ example (w : ℕ) : (carryLookaheadAdd w).depth ≤ 8 * (Nat.clog 2 (w + 1) + 1)
     (carryLookaheadAdd w).size ≤ 21 * (w + 1) ^ 2 :=
   ⟨depth_carryLookaheadAdd_le_log w, size_carryLookaheadAdd_le w⟩
 
--- The actual generated code is accepted by the ordinary checked circuit decoder.
-example (w : ℕ) : Circuit.ofCode (σ := signature) (w + w + 1) (w + 1) (carryLookahead w).code =
-    some (carryLookahead w) := Circuit.ofCode_code _
+-- The actual generated code is accepted by the ordinary checked circuit decoder and has
+-- `w + 1` outputs.
+example (w : ℕ) :
+    Circuit.ofCode (σ := signature) (w + w + 1) (w + 1) (carryLookahead w).code =
+      some (carryLookahead w) ∧
+    (carryLookahead w).code.2.length = w + 1 :=
+  ⟨Circuit.ofCode_code _, by simp [Circuit.code]⟩
 
 /-- A single native algorithm generates full adder codes at an unbounded computed width. -/
 theorem growingWidth_polynomialTime :
-    ComputableTidilyInPolyTime (fun k : ℕ => (carryLookahead (2 * k + 1)).code)
+    ComputableInPolyTime (fun k : ℕ => (carryLookahead (2 * k + 1)).code)
       encUnary encCode :=
-  computableInPolyTime_carryLookahead.tidy.comp (by fun_prop)
+  computableInPolyTime_carryLookahead.comp (by fun_prop)
 
 /-- The modular and carry-save finishing generators are also uniform in the unary width. -/
 theorem modularAndFinish_polynomialTime :
-    ComputableTidilyInPolyTime (fun w => ((carryLookaheadAdd w).code,
+    ComputableInPolyTime (fun w => ((carryLookaheadAdd w).code,
       (carryLookaheadFinish w).code)) encUnary (encPair encCode encCode) :=
-  computableInPolyTime_carryLookaheadAdd.tidy.prod
-    computableInPolyTime_carryLookaheadFinish.tidy
+  computableInPolyTime_carryLookaheadAdd.prod
+    computableInPolyTime_carryLookaheadFinish
 
 /-- Distances are binary and need not be polynomially bounded as natural numbers. -/
 theorem arbitraryDistance_polynomialTime :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ℕ × ℕ => Cslib.Circuits.Boolean.CarryLookahead.stepCode p.1 p.2)
       (encPair encUnary encNat) encCode :=
-  (Cslib.Circuits.Boolean.CarryLookahead.computableInPolyTime_stepCode
-    (.of_tidy (fst _ _)) (.of_tidy (snd _ _))).tidy
+  Cslib.Circuits.Boolean.CarryLookahead.computableInPolyTime_stepCode
+    (fst _ _) (snd _ _)
 
 end ComplexityTests.CarryLookahead

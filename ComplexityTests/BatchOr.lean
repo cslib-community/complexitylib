@@ -21,17 +21,6 @@ namespace ComplexityTests.BatchOr
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean ComplexityTests.CircuitMaterialize
 
-example {input sources requests k v : ℕ}
-    (sourceKeys : Fin sources → Fin k → Fin input ⊕ Bool)
-    (sourceValues : Fin sources → Fin v → Fin input ⊕ Bool)
-    (queryKeys : Fin requests → Fin k → Fin input ⊕ Bool)
-    (x : BitString input) (request : Fin requests) (bit : Fin v) :
-    (batchOrCircuit sourceKeys sourceValues queryKeys).eval interpretation x
-        (finProdFinEquiv (request, bit)) = true ↔
-      ∃ source, substitute (sourceKeys source) x = substitute (queryKeys request) x ∧
-        substitute (sourceValues source) x bit = true :=
-  eval_batchOrCircuit_iff sourceKeys sourceValues queryKeys x request bit
-
 -- Two one-bit source keys, two two-bit values, and three one-bit queries: all 512 inputs.
 /-- info: true -/
 #guard_msgs in

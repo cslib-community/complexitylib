@@ -20,8 +20,8 @@ theorem reverseFamily :
       ∀ a (x : Fin a.length → Bool) (j : Fin a.length),
         (circuits a).eval interpretation x j = (List.ofFn x).reverse.getD j.val false :=
   CircuitValue.exists_uniformCircuitFamily (F := fun p : List Bool × List Bool => p.2.reverse)
-    (.of_tidy ComputableTidilyInPolyTime.length_bits)
-    (.of_tidy ComputableTidilyInPolyTime.length_bits) (by fun_prop)
+    ComputableInPolyTime.length_bits
+    ComputableInPolyTime.length_bits (by fun_prop)
 
 /-- Fixed output width is independent of input width. An empty function output is padded with
 false, including at input length zero. -/
@@ -31,20 +31,20 @@ theorem paddedFamily :
       ∀ a (x : Fin a.length → Bool) (j : Fin 3),
         (circuits a).eval interpretation x j = false := by
   obtain ⟨circuits, hc, he⟩ := CircuitValue.exists_uniformCircuitFamily
-    (.of_tidy ComputableTidilyInPolyTime.length_bits)
-    (.of_tidy (ComputableTidilyInPolyTime.const 3))
-    (.of_tidy (ComputableTidilyInPolyTime.const ([] : List Bool)
-      (encIn := encPair encBits encBits) (encMid := encBits)))
+    ComputableInPolyTime.length_bits
+    (ComputableInPolyTime.const 3)
+    (ComputableInPolyTime.const ([] : List Bool)
+      (encIn := encPair encBits encBits) (encOut := encBits))
   exact ⟨circuits, hc, fun a x j => by simpa using he a x j⟩
 
 /-- An empty output family is admitted, even for an input type with arbitrarily long encodings. -/
 example : ∃ circuits : (a : List Bool) → Circuit signature a.length 0,
     ComputableInPolyTime (fun a => (circuits a).code) encBits encCode := by
   obtain ⟨circuits, hc, _⟩ := CircuitValue.exists_uniformCircuitFamily
-    (.of_tidy ComputableTidilyInPolyTime.length_bits)
-    (.of_tidy (ComputableTidilyInPolyTime.const 0))
-    (.of_tidy (ComputableTidilyInPolyTime.const ([] : List Bool)
-      (encIn := encPair encBits encBits) (encMid := encBits)))
+    ComputableInPolyTime.length_bits
+    (ComputableInPolyTime.const 0)
+    (ComputableInPolyTime.const ([] : List Bool)
+      (encIn := encPair encBits encBits) (encOut := encBits))
   exact ⟨circuits, hc⟩
 
 end ComplexityTests.UniformCircuits

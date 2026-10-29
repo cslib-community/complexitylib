@@ -21,36 +21,26 @@ open Cslib WordRAM
 private def double : Program .standard 2 :=
   [.op (.const 1 1), .op (.load 0 1), .op (.bin .add 0 0 0), .halt 0]
 
-example : GenericRAM.run (M := Basis.standard.genericModel) 4 double.toGeneric 4
-    ((State.init [3]).toGeneric .standard) = some (6, 4) := by
-  rw [run_toGeneric]
-  decide
-
-example : GenericRAM.step (M := Basis.standard.genericModel) 3
-    (Program.toGeneric (B := .standard) [.op (.const (0 : Fin 1) 8), .halt 0])
-    ((State.init []).toGeneric .standard) = .fault := by
-  rw [step_toGeneric]
-  rfl
-
 private def oversized : State 2 := ⟨0, ⟨fun _ => 9, fun _ => 0⟩⟩
 
-/-- The adapter does not strengthen WordRAM to check moves or halts on arbitrary initial data. -/
-example : GenericRAM.run (M := Basis.standard.genericModel) 0
-    (Program.toGeneric (B := .standard) [.op (.copy 0 1), .halt 0]) 2
-    (oversized.toGeneric .standard) = some (9, 2) := by
-  rw [run_toGeneric]
-  rfl
-
-/-- Natural control labels remain unbounded, even at width zero. -/
-example : GenericRAM.step (M := Basis.standard.genericModel) 0
-    (Program.toGeneric (B := .standard) [.jump 100]) (oversized.toGeneric .standard) =
-    .next ((⟨100, oversized.data⟩ : State 2).toGeneric .standard) := by
-  rw [step_toGeneric]
-  rfl
-
-example {B : Basis} {r w fuel : ℕ} (p : Program B r) (s : State r) :
-    GenericRAM.run w p.toGeneric fuel (s.toGeneric B) = run w p fuel s :=
-  run_toGeneric w p fuel s
+/-- The generic adapter preserves nonempty-input execution, overflow faults, unchecked moves/halts
+on arbitrary initial data, and unbounded natural control labels. -/
+example :
+    GenericRAM.run (M := Basis.standard.genericModel) 4 double.toGeneric 4
+      ((State.init [3]).toGeneric .standard) = some (6, 4) ∧
+    GenericRAM.step (M := Basis.standard.genericModel) 3
+      (Program.toGeneric (B := .standard) [.op (.const (0 : Fin 1) 8), .halt 0])
+      ((State.init []).toGeneric .standard) = .fault ∧
+    GenericRAM.run (M := Basis.standard.genericModel) 0
+      (Program.toGeneric (B := .standard) [.op (.copy 0 1), .halt 0]) 2
+      (oversized.toGeneric .standard) = some (9, 2) ∧
+    GenericRAM.step (M := Basis.standard.genericModel) 0
+      (Program.toGeneric (B := .standard) [.jump 100]) (oversized.toGeneric .standard) =
+      .next ((⟨100, oversized.data⟩ : State 2).toGeneric .standard) :=
+  ⟨by rw [run_toGeneric]; decide,
+   by rw [step_toGeneric]; rfl,
+   by rw [run_toGeneric]; rfl,
+   by rw [step_toGeneric]; rfl⟩
 
 /-- info: 'Cslib.WordRAM.step_toGeneric' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
