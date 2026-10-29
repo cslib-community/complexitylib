@@ -131,23 +131,15 @@ def totalChunks {n : ℕ} (wAB : Fin n → Fin n → ℤ) (D p : ℕ) : ℕ :=
 
 variable {n : ℕ}
 
-/-- `√D ≤ D ≤ n`. -/
-theorem sqrt_le_natCast {D : ℕ} (hD : 1 ≤ D) (hDn : D ≤ n) : Real.sqrt D ≤ n :=
-  calc Real.sqrt D ≤ Real.sqrt D * Real.sqrt D :=
-        le_mul_of_one_le_left (Real.sqrt_nonneg _) (Real.one_le_sqrt.mpr (by exact_mod_cast hD))
-    _ = D := Real.mul_self_sqrt (Nat.cast_nonneg D)
-    _ ≤ n := by exact_mod_cast hDn
-
 /-- The bound `⌊n²/√D⌋` on the size of a chunk is at least 1, because `√D ≤ n ≤ n²`. -/
 theorem one_le_queryCap {D : ℕ} (hD : 1 ≤ D) (hDn : D ≤ n) : 1 ≤ queryCap n D := by
   rw [queryCap_eq_floor]
   have hn : (1 : ℝ) ≤ n := by exact_mod_cast hD.trans hDn
   refine Nat.le_floor ?_
   rw [Nat.cast_one, le_div_iff₀ (Real.sqrt_pos.mpr (by exact_mod_cast hD)), one_mul]
-  exact (sqrt_le_natCast hD hDn).trans (le_self_pow₀ hn two_ne_zero)
-
-private theorem four_le_sqrt {D : ℕ} (hD : 16 ≤ D) : 4 ≤ Real.sqrt (D : ℝ) :=
-  Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD)
+  have hsqrt : Real.sqrt (D : ℝ) ≤ D :=
+    Real.sqrt_le_self_iff.mpr (Or.inr (by exact_mod_cast hD))
+  exact (hsqrt.trans (by exact_mod_cast hDn)).trans (le_self_pow₀ hn two_ne_zero)
 
 variable {n D g p : ℕ}
 
@@ -163,7 +155,7 @@ theorem sqrt_lt_sOf_add_one (D : ℕ) : Real.sqrt D < (sOf D : ℝ) + 1 :=
 
 /-- `s > 0` because `D ≥ 16`. -/
 private theorem sOf_pos (hD : 16 ≤ D) : (0 : ℝ) < sOf D := by
-  linarith [four_le_sqrt hD, sqrt_lt_sOf_add_one D]
+  linarith [Real.four_le_sqrt_natCast hD, sqrt_lt_sOf_add_one D]
 
 /-- The bound `⌈s/g⌉` on the size of a piece is at least 1. -/
 theorem pieceSize_pos (hD : 16 ≤ D) (hg1 : 1 ≤ g) : 0 < pieceSize D g := by
@@ -270,7 +262,7 @@ private theorem sq_lt_mul_queryCap_add (hD : 16 ≤ D) (hDn : D ≤ n)
   set r := Real.sqrt D with hr
   set δ := (sOf D : ℝ) + 1 - r with hδ
   set x := (n : ℝ) ^ 2 / r with hx
-  have hr4 : 4 ≤ r := four_le_sqrt hD
+  have hr4 : 4 ≤ r := Real.four_le_sqrt_natCast hD
   have hxr : x * r = (n : ℝ) ^ 2 := div_mul_cancel₀ _ (by linarith)
   have hx3 : r ^ 3 ≤ x := by
     rw [hx, le_div_iff₀ (by linarith)]
@@ -304,8 +296,8 @@ private theorem sq_lt_mul_queryCap_add (hD : 16 ≤ D) (hDn : D ≤ n)
 because D ≥ 16, and √D ≤ √n ≤ 2n/3 because D ≤ n and we may assume n ≥ 3". -/
 theorem le_sOf_and_sqrt_le (hD : 16 ≤ D) (hDn : D ≤ n) :
     3 * Real.sqrt D / 4 ≤ (sOf D : ℝ) ∧ Real.sqrt D ≤ 2 * (n : ℝ) / 3 := by
-  have hsqrtD := four_le_sqrt hD
-  have hsqrtn := four_le_sqrt (hD.trans hDn)
+  have hsqrtD := Real.four_le_sqrt_natCast hD
+  have hsqrtn := Real.four_le_sqrt_natCast (hD.trans hDn)
   constructor
   · calc 3 * Real.sqrt D / 4 ≤ Real.sqrt D - 1 := by linarith
       _ ≤ (sOf D : ℝ) := by linarith [sqrt_lt_sOf_add_one D]
@@ -385,10 +377,10 @@ private theorem totalChunks_le_add_sOf (hD : 16 ≤ D) (hDn : D ≤ n) (hp0 : p 
 NOTE.  A chunk holds a whole number of pairs, at most `⌊n²/√D⌋`, so the count is at most
 `p + (n² − p)/⌊n²/√D⌋`, and the second term can exceed `√D` slightly.  The printed bound is still
 true, because the count is an integer, `D` is an integer and `D ≤ n` (`sq_lt_mul_queryCap_add`). -/
-theorem totalChunks_le (hD : 16 ≤ D) (hDn : D ≤ n) (hp : p ∈ primesInRange D) :
+theorem totalChunks_le (hD : 16 ≤ D) (hDn : D ≤ n) (hp : p ∈ Nat.sqrtPrimeWindow D) :
     (totalChunks wAB D p : ℝ) ≤ (p : ℝ) + Real.sqrt D ∧
     (p : ℝ) + Real.sqrt D ≤ 2 * Real.sqrt D := by
-  obtain ⟨hprime, hge, hlt⟩ := mem_primesInRange.mp hp
+  obtain ⟨hprime, hge, hlt⟩ := Nat.mem_sqrtPrimeWindow.mp hp
   have hnat : (totalChunks wAB D p : ℝ) ≤ (p : ℝ) + (sOf D : ℝ) := by
     exact_mod_cast totalChunks_le_add_sOf wAB hD hDn hprime.ne_zero hge
   exact ⟨by linarith [sOf_le_sqrt D], by linarith⟩
@@ -397,9 +389,9 @@ theorem totalChunks_le (hD : 16 ≤ D) (hDn : D ≤ n) (hp : p ∈ primesInRange
 
 /-- Proof of Theorem 17: "middle part C_k × ℤ_p, of size at most sp ≤ D".  So each instance is an
 instance of Lop-AE-SparseTri(n, D). -/
-theorem card_middle_lopInstance (hD : 16 ≤ D) (hg1 : 1 ≤ g) (hp : p ∈ primesInRange D)
+theorem card_middle_lopInstance (hD : 16 ≤ D) (hg1 : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow D)
     (ι : InstanceIndex p) : Fintype.card (lopInstance wAB wBC wAC D g p ι).M ≤ D := by
-  obtain ⟨-, -, hlt⟩ := mem_primesInRange.mp hp
+  obtain ⟨-, -, hlt⟩ := Nat.mem_sqrtPrimeWindow.mp hp
   have hsp : (sOf D : ℝ) * (p : ℝ) ≤ D :=
     calc (sOf D : ℝ) * (p : ℝ) ≤ Real.sqrt D * Real.sqrt D :=
           mul_le_mul (sOf_le_sqrt D) hlt.le (Nat.cast_nonneg p) (Real.sqrt_nonneg _)
@@ -475,7 +467,7 @@ theorem card_instanceIndices (D g p : ℕ) :
 
 /-- Proof of Theorem 17: "There are at most 2√D h ≤ 2√D(ng/s + 1) ≤ 4ng instances". -/
 theorem card_instanceIndices_le (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g)
-    (hp : p ∈ primesInRange D) :
+    (hp : p ∈ Nat.sqrtPrimeWindow D) :
     ((instanceIndices wAB D g p).card : ℝ) ≤ 4 * (n : ℝ) * (g : ℝ) := by
   obtain ⟨hs, hsqrt⟩ := le_sOf_and_sqrt_le hD hDn
   obtain ⟨hchunks, hchunks'⟩ := totalChunks_le wAB hD hDn hp

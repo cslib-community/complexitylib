@@ -3,14 +3,20 @@ Complexity/Algorithms/ExactTriangle/{Defs,Weights,Lopsided,Hashing,Splitting,Wit
 Complexity/Algorithms/MatrixMultiplication/Schonhage/,
 Complexity/Algorithms/ThreeSum/,
 Complexity/Algorithms/WordRAM/ThreeSum/,
-Complexity/Foundations/Data/Finset/{Average,Quotient}.lean,
+Complexity/Foundations/Algebra/{FiniteMagnitude,GeometricTail}.lean,
+Complexity/Foundations/Combinatorics/FunctionPlaces.lean,
+Complexity/Foundations/Data/Finset/{Average,OrderGlue,Quotient}.lean,
 Complexity/Foundations/Data/Int/Residue.lean,
 Complexity/Foundations/Data/Nat/CeilDiv.lean,
 Complexity/Foundations/Data/Matrix/{IntegerBits,PairChunks}.lean and
-Complexity/Foundations/NumberTheory/{PrimeCounting,PrimeWindow}.lean and
+Complexity/Foundations/NumberTheory/{PrimeCounting,PrimeWindow,SqrtPrimeWindow}.lean and
 Complexity/Foundations/RingTheory/CyclicIntRing.lean are adapted from
 anthropics/formal-math, 3sum-apsp, revision
 16a5ce41304fcdaea4e0be7c132e1c361dc26da5.
+
+The single-coefficient binomial bound in Complexity/Foundations/Data/Nat/Choose/Real.lean
+retains its source credit from that adaptation; its proof now derives the statement from the
+library's existing partial-binomial-sum bound.
 
 ThreeSumApsp: a Lean 4 formalization of "Truly Subquadratic 3SUM and Truly Subcubic APSP via Triangles in
 Sparse Lopsided Graphs"

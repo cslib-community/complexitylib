@@ -24,6 +24,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Op
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.List.GetD
+import Mathlib.Data.Nat.Size
 import Mathlib.Order.Interval.Finset.Nat
 
 /-!
@@ -678,20 +679,19 @@ theorem computableInPolyTime_heavyVarList :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List (List ℕ)) => heavyVarList p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encNat) (encList (encList (encList encNat))))
       (encList encNat) := by
-  refine .of_tidy ?_
   let encSys := encList (encList (encList encNat))
-  have hrange : ComputableTidilyInPolyTime
+  have hrange : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × List (List (List ℕ)) => (List.range p.1.1).map fun v => v)
       (encPair (encPair encUnary encNat) encSys) (encList encNat) :=
-    (ComputableTidilyInPolyTime.map ComputableTidilyInPolyTime.unary_to_binary).comp
-      (ComputableTidilyInPolyTime.range.comp ((ComputableTidilyInPolyTime.fst _ _).fst'))
-  have hpred : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.map ComputableInPolyTime.unary_to_binary).comp
+      (ComputableInPolyTime.range.comp ((ComputableInPolyTime.fst _ _).fst'))
+  have hpred : ComputableInPolyTime
       (fun q : ((ℕ × ℕ) × List (List (List ℕ))) × ℕ => decide (q.1.1.2 < varDegree q.2 q.1.2))
       (encPair (encPair (encPair encUnary encNat) encSys) encNat) encBool :=
-    ComputableTidilyInPolyTime.binary_lt' ((ComputableTidilyInPolyTime.fst _ _).fst'.snd')
-      (ComputableTidilyInPolyTime.unary_to_binary.comp (computableInPolyTime_varDegree.tidy.comp
-        ((ComputableTidilyInPolyTime.snd _ _).prod ((ComputableTidilyInPolyTime.fst _ _).snd'))))
-  exact (ComputableTidilyInPolyTime.filterWithInput
+    ComputableInPolyTime.binary_lt' ((ComputableInPolyTime.fst _ _).fst'.snd')
+      (ComputableInPolyTime.unary_to_binary.comp (computableInPolyTime_varDegree.comp
+        ((ComputableInPolyTime.snd _ _).prod ((ComputableInPolyTime.fst _ _).snd'))))
+  exact (ComputableInPolyTime.filterWithInput
     (test := fun x v => decide (x.1.2 < varDegree v x.2)) hrange hpred).of_enc_eq
       fun _ => congrArg (encList encNat) (by rw [List.map_id']; rfl)
 
@@ -706,11 +706,10 @@ theorem computableInPolyTime_heavyVarList :
 theorem computableInPolyTime_relabelFreeVar :
     ComputableInPolyTime (fun p : List ℕ × ℕ => relabelFreeVar p.1 p.2)
       (encPair (encList encNat) encNat) encNat := by
-  refine .of_tidy ?_
-  have hfil : ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => (p.1.filter (· < p.2)).length)
+  have hfil : ComputableInPolyTime (fun p : List ℕ × ℕ => (p.1.filter (· < p.2)).length)
       (encPair (encList encNat) encNat) encUnary := by fun_prop
-  exact ComputableTidilyInPolyTime.binary_sub'
-    (ComputableTidilyInPolyTime.snd _ _) (ComputableTidilyInPolyTime.unary_to_binary.comp hfil)
+  exact ComputableInPolyTime.binary_sub'
+    (ComputableInPolyTime.snd _ _) (ComputableInPolyTime.unary_to_binary.comp hfil)
 
 @[fun_prop] theorem computableInPolyTime_relabelFreeVar_comp {α : Type} {encIn : α ↪ List Bool}
     {S : α → List ℕ} {v : α → ℕ} (hS : ComputableInPolyTime S encIn (encList encNat))
@@ -722,11 +721,11 @@ theorem computableInPolyTime_relabelFreeVar :
 theorem computableInPolyTime_relabelEquation :
     ComputableInPolyTime (fun p : List ℕ × List (List ℕ) => relabelEquation p.1 p.2)
       (encPair (encList encNat) (encList (encList encNat))) (encList (encList encNat)) := by
-  refine .of_tidy ?_; unfold relabelEquation
-  apply ComputableTidilyInPolyTime.mapWithInput (by fun_prop)
-  apply ComputableTidilyInPolyTime.mapWithInput (by fun_prop)
-  exact computableInPolyTime_relabelFreeVar.tidy.comp
-    ((ComputableTidilyInPolyTime.fst _ _).fst'.fst'.prod (ComputableTidilyInPolyTime.snd _ _))
+  unfold relabelEquation
+  apply ComputableInPolyTime.mapWithInput (by fun_prop)
+  apply ComputableInPolyTime.mapWithInput (by fun_prop)
+  exact computableInPolyTime_relabelFreeVar.comp
+    ((ComputableInPolyTime.fst _ _).fst'.fst'.prod (ComputableInPolyTime.snd _ _))
 
 @[fun_prop] theorem computableInPolyTime_relabelEquation_comp {α : Type} {encIn : α ↪ List Bool}
     {S : α → List ℕ} {eq : α → List (List ℕ)} (hS : ComputableInPolyTime S encIn (encList encNat))
@@ -741,13 +740,13 @@ theorem computableInPolyTime_substituteEquation :
       (encPair (encList encNat) (encPair encBits (encList (encList encNat))))
       (encList (encList encNat)) := by
   let encEq := encList (encList encNat)
-  have hraw : ComputableTidilyInPolyTime
+  have hraw : ComputableInPolyTime
       (fun p : List ℕ × (List Bool × List (List ℕ)) =>
         ((p.2.2.filter fun m => !m.any fun v => decide (v ∈ p.1) && !p.2.1.getD (p.1.idxOf v) false)
           |>.map fun m => m.filter fun v => decide (v ∉ p.1)))
       (encPair (encList encNat) (encPair encBits encEq)) encEq := by fun_prop
   simpa only [Function.comp_def, substituteEquation] using
-    computableInPolyTime_reduceEquation.comp (.of_tidy hraw)
+    computableInPolyTime_reduceEquation.comp hraw
 
 @[fun_prop] theorem computableInPolyTime_substituteEquation_comp {α : Type} {encIn : α ↪ List Bool}
     {S : α → List ℕ} {vals : α → List Bool} {eq : α → List (List ℕ)}
@@ -765,34 +764,35 @@ theorem computableInPolyTime_prepareBranch :
         prepareBranch p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair (encList encNat)
         (encPair encBits (encList (encList (encList encNat)))))) encBranchOutcome := by
-  refine .of_tidy ?_; let P := ℕ × List ℕ × List Bool × List (List (List ℕ))
+  let P := ℕ × List ℕ × List Bool × List (List (List ℕ))
   let encEq := encList (encList encNat); let encSys := encList encEq
   let encOptSys := encOption encSys; let encInner := encPair encUnary encOptSys
   let encOut := encOption encInner
   let encIn := encPair encUnary (encPair (encList encNat) (encPair encBits encSys))
   let nz (p : P) := (p.2.2.2.map (substituteEquation p.2.1 p.2.2.1)).filter fun eq => !eq.isEmpty
-  have hnonZero : ComputableTidilyInPolyTime nz encIn encSys :=
-    ComputableTidilyInPolyTime.filterWithInput
-      (ComputableTidilyInPolyTime.mapWithInput (by fun_prop)
-        (computableInPolyTime_substituteEquation.tidy.comp
-          ((ComputableTidilyInPolyTime.fst _ _).snd'.fst'.prod
-            ((ComputableTidilyInPolyTime.fst _ _).snd'.snd'.fst'.prod
-              (ComputableTidilyInPolyTime.snd _ _))))) (by fun_prop)
-  have hrelMap : ComputableTidilyInPolyTime (fun p : P => (nz p).map (relabelEquation p.2.1))
+  have hnonZero : ComputableInPolyTime nz encIn encSys :=
+    ComputableInPolyTime.filterWithInput
+      (ComputableInPolyTime.mapWithInput (by fun_prop)
+        (computableInPolyTime_substituteEquation.comp
+          ((ComputableInPolyTime.fst _ _).snd'.fst'.prod
+            ((ComputableInPolyTime.fst _ _).snd'.snd'.fst'.prod
+              (ComputableInPolyTime.snd _ _))))) (by fun_prop)
+  have hrelMap : ComputableInPolyTime (fun p : P => (nz p).map (relabelEquation p.2.1))
       encIn encSys :=
-    ComputableTidilyInPolyTime.mapWithInput hnonZero
-      (computableInPolyTime_relabelEquation.tidy.comp
-        ((ComputableTidilyInPolyTime.fst _ _).snd'.fst'.prod (ComputableTidilyInPolyTime.snd _ _)))
-  have hn' : ComputableTidilyInPolyTime (fun p : P => p.1 - p.2.1.length) encIn encUnary := by
+    ComputableInPolyTime.mapWithInput hnonZero
+      (computableInPolyTime_relabelEquation.comp
+        ((ComputableInPolyTime.fst _ _).snd'.fst'.prod (ComputableInPolyTime.snd _ _)))
+  have hn' : ComputableInPolyTime (fun p : P => p.1 - p.2.1.length) encIn encUnary := by
     fun_prop
-  have hc1 := ComputableTidilyInPolyTime.decide_mem hnonZero (ComputableTidilyInPolyTime.const [[]])
-  have hc2 := (ComputableTidilyInPolyTime.listIsEmpty' encEq).comp hnonZero
-  have hb1 := (ComputableTidilyInPolyTime.optionSome encInner).comp
-    (hn'.prod (ComputableTidilyInPolyTime.const (encMid := encOptSys) none))
-  have hb2 := (ComputableTidilyInPolyTime.optionSome encInner).comp
-    (hn'.prod ((ComputableTidilyInPolyTime.optionSome encSys).comp hrelMap))
+  have hc1 := ComputableInPolyTime.decide_mem hnonZero (ComputableInPolyTime.const [[]])
+  have hc2 := (by fun_prop : ComputableInPolyTime (List.isEmpty (α := List (List ℕ))) encSys
+    encBool).comp hnonZero
+  have hb1 := (ComputableInPolyTime.optionSome encInner).comp
+    (hn'.prod (ComputableInPolyTime.const (encOut := encOptSys) none))
+  have hb2 := (ComputableInPolyTime.optionSome encInner).comp
+    (hn'.prod ((ComputableInPolyTime.optionSome encSys).comp hrelMap))
   have hopt :=
-    hc1.ite' (ComputableTidilyInPolyTime.const (encMid := encOut) none) (hc2.ite' hb1 hb2)
+    hc1.ite' (ComputableInPolyTime.const (encOut := encOut) none) (hc2.ite' hb1 hb2)
   have hfun (p : P) :
       (if decide ([[]] ∈ nz p) then none
         else if (nz p).isEmpty then some (p.1 - p.2.1.length, none)
@@ -832,8 +832,8 @@ theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
   have hrel : ∀ eq₁ : List (List ℕ), (encList (encList encNat) (relabelEquation S eq₁)).length ≤
       (encList (encList encNat) eq₁).length := fun eq₁ =>
     length_encList_map_le (encList encNat) (encList encNat) fun m _ =>
-      length_encList_map_le encNat encNat fun v _ =>
-        ComputableTidilyInO.length_encNat_mono (Nat.sub_le _ _)
+      length_encList_map_le encNat encNat fun v _ => by
+        simpa [Nat.size_eq_bits_len, relabelFreeVar] using Nat.size_le_size (Nat.sub_le v _)
   have hsys : (encList (encList (encList encNat))
       (((sys.map (substituteEquation S vals)).filter fun eq => !eq.isEmpty).map
         (relabelEquation S))).length ≤ (encList (encList (encList encNat)) sys).length :=
@@ -979,7 +979,7 @@ theorem computableInPolyTime_prepareStep :
   unfold encBranchInput; fun_prop
 private theorem computableInPolyTime_binaryAdd :
     ComputableInPolyTime (fun x : ℕ × ℕ => x.1 + x.2) (encPair encNat encNat) encNat :=
-  .of_tidy ComputableTidilyInPolyTime.binary_add
+  ComputableInPolyTime.binary_add
 private theorem computableInPolyTime_dim :
     ComputableInPolyTime (fun inp : BranchInput => inp.2.1.length) encBranchInput encUnary := by
   unfold encBranchInput; fun_prop
@@ -1138,7 +1138,8 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
       (Nat.mul_le_mul hj (Nat.pow_le_pow_right (by omega) (Nat.sub_le _ _))).trans_eq
         (Nat.pow_add 2 _ _).symm
   have hlen_accSum : (encNat st.2.2.2).length ≤ L := by
-    have h := ComputableTidilyInO.length_encNat_mono hsum_le
+    have h : (encNat st.2.2.2).length ≤ (encNat (2 ^ (inp.2.1.length + inp.1))).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size hsum_le
     rw [BooleanFold.length_clock] at h; omega
   have hlen_acc : (encPair encBranchInput encNat st.2.2).length ≤ 3 * L + 1 := by
     rw [hst_pair, length_encPair]
@@ -1184,7 +1185,8 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
           (hn' ▸ Nat.pow_le_pow_right (by omega) (Nat.sub_le _ _)),
         hR inp idx' hidx'_lt n' sys' hout, hQ inp idx' hidx'_lt n' sys' hout⟩
   have hlen_bc : (encNat (branchCountOracle solver o)).length ≤ L := by
-    have h := ComputableTidilyInO.length_encNat_mono hbc_le
+    have h : (encNat (branchCountOracle solver o)).length ≤ (encNat (2 ^ inp.1)).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size hbc_le
     rw [BooleanFold.length_clock] at h; omega
   have hlen_add : (encPair encNat encNat (q.2.2, branchCountOracle solver o)).length ≤ 3 * L + 1 :=
     by rw [show q.2.2 = st.2.2.2 from rfl, length_encPair]; dsimp only; omega
