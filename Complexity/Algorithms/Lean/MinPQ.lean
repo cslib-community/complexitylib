@@ -32,8 +32,10 @@ by the data structure:
   `u'` while preserving its satellite value `v`;
 * `isEmpty` and `get h`: read-only queries returning `decide (dom s = ∅)` and `s h`.
 
-This module also defines the deterministic free-list handle allocator (`AllocState`, `stepAlloc`)
-and proves that it refines `MinPQ.spec` while projecting to `IndexedMinPQ.spec` on keys.
+This module also defines the deterministic free-list handle allocator (`AllocState`, `stepAlloc`),
+proves that `stepAlloc` refines `MinPQ.spec` while preserving `AllocState.WellFormed`, and provides
+the key-projection lemmas `toIndexed_update_some` and `toIndexed_update_none` connecting `State` to
+`IndexedMinPQ.State`.
 
 ## Main definitions
 
@@ -51,8 +53,9 @@ and proves that it refines `MinPQ.spec` while projecting to `IndexedMinPQ.spec` 
 
 * `Cslib.Algorithms.Lean.MinPQ.instTotalSpec`: `MinPQ.spec n_max U V` is total (`RelSpec.Total`).
 * `Cslib.Algorithms.Lean.MinPQ.stepAlloc_refines_spec`: every valid `stepAlloc` transition satisfies
-  `(spec n_max U V).step`, preserves `AllocState.WellFormed`, and steps `toIndexed` via
-  `IndexedMinPQ.spec`.
+  `(spec n_max U V).step` and preserves `AllocState.WellFormed`.
+* `Cslib.Algorithms.Lean.MinPQ.toIndexed_update_some`, `toIndexed_update_none`: `toIndexed`
+  commutes with `Function.update` on active and cleared handles.
 -/
 
 @[expose] public section
@@ -376,8 +379,7 @@ def allocHandle {n_max : ℕ} (s : AllocState n_max) :
       none
 
 /-- Deterministic transition on `AllocState n_max` using `allocHandle` for `insert` and
-`IndexedMinPQ.findMin (toIndexed s.entries)` (lexicographic `(key, handle)` tie-breaking) for
-`extractMin`. -/
+`findMin s.entries` (lexicographic `(key, handle)` tie-breaking) for `extractMin`. -/
 def stepAlloc {n_max : ℕ} (s : AllocState n_max) (o : Op n_max) :
     AllocState n_max × o.Result :=
   match o with
@@ -393,13 +395,10 @@ def stepAlloc {n_max : ℕ} (s : AllocState n_max) (o : Op n_max) :
     | some (_, v) => (⟨Function.update s.entries h (some (u', v)), s.freeList, s.fresh⟩, ())
     | none => (s, ())
   | .extractMin =>
-    match IndexedMinPQ.findMin (toIndexed s.entries) with
+    match findMin s.entries with
     | none => (s, none)
-    | some (h, u) =>
-      match s.entries h with
-      | some (_, v) =>
-        (⟨Function.update s.entries h none, h :: s.freeList, s.fresh⟩, some (u, v, h))
-      | none => (s, none)
+    | some (u, v, h) =>
+      (⟨Function.update s.entries h none, h :: s.freeList, s.fresh⟩, some (u, v, h))
 
 /-- On any well-formed `AllocState` with `size s.entries < n_max`, `allocHandle s` succeeds,
 returns an unused handle `h` (`s.entries h = none`), and preserves `AllocState.WellFormed` after
@@ -491,10 +490,11 @@ theorem stepAlloc_refines_spec {n_max U V : ℕ} {s : AllocState n_max} (hwf : s
     · have hemp : dom s.entries = ∅ := by
         rw [← dom_toIndexed, ← IndexedMinPQ.findMin_eq_none_iff]
         exact hfm
-      simp only [stepAlloc, hfm]
+      have hfm' : findMin s.entries = none := findMin_eq_none_iff.mpr hemp
+      simp only [stepAlloc, hfm']
       exact ⟨Or.inl ⟨hemp, rfl, rfl⟩, hfr_le, hnd, hfree, hbump, hsum⟩
-    · obtain ⟨v, hsh, _, hmin⟩ := findMin_eq_some_of_indexed hfm
-      simp only [stepAlloc, hfm, hsh]
+    · obtain ⟨v, hsh, hfm', hmin⟩ := findMin_eq_some_of_indexed hfm
+      simp only [stepAlloc, hfm']
       have hh_not_free : h ∉ s.freeList := fun hm => by
         rw [(hfree h hm).2] at hsh
         cases hsh

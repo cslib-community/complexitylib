@@ -247,10 +247,10 @@ def getCode : Code .exact rMinPQ :=
     ]
   ]
 
-/-- `insert u v`: allocates a handle `argV` from `freeStack` (if `freeTopReg > 0`) or bumps
-`freshReg`, stores `val[argV] ← inValReg`, runs `FibonacciHeap.insertCode.rename f42` with key
-`argK = u`, and outputs `outV ← argV`. -/
-def insertCode : Code .exact rMinPQ :=
+/-- Handle-allocation branch of `insertCode`: pops a recycled handle from
+`freeStack[freeTopReg - 1]` when `freeTopReg ≠ 0`, or allocates `freshReg` and increments
+`freshReg` when `freeTopReg = 0`. -/
+def allocHandleBranch : Code .exact rMinPQ :=
   ram_exact[
     if freeTopReg = zeroP then [
       argV ← freshReg;
@@ -259,7 +259,15 @@ def insertCode : Code .exact rMinPQ :=
       freeTopReg ← freeTopReg - oneP;
       s0 ← freeBaseReg + freeTopReg;
       argV ← *s0
-    ];
+    ]
+  ]
+
+/-- `insert u v`: allocates a handle `argV` from `freeStack` (if `freeTopReg > 0`) or bumps
+`freshReg` via `allocHandleBranch`, stores `val[argV] ← inValReg`, runs
+`FibonacciHeap.insertCode.rename f42` with key `argK = u`, and outputs `outV ← argV`. -/
+def insertCode : Code .exact rMinPQ :=
+  ram_exact[
+    ⟪allocHandleBranch⟫;
     s0 ← valBaseReg + argV;
     *s0 ← inValReg;
     ⟪FibonacciHeap.insertCode.rename f42⟫;
@@ -339,7 +347,7 @@ def rawEncode {n_max : ℕ} : Cslib.Algorithms.Lean.MinPQ.Op n_max → Fin rMinP
 
 /-- Register encoding for `Cslib.Algorithms.Lean.MinPQ.Op n_max` bounded by `U` on `decreaseKey`
 so `arguments_fit` holds on arbitrary states; coincides with `rawEncode` on every represented
-state (`encode_eq_rawEncode_of_valid`). -/
+state (`encode_eq_rawEncode_of_rep`). -/
 def encode {n_max : ℕ} (U : ℕ) : Cslib.Algorithms.Lean.MinPQ.Op n_max → Fin rMinPQ → ℕ
   | .decreaseKey h u' => fun i =>
       if i = tag1 then 1 else if i = tag0 then 1
@@ -490,12 +498,6 @@ theorem modifies_of_fib {n_max base : ℕ} {m₁ m₂ : ℕ → ℕ}
     Modifies (Block.mk base (space n_max)).footprint m₁ m₂ :=
   fun a ha => h a fun ha' => ha (fib_footprint_subset ha')
 
-theorem modifies_outer_trans {n_max base : ℕ} {m₁ m₂ m₃ : ℕ → ℕ}
-    (h₁ : Modifies (Block.mk base (space n_max)).footprint m₁ m₂)
-    (h₂ : Modifies (Block.mk base (space n_max)).footprint m₂ m₃) :
-    Modifies (Block.mk base (space n_max)).footprint m₁ m₃ := by
-  simpa only [Finset.union_idempotent] using h₁.trans h₂
-
 theorem AllocRep.supported {n_max U V w base : ℕ}
     {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x x' : Data rMinPQ}
     (hreg : ∀ i : Fin rMinPQ, inputReg i = false → x'.regs i = x.regs i)
@@ -572,24 +574,6 @@ theorem encode_eq_rawEncode_of_rep {n_max U V w base : ℕ}
 
 /-! ## Initialization: `incCur_eval`, `allocSpan_exec`, `initSetup_exec` -/
 
-private theorem execWithin_exactAdd48 {w : ℕ} {x : Data rMinPQ} {d i j : Fin rMinPQ}
-    (hfit : Fits w (x.regs i + x.regs j)) :
-    ExecWithin (B := .exact) w (.op (.exactBin .add d i j)) x
-      (x.set d (x.regs i + x.regs j)) 1 :=
-  ExecWithin.op (by
-    rw [Op.eval_exactBin]
-    simp only [BinOp.evalExact, Option.bind_some]
-    exact Data.put_of_fits hfit)
-
-private theorem execWithin_exactSub48 {w : ℕ} {x : Data rMinPQ} {d i j : Fin rMinPQ}
-    (hle : x.regs j ≤ x.regs i) (hfit : Fits w (x.regs i - x.regs j)) :
-    ExecWithin (B := .exact) w (.op (.exactBin .sub d i j)) x
-      (x.set d (x.regs i - x.regs j)) 1 :=
-  ExecWithin.op (by
-    rw [Op.eval_exactBin]
-    simp only [BinOp.evalExact, hle, ↓reduceIte, Option.bind_some]
-    exact Data.put_of_fits hfit)
-
 theorem incCur_eval {w : ℕ} {x : Data rMinPQ} (h1 : x.regs oneReg = 1)
     (hfit : Fits w (x.regs curReg + 1)) :
     (Op.exactBin .add curReg curReg oneReg).eval w x =
@@ -641,7 +625,7 @@ theorem allocSpan_exec {n_max w base : ℕ} (hS : Fits w (base + space n_max))
   let x2 := x1.set freeBaseReg (base + FibonacciHeap.space n_max + n_max)
   have e2 : ExecWithin w (.op (.exactBin .add freeBaseReg valBaseReg nReg)) x1 x2 1 := by
     simpa only [hx1_vb, hx1_n] using
-      execWithin_exactAdd48 (x := x1) (d := freeBaseReg) (i := valBaseReg) (j := nReg)
+      FibonacciHeap.execWithin_exactAdd (x := x1) (d := freeBaseReg) (i := valBaseReg) (j := nReg)
         (by rw [hx1_vb, hx1_n]; rw [space_eq_fib_add] at hS; exact hS.of_le (by omega))
   have hx2_fb : x2.regs freeBaseReg = base + FibonacciHeap.space n_max + n_max := by
     simp only [x2, Data.set_regs, Function.update_self]
@@ -652,7 +636,8 @@ theorem allocSpan_exec {n_max w base : ℕ} (hS : Fits w (base + space n_max))
     have heq : base + FibonacciHeap.space n_max + n_max + n_max = base + space n_max := by
       rw [space_eq_fib_add]; omega
     simpa only [hx2_fb, hx2_n, heq] using
-      execWithin_exactAdd48 (x := x2) (d := outerFrontierReg) (i := freeBaseReg) (j := nReg)
+      FibonacciHeap.execWithin_exactAdd
+        (x := x2) (d := outerFrontierReg) (i := freeBaseReg) (j := nReg)
         (by rw [hx2_fb, hx2_n, heq]; exact hS)
   have he : ExecWithin w allocSpan x x3 15 := by
     unfold allocSpan
@@ -684,7 +669,8 @@ theorem initSetup_exec {n_max U V w base : ℕ} {x₁ : Data rMinPQ}
     have hsub : base + space n_max - n_max = base + FibonacciHeap.space n_max + n_max := by
       rw [space_eq_fib_add]; omega
     simpa only [hfr₁, hn, hsub] using
-      execWithin_exactSub48 (x := x₁) (d := freeBaseReg) (i := outerFrontierReg) (j := nReg)
+      FibonacciHeap.execWithin_exactSub
+        (x := x₁) (d := freeBaseReg) (i := outerFrontierReg) (j := nReg)
         (by rw [hfr₁, hn, space_eq_fib_add]; omega)
         (by rw [hfr₁, hn, hsub]; rw [space_eq_fib_add] at hS; exact hS.of_le (by omega))
   have hs1_fb : s1.regs freeBaseReg = base + FibonacciHeap.space n_max + n_max := by
@@ -694,7 +680,7 @@ theorem initSetup_exec {n_max U V w base : ℕ} {x₁ : Data rMinPQ}
   let s2 := s1.set valBaseReg (base + FibonacciHeap.space n_max)
   have e2 : ExecWithin w (.op (.exactBin .sub valBaseReg freeBaseReg nReg)) s1 s2 1 := by
     simpa only [hs1_fb, hs1_n, Nat.add_sub_cancel] using
-      execWithin_exactSub48 (x := s1) (d := valBaseReg) (i := freeBaseReg) (j := nReg)
+      FibonacciHeap.execWithin_exactSub (x := s1) (d := valBaseReg) (i := freeBaseReg) (j := nReg)
         (by rw [hs1_fb, hs1_n]; omega)
         (by
           rw [hs1_fb, hs1_n, Nat.add_sub_cancel]
@@ -929,7 +915,7 @@ theorem getCode_exec {n_max U V w base : ℕ}
       have ea : ExecWithin w (.op (.exactBin .add s0 valBaseReg argV)) x1
           (x1.set s0 (base + FibonacciHeap.space n_max + h.val)) 1 := by
         simpa only [hx1_vb, hx1_v] using
-          execWithin_exactAdd48 (x := x1) (d := s0) (i := valBaseReg) (j := argV)
+          FibonacciHeap.execWithin_exactAdd (x := x1) (d := s0) (i := valBaseReg) (j := argV)
             (by rw [hx1_vb, hx1_v]; rw [space_eq_fib_add] at hfit_stop;
                 exact hfit_stop.of_le (by omega))
       have el : ExecWithin (B := .exact) w (.op (.load outValReg s0))
@@ -962,18 +948,6 @@ theorem getCode_exec {n_max U V w base : ℕ}
         at hpot_fib
       unfold potential
       omega
-
-private def allocHandleBranch : Code .exact rMinPQ :=
-  ram_exact[
-    if freeTopReg = zeroP then [
-      argV ← freshReg;
-      freshReg ← freshReg + oneP
-    ] else [
-      freeTopReg ← freeTopReg - oneP;
-      s0 ← freeBaseReg + freeTopReg;
-      argV ← *s0
-    ]
-  ]
 
 private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
     {s : Cslib.Algorithms.Lean.MinPQ.AllocState n_max} {x : Data rMinPQ}
@@ -1024,7 +998,8 @@ private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
       have ho1' : (x.set argV s.fresh).regs oneP = 1 := by
         simp only [Data.set_regs, Function.update_of_ne (by decide : oneP ≠ argV), ho1]
       simpa only [hfr1, ho1'] using
-        execWithin_exactAdd48 (x := x.set argV s.fresh) (d := freshReg) (i := freshReg) (j := oneP)
+        FibonacciHeap.execWithin_exactAdd
+          (x := x.set argV s.fresh) (d := freshReg) (i := freshReg) (j := oneP)
           (by rw [hfr1, ho1']; have := space_lower n_max; exact hfit_stop.of_le (by omega))
     have he : ExecWithin w allocHandleBranch x x1 5 := by
       unfold allocHandleBranch
@@ -1061,7 +1036,7 @@ private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
     let x1 := a2.set argV hd.val
     have e1 : ExecWithin w (.op (.exactBin .sub freeTopReg freeTopReg oneP)) x a1 1 := by
       simpa only [htop_eq, ho1, Nat.add_sub_cancel] using
-        execWithin_exactSub48 (x := x) (d := freeTopReg) (i := freeTopReg) (j := oneP)
+        FibonacciHeap.execWithin_exactSub (x := x) (d := freeTopReg) (i := freeTopReg) (j := oneP)
           (by rw [htop_eq, ho1]; omega)
           (by rw [htop_eq, ho1, Nat.add_sub_cancel]; have := space_lower n_max;
               exact hfit_stop.of_le (by omega))
@@ -1072,7 +1047,7 @@ private theorem allocHandleBranch_exec {n_max U V w base u v : ℕ}
       have ha1_top : a1.regs freeTopReg = tl.length := by
         simp only [a1, Data.set_regs, Function.update_self]
       simpa only [ha1_fb, ha1_top] using
-        execWithin_exactAdd48 (x := a1) (d := s0) (i := freeBaseReg) (j := freeTopReg)
+        FibonacciHeap.execWithin_exactAdd (x := a1) (d := s0) (i := freeBaseReg) (j := freeTopReg)
           (by rw [ha1_fb, ha1_top]; rw [space_eq_fib_add] at hfit_stop;
               exact hfit_stop.of_le (by omega))
     have e3 : ExecWithin (B := .exact) w (.op (.load argV s0)) a2 x1 1 := by
@@ -1129,7 +1104,7 @@ theorem insertCode_exec {n_max U V w base u v : ℕ}
   have ew1 : ExecWithin w (.op (.exactBin .add s0 valBaseReg argV)) x1
       (x1.set s0 (base + FibonacciHeap.space n_max + h.val)) 1 := by
     simpa only [hx1_vb, hx1_v] using
-      execWithin_exactAdd48 (x := x1) (d := s0) (i := valBaseReg) (j := argV)
+      FibonacciHeap.execWithin_exactAdd (x := x1) (d := s0) (i := valBaseReg) (j := argV)
         (by rw [hx1_vb, hx1_v]; rw [space_eq_fib_add] at hfit_stop;
             exact hfit_stop.of_le (by omega))
   have ew2 : ExecWithin (B := .exact) w (.op (.store s0 inValReg))
@@ -1199,7 +1174,7 @@ theorem insertCode_exec {n_max U V w base u v : ℕ}
         (Function.update x1.mem (base + FibonacciHeap.space n_max + h.val) v)
       rw [hm1]
       exact Modifies.write_of_owns ho_val v
-    exact modifies_outer_trans hm_x2 (modifies_of_fib hmod_fib)
+    exact FibonacciHeap.modifies_block_trans hm_x2 (modifies_of_fib hmod_fib)
   refine ⟨y, 5 + 1 + 1 + t_fib + 1, he, ?_, ?_, hmod_all, ?_⟩
   · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, halloc, y, Data.set_regs,
       Function.update_self, hh_lt, ↓reduceDIte, Fin.eta]
@@ -1403,10 +1378,14 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
           (hmem1_ge _ (Nat.le_add_right _ _)).trans (hval h' u' v' hsh').2.2⟩,
         fun i hi => (hmem1_ge _ (by omega)).trans (hfree i hi)⟩
     refine ⟨y, t1 + 2, he1.seq he2, ?_, ?_, modifies_of_fib hmod_fib, ?_⟩
-    · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm, y, Data.set_regs,
+    · have hfm' : Cslib.Algorithms.Lean.MinPQ.findMin s.entries = none := by
+        simp only [Cslib.Algorithms.Lean.MinPQ.findMin, hfm]
+      simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm', y, Data.set_regs,
         Function.update_of_ne (by decide : outFlag ≠ s0), hfl0, ↓reduceIte]
       rfl
-    · simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm]
+    · have hfm' : Cslib.Algorithms.Lean.MinPQ.findMin s.entries = none := by
+        simp only [Cslib.Algorithms.Lean.MinPQ.findMin, hfm]
+      simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm']
       exact hrep1.supported hreg_y (fun _ _ => rfl) (he2.bounded hb1)
     · rw [potential_supported hreg_y]
       change t1 + 2 + FibonacciHeap.potential (x1.comap f42) ≤ _ + potential x
@@ -1414,7 +1393,7 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
       unfold potential
       omega
   · -- Non-empty queue (`findMin = some (h, u)`)
-    obtain ⟨v, hsh, _, _⟩ := Cslib.Algorithms.Lean.MinPQ.findMin_eq_some_of_indexed hfm
+    obtain ⟨v, hsh, hfm', _⟩ := Cslib.Algorithms.Lean.MinPQ.findMin_eq_some_of_indexed hfm
     simp only [PQCode.decode, FibonacciHeap.code, IndexedMinPQ.spec, hfm] at hdec_fib hinv_fib
     have hfl_ne : x1.regs outFlag ≠ 0 := by
       rw [hx1_fl]
@@ -1445,7 +1424,7 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
     let y := a4.set freeTopReg (s.freeList.length + 1)
     have eb1 : ExecWithin w (.op (.exactBin .add s0 valBaseReg outV)) x1 a1 1 := by
       simpa only [hx1_vb, hov_eq] using
-        execWithin_exactAdd48 (x := x1) (d := s0) (i := valBaseReg) (j := outV)
+        FibonacciHeap.execWithin_exactAdd (x := x1) (d := s0) (i := valBaseReg) (j := outV)
           (by rw [hx1_vb, hov_eq]; rw [space_eq_fib_add] at hfit_stop;
               exact hfit_stop.of_le (by omega))
     have eb2 : ExecWithin (B := .exact) w (.op (.load outValReg s0)) a1 a2 1 := by
@@ -1463,7 +1442,7 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
           Function.update_of_ne (by decide : freeTopReg ≠ outValReg),
           Function.update_of_ne (by decide : freeTopReg ≠ s0), hx1_top]
       simpa only [ha2_fb, ha2_top] using
-        execWithin_exactAdd48 (x := a2) (d := s0) (i := freeBaseReg) (j := freeTopReg)
+        FibonacciHeap.execWithin_exactAdd (x := a2) (d := s0) (i := freeBaseReg) (j := freeTopReg)
           (by rw [ha2_fb, ha2_top]; rw [space_eq_fib_add] at hfit_stop;
               exact hfit_stop.of_le (by omega))
     have eb4 : ExecWithin (B := .exact) w (.op (.store s0 outV)) a3 a4 1 := by
@@ -1483,7 +1462,7 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
           Function.update_of_ne (by decide : oneP ≠ s0),
           Function.update_of_ne (by decide : oneP ≠ outValReg), hx1_o1]
       simpa only [ha4_top, ha4_o1] using
-        execWithin_exactAdd48 (x := a4) (d := freeTopReg) (i := freeTopReg) (j := oneP)
+        FibonacciHeap.execWithin_exactAdd (x := a4) (d := freeTopReg) (i := freeTopReg) (j := oneP)
           (by rw [ha4_top, ha4_o1]; have := space_lower n_max;
               exact hfit_stop.of_le (by omega))
     have he2 : ExecWithin (B := .exact) w
@@ -1513,9 +1492,9 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
     have hmod_all : Modifies (Block.mk base (space n_max)).footprint x.mem y.mem := by
       have hm_y : Modifies (Block.mk base (space n_max)).footprint x1.mem y.mem :=
         Modifies.write_of_owns ho_free h.val
-      exact modifies_outer_trans (modifies_of_fib hmod_fib) hm_y
+      exact FibonacciHeap.modifies_block_trans (modifies_of_fib hmod_fib) hm_y
     refine ⟨y, t1 + 7, he1.seq he2, ?_, ?_, hmod_all, ?_⟩
-    · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm, hsh, y, a4, a3, a2, a1,
+    · simp only [decode, Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm', y, a4, a3, a2, a1,
         Data.set_regs, Data.write_regs,
         Function.update_of_ne (by decide : outFlag ≠ freeTopReg),
         Function.update_of_ne (by decide : outFlag ≠ s0),
@@ -1530,7 +1509,7 @@ theorem extractMinCode_exec {n_max U V w base : ℕ}
         Function.update_of_ne (by decide : outValReg ≠ s0),
         Function.update_self, hfl_ne, hov_eq, hok_eq, hh_lt, ↓reduceIte, ↓reduceDIte, Fin.eta]
       rfl
-    · simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm, hsh] at hwf' ⊢
+    · simp only [Cslib.Algorithms.Lean.MinPQ.stepAlloc, hfm'] at hwf' ⊢
       refine ⟨hby, ?_, hwf', ?_, ?_, ?_, ?_, ?_, ?_⟩
       · refine FibonacciHeap.FibInv.supported hreg_fib hmem_fib (hby.comap f42) ?_
         dsimp only

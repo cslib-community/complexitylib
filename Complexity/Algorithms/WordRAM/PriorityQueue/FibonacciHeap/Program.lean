@@ -698,7 +698,7 @@ theorem charge_extractMin_le_tExt (n : ℕ) (s : IndexedMinPQ.State n) :
 
 /-! ## Exact-ALU step rules, footprint framing, and `RawState.ofData` update lemmas -/
 
-theorem execWithin_exactAdd {w : ℕ} {x : Data rFib} {d i j : Fin rFib}
+theorem execWithin_exactAdd {w r : ℕ} {x : Data r} {d i j : Fin r}
     (hfit : Fits w (x.regs i + x.regs j)) :
     ExecWithin (B := .exact) w (.op (.exactBin .add d i j)) x
       (x.set d (x.regs i + x.regs j)) 1 :=
@@ -707,7 +707,7 @@ theorem execWithin_exactAdd {w : ℕ} {x : Data rFib} {d i j : Fin rFib}
     simp only [BinOp.evalExact, Option.bind_some]
     exact Data.put_of_fits hfit)
 
-theorem execWithin_exactSub {w : ℕ} {x : Data rFib} {d i j : Fin rFib}
+theorem execWithin_exactSub {w r : ℕ} {x : Data r} {d i j : Fin r}
     (hle : x.regs j ≤ x.regs i) (hfit : Fits w (x.regs i - x.regs j)) :
     ExecWithin (B := .exact) w (.op (.exactBin .sub d i j)) x
       (x.set d (x.regs i - x.regs j)) 1 :=

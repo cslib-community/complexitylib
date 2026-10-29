@@ -12,13 +12,15 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
 /-!
 # Degree-indexed root consolidation and `extractMin` for a Fibonacci heap
 
-This file proves the correctness, memory-safety, and `O(log n)` amortized instruction bound of
-`scatterRootCode` and `extractMinCode` [Fredman and Tarjan][FredmanTarjan1987]
+This file proves the correctness, memory-safety, and `O(log |dom s| + 1)` amortized instruction
+bound of `scatterRootCode` and `extractMinCode` in the current number of stored elements
+`sz = (IndexedMinPQ.dom s).card` [Fredman and Tarjan][FredmanTarjan1987]
 [Cormen et al., Section 19.2][CLRS2009]:
 
 * **Degree-table invariant (`SlotInv`):** Tracks the subset `slotTrees` of consolidated root trees
-  currently stored in `cons[0..maxDeg]`, maintaining pairwise-distinct degrees, `maxDeg ≤
-  2 * Nat.log 2 n + 1`, and zeroing of all unoccupied entries `cons[d]` (`d ≤ n`).
+  currently stored in `cons[0..maxDeg]` when consolidating at most `sz` nodes, maintaining
+  pairwise-distinct degrees, `maxDeg ≤ 2 * Nat.log 2 sz + 1`, and zeroing of all unoccupied entries
+  `cons[d]` (`d ≤ n`).
 * **Root scattering (`scatterRootCode_exec`):** Repeatedly links equal-degree roots via
   `ValidRoot.link` under lexicographic `IndexedMinPQ.PrioLT` using internal potential
   `50 * slotTrees.length`,
@@ -26,9 +28,9 @@ This file proves the correctness, memory-safety, and `O(log n)` amortized instru
   other live nodes.
 * **Minimum extraction (`extractMinCode_exec`):** Removes `z = minRoot - 1` (agreeing with
   `IndexedMinPQ.findMin`), scatters `z`'s children and the `numRoots - 1` remaining roots into
-  `cons`, and scans only `0 .. maxDeg` (`≤ 2 * Nat.log 2 n + 2` slots) to rebuild the root circular
-  list and `minRootReg` while restoring `cons = 0` in `t + potential y ≤ 410 * (Nat.log 2 n + 1) +
-  potential x` instructions.
+  `cons`, and scans only `0 .. maxDeg` (`≤ 2 * Nat.log 2 (IndexedMinPQ.dom s).card + 2` slots) to
+  rebuild the root circular list and `minRootReg` while restoring `cons = 0` in
+  `t + potential y ≤ 410 * (Nat.log 2 (IndexedMinPQ.dom s).card + 1) + potential x` instructions.
 
 ## Main definitions
 
@@ -39,8 +41,9 @@ This file proves the correctness, memory-safety, and `O(log n)` amortized instru
 
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.scatterRootCode_exec`: amortized root
   scattering and equal-degree linking specification.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.extractMinCode_exec`: `O(log n)` amortized
-  `extractMin` specification.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.extractMinCode_exec`:
+  `O(log |dom s| + 1)` amortized `extractMin` specification in the current number of stored
+  elements.
 
 ## References
 
@@ -97,11 +100,11 @@ theorem ValidRoot.frame_nodes {n : ℕ} {st st' : RawState n} {T : FHTree n}
       let hu' := h u (T.nodes_eq ▸ List.mem_cons_of_mem T.root hu)
       hu'.2.2.2.2.2.2)
 
-/-- Every valid subtree `T` disjoint from at least one other handle `z : Fin n` satisfies both
-`T.deg ≤ 2 * Nat.log 2 n + 1` and `T.deg + 2 ≤ n`. -/
-theorem deg_bounds_of_extra {n : ℕ} {st : RawState n} {T : FHTree n} {z : Fin n}
-    (hT : ValidSubtree st none T) (hnd : (z :: T.nodes).Nodup) :
-    T.deg ≤ 2 * Nat.log 2 n + 1 ∧ T.deg + 2 ≤ n := by
+/-- Every valid subtree `T` with `T.size ≤ sz` disjoint from at least one other handle `z : Fin n`
+satisfies both `T.deg ≤ 2 * Nat.log 2 sz + 1` and `T.deg + 2 ≤ n`. -/
+theorem deg_bounds_of_extra {n sz : ℕ} {st : RawState n} {T : FHTree n} {z : Fin n}
+    (hsz : T.size ≤ sz) (hT : ValidSubtree st none T) (hnd : (z :: T.nodes).Nodup) :
+    T.deg ≤ 2 * Nat.log 2 sz + 1 ∧ T.deg + 2 ≤ n := by
   have hlen : 1 + T.size ≤ n := by
     have h : (z :: T.nodes).length ≤ n := by simpa using hnd.length_le_card
     simp only [List.length_cons] at h
@@ -109,8 +112,7 @@ theorem deg_bounds_of_extra {n : ℕ} {st : RawState n} {T : FHTree n} {z : Fin 
     omega
   have hfib : Nat.fib (T.deg + 2) ≤ T.size := hT.fib_le_size
   have hd_size : T.deg + 1 ≤ T.size := (deg_add_one_le_fib T.deg).trans hfib
-  have hd_log : T.deg ≤ 2 * Nat.log 2 n + 1 :=
-    (hT.deg_bounds (m := n) (by omega)).1
+  have hd_log : T.deg ≤ 2 * Nat.log 2 sz + 1 := (hT.deg_bounds hsz).1
   exact ⟨hd_log, by omega⟩
 
 private theorem nodup_eraseIdx {α : Type*} :
@@ -409,7 +411,8 @@ private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
   have hnd_cur_rest := List.nodup_append.mp hnd
   have hz_in_ro : z ∈ forestNodes slotTrees ++ otherNodes := List.mem_append_right _ hz_mem
   have hz_not_cur : z ∉ T_cur.nodes := fun hm => hnd_cur_rest.2.2 z hm z hz_in_ro rfl
-  have hdeg_bds := deg_bounds_of_extra hT_cur.1 (List.nodup_cons.mpr ⟨hz_not_cur, hnd_cur_rest.1⟩)
+  have hdeg_bds :=
+    deg_bounds_of_extra le_rfl hT_cur.1 (List.nodup_cons.mpr ⟨hz_not_cur, hnd_cur_rest.1⟩)
   rw [hcur_deg] at hdeg_bds
   have hd_le_n : curD ≤ n := by omega
   have hd1_le_n : curD + 1 ≤ n := by omega
@@ -1311,7 +1314,7 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
   have hnd_0 := List.nodup_append.mp hnd
   have hz_not_0 : z ∉ T₀.nodes := fun hm =>
     hnd_0.2.2 z hm z (List.mem_append_right _ hz_mem) rfl
-  have hd0_bds := deg_bounds_of_extra hT₀.1 (List.nodup_cons.mpr ⟨hz_not_0, hnd_0.1⟩)
+  have hd0_bds := deg_bounds_of_extra le_rfl hT₀.1 (List.nodup_cons.mpr ⟨hz_not_0, hnd_0.1⟩)
   have hd0_le_n : d0 ≤ n := by omega
   have hdeg_u0 : st.deg u0 = d0 := by
     cases hT₀.1 with
@@ -1395,7 +1398,12 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
   have hnd_f := List.nodup_append.mp hnd_lp
   have hz_not_f : z ∉ T_f.nodes := fun hm =>
     hnd_f.2.2 z hm z (List.mem_append_right _ hz_mem) rfl
-  have hdf_bds := deg_bounds_of_extra hTf.1 (List.nodup_cons.mpr ⟨hz_not_f, hnd_f.1⟩)
+  have hTf_sz : T_f.size ≤ sz := by
+    have hp_len := (hperm_lp.append_right otherNodes).length_eq
+    simp only [List.length_append] at hp_len hsz
+    unfold FHTree.size
+    omega
+  have hdf_bds := deg_bounds_of_extra hTf_sz hTf.1 (List.nodup_cons.mpr ⟨hz_not_f, hnd_f.1⟩)
   rw [hdeg_f] at hdf_bds
   have hdf_le_n : curD_f ≤ n := by omega
   have hcons_f_zero : st_lp.cons curD_f = 0 := by
@@ -1508,15 +1516,7 @@ theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
       Function.update_of_ne ne_cd, Function.update_of_ne ne4]
   · simpa only [forestNodes, List.append_assoc] using hnd_lp
   · rw [hsty, hst_z2]
-    have hTf_sz : T_f.size ≤ sz := by
-      have hp_len := (hperm_lp.append_right otherNodes).length_eq
-      simp only [List.length_append] at hp_len hsz
-      unfold FHTree.size
-      omega
-    have hdf_log : curD_f ≤ 2 * Nat.log 2 sz + 1 := by
-      rw [← hdeg_f]
-      exact (hTf.1.deg_bounds hTf_sz).1
-    exact hs_lp.insert_empty hdf_bds.2 hdf_log hdeg_f hnone_f hTf
+    exact hs_lp.insert_empty hdf_bds.2 hdf_bds.1 hdeg_f hnone_f hTf
   · dsimp only
     rw [hsty, hst_z2]
     exact ⟨hk_lp, hmk_lp, hin_lp, hmin_lp, hnr_lp, hnm_lp, hsz_lp, ho_lp⟩
