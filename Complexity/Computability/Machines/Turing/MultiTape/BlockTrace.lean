@@ -111,7 +111,8 @@ theorem workTapePos_runFrom_abs_sub_le (cfg : Cfg k Symbol State input)
   | zero => simp [runFrom]
   | succ duration ih =>
     rw [runFrom_succ]
-    have hs := abs_le.mp (tm.workTapePos_step_le (tm.runFrom cfg duration) tape)
+    have hs := abs_le.mp (MultiTapeNTM.Step.workTapePos_le
+      (step_iff.mpr rfl : tm.Step (tm.runFrom cfg duration) _) tape)
     have hi := abs_le.mp ih
     apply abs_le.mpr
     constructor <;> push_cast <;> omega
@@ -124,7 +125,7 @@ theorem workTapes_runFrom_eq_of_outside_window (cfg : Cfg k Symbol State input)
     (tm.runFrom cfg duration).workTapes tape position = cfg.workTapes tape position := by
   apply workTapes_runFrom_eq_of_notMem_visitedByTapeHead
   intro hmem
-  obtain ⟨j, hj, rfl⟩ := (mem_visitedByTapeHead.mp hmem)
+  obtain ⟨j, hj, rfl⟩ := MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic.mp hmem
   have hpos := tm.workTapePos_runFrom_abs_sub_le cfg j tape
   omega
 
