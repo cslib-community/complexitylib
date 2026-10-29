@@ -15,6 +15,7 @@ public import Complexity.Algorithms.Lean.FusionTree.Sketch
 public import Complexity.Algorithms.Lean.FusionTree.Tree
 public import Complexity.Algorithms.Lean.FusionTree.XorCorrection
 public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.Algorithms.Lean.MinPQ
 public import Complexity.Algorithms.Lean.Queue
 public import Complexity.Algorithms.Lean.Retroactive
 public import Complexity.Algorithms.Lean.SearchTree.Basic
@@ -291,6 +292,7 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Consolidate
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Cut
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Forest
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Model
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Program
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Trees
