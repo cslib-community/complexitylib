@@ -8,6 +8,7 @@ module
 -- upstream: candidate (addition to `Cslib/Probability/PMF.lean`)
 
 public import Complexity.Probability.PMF
+import Complexity.Probability.PMF.Bind
 
 /-!
 # Event probabilities of discrete distributions
@@ -151,9 +152,7 @@ theorem toOuterMeasure_bind_le (p : PMF α) (kernel : α → PMF β) (event : Se
     {error : ENNReal} (h : ∀ a, (kernel a).toOuterMeasure event ≤ error) :
     (p.bind kernel).toOuterMeasure event ≤ error := by
   rw [PMF.toOuterMeasure_bind_apply]
-  calc ∑' a, p a * (kernel a).toOuterMeasure event
-      ≤ ∑' a, p a * error := ENNReal.tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h a) zero_le
-    _ = error := by rw [ENNReal.tsum_mul_right, p.tsum_coe, one_mul]
+  exact tsum_mul_le_of_forall_le _ h
 
 /-- A randomized continuation can fail because its precondition was already false or because
 it fails from a valid input. No independence or finite-state assumption is needed. -/
