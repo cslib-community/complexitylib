@@ -133,6 +133,16 @@
       "namespace": "ComplexityTests.Abstracts.ConstantDepthAbstract"
     },
     {
+      "id": "braverman",
+      "title": "Braverman: polylogarithmic independence fools AC⁰",
+      "module": "ComplexityAbstracts.BravermanAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.BravermanAbstract.braverman"
+      ],
+      "summary": "Every k-wise independent distribution on n-bit strings with k ≥ (64q)^((2d+3)(d+7)+1) makes a circuit of NOT and unbounded fan-in AND/OR gates of depth at most d, with at most 2^q gates of fan-in below 2^q, output true with probability within 2^(-q) of the fraction of inputs on which it is true; for size and fan-in at most m and error ε this is k = (log(m/ε))^O(d²).",
+      "scope": "Arbitrary distributions with uniform marginals on every set of at most k positions; explicit bound with our own constants and exponent, weaker than Braverman's; size and depth count NOT gates and constants; one parameter q bounds the size, the fan-in and log₂ of the inverse error; nonuniform and information-theoretic."
+    },
+    {
       "id": "formula-bounds",
       "title": "Formula lower bounds: parity and Andreev",
       "module": "ComplexityAbstracts.FormulaBoundsAbstract",
