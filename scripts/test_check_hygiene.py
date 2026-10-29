@@ -48,6 +48,42 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("missing or invalid `-- upstream:` marker", errors[0])
 
+    def test_upstream_marker_must_be_a_standalone_line_comment(self) -> None:
+        examples = (
+            '/- Example:\n-- upstream: candidate\n-/\n',
+            '/- Outer /- nested -/\n-- upstream: candidate\n-/\n',
+            'def text := "\n-- upstream: candidate\n"\n',
+            'def text := r##"\n-- upstream: candidate\n"##\n',
+            'def value := 0 -- upstream: candidate\n',
+        )
+        for example in examples:
+            with self.subTest(example=example):
+                p = self.write("Complexity/NoMarker.lean", "module\n" + example)
+                self.assertEqual(check_hygiene.check_file(p, root=self.root),
+                                 ["Complexity/NoMarker.lean: missing or invalid `-- upstream:` marker"])
+
+    def test_standalone_upstream_status_forms_pass(self) -> None:
+        statuses = ("candidate", "submitted #123 @deadbeef",
+                    "vendored contributor:feature/api @deadbeef (unsubmitted)",
+                    "merged @deadbeef", "local-only (test scaffolding)")
+        for status in statuses:
+            for indent in ("", "  "):
+                with self.subTest(status=status, indent=indent):
+                    p = self.write("Complexity/Marker.lean",
+                                   f"module\n{indent}-- upstream: {status}\n")
+                    self.assertEqual(check_hygiene.check_file(p, root=self.root), [])
+
+    def test_candidate_marker_examples_do_not_enable_simp_check(self) -> None:
+        for example in ('/-\n-- upstream: candidate\n-/\n',
+                        'def text := r#"\n-- upstream: candidate\n"#\n'):
+            with self.subTest(example=example):
+                p = self.write(
+                    "Complexity/Local.lean",
+                    "module\n-- upstream: local-only (test scaffolding)\n" + example
+                    + "theorem demo : True := by\n  simp\n  trivial\n",
+                )
+                self.assertEqual(check_hygiene.check_file(p, root=self.root, check_simp=True), [])
+
     def heartbeat_module(self, rel: str, value: int | str) -> pathlib.Path:
         return self.write(
             rel,
@@ -146,6 +182,24 @@ class CheckHygieneTests(unittest.TestCase):
                                + "\n" * 5 + setting + "\n")
                 errors = check_hygiene.check_file(p, root=self.root)
                 self.assertTrue(any("justifying comment" in e for e in errors), errors)
+
+    def test_options_in_interpolated_terms_are_checked(self) -> None:
+        # Interpolation braces contain executable Lean terms, including tactic proofs.
+        for option, value in (("maxHeartbeats", 400000), ("maxRecDepth", 1000)):
+            with self.subTest(option=option):
+                p = self.write(
+                    "Complexity/Interpolation.lean",
+                    "module\n-- upstream: candidate\n" + "\n" * 5
+                    + f'def text := s!"{{(by set_option {option} {value} '
+                    'in exact (0 : Nat))}"\n',
+                )
+                errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+                self.assertEqual(len(errors), 2 if option == "maxHeartbeats" else 1, errors)
+                self.assertTrue(all(e.startswith("Complexity/Interpolation.lean:8:")
+                                    for e in errors), errors)
+                self.assertIn("requires a justifying comment", errors[0])
+                if option == "maxHeartbeats":
+                    self.assertIn("exceeds the 200000 default", errors[1])
 
     def test_heartbeat_allowlist_parsing(self) -> None:
         path = self.write("scripts/heartbeat_allowlist.txt",

@@ -13,7 +13,6 @@ import Complexity.Computability.Complexity.Classes.NP.Witness
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Search problems: FNP, FP and TFNP
@@ -213,20 +212,16 @@ theorem mem_FNP_iff_exists_bounded : R ∈ FNP enc ↔
     ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
       ComputableInPolyTime V (encPair enc encBits) encBool ∧
         ∀ a w, R a w ↔ w.length ≤ p.eval (enc a).length ∧ V (a, w) = true := by
-  have this : R ∈ FNP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableInPolyTime V (encPair enc encBits) encBool ∧ ∀ a w, R a w ↔ w.length ≤ p.eval
-      (enc a).length ∧ V (a, w) = true := by
-    rw [mem_FNP]
-    constructor
-    · rintro ⟨⟨p, hp⟩, V, hV, hR⟩
-      exact ⟨p, V, hV, fun a w => ⟨fun h => ⟨hp a w h, (hR a w).1 h⟩, fun h => (hR a w).2 h.2⟩⟩
-    · rintro ⟨p, V, hV, hR⟩
-      refine ⟨⟨p, fun a w h => ((hR a w).1 h).1⟩,
-        fun x => decide (x.2.length ≤ p.eval (enc x.1).length) && V x, ?_, fun a w => ?_⟩
-      · exact (bool_and' (unary_le' (length_bits.comp (snd enc encBits))
-          ((unary_eval p).comp ((encoding_length enc).comp (fst enc encBits)))) hV)
-      · simp only [hR a w, Bool.and_eq_true, decide_eq_true_eq]
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  rw [mem_FNP]
+  constructor
+  · rintro ⟨⟨p, hp⟩, V, hV, hR⟩
+    exact ⟨p, V, hV, fun a w => ⟨fun h => ⟨hp a w h, (hR a w).1 h⟩, fun h => (hR a w).2 h.2⟩⟩
+  · rintro ⟨p, V, hV, hR⟩
+    refine ⟨⟨p, fun a w h => ((hR a w).1 h).1⟩,
+      fun x => decide (x.2.length ≤ p.eval (enc x.1).length) && V x, ?_, fun a w => ?_⟩
+    · exact bool_and' (unary_le' (length_bits.comp (snd enc encBits))
+        ((unary_eval p).comp ((encoding_length enc).comp (fst enc encBits)))) hV
+    · simp only [hR a w, Bool.and_eq_true, decide_eq_true_eq]
 
 /-- A polynomial-time solver of a total relation in `FNP` puts it in `FPSearch`. -/
 theorem mem_FPSearch_of_total (hR : R ∈ FNP enc) {g : α → List Bool}
@@ -235,12 +230,10 @@ theorem mem_FPSearch_of_total (hR : R ∈ FNP enc) {g : α → List Bool}
 
 /-- A total relation in `FPSearch` has a polynomial-time function returning a solution. -/
 theorem exists_total_of_mem_FPSearch (hR : R ∈ FPSearch enc) (htot : IsTotalSearch R) :
-    ∃ g : α → List Bool, ComputableInPolyTime g enc encBits ∧ ∀ a, R a (g a) := by
-  have this : ∃ g : α → List Bool, ComputableInPolyTime g enc encBits ∧ ∀ a, R a (g a) :=
-    let ⟨_, f, hf, hsolve⟩ := hR
-    ⟨fun a => (f a).getD [], optionGetDWithInput hf (const []),
-      fun a => hsolve.rel_getD htot a []⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+    ∃ g : α → List Bool, ComputableInPolyTime g enc encBits ∧ ∀ a, R a (g a) :=
+  let ⟨_, f, hf, hsolve⟩ := hR
+  ⟨fun a => (f a).getD [], optionGetDWithInput hf (const []),
+    fun a => hsolve.rel_getD htot a []⟩
 
 /-! ### Domains and `NP` -/
 

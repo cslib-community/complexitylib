@@ -32,8 +32,7 @@ Thus the proof uses certified word sums and powers, without assuming indexed-pro
 The two-sided acceptance/rejection-target generalization is proved in `WPP.TwoSided`.
 Oracle lowness is a separate result.
 
-The polynomial-time interfaces use `Turing.MultiTapeTM.ComputableInPolyTime`. The binary integer
-list product and list numbering are still certified in the tidy calculus.
+The polynomial-time interfaces use `Turing.MultiTapeTM.ComputableInPolyTime`.
 
 ## Main results
 
@@ -59,18 +58,16 @@ namespace Cslib.Complexity
 open Finset Turing.MultiTapeTM
 
 private def selectedProduct (xs : List ℤ) (w : List Bool) : ℤ :=
-  (xs.zipIdx.map fun zi => if w.getD zi.2 false then 1 else zi.1).prod
+  ((List.range xs.length).map fun i => if w.getD i false then 1 else xs.getD i 0).prod
 
 private theorem selectedProduct_ofFn (xs : List ℤ) (w : Fin xs.length → Bool) :
     selectedProduct xs (List.ofFn w) = ∏ i, if w i then 1 else xs.get i := by
-  have he : (xs.zipIdx.map fun zi => if (List.ofFn w).getD zi.2 false then 1 else zi.1) =
+  have he : ((List.range xs.length).map fun i =>
+      if (List.ofFn w).getD i false then 1 else xs.getD i 0) =
       List.ofFn (fun i => if w i then 1 else xs.get i) := by
-    apply List.ext_getElem
-    · simp
-    · intro i h₁ h₂
-      simp only [List.getElem_map, List.getElem_zipIdx]
-      have hi : i < xs.length := by simpa only [List.length_ofFn] using h₂
-      simp [List.getD, hi]
+    apply List.ext_getElem (by simp) fun i h₁ h₂ => ?_
+    have hi : i < xs.length := by simpa only [List.length_ofFn] using h₂
+    simp [List.getD, hi]
   rw [selectedProduct, he, List.prod_ofFn]
 
 
@@ -89,12 +86,11 @@ private theorem polyTime_selectedProduct {α : Type} {enc : α ↪ List Bool} {f
     (hf : ComputableInPolyTime f enc (encList encIntBin)) :
     ComputableInPolyTime (fun x : α × List Bool => selectedProduct (f x.1) x.2)
       (encPair enc encBits) encIntBin := by
-  have hf := hf.tidy
   unfold selectedProduct
-  refine .of_tidy (ComputableTidilyInPolyTime.intBin_prod.comp ?_)
-  apply ComputableTidilyInPolyTime.mapWithInput
-  · exact (ComputableTidilyInPolyTime.zipIdx encIntBin).comp
-      (hf.comp (.fst enc encBits))
+  refine (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp ?_
+  apply ComputableInPolyTime.mapWithInput
+  · exact ComputableInPolyTime.range.comp
+      ((ComputableInPolyTime.length_list encIntBin).comp (hf.comp (.fst enc encBits)))
   · fun_prop
 
 

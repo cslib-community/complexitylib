@@ -13,6 +13,7 @@ public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Int.Order
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.BigOperators.Intervals
@@ -791,7 +792,7 @@ theorem computableInPolyTime_zeroJet {J ℓ : α → ℕ}
     (hℓ : ComputableInPolyTime ℓ encIn encUnary) :
     ComputableInPolyTime (fun x => zeroJet (J x) (ℓ x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (ComputableTidilyInPolyTime.const 0))
+  computableInPolyTime_tabulateTable hJ hℓ (.const 0)
 
 /-- `constJet` is computable in polynomial time for unary `(J, ℓ)` and binary `c`. -/
 @[fun_prop]
@@ -801,10 +802,9 @@ theorem computableInPolyTime_constJet {J ℓ : α → ℕ} {c : α → ℤ}
     ComputableInPolyTime (fun x => constJet (J x) (ℓ x) (c x))
       encIn (encList (encList encIntBin)) := by
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
-  have hc := hc.tidy
   rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 0 then c p.1.1 else 0) =
       fun p => if (p.1.2 == 0 && p.2 == 0) then c p.1.1 else 0 by funext; simp]
-  exact .of_tidy (by fun_prop)
+  fun_prop
 
 /-- `zJet` is computable in polynomial time for unary `(J, ℓ)`. -/
 @[fun_prop]
@@ -814,7 +814,7 @@ theorem computableInPolyTime_zJet {J ℓ : α → ℕ}
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
   rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 1 ∧ p.2 = 0 then (1 : ℤ) else 0) =
       fun p => if (p.1.2 == 1 && p.2 == 0) then 1 else 0 by funext; simp]
-  exact .of_tidy (by fun_prop)
+  fun_prop
 
 /-- `vJet` is computable in polynomial time for unary `(J, ℓ)`. -/
 @[fun_prop]
@@ -824,9 +824,8 @@ theorem computableInPolyTime_vJet {J ℓ : α → ℕ}
   refine computableInPolyTime_tabulateTable hJ hℓ ?_
   rw [show (fun p : (α × ℕ) × ℕ => if p.1.2 = 0 ∧ p.2 = 1 then (1 : ℤ) else 0) =
       fun p => if (p.1.2 == 0 && p.2 == 1) then 1 else 0 by funext; simp]
-  exact .of_tidy (by fun_prop)
+  fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `addJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_addJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
@@ -835,18 +834,16 @@ theorem computableInPolyTime_addJet {J ℓ : α → ℕ} {A B : α → List (Lis
     (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => addJet (J x) (ℓ x) (A x) (B x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `negJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_negJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => negJet (J x) (ℓ x) (A x)) encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `subJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_subJet {J ℓ : α → ℕ} {A B : α → List (List ℤ)}
@@ -855,9 +852,8 @@ theorem computableInPolyTime_subJet {J ℓ : α → ℕ} {A B : α → List (Lis
     (hB : ComputableInPolyTime B encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => subJet (J x) (ℓ x) (A x) (B x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `smulJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_smulJet {J ℓ : α → ℕ} {c : α → ℤ} {A : α → List (List ℤ)}
@@ -866,9 +862,8 @@ theorem computableInPolyTime_smulJet {J ℓ : α → ℕ} {c : α → ℤ} {A : 
     (hA : ComputableInPolyTime A encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => smulJet (J x) (ℓ x) (c x) (A x))
       encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_tabulateTable hJ hℓ (.of_tidy (by fun_prop))
+  computableInPolyTime_tabulateTable hJ hℓ (by fun_prop)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `shiftZJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_shiftZJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
@@ -880,9 +875,8 @@ theorem computableInPolyTime_shiftZJet {J ℓ : α → ℕ} {A : α → List (Li
   rw [show (fun p : (α × ℕ) × ℕ =>
         if p.1.2 = 0 then (0 : ℤ) else rowEntry (A p.1.1) (p.1.2 - 1) p.2) =
       fun p => if p.1.2 == 0 then 0 else rowEntry (A p.1.1) (p.1.2 - 1) p.2 by funext; simp]
-  exact .of_tidy (by fun_prop)
+  fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- `shiftVJet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_shiftVJet {J ℓ : α → ℕ} {A : α → List (List ℤ)}
@@ -894,9 +888,8 @@ theorem computableInPolyTime_shiftVJet {J ℓ : α → ℕ} {A : α → List (Li
   rw [show (fun p : (α × ℕ) × ℕ =>
         if p.2 = 0 then (0 : ℤ) else rowEntry (A p.1.1) p.1.2 (p.2 - 1)) =
       fun p => if p.2 == 0 then 0 else rowEntry (A p.1.1) p.1.2 (p.2 - 1) by funext; simp]
-  exact .of_tidy (by fun_prop)
+  fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Computing a single truncated 2D convolution coefficient `convEntry` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_convEntry {A B : α → List (List ℤ)} {j u : α → ℕ}
@@ -904,7 +897,6 @@ theorem computableInPolyTime_convEntry {A B : α → List (List ℤ)} {j u : α 
     (hB : ComputableInPolyTime B encIn (encList (encList encIntBin)))
     (hj : ComputableInPolyTime j encIn encUnary) (hu : ComputableInPolyTime u encIn encUnary) :
     ComputableInPolyTime (fun x => convEntry (A x) (B x) (j x) (u x)) encIn encIntBin := by
-  refine .of_tidy ?_
   unfold convEntry
   fun_prop
 

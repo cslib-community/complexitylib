@@ -275,8 +275,8 @@ theorem PolyTimeTruthTableAutoreducible.polyTimeTuringAutoreducible
   let words : α → List (List Bool) :=
     fun a => (List.range (r a)).map fun i => encA (q (a, i))
   have hwords : ComputableInPolyTime words encA (encList encBits) :=
-    .of_tidy (ComputableTidilyInPolyTime.mapWithInput
-      (ComputableTidilyInPolyTime.range.comp hr.tidy) hq.tidy.encoded)
+    ComputableInPolyTime.mapWithInput
+      (ComputableInPolyTime.range.comp hr) hq.encoding_comp
   let program : α → WordQueryComp Unit Bool := fun a =>
     (fun ans => d (a, ans)) <$> queryWords (words a)
   refine ⟨program, ?_, fun a qr hqr => ?_, fun a => ?_⟩

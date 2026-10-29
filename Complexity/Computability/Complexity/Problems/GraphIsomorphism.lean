@@ -10,9 +10,10 @@ module
 public import Complexity.Computability.Complexity.Problems.Graph
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Graph isomorphism
@@ -57,7 +58,7 @@ many vertices as the first graph, and preserves adjacency.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 namespace Graph
 
@@ -76,12 +77,8 @@ theorem computableInPolyTime_adjIndex {γ : Type} {input : γ ↪ List Bool} {G 
     (hi : ComputableInPolyTime i input encUnary)
     (hj : ComputableInPolyTime j input encUnary) :
     ComputableInPolyTime (fun x => (G x).adjIndex (i x) (j x)) input encBool := by
-  have hG := hG.tidy
-  have hi := hi.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
-  have hV := computableInPolyTime_distinctVertices.tidy.comp hG
-  exact computableInPolyTime_adjBool.tidy.comp ((hG.prod
+  have hV := computableInPolyTime_distinctVertices.comp hG
+  exact computableInPolyTime_adjBool.comp ((hG.prod
     ((listGetD (encA := encNat) 0).comp (hV.prod hi))).prod
     ((listGetD (encA := encNat) 0).comp (hV.prod hj)))
 
@@ -145,22 +142,20 @@ def verifier : (Graph × Graph) × List Bool → Bool :=
         (List.range x.1.distinctVertices.length).all fun j =>
           x.2.adjBool (p.getD i 0) (p.getD j 0) == x.1.adjIndex i j
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The verifier is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair (encPair encGraph encGraph) encBits) encBool := by
-  refine .of_tidy ?_
-  refine (Graph.computableInPolyTime_verifyOrdering (.of_tidy (by unfold encGraph; fun_prop))
-    (.of_tidy (bool_and'
-      (((length_list encNat).comp (snd _ _)).decide_eq'
-        ((length_list encNat).comp (by fun_prop))) ?_))).tidy
-  refine allWithInput (by fun_prop) (allWithInput (by fun_prop) ?_)
-  exact bool_beq.comp
-    (((Graph.computableInPolyTime_adjBool_comp (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
-      (.of_tidy (by fun_prop))).tidy).prod
-      (Graph.computableInPolyTime_adjIndex (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
-        (.of_tidy (by fun_prop))).tidy)
+  have hlen : ComputableInPolyTime
+      (fun x : (Graph × Graph) × List ℕ => x.1.1.distinctVertices.length)
+      (encPair (encPair encGraph encGraph) (encList encNat)) encUnary :=
+    (length_list encNat).comp (by fun_prop)
+  refine Graph.computableInPolyTime_verifyOrdering (by unfold encGraph; fun_prop)
+    (bool_and' (((length_list encNat).comp (snd _ _)).decide_eq' hlen) ?_)
+  refine allWithInput (range.comp hlen)
+    (allWithInput (range.comp (hlen.comp (fst _ _))) ?_)
+  exact (Graph.computableInPolyTime_adjBool_comp (by fun_prop) (by fun_prop) (by fun_prop)).beq
+    (Graph.computableInPolyTime_adjIndex (by fun_prop) (by fun_prop) (by fun_prop))
 
 /-- `verifier` is a verifier for `GraphIsomorphism` with certificates whose length is the square
 of the length of the encoded pair of graphs. -/
@@ -211,8 +206,6 @@ theorem isVerifier :
     fun x p => ?_
   simp only [Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true, List.mem_range, beq_iff_eq]
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`GraphIsomorphism ∈ NP`.** -/
 theorem mem_NP : GraphIsomorphism ∈ NP (encPair encGraph encGraph) :=
   ⟨Polynomial.X ^ 2, verifier, computableInPolyTime_verifier, isVerifier⟩

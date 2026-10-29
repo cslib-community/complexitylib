@@ -40,9 +40,50 @@ framing. They do not use a fixed-dimensional finite-type encoding to obtain effi
 
 namespace Cslib.Crypto.Homomorphic.GSW
 
-open Probability Turing.MultiTapeTM Turing.MultiTapeTM.ComputableTidilyInPolyTime
+open Probability Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α : Type} {input : α ↪ List Bool} {n m w η i k j : α → ℕ}
+
+private theorem computableInPolyTime_matrixBinaryEntry {β : Type} {encIn : β ↪ List Bool}
+    {cols width row col : β → ℕ} {word : β → List Bool}
+    (_hcols : ComputableInPolyTime cols encIn encUnary)
+    (hwidth : ComputableInPolyTime width encIn encUnary)
+    (hword : ComputableInPolyTime word encIn encBits)
+    (_hrow : ComputableInPolyTime row encIn encUnary)
+    (_hcol : ComputableInPolyTime col encIn encUnary) :
+    ComputableInPolyTime
+      (fun a => Matrix.binaryEntry (cols a) (width a) (word a) (row a) (col a))
+      encIn encNat :=
+  bitsToNat.comp (bitsRowWithInput hwidth (by fun_prop) hword)
+
+private theorem computableInPolyTime_intBin_emodNat'
+    {value : α → ℤ} {modulus : α → ℕ}
+    (hvalue : ComputableInPolyTime value input encIntBin)
+    (hmodulus : ComputableInPolyTime modulus input encNat) :
+    ComputableInPolyTime (fun a => (value a % (modulus a : ℤ)).toNat) input encNat := by
+  have hsign : ComputableInPolyTime (fun a => decide (value a < 0)) input encBool :=
+    ((headD (encA := encBool) (encL := encBits) false).comp hvalue.encoding_comp).of_enc_eq
+      fun a => by simp
+  have habs : ComputableInPolyTime (fun a => (value a).natAbs) input encNat :=
+    (bitsTail.comp hvalue.encoding_comp).of_enc_eq fun a => by simp
+  have hrem := binary_mod.comp (habs.prod hmodulus)
+  have h := hsign.ite'
+    (binary_mod.comp ((binary_sub.comp (hmodulus.prod hrem)).prod hmodulus)) hrem
+  refine h.of_enc_eq fun a => congrArg encNat ?_
+  by_cases hz : value a < 0
+  · simp only [Function.comp_apply, hz, decide_true, ↓reduceIte]
+    by_cases hq : modulus a = 0
+    · simp only [hq, Nat.cast_zero, Int.emod_zero, Nat.zero_sub, Nat.mod_zero]
+      omega
+    · rw [Int.emod_natAbs_of_neg hz hq]
+      split_ifs with hdiv
+      · simp [Int.emod_eq_zero_of_dvd hdiv]
+      · have hlt : (value a % (modulus a : ℤ)).toNat < modulus a := by
+          have := Int.emod_lt_of_pos (value a) (by omega : 0 < (modulus a : ℤ))
+          omega
+        rw [Nat.sub_sub_self hlt.le, Nat.mod_eq_of_lt hlt]
+  · simp only [Function.comp_apply, hz, decide_false, Bool.false_eq_true, ↓reduceIte]
+    exact (Int.emod_natAbs_of_nonneg (by omega : 0 ≤ value a)).symm
 
 /-- Compute a public row's leading residue from arbitrary binary inputs and signed errors. -/
 @[fun_prop]
@@ -53,14 +94,9 @@ theorem computableInPolyTime_publicRowHead {inputs : α → SerializedKeyInputs}
     (hi : ComputableInPolyTime i input encUnary) :
     ComputableInPolyTime (fun a => publicRowHead (n a) (w a) (inputs a) (i a))
       input encNat := by
-  have hn := hn.tidy
-  have hw := hw.tidy
-  have hinputs := hinputs.tidy
-  have hi := hi.tidy
-  refine .of_tidy ?_
   unfold publicRowHead
   have hrow := (listGetD (encA := encList encNat) []).comp (hinputs.snd'.fst'.prod hi)
-  have hproduct : ComputableTidilyInPolyTime
+  have hproduct : ComputableInPolyTime
       (fun p : α × ℕ => ((inputs p.1).2.1.getD (i p.1) []).getD p.2 0 *
         (inputs p.1).1.getD p.2 0) (encPair input encUnary) encNat := by
     apply binary_mul'
@@ -68,14 +104,17 @@ theorem computableInPolyTime_publicRowHead {inputs : α → SerializedKeyInputs}
         ((hrow.comp (fst input encUnary)).prod (snd input encUnary))
     · exact (listGetD (encA := encNat) 0).comp
         ((hinputs.fst'.comp (fst input encUnary)).prod (snd input encUnary))
-  have hsum := binary_sum.comp (mapWithInput
-    (f := fun a j => ((inputs a).2.1.getD (i a) []).getD j 0 * (inputs a).1.getD j 0)
-    (range.comp hn) hproduct)
+  have hsum := (show ComputableInPolyTime List.sum (encList encNat) encNat by fun_prop).comp
+    (mapWithInput
+      (f := fun a j => ((inputs a).2.1.getD (i a) []).getD j 0 * (inputs a).1.getD j 0)
+      (range.comp hn) hproduct)
   have herror := (listGetD (encA := encIntBin) 0).comp (hinputs.snd'.snd'.prod hi)
+  have hadd := (show ComputableInPolyTime (fun p : ℤ × ℤ => p.1 + p.2)
+    (encPair encIntBin encIntBin) encIntBin by fun_prop).comp
+      ((intBin_natCast.comp hsum).prod herror)
   simpa only [Function.comp_apply, Nat.cast_pow, Nat.cast_ofNat] using
-    intBin_emodNat' (intBin_add' (intBin_natCast.comp hsum) herror) (binary_pow' (const 2) hw)
+    computableInPolyTime_intBin_emodNat' hadd (binary_pow' (const 2) hw)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Construct the entire public word, charging the runtime number and width of every entry. -/
 @[fun_prop]
 theorem computableInPolyTime_publicMatrixSerialized {inputs : α → SerializedKeyInputs}
@@ -85,24 +124,18 @@ theorem computableInPolyTime_publicMatrixSerialized {inputs : α → SerializedK
     (hinputs : ComputableInPolyTime inputs input encSerializedKeyInputs) :
     ComputableInPolyTime
       (fun a => publicMatrixSerialized (n a) (m a) (w a) (inputs a)) input encBits := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hw := hw.tidy
-  have hinputs := hinputs.tidy
-  refine .of_tidy ?_
   unfold publicMatrixSerialized
   apply flatMapToBitsWithInput (range.comp hm)
   apply bitsAppend
   · fun_prop
   · apply flatMapToBitsWithInput (range.comp (hn.comp (fst input encUnary)))
     apply bitsLow (by fun_prop)
-    apply binary_mod'
-    · have hrow := (listGetD (encA := encList encNat) []).comp
-        ((hinputs.snd'.fst'.comp (fst input encUnary)).prod (snd input encUnary))
-      exact (listGetD (encA := encNat) 0).comp
-        ((hrow.comp (fst (encPair input encUnary) encUnary)).prod
-          (snd (encPair input encUnary) encUnary))
-    · exact binary_pow' (const 2) (by fun_prop)
+    have hrow := (listGetD (encA := encList encNat) []).comp
+      ((hinputs.snd'.fst'.comp (fst input encUnary)).prod (snd input encUnary))
+    have hentry := (listGetD (encA := encNat) 0).comp
+      ((hrow.comp (fst (encPair input encUnary) encUnary)).prod
+        (snd (encPair input encUnary) encUnary))
+    exact binary_mod.comp (hentry.prod (binary_pow' (const 2) (by fun_prop)))
 
 /-- Normalize and write the declared number of binary secret coordinates. -/
 @[fun_prop]
@@ -112,17 +145,12 @@ theorem computableInPolyTime_secretSerialized {secret : α → List ℕ}
     (hsecret : ComputableInPolyTime secret input (encList encNat)) :
     ComputableInPolyTime (fun a => secretSerialized (n a) (w a) (secret a))
       input encBits := by
-  have hn := hn.tidy
-  have hw := hw.tidy
-  have hsecret := hsecret.tidy
-  refine .of_tidy ?_
   unfold secretSerialized
   apply flatMapToBitsWithInput (range.comp hn)
   apply bitsLow (hw.comp (fst input encUnary))
-  apply binary_mod'
-  · exact (listGetD (encA := encNat) 0).comp
-      ((hsecret.comp (fst input encUnary)).prod (snd input encUnary))
-  · exact binary_pow' (const 2) (hw.comp (fst input encUnary))
+  have hentry := (listGetD (encA := encNat) 0).comp
+    ((hsecret.comp (fst input encUnary)).prod (snd input encUnary))
+  exact binary_mod.comp (hentry.prod (binary_pow' (const 2) (hw.comp (fst input encUnary))))
 
 /-- Compute a binary entry of the masked public matrix plus the message gadget. -/
 @[fun_prop]
@@ -140,40 +168,31 @@ theorem computableInPolyTime_encryptEntry
     ComputableInPolyTime
       (fun a => encryptEntry (n a) (m a) (w a) (publicWord a) (message a) (coins a)
         (i a) (k a) (j a)) input encNat := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hw := hw.tidy
-  have hpublicWord := hpublicWord.tidy
-  have hmessage := hmessage.tidy
-  have hcoins := hcoins.tidy
-  have hi := hi.tidy
-  have hk := hk.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
   unfold encryptEntry
   have hcoinsRow := (listGetD (encA := encBits) []).comp
     (((listGetD (encA := encList encBits) []).comp (hcoins.prod hi)).prod hk)
-  have hterm : ComputableTidilyInPolyTime
+  have hterm : ComputableInPolyTime
       (fun p : α × ℕ => if (((coins p.1).getD (i p.1) []).getD (k p.1) []).getD p.2 false
         then Matrix.binaryEntry (n p.1 + 1) (w p.1) (publicWord p.1) p.2 (j p.1) else 0)
       (encPair input encUnary) encNat := by
     apply ((bitsGetD false).comp
       ((hcoinsRow.comp (fst input encUnary)).prod (snd input encUnary))).ite'
-    · exact matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
+    · exact computableInPolyTime_matrixBinaryEntry (by fun_prop) (by fun_prop) (by fun_prop)
         (snd input encUnary) (by fun_prop)
     · exact const 0
-  have hsum := binary_sum.comp (mapWithInput
-    (f := fun a r => if (((coins a).getD (i a) []).getD (k a) []).getD r false
-      then Matrix.binaryEntry (n a + 1) (w a) (publicWord a) r (j a) else 0)
-    (range.comp hm) hterm)
-  have hgadget : ComputableTidilyInPolyTime
+  have hsum := (show ComputableInPolyTime List.sum (encList encNat) encNat by fun_prop).comp
+    (mapWithInput
+      (f := fun a r => if (((coins a).getD (i a) []).getD (k a) []).getD r false
+        then Matrix.binaryEntry (n a + 1) (w a) (publicWord a) r (j a) else 0)
+      (range.comp hm) hterm)
+  have hboolUnary : ComputableInPolyTime Bool.toNat encBool encUnary := of_finite Bool.toNat
+  have hgadget : ComputableInPolyTime
       (fun a => if i a = j a then (message a).toNat * 2 ^ k a else 0) input encNat := by
-    simpa only [Function.comp_apply, beq_iff_eq] using (unary_beq hi hj).ite'
-      (binary_mul' (unary_to_binary.comp (bool_toUnary.comp hmessage))
+    simpa only [Function.comp_apply, beq_iff_eq] using (beq hi hj).ite'
+      (binary_mul' (unary_to_binary.comp (hboolUnary.comp hmessage))
         (binary_pow' (const 2) hk)) (const 0)
-  exact binary_mod' (binary_add' hgadget hsum) (binary_pow' (const 2) hw)
+  exact binary_mod.comp ((binary_add.comp (hgadget.prod hsum)).prod (binary_pow' (const 2) hw))
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Encrypt from arbitrary public words and coins, charging the complete ciphertext output. -/
 @[fun_prop]
 theorem computableInPolyTime_encryptWithCoinsSerialized
@@ -187,20 +206,12 @@ theorem computableInPolyTime_encryptWithCoinsSerialized
     ComputableInPolyTime
       (fun a => encryptWithCoinsSerialized (n a) (m a) (w a) (publicWord a) (message a) (coins a))
       input encBits := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hw := hw.tidy
-  have hpublicWord := hpublicWord.tidy
-  have hmessage := hmessage.tidy
-  have hcoins := hcoins.tidy
-  refine .of_tidy ?_
   unfold encryptWithCoinsSerialized
   apply flatMapToBitsWithInput (range.comp (by fun_prop))
   apply flatMapToBitsWithInput (range.comp (by fun_prop))
   apply flatMapToBitsWithInput (range.comp (by fun_prop))
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The complete key generator is strict PPT for arbitrary efficient runtime dimensions. -/
 @[fun_prop]
 theorem isPPTOn_keyGenSerialized
@@ -210,16 +221,10 @@ theorem isPPTOn_keyGenSerialized
     (hη : ComputableInPolyTime η input encUnary) :
     IsPPTOn input (encPair encBits encBits)
       (fun a => keyGenSerialized (n a) (m a) (w a) (η a)) := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hw := hw.tidy
-  have hη := hη.tidy
-  have hsample := isPPTOn_sampleKeyInputsSerialized (.of_tidy hn) (.of_tidy hm) (.of_tidy hw)
-    (.of_tidy hη)
+  have hsample := isPPTOn_sampleKeyInputsSerialized hn hm hw hη
   unfold keyGenSerialized
   ppt
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The complete encryption program is strict PPT on arbitrary public words and messages. -/
 @[fun_prop]
 theorem isPPTOn_encryptSerialized {publicWord : α → List Bool} {message : α → Bool}
@@ -230,12 +235,7 @@ theorem isPPTOn_encryptSerialized {publicWord : α → List Bool} {message : α 
     (hmessage : ComputableInPolyTime message input encBool) :
     IsPPTOn input encBits
       (fun a => encryptSerialized (n a) (m a) (w a) (publicWord a) (message a)) := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hw := hw.tidy
-  have hpublicWord := hpublicWord.tidy
-  have hmessage := hmessage.tidy
-  have hsample := isPPTOn_sampleCoinsSerialized (.of_tidy hn) (.of_tidy hm) (.of_tidy hw)
+  have hsample := isPPTOn_sampleCoinsSerialized hn hm hw
   unfold encryptSerialized
   ppt
 

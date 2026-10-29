@@ -209,12 +209,8 @@ theorem computableInPolyTime_universalTMRunFor :
   open ComputableInPolyTime in
   have hp := fst encBits encUnary
   have ht := snd encBits encUnary
-  have hunf : ComputableInPolyTime unframe encBits encBits :=
-    .of_tidy ComputableTidilyInPolyTime.unframe
-  have hdrop : ComputableInPolyTime dropFrame encBits encBits :=
-    .of_tidy ComputableTidilyInPolyTime.dropFrame
-  have hd := computableInPolyTime_decodeDesc.comp (hunf.comp hp)
-  have hw := computableInPolyTime_map_eBit.comp (hdrop.comp hp)
+  have hd := computableInPolyTime_decodeDesc.comp (unframe.comp hp)
+  have hw := computableInPolyTime_map_eBit.comp (dropFrame.comp hp)
   have hsim := computableInPolyTime_universal.comp (hd.prod (hw.prod ht))
   have hf : ComputableInPolyTime (fun r : List ℕ × Bool => r.1) eOut (encList encUnary) :=
     fst (encList encUnary) encBool

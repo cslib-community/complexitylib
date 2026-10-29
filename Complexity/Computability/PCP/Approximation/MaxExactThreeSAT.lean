@@ -131,14 +131,17 @@ theorem unsatVal_toExactThreeSAT (φ : CNF ℕ) :
 /-- The reduction is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_reduce : ComputableInPolyTime reduce encCNF encCNF := by
-  refine .of_tidy ?_
   unfold reduce
-  have hany : ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.any List.isEmpty) encCNF encBool :=
-    ComputableTidilyInPolyTime.anyWithInput (ComputableTidilyInPolyTime.id' (encIn := encCNF))
-      ((ComputableTidilyInPolyTime.listIsEmpty' (encPair encNat encBool)).comp
-        (ComputableTidilyInPolyTime.snd _ _))
-  exact ComputableTidilyInPolyTime.cond hany (.const _)
-    computableInPolyTime_toExactThreeSAT.tidy
+  have hempty : ComputableInPolyTime (List.isEmpty : Clause ℕ → Bool)
+      (encList (encPair encNat encBool)) encBool := by
+    obtain ⟨c, k, Q, hfin, tm, htm⟩ := ListEncoding.isEmpty
+      (enc₁ := encPair encNat encBool) (enc := encList (encPair encNat encBool))
+    exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
+      k, Q, hfin, tm, fun l => htm l⟩
+  have hany : ComputableInPolyTime (fun φ : CNF ℕ => φ.any List.isEmpty) encCNF encBool :=
+    ComputableInPolyTime.anyWithInput (ComputableInPolyTime.id' (encIn := encCNF))
+      (hempty.comp (ComputableInPolyTime.snd _ _))
+  exact ComputableInPolyTime.ite hany (.const _) computableInPolyTime_toExactThreeSAT
 
 end GapExactThreeSAT
 

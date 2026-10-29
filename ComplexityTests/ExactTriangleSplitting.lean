@@ -43,8 +43,8 @@ private def zeroWeight : Fin 16 → Fin 16 → ℤ := fun _ _ => 0
 private def falseWeight : Fin 16 → Fin 16 → ℤ := fun _ _ => 6
 
 -- The prime window admits p = 3 at the smallest supported D.
-private theorem prime3 : 3 ∈ primesInRange 16 := by
-  rw [mem_primesInRange_iff_sq]
+private theorem prime3 : 3 ∈ Nat.sqrtPrimeWindow 16 := by
+  rw [Nat.mem_sqrtPrimeWindow_iff_sq]
   decide
 
 -- All-zero matrices supply an admitted, nonempty splitting with the promised bounds.
@@ -139,7 +139,7 @@ example : ∃ L, IsScanOrder zeroWeight zeroWeight zeroWeight 16 2 3
 
 private theorem falseSelected : IsSelectedPrime falseWeight zeroWeight zeroWeight 16 3 := by
   refine ⟨prime3, fun q hq => ?_⟩
-  obtain ⟨hprime, -, hsq⟩ := mem_primesInRange_iff_sq.mp hq
+  obtain ⟨hprime, -, hsq⟩ := Nat.mem_sqrtPrimeWindow_iff_sq.mp hq
   have hq : q = 2 ∨ q = 3 := by
     have := hprime.two_le
     have : q < 4 := by nlinarith

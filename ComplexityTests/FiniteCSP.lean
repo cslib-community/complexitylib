@@ -22,6 +22,8 @@ This module tests the finite-domain CSP compilation pipeline and its exact model
 open Cslib.Logic.PL
 open Cslib.BitString
 open Cslib.Complexity
+open Turing.MultiTapeTM
+open SubexponentialSAT
 
 namespace ComplexityTests.FiniteCSP
 
@@ -89,5 +91,65 @@ example : CSP.validDeclaredCSP 4 6 (triangleCSP.toBoolean 3 3) = true := by deci
 -- Satisfiability and unsatisfiability checks
 example : 0 < triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) := by decide
 example : triangleCSP.modelCountOn (semNeq 2) (Finset.range 3) = 0 := by decide
+
+-- Satisfiability equivalence and variable count bound on compiled Boolean CSP
+example :
+    (triangleCSP.toBoolean 3 3).Satisfiable (CSP.semBoolean 3 (semNeq 3)) ↔
+    triangleCSP.Satisfiable (semNeq 3) :=
+  CSP.satisfiable_toBoolean 3 3 (semNeq 3) triangleCSP (by decide)
+
+example : (triangleCSP.toBoolean 3 3).numVars ≤ 3 * CSP.bitWidth 3 :=
+  CSP.numVars_toBoolean_le (by decide)
+
+/-- Trivial encoding for the singleton relation alphabet `Unit`. -/
+def encUnit : Unit ↪ List Bool :=
+  ⟨fun _ => [], fun _ _ _ => rfl⟩
+
+-- Polynomial-time compilation and compiled encoding length bound
+example :
+    ComputableInPolyTime (fun x : ℕ × CSP Unit ℕ => x.2.toBoolean 3 x.1)
+      (encPair encUnary (encCSP encUnit encNat))
+      (encCSP (encOption encUnit) encNat) :=
+  CSP.computableInPolyTime_toBoolean encUnit 3
+
+example :
+    ComputableInPolyTime
+      (fun x : ℕ × CSP Unit ℕ => (x.1 * CSP.bitWidth 3, x.2.toBoolean 3 x.1))
+      (encPair encUnary (encCSP encUnit encNat))
+      (encPair encUnary (encCSP (encOption encUnit) encNat)) :=
+  CSP.computableInPolyTime_toBooleanDeclared encUnit 3
+
+example :
+    PolyBounded
+      (fun x : ℕ × CSP Unit ℕ => (encPair encUnary (encCSP encUnit encNat) x).length)
+      (fun x : ℕ × CSP Unit ℕ =>
+        (encPair encUnary (encCSP (encOption encUnit) encNat)
+          (x.1 * CSP.bitWidth 3, x.2.toBoolean 3 x.1)).length) :=
+  CSP.polyBounded_length_toBooleanDeclared encUnit 3
+
+-- Native declared-variable exact counting on `Fin 3` (graph 3-coloring)
+example :
+    ∃ (count : ℕ × CSP Unit ℕ → ℕ) (T S : ℕ × CSP Unit ℕ → ℕ) (A c e a b_space : ℕ),
+      ComputableInO count (encPair encUnary (encCSP encUnit encNat)) encNat T S ∧
+      (∀ x, count x = if CSP.validDeclaredCSP 2 x.1 x.2 then
+        x.2.modelCountOn (semNeq 3) (Finset.range x.1) else 0) ∧
+      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
+        (((encPair encUnary (encCSP encUnit encNat) x).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x, S x ≤ a * ((encPair encUnary (encCSP encUnit encNat) x).length + 1) ^ b_space) :=
+  CSP.exists_declaredCounter_finiteDomain encUnit 3 2 (semNeq 3)
+
+-- Native occurring-variable exact counting on `Fin 3`
+example :
+    ∃ (count : CSP Unit ℕ → ℕ) (T S : CSP Unit ℕ → ℕ) (A c e a b_space : ℕ),
+      ComputableInO count (encCSP encUnit encNat) encNat T S ∧
+      (∀ F : CSP Unit ℕ, (∀ c ∈ F, c.2.length ≤ 2) → count F = F.modelCount (semNeq 3)) ∧
+      (∀ F : CSP Unit ℕ, (T F : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale F.numVars) *
+        (((encCSP encUnit encNat F).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ F : CSP Unit ℕ, S F ≤ a * ((encCSP encUnit encNat F).length + 1) ^ b_space) :=
+  CSP.exists_modelCounter_finiteDomain encUnit encNat 3 2 (semNeq 3)
+
+-- Subexponential-time decision for bounded-arity CSP on `Fin 3`
+example : DecidableInSubexpTime (CSP.KCSP 2 (semNeq 3)) (encCSP encUnit encNat) CSP.numVars :=
+  CSP.decidableInSubexpTime_finiteDomainKCSP encUnit encNat 3 2 (semNeq 3)
 
 end ComplexityTests.FiniteCSP

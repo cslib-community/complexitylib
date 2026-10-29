@@ -272,13 +272,9 @@ finds a satisfying assignment of every satisfiable formula, as a certificate for
 theorem exists_search (h : SAT ∈ P encCNF) :
     ∃ g : CNF ℕ → List Bool, ComputableInPolyTime g encCNF encBits ∧
       ∀ φ, verifier (φ, g φ) = true ↔ φ ∈ SAT := by
-  have this : ∃ g : CNF ℕ → List Bool, ComputableInPolyTime g encCNF encBits ∧ ∀ φ, verifier
-      (φ, g φ) = true ↔ φ ∈ SAT := by
-    obtain ⟨D, hD, hSAT⟩ := mem_P.mp h
-    exact ⟨search D,
-      (computableInPolyTime_search (D := fun _ => D) ((hD.comp ((snd _ _))))
-      (id')),
-      fun φ => verifier_search_iff fun ψ _ => (hSAT ψ).symm⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  obtain ⟨D, hD, hSAT⟩ := mem_P.mp h
+  exact ⟨search D,
+    computableInPolyTime_search (D := fun _ => D) (hD.comp (snd _ _)) id',
+    fun φ => verifier_search_iff fun ψ _ => (hSAT ψ).symm⟩
 
 end Cslib.Complexity.SAT

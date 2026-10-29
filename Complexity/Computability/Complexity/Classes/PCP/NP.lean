@@ -13,7 +13,6 @@ public import Mathlib.Data.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
 
 /-!

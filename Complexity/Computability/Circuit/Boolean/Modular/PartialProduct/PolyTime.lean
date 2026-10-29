@@ -38,7 +38,7 @@ public section
 
 namespace Cslib.Circuits.Boolean.Modular
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {w : ℕ}
 
@@ -90,32 +90,32 @@ theorem partialProductCode_eq_code (i : Fin w) :
 theorem computableInPolyTime_partialProductCode :
     ComputableInPolyTime (fun p : ℕ × ℕ => partialProductCode p.1 p.2)
       (encPair encUnary encUnary) encCode := by
-  apply ComputableInPolyTime.of_tidy
-  have hw : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1)
-      (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-  have hi : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2)
-      (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-  have hj : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2)
-      (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-  have ht : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
+  have hw : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1)
+      (encPair (encPair encUnary encUnary) encUnary) encNat :=
+    unary_to_binary.comp (by fun_prop)
+  have hi : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2)
+      (encPair (encPair encUnary encUnary) encUnary) encNat :=
+    unary_to_binary.comp (by fun_prop)
+  have hj : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2)
+      (encPair (encPair encUnary encUnary) encUnary) encNat :=
+    unary_to_binary.comp (by fun_prop)
+  have ht : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
       formulaCode (p.1.1 + p.1.1)
         ((Formula.input (n := 2) 0).and (.input 1)) ![p.2 - p.1.2, p.1.1 + p.1.2])
       (encPair (encPair encUnary encUnary) encUnary) encCode := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_formulaCode _ (.of_tidy (by fun_prop))
+    apply computableInPolyTime_formulaCode _ (by fun_prop)
     intro k
-    apply ComputableInPolyTime.of_tidy
     fin_cases k
-    · change ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2 - p.1.2) _ encNat
+    · change ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2 - p.1.2) _ encNat
       fun_prop
-    · change ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1 + p.1.2) _ encNat
+    · change ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1 + p.1.2) _ encNat
       fun_prop
-  have hb : ComputableTidilyInPolyTime
+  have hb : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => partialProductBitCode p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) encUnary) encCode := by
     unfold partialProductBitCode
     fun_prop
-  exact (computableInPolyTime_appendCodes (.of_tidy (by fun_prop))
-    (.of_tidy (mapWith hb id' (range.comp (fst _ _))))).tidy
+  exact computableInPolyTime_appendCodes (unary_to_binary.comp (by fun_prop))
+    (mapWithInput (range.comp (fst _ _)) hb)
 
 end Cslib.Circuits.Boolean.Modular

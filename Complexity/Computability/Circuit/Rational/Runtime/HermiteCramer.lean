@@ -548,11 +548,11 @@ private theorem nat_choose_eq_ite (m j : ℕ) :
     exact Nat.choose_eq_zero_of_lt (Nat.lt_of_not_ge h)
 
 private theorem unary_choose_intBin :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.1.choose p.2 : ℤ))
+    ComputableInPolyTime (fun p : ℕ × ℕ => (p.1.choose p.2 : ℤ))
       (encPair encUnary encUnary) encIntBin := by
-  have hle : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.2 ≤ p.1))
+  have hle : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.2 ≤ p.1))
       (encPair encUnary encUnary) encBool := by fun_prop
-  have hdiv : ComputableTidilyInPolyTime
+  have hdiv : ComputableInPolyTime
       (fun p : ℕ × ℕ => ((p.1.factorial / (p.2.factorial * (p.1 - p.2).factorial) : ℕ) : ℤ))
       (encPair encUnary encUnary) encIntBin := by fun_prop
   have h := hle.ite_decide hdiv (.const 0)
@@ -570,44 +570,41 @@ theorem computableInPolyTime_hermiteRows {nodes : α → List ℤ} {J : α → �
     (hJ : ComputableInPolyTime J encIn encUnary) :
     ComputableInPolyTime (fun x => hermiteRows (nodes x) (J x))
       encIn (encList (encList encIntBin)) := by
-  have hnodes' := hnodes.tidy
-  have hJ' := hJ.tidy
-  refine .of_tidy ?_
-  have hdim : ComputableTidilyInPolyTime (fun x => (nodes x).length * J x) encIn encUnary := by
+  have hdim : ComputableInPolyTime (fun x => (nodes x).length * J x) encIn encUnary := by
     fun_prop
-  have hentry : ComputableTidilyInPolyTime
+  have hentry : ComputableInPolyTime
       (fun q : ((α × ℤ) × ℕ) × ℕ => (q.2.choose q.1.2 : ℤ) * q.1.1.2 ^ (q.2 - q.1.2))
       (encPair (encPair (encPair encIn encIntBin) encUnary) encUnary) encIntBin := by
-    have hchoose : ComputableTidilyInPolyTime
+    have hchoose : ComputableInPolyTime
         (fun q : ((α × ℤ) × ℕ) × ℕ => (q.2.choose q.1.2 : ℤ))
         (encPair (encPair (encPair encIn encIntBin) encUnary) encUnary) encIntBin :=
-      unary_choose_intBin.comp ((ComputableTidilyInPolyTime.snd _ _).prod
-        ((ComputableTidilyInPolyTime.snd _ _).comp (ComputableTidilyInPolyTime.fst _ _)))
-    have hpow : ComputableTidilyInPolyTime
+      unary_choose_intBin.comp ((ComputableInPolyTime.snd _ _).prod
+        ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.fst _ _)))
+    have hpow : ComputableInPolyTime
         (fun q : ((α × ℤ) × ℕ) × ℕ => q.1.1.2 ^ (q.2 - q.1.2))
         (encPair (encPair (encPair encIn encIntBin) encUnary) encUnary) encIntBin := by fun_prop
-    exact ComputableTidilyInPolyTime.intBin_mul' hchoose hpow
-  have hrow : ComputableTidilyInPolyTime
+    exact ComputableInPolyTime.intBin_mul' hchoose hpow
+  have hrow : ComputableInPolyTime
       (fun p : (α × ℤ) × ℕ =>
         (List.range ((nodes p.1.1).length * J p.1.1)).map fun m =>
           (m.choose p.2 : ℤ) * p.1.2 ^ (m - p.2))
       (encPair (encPair encIn encIntBin) encUnary) (encList encIntBin) :=
-    ComputableTidilyInPolyTime.mapWithInput
-      (ComputableTidilyInPolyTime.range.comp
-        (hdim.comp ((ComputableTidilyInPolyTime.fst _ _).comp
-          (ComputableTidilyInPolyTime.fst _ _))))
+    ComputableInPolyTime.mapWithInput
+      (ComputableInPolyTime.range.comp
+        (hdim.comp ((ComputableInPolyTime.fst _ _).comp
+          (ComputableInPolyTime.fst _ _))))
       hentry
-  have hblock : ComputableTidilyInPolyTime
+  have hblock : ComputableInPolyTime
       (fun p : α × ℤ =>
         (List.range (J p.1)).map fun j =>
           (List.range ((nodes p.1).length * J p.1)).map fun m =>
             (m.choose j : ℤ) * p.2 ^ (m - j))
       (encPair encIn encIntBin) (encList (encList encIntBin)) :=
-    ComputableTidilyInPolyTime.mapWithInput
-      (ComputableTidilyInPolyTime.range.comp
-        (hJ'.comp (ComputableTidilyInPolyTime.fst _ _)))
+    ComputableInPolyTime.mapWithInput
+      (ComputableInPolyTime.range.comp
+        (hJ.comp (ComputableInPolyTime.fst _ _)))
       hrow
-  exact ComputableTidilyInPolyTime.flatMapWithInput hnodes' hblock
+  exact ComputableInPolyTime.flatMapWithInput hnodes hblock
 
 /-- `hermiteRows` is computable in polynomial time on `encPair (encList encIntBin) encUnary`. -/
 theorem hermiteRows_polytime :
@@ -623,9 +620,6 @@ theorem computableInPolyTime_cramerColZeroRows
     (hrhs : ComputableInPolyTime rhs encIn (encList encIntBin)) :
     ComputableInPolyTime (fun x => cramerColZeroRows (mat x) (rhs x))
       encIn (encList (encList encIntBin)) := by
-  have hmat' := hmat.tidy
-  have hrhs' := hrhs.tidy
-  refine .of_tidy ?_
   unfold cramerColZeroRows
   fun_prop
 
@@ -647,8 +641,9 @@ theorem computableInPolyTime_hermiteRecoverZero
     ComputableInPolyTime
       (fun x => hermiteRecoverZero (nodes x) (J x) (Ω x) (jets x))
       encIn encIntBin := by
-  have hflat : ComputableInPolyTime (fun x => (jets x).flatten) encIn (encList encIntBin) :=
-    .of_tidy ((ComputableTidilyInPolyTime.flatten encIntBin).comp hjets.tidy)
+  have hflat : ComputableInPolyTime (fun x => (jets x).flatten) encIn (encList encIntBin) := by
+    simp only [List.flatten_eq_flatMap]
+    fun_prop
   unfold hermiteRecoverZero
   fun_prop
 
@@ -709,11 +704,10 @@ theorem computableInPolyTime_modPowTwo_sum_hermiteRecoverZero
   have hmap : ComputableInPolyTime
       (fun x => (coordJets x).map (hermiteRecoverZero (nodes x) (J x) (Ω x)))
       encIn (encList encIntBin) :=
-    .of_tidy (ComputableTidilyInPolyTime.mapWithInput hcoordJets.tidy hitem.tidy)
+    ComputableInPolyTime.mapWithInput hcoordJets hitem
   have hsum : ComputableInPolyTime
       (fun x => ((coordJets x).map (hermiteRecoverZero (nodes x) (J x) (Ω x))).sum)
-      encIn encIntBin :=
-    .of_tidy (ComputableTidilyInPolyTime.intBin_sum.comp hmap.tidy)
+      encIn encIntBin := by fun_prop
   exact ComputableInPolyTime.intBin_modPowTwo' hsum hℓ
 
 end Cslib.Circuits.Rational
