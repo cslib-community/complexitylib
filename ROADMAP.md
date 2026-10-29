@@ -367,9 +367,9 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **Derandomization from hardness:** the infinitely-often variant, and the EXP ⊄ P/poly endpoint
   of Babai, Fortnow, Nisan and Wigderson.
 - **Extractors** ([#895]) beyond Chor–Goldreich: two-source extractors for lower min-entropy,
-  where Chattopadhyay–Zuckerman's transfer of resilience to bounded independence (their
-  Theorem 4.1) is formalized with exponent `O(d²)` in place of their `3 d + 6`, and their resilient
-  monotone function and extractor (Theorems 3 and 4) are not yet formalized;
+  where the `t`-wise independent parts of Chattopadhyay–Zuckerman's Theorem 4.1 are formalized with
+  exponent `O(d²)` in place of their `3 d + 6` (the almost `t`-wise independent parts are not), and
+  their resilient functions (Theorems 3 and 4) and extractor (Theorem 1) are not yet formalized;
   condensers, limited independence, explicit expanders and space-bounded generators, with finite
   guarantees separate from uniform construction and decoding costs.
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,

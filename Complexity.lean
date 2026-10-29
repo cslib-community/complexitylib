@@ -450,6 +450,7 @@ public import Complexity.Computability.Circuit.Boolean.ThresholdNC1
 public import Complexity.Computability.Circuit.Boolean.TopDown
 public import Complexity.Computability.Circuit.Boolean.Tournament
 public import Complexity.Computability.Circuit.Boolean.Unbounded
+public import Complexity.Computability.Circuit.Boolean.Unbounded.Restriction
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activation
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Activity

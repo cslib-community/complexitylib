@@ -6,8 +6,8 @@ Authors: Samuel Schlesinger
 
 module
 -- upstream: candidate
-public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Support
+public import Cslib.Computability.Circuit.Composition
 public import Cslib.Computability.Circuit.Depth
 public import Cslib.Computability.Circuit.Simulation
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -29,8 +29,10 @@ lower bound on circuit size.
   function.
 * `Cslib.Circuits.Circuit.card_inputSupport_le_depth`, `Cslib.Circuits.Circuit.essential_le_depth`:
   at depth `d`, an output of a circuit of fan-in `r` depends on at most `r ^ d` inputs.
-* `Cslib.Circuits.Circuit.FanInAtMost.comp`, `Cslib.Circuits.Circuit.FanInAtMost.append`,
-  `Cslib.Circuits.Circuit.fanInAtMost_oneGate`: fan-in bounds of composed circuits and of one gate.
+* `Cslib.Circuits.Program.FanInAtMost.mono`, `Cslib.Circuits.Circuit.FanInAtMost.mono`: fan-in
+  bounds are monotone in the bound.
+* `Cslib.Circuits.Program.FanInAtMost.append`, `Cslib.Circuits.Circuit.FanInAtMost.comp`,
+  `Cslib.Circuits.Circuit.FanInAtMost.append`: fan-in bounds of composed programs and circuits.
 -/
 
 @[expose] public section
@@ -355,10 +357,5 @@ theorem Circuit.FanInAtMost.comp {p : ℕ} {d : Circuit σ m p} {c : Circuit σ 
 theorem Circuit.FanInAtMost.append {p : ℕ} {c : Circuit σ n m} {d : Circuit σ n p} {r : ℕ}
     (hc : c.FanInAtMost r) (hd : d.FanInAtMost r) : (c.append d).FanInAtMost r :=
   Program.FanInAtMost.append hc hd
-
-/-- One gate has fan-in at most `r` exactly when its operation has arity at most `r`. -/
-@[simp] theorem Circuit.fanInAtMost_oneGate (op : σ.Op) (args : Fin (σ.Arity op) → Fin n)
-    (r : ℕ) : (Circuit.oneGate op args).FanInAtMost r ↔ σ.Arity op ≤ r :=
-  ⟨fun h => h.2, fun h => ⟨trivial, h⟩⟩
 
 end Cslib.Circuits

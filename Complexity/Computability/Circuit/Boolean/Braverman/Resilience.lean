@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.Braverman.Fooling
-public import Complexity.Computability.Circuit.Boolean.Substitution
+public import Complexity.Computability.Circuit.Boolean.Unbounded.Restriction
 public import Complexity.Computability.Circuit.Pi
 public import Complexity.Probability.Resilience
 import Complexity.Computability.Circuit.FanIn
@@ -27,9 +27,9 @@ This event is computed by a constant-depth circuit `E_Q` (`undeterminedCircuit`)
 theorem applied to `E_Q` bounds its probability.
 
 The circuit `E_Q` is our construction in the unbounded fan-in basis: it runs two copies of the
-circuit `C` on the inputs with the bits of `Q` fixed (`fixCircuit`, through the De Morgan
-substitution circuit `Cslib.Circuits.Boolean.substituteCircuit`) and combines them by
-`x₀ ∧ ¬x₁` (`andNotCircuit`). If `C` has `m` gates, depth `d` and fan-in `r`, then `E_Q` has
+circuit `C` on the inputs with the bits of `Q` fixed (`fixCircuit`, a restriction circuit
+`Cslib.Circuits.Boolean.Unbounded.restrictCircuit`) and combines them by a circuit of two gates
+computing `x₀ ∧ ¬x₁`. If `C` has `m` gates, depth `d` and fan-in `r`, then `E_Q` has
 exactly `2 m + 6` gates, depth at most `d + 3` and fan-in at most `max r 2`. Chattopadhyay and
 Zuckerman compute `¬(C₀ = C₁)` instead, with size `4 m + 3` and depth `d + 2`, reduced to `d + 1`
 [Chattopadhyay–Zuckerman, proof of Theorem 4.1][ChattopadhyayZuckerman2019];
@@ -38,12 +38,14 @@ suffices since `C₀ ≤ C₁` for monotone `C`.
 
 The required independence is that of the library's Braverman theorem
 (`Cslib.Circuits.Boolean.Braverman.fools_of_independence_le`) at depth `d + 3`: with error
-`2 ^ (-p)` it is at most `(64 p) ^ ((2 d + 9) (d + 10) + 1)`, which is `(log (m / ε)) ^ O(d²)`.
-Chattopadhyay and Zuckerman obtain `(log (m / ε)) ^ (3 d + 6)` from Tal's form of Braverman's
-theorem; that exponent is not claimed here. Monotonicity is assumed of the computed function, which
-is weaker than their assumption of a monotone circuit. The statements for almost `t`-wise
-independent distributions in their Theorem 4.1, which need a further approximation theorem, are not
-formalized.
+`2 ^ (-p)` it is at most `(64 p) ^ ((2 d + 9) (d + 10) + 1)`. The theorem needs `2 m + 6 ≤ 2 ^ p`
+for a circuit of `m` gates and, since the fan-in of this model is not bounded by the size, fan-in
+`r < 2 ^ p`; taking `p ≥ max (log₂ (2 m + 6)) (max (log₂ (r + 1)) (log₂ (1 / ε)))` gives
+`t = (log (max m (r + 1) / ε)) ^ O(d²)`. Chattopadhyay and Zuckerman obtain
+`(log (m / ε)) ^ (3 d + 6)` from Tal's form of Braverman's theorem; that exponent is not claimed
+here. Monotonicity is assumed of the computed function, which is weaker than their assumption of a
+monotone circuit. The statements for almost `t`-wise independent distributions in their
+Theorem 4.1, which need a further approximation theorem, are not formalized.
 
 ## Main definitions
 
@@ -84,56 +86,54 @@ variable {n : ℕ}
 /-! ### The circuit `E_Q` -/
 
 /-- The circuit that outputs its inputs with the bits of `Q` replaced by the constant `b`: the
-De Morgan substitution circuit, in the unbounded fan-in basis. -/
+restriction circuit of the partial assignment fixing `Q` to `b`. -/
 def fixCircuit (Q : Finset (Fin n)) (b : Bool) : Circuit Unbounded.signature n n :=
-  (substituteCircuit fun i => if i ∈ Q then .inr b else .inl i).mapOp
-    Unbounded.deMorganToUnbounded
+  Unbounded.restrictCircuit (PartialAssignment.empty.assign Q fun _ => b)
 
 /-- `fixCircuit Q b` sets the bits of `Q` to `b`. -/
 @[simp] theorem eval_fixCircuit (Q : Finset (Fin n)) (b : Bool) (x : BitString n) :
     (fixCircuit Q b).eval Unbounded.interpretation x = Q.piecewise (fun _ => b) x := by
-  rw [fixCircuit, Circuit.eval_mapOp (I := Boolean.interpretation), eval_substituteCircuit]
+  rw [fixCircuit, Unbounded.eval_restrictCircuit]
   funext i
   by_cases hi : i ∈ Q
-  · rw [piecewise_eq_of_mem _ _ _ hi]
-    exact substitute_inr (ite_eq_left hi)
-  · rw [piecewise_eq_of_notMem _ _ _ hi]
-    exact substitute_inl (ite_eq_right hi)
+  · rw [piecewise_eq_of_mem _ _ _ hi,
+      PartialAssignment.fill_of_eq_some (PartialAssignment.assign_of_mem hi _)]
+  · rw [piecewise_eq_of_notMem _ _ _ hi, PartialAssignment.fill_of_eq_none
+      ((PartialAssignment.assign_of_notMem hi _).trans (PartialAssignment.empty_apply i))]
 
 /-- `fixCircuit Q b` has two gates, one for each constant. -/
-@[simp] theorem size_fixCircuit (Q : Finset (Fin n)) (b : Bool) : (fixCircuit Q b).size = 2 := by
-  rw [fixCircuit, Circuit.size_mapOp, size_substituteCircuit]
+@[simp] theorem size_fixCircuit (Q : Finset (Fin n)) (b : Bool) : (fixCircuit Q b).size = 2 :=
+  Unbounded.size_restrictCircuit _
 
 /-- `fixCircuit Q b` has depth at most one. -/
-theorem depth_fixCircuit_le (Q : Finset (Fin n)) (b : Bool) : (fixCircuit Q b).depth ≤ 1 := by
-  rw [fixCircuit, Circuit.depth_mapOp]
-  exact depth_substituteCircuit_le _
+theorem depth_fixCircuit_le (Q : Finset (Fin n)) (b : Bool) : (fixCircuit Q b).depth ≤ 1 :=
+  Unbounded.depth_restrictCircuit_le _
 
 /-- `fixCircuit Q b` has fan-in at most two. -/
 theorem fanInAtMost_fixCircuit (Q : Finset (Fin n)) (b : Bool) :
     (fixCircuit Q b).FanInAtMost 2 :=
-  (Circuit.fanInAtMost_mapOp _ _).2 (Circuit.fanInAtMost_two _)
+  Unbounded.fanInAtMost_restrictCircuit _
 
 /-- The circuit computing `x₀ ∧ ¬x₁`, with two gates. -/
-def andNotCircuit : Circuit Unbounded.signature 2 1 :=
+private def andNotCircuit : Circuit Unbounded.signature 2 1 :=
   (Circuit.oneGate (Unbounded.Op.and 2) (id : Fin 2 → Fin 2)).comp
     ((Circuit.wiring Unbounded.signature ![(0 : Fin 2)]).append
       (Circuit.oneGate Unbounded.Op.not ![(1 : Fin 2)]))
 
 /-- `andNotCircuit` computes `x₀ ∧ ¬x₁`. -/
-@[simp] theorem eval_andNotCircuit (v : Fin 2 → Bool) :
+@[simp] private theorem eval_andNotCircuit (v : Fin 2 → Bool) :
     andNotCircuit.eval Unbounded.interpretation v 0 = (v 0 && !v 1) := by
   obtain ⟨a, b, rfl⟩ : ∃ a b : Bool, v = ![a, b] :=
     ⟨v 0, v 1, funext fun j => by fin_cases j <;> rfl⟩
   cases a <;> cases b <;> decide
 
 /-- `andNotCircuit` has two gates. -/
-@[simp] theorem size_andNotCircuit : andNotCircuit.size = 2 := by
+@[simp] private theorem size_andNotCircuit : andNotCircuit.size = 2 := by
   simp only [andNotCircuit, Circuit.size_comp, Circuit.size_append, Circuit.size_wiring,
     Circuit.size_oneGate, Nat.zero_add]
 
 /-- `andNotCircuit` has depth at most two. -/
-theorem depth_andNotCircuit_le : andNotCircuit.depth ≤ 2 := by
+private theorem depth_andNotCircuit_le : andNotCircuit.depth ≤ 2 := by
   have h := Circuit.depth_append_le (Circuit.wiring Unbounded.signature ![(0 : Fin 2)])
     (Circuit.oneGate Unbounded.Op.not ![(1 : Fin 2)])
   rw [Circuit.depth_wiring, Circuit.depth_oneGate] at h
@@ -144,7 +144,7 @@ theorem depth_andNotCircuit_le : andNotCircuit.depth ≤ 2 := by
   exact h'.trans (by omega)
 
 /-- `andNotCircuit` has fan-in at most two. -/
-theorem fanInAtMost_andNotCircuit : andNotCircuit.FanInAtMost 2 :=
+private theorem fanInAtMost_andNotCircuit : andNotCircuit.FanInAtMost 2 :=
   ((Circuit.fanInAtMost_oneGate _ _ _).2 le_rfl).comp
     ((Circuit.fanInAtMost_wiring _ _).append ((Circuit.fanInAtMost_oneGate _ _ _).2 one_le_two))
 
@@ -196,7 +196,8 @@ theorem fanInAtMost_undeterminedCircuit {C : Circuit Unbounded.signature n 1} {r
 
 /-! ### Theorem 4.1 of Chattopadhyay and Zuckerman -/
 
-/-- **Coalition influence under polylogarithmic independence, with the sharp independence**
+/-- **Coalition influence under polylogarithmic independence, with the exact independence function
+`independence`**
 [Chattopadhyay–Zuckerman, Theorem 4.1, influence part][ChattopadhyayZuckerman2019]. Let `C` be a
 circuit of the unbounded fan-in basis computing a monotone function `f`, of depth at most `d`, with
 `2 size C + 6 ≤ 2 ^ p` and fan-in less than `2 ^ p`, where `p ≥ 2`. If a coalition `Q` has
@@ -241,7 +242,8 @@ theorem coalitionInfluence_le_of_independence_le {D : PMF (BitString n)} {d p t 
   have := (abs_le.1 hfools).2
   linarith
 
-/-- **The bias under polylogarithmic independence, with the sharp independence**
+/-- **The bias under polylogarithmic independence, with the exact independence function
+`independence`**
 [Chattopadhyay–Zuckerman, Theorem 4.1, bias part][ChattopadhyayZuckerman2019]. Let `C` be a circuit
 of the unbounded fan-in basis of depth at most `d`, with at most `2 ^ p` gates and fan-in less than
 `2 ^ p`, where `p ≥ 1`. If `C` is true with probability within `ε₁` of `1 / 2` under the uniform
@@ -280,8 +282,10 @@ at most `d`, with `2 size C + 6 ≤ 2 ^ p` and fan-in less than `2 ^ p`, where `
 function is `t`-independent `(q, ε₂ + 2 ^ (-p))`-resilient for every
 `t ≥ (64 p) ^ ((2 d + 9) (d + 10) + 1)`.
 
-Taking `p` at least `log₂` of `2 size C + 6`, of the fan-in plus one and of the inverse of the
-error, this is `t = (log (m / ε)) ^ O(d²)`. Chattopadhyay and Zuckerman have the exponent
+For a circuit of `m` gates and fan-in `r`, taking
+`p ≥ max (log₂ (2 m + 6)) (max (log₂ (r + 1)) (log₂ (1 / ε)))` this is
+`t = (log (max m (r + 1) / ε)) ^ O(d²)`; the fan-in term is needed since the fan-in of this model is
+not bounded by the size. Chattopadhyay and Zuckerman have the exponent
 `3 d + 6`, which is not claimed here: the exponent and constants are ours. -/
 theorem isKWiseResilient_of_isResilient {d p q t : ℕ} {ε₂ : ℝ} (hp : 2 ≤ p)
     (C : Circuit Unbounded.signature n 1)

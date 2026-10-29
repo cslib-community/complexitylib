@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.BooleanAnalysis.Influence
+public import Complexity.Foundations.Data.BitString.PartialAssignment
 public import Complexity.Probability.Fooling
 import Complexity.Probability.PMF
 
@@ -40,6 +41,9 @@ independent distribution [Chattopadhyay–Zuckerman, Definition 1.10][Chattopadh
 Chattopadhyay and Zuckerman define the largest influence `I_q(f)` and `I_{q,t}(f)` and bound it by
 `ε`; the predicates state the bound for every coalition and distribution directly.
 
+Equivalently, `f` is undetermined at `x` by the bits outside `Q` when its restriction fixing the
+bits outside `Q` to those of `x` is not constant (`Cslib.BitString.isUndetermined_iff_outside`).
+
 For a monotone function, `f` is undetermined at `x` by the bits outside `Q` exactly when setting
 all of `Q` to `true` gives `true` and setting all of `Q` to `false` gives `false`
 (`Cslib.BitString.isUndetermined_iff_of_monotone`). The influence of a single bit is the
@@ -55,6 +59,8 @@ influence of `Cslib.BitString.influence` (`Cslib.BitString.coalitionInfluence_si
 
 ## Main results
 
+* `Cslib.BitString.isUndetermined_iff_outside`: undetermined functions are those with a
+  non-constant restriction.
 * `Cslib.BitString.isUndetermined_iff_of_monotone`: undetermined monotone functions.
 * `Cslib.BitString.coalitionInfluence_uniformOfFintype`: the uniform influence as an average.
 * `Cslib.BitString.coalitionInfluence_nonneg`, `Cslib.BitString.coalitionInfluence_le_one`,
@@ -111,6 +117,21 @@ theorem not_isUndetermined_const (b : Bool) : ¬IsUndetermined Q (fun _ => b) x 
   fun ⟨_, _, _, _, hf⟩ => hf rfl
 
 variable [DecidableEq ι]
+
+/-- A function is undetermined at `x` by the bits outside `Q` exactly when its restriction fixing
+the bits outside `Q` to those of `x` (`Cslib.BitString.PartialAssignment.outside`) is not
+constant. -/
+theorem isUndetermined_iff_outside :
+    IsUndetermined Q f x ↔ ∃ y z : ι → Bool,
+      f ((PartialAssignment.outside Q x).fill y) ≠ f ((PartialAssignment.outside Q x).fill z) := by
+  simp only [PartialAssignment.fill_outside]
+  have key (y : ι → Bool) (hy : ∀ i ∉ Q, y i = x i) : Q.piecewise y x = y := funext fun i => by
+    by_cases hi : i ∈ Q
+    · rw [piecewise_eq_of_mem _ _ _ hi]
+    · rw [piecewise_eq_of_notMem _ _ _ hi, hy i hi]
+  refine ⟨fun ⟨y, z, hy, hz, h⟩ => ⟨y, z, by rwa [key y hy, key z hz]⟩, fun ⟨y, z, h⟩ =>
+    ⟨Q.piecewise y x, Q.piecewise z x, fun i hi => piecewise_eq_of_notMem _ _ _ hi,
+      fun i hi => piecewise_eq_of_notMem _ _ _ hi, h⟩⟩
 
 /-- **Undetermined monotone functions.** A monotone function is undetermined at `x` by the bits
 outside `Q` exactly when setting all of `Q` to `true` gives `true` and setting all of `Q` to
@@ -196,12 +217,12 @@ theorem coalitionInfluence_uniformOfFintype (Q : Finset ι) (f : (ι → Bool) �
       𝔼 x, if IsUndetermined Q f x then (1 : ℝ) else 0 :=
   sum_uniformOfFintype_mul _
 
-/-- Influences are nonnegative. -/
+/-- Influences are nonnegative [O'Donnell, Exercise 9.25(b)][ODonnell2014]. -/
 theorem coalitionInfluence_nonneg (D : PMF (ι → Bool)) (Q : Finset ι) (f : (ι → Bool) → Bool) :
     0 ≤ coalitionInfluence D Q f :=
   sum_nonneg fun x _ => mul_nonneg ENNReal.toReal_nonneg (by split_ifs <;> norm_num)
 
-/-- Influences are at most one. -/
+/-- Influences are at most one [O'Donnell, Exercise 9.25(b)][ODonnell2014]. -/
 theorem coalitionInfluence_le_one (D : PMF (ι → Bool)) (Q : Finset ι) (f : (ι → Bool) → Bool) :
     coalitionInfluence D Q f ≤ 1 :=
   (sum_le_sum fun x _ => mul_le_of_le_one_right ENNReal.toReal_nonneg
@@ -241,13 +262,19 @@ theorem coalitionInfluence_singleton (i : ι) (f : (ι → Bool) → Bool) :
 
 /-- A function is *`(q, ε)`-resilient* if every coalition of `q` bits has influence at most `ε`
 under the uniform distribution
-[Chattopadhyay–Zuckerman, Definition 1.7][ChattopadhyayZuckerman2019]. -/
+[Chattopadhyay–Zuckerman, Definition 1.7][ChattopadhyayZuckerman2019]. For `q > card ι` there is no
+such coalition and the predicate holds vacuously, while their largest influence `I_q(f)` is
+undefined. -/
 @[expose] def IsResilient (q : ℕ) (ε : ℝ) (f : (ι → Bool) → Bool) : Prop :=
   ∀ Q : Finset ι, #Q = q → coalitionInfluence (Probability.PMF.uniformOfFintype _) Q f ≤ ε
 
 /-- A function is *`t`-independent `(q, ε)`-resilient* if every coalition of `q` bits has
 influence at most `ε` under every `t`-wise independent distribution
-[Chattopadhyay–Zuckerman, Definition 1.10][ChattopadhyayZuckerman2019]. -/
+[Chattopadhyay–Zuckerman, Definition 1.10][ChattopadhyayZuckerman2019], with `D` a distribution on
+all bits. This is equivalent to their reading, with a distribution on the bits outside `Q`, by an
+argument not formalized here (see the module docstring). For `q > card ι` there is no coalition of
+`q` bits and the predicate holds vacuously, while their largest influence `I_{q,t}(f)` is
+undefined. -/
 @[expose] def IsKWiseResilient (t q : ℕ) (ε : ℝ) (f : (ι → Bool) → Bool) : Prop :=
   ∀ Q : Finset ι, #Q = q → ∀ D : PMF (ι → Bool), IsKWiseIndependent t D →
     coalitionInfluence D Q f ≤ ε

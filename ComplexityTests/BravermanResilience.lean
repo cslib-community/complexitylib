@@ -34,10 +34,6 @@ open scoped BigOperators
 
 /-! ### The definitions, on both sides -/
 
--- A constant function is resilient against every coalition.
-example : IsResilient 3 0 fun _ : Fin 3 → Bool => true :=
-  isResilient_const 3 true
-
 /-- Parity of three bits is undetermined everywhere by the bits other than the first. -/
 theorem isUndetermined_parity₃ (x : Fin 3 → Bool) :
     IsUndetermined {0} (fun x : Fin 3 → Bool => x 0 ^^ x 1 ^^ x 2) x := by
