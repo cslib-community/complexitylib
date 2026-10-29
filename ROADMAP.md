@@ -323,14 +323,19 @@ certified DPLL solver runtimes.
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
   hitting-list matrices.
-- **Algebraic complexity** ([#891]): Limaye–Srinivasan–Tavenas constant-depth lower bounds; the
-  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the
-  permanent has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the
-  permanent over fields of characteristic other than two; formula and branching-program models,
-  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
-  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms
-  at depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
-  construction costs certified separately from gate counts.
+- **Algebraic complexity** ([#891]): the rest of Limaye–Srinivasan–Tavenas. Proved: simple
+  circuits (product gates reading distinct wires) of constant product-depth computing iterated
+  matrix multiplication need superpolynomial size over any field, at `d = ⌊log₂ ⌊log₂ n⌋⌋`, from an
+  explicit bound with exponent `d ^ (1 / (4 ^ Δ - 1))`. Remaining: their semantic set-multilinear
+  model; growing `Δ` with exponent `d ^ exp(-O(Δ))`; the `√d` bound at `Δ = 1` (LST Lemma 13 and
+  Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
+  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
+  has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
+  fields of characteristic other than two; formula and branching-program models, identity testing,
+  hitting sets, and tensor and rank methods, including partial-derivative measures (Nisan–Wigderson
+  depth-3 bounds and shifted partials) and the depth-reduction chasms at depth four (Agrawal–Vinay)
+  and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform construction costs certified
+  separately from gate counts.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -399,6 +404,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ## Machines, RAM and data structures
 
+- **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
+  with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
+  The current interpreter has a stronger polynomial certificate and a streaming input lookup;
+  the buffered representation, its native cleanup routines and their amortized bounds remain.
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.
@@ -420,6 +429,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
+- **Shared native matrix encoders** ([#1493]): compute all `10^L` leaf values from `7^L`
+  signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
+  with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
   transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
   has the Convolution-3SUM/Exact Triangle correctness reduction, a charged native single-instance
@@ -432,9 +444,6 @@ each statement against the numbered result. Organize modules by subject, not cha
   bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
   ([#1463]) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
   sparse encoding/leaf/passed-set totals. Those counts are not native instruction costs.
-  The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
-  signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
-  with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
   Native ExactTriangle preparation ([#1532]) proves initialized execution of the complete
   computed catalogue and zero/one instance matrices, exact finite readback, logarithmic width,
   polynomial prefix words and address space, and a `690n²Dg` charged bound in the source's

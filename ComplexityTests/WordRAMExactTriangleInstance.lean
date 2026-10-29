@@ -171,8 +171,8 @@ example : ∃ y t, t ≤ 2826240 ∧
     y.regs produced = 16 ∧ y.regs heap = 11380 ∧
     y.mem 3094 = 1544 ∧ y.mem 3095 = 64 ∧
     y.mem 3098 = 1 ∧ y.mem 3110 = 0 ∧ y.mem 3354 = 1 ∧ y.mem 3546 = 0 := by
-  have hprime : 3 ∈ Cslib.Algorithms.ExactTriangle.primesInRange 16 :=
-    Cslib.Algorithms.ExactTriangle.mem_primesInRange_iff_sq.mpr
+  have hprime : 3 ∈ Nat.sqrtPrimeWindow 16 :=
+    Nat.mem_sqrtPrimeWindow_iff_sq.mpr
       ⟨by decide, by decide, by decide⟩
   obtain ⟨y, t, ht, hr, he, hout, -, -⟩ := PreparationBounds.runs_input
     (n := 16) (D := 16) (g := 1) (p := 3) (A := 0) sourceValues

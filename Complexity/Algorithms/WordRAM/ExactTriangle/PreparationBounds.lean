@@ -44,7 +44,7 @@ open Cslib.Algorithms.ExactTriangle
 /-- Sum the two `20nD+6` matrix-writer bounds over the existing actual instance set. An explicit
 additional `c` instructions per instance accounts for caller overhead separately. -/
 theorem matrix_writing_total_le {n D g p : ℕ} (wAB : Fin n → Fin n → ℤ) (c : ℕ)
-    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ primesInRange D) :
+    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow D) :
     (∑ _ι ∈ instanceIndices wAB D g p, (2 * (20 * (n * D) + 6) + c)) ≤
       (208 + 4 * c) * (n * n) * D * g := by
   have hcard : (instanceIndices wAB D g p).card ≤ 4 * n * g := by
@@ -116,11 +116,11 @@ theorem prefix_time_le {n D g p : ℕ}
 `690n²Dg` bound includes all catalogue work, selection, record stores, both matrix calls,
 argument delivery, loop control and halt. `runs_input` applies this bound to actual execution. -/
 theorem timeBound_le {n D g p : ℕ} (wAB : Fin n → Fin n → ℤ)
-    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ primesInRange D) :
+    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow D) :
     Instances.timeBound n D p (totalChunks wAB D p) (numPieces n D g) ≤
       690 * (n * n) * D * g := by
   have hpD : p ≤ D := (Nat.le_self_pow two_ne_zero p).trans
-    ((mem_primesInRange_iff_sq.mp hp).2.2.le)
+    ((Nat.mem_sqrtPrimeWindow_iff_sq.mp hp).2.2.le)
   have hprefix := prefix_time_le (by omega : 1 ≤ D) hDn hg hpD
   have hmat := matrix_writing_total_le wAB 56 hD hDn hg hp
   have hvisit : (instanceIndices wAB D g p).card * (40 * (n * D) + 68) ≤
@@ -137,12 +137,12 @@ theorem timeBound_le {n D g p : ℕ} (wAB : Fin n → Fin n → ℤ)
 actual charged execution budget, not an assumed matrix-write contract, has the preparation
 bound in the source's admissible regime. -/
 theorem computed_timeBound_le {n D g p : ℕ} (values : List ℤ)
-    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ primesInRange D) :
+    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow D) :
     let C := fun rho => Nat.count (fun q => (values.getD q 0 % (p : ℤ)).toNat = rho) (n * n)
     Instances.timeBound n D p (ChunkCatalogue.before C (queryCap n D) p)
       (numPieces n D g) ≤ 690 * (n * n) * D * g := by
   let wAB (a b : Fin n) := values.getD (Cslib.Matrix.pairIndex (a, b)) 0
-  have hp0 : p ≠ 0 := (mem_primesInRange_iff_sq.mp hp).1.ne_zero
+  have hp0 : p ≠ 0 := (Nat.mem_sqrtPrimeWindow_iff_sq.mp hp).1.ne_zero
   dsimp only
   rw [QuerySpec.before_eq_totalChunks wAB hp0
     (fun q => (values.getD q 0 % (p : ℤ)).toNat) (by intro q; rfl) D]
@@ -153,7 +153,7 @@ the existing finite splitting hypotheses. All output assertions refer to its sam
 state. The supplied prime has not been chosen by this component. -/
 theorem runs_input {n D g p A W : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n))
-    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ primesInRange D)
+    (hD : 16 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : p ∈ Nat.sqrtPrimeWindow D)
     (hv : ∀ z ∈ values, z.natAbs ≤ A) (hw : PreparationInput.width n D g p A ≤ W) :
     ∃ y t, t ≤ 690 * (n * n) * D * g ∧
       Cslib.WordRAM.Runs W PreparationInput.flatProgram
@@ -166,7 +166,7 @@ theorem runs_input {n D g p A W : ℕ} (values : List ℤ)
         (.init (PreparationInput.input n D g p values)) y ∧
       Cslib.WordRAM.InputFits W (PreparationInput.input n D g p values) ∧ y.Bounded W := by
   obtain ⟨y, t, ht, hr, he, hout, hi, hb⟩ := PreparationInput.runs_input values hlen
-    (by omega) hDn hg (mem_primesInRange_iff_sq.mp hp).1.pos hv hw
+    (by omega) hDn hg (Nat.mem_sqrtPrimeWindow_iff_sq.mp hp).1.pos hv hw
   exact ⟨y, t, ht.trans (computed_timeBound_le values hD hDn hg hp), hr, he, hout, hi, hb⟩
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.PreparationBounds

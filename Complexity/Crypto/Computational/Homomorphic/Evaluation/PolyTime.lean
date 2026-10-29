@@ -60,19 +60,11 @@ theorem isPPTOn_evaluateCircuit (D : DecryptionCircuits E secretWidth ciphertext
     IsPPTOn input (encList encBits)
       (fun a => evaluateCircuit D (n a) (publicKeys a) (encryptedKeys a) (inputs a)
         (inputCount a) (code a)) := by
-  have hn := hn.tidy
-  have hpks := hpks.tidy
-  have heks := heks.tidy
-  have hinputs := hinputs.tidy
-  have hcount := hcount.tidy
-  have hcode := hcode.tidy
-  have hcompiled := (Boolean.Layered.computableInPolyTime_compile (.of_tidy hcount) (.of_tidy
-    hcode)).tidy
-  apply (isPPTOn_evaluateLayers D hencrypt hevaluate hD (.of_tidy hn) (.of_tidy hpks)
-    (.of_tidy heks) (.of_tidy hinputs) (.of_tidy hcompiled.fst')).map_with
-  apply Turing.MultiTapeTM.ComputableInPolyTime.of_tidy
-  apply ComputableTidilyInPolyTime.mapWithInput
-    (hcompiled.snd'.comp (ComputableTidilyInPolyTime.fst _ _))
-  exact ComputableTidilyInPolyTime.listGetD_binary [] (by fun_prop) (by fun_prop)
+  have hcompiled := Boolean.Layered.computableInPolyTime_compile hcount hcode
+  apply (isPPTOn_evaluateLayers D hencrypt hevaluate hD hn hpks heks hinputs
+    hcompiled.fst').map_with
+  apply ComputableInPolyTime.mapWithInput
+    (hcompiled.snd'.comp (ComputableInPolyTime.fst _ _))
+  exact ComputableInPolyTime.listGetD_binary [] (by fun_prop) (by fun_prop)
 
 end Cslib.Crypto.Homomorphic.Scheme

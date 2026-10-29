@@ -275,26 +275,29 @@ theorem pieceSize_le_two_mul_sqrt_div (hg1 : 1 ≤ g) (hg : (g : ℝ) ≤ Real.s
 
 /-- For `16 ≤ D ≤ n`, `1 ≤ g ≤ sqrt D`, `κ ≥ 1` and edge weights bounded by `n^κ`, bound
 `(falsePositiveCount + 1) * pieceSize` at any selected prime by
-`(2 * Hashing.falsePositiveConst + 2) * κ * n^3 * log n / g`.
+`(2 * falsePositiveConst + 2) * κ * n^3 * log n / g`.
 This arithmetic estimate counts candidate vertices rather than native instructions. -/
 theorem falsePositiveCount_add_one_mul_pieceSize_le {κ : ℝ} (wAB wBC wAC : Fin n → Fin n → ℤ)
     (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g) (hg : (g : ℝ) ≤ Real.sqrt D) (hκ : 1 ≤ κ)
     (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ)) (hp : IsSelectedPrime wAB wBC wAC D p) :
     ((falsePositiveCount wAB wBC wAC p : ℝ) + 1) * (pieceSize D g : ℝ)
-      ≤ (2 * Hashing.falsePositiveConst + 2) * (κ * (n : ℝ) ^ 3 * Real.log n / (g : ℝ)) := by
-  have hsqrt : 4 ≤ Real.sqrt (D : ℝ) :=
-    Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD)
+      ≤ (2 * falsePositiveConst + 2) * (κ * (n : ℝ) ^ 3 * Real.log n / (g : ℝ)) := by
+  have hsqrt : 4 ≤ Real.sqrt (D : ℝ) := Real.four_le_sqrt_natCast hD
   have hn : (16 : ℝ) ≤ n := by exact_mod_cast hD.trans hDn
   have hlog : 1 ≤ Real.log n :=
     (Real.le_log_iff_exp_le (by linarith)).2 (Real.exp_one_lt_three.le.trans (by linarith))
   set B := κ * (n : ℝ) ^ 3 * Real.log n with hB
   -- The two terms: `F(p) √D = O(B)` by the bound on `F(p)`, and `√D ≤ n ≤ n³ ≤ B`.
   have hfalse : (falsePositiveCount wAB wBC wAC p : ℝ) * Real.sqrt D ≤
-      Hashing.falsePositiveConst * B := by
-    have hF := Hashing.falsePositiveCount_le_const_mul hD hDn hκ wAB wBC wAC hT hp
+      falsePositiveConst * B := by
+    have hF := falsePositiveCount_le_const_mul hD hDn hκ wAB wBC wAC hT hp
     rwa [← mul_div_assoc, le_div_iff₀ (by linarith)] at hF
   have hone : Real.sqrt D ≤ B :=
-    calc Real.sqrt D ≤ n := sqrt_le_natCast (by omega) hDn
+    calc
+      Real.sqrt D ≤ D := by
+        apply Real.sqrt_le_self_iff.mpr
+        exact Or.inr (by exact_mod_cast (show 1 ≤ D by omega))
+      _ ≤ n := by exact_mod_cast hDn
       _ ≤ (n : ℝ) ^ 3 := le_self_pow₀ (by linarith) (by norm_num)
       _ ≤ κ * (n : ℝ) ^ 3 := le_mul_of_one_le_left (by positivity) hκ
       _ ≤ B := le_mul_of_one_le_right (by positivity) hlog
@@ -304,8 +307,8 @@ theorem falsePositiveCount_add_one_mul_pieceSize_le {κ : ℝ} (wAB wBC wAC : Fi
         exact pieceSize_le_two_mul_sqrt_div hg1 hg
     _ = (2 * ((falsePositiveCount wAB wBC wAC p : ℝ) * Real.sqrt D) +
         2 * Real.sqrt D) / (g : ℝ) := by ring
-    _ ≤ (2 * (Hashing.falsePositiveConst * B) + 2 * B) / (g : ℝ) := by gcongr
-    _ = (2 * Hashing.falsePositiveConst + 2) * (B / (g : ℝ)) := by ring
+    _ ≤ (2 * (falsePositiveConst * B) + 2 * B) / (g : ℝ) := by gcongr
+    _ = (2 * falsePositiveConst + 2) * (B / (g : ℝ)) := by ring
 
 /-! ### The output of the reduction -/
 
@@ -319,7 +322,7 @@ theorem recovery_correct (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g)
     {L : List (InstanceIndex p × (Fin n × Fin n))} (hL : IsScanOrder wAB wBC wAC D g p ans L) :
     IsSearchAnswer wAB wBC wAC (runScans wAB wBC wAC D g L).1 ∧
       (runScans wAB wBC wAC D g L).2 ≤ falsePositiveCount wAB wBC wAC p + 1 := by
-  have hp0 : p ≠ 0 := (mem_primesInRange.mp hp.1).1.ne_zero
+  have hp0 : p ≠ 0 := (Nat.mem_sqrtPrimeWindow.mp hp.1).1.ne_zero
   obtain ⟨hzero, hnone, hcount⟩ := runScans_spec wAB wBC wAC D g L
   refine ⟨⟨hzero, fun hout ⟨a, b, c, h0⟩ => ?_⟩, ?_⟩
   · -- "A zero triangle is always found": its scan cannot have failed.
@@ -363,8 +366,8 @@ theorem answersCorrect_of_counting (wAB wBC wAC : Fin n → Fin n → ℤ) (D g 
   intro ι hι q hq
   apply propext
   simp only [decide_eq_true_eq]
-  exact Iff.of_eq ((lopInstance wAB wBC wAC D g p ι).detection_eqOn_of_counting
-    (counts ι) (hcounts ι hι) hq)
+  exact (lopInstance wAB wBC wAC D g p ι).detection_iff_of_counting
+    (counts ι) (hcounts ι hι) q hq
 
 /-- The recovery scan examines at most the uniform false-positive bound times the piece size.
 This counts candidate vertices only; it is not a charged native running-time theorem. -/
@@ -377,7 +380,7 @@ theorem recovery_vertexBound {κ : ℝ} (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1
     {L : List (InstanceIndex p × (Fin n × Fin n))} (hL : IsScanOrder wAB wBC wAC D g p ans L) :
     IsSearchAnswer wAB wBC wAC (runScans wAB wBC wAC D g L).1 ∧
       ((runScans wAB wBC wAC D g L).2 : ℝ) * pieceSize D g ≤
-        (2 * Hashing.falsePositiveConst + 2) * (κ * (n : ℝ) ^ 3 * Real.log n / (g : ℝ)) := by
+        (2 * falsePositiveConst + 2) * (κ * (n : ℝ) ^ 3 * Real.log n / (g : ℝ)) := by
   obtain ⟨hcorrect, hcount⟩ := recovery_correct hD hDn hg1 wAB wBC wAC hp hans hL
   refine ⟨hcorrect, le_trans ?_ (falsePositiveCount_add_one_mul_pieceSize_le
     wAB wBC wAC hD hDn hg1 hg hκ hw hp)⟩
