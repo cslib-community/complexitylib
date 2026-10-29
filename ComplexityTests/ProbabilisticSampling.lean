@@ -15,14 +15,18 @@ open Cslib Cslib.Probability Turing Turing.MultiTapeTM Turing.MultiTapePTM
 
 example : ProbComp.eval (BitString.sampleList 0) = PMF.pure [] := by simp
 
--- Both symbol values count: the machine samples words of length 2 on `[false, true]`.
-example {w : List Bool}
-    (hw : w ∈ (ProbComp.eval (uniformListMachine.runClosed 3 [false, true])).support) :
-    w.length = 2 := by
-  change w ∈ (ProbComp.eval
-    (uniformListMachine.runClosed ([false, true].length + 1) [false, true])).support at hw
-  rw [eval_uniformListMachine [false, true]] at hw
-  exact BitString.length_of_mem_support_uniformList hw
+-- The full output law checks uniformity, including both input symbol values.
+example : ProbComp.eval (uniformListMachine.runClosed 3 [false, true]) =
+    BitString.uniformList 2 := eval_uniformListMachine _
+
+-- Empty input halts in one transition; the two-bit input halts exactly at the linear clock.
+example : ∀ final ∈ (ProbComp.eval (uniformListMachine.runClosedConfigFrom 1
+    (uniformListMachine.initialConfig []))).support, final.tapes.state = none :=
+  uniformListMachine_halted []
+
+example : ∀ final ∈ (ProbComp.eval (uniformListMachine.runClosedConfigFrom 3
+    (uniformListMachine.initialConfig [false, true]))).support, final.tapes.state = none :=
+  uniformListMachine_halted [false, true]
 
 -- Writing the two bits has not yet consumed the final halting transition at step 2.
 example :

@@ -27,14 +27,18 @@ example : ComputableInPolyTime
     (fun p : (ℕ × ℕ) × List Bool => BitString.listRows p.1.1 p.1.2 p.2)
     (encPair (encPair encUnary encUnary) encBits) (encList encBits) := by fun_prop
 
--- Every row family in the support of `(BitString.uniformList 2).map (BitString.listRows 2 1)` has
--- two rows of length one.
-example {rows : List (List Bool)}
-    (h : rows ∈ ((BitString.uniformList 2).map (BitString.listRows 2 1)).support) :
-    rows.length = 2 := by
-  rw [BitString.uniformList_listRows 2 1] at h
-  obtain ⟨f, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp h
-  simp
+-- Two independent one-bit rows disagree in this specified order with probability `1 / 4`.
+example : ((BitString.uniformList 2).map (BitString.listRows 2 1))
+    [[true], [false]] = 1 / 4 := by
+  change ((BitString.uniformList (2 * 1)).map (BitString.listRows 2 1)) _ = _
+  rw [BitString.uniformList_listRows, PMF.map_apply, tsum_fintype]
+  simp only [PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool,
+    Fintype.card_fin]
+  rw [Finset.sum_ite, Finset.sum_const_zero, add_zero, Finset.sum_const]
+  have hcount : (Finset.univ.filter fun rows : Fin 2 → BitString 1 =>
+      [[true], [false]] = List.ofFn (fun i => List.ofFn (rows i))).card = 1 := by decide
+  rw [hcount]
+  norm_num
 
 private noncomputable def grow (state : List Bool) : ProbComp (List Bool) := do
   let bit ← ProbComp.uniform Bool

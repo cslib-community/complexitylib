@@ -24,12 +24,12 @@ private noncomputable def adaptive (word : List Bool) : WordOracleComp Bool (Lis
   if first = [true] then List.take word.length <$> ProbOracleComp.query (true, first)
   else pure []
 
--- The certificate is found compositionally from the bounded-prefix query and the conditional, and
--- yields a uniform query budget on every input.
+-- The certificate is found compositionally from the bounded-prefix query and the conditional.
 private theorem adaptive_isOraclePPTOn : IsOraclePPTOn encBits encBits adaptive := by
   unfold adaptive
   fun_prop
 
+-- On the empty input, the certificate bounds both the query count and request lengths.
 example : ∃ c d : ℕ, (adaptive []).IsQueryBounded (c * 1 ^ d) ∧
     (adaptive []).QueriesSatisfy fun request => request.2.length ≤ c * 1 ^ d := by
   obtain ⟨c, d, h⟩ := adaptive_isOraclePPTOn.query_bounds
