@@ -37,7 +37,7 @@ public section
 
 namespace Cslib.Circuits.Boolean.Modular
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Generate the complete modular multiplier, preserving the half-split reduction topology. -/
 def multiplyCode (w : ℕ) : List (Op × List ℕ) × List ℕ :=
@@ -61,16 +61,15 @@ theorem multiplyCode_eq_code (w : ℕ) : multiplyCode w = (multiply w).code := b
 /-- Generation is native polynomial-time in unary width, charging the complete binary code. -/
 @[fun_prop] theorem computableInPolyTime_multiply :
     ComputableInPolyTime (fun w => (multiply w).code) encUnary encCode := by
-  have hl : ComputableTidilyInPolyTime (fun p : ℕ × ℕ =>
+  have hl : ComputableInPolyTime (fun p : ℕ × ℕ =>
       pairWithZeroCode (p.1 + p.1) p.1 (partialProductCode p.1 p.2))
-      (encPair encUnary encUnary) encCode := by
-    exact (computableInPolyTime_pairWithZeroCode
-      (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
-      computableInPolyTime_partialProductCode).tidy
-  have h := computableInPolyTime_sumPairsCode
-    (show ComputableInPolyTime (fun w : ℕ => w + w) encUnary encNat from
-      .of_tidy (by fun_prop))
-    (.of_tidy id') (.of_tidy (mapWith hl id' range))
-  simpa only [← multiplyCode_eq_code, multiplyCode] using h
+      (encPair encUnary encUnary) encCode :=
+    computableInPolyTime_pairWithZeroCode
+      (unary_to_binary.comp (by fun_prop)) (fst _ _)
+      computableInPolyTime_partialProductCode
+  suffices ComputableInPolyTime multiplyCode encUnary encCode by
+    simpa only [← multiplyCode_eq_code] using this
+  unfold multiplyCode
+  exact computableInPolyTime_sumPairsCode (by fun_prop) id' (mapWithInput range hl)
 
 end Cslib.Circuits.Boolean.Modular
