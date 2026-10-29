@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.PCP.Encoded.Basic
 public import Complexity.Computability.PCP.DegreeReduction
 public import Mathlib.Data.List.NodupEquivFin
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.ProdSigma
 
@@ -71,8 +70,17 @@ theorem isPolyTime_halfEdges {graph : Input → Graph C}
     (hgraph : ComputableInPolyTime graph input (encoding enc)) :
     ComputableInPolyTime (fun x => (graph x).halfEdges)
       input (encList (encPair encUnary encBool)) := by
+  have hrange : ComputableInPolyTime (fun x => List.range (graph x).edges.length)
+      input (encList encUnary) :=
+    ComputableInPolyTime.range.comp
+      ((ComputableInPolyTime.length_list (Edge.encoding enc)).comp (isPolyTime_edges hgraph))
   unfold halfEdges List.product
-  polytime
+  exact ComputableInPolyTime.flatMapWithInput hrange
+    (ComputableInPolyTime.mapWithInput
+      (ComputableInPolyTime.const (encIn := encPair input encUnary) [false, true])
+      (((ComputableInPolyTime.snd input encUnary).comp
+        (ComputableInPolyTime.fst (encPair input encUnary) encBool)).prod
+        (ComputableInPolyTime.snd (encPair input encUnary) encBool)))
 
 /-- Endpoint lookup is uniform in the graph and the half-edge. -/
 @[fun_prop]
@@ -82,8 +90,9 @@ theorem isPolyTime_endpoint {graph : Input → Graph C} {halfEdge : Input → �
     (fallback : C) :
     ComputableInPolyTime (fun x => (graph x).endpoint fallback (halfEdge x))
       input encUnary := by
+  have hedge := isPolyTime_edgeAt hgraph hhalfEdge.fst' fallback
   unfold endpoint
-  polytime
+  exact hhalfEdge.snd'.ite (Edge.isPolyTime_dst hedge) (Edge.isPolyTime_src hedge)
 
 /-- Cloud enumeration charges each endpoint lookup and the entire filtered output. -/
 @[fun_prop]
@@ -93,7 +102,11 @@ theorem isPolyTime_cloud {graph : Input → Graph C} {vertex : Input → ℕ}
     ComputableInPolyTime (fun x => (graph x).cloud fallback (vertex x))
       input (encList (encPair encUnary encBool)) := by
   unfold cloud
-  polytime
+  exact ComputableInPolyTime.filterWithInput (isPolyTime_halfEdges hgraph)
+    ((isPolyTime_endpoint
+      (hgraph.comp (ComputableInPolyTime.fst input (encPair encUnary encBool)))
+      (ComputableInPolyTime.snd input (encPair encUnary encBool)) fallback).beq
+      (hvertex.comp (ComputableInPolyTime.fst input (encPair encUnary encBool))))
 
 /-- Every edge contributes exactly two half-edges. -/
 @[simp]

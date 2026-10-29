@@ -31,19 +31,28 @@ root path of at most `h` variables by such a clause. Labellings exist for `h`-is
 node of depth less than `h` has at most `k - 1` children when the clauses of `φ` have at most `k`
 literals (`card_children_le`).
 
+The tree of `x` only visits root paths that contain `x`. `IsCriticalTreeAt φ σ x h C` asks for
+the clause labels on those paths only; it follows from `IsCriticalTree φ σ h C`
+(`IsCriticalTree.isCriticalTreeAt`), and the degree bound and the forcing lemma need no more. For
+general satisfiable formulas, PPSZ needs trees for frozen variables of restricted formulas, which
+are rooted trees but not isolated ones.
+
 `Cut C A d p` says that every downward path of `d` steps from the node `p` has a node other than
 `p` labelled in `A` (`cut_iff_forall_descends`). It is decidable, monotone in `A` (`Cut.mono`),
 and satisfies `Cut C A (d + 1) p ↔ ∀ y ∈ children C p, y ∈ A ∨ Cut C A d (y :: p)` (`cut_succ`).
 
 **Forcing lemma.** If every path from the root of the tree of `x` to depth `h` meets `A`, then
 `x = σ x` is implied, under `σ` restricted to `A`, by the clause labels of the tree, which are
-at most `∑ i < h, (k - 1) ^ i` (`wImplied_of_cut`). In PPSZ, with `A` the variables placed before
+at most `∑ i < h, (k - 1) ^ i` (`wImplied_of_cut`, and `IsCriticalTreeAt.wImplied_of_cut` for
+rooted trees). In PPSZ, with `A` the variables placed before
 `x`, this says that `x` is forced [Scheder, Lemma 3.2][Scheder2021].
 
 ## Main definitions
 
 * `Cslib.Complexity.PPSZ.IsIsolated`: flipping at most `h` variables falsifies the formula.
 * `Cslib.Complexity.PPSZ.IsCriticalTree`: a clause labelling of the critical clause tree.
+* `Cslib.Complexity.PPSZ.IsCriticalTreeAt`: a clause labelling of the critical clause tree
+  rooted at a given variable.
 * `Cslib.Complexity.PPSZ.children`: the children of a node.
 * `Cslib.Complexity.PPSZ.Descends`: the downward paths from a node.
 * `Cslib.Complexity.PPSZ.Cut`: every downward path from a node meets a set of variables.
@@ -57,6 +66,8 @@ at most `∑ i < h, (k - 1) ^ i` (`wImplied_of_cut`). In PPSZ, with `A` the vari
 * `Cslib.Complexity.PPSZ.cut_insert_of_mem`: `Cut` below `p` does not depend on the labels on
   `p`.
 * `Cslib.Complexity.PPSZ.cut_iff_forall_descends`: `Cut` in terms of paths.
+* `Cslib.Complexity.PPSZ.IsCriticalTreeAt.wImplied_of_cut`: the forcing lemma for a rooted tree
+  and `w ≥ ∑ i < h, (k - 1) ^ i`.
 * `Cslib.Complexity.PPSZ.wImplied_of_cut`: the forcing lemma for `w ≥ ∑ i < h, (k - 1) ^ i`.
 * `Cslib.Complexity.PPSZ.wImplied_of_forall_descends`: the forcing lemma for
   `w ≥ (k - 1) ^ (h + 1)` [Scheder, Lemma 3.2][Scheder2021].
@@ -123,6 +134,23 @@ theorem exists_isCriticalTree {φ : CNF (Fin n)} {σ : Fin n → Bool} {h : ℕ}
   choose C hC using key'
   exact ⟨C, hC⟩
 
+/-- The clause labelling `C` defines a **critical clause tree of height `h` rooted at `x`** for
+`σ`: every root path `p` of at most `h` variables that contains `x` is labelled by a clause of `φ`
+that flipping the variables of `p` violates. The root paths of the nodes of the tree of `x` end
+in `x`, so this is the part of `IsCriticalTree` that the tree of `x` uses
+(`IsCriticalTree.isCriticalTreeAt`). Unlike `IsCriticalTree`, it can hold when `σ` is not
+isolated, for instance for a frozen variable of a restricted formula (original). -/
+def IsCriticalTreeAt (φ : CNF (Fin n)) (σ : Fin n → Bool) (x : Fin n) (h : ℕ)
+    (C : List (Fin n) → Clause (Fin n)) : Prop :=
+  ∀ p : List (Fin n), x ∈ p → p.length ≤ h →
+    C p ∈ φ ∧ (C p).eval (flipOn p.toFinset σ) = false
+
+/-- A critical clause tree is a critical clause tree rooted at every variable. -/
+theorem IsCriticalTree.isCriticalTreeAt {φ : CNF (Fin n)} {σ : Fin n → Bool} {h : ℕ}
+    {C : List (Fin n) → Clause (Fin n)} (hC : IsCriticalTree φ σ h C) (x : Fin n) :
+    IsCriticalTreeAt φ σ x h C :=
+  fun p hxp hph => hC p (List.ne_nil_of_mem hxp) hph
+
 /-- The **children** of the node with root path `p`: the variables of its clause label that are
 not on `p` [Paturi, Pudlák, Saks, Zane, §3.2][PaturiPudlakSaksZane2005]. -/
 def children (C : List (Fin n) → Clause (Fin n)) (p : List (Fin n)) : Finset (Fin n) :=
@@ -140,11 +168,11 @@ theorem notMem_of_mem_children {C : List (Fin n) → Clause (Fin n)} {p : List (
 
 /-- The critical clause tree has **degree at most `k - 1`** for clauses of at most `k` literals:
 some variable of a node's clause label is on its root path [Scheder, §3.1][Scheder2021]. -/
-theorem card_children_le {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
-    {C : List (Fin n) → Clause (Fin n)} (hσ : φ.eval σ = true) (hC : IsCriticalTree φ σ h C)
-    (hlen : ∀ c ∈ φ, c.length ≤ k) {p : List (Fin n)} (hp : p ≠ []) (hph : p.length ≤ h) :
+theorem card_children_le {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool} {x : Fin n}
+    {C : List (Fin n) → Clause (Fin n)} (hσ : φ.eval σ = true) (hC : IsCriticalTreeAt φ σ x h C)
+    (hlen : ∀ c ∈ φ, c.length ≤ k) {p : List (Fin n)} (hxp : x ∈ p) (hph : p.length ≤ h) :
     (children C p).card ≤ k - 1 := by
-  obtain ⟨hmem, hflip⟩ := hC p hp hph
+  obtain ⟨hmem, hflip⟩ := hC p hxp hph
   obtain ⟨l, hl, hls⟩ :=
     (Clause.eval_eq_true_iff σ _).mp ((CNF.eval_eq_true_iff σ φ).mp hσ _ hmem)
   have hlp : l.1 ∈ p := by
@@ -261,33 +289,35 @@ theorem mem_labels_succ {C : List (Fin n) → Clause (Fin n)} {d : ℕ} {p : Lis
   simp [labels]
 
 /-- The clause labels of a critical clause tree are clauses of the formula. -/
-theorem mem_of_mem_labels {φ : CNF (Fin n)} {σ : Fin n → Bool} {h : ℕ}
-    {C : List (Fin n) → Clause (Fin n)} (hC : IsCriticalTree φ σ h C) :
-    ∀ {d : ℕ} {p : List (Fin n)}, p ≠ [] → p.length + d ≤ h + 1 →
+theorem mem_of_mem_labels {φ : CNF (Fin n)} {σ : Fin n → Bool} {x : Fin n} {h : ℕ}
+    {C : List (Fin n) → Clause (Fin n)} (hC : IsCriticalTreeAt φ σ x h C) :
+    ∀ {d : ℕ} {p : List (Fin n)}, x ∈ p → p.length + d ≤ h + 1 →
       ∀ c ∈ labels C d p, c ∈ φ
   | 0, _, _, _, c, hc => by simp [labels] at hc
-  | d + 1, p, hp, hph, c, hc => by
+  | d + 1, p, hxp, hph, c, hc => by
     rcases mem_labels_succ.mp hc with rfl | ⟨y, _, hy⟩
-    · exact (hC p hp (by omega)).1
-    · exact mem_of_mem_labels hC (List.cons_ne_nil y p) (by rw [List.length_cons]; omega) c hy
+    · exact (hC p hxp (by omega)).1
+    · exact mem_of_mem_labels hC (List.mem_cons_of_mem y hxp) (by rw [List.length_cons]; omega)
+        c hy
 
 /-- **The number of clause labels** of nodes of depth less than `d` is at most
 `∑ i < d, (k - 1) ^ i`. -/
-theorem card_labels_le {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
-    {C : List (Fin n) → Clause (Fin n)} (hσ : φ.eval σ = true) (hC : IsCriticalTree φ σ h C)
+theorem card_labels_le {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool} {x : Fin n}
+    {C : List (Fin n) → Clause (Fin n)} (hσ : φ.eval σ = true) (hC : IsCriticalTreeAt φ σ x h C)
     (hlen : ∀ c ∈ φ, c.length ≤ k) :
-    ∀ {d : ℕ} {p : List (Fin n)}, p ≠ [] → p.length + d ≤ h + 1 →
+    ∀ {d : ℕ} {p : List (Fin n)}, x ∈ p → p.length + d ≤ h + 1 →
       (labels C d p).card ≤ ∑ i ∈ range d, (k - 1) ^ i
   | 0, _, _, _ => by simp [labels]
-  | d + 1, p, hp, hph => by
-    have hch := card_children_le hσ hC hlen hp (by omega)
+  | d + 1, p, hxp, hph => by
+    have hch := card_children_le hσ hC hlen hxp (by omega)
     calc (labels C (d + 1) p).card
         ≤ ((children C p).biUnion fun y => labels C d (y :: p)).card + 1 := card_insert_le _ _
       _ ≤ (∑ y ∈ children C p, (labels C d (y :: p)).card) + 1 :=
         Nat.add_le_add_right card_biUnion_le 1
       _ ≤ (∑ _y ∈ children C p, ∑ i ∈ range d, (k - 1) ^ i) + 1 :=
         Nat.add_le_add_right (sum_le_sum fun y _ =>
-          card_labels_le hσ hC hlen (List.cons_ne_nil y p) (by rw [List.length_cons]; omega)) 1
+          card_labels_le hσ hC hlen (List.mem_cons_of_mem y hxp)
+            (by rw [List.length_cons]; omega)) 1
       _ ≤ (k - 1) * (∑ i ∈ range d, (k - 1) ^ i) + 1 := by
         rw [sum_const, smul_eq_mul]
         exact Nat.add_le_add_right (Nat.mul_le_mul_right _ hch) 1
@@ -297,16 +327,16 @@ theorem card_labels_le {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
 `σ` on the root path `p` violates a clause label below `p` if `p` has a cut in `A`. Follow the
 children on which `γ` differs from `σ`; where this stops, `γ` agrees with the flip of `σ` on the
 whole clause label. -/
-theorem exists_mem_labels_eval_eq_false {φ : CNF (Fin n)} {σ γ : Fin n → Bool} {h : ℕ}
-    {C : List (Fin n) → Clause (Fin n)} (hC : IsCriticalTree φ σ h C) {A : Finset (Fin n)}
-    (hA : ∀ y ∈ A, γ y = σ y) :
-    ∀ {d : ℕ} {p : List (Fin n)}, p ≠ [] → p.length + d ≤ h + 1 → (∀ y ∈ p, γ y ≠ σ y) →
+theorem exists_mem_labels_eval_eq_false {φ : CNF (Fin n)} {σ γ : Fin n → Bool} {x : Fin n}
+    {h : ℕ} {C : List (Fin n) → Clause (Fin n)} (hC : IsCriticalTreeAt φ σ x h C)
+    {A : Finset (Fin n)} (hA : ∀ y ∈ A, γ y = σ y) :
+    ∀ {d : ℕ} {p : List (Fin n)}, x ∈ p → p.length + d ≤ h + 1 → (∀ y ∈ p, γ y ≠ σ y) →
       Cut C A d p → ∃ c ∈ labels C d p, c.eval γ = false
   | 0, _, _, _, _, hcut => absurd hcut (cut_zero C A _)
-  | d + 1, p, hp, hph, hγ, hcut => by
+  | d + 1, p, hxp, hph, hγ, hcut => by
     by_cases hall : ∀ y ∈ children C p, γ y = σ y
     · refine ⟨C p, mem_labels_succ.mpr (Or.inl rfl), ?_⟩
-      have hflip := (hC p hp (by omega)).2
+      have hflip := (hC p hxp (by omega)).2
       have hagree : ∀ l ∈ C p, γ l.1 = flipOn p.toFinset σ l.1 := by
         intro l hl
         by_cases hlp : l.1 ∈ p
@@ -326,9 +356,32 @@ theorem exists_mem_labels_eval_eq_false {φ : CNF (Fin n)} {σ γ : Fin n → Bo
       obtain ⟨y, hy, hyγ⟩ := hall
       have hyA : y ∉ A := fun hyA => hyγ (hA y hyA)
       have hcut' := ((cut_succ C A d p).mp hcut y hy).resolve_left hyA
-      obtain ⟨c, hc, hcγ⟩ := exists_mem_labels_eval_eq_false hC hA (List.cons_ne_nil y p)
+      obtain ⟨c, hc, hcγ⟩ := exists_mem_labels_eval_eq_false hC hA (List.mem_cons_of_mem y hxp)
         (by rw [List.length_cons]; omega) (by simpa using ⟨hyγ, hγ⟩) hcut'
       exact ⟨c, mem_labels_succ.mpr (Or.inr ⟨y, hy, hc⟩), hcγ⟩
+
+/-- **The forcing lemma for a rooted tree** (original: a strengthening of
+[Scheder, Lemma 3.2][Scheder2021], whose proof uses only the number of clause-labelled nodes).
+Let `σ` satisfy `φ`, whose clauses have at most `k` literals, and let `C` label a critical clause
+tree of height `h` rooted at `x`. If every path from the root `x` to depth `h` meets `A` outside
+the root, then `x = σ x` is `w`-implied under `σ` restricted to `A` whenever
+`w ≥ ∑ i < h, (k - 1) ^ i`, a bound on the number of nodes of depth less than `h`. -/
+theorem IsCriticalTreeAt.wImplied_of_cut {k h w : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
+    {x : Fin n} {C : List (Fin n) → Clause (Fin n)} (hC : IsCriticalTreeAt φ σ x h C)
+    (hσ : φ.eval σ = true) (hlen : ∀ c ∈ φ, c.length ≤ k) (hw : ∑ i ∈ range h, (k - 1) ^ i ≤ w)
+    {A : Finset (Fin n)} (hcut : Cut C A h [x]) :
+    WImplied φ w (PPZ.restrict σ A) x (σ x) := by
+  have hx : x ∈ [x] := List.mem_singleton_self x
+  have hxh : [x].length + h ≤ h + 1 := by simp [Nat.add_comm]
+  refine ⟨(labels C h [x]).toList, fun c hc => mem_of_mem_labels hC hx hxh c (by simpa using hc),
+    by simpa using (card_labels_le hσ hC hlen hx hxh).trans hw, ?_⟩
+  intro γ hγ hψ
+  have hA : ∀ y ∈ A, γ y = σ y := fun y hy => hγ y (σ y) (by simp [PPZ.restrict, hy])
+  by_contra hne
+  obtain ⟨c, hc, hcγ⟩ :=
+    exists_mem_labels_eval_eq_false hC hA hx hxh (by simpa using hne) hcut
+  have := (CNF.eval_eq_true_iff γ _).mp hψ c (by simpa using hc)
+  simp [hcγ] at this
 
 /-- **The forcing lemma** (original: a strengthening of [Scheder, Lemma 3.2][Scheder2021], whose
 proof uses only the number of clause-labelled nodes). Let `σ` satisfy `φ`, whose clauses have at
@@ -340,18 +393,8 @@ theorem wImplied_of_cut {k h w : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
     {C : List (Fin n) → Clause (Fin n)} (hσ : φ.eval σ = true) (hC : IsCriticalTree φ σ h C)
     (hlen : ∀ c ∈ φ, c.length ≤ k) (hw : ∑ i ∈ range h, (k - 1) ^ i ≤ w)
     {A : Finset (Fin n)} {x : Fin n} (hcut : Cut C A h [x]) :
-    WImplied φ w (PPZ.restrict σ A) x (σ x) := by
-  have hx : [x] ≠ [] := List.cons_ne_nil x []
-  have hxh : [x].length + h ≤ h + 1 := by simp [Nat.add_comm]
-  refine ⟨(labels C h [x]).toList, fun c hc => mem_of_mem_labels hC hx hxh c (by simpa using hc),
-    by simpa using (card_labels_le hσ hC hlen hx hxh).trans hw, ?_⟩
-  intro γ hγ hψ
-  have hA : ∀ y ∈ A, γ y = σ y := fun y hy => hγ y (σ y) (by simp [PPZ.restrict, hy])
-  by_contra hne
-  obtain ⟨c, hc, hcγ⟩ :=
-    exists_mem_labels_eval_eq_false hC hA hx hxh (by simpa using hne) hcut
-  have := (CNF.eval_eq_true_iff γ _).mp hψ c (by simpa using hc)
-  simp [hcγ] at this
+    WImplied φ w (PPZ.restrict σ A) x (σ x) :=
+  (hC.isCriticalTreeAt x).wImplied_of_cut hσ hlen hw hcut
 
 /-- **The forcing lemma** [Scheder, Lemma 3.2][Scheder2021]. Let `σ` satisfy the `k`-CNF formula
 `φ` with `k ≥ 3`, let `C` label a critical clause tree of height `h`, and let

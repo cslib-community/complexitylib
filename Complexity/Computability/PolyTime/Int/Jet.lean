@@ -280,8 +280,12 @@ theorem computableInPolyTime_add :
 @[fun_prop] theorem computableInPolyTime_sub' {γ : Type} {encIn : γ ↪ List Bool}
     {J : γ → ℕ} {a b : γ → List ℤ} (hJ : ComputableInPolyTime J encIn encUnary)
     (ha : ComputableInPolyTime a encIn encJet) (hb : ComputableInPolyTime b encIn encJet) :
-    ComputableInPolyTime (fun x => sub (J x) (a x) (b x)) encIn encJet := by
-  have := hJ.tidy; have := ha.tidy; have := hb.tidy; refine .of_tidy ?_; unfold sub; fun_prop
+    ComputableInPolyTime (fun x => sub (J x) (a x) (b x)) encIn encJet :=
+  have hx := ComputableInPolyTime.fst encIn encUnary
+  have hk := ComputableInPolyTime.snd encIn encUnary
+  ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hJ)
+    (ComputableInPolyTime.intBin_sub.comp
+      (((ha.comp hx).listGetDWithInput hk 0).prod ((hb.comp hx).listGetDWithInput hk 0)))
 
 theorem computableInPolyTime_sub :
     ComputableInPolyTime (fun p : (ℕ × List ℤ) × List ℤ => sub p.1.1 p.1.2 p.2)
@@ -290,9 +294,9 @@ theorem computableInPolyTime_sub :
 @[fun_prop] theorem computableInPolyTime_subConst' {γ : Type} {encIn : γ ↪ List Bool}
     {J : γ → ℕ} {c : γ → ℤ} {a : γ → List ℤ} (hJ : ComputableInPolyTime J encIn encUnary)
     (hc : ComputableInPolyTime c encIn encIntBin) (ha : ComputableInPolyTime a encIn encJet) :
-    ComputableInPolyTime (fun x => subConst (J x) (c x) (a x)) encIn encJet := by
-  have := hJ.tidy; have := hc.tidy; have := ha.tidy
-  refine .of_tidy ?_; unfold subConst sub; fun_prop
+    ComputableInPolyTime (fun x => subConst (J x) (c x) (a x)) encIn encJet :=
+  computableInPolyTime_sub' hJ
+    ((ComputableInPolyTime.snoc encIntBin).comp ((ComputableInPolyTime.const []).prod hc)) ha
 
 theorem computableInPolyTime_subConst :
     ComputableInPolyTime (fun p : (ℕ × ℤ) × List ℤ => subConst p.1.1 p.1.2 p.2)
@@ -316,23 +320,20 @@ theorem computableInPolyTime_foldl_mulZJet {γ α : Type} {encIn : γ ↪ List B
       (fun x => (xs x).foldl (fun acc a => Cslib.mulZJet (J x) acc (factor (J x) (δ x) a))
         (Cslib.truncZJet (J x) [1]))
       encIn encJet := by
-  have hJt := hJ.tidy; have hδt := hδ.tidy; have hxst := hxs.tidy
-  have hinit := (Cslib.computableInPolyTime_truncZJet hJ (.of_tidy (.const [1]))).tidy
+  have hinit := Cslib.computableInPolyTime_truncZJet hJ (.const [1])
   have hqJ : ComputableInPolyTime (fun q : ((ℕ × ℤ) × List ℤ) × α => q.1.1.1)
-      (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encUnary :=
-    .of_tidy (by fun_prop)
+      (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encUnary := by fun_prop
   have hqAcc : ComputableInPolyTime (fun q : ((ℕ × ℤ) × List ℤ) × α => q.1.2)
-      (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encJet :=
-    .of_tidy (by fun_prop)
-  have hstep := (Cslib.computableInPolyTime_mulZJet hqJ hqAcc hfac).tidy
-  refine .of_tidy (ComputableTidilyInPolyTime.foldlWith (encA := encA)
+      (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encJet := by fun_prop
+  have hstep := Cslib.computableInPolyTime_mulZJet hqJ hqAcc hfac
+  refine ComputableInPolyTime.foldlWith (encA := encA)
     (par := fun x => (J x, δ x)) (list := xs) (init := fun x => Cslib.truncZJet (J x) [1])
     (step := fun par acc a => Cslib.mulZJet par.1 acc (factor par.1 par.2 a))
-    (hJt.prod hδt) hxst hinit hstep
+    (hJ.prod hδ) hxs hinit hstep
     (B := fun x => J x * (2 * (1 + (encList encA (xs x)).length * K x) + 3))
-    (hJt.polyBounded.mul (((PolyBounded.const 2).mul
-      ((PolyBounded.const 1).add (hxst.polyBounded_length.mul hK))).add (.const 3)))
-    fun x i _ => ?_)
+    (hJ.polyBounded.mul (((PolyBounded.const 2).mul
+      ((PolyBounded.const 1).add (hxs.polyBounded_length.mul hK))).add (.const 3)))
+    fun x i _ => ?_
   dsimp only
   have htake_len : ((xs x).take i).length ≤ (encList encA (xs x)).length :=
     (List.length_take_le' i (xs x)).trans (length_le_length_encList encA (xs x))

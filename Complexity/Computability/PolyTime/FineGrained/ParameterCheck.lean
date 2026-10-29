@@ -513,230 +513,77 @@ theorem feasible_of_checkScheduleFeasible_chooseBeta_eq_true {n M b w : ℕ}
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
-/-! #### Internal tidy building blocks (zero public `Tidy` surface) -/
+/-! #### Internal plain building blocks -/
 
 private theorem clog_two_le_size (n : ℕ) : Nat.clog 2 n ≤ n.size :=
   (Nat.clog_le_iff_le_pow Nat.one_lt_two).mpr (Nat.lt_size_self n).le
 
-private theorem tidy_clog2 : ComputableTidilyInPolyTime (Nat.clog 2) encNat encNat :=
-  ComputableInPolyTime.binary_clog_two_nat.tidy
+private theorem bAdd {α : Type} {ei : α ↪ List Bool} {f g : α → ℕ}
+    (hf : ComputableInPolyTime f ei encNat) (hg : ComputableInPolyTime g ei encNat) :
+    ComputableInPolyTime (fun x => f x + g x) ei encNat :=
+  binary_add.comp (hf.prod hg)
 
-private theorem tidy_nu :
-    ComputableTidilyInPolyTime (fun n : ℕ => Nat.clog 2 (Nat.clog 2 n)) encNat encNat :=
-  tidy_clog2.comp tidy_clog2
+private theorem bDiv {α : Type} {ei : α ↪ List Bool} {f g : α → ℕ}
+    (hf : ComputableInPolyTime f ei encNat) (hg : ComputableInPolyTime g ei encNat) :
+    ComputableInPolyTime (fun x => f x / g x) ei encNat :=
+  binary_div.comp (hf.prod hg)
 
-private theorem tidy_numGroups :
-    ComputableTidilyInPolyTime ReplacementParams.numGroups encNat encNat :=
-  binary_div' (ComputableInPolyTime.binary_sqrt.tidy.comp tidy_clog2)
-    (binary_pow' tidy_nu (const 2))
+private theorem bLe {α : Type} {ei : α ↪ List Bool} {f g : α → ℕ}
+    (hf : ComputableInPolyTime f ei encNat) (hg : ComputableInPolyTime g ei encNat) :
+    ComputableInPolyTime (fun x => decide (f x ≤ g x)) ei encBool :=
+  (show ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
+    (encPair encNat encNat) encBool by fun_prop).comp (hf.prod hg)
 
-private theorem tidy_numGroups_unary :
-    ComputableTidilyInPolyTime ReplacementParams.numGroups encNat encUnary := by
-  have hmin : ComputableTidilyInPolyTime
-      (fun n : ℕ => min n.size (ReplacementParams.numGroups n)) encNat encUnary :=
-    (ComputableInPolyTime.binary_min_unary'
-      ComputableInPolyTime.binary_size tidy_numGroups.computableInPolyTime).tidy
-  refine hmin.of_enc_eq fun n => congrArg encUnary ?_
-  exact (Nat.min_eq_right
-    (((Nat.div_le_self _ _).trans (Nat.sqrt_le_self _)).trans (clog_two_le_size n))).symm
+private theorem uToB : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat := by fun_prop
 
-private theorem tidy_numNodes :
-    ComputableTidilyInPolyTime ReplacementParams.numNodes encNat encNat :=
-  binary_div' tidy_clog2 (binary_mul' (const 128) tidy_nu)
+private theorem uMax :
+    ComputableInPolyTime (fun p : ℕ × ℕ => max p.1 p.2) (encPair encUnary encUnary) encUnary := by
+  fun_prop
 
-private theorem tidy_numNodes_unary :
-    ComputableTidilyInPolyTime ReplacementParams.numNodes encNat encUnary := by
-  have hmin : ComputableTidilyInPolyTime
-      (fun n : ℕ => min n.size (ReplacementParams.numNodes n)) encNat encUnary :=
-    (ComputableInPolyTime.binary_min_unary'
-      ComputableInPolyTime.binary_size tidy_numNodes.computableInPolyTime).tidy
-  refine hmin.of_enc_eq fun n => congrArg encUnary ?_
-  exact (Nat.min_eq_right ((Nat.div_le_self _ _).trans (clog_two_le_size n))).symm
+private theorem bSum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
 
-private theorem tidy_rowBound :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => ReplacementParams.rowBound p.1 p.2)
-      (encPair encNat encNat) encNat :=
-  binary_mul' (binary_add' (fst encNat encNat) (const 3))
-    (ComputableInPolyTime.binary_ceilSqrt.tidy.comp (tidy_clog2.comp (snd encNat encNat)))
+private theorem clog2_pt : ComputableInPolyTime (Nat.clog 2) encNat encNat :=
+  binary_clog_two_nat
 
-private theorem tidy_auxDim :
-    ComputableTidilyInPolyTime ReplacementParams.auxDim encNat encNat :=
-  binary_pow' tidy_numGroups (unary_mul.comp ((const 2).prod tidy_numNodes_unary))
-
-private theorem tidy_intervalStart :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => ReplacementParams.intervalStart p.1 p.2)
-      (encPair encNat encNat) encNat := by
-  have hn := snd encNat encNat
-  have hr := tidy_numGroups.comp hn
-  have hQ := tidy_numNodes.comp hn
-  have hR := tidy_rowBound
-  exact binary_div'
-    (binary_sub' (binary_mul' hQ (binary_sub' hr (const 1)))
-      (binary_mul' hr (binary_sub' hR (const 1))))
-    (binary_mul' (const 2) hr)
-
-private theorem tidy_heavyDegreeCutoff :
-    ComputableTidilyInPolyTime heavyDegreeCutoff encNat encNat :=
-  binary_pow' tidy_clog2 (const 5)
-
-private theorem tidy_heavyIncidenceCutoff :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => heavyIncidenceCutoff p.1 p.2)
-      (encPair encNat encNat) encNat :=
-  binary_mul'
-    (binary_div' (binary_sub' (binary_add' (fst encNat encNat) (snd encNat encNat)) (const 1))
-      (snd encNat encNat))
-    (ComputableInPolyTime.binary_ceilSqrt.tidy.comp (tidy_clog2.comp (snd encNat encNat)))
-
-private theorem tidy_chooseBeta :
-    ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => chooseBeta p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encNat) encNat) encNat := by
-  let encIn := encPair (encPair encNat encNat) encNat
-  have hb_size : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2.size) encIn encUnary :=
-    ComputableInPolyTime.binary_size.tidy.comp ((fst (encPair encNat encNat) encNat).snd')
-  have hw_size : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2.size) encIn encUnary :=
-    ComputableInPolyTime.binary_size.tidy.comp (snd (encPair encNat encNat) encNat)
-  have hlist := (map (unary_add.comp (id'.prod (const 1)))).comp
-    (range.comp (unary_add.comp ((unary_max.comp (hb_size.prod hw_size)).prod (const 1))))
-  have hpred : ComputableTidilyInPolyTime
-      (fun q : (((ℕ × ℕ) × ℕ) × ℕ) =>
-        decide (q.1.1.2 ≤ q.1.1.1 ^ q.2) && decide (q.1.2 ≤ q.1.1.1 ^ q.2))
-      (encPair encIn encUnary) encBool := by fun_prop
-  exact unary_to_binary.comp ((findWithInput hlist hpred).optionGetDWithInput (const 1))
-
-private theorem tidy_binomTailTerm :
-    ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => binomTailTerm p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encNat) encUnary) encNat := by
-  have h1 := fst (encPair encUnary encNat) encUnary
-  have hQ := h1.fst'; have hr := h1.snd'; have hw := snd (encPair encUnary encNat) encUnary
-  exact binary_mul'
-    (binary_mul' (ComputableInPolyTime.binary_choose.tidy.comp (hQ.prod hw))
-      (binary_pow' (binary_sub' hr (const 1)) hw))
-    (binary_pow' (binary_add' hr (const 1)) (unary_sub.comp (hQ.prod hw)))
-
-private theorem tidy_binomTailNumerator :
-    ComputableTidilyInPolyTime
-      (fun p : ((ℕ × ℕ) × ℕ) × ℕ => binomTailNumerator p.1.1.1 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat := by
-  let enc3 := encPair (encPair encUnary encNat) encNat; let encIn := encPair enc3 encNat
-  have hlist : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × ℕ) × ℕ) × ℕ => List.range (p.1.1.1 + 1)) encIn (encList encUnary) :=
-    range.comp (unary_add.comp ((((fst enc3 encNat).fst').fst').prod (const 1)))
-  have hfilter : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × ℕ) × ℕ) × ℕ => (List.range (p.1.1.1 + 1)).filter fun w =>
-        !(decide (p.1.2 ≤ w) && decide (w < p.1.2 + p.2))) encIn (encList encUnary) := by
-    refine filterWithInput hlist ?_
-    have hw_b := unary_to_binary.comp (snd encIn encUnary)
-    have hA := ((fst encIn encUnary).fst').snd'; have hR := (fst encIn encUnary).snd'
-    exact bool_not.comp (bool_and' (binary_le' hA hw_b) (binary_lt' hw_b (binary_add' hA hR)))
-  refine binary_sum.comp (mapWithInput (f := fun p w => binomTailTerm p.1.1.1 p.1.1.2 w) hfilter ?_)
-  have hp := fst encIn encUnary
-  exact tidy_binomTailTerm.comp
-    ((((((hp.fst').fst').fst').prod (((hp.fst').fst').snd')).prod (snd encIn encUnary)))
-
-private theorem tidy_checkBinomTail :
-    ComputableTidilyInPolyTime
-      (fun p : ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ =>
-        checkBinomTail p.1.1.1.1.1 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat) encNat)
-      encBool := by
-  let enc4 := encPair (encPair (encPair encUnary encNat) encNat) encNat
-  let enc5 := encPair enc4 encNat
-  have hp5 := fst enc5 encNat; have hp4 := hp5.fst'
-  have hQ := ((hp4.fst').fst').fst'; have hr := ((hp4.fst').fst').snd'
-  have hb := hp5.snd'; have hlam := snd enc5 encNat
-  have hnum := tidy_binomTailNumerator.comp hp4
-  have hlhs := binary_mul' (binary_mul' (binary_mul' hnum hb) (binary_pow' hr (const 2))) hlam
-  have hrhs := binary_pow' (binary_mul' (const 2) hr) hQ
-  exact bool_and'
-    (bool_and' (bool_and' (binary_le' (const 1) hr) (binary_le' (const 1) hb))
-      (binary_le' (const 1) hlam))
-    (binary_le' hlhs hrhs)
-
-private abbrev FeasibleTuple := (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ
-
-private abbrev encFeasible8 : ((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ ↪ List Bool :=
-  encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat) encNat) encNat)
-    encNat) encUnary) encNat) encNat
-
-private abbrev encFeasibleTuple : FeasibleTuple ↪ List Bool := encPair encFeasible8 encNat
-
-private theorem tidy_checkReplacementFeasible :
-    ComputableTidilyInPolyTime
-      (fun p : FeasibleTuple =>
-        checkReplacementFeasible p.1.1.1.1.1.1.1.1 p.1.1.1.1.1.1.1.2 p.1.1.1.1.1.1.2
-          p.1.1.1.1.1.2 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
-      encFeasibleTuple encBool := by
-  have h8 := fst encFeasible8 encNat
-  have h7 := h8.fst'; have h6 := h7.fst'; have h5 := h6.fst'
-  have h4 := h5.fst'; have h3 := h4.fst'; have h2 := h3.fst'
-  have hn := h2.fst'; have hM := h2.snd'; have hb := h3.snd'
-  have hwmax := h4.snd'; have hlam := h5.snd'; have hQ := h6.snd'
-  have hr := h7.snd'; have hA := h8.snd'; have hR := snd encFeasible8 encNat
-  have hQb := unary_to_binary.comp hQ
-  have hD2 := binary_pow' (binary_pow' hr (unary_mul.comp ((const 2).prod hQ))) (const 2)
-  have hbalM := binary_le' (binary_mul' (binary_mul' (const 2) (binary_add' hb hwmax)) hD2) hM
-  have hbaln := binary_le'
-    (binary_mul' (binary_mul' (const 2) hQb) (binary_pow' hr (const 2))) hn
-  have htail := tidy_checkBinomTail.comp (((((hQ.prod hr).prod hA).prod hR).prod hb).prod hlam)
-  exact bool_and' (bool_and' (bool_and' (bool_and' (bool_and'
-    (bool_and' (binary_le' (const 2) hr) (binary_le' (const 1) hR)) (binary_lt' hR hQb))
-    (binary_le' (binary_add' hA hR) (binary_add' hQb (const 1)))) hbalM) hbaln) htail
-
-private abbrev encScheduleOut : (ℕ × ℕ × ℕ × ℕ × ℕ × ℕ) ↪ List Bool :=
-  encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat))))
-
-private theorem tidy_computeScheduleParams :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => computeScheduleParams p.1 p.2)
-      (encPair encNat encNat) encScheduleOut := by
-  have hβ := fst encNat encNat; have hn := snd encNat encNat
-  exact (tidy_clog2.comp hn).prod ((tidy_nu.comp hn).prod
-    ((tidy_numGroups.comp hn).prod ((tidy_numNodes.comp hn).prod
-      (tidy_rowBound.prod tidy_intervalStart))))
-
-private theorem tidy_checkScheduleFeasible_binary :
-    ComputableTidilyInPolyTime
-      (fun p : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ =>
-        checkScheduleFeasible p.1.1.1.1 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair (encPair encNat encNat) encNat) encNat) encNat) encBool := by
-  let enc4 := encPair (encPair (encPair encNat encNat) encNat) encNat
-  have h4 := fst enc4 encNat; have h3 := h4.fst'; have h2 := h3.fst'
-  have hn := h2.fst'; have hM := h2.snd'; have hb := h3.snd'
-  have hwmax := h4.snd'; have hβ := snd enc4 encNat
-  have hlam := tidy_clog2.comp hn; have hr := tidy_numGroups.comp hn
-  have hQu := tidy_numNodes_unary.comp hn; have hQb := tidy_numNodes.comp hn
-  have hR := tidy_rowBound.comp (hβ.prod hn); have hA := tidy_intervalStart.comp (hβ.prod hn)
-  have hfeas := tidy_checkReplacementFeasible.comp
-    ((((((((hn.prod hM).prod hb).prod hwmax).prod hlam).prod hQu).prod hr).prod hA).prod hR)
-  exact bool_and' (bool_and' (bool_and' (binary_le' (const 20) hn) (binary_le' (const 32) hR))
-    (binary_le' (binary_mul' (const 6) hR) hQb)) hfeas
-
-/-! #### Public Plain `ComputableInPolyTime` Certificates -/
+private theorem nu_pt :
+    ComputableInPolyTime (fun n : ℕ => Nat.clog 2 (Nat.clog 2 n)) encNat encNat :=
+  clog2_pt.comp clog2_pt
 
 /-- `ReplacementParams.numGroups` (`r`) is polynomial-time over binary naturals. -/
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_numGroups :
-    ComputableInPolyTime ReplacementParams.numGroups encNat encNat := .of_tidy tidy_numGroups
+    ComputableInPolyTime ReplacementParams.numGroups encNat encNat :=
+  bDiv (binary_sqrt.comp clog2_pt) (binary_pow' nu_pt (const 2))
 
 /-- `ReplacementParams.numGroups` (`r`) is polynomial-time from binary naturals to unary. -/
 theorem computableInPolyTime_numGroups_unary :
-    ComputableInPolyTime ReplacementParams.numGroups encNat encUnary :=
-  .of_tidy tidy_numGroups_unary
+    ComputableInPolyTime ReplacementParams.numGroups encNat encUnary := by
+  refine (binary_min_unary' binary_size computableInPolyTime_numGroups).of_enc_eq fun n =>
+    congrArg encUnary ?_
+  exact (Nat.min_eq_right
+    (((Nat.div_le_self _ _).trans (Nat.sqrt_le_self _)).trans (clog_two_le_size n))).symm
 
 /-- `ReplacementParams.numNodes` (`Q`) is polynomial-time over binary naturals. -/
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_numNodes :
-    ComputableInPolyTime ReplacementParams.numNodes encNat encNat := .of_tidy tidy_numNodes
+    ComputableInPolyTime ReplacementParams.numNodes encNat encNat :=
+  bDiv clog2_pt (binary_mul' (const 128) nu_pt)
 
 /-- `ReplacementParams.numNodes` (`Q`) is polynomial-time from binary naturals to unary. -/
 theorem computableInPolyTime_numNodes_unary :
-    ComputableInPolyTime ReplacementParams.numNodes encNat encUnary := .of_tidy tidy_numNodes_unary
+    ComputableInPolyTime ReplacementParams.numNodes encNat encUnary := by
+  refine (binary_min_unary' binary_size computableInPolyTime_numNodes).of_enc_eq fun n =>
+    congrArg encUnary ?_
+  exact (Nat.min_eq_right ((Nat.div_le_self _ _).trans (clog_two_le_size n))).symm
 
 /-- `ReplacementParams.rowBound` (`R`) is polynomial-time over binary pairs `(β, n)`. -/
 theorem computableInPolyTime_rowBound :
     ComputableInPolyTime (fun p : ℕ × ℕ => ReplacementParams.rowBound p.1 p.2)
-      (encPair encNat encNat) encNat := .of_tidy tidy_rowBound
+      (encPair encNat encNat) encNat :=
+  binary_mul' (bAdd (fst encNat encNat) (const 3))
+    (binary_ceilSqrt.comp (clog2_pt.comp (snd encNat encNat)))
 
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_rowBound_apply {α : Type} {encIn : α ↪ List Bool} {fβ fn : α → ℕ}
@@ -748,12 +595,22 @@ theorem computableInPolyTime_rowBound_apply {α : Type} {encIn : α ↪ List Boo
 naturals (`encNat` to `encNat`). -/
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_auxDim :
-    ComputableInPolyTime ReplacementParams.auxDim encNat encNat := .of_tidy tidy_auxDim
+    ComputableInPolyTime ReplacementParams.auxDim encNat encNat :=
+  binary_pow' computableInPolyTime_numGroups
+    (unary_mul.comp ((const 2).prod computableInPolyTime_numNodes_unary))
 
 /-- `ReplacementParams.intervalStart` (`A₀`) is polynomial-time over binary pairs `(β, n)`. -/
 theorem computableInPolyTime_intervalStart :
     ComputableInPolyTime (fun p : ℕ × ℕ => ReplacementParams.intervalStart p.1 p.2)
-      (encPair encNat encNat) encNat := .of_tidy tidy_intervalStart
+      (encPair encNat encNat) encNat := by
+  have hn := snd encNat encNat
+  have hr := computableInPolyTime_numGroups.comp hn
+  have hQ := computableInPolyTime_numNodes.comp hn
+  have hR := computableInPolyTime_rowBound
+  exact bDiv
+    (binary_sub' (binary_mul' hQ (binary_sub' hr (const 1)))
+      (binary_mul' hr (binary_sub' hR (const 1))))
+    (binary_mul' (const 2) hr)
 
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_intervalStart_apply {α : Type} {encIn : α ↪ List Bool} {fβ fn : α → ℕ}
@@ -765,12 +622,17 @@ theorem computableInPolyTime_intervalStart_apply {α : Type} {encIn : α ↪ Lis
 /-- `heavyDegreeCutoff` (`λ_n ^ 5`) is polynomial-time over binary naturals. -/
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_heavyDegreeCutoff :
-    ComputableInPolyTime heavyDegreeCutoff encNat encNat := .of_tidy tidy_heavyDegreeCutoff
+    ComputableInPolyTime heavyDegreeCutoff encNat encNat :=
+  binary_pow' clog2_pt (const 5)
 
 /-- `heavyIncidenceCutoff` (`b₀ = ⌈M / n⌉ ⌈√λ_n⌉`) is polynomial-time over binary pairs `(M, n)`. -/
 theorem computableInPolyTime_heavyIncidenceCutoff :
     ComputableInPolyTime (fun p : ℕ × ℕ => heavyIncidenceCutoff p.1 p.2)
-      (encPair encNat encNat) encNat := .of_tidy tidy_heavyIncidenceCutoff
+      (encPair encNat encNat) encNat :=
+  binary_mul'
+    (bDiv (binary_sub' (bAdd (fst encNat encNat) (snd encNat encNat)) (const 1))
+      (snd encNat encNat))
+    (binary_ceilSqrt.comp (clog2_pt.comp (snd encNat encNat)))
 
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_heavyIncidenceCutoff_apply {α : Type} {encIn : α ↪ List Bool}
@@ -782,7 +644,26 @@ theorem computableInPolyTime_heavyIncidenceCutoff_apply {α : Type} {encIn : α 
 /-- `chooseBeta` is polynomial-time over binary triples `(lam, b, w)`. -/
 theorem computableInPolyTime_chooseBeta :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => chooseBeta p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encNat) encNat) encNat := .of_tidy tidy_chooseBeta
+      (encPair (encPair encNat encNat) encNat) encNat := by
+  let encIn := encPair (encPair encNat encNat) encNat
+  have hb_size : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2.size) encIn encUnary :=
+    binary_size.comp ((fst (encPair encNat encNat) encNat).snd')
+  have hw_size : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2.size) encIn encUnary :=
+    binary_size.comp (snd (encPair encNat encNat) encNat)
+  have hlist : ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × ℕ => (List.range (max p.1.2.size p.2.size + 1)).map (· + 1))
+      encIn (encList encUnary) :=
+    mapWithInput
+      (range.comp (unary_add.comp ((uMax.comp (hb_size.prod hw_size)).prod (const 1))))
+      (unary_add.comp ((snd encIn encUnary).prod (const 1)))
+  have hpred : ComputableInPolyTime
+      (fun q : (((ℕ × ℕ) × ℕ) × ℕ) =>
+        decide (q.1.1.2 ≤ q.1.1.1 ^ q.2) && decide (q.1.2 ≤ q.1.1.1 ^ q.2))
+      (encPair encIn encUnary) encBool := by
+    have hq1 := fst encIn encUnary
+    have hpow := binary_pow' ((hq1.fst').fst') (snd encIn encUnary)
+    exact bool_and' (bLe ((hq1.fst').snd') hpow) (bLe hq1.snd' hpow)
+  exact uToB.comp ((findWithInput hlist hpred).optionGetDWithInput (const 1))
 
 @[fun_prop, program_certificate]
 theorem computableInPolyTime_chooseBeta_apply {α : Type} {encIn : α ↪ List Bool}
@@ -791,22 +672,45 @@ theorem computableInPolyTime_chooseBeta_apply {α : Type} {encIn : α ↪ List B
     ComputableInPolyTime (fun x => chooseBeta (flam x) (fb x) (fw x)) encIn encNat :=
   (computableInPolyTime_chooseBeta.comp ((hlam.prod hb).prod hw)).of_enc_eq fun _ => rfl
 
+private theorem computableInPolyTime_binomTailTerm :
+    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => binomTailTerm p.1.1 p.1.2 p.2)
+      (encPair (encPair encUnary encNat) encUnary) encNat := by
+  have h1 := fst (encPair encUnary encNat) encUnary
+  have hQ := h1.fst'; have hr := h1.snd'; have hw := snd (encPair encUnary encNat) encUnary
+  exact binary_mul'
+    (binary_mul' (binary_choose.comp (hQ.prod hw)) (binary_pow' (binary_sub' hr (const 1)) hw))
+    (binary_pow' (bAdd hr (const 1)) (unary_sub.comp (hQ.prod hw)))
+
 /-- `binomTailNumerator` is polynomial-time with `Q` in `encUnary` and `(r, A₀, R)` in `encNat`. -/
 theorem computableInPolyTime_binomTailNumerator :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × ℕ => binomTailNumerator p.1.1.1 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat :=
-  .of_tidy tidy_binomTailNumerator
+      (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat := by
+  let enc3 := encPair (encPair encUnary encNat) encNat; let encIn := encPair enc3 encNat
+  have hlist : ComputableInPolyTime
+      (fun p : ((ℕ × ℕ) × ℕ) × ℕ => List.range (p.1.1.1 + 1)) encIn (encList encUnary) :=
+    range.comp (unary_add.comp ((((fst enc3 encNat).fst').fst').prod (const 1)))
+  have hfilter : ComputableInPolyTime
+      (fun p : ((ℕ × ℕ) × ℕ) × ℕ => (List.range (p.1.1.1 + 1)).filter fun w =>
+        !(decide (p.1.2 ≤ w) && decide (w < p.1.2 + p.2))) encIn (encList encUnary) := by
+    refine filterWithInput hlist ?_
+    have hw_b := uToB.comp (snd encIn encUnary)
+    have hA := ((fst encIn encUnary).fst').snd'; have hR := (fst encIn encUnary).snd'
+    exact bool_not.comp (bool_and' (bLe hA hw_b) (binary_lt' hw_b (bAdd hA hR)))
+  refine bSum.comp (mapWithInput (f := fun p w => binomTailTerm p.1.1.1 p.1.1.2 w) hfilter ?_)
+  have hp := fst encIn encUnary
+  exact computableInPolyTime_binomTailTerm.comp
+    ((((((hp.fst').fst').fst').prod (((hp.fst').fst').snd')).prod (snd encIn encUnary)))
 
 /-- `binomTailNumerator` is also polynomial-time when both `(Q, r)` are given in `encUnary`. -/
 theorem computableInPolyTime_binomTailNumerator_unary :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × ℕ => binomTailNumerator p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair encUnary encUnary) encNat) encNat) encNat := by
-  refine .of_tidy ?_; let enc3 := encPair (encPair encUnary encUnary) encNat
+  let enc3 := encPair (encPair encUnary encUnary) encNat
   have hp3 := fst enc3 encNat
-  exact tidy_binomTailNumerator.comp
-    (((((hp3.fst').fst').prod (unary_to_binary.comp ((hp3.fst').snd'))).prod hp3.snd').prod
+  exact computableInPolyTime_binomTailNumerator.comp
+    (((((hp3.fst').fst').prod (uToB.comp ((hp3.fst').snd'))).prod hp3.snd').prod
       (snd enc3 encNat))
 
 @[fun_prop] theorem computableInPolyTime_binomTailNumerator_apply {α : Type}
@@ -824,7 +728,18 @@ theorem computableInPolyTime_checkBinomTail :
       (fun p : ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ =>
         checkBinomTail p.1.1.1.1.1 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat) encNat)
-      encBool := .of_tidy tidy_checkBinomTail
+      encBool := by
+  let enc4 := encPair (encPair (encPair encUnary encNat) encNat) encNat
+  let enc5 := encPair enc4 encNat
+  have hp5 := fst enc5 encNat; have hp4 := hp5.fst'
+  have hQ := ((hp4.fst').fst').fst'; have hr := ((hp4.fst').fst').snd'
+  have hb := hp5.snd'; have hlam := snd enc5 encNat
+  have hnum := computableInPolyTime_binomTailNumerator.comp hp4
+  have hlhs := binary_mul' (binary_mul' (binary_mul' hnum hb) (binary_pow' hr (const 2))) hlam
+  have hrhs := binary_pow' (binary_mul' (const 2) hr) hQ
+  exact bool_and'
+    (bool_and' (bool_and' (bLe (const 1) hr) (bLe (const 1) hb)) (bLe (const 1) hlam))
+    (bLe hlhs hrhs)
 
 /-- `checkBinomTail` is also polynomial-time when both `(Q, r)` are given in `encUnary`. -/
 theorem computableInPolyTime_checkBinomTail_unary :
@@ -833,10 +748,10 @@ theorem computableInPolyTime_checkBinomTail_unary :
         checkBinomTail p.1.1.1.1.1 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair (encPair (encPair encUnary encUnary) encNat) encNat) encNat)
         encNat) encBool := by
-  refine .of_tidy ?_; let enc4 := encPair (encPair (encPair encUnary encUnary) encNat) encNat
+  let enc4 := encPair (encPair (encPair encUnary encUnary) encNat) encNat
   let enc5 := encPair enc4 encNat; have hp5 := fst enc5 encNat; have hp4 := hp5.fst'
-  exact tidy_checkBinomTail.comp
-    ((((((((hp4.fst').fst').fst').prod (unary_to_binary.comp (((hp4.fst').fst').snd'))).prod
+  exact computableInPolyTime_checkBinomTail.comp
+    ((((((((hp4.fst').fst').fst').prod (uToB.comp (((hp4.fst').fst').snd'))).prod
       ((hp4.fst').snd')).prod hp4.snd').prod hp5.snd').prod (snd enc5 encNat))
 
 theorem computableInPolyTime_checkBinomTail_apply {α : Type} {encIn : α ↪ List Bool}
@@ -849,6 +764,14 @@ theorem computableInPolyTime_checkBinomTail_apply {α : Type} {encIn : α ↪ Li
   (computableInPolyTime_checkBinomTail.comp
     (((((hQ.prod hr).prod hA).prod hR).prod hb).prod hlam)).of_enc_eq fun _ => rfl
 
+private abbrev FeasibleTuple := (((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ
+
+private abbrev encFeasible8 : ((((((ℕ × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × ℕ ↪ List Bool :=
+  encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat) encNat) encNat)
+    encNat) encUnary) encNat) encNat
+
+private abbrev encFeasibleTuple : FeasibleTuple ↪ List Bool := encPair encFeasible8 encNat
+
 /-- `checkReplacementFeasible` is polynomial-time with `Q` in `encUnary` and
 `(n, M, b, wmax, lam, r, A₀, R)` in `encNat`. -/
 theorem computableInPolyTime_checkReplacementFeasible :
@@ -857,8 +780,22 @@ theorem computableInPolyTime_checkReplacementFeasible :
         checkReplacementFeasible p.1.1.1.1.1.1.1.1 p.1.1.1.1.1.1.1.2 p.1.1.1.1.1.1.2
           p.1.1.1.1.1.2 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat)
-        encNat) encNat) encNat) encUnary) encNat) encNat) encNat) encBool :=
-  .of_tidy tidy_checkReplacementFeasible
+        encNat) encNat) encNat) encUnary) encNat) encNat) encNat) encBool := by
+  have h8 := fst encFeasible8 encNat
+  have h7 := h8.fst'; have h6 := h7.fst'; have h5 := h6.fst'
+  have h4 := h5.fst'; have h3 := h4.fst'; have h2 := h3.fst'
+  have hn := h2.fst'; have hM := h2.snd'; have hb := h3.snd'
+  have hwmax := h4.snd'; have hlam := h5.snd'; have hQ := h6.snd'
+  have hr := h7.snd'; have hA := h8.snd'; have hR := snd encFeasible8 encNat
+  have hQb := uToB.comp hQ
+  have hD2 := binary_pow' (binary_pow' hr (unary_mul.comp ((const 2).prod hQ))) (const 2)
+  have hbalM := bLe (binary_mul' (binary_mul' (const 2) (bAdd hb hwmax)) hD2) hM
+  have hbaln := bLe (binary_mul' (binary_mul' (const 2) hQb) (binary_pow' hr (const 2))) hn
+  have htail := computableInPolyTime_checkBinomTail.comp
+    (((((hQ.prod hr).prod hA).prod hR).prod hb).prod hlam)
+  exact bool_and' (bool_and' (bool_and' (bool_and' (bool_and'
+    (bool_and' (bLe (const 2) hr) (bLe (const 1) hR)) (binary_lt' hR hQb))
+    (bLe (bAdd hA hR) (bAdd hQb (const 1)))) hbalM) hbaln) htail
 
 /-- `checkReplacementFeasible` is also polynomial-time when both `(Q, r)` are given in
 `encUnary`. -/
@@ -869,14 +806,13 @@ theorem computableInPolyTime_checkReplacementFeasible_unary :
           p.1.1.1.1.1.2 p.1.1.1.1.2 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat)
         encNat) encNat) encNat) encUnary) encUnary) encNat) encNat) encBool := by
-  refine .of_tidy ?_
   let enc8 := encPair (encPair (encPair (encPair (encPair (encPair (encPair encNat encNat) encNat)
     encNat) encNat) encUnary) encUnary) encNat
   have h8 := fst enc8 encNat; have h7 := h8.fst'; have h6 := h7.fst'; have h5 := h6.fst'
   have h4 := h5.fst'; have h3 := h4.fst'; have h2 := h3.fst'
-  exact tidy_checkReplacementFeasible.comp
+  exact computableInPolyTime_checkReplacementFeasible.comp
     ((((((((h2.fst'.prod h2.snd').prod h3.snd').prod h4.snd').prod h5.snd').prod h6.snd').prod
-      (unary_to_binary.comp h7.snd')).prod h8.snd').prod (snd enc8 encNat))
+      (uToB.comp h7.snd')).prod h8.snd').prod (snd enc8 encNat))
 
 theorem computableInPolyTime_checkReplacementFeasible_apply {α : Type} {encIn : α ↪ List Bool}
     {fn fM fb fwmax flam fQ fr fA fR : α → ℕ}
@@ -891,12 +827,19 @@ theorem computableInPolyTime_checkReplacementFeasible_apply {α : Type} {encIn :
     ((((((((hn.prod hM).prod hb).prod hwmax).prod hlam).prod hQ).prod hr).prod hA).prod
       hR)).of_enc_eq fun _ => rfl
 
+private abbrev encScheduleOut : (ℕ × ℕ × ℕ × ℕ × ℕ × ℕ) ↪ List Bool :=
+  encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat))))
+
 /-- Computing the full Section 4.7 schedule `(λ, ν, r, Q, R, A₀)` is polynomial-time over binary
 pairs `(β, n)`. -/
 theorem computableInPolyTime_computeScheduleParams :
     ComputableInPolyTime (fun p : ℕ × ℕ => computeScheduleParams p.1 p.2) (encPair encNat encNat)
       (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat))))) :=
-  .of_tidy tidy_computeScheduleParams
+  let hn := snd encNat encNat
+  (clog2_pt.comp hn).prod ((nu_pt.comp hn).prod
+    ((computableInPolyTime_numGroups.comp hn).prod
+      ((computableInPolyTime_numNodes.comp hn).prod
+        (computableInPolyTime_rowBound.prod computableInPolyTime_intervalStart))))
 
 theorem computableInPolyTime_computeScheduleParams_apply {α : Type} {encIn : α ↪ List Bool}
     {fβ fn : α → ℕ} (hβ : ComputableInPolyTime fβ encIn encNat)
@@ -905,13 +848,32 @@ theorem computableInPolyTime_computeScheduleParams_apply {α : Type} {encIn : α
       (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat))))) :=
   (computableInPolyTime_computeScheduleParams.comp (hβ.prod hn)).of_enc_eq fun _ => rfl
 
+private theorem computableInPolyTime_checkScheduleFeasible_binary :
+    ComputableInPolyTime
+      (fun p : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ =>
+        checkScheduleFeasible p.1.1.1.1 p.1.1.1.2 p.1.1.2 p.1.2 p.2)
+      (encPair (encPair (encPair (encPair encNat encNat) encNat) encNat) encNat) encBool := by
+  let enc4 := encPair (encPair (encPair encNat encNat) encNat) encNat
+  have h4 := fst enc4 encNat; have h3 := h4.fst'; have h2 := h3.fst'
+  have hn := h2.fst'; have hM := h2.snd'; have hb := h3.snd'
+  have hwmax := h4.snd'; have hβ := snd enc4 encNat
+  have hlam := clog2_pt.comp hn; have hr := computableInPolyTime_numGroups.comp hn
+  have hQu := computableInPolyTime_numNodes_unary.comp hn
+  have hQb := computableInPolyTime_numNodes.comp hn
+  have hR := computableInPolyTime_rowBound.comp (hβ.prod hn)
+  have hA := computableInPolyTime_intervalStart.comp (hβ.prod hn)
+  have hfeas := computableInPolyTime_checkReplacementFeasible.comp
+    ((((((((hn.prod hM).prod hb).prod hwmax).prod hlam).prod hQu).prod hr).prod hA).prod hR)
+  exact bool_and' (bool_and' (bool_and' (bLe (const 20) hn) (bLe (const 32) hR))
+    (bLe (binary_mul' (const 6) hR) hQb)) hfeas
+
 theorem computableInPolyTime_checkScheduleFeasible_apply {α : Type} {encIn : α ↪ List Bool}
     {fn fM fb fwmax fβ : α → ℕ} (hn : ComputableInPolyTime fn encIn encNat)
     (hM : ComputableInPolyTime fM encIn encNat) (hb : ComputableInPolyTime fb encIn encNat)
     (hwmax : ComputableInPolyTime fwmax encIn encNat) (hβ : ComputableInPolyTime fβ encIn encNat) :
     ComputableInPolyTime
       (fun x => checkScheduleFeasible (fn x) (fM x) (fb x) (fwmax x) (fβ x)) encIn encBool :=
-  ((ComputableInPolyTime.of_tidy tidy_checkScheduleFeasible_binary).comp
+  (computableInPolyTime_checkScheduleFeasible_binary.comp
     ((((hn.prod hM).prod hb).prod hwmax).prod hβ)).of_enc_eq fun _ => rfl
 
 /-- **Binary-`n` full-schedule and feasibility certificate (Lemma 4.8, p. 34)**: given
@@ -927,10 +889,10 @@ theorem computableInPolyTime_scheduleAndCheck_binary :
       (encPair
         (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat)))))
         encBool) := by
-  refine .of_tidy ?_; let enc4 := encPair (encPair (encPair encNat encNat) encNat) encNat
-  exact (tidy_computeScheduleParams.comp
+  let enc4 := encPair (encPair (encPair encNat encNat) encNat) encNat
+  exact (computableInPolyTime_computeScheduleParams.comp
     ((snd enc4 encNat).prod ((((fst enc4 encNat).fst').fst').fst'))).prod
-    tidy_checkScheduleFeasible_binary
+    computableInPolyTime_checkScheduleFeasible_binary
 
 /-- **Composed unary-`n` full-schedule and feasibility certificate (§5.5 / Theorem 2.2)**: given
 `(n_unary, M, b, wmax, β)` with `n_unary` in `encUnary` and `(M, b, wmax, β)` in `encNat`,
@@ -948,17 +910,19 @@ theorem computableInPolyTime_scheduleAndCheck_unary :
       (encPair
         (encPair encNat (encPair encNat (encPair encNat (encPair encNat (encPair encNat encNat)))))
         (encPair encBool encBool)) := by
-  refine .of_tidy ?_; let enc4 := encPair (encPair (encPair encUnary encNat) encNat) encNat
+  let enc4 := encPair (encPair (encPair encUnary encNat) encNat) encNat
   have h4 := fst enc4 encNat; have h3 := h4.fst'; have h2 := h3.fst'
-  have hn := unary_to_binary.comp h2.fst'; have hM := h2.snd'; have hb := h3.snd'
+  have hn := uToB.comp h2.fst'; have hM := h2.snd'; have hb := h3.snd'
   have hwmax := h4.snd'; have hβ := snd enc4 encNat
-  have hsched := tidy_computeScheduleParams.comp (hβ.prod hn)
-  have hlam := tidy_clog2.comp hn; have hr := tidy_numGroups.comp hn
-  have hQu := tidy_numNodes_unary.comp hn; have hQb := tidy_numNodes.comp hn
-  have hR := tidy_rowBound.comp (hβ.prod hn); have hA := tidy_intervalStart.comp (hβ.prod hn)
-  have hrep := tidy_checkReplacementFeasible.comp
+  have hsched := computableInPolyTime_computeScheduleParams.comp (hβ.prod hn)
+  have hlam := clog2_pt.comp hn; have hr := computableInPolyTime_numGroups.comp hn
+  have hQu := computableInPolyTime_numNodes_unary.comp hn
+  have hQb := computableInPolyTime_numNodes.comp hn
+  have hR := computableInPolyTime_rowBound.comp (hβ.prod hn)
+  have hA := computableInPolyTime_intervalStart.comp (hβ.prod hn)
+  have hrep := computableInPolyTime_checkReplacementFeasible.comp
     ((((((((hn.prod hM).prod hb).prod hwmax).prod hlam).prod hQu).prod hr).prod hA).prod hR)
-  have hchk := tidy_checkScheduleFeasible_binary.comp
+  have hchk := computableInPolyTime_checkScheduleFeasible_binary.comp
     ((((hn.prod hM).prod hb).prod hwmax).prod hβ)
   exact hsched.prod (hrep.prod hchk)
 

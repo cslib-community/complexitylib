@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.List.OfFn
@@ -214,6 +215,10 @@ theorem mem_candidateScheduleList {r : ℕ} (hr : 1 ≤ r) (Q : ℕ) (a : Fin Q 
   rw [wordToSchedule_decodeLabelWord_eq_finFunctionFinEquiv_symm hr Q j]
   exact Equiv.symm_apply_apply _ _
 
+private theorem length_encNat_mono {a b : ℕ} (h : a ≤ b) :
+    (encNat a).length ≤ (encNat b).length := by
+  simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h
+
 /-- Encoded bit-length bound for any word of length `Q` with digits `< max r 1`. -/
 theorem length_encList_word_le {Q r : ℕ} {w : List ℕ} (hlen : w.length = Q)
     (hw : ∀ x ∈ w, x < max r 1) :
@@ -222,7 +227,7 @@ theorem length_encList_word_le {Q r : ℕ} {w : List ℕ} (hlen : w.length = Q)
   have hdom : (w.map fun a => 2 * (encNat a).length + 1).sum ≤
       (w.map fun _ => 2 * (encNat r).length + 1).sum := List.sum_le_sum fun x hx => by
     have hlt := hw x hx
-    have hsz := ComputableTidilyInO.length_encNat_mono (by omega : x ≤ r); omega
+    have hsz := length_encNat_mono (by omega : x ≤ r); omega
   simpa only [List.map_const', hlen, List.sum_replicate, smul_eq_mul] using hdom
 
 /-- `decodeLabelWord r Q j` is computable in polynomial time from binary `r`, unary `Q`, and
@@ -230,7 +235,7 @@ binary `j`. -/
 @[fun_prop] theorem computableInPolyTime_decodeLabelWord :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => decodeLabelWord p.1.1 p.1.2 p.2)
       (encPair (encPair encNat encUnary) encNat) (encList encNat) := by
-  refine .of_tidy ?_; simp only [decodeLabelWord, Cslib.Radix.digit_eq_div_pow_mod]; fun_prop
+  simp only [decodeLabelWord, Cslib.Radix.digit_eq_div_pow_mod]; fun_prop
 
 @[fun_prop] theorem computableInPolyTime_decodeLabelWord' {α : Type} {input : α ↪ List Bool}
     {r Q j : α → ℕ} (hr : ComputableInPolyTime r input encNat)
@@ -369,7 +374,7 @@ theorem length_encNat_clearedJointScore_le (n Q r C : ℕ) (edges : List (ℕ ×
     (encNat (clearedJointScore n Q r C edges varSched facSched)).length ≤
       2 * Q * (encNat r).length + 2 * (encNat r).length + (encNat C).length +
         2 * (encNat edges.length).length + 2 * (encNat n).length + 2 * (encNat Q).length + 18 := by
-  refine (ComputableTidilyInO.length_encNat_mono
+  refine (length_encNat_mono
     (clearedJointScore_le n Q r C edges varSched facSched)).trans ?_
   simp only [encNat_apply, Nat.size_eq_bits_len]
   have hs1 (a : ℕ) : (a + 1).size ≤ a.size + 2 :=
@@ -571,25 +576,41 @@ theorem clearedJointScore_le_iff_normalizedPartialScore_le {E m n Q r : ℕ} (hr
 
 /-! ### Polynomial-time certificate for `clearedJointScore` -/
 
-private theorem tidy_clearedPartialCollision {α γ : Type} [DecidableEq α]
+private theorem ite_decide_polyTime {γ β : Type} {encIn : γ ↪ List Bool} {encB : β ↪ List Bool}
+    {P : γ → Prop} [∀ g, Decidable (P g)] {yes no : γ → β}
+    (hP : ComputableInPolyTime (fun g => decide (P g)) encIn encBool)
+    (hyes : ComputableInPolyTime yes encIn encB)
+    (hno : ComputableInPolyTime no encIn encB) :
+    ComputableInPolyTime (fun g => if P g then yes g else no g) encIn encB :=
+  (hP.ite' hyes hno).of_enc_eq fun _ => by simp only [decide_eq_true_eq]
+
+private theorem binary_sum_polyTime :
+    ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
+
+private theorem binary_add_polyTime {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
+    (ha : ComputableInPolyTime a encIn encNat) (hb : ComputableInPolyTime b encIn encNat) :
+    ComputableInPolyTime (fun x => a x + b x) encIn encNat :=
+  (show ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
+    (encPair encNat encNat) encNat by fun_prop).comp (ha.prod hb)
+
+private theorem computableInPolyTime_clearedPartialCollision {α γ : Type} [DecidableEq α]
     {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {cardL i j : γ → ℕ} {assigned : γ → List (Option α)}
-    (hc : ComputableTidilyInPolyTime cardL encIn encNat)
-    (ha : ComputableTidilyInPolyTime assigned encIn (encList (encOption encA)))
-    (hi : ComputableTidilyInPolyTime i encIn encNat)
-    (hj : ComputableTidilyInPolyTime j encIn encNat) :
-    ComputableTidilyInPolyTime
+    (hc : ComputableInPolyTime cardL encIn encNat)
+    (ha : ComputableInPolyTime assigned encIn (encList (encOption encA)))
+    (hi : ComputableInPolyTime i encIn encNat)
+    (hj : ComputableInPolyTime j encIn encNat) :
+    ComputableInPolyTime
       (fun g => clearedPartialCollision (cardL g) (assigned g) (i g) (j g)) encIn encNat := by
-  have hgi := ComputableTidilyInPolyTime.listGetD_binary (encA := encOption encA) none ha hi
-  have hgj := ComputableTidilyInPolyTime.listGetD_binary (encA := encOption encA) none ha hj
-  have hboth : ComputableTidilyInPolyTime
+  have hgi := ComputableInPolyTime.listGetD_binary (encA := encOption encA) none ha hi
+  have hgj := ComputableInPolyTime.listGetD_binary (encA := encOption encA) none ha hj
+  have hboth : ComputableInPolyTime
       (fun g => ((assigned g).getD (i g) none).isSome && ((assigned g).getD (j g) none).isSome)
       encIn encBool := by fun_prop
-  have hinner := ComputableTidilyInPolyTime.ite_decide
-    (ComputableTidilyInPolyTime.decide_eq' hgi hgj) hc (ComputableTidilyInPolyTime.const 0)
-  have hmatch := hboth.cond hinner (ComputableTidilyInPolyTime.const 1)
-  refine (ComputableTidilyInPolyTime.ite_decide
-    (ComputableTidilyInPolyTime.decide_eq' hi hj) hc hmatch).of_enc_eq fun g => congrArg encNat ?_
+  have hinner := ite_decide_polyTime (ComputableInPolyTime.decide_eq' hgi hgj) hc (.const 0)
+  have hmatch := hboth.ite' hinner (.const 1)
+  refine (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hi hj) hc hmatch).of_enc_eq
+    fun g => congrArg encNat ?_
   dsimp only [clearedPartialCollision]; by_cases hij : i g = j g
   · simp only [hij, ↓reduceIte]
   · simp only [hij, ↓reduceIte]
@@ -597,12 +618,12 @@ private theorem tidy_clearedPartialCollision {α γ : Type} [DecidableEq α]
       rcases (assigned g).getD (j g) none with _ | y <;>
       first | rfl | simp only [Option.isSome_some, Bool.and_self, ↓reduceIte, Option.some.injEq]
 
-private theorem tidy_binary_max1 {γ : Type} {encIn : γ ↪ List Bool} {x : γ → ℕ}
-    (hx : ComputableTidilyInPolyTime x encIn encNat) :
-    ComputableTidilyInPolyTime (fun g => max (x g) 1) encIn encNat := by
-  convert (show ComputableTidilyInPolyTime (fun g => if x g = 0 then 1 else x g) encIn encNat by
-    fun_prop) using 1
-  funext g; rcases Nat.eq_zero_or_pos (x g) with h0 | hpos
+private theorem computableInPolyTime_binary_max1 {γ : Type} {encIn : γ ↪ List Bool} {x : γ → ℕ}
+    (hx : ComputableInPolyTime x encIn encNat) :
+    ComputableInPolyTime (fun g => max (x g) 1) encIn encNat := by
+  refine (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hx (.const 0))
+    (.const 1) hx).of_enc_eq fun g => congrArg encNat ?_
+  rcases Nat.eq_zero_or_pos (x g) with h0 | hpos
   · simp only [h0, ↓reduceIte]; omega
   · simp only [hpos.ne', ↓reduceIte]; omega
 
@@ -621,66 +642,66 @@ def encScoreParams : ((ℕ × ℕ) × (ℕ × ℕ) × List (ℕ × ℕ)) ↪ Lis
         (List (Option (List ℕ)) × List (Option (List ℕ))) =>
       clearedJointScore p.1.1.1 p.1.1.2 p.1.2.1.1 p.1.2.1.2 p.1.2.2 p.2.1 p.2.2)
       (encPair encScoreParams encPartialSchedules) encNat := by
-  refine .of_tidy ?_; unfold encScoreParams encPartialSchedules
+  unfold encScoreParams encPartialSchedules
   let ePar := encPair (encPair encUnary encUnary)
     (encPair (encPair encNat encNat) (encList (encPair encNat encNat)))
   let eIn := encPair ePar
     (encPair (encList (encOption (encList encNat))) (encList (encOption (encList encNat))))
-  have hK : ComputableTidilyInPolyTime (fun p : _ × _ => p.1.2.1.1 ^ p.1.1.2) eIn encNat := by
-    fun_prop
-  have hincCol : ComputableTidilyInPolyTime (fun p : _ × _ =>
+  have hK : ComputableInPolyTime (fun p : _ × _ => p.1.2.1.1 ^ p.1.1.2) eIn encNat :=
+    ComputableInPolyTime.binary_pow' (by fun_prop) (by fun_prop)
+  have hincCol : ComputableInPolyTime (fun p : _ × _ =>
       clearedIncidenceCollisions (p.1.2.1.1 ^ p.1.1.2) p.1.2.2 p.2.1 p.2.2) eIn encNat := by
     unfold clearedIncidenceCollisions
-    refine ComputableTidilyInPolyTime.binary_sum.comp (ComputableTidilyInPolyTime.mapWithInput
-      (by fun_prop) (ComputableTidilyInPolyTime.binary_sum.comp
-        (ComputableTidilyInPolyTime.mapWithInput (by fun_prop) ?_)))
-    exact ComputableTidilyInPolyTime.binary_mul'
-      (tidy_clearedPartialCollision (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop))
-      (tidy_clearedPartialCollision (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop))
-  have hgrpCol : ComputableTidilyInPolyTime (fun p : _ × _ =>
+    refine binary_sum_polyTime.comp (ComputableInPolyTime.mapWithInput
+      (by fun_prop) (binary_sum_polyTime.comp
+        (ComputableInPolyTime.mapWithInput (by fun_prop) ?_)))
+    exact ComputableInPolyTime.binary_mul'
+      (computableInPolyTime_clearedPartialCollision
+        (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop))
+      (computableInPolyTime_clearedPartialCollision
+        (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop))
+  have hgrpCol : ComputableInPolyTime (fun p : _ × _ =>
       clearedGroupCollisions p.1.1.1 p.1.1.2 p.1.2.1.1 p.2.1) eIn encNat := by
     unfold clearedGroupCollisions
-    refine ComputableTidilyInPolyTime.binary_sum.comp
-      (ComputableTidilyInPolyTime.mapWithInput (by fun_prop) ?_)
-    have hct : ComputableTidilyInPolyTime (fun q : _ × ℕ =>
+    refine binary_sum_polyTime.comp
+      (ComputableInPolyTime.mapWithInput (by fun_prop) ?_)
+    have hct : ComputableInPolyTime (fun q : _ × ℕ =>
         q.1.2.1.map (Option.map fun w => w.getD q.2 0))
         (encPair eIn encUnary) (encList (encOption encNat)) := by
-      refine (show ComputableTidilyInPolyTime
+      refine (show ComputableInPolyTime
           (fun q : _ × ℕ => q.1.2.1.map fun o => o.elim none fun w => some (w.getD q.2 0))
           (encPair eIn encUnary) (encList (encOption encNat)) by fun_prop).of_enc_eq fun q => ?_
       congr 1; apply List.map_congr_left; intro o _; cases o <;> rfl
-    refine ComputableTidilyInPolyTime.binary_sum.comp (ComputableTidilyInPolyTime.mapWithInput
-      (by fun_prop) (ComputableTidilyInPolyTime.binary_sum.comp
-        (ComputableTidilyInPolyTime.mapWithInput (by fun_prop) ?_)))
-    exact tidy_clearedPartialCollision (by fun_prop) (hct.comp (by fun_prop))
-      (ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop))
-      (ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop))
-  have heLen := ComputableTidilyInPolyTime.unary_to_binary.comp
-    (show ComputableTidilyInPolyTime (fun p : _ × _ => p.1.2.2.length) eIn encUnary by fun_prop)
-  have hnBin := ComputableTidilyInPolyTime.unary_to_binary.comp
-    (show ComputableTidilyInPolyTime (fun p : _ × _ => p.1.1.1) eIn encUnary by fun_prop)
-  have hQBin := ComputableTidilyInPolyTime.unary_to_binary.comp
-    (show ComputableTidilyInPolyTime (fun p : _ × _ => p.1.1.2) eIn encUnary by fun_prop)
-  have hC : ComputableTidilyInPolyTime (fun p : _ × _ => p.1.2.1.2) eIn encNat := by fun_prop
-  have hrBin : ComputableTidilyInPolyTime (fun p : _ × _ => p.1.2.1.1) eIn encNat := by fun_prop
-  have hK2 := ComputableTidilyInPolyTime.binary_pow' hK (ComputableTidilyInPolyTime.const 2)
-  have he2 := ComputableTidilyInPolyTime.binary_pow' heLen (ComputableTidilyInPolyTime.const 2)
-  have hn2 := ComputableTidilyInPolyTime.binary_pow' hnBin (ComputableTidilyInPolyTime.const 2)
-  have hqn := ComputableTidilyInPolyTime.binary_mul' hQBin hnBin
-  have hec := ComputableTidilyInPolyTime.binary_mul' heLen hC
-  have hincPot := ComputableTidilyInPolyTime.binary_sub' hincCol he2
-  have hgrpPot := ComputableTidilyInPolyTime.binary_sub' hgrpCol
-    (ComputableTidilyInPolyTime.binary_mul' hQBin hn2)
+    refine binary_sum_polyTime.comp (ComputableInPolyTime.mapWithInput
+      (by fun_prop) (binary_sum_polyTime.comp
+        (ComputableInPolyTime.mapWithInput (by fun_prop) ?_)))
+    exact computableInPolyTime_clearedPartialCollision (by fun_prop) (hct.comp (by fun_prop))
+      (ComputableInPolyTime.unary_to_binary.comp (by fun_prop))
+      (ComputableInPolyTime.unary_to_binary.comp (by fun_prop))
+  have heLen := ComputableInPolyTime.unary_to_binary.comp
+    (show ComputableInPolyTime (fun p : _ × _ => p.1.2.2.length) eIn encUnary by fun_prop)
+  have hnBin := ComputableInPolyTime.unary_to_binary.comp
+    (show ComputableInPolyTime (fun p : _ × _ => p.1.1.1) eIn encUnary by fun_prop)
+  have hQBin := ComputableInPolyTime.unary_to_binary.comp
+    (show ComputableInPolyTime (fun p : _ × _ => p.1.1.2) eIn encUnary by fun_prop)
+  have hC : ComputableInPolyTime (fun p : _ × _ => p.1.2.1.2) eIn encNat := by fun_prop
+  have hrBin : ComputableInPolyTime (fun p : _ × _ => p.1.2.1.1) eIn encNat := by fun_prop
+  have hK2 := ComputableInPolyTime.binary_pow' hK (.const 2)
+  have he2 := ComputableInPolyTime.binary_pow' heLen (.const 2)
+  have hn2 := ComputableInPolyTime.binary_pow' hnBin (.const 2)
+  have hqn := ComputableInPolyTime.binary_mul' hQBin hnBin
+  have hec := ComputableInPolyTime.binary_mul' heLen hC
+  have hincPot := ComputableInPolyTime.binary_sub' hincCol he2
+  have hgrpPot := ComputableInPolyTime.binary_sub' hgrpCol
+    (ComputableInPolyTime.binary_mul' hQBin hn2)
   unfold clearedJointScore clearedIncidencePotential clearedGroupPotential
-  exact ComputableTidilyInPolyTime.binary_add'
-    (ComputableTidilyInPolyTime.ite_decide
-      (ComputableTidilyInPolyTime.decide_eq' hec (ComputableTidilyInPolyTime.const 0))
-      (ComputableTidilyInPolyTime.const 0) (ComputableTidilyInPolyTime.binary_mul' hincPot
-        (ComputableTidilyInPolyTime.binary_mul' hrBin (tidy_binary_max1 hqn))))
-    (ComputableTidilyInPolyTime.ite_decide
-      (ComputableTidilyInPolyTime.decide_eq' hqn (ComputableTidilyInPolyTime.const 0))
-      (ComputableTidilyInPolyTime.const 0) (ComputableTidilyInPolyTime.binary_mul' hgrpPot
-        (ComputableTidilyInPolyTime.binary_mul' hK2 (tidy_binary_max1 hec))))
+  exact binary_add_polyTime
+    (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hec (.const 0))
+      (.const 0) (ComputableInPolyTime.binary_mul' hincPot
+        (ComputableInPolyTime.binary_mul' hrBin (computableInPolyTime_binary_max1 hqn))))
+    (ite_decide_polyTime (ComputableInPolyTime.decide_eq' hqn (.const 0))
+      (.const 0) (ComputableInPolyTime.binary_mul' hgrpPot
+        (ComputableInPolyTime.binary_mul' hK2 (computableInPolyTime_binary_max1 hec))))
 
 /-! ### Section 3: Streaming `IndexFold` slot selector and rational minimizer bridges -/
 
@@ -930,7 +951,7 @@ theorem length_encSlotSelectState_run_le (n Q r C : ℕ) (edges : List (ℕ × �
   let init : SlotSelectAcc := (((n, Q), (r, C), edges), (slot, (scheds, none)))
   have hp := run_selectSlotStep_params ((n, Q), (r, C), edges) slot scheds j
   have hj_len : (encNat j).length ≤ Q * (encNat r).length + 1 :=
-    (ComputableTidilyInO.length_encNat_mono hj).trans (length_encNat_pow_le r Q)
+    (length_encNat_mono hj).trans (length_encNat_pow_le r Q)
   have hbest : (encOption (encPair (encList encNat) encNat)
       (IndexFold.run selectSlotStep j init).2.2.2.2).length ≤
       6 * Q * (encNat r).length + 4 * Q + 2 * (encNat r).length + (encNat C).length +
@@ -971,28 +992,28 @@ private theorem list_set_eq_range_map {α : Type*} (d : α) (l : List α) (i : �
         (List (Option (List ℕ)) × List (Option (List ℕ))) => updateSlotSchedules p.1.1 p.1.2 p.2)
       (encPair (encPair (encPair encBool encUnary) (encOption (encList encNat)))
         encPartialSchedules) encPartialSchedules := by
-  refine .of_tidy ?_; unfold encPartialSchedules; let eOpt := encOption (encList encNat)
+  unfold encPartialSchedules; let eOpt := encOption (encList encNat)
   let eIn := encPair (encPair (encPair encBool encUnary) eOpt)
     (encPair (encList eOpt) (encList eOpt))
-  have hset1 : ComputableTidilyInPolyTime (fun p : (_ × _) × (_ × _) =>
+  have hset1 : ComputableInPolyTime (fun p : (_ × _) × (_ × _) =>
       (List.range p.2.1.length).map fun k =>
         if decide (p.1.1.2 = k) then p.1.2 else p.2.1.getD k none)
-      eIn (encList eOpt) := ComputableTidilyInPolyTime.mapWithInput (by fun_prop)
-    (ComputableTidilyInPolyTime.ite_decide
-      (ComputableTidilyInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
+      eIn (encList eOpt) := ComputableInPolyTime.mapWithInput (by fun_prop)
+    (ComputableInPolyTime.ite'
+      (ComputableInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
       (by fun_prop) (by fun_prop))
-  have hset2 : ComputableTidilyInPolyTime (fun p : (_ × _) × (_ × _) =>
+  have hset2 : ComputableInPolyTime (fun p : (_ × _) × (_ × _) =>
       (List.range p.2.2.length).map fun k =>
         if decide (p.1.1.2 = k) then p.1.2 else p.2.2.getD k none)
-      eIn (encList eOpt) := ComputableTidilyInPolyTime.mapWithInput (by fun_prop)
-    (ComputableTidilyInPolyTime.ite_decide
-      (ComputableTidilyInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
+      eIn (encList eOpt) := ComputableInPolyTime.mapWithInput (by fun_prop)
+    (ComputableInPolyTime.ite'
+      (ComputableInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
       (by fun_prop) (by fun_prop))
-  refine (ComputableTidilyInPolyTime.cond (show ComputableTidilyInPolyTime
+  refine (ComputableInPolyTime.ite' (show ComputableInPolyTime
       (fun p : _ => p.1.1.1) eIn encBool by fun_prop)
-    ((show ComputableTidilyInPolyTime (fun p : _ => p.2.1) eIn (encList eOpt) by
+    ((show ComputableInPolyTime (fun p : _ => p.2.1) eIn (encList eOpt) by
         fun_prop).prod hset2)
-    (hset1.prod (show ComputableTidilyInPolyTime (fun p : _ => p.2.2) eIn (encList eOpt) by
+    (hset1.prod (show ComputableInPolyTime (fun p : _ => p.2.2) eIn (encList eOpt) by
       fun_prop))).of_enc_eq fun p => ?_
   dsimp only [updateSlotSchedules]
   rw [list_set_eq_range_map none p.2.1 p.1.1.2 p.1.2,
@@ -1003,7 +1024,7 @@ private theorem list_set_eq_range_map {α : Type*} (d : α) (l : List α) (i : �
     ComputableInPolyTime (fun p : (Bool × ℕ) × (List (Option (List ℕ)) × List (Option (List ℕ))) =>
         readSlotSchedule p.1 p.2)
       (encPair (encPair encBool encUnary) encPartialSchedules) (encOption (encList encNat)) := by
-  refine .of_tidy ?_; unfold readSlotSchedule encPartialSchedules; fun_prop
+  unfold readSlotSchedule encPartialSchedules; fun_prop
 
 private theorem computableInPolyTime_selectSlotStep :
     ComputableInPolyTime selectSlotStep (encPair encNat encSlotSelectAcc) encSlotSelectAcc := by
@@ -1011,48 +1032,48 @@ private theorem computableInPolyTime_selectSlotStep :
   have hw : ComputableInPolyTime (fun s : ℕ × SlotSelectAcc =>
       decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1) eIn (encList encNat) :=
     computableInPolyTime_decodeLabelWord'
-      (.of_tidy (by unfold eIn encSlotSelectAcc encScoreParams; fun_prop))
-      (.of_tidy (by unfold eIn encSlotSelectAcc encScoreParams; fun_prop))
-      (.of_tidy (by unfold eIn; fun_prop))
+      (by unfold eIn encSlotSelectAcc encScoreParams; fun_prop)
+      (by unfold eIn encSlotSelectAcc encScoreParams; fun_prop)
+      (by unfold eIn; fun_prop)
   have hupd_in : ComputableInPolyTime (fun s : ℕ × SlotSelectAcc =>
       ((s.2.2.1, some (decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1)), s.2.2.2.1))
       eIn (encPair (encPair (encPair encBool encUnary) (encOption (encList encNat)))
         encPartialSchedules) := by
-    refine .of_tidy ?_; have hwT := hw.tidy; unfold eIn encSlotSelectAcc; fun_prop
+    unfold eIn encSlotSelectAcc; fun_prop
   have hcs := computableInPolyTime_updateSlotSchedules.comp hupd_in
   have hsc_in : ComputableInPolyTime (fun s : ℕ × SlotSelectAcc =>
       (s.2.1, updateSlotSchedules s.2.2.1
         (some (decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1)) s.2.2.2.1))
       eIn (encPair encScoreParams encPartialSchedules) :=
-    (ComputableInPolyTime.of_tidy (by unfold eIn encSlotSelectAcc; fun_prop)).prod hcs
+    (show ComputableInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.1) eIn encScoreParams by
+      unfold eIn encSlotSelectAcc; fun_prop).prod hcs
   have hsc := computableInPolyTime_clearedJointScore.comp hsc_in
-  refine .of_tidy ?_; have hwT := hw.tidy; have hscT := hsc.tidy
   let eBest := encPair (encList encNat) encNat
   let candW (s : ℕ × SlotSelectAcc) := decodeLabelWord s.2.1.2.1.1 s.2.1.1.2 s.1
   let candSc (s : ℕ × SlotSelectAcc) :=
     clearedJointScore s.2.1.1.1 s.2.1.1.2 s.2.1.2.1.1 s.2.1.2.1.2 s.2.1.2.2
       (updateSlotSchedules s.2.2.1 (some (candW s)) s.2.2.2.1).1
       (updateSlotSchedules s.2.2.1 (some (candW s)) s.2.2.2.1).2
-  have hsomeCand : ComputableTidilyInPolyTime (fun s => some (candW s, candSc s))
-      eIn (encOption eBest) := (ComputableTidilyInPolyTime.optionSome eBest).comp (hwT.prod hscT)
-  have hbest : ComputableTidilyInPolyTime
+  have hsomeCand : ComputableInPolyTime (fun s => some (candW s, candSc s))
+      eIn (encOption eBest) := (ComputableInPolyTime.optionSome eBest).comp (hw.prod hsc)
+  have hbest : ComputableInPolyTime
       (fun s : ℕ × SlotSelectAcc => s.2.2.2.2.elim (some (candW s, candSc s)) fun best =>
         if decide (candSc s < best.2) then some (candW s, candSc s) else some best)
       eIn (encOption eBest) := by
-    refine ComputableTidilyInPolyTime.optionElimWithInput
+    refine ComputableInPolyTime.optionElimWithInput
       (by unfold eIn encSlotSelectAcc; fun_prop) hsomeCand ?_
-    have hq1 := ComputableTidilyInPolyTime.fst eIn eBest
-    have hq2 := ComputableTidilyInPolyTime.snd eIn eBest
-    exact ComputableTidilyInPolyTime.ite_decide
-      (ComputableTidilyInPolyTime.binary_lt' (hscT.comp hq1)
-        ((ComputableTidilyInPolyTime.snd (encList encNat) encNat).comp hq2))
-      (hsomeCand.comp hq1) ((ComputableTidilyInPolyTime.optionSome eBest).comp hq2)
+    have hq1 := ComputableInPolyTime.fst eIn eBest
+    have hq2 := ComputableInPolyTime.snd eIn eBest
+    exact ComputableInPolyTime.ite'
+      (ComputableInPolyTime.binary_lt' (hsc.comp hq1)
+        ((ComputableInPolyTime.snd (encList encNat) encNat).comp hq2))
+      (hsomeCand.comp hq1) ((ComputableInPolyTime.optionSome eBest).comp hq2)
   unfold selectSlotStep
-  exact (show ComputableTidilyInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.1) eIn encScoreParams by
+  exact (show ComputableInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.1) eIn encScoreParams by
     unfold eIn encSlotSelectAcc; fun_prop).prod
-    ((show ComputableTidilyInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.2.1)
+    ((show ComputableInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.2.1)
         eIn (encPair encBool encUnary) by unfold eIn encSlotSelectAcc; fun_prop).prod
-      ((show ComputableTidilyInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.2.2.1)
+      ((show ComputableInPolyTime (fun s : ℕ × SlotSelectAcc => s.2.2.2.1)
           eIn encPartialSchedules by unfold eIn encSlotSelectAcc; fun_prop).prod hbest))
 
 private def streamSlotCount (a : StreamSlotIn) : ℕ := a.1.2.1.1 ^ a.1.1.2
@@ -1062,16 +1083,17 @@ private def extractBestSlotWord (st : ℕ × SlotSelectAcc) : List ℕ :=
 
 private theorem computableInPolyTime_streamSlotCount :
     ComputableInPolyTime streamSlotCount encStreamSlotIn encNat := by
-  refine .of_tidy ?_; unfold streamSlotCount encStreamSlotIn encScoreParams; fun_prop
+  unfold streamSlotCount encStreamSlotIn encScoreParams
+  exact ComputableInPolyTime.binary_pow' (by fun_prop) (by fun_prop)
 
 private theorem computableInPolyTime_streamSlotInit :
     ComputableInPolyTime streamSlotInit encStreamSlotIn encSlotSelectAcc := by
-  refine .of_tidy ?_; unfold streamSlotInit encStreamSlotIn encSlotSelectAcc; fun_prop
+  unfold streamSlotInit encStreamSlotIn encSlotSelectAcc; fun_prop
 
 private theorem computableInPolyTime_extractBestSlotWord :
     ComputableInPolyTime extractBestSlotWord
       (encPair encNat encSlotSelectAcc) (encList encNat) := by
-  refine .of_tidy ?_; unfold extractBestSlotWord encSlotSelectAcc encScoreParams; fun_prop
+  unfold extractBestSlotWord encSlotSelectAcc encScoreParams; fun_prop
 
 private noncomputable def mkSlotCert
     (cn : NativeCertificate streamSlotCount encStreamSlotIn encNat)
@@ -1195,7 +1217,7 @@ private theorem mkSlotCert_bounds
   · have hmaxRT : RT ≤ bFull L + (lIdx L + 1) ^ 2 + pCb (bFull L) := by
       refine NativeCertificate.maxRoundTime_le _ _ _ fun j hj => ?_
       have hj_len : (encNat (runAt j).1).length ≤ lIdx L := by
-        rw [IndexFold.run_index]; exact (ComputableTidilyInO.length_encNat_mono hj).trans hlIdx
+        rw [IndexFold.run_index]; exact (length_encNat_mono hj).trans hlIdx
       have hsq := Nat.pow_le_pow_left (Nat.add_le_add_right hj_len 1) 2
       have hcbT : cb.time (runAt j) ≤ pCb (bFull L) := (hCb _).1.trans (hmCb (hbFull j hj))
       have hst_len := hbFull j hj
@@ -1216,7 +1238,7 @@ private theorem mkSlotCert_bounds
   · have hmaxRS : RS ≤ bFull L + (lIdx L + 1) + pCb (bFull L) := by
       refine NativeCertificate.maxRoundSpace_le _ _ _ fun j hj => ?_
       have hj_len : (encNat (runAt j).1).length ≤ lIdx L := by
-        rw [IndexFold.run_index]; exact (ComputableTidilyInO.length_encNat_mono hj).trans hlIdx
+        rw [IndexFold.run_index]; exact (length_encNat_mono hj).trans hlIdx
       have hcbS : cb.space (runAt j) ≤ pCb (bFull L) := (hCb _).2.trans (hmCb (hbFull j hj))
       have hst_len := hbFull j hj
       change (encPair encNat encSlotSelectAcc (runAt j)).length +

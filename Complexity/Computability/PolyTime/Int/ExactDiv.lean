@@ -179,6 +179,28 @@ private theorem emod_eq_emodNat (a b : ℤ) :
   · simp only [hb, ↓reduceIte, emod_natAbs_eq]
     exact (Int.toNat_of_nonneg (Int.emod_nonneg a hb)).symm
 
+private theorem emod_eq_signMagnitude (a b : ℤ) :
+    a.emod b =
+      if b = 0 then a
+      else if a < 0 then (((b.natAbs - a.natAbs % b.natAbs) % b.natAbs : ℕ) : ℤ)
+      else ((a.natAbs % b.natAbs : ℕ) : ℤ) := by
+  rw [emod_eq_emodNat]
+  by_cases hb : b = 0
+  · simp [hb]
+  · have hq : b.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hb
+    simp only [hb, ↓reduceIte]
+    by_cases ha : a < 0
+    · simp only [ha, ↓reduceIte, Int.emod_natAbs_of_neg ha hq]
+      split_ifs with hdiv
+      · rw [Int.emod_eq_zero_of_dvd hdiv]; simp
+      · have hr_nonneg : 0 ≤ a % (b.natAbs : ℤ) := Int.emod_nonneg a (by positivity)
+        have hr_lt : a % (b.natAbs : ℤ) < (b.natAbs : ℤ) := Int.emod_lt_of_pos a (by positivity)
+        have hr_ne : a % (b.natAbs : ℤ) ≠ 0 := fun h0 => hdiv (Int.dvd_of_emod_eq_zero h0)
+        have hlt : b.natAbs - (b.natAbs - (a % (b.natAbs : ℤ)).toNat) < b.natAbs := by lia
+        rw [Nat.mod_eq_of_lt hlt]; lia
+    · have ha0 : 0 ≤ a := not_lt.mp ha
+      simp only [ha, ↓reduceIte, Int.emod_natAbs_of_nonneg ha0]
+
 theorem natAbs_emod_lt_of_ne_zero (a : ℤ) {b : ℤ} (hb : b ≠ 0) :
     (a.emod b).natAbs < b.natAbs := by
   have hcast : ((a.emod b).natAbs : ℤ) < (b.natAbs : ℤ) := by
@@ -248,81 +270,17 @@ namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-! ### Plain polynomial-time certificates -/
 
-private theorem intBin_tdiv_tidy :
-    ComputableTidilyInPolyTime (fun p : ℤ × ℤ => p.1.tdiv p.2)
-      (encPair encIntBin encIntBin) encIntBin := by
-  have hsa := ComputableTidilyInPolyTime.intBin_isNeg.comp
-    (ComputableTidilyInPolyTime.fst encIntBin encIntBin)
-  have hsb := ComputableTidilyInPolyTime.intBin_isNeg.comp
-    (ComputableTidilyInPolyTime.snd encIntBin encIntBin)
-  have hma := ComputableTidilyInPolyTime.intBin_natAbs.comp
-    (ComputableTidilyInPolyTime.fst encIntBin encIntBin)
-  have hmb := ComputableTidilyInPolyTime.intBin_natAbs.comp
-    (ComputableTidilyInPolyTime.snd encIntBin encIntBin)
-  have h := ComputableTidilyInPolyTime.intBin_signMagnitude.comp
-    ((ComputableTidilyInPolyTime.bool_xor.comp (hsa.prod hsb)).prod
-      (ComputableTidilyInPolyTime.binary_div.comp (hma.prod hmb)))
-  refine h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin ?_
-  simpa only [Function.comp_apply] using Int.tdiv_eq_signMagnitude a b
-
-private theorem intBin_tmod_tidy :
-    ComputableTidilyInPolyTime (fun p : ℤ × ℤ => p.1.tmod p.2)
-      (encPair encIntBin encIntBin) encIntBin := by
-  have hsa := ComputableTidilyInPolyTime.intBin_isNeg.comp
-    (ComputableTidilyInPolyTime.fst encIntBin encIntBin)
-  have hma := ComputableTidilyInPolyTime.intBin_natAbs.comp
-    (ComputableTidilyInPolyTime.fst encIntBin encIntBin)
-  have hmb := ComputableTidilyInPolyTime.intBin_natAbs.comp
-    (ComputableTidilyInPolyTime.snd encIntBin encIntBin)
-  have h := ComputableTidilyInPolyTime.intBin_signMagnitude.comp
-    (hsa.prod (ComputableTidilyInPolyTime.binary_mod.comp (hma.prod hmb)))
-  refine h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin ?_
-  simpa only [Function.comp_apply] using Int.tmod_eq_signMagnitude a b
-
-private theorem intBin_ediv_tidy :
-    ComputableTidilyInPolyTime (fun p : ℤ × ℤ => p.1.ediv p.2)
-      (encPair encIntBin encIntBin) encIntBin := by
-  have hb0 : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => decide (p.2 = 0))
-      (encPair encIntBin encIntBin) encBool :=
-    ComputableTidilyInPolyTime.intBin_isZero.comp (ComputableTidilyInPolyTime.snd _ _)
-  have ha_neg : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => decide (p.1 < 0))
-      (encPair encIntBin encIntBin) encBool :=
-    ComputableTidilyInPolyTime.intBin_isNeg.comp (ComputableTidilyInPolyTime.fst _ _)
-  have hb_neg : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => decide (p.2 < 0))
-      (encPair encIntBin encIntBin) encBool :=
-    ComputableTidilyInPolyTime.intBin_isNeg.comp (ComputableTidilyInPolyTime.snd _ _)
-  have hq_neg : ComputableTidilyInPolyTime
-      (fun p : ℤ × ℤ => (((p.1.natAbs - 1) / p.2.natAbs + 1 : ℕ) : ℤ))
-      (encPair encIntBin encIntBin) encIntBin := by fun_prop
-  have hq_nonneg : ComputableTidilyInPolyTime
-      (fun p : ℤ × ℤ => ((p.1.natAbs / p.2.natAbs : ℕ) : ℤ))
-      (encPair encIntBin encIntBin) encIntBin := by fun_prop
-  have h := hb0.ite_decide (.const 0)
-    (ha_neg.ite_decide
-      (hb_neg.ite_decide hq_neg (ComputableTidilyInPolyTime.intBin_neg.comp hq_neg))
-      (hb_neg.ite_decide (ComputableTidilyInPolyTime.intBin_neg.comp hq_nonneg) hq_nonneg))
-  refine h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin ?_
-  simpa only [Function.comp_apply] using Int.ediv_eq_signMagnitude a b
-
-private theorem intBin_emod_tidy :
-    ComputableTidilyInPolyTime (fun p : ℤ × ℤ => p.1.emod p.2)
-      (encPair encIntBin encIntBin) encIntBin := by
-  have hb0 : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => decide (p.2 = 0))
-      (encPair encIntBin encIntBin) encBool :=
-    ComputableTidilyInPolyTime.intBin_isZero.comp (ComputableTidilyInPolyTime.snd _ _)
-  have hrem : ComputableTidilyInPolyTime
-      (fun p : ℤ × ℤ => ((p.1 % (p.2.natAbs : ℤ)).toNat : ℤ))
-      (encPair encIntBin encIntBin) encIntBin := by fun_prop
-  have h := hb0.ite_decide (ComputableTidilyInPolyTime.fst encIntBin encIntBin) hrem
-  refine h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin ?_
-  simpa only [Function.comp_apply] using Int.emod_eq_emodNat a b
-
 /-- Truncated-toward-zero division of signed binary integers is computable in polynomial time. -/
 @[fun_prop]
 theorem intBin_tdiv :
     ComputableInPolyTime (fun p : ℤ × ℤ => p.1.tdiv p.2)
-      (encPair encIntBin encIntBin) encIntBin :=
-  .of_tidy intBin_tdiv_tidy
+      (encPair encIntBin encIntBin) encIntBin := by
+  have h : ComputableInPolyTime
+      (fun p : ℤ × ℤ =>
+        if (decide (p.1 < 0) ^^ decide (p.2 < 0)) then -((p.1.natAbs / p.2.natAbs : ℕ) : ℤ)
+        else ((p.1.natAbs / p.2.natAbs : ℕ) : ℤ))
+      (encPair encIntBin encIntBin) encIntBin := by fun_prop
+  exact h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin (Int.tdiv_eq_signMagnitude a b)
 
 /-- Truncated-toward-zero division of computed binary integers. -/
 @[fun_prop]
@@ -336,8 +294,13 @@ theorem intBin_tdiv' {α : Type} {input : α ↪ List Bool} {left right : α →
 @[fun_prop]
 theorem intBin_tmod :
     ComputableInPolyTime (fun p : ℤ × ℤ => p.1.tmod p.2)
-      (encPair encIntBin encIntBin) encIntBin :=
-  .of_tidy intBin_tmod_tidy
+      (encPair encIntBin encIntBin) encIntBin := by
+  have h : ComputableInPolyTime
+      (fun p : ℤ × ℤ =>
+        if decide (p.1 < 0) then -((p.1.natAbs % p.2.natAbs : ℕ) : ℤ)
+        else ((p.1.natAbs % p.2.natAbs : ℕ) : ℤ))
+      (encPair encIntBin encIntBin) encIntBin := by fun_prop
+  exact h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin (Int.tmod_eq_signMagnitude a b)
 
 /-- Truncated-toward-zero remainder of computed binary integers. -/
 @[fun_prop]
@@ -351,8 +314,26 @@ theorem intBin_tmod' {α : Type} {input : α ↪ List Bool} {left right : α →
 @[fun_prop]
 theorem intBin_ediv :
     ComputableInPolyTime (fun p : ℤ × ℤ => p.1.ediv p.2)
-      (encPair encIntBin encIntBin) encIntBin :=
-  .of_tidy intBin_ediv_tidy
+      (encPair encIntBin encIntBin) encIntBin := by
+  have hb0 : ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.2 = 0))
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have ha_neg : ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.1 < 0))
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have hb_neg : ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.2 < 0))
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have hq_neg : ComputableInPolyTime
+      (fun p : ℤ × ℤ => (((p.1.natAbs - 1) / p.2.natAbs + 1 : ℕ) : ℤ))
+      (encPair encIntBin encIntBin) encIntBin := by fun_prop
+  have hq_nonneg : ComputableInPolyTime
+      (fun p : ℤ × ℤ => ((p.1.natAbs / p.2.natAbs : ℕ) : ℤ))
+      (encPair encIntBin encIntBin) encIntBin := by fun_prop
+  have hneg : ComputableInPolyTime (fun z : ℤ => -z) encIntBin encIntBin := by fun_prop
+  have h := hb0.ite (.const 0)
+    (ha_neg.ite
+      (hb_neg.ite hq_neg (hneg.comp hq_neg))
+      (hb_neg.ite (hneg.comp hq_nonneg) hq_nonneg))
+  refine h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin ?_
+  simpa only [Function.comp_apply, decide_eq_true_eq] using Int.ediv_eq_signMagnitude a b
 
 /-- Euclidean division (`Int.ediv`) of computed binary integers. -/
 @[fun_prop]
@@ -381,8 +362,20 @@ theorem intBin_div' {α : Type} {input : α ↪ List Bool} {left right : α → 
 @[fun_prop]
 theorem intBin_emod :
     ComputableInPolyTime (fun p : ℤ × ℤ => p.1.emod p.2)
-      (encPair encIntBin encIntBin) encIntBin :=
-  .of_tidy intBin_emod_tidy
+      (encPair encIntBin encIntBin) encIntBin := by
+  have hb0 : ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.2 = 0))
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have ha_neg : ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.1 < 0))
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have hneg : ComputableInPolyTime
+      (fun p : ℤ × ℤ => (((p.2.natAbs - p.1.natAbs % p.2.natAbs) % p.2.natAbs : ℕ) : ℤ))
+      (encPair encIntBin encIntBin) encIntBin := by fun_prop
+  have hnonneg : ComputableInPolyTime
+      (fun p : ℤ × ℤ => ((p.1.natAbs % p.2.natAbs : ℕ) : ℤ))
+      (encPair encIntBin encIntBin) encIntBin := by fun_prop
+  have h := hb0.ite (fst encIntBin encIntBin) (ha_neg.ite hneg hnonneg)
+  refine h.of_enc_eq fun ⟨a, b⟩ => congrArg encIntBin ?_
+  simpa only [Function.comp_apply, decide_eq_true_eq] using Int.emod_eq_signMagnitude a b
 
 /-- Euclidean remainder (`Int.emod`) of computed binary integers. -/
 @[fun_prop]
@@ -413,10 +406,9 @@ theorem intBin_mod' {α : Type} {input : α ↪ List Bool} {left right : α → 
 theorem intBin_modPowTwo :
     ComputableInPolyTime (fun p : ℤ × ℕ => p.1.modPowTwo p.2)
       (encPair encIntBin encUnary) encIntBin := by
-  refine .of_tidy ?_
-  have hpow : ComputableTidilyInPolyTime (fun p : ℤ × ℕ => ((2 : ℤ) ^ p.2))
+  have hpow : ComputableInPolyTime (fun p : ℤ × ℕ => ((2 : ℤ) ^ p.2))
       (encPair encIntBin encUnary) encIntBin := by fun_prop
-  exact intBin_emod_tidy.comp ((ComputableTidilyInPolyTime.fst encIntBin encUnary).prod hpow)
+  exact intBin_emod.comp ((fst encIntBin encUnary).prod hpow)
 
 /-- Reduction `Int.modPowTwo (value a) (exponent a)` of a computed binary integer modulo a
 computed unary power of two. -/

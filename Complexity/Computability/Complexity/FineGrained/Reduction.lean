@@ -8,8 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
 /-!
 # Reductions of linear size
@@ -114,15 +115,13 @@ theorem DecidableInExpTime.of_reduction {f : α → β}
     (hf : ComputableInPolyTime f encA encB) (hfA : ∀ a, a ∈ A ↔ f a ∈ B) {c : ℕ}
     (hμ : ∀ a, μB (f a) ≤ c * μA a + c) {δ : ℝ} (hδ : 0 ≤ δ)
     (h : DecidableInExpTime B encB μB δ) : DecidableInExpTime A encA μA (c * δ) := by
-  have hf := hf.tidy
   obtain ⟨e, h⟩ := h
   obtain ⟨g, t, k, hg, hgB, ht⟩ := h.exists_computableInO
-  have hg := hg.tidy
   obtain ⟨d, _, hf⟩ := hf.exists_degree
   have hfO := hf.inO
   obtain ⟨l, hl⟩ := hfO.length_le_time
   set K : ℝ := 1 + k * 2 ^ (δ * c) * (2 * l + 1) ^ e + k
-  refine Complexity.DecidableInExpTime.of_computableInO (.of_tidy (hg.comp hfO))
+  refine Complexity.DecidableInExpTime.of_computableInO (hg.comp hfO)
     (fun a => (hfA a).trans (hgB (f a)))
     ⌈K⌉₊ (d * e + d) fun a => ?_
   show _ ≤ _
@@ -257,20 +256,18 @@ theorem DecidableInSubexpTime.of_expReduction {f : α → β} {m : α → ℕ}
     DecidableInSubexpTime A encA (fun a => m a * Nat.log 2 (m a)) := by
   intro ε hε
   obtain ⟨C, D, hfO⟩ := hf
-  have hfO := hfO.tidy
   obtain ⟨l, hl⟩ := hfO.length_le_time
   set δ : ℝ := ε / (2 * (c + 1))
   have hδ : 0 < δ := by positivity
   obtain ⟨e, hdec⟩ := h δ hδ
   obtain ⟨g, t, k, hg, hgB, ht⟩ := hdec.exists_computableInO
-  have hg := hg.tidy
   set C' : ℕ := C * (e + 1)
   set E : ℕ := D * (e + 1)
   set M : ℕ := ⌈(2 * C' : ℝ) / ε⌉₊ + 1
   set K₀ : ℝ := 2 ^ ((C' : ℝ) * ((2 ^ M : ℕ) : ℝ))
   set K₁ : ℝ := 1 + k * 2 ^ (δ * c) * (2 * l + 1) ^ e + k
   set K : ℝ := K₁ * K₀
-  refine DecidableInExpTime.of_computableInO (.of_tidy (hg.comp hfO))
+  refine DecidableInExpTime.of_computableInO (hg.comp hfO)
     (fun a => (hfA a).trans (hgB (f a)))
     ⌈K⌉₊ E fun a => ?_
   show _ ≤ _
