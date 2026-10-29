@@ -38,7 +38,7 @@ sub-multiset of the input numbers, such as subset sum, partition and knapsack.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM
 open scoped List
 
 variable {α : Type}
@@ -124,7 +124,6 @@ theorem exists_le_iff_exists_maskSelect {l : List α} {n : ℕ} (hn : l.length �
 theorem computableInPolyTime_maskSelect (enc : α ↪ List Bool) :
     ComputableInPolyTime (fun p : List α × List Bool => maskSelect p.1 p.2)
       (encPair (encList enc) encBits) (encList enc) := by
-  refine .of_tidy ?_
   unfold maskSelect
   fun_prop
 
