@@ -211,6 +211,7 @@ public import Complexity.Computability.Circuit.Boolean.BinaryCost
 public import Complexity.Computability.Circuit.Boolean.BitBlast
 public import Complexity.Computability.Circuit.Boolean.BoundedError
 public import Complexity.Computability.Circuit.Boolean.Braverman.Approximation
+public import Complexity.Computability.Circuit.Boolean.Braverman.Fooling
 public import Complexity.Computability.Circuit.Boolean.Braverman.Gates
 public import Complexity.Computability.Circuit.Boolean.Broadcast
 public import Complexity.Computability.Circuit.Boolean.CarryLookahead

@@ -7,7 +7,7 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.BooleanAnalysis.Fourier
+public import Complexity.Foundations.BooleanAnalysis.Degree
 import Mathlib.Algebra.BigOperators.Field
 
 /-!
@@ -23,12 +23,20 @@ level of the `0/1` reading is a quarter of that of the `±1` reading
 [Linial, Mansour and Nisan][LinialMansourNisan1993] bound are usually stated for the `±1` reading,
 while their applications, such as [Braverman][Braverman2010], approximate the `0/1` reading.
 
+Cutting the Fourier expansion of a function at level `t` gives a function of degree at most `t`
+whose squared `L²` distance to the original is the Fourier weight above `t`
+(`Cslib.BitString.exists_mem_lowDegree_expect_sq_sub_eq`), so a Fourier tail bound on a Boolean
+function yields a low-degree `L²` approximation of its `0/1` reading
+(`Cslib.BitString.exists_mem_lowDegree_expect_sq_bitVal_sub_eq`).
+
 ## Main results
 
 * `Cslib.BitString.fourierCoeff_bitVal_of_nonempty`: the coefficients of the `0/1` reading at a
   nonempty set are `-1 / 2` times those of the `±1` reading.
 * `Cslib.BitString.sum_fourierCoeff_bitVal_sq`: the Fourier weight of the `0/1` reading above a
   level is a quarter of that of the `±1` reading.
+* `Cslib.BitString.exists_mem_lowDegree_expect_sq_sub_eq`,
+  `Cslib.BitString.exists_mem_lowDegree_expect_sq_bitVal_sub_eq`: Fourier truncation.
 
 ## References
 
@@ -42,6 +50,7 @@ public section
 namespace Cslib.BitString
 
 open Finset
+open scoped BigOperators
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
@@ -69,5 +78,33 @@ theorem sum_fourierCoeff_bitVal_sq (F : (ι → Bool) → Bool) (t : ℕ) :
   have hS : S.Nonempty := card_pos.1 (Nat.zero_lt_of_lt (mem_filter.1 hS).2)
   rw [fourierCoeff_bitVal_of_nonempty F hS]
   ring
+
+/-- **Fourier truncation**: cutting the Fourier expansion of `f` at level `t` gives a function of
+degree at most `t` whose squared `L²` distance to `f` is the Fourier weight of `f` above `t`. -/
+theorem exists_mem_lowDegree_expect_sq_sub_eq (f : (ι → Bool) → ℝ) (t : ℕ) :
+    ∃ g ∈ lowDegree ℝ ι t, 𝔼 x, (f x - g x) ^ 2 = ∑ S with t < #S, fourierCoeff f S ^ 2 := by
+  set g : (ι → Bool) → ℝ :=
+    fun x => ∑ T, (if #T ≤ t then fourierCoeff f T else 0) * chi ℝ T x
+  have hc (S : Finset ι) : fourierCoeff g S = if #S ≤ t then fourierCoeff f S else 0 :=
+    fourierCoeff_sum_mul_chi (fun T => if #T ≤ t then fourierCoeff f T else 0) S
+  refine ⟨g, ?_, ?_⟩
+  · rw [mem_lowDegree_iff_fourierCoeff_eq_zero]
+    intro S hS
+    rw [hc, ite_eq_right (not_le.2 hS)]
+  · rw [expect_sq_eq_sum_fourierCoeff_sq, sum_filter]
+    refine sum_congr rfl fun S _ => ?_
+    rw [fourierCoeff_sub, hc]
+    by_cases h : t < #S
+    · rw [ite_eq_right (not_le.2 h), ite_eq_left h, sub_zero]
+    · rw [ite_eq_left (not_lt.1 h), ite_eq_right h, sub_self, zero_pow two_ne_zero]
+
+/-- **Fourier truncation of a Boolean function**: the `0/1` reading of `F` is approximated by a
+function of degree at most `t` with squared `L²` error a quarter of the Fourier weight of the `±1`
+reading of `F` above `t`. -/
+theorem exists_mem_lowDegree_expect_sq_bitVal_sub_eq (F : (ι → Bool) → Bool) (t : ℕ) :
+    ∃ g ∈ lowDegree ℝ ι t, 𝔼 x, (bitVal ℝ (F x) - g x) ^ 2 =
+      (∑ S with t < #S, fourierCoeff (fun x => signVal (F x)) S ^ 2) / 4 := by
+  obtain ⟨g, hg, h⟩ := exists_mem_lowDegree_expect_sq_sub_eq (fun x => bitVal ℝ (F x)) t
+  exact ⟨g, hg, h.trans (sum_fourierCoeff_bitVal_sq F t)⟩
 
 end Cslib.BitString
