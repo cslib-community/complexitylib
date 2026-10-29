@@ -230,7 +230,7 @@ example : IsPPTOn (encList encBool) (encPair encBits encBits) (fun word =>
         (requestHead word.reverse)).run word) := by
   apply requestHead_isOraclePPTOn.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller _ => caller.length + 1)
-    (by fun_prop)
+    (ComputableTidilyInPolyTime.bitsReverse.comp ComputableTidilyInPolyTime.listToBits)
     (by
       have h : IsPPTOn
           (encPair encBits (encPair (encPair (encFinEnum Unit) encBits) encBits))
