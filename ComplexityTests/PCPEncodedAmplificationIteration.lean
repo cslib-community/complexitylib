@@ -45,8 +45,8 @@ example : ComputableInPolyTime (fun x =>
   fail_if_success (clear hgraph; polytime)
   polytime
 
-example :
-    Graph.amplifyIter fallback rotate T q walks number coins queries 0 ⟨0, []⟩ = ⟨0, []⟩ := by
+example (g : Graph Constraint) :
+    Graph.amplifyIter fallback rotate T q walks number coins queries 0 g = g := by
   unfold Graph.amplifyIter
   rfl
 

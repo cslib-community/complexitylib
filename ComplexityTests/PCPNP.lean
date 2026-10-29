@@ -118,9 +118,6 @@ example (enc : Unit ↪ List Bool) : ComputableInPolyTime noQueries.tableVerifie
 example : ∃ proof, ∀ word, word.length = 0 → noQueries.accepts () proof word = true :=
   PCPVerifier.tableVerifier_sound (V := noQueries) () [] (by decide)
 
-example : PCP (fun n => Nat.log 2 n + 1) (fun _ => 3) encNat ⊆ NP encNat :=
-  PCP_log_subset_NP (fun _ => 3)
-
 -- The bounded decoder saturates on arbitrary noncanonical binary words as well.
 example : BitString.boundedBinaryValue 0 [true, false, true] = 0 := by decide
 

@@ -87,8 +87,12 @@ private def rejectingGraph : ConstraintGraph Unit Unit Bool where
   dst _ := ()
   rel _ _ _ := False
 
-example : rejectingGraph.unsatVal / 840 ≤ rejectingGraph.composeSelected.unsatVal :=
-  rejectingGraph.le_unsatVal_composeSelected
+-- Every labelling violates the single edge, so composition retains a strictly positive gap.
+example : 1 / 840 ≤ rejectingGraph.composeSelected.unsatVal := by
+  have hvalue : rejectingGraph.unsatVal = 1 := by
+    simp [ConstraintGraph.unsatVal, ConstraintGraph.unsatFrac, ConstraintGraph.unsatEdges,
+      ConstraintGraph.Satisfies, rejectingGraph]
+  simpa only [hvalue] using rejectingGraph.le_unsatVal_composeSelected
 
 example : Fintype.card (Bool × (Fin 6 → Bool)) = 128 :=
   ConstraintGraph.card_alphabet_composeSelected

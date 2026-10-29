@@ -80,19 +80,23 @@ example : (boolGadgets.edges.map Edge.src).getD 17 0 =
     (boolGadgets.edges.map Edge.src).getD 0 0 + (numberSlots boolAlphabet).1 := by decide
 example : boolGadgets.isWellFormed = true := by decide
 
-example :
-    ((boolGraph.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
-      Graph.composeEval).Satisfiable ↔
-      (boolGraph.toGraph id).Satisfiable :=
-  Graph.satisfiable_compose_iff _ _ _ boolGraph (nodup_coins _) nodup_queries (mem_coins _)
-    mem_queries
+-- The third edge rejects every assignment; the fixture is genuinely unsatisfiable.
+private theorem boolGraph_not_satisfiable : ¬ (boolGraph.toGraph id).Satisfiable := by
+  rintro ⟨σ, hσ⟩
+  exact Bool.false_ne_true (hσ ⟨2, by decide⟩)
 
-example :
-    (boolGraph.toGraph id).unsatVal / 476 ≤
-      ((boolGraph.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
-        Graph.composeEval).unsatVal :=
-  Graph.le_unsatVal_compose _ _ _ boolGraph (nodup_coins _) nodup_queries (mem_coins _)
-    mem_queries
+example : ¬ ((boolGraph.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
+    Graph.composeEval).Satisfiable := by
+  intro h
+  exact boolGraph_not_satisfiable ((Graph.satisfiable_compose_iff _ _ _ boolGraph
+    (nodup_coins _) nodup_queries (mem_coins _) mem_queries).mp h)
+
+example : 0 < ((boolGraph.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
+    Graph.composeEval).unsatVal := by
+  have hgap := (boolGraph.toGraph id).unsatVal_pos_iff.mpr boolGraph_not_satisfiable
+  exact (div_pos hgap (by norm_num : (0 : ℝ) < 476)).trans_le
+    (Graph.le_unsatVal_compose _ _ _ boolGraph (nodup_coins _) nodup_queries (mem_coins _)
+      mem_queries)
 
 example : ComputableInPolyTime
     (Graph.compose (numberSlots boolAlphabet).2 boolCoins queries)

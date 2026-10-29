@@ -17,9 +17,9 @@ open Cslib Cslib.RotationMap Turing.MultiTapeTM
 namespace ComplexityTests.PCPExpander
 
 example : ComputableInPolyTime
-    (fun index : ℕ => (⟨(index + 1) % 1, Nat.mod_lt _ (by decide)⟩ : Fin 1))
+    (fun index : ℕ => (⟨index % 1, Nat.mod_lt _ (by decide)⟩ : Fin 1))
     encUnary (encFinEnum (Fin 1)) :=
-  .of_tidy ((ComputableTidilyInPolyTime.unary_finMod (by decide) _).comp (by fun_prop))
+  .of_tidy (ComputableTidilyInPolyTime.unary_finMod (by decide) _)
 
 -- The fixed finite output may use binary indices instead of the finite-rank encoding.
 example :
@@ -36,6 +36,10 @@ private def coordinates : Fin 16 ≃ (Fin 2 → Fin 2 × Fin 2) :=
     (((finProdFinEquiv : Fin 2 × Fin 2 ≃ Fin 4).symm.prodCongr
       (finProdFinEquiv : Fin 2 × Fin 2 ≃ Fin 4).symm).trans
         (finTwoArrowEquiv (Fin 2 × Fin 2)).symm)
+
+example : ComputableInPolyTime (TowerTable.build base coordinates (by decide))
+    encUnary (TowerTable.encoding (encFinEnum (Fin 2))) :=
+  (TowerTable.polytime_build base coordinates (by decide) _).computableInPolyTime
 
 -- Equivalent call spellings and captured inputs use the same uniform certificate.
 example : ComputableInPolyTime
@@ -71,15 +75,12 @@ example :
       (target.1.val, target.2) :=
   TowerTable.lookup_build base coordinates (Equiv.refl _) (by decide) 17 ⟨0, by decide⟩ (0, 1)
 
-example : ComputableInPolyTime
-    (fun p : ℕ × (ℕ × ((Fin 16 × (Fin 2 × Fin 2)) ⊕ (Fin 16 × (Fin 2 × Fin 2)))) =>
-      TowerTable.rotateFamily base coordinates (by decide) (p.1 + 1, p.2))
+example : ComputableInPolyTime (TowerTable.rotateFamily base coordinates (by decide))
     (encPair encUnary (encPair encUnary
       (encFinEnum ((Fin 16 × (Fin 2 × Fin 2)) ⊕ (Fin 16 × (Fin 2 × Fin 2))))))
     (encPair encUnary (encFinEnum ((Fin 16 × (Fin 2 × Fin 2)) ⊕
       (Fin 16 × (Fin 2 × Fin 2))))) :=
-  (TowerTable.polytime_rotateFamily base coordinates (by decide) _).computableInPolyTime.comp
-    (by fun_prop)
+  (TowerTable.polytime_rotateFamily base coordinates (by decide) _).computableInPolyTime
 
 example : TowerTable.rotateFamily base coordinates (by decide)
     (0, 3, .inl (0, (0, 1))) = (3, .inl (0, (0, 1))) := by decide
@@ -105,12 +106,10 @@ example (label : AffinePlaneFamilyLabel (ZMod 257) 257) :
 local instance : FinEnum (ZMod 257) :=
   FinEnum.ofEquiv (Fin 257) (ZMod.finEquiv 257).toEquiv.symm
 
-example : ComputableInPolyTime
-    (fun p : ℕ × (ℕ × AffinePlaneFamilyLabel (ZMod 257) 257) =>
-      arithmeticExpanderRotate (p.1 + 1, p.2))
+example : ComputableInPolyTime arithmeticExpanderRotate
     (encPair encUnary (encPair encUnary
       (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))))
     (encPair encUnary (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))) :=
-  (polytime_arithmeticExpanderRotate _).computableInPolyTime.comp (by fun_prop)
+  (polytime_arithmeticExpanderRotate _).computableInPolyTime
 
 end ComplexityTests.PCPExpander

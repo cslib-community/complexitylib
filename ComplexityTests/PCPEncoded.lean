@@ -178,9 +178,7 @@ example :
     cloudGraph.cloudRotation false rotateReflection ((0, true), false) =
       let next := (cloudGraph.cloudFamily (fun c (_ _ : Bool) => c) false reflection 1).rot
         (⟨(⟨0, by decide⟩, true), rfl⟩, false)
-      ((next.1.val.1.val, next.1.val.2), next.2) :=
-  cloudGraph.cloudRotation_eq _ false reflection rotateReflection rotateReflection_eq 1
-    ⟨(⟨0, by decide⟩, true), rfl⟩ false
+      ((next.1.val.1.val, next.1.val.2), next.2) := by decide
 
 example : ((cloudGraph.cloudEquiv (fun c (_ _ : Bool) => c) false 1).symm
     ⟨(⟨1, by decide⟩, true), rfl⟩).val = 2 := by decide

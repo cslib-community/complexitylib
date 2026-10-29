@@ -118,6 +118,17 @@ example : ComputableInPolyTime
     (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool)) := by
   polytime
 
+-- Cross both direct/let spellings with both supported automation tactics.
+example : ComputableInPolyTime
+    (fun p : Graph Bool × List Bool => p.1.sampleEdge p.2)
+    (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool)) := by
+  polytime
+
+example : ComputableInPolyTime
+    (fun p : Graph Bool × List Bool => let graph := p.1; graph.sampleEdge p.2)
+    (encPair (Graph.encoding encBool) encBits) (encOption (Edge.encoding encBool)) := by
+  fun_prop
+
 example : ComputableInPolyTime
     (fun p : Graph Bool × List Bool => p.1.sampleEdge p.2)
     (encPair (Graph.encoding encBool) (encList encBool))

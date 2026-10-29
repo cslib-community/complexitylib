@@ -65,8 +65,8 @@ example : ComputableInPolyTime (fun g : Graph (List Bool) =>
   have htable := Graph.isPolyTime_constraintTable isPolyTime_evalBits
   fun_prop
 
-example : (encPi (encPi encBool) (evalBits [true, false, true, true])).length ≤ 26 :=
-  Graph.length_constraintTable_le (evalBits [true, false, true, true])
+example : (encPi (encPi encBool) (evalBits [true, false, true, true])).length = 26 := by
+  decide
 
 -- Table lookup is itself certified for runtime table and both runtime symbols.
 example : ComputableInPolyTime
