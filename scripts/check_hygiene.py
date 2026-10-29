@@ -30,8 +30,10 @@ Checks enforced by default (see AGENTS.md):
 
 7. (Default selection and explicit paths.) No `set_option maxHeartbeats N` exceeds the 200000
    default unless its file is listed in `scripts/heartbeat_allowlist.txt` with a cap of at least
-   `N` (one `<path> <cap>` entry per line, `#` comments allowed). With the default selection, an
-   entry whose file no longer needs it (no budget above the default, or a cap above the largest
+   `N` (one `<path> <cap>` entry per line, `#` comments allowed). Zero means unlimited in Lean
+   and requires an explicit zero cap; finite caps never permit it. Unparsed values fail closed.
+   Inline and multiline settings and decimal/hexadecimal numerals are checked. With the default
+   selection, an entry whose file no longer needs it (no budget above the default, or a cap above the largest
    budget) is reported as stale, so the allowlist only shrinks as budgets are reduced (#1528).
 
 Opt-in heuristic checks:
@@ -74,8 +76,8 @@ CUSTOM_AXIOM_RE = re.compile(
     r"^\s*(?:@\[(?:[^\[\]\n]|\[[^\[\]\n]*\])*\]\s*)*(?:(?:public|private|protected|noncomputable|scoped|local)\s+)*axiom\b",
     re.M,
 )
-SET_OPTION_RE = re.compile(r"^\s*set_option\s+(maxHeartbeats|maxRecDepth)\b")
-HEARTBEAT_VALUE_RE = re.compile(r"^\s*set_option\s+maxHeartbeats\s+(\d+)\b")
+SET_OPTION_RE = re.compile(r"\bset_option\s+(maxHeartbeats|maxRecDepth)\b(?:\s+\S+)?")
+HEARTBEAT_VALUE_RE = re.compile(r"\bset_option\s+maxHeartbeats\b\s*([^\s;,)]+)?")
 DEFAULT_MAX_HEARTBEATS = 200000
 HEARTBEAT_ALLOWLIST = ROOT / "scripts" / "heartbeat_allowlist.txt"
 # cslib pads some keys with spaces.
@@ -389,10 +391,20 @@ def load_heartbeat_allowlist(path: pathlib.Path = HEARTBEAT_ALLOWLIST) -> dict[s
     return caps
 
 
-def heartbeat_budgets(code_lines: list[str]) -> list[tuple[int, int]]:
-    """The `(line, value)` of every `set_option maxHeartbeats` in masked code lines."""
-    return [(idx + 1, int(m.group(1))) for idx, line in enumerate(code_lines)
-            if (m := HEARTBEAT_VALUE_RE.match(line))]
+def heartbeat_budgets(code_lines: list[str]) -> list[tuple[int, int | None]]:
+    """Find inline/multiline budgets in masked code; None denotes an unparsed value."""
+    code = "\n".join(code_lines)
+    budgets: list[tuple[int, int | None]] = []
+    for match in HEARTBEAT_VALUE_RE.finditer(code):
+        token = (match.group(1) or "").replace("_", "")
+        try:
+            value = int(token, 16 if token.lower().startswith("0x") else 10)
+            if value < 0:
+                value = None
+        except ValueError:
+            value = None
+        budgets.append((code.count("\n", 0, match.start()) + 1, value))
+    return budgets
 
 
 def check_heartbeat_allowlist_stale(caps: dict[str, int], root: pathlib.Path = ROOT) -> list[str]:
@@ -404,11 +416,15 @@ def check_heartbeat_allowlist_stale(caps: dict[str, int], root: pathlib.Path = R
             errors.append(f"scripts/heartbeat_allowlist.txt: `{rel}` does not exist; remove it")
             continue
         code, _ = masks(path.read_text(encoding="utf-8"))
-        largest = max((v for _, v in heartbeat_budgets(code.split("\n"))), default=0)
+        values = [v for _, v in heartbeat_budgets(code.split("\n")) if v is not None]
+        # Lean's zero means unlimited, above every finite cap.
+        if 0 in values:
+            continue
+        largest = max(values, default=0)
         if largest <= DEFAULT_MAX_HEARTBEATS:
             errors.append(f"scripts/heartbeat_allowlist.txt: `{rel}` has no budget above "
                           f"{DEFAULT_MAX_HEARTBEATS}; remove its entry")
-        elif cap > largest:
+        elif cap == 0 or cap > largest:
             errors.append(f"scripts/heartbeat_allowlist.txt: `{rel}` cap {cap} exceeds its "
                           f"largest budget {largest}; lower the cap to {largest}")
     return errors
@@ -445,17 +461,21 @@ def check_file(
         line_no = syntax.count("\n", 0, m.start()) + 1
         errors.append(f"{rel}:{line_no}: forbidden custom `axiom` declaration")
 
-    for idx, c_line in enumerate(code_lines):
-        m_opt = SET_OPTION_RE.match(c_line)
-        if m_opt and not has_nearby_comment(raw_lines, code_lines, idx):
+    for match in SET_OPTION_RE.finditer(code):
+        idx = code.count("\n", 0, match.start())
+        value_idx = code.count("\n", 0, match.end())
+        if not any(has_nearby_comment(raw_lines, code_lines, line)
+                   for line in range(idx, value_idx + 1)):
             errors.append(
-                f"{rel}:{idx + 1}: `set_option {m_opt.group(1)}` requires a justifying comment"
+                f"{rel}:{idx + 1}: `set_option {match.group(1)}` requires a justifying comment"
             )
 
     if heartbeat_caps is not None:
         cap = heartbeat_caps.get(rel.as_posix(), DEFAULT_MAX_HEARTBEATS)
         for line_no, value in heartbeat_budgets(code_lines):
-            if value > cap:
+            if value is None:
+                errors.append(f"{rel}:{line_no}: cannot parse `set_option maxHeartbeats` budget")
+            elif cap != 0 and (value == 0 or value > cap):
                 errors.append(
                     f"{rel}:{line_no}: `set_option maxHeartbeats {value}` exceeds "
                     + (f"its allowlisted cap {cap}" if cap > DEFAULT_MAX_HEARTBEATS else

@@ -333,7 +333,7 @@ the pin past it and remove the superseded local copy together. Record unresolved
 
 - No `sorry` on `main`, no custom `axiom`, no `native_decide`.
 - `set_option maxHeartbeats` / `maxRecDepth` overrides need a justifying comment. A
-  `maxHeartbeats` above the 200000 default also needs a reviewed entry in
+  `maxHeartbeats` above the 200000 default, or zero (unlimited), also needs a reviewed entry in
   `scripts/heartbeat_allowlist.txt`, which `scripts/check_hygiene.py` enforces and keeps
   shrinking; prefer reducing the proof's cost.
 - Never put `[simp]` on machine step functions or transition tables (goals explode).
