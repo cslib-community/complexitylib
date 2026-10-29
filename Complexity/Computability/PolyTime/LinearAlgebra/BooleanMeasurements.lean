@@ -126,7 +126,7 @@ theorem evalBoolRow_polyTime :
     (f := fun p j => if p.2.getD j false then p.1.getD j 0 else (0 : ℤ))
     (ComputableInPolyTime.range.comp ((ComputableInPolyTime.length_list encIntBin).comp hr))
     (hb.ite hv (ComputableInPolyTime.const 0))
-  exact ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.intBin_sum.comp hm.tidy)
+  exact (show ComputableInPolyTime List.sum (encList encIntBin) encIntBin by fun_prop).comp hm
 
 /-- Evaluate a runtime matrix on a runtime Boolean word with polynomial native costs. -/
 theorem evalBoolMatrix_polyTime :

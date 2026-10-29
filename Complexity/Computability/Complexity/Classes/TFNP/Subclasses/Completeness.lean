@@ -9,8 +9,9 @@ module
 
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilation
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 
 /-!
@@ -161,9 +162,15 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
       ∀ a u, u.length = n a → binaryValue (evalCircuitOutputs (code a) u) = C (a, u) := by
   obtain ⟨c, d, hbound⟩ := hC.polyBounded_length.exists_le
   let m (a : α) := c * (2 * (enc a).length + n a + 2) ^ d
-  have hm : ComputableInPolyTime m enc encUnary := by
-    unfold m
-    polytime
+  have hm : ComputableInPolyTime m enc encUnary :=
+    ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const c)
+      ((ComputableInPolyTime.unary_pow d).comp
+        (ComputableInPolyTime.unary_add'
+          (ComputableInPolyTime.unary_add'
+            (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+              (ComputableInPolyTime.encoding_length enc))
+            hn)
+          (ComputableInPolyTime.const 2)))
   have hword : ComputableInPolyTime
       (fun p : α × List Bool => binaryWord (m p.1) (C p)) (encPair enc encBits) encBits := by
     have hbits := (ComputableInPolyTime.of_eq (f := Nat.bits)

@@ -62,7 +62,7 @@ theorem computableInO_shortDesc :
       fun x => x.length + 1 := by
   have hu : ComputableInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
     ComputableInO.of_linear (.of_unframe fun _ => rfl)
-  have ha := ComputableTidilyInDegree.unary_succ.inO_one.computableInO.comp
+  have ha := ComputableInDegree.unary_succ.inO_one.comp
     (ComputableInO.lengthUnary.comp hu)
   have hb := ComputableInO.lengthUnary.comp
     (ComputableInO.lengthNat.of_enc_eq (encC := encBits)

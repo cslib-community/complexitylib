@@ -9,7 +9,6 @@ module
 
 public import Complexity.Crypto.Computational.DiffieHellman
 import Complexity.Probability.PMF.Uniform
-import Complexity.Tactic.PolyTime
 
 /-!
 # Fixed-first-coordinate DDH rerandomization and Multi-DDH

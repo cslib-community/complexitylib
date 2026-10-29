@@ -15,6 +15,7 @@ public import Complexity.Computability.Complexity.Classes.Space.Closure
 public import Complexity.Computability.Complexity.Classes.Space.Savitch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -145,28 +146,19 @@ theorem PSPACE_subset_EXP : PSPACE enc ⊆ EXP enc := by
       ((MultiTapeNTM.computableInPolyTime_viewCode_initView hwidth
         (.of_eq fun _ => rfl)).prod
         (MultiTapeNTM.computableInPolyTime_acceptCode hwidth))))
-  obtain ⟨te, se, hte, -, he⟩ := hedge
-  obtain ⟨ti, si, hti, -, hi⟩ := hin
-  have hedgeO : ComputableInO _ _ encBool
-      (fun q => te (encE q).length) (fun q => se (encE q).length) :=
-    ⟨1, he.mono (fun _ => by dsimp only; omega) fun _ => by dsimp only; omega,
-      fun _ => by simp⟩
-  have hinO : ComputableInO _ enc (Cslib.Reachability.encArgs (encFinEnum Unit))
-      (fun a => ti (enc a).length) (fun a => ti (enc a).length + si (enc a).length) :=
-    ⟨1, hi.mono (fun _ => by dsimp only; omega) fun _ => by dsimp only; omega, fun a => by
-      have := hi.length_le a
-      dsimp only
-      omega⟩
+  -- only the time bounds feed `EXP`, so the coarser charged space (time plus space) is harmless
+  obtain ⟨Te, _, hTe, -, hedgeO⟩ := hedge.exists_computableInO
+  obtain ⟨Ti, _, hTi, -, hinO⟩ := hin.exists_computableInO
   have h := Cslib.Reachability.computableInO_savitch (edge := fun _ => ntm.codeEdge)
     (par := fun _ => ()) hedgeO hinO
     (fun _ => MultiTapeNTM.length_viewCode (Nat.le_add_right _ _)) fun _ => List.length_replicate ..
   -- polynomial bounds on the width, the inputs and the edge test
   obtain ⟨cW, dW, hW⟩ := hwidth.polyBounded_length.exists_le
-  obtain ⟨cT, dT, hT⟩ := Cslib.polynomiallyBounded_iff_le.mp hti
-  obtain ⟨cE, dE, hE⟩ := Cslib.polynomiallyBounded_iff_le.mp hte
+  obtain ⟨cT, dT, hT⟩ := hTi.exists_le
+  obtain ⟨cE, dE, hE⟩ := hTe.exists_le
   set L := (encFinEnum Unit ()).length
   have hedgeMax (w : ℕ) :
-      Cslib.Reachability.edgeMax (fun q => te (encE q).length) () w ≤
+      Cslib.Reachability.edgeMax Te () w ≤
         cE * (2 * L + 3 * w + 3) ^ dE :=
     listMax_le fun u hu => listMax_le fun v hv => by
       refine (hE _).trans (Nat.mul_le_mul_left cE (Nat.pow_le_pow_left ?_ dE))
@@ -188,7 +180,7 @@ theorem PSPACE_subset_EXP : PSPACE enc ⊆ EXP enc := by
         simp only [B]
         omega
       gcongr
-      · exact hT (enc a).length
+      · exact hT a
       · exact (hedgeMax _).trans (Nat.mul_le_mul_left cE (Nat.pow_le_pow_left (by omega) dE))
   have hA' : A = {a | ntm.savitchDecide c d (enc a) = true} := Set.ext fun a =>
     (hAn.recognizesInSpace a).2.trans

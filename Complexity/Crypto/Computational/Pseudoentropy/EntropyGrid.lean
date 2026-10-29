@@ -13,7 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Probabilistic.UniformNat
 import Mathlib.Algebra.Order.Floor.Ring
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
-import Complexity.Tactic.PolyTime
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # An expanding grid of entropy guesses
@@ -90,8 +90,13 @@ theorem isPolyTime_size {α : Type} {input : α ↪ List Bool} {sourceBits bound
     (hsource : ComputableInPolyTime sourceBits input encUnary)
     (hbound : ComputableInPolyTime bound input encUnary) :
     ComputableInPolyTime (fun a => size (sourceBits a) (bound a)) input encUnary := by
+  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
   unfold size
-  polytime
+  exact ComputableInPolyTime.unary_mul'
+    (ComputableInPolyTime.unary_add'
+      (ComputableInPolyTime.unary_mul' hdyadic hsource)
+      (ComputableInPolyTime.const 1))
+    hdyadic
 
 /-- The common slack unit is uniformly efficient. -/
 theorem isPolyTime_scale {α : Type} {input : α ↪ List Bool} {n sourceBits bound : α → ℕ}
@@ -100,7 +105,11 @@ theorem isPolyTime_scale {α : Type} {input : α ↪ List Bool} {n sourceBits bo
     (hbound : ComputableInPolyTime bound input encUnary) :
     ComputableInPolyTime (fun a => scale (n a) (sourceBits a) (bound a)) input encUnary := by
   unfold scale
-  polytime
+  exact ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+    (ExtractionSchedule.isPolyTime_slack hn hsource
+      (ComputableInPolyTime.unary_sub'
+        (ComputableInPolyTime.unary_dyadicSize.comp hbound)
+        (ComputableInPolyTime.const 1)))
 
 attribute [program_certificate] isPolyTime_size isPolyTime_scale
 
@@ -113,8 +122,13 @@ theorem isPolyTime_observationBits {α : Type} {input : α ↪ List Bool}
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime
       (fun a => observationBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
+  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
   unfold observationBits
-  polytime
+  exact ComputableInPolyTime.unary_mul' (isPolyTime_scale hn hsource hbound)
+    (ComputableInPolyTime.unary_sub'
+      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+        (ComputableInPolyTime.unary_div.comp (hindex.prod hdyadic)))
+      (ComputableInPolyTime.const 1))
 
 /-- The label digest length is uniformly efficient in the candidate index. -/
 theorem isPolyTime_labelBits {α : Type} {input : α ↪ List Bool}
@@ -125,8 +139,13 @@ theorem isPolyTime_labelBits {α : Type} {input : α ↪ List Bool}
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime
       (fun a => labelBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
+  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
   unfold labelBits
-  polytime
+  exact ComputableInPolyTime.unary_mul' (isPolyTime_scale hn hsource hbound)
+    (ComputableInPolyTime.unary_add'
+      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+        (ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic)))
+      (ComputableInPolyTime.const 7))
 
 /-- The retained-seed digest length is uniformly efficient in the candidate index. -/
 theorem isPolyTime_remainingBits {α : Type} {input : α ↪ List Bool}
@@ -137,16 +156,30 @@ theorem isPolyTime_remainingBits {α : Type} {input : α ↪ List Bool}
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime
       (fun a => remainingBits (n a) (sourceBits a) (bound a) (index a)) input encUnary := by
+  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
+  have hq := ComputableInPolyTime.unary_div.comp (hindex.prod hdyadic)
+  have hr := ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic)
   unfold remainingBits
-  polytime
+  exact ComputableInPolyTime.unary_mul' (isPolyTime_scale hn hsource hbound)
+    (ComputableInPolyTime.unary_sub'
+      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+        (ComputableInPolyTime.unary_sub'
+          (ComputableInPolyTime.unary_mul' hdyadic hsource)
+          (ComputableInPolyTime.unary_add'
+            (ComputableInPolyTime.unary_add' hq hr)
+            (ComputableInPolyTime.const 2))))
+      (ComputableInPolyTime.const 1))
 
 /-- The requested density is uniformly efficient in the candidate index. -/
 theorem isPolyTime_numerator {α : Type} {input : α ↪ List Bool} {bound index : α → ℕ}
     (hbound : ComputableInPolyTime bound input encUnary)
     (hindex : ComputableInPolyTime index input encUnary) :
     ComputableInPolyTime (fun a => numerator (bound a) (index a)) input encUnary := by
+  have hdyadic := ComputableInPolyTime.unary_dyadicSize.comp hbound
   unfold numerator
-  polytime
+  exact ComputableInPolyTime.unary_add'
+    (ComputableInPolyTime.unary_mod.comp (hindex.prod hdyadic))
+    (ComputableInPolyTime.const 4)
 
 attribute [program_certificate]
   isPolyTime_observationBits isPolyTime_labelBits isPolyTime_remainingBits isPolyTime_numerator

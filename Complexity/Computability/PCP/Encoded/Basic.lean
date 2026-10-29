@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.PCP.ConstraintGraph
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Foundations.Data.List.Equiv
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
 
 /-!
