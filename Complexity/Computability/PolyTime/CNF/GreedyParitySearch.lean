@@ -795,10 +795,11 @@ open Finset Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
 
 /-! ### Native `IndexFold` certificates and `ComputableInO` / `ComputableInPolySpace` bounds -/
 
-private def candRowOfState (s : ℕ × SelectBestAcc) : List Bool :=
+/-- Candidate test row decoded and materialized from an `IndexFold` state `(j, acc)`. -/
+@[expose] def candRowOfState (s : ℕ × SelectBestAcc) : List Bool :=
   materializeTestRow s.2.1.1 (decodeTestTuple s.2.1.1 s.2.1.2 s.1)
 
-private theorem computableInPolyTime_candRowOfState :
+theorem computableInPolyTime_candRowOfState :
     ComputableInPolyTime candRowOfState (encPair encNat encSelectBestAcc) encBits := by
   unfold candRowOfState encSelectBestAcc
   let encRest := encPair (encList encBits) (encOption (encPair encBits encNat))
@@ -810,10 +811,11 @@ private theorem computableInPolyTime_candRowOfState :
   have hP := (ComputableInPolyTime.snd encUnary encUnary).comp hmP
   exact computableInPolyTime_materializeTestRow' hm (computableInPolyTime_decodeTestTuple' hm hP hj)
 
-private def augCandidateRows (s : ℕ × SelectBestAcc) : List (List Bool) :=
+/-- Existing parity-test rows extended with the candidate row at `IndexFold` state `s`. -/
+@[expose] def augCandidateRows (s : ℕ × SelectBestAcc) : List (List Bool) :=
   s.2.2.1 ++ [candRowOfState s]
 
-private theorem computableInPolyTime_augCandidateRows :
+theorem computableInPolyTime_augCandidateRows :
     ComputableInPolyTime augCandidateRows (encPair encNat encSelectBestAcc) (encList encBits) := by
   unfold augCandidateRows
   have hcand := computableInPolyTime_candRowOfState
@@ -824,13 +826,14 @@ private theorem computableInPolyTime_augCandidateRows :
       (ComputableInPolyTime.snd encNat (encPair (encPair encUnary encUnary) encRest)))
   exact (ComputableInPolyTime.snoc encBits).comp (hrows.prod hcand)
 
-private def finishSelectBestStep (p : (ℕ × SelectBestAcc) × ℕ) : SelectBestAcc :=
+/-- Update `SelectBestAcc` after evaluating the candidate score `p.2` at `IndexFold` state `p.1`. -/
+@[expose] def finishSelectBestStep (p : (ℕ × SelectBestAcc) × ℕ) : SelectBestAcc :=
   let candRow := candRowOfState p.1
   let nextBest := p.1.2.2.2.elim (some (candRow, p.2)) fun best =>
     if decide (p.2 < best.2) then some (candRow, p.2) else some best
   (p.1.2.1, (p.1.2.2.1, nextBest))
 
-private theorem computableInPolyTime_finishSelectBestStep :
+theorem computableInPolyTime_finishSelectBestStep :
     ComputableInPolyTime finishSelectBestStep
       (encPair (encPair encNat encSelectBestAcc) encNat) encSelectBestAcc := by
   unfold finishSelectBestStep
@@ -981,13 +984,13 @@ noncomputable def greedyParityRowsCertificate {countSys : List (List Bool) → �
 
 /-! ### Live-state length bounds and `ComputableInO` / `ComputableInPolySpace` theorems -/
 
-private theorem exists_mono_poly {α : Type} {size u : α → ℕ} (hu : PolyBounded size u) :
+theorem exists_mono_poly {α : Type} {size u : α → ℕ} (hu : PolyBounded size u) :
     ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧ ∀ a, u a ≤ p (size a) := by
   obtain ⟨c, d, h⟩ := hu.exists_le
   exact ⟨fun n => c * (n + 1) ^ d, by fun_prop,
     fun _ _ hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hxy 1) d), h⟩
 
-private theorem exists_mono_poly_cert {α β : Type} {f : α → β}
+theorem exists_mono_poly_cert {α β : Type} {f : α → β}
     {ei : α ↪ List Bool} {eo : β ↪ List Bool} (hf : ComputableInPolyTime f ei eo) :
     ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧
       ∀ a, (NativeCertificate.ofPolyTime hf).time a ≤ p (ei a).length ∧

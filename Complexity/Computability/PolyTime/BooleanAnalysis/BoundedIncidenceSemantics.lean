@@ -444,20 +444,6 @@ private theorem sum_card_listScopeFamily_augScopes (n' : ℕ) (eqs' : List (List
   exact Finset.sum_congr rfl fun f _ =>
     congrArg Finset.card (listScopeFamily_map_equationVars n' eqs' f)
 
-private theorem le_foldl_max_of_mem {init x : ℕ} {l : List ℕ} (hx : x ∈ l) :
-    x ≤ l.foldl max init := by
-  have hinit : ∀ (m : ℕ) (ys : List ℕ), m ≤ ys.foldl max m := fun m ys => by
-    induction ys generalizing m with
-    | nil => exact le_rfl
-    | cons b bs ih => exact le_trans (Nat.le_max_left m b) (ih (max m b))
-  induction l generalizing init with
-  | nil => cases hx
-  | cons a as ih =>
-    simp only [List.foldl_cons]
-    rcases List.mem_cons.mp hx with rfl | hmem
-    · exact le_trans (Nat.le_max_right init x) (hinit (max init x) as)
-    · exact ih hmem
-
 private theorem varIncidence_listScopeFamily_augScopes_le (n' : ℕ) (eqs' : List (List (List ℕ)))
     (v : Fin n') :
     let augScopes := withNeutralScopesList (eqs'.map equationVars) n'

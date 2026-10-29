@@ -219,17 +219,21 @@ def branchNeutralScope (n' : ℕ) (eqs' : List (List (List ℕ))) :
     Fin eqs'.length ⊕ Fin n' → Finset (Fin n') :=
   withNeutralScope fun i => equationScope (HeavyBranchFold.toFinsetEquation n' eqs'[i])
 
-private theorem foldl_max_le_iff {l : List ℕ} {init B : ℕ} :
+theorem foldl_max_le_iff {l : List ℕ} {init B : ℕ} :
     l.foldl max init ≤ B ↔ init ≤ B ∧ ∀ x ∈ l, x ≤ B := by
   induction l generalizing init with
   | nil => simp only [List.foldl_nil, List.not_mem_nil, IsEmpty.forall_iff, implies_true, and_true]
   | cons a as ih =>
     simp only [List.foldl_cons, ih, Nat.max_le, List.mem_cons, forall_eq_or_imp, and_assoc]
 
-private theorem le_foldl_max_init (init : ℕ) (l : List ℕ) : init ≤ l.foldl max init :=
+theorem foldl_max_le {l : List ℕ} {init B : ℕ} (hinit : init ≤ B) (hl : ∀ x ∈ l, x ≤ B) :
+    l.foldl max init ≤ B :=
+  foldl_max_le_iff.mpr ⟨hinit, hl⟩
+
+theorem le_foldl_max_init (init : ℕ) (l : List ℕ) : init ≤ l.foldl max init :=
   (foldl_max_le_iff.mp le_rfl).1
 
-private theorem le_foldl_max_of_mem {init : ℕ} {l : List ℕ} {x : ℕ} (hx : x ∈ l) :
+theorem le_foldl_max_of_mem {init : ℕ} {l : List ℕ} {x : ℕ} (hx : x ∈ l) :
     x ≤ l.foldl max init := (foldl_max_le_iff.mp le_rfl).2 x hx
 
 theorem checkVarsLt_eq_true_iff {n : ℕ} {sys : List (List (List ℕ))} :
