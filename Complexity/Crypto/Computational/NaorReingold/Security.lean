@@ -475,7 +475,6 @@ noncomputable def naorReingoldToDDHDistinguisher (inLen : ℕ → ℕ)
       (adversary n (F.encDesc input.1))).run []
   else pure false
 
-@[fun_prop]
 private theorem isPPTOn_sampleNaorReingoldPair (F : PrimeOrderGroupFamily)
     {α : Type} {input : α ↪ List Bool}
     {param : α → ℕ} {desc : α → F.Desc} {u v w : α → List Bool}
@@ -501,6 +500,8 @@ private theorem isPPTOn_sampleNaorReingoldPair (F : PrimeOrderGroupFamily)
                 (fun p : (α × ℕ) × ℕ => p.1.2)
                 (encPair (encPair input encNat) encNat) encNat).prod
               (by fun_prop))))))
+
+attribute [local fun_prop] isPPTOn_sampleNaorReingoldPair
 
 private theorem isPPTOn_naorReingoldFrontierOracle (F : PrimeOrderGroupFamily)
     {α : Type} {input : α ↪ List Bool}
