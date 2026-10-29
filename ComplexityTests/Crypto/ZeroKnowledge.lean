@@ -59,8 +59,7 @@ noncomputable def emptyZeroKnowledgeProof : ZeroKnowledgeProof encBits (∅ : Se
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
       (prepare := fun p : ℕ × List Bool × List Bool × List Bool => (p.1, p.2.1, p.2.2.2))
       (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-      (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-        fun_prop))
+      (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
       (fun _ _ => le_rfl) (fun _ _ => le_rfl)
     exact hrun.map (by fun_prop)
   complete _ _ _ hw := Bool.noConfusion hw
@@ -94,8 +93,7 @@ noncomputable def univZeroKnowledgeProof :
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
       (prepare := fun p : ℕ × List Bool × List Bool × List Bool => (p.1, p.2.1, p.2.2.2))
       (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-      (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-        fun_prop))
+      (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
       (fun _ _ => le_rfl) (fun _ _ => le_rfl)
     exact hrun.map (by fun_prop)
   complete _ _ _ _ := by simp [acceptProb, Prover.run]
@@ -108,8 +106,7 @@ noncomputable def univZeroKnowledgeProof :
         (input := encPair encUnary (encPair encBits encBits))
         (prepare := fun p : ℕ × List Bool × List Bool => p)
         (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-        (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-          fun_prop))
+        (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
         (fun _ _ => le_rfl) (fun _ _ => le_rfl)
       exact hrun.map (by fun_prop)
     · convert ComputationallyIndistinguishable.refl _ using 2 with n
@@ -129,8 +126,7 @@ theorem univZeroKnowledgeProof_auxiliaryInputZeroKnowledge :
       (input := encPair encUnary (encPair encBits encBits))
       (prepare := fun p : ℕ × List Bool × List Bool => p)
       (reply1 := fun _ => []) (reply2 := fun _ => []) (bound := fun _ => 0)
-      (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-        fun_prop))
+      (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
       (fun _ _ => le_rfl) (fun _ _ => le_rfl)
     exact hrun.map (by fun_prop)
   · convert negligible_zero using 2 with n
@@ -176,9 +172,11 @@ example (n : ℕ) (P : Prover Unit) :
     unsatFormula_not_mem_ThreeSAT P
 
 -- Every language with a zero-knowledge interactive proof system belongs to `IP`.
-example {α : Type} {enc : α ↪ List Bool} {A : Set α} (zk : ZeroKnowledgeProof enc A) :
-    A ∈ IP enc :=
-  zk.mem_IP
+example : (∅ : Set (List Bool)) ∈ IP encBits :=
+  emptyZeroKnowledgeProof.mem_IP
+
+example : (Set.univ : Set (List Bool)) ∈ IP encBits :=
+  univZeroKnowledgeProof.mem_IP
 
 -- `ThreeSAT` has a computational zero-knowledge proof system from any one-way function.
 example {f : List Bool → List Bool} (hf : OneWay f) :

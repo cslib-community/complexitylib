@@ -22,38 +22,28 @@ open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Cslib.Logic.PL.ClauseSet.S
 open Cslib.Logic.PL.CNF (normalizeDeclaredLeaf)
 open Cslib.Complexity.CountingSparsify Turing.MultiTapeTM
 
-example : countingDepthCoeff 1 2 = 0 := by decide
-
-example : countingBChoiceCoeff 1 = 0 := by decide
-
-example : countingDepthCoeff 2 2 = 4 := by decide
-
-example : countingBChoiceCoeff 2 = 4 := by decide
-
-example : countingDepthCoeff 3 2 = 28 := by decide
-
-example : countingBChoiceCoeff 3 = 16 := by decide
-
-/-- Unconditional `CountingTreeBound` witness for `K = 1, B = 1, M = 2`. -/
-example : CountingTreeBound 2 1 1 (countingDepthCoeff 1 2) (by decide) (by decide) :=
-  countingTreeBound_of_budget (by decide) (by decide) (by decide) (by decide) (by decide)
-
-/-- Unconditional `CountingTreeBound` witness for 2-CNF (`K = 2, B = 1, M = 64`), verified by
-`decide` on the integer parameter budget `4 * Nat.clog 2 (4 * 4 * 64) = 40 ≤ 64`. -/
-example : CountingTreeBound 64 2 1 (countingDepthCoeff 2 64) (by decide) (by decide) :=
-  countingTreeBound_of_budget (by decide) (by decide) (by decide) (by decide) (by decide)
-
-/-- Unconditional `CountingTreeBound` witness for 3-CNF (`K = 3, B = 1, M = 512`), verified by
-`decide` on the integer parameter budget `16 * Nat.clog 2 (4 * 6148 * 512) = 384 ≤ 512`. -/
-example : CountingTreeBound 512 3 1 (countingDepthCoeff 3 512) (by decide) (by decide) :=
-  countingTreeBound_of_budget (by decide) (by decide) (by decide) (by decide) (by decide)
-
-/-- Unconditional `CountingTreeBound` witness for 3-CNF at `countingThresholdBase 3 1`. -/
+/-- Concrete `countingDepthCoeff` and `countingBChoiceCoeff` values and unconditional
+`CountingTreeBound` witnesses across `K = 1, 2, 3`. -/
 example :
-    CountingTreeBound (countingThresholdBase 3 1) 3 1
+    countingDepthCoeff 1 2 = 0 ∧
+    countingBChoiceCoeff 1 = 0 ∧
+    countingDepthCoeff 2 2 = 4 ∧
+    countingBChoiceCoeff 2 = 4 ∧
+    countingDepthCoeff 3 2 = 28 ∧
+    countingBChoiceCoeff 3 = 16 ∧
+    Nonempty (CountingTreeBound 2 1 1 (countingDepthCoeff 1 2) (by decide) (by decide)) ∧
+    -- The 2-CNF budget is 4 * Nat.clog 2 (4 * 4 * 64) = 40 ≤ 64.
+    Nonempty (CountingTreeBound 64 2 1 (countingDepthCoeff 2 64) (by decide) (by decide)) ∧
+    -- The 3-CNF budget is 16 * Nat.clog 2 (4 * 6148 * 512) = 384 ≤ 512.
+    Nonempty (CountingTreeBound 512 3 1 (countingDepthCoeff 3 512) (by decide) (by decide)) ∧
+    Nonempty (CountingTreeBound (countingThresholdBase 3 1) 3 1
       (countingDepthCoeff 3 (countingThresholdBase 3 1))
-      ((by decide : 1 ≤ 2).trans (two_le_countingThresholdBase 3 1)) (by decide) :=
-  countingTreeBound_countingThresholdBase (by decide) (by decide)
+      ((by decide : 1 ≤ 2).trans (two_le_countingThresholdBase 3 1)) (by decide)) :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide,
+    ⟨countingTreeBound_of_budget (by decide) (by decide) (by decide) (by decide) (by decide)⟩,
+    ⟨countingTreeBound_of_budget (by decide) (by decide) (by decide) (by decide) (by decide)⟩,
+    ⟨countingTreeBound_of_budget (by decide) (by decide) (by decide) (by decide) (by decide)⟩,
+    ⟨countingTreeBound_countingThresholdBase (by decide) (by decide)⟩⟩
 
 /-- Model-count correctness of `CountingSparsify.search` on 3-CNF at `(M, K, k, B) = (512, 3, 3, 1)`
 without an external `CountingTreeBound` hypothesis. -/
@@ -75,54 +65,28 @@ def occurringLeafCounter : ℕ × CNF ℕ → ℕ :=
 def declaredLeafCounter : ℕ × CNF ℕ → ℕ :=
   fun x => x.2.modelCountOn (Finset.range x.1)
 
-/-- `N = 0` with the empty formula `[]` returns `1`. -/
+/-- Acceptance controls for `searchDeclaredWith` and `normalizeDeclaredLeaf` across `N = 0, 1, 3`,
+unit clauses, unnormalized vs normalized declared counts, empty/tautological clauses, and
+out-of-range / excessive-width rejections. -/
 example :
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
-      (normalizeDeclaredLeaf id declaredLeafCounter) 0 [] = 1 := by
-  decide
-
-/-- `N = 3` with the empty formula `[]` returns `2 ^ 3 = 8`. -/
-example :
+      (normalizeDeclaredLeaf id declaredLeafCounter) 0 [] = 1 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
-      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [] = 8 := by
-  decide
-
-/-- The unit formula `[[(0, true)]]` gives `1` at `N = 1` and `4` at `N = 3`. -/
-example :
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [] = 8 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
       (normalizeDeclaredLeaf id declaredLeafCounter) 1 [[(0, true)]] = 1 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
-      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true)]] = 4 := by
-  decide
-
-/-- Distinguishing occurring-variable leaf counts from declared-`N` leaf counts on `[[(0, true)]]`
-at `N = 3`: feeding the unnormalized declared-`N` count `4` directly into `searchDeclaredWith`
-hits the internal cap `2 ^ 1 = 2` and scales by `2 ^ (3 - 1) = 4` to yield `8`, whereas
-normalizing via `normalizeDeclaredLeaf` yields `1` internally and the exact declared count `4`. -/
-example :
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true)]] = 4 ∧
+    -- Without normalization the declared count 4 hits the internal cap 2^1 = 2,
+    -- then scaling by 2^(3 - 1) = 4 gives 8. Normalization gives internal count 1
+    -- and the exact declared count 4, including the two unused variables.
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
       declaredLeafCounter 3 [[(0, true)]] = 8 ∧
+    CNF.modelCountOn [[(0, true)]] (Finset.range 3) = 4 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
-      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true)]] = 4 ∧
-    CNF.modelCountOn [[(0, true)]] (Finset.range 3) = 4 := by
-  decide
-
-/-- Empty clauses return `0` even when `N = 3`. -/
-example :
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[]] = 0 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
-      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[]] = 0 := by
-  decide
-
-/-- A tautological clause `[[(0, true), (0, false)]]` disappearing during normalization retains its
-declared-variable contribution at `N = 3` and returns `8`. -/
-example :
-    searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
-      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true), (0, false)]] = 8 := by
-  decide
-
-/-- A variable label outside `Finset.range 3` (`[[(3, true)]]`) and an excessive-width clause
-(`k = 2` on width `3`) take the guard's zero branch. -/
-example :
+      (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true), (0, false)]] = 8 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
       occurringLeafCounter 3 [[(3, true)]] = 0 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2

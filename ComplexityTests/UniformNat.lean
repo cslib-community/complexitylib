@@ -49,14 +49,14 @@ example : IsPPTOn (encPair encUnary encUnary) encBool (fun p : ℕ × ℕ => do
     return bit && decide (index < p.2)) := by
   ppt
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × List Bool => BitString.boundedBinaryValue (dyadicSize (p.1 + 1)) p.2)
     (encPair encUnary encBits) encUnary := by fun_prop
 
 -- A raw word's unbounded numeric value has no polynomial unary-output certificate.
 example : True := by
   fail_if_success
-    have : ComputableTidilyInPolyTime BitString.binaryValue encBits encUnary := by polytime
+    have : ComputableInPolyTime BitString.binaryValue encBits encUnary := by polytime
   trivial
 
 -- Residues of a uniform value below a multiple of the modulus are exactly uniform.
