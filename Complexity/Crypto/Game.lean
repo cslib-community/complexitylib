@@ -46,6 +46,9 @@ directly, and computational definitions over infinite sample spaces can reuse th
   `Cslib.Crypto.Game.advantage_bind_le_of_support`,
   `Cslib.Crypto.Game.advantage_bind_comm`: `ℝ≥0` mixture, pointwise error-averaging, support,
   and `PMF.bind_comm` advantage lemmas, extracted from the reviewed support in PR #1169.
+* `Cslib.Crypto.Game.succProbability_uniform_bool_xor`,
+  `Cslib.Crypto.Game.advantage_le_two_mul_uniform_bool_xor`: hidden-bit XOR mixture success
+  probability and factor-of-two game-hop bound.
 
 ## References
 
@@ -403,6 +406,62 @@ theorem advantage_bind_comm {α β : Type*} (p : PMF α) (q : PMF β) (f g : α 
     Game.advantage (q.bind fun b => p.bind fun a => f a b)
       (q.bind fun b => p.bind fun a => g a b) := by
   rw [PMF.bind_comm p q f, PMF.bind_comm p q g]
+
+open Probability in
+/-- For any Boolean-indexed family of games `g : Bool → Game`, sampling a uniform hidden bit
+`bit ← PMF.uniformOfFintype Bool` and outputting `guess ^^ bit` for `guess ← g bit` succeeds with
+probability `(1 + succProbability (g false) - succProbability (g true)) / 2`. -/
+theorem succProbability_uniform_bool_xor (g : Bool → Game) :
+    (succProbability
+      ((PMF.uniformOfFintype Bool).bind fun bit => (g bit).map (fun guess => guess ^^ bit)) : ℝ) =
+      (1 + (succProbability (g false) : ℝ) - succProbability (g true)) / 2 := by
+  have h1 :
+      ((PMF.uniformOfFintype Bool).bind fun bit =>
+        (g bit).map (fun guess => guess ^^ bit)) true =
+      2⁻¹ * g false true + 2⁻¹ * g true false := by
+    rw [PMF.bind_apply, tsum_bool]
+    simp [PMF.uniformOfFintype_apply, PMF.map_apply]
+  have hfalse : (g true false).toReal = 1 - (g true true).toReal := by
+    have hsum := succProbability_add_failProbability (g true)
+    have hsumR := congrArg (fun x : ℝ≥0 => (x : ℝ)) hsum
+    simp only [NNReal.coe_add, NNReal.coe_one, succProbability, failProbability,
+      ENNReal.coe_toNNReal_eq_toReal] at hsumR
+    linarith
+  rw [coe_succProbability, h1, ENNReal.toReal_add
+    (ENNReal.mul_ne_top (by simp) (PMF.apply_ne_top _ _))
+    (ENNReal.mul_ne_top (by simp) (PMF.apply_ne_top _ _)),
+    ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_inv, ENNReal.toReal_ofNat,
+    hfalse, coe_succProbability, coe_succProbability]
+  ring
+
+open Probability in
+/-- For any two Boolean-indexed game families `g₀, g₁ : Bool → Game`, the advantage
+`advantage (g₀ false) (g₀ true)` is bounded by twice the distinguishing advantage between their
+uniform hidden-bit XOR mixtures plus `advantage (g₁ false) (g₁ true)`. -/
+theorem advantage_le_two_mul_uniform_bool_xor (g₀ g₁ : Bool → Game) :
+    advantage (g₀ false) (g₀ true) ≤
+      2 * advantage
+        ((PMF.uniformOfFintype Bool).bind fun bit => (g₀ bit).map (fun guess => guess ^^ bit))
+        ((PMF.uniformOfFintype Bool).bind fun bit => (g₁ bit).map (fun guess => guess ^^ bit)) +
+      advantage (g₁ false) (g₁ true) := by
+  rw [← NNReal.coe_le_coe]
+  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_ofNat, coe_advantage,
+    succProbability_uniform_bool_xor]
+  have hle :
+      |((succProbability (g₀ false) : ℝ) - succProbability (g₀ true)) -
+        ((succProbability (g₁ false) : ℝ) - succProbability (g₁ true))| =
+      2 * |(1 + (succProbability (g₀ false) : ℝ) - succProbability (g₀ true)) / 2 -
+        (1 + (succProbability (g₁ false) : ℝ) - succProbability (g₁ true)) / 2| := by
+    rw [show (1 + (succProbability (g₀ false) : ℝ) - succProbability (g₀ true)) / 2 -
+        (1 + (succProbability (g₁ false) : ℝ) - succProbability (g₁ true)) / 2 =
+      (((succProbability (g₀ false) : ℝ) - succProbability (g₀ true)) -
+        ((succProbability (g₁ false) : ℝ) - succProbability (g₁ true))) / 2 by ring,
+      abs_div, Nat.abs_ofNat]
+    ring
+  have htri := abs_sub_abs_le_abs_sub
+    ((succProbability (g₀ false) : ℝ) - succProbability (g₀ true))
+    ((succProbability (g₁ false) : ℝ) - succProbability (g₁ true))
+  linarith
 
 end Game
 end Cslib.Crypto

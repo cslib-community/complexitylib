@@ -100,7 +100,7 @@ theorem univ_mem_P {enc : α ↪ List Bool} : (Set.univ : Set α) ∈ P enc :=
 /-- **`P` is closed under complement**: negate the answer of the decider. -/
 theorem compl_mem_P {enc : α ↪ List Bool} {A : Set α} (hA : A ∈ P enc) : Aᶜ ∈ P enc :=
   let ⟨f, hf, h⟩ := hA
-  ⟨fun a => !f a, .of_tidy (ComputableTidilyInPolyTime.bool_not.comp hf.tidy),
+  ⟨fun a => !f a, (ComputableInPolyTime.bool_not.comp hf),
     fun a => by simp [h a]⟩
 
 /-- `P` equals its preimage under complement. -/

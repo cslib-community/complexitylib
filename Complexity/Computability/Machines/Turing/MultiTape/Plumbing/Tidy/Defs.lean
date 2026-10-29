@@ -37,7 +37,8 @@ theorem computesTidily_iff_runFrom {input output : List Symbol} :
     tm.ComputesTidilyInTimeAndSpace input output t s ↔
       tm.runFrom (wordsCfg input (some tm.q₀) (fun _ => []) []) t =
           wordsCfg input none (fun _ => []) output ∧
-        tm.space (wordsCfg input (some tm.q₀) (fun _ => []) []) t ≤ s := by
+        (MultiTapeNTM.RunPath.ofDeterministic tm (wordsCfg input (some tm.q₀) (fun _ => []) [])
+          t).space ≤ s := by
   rw [computesTidily_iff, ← exists_runPath_iff_runFrom rfl]
 
 end Turing.MultiTapeTM

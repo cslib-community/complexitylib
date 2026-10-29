@@ -38,6 +38,13 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: "Source hygiene"
         run: python3 -B scripts/check_hygiene.py --check-simp
+      # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
+      # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
+      # pins. Their own workflows run only nightly or on guide changes; checking here makes a root
+      # cslib or Mathlib bump without matching lockfile updates fail at PR time. It reads only
+      # checked-in files: no Lean, network or `.lake`.
+      - name: "Documentation pins"
+        run: python3 -B scripts/check_docs.py --config-only
       # lean-action has no hook between installing the toolchain and building, so here it only
       # installs elan and fetches Mathlib's cache. The steps around it do the rest of what it did:
       # restore and save `.lake` under the same Actions cache key, then build, test and lint.
@@ -48,6 +55,9 @@ jobs:
           path: ./.lake
           key: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
           restore-keys: lake-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
+      # Restore the toolchain from the Actions cache, or install it with retries, so that
+      # lean-action does not download it (.github/actions/install-lean, #1426).
+      - uses: ./.github/actions/install-lean
       - uses: leanprover/lean-action@v1
         with:
           auto-config: "false"
@@ -68,12 +78,16 @@ jobs:
       # A merge-group build has already checked this exact commit before it lands on main.
       # Reuse its root outputs without granting merge groups access to the public-cache writer.
       # Missing, expired or mismatched handoffs leave the ordinary build below unchanged.
+      # Set the repository variable DISABLE_BUILD_HANDOFF=1 to disable this handoff without a commit.
       - name: Restore validated merge-group build outputs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
         continue-on-error: true
         timeout-minutes: 3
         env:
           GH_TOKEN: ${{ github.token }}
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py restore
       - name: "lake build"
         run: lake build --wfail --iofail @complexitylib @/mk_all @/checkInitImports @mathlib/lint-style
@@ -184,9 +198,13 @@ jobs:
       # to have completed successfully; an artifact from a failed/cancelled run is never reused.
       - name: Stage merge-group build outputs
         id: cache-handoff
-        if: github.event_name == 'merge_group'
+        if: >-
+          github.event_name == 'merge_group' &&
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
         continue-on-error: true
         timeout-minutes: 3
+        env:
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
         run: python3 -B scripts/cache_handoff.py pack --output "$RUNNER_TEMP/lean-handoff"
       - name: Upload merge-group build outputs
         if: github.event_name == 'merge_group' && steps.cache-handoff.outputs.artifact-name != ''

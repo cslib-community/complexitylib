@@ -32,8 +32,8 @@ Thus the proof uses certified word sums and powers, without assuming indexed-pro
 The two-sided acceptance/rejection-target generalization is proved in `WPP.TwoSided`.
 Oracle lowness is a separate result.
 
-The public polynomial-time interfaces use `Turing.MultiTapeTM.ComputableInPolyTime`, following
-the plain-statement convention of #456. Private machine-construction lemmas remain tidy.
+The public polynomial-time interfaces use `Turing.MultiTapeTM.ComputableInPolyTime`. Private
+machine-construction lemmas remain tidy.
 
 ## Main results
 

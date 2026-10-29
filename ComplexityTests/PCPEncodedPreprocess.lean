@@ -222,11 +222,14 @@ private theorem mem_arithmeticLabels (d : AffinePlaneFamilyLabel (ZMod 257) 257)
   rcases d with ⟨i, ⟨a, b⟩, c, d⟩ | ⟨i, ⟨a, b⟩, c, d⟩ <;>
     simp [arithmeticLabels, hf]
 
+local instance : FinEnum (ZMod 257) :=
+  FinEnum.ofEquiv (Fin 257) (ZMod.finEquiv 257).toEquiv.symm
+
 example : ComputableTidilyInPolyTime
     (Graph.preprocess false true arithmeticExpanderRotate arithmeticLabels)
     (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool))) :=
   (Graph.isPolyTime_preprocess false true arithmeticExpanderRotate arithmeticLabels
-    (.of_tidy (polytime_arithmeticExpanderRotate (encFinite _)))).tidy
+    (.of_tidy (polytime_arithmeticExpanderRotate (encFinEnum _)))).tidy
 
 noncomputable example (g : Graph Bool) (eval : Bool → Bool → Bool → Bool) :
     (g.toGraph eval).PreprocessExpanders (AffinePlaneFamilyLabel (ZMod 257) 257)

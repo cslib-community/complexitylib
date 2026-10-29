@@ -327,4 +327,18 @@ example : PartialMCSP.ilangoReduction bpisG2 ∈ PartialMCSP.MonotoneReadOnce �
     (PartialMCSP.mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem
       bpisG2).mp hmem⟩
 
+/-- Unary-to-binary threshold re-encoding is polynomial-time computable. -/
+example : ComputableInPolyTime id PartialMCSP.enc PartialMCSP.encBinary :=
+  PartialMCSP.computableInPolyTime_id_enc_encBinary
+
+/-- Under `ETH`, `PartialMCSP.MonotoneReadOnce` is not decidable in time $2^{o(m \log m)}$ under
+either unary or binary threshold encoding. -/
+example (h : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.enc
+      (fun I => I.arity * Nat.log 2 I.arity) ∧
+    ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.encBinary
+      (fun I => I.arity * Nat.log 2 I.arity) :=
+  ⟨h.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce,
+    h.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce_encBinary⟩
+
 end ComplexityTests.PartialMCSP

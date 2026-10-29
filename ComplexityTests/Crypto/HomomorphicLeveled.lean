@@ -212,6 +212,45 @@ example {arity : ℕ} (c : Circuit Boolean.signature arity 1) (hdepth : c.depth 
   simp [Scheme.FreshInputs, List.forall₂_map_right_iff, List.forall₂_same, Leveled.scheme,
     Leveled.encrypt, artifactTwo, Leveled.keyPair, keysTwo, tagged]
 
+-- Two-hop evaluation across budget 2 (step₁ = 1, step₂ = 1): hop 1 advances from key 0 ([false])
+-- to key 2 ([false]), and hop 2 advances from key 2 ([false]) to the final key 4 ([true]).
+example : ProbComp.eval (do
+    let mid ← Leveled.evaluateHop decryptionCircuits 0 0 1 artifactTwo.1
+      ⟨2, disjunction⟩ [[false, false, false], [false, true, false]]
+    Leveled.evaluateHop decryptionCircuits 0 1 1 artifactTwo.1
+      ⟨1, wiring⟩ [mid]) = PMF.pure [true, false, true] := by
+  have hcompileOr : compile 2 disjunction.code =
+      ([[.copy 0, .copy 1, .const false, .nand 0 0, .nand 1 1],
+        [.copy 0, .copy 1, .nand 3 4, .const false, .const false]], [2]) := rfl
+  have hcompileWire : compile 1 wiring.code = ([], [0]) := rfl
+  simp [Leveled.evaluateHop, Leveled.evaluateCircuit, artifactTwo, Leveled.keyPair, keysTwo,
+    hcompileOr, hcompileWire, padTo, identityLayer, Scheme.evaluateLayers,
+    Scheme.evaluateLayerStep, OracleComp.iterate, Scheme.evaluateLayer, Scheme.evaluateNode,
+    Scheme.refresh, Scheme.refreshNand, Scheme.encryptBits, linksTwo, tagged, evaluatedBit,
+    decryptionCircuits, eval_augmentedXor, eval_xorCircuit, decode, BitString.ofList]
+
+example (outer : Σ m, Circuit Boolean.signature m 1) (houter : outer.2.depth ≤ 1)
+    (midBits : List Bool) (mids : List (List Bool)) (hmidBits : midBits.length = outer.1)
+    (hmids : List.Forall₂
+      (fun bit mid =>
+        ∃ (c : Σ m, Circuit Boolean.signature m 1) (bits : List Bool) (inputs : List (List Bool)),
+          c.2.depth ≤ 1 ∧
+            bits.length = c.1 ∧
+            (Leveled.scheme decryptionCircuits (fun _ => 2)).FreshInputs 0
+              artifactTwo.1 bits inputs ∧
+            mid ∈ (ProbComp.eval
+              (Leveled.evaluateHop decryptionCircuits 0 0 1 artifactTwo.1 c inputs)).support ∧
+            c.2.eval Boolean.interpretation (BitString.ofList c.1 bits) 0 = bit)
+      midBits mids)
+    (output : List Bool)
+    (houtput : output ∈ (ProbComp.eval
+      (Leveled.evaluateHop decryptionCircuits 0 1 1 artifactTwo.1 outer mids)).support) :
+    output.length = 3 ∧ Leveled.decrypt decryptionCircuits 0 artifactTwo.2 output =
+      outer.2.eval Boolean.interpretation (BitString.ofList outer.1 midBits) 0 :=
+  Leveled.evaluateHop_twoHop_spec decryptionCircuits tagged_correct tagged_width
+    tagged_bootstrappable (fun _ => 2) 0 1 1 artifactTwo artifactTwo_supported rfl
+    outer houter midBits mids hmidBits hmids output houtput
+
 -- The concrete base scheme inhabits the whole scheme and fixed-width interfaces at any budget.
 example (budget : ℕ → ℕ) : (Leveled.scheme decryptionCircuits budget).Correct :=
   Leveled.correct decryptionCircuits tagged_correct tagged_width tagged_bootstrappable budget
@@ -252,6 +291,15 @@ example : IsPPTOn
   apply Leveled.isPPTOn_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
     evaluate_ppt
   all_goals fun_prop
+
+example : IsPPTOn
+    (encPair encUnary (encPair encUnary (encPair encUnary
+      (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))))) encBits
+    (fun p => Leveled.evaluateHop decryptionCircuits p.1 p.2.1 p.2.2.1
+      p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2) := by
+  apply Leveled.isPPTOn_evaluateHop encrypt_ppt decryptionCircuits evaluate_ppt
+    (.of_tidy circuits_poly)
+  all_goals exact .of_tidy (by fun_prop)
 
 -- A nonconstant budget family instantiates the actual Scheme fields with one uniform clock.
 example : IsPPTOn encUnary (encPair encBits encBits)

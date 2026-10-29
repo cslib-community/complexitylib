@@ -132,8 +132,8 @@ theorem majorityPolynomial_mem {α : Type} {enc : α ↪ List Bool} {g D : α �
   have htest : ComputableInPolyTime
       (fun x : α × List Bool => if r x.1 < ones x then (1 : ℕ) else 0)
       (encPair enc encBits) encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.ite_decide (ComputableTidilyInPolyTime.unary_lt' hR.tidy
-      hones.tidy) (.const 1) (.const 0))
+    (ComputableInPolyTime.ite_decide (ComputableInPolyTime.unary_lt' hR
+      hones) (.const 1) (.const 0))
   have hweight := GapP.mul_mem (GapP.mul_mem hg' hd')
     (SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime htest))
   have hsum := GapP.sum_bits_mem hweight
@@ -242,7 +242,7 @@ theorem amplify {α : Type} {enc : α ↪ List Bool} {A : Set α}
       (0 ≤ G a ∧ G a ≤ D) ∧
         (a ∈ A → (2 : ℤ) ^ q.eval (enc a).length * (D - G a) ≤ D) ∧
         (a ∉ A → (2 : ℤ) ^ q.eval (enc a).length * G a ≤ D) := by
-  refine ⟨majorityPolynomial_mem hg (GapP.two_pow_mem p) (.of_tidy (by fun_prop)), fun a => ?_⟩
+  refine ⟨majorityPolynomial_mem hg (GapP.two_pow_mem p) (by fun_prop), fun a => ?_⟩
   obtain ⟨hb, hy, hn⟩ := hA a
   have h := majorityPolynomial_bounds (e := q.eval (enc a).length) hb.1 hb.2
   have he : (12 * q * p).eval (enc a).length =

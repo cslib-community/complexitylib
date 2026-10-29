@@ -94,9 +94,6 @@ theorem variable_bounds : ∀ s l,
     20 ≤ (variablePosition s l).1 ∧ (variablePosition s l).1 ≤ 220 ∧
       20 ≤ (variablePosition s l).2 ∧ (variablePosition s l).2 ≤ 220 := by decide +kernel
 
-private instance (r : Route) : Decidable (IsOrthogonal r) :=
-  inferInstanceAs (Decidable (∀ e ∈ r.consecutivePairs, AxisAligned e.1 e.2))
-
 /-- Every access is orthogonal, with its prescribed boundary and inner endpoints. -/
 theorem access_endpoints : ∀ s l, IsOrthogonal (accessRoute s l) ∧
     (accessRoute s l).head? = some (boundaryPort s l) ∧

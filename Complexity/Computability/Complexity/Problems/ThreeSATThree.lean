@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Logics.Propositional.CNF.ThreeOccurrence
+import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -31,7 +32,9 @@ Original natural labels stay binary throughout; only syntactic positions use una
 
 The construction is adapted from `lean-trominoes` revision
 `6d5b36c15cec6cb18d30137b7f1c7fb92ea24332`,
-`SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`.
+[PeriodicThreeSATThree.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThree.lean),
+[PeriodicThreeSATThreeCorrectness.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeCorrectness.lean), and
+[PeriodicThreeSATThreeExactSize.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeExactSize.lean).
 This endpoint imposes no planarity condition.
 
 ## Main definitions

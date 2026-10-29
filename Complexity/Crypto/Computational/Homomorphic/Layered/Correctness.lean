@@ -30,10 +30,13 @@ the endpoint distinction in a depth-budgeted scheme; security remains a separate
   the layer invariant along a valid chain.
 * `Cslib.Crypto.Homomorphic.Scheme.encryptedWires_evaluateLayers_of_generatedChain`: correctness
   for every supported key-chain sample and pointwise fresh input encryptions.
+* `Cslib.Crypto.Homomorphic.Scheme.encryptedWires_evaluateLayers_drop`: evaluating a layer
+  schedule starting at an arbitrary offset in a generated key chain.
 
 ## References
 
-* [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2][Gentry2009]
+* [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2,
+  pp. 171--172][Gentry2009]
 -/
 
 @[expose] public section
@@ -52,7 +55,7 @@ theorem encryptedWires_evaluateLayers (hE : E.Correct)
     (hwidth : E.FixedWidth secretWidth ciphertextWidth) (hD : Bootstrappable D)
     (n : ℕ) (keys : List (List Bool × List Bool))
     (links : List (List (List Bool))) (layers : List (List Layered.Node))
-    (hcount : keys.length = layers.length + 1)
+    (hcount : layers.length + 1 ≤ keys.length)
     (hkeys : ∀ key ∈ keys, key ∈ (ProbComp.eval (E.keyGen n)).support)
     (hlinks : E.ValidLinks n keys links) (bits : List Bool) (inputs : List (List Bool))
     (hinputs : E.EncryptedWires ciphertextWidth n (keys.getD 0 ([], [])).2 bits inputs)
@@ -65,8 +68,9 @@ theorem encryptedWires_evaluateLayers (hE : E.Correct)
       keys.getD i ([], []) ∈ (ProbComp.eval (E.keyGen n)).support := by
     have hi' : i < keys.length := by omega
     exact hkeys _ (by rw [List.getD_eq_getElem _ _ hi']; exact List.getElem_mem _)
-  have hlinkCount : links.length = layers.length := by
-    simpa only [hcount, Nat.add_sub_cancel] using hlinks.length_eq
+  have hlinkCount : layers.length ≤ links.length := by
+    have := hlinks.length_eq
+    omega
   have hpk (i : ℕ) :
       (keys.tail.map Prod.fst).getD i [] = (keys.getD (i + 1) ([], [])).1 := by
     change (keys.tail.map Prod.fst).getD i (Prod.fst (([], []) : List Bool × List Bool)) = _
@@ -114,7 +118,41 @@ theorem encryptedWires_evaluateLayers_of_generatedChain (hE : E.Correct)
   have hzero : 0 < keys.length := by omega
   have hfirst := hkeys (keys.getD 0 ([], []))
     (by rw [List.getD_eq_getElem _ _ hzero]; exact List.getElem_mem _)
-  exact encryptedWires_evaluateLayers D hE hwidth hD n keys links layers hcount hkeys hlinks
+  exact encryptedWires_evaluateLayers D hE hwidth hD n keys links layers hcount.ge hkeys hlinks
     bits inputs (hinputs.encryptedWires hE hwidth hfirst) hvalid outputs houtputs
+
+/-- Evaluate a layer schedule starting at index `start` in a generated key chain of total depth
+`total`, advancing the wire invariant from key `start` to key `start + layers.length`. -/
+theorem encryptedWires_evaluateLayers_drop (hE : E.Correct)
+    (hwidth : E.FixedWidth secretWidth ciphertextWidth) (hD : Bootstrappable D)
+    (n total start : ℕ) (keys : List (List Bool × List Bool))
+    (links : List (List (List Bool))) (layers : List (List Layered.Node))
+    (htotal : start + layers.length ≤ total)
+    (hchain : (keys, links) ∈ (ProbComp.eval (E.generateKeyChain n total)).support)
+    (bits : List Bool) (inputs : List (List Bool))
+    (hinputs : E.EncryptedWires ciphertextWidth n (keys.getD start ([], [])).2 bits inputs)
+    (hvalid : Layered.WellFormed bits.length layers) (outputs : List (List Bool))
+    (houtputs : outputs ∈ (ProbComp.eval
+      (evaluateLayers D n ((keys.map Prod.fst).tail.drop start)
+        (links.drop start) inputs layers)).support) :
+    E.EncryptedWires ciphertextWidth n (keys.getD (start + layers.length) ([], [])).2
+      (Layered.eval bits layers) outputs := by
+  obtain ⟨hcount, hkeys, hlinks⟩ :=
+    (E.mem_support_generateKeyChain_iff n total keys links).1 hchain
+  have hpk :
+      (keys.map Prod.fst).tail.drop start = (keys.drop start).tail.map Prod.fst := by
+    cases keys <;> simp [List.map_drop]
+  have hget0 : (keys.drop start).getD 0 ([], []) = keys.getD start ([], []) := by
+    simp [List.getD_eq_getElem?_getD, List.getElem?_drop]
+  have hgetEnd :
+      (keys.drop start).getD layers.length ([], []) =
+        keys.getD (start + layers.length) ([], []) := by
+    simp [List.getD_eq_getElem?_getD, List.getElem?_drop]
+  rw [hpk] at houtputs
+  rw [← hgetEnd]
+  exact encryptedWires_evaluateLayers D hE hwidth hD n (keys.drop start)
+    (links.drop start) layers (by rw [List.length_drop]; omega)
+    (fun k hk => hkeys k (List.mem_of_mem_drop hk)) (hlinks.drop start) bits inputs
+    (by rw [hget0]; exact hinputs) hvalid outputs houtputs
 
 end Cslib.Crypto.Homomorphic.Scheme

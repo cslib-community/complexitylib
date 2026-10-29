@@ -587,21 +587,6 @@ theorem computableInPolyTime_countingTest {V : (α × List Bool) × List Bool �
       (Z c) (w c)) input encBool :=
   .of_tidy (computableTidilyInPolyTime_countingTest hV.tidy ha.tidy hK.tidy hR.tidy hZ.tidy hw.tidy)
 
-attribute [local fun_prop] computableTidilyInPolyTime_countingTest in
-@[fun_prop]
-theorem computableTidilyInPolyTime_sharpTest {V : (α × List Bool) × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair (encPair enc encBits) encBits) encBool)
-    {a : γ → α} {R Z : γ → ℕ} {w : γ → List Bool}
-    (ha : ComputableTidilyInPolyTime a input enc)
-    (hR : ComputableTidilyInPolyTime R input encUnary)
-    (hZ : ComputableTidilyInPolyTime Z input encUnary)
-    (hw : ComputableTidilyInPolyTime w input encBits) :
-    ComputableTidilyInPolyTime (fun c => sharpTest (fun r z => V ((a c, r), z)) (R c) (Z c) (w c))
-      input encBool := by
-  unfold sharpTest
-  fun_prop
-
-
 /-- Toda's counting verifier has a plain polynomial-time certificate with the same captured
 input, two unary width parameters and word encoding as its machine-construction certificate. -/
 @[fun_prop]
@@ -613,7 +598,8 @@ theorem computableInPolyTime_sharpTest {V : (α × List Bool) × List Bool → B
     (hZ : ComputableInPolyTime Z input encUnary)
     (hw : ComputableInPolyTime w input encBits) :
     ComputableInPolyTime (fun c => sharpTest (fun r z => V ((a c, r), z)) (R c) (Z c) (w c))
-      input encBool :=
-  .of_tidy (computableTidilyInPolyTime_sharpTest hV.tidy ha.tidy hR.tidy hZ.tidy hw.tidy)
+      input encBool := by
+  unfold sharpTest
+  fun_prop
 
 end Cslib.Complexity.Toda

@@ -13,8 +13,9 @@ import Mathlib.Data.ZMod.Basic
 Checks concrete round and network evaluation, inversion, and swap-reversal conjugation over
 `ZMod 7` and `BitString 4`, instantiates a two-query adaptive distinguisher with proved query
 bound `Q = 2`, exercises the 3-round Luby–Rackoff CPA bounds, the 3-round CCA insecurity attack,
-and the 4-round strong PRF-to-random-round reduction, and audits the axiom dependencies of the
-headline theorems in `Complexity.Crypto.Protocols.Cipher.LubyRackoff`.
+the 4-round strong PRF-to-random-round reduction, and the full 4-round strong PRP Luby–Rackoff
+theorem, and audits the axiom dependencies of the headline theorems in
+`Complexity.Crypto.Protocols.Cipher.LubyRackoff`.
 -/
 
 namespace ComplexityTests.Crypto.LubyRackoff
@@ -262,6 +263,92 @@ example (keyGen : PMF (ZMod 7)) (F : ZMod 7 → ZMod 7 → ZMod 7) {ε₁ ε₂ 
       (feistel4StrongRandomRoundsGame (feistel3CCAAttack (0 : ZMod 7) 1 2)) : ℝ) ≤
       ε₁ + ε₂ + ε₃ + ε₄ :=
   advantage_feistel4StrongKeyedGame_feistel4StrongRandomRoundsGame_le h₁ h₂ h₃ h₄
+
+-- Concrete instantiation of the 4-round strong Luby–Rackoff random-round collision bound over
+-- `ZMod 7` for `feistel3CCAAttack 0 1 2` (`Q = 3`, `Q.choose 2 = 3`).
+example :
+    (Game.advantage
+      (feistel4StrongRandomRoundsGame (feistel3CCAAttack (0 : ZMod 7) 1 2))
+      (idealStrongGame (feistel3CCAAttack (0 : ZMod 7) 1 2)) : ℝ) ≤
+      2 * ((3 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ +
+        2 * ((3 : ℕ).choose 2 : ℝ) * ((Fintype.card (ZMod 7) : ℝ)⁻¹) ^ 2 :=
+  advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
+    (isQueryBounded_feistel3CCAAttack 0 1 2)
+
+-- Concrete instantiation of the full 4-round strong PRP Luby–Rackoff theorem over `ZMod 7`.
+example (keyGen : PMF (ZMod 7)) (F : ZMod 7 → ZMod 7 → ZMod 7) {ε₁ ε₂ ε₃ ε₄ : ℝ}
+    (h₁ : ∀ g₂ g₃ g₄,
+      (Game.advantage
+        (prfSingleRealGame keyGen F
+          (feistel4StrongReduction₁ g₂ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
+        (prfSingleIdealGame
+          (feistel4StrongReduction₁ g₂ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₁)
+    (h₂ : ∀ g₁ g₃ g₄,
+      (Game.advantage
+        (prfSingleRealGame keyGen F
+          (feistel4StrongReduction₂ g₁ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
+        (prfSingleIdealGame
+          (feistel4StrongReduction₂ g₁ g₃ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₂)
+    (h₃ : ∀ g₁ g₂ g₄,
+      (Game.advantage
+        (prfSingleRealGame keyGen F
+          (feistel4StrongReduction₃ g₁ g₂ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
+        (prfSingleIdealGame
+          (feistel4StrongReduction₃ g₁ g₂ g₄ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₃)
+    (h₄ : ∀ g₁ g₂ g₃,
+      (Game.advantage
+        (prfSingleRealGame keyGen F
+          (feistel4StrongReduction₄ g₁ g₂ g₃ (feistel3CCAAttack (0 : ZMod 7) 1 2)))
+        (prfSingleIdealGame
+          (feistel4StrongReduction₄ g₁ g₂ g₃ (feistel3CCAAttack (0 : ZMod 7) 1 2))) : ℝ) ≤ ε₄) :
+    (Game.advantage
+      (feistel4StrongKeyedGame keyGen F (feistel3CCAAttack (0 : ZMod 7) 1 2))
+      (idealStrongGame (feistel3CCAAttack (0 : ZMod 7) 1 2)) : ℝ) ≤
+      ε₁ + ε₂ + ε₃ + ε₄ +
+        2 * ((3 : ℕ).choose 2 : ℝ) * (Fintype.card (ZMod 7) : ℝ)⁻¹ +
+        2 * ((3 : ℕ).choose 2 : ℝ) * ((Fintype.card (ZMod 7) : ℝ)⁻¹) ^ 2 :=
+  advantage_feistel4StrongKeyedGame_idealStrongGame_le
+    (isQueryBounded_feistel3CCAAttack 0 1 2) h₁ h₂ h₃ h₄
+
+-- Concrete instantiation of the 4-round strong Luby–Rackoff bit-string specialization on
+-- `BitString 4`.
+example
+    (D : OracleComp (fun _ : Bool × (BitString 4 × BitString 4) => BitString 4 × BitString 4) Bool)
+    (hQ : OracleComp.IsQueryBounded D 2) :
+    (Game.advantage (feistel4StrongRandomRoundsGame D) (idealStrongGame D) : ℝ) ≤
+      2 * ((2 : ℕ).choose 2 : ℝ) * ((2 : ℝ) ^ 4)⁻¹ +
+        2 * ((2 : ℕ).choose 2 : ℝ) * (((2 : ℝ) ^ 4)⁻¹) ^ 2 :=
+  advantage_feistel4StrongRandomRoundsGame_bitString_le 4 hQ
+
+-- Concrete 3-round vs. 4-round CCA separation on `BitString 4`: for the 3-query attack
+-- `feistel3CCAAttack 0 (fun _ => true) 0`, 4-round random-round Feistel has strong-PRP advantage
+-- strictly below `1 / 2` (`51 / 128`), whereas every 3-round Feistel network `feistel3 f₁ f₂ f₃`
+-- has CCA advantage strictly above `1 / 2` (`59 / 64`).
+example (f₁ f₂ f₃ : BitString 4 → BitString 4) :
+    (Game.advantage
+      (feistel4StrongRandomRoundsGame
+        (feistel3CCAAttack (0 : BitString 4) (fun _ => true) 0))
+      (idealStrongGame
+        (feistel3CCAAttack (0 : BitString 4) (fun _ => true) 0)) : ℝ) <
+    (Game.advantage
+      (OracleComp.interpret (feistelStrongOracle (feistel3 f₁ f₂ f₃))
+        (feistel3CCAAttack (0 : BitString 4) (fun _ => true) 0))
+      (idealStrongGame
+        (feistel3CCAAttack (0 : BitString 4) (fun _ => true) 0)) : ℝ) := by
+  have hne : (0 : BitString 4) ≠ (fun _ => true) := by
+    intro h
+    have := congrFun h 0
+    revert this
+    decide
+  have h4 := advantage_feistel4StrongRandomRoundsGame_bitString_le 4
+    (isQueryBounded_feistel3CCAAttack (0 : BitString 4) (fun _ => true) 0)
+  have h3 := le_advantage_feistel3CCAAttack_idealStrongGame_of_ne f₁ f₂ f₃ (r₀ := (0 : BitString 4))
+    hne
+  simp only [Fintype.card_pi, Fintype.card_fin, Fintype.card_bool, Finset.prod_const,
+    Finset.card_univ, Nat.cast_pow, Nat.cast_ofNat] at h3
+  have hchoose : ((3 : ℕ).choose 2 : ℝ) = 3 := by norm_num
+  rw [hchoose] at h4
+  linarith
 
 /--
 info: 'Cslib.Crypto.LubyRackoff.prodComm_trans_feistelNetwork_reverse_trans_prodComm' depends on

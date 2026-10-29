@@ -12,7 +12,9 @@ public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Search
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.PolyTime
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Logics.Propositional.ClauseSet.Sparsification
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -533,7 +535,8 @@ private theorem exists_computableTidilyInO_search {k M : ℕ} (hkK : k ≤ K) (h
     obtain ⟨stk, acc, heq, hstk, hmem⟩ := (iterate_step hK hα hkK hM g φ).2 i
     rw [heq]
     exact length_encState_le hK hα hkK hstk hmem
-  exact ⟨d, dn, di, (ComputableTidilyInO.iterate hn.inO hi.inO hstep hround hround hstate).snd'⟩
+  exact ⟨d, dn, di, (ComputableInO.iterate hn.inO.computableInO hi.inO.computableInO
+    hstep.computableInO hround hround hstate).tidy.snd'⟩
 
 include hK hα in
 /-- **The time of the search.** With a decider within time `2 ^ (δ m)` times a polynomial, on

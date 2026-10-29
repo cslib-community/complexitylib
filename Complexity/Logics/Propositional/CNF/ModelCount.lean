@@ -17,9 +17,9 @@ public import Mathlib.Data.Nat.Bitwise
 
 `CNF.modelCount φ` is the number of satisfying assignments of a formula `φ` in conjunctive normal
 form: the assignments of the variables occurring in `φ` (`CNF.vars`) that satisfy it. Variables
-not occurring in `φ` are not counted, so the count does not depend on the type of variables, and
-injective relabelling preserves it (`CNF.modelCount_relabel`). As a function of the formula this
-is the counting problem `#SAT` [Valiant][Valiant1979].
+not occurring in `φ` are not counted, so the count does not depend on the type of variables.
+Relabelling results are in `CNF.ModelCount.Relabel`. As a function of the formula this is the
+counting problem `#SAT` [Valiant][Valiant1979].
 
 The distinct variables of `φ` in order of their first occurrence are listed by `CNF.distinctVars`,
 of length `CNF.numVars` (`CNF.length_distinctVars`), and the literal occurrences with their clause
@@ -58,7 +58,6 @@ with a given one on the variables of the formula (`CNF.modelCount_eq_one_iff`).
   `Cslib.Logic.PL.CNF.satisfiable_iff_exists_bitsAssignment`: satisfiability is a search over
   `2 ^ |vs|` numbered assignments.
 * `Cslib.Logic.PL.CNF.modelCount_eq_card_filter`: counting satisfying assignments through a map.
-* `Cslib.Logic.PL.CNF.modelCount_relabel`: injective relabelling preserves the count.
 * `Cslib.Logic.PL.CNF.modelCount_pos_iff`, `Cslib.Logic.PL.CNF.modelCount_eq_one_iff`.
 
 ## References
@@ -73,7 +72,7 @@ namespace Cslib.Logic.PL
 
 open Cslib.Complexity
 
-variable {V W : Type*}
+variable {V : Type*}
 
 /-- An occurrence of a literal in a formula: its clause, its position in the clause, and the
 literal. -/
@@ -228,23 +227,6 @@ theorem CNF.modelCount_eq_card_filter {ι : Type*} [Fintype ι] {φ : CNF V}
       rw [CNF.eval_extendAssignment_restrict, hσ]
     exact ⟨_, Finset.mem_filter.2 ⟨Finset.mem_univ _, he⟩,
       (hf _ _ he hσ).2 fun _ hv => CNF.extendAssignment_of_mem _ hv⟩
-
-/-- **Relabelling along an injective map preserves the number of satisfying assignments.** -/
-theorem CNF.modelCount_relabel [DecidableEq W] {f : V → W} (hf : Function.Injective f)
-    (φ : CNF V) : (φ.relabel f).modelCount = φ.modelCount := by
-  refine CNF.modelCount_eq_card_filter (fun σ (v : φ.vars.toFinset) => σ (f v))
-    (fun τ => φ.eval (φ.extendAssignment τ) = true) (fun σ τ _ _ => ?_) fun τ => ?_
-  · rw [CNF.vars_relabel, List.forall_mem_map, funext_iff, Subtype.forall]
-    simp only [List.mem_toFinset]
-  · constructor
-    · intro hτ
-      refine ⟨Function.extend f (φ.extendAssignment τ) fun _ => false, ?_, funext fun v => ?_⟩
-      · rwa [CNF.eval_relabel, Function.extend_comp hf]
-      · rw [hf.extend_apply, CNF.extendAssignment_of_mem _ (List.mem_toFinset.1 v.2)]
-    · rintro ⟨σ, hσ, rfl⟩
-      rw [CNF.eval_relabel] at hσ
-      rw [← hσ]
-      exact CNF.eval_congr fun v hv => CNF.extendAssignment_of_mem _ hv
 
 /-- A formula has a satisfying assignment exactly when its count is positive. -/
 theorem CNF.modelCount_pos_iff {φ : CNF V} : 0 < φ.modelCount ↔ φ.Satisfiable := by

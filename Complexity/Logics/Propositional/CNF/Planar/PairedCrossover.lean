@@ -26,6 +26,8 @@ Lichtenstein's crossover [Lichtenstein1982, Figs. 4–5], as drawn in [Tromino20
 
 ## Main results
 
+* `PairedCrossover.existsUnique_holds`: a unique full satisfying assignment for each input pair.
+* `PairedCrossover.eval_formula_iff`: split-formula semantics with paired-terminal agreement.
 * `PairedCrossover.eq_canonicalExtension_of_holds`: uniqueness of the full extension.
 * `PairedCrossover.terminal_occurrences`: two internal incidences at each of the eight ports.
 

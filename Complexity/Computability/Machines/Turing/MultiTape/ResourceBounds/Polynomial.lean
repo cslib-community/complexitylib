@@ -72,6 +72,11 @@ public theorem mul (hu : PolyBounded size u) (hv : PolyBounded size v) :
   let ⟨_, hq, hv⟩ := hv
   ⟨_, hp.mul hq, fun a => Nat.mul_le_mul (hu a) (hv a)⟩
 
+public theorem pow (hu : PolyBounded size u) (d : ℕ) :
+    PolyBounded size fun a => u a ^ d :=
+  let ⟨_, hp, hu⟩ := hu
+  ⟨_, hp.pow d, fun a => Nat.pow_le_pow_left (hu a) d⟩
+
 /-- Substitution: if `v` is bounded by a polynomial in `size'` and `size' ∘ g` by a polynomial in
 `size`, then `v ∘ g` is bounded by a polynomial in `size`. -/
 public theorem comp {size' : β → ℕ} {v : β → ℕ} {g : α → β} (hv : PolyBounded size' v)

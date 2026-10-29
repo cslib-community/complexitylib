@@ -59,4 +59,46 @@ example {α β : Type*} (p : PMF α) (q : PMF β) (f g : α → β → Game) :
       (q.bind fun b => p.bind fun a => g a b) :=
   Game.advantage_bind_comm p q f g
 
+open Cslib.Probability in
+-- Concrete check of `succProbability_uniform_bool_xor`: when `g false = PMF.pure true` and
+-- `g true = PMF.pure false`, `guess ^^ bit` is always `true`, so the success probability is `1`.
+example :
+    (Game.succProbability
+      ((PMF.uniformOfFintype Bool).bind fun bit =>
+        ((if bit then PMF.pure false else PMF.pure true : Game)).map
+          (fun guess => guess ^^ bit)) : ℝ) = 1 := by
+  rw [Game.succProbability_uniform_bool_xor]
+  simp [Game.succProbability]
+
+open Cslib.Probability in
+-- Concrete application of `advantage_le_two_mul_uniform_bool_xor` on `g₀ bit = PMF.pure (!bit)` and
+-- `g₁ _ = PMF.pure false` (where the inequality holds with equality `1 ≤ 2 * (1 / 2) + 0`).
+example :
+    let g₀ : Bool → Game := fun bit => PMF.pure (!bit)
+    let g₁ : Bool → Game := fun _ => PMF.pure false
+    Game.advantage (g₀ false) (g₀ true) ≤
+      2 * Game.advantage
+        ((PMF.uniformOfFintype Bool).bind fun bit => (g₀ bit).map (fun guess => guess ^^ bit))
+        ((PMF.uniformOfFintype Bool).bind fun bit => (g₁ bit).map (fun guess => guess ^^ bit)) +
+      Game.advantage (g₁ false) (g₁ true) :=
+  Game.advantage_le_two_mul_uniform_bool_xor (fun bit => PMF.pure (!bit)) (fun _ => PMF.pure false)
+
+open Cslib.Probability in
+-- Tightness / refutation test: the factor `2` in `advantage_le_two_mul_uniform_bool_xor` cannot be
+-- replaced by `1`. For `g₀ bit = PMF.pure (!bit)` and `g₁ _ = PMF.pure false`, the game gap of `g₀`
+-- is `1`, the game gap of `g₁` is `0`, and the hidden-bit XOR mixture advantage is `1 / 2`.
+example :
+    let g₀ : Bool → Game := fun bit => PMF.pure (!bit)
+    let g₁ : Bool → Game := fun _ => PMF.pure false
+    ¬ (Game.advantage (g₀ false) (g₀ true) ≤
+      1 * Game.advantage
+        ((PMF.uniformOfFintype Bool).bind fun bit => (g₀ bit).map (fun guess => guess ^^ bit))
+        ((PMF.uniformOfFintype Bool).bind fun bit => (g₁ bit).map (fun guess => guess ^^ bit)) +
+      Game.advantage (g₁ false) (g₁ true)) := by
+  dsimp only
+  rw [← NNReal.coe_le_coe]
+  simp only [NNReal.coe_add, NNReal.coe_mul, NNReal.coe_one, Game.coe_advantage,
+    Game.succProbability_uniform_bool_xor, Game.succProbability]
+  norm_num
+
 end ComplexityTests.GameBounds

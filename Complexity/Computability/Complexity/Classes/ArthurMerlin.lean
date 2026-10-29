@@ -53,10 +53,13 @@ the second level of the polynomial hierarchy in
 ## Main definitions
 
 * `Cslib.Complexity.IsMerlinArthurVerifier`, `Cslib.Complexity.MA`.
+* `Cslib.Complexity.arthurMerlinSlice`: reply-existence counting slice of an Arthur–Merlin verifier.
 * `Cslib.Complexity.IsArthurMerlinVerifier`, `Cslib.Complexity.AM`.
 
 ## Main results
 
+* `Cslib.Complexity.isArthurMerlinVerifier_iff_decidesWithBoundedError`: an Arthur–Merlin verifier
+  is a bounded-error decider when composed with existential quantification over Merlin's reply.
 * `Cslib.Complexity.NP_subset_MA`, `Cslib.Complexity.BPP_subset_MA`.
 * `Cslib.Complexity.PolyTimeReducible.mem_MA`, `Cslib.Complexity.PolyTimeReducible.mem_AM`:
   closure under polynomial-time many-one reductions.
@@ -85,12 +88,10 @@ makes at least two thirds of the random strings `r` accepted, `V (a, y ++ r) = t
 non-member every proof leaves at least two thirds of the random strings rejected. -/
 def IsMerlinArthurVerifier (enc : α ↪ List Bool) (q p : Polynomial ℕ) (V : α × List Bool → Bool)
     (A : Set α) : Prop :=
-  ∀ a, (a ∈ A → ∃ y : Fin (q.eval (enc a).length) → Bool, 2 * 2 ^ p.eval (enc a).length ≤
-      3 * (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn y ++ List.ofFn r) = true).card) ∧
-    (a ∉ A → ∀ y : Fin (q.eval (enc a).length) → Bool, 2 * 2 ^ p.eval (enc a).length ≤
-      3 * (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn y ++ List.ofFn r) = false).card)
+  ∀ a, (a ∈ A → ∃ y : Fin (q.eval (enc a).length) → Bool,
+      BoundedErrorAt enc p (fun z => V (z.1, List.ofFn y ++ z.2)) a true) ∧
+    (a ∉ A → ∀ y : Fin (q.eval (enc a).length) → Bool,
+      BoundedErrorAt enc p (fun z => V (z.1, List.ofFn y ++ z.2)) a false)
 
 /-- The problems with polynomial-time Merlin–Arthur verifiers, with polynomially long proofs and
 random strings, with respect to the encoding `enc` of instances [Babai][Babai1985]. -/
@@ -105,6 +106,13 @@ theorem mem_MA : A ∈ MA enc ↔ ∃ (q p : Polynomial ℕ) (V : α × List Boo
 
 /-! ### Arthur–Merlin -/
 
+/-- Whether some reply `y` of length `q(|x.1|)` is accepted by `V` on `(x.1, x.2 ++ y)`.
+This is a counting device rather than a polynomial-time verifier: it quantifies over all
+`2 ^ q(|x.1|)` replies, and `DecidesWithBoundedError` carries no computability requirement. -/
+def arthurMerlinSlice (enc : α ↪ List Bool) (q : Polynomial ℕ) (V : α × List Bool → Bool)
+    (x : α × List Bool) : Bool :=
+  decide (∃ y : Fin (q.eval (enc x.1).length) → Bool, V (x.1, x.2 ++ List.ofFn y) = true)
+
 /-- `V` is an Arthur–Merlin verifier for `A`, with random strings of length `p` and replies of
 length `q`, both evaluated at the length of the encoded instance: on a member `a` at least two
 thirds of the random strings `r` have a reply `y` with `V (a, r ++ y) = true`; on a non-member at
@@ -117,6 +125,17 @@ def IsArthurMerlinVerifier (enc : α ↪ List Bool) (p q : Polynomial ℕ) (V : 
     (a ∉ A → 2 * 2 ^ p.eval (enc a).length ≤
       3 * (univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
         ∀ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn r ++ List.ofFn y) = false).card)
+
+/-- An Arthur–Merlin verifier is a bounded-error decider when composed with existential
+quantification over Merlin's reply. -/
+theorem isArthurMerlinVerifier_iff_decidesWithBoundedError {p q : Polynomial ℕ}
+    {V : α × List Bool → Bool} :
+    IsArthurMerlinVerifier enc p q V A ↔
+      DecidesWithBoundedError enc p (arthurMerlinSlice enc q V) A := by
+  simp only [IsArthurMerlinVerifier, DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError,
+    BoundedErrorAt, arthurMerlinSlice, decide_eq_true_iff, decide_eq_false_iff_not, not_exists,
+    Bool.not_eq_true]
+  rfl
 
 /-- The problems with polynomial-time Arthur–Merlin verifiers, with polynomially long random
 strings and replies, with respect to the encoding `enc` of instances
@@ -147,9 +166,11 @@ theorem NP_subset_MA : NP enc ⊆ MA enc := by
   · obtain ⟨w, hw, hVw⟩ := (hA a).1 ha
     refine ⟨BitString.ofList _ w, two_mul_two_pow_le_card_filter_of_eq_zero
       (Polynomial.eval_zero) _ fun r => ?_⟩
+    dsimp only
     rw [BitString.ofFn_ofList hw,
       List.eq_nil_of_length_eq_zero (by simp : (List.ofFn r).length = 0), List.append_nil, hVw]
   · refine two_mul_two_pow_le_card_filter_of_eq_zero (Polynomial.eval_zero) _ fun r => ?_
+    dsimp only
     rw [List.eq_nil_of_length_eq_zero (by simp : (List.ofFn r).length = 0), List.append_nil]
     by_contra hVy
     exact ha ((hA a).2 ⟨_, List.length_ofFn, by simpa using hVy⟩)
@@ -177,11 +198,11 @@ private theorem two_mul_two_pow_le_card_filter_take {m M : ℕ} (hle : m ≤ M)
   exact Nat.mul_le_mul_left _ h
 
 private theorem exists_truncated_verifier {encB : β ↪ List Bool} {f : α → β}
-    (hf : ComputableTidilyInPolyTime f enc encB) (p₁ p₂ : Polynomial ℕ)
+    (hf : ComputableInPolyTime f enc encB) (p₁ p₂ : Polynomial ℕ)
     {V : β × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair encB encBits) encBool) :
+    (hV : ComputableInPolyTime V (encPair encB encBits) encBool) :
     ∃ (P₁ P₂ : Polynomial ℕ) (V' : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V' (encPair enc encBits) encBool ∧
+      ComputableInPolyTime V' (encPair enc encBits) encBool ∧
       (∀ a, p₁.eval (encB (f a)).length ≤ P₁.eval (enc a).length) ∧
       (∀ a, p₂.eval (encB (f a)).length ≤ P₂.eval (enc a).length) ∧
       ∀ (a : α) (u : Fin (P₁.eval (enc a).length) → Bool)
@@ -189,16 +210,16 @@ private theorem exists_truncated_verifier {encB : β ↪ List Bool} {f : α → 
         V' (a, List.ofFn u ++ List.ofFn v) =
           V (f a, (List.ofFn u).take (p₁.eval (encB (f a)).length) ++
             (List.ofFn v).take (p₂.eval (encB (f a)).length)) := by
-  have hp₁ : ComputableTidilyInPolyTime (fun a => p₁.eval (encB (f a)).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval p₁).comp
-      ((ComputableTidilyInPolyTime.encoding_length encB).comp hf)
-  have hp₂ : ComputableTidilyInPolyTime (fun a => p₂.eval (encB (f a)).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval p₂).comp
-      ((ComputableTidilyInPolyTime.encoding_length encB).comp hf)
+  have hp₁ : ComputableInPolyTime (fun a => p₁.eval (encB (f a)).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval p₁).comp
+      ((ComputableInPolyTime.encoding_length encB).comp hf)
+  have hp₂ : ComputableInPolyTime (fun a => p₂.eval (encB (f a)).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval p₂).comp
+      ((ComputableInPolyTime.encoding_length encB).comp hf)
   obtain ⟨P₁, hP₁⟩ := hp₁.polyBounded.exists_polynomial
   obtain ⟨P₂, hP₂⟩ := hp₂.polyBounded.exists_polynomial
-  have hP₁u : ComputableTidilyInPolyTime (fun a => P₁.eval (enc a).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval P₁).comp (ComputableTidilyInPolyTime.encoding_length enc)
+  have hP₁u : ComputableInPolyTime (fun a => P₁.eval (enc a).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval P₁).comp (ComputableInPolyTime.encoding_length enc)
   refine ⟨P₁, P₂, fun x => V (f x.1, x.2.take (p₁.eval (encB (f x.1)).length) ++
       (x.2.drop (P₁.eval (enc x.1).length)).take (p₂.eval (encB (f x.1)).length)),
     hV.comp ((hf.comp (.fst enc encBits)).prod
@@ -216,8 +237,9 @@ theorem PolyTimeReducible.mem_MA {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ MA encB) : A ∈ MA enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, p, V, hV, hVB⟩ := hB
-  obtain ⟨Q, P, V', hV', hQe, hPe, hsplit⟩ := exists_truncated_verifier hf.tidy q p hV.tidy
-  refine ⟨Q, P, V', .of_tidy hV', fun a => ?_⟩
+  obtain ⟨Q, P, V', hV', hQe, hPe, hsplit⟩ := exists_truncated_verifier hf q p hV
+  refine ⟨Q, P, V', hV', fun a => ?_⟩
+  dsimp only [BoundedErrorAt]
   simp only [hsplit]
   constructor
   · intro ha
@@ -240,8 +262,8 @@ theorem PolyTimeReducible.mem_AM {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ AM encB) : A ∈ AM enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨p, q, V, hV, hVB⟩ := hB
-  obtain ⟨P, Q, V', hV', hPe, hQe, hsplit⟩ := exists_truncated_verifier hf.tidy p q hV.tidy
-  refine ⟨P, Q, V', .of_tidy hV', fun a => ?_⟩
+  obtain ⟨P, Q, V', hV', hPe, hQe, hsplit⟩ := exists_truncated_verifier hf p q hV
+  refine ⟨P, Q, V', hV', fun a => ?_⟩
   have hex (r : Fin (P.eval (enc a).length) → Bool) :
       (∃ y : Fin (Q.eval (enc a).length) → Bool, V (f a, (List.ofFn r).take
           (p.eval (encB (f a)).length) ++ (List.ofFn y).take (q.eval (encB (f a)).length)) = true) ↔

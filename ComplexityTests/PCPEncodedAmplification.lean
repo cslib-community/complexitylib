@@ -293,13 +293,16 @@ private theorem mem_fullWalks (walk : Graph.PowerLabel ArithmeticLabel 4 2) :
     walk ∈ fullWalks :=
   List.mem_ofFn.mpr ⟨arithmeticWalks.2 walk, arithmeticWalks.2.symm_apply_apply walk⟩
 
+local instance : FinEnum (ZMod 257) :=
+  FinEnum.ofEquiv (Fin 257) (ZMod.finEquiv 257).toEquiv.symm
+
 private def completeRound (g : Graph Bool) :=
   g.amplify unitEval false RotationMap.arithmeticExpanderRotate 4 2 fullWalks
     (numberSelectedSlots (unitOpinions ArithmeticLabel 4)).2 fullSelectedCoins selectedQueries
 
 example : ComputableInPolyTime completeRound (Graph.encoding encBool)
     (Graph.encoding (encPi (encPi encBool))) := by
-  have hr := RotationMap.polytime_arithmeticExpanderRotate (encFinite ArithmeticLabel)
+  have hr := RotationMap.polytime_arithmeticExpanderRotate (encFinEnum ArithmeticLabel)
   have he : ComputableTidilyInPolyTime
       (fun p : Bool × (Unit × Unit) => unitEval p.1 p.2.1 p.2.2)
       (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool := by
@@ -315,7 +318,7 @@ example {Input : Type} (input : Input ↪ List Bool) (graph : Input → Graph Bo
         4 2 fullWalks
       powered.composeTabulated (numberSlots (unitOpinions ArithmeticLabel 4)).2 fullCoins queries)
       input (Graph.encoding (encPi (encPi encBool))) := by
-  have hr := RotationMap.polytime_arithmeticExpanderRotate (encFinite ArithmeticLabel)
+  have hr := RotationMap.polytime_arithmeticExpanderRotate (encFinEnum ArithmeticLabel)
   have he : ComputableTidilyInPolyTime
       (fun p : Bool × (Unit × Unit) => unitEval p.1 p.2.1 p.2.2)
       (encPair encBool (encPair (encFinEnum Unit) (encFinEnum Unit))) encBool := by

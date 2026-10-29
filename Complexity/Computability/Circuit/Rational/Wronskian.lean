@@ -102,6 +102,21 @@ lemma scaled_derivative_order {K : Type*} [CommRing K]
   intro a ha
   rw [coeff_scaled_derivative_at, coeff_eq_zero_of_lt_natTrailingDegree ha, mul_zero]
 
+/-- A square matrix of falling factorials `(d j).descFactorial i` at distinct natural numbers `d j`
+has nonzero determinant over a characteristic-zero field. -/
+private lemma det_descFactorial_ne_zero {K : Type*} [Field K] [CharZero K]
+    {h : ℕ} (d : Fin h → ℕ) (hd : Function.Injective d) :
+    Matrix.det (Matrix.of fun i j : Fin h => ((d j).descFactorial i.val : K)) ≠ 0 := by
+  let p : Fin h → K[X] := fun j => descPochhammer K j.val
+  have hp := Matrix.det_eval_matrixOfPolynomials_eq_det_vandermonde
+    (fun j : Fin h => (d j : K)) p (fun j => by simp [p]) (fun j => monic_descPochhammer K j.val)
+  have he : (Matrix.of fun i j : Fin h => ((d j).descFactorial i.val : K)) =
+      (Matrix.of fun i j : Fin h => (p j).eval (d i : K)).transpose := by
+    ext i j
+    simp [p, descPochhammer_eval_eq_descFactorial]
+  rw [he, Matrix.det_transpose, ← hp, Matrix.det_vandermonde_ne_zero_iff]
+  exact (Nat.cast_injective (R := K)).comp hd
+
 /-- The local order formula at zero, before translation to an arbitrary point.
 The sum of the row numbers is C(h,2). -/
 lemma wronskian_order_of_distinct_orders {K : Type*} [Field K] [CharZero K]
@@ -114,19 +129,6 @@ lemma wronskian_order_of_distinct_orders {K : Type*} [Field K] [CharZero K]
     Matrix.of fun i j => X ^ i.val * derivative^[i.val] (f j)
   obtain ⟨B, hdet, hB⟩ := det_factor_column_orders A
     (fun j => (f j).natTrailingDegree) (fun i j => scaled_derivative_order (f j) i.val)
-  have hfall : Matrix.det (Matrix.of fun i j : Fin h =>
-      ((f j).natTrailingDegree.descFactorial i.val : K)) ≠ 0 := by
-    let p : Fin h → K[X] := fun j => descPochhammer K j.val
-    have hp := Matrix.det_eval_matrixOfPolynomials_eq_det_vandermonde
-      (fun j : Fin h => ((f j).natTrailingDegree : K)) p
-      (fun j => by simp [p]) (fun j => monic_descPochhammer K j.val)
-    have he : (Matrix.of fun i j : Fin h =>
-        ((f j).natTrailingDegree.descFactorial i.val : K)) =
-        (Matrix.of fun i j : Fin h => (p j).eval ((f i).natTrailingDegree : K)).transpose := by
-      ext i j
-      simp [p, descPochhammer_eval_eq_descFactorial]
-    rw [he, Matrix.det_transpose, ← hp, Matrix.det_vandermonde_ne_zero_iff]
-    exact (Nat.cast_injective (R := K)).comp hd
   have hBc : B.det.coeff 0 ≠ 0 := by
     have he : B.map (evalRingHom (0 : K)) =
         Matrix.of (fun i j : Fin h => (f j).trailingCoeff *
@@ -141,34 +143,57 @@ lemma wronskian_order_of_distinct_orders {K : Type*} [Field K] [CharZero K]
     change (evalRingHom (0 : K)) B.det ≠ 0
     rw [RingHom.map_det]
     change (B.map (evalRingHom (0 : K))).det ≠ 0
-    rw [he]
-    have hscale := Matrix.det_mul_row (fun j => (f j).trailingCoeff)
-      (Matrix.of fun i j : Fin h => ((f j).natTrailingDegree.descFactorial i.val : K))
-    simp only [Matrix.of_apply] at hscale
-    rw [hscale]
+    rw [he, show (Matrix.of fun i j : Fin h => (f j).trailingCoeff *
+        ((f j).natTrailingDegree.descFactorial i.val : K)).det = _ from
+      Matrix.det_mul_row (fun j => (f j).trailingCoeff)
+        (Matrix.of fun i j : Fin h => ((f j).natTrailingDegree.descFactorial i.val : K))]
     exact mul_ne_zero (Finset.prod_ne_zero_iff.mpr fun j _ =>
-      trailingCoeff_nonzero_iff_nonzero.mpr (hf j)) hfall
-  have hB0 : B.det ≠ 0 := by intro hz; simp [hz] at hBc
-  have hA0 : A.det ≠ 0 := by
-    rw [hdet]
-    exact mul_ne_zero (pow_ne_zero _ X_ne_zero) hB0
+      trailingCoeff_nonzero_iff_nonzero.mpr (hf j)) (det_descFactorial_ne_zero _ hd)
+  have hB0 : B.det ≠ 0 := fun hz => by simp [hz] at hBc
+  have hA0 : A.det ≠ 0 := hdet ▸ mul_ne_zero (pow_ne_zero _ X_ne_zero) hB0
   have hscale : A.det = X ^ (∑ i : Fin h, i.val) * wronskianFamily f := by
-    have he := Matrix.det_mul_column (fun i : Fin h => (X : K[X]) ^ i.val)
-      (Matrix.of fun i j : Fin h => derivative^[i.val] (f j))
-    simp only [Matrix.of_apply] at he
-    change _ = _ * Matrix.det (Matrix.of fun i j : Fin h => derivative^[i.val] (f j))
-    rw [← Finset.prod_pow_eq_pow_sum]
-    exact he
-  have hw : wronskianFamily f ≠ 0 := by
-    intro hz
-    rw [hscale, hz, mul_zero] at hA0
-    exact hA0 rfl
+    simpa only [A, wronskianFamily, Matrix.of_apply, Finset.prod_pow_eq_pow_sum] using
+      Matrix.det_mul_column (fun i : Fin h => (X : K[X]) ^ i.val)
+        (Matrix.of fun i j : Fin h => derivative^[i.val] (f j))
+  have hw : wronskianFamily f ≠ 0 := fun hz => hA0 (by rw [hscale, hz, mul_zero])
   refine ⟨hw, ?_⟩
   have ho : A.det.natTrailingDegree = ∑ j, (f j).natTrailingDegree := by
     rw [hdet, mul_comm, natTrailingDegree_mul_X_pow hB0,
       natTrailingDegree_eq_zero.mpr (Or.inr hBc), zero_add]
-  rw [hscale, mul_comm, natTrailingDegree_mul_X_pow hw] at ho
-  exact ho
+  rwa [hscale, mul_comm, natTrailingDegree_mul_X_pow hw] at ho
+
+/-- A nonzero polynomial of degree `< d + 1` whose degree-`d` coefficient vanishes has degree
+`< d`. -/
+private lemma natDegree_lt_of_coeff_eq_zero {K : Type*} [Semiring K] {d : ℕ} {g : K[X]}
+    (hl : g.natDegree < d + 1) (hc : g.coeff d = 0) (hn : g ≠ 0) : g.natDegree < d := by
+  have hne : g.natDegree ≠ d := fun he =>
+    (leadingCoeff_ne_zero.mpr hn) (by rwa [← coeff_natDegree, he])
+  omega
+
+/-- Prepending `f ∈ V` with `f.coeff d ≠ 0` to a spanning family of `V ⊓ ker (lcoeff K d)`
+spans `V`. -/
+private lemma span_finCons_eq_of_coeff_ne_zero {K : Type*} [Field K] {d h : ℕ}
+    {V : Submodule K K[X]} {f : K[X]} (hfV : f ∈ V) (hfc : f.coeff d ≠ 0)
+    {g : Fin h → K[X]} (hgspan : Submodule.span K (Set.range g) = V ⊓ LinearMap.ker (lcoeff K d)) :
+    Submodule.span K (Set.range (Fin.cons f g)) = V := by
+  apply le_antisymm
+  · apply Submodule.span_le.mpr
+    rintro _ ⟨j, rfl⟩
+    exact Fin.cases hfV (fun i => (hgspan.le (Submodule.subset_span ⟨i, rfl⟩)).1) j
+  · intro u hu
+    let c : K := u.coeff d / f.coeff d
+    have hr : u - c • f ∈ V ⊓ LinearMap.ker (lcoeff K d) := by
+      refine ⟨V.sub_mem hu (V.smul_mem c hfV), ?_⟩
+      change (u - c • f).coeff d = 0
+      simp [c, coeff_sub, coeff_smul, div_mul_cancel₀ _ hfc]
+    have hsub : V ⊓ LinearMap.ker (lcoeff K d) ≤ Submodule.span K (Set.range (Fin.cons f g)) := by
+      refine hgspan.ge.trans (Submodule.span_mono ?_)
+      rw [Fin.range_cons]
+      exact Set.subset_insert f _
+    have hfj : f ∈ Submodule.span K (Set.range (Fin.cons f g)) :=
+      Submodule.subset_span ⟨0, by simp⟩
+    simpa only [sub_add_cancel] using (Submodule.span K (Set.range (Fin.cons f g))).add_mem
+      (hsub hr) ((Submodule.span K (Set.range (Fin.cons f g))).smul_mem c hfj)
 
 /-- Polynomial row reduction, derived rather than assumed: every bounded-degree
 subspace has a basis with distinct largest degrees. -/
@@ -181,85 +206,35 @@ lemma exists_degree_echelon_family {K : Type*} [Field K]
   classical
   induction d generalizing V with
   | zero =>
-    have hzero : V = ⊥ := by
-      apply le_antisymm _ bot_le
-      intro f hf
-      change f = 0
-      by_contra hn
-      exact Nat.not_lt_zero _ (hV f hf hn)
-    refine ⟨0, Fin.elim0, linearIndependent_empty_type, ?_, ?_⟩
-    · simp [hzero]
-    · intro i; exact Fin.elim0 i
+    have hzero : V = ⊥ := le_antisymm
+      (fun f hf => by by_contra hn; exact Nat.not_lt_zero _ (hV f hf hn)) bot_le
+    exact ⟨0, Fin.elim0, linearIndependent_empty_type, by simp [hzero], fun i => Fin.elim0 i⟩
   | succ d ih =>
     by_cases hall : ∀ f ∈ V, f.coeff d = 0
-    · apply ih V
-      intro f hf hn
-      have hl := hV f hf hn
-      have hne : f.natDegree ≠ d := by
-        intro he
-        have hc := hall f hf
-        rw [← he, coeff_natDegree] at hc
-        exact (leadingCoeff_ne_zero.mpr hn) hc
-      omega
+    · exact ih V fun f hf hn => natDegree_lt_of_coeff_eq_zero (hV f hf hn) (hall f hf) hn
     · push Not at hall
       obtain ⟨f, hfV, hfc⟩ := hall
-      have hf0 : f ≠ 0 := by intro hz; simp [hz] at hfc
+      have hf0 : f ≠ 0 := fun hz => by simp [hz] at hfc
       have hfd : f.natDegree = d := by
         have hl := hV f hfV hf0
         have hr := le_natDegree_of_ne_zero hfc
         omega
       let W : Submodule K K[X] := V ⊓ LinearMap.ker (lcoeff K d)
-      have hW : ∀ g ∈ W, g ≠ 0 → g.natDegree < d := by
-        intro g hg hn
-        have hl := hV g hg.1 hn
-        have hc : g.coeff d = 0 := hg.2
-        have hne : g.natDegree ≠ d := by
-          intro he
-          rw [← he, coeff_natDegree] at hc
-          exact (leadingCoeff_ne_zero.mpr hn) hc
-        omega
+      have hW : ∀ g ∈ W, g ≠ 0 → g.natDegree < d :=
+        fun g hg hn => natDegree_lt_of_coeff_eq_zero (hV g hg.1 hn) hg.2 hn
       obtain ⟨h, g, hgLI, hgspan, hgdeg⟩ := ih W hW
-      have hgmem : ∀ j, g j ∈ W := by
-        intro j
-        rw [← hgspan]
-        exact Submodule.subset_span ⟨j, rfl⟩
-      have hnot : f ∉ Submodule.span K (Set.range g) := by
-        rw [hgspan]
-        exact fun hh => hfc hh.2
-      refine ⟨h + 1, Fin.cons f g, hgLI.finCons hnot, ?_, ?_⟩
-      · apply le_antisymm
-        · apply Submodule.span_le.mpr
-          rintro _ ⟨j, rfl⟩
-          refine Fin.cases ?_ (fun i => ?_) j
-          · exact hfV
-          · exact (hgmem i).1
-        · intro u hu
-          let c : K := u.coeff d / f.coeff d
-          have hr : u - c • f ∈ W := by
-            refine ⟨V.sub_mem hu (V.smul_mem c hfV), ?_⟩
-            change (u - c • f).coeff d = 0
-            simp [c, coeff_sub, coeff_smul, div_mul_cancel₀ _ hfc]
-          have hsub : W ≤ Submodule.span K (Set.range (Fin.cons f g)) := by
-            rw [← hgspan]
-            apply Submodule.span_mono
-            rw [Fin.range_cons]
-            exact Set.subset_insert f _
-          have hfj : f ∈ Submodule.span K (Set.range (Fin.cons f g)) :=
-            Submodule.subset_span ⟨0, by simp⟩
-          have hh := (Submodule.span K (Set.range (Fin.cons f g))).add_mem
-            (hsub hr) ((Submodule.span K (Set.range (Fin.cons f g))).smul_mem c hfj)
-          simpa only [sub_add_cancel] using hh
-      · have he : (fun i => ((Fin.cons f g : Fin (h + 1) → K[X]) i).natDegree) =
-            Fin.cons f.natDegree (fun i => (g i).natDegree) := by
-          funext i
-          exact Fin.cases rfl (fun _ => rfl) i
-        rw [he]
-        apply Fin.cons_injective_of_injective ?_ hgdeg
-        rintro ⟨j, hj⟩
-        change (g j).natDegree = f.natDegree at hj
-        have hh := hW (g j) (hgmem j) (hgLI.ne_zero j)
-        rw [hfd] at hj
-        omega
+      have hgmem : ∀ j, g j ∈ W := fun j => hgspan.le (Submodule.subset_span ⟨j, rfl⟩)
+      have hnot : f ∉ Submodule.span K (Set.range g) := hgspan.symm ▸ fun hh => hfc hh.2
+      refine ⟨h + 1, Fin.cons f g, hgLI.finCons hnot,
+        span_finCons_eq_of_coeff_ne_zero hfV hfc hgspan, ?_⟩
+      rw [show (fun i => ((Fin.cons f g : Fin (h + 1) → K[X]) i).natDegree) =
+        Fin.cons f.natDegree (fun i => (g i).natDegree) from
+          funext fun i => Fin.cases rfl (fun _ => rfl) i]
+      refine Fin.cons_injective_of_injective ?_ hgdeg
+      rintro ⟨j, hj⟩
+      have hh := hW (g j) (hgmem j) (hgLI.ne_zero j)
+      change (g j).natDegree = f.natDegree at hj
+      omega
 
 /-- Fixed-length coefficient reversal is linear, unlike degree-dependent
 polynomial reversal. -/
@@ -346,13 +321,6 @@ lemma wronskian_linearCombination {K : Type*} [CommRing K] {h : ℕ}
   rw [he, Matrix.det_mul]
   congr 1
   exact (C.map_det A).symm
-
-lemma basis_toMatrix_det_ne_zero {K M : Type*} [Field K] [AddCommGroup M]
-    [Module K M] {h : ℕ} (b b' : Basis (Fin h) K M) :
-    (b.toMatrix b').det ≠ 0 := by
-  have hh := congrArg Matrix.det (b.toMatrix_mul_toMatrix_flip b')
-  rw [Matrix.det_mul, Matrix.det_one] at hh
-  exact left_ne_zero_of_mul_eq_one hh
 
 lemma wronskian_basis_change {K : Type*} [Field K] {h : ℕ}
     {V : Submodule K K[X]} (b b' : Basis (Fin h) K V) :
@@ -467,9 +435,11 @@ lemma wronskian_basis_rootMultiplicity {K : Type*} [Field K] [CharZero K]
     (hV : ∀ f ∈ V, f ≠ 0 → f.natDegree < d) :
     (wronskianFamily (fun j => (b' j : K[X]))).rootMultiplicity a =
       (wronskianFamily (fun j => (b j : K[X]))).rootMultiplicity a := by
+  let := b.invertibleToMatrix b'
   rw [wronskian_basis_change b b', rootMultiplicity_mul
     (mul_ne_zero (wronskian_basis_ne_zero d b hV)
-      (C_ne_zero.mpr (basis_toMatrix_det_ne_zero b b'))), rootMultiplicity_C, add_zero]
+      (C_ne_zero.mpr (Matrix.isUnit_det_of_invertible (b.toMatrix b')).ne_zero)),
+    rootMultiplicity_C, add_zero]
 
 /-- The Wronskian order bound for distinct points of a characteristic-zero
 field and order-echelon bases. The triangular sum is exactly binom(h,2). -/
@@ -605,45 +575,24 @@ private lemma vanishingFiltration_eq_span {K : Type*} [Field K]
     have hs : ∑ j, c j • (b j : K[X]) = f := by
       simpa only [Submodule.coe_sum, Submodule.coe_smul] using
         congrArg (fun x : V => (x : K[X])) (b.sum_repr ⟨f, hf.1⟩)
-    have hne : ∀ j, taylor a (b j : K[X]) ≠ 0 := by
-      intro j hz
-      exact b.ne_zero j (Subtype.ext ((taylorEquiv a).injective (by simpa using hz)))
+    have hne (j : Fin h) : taylor a (b j : K[X]) ≠ 0 := fun hz =>
+      b.ne_zero j (Subtype.ext ((taylorEquiv a).injective (by simpa using hz)))
     have hinj : Function.Injective (fun j => (taylor a (b j : K[X])).natTrailingDegree) := by
       simpa only [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply] using hb
-    have hz : ∀ m < r, (∑ j, c j • taylor a (b j : K[X])).coeff m = 0 := by
-      intro m hm
-      have ht := congrArg (taylor a) hs
-      simp only [map_sum, map_smul] at ht
-      rw [ht]
-      exact hf.2 m hm
-    have hc := low_coefficients_force_zero (fun j => taylor a (b j : K[X]))
-      hne hinj c r hz
-    apply (Submodule.mem_span_range_iff_exists_fun K).mpr
-    refine ⟨fun j => c j.val, ?_⟩
-    have hst := Finset.sum_subtype (F := inferInstance) (p := fun j => r ≤ (b j :
-      K[X]).rootMultiplicity a)
-      (Finset.univ.filter (fun j => r ≤ (b j : K[X]).rootMultiplicity a))
-      (by simp) (fun j => c j • (b j : K[X]))
-    rw [← hst]
-    rw [Finset.sum_filter]
-    calc
-      ∑ j, (if r ≤ (b j : K[X]).rootMultiplicity a then c j • (b j : K[X]) else 0) =
-          ∑ j, c j • (b j : K[X]) := by
-        apply Finset.sum_congr rfl
-        intro j _
-        split_ifs with hj
-        · rfl
-        · have hj' : (taylor a (b j : K[X])).natTrailingDegree < r := by
-            simpa only [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply] using
-              (Nat.lt_of_not_ge hj)
-          rw [hc j hj', zero_smul]
-      _ = f := hs
+    have hz (m : ℕ) (hm : m < r) : (∑ j, c j • taylor a (b j : K[X])).coeff m = 0 := by
+      simpa only [map_sum, map_smul, ← congrArg (taylor a) hs] using hf.2 m hm
+    have hc := low_coefficients_force_zero (fun j => taylor a (b j : K[X])) hne hinj c r hz
+    refine (Submodule.mem_span_range_iff_exists_fun K).mpr ⟨fun j => c j.val, ?_⟩
+    rw [← Finset.sum_subtype (Finset.univ.filter fun j => r ≤ (b j : K[X]).rootMultiplicity a)
+      (by simp) (fun j => c j • (b j : K[X])), Finset.sum_filter]
+    refine (Finset.sum_congr rfl fun j _ => ?_).trans hs
+    split_ifs with hj
+    · rfl
+    · rw [hc j (by simpa only [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply] using
+        Nat.lt_of_not_ge hj), zero_smul]
   · apply Submodule.span_le.mpr
     rintro _ ⟨j, rfl⟩
-    refine ⟨(b j.val).property, ?_⟩
-    intro m hm
-    apply coeff_eq_zero_of_lt_natTrailingDegree
-    apply hm.trans_le
+    refine ⟨(b j.val).property, fun m hm => coeff_eq_zero_of_lt_natTrailingDegree (hm.trans_le ?_)⟩
     simpa only [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply] using j.property
 
 /-- Row reduction exactly describes the whole vanishing filtration,

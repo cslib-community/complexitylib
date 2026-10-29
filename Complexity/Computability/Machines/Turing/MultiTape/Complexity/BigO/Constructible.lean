@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Mathlib.Data.Nat.Size
@@ -74,7 +75,7 @@ space. -/
 theorem lengthNat : ComputableTidilyInO (fun l : List Bool => l.length) encBits encNat
     (fun l => (l.length + 1) ^ 2) fun l => l.length + 1 := by
   obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 2
-  have hstep := natSucc.comp (fst encNat encBool)
+  have hstep := ComputableInO.natSucc.tidy.comp (fst encNat encBool)
   have hlen (x : List Bool) (i : ℕ) :
       (List.take i x).foldl (fun n _ => n + 1) 0 = min i x.length := by
     simp [List.foldl_const]
@@ -160,14 +161,15 @@ theorem ComputableTidilyInO.natToUnary : ComputableTidilyInO (fun n : ℕ => n) 
     induction n with
     | zero => rfl
     | succ n ih => rw [Function.iterate_succ_apply', ih]
-  have h := ComputableTidilyInO.iterate (n := fun n : ℕ => n) (init := fun _ => 0)
+  have h := (ComputableInO.iterate (n := fun n : ℕ => n) (init := fun _ => 0)
     (step := (· + 1)) (encIn := encNat) (encB := encUnary)
-    (ComputableTidilyInO.of_linear (.of_eq fun _ => rfl)) (ComputableTidilyInO.const 0)
-    ComputableTidilyInDegree.unary_succ.inO_one (R := fun n => n) (Q := fun n => n)
+    (ComputableTidilyInO.of_linear (.of_eq fun _ => rfl)).computableInO
+    (ComputableTidilyInO.const 0).computableInO
+    ComputableTidilyInDegree.unary_succ.inO_one.computableInO (R := fun n => n) (Q := fun n => n)
     (B := fun n => n)
     (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)
     (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)
-    (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)
+    (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)).tidy
   refine (h.of_enc_eq fun n => by rw [hiter]).mono 8 (fun n => ?_) fun n => ?_
   all_goals
     have := Universal.length_encNat_le n

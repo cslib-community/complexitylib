@@ -19,9 +19,11 @@ the same constructed scheme. This module assembles correctness, budget-independe
 widths and security without assuming those conclusions for the output scheme. Native certificates
 for its algorithms remain available in `Leveled.PolyTime`.
 
-`Leveled.exists_decrypt_circuits` and `Leveled.exists_decrypt_parameter_bound` give one decryption
-circuit family and one parameter-only resource bound shared by all budgets. These include the
-complete tagged decoder and are chosen independently of the requested depth family.
+`Leveled.exists_decrypt_circuits`, `Leveled.exists_uniform_decrypt_circuits` and
+`Leveled.exists_decrypt_parameter_bound` give one decryption circuit family (with a native
+polynomial-time circuit generator when `secretWidth` is computable in polynomial time in unary) and
+one parameter-only resource bound shared by all budgets. These include the complete tagged decoder
+and are chosen independently of the requested depth family.
 
 The contract evaluates fresh ciphertexts under an efficiently computed unary depth budget. It
 does not promise arbitrary reuse of evaluated wrapper ciphertexts, circuit privacy, a concrete

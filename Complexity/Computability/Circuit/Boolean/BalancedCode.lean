@@ -14,7 +14,9 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.It
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Mathlib.Data.List.GetD
@@ -119,10 +121,10 @@ private theorem codeMass_le_encoding (c : Code) : codeMass c ≤ (encCode c).len
     apply List.sum_le_sum
     intro gate _
     have := length_le_length_encList encNat gate.2
-    simp only [encGate, length_encPair]
+    simp only [encGate, Circuit.encGate, length_encPair]
     omega
   have ho := length_le_length_encList encNat c.2
-  simp only [codeMass, encCode, length_encPair]
+  simp only [codeMass, encCode, Circuit.encCode, encGate, length_encPair] at hg ⊢
   omega
 
 private theorem wireBitsLe_encoding (c : Code) : WireBitsLe c (encCode c).length := by

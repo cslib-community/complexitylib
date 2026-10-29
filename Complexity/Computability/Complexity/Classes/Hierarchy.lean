@@ -15,6 +15,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPo
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # A decidable problem outside P
@@ -177,7 +178,7 @@ theorem computableInO_verdict :
       fun r => (eOut r).length := by
   have this : ComputableTidilyInO verdict eOut encBool (fun r => ((eOut r).length + 1) ^ 2) fun r =>
       (eOut r).length := by
-    have heq := (ComputableTidilyInO.eq (encList encUnary)).comp
+    have heq := (ComputableInO.eq (encList encUnary)).tidy.comp
       ((ComputableTidilyInO.fst (encList encUnary) encBool).prod
         (ComputableTidilyInO.const (encMid := encList encUnary) [eBit true]))
     have hfin := (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)

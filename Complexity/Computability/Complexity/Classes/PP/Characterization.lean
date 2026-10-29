@@ -100,20 +100,16 @@ theorem mem_PP_iff_decidesByNonstrictMajority {A : Set α} :
     A ∈ PP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
       ComputableInPolyTime V (encPair enc encBits) encBool ∧
         DecidesByNonstrictMajority enc p V A := by
-  have this : A ∈ PP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ DecidesByNonstrictMajority enc p
-      V A := by
-    constructor
-    · intro hA
-      obtain ⟨p, V, hV, h⟩ := mem_PP.mp (compl_mem_PP hA)
-      refine ⟨p, fun x => !V x, ComputableTidilyInPolyTime.bool_not.comp hV.tidy, ?_⟩
-      simpa using decidesByMajority_iff_decidesByNonstrictMajority_compl.1 h
-    · rintro ⟨p, V, hV, h⟩
-      have h' : DecidesByMajority enc p (fun x => !V x) Aᶜ := by
-        rw [decidesByMajority_iff_decidesByNonstrictMajority_compl]
-        simpa using h
-      simpa using compl_mem_PP ⟨p, _, .of_tidy (ComputableTidilyInPolyTime.bool_not.comp hV), h'⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  constructor
+  · intro hA
+    obtain ⟨p, V, hV, h⟩ := mem_PP.mp (compl_mem_PP hA)
+    refine ⟨p, fun x => !V x, ComputableInPolyTime.bool_not.comp hV, ?_⟩
+    simpa using decidesByMajority_iff_decidesByNonstrictMajority_compl.1 h
+  · rintro ⟨p, V, hV, h⟩
+    have h' : DecidesByMajority enc p (fun x => !V x) Aᶜ := by
+      rw [decidesByMajority_iff_decidesByNonstrictMajority_compl]
+      simpa using h
+    simpa using compl_mem_PP ⟨p, _, ComputableInPolyTime.bool_not.comp hV, h'⟩
 
 /-! ### Reductions -/
 
@@ -126,15 +122,13 @@ theorem PolyTimeReducible.mem_PP {β : Type} {encB : β ↪ List Bool} {A : Set 
   rw [Complexity.mem_PP] at hB ⊢
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, W, hW, hWB⟩ := hB
-  have hf := hf.tidy
-  have hW := hW.tidy
-  have hlen : ComputableTidilyInPolyTime (fun a => q.eval (encB (f a)).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval q).comp
-      ((ComputableTidilyInPolyTime.encoding_length encB).comp hf)
+  have hlen : ComputableInPolyTime (fun a => q.eval (encB (f a)).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval q).comp
+      ((ComputableInPolyTime.encoding_length encB).comp hf)
   obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
   refine ⟨p,
     andVerifier (fun a => q.eval (encB (f a)).length) (fun x => W (f x.1, x.2)) fun _ => true,
-    .of_tidy (computableTidilyInPolyTime_andVerifier hlen
+    (computableInPolyTime_andVerifier hlen
       (hW.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits))) (.const true)),
     fun a => ?_⟩
   obtain ⟨j, hj⟩ := Nat.exists_eq_add_of_le (hle a)
@@ -155,7 +149,6 @@ theorem mem_PP_iff_exists_SharpP {A : Set α} :
   · rintro ⟨p, V, hV, h⟩
     exact ⟨_, ⟨p, V, hV, fun _ => rfl⟩, p, h⟩
   · rintro ⟨f, ⟨p, V, hV, hf⟩, q, h⟩
-    replace hV := hV.tidy
     -- on `false`, accept unless the first `k + 1` bits are `false`; on `true`, accept a
     -- certificate of `V` followed by a free bit and bits `false`
     refine ⟨p + q + 1 + 1, selectVerifier

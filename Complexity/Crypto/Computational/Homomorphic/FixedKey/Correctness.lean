@@ -19,20 +19,30 @@ randomness. Inputs need only have the base ciphertext width and the desired decr
 includes outputs of previous evaluations. Every finite circuit preserves the same key and exact
 ciphertext width.
 
+GHV is cited for the multi-hop notion (paraphrase: evaluation can be applied to its own outputs)
+[GentryHaleviVaikuntanathan2010], which `evaluate_twoHop_spec` instantiates for the fixed-key
+scheme evaluator itself.
+
 ## Main results
 
 * `Cslib.Crypto.Homomorphic.FixedKey.encryptedWires_evaluateCircuit`: arbitrary circuit outputs
   retain their plaintexts and width under the same key.
 * `Cslib.Crypto.Homomorphic.FixedKey.evaluate_spec`: the constructed evaluator accepts earlier
   evaluated ciphertexts with the correct width and decryption.
+* `Cslib.Crypto.Homomorphic.FixedKey.encryptedWires_of_evaluate`: outputs of pointwise fixed-key
+  evaluations again satisfy the wire invariant and can be fed into further evaluations.
+* `Cslib.Crypto.Homomorphic.FixedKey.evaluate_twoHop_spec`: two-hop fixed-key evaluation produces
+  a base-width ciphertext that decrypts to the composed circuit value.
 * `Cslib.Crypto.Homomorphic.FixedKey.correct`: perfect correctness for every finite circuit.
 * `Cslib.Crypto.Homomorphic.FixedKey.fixedWidth`: unchanged secret and ciphertext widths.
 * `Cslib.Crypto.Homomorphic.FixedKey.decryptionCircuits`: reuse the actual decryption circuit.
 
 ## References
 
-* [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2, the self-loop
-  construction][Gentry2009]
+* [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2, pp. 171--172,
+  the self-loop construction][Gentry2009]
+* [C. Gentry, S. Halevi, and V. Vaikuntanathan, *$i$-Hop Homomorphic Encryption and
+  Rerandomizable Yao Circuits*][GentryHaleviVaikuntanathan2010]
 -/
 
 @[expose] public section
@@ -151,6 +161,50 @@ theorem evaluate_spec (hE : E.Correct) (hwidth : E.FixedWidth secretWidth cipher
   rw [decrypt_eq D n base.2 (row.headD []) hsk hlength]
   rw [List.headD_eq_getD]
   simpa using hout.2
+
+/-- Outputs of pointwise fixed-key evaluations again satisfy the wire invariant under the same
+secret key, so they can be fed into subsequent homomorphic evaluations. -/
+theorem encryptedWires_of_evaluate (hE : E.Correct)
+    (hwidth : E.FixedWidth secretWidth ciphertextWidth) (hD : Scheme.Bootstrappable D)
+    {n : ℕ} {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval ((scheme D).keyGen n)).support)
+    {midBits : List Bool} {mids : List (List Bool)}
+    (hmids : List.Forall₂
+      (fun bit mid =>
+        ∃ (c : Σ m, Circuit signature m 1) (bits : List Bool) (inputs : List (List Bool)),
+          bits.length = c.1 ∧
+            (scheme D).EncryptedWires ciphertextWidth n keys.2 bits inputs ∧
+            mid ∈ (ProbComp.eval ((scheme D).evaluate n keys.1 c inputs)).support ∧
+            c.2.eval interpretation (BitString.ofList c.1 bits) 0 = bit)
+      midBits mids) :
+    (scheme D).EncryptedWires ciphertextWidth n keys.2 midBits mids :=
+  hmids.imp fun _ _ ⟨c, bits, inputs, hbits, hinputs, hmid, heval⟩ => by
+    have hspec := evaluate_spec D hE hwidth hD n keys hkeys c bits inputs hbits hinputs _ hmid
+    exact ⟨hspec.1, hspec.2.trans heval⟩
+
+/-- Two-hop fixed-key evaluation: feeding outputs of first-hop circuit evaluations into an outer
+circuit evaluation retains the base ciphertext width and decrypts to the composed circuit value. -/
+theorem evaluate_twoHop_spec (hE : E.Correct)
+    (hwidth : E.FixedWidth secretWidth ciphertextWidth) (hD : Scheme.Bootstrappable D)
+    (n : ℕ) (keys : List Bool × List Bool)
+    (hkeys : keys ∈ (ProbComp.eval ((scheme D).keyGen n)).support)
+    (outer : Σ m, Circuit signature m 1) (midBits : List Bool) (mids : List (List Bool))
+    (hmidBits : midBits.length = outer.1)
+    (hmids : List.Forall₂
+      (fun bit mid =>
+        ∃ (c : Σ m, Circuit signature m 1) (bits : List Bool) (inputs : List (List Bool)),
+          bits.length = c.1 ∧
+            (scheme D).EncryptedWires ciphertextWidth n keys.2 bits inputs ∧
+            mid ∈ (ProbComp.eval ((scheme D).evaluate n keys.1 c inputs)).support ∧
+            c.2.eval interpretation (BitString.ofList c.1 bits) 0 = bit)
+      midBits mids)
+    (ciphertext : List Bool)
+    (hc : ciphertext ∈ (ProbComp.eval ((scheme D).evaluate n keys.1 outer mids)).support) :
+    ciphertext.length = ciphertextWidth n ∧
+      (scheme D).decrypt n keys.2 ciphertext =
+        outer.2.eval interpretation (BitString.ofList outer.1 midBits) 0 :=
+  evaluate_spec D hE hwidth hD n keys hkeys outer midBits mids hmidBits
+    (encryptedWires_of_evaluate D hE hwidth hD hkeys hmids) ciphertext hc
 
 /-- Actual bootstrapping constructs a correct scheme permitting every finite Boolean circuit. -/
 theorem correct (hE : E.Correct) (hwidth : E.FixedWidth secretWidth ciphertextWidth)

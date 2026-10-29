@@ -7,11 +7,15 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
 
 /-!
 # The cost of a step of the simulation
@@ -307,9 +311,11 @@ public theorem applyTapes_inO :
       (p.1.take i).length
     simp only [length_encPair, List.nil_append] at h₁ h₂ h₃ ⊢
     omega
-  have hfold := foldl (encL := encList eTape) (encB := encPair (encList eTA) (encList eTape))
-    (fst (encList eTape) (encList eTA)) ((snd (encList eTape) (encList eTA)).prod (const []))
-    applyStep_deg.inO_one
+  have hfold := (ComputableInO.foldl (encL := encList eTape)
+    (encB := encPair (encList eTA) (encList eTape))
+    (fst (encList eTape) (encList eTA)).computableInO
+    ((snd (encList eTape) (encList eTA)).prod (const [])).computableInO
+    applyStep_deg.inO_one.computableInO
     (R := fun p => 14 * (encPair (encList eTape) (encList eTA) p).length + 1)
     (Q := fun p => 14 * (encPair (encList eTape) (encList eTA) p).length + 1)
     (B := fun p => 6 * (encPair (encList eTape) (encList eTA) p).length)
@@ -323,7 +329,7 @@ public theorem applyTapes_inO :
       have h₂ := length_le_encList_of_mem eTape (List.getElem_mem hi)
       simp only [length_encPair] at h₁ h₂ ⊢
       omega)
-    (fun p i hi => hlen p i)
+    (fun p i hi => hlen p i)).tidy
   refine (((snd (encList eTA) (encList eTape)).comp_linear hfold).mono 32 (fun p => ?_)
     fun p => ?_).of_enc_eq fun p => ?_
   · simp only [length_encPair]
@@ -382,16 +388,17 @@ public theorem inputSymbol_inO :
       (encList encUnary (List.tail^[k] q.1)).length ≤ (encList encUnary q.1).length := by
     rw [List.tail_iterate]
     exact SizedListEncoding.length_drop_le (encA := encUnary) _ _
-  have hiter := iterate (natPred.comp hp) hx (ComputableTidilyInDegree.tail (enc₁ := encUnary)
-    (enc := encList encUnary)).inO_one (R := fun q => (encList encUnary q.1).length)
+  have hiter := (ComputableInO.iterate (ComputableInO.natPred.tidy.comp hp).computableInO
+    hx.computableInO (ComputableTidilyInDegree.tail (enc₁ := encUnary)
+    (enc := encList encUnary)).inO_one.computableInO (R := fun q => (encList encUnary q.1).length)
     (Q := fun q => (encList encUnary q.1).length) (B := fun q => (encList encUnary q.1).length)
-    (fun q k _ => hdrop q k) (fun q k _ => hdrop q k) fun q k _ => hdrop q k
+    (fun q k _ => hdrop q k) (fun q k _ => hdrop q k) fun q k _ => hdrop q k).tidy
   have hsym := ((ComputableTidilyInDegree.isEmpty (enc₁ := encUnary)).inO_one.comp_linear
     hiter).ite (const none) ((ComputableTidilyInDegree.optionSome (enc₁ := encUnary)
       (enc := eSym)).inO_one.comp_linear
         ((ComputableTidilyInDegree.headD (enc₁ := encUnary) 0).inO_one.comp_linear hiter))
-  refine (((natIsZero.comp_linear hp).ite (const none) hsym).mono 64 (fun q => ?_)
-    fun q => ?_).of_enc_eq fun q => by
+  refine (((ComputableInO.natIsZero.tidy.comp_linear hp).ite (const none) hsym).mono 64
+    (fun q => ?_) fun q => ?_).of_enc_eq fun q => by
       rw [inputSymbol_eq]; simp only [Function.comp_apply, decide_eq_true_eq]
   all_goals
     have h₁ := length_encNat_mono (Nat.sub_le q.2 1)
@@ -421,11 +428,11 @@ public theorem moveInput_inO :
     (encMid := encBool) fun m : SignType => decide (m = s)).inO_one.comp_linear hm
   have hright := (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
     (encMid := encBool) fun b : Bool × Bool => b.1 || b.2).inO_one.comp_linear
-      ((natIsZero.comp_linear hp).prod
+      ((ComputableInO.natIsZero.tidy.comp_linear hp).prod
         ((ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear ha))
-  refine (((hsign .zero).ite hp ((hsign .neg).ite (natPred.comp hp)
-    (hright.ite (natSucc.comp hp) hp))).mono 8 (fun q => ?_) fun q => ?_).of_enc_eq
-    fun ⟨p, a, m⟩ => ?_
+  refine (((hsign .zero).ite hp ((hsign .neg).ite (ComputableInO.natPred.tidy.comp hp)
+    (hright.ite (ComputableInO.natSucc.tidy.comp hp) hp))).mono 8 (fun q => ?_)
+    fun q => ?_).of_enc_eq fun ⟨p, a, m⟩ => ?_
   · have h₁ : (encNat q.1).length ≤ (encPair encNat (encPair eSym encSign) q).length := by
       rw [length_encPair]; omega
     simp only [Function.comp_apply]
@@ -579,7 +586,7 @@ public theorem stepWith_inO :
       dsimp only [eWCtx, Function.comp_apply] at *
       omega
   -- the transition
-  have htest := (eq eKey).comp ((snd eKey (encPair eKey eAct)).fst'.prod
+  have htest := (ComputableInO.eq eKey).tidy.comp ((snd eKey (encPair eKey eAct)).fst'.prod
     (fst eKey (encPair eKey eAct)))
   have hfound : WPart wFound (encOption (encPair eKey eAct)) := by
     refine (findWith htest hkey htable).mono 64 (fun c => ?_) fun c => ?_

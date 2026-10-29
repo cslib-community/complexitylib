@@ -65,7 +65,7 @@ example : {w : List Bool | w.headD false = true} ∆ Set.univ ∈ WPP encBits :=
 private def twoTargets (b : Bool) (_ : ℕ) : ℤ := if b then 1 else -2
 
 private theorem twoTargets_poly (b : Bool) :
-    ComputableTidilyInPolyTime (twoTargets b) encUnary encIntBin := by
+    ComputableInPolyTime (twoTargets b) encUnary encIntBin := by
   cases b <;> exact .const _
 
 private theorem twoTargets_ne_zero (b : Bool) (n : ℕ) : twoTargets b n ≠ 0 := by
@@ -76,14 +76,13 @@ private def twoTargetGap (w : List Bool) : ℤ :=
   if w.headD false then (if w.tail.headD false then 1 else -2) else 0
 
 private theorem twoTargetGap_poly :
-    ComputableTidilyInPolyTime twoTargetGap encBits encIntBin := by
-  unfold twoTargetGap
-  fun_prop
+    ComputableInPolyTime twoTargetGap encBits encIntBin :=
+  .of_tidy (by unfold twoTargetGap; fun_prop)
 
 example : {w : List Bool | w.headD false = true} ∈ LWPP encBits := by
   refine mem_LWPP_of_finset_targets (Finset.univ : Finset Bool)
-    (mem_GapP_of_polyTime (.of_tidy twoTargetGap_poly))
-    (fun b _ => .of_tidy (twoTargets_poly b))
+    (mem_GapP_of_polyTime twoTargetGap_poly)
+    (fun b _ => twoTargets_poly b)
     (fun b _ => twoTargets_ne_zero b)
     (fun w => ?_) (fun w => ?_)
   · unfold twoTargetGap twoTargets
@@ -102,8 +101,8 @@ example : {w : List Bool | w.headD false = true} ∈ LWPP encBits := by
 
 example : {w : List Bool | w.headD false = true} ∈ WPP encBits := by
   refine mem_WPP_of_finset_targets (Finset.univ : Finset Bool)
-    (mem_GapP_of_polyTime (.of_tidy twoTargetGap_poly))
-    (fun b _ => .of_tidy ((twoTargets_poly b).comp (.encoding_length encBits)))
+    (mem_GapP_of_polyTime twoTargetGap_poly)
+    (fun b _ => (twoTargets_poly b).comp (.encoding_length encBits))
     (fun b _ w => twoTargets_ne_zero b w.length)
     (fun w => ?_) (fun w => ?_)
   · unfold twoTargetGap twoTargets

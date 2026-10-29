@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 public import Mathlib.Tactic.FunProp
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
 
 /-!
 # Quantitative computability rules
@@ -233,11 +234,11 @@ theorem unary_two_pow : ComputableTidilyInO (fun n : ℕ => 2 ^ n) encUnary encU
       (fun m _ => m + m) 1)).length ≤ 2 ^ n := by
     rw [List.take_replicate, foldl_double, encUnary_apply, List.length_replicate, one_mul]
     exact Nat.pow_le_pow_right (by norm_num) (Nat.min_le_right _ _)
-  have h := foldl (encA := encBool) (encL := encBits) (encB := encUnary)
+  have h := (ComputableInO.foldl (encA := encBool) (encL := encBits) (encB := encUnary)
     (list := fun n : ℕ => List.replicate n true) (init := fun _ => 1)
     (step := fun m _ => m + m)
     (of_linear (.of_eq (f := fun n : ℕ => List.replicate n true) (encIn := encUnary)
-      (encMid := encBits) fun _ => rfl)) (const 1) hstep
+      (encMid := encBits) fun _ => rfl)).computableInO (const 1).computableInO hstep.computableInO
     (R := fun n => 2 * 2 ^ n + 2) (Q := fun n => 2 * 2 ^ n + 2) (B := fun n => 2 ^ n)
     (fun n i _ => by
       have := hstate n i
@@ -247,7 +248,7 @@ theorem unary_two_pow : ComputableTidilyInO (fun n : ℕ => 2 ^ n) encUnary encU
       have := hstate n i
       simp only [length_encPair, encBool_apply, List.length_singleton]
       omega)
-    fun n i _ => hstate n i
+    fun n i _ => hstate n i).tidy
   refine (h.mono 8 (fun n => ?_) fun n => ?_).of_enc_eq fun n => ?_
   · have h₁ : n + 1 ≤ 2 ^ n := Nat.lt_two_pow_self
     have h₂ := Nat.mul_le_mul_left (n + 1) h₁

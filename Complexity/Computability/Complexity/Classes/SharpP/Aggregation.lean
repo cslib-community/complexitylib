@@ -49,15 +49,13 @@ theorem SharpP.sum_bits_mem {f : α × List Bool → ℕ} {r : α → ℕ}
     (hf : f ∈ SharpP (encPair enc encBits))
     (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => ∑ w : Fin (r a) → Bool, f (a, List.ofFn w)) ∈ SharpP enc := by
-  have hr := hr.tidy
   obtain ⟨p, V, hV, hf⟩ := mem_SharpP.mp hf
-  have hV := hV.tidy
   let q : α → ℕ := fun a => p.eval (2 * (enc a).length + 1 + r a)
   let W : α × List Bool → Bool := fun x => V ((x.1, x.2.take (r x.1)), x.2.drop (r x.1))
-  have hq : ComputableTidilyInPolyTime q enc encUnary := by dsimp [q]; fun_prop
-  have hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool := by dsimp [W]; fun_prop
-  convert mem_SharpP_of_polyTime_length (.of_tidy hW)
-    (.of_tidy (ComputableTidilyInPolyTime.unary_add.comp (hr.prod hq)))
+  have hq : ComputableInPolyTime q enc encUnary := by dsimp [q]; fun_prop
+  have hW : ComputableInPolyTime W (encPair enc encBits) encBool := by dsimp [W]; fun_prop
+  convert mem_SharpP_of_polyTime_length hW
+    ((ComputableInPolyTime.unary_add.comp (hr.prod hq)))
     using 1
   ext a
   change _ = acceptCount W a (r a + q a)
@@ -111,28 +109,28 @@ def verifier (r k : α → ℕ) (V W : α × List Bool → Bool) (b : Bool)
 
 /-- The two product verifiers run in polynomial time for unary row count and width. -/
 private theorem polyTime_verifier {r k : α → ℕ} {V W : α × List Bool → Bool}
-    (hr : ComputableTidilyInPolyTime r enc encUnary)
-    (hk : ComputableTidilyInPolyTime k enc encUnary)
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool)
-    (hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool) (b : Bool) :
-    ComputableTidilyInPolyTime (verifier r k V W b) (encPair enc encBits) encBool := by
+    (hr : ComputableInPolyTime r enc encUnary)
+    (hk : ComputableInPolyTime k enc encUnary)
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool)
+    (hW : ComputableInPolyTime W (encPair enc encBits) encBool) (b : Bool) :
+    ComputableInPolyTime (verifier r k V W b) (encPair enc encBits) encBool := by
   let encS := encPair encBool encBool
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun x : (α × State) × List Bool => mul x.1.2 (V (x.1.1, x.2), W (x.1.1, x.2)))
       (encPair (encPair enc encS) encBits) encS := by dsimp [mul, encS]; fun_prop
-  have hfold := ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
+  have hfold := ComputableInPolyTime.foldlWith_of_bounded_growth
     (encA := encBits) (encB := encS) (par := fun x : α × List Bool => x.1)
     (list := fun x => BitString.listRows (r x.1) (k x.1) x.2)
     (init := fun _ => (true, false))
     (step := fun a s row => mul s (V (a, row), W (a, row)))
-    (ComputableTidilyInPolyTime.fst enc encBits) (by fun_prop)
-    (ComputableTidilyInPolyTime.const (true, false)) hstep
+    (ComputableInPolyTime.fst enc encBits) (by fun_prop)
+    (ComputableInPolyTime.const (true, false)) hstep
     (growth := fun _ => 0) (PolyBounded.const 0) (by
       intro x s row _
       simp [encS, encBool_apply])
   cases b
-  · exact (ComputableTidilyInPolyTime.fst encBool encBool).comp hfold
-  · exact (ComputableTidilyInPolyTime.snd encBool encBool).comp hfold
+  · exact (ComputableInPolyTime.fst encBool encBool).comp hfold
+  · exact (ComputableInPolyTime.snd encBool encBool).comp hfold
 
 /-- The difference of the row-product counts is the power of the original difference. -/
 theorem count_sub (r k : α → ℕ) (V W : α × List Bool → Bool) (a : α) :
@@ -161,26 +159,22 @@ theorem count_sub (r k : α → ℕ) (V W : α × List Bool → Bool) (a : α) :
 
 end SignedProduct
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- A GapP function raised to an input-dependent polynomial-time unary exponent is in GapP. -/
 theorem GapP.pow_mem_polyTime {g : α → ℤ} {r : α → ℕ} (hg : g ∈ GapP enc)
     (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => g a ^ r a) ∈ GapP enc := by
-  have hr := hr.tidy
   obtain ⟨f₁, ⟨p₁, V₁, hV₁, hf₁⟩, f₂, ⟨p₂, V₂, hV₂, hf₂⟩, hg⟩ := hg
-  replace hV₁ := hV₁.tidy
-  replace hV₂ := hV₂.tidy
   let k : α → ℕ := fun a => (p₁ + p₂).eval (enc a).length
   let V := andVerifier (fun a => p₁.eval (enc a).length) V₁ allFalseVerifier
   let W := andVerifier (fun a => p₂.eval (enc a).length) V₂ allFalseVerifier
-  have hk : ComputableTidilyInPolyTime k enc encUnary := by dsimp [k]; fun_prop
-  have hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool := by dsimp [V]; fun_prop
-  have hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool := by dsimp [W]; fun_prop
-  have hlength := ComputableTidilyInPolyTime.unary_mul.comp (hr.prod hk)
+  have hk : ComputableInPolyTime k enc encUnary := by dsimp [k]; fun_prop
+  have hV : ComputableInPolyTime V (encPair enc encBits) encBool := by dsimp [V]; fun_prop
+  have hW : ComputableInPolyTime W (encPair enc encBits) encBool := by dsimp [W]; fun_prop
+  have hlength := ComputableInPolyTime.unary_mul.comp (hr.prod hk)
   refine ⟨_, mem_SharpP_of_polyTime_length
-    (.of_tidy (SignedProduct.polyTime_verifier hr hk hV hW false)) (.of_tidy hlength),
-    _, mem_SharpP_of_polyTime_length (.of_tidy (SignedProduct.polyTime_verifier hr hk hV hW true))
-      (.of_tidy hlength),
+    ((SignedProduct.polyTime_verifier hr hk hV hW false)) hlength,
+    _, mem_SharpP_of_polyTime_length ((SignedProduct.polyTime_verifier hr hk hV hW true))
+      hlength,
     fun a => ?_⟩
   change g a ^ r a =
     (acceptCount (SignedProduct.verifier r k V W false) a (r a * k a) : ℤ) -

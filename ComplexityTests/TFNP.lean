@@ -29,7 +29,7 @@ private theorem emptyRel_mem_TFNP : emptyRel ∈ TFNP encBits :=
   ⟨emptyRel_mem_FNP, fun _ => ⟨[], rfl⟩⟩
 
 private theorem emptyRel_mem_FPSearch : emptyRel ∈ FPSearch encBits :=
-  mem_FPSearch_of_total emptyRel_mem_FNP (.of_tidy (ComputableTidilyInPolyTime.const [])) fun _ =>
+  mem_FPSearch_of_total emptyRel_mem_FNP (ComputableInPolyTime.const []) fun _ =>
     rfl
 
 example : searchDomain emptyRel = Set.univ :=
@@ -123,8 +123,8 @@ example : PolyTimeReducible encBits encBits (searchDomain emptyRel) (searchDomai
 
 /-- A reduction to the total `emptyRel` needs only the one-way condition on solutions. -/
 example : SearchReducible encBits encBits emptyRel emptyRel :=
-  .of_isTotalSearch emptyRel_mem_TFNP.2 (.of_tidy ComputableTidilyInPolyTime.id')
-    (.of_tidy (ComputableTidilyInPolyTime.const [])) fun _ _ _ => rfl
+  .of_isTotalSearch emptyRel_mem_TFNP.2 ComputableInPolyTime.id'
+    (ComputableInPolyTime.const []) fun _ _ _ => rfl
 
 /-- **A complete problem.** `emptyRel` is complete for the total problems solvable in polynomial
 time: such a problem reduces to it by solving the instance in the map back. -/
@@ -132,31 +132,33 @@ example : SearchComplete (fun {α : Type} (enc : α ↪ List Bool) => TFNP enc �
     encBits emptyRel := by
   refine ⟨⟨emptyRel_mem_TFNP, emptyRel_mem_FPSearch⟩, fun _ enc R ⟨hR, hR'⟩ => ?_⟩
   obtain ⟨g, hg, hgR⟩ := exists_total_of_mem_FPSearch hR' hR.2
-  exact .of_isTotalSearch emptyRel_mem_TFNP.2 (.of_tidy (ComputableTidilyInPolyTime.const []))
-    (hg.comp (.of_tidy (ComputableTidilyInPolyTime.fst enc encBits))) fun a _ _ => hgR a
+  exact .of_isTotalSearch emptyRel_mem_TFNP.2 (ComputableInPolyTime.const [])
+    (hg.comp (ComputableInPolyTime.fst enc encBits)) fun a _ _ => hgR a
 
 /-! ### `SAT` -/
 
-example : SAT.searchRel ∈ FNP encCNF := SAT.searchRel_mem_FNP
+example : prefixSearch SAT.searchRel ∈ FNP (encPair encCNF encBits) :=
+  prefixSearch_mem_FNP SAT.searchRel_mem_FNP
+
 example : searchDomain SAT.searchRel ∈ NP encCNF := searchDomain_mem_NP SAT.searchRel_mem_FNP
-example : SAT.searchRel ∈ FPSearch encCNF ↔ SAT ∈ P encCNF := SAT.searchRel_mem_FPSearch_iff
-example : (∀ {α : Type} (enc : α ↪ List Bool), FNP enc ⊆ FPSearch enc) ↔ SAT ∈ P encCNF :=
-  FNP_subset_FPSearch_iff_SAT_mem_P
+
+example : (∀ {α : Type} (enc : α ↪ List Bool), FNP enc ⊆ FPSearch enc) ↔
+    SAT.searchRel ∈ FPSearch encCNF :=
+  FNP_subset_FPSearch_iff_SAT_mem_P.trans SAT.searchRel_mem_FPSearch_iff.symm
 
 /-! ### `TFNP` subclasses (`PLS`, `PPP`, `PPAD`, `PPA`) and circuit problems -/
 
-example : LocalOpt ∈ PLS encLocalOpt := LocalOpt_mem_PLS
-example : Pigeon ∈ PPP encPigeon := Pigeon_mem_PPP
-example : EndOfLine ∈ PPAD encEndOfLine := EndOfLine_mem_PPAD
-example : Leaf ∈ PPA encLeaf := Leaf_mem_PPA
+example : searchDomain LocalOpt = Set.univ :=
+  isTotalSearch_iff_searchDomain_eq_univ.1 LocalOpt_mem_TFNP.2
 
-example : LocalOpt ∈ TFNP encLocalOpt := LocalOpt_mem_TFNP
-example : Pigeon ∈ TFNP encPigeon := Pigeon_mem_TFNP
-example : EndOfLine ∈ TFNP encEndOfLine := EndOfLine_mem_TFNP
-example : Leaf ∈ TFNP encLeaf := Leaf_mem_TFNP
+example : searchDomain Pigeon = Set.univ :=
+  isTotalSearch_iff_searchDomain_eq_univ.1 Pigeon_mem_TFNP.2
 
-example : EndOfLine ∈ PPP encEndOfLine := EndOfLine_mem_PPP
-example : EndOfLine ∈ PPA encEndOfLine := EndOfLine_mem_PPA
+example : searchDomain EndOfLine = Set.univ :=
+  isTotalSearch_iff_searchDomain_eq_univ.1 EndOfLine_mem_TFNP.2
+
+example : searchDomain Leaf = Set.univ :=
+  isTotalSearch_iff_searchDomain_eq_univ.1 Leaf_mem_TFNP.2
 
 /-- Concrete 1-bit wire circuit code `x ↦ x` and negation circuit code `x ↦ ¬x`. -/
 private def idCode1 : CircuitCode := ([], [0])
@@ -189,22 +191,50 @@ example : ¬EndOfLine (1, idCode1, idCode1) [true] := fun ⟨_, h⟩ =>
 example : Leaf (1, notCode1, idCode1) [true] :=
   ⟨rfl, rfl⟩
 
-/-- Every total polynomial-time search problem reduces to `EndOfLine` and therefore belongs to
+/-! The total `emptyRel` reduces to `LocalOpt`, `Pigeon`, `EndOfLine`, and `Leaf`, and so lies in
 `PLS`, `PPP`, `PPAD`, and `PPA`. -/
+
+private theorem emptyRel_searchReducible_LocalOpt :
+    SearchReducible encBits encLocalOpt emptyRel LocalOpt :=
+  .of_isTotalSearch isTotalSearch_LocalOpt
+    (ComputableInPolyTime.const (0, ([], []), ([], [])))
+    (ComputableInPolyTime.const []) fun _ _ _ => rfl
+
+private theorem emptyRel_searchReducible_Pigeon :
+    SearchReducible encBits encPigeon emptyRel Pigeon :=
+  .of_isTotalSearch isTotalSearch_Pigeon
+    (ComputableInPolyTime.const (0, ([], [])))
+    (ComputableInPolyTime.const []) fun _ _ _ => rfl
+
 private theorem emptyRel_searchReducible_EndOfLine :
     SearchReducible encBits encEndOfLine emptyRel EndOfLine :=
   .of_isTotalSearch isTotalSearch_EndOfLine
-    (.of_tidy (ComputableTidilyInPolyTime.const (0, ([], []), ([], []))))
-    (.of_tidy (ComputableTidilyInPolyTime.const [])) fun _ _ _ => rfl
+    (ComputableInPolyTime.const (0, ([], []), ([], [])))
+    (ComputableInPolyTime.const []) fun _ _ _ => rfl
+
+private theorem emptyRel_searchReducible_Leaf :
+    SearchReducible encBits encLeaf emptyRel Leaf :=
+  .of_isTotalSearch isTotalSearch_Leaf
+    (ComputableInPolyTime.const (0, ([], []), ([], [])))
+    (ComputableInPolyTime.const []) fun _ _ _ => rfl
+
+example : emptyRel ∈ PLS encBits :=
+  emptyRel_searchReducible_LocalOpt.mem_PLS emptyRel_mem_FNP LocalOpt_mem_PLS
+
+example : emptyRel ∈ PPP encBits :=
+  emptyRel_searchReducible_Pigeon.mem_PPP emptyRel_mem_FNP Pigeon_mem_PPP
 
 example : emptyRel ∈ PPAD encBits :=
   emptyRel_searchReducible_EndOfLine.mem_PPAD emptyRel_mem_FNP EndOfLine_mem_PPAD
 
+example : emptyRel ∈ PPA encBits :=
+  emptyRel_searchReducible_Leaf.mem_PPA emptyRel_mem_FNP Leaf_mem_PPA
+
 example : emptyRel ∈ PPP encBits :=
-  PPAD_subset_PPP (emptyRel_searchReducible_EndOfLine.mem_PPAD emptyRel_mem_FNP EndOfLine_mem_PPAD)
+  emptyRel_searchReducible_EndOfLine.mem_PPP emptyRel_mem_FNP EndOfLine_mem_PPP
 
 example : emptyRel ∈ PPA encBits :=
-  PPAD_subset_PPA (emptyRel_searchReducible_EndOfLine.mem_PPAD emptyRel_mem_FNP EndOfLine_mem_PPAD)
+  emptyRel_searchReducible_EndOfLine.mem_PPA emptyRel_mem_FNP EndOfLine_mem_PPA
 
 /-- The family certifying a `PPAD` membership is plain (`mem_PPAD`). -/
 example : ∃ n : _ → ℕ, ComputableInPolyTime n encEndOfLine encUnary := by

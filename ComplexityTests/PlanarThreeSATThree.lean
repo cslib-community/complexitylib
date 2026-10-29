@@ -33,8 +33,11 @@ example : toDrawnPlanarThreeSATThree [[(0, true), (1, true), (2, true), (3, true
 example : toDrawnPlanarThreeSATThree [[(0, true)], [(0, false)], [(0, true)], [(0, false)]] =
     ([[]], [(0, 0)], []) := by decide +kernel
 
--- A valid succinct label takes the actual 32-clause compilation branch.
-example : (toPlanarThreeSATThree [[(2 ^ 100, true)]]).length = 32 := by decide +kernel
+-- A succinct binary label takes the actual paired compilation branch.
+example : (toPlanarThreeSATThree [[(2 ^ 100, true)]]).length = 319 := by
+  change (SAT.ParsimoniousPlanar.formula [[(2 ^ 100, true)]]).length = 319
+  rw [SAT.ParsimoniousPlanar.length_formula]
+  decide +kernel
 
 -- Original 3SAT inputs use the occurrence splitter before the geometric compiler.
 example : (toPlanarThreeSAT [[(7, true)]]).Satisfiable := by
@@ -68,5 +71,12 @@ example : Graph.IsPlanarOrthogonalDrawing
 
 example : ([[]], [(0, 0)], []) ∉ DrawnPlanarThreeSATThree := by
   simp [DrawnPlanarThreeSATThree, ThreeSATThree, CNF.Satisfiable]
+
+-- The paired-port variable and placed-clause encodings are computable via `FinEnum`.
+example : SAT.ParsimoniousPlanar.encVariable ((0, 0), .inl (0, 0)) ≠
+    SAT.ParsimoniousPlanar.encVariable ((0, 0), .inr .center) := by decide +kernel
+
+example : (SAT.ParsimoniousPlanar.encPlacedClause
+    ([(((0, 0), .inl (0, 0)), true)], (0, 0), [[(0, 0)]])).isEmpty = false := by decide +kernel
 
 end ComplexityTests.PlanarThreeSATThree

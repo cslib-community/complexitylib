@@ -736,7 +736,7 @@ private noncomputable abbrev encHandlerInput :
     ((((ℕ × List Bool) × ℕ) × (List Bool × List (List Bool × List Bool))) ×
       ((Unit × List Bool) × List (ℕ × List Bool))) ↪ List Bool :=
   encPair encCaller
-    (encPair (encPair (encFinite Unit) encBits) (encList (encPair encUnary encBits)))
+    (encPair (encPair (encFinEnum Unit) encBits) (encList (encPair encUnary encBits)))
 
 include hH hlen hcap in
 private theorem isOraclePPTOn_plantedHandler {bound : ℕ → ℕ}
@@ -747,9 +747,9 @@ private theorem isOraclePPTOn_plantedHandler {bound : ℕ → ℕ}
         plantedHandler S H depth p.1.1.1.1 p.1.2.1 p.1.2.2 p.1.1.2 (bound p.1.1.1.1) p.2.1
           p.2.2) := by
   have hc := ComputableTidilyInPolyTime.fst encCaller
-    (encPair (encPair (encFinite Unit) encBits) (encList (encPair encUnary encBits)))
+    (encPair (encPair (encFinEnum Unit) encBits) (encList (encPair encUnary encBits)))
   have hrest := ComputableTidilyInPolyTime.snd encCaller
-    (encPair (encPair (encFinite Unit) encBits) (encList (encPair encUnary encBits)))
+    (encPair (encPair (encFinEnum Unit) encBits) (encList (encPair encUnary encBits)))
   have hn := (ComputableTidilyInPolyTime.fst _ _).comp ((ComputableTidilyInPolyTime.fst _ _).comp
     ((ComputableTidilyInPolyTime.fst _ _).comp hc))
   have hi := (ComputableTidilyInPolyTime.snd _ _).comp

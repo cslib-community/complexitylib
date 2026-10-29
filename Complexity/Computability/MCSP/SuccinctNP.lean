@@ -63,9 +63,10 @@ given in binary. The verifier instantiates `MCSP.checkCertificateOn` with the li
   soundness and padded completeness of `SuccinctMCSP.verifier`.
 * `Cslib.SuccinctMCSP.isVerifier`, `Cslib.SuccinctMCSP.isVerifier_encBinary`: verifier correctness.
 * `Cslib.SuccinctMCSP.computableInPolyTime_rawVerifier`,
+  `Cslib.SuccinctMCSP.computableInPolyTime_id_enc_encBinary`,
   `Cslib.SuccinctMCSP.computableInPolyTime_verifier`,
   `Cslib.SuccinctMCSP.computableInPolyTime_verifier_encBinary`: polynomial-time certificates for
-  the verifiers.
+  the verifiers and unary-to-binary threshold re-encoding.
 * `Cslib.SuccinctMCSP.mem_NP`, `Cslib.SuccinctMCSP.mem_NP_encBinary`: `SuccinctMCSP ∈ NP`.
 
 ## References
@@ -314,10 +315,6 @@ def rawVerifier (r : ((ℕ × List (List Bool × Bool)) × ℕ) × List Bool) : 
 def verifier (p : Instance × List Bool) : Bool :=
   rawVerifier (toRaw p.1, p.2)
 
-theorem verifier_eq_rawVerifier (p : Instance × List Bool) :
-    verifier p = rawVerifier (((p.1.arity, rawSamples p.1), p.1.threshold), p.2) :=
-  rfl
-
 theorem verifier_eq (x : Instance) (w : List Bool) :
     verifier (x, w) =
       MCSP.checkCertificateOn (rawSamples x) Prod.fst (fun p out => out == p.2)
@@ -427,28 +424,26 @@ theorem computableInPolyTime_verifier_encBinary :
     .of_eq fun _ => rfl
   exact computableInPolyTime_rawVerifier.comp hraw
 
+/-- Re-encoding a `SuccinctMCSP.Instance` from unary threshold encoding (`enc`) to binary threshold
+encoding (`encBinary`) is computable in polynomial time. -/
+theorem computableInPolyTime_id_enc_encBinary :
+    ComputableInPolyTime id enc encBinary := by
+  let encPairIn := encPair encUnary (encList (encPair encBits encBool))
+  have hraw : ComputableInPolyTime toRaw enc (encPair encPairIn encUnary) :=
+    .of_eq fun _ => rfl
+  have hconv : ComputableInPolyTime
+      (fun r : (ℕ × List (List Bool × Bool)) × ℕ => (r.1, r.2))
+      (encPair encPairIn encUnary) (encPair encPairIn encNat) :=
+    (ComputableInPolyTime.fst _ _).prod
+      (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _))
+  exact (hconv.comp hraw).of_enc_eq fun _ => rfl
+
 /-- The `SuccinctMCSP` verifier is computable in polynomial time under `enc` (unary threshold). -/
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair enc encBits) encBool := by
-  let encSamples := encList (encPair encBits encBool)
-  let encPairIn := encPair encUnary encSamples
-  let encRawUnary := encPair encPairIn encUnary
-  have hraw : ComputableInPolyTime
-      (fun p : Instance × List Bool => (((p.1.arity, rawSamples p.1), p.1.threshold), p.2))
-      (encPair enc encBits)
-      (encPair encRawUnary encBits) :=
-    .of_eq fun _ => rfl
-  have h1 := ComputableInPolyTime.fst encRawUnary encBits
-  have h11 := h1.fst'
-  have h12 := ComputableInPolyTime.unary_to_binary.comp h1.snd'
-  have h2 := ComputableInPolyTime.snd encRawUnary encBits
-  have hconv : ComputableInPolyTime
-      (fun r : ((ℕ × List (List Bool × Bool)) × ℕ) × List Bool => ((r.1.1, r.1.2), r.2))
-      (encPair encRawUnary encBits)
-      (encPair (encPair encPairIn encNat) encBits) :=
-    (h11.prod h12).prod h2
-  rw [funext verifier_eq_rawVerifier]
-  exact (computableInPolyTime_rawVerifier.comp hconv).comp hraw
+    ComputableInPolyTime verifier (encPair enc encBits) encBool :=
+  computableInPolyTime_verifier_encBinary.comp
+    ((computableInPolyTime_id_enc_encBinary.comp (ComputableInPolyTime.fst enc encBits)).prod
+      (ComputableInPolyTime.snd enc encBits))
 
 /-- **`SuccinctMCSP` is in `NP`** under `SuccinctMCSP.enc` (unary arity, framed sample list, and
 unary threshold) [OliveiraPichSanthanam2019, Section 4.1, proof of Theorem 1.4]. -/

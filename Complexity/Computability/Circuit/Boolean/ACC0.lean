@@ -75,8 +75,8 @@ open Set Finset BitString Unbounded Cslib.Complexity Turing.MultiTapeTM
 /-- **Parity is in `P`** (`Language.ofSlices parity ∈ P encBits`). -/
 theorem parity_mem_P : (Language.ofSlices parity : Set (List Bool)) ∈ P encBits := by
   refine ⟨fun w => w.foldl bne false, ?_, fun w => ?_⟩
-  · exact .of_tidy <| ComputableTidilyInPolyTime.bitsFoldlWithInput bne
-      ComputableTidilyInPolyTime.id' (ComputableTidilyInPolyTime.const false)
+  · exact ComputableInPolyTime.bitsFoldlWithInput bne
+      ComputableInPolyTime.id' (ComputableInPolyTime.const false)
   · change w ∈ (Language.ofSlices parity : Language Bool) ↔ w.foldl bne false = true
     rw [Language.mem_ofSlices, foldl_bne_eq_parity]
 

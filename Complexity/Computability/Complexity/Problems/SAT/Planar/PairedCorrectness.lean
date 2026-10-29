@@ -46,7 +46,7 @@ theorem crossing_axes_exist {φ : CNF ℕ}
           StraightThrough (occurrencePath φ t) p (0, 1) := by
   have hc := ((PlanarCompile.mem_crossingSites φ p).1 hp).2.2
   rw [← PlanarCompile.occurrencePaths_eq_paths] at hc
-  obtain ⟨i, j, hi, hj, hij, hpi, hpj⟩ := List.exists_pair_indices_of_two_le_filter_contains _ p hc
+  obtain ⟨i, j, hi, hj, hij, hpi, hpj⟩ := (List.two_le_filter_contains_iff _ p).1 hc
   have hi' : i < (Cslib.Logic.PL.occurrences φ).length := by
     simpa only [List.length_map] using hi
   have hj' : j < (Cslib.Logic.PL.occurrences φ).length := by

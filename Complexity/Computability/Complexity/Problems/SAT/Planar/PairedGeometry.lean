@@ -32,7 +32,6 @@ All geometric assertions concern entire real supports.
 
 ## Main results
 
-* `boundary_eq_cases`: matching boundaries identify opposite adjacent sides and the lane.
 * `access_eq_translate`: every actual access uses the common fixed paired-port interface.
 * `route_contacts`, `routes_contacts`: continuous endpoint-only contacts of the actual routes.
 * `isPlanarOrthogonalDrawing`: the actual compact formula's continuous drawing certificate.
@@ -47,12 +46,6 @@ The paired macrocell assembly is original.
 namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
-
-/-- Equal paired boundary points in different cells identify both the side and the lane. -/
-theorem boundary_eq_cases {c d : Point} {s t : Fin 4} {l k : Fin 2}
-    (hcd : c ≠ d) (h : boundary c s l = boundary d t k) :
-    l = k ∧ d = c + PairedPorts.neighbor s ∧ t = PairedPorts.oppositeSide s :=
-  PairedPorts.boundary_eq_cases hcd h
 
 /-- Within one cell, boundary positions identify both the side and the lane. -/
 theorem boundary_injective (c : Point) :
@@ -248,16 +241,10 @@ theorem clause_cell_not_ordinary {φ : CNF ℕ} {i : ℕ} (hi : i < φ.length) :
   obtain ⟨o, ho, rfl⟩ := List.mem_map.mp hr
   exact PlanarCompile.clause_cell_not_mem_path_dropLast ho hi hp
 
-private instance (r : Route) : Decidable (IsOrthogonal r) :=
-  inferInstanceAs (Decidable (∀ e ∈ r.consecutivePairs, AxisAligned e.1 e.2))
-
 private def finalLocalRoute (s : Fin 4) : Route :=
   [(120, 120), PairedPorts.spokeElbow s, PairedPorts.boundaryPort s (PairedPorts.spokeLane s),
     cellOrigin 120 (PairedPorts.neighbor s) +
       PairedPorts.variablePosition (PairedPorts.oppositeSide s) (PairedPorts.spokeLane s)]
-
-private def consecutiveContact (a b : Point × Point) : List Point :=
-  if a.2 = b.1 then [a.2] else if b.2 = a.1 then [a.1] else []
 
 private theorem finalLocalRoute_orthogonal : ∀ s, IsOrthogonal (finalLocalRoute s) := by
   decide +kernel

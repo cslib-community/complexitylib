@@ -76,7 +76,7 @@ theorem encryptedWires_evaluateCircuit (hE : E.Correct)
   rw [evaluateCircuit, ProbComp.eval_map, PMF.mem_support_map_iff] at houtputs
   obtain ⟨row, hrow, rfl⟩ := houtputs
   have h := encryptedWires_evaluateLayers D hE hwidth hD n keys links
-    (Layered.compile inputCount c.code).1 (by simpa only [Layered.length_compile] using hcount)
+    (Layered.compile inputCount c.code).1 (by simpa only [Layered.length_compile] using hcount.ge)
     hkeys hlinks (List.ofFn x) inputs hinputs
     (by simpa only [List.length_ofFn] using Layered.wellFormed_compile c) row hrow
   have hselected := h.select (outputs := (Layered.compile inputCount c.code).2) (by

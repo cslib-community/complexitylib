@@ -21,17 +21,19 @@ open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Headline complexity class results -/
 
-example : ThreeSAT ∈ NP encCNF := ThreeSAT.mem_NP
-example : NPHard encCNF ThreeSAT := ThreeSAT_npHard
-example : NPComplete encCNF ThreeSAT := ThreeSAT_npComplete
+-- Each NP-completeness theorem witnesses both membership in `NP` and a polynomial-time
+-- reduction from `SAT`.
+example : ThreeSAT ∈ NP encCNF ∧
+    PolyTimeReducible encCNF encCNF SAT ThreeSAT :=
+  ⟨ThreeSAT_npComplete.1, ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example : IndependentSet ∈ NP (encPair encGraph encNat) := IndependentSet.mem_NP
-example : NPHard (encPair encGraph encNat) IndependentSet := IndependentSet_npHard
-example : NPComplete (encPair encGraph encNat) IndependentSet := IndependentSet_npComplete
+example : IndependentSet ∈ NP (encPair encGraph encNat) ∧
+    PolyTimeReducible encCNF (encPair encGraph encNat) SAT IndependentSet :=
+  ⟨IndependentSet_npComplete.1, IndependentSet_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example : Clique ∈ NP (encPair encGraph encNat) := Clique.mem_NP
-example : NPHard (encPair encGraph encNat) Clique := Clique_npHard
-example : NPComplete (encPair encGraph encNat) Clique := Clique_npComplete
+example : Clique ∈ NP (encPair encGraph encNat) ∧
+    PolyTimeReducible encCNF (encPair encGraph encNat) SAT Clique :=
+  ⟨Clique_npComplete.1, Clique_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example : PolyTimeReducible encCNF (encPair encGraph encNat) SAT Clique :=
   polyTimeReducible_SAT_IndependentSet.trans polyTimeReducible_IndependentSet_Clique
@@ -52,7 +54,7 @@ example : ComputableInPolyTime ThreeSAT.verifier (encPair encCNF encBits) encBoo
 example : ComputableInPolyTime SAT.toIndependentSet encCNF (encPair encGraph encNat) := by
   fun_prop
 
-example : ComputableTidilyInPolyTime Graph.compl encGraph encGraph := by fun_prop
+example : ComputableInPolyTime Graph.compl encGraph encGraph := by fun_prop
 
 example : ComputableInPolyTime IndependentSet.verifier
     (encPair (encPair encGraph encNat) encBits) encBool := by

@@ -148,6 +148,28 @@ example (n : ℕ) (c : Σ m, Circuit Boolean.signature m 1)
   FixedKey.evaluate_spec decryptionCircuits tagged_correct tagged_width tagged_bootstrappable
     n artifact (artifact_supported n) c bits inputs hbits hinputs output houtput
 
+-- Two-hop fixed-key evaluation composes pointwise first-hop evaluations with an outer circuit.
+example (n : ℕ) (outer : Σ m, Circuit Boolean.signature m 1)
+    (midBits : List Bool) (mids : List (List Bool)) (hmidBits : midBits.length = outer.1)
+    (hmids : List.Forall₂
+      (fun bit mid =>
+        ∃ (c : Σ m, Circuit Boolean.signature m 1) (bits : List Bool) (inputs : List (List Bool)),
+          bits.length = c.1 ∧
+            (FixedKey.scheme decryptionCircuits).EncryptedWires (fun _ => 2) n
+              artifact.2 bits inputs ∧
+            mid ∈ (ProbComp.eval
+              ((FixedKey.scheme decryptionCircuits).evaluate n artifact.1 c inputs)).support ∧
+            c.2.eval Boolean.interpretation (BitString.ofList c.1 bits) 0 = bit)
+      midBits mids)
+    (output : List Bool)
+    (houtput : output ∈ (ProbComp.eval
+      ((FixedKey.scheme decryptionCircuits).evaluate n artifact.1 outer mids)).support) :
+    output.length = 2 ∧ FixedKey.decrypt decryptionCircuits n artifact.2 output =
+      outer.2.eval Boolean.interpretation (BitString.ofList outer.1 midBits) 0 :=
+  FixedKey.evaluate_twoHop_spec decryptionCircuits tagged_correct tagged_width
+    tagged_bootstrappable n artifact (artifact_supported n) outer midBits mids hmidBits
+    hmids output houtput
+
 example : (FixedKey.scheme decryptionCircuits).Correct :=
   FixedKey.correct decryptionCircuits tagged_correct tagged_width tagged_bootstrappable
 example : (FixedKey.scheme decryptionCircuits).FixedWidth (fun _ => 1) (fun _ => 2) :=

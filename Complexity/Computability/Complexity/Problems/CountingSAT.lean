@@ -17,6 +17,7 @@ import Complexity.Computability.Complexity.CookLevin.Counting
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Logics.Propositional.CNF.PolyTime
+import Complexity.Logics.Propositional.CNF.ModelCount.Relabel
 
 /-!
 # Complete problems for the counting classes

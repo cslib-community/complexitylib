@@ -37,9 +37,11 @@ private theorem head_mem_MA_direct : {w : List Bool | w.headD false = true} ∈ 
     decide
   refine ⟨1, 1, fun x => x.1.headD false, by fun_prop, fun w => ⟨fun hw => ?_, fun hw y => ?_⟩⟩
   · refine ⟨fun _ => true, ?_⟩
+    dsimp only [BoundedErrorAt]
     rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
     exact hcard w
-  · rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
+  · dsimp only [BoundedErrorAt]
+    rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
     exact hcard w
 
 example : {w : List Bool | w.headD false = true} ∈ AM encBits := MA_subset_AM head_mem_MA_direct
@@ -95,14 +97,31 @@ example : {w : List Bool | ∃ v : List Bool, v.length = (1 : Polynomial ℕ).ev
   exact ⟨fun y => y.1.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
 /-- The threshold `2 n!` of the protocol for graph non-isomorphism, computed in binary. -/
-example : ComputableTidilyInPolyTime (fun n : ℕ => 2 * n.factorial) encUnary encNat :=
-  (ComputableTidilyInPolyTime.const 2).binary_mul' ComputableTidilyInPolyTime.binary_factorial
+example : ComputableInPolyTime (fun n : ℕ => 2 * n.factorial) encUnary encNat :=
+  .of_tidy
+    ((ComputableTidilyInPolyTime.const 2).binary_mul' ComputableTidilyInPolyTime.binary_factorial)
 
 /-- The hypothesis of the graph-isomorphism collapse follows from a reduction of `SAT` to graph
-isomorphism. -/
+isomorphism, placing `GraphNonIsomorphism` in `Σ₂`. -/
 example (h : PolyTimeReducible encCNF (encPair encGraph encGraph) SAT GraphIsomorphism) :
-    PH encBits = SigmaP 2 encBits :=
+    GraphNonIsomorphism ∈ SigmaP 2 (encPair encGraph encGraph) :=
   PH_eq_SigmaP_two_of_npComplete_GraphIsomorphism
-    ⟨GraphIsomorphism.mem_NP, CookLevin.SAT_npHard.trans h⟩
+    ⟨GraphIsomorphism.mem_NP, CookLevin.SAT_npHard.trans h⟩ ▸
+    PiP_subset_PH 2 (AM_subset_PiP_two GraphNonIsomorphism.mem_AM)
+
+/-- `IsArthurMerlinVerifier` and `IsArthurMerlinVerifierWithErrorExponent` reduce to `BPP`'s
+bounded-error and error-exponent predicates on `arthurMerlinSlice`. -/
+example : ∃ (p q : Polynomial ℕ) (V : _ × List Bool → Bool),
+    ComputableInPolyTime V (encPair encCNF encBits) encBool ∧
+      DecidesWithBoundedError encCNF p (arthurMerlinSlice encCNF q V) SAT := by
+  obtain ⟨p, q, V, hV, hAM⟩ := NP_subset_AM SAT.mem_NP
+  exact ⟨p, q, V, hV, isArthurMerlinVerifier_iff_decidesWithBoundedError.mp hAM⟩
+
+example (e : Polynomial ℕ) : ∃ (p q : Polynomial ℕ) (V : _ × List Bool → Bool),
+    ComputableInPolyTime V (encPair encCNF encBits) encBool ∧
+      DecidesWithErrorExponent encCNF e p (arthurMerlinSlice encCNF q V) SAT := by
+  obtain ⟨p, q, V, hV, hAM⟩ :=
+    mem_AM_iff_forall_errorExponent.mp (NP_subset_AM SAT.mem_NP) e
+  exact ⟨p, q, V, hV, isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent.mp hAM⟩
 
 end ComplexityTests.ArthurMerlin

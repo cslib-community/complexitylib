@@ -63,19 +63,18 @@ We prove IND-CPA security under DDH in the following settings:
 
 ## Limitations
 
-Key generation and challenge encryption in the security games sample exact uniform exponents in
-`ZMod (F.order d)` at the `PMF` level (`PMF.uniformOfFintype (ZMod (F.order d))`), because an odd
-prime order `F.order d` cannot be sampled with exact uniformity by a bounded-time fair-coin
-`ProbComp` machine; deterministic public-key computation (`encodeElGamalPublicKey`), encryption
-given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt`), and decryption
-(`decodeElGamal`, `decodeHashedElGamal`) are certified polynomial time on words. Because exponent
-sampling in key generation and encapsulation is at the `PMF` level rather than a `ProbComp`
-machine (see the `ROADMAP.md` item for efficient key generation and encryption), Hashed ElGamal
-security is proved via a direct three-hop `PMF` chain (`hashedElGamalCPAGame`,
-`hashedElGamalIdealDDHGame`, `hashedElGamalUniformPadGame`) rather than through the `ProbComp`-level
-`KEMINDCPA.hybrid_otpWordEncrypt_indcpa` combinator. The Diffie–Hellman and key-derivation security
-assumptions (`DDH`, `SecureKDF`) are hypotheses, not theorems; no nondegenerate `SecureKDF`
-instance (`msgLen n > 0`, e.g., via the leftover hash lemma) is constructed in this module.
+In this module, key generation and challenge encryption in the security games sample exact uniform
+exponents in `ZMod (F.order d)` at the `PMF` level (`PMF.uniformOfFintype (ZMod (F.order d))`),
+because an odd prime order `F.order d` cannot be sampled with exact uniformity by a bounded-time
+fair-coin `ProbComp` machine; deterministic public-key computation (`encodeElGamalPublicKey`),
+encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt`), and decryption
+(`decodeElGamal`, `decodeHashedElGamal`) are certified polynomial time on words. Strict-PPT
+(`IsPPTOn`) key generation, KEM encapsulation/decapsulation, and encryption via
+`ProbComp.sampleModNat` (connecting to `Encryption.KEMINDCPA`, `Encryption.INDCPAOn`,
+`Encryption.WordINDCPA`, and `Encryption.INDCPA`) are provided in
+`Complexity/Crypto/Computational/ElGamal/ProbComp.lean`; non-degenerate `SecureKDF` instantiation
+(`msgLen n > 0`) via `BitString.LinearHash` and the leftover hash lemma is provided in
+`Complexity/Crypto/Computational/ElGamal/KDF.lean`.
 
 ## Main definitions
 

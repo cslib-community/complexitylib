@@ -29,6 +29,9 @@ rings. Construction and source credit are documented in `Crossover` and `Crossov
 ## References
 
 The construction adapts [Lichtenstein1982, Figs. 4–5] and [Tromino2025, Fig. 8(b)].
+Unique extension is the parsimony condition of
+[HuntMaratheRadhakrishnanStearns1998, Definition 3.1]. Their Theorem 3.2 proves that property for
+Lichtenstein's crossover; kernel evaluation checks the adapted 13-variable table here.
 -/
 
 @[expose] public section

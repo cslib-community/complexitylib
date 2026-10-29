@@ -81,6 +81,10 @@ instance (a b : Point) : Decidable (AxisAligned a b) := inferInstanceAs (Decidab
 /-- Every consecutive segment is proper and axis aligned. -/
 def IsOrthogonal (r : Route) : Prop := ∀ e ∈ r.consecutivePairs, AxisAligned e.1 e.2
 
+/-- Orthogonality is decidable by checking the finitely many consecutive segments. -/
+instance : DecidablePred IsOrthogonal :=
+  fun r => inferInstanceAs (Decidable (∀ e ∈ r.consecutivePairs, AxisAligned e.1 e.2))
+
 /-- Removing the initial listed point preserves proper orthogonality. -/
 theorem IsOrthogonal.of_cons {a : Point} {r : Route} (h : IsOrthogonal (a :: r)) :
     IsOrthogonal r := by

@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.PCP.Encoded.SelectedAssignmentTester
+import Complexity.Computability.PCP.Encoded.AssignmentTester.Enumeration
 import Complexity.Computability.PCP.SelectedComposition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
@@ -16,6 +17,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.P
 namespace ComplexityTests.PCPSelectedAssignmentTester
 
 open Cslib.PCP Cslib.PCP.HadamardTester Turing.MultiTapeTM
+
+attribute [local instance] HadamardTester.instFinEnumBool Rand.finEnum
 
 private def same : Bool → Bool → Bool := fun a b => a == b
 
@@ -73,14 +76,14 @@ example : ComputableTidilyInPolyTime
     (fun p : (Bool → Bool → Bool) × (Fin 5 × Rand Bool) × Fin 6 =>
       Encoded.SelectedHadamardTester.query p.1 p.2.1 p.2.2)
     (encPair (encPi (encPi encBool))
-      (encPair (encFinite (Fin 5 × Rand Bool)) (encFinEnum (Fin 6))))
+      (encPair (encFinEnum (Fin 5 × Rand Bool)) (encFinEnum (Fin 6))))
     (encFinEnum (Pos Bool)) := by fun_prop
 
 example : ComputableTidilyInPolyTime
     (fun p : (Bool → Bool → Bool) × (Fin 5 × Rand Bool) × (Fin 6 → Bool) =>
       Encoded.SelectedHadamardTester.accepts p.1 p.2.1 p.2.2)
     (encPair (encPi (encPi encBool))
-      (encPair (encFinite (Fin 5 × Rand Bool)) (encPi encBool))) encBool := by polytime
+      (encPair (encFinEnum (Fin 5 × Rand Bool)) (encPi encBool))) encBool := by polytime
 
 example {V E : Type} [Fintype E] (G : ConstraintGraph V E Bool) :
     G.unsatVal / 840 ≤ G.composeSelected.unsatVal := G.le_unsatVal_composeSelected

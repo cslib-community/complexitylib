@@ -102,7 +102,8 @@ theorem abs_workTapePos_runFrom_le (x : List Symbol) (t : ℕ) (i : Fin k) :
   induction t with
   | zero => simp [runFrom]
   | succ t ih =>
-    have h := workTapePos_step_le (tm := tm) (tm.runFrom (tm.initCfg x) t) i
+    have h := MultiTapeNTM.Step.workTapePos_le
+      (step_iff.mpr rfl : tm.Step (tm.runFrom (tm.initCfg x) t) _) i
     rw [runFrom_succ]
     rw [abs_le] at h ih ⊢
     push_cast
@@ -128,13 +129,14 @@ theorem runFrom_eq_of_runPath {input : List Symbol} {p : tm.RunPath input} (hp :
 /-- A deterministic machine satisfying the shared space bound `s` uses at most `s` cells in every
 prefix of its run. -/
 theorem space_le_of_runsInSpace {input : List Symbol} {s : ℕ} (h : tm.RunsInSpace input s)
-    (t : ℕ) : tm.space (tm.initCfg input) t ≤ s :=
+    (t : ℕ) : (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ s :=
   h (MultiTapeNTM.ComputationPath.ofDeterministic tm input t)
 
 /-- A deterministic machine satisfies the shared space bound `s` exactly when every prefix of its
 run uses at most `s` cells. -/
 theorem runsInSpace_iff {input : List Symbol} {s : ℕ} :
-    tm.RunsInSpace input s ↔ ∀ t, tm.space (tm.initCfg input) t ≤ s := by
+    tm.RunsInSpace input s ↔
+      ∀ t, (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ s := by
   refine ⟨space_le_of_runsInSpace, fun h p => ?_⟩
   rw [p.eq_ofDeterministic]
   exact h _

@@ -22,10 +22,10 @@ private theorem head_mem_P : {w : List Bool | w.headD false = true} ∈ P encBit
 
 /-- Ratios 3/4 and 1/4 exercise both approximate cases, not only exact characteristic gaps. -/
 private theorem head_mem_AWPP : {w : List Bool | w.headD false = true} ∈ AWPP encBits := by
-  have hf : ComputableTidilyInPolyTime
+  have hf : ComputableInPolyTime
       (fun w : List Bool => if w.headD false then (3 : ℤ) else 1) encBits encIntBin := by
     fun_prop
-  refine ⟨_, mem_GapP_of_polyTime (.of_tidy hf), 2, fun w => ?_⟩
+  refine ⟨_, mem_GapP_of_polyTime hf, 2, fun w => ?_⟩
   simp only [Set.mem_ofPred_eq]
   cases w.headD false <;> norm_num
 
@@ -43,10 +43,10 @@ example : {w : List Bool | w.headD false = true} ∈ AWPP encBits :=
 
 /-- A length-dependent, exponentially large numerator and denominator. -/
 private theorem head_mem_AWPP_exp : {w : List Bool | w.headD false = true} ∈ AWPP encBits := by
-  have hf : ComputableTidilyInPolyTime
+  have hf : ComputableInPolyTime
       (fun w : List Bool => if w.headD false then (2 : ℤ) ^ w.length else 0)
       encBits encIntBin := by fun_prop
-  refine ⟨_, mem_GapP_of_polyTime (.of_tidy hf), Polynomial.X, fun w => ?_⟩
+  refine ⟨_, mem_GapP_of_polyTime hf, Polynomial.X, fun w => ?_⟩
   have hp : 0 ≤ (2 : ℤ) ^ w.length := by positivity
   cases h : w.headD false <;> simp only [encBits_apply, Polynomial.eval_X, h,
     Bool.false_eq_true, ↓reduceIte, Set.mem_ofPred_eq]
@@ -76,12 +76,10 @@ example : (∅ : Set (List Bool)) ∈ SBP encBits :=
   ⟨1, SharpP.one_mem, fun _ => 3, .const 3, fun _ => by simp⟩
 
 private theorem head_mem_SBP : {w : List Bool | w.headD false = true} ∈ SBP encBits := by
-  have hf : ComputableTidilyInPolyTime
+  have hf : ComputableInPolyTime
       (fun w : List Bool => if w.headD false then 2 ^ w.length else 0) encBits encNat := by
     fun_prop
-  refine ⟨_, mem_SharpP_of_polyTime (.of_tidy hf), fun w => 2 ^ w.length,
-    .of_tidy (ComputableTidilyInPolyTime.binary_two_pow.comp (.encoding_length encBits)),
-    fun w => ?_⟩
+  refine ⟨_, mem_SharpP_of_polyTime hf, fun w => 2 ^ w.length, by fun_prop, fun w => ?_⟩
   have hp : 0 < 2 ^ w.length := by positivity
   simp only [Set.mem_ofPred_eq]
   cases w.headD false <;> simp [hp]
@@ -105,11 +103,11 @@ example : {w : List Bool | w.headD false = true} ∪ Set.univ ∈ SBP encBits :=
 private theorem head_mem_WPP_negative : {w : List Bool | w.headD false = true} ∈
     WPP encBits := by
   let f (w : List Bool) : ℤ := -(3 * 2 ^ w.length)
-  have hf : ComputableTidilyInPolyTime f encBits encIntBin := by dsimp [f]; fun_prop
-  have hg : ComputableTidilyInPolyTime
+  have hf : ComputableInPolyTime f encBits encIntBin := by dsimp [f]; fun_prop
+  have hg : ComputableInPolyTime
       (fun w : List Bool => if w.headD false then f w else 0) encBits encIntBin := by fun_prop
   have hn (w : List Bool) : f w ≠ 0 := by simp [f]
-  refine ⟨_, mem_GapP_of_polyTime (.of_tidy hg), f, .of_tidy hf, hn, fun w => ?_, fun w => ?_⟩
+  refine ⟨_, mem_GapP_of_polyTime hg, f, hf, hn, fun w => ?_, fun w => ?_⟩
   · cases w.headD false <;> simp
   · simp only [Set.mem_ofPred_eq]
     cases w.headD false <;> simp [(hn w).symm]
@@ -139,15 +137,15 @@ open scoped symmDiff in
 example : {w : List Bool | w.headD false = true} ∆ {w | w.tail.headD false = true} ∈
     AWPP encBits := symmDiff_mem_AWPP head_mem_AWPP (tail_reduces_head.mem_AWPP head_mem_AWPP)
 
-/-- The repetition count is a theorem parameter, independent of the input. -/
-example (m : ℕ) (hm : 0 < m) : ∃ f ∈ SharpP encBits, ∃ k : List Bool → ℕ,
+/-- At repetition count `3`, the soundness gap is `2 ^ 3 = 8`. -/
+example : ∃ f ∈ SharpP encBits, ∃ k : List Bool → ℕ,
     ComputableInPolyTime k encBits encNat ∧ (∀ w, 0 < k w) ∧ ∀ w,
-      (w.headD false = true → k w ≤ f w) ∧ (w.headD false ≠ true → 2 ^ m * f w < k w) :=
-  exists_SBP_gap_pow head_mem_SBP hm
+      (w.headD false = true → k w ≤ f w) ∧ (w.headD false ≠ true → 2 ^ 3 * f w < k w) :=
+  exists_SBP_gap_pow head_mem_SBP (by decide : 0 < 3)
 
 example : {w : List Bool | w.headD false = true} ∩ {w | w.tail.headD false = true} ∈
     SBP encBits := inter_mem_SBP_of_mem_BPP head_mem_SBP
-      (P_subset_BPP ⟨fun w => w.tail.headD false, .of_tidy (by fun_prop), fun _ => Iff.rfl⟩)
+      (P_subset_BPP ⟨fun w => w.tail.headD false, by fun_prop, fun _ => Iff.rfl⟩)
 
 example : (Set.univ : Set (List Bool)) ∩ {w | w.headD false = true} ∈ SBP encBits :=
   inter_mem_SBP_of_mem_BPP univ_mem_SBP_zero (P_subset_BPP head_mem_P)

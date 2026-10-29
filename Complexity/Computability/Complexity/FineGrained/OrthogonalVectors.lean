@@ -9,7 +9,9 @@ module
 
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -232,7 +234,8 @@ private theorem unary_two_pow {γ : Type} {encIn : γ ↪ List Bool} {h : γ →
     induction k with
     | zero => rfl
     | succ k ih => rw [Function.iterate_succ_apply', ih, pow_succ, mul_comm]
-  have h := ComputableTidilyInO.iterate hh (ComputableTidilyInO.const 1) hdouble
+  have h := (ComputableInO.iterate hh.computableInO (ComputableTidilyInO.const 1).computableInO
+    hdouble.computableInO
     (R := fun x => 2 * 2 ^ h x) (Q := fun x => 2 * 2 ^ h x) (B := fun x => 2 ^ h x)
     (fun x k hk => by
       simp only [hiter, encUnary_apply, List.length_replicate]
@@ -244,7 +247,7 @@ private theorem unary_two_pow {γ : Type} {encIn : γ ↪ List Bool} {h : γ →
       omega)
     (fun x k hk => by
       simp only [hiter, encUnary_apply, List.length_replicate]
-      exact Nat.pow_le_pow_right (by norm_num) hk)
+      exact Nat.pow_le_pow_right (by norm_num) hk)).tidy
   exact h.of_enc_eq fun x => by rw [hiter]
 
 namespace OV

@@ -106,13 +106,16 @@ Verbatim from [BonehShoup2023], Exercise 12.27 (printed pp. 521–522):
 
 * `Cslib.Crypto.PrimeOrderGroupFamily` (`DiffieHellman.lean`) and `ElGamal` (`ElGamal.lean`):
   reused for group descriptions, carriers, generators, encodings, and word-level group operations.
-* `Cslib.Crypto.ProjectiveHash` (`CramerShoup/ProjectiveHash.lean`): reused for `projHash`,
+* `Cslib.Crypto.ProjectiveHash`
+  (`Complexity/Crypto/Computational/CramerShoup/ProjectiveHash.lean`): reused for `projHash`,
   `projHashAux`, `projHash2`, `projHash2Aux`, fiber identities, `projHashFiberEquiv`,
   `projHash2QueryFiberEquiv`, and `uniform_projHash_fiber_add`.
-* `Cslib.Crypto.Encryption.CCA2AdversaryOf` (`Encryption/CCA.lean`) and
+* `Cslib.Crypto.Encryption.CCA2AdversaryOf`
+  (`Complexity/Crypto/Computational/Encryption/CCA.lean`) and
   `Cslib.Crypto.isCollisionFor` (`CollisionResistant.lean`): reused for adaptive 1CCA adversaries
   and Phase 2 hash collisions in `ZMod (F.order d)`.
-* `Cslib.Crypto.Game` (`Game.lean`, `Game/UntilBad.lean`): reused for `runStatelessOracle`,
+* `Cslib.Crypto.Game` (`Game.lean`, `Complexity/Crypto/Game/UntilBad.lean`):
+  reused for `runStatelessOracle`,
   `advantage_runStatelessOracle_bind_le`, `bind_runStatelessOracle_comm`,
   `advantage_runStatelessOracle_le_of_support`, `advantage_bind_le_nnreal`,
   `advantage_bind_le_of_support`, `advantage_bind_comm`, and

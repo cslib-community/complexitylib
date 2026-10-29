@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Anton Kovsharov
 -/
 
 module
@@ -35,6 +35,7 @@ bounded on arbitrary input words; it agrees with capping the full mathematical b
 * `binaryValue_lt_two_pow`, `exists_binaryValue_eq`: the words of `t` bits represent exactly the
   numbers below `2 ^ t`.
 * `length_binaryWord`, `binaryValue_binaryWord`: the word of width `t` of a number below `2 ^ t`.
+* `lowBits_two_pow`: `2 ^ width` has the same `width` low-order bits as `0`.
 
 ## References
 
@@ -60,6 +61,11 @@ theorem lowBits_eq_ofFn (width value : ℕ) :
   apply List.ext_getElem (by simp)
   intro i hi hi'
   simp [lowBits]
+
+/-- All `width` low-order bits of `2 ^ width` are `false`, matching `lowBits width 0`. -/
+theorem lowBits_two_pow (width : ℕ) : lowBits width (2 ^ width) = lowBits width 0 := by
+  simp only [lowBits]; refine List.map_congr_left fun i hi => ?_
+  rw [Nat.testBit_two_pow_of_ne (ne_of_gt (List.mem_range.mp hi)), Nat.zero_testBit]
 
 /-- The natural number represented by a word, most significant bit first. -/
 def binaryValue (word : List Bool) : ℕ :=

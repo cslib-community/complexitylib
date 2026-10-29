@@ -160,7 +160,7 @@ private theorem isOraclePPTOn_queryAny :
     (stateEncoding := encPair (encList encBits) encBool) (by fun_prop) (by fun_prop) ?_
     (growth := 0) ?_) (by fun_prop)
   · simp only [interpret_queryAnyStep]
-    refine IsOraclePPTOn.cond (by fun_prop) (ComputableTidilyInPolyTime.id'.isOraclePPTOn) ?_
+    refine IsOraclePPTOn.cond (by fun_prop) (ComputableInPolyTime.id'.isOraclePPTOn) ?_
     exact IsOraclePPTOn.map_with (IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop))
       (by fun_prop)
   · intro state next hnext
@@ -238,13 +238,12 @@ theorem NP_subset_RPWithPromiseOracle_PromiseUSAT (enc : α ↪ List Bool) :
     (BitString.listRows (11 * (c * ((enc x.1).length + 1) ^ d + 3))
       ((c * ((enc x.1).length + 1) ^ d + 2) ^ 2) x.2).map
         fun b => encCNF (reduce (g x.1, b))
-  have hqueries : ComputableTidilyInPolyTime queries (encPair enc encBits) (encList encBits) := by
-    have hreduce := computableInPolyTime_reduce.tidy
-    have hg := hg.tidy
+  have hqueries : ComputableInPolyTime queries (encPair enc encBits) (encList encBits) := by
+    have hreduce := computableInPolyTime_reduce
     fun_prop
   refine ⟨Polynomial.C 11 * (Polynomial.C c * (Polynomial.X + 1) ^ d + 3) *
       (Polynomial.C c * (Polynomial.X + 1) ^ d + 2) ^ 2,
-    fun x => queryAny (queries x), isOraclePPTOn_queryAny.preprocess hqueries,
+    fun x => queryAny (queries x), isOraclePPTOn_queryAny.preprocess hqueries.tidy,
     fun A hA a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
   · set N := c * ((enc a).length + 1) ^ d with hN
     have heval : (Polynomial.C 11 * (Polynomial.C c * (Polynomial.X + 1) ^ d + 3) *

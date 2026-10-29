@@ -50,9 +50,6 @@ def spokeElbow (s : Fin 4) : Point :=
 def spokeRoute (s : Fin 4) : Route :=
   [(120, 120), spokeElbow s, boundaryPort s (spokeLane s)]
 
-private instance (r : Route) : Decidable (IsOrthogonal r) :=
-  inferInstanceAs (Decidable (∀ e ∈ r.consecutivePairs, AxisAligned e.1 e.2))
-
 /-- Every spoke is proper and orthogonal with its prescribed endpoints. -/
 theorem spoke_endpoints : ∀ s, IsOrthogonal (spokeRoute s) ∧
     (spokeRoute s).head? = some (120, 120) ∧

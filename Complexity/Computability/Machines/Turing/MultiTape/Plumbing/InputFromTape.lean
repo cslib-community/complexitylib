@@ -201,7 +201,8 @@ tapes `Fin.append ws₀ ![w, []]` to `Fin.append ws₁ ![w, []]` and emits `e`. 
 public theorem transformsTapes_inputFromWord_of_runFrom (mark : Symbol)
     {M : MultiTapeTM k Symbol State} {w e : List Symbol} {ws₀ ws₁ : Fin k → List Symbol}
     {t s : ℕ} (hrun : M.runFrom (wordsCfg w (some M.q₀) ws₀ []) t = wordsCfg w none ws₁ e)
-    (hspace : M.space (wordsCfg w (some M.q₀) ws₀ []) t ≤ s) :
+    (hspace : (MultiTapeNTM.RunPath.ofDeterministic M (wordsCfg w (some M.q₀) ws₀ []) t).space ≤
+      s) :
     TransformsTapes (M.inputFromWord mark)
       (fun _ ws => ws = Fin.append ws₀ ![w, []])
       (fun _ _ ws' em => ws' = Fin.append ws₁ ![w, []] ∧ em = e)
