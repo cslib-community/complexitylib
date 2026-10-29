@@ -225,8 +225,10 @@ theorem expect_bitVal_sub_le_of_witness (hX : IsKWiseIndependent k X)
 
 /-- **Fooling from an approximation with a witness** [Braverman, Lemmas 10–12 and Main Theorem]:
 under the hypotheses of `expect_bitVal_sub_le_of_witness`, the `k`-wise independent distribution
-`X` fools `F` with error `4 a + 2 (L + 1)² δ`. The negation of `F` is handled by `1 - f`, with the
-same witness. -/
+`X` fools `F` with error `4 a + 2 (L + 1)² δ`.
+
+Braverman obtains the other direction by applying Lemma 12 to `1 - F`, with a fresh
+approximation; reusing `f` and the witness via `1 - f` is our variant (it avoids a NOT layer). -/
 theorem fools_bitVal_of_witness (hX : IsKWiseIndependent k X)
     (hf : f ∈ lowDegree ℝ ι D) (he : e ∈ lowDegree ℝ ι t) (hk : 2 * (D + t) ≤ k)
     (hfE : ∀ x, E x = false → f x = bitVal ℝ (F x)) (hL : ∀ x, |f x| ≤ L)

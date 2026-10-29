@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.BooleanAnalysis.Degree
+import Complexity.Foundations.BooleanAnalysis.SignApproximation
 import Mathlib.Algebra.BigOperators.Field
 
 /-!
@@ -25,7 +26,8 @@ while their applications, such as [Braverman][Braverman2010], approximate the `0
 
 Cutting the Fourier expansion of a function at level `t` gives a function of degree at most `t`
 whose squared `L²` distance to the original is the Fourier weight above `t`
-(`Cslib.BitString.exists_mem_lowDegree_expect_sq_sub_eq`), so a Fourier tail bound on a Boolean
+(`Cslib.BitString.exists_mem_lowDegree_expect_sq_sub_eq`, from Parseval's identity in the form
+`Cslib.BitString.expect_sq_sub_sum_mul_chi`), so a Fourier tail bound on a Boolean
 function yields a low-degree `L²` approximation of its `0/1` reading
 (`Cslib.BitString.exists_mem_lowDegree_expect_sq_bitVal_sub_eq`).
 
@@ -83,20 +85,13 @@ theorem sum_fourierCoeff_bitVal_sq (F : (ι → Bool) → Bool) (t : ℕ) :
 degree at most `t` whose squared `L²` distance to `f` is the Fourier weight of `f` above `t`. -/
 theorem exists_mem_lowDegree_expect_sq_sub_eq (f : (ι → Bool) → ℝ) (t : ℕ) :
     ∃ g ∈ lowDegree ℝ ι t, 𝔼 x, (f x - g x) ^ 2 = ∑ S with t < #S, fourierCoeff f S ^ 2 := by
-  set g : (ι → Bool) → ℝ :=
-    fun x => ∑ T, (if #T ≤ t then fourierCoeff f T else 0) * chi ℝ T x
-  have hc (S : Finset ι) : fourierCoeff g S = if #S ≤ t then fourierCoeff f S else 0 :=
-    fourierCoeff_sum_mul_chi (fun T => if #T ≤ t then fourierCoeff f T else 0) S
-  refine ⟨g, ?_, ?_⟩
-  · rw [mem_lowDegree_iff_fourierCoeff_eq_zero]
-    intro S hS
-    rw [hc, ite_eq_right (not_le.2 hS)]
-  · rw [expect_sq_eq_sum_fourierCoeff_sq, sum_filter]
-    refine sum_congr rfl fun S _ => ?_
-    rw [fourierCoeff_sub, hc]
-    by_cases h : t < #S
-    · rw [ite_eq_right (not_le.2 h), ite_eq_left h, sub_zero]
-    · rw [ite_eq_left (not_lt.1 h), ite_eq_right h, sub_self, zero_pow two_ne_zero]
+  refine ⟨∑ S with #S ≤ t, fourierCoeff f S • chi ℝ S, ?_, ?_⟩
+  · exact Submodule.sum_mem _ fun S hS =>
+      Submodule.smul_mem _ _ (lowDegree_mono (mem_filter.1 hS).2 (chi_mem_lowDegree S))
+  · simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    rw [expect_sq_sub_sum_mul_chi, compl_filter]
+    simp only [sub_self, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, sum_const_zero,
+      zero_add, not_le]
 
 /-- **Fourier truncation of a Boolean function**: the `0/1` reading of `F` is approximated by a
 function of degree at most `t` with squared `L²` error a quarter of the Fourier weight of the `±1`

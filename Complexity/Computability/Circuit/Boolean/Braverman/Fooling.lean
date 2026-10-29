@@ -30,17 +30,21 @@ uniform distribution. The witness is again a circuit of constant depth, so its `
 low-degree `L²` approximation whenever its Fourier weight above some level `t` is small
 (`exists_mem_lowDegree_expect_sq_bitVal_sub_eq`). Braverman's mollification, squaring trick and
 one-sided chain (`IsKWiseIndependent.fools_bitVal_of_witness`) then show that `X` fools `C` once
-`2 ((ℓ s) ^ d + t) ≤ k`.
+`2 ((ℓ s) ^ d + t) ≤ k`. Braverman obtains the other direction by applying his Lemma 12 to `1 - C`
+with a fresh approximation; reusing `f` and the witness through `1 - f` is our variant (it avoids
+a NOT layer).
 
 The result is first stated with the Fourier tail of the witness circuits as a hypothesis
 (`fools_of_isKWiseIndependent_of_tail`), in the parametric form of
 [Tal, Theorem 20][Tal2017]. The Linial–Mansour–Nisan theorem of this library
 (`Unbounded.sum_fourierCoeff_sq_le_of_computes_of_depth_le`) discharges the hypothesis: if `C` has
 depth at most `d`, at most `2 ^ q` gates and fan-in less than `2 ^ q`, then every
-`(64 q) ^ ((2 d + 3) (d + 7) + 1)`-wise independent distribution `2 ^ (-q)`-fools `C`
-(`fools_of_isKWiseIndependent`). Taking `q` at least `log₂` of the size, of the fan-in and of the
-inverse of the error, `k = (log (m / ε)) ^ O(d²)` independence suffices for circuits of size `m`
-with fan-in at most `m`, which is the form of Braverman's theorem.
+`independence d q`-wise independent distribution `2 ^ (-q)`-fools `C`
+(`fools_of_independence_le`), and `independence d q ≤ (64 q) ^ ((2 d + 3) (d + 7) + 1)`
+(`independence_le`, `fools_of_isKWiseIndependent`). Taking `q ≥ log₂ (fan-in + 1)` and `q` at
+least `log₂` of the size and of the inverse of the error, `k = (log (m / ε)) ^ O(d²)` independence
+suffices for circuits of size `m` with fan-in at most `m`, which is the form of Braverman's
+theorem.
 
 The constants are our own and are weaker than Braverman's, since the Linial–Mansour–Nisan theorem
 of this library has exponent `1 / (d + 1)` and depth counts negations (`Circuit.depth`).
@@ -48,14 +52,16 @@ of this library has exponent `1 / (d + 1)` and depth counts negations (`Circuit.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.Braverman.level`, `Cslib.Circuits.Boolean.Braverman.independence`: the
-  level of the Fourier tail and the independence used by `fools_of_isKWiseIndependent`.
+  level of the Fourier tail and the independence used by `fools_of_independence_le`.
 
 ## Main results
 
 * `Cslib.Circuits.Boolean.Braverman.fools_of_isKWiseIndependent_of_tail`: Braverman's theorem with
   the Fourier tail of the witness circuits as a hypothesis.
+* `Cslib.Circuits.Boolean.Braverman.fools_of_independence_le`: polylogarithmic independence fools
+  AC⁰, with the sharp independence `independence d q`.
 * `Cslib.Circuits.Boolean.Braverman.fools_of_isKWiseIndependent`: polylogarithmic independence
-  fools AC⁰, with explicit parameters.
+  fools AC⁰, with the closed-form independence `(64 q) ^ ((2 d + 3) (d + 7) + 1)`.
 
 ## References
 
@@ -80,14 +86,14 @@ section Average
 
 /-- The average of a distribution on the inputs and the uniform distribution. -/
 private noncomputable def avgUniform (X : PMF (BitString n)) : PMF (BitString n) :=
-  (Probability.PMF.uniformOfFintype Bool).bind fun b =>
-    cond b X (Probability.PMF.uniformOfFintype (BitString n))
+  (Cslib.Probability.PMF.uniformOfFintype Bool).bind fun b =>
+    cond b X (Cslib.Probability.PMF.uniformOfFintype (BitString n))
 
 private theorem toReal_avgUniform (X : PMF (BitString n)) (x : BitString n) :
     (avgUniform X x).toReal =
-      ((X x).toReal + (Probability.PMF.uniformOfFintype (BitString n) x).toReal) / 2 := by
+      ((X x).toReal + (Cslib.Probability.PMF.uniformOfFintype (BitString n) x).toReal) / 2 := by
   rw [avgUniform, Cslib.Probability.PMF.bind_apply_toReal, Fintype.sum_bool]
-  simp only [Probability.PMF.uniformOfFintype_apply, Fintype.card_bool, Bool.cond_true,
+  simp only [Cslib.Probability.PMF.uniformOfFintype_apply, Fintype.card_bool, Bool.cond_true,
     Bool.cond_false]
   norm_num
   ring
@@ -126,7 +132,7 @@ theorem fools_of_isKWiseIndependent_of_tail {X : PMF (BitString n)} {ℓ s r d t
   obtain ⟨f, hf, hfL, W, hWs, hWd, hWν, hWf⟩ := exists_lowDegree_approx (avgUniform X) hℓs hr C hC
   set E : BitString n → Bool := fun x => W.eval Unbounded.interpretation x 0
   obtain ⟨e, he, heq⟩ := exists_mem_lowDegree_expect_sq_bitVal_sub_eq E t
-  set U := Probability.PMF.uniformOfFintype (BitString n)
+  set U := Cslib.Probability.PMF.uniformOfFintype (BitString n)
   have h1 : 1 ≤ ℓ * s := by omega
   have hD : (ℓ * s) ^ C.depth ≤ (ℓ * s) ^ d := Nat.pow_le_pow_right h1 hd
   have hL (x : BitString n) : |f x| ≤ 2 ^ (2 * (ℓ + 1) * ((ℓ * s) ^ d - 1)) :=
@@ -162,16 +168,16 @@ theorem fools_of_isKWiseIndependent_of_tail {X : PMF (BitString n)} {ℓ s r d t
 /-! ### Polylogarithmic independence -/
 
 /-- The level `σ = 4 (q + 1) A ^ d + A + 4 q + 5`, with `A = q (8 q + 16)`, at which the
-Linial–Mansour–Nisan theorem is applied in `fools_of_isKWiseIndependent`. -/
+Linial–Mansour–Nisan theorem is applied in `fools_of_independence_le`. -/
 @[expose] def level (d q : ℕ) : ℕ :=
   4 * (q + 1) * (q * (8 * q + 16)) ^ d + q * (8 * q + 16) + 4 * q + 5
 
 /-- The independence `2 (A ^ d + 4 σ (16 σ + 1) ^ (d + 6))`, with `A = q (8 q + 16)` and
-`σ = level d q`, that suffices in `fools_of_isKWiseIndependent`. -/
+`σ = level d q`, that suffices in `fools_of_independence_le`. -/
 @[expose] def independence (d q : ℕ) : ℕ :=
   2 * ((q * (8 * q + 16)) ^ d + 4 * level d q * (16 * level d q + 1) ^ (d + 6))
 
-/-- The independence of `fools_of_isKWiseIndependent` is at most
+/-- The independence of `fools_of_independence_le` is at most
 `(64 q) ^ ((2 d + 3) (d + 7) + 1)`, polynomial in `q` with exponent quadratic in `d`. -/
 theorem independence_le {q : ℕ} (hq : 1 ≤ q) (d : ℕ) :
     independence d q ≤ (64 * q) ^ ((2 * d + 3) * (d + 7) + 1) := by
@@ -215,7 +221,7 @@ theorem independence_le {q : ℕ} (hq : 1 ≤ q) (d : ℕ) :
   rw [pow_succ B]
   linarith
 
-/-- The arithmetic behind `fools_of_isKWiseIndependent`: with `ℓ = q`, `s = 8 q + 16`, fan-in
+/-- The arithmetic behind `fools_of_independence_le`: with `ℓ = q`, `s = 8 q + 16`, fan-in
 less than `2 ^ q`, at most `2 ^ q` gates and level `σ = level d q`, the error of
 `fools_of_isKWiseIndependent_of_tail` with the Linial–Mansour–Nisan tail is at most `2 ^ (-q)`. -/
 private theorem error_le {q m : ℕ} (hq : 1 ≤ q) (hm : m ≤ 2 ^ q) (d : ℕ) :
@@ -286,18 +292,16 @@ private theorem error_le {q m : ℕ} (hq : 1 ≤ q) (hm : m ≤ 2 ^ q) (d : ℕ)
   have hsum : (1 : ℝ) / 2 / 2 ^ q + 1 / 2 / 2 ^ q = 1 / 2 ^ q := by ring
   linarith
 
-/-- **Polylogarithmic independence fools AC⁰** [Braverman, Main Theorem][Braverman2010]. Let `C`
-be a circuit of the unbounded fan-in basis of depth at most `d`, with at most `2 ^ q` gates, each of
-fan-in less than `2 ^ q`, where `q ≥ 1`. Then every `k`-wise independent distribution on the
-inputs with `k ≥ (64 q) ^ ((2 d + 3) (d + 7) + 1)` fools `C` with error `2 ^ (-q)`.
-
-Taking `q` at least `log₂` of the size, of the fan-in and of the inverse of the error, this is the
-form `k = (log (m / ε)) ^ O(d²)` of Braverman's theorem; the explicit exponent and constants are
-our own, and depth counts negations (`Circuit.depth`). -/
-theorem fools_of_isKWiseIndependent {X : PMF (BitString n)} {d q k : ℕ} (hq : 1 ≤ q)
+/-- **Polylogarithmic independence fools AC⁰, with the sharp independence**
+[Braverman, Main Theorem][Braverman2010]. Let `C` be a circuit of the unbounded fan-in basis of
+depth at most `d`, with at most `2 ^ q` gates, each of fan-in less than `2 ^ q`, where `q ≥ 1`. Then
+every `k`-wise independent distribution on the inputs with `independence d q ≤ k` fools `C` with
+error `2 ^ (-q)`. The independence is at most `(64 q) ^ ((2 d + 3) (d + 7) + 1)`
+(`independence_le`, `fools_of_isKWiseIndependent`). -/
+theorem fools_of_independence_le {X : PMF (BitString n)} {d q k : ℕ} (hq : 1 ≤ q)
     (C : Circuit Unbounded.signature n 1) (hfan : C.FanInAtMost (2 ^ q - 1))
     (hsize : C.size ≤ 2 ^ q) (hd : C.depth ≤ d)
-    (hk : (64 * q) ^ ((2 * d + 3) * (d + 7) + 1) ≤ k) (hX : IsKWiseIndependent k X) :
+    (hk : independence d q ≤ k) (hX : IsKWiseIndependent k X) :
     Fools X (1 / 2 ^ q) fun x => bitVal ℝ (C.eval Unbounded.interpretation x 0) := by
   have hσ : 5 ≤ level d q := Nat.le_add_left _ _
   set σ := level d q
@@ -314,10 +318,23 @@ theorem fools_of_isKWiseIndependent {X : PMF (BitString n)} {d q k : ℕ} (hq : 
       (f := fun x => W.eval Unbounded.interpretation x 0)
       (Circuit.computes_single_iff.2 fun x => rfl) (by omega) hWd ht).trans ?_
     gcongr
-  have hk' : 2 * ((q * (8 * q + 16)) ^ d + 4 * σ * (16 * σ + 1) ^ (d + 6)) ≤ k :=
-    (independence_le hq d).trans hk
   exact (fools_of_isKWiseIndependent_of_tail (by nlinarith)
-    (Nat.sub_lt Nat.one_le_two_pow one_pos) C hfan hd htail hk' hX).mono
+    (Nat.sub_lt Nat.one_le_two_pow one_pos) C hfan hd htail hk hX).mono
     (error_le hq hsize d)
+
+/-- **Polylogarithmic independence fools AC⁰** [Braverman, Main Theorem][Braverman2010]. Let `C`
+be a circuit of the unbounded fan-in basis of depth at most `d`, with at most `2 ^ q` gates, each of
+fan-in less than `2 ^ q`, where `q ≥ 1`. Then every `k`-wise independent distribution on the
+inputs with `k ≥ (64 q) ^ ((2 d + 3) (d + 7) + 1)` fools `C` with error `2 ^ (-q)`.
+
+Taking `q ≥ log₂ (fan-in + 1)` and `q` at least `log₂` of the size and of the inverse of the error,
+this is the form `k = (log (m / ε)) ^ O(d²)` of Braverman's theorem; the explicit exponent and
+constants are our own, and depth counts negations (`Circuit.depth`). -/
+theorem fools_of_isKWiseIndependent {X : PMF (BitString n)} {d q k : ℕ} (hq : 1 ≤ q)
+    (C : Circuit Unbounded.signature n 1) (hfan : C.FanInAtMost (2 ^ q - 1))
+    (hsize : C.size ≤ 2 ^ q) (hd : C.depth ≤ d)
+    (hk : (64 * q) ^ ((2 * d + 3) * (d + 7) + 1) ≤ k) (hX : IsKWiseIndependent k X) :
+    Fools X (1 / 2 ^ q) fun x => bitVal ℝ (C.eval Unbounded.interpretation x 0) :=
+  fools_of_independence_le hq C hfan hsize hd ((independence_le hq d).trans hk) hX
 
 end Cslib.Circuits.Boolean.Braverman
