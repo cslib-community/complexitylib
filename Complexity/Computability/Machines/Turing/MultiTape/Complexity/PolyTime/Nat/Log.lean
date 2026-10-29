@@ -12,6 +12,7 @@ public import Mathlib.Data.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Data.Nat.Size
 
@@ -156,3 +157,16 @@ theorem unary_pow_clog_const {α : Type} {input : α ↪ List Bool} {size : α �
   simpa only [hspec] using hefficient
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_log_two` for plain certificates. -/
+theorem binary_log_two : ComputableInPolyTime (Nat.log 2) encNat encUnary :=
+  .of_tidy ComputableTidilyInPolyTime.binary_log_two
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_clog_const` for plain certificates. -/
+theorem unary_clog_const (base : ℕ) :
+    ComputableInPolyTime (Nat.clog base) encUnary encUnary :=
+  .of_tidy (ComputableTidilyInPolyTime.unary_clog_const (base := base))
+
+end Turing.MultiTapeTM.ComputableInPolyTime

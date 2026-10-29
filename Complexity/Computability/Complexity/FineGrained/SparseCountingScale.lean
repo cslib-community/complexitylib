@@ -195,14 +195,6 @@ theorem two_le_numGroups_of_clog_ge {n : ℕ} (h : 640000 ≤ Nat.clog 2 n) :
     rw [hm_eq]
     exact (four_mul_succ_pow_four_le_two_pow (by omega)).trans hpow_lt.le
 
-/-- Symbolic dyadic strict-lower-bound threshold: if `639999 ≤ m` and `2 ^ m < n`, then
-`2 ≤ numGroups n`. -/
-theorem two_le_numGroups_of_pow_lt {m n : ℕ} (hm : 639999 ≤ m) (hn : 2 ^ m < n) :
-    2 ≤ numGroups n := by
-  apply two_le_numGroups_of_clog_ge
-  have hlt : m < Nat.clog 2 n := (Nat.lt_clog_iff_pow_lt one_lt_two).mpr hn
-  omega
-
 /-- Explicit dyadic threshold: for `2 ^ 640000 ≤ n`, `2 ≤ numGroups n`. -/
 theorem two_le_numGroups_of_pow_le {n : ℕ} (hn : 2 ^ 640000 ≤ n) :
     2 ≤ numGroups n :=
@@ -540,16 +532,6 @@ private theorem eventually_two_pow_succ_clog_pow_le (C : ℝ) (d : ℕ) {ε : �
       linarith [mul_le_mul_of_nonneg_left hp hC.le]
     exact (Real.rpow_le_rpow_of_exponent_le one_le_two hexp).trans hpow
 
-/-- Quasi-polynomial natural-exponential overhead `exp (C * ⌈log₂ n⌉ ^ d)` is eventually bounded by
-`(2 : ℝ) ^ (ε * interpolationScale n)` for every `ε > 0`. -/
-theorem eventually_exp_clog_pow_le (C : ℝ) (d : ℕ) {ε : ℝ} (hε : 0 < ε) :
-    ∀ᶠ n : ℕ in atTop, Real.exp (C * (Nat.clog 2 n : ℝ) ^ d) ≤
-      (2 : ℝ) ^ (ε * interpolationScale n) := by
-  filter_upwards [eventually_mul_clog_pow_le_interpolationScale C d
-    (mul_pos hε (Real.log_pos one_lt_two))] with n hn
-  rw [Real.rpow_def_of_pos two_pos, Real.exp_le_exp]
-  linarith
-
 /-- Concrete leaf-factor bound (`A_tree = 17`): for any polynomial degree `d`, eventually
 `(n + numGroups n + 1) ^ d * 2 ^ (n / numGroups n) ≤ 2 ^ (17 * ρ(n))`. -/
 theorem eventually_poly_mul_two_pow_div_numGroups_le (d : ℕ) :
@@ -759,17 +741,6 @@ theorem eventually_leafOccurrenceBound_le (C_k : ℕ) {k : ℕ} (hk : 1 ≤ k) :
   refine leafOccurrenceBound_le_of_le hk ((le_max_left 5 (2 ^ C_k)).trans hn) ?_
   exact (Nat.clog_pow 2 C_k one_lt_two).symm.le.trans
     (Nat.clog_mono_right 2 ((le_max_right 5 (2 ^ C_k)).trans hn))
-
-/-- Unconditional existential form for arbitrary `k : ℕ`: there exists `β : ℕ` (`β = max k 1`)
-such that eventually `leafOccurrenceBound C_k k (numGroups n) ≤ ⌈log₂ n⌉ ^ β`. -/
-theorem exists_eventually_leafOccurrenceBound_le (C_k k : ℕ) :
-    ∃ β : ℕ, ∀ᶠ n : ℕ in atTop, leafOccurrenceBound C_k k (numGroups n) ≤ Nat.clog 2 n ^ β := by
-  rcases Nat.eq_zero_or_pos k with rfl | hk
-  · refine ⟨1, ?_⟩
-    filter_upwards [eventually_ge_atTop (2 ^ C_k)] with n hn
-    simp only [leafOccurrenceBound, Nat.zero_sub, pow_zero, mul_one, pow_one]
-    exact (Nat.clog_pow 2 C_k one_lt_two).symm.le.trans (Nat.clog_mono_right 2 hn)
-  · exact ⟨k, eventually_leafOccurrenceBound_le C_k hk⟩
 
 /-- Direct Lemma 4.8 feasibility bridge: for `1 ≤ k`, the Proposition 6.4 leaf-occurrence cap
 `leafOccurrenceBound C_k k (numGroups n)` eventually discharges the `b ≤ ⌈log₂ n⌉ ^ k` hypothesis
