@@ -127,8 +127,7 @@ theorem IsKernelization.mem_FPT {K : α → α} {g : ℕ → ℕ} (hK : IsKernel
     {t : ℕ → ℕ} (hA : A ∈ DTIME enc t) : A ∈ FPT enc κ := by
   obtain ⟨dec, tt, c, hdec, hdecA, htt⟩ :=
     (mem_DTIME_iff_decidableInTimeO.mp hA).exists_computableInO
-  have hdec := hdec.tidy
-  obtain ⟨d, _, hKd⟩ := hK.polyTime.tidy.exists_degree
+  obtain ⟨d, _, hKd⟩ := hK.polyTime.exists_degree
   have htt' : ∀ a, tt (K a) ≤ c * (∑ j ∈ Finset.range (g (κ a) + 1), t j) + c := fun a => by
     have h₁ : tt (K a) ≤ c * t (enc (K a)).length + c := by exact_mod_cast htt (K a)
     have h₂ : t (enc (K a)).length ≤ ∑ j ∈ Finset.range (g (κ a) + 1), t j :=
@@ -146,7 +145,7 @@ theorem IsKernelization.mem_FPT {K : α → α} {g : ℕ → ℕ} (hK : IsKernel
   exact mem_FPT_iff_computableInFPTTime.mpr ⟨dec ∘ K,
     ComputableInO.computableInFPTTime
       (F := fun k => 1 + (c * (∑ j ∈ Finset.range (g k + 1), t j) + c)) (c := d)
-      (.of_tidy ((hdec.comp hKd.inO).mono_le key key)),
+      ((hdec.comp hKd.inO).mono_le key key),
     fun a => (hK.mem_iff a).symm.trans (hdecA (K a))⟩
 
 /-- **A decidable problem with a kernel is fixed-parameter tractable.** -/
@@ -204,28 +203,29 @@ theorem hasKernel_of_mem_FPT [Nonempty α] (hA : A ∈ FPT enc κ) : HasKernel e
   let r : α → List ℕ × Bool := fun a => universal (desc eS eBit tm, (enc a).map eBit, N a)
   let K : α → α := fun a => if Diagonal.verdict (r a) then (if (r a).2 then n else a) else y
   -- polynomial time
-  have hN : ComputableTidilyInPolyTime N enc encUnary := by
-    have hL := ComputableTidilyInPolyTime.encoding_length enc
-    have hS : ComputableTidilyInPolyTime (fun a => (enc a).length + 1) enc encUnary :=
-      ComputableTidilyInPolyTime.unary_add.comp (hL.prod (ComputableTidilyInPolyTime.const 1))
-    have hP := (ComputableTidilyInPolyTime.unary_pow (e + 1)).comp hS
-    exact ComputableTidilyInPolyTime.unary_mul.comp
-      ((ComputableTidilyInPolyTime.const (c + 1)).prod hP)
-  have hin : ComputableTidilyInPolyTime (fun a => (desc eS eBit tm, (enc a).map eBit, N a)) enc
+  have hN : ComputableInPolyTime N enc encUnary := by
+    have hL := ComputableInPolyTime.encoding_length enc
+    have hS : ComputableInPolyTime (fun a => (enc a).length + 1) enc encUnary :=
+      ComputableInPolyTime.unary_add.comp (hL.prod (ComputableInPolyTime.const 1))
+    have hP := (ComputableInPolyTime.unary_pow (e + 1)).comp hS
+    exact ComputableInPolyTime.unary_mul.comp
+      ((ComputableInPolyTime.const (c + 1)).prod hP)
+  have hin : ComputableInPolyTime (fun a => (desc eS eBit tm, (enc a).map eBit, N a)) enc
       (encPair eDesc (encPair (encList encUnary) encUnary)) :=
-    (ComputableTidilyInPolyTime.const _).prod
-      ((Universal.computableTidilyInDegree_map_eBit.computableTidilyInPolyTime.comp
-        (ComputableTidilyInPolyTime.encode enc)).prod hN)
-  have hr : ComputableTidilyInPolyTime r enc eOut := computableTidilyInPolyTime_universal.comp hin
-  have hverdict : ComputableTidilyInPolyTime Diagonal.verdict eOut encBool :=
-    Diagonal.computableInO_verdict.tidy.computableTidilyInPolyTime
+    (ComputableInPolyTime.const _).prod
+      ((Universal.computableInPolyTime_map_eBit.comp
+        (ComputableInPolyTime.of_eq (f := enc) (encIn := enc) (encOut := encBits)
+          fun _ => rfl)).prod hN)
+  have hr : ComputableInPolyTime r enc eOut := computableInPolyTime_universal.comp hin
+  have hverdict : ComputableInPolyTime Diagonal.verdict eOut encBool :=
+    Diagonal.computableInO_verdict.computableInPolyTime
       (.of_forall_le 1 2 fun _ => by simp) (.of_forall_le 1 1 fun _ => by simp)
-  have hK : ComputableTidilyInPolyTime K enc enc :=
-    ComputableTidilyInPolyTime.ite' (hverdict.comp hr)
-      (ComputableTidilyInPolyTime.ite'
-        ((ComputableTidilyInPolyTime.snd (encList encUnary) encBool).comp hr)
-        (ComputableTidilyInPolyTime.const n) ComputableTidilyInPolyTime.id')
-      (ComputableTidilyInPolyTime.const y)
+  have hK : ComputableInPolyTime K enc enc :=
+    ComputableInPolyTime.ite' (hverdict.comp hr)
+      (ComputableInPolyTime.ite'
+        ((ComputableInPolyTime.snd (encList encUnary) encBool).comp hr)
+        (ComputableInPolyTime.const n) ComputableInPolyTime.id')
+      (ComputableInPolyTime.const y)
   -- the behaviour of the clocked run
   have hrun : ∀ a, (K a = y ∧ a ∈ A) ∨ (K a = n ∧ a ∉ A) ∨
       (K a = a ∧ (enc a).length < f (κ a)) := by
@@ -265,7 +265,7 @@ theorem hasKernel_of_mem_FPT [Nonempty α] (hA : A ∈ FPT enc κ) : HasKernel e
       simp only [K, hr_eq, Diagonal.verdict]
       simp
   refine ⟨K, fun k => f k + (enc y).length + (enc n).length + κ y + κ n + k,
-    ⟨hK.computableInPolyTime, fun a => ?_, fun a => ?_, fun a => ?_⟩⟩
+    ⟨hK, fun a => ?_, fun a => ?_, fun a => ?_⟩⟩
   · rcases hrun a with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩ | ⟨h₁, -⟩ <;> rw [h₁]
     · exact iff_of_true hyA h₂
     · exact iff_of_false hnA h₂

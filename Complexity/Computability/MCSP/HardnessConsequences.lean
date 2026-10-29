@@ -127,8 +127,7 @@ private theorem decodePair_encPair (p : List Bool × List Bool) :
 /-- `decodePair` is computable in polynomial time. -/
 private theorem computableInPolyTime_decodePair :
     ComputableInPolyTime decodePair encBits (encPair encBits encBits) :=
-  .of_tidy ((ComputableTidilyInPolyTime.of_linear (.of_unframe fun _ => rfl)).prod
-    (ComputableTidilyInPolyTime.of_linear (.of_dropFrame fun _ => rfl)))
+  ComputableInPolyTime.unframe.prod ComputableInPolyTime.dropFrame
 
 /-- Re-encoding `decodePair w` increases the word length by at most `1`. -/
 private theorem length_encPair_decodePair_le :
@@ -153,12 +152,12 @@ private theorem EXP_encPair_subset_PPolyOn_of_EXP_subset_PPoly
   have hk' : L ∈ DTIME (encPair encBits encBits) fun m => 2 ^ m ^ (k + 1) :=
     DTIME_mono_of_eventually_le (eventually_atTop.mpr ⟨1, fun m hm =>
       Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_right hm (Nat.le_succ k))⟩) hk
-  have hdecO : ComputableTidilyInO decodePair encBits (encPair encBits encBits)
+  have hdecO : ComputableInO decodePair encBits (encPair encBits encBits)
       (fun w => w.length + w.length) (fun w => w.length + w.length) :=
-    (ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)).prod
-      (ComputableTidilyInO.of_linear (.of_dropFrame fun _ => rfl))
+    (ComputableInO.of_linear (.of_unframe fun _ => rfl)).prod
+      (ComputableInO.of_linear (.of_dropFrame fun _ => rfl))
   have hpre : decodePair ⁻¹' L ∈ DTIME encBits fun n => 2 ^ (n + 1) ^ (k + 1) := by
-    refine preimage_mem_DTIME (C := 3) hk' (.of_tidy hdecO) fun w => ?_
+    refine preimage_mem_DTIME (C := 3) hk' hdecO fun w => ?_
     set n := w.length
     have h₁ : n + 1 ≤ (n + 1) ^ (k + 1) := Nat.le_self_pow (by omega) (n + 1)
     have h₂ : (n + 1) ^ (k + 1) ≤ 2 ^ (n + 1) ^ (k + 1) := Nat.lt_two_pow_self.le
@@ -179,7 +178,7 @@ private theorem EXP_encPair_subset_PPolyOn_of_EXP_subset_PPoly
       _ = n ^ (2 * (k + 1)) := (pow_mul n 2 (k + 1)).symm
   have hpre_PPoly : decodePair ⁻¹' L ∈ PPolyOn encBits := hEXP hpre_EXP
   have hred : PolyTimeReducible (encPair encBits encBits) encBits L (decodePair ⁻¹' L) :=
-    ⟨encPair encBits encBits, .of_tidy (.of_eq fun _ => rfl), fun p => by
+    ⟨encPair encBits encBits, .of_eq fun _ => rfl, fun p => by
       change p ∈ L ↔ decodePair (encPair encBits encBits p) ∈ L
       rw [decodePair_encPair]⟩
   exact hred.mem_PPolyOn hpre_PPoly
@@ -191,7 +190,7 @@ end Cslib.Complexity
 namespace Cslib.MCSP
 
 open Circuits Circuits.Boolean Turing.MultiTapeTM Complexity
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 /-- Certificate length is monotone in both the input arity and the gate budget. -/
 private theorem certLength_mono {m₁ m₂ s₁ s₂ : ℕ} (hm : m₁ ≤ m₂) (hs : s₁ ≤ s₂) :
@@ -219,24 +218,20 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
     (hS : ComputableInPolyTime S encIn encUnary)
     (hK : ComputableInPolyTime K encIn encUnary) :
     ComputableInPolyTime (fun a => boundedMCSPSearch (T a) (S a) (K a)) encIn encBool := by
-  refine .of_tidy ?_
-  have hT_t := hT.tidy
-  have hS_t := hS.tidy
-  have hK_t := hK.tidy
   let m (a : γ) : ℕ := Nat.log 2 (T a).length
   let cLen (a : γ) : ℕ := min (certLength (m a) (S a)) (Nat.log 2 (K a))
-  have hm : ComputableTidilyInPolyTime m encIn encUnary :=
-    unary_log_two.comp (length_bits.comp hT_t)
-  have hcLen : ComputableTidilyInPolyTime cLen encIn encUnary := by
-    change ComputableTidilyInPolyTime
+  have hm : ComputableInPolyTime m encIn encUnary :=
+    binary_log_two.comp (unary_to_binary.comp (length_bits.comp hT))
+  have hcLen : ComputableInPolyTime cLen encIn encUnary := by
+    change ComputableInPolyTime
       (fun a => min (certLength (m a) (S a)) (Nat.log 2 (K a))) encIn encUnary
-    have hcert : ComputableTidilyInPolyTime (fun a => certLength (m a) (S a)) encIn encUnary := by
+    have hcert : ComputableInPolyTime (fun a => certLength (m a) (S a)) encIn encUnary := by
       unfold certLength
       fun_prop
-    have hlogK : ComputableTidilyInPolyTime (fun a => Nat.log 2 (K a)) encIn encUnary :=
-      unary_log_two.comp hK_t
-    exact unary_min.comp (hcert.prod hlogK)
-  obtain ⟨c_K, d_K, hK_len⟩ := hK_t.polyBounded_length.exists_le
+    have hlogK : ComputableInPolyTime (fun a => Nat.log 2 (K a)) encIn encUnary :=
+      binary_log_two.comp (unary_to_binary.comp hK)
+    simpa only [Nat.min_def] using ite_decide (unary_le' hcert hlogK) hcert hlogK
+  obtain ⟨c_K, d_K, hK_len⟩ := hK.polyBounded_length.exists_le
   simp only [encUnary_apply, List.length_replicate] at hK_len
   let size_enum (L : ℕ) : ℕ := 2 * (c_K * (L + 1) ^ d_K + 1) ^ 2
   have hsize_enum : PolynomiallyBounded size_enum := by
@@ -261,10 +256,10 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
       _ = 2 * (K a + 1) ^ 2 := by ring
       _ ≤ 2 * (c_K * ((encIn a).length + 1) ^ d_K + 1) ^ 2 :=
           Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left hKa 2)
-  have henum : ComputableTidilyInPolyTime (fun a => BitString.enumList (cLen a))
+  have henum : ComputableInPolyTime (fun a => BitString.enumList (cLen a))
       encIn (encList encBits) :=
-    ComputableTidilyInPolyTime.bitsEnumList hcLen hsize_enum hbudget_enum
-  obtain ⟨c_T, d_T, hT_len⟩ := hT_t.polyBounded_length.exists_le
+    bitsEnumList hcLen hsize_enum hbudget_enum
+  obtain ⟨c_T, d_T, hT_len⟩ := hT.polyBounded_length.exists_le
   simp only [encBits_apply] at hT_len
   let size_T (L : ℕ) : ℕ := 2 * (c_T * (L + 1) ^ d_T + 1) ^ 2
   have hsize_T : PolynomiallyBounded size_T := by
@@ -297,22 +292,19 @@ theorem computableInPolyTime_boundedMCSPSearch {γ : Type} {encIn : γ ↪ List 
       (fun q : ((γ × List Bool) × List Bool) × Bool =>
         q.2 == tableValue (T q.1.1.1) q.1.2)
       (encPair (encPair (encPair encIn encBits) encBits) encBool) encBool := by
-    refine .of_tidy ?_
-    have hval : ComputableTidilyInPolyTime
+    have hval : ComputableInPolyTime
         (fun q : ((γ × List Bool) × List Bool) × Bool => tableValue (T q.1.1.1) q.1.2)
         (encPair (encPair (encPair encIn encBits) encBits) encBool) encBool :=
-      computableInPolyTime_tableValue.tidy.comp
-        ((hT_t.comp (fst _ _).fst'.fst').prod (fst _ _).snd')
-    exact ComputableTidilyInPolyTime.beq (snd _ _) hval
-  have hcheck : ComputableTidilyInPolyTime
+      computableInPolyTime_tableValue.comp
+        ((hT.comp (fst _ _).fst'.fst').prod (fst _ _).snd')
+    exact (snd _ _).beq hval
+  have hcheck : ComputableInPolyTime
       (fun p : γ × List Bool =>
         checkCertificate (fun y out => out == tableValue (T p.1) y) (m p.1) (S p.1) p.2)
       (encPair encIn encBits) encBool :=
-    (computableInPolyTime_checkCertificate
-      (.of_tidy (hm.comp (fst _ _)))
-      (.of_tidy (hS_t.comp (fst _ _)))
-      (.of_tidy (snd _ _))
-      hsize_T hbudget_T haccept).tidy
+    computableInPolyTime_checkCertificate
+      (hm.comp (fst _ _)) (hS.comp (fst _ _)) (snd _ _)
+      hsize_T hbudget_T haccept
   exact anyWithInput henum hcheck
 
 /-- When `T` has length `2 ^ m` and the enumeration budget satisfies
@@ -364,7 +356,6 @@ end Cslib.MCSP
 namespace Cslib.Complexity
 
 open _root_.Turing _root_.Turing.MultiTapeTM Circuits Circuits.Boolean MCSP
-open ComputableTidilyInPolyTime
 
 /-- **Murray–Williams Theorem 4.1 (`NEXP ⊆ EXP`, full-`NPHard` specialization)**
 [Murray and Williams, Section 4.1, Theorem 4.1, p. 13][MurrayWilliams2017]:
@@ -394,7 +385,7 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
   have hR_pair : ComputableInPolyTime
       (fun w : List Bool => (List.ofFn (R w).table, (R w).threshold))
       encBits (encPair encBits encNat) :=
-    .of_tidy (hR.tidy.of_enc_eq (encD := encPair encBits encNat) fun _ => rfl)
+    hR.of_enc_eq (encD := encPair encBits encNat) fun _ => rfl
   have hR_table : ComputableInPolyTime (fun w : List Bool => List.ofFn (R w).table)
       encBits encBits :=
     (ComputableInPolyTime.fst encBits encNat).comp hR_pair
@@ -414,7 +405,7 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
   have hL_pad_EXP : L_pad ∈ EXP (encPair encBits encBits) :=
     preimage_pad_prod_id_mem_EXP (enc := encBits) hB_bit hf
   obtain ⟨M, hM_PPoly, hM⟩ := EXP_encPair_subset_PPolyOn_of_EXP_subset_PPoly hEXP hL_pad_EXP
-  obtain ⟨c_R, d_R, hR_len⟩ := hR.tidy.polyBounded_length.exists_le
+  obtain ⟨c_R, d_R, hR_len⟩ := hR.polyBounded_length.exists_le
   simp only [encBits_apply] at hR_len
   obtain ⟨c_M, d_M, hM_size⟩ := polynomiallyBounded_iff_le.mp hM_PPoly
   let m_bound (n : ℕ) : ℕ := c_R + (f n + 2) * d_R
@@ -493,10 +484,8 @@ theorem NEXP_subset_EXP_of_MCSP_npHard_of_EXP_subset_PPoly
     let encIn := encPair encBits encUnary
     have hunframe_len : ComputableInPolyTime (fun p : List Bool × ℕ => (unframe p.1).length)
         encIn encUnary :=
-      (ComputableInPolyTime.of_tidy length_bits).comp
-        ((ComputableInPolyTime.of_tidy
-          (ComputableTidilyInPolyTime.of_linear (.of_unframe fun _ => rfl))).comp
-          (ComputableInPolyTime.fst encBits encUnary))
+      ComputableInPolyTime.length_bits.comp
+        (ComputableInPolyTime.unframe.comp (ComputableInPolyTime.fst encBits encUnary))
     have hcap : ComputableInPolyTime
         (fun p : List Bool × ℕ => s_bound (unframe p.1).length) encIn encUnary :=
       hs_bound.comp hunframe_len

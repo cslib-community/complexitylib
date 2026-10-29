@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.CookLevin.Reduction
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Logics.Propositional.CNF.PolyTime
 
 /-!
@@ -48,9 +49,16 @@ decoder or certify pattern matching on an arbitrary encoded feature.
 
 namespace Cslib.Complexity.CookLevin
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {k : ℕ} {State : Type} [Fintype State]
+
+@[local fun_prop]
+private theorem computableInPolyTime_unary_pair :
+    ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by
+  unfold Nat.pair
+  fun_prop
 
 /-- A feature is represented by its existing index in unary. -/
 noncomputable def encFeature : Feature k State ↪ List Bool :=
@@ -76,14 +84,13 @@ theorem computableInPolyTime_inRead :
 @[fun_prop]
 theorem computableInPolyTime_inPos :
     ComputableInPolyTime (Feature.inPos (k := k) (State := State)) encUnary encFeature :=
-  .of_tidy ((unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl)
+  (computableInPolyTime_unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl
 
 /-- Construct a work-head feature on a fixed tape from a signed unary position. -/
 @[fun_prop]
 theorem computableInPolyTime_head (i : Fin k) :
     ComputableInPolyTime (Feature.head (State := State) i) encInt encFeature := by
-  refine .of_tidy ?_
-  have h : ComputableTidilyInPolyTime (fun z => Nat.pair 2 (Nat.pair i (Equiv.intEquivNat z)))
+  have h : ComputableInPolyTime (fun z => Nat.pair 2 (Nat.pair i (Equiv.intEquivNat z)))
       encInt encUnary := by fun_prop
   exact h.of_enc_eq fun _ => rfl
 
@@ -92,20 +99,17 @@ theorem computableInPolyTime_head (i : Fin k) :
 theorem computableInPolyTime_cell (i : Fin k) (s : Option Bool) :
     ComputableInPolyTime (fun z => Feature.cell (State := State) i z s)
       encInt encFeature := by
-  refine .of_tidy ?_
-  have h : ComputableTidilyInPolyTime
+  have h : ComputableInPolyTime
       (fun z => Nat.pair 3 (Nat.pair i (Nat.pair (Equiv.intEquivNat z) (Encodable.encode s))))
       encInt encUnary := by fun_prop
   exact h.of_enc_eq fun _ => rfl
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Attach a unary time to an encoded feature. -/
 @[fun_prop]
 theorem computableInPolyTime_holds :
     ComputableInPolyTime (fun p : ℕ × Feature k State => Var.holds p.1 p.2)
       (encPair encUnary encFeature) encVar := by
-  refine .of_tidy ?_
-  have h : ComputableTidilyInPolyTime
+  have h : ComputableInPolyTime
       (fun p : ℕ × Feature k State => Nat.pair 0 (Nat.pair p.1 (featureIndex p.2)))
       (encPair encUnary encFeature) encUnary := by fun_prop
   exact h.of_enc_eq fun _ => rfl
@@ -114,13 +118,13 @@ theorem computableInPolyTime_holds :
 @[fun_prop]
 theorem computableInPolyTime_cert :
     ComputableInPolyTime (Var.cert (k := k) (State := State)) encUnary encVar :=
-  .of_tidy ((unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl)
+  (computableInPolyTime_unary_pair.comp ((const 1).prod id')).of_enc_eq fun _ => rfl
 
 /-- Emit the existing variable index in binary. -/
 @[fun_prop]
 theorem computableInPolyTime_index :
     ComputableInPolyTime (Var.index (k := k) (State := State)) encVar encNat :=
-  .of_tidy (unary_to_binary.comp (of_eq (encMid := encUnary) fun _ => rfl))
+  unary_to_binary.comp (of_eq (encOut := encUnary) fun _ => rfl)
 
 /-- Convert a constructed tableau to the SAT encoding using its existing variable numbering. -/
 @[fun_prop]
