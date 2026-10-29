@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Chaeyoung Lim. All rights reserved.
+Copyright (c) 2026 Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chaeyoung Lim
+Authors: Renfei Zhou
 -/
 
 module
@@ -17,7 +17,8 @@ This file extends the deterministic `Cslib.WordRAM.SubroutineDS` interface to **
 structures and Las Vegas subroutines** on the Word-RAM — covering both structures initialized from a
 random seed (such as universal hash tables, 2-choice hash tables, and cuckoo hash tables) and
 structures whose operations make random choices via `Instr.rand` (such as treaps, skip lists,
-reservoir samplers, or randomized rehashing) `[MitzenmacherUpfal2017]`.
+reservoir samplers, or randomized rehashing); see [MitzenmacherUpfal2017], Sections 1.5, 2.1, and
+2.3.
 
 ## Core design
 
@@ -43,7 +44,7 @@ density factor `seedSlack : ℝ≥0∞`:
    - Every admissible operation `o : D.Op` from abstract state `s : D.State` and coupled state
      distribution `ν : PMF (Seed × Data r_ds)` produces a transition kernel
      `μ_step : Seed × Data r_ds → PMF (Seed × Data r_ds)` and expected step count
-     `T_step : Seed × Data r_ds → ℝ≥0∞` satisfying
+     `T_step : Seed × Data r_ds → ℝ≥0∞` satisfying (for `Φ(p) := potential p.1 p.2`)
      `∑' p, ν p * (T_step p + ∑' q, μ_step p q * Φ(q)) ≤ charge s o + ∑' p, ν p * Φ(p)`.
    - Across any admissible finite operation sequence `ops : List D.Op`, `seq_expected_amortized`
      telescopes these one-step bounds without `ℝ≥0∞` subtraction:
@@ -81,7 +82,7 @@ density factor `seedSlack : ℝ≥0∞`:
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
   Chapter 17][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing: Randomization and Probabilistic
-  Techniques in Algorithms and Data Analysis*][MitzenmacherUpfal2017]
+  Techniques in Algorithms and Data Analysis*][MitzenmacherUpfal2017], Sections 1.5, 2.1, and 2.3.
 -/
 
 @[expose] public section
@@ -946,7 +947,8 @@ satisfying the seed-marginal bound and `C.rep p.1 s p.2` on `ν.support`, execut
 operation sequence `ops : List D.Op` (`D.ValidHistory s ops`) produces a final coupled distribution
 `ν_final` and total expected operation step count `T_ops : ℝ≥0∞` witnessing
 `C.ExecSteps s ops ν ν_final T_ops` and satisfying the addition-only `ℝ≥0∞` telescope inequality
-`T_ops + E_{ν_final}[Φ] ≤ D.totalCost C.charge s ops + E_ν[Φ]`. -/
+(with `Φ(p) := C.potential p.1 p.2`)
+`T_ops + ∑' q, ν_final q * Φ(q) ≤ D.totalCost C.charge s ops + ∑' p, ν p * Φ(p)`. -/
 theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
     {s : D.State} (ops : List D.Op) (ν : PMF (C.Seed × Data r_ds))
     (hv : D.ValidHistory s ops)

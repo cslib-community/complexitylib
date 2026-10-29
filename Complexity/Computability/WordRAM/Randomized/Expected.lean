@@ -72,14 +72,14 @@ additivity (`expectedCodeTime_seq`), branch laws (`expectedCodeTime_branch_pos`,
   geometric Las Vegas `while` loops and structured programs.
 
 Discrete and conditional expectation principles are classical background; see
-[MitzenmacherUpfal2017], Sections 2.1 and 2.3. The particular native tail-sum/Bellman definitions,
-finite structured-execution-tree bridge and ranked-loop expected-cost formalization are original
-library constructions in this module.
+[MitzenmacherUpfal2017], Sections 1.5, 2.1, and 2.3. The particular native tail-sum/Bellman
+definitions, finite structured-execution-tree bridge and ranked-loop expected-cost formalization are
+original library constructions in this module.
 
 ## References
 
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017],
-  Sections 2.1 and 2.3.
+  Sections 1.5, 2.1, and 2.3.
 -/
 
 @[expose] public section
