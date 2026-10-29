@@ -31,7 +31,7 @@ noncomputable def echoCipher : SymmetricCipher where
   decrypt _ _ ct := some ct
   keyGen_ppt := by ppt
   encrypt_ppt := by ppt
-  decrypt_polyTime := .of_tidy (by polytime)
+  decrypt_polyTime := by polytime
   decrypt_encrypt := by
     intro _ _ _ msg _ ct hct
     rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hct
@@ -86,7 +86,7 @@ theorem not_ciphertextIntegrity_echoCipher :
     ProbOracleComp.sample (pure (List.replicate n false))
   have hadvBody : IsPPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool => (pure (List.replicate p.1 false) : ProbComp (List Bool))) := by
-    have hrep : ComputableTidilyInPolyTime
+    have hrep : ComputableInPolyTime
         (fun p : ℕ × List Bool => List.replicate p.1 false)
         (encPair encUnary encBits) encBits := by polytime
     exact hrep.isPPTOn
@@ -113,7 +113,7 @@ def zeroCCAAdversary : CCAAdversary :=
 theorem isOraclePPT_zeroCCAAdversary : IsOraclePPT encBool zeroCCAAdversary := by
   have hbody : IsPPTOn (encPair encUnary encBits) encBool
       (fun _ : ℕ × List Bool => (pure false : ProbComp Bool)) :=
-    (ComputableTidilyInPolyTime.const false).isPPTOn
+    (ComputableInPolyTime.const false).isPPTOn
   exact hbody.isOraclePPTOn.isOraclePPT
 
 theorem isQueryBounded_zeroCCAAdversary (n : ℕ) :
@@ -125,29 +125,25 @@ theorem isQueryBounded_zeroCCAAdversary (n : ℕ) :
 example (bit : Bool) :
     IsPPT encBool
       (fun n _ =>
-        echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) bit n) :=
-  echoCipher.isPPT_cpaGame
-    (SymmetricCipher.isOraclePPT_ccaToCPAAdversary ComputableInPolyTime.id'
-      isOraclePPT_zeroCCAAdversary)
-    bit
-
-example (bit : Bool) :
+        echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) bit n) ∧
     IsPPT encBool
       (fun n _ =>
         echoCipher.ciGame
-          (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary) n) :=
-  echoCipher.isPPT_ciGame
-    (SymmetricCipher.isOraclePPT_ccaToCIAdversary ComputableInPolyTime.id'
-      (ComputableInPolyTime.const 0) bit isOraclePPT_zeroCCAAdversary)
-
-example :
+          (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary) n) ∧
     IsPPT encBool
       (fun n _ =>
         echoCipher.ciGame
           (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary) n) :=
-  echoCipher.isPPT_ciGame
+  ⟨echoCipher.isPPT_cpaGame
+    (SymmetricCipher.isOraclePPT_ccaToCPAAdversary ComputableInPolyTime.id'
+      isOraclePPT_zeroCCAAdversary)
+    bit,
+   echoCipher.isPPT_ciGame
+    (SymmetricCipher.isOraclePPT_ccaToCIAdversary ComputableInPolyTime.id'
+      (ComputableInPolyTime.const 0) bit isOraclePPT_zeroCCAAdversary),
+   echoCipher.isPPT_ciGame
     (SymmetricCipher.isOraclePPT_ccaToCIHiddenBitAdversary ComputableInPolyTime.id'
-      (ComputableInPolyTime.const 0) isOraclePPT_zeroCCAAdversary)
+      (ComputableInPolyTime.const 0) isOraclePPT_zeroCCAAdversary)⟩
 
 -- Quantitative Theorem 9.1 bounds instantiated on `echoCipher` and `zeroCCAAdversary`, with
 -- `dyadicSize 0 = 2` evaluated and `echoCipher_ctLen` discharging the ciphertext-length premise.

@@ -35,24 +35,27 @@ private theorem dist_pure_true_uniform :
   rw [PMF.dist_eq]
   norm_num [PMF.pure_apply]
 
--- Mathlib's total variation distance is twice the statistical distance.
-example : tvDist (PMF.pure true).toMeasure
-    (Probability.PMF.uniformOfFintype Bool).toMeasure = 1 := by
+/-- Mathlib's total variation distance is twice the statistical distance. -/
+private theorem tvDist_pure_true_uniform :
+    tvDist (PMF.pure true).toMeasure (Probability.PMF.uniformOfFintype Bool).toMeasure = 1 := by
   have h := PMF.dist_eq_tvDist_toMeasure_div_two (PMF.pure true)
     (Probability.PMF.uniformOfFintype Bool)
   rw [dist_pure_true_uniform] at h
   linarith
 
-example : ENNReal.ofReal (tvDist (PMF.pure true).toMeasure
-    (Probability.PMF.uniformOfFintype Bool).toMeasure ^ 2 / 2) ≤
-      klDiv (PMF.pure true).toMeasure (Probability.PMF.uniformOfFintype Bool).toMeasure :=
-  ofReal_tvDist_sq_div_two_le_klDiv _ _
+example : ENNReal.ofReal (1 / 2) ≤
+    klDiv (PMF.pure true).toMeasure (Probability.PMF.uniformOfFintype Bool).toMeasure := by
+  have h := ofReal_tvDist_sq_div_two_le_klDiv (PMF.pure true).toMeasure
+    (Probability.PMF.uniformOfFintype Bool).toMeasure
+  rwa [tvDist_pure_true_uniform, one_pow] at h
 
-example : 2 * dist (PMF.pure true) (Probability.PMF.uniformOfFintype Bool) ^ 2 ≤
+example : (1 / 2 : ℝ) ≤
     ∑ b, ((PMF.pure true) b).toReal *
       Real.log (((PMF.pure true) b).toReal /
-        ((Probability.PMF.uniformOfFintype Bool) b).toReal) :=
-  PMF.two_mul_dist_sq_le_sum_mul_log_div support_pure_subset
+        ((Probability.PMF.uniformOfFintype Bool) b).toReal) := by
+  have h := PMF.two_mul_dist_sq_le_sum_mul_log_div support_pure_subset
+  rw [dist_pure_true_uniform] at h
+  linarith
 
 -- Gibbs' inequality is strict for distinct distributions.
 example : 0 < ∑ b, ((PMF.pure true) b).toReal *
@@ -84,8 +87,13 @@ example : PMF.entropy twin ≠ PMF.entropy (twin.map Prod.fst) + PMF.entropy (tw
   rw [PMF.map_apply, PMF.bind_apply] at this
   simp [PMF.map_apply, tsum_fintype] at this
 
-example : PMF.conditionalEntropy twin ≤ PMF.entropy (twin.map Prod.snd) :=
-  PMF.conditionalEntropy_le_entropy_map_snd twin
+example : PMF.conditionalEntropy twin ≤ 1 := by
+  refine (PMF.conditionalEntropy_le_entropy_map_snd twin).trans_eq ?_
+  have hmap : twin.map Prod.snd = Probability.PMF.uniformOfFintype Bool := by
+    simp only [twin, PMF.map_comp]
+    exact PMF.map_id _
+  rw [hmap]
+  simp
 
 /-! ### Han's inequality and Shearer's lemma on three bits -/
 
@@ -97,15 +105,11 @@ private theorem two_le_card_erase (i : Fin 3) :
   simp
 
 example (P : PMF (Fin 3 → Bool)) :
-    ((Fintype.card (Fin 3) : ℝ) - 1) * PMF.entropy P ≤
-      ∑ i, PMF.entropy (P.map (univ.erase i).restrict) :=
-  PMF.sub_one_mul_entropy_le_sum_entropy_map_restrict_erase P
-
-example (P : PMF (Fin 3 → Bool)) :
     (2 : ℕ) * PMF.entropy P ≤ ∑ j, PMF.entropy (P.map (univ.erase j).restrict) :=
   PMF.mul_entropy_le_sum_entropy_map_restrict P (fun j => univ.erase j) two_le_card_erase
 
--- The counting form is tight for the whole cube: `8 ^ 2 = 4 * 4 * 4`.
+-- The counting form is tight for the whole cube (`8 ^ 2 = 4 * 4 * 4`) and strict on a 3-point
+-- L-shaped subset (`3 ^ 2 ≤ 2 * 2 * 3 = 12`).
 private theorem card_image_restrict_erase (j : Fin 3) :
     #((univ : Finset (Fin 3 → Bool)).image (univ.erase j).restrict) = 4 := by
   rw [image_univ_of_surjective (fun y => ⟨fun i => if h : i ∈ univ.erase j then y ⟨i, h⟩
@@ -116,10 +120,17 @@ example : ∏ j : Fin 3, #((univ : Finset (Fin 3 → Bool)).image (univ.erase j)
   simp only [card_image_restrict_erase, prod_const, card_univ, Fintype.card_fin]
   norm_num
 
-example : #(univ : Finset (Fin 3 → Bool)) ^ 2 ≤
-    ∏ j, #((univ : Finset (Fin 3 → Bool)).image (univ.erase j).restrict) :=
-  Cslib.Finset.card_pow_le_prod_card_image_restrict (α := fun _ => Bool) (k := 2) univ
-    (fun j => univ.erase j) (by norm_num) two_le_card_erase
+/-- A 3-point L-shaped subset of the 3-bit cube. -/
+private def cornerSet : Finset (Fin 3 → Bool) :=
+  {![false, false, false], ![true, false, false], ![false, true, false]}
+
+example : 9 ≤ ∏ j : Fin 3, #(cornerSet.image (univ.erase j).restrict) := by
+  have h := Cslib.Finset.card_pow_le_prod_card_image_restrict (α := fun _ => Bool) (k := 2)
+    cornerSet (fun j => univ.erase j) (by norm_num) two_le_card_erase
+  have hcard : #cornerSet ^ 2 = 9 := by decide
+  rwa [hcard] at h
+
+example : ∏ j : Fin 3, #(cornerSet.image (univ.erase j).restrict) = 12 := by decide
 
 example : #(univ : Finset (Fin 3 → Bool)) ^ 2 = 64 := by simp
 

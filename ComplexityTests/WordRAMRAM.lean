@@ -28,75 +28,66 @@ private def selfLoad : Program .standard 1 := [.op (.const 0 1), .op (.load 0 0)
 private def selfStore : Program .standard 1 :=
   [.op (.const 0 1), .op (.store 0 0), .op (.load 0 0), .halt 0]
 
-/-- The destination of a load may also hold its address. -/
-example : targetResult selfLoad [7] = (7, true) := by decide
-
-/-- A store may use the same source register for its address and value. -/
-example : targetResult selfStore [7] = (1, true) := by decide
-
-/-- The quantitative theorem applies to the aliasing load client. -/
-example : RAM.HaltsWithResultInTime RAM.logCost (ToRAM.paddedProgram selfLoad)
-    (ToRAM.paddedInput 1 [7]) 7 (8 * (RAM.bitLength 6 + 1) * 4 * 4) :=
-  ToRAM.haltsWithResultInTime_padded (by decide) (w := 3) (by decide)
-    (Executes.of_run (fuel := 5) (by decide))
+/-- Aliasing load and store clients, plus the quantitative theorem on `selfLoad`. -/
+example :
+    targetResult selfLoad [7] = (7, true) ∧
+    targetResult selfStore [7] = (1, true) ∧
+    RAM.HaltsWithResultInTime RAM.logCost (ToRAM.paddedProgram selfLoad)
+      (ToRAM.paddedInput 1 [7]) 7 (8 * (RAM.bitLength 6 + 1) * 4 * 4) :=
+  ⟨by decide, by decide,
+   ToRAM.haltsWithResultInTime_padded (by decide) (w := 3) (by decide)
+     (Executes.of_run (fuel := 5) (by decide))⟩
 
 private def compare (c : Cond 2) (a b : ℕ) : Program .standard 2 :=
   [.op (.const 0 a), .op (.const 1 b), .branch c 5, .op (.const 0 0), .halt 0,
     .op (.const 0 1), .halt 0]
 
-/-- Equality checks both truncated differences; either strict ordering must take the false arm. -/
-example : targetResult (compare (.eq 0 1) 0 1) [] = (0, true) ∧
-    targetResult (compare (.eq 0 1) 1 0) [] = (0, true) ∧
-    targetResult (compare (.eq 0 1) 1 1) [] = (1, true) := by decide
+/-- Equality, strict order, and explicit halting with zero. -/
+example :
+    (targetResult (compare (.eq 0 1) 0 1) [] = (0, true) ∧
+      targetResult (compare (.eq 0 1) 1 0) [] = (0, true) ∧
+      targetResult (compare (.eq 0 1) 1 1) [] = (1, true)) ∧
+    (targetResult (compare (.lt 0 1) 0 1) [] = (1, true) ∧
+      targetResult (compare (.lt 0 1) 1 0) [] = (0, true) ∧
+      targetResult (compare (.lt 0 1) 1 1) [] = (0, true)) ∧
+    targetResult [.halt (0 : Fin 1)] [] = (0, true) := by
+  decide
 
-/-- Strict order distinguishes equality from a positive difference. -/
-example : targetResult (compare (.lt 0 1) 0 1) [] = (1, true) ∧
-    targetResult (compare (.lt 0 1) 1 0) [] = (0, true) ∧
-    targetResult (compare (.lt 0 1) 1 1) [] = (0, true) := by decide
+/-- Zero-bit words and charged input preparation on `[.halt (0 : Fin 1)]` and `selfLoad`. -/
+example :
+    RAM.HaltsWithResultInTime RAM.logCost (ToRAM.paddedProgram [.halt (0 : Fin 1)])
+      (ToRAM.paddedInput 1 []) 0 (8 * (RAM.bitLength 6 + 1) * 2) ∧
+    RAM.HaltsWithResultInTime RAM.logCost (ToRAM.preparedProgram [.halt (0 : Fin 1)])
+      (RAM.Input.encode 5 []) 0 (212 * 2) ∧
+    RAM.HaltsWithResultInTime RAM.logCost (ToRAM.preparedProgram selfLoad)
+      (RAM.Input.encode 5 [7]) 7 (212 * 5 * 4) :=
+  ⟨by
+     simpa [ToRAM.memoryBase] using
+       ToRAM.haltsWithResultInTime_padded (p := [.halt (0 : Fin 1)]) (by decide)
+         (input := []) (w := 0) (v := 0) (n := 1) (by decide)
+         (Executes.of_run (fuel := 1) (by decide)),
+   ToRAM.haltsWithResultInTime_prepared (p := [.halt (0 : Fin 1)]) (by decide)
+     (input := []) (w := 0) (v := 0) (n := 1) (by decide)
+     (Executes.of_run (fuel := 1) (by decide)),
+   ToRAM.haltsWithResultInTime_prepared (by decide) (w := 3) (by decide)
+     (Executes.of_run (fuel := 5) (by decide))⟩
 
-/-- The target halts even when the output is zero: its final jump uses the permanent one. -/
-example : targetResult [.halt (0 : Fin 1)] [] = (0, true) := by decide
-
-/-- Zero-bit words are allowed: the empty input and the initial zero output fit. -/
-example : RAM.HaltsWithResultInTime RAM.logCost (ToRAM.paddedProgram [.halt (0 : Fin 1)])
-    (ToRAM.paddedInput 1 []) 0 (8 * (RAM.bitLength 6 + 1) * 2) := by
-  simpa [ToRAM.memoryBase] using
-    ToRAM.haltsWithResultInTime_padded (p := [.halt (0 : Fin 1)]) (by decide)
-      (input := []) (w := 0) (v := 0) (n := 1) (by decide)
-      (Executes.of_run (fuel := 1) (by decide))
-
-/-- Charged preparation also works at width zero, despite its natural-number scratch values. -/
-example : RAM.HaltsWithResultInTime RAM.logCost (ToRAM.preparedProgram [.halt (0 : Fin 1)])
-    (RAM.Input.encode 5 []) 0 (212 * 2) :=
-  ToRAM.haltsWithResultInTime_prepared (p := [.halt (0 : Fin 1)]) (by decide)
-    (input := []) (w := 0) (v := 0) (n := 1) (by decide)
-    (Executes.of_run (fuel := 1) (by decide))
-
-/-- The uniform charged bound handles an indirect load after overlapping input relocation. -/
-example : RAM.HaltsWithResultInTime RAM.logCost (ToRAM.preparedProgram selfLoad)
-    (RAM.Input.encode 5 [7]) 7 (212 * 5 * 4) :=
-  ToRAM.haltsWithResultInTime_prepared (by decide) (w := 3) (by decide)
-    (Executes.of_run (fuel := 5) (by decide))
-
-/-- The forward theorem intentionally does not reflect source faults. -/
-example : run (B := .standard) 1 [.op (.const (0 : Fin 1) 2), .halt 0] 4 (.init []) = none ∧
-    targetResult [.op (.const (0 : Fin 1) 2), .halt 0] [] = (2, true) := by decide
-
-/-- Falling off an empty source program faults; running off the target program halts. -/
-example : run 0 ([] : Program .standard 1) 1 (.init []) = none ∧
-    targetResult ([] : Program .standard 1) [] = (0, true) := by decide
-
-/-- Bare RAM input lists do not retain their length when they end in zero. -/
-example : RAM.State.init [] = RAM.State.init [0] := by
-  apply RAM.State.ext
-  · rfl
-  · funext i
-    cases i <;> rfl
-
-/-- WordRAM's length header distinguishes the same two inputs. -/
-example : (State.init [] : State 1) ≠ State.init [0] := by
-  intro h
-  have := congrArg (fun s : State 1 => s.data.mem 0) h
-  simp [State.init] at this
+/-- Unreflected source faults, empty-program behavior, and trailing-zero input distinction between
+bare RAM and WordRAM's length header. -/
+example :
+    (run (B := .standard) 1 [.op (.const (0 : Fin 1) 2), .halt 0] 4 (.init []) = none ∧
+      targetResult [.op (.const (0 : Fin 1) 2), .halt 0] [] = (2, true)) ∧
+    (run 0 ([] : Program .standard 1) 1 (.init []) = none ∧
+      targetResult ([] : Program .standard 1) [] = (0, true)) ∧
+    RAM.State.init [] = RAM.State.init [0] ∧
+    (State.init [] : State 1) ≠ State.init [0] := by
+  refine ⟨by decide, by decide, ?_, ?_⟩
+  · apply RAM.State.ext
+    · rfl
+    · funext i
+      cases i <;> rfl
+  · intro h
+    have := congrArg (fun s : State 1 => s.data.mem 0) h
+    simp [State.init] at this
 
 end ComplexityTests.WordRAMRAM

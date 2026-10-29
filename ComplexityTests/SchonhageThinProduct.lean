@@ -75,26 +75,28 @@ example : Pruned.result 1 (encodingL (bandArrayL outerLayout X 0))
     (encodingR (bandArrayR outerLayout Y 1)) (wantedStrings outerLayout W 0 1)
     (outStrOfPos outerLayout 2 3) = 0 := by decide +kernel
 
--- Every queried product entry, through the general correctness theorem.
-example (I J : Fin 4) (h : (I, J) ∈ W) :
-    Pruned.result 1 (encodingL (bandArrayL outerLayout X (bandOf 1 0 I)))
-      (encodingR (bandArrayR outerLayout Y (bandOf 1 0 J)))
-      (wantedStrings outerLayout W (bandOf 1 0 I) (bandOf 1 0 J))
-      (outStrOfPos outerLayout I J) = (X * Y) I J :=
-  thin_product_spec outerLayout X Y W I J h
-
 example : ∑ T ∈ tiles 1 0 4, (wantedStrings outerLayout W T.1 T.2).card = 3 := by decide +kernel
 example : ∑ T ∈ tiles 1 0 4, (leaves (wantedStrings outerLayout W T.1 T.2)).card = 3 := by
   decide
 example : wantedStrings outerLayout W 1 1 = ∅ := by decide
 example : (leaves (wantedStrings outerLayout W 1 1)).card = 0 := by decide +kernel
 
--- Four signed summands at a genuine inner level; the tensor's error contributes nothing.
+-- Four signed summands with a single inner output; there is no outer error coefficient here.
 private def A : Matrix (Fin 1) (Fin 4) ℤ := !![-3, 2, 0, 5]
 private def B : Matrix (Fin 4) (Fin 1) ℤ := !![2; -1; 4; 0]
 
 example : Full.result 1 (bandArrayL innerLayout A 0) (bandArrayR innerLayout B 0)
     (outStrOfPos innerLayout 0 0) = -8 := by decide +kernel
+
+-- A mixed inner/outer output checks the exact-inner-count zeroing that eliminates error terms.
+private def mixedX (_Q : Finset (Fin 2)) : LeftMat 2 1 :=
+  fun _ π => A 0 (finProdFinEquiv (π 0))
+private def mixedY (_Q : Finset (Fin 2)) : RightMat 2 1 :=
+  fun π _ => B (finProdFinEquiv (π 0)) 0
+private def mixedOutput : OutStr 2 := ![.z0, .z 0 0]
+
+example : Pruned.result 2 (encodingL (arrayL 1 mixedX)) (encodingR (arrayR 1 mixedY))
+    {mixedOutput} mixedOutput = -8 := by decide +kernel
 
 example : Pruned.result 1 (encodingL (bandArrayL innerLayout A 0))
     (encodingR (bandArrayR innerLayout B 0))
@@ -126,14 +128,6 @@ example : D 1 ^ 18 ≤ admittedN ∧ singletonQuery.card * 2 ^ 1 ≤ admittedN ^
   constructor
   · rfl
   · norm_num [singletonQuery, admittedN]
-
-example (X' : Matrix (Fin admittedN) (Fin (D 1)) ℤ)
-    (Y' : Matrix (Fin (D 1)) (Fin admittedN) ℤ) :
-    Pruned.result 19 (encodingL (bandArrayL admittedLayout X' (bandOf 19 1 0)))
-      (encodingR (bandArrayR admittedLayout Y' (bandOf 19 1 0)))
-      (wantedStrings admittedLayout singletonQuery (bandOf 19 1 0) (bandOf 19 1 0))
-      (outStrOfPos admittedLayout 0 0) = (X' * Y') 0 0 :=
-  thin_product_spec admittedLayout X' Y' singletonQuery 0 0 (by simp [singletonQuery])
 
 example :
     ((2 * numBands (19 * 1) 1 admittedN * 10 ^ (19 * 1) : ℕ) : ℝ) ≤

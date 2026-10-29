@@ -41,7 +41,7 @@ noncomputable abbrev lamportId : SignatureScheme :=
 
 /-- Two leaves. -/
 theorem hcapOne : ComputableInPolyTime (fun _ : ℕ => 2 ^ 1) encUnary encUnary :=
-  .of_tidy (ComputableTidilyInPolyTime.const _)
+  ComputableInPolyTime.const _
 
 /-- Capacity `2 ^ Nat.clog 2 (n + 1)`, between `n + 1` and `2 * n + 1`. -/
 theorem hcapClog : ComputableInPolyTime (fun n => 2 ^ Nat.clog 2 (n + 1)) encUnary encUnary :=

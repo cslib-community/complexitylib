@@ -23,31 +23,29 @@ private def duplicate : MultiTapeCTM 0 Bool Unit where
 
 private def initial : Cfg 0 Bool Unit [] := Cfg.init () []
 
--- Equal actions are distinct occurrences, with distinct traces and certificates.
-example : duplicate.branches 1 initial = {[0], [1]} := by decide
-example : duplicate.acceptCount 1 initial = 2 := by decide
-example : duplicate.rejectCount 1 initial = 0 := by decide
-example : duplicate.certificateCount (· == [true]) 3 initial = 2 := by decide
-
 private theorem duplicate_halts : duplicate.HaltsWithin 1 initial := by
   apply HaltsWithin.step (by decide)
   intro index
   apply HaltsWithin.halt
   fin_cases index <;> rfl
 
-example (fuel : ℕ) (h : 1 ≤ fuel) : duplicate.acceptCount fuel initial = 2 := by
-  calc
-    duplicate.acceptCount fuel initial = duplicate.acceptCount 1 initial :=
-      duplicate_halts.branchCount_eq h _
-    _ = 2 := by decide
-
--- A deterministic singleton halt has one branch, without a discarded final choice.
+-- Equal actions are distinct occurrences, with distinct traces and certificates, and a
+-- deterministic singleton halt has one branch.
 private def singleton : MultiTapeCTM 0 Bool Unit where
   initial := ()
   tr _ _ _ _ := [haltAction true]
 
-example : singleton.branches 1 initial = {[0]} := by decide
-example : singleton.acceptCount 3 initial = 1 := by decide
+example (fuel : ℕ) (h : 1 ≤ fuel) :
+    duplicate.branches 1 initial = {[0], [1]} ∧
+      duplicate.acceptCount 1 initial = 2 ∧
+      duplicate.rejectCount 1 initial = 0 ∧
+      duplicate.certificateCount (· == [true]) 3 initial = 2 ∧
+      duplicate.acceptCount fuel initial = 2 ∧
+      singleton.branches 1 initial = {[0]} ∧
+      singleton.acceptCount 3 initial = 1 :=
+  ⟨by decide, by decide, by decide, by decide,
+    (duplicate_halts.branchCount_eq h _).trans (by decide),
+    by decide, by decide⟩
 
 -- Different actions may also have the same successor: leftward movement at the left boundary
 -- agrees with staying put, but the two transition occurrences still contribute separately.
@@ -61,15 +59,14 @@ private def sameSuccessor : MultiTapeCTM 0 Bool Unit where
 
 private def leftBoundary : Cfg 0 Bool Unit [] := { initial with inputPos := 0 }
 
-example : boundaryAction (-1) ≠ boundaryAction 0 := by
-  intro h
-  have := congrArg Turing.Action.inputTape h
-  contradiction
-
-example : (boundaryAction (-1)).apply leftBoundary = (boundaryAction 0).apply leftBoundary := by
-  apply Cfg.ext_zero_tapes <;> simp [Turing.Action.apply, boundaryAction, leftBoundary]
-
-example : sameSuccessor.acceptCount 1 leftBoundary = 2 := by decide
+example :
+    boundaryAction (-1) ≠ boundaryAction 0 ∧
+      (boundaryAction (-1)).apply leftBoundary = (boundaryAction 0).apply leftBoundary ∧
+      sameSuccessor.acceptCount 1 leftBoundary = 2 := by
+  refine ⟨fun h => ?_, ?_, by decide⟩
+  · have := congrArg Turing.Action.inputTape h
+    contradiction
+  · apply Cfg.ext_zero_tapes <;> simp [Turing.Action.apply, boundaryAction, leftBoundary]
 
 private def stop (bit : Bool) : MultiTapeMachine.Action 0 Bool Bool Empty :=
   .step { inputTape := 0, workTapes := Fin.elim0, output := some bit, state := none }
@@ -85,14 +82,6 @@ private def mixed : MultiTapeCTM 0 Bool Bool where
 
 private def mixedInitial : Cfg 0 Bool Bool [] := Cfg.init false []
 
--- Binary and ternary branching coexist. Early halting does not multiply the short branch,
--- and both terminal verdicts are counted exactly.
-example : mixed.branches 2 mixedInitial = {[0], [1, 0], [1, 1], [1, 2]} := by decide
-example : mixed.certificates 2 mixedInitial = {[0, 0], [1, 0], [1, 1], [1, 2]} := by decide
-example : mixed.acceptCount 2 mixedInitial = 3 := by decide
-example : mixed.rejectCount 2 mixedInitial = 1 := by decide
-example : mixed.certificateCount (fun out => !(out == [true])) 4 mixedInitial = 1 := by decide
-
 private theorem mixed_halts : mixed.HaltsWithin 2 mixedInitial := by
   apply HaltsWithin.step (by decide)
   intro index
@@ -102,44 +91,48 @@ private theorem mixed_halts : mixed.HaltsWithin 2 mixedInitial := by
     intro index
     fin_cases index <;> exact HaltsWithin.halt rfl
 
+-- Binary and ternary branching coexist. Early halting does not multiply the short branch,
+-- and truncation, invalid occurrences, and nonzero post-halt padding fail both classifiers.
 example (fuel : ℕ) (h : 2 ≤ fuel) :
-    mixed.branches fuel mixedInitial = mixed.branches 2 mixedInitial :=
-  mixed_halts.branches_eq h
+    mixed.branches 2 mixedInitial = {[0], [1, 0], [1, 1], [1, 2]} ∧
+      mixed.certificates 2 mixedInitial = {[0, 0], [1, 0], [1, 1], [1, 2]} ∧
+      mixed.acceptCount 2 mixedInitial = 3 ∧
+      mixed.rejectCount 2 mixedInitial = 1 ∧
+      mixed.certificateCount (fun out => !(out == [true])) 4 mixedInitial = 1 ∧
+      mixed.branches fuel mixedInitial = mixed.branches 2 mixedInitial ∧
+      mixed.decodeCertificate mixedInitial [1] = none ∧
+      mixed.decodeCertificate mixedInitial [2, 0] = none ∧
+      mixed.decodeCertificate mixedInitial [0, 1] = none ∧
+      mixed.certificateAccepts (· == [true]) mixedInitial [0, 1] = false ∧
+      mixed.certificateAccepts (fun out => !(out == [true])) mixedInitial [0, 1] = false :=
+  ⟨by decide, by decide, by decide, by decide, by decide,
+    mixed_halts.branches_eq h, rfl, rfl, by decide, by decide, by decide⟩
 
--- Truncation, an invalid occurrence and nonzero post-halt padding each fail both classifiers.
-example : mixed.decodeCertificate mixedInitial [1] = none := by rfl
-example : mixed.decodeCertificate mixedInitial [2, 0] = none := by rfl
-example : mixed.decodeCertificate mixedInitial [0, 1] = none := by decide
-example : mixed.certificateAccepts (· == [true]) mixedInitial [0, 1] = false := by decide
-example : mixed.certificateAccepts (fun out => !(out == [true])) mixedInitial [0, 1] = false :=
-  by decide
-
--- The single padding label does not turn an already halted branch into many longer branches.
+-- The single padding label does not turn an already halted branch into many longer branches,
+-- and a machine with no transitions has no branches and never halts.
 private def halted : Cfg 0 Bool Unit [] := { initial with state := none, output := [true] }
-
-example : duplicate.branches 0 halted = {[]} := by decide
-example : duplicate.branches 4 halted = {[]} := by decide
-example : duplicate.certificateCount (· == [true]) 0 halted = 1 := by decide
-example : duplicate.certificateCount (· == [true]) 4 halted = 1 := by decide
-example : duplicate.decodeCertificate halted [1] = none := by decide
-example : duplicate.branches 0 initial = ∅ := by decide
 
 private def stuck : MultiTapeCTM 0 Bool Unit where
   initial := ()
   tr _ _ _ _ := []
 
-example : stuck.branches 3 initial = ∅ := by decide
-example : stuck.rejectCount 3 initial = 0 := by decide
-example (fuel : ℕ) : ¬stuck.HaltsWithin fuel initial := by
+example (fuel : ℕ) :
+    duplicate.branches 0 halted = {[]} ∧
+      duplicate.branches 4 halted = {[]} ∧
+      duplicate.certificateCount (· == [true]) 0 halted = 1 ∧
+      duplicate.certificateCount (· == [true]) 4 halted = 1 ∧
+      duplicate.decodeCertificate halted [1] = none ∧
+      duplicate.branches 0 initial = ∅ ∧
+      stuck.branches 3 initial = ∅ ∧
+      stuck.rejectCount 3 initial = 0 ∧
+      ¬stuck.HaltsWithin fuel initial ∧
+      (∃ bound, ∀ input (cfg : Cfg 0 Bool Bool input), (mixed.actions cfg).length ≤ bound) ∧
+      (mixed.branches 2 mixedInitial).Nonempty := by
+  refine ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, by decide,
+    ?_, mixed.exists_branchBound, mixed_halts.branches_nonempty⟩
   intro h
   cases h with
   | halt h => cases h
   | step h _ => exact h rfl
-
--- The finite-control occurrence bound and all-branches hypothesis have concrete inhabitants.
-example : ∃ bound, ∀ input (cfg : Cfg 0 Bool Bool input), (mixed.actions cfg).length ≤ bound :=
-  mixed.exists_branchBound
-
-example : (mixed.branches 2 mixedInitial).Nonempty := mixed_halts.branches_nonempty
 
 end ComplexityTests.CountingBranches

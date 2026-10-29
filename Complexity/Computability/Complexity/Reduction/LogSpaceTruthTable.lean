@@ -169,9 +169,7 @@ theorem LogSpaceReducible.logSpaceKTruthTableReducible_one
     (h : LogSpaceReducible encA encB A B) : LogSpaceKTruthTableReducible 1 encA encB A B := by
   obtain ⟨f, hf, hA⟩ := h
   refine ⟨fun _ => 1, fun p => f p.1, fun p => p.2.headD false,
-    ComputableInLogSpace.const 1, hf.comp (ComputableInLogSpace.fst _ _),
-    (ComputableInLogSpace.bitsHeadD false).comp (ComputableInLogSpace.snd _ _),
-    fun _ => le_rfl, fun a => ?_⟩
+    ComputableInLogSpace.const 1, by fun_prop, by fun_prop, fun _ => le_rfl, fun a => ?_⟩
   rw [hA a]
   simp [truthTableAnswers]
 
@@ -207,15 +205,15 @@ theorem LogSpaceReducible.logSpaceTruthTableReducible (h : LogSpaceReducible enc
 theorem LogSpaceReducible.logSpaceDTTReducible (h : LogSpaceReducible encA encB A B) :
     LogSpaceDTTReducible encA encB A B := by
   obtain ⟨f, hf, hA⟩ := h
-  exact ⟨fun _ => 1, fun p => f p.1, ComputableInLogSpace.const 1,
-    hf.comp (ComputableInLogSpace.fst _ _), fun a => by simp [hA a]⟩
+  exact ⟨fun _ => 1, fun p => f p.1, ComputableInLogSpace.const 1, by fun_prop,
+    fun a => by simp [hA a]⟩
 
 /-- A logspace many-one reduction is a logspace conjunctive truth-table reduction. -/
 theorem LogSpaceReducible.logSpaceCTTReducible (h : LogSpaceReducible encA encB A B) :
     LogSpaceCTTReducible encA encB A B := by
   obtain ⟨f, hf, hA⟩ := h
-  exact ⟨fun _ => 1, fun p => f p.1, ComputableInLogSpace.const 1,
-    hf.comp (ComputableInLogSpace.fst _ _), fun a => by simp [hA a]⟩
+  exact ⟨fun _ => 1, fun p => f p.1, ComputableInLogSpace.const 1, by fun_prop,
+    fun a => by simp [hA a]⟩
 
 private theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
     u.any id ≤ v.any id := by
@@ -238,8 +236,7 @@ evaluated by `List.any id`. -/
 theorem LogSpaceDTTReducible.logSpacePTTReducible (h : LogSpaceDTTReducible encA encB A B) :
     LogSpacePTTReducible encA encB A B := by
   obtain ⟨r, q, hr, hq, hA⟩ := h
-  refine ⟨r, q, fun p => p.2.any id, hr, hq,
-    (ComputableInLogSpace.bitsAny id).comp (ComputableInLogSpace.snd _ _),
+  refine ⟨r, q, fun p => p.2.any id, hr, hq, by fun_prop,
     fun _ _ _ huv => any_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hA a]
   simp [truthTableAnswers, List.any_eq_true, List.mem_ofFn, Fin.exists_iff]
@@ -249,8 +246,7 @@ evaluated by `List.all id`. -/
 theorem LogSpaceCTTReducible.logSpacePTTReducible (h : LogSpaceCTTReducible encA encB A B) :
     LogSpacePTTReducible encA encB A B := by
   obtain ⟨r, q, hr, hq, hA⟩ := h
-  refine ⟨r, q, fun p => p.2.all id, hr, hq,
-    (ComputableInLogSpace.bitsAll id).comp (ComputableInLogSpace.snd _ _),
+  refine ⟨r, q, fun p => p.2.all id, hr, hq, by fun_prop,
     fun _ _ _ huv => all_id_le_of_forall₂ huv, fun a => ?_⟩
   rw [hA a]
   simp [truthTableAnswers, List.all_eq_true, List.mem_ofFn, Fin.forall_iff]
@@ -385,8 +381,7 @@ theorem LogSpacePTTReducible.refl (encA : α ↪ List Bool) (A : Set α) :
 theorem LogSpaceTruthTableReducible.compl_left (h : LogSpaceTruthTableReducible encA encB A B) :
     LogSpaceTruthTableReducible encA encB Aᶜ B := by
   obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
-  refine ⟨r, q, fun p => !d p, hr, hq,
-    (ComputableInLogSpace.of_finite (encIn := encBool) not).comp hd, fun a => ?_⟩
+  refine ⟨r, q, fun p => !d p, hr, hq, by fun_prop, fun a => ?_⟩
   simp [Set.mem_compl_iff, hA a]
 
 /-- Negating the answer bits before evaluation turns a logspace truth-table reduction from `A` to
@@ -394,9 +389,7 @@ theorem LogSpaceTruthTableReducible.compl_left (h : LogSpaceTruthTableReducible 
 theorem LogSpaceTruthTableReducible.compl_right (h : LogSpaceTruthTableReducible encA encB A B) :
     LogSpaceTruthTableReducible encA encB A Bᶜ := by
   obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
-  refine ⟨r, q, fun p => d (p.1, p.2.map (!·)), hr, hq,
-    hd.comp (ComputableInLogSpace.pair (ComputableInLogSpace.fst _ _)
-      ((ComputableInLogSpace.bitsMap (!·)).comp (ComputableInLogSpace.snd _ _))), fun a => ?_⟩
+  refine ⟨r, q, fun p => d (p.1, p.2.map (!·)), hr, hq, by fun_prop, fun a => ?_⟩
   rw [hA a, show q ⁻¹' Bᶜ = (q ⁻¹' B)ᶜ from rfl, truthTableAnswers_compl]
   simp [List.map_map, Function.comp_def]
 
@@ -411,8 +404,7 @@ theorem LogSpaceKTruthTableReducible.compl_left {k : ℕ}
     (h : LogSpaceKTruthTableReducible k encA encB A B) :
     LogSpaceKTruthTableReducible k encA encB Aᶜ B := by
   obtain ⟨r, q, d, hr, hq, hd, hrk, hA⟩ := h
-  refine ⟨r, q, fun p => !d p, hr, hq,
-    (ComputableInLogSpace.of_finite (encIn := encBool) not).comp hd, hrk, fun a => ?_⟩
+  refine ⟨r, q, fun p => !d p, hr, hq, by fun_prop, hrk, fun a => ?_⟩
   simp [Set.mem_compl_iff, hA a]
 
 /-- Negating the answer bits before evaluation turns a logspace `k`-truth-table reduction from `A`
@@ -421,9 +413,7 @@ theorem LogSpaceKTruthTableReducible.compl_right {k : ℕ}
     (h : LogSpaceKTruthTableReducible k encA encB A B) :
     LogSpaceKTruthTableReducible k encA encB A Bᶜ := by
   obtain ⟨r, q, d, hr, hq, hd, hrk, hA⟩ := h
-  refine ⟨r, q, fun p => d (p.1, p.2.map (!·)), hr, hq,
-    hd.comp (ComputableInLogSpace.pair (ComputableInLogSpace.fst _ _)
-      ((ComputableInLogSpace.bitsMap (!·)).comp (ComputableInLogSpace.snd _ _))), hrk, fun a => ?_⟩
+  refine ⟨r, q, fun p => d (p.1, p.2.map (!·)), hr, hq, by fun_prop, hrk, fun a => ?_⟩
   rw [hA a, show q ⁻¹' Bᶜ = (q ⁻¹' B)ᶜ from rfl, truthTableAnswers_compl]
   simp [List.map_map, Function.comp_def]
 
@@ -518,8 +508,9 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
     d₂ (b, (p.1.2.drop (p.2 * k₂)).take (r₂ b))
   let d (p : α × List Bool) : Bool :=
     d₁ (p.1, (List.range (r₁ p.1)).map fun i => innerAns (p, i))
-  have hr : ComputableInLogSpace r encA encUnary :=
-    ComputableInLogSpace.unaryMulConst k₂ hr₁
+  have hr : ComputableInLogSpace r encA encUnary := by
+    simp only [r]
+    fun_prop
   have hdiv : ComputableInLogSpace (fun m : ℕ => min m (k₁ * k₂) / k₂) encUnary encUnary :=
     ComputableInLogSpace.unaryBoundedMap (k₁ * k₂) (fun m => m / k₂)
   have hmod : ComputableInLogSpace (fun m : ℕ => min m (k₁ * k₂) % k₂) encUnary encUnary :=
@@ -529,38 +520,17 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
       (hq₁.comp (ComputableInLogSpace.pair
         (ComputableInLogSpace.fst _ _) (hdiv.comp (ComputableInLogSpace.snd _ _))))
       (hmod.comp (ComputableInLogSpace.snd _ _)))
-  have h_a : ComputableInLogSpace (fun p : (α × List Bool) × ℕ => p.1.1)
-      (encPair (encPair encA encBits) encUnary) encA :=
-    (ComputableInLogSpace.fst _ _).comp (ComputableInLogSpace.fst _ _)
-  have h_xs : ComputableInLogSpace (fun p : (α × List Bool) × ℕ => p.1.2)
-      (encPair (encPair encA encBits) encUnary) encBits :=
-    (ComputableInLogSpace.snd _ _).comp (ComputableInLogSpace.fst _ _)
-  have h_i : ComputableInLogSpace (fun p : (α × List Bool) × ℕ => p.2)
-      (encPair (encPair encA encBits) encUnary) encUnary :=
-    ComputableInLogSpace.snd _ _
-  have h_b : ComputableInLogSpace (fun p : (α × List Bool) × ℕ => q₁ (p.1.1, p.2))
-      (encPair (encPair encA encBits) encUnary) encB :=
-    hq₁.comp (ComputableInLogSpace.pair h_a h_i)
-  have h_drop : ComputableInLogSpace
-      (fun p : (α × List Bool) × ℕ => p.1.2.drop (p.2 * k₂))
-      (encPair (encPair encA encBits) encUnary) encBits :=
-    ComputableInLogSpace.bitsDrop.comp
-      (ComputableInLogSpace.pair h_xs (ComputableInLogSpace.unaryMulConst k₂ h_i))
-  have h_slice : ComputableInLogSpace
-      (fun p : (α × List Bool) × ℕ => (p.1.2.drop (p.2 * k₂)).take (r₂ (q₁ (p.1.1, p.2))))
-      (encPair (encPair encA encBits) encUnary) encBits :=
-    ComputableInLogSpace.bitsTake.comp
-      (ComputableInLogSpace.pair h_drop (hr₂.comp h_b))
   have h_innerAns : ComputableInLogSpace innerAns
-      (encPair (encPair encA encBits) encUnary) encBool :=
-    hd₂.comp (ComputableInLogSpace.pair h_b h_slice)
+      (encPair (encPair encA encBits) encUnary) encBool := by
+    simp only [innerAns]
+    fun_prop
   have h_outerList : ComputableInLogSpace
       (fun p : α × List Bool => (List.range (r₁ p.1)).map fun i => innerAns (p, i))
       (encPair encA encBits) encBits :=
-    ComputableInLogSpace.mapToBits_range_of_le k₁
-      (hr₁.comp (ComputableInLogSpace.fst _ _)) (fun p => hr₁k p.1) h_innerAns
-  have hd : ComputableInLogSpace d (encPair encA encBits) encBool :=
-    hd₁.comp (ComputableInLogSpace.pair (ComputableInLogSpace.fst _ _) h_outerList)
+    ComputableInLogSpace.mapToBits_range_of_le k₁ (by fun_prop) (fun p => hr₁k p.1) h_innerAns
+  have hd : ComputableInLogSpace d (encPair encA encBits) encBool := by
+    simp only [d]
+    fun_prop
   refine ⟨r, q, d, hr, hq, hd, fun a => Nat.mul_le_mul_right k₂ (hr₁k a), fun a => ?_⟩
   rw [hA a, truthTableAnswers_eq_map_range]
   dsimp only [d]

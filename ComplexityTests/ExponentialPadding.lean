@@ -10,12 +10,9 @@ import Complexity.Computability.Complexity.Classes.EXP
 
 open Cslib.Complexity Turing.MultiTapeTM
 
-example {Ψ : List Bool × ℕ → Bool}
-    (hΨ : ComputableTidilyInPolyTime Ψ (encPair encBits encUnary) encBool) :
-    {y : List Bool | Ψ (y, 2 ^ y.length) = true} ∈ E encBits :=
-  setOf_mem_E_of_computableInPolyTime_pad (.of_tidy hΨ)
-
--- The polynomial-time premise is inhabited, including at the empty input.
-example : {y : List Bool | (fun _ : List Bool × ℕ => true) (y, 2 ^ y.length) = true} ∈
-    E encBits :=
-  setOf_mem_E_of_computableInPolyTime_pad (.of_tidy (ComputableTidilyInPolyTime.const true))
+example :
+    {y : List Bool | (fun _ : List Bool × ℕ => false) (y, 2 ^ y.length) = true} ∈ E encBits ∧
+      {y : List Bool | (fun _ : List Bool × ℕ => true) (y, 2 ^ y.length) = true} ∈
+        E encBits :=
+  ⟨setOf_mem_E_of_computableInPolyTime_pad (ComputableInPolyTime.const false),
+    setOf_mem_E_of_computableInPolyTime_pad (ComputableInPolyTime.const true)⟩

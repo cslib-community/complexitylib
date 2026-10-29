@@ -114,11 +114,11 @@ example : ([0, 1] : List (ZMod (2 ^ 1))).map (decode 1) = [false, true] := by
   decide +kernel
 
 -- Width zero is a valid algebraic case, but its decoder deliberately always returns false.
-example (v : Fin 1 → ZMod (2 ^ 0)) :
-    bitCompose 0 (fun j => ((bitDecomp 0 v j).toNat : ZMod (2 ^ 0))) = v :=
-  bitCompose_bitDecomp 0 v
-
-example : decode 0 (0 : ZMod (2 ^ 0)) = false := by decide +kernel
+example :
+    bitCompose 0 (fun j => ((bitDecomp 0 (fun _ : Fin 1 => (0 : ZMod (2 ^ 0))) j).toNat :
+      ZMod (2 ^ 0))) = (fun _ => 0) ∧
+    decode 0 (0 : ZMod (2 ^ 0)) = false :=
+  ⟨bitCompose_bitDecomp 0 (fun _ => 0), by decide +kernel⟩
 
 example (μ : Bool) : decrypt (n := 0) (w := 0) (fun _ => 0)
     (encryptWithCoins (m := 0) (fun _ _ => 0) μ (fun _ _ => false)) = false := rfl
@@ -133,13 +133,10 @@ example : [0, 1, 2].map (fun j : Fin 3 => flattenMatrix 3 nonbinary 0 (0, j)) =
 
 example : (bitMatrix (ZMod (2 ^ 3)) (flattenMatrix 3 nonbinary) *ᵥ
     powersOfTwo 3 (fun _ : Fin 1 => 3)) 0 = 3 ∧
-    (nonbinary *ᵥ powersOfTwo 3 (fun _ : Fin 1 => 3)) 0 = 3 := by
-  decide +kernel
-
-example (w : ℕ) (C : Matrix (Fin 1) (Fin 2 × Fin w) (ZMod (2 ^ w)))
-    (s : Fin 2 → ZMod (2 ^ w)) :
-    bitMatrix (ZMod (2 ^ w)) (flattenMatrix w C) *ᵥ powersOfTwo w s =
-      C *ᵥ powersOfTwo w s :=
-  flattenMatrix_mulVec w C s
+    (nonbinary *ᵥ powersOfTwo 3 (fun _ : Fin 1 => 3)) 0 = 3 ∧
+    bitMatrix (ZMod (2 ^ 3)) (flattenMatrix 3 nonbinary) *ᵥ
+      powersOfTwo 3 (fun _ : Fin 1 => 3) =
+      nonbinary *ᵥ powersOfTwo 3 (fun _ : Fin 1 => 3) := by
+  refine ⟨?_, ?_, flattenMatrix_mulVec 3 nonbinary (fun _ => 3)⟩ <;> decide +kernel
 
 end ComplexityTests.GSW

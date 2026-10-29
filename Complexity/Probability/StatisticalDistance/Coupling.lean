@@ -10,6 +10,7 @@ module
 public import Cslib.Probability.StatisticalDistance
 public import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.StatisticalDistance
 
 /-!
 # The coupling inequality
@@ -35,44 +36,18 @@ private theorem dist_map_map_le_of_finite [Finite α] [Fintype β] (p : PMF α) 
     dist (p.map f) (p.map g) ≤ (p.toOuterMeasure {a | f a ≠ g a}).toReal := by
   classical
   have := Fintype.ofFinite α
-  rw [dist_eq, toOuterMeasure_apply_toReal]
-  have hmap : ∀ (h : α → β) (b : β),
-      ((p.map h) b).toReal = ∑ a, if h a = b then (p a).toReal else 0 := by
-    intro h b
-    rw [PMF.map_apply, tsum_fintype,
-      ENNReal.toReal_sum fun a _ => by split_ifs <;> simp [PMF.apply_ne_top]]
-    exact Finset.sum_congr rfl fun a _ => by by_cases hab : b = h a <;> simp [hab, eq_comm]
-  have hpt : ∀ b, |((p.map f) b).toReal - ((p.map g) b).toReal| ≤
-      ∑ a, (p a).toReal * |(if f a = b then (1 : ℝ) else 0) - (if g a = b then 1 else 0)| := by
-    intro b
-    rw [hmap, hmap, ← Finset.sum_sub_distrib]
-    refine (Finset.abs_sum_le_sum_abs _ _).trans (le_of_eq (Finset.sum_congr rfl fun a _ => ?_))
-    have hp := ENNReal.toReal_nonneg (a := p a)
-    split_ifs <;> simp [abs_of_nonneg hp]
-  have hinner : ∀ a, ∑ b, |(if f a = b then (1 : ℝ) else 0) - (if g a = b then 1 else 0)| =
-      if f a ≠ g a then 2 else 0 := by
-    intro a
-    by_cases hfg : f a = g a
-    · simp [hfg]
-    · rw [← Finset.add_sum_erase _ _ (Finset.mem_univ (f a)),
-        Finset.sum_eq_single_of_mem (g a) (by simp [Ne.symm hfg])]
-      · simp only [↓reduceIte, Ne.symm hfg, sub_zero, abs_one, hfg, zero_sub, abs_neg, ne_eq,
-          not_false_eq_true]
-        norm_num
-      · intro b hb hbg
-        have hbf : b ≠ f a := by simpa using hb
-        simp [Ne.symm hbf, Ne.symm hbg]
-  calc (∑ b, |((p.map f) b).toReal - ((p.map g) b).toReal|) / 2
-      ≤ (∑ b, ∑ a, (p a).toReal *
-          |(if f a = b then (1 : ℝ) else 0) - (if g a = b then 1 else 0)|) / 2 := by
-        gcongr with b
-        exact hpt b
-    _ = _ := by
-        rw [Finset.sum_comm]
-        simp_rw [← Finset.mul_sum, hinner]
-        rw [Finset.sum_div]
-        refine Finset.sum_congr rfl fun a _ => ?_
-        by_cases hfg : f a = g a <;> simp [hfg]
+  have hmap (h : α → β) :
+      (p.bind fun a => (PMF.pure (h a)).map (a, ·)).map Prod.snd = p.map h := by
+    simp only [PMF.map_bind, PMF.pure_map]
+    rfl
+  rw [← hmap f, ← hmap g]
+  refine (dist_map_le _ _ Prod.snd).trans ?_
+  rw [dist_bind_pair, toOuterMeasure_apply_toReal]
+  refine Finset.sum_le_sum fun a _ => ?_
+  by_cases h : f a = g a
+  · simp [h]
+  · simpa [h] using mul_le_mul_of_nonneg_left
+      (dist_le_one (PMF.pure (f a)) (PMF.pure (g a))) (ENNReal.toReal_nonneg (a := p a))
 
 /-- **Coupling inequality.** Two functions of the same sample are at statistical distance at most
 the probability that they differ. -/

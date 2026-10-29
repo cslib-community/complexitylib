@@ -68,7 +68,10 @@ private theorem eval_augmentedXor (x : Fin 6 → Bool) :
   rfl
 
 -- The public projection and the two private endpoints come from an actual supported sampler.
-example : artifact ∈ (ProbComp.eval (Leveled.keyGen tagged 0 1)).support := artifact_supported
+example :
+    artifact ∈
+      (ProbComp.eval ((Leveled.scheme decryptionCircuits (fun _ => 1)).keyGen 0)).support :=
+  artifact_supported
 example : Leveled.publicKeyDecoder.decode artifact.1 = ([[false], [true], [true]], links) := by
   simp [artifact, Leveled.keyPair, keys]
 example : Leveled.secretKeyDecoder.decode artifact.2 = ([false], [true]) := by
@@ -251,12 +254,14 @@ example (outer : Σ m, Circuit Boolean.signature m 1) (houter : outer.2.depth �
     tagged_bootstrappable (fun _ => 2) 0 1 1 artifactTwo artifactTwo_supported rfl
     outer houter midBits mids hmidBits hmids output houtput
 
--- The concrete base scheme inhabits the whole scheme and fixed-width interfaces at any budget.
-example (budget : ℕ → ℕ) : (Leveled.scheme decryptionCircuits budget).Correct :=
-  Leveled.correct decryptionCircuits tagged_correct tagged_width tagged_bootstrappable budget
-example (budget : ℕ → ℕ) :
-    (Leveled.scheme decryptionCircuits budget).FixedWidth (fun _ => 4) (fun _ => 3) :=
-  Leveled.fixedWidth decryptionCircuits tagged_correct tagged_width tagged_bootstrappable budget
+-- The concrete base scheme inhabits the scheme and fixed-width interfaces at a growing budget.
+example : (Leveled.scheme decryptionCircuits (fun n => n + 1)).Correct :=
+  Leveled.correct decryptionCircuits tagged_correct tagged_width tagged_bootstrappable
+    (fun n => n + 1)
+example :
+    (Leveled.scheme decryptionCircuits (fun n => n + 1)).FixedWidth (fun _ => 4) (fun _ => 3) :=
+  Leveled.fixedWidth decryptionCircuits tagged_correct tagged_width tagged_bootstrappable
+    (fun n => n + 1)
 
 -- Total decoding and circuit-based decryption cover malformed keys and truncated ciphertexts.
 example : Leveled.decrypt decryptionCircuits 0 [] [] = false := by decide +kernel
@@ -281,14 +286,14 @@ example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
 example : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool => Leveled.decrypt decryptionCircuits p.1 p.2.1 p.2.2)
     (encPair encUnary (encPair encBits encBits)) encBool := by
-  apply Leveled.computableInPolyTime_decrypt decryptionCircuits (.of_tidy circuits_poly) <;>
+  apply Leveled.computableInPolyTime_decrypt decryptionCircuits circuits_poly <;>
     fun_prop
 
 example : IsPPTOn
     (encPair encUnary (encPair encUnary
       (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))) encBits
     (fun p => Leveled.evaluate decryptionCircuits p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2) := by
-  apply Leveled.isPPTOn_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+  apply Leveled.isPPTOn_evaluate encrypt_ppt decryptionCircuits circuits_poly
     evaluate_ppt
   all_goals fun_prop
 
@@ -298,25 +303,25 @@ example : IsPPTOn
     (fun p => Leveled.evaluateHop decryptionCircuits p.1 p.2.1 p.2.2.1
       p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2) := by
   apply Leveled.isPPTOn_evaluateHop encrypt_ppt decryptionCircuits evaluate_ppt
-    (.of_tidy circuits_poly)
-  all_goals exact .of_tidy (by fun_prop)
+    circuits_poly
+  all_goals fun_prop
 
 -- A nonconstant budget family instantiates the actual Scheme fields with one uniform clock.
 example : IsPPTOn encUnary (encPair encBits encBits)
-    (Leveled.scheme decryptionCircuits (fun n => n + 1)).keyGen := by
-  exact Leveled.isPPTOn_scheme_keyGen keyGen_ppt encrypt_ppt decryptionCircuits
-    (fun n => n + 1) (.of_tidy (by fun_prop))
+    (Leveled.scheme decryptionCircuits (fun n => n + 1)).keyGen :=
+  Leveled.isPPTOn_scheme_keyGen keyGen_ppt encrypt_ppt decryptionCircuits
+    (fun n => n + 1) (by fun_prop)
 
 example : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))) encBits
     (fun p => (Leveled.scheme decryptionCircuits (fun n => n + 1)).evaluate
-      p.1 p.2.1 p.2.2.1 p.2.2.2) := by
-  exact Leveled.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+      p.1 p.2.1 p.2.2.1 p.2.2.2) :=
+  Leveled.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits circuits_poly
     evaluate_ppt
     (fun n => n + 1) (by fun_prop)
 
 -- The same generated decryption circuits supply the compact widths' polynomial bounds.
 example : PolynomiallyBounded (fun _ : ℕ => 4) ∧ PolynomiallyBounded (fun _ : ℕ => 3) :=
-  Leveled.polynomiallyBounded_widths decryptionCircuits (.of_tidy circuits_poly)
+  Leveled.polynomiallyBounded_widths decryptionCircuits circuits_poly
 
 end ComplexityTests.HomomorphicLeveled

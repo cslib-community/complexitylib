@@ -35,29 +35,43 @@ example (d : PMF ℕ) (game : ℕ → Game) :
 example : ¬ ((Game.advantage (PMF.pure true) (PMF.pure false) : ℝ) ≤ (⊤ : ℝ≥0∞).toReal) := by
   simp [Game.succProbability]
 
--- NNReal mixture, pointwise error-averaging, support, and bind-commutativity bounds.
-example {α : Type*} (d : PMF α) (game1 game2 : α → Game) {ε : ℝ≥0}
-    (h : ∀ a, Game.advantage (game1 a) (game2 a) ≤ ε) :
-    Game.advantage (d.bind game1) (d.bind game2) ≤ ε :=
-  Game.advantage_bind_le_nnreal d game1 game2 h
+open Cslib.Probability in
+-- NNReal mixture, pointwise error-averaging, support, and bind-commutativity bounds on `Bool`.
+example (game1 game2 err : Bool → Game) {ε : ℝ≥0}
+    (h : ∀ a, Game.advantage (game1 a) (game2 a) ≤ ε)
+    (herr : ∀ x, game1 x true ≤ game2 x true + err x true ∧
+      game2 x true ≤ game1 x true + err x true)
+    (f g : Bool → Bool → Game) :
+    Game.advantage ((PMF.uniformOfFintype Bool).bind game1)
+        ((PMF.uniformOfFintype Bool).bind game2) ≤ ε ∧
+      Game.advantage ((PMF.pure true).bind game1) ((PMF.pure true).bind game2) ≤ ε ∧
+      Game.advantage ((PMF.uniformOfFintype Bool).bind game1)
+        ((PMF.uniformOfFintype Bool).bind game2) ≤
+        Game.succProbability ((PMF.uniformOfFintype Bool).bind err) ∧
+      Game.advantage
+        ((PMF.uniformOfFintype Bool).bind fun a =>
+          (PMF.pure true).bind fun b => f a b)
+        ((PMF.uniformOfFintype Bool).bind fun a =>
+          (PMF.pure true).bind fun b => g a b) =
+      Game.advantage
+        ((PMF.pure true).bind fun b =>
+          (PMF.uniformOfFintype Bool).bind fun a => f a b)
+        ((PMF.pure true).bind fun b =>
+          (PMF.uniformOfFintype Bool).bind fun a => g a b) :=
+  ⟨Game.advantage_bind_le_nnreal _ game1 game2 h,
+   Game.advantage_bind_le_of_support _ game1 game2 (fun a _ => h a),
+   Game.advantage_bind_le_succProbability_bind _ game1 game2 err herr,
+   Game.advantage_bind_comm _ _ f g⟩
 
-example {α : Type*} (d : PMF α) (game1 game2 : α → Game) {ε : ℝ≥0}
-    (h : ∀ a ∈ d.support, Game.advantage (game1 a) (game2 a) ≤ ε) :
-    Game.advantage (d.bind game1) (d.bind game2) ≤ ε :=
-  Game.advantage_bind_le_of_support d game1 game2 h
-
-example {β : Type*} (μ : PMF β) (game1 game2 err : β → Game)
-    (h : ∀ x, game1 x true ≤ game2 x true + err x true ∧
-      game2 x true ≤ game1 x true + err x true) :
-    Game.advantage (μ.bind game1) (μ.bind game2) ≤ Game.succProbability (μ.bind err) :=
-  Game.advantage_bind_le_succProbability_bind μ game1 game2 err h
-
-example {α β : Type*} (p : PMF α) (q : PMF β) (f g : α → β → Game) :
-    Game.advantage (p.bind fun a => q.bind fun b => f a b)
-      (p.bind fun a => q.bind fun b => g a b) =
-    Game.advantage (q.bind fun b => p.bind fun a => f a b)
-      (q.bind fun b => p.bind fun a => g a b) :=
-  Game.advantage_bind_comm p q f g
+-- The two continuations agree on `pure true`'s support but disagree at `false`.
+example : Game.advantage
+    ((PMF.pure true).bind fun bit => PMF.pure bit)
+    ((PMF.pure true).bind fun _ => PMF.pure true) ≤ 0 := by
+  apply Game.advantage_bind_le_of_support
+  intro bit hbit
+  have hbit : bit = true := by simpa only [PMF.support_pure, Set.mem_singleton_iff] using hbit
+  subst bit
+  simp
 
 open Cslib.Probability in
 -- Concrete check of `succProbability_uniform_bool_xor`: when `g false = PMF.pure true` and

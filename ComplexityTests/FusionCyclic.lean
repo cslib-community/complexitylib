@@ -78,17 +78,17 @@ private theorem feedback_eval {U : Type*} (A B : Set U) :
   funext i
   fin_cases i <;> rfl
 
-example : feedback.cost Monotone.andCost = 2 := by decide
+example {U : Type*} (A B : Set U) :
+    feedback.cost Monotone.andCost = 2 ∧
+      (PairCover.ofCyclicCircuit feedback ![A, B] 0
+        (congrFun (feedback_eval A B) 0)).pairs.length = 2 := by
+  refine ⟨by decide, ?_⟩
+  rw [PairCover.length_ofCyclicCircuit]
+  decide
 
 example (weight : Monotone.Op → ℕ) :
     feedback.cost weight = weight .or + weight .and + weight .and := by
   simp [CyclicCircuit.cost, Fin.sum_univ_succ, Nat.add_assoc]
-
-example {U : Type*} (A B : Set U) :
-    (PairCover.ofCyclicCircuit feedback ![A, B] 0
-      (congrFun (feedback_eval A B) 0)).pairs.length = 2 := by
-  rw [PairCover.length_ofCyclicCircuit]
-  decide
 
 -- Input-only outputs and empty output tuples need no equations.
 example {U : Type*} (A : Set U) :
@@ -140,28 +140,32 @@ private theorem positive_cover (c : PairCover (targets 0) inputs) : 1 ≤ c.pair
   have hempty : c.pairs = [] := List.length_eq_zero_iff.mp (by lia)
   exact c.isCover witness (by simp only [hempty, List.not_mem_nil, false_implies, implies_true])
 
-example : 1 ≤ feedback.cost Monotone.andCost :=
-  pairCover_lowerBound_cyclic positive_cover feedback 0 (congrFun (feedback_eval _ _) 0)
+example (c : CyclicCircuit Monotone.signature 2 4)
+    (hc : c.eval (Monotone.setInterpretation (Fin 2 → Bool))
+      Monotone.setInterpretation_mono inputs 0 = targets 0) :
+    c.cost Monotone.andCost ≠ 0 := by
+  have h := pairCover_lowerBound_cyclic positive_cover c 0 hc
+  omega
 
 private def acyclic : Circuit Monotone.signature 2 4 :=
   ⟨(Program.empty : Program Monotone.signature 2 0).gate ⟨.and, ![.input 1, .input 0]⟩,
     ![.gate 0, .input 0, .gate 0, .input 1]⟩
 
-example : CyclicCircuit.ecomplexityFrom (Monotone.setInterpretation (Fin 2 → Bool))
-    Monotone.setInterpretation_mono Monotone.andCost
-      (fun _ : Unit => targets) (fun _ => inputs) = 1 := by
-  apply le_antisymm
+example :
+    CyclicCircuit.ecomplexityFrom (Monotone.setInterpretation (Fin 2 → Bool))
+        Monotone.setInterpretation_mono Monotone.andCost
+        (fun _ : Unit => targets) (fun _ => inputs) = 1 ∧
+      CyclicCircuit.ecomplexityFrom (Monotone.setInterpretation (Fin 2 → Bool))
+        Monotone.setInterpretation_mono (fun _ => 7)
+        (fun _ : Unit => targets) (fun _ => inputs) ≤ 7 := by
+  refine ⟨le_antisymm ?_ ?_,
+    CyclicCircuit.ecomplexityFrom_le_acyclic.trans
+      (ecomplexityFrom_le_of_computesFrom acyclic (fun _ => by funext i; fin_cases i <;> rfl))⟩
   · exact CyclicCircuit.ecomplexityFrom_le_of_computesFrom acyclic.toCyclic
       (fun _ => by simp only [Circuit.eval_toCyclic]; funext i; fin_cases i <;> rfl)
   · apply le_trans _ (pairCoverComplexity_le_cyclic_ecomplexityFrom
       (fun _ : Unit => inputs) (fun _ => targets) () 0)
     exact le_pairCoverComplexity_iff.mpr fun c => by exact_mod_cast positive_cover c
-
-example : CyclicCircuit.ecomplexityFrom (Monotone.setInterpretation (Fin 2 → Bool))
-    Monotone.setInterpretation_mono (fun _ => 7)
-      (fun _ : Unit => targets) (fun _ => inputs) ≤ 7 :=
-  CyclicCircuit.ecomplexityFrom_le_acyclic.trans
-    (ecomplexityFrom_le_of_computesFrom acyclic (fun _ => by funext i; fin_cases i <;> rfl))
 
 private abbrev constants : Circuit Monotone.signature 0 3 :=
   ⟨((Program.empty : Program Monotone.signature 0 0).gate ⟨.const false, Fin.elim0⟩).gate

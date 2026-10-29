@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Mathlib.Data.Nat.Size
@@ -43,7 +44,7 @@ within polynomial space whenever `g` is computable within polynomial space
 it charges, for every instruction, the largest time of `g` on a word no longer than the clock
 (`Turing.MultiTapeTM.wordMax`). When `g` is polynomial-time, both the instruction and the clocked
 run are polynomial-time (`Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`,
-`Turing.MultiTapePTM.computableTidilyInPolyTime_run`).
+`Turing.MultiTapePTM.computableInPolyTime_run`).
 
 ## Main definitions
 
@@ -63,7 +64,7 @@ run are polynomial-time (`Turing.MultiTapePTM.computableTidilyInPolyTime_answerS
   within polynomial space is computable within polynomial space.
 * `Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`: an instruction against a
   polynomial-time oracle is polynomial-time.
-* `Turing.MultiTapePTM.computableTidilyInPolyTime_run`: a clocked run against a polynomial-time
+* `Turing.MultiTapePTM.computableInPolyTime_run`: a clocked run against a polynomial-time
   oracle is polynomial-time.
 
 ## References
@@ -465,11 +466,13 @@ omit [Fintype Operation] in
 /-- **A clocked run against a polynomial-time oracle is polynomial-time.** Against the oracle
 answering `[g w]` to a request `w`, where `g` is polynomial-time, the run with every coin fixed to
 `false` under the clock `c * (n + 1) ^ d` is polynomial-time in the encoded input. -/
-theorem computableTidilyInPolyTime_run [Finite Operation] {α : Type} {input : α ↪ List Bool}
-    {g : List Bool → Bool} (hg : ComputableTidilyInPolyTime g encBits encBool) (c d : ℕ) :
-    ComputableTidilyInPolyTime (fun a => OracleComp.interpret (m := Id) (fun q => [g q.2])
+theorem computableInPolyTime_run [Finite Operation] {α : Type} {input : α ↪ List Bool}
+    {g : List Bool → Bool} (hg : ComputableInPolyTime g encBits encBool) (c d : ℕ) :
+    ComputableInPolyTime (fun a => OracleComp.interpret (m := Id) (fun q => [g q.2])
       (machine.run (pure false) (fun op word => OracleComp.query (op, word))
         (c * ((input a).length + 1) ^ d) (input a))) input encBits := by
+  replace hg := hg.tidy
+  refine .of_tidy ?_
   classical
   let _ := Fintype.ofFinite Operation
   obtain ⟨cf, hcf⟩ := length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Operation)

@@ -235,9 +235,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `81920*(L+1)*N²/(4^m)^(1/18)` when `L=19m` and `N≥(4^m)^18`. Native power, ordered-filter,
   finite-digit and row-major list lemmas live in small topic modules; the existing mathematical
   layout, matrix and encoding interfaces are reused. No source machine or call/time oracle
-  is introduced. Native pruned and sparse-query programs, native preprocessing/solvers and
-  full input/time/width composition, including the
-  improved Section 4 route to exponent 1.9992, remain in #1394.
+  is introduced. Native pruned and sparse-query programs, the full reduction host, native
+  Chan–He preprocessing, fast Exact Triangle and full input/time/width/asymptotic composition,
+  including the improved Section 4 route needed for exponent 1.9992, remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394). Anthropic's copyright
+  and attribution are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
@@ -316,6 +318,7 @@ agreement during upstream review.
 | `Foundations/Combinatorics/{FiniteCover,Hoeffding,Hypergeometric,PowersetTail,Sunflower}` | Consider Mathlib combinatorics; probabilistic-method lemmas belong near `Combinatorics/Probabilistic`. |
 | `Foundations/Data/Finset/Expect` | Product-type expectation helpers extracted from `Foundations/Combinatorics/Expander/Products` (#317); Mathlib candidates. |
 | `Foundations/Data/Finset/Markov` | Mathlib candidate: `Algebra/Order/BigOperators/Group/Finset` (`Finset.card_filter_mul_le_sum`, `Finset.mul_card_filter_le_sum`). |
+| `Foundations/Data/Finset/OrderGlue` | Follow-up to #1496: rename the generic `forall_level_iff`, `exists_innerLevel`, `outerLevel_notMem` and `filter_glue` using order-embedding/complement terminology (for example `forall_iff_orderEmb_and_compl`), retaining this topic module. Migrate the concrete `Schonhage/Levels` and `Schonhage/Batch` clients together with the active native band-preparation client; defer that API migration until the latter is stable. |
 | `Foundations/Data/Matrix/Permanent` | Mathlib candidate: Laplace expansion of the permanent along row and column 0, beside `LinearAlgebra/Matrix/Permanent` (mirroring `Matrix.det_succ_row_zero`). |
 | `Foundations/LinearAlgebra/{Rank,Matrix/CutRank,Matrix/Lindsey}` | Mathlib candidates: `LinearAlgebra/Dimension/LinearMap` and `LinearAlgebra/Matrix/Rank`; placement of Lindsey's lemma needs agreement. |
 | `Probability/PairwiseIndependentHash/Shift` | Consider integration into `PairwiseIndependentHash`. |

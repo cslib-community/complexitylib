@@ -42,9 +42,6 @@ private theorem cell_preserves (side : Bool) (i : Fin 32) :
     9 ≤ i.val → ¬CellLocal i → (cellBody side).Preserves i := by
   decide +kernel +revert
 
-set_option maxHeartbeats 2000000 in
--- Symbolic execution retains nine instructions' functional register updates; normalizing them
--- and proving the explicit nonlinear address inequalities exceeds the default heartbeat budget.
 /-- One output entry, with all index arithmetic and the counter increment charged. A single
 ordinary explicit natural-number bound covers the addresses and index products; no fit
 condition is imposed on an unspecified intermediate machine state. -/
@@ -65,23 +62,26 @@ theorem exec_cell {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
   let p := i / (10 * n)
   let t : Fin 10 := ⟨i / n % 10, Nat.mod_lt _ (by decide)⟩
   let r := i % n
+  -- Keep nonlinear arithmetic focused on index bounds, rather than the execution context.
   have hp : p < P := by
     apply (Nat.div_lt_iff_lt_mul (by positivity : 0 < 10 * n)).mpr
-    nlinarith [hi]
+    nlinarith only [hi]
   have hr : r < n := Nat.mod_lt _ hnpos
   have hn1 : 1 ≤ n := hnpos
-  have hPn : n ≤ P * n := by nlinarith
+  have hPn : n ≤ P * n := Nat.le_mul_of_pos_left n hP
   have hmul : p * n < P * n := Nat.mul_lt_mul_of_pos_right hp hnpos
-  have h10n : Fits (w + 2) (10 * n) := haddr.of_le (by nlinarith)
-  have hpfit : Fits (w + 2) p := haddr.of_le (by nlinarith)
+  have h10n : Fits (w + 2) (10 * n) := haddr.of_le (by nlinarith only [hPn])
+  have hpfit : Fits (w + 2) p := haddr.of_le (by nlinarith only [hp, hn1])
   have hdiv : i / n ≤ i := Nat.div_le_self _ _
-  have hdivfit : Fits (w + 2) (i / n) := haddr.of_le (by nlinarith)
+  have hdivfit : Fits (w + 2) (i / n) := haddr.of_le (by nlinarith only [hdiv, hi])
   have htfit : Fits (w + 2) t.val := haddr.of_le (by have := t.isLt; omega)
-  have hrfit : Fits (w + 2) r := haddr.of_le (by nlinarith)
-  have hp7 : Fits (w + 2) (p * 7) := haddr.of_le (by nlinarith)
-  have hp7n : Fits (w + 2) (p * 7 * n) := haddr.of_le (by nlinarith)
-  have hp7nr : Fits (w + 2) (p * 7 * n + r) := haddr.of_le (by nlinarith)
-  have hgroup : Fits (w + 2) (s + (p * 7 * n + r)) := haddr.of_le (by nlinarith)
+  have hrfit : Fits (w + 2) r := haddr.of_le (by nlinarith only [hr, hPn])
+  have hp7 : Fits (w + 2) (p * 7) := haddr.of_le (by nlinarith only [hp, hn1])
+  have hp7n : Fits (w + 2) (p * 7 * n) := haddr.of_le (by nlinarith only [hmul])
+  have hp7nr : Fits (w + 2) (p * 7 * n + r) :=
+    haddr.of_le (by nlinarith only [hmul, hr, hPn])
+  have hgroup : Fits (w + 2) (s + (p * 7 * n + r)) :=
+    haddr.of_le (by nlinarith only [hmul, hr, hPn])
   let z := ((((((((x.set temporary (10 * n)).set block p).set term (i / n)).set term t.val).set
     suffix r).set group (p * 7)).set group (p * 7 * n)).set group (p * 7 * n + r)).set
       group (s + (p * 7 * n + r))
@@ -99,7 +99,7 @@ theorem exec_cell {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
     have hidx : s + (p * 7 * n + r) + a.val * n = s + (p * 7 + a.val) * n + r := by ring
     simpa only [z, Data.set_mem, hidx] using hmem a
   have hspan : Fits (w + 2) (s + (p * 7 * n + r) + 7 * n) :=
-    haddr.of_le (by nlinarith)
+    haddr.of_le (by nlinarith only [hmul, hr, hPn])
   obtain ⟨u, hu, huacc, humem, hureg⟩ := exec_dispatch hw side (List.finRange 10) t
     (List.mem_finRange _) z B (s + (p * 7 * n + r)) n v hzterm hzgroup hzn hzmem
     hB hv hval hspan (haddr.of_le (by omega))
@@ -112,8 +112,8 @@ theorem exec_cell {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
   have zuone : u.regs one = 1 := by
     rw [hureg one (by decide) (by decide) (by decide) (by decide)]
     simpa [z, temporary, block, term, suffix, group, one, Fin.mk.injEq] using hone
-  have hdfit : Fits (w + 2) (d + i) := haddr.of_le (by nlinarith)
-  have hinc : Fits (w + 2) (i + 1) := haddr.of_le (by nlinarith)
+  have hdfit : Fits (w + 2) (d + i) := haddr.of_le (by nlinarith only [hi])
+  have hinc : Fits (w + 2) (i + 1) := haddr.of_le (by nlinarith only [hi])
   let y := ((u.set address (d + i)).write (d + i) (u.regs accumulator)).set cell (i + 1)
   have hy : ExecWithin (w + 2) cellFinish u y 3 := by
     ram_eval [cellFinish, y, zucell, zudst, zuone, hdfit, hinc,
