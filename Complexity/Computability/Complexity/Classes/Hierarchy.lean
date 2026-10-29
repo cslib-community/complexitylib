@@ -149,16 +149,15 @@ theorem not_forall_halted_diagonal {k : ℕ} {State : Type} [Finite State]
 /-- **The diagonal problem is not in `P`**, by the diagonal argument of the time hierarchy
 theorem [Arora and Barak, Theorem 3.1][AroraBarak09]. -/
 theorem diagonal_notMem_P : {x | diagonal x = true} ∉ P encBits := by
-  rintro ⟨f, hfpoly, hf⟩
-  obtain ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩ := hfpoly.tidy
+  rintro ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩
   have hfx (x : List Bool) : f x = diagonal x := by
     cases h : diagonal x
     · cases hfx : f x
       · rfl
       · exact absurd ((hf x).mpr hfx) (by simp [h])
     · exact (hf x).mp h
-  exact not_forall_halted_diagonal tm ht fun x => by
-    obtain ⟨hhalt, hout⟩ := ComputesTidilyInTimeAndSpace.runFrom_initCfg (htm x)
+  exact not_forall_halted_diagonal tm (.of_polynomiallyBounded _ ht) fun x => by
+    obtain ⟨hhalt, hout⟩ := (htm x).runFrom_of_le le_rfl
     exact ⟨hhalt, hout.trans (by rw [encBool_apply, hfx])⟩
 
 /-- **No plain machine computes the diagonal in polynomial time**: the separation does not depend

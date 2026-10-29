@@ -17,11 +17,12 @@ open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.PrefixSums
 
 namespace WordRAMPrefixSumsTests
 
-/-- The implementation has no code dependency on the height or word width. -/
-example (h w h' w' : ℕ) : (program h w).code = (program h' w').code := rfl
-
-/-- A represented four-element array exists, with its seven-word tree starting at address ten. -/
-example : Rep 2 10 8 [0, 0, 0, 0] (zeroData 2 10) := rep_zeroData (by decide)
+/-- The implementation has no code dependency on height or word width, and a represented
+four-element array exists with its seven-word tree starting at address ten. -/
+example (h w h' w' : ℕ) :
+    (program h w).code = (program h' w').code ∧
+    Rep 2 10 8 [0, 0, 0, 0] (zeroData 2 10) :=
+  ⟨rfl, rep_zeroData (by decide)⟩
 
 /-- Two updates followed by overlapping queries, preserving the array between calls. -/
 def client : (spec 2 8).Client (List ℕ) :=
@@ -63,13 +64,14 @@ def runCalls : List Operation → Data 14 → Option (Data 14 × List ℕ × ℕ
 example : ((runCalls [.sum 0, .add 0 2, .add 2 3, .sum 1, .sum 3, .sum 4]
     (zeroData 2 10)).map fun r => r.2.1) = some [0, 0, 0, 2, 5, 5] := by decide +kernel
 
-/-- Out-of-range operations and overflowing updates are excluded by the specification. -/
-example : ¬(spec 2 8).valid [0, 0, 0, 0] (.add 4 1) := by simp [spec]
-example : ¬(spec 2 8).valid [255, 0, 0, 0] (.add 0 1) := by simp [spec, fits_iff]
-
-/-- The bounded-word machine faults when an actual aggregate addition overflows. -/
-example : (((zeroData 2 10).write 10 255) |> fun x =>
-    (program 2 8).eval 8 4 (.add 0 1) x).isNone = true := by decide
+/-- Out-of-range operations and overflowing updates are excluded by the specification, and the
+bounded-word machine faults when an actual aggregate addition overflows. -/
+example :
+    ¬(spec 2 8).valid [0, 0, 0, 0] (.add 4 1) ∧
+    ¬(spec 2 8).valid [255, 0, 0, 0] (.add 0 1) ∧
+    (((zeroData 2 10).write 10 255) |> fun x =>
+      (program 2 8).eval 8 4 (.add 0 1) x).isNone = true :=
+  ⟨by simp [spec], by simp [spec, fits_iff], by decide⟩
 
 /--
 info: 'Cslib.Algorithms.WordRAM.PrefixSums.Tree.prefixSum_eq_sum_take' depends on axioms:

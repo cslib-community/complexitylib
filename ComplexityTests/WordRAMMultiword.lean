@@ -18,28 +18,20 @@ def observed (w m n : ℕ) (a : Fin m → ℕ) (b : Fin n → ℕ) :
   ((fixedProgram m n).eval w 0 (input m n a b)).map fun (y, t) =>
     ((outputRegs m n).map y.regs, t)
 
-/-- At the smallest allowed width, `3 * 3 = 9` requires all four binary output digits. -/
-example : observed 2 2 2 ![1, 1] ![1, 1] = some ([1, 0, 0, 1], 41) := by decide
-
-/-- Odd word width: `7 * 7 = 49`. -/
-example : observed 3 3 3 ![1, 1, 1] ![1, 1, 1] =
-    some ([1, 0, 0, 0, 1, 1], 80) := by decide
-
-/-- Unequal lengths and maximal radix-four digits: `63 * 15 = 945`. -/
-example : observed 4 3 2 ![3, 3, 3] ![3, 3] = some ([1, 0, 3, 2, 3], 64) := by decide
-
-/-- Internal zero digits: `5 * 3 = 15`. -/
-example : observed 2 3 2 ![1, 0, 1] ![1, 1] = some ([1, 1, 1, 1, 0], 64) := by decide
-
-example : observed 2 0 3 ![] ![1, 1, 1] = some ([0, 0, 0], 11) := by decide
-example : observed 2 3 0 ![1, 1, 1] ![] = some ([0, 0, 0], 32) := by decide
-example : observed 2 0 0 ![] ![] = some ([], 8) := by decide
-
-/-- The setup deliberately excludes widths below two. -/
-example : observed 1 2 2 ![0, 0] ![0, 0] = none := by decide
-example : observed 0 2 2 ![0, 0] ![0, 0] = none := by decide
-
-example : (fixedProgram 18 18).size = 2465 := size_fixedProgram 18 18
+/-- Maximal digits, odd widths, unequal lengths, internal zero digits, zero-length operands,
+width exclusions below `2`, and code size of `fixedProgram 18 18`. -/
+example :
+    observed 2 2 2 ![1, 1] ![1, 1] = some ([1, 0, 0, 1], 41) ∧
+    observed 3 3 3 ![1, 1, 1] ![1, 1, 1] = some ([1, 0, 0, 0, 1, 1], 80) ∧
+    observed 4 3 2 ![3, 3, 3] ![3, 3] = some ([1, 0, 3, 2, 3], 64) ∧
+    observed 2 3 2 ![1, 0, 1] ![1, 1] = some ([1, 1, 1, 1, 0], 64) ∧
+    (observed 2 0 3 ![] ![1, 1, 1] = some ([0, 0, 0], 11) ∧
+      observed 2 3 0 ![1, 1, 1] ![] = some ([0, 0, 0], 32) ∧
+      observed 2 0 0 ![] ![] = some ([], 8)) ∧
+    (observed 1 2 2 ![0, 0] ![0, 0] = none ∧
+      observed 0 2 2 ![0, 0] ![0, 0] = none) ∧
+    (fixedProgram 18 18).size = 2465 :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide, size_fixedProgram 18 18⟩
 
 /-- The full six-word product contract has a bounded concrete instance at width two. -/
 example : ∃ x y : Data 76, x.Bounded 2 ∧ y.Bounded 2 ∧

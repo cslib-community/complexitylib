@@ -48,31 +48,21 @@ def sampleCSP : CSP SampleRel ℕ :=
 def unsatRepeatedScopeCSP : CSP SampleRel ℕ :=
   [((false, true), [4, 4])]
 
-example : (BitString.enumList 3).length = 8 := by decide
-
--- `sampleCSP`:
--- 1. `2 ^^ 5 ^^ 9 = true` and `2 != 5` forces `2 ≠ 5` (2 choices) and `9 = false` (1 choice).
--- 2. Variable `12` appears only in the tautological constraint `((true, false), [9, 12])`, so it
---    has 2 free choices in `sampleCSP.modelCount sampleSem`, giving `2 * 1 * 2 = 4` solutions.
-example : sampleCSP.numVars = 4 := by decide
-example : sampleCSP.distinctVars = [2, 5, 9, 12] := by decide
-example : (sampleCSP.toCNF sampleSem).length = 6 := by decide
-example : sampleCSP.toCNFBounded 3 sampleSem = sampleCSP.toCNF sampleSem := by decide
+-- Concrete evaluations on `sampleCSP`, `unsatRepeatedScopeCSP`, and the empty CSP.
 example :
-    (sampleCSP.toCNF sampleSem).all (fun cl => decide (cl.length ≤ 3)) = true := by
+    (BitString.enumList 3).length = 8 ∧
+    sampleCSP.numVars = 4 ∧
+    sampleCSP.distinctVars = [2, 5, 9, 12] ∧
+    (sampleCSP.toCNF sampleSem).length = 6 ∧
+    sampleCSP.toCNFBounded 3 sampleSem = sampleCSP.toCNF sampleSem ∧
+    (sampleCSP.toCNF sampleSem).all (fun cl => decide (cl.length ≤ 3)) = true ∧
+    sampleCSP.modelCount sampleSem = 4 ∧
+    (sampleCSP.denseRelabel.toCNF sampleSem).modelCountOn (Finset.range sampleCSP.numVars) = 4 ∧
+    (unsatRepeatedScopeCSP.toCNF sampleSem).length = 2 ∧
+    unsatRepeatedScopeCSP.modelCount sampleSem = 0 ∧
+    CSP.modelCount sampleSem ([] : CSP SampleRel ℕ) = 1 ∧
+    CSP.modelCountOn sampleSem ([] : CSP SampleRel ℕ) (Finset.range 3) = 8 := by
   decide
-example : sampleCSP.modelCount sampleSem = 4 := by decide
-example :
-    (sampleCSP.denseRelabel.toCNF sampleSem).modelCountOn (Finset.range sampleCSP.numVars) = 4 := by
-  decide
-
--- Repeated variable in scope (`x ≠ x`) is properly unsatisfiable via `forbidClause`.
-example : (unsatRepeatedScopeCSP.toCNF sampleSem).length = 2 := by decide
-example : unsatRepeatedScopeCSP.modelCount sampleSem = 0 := by decide
-
--- Empty CSP has 1 satisfying assignment on its empty variable set, and `2 ^ N` on `Finset.range N`.
-example : CSP.modelCount sampleSem ([] : CSP SampleRel ℕ) = 1 := by decide
-example : CSP.modelCountOn sampleSem ([] : CSP SampleRel ℕ) (Finset.range 3) = 8 := by decide
 
 -- Domain-polymorphic `CSP.modelCount` over a finite non-Boolean domain (`Fin 3`):
 -- 3-coloring of a triangle `[((), [0, 1]), ((), [1, 2]), ((), [0, 2])]` has `3 * 2 * 1 = 6` models.
@@ -83,16 +73,13 @@ def neqFin3 : Unit → List (Fin 3) → Bool
 def triangle3ColorCSP : CSP Unit ℕ :=
   [((), [10, 20]), ((), [20, 30]), ((), [10, 30])]
 
-example : triangle3ColorCSP.modelCount neqFin3 = 6 := by decide
-example : triangle3ColorCSP.denseRelabel.modelCount neqFin3 = 6 := by decide
-
--- Polynomial-time compilation check (finite relation alphabet corollary).
 example :
-    ComputableInPolyTime (CSP.toCNFBounded 3 sampleSem)
-      (encCSP encSampleRel encNat) encCNF :=
-  CSP.computableInPolyTime_toCNFBounded_of_finite encSampleRel encNat 3 sampleSem
+    triangle3ColorCSP.modelCount neqFin3 = 6 ∧
+    triangle3ColorCSP.denseRelabel.modelCount neqFin3 = 6 := by
+  decide
 
--- Polynomial-time compilation check on an infinite relation type (`Bool × List Bool`).
+-- Polynomial-time compilation check on both finite (`SampleRel`) and infinite (`Bool × List Bool`)
+-- relation types.
 def taggedSem (r : Bool × List Bool) (_w : List Bool) : Bool := r.1
 
 theorem computableInPolyTime_taggedSem :
@@ -101,10 +88,13 @@ theorem computableInPolyTime_taggedSem :
   (ComputableInPolyTime.fst encBool encBits).comp (ComputableInPolyTime.fst _ _)
 
 example :
+    ComputableInPolyTime (CSP.toCNFBounded 3 sampleSem)
+      (encCSP encSampleRel encNat) encCNF ∧
     ComputableInPolyTime (CSP.toCNFBounded 3 taggedSem)
       (encCSP (encPair encBool encBits) encNat) encCNF :=
-  CSP.computableInPolyTime_toCNFBounded (encPair encBool encBits) encNat 3 taggedSem
-    computableInPolyTime_taggedSem
+  ⟨CSP.computableInPolyTime_toCNFBounded_of_finite encSampleRel encNat 3 sampleSem,
+   CSP.computableInPolyTime_toCNFBounded (encPair encBool encBits) encNat 3 taggedSem
+     computableInPolyTime_taggedSem⟩
 
 -- Non-vacuity of declared-variable exact `#CSP` counter.
 example :

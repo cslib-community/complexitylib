@@ -31,57 +31,36 @@ open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification
 
 /-! ### 1. Step-by-step trace of `CountingSparsify.step` on `flowerWithTautology` -/
 
-/-- Initial state on `flowerWithTautology`: `n = 3` declared variables, stack containing the
-nontautological normal form of the 2-clause flower, and accumulator `0`. -/
-example : CountingSparsify.init 2 flowerWithTautology =
-    (3, ([[[(0, true), (1, true)], [(0, true), (2, false)]]], 0)) := by
-  decide
-
-/-- Step 1: the non-sparse flower is popped and replaced by its `false` child `[[(0, true)]]` and
-`true` child `[[(1, true)], [(2, false)], [(0, false)]]`. -/
-example : CountingSparsify.step 2 2 CNF.modelCount (CountingSparsify.init 2 flowerWithTautology) =
-    (3, ([[[(0, true)]], [[(1, true)], [(2, false)], [(0, false)]]], 0)) := by
-  decide
-
-/-- Step 2: the sparse `false` child `[[(0, true)]]` (which mentions only variable `0`, so
-`distinctVars.length = 1` and `modelCount = 1`) is popped and weighted by
-`2 ^ (3 - 1) * 1 = 4`. -/
-example : (CountingSparsify.step 2 2 CNF.modelCount)^[2]
-      (CountingSparsify.init 2 flowerWithTautology) =
-    (3, ([[[(1, true)], [(2, false)], [(0, false)]]], 4)) := by
-  decide
-
-/-- Step 3: the sparse `true` child `[[(1, true)], [(2, false)], [(0, false)]]` (which mentions all
-3 variables `0, 1, 2`, with `modelCount = 1`) is popped and weighted by `2 ^ (3 - 3) * 1 = 1`,
-emptying the stack with final count `4 + 1 = 5`. -/
-example : (CountingSparsify.step 2 2 CNF.modelCount)^[3]
-      (CountingSparsify.init 2 flowerWithTautology) =
-    (3, ([], 5)) := by
-  decide
+/-- Step-by-step trace on `flowerWithTautology`: initial state (`n = 3` declared variables, stack
+containing the nontautological normal form of the 2-clause flower, accumulator `0`), step 1
+(popping the non-sparse flower into its `false` and `true` children), step 2 (popping the sparse
+`false` child weighted by `2 ^ (3 - 1) * 1 = 4`), and step 3 (popping the sparse `true` child
+weighted by `2 ^ (3 - 3) * 1 = 1` for a total of `5`). -/
+example :
+    CountingSparsify.init 2 flowerWithTautology =
+      (3, ([[[(0, true), (1, true)], [(0, true), (2, false)]]], 0)) ∧
+    CountingSparsify.step 2 2 CNF.modelCount (CountingSparsify.init 2 flowerWithTautology) =
+      (3, ([[[(0, true)]], [[(1, true)], [(2, false)], [(0, false)]]], 0)) ∧
+    (CountingSparsify.step 2 2 CNF.modelCount)^[2]
+        (CountingSparsify.init 2 flowerWithTautology) =
+      (3, ([[[(1, true)], [(2, false)], [(0, false)]]], 4)) ∧
+    (CountingSparsify.step 2 2 CNF.modelCount)^[3]
+        (CountingSparsify.init 2 flowerWithTautology) =
+      (3, ([], 5)) :=
+  ⟨by decide, by decide, by decide, by decide⟩
 
 /-! ### 2. Full `CountingSparsify.search` evaluation and edge cases -/
 
 /-- `CountingSparsify.search` recovers all `5` satisfying assignments of `flowerWithTautology` on
-its `3` occurring variables. -/
-example : CountingSparsify.search 2 2 2 2 CNF.modelCount flowerWithTautology = 5 := by
-  decide
-
-example : CountingSparsify.search 2 2 2 2 CNF.modelCount flowerWithTautology =
-    flowerWithTautology.modelCount := by
-  decide
-
-/-- Edge cases: empty formula at `k = 0` and `k = 2`, unsatisfiable empty-clause formula `[[]]`,
-and a 3-CNF clause rejected by the `k = 2` width guard. -/
-example : CountingSparsify.search 2 2 0 1 CNF.modelCount ([] : CNF ℕ) = 1 := by
-  decide
-
-example : CountingSparsify.search 2 2 2 1 CNF.modelCount ([] : CNF ℕ) = 1 := by
-  decide
-
-example : CountingSparsify.search 2 2 2 1 CNF.modelCount ([[]] : CNF ℕ) = 0 := by
-  decide
-
+its `3` occurring variables, handles `[]` at `k = 0` and `k = 2` and `[[]]`, and rejects a 3-CNF
+clause under the `k = 2` width guard. -/
 example :
+    CountingSparsify.search 2 2 2 2 CNF.modelCount flowerWithTautology = 5 ∧
+    CountingSparsify.search 2 2 2 2 CNF.modelCount flowerWithTautology =
+      flowerWithTautology.modelCount ∧
+    CountingSparsify.search 2 2 0 1 CNF.modelCount ([] : CNF ℕ) = 1 ∧
+    CountingSparsify.search 2 2 2 1 CNF.modelCount ([] : CNF ℕ) = 1 ∧
+    CountingSparsify.search 2 2 2 1 CNF.modelCount ([[]] : CNF ℕ) = 0 ∧
     CountingSparsify.search 2 2 2 1 CNF.modelCount [[(0, true), (1, true), (2, true)]] = 0 := by
   decide
 

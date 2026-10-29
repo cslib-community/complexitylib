@@ -22,35 +22,20 @@ open Cslib.WordRAM
 
 /-! ## The machine -/
 
-/-- Writing `8` into a register faults at word size `3`, where words are below `8`, while `7`
-fits. -/
-example : run (B := .standard) 3 [.op (.const (0 : Fin 1) 8), .halt 0] 5 (.init []) = none ∧
-    run (B := .standard) 3 [.op (.const (0 : Fin 1) 7), .halt 0] 5 (.init []) = some (7, 2) := by
-  decide
-
-/-- Adding past `2 ^ w` faults rather than wrapping around. -/
+/-- Overflow faults (`8` at width `3`, or `5 + 5` at width `3`), running off the end of a program
+faults, a program reading the word size tells word sizes apart, and the input length is at
+address `0` followed by the words. -/
 example :
-    run 3 [.op (.const (0 : Fin 1) 5), .op (.bin .add 0 0 0), .halt 0] 5 (.init []) = none := by
-  decide
-
-/-- Running off the end of a program faults: a run must halt. -/
-example : run (B := .standard) 8 [.op (.const (0 : Fin 1) 5)] 5 (.init []) = none := by decide
-
-/-- A program reading the word size tells word sizes apart. -/
-example : run 4 [.op (.width (0 : Fin 1)), .halt 0] 5 (.init []) = some (4, 2) ∧
-    run 5 [.op (.width (0 : Fin 1)), .halt 0] 5 (.init []) = some (5, 2) := by
-  decide
-
-/-- The input length is at address `0` and the words follow: this program halts with the length
-after reading it through a register holding the address `0`. -/
-example :
+    (run (B := .standard) 3 [.op (.const (0 : Fin 1) 8), .halt 0] 5 (.init []) = none ∧
+      run (B := .standard) 3 [.op (.const (0 : Fin 1) 7), .halt 0] 5 (.init []) = some (7, 2)) ∧
+    run 3 [.op (.const (0 : Fin 1) 5), .op (.bin .add 0 0 0), .halt 0] 5 (.init []) = none ∧
+    run (B := .standard) 8 [.op (.const (0 : Fin 1) 5)] 5 (.init []) = none ∧
+    (run 4 [.op (.width (0 : Fin 1)), .halt 0] 5 (.init []) = some (4, 2) ∧
+      run 5 [.op (.width (0 : Fin 1)), .halt 0] 5 (.init []) = some (5, 2)) ∧
     run (B := .standard) 8 [.op (.load (1 : Fin 2) 0), .halt 1] 5 (.init [5, 6, 7]) =
-      some (3, 2) := by
-  decide
-
-example :
+      some (3, 2) ∧
     Executes (B := .standard) 8 [.op (.load (1 : Fin 2) 0), .halt 1] (.init [5, 6, 7]) 3 2 :=
-  .of_run (fuel := 5) (by decide)
+  ⟨by decide, by decide, by decide, by decide, by decide, .of_run (fuel := 5) (by decide)⟩
 
 /-- Truncated subtraction, division by zero and the bitwise operations. -/
 example : BinOp.sub.eval 3 5 = 0 ∧ BinOp.div.eval 7 0 = 0 ∧ BinOp.mod.eval 7 0 = 7 ∧
@@ -76,13 +61,12 @@ def straight : Code .standard 3 := ram[
   if b < c then [ c ← c - b ] else [ c ← #0 ];
   *b ← c ]
 
-example : straight =
-    .seq (.op (.const b 5)) (.seq (.op (.const c 7)) (.seq (.op (.bin .add c b c))
-      (.seq (.branch (.lt b c) (.op (.bin .sub c c b)) (.op (.const c 0))) (.op (.store b c))))) :=
-  rfl
-
-/-- The interpreter counts the branch instruction of the taken alternative. -/
-example : (straight.eval 8 0 (.init [])).map (·.2) = some 6 := by decide
+/-- Desugared syntax of `straight` and concrete evaluation counting the taken branch instruction. -/
+example :
+    straight = .seq (.op (.const b 5)) (.seq (.op (.const c 7)) (.seq (.op (.bin .add c b c))
+      (.seq (.branch (.lt b c) (.op (.bin .sub c c b)) (.op (.const c 0))) (.op (.store b c))))) ∧
+    (straight.eval 8 0 (.init [])).map (·.2) = some 6 :=
+  ⟨rfl, by decide⟩
 
 /-- `ram_eval` executes the program symbolically on arbitrary data. -/
 example (x : Data 3) : ∃ y, ExecWithin 8 straight x y 6 ∧ y.mem 5 = 7 := by
@@ -107,21 +91,15 @@ example (x : Data 3) : ∃ y, Exec 8 count x y 14 ∧ y.regs a = 3 := by
   case run => ram_eval 3 [count]
   case val => simp
 
-/-- A loop compiles to a branch, a jump out, the body and a jump back. -/
-example : (ram[ while a < b do [ a ← a + c ] ] : Code .standard 3).assemble 0 =
-    [.branch (.lt a b) 2, .jump 4, .op (.bin .add a a c), .jump 0] := rfl
-
-/-- Reading the word size. -/
-example :
-    ((ram[ a ← width% ] : Code .standard 3).eval 7 0 (.init [])).map (·.1.regs a) = some 7 := by
-  decide
-
-/-- Registers a program never writes keep their contents; `Code.Preserves` is decidable. -/
-example {w n : ℕ} {x y : Data 3} (h : Exec w straight x y n) : y.regs a = x.regs a :=
-  h.regs_eq (by decide)
-
-/-- The notation reserves no identifiers. -/
-example (ram width : ℕ) : ram + width = width + ram := Nat.add_comm _ _
+/-- Loop assembly, reading the word size, preservation of unwritten registers, and unreserved
+identifiers `ram` and `width`. -/
+example {w n : ℕ} {x y : Data 3} (h : Exec w straight x y n) (ram width : ℕ) :
+    (ram[ while a < b do [ a ← a + c ] ] : Code .standard 3).assemble 0 =
+      [.branch (.lt a b) 2, .jump 4, .op (.bin .add a a c), .jump 0] ∧
+    ((ram[ a ← width% ] : Code .standard 3).eval 7 0 (.init [])).map (·.1.regs a) = some 7 ∧
+    y.regs a = x.regs a ∧
+    ram + width = width + ram :=
+  ⟨rfl, by decide, h.regs_eq (by decide), Nat.add_comm _ _⟩
 
 end Notation
 
@@ -229,23 +207,16 @@ section ElementDistinctness
 
 open Cslib.Algorithms.WordRAM.ElementDistinctness Cslib.Algorithms.WordRAM.ElementDistinctness.Reg
 
-/-- Distinct entries: the compiled decider answers `1`. -/
-example : (run 8 (decider.program ans) 200 (.init [2, 0, 1])).map (·.1) = some 1 := by decide
-
-/-- A duplicate: the compiled decider answers `0`. -/
-example : (run 8 (decider.program ans) 200 (.init [1, 0, 1])).map (·.1) = some 0 := by decide
-
-/-- The empty list has no duplicates. -/
-example : (run 8 (decider.program ans) 200 (.init [])).map (·.1) = some 1 := by decide
-
-/-- At the threshold word size `2 (⌊log₂ 3⌋ + 1) = 4`, the decider answers within its bound
-`16 (n + 1)`; at word size `2` it faults. -/
-example : logWidth 2 3 = 4 ∧ run 4 (decider.program ans) 200 (.init [2, 0, 1]) = some (1, 58) ∧
-    58 ≤ 16 * (3 + 1) ∧ run 2 (decider.program ans) 200 (.init [2, 0, 1]) = none := by
+/-- Distinct entries (`[2, 0, 1]`), duplicates (`[1, 0, 1]`), the empty list, the threshold word
+size `logWidth 2 3 = 4` versus faulting at width `2`, and `ReadsWidth` checks. -/
+example :
+    (run 8 (decider.program ans) 200 (.init [2, 0, 1])).map (·.1) = some 1 ∧
+    (run 8 (decider.program ans) 200 (.init [1, 0, 1])).map (·.1) = some 0 ∧
+    (run 8 (decider.program ans) 200 (.init [])).map (·.1) = some 1 ∧
+    (logWidth 2 3 = 4 ∧ run 4 (decider.program ans) 200 (.init [2, 0, 1]) = some (1, 58) ∧
+      58 ≤ 16 * (3 + 1) ∧ run 2 (decider.program ans) 200 (.init [2, 0, 1]) = none) ∧
+    (¬decider.ReadsWidth ∧ ¬(decider.program ans).ReadsWidth) := by
   decide
-
-/-- Neither the decider nor its compiled program reads the word size. -/
-example : ¬decider.ReadsWidth ∧ ¬(decider.program ans).ReadsWidth := by decide
 
 /-- The client has an input-fit certificate at its actual logarithmic threshold, so its
 correctness contract gives an unconditional answer there for every promised instance. -/

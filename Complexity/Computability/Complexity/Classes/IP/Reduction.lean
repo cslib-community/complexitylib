@@ -16,7 +16,7 @@ import Complexity.Computability.Probabilistic.Oracle.Composition
 
 If `A` reduces to `B` in polynomial time and `B` has an interactive proof, so has `A`: the verifier
 for `A` computes the reduction and runs the verifier for `B` on its result, which is still strict
-oracle PPT (`Cslib.Probability.IsOraclePPTOn.preprocess`), with the same provers, completeness and
+oracle PPT (`Cslib.Probability.IsOraclePPTOn.preprocess'`), with the same provers, completeness and
 soundness [Arora and Barak, Chapter 8][AroraBarak09].
 
 ## Main results
@@ -49,6 +49,6 @@ theorem PolyTimeReducible.mem_IP {encA : α ↪ List Bool} {encB : β ↪ List B
     {B : Set β} (hAB : PolyTimeReducible encA encB A B) (hB : B ∈ IP encB) : A ∈ IP encA := by
   obtain ⟨f, hf, hfA⟩ := hAB
   obtain ⟨verifier, hV, hproof⟩ := hB
-  exact ⟨fun a => verifier (f a), hV.preprocess hf.tidy, hproof.comp hfA⟩
+  exact ⟨fun a => verifier (f a), hV.preprocess' hf, hproof.comp hfA⟩
 
 end Cslib.Complexity
