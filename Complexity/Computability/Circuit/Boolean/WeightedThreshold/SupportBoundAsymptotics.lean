@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import Mathlib.Analysis.Asymptotics.Defs
-import Complexity.Computability.Circuit.Frontier.Layouts.Basic
+import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Analysis.Asymptotics.Lemmas
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Tactic.FieldSimp
@@ -110,14 +110,14 @@ private theorem eventually_lt_of_three_support_bounds {k : ℕ → ℕ}
     have h := (div_lt_iff₀ hε).mp hT
     nlinarith
   let D : ℝ := (max 3 T : ℕ)
-  have hD : 0 < D := by
-    dsimp only [D]
-    exact_mod_cast (show 0 < max 3 T by omega)
-  obtain ⟨B, hB⟩ := Frontier.exists_natLog_le_mul_add
-    (ε := ε / (4 * D)) (by positivity)
+  obtain ⟨m, hm⟩ := exists_nat_gt (4 * D / ε)
+  have hDm : D ≤ (ε / 4) * m := by
+    have h := (div_lt_iff₀ hε).mp hm
+    linarith
+  let B : ℝ := (ε / 4) * (m * m : ℕ)
   refine ⟨T, ?_⟩
   filter_upwards [hk.bound (show 0 < ε / 6 by positivity),
-    eventually_ge_atTop ⌈2 * (D * B + C) / ε⌉₊] with n hnK hn
+    eventually_ge_atTop ⌈2 * (B + C) / ε⌉₊] with n hnK hn
   intro q hbound
   have hN : (0 : ℝ) ≤ n := Nat.cast_nonneg n
   simp only [Real.norm_eq_abs, abs_of_nonneg (Nat.cast_nonneg (k n) : (0 : ℝ) ≤ k n),
@@ -128,20 +128,25 @@ private theorem eventually_lt_of_three_support_bounds {k : ℕ → ℕ}
     calc
       _ ≤ ((6 : ℝ) / (T + 1)) * n := mul_le_mul_of_nonneg_left hqn (by positivity)
       _ ≤ ε * n := mul_le_mul_of_nonneg_right hcoeff hN
-  have hconstant : D * B + C ≤ ε / 2 * n := by
-    have hceil := (Nat.le_ceil (2 * (D * B + C) / ε)).trans
-      (show (⌈2 * (D * B + C) / ε⌉₊ : ℝ) ≤ n by exact_mod_cast hn)
+  have hconstant : B + C ≤ ε / 2 * n := by
+    have hceil := (Nat.le_ceil (2 * (B + C) / ε)).trans
+      (show (⌈2 * (B + C) / ε⌉₊ : ℝ) ≤ n by exact_mod_cast hn)
     have h := (div_le_iff₀ hε).mp hceil
     linarith
   have hlog : D * (Nat.log 2 (n + q) : ℝ) + C ≤ ε * n := by
-    calc
-      _ ≤ D * (ε / (4 * D) * (n + q) + B) + C := by
-        have h := mul_le_mul_of_nonneg_left (hB (n + q)) hD.le
-        push_cast at h
-        linarith
-      _ ≤ D * (ε / (4 * D) * (2 * n) + B) + C := by gcongr; linarith
-      _ = ε / 2 * n + (D * B + C) := by field_simp; ring
-      _ ≤ ε * n := by linarith
+    have hmlog : (m : ℝ) * Nat.log 2 (n + q) ≤ (n : ℝ) + q + (m * m : ℕ) := by
+      exact_mod_cast Nat.mul_log_le_add_sq Nat.one_lt_two m (n + q)
+    have hDlog : D * (Nat.log 2 (n + q) : ℝ) ≤ (ε / 4) * (2 * (n : ℝ) + (m * m : ℕ)) :=
+      calc D * (Nat.log 2 (n + q) : ℝ)
+          ≤ ((ε / 4) * m) * (Nat.log 2 (n + q) : ℝ) :=
+            mul_le_mul_of_nonneg_right hDm (Nat.cast_nonneg _)
+        _ = (ε / 4) * ((m : ℝ) * Nat.log 2 (n + q)) := mul_assoc _ _ _
+        _ ≤ (ε / 4) * ((n : ℝ) + q + (m * m : ℕ)) :=
+            mul_le_mul_of_nonneg_left hmlog (by positivity)
+        _ ≤ (ε / 4) * (2 * (n : ℝ) + (m * m : ℕ)) :=
+            mul_le_mul_of_nonneg_left (by linarith) (by positivity)
+    dsimp only [B] at hconstant
+    linarith
   dsimp only [D] at hlog
   nlinarith
 

@@ -95,13 +95,13 @@ def Represents (t : RawTape Symbol) (native : ℤ → Option Symbol) (pos : ℤ)
   | ofNat n => cases n <;> simp [read, init]
   | negSucc n => simp [read, init]
 
-private theorem read_write (t : RawTape Symbol) (w : Option (Option Symbol)) (z : ℤ) :
+theorem read_write (t : RawTape Symbol) (w : Option (Option Symbol)) (z : ℤ) :
     (t.write w).read z = if z = 0 then w.getD t.head else t.read z := by
   cases z with
   | ofNat n => cases n <;> simp [read, write, add_eq_zero_iff_eq_neg]
   | negSucc n => simp [read, write]
 
-private theorem read_moveLeft (t : RawTape Symbol) (z : ℤ) :
+theorem read_moveLeft (t : RawTape Symbol) (z : ℤ) :
     t.moveLeft.read z = t.read (z - 1) := by
   rcases t with ⟨h, l, r⟩
   cases z with
@@ -119,7 +119,7 @@ private theorem read_moveLeft (t : RawTape Symbol) (z : ℤ) :
     rw [he]
     cases l <;> rfl
 
-private theorem read_moveRight (t : RawTape Symbol) (z : ℤ) :
+theorem read_moveRight (t : RawTape Symbol) (z : ℤ) :
     t.moveRight.read z = t.read (z + 1) := by
   rcases t with ⟨h, l, r⟩
   cases z with
@@ -191,22 +191,22 @@ theorem Represents.step {t : RawTape Symbol} {native : ℤ → Option Symbol} {p
   · simpa only [RawTape.step, SignType.cast, sub_eq_add_neg] using (h.write (some _)).moveLeft
   · simpa only [RawTape.step, SignType.cast] using (h.write (some _)).moveRight
 
-@[simp] private theorem left_write (t : RawTape Symbol) (w : Option (Option Symbol)) :
+@[simp] theorem left_write (t : RawTape Symbol) (w : Option (Option Symbol)) :
     (t.write w).left = t.left := rfl
 
-@[simp] private theorem right_write (t : RawTape Symbol) (w : Option (Option Symbol)) :
+@[simp] theorem right_write (t : RawTape Symbol) (w : Option (Option Symbol)) :
     (t.write w).right = t.right := rfl
 
-@[simp] private theorem length_left_moveLeft (t : RawTape Symbol) :
+@[simp] theorem length_left_moveLeft (t : RawTape Symbol) :
     t.moveLeft.left.length = t.left.length - 1 := by simp [moveLeft]
 
-@[simp] private theorem length_right_moveLeft (t : RawTape Symbol) :
+@[simp] theorem length_right_moveLeft (t : RawTape Symbol) :
     t.moveLeft.right.length = t.right.length + 1 := rfl
 
-@[simp] private theorem length_left_moveRight (t : RawTape Symbol) :
+@[simp] theorem length_left_moveRight (t : RawTape Symbol) :
     t.moveRight.left.length = t.left.length + 1 := rfl
 
-@[simp] private theorem length_right_moveRight (t : RawTape Symbol) :
+@[simp] theorem length_right_moveRight (t : RawTape Symbol) :
     t.moveRight.right.length = t.right.length - 1 := by simp [moveRight]
 
 /-- The exact left-stack length after an action. -/

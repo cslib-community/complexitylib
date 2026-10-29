@@ -120,4 +120,8 @@ example : Nat.log 2 (7 + 1) ≤ Nat.log 2 7 + 1 ∧ Nat.log 2 (7 + 1) = Nat.log 
 example : Nat.log 0 (5 + 1) ≤ Nat.log 0 5 + 1 ∧ Nat.log 2 (0 + 1) ≤ Nat.log 2 0 + 1 :=
   ⟨Nat.log_add_one_le 0 5, Nat.log_add_one_le 2 0⟩
 
+/-- `m * ⌊log_b n⌋ ≤ n + m * m` holds in both regimes (`⌊log_b n⌋ ≤ m` and `m < ⌊log_b n⌋`). -/
+example : 3 * Nat.log 2 5 ≤ 5 + 3 * 3 ∧ 2 * Nat.log 2 16 ≤ 16 + 2 * 2 :=
+  ⟨Nat.mul_log_le_add_sq Nat.one_lt_two 3 5, Nat.mul_log_le_add_sq Nat.one_lt_two 2 16⟩
+
 end ComplexityTests.Consolidation

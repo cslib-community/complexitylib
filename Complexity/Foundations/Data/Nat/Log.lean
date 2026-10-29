@@ -28,6 +28,7 @@ stays polynomial after logarithmically many rounds. Similarly `2 ^ (⌊log₂ n�
 * `Nat.two_pow_log2_succ_le`: `2 ^ (⌊log₂ n⌋ + 1) ≤ 2 (n + 1)`.
 * `Nat.two_pow_clog_two_le`: `2 ^ ⌈log₂ n⌉ ≤ 2 (n + 1)`, also for `n = 0`.
 * `Nat.log_add_one_le`: `⌊log_b (n + 1)⌋ ≤ ⌊log_b n⌋ + 1`.
+* `Nat.mul_log_le_add_sq`: `m * ⌊log_b n⌋ ≤ n + m * m` for `1 < b`.
 -/
 
 @[expose] public section
@@ -79,5 +80,20 @@ theorem log_add_one_le (b n : ℕ) : log b (n + 1) ≤ log b n + 1 := by
       rw [pow_succ']
       omega
     exact le_of_lt_succ (log_lt_of_lt_pow (Nat.succ_ne_zero n) hlt')
+
+/-- For any base `b > 1` and multiplier `m`, `m * ⌊log_b n⌋ ≤ n + m * m`. -/
+theorem mul_log_le_add_sq (hb : 1 < b) (m n : ℕ) : m * log b n ≤ n + m * m := by
+  rcases le_or_gt (log b n) m with h | h
+  · exact (Nat.mul_le_mul_left m h).trans (Nat.le_add_left _ n)
+  · have hpow (k : ℕ) : k ≤ b ^ k :=
+      Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_left hb k)
+    have hsub : m * (log b n - m) ≤ n :=
+      calc m * (log b n - m) ≤ b ^ m * b ^ (log b n - m) :=
+            Nat.mul_le_mul (hpow m) (hpow (log b n - m))
+        _ = b ^ log b n := by rw [← Nat.pow_add, Nat.add_sub_cancel' h.le]
+        _ ≤ n := pow_log_le_self b (by rintro rfl; simp at h)
+    have hmul : m * log b n = m * (log b n - m) + m * m := by
+      rw [← Nat.mul_add, Nat.sub_add_cancel h.le]
+    omega
 
 end Nat
