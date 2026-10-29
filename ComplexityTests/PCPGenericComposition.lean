@@ -61,21 +61,24 @@ example :
   ConstraintGraph.unsatVal_of_isEmpty _
 
 -- The old concrete graph definitions remain definitionally identical to the generic construction.
-example :
-    HadamardTester.assignmentTester.compose rejecting = rejecting.compose ∧
-      HadamardTester.assignmentTester.composeProof rejecting (fun _ => false) =
-        rejecting.composeProof (fun _ => false) ∧
-      AssignmentTester.decodeLabelling ConstraintGraph.decodeLabel
-        (fun _ : ConstraintGraph.ComposePos Unit Unit Bool => false) =
-        ConstraintGraph.decodeLabelling (V := Unit) (E := Unit) (α := Bool) (fun _ => false) :=
-  ⟨rfl, rfl, rfl⟩
+example {V E α : Type} [Fintype α] [DecidableEq α] (G : ConstraintGraph V E α) :
+    HadamardTester.assignmentTester.compose G = G.compose := rfl
+
+example {V E α : Type} [Fintype α] [DecidableEq α] (G : ConstraintGraph V E α)
+    (σ : V → α) :
+    HadamardTester.assignmentTester.composeProof G σ = G.composeProof σ := rfl
+
+example {V E α : Type} [Fintype α] [DecidableEq α] [Nonempty α]
+    (π : ConstraintGraph.ComposePos V E α → Bool) :
+    AssignmentTester.decodeLabelling ConstraintGraph.decodeLabel π =
+      ConstraintGraph.decodeLabelling π := rfl
 
 -- A zero rejection bound remains a valid weighted statement, but not a positive-gap contract.
-example (A : AssignmentTester.ComposePos Unit Unit Unit Empty ⊕ Unit × Unit →
-      Bool × (Fin 2 → Bool))
-    (hsound : (directTester Bool).Sound (fun table => table ()) 0) :
-    0 ≤ (2 : ℝ) * ((directTester Bool).compose rejecting).unsatFrac A := by
-  simpa using AssignmentTester.mul_unsatFrac_decodeLabelling_le hsound rejecting A
+example {V E α : Type} [Fintype E] (G : ConstraintGraph V E α)
+    (A : AssignmentTester.ComposePos V E Unit Empty ⊕ E × Unit → α × (Fin 2 → α))
+    (hsound : (directTester α).Sound (fun table => table ()) 0) :
+    0 ≤ (2 : ℝ) * ((directTester α).compose G).unsatFrac A := by
+  simpa using AssignmentTester.mul_unsatFrac_decodeLabelling_le hsound G A
 
 -- An honest auxiliary proof may depend on the constraint, not just its two labels.
 open Classical in

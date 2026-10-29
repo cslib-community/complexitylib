@@ -40,15 +40,15 @@ example :
   letI := Classical.decEq singleLoop.V
   (arithmeticInputs singleLoop).spectralExpansion_whole_le
 
--- The new interface recovers the old family-based pipeline on a concrete graph.
-example :
-    singleGraph.preprocessWith (.ofFamily singleGraph arithmeticExpanderFamily) =
-      singleGraph.preprocess arithmeticExpanderFamily :=
+-- The new interface recovers the old family-based pipeline exactly.
+example {V E α : Type} [Fintype E] [DecidableEq V] (G : ConstraintGraph V E α) :
+    G.preprocessWith (.ofFamily G arithmeticExpanderFamily) =
+      G.preprocess arithmeticExpanderFamily :=
   rfl
 
-example :
-    singleGraph.amplifyWith (.ofFamily singleGraph expanderFamily) 2 2 =
-      singleGraph.amplify 2 2 :=
+example {V E α : Type} [Fintype E] [DecidableEq V] [Fintype α] [DecidableEq α]
+    (G : ConstraintGraph V E α) (T q : ℕ) [NeZero q] :
+    G.amplifyWith (.ofFamily G expanderFamily) T q = G.amplify T q :=
   rfl
 
 -- Real arithmetic parameters are obtained without evaluating the enormous fixed degree.

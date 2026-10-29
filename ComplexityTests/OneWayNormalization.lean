@@ -14,12 +14,13 @@ namespace ComplexityTests.OneWayNormalization
 
 open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
--- Use the existing pair encoding; padding to bound zero equals framing.
-example (word : List Bool) :
-    BitString.padWord 2 word =
-      encPair encBits encBits (word, List.replicate (2 * (2 - word.length)) false) ∧
-    BitString.padWord 0 word = frame word := by
-  exact ⟨rfl, by simp [BitString.padWord]⟩
+-- Use exactly the existing pair encoding; there is no second framing convention.
+example (bound : ℕ) (word : List Bool) :
+    BitString.padWord bound word =
+      encPair encBits encBits (word, List.replicate (2 * (bound - word.length)) false) := rfl
+
+example (word : List Bool) : BitString.padWord 0 word = frame word := by
+  simp [BitString.padWord]
 
 example : BitString.padWord 0 [] = [false] ∧
     BitString.padWord 0 [true] = [true, true, false] ∧
@@ -71,8 +72,8 @@ example {f : List Bool → List Bool} (hf : OneWay f) :
     ∃ (g : List Bool → List Bool) (length : ℕ → ℕ),
       OneWay g ∧ ComputableInPolyTime g encBits encBits ∧
       (∀ input, (g input).length = length input.length) ∧
-      ComputableInPolyTime (fun n => length (n + 1)) encUnary encUnary := by
+      ComputableInPolyTime length encUnary encUnary := by
   obtain ⟨g, length, hg, hlen, hcomp⟩ := hf.exists_fixedOutputLength
-  exact ⟨g, length, hg, hg.polyTime, hlen, by fun_prop⟩
+  exact ⟨g, length, hg, hg.polyTime, hlen, hcomp⟩
 
 end ComplexityTests.OneWayNormalization

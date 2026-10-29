@@ -21,9 +21,8 @@ example : IsPPTOn encUnary (encList encUnary) (fun n =>
       ((fun bit => if bit then n else 0) <$> ProbComp.uniform Bool)) := by ppt
 
 -- The wrapper is an ordinary list traversal in execution order.
-example :
-    OracleComp.replicate 3 (ProbComp.uniform Bool) =
-      (List.replicate 3 ()).mapM (fun _ => ProbComp.uniform Bool) := rfl
+example (source : ProbComp ℕ) (count : ℕ) :
+    OracleComp.replicate count source = (List.replicate count ()).mapM (fun _ => source) := rfl
 
 -- Every pair has mass one quarter; collecting samples must not reuse a single random bit.
 example (first second : Bool) :
@@ -92,16 +91,16 @@ private theorem adaptive_queryBounds : adaptive.IsQueryBounded 2 := by
       OracleComp.IsCostBounded.pure _ 0).mono (by norm_num)
 
 -- Two saved independent bits reproduce online sampling, including the correlated final state.
-example :
+example (state : List Bool) :
     ProbComp.eval (do
       let values ← OracleComp.replicate 2 (ProbComp.uniform Bool)
       (fun (result, next, _) => (result, next)) <$> (OracleComp.interpret
         (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
-          (OracleComp.withSampleList false respond)) adaptive).run ([false], values)) =
+          (OracleComp.withSampleList false respond)) adaptive).run (state, values)) =
       ProbComp.eval ((OracleComp.interpret
         (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
           (fun query state => ProbComp.uniform Bool >>= fun value => respond value query state))
-            adaptive).run [false]) :=
-  adaptive_queryBounds.eval_presample (ProbComp.uniform Bool) false respond [false]
+            adaptive).run state) :=
+  adaptive_queryBounds.eval_presample (ProbComp.uniform Bool) false respond state
 
 end ComplexityTests.Presample
