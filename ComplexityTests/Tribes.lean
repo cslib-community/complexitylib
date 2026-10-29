@@ -15,10 +15,9 @@ Concrete values of the Tribes function `Tribes_{w,s}`: the probability `7 / 16` 
 `w = s = 2` [O'Donnell, Fact 4.10][ODonnell2014], and the resilience bound `2 ^ (q - w)` for
 `w = 2`, `s = 1`, `q = 1`, which is attained. Then the instances of
 [Chattopadhyay–Zuckerman, Theorem 4.1][ChattopadhyayZuckerman2019] for Tribes under the even-parity
-distribution on all `s w` bits (`ComplexityTests.BravermanFooling`), at the least widths for which
-the hypotheses hold: `w = 1015` with O'Donnell's number of tribes `s = tribesSize w` for the bias,
-and `w = 2723`, `s = 2 ^ w` for the influence. These concrete instances check that the hypotheses
-can be met.
+distribution on all `s w` bits (`ComplexityTests.BravermanFooling`), at concrete sufficient
+parameters: `w = 1015`, `s = tribesSize w`, `p = 1016` for the bias, and `w = 2723`,
+`s = 2 ^ w`, `p = 2727` for the influence. These instances check that the hypotheses can be met.
 
 For the bias, the circuit reads all `s w` bits and the even-parity distribution on them is not
 uniform. For the influence of a nonempty coalition `Q`, the influence depends only on the marginal
@@ -97,7 +96,8 @@ example : |∑ x, (evenParity (tribesSize 1015 * 1015) x).toReal *
 
 -- The influence at `w = 2723`, `s = 2 ^ w` and `p = w + 4`: under the even-parity distribution on
 -- its `s w` bits, every coalition `Q` has influence at most `2 ^ (|Q| - 2723) + 2 ^ (-2727)` on
--- `Tribes_{w,s}`. With `s ≤ 2 ^ w`, `2723` is the least `w` with `s w - 1 ≥ (64 (w + 4)) ^ 157`.
+-- `Tribes_{w,s}`. For `s = 2 ^ w`, `p = w + 4`, `2723` is the least `w` with
+-- `s w - 1 ≥ (64 p) ^ 157`.
 -- `norm_num` evaluates `2 ^ 2727`, beyond the default `exponentiation.threshold` of `256`.
 set_option exponentiation.threshold 2727 in
 example (Q : Finset (Fin (2 ^ 2723 * 2723))) :

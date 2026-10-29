@@ -37,8 +37,9 @@ A coalition `Q` leaves Tribes undetermined only if some tribe meets `Q` and is a
 [O'Donnell, Section 9.6][ODonnell2014], and the largest coalitional influence toward `True` of at
 most `log n` bits is `1 / 2 + Θ(log n / n)` [O'Donnell, Exercise 9.25(g)][ODonnell2014]. In our
 terms, one whole tribe of `w` bits has influence `(1 - 2 ^ (-w)) ^ (s - 1)`, about `1 / 2` for the
-`s` above, so Tribes is not `(q, O(q log n / n))`-resilient for `q ≥ w`; this computation and
-conclusion are ours and are not formalized.
+`s` above. For `s = tribesSize w`, this whole-tribe coalition rules out an
+`O(q log n / n)` influence bound at `q = w` as `w` tends to infinity, where `n = s * w`.
+This computation and conclusion are ours and are not formalized.
 
 ## Main definitions
 
@@ -339,8 +340,10 @@ theorem coalitionInfluence_tribes_le (Q : Finset (Fin (s * w))) :
 
 /-- **Tribes is resilient against small coalitions**, our bound: `Tribes_{w,s}` is
 `(q, 2 ^ (q - w))`-resilient [Chattopadhyay–Zuckerman, Definition 1.7][ChattopadhyayZuckerman2019].
-This is useful only for `q < w`; Tribes is not `(q, O(q log n / n))`-resilient for `q ≥ w`
-[O'Donnell, Section 9.6][ODonnell2014]. -/
+This is useful only for `q < w`. For `s = tribesSize w`, a whole-tribe coalition rules out an
+`O(q log n / n)` influence bound at `q = w` as `w` tends to infinity, where `n = s * w`.
+This asymptotic conclusion is not formalized here
+(compare [O'Donnell, Section 9.6][ODonnell2014]). -/
 theorem isResilient_tribes (w s q : ℕ) : IsResilient q (2 ^ q / 2 ^ w) (tribes w s) :=
   fun Q hQ => hQ ▸ coalitionInfluence_tribes_le Q
 
