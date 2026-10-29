@@ -62,37 +62,15 @@ theorem isUnit_fromBlocks_one_zero₁₂ (C : Matrix κ ι R) :
 /-- A block diagonal matrix is invertible exactly when both diagonal blocks are. -/
 theorem isUnit_fromBlocks_diagonal_iff (A : Matrix ι ι R) (D : Matrix κ κ R) :
     IsUnit (fromBlocks A 0 0 D) ↔ IsUnit A ∧ IsUnit D := by
+  simp only [isUnit_iff_exists]
   constructor
-  · rintro ⟨u, hu⟩
-    have hh := u.val_inv
-    have hh' := u.inv_val
-    rw [hu] at hh hh'
-    refine ⟨isUnit_iff_exists.mpr ⟨(↑u⁻¹ : Matrix (ι ⊕ κ) (ι ⊕ κ) R).toBlocks₁₁, ?_, ?_⟩,
-      isUnit_iff_exists.mpr ⟨(↑u⁻¹ : Matrix (ι ⊕ κ) (ι ⊕ κ) R).toBlocks₂₂, ?_, ?_⟩⟩
-    · have h := congrArg Matrix.toBlocks₁₁ hh
-      rw [← fromBlocks_toBlocks u.inv, fromBlocks_multiply] at h
-      ext i j
-      have hx := congrFun (congrFun h i) j
-      simpa [Matrix.toBlocks₁₁, Matrix.toBlocks₂₂, Matrix.submatrix, Matrix.one_apply] using hx
-    · have h := congrArg Matrix.toBlocks₁₁ hh'
-      rw [← fromBlocks_toBlocks u.inv, fromBlocks_multiply] at h
-      ext i j
-      have hx := congrFun (congrFun h i) j
-      simpa [Matrix.toBlocks₁₁, Matrix.toBlocks₂₂, Matrix.submatrix, Matrix.one_apply] using hx
-    · have h := congrArg Matrix.toBlocks₂₂ hh
-      rw [← fromBlocks_toBlocks u.inv, fromBlocks_multiply] at h
-      ext i j
-      have hx := congrFun (congrFun h i) j
-      simpa [Matrix.toBlocks₁₁, Matrix.toBlocks₂₂, Matrix.submatrix, Matrix.one_apply] using hx
-    · have h := congrArg Matrix.toBlocks₂₂ hh'
-      rw [← fromBlocks_toBlocks u.inv, fromBlocks_multiply] at h
-      ext i j
-      have hx := congrFun (congrFun h i) j
-      simpa [Matrix.toBlocks₁₁, Matrix.toBlocks₂₂, Matrix.submatrix, Matrix.one_apply] using hx
-  · rintro ⟨⟨u, rfl⟩, ⟨v, rfl⟩⟩
-    apply isUnit_iff_exists.mpr
-    refine ⟨fromBlocks (↑u⁻¹) 0 0 (↑v⁻¹), ?_, ?_⟩ <;>
-      simp [fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul]
+  · rintro ⟨B, hAB, hBA⟩
+    rw [← fromBlocks_toBlocks B, fromBlocks_multiply, ← fromBlocks_one] at hAB hBA
+    simp only [fromBlocks_inj, Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add] at hAB hBA
+    exact ⟨⟨B.toBlocks₁₁, hAB.1, hBA.1⟩, ⟨B.toBlocks₂₂, hAB.2.2.2, hBA.2.2.2⟩⟩
+  · rintro ⟨⟨A', hAA', hA'A⟩, ⟨D', hDD', hD'D⟩⟩
+    refine ⟨fromBlocks A' 0 0 D', ?_, ?_⟩ <;>
+      simp [fromBlocks_multiply, hAA', hA'A, hDD', hD'D]
 
 /-- The Schur factorization of a block matrix with a zero corner and an invertible corner. -/
 theorem fromBlocks_zero₂₂_schur_factor (A A' : Matrix ι ι R) (B : Matrix ι κ R) (C : Matrix κ ι R)

@@ -9,20 +9,22 @@ import Lean.Elab.Command
 
 /-! Total decoder leaf machines, including malformed words and fixed default behavior. -/
 open Turing.MultiTapeTM Internal.DecoderWords
-example (w : List Bool) : unaryLengthT.toTM.ComputesInTimeAndSpace w
-    (List.replicate w.length true) (2 * w.length + 3) 0 := by
-  simpa only [show unaryLengthT.q₀ = () from rfl, unaryLengthT_run] using
-    unaryLengthT.computesInTimeAndSpace_toTM w
-example (w : List Bool) (d : Bool) : (headDefaultT d).toTM.ComputesInTimeAndSpace w
-    [w.headD d] (2 * w.length + 3) 0 := by
-  simpa only [show (headDefaultT d).q₀ = false from rfl, headDefaultT_run] using
-    (headDefaultT d).computesInTimeAndSpace_toTM w
-example : (headDefaultT false).run false [] = [false] := rfl
-example : (headDefaultT true).run false [] = [true] := rfl
-example (w : List Bool) : (headDefaultT false).run false (true :: w) = [true] := by
-  simpa using headDefaultT_run false (true :: w)
-example (n : ℕ) : unaryLengthT.run () (List.replicate n false) = List.replicate n true := by
-  simp [unaryLengthT_run]
+
+example (w : List Bool) (d : Bool) (n : ℕ) :
+    unaryLengthT.toTM.ComputesInTimeAndSpace w
+      (List.replicate w.length true) (2 * w.length + 3) 0 ∧
+    (headDefaultT d).toTM.ComputesInTimeAndSpace w
+      [w.headD d] (2 * w.length + 3) 0 ∧
+    (headDefaultT false).run false [] = [false] ∧
+    (headDefaultT true).run false [] = [true] ∧
+    (headDefaultT false).run false (true :: w) = [true] ∧
+    unaryLengthT.run () (List.replicate n false) = List.replicate n true := by
+  refine ⟨?_, ?_, rfl, rfl, ?_, by simp [unaryLengthT_run]⟩
+  · simpa only [show unaryLengthT.q₀ = () from rfl, unaryLengthT_run] using
+      unaryLengthT.computesInTimeAndSpace_toTM w
+  · simpa only [show (headDefaultT d).q₀ = false from rfl, headDefaultT_run] using
+      (headDefaultT d).computesInTimeAndSpace_toTM w
+  · simpa using headDefaultT_run false (true :: w)
 
 open Lean Elab Command in
 run_cmd do

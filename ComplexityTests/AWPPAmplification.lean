@@ -47,14 +47,21 @@ example : [true] ∈ language ∧ [false] ∉ language := by simp [language]
 /-- The original witness has genuine error one quarter on both sides. -/
 example : numerator [true] = 3 ∧ numerator [false] = 1 := by decide
 
-/-- One GapP witness simultaneously achieves a varying exponential error bound. -/
-example : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ, ∀ w : List Bool,
-    let D := (2 : ℤ) ^ P.eval w.length
-    (0 ≤ G w ∧ G w ≤ D) ∧
-      (w ∈ language → (2 : ℤ) ^ (w.length + 1) * (D - G w) ≤ D) ∧
-      (w ∉ language → (2 : ℤ) ^ (w.length + 1) * G w ≤ D) :=
-  exists_AWPP_gap_errorExponent language_mem (fun w => w.length + 1)
+/-- One GapP witness simultaneously achieves a varying exponential error bound, giving error at
+most `1 / 4` on the length-1 inputs `[true]` and `[false]`. -/
+example : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ,
+    (∀ w : List Bool,
+      let D := (2 : ℤ) ^ P.eval w.length
+      (0 ≤ G w ∧ G w ≤ D) ∧
+        (w ∈ language → (2 : ℤ) ^ (w.length + 1) * (D - G w) ≤ D) ∧
+        (w ∉ language → (2 : ℤ) ^ (w.length + 1) * G w ≤ D)) ∧
+    4 * ((2 : ℤ) ^ P.eval 1 - G [true]) ≤ (2 : ℤ) ^ P.eval 1 ∧
+    4 * G [false] ≤ (2 : ℤ) ^ P.eval 1 := by
+  obtain ⟨G, hG, P, h⟩ := exists_AWPP_gap_errorExponent language_mem (fun w => w.length + 1)
     (PolyBounded.self.add (.const 1))
+  refine ⟨G, hG, P, h, ?_, ?_⟩
+  · simpa [language] using (h [true]).2.1 (by simp [language])
+  · simpa [language] using (h [false]).2.2 (by simp [language])
 
 /-- A possibly noncomputable requested rate is handled by a fixed dominating polynomial. -/
 example (S : Set (List Bool)) : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ, ∀ w : List Bool,
@@ -75,10 +82,13 @@ example : AWPPAmplification.majorityPolynomial 3 4 0 = 0 ∧
     AWPPAmplification.majorityPolynomial 3 4 1 = 9 := by
   decide
 
-/-- A denominator of one is allowed, including the exact accepting endpoint at `e = 2`. -/
-example : (2 : ℤ) ^ 2 *
-    (1 - AWPPAmplification.majorityPolynomial 1 1 12) ≤ 1 := by
-  simpa using (AWPPAmplification.majorityPolynomial_bounds
-    (g := 1) (m := 0) (e := 2) (by norm_num) (by norm_num)).2.1 (by norm_num)
+/-- A denominator of one is allowed, forcing the exact accepting endpoint `1` at `e = 2`. -/
+example : AWPPAmplification.majorityPolynomial 1 1 12 = 1 := by
+  have hb := AWPPAmplification.majorityPolynomial_bounds
+    (g := 1) (m := 0) (e := 2) (by norm_num) (by norm_num)
+  have h1 : AWPPAmplification.majorityPolynomial 1 1 12 ≤ 1 := by simpa using hb.1.2
+  have h2 : 4 * (1 - AWPPAmplification.majorityPolynomial 1 1 12) ≤ 1 := by
+    simpa using hb.2.1 (by norm_num)
+  lia
 
 end Cslib.Complexity.Tests.UniformAWPP

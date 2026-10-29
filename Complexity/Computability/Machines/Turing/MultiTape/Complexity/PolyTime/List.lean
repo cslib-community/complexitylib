@@ -984,6 +984,7 @@ theorem length_bits_comp {α : Type} {input : α ↪ List Bool} {word : α → L
   length_bits.comp hword
 
 /-- Find the first list element passing a test that captures the original input. -/
+@[fun_prop]
 theorem findWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {test : γ → α → Bool} {list : γ → List α}
     (hlist : ComputableInPolyTime list encIn (encList encA))

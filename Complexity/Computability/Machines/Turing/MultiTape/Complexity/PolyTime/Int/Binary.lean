@@ -33,6 +33,8 @@ the binary length bounds of `Int.size_natAbs_add_le` and `Int.size_natAbs_mul_le
 
 * `Turing.MultiTapeTM.ComputableInPolyTime.intBin_mul'`: multiply two plain-certified binary
   integers from the same complete input encoding.
+* `Turing.MultiTapeTM.ComputableInPolyTime.intBin_prod_range`: the product of a plain-certified
+  family of binary integers over a computed unary range.
 
 * `Int.size_natAbs_add_le`, `Int.size_natAbs_sub_le`, `Int.size_natAbs_mul_le`,
   `Int.size_natAbs_pow_le`, `Int.size_natAbs_sum_le`, `Int.size_natAbs_prod_le`: binary lengths of
@@ -405,5 +407,14 @@ theorem intBin_toNat : ComputableInPolyTime Int.toNat encIntBin encNat :=
 theorem intBin_sub : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 - p.2)
     (encPair encIntBin encIntBin) encIntBin :=
   .of_tidy ComputableTidilyInPolyTime.intBin_sub
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.intBin_prod_range` for plain certificates. -/
+@[fun_prop]
+theorem intBin_prod_range {α : Type} {enc : α ↪ List Bool}
+    {f : α × ℕ → ℤ} {r : α → ℕ}
+    (hf : ComputableInPolyTime f (encPair enc encUnary) encIntBin)
+    (hr : ComputableInPolyTime r enc encUnary) :
+    ComputableInPolyTime (fun a => ∏ i ∈ Finset.range (r a), f (a, i)) enc encIntBin :=
+  .of_tidy (ComputableTidilyInPolyTime.intBin_prod_range hf.tidy hr.tidy)
 
 end Turing.MultiTapeTM.ComputableInPolyTime

@@ -156,12 +156,12 @@ private theorem isOraclePPTOn_queryAny :
     IsOraclePPTOn (encList encBits) encBool
       (fun words => OracleComp.interpret ProbOracleComp.query (queryAny words)) := by
   simp only [queryAny, OracleComp.interpret_map, OracleComp.interpret_iterate]
-  refine IsOraclePPTOn.map (IsOraclePPTOn.iterate_of_bounded_growth
+  refine IsOraclePPTOn.map' (IsOraclePPTOn.iterate_of_bounded_growth'
     (stateEncoding := encPair (encList encBits) encBool) (by fun_prop) (by fun_prop) ?_
     (growth := 0) ?_) (by fun_prop)
   · simp only [interpret_queryAnyStep]
-    refine IsOraclePPTOn.cond (by fun_prop) (ComputableInPolyTime.id'.isOraclePPTOn) ?_
-    exact IsOraclePPTOn.map_with (IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop))
+    refine IsOraclePPTOn.cond' (by fun_prop) (ComputableInPolyTime.id'.isOraclePPTOn) ?_
+    exact IsOraclePPTOn.map_with' (IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop))
       (by fun_prop)
   · intro state next hnext
     rw [interpret_queryAnyStep] at hnext
@@ -243,7 +243,7 @@ theorem NP_subset_RPWithPromiseOracle_PromiseUSAT (enc : α ↪ List Bool) :
     fun_prop
   refine ⟨Polynomial.C 11 * (Polynomial.C c * (Polynomial.X + 1) ^ d + 3) *
       (Polynomial.C c * (Polynomial.X + 1) ^ d + 2) ^ 2,
-    fun x => queryAny (queries x), isOraclePPTOn_queryAny.preprocess hqueries.tidy,
+    fun x => queryAny (queries x), isOraclePPTOn_queryAny.preprocess' hqueries,
     fun A hA a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
   · set N := c * ((enc a).length + 1) ^ d with hN
     have heval : (Polynomial.C 11 * (Polynomial.C c * (Polynomial.X + 1) ^ d + 3) *
