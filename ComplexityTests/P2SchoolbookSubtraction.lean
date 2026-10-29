@@ -33,22 +33,22 @@ example :
     (run 10 3).1 = false ∧ (run 10 3).2.foldr Nat.bit 0 = 7 := by
   decide +kernel
 
--- The borrow crosses sixteen zero bits; padding stays explicit in the unnormalized word.
+-- Exercise the consuming realization itself, including both emptied cursors, long borrow,
+-- and underflow. The padded output is decoded only when its final borrow is false.
 example :
-    let run := (BinarySub.digitPairs (65536, 1)).foldl BinarySub.subStep (false, []);
-    run = (false, List.replicate 16 true ++ [false, false]) ∧ (encNat 65535).length = 16 := by
+    let run (a b : ℕ) := (a.bits ++ b.bits).foldl BinarySub.cursorStep
+      ((a.bits, b.bits), (false, []));
+    run 65536 1 = (([], []), (false, List.replicate 16 true ++ [false, false])) ∧
+    run 3 10 = (([], []), (true, [true, false, false, true, true, true])) ∧
+    (if (run 65536 1).2.1 then 0 else ofBits (run 65536 1).2.2) = 65535 ∧
+    (if (run 3 10).2.1 then 0 else ofBits (run 3 10).2.2) = 0 := by
   decide +kernel
 
--- Reuse functional correctness, then compute the schoolbook side rather than only Nat.sub.
-example : (0 : ℕ) - 0 = 0 ∧ (0 : ℕ) - 9 = 0 ∧ (7 : ℕ) - 7 = 0 ∧
-    (3 : ℕ) - 10 = 0 ∧ (10 : ℕ) - 3 = 7 ∧ (65536 : ℕ) - 1 = 65535 := by
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [BinarySub.sub_eq (0, 0)]; decide +kernel
-  · rw [BinarySub.sub_eq (0, 9)]; decide +kernel
-  · rw [BinarySub.sub_eq (7, 7)]; decide +kernel
-  · rw [BinarySub.sub_eq (3, 10)]; decide +kernel
-  · rw [BinarySub.sub_eq (10, 3)]; decide +kernel
+-- Reuse the retained correctness law for the two decoded boundary results.
+example : (65536 : ℕ) - 1 = 65535 ∧ (3 : ℕ) - 10 = 0 := by
+  constructor
   · rw [BinarySub.sub_eq (65536, 1)]; decide +kernel
+  · rw [BinarySub.sub_eq (3, 10)]; decide +kernel
 
 -- Pair framing is asymmetric. Large values still have short encoded budgets.
 example :
@@ -71,19 +71,20 @@ example :
     remaining (3, 10) = 6 ∧ remaining (10, 3) = 0 ∧ remaining (65536, 65537) = 0 := by
   dsimp only
   have h := ComputableInO.natPred.comp ComputableInO.natSub
+  have hlen (p : ℕ × ℕ) :
+      (encNat (p.2 - p.1)).length ≤ (encPair encNat encNat p).length := by
+    have hsize : (encNat (p.2 - p.1)).length ≤ (encNat p.2).length := by
+      simpa only [encNat_apply, Nat.size_eq_bits_len] using
+        Nat.size_le_size (Nat.sub_le p.2 p.1)
+    exact hsize.trans (length_le_encPair_right encNat encNat p)
   have hremaining : ComputableInO (fun p : ℕ × ℕ => p.2 - p.1 - 1)
       (encPair encNat encNat) encNat
       (fun p => ((encPair encNat encNat p).length + 1) ^ 2)
       (fun p => (encPair encNat encNat p).length + 1) := by
     refine h.mono 2 (fun p => ?_) (fun p => ?_)
-    · have hlen : (encNat (p.2 - p.1)).length ≤ (encPair encNat encNat p).length :=
-        (ComputableTidilyInO.length_encNat_mono (Nat.sub_le p.2 p.1)).trans
-          (length_le_encPair_right encNat encNat p)
-      have hpow := Nat.pow_le_pow_left (Nat.succ_le_succ hlen) 2
+    · have hpow := Nat.pow_le_pow_left (Nat.succ_le_succ (hlen p)) 2
       nlinarith
-    · have hlen : (encNat (p.2 - p.1)).length ≤ (encPair encNat encNat p).length :=
-        (ComputableTidilyInO.length_encNat_mono (Nat.sub_le p.2 p.1)).trans
-          (length_le_encPair_right encNat encNat p)
+    · have := hlen p
       omega
   refine ⟨hremaining, ComputableInSpace.of_inO hremaining, ?_,
     by decide +kernel, by decide +kernel, by decide +kernel⟩
