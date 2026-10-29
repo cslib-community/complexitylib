@@ -72,14 +72,13 @@ theorem isPolyTime_arithmeticAmplify {Input : Type} {input : Input ↪ List Bool
     (hwellFormed : ∀ x, (graph x).WellFormed) :
     ComputableInPolyTime (fun x => arithmeticAmplify (graph x))
       input (encoding (encPi (encPi encBool))) := by
-  have hgraph := hgraph.tidy
-  refine .of_tidy ?_
   have hcost := RotationMap.polytime_arithmeticExpanderRotate (encFinEnum Label)
   unfold arithmeticAmplify
-  exact (isPolyTime_amplifyIter_clog (.of_tidy hgraph) hwellFormed RotationMap.arithmeticExpander
-    RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq (.of_tidy hcost)
+  exact isPolyTime_amplifyIter_clog hgraph hwellFormed RotationMap.arithmeticExpander
+    RotationMap.arithmeticExpanderRotate RotationMap.arithmeticExpanderRotate_eq
+    (by fun_prop)
     (fun _ _ => true) walkLength killRate (FinEnum.toList _) FinEnum.equiv
-    (FinEnum.toList _) (FinEnum.toList _)).tidy
+    (FinEnum.toList _) (FinEnum.toList _)
 
 /-- Valid endpoint indices are preserved, including when the program performs no rounds. -/
 theorem wellFormed_arithmeticAmplify {g : Graph Constraint} (hg : g.WellFormed) :

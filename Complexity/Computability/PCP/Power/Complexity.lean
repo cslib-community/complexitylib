@@ -33,9 +33,94 @@ not a certificate uniform in varying walk lengths, killing rates or alphabet enc
 
 namespace Cslib.PCP.RegularConstraintGraph
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime RotationMap
+open Turing.MultiTapeTM ComputableInPolyTime RotationMap
 
-variable {P W D α : Type} [Fintype D]
+variable {P W D α : Type}
+  {input : P ↪ List Bool} {vertex : W ↪ List Bool}
+  {label : D ↪ List Bool} {alphabet : α ↪ List Bool}
+  {rotate : P × (W × D) → W × D} {rel : P × ((W × D) × (α × α)) → Bool}
+
+private theorem polytime_finTail (T : ℕ) :
+    ComputableInPolyTime (@Fin.tail T (fun _ => D)) (encPi label) (encPi label) :=
+  pi fun i => pi_apply label i.succ
+
+private theorem polytime_finSnoc (T : ℕ) :
+    ComputableInPolyTime (fun p : (Fin T → D) × D => Fin.snoc p.1 p.2)
+      (encPair (encPi label) label) (encPi label) := by
+  apply pi
+  intro i
+  refine Fin.lastCases ?_ (fun j => ?_) i
+  · simpa only [Fin.snoc_last] using snd (encPi label) label
+  · simpa only [Fin.snoc_castSucc, Function.comp_def] using
+      (pi_apply label j).comp (fst (encPi label) label)
+
+private theorem polytime_finTake {T n : ℕ} (hn : n ≤ T) :
+    ComputableInPolyTime (Fin.take n hn (α := fun _ => D)) (encPi label) (encPi label) :=
+  pi fun i => pi_apply label (i.castLE hn)
+
+private theorem polytime_powRotWithInput
+    (hrotate : ComputableInPolyTime rotate
+      (encPair input (encPair vertex label)) (encPair vertex label)) (T : ℕ) :
+    ComputableInPolyTime (RotationMap.powRotWithInput rotate T)
+      (encPair input (encPair vertex (encPi label))) (encPair vertex (encPi label)) := by
+  induction T with
+  | zero => exact snd _ _
+  | succ T ih =>
+    have hhead : ComputableInPolyTime
+        (fun p : P × (W × (Fin (T + 1) → D)) => rotate (p.1, p.2.1, p.2.2 0))
+        (encPair input (encPair vertex (encPi label))) (encPair vertex label) :=
+      hrotate.comp ((fst _ _).prod
+        (((snd _ _).fst').prod ((pi_apply label 0).comp ((snd _ _).snd'))))
+    have hrest := ih.comp ((fst _ _).prod (hhead.fst'.prod
+      ((polytime_finTail (label := label) T).comp ((snd _ _).snd'))))
+    exact hrest.fst'.prod ((polytime_finSnoc (label := label) T).comp (hrest.snd'.prod hhead.snd'))
+
+private theorem polytime_walkAtWithInput
+    (hrotate : ComputableInPolyTime rotate
+      (encPair input (encPair vertex label)) (encPair vertex label)) (T m : ℕ) :
+    ComputableInPolyTime
+      (fun p : P × (W × (Fin T → D)) => RotationMap.walkAtWithInput rotate p m)
+      (encPair input (encPair vertex (encPi label))) vertex :=
+  ((polytime_powRotWithInput hrotate (min m T)).comp
+    ((fst _ _).prod (((snd _ _).fst').prod
+      ((polytime_finTake (Nat.min_le_right m T)).comp ((snd _ _).snd'))))).fst'
+
+private theorem polytime_killedPowRotWithInput
+    (hrotate : ComputableInPolyTime rotate
+      (encPair input (encPair vertex label)) (encPair vertex label))
+    (T q : ℕ) [NeZero q] (signal : Fin q ↪ List Bool) :
+    ComputableInPolyTime
+      (RotationMap.killedPowRotWithInput rotate T q)
+      (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
+      (encPair vertex (encPair (encPi label) (encPi signal))) := by
+  have hbranch (c : Fin T → Fin q) : ComputableInPolyTime
+      (fun p : P × (W × ((Fin T → D) × (Fin T → Fin q))) =>
+        RotationMap.killedPowRotWithInput rotate T q (p.1, p.2.1, p.2.2.1, c))
+      (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
+      (encPair vertex (encPair (encPi label) (encPi signal))) := by
+    have hwalk : ComputableInPolyTime
+        (fun p : P × (W × ((Fin T → D) × (Fin T → Fin q))) =>
+          RotationMap.powRotWithInput rotate (killTime c)
+            (p.1, p.2.1, Fin.take _ (killTime_le c) p.2.2.1))
+        (encPair input (encPair vertex (encPair (encPi label) (encPi signal))))
+        (encPair vertex (encPi label)) :=
+      (polytime_powRotWithInput hrotate (killTime c)).comp
+        ((fst _ _).prod (((snd _ _).fst').prod
+          ((polytime_finTake (killTime_le c)).comp ((snd _ _).snd'.fst'))))
+    dsimp only [RotationMap.killedPowRotWithInput]
+    apply hwalk.fst'.prod
+    apply prod ?_ (const c)
+    apply pi
+    intro i
+    by_cases hi : i.val < killTime c
+    · simpa only [dite_eq_left hi, Function.comp_def] using
+        (pi_apply label ⟨i.val, hi⟩).comp hwalk.snd'
+    · simpa only [dite_eq_right hi, Function.comp_def] using
+        (pi_apply label i).comp ((snd input _).snd'.fst')
+  exact ((snd input (encPair vertex (encPair (encPi label) (encPi signal)))).snd'.snd').finite_cases
+    hbranch
+
+variable [Fintype D]
 
 /-- The runtime graph, vertex, complete walk and both opinion tables are all stored explicitly. -/
 noncomputable def powerInputEncoding (input : P ↪ List Bool) (vertex : W ↪ List Bool)
@@ -43,10 +128,6 @@ noncomputable def powerInputEncoding (input : P ↪ List Bool) (vertex : W ↪ L
     (signal : Fin q ↪ List Bool) : PowerInput P W D α T q ↪ List Bool :=
   encPair input (encPair (encPair vertex (encPair (encPi label) (encPi signal)))
     (encPair (encPi alphabet) (encPi alphabet)))
-
-variable {input : P ↪ List Bool} {vertex : W ↪ List Bool}
-  {label : D ↪ List Bool} {alphabet : α ↪ List Bool}
-  {rotate : P × (W × D) → W × D} {rel : P × ((W × D) × (α × α)) → Bool}
 
 /-- Every original relation call, intermediate walk vertex, reverse-label table and opinion
 lookup is charged. The finite dispatch depends only on the fixed walk parameters. -/
@@ -59,17 +140,14 @@ theorem isPolyTime_powerRelationWithInput
     (T q : ℕ) [NeZero q] (signal : Fin q ↪ List Bool) :
     ComputableInPolyTime (powerRelationWithInput rotate rel T q)
       (powerInputEncoding input vertex label alphabet T q signal) encBool := by
-  have hrotate := hrotate.tidy
-  have hrel := hrel.tidy
-  refine .of_tidy ?_
   let enc := powerInputEncoding input vertex label alphabet T q signal
-  have hbranch (s : (Fin T → D) × (Fin T → Fin q)) : ComputableTidilyInPolyTime
+  have hbranch (s : (Fin T → D) × (Fin T → Fin q)) : ComputableInPolyTime
       (fun p : PowerInput P W D α T q =>
         powerRelationWithInput rotate rel T q (p.1, (p.2.1.1, s), p.2.2)) enc encBool := by
-    have hreturned : ComputableTidilyInPolyTime
+    have hreturned : ComputableInPolyTime
         (fun p : PowerInput P W D α T q => killedPowRotWithInput rotate T q (p.1, p.2.1.1, s))
         enc (encPair vertex (encPair (encPi label) (encPi signal))) :=
-      (rotationMap_killedPowRotWithInput hrotate T q signal).comp
+      (polytime_killedPowRotWithInput hrotate T q signal).comp
         ((fst _ _).prod (((snd _ _).fst'.fst').prod (const s)))
     let check (p : PowerInput P W D α T q) (i : Fin T) : Bool :=
       if i.val < killTime s.2 then
@@ -78,16 +156,16 @@ theorem isPolyTime_powerRelationWithInput
           p.2.2.2 (.take (killTime s.2 - (i.val + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
             (killedPowRotWithInput rotate T q (p.1, p.2.1.1, s)).2.1))
       else true
-    have hcheck (i : Fin T) : ComputableTidilyInPolyTime (fun p => check p i) enc encBool := by
+    have hcheck (i : Fin T) : ComputableInPolyTime (fun p => check p i) enc encBool := by
       by_cases hi : i.val < killTime s.2
-      · have hwalk : ComputableTidilyInPolyTime
+      · have hwalk : ComputableInPolyTime
             (fun p : PowerInput P W D α T q => walkAtWithInput rotate (p.1, p.2.1.1, s.1) i.val)
-            enc vertex := (rotationMap_walkAtWithInput hrotate T i.val).comp
+            enc vertex := (polytime_walkAtWithInput hrotate T i.val).comp
           ((fst _ _).prod (((snd _ _).fst'.fst').prod (const s.1)))
-        have hleft : ComputableTidilyInPolyTime
+        have hleft : ComputableInPolyTime
             (fun p : PowerInput P W D α T q => p.2.2.1 (.take i.val i.isLt.le s.1))
             enc alphabet := (pi_apply alphabet _).comp ((snd _ _).snd'.fst')
-        have hprefix : ComputableTidilyInPolyTime
+        have hprefix : ComputableInPolyTime
             (fun k : Fin T → D => WalkLabels.take (killTime s.2 - (i.val + 1))
               ((Nat.sub_le _ _).trans (killTime_le _)) k)
             (encPi label) (encFinite (WalkLabels D T)) := .of_finite _
