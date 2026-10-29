@@ -107,7 +107,7 @@ private theorem clause_eq_selected (i : ℕ) (c : Clause V) :
   rcases c with _ | ⟨p, _ | ⟨q, _ | ⟨r, rest⟩⟩⟩ <;>
     simp [clause, selectedLiteral, List.getD]
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableInPolyTime_selectedLiteral (enc : V ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime (fun p : ℕ × Clause V => selectedLiteral p.1 k p.2)
       (encPair encUnary (encList (encPair enc encBool)))
@@ -135,7 +135,7 @@ private theorem computableInPolyTime_selectedLiteral (enc : V ↪ List Bool) (k 
   exact ComputableInPolyTime.ite_decide
     (ComputableInPolyTime.unary_lt' (ComputableInPolyTime.const k) hl) hg hp
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableInPolyTime_core (enc : V ↪ List Bool) :
     ComputableInPolyTime
       (fun p : ℕ × Literal (Variable V) × Literal (Variable V) × Literal (Variable V) =>
@@ -146,7 +146,7 @@ private theorem computableInPolyTime_core (enc : V ↪ List Bool) :
   unfold core aux encVariable ExactOneGadget.disjunctionClauses Std.Sat.Literal.negate
   fun_prop
 
-@[fun_prop]
+@[local fun_prop]
 private theorem computableInPolyTime_forcePadding (enc : V ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime (fun i : ℕ => forcePadding (V := V) i k) encUnary
       (encList (encList (encPair (encVariable enc) encBool))) := by
