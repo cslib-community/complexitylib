@@ -53,6 +53,17 @@ open Lean Meta Elab Tactic
 
 namespace Cslib.Tactic
 
+/-- Inspect an ordinary conditional under its function binders, including reducible aliases.
+The callback runs while those binders are in scope; no expression with escaped fvars is returned
+by the recognizer itself. Named opaque programs are not unfolded. -/
+def withConditionalBody? {α : Type} (program : Expr)
+    (inspect : Expr → MetaM α) : MetaM (Option α) := do
+  let program ← Core.betaReduce (← etaExpand program)
+  lambdaTelescope program fun _ body => do
+    let body ← if body.isAppOf ``ite then pure body else whnfR body
+    if body.isAppOf ``ite then return some (← inspect body)
+    return none
+
 /-- The constant naming a program body, and whether it was found under an output encoding. An
 application of an encoding is looked through, and so is `List.replicate n true`, the simp-normal
 form of a unary encoding. -/

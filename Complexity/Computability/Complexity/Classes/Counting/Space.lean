@@ -62,7 +62,7 @@ theorem PP_subset_PSPACE : PP enc ⊆ PSPACE enc := by
       ((ComputableInPolySpace.of_polyTime hpow).prod
         ((ComputableInPolySpace.of_polyTime hdouble).comp
           (SharpP.computableInPolySpace hf)))
-  exact mem_PSPACE_of_computableInPolySpace (htest) fun a => by simpa using hA a
+  exact mem_PSPACE_of_computableInPolySpace htest fun a => by simpa using hA a
 
 /-- Testing whether a fixed modulus divides a #P count is in polynomial space. A quotient has
 at most one more bit than the verifier's certificate length, even for moduli zero and one. -/
@@ -87,12 +87,12 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
         (hle.comp ((ComputableInPolySpace.of_polyTime hright).prod hleft)))
   have hB : {x : α × List Bool | f x.1 = k * ofBits x.2} ∈
       PSPACE (encPair enc encBits) :=
-    mem_PSPACE_of_computableInPolySpace (htest) fun x => by
+    mem_PSPACE_of_computableInPolySpace htest fun x => by
       simp only [Set.mem_ofPred_eq, Bool.and_eq_true, decide_eq_true_eq]
       exact le_antisymm_iff
   have hbound : ComputableInPolyTime (fun a => p.eval (enc a).length + 1)
       enc encUnary := by fun_prop
-  have h := setOf_exists_mem_PSPACE hB (hbound)
+  have h := setOf_exists_mem_PSPACE hB hbound
   convert h using 1
   ext a
   rw [hA a]

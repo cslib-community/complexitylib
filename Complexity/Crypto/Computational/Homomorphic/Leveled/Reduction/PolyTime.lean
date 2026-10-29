@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Crypto.Computational.Homomorphic.Leveled.Reduction
-public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Hybrid.PolyTime
+public import Complexity.Crypto.Computational.Homomorphic.KeyChain.Reduction.PolyTime
 import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Tactic.PPT
@@ -18,16 +18,22 @@ import Complexity.Tactic.PPT
 
 The public-artifact test charges both adaptive adversary stages and the complete tagged
 challenge. The zero-link adversary charges the generated key list, all zero-link encryptions,
-public serialization and the adversary's saved state.
+public serialization and the adversary's saved state. `isPPT_leveledAdversary` certifies the
+asymptotic runtime consequence of [Gentry2009, Section 2, Theorem 4, p. 171]: the unified
+two-stage reduction is uniform strict PPT whenever the adversary, base scheme, depth and capacity
+are (without proving the multiplicative `poly(ℓ, d)` runtime factor relative to the adversary).
 
 ## Main results
 
 * `Cslib.Crypto.Homomorphic.Leveled.isPPTOn_publicKeyGame`: native public-artifact postprocessing.
-* `Cslib.Crypto.Homomorphic.Leveled.isPPT_zeroLinkAdversary`: native base-game admissibility.
+* `Cslib.Crypto.Homomorphic.Leveled.isPPT_zeroLinkAdversary`: native zero-link base-game
+  admissibility.
+* `Cslib.Crypto.Homomorphic.Leveled.isPPT_leveledAdversary`: native admissibility of the unified
+  leveled reduction.
 
 ## References
 
-* [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2][Gentry2009]
+* [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2, Theorem 4][Gentry2009]
 -/
 
 @[expose] public section
@@ -116,5 +122,87 @@ theorem isPPT_zeroLinkAdversary
   · change IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
       (fun p => adversary.guess p.1 p.2.1 (false :: p.2.2))
     ppt
+
+omit hencrypt hadversary in
+private theorem computableTidilyInPolyTime_tagLeveledChoice (first second : Bool) :
+    ComputableTidilyInPolyTime (tagLeveledChoice first second)
+      (encPair (encPair encBool encBool) encBits)
+      (encPair (encPair encBool encBool) encBits) := by
+  unfold tagLeveledChoice
+  exact (ComputableTidilyInPolyTime.fst _ _).prod
+    (ComputableTidilyInPolyTime.bitsCons (by fun_prop)
+      (ComputableTidilyInPolyTime.bitsCons (by fun_prop)
+        (ComputableTidilyInPolyTime.snd _ _)))
+
+omit hencrypt hadversary in
+private theorem computableTidilyInPolyTime_swapLeveledChoice :
+    ComputableTidilyInPolyTime swapLeveledChoice
+      (encPair (encPair encBool encBool) encBits)
+      (encPair (encPair encBool encBool) encBits) := by
+  unfold swapLeveledChoice
+  fun_prop
+
+/-- The unified leveled reduction is native strict PPT: its message selection charges both
+selector coins, the dyadic index coins, and the selected sub-reduction (`zeroLinkAdversary` or
+`E.linkAdversary`), while its guessing stage inspects the two prefix bits and charges the
+forwarded saved state and challenge ciphertext. -/
+theorem isPPT_leveledAdversary
+    (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
+    {depth capacity : ℕ → ℕ}
+    (hdepth : ComputableInPolyTime depth encUnary encUnary)
+    (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
+    (leveledAdversary E depth capacity adversary).IsPPT := by
+  have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth
+  have hlinkFalse := Scheme.isPPT_linkAdversary hkeyGen hencrypt
+    (isPPTOn_publicKeyGame hencrypt hadversary false) hdepth hcapacity
+  have hlinkTrue := Scheme.isPPT_linkAdversary hkeyGen hencrypt
+    (isPPTOn_publicKeyGame hencrypt hadversary true) hdepth hcapacity
+  constructor
+  · change IsPPTOn (encPair encUnary encBits) (encPair (encPair encBool encBool) encBits)
+      (fun p => (leveledAdversary E depth capacity adversary).choose p.1 p.2)
+    dsimp only [leveledAdversary]
+    apply (isPPTOn_uniform_bool (input := encPair encUnary encBits)).bind_with
+    apply (isPPTOn_uniform_bool
+      (input := encPair (encPair encUnary encBits) encBool)).bind_with
+    apply IsPPTOn.cond (by fun_prop)
+    · apply IsPPTOn.cond (by fun_prop)
+      · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
+      · apply (isPPTOn_sampleDyadicCoin
+          (hdepth.comp (by fun_prop)) (by fun_prop)).bind_with
+        apply (isPPTOn_sampleDyadicCoin
+          (hcapacity.comp (by fun_prop)) (by fun_prop)).bind_with
+        apply IsPPTOn.cond (by fun_prop)
+        · apply IsPPTOn.cond (by fun_prop)
+          · exact (hzero.choose.preprocess (by fun_prop) (by fun_prop)).map
+              (.of_tidy (computableTidilyInPolyTime_tagLeveledChoice true false))
+          · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
+        · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
+    · apply IsPPTOn.cond (by fun_prop)
+      · exact (hlinkTrue.choose.preprocess (by fun_prop) (by fun_prop)).map
+          (.of_tidy ((computableTidilyInPolyTime_tagLeveledChoice false true).comp
+            computableTidilyInPolyTime_swapLeveledChoice))
+      · exact (hlinkFalse.choose.preprocess (by fun_prop) (by fun_prop)).map
+          (.of_tidy (computableTidilyInPolyTime_tagLeveledChoice false false))
+  · dsimp only [leveledAdversary]
+    have hstate : ComputableTidilyInPolyTime
+        (fun p : ℕ × List Bool × List Bool => p.2.1)
+        (encPair encUnary (encPair encBits encBits)) encBits := by fun_prop
+    have htail1 := ComputableTidilyInPolyTime.bitsTail.comp hstate
+    have htail2 := ComputableTidilyInPolyTime.bitsTail.comp htail1
+    have hhead1 := (ComputableTidilyInPolyTime.headD (encA := encBool) true).comp hstate
+    have hhead2 := (ComputableTidilyInPolyTime.headD (encA := encBool) true).comp htail1
+    have hforward : ComputableInPolyTime
+        (fun p : ℕ × List Bool × List Bool => (p.1, p.2.1.tail.tail, p.2.2))
+        (encPair encUnary (encPair encBits encBits))
+        (encPair encUnary (encPair encBits encBits)) :=
+      .of_tidy ((ComputableTidilyInPolyTime.fst _ _).prod
+        (htail2.prod (by fun_prop)))
+    apply IsPPTOn.cond hhead1
+    · apply IsPPTOn.cond hhead2
+      · exact (ComputableTidilyInPolyTime.const false).isPPTOn
+      · exact hzero.guess.preprocess hforward
+    · apply IsPPTOn.cond hhead2
+      · exact hlinkTrue.guess.preprocess hforward
+      · exact hlinkFalse.guess.preprocess hforward
 
 end Cslib.Crypto.Homomorphic.Leveled

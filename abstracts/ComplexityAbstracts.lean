@@ -17,6 +17,8 @@ import ComplexityAbstracts.DijkstraBridge
 import ComplexityAbstracts.Encoding
 import ComplexityAbstracts.FaginAbstract
 import ComplexityAbstracts.FaginBridge
+import ComplexityAbstracts.FibonacciHeapAbstract
+import ComplexityAbstracts.FibonacciHeapBridge
 import ComplexityAbstracts.FormulaBoundsAbstract
 import ComplexityAbstracts.FormulaBoundsBridge
 import ComplexityAbstracts.GSW
@@ -26,6 +28,8 @@ import ComplexityAbstracts.GSWSecurityAbstract
 import ComplexityAbstracts.GSWSecurityBridge
 import ComplexityAbstracts.ImmermanSzelepcsenyiAbstract
 import ComplexityAbstracts.ImmermanSzelepcsenyiBridge
+import ComplexityAbstracts.KargerMinCutAbstract
+import ComplexityAbstracts.KargerMinCutBridge
 import ComplexityAbstracts.MagnificationAbstract
 import ComplexityAbstracts.MagnificationBridge
 import ComplexityAbstracts.PCPAbstract

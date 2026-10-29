@@ -18,9 +18,9 @@ open Cslib Cslib.Probability Turing.MultiTapeTM
 -- Nested deterministic loops remain reusable inside a closed probabilistic computation.
 example {α : Type} (input : α ↪ List Bool) (N C : α → ℕ)
     (call : α → ℕ → ℕ → Bool)
-    (hN : ComputableTidilyInPolyTime N input encUnary)
-    (hC : ComputableTidilyInPolyTime C input encUnary)
-    (hcall : ComputableTidilyInPolyTime
+    (hN : ComputableInPolyTime N input encUnary)
+    (hC : ComputableInPolyTime C input encUnary)
+    (hcall : ComputableInPolyTime
       (fun p : (α × ℕ) × ℕ => call p.1.1 p.1.2 p.2)
       (encPair (encPair input encUnary) encUnary) encBool) :
     IsPPTOn input encBool (fun a => pure
@@ -45,11 +45,11 @@ example : True := by
   fail_if_success have : IsPPTOn encBits encFin3 (fun _ => ProbComp.uniform (Fin 3)) := by fun_prop
   trivial
 
--- Reuse output bounds without unpacking machines or finite-state presentations.
-example {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
-    {program : α → ProbComp β} (h : IsPPTOn input output program) :
-    ∃ c d : ℕ, ∀ a b, b ∈ (ProbComp.eval (program a)).support →
-      (output b).length ≤ c * ((input a).length + 1) ^ d := h.length_le
+-- Reuse output bounds on a concrete PPT program without unpacking machines.
+example :
+    ∃ c d : ℕ, ∀ (n : ℕ) (b : ℕ), b ∈ (ProbComp.eval (pure (n + 1) : ProbComp ℕ)).support →
+      (encUnary b).length ≤ c * ((encUnary n).length + 1) ^ d :=
+  (by fun_prop : IsPPTOn encUnary encUnary (fun n => pure (n + 1))).length_le
 
 -- A state-changing oracle would be observable if the deterministic embedding queried it.
 example {input : List Bool} (machine : Turing.MultiTapeTM 0 Bool Unit) (fuel : ℕ)

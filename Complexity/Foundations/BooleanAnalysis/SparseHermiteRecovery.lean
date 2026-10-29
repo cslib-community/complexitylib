@@ -333,24 +333,6 @@ theorem taylor_clearedMonomialSumPoly (t d_den : ℤ) (k : ℕ) (θ : ι → Pol
   rw [map_sum]
   exact sum_congr rfl fun M _ => taylor_clearedMonomialPoly t d_den k θ M
 
-/-- `Polynomial.taylor t` commutes with `parityBaseDigitCleared` when `Δ` is a scalar constant. -/
-theorem taylor_parityBaseDigitCleared {R : Type*} [CommRing R] (t Δ : R) (ℓ j : ℕ)
-    (A_i : Polynomial R) :
-    Polynomial.taylor t (parityBaseDigitCleared ℓ j (Polynomial.C Δ) A_i) =
-      parityBaseDigitCleared ℓ j (Polynomial.C Δ) (Polynomial.taylor t A_i) := by
-  have hhom :=
-    map_parityBaseDigitCleared (Polynomial.taylorAlgHom t).toRingHom ℓ j (Polynomial.C Δ) A_i
-  simpa only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, Polynomial.taylorAlgHom_apply,
-    Polynomial.taylor_C] using hhom
-
-/-- `Polynomial.taylor t` commutes with `hPolyCleared` when `Δ` is a scalar constant. -/
-theorem taylor_hPolyCleared {R : Type*} [CommRing R] (t Δ : R) (A_i : Polynomial R) :
-    Polynomial.taylor t (hPolyCleared (Polynomial.C Δ) A_i) =
-      hPolyCleared (Polynomial.C Δ) (Polynomial.taylor t A_i) := by
-  have hhom := map_hPolyCleared (Polynomial.taylorAlgHom t).toRingHom (Polynomial.C Δ) A_i
-  simpa only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, Polynomial.taylorAlgHom_apply,
-    Polynomial.taylor_C] using hhom
-
 /-- Mapping `parityFactorCleared ℓ (Polynomial.C Δ) A_i` by `(Polynomial.taylorAlgHom t).toRingHom`
 shifts `A_i` by `Polynomial.taylor t`. -/
 theorem map_taylor_parityFactorCleared {R : Type*} [CommRing R] (t Δ : R) (ℓ : ℕ)

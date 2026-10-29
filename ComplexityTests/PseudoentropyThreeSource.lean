@@ -23,8 +23,7 @@ example : ThreeSource.Efficient (fun _ => 1) (fun _ => 2) (fun _ => 3) (fun _ =>
 
 -- Runtime divisors, including zero, use the same total quotient/remainder certificate.
 example : ComputableInPolyTime (fun p : ℕ × ℕ => (p.1 / p.2, p.1 % p.2))
-    (encPair encUnary encUnary) (encPair encUnary encUnary) :=
-  .of_tidy ComputableTidilyInPolyTime.unary_divMod
+    (encPair encUnary encUnary) (encPair encUnary encUnary) := by fun_prop
 
 example : ComputableInPolyTime
     (fun p : Bool × ℕ × ℕ => (p.2.1 / p.2.2, p.2.1 % p.2.2))
@@ -51,13 +50,10 @@ example : EntropyGrid.Valid 0 2 4 64 1 0 (1 / 2) := by
 example : 0 < EntropyGrid.observationBits 0 2 4 64 ∧
     0 < EntropyGrid.labelBits 0 2 4 64 ∧ 0 < EntropyGrid.remainingBits 0 2 4 64 := by decide
 
--- Even an inaccurate or out-of-range guess expands; validity is a separate security condition.
-example (n seedBits bound index : ℕ) :
-    ExtractionSchedule.count n seedBits (dyadicSize bound - 1) * seedBits <
-      EntropyGrid.observationBits n seedBits bound index +
-        EntropyGrid.labelBits n seedBits bound index +
-          EntropyGrid.remainingBits n seedBits bound index :=
-  EntropyGrid.expands n seedBits bound index
+-- At the zero observation/label guess, 65536 sampled seed bits expand to 69632 output bits.
+-- Guess validity is a separate security condition.
+example : 65537 ≤ 69632 := by
+  convert Nat.succ_le_of_lt (EntropyGrid.expands 0 2 4 0) using 1 <;> decide
 
 -- An arbitrary evaluator may capture the parameter; the theorem charges every call and hash.
 example (evaluate : ℕ → List Bool → List Bool × Bool)

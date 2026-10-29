@@ -22,15 +22,12 @@ namespace ComplexityTests.WPPTruthTable
 
 def oracle : Set (List Bool) := {w | w.getD 0 false = true}
 
-def target (n : ℕ) : ℤ := -Int.ofNat (n + 1)
+def target (n : ℕ) : ℤ := -((n + 1 : ℕ) : ℤ)
 
 @[fun_prop]
-theorem polyTime_target : ComputableInPolyTime target encUnary encIntBin :=
-  .of_tidy (ComputableTidilyInPolyTime.intBin_neg.comp
-    (ComputableTidilyInPolyTime.intBin_natCast.comp
-      (ComputableTidilyInPolyTime.unary_to_binary.comp
-        (ComputableTidilyInPolyTime.unary_add.comp
-          (ComputableTidilyInPolyTime.id'.prod (.const 1))))))
+theorem polyTime_target : ComputableInPolyTime target encUnary encIntBin := by
+  unfold target
+  fun_prop
 
 theorem target_ne_zero (n : ℕ) : target n ≠ 0 := by
   dsimp [target]
@@ -77,18 +74,16 @@ theorem reduction : PolyTimeTruthTableReducible encBits encBits language oracle 
   ⟨count, query, combine, polyTime_count, polyTime_query,
     polyTime_combine, fun _ => Iff.rfl⟩
 
-example : language ∈ LWPP encBits := reduction.mem_LWPP oracle_mem_LWPP
-
-example : language ∈ WPP encBits := reduction.mem_WPP (LWPP_subset_WPP oracle_mem_LWPP)
+example : language ∈ LWPP encBits ∧ language ∈ WPP encBits :=
+  ⟨reduction.mem_LWPP oracle_mem_LWPP,
+   reduction.mem_WPP (LWPP_subset_WPP oracle_mem_LWPP)⟩
 
 theorem joint_mem_LWPP : query ⁻¹' oracle ∈ LWPP (encPair encBits encUnary) :=
   PolyTimeReducible.mem_LWPP ⟨query, polyTime_query, fun _ => Iff.rfl⟩ oracle_mem_LWPP
 
-example : language ∈ LWPP encBits :=
-  truthTable_mem_LWPP joint_mem_LWPP polyTime_count polyTime_combine
-
-example : language ∈ WPP encBits :=
-  truthTable_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) polyTime_count polyTime_combine
+example : language ∈ LWPP encBits ∧ language ∈ WPP encBits :=
+  ⟨truthTable_mem_LWPP joint_mem_LWPP polyTime_count polyTime_combine,
+   truthTable_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) polyTime_count polyTime_combine⟩
 
 example : count [true, false] = 2 ∧ count [false, true] = 0 := by decide
 

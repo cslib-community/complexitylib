@@ -14,35 +14,31 @@ namespace ComplexityTests.PlanarCompile
 open Cslib.Logic.PL Cslib.Orthogonal Cslib.Complexity
 open SAT.ParsimoniousPlanar
 
--- The compiler preserves the two degenerate SAT instances, including the empty clause.
-example : formula [] = [] := by decide +kernel
-example : formula [[]] = [[]] := by decide +kernel
+-- Degenerate SAT instances and unit-clause compilation without crossing gadgets.
+example :
+    formula [] = [] ∧
+    formula [[]] = [[]] ∧
+    crossingSites [[(7, true)]] = [] ∧
+    (rawFormula [[(7, true)]]).length = 319 ∧
+    (rawFormula [[(7, true)]]).vars.length = 637 ∧
+    (rawFormula [[(7, true)]]).eval (fun _ => true) = true := by
+  decide +kernel
 
--- A unit clause produces a nonempty wire, without inserting any crossing gadgets.
-example : crossingSites [[(7, true)]] = [] := by decide +kernel
-example : (rawFormula [[(7, true)]]).length = 319 := by decide +kernel
-example : (rawFormula [[(7, true)]]).vars.length = 637 := by decide +kernel
-example : (rawFormula [[(7, true)]]).eval (fun _ => true) = true := by decide +kernel
-
--- Crossing ports retain the side order and keep both lanes separate.
-example : signal [(0, 0)] (0, 0) (-1, 0) 0 =
-    ((0, 0), Sum.inr (CNF.PairedCrossover.terminal 0 0)) := by decide
-example : access [] (0, 0) (1, 0) 0 = [(240, 110), (220, 110)] := by decide
-
--- Separate forward and backward lanes close the slack between adjacent cells.
-example : (link [] (0, 0) (1, 0) 0).1 =
-    [(((0, 0), Sum.inl (1, 0)), false), (((1, 0), Sum.inl (0, 0)), true)] := by decide
-example : (link [] (0, 0) (1, 0) 1).1 =
-    [(((1, 0), Sum.inl (0, 1)), false), (((0, 0), Sum.inl (1, 1)), true)] := by decide
-
--- Repeated literal incidences contribute separately to the actual graph degree.
-example : (SAT.incidenceGraph [[(5, true), (5, false)]]).incidenceVertices.count 0 = 2 :=
-  by decide
-example : (SAT.incidenceGraph [[(5, true), (5, false)]]).incidenceVertices.count 1 = 2 :=
-  by decide
-
-example : (CNF.implicationChain ([0, 1, 2] : List ℕ)).eval (fun _ => true) = true := by decide
-example : (CNF.implicationChain ([0, 1, 2] : List ℕ)).eval (fun i => i == 0) = false := by decide
+-- Crossing port signals, access routes, forward/backward link clauses, repeated-literal incidence
+-- degrees, and `CNF.implicationChain` evaluations.
+example :
+    signal [(0, 0)] (0, 0) (-1, 0) 0 =
+      ((0, 0), Sum.inr (CNF.PairedCrossover.terminal 0 0)) ∧
+    access [] (0, 0) (1, 0) 0 = [(240, 110), (220, 110)] ∧
+    (link [] (0, 0) (1, 0) 0).1 =
+      [(((0, 0), Sum.inl (1, 0)), false), (((1, 0), Sum.inl (0, 0)), true)] ∧
+    (link [] (0, 0) (1, 0) 1).1 =
+      [(((1, 0), Sum.inl (0, 1)), false), (((0, 0), Sum.inl (1, 1)), true)] ∧
+    (SAT.incidenceGraph [[(5, true), (5, false)]]).incidenceVertices.count 0 = 2 ∧
+    (SAT.incidenceGraph [[(5, true), (5, false)]]).incidenceVertices.count 1 = 2 ∧
+    (CNF.implicationChain ([0, 1, 2] : List ℕ)).eval (fun _ => true) = true ∧
+    (CNF.implicationChain ([0, 1, 2] : List ℕ)).eval (fun i => i == 0) = false := by
+  decide
 
 -- A nonempty instance of the actual continuous drawing predicate.
 example : Graph.IsPlanarOrthogonalDrawing ([0, 1], [(0, 1)])
