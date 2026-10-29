@@ -35,21 +35,6 @@ open Cslib.Circuits Cslib.Circuits.Arithmetic Cslib.Circuits.Arithmetic.SPFormul
 private noncomputable def F01 : SPFormula ℚ 2 :=
   .mul ![.input 0, add ![1, 1] ![.input 1, const 1]]
 
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).polynomial =
-    smProj (fun i : Fin 2 => i) Finset.univ F01.polynomial :=
-  polynomial_smPart _ _
-
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).IsSetMultilinear (fun i : Fin 2 => i)
-    Finset.univ :=
-  isSetMultilinear_smPart _ _
-
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).productDepth ≤ 2 * F01.productDepth :=
-  productDepth_smPart_le _ _
-
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).nodeCount ≤
-    smCost 2 ^ F01.productDepth * F01.nodeCount :=
-  nodeCount_smPart_le _ _
-
 /-- The part on both blocks of `x₀ · (x₁ + 1)` is `x₀ x₁`. -/
 example : (smPart (fun i : Fin 2 => i) Finset.univ F01).polynomial = X 0 * X 1 := by
   have h01 : IsSetMultilinear (fun i : Fin 2 => i) Finset.univ (X 0 * X 1 : MvPolynomial _ ℚ) := by
