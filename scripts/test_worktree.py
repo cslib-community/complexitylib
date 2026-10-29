@@ -243,7 +243,8 @@ class WorktreeCreateTests(unittest.TestCase):
         for mode in ((), ("--source-only",)):
             for path in (".", ".lake", ".lake/packages", ".lake/build", ".lake/config",
                          ".lake/packages/cslib", ".lake/packages/cslib/.lake",
-                         ".lake/packages/cslib/.lake/build", ".lake/packages/cslib/.lake/config"):
+                         ".lake/packages/cslib/.lake/build", ".lake/packages/cslib/.lake/config",
+                         ".lake/build/lib/lean", ".lake/packages/cslib/.lake/build/lib/lean"):
                 with self.subTest(mode=mode, path=path):
                     name = f"existing-{len(mode)}-{path.replace('/', '-')}"
                     wt = self.work / ".worktrees" / name
@@ -281,6 +282,35 @@ class WorktreeCreateTests(unittest.TestCase):
                     self.assertEqual(sentinel.read_text(), "primary content\n")
             git(self.work, "rm", "--quiet", path)
             git(self.work, "commit", "--quiet", "-m", "remove unsafe fixture cache link")
+
+    def test_nested_cache_links_cannot_redirect_bootstrap_writes_to_primary(self) -> None:
+        env = self.bootstrap_probe()
+        ensure = self.work / "scripts/cache/ensure.sh"
+        with ensure.open("a", encoding="utf-8") as stream:
+            stream.write('printf altered > "$BOOTSTRAP_WRITE_PATH/sentinel"\n')
+        protected = self.work / "protected"
+        protected.mkdir()
+        sentinel = protected / "sentinel"
+        for index, path in enumerate((".lake/build/lib/lean",
+                                      ".lake/packages/cslib/.lake/build/lib/lean")):
+            link = self.work / path
+            link.parent.mkdir(parents=True, exist_ok=True)
+            link.symlink_to(protected, target_is_directory=True)
+            git(self.work, "add", path)
+            git(self.work, "commit", "--quiet", "-m", "fixture with nested cache link")
+            for mode in ((), ("--source-only",)):
+                with self.subTest(path=path, mode=mode):
+                    sentinel.write_text("primary content\n", encoding="utf-8")
+                    log = self.tmp / "bootstrap.log"
+                    log.unlink(missing_ok=True)
+                    name = f"nested-{index}-{len(mode)}"
+                    result = self.create(f"feature/{name}", name, "HEAD", *mode,
+                                         env={**env, "BOOTSTRAP_WRITE_PATH": path})
+                    self.assertEqual((result.returncode != 0, log.exists(), sentinel.read_text()),
+                                     (True, False, "primary content\n"), result.stderr)
+                    self.assertIn("destination cache symlink", result.stderr)
+            git(self.work, "rm", "--quiet", path)
+            git(self.work, "commit", "--quiet", "-m", "remove nested fixture cache link")
 
     def test_create_isolates_seeded_dependency_caches(self) -> None:
         paths = [pathlib.Path(".lake/packages/cslib/.lake") / part

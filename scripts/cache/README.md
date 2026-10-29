@@ -123,7 +123,9 @@ scripts/worktree.sh create feature/example example origin/main --source-only
 ```
 
 `--source-only` skips initial root and dependency outputs, package sources and package Git controls.
-The same target and cache isolation checks still run before bootstrap. Bootstrap remains automatic
+The same target and cache isolation checks still run before bootstrap. Both modes refuse existing
+symlinks anywhere in root cache trees or dependency `.lake` trees, including nested output paths;
+package source and Git-control trees are not traversed by this check. Bootstrap remains automatic
 unless `COMPLEXITYLIB_WORKTREE_SKIP_CACHE_BOOTSTRAP=1` or the usual cache opt-out is set; it may
 populate the new checkout with independently materialized dependencies and restored outputs.
 Lake can reuse its immutable artifact cache, but expect dependency downloads and disk use for

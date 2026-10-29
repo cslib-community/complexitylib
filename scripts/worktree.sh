@@ -301,22 +301,36 @@ refuse_primary_or_symlink_target() {
       esac
     fi
   done
-  if [ -d "$wt_path/.lake/packages" ]; then
-    local pkg_entry
-    shopt -s dotglob nullglob
-    for pkg_entry in "$wt_path/.lake/packages"/*; do
-      if [ -L "$pkg_entry" ]; then
-        echo "Refusing to seed through destination package symlink: $pkg_entry" >&2
-        return 1
-      fi
-      for path in "$pkg_entry/.lake" "$pkg_entry/.lake/build" "$pkg_entry/.lake/config"; do
-        if [ -L "$path" ]; then
-          echo "Refusing to seed through destination cache symlink: $path" >&2
-          return 1
-        fi
-      done
-    done
-  fi
+  # Check nested cache links without traversing package source or Git-control trees. Checking
+  # only build/config themselves misses links such as .lake/build/lib/lean before bootstrap.
+  python3 - "$wt_path/.lake" <<'PY'
+import os, pathlib, sys
+
+def refuse_link(path: pathlib.Path, kind: str = "cache") -> None:
+    if path.is_symlink():
+        raise SystemExit(f"Refusing to seed through destination {kind} symlink: {path}")
+
+def fail_walk(error: OSError) -> None:
+    raise error
+
+def check_cache(root: pathlib.Path, skip_packages: bool = False) -> None:
+    refuse_link(root)
+    for directory, dirs, files in os.walk(root, followlinks=False, onerror=fail_walk):
+        for name in dirs + files:
+            refuse_link(pathlib.Path(directory) / name)
+        if skip_packages and pathlib.Path(directory) == root:
+            dirs[:] = [name for name in dirs if name != "packages"]
+
+cache = pathlib.Path(sys.argv[1])
+if cache.exists():
+    check_cache(cache, skip_packages=True)
+    packages = cache / "packages"
+    if packages.is_dir():
+        for package in packages.iterdir():
+            refuse_link(package, "package")
+            if (package / ".lake").exists() or (package / ".lake").is_symlink():
+                check_cache(package / ".lake")
+PY
 }
 
 # prepare_lake <worktree_path> <copy_mode> [source_only], where copy_mode is `none`, `cslib` or `all`.
