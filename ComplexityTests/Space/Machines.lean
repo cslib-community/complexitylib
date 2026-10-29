@@ -121,17 +121,15 @@ private theorem runsInTime_writeAccept (input : List Bool) : writeAccept.RunsInT
     simp [Action.apply, writeAction]
 
 /-- With a work tape that is actually written, the problem of all words is in `NPSPACE` within
-one cell. -/
-example : (Set.univ : Set (List Bool)) ∈ NPSPACE encBits :=
-  ⟨1, Unit, inferInstance, writeAccept, fun _ => 1, .const 1, ⟨fun a =>
+one cell, and Savitch's decider accepts. -/
+example (input : List Bool) :
+    (Set.univ : Set (List Bool)) ∈ NPSPACE encBits ∧
+    writeAccept.savitchDecide 1 0 input = true :=
+  ⟨⟨1, Unit, inferInstance, writeAccept, fun _ => 1, .const 1, ⟨fun a =>
     ⟨runsInSpace_writeAccept a, by simpa using accepts_writeAccept a⟩,
-    fun a => ⟨1, runsInTime_writeAccept a⟩⟩⟩
-
-/-- Savitch's decider accepts for `writeAccept`, with codes sized by the bound on views with a
-written work tape. -/
-example (input : List Bool) : writeAccept.savitchDecide 1 0 input = true :=
-  (savitchDecide_eq_true_iff (runsInSpace_writeAccept input) (by simp)).mpr
-    (accepts_writeAccept input)
+    fun a => ⟨1, runsInTime_writeAccept a⟩⟩⟩,
+    (savitchDecide_eq_true_iff (runsInSpace_writeAccept input) (by simp)).mpr
+      (accepts_writeAccept input)⟩
 
 /-! ### A head running right forever -/
 
@@ -186,10 +184,11 @@ example (input : List Bool) (s : ℕ) : ¬runRight.RunsInSpace input s := by
 
 /-! ### Malformed codes -/
 
-/-- The empty word has no edges. -/
-example (next : List Bool) : writeAccept.codeEdge [] next = false := rfl
-
-/-- A word with tag one, the accepting code among them, has no edges. -/
-example (code next : List Bool) : writeAccept.codeEdge (true :: code) next = false := rfl
+/-- Neither the empty word nor a word with tag one (including the accepting code) has outgoing
+edges. -/
+example (code next : List Bool) :
+    writeAccept.codeEdge [] next = false ∧
+    writeAccept.codeEdge (true :: code) next = false :=
+  ⟨rfl, rfl⟩
 
 end ComplexityTests.SpaceMachines

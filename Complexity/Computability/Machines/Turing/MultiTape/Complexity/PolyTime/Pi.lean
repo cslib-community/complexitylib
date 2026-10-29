@@ -24,7 +24,7 @@ The index type is fixed independently of the input; values need not be finite or
 
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.ofFn`, `.pi`: construct fixed finite families.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply`, `.pi_update`: fixed-index access.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply'`, `.pi_update'`: computed-index access.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_apply'`: computed-index access.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.pi_eval`: lookup from an encoded table/index pair.
 
 ## References
@@ -103,15 +103,5 @@ for separately computed tables and indices, apply `pi_apply'` to their certifica
 theorem pi_eval [Fintype Index] (indexEncoding : Index ↪ List Bool) (enc : Value ↪ List Bool) :
     ComputableTidilyInPolyTime (fun pair : (Index → Value) × Index => pair.1 pair.2)
       (encPair (encPi enc) indexEncoding) enc := pi_apply' (fst _ _) (snd _ _)
-
-/-- Update a computed index while retaining and charging every other entry. -/
-@[fun_prop]
-theorem pi_update' [Fintype Index] [DecidableEq Index] {indexEncoding : Index ↪ List Bool}
-    {values : α → Index → Value} {index : α → Index} {value : α → Value}
-    (hvalues : ComputableTidilyInPolyTime values input (encPi enc))
-    (hindex : ComputableTidilyInPolyTime index input indexEncoding)
-    (hvalue : ComputableTidilyInPolyTime value input enc) :
-    ComputableTidilyInPolyTime (fun a => Function.update (values a) (index a) (value a))
-      input (encPi enc) := hindex.finite_cases (fun i => pi_update hvalues hvalue i)
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime

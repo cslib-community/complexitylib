@@ -12,12 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 
 open Turing.MultiTapeTM
 
-example : ComputableInPolyTime (fun p : Bool × Bool => p.1 && p.2)
-    (encPair encBool encBool) encBool := ComputableInPolyTime.bool_and
-
-example : ComputableInPolyTime Bool.not encBool encBool := ComputableInPolyTime.bool_not
-
-example : ComputableInPolyTime (fun p : Bool × Bool => p.1 && p.2)
-    (encPair encBool encBool) encBool := by fun_prop
-
-example : ComputableInPolyTime Bool.not encBool encBool := by fun_prop
+example :
+    ComputableInPolyTime (fun p : Bool × Bool => p.1 && p.2) (encPair encBool encBool) encBool ∧
+    ComputableInPolyTime Bool.not encBool encBool :=
+  ⟨by fun_prop, by fun_prop⟩

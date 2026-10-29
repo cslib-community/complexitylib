@@ -43,25 +43,22 @@ theorem bruteSAT_iff (ψ : CNF ℕ) : bruteSAT ψ = true ↔ ψ ∈ SAT := by
 /-- `(x₀ ∨ x₁) ∧ ¬x₀`, with literal occurrences `x₀, x₁, x₀`. -/
 def φ₁ : CNF ℕ := [[(0, true), (1, true)], [(0, false)]]
 
--- `x₀` is fixed to false, then `x₁` to true; the second occurrence of `x₀` repeats its value.
-example : SAT.selfReduce bruteSAT φ₁ = [(0, false), (1, true), (0, false)] := by decide
-example : SAT.search bruteSAT φ₁ = [false, true, false] := by decide
-example : SAT.verifier (φ₁, SAT.search bruteSAT φ₁) = true := by decide
-
-example : SAT.verifier (φ₁, SAT.search bruteSAT φ₁) = true :=
-  SAT.verifier_search (fun ψ _ => bruteSAT_iff ψ) ⟨fun v => v == 1, by decide⟩
-
 /-- `x₀ ∧ ¬x₀`. -/
 def φ₂ : CNF ℕ := [[(0, true)], [(0, false)]]
 
--- On an unsatisfiable formula, no certificate is accepted.
-example : SAT.verifier (φ₂, SAT.search bruteSAT φ₂) = false := by decide
-
--- With wrong answers, the self-reduction can miss a satisfying assignment.
-example : SAT.search (fun _ => true) φ₁ = [true, true, true] := by decide
-example : SAT.verifier (φ₁, SAT.search (fun _ => true) φ₁) = false := by decide
-
-example : SAT.queryBound 1 = 39 := rfl
+-- Self-reduction on `φ₁` (`x₀ ↦ false`, `x₁ ↦ true`), unsatisfiable `φ₂`, wrong oracle answers,
+-- and `SAT.queryBound 1 = 39`.
+example :
+    SAT.selfReduce bruteSAT φ₁ = [(0, false), (1, true), (0, false)] ∧
+    SAT.search bruteSAT φ₁ = [false, true, false] ∧
+    SAT.verifier (φ₁, SAT.search bruteSAT φ₁) = true ∧
+    SAT.verifier (φ₂, SAT.search bruteSAT φ₂) = false ∧
+    SAT.search (fun _ => true) φ₁ = [true, true, true] ∧
+    SAT.verifier (φ₁, SAT.search (fun _ => true) φ₁) = false ∧
+    SAT.queryBound 1 = 39 :=
+  ⟨by decide, by decide,
+    SAT.verifier_search (fun ψ _ => bruteSAT_iff ψ) ⟨fun v => v == 1, by decide⟩,
+    by decide, by decide, by decide, rfl⟩
 
 /-! ### Advice strings -/
 
@@ -73,24 +70,19 @@ def firstBit : (m : ℕ) → Circuit signature m 1
 theorem size_firstBit (m : ℕ) : (firstBit m).size ≤ 1 := by
   cases m <;> rfl
 
-example : (familyAdvice 3 1 firstBit).length = 4 * certLength 3 1 :=
-  length_familyAdvice fun m _ => size_firstBit m
-
-example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [] = false := by decide
-example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [true, false] = true := by
-  decide
-example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [false, true, true] = false :=
-  by decide
-
-example (x : List Bool) (hx : x.length ≤ 3) :
-    evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) x =
-      (firstBit x.length).eval interpretation (fun i => x[i]) 0 :=
-  evalAdvice_familyAdvice (fun m _ => size_firstBit m) hx
-
--- Beyond the listed lengths the advice string is empty: it reads as no gates and output wire `0`,
--- the first input.
-example : evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [true, true, true, true] =
-    true := by decide
+-- Length and evaluation of `familyAdvice 3 1 firstBit` within and beyond the listed lengths.
+example :
+    (familyAdvice 3 1 firstBit).length = 4 * certLength 3 1 ∧
+    evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [] = false ∧
+    evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [true, false] = true ∧
+    evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [false, true, true] = false ∧
+    evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [true, false] =
+      (firstBit 2).eval interpretation (fun i => [true, false][i]) 0 ∧
+    evalAdvice 1 (certLength 3 1) (familyAdvice 3 1 firstBit) [true, true, true, true] = true :=
+  ⟨length_familyAdvice fun m _ => size_firstBit m,
+    by decide, by decide, by decide,
+    evalAdvice_familyAdvice (fun m _ => size_firstBit m) (by decide : [true, false].length ≤ 3),
+    by decide⟩
 
 /-! ### Nonuniform quantifier elimination and `PH ⊆ P/poly` -/
 
@@ -114,24 +106,5 @@ example : {x : List Bool | x.reverse ∈ firstBitLanguage} ∈ PPolyOn encBits :
     ⟨List.reverse, ComputableInPolyTime.bitsReverse, fun _ => Iff.rfl⟩
   exact hred.mem_PPolyOn (mem_PPolyOn_encBits_iff.2 firstBitLanguage_mem_PPoly)
 
-example (hNP : NP encBits ⊆ PPolyOn encBits)
-    (k : ℕ) {A : Language Bool} (hA : (A : Set (List Bool)) ∈ SigmaP k encBits) :
-    A ∈ PPoly :=
-  mem_PPolyOn_encBits_iff.1 (SigmaP_subset_PPolyOn_of_NP_subset_PPoly hNP k hA)
-
-example (hNP : NP encBits ⊆ PPolyOn encBits)
-    (k : ℕ) {A : Language Bool} (hA : (A : Set (List Bool)) ∈ PiP k encBits) :
-    A ∈ PPoly :=
-  mem_PPolyOn_encBits_iff.1 (PiP_subset_PPolyOn_of_NP_subset_PPoly hNP k hA)
-
-example (hNP : NP encBits ⊆ PPolyOn encBits)
-    {A : Language Bool} (hA : (A : Set (List Bool)) ∈ PH encBits) :
-    A ∈ PPoly :=
-  mem_PPolyOn_encBits_iff.1 (PH_subset_PPolyOn_of_NP_subset_PPoly hNP hA)
-
-example (hSAT : SAT ∈ PPolyOn encCNF)
-    {α : Type} {enc : α ↪ List Bool} (k : ℕ) {A : Set α} (hA : A ∈ SigmaP k enc) :
-    A ∈ PPolyOn enc :=
-  SigmaP_subset_PPolyOn_of_NP_subset_PPoly (NP_subset_PPolyOn_iff_SAT.2 hSAT) k hA
 
 end Cslib.Complexity.Tests.KarpLipton

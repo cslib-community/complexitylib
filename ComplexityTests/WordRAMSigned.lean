@@ -32,48 +32,37 @@ private def caller : Data 10 :=
 private def answer (c : Code .standard 10) (w : ℕ) (a b : ℤ) : Option ℕ :=
   (run w (c.program result) 32 ⟨0, inputs a b⟩).map Prod.fst
 
-example : decode (encode (-8)) = -8 ∧ encode (-8) = 17 ∧
-    Cslib.GenericRAM.Signed.Fits 4 (-8) ∧ Cslib.GenericRAM.Signed.Fits 4 7 ∧
-    ¬Cslib.GenericRAM.Signed.Fits 4 8 ∧ ¬Cslib.GenericRAM.Signed.Fits 4 (-9) := by
-  decide
-
-/-- Opposite signs, both magnitude orderings, same signs, and cancellation. -/
-example : answer add 6 (-8) 7 = some (encode (-1)) ∧
-    answer add 6 7 (-8) = some (encode (-1)) ∧
-    answer add 6 (-3) (-5) = some (encode (-8)) ∧
-    answer add 6 3 4 = some (encode 7) ∧
-    answer add 6 (-7) 7 = some (encode 0) := by
-  decide
-
-/-- Addition and subtraction compute exact expanded results even outside the source range. -/
-example : answer add 6 (-8) (-8) = some (encode (-16)) ∧
-    answer subtract 6 7 (-8) = some (encode 15) ∧
-    answer subtract 6 (-8) 7 = some (encode (-15)) ∧
-    answer subtract 6 (-8) (-8) = some (encode 0) ∧
-    answer subtract 6 (-3) 0 = some (encode (-3)) := by
-  decide
-
-/-- Negative products, positive products, and normalization of zero with either input sign. -/
-example : answer multiply 6 (-8) 1 = some (encode (-8)) ∧
-    answer multiply 6 (-2) (-3) = some (encode 6) ∧
-    answer multiply 6 2 (-3) = some (encode (-6)) ∧
-    answer multiply 6 (-8) 0 = some (encode 0) ∧
-    answer multiply 6 0 (-8) = some (encode 0) := by
-  decide
-
-/-- The one-bit signed domain contains -1 and 0. -/
-example : Cslib.GenericRAM.Signed.Fits 1 (-1) ∧ Cslib.GenericRAM.Signed.Fits 1 0 ∧
-    answer add 3 (-1) (-1) = some (encode (-2)) ∧
-    answer subtract 3 0 (-1) = some (encode 1) ∧
-    answer multiply 3 (-1) 0 = some (encode 0) := by
-  decide
-
-/-- Multiplication's result-fit premise excludes signed overflow. These routines do not promise
-to reproduce source faults: negating the minimum may succeed, while a larger product faults. -/
-example : ¬Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) * -1) ∧
-    answer multiply 6 (-8) (-1) = some (encode 8) ∧
-    answer multiply 6 (-8) (-8) = none := by
-  decide
+/-- Encoding, fit bounds, addition, subtraction, multiplication, one-bit words, and overflow. -/
+example :
+    (decode (encode (-8)) = -8 ∧ encode (-8) = 17 ∧
+      Cslib.GenericRAM.Signed.Fits 4 (-8) ∧ Cslib.GenericRAM.Signed.Fits 4 7 ∧
+      ¬Cslib.GenericRAM.Signed.Fits 4 8 ∧ ¬Cslib.GenericRAM.Signed.Fits 4 (-9)) ∧
+    (answer add 6 (-8) 7 = some (encode (-1)) ∧
+      answer add 6 7 (-8) = some (encode (-1)) ∧
+      answer add 6 (-3) (-5) = some (encode (-8)) ∧
+      answer add 6 3 4 = some (encode 7) ∧
+      answer add 6 (-7) 7 = some (encode 0)) ∧
+    (answer add 6 (-8) (-8) = some (encode (-16)) ∧
+      answer subtract 6 7 (-8) = some (encode 15) ∧
+      answer subtract 6 (-8) 7 = some (encode (-15)) ∧
+      answer subtract 6 (-8) (-8) = some (encode 0) ∧
+      answer subtract 6 (-3) 0 = some (encode (-3))) ∧
+    (answer multiply 6 (-8) 1 = some (encode (-8)) ∧
+      answer multiply 6 (-2) (-3) = some (encode 6) ∧
+      answer multiply 6 2 (-3) = some (encode (-6)) ∧
+      answer multiply 6 (-8) 0 = some (encode 0) ∧
+      answer multiply 6 0 (-8) = some (encode 0)) ∧
+    (Cslib.GenericRAM.Signed.Fits 1 (-1) ∧ Cslib.GenericRAM.Signed.Fits 1 0 ∧
+      answer add 3 (-1) (-1) = some (encode (-2)) ∧
+      answer subtract 3 0 (-1) = some (encode 1) ∧
+      answer multiply 3 (-1) 0 = some (encode 0)) ∧
+    -- Multiplication's result-fit premise excludes signed overflow. These routines do not
+    -- promise to reproduce source faults: negating the minimum may succeed, while a larger
+    -- product faults.
+    (¬Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) * -1) ∧
+      answer multiply 6 (-8) (-1) = some (encode 8) ∧
+      answer multiply 6 (-8) (-8) = none) :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide⟩
 
 /-- All three contracts hold on concrete bounded caller states, with an unrelated register
 and nonzero memory. The output's encoding determines the mathematical integer. -/
@@ -114,56 +103,49 @@ example : ∃ n ≤ 15, Executes 6 ((multiply (r := 1)).program result)
     (by decide) (by decide) (by decide) (inputs (-8) 1) (by rfl) (by rfl)
   exact ⟨n + 1, by omega, hv ▸ he.executes result⟩
 
-/-- Euclidean division and remainder across all four sign combinations, with nonzero remainders. -/
-example : answer divide 6 7 3 = some (encode 2) ∧
-    answer modulo 6 7 3 = some (encode 1) ∧
-    answer divide 6 7 (-3) = some (encode (-2)) ∧
-    answer modulo 6 7 (-3) = some (encode 1) ∧
-    answer divide 6 (-7) 3 = some (encode (-3)) ∧
-    answer modulo 6 (-7) 3 = some (encode 2) ∧
-    answer divide 6 (-7) (-3) = some (encode 3) ∧
-    answer modulo 6 (-7) (-3) = some (encode 2) := by
-  decide
-
-/-- Exact multiples across all four sign combinations and zero-dividend sign normalization. -/
-example : answer divide 6 6 3 = some (encode 2) ∧
-    answer modulo 6 6 3 = some (encode 0) ∧
-    answer divide 6 6 (-3) = some (encode (-2)) ∧
-    answer modulo 6 6 (-3) = some (encode 0) ∧
-    answer divide 6 (-6) 3 = some (encode (-2)) ∧
-    answer modulo 6 (-6) 3 = some (encode 0) ∧
-    answer divide 6 (-6) (-3) = some (encode 2) ∧
-    answer modulo 6 (-6) (-3) = some (encode 0) ∧
-    answer divide 6 0 (-3) = some (encode 0) ∧
-    answer modulo 6 0 (-3) = some (encode 0) := by
-  decide
-
-/-- Lean's total zero-divisor conventions: `a / 0 = 0` and `a % 0 = a`, including `a < 0`. -/
-example : answer divide 6 7 0 = some (encode 0) ∧
-    answer divide 6 (-8) 0 = some (encode 0) ∧
-    answer divide 6 0 0 = some (encode 0) ∧
-    answer modulo 6 7 0 = some (encode 7) ∧
-    answer modulo 6 (-8) 0 = some (encode (-8)) ∧
-    answer modulo 6 0 0 = some (encode 0) := by
-  decide
-
-/-- Asymmetric negative endpoint `-8` at `w = 4` (both as dividend and as divisor), the
-minimum/`-1` signed division overflow exclusion, and one-bit signed words (`w = 1`). -/
-example : answer divide 6 (-8) 3 = some (encode (-3)) ∧
-    answer modulo 6 (-8) 3 = some (encode 1) ∧
-    answer divide 6 (-8) (-3) = some (encode 3) ∧
-    answer modulo 6 (-8) (-3) = some (encode 1) ∧
-    answer divide 6 (-7) (-8) = some (encode 1) ∧
-    answer modulo 6 (-7) (-8) = some (encode 1) ∧
-    ¬Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) / -1) ∧
-    Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) % -1) ∧
-    answer divide 6 (-8) (-1) = some (encode 8) ∧
-    answer modulo 6 (-8) (-1) = some (encode 0) ∧
-    answer divide 3 (-1) (-1) = some (encode 1) ∧
-    answer divide 3 (-1) 0 = some (encode 0) ∧
-    answer modulo 3 (-1) (-1) = some (encode 0) ∧
-    answer modulo 3 (-1) 0 = some (encode (-1)) := by
-  decide
+/-- Euclidean division and remainder across all four sign combinations, exact multiples,
+zero-divisor conventions, asymmetric negative endpoint `-8` at `w = 4`, minimum/`-1` overflow,
+and one-bit signed words (`w = 1`). -/
+example :
+    (answer divide 6 7 3 = some (encode 2) ∧
+      answer modulo 6 7 3 = some (encode 1) ∧
+      answer divide 6 7 (-3) = some (encode (-2)) ∧
+      answer modulo 6 7 (-3) = some (encode 1) ∧
+      answer divide 6 (-7) 3 = some (encode (-3)) ∧
+      answer modulo 6 (-7) 3 = some (encode 2) ∧
+      answer divide 6 (-7) (-3) = some (encode 3) ∧
+      answer modulo 6 (-7) (-3) = some (encode 2)) ∧
+    (answer divide 6 6 3 = some (encode 2) ∧
+      answer modulo 6 6 3 = some (encode 0) ∧
+      answer divide 6 6 (-3) = some (encode (-2)) ∧
+      answer modulo 6 6 (-3) = some (encode 0) ∧
+      answer divide 6 (-6) 3 = some (encode (-2)) ∧
+      answer modulo 6 (-6) 3 = some (encode 0) ∧
+      answer divide 6 (-6) (-3) = some (encode 2) ∧
+      answer modulo 6 (-6) (-3) = some (encode 0) ∧
+      answer divide 6 0 (-3) = some (encode 0) ∧
+      answer modulo 6 0 (-3) = some (encode 0)) ∧
+    (answer divide 6 7 0 = some (encode 0) ∧
+      answer divide 6 (-8) 0 = some (encode 0) ∧
+      answer divide 6 0 0 = some (encode 0) ∧
+      answer modulo 6 7 0 = some (encode 7) ∧
+      answer modulo 6 (-8) 0 = some (encode (-8)) ∧
+      answer modulo 6 0 0 = some (encode 0)) ∧
+    (answer divide 6 (-8) 3 = some (encode (-3)) ∧
+      answer modulo 6 (-8) 3 = some (encode 1) ∧
+      answer divide 6 (-8) (-3) = some (encode 3) ∧
+      answer modulo 6 (-8) (-3) = some (encode 1) ∧
+      answer divide 6 (-7) (-8) = some (encode 1) ∧
+      answer modulo 6 (-7) (-8) = some (encode 1) ∧
+      ¬Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) / -1) ∧
+      Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) % -1) ∧
+      answer divide 6 (-8) (-1) = some (encode 8) ∧
+      answer modulo 6 (-8) (-1) = some (encode 0) ∧
+      answer divide 3 (-1) (-1) = some (encode 1) ∧
+      answer divide 3 (-1) 0 = some (encode 0) ∧
+      answer modulo 3 (-1) (-1) = some (encode 0) ∧
+      answer modulo 3 (-1) 0 = some (encode (-1))) :=
+  ⟨by decide, by decide, by decide, by decide⟩
 
 /-- Division and remainder preserve the caller frame and obey their halting instruction bounds. -/
 example : ∃ y, ExecWithin 6 divide caller y 20 ∧

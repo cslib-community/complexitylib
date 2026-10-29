@@ -96,12 +96,10 @@ theorem not_isThreeCNF_wideClause : ¬(letI := wideClause; cnf.IsThreeCNF (Fin 2
   decide
 
 /-- SAT has members and non-members, so the classes in the headline results are not trivial. -/
-example : (letI := unitClause; (Bundled.of (Fin 1) : Bundled cnf.Structure)) ∈ cnf.SAT :=
-  satisfiable_unitClause
-
-example : (letI := contradiction; (Bundled.of (Fin 2) : Bundled cnf.Structure)) ∉
-    cnf.ThreeSAT :=
-  fun h => not_satisfiable_contradiction h.2
+example :
+    (letI := unitClause; (Bundled.of (Fin 1) : Bundled cnf.Structure)) ∈ cnf.SAT ∧
+    (letI := contradiction; (Bundled.of (Fin 2) : Bundled cnf.Structure)) ∉ cnf.ThreeSAT :=
+  ⟨satisfiable_unitClause, fun h => not_satisfiable_contradiction h.2⟩
 
 /-- The graph of the unsatisfiable 3-CNF structure `x ∧ ¬x` is not three-colorable. -/
 example : ¬(letI := contradiction;
@@ -144,36 +142,28 @@ example : ¬(letI := contradiction; graph.Colorable 3
 
 /-! ### Clients of the reductions -/
 
-/-- **3COL reduces to SAT**, through the grounding of its defining sentence. -/
-example : Reduces graph.ThreeColorable.{0} cnf.SAT.{0} :=
-  graph.definable_ThreeColorable.reduces_SAT fun _ _ => graph.colorable_of_isEmpty
-
-/-- **3SAT reduces to SAT**, through Fagin's theorem and the NP-hardness of SAT. -/
-example : Reduces cnf.ThreeSAT.{0} cnf.SAT.{0} :=
-  cnf.reduces_SAT_of_queryLanguage_mem_NP cnf.vocabulary cnf.isoClosed_ThreeSAT
-    cnf.queryLanguage_ThreeSAT_mem_NP
-    fun _ _ => ⟨cnf.isThreeCNF_of_isEmpty, cnf.satisfiable_of_isEmpty⟩
+/-- **3COL and 3SAT reduce to SAT**, 3SAT reduces to classical 3COL, and 3COL is ESO-definable. -/
+example :
+    Reduces graph.ThreeColorable.{0} cnf.SAT.{0} ∧
+    Reduces cnf.ThreeSAT.{0} cnf.SAT.{0} ∧
+    ESO.Definable graph.ThreeColorable.{0} ∧
+    Reduces cnf.SAT.{0} cnf.SAT.{0} ∧
+    Reduces cnf.ThreeSAT.{0} graph.SimpleThreeColorable.{0} :=
+  ⟨graph.definable_ThreeColorable.reduces_SAT fun _ _ => graph.colorable_of_isEmpty,
+   cnf.reduces_SAT_of_queryLanguage_mem_NP cnf.vocabulary cnf.isoClosed_ThreeSAT
+     cnf.queryLanguage_ThreeSAT_mem_NP
+     (fun _ _ => ⟨cnf.isThreeCNF_of_isEmpty, cnf.satisfiable_of_isEmpty⟩),
+   (ESO.definable_iff_reduces_SAT fun _ _ => graph.colorable_of_isEmpty).2
+     (graph.definable_ThreeColorable.reduces_SAT fun _ _ => graph.colorable_of_isEmpty),
+   (cnf.reduces_SAT_iff_isoClosed_and_queryLanguage_mem_NP cnf.vocabulary
+     fun _ _ => cnf.satisfiable_of_isEmpty).2 ⟨cnf.isoClosed_SAT, cnf.queryLanguage_SAT_mem_NP⟩,
+   cnf.reduces_ThreeSAT_SimpleThreeColorable⟩
 
 /-- The reductions compose: 3SAT reduces to 3COL, which reduces to SAT. -/
 example : Reduces cnf.ThreeSAT.{0} cnf.SAT.{0} :=
   cnf.reduces_ThreeSAT_ThreeColorable.trans
     (graph.definable_ThreeColorable.reduces_SAT fun _ _ => graph.colorable_of_isEmpty)
     cnf.isoClosed_SAT
-
-/-- 3COL is existential second-order definable, as it reduces to SAT. -/
-example : ESO.Definable graph.ThreeColorable.{0} :=
-  (ESO.definable_iff_reduces_SAT fun _ _ => graph.colorable_of_isEmpty).2
-    (graph.definable_ThreeColorable.reduces_SAT fun _ _ => graph.colorable_of_isEmpty)
-
-/-- The classes containing every empty structure that are first-order reducible to SAT are the
-classes in NP closed under isomorphism; SAT itself is one. -/
-example : Reduces cnf.SAT.{0} cnf.SAT.{0} :=
-  (cnf.reduces_SAT_iff_isoClosed_and_queryLanguage_mem_NP cnf.vocabulary
-    fun _ _ => cnf.satisfiable_of_isEmpty).2 ⟨cnf.isoClosed_SAT, cnf.queryLanguage_SAT_mem_NP⟩
-
-/-- 3SAT reduces to classical 3COL by an order-free interpretation. -/
-example : Reduces cnf.ThreeSAT.{0} graph.SimpleThreeColorable.{0} :=
-  cnf.reduces_ThreeSAT_SimpleThreeColorable
 
 /-! ### Milestone-two clients -/
 
@@ -222,17 +212,18 @@ example : letI := unitClause;
   rw [graph.satisfiable_cnfInterpretation_iff, cnf.colorable_coloringInterpretation_iff]
   exact ⟨cnf.isThreeCNF_of_subsingleton, satisfiable_unitClause⟩
 
-/-- The two order-free 3SAT/3COL interpretations compose. -/
-example : Reduces cnf.ThreeSAT.{0} cnf.ThreeSAT.{0} :=
-  cnf.reduces_ThreeSAT_ThreeColorable.trans graph.reduces_ThreeColorable_ThreeSAT
-    cnf.isoClosed_ThreeSAT
-
-example : ReducesNontrivial cnf.SAT.{0} sizedGraph.IndependentSet.{0} :=
-  cnf.reducesNontrivial_SAT_IndependentSet
-
-example : ESO.Definable sizedGraph.Clique.{0} := sizedGraph.definable_Clique
-
-example : ESO.Definable sizedGraph.VertexCover.{0} := sizedGraph.definable_VertexCover
+/-- The two order-free 3SAT/3COL interpretations compose, and `Clique` and `VertexCover` are
+ESO-definable. -/
+example :
+    Reduces cnf.ThreeSAT.{0} cnf.ThreeSAT.{0} ∧
+    ReducesNontrivial cnf.SAT.{0} sizedGraph.IndependentSet.{0} ∧
+    ESO.Definable sizedGraph.Clique.{0} ∧
+    ESO.Definable sizedGraph.VertexCover.{0} :=
+  ⟨cnf.reduces_ThreeSAT_ThreeColorable.trans graph.reduces_ThreeColorable_ThreeSAT
+     cnf.isoClosed_ThreeSAT,
+   cnf.reducesNontrivial_SAT_IndependentSet,
+   sizedGraph.definable_Clique,
+   sizedGraph.definable_VertexCover⟩
 
 /-- The empty-clause coloring graph maps to an unsatisfiable 3-CNF structure. -/
 example : ¬(letI := emptyClause;

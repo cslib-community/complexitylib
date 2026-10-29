@@ -111,7 +111,6 @@ theorem computableInPolyTime_uniqueClauses [DecidableEq State] :
   refine .of_tidy ?_
   fun_prop [uniqueClauses]
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Build input-symbol clauses from computed input, certificate length, time and position. -/
 @[fun_prop]
 theorem computableInPolyTime_inputClauses {α : Type} {enc : α ↪ List Bool}
@@ -123,11 +122,6 @@ theorem computableInPolyTime_inputClauses {α : Type} {enc : α ↪ List Bool}
     ComputableInPolyTime
       (fun a => inputClauses (k := k) (State := State) (u a) (L a) (t a) (j a))
       enc (encList (encList (encPair encVar encBool))) := by
-  have hu := hu.tidy
-  have hL := hL.tidy
-  have ht := ht.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
   fun_prop [inputClauses]
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in

@@ -13,7 +13,7 @@ overflow and a composition with two independently generated three-to-two reducer
 namespace ComplexityTests.CarrySaveNative
 
 open Cslib.Circuits Cslib.Circuits.Boolean
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 example : csa3to2Code 0 = ([], []) := by decide
 example : csa4to2Code 0 = ([], []) := by decide
@@ -40,13 +40,13 @@ private def twice3to2 (w : ℕ) : Circuit signature (w + (w + w)) ((w + w) + (w 
 
 /-- A client generates both reducers and feeds their shared-input outputs to a four-to-two
 reducer. The full resulting code, not just a size bound, is uniformly native polynomial-time. -/
-theorem composed_generator : ComputableTidilyInPolyTime
+theorem composed_generator : ComputableInPolyTime
     (fun w => ((csa4to2 w).comp (twice3to2 w)).code) encUnary encCode := by
   have hw := unary_to_binary
-  have hn : ComputableTidilyInPolyTime (fun w : ℕ => w + (w + w)) encUnary encNat := by fun_prop
-  have h := (computableInPolyTime_compCode (.of_tidy hn) computableInPolyTime_csa4to2
-    (computableInPolyTime_appendCode (.of_tidy hn) computableInPolyTime_csa3to2
-      computableInPolyTime_csa3to2)).tidy
+  have hn : ComputableInPolyTime (fun w : ℕ => w + (w + w)) encUnary encNat := by fun_prop
+  have h := computableInPolyTime_compCode hn computableInPolyTime_csa4to2
+    (computableInPolyTime_appendCode hn computableInPolyTime_csa3to2
+      computableInPolyTime_csa3to2)
   simpa only [appendCode_code, compCode_code, twice3to2] using h
 
 end ComplexityTests.CarrySaveNative

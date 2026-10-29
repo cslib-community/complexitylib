@@ -37,6 +37,8 @@ rules for `fun_prop`.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq`, `.beq`: equality for fixed encodings.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and'`, `.decide_and`, `.cond`, `.ite_decide`:
   compound guards and conditionals with fixed intermediate Boolean encodings.
+* `Turing.MultiTapeTM.ComputableInPolyTime.decide_or`, `.bne`: disjunction and Boolean inequality
+  for plain certificates.
 -/
 
 @[expose] public section
@@ -245,3 +247,25 @@ theorem decide_ne [DecidableEq β] {left right : α → β}
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 /-! ### Plain polynomial-time automation -/
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_or` for plain certificates. -/
+@[fun_prop]
+theorem decide_or {left right : α → Prop} [∀ a, Decidable (left a)] [∀ a, Decidable (right a)]
+    (hleft : ComputableInPolyTime (fun a => decide (left a)) encA encBool)
+    (hright : ComputableInPolyTime (fun a => decide (right a)) encA encBool) :
+    ComputableInPolyTime (fun a => decide (left a ∨ right a)) encA encBool := by
+  simpa only [Bool.decide_or, Function.comp_def] using bool_or.comp (hleft.prod hright)
+
+/-- Lawful Boolean inequality compares computed values through their common encoding. -/
+@[fun_prop]
+theorem bne [BEq β] [LawfulBEq β] {left right : α → β}
+    (hleft : ComputableInPolyTime left encA encB)
+    (hright : ComputableInPolyTime right encA encB) :
+    ComputableInPolyTime (fun x => left x != right x) encA encBool := by
+  simpa only [_root_.bne, Function.comp_def] using bool_not.comp (hleft.beq hright)
+
+end Turing.MultiTapeTM.ComputableInPolyTime

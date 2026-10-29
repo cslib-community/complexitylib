@@ -46,8 +46,8 @@ capabilities.
 * `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.of_enc_eq`: reuse identical encoded outputs
   with the same machine and exact time and space bounds.
 
-* `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace.comp`, `.ite`, `.append`, `.pair`:
-  closure properties of linear time and space.
+* `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace.ite`, `.append`: closure properties of
+  linear time and space.
 * `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace.const`: constant functions.
 * `Turing.MultiTapeTM.Transducer.computableTidilyInLinearTimeAndSpace`: functions computed by
   finite-state transducers.
@@ -87,18 +87,6 @@ namespace ComputableTidilyInLinearTimeAndSpace
 
 variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}
   {encOut : γ ↪ List Bool}
-
-/-- Compositions of functions tidily computable in linear time and space. -/
-public theorem comp {f : β → γ} {g : α → β}
-    (hf : ComputableTidilyInLinearTimeAndSpace f encMid encOut)
-    (hg : ComputableTidilyInLinearTimeAndSpace g encIn encMid) :
-    ComputableTidilyInLinearTimeAndSpace (f ∘ g) encIn encOut := by
-  obtain ⟨c₁, h₁⟩ := hg
-  obtain ⟨c₂, h₂⟩ := hf
-  -- vendored: crei's `comp` is `comp_linear` here, as cslib #1111 restates `comp`
-  obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.comp_linear h₂ h₁
-  refine ⟨c₁ + (c₂ + c) * (c₁ + 1), h.mono (fun a => ?_) (fun a => ?_)⟩ <;>
-  nlinarith [h₁.length_le a]
 
 /-- A function tidily computable in linear time and space on all inputs is so on the inputs
 satisfying `p`. -/
@@ -162,18 +150,5 @@ public theorem Transducer.computableTidilyInLinearTimeAndSpace {Q : Type} [Finit
     {f : α → β} (hf : ∀ a, encOut (f a) = τ.run τ.q₀ (encIn a)) :
     ComputableTidilyInLinearTimeAndSpace f encIn encOut :=
   ⟨8, (τ.computableTidilyInTimeAndSpace hf).mono (fun _ => by omega) (fun _ => Nat.zero_le _)⟩
-
-/-- Pairing functions tidily computable in linear time and space. -/
-public theorem ComputableTidilyInLinearTimeAndSpace.pair {α β₁ β₂ : Type u}
-    {encIn : α ↪ List Bool} {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool}
-    {enc : β₁ × β₂ ↪ List Bool} [hP : PairEncoding enc₁ enc₂ enc] {f : α → β₁} {g : α → β₂}
-    (hf : ComputableTidilyInLinearTimeAndSpace f encIn enc₁)
-    (hg : ComputableTidilyInLinearTimeAndSpace g encIn enc₂) :
-    ComputableTidilyInLinearTimeAndSpace (fun x => (f x, g x)) encIn enc := by
-  obtain ⟨c₁, h₁⟩ := hf
-  obtain ⟨c₂, h₂⟩ := hg
-  exact Internal.NormalForm.linear
-    (ComputableInLinearTimeAndSpace.pair ⟨c₁, h₁.computableInTimeAndSpace⟩
-      ⟨c₂, h₂.computableInTimeAndSpace⟩)
 
 end Turing.MultiTapeTM

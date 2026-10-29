@@ -29,15 +29,13 @@ private def flip : Circuit signature 1 1 :=
 /-- Two-bit increment modulo four, least significant bit first. -/
 private def inc (x : BitString 2) : BitString 2 := ![!x 0, x 1 ^^ x 0]
 
--- Time bits `true, true` (least significant first) encode `3`: `00` becomes `11`.
-example : inputTimeIterate inc 2 ![false, false, true, true] = ![true, true] := by decide
-
--- Time bits `false, true` encode `2`: `01` becomes `11`.
-example : inputTimeIterate inc 2 ![true, false, false, true] = ![true, true] := by decide
-
--- Without time bits the state is returned.
-example (y : BitString (2 + 0)) : inputTimeIterate inc 0 y = fun i => y (Fin.castAdd 0 i) :=
-  inputTimeIterate_zero inc y
+-- Time bits `true, true` (least significant first) encode `3` (`00` becomes `11`); time bits
+-- `false, true` encode `2` (`01` becomes `11`); and without time bits the state is returned.
+example :
+    inputTimeIterate inc 2 ![false, false, true, true] = ![true, true] ∧
+    inputTimeIterate inc 2 ![true, false, false, true] = ![true, true] ∧
+    inputTimeIterate inc 0 ![true, false] = ![true, false] :=
+  ⟨by decide, by decide, (inputTimeIterate_zero inc ![true, false]).trans (by decide)⟩
 
 -- Every input time of the flip, with the fixed-power circuits at `L = 1`.
 example (m : ℕ) : ∃ out : Circuit signature (1 + m) 1,
@@ -46,19 +44,15 @@ example (m : ℕ) : ∃ out : Circuit signature (1 + m) 1,
   simpa [flip] using variable_time flip m 1 one_pos (by decide)
 
 -- The shared lookup returns the stored value, all-false for an absent key, and the OR of the
--- values stored under a repeated key.
-example : lookupOr ![![true, false], ![false, true]] ![![true], ![false]] ![true, false] =
-    ![true] := by decide
-
-example : lookupOr ![![true, false], ![false, true]] ![![true], ![false]] ![true, true] =
-    ![false] := by decide
-
-example : lookupOr ![![true, false], ![true, false]] ![![true, false], ![false, true]]
-    ![true, false] = ![true, true] := by decide
-
--- Without a flagged time the finished state is the fallback.
-example : finishHit (w := 2) inc 1 ![false, false] ![![true, true], ![true, false]]
-    ![false, true] = ![false, true] := by decide
+-- values stored under a repeated key; without a flagged time the finished state is the fallback.
+example :
+    lookupOr ![![true, false], ![false, true]] ![![true], ![false]] ![true, false] = ![true] ∧
+    lookupOr ![![true, false], ![false, true]] ![![true], ![false]] ![true, true] = ![false] ∧
+    lookupOr ![![true, false], ![true, false]] ![![true, false], ![false, true]]
+      ![true, false] = ![true, true] ∧
+    finishHit (w := 2) inc 1 ![false, false] ![![true, true], ![true, false]]
+      ![false, true] = ![false, true] := by
+  decide
 
 -- The identity repeats immediately, so the checkpoint-free power applies at `L = 2`.
 example (T : ℕ) (hT : 4 ≤ T) : ∃ out : Circuit signature 1 1,
@@ -70,20 +64,16 @@ example (T : ℕ) (hT : 4 ≤ T) : ∃ out : Circuit signature 1 1,
   rw [hout x ⟨0, 1, by decide, by decide, by simp [hid]⟩, hid, Function.iterate_id]
   rfl
 
--- Two independent flips share one dictionary.
-example (T : ℕ) : ∃ out : Circuit signature (2 * 1) (2 * 1),
-    out.Computes interpretation (blockMap (flip.eval interpretation)^[T] 2) ∧
-      out.size ≤ 100000 * batchBudget 1 1 2 2 1 := by
+-- Two independent flips share one dictionary, and the empty batch is allowed.
+example (c : Circuit signature 2 2) (T : ℕ) :
+    (∃ out : Circuit signature (2 * 1) (2 * 1),
+      out.Computes interpretation (blockMap (flip.eval interpretation)^[T] 2) ∧
+        out.size ≤ 100000 * batchBudget 1 1 2 2 1) ∧
+    (∃ out : Circuit signature (0 * 2) (0 * 2),
+      out.Computes interpretation (blockMap (c.eval interpretation)^[T] 0) ∧
+        out.size ≤ 100000 * batchBudget 2 c.size 4 0 1) := by
+  refine ⟨?_, batched_fixed_power c 0 T 1 (by decide) one_pos (by decide)⟩
   simpa [flip] using batched_fixed_power flip 2 T 1 (by decide) one_pos (by decide)
-
--- The empty batch is allowed.
-example (c : Circuit signature 2 2) (T : ℕ) : ∃ out : Circuit signature (0 * 2) (0 * 2),
-    out.Computes interpretation (blockMap (c.eval interpretation)^[T] 0) ∧
-      out.size ≤ 100000 * batchBudget 2 c.size 4 0 1 :=
-  batched_fixed_power c 0 T 1 (by decide) one_pos (by decide)
-
--- A single trajectory recovers the fixed-power tradeoff.
-example (n s M L : ℕ) : batchBudget n s M 1 L = powerBudget n s M L := batchBudget_one n s M L
 
 -- Two flips, each with its own time.
 example (m : ℕ) : ∃ out : Circuit signature (2 * (1 + m)) (2 * 1),
@@ -121,15 +111,16 @@ example : ∃ out : Circuit signature 6 6,
       directProductInput ![false, false, false, true, false, false] member ∈ leftHalf := by decide
   exact (hout hx).trans (by decide)
 
--- The promise is proper, and the improved budget is strictly smaller than the global one.
-example : ¬∀ member : Fin 3,
-    directProductInput ![true, false, false, true, false, false] member ∈ leftHalf := by decide
-
-example : batchBudget 2 1 leftHalf.card 3 1 = 165 ∧ batchBudget 2 1 4 3 1 = 219 := by decide
-
--- Prefix containment does not assume invariance: this singleton is left after one step.
-example : flipTail.eval interpretation ![false, false] ∉
-    ({![false, false]} : Finset (BitString 2)) := by decide
+-- A single trajectory recovers `powerBudget`; the promise is proper; the improved budget is
+-- strictly smaller than the global one; and prefix containment does not assume invariance.
+example :
+    batchBudget 2 1 leftHalf.card 1 1 = powerBudget 2 1 leftHalf.card 1 ∧
+    (¬∀ member : Fin 3,
+      directProductInput ![true, false, false, true, false, false] member ∈ leftHalf) ∧
+    (batchBudget 2 1 leftHalf.card 3 1 = 165 ∧ batchBudget 2 1 4 3 1 = 219) ∧
+    flipTail.eval interpretation ![false, false] ∉
+      ({![false, false]} : Finset (BitString 2)) :=
+  ⟨batchBudget_one 2 1 leftHalf.card 1, by decide, by decide, by decide⟩
 
 example : ∃ out : Circuit signature 6 6,
     out.eval interpretation ![false, false, false, false, false, false] =
