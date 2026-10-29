@@ -68,18 +68,16 @@ example : (2 ^ ([false, true] : List Bool).length + 2) % 6 = 0 := by decide
 
 example : (2 ^ ([false] : List Bool).length + 2) % 6 ≠ 0 := by decide
 
-example : {w : List Bool | 2 ^ w.length % 0 ≠ 0} ∈ PSPACE encBits :=
-  ModP_subset_PSPACE 0 ⟨_, power_mem, fun _ => Iff.rfl⟩
+example :
+    {w : List Bool | 2 ^ w.length % 0 ≠ 0} ∈ PSPACE encBits ∧
+    {w : List Bool | 2 ^ w.length % 1 ≠ 0} ∈ PSPACE encBits :=
+  ⟨ModP_subset_PSPACE 0 ⟨_, power_mem, fun _ => Iff.rfl⟩,
+   ModP_subset_PSPACE 1 ⟨_, power_mem, fun _ => Iff.rfl⟩⟩
 
-example : {w : List Bool | 2 ^ w.length % 1 ≠ 0} ∈ PSPACE encBits :=
-  ModP_subset_PSPACE 1 ⟨_, power_mem, fun _ => Iff.rfl⟩
-
-example {A : Set (List Bool)} (hA : A ∈ PP encBits) : Aᶜ ∈ PSPACE encBits :=
-  compl_mem_PSPACE (PP_subset_PSPACE hA)
-
-example {A : Set (List Bool)} (hA : A ∈ PP encBits) :
-    NPWithOracle A encBits ⊆ PSPACE encBits :=
-  NPWithOracle_subset_PSPACE_of_mem_PP hA
+example {A L : Set (List Bool)} (hA : A ∈ PP encBits) (hL : L ∈ NPWithOracle A encBits) :
+    Aᶜ ∈ PSPACE encBits ∧ Lᶜ ∈ PSPACE encBits :=
+  ⟨compl_mem_PSPACE (PP_subset_PSPACE hA),
+   compl_mem_PSPACE (NPWithOracle_subset_PSPACE_of_mem_PP hA hL)⟩
 
 example : {w : List Bool | w.headD false = true} ∈ PSPACE encBits :=
   PWithPPOracle_subset_PSPACE

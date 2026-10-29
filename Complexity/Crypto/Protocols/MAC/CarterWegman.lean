@@ -1158,7 +1158,7 @@ theorem isOraclePPT_prfPadDistinguisher
   have hq : IsOraclePPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool =>
         List.take p.1 <$> ProbOracleComp.query ((), List.replicate p.1 false)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   exact (hq.bind_with ((htest.preprocess
     (prepare := fun p : (ℕ × List Bool) × List Bool => (p.1.1, p.2))
     (by polytime)).isOraclePPTOn)).isOraclePPT
@@ -1788,32 +1788,30 @@ theorem isOraclePPT_prfMultiPadDistinguisher
       (fun p : ℕ × List (List Bool) =>
         test p.1 (fun i => BitString.ofList p.1 (p.2.getD i [])))) :
     IsOraclePPT encBool (prfMultiPadDistinguisher Q nonce test) := by
-  have hQ_tidy := hQ.tidy
-  have hnonce_tidy := hnonce.tidy
   have hq : IsOraclePPTOn
       (encPair (encPair encUnary encBits) (encList encBits))
       encBits
       (fun p : (ℕ × List Bool) × List (List Bool) =>
         List.take p.1.1 <$> ProbOracleComp.query ((), nonce p.1.1 p.2.length)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   have hstep : IsOraclePPTOn
       (encPair (encPair encUnary encBits) (encList encBits))
       (encList encBits)
       (fun p : (ℕ × List Bool) × List (List Bool) =>
         prfPadCollectStep p.1.1 nonce p.2) := by
     unfold prfPadCollectStep
-    exact hq.map_with
+    exact hq.map_with'
       (f := fun (p : (ℕ × List Bool) × List (List Bool)) reply => p.2 ++ [reply])
       (by polytime)
   have hpoly : PolyBounded (fun p : ℕ × List Bool => (encPair encUnary encBits p).length)
       (fun p : ℕ × List Bool => 2 * p.1 + 2) := by
-    have h1 : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => 2 * p.1 + 2)
+    have h1 : ComputableInPolyTime (fun p : ℕ × List Bool => 2 * p.1 + 2)
         (encPair encUnary encBits) encUnary := by polytime
     simpa only [encUnary_apply, List.length_replicate] using h1.polyBounded_length
   have hiter : IsOraclePPTOn (encPair encUnary encBits) (encList encBits)
       (fun p : ℕ × List Bool =>
         OracleComp.iterate (Q p.1) (prfPadCollectStep p.1 nonce) []) := by
-    refine IsOraclePPTOn.iterateWith_of_bounded_growth
+    refine IsOraclePPTOn.iterateWith_of_bounded_growth'
       (initial := fun _ : ℕ × List Bool => ([] : List (List Bool)))
       (count := fun p : ℕ × List Bool => Q p.1)
       (step := fun (p : ℕ × List Bool) pads => prfPadCollectStep p.1 nonce pads)
@@ -3007,8 +3005,6 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
     IsOraclePPT encBool (prfNonceToPrfDistinguisher msgLen seed hash adversary) := by
-  have hmsgLen_tidy := hmsgLen.tidy
-  have hhash_tidy := hhash.tidy
   have hhandler : IsOraclePPTOn
       (encPair (encPair (encPair encUnary encBits) encBits)
         (encPair (encPair (encFinite Unit) encBits)
@@ -3018,7 +3014,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
           ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
         cwNonceLogHandler msgLen hash p.1.1.1 p.1.2 p.2.1 p.2.2) := by
     unfold cwNonceLogHandler
-    have hcond : ComputableTidilyInPolyTime
+    have hcond : ComputableInPolyTime
         (fun p : ((ℕ × List Bool) × List Bool) ×
             ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
           ((unframe p.2.1.2).length == msgLen p.1.1.1) &&
@@ -3041,7 +3037,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
             let tag := BitString.listXor p.1.1.1 [hash p.1.1.1 p.1.2 msg, pad]
             (tag, ((msg, nonce), tag) :: p.2.2)) <$>
             (List.take p.1.1.1 <$> ProbOracleComp.query ((), dropFrame p.2.1.2))) :=
-      (IsOraclePPTOn.query_take () (by polytime) (by polytime)).map_with (by polytime)
+      (IsOraclePPTOn.query_take' () (by polytime) (by polytime)).map_with' (by polytime)
     have hno : IsOraclePPTOn
         (encPair (encPair (encPair encUnary encBits) encBits)
           (encPair (encPair (encFinite Unit) encBits)
@@ -3050,7 +3046,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
         (fun p : ((ℕ × List Bool) × List Bool) ×
             ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
           pure ([], ((unframe p.2.1.2, dropFrame p.2.1.2), []) :: p.2.2)) :=
-      (show ComputableTidilyInPolyTime
+      (show ComputableInPolyTime
         (fun p : ((ℕ × List Bool) × List Bool) ×
             ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
           (([] : List Bool),
@@ -3060,7 +3056,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
             (encList (encPair (encPair encBits encBits) encBits))))
         (encPair encBits (encList (encPair (encPair encBits encBits) encBits))) by
           polytime).isOraclePPTOn (Operation := Unit)
-    exact IsOraclePPTOn.cond hcond hyes hno
+    exact IsOraclePPTOn.cond' hcond hyes hno
   have hrun : IsOraclePPTOn
       (encPair (encPair encUnary encBits) encBits)
       (encPair (encPair (encPair encBits encBits) encBits)
@@ -3071,7 +3067,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (cwNonceLogHandler msgLen hash caller.1.1 caller.2))
           (adversary caller.1.1 [])).run []) := by
-    apply hadversary.run_interpret_preprocess_open
+    apply hadversary.run_interpret_preprocess_open'
       (prepare := fun caller : (ℕ × List Bool) × List Bool => (caller.1.1, ([] : List Bool)))
       (initial := fun _ => ([] : List ((List Bool × List Bool) × List Bool)))
       (resources := fun caller query => 2 * caller.1.1 + 4 * query.length + 14)
@@ -3106,7 +3102,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
       (fun p : ((ℕ × List Bool) × List Bool) ×
           (((List Bool × List Bool) × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
         List.take p.1.1.1 <$> ProbOracleComp.query ((), p.2.1.1.2)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   have hpost : ComputableTidilyInPolyTime
       (fun p : (((ℕ × List Bool) × List Bool) ×
           (((List Bool × List Bool) × List Bool) × List ((List Bool × List Bool) × List Bool))) ×
@@ -3121,6 +3117,8 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
             (encList (encPair (encPair encBits encBits) encBits))))
         encBits)
       encBool := by
+    have hmsgLen_tidy := hmsgLen.tidy
+    have hhash_tidy := hhash.tidy
     polytime
   unfold prfNonceToPrfDistinguisher
   exact (hk.bind_with (hrun.bind_with (hq.map_with hpost))).isOraclePPT
@@ -4817,7 +4815,7 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
   have hframe : ComputableTidilyInPolyTime frame encBits encBits :=
     ComputableInPolyTime.frame.tidy
   unfold cwRandomNonceLogHandler
-  have hcond : ComputableTidilyInPolyTime
+  have hcond : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) ×
           ((Unit × List Bool) × List (List Bool × List Bool)) =>
         p.2.1.2.length == msgLen p.1.1.1)
@@ -4850,7 +4848,7 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
       encBits := by
     unfold mkFullTag
     polytime
-  have hpost : ComputableTidilyInPolyTime
+  have hpost : ComputableInPolyTime
       (fun r : ((((ℕ × List Bool) × List Bool) ×
           ((Unit × List Bool) × List (List Bool × List Bool))) × List Bool) × List Bool =>
         (mkFullTag r, (r.1.1.2.1.2, mkFullTag r) :: r.1.1.2.2))
@@ -4861,9 +4859,8 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
               (encList (encPair encBits encBits))))
           encBits)
         encBits)
-      (encPair encBits (encList (encPair encBits encBits))) := by
-    refine ComputableInPolyTime.tidy ?_
-    exact ComputableInPolyTime.prod hmkFullTag
+      (encPair encBits (encList (encPair encBits encBits))) :=
+    ComputableInPolyTime.prod hmkFullTag
       (ComputableInPolyTime.cons'
         (ComputableInPolyTime.prod (by polytime) hmkFullTag)
         (by polytime))
@@ -4883,7 +4880,7 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
           let fullTag := encPair encBits encBits (nonce, tag)
           (fullTag, (msg, fullTag) :: q.1.2.2)) <$>
           (List.take q.1.1.1.1 <$> ProbOracleComp.query ((), q.2))) :=
-    (IsOraclePPTOn.query_take () (by polytime) (by polytime)).map_with hpost
+    (IsOraclePPTOn.query_take' () (by polytime) (by polytime)).map_with' hpost
   have hyes : IsOraclePPTOn
       (encPair (encPair (encPair encUnary encBits) encBits)
         (encPair (encPair (encFinite Unit) encBits)
@@ -4907,7 +4904,7 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
       (fun p : ((ℕ × List Bool) × List Bool) ×
           ((Unit × List Bool) × List (List Bool × List Bool)) =>
         pure ([], (p.2.1.2, []) :: p.2.2)) :=
-    (show ComputableTidilyInPolyTime
+    (show ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) ×
           ((Unit × List Bool) × List (List Bool × List Bool)) =>
         (([] : List Bool), (p.2.1.2, ([] : List Bool)) :: p.2.2))
@@ -4916,7 +4913,7 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
           (encList (encPair encBits encBits))))
       (encPair encBits (encList (encPair encBits encBits))) by
         polytime).isOraclePPTOn (Operation := Unit)
-  exact IsOraclePPTOn.cond hcond hyes hno
+  exact IsOraclePPTOn.cond' hcond hyes hno
 
 private theorem isOraclePPTOn_cwRandomNonceCheck
     {msgLen : ℕ → ℕ} {hash : ℕ → List Bool → List Bool → List Bool}

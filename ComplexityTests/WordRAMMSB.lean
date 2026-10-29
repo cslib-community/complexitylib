@@ -44,19 +44,20 @@ example : ∃ t ≤ 200001, Executes 2 (Program.program 2) (State.init [3]) 1 t 
 def input (w q : ℕ) : Data (Bank.capacity 44 + 4) :=
   ⟨fun i => if i = Bank.inputReg then q else 2 ^ w - 1, fun a => (a + 1) % 2 ^ w⟩
 
-example : ∃ y, ExecWithin 5 (Program.scalarCode 5) (input 5 31) y 200000 ∧
-    y.regs Program.output = 4 ∧ y.mem = (input 5 31).mem := by
+/-- Scalar MSB execution on `31` at width `5` and `0` at width `3`, plus fixed register capacity
+and code-size bounds. -/
+example (w : ℕ) :
+    (∃ y, ExecWithin 5 (Program.scalarCode 5) (input 5 31) y 200000 ∧
+      y.regs Program.output = 4 ∧ y.mem = (input 5 31).mem) ∧
+    (∃ y, ExecWithin 3 (Program.scalarCode 3) (input 3 0) y 200000 ∧
+      y.regs Program.output = 0 ∧ y.mem = (input 3 0).mem) ∧
+    Bank.capacity 44 + 4 = 836 ∧
+    (Program.scalarCode w).size ≤ 200000 := by
   have hlog : (31 : ℕ).log2 = 4 := by decide
-  simpa only [input, ↓reduceIte, hlog] using
-    Program.exec_scalarCode (by decide : 3 ≤ 5) (input 5 31) (by decide)
-
-example : ∃ y, ExecWithin 3 (Program.scalarCode 3) (input 3 0) y 200000 ∧
-    y.regs Program.output = 0 ∧ y.mem = (input 3 0).mem := by
-  simpa only [input, ↓reduceIte, Nat.log2_zero] using
-    Program.exec_scalarCode (by decide : 3 ≤ 3) (input 3 0) (by decide)
-
-/-- Instruction-named registers are a fixed constant independent of physical width. -/
-example : Bank.capacity 44 + 4 = 836 := by decide
-example (w : ℕ) : (Program.scalarCode w).size ≤ 200000 := Program.size_scalarCode w
+  refine ⟨?_, ?_, by decide, Program.size_scalarCode w⟩
+  · simpa only [input, ↓reduceIte, hlog] using
+      Program.exec_scalarCode (by decide : 3 ≤ 5) (input 5 31) (by decide)
+  · simpa only [input, ↓reduceIte, Nat.log2_zero] using
+      Program.exec_scalarCode (by decide : 3 ≤ 3) (input 3 0) (by decide)
 
 end WordRAMMSBTests

@@ -188,11 +188,10 @@ decides a problem within that time. -/
 theorem setOf_mem_DTIME_of_computableInO {enc : α ↪ List Bool} {f : α → Bool}
     {T S : α → ℕ} {t : ℕ → ℕ} (h : Turing.MultiTapeTM.ComputableInO f enc encBool T S)
     (hT : ∀ a, T a ≤ t (enc a).length) : {a | f a = true} ∈ DTIME enc t := by
-  have h := h.tidy
   obtain ⟨c, hc, -⟩ := h
   obtain ⟨s, hs⟩ := exists_le_length enc S
   refine ⟨c, c, fun n => c * (s n + 1), decidableInTimeAndSpace_iff.mpr ⟨f, ?_, fun a => Iff.rfl⟩⟩
-  refine hc.computableInTimeAndSpace.mono (fun a => ?_) fun a => ?_
+  refine hc.mono (fun a => ?_) fun a => ?_
   · have := Nat.mul_le_mul_left c (hT a)
     rw [Nat.mul_add, Nat.mul_one]
     omega
@@ -429,11 +428,9 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
     -- sample a random string and run the verifier on it
     let program (a : α) : ProbComp Bool :=
       (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length)
-    have hcount : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
-      (ComputableTidilyInPolyTime.unary_eval p).comp
-        (ComputableTidilyInPolyTime.encoding_length enc)
-    have hprogram : IsPPTOn enc encBool program :=
-      (ComputableInPolyTime.of_tidy hcount).sampleList.map_with hV
+    have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
+      (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length enc)
+    have hprogram : IsPPTOn enc encBool program := hcount.sampleList.map_with hV
     obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
     refine ⟨d, c * 2 ^ d, c, k, State, hfinite, machine,
       MultiTapePTM.DecidesWithBoundedErrorInTime.mono (t := fun a => c * ((enc a).length + 1) ^ d)
@@ -447,12 +444,13 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
     -- replay the coins
     refine ⟨Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂,
       fun x => decide (machine.runClosedCoins x.2 (enc x.1) = [true]),
-      .of_tidy (ComputableTidilyInPolyTime.decide_eq'
-        ((MultiTapePTM.computableTidilyInPolyTime_runClosedCoins machine).comp
-          ((ComputableTidilyInPolyTime.snd enc encBits).prod
-            ((ComputableTidilyInPolyTime.of_eq (encMid := encBits) fun _ => rfl).comp
-              (ComputableTidilyInPolyTime.fst enc encBits))))
-        (ComputableTidilyInPolyTime.const [true])), fun a => ?_⟩
+      ComputableInPolyTime.decide_eq'
+        ((ComputableInPolyTime.of_tidy
+          (MultiTapePTM.computableTidilyInPolyTime_runClosedCoins machine)).comp
+          ((ComputableInPolyTime.snd enc encBits).prod
+            ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
+              (ComputableInPolyTime.fst enc encBits))))
+        (ComputableInPolyTime.const [true]), fun a => ?_⟩
     have heval : (Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂).eval (enc a).length =
         c₁ * (enc a).length ^ d + c₂ := by
       simp

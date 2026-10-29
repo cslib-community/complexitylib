@@ -30,9 +30,8 @@ example : Parameters.width 1 = 24 ∧ Parameters.samples 1 = 74 ∧
     Parameters.width 2 = 32 ∧ Parameters.samples 2 = 132 := by
   decide +kernel
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Every unary-output native premise is instantiated by the same family, including the modulus.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun security => (Parameters.dimension security, Parameters.noise security,
       Parameters.width security, Parameters.rows security, Parameters.samples security,
       Parameters.modulus security)) encUnary

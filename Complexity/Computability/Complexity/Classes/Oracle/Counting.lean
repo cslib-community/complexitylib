@@ -114,13 +114,13 @@ theorem mem_PWithSharpPOracle_of_testBit {f : α → ℕ} (hf : f ∈ SharpP enc
     {p : Polynomial ℕ} (h : ∀ a, a ∈ L ↔ (f a).testBit (p.eval (enc a).length)) :
     L ∈ PWithSharpPOracle enc := by
   classical
-  have hq : ComputableTidilyInPolyTime (fun a => encPair enc encNat (a, p.eval (enc a).length))
+  have hq : ComputableInPolyTime (fun a => encPair enc encNat (a, p.eval (enc a).length))
       enc encBits :=
-    ComputableTidilyInPolyTime.encoded (f := fun a => (a, p.eval (enc a).length))
-      (ComputableTidilyInPolyTime.id'.prod
-        (ComputableTidilyInPolyTime.unary_to_binary.comp (f := fun n : ℕ => n)
+    ComputableInPolyTime.encoding_comp (f := fun a => (a, p.eval (enc a).length))
+      (ComputableInPolyTime.id'.prod
+        (ComputableInPolyTime.unary_to_binary.comp (f := fun n : ℕ => n)
           (g := fun a => p.eval (enc a).length) (by fun_prop)))
-  exact ⟨α, enc, f, hf, .of_query (.of_tidy hq) fun A hA a =>
+  exact ⟨α, enc, f, hf, .of_query hq fun A hA a =>
     (h a).trans ((hA a (p.eval (enc a).length)).symm.trans decide_eq_true_iff.symm)⟩
 
 end Cslib.Complexity

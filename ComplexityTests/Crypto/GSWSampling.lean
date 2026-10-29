@@ -116,9 +116,12 @@ example (μ : Bool) :
   exists_uniform_seed_keyGen_encrypt 1 1 6 1 μ
 
 -- These certificates grow with unary width and retain binary numeric outputs.
-example : IsPPTOn encUnary encNat sampleBinaryNat := isPPTOn_sampleBinaryNat
-
-example : IsPPTOn encUnary encIntBin sampleCenteredBinomial := isPPTOn_sampleCenteredBinomial
+example : IsPPTOn encUnary (encPair encNat encIntBin)
+    (fun width => do
+      let a ← sampleBinaryNat width
+      (a, ·) <$> sampleCenteredBinomial width) :=
+  isPPTOn_sampleBinaryNat.bind_with
+    ((isPPTOn_sampleCenteredBinomial.preprocess (by fun_prop)).map_with (by fun_prop))
 
 example : serializeKeyInputs keyInputs = ([5], ([[3]], [1])) := by decide +kernel
 
@@ -148,11 +151,9 @@ example : ProbComp.eval (decodeCoins 1 1 6 <$> sampleCoinsSerialized 1 1 6) =
 -- Every dimension grows with the input; the modulus itself is not encoded in unary.
 example : IsPPTOn encUnary encSerializedKeyInputs
     (fun size => sampleKeyInputsSerialized size size size size) :=
-  isPPTOn_sampleKeyInputsSerialized (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy
-    (by fun_prop)) (.of_tidy (by fun_prop))
+  isPPTOn_sampleKeyInputsSerialized (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
 
 example : IsPPTOn encUnary encSerializedCoins (fun size => sampleCoinsSerialized size size size) :=
-  isPPTOn_sampleCoinsSerialized (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-    fun_prop))
+  isPPTOn_sampleCoinsSerialized (by fun_prop) (by fun_prop) (by fun_prop)
 
 end ComplexityTests.GSWSampling

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.Oracle.Diagonal
 public import Complexity.Computability.Complexity.Classes.Oracle.Deterministic
 public import Complexity.Computability.Complexity.Classes.Oracle.Closure
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!
@@ -130,37 +131,15 @@ theorem exists_unaryLengthLanguage_notMem_PWithOracle :
 
 namespace BakerGillSolovay
 
-/-- Tracks whether every symbol read so far is `true`, and emits the verdict at the end. -/
-private def allTrue : Transducer Bool Bool where
-  q₀ := true
-  step q b := (q && b, [])
-  final q := [q]
-  length_step_le _ _ := by simp
-  length_final_le _ := by simp
-
-private theorem allTrue_run (q : Bool) (x : List Bool) : allTrue.run q x = [q && x.all id] := by
-  induction x generalizing q with
-  | nil => simp [allTrue]
-  | cons b x ih =>
-    rw [Transducer.run_cons, ih]
-    simp [allTrue, Bool.and_assoc]
-
 /-- Whether the first word consists of `true` symbols only, beside a Boolean, in polynomial
 time. -/
-private theorem computableTidilyInPolyTime_all_and :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_all_and :
+    ComputableInPolyTime
       (fun pair : (List Bool × List Bool) × Bool => pair.1.1.all id && pair.2)
-      (encPair (encPair encBits encBits) encBool) encBool := by
-  have hall : ComputableTidilyInPolyTime (fun x : List Bool => x.all id) encBits encBool :=
-    (ComputableTidilyInDegree.of_linear (allTrue.computableTidilyInLinearTimeAndSpace fun x => by
-      rw [allTrue_run]; simp [encBits, allTrue])).computableTidilyInPolyTime
-  have hand : ComputableTidilyInPolyTime (fun q : Bool × Bool => q.1 && q.2)
-      (encPair encBool encBool) encBool :=
-    (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
-      fun q : Bool × Bool => q.1 && q.2).computableTidilyInPolyTime
-  exact hand.comp ((hall.comp ((ComputableTidilyInPolyTime.fst encBits encBits).comp
-    (ComputableTidilyInPolyTime.fst (encPair encBits encBits) encBool))).prod
-    (ComputableTidilyInPolyTime.snd (encPair encBits encBits) encBool))
+      (encPair (encPair encBits encBits) encBool) encBool :=
+  ComputableInPolyTime.bool_and.comp
+    ((ComputableInPolyTime.bitsAllWithInput (test := fun _ => id)
+      ((ComputableInPolyTime.fst _ _).comp (.fst _ _)) (.snd _ _)).prod (.snd _ _))
 
 end BakerGillSolovay
 
@@ -171,9 +150,9 @@ theorem unaryLengthLanguage_mem_NPWithOracle (B : Set (List Bool)) :
     unaryLengthLanguage B ∈ NPWithOracle B encBits := by
   refine ⟨Polynomial.X, fun xu : List Bool × List Bool => xu.1.all id && decide (xu.2 ∈ B),
     ((computableInPolyTimeWithOracle_mem B).preprocess
-      (.of_tidy (ComputableTidilyInPolyTime.snd encBits encBits))).map_with
+      (.snd encBits encBits)).map_with
       (g := fun (xu : List Bool × List Bool) b => xu.1.all id && b)
-      (.of_tidy BakerGillSolovay.computableTidilyInPolyTime_all_and), fun x => ?_⟩
+      BakerGillSolovay.computableInPolyTime_all_and, fun x => ?_⟩
   · simp only [unaryLengthLanguage, Set.mem_ofPred_eq, Polynomial.eval_X, encBits,
       Function.Embedding.refl_apply, Bool.and_eq_true, List.all_eq_true, id, decide_eq_true_eq]
     constructor
