@@ -69,8 +69,8 @@ theorem clauseGeometry_clause_bounds (φ : CNF ℕ) (d : Graph.OrthogonalDrawing
     InPositiveLocalBox p := by
   obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hp
   apply collarPoint_in_positiveBox
-  have hb := profile_prefix_clause_interior (clauseProfile c) q hq
-  exact ⟨hb.1.le, hb.2.1.le, hb.2.2.1.le, hb.2.2.2.le⟩
+  obtain ⟨i, rfl⟩ := List.get_of_mem hq
+  simpa [LocalGeometry.clausePosition] using profile_prefix_clause_bounds (clauseProfile c) i
 
 /-- A single actual clause box has distinct clause points. -/
 theorem positiveClauseBlock_positions_nodup (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)

@@ -26,6 +26,19 @@ example : Graph.IsPlanarOrthogonalDrawing
     (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource).2 :=
   isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource
 
+/-- The emitted drawing passes the planarity guard, so the guarded count keeps all four models. -/
+example : SharpDrawnPlanarPositiveOneInExactThreeSATThree
+    (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource) = 4 := by
+  rw [SharpDrawnPlanarPositiveOneInExactThreeSATThree]
+  split
+  · rw [show (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource).1 =
+        toPlanarPositiveOneInExactThreeSATThree mixedSource from rfl,
+      sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree]
+    decide
+  · rename_i h
+    exact
+      (h (isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource)).elim
+
 example : toPlanarPositiveOneInExactThreeSATThree mixedSource ∈
     PlanarPositiveOneInExactThreeSATThree := by
   apply (mem_PlanarPositiveOneInExactThreeSATThree_toPlanar_iff mixedSource).mpr

@@ -32,12 +32,18 @@ counted only on occurring variables, and every ordinary source model has a uniqu
 
 * `PlanarPositiveOneInExactThreeSATThree`: the existential orthogonal-drawing language.
 * `DrawnPlanarPositiveOneInExactThreeSATThree`: the supplied-drawing language.
+* `SharpPlanarPositiveOneInExactThreeSATThree`, `SharpDrawnPlanarPositiveOneInExactThreeSATThree`:
+  the positive exact-one model counts guarded by the existence, respectively the validity, of a
+  planar orthogonal incidence drawing.
 * `toPlanarPositiveOneInExactThreeSATThree`, `toDrawnPlanarPositiveOneInExactThreeSATThree`:
   the actual formula and supplied-drawing compilers.
 
 ## Main results
 
 * `oneModelCount_toPlanarPositiveOneInExactThreeSATThree`: preservation of model counts.
+* `parsimoniousReducible_SharpThreeSAT_SharpPlanarPositiveOneInExactThreeSATThree`,
+  `parsimoniousReducible_SharpThreeSAT_SharpDrawnPlanarPositiveOneInExactThreeSATThree`: native
+  parsimonious reductions from `#3SAT` to the planarity-guarded counts.
 * `PlanarPositiveOneInExactThreeSATThree_npHard`, `PlanarPositiveOneInThreeSATThree_npHard`,
   `DrawnPlanarPositiveOneInExactThreeSATThree_npHard`: NP-hardness of the planar positive
   variants, including the version with the actual drawing supplied.
@@ -74,6 +80,21 @@ def DrawnPlanarPositiveOneInExactThreeSATThree : Set (CNF ℕ × Graph.Orthogona
 def PlanarPositiveOneInThreeSATThree : Set (CNF ℕ) :=
   {φ | φ ∈ PositiveOneInThreeSATThree ∧
     ∃ d, Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d}
+
+open Classical in
+/-- Count positive exact-three, occurrence-three exact-one models of formulas that have a planar
+orthogonal incidence drawing; return zero otherwise. -/
+noncomputable def SharpPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) : ℕ :=
+  if ∃ d, Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d then
+    SharpPositiveOneInExactThreeSATThree φ else 0
+
+open Classical in
+/-- Count positive exact-three, occurrence-three exact-one models when the supplied drawing is a
+planar orthogonal incidence drawing of the formula; return zero otherwise. -/
+noncomputable def SharpDrawnPlanarPositiveOneInExactThreeSATThree
+    (x : CNF ℕ × Graph.OrthogonalDrawing) : ℕ :=
+  if Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph x.1) x.2 then
+    SharpPositiveOneInExactThreeSATThree x.1 else 0
 
 /-- Apply only the constant-factor positive compiler after the existing planarization. -/
 def toPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) : CNF ℕ :=
@@ -237,12 +258,19 @@ theorem sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATT
     simpa only [SharpThreeSATThree, hsource, ↓reduceIte, SharpSAT] using
       sharpThreeSATThree_toThreeSATThree φ)
 
-/-- The planar formula compiler is a native parsimonious reduction of guarded counting problems. -/
-theorem parsimoniousReducible_SharpThreeSAT_planarPositiveOneInExactThreeSATThree :
-    ParsimoniousReducible encCNF encCNF SharpThreeSAT SharpPositiveOneInExactThreeSATThree :=
+/-- The planar formula compiler is a native parsimonious reduction to the planarity-guarded count:
+every output has a planar orthogonal incidence drawing, so the guard never discards a model. -/
+theorem parsimoniousReducible_SharpThreeSAT_SharpPlanarPositiveOneInExactThreeSATThree :
+    ParsimoniousReducible encCNF encCNF SharpThreeSAT
+      SharpPlanarPositiveOneInExactThreeSATThree :=
   ⟨toPlanarPositiveOneInExactThreeSATThree,
-    computableInPolyTime_toPlanarPositiveOneInExactThreeSATThree,
-    fun φ => (sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree φ).symm⟩
+    computableInPolyTime_toPlanarPositiveOneInExactThreeSATThree, fun φ => by
+      rw [SharpPlanarPositiveOneInExactThreeSATThree]
+      split
+      · exact (sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree φ).symm
+      · rename_i h
+        exact
+          (h ⟨_, isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree φ⟩).elim⟩
 
 /-- The full compiler retains linear grid sides relative to the original ordinary 3SAT input. -/
 theorem toDrawnPlanarPositiveOneInExactThreeSATThree_fits (φ : CNF ℕ) :
@@ -298,12 +326,18 @@ theorem DrawnPlanarPositiveOneInExactThreeSATThree_npHard :
     NPHard (encPair encCNF Graph.encOrthogonalDrawing) DrawnPlanarPositiveOneInExactThreeSATThree :=
   ThreeSAT_npHard.trans polyTimeReducible_ThreeSAT_DrawnPlanarPositiveOneInExactThreeSATThree
 
-/-- Supplying the emitted drawing preserves the same exact guarded model counts. -/
-theorem parsimoniousReducible_SharpThreeSAT_drawnPlanarPositiveOneInExactThreeSATThree :
+/-- Supplying the emitted drawing gives a native parsimonious reduction to the count guarded by the
+validity of the supplied drawing: the emitted drawing is always a planar orthogonal incidence
+drawing of the emitted formula. -/
+theorem parsimoniousReducible_SharpThreeSAT_SharpDrawnPlanarPositiveOneInExactThreeSATThree :
     ParsimoniousReducible encCNF (encPair encCNF Graph.encOrthogonalDrawing) SharpThreeSAT
-      (fun x => SharpPositiveOneInExactThreeSATThree x.1) :=
+      SharpDrawnPlanarPositiveOneInExactThreeSATThree :=
   ⟨toDrawnPlanarPositiveOneInExactThreeSATThree,
-    computableInPolyTime_toDrawnPlanarPositiveOneInExactThreeSATThree,
-    fun φ => (sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree φ).symm⟩
+    computableInPolyTime_toDrawnPlanarPositiveOneInExactThreeSATThree, fun φ => by
+      rw [SharpDrawnPlanarPositiveOneInExactThreeSATThree]
+      split
+      · exact (sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree φ).symm
+      · rename_i h
+        exact (h (isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree φ)).elim⟩
 
 end Cslib.Complexity
