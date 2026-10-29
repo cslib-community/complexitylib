@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.Randomized.Expected
+import Complexity.Probability.PMF.Expect
 
 /-!
 # Composable Randomized Word-RAM Data-Structure Subroutines
@@ -17,8 +18,8 @@ This file extends the deterministic `Cslib.WordRAM.SubroutineDS` interface to **
 structures and Las Vegas subroutines** on the Word-RAM — covering both structures initialized from a
 random seed (such as universal hash tables, 2-choice hash tables, and cuckoo hash tables) and
 structures whose operations make random choices via `Instr.rand` (such as treaps, skip lists,
-reservoir samplers, or randomized rehashing); see [MitzenmacherUpfal2017], Sections 1.5, 2.1, and
-2.3.
+reservoir samplers, or randomized rehashing); see [MitzenmacherUpfal2017], Sections 2.1, 2.3, and
+2.4.
 
 ## Core design
 
@@ -50,6 +51,12 @@ density factor `seedSlack : ℝ≥0∞`:
      telescopes these one-step bounds without `ℝ≥0∞` subtraction:
      total expected step cost is at most `initTime + initPotential + D.totalCost charge s₀ ops`.
 
+The sequence theorems charge initialization and subroutine bodies for a fixed operation list.
+`prepare` delivers each operation's arguments by a semantic register replacement; its encoding
+and delivery, caller dispatch and a whole-client driver are not charged. Callers requiring native
+argument preparation can use `call_rename`, whose `B_prep` explicitly charges the preparation
+code. Compiling a standalone body adds the final halt separately via `ExecCodeDist.program_halts`.
+
 ## Main definitions
 
 * `Cslib.WordRAM.Randomized.SubroutineDS`: reusable randomized Word-RAM subroutine certificate for
@@ -65,7 +72,8 @@ density factor `seedSlack : ℝ≥0∞`:
 
 * `Cslib.WordRAM.Randomized.SubroutineDS.initFresh_exec`, `initFresh_rename`: expected-time
   initialization on fresh zeroed memory.
-* `Cslib.WordRAM.Randomized.SubroutineDS.zeroFillCode_exec`, `initClear_exec`, `initClear_rename`:
+* `Cslib.WordRAM.SubroutineCode.zeroFillCode_exec`,
+  `Cslib.WordRAM.Randomized.SubroutineDS.initClear_exec`, `initClear_rename`:
   expected-time initialization on arbitrary dirty memory.
 * `Cslib.WordRAM.Randomized.SubroutineDS.code_rename`, `call_rename`: inline subroutine invocation
   on caller state space `Data r_caller` via register injection `f : Fin r_ds → Fin r_caller`.
@@ -74,7 +82,7 @@ density factor `seedSlack : ℝ≥0∞`:
   or randomized caller steps that do not modify persistent DS registers (`P.input i = false`) or
   `[base, base + space)`.
 * `Cslib.WordRAM.Randomized.SubroutineDS.steps_expected_amortized`, `seq_expected_amortized`:
-  end-to-end telescope theorems bounding total expected time across any admissible operation
+  telescope theorems bounding initialization and expected body time across any admissible operation
   sequence `ops : List D.Op`.
 
 ## References
@@ -82,7 +90,7 @@ density factor `seedSlack : ℝ≥0∞`:
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
   Chapter 17][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing: Randomization and Probabilistic
-  Techniques in Algorithms and Data Analysis*][MitzenmacherUpfal2017], Sections 1.5, 2.1, and 2.3.
+  Techniques in Algorithms and Data Analysis*][MitzenmacherUpfal2017], Sections 2.1, 2.3, and 2.4.
 -/
 
 @[expose] public section
@@ -281,7 +289,7 @@ noncomputable def toRandomized (C : SubroutineDS P D w base params s₀) :
     · calc
         (∑' p, ν p * ((n p : ℝ≥0∞) + ∑' q, PMF.pure ((), y p) q * (C.potential q.2 : ℝ≥0∞)))
           ≤ ∑' p, ν p * ((C.charge s o : ℝ≥0∞) + (C.potential p.2 : ℝ≥0∞)) := by
-            refine ENNReal.tsum_le_tsum fun p => ?_
+            refine tsum_le_tsum fun p => ?_
             by_cases hp_mem : p ∈ ν.support
             · refine mul_le_mul_right ?_ _
               have hp : C.rep s p.2 ∧ C.argMatch o p.2.regs := hsupp p hp_mem
@@ -297,7 +305,7 @@ noncomputable def toRandomized (C : SubroutineDS P D w base params s₀) :
               exact_mod_cast hpot
             · rw [(PMF.apply_eq_zero_iff _ _).mpr hp_mem, zero_mul, zero_mul]
         _ = (C.charge s o : ℝ≥0∞) + ∑' p, ν p * (C.potential p.2 : ℝ≥0∞) := by
-            simp_rw [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
+            simp_rw [mul_add, tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
 
 end Cslib.WordRAM.SubroutineDS
 
@@ -451,57 +459,6 @@ theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
 /-! ### Projection 3: Generic `O(space)` dirty-memory initialization (`zeroFillCode_exec`,
 `initClear_exec`, `initClear_rename`) -/
 
-private def zeroFillSpec : Stateful.Spec.{0, 0, 0} where
-  State := PUnit
-  Op := PEmpty
-  Result o := PEmpty.elim o
-  step _ o := PEmpty.elim o
-
-private noncomputable def toZeroFillDet (C : SubroutineDS P D w base params s₀) :
-    Cslib.WordRAM.SubroutineDS
-      { P with initSetup := .op (.copy P.zeroReg P.zeroReg) }
-      zeroFillSpec w base params PUnit.unit where
-  space := C.space
-  spanTime := C.spanTime
-  setupTime := 1
-  initPotential := 0
-  charge _ o := PEmpty.elim o
-  rep _ x := x.Bounded w
-  potential _ := 0
-  encode o := PEmpty.elim o
-  argMatch o := PEmpty.elim o
-  decode o := PEmpty.elim o
-  bounded h := h
-  rep_unique _ _ := rfl
-  arguments_fit o := PEmpty.elim o
-  encode_matches o := PEmpty.elim o
-  rep_supported _ _ hb _ := hb
-  potential_supported _ _ _ := rfl
-  clear_nodup := C.clear_nodup
-  params_not_clear := C.params_not_clear
-  incCur_eval := C.incCur_eval
-  span_exec := C.span_exec
-  setup_exec {x₁} hx₁ _ hfr _ _ := by
-    refine ⟨x₁.set P.zeroReg (x₁.regs P.zeroReg), ExecWithin.copy, ?_,
-      hx₁.set (hx₁.1 P.zeroReg), Nat.le_refl 0, Modifies.refl _ _⟩
-    simp [Data.set, hfr]
-  step_exec o := PEmpty.elim o
-
-/-- Generic execution of `P.zeroFillCode` clearing `[base, base + C.space)` in `4 * C.space + 6`
-instructions over any basis `B`. -/
-theorem zeroFillCode_exec (C : SubroutineDS P D w base params s₀) {x₁ : Data r_ds}
-    (hx₁ : x₁.Bounded w) (hb₁ : x₁.regs P.baseReg = base)
-    (hfr₁ : x₁.regs P.frontierReg = base + C.space)
-    (hpar₁ : ∀ j, x₁.regs (P.initParams j) = params j) :
-    ∃ x₂, ExecWithin w P.zeroFillCode x₁ x₂ (4 * C.space + 6) ∧
-      x₂.Bounded w ∧
-      x₂.regs P.baseReg = base ∧
-      x₂.regs P.frontierReg = base + C.space ∧
-      (∀ j, x₂.regs (P.initParams j) = params j) ∧
-      (∀ a ∈ (Block.mk base C.space).footprint, x₂.mem a = 0) ∧
-      Modifies (Block.mk base C.space).footprint x₁.mem x₂.mem :=
-  C.toZeroFillDet.zeroFillCode_exec hx₁ hb₁ hfr₁ hpar₁
-
 /-- Execute `P.initClear` on **arbitrary dirty memory** in
 `C.initTime + (4 * C.space + 6 : ℕ)` expected instructions. -/
 theorem initClear_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
@@ -518,7 +475,8 @@ theorem initClear_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
         Modifies (Block.mk base C.space).footprint x.mem p.2.mem := by
   obtain ⟨x₁, he₁, hm₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
   obtain ⟨x₂, he₂, hx₂, hb₂, hfr₂, hpar₂, hz₂, hmod₂⟩ :=
-    C.zeroFillCode_exec (he₁.bounded hx) hb₁ hfr₁ hpar₁
+    P.zeroFillCode_exec C.clear_nodup C.params_not_clear C.incCur_eval
+      (he₁.bounded hx) hb₁ hfr₁ hpar₁
   obtain ⟨ν₀, he₃, hseed, hsupp⟩ := C.setup_exec hx₂ hb₂ hfr₂ hpar₂ hz₂
   rw [hm₁] at hmod₂
   have he_clear : ExecCodeDist w P.initClear x (ν₀.map Prod.snd)
@@ -618,10 +576,10 @@ theorem frame_caller_dist (C : SubroutineDS P D w base params s₀)
     obtain ⟨x', hx', rfl⟩ := hq_map
     obtain ⟨hb', hreg, hmem⟩ := hframe p hp x' hx'
     exact (C.frame_caller (hrep p hp) hb' hreg hdisj hmem).1
-  · rw [frameDist, tsum_pmf_bind]
+  · rw [frameDist, Cslib.Probability.PMF.tsum_bind_mul]
     refine tsum_congr fun p => ?_
     by_cases hp : p ∈ ν.support
-    · rw [tsum_pmf_map]
+    · rw [Cslib.Probability.PMF.tsum_map_mul]
       have hpot_eq : (∑' x', μ_caller p x' * (C.potential p.1 (x'.comap f) : ℝ≥0∞)) =
           ∑' x', μ_caller p x' * (C.potential p.1 (p.2.comap f) : ℝ≥0∞) := by
         refine tsum_congr fun x' => ?_
@@ -700,7 +658,7 @@ theorem code_rename (C : SubroutineDS P D w base params s₀)
         (∑' q, μ_caller p q * (C.potential q.1 (q.2.comap f) : ℝ≥0∞)) =
           ∑' q_ds, μ_ds (proj p) q_ds * (C.potential q_ds.1 q_ds.2 : ℝ≥0∞) := by
       intro p
-      rw [tsum_pmf_map]
+      rw [Cslib.Probability.PMF.tsum_map_mul]
       refine tsum_congr fun q_ds => ?_
       rw [Data.comap_extend hf]
     simp_rw [hPot_inner]
@@ -709,12 +667,13 @@ theorem code_rename (C : SubroutineDS P D w base params s₀)
             ∑' q_ds, μ_ds (proj p) q_ds * (C.potential q_ds.1 q_ds.2 : ℝ≥0∞))) =
           ∑' p_ds, ν_ds p_ds * (T_ds p_ds +
             ∑' q_ds, μ_ds p_ds q_ds * (C.potential q_ds.1 q_ds.2 : ℝ≥0∞)) :=
-      (tsum_pmf_map ν proj fun p_ds =>
+      (Cslib.Probability.PMF.tsum_map_mul ν proj fun p_ds =>
         T_ds p_ds + ∑' q_ds, μ_ds p_ds q_ds * (C.potential q_ds.1 q_ds.2 : ℝ≥0∞)).symm
     have hRHS :
         (∑' p, ν p * (C.potential p.1 (p.2.comap f) : ℝ≥0∞)) =
           ∑' p_ds, ν_ds p_ds * (C.potential p_ds.1 p_ds.2 : ℝ≥0∞) :=
-      (tsum_pmf_map ν proj fun p_ds => (C.potential p_ds.1 p_ds.2 : ℝ≥0∞)).symm
+      (Cslib.Probability.PMF.tsum_map_mul ν proj
+        fun p_ds => (C.potential p_ds.1 p_ds.2 : ℝ≥0∞)).symm
     rw [hLHS, hRHS]
     exact hamort_ds
 
@@ -802,10 +761,10 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
   · have hpot_prep :
         (∑' p', ν_prep p' * (C.potential p'.1 (p'.2.comap f) : ℝ≥0∞)) =
           ∑' p, ν p * (C.potential p.1 (p.2.comap f) : ℝ≥0∞) := by
-      simp only [ν_prep, frameDist, tsum_pmf_bind]
+      simp only [ν_prep, frameDist, Cslib.Probability.PMF.tsum_bind_mul]
       refine tsum_congr fun p => ?_
       by_cases hp : p ∈ ν.support
-      · rw [tsum_pmf_map]
+      · rw [Cslib.Probability.PMF.tsum_map_mul]
         have hpot_eq : (∑' x', μ_prep p x' * (C.potential p.1 (x'.comap f) : ℝ≥0∞)) =
             ∑' x', μ_prep p x' * (C.potential p.1 (p.2.comap f) : ℝ≥0∞) := by
           refine tsum_congr fun x' => ?_
@@ -827,9 +786,9 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
               (T_code (p.1, x') +
                 ∑' q, μ_code (p.1, x') q * (C.potential q.1 (q.2.comap f) : ℝ≥0∞)) := by
         intro p
-        simp only [T_call, μ_call, tsum_pmf_bind, add_assoc]
+        simp only [T_call, μ_call, Cslib.Probability.PMF.tsum_bind_mul, add_assoc]
         congr 1
-        rw [← ENNReal.tsum_add]
+        rw [← tsum_add]
         simp_rw [mul_add]
       have hmul : ∀ p : C.Seed × Data r_caller,
           ν p * (T_call p + ∑' q, μ_call p q * (C.potential q.1 (q.2.comap f) : ℝ≥0∞)) =
@@ -839,18 +798,18 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
         intro p
         rw [hinner p, mul_add]
       simp_rw [hmul]
-      rw [ENNReal.tsum_add]
+      rw [tsum_add]
       congr 1
       symm
       dsimp only [ν_prep, frameDist]
-      rw [tsum_pmf_bind]
+      rw [Cslib.Probability.PMF.tsum_bind_mul]
       refine tsum_congr fun p => ?_
-      rw [tsum_pmf_map]
+      rw [Cslib.Probability.PMF.tsum_map_mul]
     have hprep_le : (∑' p, ν p * T_prep p) ≤ B_prep := by
       calc
         (∑' p, ν p * T_prep p)
           ≤ ∑' p, ν p * B_prep := by
-            refine ENNReal.tsum_le_tsum fun p => ?_
+            refine tsum_le_tsum fun p => ?_
             by_cases hp : p ∈ ν.support
             · exact mul_le_mul_right (hprep p hp).2.1 _
             · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul, zero_mul]
@@ -870,60 +829,43 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
 /-! ### Projection 6: End-to-end expected-amortized sequence telescope (`steps_expected_amortized`,
 `seq_expected_amortized`) -/
 
-/-- Deliver standalone operation arguments for `o` without changing memory or persistent
-registers (`P.input i = false`). -/
-def prepare (C : SubroutineDS P D w base params s₀) (o : D.Op) (x : Data r_ds) : Data r_ds where
-  regs i := if P.input i then C.encode o i else x.regs i
-  mem := x.mem
-
-@[simp]
-theorem prepare_mem (C : SubroutineDS P D w base params s₀) (o : D.Op) (x : Data r_ds) :
-    (C.prepare o x).mem = x.mem := rfl
-
-theorem prepare_regs_of_not_input (C : SubroutineDS P D w base params s₀)
-    {i : Fin r_ds} (hi : P.input i = false) (o : D.Op) (x : Data r_ds) :
-    (C.prepare o x).regs i = x.regs i := by
-  simp [prepare, hi]
-
-theorem prepare_bounded (C : SubroutineDS P D w base params s₀)
-    {s : D.State} {o : D.Op} {x : Data r_ds} (hx : x.Bounded w) (hv : D.valid s o) :
-    (C.prepare o x).Bounded w := by
-  refine ⟨fun i => ?_, hx.2⟩
-  change Fits w (if P.input i then C.encode o i else x.regs i)
-  split
-  · exact C.arguments_fit o hv i (by assumption)
-  · exact hx.1 i
+/-- Reuse the signature-level program and argument-delivery API with the actual instruction basis.
+This projection carries code and the calling convention, without a deterministic certificate. -/
+def toDynamicProgram (C : SubroutineDS P D w base params s₀) : DynamicProgram D r_ds B :=
+  P.toDynamicProgram C.encode C.decode
 
 theorem prepare_rep (C : SubroutineDS P D w base params s₀)
     {θ : C.Seed} {s : D.State} {o : D.Op} {x : Data r_ds}
     (hr : C.rep θ s x) (hv : D.valid s o) :
-    C.rep θ s (C.prepare o x) :=
+    C.rep θ s (C.toDynamicProgram.prepare o x) :=
   C.rep_supported
-    (fun _ hi => C.prepare_regs_of_not_input hi o x)
+    (fun _ hi => C.toDynamicProgram.prepare_regs_of_not_input hi o x)
     (fun _ _ => rfl)
-    (C.prepare_bounded (C.bounded hr) hv)
+    (C.toDynamicProgram.prepare_bounded (C.bounded hr) (C.arguments_fit _ hv))
     hr
 
 theorem prepare_potential (C : SubroutineDS P D w base params s₀)
     {θ : C.Seed} {s : D.State} {o : D.Op} {x : Data r_ds}
     (hr : C.rep θ s x) :
-    C.potential θ (C.prepare o x) = C.potential θ x :=
+    C.potential θ (C.toDynamicProgram.prepare o x) = C.potential θ x :=
   C.potential_supported
-    (fun _ hi => C.prepare_regs_of_not_input hi o x)
+    (fun _ hi => C.toDynamicProgram.prepare_regs_of_not_input hi o x)
     (fun _ _ => rfl)
     hr
 
 theorem prepare_argMatch (C : SubroutineDS P D w base params s₀) (o : D.Op) (x : Data r_ds) :
-    C.argMatch o (C.prepare o x).regs :=
+    C.argMatch o (C.toDynamicProgram.prepare o x).regs :=
   C.encode_matches o x.regs
 
 /-- Inductive multi-operation distributional execution relation for a randomized subroutine `C`.
 `C.ExecSteps s ops ν ν_final T_ops` witnesses that starting from abstract state `s` and coupled
 state distribution `ν : PMF (C.Seed × Data r_ds)`, executing each operation `o` in `ops` by
-delivering arguments via `C.prepare o` and running `P.code` under `ExecCodeDist` produces the
+delivering arguments via `C.toDynamicProgram.prepare o` and running `P.code` under `ExecCodeDist`
+produces the
 final coupled distribution `ν_final`, decodes the exact abstract return value `(D.step s o).2` at
 every step, modifies memory only within `[base, base + C.space)`, and incurs total expected
-operation step cost `T_ops`. -/
+operation body cost `T_ops`. Argument delivery is an external register replacement and
+contributes no native instructions to this relation. -/
 inductive ExecSteps (C : SubroutineDS P D w base params s₀) :
     D.State → List D.Op → PMF (C.Seed × Data r_ds) → PMF (C.Seed × Data r_ds) → ℝ≥0∞ → Prop where
   | nil (s : D.State) (ν : PMF (C.Seed × Data r_ds)) :
@@ -933,7 +875,8 @@ inductive ExecSteps (C : SubroutineDS P D w base params s₀) :
       {μ_step : C.Seed × Data r_ds → PMF (C.Seed × Data r_ds)}
       {T_step : C.Seed × Data r_ds → ℝ≥0∞} {T_rest : ℝ≥0∞} :
       (∀ p ∈ ν.support,
-        ExecCodeDist w P.code (C.prepare o p.2) ((μ_step p).map Prod.snd) (T_step p) ∧
+        ExecCodeDist w P.code (C.toDynamicProgram.prepare o p.2)
+          ((μ_step p).map Prod.snd) (T_step p) ∧
         ∀ q ∈ (μ_step p).support,
           C.decode o q.2.regs = some (D.step s o).2 ∧
           C.rep q.1 (D.step s o).1 q.2 ∧
@@ -965,7 +908,7 @@ theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
     exact ⟨ν, 0, ExecSteps.nil s ν, hseed, hrep, by simp⟩
   | cons o os ih =>
     obtain ⟨hvo, hvos⟩ := hv
-    let ν_prep : PMF (C.Seed × Data r_ds) := ν.map fun p => (p.1, C.prepare o p.2)
+    let ν_prep : PMF (C.Seed × Data r_ds) := ν.map fun p => (p.1, C.toDynamicProgram.prepare o p.2)
     have hseed_prep : ∀ θ, (ν_prep.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ := by
       intro θ
       rw [PMF.map_comp]
@@ -978,7 +921,7 @@ theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
     have hpot_prep :
         (∑' p', ν_prep p' * (C.potential p'.1 p'.2 : ℝ≥0∞)) =
           ∑' p, ν p * (C.potential p.1 p.2 : ℝ≥0∞) := by
-      rw [tsum_pmf_map]
+      rw [Cslib.Probability.PMF.tsum_map_mul]
       refine tsum_congr fun p => ?_
       by_cases hp : p ∈ ν.support
       · rw [C.prepare_potential (hrep p hp)]
@@ -986,9 +929,9 @@ theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
     obtain ⟨μ_step, T_step, hstep, hseed₁, hamort₁⟩ :=
       C.step_exec o ν_prep hvo hseed_prep hsupp_prep
     let μ_op : C.Seed × Data r_ds → PMF (C.Seed × Data r_ds) :=
-      fun p => μ_step (p.1, C.prepare o p.2)
+      fun p => μ_step (p.1, C.toDynamicProgram.prepare o p.2)
     let T_op : C.Seed × Data r_ds → ℝ≥0∞ :=
-      fun p => T_step (p.1, C.prepare o p.2)
+      fun p => T_step (p.1, C.toDynamicProgram.prepare o p.2)
     let ν₁ := ν.bind μ_op
     have hν₁_eq : ν₁ = ν_prep.bind μ_step := by
       simp only [ν₁, ν_prep, μ_op, PMF.bind_map]
@@ -1006,17 +949,18 @@ theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
     let T₁ : ℝ≥0∞ := ∑' p, ν p * T_op p
     have hT₁_eq : T₁ = ∑' p', ν_prep p' * T_step p' := by
       symm
-      exact tsum_pmf_map ν (fun p => (p.1, C.prepare o p.2)) T_step
+      exact Cslib.Probability.PMF.tsum_map_mul ν
+        (fun p => (p.1, C.toDynamicProgram.prepare o p.2)) T_step
     have hex_cons : C.ExecSteps s (o :: os) ν ν_final (T₁ + T_rest) := by
       refine ExecSteps.cons (μ_step := μ_op) (T_step := T_op) (fun p hp => ?_) hex_rest
-      have hp' : (p.1, C.prepare o p.2) ∈ ν_prep.support :=
+      have hp' : (p.1, C.toDynamicProgram.prepare o p.2) ∈ ν_prep.support :=
         (PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩
-      exact hstep (p.1, C.prepare o p.2) hp'
+      exact hstep (p.1, C.toDynamicProgram.prepare o p.2) hp'
     have hstep_split :
         T₁ + (∑' q, ν₁ q * (C.potential q.1 q.2 : ℝ≥0∞)) =
           ∑' p', ν_prep p' * (T_step p' + ∑' q, μ_step p' q * (C.potential q.1 q.2 : ℝ≥0∞)) := by
       rw [hT₁_eq, hν₁_eq]
-      simp only [tsum_pmf_bind, ← ENNReal.tsum_add, mul_add]
+      simp only [Cslib.Probability.PMF.tsum_bind_mul, ← tsum_add, mul_add]
     refine ⟨ν_final, T₁ + T_rest, hex_cons, hseed_final, hrep_final, ?_⟩
     calc
       (T₁ + T_rest) + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)
@@ -1061,7 +1005,7 @@ theorem seq_expected_amortized (C : SubroutineDS P D w base params s₀)
     calc
       (∑' p, ν₀ p * (C.potential p.1 p.2 : ℝ≥0∞))
         ≤ ∑' p, ν₀ p * (C.initPotential : ℝ≥0∞) := by
-          refine ENNReal.tsum_le_tsum fun p => ?_
+          refine tsum_le_tsum fun p => ?_
           by_cases hp : p ∈ ν₀.support
           · exact mul_le_mul_right (Nat.cast_le.mpr (hsupp₀ p hp).2.2.1) _
           · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul, zero_mul]
