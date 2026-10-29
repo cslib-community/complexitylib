@@ -1954,6 +1954,7 @@ public import Complexity.Foundations.BooleanAnalysis.Decomposition
 public import Complexity.Foundations.BooleanAnalysis.Degree
 public import Complexity.Foundations.BooleanAnalysis.Fibers
 public import Complexity.Foundations.BooleanAnalysis.Fourier
+public import Complexity.Foundations.BooleanAnalysis.FourierBitVal
 public import Complexity.Foundations.BooleanAnalysis.FourierDegree
 public import Complexity.Foundations.BooleanAnalysis.FourierRestriction
 public import Complexity.Foundations.BooleanAnalysis.FriedgutJunta
@@ -2529,6 +2530,8 @@ public import Complexity.Probability.EntropyExtraction
 public import Complexity.Probability.Extractor.Basic
 public import Complexity.Probability.Extractor.LeftoverHash
 public import Complexity.Probability.Extractor.TwoSource
+public import Complexity.Probability.Fooling
+public import Complexity.Probability.Fooling.OneSided
 public import Complexity.Probability.Forking
 public import Complexity.Probability.Guessing
 public import Complexity.Probability.HashFamily
