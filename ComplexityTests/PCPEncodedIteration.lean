@@ -9,7 +9,6 @@ import Complexity.Computability.PCP.Encoded.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Tactic.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Logarithmic graph loops using the existing iteration calculus and complete encoding bounds. -/
 
@@ -17,13 +16,11 @@ namespace ComplexityTests.PCPEncodedIteration
 
 open Cslib.PCP.Encoded Turing.MultiTapeTM
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The loop remains an application of the existing calculus; the graph lemmas supply its bound.
 example {C Input : Type} {enc : C ↪ List Bool} {input : Input ↪ List Bool}
     {graph : Input → Graph C} {step : Graph C → Graph C} {valid : Graph C → Prop}
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding enc))
-    (hstep : ComputableTidilyInPolyTime step (Graph.encoding enc) (Graph.encoding enc))
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding enc))
+    (hstep : ComputableInPolyTime step (Graph.encoding enc) (Graph.encoding enc))
     (factor descriptorBound : ℕ)
     (hbase : ∀ x, valid (graph x)) (hvalid : ∀ g, valid g → valid (step g))
     (hwellFormed : ∀ g, valid g → g.WellFormed)
@@ -31,18 +28,19 @@ example {C Input : Type} {enc : C ↪ List Bool} {input : Input ↪ List Bool}
       (enc edge.constraint).length ≤ descriptorBound)
     (hgrowth : ∀ g, valid g →
       (step g).vertices + (step g).edges.length ≤ factor * (g.vertices + g.edges.length)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun x => step^[Nat.clog 2 (graph x).edges.length] (graph x)) input (Graph.encoding enc) := by
-  apply ComputableTidilyInPolyTime.iterate (by fun_prop) hgraph hstep
-    (Graph.polyBounded_iterationSize_clog (.of_tidy hgraph) factor descriptorBound)
+  refine .of_tidy ?_
+  have hcount : ComputableInPolyTime (fun x => Nat.clog 2 (graph x).edges.length) input encUnary :=
+    by fun_prop
+  apply ComputableTidilyInPolyTime.iterate hcount.tidy hgraph.tidy hstep.tidy
+    (Graph.polyBounded_iterationSize_clog hgraph factor descriptorBound)
   exact fun x _ hi => Graph.iterate_length_encoding_le factor descriptorBound
     hvalid hwellFormed hdescriptors hgrowth (hbase x) hi
 
 private def doubleEdges (g : Graph Bool) : Graph Bool := ⟨g.vertices, g.edges ++ g.edges⟩
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-private theorem isPolyTime_doubleEdges : ComputableTidilyInPolyTime doubleEdges
+private theorem isPolyTime_doubleEdges : ComputableInPolyTime doubleEdges
     (Graph.encoding encBool) (Graph.encoding encBool) := by
   unfold doubleEdges
   polytime
@@ -57,17 +55,18 @@ private theorem growth_doubleEdges (g : Graph Bool) :
   simp only [doubleEdges, List.length_append]
   lia
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Arbitrary computed well-formed graphs can be iterated, retaining their original input encoding.
 example {Input : Type} {input : Input ↪ List Bool} {graph : Input → Graph Bool}
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding encBool))
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding encBool))
     (hwellFormed : ∀ x, (graph x).WellFormed) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun x => doubleEdges^[Nat.clog 2 (graph x).edges.length] (graph x))
       input (Graph.encoding encBool) := by
-  apply ComputableTidilyInPolyTime.iterate (by fun_prop) hgraph isPolyTime_doubleEdges
-    (Graph.polyBounded_iterationSize_clog (.of_tidy hgraph) 2 1)
+  refine .of_tidy ?_
+  have hcount : ComputableInPolyTime (fun x => Nat.clog 2 (graph x).edges.length) input encUnary :=
+    by fun_prop
+  apply ComputableTidilyInPolyTime.iterate hcount.tidy hgraph.tidy isPolyTime_doubleEdges.tidy
+    (Graph.polyBounded_iterationSize_clog hgraph 2 1)
   exact fun x _ hi => Graph.iterate_length_encoding_le (valid := Graph.WellFormed) 2 1
     (fun _ => wellFormed_doubleEdges) (fun _ h => h) (by intros; simp)
     (fun g _ => growth_doubleEdges g) (hwellFormed x) hi

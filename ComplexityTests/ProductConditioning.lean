@@ -35,16 +35,15 @@ theorem first_true_mem : ∃ u ∈ {u : Fin 2 → Bool | u 0 = true}, u ∈ (pi 
     intro i
     simp [bits]⟩
 
--- Conditioning two fair bits on the first being `true`.
-example : (∑ j, dist (((pi bits).filter {u | u 0 = true} first_true_mem).map fun u => u j)
-      (bits j)) ^ 2 ≤
-    2 * Real.log (1 / ((pi bits).toOuterMeasure {u | u 0 = true}).toReal) / 2 := by
-  simpa using sq_sum_dist_map_filter_pi_le bits {u | u 0 = true} first_true_mem
-
--- Holenstein's form for the same event.
-example : ((pi bits).toOuterMeasure {u | u 0 = true}).toReal ≤ (2 : ℝ) ^
-    (-∑ j, dist (((pi bits).filter {u | u 0 = true} first_true_mem).map fun u => u j)
-      (bits j) ^ 2) :=
-  toOuterMeasure_toReal_le_two_rpow bits _ first_true_mem
+-- Conditioning two fair bits on the first being `true`, in both Raz's and Holenstein's forms.
+example :
+    (∑ j, dist (((pi bits).filter {u | u 0 = true} first_true_mem).map fun u => u j)
+        (bits j)) ^ 2 ≤
+      2 * Real.log (1 / ((pi bits).toOuterMeasure {u | u 0 = true}).toReal) / 2 ∧
+    ((pi bits).toOuterMeasure {u | u 0 = true}).toReal ≤ (2 : ℝ) ^
+      (-∑ j, dist (((pi bits).filter {u | u 0 = true} first_true_mem).map fun u => u j)
+        (bits j) ^ 2) :=
+  ⟨by simpa using sq_sum_dist_map_filter_pi_le bits {u | u 0 = true} first_true_mem,
+    toOuterMeasure_toReal_le_two_rpow bits _ first_true_mem⟩
 
 end ComplexityTests.ProductConditioning
