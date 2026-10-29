@@ -282,6 +282,24 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   proofs, not a transfer of the source Light semantics or instruction constants. Exact Triangle
   parameter/instance preparation and outer solving, full ordinary-3SUM composition, and the
   improved Section 4 route to exponent 1.9992 remain separate work under #1394.
+  Caller-safe queried products ([#1618](https://github.com/cslib-community/complexitylib/issues/1618))
+  rebase actual memory accesses above a runtime caller base. The generic `WordRAM.MemoryWindow`
+  compiler charges an addition/load/remainder for each load and an addition/store for each
+  store, reusing ordinary native `Exec` and `Code`. Its clipped-memory view permits dirty
+  workspace without bulk initialization; it is a value relation, not independent run semantics.
+  The original product program is unchanged. Existing `NatClog` (the exact module already
+  landed in #1469) and `WordRAM.Power` compute the source modulus from original counts; fixed
+  register normalization and two `WordRAM.ArrayNormalize` span loops are actual charged code.
+  The callable raw-zero/one thin-regime client uses 163 registers and at most 131072 flat
+  instructions. It restores local input, returns exact product words at an absolute pointer,
+  preserves the caller outside its window, and retains the original charged raw-to-signed
+  doubling. At `D=4^m`, `L=19m`, `D^18≤N`, its standalone charge including halt is at most
+  three times the original product charge plus `2048*(N*D+Q+1)`. Distinct-set sparsity retains
+  the additive occurrence charge; `Q*2^m≤N²` gives `17301504*(19m+1)*N²/D^(1/18)`.
+  The window is at most `(2*(N+Q+3))^128`; this deliberately large polynomial address-space
+  reservation is not a claim about a tightly packed physical allocation. Every width above
+  `256*clog₂(base+N+Q+P+5)` suffices for initialized callers with prefix words bounded by `P`.
+  The real ET-record/matrix/query adapter and whole solver remain subsequent work under #1394.
   Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies

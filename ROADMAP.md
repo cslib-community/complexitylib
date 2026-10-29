@@ -455,6 +455,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   fixed 160-register program uses at most `4325376*(19m+1)*N²/D^(1/18)` instructions including
   halt, with sufficient width `128*clog₂(N+Q+A+2)` for entry bound `A`. The distinct-set sparsity
   theorem instead retains an explicit additive charge for all `Q` occurrences.
+  A caller-safe raw-zero/one product ([#1618]) rebases actual memory operations above a runtime
+  caller base, using a computed source modulus and charged load normalization. Its initialized
+  163-register program restores local input, returns an absolute answer pointer, and preserves
+  the caller outside the reserved polynomial window. Setup/return costs are bounded by three
+  times the original product charge plus `2048*(N*D+Q+1)`; the same thin geometry and occurrence
+  sparsity give `17301504*(19m+1)*N²/D^(1/18)`, including halt. Its every-wide-width threshold is
+  `256*clog₂(base+N+Q+P+5)` for caller-word bound `P`. The explicit reservation
+  `(2*(N+Q+3))^128` is not bulk-initialized. Actual ET-record reads, matrix/query placement and
+  producer-readback composition remain the next adapter milestone.
   Native Chan–He preprocessing and the reduction host are separate stack components.
   Native sparse-product and Exact Triangle solving, full input/time/width/asymptotic composition,
   and the improved Section 4 route to exponent 1.9992 remain under #1394;
@@ -610,3 +619,4 @@ not planned, not as proved.
 [#1526]: https://github.com/cslib-community/complexitylib/issues/1526
 [#1561]: https://github.com/cslib-community/complexitylib/issues/1561
 [#1581]: https://github.com/cslib-community/complexitylib/issues/1581
+[#1618]: https://github.com/cslib-community/complexitylib/issues/1618
