@@ -94,9 +94,11 @@ def testJetsSigned : List (List ℤ) :=
   detRows (hermiteRows [1, 2] 0),
   hermiteRows [] 3)
 
-example : hermiteRecoverZero [1, 2] 3 6 testJetsPos = -17 := by decide +kernel
-example : hermiteRecoverZero [-1, 2] 3 6 testJetsSigned = -17 := by decide +kernel
-example : hermiteRecoverModPowTwo [1, 2] 3 5 6 testJetsPos = 15 := by decide +kernel
+example :
+    hermiteRecoverZero [1, 2] 3 6 testJetsPos = -17 ∧
+    hermiteRecoverZero [-1, 2] 3 6 testJetsSigned = -17 ∧
+    hermiteRecoverModPowTwo [1, 2] 3 5 6 testJetsPos = 15 := by
+  decide +kernel
 
 -- Nonvacuous propositional instantiation of `hermiteRecoverZero_eq` and
 -- `hermiteRecoverModPowTwo_eq` on `testPoly` (`r = 2, J = 3, Ω = 6`).
@@ -174,37 +176,29 @@ theorem recover_testPoly_mod32 : hermiteRecoverModPowTwo [1, 2] 3 5 6 testJetsPo
     (testPoly_natDegree_lt [1, 2] rfl) testPoly_eval_zero rfl (by decide) testPoly_jets_pos
     (by decide) (by decide) ⟨-1, by decide⟩
 
--- Concrete entry bit-length bounds on the `6 × 6` Hermite and Cramer tables.
-example {row : List ℤ} (hrow : row ∈ hermiteRows [-1, 2] 3) {z : ℤ} (hz : z ∈ row) :
-    intBits z ≤ 6 * (2 + 1) + 1 :=
-  intBits_le_of_mem_hermiteRows (b := 2) (by decide +kernel) hrow hz
-
-example {row : List ℤ}
-    (hrow : row ∈ cramerColZeroRows (hermiteRows [-1, 2] 3) testJetsSigned.flatten)
-    {z : ℤ} (hz : z ∈ row) :
-    intBits z ≤ 18 + 1 :=
-  intBits_le_of_mem_cramerColZeroRows (B := 18)
-    (fun _ hr _ hz' => intBits_le_of_mem_hermiteRows (b := 2) (by decide +kernel) hr hz')
-    (by decide +kernel) hrow hz
-
-/-! ### Plain `ComputableInPolyTime` composition checks (zero `Tidy` annotations) -/
-
-example : ComputableInPolyTime
-    (fun p : (ℤ × ℤ) × ℕ => ((p.1.1.ediv p.1.2) + (p.1.1.tdiv p.1.2)).modPowTwo p.2)
-    (encPair (encPair encIntBin encIntBin) encUnary) encIntBin := by
-  fun_prop
-
-example : ComputableInPolyTime
-    (fun p : ℤ × ℤ => (p.1 / p.2) * (p.1 % p.2) + p.1.tmod p.2)
-    (encPair encIntBin encIntBin) encIntBin := by
-  fun_prop
-
-example : ComputableInPolyTime
-    (fun q : (((List ℤ × ℕ) × ℕ) × ℤ) × List (List (List ℤ)) =>
-      ((q.2.map (hermiteRecoverZero q.1.1.1.1 q.1.1.1.2 q.1.2)).sum).modPowTwo q.1.1.2)
-    (encPair (encPair (encPair (encPair (encList encIntBin) encUnary) encUnary) encIntBin)
-      (encList (encList (encList encIntBin))))
-    encIntBin := by
-  fun_prop
+-- Concrete entry bit-length bounds on the `6 × 6` Hermite and Cramer tables, and plain
+-- `ComputableInPolyTime` composition checks (zero `Tidy` annotations).
+example {row₁ row₂ : List ℤ} (hrow₁ : row₁ ∈ hermiteRows [-1, 2] 3) {z₁ : ℤ} (hz₁ : z₁ ∈ row₁)
+    (hrow₂ : row₂ ∈ cramerColZeroRows (hermiteRows [-1, 2] 3) testJetsSigned.flatten)
+    {z₂ : ℤ} (hz₂ : z₂ ∈ row₂) :
+    intBits z₁ ≤ 6 * (2 + 1) + 1 ∧
+    intBits z₂ ≤ 18 + 1 ∧
+    ComputableInPolyTime
+      (fun p : (ℤ × ℤ) × ℕ => ((p.1.1.ediv p.1.2) + (p.1.1.tdiv p.1.2)).modPowTwo p.2)
+      (encPair (encPair encIntBin encIntBin) encUnary) encIntBin ∧
+    ComputableInPolyTime
+      (fun p : ℤ × ℤ => (p.1 / p.2) * (p.1 % p.2) + p.1.tmod p.2)
+      (encPair encIntBin encIntBin) encIntBin ∧
+    ComputableInPolyTime
+      (fun q : (((List ℤ × ℕ) × ℕ) × ℤ) × List (List (List ℤ)) =>
+        ((q.2.map (hermiteRecoverZero q.1.1.1.1 q.1.1.1.2 q.1.2)).sum).modPowTwo q.1.1.2)
+      (encPair (encPair (encPair (encPair (encList encIntBin) encUnary) encUnary) encIntBin)
+        (encList (encList (encList encIntBin))))
+      encIntBin :=
+  ⟨intBits_le_of_mem_hermiteRows (b := 2) (by decide +kernel) hrow₁ hz₁,
+    intBits_le_of_mem_cramerColZeroRows (B := 18)
+      (fun _ hr _ hz' => intBits_le_of_mem_hermiteRows (b := 2) (by decide +kernel) hr hz')
+      (by decide +kernel) hrow₂ hz₂,
+    by fun_prop, by fun_prop, by fun_prop⟩
 
 end ComplexityTests.HermiteCramer

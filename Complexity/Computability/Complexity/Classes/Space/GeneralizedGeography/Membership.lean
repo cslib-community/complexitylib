@@ -424,7 +424,7 @@ theorem isGameVerifier_verifier :
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 /-- Plays encoded as framed tuples: the outcome as an option, the player to move, the visited
 vertices in binary, and the vertex of the token in binary. -/
@@ -445,48 +445,49 @@ theorem computableInPolyTime_moverBits {B : γ → ℕ} {first : γ → Bool}
   fun_prop
 
 /-- A move is polynomial-time. -/
-private theorem computableTidilyInPolyTime_next :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_next :
+    ComputableInPolyTime
       (fun p : (Graph × Play) × List Bool => next p.1.1 p.1.2.2.1 p.1.2.2.2.1 p.1.2.2.2.2 p.2)
       (encPair (encPair encGraph encPlay) (encList encBool)) encPlay := by
   set encQ := encPair (encPair encGraph encPlay) (encList encBool)
-  have hG : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1) encQ
+  have hG : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1) encQ
       encGraph := by fun_prop
-  have hV : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.1) encQ
+  have hV : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.1) encQ
       (encList encNat) := (fst _ _).comp hG
-  have hE : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.2) encQ
+  have hE : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.2) encQ
       (encList (encPair encNat encNat)) := (snd _ _).comp hG
-  have hfirst : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.1)
+  have hfirst : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.1)
       encQ encBool := by fun_prop
-  have hvis : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.2.1)
+  have hvis : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.2.1)
       encQ (encList encNat) := by fun_prop
-  have hv : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.2.2)
+  have hv : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.2.2)
       encQ encNat := by fun_prop
-  have hi : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => choice p.2)
+  have hi : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => choice p.2)
       encQ encUnary := idxOfWithInput (snd _ _) (const true)
-  have hN : ComputableTidilyInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.2.length)
+  have hN : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.2.length)
       encQ encUnary := (length_list _).comp hE
-  have harc : ComputableTidilyInPolyTime
+  have harc : ComputableInPolyTime
       (fun p : (Graph × Play) × List Bool => arc p.1.1 (choice p.2)) encQ
       (encPair encNat encNat) := (listGetD (0, 0)).comp (hE.prod hi)
-  have hw : ComputableTidilyInPolyTime
+  have hw : ComputableInPolyTime
       (fun p : (Graph × Play) × List Bool => (arc p.1.1 (choice p.2)).2) encQ encNat :=
     (snd _ _).comp harc
   have hmem {l : (Graph × Play) × List Bool → List ℕ}
-      (hl : ComputableTidilyInPolyTime l encQ (encList encNat)) :
-      ComputableTidilyInPolyTime
+      (hl : ComputableInPolyTime l encQ (encList encNat)) :
+      ComputableInPolyTime
         (fun p => decide ((arc p.1.1 (choice p.2)).2 ∈ l p)) encQ encBool := by
     simp only [List.decide_mem_eq_any]
-    exact anyWithInput hl ((decide_eq encNat).comp ((snd _ _).prod (hw.comp (fst _ _))))
-  have hlegal : ComputableTidilyInPolyTime
+    exact anyWithInput hl (decide_eq' (snd _ _) (hw.comp (fst _ _)))
+  have hlegal : ComputableInPolyTime
       (fun p : (Graph × Play) × List Bool => legal p.1.1 p.1.2.2.2.1 p.1.2.2.2.2 (choice p.2))
       encQ encBool := by
     unfold legal
-    refine bool_and' (bool_and' (bool_and' (unary_lt' hi hN) ?_) (hmem hV))
-      (bool_not.comp (hmem hvis))
-    exact (decide_eq encNat).comp (((fst _ _).comp harc).prod hv)
+    have hv' := decide_eq' ((fst _ _).comp harc) hv
+    have hV' := hmem hV
+    have hvis' := hmem hvis
+    fun_prop
   unfold next
-  exact cond hlegal (((const none).prod ((bool_not.comp hfirst).prod
+  exact ite' hlegal (((const none).prod ((bool_not.comp hfirst).prod
     ((cons' hw hvis).prod hw))))
     (((optionSome encBool).comp (bool_not.comp hfirst)).prod (hfirst.prod (hvis.prod hv)))
 
@@ -534,58 +535,60 @@ private abbrev encStep : (((Graph × ℕ) × List Bool) × Play) × List Bool �
 vertex per block. -/
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
-  refine .of_tidy ?_
-  have hG : ComputableTidilyInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1) encInput
+  have hG : ComputableInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1) encInput
       encGraph := by fun_prop
-  have hB : ComputableTidilyInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1.2.length) encInput
+  have hB : ComputableInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1.2.length) encInput
       encUnary := (length_list _).comp ((snd _ _).comp hG)
-  have hR : ComputableTidilyInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1.1.length + 1)
+  have hR : ComputableInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1.1.length + 1)
       encInput encUnary :=
     unary_add.comp (((length_list _).comp ((fst _ _).comp hG)).prod (const 1))
-  have hblocks : ComputableTidilyInPolyTime
+  have hblocks : ComputableInPolyTime
       (fun x : (Graph × ℕ) × List Bool => blocks x.1.1.2.length (x.1.1.1.length + 1) x.2) encInput
       (encList encBits) := by
+    have h2B : ComputableInPolyTime
+        (fun p : ((Graph × ℕ) × List Bool) × ℕ => 2 * p.1.1.1.2.length)
+        (encPair encInput encUnary) encUnary := unary_mul.comp ((const 2).prod (hB.comp (fst _ _)))
     unfold blocks
-    fun_prop
-  have hinit : ComputableTidilyInPolyTime
+    exact mapWithInput (range.comp hR) (bitsTakeWithInput (bitsDropWithInput
+      ((snd _ _).comp (fst _ _)) (unary_mul.comp (h2B.prod (snd _ _)))) h2B)
+  have hinit : ComputableInPolyTime
       (fun x : (Graph × ℕ) × List Bool => ((none, true, [x.1.2], x.1.2) : Play)) encInput
       encPlay := by
     fun_prop
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
         step p.1.1.1.1 p.1.1.1.1.2.length p.1.2 p.2)
       encStep encPlay := by
-    have hst : ComputableTidilyInPolyTime
+    have hst : ComputableInPolyTime
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) => p.1.2)
         encStep encPlay := by fun_prop
-    have hX : ComputableTidilyInPolyTime
+    have hX : ComputableInPolyTime
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) => p.1.1)
         encStep encInput := by fun_prop
-    have hbits : ComputableTidilyInPolyTime
+    have hbits : ComputableInPolyTime
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
           moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2)
         encStep (encList encBool) :=
-      (computableInPolyTime_moverBits (.of_tidy (hB.comp hX)) (.of_tidy (by fun_prop))
-        (.of_tidy (snd _ _))).tidy
-    have hpair : ComputableTidilyInPolyTime
+      computableInPolyTime_moverBits (hB.comp hX) (by fun_prop) (snd _ _)
+    have hpair : ComputableInPolyTime
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
           ((p.1.1.1.1, p.1.2), moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2))
         encStep
         (encPair (encPair encGraph encPlay) (encList encBool)) :=
       ((hG.comp hX).prod hst).prod hbits
-    have hnext : ComputableTidilyInPolyTime
+    have hnext : ComputableInPolyTime
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
           next p.1.1.1.1 p.1.2.2.1 p.1.2.2.2.1 p.1.2.2.2.2
             (moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2))
         encStep encPlay := by
-      have h := computableTidilyInPolyTime_next.comp hpair
+      have h := computableInPolyTime_next.comp hpair
       simp only [Function.comp_def] at h
       exact h
-    have hsome : ComputableTidilyInPolyTime
+    have hsome : ComputableInPolyTime
         (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) => p.1.2.1.isSome)
         encStep encBool := optionIsSome ((fst _ _).comp hst)
     unfold step
-    exact cond hsome hst hnext
+    exact ite' hsome hst hnext
   have hfold := foldlWithInput_of_bounded_growth (encA := encBits) (encL := encList encBits)
     (step := fun x : (Graph × ℕ) × List Bool => step x.1.1 x.1.1.2.length) hinit
     ⟨hblocks, hstep, inferInstance, inferInstance⟩

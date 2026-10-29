@@ -82,7 +82,6 @@ theorem mem_PSPACE_iff_computableInO : A ∈ PSPACE enc ↔ ∃ (f : α → Bool
         hA⟩
   simpa only [Turing.MultiTapeTM.computableInO_iff_computableTidilyInO] using this
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolySpace.tidy in
 /-- **`PSPACE` within polynomial space**: a problem is in `PSPACE` exactly when a Boolean function
 deciding it is computable within space polynomial in the length of the encoded instance
 (`Turing.MultiTapeTM.ComputableInPolySpace`). -/
@@ -104,28 +103,22 @@ theorem mem_PSPACE_of_computableInPolySpace {f : α → Bool}
     A ∈ PSPACE enc :=
   mem_PSPACE_iff_computableInPolySpace.mpr ⟨f, hf, hA⟩
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolySpace.tidy in
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolyTime.tidy in
 /-- **`PSPACE` is closed under complement**: negate the answer. -/
 theorem compl_mem_PSPACE (hA : A ∈ PSPACE enc) : Aᶜ ∈ PSPACE enc := by
-  obtain ⟨f, T, S, hf, hS, hA⟩ := mem_PSPACE_iff_computableInO.mp hA
-  have hnot := (ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
-    Bool.not).inO_one.comp_linear hf.tidy
-  refine mem_PSPACE_iff_computableInO.mpr ⟨_, T, S, .of_tidy hnot, hS, fun a => ?_⟩
-  simp [hA a]
+  obtain ⟨f, hf, hA⟩ := mem_PSPACE_iff_computableInPolySpace.mp hA
+  exact mem_PSPACE_of_computableInPolySpace
+    ((ComputableInPolySpace.of_polyTime ComputableInPolyTime.bool_not).comp hf)
+    fun a => by simp [hA a]
 
 open scoped symmDiff
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolySpace.tidy in
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolyTime.tidy in
 /-- **`PSPACE` is closed under intersection.** -/
 theorem inter_mem_PSPACE {B : Set α} (hA : A ∈ PSPACE enc) (hB : B ∈ PSPACE enc) :
     A ∩ B ∈ PSPACE enc := by
   obtain ⟨f, hf, hA⟩ := mem_PSPACE_iff_computableInPolySpace.mp hA
   obtain ⟨g, hg, hB⟩ := mem_PSPACE_iff_computableInPolySpace.mp hB
   exact mem_PSPACE_of_computableInPolySpace
-    (.of_tidy ((ComputableTidilyInPolySpace.of_polyTime ComputableTidilyInPolyTime.bool_and).comp
-      (hf.tidy.prod hg.tidy)))
+    ((ComputableInPolySpace.of_polyTime ComputableInPolyTime.bool_and).comp (hf.prod hg))
     fun a => by simp [hA a, hB a]
 
 /-- `PSPACE` as a Boolean subalgebra of `Set α`. -/
@@ -156,16 +149,13 @@ theorem symmDiff_mem_PSPACE {B : Set α} (hA : A ∈ PSPACE enc) (hB : B ∈ PSP
     A ∆ B ∈ PSPACE enc :=
   (PSPACE.booleanSubalgebra enc).symmDiff_mem hA hB
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolySpace.tidy in
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolyTime.tidy in
 /-- **`PSPACE` is closed under polynomial-time reductions.** -/
 theorem PolyTimeReducible.mem_PSPACE {β : Type} {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ PSPACE encB) : A ∈ PSPACE enc := by
   obtain ⟨g, hg, hAB⟩ := h
-  obtain ⟨f, T, S, hf, hS, hB⟩ := mem_PSPACE_iff_computableInO.mp hB
-  obtain ⟨Tg, Sg, hSg, hgO⟩ := ComputableTidilyInPolySpace.of_polyTime hg.tidy
-  exact mem_PSPACE_iff_computableInO.mpr ⟨f ∘ g, _, _, .of_tidy (hf.tidy.comp hgO),
-    hSg.add (hS.comp hg.polyBounded_length), fun a => (hAB a).trans (hB (g a))⟩
+  obtain ⟨f, hf, hB⟩ := mem_PSPACE_iff_computableInPolySpace.mp hB
+  exact mem_PSPACE_of_computableInPolySpace (hf.comp (.of_polyTime hg))
+    fun a => (hAB a).trans (hB (g a))
 
 /-- The edges of the graph on words of width `n + 1` whose reachability within two steps from the
 all-zero word to the all-one word is a bounded existential over `f`: an edge from the all-zero word
@@ -200,7 +190,6 @@ private theorem savitch_existsEdge {β : Type} (f : β × List Bool → Bool) (x
     · simp [existsEdge, List.replicate_succ, hf]
     · simp [existsEdge, List.replicate_succ]
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolyTime.tidy in
 /-- **`PSPACE` is closed under polynomially bounded existential quantification**: if `B ⊆ β × List
 Bool` is in `PSPACE` and `ℓ` is polynomial-time, then so is the set of the `x` for which some word
 `w` of length `ℓ x` has `(x, w) ∈ B`. The candidates are enumerated in place: this is reachability
@@ -211,48 +200,28 @@ theorem setOf_exists_mem_PSPACE {β : Type} {encB : β ↪ List Bool} {B : Set (
     {ℓ : β → ℕ} (hB : B ∈ PSPACE (encPair encB encBits))
     (hℓ : ComputableInPolyTime ℓ encB encUnary) :
     {x | ∃ w : List Bool, w.length = ℓ x ∧ (x, w) ∈ B} ∈ PSPACE encB := by
-  have hℓ := hℓ.tidy
   obtain ⟨f, T, S, hf, hS, hB⟩ := mem_PSPACE_iff_computableInO.mp hB
   set encQ := encPair encB (encPair encBits encBits)
   -- the edge test: polynomial-time tests around one call of the decider of `B`
-  have hg : ComputableTidilyInPolyTime (fun q : β × List Bool × List Bool => (q.1, q.2.2.tail))
-      encQ (encPair encB encBits) :=
-    (ComputableTidilyInPolyTime.fst _ _).prod
-      (ComputableTidilyInPolyTime.bitsTail.comp
-        ((ComputableTidilyInPolyTime.snd _ _).comp (.snd _ _)))
-  have hc : ComputableTidilyInPolyTime
+  have hg : ComputableInPolyTime (fun q : β × List Bool × List Bool => (q.1, q.2.2.tail))
+      encQ (encPair encB encBits) := by fun_prop
+  have hc : ComputableInPolyTime
       (fun q : β × List Bool × List Bool => !(q.2.1.any fun b => b) && q.2.2.headD false)
-      encQ encBool :=
-    ComputableTidilyInPolyTime.bool_and.comp
-      ((ComputableTidilyInPolyTime.bool_not.comp
-        (ComputableTidilyInPolyTime.bitsAnyWithInput (test := fun _ b => b)
-          ((ComputableTidilyInPolyTime.fst _ _).comp (.snd _ _)) (.snd _ _))).prod
-        ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp
-          ((ComputableTidilyInPolyTime.snd _ _).comp (.snd _ _))))
-  have he : ComputableTidilyInPolyTime
+      encQ encBool := by fun_prop
+  have he : ComputableInPolyTime
       (fun q : β × List Bool × List Bool => q.2.1.headD false && !(q.2.2.any fun b => !b))
-      encQ encBool :=
-    ComputableTidilyInPolyTime.bool_and.comp
-      (((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp
-        ((ComputableTidilyInPolyTime.fst _ _).comp (.snd _ _))).prod
-        (ComputableTidilyInPolyTime.bool_not.comp
-          (ComputableTidilyInPolyTime.bitsAnyWithInput (test := fun _ b => !b)
-            ((ComputableTidilyInPolyTime.snd _ _).comp (.snd _ _))
-            (ComputableTidilyInPolyTime.bool_not.comp (.snd _ _)))))
-  obtain ⟨Tg, Sg, hSg, hgO⟩ := ComputableTidilyInPolySpace.of_polyTime hg
-  obtain ⟨Tc, Sc, hSc, hcO⟩ := ComputableTidilyInPolySpace.of_polyTime hc
-  obtain ⟨Te, Se, hSe, heO⟩ := ComputableTidilyInPolySpace.of_polyTime he
+      encQ encBool := by fun_prop
+  obtain ⟨Tg, Sg, hSg, hgO⟩ := ComputableTidilyInPolySpace.of_polyTime hg.tidy
+  obtain ⟨Tc, Sc, hSc, hcO⟩ := ComputableTidilyInPolySpace.of_polyTime hc.tidy
+  obtain ⟨Te, Se, hSe, heO⟩ := ComputableTidilyInPolySpace.of_polyTime he.tidy
   have hedge := hcO.ite (hf.tidy.comp hgO) heO
   -- the arguments of Savitch's algorithm
-  have hin : ComputableTidilyInPolyTime
+  have hin : ComputableInPolyTime
       (fun x => (x, ℓ x + 1, 1, List.replicate (ℓ x + 1) false, List.replicate (ℓ x + 1) true))
       encB (Cslib.Reachability.encArgs encB) := by
-    have hw : ComputableTidilyInPolyTime (fun x => ℓ x + 1) encB encUnary :=
-      ComputableTidilyInPolyTime.unary_add.comp (hℓ.prod (.const 1))
-    exact ComputableTidilyInPolyTime.id'.prod (hw.prod ((ComputableTidilyInPolyTime.const 1).prod
-      (((ComputableTidilyInPolyTime.bitsReplicate false).comp hw).prod
-        ((ComputableTidilyInPolyTime.bitsReplicate true).comp hw))))
-  obtain ⟨Ti, Si, hSi, hinO⟩ := ComputableTidilyInPolySpace.of_polyTime hin
+    unfold Cslib.Reachability.encArgs
+    fun_prop
+  obtain ⟨Ti, Si, hSi, hinO⟩ := ComputableTidilyInPolySpace.of_polyTime hin.tidy
   have h := Cslib.Reachability.computableTidilyInO_savitch (edge := existsEdge f) (par := id)
     hedge hinO (fun _ => List.length_replicate ..) fun _ => List.length_replicate ..
   -- the space is polynomial

@@ -31,33 +31,26 @@ theorem three_le_entropy_uniform_five :
   have h5 : ((5 : ℕ) : ℝ) - 2 = 3 := by norm_num
   linarith
 
-/-- Low-point-mass subset bound (`sum_filter_mass_le_ge_of_entropy_ge`) instantiated on
-`PMF.uniformOfFintype (BitString 5)` with $B = 3$. -/
-example :
+/-- Low-point-mass subset bound (`sum_filter_mass_le_ge_of_entropy_ge`), prefix-truncation bound
+(`entropy_ofList_take_ge`), and uniform-padding bound (`entropy_append_uniform`). -/
+example (p₅ : PMF (BitString 5)) (hp₅ : 4 ≤ PMF.entropy p₅)
+    (p₄ : PMF (BitString 4)) (hp₄ : 3 ≤ PMF.entropy p₄) :
     (1 : ℝ) / 5 ≤
       ∑ y ∈ Finset.univ.filter (fun y : BitString 5 =>
         (PMF.uniformOfFintype (BitString 5) y).toReal ≤ (2 : ℝ) ^ (-(0 : ℝ))),
-        (PMF.uniformOfFintype (BitString 5) y).toReal := by
-  simpa using sum_filter_mass_le_ge_of_entropy_ge (by omega : 1 ≤ 5)
-    (PMF.uniformOfFintype (BitString 5)) (B := 3) le_rfl three_le_entropy_uniform_five
-
-/-- `entropy_ofList_take_ge` instantiated on a distribution over `BitString 5` with $H(p) \ge 4$
-and prefix length $k = 4$: truncating to $4$ bits leaves entropy at least $3$. -/
-example (p : PMF (BitString 5)) (hp : 4 ≤ PMF.entropy p) :
-    3 ≤ PMF.entropy (p.map fun x => BitString.ofList 4 ((List.ofFn x).take 4)) := by
-  have h := entropy_ofList_take_ge (m := 5) (k := 4) (by omega) p
-  have hsub : ((5 - 4 : ℕ) : ℝ) = 1 := by norm_num
-  linarith
-
-/-- `entropy_append_uniform` instantiated with $H(p) \ge 3$ on `BitString 4` and $k = 2$
-independent uniform padding bits: the padded distribution on `BitString 6` has entropy
-$H(p) + 2 \ge 5$. -/
-example (p : PMF (BitString 4)) (hp : 3 ≤ PMF.entropy p) :
-    5 ≤ PMF.entropy (p.bind fun x =>
+        (PMF.uniformOfFintype (BitString 5) y).toReal ∧
+    3 ≤ PMF.entropy (p₅.map fun x => BitString.ofList 4 ((List.ofFn x).take 4)) ∧
+    5 ≤ PMF.entropy (p₄.bind fun x =>
       (PMF.uniformOfFintype (BitString 2)).map fun z =>
         BitString.ofList (4 + 2) (List.ofFn x ++ List.ofFn z)) := by
-  have h := entropy_append_uniform (m := 4) (k := 2) p
-  have h2 : ((2 : ℕ) : ℝ) = 2 := by norm_num
-  linarith
+  refine ⟨?_, ?_, ?_⟩
+  · simpa using sum_filter_mass_le_ge_of_entropy_ge (by omega : 1 ≤ 5)
+      (PMF.uniformOfFintype (BitString 5)) (B := 3) le_rfl three_le_entropy_uniform_five
+  · have h := entropy_ofList_take_ge (m := 5) (k := 4) (by omega) p₅
+    have hsub : ((5 - 4 : ℕ) : ℝ) = 1 := by norm_num
+    linarith
+  · have h := entropy_append_uniform (m := 4) (k := 2) p₄
+    have h2 : ((2 : ℕ) : ℝ) = 2 := by norm_num
+    linarith
 
 end Cslib.Probability.PMF.BitStringEntropyTests
