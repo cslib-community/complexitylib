@@ -64,7 +64,11 @@ example : (Rat.divInt (-6) 4).den = 2 := by
   decide +kernel
 
 example : decide ((Rat.divInt (-6) 4).num < 0) = true := by
-  rw [divInt_sign (-6) 4 (by decide)]
+  rw [Rat.decide_num_divInt_lt_zero_of_ne_zero (-6) 4 (by decide)]
+  decide +kernel
+
+example : decide ((Rat.divInt (-6) 0).num < 0) = false := by
+  rw [Rat.decide_num_divInt_lt_zero (-6) 0]
   decide +kernel
 
 example : encodeRat (Rat.divInt (-6) 4) =

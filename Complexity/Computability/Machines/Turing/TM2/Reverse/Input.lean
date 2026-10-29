@@ -100,7 +100,7 @@ theorem length_eq (h : z.Represents input pos) :
   simpa only [List.length_append, List.length_reverse] using congrArg List.length h.contents
 
 /-- A zipper read agrees with indexing the original input at the native head position. -/
-private theorem read_eq_getElem? (h : z.Represents input pos) :
+theorem read_eq_getElem? (h : z.Represents input pos) :
     z.read = if pos.val = 0 then none else input[pos.val - 1]? := by
   rcases z with ⟨l, r, b⟩
   cases b with
@@ -119,7 +119,7 @@ theorem read_eq_inputSymbol {k : ℕ} {State : Type*} {cfg : Cfg k Symbol State 
   split_ifs <;> grind
 
 /-- Moving left preserves the representation, with clamping at the left boundary. -/
-private theorem moveLeft (h : z.Represents input pos) :
+theorem moveLeft (h : z.Represents input pos) :
     z.moveLeft.Represents input (moveInputPos pos .neg) := by
   have hm := val_moveInputPos_eq pos .neg
   simp only [SignType.cast] at hm
@@ -148,7 +148,7 @@ private theorem moveLeft (h : z.Represents input pos) :
         omega
 
 /-- Moving right preserves the representation, with clamping at the right boundary. -/
-private theorem moveRight (h : z.Represents input pos) :
+theorem moveRight (h : z.Represents input pos) :
     z.moveRight.Represents input (moveInputPos pos .pos) := by
   have hm := val_moveInputPos_eq pos .pos
   simp only [SignType.cast] at hm

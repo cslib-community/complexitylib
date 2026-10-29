@@ -178,11 +178,14 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
   Native numeric parameter computation, signed-residue/histogram counting, trial-division prime
-  tables, collision-tested least-prime scans and complete two-prime modulus selection also use
-  the existing `WordRAM.Code`/`ExecWithin` APIs. Their explicit local fit, frame and charged-cost
-  contracts do not yet compose the complete preprocessing from input through frontend, heavy sets,
-  recursion and packed output. Global logarithmic width and subquadratic preprocessing bounds
-  remain in #1446.
+  tables and collision-tested least-prime scans also use the existing `WordRAM.Code`/`ExecWithin`
+  APIs. Their explicit local fit, frame and charged-cost contracts do not yet compose the complete
+  preprocessing from input through frontend, heavy sets, recursion and packed output; the global
+  logarithmic width and subquadratic preprocessing bound remain in #1446.
+
+  Complete native two-prime modulus selection uses the same `WordRAM.Code`/`ExecWithin` APIs,
+  with explicit local fit, frame and charged-cost contracts. This component does not complete
+  the preprocessing objective in #1446.
 
   `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
   frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical

@@ -9,12 +9,14 @@ module
 
 public import Complexity.Init
 public import Mathlib.Data.List.Basic
+public import Mathlib.Data.List.DropRight
 
 /-!
 # List append boundaries and unary delimiters
 
 ## Main results
 
+* `List.rdropWhile_append`: drop matching suffix elements across an append boundary.
 * `List.zip_tail_append_cons`: split adjacent pairs at a shared boundary element.
 * `List.replicate_not_append_cons_inj`, `List.replicate_true_append_false_inj`: a unary block
   followed by its delimiter determines both its length and the remaining suffix.
@@ -25,6 +27,15 @@ public import Mathlib.Data.List.Basic
 -/
 
 @[expose] public section
+
+/-- Dropping from the right of an appended list drops from the suffix first. -/
+theorem List.rdropWhile_append {α : Type*} (p : α → Bool) (l₁ l₂ : List α) :
+    (l₁ ++ l₂).rdropWhile p =
+      if l₂.rdropWhile p = [] then l₁.rdropWhile p else l₁ ++ l₂.rdropWhile p := by
+  simp only [List.rdropWhile, List.reverse_append, List.dropWhile_append]
+  by_cases h : l₂.reverse.dropWhile p = []
+  · simp [h]
+  · simp [h]
 
 /-- Split consecutive pairs at a boundary element shared by the two list segments. -/
 theorem List.zip_tail_append_cons {α : Type*} (before : List α) (middle : α)

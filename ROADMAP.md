@@ -430,10 +430,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table and
-  collision-tested minimum-search and complete two-prime modulus programs have explicit local
-  fit/frame/cost contracts.
+  collision-tested minimum-search programs have explicit local fit/frame/cost contracts.
   Frontend enumeration, heavy extraction, recursive traversal, packed output and global
   preprocessing width/time composition remain.
+- **Native Chan–He modulus** ([#1501](https://github.com/cslib-community/complexitylib/issues/1501)):
+  complete two-prime modulus selection has explicit local fit/frame/cost contracts. The full
+  preprocessing and global width/time composition objective remains under [#1446].
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
