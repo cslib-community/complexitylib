@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.ExactTriangle.Weights
+public import Complexity.Foundations.Data.Int.Residue
 public import Complexity.Foundations.NumberTheory.PrimeWindow
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Mathlib.Data.Matrix.Mul
@@ -74,15 +75,6 @@ def IsSelectedPrime {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (D p : ℕ
 private theorem four_le_sqrt {D : ℕ} (hD : 16 ≤ D) : 4 ≤ Real.sqrt (D : ℝ) :=
   Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD)
 
-private theorem natCast_toNat_emod {p : ℕ} (hp : 0 < p) (u : ℤ) :
-    ((u % (p : ℤ)).toNat : ℤ) = u % (p : ℤ) :=
-  Int.toNat_of_nonneg (Int.emod_nonneg _ (by omega))
-
-private theorem toNat_emod_lt {p : ℕ} (hp : 0 < p) (u : ℤ) : (u % (p : ℤ)).toNat < p := by
-  have := Int.emod_nonneg u (by omega : (p : ℤ) ≠ 0)
-  have := Int.emod_lt_of_pos u (by omega : (0 : ℤ) < p)
-  omega
-
 /-!
 ### The primes in the range -/
 
@@ -134,8 +126,8 @@ private theorem eq_add_toNat_emod_iff {p r : ℕ} (hp : p ≠ 0) (hr : r < p) (u
   rw [← Int.natCast_inj, Int.ModEq, Int.emod_eq_of_lt (Int.natCast_nonneg r) (by exact_mod_cast hr),
     eq_comm]
   push_cast
-  rw [natCast_toNat_emod (Nat.pos_of_ne_zero hp),
-    natCast_toNat_emod (Nat.pos_of_ne_zero hp),
+  rw [Int.natCast_toNat_emod (Nat.pos_of_ne_zero hp),
+    Int.natCast_toNat_emod (Nat.pos_of_ne_zero hp),
     ← Int.add_emod]
 
 /-!
@@ -233,8 +225,9 @@ theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
   refine Finset.sum_congr rfl fun a _ => ?_
   rw [Fintype.sum_prod_type]
   refine Finset.sum_congr rfl fun b _ => ?_
-  have hcast := natCast_toNat_emod (Nat.pos_of_ne_zero hp) (-wAB a b)
-  rw [(coeff_matP_mul_matQ wBC wAC) hp a b _ (toNat_emod_lt (Nat.pos_of_ne_zero hp) _),
+  have hcast := Int.natCast_toNat_emod (Nat.pos_of_ne_zero hp) (-wAB a b)
+  have hr : ((-wAB a b) % (p : ℤ)).toNat < p := Int.natMod_lt (m := -wAB a b) hp
+  rw [(coeff_matP_mul_matQ wBC wAC) hp a b _ hr,
     Finset.card_filter]
   push_cast
   refine Finset.sum_congr rfl fun c _ => ?_
