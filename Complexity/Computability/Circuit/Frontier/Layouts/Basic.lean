@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.Multigraph
 public import Mathlib.Data.Nat.Log
+import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.Archimedean.Real.Basic
 import Mathlib.Data.Finset.Sort
@@ -39,25 +40,6 @@ the absorption of logarithmic error terms into the layout hypothesis.
 namespace Cslib.Circuits.Frontier
 
 open Set
-
-/-- `log₂ N` is at most `ε N` plus a constant, for every `ε > 0`. -/
-theorem exists_natLog_le_mul_add {ε : ℝ} (hε : 0 < ε) :
-    ∃ K : ℝ, ∀ N : ℕ, (Nat.log 2 N : ℝ) ≤ ε * N + K := by
-  obtain ⟨k, hk⟩ := pow_unbounded_of_one_lt (1 / ε) one_lt_two
-  refine ⟨k, fun N => ?_⟩
-  -- `2 ^ k (log₂ N - k) ≤ 2 ^ log₂ N ≤ N`.
-  have hN : 2 ^ k * (Nat.log 2 N - k) ≤ N := by
-    rcases le_or_gt (Nat.log 2 N) k with h | h
-    · simp [Nat.sub_eq_zero_of_le h]
-    · calc 2 ^ k * (Nat.log 2 N - k) ≤ 2 ^ k * 2 ^ (Nat.log 2 N - k) :=
-            Nat.mul_le_mul_left _ Nat.lt_two_pow_self.le
-        _ = 2 ^ Nat.log 2 N := by rw [← pow_add, Nat.add_sub_cancel' h.le]
-        _ ≤ N := Nat.pow_log_le_self 2 (by rintro rfl; simp at h)
-  have h₁ : (Nat.log 2 N : ℝ) ≤ ((Nat.log 2 N - k : ℕ) : ℝ) + k := by norm_cast; omega
-  have h₂ : (2 : ℝ) ^ k * ((Nat.log 2 N - k : ℕ) : ℝ) ≤ N := by exact_mod_cast hN
-  have h₃ : 1 < ε * 2 ^ k := by rwa [div_lt_iff₀ hε, mul_comm] at hk
-  nlinarith [mul_le_mul_of_nonneg_left h₂ hε.le,
-    mul_le_mul_of_nonneg_right h₃.le (Nat.cast_nonneg (α := ℝ) (Nat.log 2 N - k))]
 
 /-! ### Edge cuts -/
 
@@ -199,15 +181,19 @@ theorem LayoutBound.of_natLog {d D : ℕ} {A : ℝ}
     LayoutBound d A := by
   intro η hη
   obtain ⟨C, hC⟩ := h η hη
-  obtain ⟨K, hK⟩ := exists_natLog_le_mul_add (ε := η / (D + 1)) (by positivity)
-  refine ⟨C + D * K, fun V E _ _ G hconn hloop hdeg => ?_⟩
+  obtain ⟨m, hm⟩ := exists_nat_gt ((D : ℝ) / η)
+  refine ⟨C + η * (m * m : ℕ), fun V E _ _ G hconn hloop hdeg => ?_⟩
   obtain ⟨π, hπ⟩ := hC V E G hconn hloop hdeg
   refine ⟨π, hπ.trans ?_⟩
-  have hD : (D : ℝ) * (η / (D + 1)) ≤ η := by
-    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-    nlinarith
-  have hN : (0 : ℝ) ≤ Nat.card V := Nat.cast_nonneg _
-  have hlog := mul_le_mul_of_nonneg_left (hK (Nat.card V)) (Nat.cast_nonneg (α := ℝ) D)
-  nlinarith [mul_le_mul_of_nonneg_right hD hN]
+  have hDm : (D : ℝ) ≤ η * m := ((div_lt_iff₀ hη).mp hm).le.trans_eq (mul_comm _ _)
+  have hlog : (m : ℝ) * Nat.log 2 (Nat.card V) ≤ Nat.card V + (m * m : ℕ) := by
+    exact_mod_cast Nat.mul_log_le_add_sq Nat.one_lt_two m (Nat.card V)
+  have hDlog : (D : ℝ) * Nat.log 2 (Nat.card V) ≤ η * (Nat.card V + (m * m : ℕ)) :=
+    calc (D : ℝ) * Nat.log 2 (Nat.card V)
+        ≤ (η * m) * Nat.log 2 (Nat.card V) :=
+          mul_le_mul_of_nonneg_right hDm (Nat.cast_nonneg _)
+      _ = η * ((m : ℝ) * Nat.log 2 (Nat.card V)) := mul_assoc _ _ _
+      _ ≤ η * (Nat.card V + (m * m : ℕ)) := mul_le_mul_of_nonneg_left hlog hη.le
+  linarith
 
 end Cslib.Circuits.Frontier
