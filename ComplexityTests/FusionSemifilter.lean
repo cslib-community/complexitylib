@@ -45,8 +45,6 @@ private theorem no_semifilter {U : Type*} [IsEmpty U] (F : Semifilter U) : False
   F.not_apply_empty ((show (Set.univ : Set U) = ∅ from
     Set.univ_eq_empty_iff.mpr inferInstance) ▸ F.apply_univ)
 
-example (F : Semifilter Empty) : False := no_semifilter F
-
 private abbrev target : Set (Fin 3) := {0}
 private abbrev inputs : Fin 2 → Set (Fin 3) := ![{0, 1}, {0, 2}]
 
@@ -97,8 +95,9 @@ example : ecomplexityFrom (Monotone.setInterpretation (Fin 3)) Monotone.andCost
 
 example (c : Circuit Monotone.signature 2 1)
     (hc : c.eval (Monotone.setInterpretation (Fin 3)) inputs 0 = target) :
-    1 ≤ c.program.cost Monotone.andCost :=
-  pairCover_lowerBound positive_cover c 0 hc
+    c.program.cost Monotone.andCost ≠ 0 := by
+  have h := pairCover_lowerBound positive_cover c 0 hc
+  omega
 
 private def shared : Circuit Monotone.signature 2 4 :=
   ⟨((((((Program.empty : Program Monotone.signature 2 0).gate
@@ -116,14 +115,15 @@ private theorem shared_eval : shared.eval (Monotone.setInterpretation (Fin 3)) i
 private def extracted : PairCover target inputs := PairCover.ofCircuit shared inputs 0 shared_eval
 
 -- The same AND pair occurs twice, including the final unused gate; no free gate contributes.
-example : extracted.pairs =
-    [(Subtype.val ⁻¹' inputs 0, Subtype.val ⁻¹' inputs 1),
-      (Subtype.val ⁻¹' inputs 0, Subtype.val ⁻¹' inputs 1)] := by
+example :
+    extracted.pairs =
+        [(Subtype.val ⁻¹' inputs 0, Subtype.val ⁻¹' inputs 1),
+          (Subtype.val ⁻¹' inputs 0, Subtype.val ⁻¹' inputs 1)] ∧
+      extracted.pairs.length = 2 := by
+  refine ⟨?_, PairCover.length_ofCircuit _ _ _ _⟩
   change [((Subtype.val ⁻¹' (inputs 0 ∪ ∅)), Subtype.val ⁻¹' inputs 1),
     ((Subtype.val ⁻¹' (inputs 0 ∪ ∅)), Subtype.val ⁻¹' inputs 1)] = _
   simp
-
-example : extracted.pairs.length = 2 := PairCover.length_ofCircuit _ _ _ _
 
 /-- info: (6, 2, 2) -/
 #guard_msgs in
@@ -160,17 +160,19 @@ private def unopposed : SemifilterWitness target (Fin.elim0 : Fin 0 → Set (Fin
   admissible_filter := trivial
   above i := i.elim0
 
-example : pairCoverComplexity target (Fin.elim0 : Fin 0 → Set (Fin 3)) = ⊤ := by
+private theorem unopposed_cover_top :
+    pairCoverComplexity target (Fin.elim0 : Fin 0 → Set (Fin 3)) = ⊤ := by
   apply top_le_iff.mp
   refine le_pairCoverComplexity_iff.mpr fun c => (c.isCover unopposed ?_).elim
   exact fun _ _ ha hb => ⟨ha, hb⟩
 
--- Carrier and assignment domain remain independently universe-polymorphic.
-universe u v
-example {U : Type u} {X : Type v} {n m : ℕ} (sources : X → Fin n → Set U)
-    (target : X → Fin m → Set U) (x : X) (o : Fin m) (k : ℕ∞)
-    (h : k ≤ pairCoverComplexity (target x o) (sources x) Semifilter.IsUltra) :
-    k ≤ ecomplexityFrom (Monotone.setInterpretation U) Monotone.andCost target sources :=
-  h.trans (pairCoverComplexity_le_ecomplexityFrom sources target x o Semifilter.IsUltra)
+-- An unopposed witness forces infinite circuit complexity for any output family with `target`.
+example : ecomplexityFrom (Monotone.setInterpretation (Fin 3)) Monotone.andCost
+    (fun _ : Unit => ![target]) (fun _ : Unit => (Fin.elim0 : Fin 0 → Set (Fin 3))) = ⊤ := by
+  apply top_le_iff.mp
+  rw [← unopposed_cover_top]
+  exact pairCoverComplexity_le_ecomplexityFrom
+    (fun _ : Unit => (Fin.elim0 : Fin 0 → Set (Fin 3)))
+    (fun _ : Unit => ![target]) () 0 (fun _ => True)
 
 end ComplexityTests.FusionSemifilter

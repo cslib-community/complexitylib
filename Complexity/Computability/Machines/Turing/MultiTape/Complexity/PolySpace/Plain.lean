@@ -138,4 +138,9 @@ theorem comp' {f : β → γ} {g : α → β} {encOut : γ ↪ List Bool}
 
 end ComputableInPolySpace
 
+/-- The binary counter in polynomial time. -/
+theorem ComputableInPolyTime.increment :
+    ComputableInPolyTime Cslib.BitString.increment encBits encBits :=
+  .of_tidy ComputableTidilyInPolyTime.increment
+
 end Turing.MultiTapeTM

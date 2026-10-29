@@ -1639,6 +1639,31 @@ private theorem toOuterMeasure_uniformOfFinset_bind {U : Finset G} (hU : U.Nonem
     tsum_eq_sum (s := U) fun z hz => by simp [PMF.uniformOfFinset_apply, hz]]
   exact Finset.sum_congr rfl fun z hz => by simp [PMF.uniformOfFinset_apply, hz]
 
+omit [AddGroup G] [DecidableEq G] [Fintype G] [Nonempty G] in
+/-- Compare the uniform continuation sums after discarding bad samples and relabeling the
+remaining samples by an equivalence. -/
+private theorem sum_uniform_le_of_good (U V : Finset G) (e : G ≃ G) (bad : G → Bool)
+    (f g : G → ℝ≥0∞) (hsub : V.map e.toEmbedding ⊆ U)
+    (hzero : ∀ x, bad x = true → f x = 0)
+    (hgood : ∀ x ∈ U, bad x = false → e.symm x ∈ V ∧ f x ≤ g (e.symm x)) :
+    ∑ x ∈ U, (U.card : ℝ≥0∞)⁻¹ * f x ≤ ∑ y ∈ V, (V.card : ℝ≥0∞)⁻¹ * g y := by
+  have hcard : (U.card : ℝ≥0∞)⁻¹ ≤ (V.card : ℝ≥0∞)⁻¹ :=
+    ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr (by simpa using Finset.card_le_card hsub))
+  have hout : ∀ x ∈ U, x ∉ V.map e.toEmbedding → (U.card : ℝ≥0∞)⁻¹ * f x = 0 := by
+    intro x hx hnot
+    by_cases hb : bad x = true
+    · rw [hzero x hb, mul_zero]
+    · exact False.elim (hnot (Finset.mem_map.mpr
+        ⟨e.symm x, (hgood x hx (Bool.eq_false_iff.mpr hb)).1, e.apply_symm_apply x⟩))
+  rw [← Finset.sum_subset hsub hout, Finset.sum_map]
+  refine Finset.sum_le_sum fun y hy => ?_
+  simp only [Equiv.toEmbedding_apply]
+  by_cases hb : bad (e y) = true
+  · rw [hzero (e y) hb, mul_zero]
+    exact zero_le
+  · simpa only [Equiv.symm_apply_apply] using mul_le_mul' hcard
+      (hgood (e y) (hsub (Finset.mem_map_of_mem _ hy)) (Bool.eq_false_iff.mpr hb)).2
+
 /-- **Lazy coupling inequality**: starting from any cache triple `(c_e, c_π, c)` satisfying
 `CacheRel k c_e c_π c`, the probability that `idealLazyHandler` produces an output satisfying `P`
 without triggering `isBadEvenMansourKey` is at most the probability that `realLazyHandler k`
@@ -1683,51 +1708,18 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         · have hne_c := hrel.partial_c.unusedRange_nonempty hxc
           simp only [hxc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
             toOuterMeasure_uniformOfFinset_bind]
-          have hsub := hrel.map_unusedRange_subset_e
-          have hzero : ∀ y ∈ unusedRange c_e,
-              y ∉ (unusedRange c).map (Equiv.addRight k.2).toEmbedding →
-              ((unusedRange c_e).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (y, ((x, y) :: c_e, c_π))).toOuterMeasure S_ideal = 0 := by
-            intro y hy hnot
-            by_cases hbad : isBadEvenMansourKey ((x, y) :: c_e) c_π k = true
-            · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont y) P hbad, mul_zero]
-            · have hgood' : isBadEvenMansourKey ((x, y) :: c_e) c_π k = false :=
-                Bool.eq_false_iff.mpr hbad
-              have hyc := (hrel.cons_cipher hx (mem_unusedRange_iff.mp hy) hgood').2.1
-              refine False.elim (hnot (Finset.mem_map.mpr ⟨y - k.2,
-                mem_unusedRange_iff.mpr hyc, by simp⟩))
-          rw [← Finset.sum_subset hsub hzero, Finset.sum_map]
-          refine Finset.sum_le_sum fun v hv => ?_
-          dsimp
-          by_cases hbad : isBadEvenMansourKey ((x, v + k.2) :: c_e) c_π k = true
-          · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont (v + k.2)) P hbad,
-              mul_zero]
-            exact zero_le
-          · have hgood' : isBadEvenMansourKey ((x, v + k.2) :: c_e) c_π k = false :=
-              Bool.eq_false_iff.mpr hbad
-            have hvy : invLookup c_e (v + k.2) = none :=
-              mem_unusedRange_iff.mp (hsub (Finset.mem_map_of_mem _ hv))
-            have hrel' := (hrel.cons_cipher hx hvy hgood').2.2
-            simp only [add_sub_cancel_right] at hrel'
-            have hcard : ((unusedRange c_e).card : ℝ≥0∞)⁻¹ ≤ ((unusedRange c).card : ℝ≥0∞)⁻¹ :=
-              ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr
-                (by simpa using Finset.card_le_card hsub))
-            exact mul_le_mul' hcard (ih (v + k.2) hrel')
-        · cases hcl : c.lookup (x + k.1) with
-          | none => exact False.elim (hxc hcl)
-          | some v =>
-            have hzero : ∑ y ∈ unusedRange c_e, ((unusedRange c_e).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (y, ((x, y) :: c_e, c_π))).toOuterMeasure S_ideal = 0 := by
-              refine Finset.sum_eq_zero fun y hy => ?_
-              have hbad : isBadEvenMansourKey ((x, y) :: c_e) c_π k = true := by
-                rcases (hrel.mem_iff (x + k.1, v)).mp (mem_of_lookup_eq_some hcl) with he | hπ
-                · simp only [unshiftPair, add_sub_cancel_right] at he
-                  exact False.elim (lookup_eq_none_iff_forall.mp hx (v + k.2) he)
-                · rw [isBadEvenMansourKey_eq_true_iff]
-                  exact ⟨(x, y), List.mem_cons_self, (x + k.1, v), hπ, Or.inl rfl⟩
-              rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont y) P hbad, mul_zero]
-            rw [hzero]
-            exact zero_le
+          refine sum_uniform_le_of_good _ _ (Equiv.subRight k.2).symm
+            (fun y => isBadEvenMansourKey ((x, y) :: c_e) c_π k) _ _
+            hrel.map_unusedRange_subset_e
+            (fun y hbad => toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont y) P hbad) ?_
+          intro y hy hgood
+          obtain ⟨_, hyc, hrel'⟩ := hrel.cons_cipher hx (mem_unusedRange_iff.mp hy) hgood
+          refine ⟨mem_unusedRange_iff.mpr hyc, ?_⟩
+          simpa using ih y hrel'
+        · refine (le_of_eq (Finset.sum_eq_zero fun y hy => ?_)).trans zero_le
+          have hbad := Bool.eq_true_of_not_eq_false fun hgood =>
+            hxc (hrel.cons_cipher hx (mem_unusedRange_iff.mp hy) hgood).1
+          rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont y) P hbad, mul_zero]
     · -- Case 2: .inl (.inverse y)
       dsimp [idealLazyHandler, realLazyHandler, toPermQuery, fromPermAnswer,
         RandomPermutation.answer]
@@ -1744,51 +1736,18 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         · have hne_c := hrel.partial_c.unusedDomain_nonempty hyc
           simp only [hyc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
             toOuterMeasure_uniformOfFinset_bind]
-          have hsub := hrel.map_unusedDomain_subset_e
-          have hzero : ∀ x ∈ unusedDomain c_e,
-              x ∉ (unusedDomain c).map (Equiv.subRight k.1).toEmbedding →
-              ((unusedDomain c_e).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (x, ((x, y) :: c_e, c_π))).toOuterMeasure S_ideal = 0 := by
-            intro x hx hnot
-            by_cases hbad : isBadEvenMansourKey ((x, y) :: c_e) c_π k = true
-            · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont x) P hbad, mul_zero]
-            · have hgood' : isBadEvenMansourKey ((x, y) :: c_e) c_π k = false :=
-                Bool.eq_false_iff.mpr hbad
-              have hxc := (hrel.cons_cipher (mem_unusedDomain_iff.mp hx) hy hgood').1
-              refine False.elim (hnot (Finset.mem_map.mpr ⟨x + k.1,
-                mem_unusedDomain_iff.mpr hxc, by simp⟩))
-          rw [← Finset.sum_subset hsub hzero, Finset.sum_map]
-          refine Finset.sum_le_sum fun u hu => ?_
-          dsimp [Equiv.subRight]
-          by_cases hbad : isBadEvenMansourKey ((u - k.1, y) :: c_e) c_π k = true
-          · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont (u - k.1)) P hbad,
-              mul_zero]
-            exact zero_le
-          · have hgood' : isBadEvenMansourKey ((u - k.1, y) :: c_e) c_π k = false :=
-              Bool.eq_false_iff.mpr hbad
-            have hux : c_e.lookup (u - k.1) = none :=
-              mem_unusedDomain_iff.mp (hsub (Finset.mem_map_of_mem _ hu))
-            have hrel' := (hrel.cons_cipher hux hy hgood').2.2
-            simp only [sub_add_cancel] at hrel'
-            have hcard : ((unusedDomain c_e).card : ℝ≥0∞)⁻¹ ≤ ((unusedDomain c).card : ℝ≥0∞)⁻¹ :=
-              ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr
-                (by simpa using Finset.card_le_card hsub))
-            exact mul_le_mul' hcard (ih (u - k.1) hrel')
-        · cases hcl : invLookup c (y - k.2) with
-          | none => exact False.elim (hyc hcl)
-          | some u =>
-            have hzero : ∑ x ∈ unusedDomain c_e, ((unusedDomain c_e).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (x, ((x, y) :: c_e, c_π))).toOuterMeasure S_ideal = 0 := by
-              refine Finset.sum_eq_zero fun x hx => ?_
-              have hbad : isBadEvenMansourKey ((x, y) :: c_e) c_π k = true := by
-                rcases (hrel.mem_iff (u, y - k.2)).mp (mem_of_invLookup_eq_some hcl) with he | hπ
-                · simp only [unshiftPair, sub_add_cancel] at he
-                  exact False.elim (invLookup_eq_none_iff_forall.mp hy (u - k.1) he)
-                · rw [isBadEvenMansourKey_eq_true_iff]
-                  exact ⟨(x, y), List.mem_cons_self, (u, y - k.2), hπ, Or.inr rfl⟩
-              rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont x) P hbad, mul_zero]
-            rw [hzero]
-            exact zero_le
+          refine sum_uniform_le_of_good _ _ (Equiv.subRight k.1)
+            (fun x => isBadEvenMansourKey ((x, y) :: c_e) c_π k) _ _
+            hrel.map_unusedDomain_subset_e
+            (fun x hbad => toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont x) P hbad) ?_
+          intro x hx hgood
+          obtain ⟨hxc, _, hrel'⟩ := hrel.cons_cipher (mem_unusedDomain_iff.mp hx) hy hgood
+          refine ⟨mem_unusedDomain_iff.mpr hxc, ?_⟩
+          simpa [Equiv.subRight] using ih x hrel'
+        · refine (le_of_eq (Finset.sum_eq_zero fun x hx => ?_)).trans zero_le
+          have hbad := Bool.eq_true_of_not_eq_false fun hgood =>
+            hyc (hrel.cons_cipher (mem_unusedDomain_iff.mp hx) hy hgood).2.1
+          rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont x) P hbad, mul_zero]
     · -- Case 3: .inr (.forward u)
       dsimp [idealLazyHandler, realLazyHandler, toPermQuery, fromPermAnswer,
         RandomPermutation.answer]
@@ -1805,44 +1764,17 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         · have hne_c := hrel.partial_c.unusedRange_nonempty huc
           simp only [huc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
             toOuterMeasure_uniformOfFinset_bind]
-          have hsub := hrel.unusedRange_subset_π
-          have hzero : ∀ v ∈ unusedRange c_π, v ∉ unusedRange c →
-              ((unusedRange c_π).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (v, (c_e, (u, v) :: c_π))).toOuterMeasure S_ideal = 0 := by
-            intro v hv hnot
-            by_cases hbad : isBadEvenMansourKey c_e ((u, v) :: c_π) k = true
-            · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont v) P hbad, mul_zero]
-            · have hgood' : isBadEvenMansourKey c_e ((u, v) :: c_π) k = false :=
-                Bool.eq_false_iff.mpr hbad
-              have hvc := (hrel.cons_perm hu (mem_unusedRange_iff.mp hv) hgood').2.1
-              exact False.elim (hnot (mem_unusedRange_iff.mpr hvc))
-          rw [← Finset.sum_subset hsub hzero]
-          refine Finset.sum_le_sum fun v hv => ?_
-          by_cases hbad : isBadEvenMansourKey c_e ((u, v) :: c_π) k = true
-          · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont v) P hbad, mul_zero]
-            exact zero_le
-          · have hgood' : isBadEvenMansourKey c_e ((u, v) :: c_π) k = false :=
-              Bool.eq_false_iff.mpr hbad
-            have hvπ : invLookup c_π v = none := mem_unusedRange_iff.mp (hsub hv)
-            have hrel' := (hrel.cons_perm hu hvπ hgood').2.2
-            have hcard : ((unusedRange c_π).card : ℝ≥0∞)⁻¹ ≤ ((unusedRange c).card : ℝ≥0∞)⁻¹ :=
-              ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr (Finset.card_le_card hsub))
-            exact mul_le_mul' hcard (ih v hrel')
-        · cases hcl : c.lookup u with
-          | none => exact False.elim (huc hcl)
-          | some v₀ =>
-            have hzero : ∑ v ∈ unusedRange c_π, ((unusedRange c_π).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (v, (c_e, (u, v) :: c_π))).toOuterMeasure S_ideal = 0 := by
-              refine Finset.sum_eq_zero fun v hv => ?_
-              have hbad : isBadEvenMansourKey c_e ((u, v) :: c_π) k = true := by
-                rcases (hrel.mem_iff (u, v₀)).mp (mem_of_lookup_eq_some hcl) with he | hπ
-                · rw [isBadEvenMansourKey_eq_true_iff]
-                  exact ⟨unshiftPair k (u, v₀), he, (u, v), List.mem_cons_self,
-                    Or.inl (by simp [unshiftPair])⟩
-                · exact False.elim (lookup_eq_none_iff_forall.mp hu v₀ hπ)
-              rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont v) P hbad, mul_zero]
-            rw [hzero]
-            exact zero_le
+          refine sum_uniform_le_of_good _ _ (Equiv.refl G)
+            (fun v => isBadEvenMansourKey c_e ((u, v) :: c_π) k) _ _
+            (by simpa using hrel.unusedRange_subset_π)
+            (fun v hbad => toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont v) P hbad) ?_
+          intro v hv hgood
+          obtain ⟨_, hvc, hrel'⟩ := hrel.cons_perm hu (mem_unusedRange_iff.mp hv) hgood
+          exact ⟨mem_unusedRange_iff.mpr hvc, ih v hrel'⟩
+        · refine (le_of_eq (Finset.sum_eq_zero fun v hv => ?_)).trans zero_le
+          have hbad := Bool.eq_true_of_not_eq_false fun hgood =>
+            huc (hrel.cons_perm hu (mem_unusedRange_iff.mp hv) hgood).1
+          rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont v) P hbad, mul_zero]
     · -- Case 4: .inr (.inverse v)
       dsimp [idealLazyHandler, realLazyHandler, toPermQuery, fromPermAnswer,
         RandomPermutation.answer]
@@ -1859,44 +1791,17 @@ theorem run_idealLazyHandler_good_le_realLazyHandler {α : Type}
         · have hne_c := hrel.partial_c.unusedDomain_nonempty hvc
           simp only [hvc, dite_eq_left hne_c, Function.comp_def, PMF.bind_map,
             toOuterMeasure_uniformOfFinset_bind]
-          have hsub := hrel.unusedDomain_subset_π
-          have hzero : ∀ u ∈ unusedDomain c_π, u ∉ unusedDomain c →
-              ((unusedDomain c_π).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (u, (c_e, (u, v) :: c_π))).toOuterMeasure S_ideal = 0 := by
-            intro u hu hnot
-            by_cases hbad : isBadEvenMansourKey c_e ((u, v) :: c_π) k = true
-            · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont u) P hbad, mul_zero]
-            · have hgood' : isBadEvenMansourKey c_e ((u, v) :: c_π) k = false :=
-                Bool.eq_false_iff.mpr hbad
-              have huc := (hrel.cons_perm (mem_unusedDomain_iff.mp hu) hv hgood').1
-              exact False.elim (hnot (mem_unusedDomain_iff.mpr huc))
-          rw [← Finset.sum_subset hsub hzero]
-          refine Finset.sum_le_sum fun u hu => ?_
-          by_cases hbad : isBadEvenMansourKey c_e ((u, v) :: c_π) k = true
-          · rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont u) P hbad, mul_zero]
-            exact zero_le
-          · have hgood' : isBadEvenMansourKey c_e ((u, v) :: c_π) k = false :=
-              Bool.eq_false_iff.mpr hbad
-            have huπ : c_π.lookup u = none := mem_unusedDomain_iff.mp (hsub hu)
-            have hrel' := (hrel.cons_perm huπ hv hgood').2.2
-            have hcard : ((unusedDomain c_π).card : ℝ≥0∞)⁻¹ ≤ ((unusedDomain c).card : ℝ≥0∞)⁻¹ :=
-              ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr (Finset.card_le_card hsub))
-            exact mul_le_mul' hcard (ih u hrel')
-        · cases hcl : invLookup c v with
-          | none => exact False.elim (hvc hcl)
-          | some u₀ =>
-            have hzero : ∑ u ∈ unusedDomain c_π, ((unusedDomain c_π).card : ℝ≥0∞)⁻¹ *
-                (cont_ideal (u, (c_e, (u, v) :: c_π))).toOuterMeasure S_ideal = 0 := by
-              refine Finset.sum_eq_zero fun u hu => ?_
-              have hbad : isBadEvenMansourKey c_e ((u, v) :: c_π) k = true := by
-                rcases (hrel.mem_iff (u₀, v)).mp (mem_of_invLookup_eq_some hcl) with he | hπ
-                · rw [isBadEvenMansourKey_eq_true_iff]
-                  exact ⟨unshiftPair k (u₀, v), he, (u, v), List.mem_cons_self,
-                    Or.inr (by simp [unshiftPair])⟩
-                · exact False.elim (invLookup_eq_none_iff_forall.mp hv u₀ hπ)
-              rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont u) P hbad, mul_zero]
-            rw [hzero]
-            exact zero_le
+          refine sum_uniform_le_of_good _ _ (Equiv.refl G)
+            (fun u => isBadEvenMansourKey c_e ((u, v) :: c_π) k) _ _
+            (by simpa using hrel.unusedDomain_subset_π)
+            (fun u hbad => toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont u) P hbad) ?_
+          intro u hu hgood
+          obtain ⟨huc, _, hrel'⟩ := hrel.cons_perm (mem_unusedDomain_iff.mp hu) hv hgood
+          exact ⟨mem_unusedDomain_iff.mpr huc, ih u hrel'⟩
+        · refine (le_of_eq (Finset.sum_eq_zero fun u hu => ?_)).trans zero_le
+          have hbad := Bool.eq_true_of_not_eq_false fun hgood =>
+            hvc (hrel.cons_perm (mem_unusedDomain_iff.mp hu) hv hgood).2.1
+          rw [toOuterMeasure_run_idealLazyHandler_eq_zero_of_bad (cont u) P hbad, mul_zero]
 
 omit [AddGroup G] in
 private theorem length_fst_idealLazyHandler_le {α : Type}

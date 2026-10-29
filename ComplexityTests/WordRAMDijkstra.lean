@@ -25,10 +25,10 @@ def graph : ListInstance where
   adj := ![[(1, 4), (2, 1), (1, 5)], [], [(1, 2)]]
   source := 0
 
-example : graph.m = 4 ∧ graph.maxWeight = 5 := by decide
-
-/-- The input words: `n`, the source, the offsets `0, 3, 3, 4`, then the edges. -/
-example : graph.encode = [3, 0, 0, 3, 3, 4, 1, 4, 2, 1, 1, 5, 1, 2] := by decide
+/-- `graph` has `4` edges, maximum weight `5`, and encoded words `n`, source, offsets `0, 3, 3, 4`,
+then the edges. -/
+example : (graph.m = 4 ∧ graph.maxWeight = 5) ∧
+    graph.encode = [3, 0, 0, 3, 3, 4, 1, 4, 2, 1, 1, 5, 1, 2] := by decide
 
 /-- The word-size hypothesis of `LogLinearSpec` holds for the instance at word size `10`. -/
 theorem fits : Fits 10 (8 * (graph.n + graph.m + 2) * (graph.maxWeight + 2)) := by decide

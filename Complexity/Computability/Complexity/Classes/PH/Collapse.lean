@@ -86,13 +86,13 @@ theorem SigmaP_succ_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
   refine ⟨(p + r.comp L) :: rs.map (·.comp L),
     fun x => V' ((x.1, x.2.take (p.eval (enc x.1).length)), x.2.drop (p.eval (enc x.1).length)),
     by simp only [List.length_cons, List.length_map]; omega, ?_, fun a => ?_⟩
-  · have hn : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
+  · have hn : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
         (encPair enc encBits) encUnary :=
-      ((ComputableTidilyInPolyTime.unary_eval p).comp
-        (ComputableTidilyInPolyTime.encoding_length enc)).comp (.fst _ _)
-    exact .of_tidy <| hV'.tidy.comp (((ComputableTidilyInPolyTime.fst _ _).prod
-      (ComputableTidilyInPolyTime.bitsTakeWithInput (.snd _ _) hn)).prod
-        (ComputableTidilyInPolyTime.bitsDropWithInput (.snd _ _) hn))
+      ((ComputableInPolyTime.unary_eval p).comp
+        (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
+    exact hV'.comp (((ComputableInPolyTime.fst _ _).prod
+      (ComputableInPolyTime.bitsTakeWithInput (.snd _ _) hn)).prod
+        (ComputableInPolyTime.bitsDropWithInput (.snd _ _) hn))
   · rw [hA a]
     simp only [List.map_cons, alternation_true_cons, Polynomial.eval_add, Polynomial.eval_comp,
       List.map_map, Function.comp_def]
@@ -149,7 +149,7 @@ theorem PH_eq_P_of_NP_subset_P (h : ∀ {β : Type} (encB : β ↪ List Bool), N
   rw [PH_eq_NP_of_coNP_subset_NP fun encB A hA => ?_, hNP]
   obtain ⟨f, hf, hfA⟩ := h encB hA
   rw [hNP]
-  exact ⟨fun a => !f a, .of_tidy (ComputableTidilyInPolyTime.bool_not.comp hf.tidy), fun a => by
+  exact ⟨fun a => !f a, (ComputableInPolyTime.bool_not.comp hf), fun a => by
     simpa using (hfA a).not⟩
 
 /-- **`Σₖ₊₁ ⊆ Σₖ` collapses the polynomial hierarchy to `Σₖ`**, for every `k`: then
