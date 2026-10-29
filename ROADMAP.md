@@ -402,6 +402,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   communication and interactive classes, with amplification, containments and complete
   problems.
 
+[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
+[#1463]: https://github.com/cslib-community/complexitylib/issues/1463
+[#1482]: https://github.com/cslib-community/complexitylib/issues/1482
+
 ## Machines, RAM and data structures
 
 - **Native distinct-position frontend** ([#1482]): initialized signed input produces exact
@@ -600,6 +604,4 @@ not planned, not as proved.
 [#1446]: https://github.com/cslib-community/complexitylib/issues/1446
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
-[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
-[#1482]: https://github.com/cslib-community/complexitylib/issues/1482
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
