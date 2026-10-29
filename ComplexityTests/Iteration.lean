@@ -14,6 +14,7 @@ import Complexity.Computability.Circuit.Boolean.Iteration.PrimeCycles
 import Complexity.Computability.Circuit.Boolean.Iteration.SequentialSquaring
 import Complexity.Computability.Circuit.Boolean.Iteration.UniversalMap
 import Complexity.Computability.Circuit.Boolean.Iteration.VisitScheduleCircuits
+import Complexity.Foundations.NumberTheory.PrimeCounting
 
 /-!
 # Fixed-power circuit clients
@@ -341,11 +342,11 @@ example :
             2 ^ 64 / (1024 * (64 + 1)) < out.size) ∧
     (easyCounterPowers 64 (lowerBudget 64)).card * 2 ^ (2 ^ (64 - 1)) ≤
       ModulusCounter.period 64 ∧
-    lcmBelow 5 < 4 ^ 5 :=
+    Nat.lcmUpto 5 < 4 ^ 5 :=
   ⟨counterStep_circuit 2,
    counter_power_lower_bound 64 (by decide),
    almost_all_counter_powers_hard 64 (by decide),
-   lcmBelow_lt_four_pow 5 (by decide)⟩
+   Nat.lcmUpto_lt_four_pow 5 (by decide)⟩
 
 /-- Non-vacuous concrete `PrimeCycleData` instance from the hash-class construction. -/
 noncomputable def samplePrimeCycleData : PrimeCycleData 1 3 :=

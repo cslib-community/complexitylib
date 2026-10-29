@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 module
 -- upstream: candidate
+public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Support
 public import Cslib.Computability.Circuit.Composition
 public import Cslib.Computability.Circuit.Depth
@@ -33,6 +34,8 @@ lower bound on circuit size.
   bounds are monotone in the bound.
 * `Cslib.Circuits.Program.FanInAtMost.append`, `Cslib.Circuits.Circuit.FanInAtMost.comp`,
   `Cslib.Circuits.Circuit.FanInAtMost.append`: fan-in bounds of composed programs and circuits.
+* `Cslib.Circuits.Circuit.fanInAtMost_pi`: single-output circuits side by side keep a common
+  fan-in bound.
 -/
 
 @[expose] public section
@@ -357,5 +360,16 @@ theorem Circuit.FanInAtMost.comp {p : ℕ} {d : Circuit σ m p} {c : Circuit σ 
 theorem Circuit.FanInAtMost.append {p : ℕ} {c : Circuit σ n m} {d : Circuit σ n p} {r : ℕ}
     (hc : c.FanInAtMost r) (hd : d.FanInAtMost r) : (c.append d).FanInAtMost r :=
   Program.FanInAtMost.append hc hd
+
+/-- Single-output circuits side by side keep a common fan-in bound. -/
+theorem Circuit.fanInAtMost_pi {m r : ℕ} {cs : Fin m → Circuit σ n 1}
+    (h : ∀ j, (cs j).FanInAtMost r) : (Circuit.pi cs).FanInAtMost r := by
+  induction m with
+  | zero =>
+    rw [Circuit.pi]
+    exact Circuit.fanInAtMost_wiring _ _
+  | succ m ih =>
+    rw [Circuit.pi]
+    exact (ih fun j => h _).append (h _)
 
 end Cslib.Circuits

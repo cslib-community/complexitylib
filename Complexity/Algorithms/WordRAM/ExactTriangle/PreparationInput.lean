@@ -29,6 +29,7 @@ pre-halt state and the final halt charged.
 
 ## Main results
 
+* `PreparationInput.exec_input`: structured execution for composition, without the final halt.
 * `PreparationInput.runs_input`: initialized execution, exact readback, fits and charged halt.
 * `PreparationInput.bounded_reachable`: input-derived word and address bounds at every prefix.
 * `PreparationInput.width_le_log`, `PreparationInput.wordBound_le_pow`: logarithmic physical
@@ -213,18 +214,17 @@ private theorem input_fits {n D g p A : ℕ} (values : List ℤ)
       have hs := hmag.of_natAbs_le ((hv z hz).trans (by omega : A ≤ A + p + 1))
       exact (Signed.encode_fits hs).mono (by dsimp only [width]; omega)
 
-/-- Complete initialized execution at every admitted physical width. The prefix witness and
-the output predicate use the same actual pre-halt memory, and the bound includes the halt. -/
-theorem runs_input {n D g p A W : ℕ} (values : List ℤ)
+/-- Structured initialized execution for real native caller composition. The budget excludes
+only the final halt; all existing original-input, width and exact readback hypotheses remain.
+This does not accept an execution, layout or intermediate-fit certificate. -/
+theorem exec_input {n D g p A W : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n))
     (hD : 1 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : 0 < p)
     (hv : ∀ z ∈ values, z.natAbs ≤ A) (hw : width n D g p A ≤ W) :
     let C := fun rho => Nat.count (fun q => (values.getD q 0 % (p : ℤ)).toNat = rho) (n * n)
     let K := ChunkCatalogue.before C (queryCap n D) p
-    ∃ y t, t ≤ Instances.timeBound n D p K (numPieces n D g) ∧
-      Runs W flatProgram (State.init (input n D g p values)) ⟨Instances.program.size, y⟩
-        (t - 1) ∧
-      Executes W flatProgram (State.init (input n D g p values)) (y.regs Instances.output) t ∧
+    ∃ y, ExecWithin W Instances.program (.init (input n D g p values)) y
+        (Instances.timeBound n D p K (numPieces n D g) - 1) ∧
       Instances.Output n D g p (fun q => values.getD q 0)
         (.init (input n D g p values)) y ∧
       InputFits W (input n D g p values) ∧ y.Bounded W := by
@@ -244,6 +244,24 @@ theorem runs_input {n D g p A W : ℕ} (values : List ℤ)
   have hew := ExecWithin.mono_width Instances.program_fixed.2 hy hw
   have hi := (input_fits values hlen hv).mono hw
   have hybounded := hew.bounded (Data.Bounded.init hi)
+  exact ⟨y, hew, hout, hi, hybounded⟩
+
+/-- Complete initialized execution at every admitted physical width. The prefix witness and
+the output predicate use the same actual pre-halt memory, and the bound includes the halt. -/
+theorem runs_input {n D g p A W : ℕ} (values : List ℤ)
+    (hlen : values.length = 3 * (n * n))
+    (hD : 1 ≤ D) (hDn : D ≤ n) (hg : 1 ≤ g) (hp : 0 < p)
+    (hv : ∀ z ∈ values, z.natAbs ≤ A) (hw : width n D g p A ≤ W) :
+    let C := fun rho => Nat.count (fun q => (values.getD q 0 % (p : ℤ)).toNat = rho) (n * n)
+    let K := ChunkCatalogue.before C (queryCap n D) p
+    ∃ y t, t ≤ Instances.timeBound n D p K (numPieces n D g) ∧
+      Runs W flatProgram (State.init (input n D g p values)) ⟨Instances.program.size, y⟩
+        (t - 1) ∧
+      Executes W flatProgram (State.init (input n D g p values)) (y.regs Instances.output) t ∧
+      Instances.Output n D g p (fun q => values.getD q 0)
+        (.init (input n D g p values)) y ∧
+      InputFits W (input n D g p values) ∧ y.Bounded W := by
+  obtain ⟨y, hew, hout, hi, hybounded⟩ := exec_input values hlen hD hDn hg hp hv hw
   obtain ⟨t, ht, he⟩ := hew
   have hr := he.runs (pc := 0) (p := flatProgram) (Program.Contains.self _).append_left
   refine ⟨y, t + 1, ?_, ?_, ?_, hout, hi, hybounded⟩

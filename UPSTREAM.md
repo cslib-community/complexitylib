@@ -384,7 +384,26 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   from that derived physical admission. Initialized scratch is zero, so its `P` only needs
   to bound the protected caller prefix. The generic compiler theorem remains separate from
   the concrete thin-geometry admission and saving.
-  The real ET-record/matrix/query adapter and whole solver remain subsequent work under #1394.
+  The real ET-record/matrix/query adapter is tracked in
+  [#1626](https://github.com/cslib-community/complexitylib/issues/1626). Its fixed 320-register
+  native code computes the selected record address, reads all six fields, recovers the exact
+  `4^m` exponent with existing `NatLog`, stores local original headers and copies the two raw
+  matrices and interleaved occurrence coordinates above the actual producer heap. Raw zero/one
+  words are copied unchanged; the callee's existing loop performs charged signed doubling.
+  The complete 163-register callable bank is renamed together, preserving the producer's low
+  64 registers. Memory relocation uses the real callable compiler, never register renaming alone.
+  `PreparationInput.exec_input` exposes the existing structured initialized derivation so real
+  caller code can compose it. Its private fit proof stays private; existing `runs_input` reuses
+  the new rule with unchanged statement, assumptions, exact readback and halt-inclusive budget.
+  The first-record initialized client supplies no layout/run/time/fit/solver certificate;
+  actual producer readback derives all source pointer ranges and coordinate meanings, and
+  actual chunk counts derive occurrence sparsity. The general caller supports every occupied
+  record ordinal. The per-record charge including halt is at most three times the original
+  product plus `4096*(nD+Q+1)`, or `34603008*(19m+1)*n²/D^(1/18)` under the admitted geometry.
+  The original producer word bound supplies caller `P` and heap placement; the complete wider
+  initialized prefixes have a positive logarithmic width threshold and polynomial words/support
+  independent of the physical width. Outer parameter/prime selection and instance iteration,
+  aggregate solving/witness reconstruction and the whole #1394 endpoint remain separate.
   Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies
