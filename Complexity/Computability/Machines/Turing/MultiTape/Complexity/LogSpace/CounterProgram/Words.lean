@@ -8,9 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 
 /-!
 # Word and list operations with counters, in logarithmic space
@@ -27,7 +27,8 @@ length, so that they are not finite-state transductions:
 Each program reads the length `n` of the framed first component and the unary second component
 into registers (`headerCode`), and keeps its registers below the input length, so it computes its
 function in logarithmic space by `Turing.CounterProgram.computableInLogSpace_of_reachesOut`.
-None of this uses logarithmic-space composition.
+None of this uses logarithmic-space composition, apart from the `fun_prop` forms at the end.
+The rules of `LogSpace/Words` are imported publicly, so that `fun_prop` has the full rule set.
 
 ## Main definitions
 
@@ -37,6 +38,8 @@ None of this uses logarithmic-space composition.
 
 ## Main results
 
+* `Turing.CounterProgram.Words.reachesOut_header`: the run of the header, for programs built on
+  it.
 * `Turing.MultiTapeTM.ComputableInLogSpace.bitsTake`,
   `Turing.MultiTapeTM.ComputableInLogSpace.bitsDrop`: taking and dropping bits.
 * `Turing.MultiTapeTM.ComputableInLogSpace.range`: the list `0, …, n - 1`.
@@ -116,7 +119,10 @@ def headerCode : List Instr :=
 
 variable {P : CounterProgram} {w : List Bool} {k B : ℕ}
 
-private theorem reachesOut_header (hP : P.CodeAt 0 headerCode)
+/-- **The run of `headerCode`**: from the initial registers it stores the length of the framed
+word in register `0` and the unary count in register `1`, and exits at label `4`, without
+emitting. -/
+theorem reachesOut_header (hP : P.CodeAt 0 headerCode)
     (hB : 2 * w.length + 1 + k ≤ B) :
     P.ReachesOut (frame w ++ List.replicate k true) (P.Active B) (0, [0, 0, 0, 0])
       (4, [w.length, k, 0, 0]) [] := by
