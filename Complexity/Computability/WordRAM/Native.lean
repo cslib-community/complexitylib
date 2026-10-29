@@ -428,7 +428,7 @@ theorem transport_polyTime (enc : B.genericModel.Encoding)
       (FiniteState.resultEncoding enc
         (FiniteState.run (cfg a) p.toGeneric j (initState a))).length ≤ bound a) :
     ComputableInPolyTime f ei enc.value :=
-  .of_tidy <| FiniteState.transport_polyTime enc N p.toGeneric cSteps cCfg cInit
+  FiniteState.transport_polyTime enc N p.toGeneric cSteps cCfg cInit
     (fun a => by
       obtain ⟨m, hm, hex⟩ := hExec a
       rw [hden a]
@@ -450,7 +450,7 @@ theorem transport_polyTime_of_le_const (enc : B.genericModel.Encoding)
     (hSteps : cSteps.IsPolynomial) (hCfg : cCfg.IsPolynomial) (hInit : cInit.IsPolynomial)
     (K : ℕ) (hStepsLe : ∀ a, steps a ≤ K) :
     ComputableInPolyTime f ei enc.value :=
-  .of_tidy <| FiniteState.transport_polyTime_of_le_const enc N p.toGeneric cSteps cCfg cInit
+  FiniteState.transport_polyTime_of_le_const enc N p.toGeneric cSteps cCfg cInit
     (fun a => by
       obtain ⟨m, hm, hex⟩ := hExec a
       rw [hden a]
