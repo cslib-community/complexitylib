@@ -272,8 +272,7 @@ private theorem computableInPolyTime_answerFromHistory (op : Operation) (next : 
         answerFromHistory matchOp entryPair p.1.1 op next p.1.2)
       (encPair (encPair encUnary (encAliveState encEntry)) encBool)
       (encAliveState encEntry) := by
-  have hmatchOp := (hmatch op)
-  have hpairTidy := hpair
+  have hmatchOp := hmatch op
   unfold answerFromHistory
   fun_prop
 

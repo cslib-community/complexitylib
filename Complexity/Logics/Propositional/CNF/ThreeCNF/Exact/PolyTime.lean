@@ -43,7 +43,7 @@ and gate indices. This mirrors the certificate for `Cslib.Logic.PL.CNF.to3CNF`.
 
 namespace Cslib.Logic.PL
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {V W Input : Type}
 
@@ -91,12 +91,12 @@ private theorem orChainAux_eq_flatMap (fresh : ℕ → W) (j : ℕ) (carry : Lit
     | [], _ | [_], _ | [_, _], _ => simp [Clause.orChainAux]
     | _ :: _ :: _ :: _, hrest => exact absurd rfl (hrest _ _ _ _)
 
-private theorem gateClauses_tidy {In : Type} {encIn : In ↪ List Bool} {enc : W ↪ List Bool}
+private theorem gateClauses_polyTime {In : Type} {encIn : In ↪ List Bool} {enc : W ↪ List Bool}
     {u v : In → Literal W} {z : In → W}
-    (hu : ComputableTidilyInPolyTime u encIn (encPair enc encBool))
-    (hv : ComputableTidilyInPolyTime v encIn (encPair enc encBool))
-    (hz : ComputableTidilyInPolyTime z encIn enc) :
-    ComputableTidilyInPolyTime (fun x => gateClauses (u x) (v x) (z x)) encIn
+    (hu : ComputableInPolyTime u encIn (encPair enc encBool))
+    (hv : ComputableInPolyTime v encIn (encPair enc encBool))
+    (hz : ComputableInPolyTime z encIn enc) :
+    ComputableInPolyTime (fun x => gateClauses (u x) (v x) (z x)) encIn
       (encList (encList (encPair enc encBool))) := by
   unfold gateClauses
   fun_prop
@@ -114,30 +114,25 @@ theorem Clause.isPolyTime_orChainAux {input : Input ↪ List Bool} {enc : W ↪ 
       (encPair input encUnary) enc) :
     ComputableInPolyTime (fun x => Clause.orChainAux (fresh x) (index x) (carry x) (rest x))
       input (encList (encList (encPair enc encBool))) := by
-  have hrest := hrest.tidy
-  have hcarry := hcarry.tidy
-  have hindex := hindex.tidy
-  have hfresh := hfresh.tidy
-  refine .of_tidy ?_
-  have hdrop : ComputableTidilyInPolyTime (fun x => (rest x).drop ((rest x).length - 2))
+  have hdrop : ComputableInPolyTime (fun x => (rest x).drop ((rest x).length - 2))
       input (encList (encPair enc encBool)) :=
     (dropUnary (encA := encPair enc encBool)).comp (hrest.prod (by fun_prop))
-  have hu : ComputableTidilyInPolyTime (fun p : Input × ℕ =>
+  have hu : ComputableInPolyTime (fun p : Input × ℕ =>
       if p.2 = 0 then carry p.1 else ((fresh p.1 (index p.1 + (p.2 - 1)), true) : Literal W))
       (encPair input encUnary) (encPair enc encBool) := by
     fun_prop
-  have hv : ComputableTidilyInPolyTime (fun p : Input × ℕ => ((rest p.1)[p.2]?).getD (carry p.1))
+  have hv : ComputableInPolyTime (fun p : Input × ℕ => ((rest p.1)[p.2]?).getD (carry p.1))
       (encPair input encUnary) (encPair enc encBool) := by
     fun_prop
-  have hz : ComputableTidilyInPolyTime (fun p : Input × ℕ => fresh p.1 (index p.1 + p.2))
+  have hz : ComputableInPolyTime (fun p : Input × ℕ => fresh p.1 (index p.1 + p.2))
       (encPair input encUnary) enc := by
     fun_prop
-  have hflat := ComputableTidilyInPolyTime.flatMapWithInput
+  have hflat := ComputableInPolyTime.flatMapWithInput
     (list := fun x => List.range ((rest x).length - 2))
     (f := fun x i => gateClauses
       (if i = 0 then carry x else ((fresh x (index x + (i - 1)), true) : Literal W))
       (((rest x)[i]?).getD (carry x)) (fresh x (index x + i)))
-    (by fun_prop) (gateClauses_tidy hu hv hz)
+    (by fun_prop) (gateClauses_polyTime hu hv hz)
   simp_rw [orChainAux_eq_flatMap, List.getD_eq_getElem?_getD]
   fun_prop
 
@@ -152,19 +147,15 @@ theorem Clause.isPolyTime_orSplit3 {input : Input ↪ List Bool} {enc : W ↪ Li
       (encPair input encUnary) enc) :
     ComputableInPolyTime (fun x => Clause.orSplit3 (fresh x) (index x) (clause x))
       input (encList (encList (encPair enc encBool))) := by
-  have hclause := hclause.tidy
-  have hindex := hindex.tidy
-  have hfresh := hfresh.tidy
-  refine .of_tidy ?_
   have heq (f : ℕ → W) (j : ℕ) (c : Clause W) : Clause.orSplit3 f j c =
       c.head?.elim [[]] (fun carry => Clause.orChainAux f j carry c.tail) := by
     cases c <;> rfl
   simp_rw [heq]
   apply optionElimWithInput (encB := encPair enc encBool) (by fun_prop) (by fun_prop)
-  exact (Clause.isPolyTime_orChainAux (input := encPair input (encPair enc encBool))
+  exact Clause.isPolyTime_orChainAux (input := encPair input (encPair enc encBool))
     (fresh := fun p => fresh p.1) (index := fun p => index p.1) (carry := fun p => p.2)
-    (rest := fun p => (clause p.1).tail) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))).tidy
+    (rest := fun p => (clause p.1).tail) (by fun_prop) (by fun_prop)
+    (by fun_prop) (by fun_prop)
 
 /-- Convert an arbitrary CNF formula to 3CNF with the same number of models, encoding gate
 variables by unary clause and gate indices. The certificate includes relabelling, clause
@@ -174,16 +165,15 @@ theorem CNF.isPolyTime_toExact3CNF (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.toExact3CNF (V := V))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool))) := by
-  refine .of_tidy ?_
-  have hsplit : ComputableTidilyInPolyTime
+  have hsplit : ComputableInPolyTime
       (fun p : CNF V × (Clause V × ℕ) => Clause.orSplit3 (fun j => Sum.inr (p.2.2, j)) 0
         (Clause.relabel Sum.inl p.2.1))
       (encPair (encList (encList (encPair enc encBool)))
         (encPair (encList (encPair enc encBool)) encUnary))
       (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool))) :=
-    ComputableInPolyTime.tidy <| Clause.isPolyTime_orSplit3
-      ((Clause.computableInPolyTime_relabel (.of_tidy (by fun_prop))).comp
-        (.of_tidy (by fun_prop))) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+    Clause.isPolyTime_orSplit3
+      ((Clause.computableInPolyTime_relabel (by fun_prop)).comp
+        (by fun_prop)) (by fun_prop) (by fun_prop)
   unfold CNF.toExact3CNF
   fun_prop
 
