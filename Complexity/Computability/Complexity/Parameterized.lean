@@ -253,19 +253,19 @@ section Plain
 
 variable {α β : Type*} {f : α → β} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {κ : α → ℕ}
 
-/-- A function computable in fpt time is computed tidily within the same bound, up to a constant
-factor: the output is within the time bound, which is also the space bound. -/
-private theorem ComputableInFPTTime.exists_computableTidilyInO
+/-- A function computable in fpt time is computed within the same bound, up to a constant factor:
+the output is within the time bound, which is also the space bound. -/
+private theorem ComputableInFPTTime.exists_computableInO
     (h : ComputableInFPTTime f encA encB κ) :
-    ∃ (F : ℕ → ℕ) (c : ℕ), ComputableTidilyInO f encA encB
+    ∃ (F : ℕ → ℕ) (c : ℕ), ComputableInO f encA encB
       (fun a => F (κ a) * ((encA a).length + 1) ^ c) fun a => F (κ a) * ((encA a).length + 1) ^ c :=
   let ⟨F, c, hc⟩ := h
-  ⟨F, c, hc.computableTidilyInO hc.length_le⟩
+  ⟨F, c, .of_bounds hc 1 (fun _ => by omega) (fun _ => by omega)
+    fun a => (hc.length_le a).trans (by omega)⟩
 
-/-- A tidy computation within an fpt bound, up to a constant factor, is a computation in fpt time,
-by the same machine. -/
-private theorem computableInFPTTime_of_computableTidilyInO {F : ℕ → ℕ} {c : ℕ}
-    (h : ComputableTidilyInO f encA encB (fun a => F (κ a) * ((encA a).length + 1) ^ c)
+/-- A computation within an fpt bound, up to a constant factor, is a computation in fpt time. -/
+theorem _root_.Turing.MultiTapeTM.ComputableInO.computableInFPTTime {F : ℕ → ℕ} {c : ℕ}
+    (h : ComputableInO f encA encB (fun a => F (κ a) * ((encA a).length + 1) ^ c)
       fun a => F (κ a) * ((encA a).length + 1) ^ c) :
     ComputableInFPTTime f encA encB κ := by
   obtain ⟨d, hd, -⟩ := h
@@ -273,14 +273,7 @@ private theorem computableInFPTTime_of_computableTidilyInO {F : ℕ → ℕ} {c 
       d * (F (κ a) + 1) * ((encA a).length + 1) ^ c := by
     have := Nat.mul_le_mul_left d (Nat.one_le_pow c _ (Nat.succ_pos (encA a).length))
     nlinarith
-  exact ⟨fun k => d * (F k + 1), c, hd.computableInTimeAndSpace.mono hle hle⟩
-
-/-- A computation within an fpt bound, up to a constant factor, is a computation in fpt time. -/
-theorem _root_.Turing.MultiTapeTM.ComputableInO.computableInFPTTime {F : ℕ → ℕ} {c : ℕ}
-    (h : ComputableInO f encA encB (fun a => F (κ a) * ((encA a).length + 1) ^ c)
-      fun a => F (κ a) * ((encA a).length + 1) ^ c) :
-    ComputableInFPTTime f encA encB κ :=
-  computableInFPTTime_of_computableTidilyInO h.tidy
+  exact ⟨fun k => d * (F k + 1), c, hd.mono hle hle⟩
 
 /-- **A time bound alone suffices.** A function computable by some machine within time
 `F (κ a) * (|encA a| + 1) ^ c`, with any space bound, is computable in fpt time: a machine with `k`
@@ -309,8 +302,8 @@ variable {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {
 theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.computableInFPTTime {f : α → β}
     (hf : ComputableInPolyTime f encA encB) (κ : α → ℕ) :
     ComputableInFPTTime f encA encB κ :=
-  let ⟨d, _, hf⟩ := hf.tidy.exists_degree
-  computableInFPTTime_of_computableTidilyInO (F := fun _ => 1) (c := d)
+  let ⟨d, _, hf⟩ := hf.exists_degree
+  ComputableInO.computableInFPTTime (F := fun _ => 1) (c := d)
     (hf.inO.mono_le (fun _ => (one_mul _).ge) fun _ => (one_mul _).ge)
 
 /-- **Case distinction in fpt time.** -/
@@ -318,9 +311,9 @@ theorem ComputableInFPTTime.ite {p : α → Bool} {f g : α → β}
     (hp : ComputableInFPTTime p encA encBool κ)
     (hf : ComputableInFPTTime f encA encB κ) (hg : ComputableInFPTTime g encA encB κ) :
     ComputableInFPTTime (fun a => if p a then f a else g a) encA encB κ := by
-  obtain ⟨F₁, c₁, hp⟩ := ComputableInFPTTime.exists_computableTidilyInO hp
-  obtain ⟨F₂, c₂, hf⟩ := ComputableInFPTTime.exists_computableTidilyInO hf
-  obtain ⟨F₃, c₃, hg⟩ := ComputableInFPTTime.exists_computableTidilyInO hg
+  obtain ⟨F₁, c₁, hp⟩ := ComputableInFPTTime.exists_computableInO hp
+  obtain ⟨F₂, c₂, hf⟩ := ComputableInFPTTime.exists_computableInO hf
+  obtain ⟨F₃, c₃, hg⟩ := ComputableInFPTTime.exists_computableInO hg
   have key : ∀ a, (F₁ (κ a) * ((encA a).length + 1) ^ c₁ +
       if p a then F₂ (κ a) * ((encA a).length + 1) ^ c₂
       else F₃ (κ a) * ((encA a).length + 1) ^ c₃) ≤
@@ -334,7 +327,7 @@ theorem ComputableInFPTTime.ite {p : α → Bool} {f g : α → β}
     have h₃ := hle c₃ (by omega) (F₃ (κ a))
     rw [Nat.add_mul, Nat.add_mul]
     split_ifs <;> omega
-  exact computableInFPTTime_of_computableTidilyInO (F := fun k => F₁ k + F₂ k + F₃ k)
+  exact ComputableInO.computableInFPTTime (F := fun k => F₁ k + F₂ k + F₃ k)
     (c := c₁ + c₂ + c₃) ((hp.ite hf hg).mono_le key key)
 
 /-- The arithmetic of composition: a bound `F₂ (n + 1) ^ e` on an output of length `n` within
@@ -364,19 +357,19 @@ private theorem comp_time_le {L F₁ c₁ l n F₂ F₂' e E : ℕ}
 
 /-- Composition of an fpt-time function with a function computable within time
 `F₂ (κB b) (|b| + 1) ^ e₂ (κB b)`, given bounds on `F₂` and `e₂` along the function. -/
-private theorem computableTidilyInO_comp {f : α → β} {g : β → γ} {F₁ : ℕ → ℕ} {c₁ : ℕ}
+private theorem computableInO_comp {f : α → β} {g : β → γ} {F₁ : ℕ → ℕ} {c₁ : ℕ}
     {F₂ e₂ F₂' E : ℕ → ℕ}
-    (hg : ComputableTidilyInO g encB encC (fun b => F₂ (κB b) * ((encB b).length + 1) ^ e₂ (κB b))
+    (hg : ComputableInO g encB encC (fun b => F₂ (κB b) * ((encB b).length + 1) ^ e₂ (κB b))
       fun b => F₂ (κB b) * ((encB b).length + 1) ^ e₂ (κB b))
-    (hf : ComputableTidilyInO f encA encB (fun a => F₁ (κA a) * ((encA a).length + 1) ^ c₁)
+    (hf : ComputableInO f encA encB (fun a => F₁ (κA a) * ((encA a).length + 1) ^ c₁)
       fun a => F₁ (κA a) * ((encA a).length + 1) ^ c₁)
     (hF : ∀ a, F₂ (κB (f a)) ≤ F₂' (κA a)) (he : ∀ a, e₂ (κB (f a)) ≤ E (κA a)) :
-    ∃ l, ComputableTidilyInO (g ∘ f) encA encC
+    ∃ l, ComputableInO (g ∘ f) encA encC
       (fun a => (F₁ (κA a) + F₂' (κA a) * ((l + 1) * (F₁ (κA a) + 1)) ^ E (κA a)) *
         ((encA a).length + 1) ^ (c₁ + c₁ * E (κA a)))
       fun a => (F₁ (κA a) + F₂' (κA a) * ((l + 1) * (F₁ (κA a) + 1)) ^ E (κA a)) *
         ((encA a).length + 1) ^ (c₁ + c₁ * E (κA a)) := by
-  obtain ⟨l, hl⟩ := hf.length_le
+  have ⟨l, _, hl⟩ := hf
   have key := fun a => comp_time_le (hl a) (hF a) (he a)
   exact ⟨l, (hg.comp hf).mono_le key key⟩
 
@@ -385,23 +378,22 @@ theorem ComputableInFPTTime.comp {f : α → β} {g : β → γ}
     (hg : ComputableInFPTTime g encB encC κB) (hf : ComputableInFPTTime f encA encB κA)
     {h : ℕ → ℕ} (hκ : ∀ a, κB (f a) ≤ h (κA a)) :
     ComputableInFPTTime (g ∘ f) encA encC κA := by
-  obtain ⟨F₂, c₂, hg⟩ := ComputableInFPTTime.exists_computableTidilyInO hg
-  obtain ⟨F₁, c₁, hf⟩ := ComputableInFPTTime.exists_computableTidilyInO hf
-  obtain ⟨l, hgf⟩ := computableTidilyInO_comp (e₂ := fun _ => c₂)
+  obtain ⟨F₂, c₂, hg⟩ := ComputableInFPTTime.exists_computableInO hg
+  obtain ⟨F₁, c₁, hf⟩ := ComputableInFPTTime.exists_computableInO hf
+  obtain ⟨l, hgf⟩ := computableInO_comp (e₂ := fun _ => c₂)
     (F₂' := fun k => ∑ j ∈ Finset.range (h k + 1), F₂ j) (E := fun _ => c₂) hg hf
     (fun a => le_sum_range_succ (hκ a)) fun _ => le_rfl
-  exact computableInFPTTime_of_computableTidilyInO
+  exact ComputableInO.computableInFPTTime
     (F := fun k => F₁ k + (∑ j ∈ Finset.range (h k + 1), F₂ j) * ((l + 1) * (F₁ k + 1)) ^ c₂)
     (c := c₁ + c₁ * c₂) hgf
 
-/-- Bounds of the shape `T a`, cast to the reals, are tidy bounds. -/
+/-- Bounds of the shape `T a`, cast to the reals, are `ComputableInO` bounds. -/
 private theorem decidableInTimeO_natCast_iff {A : Set α} {T : α → ℕ} :
     DecidableInTimeO A encA (fun a => (T a : ℝ)) ↔
-      ∃ g : α → Bool, ComputableTidilyInO g encA encBool T T ∧ ∀ a, a ∈ A ↔ g a = true := by
+      ∃ g : α → Bool, ComputableInO g encA encBool T T ∧ ∀ a, a ∈ A ↔ g a = true := by
   constructor
   · intro h
     obtain ⟨g, t, k, hg, hA, ht⟩ := h.exists_computableInO
-    have hg := hg.tidy
     have ht' : ∀ a, t a ≤ k * (T a + 1) := fun a => by
       have : (t a : ℝ) ≤ ((k * (T a + 1) : ℕ) : ℝ) := by
         push_cast
@@ -409,7 +401,7 @@ private theorem decidableInTimeO_natCast_iff {A : Set α} {T : α → ℕ} :
       exact_mod_cast this
     exact ⟨g, hg.mono k ht' ht', hA⟩
   · rintro ⟨g, hg, hA⟩
-    exact DecidableInTimeO.of_computableInO (.of_tidy hg) hA fun _ => le_rfl
+    exact DecidableInTimeO.of_computableInO hg hA fun _ => le_rfl
 
 /-- **`FPT` in terms of fpt-time computability**: a problem is fixed-parameter tractable exactly
 when a Boolean function deciding it is computable in fpt time. -/
@@ -425,9 +417,9 @@ theorem mem_FPT_iff_computableInFPTTime {A : Set α} :
   · rintro ⟨f, c, h⟩
     rw [e, decidableInTimeO_natCast_iff] at h
     obtain ⟨g, hg, hA⟩ := h
-    exact ⟨g, computableInFPTTime_of_computableTidilyInO hg, hA⟩
+    exact ⟨g, hg.computableInFPTTime, hA⟩
   · rintro ⟨g, hg, hA⟩
-    obtain ⟨f, c, hg⟩ := ComputableInFPTTime.exists_computableTidilyInO hg
+    obtain ⟨f, c, hg⟩ := ComputableInFPTTime.exists_computableInO hg
     refine ⟨f, c, ?_⟩
     rw [e, decidableInTimeO_natCast_iff]
     exact ⟨g, hg, hA⟩
@@ -437,24 +429,20 @@ theorem mem_XP_iff_exists_computableInO {A : Set α} :
     A ∈ XP encA κ ↔ ∃ (g : α → Bool) (f e : ℕ → ℕ), ComputableInO g encA encBool
       (fun a => f (κ a) * ((encA a).length + 1) ^ e (κ a))
       (fun a => f (κ a) * ((encA a).length + 1) ^ e (κ a)) ∧ ∀ a, a ∈ A ↔ g a = true := by
-  have this : A ∈ XP encA κ ↔ ∃ (g : α → Bool) (f e : ℕ → ℕ), ComputableTidilyInO g encA encBool
-      (fun a => f (κ a) * ((encA a).length + 1) ^ e (κ a))
-      (fun a => f (κ a) * ((encA a).length + 1) ^ e (κ a)) ∧ ∀ a, a ∈ A ↔ g a = true := by
-    have h : ∀ f e : ℕ → ℕ, (fun a => (f (κ a) : ℝ) * ((encA a).length + 1) ^ e (κ a)) =
-        fun a => ((f (κ a) * ((encA a).length + 1) ^ e (κ a) : ℕ) : ℝ) := fun f e => by
-      funext a
-      push_cast
-      rfl
-    constructor
-    · rintro ⟨f, e, hA⟩
-      rw [h, decidableInTimeO_natCast_iff] at hA
-      obtain ⟨g, hg, hA⟩ := hA
-      exact ⟨g, f, e, hg, hA⟩
-    · rintro ⟨g, f, e, hg, hA⟩
-      refine ⟨f, e, ?_⟩
-      rw [h, decidableInTimeO_natCast_iff]
-      exact ⟨g, hg, hA⟩
-  simpa only [computableInO_iff_computableTidilyInO] using this
+  have h : ∀ f e : ℕ → ℕ, (fun a => (f (κ a) : ℝ) * ((encA a).length + 1) ^ e (κ a)) =
+      fun a => ((f (κ a) * ((encA a).length + 1) ^ e (κ a) : ℕ) : ℝ) := fun f e => by
+    funext a
+    push_cast
+    rfl
+  constructor
+  · rintro ⟨f, e, hA⟩
+    rw [h, decidableInTimeO_natCast_iff] at hA
+    obtain ⟨g, hg, hA⟩ := hA
+    exact ⟨g, f, e, hg, hA⟩
+  · rintro ⟨g, f, e, hg, hA⟩
+    refine ⟨f, e, ?_⟩
+    rw [h, decidableInTimeO_natCast_iff]
+    exact ⟨g, hg, hA⟩
 
 /-- **Bounded parameters.** For a parameter bounded by a constant, `FPT` is `P`. -/
 theorem FPT_eq_P_of_le {K : ℕ} (hκ : ∀ a, κ a ≤ K) : FPT encA κ = P encA := by
@@ -462,8 +450,8 @@ theorem FPT_eq_P_of_le {K : ℕ} (hκ : ∀ a, κ a ≤ K) : FPT encA κ = P enc
   obtain ⟨g, hg, hA⟩ :=
     mem_FPT_iff_computableInFPTTime.mp (FPT_subset_FPT_of_le_comp (κ' := fun _ => 0)
       (h := fun _ => K) hκ hA)
-  obtain ⟨f, c, hg⟩ := ComputableInFPTTime.exists_computableTidilyInO hg
-  exact ⟨g, .of_tidy <| hg.computableTidilyInPolyTime (.of_forall_le (f 0) c fun _ => le_rfl)
+  obtain ⟨f, c, hg⟩ := ComputableInFPTTime.exists_computableInO hg
+  exact ⟨g, hg.computableInPolyTime (.of_forall_le (f 0) c fun _ => le_rfl)
     (.of_forall_le (f 0) c fun _ => le_rfl), hA⟩
 
 /-- **Bounded parameters.** For a parameter bounded by a constant, `XP` is `P`. -/
@@ -472,7 +460,7 @@ theorem XP_eq_P_of_le {K : ℕ} (hκ : ∀ a, κ a ≤ K) : XP encA κ = P encA 
   obtain ⟨g, f, e, hg, hA⟩ :=
     mem_XP_iff_exists_computableInO.mp (XP_subset_XP_of_le_comp (κ' := fun _ => 0)
       (h := fun _ => K) hκ hA)
-  exact ⟨g, .of_tidy <| hg.tidy.computableTidilyInPolyTime
+  exact ⟨g, hg.computableInPolyTime
     (.of_forall_le (f 0) (e 0) fun _ => le_rfl)
     (.of_forall_le (f 0) (e 0) fun _ => le_rfl), hA⟩
 
@@ -482,8 +470,8 @@ theorem XP_eq_P_of_le {K : ℕ} (hκ : ∀ a, κ a ≤ K) : XP encA κ = P encA 
 theorem compl_mem_FPT {A : Set α} (hA : A ∈ FPT encA κ) : Aᶜ ∈ FPT encA κ := by
   obtain ⟨g, hg, hA⟩ := mem_FPT_iff_computableInFPTTime.mp hA
   refine mem_FPT_iff_computableInFPTTime.mpr ⟨_, hg.ite
-    ((ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.const false)).computableInFPTTime κ)
-    ((ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.const true)).computableInFPTTime κ),
+    ((ComputableInPolyTime.const false).computableInFPTTime κ)
+    ((ComputableInPolyTime.const true).computableInFPTTime κ),
       fun a => ?_⟩
   simp only [Set.mem_compl_iff, hA]
   cases g a <;> simp
@@ -494,7 +482,7 @@ theorem inter_mem_FPT {A B : Set α} (hA : A ∈ FPT encA κ) (hB : B ∈ FPT en
   obtain ⟨g₁, hg₁, hA⟩ := mem_FPT_iff_computableInFPTTime.mp hA
   obtain ⟨g₂, hg₂, hB⟩ := mem_FPT_iff_computableInFPTTime.mp hB
   refine mem_FPT_iff_computableInFPTTime.mpr ⟨_, hg₁.ite hg₂
-    ((ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.const false)).computableInFPTTime κ),
+    ((ComputableInPolyTime.const false).computableInFPTTime κ),
       fun a => ?_⟩
   simp only [Set.mem_inter_iff, hA, hB]
   cases g₁ a <;> simp
@@ -505,7 +493,7 @@ theorem union_mem_FPT {A B : Set α} (hA : A ∈ FPT encA κ) (hB : B ∈ FPT en
   obtain ⟨g₁, hg₁, hA⟩ := mem_FPT_iff_computableInFPTTime.mp hA
   obtain ⟨g₂, hg₂, hB⟩ := mem_FPT_iff_computableInFPTTime.mp hB
   refine mem_FPT_iff_computableInFPTTime.mpr ⟨_, hg₁.ite
-    ((ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.const true)).computableInFPTTime κ)
+    ((ComputableInPolyTime.const true).computableInFPTTime κ)
       hg₂, fun a => ?_⟩
   simp only [Set.mem_union, hA, hB]
   cases g₁ a <;> simp
@@ -513,10 +501,10 @@ theorem union_mem_FPT {A B : Set α} (hA : A ∈ FPT encA κ) (hB : B ∈ FPT en
 /-- **`XP` is closed under complement.** -/
 theorem compl_mem_XP {A : Set α} (hA : A ∈ XP encA κ) : Aᶜ ∈ XP encA κ := by
   obtain ⟨g, f, e, hg, hA⟩ := mem_XP_iff_exists_computableInO.mp hA
-  have h := hg.tidy.ite (ComputableTidilyInO.const (encMid := encBool) false)
-    (ComputableTidilyInO.const (encMid := encBool) true)
+  have h := hg.ite (ComputableInO.const false : ComputableInO _ _ encBool _ _)
+    (ComputableInO.const true : ComputableInO _ _ encBool _ _)
   refine mem_XP_iff_exists_computableInO.mpr ⟨_, fun k => f k + 1, fun k => e k + 1,
-    .of_tidy (h.mono_le (fun a => ?_) (fun a => ?_)), fun a => ?_⟩
+    h.mono_le (fun a => ?_) (fun a => ?_), fun a => ?_⟩
   rotate_left 2
   · simp only [Set.mem_compl_iff, hA]
     cases g a <;> simp
@@ -572,8 +560,7 @@ theorem FPTReducible.of_computableInPolyTime {f : α → β}
 theorem FPTReducible.refl (encA : α ↪ List Bool) (κA : α → ℕ) (A : Set α) :
     FPTReducible encA encA κA κA A A :=
   ManyOneReducibleBy.refl
-    ⟨(ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.id').computableInFPTTime κA, id,
-      fun _ => le_rfl⟩ A
+    ⟨ComputableInPolyTime.id'.computableInFPTTime κA, id, fun _ => le_rfl⟩ A
 
 /-- **Fpt-reductions compose.** -/
 @[trans]
@@ -601,16 +588,16 @@ theorem FPTReducible.mem_FPT (hAB : FPTReducible encA encB κA κB A B) (hB : B 
 theorem FPTReducible.mem_XP (hAB : FPTReducible encA encB κA κB A B) (hB : B ∈ XP encB κB) :
     A ∈ XP encA κA := by
   obtain ⟨f, ⟨hf, h, hκ⟩, hAB⟩ := hAB
-  obtain ⟨F₁, c₁, hf⟩ := ComputableInFPTTime.exists_computableTidilyInO hf
+  obtain ⟨F₁, c₁, hf⟩ := ComputableInFPTTime.exists_computableInO hf
   obtain ⟨g, F₂, e₂, hg, hB⟩ := mem_XP_iff_exists_computableInO.mp hB
-  obtain ⟨l, hgf⟩ := computableTidilyInO_comp
+  obtain ⟨l, hgf⟩ := computableInO_comp
     (F₂' := fun k => ∑ j ∈ Finset.range (h k + 1), F₂ j)
-    (E := fun k => ∑ j ∈ Finset.range (h k + 1), e₂ j) hg.tidy hf
+    (E := fun k => ∑ j ∈ Finset.range (h k + 1), e₂ j) hg hf
     (fun a => le_sum_range_succ (hκ a)) fun a => le_sum_range_succ (hκ a)
   exact mem_XP_iff_exists_computableInO.mpr ⟨g ∘ f,
     fun k => F₁ k + (∑ j ∈ Finset.range (h k + 1), F₂ j) *
       ((l + 1) * (F₁ k + 1)) ^ ∑ j ∈ Finset.range (h k + 1), e₂ j,
-    fun k => c₁ + c₁ * ∑ j ∈ Finset.range (h k + 1), e₂ j, .of_tidy hgf,
+    fun k => c₁ + c₁ * ∑ j ∈ Finset.range (h k + 1), e₂ j, hgf,
     fun a => (hAB a).trans (hB (f a))⟩
 
 end Reduction

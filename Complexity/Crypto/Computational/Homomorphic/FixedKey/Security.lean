@@ -88,10 +88,10 @@ theorem negligible_publicKeyGame {E : Scheme}
   have hgame := isPPTOn_publicKeyGame hencrypt hadversary bit
   have htest : IsPPT encBool (fun n word =>
       publicKeyGame E adversary bit n (publicKeyDecoder.decode word)) :=
-    hgame.preprocess (ComputableInPolyTime.of_tidy
-      ((ComputableTidilyInPolyTime.fst encUnary encBits).prod
-      (publicKeyDecoder.computableInPolyTime.tidy.comp
-        (ComputableTidilyInPolyTime.snd encUnary encBits))))
+    hgame.preprocess
+      ((ComputableInPolyTime.fst encUnary encBits).prod
+        (publicKeyDecoder.computableInPolyTime.comp
+          (ComputableInPolyTime.snd encUnary encBits)))
   have h := hcircular _ htest
   simpa only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
     publicKeyDecoder.decode_enc, ProbComp.eval_bind] using h

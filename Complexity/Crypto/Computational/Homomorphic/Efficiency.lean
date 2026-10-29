@@ -61,15 +61,17 @@ theorem isPPTOn_encryptBits
     (hpk : ComputableInPolyTime pk input encBits)
     (hbits : ComputableInPolyTime bits input encBits) :
     IsPPTOn input (encList encBits) (fun a => E.encryptBits (n a) (pk a) (bits a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hbits
-  apply IsPPTOn.mapMWith (element := encBool)
-  · exact hencrypt.preprocess (ComputableInPolyTime.of_tidy
-      (show ComputableTidilyInPolyTime
-        (fun p : α × Bool => (n p.1, pk p.1, p.2))
-        (encPair input encBool) (encPair encUnary (encPair encBits encBool)) by fun_prop))
-  · exact ComputableTidilyInPolyTime.bitsToList.comp hbits
+  have hpairs : ComputableInPolyTime (fun a => (bits a).map fun b => (a, b))
+      input (encList (encPair input encBool)) :=
+    ComputableInPolyTime.mapWithInput (ComputableInPolyTime.bitsToList.comp hbits) .id'
+  have hstep : IsPPTOn (encPair input encBool) encBits
+      (fun p : α × Bool => E.encrypt (n p.1) (pk p.1) p.2) :=
+    hencrypt.preprocess
+      ((hn.comp (ComputableInPolyTime.fst _ _)).prod
+        ((hpk.comp (ComputableInPolyTime.fst _ _)).prod (ComputableInPolyTime.snd _ _)))
+  apply (hstep.mapM.preprocess hpairs).congr
+  intro a
+  simp only [Scheme.encryptBits, List.mapM_map, Function.comp_def]
 
 variable {secretWidth ciphertextWidth : ℕ → ℕ}
   (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -89,21 +91,12 @@ theorem isPPTOn_refresh
     (hek : ComputableInPolyTime encryptedKey input (encList encBits))
     (hc : ComputableInPolyTime bits input encBits) :
     IsPPTOn input encBits (fun a => refresh D (n a) (pk a) (encryptedKey a) (bits a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hek
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hc
-  apply (isPPTOn_encryptBits hencrypt (.of_tidy hn) (.of_tidy hpk) (.of_tidy hc)).bind_with
-  have hparameter := hn.comp
-    (ComputableTidilyInPolyTime.fst input (encList encBits))
-  have hcircuit := hD.tidy.comp hparameter
-  exact hevaluate.preprocess (ComputableInPolyTime.of_tidy (show ComputableTidilyInPolyTime
-    (fun p : α × List (List Bool) =>
-      (n p.1, pk p.1, ⟨_, D.circuit (n p.1)⟩, encryptedKey p.1 ++ p.2))
-    (encPair input (encList encBits))
-    (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))) by
-    exact hparameter.prod ((hpk.comp (ComputableTidilyInPolyTime.fst _ _)).prod
-      (hcircuit.prod (by fun_prop)))))
+  apply (isPPTOn_encryptBits hencrypt hn hpk hc).bind_with
+  have hparameter := hn.comp (ComputableInPolyTime.fst input (encList encBits))
+  have hcircuit := hD.comp hparameter
+  exact hevaluate.preprocess
+    (hparameter.prod ((hpk.comp (ComputableInPolyTime.fst _ _)).prod
+      (hcircuit.prod (by fun_prop))))
 
 /-- NAND refresh is strict PPT. The certificate constructs the augmented circuit and charges
 both bit-encryption traversals and both copies of the encrypted secret key. -/
@@ -116,27 +109,16 @@ theorem isPPTOn_refreshNand
     (hsecond : ComputableInPolyTime second input encBits) :
     IsPPTOn input encBits
       (fun a => refreshNand D (n a) (pk a) (encryptedKey a) (first a) (second a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hpk
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hek
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hfirst
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hsecond
-  apply (isPPTOn_encryptBits hencrypt (.of_tidy hn) (.of_tidy hpk) (.of_tidy hfirst)).bind_with
+  apply (isPPTOn_encryptBits hencrypt hn hpk hfirst).bind_with
   have hsecond' : IsPPTOn (encPair input (encList encBits)) (encList encBits)
       (fun p : α × List (List Bool) => E.encryptBits (n p.1) (pk p.1) (second p.1)) :=
-    (isPPTOn_encryptBits hencrypt (.of_tidy hn) (.of_tidy hpk) (.of_tidy hsecond)).preprocess
-      (ComputableInPolyTime.fst _ _)
+    (isPPTOn_encryptBits hencrypt hn hpk hsecond).preprocess (ComputableInPolyTime.fst _ _)
   apply hsecond'.bind_with
   have hparameter := hn.comp
-    ((ComputableTidilyInPolyTime.fst (encPair input (encList encBits)) (encList encBits)).fst')
-  have haug := (computableInPolyTime_augmentNand.tidy.comp hD.tidy).comp hparameter
-  exact hevaluate.preprocess (ComputableInPolyTime.of_tidy (show ComputableTidilyInPolyTime
-    (fun p : (α × List (List Bool)) × List (List Bool) =>
-      (n p.1.1, pk p.1.1, ⟨_, augmentNand (D.circuit (n p.1.1))⟩,
-        (encryptedKey p.1.1 ++ p.1.2) ++ (encryptedKey p.1.1 ++ p.2)))
-    (encPair (encPair input (encList encBits)) (encList encBits))
-    (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))) by
-    exact hparameter.prod ((hpk.comp
-      ((ComputableTidilyInPolyTime.fst _ _).fst')).prod (haug.prod (by fun_prop)))))
+    ((ComputableInPolyTime.fst (encPair input (encList encBits)) (encList encBits)).fst')
+  have haug := (computableInPolyTime_augmentNand.comp hD).comp hparameter
+  exact hevaluate.preprocess
+    (hparameter.prod ((hpk.comp
+      ((ComputableInPolyTime.fst _ _).fst')).prod (haug.prod (by fun_prop))))
 
 end Cslib.Crypto.Homomorphic.Scheme

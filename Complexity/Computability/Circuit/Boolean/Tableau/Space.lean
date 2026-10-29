@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 
@@ -37,7 +36,7 @@ tableau, used to write the circuit down in logarithmic space.
 
 namespace Cslib.Circuits.Boolean.Tableau
 
-open Turing MultiTapeTM ComputableTidilyInSpace
+open Turing MultiTapeTM ComputableInSpace
 
 /-! ### The layout in normal form -/
 
@@ -175,45 +174,36 @@ private theorem colWidth_pos : 0 < colWidth k := by simp only [colWidth]; omega
 
 section Layout
 
-variable {T : α → ℕ} (hT : ComputableTidilyInSpace T encIn encNat Bs)
+variable {T : α → ℕ} (hT : ComputableInSpace T encIn encNat Bs)
   (hin : (fun x => (encIn x).length) ≼ Bs)
 include hT hin
 
 omit [DecidableEq State] in
 private theorem numCols_inSpace :
-    ComputableTidilyInSpace (fun x => numCols (T x)) encIn encNat Bs :=
+    ComputableInSpace (fun x => numCols (T x)) encIn encNat Bs :=
   budget_natAdd (budget_natMul (budget_const 2 hin) hT) (budget_const 1 hin)
 
 omit [DecidableEq State] in
 private theorem globStart_inSpace :
-    ComputableTidilyInSpace (fun x => globStart k (T x)) encIn encNat Bs :=
+    ComputableInSpace (fun x => globStart k (T x)) encIn encNat Bs :=
   budget_natMul (numCols_inSpace hT hin) (budget_const (scanWidth k) hin)
 
 omit [DecidableEq State] in
-omit hT hin in
 /-- Computing `gfStart k State (T x)` within space budget `Bs`. -/
-theorem gfStart_inSpace (hT : ComputableInSpace T encIn encNat Bs)
-    (hin : (fun x => (encIn x).length) ≼ Bs) :
-    ComputableInSpace (fun x => gfStart k State (T x)) encIn encNat Bs := by
-  have hT := hT.tidy
-  refine .of_tidy ?_
-  exact budget_natAdd (globStart_inSpace (k := k) hT hin) (budget_const _ hin)
+theorem gfStart_inSpace :
+    ComputableInSpace (fun x => gfStart k State (T x)) encIn encNat Bs :=
+  budget_natAdd (globStart_inSpace (k := k) hT hin) (budget_const _ hin)
 
 omit [DecidableEq State] in
 private theorem colStart_inSpace :
-    ComputableTidilyInSpace (fun x => colStart k State (T x)) encIn encNat Bs :=
-  budget_natAdd (gfStart_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy (budget_const
-    _ hin)
+    ComputableInSpace (fun x => colStart k State (T x)) encIn encNat Bs :=
+  budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin)
 
 omit [DecidableEq State] in
-omit hT hin in
 /-- Computing `blockSize k State (T x)` within space budget `Bs`. -/
-theorem blockSize_inSpace (hT : ComputableInSpace T encIn encNat Bs)
-    (hin : (fun x => (encIn x).length) ≼ Bs) :
-    ComputableInSpace (fun x => blockSize k State (T x)) encIn encNat Bs := by
-  have hT := hT.tidy
-  refine .of_tidy ?_
-  exact budget_natAdd (colStart_inSpace (k := k) (State := State) hT hin)
+theorem blockSize_inSpace :
+    ComputableInSpace (fun x => blockSize k State (T x)) encIn encNat Bs :=
+  budget_natAdd (colStart_inSpace (k := k) (State := State) hT hin)
     (budget_natMul (numCols_inSpace hT hin) (budget_const _ hin))
 
 /-- Explicit finite enumeration of `ColSel`. -/
@@ -227,14 +217,14 @@ instance : FinEnum Guard :=
 
 omit [DecidableEq State] in
 private theorem regionStart_inSpace {i : α → Fin 4}
-    (hi : ComputableTidilyInSpace i encIn (encFinEnum (Fin 4)) Bs) :
-    ComputableTidilyInSpace (fun x => regionStart k State (T x) (i x)) encIn encNat Bs := by
+    (hi : ComputableInSpace i encIn (encFinEnum (Fin 4)) Bs) :
+    ComputableInSpace (fun x => regionStart k State (T x) (i x)) encIn encNat Bs := by
   have h₀ := budget_finite (encC := encBool) (fun j : Fin 4 => decide (j = 0)) hi
   have h₁ := budget_finite (encC := encBool) (fun j : Fin 4 => decide (j = 1)) hi
   have h₂ := budget_finite (encC := encBool) (fun j : Fin 4 => decide (j = 2)) hi
   refine (budget_ite h₀ (budget_const (encB := encNat) 0 hin)
     (budget_ite h₁ (globStart_inSpace (k := k) hT hin)
-      (budget_ite h₂ (gfStart_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy
+      (budget_ite h₂ (gfStart_inSpace (k := k) (State := State) hT hin)
       (colStart_inSpace (k := k) (State := State) hT hin)))).of_enc_eq fun x => ?_
   simp only [regionStart, decide_eq_true_eq]
 
@@ -242,18 +232,18 @@ end Layout
 
 section Resolve
 
-variable {n T t c : α → ℕ} (hn : ComputableTidilyInSpace n encIn encNat Bs)
-  (hT : ComputableTidilyInSpace T encIn encNat Bs)
-  (ht : ComputableTidilyInSpace t encIn encNat Bs)
-  (hc : ComputableTidilyInSpace c encIn encNat Bs)
+variable {n T t c : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs)
+  (hT : ComputableInSpace T encIn encNat Bs)
+  (ht : ComputableInSpace t encIn encNat Bs)
+  (hc : ComputableInSpace c encIn encNat Bs)
   (hin : (fun x => (encIn x).length) ≼ Bs)
 include hn hT ht hc hin
 
 omit [DecidableEq State] in
 /-- **The wire of a reference**, within a budget. -/
 private theorem resolve_inSpace {r : α → Ref k State}
-    (hr : ComputableTidilyInSpace r encIn (encFinite (Ref k State)) Bs) :
-    ComputableTidilyInSpace (fun x => (r x).resolve (n x) (T x) (t x) (c x)) encIn encNat Bs := by
+    (hr : ComputableInSpace r encIn (encFinite (Ref k State)) Bs) :
+    ComputableInSpace (fun x => (r x).resolve (n x) (T x) (t x) (c x)) encIn encNat Bs := by
   have hk (i : Fin 4) :=
     budget_finite (encC := encBool) (fun r : Ref k State => decide (r.kind = i)) hr
   have hc0 := budget_natLt (budget_const (encB := encNat) 0 hin) hc
@@ -288,7 +278,7 @@ private theorem resolve_inSpace {r : α → Ref k State}
   have hmult := budget_finite (encC := encNat) Loc.mult hloc
   have hlidx := budget_finite (encC := encNat) Loc.lidx hloc
   have hwire := budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-    (budget_natMul ht' (blockSize_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy))
+    (budget_natMul ht' (blockSize_inSpace (k := k) (State := State) hT hin)))
     (budget_natAdd (budget_natAdd hreg (budget_natMul hcol hmult)) hlidx)
   refine (budget_ite (hk 0) hn (budget_ite (hk 1) (budget_natAdd hn (budget_const 1 hin))
     (budget_ite (hk 2) hinp (budget_ite hg hwire hn)))).of_enc_eq fun x => ?_
@@ -325,16 +315,16 @@ private theorem initBit_eq (T c : ℕ) (l : Loc k State) :
 
 section Gate
 
-variable {n T t c : α → ℕ} (hn : ComputableTidilyInSpace n encIn encNat Bs)
-  (hT : ComputableTidilyInSpace T encIn encNat Bs)
+variable {n T t c : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs)
+  (hT : ComputableInSpace T encIn encNat Bs)
   (hin : (fun x => (encIn x).length) ≼ Bs)
 include hn hT hin
 
 /-- **The gate at a position**, within a budget. -/
-private theorem gateAt_inSpace (ht : ComputableTidilyInSpace t encIn encNat Bs)
-    (hc : ComputableTidilyInSpace c encIn encNat Bs) {l : α → Loc k State}
-    (hl : ComputableTidilyInSpace l encIn (encFinite (Loc k State)) Bs) :
-    ComputableTidilyInSpace (fun x => gateAt tm (n x) (T x) (t x) (c x) (l x)) encIn encGate
+private theorem gateAt_inSpace (ht : ComputableInSpace t encIn encNat Bs)
+    (hc : ComputableInSpace c encIn encNat Bs) {l : α → Loc k State}
+    (hl : ComputableInSpace l encIn (encFinite (Loc k State)) Bs) :
+    ComputableInSpace (fun x => gateAt tm (n x) (T x) (t x) (c x) (l x)) encIn encGate
       Bs := by
   have ht0 := budget_natEq ht (budget_const (encB := encNat) 0 hin)
   have hc1 := budget_natEq hc (budget_const (encB := encNat) 1 hin)
@@ -359,23 +349,15 @@ private theorem gateAt_inSpace (ht : ComputableTidilyInSpace t encIn encNat Bs)
   · simp [gateAt, h, initBit_eq]
   · simp [gateAt, h, argsOf_eq]
 
-omit hn hT hin in
 /-- **The gate with a given number**, within a budget covering `n`, `T` and the number. -/
-theorem gateCode_inSpace (hn : ComputableInSpace n encIn encNat Bs) (hT : ComputableInSpace T
-    encIn encNat Bs)
-    (hin : (fun x => (encIn x).length) ≼ Bs) {g : α → ℕ} (hg : ComputableInSpace g encIn encNat
-      Bs) :
+theorem gateCode_inSpace {g : α → ℕ} (hg : ComputableInSpace g encIn encNat Bs) :
     ComputableInSpace (fun x => gateCode tm (n x) (T x) (g x)) encIn encGate Bs := by
-  have hT := hT.tidy
-  have hn := hn.tidy
-  have hg := hg.tidy
-  refine .of_tidy ?_
-  have hB := (blockSize_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy
+  have hB := blockSize_inSpace (k := k) (State := State) hT hin
   have hgm := budget_natSub hg (budget_const (encB := encNat) 2 hin)
   have ht := budget_natDiv hgm hB
   have hr := budget_natMod hgm hB
   have hgs := globStart_inSpace (k := k) hT hin
-  have hgf := (gfStart_inSpace (k := k) (State := State) (.of_tidy hT) hin).tidy
+  have hgf := gfStart_inSpace (k := k) (State := State) hT hin
   have hcs := colStart_inSpace (k := k) (State := State) hT hin
   have hr₁ := budget_natLt hr hgs
   have hr₂ := budget_natLt hr hgf

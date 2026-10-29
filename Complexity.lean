@@ -145,6 +145,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountTriple
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
@@ -163,6 +164,7 @@ public import Complexity.Computability.BranchingProgram.PolyLength
 public import Complexity.Computability.Circuit.Approximation
 public import Complexity.Computability.Circuit.Approximation.Hamming
 public import Complexity.Computability.Circuit.Arithmetic
+public import Complexity.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.Determinant
 public import Complexity.Computability.Circuit.Arithmetic.Formula
 public import Complexity.Computability.Circuit.Arithmetic.GeneralLowerBound
@@ -172,11 +174,13 @@ public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
+public import Complexity.Computability.Circuit.Arithmetic.SPCircuit
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinear
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearGadget
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearize
 public import Complexity.Computability.Circuit.Arithmetic.SigmaPi
+public import Complexity.Computability.Circuit.Arithmetic.SumFlatten
 public import Complexity.Computability.Circuit.Arithmetic.VNP
 public import Complexity.Computability.Circuit.Arithmetic.VP
 public import Complexity.Computability.Circuit.Arithmetic.Waring
@@ -1435,6 +1439,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compo
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Correct
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.ResourceBound

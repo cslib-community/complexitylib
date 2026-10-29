@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.ReadOnce
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.MCSP.PartialNP
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -1779,18 +1780,18 @@ private theorem foldl_double_replicate (k : ℕ) (acc : ℕ) :
     rw [List.replicate_succ, List.foldl_cons, ih]
     ring
 
-private theorem computableTidilyInO_twoPow :
-    ComputableTidilyInO (fun m : ℕ => 2 ^ m) encUnary encUnary
+private theorem computableInO_twoPow :
+    ComputableInO (fun m : ℕ => 2 ^ m) encUnary encUnary
       (fun m => 2 ^ (2 * m)) (fun m => 2 ^ (2 * m)) := by
-  have hlist : ComputableTidilyInO (fun m : ℕ => List.replicate m true) encUnary encBits
+  have hlist : ComputableInO (fun m : ℕ => List.replicate m true) encUnary encBits
       (fun m => (encUnary m).length) (fun m => (encUnary m).length) :=
-    ComputableTidilyInO.of_linear (.of_eq (encIn := encUnary) (encMid := encBits) fun _ => rfl)
-  have hstep : ComputableTidilyInO (fun p : ℕ × Bool => p.1 + p.1)
+    ComputableInO.of_eq (encIn := encUnary) (encMid := encBits) fun _ => rfl
+  have hstep : ComputableInO (fun p : ℕ × Bool => p.1 + p.1)
       (encPair encUnary encBool) encUnary
       (fun p => (encPair encUnary encBool p).length + (encPair encUnary encBool p).length)
       (fun p => (encPair encUnary encBool p).length + (encPair encUnary encBool p).length) :=
-    (ComputableTidilyInO.fst encUnary encBool).append
-      (ComputableTidilyInO.fst encUnary encBool)
+    (ComputableInO.fst encUnary encBool).append
+      (ComputableInO.fst encUnary encBool)
       (fun _ => by simp only [encUnary_apply, List.replicate_add])
   have hstep_bound (m i : ℕ) (_ : i < (List.replicate m true).length) :
       (let p := (((List.replicate m true).take i).foldl (fun n _ => n + n) 1,
@@ -1802,15 +1803,14 @@ private theorem computableTidilyInO_twoPow :
     simp only [length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
       List.length_singleton]
     omega
-  have hfold := (ComputableInO.foldl (encA := encBool) (encL := encBits) (encB := encUnary)
-    (step := fun n _ => n + n) hlist.computableInO (ComputableTidilyInO.const 1).computableInO
-    hstep.computableInO
+  have hfold := ComputableInO.foldl (encA := encBool) (encL := encBits) (encB := encUnary)
+    (step := fun n _ => n + n) hlist (ComputableInO.const 1) hstep
     (R := fun m => 4 * 2 ^ m + 4) (Q := fun m => 4 * 2 ^ m + 4) (B := fun m => 2 ^ m)
     hstep_bound hstep_bound (fun m i _ => by
       have := Nat.pow_le_pow_right two_pos (Nat.min_le_right i m)
       rw [List.take_replicate, foldl_double_replicate, one_mul, encUnary_apply,
         List.length_replicate]
-      omega)).tidy
+      omega)
   refine (hfold.mono 16 (fun m => ?_) (fun m => ?_)).of_enc_eq fun m => ?_
   · simp only [encUnary_apply, encBits_apply, List.length_replicate]
     have hm : m < 2 ^ m := Nat.lt_two_pow_self
@@ -1880,23 +1880,22 @@ theorem exists_computableInO_ilangoReduction :
       encBipartitePermutationGraph PartialMCSP.enc
       (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D)
       (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D) := by
-  obtain ⟨d₁, _, hd₁⟩ := computableInPolyTime_sixMulFst.tidy.exists_degree
-  obtain ⟨d₂, _, hd₂⟩ := computableInPolyTime_ilangoRawFromFuel.tidy.exists_degree
-  have hId : ComputableTidilyInO (fun G : BipartitePermutationGraph => G)
+  obtain ⟨d₁, _, hd₁⟩ := computableInPolyTime_sixMulFst.exists_degree
+  obtain ⟨d₂, _, hd₂⟩ := computableInPolyTime_ilangoRawFromFuel.exists_degree
+  have hId : ComputableInO (fun G : BipartitePermutationGraph => G)
       encBipartitePermutationGraph encBipartitePermutationGraph
       (fun G => (encBipartitePermutationGraph G).length)
       (fun G => (encBipartitePermutationGraph G).length) :=
-    ComputableTidilyInO.of_linear
-      (.of_eq (encIn := encBipartitePermutationGraph) (encMid := encBipartitePermutationGraph)
-        fun _ => rfl)
-  have hFuel : ComputableTidilyInO (fun G : BipartitePermutationGraph => 2 ^ (6 * G.1))
+    ComputableInO.of_eq (encIn := encBipartitePermutationGraph)
+      (encMid := encBipartitePermutationGraph) fun _ => rfl
+  have hFuel : ComputableInO (fun G : BipartitePermutationGraph => 2 ^ (6 * G.1))
       encBipartitePermutationGraph encUnary
       (fun G => ((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1)))
       (fun G => ((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1))) :=
-    computableTidilyInO_twoPow.comp hd₁.inO
+    computableInO_twoPow.comp hd₁.inO
   have hComp := hd₂.inO.comp (hId.prod hFuel)
-  refine ⟨12 + 6 * d₂, d₁ + d₂ + 1, .of_tidy ((hComp.mono (3 ^ d₂ + 3)
-    (ilangoReduction_time_bound d₁ d₂) (ilangoReduction_time_bound d₁ d₂)).of_enc_eq fun G => ?_)⟩
+  refine ⟨12 + 6 * d₂, d₁ + d₂ + 1, (hComp.mono (3 ^ d₂ + 3)
+    (ilangoReduction_time_bound d₁ d₂) (ilangoReduction_time_bound d₁ d₂)).of_enc_eq fun G => ?_⟩
   rw [enc_apply, ← ilangoRawFromFuel_eq]
   rfl
 
