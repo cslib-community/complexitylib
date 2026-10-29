@@ -404,6 +404,7 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 [#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1463]: https://github.com/cslib-community/complexitylib/issues/1463
+[#1481]: https://github.com/cslib-community/complexitylib/issues/1481
 [#1482]: https://github.com/cslib-community/complexitylib/issues/1482
 
 ## Machines, RAM and data structures
@@ -434,9 +435,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   where several clients benefit, keeping machine transitions out of global simp.
 - **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table and
   collision-tested minimum-search and complete two-prime modulus programs have explicit local
-  fit/frame/cost contracts.
-  Frontend enumeration, heavy extraction, recursive traversal, packed output and global
-  preprocessing width/time composition remain.
+  fit/frame/cost contracts. The complete native one-node component ([#1481]) computes all
+  residues/histograms, three compact heavy arrays and exact packed output in linear time;
+  recursive traversal and global preprocessing width/time composition remain.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
