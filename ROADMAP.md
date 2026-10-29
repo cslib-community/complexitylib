@@ -582,4 +582,5 @@ not planned, not as proved.
 [#1446]: https://github.com/cslib-community/complexitylib/issues/1446
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
+[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
