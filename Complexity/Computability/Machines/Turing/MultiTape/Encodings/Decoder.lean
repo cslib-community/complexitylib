@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 
 /-!
 # Total decoders
