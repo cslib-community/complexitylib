@@ -53,6 +53,8 @@ density factor `seedSlack : ℝ≥0∞`:
 
 * `Cslib.WordRAM.Randomized.SubroutineDS`: reusable randomized Word-RAM subroutine certificate for
   a deterministic specification `D : Stateful.Spec`.
+* `Cslib.WordRAM.Randomized.SubroutineDS.ExecSteps`: multi-operation distributional execution trace
+  threading coupled state distributions and expected step costs across `ops : List D.Op`.
 * `Cslib.WordRAM.SubroutineDS.toRandomized`: canonical embedding of any deterministic
   `Cslib.WordRAM.SubroutineDS` into `Cslib.WordRAM.Randomized.SubroutineDS`.
 * `Cslib.WordRAM.Randomized.SubroutineDS.mapSimulates`, `toStandard`: basis transport from
@@ -386,14 +388,19 @@ theorem initFresh_exec (C : SubroutineDS P D w base params s₀) {x : Data r_ds}
   rw [hm₁] at hsupp
   exact ⟨ν₀, (ExecCodeDist.of_execWithin he₁).seq_pure he₂, hseed, hsupp⟩
 
-/-- Relocated fresh initialization along any injective register embedding `f`. -/
-theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
-    {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
-    (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
-    (hpar : ∀ j, x.regs (f (P.initParams j)) = params j)
-    (hz : ∀ a ∈ (Block.mk base C.space).footprint, x.mem a = 0) :
+private theorem init_rename_of_exec (C : SubroutineDS P D w base params s₀)
+    {c : Code B r_ds} {T : ℝ≥0∞} {f : Fin r_ds → Fin r_caller} (hf : f.Injective)
+    {x : Data r_caller}
+    (hex : ∃ ν₀ : PMF (C.Seed × Data r_ds),
+      ExecCodeDist w c (x.comap f) (ν₀.map Prod.snd) T ∧
+      (∀ θ, (ν₀.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
+      ∀ p ∈ ν₀.support,
+        p.2.regs P.frontierReg = base + C.space ∧
+        C.rep p.1 s₀ p.2 ∧
+        C.potential p.1 p.2 ≤ C.initPotential ∧
+        Modifies (Block.mk base C.space).footprint (x.comap f).mem p.2.mem) :
     ∃ ν₀ : PMF (C.Seed × Data r_caller),
-      ExecCodeDist w (P.initFresh.rename f) x (ν₀.map Prod.snd) C.initTime ∧
+      ExecCodeDist w (c.rename f) x (ν₀.map Prod.snd) T ∧
       (∀ θ, (ν₀.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
       ∀ p ∈ ν₀.support,
         p.2.regs (f P.frontierReg) = base + C.space ∧
@@ -401,7 +408,7 @@ theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
         C.potential p.1 (p.2.comap f) ≤ C.initPotential ∧
         Modifies (Block.mk base C.space).footprint x.mem p.2.mem ∧
         (∀ j ∉ Set.range f, p.2.regs j = x.regs j) := by
-  obtain ⟨ν₀, he, hseed, hsupp⟩ := C.initFresh_exec hx hfr hpar hz
+  obtain ⟨ν₀, he, hseed, hsupp⟩ := hex
   refine ⟨ν₀.map fun p => (p.1, p.2.extend f x), ?_, ?_, ?_⟩
   · have he' := he.rename hf
     refine he'.congr_dist ?_ le_rfl
@@ -422,6 +429,23 @@ theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
       exact hrep
     · rw [Data.comap_extend hf]
       exact hpot
+
+/-- Relocated fresh initialization along any injective register embedding `f`. -/
+theorem initFresh_rename (C : SubroutineDS P D w base params s₀)
+    {f : Fin r_ds → Fin r_caller} (hf : f.Injective) {x : Data r_caller}
+    (hx : (x.comap f).Bounded w) (hfr : x.regs (f P.frontierReg) = base)
+    (hpar : ∀ j, x.regs (f (P.initParams j)) = params j)
+    (hz : ∀ a ∈ (Block.mk base C.space).footprint, x.mem a = 0) :
+    ∃ ν₀ : PMF (C.Seed × Data r_caller),
+      ExecCodeDist w (P.initFresh.rename f) x (ν₀.map Prod.snd) C.initTime ∧
+      (∀ θ, (ν₀.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
+      ∀ p ∈ ν₀.support,
+        p.2.regs (f P.frontierReg) = base + C.space ∧
+        C.rep p.1 s₀ (p.2.comap f) ∧
+        C.potential p.1 (p.2.comap f) ≤ C.initPotential ∧
+        Modifies (Block.mk base C.space).footprint x.mem p.2.mem ∧
+        (∀ j ∉ Set.range f, p.2.regs j = x.regs j) :=
+  C.init_rename_of_exec hf (C.initFresh_exec hx hfr hpar hz)
 
 /-! ### Projection 3: Generic `O(space)` dirty-memory initialization (`zeroFillCode_exec`,
 `initClear_exec`, `initClear_rename`) -/
@@ -521,45 +545,8 @@ theorem initClear_rename (C : SubroutineDS P D w base params s₀)
         C.rep p.1 s₀ (p.2.comap f) ∧
         C.potential p.1 (p.2.comap f) ≤ C.initPotential ∧
         Modifies (Block.mk base C.space).footprint x.mem p.2.mem ∧
-        (∀ j ∉ Set.range f, p.2.regs j = x.regs j) := by
-  obtain ⟨ν₀, he, hseed, hsupp⟩ := C.initClear_exec hx hfr hpar
-  refine ⟨ν₀.map fun p => (p.1, p.2.extend f x), ?_, ?_, ?_⟩
-  · have he' := he.rename hf
-    refine he'.congr_dist ?_ le_rfl
-    rw [PMF.map_comp, PMF.map_comp]
-    rfl
-  · intro θ
-    rw [PMF.map_comp]
-    exact hseed θ
-  · intro q hq
-    rw [PMF.mem_support_map_iff] at hq
-    obtain ⟨p, hp, rfl⟩ := hq
-    obtain ⟨hfr', hrep, hpot, hmod⟩ := hsupp p hp
-    refine ⟨?_, ?_, ?_, hmod, fun j hj => Data.extend_regs_of_notMem p.2 x hj⟩
-    · change ((p.2.extend f x).comap f).regs P.frontierReg = base + C.space
-      rw [Data.comap_extend hf]
-      exact hfr'
-    · rw [Data.comap_extend hf]
-      exact hrep
-    · rw [Data.comap_extend hf]
-      exact hpot
-
-/-! ### Helper lemmas for coupled PMF expectations -/
-
-private theorem tsum_pmf_map {α β : Type*} (p : PMF α) (g : α → β) (k : β → ℝ≥0∞) :
-    (∑' b, p.map g b * k b) = ∑' a, p a * k (g a) := by
-  simp only [PMF.map_apply, ← ENNReal.tsum_mul_right]
-  rw [ENNReal.tsum_comm]
-  refine tsum_congr fun a => ?_
-  rw [tsum_eq_single (g a)]
-  · simp
-  · intro b hb
-    simp [hb]
-
-private theorem tsum_pmf_bind {α β : Type*} (p : PMF α) (f : α → PMF β) (k : β → ℝ≥0∞) :
-    (∑' b, (p.bind f) b * k b) = ∑' a, p a * ∑' b, f a b * k b := by
-  simp only [PMF.bind_apply, ← ENNReal.tsum_mul_right, ← ENNReal.tsum_mul_left, mul_assoc]
-  exact ENNReal.tsum_comm
+        (∀ j ∉ Set.range f, p.2.regs j = x.regs j) :=
+  C.init_rename_of_exec hf (C.initClear_exec hx hfr hpar)
 
 /-! ### Projection 4: Caller-to-DS bidirectional framing (`frame_caller`, `frame_caller_dist`) -/
 
@@ -756,7 +743,10 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
         ExecCodeDist w (.seq prep (P.code.rename f)) p.2 ((μ_call p).map Prod.snd) (T_call p) ∧
         ∀ q ∈ (μ_call p).support,
           C.decode o (q.2.comap f).regs = some (D.step s o).2 ∧
-          C.rep q.1 (D.step s o).1 (q.2.comap f)) ∧
+          C.rep q.1 (D.step s o).1 (q.2.comap f) ∧
+          ∃ x' ∈ (μ_prep p).support,
+            Modifies (Block.mk base C.space).footprint x'.mem q.2.mem ∧
+            ∀ j ∉ Set.range f, q.2.regs j = x'.regs j) ∧
       (∀ θ', ((ν.bind μ_call).map Prod.fst) θ' ≤ C.seedSlack * C.seedLaw θ') ∧
       (∑' p, ν p * (T_call p + ∑' q, μ_call p q * (C.potential q.1 (q.2.comap f) : ℝ≥0∞))) ≤
         B_prep + (C.charge s o : ℝ≥0∞) + ∑' p, ν p * (C.potential p.1 (p.2.comap f) : ℝ≥0∞) := by
@@ -800,8 +790,8 @@ theorem call_rename (C : SubroutineDS P D w base params s₀)
       have hp' : (p.1, x') ∈ ν_prep.support := by
         simp only [ν_prep, frameDist, PMF.mem_support_bind_iff]
         exact ⟨p, hp, (PMF.mem_support_map_iff _ _ _).mpr ⟨x', hx', rfl⟩⟩
-      obtain ⟨hdec, hrep', _, _⟩ := (hcode (p.1, x') hp').2 q hq_code
-      exact ⟨hdec, hrep'⟩
+      obtain ⟨hdec, hrep', hmod, hregs⟩ := (hcode (p.1, x') hp').2 q hq_code
+      exact ⟨hdec, hrep', x', hx', hmod, hregs⟩
   · intro θ'
     have hbind_eq : ν.bind μ_call = ν_prep.bind μ_code := by
       simp only [ν_prep, frameDist, μ_call, PMF.bind_bind, PMF.bind_map]
@@ -926,12 +916,36 @@ theorem prepare_argMatch (C : SubroutineDS P D w base params s₀) (o : D.Op) (x
     C.argMatch o (C.prepare o x).regs :=
   C.encode_matches o x.regs
 
+/-- Inductive multi-operation distributional execution relation for a randomized subroutine `C`.
+`C.ExecSteps s ops ν ν_final T_ops` witnesses that starting from abstract state `s` and coupled
+state distribution `ν : PMF (C.Seed × Data r_ds)`, executing each operation `o` in `ops` by
+delivering arguments via `C.prepare o` and running `P.code` under `ExecCodeDist` produces the
+final coupled distribution `ν_final`, decodes the exact abstract return value `(D.step s o).2` at
+every step, modifies memory only within `[base, base + C.space)`, and incurs total expected
+operation step cost `T_ops`. -/
+inductive ExecSteps (C : SubroutineDS P D w base params s₀) :
+    D.State → List D.Op → PMF (C.Seed × Data r_ds) → PMF (C.Seed × Data r_ds) → ℝ≥0∞ → Prop where
+  | nil (s : D.State) (ν : PMF (C.Seed × Data r_ds)) :
+      C.ExecSteps s [] ν ν 0
+  | cons {s : D.State} {o : D.Op} {ops : List D.Op}
+      {ν ν_final : PMF (C.Seed × Data r_ds)}
+      {μ_step : C.Seed × Data r_ds → PMF (C.Seed × Data r_ds)}
+      {T_step : C.Seed × Data r_ds → ℝ≥0∞} {T_rest : ℝ≥0∞} :
+      (∀ p ∈ ν.support,
+        ExecCodeDist w P.code (C.prepare o p.2) ((μ_step p).map Prod.snd) (T_step p) ∧
+        ∀ q ∈ (μ_step p).support,
+          C.decode o q.2.regs = some (D.step s o).2 ∧
+          C.rep q.1 (D.step s o).1 q.2 ∧
+          Modifies (Block.mk base C.space).footprint p.2.mem q.2.mem) →
+      C.ExecSteps (D.step s o).1 ops (ν.bind μ_step) ν_final T_rest →
+      C.ExecSteps s (o :: ops) ν ν_final ((∑' p, ν p * T_step p) + T_rest)
+
 /-- **Multi-operation expected-amortized telescope (`steps_expected_amortized`).**
 From any abstract state `s : D.State` and coupled state distribution `ν : PMF (C.Seed × Data r_ds)`
 satisfying the seed-marginal bound and `C.rep p.1 s p.2` on `ν.support`, executing any admissible
 operation sequence `ops : List D.Op` (`D.ValidHistory s ops`) produces a final coupled distribution
-`ν_final` and total expected operation step count `T_ops : ℝ≥0∞` satisfying the addition-only
-`ℝ≥0∞` telescope inequality
+`ν_final` and total expected operation step count `T_ops : ℝ≥0∞` witnessing
+`C.ExecSteps s ops ν ν_final T_ops` and satisfying the addition-only `ℝ≥0∞` telescope inequality
 `T_ops + E_{ν_final}[Φ] ≤ D.totalCost C.charge s ops + E_ν[Φ]`. -/
 theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
     {s : D.State} (ops : List D.Op) (ν : PMF (C.Seed × Data r_ds))
@@ -939,13 +953,14 @@ theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
     (hseed : ∀ θ, (ν.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ)
     (hrep : ∀ p ∈ ν.support, C.rep p.1 s p.2) :
     ∃ (ν_final : PMF (C.Seed × Data r_ds)) (T_ops : ℝ≥0∞),
+      C.ExecSteps s ops ν ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
       (∀ p ∈ ν_final.support, C.rep p.1 (D.run s ops).1 p.2) ∧
       T_ops + (∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)) ≤
         (D.totalCost C.charge s ops : ℝ≥0∞) + ∑' p, ν p * (C.potential p.1 p.2 : ℝ≥0∞) := by
   induction ops generalizing s ν with
   | nil =>
-    exact ⟨ν, 0, hseed, hrep, by simp⟩
+    exact ⟨ν, 0, ExecSteps.nil s ν, hseed, hrep, by simp⟩
   | cons o os ih =>
     obtain ⟨hvo, hvos⟩ := hv
     let ν_prep : PMF (C.Seed × Data r_ds) := ν.map fun p => (p.1, C.prepare o p.2)
@@ -968,20 +983,39 @@ theorem steps_expected_amortized (C : SubroutineDS P D w base params s₀)
       · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul, zero_mul]
     obtain ⟨μ_step, T_step, hstep, hseed₁, hamort₁⟩ :=
       C.step_exec o ν_prep hvo hseed_prep hsupp_prep
-    let ν₁ := ν_prep.bind μ_step
+    let μ_op : C.Seed × Data r_ds → PMF (C.Seed × Data r_ds) :=
+      fun p => μ_step (p.1, C.prepare o p.2)
+    let T_op : C.Seed × Data r_ds → ℝ≥0∞ :=
+      fun p => T_step (p.1, C.prepare o p.2)
+    let ν₁ := ν.bind μ_op
+    have hν₁_eq : ν₁ = ν_prep.bind μ_step := by
+      simp only [ν₁, ν_prep, μ_op, PMF.bind_map]
+      rfl
+    have hseed₁' : ∀ θ, (ν₁.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ := by
+      rw [hν₁_eq]
+      exact hseed₁
     have hrep₁ : ∀ q ∈ ν₁.support, C.rep q.1 (D.step s o).1 q.2 := by
       intro q hq
-      rw [PMF.mem_support_bind_iff] at hq
+      rw [hν₁_eq, PMF.mem_support_bind_iff] at hq
       obtain ⟨p', hp', hq_step⟩ := hq
       exact ((hstep p' hp').2 q hq_step).2.1
-    obtain ⟨ν_final, T_rest, hseed_final, hrep_final, hamort_rest⟩ :=
-      ih ν₁ hvos hseed₁ hrep₁
-    let T₁ : ℝ≥0∞ := ∑' p', ν_prep p' * T_step p'
+    obtain ⟨ν_final, T_rest, hex_rest, hseed_final, hrep_final, hamort_rest⟩ :=
+      ih ν₁ hvos hseed₁' hrep₁
+    let T₁ : ℝ≥0∞ := ∑' p, ν p * T_op p
+    have hT₁_eq : T₁ = ∑' p', ν_prep p' * T_step p' := by
+      symm
+      exact tsum_pmf_map ν (fun p => (p.1, C.prepare o p.2)) T_step
+    have hex_cons : C.ExecSteps s (o :: os) ν ν_final (T₁ + T_rest) := by
+      refine ExecSteps.cons (μ_step := μ_op) (T_step := T_op) (fun p hp => ?_) hex_rest
+      have hp' : (p.1, C.prepare o p.2) ∈ ν_prep.support :=
+        (PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩
+      exact hstep (p.1, C.prepare o p.2) hp'
     have hstep_split :
         T₁ + (∑' q, ν₁ q * (C.potential q.1 q.2 : ℝ≥0∞)) =
           ∑' p', ν_prep p' * (T_step p' + ∑' q, μ_step p' q * (C.potential q.1 q.2 : ℝ≥0∞)) := by
-      simp only [T₁, ν₁, tsum_pmf_bind, ← ENNReal.tsum_add, mul_add]
-    refine ⟨ν_final, T₁ + T_rest, hseed_final, hrep_final, ?_⟩
+      rw [hT₁_eq, hν₁_eq]
+      simp only [tsum_pmf_bind, ← ENNReal.tsum_add, mul_add]
+    refine ⟨ν_final, T₁ + T_rest, hex_cons, hseed_final, hrep_final, ?_⟩
     calc
       (T₁ + T_rest) + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)
         = T₁ + (T_rest + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)) := by ac_rfl
@@ -1012,13 +1046,14 @@ theorem seq_expected_amortized (C : SubroutineDS P D w base params s₀)
     (hv : D.ValidHistory s₀ ops) :
     ∃ (ν₀ ν_final : PMF (C.Seed × Data r_ds)) (T_ops : ℝ≥0∞),
       ExecCodeDist w P.initFresh x (ν₀.map Prod.snd) C.initTime ∧
+      C.ExecSteps s₀ ops ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
       (∀ p ∈ ν_final.support, C.rep p.1 (D.run s₀ ops).1 p.2) ∧
       C.initTime + T_ops + (∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)) ≤
         C.initTime + (C.initPotential : ℝ≥0∞) + (D.totalCost C.charge s₀ ops : ℝ≥0∞) := by
   obtain ⟨ν₀, he_init, hseed₀, hsupp₀⟩ := C.initFresh_exec hx hfr hpar hz
   have hrep₀ : ∀ p ∈ ν₀.support, C.rep p.1 s₀ p.2 := fun p hp => (hsupp₀ p hp).2.1
-  obtain ⟨ν_final, T_ops, hseed_final, hrep_final, hamort⟩ :=
+  obtain ⟨ν_final, T_ops, hex_steps, hseed_final, hrep_final, hamort⟩ :=
     C.steps_expected_amortized ops ν₀ hv hseed₀ hrep₀
   have hpot₀ : (∑' p, ν₀ p * (C.potential p.1 p.2 : ℝ≥0∞)) ≤ (C.initPotential : ℝ≥0∞) := by
     calc
@@ -1030,7 +1065,7 @@ theorem seq_expected_amortized (C : SubroutineDS P D w base params s₀)
           · rw [(PMF.apply_eq_zero_iff _ _).mpr hp, zero_mul, zero_mul]
       _ = (C.initPotential : ℝ≥0∞) := by
           rw [ENNReal.tsum_mul_right, ν₀.tsum_coe, one_mul]
-  refine ⟨ν₀, ν_final, T_ops, he_init, hseed_final, hrep_final, ?_⟩
+  refine ⟨ν₀, ν_final, T_ops, he_init, hex_steps, hseed_final, hrep_final, ?_⟩
   calc
     C.initTime + T_ops + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)
       = C.initTime + (T_ops + ∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)) := by ac_rfl

@@ -301,6 +301,7 @@ theorem coinSubroutineDS_seq_amortized (w base : ℕ)
     let C := coinSubroutineDS w base
     ∃ (ν₀ ν_final : PMF (C.Seed × Data 5)) (T_ops : ℝ≥0∞),
       ExecCodeDist w coinSubroutineCode.initFresh x₀ (ν₀.map Prod.snd) C.initTime ∧
+      C.ExecSteps PUnit.unit ops ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
       (∀ p ∈ ν_final.support, C.rep p.1 (coinSpec.run PUnit.unit ops).1 p.2) ∧
       C.initTime + T_ops + (∑' q, ν_final q * (C.potential q.1 q.2 : ℝ≥0∞)) ≤
@@ -315,6 +316,72 @@ theorem coinSubroutineDS_seq_amortized (w base : ℕ)
     change ∀ a ∈ (Block.mk base 0).footprint, x₀.mem a = 0
     simp [Block.footprint]
   exact C.seq_expected_amortized ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
+
+/-- Dirty-memory initialization via `initClear_exec` for `coinSubroutineDS`. -/
+theorem coinSubroutineDS_initClear (w base : ℕ) {x₀ : Data 5}
+    (hx₀ : x₀.Bounded w) (hfr : x₀.regs 1 = base) :
+    let C := coinSubroutineDS w base
+    ∃ ν₀ : PMF (C.Seed × Data 5),
+      ExecCodeDist w coinSubroutineCode.initClear x₀ (ν₀.map Prod.snd)
+        (C.initTime + (4 * C.space + 6 : ℕ)) ∧
+      (∀ θ, (ν₀.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
+      ∀ p ∈ ν₀.support,
+        p.2.regs coinSubroutineCode.frontierReg = base + C.space ∧
+        C.rep p.1 PUnit.unit p.2 ∧
+        C.potential p.1 p.2 ≤ C.initPotential ∧
+        Modifies (Block.mk base C.space).footprint x₀.mem p.2.mem := by
+  intro C
+  exact C.initClear_exec hx₀ hfr (fun j => Fin.elim0 j)
+
+/-- Inline caller subroutine invocation via `call_rename` for `coinSubroutineDS`: a caller with
+6 registers embeds `Fin 5` via `Fin.castSucc`, executes `prep := .op (.const 5 0)` on its own
+register `r5`, and invokes `coinSubroutineCode.code.rename Fin.castSucc`. -/
+theorem coinSubroutineDS_call_rename (w base : ℕ)
+    (ν : PMF ((coinSubroutineDS w base).Seed × Data 6))
+    (hseed : ∀ θ, (ν.map Prod.fst) θ ≤
+      (coinSubroutineDS w base).seedSlack * (coinSubroutineDS w base).seedLaw θ)
+    (hrep : ∀ p ∈ ν.support,
+      (coinSubroutineDS w base).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
+    let C := coinSubroutineDS w base
+    let prep : Code .exact 6 := .op (.const 5 0)
+    ∃ (μ_call : C.Seed × Data 6 → PMF (C.Seed × Data 6))
+      (T_call : C.Seed × Data 6 → ℝ≥0∞),
+      (∀ p ∈ ν.support,
+        ExecCodeDist w (.seq prep (coinSubroutineCode.code.rename Fin.castSucc))
+          p.2 ((μ_call p).map Prod.snd) (T_call p) ∧
+        ∀ q ∈ (μ_call p).support,
+          C.decode PUnit.unit (q.2.comap Fin.castSucc).regs =
+            some (coinSpec.step PUnit.unit PUnit.unit).2 ∧
+          C.rep q.1 (coinSpec.step PUnit.unit PUnit.unit).1 (q.2.comap Fin.castSucc) ∧
+          ∃ x' ∈ (PMF.pure (p.2.set 5 0) : PMF (Data 6)).support,
+            Modifies (Block.mk base C.space).footprint x'.mem q.2.mem ∧
+            ∀ j ∉ Set.range (Fin.castSucc : Fin 5 → Fin 6), q.2.regs j = x'.regs j) ∧
+      (∀ θ', ((ν.bind μ_call).map Prod.fst) θ' ≤ C.seedSlack * C.seedLaw θ') ∧
+      (∑' p, ν p * (T_call p +
+          ∑' q, μ_call p q * (C.potential q.1 (q.2.comap Fin.castSucc) : ℝ≥0∞))) ≤
+        1 + (C.charge PUnit.unit PUnit.unit : ℝ≥0∞) +
+          ∑' p, ν p * (C.potential p.1 (p.2.comap Fin.castSucc) : ℝ≥0∞) := by
+  intro C prep
+  refine C.call_rename (Fin.castSucc_injective 5) PUnit.unit ν
+    (prep := prep) (B_prep := 1)
+    (μ_prep := fun p => PMF.pure (p.2.set 5 0)) (T_prep := fun _ => 1)
+    trivial hseed hrep ?_
+  intro p hp
+  refine ⟨?_, le_rfl, ?_⟩
+  · simpa [prep] using ExecCodeDist.of_exec (B := .exact) (w := w) (x := p.2)
+      (Exec.const (d := (5 : Fin 6)) (fits_zero w))
+  · intro x' hx'
+    rw [PMF.mem_support_pure_iff] at hx'
+    subst hx'
+    have hbp : (p.2.comap Fin.castSucc).Bounded w := C.bounded (hrep p hp)
+    refine ⟨?_, ?_, fun _ _ => rfl, trivial⟩
+    · refine ⟨fun i => ?_, hbp.2⟩
+      have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
+      simp only [Data.comap_regs, Data.set_regs, Function.update_of_ne hne]
+      exact hbp.1 i
+    · intro i _
+      have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
+      simp [Data.set, hne]
 
 /-- Caller framing across a randomized caller step: a caller with 6 registers embeds `Fin 5` via
 `Fin.castSucc` and executes `r5 ← rand r2` on its own register `r5` (`5 : Fin 6`), preserving the

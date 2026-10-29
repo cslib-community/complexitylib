@@ -1431,6 +1431,23 @@ theorem mem_support_loopExitPMF {cond : Cond r} {I Q : Data r → Prop}
   · exact absurd hcy hnc
   · exact ⟨⟨hnc, hQy⟩, K, hK⟩
 
+/-- Expectation of `k : β → ℝ≥0∞` under `p.map g` equals expectation of `k ∘ g` under `p`. -/
+theorem tsum_pmf_map {α β : Type*} (p : PMF α) (g : α → β) (k : β → ℝ≥0∞) :
+    (∑' b, p.map g b * k b) = ∑' a, p a * k (g a) := by
+  simp only [PMF.map_apply, ← ENNReal.tsum_mul_right]
+  rw [ENNReal.tsum_comm]
+  refine tsum_congr fun a => ?_
+  rw [tsum_eq_single (g a)]
+  · simp
+  · intro b hb
+    simp [hb]
+
+/-- Expectation of `k : β → ℝ≥0∞` under `p.bind f` decomposes as an iterated expectation. -/
+theorem tsum_pmf_bind {α β : Type*} (p : PMF α) (f : α → PMF β) (k : β → ℝ≥0∞) :
+    (∑' b, (p.bind f) b * k b) = ∑' a, p a * ∑' b, f a b * k b := by
+  simp only [PMF.bind_apply, ← ENNReal.tsum_mul_right, ← ENNReal.tsum_mul_left, mul_assoc]
+  exact ENNReal.tsum_comm
+
 /-! ### Compositional distributional execution (`ExecCodeDist`) -/
 
 /-- `ExecCodeDist w c x μ T`: at word size `w`, running structured program `c` from data `x`
@@ -1686,16 +1703,6 @@ private theorem pmf_map_apply_not_mem_range {α β : Type*} (p : PMF α) (g : α
   have hne : b ≠ g a := fun h => hb ⟨a, h.symm⟩
   simp [hne]
 
-private theorem tsum_pmf_map {α β : Type*} (p : PMF α) (g : α → β) (k : β → ℝ≥0∞) :
-    (∑' b, p.map g b * k b) = ∑' a, p a * k (g a) := by
-  simp only [PMF.map_apply, ← ENNReal.tsum_mul_right]
-  rw [ENNReal.tsum_comm]
-  refine tsum_congr fun a => ?_
-  rw [tsum_eq_single (g a)]
-  · simp
-  · intro b hb
-    simp [hb]
-
 private theorem loopIterPMF_rename {r' : ℕ} {f : Fin r → Fin r'} (hf : f.Injective)
     (cond : Cond r) (μ_body : Data r → PMF (Data r)) (x : Data r') (K : ℕ) (u : Data r) :
     loopIterPMF (cond.rename f) (fun x' => (μ_body (x'.comap f)).map (fun y => y.extend f x))
@@ -1884,9 +1891,8 @@ theorem expectedStepsWithin_assemble (h : ExecCodeDist w c x μ T) {p : Program 
               ∑' z, (μ₁.bind μ₂) z *
                 expectedStepsWithin w p N (.running ⟨pc + (c₁.seq c₂).size, z⟩) := by
             congr 1
-            simp only [PMF.bind_apply, Code.size, Nat.add_assoc]
-            simp_rw [← ENNReal.tsum_mul_left, ← ENNReal.tsum_mul_right, mul_assoc]
-            exact ENNReal.tsum_comm
+            simp only [Code.size, Nat.add_assoc]
+            exact (tsum_pmf_bind μ₁ μ₂ _).symm
     calc
       T₁ + ∑' y, μ₁ y * expectedStepsWithin w p N (.running ⟨pc + c₁.size, y⟩)
         ≤ T₁ + ((∑' y, μ₁ y * T₂ y) +
@@ -1985,9 +1991,7 @@ theorem expectedStepsWithin_assemble (h : ExecCodeDist w c x μ T) {p : Program 
               (∑' u, μ_body z u * ∑' y, loopExitPMF cond μ_body u y * K_cont y) =
                 ∑' y, loopExitPMF cond μ_body z y * K_cont y := by
             rw [loopExitPMF_of_holds hp_pos hp_top hinv hp_exit hIz hcz]
-            simp only [PMF.bind_apply]
-            simp_rw [← ENNReal.tsum_mul_left, ← ENNReal.tsum_mul_right, mul_assoc]
-            exact ENNReal.tsum_comm
+            exact (tsum_pmf_bind (μ_body z) (loopExitPMF cond μ_body) K_cont).symm
           have hih_step :
               (∑' u, μ_body z u * expectedStepsWithin w p n (.running ⟨pc, u⟩)) ≤
                 (∑' u, μ_body z u * (if cond.Holds u then M else 0)) + 2 +
@@ -2196,9 +2200,8 @@ theorem le_iSup_evalRand_halted (h : ExecCodeDist w c x μ T) {p : Program B r} 
             ⨆ T_hor : ℕ, evalRand w p T_hor ⟨pc + (c₁.seq c₂).size, y⟩ (.halted v d)) =
           ∑' y₁, μ₁ y₁ * ∑' y, (μ₂ y₁) y *
             ⨆ T_hor : ℕ, evalRand w p T_hor ⟨pc + c₁.size + c₂.size, y⟩ (.halted v d) := by
-      simp only [PMF.bind_apply, Code.size, Nat.add_assoc]
-      simp_rw [← ENNReal.tsum_mul_left, ← ENNReal.tsum_mul_right, mul_assoc]
-      exact ENNReal.tsum_comm
+      simp only [Code.size, Nat.add_assoc]
+      exact tsum_pmf_bind μ₁ μ₂ _
     rw [hbind]
     refine (ENNReal.tsum_le_tsum fun y₁ => ?_).trans (ih₁ hp.append_left)
     by_cases hy₁ : y₁ ∈ μ₁.support
@@ -2270,10 +2273,8 @@ theorem le_iSup_evalRand_halted (h : ExecCodeDist w c x μ T) {p : Program B r} 
         rcases hz_inv with ⟨hcz, hIz⟩ | ⟨hcz, _⟩
         · rw [loopIterPMF_succ, loopStepPMF_of_holds hcz]
           have hbind : (∑' y, ((μ_body z).bind (loopIterPMF cond μ_body K)) y * H_loop y) =
-              ∑' u, μ_body z u * ∑' y, loopIterPMF cond μ_body K u y * H_loop y := by
-            simp only [PMF.bind_apply]
-            simp_rw [← ENNReal.tsum_mul_left, ← ENNReal.tsum_mul_right, mul_assoc]
-            exact ENNReal.tsum_comm
+              ∑' u, μ_body z u * ∑' y, loopIterPMF cond μ_body K u y * H_loop y :=
+            tsum_pmf_bind (μ_body z) (loopIterPMF cond μ_body K) H_loop
           rw [hbind]
           refine (ENNReal.tsum_le_tsum fun u => ?_).trans (hstep_le z hIz hcz)
           by_cases hu : u ∈ (μ_body z).support
