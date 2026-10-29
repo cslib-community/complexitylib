@@ -48,7 +48,7 @@ variable {α β : Type*}
 theorem map_fst_apply (joint : PMF (α × β)) (a : α) :
     (joint.map Prod.fst) a = ∑' b, joint (a, b) := by
   classical
-  rw [PMF.map_apply, ENNReal.tsum_prod']
+  rw [PMF.map_apply, tsum_prod']
   rw [tsum_eq_single a]
   · simp
   · intro x hx
@@ -72,9 +72,9 @@ theorem conditionalSnd_apply (joint : PMF (α × β)) (a : α)
     conditionalSnd joint a b = joint (a, b) / (joint.map Prod.fst) a := by
   classical
   have hpost : a ∈ (joint.bind (fun pair => PMF.pure pair.1)).support := ha
-  simp only [conditionalSnd, hpost, dite_true, PMF.map_apply, ENNReal.tsum_prod',
+  simp only [conditionalSnd, hpost, dite_true, PMF.map_apply, tsum_prod',
     posteriorDist_apply, bind_pair_apply, PMF.pure_apply]
-  simp [ENNReal.tsum_prod', div_eq_mul_inv]
+  simp [tsum_prod', div_eq_mul_inv]
 
 /-- Multiplying by the marginal recovers the joint mass, also at zero-probability observations. -/
 theorem marginal_mul_conditionalSnd (joint : PMF (α × β)) (a : α) (b : β) :

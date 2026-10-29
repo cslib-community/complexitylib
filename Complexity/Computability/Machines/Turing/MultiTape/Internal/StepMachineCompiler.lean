@@ -155,11 +155,6 @@ public lemma peek_none : ComputableInO (fun t => ((none : Option Bool), t)) enc 
     | nil => simp [h, peekWord]
     | cons b w => simp [h, peekWord, slotT_run_some])
 
-/-- A fixed initial value, retaining the zero workspace budget. -/
-private lemma constZero {α β : Type} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool} (b : β) :
-    ComputableInO (fun _ : α => b) encIn encMid (fun a => (encIn a).length) (fun _ => 0) :=
-  ComputableInO.constZero b
-
 /-! ### The parts of a round -/
 
 section Parts
@@ -279,7 +274,8 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
     ((of_linear (ComputableInLinearTimeAndSpace.of_finite
       (encIn := encBool) (encMid := encBool) fun b : Bool => !b)).comp_linear
       (hhalt.comp (peek_snd (enc := encAug encS)).fst'))
-  have fI := (peek_none (enc := encAug encS)).comp_linear (hinit.prod (constZero (0 : SignType)))
+  have fI := (peek_none (enc := encAug encS)).comp_linear
+    (hinit.prod (ComputableInO.constZero (0 : SignType)))
   obtain ⟨cE, ⟨kE, SE, _, tmE, htmE⟩, -⟩ := Internal.NormalForm.inO fE
   obtain ⟨cN, ⟨kN, SN, _, tmN, htmN⟩, -⟩ := Internal.NormalForm.inO fN
   obtain ⟨cM, ⟨kM, SM, _, tmM, htmM⟩, -⟩ := Internal.NormalForm.inO fM
@@ -578,7 +574,7 @@ public theorem ResourceCertificate.computableInBigO {σ γ ω : Type} {encS : σ
       T (m.run (encIn x) i).state ≤ tMax x ∧ S (m.run (encIn x) i).state ≤ sMax x) :
     ComputableInBigO g encIn encOut
       (fun x => (rounds x + 1) * (tMax x + sMax x + 1) + (encIn x).length) sMax :=
-  (hm.computableInBigO_of_init (constZero m.init) g rounds hrounds hg hmax).weaken
+  (hm.computableInBigO_of_init (ComputableInO.constZero m.init) g rounds hrounds hg hmax).weaken
     (.of_le_linear 2 0 fun x => by simp only [Nat.add_zero]; omega) (.of_le fun x => by omega)
 
 end Turing.StepMachine

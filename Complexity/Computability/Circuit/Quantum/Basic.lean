@@ -172,7 +172,7 @@ theorem place_apply (A : Fin k ↪ Fin n) (U : unitaryGroup (Fin k → Bool) ℂ
     (place A U : Matrix _ _ ℂ) y x =
       if ∀ j, (¬∃ i, A i = j) → y j = x j then (U : Matrix _ _ ℂ) (y ∘ A) (x ∘ A) else 0 := by
   simp only [place, MonoidHom.coe_mk, OneHom.coe_mk, submatrix_apply, kroneckerMap_apply,
-    splitEquiv_apply_fst, splitEquiv_apply_snd, one_apply, funext_iff, Subtype.forall]
+    splitEquiv_apply_fst, splitEquiv_apply_snd, Matrix.one_apply, funext_iff, Subtype.forall]
   split_ifs <;> simp
 
 namespace PlacedGate
@@ -281,7 +281,7 @@ theorem hadamardMatrix_mem_unitaryGroup : hadamardMatrix ∈ unitaryGroup Bool �
   rw [mem_unitaryGroup_iff]
   ext b c
   cases b <;> cases c <;>
-    simp [hadamardMatrix, mul_apply, star_eq_conjTranspose, Complex.conj_ofReal, h2, h1]
+    simp [hadamardMatrix, Matrix.mul_apply, star_eq_conjTranspose, Complex.conj_ofReal, h2, h1]
 
 theorem star_hadamardMatrix : star hadamardMatrix = hadamardMatrix := by
   ext b c

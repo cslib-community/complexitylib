@@ -405,11 +405,11 @@ theorem pedersenHidingGame_apply_true_le (setup : ℕ → PMF F.Desc)
         ≤ ∑' α, (PMF.uniformOfFintype (ZMod (F.order d)) α *
             F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n true +
             if α = 0 then (F.order d : ℝ≥0∞)⁻¹ else 0) :=
-          ENNReal.tsum_le_tsum hα
+          tsum_le_tsum hα
       _ = (∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
             F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n true) +
           (F.order d : ℝ≥0∞)⁻¹ := by
-          rw [ENNReal.tsum_add, tsum_ite_eq]
+          rw [tsum_add, tsum_ite_eq]
       _ ≤ (∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
             F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n true) +
           (m : ℝ≥0∞)⁻¹ := add_le_add le_rfl hord
@@ -423,7 +423,7 @@ theorem pedersenHidingGame_apply_true_le (setup : ℕ → PMF F.Desc)
           (((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
             F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n) true +
             (m : ℝ≥0∞)⁻¹) := by
-        refine ENNReal.tsum_le_tsum fun d => ?_
+        refine tsum_le_tsum fun d => ?_
         by_cases hd : d ∈ (setup n).support
         · exact mul_le_mul_of_nonneg_left (hd_bound d hd) zero_le
         · have hd0 : setup n d = 0 := by rwa [PMF.mem_support_iff, not_not] at hd
@@ -432,7 +432,7 @@ theorem pedersenHidingGame_apply_true_le (setup : ℕ → PMF F.Desc)
           ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
             F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n) true) +
         (m : ℝ≥0∞)⁻¹ := by
-        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, (setup n).tsum_coe, one_mul]
+        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, (setup n).tsum_coe, one_mul]
 
 /-- **Unconditional hiding bound for Pedersen commitments**: when every supported group at
 parameter `n` has order at least `m > 0`, any (even computationally unbounded)

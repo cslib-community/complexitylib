@@ -77,8 +77,8 @@ noncomputable def Prover.guessProb (P : Prover Unit) (s : P.State) (m : List Boo
 theorem Prover.guessProb_add_le_one (P : Prover Unit) (s : P.State) (m : List Bool) :
     P.guessProb s m false + P.guessProb s m true ≤ 1 := by
   simp only [Prover.guessProb, PMF.map_apply]
-  rw [← ENNReal.tsum_add, ← PMF.tsum_coe ((P.respond ((), m)).run s)]
-  refine ENNReal.tsum_le_tsum fun y => ?_
+  rw [← tsum_add, ← PMF.tsum_coe ((P.respond ((), m)).run s)]
+  refine tsum_le_tsum fun y => ?_
   by_cases h : List.take 1 y.1 = [false]
   · simp [h]
   · by_cases h' : List.take 1 y.1 = [true] <;> simp [h, h']
@@ -120,7 +120,7 @@ theorem acceptProb_guessingRound_le {message : Bool → ProbComp (List Bool)} {�
         exact hclose _ fun m => PMF.coe_le_one _ _
     _ = ∑' m, ProbComp.eval (message false) m *
           (P.guessProb P.init m false + P.guessProb P.init m true) + δ := by
-        rw [← add_assoc, ← ENNReal.tsum_add]
+        rw [← add_assoc, ← tsum_add]
         simp only [mul_add]
     _ ≤ 1 + δ := by
         gcongr

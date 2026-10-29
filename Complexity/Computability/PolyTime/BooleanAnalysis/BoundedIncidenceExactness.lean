@@ -1090,7 +1090,8 @@ theorem evalBoundedIncidenceBranch_eq_rootCount {N₀_branch n' : ℕ}
   let P_eq : Fin eqs'.length → Finset (Finset (Fin n')) := fun f =>
     HeavyBranchFold.toFinsetEquation n' eqs'[f]
   have hk_list : ∀ eq ∈ eqs', ∀ m ∈ eq, m.length ≤ k' := fun eq heq m hm =>
-    le_foldl_max_of_mem (List.mem_map_of_mem (List.mem_flatten.mpr ⟨eq, heq, hm⟩))
+    List.le_max_of_mem
+      (List.mem_cons_of_mem _ (List.mem_map_of_mem (List.mem_flatten.mpr ⟨eq, heq, hm⟩)))
   have hk_fin : ∀ f ∈ (univ : Finset (Fin eqs'.length)), ∀ M ∈ P_eq f, #M ≤ k' := by
     intro f _ M hM
     simp only [P_eq, HeavyBranchFold.toFinsetEquation, List.mem_toFinset, List.mem_map] at hM

@@ -102,18 +102,6 @@ private theorem exists_inO_eq : ∃ T S, ComputableTidilyInO
   ⟨_, _, ComputableInO.eqWords.tidy.comp (ComputableTidilyInO.snd encUnit _)⟩
 
 -- Savitch's algorithm at depth `n`, with the width, the endpoints and the edge test fixed.
-example : ∃ T S, ComputableTidilyInO
-    (fun n : ℕ => savitch (fun u v => decide (u = v)) 1 n [false] [true]) encUnary encBool T S := by
-  obtain ⟨Te, Se, hedge⟩ := exists_inO_eq
-  have hin : ComputableTidilyInO (fun n : ℕ => ((), 1, n, [false], [true])) encUnary
-      (encArgs encUnit) _ _ :=
-    (ComputableTidilyInO.const ()).prod ((ComputableTidilyInO.const 1).prod
-      ((ComputableTidilyInO.of_linear (.of_eq fun _ => rfl)).prod
-        ((ComputableTidilyInO.const [false]).prod (ComputableTidilyInO.const [true]))))
-  exact ⟨_, _, computableTidilyInO_savitch (edge := fun _ u v => decide (u = v)) hedge hin
-    (fun _ => rfl) fun _ => rfl⟩
-
--- The same family, from a plain certificate of the edge test.
 example : ∃ T S, ComputableInO
     (fun n : ℕ => savitch (fun u v => decide (u = v)) 1 n [false] [true]) encUnary encBool T S := by
   obtain ⟨Te, Se, hedge⟩ := exists_inO_eq
@@ -128,15 +116,15 @@ example : ∃ T S, ComputableInO
 
 -- The same family, in polynomial space.
 example : ∃ t s, PolyBounded (fun n : ℕ => (encUnary n).length) s ∧
-    ComputableTidilyInTimeAndSpace
+    ComputableInTimeAndSpace
       (fun n : ℕ => savitch (fun u v => decide (u = v)) 1 n [false] [true]) encUnary encBool
       t s := by
-  have hedge : ComputableTidilyInPolyTime
+  have hedge : ComputableInPolyTime
       (fun q : Unit × List Bool × List Bool => decide (q.2.1 = q.2.2))
       (encPair encUnit (encPair encBits encBits)) encBool :=
     (ComputableTidilyInDegree.eqWords.comp
-      (ComputableTidilyInDegree.snd encUnit _)).computableTidilyInPolyTime
-  have hin : ComputableTidilyInPolyTime (fun n : ℕ => ((), 1, n, [false], [true])) encUnary
+      (ComputableTidilyInDegree.snd encUnit _)).computableTidilyInPolyTime.computableInPolyTime
+  have hin : ComputableInPolyTime (fun n : ℕ => ((), 1, n, [false], [true])) encUnary
       (encArgs encUnit) := by
     fun_prop
   exact exists_polyBounded_space_savitch (edge := fun _ u v => decide (u = v)) hedge hin

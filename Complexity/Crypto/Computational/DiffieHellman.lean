@@ -173,14 +173,14 @@ theorem succProbability_discreteLogGame_le_cdhGame (setup : ℕ → PMF F.Desc)
   simp only [discreteLogGame, cdhGame, dlToCDHAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
   rw [PMF.bind_apply, PMF.bind_apply]
-  refine ENNReal.tsum_le_tsum fun d => mul_le_mul_of_nonneg_left ?_ zero_le
+  refine tsum_le_tsum fun d => mul_le_mul_of_nonneg_left ?_ zero_le
   rw [PMF.bind_apply, PMF.bind_apply]
-  refine ENNReal.tsum_le_tsum fun α => mul_le_mul_of_nonneg_left ?_ zero_le
+  refine tsum_le_tsum fun α => mul_le_mul_of_nonneg_left ?_ zero_le
   rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
     ((ProbComp.eval (adversary n (d, F.encode d (α • F.generator d)))).bind _)]
   rw [PMF.bind_apply, PMF.bind_apply]
-  refine ENNReal.tsum_le_tsum fun β => mul_le_mul_of_nonneg_left ?_ zero_le
-  refine ENNReal.tsum_le_tsum fun guess => mul_le_mul_of_nonneg_left ?_ zero_le
+  refine tsum_le_tsum fun β => mul_le_mul_of_nonneg_left ?_ zero_le
+  refine tsum_le_tsum fun guess => mul_le_mul_of_nonneg_left ?_ zero_le
   by_cases hα : (ofBits guess : ZMod (F.order d)) = α
   · simp only [hα, F.smul_encode, smul_smul, decide_true, le_rfl]
   · simp only [hα, decide_false, PMF.pure_apply, Bool.true_eq_false, ↓reduceIte, zero_le]
@@ -301,7 +301,7 @@ theorem ddhIdealGame_cdhToDDHDistinguisher_true_le (setup : ℕ → PMF F.Desc)
               fun guess =>
                 PMF.pure (decide (guess = F.encode d (γ • F.generator d)))) true
       ≤ ∑' d, setup n d * (m : ℝ≥0∞)⁻¹ := by
-        refine ENNReal.tsum_le_tsum fun d => ?_
+        refine tsum_le_tsum fun d => ?_
         by_cases hd : d ∈ (setup n).support
         · refine mul_le_mul_of_nonneg_left ?_ zero_le
           have hord : (F.order d : ℝ≥0∞)⁻¹ ≤ (m : ℝ≥0∞)⁻¹ :=
@@ -315,8 +315,8 @@ theorem ddhIdealGame_cdhToDDHDistinguisher_true_le (setup : ℕ → PMF F.Desc)
                       PMF.pure (decide (guess = F.encode d (γ • F.generator d)))) true
               ≤ ∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
                   ∑' β, PMF.uniformOfFintype (ZMod (F.order d)) β * (m : ℝ≥0∞)⁻¹ := by
-                refine ENNReal.tsum_le_tsum fun α => mul_le_mul_of_nonneg_left ?_ zero_le
-                refine ENNReal.tsum_le_tsum fun β => mul_le_mul_of_nonneg_left ?_ zero_le
+                refine tsum_le_tsum fun α => mul_le_mul_of_nonneg_left ?_ zero_le
+                refine tsum_le_tsum fun β => mul_le_mul_of_nonneg_left ?_ zero_le
                 rw [PMF.bind_comm, PMF.bind_apply]
                 calc ∑' guess, ProbComp.eval (adversary n
                         (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d))) guess *
@@ -325,7 +325,7 @@ theorem ddhIdealGame_cdhToDDHDistinguisher_true_le (setup : ℕ → PMF F.Desc)
                     ≤ ∑' guess, ProbComp.eval (adversary n
                         (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d))) guess *
                       (m : ℝ≥0∞)⁻¹ := by
-                      refine ENNReal.tsum_le_tsum fun guess =>
+                      refine tsum_le_tsum fun guess =>
                         mul_le_mul_of_nonneg_left
                           ((F.uniform_decide_eq_encode_le d guess).trans hord) zero_le
                   _ = (m : ℝ≥0∞)⁻¹ := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]

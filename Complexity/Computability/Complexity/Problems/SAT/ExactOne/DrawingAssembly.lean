@@ -45,15 +45,6 @@ def positiveFormulaDrawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
   incidenceRoute := fun o =>
     ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).2.2.getD o.2.1 []
 
-private theorem map_getD_zipIdx {A B : Type*} (xs : List A) (ys : List B) (fallback : B)
-    (hlen : ys.length = xs.length) :
-    (xs.zipIdx.map fun a => ys.getD a.2 fallback) = ys := by
-  apply List.ext_getElem
-  · simpa using hlen.symm
-  · intro i hi hj
-    simp only [List.getElem_map, List.getElem_zipIdx, Nat.zero_add]
-    rw [List.getD_eq_getElem _ _ hj]
-
 private theorem placed_occurrence_routes (pcs : List PositivePlacedClause)
     (hc : ∀ pc ∈ pcs, pc.2.2.length = pc.1.length) :
     ((Cslib.Logic.PL.occurrences (pcs.map Prod.fst)).map fun o =>

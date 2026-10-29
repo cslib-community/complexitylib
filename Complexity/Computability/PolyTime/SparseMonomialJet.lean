@@ -945,13 +945,6 @@ open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-private theorem intBin_pow_polytime {base : α → ℤ} {exp : α → ℕ}
-    (hb : ComputableInPolyTime base encIn encIntBin)
-    (he : ComputableInPolyTime exp encIn encUnary) :
-    ComputableInPolyTime (fun x => base x ^ exp x) encIn encIntBin :=
-  (show ComputableInPolyTime (fun p : ℤ × ℕ => p.1 ^ p.2)
-    (encPair encIntBin encUnary) encIntBin by fun_prop).comp (hb.prod he)
-
 private theorem intBin_sum_polytime :
     ComputableInPolyTime List.sum (encList encIntBin) encIntBin := by fun_prop
 

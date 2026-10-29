@@ -47,13 +47,9 @@ namespace Cslib.Logic.PL.ClauseSet.Sparsification
 
 open Finset Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 
-private abbrev Accepts (k B m : ℕ) : Prop :=
-  countingBChoiceCoeff k ≤ 2 ^ m ∧
-    B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k (2 ^ m) * 2 ^ m) ≤
-      2 ^ m
-
 private def firstExponent (k D B : ℕ) : ℕ :=
-  ((List.range (D + 2 * Nat.clog 2 B + 1)).filter (fun m => decide (Accepts k B m))).headD 0
+  ((List.range (D + 2 * Nat.clog 2 B + 1)).filter
+    (fun m => decide (CountingExponentAccepts k B m))).headD 0
 
 private def boundedBase (k D B : ℕ) : ℕ :=
   if B = 0 then 2 else 2 ^ firstExponent k D B
@@ -70,7 +66,7 @@ private theorem depthCoeff_polyTime (k : ℕ) :
   exact binary_mul' (const 4) (hsum (k - 1))
 
 private theorem accepts_polyTime (k : ℕ) :
-    ComputableInPolyTime (fun p : ℕ × ℕ => decide (Accepts k p.1 p.2))
+    ComputableInPolyTime (fun p : ℕ × ℕ => decide (CountingExponentAccepts k p.1 p.2))
       (encPair encNat encUnary) encBool := by
   have hB := fst encNat encUnary
   have hM := binary_two_pow.comp (snd encNat encUnary)
@@ -79,7 +75,7 @@ private theorem accepts_polyTime (k : ℕ) :
     (binary_clog_two.comp (binary_mul' (binary_mul' (const 4) hC) hM))
   have hbudget := binary_le' (binary_mul' (binary_mul' hB (const (countingBChoiceCoeff k))) hh) hM
   have hlarge := binary_le' (const (countingBChoiceCoeff k)) hM
-  simpa only [Accepts, Bool.decide_and, Function.comp_def] using
+  simpa only [CountingExponentAccepts, Bool.decide_and, Function.comp_def] using
     bool_and.comp (hlarge.prod hbudget)
 
 private theorem firstExponent_polyTime (k D : ℕ) :
@@ -105,10 +101,10 @@ private theorem boundedBase_eq {k D : ℕ} (hk : 2 ≤ k)
   have hmBound : m ≤ D + 2 * Nat.clog 2 B := by
     have h := hD B hB'
     simpa only [hm, Nat.clog_pow 2 m (by decide)] using h
-  have hpass : Accepts k B m := by
-    simpa only [Accepts, hm] using countingThresholdBase_spec hk hB'
+  have hpass : CountingExponentAccepts k B m := by
+    simpa only [CountingExponentAccepts, hm] using countingThresholdBase_spec hk hB'
   have hfound : (List.range (D + 2 * Nat.clog 2 B + 1)).find?
-      (fun j => decide (Accepts k B j)) = some m := by
+      (fun j => decide (CountingExponentAccepts k B j)) = some m := by
     apply List.find?_range_eq_some.mpr
     refine ⟨by simpa only [decide_eq_true_eq] using hpass, ?_, ?_⟩
     · simpa only [List.mem_range] using Nat.lt_succ_of_le hmBound

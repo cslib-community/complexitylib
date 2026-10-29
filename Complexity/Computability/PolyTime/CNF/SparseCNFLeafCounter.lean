@@ -478,12 +478,6 @@ def ValidPolyTimeBound (encP : P ↪ List Bool) (NOf BOf : P → ℕ) (k N₀ : 
       (encPair encUnary encSys (NOf x.1, sys)).length ≤ polySys (encPair encP encCNF x).length →
       cPoly.time (NOf x.1, sys) ≤ R x
 
-private theorem exists_mono_poly {α : Type} {size u : α → ℕ} (hu : PolyBounded size u) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧ ∀ a, u a ≤ p (size a) := by
-  obtain ⟨c, d, h⟩ := hu.exists_le
-  exact ⟨fun n => c * (n + 1) ^ d, by fun_prop,
-    fun _ _ hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hxy 1) d), h⟩
-
 private theorem polyBounded_output_of_space {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
     {f : α → β} (c : NativeCertificate f ei eo)
     (hs : PolyBounded (fun a => (ei a).length) c.space) :

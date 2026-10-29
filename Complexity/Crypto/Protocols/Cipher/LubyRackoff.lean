@@ -1013,7 +1013,7 @@ private theorem tsum_seed_toOuterMeasure_hasCollision_le {seed₁ : PMF K₁} {h
         ∑' x, idealRun x * ∑' k₁,
           ({k₁ : K₁ | hasUCollision (h₁ k₁) x.2 = true}.indicator seed₁ k₁) := by
       simp only [← ENNReal.tsum_mul_left]
-      rw [ENNReal.tsum_comm]
+      rw [tsum_comm]
       refine tsum_congr fun x => tsum_congr fun k₁ => ?_
       by_cases hx : hasUCollision (h₁ k₁) x.2 = true
       · rw [Set.indicator_of_mem hx, Set.indicator_of_mem hx, mul_comm]
@@ -1022,7 +1022,7 @@ private theorem tsum_seed_toOuterMeasure_hasCollision_le {seed₁ : PMF K₁} {h
     calc ∑' x, idealRun x * ∑' k₁,
           ({k₁ : K₁ | hasUCollision (h₁ k₁) x.2 = true}.indicator seed₁ k₁)
         ≤ ∑' x, idealRun x * (Q.choose 2 * ε) := by
-          refine ENNReal.tsum_le_tsum fun x => ?_
+          refine tsum_le_tsum fun x => ?_
           by_cases hmem : x ∈ idealRun.support
           · refine mul_le_mul_of_nonneg_left ?_ zero_le
             rw [← PMF.toOuterMeasure_apply]
@@ -1045,10 +1045,10 @@ private theorem tsum_seed_toOuterMeasure_hasCollision_le {seed₁ : PMF K₁} {h
       ≤ ∑' k₁, seed₁ k₁ *
         (idealRun.toOuterMeasure {x | hasUCollision (h₁ k₁) x.2 = true} +
           idealRun.toOuterMeasure {x | hasVCollision x.2 = true}) :=
-        ENNReal.tsum_le_tsum fun k₁ => mul_le_mul_of_nonneg_left (hsplit k₁) zero_le
+        tsum_le_tsum fun k₁ => mul_le_mul_of_nonneg_left (hsplit k₁) zero_le
     _ = (∑' k₁, seed₁ k₁ * idealRun.toOuterMeasure {x | hasUCollision (h₁ k₁) x.2 = true}) +
         (∑' k₁, seed₁ k₁ * idealRun.toOuterMeasure {x | hasVCollision x.2 = true}) := by
-        simp only [mul_add, ENNReal.tsum_add]
+        simp only [mul_add, tsum_add]
     _ ≤ Q.choose 2 * ε + Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ := add_le_add hu hv
 
 /-- For every fixed `f₁`, the acceptance probability of `feistel3FixedGame f₁ program` and
@@ -1092,13 +1092,13 @@ theorem feistel3HashIdealGame_apply_le {seed₁ : PMF K₁} {h₁ : K₁ → G �
       ≤ ∑' k₁, seed₁ k₁ * (randomFunctionGame program b +
           ((OracleComp.interpret (memoize (fun _ : G × G => PMF.uniformOfFintype (G × G)))
             program).run []).toOuterMeasure {x | hasCollision (h₁ k₁) x.2 = true}) :=
-        ENNReal.tsum_le_tsum fun k₁ =>
+        tsum_le_tsum fun k₁ =>
           mul_le_mul_of_nonneg_left (feistel3FixedGame_apply_le (h₁ k₁) program b) zero_le
     _ = randomFunctionGame program b +
           ∑' k₁, seed₁ k₁ *
             ((OracleComp.interpret (memoize (fun _ : G × G => PMF.uniformOfFintype (G × G)))
               program).run []).toOuterMeasure {x | hasCollision (h₁ k₁) x.2 = true} := by
-        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, seed₁.tsum_coe, one_mul]
+        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, seed₁.tsum_coe, one_mul]
     _ ≤ randomFunctionGame program b +
           (Q.choose 2 * ε + Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹) :=
         add_le_add le_rfl (tsum_seed_toOuterMeasure_hasCollision_le hh₁ hQ)
@@ -1120,14 +1120,14 @@ theorem randomFunctionGame_apply_le_feistel3HashIdealGame {seed₁ : PMF K₁} {
       ≤ ∑' k₁, seed₁ k₁ * (feistel3FixedGame (h₁ k₁) program b +
           ((OracleComp.interpret (memoize (fun _ : G × G => PMF.uniformOfFintype (G × G)))
             program).run []).toOuterMeasure {x | hasCollision (h₁ k₁) x.2 = true}) :=
-        ENNReal.tsum_le_tsum fun k₁ =>
+        tsum_le_tsum fun k₁ =>
           mul_le_mul_of_nonneg_left
             (randomFunctionGame_apply_le_feistel3FixedGame (h₁ k₁) program b) zero_le
     _ = (∑' k₁, seed₁ k₁ * feistel3FixedGame (h₁ k₁) program b) +
           ∑' k₁, seed₁ k₁ *
             ((OracleComp.interpret (memoize (fun _ : G × G => PMF.uniformOfFintype (G × G)))
               program).run []).toOuterMeasure {x | hasCollision (h₁ k₁) x.2 = true} := by
-        simp only [mul_add, ENNReal.tsum_add]
+        simp only [mul_add, tsum_add]
     _ ≤ (∑' k₁, seed₁ k₁ * feistel3FixedGame (h₁ k₁) program b) +
           (Q.choose 2 * ε + Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹) :=
         add_le_add le_rfl (tsum_seed_toOuterMeasure_hasCollision_le hh₁ hQ)
@@ -1619,7 +1619,7 @@ theorem le_idealStrongGame_feistel3CCAAttack_false {l₀ l₁ l₂ r₀ : G}
     _ ≤ ∑' π : Equiv.Perm (G × G),
           PMF.uniformOfFintype (Equiv.Perm (G × G)) π *
             OracleComp.interpret (feistelStrongOracle π) (feistel3CCAAttack l₀ l₁ r₀) false :=
-        ENNReal.le_tsum (f := fun π : Equiv.Perm (G × G) =>
+        le_tsum (f := fun π : Equiv.Perm (G × G) =>
           PMF.uniformOfFintype (Equiv.Perm (G × G)) π *
             OracleComp.interpret (feistelStrongOracle π) (feistel3CCAAttack l₀ l₁ r₀) false) π₀
 
@@ -1875,9 +1875,9 @@ theorem idealStrongGame_feistel3CCAAttack_true_le {l₀ l₁ : G} (r₀ : G) (h0
               (fun x => decide (-vw₀.1 + x.1.2 = -vw₁.1 + r₀))) true
           ≤ ∑' vw₁, ((PMF.uniformOfFintype (G × G)) vw₁ * (Fintype.card G : ℝ≥0∞)⁻¹ +
               ({q₃} : Set (G × G)).indicator (PMF.uniformOfFintype (G × G)) vw₁) :=
-            ENNReal.tsum_le_tsum hvw₁
+            tsum_le_tsum hvw₁
         _ = (Fintype.card G : ℝ≥0∞)⁻¹ + (Fintype.card (G × G) : ℝ≥0∞)⁻¹ := by
-            rw [ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
+            rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
               ← PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply_singleton,
               PMF.uniformOfFintype_apply]
     calc ∑' vw₀, (PMF.uniformOfFintype (G × G)) vw₀ *
@@ -1888,7 +1888,7 @@ theorem idealStrongGame_feistel3CCAAttack_true_le {l₀ l₁ : G} (r₀ : G) (h0
               (fun x => decide (-vw₀.1 + x.1.2 = -vw₁.1 + r₀))) true
         ≤ ∑' vw₀, (PMF.uniformOfFintype (G × G)) vw₀ *
             ((Fintype.card G : ℝ≥0∞)⁻¹ + (Fintype.card (G × G) : ℝ≥0∞)⁻¹) :=
-          ENNReal.tsum_le_tsum fun vw₀ => mul_le_mul_of_nonneg_left (hvw₀ vw₀) zero_le
+          tsum_le_tsum fun vw₀ => mul_le_mul_of_nonneg_left (hvw₀ vw₀) zero_le
       _ = (Fintype.card G : ℝ≥0∞)⁻¹ + (Fintype.card (G × G) : ℝ≥0∞)⁻¹ := by
           rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
   have hchoose : ((Nat.choose 3 2 : ℕ) : ℝ≥0∞) = 3 := rfl
@@ -3043,7 +3043,7 @@ private theorem tsum_toOuterMeasure_of_pointwise_le {α β : Type} (μ : PMF α)
       (∑' a, μ a * ∑' y, {y | P a y}.indicator d y) =
         ∑' y, d y * ∑' a, {a | P a y}.indicator μ a := by
     simp only [← ENNReal.tsum_mul_left]
-    rw [ENNReal.tsum_comm]
+    rw [tsum_comm]
     refine tsum_congr fun y => tsum_congr fun a => ?_
     by_cases h : P a y
     · rw [Set.indicator_of_mem h, Set.indicator_of_mem h, mul_comm]
@@ -3051,7 +3051,7 @@ private theorem tsum_toOuterMeasure_of_pointwise_le {α β : Type} (μ : PMF α)
   rw [hcomm]
   calc ∑' y, d y * ∑' a, {a | P a y}.indicator μ a
       ≤ ∑' y, d y * M :=
-        ENNReal.tsum_le_tsum fun y => mul_le_mul_of_nonneg_left (by
+        tsum_le_tsum fun y => mul_le_mul_of_nonneg_left (by
           rw [← PMF.toOuterMeasure_apply]
           exact hM y) zero_le
     _ = M := by rw [ENNReal.tsum_mul_right, d.tsum_coe, one_mul]
@@ -3155,14 +3155,14 @@ private theorem tsum_uniform_toOuterMeasure_hasCollision4_le
             d.toOuterMeasure
               {x | IsGoodCache4 Q x.2 ∧ hasVCollision4 f₄ x.2 = true} +
             (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹) :=
-          ENNReal.tsum_le_tsum fun f₄ =>
+          tsum_le_tsum fun f₄ =>
             mul_le_mul_of_nonneg_left (toOuterMeasure_hasCollision4_le f₁ f₄ hQ) zero_le
       _ = d.toOuterMeasure
             {x | IsGoodCache4 Q x.2 ∧ hasUCollision f₁ x.2 = true} +
           (∑' f₄, unif f₄ * d.toOuterMeasure
             {x | IsGoodCache4 Q x.2 ∧ hasVCollision4 f₄ x.2 = true}) +
           (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹ := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, unif.tsum_coe, one_mul]
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, unif.tsum_coe, one_mul]
       _ ≤ _ := add_le_add (add_le_add le_rfl (tsum_uniform_toOuterMeasure_hasVCollision4_le d Q))
           le_rfl
   calc ∑' f₁, unif f₁ * ∑' f₄, unif f₄ * d.toOuterMeasure {x | hasCollision4 f₁ f₄ x.2 = true}
@@ -3171,12 +3171,12 @@ private theorem tsum_uniform_toOuterMeasure_hasCollision4_le
            {x | IsGoodCache4 Q x.2 ∧ hasUCollision f₁ x.2 = true} +
           Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ +
           (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹) :=
-        ENNReal.tsum_le_tsum fun f₁ => mul_le_mul_of_nonneg_left (hinner f₁) zero_le
+        tsum_le_tsum fun f₁ => mul_le_mul_of_nonneg_left (hinner f₁) zero_le
     _ = (∑' f₁, unif f₁ * d.toOuterMeasure
           {x | IsGoodCache4 Q x.2 ∧ hasUCollision f₁ x.2 = true}) +
         Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ +
         (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹ := by
-        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, unif.tsum_coe, one_mul]
+        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, unif.tsum_coe, one_mul]
     _ ≤ Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ +
         Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ +
         (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹ :=
@@ -3253,13 +3253,13 @@ theorem feistel4StrongRandomRoundsGame_apply_le
           (forgetVal +
             ((OracleComp.interpret RandomPermutation.forgetfulAnswer prog).run []).toOuterMeasure
               {x | hasCollision4 f₁ f₄ x.2 = true}) :=
-          ENNReal.tsum_le_tsum fun f₁ => mul_le_mul_of_nonneg_left
-            (ENNReal.tsum_le_tsum fun f₄ => mul_le_mul_of_nonneg_left
+          tsum_le_tsum fun f₁ => mul_le_mul_of_nonneg_left
+            (tsum_le_tsum fun f₄ => mul_le_mul_of_nonneg_left
               (feistel4StrongFixedGame_apply_le f₁ f₄ program b) zero_le) zero_le
       _ = forgetVal + ∑' f₁, unif f₁ * ∑' f₄, unif f₄ *
             ((OracleComp.interpret RandomPermutation.forgetfulAnswer prog).run []).toOuterMeasure
               {x | hasCollision4 f₁ f₄ x.2 = true} := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, unif.tsum_coe, one_mul]
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, unif.tsum_coe, one_mul]
       _ ≤ _ := add_le_add le_rfl (tsum_uniform_toOuterMeasure_hasCollision4_le hQ')
   have hperm := RandomPermutation.forgetfulAnswer_bind_apply_le_uniformPerm hQ' PMF.pure b
   simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_pure] at hperm
@@ -3303,14 +3303,14 @@ theorem idealStrongGame_apply_le_feistel4StrongRandomRoundsGame
           (feistel4StrongFixedGame f₁ f₄ program b +
             ((OracleComp.interpret RandomPermutation.forgetfulAnswer prog).run []).toOuterMeasure
               {x | hasCollision4 f₁ f₄ x.2 = true}) :=
-          ENNReal.tsum_le_tsum fun f₁ => mul_le_mul_of_nonneg_left
-            (ENNReal.tsum_le_tsum fun f₄ => mul_le_mul_of_nonneg_left
+          tsum_le_tsum fun f₁ => mul_le_mul_of_nonneg_left
+            (tsum_le_tsum fun f₄ => mul_le_mul_of_nonneg_left
               (forgetfulAnswer_apply_le_feistel4StrongFixedGame f₁ f₄ program b) zero_le) zero_le
       _ = (∑' f₁, unif f₁ * ∑' f₄, unif f₄ * feistel4StrongFixedGame f₁ f₄ program b) +
           ∑' f₁, unif f₁ * ∑' f₄, unif f₄ *
             ((OracleComp.interpret RandomPermutation.forgetfulAnswer prog).run []).toOuterMeasure
               {x | hasCollision4 f₁ f₄ x.2 = true} := by
-          simp only [mul_add, ENNReal.tsum_add]
+          simp only [mul_add, tsum_add]
       _ ≤ _ := add_le_add le_rfl (tsum_uniform_toOuterMeasure_hasCollision4_le hQ')
   have hperm := RandomPermutation.uniformPerm_bind_apply_le_forgetful hQ' PMF.pure b
   simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_pure] at hperm

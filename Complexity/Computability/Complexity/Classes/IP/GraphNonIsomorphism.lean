@@ -413,7 +413,7 @@ private theorem card_filter_not_injective_div_le (n : ℕ) :
 private theorem tsum_map_mul {β γ : Type*} (μ : PMF β) (m : β → γ) (f : γ → ENNReal) :
     ∑' c, μ.map m c * f c = ∑' b, μ b * f (m b) := by
   simp only [PMF.map_apply, ENNReal.tsum_mul_right.symm]
-  rw [ENNReal.tsum_comm]
+  rw [tsum_comm]
   refine tsum_congr fun b => ?_
   rw [tsum_eq_single (m b)]
   · simp

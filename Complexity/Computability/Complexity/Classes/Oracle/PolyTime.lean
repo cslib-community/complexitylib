@@ -21,7 +21,7 @@ A computation in polynomial time relative to `A` is the clocked run, with every 
 That run iterates one instruction on finite storage (`Turing.MultiTapePTM.answerStep`), which
 answers a query with the decider of `A` on the pending request. Against an oracle computed in
 polynomial time the instruction is polynomial-time
-(`Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`), the storage grows by a bounded amount
+(`Turing.MultiTapePTM.computableInPolyTime_answerStep`), the storage grows by a bounded amount
 per instruction, and the clock is polynomial, so the run is polynomial-time
 (`Turing.MultiTapePTM.computableInPolyTime_run`,
 `Cslib.Complexity.ComputableInPolyTimeWithOracle.computableInPolyTime`).

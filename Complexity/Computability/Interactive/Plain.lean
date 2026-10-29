@@ -142,7 +142,8 @@ private theorem runLaw_output {s : Spec} {StmtIn StmtOut : Type}
   · exact e.elim
   · rfl
 
-private theorem toOuterMeasure_bind_le {α β : Type} (p : PMF α) (f : α → PMF β) (t : Set β)
+/-- A uniform upper bound on `(f a).toOuterMeasure t` bounds `(p.bind f).toOuterMeasure t`. -/
+theorem toOuterMeasure_bind_le {α β : Type} (p : PMF α) (f : α → PMF β) (t : Set β)
     {K : ℝ≥0∞} (h : ∀ a, (f a).toOuterMeasure t ≤ K) : (p.bind f).toOuterMeasure t ≤ K := by
   rw [PMF.toOuterMeasure_bind_apply]
   exact Probability.PMF.tsum_mul_le_of_forall_le _ h
@@ -201,9 +202,9 @@ private theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
           st'
     calc ∑' c, ProbComp.eval smp.1 c * _ ≤
           ∑' c, ProbComp.eval smp.1 c * (A.indicator 1 c + PerChallenge.sum s ε.2) :=
-          ENNReal.tsum_le_tsum fun c => by gcongr; exact hinner c
+          tsum_le_tsum fun c => by gcongr; exact hinner c
       _ = (ProbComp.eval smp.1).toOuterMeasure A + PerChallenge.sum s ε.2 := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
             PMF.toOuterMeasure_apply]
           congr 1
           refine tsum_congr fun c => ?_

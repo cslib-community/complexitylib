@@ -215,7 +215,7 @@ private theorem bind_match_apply {X : Type} (μ : PMF X) (index : X → Option (
       | some j => decide (event j x))) true =
       ∑ j, (μ.bind fun x => PMF.pure (decide (index x = some j ∧ event j x))) true := by
   simp only [PMF.bind_apply, PMF.pure_apply]
-  rw [← Summable.tsum_finsetSum fun _ _ => ENNReal.summable]
+  rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
   refine tsum_congr fun x => ?_
   rw [← Finset.mul_sum]
   congr 1

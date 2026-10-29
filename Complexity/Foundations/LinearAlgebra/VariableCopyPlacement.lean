@@ -12,6 +12,7 @@ public import Complexity.Foundations.Data.Polynomial.CoeffNorm1
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.Ring.Abs
+import Mathlib.Data.Nat.Factorial.BigOperators
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Positivity
@@ -669,15 +670,6 @@ private theorem coeffNorm1_prod_C_sub_X_le {Q : ℕ} (E : Finset (Fin Q)) :
       _ ≤ ((s.1 + 1) + 1) * ∏ t ∈ E, ((t.1 + 1) + 1) :=
         Nat.mul_le_mul_left _ ih
 
-private theorem prod_fin_add_one_eq_factorial (Q : ℕ) :
-    (∏ s : Fin Q, (s.1 + 1)) = Q.factorial := by
-  induction Q with
-  | zero => simp
-  | succ Q ih =>
-    rw [Fin.prod_univ_castSucc]
-    simp only [Fin.val_castSucc, Fin.val_last, ih, Nat.factorial_succ]
-    ring
-
 private theorem prod_add_one_add_one_le {Q : ℕ} (E : Finset (Fin Q)) :
     (∏ s ∈ E, ((s.1 + 1) + 1)) ≤ ∏ s ∈ E, (2 * (s.1 + 1)) := by
   classical
@@ -719,7 +711,9 @@ theorem coeffNorm1_mismatchAnnihilatorScaledInt_le {Q r : ℕ} (u y : AuxLabel Q
     _ = 2 ^ #(mismatchSet u y) * Q.factorial := by
       rw [prod_mul_distrib, prod_const, ← mul_assoc,
         mul_comm (∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1)) (2 ^ #(mismatchSet u y)),
-        mul_assoc, prod_compl_mul_prod, prod_fin_add_one_eq_factorial]
+        mul_assoc, prod_compl_mul_prod,
+        Fin.prod_univ_eq_prod_range (fun i => i + 1) Q,
+        Finset.prod_range_add_one_eq_factorial]
     _ ≤ Q.factorial * 2 ^ Q := by
       rw [mul_comm]
       exact Nat.mul_le_mul_left _

@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Foundations.Data.List.Fold
 import Mathlib.Data.Fintype.Basic
@@ -39,9 +40,10 @@ The result has the chosen branch's exact distribution, including state returned 
 theorem IsPPTOn.finite_cases
     {α β Tag : Type} [Finite Tag] {input : α ↪ List Bool} {output : β ↪ List Bool}
     {tagEncoding : Tag ↪ List Bool} {tag : α → Tag} {branch : Tag → α → ProbComp β}
-    (htag : ComputableTidilyInPolyTime tag input tagEncoding)
+    (htag : ComputableInPolyTime tag input tagEncoding)
     (hbranch : ∀ choice, IsPPTOn input output (branch choice)) :
     IsPPTOn input output (fun a => branch (tag a) a) := by
+  have htag := htag.tidy
   classical
   let _ := Fintype.ofFinite Tag
   cases isEmpty_or_nonempty Tag with

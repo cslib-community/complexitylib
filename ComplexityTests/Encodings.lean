@@ -8,6 +8,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Encoding
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 
 /-!
 # Tests for the framed encodings
@@ -27,10 +28,13 @@ example : encList encBool [true, false] = [true, true, false, true, false, false
 example (w u : List Bool) : unframe (frame w ++ u) = w := unframe_frame_append w u
 
 -- Binary successor can expose its raw output word with precisely the same time/space bounds.
-example : ∃ c, ComputableTidilyInTimeAndSpace (fun n : ℕ => encNat (n + 1)) encNat encBits
-    (fun n => c * ((encNat n).length + 1) ^ 2)
-    (fun n => c * ((encNat n).length + 1)) :=
-  let ⟨c, h⟩ := computableTidilyInTimeAndSpace_succ
-  ⟨c, h.of_enc_eq fun _ => rfl⟩
+example : ComputableInTimeAndSpace (fun n : ℕ => encNat (n + 1)) encNat encBits
+    (fun n => 2 * (encNat n).length + 3) (fun _ => 0) :=
+  let ⟨k, Q, hQ, tm, h⟩ := computableInTimeAndSpace_succ
+  ⟨k, Q, hQ, tm, h⟩
+
+-- The encoded successor, one digit longer after a carry out, is written within the linear clock.
+example (n : ℕ) : (encNat (n + 1)).length ≤ 2 * (encNat n).length + 3 :=
+  computableInTimeAndSpace_succ.length_le n
 
 end ComplexityTests.Encodings

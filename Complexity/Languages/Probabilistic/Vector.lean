@@ -274,7 +274,7 @@ theorem eval_pi {m : ℕ} {α : Fin m → Type} [∀ i, Finite (α i)]
         funext i
         simpa using (congrFun hEq (Fin.succ i)).symm
     · intro a ha
-      simp only [mul_eq_zero, ENNReal.tsum_eq_zero]
+      simp only [mul_eq_zero, tsum_eq_zero_iff]
       right
       intro b
       rw [ite_eq_right]

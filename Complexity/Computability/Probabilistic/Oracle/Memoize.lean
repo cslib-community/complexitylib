@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Control.Monad.Memoize
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Probabilistic.Oracle.Composition
+public import Complexity.Foundations.Control.Monad.Memoize
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
 /-!
@@ -108,11 +109,13 @@ theorem IsOraclePPTOn.memoize {Operation α Key Value : Type} [DecidableEq Opera
     {compute : α → Key → WordOracleComp Operation Value} {query : α → Key}
     {cache : α → List (Key × Value)}
     (hcompute : IsOraclePPTOn input valueEncoding (fun a => compute a (query a)))
-    (hquery : ComputableTidilyInPolyTime query input keyEncoding)
-    (hcache : ComputableTidilyInPolyTime cache input
+    (hquery : ComputableInPolyTime query input keyEncoding)
+    (hcache : ComputableInPolyTime cache input
       (encList (encPair keyEncoding valueEncoding))) :
     IsOraclePPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
       (fun a => memoize (compute a) (query a) (cache a)) := by
+  have hquery := hquery.tidy
+  have hcache := hcache.tidy
   let found (a : α) := (cache a).find? (fun entry => query a == entry.1)
   have hfound : ComputableTidilyInPolyTime found input
       (encOption (encPair keyEncoding valueEncoding)) := by fun_prop

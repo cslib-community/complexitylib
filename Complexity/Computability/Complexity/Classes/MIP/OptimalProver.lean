@@ -581,7 +581,7 @@ private theorem tsum_mul_le_bestOfList (μ : PMF α) (g : α → ℝ≥0∞) (de
     ∑' x, μ x * g x ≤ g (bestOfList g default l) := by
   calc ∑' x, μ x * g x
       ≤ ∑' x, μ x * g (bestOfList g default l) := by
-        refine ENNReal.tsum_le_tsum fun x => ?_
+        refine tsum_le_tsum fun x => ?_
         by_cases hx : x ∈ μ.support
         · exact mul_le_mul_right (le_bestOfList g default l (hsupp x hx)) (μ x)
         · rw [PMF.mem_support_iff, not_not] at hx
@@ -618,7 +618,7 @@ theorem exists_deterministic_prover_family [Finite ι] [DecidableEq ι] {γ : Ty
       rw [run_eq_bind_piPresample (hF c) P (fun _ => d) (fun _ => le_rfl)
         (Prover.independent P).init, PMF.bind_apply]
     simp only [hc, ← ENNReal.tsum_mul_left]
-    rw [← Summable.tsum_finsetSum fun _ _ => ENNReal.summable]
+    rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
     refine tsum_congr fun f => ?_
     rw [Finset.mul_sum]
     exact Finset.sum_congr rfl fun c _ => by rw [mul_left_comm]

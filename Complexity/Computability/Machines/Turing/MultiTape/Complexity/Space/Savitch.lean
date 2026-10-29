@@ -115,7 +115,7 @@ theorem savitchDecide_eq_true_iff {c d s : ℕ} {input : List Bool} (hs : ntm.Ru
   exact (Relation.reflTransGen_iff_relatesWithinSteps_of_encard_le hcard).symm
 
 /-- The width of the codes is polynomial-time, in unary. -/
-theorem computableTidilyInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d : ℕ) :
+private theorem computableTidilyInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d : ℕ) :
     ComputableTidilyInPolyTime (fun a => ntm.codeWidth c d (enc a)) enc encUnary := by
   have hlength := ComputableTidilyInPolyTime.encoding_length enc
   have hinit := ComputableTidilyInPolyTime.finiteCfg_init (k := k) (.encode enc) ntm.q₀
@@ -123,7 +123,7 @@ theorem computableTidilyInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool
   simp only [codeWidth, viewLengthBound, initView]
   fun_prop
 
-/-- `computableTidilyInPolyTime_codeWidth` for plain certificates. -/
+/-- The width of the codes is polynomial-time, in unary. -/
 theorem computableInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d : ℕ) :
     ComputableInPolyTime (fun a => ntm.codeWidth c d (enc a)) enc encUnary :=
   (computableTidilyInPolyTime_codeWidth c d).computableInPolyTime
@@ -137,11 +137,11 @@ theorem computableInPolyTime_viewCodeWidth (c d : ℕ) :
   fun_prop
 
 variable (ntm) in
-/-- **Savitch's decider runs in polynomial space**, tidily: within some time and within space
+/-- **Savitch's decider runs in polynomial space**: within some time and within space
 polynomially bounded in the length of the encoded instance. -/
 theorem exists_polyBounded_space_savitchDecide {α : Type} (enc : α ↪ List Bool) (c d : ℕ) :
     ∃ t s, PolyBounded (fun a => (enc a).length) s ∧
-      ComputableTidilyInTimeAndSpace (fun a => ntm.savitchDecide c d (enc a)) enc encBool t s := by
+      ComputableInTimeAndSpace (fun a => ntm.savitchDecide c d (enc a)) enc encBool t s := by
   have hwidth := computableInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
   have hedge : ComputableInPolyTime
       (fun q : Unit × List Bool × List Bool => (fun _ => ntm.codeEdge) q.1 q.2.1 q.2.2)
@@ -158,7 +158,7 @@ theorem exists_polyBounded_space_savitchDecide {α : Type} (enc : α ↪ List Bo
     unfold viewCodeWidth Cslib.Reachability.encArgs
     fun_prop
   exact Cslib.Reachability.exists_polyBounded_space_savitch (edge := fun _ => ntm.codeEdge)
-    (par := fun _ => ()) hedge.tidy hin.tidy
+    (par := fun _ => ()) hedge hin
     (fun _ => length_viewCode (Nat.le_add_right _ _)) fun _ => List.length_replicate ..
 
 end Turing.MultiTapeNTM

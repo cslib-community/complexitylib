@@ -7,11 +7,11 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Deterministic replay of Boolean oracle replies
@@ -37,10 +37,9 @@ supplied random coins for a closed machine using an additional work tape.
 ## Main results
 
 * `Turing.MultiTapePTM.replayConfig_pt`: replay is polynomial-time.
-* `Turing.MultiTapePTM.replayPrefix_pt`: prefix configurations are uniformly polynomial-time.
 * `Turing.MultiTapePTM.computableInPolyTime_replayPrefix`,
   `Turing.MultiTapePTM.computableInPolyTime_replayOutput`: prefix configurations and the replayed
-  output are polynomial-time, for plain certificates.
+  output are polynomial-time.
 * `Turing.MultiTapePTM.length_pendingRequest_replayPrefix_le`: request size is bounded by the
   number of elapsed instructions.
 * `Turing.MultiTapePTM.replayOutput_oracleReplies`: canonical replay is the certified oracle run.
@@ -167,16 +166,16 @@ section PolyTime
 variable [Finite Control] [Fintype Operation]
 
 /-- The next replay instruction is polynomial-time, uniformly in its reply bit. -/
-@[fun_prop] theorem replyStep_pt : ComputableTidilyInPolyTime
+@[fun_prop] theorem replyStep_pt : ComputableInPolyTime
     (fun p : FiniteConfig k Bool Control Operation × Bool => machine.replyStep p.1 p.2)
     (encPair encFiniteConfig encBool) encFiniteConfig := by
-  exact ComputableTidilyInPolyTime.cond
+  exact .of_tidy <| ComputableTidilyInPolyTime.cond
     ((ComputableTidilyInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp (.fst encFiniteConfig encBool)))
-    machine.receiveBit_pt (machine.localStep_pt.comp (.fst encFiniteConfig encBool))
+      (machine.pendingQuery_pt.tidy.comp (.fst encFiniteConfig encBool)))
+    machine.receiveBit_pt.tidy (machine.localStep_pt.tidy.comp (.fst encFiniteConfig encBool))
 
 /-- Deterministic oracle replay is polynomial-time in the encoded input and transcript. -/
-@[fun_prop] theorem replayConfig_pt : ComputableTidilyInPolyTime
+@[fun_prop] theorem replayConfig_pt : ComputableInPolyTime
     (fun p : List Bool × List Bool => machine.replayConfig p.1 p.2)
     (encPair encBits encBits) encFiniteConfig := by
   obtain ⟨c, hc⟩ := length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Operation)
@@ -190,18 +189,19 @@ variable [Finite Control] [Fintype Operation]
       (encPair encBits encBits p).length) (fun p => p.2.length) :=
     (ComputableTidilyInPolyTime.snd encBits encBits).polyBounded_length
   have hb := (PolyBounded.const c).mul (((hin.add hans).add (.const 1)).add (.const 1))
-  exact ComputableTidilyInPolyTime.foldl' (.snd encBits encBits) hinit machine.replyStep_pt hb
+  exact .of_tidy <| ComputableTidilyInPolyTime.foldl' (.snd encBits encBits) hinit
+    machine.replyStep_pt.tidy hb
     (fun p i _ => (hc _ _ _ _ (machine.spaceBound_replayConfig p.1 (p.2.take i))).trans
       (Nat.mul_le_mul_left c (by simp only [List.length_take]; omega)))
 
 /-- Prefix replay is jointly polynomial-time in input, transcript and unary instruction index. -/
-@[fun_prop] theorem replayPrefix_pt : ComputableTidilyInPolyTime
+@[local fun_prop] private theorem replayPrefix_pt : ComputableTidilyInPolyTime
     (fun p : (List Bool × List Bool) × ℕ => machine.replayPrefix p.1.1 p.1.2 p.2)
     (encPair (encPair encBits encBits) encUnary) encFiniteConfig := by
-  exact machine.replayConfig_pt.comp (g := fun p : (List Bool × List Bool) × ℕ =>
+  exact machine.replayConfig_pt.tidy.comp (g := fun p : (List Bool × List Bool) × ℕ =>
     (p.1.1, p.1.2.take p.2)) (by fun_prop)
 
-/-- `Turing.MultiTapePTM.replayPrefix_pt` for plain certificates. -/
+/-- Prefix replay is jointly polynomial-time in input, transcript and unary instruction index. -/
 @[fun_prop] theorem computableInPolyTime_replayPrefix : ComputableInPolyTime
     (fun p : (List Bool × List Bool) × ℕ => machine.replayPrefix p.1.1 p.1.2 p.2)
     (encPair (encPair encBits encBits) encUnary) encFiniteConfig :=
@@ -221,24 +221,24 @@ variable [Finite Control] [Finite Operation]
   have hout : ComputableTidilyInPolyTime
       (fun cfg : FiniteConfig k Bool Control Operation => cfg.tapes.output)
       encFiniteConfig encBits := by fun_prop
-  exact (hout.comp machine.replayConfig_pt).computableInPolyTime
+  exact (hout.comp machine.replayConfig_pt.tidy).computableInPolyTime
 
 /-- The next query in a guessed-reply execution is uniformly polynomial-time. -/
-@[fun_prop] theorem replayPrefix_pendingRequest_pt : ComputableTidilyInPolyTime
+@[fun_prop] theorem replayPrefix_pendingRequest_pt : ComputableInPolyTime
     (fun p : (List Bool × List Bool) × ℕ =>
       machine.pendingRequest (machine.replayPrefix p.1.1 p.1.2 p.2))
     (encPair (encPair encBits encBits) encUnary) encBits := by
   let _ := Fintype.ofFinite Operation
-  exact machine.pendingRequest_pt.comp machine.replayPrefix_pt
+  exact machine.pendingRequest_pt.comp machine.computableInPolyTime_replayPrefix
 
 /-- Whether the next guessed-reply instruction is a query is uniformly polynomial-time. -/
-@[fun_prop] theorem replayPrefix_isQuery_pt : ComputableTidilyInPolyTime
+@[fun_prop] theorem replayPrefix_isQuery_pt : ComputableInPolyTime
     (fun p : (List Bool × List Bool) × ℕ =>
       (machine.pendingQuery (machine.replayPrefix p.1.1 p.1.2 p.2)).isSome)
     (encPair (encPair encBits encBits) encUnary) encBool := by
   let _ := Fintype.ofFinite Operation
-  exact (ComputableTidilyInPolyTime.of_finite Option.isSome).comp
-    (machine.pendingQuery_pt.comp machine.replayPrefix_pt)
+  exact (ComputableInPolyTime.of_finite Option.isSome).comp
+    (machine.pendingQuery_pt.comp machine.computableInPolyTime_replayPrefix)
 
 end PolyTimeOutput
 

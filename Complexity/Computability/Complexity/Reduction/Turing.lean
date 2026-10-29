@@ -155,14 +155,14 @@ theorem PolyTimeOneOneReducible.polyTimeTuringReducible
 
 /-- One step of `queryWords`: ask the first remaining word, and append whether its reply begins
 with `true` to the accumulated answer word. -/
-private def queryWordsStep (s : List (List Bool) × List Bool) :
+def queryWordsStep (s : List (List Bool) × List Bool) :
     WordQueryComp Unit (List (List Bool) × List Bool) :=
   if s.1.isEmpty then pure s else
     (fun reply => (s.1.tail, s.2 ++ [reply == [true]])) <$>
       (List.take 1 <$> OracleComp.query ((), s.1.headD []))
 
 /-- Ask the oracle every word of the list, in order, and collect the one-bit answers. -/
-private def queryWords (words : List (List Bool)) : WordQueryComp Unit (List Bool) :=
+def queryWords (words : List (List Bool)) : WordQueryComp Unit (List Bool) :=
   Prod.snd <$> OracleComp.iterate words.length queryWordsStep (words, [])
 
 private theorem interpret_queryWordsStep (s : List (List Bool) × List Bool) :
@@ -177,7 +177,7 @@ private theorem interpret_queryWordsStep (s : List (List Bool) × List Bool) :
 /-- Asking every word of a list and collecting the one-bit answers is strict oracle PPT: each step
 pops one word from the framed list and appends one bit to the answer word, so the encoded state
 never grows. -/
-private theorem isOraclePPTOn_queryWords :
+theorem isOraclePPTOn_queryWords :
     Probability.IsOraclePPTOn (encList encBits) encBits
       (fun words => OracleComp.interpret ProbOracleComp.query (queryWords words)) := by
   simp only [queryWords, OracleComp.interpret_map, OracleComp.interpret_iterate]
@@ -213,7 +213,9 @@ private theorem interpret_id_queryWordsStep (O : Set (List Bool)) (word : List B
   cases decide (word ∈ O) <;> rfl
 
 open Classical in
-private theorem interpret_queryWords (O : Set (List Bool)) (words : List (List Bool)) :
+/-- Interpreting `queryWords words` against `languageOracle O` returns the list of membership
+decisions `words.map (fun word => decide (word ∈ O))`. -/
+theorem interpret_queryWords (O : Set (List Bool)) (words : List (List Bool)) :
     OracleComp.interpret (m := Id) (languageOracle O) (queryWords words) =
       words.map fun word => decide (word ∈ O) := by
   have key : ∀ (words : List (List Bool)) (acc : List Bool),
@@ -342,10 +344,10 @@ private theorem isOraclePPTOn_oracleAnswerStep {k : ℕ} {Control : Type} [Finit
         OracleComp.interpret ProbOracleComp.query (oracleAnswerStep machine prog cfg)) := by
   simp only [interpret_oracleAnswerStep]
   exact Probability.IsOraclePPTOn.cond'
-    ((ComputableInPolyTime.of_finite Option.isSome).comp (.of_tidy machine.pendingQuery_pt))
-    ((hprog.preprocess' (.of_tidy machine.pendingRequest_pt)).map_with'
-      (f := fun cfg b => machine.receiveBit (cfg, b)) (.of_tidy machine.receiveBit_pt))
-    (ComputableInPolyTime.of_tidy machine.localStep_pt).isOraclePPTOn
+    ((ComputableInPolyTime.of_finite Option.isSome).comp machine.pendingQuery_pt)
+    ((hprog.preprocess' machine.pendingRequest_pt).map_with'
+      (f := fun cfg b => machine.receiveBit (cfg, b)) machine.receiveBit_pt)
+    machine.localStep_pt.isOraclePPTOn
 
 private theorem spaceBound_of_mem_support_oracleAnswerStep {k : ℕ} {Control : Type}
     (machine : Turing.MultiTapePTM k Bool Control Unit)

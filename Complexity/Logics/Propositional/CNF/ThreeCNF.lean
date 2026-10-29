@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CNF
+import Complexity.Foundations.Data.List.Filter
 
 /-!
 # Splitting clauses into clauses of width three
@@ -228,20 +229,6 @@ theorem CNF.length_to3CNF (φ : CNF V) :
   refine List.map_congr_left fun x _ => ?_
   rw [Clause.length_split3, Function.comp_apply, Clause.length_relabel]
 
-private theorem countP_le_sum_map {α : Type*} {p : α → Bool} {f : α → ℕ} {l : List α}
-    (h : ∀ x ∈ l, p x = true → 1 ≤ f x) : l.countP p ≤ (l.map f).sum := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.countP_cons, List.map_cons, List.sum_cons]
-    have := ih fun x hx => h x (List.mem_cons_of_mem _ hx)
-    by_cases hp : p a = true
-    · have := h a List.mem_cons_self hp
-      simp only [hp, ite_true]
-      omega
-    · simp only [hp, Bool.false_eq_true, ite_false]
-      omega
-
 /-- **Splitting keeps falsified clauses falsified**: an assignment of the split formula falsifies
 at least as many clauses as its restriction to the original variables falsifies in the original
 formula. -/
@@ -254,7 +241,7 @@ theorem CNF.countUnsat_comp_inl_le_countUnsat_to3CNF (φ : CNF V) (τ : V ⊕ (�
     rw [List.countP_map]
     rfl
   rw [hφ, CNF.countUnsat, CNF.to3CNF, List.countP_flatMap]
-  refine countP_le_sum_map fun x _ hx => Nat.one_le_iff_ne_zero.2 fun h0 => ?_
+  refine List.countP_le_sum_map fun x _ hx => Nat.one_le_iff_ne_zero.2 fun h0 => ?_
   have h := Clause.eval_of_eval_split3 _ τ 0 _
     (CNF.countUnsat_eq_zero_iff.1 (show CNF.countUnsat τ _ = 0 from h0))
   rw [Clause.eval_relabel] at h

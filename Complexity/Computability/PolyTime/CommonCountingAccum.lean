@@ -89,6 +89,7 @@ when `w = 0`; clearing theorems hold in any `CommRing K`; and Cramer recovery re
 namespace Cslib.CommonCountingAccum
 
 open Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
+open ComputableTidilyInO (length_encNat_mono)
 
 local notation "encJet" => encList (encList encIntBin)
 local notation "encJets" => encList (encList (encList encIntBin))
@@ -450,7 +451,7 @@ theorem jetL1Norm_weightedProdJet_le (J ℓ : ℕ) (w : ℤ) (groups : List JetR
 
 section SharedHelpers
 
-private theorem foldl_keep_fst {ι π α : Type*} (step : π → α → ι → α)
+theorem foldl_keep_fst {ι π α : Type*} (step : π → α → ι → α)
     (par : π) (xs : List ι) (init : α) :
     xs.foldl (fun pa i => (pa.1, step pa.1 pa.2 i)) (par, init) =
       (par, xs.foldl (step par) init) := by
@@ -504,10 +505,11 @@ private theorem length_encJetRows_rangeAddJet_le {J ℓ j N M : ℕ} {f : ℕ �
     (Nat.size_le_size ((natAbs_rowEntry_rangeAddJet_le J ℓ j M f hM j' u').trans
       (Nat.mul_le_mul_right M hj))).trans (Nat.size_mul_le N M)
 
-private def HasPolySpace {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
+/-- A native certificate `c` has polynomially bounded workspace in the encoded input length. -/
+def HasPolySpace {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
     {f : α → β} (c : NativeCertificate f ei eo) : Prop :=
   PolyBounded (fun a => (ei a).length) c.space
-private theorem polyBounded_length_of_hasPolySpace {α β : Type} {ei : α ↪ List Bool}
+theorem polyBounded_length_of_hasPolySpace {α β : Type} {ei : α ↪ List Bool}
     {eo : β ↪ List Bool} {f : α → β} {c : NativeCertificate f ei eo} (hc : HasPolySpace c) :
     PolyBounded (fun a => (ei a).length) (fun a => (eo (f a)).length) := by
   obtain ⟨c₀, d₀, hs⟩ := hc.exists_le
@@ -515,11 +517,11 @@ private theorem polyBounded_length_of_hasPolySpace {α β : Type} {ei : α ↪ L
   refine .of_forall_le (k * (c₀ + 1)) d₀ fun a => (hl a).trans ?_
   have h1 : 1 ≤ ((ei a).length + 1) ^ d₀ := Nat.one_le_pow _ _ (Nat.succ_pos _)
   have := hs a; nlinarith
-private theorem hasPolySpace_comp {α β γ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
+theorem hasPolySpace_comp {α β γ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
     {eo : γ ↪ List Bool} {f : α → β} {g : β → γ} {d : NativeCertificate g em eo}
     {c : NativeCertificate f ei em} (hd : HasPolySpace d) (hc : HasPolySpace c) :
     HasPolySpace (d.comp c) := hc.add (hd.comp (polyBounded_length_of_hasPolySpace hc))
-private theorem hasPolySpace_prod {α β γ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
+theorem hasPolySpace_prod {α β γ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
     {eo : γ ↪ List Bool} {f : α → β} {g : α → γ} {c : NativeCertificate f ei em}
     {d : NativeCertificate g ei eo} (hc : HasPolySpace c) (hd : HasPolySpace d) :
     HasPolySpace (c.prod d) := hc.add hd
@@ -541,9 +543,6 @@ private theorem computableInPolySpace_of_inO {α β : Type} {ei : α ↪ List Bo
     Nat.mul_le_mul_left k (Nat.add_le_add_right (hPb x) 1)
   exact ⟨_, b, by dsimp only [b]; fun_prop, htm.mono (fun _ => le_rfl) hk,
     fun x => (hl x).trans (hk x)⟩
-private theorem length_encNat_mono {a b : ℕ} (h : a ≤ b) :
-    (encNat a).length ≤ (encNat b).length := by
-  simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h
 private theorem pb_aff {ι : Type} {sz f g : ι → ℕ} (a b c : ℕ)
     (hf : PolyBounded sz f) (hg : PolyBounded sz g) :
     PolyBounded sz (fun x => a * f x + b * g x + c) :=
@@ -554,7 +553,7 @@ private theorem polyBounded_jetEncBound {ι : Type} {sz J ℓ K M : ι → ℕ}
     PolyBounded sz (fun x => J x * (2 * (ℓ x * (2 * (K x + M x) + 3)) + 1)) :=
   hJ.mul (((PolyBounded.const 2).mul (hℓ.mul
     (((PolyBounded.const 2).mul (hK.add hM)).add (.const 3)))).add (.const 1))
-private theorem exists_natAbs_rowEntry_le_two_pow {ι γ : Type} {sz : ι → ℕ}
+theorem exists_natAbs_rowEntry_le_two_pow {ι γ : Type} {sz : ι → ℕ}
     {encΓ : γ ↪ List Bool} {f : γ → JetRows} {L : ι → ℕ}
     (hf : PolyBounded (fun y => (encΓ y).length) (fun y => (encJet (f y)).length))
     (hL : PolyBounded sz L) :
@@ -567,7 +566,7 @@ private theorem exists_natAbs_rowEntry_le_two_pow {ι γ : Type} {sz : ι → �
     (Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hy 1) d))
   exact (Nat.size_le.mp ((size_natAbs_rowEntry_le_length_encJetRows (f y) j u).trans hout)).le
 
-private theorem computableInO_snd_indexFold {ι β : Type} {encIn : ι ↪ List Bool}
+theorem computableInO_snd_indexFold {ι β : Type} {encIn : ι ↪ List Bool}
     {encB : β ↪ List Bool} {count : ι → ℕ} {initial : ι → β} {body : ℕ × β → β}
     (cn : NativeCertificate count encIn encNat) (ci : NativeCertificate initial encIn encB)
     (cb : NativeCertificate body (encPair encNat encB) encB)

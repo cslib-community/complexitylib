@@ -2805,15 +2805,6 @@ private theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ 
   exact ComputableTidilyInPolyTime.allWithInput (test := fun a x => (list a).count x == 1)
     hlist (by polytime)
 
-private theorem length_unframe_add_dropFrame_le :
-    ∀ v : List Bool, 2 * (unframe v).length + (dropFrame v).length ≤ v.length
-  | [] | [true] => by simp [unframe, dropFrame]
-  | false :: v => by simp [unframe, dropFrame]
-  | true :: b :: v => by
-    have ih := length_unframe_add_dropFrame_le v
-    simp only [unframe, dropFrame, List.length_cons]
-    omega
-
 /-- **Computational nonce-based Carter–Wegman MAC (`NonceMACScheme`)**
 ([BonehShoup2023], Section 7.5.1, Attack Game 7.4 and Theorem 7.10, p. 274):
 given a polynomial-time message-length schedule `msgLen : ℕ → ℕ`, a strict-PPT hash-key sampler
@@ -3802,10 +3793,10 @@ theorem randomNonceSimHandler_not_nodup_le {α : Type} [Fintype N] [Nonempty N] 
                     PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true
           ≤ ∑' x, PMF.uniformOfFintype N x *
               ((PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B) :=
-            ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hx_bound x) zero_le
+            tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hx_bound x) zero_le
         _ = ((PMF.uniformOfFintype N).bind fun x =>
               PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
-            simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right,
+            simp only [mul_add, tsum_add, ENNReal.tsum_mul_right,
               (PMF.uniformOfFintype N).tsum_coe, one_mul, PMF.bind_apply]
         _ ≤ (tr.length : ℝ≥0∞) / Fintype.card N + B := add_le_add hmem_le le_rfl
         _ = ((∑ i ∈ Finset.range (Q + 1), (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N := by
@@ -4029,11 +4020,11 @@ theorem randomNonceStrongGame_le_sum_add_max {seed : PMF K} {hash : K → M → 
       ≤ ∑' res, simPMF res *
           ((PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
             max ε (Fintype.card Y : ℝ≥0∞)⁻¹) :=
-        ENNReal.tsum_le_tsum fun res => mul_le_mul_of_nonneg_left (hpoint res) zero_le
+        tsum_le_tsum fun res => mul_le_mul_of_nonneg_left (hpoint res) zero_le
     _ = (simPMF.bind fun res =>
           PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
         max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
-        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, simPMF.tsum_coe, one_mul,
+        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, simPMF.tsum_coe, one_mul,
           PMF.bind_apply]
     _ ≤ ((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N +
         max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
@@ -4485,10 +4476,10 @@ theorem probOracleComp_randomNonceSimHandler_not_nodup_le {α : Type}
                       PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true
             ≤ ∑' x, PMF.uniformOfFintype N x *
                 ((PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B) :=
-              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hx_bound x) zero_le
+              tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hx_bound x) zero_le
           _ = ((PMF.uniformOfFintype N).bind fun x =>
                 PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
-              simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right,
+              simp only [mul_add, tsum_add, ENNReal.tsum_mul_right,
                 (PMF.uniformOfFintype N).tsum_coe, one_mul, PMF.bind_apply]
           _ ≤ (tr.length : ℝ≥0∞) / Fintype.card N + B := add_le_add hmem_le le_rfl
           _ = ((∑ i ∈ Finset.range (Q + 1), (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N := by
@@ -4610,11 +4601,11 @@ theorem seed_uniform_probOracleComp_checkRandomNonceSUF_le {α : Type}
       ≤ ∑' res, simPMF res *
           ((PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
             max ε (Fintype.card Y : ℝ≥0∞)⁻¹) :=
-        ENNReal.tsum_le_tsum fun res => mul_le_mul_of_nonneg_left (hpoint res) zero_le
+        tsum_le_tsum fun res => mul_le_mul_of_nonneg_left (hpoint res) zero_le
     _ = (simPMF.bind fun res =>
           PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
         max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
-        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, simPMF.tsum_coe, one_mul,
+        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, simPMF.tsum_coe, one_mul,
           PMF.bind_apply]
     _ ≤ ((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N +
         max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by

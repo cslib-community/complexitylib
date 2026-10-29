@@ -143,7 +143,7 @@ is even. -/
 theorem monomialSum_zmod_two_eq_zero_iff_even (𝓜 : Finset (Finset ι)) (x : ι → Bool) :
     monomialSum (ZMod 2) 𝓜 x = 0 ↔ Even (monomialSum ℤ 𝓜 x) := by
   rw [monomialSum_eq_card_filter (ZMod 2), monomialSum_eq_card_filter ℤ,
-    ZMod.natCast_eq_zero_iff_even, Int.even_coe_nat]
+    ZMod.natCast_eq_zero_iff_even, Int.even_natCast]
 
 /-- An assignment `x : ι → Bool` is a common zero of the family `{P i}_{i ∈ I}` over `𝔽₂` if every
 equation `P i` (`i ∈ I`) evaluates to `0` in `ZMod 2` at `x`. -/

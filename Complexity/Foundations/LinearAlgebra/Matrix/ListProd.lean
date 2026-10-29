@@ -38,7 +38,7 @@ theorem list_prod_ofFn_apply : ∀ {d : ℕ} (M : Fin d → Matrix ι ι R) (a b
       if p 0 = a ∧ p (Fin.last d) = b then ∏ i : Fin d, M i (p i.castSucc) (p i.succ) else 0
   | 0, M, a, b => by
     rw [← (Equiv.funUnique (Fin 1) ι).symm.sum_comp]
-    simp only [List.ofFn_zero, List.prod_nil, one_apply, Finset.univ_eq_empty,
+    simp only [List.ofFn_zero, List.prod_nil, Matrix.one_apply, Finset.univ_eq_empty,
       Finset.prod_empty, Equiv.funUnique_symm_apply, Fin.last_zero, uniqueElim_const]
     by_cases hab : a = b
     · subst hab
@@ -51,7 +51,7 @@ theorem list_prod_ofFn_apply : ∀ {d : ℕ} (M : Fin d → Matrix ι ι R) (a b
     have hL : (List.ofFn M).prod a b = ∑ q : Fin (d + 1) → ι,
         if q (Fin.last d) = b then M 0 a (q 0) * ∏ i : Fin d, M i.succ (q i.castSucc) (q i.succ)
         else 0 := by
-      rw [List.ofFn_succ, List.prod_cons, mul_apply]
+      rw [List.ofFn_succ, List.prod_cons, Matrix.mul_apply]
       simp only [list_prod_ofFn_apply (fun i => M i.succ), Finset.mul_sum, mul_ite, mul_zero]
       rw [Finset.sum_comm]
       refine Finset.sum_congr rfl fun q _ => ?_

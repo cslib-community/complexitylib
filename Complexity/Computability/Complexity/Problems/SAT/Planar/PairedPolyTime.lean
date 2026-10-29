@@ -79,13 +79,6 @@ def encVariable : Variable ↪ List Bool :=
 def encPlacedClause : PlacedClause ↪ List Bool :=
   encPair (encList (encPair encVariable encBool)) (encPair encPoint (encList encRoute))
 
-private theorem computable_intAdd {α : Type} {enc : α ↪ List Bool} {f g : α → ℤ}
-    (hf : ComputableInPolyTime f enc encIntBin)
-    (hg : ComputableInPolyTime g enc encIntBin) :
-    ComputableInPolyTime (fun a => f a + g a) enc encIntBin :=
-  (show ComputableInPolyTime (fun p : ℤ × ℤ => p.1 + p.2)
-    (encPair encIntBin encIntBin) encIntBin by fun_prop).comp (hf.prod hg)
-
 private theorem computable_intLt {α : Type} {enc : α ↪ List Bool} {f g : α → ℤ}
     (hf : ComputableInPolyTime f enc encIntBin)
     (hg : ComputableInPolyTime g enc encIntBin) :
@@ -93,16 +86,8 @@ private theorem computable_intLt {α : Type} {enc : α ↪ List Bool} {f g : α 
   (show ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.1 < p.2))
     (encPair encIntBin encIntBin) encBool by fun_prop).comp (hf.prod hg)
 
-private theorem computable_natCast :
-    ComputableInPolyTime (fun n : ℕ => (n : ℤ)) encUnary encIntBin :=
-  ComputableInPolyTime.intBin_natCast.comp ComputableInPolyTime.unary_to_binary
-
-attribute [local fun_prop] computable_intAdd computable_intLt computable_natCast
-
-private theorem computable_layoutCenter :
-    ComputableInPolyTime Layout.center encUnary encPoint := by
-  unfold Layout.center encPoint
-  fun_prop
+attribute [local fun_prop] PlanarCompile.computable_intAdd computable_intLt
+  PlanarCompile.computable_natCast PlanarCompile.computable_layoutCenter
 
 private theorem computable_side :
     ComputableInPolyTime (fun p : Point × Point => side p.1 p.2)
@@ -148,18 +133,10 @@ private theorem computable_dropLast :
   exact htake.comp (ComputableInPolyTime.id'.prod
     (ComputableInPolyTime.unary_sub' (ComputableInPolyTime.length_list encPoint) (.const 1)))
 
-attribute [local fun_prop] computable_layoutCenter computable_side computable_cellOrigin
+attribute [local fun_prop] computable_side computable_cellOrigin
   computable_center computable_translate computable_pointAdd computable_dropLast
 
-private theorem computable_distinctPoints :
-    ComputableInPolyTime (fun l : Route => selectDistinct l (List.replicate l.length true))
-      encRoute encRoute := by
-  have hrep : ComputableInPolyTime (fun n => List.replicate n true) encUnary encBits :=
-    ComputableInPolyTime.of_eq fun _ => rfl
-  have hlen : ComputableInPolyTime (fun l : Route => l.length) encRoute encUnary :=
-    ComputableInPolyTime.length_list encPoint
-  unfold encRoute at *
-  fun_prop
+open PlanarCompile (computable_distinctPoints)
 
 /-- Ordinary cells are selected from polynomial-size retained paths, without enumerating a
 coordinate box or a domain depending on the numeric magnitude of an input label. -/
