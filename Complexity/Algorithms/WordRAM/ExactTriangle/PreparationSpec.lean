@@ -18,10 +18,8 @@ The native catalogue enumerates the existing residue classes, chunks and pieces.
 identify its actual output count and per-instance records with that finite construction. Matrix
 meaning and padding reuse `MatrixSpec` and its existing writer-entry formulas.
 
-The [PreparationAdjacency consumer extension][adjacency] connects these cells to finite adjacency,
-deriving piece coordinates and the padding bound.
-
-[adjacency]: /Complexity/Algorithms/WordRAM/ExactTriangle/PreparationAdjacency.lean
+The [consumer extension](Complexity/Algorithms/WordRAM/ExactTriangle/PreparationAdjacency.html)
+connects these cells to finite adjacency, deriving piece coordinates and the padding bound.
 
 ## Main results
 
