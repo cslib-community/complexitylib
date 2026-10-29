@@ -18,6 +18,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Views and their codes in polynomial time
@@ -53,6 +54,10 @@ the accepting code are polynomial-time.
 * `Turing.MultiTapeNTM.accepts_iff_reflTransGen_codeStep`: acceptance is reachability of the
   accepting code.
 * `Turing.MultiTapeNTM.computableTidilyInPolyTime_codeEdge`: the edge test is polynomial-time.
+* `Turing.MultiTapeNTM.computableInPolyTime_codeEdge`,
+  `Turing.MultiTapeNTM.computableInPolyTime_viewCode_initView`,
+  `Turing.MultiTapeNTM.computableInPolyTime_acceptCode`: the edge test, the initial code and the
+  accepting code are polynomial-time, for plain certificates.
 
 ## References
 
@@ -318,6 +323,13 @@ theorem computableTidilyInPolyTime_codeEdge
     exact ntm.computableTidilyInPolyTime_viewStepB.comp
       ((hsnd.comp (ComputableTidilyInPolyTime.fst _ _)).prod (ComputableTidilyInPolyTime.snd _ _))
 
+/-- `computableTidilyInPolyTime_codeEdge` for plain certificates. -/
+theorem computableInPolyTime_codeEdge
+    {code next : α → List Bool} (hcode : ComputableInPolyTime code encA encBits)
+    (hnext : ComputableInPolyTime next encA encBits) :
+    ComputableInPolyTime (fun a => ntm.codeEdge (code a) (next a)) encA encBool :=
+  (computableTidilyInPolyTime_codeEdge hcode.tidy hnext.tidy).computableInPolyTime
+
 /-- The code of the initial view of a computed input is polynomial-time, for a polynomial-time
 width. -/
 theorem computableTidilyInPolyTime_viewCode_initView {width : α → ℕ} {word : α → List Bool}
@@ -329,6 +341,13 @@ theorem computableTidilyInPolyTime_viewCode_initView {width : α → ℕ} {word 
   exact ComputableTidilyInPolyTime.bitsAppend (left := fun _ => [false]) (.const _)
     (ComputableTidilyInPolyTime.bitsPadWord hwidth hinit.encoded)
 
+/-- `computableTidilyInPolyTime_viewCode_initView` for plain certificates. -/
+theorem computableInPolyTime_viewCode_initView {width : α → ℕ} {word : α → List Bool}
+    (hwidth : ComputableInPolyTime width encA encUnary)
+    (hword : ComputableInPolyTime word encA encBits) :
+    ComputableInPolyTime (fun a => viewCode (width a) (ntm.initView (word a))) encA encBits :=
+  (computableTidilyInPolyTime_viewCode_initView hwidth.tidy hword.tidy).computableInPolyTime
+
 /-- The accepting code of a polynomial-time width is polynomial-time. -/
 theorem computableTidilyInPolyTime_acceptCode {width : α → ℕ}
     (hwidth : ComputableTidilyInPolyTime width encA encUnary) :
@@ -339,6 +358,12 @@ theorem computableTidilyInPolyTime_acceptCode {width : α → ℕ}
         ((ComputableTidilyInPolyTime.const 2).prod hwidth)).prod
         (ComputableTidilyInPolyTime.const 2))
   exact (ComputableTidilyInPolyTime.bitsReplicate true).comp hlength
+
+/-- `computableTidilyInPolyTime_acceptCode` for plain certificates. -/
+theorem computableInPolyTime_acceptCode {width : α → ℕ}
+    (hwidth : ComputableInPolyTime width encA encUnary) :
+    ComputableInPolyTime (fun a => acceptCode (width a)) encA encBits :=
+  (computableTidilyInPolyTime_acceptCode hwidth.tidy).computableInPolyTime
 
 end Certificate
 

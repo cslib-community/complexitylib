@@ -95,11 +95,9 @@ private meta def pptConditional (rule : Name) : TacticM Unit :=
   withMainContext <| Term.withoutErrToSorry <| withoutRecover do
     let target := (← instantiateMVars (← getMainTarget)).consumeMData
     unless target.isAppOf ``IsPPTOn do throwError "expected an encoded-input PPT goal"
-    let program ← Core.betaReduce (← etaExpand target.getAppArgs.back!)
-    let conditional ← lambdaTelescope program fun _ body => do
-      if body.isAppOf ``ite then return true
-      return (← whnfR body).isAppOf ``ite
-    unless conditional do throwError "expected a conditional program"
+    let conditional? ← Cslib.Tactic.withConditionalBody? target.getAppArgs.back!
+      fun _ => pure true
+    unless conditional?.isSome do throwError "expected a conditional program"
     liftMetaTactic fun goal => goal.applyConst rule
 
 /-- Retain Boolean branch selection at its original priority. -/

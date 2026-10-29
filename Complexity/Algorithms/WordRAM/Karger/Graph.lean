@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Uniform
 import Mathlib.Algebra.Order.Ring.Nat
+import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Data.Nat.Log
 
 /-!
@@ -1162,7 +1163,8 @@ theorem toOuterMeasure_compl_le_one_sub {α : Type*} (p : PMF α) (s : Set α) {
     p.toOuterMeasure sᶜ + q ≤ p.toOuterMeasure sᶜ + p.toOuterMeasure s := by gcongr
     _ = 1 := by rw [add_comm, hsum]
 
-private theorem ennreal_div_pow (a b : ℝ≥0∞) (m : ℕ) :
+/-- Power of a quotient in `ℝ≥0∞`: `(a / b) ^ m = a ^ m / b ^ m`. -/
+theorem ennreal_div_pow (a b : ℝ≥0∞) (m : ℕ) :
     (a / b) ^ m = a ^ m / b ^ m := by
   simp only [div_eq_mul_inv, mul_pow, ENNReal.inv_pow]
 
@@ -1214,34 +1216,17 @@ theorem telescope_survival_step {t m : ℕ} (ht : 2 ≤ t) (htm : t ≤ m) :
       (t * (t - 1)) * ((m + 1) * (m * (m - 1))) := by ring
   exact_mod_cast hnat
 
-/-- Elementary `ℕ` Bernoulli inequality: `d ^ (j + 1) + (j + 1) * d ^ j ≤ (d + 1) ^ (j + 1)`. -/
-private theorem bernoulli_pow_nat (d j : ℕ) :
-    d ^ (j + 1) + (j + 1) * d ^ j ≤ (d + 1) ^ (j + 1) := by
-  induction j with
-  | zero => simp
-  | succ j ih =>
-    calc
-      d ^ (j + 2) + (j + 2) * d ^ (j + 1)
-        ≤ (d ^ (j + 1) + (j + 1) * d ^ j) * (d + 1) := by
-          have : (d ^ (j + 1) + (j + 1) * d ^ j) * (d + 1) =
-              (d ^ (j + 2) + (j + 2) * d ^ (j + 1)) + (j + 1) * d ^ j := by ring
-          rw [this]
-          exact Nat.le_add_right _ _
-      _ ≤ (d + 1) ^ (j + 1) * (d + 1) := Nat.mul_le_mul_right (d + 1) ih
-      _ = (d + 1) ^ (j + 2) := by ring
-
-private theorem two_mul_pred_pow_le_pow {m : ℕ} (hm : 1 ≤ m) :
+/-- Elementary Bernoulli power bound `2 * (m - 1) ^ m ≤ m ^ m` for `1 ≤ m`. -/
+theorem two_mul_pred_pow_le_pow {m : ℕ} (hm : 1 ≤ m) :
     2 * (m - 1) ^ m ≤ m ^ m := by
-  rcases eq_or_lt_of_le hm with rfl | hgt
-  · simp
-  · obtain ⟨d, rfl⟩ : ∃ d, m = d + 1 := ⟨m - 1, by omega⟩
-    simp only [Nat.add_sub_cancel]
-    have hbern := bernoulli_pow_nat d d
-    have hle : d ^ (d + 1) ≤ (d + 1) * d ^ d := by
-      have : d ^ (d + 1) = d * d ^ d := by ring
-      rw [this]
-      exact Nat.mul_le_mul_right (d ^ d) (Nat.le_succ d)
-    omega
+  obtain ⟨d, rfl⟩ : ∃ d, m = d + 1 := ⟨m - 1, by omega⟩
+  simp only [Nat.add_sub_cancel]
+  have hbern := pow_add_mul_le_add_pow (a := d) (b := 1) (Nat.zero_le d) (by omega) (d + 1)
+  simp only [Nat.add_sub_cancel, mul_one, Nat.cast_id] at hbern
+  have hle : d ^ (d + 1) ≤ (d + 1) * d ^ d := by
+    rw [pow_succ']
+    exact Nat.mul_le_mul_right (d ^ d) (Nat.le_succ d)
+  omega
 
 theorem one_sub_two_div_pairs_eq {n : ℕ} (hn : 2 ≤ n) :
     (1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞) =

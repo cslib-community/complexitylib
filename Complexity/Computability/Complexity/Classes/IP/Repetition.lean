@@ -111,10 +111,10 @@ theorem isOraclePPTOn_sequentialRepeat [DecidableEq Operation] [Finite Operation
     (h : IsOraclePPTOn input encBool round) (k : ℕ) :
     IsOraclePPTOn input encBool (fun a => sequentialRepeat k (round a)) := by
   induction k with
-  | zero => exact (ComputableTidilyInPolyTime.const true).isOraclePPTOn
+  | zero => exact (ComputableInPolyTime.const true).isOraclePPTOn
   | succ k ih =>
-    exact h.bind_with (IsOraclePPTOn.cond (ComputableTidilyInPolyTime.snd input encBool)
-      (ih.preprocess (ComputableTidilyInPolyTime.fst input encBool))
-      (ComputableTidilyInPolyTime.const false).isOraclePPTOn)
+    exact h.bind_with (IsOraclePPTOn.cond' (ComputableInPolyTime.snd input encBool)
+      (ih.preprocess' (ComputableInPolyTime.fst input encBool))
+      (ComputableInPolyTime.const false).isOraclePPTOn)
 
 end Cslib.Complexity

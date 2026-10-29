@@ -12,6 +12,7 @@ import Complexity.Computability.Probabilistic.Realization.OpenOracleSimulation
 import Complexity.Languages.Probabilistic.Oracle.Simulation
 import Complexity.Languages.Probabilistic.Simulation
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Open stateful oracle substitution
@@ -32,6 +33,8 @@ case of a sampled closed handler without external channels.
 
 * `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open`: open substitution with
   captured caller data, a local state invariant and an efficiently computed resource allowance.
+* `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open'`: the same with plain
+  `ComputableInPolyTime` side conditions.
 * `Cslib.Probability.IsOraclePPTOn.interpret_bitQueries`: replace each deterministic word query
   by a polynomial-time transformed request, keeping only one answer bit.
 
@@ -118,6 +121,38 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
   rw [hout, OracleComp.interpret_map, StateT.run_map, OracleComp.interpret_map, StateT.run_map,
     ProbOracleComp.run_interpret_run_interpret, ProbOracleComp.run_interpret_run_interpret,
     hrealize]
+
+/-- `Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open` with plain polynomial-time
+preparation, initial state and resource allowance. -/
+theorem IsOraclePPTOn.run_interpret_preprocess_open'
+    {Operation External α β Caller State : Type} [DecidableEq Operation]
+    [DecidableEq External] [Finite External]
+    {source : α ↪ List Bool} {input : Caller ↪ List Bool} {output : β ↪ List Bool}
+    {operationEncoding : Operation ↪ List Bool} {stateEncoding : State ↪ List Bool}
+    {program : α → WordOracleComp Operation β}
+    {handler : Caller → Operation × List Bool → State →
+      WordOracleComp External (List Bool × State)}
+    {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
+    (hprogram : IsOraclePPTOn source output program)
+    (hprepare : ComputableInPolyTime prepare input source)
+    (hhandler : IsOraclePPTOn
+      (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
+      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+    (hinitial : ComputableInPolyTime initial input stateEncoding)
+    (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
+    (hresources : ComputableInPolyTime (fun pair => resources pair.1 pair.2)
+      (encPair input encBits) encUnary)
+    (hpreserve : ∀ a request state, invariant a state →
+      ∀ result ∈ OracleComp.support (handler a request state),
+        invariant a result.2 ∧ result.1.length ≤ resources a request.2 ∧
+        (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
+    IsOraclePPTOn input (encPair output stateEncoding) (fun a =>
+      (OracleComp.interpret
+        (ProbOracleComp.handler
+          (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n))) (handler a))
+          (program (prepare a))).run (initial a)) :=
+  hprogram.run_interpret_preprocess_open hprepare.tidy hhandler hinitial.tidy invariant hinit
+    hresources.tidy hpreserve
 
 /-- Replacing every request by a polynomial-time computed word and reading at most one reply
 bit preserves strict oracle polynomial time. The certificate holds uniformly for every external

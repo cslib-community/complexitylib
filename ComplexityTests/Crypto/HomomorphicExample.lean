@@ -121,58 +121,57 @@ theorem tagged_bootstrappable : Scheme.Bootstrappable decryptionCircuits where
   decrypt_mem _ := trivial
   nand_mem _ := trivial
 
-theorem decode_poly : ComputableTidilyInPolyTime
+theorem decode_poly : ComputableInPolyTime
     (fun p : List Bool × List Bool => decode p.1 p.2) (encPair encBits encBits) encBool := by
   unfold decode
   fun_prop
 
-theorem evaluatedBit_poly : ComputableTidilyInPolyTime
+theorem evaluatedBit_poly : ComputableInPolyTime
     (fun p : List Bool × (Σ n, Circuit Boolean.signature n 1) × List (List Bool) =>
       evaluatedBit p.1 p.2.1 p.2.2)
     (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))) encBool := by
-  have hdecoded : ComputableTidilyInPolyTime
+  have hdecoded : ComputableInPolyTime
       (fun p : List Bool × (Σ n, Circuit Boolean.signature n 1) × List (List Bool) =>
         p.2.2.map (decode p.1))
       (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))) encBits := by
-    apply ComputableTidilyInPolyTime.mapToBitsWithInput
+    apply ComputableInPolyTime.mapToBitsWithInput
     · fun_prop
-    · exact decode_poly.comp (show ComputableTidilyInPolyTime
+    · exact decode_poly.comp (show ComputableInPolyTime
         (fun p : (List Bool × (Σ n, Circuit Boolean.signature n 1) × List (List Bool)) ×
           List Bool => (p.1.1, p.2))
         (encPair (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))) encBits)
         (encPair encBits encBits) by fun_prop)
-  have heval : ComputableTidilyInPolyTime
+  have heval : ComputableInPolyTime
       (fun p : List Bool × (Σ n, Circuit Boolean.signature n 1) × List (List Bool) =>
         p.2.1.2.eval Boolean.interpretation (BitString.ofList p.2.1.1 (p.2.2.map (decode p.1))) 0)
-      (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))) encBool := by
-    apply ComputableInPolyTime.tidy
-    exact Boolean.computableInPolyTime_evalCircuit (.of_tidy (by fun_prop)) (.of_tidy hdecoded)
+      (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))) encBool :=
+    Boolean.computableInPolyTime_evalCircuit (by fun_prop) hdecoded
   unfold evaluatedBit
   fun_prop
 
 theorem encrypt_ppt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => tagged.encrypt p.1 p.2.1 p.2.2) := by
-  apply ComputableTidilyInPolyTime.isPPTOn
-  change ComputableTidilyInPolyTime
+  apply ComputableInPolyTime.isPPTOn
+  change ComputableInPolyTime
     (fun p : ℕ × List Bool × Bool => [p.2.2 ^^ p.2.1.getD 0 false, false]) _ _
   fun_prop
 
 theorem evaluate_ppt : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
     encBits (fun p => tagged.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) := by
-  apply ComputableTidilyInPolyTime.isPPTOn
-  change ComputableTidilyInPolyTime
+  apply ComputableInPolyTime.isPPTOn
+  change ComputableInPolyTime
     (fun p : ℕ × List Bool × (Σ n, Circuit Boolean.signature n 1) × List (List Bool) =>
       [evaluatedBit p.2.1 p.2.2.1 p.2.2.2 ^^ p.2.1.getD 0 false, true]) _ _
   have heval := evaluatedBit_poly.comp
-    (ComputableTidilyInPolyTime.snd encUnary
+    (ComputableInPolyTime.snd encUnary
       (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
   fun_prop
 
-theorem circuits_poly : ComputableTidilyInPolyTime
+theorem circuits_poly : ComputableInPolyTime
     (fun n => (⟨_, decryptionCircuits.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
-    encUnary (Boolean.encCircuit 1) := by
-  exact ComputableTidilyInPolyTime.const
+    encUnary (Boolean.encCircuit 1) :=
+  ComputableInPolyTime.const
     (⟨3, xorCircuit⟩ : Σ n, Circuit Boolean.signature n 1)
 
 -- The key sampler is one fair bit followed by finite deterministic processing.
