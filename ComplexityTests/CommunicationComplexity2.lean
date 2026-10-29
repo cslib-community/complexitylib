@@ -157,10 +157,10 @@ private theorem solves_eqPublicCoin₂ (n : ℕ) :
     push_cast
     nlinarith
 
--- Equality has public-coin complexity at most three with error one quarter, against `n + 1`
--- deterministically.
-example (n : ℕ) : PublicCoin.ecomplexityFun (1 / 4) (equality : BitString n → BitString n → Bool)
-    ≤ 3 :=
+/-- Equality has public-coin complexity at most three with error one quarter, against `n + 1`
+deterministically. -/
+private theorem ecomplexityFun_quarter_equality_le (n : ℕ) :
+    PublicCoin.ecomplexityFun (1 / 4) (equality : BitString n → BitString n → Bool) ≤ 3 :=
   (PublicCoin.ecomplexity_le_depth (solves_eqPublicCoin₂ n)).trans (depth_eqPublicCoin₂ n)
 
 /-! ### Amplification by majority -/
@@ -172,10 +172,6 @@ private theorem solves_amplify_eqPublicCoin₂ (n r : ℕ) :
       Set.univ Set.univ := by
   have h := (solves_eqPublicCoin₂ n).amplify (by norm_num) r
   rwa [show (4 * (1 / 4) * (1 - 1 / 4) : ℝ) = 3 / 4 by norm_num] at h
-
--- The `2 r` runs of three bits send at most `6 r` bits.
-example (n r : ℕ) : ((eqPublicCoin₂ n).amplify r).depth ≤ 2 * r * 3 :=
-  PublicCoin.depth_amplify_le (c := 3) (depth_eqPublicCoin₂ n) r
 
 -- Equality with error `(3 / 4) ^ r` costs at most `6 r` bits.
 example (n r : ℕ) :
@@ -192,22 +188,29 @@ example (n : ℕ) :
     subset_rfl subset_rfl)).trans
     ((PublicCoin.depth_amplify_le (c := 3) (depth_eqPublicCoin₂ n) 4).trans (by norm_num))
 
-example : Protocol.ecomplexityFun (equality : BitString 3 → BitString 3 → Bool) = 4 :=
-  ecomplexity_equality (by decide)
+-- On 3-bit strings, public-coin equality with error `1 / 4` is strictly cheaper than
+-- deterministic equality (`≤ 3` vs `4`).
+example :
+    PublicCoin.ecomplexityFun (1 / 4) (equality : BitString 3 → BitString 3 → Bool) <
+      Protocol.ecomplexityFun (equality : BitString 3 → BitString 3 → Bool) := by
+  refine (ecomplexityFun_quarter_equality_le 3).trans_lt ?_
+  rw [Protocol.ecomplexityFun, ecomplexity_equality (by decide)]
+  decide
 
--- The averaging argument picks, for inputs drawn from any distribution, one protocol that errs
--- with probability at most one half.
+-- The averaging argument picks, for inputs drawn from any distribution, a deterministic protocol
+-- of depth at most two that errs with probability at most one half.
 example (n : ℕ) (ν : PMF (BitString n × BitString n)) :
-    ∃ p ∈ (eqPublicCoin n).support,
-      p.distributionalError ν (fun x y b => equality x y = b) ≤ 1 / 2 :=
-  (solves_eqPublicCoin n).exists_distributionalError_le ν fun _ _ => ⟨trivial, trivial⟩
+    ∃ p : Protocol (BitString n) (BitString n) Bool,
+      p.distributionalError ν (fun x y b => equality x y = b) ≤ 1 / 2 ∧ p.depth ≤ 2 := by
+  obtain ⟨p, hp, herr⟩ :=
+    (solves_eqPublicCoin n).exists_distributionalError_le ν fun _ _ => ⟨trivial, trivial⟩
+  exact ⟨p, herr, by exact_mod_cast (PublicCoin.depth_le_depth hp).trans (depth_eqPublicCoin n)⟩
 
 /-! ### Deterministic and private-coin protocols -/
 
-example {X Y Z : Type*} {R : X → Y → Z → Prop} {A : Set X} {B : Set Y} :
-    PublicCoin.ecomplexity (1 / 3) R A B ≤ PrivateCoin.ecomplexity (1 / 3) R A B ∧
-      PrivateCoin.ecomplexity (1 / 3) R A B ≤ Protocol.ecomplexity R A B :=
-  ⟨PublicCoin.ecomplexity_le_privateCoin, PrivateCoin.ecomplexity_le_protocol (by norm_num)⟩
+-- Deterministic equality on 3 bits gives a private-coin protocol of cost at most 4.
+example : PrivateCoin.ecomplexityFun (1 / 3) (equality : BitString 3 → BitString 3 → Bool) ≤ 4 :=
+  (PrivateCoin.ecomplexity_le_protocol (by norm_num)).trans_eq (ecomplexity_equality (by decide))
 
 -- A deterministic protocol, run while ignoring the random bits, errs with probability zero.
 example (x : BitString 2) (y : BitString 2) :
@@ -217,20 +220,27 @@ example (x : BitString 2) (y : BitString 2) :
 
 /-! ### Newman's theorem -/
 
-example {Z : Type*} (n : ℕ) {R : BitString n → BitString n → Z → Prop} {ε δ : ℝ} (hδ : 0 < δ) :
-    PrivateCoin.ecomplexity (ε + δ) R Set.univ Set.univ ≤
-      PublicCoin.ecomplexity ε R Set.univ Set.univ + Nat.clog 2 ⌈n / δ ^ 2⌉₊ :=
-  PrivateCoin.ecomplexity_le_add_clog (n := n) (by simp) (by simp) hδ
+-- Applied to `eqPublicCoin₂`: a private-coin protocol for equality with `O(log n)` bits.
+example (n : ℕ) {δ : ℝ} (hδ : 0 < δ) :
+    PrivateCoin.ecomplexityFun (1 / 4 + δ) (equality : BitString n → BitString n → Bool) ≤
+      3 + Nat.clog 2 ⌈(n : ℝ) / δ ^ 2⌉₊ := by
+  exact (PrivateCoin.ecomplexity_le_add_clog (n := n)
+    (R := fun (x y : BitString n) b => equality x y = b) (A := Set.univ) (B := Set.univ)
+    (by simp) (by simp) hδ).trans (add_le_add_left (ecomplexityFun_quarter_equality_le n) _)
 
--- Equality with private coins and error `3 / 8` needs at most `3 + ⌈log₂ 64 n⌉` bits.
-example (n : ℕ) :
-    PrivateCoin.ecomplexityFun (1 / 4 + 1 / 8) (equality : BitString n → BitString n → Bool) ≤
-      3 + Nat.clog 2 ⌈n / (1 / 8 : ℝ) ^ 2⌉₊ :=
-  (PrivateCoin.ecomplexity_le_add_clog (n := n) (by simp) (by simp) (by norm_num)).trans
-    (by
-      gcongr
-      exact (PublicCoin.ecomplexity_le_depth (solves_eqPublicCoin₂ n)).trans
-        (depth_eqPublicCoin₂ n))
+-- On 16-bit strings, Newman's theorem with `eqPublicCoin₂ 16` gives a private-coin equality
+-- protocol with error `3 / 8` sending at most `3 + ⌈log₂ (16 · 64)⌉ = 13` bits (whereas
+-- deterministic equality needs `17` bits).
+example :
+    PrivateCoin.ecomplexityFun (3 / 8) (equality : BitString 16 → BitString 16 → Bool) ≤ 13 := by
+  have h := (PrivateCoin.ecomplexity_le_add_clog (n := 16)
+    (R := fun (x y : BitString 16) b => equality x y = b) (A := Set.univ) (B := Set.univ)
+    (ε := 1 / 4) (δ := 1 / 8) (by simp) (by simp) (by norm_num)).trans
+    (add_le_add_left (ecomplexityFun_quarter_equality_le 16) _)
+  rw [show (1 / 4 + 1 / 8 : ℝ) = 3 / 8 by norm_num,
+    show ⌈((16 : ℕ) : ℝ) / (1 / 8 : ℝ) ^ 2⌉₊ = 1024 by norm_num,
+    show Nat.clog 2 1024 = 10 by decide] at h
+  simpa [PrivateCoin.ecomplexityFun, show (3 + 10 : ℕ∞) = 13 by rfl] using h
 
 /-! ### The weighted area bound -/
 
@@ -247,18 +257,18 @@ example {X Y : Type*} [Fintype X] [Fintype Y] (p : Protocol X Y Bool) :
 
 /-! ### Discrepancy and the inner product -/
 
-example {X Y : Type*} [Fintype X] [Fintype Y] (ν : PMF (X × Y)) (f : X → Y → Bool) :
-    0 ≤ discrepancy ν f :=
-  discrepancy_nonneg
+-- On 4-bit strings, the uniform discrepancy of the inner product is at most `1 / 4`.
+example :
+    discrepancy (Probability.PMF.uniformOfFintype (BitString 4 × BitString 4))
+      (fun x y => x ⬝ᵥ y) ≤ 1 / 4 := by
+  have h := discrepancy_dotProduct_sq_mul_two_pow_le 4
+  nlinarith [discrepancy_nonneg (ν := Probability.PMF.uniformOfFintype (BitString 4 × BitString 4))
+    (f := fun x y => x ⬝ᵥ y)]
 
--- The squared discrepancy bound for the inner product on three bits.
-example : discrepancy (Probability.PMF.uniformOfFintype (BitString 3 × BitString 3))
-    (fun x y => x ⬝ᵥ y) ^ 2 * 2 ^ 3 ≤ 1 :=
-  discrepancy_dotProduct_sq_mul_two_pow_le 3
-
--- With error `1 / 3`, the inner product of ten bits needs at least four bits, with public or
--- private coins.
-example : 4 ≤ PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y) := by
+-- With error `1 / 3`, the inner product of ten bits needs at least four bits with public coins,
+-- and hence also with private coins.
+private theorem four_le_publicCoin_dotProduct_ten :
+    4 ≤ PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y) := by
   have h := PublicCoin.le_two_mul_ecomplexityFun_dotProduct_add_three 10
   cases hc : PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y)
     using ENat.recTopCoe with
@@ -268,9 +278,8 @@ example : 4 ≤ PublicCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x �
     have : 10 ≤ 2 * c + 3 := by exact_mod_cast h
     exact_mod_cast (by omega : 4 ≤ c)
 
-example (n : ℕ) :
-    (n : ℕ∞) ≤ 2 * PrivateCoin.ecomplexityFun (1 / 3) (fun x y : BitString n => x ⬝ᵥ y) + 3 :=
-  PrivateCoin.le_two_mul_ecomplexityFun_dotProduct_add_three n
+example : 4 ≤ PrivateCoin.ecomplexityFun (1 / 3) (fun x y : BitString 10 => x ⬝ᵥ y) :=
+  four_le_publicCoin_dotProduct_ten.trans PublicCoin.ecomplexityFun_le_privateCoin
 
 -- The general error trade-off: error `1 / 2 - γ` with `c` bits forces `(2 γ)² 2 ^ n ≤ 4 ^ c`.
 example (n c : ℕ) {γ : ℝ} (hγ : 0 ≤ γ)

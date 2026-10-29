@@ -62,20 +62,18 @@ example : targets 0 = [-1, -1] := rfl
 example : targets 3 = [-1, -1, -2, -2, -2] := rfl
 
 -- Empty lists are allowed only when the accepting side is empty; their product target is one.
-example : (∅ : Set (List Bool)) ∈ WPP encBits :=
-  mem_WPP_of_polyTime_targets (GapP.zero_mem (enc := encBits))
-    (ComputableInPolyTime.const ([] : List ℤ)) (by simp) (by simp) (by simp)
-
-example : (∅ : Set (List Bool)) ∈ LWPP encBits :=
-  mem_LWPP_of_polyTime_targets (GapP.zero_mem (enc := encBits))
-    (ComputableInPolyTime.const ([] : List ℤ)) (by simp) (by simp) (by simp)
+example : (∅ : Set (List Bool)) ∈ WPP encBits ∧ (∅ : Set (List Bool)) ∈ LWPP encBits :=
+  ⟨mem_WPP_of_polyTime_targets (GapP.zero_mem (enc := encBits))
+    (ComputableInPolyTime.const ([] : List ℤ)) (by simp) (by simp) (by simp),
+   mem_LWPP_of_polyTime_targets (GapP.zero_mem (enc := encBits))
+    (ComputableInPolyTime.const ([] : List ℤ)) (by simp) (by simp) (by simp)⟩
 
 -- The interpolation polynomial retains multiplicity and signs.
-example : (([-1, -1, -2] : List ℤ).map (fun z => z - (-1))).prod = 0 := by decide
-example : (([-1, -1, -2] : List ℤ).map (fun z => z - 0)).prod = -2 := by decide
+example : (([-1, -1, -2] : List ℤ).map (fun z => z - (-1))).prod = 0 ∧
+    (([-1, -1, -2] : List ℤ).map (fun z => z - 0)).prod = -2 := by decide
 
 private def indexedGap (w : List Bool) : ℤ :=
-  if w.headD false then -((w.length : ℤ) + 1) else 0
+  if w.headD false then -((w.length + 1 : ℕ) : ℤ) else 0
 
 -- The indexed target-list API returns plain computability with the same unary count bound.
 example : ComputableInPolyTime
@@ -86,14 +84,12 @@ example : ComputableInPolyTime
 -- A varying last target witnesses acceptance; the theorem receives only its existence.
 example : language ∈ LWPP encBits := by
   apply mem_LWPP_of_indexed_targets
-    (g := indexedGap) (f := fun ni : ℕ × ℕ => -((ni.2 : ℤ) + 1)) (r := fun n => n + 1)
+    (g := indexedGap) (f := fun ni : ℕ × ℕ => -((ni.2 + 1 : ℕ) : ℤ)) (r := fun n => n + 1)
   · apply mem_GapP_of_polyTime
-    have hl : ComputableTidilyInPolyTime (fun w : List Bool => (w.length : ℤ))
-        encBits encIntBin := ComputableTidilyInPolyTime.intBin_natCast.comp
-          (ComputableTidilyInPolyTime.unary_to_binary.comp (.encoding_length encBits))
-    have hv : ComputableTidilyInPolyTime (fun w : List Bool => -((w.length : ℤ) + 1))
-        encBits encIntBin := ComputableTidilyInPolyTime.intBin_neg.comp
-          (ComputableTidilyInPolyTime.intBin_add' hl (.const 1))
+    have hv : ComputableInPolyTime (fun w : List Bool => -((w.length + 1 : ℕ) : ℤ))
+        encBits encIntBin :=
+      (show ComputableInPolyTime (fun n : ℕ => -((n + 1 : ℕ) : ℤ)) encUnary encIntBin by
+        fun_prop).comp (.encoding_length encBits)
     unfold indexedGap
     fun_prop
   · fun_prop

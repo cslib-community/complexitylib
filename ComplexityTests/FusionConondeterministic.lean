@@ -39,11 +39,6 @@ example : ∃ cover : PairCover {x | forallGuess verifier x = true}
     cover.pairs.length = 1 := by
   simpa only [cost] using exists_pairCover_forallGuess verifier circuit computes
 
-example : pairCoverComplexity {x | forallGuess verifier x = true}
-    (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra ≤ 1 := by
-  simpa only [cost, Nat.cast_one] using
-    pairCoverComplexity_forallGuess_le_cost verifier circuit computes
-
 private def zeroInput : ↥({x | forallGuess verifier x = true}ᶜ) :=
   ⟨![false, false], by decide⟩
 
@@ -63,20 +58,32 @@ private theorem twoPointFilter_ultra : twoPointFilter.IsUltra := by
   · exact Or.inl (Or.inl h)
   · exact Or.inr (Or.inl h)
 
--- The target and admissible witness class are nonempty, so this is not vacuous extraction.
-example : Nonempty (SemifilterWitness {x | forallGuess verifier x = true}
-    (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra) := by
-  refine ⟨⟨⟨![false, true], by decide⟩, twoPointFilter, twoPointFilter_ultra, ?_⟩⟩
-  change ∀ i, AltFormula.literals ![false, true] i = true →
-    AltFormula.literals ![false, false] i = true ∨ AltFormula.literals ![true, true] i = true
-  decide
+-- The target and admissible witness class are nonempty, forcing at least one AND pair.
+private def verifierWitness : SemifilterWitness {x | forallGuess verifier x = true}
+    (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra :=
+  ⟨⟨![false, true], by decide⟩, twoPointFilter, twoPointFilter_ultra, by
+    change ∀ i, AltFormula.literals ![false, true] i = true →
+      AltFormula.literals ![false, false] i = true ∨ AltFormula.literals ![true, true] i = true
+    decide⟩
+
+example : pairCoverComplexity {x | forallGuess verifier x = true}
+    (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra = 1 := by
+  apply le_antisymm
+  · simpa only [cost, Nat.cast_one] using
+      pairCoverComplexity_forallGuess_le_cost verifier circuit computes
+  · refine le_pairCoverComplexity_iff.mpr fun c => ?_
+    have hpos : 1 ≤ c.pairs.length := by
+      by_contra h
+      have hempty : c.pairs = [] := List.length_eq_zero_iff.mp (by omega)
+      exact c.isCover verifierWitness (by simp [hempty])
+    exact_mod_cast hpos
 
 private def noGuess : BooleanFunction (1 + 0) := fun x => x 0
 
-example : forallGuess noGuess = noGuess := by decide
-
-example : pairCoverComplexity {x | forallGuess noGuess x = true}
-    (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra ≤ 0 := by
+example : forallGuess noGuess = noGuess ∧
+    pairCoverComplexity {x | forallGuess noGuess x = true}
+      (fun i => {x | AltFormula.literals x i = true}) Semifilter.IsUltra = 0 := by
+  refine ⟨by decide, le_antisymm ?_ zero_le⟩
   exact pairCoverComplexity_forallGuess_le_cost noGuess
     (Circuit.wiring Monotone.signature (fun _ : Fin 1 => (0 : Fin 2))) (by
       unfold Circuit.ComputesFrom

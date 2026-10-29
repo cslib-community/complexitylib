@@ -45,21 +45,19 @@ private theorem accepts : accept.DecidesInTime (fun _ n => [n]) Set.univ
   simp [WordSizeDependentProgram.const, run, step, accept, Op.eval, Data.put, h1, Data.set,
     State.init]
 
-/-- A logarithmic upper bound can be combined with the addressing lower bound. -/
-example : UniformDecidableInTime .standard Set.univ (fun _ n => [n]) (fun _ w => w + 2)
-    (fun n w => logWidth 1 n ≤ w ∧ w ≤ logWidth 3 n) :=
-  ⟨1, accept, accepts.mono (fun _ _ => le_rfl) (fun _ _ _ => trivial)⟩
-
-example : (logWidth 1 5 ≤ 3 ∧ 3 ≤ logWidth 3 5) ∧ InputFits 3 [5] := by
-  decide
-
-/-- A squared-logarithmic lower bound is just another width condition. -/
-example : UniformDecidableInTime .standard Set.univ (fun _ n => [n]) (fun _ w => w + 2)
-    (fun n w => logWidth 1 n ^ 2 ≤ w) :=
-  ⟨1, accept, accepts.mono (fun _ _ => le_rfl) (fun _ _ _ => trivial)⟩
-
-example : logWidth 1 3 ^ 2 ≤ 4 ∧ InputFits 4 [3] := by
-  decide
+/-- Logarithmic upper intervals and squared-logarithmic lower bounds as width conditions, with
+concrete fitting witnesses. -/
+example :
+    UniformDecidableInTime .standard Set.univ (fun _ n => [n]) (fun _ w => w + 2)
+      (fun n w => logWidth 1 n ≤ w ∧ w ≤ logWidth 3 n) ∧
+    ((logWidth 1 5 ≤ 3 ∧ 3 ≤ logWidth 3 5) ∧ InputFits 3 [5]) ∧
+    UniformDecidableInTime .standard Set.univ (fun _ n => [n]) (fun _ w => w + 2)
+      (fun n w => logWidth 1 n ^ 2 ≤ w) ∧
+    (logWidth 1 3 ^ 2 ≤ 4 ∧ InputFits 4 [3]) :=
+  ⟨⟨1, accept, accepts.mono (fun _ _ => le_rfl) (fun _ _ _ => trivial)⟩,
+   by decide,
+   ⟨1, accept, accepts.mono (fun _ _ => le_rfl) (fun _ _ _ => trivial)⟩,
+   by decide⟩
 
 /-- Runtime constants are shared by all widths. -/
 example : DecidableInO .standard Set.univ (fun _ n => [n]) id (fun _ w => w + 2)

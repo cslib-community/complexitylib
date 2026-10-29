@@ -18,9 +18,8 @@ public import Complexity.Computability.WordRAM.Notation
 is undefined (subtraction below zero, division and remainder by zero), and `d ← width%` is
 `Cslib.WordRAM.Op.exactWidth`. The tactic `ram_exact_eval` is `ram_eval` for such programs.
 
-The notation, with its expansions and the tactic, is scoped to
-`Cslib.Algorithms.WordRAM.Dijkstra`. Its statements are those of the scoped `wramStmt` syntax of
-`Cslib.WordRAM`, so they parse only where both namespaces are open.
+The notation, with its expansions and the tactic, is scoped to `Cslib.WordRAM`, alongside the
+`wramStmt` statement syntax of `Complexity/Computability/WordRAM/Notation.lean`.
 
 ## Main definitions
 
@@ -41,9 +40,7 @@ word-RAM notation of [Algolean][Algolean2026].
 
 public section
 
-namespace Cslib.Algorithms.WordRAM.Dijkstra
-
-open scoped Cslib.WordRAM
+namespace Cslib.WordRAM
 
 /-- A structured word-RAM program over the exact basis, written as a block of statements. -/
 scoped syntax "ram_exact[" sepBy1(wramStmt, "; ") "]" : term
@@ -145,6 +142,6 @@ scoped macro_rules
           Nat.reduceLeDiff, Nat.reduceEqDiff, $args,*]
          try rfl))
 
-end Cslib.Algorithms.WordRAM.Dijkstra
+end Cslib.WordRAM
 
 end

@@ -144,14 +144,14 @@ theorem exists_mem_PiP_of_mem_SigmaP_succ {k : ℕ} {A : Set α} (hA : A ∈ Sig
     omega
   refine ⟨p, B, ⟨ps, fun z => V (z.1.1, z.1.2 ++ truncateBlocks ps (enc z.1.1).length
       (encPair enc encBits z.1).length z.2), hlen', ?_, fun y => ?_⟩, hA⟩
-  · have hfst := (ComputableTidilyInPolyTime.fst (encPair enc encBits) encBits)
-    exact .of_tidy <| hV.tidy.comp (((ComputableTidilyInPolyTime.fst _ _).comp hfst).prod
-      (ComputableTidilyInPolyTime.bitsAppend ((ComputableTidilyInPolyTime.snd _ _).comp hfst)
+  · have hfst := (ComputableInPolyTime.fst (encPair enc encBits) encBits)
+    exact hV.comp (((ComputableInPolyTime.fst _ _).comp hfst).prod
+      (ComputableInPolyTime.bitsAppend ((ComputableInPolyTime.snd _ _).comp hfst)
         (computableInPolyTime_truncateBlocks ps
-          (.of_tidy ((ComputableTidilyInPolyTime.encoding_length enc).comp
-            ((ComputableTidilyInPolyTime.fst _ _).comp hfst)))
-          (.of_tidy ((ComputableTidilyInPolyTime.encoding_length _).comp hfst))
-            (.of_tidy (.snd _ _))).tidy))
+          (((ComputableInPolyTime.encoding_length enc).comp
+            ((ComputableInPolyTime.fst _ _).comp hfst)))
+          (((ComputableInPolyTime.encoding_length _).comp hfst))
+            (.snd _ _))))
   · exact (alternation_truncateBlocks (hle y) (P := fun w => V (y.1, y.2 ++ w) = true)).symm
 
 end Cslib.Complexity

@@ -402,7 +402,7 @@ private lemma opCont_pt (o : ArithQBF.Operator) :
   unfold opCont
   have hsample : IsOraclePPTOn (Operation := Unit) (encPair encStepData encBits) encUnary
       (fun pair : StepData × List Bool => ProbOracleComp.sample (sampleMod pair.1.modulus)) :=
-    (isPPTOn_sampleMod (.of_tidy (by fun_prop))).isOraclePPTOn
+    (isPPTOn_sampleMod (by fun_prop)).isOraclePPTOn
   exact IsOraclePPTOn.cond (opCheck_pt o) (hsample.map_with opNext_pt)
     ((ComputableTidilyInPolyTime.isOraclePPTOn (f := fun pair : StepData × List Bool =>
       reject pair.1) (by fun_prop)))
