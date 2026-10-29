@@ -64,29 +64,21 @@ example (A : Set (List Bool)) (hA : [true] ∉ A) :
 
 /-! ### The oracle classes -/
 
-/-- A problem in `P`, here every word, is in `P` relative to every oracle. -/
-example (A : Set (List Bool)) : (Set.univ : Set (List Bool)) ∈ PWithOracle A encBits :=
-  P_subset_PWithOracle A encBits ⟨fun _ => true, ComputableInPolyTime.const true,
-    fun _ => by simp⟩
-
-/-- A deterministic computation is polynomial time relative to an oracle, with a certificate. -/
+/-- `P` problems and deterministic polynomial-time computations lift to every oracle, while
+`A` and reductions to `A` belong to `P^A` and `NP^A`. -/
 example (A : Set (List Bool)) :
-    ComputableInPolyTimeWithOracle A (fun _ : List Bool => false) encBits encBool :=
-  (ComputableInPolyTime.const false).computableInPolyTimeWithOracle A
-
-/-- `fun_prop` lifts polynomial-time certificates to every oracle. -/
-example (A : Set (List Bool)) :
-    ComputableInPolyTimeWithOracle A (fun x : List Bool => x.reverse) encBits encBits := by
-  fun_prop
-
-/-- `P` relative to `A` contains `A`, and lies inside `NP` relative to `A`. -/
-example (A : Set (List Bool)) : A ∈ NPWithOracle A encBits :=
-  PWithOracle_subset_NPWithOracle A encBits (mem_PWithOracle_self A)
-
-/-- A reduction to the oracle language: words whose reversal is in `A`. -/
-example (A : Set (List Bool)) : {w : List Bool | w.reverse ∈ A} ∈ PWithOracle A encBits :=
-  PolyTimeReducible.mem_PWithOracle ⟨List.reverse, by fun_prop, fun _ => Iff.rfl⟩
-    (mem_PWithOracle_self A)
+    (Set.univ : Set (List Bool)) ∈ PWithOracle A encBits ∧
+    ComputableInPolyTimeWithOracle A (fun _ : List Bool => false) encBits encBool ∧
+    ComputableInPolyTimeWithOracle A (fun x : List Bool => x.reverse) encBits encBits ∧
+    A ∈ NPWithOracle A encBits ∧
+    {w : List Bool | w.reverse ∈ A} ∈ PWithOracle A encBits :=
+  ⟨P_subset_PWithOracle A encBits ⟨fun _ => true, ComputableInPolyTime.const true,
+     fun _ => by simp⟩,
+   (ComputableInPolyTime.const false).computableInPolyTimeWithOracle A,
+   by fun_prop,
+   PWithOracle_subset_NPWithOracle A encBits (mem_PWithOracle_self A),
+   PolyTimeReducible.mem_PWithOracle ⟨List.reverse, by fun_prop, fun _ => Iff.rfl⟩
+     (mem_PWithOracle_self A)⟩
 
 /-- The oracle adds power: the time-hierarchy diagonal language is not in `P`, but it is in `P`
 relative to itself. -/
@@ -95,14 +87,13 @@ example : ∃ A : Set (List Bool), A ∈ PWithOracle A encBits ∧ A ∉ P encBi
 
 /-! ### The unary length language -/
 
-example : [true, true] ∈ unaryLengthLanguage {[false, true]} :=
-  replicate_mem_unaryLengthLanguage.mpr ⟨[false, true], rfl, rfl⟩
-
-/-- The empty word asks for a word of length zero. -/
-example : [] ∈ unaryLengthLanguage {[]} :=
-  replicate_mem_unaryLengthLanguage (n := 0).mpr ⟨[], rfl, rfl⟩
-
-example : [] ∉ unaryLengthLanguage ∅ := fun h => by simpa using h.2
+example :
+    [true, true] ∈ unaryLengthLanguage {[false, true]} ∧
+    [] ∈ unaryLengthLanguage {[]} ∧
+    [] ∉ unaryLengthLanguage ∅ :=
+  ⟨replicate_mem_unaryLengthLanguage.mpr ⟨[false, true], rfl, rfl⟩,
+   replicate_mem_unaryLengthLanguage (n := 0).mpr ⟨[], rfl, rfl⟩,
+   fun h => by simpa using h.2⟩
 
 /-- Words containing `false` are never in the unary length language. -/
 example (B : Set (List Bool)) : [true, false] ∉ unaryLengthLanguage B := fun h => by
@@ -178,19 +169,15 @@ example : TQBF.isCode [true, true] = false := by
   simp only [List.length_cons, List.length_nil] at h₁
   omega
 
-/-- The `TQBF` oracle is nontrivial: it contains the encoding of `top`, not that of `bot`. -/
-example : encQBF .top ∈ encQBF '' TQBF := ⟨_, top_mem_TQBF, rfl⟩
-
-example : encQBF .bot ∉ encQBF '' TQBF := fun h =>
-  bot_notMem_TQBF (encQBF.injective.mem_set_image.mp h)
-
-/-- Relative to `TQBF`, the encodings of true closed formulas are in `NP`, and `NP = P`. -/
-example : encQBF '' TQBF ∈ NPWithOracle (encQBF '' TQBF) encBits :=
-  PWithOracle_image_TQBF_eq_NPWithOracle encBits ▸ mem_PWithOracle_self _
-
-/-- Every problem in `PSPACE`, here `TQBF` on formulas, is in `P` relative to `TQBF`. -/
-example : TQBF ∈ PWithOracle (encQBF '' TQBF) encQBF :=
-  PSPACE_subset_PWithOracle image_TQBF_pspaceHard encQBF TQBF_mem_PSPACE
+/-- The `TQBF` oracle is nontrivial (containing `encQBF .top` and omitting `encQBF .bot`),
+collapses `NP` to `P` relative to `encQBF '' TQBF`, and places `TQBF` in `P` relative to it. -/
+example :
+    (encQBF .top ∈ encQBF '' TQBF ∧ encQBF .bot ∉ encQBF '' TQBF) ∧
+    encQBF '' TQBF ∈ NPWithOracle (encQBF '' TQBF) encBits ∧
+    TQBF ∈ PWithOracle (encQBF '' TQBF) encQBF :=
+  ⟨⟨⟨_, top_mem_TQBF, rfl⟩, fun h => bot_notMem_TQBF (encQBF.injective.mem_set_image.mp h)⟩,
+   PWithOracle_image_TQBF_eq_NPWithOracle encBits ▸ mem_PWithOracle_self _,
+   PSPACE_subset_PWithOracle image_TQBF_pspaceHard encQBF TQBF_mem_PSPACE⟩
 
 /-- The theorem of Baker, Gill and Solovay: the oracles of the collapse and of the separation. -/
 example : (∃ A : Set (List Bool), unaryLengthLanguage A ∈ PWithOracle A encBits) ∧
@@ -200,17 +187,15 @@ example : (∃ A : Set (List Bool), unaryLengthLanguage A ∈ PWithOracle A encB
 
 /-! ### Oracle monotonicity -/
 
-/-- `B` reduces to the words whose reversal is in `B`, so `B` is in `P` relative to them. -/
-example (B : Set (List Bool)) : B ∈ PWithOracle {w | w.reverse ∈ B} encBits :=
-  PolyTimeReducible.PWithOracle_subset ⟨List.reverse, by fun_prop, fun w => by simp⟩ encBits
-    (mem_PWithOracle_self B)
-
-/-- Monotonicity for `NP`: the unary length language of `B` is in `NP` relative to the words
-whose reversal is in `B`. -/
+/-- Monotonicity for `P` and `NP` along reversal: `B` and `unaryLengthLanguage B` lie in `P` and
+`NP` relative to `{w | w.reverse ∈ B}`. -/
 example (B : Set (List Bool)) :
+    B ∈ PWithOracle {w | w.reverse ∈ B} encBits ∧
     unaryLengthLanguage B ∈ NPWithOracle {w | w.reverse ∈ B} encBits :=
-  PolyTimeReducible.NPWithOracle_subset ⟨List.reverse, by fun_prop, fun w => by simp⟩ encBits
-    (unaryLengthLanguage_mem_NPWithOracle B)
+  have hrev : PolyTimeReducible encBits encBits B {w | w.reverse ∈ B} :=
+    ⟨List.reverse, by fun_prop, fun w => by simp⟩
+  ⟨hrev.PWithOracle_subset encBits (mem_PWithOracle_self B),
+   hrev.NPWithOracle_subset encBits (unaryLengthLanguage_mem_NPWithOracle B)⟩
 
 /-! ### Axioms -/
 
