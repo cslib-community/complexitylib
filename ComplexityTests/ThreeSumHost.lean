@@ -87,13 +87,14 @@ private theorem probe_spec (input : List ℤ)
     rcases hinput with rfl | rfl | rfl | rfl
     all_goals norm_num [Host.sideLength] at hs
     all_goals interval_cases s <;>
-      norm_num [Host.instanceArgs, Fill.Args.filled, Fill.Args.valueAB, Fill.Args.valueBC,
+      norm_num [Host.instanceArgs, Host.instanceArgsAt, Fill.Args.filled,
+        Fill.Args.valueAB, Fill.Args.valueBC,
         Fill.Args.valueAC, pick, encode, Host.hit, Algorithms.ExactTriangle.HasZeroTriangle,
         weightAB, weightBC, weightAC] <;> decide
   · intro k hk
     rw [hym, hm]
     apply Fill.Args.outside_filled
-    all_goals dsimp [Host.instanceArgs]; omega
+    all_goals dsimp only [Host.instanceArgs, Host.instanceArgsAt]; omega
 
 /-- The full quantitative theorem is inhabited for empty, positive and negative singleton
 inputs, and the output witness is the actual native pre-halt state. -/

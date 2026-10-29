@@ -165,7 +165,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
   The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
   This remains conditional on the supplied solver's native execution/correctness/frame theorem;
-  it does not establish a fast solver. Fast Exact Triangle and full input/time/width/asymptotic
+  it does not establish a fast solver. Fast Exact Triangle and its final native backend/asymptotic
   composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
@@ -183,8 +183,20 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `(1300κ+7865) clog₂(n+2)` physical width; every run prefix uses polynomial words/addresses even
   at wider admitted widths. Its charged cost is at most
   `Kκ (n+2)(sqrt(n+2)+1)(log₂(n+2)+1)^13`, including the final halt. The complete native
-  preprocessing milestone is #1446; the Exact Triangle solver and full final 3SUM composition
-  remain #1394. These components do not affect the curated headlines.
+  preprocessing milestone is #1446. `Algorithms/WordRAM/ThreeSum/Decision.lean` composes that
+  actual initialized output with the Convolution host (#1559): raw registers 78/79/116 supply the
+  actual pointer table, count and common packed length. The caller-owned host reads each signed
+  payload directly and reserves matrices above twice the preprocessing polynomial word bound,
+  preserving every future instance. One finite program per fixed exponent and certified finite
+  Exact Triangle block returns the existing distinct-position verdict, with derived positive
+  logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
+  charged compositional bound at the actual packed size. `Host.Callee` requires actual finite-code
+  execution, matrix correctness, logarithmic width and a protected-prefix frame on arbitrary old
+  scratch memory; `Host.Slow.callee` is a proved exhaustive native instance. This conditional host
+  does not provide a fast solver. The unconditional native solver/backend and final asymptotic
+  composition, including exponent 1.9992, remain #1394. These components do not affect the curated
+  headlines. The caller layout, exhaustive callee and ordinary composition are original; the
+  underlying finite reductions and builder retain their existing Anthropic credit.
 
   Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
   `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,

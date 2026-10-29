@@ -437,10 +437,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   and charged ternary-tree bounds. Complete native preprocessing ([#1446]) composes every root
   from actual initialized input, returns the exact finite packed instances and derives positive
   logarithmic width, polynomial space/intermediates and an `Oκ(n^1.5 log¹³(n+2))` charged bound.
-  It still needs
+  The complete conditional ordinary host ([#1559]) connects that actual output to caller-safe
+  Convolution calls, proves the existing distinct-position verdict from `State.init`, derives
+  logarithmic width and every-prefix polynomial words/space, and charges all concrete callee work
+  at the actual packed size. Its actual finite callee contract has a proved slow exhaustive native
+  instance; no fast backend or final subquadratic bound is supplied. The endpoint still needs
   residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
-  Chan–He/Exact Triangle host composition, the fast Exact Triangle solver and full input/time/width/
-  asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
+  fast-backend composition, the fast Exact Triangle solver and final asymptotic composition, then
+  the improved Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
@@ -571,3 +575,4 @@ not planned, not as proved.
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1481]: https://github.com/cslib-community/complexitylib/issues/1481
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
+[#1559]: https://github.com/cslib-community/complexitylib/issues/1559

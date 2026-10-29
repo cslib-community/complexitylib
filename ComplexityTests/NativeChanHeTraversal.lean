@@ -154,10 +154,6 @@ private def branchingNodes : List Cslib.Algorithms.ThreeSum.ChanHe.Node :=
   let ν₁ : Cslib.Algorithms.ThreeSum.ChanHe.Node := ⟨{0, 4}, {0}, {-1}, 4⟩
   [ν₀, ν₁]
 
-private instance : DecidableEq Cslib.Algorithms.ThreeSum.ChanHe.Node := fun a b =>
-  decidable_of_iff (a.S₁ = b.S₁ ∧ a.S₂ = b.S₂ ∧ a.S₃ = b.S₃ ∧ a.M = b.M)
-    (by cases a; cases b; simp only [Cslib.Algorithms.ThreeSum.ChanHe.Node.mk.injEq])
-
 -- The same two nodes are computed by the existing finite recursion, in the same order.
 example : (Math.Task.mk 2 ![{0, 4, 1}, {0}, {-1}]).output {2} 4 = branchingNodes := by
   decide
