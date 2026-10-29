@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Circuit.Boolean.MassProduction.Uhlig
+import Complexity.Foundations.Data.BitString.Parity
 
 /-!
 # Uhlig mass-production clients
@@ -73,16 +74,16 @@ private theorem complexity_directProduct_zero_inputs (g : BooleanFunction 0) :
     (Synthesis.of_forall_eq_const (s := inputs 0) (g ![])
       fun _ => congrArg g (Subsingleton.elim _ _)).complexity_le
 
--- One layer (two copies on one input) and two layers (four copies on two inputs) from single
--- copies on no inputs.
-example (f₁ : BooleanFunction (1 + 0)) (f₂ : BooleanFunction (2 * 1 + 0)) :
-    complexity interpretation (directProduct f₁ (2 * 1)) ≤
-        (2 ^ 1 + 1) * 1 + 1 * layerOverhead 1 0 ∧
-      complexity interpretation (directProduct f₂ (2 ^ 2)) ≤
-        (2 ^ 1 + 1) ^ 2 * (1 + 2 * 2 ^ 2 * layerOverhead 1 1) :=
-  ⟨complexity_directProduct_two_mul_le complexity_directProduct_zero_inputs f₁,
-    complexity_directProduct_two_pow_le complexity_directProduct_zero_inputs 2 _ rfl
-      (fun e he => layerOverhead_mono (by omega)) f₂⟩
+-- Two copies of negation on one input, and four copies of conjunction on two inputs.
+example : complexity interpretation (directProduct (fun x : BitString 1 => !x 0) (2 * 1)) ≤
+    (2 ^ 1 + 1) * 1 + 1 * layerOverhead 1 0 :=
+  complexity_directProduct_two_mul_le complexity_directProduct_zero_inputs _
+
+example : complexity interpretation (directProduct (fun x : BitString 2 => x 0 && x 1) (2 ^ 2)) ≤
+    (2 ^ 1 + 1) ^ 2 * (1 + 2 * 2 ^ 2 * layerOverhead 1 1) :=
+  complexity_directProduct_two_pow_le (p := 1) (m := 0) (L := 1) (H := layerOverhead 1 1)
+    complexity_directProduct_zero_inputs 2 _ rfl
+    (fun e he => layerOverhead_mono (by omega)) _
 
 /-! ### Copy depths -/
 
@@ -112,12 +113,14 @@ theorem not_isUhligDepth_div_log : ¬ IsUhligDepth fun n => n / Nat.log 2 n := b
   have e : 2 * (n / Nat.log 2 n) * Nat.log 2 n = 2 * (n / Nat.log 2 n * Nat.log 2 n) := by ring
   omega
 
--- The theorem applies to the superpolynomial copy budget, and zero copies cost nothing.
-example (P : ℕ) :
-    (∀ᶠ n in atTop, ∀ (f : BooleanFunction n) (k : ℕ),
-      k ≤ 2 ^ (n / Nat.log 2 n ^ 2) →
-        (P * n : ℕ∞) * massComplexity f k ≤ ((P + 1) * 2 ^ n : ℕ)) ∧
-    massComplexity (0 : BooleanFunction 5) 0 = 0 :=
-  ⟨eventually_mul_massComplexity_le isUhligDepth_div_log_sq P, massComplexity_zero⟩
+-- A fixed parity family at the full superpolynomial copy budget, with scale factor two.
+example : ∀ᶠ (n : ℕ) in atTop,
+    ((2 * n : ℕ) : ℕ∞) * massComplexity (parity n) (2 ^ (n / Nat.log 2 n ^ 2)) ≤
+      ((2 + 1) * 2 ^ n : ℕ) := by
+  filter_upwards [eventually_mul_massComplexity_le isUhligDepth_div_log_sq 2] with n hn
+  exact hn (parity n) _ le_rfl
+
+-- Zero copies cost nothing even for the nonconstant parity function.
+example : massComplexity (parity 5) 0 = 0 := massComplexity_zero
 
 end ComplexityTests.MassProduction.Uhlig

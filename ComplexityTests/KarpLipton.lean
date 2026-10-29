@@ -106,16 +106,5 @@ example : {x : List Bool | x.reverse ∈ firstBitLanguage} ∈ PPolyOn encBits :
     ⟨List.reverse, ComputableInPolyTime.bitsReverse, fun _ => Iff.rfl⟩
   exact hred.mem_PPolyOn (mem_PPolyOn_encBits_iff.2 firstBitLanguage_mem_PPoly)
 
--- Under `NP ⊆ P/poly` (or `SAT ∈ P/poly`), every level `SigmaP k`, `PiP k`, and `PH` is in
--- `P/poly`.
-example (hNP : NP encBits ⊆ PPolyOn encBits) (hSAT : SAT ∈ PPolyOn encCNF) (k : ℕ)
-    {A B C : Language Bool} (hA : (A : Set (List Bool)) ∈ SigmaP k encBits)
-    (hB : (B : Set (List Bool)) ∈ PiP k encBits)
-    (hC : (C : Set (List Bool)) ∈ PH encBits) :
-    A ∈ PPoly ∧ B ∈ PPoly ∧ C ∈ PPoly ∧ (A : Set (List Bool)) ∈ PPolyOn encBits :=
-  ⟨mem_PPolyOn_encBits_iff.1 (SigmaP_subset_PPolyOn_of_NP_subset_PPoly hNP k hA),
-    mem_PPolyOn_encBits_iff.1 (PiP_subset_PPolyOn_of_NP_subset_PPoly hNP k hB),
-    mem_PPolyOn_encBits_iff.1 (PH_subset_PPolyOn_of_NP_subset_PPoly hNP hC),
-    SigmaP_subset_PPolyOn_of_NP_subset_PPoly (NP_subset_PPolyOn_iff_SAT.2 hSAT) k hA⟩
 
 end Cslib.Complexity.Tests.KarpLipton

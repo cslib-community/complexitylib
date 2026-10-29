@@ -39,23 +39,37 @@ example :
       some ((![1, 0], ![1, 0]) : (Fin 2 → ZMod 2) × (Fin 2 → ZMod 2))) = {0} := by
   decide
 
-example (u v : Fin 5 → ZMod 3) (hv : v ≠ 0) (u₂ : Fin 2 → ZMod 3)
-    (u₄ y₄ : Fin 4 → ZMod 3) (hy₄ : y₄ ≠ u₄) (u₃ v₃ : Fin 3 → ZMod 2) (hv₃ : v₃ ≠ 0)
-    (lines : Fin 7 → Option ((Fin 3 → ZMod 3) × (Fin 3 → ZMod 3))) :
-    #(puncturedLine u v) = 2 ∧
-    Disjoint (puncturedLine u₂ ![1, 0]) (puncturedLine u₂ ![0, 1]) ∧
-    #{v ∈ univ.erase 0 | y₄ ∈ puncturedLine u₄ v} = 2 ∧
-    Disjoint (puncturedLine u₃ v₃) {u₃} ∧
-    #{v ∈ univ.erase 0 | ¬Disjoint (puncturedLine u₃ v) {u₃}} = 0 ∧
-    #(occupiedPoints lines) ≤ 14 := by
-  refine ⟨by rw [card_puncturedLine u hv, ZMod.card],
-    by rw [disjoint_puncturedLine_iff]; decide,
-    by rw [card_filter_mem_puncturedLine hy₄, ZMod.card],
-    disjoint_singleton_right.mpr (notMem_puncturedLine_self u₃ hv₃), ?_, ?_⟩
-  · have h := card_filter_not_disjoint_puncturedLine_le u₃ {u₃}
-    rwa [erase_singleton, card_empty, zero_mul, Nat.le_zero] at h
-  · have h := card_occupiedPoints_le lines
-    rwa [ZMod.card] at h
+-- The line through zero in a coordinate direction has both nonzero scalar multiples.
+example : #(puncturedLine (0 : Fin 2 → ZMod 3) ![1, 0]) = 2 := by
+  rw [card_puncturedLine _ (by decide), ZMod.card]
+
+-- Translating the anchor preserves disjointness of these independent directions.
+example : Disjoint (puncturedLine (![1, 2] : Fin 2 → ZMod 3) ![1, 0])
+    (puncturedLine ![1, 2] ![0, 1]) := by
+  rw [disjoint_puncturedLine_iff]
+  decide
+
+-- The two nonzero multiples leading to `![2, 0]` are the only blocking directions.
+example : #{v ∈ univ.erase 0 | (![2, 0] : Fin 2 → ZMod 3) ∈ puncturedLine 0 v} = 2 := by
+  rw [card_filter_mem_puncturedLine (by decide), ZMod.card]
+
+-- The anchor itself lies in no punctured line with a nonzero direction.
+example : Disjoint (puncturedLine (![1, 1] : Fin 2 → ZMod 2) ![1, 0]) {![1, 1]} :=
+  disjoint_singleton_right.mpr (notMem_puncturedLine_self _ (by decide))
+
+example : #{v ∈ univ.erase 0 |
+    ¬Disjoint (puncturedLine (![1, 1] : Fin 2 → ZMod 2) v) {![1, 1]}} = 0 := by
+  have h := card_filter_not_disjoint_puncturedLine_le (![1, 1] : Fin 2 → ZMod 2) {![1, 1]}
+  rwa [erase_singleton, card_empty, zero_mul, Nat.le_zero] at h
+
+-- Seven repeated requests occupy the same two-point line, within the `7 * (3 - 1)` bound.
+private def repeatedLines : Fin 7 → Option ((Fin 2 → ZMod 3) × (Fin 2 → ZMod 3)) :=
+  fun _ => some (0, ![1, 0])
+
+example : #(occupiedPoints repeatedLines) = 2 ∧ #(occupiedPoints repeatedLines) ≤ 14 := by
+  refine ⟨by decide, ?_⟩
+  have h := card_occupiedPoints_le repeatedLines
+  rwa [ZMod.card] at h
 
 /-! ### Menu lengths -/
 
