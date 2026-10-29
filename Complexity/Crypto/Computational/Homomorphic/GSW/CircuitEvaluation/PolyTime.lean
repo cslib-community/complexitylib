@@ -81,15 +81,12 @@ theorem computableInPolyTime_evaluateNode {wires : α → List (List Bool)}
     ComputableInPolyTime (fun a => evaluateNode (n a) (w a) (wires a) (node a))
       input encBits := by
   have hcode := Layered.computableInPolyTime_nodeCode.comp hnode
-  -- Binary-index lookup has no plain rule yet; it is used as a single tidy leaf.
   have hfirst : ComputableInPolyTime
       (fun a => (wires a).getD (node a).code.2.1 []) input encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.listGetD_binary (encA := encBits) [] hwires.tidy
-      hcode.snd'.fst'.tidy)
+    listGetD_binary (encA := encBits) [] hwires hcode.snd'.fst'
   have hsecond : ComputableInPolyTime
       (fun a => (wires a).getD (node a).code.2.2 []) input encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.listGetD_binary (encA := encBits) [] hwires.tidy
-      hcode.snd'.snd'.tidy)
+    listGetD_binary (encA := encBits) [] hwires hcode.snd'.snd'
   have h : ComputableInPolyTime (fun a =>
       if (node a).code.1.1 then
         if (node a).code.1.2 then
@@ -202,8 +199,6 @@ theorem computableInPolyTime_evaluateCircuit {C : α → Σ k, Circuit signature
   have hindex : ComputableInPolyTime
       (fun a => (Layered.compile (C a).1 (C a).2.code).2.headD 0) input encNat :=
     (headD (encA := encNat) 0).comp hcompiled.snd'
-  -- Binary-index lookup has no plain rule yet; it is used as a single tidy leaf.
-  exact .of_tidy (ComputableTidilyInPolyTime.listGetD_binary (encA := encBits) [] hlayers.tidy
-    hindex.tidy)
+  exact listGetD_binary (encA := encBits) [] hlayers hindex
 
 end Cslib.Crypto.Homomorphic.GSW

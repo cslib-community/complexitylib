@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -26,10 +27,15 @@ the work tapes as integers (`Turing.MultiTapeTM.encInt`), the position of the in
 
 Reading, writing and moving on a zipper are tidily computable in linear time and space. A step of
 the simulation (`Turing.MultiTapeTM.Universal.step_inO`) takes space linear in the length `L` of
-the encoded context (the description, the input and the configuration), and time
-`(K + E + p + 1) * (L + 1) ^ 2` for `K` work tapes, `E` transitions and the input head at `p`:
-reading and changing a work tape is linear, comparing the key with a transition is quadratic, and
-finding the input symbol counts down from `p`.
+the encoded context (the description, the input and the configuration). Its time bound separates
+the configuration length from description lookup and input scanning: for `K` work tapes, `E`
+transitions, description length `D`, encoded input length `N`, input position `p` and binary
+position length `P`, the bound is
+`(K + E + 1) * (D + 1) * (L + 1) + (N + 1) * (P + 1) ^ 2`.
+The first word in a transition comparison comes from the description, so its length is bounded
+by `D`, even when the simulated configuration is large. The input scanner streams the encoded
+list with a binary countdown, whose arithmetic is charged to `P`. The configuration is still
+copied each round; this bound does not implement the buffered Hennie–Stearns simulation.
 
 ## Main definitions
 
@@ -369,57 +375,12 @@ public theorem reads_inO :
 
 /-! ### The input head -/
 
-lemma inputSymbol_eq (x : List ℕ) (p : ℕ) : inputSymbol x p =
-    if p = 0 then none else
-      if (List.tail^[p - 1] x).isEmpty then none else some ((List.tail^[p - 1] x).headD 0) := by
-  rw [List.tail_iterate, inputSymbol]
-  split_ifs <;> simp_all
-
-/-- The symbol at a position of the input, given in binary, within time the position times the
-square of the length of the arguments, and linear space. -/
-public theorem inputSymbol_inO :
-    ComputableTidilyInO (fun q : List ℕ × ℕ => inputSymbol q.1 q.2)
-      (encPair (encList encUnary) encNat) eSym
-      (fun q => (q.2 + 1) * ((encPair (encList encUnary) encNat q).length + 1) ^ 2)
-      fun q => (encPair (encList encUnary) encNat q).length := by
-  have hx := fst (encList encUnary) encNat
-  have hp := snd (encList encUnary) encNat
-  have hdrop (q : List ℕ × ℕ) (k : ℕ) :
-      (encList encUnary (List.tail^[k] q.1)).length ≤ (encList encUnary q.1).length := by
-    rw [List.tail_iterate]
-    exact SizedListEncoding.length_drop_le (encA := encUnary) _ _
-  have hiter := (ComputableInO.iterate (ComputableInO.natPred.tidy.comp hp).computableInO
-    hx.computableInO (ComputableTidilyInDegree.tail (enc₁ := encUnary)
-    (enc := encList encUnary)).inO_one.computableInO (R := fun q => (encList encUnary q.1).length)
-    (Q := fun q => (encList encUnary q.1).length) (B := fun q => (encList encUnary q.1).length)
-    (fun q k _ => hdrop q k) (fun q k _ => hdrop q k) fun q k _ => hdrop q k).tidy
-  have hsym := ((ComputableTidilyInDegree.isEmpty (enc₁ := encUnary)).inO_one.comp_linear
-    hiter).ite (const none) ((ComputableTidilyInDegree.optionSome (enc₁ := encUnary)
-      (enc := eSym)).inO_one.comp_linear
-        ((ComputableTidilyInDegree.headD (enc₁ := encUnary) 0).inO_one.comp_linear hiter))
-  refine (((ComputableInO.natIsZero.tidy.comp_linear hp).ite (const none) hsym).mono 64
-    (fun q => ?_) fun q => ?_).of_enc_eq fun q => by
-      rw [inputSymbol_eq]; simp only [Function.comp_apply, decide_eq_true_eq]
-  all_goals
-    have h₁ := length_encNat_mono (Nat.sub_le q.2 1)
-    have h₂ : (encNat q.2).length ≤ (encPair (encList encUnary) encNat q).length := by
-      rw [length_encPair]; omega
-    have h₃ : (encList encUnary q.1).length ≤ (encPair (encList encUnary) encNat q).length := by
-      rw [length_encPair]; omega
-    simp only [Function.comp_apply] at *
-    set L := (encPair (encList encUnary) encNat q).length
-  · have h₄ : (encNat (q.2 - 1)).length + 1 ≤ L + 1 := by omega
-    have h₅ := Nat.pow_le_pow_left h₄ 2
-    have h₆ : L + 1 ≤ (L + 1) ^ 2 := Nat.le_self_pow two_ne_zero _
-    have h₇ : q.2 - 1 + 1 ≤ q.2 + 1 := by omega
-    split_ifs <;> nlinarith
-  · split_ifs <;> omega
-
-/-- Moving the input head, given in binary. -/
+/-- Moving the input head, charging binary arithmetic only to the encoded position length. -/
 public theorem moveInput_inO :
     ComputableTidilyInO (fun q : ℕ × Option ℕ × SignType => moveInput q.1 q.2.1 q.2.2)
       (encPair encNat (encPair eSym encSign)) encNat
-      (fun q => ((encPair encNat (encPair eSym encSign) q).length + 1) ^ 2)
+      (fun q => (encPair encNat (encPair eSym encSign) q).length +
+        ((encNat q.1).length + 1) ^ 2)
       fun q => (encPair encNat (encPair eSym encSign) q).length + 1 := by
   have hp := fst encNat (encPair eSym encSign)
   have ha := (snd encNat (encPair eSym encSign)).fst'
@@ -436,9 +397,7 @@ public theorem moveInput_inO :
   · have h₁ : (encNat q.1).length ≤ (encPair encNat (encPair eSym encSign) q).length := by
       rw [length_encPair]; omega
     simp only [Function.comp_apply]
-    have := Nat.pow_le_pow_left (Nat.add_le_add_right h₁ 1) 2
-    have : (encPair encNat (encPair eSym encSign) q).length + 1 ≤
-        ((encPair encNat (encPair eSym encSign) q).length + 1) ^ 2 :=
+    have : (encNat q.1).length + 1 ≤ ((encNat q.1).length + 1) ^ 2 :=
       Nat.le_self_pow two_ne_zero _
     split_ifs <;> omega
   · have h₁ : (encNat q.1).length ≤ (encPair encNat (encPair eSym encSign) q).length := by
@@ -486,10 +445,11 @@ public lemma stepWith_eq (c : WCtx) : stepWith c.1.1 c.1.2 c.2 =
     · rfl
     · simp [wAct, h]
 
-/-- The time bound of a step without the input: the number of work tapes and of transitions, times
-the square of the length of the context. -/
+/-- A step without input lookup: tape passes and description comparisons are linear in context
+length; only binary input-head arithmetic is quadratic in its own encoded length. -/
 @[expose] public def wTime (c : WCtx) : ℕ :=
-  (c.1.2.workTapes.length + c.1.1.table.length + 1) * ((eWCtx c).length + 1) ^ 2
+  (c.1.2.workTapes.length + c.1.1.table.length + 1) * ((eDesc c.1.1).length + 1) *
+    ((eWCtx c).length + 1) + ((encNat c.1.2.inputPos).length + 1) ^ 2
 
 section Lengths
 
@@ -506,13 +466,17 @@ lemma length_wTable_le :
 
 lemma length_le_wTime {A B : ℕ}
     (hA : A ≤ c.1.2.workTapes.length + c.1.1.table.length)
-    (hB : B ≤ (eWCtx c).length) : (A + 1) * (B + 1) ^ 2 ≤ wTime c :=
-  Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left (by omega) 2)
+    (hB : B ≤ (eWCtx c).length) :
+    (A + 1) * ((eDesc c.1.1).length + 1) * (B + 1) ≤ wTime c :=
+  (Nat.mul_le_mul (Nat.mul_le_mul_right _ (by omega)) (by omega)).trans
+    (Nat.le_add_right _ _)
 
 lemma length_le_wTime' {A B : ℕ}
     (hA : A ≤ c.1.2.workTapes.length + c.1.1.table.length)
     (hB : B ≤ (eWCtx c).length) : (A + 1) * (B + 1) ≤ wTime c :=
-  (Nat.mul_le_mul_left _ (Nat.le_self_pow two_ne_zero _)).trans (length_le_wTime c hA hB)
+  (Nat.mul_le_mul_right (B + 1)
+    (Nat.le_mul_of_pos_right (A + 1) (Nat.succ_pos _))).trans
+      (length_le_wTime c hA hB)
 
 lemma length_wKey_le : (eKey (wKey c)).length ≤ 4 * (eWCtx c).length + 4 := by
   have h₂ : (encList eSym (c.1.2.workTapes.map Tape.read)).length ≤
@@ -549,8 +513,7 @@ abbrev WPart {β : Type} (f : WCtx → β) (enc : β ↪ List Bool) : Prop :=
   ComputableTidilyInO f eWCtx enc wTime fun c => (eWCtx c).length
 
 lemma le_wTime (c : WCtx) : (eWCtx c).length + 1 ≤ wTime c :=
-  (Nat.le_self_pow two_ne_zero _).trans (by
-    simpa using length_le_wTime c (A := 0) (Nat.zero_le _) le_rfl)
+  by simpa using length_le_wTime' c (A := 0) (Nat.zero_le _) le_rfl
 
 /-- One step of the simulation without the input, within the time `wTime` and linear space. -/
 public theorem stepWith_inO :
@@ -597,25 +560,35 @@ public theorem stepWith_inO :
       have hentry (e : Key × Act) (he : e ∈ c.1.1.table) :
           (encPair eKey eAct e).length ≤ (eWCtx c).length :=
         (length_le_encList_of_mem (encPair eKey eAct) he).trans ht
+      have hentryD (e : Key × Act) (he : e ∈ c.1.1.table) :
+          (encPair eKey eAct e).length ≤ (eDesc c.1.1).length := by
+        have := length_le_encList_of_mem (encPair eKey eAct) he
+        simp only [eDesc_apply, length_encPair] at *
+        omega
+      have hlinear : (eWCtx c).length + 1 ≤
+          ((eDesc c.1.1).length + 1) * ((eWCtx c).length + 1) := by nlinarith
       have hlen := length_le_length_encList (encPair eKey eAct) c.1.1.table
     · have h₁ : listMax (fun e => (encPair eKey (encPair eKey eAct) (wKey c, e)).length +
           (encPair eKey (encPair eKey eAct) (wKey c, e)).length +
           ((eKey (e.1, wKey c).1).length + 1) *
             ((eKey (e.1, wKey c).1).length + (eKey (e.1, wKey c).2).length + 1))
-          c.1.1.table ≤ 32 * ((eWCtx c).length + 1) ^ 2 :=
+          c.1.1.table ≤ 32 * ((eDesc c.1.1).length + 1) * ((eWCtx c).length + 1) :=
         listMax_le fun e he => by
           have h₁ := hentry e he
           have h₂ := length_le_encPair_left eKey eAct e
+          have hD := hentryD e he
           have h₃ : ((eKey e.1).length + 1) * ((eKey e.1).length + (eKey (wKey c)).length + 1)
-              ≤ ((eWCtx c).length + 1) * (5 * ((eWCtx c).length + 1)) :=
+              ≤ ((eDesc c.1.1).length + 1) * (5 * ((eWCtx c).length + 1)) :=
             Nat.mul_le_mul (by omega) (by omega)
           simp only [length_encPair] at *
           nlinarith
       have h₂ := length_le_wTime c (A := c.1.1.table.length) (by omega)
         (B := (eWCtx c).length) le_rfl
       have h₃ := Nat.mul_le_mul_left (c.1.1.table.length + 1) (Nat.add_le_add
-        (Nat.add_le_add (hk.trans (show 4 * (eWCtx c).length + 4 ≤ 4 * ((eWCtx c).length + 1) ^ 2 by
-          nlinarith)) (ht.trans (show (eWCtx c).length ≤ ((eWCtx c).length + 1) ^ 2 by nlinarith)))
+        (Nat.add_le_add (hk.trans (show 4 * (eWCtx c).length + 4 ≤
+          4 * ((eDesc c.1.1).length + 1) * ((eWCtx c).length + 1) by nlinarith))
+          (ht.trans (show (eWCtx c).length ≤
+            ((eDesc c.1.1).length + 1) * ((eWCtx c).length + 1) by omega)))
           h₁)
       dsimp only [eWCtx, Function.comp_apply] at *
       nlinarith
@@ -652,10 +625,10 @@ public theorem stepWith_inO :
         have := length_eWCtx c
         simp only [eKey_apply, eAct_apply, length_encPair] at *
         omega
-      have h₂ := length_le_wTime c (A := 0) (Nat.zero_le _) (B := (eWCtx c).length) le_rfl
-    · have h₁ := Nat.pow_le_pow_left (Nat.add_le_add_right hp 1) 2
-      dsimp only [eWCtx, Function.comp_apply] at *
-      nlinarith
+      have h₂ : ((encNat c.1.2.inputPos).length + 1) ^ 2 ≤ wTime c :=
+        Nat.le_add_left _ _
+    · dsimp only [eWCtx, Function.comp_apply] at *
+      omega
     · dsimp only [eWCtx, Function.comp_apply] at *
       omega
   have happ : WPart (fun c => applyTapes c.1.2.workTapes (wAct c).workTapes)
@@ -705,24 +678,16 @@ public abbrev Ctx := (Desc × List ℕ) × SCfg
 /-- The encoding of contexts. -/
 public abbrev eCtx : Ctx ↪ List Bool := encPair (encPair eDesc (encList encUnary)) eCfg
 
-/-- The time bound of a step: the number of work tapes, of transitions and the position of the
-input head, times the square of the length of the context. -/
+/-- The step bound separates linear configuration passes from a streaming input lookup with
+binary countdown arithmetic. In particular, the whole configuration length is never squared. -/
 @[expose] public def stepTime (c : Ctx) : ℕ :=
-  (c.2.workTapes.length + c.1.1.table.length + c.2.inputPos + 1) * ((eCtx c).length + 1) ^ 2
-
-lemma length_inputSymbol_le (x : List ℕ) (p : ℕ) :
-    (eSym (inputSymbol x p)).length ≤ (encList encUnary x).length + 1 := by
-  unfold inputSymbol
-  split_ifs
-  · simp
-  · rcases h : x.drop (p - 1) with _ | ⟨a, l⟩
-    · simp
-    · have := length_le_encList_of_mem encUnary (List.mem_of_mem_drop (h ▸ List.mem_cons_self ..))
-      simp at this ⊢
-      omega
+  (c.2.workTapes.length + c.1.1.table.length + 1) * ((eDesc c.1.1).length + 1) *
+    ((eCtx c).length + 1) +
+    ((encList encUnary c.1.2).length + 1) * ((encNat c.2.inputPos).length + 1) ^ 2
 
 lemma le_stepTime_ctx (c : Ctx) : (eCtx c).length + 1 ≤ stepTime c :=
-  (Nat.le_self_pow two_ne_zero _).trans (Nat.le_mul_of_pos_left _ (Nat.succ_pos _))
+  (Nat.le_mul_of_pos_left _ (Nat.mul_pos (Nat.succ_pos _) (Nat.succ_pos _))).trans
+    (Nat.le_add_right _ _)
 
 /-- One step of the simulation, on contexts, within the time `stepTime` and linear space: the
 symbol under the input head, and the step without the input. -/
@@ -734,10 +699,12 @@ public theorem step_inO :
   have hc := snd (encPair eDesc (encList encUnary)) eCfg
   have hip := (hc.of_enc_eq (encOut := eCfgFields)
     (g := fun c : Ctx => (c.2.state, c.2.inputPos, c.2.workTapes)) fun _ => rfl).snd'.fst'
-  refine ((stepWith_inO.comp ((hd.prod hc).prod (inputSymbol_inO.comp (hx.prod hip)))).mono 32
+  refine ((stepWith_inO.comp
+    ((hd.prod hc).prod (inputSymbol_stream_inO.tidy.comp (hx.prod hip)))).mono 32
     (fun c => ?_) fun c => ?_).of_enc_eq fun c => by rw [step_eq_stepWith]; rfl
   all_goals
-    have h₁ := length_inputSymbol_le c.1.2 c.2.inputPos
+    have h₁ : (eSym (inputSymbol c.1.2 c.2.inputPos)).length ≤
+        (encList encUnary c.1.2).length + 1 := length_inputSymbol_le c.1.2 c.2.inputPos
     have h₂ : (encPair (encList encUnary) encNat (c.1.2, c.2.inputPos)).length ≤
         (eCtx c).length := by
       simp only [eCtx, eCfg_apply, length_encPair]; omega
@@ -746,15 +713,16 @@ public theorem step_inO :
       simp only [eWCtx, eCtx, length_encPair] at *; omega
     have h₄ := le_stepTime_ctx c
     simp only [Function.comp_apply]
-  · have h₅ : wTime ((c.1.1, c.2), inputSymbol c.1.2 c.2.inputPos) ≤ 9 * stepTime c := by
-      unfold wTime stepTime
-      calc _ ≤ (c.2.workTapes.length + c.1.1.table.length + c.2.inputPos + 1) *
-            (3 * ((eCtx c).length + 1)) ^ 2 := Nat.mul_le_mul (by dsimp only; omega)
-              (Nat.pow_le_pow_left h₃ 2)
-        _ = _ := by ring
-    have h₆ : (c.2.inputPos + 1) *
-        ((encPair (encList encUnary) encNat (c.1.2, c.2.inputPos)).length + 1) ^ 2 ≤ stepTime c :=
-      Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left (by omega) 2)
+  · have h₅ : wTime ((c.1.1, c.2), inputSymbol c.1.2 c.2.inputPos) ≤ 3 * stepTime c := by
+      have hprod := Nat.mul_le_mul_left
+        ((c.2.workTapes.length + c.1.1.table.length + 1) * ((eDesc c.1.1).length + 1)) h₃
+      have hcounter : ((encNat c.2.inputPos).length + 1) ^ 2 ≤
+          ((encList encUnary c.1.2).length + 1) * ((encNat c.2.inputPos).length + 1) ^ 2 :=
+        Nat.le_mul_of_pos_left _ (Nat.succ_pos _)
+      dsimp only [wTime, stepTime]
+      nlinarith
+    have h₆ : ((encList encUnary c.1.2).length + 1) *
+        ((encNat c.2.inputPos).length + 1) ^ 2 ≤ stepTime c := Nat.le_add_left _ _
     dsimp only [eCtx] at *
     omega
   · dsimp only [eCtx, eWCtx] at *

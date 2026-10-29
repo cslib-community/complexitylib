@@ -118,17 +118,17 @@ theorem exists_scheme_of_polynomiallyBounded {E : Scheme}
       Encryption.INDCPA (scheme D budget).keyGen (scheme D budget).encrypt := by
   obtain ⟨coefficient, degree, hmajorant⟩ := polynomiallyBounded_iff_le.mp hdepth
   let budget := fun n => coefficient * (n + 1) ^ degree
-  have hbudget : ComputableTidilyInPolyTime budget encUnary encUnary := by
+  have hbudget : ComputableInPolyTime budget encUnary encUnary := by
     dsimp only [budget]
     fun_prop
-  refine ⟨budget, .of_tidy hbudget, hmajorant, correct D hE hwidth hboot budget,
+  refine ⟨budget, hbudget, hmajorant, correct D hE hwidth hboot budget,
     (fun n c hc => hc.trans (hmajorant n)), fixedWidth D hE hwidth hboot budget,
     (polynomiallyBounded_widths D hD).1, (polynomiallyBounded_widths D hD).2,
-    isPPTOn_scheme_keyGen hkeyGen hencrypt D budget (.of_tidy hbudget),
+    isPPTOn_scheme_keyGen hkeyGen hencrypt D budget hbudget,
     isPPTOn_scheme_encrypt hencrypt D budget,
     computableInPolyTime_scheme_decrypt D hD budget,
-    isPPTOn_scheme_evaluate hencrypt D hD hevaluate budget (.of_tidy hbudget),
-    indCPA_scheme hsecure hkeyGen hencrypt hwidth.secret_length (.of_tidy hbudget) D⟩
+    isPPTOn_scheme_evaluate hencrypt D hD hevaluate budget hbudget,
+    indCPA_scheme hsecure hkeyGen hencrypt hwidth.secret_length hbudget D⟩
 
 /-- The depth-indexed family `fun d => scheme D (fun _ => d)` (`{E^(d) : d ∈ ℕ}` in
 [Gentry2009, Definition 3, p. 170]) shares one uniform strict PPT clock jointly in `(n, d)`

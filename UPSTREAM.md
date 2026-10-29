@@ -40,6 +40,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and their helpers) and the blocks marked `@9cce4cc7` in older copies come from a later local
   rewrite of the branch that is not yet published; `scripts/upstream_sync.py` reports them
   against the published head until it is. The rest of the branch is still copied at `@7f7c0696`.
+* **Universal simulation.** The local universal interpreter preserves Christian Reitwiessner’s
+  description format and execution semantics. Its resource certificates now separate
+  transition-description size and binary input-head length from the copied configuration;
+  `Universal/Input` uses the existing native streaming fold to emit a selected input symbol
+  without repeatedly copying list tails. Retain these local improvements when synchronizing
+  `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
+  This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
 * **Polynomial bounds.** The tidy calculus's size-parameterized `PolyBounded` adapts CSLib's
   `PolynomiallyBounded` and shares its closure API. Coordinate this adaptation with the tidy
   branch; preserve it when resynchronizing the vendored files.
