@@ -64,14 +64,14 @@ noncomputable section
 variable {k : ℕ} {State : Type}
 
 /-- Exactly the stacks other than the two output stacks are discarded. -/
-@[simp] private theorem mem_auxiliaries (s : Stack k) :
+@[simp] theorem mem_auxiliaries (s : Stack k) :
     s ∈ auxiliaries k ↔ s ≠ .output ∧ s ≠ .reversed := by
   cases s with
   | work i b => cases b <;> simp [auxiliaries]
   | _ => simp [auxiliaries]
 
 /-- Each auxiliary is popped exactly once in a cleanup round. -/
-private theorem auxiliaries_nodup (k : ℕ) : (auxiliaries k).Nodup := by
+theorem auxiliaries_nodup (k : ℕ) : (auxiliaries k).Nodup := by
   have hp : List.Pairwise (Function.onFun List.Disjoint
       (fun i : Fin k => [Stack.work i false, Stack.work i true])) (List.finRange k) := by
     apply (List.nodup_finRange k).imp
@@ -166,7 +166,7 @@ private theorem auxiliaryBusy_eq_false_iff (store : ∀ s : Stack k, List (Alpha
   simp [auxiliaryBusy, List.any_eq_false]
 
 /-- Zero auxiliary storage is equivalent to emptiness of every auxiliary stack. -/
-private theorem auxiliaryLength_eq_zero_iff (store : ∀ s : Stack k, List (Alphabet s)) :
+theorem auxiliaryLength_eq_zero_iff (store : ∀ s : Stack k, List (Alphabet s)) :
     auxiliaryLength store = 0 ↔ ∀ s ∈ auxiliaries k, store s = [] := by
   simp [auxiliaryLength, Finset.sum_eq_zero_iff]
 

@@ -21,19 +21,19 @@ No inhabitance assumption is imposed on the payload type.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInO.optionElimWithInput`: selected-branch time and space
+* `Turing.MultiTapeTM.ComputableInO.optionElimWithInput`: selected-branch time and space
   bounds for option elimination retaining the original input.
 
 ## References
 
-Uses Christian Reitwiessner's native tidy degree/resource calculus. The proof adapts
+Uses Christian Reitwiessner's native degree/resource calculus. The proof adapts
 `Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Option.lean` while
 preserving arbitrary resource bounds.
 -/
 
 @[expose] public section
 
-namespace Turing.MultiTapeTM.ComputableTidilyInO
+namespace Turing.MultiTapeTM.ComputableInO
 
 /-- Eliminate an option while retaining the input. The conservative bound charges two option
 computations even on the `none` branch; it charges only the selected handler. -/
@@ -41,11 +41,11 @@ theorem optionElimWithInput {α β γ : Type}
     {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
     {value : α → Option β} {fallback : α → γ} {body : α → β → γ}
     {Tv Sv Tnone Snone : α → ℕ} {Tbody Sbody : α × β → ℕ}
-    (hvalue : ComputableTidilyInO value encA (encOption encB) Tv Sv)
-    (hfallback : ComputableTidilyInO fallback encA encC Tnone Snone)
-    (hbody : ComputableTidilyInO (fun p : α × β => body p.1 p.2)
+    (hvalue : ComputableInO value encA (encOption encB) Tv Sv)
+    (hfallback : ComputableInO fallback encA encC Tnone Snone)
+    (hbody : ComputableInO (fun p : α × β => body p.1 p.2)
       (encPair encA encB) encC Tbody Sbody) :
-    ComputableTidilyInO (fun a => (value a).elim (fallback a) (body a)) encA encC
+    ComputableInO (fun a => (value a).elim (fallback a) (body a)) encA encC
       (fun a => 2 * Tv a + (encA a).length +
         (value a).elim (Tnone a) (fun b => Tbody (a, b)))
       (fun a => 2 * Sv a + (encA a).length +
@@ -61,11 +61,11 @@ theorem optionElimWithInput {α β γ : Type}
       (S' := fun a => 2 * Sv a + (encA a).length + Snone a)
       (fun _ => by omega) (fun _ => by omega)
   · obtain ⟨b⟩ := h
-    have hget := (ComputableTidilyInDegree.optionGetD encB b).inO_one.comp_linear hvalue
-    have htag := (ComputableTidilyInDegree.isSome (enc := encB)).inO_one.comp_linear hvalue
-    have hid : ComputableTidilyInO (fun a : α => a) encA encA
+    have hget := (ComputableInDegree.optionGetD encB b).inO_one.comp_linear hvalue
+    have htag := (ComputableInDegree.isSome (enc := encB)).inO_one.comp_linear hvalue
+    have hid : ComputableInO (fun a : α => a) encA encA
         (fun a => (encA a).length) (fun a => (encA a).length) :=
-      (ComputableTidilyInDegree.id').inO_one
+      (ComputableInDegree.id').inO_one
     have h := htag.ite (hbody.comp (hid.prod hget)) hfallback
     have h' := h.mono_le
       (T' := fun a => 2 * Tv a + (encA a).length +
@@ -88,4 +88,4 @@ theorem optionElimWithInput {α β γ : Type}
       if (value a).isSome then body a ((value a).getD b) else fallback a
     cases value a <;> rfl
 
-end Turing.MultiTapeTM.ComputableTidilyInO
+end Turing.MultiTapeTM.ComputableInO

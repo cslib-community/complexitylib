@@ -21,6 +21,7 @@ with initial value zero reconstructs the original number.
 
 ## Main results
 
+* `Nat.bits_eq_nil_iff`: a natural has no binary digits exactly when it is zero.
 * `Nat.foldr_bit_bits`: folding `Nat.bit` over the binary representation of `n` gives `n`.
 * `Nat.foldr_bit_lt`, `Nat.foldr_bit_testBit`: fixed-width little-endian reconstruction.
 * `Nat.foldr_bit_one_ne_zero`, `Nat.bits_foldr_bit_one`, `Nat.foldr_bit_one_lt`: reconstruction
@@ -32,6 +33,10 @@ with initial value zero reconstructs the original number.
 @[expose] public section
 
 open scoped BigOperators
+
+/-- The binary digit list of `n` is empty if and only if `n = 0`. -/
+theorem Nat.bits_eq_nil_iff {n : ℕ} : n.bits = [] ↔ n = 0 := by
+  rw [← List.length_eq_zero_iff, Nat.size_eq_bits_len, Nat.size_eq_zero]
 
 /-- Reconstructing a finite little-endian word sums the digits' binary place values. -/
 theorem Nat.foldr_bit_ofFn {w : ℕ} (bits : Fin w → Bool) :

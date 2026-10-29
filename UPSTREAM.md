@@ -254,7 +254,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
   problem-statement universe or solver/time hypothesis is imported.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
-  Tensor/sparse query programs, the full reduction host, fast Exact Triangle and full input/time/width/asymptotic composition remain in
+  Tensor/sparse query programs, the full reduction host, fast Exact Triangle and full
+  input/time/width/asymptotic composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
