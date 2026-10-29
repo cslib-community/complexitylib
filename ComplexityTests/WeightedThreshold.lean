@@ -114,22 +114,37 @@ example (x : Fin 2 → Bool) : mixed.eval interpretation x 2 = true := by
 private def gateOutputs : Circuit signature 2 2 :=
   ⟨mixed, fun _ => .gate 1⟩
 
--- Gate-weight acyclicity, transcript determinacy on gate outputs, and size/evaluation preservation
--- under `Circuit.mapOp ofThreshold`.
-example {x y : Fin 2 → Bool} (h : transcript mixed x = transcript mixed y)
-    (n : ℕ) (z : Fin n → Bool) :
+-- Gate-weight acyclicity and transcript determinacy use only the transcript hypothesis.
+example {x y : Fin 2 → Bool} (h : transcript mixed x = transcript mixed y) :
     gateWeight mixed 1 1 = 0 ∧
     gateWeight mixed 1 2 = 0 ∧
-    gateOutputs.eval interpretation x = gateOutputs.eval interpretation y ∧
+    gateOutputs.eval interpretation x = gateOutputs.eval interpretation y :=
+  ⟨gateWeight_eq_zero_of_le mixed 1 1 le_rfl,
+    gateWeight_eq_zero_of_le mixed 1 2 (by decide),
+    circuit_eval_eq_of_transcript_eq gateOutputs (fun _ => ⟨(1 : Fin 3), rfl⟩) h⟩
+
+-- The generic translation API is available independently of the transcript example.
+example (n : ℕ) (z : Fin n → Bool) :
     ((Boolean.Threshold.parityCircuit n).mapOp ofThreshold).size =
       (Boolean.Threshold.parityCircuit n).size ∧
     ((Boolean.Threshold.parityCircuit n).mapOp ofThreshold).eval interpretation z =
       (Boolean.Threshold.parityCircuit n).eval Boolean.Threshold.interpretation z :=
-  ⟨gateWeight_eq_zero_of_le mixed 1 1 le_rfl,
-    gateWeight_eq_zero_of_le mixed 1 2 (by decide),
-    circuit_eval_eq_of_transcript_eq gateOutputs (fun _ => ⟨(1 : Fin 3), rfl⟩) h,
-    Circuit.size_mapOp _,
-    Circuit.eval_mapOp _ _⟩
+  ⟨Circuit.size_mapOp _, Circuit.eval_mapOp _ _⟩
+
+-- The fixed two-bit circuit has four gates and computes true on an odd-parity input.
+-- Evaluate the Boolean source, then transfer through the interpretation-preserving translation.
+example :
+    ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).size = 4 ∧
+    (Boolean.Threshold.parityCircuit 2).size = 4 ∧
+    ((Boolean.Threshold.parityCircuit 2).mapOp ofThreshold).eval interpretation
+      ![true, false] 0 = true ∧
+    (Boolean.Threshold.parityCircuit 2).eval Boolean.Threshold.interpretation
+      ![true, false] 0 = true := by
+  refine ⟨by decide, by decide, ?_, by decide⟩
+  calc
+    _ = (Boolean.Threshold.parityCircuit 2).eval Boolean.Threshold.interpretation
+        ![true, false] 0 := congrFun (Circuit.eval_mapOp _ _) 0
+    _ = true := by decide
 
 -- A free original-input output is a genuine counterexample without the gate-output premise.
 example : ∃ x y : Fin 1 → Bool,

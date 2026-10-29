@@ -36,13 +36,10 @@ example :
     BitString.binaryValue [true, false, true] = 5 := by
   decide
 
--- Words whose length is not a power of two belong to neither side of GapMCSP, and `binaryValue`
--- is injective on words of equal length.
-example (s : ℕ → ℕ) {u v : List Bool} (hlen : u.length = v.length)
-    (h : BitString.binaryValue u = BitString.binaryValue v) :
+-- Words whose length is not a power of two belong to neither side of GapMCSP.
+example (s : ℕ → ℕ) :
     [true, false, true] ∉ (GapMCSP s s fun _ => le_rfl).yes ∧
-    [true, false, true] ∉ (GapMCSP s s fun _ => le_rfl).no ∧
-    u = v := by
+    [true, false, true] ∉ (GapMCSP s s fun _ => le_rfl).no := by
   have hnot (n : ℕ) (hn : [true, false, true].length = 2 ^ n) : False := by
     match n with
     | 0 => revert hn; decide
@@ -52,8 +49,12 @@ example (s : ℕ → ℕ) {u v : List Bool} (hlen : u.length = v.length)
         calc 3 < 2 ^ 2 := by decide
         _ ≤ 2 ^ (k + 2) := Nat.pow_le_pow_right (by omega) (by omega)
       exact ne_of_lt (by simpa using hlt) hn
-  exact ⟨fun ⟨n, hn, _⟩ => hnot n hn, fun ⟨n, hn, _⟩ => hnot n hn,
-    BitString.binaryValue_injective_of_length_eq hlen h⟩
+  exact ⟨fun ⟨n, hn, _⟩ => hnot n hn, fun ⟨n, hn, _⟩ => hnot n hn⟩
+
+-- Keep the equal-length decoding client independent of the GapMCSP hypotheses.
+example {u v : List Bool} (hlen : u.length = v.length)
+    (h : BitString.binaryValue u = BitString.binaryValue v) : u = v :=
+  BitString.binaryValue_injective_of_length_eq hlen h
 
 /-! ### The `Σ₃` verifier -/
 
