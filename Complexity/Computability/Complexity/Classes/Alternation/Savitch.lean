@@ -345,30 +345,28 @@ theorem exists_isGameVerifier_of_mem_PSPACE (h : A ∈ PSPACE enc) :
     ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
       Turing.MultiTapeTM.ComputableInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p
         V A := by
-  have this : ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool), ComputableTidilyInPolyTime V
-      (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
-    obtain ⟨k, State, _, ntm, s, hs, hA⟩ := PSPACE_subset_NPSPACE h
-    obtain ⟨c, d, hcd⟩ := hs.exists_le
-    -- the number of rounds of the game is polynomially bounded
-    have hrounds : ComputableTidilyInPolyTime
-        (fun a => (ntm.viewCodeWidth c d (enc a) + 1) * ntm.viewCodeWidth c d (enc a))
-        enc encUnary := by
-      have := (ntm.computableInPolyTime_viewCodeWidth c d).tidy.comp (.encode enc)
-      fun_prop
-    obtain ⟨p, hr⟩ := hrounds.polyBounded.exists_polynomial
-    refine ⟨p, savitchVerifier (enc := enc) ntm c d,
-      (computableInPolyTime_savitchVerifier ntm c d).tidy, fun a => ?_⟩
-    set w := ntm.viewCodeWidth c d (enc a)
-    have hle : 2 * ((w + 1) * w) ≤ 2 * p.eval (enc a).length :=
-      Nat.mul_le_mul_left 2 (hr a)
-    rw [(hA.recognizesInSpace a).2,
-      ← MultiTapeNTM.savitchDecide_eq_true_iff (hA.recognizesInSpace a).1 (hcd a),
-      MultiTapeNTM.savitchDecide,
-      savitch_eq, ← Nat.add_sub_cancel' hle, List.replicate_add, alternation_append_iff
-        fun z => by rw [Cslib.Complexity.sum_replicate_one, savitchVerifier, savitchVerifier,
-          midpointGame_take]]
-    exact (alternation_midpointGame_iff _ _ _).symm
-  simpa only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  obtain ⟨k, State, _, ntm, s, hs, hA⟩ := PSPACE_subset_NPSPACE h
+  obtain ⟨c, d, hcd⟩ := hs.exists_le
+  -- the number of rounds of the game is polynomially bounded
+  have hrounds : ComputableInPolyTime
+      (fun a => (ntm.viewCodeWidth c d (enc a) + 1) * ntm.viewCodeWidth c d (enc a))
+      enc encUnary := by
+    have := (ntm.computableInPolyTime_viewCodeWidth c d).comp
+      (ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl)
+    fun_prop
+  obtain ⟨p, hr⟩ := hrounds.polyBounded.exists_polynomial
+  refine ⟨p, savitchVerifier (enc := enc) ntm c d,
+    computableInPolyTime_savitchVerifier ntm c d, fun a => ?_⟩
+  set w := ntm.viewCodeWidth c d (enc a)
+  have hle : 2 * ((w + 1) * w) ≤ 2 * p.eval (enc a).length :=
+    Nat.mul_le_mul_left 2 (hr a)
+  rw [(hA.recognizesInSpace a).2,
+    ← MultiTapeNTM.savitchDecide_eq_true_iff (hA.recognizesInSpace a).1 (hcd a),
+    MultiTapeNTM.savitchDecide,
+    savitch_eq, ← Nat.add_sub_cancel' hle, List.replicate_add, alternation_append_iff
+      fun z => by rw [Cslib.Complexity.sum_replicate_one, savitchVerifier, savitchVerifier,
+        midpointGame_take]]
+  exact (alternation_midpointGame_iff _ _ _).symm
 
 /-- **`PSPACE ⊆ AP`** [Chandra, Kozen and Stockmeyer][ChandraKozenStockmeyer1981]: a problem in
 `PSPACE` is Savitch's midpoint game on the views of a machine deciding it, which the

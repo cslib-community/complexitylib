@@ -44,11 +44,10 @@ variable {α : Type} {enc : α ↪ List Bool}
 /-- A polynomial-time function with binary natural output is a #P function. -/
 theorem mem_SharpP_of_polyTime {f : α → ℕ} (hf : ComputableInPolyTime f enc encNat) :
     f ∈ SharpP enc := by
-  have hf := hf.tidy
   obtain ⟨p, hb⟩ := hf.polyBounded_length.exists_polynomial
   refine ⟨p, fun x => decide (BitString.binaryValue x.2 < f x.1), ?_, fun a => ?_⟩
-  · exact .of_tidy <| ComputableTidilyInPolyTime.binary_lt.comp
-      ((ComputableTidilyInPolyTime.bitsBinaryValue.comp (.snd enc encBits)).prod
+  · exact ComputableInPolyTime.binary_lt.comp
+      ((ComputableInPolyTime.bitsBinaryValue.comp (.snd enc encBits)).prod
         (hf.comp (.fst enc encBits)))
   · symm
     unfold acceptCount
@@ -61,12 +60,10 @@ theorem mem_SharpP_of_polyTime {f : α → ℕ} (hf : ComputableInPolyTime f enc
 /-- A polynomial-time function with binary integer output is a GapP function. -/
 theorem mem_GapP_of_polyTime {f : α → ℤ} (hf : ComputableInPolyTime f enc encIntBin) :
     f ∈ GapP enc := by
-  have hf := hf.tidy
-  have hp := mem_SharpP_of_polyTime (.of_tidy (ComputableTidilyInPolyTime.intBin_toNat.comp hf))
+  have htoNat := ComputableTidilyInPolyTime.intBin_toNat.computableInPolyTime
+  have hp := mem_SharpP_of_polyTime (htoNat.comp hf)
   have hn := mem_SharpP_of_polyTime
-    (.of_tidy
-      (ComputableTidilyInPolyTime.intBin_toNat.comp
-      (ComputableTidilyInPolyTime.intBin_neg.comp hf)))
+    (htoNat.comp (ComputableTidilyInPolyTime.intBin_neg.computableInPolyTime.comp hf))
   exact ⟨_, hp, _, hn, fun a => by simp only [Function.comp_apply]; lia⟩
 
 /-- A polynomial-time Boolean test may select between two #P functions on the same input.

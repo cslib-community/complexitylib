@@ -17,6 +17,10 @@ namespace ComplexityTests.Internal.OCountedIteration
 open Turing.MultiTapeTM
 open Turing.MultiTapeTM.Internal.BinaryCounter
 
+private def unitWord : Unit ↪ List Bool :=
+  ⟨fun _ => [], by intro a b _; cases a; cases b; rfl⟩
+
+-- An arbitrary binary runtime count needs no unary materialization or positive state workspace.
 example {γ β : Type} [Inhabited β] {input : γ ↪ List Bool} {state : β ↪ List Bool}
     {n : γ → ℕ} {init : γ → β} {step : β → β}
     {Tn Ti Sn Si R Q B : γ → ℕ} {Ts Ss : β → ℕ}
@@ -28,29 +32,23 @@ example {γ β : Type} [Inhabited β] {input : γ ↪ List Bool} {state : β ↪
     (hb : ∀ x, ∀ j ≤ n x, (state (step^[j] (init x))).length ≤ B x) :
     ComputableInO (fun x => step^[n x] (init x)) input state
       (fun x => Tn x + Ti x + (n x + 1) * (R x + B x + ((encNat (n x)).length + 1) ^ 2))
-      (fun x => Sn x + Si x + Q x + B x + (encNat (n x)).length) :=
-  ComputableInO.iterate hn hi hs hr hq hb
-
-example : countStep Nat.succ (some (0, 7)) = none := rfl
-example : countStep Nat.succ (some (1, 7)) = some (0, 8) := rfl
-example : countStep Nat.succ none = none := rfl
-example : (countStep Nat.succ)^[5] (some (5, 3)) = some (0, 8) := by decide
-
-private def unitWord : Unit ↪ List Bool :=
-  ⟨fun _ => [], by intro a b _; cases a; cases b; rfl⟩
-
--- An arbitrary binary runtime count needs no unary materialization or positive state workspace.
-example : ComputableInO (fun _ : ℕ => ()) encNat unitWord
-    (fun n => (encNat n).length + (encNat n).length +
-      (n + 1) * (0 + 0 + ((encNat n).length + 1) ^ 2))
-    (fun n => (encNat n).length + 0 + 0 + 0 + (encNat n).length) := by
-  have hn : ComputableInO (fun n : ℕ => n) encNat encNat
+      (fun x => Sn x + Si x + Q x + B x + (encNat (n x)).length) ∧
+    countStep Nat.succ (some (0, 7)) = none ∧
+    countStep Nat.succ (some (1, 7)) = some (0, 8) ∧
+    countStep Nat.succ none = none ∧
+    (countStep Nat.succ)^[5] (some (5, 3)) = some (0, 8) ∧
+    ComputableInO (fun _ : ℕ => ()) encNat unitWord
+      (fun n => (encNat n).length + (encNat n).length +
+        (n + 1) * (0 + 0 + ((encNat n).length + 1) ^ 2))
+      (fun n => (encNat n).length + 0 + 0 + 0 + (encNat n).length) := by
+  refine ⟨ComputableInO.iterate hn hi hs hr hq hb, rfl, rfl, rfl, by decide, ?_⟩
+  have hn₀ : ComputableInO (fun n : ℕ => n) encNat encNat
       (fun n => (encNat n).length) (fun n => (encNat n).length) := .of_eq fun _ => rfl
-  have hi : ComputableInO (fun _ : ℕ => ()) encNat unitWord
+  have hi₀ : ComputableInO (fun _ : ℕ => ()) encNat unitWord
       (fun n => (encNat n).length) (fun _ => 0) := .constZero ()
-  have hs : ComputableInO (fun u : Unit => u) unitWord unitWord
+  have hs₀ : ComputableInO (fun u : Unit => u) unitWord unitWord
       (fun _ => 0) (fun _ => 0) := .of_eq fun _ => rfl
-  have h := ComputableInO.iterate hn hi hs (R := fun _ => 0) (Q := fun _ => 0)
+  have h := ComputableInO.iterate hn₀ hi₀ hs₀ (R := fun _ => 0) (Q := fun _ => 0)
     (B := fun _ => 0) (fun _ _ _ => le_rfl) (fun _ _ _ => le_rfl)
     (fun _ _ _ => by change 0 ≤ 0; exact le_rfl)
   exact h.of_enc_eq (g := fun _ : ℕ => ()) fun _ => rfl
@@ -81,16 +79,16 @@ theorem growingOutput : ComputableInO (fun n : ℕ => List.replicate n true) enc
   simpa only [prefix_iterate, id_eq] using h
 
 example (T : ℕ → ℕ) :
-    ¬ ComputableInO (fun n : ℕ => List.replicate n true) encNat encBits T (fun _ => 0) := by
+    (¬ ComputableInO (fun n : ℕ => List.replicate n true) encNat encBits T (fun _ => 0)) ∧
+    ComputableInO (fun p : ℕ × ℕ => decide (p.1 < p.2))
+      (encPair encNat encNat) encBool
+      (fun p => (p.1 + 1) * ((encPair encNat encNat p).length + 1) ^ 2)
+      (fun p => (encPair encNat encNat p).length + 1) := by
+  refine ⟨?_, .natLt⟩
   rintro ⟨c, _, hlen⟩
   have h := hlen (c + 1)
   simp only [encBits_apply, List.length_replicate, Nat.zero_add, Nat.mul_one] at h
   omega
-
-example : ComputableInO (fun p : ℕ × ℕ => decide (p.1 < p.2))
-    (encPair encNat encNat) encBool
-    (fun p => (p.1 + 1) * ((encPair encNat encNat p).length + 1) ^ 2)
-    (fun p => (encPair encNat encNat p).length + 1) := .natLt
 
 open Lean Elab Command in
 run_cmd do
@@ -102,15 +100,5 @@ run_cmd do
       `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.exists_onWords] do
     if (← getEnv).contains name then
       throwError "A higher tidy calculus was imported: {name}"
-
-/-- info: 'Turing.MultiTapeTM.ComputableInO.iterate' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms Turing.MultiTapeTM.ComputableInO.iterate
-
-/-- info: 'Turing.MultiTapeTM.ComputableInO.natLt' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms Turing.MultiTapeTM.ComputableInO.natLt
 
 end ComplexityTests.Internal.OCountedIteration
