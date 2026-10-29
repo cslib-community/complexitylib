@@ -157,10 +157,13 @@ example :
   decide
 
 example :
-    (countingLeaves (fun j => (countingThresholdBase 3 2) ^ j)
+    1 ≤ (countingLeaves (fun j => (countingThresholdBase 3 2) ^ j)
+        (reduce (nontautological sampleCNF.toClauseSet))).length ∧
+      (countingLeaves (fun j => (countingThresholdBase 3 2) ^ j)
         (reduce (nontautological sampleCNF.toClauseSet))).length ≤ 4 :=
-  length_countingLeaves_nontautological_thresholdBase_le (k := 3) (B := 2) (by decide)
-    sampleCNF (by decide) (univ : Finset (Fin 3)) (fun _ _ => mem_univ _) (n := 3) (by decide)
+  ⟨List.length_pos_iff.mpr (countingLeaves_ne_nil _ _),
+    length_countingLeaves_nontautological_thresholdBase_le (k := 3) (B := 2) (by decide)
+      sampleCNF (by decide) (univ : Finset (Fin 3)) (fun _ _ => mem_univ _) (n := 3) (by decide)⟩
 
 example :
     let θ := fun j => (countingThresholdBase 3 2) ^ j
