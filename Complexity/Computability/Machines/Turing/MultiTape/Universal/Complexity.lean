@@ -627,8 +627,7 @@ public theorem stepWith_inO :
         omega
       have h₂ : ((encNat c.1.2.inputPos).length + 1) ^ 2 ≤ wTime c :=
         Nat.le_add_left _ _
-    ·
-      dsimp only [eWCtx, Function.comp_apply] at *
+    · dsimp only [eWCtx, Function.comp_apply] at *
       omega
     · dsimp only [eWCtx, Function.comp_apply] at *
       omega
