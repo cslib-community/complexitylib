@@ -752,16 +752,6 @@ def compileParitySystemBounded (k : ℕ) (φ : CNF ℕ) (rows : List (List Bool)
     List (List (List ℕ)) :=
   compileParitySystem (φ.map (List.take k)) rows
 
-theorem compileClauseBounded_eq_compileClause {k : ℕ} {c : Clause ℕ} (hc : c.length ≤ k) :
-    compileClauseBounded k c = compileClause c := by
-  rw [compileClauseBounded, List.take_of_length_le hc]
-
-theorem compileParityRowBounded_eq_compileParityRow {k : ℕ} {φ : CNF ℕ}
-    (hφ : ∀ c ∈ φ, c.length ≤ k) (row : List Bool) :
-    compileParityRowBounded k φ row = compileParityRow φ row := by
-  rw [compileParityRowBounded,
-    (List.map_congr_left fun c hc => List.take_of_length_le (hφ c hc)).trans (List.map_id φ)]
-
 theorem compileParitySystemBounded_eq_compileParitySystem {k : ℕ} {φ : CNF ℕ}
     (hφ : ∀ c ∈ φ, c.length ≤ k) (rows : List (List Bool)) :
     compileParitySystemBounded k φ rows = compileParitySystem φ rows := by
@@ -839,16 +829,6 @@ theorem exists_sublist_of_mem_restrictEquation {v : ℕ} {val : Bool} {eq : List
     obtain ⟨m, hm, rfl⟩ := List.mem_map.mp (mem_of_mem_reduceEquation hm')
     exact ⟨m, hm, List.filter_sublist⟩
 
-theorem isCanonicalEquation_restrictEquation {v : ℕ} {val : Bool} {eq : List (List ℕ)}
-    (heq : IsCanonicalEquation eq) : IsCanonicalEquation (restrictEquation v val eq) := by
-  unfold restrictEquation; cases val
-  · simp only [Bool.false_eq_true, ↓reduceIte]
-    exact ⟨heq.1.filter _, fun m hm => heq.2 m (List.mem_filter.mp hm).1⟩
-  · simp only [↓reduceIte]
-    refine ⟨nodup_reduceEquation _, fun m' hm' => ?_⟩
-    obtain ⟨m, hm, rfl⟩ := List.mem_map.mp (mem_of_mem_reduceEquation hm')
-    exact (heq.2 m hm).filter _
-
 /-- `restrictEquation` preserves any monomial degree bound `≤ k`. -/
 theorem length_mem_restrictEquation_le {k v : ℕ} {val : Bool} {eq : List (List ℕ)}
     (hdeg : ∀ m ∈ eq, m.length ≤ k) {m' : List ℕ} (hm' : m' ∈ restrictEquation v val eq) :
@@ -874,32 +854,6 @@ theorem not_mem_of_mem_restrictEquation {v : ℕ} {val : Bool} {eq : List (List 
   · simp only [↓reduceIte] at hm'
     obtain ⟨m, -, rfl⟩ := List.mem_map.mp (mem_of_mem_reduceEquation hm')
     exact fun hvm => absurd rfl (of_decide_eq_true (List.mem_filter.mp hvm).2)
-
-theorem varDegree_restrictSystem_self (v : ℕ) (val : Bool) (sys : List (List (List ℕ))) :
-    varDegree v (restrictSystem v val sys) = 0 := by
-  rw [varDegree, List.countP_eq_zero]
-  intro eq' heq'
-  obtain ⟨eq, -, rfl⟩ := List.mem_map.mp heq'
-  simp only [Bool.not_eq_true, decide_eq_false_iff_not, mem_equationVars, not_exists, not_and]
-  exact fun _ hm' => not_mem_of_mem_restrictEquation hm'
-
-theorem varDegree_restrictSystem_le (u v : ℕ) (val : Bool) (sys : List (List (List ℕ))) :
-    varDegree u (restrictSystem v val sys) ≤ varDegree u sys := by
-  unfold varDegree restrictSystem
-  induction sys with
-  | nil => simp only [List.map_nil, le_rfl]
-  | cons eq sys ih =>
-    rw [List.map_cons, List.countP_cons, List.countP_cons]
-    refine Nat.add_le_add ih ?_
-    split_ifs with h1 h2
-    · exact le_rfl
-    · exfalso
-      rw [decide_eq_true_iff, mem_equationVars] at h1 h2
-      obtain ⟨m', hm', hum'⟩ := h1
-      obtain ⟨m, hm, hsub⟩ := exists_sublist_of_mem_restrictEquation hm'
-      exact h2 ⟨m, hm, hsub.subset hum'⟩
-    · exact Nat.zero_le _
-    · exact le_rfl
 
 /-- **Exact variable-restriction semantics (§5.5, p. 38)**: evaluating `restrictEquation v val eq`
 on `σ` agrees with evaluating `eq` on `Function.update σ v val`. -/
@@ -940,12 +894,6 @@ theorem evalMonomialList_restrictEquation (v : ℕ) (val : Bool) (eq : List (Lis
             h u (List.mem_filter.mpr ⟨hu, decide_eq_true huv⟩)
       · obtain ⟨hum, huv⟩ := List.mem_filter.mp hu
         simpa only [Function.update_of_ne (of_decide_eq_true huv)] using h u hum
-
-theorem evalSystem_restrictSystem (v : ℕ) (val : Bool) (sys : List (List (List ℕ)))
-    (σ : ℕ → Bool) :
-    evalSystem (restrictSystem v val sys) σ = evalSystem sys (Function.update σ v val) := by
-  simp only [evalSystem, restrictSystem, List.all_map, Function.comp_def,
-    evalMonomialList_restrictEquation]
 
 /-! ### 4. Polynomial-Time Complexity Proofs (Plain `ComputableInPolyTime`) -/
 

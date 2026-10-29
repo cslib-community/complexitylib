@@ -12,12 +12,13 @@ public import Complexity.Algorithms.WordRAM.Dijkstra.Invariant
 import Mathlib.Algebra.BigOperators.Fin
 
 /-!
-# Dijkstra's algorithm with a binary heap: the input words
+# Dijkstra's algorithm: the adjacency-list input words and edge-scan relaxation
 
 This file reads the input words `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.encode` of an
 adjacency-list instance back from the initial memory of a word RAM: `n`, the source, the offsets
 of the adjacency lists and the targets and weights of the edges each sit at the address that
-`Cslib.Algorithms.WordRAM.Dijkstra.heapDijkstra` reads them from, and memory past the input is
+`Cslib.Algorithms.WordRAM.Dijkstra.dijkstraCode` (and its binary-heap instantiation
+`Cslib.Algorithms.WordRAM.Dijkstra.heapDijkstra`) reads them from, and memory past the input is
 `0`.
 
 It also defines the effect of scanning the edges out of a vertex on one distance word

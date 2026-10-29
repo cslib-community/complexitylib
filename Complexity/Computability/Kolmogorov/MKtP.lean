@@ -320,7 +320,8 @@ theorem boundedSearch_eq_true_iff_of_two_pow_le {x : List Bool} {k N : ℕ}
 theorem computableInPolyTime_boundedSearch :
     ComputableInPolyTime (fun q : List Bool × (ℕ × ℕ) => boundedSearch q.1 q.2.1 q.2.2)
       (encPair encBits (encPair encUnary encUnary)) encBool := by
-  unfold boundedSearch
+  -- A `==` comparison of the run is much cheaper for `fun_prop` than a `decide` atom.
+  simp only [boundedSearch, ← beq_eq_decide]
   fun_prop
 
 /-- **`MKtP` is in linear exponential time `E`** with respect to `encPair encBits encUnary`. -/

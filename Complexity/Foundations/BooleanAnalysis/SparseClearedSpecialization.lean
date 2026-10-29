@@ -146,15 +146,6 @@ theorem eval_coeff_prod_parityFactorCleared [CommRing R] (I : Finset κ) (ℓ : 
   refine congrArg (fun Q : Polynomial R => Q.coeff s) (prod_congr rfl fun i _ => ?_)
   exact map_parityFactorCleared φ ℓ Δ (A_i i)
 
-/-- Evaluating `sumCoeffsBelow m` of `∏ i ∈ I, parityFactorCleared ℓ Δ (A_i i)` at `t : R` agrees
-with `sumCoeffsBelow m` of `∏ i ∈ I, parityFactorCleared ℓ (Δ.eval t) ((A_i i).eval t)`. -/
-theorem eval_sumCoeffsBelow_prod_parityFactorCleared [CommRing R] (I : Finset κ) (ℓ : ℕ)
-    (Δ : Polynomial R) (A_i : κ → Polynomial R) (m : ℕ) (t : R) :
-    ((∏ i ∈ I, parityFactorCleared ℓ Δ (A_i i)).sumCoeffsBelow m).eval t =
-      (∏ i ∈ I, parityFactorCleared ℓ (Δ.eval t) ((A_i i).eval t)).sumCoeffsBelow m := by
-  rw [Polynomial.sumCoeffsBelow, Polynomial.eval_finsetSum, Polynomial.sumCoeffsBelow]
-  exact sum_congr rfl fun s _ => eval_coeff_prod_parityFactorCleared I ℓ Δ A_i s t
-
 /-- When `Δ` has `natDegree = 0` and `A_i` has `natDegree ≤ d`, `parityBaseDigitCleared ℓ j Δ A_i`
 has `natDegree ≤ d`. -/
 theorem natDegree_parityBaseDigitCleared_le [CommRing R] (ℓ j : ℕ) (Δ A_i : Polynomial R)
@@ -257,20 +248,6 @@ theorem natDegree_coeff_prod_parityFactorCleared_le_of_lt [CommRing R] (I : Fins
       d * (#I + 2 * (ℓ - 1)) := by
   refine (natDegree_coeff_prod_parityFactorCleared_le I ℓ Δ A_i hΔ hA s).trans ?_
   exact Nat.mul_le_mul_left d (by omega)
-
-/-- The truncated sum `sumCoeffsBelow ℓ (∏ i ∈ I, parityFactorCleared ℓ Δ (A_i i))` has
-`natDegree ≤ d * (#I + 2 * (ℓ - 1))`. -/
-theorem natDegree_sumCoeffsBelow_prod_parityFactorCleared_le [CommRing R] (I : Finset κ)
-    (ℓ : ℕ) (Δ : Polynomial R) (A_i : κ → Polynomial R) {d : ℕ} (hΔ : Δ.natDegree = 0)
-    (hA : ∀ i ∈ I, (A_i i).natDegree ≤ d) :
-    ((∏ i ∈ I, parityFactorCleared ℓ Δ (A_i i)).sumCoeffsBelow ℓ).natDegree ≤
-      d * (#I + 2 * (ℓ - 1)) := by
-  rw [Polynomial.sumCoeffsBelow]
-  refine (Polynomial.natDegree_sum_le _ _).trans ?_
-  rw [Finset.fold_max_le]
-  refine ⟨Nat.zero_le _, fun s hs => ?_⟩
-  rw [mem_range] at hs
-  exact natDegree_coeff_prod_parityFactorCleared_le_of_lt I Δ A_i hΔ hA hs
 
 /-! ### 2. Cleared-denominator monomials and equations: $T = 0$ evaluation, ring homogenization,
 and `natDegree` bounds (§5.3–5.4 & Appendix B.2) -/
@@ -414,17 +391,6 @@ theorem univariateClearedParityTruncatedSum_eq_sum_coord [Fintype ι] [Decidable
       ∑ s ∈ range ℓ, univariateClearedParityCoord I P d_den k ℓ θ s :=
   rfl
 
-/-- Explicit cube-sum expansion of `univariateClearedParityTruncatedSum`. -/
-theorem univariateClearedParityTruncatedSum_eq_sum [Fintype ι] [DecidableEq ι] (I : Finset κ)
-    (P : κ → Finset (Finset ι)) (d_den : ℤ) (k ℓ : ℕ)
-    (θ : (ι → Bool) → κ → ι → Polynomial ℤ) :
-    univariateClearedParityTruncatedSum I P d_den k ℓ θ =
-      ∑ x : ι → Bool,
-        (∏ i ∈ I,
-          parityFactorCleared ℓ (Polynomial.C (d_den ^ k))
-            (clearedMonomialSumPoly d_den k (θ x i) (P i))).sumCoeffsBelow ℓ := by
-  rw [univariateClearedParityTruncatedSum, univariateClearedParityProduct, sumCoeffsBelow_sum]
-
 /-- **Equation (5.5a) (cleared-denominator coordinate `natDegree` bound)**: for `s < ℓ`, if every
 equation `P i` (`i ∈ I`) has degree at most `k` and every numerator `θ x i v` has
 `natDegree ≤ R_deg`, then `univariateClearedParityCoord I P d_den k ℓ θ s` has
@@ -530,19 +496,6 @@ theorem C_mul_divDenomReplacement {K : Type*} [Field K] {d_den : ℤ} (hd : (d_d
       Polynomial.C (d_den : K) * divDenomReplacement K d_den θ x i v := by
   rw [divDenomReplacement, ← mul_assoc, ← Polynomial.C_mul, mul_inv_cancel₀ hd, Polynomial.C_1,
     one_mul]
-
-/-- At `T = 0`, if `(d_den : K) ≠ 0` and `(θ x i v).eval 0 = d_den * bitVal ℤ (x v)`, then
-`divDenomReplacement K d_den θ x i v` restores `bitVal K (x v)`. -/
-theorem eval_zero_divDenomReplacement {K : Type*} [Field K] {d_den : ℤ} (hd : (d_den : K) ≠ 0)
-    (θ : (ι → Bool) → κ → ι → Polynomial ℤ) {x : ι → Bool} {i : κ} {v : ι}
-    (hθ : (θ x i v).eval 0 = d_den * bitVal ℤ (x v)) :
-    (divDenomReplacement K d_den θ x i v).eval 0 = bitVal K (x v) := by
-  rw [divDenomReplacement, Polynomial.eval_mul, Polynomial.eval_C]
-  have h0 : (0 : K) = Int.castRingHom K 0 := by rw [map_zero]
-  have hbit : (bitVal ℤ (x v) : K) = bitVal K (x v) := by
-    cases x v <;> simp only [bitVal_true, bitVal_false, Int.cast_one, Int.cast_zero]
-  rw [h0, Polynomial.eval_map_apply, eq_intCast, hθ, Int.cast_mul, hbit, ← mul_assoc,
-    inv_mul_cancel₀ hd, one_mul]
 
 /-- **§5.4 & Appendix B.3 ($\tilde{H}_s(T) = \Omega [V^s] H(T)$ over a field $K$)**: when
 `(d_den : K) ≠ 0`, `1 ≤ ℓ`, and `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, mapping

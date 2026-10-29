@@ -17,8 +17,8 @@ with `X` as a function but not as a polynomial. The product monomial is a projec
 `2 × 2` determinant, and the products of `n` variables form a p-projection of the determinant
 family, so they are in `VP` by closure. Repeated squaring has small circuits but is not in `VP`.
 The determinant circuits evaluate concrete determinants, a Boolean sum is computed, and the
-determinant family is in `VNP`. The permanent expands along row 0 and its generic family is a
-p-family.
+determinant family is in `VNP`. The permanent expands along row 0 on both a concrete `2 × 2`
+integer matrix and the `2 × 2` generic matrix polynomial.
 -/
 
 namespace ComplexityTests.AlgebraicComplexity
@@ -33,8 +33,9 @@ private def square : Circuit (arithSignature (ZMod 2)) 1 1 :=
 example : square.polynomial 0 = X 0 ^ 2 := by
   simp [square, Circuit.polynomial, Circuit.eval_oneGate, sq]
 
--- As a function on `ZMod 2`, the square is the identity.
-example (x : Fin 1 → ZMod 2) : square.eval (arithInterpretation (ZMod 2)) x 0 = x 0 := by
+/-- As a function on `ZMod 2`, the square is the identity. -/
+private theorem eval_square (x : Fin 1 → ZMod 2) :
+    square.eval (arithInterpretation (ZMod 2)) x 0 = x 0 := by
   simp only [square, Circuit.eval_oneGate, arithInterpretation, arithInterpretationWith_mul]
   generalize x 0 = a
   fin_cases a <;> rfl
@@ -43,10 +44,9 @@ example (x : Fin 1 → ZMod 2) : square.eval (arithInterpretation (ZMod 2)) x 0 
 example : (X 0 ^ 2 : MvPolynomial (Fin 1) (ZMod 2)) ≠ X 0 := fun h => by
   simpa [totalDegree_X_pow, totalDegree_X] using congrArg totalDegree h
 
--- Evaluation of the computed polynomial is evaluation of the circuit.
-example (x : Fin 1 → ZMod 2) :
-    aeval x (square.polynomial 0) = square.eval (arithInterpretation (ZMod 2)) x 0 :=
-  square.aeval_polynomial x 0
+-- Evaluation of the computed polynomial agrees with the circuit's identity evaluation on `ZMod 2`.
+example (x : Fin 1 → ZMod 2) : aeval x (square.polynomial 0) = x 0 :=
+  (square.aeval_polynomial x 0).trans (eval_square x)
 
 /-! ### Projections -/
 
@@ -87,13 +87,25 @@ example : productFamily ∈ VP ℚ :=
 
 /-! ### Degree bounds are part of VP -/
 
-example (n : ℕ) : ∃ c : Circuit (arithSignature ℚ) 1 1,
-    c.polynomial 0 = X 0 ^ 2 ^ n ∧ c.size ≤ n :=
-  exists_circuit_pow_two_pow n
+-- Four squaring gates compute `X₀ ^ 16`, evaluating to `2 ^ 16 = 65536` on `2`.
+example : ∃ c : Circuit (arithSignature ℚ) 1 1,
+    c.size ≤ 4 ∧ c.eval (arithInterpretation ℚ) ![2] 0 = 65536 := by
+  obtain ⟨c, hpoly, hsize⟩ := exists_circuit_pow_two_pow (K := ℚ) 4
+  refine ⟨c, hsize, ?_⟩
+  have heval := (c.aeval_polynomial (![2] : Fin 1 → ℚ) 0).symm
+  rw [hpoly] at heval
+  simp only [powTwoPowFamily, map_pow, aeval_X, Matrix.cons_val_zero] at heval
+  exact heval.trans (by norm_num)
 
-example : powTwoPowFamily ℚ ∉ VP ℚ := powTwoPowFamily_not_mem_VP
+-- Because `powTwoPowFamily` is not in `VP` while `detFamily` is, `powTwoPowFamily` cannot be a
+-- p-projection of `detFamily` over `ℚ` or `ZMod 2`.
+example : ¬ (powTwoPowFamily ℚ).IsPProjection (detFamily ℚ) := fun hproj =>
+  powTwoPowFamily_not_mem_VP
+    (VP.of_isPProjection detFamily_mem_VP hproj (PolynomiallyBounded.const 1))
 
-example : powTwoPowFamily (ZMod 2) ∉ VP (ZMod 2) := powTwoPowFamily_not_mem_VP
+example : ¬ (powTwoPowFamily (ZMod 2)).IsPProjection (detFamily (ZMod 2)) := fun hproj =>
+  powTwoPowFamily_not_mem_VP
+    (VP.of_isPProjection detFamily_mem_VP hproj (PolynomiallyBounded.const 1))
 
 /-! ### The determinant -/
 
@@ -109,22 +121,36 @@ example : ∃ c : Circuit (arithSignature ℚ) (2 * 2) 1, c.size ≤ 52 ∧
   rw [hx, Matrix.det_fin_two_of, Algebra.algebraMap_self, RingHom.coe_id] at h
   exact ⟨c, hsize.trans (by norm_num), h.trans (by norm_num)⟩
 
--- The same holds in characteristic two and in polynomial rings.
-example : detFamily (ZMod 2) ∈ VP (ZMod 2) := detFamily_mem_VP
-
-example : detFamily (MvPolynomial (Fin 3) ℤ) ∈ VP (MvPolynomial (Fin 3) ℤ) := detFamily_mem_VP
+-- In characteristic two, `!![1, 1; 1, -1]` (determinant `-2` over `ℤ`) has determinant `0`.
+example : ∃ c : Circuit (arithSignature (ZMod 2)) (2 * 2) 1, c.size ≤ 52 ∧
+    c.eval (arithInterpretation (ZMod 2)) ![1, 1, 1, -1] 0 = 0 := by
+  obtain ⟨c, hsize, hc⟩ := exists_circuit_det_eval (K := ZMod 2) 2
+  have h := hc (R := ZMod 2) !![1, 1; 1, -1]
+  have hx : (fun k : Fin (2 * 2) => (!![1, 1; 1, -1] : Matrix (Fin 2) (Fin 2) (ZMod 2))
+      (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2) = ![1, 1, 1, -1] := by
+    funext k
+    fin_cases k <;> rfl
+  rw [hx, Matrix.det_fin_two_of, Algebra.algebraMap_self, RingHom.coe_id] at h
+  exact ⟨c, hsize.trans (by norm_num), h.trans (by decide)⟩
 
 /-! ### The permanent -/
 
-example (A : Matrix (Fin 2) (Fin 2) ℤ) :
-    A.permanent = ∑ j : Fin 2, A 0 j * (A.submatrix Fin.succ j.succAbove).permanent :=
-  Matrix.permanent_succ_row_zero A
+-- Expanding `!![2, 3; 5, 7]` along row `0` gives permanent `2 * 7 + 3 * 5 = 29` (whereas its
+-- determinant above is `-1`).
+example : (!![2, 3; 5, 7] : Matrix (Fin 2) (Fin 2) ℤ).permanent = 29 := by
+  rw [Matrix.permanent_succ_row_zero, Fin.sum_univ_two]
+  decide
 
-example : (permFamily ℚ).IsPFamily := isPFamily_permFamily
+-- The `2 × 2` generic permanent polynomial is `X₀ X₃ + X₁ X₂` (contrast `(genericMatrix ℚ 2).det`
+-- above).
+example : (permFamily ℚ).poly 2 =
+    (X (0 : Fin (2 * 2)) * X (3 : Fin (2 * 2)) + X (1 : Fin (2 * 2)) * X (2 : Fin (2 * 2))) := by
+  change (genericMatrix ℚ 2).permanent = X 0 * X 3 + X 1 * X 2
+  rw [Matrix.permanent_succ_row_zero, Fin.sum_univ_two, Matrix.permanent_succ_row_zero,
+    Matrix.permanent_succ_row_zero, Fin.sum_univ_one, Fin.sum_univ_one]
+  simp [Matrix.permanent, genericMatrix, finProdFinEquiv]
 
 /-! ### VNP -/
-
-example : detFamily ℚ ∈ VNP ℚ := VP_subset_VNP detFamily_mem_VP
 
 /-- Summing `X₀ * e` over `e ∈ {0, 1}` gives `X₀`. -/
 example : booleanSum 1 (X 0 * X 1 : MvPolynomial (Fin (1 + 1)) ℚ) = X 0 := by
