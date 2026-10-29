@@ -221,6 +221,21 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   signed kernels, without a copied source machine or a whole-program simulation hypothesis.
   The existing array-copy interface is retained, with a narrow generalization for disjoint
   blocks in either address order or identical blocks.
+  The native shared-band preparation component
+  ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
+  `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
+  count by a charged loop, and decodes each band-array index into the original row/column and
+  thin-dimension coordinates. Real matrix bounds are checked before row-major multiplication.
+  Each shared row/column band calls the unchanged encoder once; tiles refer to its catalogue
+  block in the existing leaf order. The fixed 96-register standard code starts from actual
+  `State.init` scalar/matrix input, charges snapshot and restoration of the complete original
+  prefix, and preserves arbitrary outside memory. All counter/address fits follow from an
+  explicit original-parameter word budget; signed fits follow from the original entry bound.
+  Its complete instruction bound, including halt, is
+  `81920*(L+1)*N²/(4^m)^(1/18)` when `L=19m` and `N≥(4^m)^18`. Native power, ordered-filter,
+  finite-digit and row-major list lemmas live in small topic modules; the existing mathematical
+  layout, matrix and encoding interfaces are reused. No source machine or call/time oracle
+  is introduced.
   The explicit-stack pruned-query evaluator ([#1526](https://github.com/cslib-community/complexitylib/issues/1526))
   is also original native code, reusing the finite `Pruned.result`, `childSet` and trace/leaf
   quantities from `Sec2/Lemma10.lean`. `PrunedQuery.queryIndex` directly applies the existing
@@ -232,8 +247,8 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   halt is `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)`. The source Light implementation's
   semantics and instruction constants are not reused. Query grouping, sparse-product/Exact
   Triangle solving and full input/time/width composition, including the improved Section 4 route
-  to exponent 1.9992, remain in #1394. The independent band producer is #1523; its catalogue
-  retains the same leaf ordering and canonical signed words. Raw 0/1 matrix producers must
+  to exponent 1.9992, remain in #1394. The band catalogue retains the same leaf ordering and
+  canonical signed words. Raw 0/1 matrix producers must
   actually double entries before copying into signed input arrays, with that work charged.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
@@ -313,6 +328,7 @@ agreement during upstream review.
 | `Foundations/Combinatorics/{FiniteCover,Hoeffding,Hypergeometric,PowersetTail,Sunflower}` | Consider Mathlib combinatorics; probabilistic-method lemmas belong near `Combinatorics/Probabilistic`. |
 | `Foundations/Data/Finset/Expect` | Product-type expectation helpers extracted from `Foundations/Combinatorics/Expander/Products` (#317); Mathlib candidates. |
 | `Foundations/Data/Finset/Markov` | Mathlib candidate: `Algebra/Order/BigOperators/Group/Finset` (`Finset.card_filter_mul_le_sum`, `Finset.mul_card_filter_le_sum`). |
+| `Foundations/Data/Finset/OrderGlue` | #1545 resolves the generic naming follow-up from #1496 after native bands stabilized in #1536: order-embedding/subset/complement terminology, Mathlib's `orderEmbOfFin_mem`/`range_orderEmbOfFin` and ordinary substitution in place of five redundant wrappers, and migration of finite tensor clients with checked native band clients. Retain this focused topic module. |
 | `Foundations/Data/Matrix/Permanent` | Mathlib candidate: Laplace expansion of the permanent along row and column 0, beside `LinearAlgebra/Matrix/Permanent` (mirroring `Matrix.det_succ_row_zero`). |
 | `Foundations/LinearAlgebra/{Rank,Matrix/CutRank,Matrix/Lindsey}` | Mathlib candidates: `LinearAlgebra/Dimension/LinearMap` and `LinearAlgebra/Matrix/Rank`; placement of Lindsey's lemma needs agreement. |
 | `Probability/PairwiseIndependentHash/Shift` | Consider integration into `PairwiseIndependentHash`. |

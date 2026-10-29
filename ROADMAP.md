@@ -432,14 +432,19 @@ each statement against the numbered result. Organize modules by subject, not cha
   The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
+  Native shared-band preparation ([#1523]) computes deterministic subset tables and a valid layout,
+  prepares padded signed matrix bands, invokes both shared encoders for every band, and restores the
+  original initialized input. Fixed 96-register code has a complete charged bound
+  `4096*(L+1)*(1+N*4^m+2^L+2*numBands*10^L)`; at `L=19m`, `N≥(4^m)^18`, including halt, this is at most
+  `81920*(L+1)*N²/(4^m)^(1/18)`.
   The native pruned-query evaluator ([#1526]) uses fixed 96-register code to compute its own
   distinct root/child queries, stack traversal and signed accumulators. Actual initialized flat
   runs preserve query order and duplicates, the input and outside frame. Setup, sparse clearing,
   all control/index work and halt fit `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)` instructions;
   widths follow from explicit original magnitude/address bounds. A callable pointer/epoch kernel
   permits directory reuse across tiles. This does not construct the product's tile query groups
-  or supply a sparse-product/Exact Triangle solver. Band/tile preparation ([#1523]) is a separate
-  producer; native Chan–He preprocessing and the reduction host are separate stack components.
+  or supply a sparse-product/Exact Triangle solver. Native Chan–He preprocessing and the reduction
+  host are separate stack components.
   Native sparse-product and Exact Triangle solving, full input/time/width/asymptotic composition,
   and the improved Section 4 route to exponent 1.9992 remain under #1394;
   size-based width
@@ -573,3 +578,4 @@ not planned, not as proved.
 [#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1463]: https://github.com/cslib-community/complexitylib/issues/1463
 [#1493]: https://github.com/cslib-community/complexitylib/issues/1493
+[#1523]: https://github.com/cslib-community/complexitylib/issues/1523

@@ -187,35 +187,36 @@ theorem innerSetO_outStrOf (r c : OuterStr L m) : innerSetO (outStrOf Q hQ r c) 
 theorem outerPartL_leftStrOf (r : OuterStr L m) (π : InnerStr m)
     (h : (innerSetL (leftStrOf Q hQ r π)).card = m) : outerPartL (leftStrOf Q hQ r π) h = r :=
   funext fun k => congrArg LeftVar.outerIndex
-    (glue_outerLevel_of_eq Q hQ _ _ (innerSetL_leftStrOf Q hQ r π) h k)
+    (glue_orderEmbOfFin_compl_of_eq Q hQ _ _ (innerSetL_leftStrOf Q hQ r π) h k)
 
 /-- The inner part of `leftStrOf Q hQ r π` is `π`. -/
 @[simp]
 theorem innerPartL_leftStrOf (r : OuterStr L m) (π : InnerStr m)
     (h : (innerSetL (leftStrOf Q hQ r π)).card = m) : innerPartL (leftStrOf Q hQ r π) h = π :=
   funext fun k => congrArg LeftVar.innerIndex
-    (glue_innerLevel_of_eq Q hQ _ _ (innerSetL_leftStrOf Q hQ r π) h k)
+    (glue_orderEmbOfFin_of_eq Q hQ _ _ (innerSetL_leftStrOf Q hQ r π) h k)
 
 /-- The inner part of `rightStrOf Q hQ π c` is `π`. -/
 @[simp]
 theorem innerPartR_rightStrOf (π : InnerStr m) (c : OuterStr L m)
     (h : (innerSetR (rightStrOf Q hQ π c)).card = m) : innerPartR (rightStrOf Q hQ π c) h = π :=
   funext fun k => congrArg RightVar.innerIndex
-    (glue_innerLevel_of_eq Q hQ _ _ (innerSetR_rightStrOf Q hQ π c) h k)
+    (glue_orderEmbOfFin_of_eq Q hQ _ _ (innerSetR_rightStrOf Q hQ π c) h k)
 
 /-- The outer part of `rightStrOf Q hQ π c` is `c`. -/
 @[simp]
 theorem outerPartR_rightStrOf (π : InnerStr m) (c : OuterStr L m)
     (h : (innerSetR (rightStrOf Q hQ π c)).card = m) : outerPartR (rightStrOf Q hQ π c) h = c :=
   funext fun k => congrArg RightVar.outerIndex
-    (glue_outerLevel_of_eq Q hQ _ _ (innerSetR_rightStrOf Q hQ π c) h k)
+    (glue_orderEmbOfFin_compl_of_eq Q hQ _ _ (innerSetR_rightStrOf Q hQ π c) h k)
 
 /-- The variable of `outStrOf Q hQ r c` at the `k`-th lowest level outside its inner set. -/
 private theorem outStrOf_outerLevel (r c : OuterStr L m)
     (h : (innerSetO (outStrOf Q hQ r c)).card = m) (k : Fin (L - m)) :
     outStrOf Q hQ r c (((innerSetO (outStrOf Q hQ r c))ᶜ.orderEmbOfFin (card_compl_of_card_eq
       (innerSetO (outStrOf Q hQ r c)) h)) k) = .z (r k) (c k) := by
-  rw [outerLevel_congr Q hQ (innerSetO_outStrOf Q hQ r c) h, outStrOf, glue_outerLevel]
+  simp only [innerSetO_outStrOf] at h ⊢
+  exact glue_orderEmbOfFin_compl Q hQ _ _ k
 
 /-- The row of `outStrOf Q hQ r c` is `r`. -/
 @[simp]
@@ -236,7 +237,8 @@ part. -/
 theorem leftStr_eq_leftStrOf {u : LeftStr L} (hu : innerSetL u = Q) (h : (innerSetL u).card = m) :
     u = leftStrOf Q hQ (outerPartL u h) (innerPartL u h) := by
   subst hu
-  refine glue_index _ h LeftVar.IsInner (inner := fun π : Fin 2 × Fin 2 => .p π.1 π.2) ?_ ?_ rfl
+  refine eq_glue_of_reconstruct _ h LeftVar.IsInner
+    (fromSubset := fun π : Fin 2 × Fin 2 => .p π.1 π.2) ?_ ?_ rfl
   · rintro (i | ⟨i, j⟩) hs
     exacts [hs.elim, rfl]
   · rintro (i | ⟨i, j⟩) hs
@@ -247,7 +249,8 @@ part. -/
 theorem rightStr_eq_rightStrOf {v : RightStr L} (hv : innerSetR v = Q)
     (h : (innerSetR v).card = m) : v = rightStrOf Q hQ (innerPartR v h) (outerPartR v h) := by
   subst hv
-  refine glue_index _ h RightVar.IsInner (inner := fun π : Fin 2 × Fin 2 => .q π.1 π.2) ?_ ?_ rfl
+  refine eq_glue_of_reconstruct _ h RightVar.IsInner
+    (fromSubset := fun π : Fin 2 × Fin 2 => .q π.1 π.2) ?_ ?_ rfl
   · rintro (j | ⟨i, j⟩) ht
     exacts [ht.elim, rfl]
   · rintro (j | ⟨i, j⟩) ht
@@ -257,9 +260,9 @@ theorem rightStr_eq_rightStrOf {v : RightStr L} (hv : innerSetR v = Q)
 theorem outStr_eq_outStrOf {w : OutStr L} (hw : innerSetO w = Q) (h : (innerSetO w).card = m) :
     w = outStrOf Q hQ (rowO w h) (colO w h) := by
   subst hw
-  refine glue_index _ h OutVar.IsInner (inner := fun _ : Unit => .z0)
-    (outer := fun rc : Fin 3 × Fin 3 => .z rc.1 rc.2) (innerIndex := fun _ => ())
-    (outerIndex := fun z => (z.rowIndex, z.colIndex)) ?_ ?_ rfl
+  refine eq_glue_of_reconstruct _ h OutVar.IsInner (fromSubset := fun _ : Unit => .z0)
+    (fromCompl := fun rc : Fin 3 × Fin 3 => .z rc.1 rc.2) (toSubset := fun _ => ())
+    (toCompl := fun z => (z.rowIndex, z.colIndex)) ?_ ?_ rfl
   · rintro (⟨i, j⟩ | _) hz
     exacts [hz.elim, rfl]
   · rintro (⟨i, j⟩ | _) hz

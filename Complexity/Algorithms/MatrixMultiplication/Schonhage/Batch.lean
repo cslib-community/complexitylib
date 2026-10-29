@@ -105,7 +105,8 @@ private theorem exists_of_summand_ne_zero {L m : ℕ} (Q : Finset (Fin L)) (hQ :
     (r c : OuterStr L m) {u : LeftStr L} {v : RightStr L}
     (hγ : ∀ ℓ, coefficient (u ℓ) (v ℓ) (outStrOf Q hQ r c ℓ) ≠ 0) (hu : (innerSetL u).card = m)
     (hv : (innerSetR v).card = m) : ∃ π, u = leftStrOf Q hQ r π ∧ v = rightStrOf Q hQ π c := by
-  simp only [outStrOf, forall_level_iff Q hQ, glue_innerLevel, glue_outerLevel] at hγ
+  simp only [outStrOf, forall_iff_orderEmbOfFin_and_compl Q hQ, glue_orderEmbOfFin,
+    glue_orderEmbOfFin_compl] at hγ
   obtain ⟨hγin, hγout⟩ := hγ
   -- at a level ℓ ∈ Q we have w_ℓ = z₀ […] So (u_ℓ, v_ℓ) = (p_ij, q_ij) for some i, j.
   have hin : ∀ k, ∃ ij : Fin 2 × Fin 2,
@@ -117,11 +118,11 @@ private theorem exists_of_summand_ne_zero {L m : ℕ} (Q : Finset (Fin L)) (hQ :
   -- Thus u and v have an inner variable at every level of Q, and their inner sets are therefore
   -- exactly Q.  So u_ℓ and v_ℓ are outer at the levels outside Q.
   have huQ : innerSetL u = Q :=
-    filter_eq_of_forall_innerLevel Q hQ (fun k => by rw [(hπ k).1]; trivial) hu
+    filter_eq_of_forall_orderEmbOfFin Q hQ (fun k => by rw [(hπ k).1]; trivial) hu
   have hvQ : innerSetR v = Q :=
-    filter_eq_of_forall_innerLevel Q hQ (fun k => by rw [(hπ k).2]; trivial) hv
-  have huout := ((filter_eq_iff_forall_level Q hQ).mp huQ).2
-  have hvout := ((filter_eq_iff_forall_level Q hQ).mp hvQ).2
+    filter_eq_of_forall_orderEmbOfFin Q hQ (fun k => by rw [(hπ k).2]; trivial) hv
+  have huout := ((filter_eq_iff_orderEmbOfFin_and_compl Q hQ).mp huQ).2
+  have hvout := ((filter_eq_iff_orderEmbOfFin_and_compl Q hQ).mp hvQ).2
   -- at a level ℓ ∉ Q we have w_ℓ = z_ij for some i, j […] so (u_ℓ, v_ℓ) = (x_i, y_j).
   have hout : ∀ k, u ((Qᶜ.orderEmbOfFin (card_compl_of_card_eq Q hQ)) k) = .x (r k) ∧ v
     ((Qᶜ.orderEmbOfFin (card_compl_of_card_eq Q hQ)) k) = .y (c k) :=
@@ -135,8 +136,8 @@ private theorem prod_gamma_eq_one {L m : ℕ} (Q : Finset (Fin L)) (hQ : Q.card 
     ∏ ℓ, coefficient (leftStrOf Q hQ r π ℓ) (rightStrOf Q hQ π c ℓ) (outStrOf Q hQ r c ℓ) = 1 := by
   have hone : ∀ ℓ,
       coefficient (leftStrOf Q hQ r π ℓ) (rightStrOf Q hQ π c ℓ) (outStrOf Q hQ r c ℓ) = 1 := by
-    simp only [forall_level_iff Q hQ, leftStrOf, rightStrOf, outStrOf, glue_innerLevel,
-      glue_outerLevel]
+    simp only [forall_iff_orderEmbOfFin_and_compl Q hQ, leftStrOf, rightStrOf, outStrOf,
+      glue_orderEmbOfFin, glue_orderEmbOfFin_compl]
     exact ⟨fun _ => (coefficient_z0 _ _).trans (ite_eq_left ⟨_, _, rfl, rfl⟩),
       fun _ => (coefficient_x_y_z _ _ _ _).trans (ite_eq_left ⟨rfl, rfl⟩)⟩
   exact prod_eq_one fun ℓ _ => hone ℓ
