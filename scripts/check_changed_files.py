@@ -37,6 +37,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import lean_outputs as lo  # noqa: E402
+from check_hygiene import extract_docstrings  # noqa: E402
 from proof_lengths import command_starts, masks, signature_end  # noqa: E402
 
 # Lean's identifiers (`Lean.isIdFirst`, `Lean.isIdRest`), with `«…»` escapes; dot-separated.
@@ -106,7 +107,8 @@ DOC_NAME = re.compile(r"@?[^\s`()\[\]{},;:]*[A-Za-z][^\s`()\[\]{},;:]*")
 
 
 def doc_blocks(text: str) -> list[str]:
-    return re.findall(r"/-!(.*?)-/", text, re.S)
+    """Read complete module docstrings, excluding examples in literals and ordinary comments."""
+    return [body for start, body in extract_docstrings(text) if text[start - 3:start] == "/-!"]
 
 
 def listed_names(doc: str) -> list[str]:

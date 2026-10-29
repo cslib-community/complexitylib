@@ -55,29 +55,21 @@ theorem train_ppt (parameters : Parameters) {callback : List Bool → List Bool}
   fun_prop [train, run]
 
 example (callback : List Bool → List Bool)
-    (hcallback : ComputableInPolyTime callback encBits encBits) :
-    IsPPTOn encBits encBits (run ⟨true⟩ callback) := by
-  fail_if_success (clear hcallback; ppt)
-  ppt
-
-example (callback : List Bool → List Bool)
-    (hcallback : ComputableInPolyTime callback encBits encBits) :
-    IsPPTOn encBits encBits (train ⟨true⟩ callback) := by
-  fail_if_success (clear hcallback; ppt)
-  ppt
-
-example (condition : List Bool → Bool) (yes no : List Bool → ProbComp (List Bool))
-    (hcondition : ComputableTidilyInPolyTime condition encBits encBool)
-    (hyes : IsPPTOn encBits encBits yes) (hno : IsPPTOn encBits encBits no) :
-    IsPPTOn encBits encBits (fun word => if condition word then yes word else no word) := by
-  ppt
-
-example (condition : List Bool → Prop) [∀ word, Decidable (condition word)]
-    (yes no : List Bool → ProbComp (List Bool))
-    (hcondition : ComputableTidilyInPolyTime (fun word => decide (condition word)) encBits encBool)
-    (hyes : IsPPTOn encBits encBits yes) (hno : IsPPTOn encBits encBits no) :
-    IsPPTOn encBits encBits (fun word => if condition word then yes word else no word) := by
-  ppt
+    (hcallback : ComputableInPolyTime callback encBits encBits)
+    (condition : List Bool → Bool) (yes no : List Bool → ProbComp (List Bool))
+    (hcondition : ComputableInPolyTime condition encBits encBool)
+    (hyes : IsPPTOn encBits encBits yes) (hno : IsPPTOn encBits encBits no)
+    (propCond : List Bool → Prop) [∀ word, Decidable (propCond word)]
+    (hpropCond : ComputableInPolyTime (fun word => decide (propCond word)) encBits encBool) :
+    IsPPTOn encBits encBits (run ⟨true⟩ callback) ∧
+    IsPPTOn encBits encBits (train ⟨true⟩ callback) ∧
+    IsPPTOn encBits encBits (fun word => if condition word then yes word else no word) ∧
+    IsPPTOn encBits encBits (fun word => if propCond word then yes word else no word) := by
+  refine ⟨?_, ?_, by ppt, by ppt⟩
+  · fail_if_success (clear hcallback; ppt)
+    ppt
+  · fail_if_success (clear hcallback; ppt)
+    ppt
 
 /-- Opacity makes the nested plain certificate, rather than the program body, decisive. -/
 @[irreducible] def consume (callback : List Bool → List Bool) (word : List Bool) :
@@ -100,25 +92,6 @@ theorem consume_ppt {callback : List Bool → List Bool}
   unfold rawOnlyReverse
   fun_prop
 
--- Literal pure programs must not recover a global raw certificate through either a function
--- rule or a composition rule. Ordinary proof use and unfiltered `fun_prop` remain available.
-example : IsPPTOn encBits encBits (fun word => pure (rawOnlyReverse word)) := by
-  fail_if_success ppt
-  exact rawOnlyReverse_tidy.isPPTOn
-
-example (callback : List Bool → List Bool)
-    (hcallback : ComputableInPolyTime callback encBits encBits) :
-    IsPPTOn encBits encBits (fun word => pure (callback word)) := by
-  ppt
-
-example (callback : List Bool → List Bool)
-    (hcallback : ComputableTidilyInPolyTime callback encBits encBits) :
-    IsPPTOn encBits encBits (fun word => pure (callback word)) := by
-  ppt
-
-example : IsPPTOn encBits encBits (fun word => pure (rawOnlyReverse word)) := by
-  fun_prop
-
 /-- A complete predicate alias exercises the same boundary inside probabilistic search. -/
 abbrev RawAliasFull {α β : Type*} (f : α → β)
     (input : α ↪ List Bool) (output : β ↪ List Bool) : Prop :=
@@ -130,14 +103,6 @@ abbrev RawAliasFull {α β : Type*} (f : α → β)
     (h : RawAliasFull f input output) : ComputableInPolyTime f input output :=
   .of_tidy h
 
-example : IsPPTOn encBits encBits (consume rawOnlyReverse) := by
-  fail_if_success ppt
-  exact consume_ppt (.of_tidy rawOnlyReverse_tidy)
-
-example (callback : List Bool → List Bool) (h : RawAliasFull callback encBits encBits) :
-    IsPPTOn encBits encBits (consume callback) := by
-  ppt
-
 /-- A future function rule may also hide its construction premise behind a full alias. -/
 @[irreducible] def aliasPure (callback : List Bool → List Bool) (word : List Bool) :
     ProbComp (List Bool) := pure (callback word)
@@ -148,13 +113,6 @@ example (callback : List Bool → List Bool) (h : RawAliasFull callback encBits 
     IsPPTOn encBits encBits (aliasPure callback) := by
   unfold aliasPure
   exact hcallback.isPPTOn
-
-example : IsPPTOn encBits encBits (aliasPure rawOnlyReverse) := by
-  fail_if_success ppt
-  exact aliasPure_raw rawOnlyReverse_tidy
-
-example : IsPPTOn encBits encBits (aliasPure rawOnlyReverse) := by
-  fun_prop
 
 /-- An opaque plain contract is a legitimate source of a nested deterministic certificate. -/
 @[irreducible] def PlainContract (callback : List Bool → List Bool) : Prop :=
@@ -168,9 +126,28 @@ attribute [fun_prop] PlainContract
   unfold PlainContract at h
   exact h
 
-example (callback : List Bool → List Bool) (h : PlainContract callback) :
-    IsPPTOn encBits encBits (consume callback) := by
-  ppt
+-- Literal pure programs, `consume`, `aliasPure`, and `PlainContract` boundary checks.
+example (callback : List Bool → List Bool)
+    (hplain : ComputableInPolyTime callback encBits encBits)
+    (hcontract : PlainContract callback) :
+    IsPPTOn encBits encBits (fun word => pure (rawOnlyReverse word)) ∧
+    IsPPTOn encBits encBits (fun word => pure (callback word)) ∧
+    IsPPTOn encBits encBits (consume rawOnlyReverse) ∧
+    IsPPTOn encBits encBits (consume callback) ∧
+    IsPPTOn encBits encBits (aliasPure rawOnlyReverse) := by
+  refine ⟨?_, by clear hcontract; ppt, ?_,
+    by clear hplain; ppt, ?_⟩
+  · fail_if_success (clear hplain hcontract; ppt)
+    fun_prop
+  · fail_if_success (clear hplain hcontract; ppt)
+    exact consume_ppt (.of_tidy rawOnlyReverse_tidy)
+  · fail_if_success (clear hplain hcontract; ppt)
+    fun_prop
+
+-- The raw-premise API is checked independently of the ordinary global-search example above.
+example : IsPPTOn encBits encBits (aliasPure rawOnlyReverse) := by
+  fail_if_success ppt
+  exact aliasPure_raw rawOnlyReverse_tidy
 
 /-- A reducible client wrapper keeps the actual iteration operation visible to dispatch. -/
 abbrev wrappedIterate {State : Type} (count : ℕ) (step : State → ProbComp State)
@@ -180,61 +157,48 @@ abbrev wrappedIterate {State : Type} (count : ℕ) (step : State → ProbComp St
 example (step : List Bool → ProbComp (List Bool))
     (hstep : IsPPTOn encBits encBits step)
     (hshrink : ∀ state next, next ∈ (ProbComp.eval (step state)).support →
-      next.length ≤ state.length) :
-    IsPPTOn encBits encBits (fun word => OracleComp.iterate word.length step word) := by
-  fail_if_success (clear hstep; ppt)
-  fail_if_success (clear hshrink; ppt)
-  ppt
-
-example (step : List Bool → ProbComp (List Bool))
-    (hstep : IsPPTOn encBits encBits step)
-    (hshrink : ∀ state next, next ∈ (ProbComp.eval (step state)).support →
-      next.length ≤ state.length) :
-    IsPPTOn encBits encBits (fun word => wrappedIterate word.length step word) := by
-  ppt
-
-example (step : List Bool → ProbComp (List Bool))
-    (hstep : IsPPTOn encBits encBits step) (growth : ℕ)
+      next.length ≤ state.length)
+    (growth : ℕ)
     (hgrowth : ∀ state next, next ∈ (ProbComp.eval (step state)).support →
-      next.length ≤ state.length + growth) :
-    IsPPTOn encBits encBits (fun word => OracleComp.iterate word.length step word) := by
-  fail_if_success (clear hgrowth; ppt)
-  ppt
-
-example (step : List Bool → List Bool → ProbComp (List Bool))
-    (hstep : IsPPTOn (encPair encBits encBits) encBits (fun pair => step pair.1 pair.2))
-    (growth : List Bool → ℕ) (hpoly : PolyBounded List.length growth)
-    (hgrowth : ∀ word state next, next ∈ (ProbComp.eval (step word state)).support →
-      next.length ≤ state.length + growth word) :
-    IsPPTOn encBits encBits (fun word => wrappedIterate word.length (step word) word) := by
-  fail_if_success (clear hstep; ppt)
-  fail_if_success (clear hpoly; ppt)
-  fail_if_success (clear hgrowth; ppt)
-  ppt
+      next.length ≤ state.length + growth)
+    (step2 : List Bool → List Bool → ProbComp (List Bool))
+    (hstep2 : IsPPTOn (encPair encBits encBits) encBits (fun pair => step2 pair.1 pair.2))
+    (growth2 : List Bool → ℕ) (hpoly2 : PolyBounded List.length growth2)
+    (hgrowth2 : ∀ word state next, next ∈ (ProbComp.eval (step2 word state)).support →
+      next.length ≤ state.length + growth2 word) :
+    IsPPTOn encBits encBits (fun word => OracleComp.iterate word.length step word) ∧
+    IsPPTOn encBits encBits (fun word => OracleComp.iterate word.length step word) ∧
+    IsPPTOn encBits encBits (fun word => wrappedIterate word.length step word) ∧
+    IsPPTOn encBits encBits (fun word => wrappedIterate word.length step word) ∧
+    IsPPTOn encBits encBits (fun word => wrappedIterate word.length (step2 word) word) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  -- Direct iteration with shrinking state.
+  · clear growth hgrowth step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hstep; ppt)
+    fail_if_success (clear hshrink; ppt)
+    ppt
+  -- Direct iteration with additive growth; shrinking evidence is unavailable.
+  · clear hshrink step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hgrowth; ppt)
+    ppt
+  -- The wrapper also supports additive growth.
+  · clear hshrink step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hgrowth; ppt)
+    ppt
+  -- Wrapped iteration with shrinking state; additive-growth evidence is unavailable.
+  · clear growth hgrowth step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hshrink; ppt)
+    ppt
+  -- Captured inputs have a polynomially bounded growth allowance.
+  · clear step hstep hshrink growth hgrowth
+    fail_if_success (clear hstep2; ppt)
+    fail_if_success (clear hpoly2; ppt)
+    fail_if_success (clear hgrowth2; ppt)
+    ppt
 
 /-- A distinct opaque result separates implication application
 from direct certificate conversion. -/
 @[irreducible] def implicationResult (word : List Bool) : ProbComp (List Bool) := pure word
-
--- Missing evidence cannot be recovered globally through a local full-arity alias implication.
-example (h : RawAliasFull rawOnlyReverse encBits encBits →
-    IsPPTOn encBits encBits implicationResult) :
-    IsPPTOn encBits encBits implicationResult := by
-  fail_if_success ppt
-  exact h rawOnlyReverse_tidy
-
--- Complete supplied evidence remains usable through that same implication.
-example (h : RawAliasFull rawOnlyReverse encBits encBits →
-    IsPPTOn encBits encBits implicationResult)
-    (hf : RawAliasFull rawOnlyReverse encBits encBits) :
-    IsPPTOn encBits encBits implicationResult := by
-  ppt
-
--- Quantified complete families are evidence, rather than a request to search raw globally.
-example (family : ℕ → List Bool → List Bool)
-    (hf : ∀ n, RawAliasFull (family n) encBits encBits) (n : ℕ) :
-    IsPPTOn encBits encBits (consume (family n)) := by
-  ppt
 
 /-- A global named theorem with a raw premise is an explicit construction API only. -/
 @[program_certificate _h]
@@ -243,16 +207,44 @@ theorem implicationResult_raw (_h : RawAliasFull rawOnlyReverse encBits encBits)
   unfold implicationResult
   fun_prop
 
+-- Explicit construction and ordinary unfiltered search are independent of supplied evidence.
 example : IsPPTOn encBits encBits implicationResult := by
   fail_if_success ppt
   exact implicationResult_raw rawOnlyReverse_tidy
 
--- Ordinary unfiltered application is restored after public search fails.
 example : IsPPTOn encBits encBits implicationResult := by
   fail_if_success ppt
   fun_prop
 
--- Forced production dispatch retains every compatible supplied callback encoding.
+-- A local implication alone cannot launch raw search during nested preprocessing.
+example (h : RawAliasFull rawOnlyReverse encBits encBits →
+    ComputableInPolyTime rawOnlyReverse encBits encBits) :
+    IsPPTOn (encPair encBits encBool) encBits (fun p => consume rawOnlyReverse p.1) := by
+  fail_if_success ppt
+  exact consume_ppt (h rawOnlyReverse_tidy) |>.preprocess
+    (ComputableInPolyTime.fst encBits encBool)
+
+-- Implication application, quantified families, global raw premises, and nested preprocessing.
+example (h : RawAliasFull rawOnlyReverse encBits encBits →
+      IsPPTOn encBits encBits implicationResult)
+    (hf : RawAliasFull rawOnlyReverse encBits encBits)
+    (family : ℕ → List Bool → List Bool)
+    (hfamily : ∀ n, RawAliasFull (family n) encBits encBits) (n : ℕ)
+    (callback : List Bool → List Bool) (hcb : RawAliasFull callback encBits encBits) :
+    IsPPTOn encBits encBits implicationResult ∧
+    IsPPTOn encBits encBits (consume (family n)) ∧
+    IsPPTOn (encPair encBits encBool) encBits (fun p => consume callback p.1) ∧
+    IsPPTOn (encPair encBits encBool) encBits (fun p => consume (family n) p.1) ∧
+    IsPPTOn (encPair encBits encBool) encBits (fun p => consume rawOnlyReverse p.1) := by
+  refine ⟨?_, by ppt, by ppt, by ppt, ?_⟩
+  · fail_if_success (clear hf; ppt)
+    ppt
+  · fail_if_success (clear h hf hfamily hcb; ppt)
+    exact consume_ppt (.of_tidy rawOnlyReverse_tidy) |>.preprocess
+      (ComputableInPolyTime.fst encBits encBool)
+
+-- Forced production dispatch retains every compatible supplied callback encoding, and without
+-- local callback evidence the ordinary generic scan alternative remains available.
 private meta def scanTwoLocalCallbacks : Aesop.RuleTac := fun input => do
   let result ← Cslib.Tactic.applyScanWithLocalCallback ``ComputableInPolyTime
     ``ComputableInPolyTime.anyWithInput input
@@ -267,39 +259,16 @@ example (test : List Bool × Bool × ℕ → Bool) (list : List Bool × Bool →
     (_hlb : ComputableInPolyTime list (encPair encBits encBool) (encList encNat)) :
     ComputableInPolyTime
       (fun pair : List Bool × Bool => (list pair).any fun i => test (pair.1, pair.2, i))
-      (encPair encBits encBool) encBool := by
-  run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
-    Lean.Elab.Tactic.evalTactic (← `(tactic|
-      aesop (rule_sets := [-builtin, -default])
-        (add unsafe 100% tactic scanTwoLocalCallbacks)))
-
--- Without local callback evidence, the ordinary generic scan alternative remains available.
-example : ComputableInPolyTime
-    (fun word : List Bool => [false, true].any fun bit => bit && word.isEmpty)
-    encBits encBool := by
-  polytime
-
--- Nested preprocessing reuses only complete supplied callback evidence in its generated context.
-example (callback : List Bool → List Bool) (h : RawAliasFull callback encBits encBits) :
-    IsPPTOn (encPair encBits encBool) encBits (fun p => consume callback p.1) := by
-  ppt
-
-example (family : ℕ → List Bool → List Bool)
-    (hf : ∀ n, RawAliasFull (family n) encBits encBits) (n : ℕ) :
-    IsPPTOn (encPair encBits encBool) encBits (fun p => consume (family n) p.1) := by
-  ppt
-
-example : IsPPTOn (encPair encBits encBool) encBits
-    (fun p => consume rawOnlyReverse p.1) := by
-  fail_if_success ppt
-  exact consume_ppt (.of_tidy rawOnlyReverse_tidy) |>.preprocess
-    (ComputableInPolyTime.fst encBits encBool)
-
-example (h : RawAliasFull rawOnlyReverse encBits encBits →
-    ComputableInPolyTime rawOnlyReverse encBits encBits) :
-    IsPPTOn (encPair encBits encBool) encBits (fun p => consume rawOnlyReverse p.1) := by
-  fail_if_success ppt
-  exact consume_ppt (h rawOnlyReverse_tidy) |>.preprocess
-    (ComputableInPolyTime.fst encBits encBool)
+      (encPair encBits encBool) encBool ∧
+    ComputableInPolyTime
+      (fun word : List Bool => [false, true].any fun bit => bit && word.isEmpty)
+      encBits encBool := by
+  refine ⟨?_, ?_⟩
+  · run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
+      Lean.Elab.Tactic.evalTactic (← `(tactic|
+        aesop (rule_sets := [-builtin, -default])
+          (add unsafe 100% tactic scanTwoLocalCallbacks)))
+  · clear test list _hu _hb _hlu _hlb
+    polytime
 
 end ComplexityTests.PPTPlainSource
