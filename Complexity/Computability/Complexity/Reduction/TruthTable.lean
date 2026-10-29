@@ -120,12 +120,12 @@ theorem PolyTimeTruthTableReducible.compl_right
     (h : PolyTimeTruthTableReducible encA encB L B) :
     PolyTimeTruthTableReducible encA encB L Bᶜ := by
   obtain ⟨r, q, d, hr, hq, hd, hL⟩ := h
-  have hmap : ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.map (!·))
+  have hmap : ComputableInPolyTime (fun x : α × List Bool => x.2.map (!·))
       (encPair encA encBits) encBits :=
-    ComputableTidilyInPolyTime.bitsMapWithInput (f := fun _ b => !b) (.snd encA encBits)
+    ComputableInPolyTime.bitsMapWithInput (f := fun _ b => !b) (.snd encA encBits)
       (by fun_prop)
   refine ⟨r, q, fun x => d (x.1, x.2.map (!·)), hr, hq,
-    hd.comp (.of_tidy ((ComputableTidilyInPolyTime.fst encA encBits).prod hmap)), fun a => ?_⟩
+    hd.comp ((ComputableInPolyTime.fst encA encBits).prod hmap), fun a => ?_⟩
   rw [hL a, show q ⁻¹' Bᶜ = (q ⁻¹' B)ᶜ from rfl, truthTableAnswers_compl]
   simp [List.map_map, Function.comp_def]
 
@@ -142,15 +142,13 @@ theorem truthTable_mem_P {A : Set (α × ℕ)} {r : α → ℕ} {d : α × List 
     (hr : ComputableInPolyTime r encA encUnary)
     (hd : ComputableInPolyTime d (encPair encA encBits) encBool) :
     {a | d (a, truthTableAnswers A r a) = true} ∈ P encA := by
-  have hr := hr.tidy
-  have hd := hd.tidy
   classical
   obtain ⟨f, hf, hAf⟩ := mem_P.mp hA
-  have hans : ComputableTidilyInPolyTime
+  have hans : ComputableInPolyTime
       (fun a => (List.range (r a)).map fun i => f (a, i)) encA encBits :=
-    ComputableTidilyInPolyTime.mapToBitsWithInput (ComputableTidilyInPolyTime.range.comp hr) hf.tidy
+    ComputableInPolyTime.mapToBitsWithInput (ComputableInPolyTime.range.comp hr) hf
   refine mem_P.mpr ⟨fun a => d (a, (List.range (r a)).map fun i => f (a, i)),
-    .of_tidy (hd.comp (ComputableTidilyInPolyTime.id'.prod hans)), fun a => ?_⟩
+    hd.comp (ComputableInPolyTime.id'.prod hans), fun a => ?_⟩
   simp [truthTableAnswers_eq_map_range, hAf]
 
 /-- **`P` is closed under polynomial-time truth-table reductions.** -/

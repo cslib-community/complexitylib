@@ -482,14 +482,14 @@ private theorem exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP (hA : A ∈ 
   have hbound : ComputableInPolyTime bound encUnary encUnary := by dsimp [bound]; fun_prop
   let D : ℕ → ℤ := fun n => ((List.range (bound n)).map f).prod
   have hD : ComputableInPolyTime D encUnary encIntBin :=
-    ComputableTidilyInPolyTime.intBin_prod.computableInPolyTime.comp
+    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
       ((ComputableInPolyTime.map hf).comp
         (ComputableInPolyTime.range.comp hbound))
   have hDn (n : ℕ) : D n ≠ 0 := List.prod_ne_zero (by simp [hfn])
   let S : ℕ → ℤ := fun n => D n ^ τ n
   -- elaborated without the expected type, which would unfold `S`
   have hS : ComputableInPolyTime S encUnary encIntBin :=
-    (ComputableTidilyInPolyTime.intBin_pow.computableInPolyTime.comp (hD.prod hτ) :)
+    ((ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_pow).comp (hD.prod hτ) :)
   have hSn (n : ℕ) : S n ≠ 0 := pow_ne_zero (τ n) (hDn n)
   let K : α × List Bool → ℤ := fun x =>
     (((List.range (bound (enc x.1).length)).filter (fun i => decide (i ≠ x.2.length))).map f).prod
@@ -502,7 +502,7 @@ private theorem exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP (hA : A ∈ 
       (fun y : (α × List Bool) × ℕ => decide (y.2 ≠ y.1.2.length))
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
   have hK : ComputableInPolyTime K (encPair enc encBits) encIntBin :=
-    ComputableTidilyInPolyTime.intBin_prod.computableInPolyTime.comp
+    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
       ((ComputableInPolyTime.map hf).comp
         (ComputableInPolyTime.filterWithInput hlist htest))
   let H : α × List Bool → ℤ := fun x => g x.2 * K x

@@ -12,7 +12,7 @@ import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingPolyTime
 
 namespace ComplexityTests.SparsificationRuntimeThresholds
 
-open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM
 
 /-- Two clauses sharing the heart `x₁`. -/
 abbrev ψ : CNF ℕ := [[(1, true), (2, true)], [(1, true), (3, true)]]
@@ -39,28 +39,28 @@ example : ComputableInPolyTime
     (fun x : ℕ × CNF ℕ =>
       isSparse (countingThreshold (2 * x.1)) 2 (countingNext (countingThreshold x.1) 2 x.2 true))
     (encPair encNat (encList (encList (encPair encNat encBool)))) encBool := by
-  have hs := (computableInPolyTime_isSparse_countingThreshold encNat 2).tidy
-  have hn := (computableInPolyTime_countingNext_countingThreshold encNat 2).tidy
-  have hchild : ComputableTidilyInPolyTime
+  have hs := computableInPolyTime_isSparse_countingThreshold encNat 2
+  have hn := computableInPolyTime_countingNext_countingThreshold encNat 2
+  have harg : ComputableInPolyTime
+      (fun x : ℕ × CNF ℕ => (x.1, x.2, true))
+      (encPair encNat (encList (encList (encPair encNat encBool))))
+      (encPair encNat (encPair (encList (encList (encPair encNat encBool))) encBool)) := by
+    fun_prop
+  have hchild : ComputableInPolyTime
       (fun x : ℕ × CNF ℕ => countingNext (countingThreshold x.1) 2 x.2 true)
       (encPair encNat (encList (encList (encPair encNat encBool))))
-      (encList (encList (encPair encNat encBool))) :=
-    by
-      simpa only [Function.comp_def] using hn.comp
-        ((fst encNat (encList (encList (encPair encNat encBool)))).prod
-          ((snd encNat (encList (encList (encPair encNat encBool)))).prod
-            (const (encMid := encBool) true)))
-  have hbase : ComputableTidilyInPolyTime (fun x : ℕ × CNF ℕ => 2 * x.1)
+      (encList (encList (encPair encNat encBool))) := by
+    simpa only [Function.comp_def] using hn.comp harg
+  have hbase : ComputableInPolyTime (fun x : ℕ × CNF ℕ => 2 * x.1)
       (encPair encNat (encList (encList (encPair encNat encBool)))) encNat := by
     fun_prop
-  exact .of_tidy (by simpa only [Function.comp_def] using hs.comp (hbase.prod hchild))
+  simpa only [Function.comp_def] using hs.comp (hbase.prod hchild)
 
 /-- A runtime parameter of another type: a pair `(M, a)` selecting the thresholds `M ^ j + a`. -/
 example : ComputableInPolyTime
     (fun x : (ℕ × ℕ) × CNF ℕ => isSparse (fun j => x.1.1 ^ j + x.1.2) 2 x.2)
     (encPair (encPair encNat encNat) (encList (encList (encPair encNat encBool)))) encBool := by
   refine computableInPolyTime_isSparseWith encNat (θ := fun (p : ℕ × ℕ) j => p.1 ^ j + p.2) ?_ 2
-  refine .of_tidy ?_
   fun_prop
 
 end ComplexityTests.SparsificationRuntimeThresholds

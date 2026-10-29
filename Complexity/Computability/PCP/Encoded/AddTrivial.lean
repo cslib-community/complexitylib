@@ -9,7 +9,6 @@ module
 
 public import Complexity.Computability.PCP.Encoded.Basic
 public import Mathlib.Logic.Equiv.Fin.Basic
-import Complexity.Tactic.PolyTime
 
 /-!
 # Adding trivial edges to encoded constraint graphs
@@ -81,7 +80,11 @@ theorem isPolyTime_addTrivial (enc : C ↪ List Bool) (truth : C) :
 theorem isPolyTime_addLoops (enc : C ↪ List Bool) (truth : C) :
     ComputableInPolyTime (addLoops truth) (encoding enc) (encoding enc) := by
   unfold addLoops
-  polytime
+  exact (isPolyTime_addTrivial enc truth).comp
+    (ComputableInPolyTime.id'.prod
+      ((ComputableInPolyTime.map
+        (ComputableInPolyTime.id'.prod ComputableInPolyTime.id')).comp
+        (ComputableInPolyTime.range.comp (isPolyTime_vertices ComputableInPolyTime.id'))))
 
 /-- An appended edge list has the declared number of old and new edges. -/
 @[simp]

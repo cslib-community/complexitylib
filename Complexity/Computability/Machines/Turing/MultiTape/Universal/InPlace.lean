@@ -411,12 +411,20 @@ lemma wTime_le (s : St) : wTime (s.1, symAt s) ≤ 9 * ((eSt s).length + 1) ^ 3 
   have hl : s.1.2.workTapes.length + s.1.1.table.length + 1 ≤ (eSt s).length + 1 := by
     simp only [length_encPair, eCfg_apply, eDesc_apply] at ht hd ⊢
     omega
+  have hdesc : (eDesc s.1.1).length ≤ (eSt s).length := by
+    simp only [length_encPair]
+    omega
+  have hpos : (encNat s.1.2.inputPos).length ≤ (eSt s).length := by
+    simp only [length_encPair, eCfg_apply]
+    omega
+  have hproduct : (s.1.2.workTapes.length + s.1.1.table.length + 1) *
+      ((eDesc s.1.1).length + 1) * ((eWCtx (s.1, symAt s)).length + 1) ≤
+        ((eSt s).length + 1) * ((eSt s).length + 1) * ((eSt s).length + 2) :=
+    Nat.mul_le_mul (Nat.mul_le_mul hl (by omega)) (by omega)
+  have hdigits := Nat.pow_le_pow_left (Nat.succ_le_succ hpos) 2
   unfold wTime
-  calc _ ≤ ((eSt s).length + 1) * ((eSt s).length + 2) ^ 2 :=
-        Nat.mul_le_mul hl (Nat.pow_le_pow_left (by omega) 2)
-    _ ≤ ((eSt s).length + 1) * (4 * ((eSt s).length + 1) ^ 2) :=
-        Nat.mul_le_mul_left _ (by nlinarith)
-    _ ≤ 9 * ((eSt s).length + 1) ^ 3 := by ring_nf; omega
+  dsimp only at hproduct hdigits ⊢
+  nlinarith [Nat.le_self_pow (show 2 ≠ 0 by decide) ((eSt s).length + 1)]
 
 /-- The step at the end of a pass. -/
 public lemma stepAt_inO : ComputableTidilyInO stepAt eSt (encPair eCfg eSym)

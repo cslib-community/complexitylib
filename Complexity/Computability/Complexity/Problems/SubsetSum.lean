@@ -76,7 +76,7 @@ by both of its literal numbers. Formulas with a clause of more than three litera
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 open scoped List
 
 /-- The instances `(a, t)` of subset sum: some sub-multiset of the numbers `a` sums to `t`
@@ -561,12 +561,11 @@ end Correctness
 /-! ### Polynomial time -/
 
 /-- `8 ^ p` in binary, from `p` in unary. -/
-private theorem eight_pow : ComputableTidilyInPolyTime (fun p : ℕ => 8 ^ p) encUnary encNat := by
+@[local fun_prop]
+private theorem eight_pow : ComputableInPolyTime (fun p : ℕ => 8 ^ p) encUnary encNat := by
   have h : (fun p : ℕ => 8 ^ p) = fun p => 2 ^ (3 * p) := funext fun p => by rw [pow_mul]; rfl
   rw [h]
   fun_prop
-
-attribute [local fun_prop] eight_pow ComputableInPolyTime.tidy
 
 /-- Testing whether a clause contains a literal is polynomial-time. -/
 @[fun_prop]
@@ -574,11 +573,10 @@ theorem computableInPolyTime_covers :
     ComputableInPolyTime
       (fun p : ((CNF ℕ × ℕ) × Bool) × ℕ => covers p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair (encPair encCNF encUnary) encBool) encUnary) encBool := by
-  refine .of_tidy ?_
   unfold covers encCNF
   apply anyWithInput (encA := encPair encNat encBool)
   · exact (listGetD (encA := encList (encPair encNat encBool)) []).comp
-      (show ComputableTidilyInPolyTime (fun x : ((CNF ℕ × ℕ) × Bool) × ℕ => (x.1.1.1, x.2)) _
+      (show ComputableInPolyTime (fun x : ((CNF ℕ × ℕ) × Bool) × ℕ => (x.1.1.1, x.2)) _
         (encPair (encList (encList (encPair encNat encBool))) encUnary) by fun_prop)
   · fun_prop
 
@@ -608,12 +606,10 @@ theorem computableInPolyTime_octal :
   unfold octal
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The numbers of the digit construction are computed in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_digitNumbers :
     ComputableInPolyTime digitNumbers encCNF (encList encNat) := by
-  refine .of_tidy ?_
   unfold digitNumbers
   apply listAppend'
   · apply flatMapWithInput (by fun_prop)

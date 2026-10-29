@@ -39,7 +39,7 @@ encoding rather than practical running time at arbitrary fixed parameters.
 
 namespace Cslib.PCP
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime Cslib.PCP.HadamardTester
+open Turing.MultiTapeTM Cslib.PCP.HadamardTester
 
 namespace Encoded.Graph
 

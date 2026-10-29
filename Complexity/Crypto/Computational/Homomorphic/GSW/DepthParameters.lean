@@ -48,7 +48,7 @@ they are not a claim about the paper's hardness parameters.
 namespace Cslib.Crypto.Homomorphic.GSW.DepthParameters
 
 open Parameters (dimension noise)
-open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableTidilyInPolyTime
+open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 open scoped NNReal
 
 /-- A positive logarithmic size, at least two even at security parameter zero. -/
@@ -194,7 +194,6 @@ theorem nand_margin (security : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_logSize :
     ComputableInPolyTime logSize encUnary encUnary := by
-  refine .of_tidy ?_
   have := unary_clog_const 2
   unfold logSize
   fun_prop
@@ -223,25 +222,31 @@ theorem computableInPolyTime_depthBudget :
 @[fun_prop]
 theorem computableInPolyTime_modulus :
     ComputableInPolyTime modulus encUnary encNat :=
-  .of_tidy (binary_pow' (const 2) DepthParameters.computableInPolyTime_width.tidy)
+  binary_pow' (const 2) DepthParameters.computableInPolyTime_width
+
+private theorem polynomiallyBounded_of_unary {f : ℕ → ℕ}
+    (hf : ComputableInPolyTime f encUnary encUnary) : PolynomiallyBounded f :=
+  (show PolyBounded (fun n : ℕ => n) f by
+    simpa only [encUnary_apply, List.length_replicate] using
+      hf.polyBounded_length).polynomiallyBounded
 
 /-- All unary parameters have polynomial bounds; the modulus is deliberately excluded. -/
 theorem polynomiallyBounded_parameters :
     PolynomiallyBounded dimension ∧ PolynomiallyBounded noise ∧ PolynomiallyBounded width ∧
       PolynomiallyBounded rows ∧ PolynomiallyBounded samples ∧ PolynomiallyBounded depthBudget :=
-  ⟨Parameters.computableInPolyTime_dimension.tidy.polynomiallyBounded,
-    Parameters.computableInPolyTime_noise.tidy.polynomiallyBounded,
-    DepthParameters.computableInPolyTime_width.tidy.polynomiallyBounded,
-    DepthParameters.computableInPolyTime_rows.tidy.polynomiallyBounded,
-    DepthParameters.computableInPolyTime_samples.tidy.polynomiallyBounded,
-    computableInPolyTime_depthBudget.tidy.polynomiallyBounded⟩
+  ⟨polynomiallyBounded_of_unary Parameters.computableInPolyTime_dimension,
+    polynomiallyBounded_of_unary Parameters.computableInPolyTime_noise,
+    polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_width,
+    polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_rows,
+    polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_samples,
+    polynomiallyBounded_of_unary computableInPolyTime_depthBudget⟩
 
 /-- The actual shared-public-matrix error bound is negligible for this new family. -/
 theorem negligible_statistical_error :
     Negligible (fun security => (rows security : ℝ≥0) *
       NNReal.sqrt ((2 : ℝ≥0) ^ rows security / 2 ^ samples security)) :=
   negligible_mul_sqrt_pow_two_div_pow_two
-    DepthParameters.computableInPolyTime_rows.tidy.polynomiallyBounded
+    (polynomiallyBounded_of_unary DepthParameters.computableInPolyTime_rows)
     (Filter.Eventually.of_forall entropy_margin)
 
 end Cslib.Crypto.Homomorphic.GSW.DepthParameters

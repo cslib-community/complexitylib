@@ -23,7 +23,7 @@ numeric algorithms can reuse it without depending on tree evaluation.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInSpace.natTestBit`: binary digit access in work space
+* `Turing.MultiTapeTM.ComputableInSpace.natTestBit`: binary digit access in work space
   linear in the binary encodings of both the value and the index.
 
 ## References
@@ -33,19 +33,21 @@ numeric algorithms can reuse it without depending on tree evaluation.
 
 @[expose] public section
 
-namespace Turing.MultiTapeTM.ComputableTidilyInSpace
+namespace Turing.MultiTapeTM
+
+namespace ComputableInSpace
 
 /-- **A bit of a binary natural**, `k.testBit j` from `(k, j)`. -/
 theorem natTestBit :
-    ComputableTidilyInSpace (fun q : ℕ × ℕ => q.1.testBit q.2) (encPair encNat encNat) encBool
+    ComputableInSpace (fun q : ℕ × ℕ => q.1.testBit q.2) (encPair encNat encNat) encBool
       fun q => 32 * ((encPair encNat encNat q).length + 1) := by
   have hl : (fun q => (encPair encNat encNat q).length) ≼
       fun q => 8 * ((encPair encNat encNat q).length + 1) := .of_le fun _ => by omega
-  have hbits : ComputableTidilyInSpace (fun q : ℕ × ℕ => q.1.bits) (encPair encNat encNat) encBits
+  have hbits : ComputableInSpace (fun q : ℕ × ℕ => q.1.bits) (encPair encNat encNat) encBits
       fun q => 8 * ((encPair encNat encNat q).length + 1) :=
     ((fst encNat encNat).weaken hl).of_enc_eq fun _ => rfl
-  have htail : ComputableTidilyInSpace List.tail encBits encBits fun l => (encBits l).length :=
-    of_inO (.of_linear (Internal.NormalForm.linear (ListEncoding.tail encBool)))
+  have htail : ComputableInSpace List.tail encBits encBits fun l => (encBits l).length :=
+    of_inO (.of_linear (ListEncoding.tail encBool))
   have hlen (q : ℕ × ℕ) (i : ℕ) :
       (encBits (List.tail^[i] q.1.bits)).length ≤ (encNat q.1).length := by
     induction i with
@@ -57,10 +59,9 @@ theorem natTestBit :
   have h := iterate (n := fun q : ℕ × ℕ => q.2) ((snd encNat encNat).weaken hl) hbits htail
     (Q := fun q => (encNat q.1).length) (B := fun q => (encNat q.1).length)
     (fun q k _ => hlen q k) (fun q k _ => hlen q k)
-  have hhead : ComputableTidilyInSpace (fun l : List Bool => l.headD false) encBits encBool
+  have hhead : ComputableInSpace (fun l : List Bool => l.headD false) encBits encBool
       fun l => (encBits l).length :=
-    of_inO (.of_linear (Internal.NormalForm.linear
-      (ListEncoding.headD false)))
+    of_inO (.of_linear (ListEncoding.headD false))
   refine (budget_comp_linear hhead h).mono_le (fun q => ?_) |>.of_enc_eq fun q => ?_
   · simp only [length_encPair]; omega
   · rw [List.tail_iterate, Nat.testBit_eq_inth]
@@ -68,4 +69,16 @@ theorem natTestBit :
     rw [List.headD_eq_head?_getD, List.head?_drop, List.getI_eq_getElem?_getD]
     rfl
 
-end Turing.MultiTapeTM.ComputableTidilyInSpace
+end ComputableInSpace
+
+namespace ComputableTidilyInSpace
+
+/-- **A bit of a binary natural**, `k.testBit j` from `(k, j)`. -/
+theorem natTestBit :
+    ComputableTidilyInSpace (fun q : ℕ × ℕ => q.1.testBit q.2) (encPair encNat encNat) encBool
+      fun q => 32 * ((encPair encNat encNat q).length + 1) :=
+  ComputableInSpace.natTestBit.tidy
+
+end ComputableTidilyInSpace
+
+end Turing.MultiTapeTM

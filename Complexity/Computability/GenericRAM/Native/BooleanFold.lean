@@ -14,6 +14,7 @@ public import Complexity.Foundations.Data.BitString.Enumeration
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
+import Mathlib.Data.Nat.Size
 
 /-!
 # Streaming local Boolean assignments
@@ -199,7 +200,8 @@ theorem length_prefix_le (body : (ℕ × List Bool) × β → β) (n j B : ℕ) 
   simp only [length_encPair, prefix_width, encUnary_apply, List.length_replicate]
   have hi : (runPrefix body n j initial).1 = j := IndexFold.run_index _ _ _
   rw [hi]
-  have hn := ComputableTidilyInO.length_encNat_mono hj
+  have hn : (encNat j).length ≤ (encNat (2 ^ n)).length := by
+    simpa [Nat.size_eq_bits_len] using Nat.size_le_size hj
   rw [length_clock] at hn
   omega
 

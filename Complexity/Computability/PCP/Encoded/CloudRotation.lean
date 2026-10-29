@@ -9,7 +9,6 @@ module
 
 public import Complexity.Computability.PCP.Encoded.Cloud
 public import Complexity.Foundations.Combinatorics.Expander.Reindex
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
 
 /-!

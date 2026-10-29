@@ -47,7 +47,7 @@ already `NP`-complete. A subset sum instance is a single equation, so `SubsetSum
 
 namespace Cslib.Complexity
 
-open Finset Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Finset Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The systems of linear equations with natural coefficients that have a zero-one solution, the
 equality form of Karp's zero-one integer programming [Karp1972]. A constraint `(a, t)` asks for
@@ -97,8 +97,7 @@ theorem isVerifier :
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier
       (encPair (encList (encPair (encList encNat) encNat)) encBits) encBool := by
-  have hmask := (computableInPolyTime_maskSelect encNat).tidy
-  refine .of_tidy ?_
+  have hmask := computableInPolyTime_maskSelect encNat
   unfold verifier
   apply allWithInput (by fun_prop)
   fun_prop

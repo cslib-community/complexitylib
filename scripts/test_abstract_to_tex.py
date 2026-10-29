@@ -318,6 +318,16 @@ end Example
         self.assertEqual(abstract_to_tex.escape_tex_prose("2^(n/24), {0,1}, $5 and ~n"),
                          r"2\textasciicircum{}(n/24), \{0,1\}, \$5 and \textasciitilde{}n")
 
+    def test_floor_delta_omega_eventually_and_cdots_are_pdflatex_safe(self):
+        sample = "d = ⌊log₂ ⌊log₂ n⌋⌋, Δ, ω(1), ∀ᶠ n in atTop, X_0 ⋯ X_{d-1}"
+        for rendered in (abstract_to_tex.escape_tex_code_line(sample),
+                         abstract_to_tex.escape_tex_prose(sample)):
+            with self.subTest(rendered=rendered):
+                self.assertTrue(rendered.isascii())
+                for command in (r"\lfloor", r"\rfloor", r"\Delta", r"\omega",
+                                r"^{\mathsf{f}}", r"\cdots"):
+                    self.assertIn(command, rendered)
+
     def test_named_axiom_audits_are_stripped(self):
         sample = (
             "/-! # Title\n\nIntro.\n-/\n\nnamespace Foo\n\n"

@@ -9,15 +9,14 @@ module
 
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Foundations.Data.Int.Residue
-public import Complexity.Foundations.NumberTheory.PrimeWindow
+public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Mathlib.Data.Matrix.Mul
 
 /-!
 # Modular counts and prime selection for integer Exact Triangle
 
-Let `S(a,b,c)` denote `weightSum`, `F(p)` the false-positive count and `Z₀` the zero count. A
-minimum-count prime in `[sqrt D / 2, sqrt D)` also minimises false positives. For weights
+A minimum-count prime in `[sqrt D / 2, sqrt D)` also minimises false positives. For weights
 bounded by `n^κ`, with `16 ≤ D ≤ n` and `1 ≤ κ`, a universal constant bounds its false positives
 by `C * κ * n^3 * log n / sqrt D`. The prime count used here is proved for every admitted `D`.
 
@@ -33,7 +32,7 @@ by `C * κ * n^3 * log n / sqrt D`. The prime count used here is proved for ever
 * `coeff_matP_mul_matQ`, `falsePositiveCount_add_zeroCount_eq_sum_coeff`: coefficient
   identities.
 * `exists_isSelectedPrime`: the minimum exists.
-* `Hashing.falsePositiveCount_le_const_mul`: the uniform false-positive bound.
+* `falsePositiveCount_le_const_mul`: the uniform false-positive bound.
 
 This is a mathematical reduction step. No native program or charged running-time bound is
 asserted. The supplied three matrices retain the existing `HasZeroTriangle` semantics.
@@ -53,70 +52,18 @@ The source pin is
 
 namespace Cslib.Algorithms.ExactTriangle
 
-open Classical in
-/-- Prime numbers in the half-open real interval `[sqrt D / 2, sqrt D)`.
--/
-noncomputable def primesInRange (D : ℕ) : Finset ℕ :=
-  (Finset.range D).filter fun p => p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℝ) < Real.sqrt D
-
 /-- Count vertex triples whose three edge weights have sum congruent to zero modulo `p`.
 -/
 def countZeroMod {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (p : ℕ) : ℕ :=
   (Finset.univ.filter fun t : Fin n × Fin n × Fin n =>
     weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≡ 0 [ZMOD (p : ℤ)]).card
 
-/-- A prime in `primesInRange D` whose modular-zero count is minimal among all primes in that
+/-- A prime in `Nat.sqrtPrimeWindow D` whose modular-zero count is minimal among all primes in that
 window. Tied minima all satisfy this predicate.
 -/
 def IsSelectedPrime {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (D p : ℕ) : Prop :=
-  p ∈ primesInRange D ∧ ∀ q ∈ primesInRange D,
+  p ∈ Nat.sqrtPrimeWindow D ∧ ∀ q ∈ Nat.sqrtPrimeWindow D,
     countZeroMod wAB wBC wAC p ≤ countZeroMod wAB wBC wAC q
-
-private theorem four_le_sqrt {D : ℕ} (hD : 16 ≤ D) : 4 ≤ Real.sqrt (D : ℝ) :=
-  Real.le_sqrt_of_sq_le (by norm_num; exact_mod_cast hD)
-
-/-!
-### The primes in the range -/
-
-/-- Window membership is equivalent to primality and the two real endpoint inequalities. The
-finite enumeration bound in `primesInRange` excludes no member of the interval.
--/
-theorem mem_primesInRange {D p : ℕ} :
-    p ∈ primesInRange D ↔ p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℝ) < Real.sqrt D := by
-  unfold primesInRange
-  rw [Finset.mem_filter, Finset.mem_range]
-  refine ⟨fun h => h.2, fun h => ⟨?_, h⟩⟩
-  -- From `p < √D` we get `p ≤ p² < D`.
-  have hsq : p ^ 2 < D := by exact_mod_cast (Real.lt_sqrt (Nat.cast_nonneg p)).1 h.2.2
-  exact (Nat.le_self_pow two_ne_zero p).trans_lt hsq
-
-/-- Characterize window membership using primality and integer-square inequalities, including the
-closed lower and open upper endpoints.
--/
-theorem mem_primesInRange_iff_sq {D p : ℕ} :
-    p ∈ primesInRange D ↔ p.Prime ∧ D ≤ 4 * p ^ 2 ∧ p ^ 2 < D := by
-  rw [mem_primesInRange]
-  have hp0 : (0 : ℝ) ≤ p := Nat.cast_nonneg p
-  have hsqrt0 : 0 ≤ Real.sqrt (D : ℝ) := Real.sqrt_nonneg _
-  have hsqrt : (Real.sqrt (D : ℝ)) ^ 2 = D := Real.sq_sqrt (Nat.cast_nonneg D)
-  constructor
-  · rintro ⟨hp, hlo, hhi⟩
-    refine ⟨hp, ?_, ?_⟩
-    · have h : (D : ℝ) ≤ 4 * (p : ℝ) ^ 2 := by nlinarith
-      exact_mod_cast h
-    · exact_mod_cast (Real.lt_sqrt hp0).1 hhi
-  · rintro ⟨hp, hlo, hhi⟩
-    refine ⟨hp, ?_, (Real.lt_sqrt hp0).2 (by exact_mod_cast hhi)⟩
-    have h : (D : ℝ) ≤ 4 * (p : ℝ) ^ 2 := by exact_mod_cast hlo
-    nlinarith
-
-/-- Enumerate the real prime window using a decidable filter of the integers below `D`.
--/
-theorem primesInRange_eq_filter (D : ℕ) :
-    primesInRange D = (Finset.range D).filter fun p => p.Prime ∧ D ≤ 4 * p ^ 2 ∧ p ^ 2 < D := by
-  ext p
-  rw [mem_primesInRange_iff_sq, Finset.mem_filter, Finset.mem_range]
-  exact ⟨fun h => ⟨(Nat.le_self_pow two_ne_zero p).trans_lt h.2.2, h⟩, fun h => h.2⟩
 
 /-- A number `r < p` is the sum of the residues of `u` and `v` in `{0, …, p − 1}`, reduced modulo
 `p`, exactly if `u + v ≡ r`.
@@ -131,7 +78,7 @@ private theorem eq_add_toNat_emod_iff {p r : ℕ} (hp : p ≠ 0) (hr : r < p) (u
     ← Int.add_emod]
 
 /-!
-### Counting the triples with `S(a,b,c) ≡ 0 (mod p)` -/
+### Counting triples with a vanishing modular weight sum -/
 
 section Counting
 
@@ -174,7 +121,8 @@ theorem countZeroMod_eq (p : ℕ) : (countZeroMod wAB wBC wAC) p = (falsePositiv
   classical
   simp only [countZeroMod, falsePositiveCount, zeroCount, Finset.card_filter, ←
       Finset.sum_add_distrib]
-  -- A triple with `p ∣ S(a,b,c)` is a zero triangle or a false positive, and not both.
+  -- A triple whose `weightSum` is divisible by `p` is a zero triangle or a false positive,
+  -- and not both.
   refine Finset.sum_congr rfl fun t _ => ?_
   by_cases h0 : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 = 0 <;>
     simp [IsFalsePositive, Int.modEq_zero_iff_dvd, h0]
@@ -231,8 +179,8 @@ theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
     Finset.card_filter]
   push_cast
   refine Finset.sum_congr rfl fun c _ => ?_
-  -- `S(a,b,c) ≡ 0` says the same as `w(a,c) + w(b,c) ≡ -w(a,b)`, and `-w(a,b)` is congruent to its
-  -- residue.
+  -- A zero `weightSum` modulo `p` means `wAC a c + wBC b c ≡ -wAB a b`, and the right side
+  -- is congruent to its residue.
   have hres : (-wAB a b) % (p : ℤ) ≡ -wAB a b [ZMOD (p : ℤ)] := Int.mod_modEq _ _
   have hiff : weightSum wAB wBC wAC a b c ≡ 0 [ZMOD (p : ℤ)] ↔
       wAC a c + wBC b c ≡ ((((-wAB a b) % (p : ℤ)).toNat : ℕ) : ℤ) [ZMOD (p : ℤ)] := by
@@ -246,24 +194,6 @@ theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
 
 end Counting
 
-/-- For `D ≥ 16`, the number of primes in `primesInRange D` is strictly less than `sqrt D`.
--/
-theorem card_primesInRange_lt (D : ℕ) (hD : 16 ≤ D) :
-    ((primesInRange D).card : ℝ) < Real.sqrt D := by
-  have hpos : 0 < Real.sqrt D := by linarith [four_le_sqrt hD]
-  -- The primes in the range are among the numbers `1, …, ⌈√D⌉ - 1`.
-  have hsub : primesInRange D ⊆ Finset.Ico 1 ⌈Real.sqrt D⌉₊ := by
-    intro p hp
-    obtain ⟨hprime, -, hlt⟩ := mem_primesInRange.1 hp
-    exact Finset.mem_Ico.2 ⟨hprime.one_lt.le, Nat.lt_ceil.2 hlt⟩
-  have hcard : (primesInRange D).card + 1 ≤ ⌈Real.sqrt D⌉₊ := by
-    have hle := Finset.card_le_card hsub
-    have hone : 1 ≤ ⌈Real.sqrt D⌉₊ := Nat.one_le_ceil_iff.2 hpos
-    rw [Nat.card_Ico] at hle
-    omega
-  have hcast : ((primesInRange D).card : ℝ) + 1 ≤ (⌈Real.sqrt D⌉₊ : ℝ) := by exact_mod_cast hcard
-  linarith [Nat.ceil_lt_add_one hpos.le]
-
 /-!
 ### Selecting the prime -/
 
@@ -275,18 +205,19 @@ variable {n D p : ℕ} {κ : ℝ} (wAB wBC wAC : Fin n → Fin n → ℤ)
 minimum of the modular-zero count.
 -/
 theorem exists_isSelectedPrime (D : ℕ) (hD : 16 ≤ D) : ∃ p, IsSelectedPrime wAB wBC wAC D p := by
+  have hsqrt : (4 : ℝ) ≤ Real.sqrt D := Real.four_le_sqrt_natCast hD
   obtain ⟨q, hq⟩ :=
-    Nat.exists_prime_half_le_and_lt (Real.sqrt D) (four_le_sqrt hD)
-  exact Finset.exists_min_image (primesInRange D) (countZeroMod wAB wBC wAC) ⟨q,
-      mem_primesInRange.2 hq⟩
+    Nat.exists_prime_half_le_and_lt (Real.sqrt D) hsqrt
+  exact Finset.exists_min_image (Nat.sqrtPrimeWindow D) (countZeroMod wAB wBC wAC) ⟨q,
+      Nat.mem_sqrtPrimeWindow.2 hq⟩
 
 /-- A selected minimum of the modular-zero count also minimizes the false-positive count over the
 same prime window.
 -/
 theorem IsSelectedPrime.falsePositiveCount_le {wAB wBC wAC : Fin n → Fin n → ℤ} (hp :
     IsSelectedPrime wAB wBC wAC D p) :
-    ∀ q ∈ primesInRange D, (falsePositiveCount wAB wBC wAC) p ≤ (falsePositiveCount wAB wBC wAC)
-        q := by
+    ∀ q ∈ Nat.sqrtPrimeWindow D,
+      (falsePositiveCount wAB wBC wAC) p ≤ (falsePositiveCount wAB wBC wAC) q := by
   intro q hq
   have h := hp.2 q hq
   rw [countZeroMod_eq, countZeroMod_eq] at h
@@ -301,17 +232,17 @@ primes accepting that triple by the base-`sqrt D / 2` logarithm of `3*n^κ`.
 -/
 theorem card_falsePositive_primes_le (hD : 16 ≤ D) (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ))
     (t : Fin n × Fin n × Fin n) (ht : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≠ 0) :
-    (((primesInRange D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
+    (((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
       ≤ Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
-  have hsqrt := four_le_sqrt hD
-  set divisors := (primesInRange D).filter fun p => IsFalsePositive wAB wBC wAC p t
+  have hsqrt := Real.four_le_sqrt_natCast hD
+  set divisors := (Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t
   have hmem : ∀ p ∈ divisors,
       p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℤ) ∣ weightSum wAB wBC wAC t.1 t.2.1 t.2.2 := by
     intro p hp
     obtain ⟨hrange, -, hdvd⟩ := Finset.mem_filter.1 hp
-    obtain ⟨hprime, hge, -⟩ := mem_primesInRange.1 hrange
+    obtain ⟨hprime, hge, -⟩ := Nat.mem_sqrtPrimeWindow.1 hrange
     exact ⟨hprime, hge, hdvd⟩
-  -- The product of these primes divides `S(a,b,c)`, so it is at most `|S(a,b,c)| ≤ 3n^κ`.
+  -- Their product divides the nonzero `weightSum`, whose absolute value is at most `3n^κ`.
   have hdvd : ∏ p ∈ divisors, p ∣ (weightSum wAB wBC wAC t.1 t.2.1 t.2.2).natAbs :=
     Finset.prod_primes_dvd _ (fun p hp => (hmem p hp).1.prime)
       fun p hp => Int.natCast_dvd.1 (hmem p hp).2.2
@@ -335,18 +266,18 @@ edge weights bounded by `n^κ`, the sum of false-positive counts is at most `n^3
 -/
 theorem sum_falsePositiveCount_le (hD : 16 ≤ D) (hκ : 1 ≤ κ) (hT : WeightsBoundedBy wAB wBC wAC
     ((n : ℝ) ^ κ)) :
-    ((∑ p ∈ primesInRange D, (falsePositiveCount wAB wBC wAC) p : ℕ) : ℝ)
+    ((∑ p ∈ Nat.sqrtPrimeWindow D, (falsePositiveCount wAB wBC wAC) p : ℕ) : ℝ)
       ≤ (n : ℝ) ^ 3 * Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
   classical
-  have hsqrt := four_le_sqrt hD
+  have hsqrt := Real.four_le_sqrt_natCast hD
   -- Count the pairs (prime, false positive of that prime) triple by triple.
-  have hswap : ∑ p ∈ primesInRange D, (falsePositiveCount wAB wBC wAC) p = ∑ t : Fin n × Fin n ×
-      Fin n,
-      ((primesInRange D).filter fun p => IsFalsePositive wAB wBC wAC p t).card := by
+  have hswap : ∑ p ∈ Nat.sqrtPrimeWindow D, (falsePositiveCount wAB wBC wAC) p =
+      ∑ t : Fin n × Fin n × Fin n,
+        ((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card := by
     simp only [falsePositiveCount, Finset.card_filter]
     exact Finset.sum_comm
   have hterm : ∀ t : Fin n × Fin n × Fin n,
-      (((primesInRange D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
+      (((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
         ≤ Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
     intro t
     by_cases ht : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 = 0
@@ -359,7 +290,7 @@ theorem sum_falsePositiveCount_le (hD : 16 ≤ D) (hκ : 1 ≤ κ) (hT : Weights
       convert (card_falsePositive_primes_le wAB wBC wAC) hD hT t ht
   rw [hswap, Nat.cast_sum]
   calc ∑ t : Fin n × Fin n × Fin n,
-        (((primesInRange D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
+        (((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
       ≤ ∑ _t : Fin n × Fin n × Fin n, Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) :=
         Finset.sum_le_sum fun t _ => hterm t
     _ = (n : ℝ) ^ 3 * Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
@@ -370,34 +301,24 @@ theorem sum_falsePositiveCount_le (hD : 16 ≤ D) (hκ : 1 ≤ κ) (hT : Weights
 
 end Selection
 
-/-- There is a universal positive `c` such that every window with `D ≥ 16` contains at least `c *
-sqrt D / log D` primes. The proof uses the all-window counting form of Bertrand’s postulate from
-`PrimeWindow`, with no prime-number-theorem assumption.
--/
-theorem exists_le_card_primesInRange :
-    ∃ c : ℝ, 0 < c ∧ ∀ D : ℕ, 16 ≤ D →
-      c * (Real.sqrt D / Real.log D) ≤ ((primesInRange D).card : ℝ) := by
-  obtain ⟨c, hc, hcount⟩ := Nat.exists_forall_mul_sqrt_div_log_le_card_primes
-  exact ⟨c, hc, fun D hD => hcount D hD _
-    fun _ hp hge hlt => mem_primesInRange.2 ⟨hp, hge, hlt⟩⟩
-
 /-- Multiply the selected prime’s minimum false-positive count by the number of window primes to
 obtain a bound by the sum of their false-positive counts.
 -/
 theorem IsSelectedPrime.falsePositiveCount_mul_card_le_sum {n D p : ℕ} {wAB wBC wAC : Fin n →
     Fin n → ℤ}
     (hp : IsSelectedPrime wAB wBC wAC D p) :
-    (falsePositiveCount wAB wBC wAC) p * (primesInRange D).card ≤ ∑ q ∈ primesInRange D,
+    (falsePositiveCount wAB wBC wAC) p * (Nat.sqrtPrimeWindow D).card ≤ ∑ q ∈ Nat.sqrtPrimeWindow D,
         (falsePositiveCount wAB wBC wAC) q := by
   rw [mul_comm, ← smul_eq_mul]
   exact Finset.card_nsmul_le_sum _ _ _ hp.falsePositiveCount_le
 
 /-- For `D ≥ 16`, compare `log D` with four times `log (sqrt D / 2)`.
 -/
-theorem log_le_four_mul_log_sqrt_div_two (D : ℕ) (hD : 16 ≤ D) :
+private theorem log_le_four_mul_log_sqrt_div_two (D : ℕ) (hD : 16 ≤ D) :
     Real.log D ≤ 4 * Real.log (Real.sqrt D / 2) := by
   have hD16 : (16 : ℝ) ≤ D := by exact_mod_cast hD
-  have hsqrt : 0 < Real.sqrt D := by linarith [four_le_sqrt hD]
+  have hsqrt : 0 < Real.sqrt D := Real.sqrt_pos.mpr
+    (by exact_mod_cast (show 0 < D by omega))
   -- `log(√D/2) = (log D)/2 - log 2`, and `4 log 2 = log 16 ≤ log D`.
   have hlog16 : 4 * Real.log 2 ≤ Real.log D := by
     have h := Real.log_le_log (by norm_num) (show (2 : ℝ) ^ 4 ≤ D by linarith)
@@ -410,9 +331,9 @@ theorem log_le_four_mul_log_sqrt_div_two (D : ℕ) (hD : 16 ≤ D) :
 lower bound `c * sqrt D / log D` gives every selected prime at most `(4/c) * n^3 * log (3*n^κ) /
 sqrt D` false positives.
 -/
-theorem falsePositiveCount_le_of_le_card_primesInRange {n D p : ℕ} {κ c : ℝ}
+theorem falsePositiveCount_le_of_le_card_sqrtPrimeWindow {n D p : ℕ} {κ c : ℝ}
     (wAB wBC wAC : Fin n → Fin n → ℤ) (hc : 0 < c)
-    (hcard : c * (Real.sqrt D / Real.log D) ≤ ((primesInRange D).card : ℝ)) (hD : 16 ≤ D)
+    (hcard : c * (Real.sqrt D / Real.log D) ≤ ((Nat.sqrtPrimeWindow D).card : ℝ)) (hD : 16 ≤ D)
     (hDn : D ≤ n) (hκ : 1 ≤ κ) (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ)) (hp :
         IsSelectedPrime wAB wBC wAC D p) :
     ((falsePositiveCount wAB wBC wAC) p : ℝ) ≤ 4 / c * ((n : ℝ) ^ 3 * Real.log (3 * (n : ℝ) ^ κ)
@@ -421,8 +342,8 @@ theorem falsePositiveCount_le_of_le_card_primesInRange {n D p : ℕ} {κ c : ℝ
   -- range.
   set r := Real.sqrt D
   set Y := 3 * (n : ℝ) ^ κ with hY
-  set numPrimes := (primesInRange D).card
-  have hr : 4 ≤ r := four_le_sqrt hD
+  set numPrimes := (Nat.sqrtPrimeWindow D).card
+  have hr : 4 ≤ r := Real.four_le_sqrt_natCast hD
   have hn : (16 : ℝ) ≤ n := by exact_mod_cast hD.trans hDn
   have hlogD_pos : 0 < Real.log D := Real.log_pos (by exact_mod_cast (by omega : 1 < D))
   have hlogr_pos : 0 < Real.log (r / 2) := Real.log_pos (by linarith)
@@ -459,7 +380,7 @@ theorem exists_falsePositiveCount_le :
       WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ) → IsSelectedPrime wAB wBC wAC D p →
       ((falsePositiveCount wAB wBC wAC) p : ℝ) ≤ C * (κ * (n : ℝ) ^ 3 * Real.log n / Real.sqrt
           D) := by
-  obtain ⟨c, hc, hcard⟩ := exists_le_card_primesInRange
+  obtain ⟨c, hc, hcard⟩ := Nat.exists_pos_mul_sqrt_div_log_le_card_sqrtPrimeWindow
   refine ⟨max 1 (8 / c), le_max_left _ _, fun {n D p κ} hD hDn hκ wAB wBC wAC hT hp => ?_⟩
   have hn : (16 : ℝ) ≤ n := by exact_mod_cast hD.trans hDn
   have hlogn : 0 ≤ Real.log n := Real.log_nonneg (by linarith)
@@ -471,7 +392,8 @@ theorem exists_falsePositiveCount_le :
     linarith [hlog3]
   calc ((falsePositiveCount wAB wBC wAC) p : ℝ) ≤ 4 / c * ((n : ℝ) ^ 3 * Real.log (3 * (n : ℝ) ^
       κ) / Real.sqrt D) :=
-        (falsePositiveCount_le_of_le_card_primesInRange wAB wBC wAC) hc (hcard D hD) hD hDn hκ hT hp
+        (falsePositiveCount_le_of_le_card_sqrtPrimeWindow wAB wBC wAC)
+          hc (hcard D hD) hD hDn hκ hT hp
     _ ≤ 4 / c * ((n : ℝ) ^ 3 * (2 * κ * Real.log n) / Real.sqrt D) := by gcongr
     _ = 8 / c * (κ * (n : ℝ) ^ 3 * Real.log n / Real.sqrt D) := by ring
     _ ≤ max 1 (8 / c) * (κ * (n : ℝ) ^ 3 * Real.log n / Real.sqrt D) := by
@@ -481,20 +403,20 @@ theorem exists_falsePositiveCount_le :
 /-- A universal real constant witnessing `exists_falsePositiveCount_le`. It depends on none of the
 input dimensions, weight matrices, exponent or selected prime, and is at least one.
 -/
-noncomputable def Hashing.falsePositiveConst : ℝ := Classical.choose exists_falsePositiveCount_le
+noncomputable def falsePositiveConst : ℝ := Classical.choose exists_falsePositiveCount_le
 
-/-- The universal false-positive constant `Hashing.falsePositiveConst` is at least one.
+/-- The universal false-positive constant `falsePositiveConst` is at least one.
 -/
-theorem Hashing.one_le_falsePositiveConst : 1 ≤ Hashing.falsePositiveConst :=
+theorem one_le_falsePositiveConst : 1 ≤ falsePositiveConst :=
   (Classical.choose_spec exists_falsePositiveCount_le).1
 
 /-- For `16 ≤ D ≤ n`, `κ ≥ 1` and edge weights bounded by `n^κ`, bound every selected prime’s
-false-positive count by `Hashing.falsePositiveConst * κ * n^3 * log n / sqrt D`.
+false-positive count by `falsePositiveConst * κ * n^3 * log n / sqrt D`.
 -/
-theorem Hashing.falsePositiveCount_le_const_mul {n D p : ℕ} {κ : ℝ} (hD : 16 ≤ D) (hDn : D ≤ n)
+theorem falsePositiveCount_le_const_mul {n D p : ℕ} {κ : ℝ} (hD : 16 ≤ D) (hDn : D ≤ n)
     (hκ : 1 ≤ κ) (wAB wBC wAC : Fin n → Fin n → ℤ) (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ))
     (hp : IsSelectedPrime wAB wBC wAC D p) :
-    ((falsePositiveCount wAB wBC wAC) p : ℝ) ≤ Hashing.falsePositiveConst * (κ * (n : ℝ) ^ 3 *
+    ((falsePositiveCount wAB wBC wAC) p : ℝ) ≤ falsePositiveConst * (κ * (n : ℝ) ^ 3 *
         Real.log n / Real.sqrt D) :=
   (Classical.choose_spec exists_falsePositiveCount_le).2 hD hDn hκ wAB wBC wAC hT hp
 
