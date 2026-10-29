@@ -19,6 +19,19 @@ import Mathlib.Tactic.Linarith
 
 The public borrow, digit-pair and subtraction definitions and laws are moved unchanged from the
 higher arithmetic facade. No machine or computability predicate is needed for these identities.
+The consuming-cursor realization has the same borrow rounds without repeated indexed lookup.
+
+## Main definitions
+
+* `BinarySub.borrow`, `BinarySub.subStep`: the existing schoolbook borrow round.
+* `BinarySub.digitPairs`: the original indexed pairs of input digits.
+* `BinarySub.cursorStep`: consume the remaining words and execute that same round.
+
+## Main results
+
+* `BinarySub.sub_eq`: the existing truncated-subtraction correctness law.
+* `BinarySub.foldl_cursorStep`: equality of the consuming and indexed realizations.
+* `BinarySub.cursorStep_lengths`: remaining words never grow; one output digit is added per round.
 -/
 
 @[expose] public section
@@ -80,5 +93,40 @@ lemma sub_eq (p : ℕ × ℕ) : p.1 - p.2 =
   cases h : ((digitPairs p).foldl subStep (false, [])).1 <;>
     simp only [h, Bool.toNat_true, Bool.toNat_false, Bool.false_eq_true, ↓reduceIte] at hval ⊢ <;>
     lia
+
+/-- Realize one existing borrow round by consuming the two remaining input words. The clock
+symbol is ignored; its word supplies the number of digit positions to visit. -/
+def cursorStep (s : (List Bool × List Bool) × (Bool × List Bool)) (_ : Bool) :
+    (List Bool × List Bool) × (Bool × List Bool) :=
+  ((s.1.1.tail, s.1.2.tail), subStep s.2 (s.1.1.headD false, s.1.2.headD false))
+
+/-- The consuming-word realization executes exactly the original indexed borrow fold. -/
+lemma foldl_cursorStep (clock left right : List Bool) (acc : Bool × List Bool) :
+    clock.foldl cursorStep ((left, right), acc) =
+      ((left.drop clock.length, right.drop clock.length),
+        ((List.range clock.length).map fun i =>
+          (left.getD i false, right.getD i false)).foldl subStep acc) := by
+  induction clock generalizing left right acc with
+  | nil => simp
+  | cons bit clock ih =>
+    have hget (l : List Bool) (i : ℕ) : l.tail.getD i false = l.getD (i + 1) false := by
+      cases l <;> simp
+    have hzero (l : List Bool) : l.getD 0 false = l.headD false := by cases l <;> rfl
+    simp only [List.foldl_cons, cursorStep, ih, List.length_cons, List.range_succ_eq_map,
+      List.map_cons, hzero, List.map_map, Function.comp_def, List.foldl_cons]
+    simp only [hget, List.drop_tail, Nat.succ_eq_add_one]
+
+/-- No cursor grows, and the existing subtraction accumulator appends one digit per round. -/
+lemma cursorStep_lengths (clock left right : List Bool) (acc : Bool × List Bool) :
+    (clock.foldl cursorStep ((left, right), acc)).1.1.length ≤ left.length ∧
+    (clock.foldl cursorStep ((left, right), acc)).1.2.length ≤ right.length ∧
+    (clock.foldl cursorStep ((left, right), acc)).2.2.length = acc.2.length + clock.length := by
+  rcases acc with ⟨c, out⟩
+  rw [foldl_cursorStep]
+  obtain ⟨ds, hds, hlen, _⟩ := foldl_subStep
+    ((List.range clock.length).map fun i => (left.getD i false, right.getD i false)) c out
+  simp only [List.length_map, List.length_range] at hlen
+  simp only [hds, List.length_drop, List.length_append, hlen]
+  exact ⟨Nat.sub_le _ _, Nat.sub_le _ _, trivial⟩
 
 end Turing.MultiTapeTM.BinarySub

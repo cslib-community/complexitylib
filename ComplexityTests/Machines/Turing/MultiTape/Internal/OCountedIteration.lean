@@ -7,6 +7,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.UnaryMachines
 import Lean.Elab.Command
 
@@ -82,7 +83,7 @@ example (T : ℕ → ℕ) :
     (¬ ComputableInO (fun n : ℕ => List.replicate n true) encNat encBits T (fun _ => 0)) ∧
     ComputableInO (fun p : ℕ × ℕ => decide (p.1 < p.2))
       (encPair encNat encNat) encBool
-      (fun p => (p.1 + 1) * ((encPair encNat encNat p).length + 1) ^ 2)
+      (fun p => ((encPair encNat encNat p).length + 1) ^ 2)
       (fun p => (encPair encNat encNat p).length + 1) := by
   refine ⟨?_, .natLt⟩
   rintro ⟨c, _, hlen⟩
