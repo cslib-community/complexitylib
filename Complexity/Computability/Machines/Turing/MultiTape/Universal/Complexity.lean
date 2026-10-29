@@ -700,7 +700,8 @@ public theorem step_inO :
   have hc := snd (encPair eDesc (encList encUnary)) eCfg
   have hip := (hc.of_enc_eq (encOut := eCfgFields)
     (g := fun c : Ctx => (c.2.state, c.2.inputPos, c.2.workTapes)) fun _ => rfl).snd'.fst'
-  refine ((stepWith_inO.comp ((hd.prod hc).prod (inputSymbol_stream_inO.tidy.comp (hx.prod hip)))).mono 32
+  refine ((stepWith_inO.comp
+    ((hd.prod hc).prod (inputSymbol_stream_inO.tidy.comp (hx.prod hip)))).mono 32
     (fun c => ?_) fun c => ?_).of_enc_eq fun c => by rw [step_eq_stepWith]; rfl
   all_goals
     have h₁ : (eSym (inputSymbol c.1.2 c.2.inputPos)).length ≤
