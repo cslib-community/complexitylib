@@ -26,10 +26,12 @@ import Complexity.Tactic.PPT
 /-!
 # Polynomial-Time Completeness of $\text{OT}_1^4$ for Semi-Honest Multi-Party Computation
 
-This module completes the formalization of Goldreich's semi-honest multi-party completeness theorem
-for 1-out-of-4 bit oblivious transfer $\text{OT}_1^4$ (Section 7.5.2.4, Theorem 7.5.12, print
-p. 707; generalizing Section 7.3.4, Theorem 7.3.11, print p. 648). Given any polynomial-time
-computable family of $m$-party randomized functionalities specified by a word-level evaluator
+This module formalizes a proper-coalition variant of Goldreich's semi-honest multi-party
+completeness theorem for 1-out-of-4 bit oblivious transfer $\text{OT}_1^4$ (Section 7.5.2.4,
+Theorem 7.5.12, print p. 707; generalizing Section 7.3.4, Theorem 7.3.11, print p. 648), with
+uniform efficiency certificates for the joint word-level runner and coalition simulators.
+Given any polynomial-time computable family of $m$-party randomized functionalities specified
+by a word-level evaluator
 `F : α × List Bool → List Bool` with polynomial-time unary input width `n : α → ℕ`, output width
 `k : α → ℕ`, and shared-coin width `coins : α → ℕ`:
 
@@ -67,8 +69,10 @@ computable family of $m$-party randomized functionalities specified by a word-le
    to the view-only Eq. 7.39). Under the joint view-and-output equation Eq. 7.40 for randomized
    functionalities, `I = Finset.univ` is not vacuous: the canonical independent-coin-share simulator
    `randomizedWrapperSim` is refuted at `I = Finset.univ` by
-   `not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ`, and any full-coalition simulator
-   receiving only `(x, y)` would have to sample coin shares whose XOR `r` satisfies `g(r, x) = y`.
+   `not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ` in
+   [ComplexityTests/Crypto/MPC.lean](https://github.com/cslib-community/complexitylib/blob/main/ComplexityTests/Crypto/MPC.lean),
+   and any full-coalition simulator receiving only `(x, y)` would have to sample coin shares whose
+   XOR `r` satisfies `g(r, x) = y`.
 
 ## Main definitions
 
@@ -6050,9 +6054,10 @@ p. 696; Goldreich's text on pp. 697 and 703 treats `I = [m]` as trivial without 
 remark to deterministic functionalities or to the view-only Eq. 7.39). Under the joint
 view-and-output equation Eq. 7.40 for randomized functionalities, `I = Finset.univ` is not vacuous:
 the canonical independent-coin-share simulator `randomizedWrapperSim` is refuted at
-`I = Finset.univ` by `not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ`, and any
-full-coalition simulator receiving only `(x, y)` would have to sample coin shares whose XOR `r`
-satisfies `g(r, x) = y`. -/
+`I = Finset.univ` by `not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ` in
+[ComplexityTests/Crypto/MPC.lean](https://github.com/cslib-community/complexitylib/blob/main/ComplexityTests/Crypto/MPC.lean),
+and any full-coalition simulator receiving only `(x, y)` would have to sample coin shares whose
+XOR `r` satisfies `g(r, x) = y`. -/
 theorem exists_perfectSemiHonestPrivate_ot14_of_polyTime {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) [NeZero m] {coins n k : α → ℕ} {F : α × List Bool → List Bool}
     (hcoins : ComputableInPolyTime coins enc encUnary)
