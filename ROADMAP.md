@@ -168,9 +168,12 @@ index links to canonical definitions rather than keeping a second set.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
-- A tight time hierarchy, which needs a linear-overhead tape-indexed simulation, and the
-  `f log f` hierarchy with its simulation bound. The space hierarchy for `log n ≤ g n`, which
-  needs a universal simulation that does not hold its input.
+- **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
+  degrees `1 ≤ a < b`. Remaining targets include the general deterministic `f log f` hierarchy
+  with its simulation bound ([#800]), noninteger polynomial degrees and finer logarithmic
+  gaps, and sharp nondeterministic and alternating time hierarchies with certified simulators.
+- The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
+  its input.
 - **Space:** Savitch bounds for general space-constructible functions.
 - **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
   `BPL ⊆ L²` and Saks–Zhou.
@@ -320,14 +323,19 @@ certified DPLL solver runtimes.
   constructors, with constructive choices of information sets and line menus; the
   iterated-function preprocessing; and the bit complexity of formula evaluation on the rational
   hitting-list matrices.
-- **Algebraic complexity** ([#891]): Limaye–Srinivasan–Tavenas constant-depth lower bounds; the
-  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the
-  permanent has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the
-  permanent over fields of characteristic other than two; formula and branching-program models,
-  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
-  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms
-  at depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
-  construction costs certified separately from gate counts.
+- **Algebraic complexity** ([#891]): the rest of Limaye–Srinivasan–Tavenas. Proved: simple
+  circuits (product gates reading distinct wires) of constant product-depth computing iterated
+  matrix multiplication need superpolynomial size over any field, at `d = ⌊log₂ ⌊log₂ n⌋⌋`, from an
+  explicit bound with exponent `d ^ (1 / (4 ^ Δ - 1))`. Remaining: their semantic set-multilinear
+  model; growing `Δ` with exponent `d ^ exp(-O(Δ))`; the `√d` bound at `Δ = 1` (LST Lemma 13 and
+  Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
+  Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
+  has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
+  fields of characteristic other than two; formula and branching-program models, identity testing,
+  hitting sets, and tensor and rank methods, including partial-derivative measures (Nisan–Wigderson
+  depth-3 bounds and shifted partials) and the depth-reduction chasms at depth four (Agrawal–Vinay)
+  and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform construction costs certified
+  separately from gate counts.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
   [lean-canny](https://github.com/SamuelSchlesinger/lean-canny).
@@ -424,12 +432,15 @@ each statement against the numbered result. Organize modules by subject, not cha
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
   and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
-  witness recovery ([#1447]) are proved mathematically. The charged native Convolution host
+  witness recovery ([#1447]) are proved mathematically. The tensor identity, full recursion,
+  shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
+  bounds, with the empty zero-depth root handled explicitly. The charged native Convolution host
   ([#1524]) initializes from the ordinary input and runs every generated instance, conditional on
-  a concrete solver's execution, correctness and frame theorem. Remaining work includes
-  tensor/sparse-query programs, native Chan–He preprocessing, the fast Exact Triangle solver and
-  full input/time/width/asymptotic composition, then the improved Section 4 route to exponent
-  1.9992; size-based width
+  a concrete solver's execution, correctness and frame theorem. Remaining work includes tiling
+  and sparse leaf bounds, native tensor/sparse-query programs, native Chan–He preprocessing,
+  the fast Exact Triangle solver and full
+  input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
+  size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
@@ -540,6 +551,7 @@ not planned, not as proved.
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
+[#800]: https://github.com/cslib-community/complexitylib/issues/800
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
 [#884]: https://github.com/cslib-community/complexitylib/issues/884
@@ -575,3 +587,4 @@ not planned, not as proved.
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
+[#1572]: https://github.com/cslib-community/complexitylib/issues/1572

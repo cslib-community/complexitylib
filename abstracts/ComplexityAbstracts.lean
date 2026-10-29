@@ -7,6 +7,8 @@ import ComplexityAbstracts.CommunicationAbstract
 import ComplexityAbstracts.CommunicationBridge
 import ComplexityAbstracts.Computation
 import ComplexityAbstracts.ConstantDepthAbstract
+import ComplexityAbstracts.ConstantDepthArithmeticAbstract
+import ComplexityAbstracts.ConstantDepthArithmeticBridge
 import ComplexityAbstracts.ConstantDepthBridge
 import ComplexityAbstracts.CookLevinAbstract
 import ComplexityAbstracts.CookLevinBridge

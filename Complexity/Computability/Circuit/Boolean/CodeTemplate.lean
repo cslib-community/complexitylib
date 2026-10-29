@@ -35,7 +35,7 @@ finite encoding of circuits at a fixed width. Variable-size families of instance
 
 namespace Cslib.Circuits.Boolean
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Instantiate a formula at raw wire numbers. This algorithm is total even when a selected
 wire is outside the declared input count; its typed correctness theorem requires valid wires. -/
@@ -62,14 +62,11 @@ theorem computableInPolyTime_formulaCode {α : Type} {enc : α ↪ List Bool}
     (hn : ComputableInPolyTime n enc encNat)
     (hwires : ∀ i, ComputableInPolyTime (fun a => wires a i) enc encNat) :
     ComputableInPolyTime (fun a => formulaCode (n a) F (wires a)) enc encCode := by
-  refine .of_tidy ?_
-  have hn := hn.tidy
-  have hwires := fun i => (hwires i).tidy
   induction F with
   | input i => exact (const []).prod ((hwires i).cons' (const []))
   | gate op args ih =>
-    exact (computableInPolyTime_compCode (.of_tidy hn)
-      (.of_tidy (const (Circuit.oneGate (σ := signature) op id).code))
-      (computableInPolyTime_appendCodes (.of_tidy hn) (.of_tidy (ofFn (fun i => ih i))))).tidy
+    exact computableInPolyTime_compCode hn
+      (const (Circuit.oneGate (σ := signature) op id).code)
+      (computableInPolyTime_appendCodes hn (ofFn (fun i => ih i)))
 
 end Cslib.Circuits.Boolean

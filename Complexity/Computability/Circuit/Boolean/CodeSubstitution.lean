@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Data.List.GetD
 
 /-!
@@ -179,7 +180,7 @@ theorem evalOutputs_prefixCode {n m : ℕ} (r : List Bool)
     List.length_map]
   exact ⟨trivial, trivial⟩
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Rewriting one wire is polynomial-time even when wire numbers and `n` are binary. -/
 @[fun_prop] theorem computableInPolyTime_prefixWire {α : Type}
@@ -188,18 +189,13 @@ open Turing.MultiTapeTM ComputableTidilyInPolyTime
     (hn : ComputableInPolyTime n encIn encNat)
     (hi : ComputableInPolyTime i encIn encNat) :
     ComputableInPolyTime (fun a => prefixWire (r a) (n a) (i a)) encIn encNat := by
-  have hr := hr.tidy
-  have hn := hn.tidy
-  have hi := hi.tidy
-  refine .of_tidy ?_
-  have hlen : ComputableTidilyInPolyTime (fun a => (r a).length) encIn encNat :=
+  have hlen : ComputableInPolyTime (fun a => (r a).length) encIn encNat :=
     unary_to_binary.comp (length_bits.comp hr)
-  have hbit : ComputableTidilyInPolyTime (fun a => (r a).getD (i a) false) encIn encBool :=
+  have hbit : ComputableInPolyTime (fun a => (r a).getD (i a) false) encIn encBool :=
     listGetD_binary false hr hi
   unfold prefixWire
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Construct hardwired raw codes in polynomial time, with binary live-input and wire counts. -/
 @[fun_prop] theorem computableInPolyTime_prefixCode {α : Type}
     {encIn : α ↪ List Bool} {r : α → List Bool} {n : α → ℕ}
@@ -208,23 +204,17 @@ attribute [local fun_prop] ComputableInPolyTime.tidy in
     (hn : ComputableInPolyTime n encIn encNat)
     (hcode : ComputableInPolyTime code encIn encCode) :
     ComputableInPolyTime (fun a => prefixCode (r a) (n a) (code a)) encIn encCode := by
-  have hr := hr.tidy
-  have hn := hn.tidy
-  have hcode := hcode.tidy
-  refine .of_tidy ?_
-  let encP := encPair encBits encNat
-  have hwire : ComputableTidilyInPolyTime
-      (fun p : (List Bool × ℕ) × ℕ => prefixWire p.1.1 p.1.2 p.2)
-      (encPair encP encNat) encNat := by fun_prop
-  have hgate : ComputableTidilyInPolyTime
-      (fun p : (List Bool × ℕ) × (Op × List ℕ) =>
-        (p.2.1, p.2.2.map (prefixWire p.1.1 p.1.2)))
-      (encPair encP encGate) encGate := by
-    exact ((snd encP encGate).fst').prod
-      (mapWith hwire (fst encP encGate) ((snd encP encGate).snd'))
-  have hpar := hr.prod hn
-  exact ((listAppend' (const [(Op.const false, []), (Op.const true, [])])
-    (mapWith hgate hpar hcode.fst')).prod (mapWith hwire hpar hcode.snd'))
+  have hwire : ComputableInPolyTime
+      (fun p : α × ℕ => prefixWire (r p.1) (n p.1) p.2)
+      (encPair encIn encNat) encNat := by fun_prop
+  have hgate : ComputableInPolyTime
+      (fun p : α × (Op × List ℕ) =>
+        (p.2.1, p.2.2.map (prefixWire (r p.1) (n p.1))))
+      (encPair encIn encGate) encGate :=
+    ((snd encIn encGate).fst').prod
+      (mapWithInput (snd encIn encGate).snd' (hwire.comp ((fst _ _).fst'.prod (snd _ _))))
+  exact (listAppend' (const [(Op.const false, []), (Op.const true, [])])
+    (mapWithInput hcode.fst' hgate)).prod (mapWithInput hcode.snd' hwire)
 
 end Boolean
 end Cslib.Circuits

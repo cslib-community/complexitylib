@@ -62,14 +62,14 @@ theorem NP_subset_PCP_log {Input : Type} (input : Input ↪ List Bool) :
     NP input ⊆ PCP (fun n => Nat.log 2 n + 1) (fun _ => 1) input := by
   intro A hA
   obtain ⟨reduce, hreduce, hmem⟩ := CookLevin.SAT_npHard input A hA
-  have heval : ComputableTidilyInPolyTime
+  have heval : ComputableInPolyTime
       (fun p : (SelectedAlphabet → SelectedAlphabet → Bool) ×
         SelectedAlphabet × SelectedAlphabet => p.1 p.2.1 p.2.2)
       (encPair (encPi (encPi encBool))
         (encPair (encPair encBool (encPi encBool)) (encPair encBool (encPi encBool)))) encBool :=
-    (Graph.isPolyTime_constraintTableEval (encPair encBool (encPi encBool))).tidy
+    Graph.isPolyTime_constraintTableEval (encPair encBool (encPi encBool))
   exact Graph.mem_PCP_of_gapReduction (FinEnum.card (Fin 6) + 1)
-    encodeLabel decodeLabel decode_encodeLabel (isPolyTime_gapGraph hreduce) (.of_tidy heval)
+    encodeLabel decodeLabel decode_encodeLabel (isPolyTime_gapGraph hreduce) heval
     (fun x => wellFormed_gapGraph (reduce x))
     (fun x hx => (satisfiable_gapGraph_iff _).mpr ((hmem x).mp hx))
     (gap := gap) gap_pos

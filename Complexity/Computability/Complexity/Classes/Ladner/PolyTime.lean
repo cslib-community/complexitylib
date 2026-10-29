@@ -20,7 +20,7 @@ import Complexity.Foundations.Data.List.Lookup
 /-!
 # Ladner's language in polynomial time and in NP
 
-The exponent function `Cslib.Complexity.Ladner.H` of Ladner's language is tidily computable in
+The exponent function `Cslib.Complexity.Ladner.H` of Ladner's language is computable in
 polynomial time on unary numbers (`Cslib.Complexity.Ladner.computableInPolyTime_H`), and
 Ladner's language is in `NP` (`Cslib.Complexity.Ladner.SATH_mem_NP`), with a verifier that reads
 the padded formula and evaluates it under the assignment the certificate describes.
@@ -38,7 +38,7 @@ The certificate rests on general tools: a total decoder for formulas
 (`Cslib.Complexity.cnfDecoder`, built from `Turing.MultiTapeTM.Decoder.nat` and
 `Turing.MultiTapeTM.Decoder.bool`), capped powers on unary numbers
 (`Cslib.Complexity.Ladner.computableInPolyTime_capPow`), the universal function with its
-number of steps in unary (`Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_universal`), and
+number of steps in unary (`Turing.MultiTapeTM.Universal.computableInPolyTime_universal`), and
 the words by index (`Cslib.Complexity.Ladner.computableInPolyTime_word`). Decoding machine
 descriptions and coding their input bits use the shared polynomial-time rules in
 `Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime`.
@@ -336,13 +336,13 @@ private theorem computableInPolyTime_agreesB :
 /-- The step of the exponent function is polynomial-time in its table. -/
 private theorem computableInPolyTime_hstepB :
     ComputableInPolyTime hstepB (encList encUnary) encUnary := by
-  have ha := computableInPolyTime_agreesB.tidy
-  have hall : ComputableTidilyInPolyTime
+  have ha := computableInPolyTime_agreesB
+  have hall : ComputableInPolyTime
       (fun p : List ℕ × ℕ => (List.range p.1.length).all fun j => agreesB p.1 p.2 j)
       (encPair (encList encUnary) encUnary) encBool := by
     fun_prop
   unfold hstepB
-  exact .of_tidy (by fun_prop)
+  fun_prop
 
 /-! ### The exponent function -/
 
