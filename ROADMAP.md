@@ -429,10 +429,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
-- **Shared native matrix encoders** ([#1493]): compute all `10^L` leaf values from `7^L`
+- **Shared native matrix encoders** ([#1493](https://github.com/cslib-community/complexitylib/issues/1493)): compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
-- **Native shared-band preparation** ([#1523]): computes deterministic subset tables and a valid
+- **Native shared-band preparation** ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)): computes deterministic subset tables and a valid
   layout, prepares padded signed matrix bands, invokes both shared encoders for every band, and
   restores the original initialized input. Fixed 96-register code has a charged bound, including
   halt, of `4096*(L+1)*(1+N*4^m+2^L+2*numBands*10^L)+1`; at `L=19m`, `N≥(4^m)^18`, it is at most
@@ -445,9 +445,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
   and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
   witness recovery ([#1447]) are proved mathematically. The tensor identity, full recursion,
-  shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
+  shared encodings and pruned-evaluation core ([#1459](https://github.com/cslib-community/complexitylib/issues/1459)) include exact visited-leaf and passed-set
   bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
-  ([#1463]) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
+  ([#1463](https://github.com/cslib-community/complexitylib/issues/1463)) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
   sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. It still
   needs native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
   host, the fast Exact Triangle solver and full
@@ -598,8 +598,4 @@ not planned, not as proved.
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
-[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
-[#1463]: https://github.com/cslib-community/complexitylib/issues/1463
-[#1493]: https://github.com/cslib-community/complexitylib/issues/1493
-[#1523]: https://github.com/cslib-community/complexitylib/issues/1523
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
