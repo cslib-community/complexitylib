@@ -359,7 +359,7 @@ example :
     ∃ a y₀ y traces s' tr,
       MinPQ.Rep 4 50 500 10 8 (Cslib.Algorithms.Lean.MinPQ.empty 4) y₀ ∧
       MinPQ.potential y₀ = 0 ∧
-      Stateful.RelExecutes ((relDynamicProgram hS hU hV).ExecOp 10) sampleMinPQClient y₀
+      Stateful.Executes ((relDynamicProgram hS hU hV).ExecOp 10) sampleMinPQClient y₀
         a y traces ∧
       (Cslib.Algorithms.Lean.MinPQ.spec 4 50 500).ClientRun
         (Cslib.Algorithms.Lean.MinPQ.empty 4) sampleMinPQClient a s' tr ∧

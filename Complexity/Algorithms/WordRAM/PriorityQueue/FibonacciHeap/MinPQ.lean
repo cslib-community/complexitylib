@@ -1699,14 +1699,14 @@ def relSubroutineDS {n_max U V w base : ℕ}
   setup_exec := initSetup_exec
   step_exec := dispatchCode_exec
 
-/-! ## Standalone `Basis.standard` `RelDynamicProgram` and `Stateful.RelAmortized` realizations -/
+/-! ## Standalone `Basis.standard` `DynamicProgram` and `Stateful.RelAmortized` realizations -/
 
-/-- Standalone `RelDynamicProgram` realization of the key–value Fibonacci heap over
+/-- Standalone `DynamicProgram` realization of the key–value Fibonacci heap over
 `Basis.standard`. -/
 def relDynamicProgram {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    RelDynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) rMinPQ :=
-  (relSubroutineDS (n_max := n_max) (U := U) (V := V) hS hU hV).toStandard.toRelDynamicProgram
+    DynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) rMinPQ :=
+  (relSubroutineDS (n_max := n_max) (U := U) (V := V) hS hU hV).toStandard.toDynamicProgram
 
 /-- Standalone `RelDynamicCertificate` for the key–value Fibonacci heap over `Basis.standard`. -/
 def relCertificate {n_max U V w base : ℕ}
@@ -1733,7 +1733,7 @@ theorem run_client_amortized {n_max U V w base : ℕ}
     (hr : Rep n_max U V w base s x)
     (hv : (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).DemonicValid s p) :
     ∃ a y traces s' tr,
-      Stateful.RelExecutes ((relDynamicProgram hS hU hV).ExecOp w) p x a y traces ∧
+      Stateful.Executes ((relDynamicProgram hS hU hV).ExecOp w) p x a y traces ∧
       (Cslib.Algorithms.Lean.MinPQ.spec n_max U V).ClientRun s p a s' tr ∧
       Rep n_max U V w base s' y ∧
       traces.length = tr.length ∧

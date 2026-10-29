@@ -444,10 +444,10 @@ abbrev relSubroutineDS {n_max U V w base : ℕ}
       ![n_max] (Cslib.Algorithms.Lean.MinPQ.empty n_max) :=
   MinPQ.relSubroutineDS hS hU hV
 
-/-- Standalone `RelDynamicProgram` for the key–value Fibonacci heap with handles (`MinPQ.spec`). -/
+/-- Standalone `DynamicProgram` for the key–value Fibonacci heap with handles (`MinPQ.spec`). -/
 abbrev relDynamicProgram {n_max U V w base : ℕ}
     (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    RelDynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) MinPQ.rMinPQ :=
+    DynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) MinPQ.rMinPQ :=
   MinPQ.relDynamicProgram hS hU hV
 
 /-- Standalone `RelDynamicCertificate` for the key–value Fibonacci heap with handles
