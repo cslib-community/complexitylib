@@ -63,39 +63,26 @@ example :
 
 /-! ### Concrete theorem instantiations -/
 
-example (x : ZMod 7) :
-    (Game.advantage (preWhitenKeyRecoveryRealGame x) (preWhitenKeyRecoveryIdealGame x) : ℝ) =
-      1 - (Fintype.card (ZMod 7) : ℝ)⁻¹ :=
-  advantage_preWhitenKeyRecoveryGame_eq x
-
-example (x : BitString 4) :
-    (Game.advantage (postWhitenKeyRecoveryRealGame x) (postWhitenKeyRecoveryIdealGame x) : ℝ) =
+example :
+    (Game.advantage (preWhitenKeyRecoveryRealGame (0 : ZMod 7))
+        (preWhitenKeyRecoveryIdealGame (0 : ZMod 7)) : ℝ) =
+      1 - (Fintype.card (ZMod 7) : ℝ)⁻¹ ∧
+    (Game.advantage (postWhitenKeyRecoveryRealGame (0 : BitString 4))
+        (postWhitenKeyRecoveryIdealGame (0 : BitString 4)) : ℝ) =
       1 - (Fintype.card (BitString 4) : ℝ)⁻¹ :=
-  advantage_postWhitenKeyRecoveryGame_eq x
+  ⟨advantage_preWhitenKeyRecoveryGame_eq 0, advantage_postWhitenKeyRecoveryGame_eq 0⟩
 
-example (T_e T_π : List (BitString 4 × BitString 4)) :
+example :
     ((PMF.uniformOfFintype (BitString 4 × BitString 4)).toOuterMeasure
-      {k | isBadEvenMansourKey T_e T_π k = true}).toReal ≤
-      2 * (T_e.length : ℝ) * (T_π.length : ℝ) / (Fintype.card (BitString 4) : ℝ) :=
-  toOuterMeasure_isBadEvenMansourKey_toReal_le T_e T_π
-
-example (T_e T_π : List (BitString 4 × BitString 4)) :
+      {k | isBadEvenMansourKey [(0, 0)] [(0, 0)] k = true}).toReal ≤
+      2 * ([(0 : BitString 4 × BitString 4)].length : ℝ) *
+        ([(0 : BitString 4 × BitString 4)].length : ℝ) / (Fintype.card (BitString 4) : ℝ) ∧
     ((PMF.uniformOfFintype (BitString 4)).toOuterMeasure
-      {k | isBadSingleKeyEvenMansour T_e T_π k = true}).toReal ≤
-      2 * (T_e.length : ℝ) * (T_π.length : ℝ) / (Fintype.card (BitString 4) : ℝ) :=
-  toOuterMeasure_isBadSingleKeyEvenMansour_toReal_le T_e T_π
-
-example (program : OracleComp (EvenMansourSpec (BitString 4)) Bool) :
-    evenMansourIdealGame program =
-      (((OracleComp.interpret idealLazyHandler program).run ([], [])).map Prod.fst : PMF Bool) :=
-  evenMansourIdealGame_eq_lazy program
-
-example (k : BitString 4 × BitString 4)
-    (program : OracleComp (EvenMansourSpec (BitString 4)) Bool) :
-    (PMF.uniformOfFintype (Equiv.Perm (BitString 4))).bind
-        (fun π => PMF.pure (evalEvenMansour π k.1 k.2 program)) =
-      (((OracleComp.interpret (realLazyHandler k) program).run []).map Prod.fst : PMF Bool) :=
-  realGameForKey_eq_lazy k program
+      {k | isBadSingleKeyEvenMansour [(0, 0)] [(0, 0)] k = true}).toReal ≤
+      2 * ([(0 : BitString 4 × BitString 4)].length : ℝ) *
+        ([(0 : BitString 4 × BitString 4)].length : ℝ) / (Fintype.card (BitString 4) : ℝ) :=
+  ⟨toOuterMeasure_isBadEvenMansourKey_toReal_le [(0, 0)] [(0, 0)],
+   toOuterMeasure_isBadSingleKeyEvenMansour_toReal_le [(0, 0)] [(0, 0)]⟩
 
 /-- A concrete two-sided distinguisher making `1` cipher query and `1` primitive query on
 `ZMod 7`. -/
@@ -115,17 +102,24 @@ theorem isCallBounded_sampleTwoSidedDistinguisher :
         (isCallBounded_queryPermInverse y).2.bind fun u => IsCostBounded.pure _ 0
 
 example :
+    evenMansourIdealGame sampleTwoSidedDistinguisher =
+      (((OracleComp.interpret idealLazyHandler sampleTwoSidedDistinguisher).run ([], [])).map
+        Prod.fst : PMF Bool) ∧
+    (PMF.uniformOfFintype (Equiv.Perm (ZMod 7))).bind
+        (fun π => PMF.pure (evalEvenMansour π 3 5 sampleTwoSidedDistinguisher)) =
+      (((OracleComp.interpret (realLazyHandler (3, 5)) sampleTwoSidedDistinguisher).run []).map
+        Prod.fst : PMF Bool) ∧
     (Game.advantage (evenMansourRealGame sampleTwoSidedDistinguisher)
       (evenMansourIdealGame sampleTwoSidedDistinguisher) : ℝ) ≤
-      2 * ((1 : ℕ) : ℝ) * ((1 : ℕ) : ℝ) / (Fintype.card (ZMod 7) : ℝ) :=
-  advantage_evenMansourRealGame_evenMansourIdealGame_le isCallBounded_sampleTwoSidedDistinguisher
-
-example :
+      2 * ((1 : ℕ) : ℝ) * ((1 : ℕ) : ℝ) / (Fintype.card (ZMod 7) : ℝ) ∧
     (Game.advantage (singleKeyEvenMansourRealGame sampleTwoSidedDistinguisher)
       (evenMansourIdealGame sampleTwoSidedDistinguisher) : ℝ) ≤
       2 * ((1 : ℕ) : ℝ) * ((1 : ℕ) : ℝ) / (Fintype.card (ZMod 7) : ℝ) :=
-  advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le
-    isCallBounded_sampleTwoSidedDistinguisher
+  ⟨evenMansourIdealGame_eq_lazy sampleTwoSidedDistinguisher,
+   realGameForKey_eq_lazy (3, 5) sampleTwoSidedDistinguisher,
+   advantage_evenMansourRealGame_evenMansourIdealGame_le isCallBounded_sampleTwoSidedDistinguisher,
+   advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le
+    isCallBounded_sampleTwoSidedDistinguisher⟩
 
 /-! ### Axiom guards for headline results -/
 

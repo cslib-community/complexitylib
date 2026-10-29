@@ -31,7 +31,7 @@ padded to exactly this polynomial length, which a halted table ignores. The veri
 the table emits `[true]`: then the coins encode a computation path that halts with output
 `[true]`. Every coin list selects permitted actions, except at a stuck configuration, which has
 none; there the table rejects. Replaying a fixed finite fair-coin table from encoded coins and
-input is polynomial-time (`Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins`), so
+input is polynomial-time (`Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`), so
 the verifier needs no machine built by hand.
 
 ## Main definitions
@@ -74,15 +74,14 @@ table. -/
 @[fun_prop]
 theorem computableInPolyTime_checkChoices (ntm : MultiTapeNTM k Bool State) :
     ComputableInPolyTime (ntm.checkChoices enc) (encPair enc encBits) encBool := by
-  refine .of_tidy ?_
-  have hswap : ComputableTidilyInPolyTime (fun x : α × List Bool => (x.2, enc x.1))
+  have hswap : ComputableInPolyTime (fun x : α × List Bool => (x.2, enc x.1))
       (encPair enc encBits) (encPair encBits encBits) :=
-    (ComputableTidilyInPolyTime.snd enc encBits).prod
-      ((ComputableTidilyInPolyTime.of_eq (encMid := encBits) fun _ => rfl).comp
-        (ComputableTidilyInPolyTime.fst enc encBits))
-  exact ComputableTidilyInPolyTime.decide_eq'
-    ((MultiTapePTM.computableTidilyInPolyTime_runClosedCoins ntm.choiceTable).comp hswap)
-    (ComputableTidilyInPolyTime.const [true])
+    (ComputableInPolyTime.snd enc encBits).prod
+      ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
+        (ComputableInPolyTime.fst enc encBits))
+  exact ComputableInPolyTime.decide_eq'
+    ((MultiTapePTM.computableInPolyTime_runClosedCoins ntm.choiceTable).comp hswap)
+    (ComputableInPolyTime.const [true])
 
 /-- **Accepting computations as certificates of any sufficient length.** If `ntm` decides `A`
 within `t`, then `a ∈ A` exactly when some certificate of length `L` encodes an accepting

@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Crypto.Computational.MerkleDamgard
 import Complexity.Crypto.Computational.MerkleTree.Binding
+import Complexity.Tactic.PPT
 
 /-!
 # Tests for Merkle-tree verification and position binding
@@ -34,11 +35,10 @@ abbrev key : List Bool := [false, true]
 /-- A hash that returns its message: no collisions, so only honest openings are accepted. -/
 def idHash (_ x : List Bool) : List Bool := x
 
--- Every position of the depth-two tree, opened by its path, is accepted.
-example (i : ℕ) (hi : i < 4) :
+-- All four positions of the padded depth-two tree are accepted with their computed paths.
+example : ∀ i : Fin 4,
     merkleVerify idHash key 2 (merkleRoot idHash key leaves) i (leaves.getD i [])
-      (merklePath idHash key leaves i) = true :=
-  merkleVerify_merklePath_of_clog_eq rfl hi
+      (merklePath idHash key leaves i) = true := by decide
 
 -- A wrong leaf at position `1` is rejected.
 example : merkleVerify idHash key 2 (merkleRoot idHash key leaves) 1 [true, true]
@@ -116,11 +116,8 @@ def constHash (k _ : List Bool) : List Bool := k
 def constBreaker : MerkleBindingAdversary := fun _ k => pure ((k, 0), ([false], []), ([true], []))
 
 theorem isPPT_constBreaker : IsPPT encMerkleBindingOutput constBreaker := by
-  change IsPPTOn (encPair encUnary encBits) encMerkleBindingOutput
-    (fun p => pure ((p.2, 0), ([false], []), ([true], [])))
-  exact (show ComputableInPolyTime
-    (fun p : ℕ × List Bool => ((p.2, 0), ([false], []), ([true], [])))
-    (encPair encUnary encBits) encMerkleBindingOutput by fun_prop).tidy.isPPTOn
+  unfold constBreaker
+  ppt
 
 -- The reduction applies to this adversary for an efficient length-preserving hash.
 example : IsPPT (encPair encBits encBits) (merkleCollisionFinder xorHash constBreaker) :=
@@ -143,9 +140,14 @@ theorem not_merklePositionBinding_constHash : ¬ MerklePositionBinding constHash
   exact not_negligible_const one_ne_zero
     (negligible_of_le (h.negligible constBreaker isPPT_constBreaker) hwin)
 
--- Compression families give position-binding Merkle trees, through Merkle–Damgård.
+-- Compression families give position-binding Merkle trees and PPT collision finders
+-- through Merkle–Damgård.
 example {h : List Bool → List Bool → List Bool} (hh : CompressionFamily h) :
-    MerklePositionBinding (merkleDamgard h) :=
-  hh.hashFamily_merkleDamgard.merklePositionBinding
+    MerklePositionBinding (merkleDamgard h) ∧
+      IsPPT (encPair encBits encBits)
+        (merkleCollisionFinder (merkleDamgard h) constBreaker) :=
+  ⟨hh.hashFamily_merkleDamgard.merklePositionBinding,
+    isPPT_merkleCollisionFinder hh.hashFamily_merkleDamgard.polyTime
+      hh.hashFamily_merkleDamgard.length_eq isPPT_constBreaker⟩
 
 end ComplexityTests.Crypto.MerkleBinding

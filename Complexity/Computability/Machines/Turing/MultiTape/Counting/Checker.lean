@@ -15,6 +15,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable
 
 /-!
@@ -37,7 +38,7 @@ in the encoded input/certificate pair, not uniformly in a supplied machine descr
 * `Turing.MultiTapeCTM.Checker.output_eq_decodeCertificate`: exact native replay correspondence.
 * `Turing.MultiTapeCTM.Checker.checkBinary_eq_certificateAccepts`:
   exact binary/index correspondence.
-* `Turing.MultiTapeCTM.Checker.computableTidilyInPolyTime_checkBinary`: the actual checker is
+* `Turing.MultiTapeCTM.Checker.computableInPolyTime_checkBinary`: the actual checker is
   polynomial-time, using finite dispatch and a linear encoded-storage loop invariant.
 
 ## References
@@ -382,10 +383,10 @@ theorem checkBinary_eq_certificateAccepts (machine : MultiTapeCTM k Bool State)
 
 /-- Both the accepting and rejecting binary verifiers are polynomial-time on every input pair. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_checkBinary [Finite State]
+theorem computableInPolyTime_checkBinary [Finite State]
     (machine : MultiTapeCTM k Bool State) (width : ℕ) (verdict : Bool) :
-    ComputableTidilyInPolyTime (checkBinary machine width verdict)
-      (encPair encBits encBits) encBool := by
+    ComputableInPolyTime (checkBinary machine width verdict) (encPair encBits encBits) encBool := by
+  refine ComputableTidilyInPolyTime.computableInPolyTime ?_
   have hout := computableTidilyInPolyTime_finishRuntime.comp
     (computableTidilyInPolyTime_runBinary machine width)
   have hclass : ComputableTidilyInPolyTime

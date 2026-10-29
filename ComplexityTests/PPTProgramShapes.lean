@@ -26,8 +26,8 @@ abbrev loop (count : List Bool → ℕ) (initial : List Bool → List Bool)
 
 example (count : List Bool → ℕ) (initial : List Bool → List Bool)
     (step : List Bool → ProbComp (List Bool))
-    (hc : ComputableTidilyInPolyTime count encBits encUnary)
-    (hi : ComputableTidilyInPolyTime initial encBits encBits)
+    (hc : ComputableInPolyTime count encBits encUnary)
+    (hi : ComputableInPolyTime initial encBits encBits)
     (hs : IsPPTOn encBits encBits step)
     (hshrink : ∀ state next, next ∈ (ProbComp.eval (step state)).support →
       (encBits next).length ≤ (encBits state).length) :
@@ -35,8 +35,8 @@ example (count : List Bool → ℕ) (initial : List Bool → List Bool)
 
 example (count : List Bool → ℕ) (initial : List Bool → List Bool)
     (step : List Bool → ProbComp (List Bool)) (growth : ℕ)
-    (hc : ComputableTidilyInPolyTime count encBits encUnary)
-    (hi : ComputableTidilyInPolyTime initial encBits encBits)
+    (hc : ComputableInPolyTime count encBits encUnary)
+    (hi : ComputableInPolyTime initial encBits encBits)
     (hs : IsPPTOn encBits encBits step)
     (hg : ∀ state next, next ∈ (ProbComp.eval (step state)).support →
       (encBits next).length ≤ (encBits state).length + growth) :
@@ -48,8 +48,8 @@ abbrev capturedLoop (count : List Bool → ℕ) (initial : List Bool → List Bo
 
 example (count : List Bool → ℕ) (initial : List Bool → List Bool)
     (step : List Bool → List Bool → ProbComp (List Bool)) (growth : List Bool → ℕ)
-    (hc : ComputableTidilyInPolyTime count encBits encUnary)
-    (hi : ComputableTidilyInPolyTime initial encBits encBits)
+    (hc : ComputableInPolyTime count encBits encUnary)
+    (hi : ComputableInPolyTime initial encBits encBits)
     (hs : IsPPTOn (encPair encBits encBits) encBits (fun p => step p.1 p.2))
     (hp : PolyBounded (fun word => (encBits word).length) growth)
     (hg : ∀ word state next, next ∈ (ProbComp.eval (step word state)).support →

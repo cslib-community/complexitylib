@@ -42,11 +42,6 @@ example : false ∉ small.leafBob last := fun h =>
   absurd (Protocol.leaf_eq_iff.mpr ⟨(Protocol.leaf_eq_iff.mp
     (rfl : small.leaf true true = last)).1, h⟩) (by decide)
 
--- The partition into at most `2 ^ 2` rectangles.
-example : ∃ (n : ℕ) (A : Fin n → Set Bool) (B : Fin n → Set Bool) (z : Fin n → Fin 3),
-    n ≤ 4 ∧ (∀ x y, ∃! i, x ∈ A i ∧ y ∈ B i) ∧ ∀ i, ∀ x ∈ A i, ∀ y ∈ B i, small.run x y = z i :=
-  small.exists_rectangle_partition
-
 /-! ### The trivial protocol and the boundary `n = 0` -/
 
 -- Without any bits, equality is constant and needs no communication: `0 < n` is needed.
@@ -58,14 +53,7 @@ example : Protocol.ecomplexity (fun (x y : BitString 0) b => equality x y = b) S
     (fun x _ y _ => by simp [equality, Subsingleton.elim x y])
   simpa using this
 
-example (f : BitString 3 → Bool → Bool) : Protocol.ecomplexityFun f ≤ 4 :=
-  Protocol.ecomplexityFun_le_succ f
-
 /-! ### Fooling sets -/
-
-example : IsFoolingSet (equality : Fin 3 → Fin 3 → Bool) true
-    (Finset.univ.image fun x => (x, x)) :=
-  isFoolingSet_equality _
 
 -- A pair off the diagonal cannot be added: `{(0, 0), (0, 1)}` is not a fooling set for equality.
 example : ¬ IsFoolingSet (equality : Fin 2 → Fin 2 → Bool) true {(0, 0), (0, 1)} := by
@@ -73,9 +61,13 @@ example : ¬ IsFoolingSet (equality : Fin 2 → Fin 2 → Bool) true {(0, 0), (0
   have := h.1 (0, 1) (by simp)
   simp [equality] at this
 
-example (n : ℕ) : IsFoolingSet disjointness true
-    ((Finset.univ : Finset (BitString n)).image fun x => (x, fun i => !x i)) :=
-  isFoolingSet_disjointness _
+-- By `isFoolingSet_disjointness`, a protocol computing disjointness on `BitString 3` has at least
+-- `8` leaves labelled `true`, one for each complementary pair `(x, !x)`.
+example (p : Protocol (BitString 3) (BitString 3) Bool) (hp : p.run = disjointness) :
+    8 ≤ (Finset.univ.filter fun i => p.leafOutput i = true).card := by
+  have h := (isFoolingSet_disjointness (Finset.univ : Finset (BitString 3))).card_le hp
+  rwa [Finset.card_image_of_injective _ fun x y h => congrArg Prod.fst h,
+    Finset.card_univ, BitString.card] at h
 
 /-! ### The rank bound -/
 
@@ -88,25 +80,25 @@ example (n : ℕ) : (n : ℕ∞) ≤
     simp [equality, Matrix.one_apply]
   rwa [hM, Matrix.rank_one, BitString.card, Nat.clog_pow _ _ one_lt_two] at h
 
-example : Prop := LogRankConjecture
-
 /-! ### Named functions -/
 
-example : Protocol.ecomplexity (fun (x y : BitString 3) b => equality x y = b) Set.univ
-    Set.univ = 4 :=
-  ecomplexity_equality (by decide)
+-- Every protocol computing greater-than on 3-bit binary numerals sends at least 4 bits.
+example (p : Protocol (BitString 3) (BitString 3) Bool)
+    (hp : p.Solves
+      (fun x y b => greaterThan (BitString.equivFin 3 x) (BitString.equivFin 3 y) = b)
+      Set.univ Set.univ) :
+    4 ≤ p.depth := by
+  have h := Protocol.ecomplexity_le_depth hp
+  rw [ecomplexity_greaterThan (by decide)] at h
+  exact_mod_cast h
 
-example : Protocol.ecomplexity (fun (x y : BitString 3) b =>
-    greaterThan (BitString.equivFin 3 x) (BitString.equivFin 3 y) = b) Set.univ Set.univ = 4 :=
-  ecomplexity_greaterThan (by decide)
-
-example : Protocol.ecomplexity (fun (x y : BitString 3) b => x ⬝ᵥ y = b) Set.univ
-    Set.univ = 4 :=
-  ecomplexity_dotProduct (by decide)
-
-example : Protocol.ecomplexity (fun (x y : BitString 3) b => disjointness x y = b) Set.univ
-    Set.univ = 4 :=
-  ecomplexity_disjointness (by decide)
+-- Any protocol computing the inner product on 3-bit strings has at least 9 leaves, hence depth at
+-- least 4.
+example (p : Protocol (BitString 3) (BitString 3) Bool) (hp : p.run = fun x y => x ⬝ᵥ y) :
+    4 ≤ p.depth := by
+  have h := (two_pow_lt_leafCount_of_run_eq_dotProduct hp).trans_le p.leafCount_le_two_pow_depth
+  rw [Fintype.card_fin] at h
+  exact (Nat.pow_lt_pow_iff_right Nat.one_lt_two).mp h
 
 -- Equality on a five-element set needs three bits.
 example (p : Protocol (Fin 5) (Fin 5) Bool) (hp : p.run = equality) : 3 ≤ p.depth := by

@@ -24,8 +24,6 @@ private def input (n digits : ℕ) (values : ℕ → ℤ) : Data 64 :=
 
 -- Each execution includes two complete prime scans and three baseline counting calls.
 set_option maxRecDepth 8192 in
-set_option maxHeartbeats 2000000 in
--- Kernel reduction of the full two-search program exceeds the default heartbeat budget.
 /-- Empty sets still compute the exact minimum/default specification, returning `2*2`. -/
 example : (Code.eval 8 6 Modulus.program (input 0 1 (fun i => i))).map
     (fun yn => [yn.1.regs Modulus.first, yn.1.regs Modulus.output,

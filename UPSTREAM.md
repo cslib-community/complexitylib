@@ -198,8 +198,17 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
   the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
   statements, not native instructions or an assumed solver. See
-  [#1442](https://github.com/cslib-community/complexitylib/issues/1442). Residue/chunk/piece splitting,
-  witness recovery and tensor/sparse query programs remain in #1394, alongside native composition.
+  [#1442](https://github.com/cslib-community/complexitylib/issues/1442).
+  `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
+  witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
+  using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
+  retain the source's exact real floor/ceiling specifications through checked bridges. The existing
+  signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
+  Tensor/sparse query programs, the full reduction host, native Chan–He preprocessing, fast Exact
+  Triangle and full input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.

@@ -544,7 +544,7 @@ lemma budgetTest_inO : ComputableTidilyInO
   have hword := (stepAt_inO.comp h₁).fst'.of_enc_eq (encOut := encBits)
     (g := fun s : SSt => eCfg (stepAt s.1).1) fun _ => rfl
   obtain ⟨cS, hcS⟩ := stepAt_inO.length_le
-  refine ((ComputableTidilyInO.unaryLe.comp ((ComputableTidilyInO.lengthUnary.comp
+  refine ((ComputableInO.unaryLe.tidy.comp ((ComputableInO.lengthUnary.tidy.comp
     hword).prod hbud)).of_enc_eq fun s => rfl).mono (3 * (4 * cS + 5) ^ 2 + 3) (fun s => ?_)
     fun s => ?_
   all_goals

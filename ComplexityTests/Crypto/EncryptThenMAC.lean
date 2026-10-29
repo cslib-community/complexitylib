@@ -28,8 +28,9 @@ def echoFamily (_ x : List Bool) : List Bool := x
 
 theorem echoFamily_polyTime :
     ComputableInPolyTime (fun p : List Bool × List Bool => echoFamily p.1 p.2)
-      (encPair encBits encBits) encBits :=
-  .of_tidy (ComputableTidilyInPolyTime.snd _ _)
+      (encPair encBits encBits) encBits := by
+  dsimp [echoFamily]
+  polytime
 
 theorem echoFamily_length (key query : List Bool) (h : query.length = key.length) :
     (echoFamily key query).length = key.length :=
@@ -108,7 +109,7 @@ def zeroCPAAdversary : OracleDistinguisher :=
 theorem isOraclePPT_zeroCPAAdversary : IsOraclePPT encBool zeroCPAAdversary := by
   have hbody : IsPPTOn (encPair encUnary encBits) encBool
       (fun _ : ℕ × List Bool => (pure false : ProbComp Bool)) :=
-    (ComputableTidilyInPolyTime.const false).isPPTOn
+    (ComputableInPolyTime.const false).isPPTOn
   exact hbody.isOraclePPTOn.isOraclePPT
 
 theorem isQueryBounded_zeroCPAAdversary (n : ℕ) :
@@ -120,34 +121,29 @@ def zeroCIAdversary : CIAdversary :=
   fun n _ => ProbOracleComp.sample (pure (List.replicate n false))
 
 theorem isOraclePPT_zeroCIAdversary : IsOraclePPT encBits zeroCIAdversary := by
-  have hrep : ComputableTidilyInPolyTime
+  have hrep : ComputableInPolyTime
       (fun p : ℕ × List Bool => List.replicate p.1 false)
       (encPair encUnary encBits) encBits := by polytime
   exact hrep.isPPTOn.isOraclePPTOn.isOraclePPT
 
 -- Composed closed-game `IsPPT` and Theorem 9.2 / Theorem 5.2 reduction `IsOraclePPT` certificates
 -- on `echoPrfCipher` and `echoPrfMAC`.
-example :
+example (bit : Bool) :
     IsPPT encBool
       (fun n _ =>
         echoPrfMAC.sufCmaGame
-          (etmToMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary) n) :=
-  echoPrfMAC.isPPT_sufCmaGame
-    (isOraclePPT_etmToMACForger echoPrfCipher echoPrfMAC (by polytime) isOraclePPT_zeroCIAdversary)
-
-example (bit : Bool) :
+          (etmToMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary) n) ∧
     IsPPT encBool
       (fun n _ =>
-        echoPrfCipher.cpaGame (etmToCPAAdversary echoPrfMAC zeroCPAAdversary) bit n) :=
-  echoPrfCipher.isPPT_cpaGame
-    (isOraclePPT_etmToCPAAdversary echoPrfMAC isOraclePPT_zeroCPAAdversary)
-    bit
-
-example (bit : Bool) :
+        echoPrfCipher.cpaGame (etmToCPAAdversary echoPrfMAC zeroCPAAdversary) bit n) ∧
     IsOraclePPT encBool
       (cpaToPrfDistinguisher (etmToCPAAdversary echoPrfMAC zeroCPAAdversary) bit) :=
-  isOraclePPT_cpaToPrfDistinguisher
-    (isOraclePPT_etmToCPAAdversary echoPrfMAC isOraclePPT_zeroCPAAdversary) bit
+  ⟨echoPrfMAC.isPPT_sufCmaGame
+    (isOraclePPT_etmToMACForger echoPrfCipher echoPrfMAC (by polytime) isOraclePPT_zeroCIAdversary),
+   echoPrfCipher.isPPT_cpaGame
+    (isOraclePPT_etmToCPAAdversary echoPrfMAC isOraclePPT_zeroCPAAdversary) bit,
+   isOraclePPT_cpaToPrfDistinguisher
+    (isOraclePPT_etmToCPAAdversary echoPrfMAC isOraclePPT_zeroCPAAdversary) bit⟩
 
 -- Quantitative Theorem 9.2 and Theorem 5.2 equations and bounds instantiated on `echoPrfCipher`,
 -- `echoPrfMAC`, and `echoPrfEtM`.

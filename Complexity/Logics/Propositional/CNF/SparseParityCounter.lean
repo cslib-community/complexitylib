@@ -100,23 +100,6 @@ def CNF.parityRowSystem (φ : CNF V) (rows : List (Fin φ.length → Bool))
     (i : Fin rows.length) : Finset (Finset V) :=
   φ.parityRowMonomials (rows.get i)
 
-/-- Evaluating the `i`-th equation of `φ.parityRowSystem rows` over `ZMod 2` at `σ` equals the
-violation parity `bitVal (ZMod 2) (rows.get i ⬝ᵥ φ.violations σ)`. -/
-theorem CNF.monomialSum_parityRowSystem (φ : CNF V) (rows : List (Fin φ.length → Bool))
-    (i : Fin rows.length) (σ : V → Bool) :
-    monomialSum (ZMod 2) (φ.parityRowSystem rows i) σ =
-      bitVal (ZMod 2) (rows.get i ⬝ᵥ φ.violations σ) := by
-  rw [CNF.parityRowSystem, monomialSum, CNF.sum_parityRowMonomials]
-  rfl
-
-/-- The `i`-th equation of `φ.parityRowSystem rows` vanishes at `σ` over `ZMod 2` if and only if
-`rows.get i ⬝ᵥ φ.violations σ = false`. -/
-theorem CNF.monomialSum_parityRowSystem_eq_zero_iff (φ : CNF V)
-    (rows : List (Fin φ.length → Bool)) (i : Fin rows.length) (σ : V → Bool) :
-    monomialSum (ZMod 2) (φ.parityRowSystem rows i) σ = 0 ↔
-      rows.get i ⬝ᵥ φ.violations σ = false := by
-  rw [CNF.parityRowSystem, monomialSum, CNF.sum_parityRowMonomials_eq_zero_iff_dotProduct]
-
 /-- **§6 (eq. 6.1 common-zero equivalence)**: `σ : V → Bool` is a common zero of
 `φ.parityRowSystem rows` if and only if `PassesTests φ.violations rows σ`. -/
 theorem CNF.isCommonZero_parityRowSystem_iff (φ : CNF V)
@@ -129,23 +112,6 @@ theorem CNF.isCommonZero_parityRowSystem_iff (φ : CNF V)
     exact h i (mem_univ i)
   · intro h i _
     exact h (rows.get i) (List.get_mem rows i)
-
-/-- Every monomial in `φ.parityRowSystem rows i` is supported on `φ.vars.toFinset`. -/
-theorem CNF.mem_parityRowSystem_subset_vars (φ : CNF V)
-    (rows : List (Fin φ.length → Bool)) (i : Fin rows.length) {M : Finset V}
-    (hM : M ∈ φ.parityRowSystem rows i) :
-    M ⊆ φ.vars.toFinset :=
-  CNF.subset_vars_of_mem_parityRowMonomials hM
-
-/-- The variable scope `equationScope (φ.parityRowSystem rows i)` is contained in
-`φ.vars.toFinset`. -/
-theorem CNF.equationScope_parityRowSystem_subset_vars (φ : CNF V)
-    (rows : List (Fin φ.length → Bool)) (i : Fin rows.length) :
-    equationScope (φ.parityRowSystem rows i) ⊆ φ.vars.toFinset := by
-  intro v hv
-  rw [equationScope, mem_biUnion] at hv
-  rcases hv with ⟨M, hM, hvM⟩
-  exact CNF.mem_parityRowSystem_subset_vars φ rows i hM hvM
 
 /-- If every clause of `φ` has width at most `k`, then every monomial in
 `φ.parityRowSystem rows i` has size at most `k`. -/

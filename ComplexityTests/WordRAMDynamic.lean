@@ -137,27 +137,21 @@ example : ∃ y ts,
         change (0 < 2 ∧ Fits 4 7) ∧ True ∧ True ∧ True ∧ True
         decide)
 
-/-- A typed push returns unit, writes its payload, and charges eight instructions including halt.
-The loop-free dispatcher needs no loop fuel. -/
-example : ((Stack.implementation 4 2).eval 4 0 (.push 7) (Stack.initial 3)).map
-    (fun (y, answer, cost) => (y.mem 3, y.regs Stack.len, answer, cost)) =
-      some (7, 1, (), 8) := by decide
-
-/-- Decoding distinguishes an empty pop from evaluator failure. -/
-example : ((Stack.implementation 4 2).eval 4 0 .pop (Stack.initial 3)).map
-    (fun (_, answer, _) => answer) = some none := by decide
-
-/-- A size query has a natural-number observation, without exposing its result register. -/
-example : ((Stack.implementation 4 2).eval 4 0 .size (Stack.initial 3)).map
-    (fun (_, answer, _) => answer) = some 0 := by decide
-
-/-- A decoder may reject even after successful machine execution. -/
-example : ({ exchangeProgram 4 with decode := fun _ _ => none }).eval 4 0 7
-    ⟨fun _ => 0, fun _ => 0⟩ = none := by decide
-
-/-- Loop fuel exhaustion is propagated without returning a partial observation. -/
-example : ({ exchangeProgram 4 with code := .loop (.eq 0 0) (.op (.copy 0 0)) }).eval 4 2 7
-    ⟨fun _ => 0, fun _ => 0⟩ = none := by decide
+/-- Typed push, empty pop, and size queries on `Stack.implementation 4 2`, plus decoder rejection
+and loop-fuel exhaustion on `exchangeProgram 4`. -/
+example :
+    ((Stack.implementation 4 2).eval 4 0 (.push 7) (Stack.initial 3)).map
+      (fun (y, answer, cost) => (y.mem 3, y.regs Stack.len, answer, cost)) =
+        some (7, 1, (), 8) ∧
+    ((Stack.implementation 4 2).eval 4 0 .pop (Stack.initial 3)).map
+      (fun (_, answer, _) => answer) = some none ∧
+    ((Stack.implementation 4 2).eval 4 0 .size (Stack.initial 3)).map
+      (fun (_, answer, _) => answer) = some 0 ∧
+    ({ exchangeProgram 4 with decode := fun _ _ => none }).eval 4 0 7
+      ⟨fun _ => 0, fun _ => 0⟩ = none ∧
+    ({ exchangeProgram 4 with code := .loop (.eq 0 0) (.op (.copy 0 0)) }).eval 4 2 7
+      ⟨fun _ => 0, fun _ => 0⟩ = none := by
+  decide
 
 /-- Successful evaluation of a represented, admissible call supplies native execution evidence. -/
 example {y : Data 9} {cost : ℕ}
@@ -168,11 +162,9 @@ example {y : Data 9} {cost : ℕ}
   (Stack.certificate (w := 4) (capacity := 2) (base := 3) (by decide) (by decide)).execOp_of_eval
     (Stack.initial_rep (by decide)) (by decide) he
 
-/-- A full stack does not satisfy the precondition for another push. -/
-example : ¬(Stack.spec 4 2).valid [4, 7] (.push 2) := by decide
-
-/-- The largest fitting word remains a valid value; `none` uses a separate presence register. -/
-example : (Stack.spec 4 2).valid [] (.push 15) := by decide
+/-- A full stack rejects another push, while the largest fitting word remains a valid value. -/
+example : ¬(Stack.spec 4 2).valid [4, 7] (.push 2) ∧
+    (Stack.spec 4 2).valid [] (.push 15) := by decide
 
 /--
 info: 'Cslib.WordRAM.DynamicCertificate.realization' depends on axioms:
