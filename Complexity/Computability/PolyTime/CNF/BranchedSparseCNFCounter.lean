@@ -566,7 +566,9 @@ private theorem compiled_system_incidence_bounds (k C_B β_B : ℕ) :
     Nat.pow_le_pow_right hlam1 (by omega)
   have hw_le : branchMaxFactorWidth N sys ≤ C_inc * lam ^ (2 * β_B + 4) := by
     unfold branchMaxFactorWidth
-    refine foldl_max_le (Nat.mul_pos (by dsimp only [C_inc]; omega) hpow1) fun w hw => ?_
+    refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+    simp only [List.mem_cons, forall_eq_or_imp]
+    refine ⟨Nat.mul_pos (by dsimp only [C_inc]; omega) hpow1, fun w hw => ?_⟩
     obtain ⟨eq, heq, rfl⟩ := List.mem_map.mp hw
     have h1 := (hsc_all eq heq).trans (hT_le.trans (Nat.mul_le_mul_left _ hpow_step))
     dsimp only [C_inc]; nlinarith

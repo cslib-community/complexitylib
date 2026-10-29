@@ -219,23 +219,6 @@ def branchNeutralScope (n' : ℕ) (eqs' : List (List (List ℕ))) :
     Fin eqs'.length ⊕ Fin n' → Finset (Fin n') :=
   withNeutralScope fun i => equationScope (HeavyBranchFold.toFinsetEquation n' eqs'[i])
 
-theorem foldl_max_le_iff {l : List ℕ} {init B : ℕ} :
-    l.foldl max init ≤ B ↔ init ≤ B ∧ ∀ x ∈ l, x ≤ B := by
-  induction l generalizing init with
-  | nil => simp only [List.foldl_nil, List.not_mem_nil, IsEmpty.forall_iff, implies_true, and_true]
-  | cons a as ih =>
-    simp only [List.foldl_cons, ih, Nat.max_le, List.mem_cons, forall_eq_or_imp, and_assoc]
-
-theorem foldl_max_le {l : List ℕ} {init B : ℕ} (hinit : init ≤ B) (hl : ∀ x ∈ l, x ≤ B) :
-    l.foldl max init ≤ B :=
-  foldl_max_le_iff.mpr ⟨hinit, hl⟩
-
-theorem le_foldl_max_init (init : ℕ) (l : List ℕ) : init ≤ l.foldl max init :=
-  (foldl_max_le_iff.mp le_rfl).1
-
-theorem le_foldl_max_of_mem {init : ℕ} {l : List ℕ} {x : ℕ} (hx : x ∈ l) :
-    x ≤ l.foldl max init := (foldl_max_le_iff.mp le_rfl).2 x hx
-
 theorem checkVarsLt_eq_true_iff {n : ℕ} {sys : List (List (List ℕ))} :
     checkVarsLt n sys = true ↔ ∀ eq ∈ sys, ∀ m ∈ eq, ∀ v ∈ m, v < n := by
   simp only [checkVarsLt, List.all_eq_true, decide_eq_true_eq]
@@ -309,11 +292,14 @@ theorem card_equationScope_toFinsetEquation (n : ℕ) (eq : List (List ℕ)) :
 
 theorem length_mem_le_sysMaxDegree {sys : List (List (List ℕ))} {eq : List (List ℕ)}
     (heq : eq ∈ sys) {m : List ℕ} (hm : m ∈ eq) : m.length ≤ sysMaxDegree sys :=
-  le_foldl_max_of_mem (List.mem_map_of_mem (List.mem_flatten.mpr ⟨eq, heq, hm⟩))
+  List.le_max_of_mem
+    (List.mem_cons_of_mem _ (List.mem_map_of_mem (List.mem_flatten.mpr ⟨eq, heq, hm⟩)))
 
 theorem sysMaxDegree_le_iff {sys : List (List (List ℕ))} {k : ℕ} :
     sysMaxDegree sys ≤ k ↔ ∀ eq ∈ sys, ∀ m ∈ eq, m.length ≤ k := by
-  simp only [sysMaxDegree, foldl_max_le_iff, Nat.zero_le, true_and, List.mem_map, List.mem_flatten]
+  change (0 :: sys.flatten.map List.length).max (by simp) ≤ k ↔ _
+  simp only [List.max_le_iff, List.mem_cons, forall_eq_or_imp, Nat.zero_le, true_and,
+    List.mem_map, List.mem_flatten]
   exact ⟨fun h eq heq m hm => h m.length ⟨m, ⟨eq, heq, hm⟩, rfl⟩,
     fun h _ ⟨m, ⟨eq, heq, hm⟩, hm_eq⟩ => hm_eq ▸ h eq heq m hm⟩
 
@@ -321,7 +307,7 @@ theorem one_le_branchMaxFactorIncidence (n' : ℕ) (eqs' : List (List (List ℕ)
     1 ≤ branchMaxFactorIncidence n' eqs' := Nat.succ_pos _
 
 theorem one_le_branchMaxFactorWidth (n' : ℕ) (eqs' : List (List (List ℕ))) :
-    1 ≤ branchMaxFactorWidth n' eqs' := le_foldl_max_init 1 _
+    1 ≤ branchMaxFactorWidth n' eqs' := List.le_max_of_mem List.mem_cons_self
 
 theorem le_branchAugmentedIncidence (n' : ℕ) (eqs' : List (List (List ℕ))) :
     n' ≤ branchAugmentedIncidence n' eqs' := Nat.le_add_left _ _
@@ -362,14 +348,17 @@ theorem varIncidence_branchNeutralScope_le (n' : ℕ) (eqs' : List (List (List �
       (branchNeutralScope n' eqs') v ≤ _
   rw [← withNeutralFactors_univ, branchNeutralScope, varIncidence_withNeutralFactors,
     varIncidence_toFinsetEquation_eq_varDegree, branchMaxFactorIncidence]
-  exact Nat.succ_le_succ (le_foldl_max_of_mem (List.mem_map_of_mem (List.mem_range.mpr v.isLt)))
+  apply Nat.succ_le_succ
+  exact List.le_max_of_mem (l := 0 :: (List.range n').map (varDegree · eqs'))
+    (List.mem_cons_of_mem 0 (List.mem_map_of_mem (List.mem_range.mpr v.isLt)))
 
 theorem card_branchNeutralScope_le (n' : ℕ) (eqs' : List (List (List ℕ)))
     (f : Fin eqs'.length ⊕ Fin n') :
     #(branchNeutralScope n' eqs' f) ≤ branchMaxFactorWidth n' eqs' :=
   card_withNeutralScope_le (one_le_branchMaxFactorWidth n' eqs')
     (fun i : Fin eqs'.length => (card_equationScope_toFinsetEquation n' eqs'[i]).trans_le
-      (le_foldl_max_of_mem (List.mem_map_of_mem (List.getElem_mem i.isLt)))) f
+      (List.le_max_of_mem
+        (List.mem_cons_of_mem _ (List.mem_map_of_mem (List.getElem_mem i.isLt))))) f
 
 theorem branchAugmentedIncidence_le_mul (n' : ℕ) (eqs' : List (List (List ℕ))) :
     branchAugmentedIncidence n' eqs' ≤ branchMaxFactorIncidence n' eqs' * n' := by
@@ -377,7 +366,8 @@ theorem branchAugmentedIncidence_le_mul (n' : ℕ) (eqs' : List (List (List ℕ)
     (scope := fun i => equationScope (HeavyBranchFold.toFinsetEquation n' eqs'[i]))
     (b₀ := ((List.range n').map fun v => varDegree v eqs').foldl max 0)
     (fun v => (varIncidence_toFinsetEquation_eq_varDegree n' eqs' v).trans_le
-      (le_foldl_max_of_mem (List.mem_map_of_mem (List.mem_range.mpr v.isLt))))
+      (List.le_max_of_mem (l := 0 :: (List.range n').map (varDegree · eqs'))
+        (List.mem_cons_of_mem 0 (List.mem_map_of_mem (List.mem_range.mpr v.isLt)))))
   rw [withNeutralFactors_univ, ← branchNeutralScope, Fintype.card_fin,
     ← branchMaxFactorIncidence, totalIncidence] at hle
   rwa [← sum_card_branchNeutralScope]
@@ -511,7 +501,9 @@ private theorem unaryFoldMax (init : ℕ) :
     id' (const init) (by fun_prop) (B := fun l => init + (encList encUnary l).length)
     ((PolyBounded.const init).add .self) (fun l i _ => ?_)
   simp only [encUnary_apply, List.length_replicate]
-  refine foldl_max_le_iff.mpr ⟨Nat.le_add_right _ _, fun x hx => ?_⟩
+  refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+  simp only [List.mem_cons, forall_eq_or_imp]
+  refine ⟨Nat.le_add_right _ _, fun x hx => ?_⟩
   have hsz := SizedListEncoding.length_elem_le (encA := encUnary) (encL := encList encUnary)
     l x (List.mem_of_mem_take hx)
   simp only [encUnary_apply, List.length_replicate] at hsz; omega
@@ -844,17 +836,23 @@ theorem reduced_branch_invariants {N₀_top : ℕ} {inp : SparseSystemInput} {va
   have hS_half := hS_le.trans (Nat.div_le_div_left hs2 (by omega))
   have hvd' := HeavyBranchFold.prepareBranch_reduced_varDegree_le hS_nd hSn
     (fun u hun huS => HeavyBranchFold.varDegree_le_of_not_mem_heavyVarList hun huS) hred
-  have hb' : branchMaxFactorIncidence n' sys' ≤ inp.2.1.2.2 + 1 :=
-    Nat.succ_le_succ (foldl_max_le_iff.mpr ⟨Nat.zero_le _, fun x hx => by
-      obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx; exact hvd' v (List.mem_range.mp hv)⟩)
-  have hw' : branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.2.2 :=
-    foldl_max_le_iff.mpr ⟨one_le_branchMaxFactorWidth inp.1 inp.2.2, fun x hx => by
-      obtain ⟨eq', heq', rfl⟩ := List.mem_map.mp hx
-      obtain ⟨eq₀, heq₀, _, hsc⟩ :=
-        (HeavyBranchFold.prepareBranch_reduced_length_le hred).2 eq' heq'
-      rw [scopeWidthOn_eq_length_equationVars (hvars' eq' heq')]
-      exact (hsc.trans_eq (scopeWidthOn_eq_length_equationVars (hvars eq₀ heq₀)).symm).trans
-        (le_foldl_max_of_mem (List.mem_map_of_mem heq₀))⟩
+  have hb' : branchMaxFactorIncidence n' sys' ≤ inp.2.1.2.2 + 1 := by
+    apply Nat.succ_le_succ
+    refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+    simp only [List.mem_cons, forall_eq_or_imp]
+    refine ⟨Nat.zero_le _, fun x hx => ?_⟩
+    obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx
+    exact hvd' v (List.mem_range.mp hv)
+  have hw' : branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.2.2 := by
+    refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+    simp only [List.mem_cons, forall_eq_or_imp]
+    refine ⟨one_le_branchMaxFactorWidth inp.1 inp.2.2, fun x hx => ?_⟩
+    obtain ⟨eq', heq', rfl⟩ := List.mem_map.mp hx
+    obtain ⟨eq₀, heq₀, _, hsc⟩ :=
+      (HeavyBranchFold.prepareBranch_reduced_length_le hred).2 eq' heq'
+    rw [scopeWidthOn_eq_length_equationVars (hvars' eq' heq')]
+    exact (hsc.trans_eq (scopeWidthOn_eq_length_equationVars (hvars eq₀ heq₀)).symm).trans
+      (List.le_max_of_mem (List.mem_cons_of_mem _ (List.mem_map_of_mem heq₀)))
   exact ⟨hn'_eq, by omega, hcan', hvars',
     HeavyBranchFold.prepareBranch_reduced_degree_le hdeg hred, hb', hw'⟩
 
@@ -947,14 +945,19 @@ private theorem le_maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ)
     (hred : HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 =
       .reduced n' sys') : cost (n', sys') ≤ maxReducedCost cost inp := by
   unfold maxReducedCost
-  refine le_foldl_max_of_mem (List.mem_map.mpr ⟨idx, List.mem_range.mpr hidx, ?_⟩); rw [hred]
+  refine List.le_max_of_mem
+    (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨idx, List.mem_range.mpr hidx, ?_⟩))
+  rw [hred]
 
 theorem maxReducedCost_le {cost : ℕ × List (List (List ℕ)) → ℕ}
     {inp : HeavyBranchFold.BranchInput} {B : ℕ}
     (hB : ∀ idx < 2 ^ inp.2.1.length, ∀ n' sys',
       HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 =
         .reduced n' sys' → cost (n', sys') ≤ B) : maxReducedCost cost inp ≤ B := by
-  unfold maxReducedCost; refine foldl_max_le_iff.mpr ⟨Nat.zero_le B, fun x hx => ?_⟩
+  unfold maxReducedCost
+  refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+  simp only [List.mem_cons, forall_eq_or_imp]
+  refine ⟨Nat.zero_le B, fun x hx => ?_⟩
   obtain ⟨idx, hidx, rfl⟩ := List.mem_map.mp hx
   cases hout : HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 with
   | contradiction | tautology _ => exact Nat.zero_le B

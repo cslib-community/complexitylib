@@ -1341,9 +1341,15 @@ public theorem exists_boundedIncidenceBranchCertificate_time_bound
       simp only [Rat.cast_natCast, Rat.cast_mul, Rat.cast_ofNat,
         ReplacementParams.cast_tauRat] at hrat_r
       exact (Nat.cast_le.mpr hc_le).trans hrat_r
-    · unfold d_max maxAllGroupDim; refine foldl_max_le (Nat.zero_le _) fun x hx => ?_
+    · unfold d_max maxAllGroupDim
+      refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+      simp only [List.mem_cons, forall_eq_or_imp]
+      refine ⟨Nat.zero_le _, fun x hx => ?_⟩
       obtain ⟨t, ht_mem, rfl⟩ := List.mem_map.mp hx; have ht : t < Q := List.mem_range.mp ht_mem
-      unfold maxGroupDim; refine foldl_max_le (Nat.zero_le _) fun y hy => ?_
+      unfold maxGroupDim
+      refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+      simp only [List.mem_cons, forall_eq_or_imp]
+      refine ⟨Nat.zero_le _, fun y hy => ?_⟩
       obtain ⟨g, hg_mem, rfl⟩ := List.mem_map.mp hy; have hg : g < r := List.mem_range.mp hg_mem
       refine (Nat.min_le_right _ _).trans ?_; have hgrp := (href.2.2.1 ⟨t, ht⟩ ⟨g, hg⟩).2.1
       dsimp only [data, mkDesignPair, mkDesignFromScheds, prepScheduleParams,

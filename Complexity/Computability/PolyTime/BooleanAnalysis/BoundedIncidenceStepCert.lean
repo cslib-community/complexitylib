@@ -579,12 +579,16 @@ def maxAllGroupDim (n' Q_u r_u : ℕ) (varGroups : List (List (List ℕ))) : ℕ
 private theorem min_length_le_maxGroupDim {n' r_u g : ℕ} {vGroups_t : List (List ℕ)}
     (hg : g < r_u) :
     min (2 * n') (vGroups_t.getD g []).length ≤ maxGroupDim n' r_u vGroups_t :=
-  le_foldl_max_of_mem (List.mem_map.mpr ⟨g, List.mem_range.mpr hg, rfl⟩)
+  List.le_max_of_mem
+    (l := 0 :: (List.range r_u).map (fun g => min (2 * n') (vGroups_t.getD g []).length))
+    (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨g, List.mem_range.mpr hg, rfl⟩))
 
 private theorem maxGroupDim_le_maxAllGroupDim {n' Q_u r_u t : ℕ}
     {varGroups : List (List (List ℕ))} (ht : t < Q_u) :
     maxGroupDim n' r_u (varGroups.getD t []) ≤ maxAllGroupDim n' Q_u r_u varGroups :=
-  le_foldl_max_of_mem (List.mem_map.mpr ⟨t, List.mem_range.mpr ht, rfl⟩)
+  List.le_max_of_mem
+    (l := 0 :: (List.range Q_u).map (fun t => maxGroupDim n' r_u (varGroups.getD t [])))
+    (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨t, List.mem_range.mpr ht, rfl⟩))
 
 private theorem foldl_optAddJet_spec (J ℓ j M : ℕ) (f : ℕ → Option JetRows)
     (hf : ∀ i < j, ∀ y, f i = some y → ∀ j' < J, ∀ u' < ℓ, (rowEntry y j' u').natAbs ≤ M) :
