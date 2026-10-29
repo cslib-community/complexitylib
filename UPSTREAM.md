@@ -262,6 +262,7 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   ceiling-logarithmic admission threshold depends only on the original numerical budget.
   Within-tile order is stable input order; no sorted or duplicate-free query premise is needed
   by the pruned kernel.
+  The band catalogue retains the same leaf ordering and canonical signed words.
   Native queried-product composition ([#1581](https://github.com/cslib-community/complexitylib/issues/1581))
   now connects those actual programs. It computes all protected buffers and tile arguments,
   calls the shared encoders and pruned pointer/epoch kernel, and reconstructs every requested
