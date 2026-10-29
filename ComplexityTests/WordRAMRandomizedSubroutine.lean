@@ -109,7 +109,7 @@ theorem geomCoinLoop_execCodeDist {w : ℕ} (hw : 1 ≤ w) (x₀ : Data 2)
       simp [y₀, Cond.Holds, Data.set, hr1]
     have h1 : (2 : ℝ≥0∞)⁻¹ ≤ geomBodyDist x y₀ := by
       rw [geomBodyDist, PMF.map_apply]
-      have hle := ENNReal.le_tsum
+      have hle := le_tsum
         (f := fun k : Fin (x.regs g1 + 1) =>
           if y₀ = x.set g0 k.val then uniformOfFintype (Fin (x.regs g1 + 1)) k else 0) k₀
       simpa [y₀, k₀, uniformOfFintype_apply, hr1] using hle
@@ -120,7 +120,8 @@ theorem geomCoinLoop_execCodeDist {w : ℕ} (hw : 1 ≤ w) (x₀ : Data 2)
           = Set.indicator {y | ¬(Cond.eq g0 g1).Holds y} (geomBodyDist x) y₀ := by
             rw [Set.indicator_of_mem hy₀_not]
         _ ≤ ∑' y, Set.indicator {y | ¬(Cond.eq g0 g1).Holds y} (geomBodyDist x) y :=
-            ENNReal.le_tsum y₀
+            le_tsum (f := fun y => Set.indicator {y | ¬(Cond.eq g0 g1).Holds y}
+              (geomBodyDist x) y) y₀
     exact le_trans h1 h2
   have hx₀_inv : LoopStateInv (.eq g0 g1) (geomInv w) (geomPost w) x₀ := Or.inl ⟨hx₀.2, hx₀.1⟩
   refine ⟨loopExitPMF (.eq g0 g1) geomBodyDist x₀,
@@ -163,11 +164,11 @@ def coinSpec : Stateful.Spec.{0, 0, 0} where
 
 /-- Subroutine code with 5 registers (`0` = `baseReg`, `1` = `frontierReg`, `2` = `zeroReg`,
 `3` = `curReg` / scratch output, `4` = `oneReg`). Its operation body `code` executes
-`r3 ← rand r2` (`Instr.rand`). -/
+`r3 ← rand r4` (`Instr.rand`), with `r4 = 1`, so it samples both `0` and `1`. -/
 def coinSubroutineCode : SubroutineCode .exact 5 0 where
   allocSpan := .op (.copy 0 1)
-  initSetup := .op (.const 2 0)
-  code := .rand 3 2
+  initSetup := .op (.const 4 1)
+  code := .rand 3 4
   baseReg := 0
   frontierReg := 1
   zeroReg := 2
@@ -179,9 +180,9 @@ def coinSubroutineCode : SubroutineCode .exact 5 0 where
   output := 3
 
 /-- Representation invariant for `coinSubroutineCode`: machine words are `w`-bounded, `baseReg`
-holds `base`, and `zeroReg` holds `0`. -/
+holds `base`, and `oneReg` holds `1`. -/
 def coinRep (w base : ℕ) (_θ : Fin 2) (_s : PUnit) (x : Data 5) : Prop :=
-  x.Bounded w ∧ x.regs 0 = base ∧ x.regs 2 = 0
+  x.Bounded w ∧ x.regs 0 = base ∧ x.regs 4 = 1
 
 private theorem pmf_map_fst_const {α β γ : Type*} (q : PMF α) (b : β) (g : α → γ) :
     (q.map fun a => (b, g a)).map Prod.fst = PMF.pure b := by
@@ -198,8 +199,9 @@ private theorem pmf_map_snd_const {α β γ : Type*} (q : PMF α) (f : α → β
   by_cases h : y = c <;> simp [PMF.map_apply, h, q.tsum_coe]
 
 /-- Concrete randomized `SubroutineDS` certificate for `coinSubroutineCode` with latent seed type
-`Fin 2` and uniform reference distribution `uniformOfFintype (Fin 2)`. -/
-noncomputable def coinSubroutineDS (w base : ℕ) :
+`Fin 2` and uniform reference distribution `uniformOfFintype (Fin 2)`. The native operation
+samples from `Fin 2`; its randomness is separate from this latent coupling seed. -/
+noncomputable def coinSubroutineDS (w base : ℕ) (hw : 1 ≤ w) :
     Cslib.WordRAM.Randomized.SubroutineDS
       coinSubroutineCode coinSpec w base Fin.elim0 PUnit.unit where
   Seed := Fin 2
@@ -223,7 +225,7 @@ noncomputable def coinSubroutineDS (w base : ℕ) :
   rep_supported hreg _ hb' hrep :=
     ⟨hb',
       by rw [hreg 0 rfl, hrep.2.1],
-      by rw [hreg 2 rfl, hrep.2.2]⟩
+      by rw [hreg 4 rfl, hrep.2.2]⟩
   potential_supported _ _ _ := rfl
   clear_nodup := by decide
   params_not_clear j := Fin.elim0 j
@@ -238,11 +240,11 @@ noncomputable def coinSubroutineDS (w base : ℕ) :
     · simpa [coinSubroutineCode, Data.set] using hfr
     · simpa [coinSubroutineCode, Data.set] using hfr
   setup_exec {x₁} hx₁ hb₁ hfr₁ _ _ := by
-    let x₂ : Data 5 := x₁.set 2 0
+    let x₂ : Data 5 := x₁.set 4 1
     let ν₀ : PMF (Fin 2 × Data 5) := (uniformOfFintype (Fin 2)).map fun θ => (θ, x₂)
     refine ⟨ν₀, ?_, ?_, ?_⟩
-    · have hex : ExecCodeDist (B := .exact) w (.op (.const 2 0)) x₁ (PMF.pure x₂) (1 : ℕ) :=
-        ExecCodeDist.of_exec (Exec.const (fits_zero w))
+    · have hex : ExecCodeDist (B := .exact) w (.op (.const 4 1)) x₁ (PMF.pure x₂) (1 : ℕ) :=
+        ExecCodeDist.of_exec (Exec.const (fits_one_of_pos hw))
       exact hex.congr_dist (pmf_map_snd_const (uniformOfFintype (Fin 2)) id x₂).symm (by simp)
     · intro θ
       rw [PMF.map_comp]
@@ -252,53 +254,73 @@ noncomputable def coinSubroutineDS (w base : ℕ) :
       obtain ⟨θ, _, rfl⟩ := hp
       refine ⟨?_, ?_, Nat.le_refl 0, Modifies.refl _ _⟩
       · simpa [coinSubroutineCode, x₂, Data.set] using hfr₁
-      · refine ⟨hx₁.set (fits_zero w), ?_, ?_⟩
+      · refine ⟨hx₁.set (fits_one_of_pos hw), ?_, ?_⟩
         · simp [x₂, Data.set, ← hb₁, coinSubroutineCode]
         · simp [x₂, Data.set]
   step_exec _ ν _ hseed hsupp := by
     let μ_step : Fin 2 × Data 5 → PMF (Fin 2 × Data 5) := fun p =>
-      (uniformOfFintype (Fin (p.2.regs 2 + 1))).map fun k => (p.1, p.2.set 3 k.val)
+      (uniformOfFintype (Fin (p.2.regs 4 + 1))).map fun k => (p.1, p.2.set 3 k.val)
     refine ⟨μ_step, fun _ => 1, ?_, ?_, ?_⟩
     · intro p hp
-      obtain ⟨⟨hbp, hb0, hz2⟩, _⟩ := hsupp p hp
+      obtain ⟨⟨hbp, hb0, ho4⟩, _⟩ := hsupp p hp
       refine ⟨?_, ?_⟩
-      · have hr := ExecCodeDist.rand (B := .exact) (w := w) (x := p.2) (dst := 3) (src := 2)
-          (hbp.1 2)
+      · have hr := ExecCodeDist.rand (B := .exact) (w := w) (x := p.2) (dst := 3) (src := 4)
+          (hbp.1 4)
         refine hr.congr_dist ?_ le_rfl
         rw [ProbComp.eval_unifFin, PMF.map_comp]
         rfl
       · intro q hq
         rw [PMF.mem_support_map_iff] at hq
         obtain ⟨k, _, rfl⟩ := hq
-        have hk0 : k.val = 0 := by omega
+        have hk1 : k.val ≤ 1 := by omega
         refine ⟨rfl, ⟨?_, ?_, ?_⟩, Modifies.refl _ _⟩
-        · refine hbp.set ?_
-          rw [hk0]
-          exact fits_zero w
+        · exact hbp.set ((fits_one_of_pos hw).of_le hk1)
         · simp [Data.set, hb0]
-        · simp [Data.set, hz2]
+        · simp [Data.set, ho4]
     · intro θ'
       have hmap : (ν.bind μ_step).map Prod.fst = ν.map Prod.fst := by
         rw [PMF.map_bind, PMF.map]
         refine congrArg (ν.bind ·) (funext fun p => ?_)
-        exact pmf_map_fst_const (uniformOfFintype (Fin (p.2.regs 2 + 1))) p.1
+        exact pmf_map_fst_const (uniformOfFintype (Fin (p.2.regs 4 + 1))) p.1
           (fun k => p.2.set 3 k.val)
       rw [hmap]
       exact hseed θ'
     · simp [ν.tsum_coe]
 
+/-- The concrete represented state with `oneReg = 1` executes the native sampler in one body
+instruction, and its output register is exactly fair on both `0` and `1`. -/
+theorem coinSubroutineCode_two_outcomes {w : ℕ} (hw : 1 ≤ w) :
+    let x : Data 5 := (Data.init []).set 4 1
+    let μ : PMF (Data 5) := (uniformOfFintype (Fin 2)).map fun k => x.set 3 k.val
+    coinRep w 0 0 PUnit.unit x ∧
+      ExecCodeDist w coinSubroutineCode.code x μ 1 ∧
+      (μ.map fun y => y.regs 3) 0 = (2 : ℝ≥0∞)⁻¹ ∧
+      (μ.map fun y => y.regs 3) 1 = (2 : ℝ≥0∞)⁻¹ := by
+  intro x μ
+  have hx : x.Bounded w :=
+    (Data.Bounded.init (by simp [InputFits])).set (fits_one_of_pos hw)
+  refine ⟨⟨hx, by simp [x, Data.set], by simp [x, Data.set]⟩, ?_, ?_, ?_⟩
+  · have hsource : x.regs 4 = 1 := by simp [x, Data.set]
+    have he := ExecCodeDist.rand (B := .exact) (w := w) (x := x) (dst := 3) (src := 4) (hx.1 4)
+    rw [ProbComp.eval_unifFin, hsource] at he
+    exact he
+  · simp [μ, PMF.map_comp, Function.comp_def, PMF.map_apply, tsum_fintype,
+      Fin.sum_univ_two, uniformOfFintype_apply, Data.set]
+  · simp [μ, PMF.map_comp, Function.comp_def, PMF.map_apply, tsum_fintype,
+      Fin.sum_univ_two, uniformOfFintype_apply, Data.set]
+
 /-- Standard-basis lifting of `coinSubroutineDS`. -/
-noncomputable def coinSubroutineDS_standard (w base : ℕ) :
+noncomputable def coinSubroutineDS_standard (w base : ℕ) (hw : 1 ≤ w) :
     Cslib.WordRAM.Randomized.SubroutineDS
       coinSubroutineCode.toStandard coinSpec w base Fin.elim0 PUnit.unit :=
-  (coinSubroutineDS w base).toStandard
+  (coinSubroutineDS w base hw).toStandard
 
 /-- Fresh initialization + multi-operation expected-amortized sequence bound for
 `coinSubroutineDS`. -/
-theorem coinSubroutineDS_seq_amortized (w base : ℕ)
+theorem coinSubroutineDS_seq_amortized (w base : ℕ) (hw : 1 ≤ w)
     (ops : List PUnit) {x₀ : Data 5}
     (hx₀ : x₀.Bounded w) (hfr : x₀.regs 1 = base) :
-    let C := coinSubroutineDS w base
+    let C := coinSubroutineDS w base hw
     ∃ (ν₀ ν_final : PMF (C.Seed × Data 5)) (T_ops : ℝ≥0∞),
       ExecCodeDist w coinSubroutineCode.initFresh x₀ (ν₀.map Prod.snd) C.initTime ∧
       C.ExecSteps PUnit.unit ops ν₀ ν_final T_ops ∧
@@ -317,10 +339,34 @@ theorem coinSubroutineDS_seq_amortized (w base : ℕ)
     simp [Block.footprint]
   exact C.seq_expected_amortized ops hx₀ hfr (fun j => Fin.elim0 j) hz hvalid
 
+/-- From concrete empty memory, initialization and two genuine coin-sampling bodies have
+expected cost at most four; external argument delivery is uncharged by `ExecSteps`. -/
+example :
+    let C := coinSubroutineDS 1 0 (by decide)
+    ∃ (ν₀ ν_final : PMF (C.Seed × Data 5)) (T_ops : ℝ≥0∞),
+      ExecCodeDist 1 coinSubroutineCode.initFresh (Data.init []) (ν₀.map Prod.snd) C.initTime ∧
+      C.ExecSteps PUnit.unit [PUnit.unit, PUnit.unit] ν₀ ν_final T_ops ∧
+      C.initTime + T_ops ≤ 4 := by
+  intro C
+  obtain ⟨ν₀, ν_final, T_ops, hinit, hsteps, _, _, hcost⟩ :=
+    coinSubroutineDS_seq_amortized 1 0 (by decide) [PUnit.unit, PUnit.unit]
+      (x₀ := (Data.init [] : Data 5))
+      (Data.Bounded.init (by simp [InputFits])) (by simp [Data.init])
+  refine ⟨ν₀, ν_final, T_ops, hinit, hsteps, ?_⟩
+  have hT : T_ops ≤ 2 := by
+    simpa [C, coinSubroutineDS, Cslib.WordRAM.Randomized.SubroutineDS.initTime,
+      Stateful.Spec.totalCost, coinSpec] using hcost
+  have hinitTime : C.initTime = 2 := by
+    norm_num [C, coinSubroutineDS, Cslib.WordRAM.Randomized.SubroutineDS.initTime]
+  rw [hinitTime]
+  calc
+    2 + T_ops ≤ 2 + 2 := add_le_add le_rfl hT
+    _ = 4 := by norm_num
+
 /-- Dirty-memory initialization via `initClear_exec` for `coinSubroutineDS`. -/
-theorem coinSubroutineDS_initClear (w base : ℕ) {x₀ : Data 5}
+theorem coinSubroutineDS_initClear (w base : ℕ) (hw : 1 ≤ w) {x₀ : Data 5}
     (hx₀ : x₀.Bounded w) (hfr : x₀.regs 1 = base) :
-    let C := coinSubroutineDS w base
+    let C := coinSubroutineDS w base hw
     ∃ ν₀ : PMF (C.Seed × Data 5),
       ExecCodeDist w coinSubroutineCode.initClear x₀ (ν₀.map Prod.snd)
         (C.initTime + (4 * C.space + 6 : ℕ)) ∧
@@ -336,13 +382,13 @@ theorem coinSubroutineDS_initClear (w base : ℕ) {x₀ : Data 5}
 /-- Inline caller subroutine invocation via `call_rename` for `coinSubroutineDS`: a caller with
 6 registers embeds `Fin 5` via `Fin.castSucc`, executes `prep := .op (.const 5 0)` on its own
 register `r5`, and invokes `coinSubroutineCode.code.rename Fin.castSucc`. -/
-theorem coinSubroutineDS_call_rename (w base : ℕ)
-    (ν : PMF ((coinSubroutineDS w base).Seed × Data 6))
+theorem coinSubroutineDS_call_rename (w base : ℕ) (hw : 1 ≤ w)
+    (ν : PMF ((coinSubroutineDS w base hw).Seed × Data 6))
     (hseed : ∀ θ, (ν.map Prod.fst) θ ≤
-      (coinSubroutineDS w base).seedSlack * (coinSubroutineDS w base).seedLaw θ)
+      (coinSubroutineDS w base hw).seedSlack * (coinSubroutineDS w base hw).seedLaw θ)
     (hrep : ∀ p ∈ ν.support,
-      (coinSubroutineDS w base).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
-    let C := coinSubroutineDS w base
+      (coinSubroutineDS w base hw).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
+    let C := coinSubroutineDS w base hw
     let prep : Code .exact 6 := .op (.const 5 0)
     ∃ (μ_call : C.Seed × Data 6 → PMF (C.Seed × Data 6))
       (T_call : C.Seed × Data 6 → ℝ≥0∞),
@@ -384,34 +430,42 @@ theorem coinSubroutineDS_call_rename (w base : ℕ)
       simp [Data.set, hne]
 
 /-- Caller framing across a randomized caller step: a caller with 6 registers embeds `Fin 5` via
-`Fin.castSucc` and executes `r5 ← rand r2` on its own register `r5` (`5 : Fin 6`), preserving the
+`Fin.castSucc` and executes `r5 ← rand r4` on its own register `r5` (`5 : Fin 6`), preserving the
 coupled seed marginal bound, `rep`, and expected potential via `frame_caller_dist`. -/
-theorem coinSubroutineDS_caller_rand_frame (w base : ℕ)
-    (ν : PMF ((coinSubroutineDS w base).Seed × Data 6))
+theorem coinSubroutineDS_caller_rand_frame (w base : ℕ) (hw : 1 ≤ w)
+    (ν : PMF ((coinSubroutineDS w base hw).Seed × Data 6))
     (hseed : ∀ θ, (ν.map Prod.fst) θ ≤
-      (coinSubroutineDS w base).seedSlack * (coinSubroutineDS w base).seedLaw θ)
+      (coinSubroutineDS w base hw).seedSlack * (coinSubroutineDS w base hw).seedLaw θ)
     (hrep : ∀ p ∈ ν.support,
-      (coinSubroutineDS w base).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
-    let C := coinSubroutineDS w base
+      (coinSubroutineDS w base hw).rep p.1 PUnit.unit (p.2.comap Fin.castSucc)) :
+    let C := coinSubroutineDS w base hw
     let μ_caller : C.Seed × Data 6 → PMF (Data 6) := fun p =>
-      (uniformOfFintype (Fin 1)).map fun k => p.2.set 5 k.val
+      (uniformOfFintype (Fin 2)).map fun k => p.2.set 5 k.val
+    (∀ p ∈ ν.support, ExecCodeDist (B := .exact) w (.rand 5 4) p.2 (μ_caller p) 1) ∧
     (∀ θ, ((C.frameDist ν μ_caller).map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) ∧
     (∀ q ∈ (C.frameDist ν μ_caller).support, C.rep q.1 PUnit.unit (q.2.comap Fin.castSucc)) ∧
     (∑' q, C.frameDist ν μ_caller q * (C.potential q.1 (q.2.comap Fin.castSucc) : ℝ≥0∞)) =
       ∑' p, ν p * (C.potential p.1 (p.2.comap Fin.castSucc) : ℝ≥0∞) := by
   intro C μ_caller
-  refine C.frame_caller_dist (F := ∅) hseed hrep (Finset.disjoint_empty_right _) ?_
-  intro p hp x' hx'
-  rw [PMF.mem_support_map_iff] at hx'
-  obtain ⟨k, _, rfl⟩ := hx'
-  have hbp : (p.2.comap Fin.castSucc).Bounded w := C.bounded (hrep p hp)
-  refine ⟨?_, ?_, Modifies.refl _ _⟩
-  · refine ⟨fun i => ?_, hbp.2⟩
-    have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
-    simp only [Data.comap_regs, Data.set_regs, Function.update_of_ne hne]
-    exact hbp.1 i
-  · intro i _
-    have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
-    simp [Data.set, hne]
+  refine ⟨?_, ?_⟩
+  · intro p hp
+    have hsource : p.2.regs 4 = 1 := (hrep p hp).2.2
+    have hfit : Fits w (p.2.regs 4) := by rw [hsource]; exact fits_one_of_pos hw
+    have he := ExecCodeDist.rand (B := .exact) (w := w) (x := p.2) (dst := 5) (src := 4) hfit
+    rw [ProbComp.eval_unifFin, hsource] at he
+    exact he
+  · refine C.frame_caller_dist (F := ∅) hseed hrep (Finset.disjoint_empty_right _) ?_
+    intro p hp x' hx'
+    rw [PMF.mem_support_map_iff] at hx'
+    obtain ⟨k, _, rfl⟩ := hx'
+    have hbp : (p.2.comap Fin.castSucc).Bounded w := C.bounded (hrep p hp)
+    refine ⟨?_, ?_, Modifies.refl _ _⟩
+    · refine ⟨fun i => ?_, hbp.2⟩
+      have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
+      simp only [Data.comap_regs, Data.set_regs, Function.update_of_ne hne]
+      exact hbp.1 i
+    · intro i _
+      have hne : Fin.castSucc i ≠ (5 : Fin 6) := Fin.castSucc_ne_last i
+      simp [Data.set, hne]
 
 end ComplexityTests.WordRAMRandomizedSubroutine
