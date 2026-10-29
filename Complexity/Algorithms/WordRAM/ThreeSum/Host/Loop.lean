@@ -299,7 +299,8 @@ private theorem exec_finish {w r s : ℕ} (x : Data (64 + (r + 7)))
     case mem => rfl
 
 /-- One generated instance, with the concrete solver's native execution proof supplied by the
-caller. The solver may overwrite matrices and scratch, but preserves the length header and input.
+caller. The solver may overwrite matrices and scratch, but preserves the memory prefix below
+the workspace, including the supplied input.
 The matrices in its premise are produced by the native builder, with no supplied layout oracle. -/
 theorem exec_round_at {w r N U src workspace s T : ℕ} (μ : ℕ → ℤ)
     (solver : Code .standard (r + 7)) (x : Data (64 + (r + 7)))
