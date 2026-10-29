@@ -108,7 +108,7 @@ public theorem exec_saveCodes {w L m N Q : ℕ} (x : Data 160)
     hb.2.1
   have hsep : Wanted.codeAddress L m N Q + (Q) ≤ codeBase L m N Q := by
     have horder : offsetBase L m N Q ≤ codeBase L m N Q := by
-      unfold codeBase 
+      unfold codeBase
       omega
     omega
   have hn : Fits w (Q) := allocated_fits hfit (by omega)
