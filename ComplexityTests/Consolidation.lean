@@ -5,7 +5,6 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Circuit.Boolean.Synthesis
-import Complexity.Computability.Complexity.Classes.Ladner
 import Complexity.Computability.Complexity.Classes.LogSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
@@ -17,9 +16,8 @@ import Mathlib.Tactic.FinCases
 
 /-! General lemmas in their library homes: the costs of projections and the one-gate lower bound
 for circuits on two and three inputs, the decoders of binary numbers and Booleans on encoded and
-malformed words, `P` under reductions and `NP`-complete problems in `P`, deterministic deciders as
-nondeterministic ones, the parity of a symmetric difference, and logarithmic bounds, with their
-boundary cases. -/
+malformed words, the nondeterministic space predicate, the parity of a symmetric difference,
+and logarithmic bounds, with their boundary cases. -/
 
 namespace ComplexityTests.Consolidation
 
@@ -83,20 +81,7 @@ example : Decoder.bool.decode (encBool true) = true := Decoder.bool.decode_enc t
 /-- The empty word, which encodes no Boolean, decodes to `false`. -/
 example : Decoder.bool.decode [] = false := rfl
 
-/-! ### `P` under reductions and `NP`-complete problems -/
-
-/-- Reflexivity of `PolyTimeReducible` on `P`, and `P = NP` from `SAT ∈ P` for both `encBits`
-and `encCNF`. -/
-example {A : Set (List Bool)} (hA : A ∈ P encBits) (hSAT : SAT ∈ P encCNF) :
-    A ∈ P encBits ∧ P encBits = NP encBits ∧ P encCNF = NP encCNF :=
-  ⟨(PolyTimeReducible.refl encBits A).mem_P hA,
-   CookLevin.SAT_npComplete.P_eq_NP_of_mem_P hSAT encBits,
-   Ladner.P_eq_NP_of_SAT_mem_P hSAT encCNF⟩
-
-/-! ### Deterministic deciders as nondeterministic ones -/
-
-example : L encBits ⊆ NL encBits ∧ PSPACE encBits ⊆ NPSPACE encBits :=
-  ⟨L_subset_NL, PSPACE_subset_NPSPACE⟩
+/-! ### The nondeterministic space predicate -/
 
 /-- `NPSPACE` is stated with `DecidesInSpace`. -/
 example {A : Set (List Bool)} :

@@ -39,16 +39,21 @@ example :
 example :
     (∀ x ∈ ([1, 2].set 0 3), x ≤ 3) ∧
     [1, 2].getD 1 0 ≤ 2 ∧
-    ([1, 2].getD 1 0 ∈ [1, 2] ∨ [1, 2].getD 1 0 = 0) ∧
-    (List.replicate 2 (!true) ++ true :: [false] =
-      List.replicate 2 (!true) ++ true :: [false] → 2 = 2 ∧ ([false] : List Bool) = [false]) ∧
-    (List.replicate 2 true ++ false :: [true] =
-      List.replicate 2 true ++ false :: [true] → 2 = 2 ∧ ([true] : List Bool) = [true]) :=
+    ([1, 2].getD 1 0 ∈ [1, 2] ∨ [1, 2].getD 1 0 = 0) :=
   ⟨List.forall_mem_set_of_forall_mem (by decide) (by decide),
    List.getD_le_of_forall_le (by decide) 1,
-   List.getD_mem_or [1, 2] 1 0,
-   List.replicate_not_append_cons_inj,
-   List.replicate_true_append_false_inj⟩
+   List.getD_mem_or [1, 2] 1 0⟩
+
+-- Recover an unknown unary block and suffix from a concrete encoded word.
+example (n : ℕ) (l : List Bool)
+    (h : List.replicate n (!true) ++ true :: l = [false, false, true, false]) :
+    n = 2 ∧ l = [false] :=
+  List.replicate_not_append_cons_inj (m' := 2) h
+
+example (n : ℕ) (l : List Bool)
+    (h : List.replicate n true ++ false :: l = [true, true, false, true]) :
+    n = 2 ∧ l = [true] :=
+  List.replicate_true_append_false_inj (m' := 2) h
 
 example :
     (([1, 2].take 1).foldl (· + ·) 0 ≤ 10 ∧
