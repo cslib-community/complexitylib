@@ -609,7 +609,7 @@ theorem code_xorPreludeCircuit (m n coins : ℕ) :
   simp only [xorPreludeCircuit, xorPreludeCode, ← appendCode_code, ← compCode_code,
     code_extractInputsCircuit, code_sumBlocksCircuit, code_extractCoinsCircuit]
 
-theorem computableTidilyInPolyTime_xorBitAtCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_xorBitAtCode {α : Type} {enc : α ↪ List Bool}
     {coins c : α → ℕ}
     (hcoins : ComputableTidilyInPolyTime coins enc encNat)
     (hc : ComputableTidilyInPolyTime c enc encNat) :
@@ -617,7 +617,7 @@ theorem computableTidilyInPolyTime_xorBitAtCode {α : Type} {enc : α ↪ List B
   unfold xorBitAtCode
   fun_prop
 
-theorem computableTidilyInPolyTime_zeroBitStringCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_zeroBitStringCode {α : Type} {enc : α ↪ List Bool}
     {w coins : α → ℕ}
     (hw : ComputableTidilyInPolyTime w enc encNat)
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
@@ -625,7 +625,7 @@ theorem computableTidilyInPolyTime_zeroBitStringCode {α : Type} {enc : α ↪ L
   unfold zeroBitStringCode
   fun_prop
 
-theorem computableTidilyInPolyTime_xorBitStringsCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_xorBitStringsCode {α : Type} {enc : α ↪ List Bool}
     {coins : α → ℕ}
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
     ComputableTidilyInPolyTime (fun a => xorBitStringsCode (coins a)) enc encCode := by
@@ -641,7 +641,7 @@ theorem computableTidilyInPolyTime_xorBitStringsCode {α : Type} {enc : α ↪ L
   exact (computableInPolyTime_bundleCode (.of_tidy htwoCoins) (.of_tidy (const 4))
     (.of_tidy (mapWith hbit id' (range.comp hcoins)))).tidy
 
-theorem computableTidilyInPolyTime_sumBlocksCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_sumBlocksCode {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) {coins : α → ℕ}
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
     ComputableTidilyInPolyTime (fun a => sumBlocksCode m (coins a)) enc encCode := by
@@ -678,7 +678,7 @@ theorem computableTidilyInPolyTime_sumBlocksCode {α : Type} {enc : α ↪ List 
         (computableInPolyTime_compCode (.of_tidy hsuccCoinsBin) (.of_tidy ih) (.of_tidy hrange₁))
         (.of_tidy hrange₂))).tidy
 
-theorem computableTidilyInPolyTime_extractInputsCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_extractInputsCode {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) {n coins : α → ℕ}
     (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
@@ -697,7 +697,7 @@ theorem computableTidilyInPolyTime_extractInputsCode {α : Type} {enc : α ↪ L
       (encPair enc encUnary) encNat := by fun_prop
   exact (const []).prod (mapWith hf id' (range.comp hmn))
 
-theorem computableTidilyInPolyTime_extractCoinsCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_extractCoinsCode {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) {n coins : α → ℕ}
     (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
@@ -716,7 +716,7 @@ theorem computableTidilyInPolyTime_extractCoinsCode {α : Type} {enc : α ↪ Li
       (encPair enc encUnary) encNat := by fun_prop
   exact (const []).prod (mapWith hf id' (range.comp hmc))
 
-theorem computableTidilyInPolyTime_xorPreludeCode {α : Type} {enc : α ↪ List Bool}
+private theorem computableTidilyInPolyTime_xorPreludeCode {α : Type} {enc : α ↪ List Bool}
     (m : ℕ) {n coins : α → ℕ}
     (hn : ComputableTidilyInPolyTime n enc encUnary)
     (hcoins : ComputableTidilyInPolyTime coins enc encUnary) :
@@ -929,7 +929,7 @@ theorem iterate_stepList_eq_foldlMList {ι : Type} {spec : OracleSpec ι} {Item 
 
 /-- Certify a monadic list fold `foldlMList singleStep (list a) (init a)` in `WordOracleComp`
 from a constant growth bound on the accumulator encoding `encAcc`. -/
-theorem isOraclePPTOn_foldlMList_of_bounded_growth
+private theorem isOraclePPTOn_foldlMList_of_bounded_growth
     {Operation α Item Acc : Type} [DecidableEq Operation]
     {input : α ↪ List Bool} {encItem : Item ↪ List Bool} {encAcc : Acc ↪ List Bool}
     (fallback : Item) {list : α → List Item} {init : α → Acc}
@@ -969,7 +969,7 @@ theorem isOraclePPTOn_foldlMList_of_bounded_growth
 
 /-- Certify a monadic list fold `foldlMList singleStep (list a) (init a)` in `ProbComp`
 from a constant growth bound on the accumulator encoding `encAcc`. -/
-theorem isPPTOn_foldlMList_of_bounded_growth
+private theorem isPPTOn_foldlMList_of_bounded_growth
     {α Item Acc : Type}
     {input : α ↪ List Bool} {encItem : Item ↪ List Bool} {encAcc : Acc ↪ List Bool}
     (fallback : Item) {list : α → List Item} {init : α → Acc}
