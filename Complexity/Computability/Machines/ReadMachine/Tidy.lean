@@ -266,7 +266,7 @@ theorem toStepMachine_resourceCertificate (hhalt : ComputableInO m.halt encS enc
     have he := budget_comp (ComputableInO.eq encNat) hpair
       ((BigOLe.of_le fun p => by simp only [length_encPair]; nlinarith).trans
         (sq_bigOLe hpair.length_le)) hpair.length_le
-    have hl := budget_comp natLt hpair (lt_bigOLe hpair.length_le)
+    have hl := budget_comp natLt hpair (sq_bigOLe hpair.length_le)
       (.add hpair.length_le (.const 1 _))
     -- the bit read and the step of the read machine
     have hb := budget_finite (encD := encBool)

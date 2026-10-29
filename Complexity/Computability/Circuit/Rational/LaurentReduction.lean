@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Circuit.Rational.Wronskian
 public import Mathlib.RingTheory.LaurentSeries
+import Complexity.Foundations.LinearAlgebra.Rank
 
 /-!
 # Reduction of Laurent-series subspaces at zero
@@ -482,26 +483,6 @@ private theorem reduction_weighted_supported {ι : Type*} [Finite ι]
   exact he ▸ weighted_high_reduction_zero w A (u • x) hnI' hd u⁻¹
     (inv_ne_zero hu) (he.symm ▸ hyI)
 
-lemma exists_independent_subfamily {V : Type*} [AddCommGroup V] [Module K V]
-    {h : ℕ} (v : Fin h → V) :
-    ∃ (k : ℕ) (a : Fin k → Fin h), Function.Injective a ∧
-      Submodule.span K (Set.range (v ∘ a)) = Submodule.span K (Set.range v) ∧
-      LinearIndependent K (v ∘ a) := by
-  classical
-  obtain ⟨κ, a, ha, hs, hi⟩ := exists_linearIndependent' K v
-  let : Fintype κ := Fintype.ofInjective a ha
-  let e := (Fintype.equivFin κ).symm
-  refine ⟨Fintype.card κ, a ∘ e, ha.comp e.injective, ?_, hi.comp e e.injective⟩
-  have he : Set.range (v ∘ a ∘ e) = Set.range (v ∘ a) := by
-    ext y
-    constructor
-    · rintro ⟨j, rfl⟩; exact ⟨e j, rfl⟩
-    · rintro ⟨j, rfl⟩
-      obtain ⟨r, rfl⟩ := e.surjective j
-      exact ⟨r, rfl⟩
-  change Submodule.span K (Set.range (v ∘ a ∘ e)) = _
-  rw [he, hs]
-
 /-- Restrict an integral frame to a selected family of basis vectors. -/
 private def IntegralFrame.subframe {ι : Type*} {U : Submodule (F K) (ι → F K)}
     (b : IntegralFrame U) {k : ℕ} (a : Fin k → Fin b.length)
@@ -535,7 +516,7 @@ private theorem exists_projection_subspace {ι : Type*} [Finite ι]
       ∀ x ∈ U', IntegralVector x → P (reduce x) = 0 → reduce x = 0 := by
   classical
   obtain ⟨b⟩ := exists_integralFrame U
-  obtain ⟨k, a, ha, hs, hi⟩ := exists_independent_subfamily (K := K)
+  obtain ⟨k, a, ha, hs, hi⟩ := Submodule.exists_linearIndependent_fin_comp K
     (fun j => P (reduce (b.vector j)))
   let b' := b.subframe a ha
   let U' := Submodule.span (F K) (Set.range (b.vector ∘ a))

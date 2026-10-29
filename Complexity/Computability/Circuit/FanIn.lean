@@ -6,7 +6,9 @@ Authors: Samuel Schlesinger
 
 module
 -- upstream: candidate
+public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Support
+public import Cslib.Computability.Circuit.Composition
 public import Cslib.Computability.Circuit.Depth
 public import Cslib.Computability.Circuit.Simulation
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -28,6 +30,12 @@ lower bound on circuit size.
   function.
 * `Cslib.Circuits.Circuit.card_inputSupport_le_depth`, `Cslib.Circuits.Circuit.essential_le_depth`:
   at depth `d`, an output of a circuit of fan-in `r` depends on at most `r ^ d` inputs.
+* `Cslib.Circuits.Program.FanInAtMost.mono`, `Cslib.Circuits.Circuit.FanInAtMost.mono`: fan-in
+  bounds are monotone in the bound.
+* `Cslib.Circuits.Program.FanInAtMost.append`, `Cslib.Circuits.Circuit.FanInAtMost.comp`,
+  `Cslib.Circuits.Circuit.FanInAtMost.append`: fan-in bounds of composed programs and circuits.
+* `Cslib.Circuits.Circuit.fanInAtMost_pi`: single-output circuits side by side keep a common
+  fan-in bound.
 -/
 
 @[expose] public section
@@ -322,5 +330,46 @@ theorem Circuit.essential_le_depth (c : Circuit σ n m) {I : Interpretation σ U
     (hr : c.FanInAtMost r) : selected.card ≤ m * max 1 r ^ c.depth :=
   (Finset.card_le_card fun k hk => (h k hk).mem_support hc.dependsOn).trans
     (c.card_inputSupport_le_depth hr)
+
+/-! ### Composition -/
+
+/-- A fan-in bound holds for every larger bound. -/
+theorem Program.FanInAtMost.mono {p : Program σ n g} {r s : ℕ} (h : p.FanInAtMost r)
+    (hrs : r ≤ s) : p.FanInAtMost s :=
+  Program.fanInAtMost_iff.2 fun k => (Program.fanInAtMost_iff.1 h k).trans hrs
+
+/-- Continuing a program by another keeps a common fan-in bound. -/
+theorem Program.FanInAtMost.append {k g₁ g₂ r : ℕ} {p : Program σ n g₁}
+    {feed : Fin k → Wire n g₁} {q : Program σ k g₂} (hp : p.FanInAtMost r)
+    (hq : q.FanInAtMost r) : (p.append feed q).FanInAtMost r := by
+  induction q with
+  | empty => exact hp
+  | gate q line ih => exact ⟨ih hq.1, hq.2⟩
+
+/-- A fan-in bound of a circuit holds for every larger bound. -/
+theorem Circuit.FanInAtMost.mono {c : Circuit σ n m} {r s : ℕ} (h : c.FanInAtMost r)
+    (hrs : r ≤ s) : c.FanInAtMost s :=
+  Program.FanInAtMost.mono h hrs
+
+/-- Sequential composition keeps a common fan-in bound. -/
+theorem Circuit.FanInAtMost.comp {p : ℕ} {d : Circuit σ m p} {c : Circuit σ n m} {r : ℕ}
+    (hd : d.FanInAtMost r) (hc : c.FanInAtMost r) : (d.comp c).FanInAtMost r :=
+  Program.FanInAtMost.append hc hd
+
+/-- Parallel composition keeps a common fan-in bound. -/
+theorem Circuit.FanInAtMost.append {p : ℕ} {c : Circuit σ n m} {d : Circuit σ n p} {r : ℕ}
+    (hc : c.FanInAtMost r) (hd : d.FanInAtMost r) : (c.append d).FanInAtMost r :=
+  Program.FanInAtMost.append hc hd
+
+/-- Single-output circuits side by side keep a common fan-in bound. -/
+theorem Circuit.fanInAtMost_pi {m r : ℕ} {cs : Fin m → Circuit σ n 1}
+    (h : ∀ j, (cs j).FanInAtMost r) : (Circuit.pi cs).FanInAtMost r := by
+  induction m with
+  | zero =>
+    rw [Circuit.pi]
+    exact Circuit.fanInAtMost_wiring _ _
+  | succ m ih =>
+    rw [Circuit.pi]
+    exact (ih fun j => h _).append (h _)
 
 end Cslib.Circuits

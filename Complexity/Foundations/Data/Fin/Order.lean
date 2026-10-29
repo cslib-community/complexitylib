@@ -23,12 +23,17 @@ The value type needs only a partial order. Also bounds the sum of all indices in
 ## Main results
 
 * `Fin.exists_ne_apply_eq_iff_adjacent`: an adjacent witness suffices for any repeated value.
+* `Fin.exists_adjacent_ne_of_monotone_comp`: two distinct entries with equal keys in a monotone-key
+  array force an adjacent pair of distinct entries with that key.
 * `Fin.sum_val_le_mul_self`: `(∑ j : Fin n, j.val) ≤ n * n`.
 
 ## References
 
 * Adapted from MassProduction/Nonuniform/AdjacentDuplicates.lean in
   [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
+* Adapted from lean/Proofs/{Collisions,Selection}.lean in
+  [S. Schlesinger,
+  *Square-root circuit bounds for iterated functions*][Schlesinger2026IteratedFunctions].
 * [OpenAI2026RationalHitting]
 -/
 
@@ -60,6 +65,37 @@ theorem Fin.exists_ne_apply_eq_iff_adjacent {α : Type*} [PartialOrder α] {coun
       have := congrArg Fin.val equal
       dsimp only at this
       lia
+
+/-- In a finite array with monotone keys, two different records with equal keys force an adjacent
+pair of different records with that key. -/
+theorem Fin.exists_adjacent_ne_of_monotone_comp {α β : Type*} [PartialOrder β] {R : ℕ}
+    (records : Fin R → α) (key : α → β)
+    (hs : Monotone (key ∘ records)) (i j : Fin R) (hij : i < j)
+    (hne : records i ≠ records j) (heq : key (records i) = key (records j)) :
+    ∃ (p : ℕ) (hp : p + 1 < R),
+      records ⟨p, by omega⟩ ≠ records ⟨p + 1, hp⟩ ∧
+      key (records ⟨p, by omega⟩) = key (records ⟨p + 1, hp⟩) ∧
+      key (records ⟨p, by omega⟩) = key (records i) := by
+  classical
+  have hex : ∃ q, ∃ hq : q < R, i.val < q ∧ q ≤ j.val ∧ records ⟨q, hq⟩ ≠ records i :=
+    ⟨j.val, j.isLt, hij, le_rfl, hne.symm⟩
+  obtain ⟨hq, hiq, hqj, hdiff⟩ := Nat.find_spec hex
+  generalize hqdef : Nat.find hex = q at hq hiq hqj hdiff
+  have hmin : ∀ q' < q, ¬∃ hq : q' < R, i.val < q' ∧ q' ≤ j.val ∧ records ⟨q', hq⟩ ≠ records i :=
+    fun q' hq' => Nat.find_min hex (by omega)
+  have hsame : records ⟨q - 1, by omega⟩ = records i := by
+    by_contra h
+    have hlt : i.val < q - 1 := by
+      have hne : i.val ≠ q - 1 := fun he => h (congrArg records (Fin.ext he.symm))
+      omega
+    exact hmin (q - 1) (by omega) ⟨by omega, hlt, by omega, h⟩
+  have hqkey : key (records ⟨q, hq⟩) = key (records i) :=
+    le_antisymm ((hs (show (⟨q, hq⟩ : Fin R) ≤ j from hqj)).trans_eq heq.symm)
+      (hs (show i ≤ (⟨q, hq⟩ : Fin R) from hiq.le))
+  have hqp : q - 1 + 1 = q := by omega
+  refine ⟨q - 1, by omega, ?_, ?_, congrArg key hsame⟩
+  · simpa only [hqp, hsame] using hdiff.symm
+  · simpa only [hqp, hsame] using hqkey.symm
 
 /-- The sum of all values in `Fin n` is at most `n * n`. -/
 theorem Fin.sum_val_le_mul_self (n : ℕ) : (∑ j : Fin n, j.val) ≤ n * n := by

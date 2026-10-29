@@ -15,6 +15,7 @@ public import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.Int.Order
+import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Data.List.GetD
 
 /-!
@@ -215,22 +216,6 @@ private lemma stagesRows_succ (A : List (List ℤ)) (k : ℕ) :
     stagesRows A (k + 1) = stepRows A (stagesRows A k) :=
   Function.iterate_succ_apply' _ _ _
 
-/-- A tail of a range, summed as a list, is a tail sum over `Fin`. -/
-private lemma sum_map_drop_range (d lo : ℕ) (f : ℕ → ℤ) :
-    (((List.range d).drop lo).map f).sum = BirdDet.sumFrom d lo f := by
-  induction lo using BirdDet.sumFrom_induct d with
-  | step lo hlo ih =>
-    rw [BirdDet.sumFrom_step d lo f hlo, ← ih,
-      List.drop_eq_getElem_cons (by simpa using hlo)]
-    simp
-  | stop lo hlo =>
-    rw [BirdDet.sumFrom_stop d lo f hlo, List.drop_eq_nil_of_le (by simpa using hlo)]
-    rfl
-
-lemma sum_map_drop_range_fin {d : ℕ} (i : Fin d) (f : ℕ → ℤ) :
-    (((List.range d).drop (i.val + 1)).map f).sum = ∑ k ∈ Finset.Ioi i, f k.val := by
-  rw [sum_map_drop_range, DeterminantAlgorithm.sumFrom_fin_tail]
-
 /-! ### Correctness -/
 
 /-- The list stages agree with the Bird stages of the matrix denoted by the input. -/
@@ -244,7 +229,7 @@ private theorem rowEntry_stagesRows (A : List (List ℤ)) (k : ℕ) (i j : Fin A
   | succ k ih =>
     rw [stagesRows_succ, Function.iterate_succ_apply', stepRows, rowEntry_tabulateTable,
       ite_eq_left ⟨i.isLt, j.isLt⟩, stepEntryRows, traceTerms, productTerms,
-      sum_map_drop_range_fin, sum_map_drop_range_fin, BirdDet.Spec.stepEntry_eq]
+      List.sum_map_drop_range_fin, List.sum_map_drop_range_fin, BirdDet.Spec.stepEntry_eq]
     simp only [ih, Matrix.of_apply, ofRows]
 
 private lemma birdDet_eq_of_eq_zero {n : ℕ} (M : Matrix (Fin n) (Fin n) ℤ) (hn : n = 0) :

@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -330,30 +331,11 @@ theorem binary_pow' {α : Type} {input : α ↪ List Bool} {base exponent : α �
     ComputableTidilyInPolyTime (fun a => base a ^ exponent a) input encNat :=
   binary_pow.comp (hbase.prod hexponent)
 
-/-- Truncated subtraction of binary naturals, by schoolbook subtraction with a borrow. -/
+/-- Truncated subtraction of binary naturals, reusing the shared plain schoolbook certificate. -/
 @[fun_prop]
 theorem binary_sub : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 - p.2)
-    (encPair encNat encNat) encNat := by
-  have hpairs : ComputableTidilyInPolyTime BinarySub.digitPairs (encPair encNat encNat)
-      (encList (encPair encBool encBool)) := by
-    unfold BinarySub.digitPairs
-    fun_prop
-  have hstep : ComputableTidilyInPolyTime
-      (fun p : (Bool × List Bool) × (Bool × Bool) => BinarySub.subStep p.1 p.2)
-      (encPair (encPair encBool encBits) (encPair encBool encBool))
-      (encPair encBool encBits) := by
-    unfold BinarySub.subStep BinarySub.borrow
-    fun_prop
-  have hfold := foldl_of_bounded_growth (encA := encPair encBool encBool)
-    (encL := encList (encPair encBool encBool)) (encB := encPair encBool encBits)
-    (init := fun _ => (false, [])) hpairs (const _) hstep (growth := 1)
-    (fun s d => by simp [BinarySub.subStep])
-  have hread : ComputableTidilyInPolyTime ofBits encBits encNat := bitsToNat
-  have h := ((fst encBool encBits).comp hfold).ite' (const 0)
-    (hread.comp ((snd encBool encBits).comp hfold))
-  convert h using 1
-  funext p
-  exact BinarySub.sub_eq p
+    (encPair encNat encNat) encNat :=
+  ComputableInPolyTime.binary_sub.tidy
 
 /-- Subtract computed binary values, truncating at zero and fixing their intermediate
 encodings. -/
@@ -559,12 +541,12 @@ end Turing.MultiTapeTM.ComputableInPolyTime
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
-/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub'` for plain certificates. -/
+/-- Subtract computed binary values using the shared plain certificate. -/
 theorem binary_sub' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
     (hleft : ComputableInPolyTime left input encNat)
     (hright : ComputableInPolyTime right input encNat) :
     ComputableInPolyTime (fun a => left a - right a) input encNat :=
-  .of_tidy (ComputableTidilyInPolyTime.binary_sub' (hleft := hleft.tidy) (hright := hright.tidy))
+  binary_sub.comp (hleft.prod hright)
 
 /-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow'` for plain certificates. -/
 theorem binary_pow' {α : Type} {input : α ↪ List Bool} {base exponent : α → ℕ}
