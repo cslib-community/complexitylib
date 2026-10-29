@@ -62,6 +62,8 @@ asymptotic derivation.
 * `Cslib.Circuits.Arithmetic.SPCircuit.two_rpow_le_of_imm`: the explicit lower bound for circuits.
 * `Cslib.Circuits.Arithmetic.SPCircuit.eventually_pow_lt_size_of_imm`: the superpolynomial lower
   bound.
+* `Cslib.Circuits.Arithmetic.SPCircuit.exists_isSimple_imm`: its hypotheses are satisfiable: for
+  every `n` and `d`, a simple circuit of product-depth one computes `IMM_{n,d}`.
 
 ## References
 
@@ -107,6 +109,14 @@ private theorem eventually_mul_sq_le_two_pow (a : ℕ) :
   calc a * (d + 1) ^ 2 ≤ a * (4 * d ^ 2) := Nat.mul_le_mul_left _ hsq
     _ ≤ (4 * a + 1) * d ^ 2 := by nlinarith
     _ ≤ 2 ^ d := hd'.le
+
+/-- The sum over paths is simple: the variables of a path lie in distinct matrices. -/
+theorem isSimple_immFormula {K : Type*} [Zero K] [One K] (n d : ℕ) [NeZero n] :
+    (immFormula K n d).IsSimple := by
+  refine .gate _ _ (fun m h => by cases h) fun j =>
+    .gate _ _ (fun m _ i i' h => ?_) fun i => .input _
+  injection h with h
+  simpa using congrArg (fun v => (immVarEquiv n d v).1) h
 
 namespace SPCircuit
 
@@ -234,6 +244,18 @@ theorem eventually_pow_lt_size_of_imm (K : Type*) [Field K] (Δ c : ℕ) :
   exact pow_lt_size_of_imm (le_max_right Δ 1) (Nat.pow_log_le_self 2 (NeZero.ne n))
     (Nat.lt_pow_succ_log_self one_lt_two n) (Nat.pow_log_le_self 2 hL0) hdq hdpow e hC
     (hCΔ.trans (le_max_left _ _)) hCP
+
+/-- **Simple circuits computing IMM exist at every size**: the circuit of the sum over paths
+(`immFormula`) is simple, has product-depth at most one and `n ^ (d + 1) + 1` gates, and computes
+`IMM_{n,d}` with its `d n ^ 2` variables numbered by `immVarEquiv`. So the hypotheses of the lower
+bounds are satisfiable for every `n` and `d`. -/
+theorem exists_isSimple_imm (K : Type*) [CommSemiring K] (n d : ℕ) [NeZero n] :
+    ∃ C : SPCircuit K (d * (n * n)), C.IsSimple ∧ C.productDepth ≤ 1 ∧
+      C.size = n ^ (d + 1) + 1 ∧ rename (immVarEquiv n d) C.polynomial = imm K n d := by
+  refine ⟨(immFormula K n d).toCircuit, isSimple_toCircuit (isSimple_immFormula n d),
+    (productDepth_toCircuit_le _).trans (productDepth_immFormula_le n), ?_, ?_⟩
+  · simp [immFormula, add_comm]
+  · rw [polynomial_toCircuit, rename_polynomial_immFormula]
 
 end SPCircuit
 

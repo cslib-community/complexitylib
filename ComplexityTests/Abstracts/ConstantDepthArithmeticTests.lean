@@ -12,9 +12,10 @@ import ComplexityAbstracts.ConstantDepthArithmeticAbstract
 
 Verifies that the public definitions of `ConstantDepthArithmeticAbstract` are the library's
 (`SPCircuit.polynomial`, `SPCircuit.productDepth`, `SPCircuit.IsSimple`, `imm`), that
-`IMM_{1,1}` is the variable `(0, 0, 0)`, and that the hypotheses of the headline are satisfiable:
-the gate-free circuit reading its single input is simple, of product-depth zero, and computes
-`IMM_{1,1}` with its one variable in bijection with the input. The headline is instantiated at
+`IMM_{1,1}` is the variable `(0, 0, 0)`, and that the hypotheses of the headline are satisfiable
+at every size: for all `n ≥ 1` and `d`, the circuit of the sum over paths is simple, of
+product-depth one, and computes `IMM_{n,d}` with its variables in bijection with the inputs
+(`Cslib.Circuits.Arithmetic.SPCircuit.exists_isSimple_imm`). The headline is instantiated at
 `Δ = 2` and `c = 3`.
 -/
 
@@ -44,27 +45,16 @@ example : ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm ℚ 1 1 =
     MvPolynomial.X (0, 0, 0) := by
   simp [ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm]
 
-/-- The gate-free circuit reading its single input. -/
-private def readInput : ArithCircuit ℚ 1 :=
-  Circuit.wiring _ fun _ => 0
-
-example : IsSimple readInput := fun g => g.elim0
-
-example : productDepth readInput = 0 :=
-  rfl
-
-/-- The bijection between the input and the variable of `IMM_{1,1}`. -/
-private def e₁ : Fin 1 ≃ Fin 1 × Fin 1 × Fin 1 where
-  toFun _ := (0, 0, 0)
-  invFun _ := 0
-  left_inv _ := Subsingleton.elim _ _
-  right_inv _ := Subsingleton.elim _ _
-
-/-- It computes `IMM_{1,1}`. -/
-example : MvPolynomial.rename e₁ (polynomial readInput) =
-    ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm ℚ 1 1 := by
-  simp [polynomial, readInput, e₁,
-    ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm]
+/-- The hypotheses of the headline are satisfiable at every size: for every `n ≥ 1`, `d` and
+product-depth `Δ ≥ 1`, the circuit of the sum over paths is simple, of product-depth at most `Δ`,
+and computes `IMM_{n,d}` with its variables in bijection with the inputs. -/
+example (K : Type*) [Field K] (n d Δ : ℕ) [NeZero n] (hΔ : 1 ≤ Δ) :
+    ∃ (N : ℕ) (e : Fin N ≃ Fin d × Fin n × Fin n) (C : ArithCircuit K N),
+      IsSimple C ∧ productDepth C ≤ Δ ∧
+        MvPolynomial.rename e (polynomial C) =
+          ComplexityAbstracts.ConstantDepthArithmeticAbstract.imm K n d := by
+  obtain ⟨C, simple, depth, -, computes⟩ := SPCircuit.exists_isSimple_imm K n d
+  exact ⟨_, immVarEquiv n d, C, simple, depth.trans hΔ, computes⟩
 
 /-- The headline at product-depth two and exponent three. -/
 example : ∀ᶠ n in Filter.atTop, ∀ [NeZero n] {N : ℕ}

@@ -52,6 +52,8 @@ p. 11], which depends on the size convention.
 
 * `Cslib.Circuits.Arithmetic.SPCircuit`: circuits of unbounded fan-in with one output.
 * `Cslib.Circuits.Arithmetic.SPCircuit.IsSimple`: product gates read pairwise distinct wires.
+* `Cslib.Circuits.Arithmetic.SPFormula.IsSimple`: product gates of a formula have pairwise
+  distinct arguments.
 * `Cslib.Circuits.Arithmetic.SPCircuit.productDepth`,
   `Cslib.Circuits.Arithmetic.SPCircuit.polynomial`: product-depth and the computed polynomial.
 * `Cslib.Circuits.Arithmetic.SPCircuit.toSPFormula`: the unfolded formula.
@@ -63,6 +65,9 @@ p. 11], which depends on the size convention.
 * `Cslib.Circuits.Arithmetic.SPCircuit.productDepth_toSPFormula_le`: it is no deeper in products.
 * `Cslib.Circuits.Arithmetic.SPCircuit.nodeCount_toSPFormula_le` (original): it has at most
   `(C.size + N + 1) ^ (2 * C.productDepth + 1)` nodes.
+* `Cslib.Circuits.Arithmetic.SPCircuit.isSimple_toCircuit`: conversely, the circuit of a simple
+  formula is simple, computes its polynomial (`SPCircuit.polynomial_toCircuit`) and is no deeper
+  in products (`SPCircuit.productDepth_toCircuit_le`).
 
 ## References
 
@@ -83,6 +88,23 @@ variable (K : Type u) in
 /-- Arithmetic circuits of unbounded fan-in over `K` in `N` variables, with one output. -/
 abbrev SPCircuit (N : ℕ) : Type u :=
   Circuit (sigmaPiSignature K) N 1
+
+namespace SPFormula
+
+variable {K : Type u} {N : ℕ}
+
+/-- A formula is *simple* when the arguments of each of its product gates are pairwise distinct
+formulas. Its circuit is then simple (`SPCircuit.isSimple_toCircuit`). -/
+inductive IsSimple : SPFormula K N → Prop
+  /-- An input is simple. -/
+  | input (i : Fin N) : IsSimple (.input i)
+  /-- An operation node is simple when its arguments are, and pairwise distinct if it is a product
+  gate. -/
+  | gate (op : SigmaPiOp K) (args : Fin op.arity → SPFormula K N)
+      (hmul : ∀ m, op = .mul m → Function.Injective args) (hargs : ∀ j, IsSimple (args j)) :
+      IsSimple (.gate op args)
+
+end SPFormula
 
 namespace SPCircuit
 
@@ -155,6 +177,28 @@ theorem nodeCount_toSPFormula_le [Semiring K] {C : SPCircuit K N} (hC : C.IsSimp
   have := C.depthWith_toFormula_le 0 SigmaPiOp.mulCost
   unfold SPFormula.productDepth productDepth
   omega
+
+/-! ### Formulas as circuits -/
+
+/-- The circuit of a formula computes the polynomial of the formula. -/
+@[simp] theorem polynomial_toCircuit [CommSemiring K] (F : SPFormula K N) :
+    SPCircuit.polynomial F.toCircuit = F.polynomial :=
+  F.eval_toCircuit _ _ 0
+
+/-- The circuit of a formula is no deeper in products than the formula. -/
+theorem productDepth_toCircuit_le (F : SPFormula K N) :
+    SPCircuit.productDepth F.toCircuit ≤ F.productDepth :=
+  F.depthWith_toCircuit_le _
+
+/-- The circuit of a simple formula is simple. -/
+theorem isSimple_toCircuit {F : SPFormula K N} (hF : F.IsSimple) :
+    SPCircuit.IsSimple F.toCircuit := by
+  intro k m hop
+  have h := Formula.gateFormula_toCircuit SPFormula.IsSimple
+    (fun _ _ j h => by cases h with | gate _ _ _ h => exact h j) hF k
+  rw [Program.gateFormula_eq_lines] at h
+  cases h with
+  | gate _ _ hmul _ => exact (hmul m hop).of_comp
 
 end SPCircuit
 
