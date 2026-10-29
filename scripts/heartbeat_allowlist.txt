@@ -6,3 +6,6 @@
 
 # #1528: closed incidence-table certificates from #1281.
 Complexity/Computability/Complexity/Problems/SAT/ExactOne/GeometryProfilesPrefix.lean 8000000
+
+# #1583: split native parameter segment/frame proofs to reach the default budget.
+Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/Parameters.lean 300000
