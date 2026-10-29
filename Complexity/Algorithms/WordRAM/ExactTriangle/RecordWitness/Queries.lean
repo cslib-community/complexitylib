@@ -74,7 +74,7 @@ theorem exec_queries {w U n first length out queries Q : ℕ}
       y.regs Reg.index = Q ∧ y.regs Reg.scans = S ∧
       S ≤ Nat.count (fun i => x.mem (out + i) ≠ 0 ∧
         ∀ c : Fin length, AB (a i) (b i) + BC (b i) (first + c.val) +
-          AC (a i) (first + c.val) ≠ 0) Q + 1 ∧
+          AC (a i) (first + c.val) ≠ 0) Q + y.regs Reg.found ∧
       (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
       (y.regs Reg.found = 1 ↔ ∃ i < Q, x.mem (out + i) ≠ 0 ∧
         ∃ c, first ≤ c ∧ c < first + length ∧ AB (a i) (b i) + BC (b i) c + AC (a i) c = 0) ∧
@@ -216,13 +216,11 @@ theorem exec_queries {w U n first length out queries Q : ℕ}
     funext i
     simp only [accept, hit, Bool.and_eq_true, decide_eq_true_eq,
       Bool.not_eq_true_eq_eq_false, decide_eq_false_iff_not, not_exists]
-  have flag_le : (foundBefore accept hit Q).toNat ≤ 1 := by
-    cases foundBefore accept hit Q <;> decide
   refine ⟨y, Nat.count active Q, ?_, yFixed, ym, yindex, ?_, ?_, ?_, ?_, ?_⟩
   · simpa only [Φ, hi, Nat.sub_zero, Nat.count_zero, Nat.mul_zero, Nat.add_zero] using he
   · simpa only [yindex] using ys
-  · rw [← hfail]
-    exact hcount.trans (Nat.add_le_add_left flag_le _)
+  · rw [← hfail, yf, yindex]
+    exact hcount
   · rw [yf, yindex]
     cases foundBefore accept hit Q <;> simp
   · rw [yf, yindex]

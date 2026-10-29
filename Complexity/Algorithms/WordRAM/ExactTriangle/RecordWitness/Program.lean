@@ -176,11 +176,13 @@ open Reg in
 @[expose] def program : Code .standard 400 :=
   .seq (RecordProduct.program.rename productBank) consume
 
-/-- Original initialized producer/product code followed by the real candidate consumer.
-The fixed first-record client reloads its selected ordinal with one charged instruction. -/
+/-- The real producer occupies the existing low bank of the larger caller. -/
+@[expose] def produce : Code .standard 400 := RecordProduct.produce.rename productBank
+
+/-- Original initialized producer, actual first-record selection and actual product/verifier.
+The selected ordinal is preserved by the real product, so no later reset is needed. -/
 @[expose] def entryProgram : Code .standard 400 :=
-  .seq (RecordProduct.entryProgram.rename productBank)
-    (.seq (.op (.const (productBank RecordProduct.Reg.ordinal) 0)) consume)
+  .seq produce (.seq (.op (.const (productBank RecordProduct.Reg.ordinal) 0)) program)
 
 /-- The consumer is one fixed finite instruction graph and never reads the physical width. -/
 theorem consume_fixed : consume.size ≤ 512 ∧ ¬consume.ReadsWidth := by decide

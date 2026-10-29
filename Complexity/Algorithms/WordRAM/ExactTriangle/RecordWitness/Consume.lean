@@ -63,7 +63,7 @@ theorem exec_consume {w U n D g i records heap out : ℕ}
       y.mem = x.mem ∧ y.regs Reg.scans = S ∧
       S ≤ Nat.count (fun j => x.mem (out + j) ≠ 0 ∧
         ∀ c : Fin length, AB (a j) (b j) + BC (b j) (first + c.val) +
-          AC (a j) (first + c.val) ≠ 0) (v 3) + 1 ∧
+          AC (a j) (first + c.val) ≠ 0) (v 3) + y.regs Reg.found ∧
       (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
       (y.regs Reg.found = 1 ↔ ∃ j < v 3, x.mem (out + j) ≠ 0 ∧
         ∃ c, first ≤ c ∧ c < first + length ∧ AB (a j) (b j) + BC (b j) c + AC (a j) c = 0) ∧

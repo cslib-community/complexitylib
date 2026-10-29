@@ -49,16 +49,12 @@ theorem decodedQueries_chunkOf {n D g p : ℕ} (values : ℕ → ℤ)
       rankIn S (qs.get i) = k * cap + i.val := by
     have hi : i.val < Q := by simpa only [qs, decodedQueries_length] using i.isLt
     obtain ⟨pair, hvalue, -⟩ := hpair i.val hi
+    have hvA : y.mem (q + 2 * i.val) = pair.1.val := hvalue.2.2.1
+    have hvB : y.mem (q + 2 * i.val + 1) = pair.2.val := hvalue.2.2.2
+    have hv := decodedQueries_get_val hn y.mem q Q i
+      (by rw [hvA]; exact pair.1.isLt) (by rw [hvB]; exact pair.2.isLt)
     have he : qs.get i = pair := by
-      apply Prod.ext <;> apply Fin.ext
-      · rw [List.get_eq_getElem]
-        simp only [qs, decodedQueries, List.getElem_ofFn]
-        have hv : y.mem (q + 2 * i.val) = pair.1.val := hvalue.2.2.1
-        rw [hv, Nat.mod_eq_of_lt pair.1.isLt]
-      · rw [List.get_eq_getElem]
-        simp only [qs, decodedQueries, List.getElem_ofFn]
-        have hv : y.mem (q + 2 * i.val + 1) = pair.2.val := hvalue.2.2.2
-        rw [hv, Nat.mod_eq_of_lt pair.2.isLt]
+      exact Prod.ext (Fin.ext (hv.1.trans hvA)) (Fin.ext (hv.2.trans hvB))
     rw [he]
     exact ⟨hvalue.1, hvalue.2.1⟩
   refine ⟨hget, ?_, ?_⟩

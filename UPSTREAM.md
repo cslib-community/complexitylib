@@ -404,6 +404,23 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   initialized prefixes have a positive logarithmic width threshold and polynomial words/support
   independent of the physical width. Outer parameter/prime selection and instance iteration,
   aggregate solving/witness reconstruction and the whole #1394 endpoint remain separate.
+  The original-weight consumer in
+  [#1639](https://github.com/cslib-community/complexitylib/issues/1639) composes actual producer,
+  product and verification code in 400 registers. It reads original interleaved pairs, computes
+  the piece interval with the native square-root kernel, and invokes the entire renamed
+  32-register signed verifier only while searching and on nonzero actual answers. The native
+  scan counter is at most existing finite false positives plus the returned 0/1 flag. Thus a
+  failed record has no additive successful-scan charge. Caller memory outside the original
+  product window and the complete producer bank are framed; widths and all-prefix words/support
+  are derived from original headers/weights at every sufficiently wide physical word size.
+  Source Light semantics and costs are not imported or simulated by assumption. The native
+  verifier returns its last zero, while finite `scanPiece` returns its first; failure and
+  original-weight soundness agree. The existing decoded queries now expose chunk membership,
+  nonrepetition and rank order, with an actual initialized client. The general raw writer bound
+  is placed at `WriteMatrices.entry_le_one`, and shared finite piece coordinates are in the
+  narrow `ExactTriangle.PieceBounds` module, reused by preparation and recovery. Parameter/prime
+  choice, the outer ET loop, aggregate savings and the full #1394 endpoint remain open; no curated
+  abstract changes.
   Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies
