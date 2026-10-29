@@ -34,6 +34,12 @@ ExactTriangle host.
 
 * `Catalogue.exec_at`: actual execution from the fixed input header, exact parameters, residue
   and query readback, concatenated descriptors and a combined memory frame.
+
+## References
+
+The class/query layout follows the pinned
+[Theorem 17 construction](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Programs/Sec3/Theorem17/Instances/Classes.lean).
+The native composition and instruction bounds are original.
 -/
 
 public section

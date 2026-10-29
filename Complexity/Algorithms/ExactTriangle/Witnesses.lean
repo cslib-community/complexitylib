@@ -95,14 +95,14 @@ variable {wAB wBC wAC : Fin n → Fin n → ℤ}
 /-! ### Scans and accepted pairs -/
 
 /-- Proof of Theorem 17, "scan the piece C_k of its instance for a c with S(a,b,c) = 0": a `c` that
-a scan returns lies in the piece and makes `weightSum` zero. -/
+a scan returns lies in the piece and has `S(a,b,c) = 0`. -/
 theorem scanPiece_eq_some {k : ℕ} {a b c : Fin n} (h : scanPiece wAB wBC wAC D g k a b = some c) :
     c ∈ piece n D g k ∧ weightSum wAB wBC wAC a b c = 0 := by
   have hmem := List.mem_of_find?_eq_some h
   rw [List.mem_filter] at hmem
   exact ⟨by simpa using hmem.2, by simpa using List.find?_some h⟩
 
-/-- A scan fails exactly when no `c` in the piece makes `weightSum` zero. -/
+/-- A scan fails exactly if the piece has no `c` with `S(a,b,c) = 0`. -/
 theorem scanPiece_eq_none_iff {k : ℕ} {a b : Fin n} :
     scanPiece wAB wBC wAC D g k a b = none ↔
       ∀ c ∈ piece n D g k, weightSum wAB wBC wAC a b c ≠ 0 := by
@@ -163,7 +163,7 @@ def AnswersCorrect (wAB wBC wAC : Fin n → Fin n → ℤ) (D g p : ℕ)
       ((lopInstance wAB wBC wAC D g p ι).W : Set _)
 
 /-- Proof of Theorem 17: a "failed scan, of a piece C_k for a pair (a,b)": the oracle accepted the
-pair in the instance, and the piece contains no `c` with zero `weightSum`. -/
+pair in the instance, and the piece contains no `c` with `S(a,b,c) = 0`. -/
 def failedScans (wAB wBC wAC : Fin n → Fin n → ℤ) (D g p : ℕ)
     (ans : InstanceIndex p → Fin n × Fin n → Bool) : Finset (InstanceIndex p × (Fin n × Fin n)) :=
   (acceptedPairs wAB wBC wAC D g p ans).filter fun x => scanOf wAB wBC wAC D g x = none

@@ -41,6 +41,12 @@ it does not choose a prime, evaluate their queried products or decide ExactTrian
 `PreparationBounds` proves the preparation time bound in the source's parameter regime.
 Code-stage definitions are exposed for kernel-checked interpreter clients.
 Proof helpers are private.
+
+## References
+
+The matrix geometry follows the pinned
+[Theorem 17 matrix construction](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Programs/Sec3/Theorem17/Instances/WriteMatrices.lean).
+The native controller and resource proofs are original.
 -/
 
 public section

@@ -592,7 +592,6 @@ not planned, not as proved.
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1363]: https://github.com/cslib-community/complexitylib/issues/1363
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
-[#1532]: https://github.com/cslib-community/complexitylib/issues/1532
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
@@ -601,4 +600,5 @@ not planned, not as proved.
 [#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1463]: https://github.com/cslib-community/complexitylib/issues/1463
 [#1493]: https://github.com/cslib-community/complexitylib/issues/1493
+[#1532]: https://github.com/cslib-community/complexitylib/issues/1532
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
