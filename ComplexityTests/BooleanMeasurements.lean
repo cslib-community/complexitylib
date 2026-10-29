@@ -15,15 +15,6 @@ set_option linter.privateModule false
 open Cslib Cslib.GenericRAM Cslib.LinearAlgebra.BooleanMeasurements Turing.MultiTapeTM
 open scoped BigOperators
 
--- Signed and identified-coordinate coefficients are ordinary integer coefficients.
-example : evalBoolRow [-3, 2, 2] [true, false, true] = -1 := by decide
-example : evalBoolMatrix [[2, -3, 2], [-1, 0, 4]] [true, true, true] = [1, 3] := by decide
-
--- Padding, truncation, and ragged rows use the agreed total convention.
-example : evalBoolRow [5] [] = 0 ∧ evalBoolRow [-3, 2] [true] = -3 := by decide
-example : evalBoolRow [2, -3] [true, true, true] = -1 := by decide
-example : evalBoolMatrix [[], [3, -2], [5]] [true] = [0, 3, 5] := by decide
-
 private abbrev Context := List (List ℤ) × List ℤ
 
 private def representative (p : Context × ℕ) : Option (List Bool) :=
@@ -32,32 +23,31 @@ private def representative (p : Context × ℕ) : Option (List Bool) :=
 private def contextEncoding : Context ↪ List Bool :=
   encPair (encList (encList encIntBin)) (encList encIntBin)
 
--- Both matrix and target are retained runtime inputs, rather than hardwired in the machine.
-example : representative (([[1, 0]], [1]), 2) = some [true, false] ∧
-    representative (([[0, 1]], [1]), 2) = some [false, true] ∧
-    representative (([[1, 0]], [0]), 2) = some [false, false] := by decide
-
--- First-match order with multiple representatives, and a target outside the image.
-example : representative (([[1, 1]], [1]), 2) = some [true, false] := by decide
-example : representative (([[1, 1]], [3]), 2) = none := by decide
-example : representative (([[2, -3, 2], [-1, 0, 4]], [-1, -1]), 3) =
-    some [true, true, false] := by decide
-
--- Zero rows and zero columns are distinct; neither is a vacuous exceptional assumption.
-example : representative (([], []), 0) = some [] ∧
-    representative (([], []), 2) = some [false, false] := by decide
-example : representative (([[], []], [0, 0]), 0) = some [] ∧
-    representative (([[], []], [0, 1]), 0) = none := by decide
-
--- Wrong target length always fails, while a correctly matching ragged matrix can succeed.
-example : representative (([[1, 1]], []), 2) = none ∧
-    representative (([], [0]), 2) = none := by decide
-example : representative (([[], [3, -2], [5]], [0, 3, 5]), 1) = some [true] := by decide
-
--- Unrestricted representatives need not satisfy the fixed-bit restriction of the later scan.
-example : representative (([[0, 1]], [0]), 2) = some [false, false] ∧
-    evalBoolMatrix [[0, 1]] [true, false] = [0] ∧
-    ([false, false] : List Bool).headD false = false := by decide
+-- Signed coefficients, padding/truncation/ragged rows, retained runtime context, first-match
+-- order, zero-row/zero-column regimes, target-length mismatch, and unrestricted representatives.
+example :
+    (evalBoolRow [-3, 2, 2] [true, false, true] = -1 ∧
+      evalBoolMatrix [[2, -3, 2], [-1, 0, 4]] [true, true, true] = [1, 3] ∧
+      (evalBoolRow [5] [] = 0 ∧ evalBoolRow [-3, 2] [true] = -3) ∧
+      evalBoolRow [2, -3] [true, true, true] = -1 ∧
+      evalBoolMatrix [[], [3, -2], [5]] [true] = [0, 3, 5]) ∧
+    (representative (([[1, 0]], [1]), 2) = some [true, false] ∧
+      representative (([[0, 1]], [1]), 2) = some [false, true] ∧
+      representative (([[1, 0]], [0]), 2) = some [false, false]) ∧
+    (representative (([[1, 1]], [1]), 2) = some [true, false] ∧
+      representative (([[1, 1]], [3]), 2) = none ∧
+      representative (([[2, -3, 2], [-1, 0, 4]], [-1, -1]), 3) = some [true, true, false]) ∧
+    ((representative (([], []), 0) = some [] ∧
+        representative (([], []), 2) = some [false, false]) ∧
+      (representative (([[], []], [0, 0]), 0) = some [] ∧
+        representative (([[], []], [0, 1]), 0) = none)) ∧
+    ((representative (([[1, 1]], []), 2) = none ∧
+        representative (([], [0]), 2) = none) ∧
+      representative (([[], [3, -2], [5]], [0, 3, 5]), 1) = some [true]) ∧
+    (representative (([[0, 1]], [0]), 2) = some [false, false] ∧
+      evalBoolMatrix [[0, 1]] [true, false] = [0] ∧
+      ([false, false] : List Bool).headD false = false) := by
+  decide
 
 -- A concrete successful native search gives the actual finite system of integer equations.
 example : ∃ y : List Bool,
@@ -90,26 +80,24 @@ private noncomputable def nativeRepresentative :
     NativeCertificate representative (encPair contextEncoding encUnary) (encOption encBits) :=
   searchCertificate matrixProjection targetProjection
 
-example : IsComputable representative (encPair contextEncoding encUnary) (encOption encBits) :=
-  nativeRepresentative.isComputable
-
--- The resource bounds belong to the very certificate that the consumer composes.
-example : PolyBounded (fun p => (encPair contextEncoding encUnary p).length)
-    nativeRepresentative.space :=
-  polyBounded_searchCertificate_space matrixProjection targetProjection
-
-example : ∃ overhead : Context × ℕ → ℕ,
-    PolyBounded (fun p => (encPair contextEncoding encUnary p).length) overhead ∧
-    ∀ p, nativeRepresentative.time p = (2 ^ p.2 + 1) * overhead p :=
-  exists_polyBounded_searchCertificate_time matrixProjection targetProjection
-
-example : ∃ overhead workspace : Context × ℕ → ℕ,
-    PolyBounded (fun p => (encPair contextEncoding encUnary p).length) overhead ∧
-    PolyBounded (fun p => (encPair contextEncoding encUnary p).length) workspace ∧
-    ComputableInO representative (encPair contextEncoding encUnary) (encOption encBits)
-      (fun p => (2 ^ p.2 + 1) * overhead p) workspace :=
-  exists_computableInO_search matrixProjection targetProjection
-
--- The public result encoding is raw bits plus the option tag, rather than framed Boolean cells.
-example : (encOption encBits (representative (([[1, 1]], [1]), 2))).length = 3 ∧
-    (encOption (encList encBool) (representative (([[1, 1]], [1]), 2))).length = 7 := by decide
+-- Native certificate computability, polynomial space/time bounds, `ComputableInO`, and raw-bit
+-- result encoding length.
+example :
+    IsComputable representative (encPair contextEncoding encUnary) (encOption encBits) ∧
+    PolyBounded (fun p => (encPair contextEncoding encUnary p).length)
+      nativeRepresentative.space ∧
+    (∃ overhead : Context × ℕ → ℕ,
+      PolyBounded (fun p => (encPair contextEncoding encUnary p).length) overhead ∧
+      ∀ p, nativeRepresentative.time p = (2 ^ p.2 + 1) * overhead p) ∧
+    (∃ overhead workspace : Context × ℕ → ℕ,
+      PolyBounded (fun p => (encPair contextEncoding encUnary p).length) overhead ∧
+      PolyBounded (fun p => (encPair contextEncoding encUnary p).length) workspace ∧
+      ComputableInO representative (encPair contextEncoding encUnary) (encOption encBits)
+        (fun p => (2 ^ p.2 + 1) * overhead p) workspace) ∧
+    ((encOption encBits (representative (([[1, 1]], [1]), 2))).length = 3 ∧
+      (encOption (encList encBool) (representative (([[1, 1]], [1]), 2))).length = 7) :=
+  ⟨nativeRepresentative.isComputable,
+   polyBounded_searchCertificate_space matrixProjection targetProjection,
+   exists_polyBounded_searchCertificate_time matrixProjection targetProjection,
+   exists_computableInO_search matrixProjection targetProjection,
+   by decide⟩
