@@ -46,6 +46,34 @@ def costCoefficient (κ : ℕ) : ℕ :=
   Frontend.costCoefficient κ + 60 * C ^ 2 + 77 +
     4 * (κ + 3) ^ 2 * (rootCoefficient κ + 17)
 
+private theorem parameter_scale_bounds (κ n : ℕ) :
+    let B := n + 2
+    let L := Nat.log 2 B + 1
+    let S := Nat.sqrt B + 1
+    let C := (5 * κ + 16) * (10 * κ + 40) + 1
+    Cslib.Algorithms.ThreeSum.ChanHe.mPar n (2 * B ^ κ) + 1 ≤ C * S * L ^ 2 ∧
+      S ^ 2 ≤ 4 * B := by
+  let B := n + 2
+  let L := Nat.log 2 B + 1
+  let S := Nat.sqrt B + 1
+  let C := (5 * κ + 16) * (10 * κ + 40) + 1
+  have hB : 2 ≤ B := by dsimp only [B]; omega
+  have hL : 1 ≤ L := by dsimp only [L]; omega
+  have hS : 1 ≤ S := by dsimp only [S]; omega
+  constructor
+  · have hm := Cslib.Algorithms.ThreeSum.ChanHe.mPar_shifted_pow_le n κ
+    have hu : 1 ≤ S * L ^ 2 := by
+      have hp : 0 < S * L ^ 2 := by positivity
+      omega
+    calc _ ≤ ((5 * κ + 16) * (10 * κ + 40)) * S * L ^ 2 + S * L ^ 2 :=
+        Nat.add_le_add hm hu
+      _ = C * S * L ^ 2 := by dsimp only [C]; ring
+  · have hs := Nat.sqrt_le B
+    have ht := Nat.sqrt_le_self B
+    change S ^ 2 ≤ 4 * B
+    dsimp only [S]
+    nlinarith only [hs, ht, hB]
+
 /-- The complete root cost at the actual magnitude-derived candidate window. -/
 theorem root_cost_bound (κ n : ℕ) :
     let m := Cslib.Algorithms.ThreeSum.ChanHe.mPar n (2 * (n + 2) ^ κ)
@@ -63,19 +91,9 @@ theorem root_cost_bound (κ n : ℕ) :
   have hS : 1 ≤ S := by dsimp only [S]; omega
   have hC : 1 ≤ C := by dsimp only [C]; omega
   have hlog : Nat.log 2 n ≤ Nat.log 2 B := Nat.log_mono_right (by dsimp only [B]; omega)
-  have hmb : m + 1 ≤ C * S * L ^ 2 := by
-    have hm := Cslib.Algorithms.ThreeSum.ChanHe.mPar_shifted_pow_le n κ
-    have hu : 1 ≤ S * L ^ 2 := by
-      have hp : 0 < S * L ^ 2 := by positivity
-      omega
-    calc m + 1 ≤ ((5 * κ + 16) * (10 * κ + 40)) * S * L ^ 2 + S * L ^ 2 :=
-        Nat.add_le_add hm hu
-      _ = C * S * L ^ 2 := by dsimp only [C]; ring
-  have hsquare : S ^ 2 ≤ 4 * B := by
-    have hs := Nat.sqrt_le B
-    have ht := Nat.sqrt_le_self B
-    dsimp only [S]
-    nlinarith only [hs, ht, hB]
+  obtain ⟨hmb, hsquare⟩ := parameter_scale_bounds κ n
+  change m + 1 ≤ C * S * L ^ 2 at hmb
+  change S ^ 2 ≤ 4 * B at hsquare
   have hcube : S ^ 3 ≤ 4 * B * S := by
     have hh := Nat.mul_le_mul_right S hsquare
     nlinarith
@@ -208,22 +226,9 @@ theorem cost_bound (κ n : ℕ) :
   have hS : 1 ≤ S := by dsimp only [S]; omega
   have hC : 1 ≤ C := by dsimp only [C]; omega
   have hlog : Nat.log 2 n ≤ Nat.log 2 B := Nat.log_mono_right (by dsimp only [B]; omega)
-  have hmb : m + 1 ≤ C * S * L ^ 2 := by
-    have hm := Cslib.Algorithms.ThreeSum.ChanHe.mPar_shifted_pow_le n κ
-    have hu : 1 ≤ S * L ^ 2 := by
-      have hp : 0 < S * L ^ 2 := by positivity
-      omega
-    calc m + 1 ≤ ((5 * κ + 16) * (10 * κ + 40)) * S * L ^ 2 + S * L ^ 2 :=
-        Nat.add_le_add hm hu
-      _ = C * S * L ^ 2 := by dsimp only [C]; ring
-  have hsquare : S ^ 2 ≤ 4 * B := by
-    have hs := Nat.sqrt_le B
-    have ht := Nat.sqrt_le_self B
-    dsimp only [S]
-    nlinarith only [hs, ht, hB]
-  have hcube : S ^ 3 ≤ 4 * B * S := by
-    have hh := Nat.mul_le_mul_right S hsquare
-    nlinarith
+  obtain ⟨hmb, hsquare⟩ := parameter_scale_bounds κ n
+  change m + 1 ≤ C * S * L ^ 2 at hmb
+  change S ^ 2 ≤ 4 * B at hsquare
   have lp {i j : ℕ} (hij : i ≤ j) : L ^ i ≤ L ^ j := Nat.pow_le_pow_right hL hij
   have hV : 1 ≤ V := by
     have hp : 0 < V := by dsimp only [V]; positivity

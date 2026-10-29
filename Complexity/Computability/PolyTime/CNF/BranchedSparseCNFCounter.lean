@@ -147,9 +147,6 @@ theorem leafDensityRatio_eq_prop64LeafClauseRatio {k N : ℕ}
   simp only [leafDensityRatio, leafOccBound_eq_sum, leafThresholdBase, leafSearchDivisor,
     max_eq_right hs, CNF.prop64LeafClauseRatio, CNF.prop64ThresholdBase]
 
-/-- `1 ≤ leafDensityRatio k N` for all `k, N : ℕ`. -/
-theorem one_le_leafDensityRatio (k N : ℕ) : 1 ≤ leafDensityRatio k N := Nat.succ_pos _
-
 /-- For `1 ≤ N`, `leafOccBound k N * N + 1 ≤ leafDensityRatio k N * N`. -/
 theorem leafOccBound_mul_succ_le_leafDensityRatio_mul {k N : ℕ} (hN : 1 ≤ N) :
     leafOccBound k N * N + 1 ≤ leafDensityRatio k N * N :=

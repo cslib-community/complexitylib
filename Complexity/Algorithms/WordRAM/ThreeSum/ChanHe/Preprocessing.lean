@@ -21,9 +21,11 @@ payloads use the existing signed encoding. Runtime code does not read physical w
 
 ## Main definitions
 
-* `program`, `flatProgram`: actual structured and flat native preprocessing code.
-* `width`: the positive threshold `(1300κ+7865) clog₂(n+2)` derives every component's fits.
-* `cost`: all native instructions, including the final halt.
+This umbrella re-exports these definitions and results from its imported modules.
+
+* `program`, `flatProgram`: structured and flat native code from `PreprocessingProgram`.
+* `width`: the positive threshold `(1300κ+7865) clog₂(n+2)` from `PreprocessingWidth` derives fits.
+* `cost`: all native instructions, including the final halt, from `PreprocessingInput`.
 
 ## Main results
 

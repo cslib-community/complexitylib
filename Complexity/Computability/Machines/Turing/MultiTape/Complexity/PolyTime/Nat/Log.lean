@@ -12,6 +12,7 @@ public import Mathlib.Data.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Data.Nat.Size
 
@@ -35,6 +36,8 @@ a certified unary size function.
   floor and ceiling logarithms in any fixed base on unary counters.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow_clog_const`: a fixed factor raised to
   a fixed-base ceiling logarithm, with unary output and complete intermediate-size bounds.
+* `Turing.MultiTapeTM.ComputableInPolyTime.unary_pow_clog_const`: the same bounded power for plain
+  certificates.
 
 ## References
 
@@ -156,3 +159,23 @@ theorem unary_pow_clog_const {α : Type} {input : α ↪ List Bool} {size : α �
   simpa only [hspec] using hefficient
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_log_two` for plain certificates. -/
+theorem binary_log_two : ComputableInPolyTime (Nat.log 2) encNat encUnary :=
+  .of_tidy ComputableTidilyInPolyTime.binary_log_two
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_clog_const` for plain certificates. -/
+theorem unary_clog_const (base : ℕ) :
+    ComputableInPolyTime (Nat.clog base) encUnary encUnary :=
+  .of_tidy (ComputableTidilyInPolyTime.unary_clog_const (base := base))
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_pow_clog_const` for plain certificates. -/
+@[fun_prop]
+theorem unary_pow_clog_const {α : Type} {input : α ↪ List Bool} {size : α → ℕ}
+    (hsize : ComputableInPolyTime size input encUnary) (factor base : ℕ) :
+    ComputableInPolyTime (fun x => factor ^ Nat.clog base (size x)) input encUnary :=
+  .of_tidy (ComputableTidilyInPolyTime.unary_pow_clog_const hsize.tidy factor base)
+
+end Turing.MultiTapeTM.ComputableInPolyTime

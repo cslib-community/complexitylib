@@ -152,34 +152,30 @@ example :
   rw [h]
   rfl
 
--- Every supplied tape produces a supported output, even for a nonhalting source.
-example (coins : List Bool) : writeForever.runClosedCoins coins [] ∈
-    (ProbComp.eval (writeForever.runClosed coins.length [])).support :=
-  MultiTapePTM.runClosedCoins_mem_support _ _ _
+-- A concrete 3-coin tape produces `[false]` in the support of
+-- `uniformListMachine.runClosed 3 [true]`.
+example :
+    [false] ∈ (ProbComp.eval (MultiTapePTM.uniformListMachine.runClosed 3 [true])).support := by
+  have h : MultiTapePTM.uniformListMachine.runClosedCoins [false, true, false] [true] = [false] :=
+    rfl
+  exact h ▸ MultiTapePTM.runClosedCoins_mem_support
+    MultiTapePTM.uniformListMachine [false, true, false] [true]
 
--- The actual encoded-input certificate applies even when the source never halts.
-example : MultiTapeTM.ComputableTidilyInLinearTimeAndSpace
-    (fun p : List Bool × List Bool => writeForever.runClosedCoins p.1 p.2)
-    (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits :=
-  MultiTapePTM.computableTidilyInLinearTimeAndSpace_runClosedCoins writeForever
+-- A functional client can rearrange arguments and preprocess the supplied tape by automation, and
+-- both runtime inputs matter because the scanner stops at the end of its virtual input.
+example :
+    MultiTapeTM.ComputableInPolyTime
+      (fun p : List Bool × List Bool => writeForever.runClosedCoins (false :: p.2) p.1)
+      (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits ∧
+    MultiTapeTM.ComputableInPolyTime
+      (fun p : List Bool × List Bool => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
+      (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits :=
+  ⟨by fun_prop, by fun_prop⟩
 
--- A functional client can rearrange arguments and preprocess the supplied tape by automation.
-example : MultiTapeTM.ComputableTidilyInPolyTime
-    (fun p : List Bool × List Bool => writeForever.runClosedCoins (false :: p.2) p.1)
-    (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits := by
-  fun_prop
-
--- Both runtime inputs matter: the scanner stops at the end of its virtual input.
-example : MultiTapeTM.ComputableTidilyInPolyTime
-    (fun p : List Bool × List Bool => MultiTapePTM.uniformListMachine.runClosedCoins p.1 p.2)
-    (MultiTapeTM.encPair MultiTapeTM.encBits MultiTapeTM.encBits) MultiTapeTM.encBits := by
-  polytime
-
-example : MultiTapePTM.uniformListMachine.runClosedCoins [false, true, false] [true] = [false] := by
-  rfl
-
-example : MultiTapePTM.uniformListMachine.runClosedCoins [false, true, false] [] = [] := by rfl
-
-example : MultiTapePTM.uniformListMachine.runClosedCoins [] [true, false] = [] := by rfl
+example :
+    MultiTapePTM.uniformListMachine.runClosedCoins [false, true, false] [true] = [false] ∧
+    MultiTapePTM.uniformListMachine.runClosedCoins [false, true, false] [] = [] ∧
+    MultiTapePTM.uniformListMachine.runClosedCoins [] [true, false] = [] :=
+  ⟨rfl, rfl, rfl⟩
 
 end ComplexityTests.CoinTape

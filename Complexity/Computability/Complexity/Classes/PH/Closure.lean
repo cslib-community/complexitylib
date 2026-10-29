@@ -166,11 +166,10 @@ private theorem exists_inter_verifier {q : Bool} {k : ℕ} {A B : Set α}
   · simp [hp, hq]
   · have hn : ComputableInPolyTime (fun x : α × List Bool => (enc x.1).length)
         (encPair enc encBits) encUnary := by fun_prop
-    have hs := (computableInPolyTime_splitAlternatingBlocks (ps.zip qs) hn
-      (.snd enc encBits)).tidy
-    exact .of_tidy <|
-      (hV.tidy.comp ((ComputableTidilyInPolyTime.fst enc encBits).prod hs.fst')).bool_and'
-        (hW.tidy.comp ((ComputableTidilyInPolyTime.fst enc encBits).prod hs.snd'))
+    have hs := computableInPolyTime_splitAlternatingBlocks (ps.zip qs) hn (.snd enc encBits)
+    exact ComputableInPolyTime.bool_and.comp
+      ((hV.comp ((ComputableInPolyTime.fst enc encBits).prod hs.fst')).prod
+        (hW.comp ((ComputableInPolyTime.fst enc encBits).prod hs.snd')))
 
 variable {k : ℕ} {A B : Set α}
 

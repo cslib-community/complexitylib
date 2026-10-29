@@ -146,8 +146,8 @@ private theorem computableInPolyTime_nwDecider_of_params {α : Type} (enc : α �
   have houtO : ComputableInPolyTime (fun x => p.eval (enc x).length) enc encUnary := by
     fun_prop
   refine (computableInPolyTime_nwDecider hV
-    (fun _ _ h => Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left k h)) hg (hseedO)
-    (hblockO) (hoverlapO) (houtO)
+    (fun _ _ h => Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left k h)) hg hseedO
+    hblockO hoverlapO houtO
     (hbudget (b + 1)) ((hbudget (k * (c * 4))).mono fun x => le_of_eq ?_))
   ring_nf
 

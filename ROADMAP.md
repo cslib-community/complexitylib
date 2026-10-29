@@ -423,8 +423,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   matrix builder and the complete finite mathematical Chan–He reduction ([#1435]), including
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
-  and the selected-prime false-positive bound ([#1442]) are proved mathematically. Native parameter,
-  collision-counting, prime-table, minimum-search and complete two-prime modulus programs have
+  and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
+  witness recovery ([#1447]) are proved mathematically. Native parameter, collision-counting,
+  prime-table, collision-tested minimum-search and complete two-prime modulus programs have
   explicit local fit/frame/cost contracts ([#1446]). The complete native distinct-position frontend
   ([#1482]) starts from initialized signed input and produces exact compact root descriptors with
   derived logarithmic width and uniform `Oκ((n+1) log²(n+2))` charged cost. The complete native
@@ -434,10 +435,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   and charged ternary-tree bounds. Complete native preprocessing ([#1446]) composes every root
   from actual initialized input, returns the exact finite packed instances and derives positive
   logarithmic width, polynomial space/intermediates and an `Oκ(n^1.5 log¹³(n+2))` charged bound.
-  It still needs
-  residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
-  Chan–He/Exact Triangle host composition, the fast Exact Triangle solver and full input/time/width/
-  asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
+  It still needs tensor/sparse-query programs, native Chan–He/Exact Triangle host composition,
+  the fast Exact Triangle solver and full input/time/width/asymptotic composition, then the improved
+  Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
@@ -453,6 +453,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **A typed-call evaluator** for fixed-program Word-RAM clients, returning the typed observation,
   final state and halt-inclusive instruction cost, so the prefix-sum and stack clients no longer
   assemble preparation, evaluation and halt accounting by hand.
+- **Priority-queue and shortest-path consolidation** ([#1363]): lift operation-count helpers
+  (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
+  flat-program operation-sequence execution (`RunsOps`) over `PQCode` in `PriorityQueue/Basic.lean`
+  so `BinaryHeap` and `FibonacciHeap` share a generic `run_ops_exact` theorem, and factor a common
+  `ShortestPathSpec p bound` predicate in `Dijkstra/HeapStatement.lean` across `LogLinearSpec`,
+  `FibonacciSpec`, and `FibonacciLinearSpec`.
 
 ## Coverage and reuse
 
@@ -466,6 +472,15 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
+- **Weighted multigraph cuts and `PMF` event bounds** ([#1336]): extract `IsMultigraph` (renamed
+  e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal), `IsNonTrivialCut`,
+  `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
+  `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
+  `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
+  to `(Cslib.Multigraph.edgeCut ends C).card`, and move `toOuterMeasure_bind_ge_mul_ennreal`,
+  `toOuterMeasure_bind_le_mul_ennreal`, `toOuterMeasure_add_compl_ennreal`,
+  `toOuterMeasure_compl_le_one_sub`, and `two_branch_hit_prob_ge` into
+  `Complexity/Probability/PMF/Event.lean` (reusable by `toOuterMeasure_toReal_add_compl`).
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -558,12 +573,15 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
+[#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
+[#1363]: https://github.com/cslib-community/complexitylib/issues/1363
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
 [#1446]: https://github.com/cslib-community/complexitylib/issues/1446
+[#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1482]: https://github.com/cslib-community/complexitylib/issues/1482
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1481]: https://github.com/cslib-community/complexitylib/issues/1481

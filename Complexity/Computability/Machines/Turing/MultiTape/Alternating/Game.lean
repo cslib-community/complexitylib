@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Alternating
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # The strict table of an alternating machine
@@ -22,9 +23,9 @@ the machine with the second coin in a universal state and with the first in an e
 The coin that is not used is a vacuous move.
 
 Replaying a fixed finite fair-coin table is polynomial-time
-(`Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins`), so the game verifier on the
+(`Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`), so the game verifier on the
 strict table (`Turing.MultiTapeATM.gameVerifier`) is computable in polynomial time
-(`Turing.MultiTapeATM.computableTidilyInPolyTime_gameVerifier`).
+(`Turing.MultiTapeATM.computableInPolyTime_gameVerifier`).
 
 ## Main definitions
 
@@ -37,7 +38,7 @@ strict table (`Turing.MultiTapeATM.gameVerifier`) is computable in polynomial ti
 * `Turing.MultiTapeATM.Strict.stepCoins_cfg`,
   `Turing.MultiTapeATM.Strict.stepCoins_cfg_of_halted`: two coins per step on running
   configurations, and halted configurations stay unchanged.
-* `Turing.MultiTapeATM.computableTidilyInPolyTime_gameVerifier`: replaying the strict table of a
+* `Turing.MultiTapeATM.computableInPolyTime_gameVerifier`: replaying the strict table of a
   finite alternating machine is polynomial-time.
 
 ## References
@@ -148,15 +149,15 @@ def gameVerifier (atm : MultiTapeATM k Bool State) (enc : α ↪ List Bool)
 /-- The verifier of a game on the strict table is polynomial-time: it replays a fixed finite
 fair-coin table. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_gameVerifier (atm : MultiTapeATM k Bool State) :
-    ComputableTidilyInPolyTime (atm.gameVerifier enc) (encPair enc encBits) encBool := by
-  have hswap : ComputableTidilyInPolyTime (fun x : α × List Bool => (x.2, enc x.1))
+theorem computableInPolyTime_gameVerifier (atm : MultiTapeATM k Bool State) :
+    ComputableInPolyTime (atm.gameVerifier enc) (encPair enc encBits) encBool := by
+  have hswap : ComputableInPolyTime (fun x : α × List Bool => (x.2, enc x.1))
       (encPair enc encBits) (encPair encBits encBits) :=
-    (ComputableTidilyInPolyTime.snd enc encBits).prod
-      ((ComputableTidilyInPolyTime.of_eq (encMid := encBits) fun _ => rfl).comp
-        (ComputableTidilyInPolyTime.fst enc encBits))
-  exact ComputableTidilyInPolyTime.decide_eq'
-    ((MultiTapePTM.computableTidilyInPolyTime_runClosedCoins atm.strict).comp hswap)
-    (ComputableTidilyInPolyTime.const [true])
+    (ComputableInPolyTime.snd enc encBits).prod
+      ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
+        (ComputableInPolyTime.fst enc encBits))
+  exact ComputableInPolyTime.decide_eq'
+    ((MultiTapePTM.computableInPolyTime_runClosedCoins atm.strict).comp hswap)
+    (ComputableInPolyTime.const [true])
 
 end Turing.MultiTapeATM

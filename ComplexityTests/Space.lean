@@ -225,7 +225,7 @@ example : ¬Relation.ReflTransGen (stuck.CodeStep loopWidth)
 example : ComputableInPolyTime
     (fun p : List Bool × List Bool => loopOrAccept.codeEdge p.1 p.2) (encPair encBits encBits)
       encBool :=
-  .of_tidy (loopOrAccept.computableTidilyInPolyTime_codeEdge (.fst _ _) (.snd _ _))
+  loopOrAccept.computableInPolyTime_codeEdge (by fun_prop) (by fun_prop)
 
 /-! ### Savitch's theorem -/
 

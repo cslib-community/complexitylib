@@ -143,19 +143,14 @@ theorem pipelineOverhead_le {t p w ℓ b s copies : ℕ} (hs : s + 1 = 2 ^ b) (h
   have hss : s < 2 ^ (ℓ * b) := (show s < 2 ^ b by omega).trans_le
     (Nat.pow_le_pow_right (by decide) hb)
   have hp : 1 ≤ 2 ^ p := Nat.one_le_two_pow
-  have hpow (k : ℕ) : 2 ^ k ≤ 2 ^ (lam + 1 + k) := Nat.pow_le_pow_right (by decide) (by omega)
-  have hTt : t ≤ 2 ^ (lam + 1 + p) := (show t ≤ 2 ^ (lam + 1) by omega).trans
-    (Nat.pow_le_pow_right (by decide) (by omega))
   have h1 : Nat.clog 2 (t + 2 ^ p) ≤ D := by
-    refine (Nat.clog_le_of_le_pow (y := lam + 1 + p + 1) ?_).trans (by omega)
-    have := hpow p
-    rw [pow_succ]
-    omega
+    refine (Nat.clog_le_of_le_pow (y := lam + 1 + p) ?_).trans (by omega)
+    rw [pow_add]
+    have ht := Nat.mul_le_mul_right (2 ^ p) (show t + 1 ≤ 2 ^ (lam + 1) by omega)
+    nlinarith only [ht, Nat.mul_le_mul_left t hp]
   have hTC : copies * 2 ^ (ℓ * b) + t * s ≤ 2 ^ (lam + 1 + ℓ * b) := by
     calc copies * 2 ^ (ℓ * b) + t * s ≤ (t + copies) * 2 ^ (ℓ * b) := by
-          have := Nat.mul_le_mul_left t hss.le
-          rw [add_mul]
-          omega
+          nlinarith only [Nat.mul_le_mul_left t hss.le]
       _ ≤ 2 ^ (lam + 1) * 2 ^ (ℓ * b) := Nat.mul_le_mul_right _ hlog.le
       _ = 2 ^ (lam + 1 + ℓ * b) := (pow_add _ _ _).symm
   have h2 : Nat.clog 2 (copies * 2 ^ (ℓ * b) + t * s) ≤ D :=
@@ -165,10 +160,8 @@ theorem pipelineOverhead_le {t p w ℓ b s copies : ℕ} (hs : s + 1 = 2 ^ b) (h
     have hb2 : b ≤ 2 ^ b := Nat.lt_two_pow_self.le
     calc t * s + copies * 2 ^ (ℓ * b) * b
         ≤ (copies * 2 ^ (ℓ * b) + t * s) * 2 ^ b := by
-          have h := Nat.mul_le_mul_left (copies * 2 ^ (ℓ * b)) hb2
-          have h' : t * s ≤ t * s * 2 ^ b := Nat.le_mul_of_pos_right _ (by positivity)
-          rw [add_mul]
-          omega
+          nlinarith only [Nat.mul_le_mul_left (copies * 2 ^ (ℓ * b)) hb2,
+            Nat.le_mul_of_pos_right (t * s) (show 0 < 2 ^ b by positivity)]
       _ ≤ 2 ^ (lam + 1 + ℓ * b) * 2 ^ b := Nat.mul_le_mul_right _ hTC
       _ = 2 ^ (lam + 1 + ℓ * b + b) := (pow_add _ _ _).symm
   -- Record counts.
@@ -176,64 +169,27 @@ theorem pipelineOverhead_le {t p w ℓ b s copies : ℕ} (hs : s + 1 = 2 ^ b) (h
     have : t ≤ t * (s + 1) := Nat.le_mul_of_pos_right _ (by omega)
     omega
   have n2 : copies * 2 ^ (ℓ * b) + t * s + 1 ≤ N := by
-    have : t * s ≤ t * (s + 1) := Nat.mul_le_mul_left _ (by omega)
     rw [hslots]
-    omega
+    dsimp only [N]
+    nlinarith only [hp]
   have hD2 : 2 ≤ D := by omega
   have n3 : t * s + copies * 2 ^ (ℓ * b) * b + 1 ≤ N * D := by
-    have e1 : t * s ≤ t * (s + 1) * D := by
-      have : t * s ≤ t * (s + 1) := Nat.mul_le_mul_left _ (by omega)
-      exact this.trans (Nat.le_mul_of_pos_right _ (by omega))
-    have e2 : copies * 2 ^ (ℓ * b) * b ≤ copies * (s + 1) ^ ℓ * D := by
-      rw [hslots]
-      exact Nat.mul_le_mul_left _ (by omega)
-    have e3 : 1 ≤ 2 ^ p * D := Nat.one_le_iff_ne_zero.mpr (by positivity)
-    calc t * s + copies * 2 ^ (ℓ * b) * b + 1
-        ≤ t * (s + 1) * D + copies * (s + 1) ^ ℓ * D + 2 ^ p * D := by omega
-      _ = N * D := by rw [hN]; ring
+    nlinarith only [Nat.mul_le_mul_right D n2,
+      Nat.mul_le_mul_left (copies * 2 ^ (ℓ * b)) (show b ≤ D by omega),
+      Nat.mul_le_mul_left (t * s + 1) (show 1 ≤ D by omega)]
   have n4 : t * (4 * s + 1) ≤ 4 * N := by
-    have : t * (4 * s + 1) ≤ 4 * (t * (s + 1)) := by
-      calc t * (4 * s + 1) ≤ t * (4 * (s + 1)) := Nat.mul_le_mul_left _ (by omega)
-        _ = 4 * (t * (s + 1)) := by ring
-    omega
-  -- The four stages.
-  have t1 : 48 * (t + 2 ^ p) * (Nat.clog 2 (t + 2 ^ p) + 1) ^ 2 *
-      (p + (ℓ * b + (Nat.clog 2 copies + Nat.clog 2 b)) + 1) ≤ 48 * N * (D + 1) ^ 2 * (2 * D) :=
-    Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul_left 48 n1)
-      (Nat.pow_le_pow_left (by omega) 2)) (by omega)
-  have t2 : 48 * (copies * 2 ^ (ℓ * b) + t * s + 1) *
-      (Nat.clog 2 (copies * 2 ^ (ℓ * b) + t * s) + 1) ^ 2 * (Nat.clog 2 copies + ℓ * b + w + 1) ≤
-        48 * N * (D + 1) ^ 2 * D :=
-    Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul_left 48 n2)
-      (Nat.pow_le_pow_left (by omega) 2)) (by omega)
-  have t3 : 48 * (t * s + copies * 2 ^ (ℓ * b) * b + 1) *
-      (Nat.clog 2 (t * s + copies * 2 ^ (ℓ * b) * b) + 1) ^ 2 *
-      (Nat.clog 2 copies + ℓ * b + Nat.clog 2 b + 1 + 1) ≤
-        48 * (N * D) * (2 * D + 1) ^ 2 * (2 * D) :=
-    Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul_left 48 n3)
-      (Nat.pow_le_pow_left (by omega) 2)) (by omega)
-  have d1 : (D + 1) ^ 2 ≤ 4 * D ^ 2 :=
-    calc (D + 1) ^ 2 ≤ (2 * D) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-      _ = 4 * D ^ 2 := by ring
-  have d2 : (2 * D + 1) ^ 2 ≤ 9 * D ^ 2 :=
-    calc (2 * D + 1) ^ 2 ≤ (3 * D) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-      _ = 9 * D ^ 2 := by ring
-  have d3 : N * D ^ 3 ≤ N * D ^ 4 :=
-    Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by omega) (by omega))
-  have d4 : N ≤ N * D ^ 4 := Nat.le_mul_of_pos_right _ (by positivity)
-  have s1 : 48 * N * (D + 1) ^ 2 * (2 * D) ≤ 384 * (N * D ^ 3) := by
-    calc 48 * N * (D + 1) ^ 2 * (2 * D) ≤ 48 * N * (4 * D ^ 2) * (2 * D) := by gcongr
-      _ = 384 * (N * D ^ 3) := by ring
-  have s2 : 48 * N * (D + 1) ^ 2 * D ≤ 192 * (N * D ^ 3) := by
-    calc 48 * N * (D + 1) ^ 2 * D ≤ 48 * N * (4 * D ^ 2) * D := by gcongr
-      _ = 192 * (N * D ^ 3) := by ring
-  have s3 : 48 * (N * D) * (2 * D + 1) ^ 2 * (2 * D) ≤ 864 * (N * D ^ 4) := by
-    calc 48 * (N * D) * (2 * D + 1) ^ 2 * (2 * D) ≤ 48 * (N * D) * (9 * D ^ 2) * (2 * D) := by
-          gcongr
-      _ = 864 * (N * D ^ 4) := by ring
-  have hgoal : 1444 * N * D ^ 4 = 1444 * (N * D ^ 4) := by ring
-  rw [pipelineOverhead, hgoal]
-  omega
+    dsimp only [N]
+    nlinarith only [Nat.zero_le t, hp, Nat.zero_le (copies * (s + 1) ^ ℓ)]
+  -- Bound the four stages together, then absorb the cubic and constant terms.
+  unfold pipelineOverhead
+  calc
+    _ ≤ 48 * N * (2 * D) ^ 2 * (2 * D) + 48 * N * (2 * D) ^ 2 * D +
+        48 * (N * D) * (3 * D) ^ 2 * (2 * D) + 4 * N := by gcongr <;> omega
+    _ = 576 * N * D ^ 3 + 864 * N * D ^ 4 + 4 * N := by ring
+    _ ≤ 1444 * N * D ^ 4 := by
+      nlinarith only [Nat.mul_le_mul_left N
+        (Nat.pow_le_pow_right (show 1 ≤ D by omega) (show 3 ≤ 4 by decide)),
+        Nat.le_mul_of_pos_right N (show 0 < D ^ 4 by positivity)]
 
 /-- **Explicit composition bound.** Under the hypotheses of
 `complexity_directProduct_le_of_isScheduler`, `t` independent copies of `f` have circuit size at

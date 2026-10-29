@@ -53,9 +53,8 @@ example : padTo 2 0 shared = shared := by decide +kernel
 -- Huge invalid binary references retain their existing false fallback through padding.
 example : eval [] (padTo 0 3 [[.copy (2 ^ 100)]]) = [false] := by decide +kernel
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The certificate is uniform in both unary parameters and the complete raw schedule.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × ℕ × List (List Node) => padTo p.1 p.2.1 p.2.2)
     (encPair encUnary (encPair encUnary (encList (encList encNode))))
     (encList (encList encNode)) := by fun_prop

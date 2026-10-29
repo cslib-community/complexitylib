@@ -47,44 +47,47 @@ theorem modGate_mem_SIZEMod (q : ℕ) {c : ℕ} (hc : 1 ≤ c) (k : ℕ) :
 
 /-! ### Concrete class inclusions and strict separations -/
 
-example : AC0Mod 2 ⊆ AC0Mod 6 :=
-  AC0Mod_subset_AC0Mod_of_dvd (by decide) ⟨3, rfl⟩
+example : AC0 ⊂ AC0Mod 6 :=
+  AC0_ssubset_AC0Mod_two.trans_subset (AC0Mod_subset_AC0Mod_of_dvd (by decide) ⟨3, rfl⟩)
 
 example : AC0Mod 3 ⊆ AC0Mod 6 :=
   AC0Mod_subset_AC0Mod_of_dvd (by decide) ⟨2, rfl⟩
 
-example : AC0 ⊂ AC0Mod 2 := AC0_ssubset_AC0Mod_two
-example : AC0 ⊂ ACC0 := AC0_ssubset_ACC0
+example : AC0 ⊂ TC0 :=
+  AC0_ssubset_ACC0.trans_subset ACC0_subset_TC0
 
-example : AC0Mod 3 ⊂ ACC0 :=
+example : AC0Mod 3 ⊂ TC0 :=
   have : Fact (Nat.Prime 3) := ⟨by decide⟩
-  AC0Mod_ssubset_ACC0 (by decide)
+  (AC0Mod_ssubset_ACC0 (by decide)).trans_subset ACC0_subset_TC0
 
-example : AC0Mod 5 ⊂ ACC0 :=
+example : AC0Mod 5 ⊂ NC 2 :=
   have : Fact (Nat.Prime 5) := ⟨by decide⟩
-  AC0Mod_ssubset_ACC0 (by decide)
+  (AC0Mod_ssubset_ACC0 (by decide)).trans_subset ACC0_subset_NC_two
 
 example : Language.ofSlices (modGate 2) ⊓ Language.ofSlices (modGate 3) ∈ ACC0 :=
   ACC0.inf (modGate_mem_ACC0 2) (modGate_mem_ACC0 3)
 
-example : Language.ofSlices (modGate 6) ∈ TC0 :=
-  ACC0_subset_TC0 (modGate_mem_ACC0 6)
-
-example : Language.ofSlices (modGate 6) ∈ AC 1 :=
-  ACC0_subset_AC_one (modGate_mem_ACC0 6)
-
-example : Language.ofSlices (modGate 6) ∈ NC 2 :=
-  ACC0_subset_NC_two (modGate_mem_ACC0 6)
-
-example : Language.ofSlices (modGate 6) ∈ PPoly :=
-  ACC0_subset_PPoly (modGate_mem_ACC0 6)
+example : Language.ofSlices (modGate 6) ∈ TC0 ∧
+    Language.ofSlices (modGate 6) ∈ AC 1 ∧
+    Language.ofSlices (modGate 6) ∈ NC 2 ∧
+    Language.ofSlices (modGate 6) ∈ PPoly :=
+  ⟨ACC0_subset_TC0 (modGate_mem_ACC0 6),
+    ACC0_subset_AC_one (modGate_mem_ACC0 6),
+    ACC0_subset_NC_two (modGate_mem_ACC0 6),
+    ACC0_subset_PPoly (modGate_mem_ACC0 6)⟩
 
 example : ∃ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits ∧
-    ∀ c, L ∉ SIZEMod 6 fun n => c * (n + 1) ^ 3 :=
-  exists_mem_SigmaP_two_notMem_SIZEMod 6 3
+    (∀ c, L ∉ SIZEMod 6 fun n => c * (n + 1) ^ 3) ∧
+    L ≠ Language.ofSlices (modGate 6) := by
+  obtain ⟨L, hL₂, hnot⟩ := exists_mem_SigmaP_two_notMem_SIZEMod 6 3
+  refine ⟨L, hL₂, hnot, ?_⟩
+  rintro rfl
+  exact hnot 1 (modGate_mem_SIZEMod 6 (by decide) 3)
 
-example : ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧ L ∉ AC0Mod 3 :=
+example : ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧
+    L ∉ AC0Mod 3 ∧ L ∉ AC0 := by
   have : Fact (Nat.Prime 3) := ⟨by decide⟩
-  exists_mem_P_notMem_AC0Mod (by decide)
+  obtain ⟨L, hP, hnot3⟩ := exists_mem_P_notMem_AC0Mod (p := 3) (by decide)
+  exact ⟨L, hP, hnot3, fun hAC0 => hnot3 (AC0_subset_AC0Mod 3 hAC0)⟩
 
 end ComplexityTests.Computability.Circuit.Boolean.ACC0

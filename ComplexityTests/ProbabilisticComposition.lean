@@ -65,9 +65,16 @@ private theorem chooseWord_output (input : List Bool) :
   intro bit _
   cases bit <;> simp [Config.step, Turing.Action.apply, PMF.map]
 
--- The real input is [false]. Correct virtual-input routing instead gives [true] or [].
-example : ProbComp.eval ((readFirst.comp chooseWord true).runClosed 9 [false]) =
-    (ProbComp.eval (ProbComp.uniform Bool)).map (fun bit => if bit then [true] else []) := by
+-- The real input is [false]. Correct virtual-input routing instead gives [true] or [],
+-- and every final configuration in the support is halted.
+example :
+    ProbComp.eval ((readFirst.comp chooseWord true).runClosed 9 [false]) =
+      (ProbComp.eval (ProbComp.uniform Bool)).map (fun bit => if bit then [true] else []) ∧
+    ∀ final ∈ (ProbComp.eval ((readFirst.comp chooseWord true).runClosedConfigFrom
+      9 ((readFirst.comp chooseWord true).initialConfig [false]))).support,
+      final.tapes.state = none := by
+  refine ⟨?_, MultiTapePTM.comp_halted chooseWord readFirst true [false] 2 1 (chooseWord_halts _)
+    (fun word _ => readFirst_halts word)⟩
   rw [MultiTapePTM.eval_comp chooseWord readFirst true [false] 2 1 (chooseWord_halts _)
     (fun word _ => readFirst_halts word), Probability.PMF.monad_bind_eq_bind,
     chooseWord_output, PMF.bind_map]
@@ -78,12 +85,6 @@ example : ProbComp.eval ((readFirst.comp chooseWord true).runClosed 9 [false]) =
     MultiTapePTM.runConfigFrom, MultiTapeMachine.runConfigFrom, initialConfig, Cfg.init,
     readFirst, Config.step, Turing.Action.apply, Cfg.inputSymbol, Cfg.workTapeSymbols,
     PMF.map, Function.comp_def]
-
-example : ∀ final ∈ (ProbComp.eval ((readFirst.comp chooseWord true).runClosedConfigFrom
-    9 ((readFirst.comp chooseWord true).initialConfig [false]))).support,
-    final.tapes.state = none :=
-  MultiTapePTM.comp_halted chooseWord readFirst true [false] 2 1 (chooseWord_halts _)
-    (fun word _ => readFirst_halts word)
 
 -- Writing a prefix leaves the original input available to the following computation.
 private def writePrefix : MultiTapeTM 1 Bool Unit := MultiTapeTM.ofTr ()
