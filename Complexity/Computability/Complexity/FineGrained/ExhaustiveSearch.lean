@@ -8,13 +8,12 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
+import Mathlib.Data.Nat.Size
 
 /-!
 # Exhaustive-search reductions
@@ -61,8 +60,8 @@ variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
 theorem DecidableInExpTime.of_computableInPolyTime {μ : α → ℕ} {p : α → Bool}
     (hp : ComputableInPolyTime p encA encBool) (hA : ∀ a, a ∈ A ↔ p a = true) :
     DecidableInExpTime A encA μ 0 := by
-  obtain ⟨d, _, hp'⟩ := hp.tidy.exists_degree
-  refine DecidableInExpTime.of_computableInO (.of_tidy hp'.inO) hA 1 d fun a => ?_
+  obtain ⟨d, _, hp'⟩ := hp.exists_degree
+  refine DecidableInExpTime.of_computableInO hp'.inO hA 1 d fun a => ?_
   simp
 
 namespace ExhaustiveSearch
@@ -98,31 +97,31 @@ private theorem search_eq_true_iff {f : α × ℕ → β} {ν : α → ℕ} {g :
   rw [search, iterate_step_init, List.any_eq_true, hfA]
   simp only [List.mem_range, hg, rounds]
 
-open ComputableTidilyInPolyTime in
-private theorem computableTidilyInPolyTime_init :
-    ComputableTidilyInPolyTime init encA (encState encA) := by
+open ComputableInPolyTime in
+private theorem computableInPolyTime_init :
+    ComputableInPolyTime init encA (encState encA) := by
   unfold init encState
   fun_prop
 
-open ComputableTidilyInPolyTime in
-private theorem computableTidilyInPolyTime_rounds {ν : α → ℕ}
-    (hν : ComputableTidilyInPolyTime ν encA encUnary) :
-    ComputableTidilyInPolyTime (rounds ν) encA encNat :=
+open ComputableInPolyTime in
+private theorem computableInPolyTime_rounds {ν : α → ℕ}
+    (hν : ComputableInPolyTime ν encA encUnary) :
+    ComputableInPolyTime (rounds ν) encA encNat :=
   binary_two_pow.comp hν
 
-open ComputableTidilyInPolyTime in
-private theorem exists_computableTidilyInO_step {f : α × ℕ → β}
-    (hf : ComputableTidilyInPolyTime f (encPair encA encNat) encB)
+open ComputableInPolyTime in
+private theorem exists_computableInO_step {f : α × ℕ → β}
+    (hf : ComputableInPolyTime f (encPair encA encNat) encB)
     {g : β → Bool} {t : β → ℕ}
-    (hg : ComputableTidilyInO g encB encBool t t) :
-    ∃ d, ComputableTidilyInO (step f g) (encState encA) (encState encA)
+    (hg : ComputableInO g encB encBool t t) :
+    ∃ d, ComputableInO (step f g) (encState encA) (encState encA)
       (fun s => ((encState encA s).length + 1) ^ d + t (f s.1))
       (fun s => ((encState encA s).length + 1) ^ d + t (f s.1)) := by
-  obtain ⟨dN, eN, hN⟩ := (show ComputableTidilyInPolyTime (fun s : State α => (s.1.1, s.1.2 + 1))
+  obtain ⟨dN, eN, hN⟩ := (show ComputableInPolyTime (fun s : State α => (s.1.1, s.1.2 + 1))
     (encState encA) (encPair encA encNat) by unfold encState; fun_prop).exists_degree
-  obtain ⟨dB, eB, hB⟩ := (show ComputableTidilyInPolyTime (fun s : State α => s.2)
+  obtain ⟨dB, eB, hB⟩ := (show ComputableInPolyTime (fun s : State α => s.2)
     (encState encA) encBool by unfold encState; fun_prop).exists_degree
-  obtain ⟨dR, eR, hR⟩ := (hf.comp (show ComputableTidilyInPolyTime (fun s : State α => s.1)
+  obtain ⟨dR, eR, hR⟩ := (hf.comp (show ComputableInPolyTime (fun s : State α => s.1)
     (encState encA) (encPair encA encNat) by unfold encState; fun_prop)).exists_degree
   obtain ⟨dO, eO, hO⟩ := bool_or.exists_degree
   set D := dN + dB + dR
@@ -140,8 +139,8 @@ private theorem exists_computableTidilyInO_step {f : α × ℕ → β}
     nlinarith
 
 private theorem exists_state_and_node_bounds {f : α × ℕ → β} {ν : α → ℕ}
-    (hf : ComputableTidilyInPolyTime f (encPair encA encNat) encB)
-    (hν : ComputableTidilyInPolyTime ν encA encUnary) :
+    (hf : ComputableInPolyTime f (encPair encA encNat) encB)
+    (hν : ComputableInPolyTime ν encA encUnary) :
     ∃ (c_st d_st c_nd d_nd : ℕ),
       (∀ (g : β → Bool) (a : α) (k : ℕ),
         k ≤ rounds ν a →
@@ -159,7 +158,8 @@ private theorem exists_state_and_node_bounds {f : α × ℕ → β} {ν : α →
   have hpair_le (a : α) {k : ℕ} (hk : k ≤ rounds ν a) :
       (encPair encA encNat (a, k)).length ≤ c_p * ((encA a).length + 1) ^ d_st := by
     set L := (encA a).length
-    have hK := ComputableTidilyInO.length_encNat_mono hk
+    have hK : (encNat k).length ≤ (encNat (rounds ν a)).length := by
+      simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size hk
     rw [rounds, encNat_two_pow, List.length_append, List.length_replicate,
       List.length_singleton] at hK
     have hνa : ν a ≤ c_ν * (L + 1) ^ d_ν := by
@@ -224,22 +224,19 @@ theorem DecidableInExpTime.of_exhaustiveSearch {f : α × ℕ → β} {ν : α �
     (h : DecidableInExpTime B encB μB δ) :
     DecidableInExpTime A encA μA (1 / M + c * δ) := by
   rcases isEmpty_or_nonempty α with hα | hα
-  · exact DecidableInExpTime.of_computableInO (.of_tidy (.const false))
+  · exact DecidableInExpTime.of_computableInO (.const false)
       (fun a => hα.elim a) 1 0 (fun a => hα.elim a)
   obtain ⟨a₀⟩ := hα
   have : Inhabited α := ⟨a₀⟩
-  have hf_tidy := hf.tidy
-  have hν_tidy := hν.tidy
   obtain ⟨e, h⟩ := h
   obtain ⟨g, t, k_dec, hg, hgB, ht⟩ := h.exists_computableInO
-  have hg := hg.tidy
-  obtain ⟨d, hstep⟩ := exists_computableTidilyInO_step hf_tidy hg
-  obtain ⟨dn, _, hn⟩ := (computableTidilyInPolyTime_rounds hν_tidy).exists_degree
-  obtain ⟨di, _, hi⟩ := (computableTidilyInPolyTime_init (encA := encA)).exists_degree
-  obtain ⟨da, _, ha⟩ := (show ComputableTidilyInPolyTime (fun s : State α => s.2)
+  obtain ⟨d, hstep⟩ := exists_computableInO_step hf hg
+  obtain ⟨dn, _, hn⟩ := (computableInPolyTime_rounds hν).exists_degree
+  obtain ⟨di, _, hi⟩ := (computableInPolyTime_init (encA := encA)).exists_degree
+  obtain ⟨da, _, ha⟩ := (show ComputableInPolyTime (fun s : State α => s.2)
     (encState encA) encBool by unfold encState; fun_prop).exists_degree
   obtain ⟨c_st, d_st, c_nd, d_nd, hst_bound, hrounds_len, hnd_bound⟩ :=
-    exists_state_and_node_bounds hf_tidy hν_tidy
+    exists_state_and_node_bounds hf hν
   set stBound : α → ℕ := fun a => c_st * ((encA a).length + 1) ^ d_st
   set ndBound : α → ℕ := fun a => c_nd * ((encA a).length + 1) ^ d_nd
   have hround (a : α) (k : ℕ) (hk : k ≤ rounds ν a) :
@@ -266,15 +263,14 @@ theorem DecidableInExpTime.of_exhaustiveSearch {f : α × ℕ → β} {ν : α �
   have hstate (a : α) (k : ℕ) (hk : k ≤ rounds ν a) :
       (encState encA ((step f g)^[k] (init a))).length ≤ stBound a :=
     hst_bound g a k hk
-  have hiter := (ComputableInO.iterate hn.inO.computableInO hi.inO.computableInO
-    hstep.computableInO hround hround hstate).tidy
+  have hiter := ComputableInO.iterate hn.inO hi.inO hstep hround hround hstate
   have hsearch := ha.inO.comp hiter
   set C₁ := (c_st + 1) ^ d + c_st + c_st ^ 2
   set C₃ := (c_st + 1) ^ da
   set E := dn + di + d_st * d + d_st * da + d_nd * e + 2 * d_st
   set C₂ : ℝ := k_dec * 2 ^ (c * δ) * ((c_nd : ℝ) + 1) ^ e + k_dec + 1
   set C₀ : ℝ := 3 + C₃ + (2 ^ K + 1 : ℝ) * (C₁ + C₂)
-  refine DecidableInExpTime.of_computableInO (.of_tidy hsearch)
+  refine DecidableInExpTime.of_computableInO hsearch
     (fun a => (search_eq_true_iff hfA (fun b => (hgB b).symm) a).symm) ⌈C₀⌉₊ E fun a => ?_
   set L := (encA a).length
   set N := μA a

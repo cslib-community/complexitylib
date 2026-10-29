@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Tactic.Linarith

@@ -20,7 +20,7 @@ For arbitrary subsets `A` and `B` of the Boolean cube, choose `A₀ ⊆ A` and `
 Here addition of bit strings is coordinatewise XOR. There is no degree or circuit-size
 assumption on `A` and `B`.
 
-This is the characteristic-two case of [Ellenberg2017Sumsets, Theorem 1, pp. 1–2]. The proof
+This is the case `q = 2` (the field `𝔽₂`) of [Ellenberg2017Sumsets, Theorem 1, pp. 1–2]. The proof
 uses the general image-sparsification theorem with restricted low-degree evaluation spaces.
 Its input is the common slice-space containment of the polynomial pullbacks; we do not use or
 formalize the theorem of Meshulam used in the published proof. All choices are nonuniform.

@@ -49,7 +49,7 @@ than `a.sum`.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 open scoped List
 
 /-- The lists of natural numbers that split into two sub-multisets with equal sums [Karp1972]. -/

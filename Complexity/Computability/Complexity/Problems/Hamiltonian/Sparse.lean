@@ -15,6 +15,8 @@ import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -72,7 +74,7 @@ every vertex into three (`Cslib.Complexity.Graph.split`) gives undirected Hamilt
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime Diamond
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime Diamond
 
 namespace SAT
 
@@ -291,17 +293,16 @@ theorem length_toSparseHamCycle_le {k : ℕ} {φ : CNF ℕ} (hφ : ∀ c ∈ φ,
 theorem computableInPolyTime_occurrencePositions :
     ComputableInPolyTime (fun p : CNF ℕ × ℕ => occurrencePositions p.1 p.2)
       (encPair encCNF encNat) (encList encUnary) := by
-  refine .of_tidy ?_
-  have hvars := computableInPolyTime_vars.tidy
-  have htest : ComputableTidilyInPolyTime
+  have hvars := computableInPolyTime_vars
+  have htest : ComputableInPolyTime
       (fun p : (CNF ℕ × ℕ) × ℕ => decide (p.1.1.vars.getD p.2 0 = p.1.2))
       (encPair (encPair encCNF encNat) encUnary) encBool := by
-    have hget : ComputableTidilyInPolyTime (fun p : (CNF ℕ × ℕ) × ℕ => p.1.1.vars.getD p.2 0)
+    have hget : ComputableInPolyTime (fun p : (CNF ℕ × ℕ) × ℕ => p.1.1.vars.getD p.2 0)
         (encPair (encPair encCNF encNat) encUnary) encNat :=
       (listGetD (encA := encNat) (encL := encList encNat) 0).comp
         ((hvars.comp ((fst _ _).comp (fst _ _))).prod (snd _ _))
     exact hget.decide_eq' ((snd _ _).comp (fst _ _))
-  have hrange : ComputableTidilyInPolyTime (fun p : CNF ℕ × ℕ => List.range p.1.vars.length)
+  have hrange : ComputableInPolyTime (fun p : CNF ℕ × ℕ => List.range p.1.vars.length)
       (encPair encCNF encNat) (encList encUnary) :=
     range.comp ((length_list encNat).comp (hvars.comp (fst _ _)))
   unfold occurrencePositions
@@ -311,46 +312,40 @@ theorem computableInPolyTime_occurrencePositions :
 theorem computableInPolyTime_sparseSlots :
     ComputableInPolyTime (fun p : CNF ℕ × ℕ => sparseSlots p.1 p.2)
       (encPair encCNF encUnary) encUnary := by
-  refine .of_tidy ?_
-  have hdv := computableInPolyTime_distinctVars.tidy
-  have hpos := computableInPolyTime_occurrencePositions.tidy
+  have hdv := computableInPolyTime_distinctVars
+  have hpos := computableInPolyTime_occurrencePositions
   unfold sparseSlots
   fun_prop
 
 /-- The detours are computable in polynomial time. -/
 theorem computableInPolyTime_sparseDetours :
     ComputableInPolyTime sparseDetours encCNF (encList encDetour) := by
-  refine .of_tidy ?_
-  have hdv := computableInPolyTime_distinctVars.tidy
-  have hpos := computableInPolyTime_occurrencePositions.tidy
-  have hocc := computableInPolyTime_occurrences.tidy
+  have hdv := computableInPolyTime_distinctVars
+  have hpos := computableInPolyTime_occurrencePositions
+  have hocc := computableInPolyTime_occurrences
   unfold encOccurrence Cslib.Logic.PL.encOccurrence at hocc
   unfold sparseDetours
   fun_prop
 
-private theorem computableTidilyInPolyTime_numDiamonds :
-    ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.distinctVars.length) encCNF
+private theorem computableInPolyTime_numDiamonds :
+    ComputableInPolyTime (fun φ : CNF ℕ => φ.distinctVars.length) encCNF
       encUnary :=
-  (length_list encNat).comp computableInPolyTime_distinctVars.tidy
+  (length_list encNat).comp computableInPolyTime_distinctVars
 
 /-- The sparse diamond graph is computable in polynomial time: node labels are computed in unary
 from diamond, row, clause and occurrence indices, then converted to binary. -/
 @[fun_prop]
 theorem computableInPolyTime_sparseDiamondGraph :
     ComputableInPolyTime sparseDiamondGraph encCNF encGraph :=
-  (computableInPolyTime_graph (.of_tidy computableTidilyInPolyTime_numDiamonds)
-    computableInPolyTime_sparseSlots (.of_tidy (length_list _)) computableInPolyTime_sparseDetours)
+  computableInPolyTime_graph computableInPolyTime_numDiamonds
+    computableInPolyTime_sparseSlots (length_list _) computableInPolyTime_sparseDetours
 
 /-- The reduction `toSparseDirHamPath` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toSparseDirHamPath :
     ComputableInPolyTime toSparseDirHamPath encCNF
       (encPair encGraph (encPair encNat encNat)) := by
-  have hgraph := computableInPolyTime_sparseDiamondGraph.tidy
-  have htop := Diamond.computableInPolyTime_topNode.tidy
-  have hvars := SAT.computableInPolyTime_distinctVars.tidy
-  refine .of_tidy ?_
-  have hn := computableTidilyInPolyTime_numDiamonds
+  have hn := computableInPolyTime_numDiamonds
   unfold toSparseDirHamPath
   fun_prop
 
@@ -358,8 +353,8 @@ theorem computableInPolyTime_toSparseDirHamPath :
 @[fun_prop]
 theorem computableInPolyTime_toSparseDirHamCycle :
     ComputableInPolyTime toSparseDirHamCycle encCNF encGraph :=
-  (computableInPolyTime_cycleGraph (.of_tidy computableTidilyInPolyTime_numDiamonds)
-    computableInPolyTime_sparseSlots (.of_tidy (length_list _)) computableInPolyTime_sparseDetours)
+  computableInPolyTime_cycleGraph computableInPolyTime_numDiamonds
+    computableInPolyTime_sparseSlots (length_list _) computableInPolyTime_sparseDetours
 
 /-- The reduction `toSparseHamCycle` is computable in polynomial time. -/
 @[fun_prop]

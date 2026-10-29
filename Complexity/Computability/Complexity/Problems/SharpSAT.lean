@@ -12,8 +12,10 @@ public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Complexity.Problems.USAT
 public import Complexity.Logics.Propositional.CNF.ModelCount
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -154,13 +156,11 @@ theorem acceptCount_verifier (φ : CNF ℕ) :
 
 /-! ### Polynomial time -/
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Testing for a first occurrence is polynomial-time, with the position in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_isFirst :
     ComputableInPolyTime (fun p : CNF ℕ × ℕ => isFirst p.1 p.2)
       (encPair encCNF encUnary) encBool := by
-  refine .of_tidy ?_
   fun_prop [isFirst]
 
 /-- The number of distinct variables occurring in `φ` is computable in polynomial time in unary. -/
@@ -169,12 +169,10 @@ theorem computableInPolyTime_card_vars :
     ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.toFinset.card) encCNF encUnary :=
   (CNF.computableInPolyTime_numVars encNat)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The counting verifier is polynomial-time, including on certificates of arbitrary length. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  refine .of_tidy ?_
   fun_prop [verifier, canonical]
 
 /-- **`#SAT` belongs to `#P`**, with certificates as long as the encoded formula. -/
