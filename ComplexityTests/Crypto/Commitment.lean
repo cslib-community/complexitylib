@@ -47,34 +47,26 @@ noncomputable def statefulReceiver : CommitmentReceiver where
 theorem isPPT_statefulReceiver : statefulReceiver.IsPPT := by
   constructor <;> dsimp only [statefulReceiver] <;> ppt
 
--- Runtime certificates for the two-stage commitment-hiding experiment and Naor PRG distinguisher.
-example :
+-- Runtime certificates for the two-stage commitment-hiding experiment, Naor PRG distinguisher,
+-- `naorCommit`, and `naorVerify`.
+example (bit : Bool) :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBool
-      (fun p => commitmentHidingGame leakCommit statefulReceiver p.2.1 p.2.2 p.1) :=
-  isPPTOn_commitmentHidingGame polyTime_leakCommit isPPT_statefulReceiver
-
-example (bit : Bool) :
-    IsPPT encBool (fun n aux => commitmentHidingGame leakCommit statefulReceiver aux bit n) :=
-  isPPT_commitmentHidingGame polyTime_leakCommit isPPT_statefulReceiver bit
-
-example (bit : Bool) :
-    IsPPT encBool (naorReceiverDistinguisher statefulReceiver (fun _ => []) bit) :=
-  isPPT_naorReceiverDistinguisher isPPT_statefulReceiver (by fun_prop) bit
-
--- Plain polynomial-time certificates for `naorCommit` and `naorVerify`.
-example :
+      (fun p => commitmentHidingGame leakCommit statefulReceiver p.2.1 p.2.2 p.1) ∧
+    IsPPT encBool (fun n aux => commitmentHidingGame leakCommit statefulReceiver aux bit n) ∧
+    IsPPT encBool (naorReceiverDistinguisher statefulReceiver (fun _ => []) bit) ∧
     ComputableInPolyTime
       (fun p : List Bool × Bool × List Bool => naorCommit id p.1 p.2.1 p.2.2)
-      (encPair encBits (encPair encBool encBits)) encBits :=
-  computableInPolyTime_naorCommit (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
-
-example :
+      (encPair encBits (encPair encBool encBits)) encBits ∧
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool × Bool × List Bool =>
         naorVerify id p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2)
       (encPair encUnary (encPair encBits (encPair encBits (encPair encBool encBits)))) encBool :=
-  computableInPolyTime_naorVerify
-    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+  ⟨isPPTOn_commitmentHidingGame polyTime_leakCommit isPPT_statefulReceiver,
+   isPPT_commitmentHidingGame polyTime_leakCommit isPPT_statefulReceiver bit,
+   isPPT_naorReceiverDistinguisher isPPT_statefulReceiver (by fun_prop) bit,
+   computableInPolyTime_naorCommit (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop),
+   computableInPolyTime_naorVerify
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)⟩
 
 /-- The randomized stateful receiver recovers the challenge selector `bit` with certainty at every
 security parameter `n`. -/

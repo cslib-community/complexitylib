@@ -17,65 +17,42 @@ run_elab do
       `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO] do
     if (← Lean.getEnv).contains name then throwError "unexpected higher tidy calculus: {name}"
 
-example {α : Type} {encA : α ↪ List Bool} {encL : List α ↪ List Bool}
-    [ListEncoding encA encL] [SizedListEncoding encA encL] (fallback : α) :
+example {α γ : Type} [DecidableEq α] {encA : α ↪ List Bool} {encL : List α ↪ List Bool}
+    [ListEncoding encA encL] [SizedListEncoding encA encL]
+    {input : γ ↪ List Bool} {values list : γ → List α} {index : γ → ℕ} {value : γ → α}
+    (fallback : α)
+    (hvals : ComputableInPolyTime values input (encList encA))
+    (hlist : ComputableInPolyTime list input encL)
+    (hi : ComputableInPolyTime index input encUnary)
+    (hv : ComputableInPolyTime value input encA)
+    (encEmpty : Empty ↪ List Bool) :
     ComputableInPolyTime (fun p : List α × ℕ => p.1.getD p.2 fallback)
-      (encPair encL encUnary) encA := ComputableInPolyTime.listGetD fallback
-
-example {α γ : Type} {encA : α ↪ List Bool} {input : γ ↪ List Bool}
-    {values : γ → List α} {index : γ → ℕ} (fallback : α)
-    (hv : ComputableInPolyTime values input (encList encA))
-    (hi : ComputableInPolyTime index input encUnary) :
-    ComputableInPolyTime (fun x => (values x).getD (index x) fallback) input encA := by
-  fail_if_success (clear hi; fun_prop)
-  exact (ComputableInPolyTime.listGetD fallback).comp (hv.prod hi)
-
-example {α : Type} [DecidableEq α] (enc : α ↪ List Bool) :
+      (encPair encL encUnary) encA ∧
+    ComputableInPolyTime (fun x => (values x).getD (index x) fallback) input encA ∧
     ComputableInPolyTime (fun p : List α × α => p.1.idxOf p.2)
-      (encPair (encList enc) enc) encUnary := by fun_prop
-
-example {α γ : Type} [DecidableEq α] {encA : α ↪ List Bool} {input : γ ↪ List Bool}
-    {values : γ → List α} {value : γ → α}
-    (hl : ComputableInPolyTime values input (encList encA))
-    (hv : ComputableInPolyTime value input encA) :
-    ComputableInPolyTime (fun x => (values x).idxOf (value x)) input encUnary :=
-  (ComputableInPolyTime.idxOf encA).comp (hl.prod hv)
-
-example : ([3, 4, 3] : List ℕ).idxOf 3 = 0 := by decide
-example : ([3, 4, 3] : List ℕ).idxOf 7 = 3 := by decide
-example : ([] : List ℕ).idxOf 7 = 0 := by decide
-example : ([] : List ℕ).getD 100 7 = 7 := by decide
-example : ([3, 4] : List ℕ).getD 100 7 = 7 := by decide
-example : ([3, 4] : List ℕ).getD 1 7 = 4 := by decide
-
-/-- info: 'Turing.MultiTapeTM.ComputableInPolyTime.listGetD' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInPolyTime.listGetD
-/-- info: 'Turing.MultiTapeTM.ComputableInPolyTime.idxOf' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInPolyTime.idxOf
-
--- Optional lookup retains the complete arbitrary codec and captured-input telescope.
-example {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {encL : List α ↪ List Bool} {list : γ → List α} {index : γ → ℕ}
-    (hl : ComputableInPolyTime list encIn encL)
-    (hi : ComputableInPolyTime index encIn encUnary)
-    [ListEncoding encA encL] [SizedListEncoding encA encL] :
-    ComputableInPolyTime (fun x => (list x)[index x]?) encIn (encOption encA) := by
-  fail_if_success (clear hl; fun_prop)
-  fail_if_success (clear hi; fun_prop)
-  fun_prop
-
--- No element inhabitant is required, including for an unbounded runtime index.
-example (enc : Empty ↪ List Bool) :
-    ComputableInPolyTime (fun n : ℕ => ([] : List Empty)[n]?) encUnary (encOption enc) := by
-  exact ComputableInPolyTime.getElem? (encL := encList enc)
-    (ComputableInPolyTime.const []) ComputableInPolyTime.id'
-
-example : ([] : List Bool)[100]? = none := by decide
-example : ([true, false] : List Bool)[100]? = none := by decide
-example : ([true, false] : List Bool)[1]? = some false := by decide
-
-/-- info: 'Turing.MultiTapeTM.ComputableInPolyTime.getElem?' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInPolyTime.getElem?
+      (encPair (encList encA) encA) encUnary ∧
+    ComputableInPolyTime (fun x => (values x).idxOf (value x)) input encUnary ∧
+    ([3, 4, 3] : List ℕ).idxOf 3 = 0 ∧
+    ([3, 4, 3] : List ℕ).idxOf 7 = 3 ∧
+    ([] : List ℕ).idxOf 7 = 0 ∧
+    ([] : List ℕ).getD 100 7 = 7 ∧
+    ([3, 4] : List ℕ).getD 100 7 = 7 ∧
+    ([3, 4] : List ℕ).getD 1 7 = 4 ∧
+    ComputableInPolyTime (fun x => (list x)[index x]?) input (encOption encA) ∧
+    ComputableInPolyTime (fun n : ℕ => ([] : List Empty)[n]?) encUnary (encOption encEmpty) ∧
+    ([] : List Bool)[100]? = none ∧
+    ([true, false] : List Bool)[100]? = none ∧
+    ([true, false] : List Bool)[1]? = some false := by
+  refine ⟨ComputableInPolyTime.listGetD fallback, ?_, by fun_prop,
+    (ComputableInPolyTime.idxOf encA).comp (hvals.prod hv),
+    by decide, by decide, by decide, by decide, by decide, by decide,
+    ?_,
+    ComputableInPolyTime.getElem? (encL := encList encEmpty)
+      (ComputableInPolyTime.const []) ComputableInPolyTime.id',
+    by decide, by decide, by decide⟩
+  · fail_if_success (clear hi; fun_prop)
+    exact (ComputableInPolyTime.listGetD fallback).comp (hvals.prod hi)
+  · clear hvals
+    fail_if_success (clear hlist; fun_prop)
+    fail_if_success (clear hi; fun_prop)
+    fun_prop

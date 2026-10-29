@@ -125,7 +125,7 @@ example : IsPPTOn (encList encBool) (encPair State.encoding encUnary) (fun word 
 
 -- An unknown evaluator still requires its efficiency certificate.
 example (evaluate : List Bool → List Bool → Bool)
-    (hevaluate : ComputableTidilyInPolyTime (fun pair => evaluate pair.1 pair.2)
+    (hevaluate : ComputableInPolyTime (fun pair => evaluate pair.1 pair.2)
       (encPair encBits encBits) encBool) :
     IsPPTOn encBits encBool (fun word =>
       predict evaluate word.length (⟨true, 0, [word]⟩, word.length) word) := by

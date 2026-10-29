@@ -22,47 +22,48 @@ open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.MassProduction
 private def sharedNot : Circuit signature 1 2 :=
   ⟨.gate .empty ⟨.not, fun _ => .input 0⟩, fun _ => .gate 0⟩
 
--- Both outputs of each copy share one NOT gate. Replication must not duplicate that gate.
-example : (sharedNot.replicate 3).size = 3 := by simp [sharedNot]
-
-example : (sharedNot.replicate 3).program.cost nonconstantCost = 3 := by
-  rw [Circuit.cost_program_replicate]
-  rfl
-
-example : (sharedNot.replicate 3).program.cost (fun _ => 7) = 21 := by
-  rw [Circuit.cost_program_replicate]
-  rfl
-
-example : (sharedNot.replicate 3).eval interpretation ![false, true, false] =
-    ![true, true, false, false, true, true] := by decide
-
--- No gates survive zero replication, independently of the original output width.
-example {σ : Signature} {n m : ℕ} (c : Circuit σ n m) (cost : σ.Op → ℕ) :
-    (c.replicate 0).size = 0 ∧ (c.replicate 0).program.cost cost = 0 := by
-  simp only [Circuit.size_replicate, Circuit.cost_program_replicate, Nat.zero_mul, and_self]
-
--- A circuit with no outputs may still have gates; replication retains their exact cost.
 private def unusedNot : Circuit signature 1 0 :=
   ⟨.gate .empty ⟨.not, fun _ => .input 0⟩, Fin.elim0⟩
 
-example : (unusedNot.replicate 4).size = 4 := by simp [unusedNot]
-
-example : (unusedNot.replicate 4).program.cost nonconstantCost = 4 := by
-  rw [Circuit.cost_program_replicate]
-  rfl
-
--- Constant gates exist without inputs. They count towards size but not nonconstant cost.
 private def constantTrue : Circuit signature 0 1 :=
   Circuit.oneGate (.const true) Fin.elim0
 
-example : (constantTrue.replicateScalar 4).size = 4 ∧
-    (constantTrue.replicateScalar 4).program.cost nonconstantCost = 0 := by
-  constructor
-  · simp [constantTrue]
-  · rw [Circuit.cost_program_replicateScalar]
-    rfl
+private def scalarNot : Circuit signature 1 1 := Circuit.oneGate .not (fun _ => 0)
 
-example (k : ℕ) : massComplexity (fun _ : Fin 0 → Bool => true) k = 0 := by
+-- Shared outputs, weighted gate cost, zero replication, unused gates, constant gates, and
+-- `takeDirectProductPrefix` on `sharedNot`, `unusedNot`, `constantTrue`, and `scalarNot`.
+example (k : ℕ) :
+    (sharedNot.replicate 3).size = 3 ∧
+    (sharedNot.replicate 3).program.cost nonconstantCost = 3 ∧
+    (sharedNot.replicate 3).program.cost (fun _ => 7) = 21 ∧
+    (sharedNot.replicate 3).eval interpretation ![false, true, false] =
+      ![true, true, false, false, true, true] ∧
+    (sharedNot.replicate 0).size = 0 ∧
+    (sharedNot.replicate 0).program.cost nonconstantCost = 0 ∧
+    (unusedNot.replicate 4).size = 4 ∧
+    (unusedNot.replicate 4).program.cost nonconstantCost = 4 ∧
+    (constantTrue.replicateScalar 4).size = 4 ∧
+    (constantTrue.replicateScalar 4).program.cost nonconstantCost = 0 ∧
+    massComplexity (fun _ : Fin 0 → Bool => true) k = 0 ∧
+    ((scalarNot.replicateScalar 3).takeDirectProductPrefix 1 (by decide) (by decide)).size = 3 ∧
+    ((scalarNot.replicateScalar 3).takeDirectProductPrefix 1 (by decide)
+      (by decide)).program.cost nonconstantCost = 3 ∧
+    ((scalarNot.replicateScalar 3).takeDirectProductPrefix 1 (by decide)
+      (by decide)).Computes interpretation (directProduct (fun x : Fin 1 → Bool => !x 0) 1) := by
+  refine ⟨by simp [sharedNot],
+    by rw [Circuit.cost_program_replicate]; rfl,
+    by rw [Circuit.cost_program_replicate]; rfl,
+    by decide,
+    by simp [Circuit.size_replicate],
+    by simp [Circuit.cost_program_replicate],
+    by simp [unusedNot],
+    by rw [Circuit.cost_program_replicate]; rfl,
+    by simp [constantTrue],
+    by rw [Circuit.cost_program_replicateScalar]; rfl,
+    ?_, rfl,
+    by rw [Circuit.cost_program_takeDirectProductPrefix, Circuit.cost_program_replicateScalar]; rfl,
+    (Circuit.Computes.replicateScalar (c := scalarNot) (fun _ => rfl) 3).takeDirectProductPrefix
+      (by decide) (by decide)⟩
   apply nonpos_iff_eq_zero.mp
   apply massComplexity_le_iff.mpr
   refine ⟨constantTrue.replicateScalar k, Circuit.Computes.replicateScalar (fun _ => rfl) k, ?_⟩
@@ -70,31 +71,36 @@ example (k : ℕ) : massComplexity (fun _ : Fin 0 → Bool => true) k = 0 := by
   simp only [constantTrue, Circuit.cost_program_oneGate, nonconstantCost_const, Nat.mul_zero,
     le_refl]
 
-private def scalarNot : Circuit signature 1 1 := Circuit.oneGate .not (fun _ => 0)
-
--- Retaining one output of a three-copy circuit keeps all three gates, including unused ones.
-example : ((scalarNot.replicateScalar 3).takeDirectProductPrefix 1 (by decide) (by decide)).size =
-    3 := rfl
-
-example : ((scalarNot.replicateScalar 3).takeDirectProductPrefix 1 (by decide)
-    (by decide)).program.cost nonconstantCost = 3 := by
-  rw [Circuit.cost_program_takeDirectProductPrefix, Circuit.cost_program_replicateScalar]
-  rfl
-
-example : ((scalarNot.replicateScalar 3).takeDirectProductPrefix 1 (by decide)
-    (by decide)).Computes interpretation (directProduct (fun x : Fin 1 → Bool => !x 0) 1) :=
-  (Circuit.Computes.replicateScalar (c := scalarNot) (fun _ => rfl) 3).takeDirectProductPrefix
-    (by decide) (by decide)
-
 private abbrev noOps : Signature where
   Op := Empty
   Arity := Empty.elim
 
 private def noOpsI : Interpretation noOps Unit := fun op => op.elim
 
--- One zero-input output cannot be built over a signature without operations.
-example : ecomplexityFrom noOpsI Empty.elim
-    (directProduct (fun _ : Fin 0 → Unit => ()) 1) id = ⊤ := by
+-- Unrepresentable positive batches vs zero copies over `noOps`, input wiring, ignored tail
+-- coordinates, optimal-cost realization, and `rationalCopyBudget`.
+example (f : (Fin 3 → Bool) → Bool) (k : ℕ) :
+    ecomplexityFrom noOpsI Empty.elim
+      (directProduct (fun _ : Fin 0 → Unit => ()) 1) id = ⊤ ∧
+    ecomplexityFrom noOpsI Empty.elim
+      (directProduct (fun _ : Fin 0 → Unit => ()) 0) id = 0 ∧
+    ecomplexityFrom noOpsI Empty.elim
+      (directProduct (fun _ : Fin 0 → Unit => ()) 0) id ≤
+        (0 : ℕ∞) * ecomplexityFrom noOpsI Empty.elim (single fun _ : Fin 0 → Unit => ()) id ∧
+    massComplexity (fun x : Fin 2 → Bool => f (x ∘ ![1, 0, 1])) k ≤ massComplexity f k ∧
+    massComplexity (fun x : Fin 5 → Bool => !x 0) k =
+      massComplexity (fun x : Fin 1 → Bool => !x 0) k ∧
+    (∃ c : Circuit signature 6 3,
+      c.Computes interpretation (directProduct (fun x : Fin 2 → Bool => x 0 && x 1) 3) ∧
+      (c.program.cost nonconstantCost : ℕ∞) =
+        massComplexity (fun x : Fin 2 → Bool => x 0 && x 1) 3) ∧
+    rationalCopyBudget 1 2 5 = 4 ∧
+    rationalCopyBudget 0 7 5 = 1 := by
+  refine ⟨?_, ecomplexityFrom_directProduct_zero, ecomplexityFrom_directProduct_le 0,
+    massComplexity_comp_wiring_le _ k,
+    massComplexity_comp_castLE (n := 1) (p := 5) (by decide) (by decide) (fun x => !x 0) k,
+    exists_computes_cost_eq_massComplexity (f := fun x : Fin 2 → Bool => x 0 && x 1) (k := 3),
+    by decide, by decide⟩
   rw [ecomplexityFrom_eq_top_iff]
   rintro ⟨⟨p, outputs⟩, _⟩
   cases p with
@@ -102,34 +108,6 @@ example : ecomplexityFrom noOpsI Empty.elim
     | input i => exact i.elim0
     | gate i => exact i.elim0
   | gate p line => exact line.op.elim
-
--- Zero copies of that same function still have zero cost: the 0 * top case is included.
-example : ecomplexityFrom noOpsI Empty.elim
-    (directProduct (fun _ : Fin 0 → Unit => ()) 0) id = 0 :=
-  ecomplexityFrom_directProduct_zero
-
-example : ecomplexityFrom noOpsI Empty.elim
-    (directProduct (fun _ : Fin 0 → Unit => ()) 0) id ≤
-      (0 : ℕ∞) * ecomplexityFrom noOpsI Empty.elim (single fun _ : Fin 0 → Unit => ()) id :=
-  ecomplexityFrom_directProduct_le 0
-
--- Repeated input selections, not just permutations, are free in each block.
-example (f : (Fin 3 → Bool) → Bool) (k : ℕ) :
-    massComplexity (fun x : Fin 2 → Bool => f (x ∘ ![1, 0, 1])) k ≤ massComplexity f k :=
-  massComplexity_comp_wiring_le _ k
-
--- Adding ignored tail coordinates keeps exactly the same minimum cost.
-example (k : ℕ) : massComplexity (fun x : Fin 5 → Bool => !x 0) k =
-    massComplexity (fun x : Fin 1 → Bool => !x 0) k :=
-  massComplexity_comp_castLE (n := 1) (p := 5) (by decide) (by decide) (fun x => !x 0) k
-
-example (f : (Fin 2 → Bool) → Bool) :
-    ∃ c : Circuit signature 6 3, c.Computes interpretation (directProduct f 3) ∧
-      (c.program.cost nonconstantCost : ℕ∞) = massComplexity f 3 :=
-  exists_computes_cost_eq_massComplexity (f := f) (k := 3)
-
--- Natural division rounds the exponent down; zero exponents still allow one copy.
-example : rationalCopyBudget 1 2 5 = 4 ∧ rationalCopyBudget 0 7 5 = 1 := by decide
 
 -- Every unary Boolean function has a circuit of nonconstant cost at most one.
 private def unaryImpl (f : (Fin 1 → Bool) → Bool) : Circuit signature 1 1 :=

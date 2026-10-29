@@ -158,6 +158,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   Given its arguments in registers, it writes one instance in at most `131*t² + 5` instructions
   at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
   preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics
+  were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
+  input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
+
   `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
   frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical
   reduction: minimum-prime searches, collision/heavy-element bounds, light-element arrays, bounded
@@ -174,8 +181,16 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `Set.EqOn`; no additional weighted-triangle predicate or source machine is introduced.
   This is the mathematical interface milestone
   [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
-  preprocessing/time claim or solver. Modular hashing/false-positive splitting and tensor/sparse
-  query programs remain in #1394, alongside the native and asymptotic composition below.
+  preprocessing/time claim or solver. `Algorithms/ExactTriangle/{Weights,Hashing}.lean` now adapts
+  the modular counting/coefficient identities, minimum-count prime and uniform false-positive
+  bound from `Sec3/Theorem17/Hashing.lean`, using supplied matrices and the existing decision
+  predicate. Its integer-square window characterisation supports later native enumeration.
+  The quotient/coefficient API lives in `Foundations/RingTheory/CyclicIntRing.lean`; the uniform
+  all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
+  the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
+  statements, not native instructions or an assumed solver. See
+  [#1442](https://github.com/cslib-community/complexitylib/issues/1442). Residue/chunk/piece splitting,
+  witness recovery and tensor/sparse query programs remain in #1394, alongside native composition.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics
   were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
   input/time/width/asymptotic composition remain in

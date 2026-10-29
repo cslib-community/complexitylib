@@ -23,16 +23,18 @@ open Cslib.LinearAlgebra.CopyPlacement Turing.MultiTapeTM
 
 /-! ### 1. Colliding block labels: `fiberRanks` and `flatPlacement` -/
 
-example : fiberRanks [] = [] := rfl
-example : flatPlacement 4 [] = [] := rfl
-example : fiberRanks [2, 0, 2, 1, 2] = [0, 0, 1, 0, 2] := rfl
-example : ((fiberRanks [2, 0, 2, 1, 2]).zip [2, 0, 2, 1, 2]).Nodup := by decide
-example : ∀ c ∈ fiberRanks [2, 0, 2, 1, 2], c < 3 := by decide
-example : flatPlacement 4 [2, 0, 2, 1, 2] = [2, 0, 6, 1, 10] := rfl
-example : (flatPlacement 4 [2, 0, 2, 1, 2]).Nodup := by decide
-example : ∀ e : Fin 5, (fiberRanks [2, 0, 2, 1, 2])[e.1] =
-    Cslib.LinearAlgebra.fiberRank (fun i : Fin 5 => [2, 0, 2, 1, 2][i]) e := by
-  intro e; exact getElem_fiberRanks_eq_fiberRank [2, 0, 2, 1, 2] e
+example :
+    fiberRanks [] = [] ∧
+      flatPlacement 4 [] = [] ∧
+      fiberRanks [2, 0, 2, 1, 2] = [0, 0, 1, 0, 2] ∧
+      ((fiberRanks [2, 0, 2, 1, 2]).zip [2, 0, 2, 1, 2]).Nodup ∧
+      (∀ c ∈ fiberRanks [2, 0, 2, 1, 2], c < 3) ∧
+      flatPlacement 4 [2, 0, 2, 1, 2] = [2, 0, 6, 1, 10] ∧
+      (flatPlacement 4 [2, 0, 2, 1, 2]).Nodup ∧
+      (∀ e : Fin 5, (fiberRanks [2, 0, 2, 1, 2])[e.1] =
+        Cslib.LinearAlgebra.fiberRank (fun i : Fin 5 => [2, 0, 2, 1, 2][i]) e) :=
+  ⟨rfl, rfl, rfl, by decide, by decide, rfl, by decide,
+    fun e => getElem_fiberRanks_eq_fiberRank [2, 0, 2, 1, 2] e⟩
 
 /-! ### 2. Concrete 4-variable, 6-incidence instance (`D = 4, h = 2, R = 2, d_den = 2`) -/
 
@@ -46,64 +48,70 @@ private def testBlockRepl : List (List (List ℤ)) :=
     [[0, 0], [0, 0], [2, -1], [0, 1]], [[0, 0], [0, 0], [0, 1], [2, -1]] ]
 
 -- Variable-group partition at steps `t = 0` and `t = 1`.
-example : varGroupList testSchedules 0 0 = [0, 2] := rfl
-example : varGroupList testSchedules 0 1 = [1, 3] := rfl
-example : varGroupList testSchedules 1 0 = [1, 2] := rfl
-example : varGroupList testSchedules 1 1 = [0, 3] := rfl
-example : ∀ (t g : Fin 2) (v : Fin 4), v.1 ∈ varGroupList testSchedules t.1 g.1 ↔
-    v ∈ Cslib.LinearAlgebra.varGroup
-      (fun (v : Fin 4) (t : Fin 2) =>
-        ⟨(testSchedules.getD v.1 []).getD t.1 0, by revert v t; decide⟩) t g :=
-  fun t g v => mem_varGroupList_iff_mem_varGroup (n := 4) (Q := 2) (r := 2)
-    (varSchedules := testSchedules) rfl (fun _ _ => rfl) t g v
+example :
+    varGroupList testSchedules 0 0 = [0, 2] ∧
+      varGroupList testSchedules 0 1 = [1, 3] ∧
+      varGroupList testSchedules 1 0 = [1, 2] ∧
+      varGroupList testSchedules 1 1 = [0, 3] ∧
+      (∀ (t g : Fin 2) (v : Fin 4), v.1 ∈ varGroupList testSchedules t.1 g.1 ↔
+        v ∈ Cslib.LinearAlgebra.varGroup
+          (fun (v : Fin 4) (t : Fin 2) =>
+            ⟨(testSchedules.getD v.1 []).getD t.1 0, by revert v t; decide⟩) t g) :=
+  ⟨rfl, rfl, rfl, rfl,
+    fun t g v => mem_varGroupList_iff_mem_varGroup (n := 4) (Q := 2) (r := 2)
+      (varSchedules := testSchedules) rfl (fun _ _ => rfl) t g v⟩
 
 -- Copy 0 has variable 0 twice (`y = 0` and `y = 1`), giving entry `2` with row `ℓ₁ ≤ 4`.
-example : testPlacements = [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1)] := rfl
-example : pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas =
-    [[2, 1, 0, -1], [1, 0, 1, 0]] := rfl
-example : Cslib.IsTableShape 2 4
-    (pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas) :=
-  isTableShape_pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas
-example : ∀ row ∈ pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas,
-    (row.map Int.natAbs).sum ≤ 4 := by decide
-example : restrictGroupColumns (varGroupList testSchedules 0 1)
-    (pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas) =
-    [[1, -1], [0, 0]] := rfl
+example :
+    testPlacements = [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1)] ∧
+      pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas =
+        [[2, 1, 0, -1], [1, 0, 1, 0]] ∧
+      Cslib.IsTableShape 2 4
+        (pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas) ∧
+      (∀ row ∈ pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas,
+        (row.map Int.natAbs).sum ≤ 4) ∧
+      restrictGroupColumns (varGroupList testSchedules 0 1)
+        (pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas) =
+        [[1, -1], [0, 0]] :=
+  ⟨rfl, rfl,
+    isTableShape_pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas,
+    by decide, rfl⟩
 
--- Exhaustive check of Boolean inner-product bound `[-4, 4]` across all `2^4 = 16` Boolean vectors.
-example : (List.range 16).all (fun mask =>
-    let x : ℕ → ℤ := fun v => if Nat.testBit mask v then 1 else 0
-    (pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas).all fun row =>
-      decide (|(List.zipWith (· * ·) row ((List.range 4).map x)).sum| ≤ 4)) = true := by decide
-
--- Dot-product pullback agrees with `copyEmbedExec` on a general integer vector.
+-- Exhaustive check of Boolean inner-product bound `[-4, 4]` across all `2^4 = 16` Boolean vectors,
+-- dot-product pullback agreement with `copyEmbedExec`, and `T = 0` restoration (`Cslib.rowEntry`),
+-- `IsTableShape`, and `Cslib.jetL1Norm` preservation.
 private def sampleVec : ℕ → ℤ | 0 => 3 | 1 => -2 | 2 => 7 | 3 => 4 | _ => 0
 
 example :
-    (List.zipWith (· * ·) (pullbackMeasurementRow 4 testPlacements testIncVars 0 [1, 1, 1, -1])
-      ((List.range 4).map sampleVec)).sum =
-    (List.zipWith (· * ·) [1, 1, 1, -1]
-      ((List.range 4).map (copyEmbedExec testPlacements testIncVars sampleVec 0))).sum := by decide
-
--- `T = 0` restoration (`Cslib.rowEntry`), `IsTableShape`, and `Cslib.jetL1Norm` preservation.
-example : pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl =
-    [[2, 8], [0, 1], [0, 0], [0, -1]] := rfl
-example : Cslib.IsTableShape 4 2
-    (pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl) :=
-  isTableShape_pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl
-example : Cslib.jetL1Norm (pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl) ≤
-    Cslib.jetL1Norm (testBlockRepl.getD 0 []) := by decide
-example : (List.range 6).all (fun e =>
-    let row := pullbackReplacementRow 4 2 testPlacements testIncVars e testBlockRepl
-    (List.range 4).all fun v =>
-      decide (Cslib.rowEntry row v 0 = if v = testIncVars.getD e 0 then 2 else 0)) = true := by
-  decide
+    (List.range 16).all (fun mask =>
+        let x : ℕ → ℤ := fun v => if Nat.testBit mask v then 1 else 0
+        (pullbackMeasurementMatrix 4 2 testPlacements testIncVars testBlockMeas).all fun row =>
+          decide (|(List.zipWith (· * ·) row ((List.range 4).map x)).sum| ≤ 4)) = true ∧
+      (List.zipWith (· * ·) (pullbackMeasurementRow 4 testPlacements testIncVars 0 [1, 1, 1, -1])
+        ((List.range 4).map sampleVec)).sum =
+      (List.zipWith (· * ·) [1, 1, 1, -1]
+        ((List.range 4).map (copyEmbedExec testPlacements testIncVars sampleVec 0))).sum ∧
+      pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl =
+        [[2, 8], [0, 1], [0, 0], [0, -1]] ∧
+      Cslib.IsTableShape 4 2
+        (pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl) ∧
+      Cslib.jetL1Norm (pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl) ≤
+        Cslib.jetL1Norm (testBlockRepl.getD 0 []) ∧
+      (List.range 6).all (fun e =>
+        let row := pullbackReplacementRow 4 2 testPlacements testIncVars e testBlockRepl
+        (List.range 4).all fun v =>
+          decide (Cslib.rowEntry row v 0 = if v = testIncVars.getD e 0 then 2 else 0)) = true :=
+  ⟨by decide, by decide, rfl,
+    isTableShape_pullbackReplacementRow 4 2 testPlacements testIncVars 0 testBlockRepl,
+    by decide, by decide⟩
 
 -- Non-vacuous group-separation kernel transfer (`testKerVec 1 = 5 ≠ 0`, annihilated at `T = 1`).
 private def testKerVec : ℕ → ℤ | 1 => 5 | 3 => 5 | _ => 0
 
-example : ∃ v < 4, testKerVec v ≠ 0 := ⟨1, by decide, by decide⟩
-example : copyEmbedExec testPlacements testIncVars testKerVec 0 2 = 5 := by decide
+example :
+    (∃ v < 4, testKerVec v ≠ 0) ∧
+      copyEmbedExec testPlacements testIncVars testKerVec 0 2 = 5 :=
+  ⟨⟨1, by decide, by decide⟩, by decide⟩
 
 example :
     (∑ v ∈ Finset.range 4, Polynomial.evalCoeffList (1 : ℤ)

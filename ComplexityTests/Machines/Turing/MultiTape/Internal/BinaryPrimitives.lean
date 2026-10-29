@@ -22,34 +22,6 @@ run_elab do
 
 namespace ComplexityTests.Internal.BinaryPrimitives
 
--- These are uniform certificates on all natural numbers, not fixed-width counter instances.
-example : ComputableInO (· + 1) encNat encNat
-    (fun n => ((encNat n).length + 1) ^ 2) (fun n => (encNat n).length + 1) :=
-  .natSucc
-
-example : ComputableInO (· - 1) encNat encNat
-    (fun n => ((encNat n).length + 1) ^ 2) (fun n => (encNat n).length + 1) :=
-  .natPred
-
-example : ComputableInO (fun n => decide (n = 0)) encNat encBool
-    (fun n => (encNat n).length) (fun n => (encNat n).length) :=
-  .natIsZero
-
--- The same machine witnesses quadratic time and linear workspace, with a separate output charge.
-example : ∃ c, ComputableInTimeAndSpace (· - 1) encNat encNat
-    (fun n => c * (((encNat n).length + 1) ^ 2 + 1))
-    (fun n => c * ((encNat n).length + 1 + 1)) ∧
-    ∀ n, (encNat (n - 1)).length ≤ c * ((encNat n).length + 1 + 1) :=
-  ComputableInO.natPred
-
--- Boundary, carry and borrow behavior of the unchanged word algorithms.
-example : NatSucc.succFinish ([].foldl NatSucc.succStep (true, [])) = [true] := rfl
-example : NatSucc.succFinish ([true].foldl NatSucc.succStep (true, [])) = [false, true] := rfl
-example : NatPred.norm (NatPred.decr []) = [] := rfl
-example : NatPred.norm (NatPred.decr [true]) = [] := rfl
-example : NatPred.norm (NatPred.decr [false, false, true]) = [true, true] := rfl
-example : NatSucc.incr true [true, true, true] = [false, false, false, true] := rfl
-
 -- Unbounded carry/borrow chains are verified for the actual folds, then specialized to long words.
 theorem carryChain (k : ℕ) :
     NatSucc.succFinish ((List.replicate k true).foldl NatSucc.succStep (true, [])) =
@@ -70,48 +42,50 @@ theorem borrowChain (k : ℕ) :
     simp only [List.replicate_succ, List.cons_append, NatPred.decr]
     rw [NatPred.norm_cons (NatPred.decr_ne_nil (by simp)), ih]
 
-example : NatSucc.succFinish ((List.replicate 128 true).foldl NatSucc.succStep (true, [])) =
-    List.replicate 128 false ++ [true] := carryChain 128
-example : NatPred.norm (NatPred.decr (List.replicate 128 false ++ [true])) =
-    List.replicate 128 true := borrowChain 128
-example : (encNat 0).isEmpty = true := rfl
-example : (encNat 1).isEmpty = false := rfl
-
--- The bit equations apply to arbitrary sizes and retain zero's empty encoding.
-example (n : ℕ) : encNat (n + 1) =
-    NatSucc.succFinish ((encNat n).foldl NatSucc.succStep (true, [])) := by
-  simp only [encNat_apply, NatSucc.succFinish_foldl, List.nil_append, NatSucc.bits_succ]
-example (n : ℕ) : encNat (n - 1) = NatPred.norm (NatPred.decr (encNat n)) :=
-  NatPred.bits_pred n
-example : encNat 0 = [] := rfl
-example : encNat 1 = [true] := rfl
-
--- A word-copying machine's zero work tapes do not imply constant *charged* workspace.
-example : ¬ ComputableInO (fun w : List Bool => w) encBits encBits
-    (fun w => (w.length + 1) ^ 2) (fun _ => 0) := by
-  rintro ⟨c, _, hl⟩
-  have h := hl (List.replicate (c + 1) true)
-  simp only [encBits_apply, List.length_replicate, Nat.zero_add, Nat.mul_one] at h
-  omega
-
--- Exact resource packaging cannot fabricate an output charge from workspace alone.
-example {f : ℕ → ℕ} {t s T S : ℕ → ℕ}
+-- Uniform certificates on all natural numbers, carry/borrow boundary equations, and independent
+-- workspace/output charges.
+example (n : ℕ) {f : ℕ → ℕ} {t s T S : ℕ → ℕ}
     (h : ComputableInTimeAndSpace f encNat encNat t s)
     (ht : ∀ n, t n ≤ T n + 1) (hs : ∀ n, s n ≤ S n + 1)
-    (hl : ∀ n, (encNat (f n)).length ≤ S n + 1) : ComputableInO f encNat encNat T S := by
-  fail_if_success exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs)
-  exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs) (by simpa using hl)
-
-/-- info: 'Turing.MultiTapeTM.ComputableInO.natSucc' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInO.natSucc
-
-/-- info: 'Turing.MultiTapeTM.ComputableInO.natPred' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInO.natPred
-
-/-- info: 'Turing.MultiTapeTM.ComputableInO.natIsZero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInO.natIsZero
+    (hl : ∀ n, (encNat (f n)).length ≤ S n + 1) :
+    ComputableInO (· + 1) encNat encNat
+      (fun n => ((encNat n).length + 1) ^ 2) (fun n => (encNat n).length + 1) ∧
+    ComputableInO (· - 1) encNat encNat
+      (fun n => ((encNat n).length + 1) ^ 2) (fun n => (encNat n).length + 1) ∧
+    ComputableInO (fun n => decide (n = 0)) encNat encBool
+      (fun n => (encNat n).length) (fun n => (encNat n).length) ∧
+    (∃ c, ComputableInTimeAndSpace (· - 1) encNat encNat
+      (fun n => c * (((encNat n).length + 1) ^ 2 + 1))
+      (fun n => c * ((encNat n).length + 1 + 1)) ∧
+      ∀ n, (encNat (n - 1)).length ≤ c * ((encNat n).length + 1 + 1)) ∧
+    NatSucc.succFinish ([].foldl NatSucc.succStep (true, [])) = [true] ∧
+    NatSucc.succFinish ([true].foldl NatSucc.succStep (true, [])) = [false, true] ∧
+    NatPred.norm (NatPred.decr []) = [] ∧
+    NatPred.norm (NatPred.decr [true]) = [] ∧
+    NatPred.norm (NatPred.decr [false, false, true]) = [true, true] ∧
+    NatSucc.incr true [true, true, true] = [false, false, false, true] ∧
+    NatSucc.succFinish ((List.replicate 128 true).foldl NatSucc.succStep (true, [])) =
+      List.replicate 128 false ++ [true] ∧
+    NatPred.norm (NatPred.decr (List.replicate 128 false ++ [true])) =
+      List.replicate 128 true ∧
+    (encNat 0).isEmpty = true ∧
+    (encNat 1).isEmpty = false ∧
+    encNat (n + 1) = NatSucc.succFinish ((encNat n).foldl NatSucc.succStep (true, [])) ∧
+    encNat (n - 1) = NatPred.norm (NatPred.decr (encNat n)) ∧
+    encNat 0 = [] ∧
+    encNat 1 = [true] ∧
+    (¬ ComputableInO (fun w : List Bool => w) encBits encBits
+      (fun w => (w.length + 1) ^ 2) (fun _ => 0)) ∧
+    ComputableInO f encNat encNat T S := by
+  refine ⟨.natSucc, .natPred, .natIsZero, ComputableInO.natPred,
+    rfl, rfl, rfl, rfl, rfl, rfl, carryChain 128, borrowChain 128, rfl, rfl,
+    by simp only [encNat_apply, NatSucc.succFinish_foldl, List.nil_append, NatSucc.bits_succ],
+    NatPred.bits_pred n, rfl, rfl, ?_, ?_⟩
+  · rintro ⟨c, _, hl'⟩
+    have hlen := hl' (List.replicate (c + 1) true)
+    simp only [encBits_apply, List.length_replicate, Nat.zero_add, Nat.mul_one] at hlen
+    omega
+  · fail_if_success exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs)
+    exact ComputableInO.of_bounds h 1 (by simpa using ht) (by simpa using hs) (by simpa using hl)
 
 end ComplexityTests.Internal.BinaryPrimitives
