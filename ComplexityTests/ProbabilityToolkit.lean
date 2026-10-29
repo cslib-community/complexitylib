@@ -32,46 +32,74 @@ private theorem mean_coin :
   simp [coin, PMF.uniformOfFintype_apply]
   norm_num
 
--- The upper tails for ten fair coins: the sharp and the simplified bounds apply.
-example (δ : ℝ) (hδ : 0 ≤ δ) :
+-- Concrete upper tails for ten fair coins (`δ = 1`, all ten coins `true`): the sharp and
+-- simplified bounds reduce to explicit exponentials.
+example :
     ((PMF.pi fun _ : Fin 10 => PMF.uniformOfFintype Bool).toOuterMeasure
-      {outcome | (1 + δ) * 5 ≤ ∑ i, coin i (outcome i)}).toReal ≤
-        Real.exp (5 * (δ - (1 + δ) * Real.log (1 + δ))) :=
-  PMF.pi_sum_ge_one_add_mul_le_exp_log (fun _ => PMF.uniformOfFintype Bool) coin
-    (fun i b _ => coin_mem i b) mean_coin.le hδ
+      {outcome | 10 ≤ ∑ i, coin i (outcome i)}).toReal ≤
+        Real.exp (5 * (1 - 2 * Real.log 2)) := by
+  have h := PMF.pi_sum_ge_one_add_mul_le_exp_log (fun _ => PMF.uniformOfFintype Bool) coin
+    (fun i b _ => coin_mem i b) mean_coin.le (δ := 1) zero_le_one
+  norm_num at h ⊢
+  exact h
 
-example (δ : ℝ) (hδ : 0 ≤ δ) (hδ₁ : δ ≤ 1) :
+example :
     ((PMF.pi fun _ : Fin 10 => PMF.uniformOfFintype Bool).toOuterMeasure
-      {outcome | (1 + δ) * 5 ≤ ∑ i, coin i (outcome i)}).toReal ≤
-        Real.exp (-(δ ^ 2 * 5 / 3)) :=
-  PMF.pi_sum_ge_one_add_mul_of_le_one (fun _ => PMF.uniformOfFintype Bool) coin
-    (fun i b _ => coin_mem i b) mean_coin.le hδ hδ₁
+      {outcome | 10 ≤ ∑ i, coin i (outcome i)}).toReal ≤
+        Real.exp (-5 / 3) := by
+  have h := PMF.pi_sum_ge_one_add_mul_of_le_one (fun _ => PMF.uniformOfFintype Bool) coin
+    (fun i b _ => coin_mem i b) mean_coin.le (δ := 1) zero_le_one le_rfl
+  norm_num at h ⊢
+  exact h
 
--- The lower tail for ten fair coins: the hypotheses on the scores are satisfiable.
-example (δ : ℝ) (hδ : 0 ≤ δ) :
+-- Concrete lower tail for ten fair coins (`δ = 1`, no coin is `true`).
+example :
     ((PMF.pi fun _ : Fin 10 => PMF.uniformOfFintype Bool).toOuterMeasure
-      {outcome | ∑ i, coin i (outcome i) ≤ (1 - δ) * 5}).toReal ≤
-        Real.exp (-(δ ^ 2 * 5 / 2)) :=
-  PMF.pi_sum_le_one_sub_mul (fun _ => PMF.uniformOfFintype Bool) coin
-    (fun i b _ => coin_mem i b) mean_coin.ge hδ
+      {outcome | ∑ i, coin i (outcome i) ≤ 0}).toReal ≤
+        Real.exp (-5 / 2) := by
+  have h := PMF.pi_sum_le_one_sub_mul (fun _ => PMF.uniformOfFintype Bool) coin
+    (fun i b _ => coin_mem i b) mean_coin.ge (δ := 1) zero_le_one
+  norm_num at h ⊢
+  exact h
 
 /-! ### `k`-wise independence -/
 
 instance : Fact (Nat.Prime 5) := ⟨Nat.prime_five⟩
 
--- The polynomials of degree less than three over `𝔽₅` form a 3-wise independent family.
-example : IsKWiseIndependentHash 3 (polynomialHash : (Fin 3 → ZMod 5) → ZMod 5 → ZMod 5) :=
-  isKWiseIndependentHash_polynomialHash 3
+-- The polynomials of degree less than three over `𝔽₅` form a 3-wise independent family, so
+-- sending `0, 1, 2` to `0` has exact density `1 / 125`.
+example :
+    dens {c : Fin 3 → ZMod 5 |
+      ({0, 1, 2} : Finset (ZMod 5)).restrict (polynomialHash c) = fun _ => 0} = 1 / 125 := by
+  have h := (isKWiseIndependentHash_polynomialHash 3).dens_filter_restrict_eq
+    (T := ({0, 1, 2} : Finset (ZMod 5))) (by decide) fun _ => 0
+  rw [h, show #({0, 1, 2} : Finset (ZMod 5)) = 3 by decide]
+  norm_num [ZMod.card]
 
--- Pairwise independent families, such as the affine maps of bit vectors, are 2-wise independent.
-example : IsKWiseIndependentHash 2
-    (affineHash : Matrix (Fin 2) (Fin 3) (ZMod 2) × (Fin 2 → ZMod 2) → (Fin 3 → ZMod 2) →
-      Fin 2 → ZMod 2) :=
-  isKWiseIndependentHash_two_iff.2 ⟨isPairwiseIndependentHash_affineHash, ⟨0⟩⟩
+-- Pairwise independent families, such as the affine maps of bit vectors, are 2-wise independent
+-- (`isKWiseIndependentHash_two_iff`) and send two distinct inputs to `0` with density `1 / 16`.
+example :
+    dens {s : Matrix (Fin 2) (Fin 3) (ZMod 2) × (Fin 2 → ZMod 2) |
+      ({0, 1} : Finset (Fin 3 → ZMod 2)).restrict (affineHash s) = fun _ => 0} = 1 / 16 := by
+  have h2 : IsKWiseIndependentHash 2
+      (affineHash : Matrix (Fin 2) (Fin 3) (ZMod 2) × (Fin 2 → ZMod 2) → (Fin 3 → ZMod 2) →
+        Fin 2 → ZMod 2) :=
+    isKWiseIndependentHash_two_iff.2 ⟨isPairwiseIndependentHash_affineHash, ⟨0⟩⟩
+  have h := h2.dens_filter_restrict_eq
+    (T := ({0, 1} : Finset (Fin 3 → ZMod 2))) (by decide) fun _ => 0
+  rw [h, show #({0, 1} : Finset (Fin 3 → ZMod 2)) = 2 by decide]
+  norm_num [Fintype.card_fun, ZMod.card]
 
--- Affine polynomials are pairwise independent ...
-example : IsPairwiseIndependentHash (polynomialHash : (Fin 2 → ZMod 5) → ZMod 5 → ZMod 5) :=
-  (isKWiseIndependentHash_polynomialHash 2).isPairwiseIndependentHash le_rfl
+-- Affine polynomials are pairwise independent, sending `0` and `1` to `0` with density `1 / 25` ...
+example :
+    dens {c : Fin 2 → ZMod 5 |
+      ({0, 1} : Finset (ZMod 5)).restrict (polynomialHash c) = fun _ => 0} = 1 / 25 := by
+  have hp : IsPairwiseIndependentHash (polynomialHash : (Fin 2 → ZMod 5) → ZMod 5 → ZMod 5) :=
+    (isKWiseIndependentHash_polynomialHash 2).isPairwiseIndependentHash le_rfl
+  have h := (isKWiseIndependentHash_two_iff.2 ⟨hp, ⟨0⟩⟩).dens_filter_restrict_eq
+    (T := ({0, 1} : Finset (ZMod 5))) (by decide) fun _ => 0
+  rw [h, show #({0, 1} : Finset (ZMod 5)) = 2 by decide]
+  norm_num [ZMod.card]
 
 -- ... but not 3-wise independent: their 25 seeds cannot give a value pattern at three points
 -- probability `1 / 125`.
@@ -86,14 +114,21 @@ example : ¬ IsKWiseIndependentHash 3 (polynomialHash : (Fin 2 → ZMod 5) → Z
       fun _ => 0} : ℕ) : ℚ) * 5 = 1 := by linarith
   norm_cast at this
 
--- The tail bound for 4-wise independent polynomial hashing of `[0, 1]`-valued scores.
-example (S : Finset (ZMod 5)) (g : ZMod 5 → ZMod 5 → ℝ)
-    (hg : ∀ x ∈ S, ∀ y, g x y ∈ Set.Icc 0 1) :
+/-- Indicator score for hitting `0` in `𝔽₅`. -/
+private def zeroScore (_ y : ZMod 5) : ℝ := if y = 0 then 1 else 0
+
+-- Concrete 4-wise independent tail bound for indicator scores over `𝔽₅`: deviation at least `5`
+-- has density at most `((2 ^ 2 * 5 / 5 ^ 2) ^ 2) = 16 / 25 < 1`.
+example :
     (dens {c : Fin (2 * 2) → ZMod 5 |
-      1 ≤ |∑ x ∈ S, (g x (polynomialHash c x) - 𝔼 y, g x y)|} : ℝ) ≤
-        ((2 : ℕ) ^ 2 * #S / 1 ^ 2) ^ 2 :=
-  (isKWiseIndependentHash_polynomialHash (2 * 2)).dens_filter_le_abs_sum_sub_expect S g hg
-    one_pos
+      5 ≤ |∑ x : ZMod 5, (zeroScore x (polynomialHash c x) - 𝔼 y, zeroScore x y)|} : ℝ) ≤
+        16 / 25 := by
+  have h := (isKWiseIndependentHash_polynomialHash (2 * 2)).dens_filter_le_abs_sum_sub_expect
+    (univ : Finset (ZMod 5)) zeroScore
+    (fun _ _ y => by unfold zeroScore; split_ifs <;> simp) (a := 5) (by norm_num)
+  refine h.trans ?_
+  simp only [card_univ, ZMod.card]
+  norm_num
 
 /-! ### The Lovász Local Lemma -/
 
