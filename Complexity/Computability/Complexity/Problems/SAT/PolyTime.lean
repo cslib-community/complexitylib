@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 public import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # SAT belongs to NP
@@ -62,8 +63,6 @@ def cnfDecoder : Decoder encCNF := .list (.list (.pair .nat .bool))
 
 namespace SAT
 
-open ComputableTidilyInPolyTime
-
 /-- Listing the variables in order of occurrence is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_vars :
@@ -98,26 +97,23 @@ theorem computableInPolyTime_occurrences :
 theorem computableInPolyTime_clause_length {α : Type} {input : α ↪ List Bool}
     {c : α → Clause ℕ}
     (hc : ComputableInPolyTime c input (encList (encPair encNat encBool))) :
-    ComputableInPolyTime (fun a => (c a).length) input encUnary := by
-  have hc := hc.tidy
-  exact (Clause.computableInPolyTime_length (.of_tidy hc))
+    ComputableInPolyTime (fun a => (c a).length) input encUnary :=
+  Clause.computableInPolyTime_length hc
 
 /-- The number of clauses of a polynomial-time formula, in unary, is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_length {α : Type} {input : α ↪ List Bool} {φ : α → CNF ℕ}
     (hφ : ComputableInPolyTime φ input encCNF) :
-    ComputableInPolyTime (fun a => (φ a).length) input encUnary := by
-  have hφ := hφ.tidy
-  exact (CNF.computableInPolyTime_length (encV := encNat) (.of_tidy hφ))
+    ComputableInPolyTime (fun a => (φ a).length) input encUnary :=
+  CNF.computableInPolyTime_length (encV := encNat) hφ
 
 /-- The number of variable occurrences of a polynomial-time formula, in unary, is
 polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_vars_length {α : Type} {input : α ↪ List Bool}
     {φ : α → CNF ℕ} (hφ : ComputableInPolyTime φ input encCNF) :
-    ComputableInPolyTime (fun a => (φ a).vars.length) input encUnary := by
-  have hφ := hφ.tidy
-  exact (CNF.computableInPolyTime_vars_length (encV := encNat) (.of_tidy hφ))
+    ComputableInPolyTime (fun a => (φ a).vars.length) input encUnary :=
+  CNF.computableInPolyTime_vars_length (encV := encNat) hφ
 
 /-- Reading the certificate at the first occurrence of a variable is polynomial-time. -/
 @[fun_prop]
@@ -146,8 +142,6 @@ theorem computableInPolyTime_clause :
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  have hclause := computableInPolyTime_clause.tidy
-  refine .of_tidy ?_
   fun_prop [verifier, CNF.eval]
 
 /-- Satisfiability is in NP, with certificates of length equal to the encoded formula length. -/

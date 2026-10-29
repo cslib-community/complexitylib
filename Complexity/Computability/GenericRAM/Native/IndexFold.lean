@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.GenericRAM.Native.Combinators
 import Mathlib.Data.List.Range
+import Mathlib.Data.Nat.Size
 
 /-!
 # Streaming folds over binary indices
@@ -93,7 +94,8 @@ theorem length_run_le (body : ℕ × β → β) {n j B : ℕ} (initial : β)
     (encPair encNat encB (run body j initial)).length ≤
       2 * (encNat n).length + 1 + B := by
   rw [length_run]
-  have := ComputableTidilyInO.length_encNat_mono hj
+  have : (encNat j).length ≤ (encNat n).length := by
+    simpa [Nat.size_eq_bits_len] using Nat.size_le_size hj
   omega
 
 /-- The native round is constructed from the existing binary successor and the actual callback
@@ -156,7 +158,8 @@ theorem computableInO {encIn : α ↪ List Bool} {count : α → ℕ} {initial :
       cb.time (run body j (initial a)) ≤ _
     rw [run_index]
     have hs := length_run_le body (initial a) hj (hB a j hj)
-    have hn := ComputableTidilyInO.length_encNat_mono hj
+    have hn : (encNat j).length ≤ (encNat (count a)).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size hj
     have hp := Nat.pow_le_pow_left (by omega :
       (encNat j).length + 1 ≤ (encNat (count a)).length + 1) 2
     have := hR a j hj
@@ -167,7 +170,8 @@ theorem computableInO {encIn : α ↪ List Bool} {count : α → ℕ} {initial :
       cb.space (run body j (initial a)) ≤ _
     rw [run_index]
     have hs := length_run_le body (initial a) hj (hB a j hj)
-    have hn := ComputableTidilyInO.length_encNat_mono hj
+    have hn : (encNat j).length ≤ (encNat (count a)).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size hj
     have := hQ a j hj
     omega
   · intro a j hj

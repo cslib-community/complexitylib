@@ -12,6 +12,11 @@ public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 public import Complexity.Languages.Probabilistic.BitString
 public import Complexity.Probability.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Tactic.PolyTime.Init
 import Complexity.Tactic.PPT
 
 /-!
@@ -67,13 +72,21 @@ theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
     (hseed : ComputableInPolyTime seed input encBits) :
     ComputableInPolyTime
       (fun a => generate (seedBits a) (commonBits a) (generator a) (seed a)) input encBits := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hseedBits
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hcommon
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hgenerator
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hseed
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime]
+  have htakeSeed : ComputableInPolyTime (fun a => (seed a).take (seedBits a)) input encBits :=
+    ComputableInPolyTime.bitsTakeWithInput hseed hseedBits
+  have hdropSeed : ComputableInPolyTime (fun a => (seed a).drop (seedBits a)) input encBits :=
+    ComputableInPolyTime.bitsDropWithInput hseed hseedBits
+  have hgen : ComputableInPolyTime
+      (fun a => generator a ((seed a).take (seedBits a))) input encBits :=
+    hgenerator.comp (ComputableInPolyTime.id'.prod htakeSeed)
+  have happ : ComputableInPolyTime
+      (fun a => generator a ((seed a).take (seedBits a)) ++ (seed a).drop (seedBits a))
+      input encBits :=
+    ComputableInPolyTime.bitsAppend hgen hdropSeed
+  have hlen : ComputableInPolyTime (fun a => commonBits a + 1) input encUnary :=
+    ComputableInPolyTime.unary_succ.comp hcommon
   unfold generate
-  polytime
+  exact ComputableInPolyTime.bitsTakeWithInput happ hlen
 
 attribute [program_certificate] isPolyTime_generate
 

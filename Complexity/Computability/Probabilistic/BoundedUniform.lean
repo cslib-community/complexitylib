@@ -65,19 +65,17 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
     (hwidth_eq : ∀ a, width a = Nat.log 2 (bound a) + 1) :
     IsPPTOn input (encOption encNat)
       (fun a => sampleUniformInterval (bound a) (attempts a)) := by
-  have hb := hbound.tidy
-  have hw := hwidth.tidy
-  have hleft := hb.comp (ComputableTidilyInPolyTime.fst input encNat)
-  have hright := ComputableTidilyInPolyTime.snd input encNat
-  have hmin : ComputableTidilyInPolyTime (fun p : α × ℕ => min (bound p.1) p.2)
+  have hleft := hbound.comp (ComputableInPolyTime.fst input encNat)
+  have hright := ComputableInPolyTime.snd input encNat
+  have hmin : ComputableInPolyTime (fun p : α × ℕ => min (bound p.1) p.2)
       (encPair input encNat) encNat := by
-    have hle := ComputableTidilyInPolyTime.binary_le.comp (hleft.prod hright)
-    convert hle.cond hleft hright using 1
+    have hle := ComputableInPolyTime.binary_le' hleft hright
+    convert hle.ite hleft hright using 1
     funext p
     simp only [min_def, Function.comp_def, decide_eq_true_eq]
   have hs : IsPPTOn input encNat (fun a => sampleBoundedIndex (bound a)) := by
-    apply ((isPPTOn_sampleBinaryNat.preprocess (ComputableInPolyTime.of_tidy hw)).map_with
-      (f := fun a value => min (bound a) value) (.of_tidy hmin)).congr
+    apply ((isPPTOn_sampleBinaryNat.preprocess hwidth).map_with
+      (f := fun a value => min (bound a) value) hmin).congr
     intro a
     rw [sampleBoundedIndex_eq_binary, ← hwidth_eq a]
   have hfind : ComputableInPolyTime
@@ -96,26 +94,41 @@ theorem isPPTOn_sampleIntegerBox {α : Type} {input : α ↪ List Bool}
     (hattempts : ComputableInPolyTime attempts input encUnary) :
     IsPPTOn input (encOption (encList encInt))
       (fun a => sampleIntegerBox (radius a) (dimension a) (attempts a)) := by
-  have hr := hradius.tidy
-  have hb : ComputableInPolyTime (fun a => 2 * radius a + 1) input encUnary :=
-    .of_tidy (by fun_prop)
+  have hb : ComputableInPolyTime (fun a => 2 * radius a + 1) input encUnary := by fun_prop
   have hs := isPPTOn_sampleUniformInterval hb hattempts
-  have hcoordinate : ComputableTidilyInPolyTime
+  have hcoordinate : ComputableInPolyTime
       (fun p : α × Option ℕ => p.2.elim none (fun (i : ℕ) => some ((i : ℤ) - radius p.1)))
       (encPair input (encOption encUnary)) (encOption encInt) := by
-    apply ComputableTidilyInPolyTime.optionElimWithInput (by fun_prop) (by fun_prop)
-    have hrad : ComputableTidilyInPolyTime
+    apply ComputableInPolyTime.optionElimWithInput (by fun_prop) (by fun_prop)
+    have hrad : ComputableInPolyTime
         (fun p : (α × Option ℕ) × ℕ => radius p.1.1)
         (encPair (encPair input (encOption encUnary)) encUnary) encUnary := by
       fun_prop
-    have hz := ComputableTidilyInPolyTime.int_natCast_sub.comp
-      ((ComputableTidilyInPolyTime.snd _ _).prod hrad)
-    exact (ComputableTidilyInPolyTime.optionSome encInt).comp hz
-  have hcollect : ComputableTidilyInPolyTime collectBox
+    have hz : ComputableInPolyTime (fun q : ℕ × ℕ => (q.1 : ℤ) - q.2)
+        (encPair encUnary encUnary) encInt := by
+      have hfst := ComputableInPolyTime.fst encUnary encUnary
+      have hsnd := ComputableInPolyTime.snd encUnary encUnary
+      have hpos : ComputableInPolyTime (fun q : ℕ × ℕ => ((q.1 - q.2 : ℕ) : ℤ))
+          (encPair encUnary encUnary) encInt :=
+        (ComputableInPolyTime.bitsCons (ComputableInPolyTime.const false)
+          (ComputableInPolyTime.unary_sub.comp (hfst.prod hsnd))).of_enc_eq fun _ => rfl
+      have hneg : ComputableInPolyTime (fun q : ℕ × ℕ => Int.negSucc (q.2 - q.1 - 1))
+          (encPair encUnary encUnary) encInt :=
+        (ComputableInPolyTime.bitsCons (ComputableInPolyTime.const true)
+          (ComputableInPolyTime.unary_sub.comp
+            ((ComputableInPolyTime.unary_sub.comp (hsnd.prod hfst)).prod
+              (ComputableInPolyTime.const 1)))).of_enc_eq fun _ => rfl
+      have heq (q : ℕ × ℕ) : (q.1 : ℤ) - q.2 =
+          if decide (q.2 ≤ q.1) then ((q.1 - q.2 : ℕ) : ℤ) else Int.negSucc (q.2 - q.1 - 1) := by
+        split_ifs with hq <;> simp_all only [decide_eq_true_eq] <;> lia
+      simpa only [← heq] using (ComputableInPolyTime.unary_le' hsnd hfst).ite hpos hneg
+    exact (ComputableInPolyTime.optionSome encInt).comp
+      (hz.comp ((ComputableInPolyTime.snd _ _).prod hrad))
+  have hcollect : ComputableInPolyTime collectBox
       (encList (encOption encInt)) (encOption (encList encInt)) := by
     unfold collectBox
     fun_prop
-  exact (((hs.map_with (.of_tidy hcoordinate)).replicate hdimension).map (.of_tidy hcollect))
+  exact ((hs.map_with hcoordinate).replicate hdimension).map hcollect
 
 /-- The complete framed optional output has a direct linear bound in dimension and unary
 radius; failure encodes as the empty word. -/

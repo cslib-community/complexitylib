@@ -79,7 +79,10 @@ theorem isPPTOn_publicKeyGame (bit : Bool) :
       (fun p => publicKeyGame E adversary bit p.1 p.2) := by
   have hchoose := hadversary.choose
   have hguess := hadversary.guess
-  have hpublic := (ComputableTidilyInPolyTime.snd encUnary encPublicKey).encoded
+  have hpublic : ComputableInPolyTime
+      (fun p : ℕ × (List Bool × List (List Bool)) => encPublicKey p.2)
+      (encPair encUnary encPublicKey) encBits :=
+    (ComputableInPolyTime.snd encUnary encPublicKey).of_enc_eq fun _ => rfl
   unfold publicKeyGame
   dsimp only [encPublicKey, Encryption.encCircularPublicKey] at hpublic ⊢
   ppt
@@ -99,14 +102,15 @@ theorem isPPT_zeroAdversary
         (fun p => E.encryptBits p.1.1 p.1.2 (List.replicate p.2.2.length false)) := by
       apply Scheme.isPPTOn_encryptBits hencrypt <;> fun_prop
     apply hbits.bind_with
-    have hpublic : ComputableTidilyInPolyTime
+    have hpublic : ComputableInPolyTime
         (fun p : ((ℕ × List Bool) × (List Bool × List Bool)) × List (List Bool) =>
           (p.1.1.2, p.2))
         (encPair (encPair (encPair encUnary encBits) (encPair encBits encBits))
           (encList encBits)) encPublicKey := by
       dsimp only [encPublicKey, Encryption.encCircularPublicKey]
       fun_prop
-    exact hchoose.preprocess (by fun_prop) hpublic.encoded
+    exact hchoose.on.preprocess
+      (((ComputableInPolyTime.fst _ _).fst'.fst').prod (hpublic.of_enc_eq fun _ => rfl))
   · exact hadversary.guess
 
 omit hencrypt hadversary in

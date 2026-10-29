@@ -141,8 +141,8 @@ theorem PolyTimeReducible.polyTimeTuringReducible
   obtain ⟨f, hf, hAB⟩ := h
   refine ⟨fun a => decide (encB (f a) ∈ encB '' B), ?_, fun a => ?_⟩
   · rw [computableInPolyTimeWithOracle_iff_polyTimeOracleProgram]
-    refine PolyTimeOracleProgram.of_query (req := fun a => encB (f a)) ?_ fun _ hA => hA ▸ rfl
-    exact .of_tidy hf.tidy
+    exact PolyTimeOracleProgram.of_query (req := fun a => encB (f a)) hf.encoding_comp
+      fun _ hA => hA ▸ rfl
   · dsimp only
     rw [decide_eq_true_iff, encB.injective.mem_set_image, hAB a]
 
@@ -255,8 +255,8 @@ theorem computableInPolyTimeWithOracle_truthTableAnswers {r : α → ℕ} {q : �
   classical
   have hbatch : ComputableInPolyTime
       (fun a => (List.range (r a)).map fun i => encB (q (a, i))) encA (encList encBits) :=
-    .of_tidy (ComputableTidilyInPolyTime.mapWithInput
-      (ComputableTidilyInPolyTime.range.comp hr.tidy) hq.tidy.encoded)
+    ComputableInPolyTime.mapWithInput
+      (ComputableInPolyTime.range.comp hr) hq.encoding_comp
   have hq_mem := (computableInPolyTimeWithOracle_map_mem (encB '' B)).preprocess hbatch
   convert hq_mem using 2
   rw [truthTableAnswers_eq_map_range, List.map_map]
@@ -341,11 +341,11 @@ private theorem isOraclePPTOn_oracleAnswerStep {k : ℕ} {Control : Type} [Finit
       (fun cfg =>
         OracleComp.interpret ProbOracleComp.query (oracleAnswerStep machine prog cfg)) := by
   simp only [interpret_oracleAnswerStep]
-  exact Probability.IsOraclePPTOn.cond
-    ((ComputableTidilyInPolyTime.of_finite Option.isSome).comp machine.pendingQuery_pt)
-    ((hprog.preprocess machine.pendingRequest_pt).map_with
-      (f := fun cfg b => machine.receiveBit (cfg, b)) machine.receiveBit_pt)
-    machine.localStep_pt.isOraclePPTOn
+  exact Probability.IsOraclePPTOn.cond'
+    ((ComputableInPolyTime.of_finite Option.isSome).comp (.of_tidy machine.pendingQuery_pt))
+    ((hprog.preprocess' (.of_tidy machine.pendingRequest_pt)).map_with'
+      (f := fun cfg b => machine.receiveBit (cfg, b)) (.of_tidy machine.receiveBit_pt))
+    (ComputableInPolyTime.of_tidy machine.localStep_pt).isOraclePPTOn
 
 private theorem spaceBound_of_mem_support_oracleAnswerStep {k : ℕ} {Control : Type}
     (machine : Turing.MultiTapePTM k Bool Control Unit)
@@ -397,20 +397,29 @@ theorem ComputableInPolyTimeWithOracle.of_mem_PWithOracle {O₁ O₂ : Set (List
   obtain ⟨program, hcert, hprogram⟩ := hf
   obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
   obtain ⟨cf, hcf⟩ := length_encFiniteConfig_le (k := k) (State := Fin m) (Oracle := Unit)
-  have hcount : ComputableTidilyInPolyTime (fun a => c * ((encA a).length + 1) ^ d) encA
+  have hcount : ComputableInPolyTime (fun a => c * ((encA a).length + 1) ^ d) encA
       encUnary :=
-    ((ComputableTidilyInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableTidilyInPolyTime.encoding_length encA)).of_enc_eq fun a => by simp
-  have hinit : ComputableTidilyInPolyTime
+    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
+      (ComputableInPolyTime.encoding_length encA)).of_enc_eq fun a => by simp
+  have hinit : ComputableInPolyTime
       (fun a => Turing.MultiTapeMachine.FiniteConfig.init (k := k) (Oracle := Unit)
         machine.initial (encA a))
-      encA encFiniteConfig :=
-    ComputableTidilyInPolyTime.finiteConfig_init (by fun_prop) _
+      encA encFiniteConfig := by
+    refine (((ComputableInPolyTime.of_eq fun _ => rfl :
+        ComputableInPolyTime encA encA encBits).prod
+      (ComputableInPolyTime.const (encOut :=
+        encPair (encFinite (Option (Fin m)))
+          (encPair encUnary (encPair (encPi (Index := Fin k) (encBiTape encBool)) encBits)))
+        (some machine.initial, 1, fun _ => Cslib.Turing.BiTape.nil, []))).prod
+      (ComputableInPolyTime.const
+        (encOut := encPi (Index := Unit) (encPair encBits (encBiTape encBool)))
+        fun _ : Unit => ([], Cslib.Turing.BiTape.nil))).of_enc_eq fun a => ?_
+    simp [Turing.MultiTapeMachine.FiniteConfig.init, Turing.FiniteCfg.init]
   have hbound : PolyBounded (fun a => (encA a).length)
       (fun a => cf * ((encA a).length + c * ((encA a).length + 1) ^ d + 1 + 1)) :=
     PolyBounded.mono (PolyBounded.of_polynomiallyBounded (fun a => (encA a).length)
       (bound := fun L => cf * (L + c * (L + 1) ^ d + 1 + 1)) (by fun_prop)) fun _ => le_rfl
-  have hit := (Probability.IsOraclePPTOn.iterate_spec hcount hinit
+  have hit := (Probability.IsOraclePPTOn.iterate_spec' hcount hinit
     (isOraclePPTOn_oracleAnswerStep machine hprog)
     (fun a i cfg => Turing.MultiTapeMachine.FiniteConfig.SpaceBound (encA a).length i 1 cfg)
     (fun _ => Turing.MultiTapeMachine.FiniteConfig.spaceBound_init _ _ _)
@@ -422,7 +431,7 @@ theorem ComputableInPolyTimeWithOracle.of_mem_PWithOracle {O₁ O₂ : Set (List
     OracleComp.iterate (c * ((encA a).length + 1) ^ d) (oracleAnswerStep machine prog)
       (Turing.MultiTapeMachine.FiniteConfig.init machine.initial (encA a)), ?_, fun a => ?_⟩
   · simp only [OracleComp.interpret_map, OracleComp.interpret_iterate]
-    exact hit.map (by fun_prop)
+    exact hit.map' (by fun_prop)
   · rw [OracleComp.interpret_map, OracleComp.interpret_id_iterate]
     simp only [interpret_id_oracleAnswerStep machine hg]
     change ((machine.answerStep (languageOracle O₁))^[c * ((encA a).length + 1) ^ d]

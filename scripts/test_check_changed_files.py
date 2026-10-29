@@ -51,7 +51,29 @@ class DocNameTests(unittest.TestCase):
         return c.unresolved_doc_names("Complexity/Demo.lean", text, c.known_names(ileans), syntax)
 
     def test_listed_names_resolve(self) -> None:
-        self.assertEqual(self.check(MODULE), [])
+        self.assertEqual(self.check(MODULE + "-/\n"), [])
+
+    def test_module_doc_examples_in_literals_and_comments_are_ignored(self) -> None:
+        doc = "/-!\n## Main results\n\n* `Missing.example`: example only.\n-/"
+        for text in (f'def text := "{doc}"\n', f'def text := r##"{doc}"##\n',
+                     "/- Example:\n" + doc + "\n-/\n",
+                     "-- " + doc.replace("\n", "\n-- ") + "\n"):
+            with self.subTest(text=text):
+                self.assertEqual(self.check(text), [])
+
+    def test_module_doc_names_after_nested_comments_are_checked(self) -> None:
+        text = ("/-!\n# Demo\n/- Outer /- nested -/ comment -/\n\n"
+                "## Main results\n\n* `Missing.actual`: must be checked.\n-/\n")
+        self.assertEqual(self.check(text), [
+            "Complexity/Demo.lean:7: `Missing.actual` is listed in a \"Main …\" section of the "
+            "module docstring but names no declaration"])
+
+    def test_declaration_docstrings_are_not_module_docs(self) -> None:
+        text = ("/-!\n## Main results\n\n* `thing_spec`: a real module entry.\n-/\n"
+                "/--\n## Main results\n\n* `Missing.example`: a declaration's example.\n-/\n"
+                "theorem exampleTheorem : True := trivial\n")
+        self.assertEqual(c.listed_identifiers(text), ["thing_spec"])
+        self.assertEqual(self.check(text), [])
 
     def test_missing_name_is_reported_once_with_its_line(self) -> None:
         text = MODULE + "\n## Main statements\n\n* `Demo.renamed`, `renamed`: gone.\n-/\n"

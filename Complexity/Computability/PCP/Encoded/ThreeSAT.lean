@@ -46,7 +46,7 @@ complete Boolean tables on the eight-symbol alphabet `Fin 3 → Bool`.
 
 namespace Cslib.PCP.Encoded.Graph
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Check the first three literal positions against a clause label. -/
 def clauseHolds (κ : Clause ℕ) (a : Fin 3 → Bool) : Bool :=
@@ -85,7 +85,6 @@ def ofCompactCNF {V : Type} [DecidableEq V] (φ : CNF V) :
 theorem isPolyTime_clauseHolds :
     ComputableInPolyTime (fun p : Clause ℕ × (Fin 3 → Bool) => clauseHolds p.1 p.2)
       (encPair (encList (encPair encUnary encBool)) (encPi encBool)) encBool := by
-  refine .of_tidy ?_
   unfold clauseHolds
   apply anyWithInput (encA := encFinEnum (Fin 3)) (by fun_prop)
   apply finite_cases (branch := fun (i : Fin 3) (p : (Clause ℕ × (Fin 3 → Bool)) × Fin 3) =>
@@ -93,7 +92,6 @@ theorem isPolyTime_clauseHolds :
   intro i
   apply optionElimWithInput (encB := encPair encUnary encBool) <;> fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The per-edge program charges clause lookup, endpoints, and all 64 entries of its relation. -/
 @[fun_prop]
 theorem isPolyTime_cnfEdge :
@@ -101,21 +99,19 @@ theorem isPolyTime_cnfEdge :
       (encPair (encList (encList (encPair encUnary encBool)))
         (encPair encUnary (encFinEnum (Fin 3))))
       (Edge.encoding (encPi (encPi encBool))) := by
-  refine .of_tidy ?_
-  have hindex : ComputableTidilyInPolyTime (Fin.val (n := 3))
+  have hindex : ComputableInPolyTime (Fin.val (n := 3))
       (encFinEnum (Fin 3)) encUnary := .of_finite _
-  have hclause : ComputableTidilyInPolyTime
+  have hclause : ComputableInPolyTime
       (fun p : CNF ℕ × (ℕ × Fin 3) => p.1.getD p.2.1 [])
       (encPair (encList (encList (encPair encUnary encBool)))
         (encPair encUnary (encFinEnum (Fin 3)))) (encList (encPair encUnary encBool)) := by
     fun_prop
-  have hliteral := ComputableTidilyInPolyTime.getElem? (encA := encPair encUnary encBool)
+  have hliteral := ComputableInPolyTime.getElem? (encA := encPair encUnary encBool)
     hclause (hindex.comp ((snd _ _).snd'))
   unfold cnfEdge
-  refine ComputableInPolyTime.tidy
-    (Edge.isPolyTime_mk (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy ?_))
+  refine Edge.isPolyTime_mk (by fun_prop) (by fun_prop) ?_
   refine pi fun a => pi fun b => ?_
-  have ha : ComputableTidilyInPolyTime a (encFinEnum (Fin 3)) encBool := .of_finite _
+  have ha : ComputableInPolyTime a (encFinEnum (Fin 3)) encBool := .of_finite _
   fun_prop
 
 /-- Constructing all edges and copying their constraints is polynomial-time. -/
@@ -133,7 +129,6 @@ theorem isPolyTime_ofCNF :
   unfold ofCNF
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The complete construction accepts any variable encoding and charges compact renaming. -/
 @[fun_prop]
 theorem isPolyTime_ofCompactCNF {V Input : Type} [DecidableEq V]
@@ -143,7 +138,7 @@ theorem isPolyTime_ofCompactCNF {V Input : Type} [DecidableEq V]
     ComputableInPolyTime (fun x => ofCompactCNF (formula x))
       input (encoding (encPi (encPi encBool))) := by
   unfold ofCompactCNF
-  polytime
+  fun_prop
 
 /-- Even numbers name variables; odd numbers name clause positions. -/
 def cnfVertexNumber {m : ℕ} : ℕ ⊕ Fin m → ℕ

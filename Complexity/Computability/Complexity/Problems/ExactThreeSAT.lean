@@ -143,7 +143,7 @@ def toExactThreeSAT (φ : CNF ℕ) : CNF ℕ := φ.map padClause
 @[fun_prop]
 theorem computableInPolyTime_toExactThreeSAT :
     ComputableInPolyTime toExactThreeSAT encCNF encCNF :=
-  .of_tidy (ComputableTidilyInPolyTime.map computableInPolyTime_padClause.tidy)
+  ComputableInPolyTime.map computableInPolyTime_padClause
 
 /-- A formula is in `ThreeSAT` exactly when padding its clauses puts it in `ExactThreeSAT`. -/
 theorem mem_ExactThreeSAT_toExactThreeSAT_iff (φ : CNF ℕ) :

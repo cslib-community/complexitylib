@@ -57,8 +57,7 @@ theorem isPPTOn_publicKeyGame (bit : Bool) :
   let choiceEncoding := encPair (encPair encBool encBool) encBits
   have hn := ComputableInPolyTime.fst encUnary encPublicKey
   have hartifact := ComputableInPolyTime.snd encUnary encPublicKey
-  have hpublic := ComputableInPolyTime.of_tidy
-    (ComputableTidilyInPolyTime.snd encUnary encPublicKey).encoded
+  have hpublic := (ComputableInPolyTime.snd encUnary encPublicKey).encoding_comp
   have hchoose := hadversary.choose.on.preprocess (hn.prod hpublic)
   have hfirst := (ComputableInPolyTime.listGetD (encA := encBits) []).comp
     (hartifact.fst'.prod (ComputableInPolyTime.const 0))
@@ -94,7 +93,6 @@ theorem isPPT_zeroLinkAdversary
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     {depth : ℕ → ℕ} (hdepth : ComputableInPolyTime depth encUnary encUnary) :
     (zeroLinkAdversary E depth adversary).IsPPT := by
-  have hdepth := hdepth.tidy
   have hchoose := hadversary.choose
   have hguess := hadversary.guess
   constructor
@@ -103,7 +101,7 @@ theorem isPPT_zeroLinkAdversary
     dsimp only [zeroLinkAdversary]
     have hrest := (hkeyGen.preprocess
       (ComputableInPolyTime.fst encUnary encBits)).replicate
-        (.of_tidy (hdepth.comp (ComputableTidilyInPolyTime.fst encUnary encBits)))
+        (hdepth.comp (ComputableInPolyTime.fst encUnary encBits))
     apply hrest.bind_with
     have hlinks : IsPPTOn
         (encPair (encPair encUnary encBits) (encList (encPair encBits encBits)))
@@ -111,32 +109,33 @@ theorem isPPT_zeroLinkAdversary
         (fun p => E.encryptZeroKeyLinks p.1.1 ((p.1.2, (p.2.headD ([], [])).2) :: p.2)) := by
       apply Scheme.isPPTOn_encryptZeroKeyLinks hencrypt <;> fun_prop
     apply hlinks.bind_with
-    have hpublic : ComputableTidilyInPolyTime
+    have hpublic : ComputableInPolyTime
         (fun p : ((ℕ × List Bool) × List (List Bool × List Bool)) ×
           List (List (List Bool)) => (p.1.1.2 :: p.1.2.map Prod.fst, p.2))
         (encPair (encPair (encPair encUnary encBits) (encList (encPair encBits encBits)))
           (encList (encList encBits))) encPublicKey := by
       unfold encPublicKey
       fun_prop
-    exact hchoose.preprocess (by fun_prop) hpublic.encoded
+    exact hchoose.on.preprocess
+      (((ComputableInPolyTime.fst _ _).fst'.fst').prod (hpublic.of_enc_eq fun _ => rfl))
   · change IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
       (fun p => adversary.guess p.1 p.2.1 (false :: p.2.2))
     ppt
 
 omit hencrypt hadversary in
-private theorem computableTidilyInPolyTime_tagLeveledChoice (first second : Bool) :
-    ComputableTidilyInPolyTime (tagLeveledChoice first second)
+private theorem computableInPolyTime_tagLeveledChoice (first second : Bool) :
+    ComputableInPolyTime (tagLeveledChoice first second)
       (encPair (encPair encBool encBool) encBits)
       (encPair (encPair encBool encBool) encBits) := by
   unfold tagLeveledChoice
-  exact (ComputableTidilyInPolyTime.fst _ _).prod
-    (ComputableTidilyInPolyTime.bitsCons (by fun_prop)
-      (ComputableTidilyInPolyTime.bitsCons (by fun_prop)
-        (ComputableTidilyInPolyTime.snd _ _)))
+  exact (ComputableInPolyTime.fst _ _).prod
+    (ComputableInPolyTime.bitsCons (by fun_prop)
+      (ComputableInPolyTime.bitsCons (by fun_prop)
+        (ComputableInPolyTime.snd _ _)))
 
 omit hencrypt hadversary in
-private theorem computableTidilyInPolyTime_swapLeveledChoice :
-    ComputableTidilyInPolyTime swapLeveledChoice
+private theorem computableInPolyTime_swapLeveledChoice :
+    ComputableInPolyTime swapLeveledChoice
       (encPair (encPair encBool encBool) encBits)
       (encPair (encPair encBool encBool) encBits) := by
   unfold swapLeveledChoice
@@ -166,42 +165,41 @@ theorem isPPT_leveledAdversary
       (input := encPair (encPair encUnary encBits) encBool)).bind_with
     apply IsPPTOn.cond (by fun_prop)
     · apply IsPPTOn.cond (by fun_prop)
-      · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
+      · exact (ComputableInPolyTime.const rejectLeveledChoice).isPPTOn
       · apply (isPPTOn_sampleDyadicCoin
           (hdepth.comp (by fun_prop)) (by fun_prop)).bind_with
         apply (isPPTOn_sampleDyadicCoin
           (hcapacity.comp (by fun_prop)) (by fun_prop)).bind_with
-        apply IsPPTOn.cond (by fun_prop)
-        · apply IsPPTOn.cond (by fun_prop)
-          · exact (hzero.choose.preprocess (by fun_prop) (by fun_prop)).map
-              (.of_tidy (computableTidilyInPolyTime_tagLeveledChoice true false))
-          · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
-        · exact (ComputableTidilyInPolyTime.const rejectLeveledChoice).isPPTOn
+        apply IsPPTOn.cond (by polytime)
+        · apply IsPPTOn.cond (by polytime)
+          · exact (hzero.choose.on.preprocess (by fun_prop)).map
+              (computableInPolyTime_tagLeveledChoice true false)
+          · exact (ComputableInPolyTime.const rejectLeveledChoice).isPPTOn
+        · exact (ComputableInPolyTime.const rejectLeveledChoice).isPPTOn
     · apply IsPPTOn.cond (by fun_prop)
-      · exact (hlinkTrue.choose.preprocess (by fun_prop) (by fun_prop)).map
-          (.of_tidy ((computableTidilyInPolyTime_tagLeveledChoice false true).comp
-            computableTidilyInPolyTime_swapLeveledChoice))
-      · exact (hlinkFalse.choose.preprocess (by fun_prop) (by fun_prop)).map
-          (.of_tidy (computableTidilyInPolyTime_tagLeveledChoice false false))
+      · exact (hlinkTrue.choose.on.preprocess (by fun_prop)).map
+          ((computableInPolyTime_tagLeveledChoice false true).comp
+            computableInPolyTime_swapLeveledChoice)
+      · exact (hlinkFalse.choose.on.preprocess (by fun_prop)).map
+          (computableInPolyTime_tagLeveledChoice false false)
   · dsimp only [leveledAdversary]
-    have hstate : ComputableTidilyInPolyTime
+    have hstate : ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool => p.2.1)
         (encPair encUnary (encPair encBits encBits)) encBits := by fun_prop
-    have htail1 := ComputableTidilyInPolyTime.bitsTail.comp hstate
-    have htail2 := ComputableTidilyInPolyTime.bitsTail.comp htail1
-    have hhead1 := (ComputableTidilyInPolyTime.headD (encA := encBool) true).comp hstate
-    have hhead2 := (ComputableTidilyInPolyTime.headD (encA := encBool) true).comp htail1
+    have htail1 := ComputableInPolyTime.bitsTail.comp hstate
+    have htail2 := ComputableInPolyTime.bitsTail.comp htail1
+    have hhead1 := (ComputableInPolyTime.headD (encA := encBool) true).comp hstate
+    have hhead2 := (ComputableInPolyTime.headD (encA := encBool) true).comp htail1
     have hforward : ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool => (p.1, p.2.1.tail.tail, p.2.2))
         (encPair encUnary (encPair encBits encBits))
         (encPair encUnary (encPair encBits encBits)) :=
-      .of_tidy ((ComputableTidilyInPolyTime.fst _ _).prod
-        (htail2.prod (by fun_prop)))
-    apply IsPPTOn.cond hhead1
-    · apply IsPPTOn.cond hhead2
-      · exact (ComputableTidilyInPolyTime.const false).isPPTOn
+      (ComputableInPolyTime.fst _ _).prod (htail2.prod (by fun_prop))
+    apply IsPPTOn.cond (by polytime)
+    · apply IsPPTOn.cond (by polytime)
+      · exact (ComputableInPolyTime.const false).isPPTOn
       · exact hzero.guess.preprocess hforward
-    · apply IsPPTOn.cond hhead2
+    · apply IsPPTOn.cond (by polytime)
       · exact hlinkTrue.guess.preprocess hforward
       · exact hlinkFalse.guess.preprocess hforward
 

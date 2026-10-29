@@ -39,7 +39,7 @@ public section
 
 namespace Cslib.Circuits.Boolean
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 local notation "Code" => List (Op × List ℕ) × List ℕ
 
@@ -77,13 +77,14 @@ theorem sumPairsCode_eq_code {n w : ℕ} (cs : List (Circuit signature n (w + w)
   rfl
 
 /-- Shared zero words are generated in time polynomial in unary output width and binary arity. -/
-private theorem computableTidilyInPolyTime_falseWordCode
+private theorem computableInPolyTime_falseWordCode
     {α : Type} {enc : α ↪ List Bool} {n w : α → ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encNat)
-    (hw : ComputableTidilyInPolyTime w enc encUnary) :
-    ComputableTidilyInPolyTime (fun a => falseWordCode (n a) (w a)) enc encCode := by
-  exact (const (encMid := encList encGate) [(Op.const false, [])]).prod
-    (replicate hw hn)
+    (hn : ComputableInPolyTime n enc encNat)
+    (hw : ComputableInPolyTime w enc encUnary) :
+    ComputableInPolyTime (fun a => falseWordCode (n a) (w a)) enc encCode := by
+  have hrep : ComputableInPolyTime (fun a => List.replicate (w a) (n a)) enc (encList encNat) := by
+    fun_prop
+  exact (const (encOut := encList encGate) [(Op.const false, [])]).prod hrep
 
 /-- Pair generation charges all supplied leaf code. -/
 @[fun_prop] theorem computableInPolyTime_pairWithZeroCode
@@ -91,14 +92,8 @@ private theorem computableTidilyInPolyTime_falseWordCode
     (hn : ComputableInPolyTime n enc encNat)
     (hw : ComputableInPolyTime w enc encUnary)
     (hC : ComputableInPolyTime C enc encCode) :
-    ComputableInPolyTime (fun a => pairWithZeroCode (n a) (w a) (C a)) enc encCode := by
-  have hn := hn.tidy
-  have hw := hw.tidy
-  have hC := hC.tidy
-  apply ComputableInPolyTime.of_tidy
-  unfold pairWithZeroCode
-  exact (computableInPolyTime_appendCode (.of_tidy hn) (.of_tidy hC)
-    (.of_tidy (computableTidilyInPolyTime_falseWordCode hn hw))).tidy
+    ComputableInPolyTime (fun a => pairWithZeroCode (n a) (w a) (C a)) enc encCode :=
+  computableInPolyTime_appendCode hn hC (computableInPolyTime_falseWordCode hn hw)
 
 /-- The native generator charges the complete leaf list and both reduction stages. -/
 @[fun_prop] theorem computableInPolyTime_sumPairsCode
@@ -106,16 +101,11 @@ private theorem computableTidilyInPolyTime_falseWordCode
     (hn : ComputableInPolyTime n enc encNat)
     (hw : ComputableInPolyTime w enc encUnary)
     (hcs : ComputableInPolyTime cs enc (encList encCode)) :
-    ComputableInPolyTime (fun a => sumPairsCode (n a) (w a) (cs a)) enc encCode := by
-  have hn := hn.tidy
-  have hw := hw.tidy
-  have hcs := hcs.tidy
-  apply ComputableInPolyTime.of_tidy
-  unfold sumPairsCode
-  exact (computableInPolyTime_compCode (.of_tidy hn)
-    (.of_tidy (computableInPolyTime_carryLookaheadAdd.tidy.comp hw))
-    (computableInPolyTime_balancedCode (.of_tidy hn)
-      (.of_tidy (computableInPolyTime_csa4to2.tidy.comp hw))
-      (.of_tidy (computableTidilyInPolyTime_falseWordCode hn (by fun_prop))) (.of_tidy hcs))).tidy
+    ComputableInPolyTime (fun a => sumPairsCode (n a) (w a) (cs a)) enc encCode :=
+  computableInPolyTime_compCode hn
+    (computableInPolyTime_carryLookaheadAdd.comp hw)
+    (computableInPolyTime_balancedCode hn
+      (computableInPolyTime_csa4to2.comp hw)
+      (computableInPolyTime_falseWordCode hn (by fun_prop)) hcs)
 
 end Cslib.Circuits.Boolean

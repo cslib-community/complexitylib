@@ -63,7 +63,7 @@ example {α β : Type*} {a : α ↪ List Bool} {b : β ↪ List Bool}
 open Lean Elab Command in
 run_cmd do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInBigO,
+      `Turing.MultiTapeTM.ComputableTidilyInO,
       `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInSpace,
       `Turing.MultiTapeTM.ComputableTidilyInPolySpace] do
     if (← getEnv).contains name then
