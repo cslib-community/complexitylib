@@ -18,6 +18,11 @@ The native catalogue enumerates the existing residue classes, chunks and pieces.
 identify its actual output count and per-instance records with that finite construction. Matrix
 meaning and padding reuse `MatrixSpec` and its existing writer-entry formulas.
 
+The [PreparationAdjacency consumer extension][adjacency] connects these cells to finite adjacency,
+deriving piece coordinates and the padding bound.
+
+[adjacency]: /Complexity/Algorithms/WordRAM/ExactTriangle/PreparationAdjacency.lean
+
 ## Main results
 
 * `PreparationSpec.count_eq_card`: the actual output counter is the finite instance cardinality.
