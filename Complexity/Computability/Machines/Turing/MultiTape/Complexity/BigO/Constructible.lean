@@ -19,8 +19,8 @@ import Mathlib.Tactic.Ring
 /-!
 # Lengths, comparisons and unary conversion within given bounds
 
-Routines that compute resource bounds from an input, with tidy computability up to constants
-(`Turing.MultiTapeTM.ComputableTidilyInO`): the length of a bit word in binary, by a binary
+Routines that compute resource bounds from an input, with computability up to constants
+(`Turing.MultiTapeTM.ComputableInO`): the length of a bit word in binary, by a binary
 counter; the comparison of two unary numbers, by counting down; and the conversion of a number from
 binary to unary, by counting up. They are the building blocks of constructible resource bounds and
 of the diagonal machines of the hierarchy theorems. The number of binary digits of `m` is
@@ -32,11 +32,11 @@ bounds linear in the counted value.
 * `Turing.MultiTapeTM.two_pow_length_encNat_le`: the binary digits of `m` are logarithmic.
 * `Turing.MultiTapeTM.exists_pow_length_encNat_le`: every power of the number of binary digits of
   `m` is `O(m + 1)`.
-* `Turing.MultiTapeTM.ComputableTidilyInO.lengthNat`: the length of a bit word in binary, within
+* `Turing.MultiTapeTM.ComputableInO.lengthNat`: the length of a bit word in binary, within
   quadratic time and linear space.
-* `Turing.MultiTapeTM.ComputableTidilyInO.unaryLe`: the comparison of unary numbers, within
+* `Turing.MultiTapeTM.ComputableInO.unaryLe`: the comparison of unary numbers, within
   quadratic time and linear space.
-* `Turing.MultiTapeTM.ComputableTidilyInO.natToUnary`: from binary to unary, within cubic time and
+* `Turing.MultiTapeTM.ComputableInO.natToUnary`: from binary to unary, within cubic time and
   linear space.
 -/
 
@@ -68,14 +68,14 @@ theorem exists_pow_length_encNat_le (d : ℕ) :
 
 /-! ### Lengths and comparisons, computed -/
 
-namespace ComputableTidilyInO
+namespace ComputableInO
 
 /-- The length of a bit word in binary, by a binary counter, within quadratic time and linear
 space. -/
-theorem lengthNat : ComputableTidilyInO (fun l : List Bool => l.length) encBits encNat
+theorem lengthNat : ComputableInO (fun l : List Bool => l.length) encBits encNat
     (fun l => (l.length + 1) ^ 2) fun l => l.length + 1 := by
   obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 2
-  have hstep := ComputableInO.natSucc.tidy.comp (fst encNat encBool)
+  have hstep := natSucc.comp (fst encNat encBool)
   have hlen (x : List Bool) (i : ℕ) :
       (List.take i x).foldl (fun n _ => n + 1) 0 = min i x.length := by
     simp [List.foldl_const]
@@ -111,10 +111,11 @@ theorem lengthNat : ComputableTidilyInO (fun l : List Bool => l.length) encBits 
   · simp [List.foldl_const]
 
 /-- The comparison of unary numbers, by counting down, within quadratic time and linear space. -/
-theorem unaryLe : ComputableTidilyInO (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
+theorem unaryLe : ComputableInO (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
     (encPair encUnary encUnary) encBool (fun p => ((encPair encUnary encUnary p).length + 1) ^ 2)
     fun p => (encPair encUnary encUnary p).length + 1 := by
-  have hstep := (ComputableTidilyInDegree.unary_pred.inO_one).comp (fst encUnary encBool)
+  have hstep :=
+    ComputableTidilyInDegree.unary_pred.inO_one.computableInO.comp (fst encUnary encBool)
   have hrep (a b : ℕ) : (List.replicate b true).foldl (fun n _ => n - 1) a = a - b := by
     induction b generalizing a with
     | zero => rfl
@@ -142,7 +143,7 @@ theorem unaryLe : ComputableTidilyInO (fun p : ℕ × ℕ => decide (p.1 ≤ p.2
       rw [List.take_replicate, hrep]
       simp only [length_encPair, encUnary_apply, List.length_replicate]
       omega)
-  have hz := (ComputableTidilyInDegree.unary_isZero.inO_one).comp_linear h
+  have hz := ComputableTidilyInDegree.unary_isZero.inO_one.computableInO.comp_linear h
   refine (hz.mono 16 (fun p => ?_) fun p => ?_).of_enc_eq fun p => ?_
   · simp only [length_encPair, encUnary_apply, List.length_replicate,
       encBits_apply]
@@ -152,10 +153,10 @@ theorem unaryLe : ComputableTidilyInO (fun p : ℕ × ℕ => decide (p.1 ≤ p.2
     omega
   · simp only [Function.comp_apply, hrep, Nat.sub_eq_zero_iff_le]
 
-end ComputableTidilyInO
+end ComputableInO
 
 /-- **From binary to unary**, by counting down: within time `O((n + 1) ^ 3)` and space `O(n)`. -/
-theorem ComputableTidilyInO.natToUnary : ComputableTidilyInO (fun n : ℕ => n) encNat encUnary
+theorem ComputableInO.natToUnary : ComputableInO (fun n : ℕ => n) encNat encUnary
     (fun n => (n + 1) ^ 3) fun n => n := by
   have hiter (n : ℕ) : (· + 1)^[n] 0 = n := by
     induction n with
@@ -163,13 +164,12 @@ theorem ComputableTidilyInO.natToUnary : ComputableTidilyInO (fun n : ℕ => n) 
     | succ n ih => rw [Function.iterate_succ_apply', ih]
   have h := (ComputableInO.iterate (n := fun n : ℕ => n) (init := fun _ => 0)
     (step := (· + 1)) (encIn := encNat) (encB := encUnary)
-    (ComputableTidilyInO.of_linear (.of_eq fun _ => rfl)).computableInO
-    (ComputableTidilyInO.const 0).computableInO
+    (.of_linear (.of_eq fun _ => rfl)) (.const 0)
     ComputableTidilyInDegree.unary_succ.inO_one.computableInO (R := fun n => n) (Q := fun n => n)
     (B := fun n => n)
     (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)
     (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)
-    (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)).tidy
+    (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk))
   refine (h.of_enc_eq fun n => by rw [hiter]).mono 8 (fun n => ?_) fun n => ?_
   all_goals
     have := Universal.length_encNat_le n

@@ -91,12 +91,12 @@ def lenAdversary : WordAdversary where
 
 /-- `lenAdversary` is uniform strict PPT. -/
 theorem lenAdversary_isPPT : lenAdversary.IsPPT where
-  choose := ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _)
+  choose := (ComputableInPolyTime.const _).isPPTOn
   guess := by
-    have hct : ComputableTidilyInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2)
+    have hct : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2)
         (encPair encUnary (encPair encBits encBits)) encBits := by fun_prop
-    exact (ComputableTidilyInPolyTime.decide_eq' (encB := encBits) hct
-      (ComputableTidilyInPolyTime.const [false])).isPPTOn
+    exact (ComputableInPolyTime.decide_eq' (encB := encBits) hct
+      (ComputableInPolyTime.const [false])).isPPTOn
 
 /-- Without the equal-length admissibility guard, `lenEncrypt` violates `INDCPAOf encBits`. -/
 theorem not_indcpaOf_lenEncrypt : ¬ INDCPAOf encBits constKeyGen lenEncrypt := by
@@ -128,8 +128,7 @@ theorem not_indcca2Of_lenEncrypt {Out : Type} (encOut : Out ↪ List Bool)
 example :
     ((CCA2AdversaryOf.ofCPA lenAdversary).restrict
       (fun _ _ (m₀ m₁ : List Bool) => m₀.length == m₁.length)).IsPPT encBits :=
-  (CCA2AdversaryOf.isPPT_ofCPA lenAdversary_isPPT).restrict
-    (ComputableInPolyTime.of_tidy (by polytime))
+  (CCA2AdversaryOf.isPPT_ofCPA lenAdversary_isPPT).restrict (by polytime)
 
 /-! ### 2. Refutable `INDCCA2` instance via `INDCCA2.indcpa` -/
 
@@ -192,12 +191,15 @@ example :
       4 () [false] [true] = true := by
   decide
 
-example (H : List Bool → List Bool → List Bool)
-    (valid : ℕ → List Bool → Bool) (adversary : CollisionFinder) (n : ℕ) :
+example :
     collisionGameFor (Param := List Bool) (Digest := fun _ => List Bool)
-      (fun m => ProbComp.eval (BitString.sampleList m)) H (fun m _ => valid m) adversary n =
-      ProbComp.eval (collisionGame H valid adversary n) :=
-  collisionGameFor_sampleList_eq H valid adversary n
+      (fun m => ProbComp.eval (BitString.sampleList m))
+      (fun k _ => k) (fun _ _ _ => true) (fun _ _ => pure ([false], [true])) 2 =
+      PMF.pure true := by
+  rw [collisionGameFor_sampleList_eq]
+  have hbne : ([false] != [true]) = true := rfl
+  simp only [collisionGame, isCollision, hbne, Bool.and_self, beq_self_eq_true, pure_bind,
+    ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure, PMF.bind_const]
 
 /-- Constant `ZMod 11`-valued hash family indexed by `Unit`. -/
 def constZModHash (_ : Unit) (_ : List Bool) : ZMod 11 := 0
@@ -209,7 +211,7 @@ def constZModFinder : CollisionFinderFor Unit := fun _ _ => pure ([false], [true
 theorem isPPTOn_constZModFinder :
     IsPPTOn (encPair encUnary (encFinEnum Unit)) (encPair encBits encBits)
       (fun p => constZModFinder p.1 p.2) :=
-  (ComputableTidilyInPolyTime.const ([false], [true])).isPPTOn
+  (ComputableInPolyTime.const ([false], [true])).isPPTOn
 
 /-- The constant `ZMod 11`-valued hash family is not collision-resistant. -/
 theorem not_collisionResistantFor_constZModHash :

@@ -51,8 +51,7 @@ theorem adversary_ppt : adversary.IsPPT := by
 -- Both stages, all saved state, and both possible experiment selectors are charged.
 example : IsPPTOn (encPair encUnary encBool) encBool
     (fun p => game keyGen encrypt adversary p.2 p.1) :=
-  isPPTOn_game keyGen_ppt encrypt_ppt adversary_ppt (.of_tidy (by fun_prop)) (.of_tidy (by
-    fun_prop))
+  isPPTOn_game keyGen_ppt encrypt_ppt adversary_ppt (by fun_prop) (by fun_prop)
 
 /-- The stateful adversary recovers the selector with certainty for every security parameter. -/
 theorem eval_game_adversary (bit : Bool) (n : ℕ) :

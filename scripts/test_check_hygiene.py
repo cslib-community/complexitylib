@@ -48,6 +48,169 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("missing or invalid `-- upstream:` marker", errors[0])
 
+    def test_upstream_marker_must_be_a_standalone_line_comment(self) -> None:
+        examples = (
+            '/- Example:\n-- upstream: candidate\n-/\n',
+            '/- Outer /- nested -/\n-- upstream: candidate\n-/\n',
+            'def text := "\n-- upstream: candidate\n"\n',
+            'def text := r##"\n-- upstream: candidate\n"##\n',
+            'def value := 0 -- upstream: candidate\n',
+        )
+        for example in examples:
+            with self.subTest(example=example):
+                p = self.write("Complexity/NoMarker.lean", "module\n" + example)
+                self.assertEqual(check_hygiene.check_file(p, root=self.root),
+                                 ["Complexity/NoMarker.lean: missing or invalid `-- upstream:` marker"])
+
+    def test_standalone_upstream_status_forms_pass(self) -> None:
+        statuses = ("candidate", "submitted #123 @deadbeef",
+                    "vendored contributor:feature/api @deadbeef (unsubmitted)",
+                    "merged @deadbeef", "local-only (test scaffolding)")
+        for status in statuses:
+            for indent in ("", "  "):
+                with self.subTest(status=status, indent=indent):
+                    p = self.write("Complexity/Marker.lean",
+                                   f"module\n{indent}-- upstream: {status}\n")
+                    self.assertEqual(check_hygiene.check_file(p, root=self.root), [])
+
+    def test_candidate_marker_examples_do_not_enable_simp_check(self) -> None:
+        for example in ('/-\n-- upstream: candidate\n-/\n',
+                        'def text := r#"\n-- upstream: candidate\n"#\n'):
+            with self.subTest(example=example):
+                p = self.write(
+                    "Complexity/Local.lean",
+                    "module\n-- upstream: local-only (test scaffolding)\n" + example
+                    + "theorem demo : True := by\n  simp\n  trivial\n",
+                )
+                self.assertEqual(check_hygiene.check_file(p, root=self.root, check_simp=True), [])
+
+    def heartbeat_module(self, rel: str, value: int | str) -> pathlib.Path:
+        return self.write(
+            rel,
+            "module\n"
+            "-- upstream: candidate\n\n"
+            "-- Justified: a large closed certificate.\n"
+            f"set_option maxHeartbeats {value} in\n"
+            "theorem demo : True := trivial\n",
+        )
+
+    def test_heartbeat_above_default_requires_allowlist(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+        self.assertEqual(len(errors), 1)
+        self.assertIn("exceeds the 200000 default", errors[0])
+        # The default itself, and smaller budgets, need no entry.
+        q = self.heartbeat_module("Complexity/Default.lean", 200000)
+        self.assertEqual(check_hygiene.check_file(q, root=self.root, heartbeat_caps={}), [])
+
+    def test_heartbeat_allowlist_cap_is_enforced(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        ok = {"Complexity/Big.lean": 400000}
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps=ok), [])
+        low = {"Complexity/Big.lean": 300000}
+        errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps=low)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("exceeds its allowlisted cap 300000", errors[0])
+
+    def test_heartbeat_check_is_off_without_caps(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.assertEqual(check_hygiene.check_file(p, root=self.root), [])
+
+    def test_heartbeat_budget_in_a_comment_is_ignored(self) -> None:
+        p = self.write(
+            "Complexity/Commented.lean",
+            "module\n-- upstream: candidate\n\n"
+            "-- An earlier version used set_option maxHeartbeats 8000000 here.\n"
+            "theorem demo : True := trivial\n",
+        )
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps={}), [])
+
+    def test_stale_heartbeat_allowlist_entries_are_reported(self) -> None:
+        self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.heartbeat_module("Complexity/Small.lean", 100000)
+        caps = {"Complexity/Big.lean": 500000, "Complexity/Small.lean": 400000,
+                "Complexity/Gone.lean": 400000}
+        errors = check_hygiene.check_heartbeat_allowlist_stale(caps, root=self.root)
+        self.assertEqual(len(errors), 3)
+        self.assertTrue(any("cap 500000 exceeds its largest budget 400000" in e for e in errors))
+        self.assertTrue(any("`Complexity/Small.lean` has no budget above" in e for e in errors))
+        self.assertTrue(any("`Complexity/Gone.lean` does not exist" in e for e in errors))
+        exact = {"Complexity/Big.lean": 400000}
+        self.assertEqual(check_hygiene.check_heartbeat_allowlist_stale(exact, root=self.root), [])
+
+    def test_heartbeat_alternate_forms_are_checked(self) -> None:
+        settings = [
+            "set_option maxHeartbeats 400_000 in\ntheorem demo : True := trivial",
+            "set_option maxHeartbeats 0x61A80 in\ntheorem demo : True := trivial",
+            "set_option maxHeartbeats\n  400000 in\ntheorem demo : True := trivial",
+            "theorem demo : True := by set_option maxHeartbeats 400000 in trivial",
+            "example : True := by\n  skip; set_option maxHeartbeats 400000 in trivial",
+        ]
+        for setting in settings:
+            with self.subTest(setting=setting):
+                p = self.write("Complexity/Big.lean", "module\n-- upstream: candidate\n\n"
+                               "-- Justified: closed certificate.\n" + setting + "\n")
+                errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+                self.assertTrue(any("exceeds the 200000 default" in e for e in errors), errors)
+                self.assertEqual(check_hygiene.check_file(
+                    p, root=self.root, heartbeat_caps={"Complexity/Big.lean": 400000}), [])
+
+    def test_zero_budget_requires_explicit_unlimited_cap(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 0)
+        for caps in ({}, {"Complexity/Big.lean": 8000000}):
+            with self.subTest(caps=caps):
+                self.assertTrue(check_hygiene.check_file(p, root=self.root, heartbeat_caps=caps))
+        caps = {"Complexity/Big.lean": 0}
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps=caps), [])
+        self.assertEqual(check_hygiene.check_heartbeat_allowlist_stale(caps, self.root), [])
+        self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.assertTrue(check_hygiene.check_heartbeat_allowlist_stale(caps, self.root))
+
+    def test_unparsed_heartbeat_budget_fails_closed(self) -> None:
+        for token in ("unlimited", "-1", "400000oops"):
+            with self.subTest(token=token):
+                p = self.heartbeat_module("Complexity/Big.lean", token)
+                errors = check_hygiene.check_file(
+                    p, root=self.root, heartbeat_caps={"Complexity/Big.lean": 0})
+                self.assertTrue(any("cannot parse" in e for e in errors), errors)
+
+    def test_inline_and_multiline_options_require_justification(self) -> None:
+        for setting in ("example : True := by set_option maxHeartbeats 400000 in trivial",
+                        "set_option maxRecDepth\n  1000 in\nexample : True := trivial"):
+            with self.subTest(setting=setting):
+                p = self.write("Complexity/Big.lean", "module\n-- upstream: candidate\n"
+                               + "\n" * 5 + setting + "\n")
+                errors = check_hygiene.check_file(p, root=self.root)
+                self.assertTrue(any("justifying comment" in e for e in errors), errors)
+
+    def test_options_in_interpolated_terms_are_checked(self) -> None:
+        # Interpolation braces contain executable Lean terms, including tactic proofs.
+        for option, value in (("maxHeartbeats", 400000), ("maxRecDepth", 1000)):
+            with self.subTest(option=option):
+                p = self.write(
+                    "Complexity/Interpolation.lean",
+                    "module\n-- upstream: candidate\n" + "\n" * 5
+                    + f'def text := s!"{{(by set_option {option} {value} '
+                    'in exact (0 : Nat))}"\n',
+                )
+                errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+                self.assertEqual(len(errors), 2 if option == "maxHeartbeats" else 1, errors)
+                self.assertTrue(all(e.startswith("Complexity/Interpolation.lean:8:")
+                                    for e in errors), errors)
+                self.assertIn("requires a justifying comment", errors[0])
+                if option == "maxHeartbeats":
+                    self.assertIn("exceeds the 200000 default", errors[1])
+
+    def test_heartbeat_allowlist_parsing(self) -> None:
+        path = self.write("scripts/heartbeat_allowlist.txt",
+                          "# header\n\nComplexity/Big.lean 400000  # see #1528\n")
+        self.assertEqual(check_hygiene.load_heartbeat_allowlist(path),
+                         {"Complexity/Big.lean": 400000})
+        self.assertEqual(check_hygiene.load_heartbeat_allowlist(self.root / "missing.txt"), {})
+        bad = self.write("scripts/bad.txt", "Complexity/Big.lean lots\n")
+        with self.assertRaises(ValueError):
+            check_hygiene.load_heartbeat_allowlist(bad)
+
     def test_unjustified_set_option_fails(self) -> None:
         p = self.write(
             "Complexity/UnjustifiedOption.lean",

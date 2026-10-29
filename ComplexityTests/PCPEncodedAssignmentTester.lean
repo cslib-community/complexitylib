@@ -11,7 +11,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
 import Mathlib.Tactic.FinCases
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Tests for executable assignment testing and its uniform finite-table certificates. -/
 
@@ -83,24 +82,20 @@ example {α : Type} [Fintype α] [DecidableEq α] (constraint : α → α → Bo
   rw [Encoded.HadamardTester.accepts_eq_true]
   simpa only [Encoded.HadamardTester.query_eq, LocalTest.Passes] using passes_honestProof h ω
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (Bool → Bool → Bool) × Rand Bool × Query =>
       Encoded.HadamardTester.query p.1 p.2.1 p.2.2)
     (encPair (encPi (encPi encBool)) (encPair (encFinEnum (Rand Bool)) (encFinEnum Query)))
     (encFinEnum (Pos Bool)) := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (Bool → Bool → Bool) × Rand Bool × (Query → Bool) =>
       Encoded.HadamardTester.accepts p.1 p.2.1 p.2.2)
     (encPair (encPi (encPi encBool)) (encPair (encFinEnum (Rand Bool)) (encPi encBool)))
     encBool := by polytime
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The constraint is computed from an unbounded word, not fixed with the alphabet.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List Bool × Rand Bool × Query => Encoded.HadamardTester.query
       (fun a b => p.1.getD (a.toNat + 2 * b.toNat) false) p.2.1 p.2.2)
     (encPair encBits (encPair (encFinEnum (Rand Bool)) (encFinEnum Query)))

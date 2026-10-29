@@ -40,7 +40,9 @@ unbounded reply is not oracle PPT (`ComplexityTests.OraclePPT`).
 * `Cslib.Probability.IsOraclePPTOn.query_take'`, `.pair'`, `.preprocess'`, `.map'`,
   `.map_with'`, `.cond'`, `.ite'`, `.finite_cases'`, `.iterate_spec'`, `.iterateWith_spec'`,
   `.iterateWith_of_bounded_growth'`, `.iterate_of_bounded_growth'`: the same rules with plain
-  `ComputableInPolyTime` side conditions.
+  `ComputableInPolyTime` side conditions. These primed names are transitional (#608, #862): once
+  the remaining callers migrate, the unprimed names are restated with plain hypotheses and the
+  primed ones are removed.
 
 ## References
 

@@ -46,16 +46,17 @@ unary numbers, as well as bounded-count batch evaluation (`map_range_const`, `ma
   `Turing.MultiTapeTM.ComputableInLogSpace.pair`: concatenation and pairing.
 * `Turing.MultiTapeTM.ComputableInLogSpace.optionSome`, `.optionGetD`: option operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.listSingleton`, `.listCons`, `.listAppend`,
-  `.listHeadD`: framed-list operations.
+  `.listHeadD`, `.listLength`: framed-list operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.bitsAppend`, `.bitsHeadD`, `.bitsMap`, `.bitsFoldl`,
   `.bitsAll`, `.bitsAny`: bit-word operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.unaryAdd`, `.unaryMulConst`, `.unaryLeConst`,
   `.unaryBoundedMap`: unary-number operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.map_range_const`, `.map_range_of_le`,
   `.mapToBits_range_const`, `.mapToBits_range_of_le`: bounded-count batch evaluation.
-* `Turing.MultiTapeTM.ComputableInLogSpace.fst'`, `.snd'`, `.bool_and`, `.bool_or`:
-  projections of a computed pair and Boolean connectives, in the form used by `fun_prop`, with which
-  the closure rules and word operations above are registered.
+* `Turing.MultiTapeTM.ComputableInLogSpace.fst'`, `.snd'`, `.bool_and`, `.bool_or`,
+  `.ite_decide`: projections of a computed pair, Boolean connectives and case distinctions on
+  decidable propositions, in the form used by `fun_prop`, with which the closure rules and word
+  operations above are registered.
 
 ## References
 
@@ -263,6 +264,34 @@ theorem listHeadD (d : β) :
     ComputableInLogSpace (fun l : List β => l.headD d) (encList encOut) encOut :=
   of_isEmpty_ite d (fun l hl => by cases l <;> simp_all)
     (of_unframe fun ⟨l, hl⟩ => by cases l <;> simp at hl ⊢)
+
+/-- The transducer counting the frames of a word in unary: in state `false` it reads a marker, and
+emits `true` at an end marker; in state `true` it skips the bit after a `true` marker. -/
+private def frameCountT : Transducer Bool Bool where
+  q₀ := false
+  step
+    | false, true => (true, [])
+    | false, false => (false, [true])
+    | true, _ => (false, [])
+  final _ := []
+  length_step_le q a := by cases q <;> cases a <;> simp
+  length_final_le _ := by simp
+
+private theorem frameCountT_run_frame (w rest : List Bool) :
+    frameCountT.run false (frame w ++ rest) = true :: frameCountT.run false rest := by
+  induction w with
+  | nil => rfl
+  | cons b w ih => simpa [frame_cons, Transducer.run_cons, frameCountT] using ih
+
+/-- The length of a framed list, in unary, in logarithmic space. -/
+theorem listLength : ComputableInLogSpace (fun l : List β => l.length) (encList encOut) encUnary :=
+  frameCountT.computableInLogSpace fun l => by
+    induction l with
+    | nil => rfl
+    | cons b l ih =>
+      change _ = frameCountT.run false _ at ih ⊢
+      rw [encList_cons, frameCountT_run_frame, ← ih]
+      simp [List.replicate_succ]
 
 /-- Concatenating two bit words computed in logarithmic space from a common input. -/
 theorem bitsAppend {f₁ f₂ : α → List Bool}
@@ -510,7 +539,16 @@ theorem bool_or {c₁ c₂ : α → Bool} (h₁ : ComputableInLogSpace c₁ encI
   (of_finite (encIn := encPair encBool encBool) fun p : Bool × Bool => p.1 || p.2).comp'
     (pair h₁ h₂)
 
+/-- A case distinction on a decidable proposition whose truth value is computed. -/
+@[fun_prop]
+theorem ite_decide {encC : Bool ↪ List Bool} {p : α → Prop} {_ : DecidablePred p} {f g : α → β}
+    (hp : ComputableInLogSpace (fun a => decide (p a)) encIn encC)
+    (hf : ComputableInLogSpace f encIn encOut) (hg : ComputableInLogSpace g encIn encOut) :
+    ComputableInLogSpace (fun a => if p a then f a else g a) encIn encOut :=
+  (ite hp hf hg).congr_fun fun a => by by_cases h : p a <;> simp [h]
+
 attribute [fun_prop] pair ite optionSome optionGetD listSingleton listCons listAppend listHeadD
+  listLength
   bitsAppend bitsHeadD bitsMap bitsFoldl bitsAll bitsAny unaryAdd unaryMulConst unaryLeConst
 
 end Turing.MultiTapeTM.ComputableInLogSpace

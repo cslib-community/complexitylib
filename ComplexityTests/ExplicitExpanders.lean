@@ -61,14 +61,14 @@ example {K : Type} [Field K] (encode : K ↪ List Bool)
       (planeEncoding encode) encode)
     (hsub : ComputableTidilyInPolyTime (fun p : K × K => p.1 - p.2)
       (planeEncoding encode) encode) :
-    ComputableTidilyInPolyTime (RotationMap.affinePlaneTowerBase K).rot
+    ComputableInPolyTime (RotationMap.affinePlaneTowerBase K).rot
       (encPair (baseEncoding encode) (planeEncoding encode))
       (encPair (baseEncoding encode) (planeEncoding encode)) := by
   fun_prop [RotationMap.affinePlaneTowerBase]
 
 -- Only the fixed field operations use the finite-domain theorem; graph products compose them.
 example (encode : ZMod 257 ↪ List Bool) :
-    ComputableTidilyInPolyTime (RotationMap.affinePlaneTowerBase (ZMod 257)).rot
+    ComputableInPolyTime (RotationMap.affinePlaneTowerBase (ZMod 257)).rot
       (encPair (baseEncoding encode) (planeEncoding encode))
       (encPair (baseEncoding encode) (planeEncoding encode)) := by
   have hmul : ComputableTidilyInPolyTime (fun p : ZMod 257 × ZMod 257 => p.1 * p.2)
@@ -82,7 +82,7 @@ example {V D E : Type} (G : RotationMap V D) (H : RotationMap D E)
     (vertex : V ↪ List Bool) (label : D ↪ List Bool) (small : E ↪ List Bool)
     (hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label))
     (hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ((V × D) × (E × E)) × Bool => ((G.zigzag H).rot p.1, !p.2))
       (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
       (encPair (encPair (encPair vertex label) (encPair small small)) encBool) := by
@@ -94,7 +94,7 @@ example {V D E : Type} (G : RotationMap V D) (H : RotationMap D E)
     (vertex : V ↪ List Bool) (label : D ↪ List Bool) (small : E ↪ List Bool)
     (hG : ComputableTidilyInPolyTime G.rot (encPair vertex label) (encPair vertex label))
     (hH : ComputableTidilyInPolyTime H.rot (encPair label small) (encPair label small)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ((V × D) × (E × E)) × Bool =>
         let next := (G.zigzag H).rot p.1
         (next, !p.2))

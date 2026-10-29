@@ -97,20 +97,23 @@ example : ((fanNodes 1).filter fun C => C ∉ fan ∧ C.card = 2 ∧ {(1, true)}
   exact card_counting_newContaining_lt threshold_pos 1 fanNodes (fun _ => 3)
     (fun _ => fanHeart) (fun _ => true) hstep hchoice (by omega) (by decide) (by decide)
 
--- All root clauses are unmarked, even if the initial root itself has high occurrence.
+-- All root clauses are unmarked, even if the initial root itself has high occurrence:
+-- `card_counting_newContaining_lt` bounds marked clauses (`< 4`), while dropping `C ∉ rootPairs`
+-- gives `4` clauses, so marked occurrences are strictly fewer than total occurrences.
 private def rootPairs : ClauseSet (Fin 5) :=
   {{(0, true), (1, true)}, {(0, true), (2, true)},
     {(0, true), (3, true)}, {(0, true), (4, true)}}
 
-example : (rootPairs.filter fun C => C ∉ rootPairs ∧ C.card = 2 ∧ {(0, true)} ⊆ C).card = 0 := by
-  decide
-
-example : ¬ (rootPairs.filter fun C => C.card = 2 ∧ {(0, true)} ⊆ C).card < 4 := by decide
-
-example : (rootPairs.filter fun C => C ∉ rootPairs ∧ C.card = 2 ∧ {(0, true)} ⊆ C).card < 4 := by
-  exact card_counting_newContaining_lt threshold_pos 0 (fun _ => rootPairs) (fun _ => 0)
-    (fun _ => ∅) (fun _ => false) (by intro i hi; omega) (by intro i hi; omega)
-    (t := 0) (by omega) (by decide) (by decide)
+example :
+    (rootPairs.filter fun C => C ∉ rootPairs ∧ C.card = 2 ∧ {(0, true)} ⊆ C).card <
+      (rootPairs.filter fun C => C.card = 2 ∧ {(0, true)} ⊆ C).card := by
+  have hmarked :
+      (rootPairs.filter fun C => C ∉ rootPairs ∧ C.card = 2 ∧ {(0, true)} ⊆ C).card < 4 :=
+    card_counting_newContaining_lt threshold_pos 0 (fun _ => rootPairs) (fun _ => 0)
+      (fun _ => ∅) (fun _ => false) (by intro i hi; omega) (by intro i hi; omega)
+      (t := 0) (by omega) (by decide) (by decide)
+  have htotal : (rootPairs.filter fun C => C.card = 2 ∧ {(0, true)} ⊆ C).card = 4 := by decide
+  omega
 
 -- Dropping maximum-heart priority really breaks the proposed bound, even in one step.
 private def star : ClauseSet (Fin 6) :=

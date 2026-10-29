@@ -65,7 +65,7 @@ $$\mathsf{MIP}_2 \subseteq \mathsf{MIP} \subseteq \mathsf{NEXP}.$$
    deterministic provers is accepted on more than half of the `2 ^ t` coin strings.
 4. **Upward translation from `NP` to `NEXP` (`preimage_mem_NTIME_of_mem_NP`,
    `preimage_pad_mem_NEXP`, `MIP_subset_NEXP`)**:
-   Composing the deterministic exponential-padding machine (`ComputableTidilyInO.unary_two_pow`)
+   Composing the deterministic exponential-padding machine (`ComputableInO.unary_two_pow`)
    with the halting fair-coin certificate-verifier machine (`IsPPTOn.exists_halting_machine`) via
    `MultiTapePTM.comp` and converting to `MultiTapeNTM` via `MultiTapePTM.toNTM` places the
    unpadded language in `NEXP`.
