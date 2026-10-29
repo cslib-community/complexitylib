@@ -184,11 +184,28 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   stack frame and exact preorder packed output. The traversal consumes a root descriptor and
   runtime fuel; its polynomial local envelope derives kernel fits and charges every stack,
   descriptor and address operation. It does not invoke a Convolution-3SUM solver. Composition
-  from initialized input through all frontend roots is supplied by
-  `Algorithms/WordRAM/ThreeSum/ChanHe/Preprocessing`, with positive logarithmic width, polynomial
-  space/intermediates and an `Oκ(n^1.5 log¹³(n+2))` charged bound. The fast Exact Triangle solver
-  and full input/time/width/asymptotic composition remain under #1394. These components do not
-  affect the curated headlines.
+  from initialized input through every frontend root is proved in
+  `Algorithms/WordRAM/ThreeSum/ChanHe/Preprocessing.lean`. One finite 128-register program per
+  fixed magnitude exponent returns the existing exact finite instance list. All fits derive from
+  `(1300κ+7865) clog₂(n+2)` physical width; every run prefix uses polynomial words/addresses even
+  at wider admitted widths. Its charged cost is at most
+  `Kκ (n+2)(sqrt(n+2)+1)(log₂(n+2)+1)^13`, including the final halt. The complete native
+  preprocessing milestone is #1446; the Exact Triangle solver and full final 3SUM composition
+  remain #1394. These components do not affect the curated headlines.
+
+  Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
+  `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,
+  `PreprocessingInvariant`, `PreprocessingStep` and `PreprocessingLoop` with their controller
+  consumer `PreprocessingExecute`, or use `import all` to make their proof plumbing private.
+  This includes `Saved`, `ForestCursor`, `snapshot_exec`, `primes_exec`, `setupTraversal_exec`,
+  `finish_exec`, `execute_next_root` and `forest_body_exec`; keep the initialized-input, readback,
+  width and resource endpoints available through `Preprocessing`. Separately, move
+  `modulus_bounds_of_candidates` from `SelectorBounds` beside `Collisions`' `modulus_bounds` and
+  derive or cross-reference the stronger bound, migrating `TraversalCall` and selector tests.
+  Derive `Structured`'s `ExecWithin.loop_invariant` as the `Data`-state case of
+  `GhostLoop`'s `ExecWithin.loop_invariant_state`, preserving the existing copy/residue/padding/
+  search/reservation clients. Resolve the current import direction by keeping both rules in one
+  loop topic module before changing those clients.
 
   `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
   frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical
