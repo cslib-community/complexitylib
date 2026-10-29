@@ -37,10 +37,12 @@ otherwise.
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
-private theorem tidy_binary_choose :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1.choose p.2)
+/-- Binomial coefficients `p.1.choose p.2` in binary, from `(p.1, p.2)` in unary. -/
+@[fun_prop, program_certificate]
+theorem binary_choose :
+    ComputableInPolyTime (fun p : ℕ × ℕ => p.1.choose p.2)
       (encPair encUnary encUnary) encNat := by
-  have hformula : ComputableTidilyInPolyTime
+  have hformula : ComputableInPolyTime
       (fun p : ℕ × ℕ =>
         if decide (p.2 ≤ p.1) then p.1.factorial / (p.2.factorial * (p.1 - p.2).factorial) else 0)
       (encPair encUnary encUnary) encNat := by fun_prop
@@ -49,13 +51,6 @@ private theorem tidy_binary_choose :
   · exact Nat.choose_eq_factorial_div_factorial (by simpa only [decide_eq_true_eq] using hle)
   · exact Nat.choose_eq_zero_of_lt
       (Nat.lt_of_not_ge (by simpa only [decide_eq_true_eq] using hle))
-
-/-- Binomial coefficients `p.1.choose p.2` in binary, from `(p.1, p.2)` in unary. -/
-@[fun_prop, program_certificate]
-theorem binary_choose :
-    ComputableInPolyTime (fun p : ℕ × ℕ => p.1.choose p.2)
-      (encPair encUnary encUnary) encNat :=
-  .of_tidy tidy_binary_choose
 
 /-- Binomial coefficient of two computed unary naturals, returned in binary. -/
 @[fun_prop, program_certificate]

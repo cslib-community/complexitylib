@@ -94,8 +94,7 @@ example : {w : List Bool | ∃ v : List Bool, v.length = (1 : Polynomial ℕ).ev
 
 /-- The threshold `2 n!` of the protocol for graph non-isomorphism, computed in binary. -/
 example : ComputableInPolyTime (fun n : ℕ => 2 * n.factorial) encUnary encNat :=
-  .of_tidy
-    ((ComputableTidilyInPolyTime.const 2).binary_mul' ComputableTidilyInPolyTime.binary_factorial)
+  (ComputableInPolyTime.const 2).binary_mul' ComputableInPolyTime.binary_factorial
 
 /-- The hypothesis of the graph-isomorphism collapse follows from a reduction of `SAT` to graph
 isomorphism, placing `GraphNonIsomorphism` in `Σ₂`. -/

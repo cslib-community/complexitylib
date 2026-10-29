@@ -573,13 +573,14 @@ def behavior (w x : List Bool) (o : List ℕ) : Prop :=
 
 /-- Building the description of a word into itself, as an input prefix, is computable in
 polynomial time. -/
-theorem computableTidilyInPolyTime_selfHardwire :
-    ComputableTidilyInPolyTime (fun y : List Bool => eDesc (hardwire (decodeDesc y) (frame y)))
+theorem computableInPolyTime_selfHardwire :
+    ComputableInPolyTime (fun y : List Bool => eDesc (hardwire (decodeDesc y) (frame y)))
       encBits encBits := by
   obtain ⟨_, _, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
-  have hpair := hdec.computableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.bitsFrame encBits)
-  exact (ComputableTidilyInPolyTime.of_eq (f := fun d : Desc => eDesc d) (encIn := eDesc)
-    (encMid := encBits) fun _ => rfl).comp (computableTidilyInPolyTime_hardwire.comp hpair)
+  have hpair := hdec.computableTidilyInPolyTime.computableInPolyTime.prod
+    (ComputableInPolyTime.bitsFrame encBits)
+  exact (ComputableInPolyTime.of_eq (f := fun d : Desc => eDesc d) (encIn := eDesc)
+    (encOut := encBits) fun _ => rfl).comp (computableInPolyTime_hardwire.comp hpair)
 
 /-- **Kleene's recursion theorem, in its two-way case.** For every computable verdict `f` on words
 and descriptions `d false`, `d true`, some word `e` describes a machine behaving on inputs of bits
@@ -593,7 +594,7 @@ theorem exists_behavior_eq {f : List Bool → Bool} (hf : IsComputable f encBits
     (d : Bool → Desc) : ∃ e : List Bool, ∀ (x : List Bool) (o : List ℕ),
       (decodeDesc e).Computes (x.map eBit) o ↔ (d (f e)).Computes (x.map eBit) o := by
   set s : List Bool → List Bool := fun y => eDesc (hardwire (decodeDesc y) (frame y))
-  have hs : IsComputable s encBits encBits := computableTidilyInPolyTime_selfHardwire.isComputable
+  have hs : IsComputable s encBits encBits := computableInPolyTime_selfHardwire.tidy.isComputable
   have hcons : IsComputable (fun p : Bool × List Bool => p.1 :: p.2) (encPair encBool encBits)
       encBits :=
     (ComputableTidilyInPolyTime.bitsCons (ComputableTidilyInPolyTime.fst _ _)

@@ -494,8 +494,9 @@ private theorem isPPTOn_heuristic {t : ℕ → ℕ}
   have hbest : ComputableTidilyInPolyTime
       (fun p : List Bool × List Bool => bestSlack t evalA p.1.length p.1 p.2)
       E2 encUnary :=
-    ComputableTidilyInPolyTime.findGreatest
-      (hmax_y.comp (ComputableTidilyInPolyTime.fst _ _)) htry
+    (ComputableInPolyTime.findGreatest
+      (hmax_y.comp (ComputableTidilyInPolyTime.fst _ _)).computableInPolyTime
+      htry.computableInPolyTime).tidy
   have hcand_unary : ComputableTidilyInPolyTime
       (fun p : List Bool × List Bool => heuristicCand t evalA p.1 p.2)
       E2 encUnary := by

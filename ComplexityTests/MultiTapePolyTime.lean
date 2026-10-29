@@ -109,12 +109,12 @@ example : ComputableTidilyInPolyTime (fun z : ℤ => (z + 1, (z - 1).natAbs))
   fun_prop
 
 -- Negative tape positions retain their existing numbering when emitted in binary.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun n => (Turing.windowList n).map Equiv.intEquivNat) encUnary (encList encNat) :=
-  (ComputableTidilyInPolyTime.map
-    (ComputableTidilyInPolyTime.unary_to_binary.comp
-      ComputableTidilyInPolyTime.int_equivNat)).comp
-    Turing.computableTidilyInPolyTime_windowList
+  (ComputableInPolyTime.map
+    (ComputableInPolyTime.unary_to_binary.comp
+      ComputableTidilyInPolyTime.int_equivNat.computableInPolyTime)).comp
+    Turing.computableInPolyTime_windowList
 
 -- Unary loop bounds can be evaluated and enumerated for every fixed polynomial and exponent.
 example (p : Polynomial ℕ) (c d : ℕ) :

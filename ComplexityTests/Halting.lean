@@ -175,7 +175,7 @@ example (b : Bool) (p x : List Bool) :
     (hardwire (desc unitNum eBit firstBit) [true]).Halts (x.map eBit) ∧
     ¬(hardwire (desc unitNum eBit firstBit) [false]).Halts (x.map eBit) ∧
     (hardwire (desc unitNum eBit (answer b)) p).Computes (x.map eBit) [eBit b] ∧
-    ComputableTidilyInPolyTime (fun q : List Bool => hardwire (desc unitNum eBit firstBit) q)
+    ComputableInPolyTime (fun q : List Bool => hardwire (desc unitNum eBit firstBit) q)
       encBits eDesc :=
   ⟨(Desc.halts_hardwire _ _ x).mpr ((Desc.halts_desc unitNum eBit firstBit (true :: x)).mpr
      (halts_firstBit x)),
@@ -184,9 +184,9 @@ example (b : Bool) (p x : List Bool) :
      exact not_halts_firstBit x h,
    (Desc.computes_hardwire _ p x _).mpr
      ((Desc.computes_desc unitNum eBit (answer b) (p ++ x) [b]).mpr (answer_computes b _)),
-   computableTidilyInPolyTime_hardwire.comp
-     ((ComputableTidilyInPolyTime.const (desc unitNum eBit firstBit)).prod
-       (ComputableTidilyInPolyTime.of_eq fun _ => rfl))⟩
+   computableInPolyTime_hardwire.comp
+     ((ComputableInPolyTime.const (desc unitNum eBit firstBit)).prod
+       (ComputableInPolyTime.of_eq fun _ => rfl))⟩
 
 /-! ### The recursion theorem and Rice's theorem -/
 
