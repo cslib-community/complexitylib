@@ -144,9 +144,6 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Collisions
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend
 public import Complexity.Algorithms.WordRAM.ThreeSum.Frontend.Arrays
