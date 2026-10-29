@@ -6,6 +6,7 @@ public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.Dictionary
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -130,6 +131,7 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.Hashing.MultiplyShift
 public import Complexity.Algorithms.WordRAM.Histogram
 public import Complexity.Algorithms.WordRAM.Karger.Contract
 public import Complexity.Algorithms.WordRAM.Karger.FastCut
@@ -2562,6 +2564,7 @@ public import Complexity.Foundations.FieldTheory.Finite.BinaryField
 public import Complexity.Foundations.FieldTheory.Finite.LinearizedPolynomial
 public import Complexity.Foundations.FieldTheory.Finite.ReducedMonomial
 public import Complexity.Foundations.FieldTheory.Finite.Subfield
+public import Complexity.Foundations.FieldTheory.Finite.Trinomial
 public import Complexity.Foundations.FieldTheory.Finite.UnitSum
 public import Complexity.Foundations.FieldTheory.TensorBasis
 public import Complexity.Foundations.Geometry.Euclidean.Angle.Cap
@@ -2867,6 +2870,7 @@ public import Complexity.Probability.IID
 public import Complexity.Probability.Isolation
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.KWiseIndependent.Polynomial
+public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MinEntropy
