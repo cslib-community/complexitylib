@@ -8,16 +8,19 @@ Checks enforced by default (see AGENTS.md):
 3. Every `set_option maxHeartbeats` or `set_option maxRecDepth` has an explanatory comment
    on the same line, within the preceding 3 lines, or (for `set_option ... in`) on the next
    line, where Mathlib's `linter.style.maxHeartbeats` expects it.
-4. Docstrings in `Complexity/` contain only root-qualified or external inline Markdown links
+4. Docstrings in `Complexity/` contain only root-qualified or external Markdown links
    (`[text](target)`, where external means `http://` or `https://` and anchors start with `#`,
    matching `doc-gen4`'s `extendLink`) and root-qualified slash-containing `.lean` code tokens
    (`Complexity/.../*.lean`, `Cslib/...`, `Mathlib/...`) in inline code spans and fenced Lean code
    blocks. `Complexity/...` targets are checked for file existence on disk; dependency roots
    (`Cslib/`, `Mathlib/`, `Batteries/`) are checked on disk when `.lake/packages` is present locally
    and by root prefix in CI (where `check_hygiene.py` runs before `.lake` is restored) or for
-   toolchain roots (`Std/`, `Init/`, `Lean/`). Reference-link definitions (`[label]: target`) and
-   indented (4-space) code blocks are not scanned; `scripts/check_docs.py` in `docs.yml` remains the
-   full HTML backstop.
+   toolchain roots (`Std/`, `Init/`, `Lean/`). Reference-link definitions (`[label]: target`, with
+   an optional single-line title and the destination on the same or next line) use the same
+   target check.
+   Citation-shaped labels followed by a bare prose word remain citation prose.
+   Nested block-container definitions and indented (4-space) code blocks are not scanned;
+   `scripts/check_docs.py` in `docs.yml` remains the full HTML backstop.
 5. (Default selection only.) `references.bib` keys are unique and its entries are sorted by key,
    both compared case-insensitively as BibTeX does, so that PRs adding entries rarely conflict.
 6. Every citation key in a docstring is a `references.bib` key. A citation is a bracketed segment
@@ -94,7 +97,13 @@ DOC_INLINE_RE = re.compile(
     r"|(?P<link>(?<!!)\[(?:`+[^`\n]*`+|\\.|[^\[\]`\\])*\]\(\s*"
     r"(?:<(?P<angle_target>[^>\s]+)>|(?P<target>[^)\s\"']+))"
     r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)\n]*\)))?\s*\))"
-    r"|(?P<code_fence>`+)(?P<code>.+?)(?<!`)(?P=code_fence)(?!`)"
+    r"|(?P<code_fence>`+)(?P<code>(?:(?!\n[ \t]*\n)[\s\S])+?)(?<!`)(?P=code_fence)(?!`)"
+)
+DOC_REFERENCE_RE = re.compile(
+    r"^[ ]{0,3}\[(?P<label>(?:\\.|[^\[\]\\\n])+)\]:[ \t]*(?:\n[ ]{0,3})?"
+    r"(?:<(?P<angle_target>[^<>\n]*)>|(?P<target>[^\s<>]+))"
+    r"(?:[ \t]+(?:\"[^\"\n]*\"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*$",
+    re.M,
 )
 WHITESPACE_RUN_RE = re.compile(r"\S+")
 # The shape of every `references.bib` key except the year-less `MilewskiDao`.
@@ -185,7 +194,7 @@ def validate_doc_module_path(part: str, root: pathlib.Path) -> str | None:
 
 
 def validate_doc_markdown_target(target: str, root: pathlib.Path) -> str | None:
-    """Validate a Markdown link target `[text](target)` in a `Complexity/` docstring."""
+    """Validate an inline or reference Markdown link target in a `Complexity/` docstring."""
     if target.startswith(("https://", "http://", "#")):
         return None
     path_part, _, _ = target.partition("#")
@@ -265,6 +274,26 @@ def check_docstring_links(raw: str, rel: pathlib.Path, root: pathlib.Path) -> li
                             errors.append(
                                 f"{rel}:{line_no}: invalid docstring module path `{tok}` ({reason})"
                             )
+            # Reference definitions inside inline code, math or escaped brackets are examples,
+            # not links. Preserve offsets while hiding them from the line-based scan below.
+            mask_span(chars, m.start(), m.end())
+        for m in DOC_REFERENCE_RE.finditer(masked_doc):
+            label_start = m.start() + len(m[0]) - len(m[0].lstrip(" "))
+            if chars[label_start] != "[":
+                continue
+            target = m.group("angle_target")
+            if target is None:
+                target = m.group("target")
+                # A citation sentence may wrap just after "[Key, locator]: if". Preserve
+                # citation prose, but still validate explicit angle/path/URL destinations.
+                if target.isalpha() and docstring_citations("[" + m.group("label") + "]"):
+                    continue
+            reason = validate_doc_markdown_target(target, root)
+            if reason:
+                line_no = raw.count("\n", 0, doc_start + m.start()) + 1
+                errors.append(
+                    f"{rel}:{line_no}: invalid docstring Markdown link target `{target}` ({reason})"
+                )
     return errors
 
 
