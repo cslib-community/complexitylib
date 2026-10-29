@@ -274,4 +274,8 @@ def Hits {n : ℕ} (s : ℕ) (H : Output n) : Prop :=
   ∀ f : Formula n, f.nodeCount ≤ s → Admissible f → Nonzero f →
     ∃ X ∈ H.tuples, ∃ v, Evaluates f X v ∧ IsUnit v
 
+/-- Compatibility name specialized to rational formulas; the replacement accepts any signature. -/
+@[deprecated Circuits.Formula.nodeCount +typeChanged (since := "2026-10-28")]
+abbrev Formula.nodeCount {n : ℕ} (f : Formula n) : ℕ := Circuits.Formula.nodeCount f
+
 end Cslib.Circuits.Rational

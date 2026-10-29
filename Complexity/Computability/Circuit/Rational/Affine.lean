@@ -147,7 +147,7 @@ therefore also proceed by induction on the native constructors. -/
     inferInstanceAs (DecidableEq (Index (a 0) ⊕ Unit))
 
 /-- The realization of a formula has one more row than the formula has nodes. -/
-theorem card_index (f : Formula n) : Fintype.card f.Index = f.nodeCount + 1 := by
+theorem card_index (f : Formula n) : Fintype.card f.Index = Circuits.Formula.nodeCount f + 1 := by
   rw [Circuits.Formula.nodeCount]
   induction f with
   | input i => simp [Index]
@@ -526,7 +526,8 @@ theorem certificates_iff (f : Formula n) :
     · obtain rfl : h = inv f := by simpa using hh
       exact ha.augmented_isUnit_iff.mpr hua
 
-private theorem inverseNodes_length (f : Formula n) : (inverseNodes f).length ≤ f.nodeCount := by
+private theorem inverseNodes_length (f : Formula n) :
+    (inverseNodes f).length ≤ Circuits.Formula.nodeCount f := by
   induction f using inductionOn with
   | var i => simp
   | const q => simp
@@ -536,7 +537,7 @@ private theorem inverseNodes_length (f : Formula n) : (inverseNodes f).length �
 
 /-- Every inverse node of `f` has at most `f.nodeCount` nodes. -/
 theorem nodeCount_le_of_mem_inverseNodes {f h : Formula n} (hh : h ∈ inverseNodes f) :
-    h.nodeCount ≤ f.nodeCount := by
+    Circuits.Formula.nodeCount h ≤ Circuits.Formula.nodeCount f := by
   induction f using inductionOn with
   | var i => simp at hh
   | const q => simp at hh
@@ -555,7 +556,8 @@ theorem nodeCount_le_of_mem_inverseNodes {f h : Formula n} (hh : h ∈ inverseNo
 
 /-- A formula with at most `s` nodes has at most `s + 1` certificates, each of dimension at most
 `2 * s + 1`. -/
-theorem certificate_bounds (f : Formula n) (s : ℕ) (hs : 1 ≤ s) (hf : f.nodeCount ≤ s) :
+theorem certificate_bounds (f : Formula n) (s : ℕ) (hs : 1 ≤ s)
+    (hf : Circuits.Formula.nodeCount f ≤ s) :
     (certificates f).length ≤ s + 1 ∧
       ∀ h ∈ certificates f, 0 < Fintype.card h.Index ∧ Fintype.card h.Index ≤ 2 * s + 1 := by
   refine ⟨?_, ?_⟩

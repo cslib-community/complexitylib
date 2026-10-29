@@ -31,14 +31,18 @@ def commutator : Formula 2 :=
 /-- The formula `x₀ - x₀`, identically zero wherever defined. -/
 def cancel : Formula 1 := .add (.var 0) (.mul (.const (-1)) (.var 0))
 
-example : (Formula.var 0 : Formula 1).nodeCount = 1 := by simp
-example : (Formula.inv (.const 0) : Formula 1).nodeCount = 2 := by simp
-example : commutator.nodeCount = 9 := by simp [commutator]
-example : cancel.nodeCount = 5 := by simp [cancel]
+-- The previous fully qualified name still accepts the original rational-formula type.
+#guard_msgs (drop warning) in
+example : Cslib.Circuits.Rational.Formula.nodeCount (Formula.var 0 : Formula 1) = 1 := rfl
+
+example : Cslib.Circuits.Formula.nodeCount (Formula.var 0 : Formula 1) = 1 := by simp
+example : Cslib.Circuits.Formula.nodeCount (Formula.inv (.const 0) : Formula 1) = 2 := by simp
+example : Cslib.Circuits.Formula.nodeCount commutator = 9 := by simp [commutator]
+example : Cslib.Circuits.Formula.nodeCount cancel = 5 := by simp [cancel]
 
 /-- info: [9, 5] -/
 #guard_msgs in
-#eval [commutator.nodeCount, cancel.nodeCount]
+#eval [Cslib.Circuits.Formula.nodeCount commutator, Cslib.Circuits.Formula.nodeCount cancel]
 
 -- The generic formula decidable equality distinguishes the order of the factors.
 example : (Formula.mul (.var 0) (.var 1) : Formula 2) ≠ .mul (.var 1) (.var 0) := by decide

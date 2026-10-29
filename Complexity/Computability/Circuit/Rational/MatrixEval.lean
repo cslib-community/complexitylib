@@ -112,7 +112,7 @@ theorem Nonzero.admissible {n : ℕ} {f : Formula n} (hf : Nonzero f) : Admissib
 
 /-- Positive dimension makes an invertible hitting value a nonzero witness. -/
 theorem Hits.nonzero_iff {n s : ℕ} {H : Output n} (hH : Hits s H)
-    (f : Formula n) (hf : f.nodeCount ≤ s) :
+    (f : Formula n) (hf : Circuits.Formula.nodeCount f ≤ s) :
     Nonzero f ↔ ∃ X ∈ H.tuples, ∃ v, Evaluates f X v ∧ IsUnit v := by
   have : NeZero H.dimension := ⟨H.dimension_pos.ne'⟩
   constructor
@@ -135,14 +135,14 @@ theorem admissible_nonzero_or_add_one {n : ℕ} (f : Formula n) (hf : Admissible
 
 /-- A hitting list with an allowance of two more nodes also detects the domain of every formula. -/
 theorem Hits.admissible_iff {n s : ℕ} {H : Output n} (hH : Hits (s + 2) H)
-    (f : Formula n) (hf : f.nodeCount ≤ s) :
+    (f : Formula n) (hf : Circuits.Formula.nodeCount f ≤ s) :
     Admissible f ↔ ∃ X ∈ H.tuples, ∃ v, Evaluates f X v := by
   constructor
   · intro ha
     rcases admissible_nonzero_or_add_one f ha with hn | hn
     · obtain ⟨X, hX, v, he, _⟩ := hH f (by lia) ha hn
       exact ⟨X, hX, v, he⟩
-    · have hsize : (Formula.add f (.const 1)).nodeCount ≤ s + 2 := by
+    · have hsize : Circuits.Formula.nodeCount (Formula.add f (.const 1)) ≤ s + 2 := by
         simp only [nodeCount_add, nodeCount_const]
         lia
       obtain ⟨X, hX, v, he, _⟩ := hH (.add f (.const 1)) hsize hn.admissible hn
@@ -153,7 +153,7 @@ theorem Hits.admissible_iff {n s : ℕ} {H : Output n} (hH : Hits (s + 2) H)
 
 /-- An invertible hit turns a nonzero formula into one with an admissible inverse. -/
 theorem Hits.admissible_inv_iff_nonzero {n s : ℕ} {H : Output n} (hH : Hits s H)
-    (f : Formula n) (hf : f.nodeCount ≤ s) : Admissible (.inv f) ↔ Nonzero f := by
+    (f : Formula n) (hf : Circuits.Formula.nodeCount f ≤ s) : Admissible (.inv f) ↔ Nonzero f := by
   constructor
   · rintro ⟨d, hd, X, v, he⟩
     have : NeZero d := ⟨hd.ne'⟩
@@ -187,13 +187,13 @@ theorem Output.nonzeroTest_iff {n : ℕ} (H : Output n) (f : Formula n) :
 
 /-- A hitting list for `s + 2` nodes decides admissibility of formulas with at most `s` nodes. -/
 theorem Hits.admissibilityTest_eq_true_iff {n s : ℕ} {H : Output n}
-    (hH : Hits (s + 2) H) (f : Formula n) (hf : f.nodeCount ≤ s) :
+    (hH : Hits (s + 2) H) (f : Formula n) (hf : Circuits.Formula.nodeCount f ≤ s) :
     H.admissibilityTest f = true ↔ Admissible f := by
   rw [H.admissibilityTest_iff f, hH.admissible_iff f hf]
 
 /-- A hitting list for `s` nodes decides nonzeroness of formulas with at most `s` nodes. -/
 theorem Hits.nonzeroTest_eq_true_iff {n s : ℕ} {H : Output n}
-    (hH : Hits s H) (f : Formula n) (hf : f.nodeCount ≤ s) :
+    (hH : Hits s H) (f : Formula n) (hf : Circuits.Formula.nodeCount f ≤ s) :
     H.nonzeroTest f = true ↔ Nonzero f := by
   rw [H.nonzeroTest_iff f, hH.nonzero_iff f hf]
 
