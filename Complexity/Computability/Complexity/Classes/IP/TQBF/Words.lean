@@ -337,7 +337,7 @@ theorem eval_sampleMod_le [NeZero p] (n : ℕ) : ProbComp.eval (sampleMod p) n �
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 variable {γ : Type} {encIn : γ ↪ List Bool}
 
@@ -371,10 +371,6 @@ theorem computableInPolyTime_hornerMod {p z : γ → ℕ} {l : γ → List ℕ}
     (hz : ComputableInPolyTime z encIn encUnary)
     (hl : ComputableInPolyTime l encIn (encList encUnary)) :
     ComputableInPolyTime (fun x => hornerMod (p x) (z x) (l x)) encIn encUnary := by
-  have hp := hp.tidy
-  have hz := hz.tidy
-  have hl := hl.tidy
-  refine .of_tidy ?_
   unfold hornerMod
   refine foldlWithInput_of_bounded_growth (encA := encUnary) (encL := encList encUnary)
     (const 0) ⟨by fun_prop, by fun_prop, inferInstance, inferInstance⟩
@@ -388,11 +384,8 @@ theorem computableInPolyTime_lookupPt {pt : γ → List (ℕ × ℕ)} {w : γ �
     (hpt : ComputableInPolyTime pt encIn (encList (encPair encNat encUnary)))
     (hw : ComputableInPolyTime w encIn encNat) :
     ComputableInPolyTime (fun x => lookupPt (pt x) (w x)) encIn encUnary := by
-  have hpt := hpt.tidy
-  have hw := hw.tidy
-  refine .of_tidy ?_
   unfold lookupPt
-  have htest : ComputableTidilyInPolyTime (fun q : γ × (ℕ × ℕ) => q.2.1 == w q.1)
+  have htest : ComputableInPolyTime (fun q : γ × (ℕ × ℕ) => q.2.1 == w q.1)
       (encPair encIn (encPair encNat encUnary)) encBool := by fun_prop
   exact optionElimWithInput (findWithInput hpt htest) (const 0) (by fun_prop)
 
@@ -406,7 +399,6 @@ theorem computableInPolyTime_normPt {p : γ → ℕ} {xs : γ → List ℕ}
   unfold normPt
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 @[fun_prop]
 theorem computableInPolyTime_updatePt {p : γ → ℕ} {xs : γ → List ℕ}
     {pt : γ → List (ℕ × ℕ)} {v z : γ → ℕ} (hp : ComputableInPolyTime p encIn encUnary)
@@ -416,12 +408,6 @@ theorem computableInPolyTime_updatePt {p : γ → ℕ} {xs : γ → List ℕ}
     (hz : ComputableInPolyTime z encIn encUnary) :
     ComputableInPolyTime (fun x => updatePt (p x) (xs x) (pt x) (v x) (z x)) encIn
       (encList (encPair encNat encUnary)) := by
-  have hp := hp.tidy
-  have hxs := hxs.tidy
-  have hpt := hpt.tidy
-  have hv := hv.tidy
-  have hz := hz.tidy
-  refine .of_tidy ?_
   unfold updatePt
   fun_prop
 

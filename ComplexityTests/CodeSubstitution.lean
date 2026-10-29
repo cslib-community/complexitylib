@@ -31,12 +31,9 @@ example : prefixCode [true, false] 1 exampleCode =
       [4, 2, 0, 4]) := by decide +kernel
 
 example : Circuit.ofCode 1 4 (prefixCode [true, false] 1 exampleCircuit.code) =
-    some (prefixCircuit (n := 1) [true, false] exampleCircuit) := ofCode_prefixCode _ _
-
-example (x : Fin 1 → Bool) :
-    (prefixCircuit (n := 1) [true, false] exampleCircuit).eval interpretation x =
-      exampleCircuit.eval interpretation (Fin.append (fun i => [true, false][i.val]) x) :=
-  eval_prefixCircuit _ _ _
+    some (prefixCircuit (n := 1) [true, false] exampleCircuit) ∧
+    (prefixCircuit (n := 1) [true, false] exampleCircuit).size = 2 + exampleCircuit.size :=
+  ⟨ofCode_prefixCode _ _, size_prefixCircuit _ _⟩
 
 example : (prefixCircuit (n := 1) [true, false] exampleCircuit).size = 4 := by decide +kernel
 
@@ -51,17 +48,17 @@ example : List.ofFn
 example (x : Fin 1 → Bool) :
     (prefixCode [true, false] 1 exampleCircuit.code).2.map
         (evalOutput (List.ofFn x) (prefixCode [true, false] 1 exampleCircuit.code).1) =
-      List.ofFn (exampleCircuit.eval interpretation
-        (Fin.append (fun i => [true, false][i.val]) x)) := evalOutputs_prefixCode _ _ _
+      List.ofFn
+        ((prefixCircuit (n := 1) [true, false] exampleCircuit).eval interpretation x) := by
+  rw [evalOutputs_prefixCode, eval_prefixCircuit]
 
 example : prefixCode [] 0 ([], []) = ([(.const false, []), (.const true, [])], []) := rfl
 
 example : prefixCode [false, true] 0 ([], [0, 1, 0]) =
     ([(.const false, []), (.const true, [])], [0, 1, 0]) := by decide +kernel
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Input counts use binary encodings; the certificate does not enumerate all input wires.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (List Bool × ℕ) × (List (Op × List ℕ) × List ℕ) => prefixCode p.1.1 p.1.2 p.2)
     (encPair (encPair encBits encNat) encCode) encCode := by fun_prop
 

@@ -33,11 +33,11 @@ example (op : model.operations.Op) : ComputableInPolyTime (model.checkedOp op)
   exact (binary_lt.comp (hadd.prod (fst encNat (encPi encNat)))).ite_decide
     ((optionSome encNat).comp hadd) (const none)
 
-example : model.checkedConstant 0 0 = none := rfl
-example : model.checkedConstant 0 1 = some 0 := rfl
-
--- Later consumer migration must keep ofPolyTime, not replace its chosen resource data.
+-- Boundary evaluation of `checkedConstant` and proof-irrelevance of `NativeCertificate.ofPolyTime`.
 example {α β : Type} {f : α → β} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
     (h₁ h₂ : ComputableInPolyTime f ei eo) :
+    model.checkedConstant 0 0 = none ∧
+    model.checkedConstant 0 1 = some 0 ∧
     Cslib.GenericRAM.NativeCertificate.ofPolyTime h₁ =
-      Cslib.GenericRAM.NativeCertificate.ofPolyTime h₂ := rfl
+      Cslib.GenericRAM.NativeCertificate.ofPolyTime h₂ :=
+  ⟨rfl, rfl, rfl⟩
