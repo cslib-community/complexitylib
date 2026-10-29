@@ -461,8 +461,9 @@ private theorem isPPT_familyInverter {m : ℕ → ℕ} {core : ℕ → List Bool
   have hbest : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × List Bool =>
         bestLength m core evaluate p.1.1 p.1.2 p.2) E2 encUnary :=
-    ComputableTidilyInPolyTime.findGreatest
-      (hm_succ.comp (ComputableTidilyInPolyTime.fst _ _)) htry
+    (ComputableInPolyTime.findGreatest
+      (hm_succ.comp (ComputableTidilyInPolyTime.fst _ _)).computableInPolyTime
+      htry.computableInPolyTime).tidy
   have hsearch : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × List Bool =>
         searchCandidate m core evaluate p.1.1 p.1.2 p.2) E2 encBits := by

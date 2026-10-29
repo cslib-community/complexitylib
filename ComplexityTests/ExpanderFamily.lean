@@ -88,9 +88,9 @@ example {V E α : Type*} [Fintype E] [DecidableEq V] [Nonempty α]
 -- A reindexing certificate requires the rotation and both directions of the representation map.
 example {V W D : Type} (G : RotationMap V D) (e : V ≃ W)
     (ev : V ↪ List Bool) (ew : W ↪ List Bool) (ed : D ↪ List Bool)
-    (hf : ComputableTidilyInPolyTime e ev ew)
-    (hb : ComputableTidilyInPolyTime e.symm ew ev)
-    (hg : ComputableTidilyInPolyTime G.rot (encPair ev ed) (encPair ev ed)) :
+    (hf : ComputableInPolyTime e ev ew)
+    (hb : ComputableInPolyTime e.symm ew ev)
+    (hg : ComputableInPolyTime G.rot (encPair ev ed) (encPair ev ed)) :
     ComputableInPolyTime
       (fun p : (W × D) × Bool =>
         let next := (G.reindex e).rot p.1
@@ -103,7 +103,7 @@ example {V W D : Type} (G : RotationMap V D) (e : V ≃ W)
 
 -- A concrete equivalence on an unbounded type uses structural encodings in either order.
 example (G : RotationMap (Bool × List Bool) Bool)
-    (hg : ComputableTidilyInPolyTime G.rot
+    (hg : ComputableInPolyTime G.rot
       (encPair (encPair encBool encBits) encBool)
       (encPair (encPair encBool encBits) encBool)) :
     ComputableInPolyTime (G.reindex (Equiv.prodComm Bool (List Bool))).rot

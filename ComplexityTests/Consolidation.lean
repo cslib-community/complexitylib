@@ -8,15 +8,24 @@ import Complexity.Computability.Circuit.Boolean.Synthesis
 import Complexity.Computability.Complexity.Classes.LogSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
+import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
+import Complexity.Foundations.Data.BitString.Affine
 import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.Fin.Order
+import Complexity.Foundations.Data.List.Filter
 import Complexity.Foundations.Data.Nat.Asymptotics
+import Complexity.Foundations.Data.Nat.Choose.Real
+import Complexity.Foundations.Data.Nat.Div
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
+import Complexity.Foundations.LinearAlgebra.CubeSum
+import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.Tactic.FinCases
 
 /-! General lemmas in their library homes: the costs of projections and the one-gate lower bound
 for circuits on two and three inputs, the decoders of binary numbers and Booleans on encoded and
 malformed words, the nondeterministic space predicate, the parity of a symmetric difference,
+affine Boolean forms and step sums over `𝔽₂`, set difference via list filtering, block modular sums,
 and logarithmic bounds, with their boundary cases. -/
 
 namespace ComplexityTests.Consolidation
@@ -123,5 +132,69 @@ example : Nat.log 0 (5 + 1) ≤ Nat.log 0 5 + 1 ∧ Nat.log 2 (0 + 1) ≤ Nat.lo
 /-- `m * ⌊log_b n⌋ ≤ n + m * m` holds in both regimes (`⌊log_b n⌋ ≤ m` and `m < ⌊log_b n⌋`). -/
 example : 3 * Nat.log 2 5 ≤ 5 + 3 * 3 ∧ 2 * Nat.log 2 16 ≤ 16 + 2 * 2 :=
   ⟨Nat.mul_log_le_add_sq Nat.one_lt_two 3 5, Nat.mul_log_le_add_sq Nat.one_lt_two 2 16⟩
+
+/-! ### Affine forms, list filtering and block modular sums -/
+
+/-- A function of bits depending only on `{0, 2}` and preserving sums of three points is affine. -/
+example : ∃ T ⊆ ({0, 2} : Finset ℕ), ∀ u : ℕ → Bool,
+    (true + u 0 + u 2) = (true + (0 : ℕ → Bool) 0 + (0 : ℕ → Bool) 2) + ∑ j ∈ T, u j :=
+  BitString.exists_affine_of_add_add (M := {0, 2}) (g := fun u => true + u 0 + u 2)
+    (fun u u' h => by simp [h 0 (by simp), h 2 (by simp)])
+    (fun u u' u'' => by
+      simp only [Pi.add_apply]
+      cases u 0 <;> cases u' 0 <;> cases u'' 0 <;>
+        cases u 2 <;> cases u' 2 <;> cases u'' 2 <;> rfl)
+
+/-- Prefix parity accumulation from a step recurrence. -/
+example (f : ℕ → Bool) :
+    let z : ℕ → Bool := fun j => true + ∑ j' ∈ Finset.range j, f j'
+    ∀ j ≤ 3, z j = true + ∑ j' ∈ Finset.range j, f j' :=
+  BitString.eq_add_sum_of_step (z := fun j => true + ∑ j' ∈ Finset.range j, f j')
+    (by simp)
+    (fun j _ => by simp [Finset.sum_range_succ, ← add_assoc]; rfl)
+
+/-- Filtering a list by non-membership in `H` takes the `Finset` difference. -/
+example :
+    (([1, 2, 2, 3].filter fun l => !([2, 4].any (· == l))).toFinset : Finset ℕ) =
+      ([1, 2, 2, 3].toFinset \ [2, 4].toFinset) :=
+  List.toFinset_filter_not_mem [1, 2, 2, 3] [2, 4]
+
+/-- Summing over `n` blocks of length `ℓ` at offset `i < ℓ`. -/
+example (F : ℕ → ℕ) :
+    ∑ q ∈ Finset.range (3 * 4), (if q % 4 = 2 then F q else 0) =
+      ∑ k ∈ Finset.range 3, F (k * 4 + 2) :=
+  Nat.sum_range_mul_ite_mod 3 (by decide : 2 < 4) F
+
+/-! ### Asymptotics, StateT folds, Boolean-cube product expansion and matrix scalar cancellation -/
+
+/-- `(n + 1) ^ k * n` is eventually below `2 ^ n`. -/
+example : ∀ᶠ n : ℕ in Filter.atTop, (n + 1) ^ 3 * n < 2 ^ n :=
+  Nat.eventually_add_one_pow_mul_lt_pow 3 Nat.one_lt_two
+
+/-- A real polynomial is eventually below an exponential with base `r > 1`. -/
+example : ∃ α : ℕ, 1 ≤ α ∧ (5 : ℝ) * (α : ℝ) ^ 3 ≤ (3 / 2 : ℝ) ^ α :=
+  Real.exists_one_le_and_mul_pow_le_pow 5 3 (by norm_num)
+
+/-- Running a `foldlM` in `StateT σ (Except ε)` chains results via `Except.bind`. -/
+example (g : ℕ → Bool → StateT ℕ (Except Unit) ℕ) :
+    (([true, false].foldlM g 0).run 1) =
+      [true, false].foldl (fun acc c => acc.bind fun p => (g p.1 c).run p.2) (.ok (0, 1)) :=
+  StateT.foldlM_run_except g [true, false] 0 1
+
+/-- Boolean-cube expansion of a product of differences over `ℤ`. -/
+example (f g : Fin 2 → ℤ) :
+    (∏ i, (f i - g i)) = ∑ w : Fin 2 → Bool,
+      (-1 : ℤ) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i :=
+  Cslib.prod_sub_eq_sum f g
+
+/-- The sum of all values in `Fin 4` is at most `4 * 4`. -/
+example : (∑ j : Fin 4, j.val) ≤ 4 * 4 ∧ (∑ j : Fin 4, j.val) = 6 :=
+  ⟨Fin.sum_val_le_mul_self 4, by decide⟩
+
+/-- Rescaling two matrices over `ℚ` by the same nonzero scalar cancels in `(c • A)⁻¹ * (c • B)`. -/
+example (B : Matrix (Fin 2) (Fin 2) ℚ) :
+    ((3 : ℚ) • (1 : Matrix (Fin 2) (Fin 2) ℚ))⁻¹ * ((3 : ℚ) • B) =
+      (1 : Matrix (Fin 2) (Fin 2) ℚ)⁻¹ * B :=
+  Matrix.inv_smul_mul_smul_of_ne_zero 1 B (by simp) (by norm_num)
 
 end ComplexityTests.Consolidation

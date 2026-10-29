@@ -19,7 +19,7 @@ namespace ComplexityTests.PCPExpander
 example : ComputableInPolyTime
     (fun index : ℕ => (⟨index % 1, Nat.mod_lt _ (by decide)⟩ : Fin 1))
     encUnary (encFinEnum (Fin 1)) :=
-  .of_tidy (ComputableTidilyInPolyTime.unary_finMod (by decide) _)
+  ComputableInPolyTime.unary_finMod (by decide) _
 
 -- The fixed finite output may use binary indices instead of the finite-rank encoding.
 example :
@@ -27,7 +27,7 @@ example :
       ⟨fun index => encNat index.val, fun _ _ h => Fin.val_injective (encNat.injective h)⟩
     ComputableInPolyTime
       (fun index : ℕ => (⟨index % 3, Nat.mod_lt _ (by decide)⟩ : Fin 3)) encUnary output :=
-  .of_tidy (ComputableTidilyInPolyTime.unary_finMod (by decide) _)
+  ComputableInPolyTime.unary_finMod (by decide) _
 
 private def base : RotationMap (Fin 16) (Fin 2) := .loops _ _
 
@@ -39,14 +39,13 @@ private def coordinates : Fin 16 ≃ (Fin 2 → Fin 2 × Fin 2) :=
 
 example : ComputableInPolyTime (TowerTable.build base coordinates (by decide))
     encUnary (TowerTable.encoding (encFinEnum (Fin 2))) :=
-  (TowerTable.polytime_build base coordinates (by decide) _).computableInPolyTime
+  TowerTable.polytime_build base coordinates (by decide) _
 
 -- Equivalent call spellings and captured inputs use the same uniform certificate.
 example : ComputableInPolyTime
     (fun p : Bool × ℕ => TowerTable.build base coordinates (by decide) (p.2 + 1))
     (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2))) := by
-  have h := (TowerTable.polytime_build base coordinates (by decide)
-    (encFinEnum (Fin 2))).computableInPolyTime
+  have h := TowerTable.polytime_build base coordinates (by decide) (encFinEnum (Fin 2))
   polytime
 
 example : (TowerTable.build base coordinates (by decide) 0).length = 16 := by decide
@@ -80,7 +79,7 @@ example : ComputableInPolyTime (TowerTable.rotateFamily base coordinates (by dec
       (encFinEnum ((Fin 16 × (Fin 2 × Fin 2)) ⊕ (Fin 16 × (Fin 2 × Fin 2))))))
     (encPair encUnary (encFinEnum ((Fin 16 × (Fin 2 × Fin 2)) ⊕
       (Fin 16 × (Fin 2 × Fin 2))))) :=
-  (TowerTable.polytime_rotateFamily base coordinates (by decide) _).computableInPolyTime
+  TowerTable.polytime_rotateFamily base coordinates (by decide) _
 
 example : TowerTable.rotateFamily base coordinates (by decide)
     (0, 3, .inl (0, (0, 1))) = (3, .inl (0, (0, 1))) := by decide
@@ -110,6 +109,6 @@ example : ComputableInPolyTime arithmeticExpanderRotate
     (encPair encUnary (encPair encUnary
       (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))))
     (encPair encUnary (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))) :=
-  (polytime_arithmeticExpanderRotate _).computableInPolyTime
+  polytime_arithmeticExpanderRotate _
 
 end ComplexityTests.PCPExpander

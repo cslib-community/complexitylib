@@ -20,7 +20,7 @@ private def emptyUnit : Unit ↪ List Bool := ⟨fun _ => [], fun _ _ _ => rfl�
 -- certificates capture payloads without requiring the other summand to be inhabited.
 example {α β Input : Type} (left : α ↪ List Bool) (right : β ↪ List Bool)
     (input : Input ↪ List Bool) (f : Input → α) (g : Input → β)
-    (hf : ComputableInPolyTime f input left) (hg : ComputableTidilyInPolyTime g input right)
+    (hf : ComputableInPolyTime f input left) (hg : ComputableInPolyTime g input right)
     (empty : Empty ↪ List Bool) :
     encSum emptyUnit emptyUnit (.inl ()) = [false] ∧
     encSum emptyUnit emptyUnit (.inr ()) = [true] ∧
@@ -29,7 +29,7 @@ example {α β Input : Type} (left : α ↪ List Bool) (right : β ↪ List Bool
     ComputableInPolyTime (fun x => let value := g x; Sum.inr value) input (encSum left right) ∧
     ComputableInPolyTime (Sum.inr : ℕ → Empty ⊕ ℕ) encUnary (encSum empty encUnary) ∧
     ComputableInPolyTime (Sum.inl : ℕ → ℕ ⊕ Empty) encUnary (encSum encUnary empty) := by
-  refine ⟨rfl, rfl, rfl, ?_, .of_tidy (by polytime), by fun_prop, by fun_prop⟩
+  refine ⟨rfl, rfl, rfl, ?_, by fun_prop, by fun_prop, by fun_prop⟩
   fail_if_success (clear hf; fun_prop)
   fun_prop
 

@@ -1,30 +1,35 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 OpenAI, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: OpenAI, Karn Seth, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate (Mathlib, `Mathlib/Order/Fin/Basic.lean`)
 
 public import Complexity.Init
+public import Mathlib.Data.Fintype.BigOperators
 public import Mathlib.Order.Fin.Basic
 public import Mathlib.Order.Monotone.Basic
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
-# Equal neighbors in monotone finite arrays
+# Equal neighbors and index-sum bounds in finite arrays
 
 A repeated value in a monotone finite array has an equal predecessor or successor.
-The value type needs only a partial order.
+The value type needs only a partial order. Also bounds the sum of all indices in `Fin n` by
+`n * n`.
 
 ## Main results
 
 * `Fin.exists_ne_apply_eq_iff_adjacent`: an adjacent witness suffices for any repeated value.
+* `Fin.sum_val_le_mul_self`: `(∑ j : Fin n, j.val) ≤ n * n`.
 
 ## References
 
-Adapted from MassProduction/Nonuniform/AdjacentDuplicates.lean in
-[S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
+* Adapted from MassProduction/Nonuniform/AdjacentDuplicates.lean in
+  [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
+* [OpenAI2026RationalHitting]
 -/
 
 @[expose] public section
@@ -55,3 +60,9 @@ theorem Fin.exists_ne_apply_eq_iff_adjacent {α : Type*} [PartialOrder α] {coun
       have := congrArg Fin.val equal
       dsimp only at this
       lia
+
+/-- The sum of all values in `Fin n` is at most `n * n`. -/
+theorem Fin.sum_val_le_mul_self (n : ℕ) : (∑ j : Fin n, j.val) ≤ n * n := by
+  calc
+    _ ≤ ∑ _j : Fin n, n := Finset.sum_le_sum fun j _ => Nat.le_of_lt j.isLt
+    _ = n * n := by simp

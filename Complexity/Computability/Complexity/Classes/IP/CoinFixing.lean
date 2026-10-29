@@ -14,6 +14,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.O
 public import Complexity.Probability.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryBounds
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryTake
+import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 import Cslib.Foundations.Control.Monad.IsMonadHom.List
 
 /-!
@@ -270,31 +271,6 @@ private theorem replay_coinStep (t : ℕ) (cfg : FiniteConfig k Bool Control Uni
           else .error none) >>= _ = _
         split_ifs with hm <;> simp [hm]
 
-/-- A fold in the state and exception monad is a fold of results. -/
-theorem foldlM_run {σ ε β γ : Type} (g : β → γ → StateT σ (Except ε) β) (l : List γ)
-    (b : β) (s : σ) :
-    (l.foldlM g b).run s =
-      l.foldl (fun acc c => acc.bind fun p => (g p.1 c).run p.2) (.ok (b, s)) := by
-  have hsplit (l : List γ) (x : Except ε (β × σ)) :
-      l.foldl (fun acc c => acc.bind fun p => (g p.1 c).run p.2) x =
-        x.bind fun p => l.foldl (fun acc c => acc.bind fun p => (g p.1 c).run p.2) (.ok p) := by
-    induction l generalizing x with
-    | nil => cases x <;> rfl
-    | cons c l ih =>
-      cases x with
-      | error e => exact (ih (.error e)).trans rfl
-      | ok p => rfl
-  induction l generalizing b s with
-  | nil => rfl
-  | cons c l ih =>
-    rw [List.foldlM_cons, StateT.run_bind, List.foldl_cons]
-    change _ = l.foldl _ ((g b c).run s)
-    rw [hsplit]
-    change Except.bind _ _ = Except.bind _ _
-    congr 1
-    funext p
-    exact ih p.1 p.2
-
 /-- A replay of a fold is a fold of replays. -/
 private theorem replay_foldlM {β γ : Type} (f : β → γ → WordQueryComp Unit β) (l : List γ)
     (b : β) :
@@ -310,7 +286,7 @@ theorem outcome_coinProgram (t : ℕ) (x r : List Bool) (h : History) :
   rw [outcome_eq_replay]
   congr 1
   rw [coinProgram, replay, OracleComp.interpret_map, StateT.run_map, ← replay, replay_foldlM,
-    foldlM_run]
+    StateT.foldlM_run_except]
   simp only [replay_coinStep, simulate]
   rfl
 

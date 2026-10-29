@@ -119,22 +119,6 @@ private theorem runFrom_leaf {p : ℕ} [Fact p.Prime] {st : List Frame} {v : Fin
     funext j
     simp [embed]
 
-/-- Sums over the positions of a table of `n` blocks of `ℓ` bits whose position within the block
-is `i`, as sums over the blocks. -/
-theorem sum_range_mul_ite_mod {M : Type*} [AddCommMonoid M] (n : ℕ) {i : ℕ} (hi : i < ℓ)
-    (F : ℕ → M) :
-    ∑ q ∈ Finset.range (n * ℓ), (if q % ℓ = i then F q else 0) =
-      ∑ k ∈ Finset.range n, F (k * ℓ + i) := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [Nat.succ_mul, Finset.sum_range_add, ih, Finset.sum_range_succ]
-    congr 1
-    have hmod (j : ℕ) (hj : j ∈ Finset.range ℓ) : (n * ℓ + j) % ℓ = j := by
-      rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt (Finset.mem_range.mp hj)]
-    rw [Finset.sum_congr rfl fun j hj => by rw [hmod j hj]]
-    simp [hi]
-
 /-- One step of the pass over a table. -/
 private theorem next_scan {p : ℕ} (R : Regs) (fr : Frame) (st : List Frame) {k : ℕ}
     (hk : k < tableLength ℓ) (acc : List ℕ) (out : List Bool) :
@@ -224,7 +208,7 @@ private theorem runFrom_update {p : ℕ} [Fact p.Prime] {fr : Frame} {st : List 
     congr 1
     funext i
     congr 2
-    rw [hsum i, tableLength, sum_range_mul_ite_mod _ i.isLt, eval_gatePoly_eq_sum]
+    rw [hsum i, tableLength, Nat.sum_range_mul_ite_mod _ i.isLt, eval_gatePoly_eq_sum]
     refine Finset.sum_congr rfl fun k _ => ?_
     rw [tableBit_mul_add, cast_weight, Nat.mul_add_div_fin]
     rfl

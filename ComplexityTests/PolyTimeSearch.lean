@@ -16,12 +16,12 @@ open Turing.MultiTapeTM
 -- The bound and the joint predicate certificate are independently necessary.
 example {α : Type} (input : α ↪ List Bool) (bound : α → ℕ)
     (predicate : α → ℕ → Prop) [∀ a, DecidablePred (predicate a)]
-    (hbound : ComputableTidilyInPolyTime bound input encUnary)
-    (hpredicate : ComputableTidilyInPolyTime (fun p : α × ℕ => decide (predicate p.1 p.2))
+    (hbound : ComputableInPolyTime bound input encUnary)
+    (hpredicate : ComputableInPolyTime (fun p : α × ℕ => decide (predicate p.1 p.2))
       (encPair input encUnary) encBool) :
-    ComputableTidilyInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
+    ComputableInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
       input encUnary ∧
-    ComputableTidilyInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
+    ComputableInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
       input encUnary := by
   constructor
   · fail_if_success (clear hbound; fun_prop)
@@ -34,15 +34,15 @@ example {α : Type} (input : α ↪ List Bool) (bound : α → ℕ)
 -- Framed and raw bit lists and arithmetic predicates with a computed unary bound are certified
 -- automatically.
 example :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : List Bool × ℕ =>
         Nat.findGreatest (fun i => (p.1[i]?).getD false = true) (p.2 + p.1.length))
       (encPair encBits encUnary) encUnary ∧
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : List Bool × ℕ =>
         Nat.findGreatest (fun i => (p.1[i]?).getD false = true) (p.2 + p.1.length))
       (encPair (encList encBool) encUnary) encUnary ∧
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun n : ℕ => Nat.findGreatest (fun i => i * i ≤ n) (n + 1))
       encUnary encUnary :=
   ⟨by fun_prop, by polytime, by polytime⟩

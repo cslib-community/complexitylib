@@ -24,7 +24,7 @@ The construction directly adapts Anthropic's pinned
 
 ## Main definitions
 
-* `Host.instanceArgs`: the concrete generated instance and layout.
+* `Host.instanceArgsAt`, `Host.instanceArgs`: caller-owned and standalone matrix layouts.
 * `Host.hit`: the mathematical verdict for one instance.
 * `Host.round`: fill, invoke the solver and advance one instance.
 * `Host.loop`: the complete instance loop.
@@ -42,11 +42,15 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.Host
 open Cslib.WordRAM Cslib.WordRAM.Signed
 open Cslib.Algorithms.ThreeSum
 
-/-- The generated matrices follow the input and precede the solver's workspace. -/
-def instanceArgs (N U s : ℕ) (μ : ℕ → ℤ) : Fill.Args :=
-  ⟨N, sideLength N, s, 1, N + 1,
-    N + 1 + sideLength N * sideLength N,
-    N + 1 + 2 * (sideLength N * sideLength N), μ, 2 * U + 1⟩
+/-- The matrices occupy a caller-supplied workspace; the input has its own source pointer. -/
+def instanceArgsAt (N U src workspace s : ℕ) (μ : ℕ → ℤ) : Fill.Args :=
+  ⟨N, sideLength N, s, src, workspace,
+    workspace + sideLength N * sideLength N,
+    workspace + 2 * (sideLength N * sideLength N), μ, 2 * U + 1⟩
+
+/-- The standalone input and matrix placement is one caller-layout specialization. -/
+abbrev instanceArgs (N U s : ℕ) (μ : ℕ → ℤ) : Fill.Args :=
+  instanceArgsAt N U 1 (N + 1) s μ
 
 /-- The exact-triangle answer for one instance of the explicit reduction. -/
 def hit (N U s : ℕ) (μ : ℕ → ℤ) : Prop :=
@@ -115,10 +119,10 @@ private theorem fill_injective : fillRegisters.Injective := by
   intro i j h
   exact Fin.ext (congrArg (fun k : Fin 64 => k.val) h)
 
-private theorem parameters_of_regs {N U : ℕ} {x y : Data 64}
-    (hx : Parameters N U x)
+private theorem parameters_of_regs {N U src workspace : ℕ} {x y : Data 64}
+    (hx : ParametersAt N U src workspace x)
     (h : ∀ i : Fin 64, 34 ≤ i.val → i ≠ inst → i ≠ found → y.regs i = x.regs i) :
-    Parameters N U y := by
+    ParametersAt N U src workspace y := by
   exact ⟨(h len (by decide) (by decide) (by decide)).trans hx.len,
     (h upper (by decide) (by decide) (by decide)).trans hx.upper,
     (h base (by decide) (by decide) (by decide)).trans hx.base,
@@ -134,24 +138,25 @@ private theorem parameters_of_regs {N U : ℕ} {x y : Data 64}
 
 /-- All eight argument copies and the complete matrix builder are charged. Memory before
 the matrix blocks is preserved; the result contains the three actual serialized matrices. -/
-theorem exec_fill {w N U s : ℕ} (μ : ℕ → ℤ) (x : Data 64)
-    (hp : Parameters N U x) (hs : x.regs inst = s)
-    (hmem : ∀ i < N, x.mem (1 + i) = encode (μ i))
+theorem exec_fill_at {w N U src workspace s : ℕ} (μ : ℕ → ℤ) (x : Data 64)
+    (hp : ParametersAt N U src workspace x) (hs : x.regs inst = s)
+    (hmem : ∀ i < N, x.mem (src + i) = encode (μ i))
     (hidx : GenericRAM.Signed.Fits w ((2 * (sideLength N * sideLength N) + s + 1 : ℕ) : ℤ))
     (hF : GenericRAM.Signed.Fits w (2 * (U : ℤ) + 1))
     (hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)))
     (hμ : ∀ i < N, GenericRAM.Signed.Fits w (μ i))
-    (hsize : Fits (w + 2) (N + 1 + 3 * (sideLength N * sideLength N))) :
+    (hsize : Fits (w + 2) (workspace + 3 * (sideLength N * sideLength N)))
+    (hbelow : src + N ≤ workspace) :
     ∃ y, ExecWithin (w + 2) fill x y (131 * (sideLength N * sideLength N) + 13) ∧
-      Parameters N U y ∧ y.regs inst = s ∧ y.regs found = x.regs found ∧
-      y.mem = (instanceArgs N U s μ).filled x.mem (sideLength N * sideLength N) ∧
-      (∀ a < N + 1, y.mem a = x.mem a) := by
-  let b := x.set (fillRegisters Cell.len) N |>.set (fillRegisters Cell.base) 1
+      ParametersAt N U src workspace y ∧ y.regs inst = s ∧ y.regs found = x.regs found ∧
+      y.mem = (instanceArgsAt N U src workspace s μ).filled x.mem (sideLength N * sideLength N) ∧
+      (∀ a < workspace, y.mem a = x.mem a) := by
+  let b := x.set (fillRegisters Cell.len) N |>.set (fillRegisters Cell.base) src
     |>.set (fillRegisters Cell.filler) (4 * U + 2)
     |>.set (fillRegisters Cell.side) (sideLength N) |>.set (fillRegisters Cell.inst) s
-    |>.set (fillRegisters Cell.matAB) (N + 1)
-    |>.set (fillRegisters Cell.matBC) (N + 1 + sideLength N * sideLength N)
-    |>.set (fillRegisters Cell.matAC) (N + 1 + 2 * (sideLength N * sideLength N))
+    |>.set (fillRegisters Cell.matAB) workspace
+    |>.set (fillRegisters Cell.matBC) (workspace + sideLength N * sideLength N)
+    |>.set (fillRegisters Cell.matAC) (workspace + 2 * (sideLength N * sideLength N))
   have hb : ExecWithin (w + 2) fillSetup x b 8 := by
     ram_eval [fillSetup, b, hp.len, hp.base, hp.encodedFiller, hp.side, hs,
       hp.ab, hp.bc, hp.ac, fillRegisters, Cell.len, Cell.base, Cell.filler, Cell.side,
@@ -165,30 +170,31 @@ theorem exec_fill {w N U s : ℕ} (μ : ℕ → ℤ) (x : Data 64)
       have := j.isLt
       omega
     simp only [b, Data.set_regs, Function.update_of_ne (hne _)]
-  have hbf : (b.comap fillRegisters).regs Cell.filler = encode (instanceArgs N U s μ).filler := by
-    simp +decide [b, instanceArgs, fillRegisters, Cell.filler, Cell.side, Cell.inst,
+  have hbf : (b.comap fillRegisters).regs Cell.filler =
+      encode (instanceArgsAt N U src workspace s μ).filler := by
+    simp +decide [b, instanceArgsAt, fillRegisters, Cell.filler, Cell.side, Cell.inst,
       Cell.matAB, Cell.matBC, Cell.matAC, encode,
       show ¬(2 * (U : ℤ) + 1 < 0) from by omega]
     omega
-  obtain ⟨p, he, hm, -⟩ := Fill.exec (instanceArgs N U s μ) (b.comap fillRegisters)
-    (by simp +decide [b, instanceArgs, fillRegisters, Cell.side, Cell.inst,
+  obtain ⟨p, he, hm, -⟩ := Fill.exec (instanceArgsAt N U src workspace s μ) (b.comap fillRegisters)
+    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.side, Cell.inst,
       Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgs, fillRegisters, Cell.inst,
+    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.inst,
       Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgs, fillRegisters, Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgs, fillRegisters, Cell.matBC, Cell.matAC])
-    (by simp [b, instanceArgs])
-    (by simp +decide [b, instanceArgs, fillRegisters, Cell.len, Cell.base, Cell.filler,
+    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.matAB, Cell.matBC, Cell.matAC])
+    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.matBC, Cell.matAC])
+    (by simp [b, instanceArgsAt])
+    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.len, Cell.base, Cell.filler,
       Cell.side, Cell.inst, Cell.matAB, Cell.matBC, Cell.matAC])
-    (by simp +decide [b, instanceArgs, fillRegisters, Cell.base, Cell.filler,
+    (by simp +decide [b, instanceArgsAt, fillRegisters, Cell.base, Cell.filler,
       Cell.side, Cell.inst, Cell.matAB, Cell.matBC, Cell.matAC]) hbf
     hmem hidx hF hnF hμ
-    (hsize.of_le (by dsimp [instanceArgs]; omega))
-    (hsize.of_le (by dsimp [instanceArgs]; omega))
-    (hsize.of_le (by dsimp [instanceArgs]; omega))
-    (hsize.of_le (by dsimp [instanceArgs]; omega))
-    (by dsimp [instanceArgs]; omega) (by dsimp [instanceArgs]; omega)
-    (by dsimp [instanceArgs]; omega)
+    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+    (hsize.of_le (by dsimp [instanceArgsAt]; omega))
+    (by dsimp [instanceArgsAt]; omega) (by dsimp [instanceArgsAt]; omega)
+    (by dsimp [instanceArgsAt]; omega)
   let y := p.extend fillRegisters b
   have hy : ExecWithin (w + 2) (Fill.program.rename fillRegisters) b y
       (131 * (sideLength N * sideLength N) + 5) := he.rename fill_injective
@@ -207,7 +213,7 @@ theorem exec_fill {w N U s : ℕ} (μ : ℕ → ℤ) (x : Data 64)
     change p.mem a = x.mem a
     rw [hm]
     apply Fill.Args.outside_filled
-    all_goals dsimp [instanceArgs]; omega
+    all_goals dsimp [instanceArgsAt]; omega
 
 /-- The host register bank is embedded injectively. -/
 theorem hostRegisters_injective {r : ℕ} : (hostRegisters (r := r)).Injective := by
@@ -293,8 +299,186 @@ private theorem exec_finish {w r s : ℕ} (x : Data (64 + (r + 7)))
     case mem => rfl
 
 /-- One generated instance, with the concrete solver's native execution proof supplied by the
-caller. The solver may overwrite matrices and scratch, but preserves the length header and input.
+caller. The solver may overwrite matrices and scratch, but preserves the memory prefix below
+the workspace, including the supplied input.
 The matrices in its premise are produced by the native builder, with no supplied layout oracle. -/
+theorem exec_round_at {w r N U src workspace s T : ℕ} (μ : ℕ → ℤ)
+    (solver : Code .standard (r + 7)) (x : Data (64 + (r + 7)))
+    (hp : ParametersAt N U src workspace (x.comap hostRegisters))
+    (hs : x.regs (hostRegisters inst) = s) (hslt : s < 2 * sideLength N)
+    (hf : x.regs (hostRegisters found) ≤ 1)
+    (hmem : ∀ i < N, x.mem (src + i) = encode (μ i))
+    (hidx : GenericRAM.Signed.Fits w ((2 * (sideLength N * sideLength N) + s + 1 : ℕ) : ℤ))
+    (hF : GenericRAM.Signed.Fits w (2 * (U : ℤ) + 1))
+    (hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)))
+    (hμ : ∀ i < N, GenericRAM.Signed.Fits w (μ i))
+    (hsize : Fits (w + 2) (workspace + 3 * (sideLength N * sideLength N)))
+    (hbelow : src + N ≤ workspace)
+    (hsolver : ∀ (a : Data (r + 7)) (mem : ℕ → ℕ),
+      a.regs (solverArg 0) = sideLength N → a.regs (solverArg 1) = 2 * U + 1 →
+      a.regs (solverArg 2) = workspace →
+      a.regs (solverArg 3) = workspace + sideLength N * sideLength N →
+      a.regs (solverArg 4) = workspace + 2 * (sideLength N * sideLength N) →
+      a.regs (solverArg 5) = workspace + 3 * (sideLength N * sideLength N) →
+      a.mem = (instanceArgsAt N U src workspace s μ).filled mem (sideLength N * sideLength N) →
+      ∃ b, ExecWithin (w + 2) solver a b T ∧ b.regs (solverArg 6) ≤ 1 ∧
+        (b.regs (solverArg 6) = 1 ↔ hit N U s μ) ∧
+        (∀ a < workspace, b.mem a = mem a)) :
+    ∃ y, ExecWithin (w + 2) (round solver) x y
+        (131 * (sideLength N * sideLength N) + T + 23) ∧
+      ParametersAt N U src workspace (y.comap hostRegisters) ∧ y.regs (hostRegisters inst) = s + 1 ∧
+      y.regs (hostRegisters found) ≤ 1 ∧
+      (y.regs (hostRegisters found) = 1 ↔ x.regs (hostRegisters found) = 1 ∨ hit N U s μ) ∧
+      (∀ a < workspace, y.mem a = x.mem a) := by
+  obtain ⟨a, ha, hap, hasi, haf, ham, -⟩ :=
+    exec_fill_at μ (x.comap hostRegisters) hp hs hmem hidx hF hnF hμ hsize hbelow
+  let y := a.extend hostRegisters x
+  have hy : ExecWithin (w + 2) (fill.rename hostRegisters) x y
+      (131 * (sideLength N * sideLength N) + 13) := ha.rename hostRegisters_injective
+  have hyc : y.comap hostRegisters = a := Data.comap_extend hostRegisters_injective _ _
+  have hyp : ParametersAt N U src workspace (y.comap hostRegisters) := by rw [hyc]; exact hap
+  have hysi : y.regs (hostRegisters inst) = s :=
+    (hostRegisters_injective.extend_apply _ _ inst).trans hasi
+  have hyf : y.regs (hostRegisters found) = x.regs (hostRegisters found) :=
+    (hostRegisters_injective.extend_apply _ _ found).trans haf
+  obtain ⟨b, hb, hbr, hbm, hb0, hb1, hb2, hb3, hb4, hb5⟩ := exec_solverSetup (w := w + 2) y
+  have hbp : ParametersAt N U src workspace (b.comap hostRegisters) :=
+    parameters_of_regs hyp (fun i _ _ _ => hbr i)
+  obtain ⟨c, hc, hcans, hchit, hcm⟩ := hsolver (b.comap solverRegisters) x.mem
+    (hb0.trans hyp.side) (hb1.trans hyp.filler) (hb2.trans hyp.ab)
+    (hb3.trans hyp.bc) (hb4.trans hyp.ac) (hb5.trans hyp.free)
+    (hbm.trans ham)
+  let z := c.extend solverRegisters b
+  have hz : ExecWithin (w + 2) (solver.rename solverRegisters) b z T :=
+    hc.rename solver_injective
+  have hzr (i : Fin 64) : z.regs (hostRegisters i) = b.regs (hostRegisters i) := by
+    apply hz.regs_eq
+    apply Code.preserves_rename_of_forall_ne
+    intro j he
+    have hv := congrArg Fin.val he
+    dsimp only [solverRegisters, hostRegisters] at hv
+    have := i.isLt
+    omega
+  have hzp : ParametersAt N U src workspace (z.comap hostRegisters) :=
+    parameters_of_regs hbp (fun i _ _ _ => hzr i)
+  have hzsi : z.regs (hostRegisters inst) = s :=
+    (hzr inst).trans ((hbr inst).trans hysi)
+  have hzf : z.regs (hostRegisters found) = x.regs (hostRegisters found) :=
+    (hzr found).trans ((hbr found).trans hyf)
+  have hza : z.regs (callRegisters 6) = c.regs (solverArg 6) :=
+    solver_injective.extend_apply _ _ _
+  have hinc : Fits (w + 2) (s + 1) := hsize.of_le (by
+    have := Nat.le_mul_self (sideLength N)
+    omega)
+  obtain ⟨q, hq, hqi, hqf, hqr, hqm⟩ := exec_finish z hzp.one hzsi hinc
+  have hqp : ParametersAt N U src workspace (q.comap hostRegisters) :=
+    parameters_of_regs hzp (fun i _ hi hf => hqr i hi hf)
+  refine ⟨q, ?_, hqp, hqi, ?_, ?_, ?_⟩
+  · exact (hy.seq (hb.seq (hz.seq hq))).mono (by omega)
+  · rw [hqf, hza, hzf]
+    split_ifs <;> omega
+  · rw [hqf, hza, hzf]
+    by_cases h : c.regs (solverArg 6) = 1
+    · simp only [h, ↓reduceIte, hchit.mp h, or_true]
+    · simp only [h, ↓reduceIte, hchit.not.mp h, or_false]
+  · intro a ha
+    rw [hqm]
+    exact hcm a ha
+
+/-- The complete native instance loop. Its invariant records exactly the instances already
+examined, retains the original input, and charges every solver call and loop instruction. -/
+theorem exec_loop_at {w r N U src workspace T : ℕ} (μ : ℕ → ℤ)
+    (solver : Code .standard (r + 7)) (x : Data (64 + (r + 7)))
+    (hp : ParametersAt N U src workspace (x.comap hostRegisters))
+    (hi : x.regs (hostRegisters inst) = 0) (hf : x.regs (hostRegisters found) = 0)
+    (hmem : ∀ i < N, x.mem (src + i) = encode (μ i))
+    (hidx : ∀ s < 2 * sideLength N,
+      GenericRAM.Signed.Fits w ((2 * (sideLength N * sideLength N) + s + 1 : ℕ) : ℤ))
+    (hF : GenericRAM.Signed.Fits w (2 * (U : ℤ) + 1))
+    (hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)))
+    (hμ : ∀ i < N, GenericRAM.Signed.Fits w (μ i))
+    (hsize : Fits (w + 2) (workspace + 3 * (sideLength N * sideLength N)))
+    (hbelow : src + N ≤ workspace)
+    (hsolver : ∀ s < 2 * sideLength N, ∀ (a : Data (r + 7)) (mem : ℕ → ℕ),
+      a.regs (solverArg 0) = sideLength N → a.regs (solverArg 1) = 2 * U + 1 →
+      a.regs (solverArg 2) = workspace →
+      a.regs (solverArg 3) = workspace + sideLength N * sideLength N →
+      a.regs (solverArg 4) = workspace + 2 * (sideLength N * sideLength N) →
+      a.regs (solverArg 5) = workspace + 3 * (sideLength N * sideLength N) →
+      a.mem = (instanceArgsAt N U src workspace s μ).filled mem (sideLength N * sideLength N) →
+      ∃ b, ExecWithin (w + 2) solver a b T ∧ b.regs (solverArg 6) ≤ 1 ∧
+        (b.regs (solverArg 6) = 1 ↔ hit N U s μ) ∧
+        (∀ a < workspace, b.mem a = mem a)) :
+    ∃ y, ExecWithin (w + 2) (loop solver) x y
+        (2 * sideLength N * (131 * (sideLength N * sideLength N) + T + 25) + 2) ∧
+      ParametersAt N U src workspace (y.comap hostRegisters) ∧
+      y.regs (hostRegisters inst) = 2 * sideLength N ∧
+      y.regs (hostRegisters found) ≤ 1 ∧
+      (y.regs (hostRegisters found) = 1 ↔ ∃ s < 2 * sideLength N, hit N U s μ) ∧
+      (∀ a < workspace, y.mem a = x.mem a) := by
+  let I (y : Data (64 + (r + 7))) : Prop :=
+    ParametersAt N U src workspace (y.comap hostRegisters) ∧
+      y.regs (hostRegisters inst) ≤ 2 * sideLength N ∧
+      y.regs (hostRegisters found) ≤ 1 ∧
+      (y.regs (hostRegisters found) = 1 ↔ ∃ s < y.regs (hostRegisters inst), hit N U s μ) ∧
+      (∀ a < workspace, y.mem a = x.mem a)
+  have hbody (y : Data (64 + (r + 7))) (hy : I y)
+      (hc : (Cond.lt (hostRegisters inst) (hostRegisters stop)).Holds y) :
+      ∃ z, ExecWithin (w + 2) (round solver) y z
+          (131 * (sideLength N * sideLength N) + T + 23) ∧ I z ∧
+        2 * sideLength N - z.regs (hostRegisters inst) <
+          2 * sideLength N - y.regs (hostRegisters inst) := by
+    obtain ⟨hyp, hys, hyf, hyans, hym⟩ := hy
+    have hlt : y.regs (hostRegisters inst) < 2 * sideLength N := by
+      change y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
+      exact hc.trans_eq hyp.stop
+    have hyinput : ∀ i < N, y.mem (src + i) = encode (μ i) := by
+      intro i hi
+      rw [hym _ (by omega)]
+      exact hmem i hi
+    obtain ⟨z, hz, hzp, hzsi, hzf, hzans, hzm⟩ := exec_round_at μ solver y hyp rfl hlt
+      hyf hyinput (hidx _ hlt) hF hnF hμ hsize hbelow (hsolver _ hlt)
+    refine ⟨z, hz, ⟨hzp, by omega, hzf, ?_, ?_⟩, by omega⟩
+    · rw [hzans, hyans, hzsi]
+      constructor
+      · rintro (⟨s, hs, hh⟩ | hh)
+        · exact ⟨s, by omega, hh⟩
+        · exact ⟨_, by omega, hh⟩
+      · rintro ⟨s, hs, hh⟩
+        by_cases h : s < y.regs (hostRegisters inst)
+        · exact Or.inl ⟨s, h, hh⟩
+        · have he : s = y.regs (hostRegisters inst) := by omega
+          exact Or.inr (he ▸ hh)
+    · intro a ha
+      exact (hzm a ha).trans (hym a ha)
+  have hx : I x := ⟨hp, by omega, by omega, by simp [hi, hf], fun _ _ => rfl⟩
+  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
+    (fun y => 2 * sideLength N - y.regs (hostRegisters inst)) hbody hx
+  obtain ⟨hyp, hyi, hyf, hyans, hym⟩ := hy
+  have hend : y.regs (hostRegisters inst) = 2 * sideLength N := by
+    change ¬y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
+    have hstop : y.regs (hostRegisters stop) = 2 * sideLength N := hyp.stop
+    omega
+  refine ⟨y, ?_, hyp, hend, hyf, ?_, hym⟩
+  · simpa only [loop, hi, Nat.sub_zero, Nat.add_assoc, Nat.reduceAdd] using he
+  · simpa only [hend] using hyans
+
+/-- Standalone specialization of the caller-layout execution theorem. -/
+theorem exec_fill {w N U s : ℕ} (μ : ℕ → ℤ) (x : Data 64)
+    (hp : Parameters N U x) (hs : x.regs inst = s)
+    (hmem : ∀ i < N, x.mem (1 + i) = encode (μ i))
+    (hidx : GenericRAM.Signed.Fits w ((2 * (sideLength N * sideLength N) + s + 1 : ℕ) : ℤ))
+    (hF : GenericRAM.Signed.Fits w (2 * (U : ℤ) + 1))
+    (hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)))
+    (hμ : ∀ i < N, GenericRAM.Signed.Fits w (μ i))
+    (hsize : Fits (w + 2) (N + 1 + 3 * (sideLength N * sideLength N))) :
+    ∃ y, ExecWithin (w + 2) fill x y (131 * (sideLength N * sideLength N) + 13) ∧
+      Parameters N U y ∧ y.regs inst = s ∧ y.regs found = x.regs found ∧
+      y.mem = (instanceArgs N U s μ).filled x.mem (sideLength N * sideLength N) ∧
+      (∀ a < N + 1, y.mem a = x.mem a) :=
+  exec_fill_at μ x hp hs hmem hidx hF hnF hμ hsize (by omega)
+
+/-- Standalone specialization of the caller-layout execution theorem. -/
 theorem exec_round {w r N U s T : ℕ} (μ : ℕ → ℤ)
     (solver : Code .standard (r + 7)) (x : Data (64 + (r + 7)))
     (hp : Parameters N U (x.comap hostRegisters))
@@ -321,64 +505,10 @@ theorem exec_round {w r N U s T : ℕ} (μ : ℕ → ℤ)
       Parameters N U (y.comap hostRegisters) ∧ y.regs (hostRegisters inst) = s + 1 ∧
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ x.regs (hostRegisters found) = 1 ∨ hit N U s μ) ∧
-      (∀ a < N + 1, y.mem a = x.mem a) := by
-  obtain ⟨a, ha, hap, hasi, haf, ham, -⟩ :=
-    exec_fill μ (x.comap hostRegisters) hp hs hmem hidx hF hnF hμ hsize
-  let y := a.extend hostRegisters x
-  have hy : ExecWithin (w + 2) (fill.rename hostRegisters) x y
-      (131 * (sideLength N * sideLength N) + 13) := ha.rename hostRegisters_injective
-  have hyc : y.comap hostRegisters = a := Data.comap_extend hostRegisters_injective _ _
-  have hyp : Parameters N U (y.comap hostRegisters) := by rw [hyc]; exact hap
-  have hysi : y.regs (hostRegisters inst) = s :=
-    (hostRegisters_injective.extend_apply _ _ inst).trans hasi
-  have hyf : y.regs (hostRegisters found) = x.regs (hostRegisters found) :=
-    (hostRegisters_injective.extend_apply _ _ found).trans haf
-  obtain ⟨b, hb, hbr, hbm, hb0, hb1, hb2, hb3, hb4, hb5⟩ := exec_solverSetup (w := w + 2) y
-  have hbp : Parameters N U (b.comap hostRegisters) :=
-    parameters_of_regs hyp (fun i _ _ _ => hbr i)
-  obtain ⟨c, hc, hcans, hchit, hcm⟩ := hsolver (b.comap solverRegisters) x.mem
-    (hb0.trans hyp.side) (hb1.trans hyp.filler) (hb2.trans hyp.ab)
-    (hb3.trans hyp.bc) (hb4.trans hyp.ac) (hb5.trans hyp.free)
-    (hbm.trans ham)
-  let z := c.extend solverRegisters b
-  have hz : ExecWithin (w + 2) (solver.rename solverRegisters) b z T :=
-    hc.rename solver_injective
-  have hzr (i : Fin 64) : z.regs (hostRegisters i) = b.regs (hostRegisters i) := by
-    apply hz.regs_eq
-    apply Code.preserves_rename_of_forall_ne
-    intro j he
-    have hv := congrArg Fin.val he
-    dsimp only [solverRegisters, hostRegisters] at hv
-    have := i.isLt
-    omega
-  have hzp : Parameters N U (z.comap hostRegisters) :=
-    parameters_of_regs hbp (fun i _ _ _ => hzr i)
-  have hzsi : z.regs (hostRegisters inst) = s :=
-    (hzr inst).trans ((hbr inst).trans hysi)
-  have hzf : z.regs (hostRegisters found) = x.regs (hostRegisters found) :=
-    (hzr found).trans ((hbr found).trans hyf)
-  have hza : z.regs (callRegisters 6) = c.regs (solverArg 6) :=
-    solver_injective.extend_apply _ _ _
-  have hinc : Fits (w + 2) (s + 1) := hsize.of_le (by
-    have := Nat.le_mul_self (sideLength N)
-    omega)
-  obtain ⟨q, hq, hqi, hqf, hqr, hqm⟩ := exec_finish z hzp.one hzsi hinc
-  have hqp : Parameters N U (q.comap hostRegisters) :=
-    parameters_of_regs hzp (fun i _ hi hf => hqr i hi hf)
-  refine ⟨q, ?_, hqp, hqi, ?_, ?_, ?_⟩
-  · exact (hy.seq (hb.seq (hz.seq hq))).mono (by omega)
-  · rw [hqf, hza, hzf]
-    split_ifs <;> omega
-  · rw [hqf, hza, hzf]
-    by_cases h : c.regs (solverArg 6) = 1
-    · simp only [h, ↓reduceIte, hchit.mp h, or_true]
-    · simp only [h, ↓reduceIte, hchit.not.mp h, or_false]
-  · intro a ha
-    rw [hqm]
-    exact hcm a ha
+      (∀ a < N + 1, y.mem a = x.mem a) :=
+  exec_round_at μ solver x hp hs hslt hf hmem hidx hF hnF hμ hsize (by omega) hsolver
 
-/-- The complete native instance loop. Its invariant records exactly the instances already
-examined, retains the original input, and charges every solver call and loop instruction. -/
+/-- Standalone specialization of the caller-layout execution theorem. -/
 theorem exec_loop {w r N U T : ℕ} (μ : ℕ → ℤ)
     (solver : Code .standard (r + 7)) (x : Data (64 + (r + 7)))
     (hp : Parameters N U (x.comap hostRegisters))
@@ -406,52 +536,7 @@ theorem exec_loop {w r N U T : ℕ} (μ : ℕ → ℤ)
       y.regs (hostRegisters inst) = 2 * sideLength N ∧
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ ∃ s < 2 * sideLength N, hit N U s μ) ∧
-      (∀ a < N + 1, y.mem a = x.mem a) := by
-  let I (y : Data (64 + (r + 7))) : Prop :=
-    Parameters N U (y.comap hostRegisters) ∧
-      y.regs (hostRegisters inst) ≤ 2 * sideLength N ∧
-      y.regs (hostRegisters found) ≤ 1 ∧
-      (y.regs (hostRegisters found) = 1 ↔ ∃ s < y.regs (hostRegisters inst), hit N U s μ) ∧
-      (∀ a < N + 1, y.mem a = x.mem a)
-  have hbody (y : Data (64 + (r + 7))) (hy : I y)
-      (hc : (Cond.lt (hostRegisters inst) (hostRegisters stop)).Holds y) :
-      ∃ z, ExecWithin (w + 2) (round solver) y z
-          (131 * (sideLength N * sideLength N) + T + 23) ∧ I z ∧
-        2 * sideLength N - z.regs (hostRegisters inst) <
-          2 * sideLength N - y.regs (hostRegisters inst) := by
-    obtain ⟨hyp, hys, hyf, hyans, hym⟩ := hy
-    have hlt : y.regs (hostRegisters inst) < 2 * sideLength N := by
-      change y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
-      exact hc.trans_eq hyp.stop
-    have hyinput : ∀ i < N, y.mem (1 + i) = encode (μ i) := by
-      intro i hi
-      rw [hym _ (by omega)]
-      exact hmem i hi
-    obtain ⟨z, hz, hzp, hzsi, hzf, hzans, hzm⟩ := exec_round μ solver y hyp rfl hlt
-      hyf hyinput (hidx _ hlt) hF hnF hμ hsize (hsolver _ hlt)
-    refine ⟨z, hz, ⟨hzp, by omega, hzf, ?_, ?_⟩, by omega⟩
-    · rw [hzans, hyans, hzsi]
-      constructor
-      · rintro (⟨s, hs, hh⟩ | hh)
-        · exact ⟨s, by omega, hh⟩
-        · exact ⟨_, by omega, hh⟩
-      · rintro ⟨s, hs, hh⟩
-        by_cases h : s < y.regs (hostRegisters inst)
-        · exact Or.inl ⟨s, h, hh⟩
-        · have he : s = y.regs (hostRegisters inst) := by omega
-          exact Or.inr (he ▸ hh)
-    · intro a ha
-      exact (hzm a ha).trans (hym a ha)
-  have hx : I x := ⟨hp, by omega, by omega, by simp [hi, hf], fun _ _ => rfl⟩
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => 2 * sideLength N - y.regs (hostRegisters inst)) hbody hx
-  obtain ⟨hyp, hyi, hyf, hyans, hym⟩ := hy
-  have hend : y.regs (hostRegisters inst) = 2 * sideLength N := by
-    change ¬y.regs (hostRegisters inst) < y.regs (hostRegisters stop) at hc
-    have hstop : y.regs (hostRegisters stop) = 2 * sideLength N := hyp.stop
-    omega
-  refine ⟨y, ?_, hyp, hend, hyf, ?_, hym⟩
-  · simpa only [loop, hi, Nat.sub_zero, Nat.add_assoc, Nat.reduceAdd] using he
-  · simpa only [hend] using hyans
+      (∀ a < N + 1, y.mem a = x.mem a) :=
+  exec_loop_at μ solver x hp hi hf hmem hidx hF hnF hμ hsize (by omega) hsolver
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Host

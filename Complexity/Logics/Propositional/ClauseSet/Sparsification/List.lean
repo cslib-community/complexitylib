@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Tree
+import Complexity.Foundations.Data.List.Filter
 import Mathlib.Data.List.Sublists
 import Mathlib.Tactic.Ring
 
@@ -214,14 +215,6 @@ theorem toClauseSet_flower {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) 
     simp only [Bool.and_eq_true, beq_iff_eq, subclause_eq_true_iff]
     exact ⟨by rw [← List.toFinset_card_of_nodup (hnd C hC), hcard], hH⟩
 
-theorem toFinset_filter_not_mem (C H : Clause V) :
-    (C.filter fun l => !H.any (· == l)).toFinset = C.toFinset \ H.toFinset := by
-  ext l
-  rw [List.mem_toFinset, List.mem_filter, Finset.mem_sdiff, List.mem_toFinset, List.mem_toFinset]
-  refine and_congr_right fun _ => ?_
-  rw [Bool.not_eq_true', List.any_eq_false]
-  exact ⟨fun h hl => h l hl (beq_self_eq_true l), fun h l' hl' heq => h (beq_iff_eq.mp heq ▸ hl')⟩
-
 /-- The list-level petals compute the clause-set petals when clauses have no repeated literals. -/
 theorem toClauseSet_petals {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) (H : Clause V) :
     (petals ψ c H).toClauseSet = ClauseSet.Sparsification.petals ψ.toClauseSet c H.toFinset := by
@@ -230,9 +223,9 @@ theorem toClauseSet_petals {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) 
   simp only [petals, List.mem_map, mem_toClauseSet]
   constructor
   · rintro ⟨_, ⟨C, hC, rfl⟩, rfl⟩
-    exact ⟨C.toFinset, ⟨C, hC, rfl⟩, (toFinset_filter_not_mem C H).symm⟩
+    exact ⟨C.toFinset, ⟨C, hC, rfl⟩, (List.toFinset_filter_not_mem C H).symm⟩
   · rintro ⟨_, ⟨C, hC, rfl⟩, rfl⟩
-    exact ⟨_, ⟨C, hC, rfl⟩, toFinset_filter_not_mem C H⟩
+    exact ⟨_, ⟨C, hC, rfl⟩, List.toFinset_filter_not_mem C H⟩
 
 private theorem toClauseSet_intro {ψ : CNF V} (hnd : ∀ C ∈ ψ, C.Nodup) (c : ℕ) (H : Clause V)
     (b : Bool) :
@@ -506,7 +499,7 @@ private theorem normalized_child {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {k
       have hE' := List.mem_filter.mp hE
       have hF' := List.mem_filter.mp hF
       simp only [Bool.and_eq_true, beq_iff_eq, subclause_eq_true_iff] at hE' hF'
-      simp only [Function.comp_apply, toFinset_filter_not_mem] at heq
+      simp only [Function.comp_apply, List.toFinset_filter_not_mem] at heq
       have hEF : E.toFinset = F.toFinset := by
         rw [← sdiff_union_of_subset hE'.2.2, ← sdiff_union_of_subset hF'.2.2, heq]
       exact List.inj_on_of_nodup_map h.nodup_toFinset hE'.1 hF'.1 hEF

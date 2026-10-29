@@ -411,8 +411,17 @@ each statement against the numbered result. Organize modules by subject, not cha
   communication and interactive classes, with amplification, containments and complete
   problems.
 
+[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
+[#1463]: https://github.com/cslib-community/complexitylib/issues/1463
+[#1481]: https://github.com/cslib-community/complexitylib/issues/1481
+[#1482]: https://github.com/cslib-community/complexitylib/issues/1482
+
 ## Machines, RAM and data structures
 
+- **Native distinct-position frontend** ([#1482]): initialized signed input produces exact
+  compact root descriptors, with derived logarithmic width and uniform
+  `Oκ((n+1) log²(n+2))` charged cost. This frontend is composed into the complete native
+  preprocessing and the conditional ordinary host described below.
 - **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
   with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
   The current interpreter has a stronger polynomial certificate and a streaming input lookup;
@@ -433,18 +442,65 @@ each statement against the numbered result. Organize modules by subject, not cha
   kept separate; and develop general open-program composition. Use Cook–Levin and GGM as
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
-- **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table and
-  collision-tested minimum-search programs have explicit local fit/frame/cost contracts.
-  Frontend enumeration, heavy extraction, recursive traversal, packed output and global
-  preprocessing width/time composition remain.
+- **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table,
+  collision-tested minimum-search and complete two-prime modulus programs have explicit local
+  fit/frame/cost contracts. The complete native distinct-position frontend ([#1482]) starts from
+  initialized signed input and produces exact compact root descriptors with derived logarithmic
+  width and uniform `Oκ((n+1) log²(n+2))` charged cost. The complete native one-node component
+  ([#1481]) computes all residues/histograms, three compact heavy arrays and exact packed output
+  in linear time. Native bounded recursive traversal ([#1512](https://github.com/cslib-community/complexitylib/issues/1512)) executes those components with an
+  explicit stack, exact preorder output, polynomial local fit/frame contracts and charged
+  ternary-tree bounds. Complete native preprocessing ([#1446]) composes every root from actual
+  initialized input, returns the exact finite packed instances and derives positive logarithmic
+  width, polynomial space/intermediates and an `Oκ(n^1.5 log¹³(n+2))` charged bound.
+- **Conditional native ordinary host** ([#1559](https://github.com/cslib-community/complexitylib/issues/1559)):
+  connects actual preprocessing output to caller-safe Convolution calls, proves the existing
+  distinct-position verdict from `State.init`, derives logarithmic width and every-prefix
+  polynomial words/space, and charges concrete callee work at the actual packed size. Its finite
+  callee contract has a proved slow exhaustive native instance; no fast backend or final
+  subquadratic bound is supplied. The native fast backend, Exact Triangle solver and final
+  input/time/width/asymptotic composition, including exponent 1.9992, remain under #1394.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
+- **Native pruned-query evaluator** ([#1526](https://github.com/cslib-community/complexitylib/issues/1526)):
+  fixed 96-register code computes distinct root/child queries, stack traversal and signed
+  accumulators. Initialized flat runs preserve query order and duplicates, input and outside
+  frame. Setup, sparse clearing, control/index work and halt fit
+  `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)` instructions, with widths derived from
+  original magnitude/address bounds. A callable pointer/epoch kernel permits directory reuse.
+  Query grouping, band/tile composition, sparse-product and Exact Triangle solving, and full
+  input/time/width/asymptotic composition remain under #1394.
+
 - **Shared native matrix encoders** ([#1493](https://github.com/cslib-community/complexitylib/issues/1493)): compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
+- **Native shared-band preparation** ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)): computes deterministic subset tables and a valid
+  layout, prepares padded signed matrix bands, invokes both shared encoders for every band, and
+  restores the original initialized input. Fixed 96-register code has a charged bound, including
+  halt, of `4096*(L+1)*(1+N*4^m+2^L+2*numBands*10^L)+1`; at `L=19m`, `N≥(4^m)^18`, it is at most
+  `81920*(L+1)*N²/(4^m)^(1/18)`.
+- **Native wanted-query routing**
+  ([#1561](https://github.com/cslib-community/complexitylib/issues/1561)): computes the
+  selected-subset table, tile keys, query codes, counts, prefix offsets and stable scatter from
+  original raw coordinates. Its initialized run preserves every original occurrence and gives
+  each tile exactly its finite `wantedStrings` code set, within
+  `128*(L+1)*(Q+numBands²+2^L+1)` instructions including halt. It uses fixed 96-register code and
+  an explicit positive sufficient-width threshold. Joining these groups to shared band encoders,
+  invoking the pruned kernel and reconstructing queried products remain separate native work.
+- **Native queried-product composition**
+  ([#1581](https://github.com/cslib-community/complexitylib/issues/1581)): joins the actual router
+  and band producers to the pointer/epoch kernel, restores the original input, and reconstructs
+  every requested signed product in original order. It charges raw-entry conversion, all copies,
+  dispatch, one shared directory initialization, epochs and reporting. At `L=19m`, `D=4^m`,
+  `D^18≤N` and occurrence sparsity `Q*2^m≤N²`, its initialized fixed 160-register program uses at
+  most `4325376*(19m+1)*N²/D^(1/18)` instructions including halt, with sufficient width
+  `128*clog₂(N+Q+A+2)` for entry bound `A`. The distinct-set sparsity theorem instead retains an
+  explicit additive charge for all `Q` occurrences. Native sparse-product and Exact Triangle
+  solving, full input/time/width/asymptotic composition, and the improved Section 4 route to
+  exponent 1.9992 remain under [#1394].
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
   transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
   has the Convolution-3SUM/Exact Triangle correctness reduction, a charged native single-instance
@@ -456,15 +512,27 @@ each statement against the numbered result. Organize modules by subject, not cha
   shared encodings and pruned-evaluation core ([#1459](https://github.com/cslib-community/complexitylib/issues/1459)) include exact visited-leaf and passed-set
   bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
   ([#1463](https://github.com/cslib-community/complexitylib/issues/1463)) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
-  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. It still
-  needs native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
-  host, the fast Exact Triangle solver and full
-  input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
+  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. Complete
+  native preprocessing and the conditional ordinary host with an exhaustive reference callee
+  are available. Native pruned/sparse-query backend composition, a concrete fast Exact Triangle solver
+  and the unconditional fast input/time/width/asymptotic bound remain, including the improved
+  Section 4 route to exponent 1.9992;
   size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
   Horn-SAT, 2SAT, matching and domino-tiling clients.
+- **Caller-safe queried thin products** ([#1618](https://github.com/cslib-community/complexitylib/issues/1618)):
+  actual memory operations are rebased above a runtime caller base, using a computed source
+  modulus and charged load normalization. The initialized 163-register program restores local
+  input, returns an absolute answer pointer and preserves the caller outside a polynomial window.
+  Setup/return adds at most `2048*(N*D+Q+1)` to three times the original product charge. At
+  `D=4^m`, `L=19m`, `D^18≤N` and `Q*2^m≤N²`, the full charge including halt is at most
+  `17301504*(19m+1)*N²/D^(1/18)`. Distinct-set sparsity retains an additive occurrence charge.
+  Every width at least `256*clog₂(base+N+Q+P+5)` suffices for initialized caller-word bound `P`.
+  The reserved window is at most `(2*(N+Q+3))^128` and is not bulk-initialized. Actual ET-record
+  reads, matrix/query placement, producer-readback composition and the full [#1394] endpoint
+  remain open.
 - **Conditional Convolution-3SUM host** ([#1524]): the charged native host initializes from the
   ordinary input and runs every generated instance, conditional on a concrete solver's execution,
   correctness and frame theorem. This completes the conditional host milestone. Integrating the
@@ -487,6 +555,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   so `BinaryHeap` and `FibonacciHeap` share a generic `run_ops_exact` theorem, and factor a common
   `ShortestPathSpec p bound` predicate in `Dijkstra/HeapStatement.lean` across `LogLinearSpec`,
   `FibonacciSpec`, and `FibonacciLinearSpec`.
+
+- **Native ExactTriangle preparation** ([#1532](https://github.com/cslib-community/complexitylib/issues/1532)):
+  initialized execution computes the complete catalogue and raw zero/one instance matrices,
+  with exact finite readback, logarithmic width, polynomial prefix words and address space,
+  and a `690n²Dg` charged bound in the source's admissible parameter regime. Prime selection,
+  solving the prepared instances, product/backend composition and the full #1394 endpoint remain.
 
 ## Coverage and reuse
 
@@ -612,6 +686,5 @@ not planned, not as proved.
 [#1446]: https://github.com/cslib-community/complexitylib/issues/1446
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
-[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572

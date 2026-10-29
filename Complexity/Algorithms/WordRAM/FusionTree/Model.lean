@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.FusionTree.Tree
-public import Complexity.Computability.WordRAM.Heap
+public import Complexity.Computability.WordRAM.ListArray
 
 /-!
 # Contiguous static fusion-tree records
@@ -35,7 +35,7 @@ It asserts neither preprocessing time nor a query running time.
   `HeaderOffset.globalOffset`, `HeaderOffset.reserved`: record header length and named offsets.
 * `span`, `childAddress`, `header`, `childTable`, `encode`, `encodeForest`, `decode`:
   allocation length, serialized RAM word lists, and load-based decoder.
-* `Stores`, `Rep`, `arena`, `memory`: contiguous memory realization, heap assertion, and
+* `Rep`, `arena`, `memory`: generic list-block realization, heap assertion, and
   concrete zero-extended RAM realization.
 * `ArenaFits`, `ContentFits`: separate address/frontier and stored-content contracts.
 
@@ -178,41 +178,9 @@ theorem encodeForest_length (p : Parameters) (base : ℕ) (cs : List Tree) :
   | nil => simp [encodeForest]
   | cons t ts ih => simp [encodeForest, encode_length, ih]
 
-/-- Actual RAM contents of a contiguous list, using the existing allocation API. -/
-abbrev Stores (xs : List ℕ) (base : ℕ) (mem : ℕ → ℕ) : Prop :=
-  (Block.mk base xs.length).Realizes mem (fun i => xs[i])
-
-private theorem stores_iff (xs : List ℕ) (base : ℕ) (mem : ℕ → ℕ) :
-    Stores xs base mem ↔ ∀ i, (hi : i < xs.length) → mem (base + i) = xs[i] := by
-  exact ⟨fun h i hi => h ⟨i, hi⟩, fun h i => h i i.isLt⟩
-
-private theorem stores_append {xs ys : List ℕ} {base : ℕ} {mem : ℕ → ℕ} :
-    Stores (xs ++ ys) base mem ↔
-      Stores xs base mem ∧ Stores ys (base + xs.length) mem := by
-  simp only [stores_iff]
-  constructor
-  · intro h
-    constructor
-    · intro i hi
-      have hh := h i (by simp only [List.length_append]; omega)
-      rw [List.getElem_append_left hi] at hh
-      exact hh
-    · intro i hi
-      have hh := h (xs.length + i) (by simp only [List.length_append]; omega)
-      rw [List.getElem_append_right (by omega : xs.length ≤ xs.length + i)] at hh
-      simpa only [Nat.add_sub_cancel_left, Nat.add_assoc] using hh
-  · rintro ⟨hx, hy⟩ i hi
-    by_cases hix : i < xs.length
-    · rw [List.getElem_append_left hix]; exact hx i hix
-    · rw [List.getElem_append_right (by omega)]
-      have hh := hy (i - xs.length) (by simp only [List.length_append] at hi; omega)
-      convert hh using 1
-      congr 1
-      omega
-
 /-- Memory represents the concrete serialized tree, with arbitrary memory outside its block. -/
 def Rep (p : Parameters) (t : Tree) (base : ℕ) (mem : ℕ → ℕ) : Prop :=
-  Stores (encode p base t) base mem
+  Block.HoldsList base (encode p base t) mem
 
 /-- The existing heap assertion for the serialized arena, including exactly its allocated cells. -/
 def arena (p : Parameters) (t : Tree) (base : ℕ) : HeapAssertion :=
@@ -241,18 +209,18 @@ def memory (p : Parameters) (t : Tree) (base : ℕ) : ℕ → ℕ :=
 /-- The explicit list encoding has an actual RAM realization. -/
 theorem rep_memory (p : Parameters) (t : Tree) (base : ℕ) :
     Rep p t base (memory p t base) := by
-  rw [Rep, stores_iff]
-  intro i hi
-  simp [memory, List.getElem?_eq_getElem hi]
+  intro i
+  change memory p t base (base + i.val) = (encode p base t)[i.val]
+  simp [memory]
 
 /-- A represented internal node exposes its header, minima, pointers and child-record interval. -/
 private theorem Rep.node_parts {p : Parameters} {m base : ℕ} {cs : List Tree} {mem : ℕ → ℕ}
     (hr : Rep p (.node m cs) base mem) :
-    Stores (header p m cs) base mem ∧
-    Stores (childTable base cs) (base + headerWords) mem ∧
-    Stores (encodeForest p (base + headerWords + 2 * cs.length) cs)
-      (base + headerWords + 2 * cs.length) mem := by
-  simp only [Rep, encode, stores_append] at hr
+    Block.HoldsList base (header p m cs) mem ∧
+    Block.HoldsList (base + headerWords) (childTable base cs) mem ∧
+    Block.HoldsList (base + headerWords + 2 * cs.length)
+      (encodeForest p (base + headerWords + 2 * cs.length) cs) mem := by
+  simp only [Rep, encode, Block.holdsList_append_iff] at hr
   simpa [header, List.length_append, List.length_cons, List.length_nil, List.length_ofFn,
     List.length_map, childTable, headerWords, Nat.add_assoc] using hr
 
@@ -261,14 +229,14 @@ theorem Rep.node_header {p : Parameters} {m base : ℕ} {cs : List Tree} {mem : 
     (hr : Rep p (.node m cs) base mem) :
     mem base = 1 ∧ mem (base + 1) = cs.length ∧ mem (base + 2) = m ∧
       ∀ j : Fin 15, mem (base + 3 + j) = p (.node m cs) j := by
-  have hh := stores_append.mp hr.node_parts.1
-  have hh0 := (stores_iff _ _ _).mp hh.1
+  have hh := Block.holdsList_append_iff.mp hr.node_parts.1
+  have hh0 := hh.1.get
   refine ⟨?_, ?_, ?_, ?_⟩
   · simpa using hh0 0 (by simp)
   · simpa using hh0 1 (by simp)
   · simpa using hh0 2 (by simp)
   · intro j
-    have hj := (stores_iff _ _ _).mp hh.2 j (by simp only [List.length_ofFn]; exact j.isLt)
+    have hj := hh.2.get j (by simp only [List.length_ofFn]; exact j.isLt)
     simpa only [List.length_cons, List.length_nil, List.getElem_ofFn] using hj
 
 /-- The three leaf words decode as tag, presence and key. -/
@@ -276,22 +244,22 @@ theorem Rep.leaf_fields {p : Parameters} {base : ℕ} {xs : List ℕ} {mem : ℕ
     (hr : Rep p (.leaf xs) base mem) :
     mem base = 0 ∧ mem (base + 1) = (if xs.isEmpty then 0 else 1) ∧
       mem (base + 2) = xs.headD 0 := by
-  have hh := (stores_iff _ _ _).mp (stores_append.mp hr).1
+  have hh := (Block.holdsList_append_iff.mp hr).1.get
   exact ⟨by simpa using hh 0 (by simp),
     by simpa using hh 1 (by simp),
     by simpa using hh 2 (by simp)⟩
 
 private theorem forest_child {p : Parameters} {base : ℕ} {cs : List Tree} {mem : ℕ → ℕ}
-    (hr : Stores (encodeForest p base cs) base mem) (i : ℕ) (hi : i < cs.length) :
+    (hr : Block.HoldsList base (encodeForest p base cs) mem) (i : ℕ) (hi : i < cs.length) :
     Rep p cs[i] (base + ((cs.take i).map span).sum) mem := by
   induction cs generalizing base i with
   | nil => simp at hi
   | cons t ts ih =>
-    have hh := stores_append.mp hr
+    have hh := Block.holdsList_append_iff.mp hr
     cases i with
     | zero => simpa [Rep] using hh.1
     | succ i =>
-      have hh' : Stores (encodeForest p (base + span t) ts) (base + span t) mem := by
+      have hh' : Block.HoldsList (base + span t) (encodeForest p (base + span t) ts) mem := by
         simpa only [encode_length] using hh.2
       simpa [List.take_succ_cons, Nat.add_assoc] using ih hh' i (by simpa using hi)
 
@@ -303,9 +271,9 @@ theorem Rep.child {p : Parameters} {m base : ℕ} {cs : List Tree} {mem : ℕ �
     Rep p cs[i] (childAddress base cs i) mem := by
   have hh := hr.node_parts
   refine ⟨?_, ?_, ?_⟩
-  · exact ((stores_iff _ _ _).mp hh.2.1 _ (by simp [childTable])).trans
+  · exact (hh.2.1.get _ (by simp [childTable])).trans
       (childTable_minimum base cs i)
-  · exact ((stores_iff _ _ _).mp hh.2.1 _ (by simp [childTable]; omega)).trans
+  · exact (hh.2.1.get _ (by simp [childTable]; omega)).trans
       (childTable_pointer base cs i)
   · exact forest_child hh.2.2 i i.isLt
 

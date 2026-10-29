@@ -19,9 +19,9 @@ the existing finite-table calculus without requiring a decoder for any entry enc
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.dpi`: construct a dependent finite table.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.dpi_apply`: read a fixed entry.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.dpi_update`: replace a fixed entry.
+* `Turing.MultiTapeTM.ComputableInPolyTime.dpi`: construct a dependent finite table.
+* `Turing.MultiTapeTM.ComputableInPolyTime.dpi_apply`: read a fixed entry.
+* `Turing.MultiTapeTM.ComputableInPolyTime.dpi_update`: replace a fixed entry.
 
 ## References
 
@@ -31,7 +31,7 @@ Extends the finite-table calculus in
 
 @[expose] public section
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α Index : Type} {Value : Index → Type} [Fintype Index]
     {input : α ↪ List Bool} {enc : ∀ i, Value i ↪ List Bool}
@@ -39,16 +39,17 @@ variable {α Index : Type} {Value : Index → Type} [Fintype Index]
 /-- Construct a fixed dependent family, retaining the original input for each entry. -/
 @[fun_prop]
 theorem dpi {values : α → ∀ i, Value i}
-    (hvalues : ∀ i, ComputableTidilyInPolyTime (fun a => values a i) input (enc i)) :
-    ComputableTidilyInPolyTime values input (encDPi enc) :=
-  (pi (fun i => (hvalues i).encoded)).of_enc_eq (fun _ => rfl)
+    (hvalues : ∀ i, ComputableInPolyTime (fun a => values a i) input (enc i)) :
+    ComputableInPolyTime values input (encDPi enc) :=
+  (pi (fun i => (hvalues i).of_enc_eq (encD := encBits)
+    (g := fun a => enc i (values a i)) (fun _ => rfl))).of_enc_eq (fun _ => rfl)
 
 /-- Read a fixed dependent-table entry, charging the stored prefix and requiring no default. -/
 @[fun_prop]
 theorem dpi_apply (enc : ∀ i, Value i ↪ List Bool) (i : Index) :
-    ComputableTidilyInPolyTime (fun values : ∀ j, Value j => values i)
+    ComputableInPolyTime (fun values : ∀ j, Value j => values i)
       (encDPi enc) (enc i) := by
-  have htable : ComputableTidilyInPolyTime
+  have htable : ComputableInPolyTime
       (fun values : ∀ j, Value j => fun j => enc j (values j))
       (encDPi enc) (encPi encBits) := of_eq (fun _ => rfl)
   exact ((pi_apply encBits i).comp htable).of_enc_eq (fun _ => rfl)
@@ -57,9 +58,9 @@ theorem dpi_apply (enc : ∀ i, Value i ↪ List Bool) (i : Index) :
 @[fun_prop]
 theorem dpi_update [DecidableEq Index] {values : α → ∀ i, Value i} {i : Index}
     {value : α → Value i}
-    (hvalues : ComputableTidilyInPolyTime values input (encDPi enc))
-    (hvalue : ComputableTidilyInPolyTime value input (enc i)) :
-    ComputableTidilyInPolyTime (fun a => Function.update (values a) i (value a))
+    (hvalues : ComputableInPolyTime values input (encDPi enc))
+    (hvalue : ComputableInPolyTime value input (enc i)) :
+    ComputableInPolyTime (fun a => Function.update (values a) i (value a))
       input (encDPi enc) := by
   apply dpi
   intro j
@@ -68,4 +69,4 @@ theorem dpi_update [DecidableEq Index] {values : α → ∀ i, Value i} {i : Ind
     simpa using hvalue
   · simpa only [Function.update_of_ne h, Function.comp_def] using (dpi_apply enc j).comp hvalues
 
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+end Turing.MultiTapeTM.ComputableInPolyTime

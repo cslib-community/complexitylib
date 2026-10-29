@@ -10,7 +10,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.DP
 
 namespace ComplexityTests.DependentTable
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 private def Entry : Bool → Type
   | false => List Empty
@@ -27,18 +27,18 @@ private def table (bits : List Bool) : ∀ i, Entry i
   | false => []
   | true => bits
 
-example : ComputableTidilyInPolyTime table encBits (encDPi encoding) := by
+example : ComputableInPolyTime table encBits (encDPi encoding) := by
   apply dpi
   intro i
   cases i
   · exact const []
   · exact id'
 
-example : ComputableTidilyInPolyTime (fun values : ∀ i, Entry i => values true)
+example : ComputableInPolyTime (fun values : ∀ i, Entry i => values true)
     (encDPi encoding) encBits := dpi_apply encoding true
 
 -- Reading the unbounded word, reversing it, and replacing it preserves the empty-alphabet entry.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun values : ∀ i, Entry i => Function.update values true (values true).reverse)
     (encDPi encoding) (encDPi encoding) :=
   dpi_update id' (bitsReverse.comp (dpi_apply encoding true))
@@ -48,7 +48,7 @@ example (bits : List Bool) : Function.update (table bits) true bits.reverse fals
     (by decide) bits.reverse (table bits)
 
 -- The finite family with no indices still has one value and requires no entry inhabitant.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun _ : List Bool => (Empty.elim : Empty → Empty)) encBits
     (encDPi (fun i : Empty => i.elim)) := by
   apply dpi

@@ -57,7 +57,9 @@ def termAt (t : Fin 10) : Term :=
   if h : t.val < 9 then .P ⟨t.val / 3, by omega⟩ ⟨t.val % 3, Nat.mod_lt _ (by decide)⟩
   else .P0
 
-/-- Explicit numbering of the seven left variables. -/
+/-- Executable flat address digits for the seven left variables. `LeftVar.equiv` instead
+exposes their mathematical sum carrier `Fin 3 ⊕ (Fin 2 × Fin 2)`. This dictionary gives a
+single `Fin 7` digit for each variable, for the native array layout. -/
 def leftDigits : Fin 7 ≃ LeftVar where
   toFun := leftAt
   invFun
@@ -66,7 +68,9 @@ def leftDigits : Fin 7 ≃ LeftVar where
   left_inv := by decide
   right_inv := by decide
 
-/-- Explicit numbering of the seven right variables. -/
+/-- Executable flat address digits for the seven right variables. `RightVar.equiv` instead
+exposes their mathematical sum carrier `Fin 3 ⊕ (Fin 2 × Fin 2)`. This dictionary gives a
+single `Fin 7` digit for each variable, in the same order as `leftDigits`. -/
 def rightDigits : Fin 7 ≃ RightVar where
   toFun := rightAt
   invFun
@@ -75,7 +79,9 @@ def rightDigits : Fin 7 ≃ RightVar where
   left_inv := by decide
   right_inv := by decide
 
-/-- Explicit numbering of all ten terms. -/
+/-- Executable flat address digits for all ten terms. `Term.equiv` instead exposes their
+mathematical carrier `Option (Fin 3 × Fin 3)`. The native dictionary uses `Fin 10`, with
+row-major `P i j` at digit `3*i+j` and `P0` at digit 9. -/
 def termDigits : Fin 10 ≃ Term where
   toFun := termAt
   invFun

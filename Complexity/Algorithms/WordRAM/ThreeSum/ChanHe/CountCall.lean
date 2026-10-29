@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Count
 import Mathlib.Tactic.FinCases
 
 /-!

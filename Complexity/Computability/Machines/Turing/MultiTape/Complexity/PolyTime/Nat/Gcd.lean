@@ -8,8 +8,10 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Polynomial-time greatest common divisor on binary naturals
@@ -34,7 +36,7 @@ at least halves the product `a * b` (`BinaryGcd.gcd_product_halving`). Because
 * `Turing.MultiTapeTM.BinaryGcd.gcd_product_halving`: when `0 < a ≤ b`, `2 * (a * (b % a)) ≤ a * b`.
 * `Turing.MultiTapeTM.BinaryGcd.iterate_gcdStep_eq`: iterating `gcdStep` for `gcdCount p` steps
   produces `(Nat.gcd p.1 p.2, 0)`.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_gcd`, `.binary_gcd'`: polynomial-time
+* `Turing.MultiTapeTM.ComputableInPolyTime.binary_gcd`, `.binary_gcd'`: polynomial-time
   certificates for `Nat.gcd` on `encNat`.
 
 ## References
@@ -182,20 +184,20 @@ theorem length_encPair_iterate_gcdStep_le (p : ℕ × ℕ) (i : ℕ) :
 
 end Turing.MultiTapeTM.BinaryGcd
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Greatest common divisor of binary naturals via Euclid's algorithm. -/
 @[fun_prop, program_certificate]
-theorem binary_gcd : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => Nat.gcd p.1 p.2)
+theorem binary_gcd : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.gcd p.1 p.2)
     (encPair encNat encNat) encNat := by
-  have hcount : ComputableTidilyInPolyTime BinaryGcd.gcdCount
+  have hcount : ComputableInPolyTime BinaryGcd.gcdCount
       (encPair encNat encNat) encUnary := by
     unfold BinaryGcd.gcdCount
     fun_prop
-  have hinit : ComputableTidilyInPolyTime (fun p => p)
+  have hinit : ComputableInPolyTime (fun p => p)
       (encPair encNat encNat) (encPair encNat encNat) := by
     fun_prop
-  have hstep : ComputableTidilyInPolyTime BinaryGcd.gcdStep
+  have hstep : ComputableInPolyTime BinaryGcd.gcdStep
       (encPair encNat encNat) (encPair encNat encNat) := by
     unfold BinaryGcd.gcdStep
     fun_prop
@@ -210,10 +212,10 @@ theorem binary_gcd : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => Nat.gcd p
 proof search. -/
 @[fun_prop, program_certificate]
 theorem binary_gcd' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
-    (hleft : ComputableTidilyInPolyTime left input encNat)
-    (hright : ComputableTidilyInPolyTime right input encNat) :
-    ComputableTidilyInPolyTime (fun a => Nat.gcd (left a) (right a)) input encNat :=
+    (hleft : ComputableInPolyTime left input encNat)
+    (hright : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun a => Nat.gcd (left a) (right a)) input encNat :=
   binary_gcd.comp (hleft.prod hright)
 
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+end Turing.MultiTapeTM.ComputableInPolyTime
 

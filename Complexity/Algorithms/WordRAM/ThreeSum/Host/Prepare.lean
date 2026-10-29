@@ -24,7 +24,7 @@ The complete reduction must also fill every instance and invoke a concrete certi
 
 ## Main definitions
 
-* `Host.Parameters`: the prepared register interface.
+* `Host.ParametersAt`, `Host.Parameters`: caller-owned and standalone register interfaces.
 * `Host.prepare`: native header, magnitude, square-root and layout computation.
 
 ## Main results
@@ -98,22 +98,22 @@ private theorem sqrt_injective : sqrtRegisters.Injective := by
 /-- The mathematical side length used by the reduction. -/
 abbrev sideLength (N : ℕ) : ℕ := Nat.sqrt N + 1
 
-/-- Parameters retained throughout the instance loop. -/
-structure Parameters (N U : ℕ) (x : Data 64) : Prop where
+/-- Runtime source and caller-owned matrix workspace retained throughout the instance loop. -/
+structure ParametersAt (N U src workspace : ℕ) (x : Data 64) : Prop where
   /-- Input length. -/
   len : x.regs len = N
   /-- Magnitude bound. -/
   upper : x.regs upper = U
-  /-- Input starts after the length header. -/
-  base : x.regs base = 1
-  /-- AB follows the input. -/
-  ab : x.regs matAB = N + 1
+  /-- Caller-supplied input pointer. -/
+  base : x.regs base = src
+  /-- AB starts in the caller-owned matrix workspace. -/
+  ab : x.regs matAB = workspace
   /-- BC follows AB. -/
-  bc : x.regs matBC = N + 1 + sideLength N * sideLength N
+  bc : x.regs matBC = workspace + sideLength N * sideLength N
   /-- AC follows BC. -/
-  ac : x.regs matAC = N + 1 + 2 * (sideLength N * sideLength N)
+  ac : x.regs matAC = workspace + 2 * (sideLength N * sideLength N)
   /-- Solver scratch follows AC. -/
-  free : x.regs free = N + 1 + 3 * (sideLength N * sideLength N)
+  free : x.regs free = workspace + 3 * (sideLength N * sideLength N)
   /-- Side length. -/
   side : x.regs side = sideLength N
   /-- Two instances per possible low-index sum. -/
@@ -124,6 +124,9 @@ structure Parameters (N U : ℕ) (x : Data 64) : Prop where
   encodedFiller : x.regs encodedFiller = 4 * U + 2
   /-- Loop increment. -/
   one : x.regs one = 1
+
+/-- Standalone layout: input starts after header zero and matrices immediately follow it. -/
+abbrev Parameters (N U : ℕ) (x : Data 64) : Prop := ParametersAt N U 1 (N + 1) x
 
 /-- Input-length output of the parameter bank. -/
 abbrev parameterLen : Fin 64 := 0
@@ -147,22 +150,23 @@ def prepare (κ : ℕ) : Code .standard 64 :=
   .seq ((ChanHe.Parameters.program κ).rename parameterRegisters)
     (.seq setup (.seq (NatSqrt.program.rename sqrtRegisters) layout))
 
-private theorem exec_layout {w N U : ℕ} (x : Data 64)
-    (hN : x.regs len = N) (hU : x.regs upper = U) (hb : x.regs base = 1)
+/-- Existing layout code also supports arbitrary source placement. -/
+theorem exec_layout_at {w N U src : ℕ} (x : Data 64)
+    (hN : x.regs len = N) (hU : x.regs upper = U) (hb : x.regs base = src)
     (ho : x.regs one = 1)
     (hr : x.regs sqrtRoot = Nat.sqrt N)
-    (hsize : Fits w (N + 1 + 3 * (sideLength N * sideLength N)))
+    (hsize : Fits w (N + src + 3 * (sideLength N * sideLength N)))
     (hfill : Fits w (4 * U + 2)) :
-    ∃ y, ExecWithin w layout x y 12 ∧ Parameters N U y ∧
+    ∃ y, ExecWithin w layout x y 12 ∧ ParametersAt N U src (N + src) y ∧
       y.regs inst = 0 ∧ y.regs found = 0 ∧ y.mem = x.mem := by
   let t := sideLength N
   have ht : Fits w t := hsize.of_le (by have := Nat.le_mul_self t; dsimp [t] at *; omega)
   have ha : Fits w (t * t) := hsize.of_le (by dsimp [t] at *; omega)
   have hs : Fits w (t + t) := hsize.of_le (by have := Nat.le_mul_self t; dsimp [t] at *; omega)
-  have hab : Fits w (1 + N) := hsize.of_le (by omega)
-  have hbc : Fits w (1 + N + t * t) := hsize.of_le (by dsimp [t] at *; omega)
-  have hac : Fits w (1 + N + t * t + t * t) := hsize.of_le (by dsimp [t] at *; omega)
-  have hfree : Fits w (1 + N + t * t + t * t + t * t) :=
+  have hab : Fits w (src + N) := hsize.of_le (by omega)
+  have hbc : Fits w (src + N + t * t) := hsize.of_le (by dsimp [t] at *; omega)
+  have hac : Fits w (src + N + t * t + t * t) := hsize.of_le (by dsimp [t] at *; omega)
+  have hfree : Fits w (src + N + t * t + t * t + t * t) :=
     hsize.of_le (by dsimp [t] at *; omega)
   have hu2 : Fits w (U + U) := hfill.of_le (by omega)
   have hu1 : Fits w (U + U + 1) := hfill.of_le (by omega)
@@ -232,7 +236,7 @@ theorem exec_prepare {w : ℕ} (κ : ℕ) (x : Data 64)
       (5 * Nat.sqrt N + 7) := by
     change ExecWithin w _ b c (5 * Nat.sqrt (b.regs sqrtArg) + 7) at hc
     simpa only [hbn] using hc
-  obtain ⟨y, hy, hparams, hi, hf, hym⟩ := exec_layout (N := N) (U := U) c
+  obtain ⟨y, hy, hparams, hi, hf, hym⟩ := exec_layout_at (N := N) (U := U) c
     ((hpres len (by decide)).trans (by
       simp +decide [b, N, U, len, sqrtArg, one, base, upper]))
     ((hpres upper (by decide)).trans (by

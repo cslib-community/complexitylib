@@ -15,11 +15,14 @@ public import Mathlib.Data.Finset.Sort
 
 ## Main definitions
 
-* `Finset.glue`: join two strings along a subset and its complement.
+* `Finset.glue`: join two functions along a subset and its complement, each enumerated
+  by Mathlib's `Finset.orderEmbOfFin`.
 
 ## Main results
 
+* `Finset.forall_iff_orderEmbOfFin_and_compl`: split a predicate over the two enumerations.
 * `Finset.eq_glue_iff`, `Finset.glue_inj`: reconstruction and uniqueness.
+* `Finset.eq_glue_of_reconstruct`: reconstruct values through maps on the two parts.
 
 ## References
 
@@ -42,146 +45,126 @@ theorem card_compl_of_card_eq {L m : ℕ} (Q : Finset (Fin L)) (hQ : Q.card = m)
 
 variable {L m : ℕ} (Q : Finset (Fin L)) (hQ : Q.card = m)
 
-/-! ### The levels of a set and of its complement, in order -/
+/-! ### Predicates on a subset and its complement -/
 
-/-- The `k`-th lowest level outside `Q` is not a level of `Q`. -/
-theorem outerLevel_notMem (k : Fin (L - m)) : (Qᶜ.orderEmbOfFin (card_compl_of_card_eq Q hQ)) k ∉
-  Q :=
-  mem_compl.mp (Qᶜ.orderEmbOfFin_mem (card_compl_of_card_eq Q hQ) k)
-
-/-- Every level of `Q` is the `k`-th lowest level of `Q` for some `k`. -/
-theorem exists_innerLevel {ℓ : Fin L} (hℓ : ℓ ∈ Q) : ∃ k, Finset.orderEmbOfFin Q hQ k = ℓ :=
-  (Q.range_orderEmbOfFin hQ).ge hℓ
-
-/-- Every level outside `Q` is the `k`-th lowest level outside `Q` for some `k`. -/
-theorem exists_outerLevel {ℓ : Fin L} (hℓ : ℓ ∉ Q) : ∃ k, (Qᶜ.orderEmbOfFin (card_compl_of_card_eq
-  Q hQ)) k = ℓ :=
-  (Qᶜ.range_orderEmbOfFin (card_compl_of_card_eq Q hQ)).ge (mem_coe.mpr (mem_compl.mpr hℓ))
-
-/-- The levels of `Q` in order depend only on the set `Q`. -/
-theorem innerLevel_congr {Q' : Finset (Fin L)} (h : Q' = Q) (hQ' : Q'.card = m) :
-    Finset.orderEmbOfFin Q' hQ' = Finset.orderEmbOfFin Q hQ := by
-  subst h
-  rfl
-
-/-- The levels outside `Q` in order depend only on the set `Q`. -/
-theorem outerLevel_congr {Q' : Finset (Fin L)} (h : Q' = Q) (hQ' : Q'.card = m) :
-    (Q'ᶜ.orderEmbOfFin (card_compl_of_card_eq Q' hQ')) = (Qᶜ.orderEmbOfFin (card_compl_of_card_eq
-      Q hQ)) := by
-  subst h
-  rfl
-
-/-- A property holds at every level if and only if it holds at the levels of `Q` and at the levels
-outside `Q`. -/
-theorem forall_level_iff {P : Fin L → Prop} :
+/-- A predicate holds everywhere if and only if it holds on the ordered enumerations of
+`Q` and its complement. -/
+theorem forall_iff_orderEmbOfFin_and_compl {P : Fin L → Prop} :
     (∀ ℓ, P ℓ) ↔ (∀ k, P (Finset.orderEmbOfFin Q hQ k)) ∧ ∀ k, P ((Qᶜ.orderEmbOfFin
       (card_compl_of_card_eq Q hQ)) k) := by
   refine ⟨fun h => ⟨fun _ => h _, fun _ => h _⟩, fun ⟨hin, hout⟩ ℓ => ?_⟩
   by_cases hℓ : ℓ ∈ Q
-  · obtain ⟨k, rfl⟩ := exists_innerLevel Q hQ hℓ
+  · obtain ⟨k, rfl⟩ := (Q.range_orderEmbOfFin hQ).ge hℓ
     exact hin k
-  · obtain ⟨k, rfl⟩ := exists_outerLevel Q hQ hℓ
+  · obtain ⟨k, rfl⟩ := (Qᶜ.range_orderEmbOfFin (card_compl_of_card_eq Q hQ)).ge
+      (mem_coe.mpr (mem_compl.mpr hℓ))
     exact hout k
 
-/-- A property cuts out the set `Q` if and only if it holds at the levels of `Q` and fails at the
-other levels. -/
-theorem filter_eq_iff_forall_level {P : Fin L → Prop} [DecidablePred P] :
+/-- A predicate cuts out `Q` if and only if it holds on its ordered enumeration and fails
+on the ordered enumeration of its complement. -/
+theorem filter_eq_iff_orderEmbOfFin_and_compl {P : Fin L → Prop} [DecidablePred P] :
     univ.filter P = Q ↔ (∀ k, P (Finset.orderEmbOfFin Q hQ k)) ∧ ∀ k, ¬ P ((Qᶜ.orderEmbOfFin
       (card_compl_of_card_eq Q hQ)) k) := by
-  simp only [Finset.ext_iff, forall_level_iff Q hQ, mem_filter, mem_univ, true_and,
-    Finset.orderEmbOfFin_mem, outerLevel_notMem Q hQ, iff_true, iff_false]
+  have hcompl (k : Fin (L - m)) :
+      Qᶜ.orderEmbOfFin (card_compl_of_card_eq Q hQ) k ∉ Q :=
+    mem_compl.mp (Qᶜ.orderEmbOfFin_mem (card_compl_of_card_eq Q hQ) k)
+  simp only [Finset.ext_iff, forall_iff_orderEmbOfFin_and_compl Q hQ, mem_filter, mem_univ,
+    true_and, Finset.orderEmbOfFin_mem, hcompl, iff_true, iff_false]
 
-/-- A property that holds at the `m` levels of `Q`, and at `m` levels in all, cuts out `Q`. -/
-theorem filter_eq_of_forall_innerLevel {P : Fin L → Prop} [DecidablePred P]
+/-- A predicate holding on every enumerated element of `Q`, and on `m` elements in all,
+cuts out `Q`. -/
+theorem filter_eq_of_forall_orderEmbOfFin {P : Fin L → Prop} [DecidablePred P]
     (hin : ∀ k, P (Finset.orderEmbOfFin Q hQ k)) (hcard : (univ.filter P).card = m) : univ.filter
       P = Q := by
   refine (eq_of_subset_of_card_le (fun ℓ hℓ => ?_) (hcard.trans hQ.symm).le).symm
-  obtain ⟨k, rfl⟩ := exists_innerLevel Q hQ hℓ
+  obtain ⟨k, rfl⟩ := (Q.range_orderEmbOfFin hQ).ge hℓ
   exact mem_filter.mpr ⟨mem_univ _, hin k⟩
 
-/-! ### Gluing two strings along a set of levels -/
+/-! ### Gluing functions along an ordered subset -/
 
 variable {α : Type*}
 
-/-- The string that has the letters of `f` at the levels of `Q` and the letters of `g` at the other
-levels, both in the order of the levels. -/
+/-- The function taking the values of `f` on `Q` and of `g` on its complement, with each
+part enumerated in increasing order. -/
 def glue (f : Fin m → α) (g : Fin (L - m) → α) : Fin L → α :=
   fun ℓ =>
     if hℓ : ℓ ∈ Q then f ((Q.orderIsoOfFin hQ).symm ⟨ℓ, hℓ⟩)
     else g ((Qᶜ.orderIsoOfFin (card_compl_of_card_eq Q hQ)).symm ⟨ℓ, mem_compl.mpr hℓ⟩)
 
-/-- At the `k`-th lowest level of `Q`, the glued string has the `k`-th letter of `f`. -/
+/-- Evaluating a glued function on the ordered enumeration of `Q` reads `f`. -/
 @[simp]
-theorem glue_innerLevel (f : Fin m → α) (g : Fin (L - m) → α) (k : Fin m) :
+theorem glue_orderEmbOfFin (f : Fin m → α) (g : Fin (L - m) → α) (k : Fin m) :
     glue Q hQ f g (Finset.orderEmbOfFin Q hQ k) = f k := by
   rw [glue, dite_eq_left (Finset.orderEmbOfFin_mem Q hQ k)]
   exact congrArg f ((OrderIso.symm_apply_eq _).mpr (Subtype.ext rfl))
 
-/-- At the `k`-th lowest level outside `Q`, the glued string has the `k`-th letter of `g`. -/
+/-- Evaluating a glued function on the ordered enumeration of the complement reads `g`. -/
 @[simp]
-theorem glue_outerLevel (f : Fin m → α) (g : Fin (L - m) → α) (k : Fin (L - m)) :
+theorem glue_orderEmbOfFin_compl (f : Fin m → α) (g : Fin (L - m) → α) (k : Fin (L - m)) :
     glue Q hQ f g ((Qᶜ.orderEmbOfFin (card_compl_of_card_eq Q hQ)) k) = g k := by
-  rw [glue, dite_eq_right (outerLevel_notMem Q hQ k)]
+  rw [glue, dite_eq_right (mem_compl.mp
+    (Qᶜ.orderEmbOfFin_mem (card_compl_of_card_eq Q hQ) k))]
   exact congrArg g ((OrderIso.symm_apply_eq _).mpr (Subtype.ext rfl))
 
-/-- At the `k`-th lowest level of a set `Q'` that is equal to `Q`, the string glued along `Q` has
-the `k`-th letter of `f`. -/
-theorem glue_innerLevel_of_eq (f : Fin m → α) (g : Fin (L - m) → α) {Q' : Finset (Fin L)}
+/-- Enumerating a subset equal to `Q` reads the same values from a glued function. -/
+theorem glue_orderEmbOfFin_of_eq (f : Fin m → α) (g : Fin (L - m) → α) {Q' : Finset (Fin L)}
     (h : Q' = Q) (hQ' : Q'.card = m) (k : Fin m) : glue Q hQ f g (Finset.orderEmbOfFin Q' hQ' k) =
       f k := by
-  rw [innerLevel_congr Q hQ h, glue_innerLevel]
+  subst h
+  apply glue_orderEmbOfFin
 
-/-- At the `k`-th lowest level outside a set `Q'` that is equal to `Q`, the string glued along `Q`
-has the `k`-th letter of `g`. -/
-theorem glue_outerLevel_of_eq (f : Fin m → α) (g : Fin (L - m) → α) {Q' : Finset (Fin L)}
+/-- Enumerating the complement of a subset equal to `Q` reads the same values from a
+function glued along `Q`. -/
+theorem glue_orderEmbOfFin_compl_of_eq (f : Fin m → α) (g : Fin (L - m) → α) {Q' : Finset (Fin L)}
     (h : Q' = Q) (hQ' : Q'.card = m) (k : Fin (L - m)) :
     glue Q hQ f g ((Q'ᶜ.orderEmbOfFin (card_compl_of_card_eq Q' hQ')) k) = g k := by
   subst h
-  apply glue_outerLevel
+  apply glue_orderEmbOfFin_compl
 
 variable {f f' : Fin m → α} {g g' : Fin (L - m) → α}
 
-/-- The glued string is the only string with the letters of `f` at the levels of `Q` and the letters
-of `g` at the other levels. -/
+/-- A function is the glued function exactly when its restrictions to both ordered
+parts have the stated values. -/
 theorem eq_glue_iff {u : Fin L → α} :
     u = glue Q hQ f g
       ↔ (∀ k, u (Finset.orderEmbOfFin Q hQ k) = f k) ∧ ∀ k, u ((Qᶜ.orderEmbOfFin
         (card_compl_of_card_eq Q hQ)) k) = g k := by
-  simp only [funext_iff, forall_level_iff Q hQ, glue_innerLevel, glue_outerLevel]
+  simp only [funext_iff, forall_iff_orderEmbOfFin_and_compl Q hQ, glue_orderEmbOfFin,
+    glue_orderEmbOfFin_compl]
 
-/-- The two strings can be read off the glued string. -/
+/-- Both component functions can be read off their glued function. -/
 theorem glue_inj : glue Q hQ f g = glue Q hQ f' g' ↔ f = f' ∧ g = g' := by
   rw [eq_glue_iff]
-  simp only [glue_innerLevel, glue_outerLevel, funext_iff]
+  simp only [glue_orderEmbOfFin, glue_orderEmbOfFin_compl, funext_iff]
 
-/-- A map applied to a glued string, letter by letter. -/
+/-- Applying a map to a glued function maps both of its components. -/
 theorem map_glue {β : Type*} (φ : α → β) :
     (fun ℓ => φ (glue Q hQ f g ℓ)) = glue Q hQ (fun k => φ (f k)) (fun k => φ (g k)) := by
-  simp only [eq_glue_iff, glue_innerLevel, glue_outerLevel, implies_true, and_self]
+  simp only [eq_glue_iff, glue_orderEmbOfFin, glue_orderEmbOfFin_compl, implies_true, and_self]
 
-/-! ### Alphabets with inner and outer letters -/
+/-! ### Predicates and reconstruction on the two parts -/
 
-variable (IsInner : α → Prop) [DecidablePred IsInner]
+variable (P : α → Prop) [DecidablePred P]
 
-/-- If the letters of `f` are inner and those of `g` are outer, then the glued string has its inner
-letters exactly at the levels of `Q`. -/
-theorem filter_glue (hf : ∀ k, IsInner (f k)) (hg : ∀ k, ¬ IsInner (g k)) :
-    (univ.filter fun ℓ => IsInner (glue Q hQ f g ℓ)) = Q := by
-  simpa only [filter_eq_iff_forall_level Q hQ, glue_innerLevel, glue_outerLevel] using
+/-- If `P` holds on the values of `f` and fails on the values of `g`, it holds on the
+glued function exactly at the elements of `Q`. -/
+theorem filter_glue (hf : ∀ k, P (f k)) (hg : ∀ k, ¬ P (g k)) :
+    (univ.filter fun ℓ => P (glue Q hQ f g ℓ)) = Q := by
+  simpa only [filter_eq_iff_orderEmbOfFin_and_compl Q hQ, glue_orderEmbOfFin,
+    glue_orderEmbOfFin_compl] using
     And.intro hf hg
 
-/-- Reconstruct `u` by extracting and reinserting its inner and outer indices. The hypotheses
-require that both index projections have the stated reconstruction property on their
-respective classes of letters, and that the inner letters of `u` occur exactly on the
-size-`m` set `Q`. -/
-theorem glue_index {I O : Type*} {inner : I → α} {outer : O → α} {innerIndex : α → I}
-    {outerIndex : α → O} (hI : ∀ s, IsInner s → inner (innerIndex s) = s)
-    (hO : ∀ s, ¬ IsInner s → outer (outerIndex s) = s) {u : Fin L → α}
-    (hu : (univ.filter fun ℓ => IsInner (u ℓ)) = Q) :
-    u = glue Q hQ (fun k => inner (innerIndex (u (Finset.orderEmbOfFin Q hQ k))))
-      (fun k => outer (outerIndex (u ((Qᶜ.orderEmbOfFin (card_compl_of_card_eq Q hQ)) k)))) := by
-  obtain ⟨hin, hout⟩ := (filter_eq_iff_forall_level Q hQ).mp hu
-  exact (eq_glue_iff Q hQ).mpr ⟨fun k => (hI _ (hin k)).symm, fun k => (hO _ (hout k)).symm⟩
-
+/-- Reconstruct `u` from maps that recover its values on the subset defined by `P` and
+on its complement. The two reconstruction hypotheses apply on their respective parts. -/
+theorem eq_glue_of_reconstruct {β γ : Type*} {fromSubset : β → α} {fromCompl : γ → α}
+    {toSubset : α → β} {toCompl : α → γ}
+    (hsubset : ∀ a, P a → fromSubset (toSubset a) = a)
+    (hcompl : ∀ a, ¬ P a → fromCompl (toCompl a) = a) {u : Fin L → α}
+    (hu : (univ.filter fun ℓ => P (u ℓ)) = Q) :
+    u = glue Q hQ (fun k => fromSubset (toSubset (u (Finset.orderEmbOfFin Q hQ k))))
+      (fun k => fromCompl (toCompl (u ((Qᶜ.orderEmbOfFin (card_compl_of_card_eq Q hQ)) k)))) := by
+  obtain ⟨hin, hout⟩ := (filter_eq_iff_orderEmbOfFin_and_compl Q hQ).mp hu
+  exact (eq_glue_iff Q hQ).mpr
+    ⟨fun k => (hsubset _ (hin k)).symm, fun k => (hcompl _ (hout k)).symm⟩
 
 end Finset

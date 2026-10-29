@@ -9,8 +9,8 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.PPoly
 public import Cslib.Computability.Circuit.Boolean.Shannon
+import Complexity.Foundations.Data.Nat.Asymptotics
 import Complexity.Foundations.Data.Nat.IntermediateValue
-import Cslib.Foundations.Data.Nat.Asymptotics
 
 /-!
 # The circuit size hierarchy
@@ -180,30 +180,16 @@ theorem SIZE_ssubset {s t : ℕ → ℕ} (hst : s ≤ t) (ht : ∀ n, 1 ≤ t n)
   rw [Language.slice_ofSlices] at this
   exact absurd (hfs n hn) (not_lt.2 this)
 
-/-- Polynomials are eventually below `2 ^ n / n`: `(n + 1) ^ k n ≤ 2 ^ k n ^ (k + 1)`, which is
-eventually below `2 ^ n`. -/
-theorem eventually_pow_lt_two_pow_div (k : ℕ) :
-    ∀ᶠ n : ℕ in atTop, (((n + 1) ^ k : ℕ) : ℝ) < 2 ^ n / n := by
-  filter_upwards [Nat.eventually_mul_pow_le_pow (2 ^ (k + 1)) (k + 1) Nat.one_lt_two,
-    eventually_ge_atTop 1] with n hn hn1
-  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn1
-  rw [lt_div_iff₀ hn0]
-  have hpow : 0 < 2 ^ k * n ^ (k + 1) := by positivity
-  have hlt : (n + 1) ^ k * n < 2 ^ n :=
-    calc (n + 1) ^ k * n ≤ (2 * n) ^ k * n :=
-          Nat.mul_le_mul_right n (Nat.pow_le_pow_left (by omega) k)
-      _ = 2 ^ k * n ^ (k + 1) := by ring
-      _ < 2 ^ (k + 1) * n ^ (k + 1) := by rw [pow_succ 2 k, mul_comm (2 ^ k) 2, mul_assoc]; omega
-      _ ≤ 2 ^ n := hn
-  exact_mod_cast hlt
-
 /-- **The polynomial size hierarchy.** For `k ≥ 1`, circuits of size `(n + 1) ^ (k + 1)` decide
 strictly more languages than circuits of size `(n + 1) ^ k`. -/
 theorem SIZE_pow_ssubset {k : ℕ} (hk : 1 ≤ k) :
     SIZE (fun n => (n + 1) ^ k) ⊂ SIZE (fun n => (n + 1) ^ (k + 1)) := by
+  have hlt : ∀ᶠ n : ℕ in atTop, (((n + 1) ^ k : ℕ) : ℝ) < 2 ^ n / n := by
+    filter_upwards [Nat.eventually_add_one_pow_mul_lt_pow k Nat.one_lt_two,
+      eventually_ge_atTop 1] with n hn hn1
+    exact (lt_div_iff₀ (by exact_mod_cast hn1)).mpr (by exact_mod_cast hn)
   refine SIZE_ssubset (fun n => Nat.pow_le_pow_right n.succ_pos k.le_succ)
-    (fun n => Nat.one_le_pow _ _ n.succ_pos) ?_
-    (eventually_pow_lt_two_pow_div k).frequently
+    (fun n => Nat.one_le_pow _ _ n.succ_pos) ?_ hlt.frequently
   filter_upwards [eventually_ge_atTop 3] with n hn
   have h1 : n + 1 ≤ (n + 1) ^ k := Nat.le_self_pow (by omega) _
   rw [pow_succ]

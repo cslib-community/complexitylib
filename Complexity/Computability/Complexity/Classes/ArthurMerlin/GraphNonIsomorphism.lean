@@ -635,7 +635,7 @@ theorem mem_AM : GraphNonIsomorphism ∈ AM (encPair encGraph encGraph) := by
       (fun a : Graph × Graph => 2 * a.1.distinctVertices.length.factorial)
       (encPair encGraph encGraph) encNat :=
     (ComputableInPolyTime.const 2).binary_mul'
-      ((ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_factorial).comp
+      (ComputableInPolyTime.binary_factorial.comp
         ((ComputableInPolyTime.length_list encNat).comp
           (Graph.computableInPolyTime_distinctVertices.comp
             (ComputableInPolyTime.fst encGraph encGraph))))

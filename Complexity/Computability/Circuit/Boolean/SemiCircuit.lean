@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.SemiCircuit.Equation
 public import Mathlib.Data.Finset.Sum
 public import Mathlib.Algebra.BigOperators.Pi
 public import Mathlib.Data.Finset.Lattice.Fold
+import Complexity.Foundations.Data.BitString.Affine
 import Mathlib.Tactic.Ring
 
 /-!
@@ -372,37 +373,6 @@ theorem AffineIn.unique (hC : C.WellFormed) {t : ℕ} {c c' : Bool} {T T' : Fins
 
 /-! ### Affine functions of finitely many bits -/
 
-/-- A function of bits that depends only on the coordinates in `M` and preserves sums of three
-points is affine: a constant plus the sum of the coordinates in some `T ⊆ M`. -/
-theorem exists_affine_of_add_add {M : Finset ℕ} {g : (ℕ → Bool) → Bool}
-    (hcongr : ∀ u u' : ℕ → Bool, (∀ j ∈ M, u j = u' j) → g u = g u')
-    (hadd : ∀ u u' u'' : ℕ → Bool, g (u + u' + u'') = g u + g u' + g u'') :
-    ∃ T ⊆ M, ∀ u, g u = g 0 + ∑ j ∈ T, u j := by
-  classical
-  let e : ℕ → ℕ → Bool := fun j => Pi.single j true
-  have hsum : ∀ A : Finset ℕ, g (∑ j ∈ A, e j) = g 0 + ∑ j ∈ A, (g (e j) + g 0) := by
-    intro A
-    induction A using Finset.induction_on with
-    | empty => simp
-    | @insert j A hj ih =>
-      rw [Finset.sum_insert hj, Finset.sum_insert hj]
-      have := hadd (e j) (∑ i ∈ A, e i) 0
-      rw [add_zero] at this
-      rw [this, ih]
-      ring
-  refine ⟨M.filter fun j => g (e j) + g 0 = true, Finset.filter_subset _ _, fun u => ?_⟩
-  have hu : g u = g (∑ j ∈ M.filter (fun j => u j = true), e j) := by
-    apply hcongr
-    intro i hi
-    rw [Finset.sum_apply, Finset.sum_pi_single]
-    simp only [Finset.mem_filter, hi, true_and]
-    cases u i <;> rfl
-  rw [hu, hsum]
-  congr 1
-  rw [Finset.sum_filter, Finset.sum_filter]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  cases u j <;> cases g (e j) + g 0 <;> rfl
-
 variable {C : SemiCircuit}
 
 /-- Every auxiliary variable of a well-formed semi-circuit is an affine function of the
@@ -415,7 +385,7 @@ theorem WellFormed.exists_affineIn (hC : C.WellFormed) {v : ℕ} (hv : v ∈ C.a
     fun u => (hC.solvable u).choose_spec
   have hval : ∀ val, C.EqnsHold val → val v = sol val v := fun val hval =>
     hC.unique _ _ (fun j hj => ((hsol val).1 j hj).symm) hval (hsol val).2 v hv
-  obtain ⟨T, hT, hg⟩ := exists_affine_of_add_add (M := C.params) (g := fun u => sol u v)
+  obtain ⟨T, hT, hg⟩ := BitString.exists_affine_of_add_add (M := C.params) (g := fun u => sol u v)
     (fun u u' h => hC.unique _ _ (fun j hj => by rw [(hsol u).1 j hj, (hsol u').1 j hj, h j hj])
       (hsol u).2 (hsol u').2 v hv)
     (fun u u' u'' => by

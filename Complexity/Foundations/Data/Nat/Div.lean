@@ -1,14 +1,16 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate (to Mathlib's `Mathlib/Data/Nat/Defs.lean` or cslib)
 
 public import Complexity.Init
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.Nat.ModEq
+import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 
 /-!
 # Dividing repeatedly by a power and quotient-remainder arithmetic
@@ -26,6 +28,8 @@ and exact quotient identities for division by `m` with remainder strictly below 
 * `Nat.add_sub_mod_mod_eq_ite`: difference of remainders modulo `d`, in the form
   `(a + d - b % d) % d`.
 * `Nat.add_sub_mod_mod_eq_of_modEq`: a modular difference is determined by its congruence.
+* `Nat.sum_range_mul_ite_mod`: sums over `< n * ℓ` filtered by `q % ℓ = i` (for `i < ℓ`) equal sums
+  of `k * ℓ + i` over `k < n`.
 -/
 
 @[expose] public section
@@ -80,5 +84,21 @@ theorem add_sub_mod_mod_eq_of_modEq {a b c d : ℕ} (hd : 0 < d) (hc : c < d)
       _ ≡ a [MOD d] := Nat.add_modEq_right
       _ ≡ c + b [MOD d] := he.symm
   rw [Nat.ModEq.add_right_cancel' b h1, Nat.mod_eq_of_lt hc]
+
+/-- Sums over the positions of `n` blocks of length `ℓ` whose position within the block is `i`, as
+sums over the blocks. -/
+theorem sum_range_mul_ite_mod {M : Type*} [AddCommMonoid M] (n : ℕ) {i ℓ : ℕ} (hi : i < ℓ)
+    (F : ℕ → M) :
+    ∑ q ∈ Finset.range (n * ℓ), (if q % ℓ = i then F q else 0) =
+      ∑ k ∈ Finset.range n, F (k * ℓ + i) := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Nat.succ_mul, Finset.sum_range_add, ih, Finset.sum_range_succ]
+    congr 1
+    have hmod (j : ℕ) (hj : j ∈ Finset.range ℓ) : (n * ℓ + j) % ℓ = j := by
+      rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt (Finset.mem_range.mp hj)]
+    rw [Finset.sum_congr rfl fun j hj => by rw [hmod j hj]]
+    simp [hi]
 
 end Nat

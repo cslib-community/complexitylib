@@ -893,6 +893,36 @@ theorem filterWithInput {α : Type}
   .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.filterWithInput α γ encA encIn test
       list hlist.tidy htest.tidy)
 
+/-- Filtering a list by a polynomial-time test is polynomial-time. -/
+@[fun_prop]
+theorem filter {α : Type} {encA : α ↪ List Bool} {test : α → Bool}
+    (htest : ComputableInPolyTime test encA encBool) :
+    ComputableInPolyTime (List.filter test) (encList encA) (encList encA) :=
+  filterWithInput id' (htest.comp (snd _ _))
+
+/-- Map an input-dependent function over a fixed list. Only its members need certificates;
+the list and its elements are not part of the computational input. -/
+@[fun_prop]
+theorem mapConst {β γ : Type} {encB : β ↪ List Bool} {encIn : γ ↪ List Bool}
+    {ι : Type*} (l : List ι) {f : γ → ι → β}
+    (hf : ∀ i ∈ l, ComputableInPolyTime (fun x => f x i) encIn encB) :
+    ComputableInPolyTime (fun x => l.map (f x)) encIn (encList encB) := by
+  induction l with
+  | nil => exact const []
+  | cons a l ih =>
+    exact cons' (hf a (List.mem_cons_self ..))
+      (ih fun b hb => hf b (List.mem_cons_of_mem _ hb))
+
+/-- Repeat a computed value a computed unary number of times, charging every copy and delimiter. -/
+@[fun_prop]
+theorem replicate {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {count : γ → ℕ} {value : γ → α}
+    (hcount : ComputableInPolyTime count encIn encUnary)
+    (hvalue : ComputableInPolyTime value encIn encA) :
+    ComputableInPolyTime (fun x => List.replicate (count x) (value x))
+      encIn (encList encA) :=
+  .of_tidy (ComputableTidilyInPolyTime.replicate hcount.tidy hvalue.tidy)
+
 /-- Concatenate lists computed jointly from the original input and each list element.
 Like `mapWithInput`, this is a composition rule for `fun_prop`. -/
 @[fun_prop]
