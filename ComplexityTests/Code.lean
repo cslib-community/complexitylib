@@ -54,8 +54,11 @@ the Gilbert–Varshamov bound, and the minimum distance of the Hadamard code. -/
 example :
     minDist (∅ : Set (Fin 3 → Bool)) = ⊤ ∧
     minDist ({fun _ => true} : Set (Fin 3 → Bool)) = ⊤ ∧
+    -- Singleton is tight: two repetition words equal 2^(3 - 3 + 1).
     repetition.card ≤ 2 ^ (3 - 3 + 1) ∧
+    -- Hamming is tight: two radius-one balls, each with four words, fill all eight words.
     repetition.card * ∑ j ∈ Finset.range 2, (3).choose j * (2 - 1) ^ j ≤ 2 ^ 3 ∧
+    -- Gilbert–Varshamov gives at least 8 / 4 words at length three and distance two.
     (∃ C : Finset (Fin 3 → Bool), (2 : ℕ∞) ≤ minDist (C : Set (Fin 3 → Bool)) ∧
       2 ^ 3 ≤ C.card * ∑ j ∈ Finset.range 2, (3).choose j * (2 - 1) ^ j) ∧
     minDist (Set.range (BitString.hadamardCode (ι := Fin 3))) = 4 :=

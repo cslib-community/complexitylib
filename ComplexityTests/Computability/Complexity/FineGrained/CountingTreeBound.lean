@@ -32,7 +32,9 @@ example :
     countingDepthCoeff 3 2 = 28 ∧
     countingBChoiceCoeff 3 = 16 ∧
     Nonempty (CountingTreeBound 2 1 1 (countingDepthCoeff 1 2) (by decide) (by decide)) ∧
+    -- The 2-CNF budget is 4 * Nat.clog 2 (4 * 4 * 64) = 40 ≤ 64.
     Nonempty (CountingTreeBound 64 2 1 (countingDepthCoeff 2 64) (by decide) (by decide)) ∧
+    -- The 3-CNF budget is 16 * Nat.clog 2 (4 * 6148 * 512) = 384 ≤ 512.
     Nonempty (CountingTreeBound 512 3 1 (countingDepthCoeff 3 512) (by decide) (by decide)) ∧
     Nonempty (CountingTreeBound (countingThresholdBase 3 1) 3 1
       (countingDepthCoeff 3 (countingThresholdBase 3 1))
@@ -75,6 +77,9 @@ example :
       (normalizeDeclaredLeaf id declaredLeafCounter) 1 [[(0, true)]] = 1 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
       (normalizeDeclaredLeaf id declaredLeafCounter) 3 [[(0, true)]] = 4 ∧
+    -- Without normalization the declared count 4 hits the internal cap 2^1 = 2,
+    -- then scaling by 2^(3 - 1) = 4 gives 8. Normalization gives internal count 1
+    -- and the exact declared count 4, including the two unused variables.
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 2 2
       declaredLeafCounter 3 [[(0, true)]] = 8 ∧
     CNF.modelCountOn [[(0, true)]] (Finset.range 3) = 4 ∧

@@ -71,30 +71,41 @@ theorem repTwo_boundedRep : DynamicArray.BoundedRep 8 [10, 20] repTwoState :=
       rcases a with _ | _ | _ | a <;> simp [repTwoState, mkState, Fits]⟩,
    repTwo_rep⟩
 
-/-- Symbolic execution trace across `initProgram`, five appends (`1 → 2 → 4 → 8` capacity
+/-- Concrete execution trace across `initProgram`, five appends (`1 → 2 → 4 → 8` capacity
 doublings), and `getProgram`, plus precondition rejections for out-of-range read and word overflow.
 -/
 example :
+    -- Init allocates the one-word block at address 0, zeroes it and sets frontier = 1 in 15 steps.
     (DynamicArray.initProgram.eval 8 4 blank).map (snapshot [0, 1]) =
       some (15, (0, 0, 1, 1), [0, 0]) ∧
+    -- First append: capacity 1 suffices; write 10 at address 0 in 7 steps.
     (DynamicArray.program.eval 8 4 (mkState 0 0 1 1 10 [0])).map (snapshot [0, 1]) =
       some (7, (0, 1, 1, 1), [10, 0]) ∧
+    -- Second append doubles 1 → 2, allocates [1, 3), copies 10 and writes 20.
+    -- Frontier becomes 3; amortized charge is 34 + 30 - 15 = 49.
     (DynamicArray.program.eval 8 4 (mkState 0 1 1 1 20 [10])).map (snapshot [0, 1, 2, 3]) =
       some (34, (1, 2, 2, 3), [10, 10, 20, 0]) ∧
+    -- Third append doubles 2 → 4, copies to addresses 3..4, writes 30 at 5 and leaves cell 6 zero.
+    -- Frontier becomes 7; amortized charge is 49 + 30 - 30 = 49.
     (DynamicArray.program.eval 8 8 (mkState 1 2 2 3 30 [10, 10, 20])).map
       (snapshot [3, 4, 5, 6]) =
       some (49, (3, 3, 4, 7), [10, 20, 30, 0]) ∧
+    -- Fourth append uses spare capacity, writing 40 at address 6 in 7 steps.
     (DynamicArray.program.eval 8 8
       (mkState 3 3 4 7 40 [10, 10, 20, 10, 20, 30, 0])).map (snapshot [3, 4, 5, 6]) =
       some (7, (3, 4, 4, 7), [10, 20, 30, 40]) ∧
+    -- Fifth append doubles 4 → 8, copies to 7..10, writes 50 at 11 and zeroes 12..14.
+    -- Frontier becomes 15 < 4 * 5 = 20; amortized charge is 79 + 30 - 60 = 49.
     (DynamicArray.program.eval 8 10
       (mkState 3 4 4 7 50 [10, 10, 20, 10, 20, 30, 40])).map
       (snapshot [7, 8, 9, 10, 11, 12, 13, 14]) =
       some (79, (7, 5, 8, 15), [10, 20, 30, 40, 50, 0, 0, 0]) ∧
+    -- Read index 4 from the block at address 7, returning 50 in 2 steps.
     (DynamicArray.getProgram.eval 8 0
       (mkState 7 5 8 15 4 [10, 10, 20, 10, 20, 30, 40, 10, 20, 30, 40, 50, 0, 0, 0])).map
       (fun yn => (yn.2, yn.1.regs DynamicArray.temp)) =
       some (2, 50) ∧
+    -- Reject an out-of-range read and an append value that overflows the word width.
     ¬(DynamicArray.spec 8).valid [10, 20] (.get 2) ∧
     ¬(DynamicArray.spec 4).valid [10, 20] (.append 5) :=
   ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, by decide,

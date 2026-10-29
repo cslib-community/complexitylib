@@ -65,12 +65,16 @@ private theorem search_boundedDeclared (N : ℕ) {φ : CNF ℕ}
 /-- Normalized-leaf correctness despite the provider's wrong answer (`8`) on unnormalized duplicate
 clauses, tautological-clause disappearance at `N = 3`, zero-variable empty/empty-clause boundaries,
 and out-of-range variable rejection. -/
+-- The theorem proves correctness although the provider gives 8 on the input itself;
+-- the two unused declared variables contribute a factor 4 to the normalized answer.
 example :
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 1 1
       (normalizeDeclaredLeaf id (boundedDeclared 1 2)) 3 (List.replicate 8 [(0, true)]) = 4 ∧
     boundedDeclared 1 2 (3, List.replicate 8 [(0, true)]) = 8 ∧
+    -- A tautological clause disappears; its variable and the two unused variables still count.
     searchDeclaredWith id (fun _ => 64) (fun _ => 1) 2 2
       (normalizeDeclaredLeaf id (boundedDeclared 2 64)) 3 [[(0, true), (0, false)]] = 8 ∧
+    -- At zero declared variables, the empty formula has one assignment and an empty clause none.
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 1 1
       (normalizeDeclaredLeaf id (boundedDeclared 1 2)) 0 [] = 1 ∧
     searchDeclaredWith id (fun _ => 2) (fun _ => 1) 1 1

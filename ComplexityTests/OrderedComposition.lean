@@ -102,11 +102,11 @@ example :
     rw [bitQuery, realize_bit]
     decide
 
-/-- Genuine numeric constants occur under a universal quantifier, and composition commutes with
-`onSentence` and `onFormula`. -/
+/-- Genuine numeric constants occur under a universal quantifier. -/
 noncomputable def oneBits : (language L).Sentence :=
   closeAll Unit ((bit L (one L) (.var ())).iff ((Term.var ()).equal (zero L)))
 
+-- Composition commutes with `onSentence` and `onFormula` for the concrete queries below.
 example (v : Fin 2 → Fin 3 → Fin 2 → Fin 3) :
     Fin 3 ⊨ (outer.comp inner).onSentence oneBits ∧
     (Fin 3 ⊨ (outer.comp inner).onSentence oneBits ↔
