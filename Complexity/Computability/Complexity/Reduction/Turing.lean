@@ -342,10 +342,10 @@ private theorem isOraclePPTOn_oracleAnswerStep {k : ℕ} {Control : Type} [Finit
         OracleComp.interpret ProbOracleComp.query (oracleAnswerStep machine prog cfg)) := by
   simp only [interpret_oracleAnswerStep]
   exact Probability.IsOraclePPTOn.cond'
-    ((ComputableInPolyTime.of_finite Option.isSome).comp (.of_tidy machine.pendingQuery_pt))
-    ((hprog.preprocess' (.of_tidy machine.pendingRequest_pt)).map_with'
-      (f := fun cfg b => machine.receiveBit (cfg, b)) (.of_tidy machine.receiveBit_pt))
-    (ComputableInPolyTime.of_tidy machine.localStep_pt).isOraclePPTOn
+    ((ComputableInPolyTime.of_finite Option.isSome).comp machine.pendingQuery_pt)
+    ((hprog.preprocess' machine.pendingRequest_pt).map_with'
+      (f := fun cfg b => machine.receiveBit (cfg, b)) machine.receiveBit_pt)
+    machine.localStep_pt.isOraclePPTOn
 
 private theorem spaceBound_of_mem_support_oracleAnswerStep {k : ℕ} {Control : Type}
     (machine : Turing.MultiTapePTM k Bool Control Unit)

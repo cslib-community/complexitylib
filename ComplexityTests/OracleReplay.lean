@@ -67,7 +67,7 @@ example :
     ComputableInPolyTime
       (fun p : List Bool × List Bool => machine.replayOutput p.1 p.2)
       (encPair encBits encBits) encBits ∧
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (List Bool × List Bool) × ℕ =>
         machine.pendingRequest (machine.replayPrefix p.1.1 p.1.2 p.2))
       (encPair (encPair encBits encBits) encUnary) encBits :=

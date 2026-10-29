@@ -51,6 +51,11 @@ namespace Cslib.Crypto.Pseudoentropy.SamplablePair
 
 open ProbComp Probability Probability.PMF BitString Boosting Filter Turing.MultiTapeTM
 
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_dyadicSize :
+    ComputableTidilyInPolyTime dyadicSize encUnary encUnary :=
+  ComputableInPolyTime.unary_dyadicSize.tidy
+
 /-- All tests in a uniformly efficient polynomial-size family eventually admit dense soft masks
 with small distinguishing gap whenever their density is valid. The common eventual threshold
 allows arbitrary choices of index in the proof without supplying that choice to the program. -/

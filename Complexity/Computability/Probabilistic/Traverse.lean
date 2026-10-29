@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Languages.Probabilistic.Traverse
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Probability.PMF.Bind
 import Complexity.Computability.Probabilistic.CoinTape
 import Complexity.Computability.Probabilistic.Sampling
@@ -17,7 +18,6 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Tactic.PolyTime.Init
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Strict PPT list traversal
@@ -114,8 +114,9 @@ theorem IsPPTOn.mapMWith {α β γ : Type} {input : α ↪ List Bool}
     {element : β ↪ List Bool} {output : γ ↪ List Bool} {list : α → List β}
     {program : α → β → ProbComp γ}
     (hprogram : IsPPTOn (encPair input element) output (fun p => program p.1 p.2))
-    (hlist : ComputableTidilyInPolyTime list input (encList element)) :
+    (hlist : ComputableInPolyTime list input (encList element)) :
     IsPPTOn input (encList output) (fun a => (list a).mapM (program a)) := by
+  have hlist := hlist.tidy
   have hpairs : ComputableTidilyInPolyTime (fun a => (list a).map fun b => (a, b))
       input (encList (encPair input element)) := by fun_prop
   apply (hprogram.mapM.preprocess (ComputableInPolyTime.of_tidy hpairs)).congr

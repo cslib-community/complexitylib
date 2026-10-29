@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
@@ -124,12 +125,12 @@ theorem isPPTOn_run [Finite Operation] {input : α ↪ List Bool}
     {stateEncoding : State ↪ List Bool} (machine : MultiTapePTM k Bool Control Operation)
     {word : α → List Bool} {count : α → ℕ}
     {handler : α → Operation × List Bool → State → ProbComp (List Bool × State)}
-    {initial : α → State} (hword : ComputableTidilyInPolyTime word input encBits)
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
+    {initial : α → State} (hword : ComputableInPolyTime word input encBits)
+    (hcount : ComputableInPolyTime count input encUnary)
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
+    (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : α → State → Prop) (hinit : ∀ a, invariant a (initial a))
     {resources : ℕ → ℕ} (hresources : PolynomiallyBounded resources)
     (hpreserve : ∀ a request state, invariant a state →

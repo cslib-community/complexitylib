@@ -182,11 +182,11 @@ private theorem replayStepFactor_mem_SharpP [Finite Control] [Finite Operation]
       (fun x => (machine.pendingQuery (cfg x)).isSome)
       (encPair (encPair enc encBits) encUnary) encBool :=
     (ComputableInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.computableInPolyTime.comp hcfg)
+      (machine.pendingQuery_pt.comp hcfg)
   have hreq : ComputableInPolyTime
       (fun x => machine.pendingRequest (cfg x))
       (encPair (encPair enc encBits) encUnary) encBits :=
-    machine.pendingRequest_pt.computableInPolyTime.comp hcfg
+    machine.pendingRequest_pt.comp hcfg
   have hbit : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
