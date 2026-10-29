@@ -49,30 +49,29 @@ private theorem minDist_repetition : minDist (repetition : Set (Fin 3 → Bool))
     rcases hx with rfl | rfl <;> rcases hy with rfl | rfl
     all_goals first | exact absurd rfl hxy | (rw [show hammingDist _ _ = 3 by decide]; rfl)
 
-example : minDist (∅ : Set (Fin 3 → Bool)) = ⊤ := minDist_empty
-
-example : minDist ({fun _ => true} : Set (Fin 3 → Bool)) = ⊤ := minDist_singleton _
-
-/-- The Singleton bound for the repetition code is tight: two words, `2 ^ (3 - 3 + 1)`. -/
-example : repetition.card ≤ 2 ^ (3 - 3 + 1) := by
-  simpa using card_le_pow_of_le_minDist (d := 3) minDist_repetition.ge
-
-/-- The Hamming bound for the repetition code is tight: two balls of radius one, of four words
-each, fill the eight words of length three. -/
-example : repetition.card * ∑ j ∈ Finset.range 2, (3).choose j * (2 - 1) ^ j ≤ 2 ^ 3 := by
-  simpa using card_mul_sum_choose_le_of_two_mul_lt_minDist (β := fun _ : Fin 3 => Bool) (q := 2)
-    (fun _ => rfl) (r := 1) (by rw [minDist_repetition]; decide)
-
-/-- The Gilbert–Varshamov bound: some binary code of length three and minimum distance at least
-two has at least `8 / 4` words. -/
-example : ∃ C : Finset (Fin 3 → Bool), (2 : ℕ∞) ≤ minDist (C : Set (Fin 3 → Bool)) ∧
-    2 ^ 3 ≤ C.card * ∑ j ∈ Finset.range 2, (3).choose j * (2 - 1) ^ j := by
-  simpa using exists_le_minDist_and_pow_le_card_mul_sum_choose (β := fun _ : Fin 3 => Bool)
-    (q := 2) (fun _ => rfl) (d := 2) (by norm_num)
-
-/-- The Hadamard code of messages of three bits has minimum distance four. -/
-example : minDist (Set.range (BitString.hadamardCode (ι := Fin 3))) = 4 := by
-  simpa using BitString.minDist_range_hadamardCode (ι := Fin 3)
+/-- Minimum distance of empty/singleton sets, Singleton and Hamming bounds on the repetition code,
+the Gilbert–Varshamov bound, and the minimum distance of the Hadamard code. -/
+example :
+    minDist (∅ : Set (Fin 3 → Bool)) = ⊤ ∧
+    minDist ({fun _ => true} : Set (Fin 3 → Bool)) = ⊤ ∧
+    -- Singleton is tight: two repetition words equal 2^(3 - 3 + 1).
+    repetition.card ≤ 2 ^ (3 - 3 + 1) ∧
+    -- Hamming is tight: two radius-one balls, each with four words, fill all eight words.
+    repetition.card * ∑ j ∈ Finset.range 2, (3).choose j * (2 - 1) ^ j ≤ 2 ^ 3 ∧
+    -- Gilbert–Varshamov gives at least 8 / 4 words at length three and distance two.
+    (∃ C : Finset (Fin 3 → Bool), (2 : ℕ∞) ≤ minDist (C : Set (Fin 3 → Bool)) ∧
+      2 ^ 3 ≤ C.card * ∑ j ∈ Finset.range 2, (3).choose j * (2 - 1) ^ j) ∧
+    minDist (Set.range (BitString.hadamardCode (ι := Fin 3))) = 4 :=
+  ⟨minDist_empty,
+    minDist_singleton _,
+    by simpa using card_le_pow_of_le_minDist (d := 3) minDist_repetition.ge,
+    by
+      simpa using card_mul_sum_choose_le_of_two_mul_lt_minDist (β := fun _ : Fin 3 => Bool) (q := 2)
+        (fun _ => rfl) (r := 1) (by rw [minDist_repetition]; decide),
+    by
+      simpa using exists_le_minDist_and_pow_le_card_mul_sum_choose (β := fun _ : Fin 3 => Bool)
+        (q := 2) (fun _ => rfl) (d := 2) (by norm_num),
+    by simpa using BitString.minDist_range_hadamardCode (ι := Fin 3)⟩
 
 /-! ### Reed–Solomon codes over `ZMod 5` -/
 
@@ -96,43 +95,38 @@ private theorem rs_ne_bot : reedSolomon points5 2 ≠ ⊥ := by
   exact absurd (congrFun h1 0) (by simp)
 
 /-- **Reed–Solomon codes are maximum distance separable**: the Singleton bound holds with
-equality. -/
-example : Module.finrank (ZMod 5) (reedSolomon points5 2) + 4 = Fintype.card (Fin 5) + 1 := by
-  rw [finrank_rs]
-  simp
-
-example : Module.finrank (ZMod 5) (reedSolomon points5 2) + 4 ≤ Fintype.card (Fin 5) + 1 :=
-  finrank_add_le_card_add_one rs_ne_bot minDist_rs.ge
-
-/-- The Reed–Solomon code of dimension zero is the zero code, whose minimum distance is `⊤`. -/
-example : minDist (reedSolomon points5 0 : Set (Fin 5 → ZMod 5)) = ⊤ := by
-  refine minDist_eq_top_iff.2 fun x hx y hy => ?_
-  obtain ⟨p, hp, rfl⟩ := mem_reedSolomon.1 hx
-  obtain ⟨q, hq, rfl⟩ := mem_reedSolomon.1 hy
+equality, dimension zero is the zero code with `minDist = ⊤`, and unique decoding holds below half
+the distance. -/
+example {x y w : Fin 5 → ZMod 5} (hx : x ∈ reedSolomon points5 2) (hy : y ∈ reedSolomon points5 2)
+    (hxw : hammingDist x w ≤ 1) (hyw : hammingDist y w ≤ 1) :
+    Module.finrank (ZMod 5) (reedSolomon points5 2) + 4 = Fintype.card (Fin 5) + 1 ∧
+    Module.finrank (ZMod 5) (reedSolomon points5 2) + 4 ≤ Fintype.card (Fin 5) + 1 ∧
+    minDist (reedSolomon points5 0 : Set (Fin 5 → ZMod 5)) = ⊤ ∧
+    x = y := by
+  refine ⟨by rw [finrank_rs]; simp,
+    finrank_add_le_card_add_one rs_ne_bot minDist_rs.ge,
+    ?_,
+    eq_of_hammingDist_le_of_two_mul_lt_minDist (by rw [minDist_rs]; decide) hx hy hxw hyw⟩
+  refine minDist_eq_top_iff.2 fun u hu v hv => ?_
+  obtain ⟨p, hp, rfl⟩ := mem_reedSolomon.1 hu
+  obtain ⟨q, hq, rfl⟩ := mem_reedSolomon.1 hv
   rw [Nat.cast_zero, Nat.WithBot.lt_zero_iff, degree_eq_bot] at hp hq
   rw [hp, hq]
 
-/-- Unique decoding: a word within distance one of two codewords determines them, since
-`2 * 1 < 4`. -/
-example {x y w : Fin 5 → ZMod 5} (hx : x ∈ reedSolomon points5 2) (hy : y ∈ reedSolomon points5 2)
-    (hxw : hammingDist x w ≤ 1) (hyw : hammingDist y w ≤ 1) : x = y :=
-  eq_of_hammingDist_le_of_two_mul_lt_minDist (by rw [minDist_rs]; decide) hx hy hxw hyw
-
 /-! ### Reed–Muller codes over `ZMod 3` -/
 
-/-- The Reed–Muller code of degree one in two variables over `ZMod 3` has minimum distance
-`(3 - 1) * 3 = 6`. -/
-example : minDist (reedMuller (ZMod 3) 2 1 : Set ((Fin 2 → ZMod 3) → ZMod 3)) = 6 := by
-  have := minDist_reedMuller (F := ZMod 3) (m := 1) (d := 1) (by simp [ZMod.card])
-  simpa [ZMod.card] using this
-
-/-- Distinct codewords of the Reed–Muller code of degree two in three variables over `ZMod 3`
-differ on at least `(3 - 2) * 27 / 3 = 9` points. -/
+/-- Minimum distance `(3 - 1) * 3 = 6` of the degree-1 Reed–Muller code in two variables over
+`ZMod 3`, and distance `≥ 9` between distinct codewords of degree two in three variables. -/
 example {f g : (Fin 3 → ZMod 3) → ZMod 3} (hf : f ∈ reedMuller (ZMod 3) 3 2)
-    (hg : g ∈ reedMuller (ZMod 3) 3 2) (hfg : f ≠ g) : 9 ≤ hammingDist f g := by
-  have := card_sub_mul_pow_le_mul_hammingDist_of_mem_reedMuller hf hg hfg
-  simp only [ZMod.card] at this
-  omega
+    (hg : g ∈ reedMuller (ZMod 3) 3 2) (hfg : f ≠ g) :
+    minDist (reedMuller (ZMod 3) 2 1 : Set ((Fin 2 → ZMod 3) → ZMod 3)) = 6 ∧
+    9 ≤ hammingDist f g := by
+  refine ⟨?_, ?_⟩
+  · have := minDist_reedMuller (F := ZMod 3) (m := 1) (d := 1) (by simp [ZMod.card])
+    simpa [ZMod.card] using this
+  · have := card_sub_mul_pow_le_mul_hammingDist_of_mem_reedMuller hf hg hfg
+    simp only [ZMod.card] at this
+    omega
 
 /-! ### Berlekamp–Welch decoding over `ZMod 7` -/
 
@@ -156,12 +150,12 @@ private theorem hammingDist_received :
 private theorem degree_lt : (X ^ 2 + 1 : (ZMod 7)[X]).degree < (3 : ℕ) := by
   compute_degree!
 
-/-- The key equations have a solution for the received word. -/
-example : ∃ E Q, BerlekampWelch.IsSolution points7 received 2 3 E Q :=
-  BerlekampWelch.exists_isSolution degree_lt hammingDist_received
-
-/-- Two errors among seven points are corrected at dimension three, since `2 * 2 + 3 ≤ 7`. -/
-example : berlekampWelch points7 2 3 received = some (X ^ 2 + 1) :=
-  berlekampWelch_eq_some points7_injective (by simp) degree_lt hammingDist_received
+/-- Existence of a key-equation solution and unique Berlekamp–Welch recovery of `X ^ 2 + 1` from two
+errors among seven points at dimension three. -/
+example :
+    (∃ E Q, BerlekampWelch.IsSolution points7 received 2 3 E Q) ∧
+    berlekampWelch points7 2 3 received = some (X ^ 2 + 1) :=
+  ⟨BerlekampWelch.exists_isSolution degree_lt hammingDist_received,
+    berlekampWelch_eq_some points7_injective (by simp) degree_lt hammingDist_received⟩
 
 end ComplexityTests.Code

@@ -66,45 +66,39 @@ def nullaryVocabulary : Vocabulary nullaryLanguage where
 /-- The edge: two vertices, adjacent both ways, no loops. -/
 def edge : EncodedStructure := (2, [ [false, true, true, false] ])
 
-example : graphVocabulary.WellFormed edge := by decide +kernel
-example : graphVocabulary.checkShape edge = true := by decide +kernel
-
-/-- The empty graph has an empty adjacency table. -/
-example : graphVocabulary.WellFormed (0, [ [] ]) := by decide +kernel
-
-/-- A missing table, a surplus table, and a table of the wrong length are malformed. -/
-example : ¬ graphVocabulary.WellFormed (2, []) := by decide +kernel
-example : ¬ graphVocabulary.WellFormed (2, [ [false, true, true, false], [] ]) := by decide +kernel
-example : ¬ graphVocabulary.WellFormed (2, [ [false, true, true] ]) := by decide +kernel
-example : ¬ graphVocabulary.WellFormed (0, []) := by decide +kernel
-
-/-- A nullary relation has a one-bit table, even on the empty structure. -/
-example : nullaryVocabulary.WellFormed (0, [ [true] ]) := by decide +kernel
-example : nullaryVocabulary.WellFormed (3, [ [false] ]) := by decide +kernel
-example : ¬ nullaryVocabulary.WellFormed (0, [ [] ]) := by decide +kernel
-example : ¬ nullaryVocabulary.WellFormed (3, [ [false, false] ]) := by decide +kernel
+/-- Well-formedness and shape checks on `edge`, the empty graph, malformed inputs, and nullary
+relations. -/
+example :
+    graphVocabulary.WellFormed edge ∧
+    graphVocabulary.checkShape edge = true ∧
+    graphVocabulary.WellFormed (0, [ [] ]) ∧
+    ¬ graphVocabulary.WellFormed (2, []) ∧
+    ¬ graphVocabulary.WellFormed (2, [ [false, true, true, false], [] ]) ∧
+    ¬ graphVocabulary.WellFormed (2, [ [false, true, true] ]) ∧
+    ¬ graphVocabulary.WellFormed (0, []) ∧
+    nullaryVocabulary.WellFormed (0, [ [true] ]) ∧
+    nullaryVocabulary.WellFormed (3, [ [false] ]) ∧
+    ¬ nullaryVocabulary.WellFormed (0, [ [] ]) ∧
+    ¬ nullaryVocabulary.WellFormed (3, [ [false, false] ]) := by
+  decide +kernel
 
 /-! ### Decoding -/
 
-/-- The nullary relation holds in the decoded structure exactly when its bit is set. -/
-example : (nullaryVocabulary.decode (0, [ [true] ])).RelMap nullarySymbol ![] := by
-  rw [Vocabulary.relMap_decode]
-  decide +kernel
-
-example : ¬ (nullaryVocabulary.decode (3, [ [false] ])).RelMap nullarySymbol ![] := by
-  rw [Vocabulary.relMap_decode]
-  decide +kernel
+/-- The nullary relation holds in the decoded structure exactly when its bit is set, and malformed
+inputs are never in a query language. -/
+example (K : Set (Bundled Language.graph.Structure)) :
+    (nullaryVocabulary.decode (0, [ [true] ])).RelMap nullarySymbol ![] ∧
+    ¬ (nullaryVocabulary.decode (3, [ [false] ])).RelMap nullarySymbol ![] ∧
+    (2, [ [false, true, true] ]) ∉ graphVocabulary.queryLanguage K :=
+  ⟨by rw [Vocabulary.relMap_decode]; decide +kernel,
+    by rw [Vocabulary.relMap_decode]; decide +kernel,
+    fun h => absurd h.1 (by decide +kernel)⟩
 
 /-- The edge decodes to the complete graph on two vertices. -/
 theorem relMap_decode_edge (x y : Fin 2) :
     (graphVocabulary.decode edge).RelMap adj ![x, y] ↔ x ≠ y := by
   rw [Vocabulary.relMap_decode]
   fin_cases x <;> fin_cases y <;> decide +kernel
-
-/-- Malformed inputs are never in a query language. -/
-example (K : Set (Bundled Language.graph.Structure)) :
-    (2, [ [false, true, true] ]) ∉ graphVocabulary.queryLanguage K :=
-  fun h => absurd h.1 (by decide +kernel)
 
 /-! ### Encoding -/
 
@@ -127,28 +121,24 @@ example : @Vocabulary.encode _ graphVocabulary (Fin 2) (⊤ : SimpleGraph (Fin 2
     List.getElem_cons_succ, decide_eq_true_eq, decide_eq_false_iff_not] <;> decide +kernel +revert
 
 /-- For a class closed under isomorphism, membership of an encoding is membership of the
-structure: the encodings of the complete graph on two vertices along both numberings are in the
-query language of two-colorability. -/
+structure: the encodings of the complete graph on two vertices along any numbering, and `edge`
+itself, are in the query language of two-colorability, while `edge` is not one-colorable. -/
 example (e : Fin 2 ≃ Fin 2) :
-    (letI := (⊤ : SimpleGraph (Fin 2)).structure; graphVocabulary.encode (Fin 2) e) ∈
+    ((letI := (⊤ : SimpleGraph (Fin 2)).structure; graphVocabulary.encode (Fin 2) e) ∈
       graphVocabulary.queryLanguage
-        {M | ∃ f : M → Fin 2, ∀ x y, RelMap adj ![x, y] → f x ≠ f y} := by
+        {M | ∃ f : M → Fin 2, ∀ x y, RelMap adj ![x, y] → f x ≠ f y}) ∧
+    edge ∈ graphVocabulary.queryLanguage
+      {M | ∃ f : M → Fin 2, ∀ x y, RelMap adj ![x, y] → f x ≠ f y} ∧
+    edge ∉ graphVocabulary.queryLanguage
+      {M | ∃ f : M → Fin 1, ∀ x y, RelMap adj ![x, y] → f x ≠ f y} := by
+  refine ⟨?_,
+    ⟨by decide +kernel, id, fun x y h => (relMap_decode_edge x y).1 h⟩,
+    fun h => by
+      obtain ⟨f, hf⟩ := h.2
+      exact hf (0 : Fin 2) (1 : Fin 2) ((relMap_decode_edge 0 1).2 (by decide))
+        (Subsingleton.elim _ _)⟩
   let _ := (⊤ : SimpleGraph (Fin 2)).structure
   rw [Vocabulary.mem_queryLanguage_encode (Cslib.Logic.ESO.Definable.colorable 2).isoClosed]
   exact ⟨id, fun x y h => h.ne⟩
-
-/-! ### Colorability -/
-
-/-- The edge is two-colorable: it belongs to the query language of two-colorability. -/
-example : edge ∈ graphVocabulary.queryLanguage {M | ∃ f : M → Fin 2,
-    ∀ x y, RelMap adj ![x, y] → f x ≠ f y} :=
-  ⟨by decide +kernel, id, fun x y h => (relMap_decode_edge x y).1 h⟩
-
-/-- The edge is not one-colorable. -/
-example : edge ∉ graphVocabulary.queryLanguage {M | ∃ f : M → Fin 1,
-    ∀ x y, RelMap adj ![x, y] → f x ≠ f y} := by
-  intro h
-  obtain ⟨f, hf⟩ := h.2
-  exact hf (0 : Fin 2) (1 : Fin 2) ((relMap_decode_edge 0 1).2 (by decide)) (Subsingleton.elim _ _)
 
 end ComplexityTests.FaginEncoding

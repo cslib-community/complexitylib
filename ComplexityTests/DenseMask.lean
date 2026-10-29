@@ -48,10 +48,6 @@ private noncomputable def fairPair : SamplablePair where
     simp only [ProbComp.eval_map, ProbComp.eval_uniform, PMF.map_comp, Function.comp_def]
     rfl
 
--- The latent decoder preserves the hidden bit along with the public observation.
-example (n : ℕ) : ProbComp.eval (fairPair.latentSample n) =
-    (uniformOfFintype Bool).map ((), ·) := fairPair.eval_latentSample n
-
 private theorem fairPair_entropy (n : ℕ) : conditionalEntropy (fairPair.joint n) = 1 := by
   change conditionalEntropy ((uniformOfFintype Bool).map ((), ·)) = 1
   rw [conditionalEntropy, entropy_map_of_injective _ (fun _ _ h => congrArg Prod.snd h)]
@@ -60,6 +56,13 @@ private theorem fairPair_entropy (n : ℕ) : conditionalEntropy (fairPair.joint 
     entropy ((uniformOfFintype Bool).map (Function.const Bool ())) = 1
   rw [PMF.map_const]
   simp [entropy_uniform]
+
+-- The latent decoder preserves the hidden bit and has conditional entropy one.
+example (n : ℕ) :
+    ProbComp.eval (fairPair.latentSample n) = (uniformOfFintype Bool).map ((), ·) ∧
+      conditionalEntropy (ProbComp.eval (fairPair.latentSample n)) = 1 := by
+  rw [fairPair.eval_latentSample n]
+  exact ⟨rfl, fairPair_entropy n⟩
 
 private theorem fairPair_gap : fairPair.HasGap (fun _ => 0) := by
   intro adversary _
@@ -94,7 +97,7 @@ example :
         (ThreeSource.extract (count n) (saved.length n) 2 0 (bits n) 0 (saved.sampleWithSeed n)))
       (fun n => uniformList
         (ThreeSource.outputLength (count n) (saved.length n) 2 0 (bits n) 0)) := by
-  have hlength := saved.length_isPolyTime.tidy
+  have hlength := saved.length_isPolyTime
   apply fairPair_gap.extract_three saved
     (bound := fun _ => 2) (inverseSlack := fun _ => 0)
     (observationBits := fun _ => 0) (remainingBits := fun _ => 0)
@@ -125,15 +128,15 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1)
         extractWordLabels (count n) (bits n) values >>= test n (choose n)))
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> fairPair.sample n) (count n) (bits n)
         >>= test n (choose n)))) := by
-  have hlength := saved.length_isPolyTime.tidy
+  have hlength := saved.length_isPolyTime
   apply fairPair_gap.extract_indexed_word_labels saved choose
     (candidates := fun n => n + 1) (inverseSlack := fun _ => 0)
     (outputBits := fun n _ => ExtractionSchedule.slack n (saved.length n) 0)
     (numerator := fun _ _ => 2) (densityBound := fun _ => 0)
-    (.of_tidy (by fun_prop))
-    (ExtractionSchedule.isPolyTime_slack (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
-      (.of_tidy (by fun_prop)))
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+    (by fun_prop)
+    (ExtractionSchedule.isPolyTime_slack (by fun_prop) (by fun_prop)
+      (by fun_prop))
+    (by fun_prop) (by fun_prop) (by fun_prop)
       (Eventually.of_forall hchoose)
     (Eventually.of_forall (by intro n; rw [fairPair_entropy]; norm_num [dyadicSize]))
     ?_ test htest
@@ -161,8 +164,7 @@ example : ∀ᶠ n in atTop, ∀ i < n + 1,
     (candidates := fun n => n + 1) (count := fun n => n + 1)
     (numerator := fun _ _ => 1) (densityBound := fun _ => 1)
     (inverseGap := fun n => 4 * (n + 1))
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-      fun_prop)) (.of_tidy (by fun_prop)) (by lia)
+    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by lia)
   filter_upwards [h] with n hn
   intro i hi
   obtain ⟨mask, hdense, _, hclose⟩ := hn i hi (by decide) (by decide)

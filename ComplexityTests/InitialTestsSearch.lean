@@ -11,13 +11,24 @@ import Complexity.Computability.PolyTime.BitString.InitialTestsSearch
 namespace ComplexityTests.InitialTestsSearch
 open Cslib Cslib.BitString Cslib.Complexity.InitialTestsSearch Cslib.Probability.PMF
 open Turing.MultiTapeTM
--- Base ell = 0 (qG = 1) schedule values, trivial shift search, and degenerate empty cases.
-example : greedyRowListLength 1 1 = 20000 ∧ initialRowWeightBound 1 1 = 320000 ∧ ellG 1 1 = 0 ∧
-    qG 1 1 = 1 ∧ dG 1 1 = 1 ∧
-    checkSmallBiasShifts 0 3 0 1 [[], [], []] = true ∧
-    checkSmallBiasShifts 0 3 0 1 [[true], [], []] = false ∧
-    findSmallBiasShifts 0 3 0 1 = [[], [], []] ∧
-    initialTestsRows 0 1 = [] ∧ initialTestsRows 3 0 = [] := by decide
+-- Base ell = 0 (qG = 1) schedule values, trivial shift search, degenerate empty cases,
+-- and end-to-end check of initialTestsRows_spec and map_ofList_initialTestsRows_spec at (4, 6, 2).
+example :
+    (greedyRowListLength 1 1 = 20000 ∧ initialRowWeightBound 1 1 = 320000 ∧ ellG 1 1 = 0 ∧
+      qG 1 1 = 1 ∧ dG 1 1 = 1 ∧
+      checkSmallBiasShifts 0 3 0 1 [[], [], []] = true ∧
+      checkSmallBiasShifts 0 3 0 1 [[true], [], []] = false ∧
+      findSmallBiasShifts 0 3 0 1 = [[], [], []] ∧
+      initialTestsRows 0 1 = [] ∧ initialTestsRows 3 0 = []) ∧
+    (initialTestsRows 6 2).length ≤ 12 ∧
+    (∀ r ∈ (initialTestsRows 6 2).map (ofList 6), weight r ≤ initialRowWeightBound 2 6) ∧
+    ∀ z : Fin 6 → Bool, z ≠ 0 → (∀ r ∈ initialTestsRows 6 2, ofList 6 r ⬝ᵥ z = false) →
+      (6 : ℝ) / (greedyRowListLength 2 6 : ℝ) ≤ (weight z : ℝ) :=
+  ⟨by decide,
+    (initialTestsRows_spec (n := 4) (m := 6) (B := 2) (by decide) (by decide) (by decide)).1,
+    (map_ofList_initialTestsRows_spec (n := 4) (by decide) (by decide) (by decide)).2.1,
+    fun _ hz0 hz => div_greedyRowListLength_le_weight_of_initialTestsRows (n := 4) (by decide)
+      (by decide) (by decide) hz0 hz⟩
 
 set_option maxRecDepth 4096 in
 -- Kernel reduction of 2 ^ (3 * 2) = 64 sequential IndexFold.run steps + IsSmallBias soundness.
@@ -82,15 +93,5 @@ example :
     (buildShortenedTannerRows_polyTime (bound := fun x => 2 * x.1.1 + 1) (by fun_prop)
       (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
       fun x => qG_le_two_mul_add_one x.1.1 x.1.2))
--- End-to-end check of initialTestsRows_spec and map_ofList_initialTestsRows_spec at (4, 6, 2).
-example :
-    (initialTestsRows 6 2).length ≤ 12 ∧
-      (∀ r ∈ (initialTestsRows 6 2).map (ofList 6), weight r ≤ initialRowWeightBound 2 6) ∧
-      ∀ z : Fin 6 → Bool, z ≠ 0 → (∀ r ∈ initialTestsRows 6 2, ofList 6 r ⬝ᵥ z = false) →
-        (6 : ℝ) / (greedyRowListLength 2 6 : ℝ) ≤ (weight z : ℝ) :=
-  ⟨(initialTestsRows_spec (n := 4) (m := 6) (B := 2) (by decide) (by decide) (by decide)).1,
-    (map_ofList_initialTestsRows_spec (n := 4) (by decide) (by decide) (by decide)).2.1,
-    fun _ hz0 hz => div_greedyRowListLength_le_weight_of_initialTestsRows (n := 4) (by decide)
-      (by decide) (by decide) hz0 hz⟩
 
 end ComplexityTests.InitialTestsSearch

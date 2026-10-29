@@ -167,7 +167,7 @@ private theorem replayStepFactor_mem_SharpP [Finite Control] [Finite Operation]
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
   have hcfg : ComputableInPolyTime cfg
       (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.replayPrefix_pt.computableInPolyTime.comp (g := fun x : (α × List Bool) × ℕ =>
+    machine.computableInPolyTime_replayPrefix.comp (g := fun x : (α × List Bool) × ℕ =>
       ((input x.1.1, x.1.2), x.2)) (by fun_prop)
   have hquery : ComputableInPolyTime
       (fun x => (machine.pendingQuery (cfg x)).isSome)
@@ -211,7 +211,7 @@ private theorem replayAcceptCount_mem_SharpP [Finite Control] [Finite Operation]
         (fun x : α × List Bool => (input x.1, x.2))
         (encPair enc encBits) (encPair encBits encBits) := by fun_prop
     exact hP.comp ((ComputableInPolyTime.fst enc encBits).prod
-      (machine.replayOutput_pt.computableInPolyTime.comp hpair))
+      (machine.computableInPolyTime_replayOutput.comp hpair))
   have hmask : (fun x : α × List Bool =>
       if P (x.1, machine.replayOutput (input x.1) x.2) then 1 else 0) ∈
       SharpP (encPair enc encBits) :=

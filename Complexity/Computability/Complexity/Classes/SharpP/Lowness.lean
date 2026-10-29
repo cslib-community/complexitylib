@@ -176,7 +176,7 @@ private theorem replayStepFactor_mem_SharpP [Finite Control] [Finite Operation]
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
   have hcfg : ComputableInPolyTime cfg
       (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.replayPrefix_pt.computableInPolyTime.comp (g := fun x : (α × List Bool) × ℕ =>
+    machine.computableInPolyTime_replayPrefix.comp (g := fun x : (α × List Bool) × ℕ =>
       ((input x.1.1, x.1.2), x.2)) (by fun_prop)
   have hquery : ComputableInPolyTime
       (fun x => (machine.pendingQuery (cfg x)).isSome)
@@ -219,7 +219,7 @@ private theorem replayWeightedSum_mem_SharpP [Finite Control] [Finite Operation]
   have hout : (fun x : α × List Bool => F (x.1, machine.replayOutput (input x.1) x.2)) ∈
       SharpP (encPair enc encBits) :=
     SharpP.comp_mem hF ((ComputableInPolyTime.fst enc encBits).prod
-      (machine.replayOutput_pt.computableInPolyTime.comp hpair))
+      (machine.computableInPolyTime_replayOutput.comp hpair))
   exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hout) hT
 
 private theorem replayStepFactor_pos_iff (machine : MultiTapePTM tapes Bool Control Operation)

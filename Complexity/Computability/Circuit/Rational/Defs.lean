@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
-public import Complexity.Computability.Circuit.Formula
+public import Complexity.Computability.Circuit.Formula.NodeCount
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 public import Mathlib.Data.Nat.Digits.Defs
 import Mathlib.Tactic.FinCases
@@ -26,8 +26,8 @@ substitutions *hits* the formulas of node count at most `s` if every admissible 
 formula has an invertible value at some substitution on the list.
 
 The node count of a formula, the source's size measure, counts every syntax-tree node: input
-leaves, constants and operations (`Formula.nodeCount`, the native gate count `Formula.size` plus
-the leaf count `Formula.leafSize`).
+leaves, constants and operations (the generic `Cslib.Circuits.Formula.nodeCount`, the native gate
+count `Formula.size` plus the leaf count `Formula.leafSize`).
 
 ## Main definitions
 
@@ -35,7 +35,6 @@ the leaf count `Formula.leafSize`).
   `Cslib.Circuits.Rational.Formula`: the operation symbols, signature, and formulas, with
   constructors `Formula.var`, `Formula.const`, `Formula.add`, `Formula.mul`, `Formula.inv` and the
   induction principle `Formula.inductionOn`.
-* `Cslib.Circuits.Rational.Formula.nodeCount`: the number of syntax-tree nodes.
 * `Cslib.Circuits.Rational.Formula.Eval`: partial evaluation as a relation.
 * `Cslib.Circuits.Rational.Mat`, `Cslib.Circuits.Rational.Tuple`: square rational matrices and
   matrix substitutions.
@@ -133,40 +132,34 @@ theorem inductionOn {motive : Formula n → Prop} (f : Formula n)
       have h : args = ![args 0] := by funext i; fin_cases i; rfl
       exact h ▸ inv (args 0) (ih 0)
 
-/-- The number of syntax-tree nodes, counting input leaves, constants and operations alike: the
-operation nodes `Formula.size` together with the input leaves `Formula.leafSize`. -/
-def nodeCount (f : Formula n) : ℕ := f.size + f.leafSize
+/-! The generic `Cslib.Circuits.Formula.nodeCount_input` and `Cslib.Circuits.Formula.nodeCount_gate`
+specialized to the constructors; `simp` derives these from the generic lemmas, so they are not
+simp lemmas themselves. -/
 
 /-- A variable leaf has node count `1`. -/
-@[simp] theorem nodeCount_var (i : Fin n) : (var i).nodeCount = 1 := rfl
+theorem nodeCount_var (i : Fin n) : (var i).nodeCount = 1 := rfl
 
 /-- A rational constant node has node count `1`. -/
-@[simp] theorem nodeCount_const (q : ℚ) : (const q : Formula n).nodeCount = 1 := by
-  simp [nodeCount]
+theorem nodeCount_const (q : ℚ) : (const q : Formula n).nodeCount = 1 := by
+  simp
 
 /-- The node count of `add f g` is `f.nodeCount + g.nodeCount + 1`. -/
-@[simp] theorem nodeCount_add (f g : Formula n) :
+theorem nodeCount_add (f g : Formula n) :
     (add f g).nodeCount = f.nodeCount + g.nodeCount + 1 := by
-  simp only [nodeCount, Circuits.Formula.size_gate, Circuits.Formula.leafSize_gate,
-    Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one]
-  omega
+  simp
 
 /-- The node count of `mul f g` is `f.nodeCount + g.nodeCount + 1`. -/
-@[simp] theorem nodeCount_mul (f g : Formula n) :
+theorem nodeCount_mul (f g : Formula n) :
     (mul f g).nodeCount = f.nodeCount + g.nodeCount + 1 := by
-  simp only [nodeCount, Circuits.Formula.size_gate, Circuits.Formula.leafSize_gate,
-    Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one]
-  omega
+  simp
 
 /-- The node count of `inv f` is `f.nodeCount + 1`. -/
-@[simp] theorem nodeCount_inv (f : Formula n) : (inv f).nodeCount = f.nodeCount + 1 := by
-  simp only [nodeCount, Circuits.Formula.size_gate, Circuits.Formula.leafSize_gate,
-    Fin.sum_univ_one, Matrix.cons_val_zero]
-  omega
+theorem nodeCount_inv (f : Formula n) : (inv f).nodeCount = f.nodeCount + 1 := by
+  simp
 
 /-- A formula has at least one node. -/
-theorem nodeCount_pos (f : Formula n) : 0 < f.nodeCount := by
-  induction f using inductionOn <;> simp
+theorem nodeCount_pos (f : Formula n) : 0 < f.nodeCount :=
+  Circuits.Formula.nodeCount_pos f
 
 /-- `f.Eval c X v`: the formula `f` is defined at the substitution `X` in the ring `R`, with
 rational constants interpreted by `c`, and has the value `v`. An inverse node requires an actual

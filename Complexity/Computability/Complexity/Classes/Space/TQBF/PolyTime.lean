@@ -37,7 +37,7 @@ unary, the two words, and the formula of level `0`
 The formula of level `0` numbers the variables of a Cook–Levin tableau by odd numbers
 (`Cslib.Complexity.TQBF.computableInPolyTime_tabVar`), and is polynomial-time in the tableau.
 Composed with the polynomial-time width and codes of the views
-(`Turing.MultiTapeNTM.computableTidilyInPolyTime_codeWidth`) and the polynomial-time Cook–Levin
+(`Turing.MultiTapeNTM.computableInPolyTime_codeWidth`) and the polynomial-time Cook–Levin
 tableau (`Cslib.Complexity.CookLevin.computableInPolyTime_tableau`), the reduction
 `Cslib.Complexity.TQBF.reduce` is polynomial-time, for every machine standing for the test of one
 step or none and every polynomial time bound
@@ -357,7 +357,7 @@ theorem computableInPolyTime_edgeTest :
   have hy : Turing.MultiTapeTM.ComputableInPolyTime
       (fun p : α × List Bool => p.2.drop (ntm.viewCodeWidth c d (enc p.1)))
       (encPair enc encBits) encBits := by fun_prop
-  have he := (ntm.computableTidilyInPolyTime_codeEdge hx.tidy hy.tidy).computableInPolyTime
+  have he := ntm.computableInPolyTime_codeEdge hx hy
   unfold edgeTest
   simp only [Cslib.Reachability.reach]
   fun_prop
@@ -367,9 +367,9 @@ of one step or none and every time bound `cV * (n + 1) ^ dV` allowed to it. -/
 theorem computableInPolyTime_reduce {kV : ℕ} {StateV : Type} [Fintype StateV]
     [DecidableEq StateV] (tmV : MultiTapeTM kV Bool StateV) (cV dV : ℕ) :
     Turing.MultiTapeTM.ComputableInPolyTime (reduce enc ntm c d tmV cV dV) enc encQBF := by
-  have hW := MultiTapeNTM.computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
-  have hinit := ntm.computableTidilyInPolyTime_viewCode_initView hW (.encode enc)
-  have hacc := MultiTapeNTM.computableTidilyInPolyTime_acceptCode hW
+  have hW := MultiTapeNTM.computableInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
+  have hinit := ntm.computableInPolyTime_viewCode_initView (word := enc) hW (.of_eq fun _ => rfl)
+  have hacc := MultiTapeNTM.computableInPolyTime_acceptCode hW
   have htab := CookLevin.computableInPolyTime_tableau tmV
   have hframe := bitsFrame enc
   unfold reduce edgeTime

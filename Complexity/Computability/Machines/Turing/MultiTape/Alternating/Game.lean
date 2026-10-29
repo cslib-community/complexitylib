@@ -23,7 +23,7 @@ the machine with the second coin in a universal state and with the first in an e
 The coin that is not used is a vacuous move.
 
 Replaying a fixed finite fair-coin table is polynomial-time
-(`Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins`), so the game verifier on the
+(`Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`), so the game verifier on the
 strict table (`Turing.MultiTapeATM.gameVerifier`) is computable in polynomial time
 (`Turing.MultiTapeATM.computableInPolyTime_gameVerifier`).
 
@@ -157,8 +157,7 @@ theorem computableInPolyTime_gameVerifier (atm : MultiTapeATM k Bool State) :
       ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
         (ComputableInPolyTime.fst enc encBits))
   exact ComputableInPolyTime.decide_eq'
-    ((ComputableInPolyTime.of_tidy
-      (MultiTapePTM.computableTidilyInPolyTime_runClosedCoins atm.strict)).comp hswap)
+    ((MultiTapePTM.computableInPolyTime_runClosedCoins atm.strict).comp hswap)
     (ComputableInPolyTime.const [true])
 
 end Turing.MultiTapeATM
