@@ -261,23 +261,21 @@ end GameTree
 
 section PolyTime
 
-open _root_.Turing _root_.Turing.MultiTapeTM ComputableTidilyInPolyTime
+open _root_.Turing _root_.Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Decoding a word is polynomial-time. -/
-private theorem computableTidilyInPolyTime_decodeWord :
-    ComputableTidilyInPolyTime decodeWord encBits encBits := by
-  have hidx : ComputableTidilyInPolyTime (fun u : List Bool => u.idxOf true + 1) encBits
+private theorem computableInPolyTime_decodeWord :
+    ComputableInPolyTime decodeWord encBits encBits := by
+  have hidx : ComputableInPolyTime (fun u : List Bool => u.idxOf true + 1) encBits
       encUnary := by
-    have h := (idxOf encBool).comp (bitsToList.prod (const (encMid := encBool) true))
-    have hsucc : ComputableTidilyInPolyTime (· + 1) encUnary encUnary :=
-      ComputableTidilyInDegree.unary_succ.computableTidilyInPolyTime
-    exact hsucc.comp h
+    have h := (idxOf encBool).comp (bitsToList.prod (const (encOut := encBool) true))
+    exact unary_succ.comp h
   exact bitsDropWithInput id' hidx
 
 /-- Decoding a history is polynomial-time. -/
-private theorem computableTidilyInPolyTime_decodeHistory :
-    ComputableTidilyInPolyTime decodeHistory (encList (encPair encBits encBits)) encHistory := by
-  have hd := computableTidilyInPolyTime_decodeWord
+private theorem computableInPolyTime_decodeHistory :
+    ComputableInPolyTime decodeHistory (encList (encPair encBits encBits)) encHistory := by
+  have hd := computableInPolyTime_decodeWord
   unfold decodeHistory
   fun_prop
 
@@ -377,36 +375,34 @@ end Evaluation
 
 section Space
 
-open _root_.Turing _root_.Turing.MultiTapeTM ComputableTidilyInPolyTime
+open _root_.Turing _root_.Turing.MultiTapeTM ComputableInPolyTime
 
 variable {γ : Type} {input : γ ↪ List Bool}
 
 @[local fun_prop] private theorem max_pt {left right : γ → ℕ}
-    (hl : ComputableTidilyInPolyTime left input encNat)
-    (hr : ComputableTidilyInPolyTime right input encNat) :
-    ComputableTidilyInPolyTime (fun x => max (left x) (right x)) input encNat := by
+    (hl : ComputableInPolyTime left input encNat)
+    (hr : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun x => max (left x) (right x)) input encNat := by
   simp only [max_def]
   exact ite_decide (binary_le' hl hr) hr hl
 
 @[local fun_prop] private theorem min_pt {left right : γ → ℕ}
-    (hl : ComputableTidilyInPolyTime left input encNat)
-    (hr : ComputableTidilyInPolyTime right input encNat) :
-    ComputableTidilyInPolyTime (fun x => min (left x) (right x)) input encNat := by
+    (hl : ComputableInPolyTime left input encNat)
+    (hr : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun x => min (left x) (right x)) input encNat := by
   simp only [min_def]
   exact ite_decide (binary_le' hl hr) hl hr
 
 @[local fun_prop] private theorem firstCode_pt {count : γ → ℕ}
-    (h : ComputableTidilyInPolyTime count input encUnary) :
-    ComputableTidilyInPolyTime (fun x => firstCode (count x)) input encBits :=
+    (h : ComputableInPolyTime count input encUnary) :
+    ComputableInPolyTime (fun x => firstCode (count x)) input encBits :=
   bitsCons (const true) ((bitsReplicate false).comp h)
 
 @[local fun_prop] private theorem lastCode_pt {count : γ → ℕ} {word : γ → List Bool}
-    (h : ComputableTidilyInPolyTime count input encUnary)
-    (hword : ComputableTidilyInPolyTime word input encBits) :
-    ComputableTidilyInPolyTime (fun x => lastCode (count x) (word x)) input encBool := by
-  have hsucc : ComputableTidilyInPolyTime (· + 1) encUnary encUnary :=
-    ComputableTidilyInDegree.unary_succ.computableTidilyInPolyTime
-  exact decide_eq' hword ((bitsReplicate true).comp (hsucc.comp h))
+    (h : ComputableInPolyTime count input encUnary)
+    (hword : ComputableInPolyTime word input encBits) :
+    ComputableInPolyTime (fun x => lastCode (count x) (word x)) input encBool := by
+  exact decide_eq' hword ((bitsReplicate true).comp (unary_succ.comp h))
 
 variable {α : Type} (enc : α ↪ List Bool) {k : ℕ} {Control : Type}
   (M : _root_.Turing.MultiTapePTM k Bool Control Unit) (fuel : α → ℕ)
@@ -419,60 +415,60 @@ abbrev encFrame : GameTree.Frame (List Bool) ↪ List Bool :=
 abbrev encEvalState : EvalState α ↪ List Bool :=
   encPair enc (encPair (encList encFrame) (encOption encNat))
 
-variable {enc fuel} (hfuel : ComputableTidilyInPolyTime fuel enc encUnary)
+variable {enc fuel} (hfuel : ComputableInPolyTime fuel enc encUnary)
 include hfuel
 
 /-- Returning a value into the stack is polynomial-time. -/
-private theorem computableTidilyInPolyTime_returnStep :
-    ComputableTidilyInPolyTime (fun s : EvalState α =>
+private theorem computableInPolyTime_returnStep :
+    ComputableInPolyTime (fun s : EvalState α =>
       (s.1, returnStep (fuel s.1) (2 ^ fuel s.1) s.2.1 (s.2.2.getD 0)))
       (encEvalState enc) (encEvalState enc) := by
-  have hfuel' : ComputableTidilyInPolyTime (fun s : EvalState α => fuel s.1) (encEvalState enc)
+  have hfuel' : ComputableInPolyTime (fun s : EvalState α => fuel s.1) (encEvalState enc)
       encUnary := hfuel.comp (fst _ _)
   unfold returnStep
   fun_prop
 
 /-- Pushing a frame is polynomial-time. -/
-private theorem computableTidilyInPolyTime_pushStep :
-    ComputableTidilyInPolyTime (fun p : EvalState α × ℕ =>
+private theorem computableInPolyTime_pushStep :
+    ComputableInPolyTime (fun p : EvalState α × ℕ =>
       (p.1.1, pushStep (fuel p.1.1) p.1.2.1 p.2))
       (encPair (encEvalState enc) encNat) (encEvalState enc) := by
-  have hfuel' : ComputableTidilyInPolyTime (fun p : EvalState α × ℕ => fuel p.1.1)
+  have hfuel' : ComputableInPolyTime (fun p : EvalState α × ℕ => fuel p.1.1)
       (encPair (encEvalState enc) encNat) encUnary := hfuel.comp (by fun_prop)
   unfold pushStep
   fun_prop
 
 /-- **The leaf value within polynomial space**: the count of accepting coins, capped. -/
-private theorem computableTidilyInPolySpace_leaf [Finite Control] :
-    ComputableTidilyInPolySpace (fun s : EvalState α => min (2 ^ fuel s.1)
+private theorem computableInPolySpace_leaf [Finite Control] :
+    ComputableInPolySpace (fun s : EvalState α => min (2 ^ fuel s.1)
       (leafValue (coinFamily M (fuel s.1) (enc s.1)) (GameTree.history s.2.1)))
       (encEvalState enc) encNat := by
-  have hcount := (computableInPolySpace_countAccepts M enc fuel (.of_tidy hfuel)).tidy
-  have hdec := computableTidilyInPolyTime_decodeHistory
-  have harg : ComputableTidilyInPolyTime (fun s : EvalState α =>
+  have hcount := computableInPolySpace_countAccepts M enc fuel hfuel
+  have hdec := computableInPolyTime_decodeHistory
+  have harg : ComputableInPolyTime (fun s : EvalState α =>
       (s.1, decodeHistory (GameTree.history s.2.1))) (encEvalState enc)
       (encPair enc encHistory) := by
     unfold GameTree.history
     fun_prop
-  have hcap : ComputableTidilyInPolyTime (fun s : EvalState α => 2 ^ fuel s.1)
+  have hcap : ComputableInPolyTime (fun s : EvalState α => 2 ^ fuel s.1)
       (encEvalState enc) encNat := binary_two_pow.comp (hfuel.comp (fst _ _))
-  have hmin : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => min p.1 p.2) (encPair encNat encNat)
+  have hmin : ComputableInPolyTime (fun p : ℕ × ℕ => min p.1 p.2) (encPair encNat encNat)
       encNat := by fun_prop
-  refine ((ComputableTidilyInPolySpace.of_polyTime hmin).comp
-    ((ComputableTidilyInPolySpace.of_polyTime hcap).prod (hcount.comp
-      (ComputableTidilyInPolySpace.of_polyTime harg)))).congr fun s => ?_
+  refine ((ComputableInPolySpace.of_polyTime hmin).comp
+    ((ComputableInPolySpace.of_polyTime hcap).prod (hcount.comp
+      (ComputableInPolySpace.of_polyTime harg)))).congr fun s => ?_
   simp only [leafValue, countAccepts_eq_accepted]
 
 /-- **A step of the evaluation within polynomial space.** -/
-private theorem computableTidilyInPolySpace_evalStep [Finite Control] :
-    ComputableTidilyInPolySpace (evalStep enc M fuel) (encEvalState enc) (encEvalState enc) := by
-  have hcond : ComputableTidilyInPolyTime (fun s : EvalState α => s.2.2.isSome)
+private theorem computableInPolySpace_evalStep [Finite Control] :
+    ComputableInPolySpace (evalStep enc M fuel) (encEvalState enc) (encEvalState enc) := by
+  have hcond : ComputableInPolyTime (fun s : EvalState α => s.2.2.isSome)
       (encEvalState enc) encBool := by fun_prop
-  refine (ComputableTidilyInPolySpace.ite (.of_polyTime hcond)
-    (.of_polyTime (computableTidilyInPolyTime_returnStep hfuel))
-    ((ComputableTidilyInPolySpace.of_polyTime (computableTidilyInPolyTime_pushStep hfuel)).comp
-      ((ComputableTidilyInPolySpace.of_polyTime id').prod
-        (computableTidilyInPolySpace_leaf M hfuel)))).congr fun s => ?_
+  refine (ComputableInPolySpace.ite (.of_polyTime hcond)
+    (.of_polyTime (computableInPolyTime_returnStep hfuel))
+    ((ComputableInPolySpace.of_polyTime (computableInPolyTime_pushStep hfuel)).comp
+      ((ComputableInPolySpace.of_polyTime id').prod
+        (computableInPolySpace_leaf M hfuel)))).congr fun s => ?_
   rw [evalStep_eq]
 
 omit hfuel in
@@ -517,29 +513,27 @@ omit hfuel in
 theorem computableInPolySpace_evaluate [Finite Control] [Inhabited α]
     (hfuel : ComputableInPolyTime fuel enc encUnary) :
     ComputableInPolySpace (evaluate enc M fuel) enc encNat := by
-  have hfuel := hfuel.tidy
-  refine .of_tidy ?_
-  have hn : ComputableTidilyInPolyTime (evalTime fuel) enc encNat := by
-    have hexp : ComputableTidilyInPolyTime (fun a => (fuel a + 1) * (2 * fuel a + 1)) enc
+  have hn : ComputableInPolyTime (evalTime fuel) enc encNat := by
+    have hexp : ComputableInPolyTime (fun a => (fuel a + 1) * (2 * fuel a + 1)) enc
         encUnary := by
-      have h1 := unary_add.comp (hfuel.prod (const (encMid := encUnary) 1))
-      have h2 := unary_add.comp ((unary_mul.comp ((const (encMid := encUnary) 2).prod hfuel)).prod
-        (const (encMid := encUnary) 1))
+      have h1 := unary_add.comp (hfuel.prod (const (encOut := encUnary) 1))
+      have h2 := unary_add.comp ((unary_mul.comp ((const (encOut := encUnary) 2).prod hfuel)).prod
+        (const (encOut := encUnary) 1))
       exact unary_mul.comp (h1.prod h2)
     exact binary_two_pow.comp hexp
-  have hinit : ComputableTidilyInPolyTime (fun a : α => ((a, [], none) : EvalState α)) enc
+  have hinit : ComputableInPolyTime (fun a : α => ((a, [], none) : EvalState α)) enc
       (encEvalState enc) := by fun_prop
   have hlen := hfuel.polyBounded_length
   simp only [encUnary_apply, List.length_replicate] at hlen
-  have hit := ComputableTidilyInPolySpace.iterate hn (.of_polyTime hinit)
-    (computableTidilyInPolySpace_evalStep M hfuel)
+  have hit := ComputableInPolySpace.iterate hn (.of_polyTime hinit)
+    (computableInPolySpace_evalStep M hfuel)
     (B := fun a => 2 * (enc a).length + 2 * fuel a * (14 * fuel a + 21) + fuel a + 4)
     (((((PolyBounded.const 2).mul .self).add (((PolyBounded.const 2).mul hlen).mul
       (((PolyBounded.const 14).mul hlen).add (.const 21)))).add hlen).add (.const 4))
     (fun a j _ => length_encEvalState_iterate_le M a j)
-  have hpost : ComputableTidilyInPolyTime (fun s : EvalState α => s.2.2.getD 0)
+  have hpost : ComputableInPolyTime (fun s : EvalState α => s.2.2.getD 0)
       (encEvalState enc) encNat := by fun_prop
-  exact (ComputableTidilyInPolySpace.of_polyTime hpost).comp hit
+  exact (ComputableInPolySpace.of_polyTime hpost).comp hit
 
 end Space
 
@@ -619,23 +613,23 @@ theorem IP_subset_PSPACE (enc : α ↪ List Bool) : IP enc ⊆ PSPACE enc := by
   let _ : Inhabited α := Classical.inhabited_of_nonempty hα
   obtain ⟨_, k, Control, _, M, c, d, hreal⟩ := hV
   set fuel : α → ℕ := fun a => c * ((enc a).length + 1) ^ d
-  have hfuel : ComputableTidilyInPolyTime fuel enc encUnary := by
-    have hlen : ComputableTidilyInPolyTime (fun a => (enc a).length) enc encUnary := by fun_prop
-    exact ((ComputableTidilyInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
+  have hfuel : ComputableInPolyTime fuel enc encUnary := by
+    have hlen : ComputableInPolyTime (fun a => (enc a).length) enc encUnary := by fun_prop
+    exact ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
       hlen).of_enc_eq fun a => by simp [fuel]
-  have hdec : ComputableTidilyInPolySpace
+  have hdec : ComputableInPolySpace
       (fun a => decide (2 ^ fuel a < 2 * evaluate enc M fuel a)) enc encBool := by
-    have hcap : ComputableTidilyInPolyTime (fun a => 2 ^ fuel a) enc encNat :=
-      ComputableTidilyInPolyTime.binary_two_pow.comp hfuel
-    have hpost : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.1 < 2 * p.2))
+    have hcap : ComputableInPolyTime (fun a => 2 ^ fuel a) enc encNat :=
+      ComputableInPolyTime.binary_two_pow.comp hfuel
+    have hpost : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 < 2 * p.2))
         (encPair encNat encNat) encBool :=
-      ComputableTidilyInPolyTime.binary_lt' (ComputableTidilyInPolyTime.fst _ _)
-        (ComputableTidilyInPolyTime.binary_mul' (ComputableTidilyInPolyTime.const 2)
-          (ComputableTidilyInPolyTime.snd _ _))
-    exact (ComputableTidilyInPolySpace.of_polyTime hpost).comp
-      ((ComputableTidilyInPolySpace.of_polyTime hcap).prod
-        (computableInPolySpace_evaluate M (.of_tidy hfuel)).tidy)
-  refine mem_PSPACE_of_computableInPolySpace (.of_tidy hdec) fun a => ?_
+      ComputableInPolyTime.binary_lt.comp ((ComputableInPolyTime.fst _ _).prod
+        (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 2)
+          (ComputableInPolyTime.snd _ _)))
+    exact (ComputableInPolySpace.of_polyTime hpost).comp
+      ((ComputableInPolySpace.of_polyTime hcap).prod
+        (computableInPolySpace_evaluate M hfuel))
+  refine mem_PSPACE_of_computableInPolySpace hdec fun a => ?_
   rw [mem_iff_two_pow_lt_value (fun a S oracle s => hreal a S oracle s) hA a, evaluate_eq,
     decide_eq_true_iff]
 

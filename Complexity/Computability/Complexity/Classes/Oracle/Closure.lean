@@ -149,7 +149,7 @@ theorem mem_PWithOracle_self (A : Set (List Bool)) : A ∈ PWithOracle A encBits
 certificate. -/
 theorem PWithOracle_subset_NPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     PWithOracle A enc ⊆ NPWithOracle A enc := fun _ ⟨f, hf, h⟩ =>
-  ⟨0, fun aw => f aw.1, hf.preprocess (.of_tidy (ComputableTidilyInPolyTime.fst enc encBits)),
+  ⟨0, fun aw => f aw.1, hf.preprocess (ComputableInPolyTime.fst enc encBits),
     fun a => by
     simp only [Polynomial.eval_zero, List.length_eq_zero_iff, exists_eq_left, h]⟩
 
@@ -175,10 +175,9 @@ theorem PolyTimeReducible.mem_NPWithOracle {encA : α ↪ List Bool} {encB : β 
   have hpq (a : α) : p.eval (encB (g a)).length ≤ q.eval (encA a).length := by
     rw [hq, Polynomial.eval_comp]
     exact p.eval_mono (hlen a)
-  have hg := hg.tidy
   refine ⟨q, fun aw => V (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length)),
     hV.preprocess (f := V) (g := fun aw : α × List Bool =>
-      (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length))) (.of_tidy (by fun_prop)), fun a => ?_⟩
+      (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length))) (by fun_prop), fun a => ?_⟩
   rw [hL a, hL' (g a)]
   constructor
   · rintro ⟨w, hw, hV⟩

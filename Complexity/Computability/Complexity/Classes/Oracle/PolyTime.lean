@@ -23,7 +23,7 @@ answers a query with the decider of `A` on the pending request. Against an oracl
 polynomial time the instruction is polynomial-time
 (`Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`), the storage grows by a bounded amount
 per instruction, and the clock is polynomial, so the run is polynomial-time
-(`Turing.MultiTapePTM.computableTidilyInPolyTime_run`,
+(`Turing.MultiTapePTM.computableInPolyTime_run`,
 `Cslib.Complexity.ComputableInPolyTimeWithOracle.computableInPolyTime`).
 
 ## Main results
@@ -54,7 +54,6 @@ theorem ComputableInPolyTimeWithOracle.computableInPolyTime {f : α → β}
     {output : β ↪ List Bool} (hA : A ∈ P encBits)
     (hf : ComputableInPolyTimeWithOracle A f enc output) :
     ComputableInPolyTime f enc output := by
-  refine .of_tidy ?_
   obtain ⟨g, hg, hgA⟩ := hA
   have hg' : g = fun w => decide (w ∈ A) := funext fun w =>
     Bool.eq_iff_iff.mpr ⟨fun h => decide_eq_true ((hgA w).mpr h),
@@ -62,7 +61,7 @@ theorem ComputableInPolyTimeWithOracle.computableInPolyTime {f : α → β}
   subst hg'
   obtain ⟨program, hcert, hprogram⟩ := hf
   obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
-  refine (machine.computableTidilyInPolyTime_run (input := enc) hg.tidy c d).of_enc_eq fun a => ?_
+  refine (machine.computableInPolyTime_run (input := enc) hg c d).of_enc_eq fun a => ?_
   rw [← hprogram a, ← hrun a (languageOracle A)]
   rfl
 
