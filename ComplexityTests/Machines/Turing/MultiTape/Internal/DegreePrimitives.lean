@@ -32,19 +32,12 @@ def word : List Bool ↪ List Bool := Function.Embedding.refl _
 private def bit : Bool ↪ List Bool :=
   ⟨fun b => [b], by intro a b h; simpa using h⟩
 
-example : ComputableInDegree (fun _ : List Bool => []) word word 1 0 := .const []
-
-example : ComputableInDegree (fun w : List Bool => w) word word 1 1 := .of_eq fun _ => rfl
-
-example (n : ℕ) : (word (List.replicate n true)).length = n := by simp [word]
-
-example : ComputableInDegree Bool.not bit bit 1 0 := .of_finite Bool.not
-
 private def emptyWord : Empty ↪ List Bool := ⟨Empty.elim, fun a => Empty.elim a⟩
 
--- Empty domains and codomains do not acquire an artificial inhabitedness premise.
-example : ComputableInDegree (Empty.elim : Empty → Empty) emptyWord emptyWord 1 0 :=
-  .of_finite Empty.elim
+private def unitWord : Unit ↪ List Bool := ⟨fun _ => [], by intro a b _; cases a; cases b; rfl⟩
+
+private def liftedWord : ULift.{1} (List Bool) ↪ List Bool :=
+  ⟨ULift.down, by intro a b h; cases a; cases b; cases h; rfl⟩
 
 /-- A real machine on arbitrary-length words can have zero cost/output degrees when it ignores
 the input. This supplies an inhabited degree-zero witness for both encoding transports. -/
@@ -53,22 +46,21 @@ theorem zeroDegree : ComputableInDegree (fun _ : List Bool => []) word word 0 0 
   exact ⟨⟨fun _ => c, fun _ => 0, DegreeBounded.const c, DegreeBounded.const 0, h⟩,
     DegreeBounded.const 0⟩
 
-private def unitWord : Unit ↪ List Bool := ⟨fun _ => [], by intro a b _; cases a; cases b; rfl⟩
-
-example : ComputableInDegree (fun _ : List Bool => ()) word unitWord 0 0 :=
-  zeroDegree.of_enc_eq fun _ => rfl
-
-private def liftedWord : ULift.{1} (List Bool) ↪ List Bool :=
-  ⟨ULift.down, by intro a b h; cases a; cases b; cases h; rfl⟩
-
--- The input domain genuinely lives in Type 1; the same finite machine is retained.
-example : ComputableInDegree (fun _ : ULift.{1} (List Bool) => []) liftedWord word 0 0 :=
-  zeroDegree.of_encIn_eq ULift.down fun _ => rfl
-
-example {α β γ : Type*} {input : α ↪ List Bool} {middle : β ↪ List Bool}
+-- Empty domains, growing words, Type 1 input domains, and encoding transports.
+example (n : ℕ) {α β γ : Type*} {input : α ↪ List Bool} {middle : β ↪ List Bool}
     {output : γ ↪ List Bool} {f : α → β} {g : α → γ} {d e : ℕ}
     (hf : ComputableInDegree f input middle d e)
-    (h : ∀ a, output (g a) = middle (f a)) : ComputableInDegree g input output d e :=
-  hf.of_enc_eq h
+    (h : ∀ a, output (g a) = middle (f a)) :
+    ComputableInDegree (fun _ : List Bool => []) word word 1 0 ∧
+    ComputableInDegree (fun w : List Bool => w) word word 1 1 ∧
+    (word (List.replicate n true)).length = n ∧
+    ComputableInDegree Bool.not bit bit 1 0 ∧
+    ComputableInDegree (Empty.elim : Empty → Empty) emptyWord emptyWord 1 0 ∧
+    ComputableInDegree (fun _ : List Bool => ()) word unitWord 0 0 ∧
+    ComputableInDegree (fun _ : ULift.{1} (List Bool) => []) liftedWord word 0 0 ∧
+    ComputableInDegree g input output d e :=
+  ⟨.const [], .of_eq fun _ => rfl, by simp [word], .of_finite Bool.not, .of_finite Empty.elim,
+    zeroDegree.of_enc_eq fun _ => rfl, zeroDegree.of_encIn_eq ULift.down fun _ => rfl,
+    hf.of_enc_eq h⟩
 
 end ComplexityTests.Internal.DegreePrimitives

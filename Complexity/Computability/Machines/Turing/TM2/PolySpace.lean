@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Mathlib stack-machine computations within polynomial space
@@ -34,6 +35,8 @@ preserve sublinear native work-space bounds.
   stacks give a polynomial-space simulation.
 * `Turing.TM2Computable.computableTidilyInPolySpace`: transfer termination and a polynomial
   source-stack bound to tidy polynomial-space computation.
+* `Turing.TM2Computable.computableInPolySpace_encList`: the same for plain polynomial-space
+  computation.
 
 ## References
 
@@ -132,5 +135,18 @@ theorem computableTidilyInPolySpace {α β αΓ βΓ : Type} [Finite αΓ]
         (initList h.tm (List.map h.inputAlphabet.symm (ea a)))).stk h.tm.k₁) = eb (f a) := by
     simpa [haltList] using houtput
   exact congrArg (encList encB) hresult.symm
+
+/-- `Turing.TM2Computable.computableTidilyInPolySpace` for plain certificates. -/
+theorem computableInPolySpace_encList {α β αΓ βΓ : Type} [Finite αΓ]
+    {encA : αΓ ↪ List Bool} {encB : βΓ ↪ List Bool}
+    {ea : α → List αΓ} {eb : β → List βΓ} {f : α → β}
+    (h : TM2Computable ea eb f) [∀ k, Finite (h.tm.Γ k)]
+    (ha : Function.Injective ea) (hb : Function.Injective eb)
+    {space : α → ℕ} (hspace : PolyBounded (fun a => (ea a).length) space)
+    (hstacks : h.StacksBounded space) :
+    ComputableInPolySpace f
+      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
+      ((⟨eb, hb⟩ : β ↪ List βΓ).trans (encList encB)) :=
+  .of_tidy (h.computableTidilyInPolySpace ha hb hspace hstacks)
 
 end Turing.TM2Computable

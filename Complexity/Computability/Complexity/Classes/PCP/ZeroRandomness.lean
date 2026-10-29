@@ -61,8 +61,7 @@ theorem PCP_zero_zero : PCP (fun _ => 0) (fun _ => 0) enc = P enc := by
   · rintro ⟨V, c, d, ⟨-, -, hv⟩, hcoins, hqs, hcomp, hsound⟩
     simp only [mul_zero, nonpos_iff_eq_zero] at hcoins hqs
     refine ⟨fun a => V.verdict ((a, []), []), ?_, fun a => ?_⟩
-    · exact .of_tidy <|
-        hv.tidy.comp (g := fun a : α => ((a, ([] : List Bool)), ([] : List Bool))) (by fun_prop)
+    · exact hv.comp (g := fun a : α => ((a, ([] : List Bool)), ([] : List Bool))) (by fun_prop)
     · -- with no random bits there are no queries, so the verdict ignores the proof
       have key (π : List Bool) : V.accepts a π [] = V.verdict ((a, []), []) := by
         have h0 : V.queries (a, []) = [] :=
@@ -113,19 +112,16 @@ theorem exists_mem_PCP_zero_of_mem_NP {A : Set α} (hA : A ∈ NP enc) :
     fun y => V (y.1.1, y.2)⟩, 0, c, ⟨?_, ?_, ?_⟩, ?_, ?_, ?_, ?_⟩
   · exact ComputableInPolyTime.const _
   · -- `x ↦ range (p (|enc x.1|))`, built in unary and converted elementwise to binary
-    apply ComputableInPolyTime.of_tidy
-    have h1 : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
+    have h1 : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
         (encPair enc encBits) encUnary :=
-      (ComputableTidilyInPolyTime.unary_eval p).comp
-        ((ComputableTidilyInPolyTime.encoding_length enc).comp
-          (ComputableTidilyInPolyTime.fst enc encBits))
+      (ComputableInPolyTime.unary_eval p).comp
+        ((ComputableInPolyTime.encoding_length enc).comp (ComputableInPolyTime.fst enc encBits))
     simpa [Function.comp_def] using
-      (ComputableTidilyInPolyTime.map ComputableTidilyInPolyTime.unary_to_binary).comp
-        (ComputableTidilyInPolyTime.range.comp h1)
-  · apply ComputableInPolyTime.of_tidy
-    exact hV.tidy.comp (((ComputableTidilyInPolyTime.fst enc encBits).comp
-      (ComputableTidilyInPolyTime.fst (encPair enc encBits) encBits)).pair
-      (ComputableTidilyInPolyTime.snd (encPair enc encBits) encBits))
+      (ComputableInPolyTime.map ComputableInPolyTime.unary_to_binary).comp
+        (ComputableInPolyTime.range.comp h1)
+  · exact hV.comp (((ComputableInPolyTime.fst enc encBits).comp
+      (ComputableInPolyTime.fst (encPair enc encBits) encBits)).pair
+      (ComputableInPolyTime.snd (encPair enc encBits) encBits))
   · intro a
     simp
   · intro a ρ _

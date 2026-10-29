@@ -165,9 +165,6 @@ theorem computableInPolyTime_verifier {N c m T : Polynomial ℕ} {ℓ : α → �
     {R : α × List Bool → Bool} (hℓ : ComputableInPolyTime ℓ enc encUnary)
     (hR : ComputableInPolyTime R (encPair enc encBits) encBool) :
     ComputableInPolyTime (verifier enc N c m T ℓ R) (encPair enc encBits) encBool := by
-  have hℓ := hℓ.tidy
-  have hR := hR.tidy
-  refine .of_tidy ?_
   unfold verifier
   dsimp only
   fun_prop
@@ -305,18 +302,16 @@ theorem mem_AM_of_card_certifiedSet {N c : Polynomial ℕ} {R : α × List Bool 
     (hK : ComputableInPolyTime K enc encNat) (hKpos : ∀ a, 0 < K a)
     (hmem : ∀ a ∈ A, K a ≤ #(certifiedSet enc N c R a))
     (hnot : ∀ a ∉ A, 2 * #(certifiedSet enc N c R a) ≤ K a) : A ∈ AM enc := by
-  have hR := hR.tidy
-  have hK := hK.tidy
   -- normalise the threshold `K a ^ 5` to a power of two
   set ℓ : α → ℕ := fun a => Nat.log 2 (K a ^ 5) with hℓdef
-  have hℓ : ComputableTidilyInPolyTime ℓ enc encUnary :=
-    ComputableTidilyInPolyTime.binary_log_two.comp
-      (hK.binary_pow' (ComputableTidilyInPolyTime.const 5))
+  have hℓ : ComputableInPolyTime ℓ enc encUnary :=
+    ComputableInPolyTime.binary_log_two.comp
+      (hK.binary_pow' (ComputableInPolyTime.const 5))
   obtain ⟨B, hB⟩ := hℓ.polyBounded.exists_polynomial
   set m : Polynomial ℕ := B + 2 with hm
   set T : Polynomial ℕ := B + 4 with hT
   refine ⟨m * (5 * N + T) + m, 5 * N + T + 5 * c, verifier enc N c m T ℓ R,
-    (computableInPolyTime_verifier (.of_tidy hℓ) (.of_tidy hR)), fun a => ?_⟩
+    (computableInPolyTime_verifier hℓ hR), fun a => ?_⟩
   have hP : (m * (5 * N + T) + m).eval (enc a).length = m.eval (enc a).length *
       (5 * N.eval (enc a).length + T.eval (enc a).length) + m.eval (enc a).length := by simp
   have hQ : (5 * N + T + 5 * c).eval (enc a).length = 5 * N.eval (enc a).length +
@@ -356,10 +351,10 @@ theorem SBP_subset_AM : SBP enc ⊆ AM enc := by
     exact ⟨fun ⟨_, h⟩ => h, fun h => ⟨fun _ => false, h⟩⟩
   refine mem_AM_of_card_certifiedSet (N := s) (c := 0)
     (R := fun x => W (x.1, x.2.take (s.eval (enc x.1).length)))
-    (.of_tidy (hW.tidy.comp ((ComputableTidilyInPolyTime.fst enc encBits).prod
-      (ComputableTidilyInPolyTime.bitsTakeWithInput (.snd enc encBits)
-        (((ComputableTidilyInPolyTime.unary_eval s).comp
-          (ComputableTidilyInPolyTime.encoding_length enc)).comp (.fst enc encBits))))))
+    ((hW.comp ((ComputableInPolyTime.fst enc encBits).prod
+      (ComputableInPolyTime.bitsTakeWithInput (.snd enc encBits)
+        (((ComputableInPolyTime.unary_eval s).comp
+          (ComputableInPolyTime.encoding_length enc)).comp (.fst enc encBits))))))
     hk hkpos (fun a ha => ?_) fun a ha => ?_
   · rw [hcount]
     exact (hA a).1 ha

@@ -423,10 +423,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   matrix builder and the complete finite mathematical Chan–He reduction ([#1435]), including
   ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
   interface ([#1438]) adds padding, detection and signed digit reconstruction. Modular counting
-  and the selected-prime false-positive bound ([#1442]) are proved mathematically; it still needs
-  residue/chunk/piece splitting and witness recovery, tensor/sparse-query programs, native
-  Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
-  asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
+  and the selected-prime false-positive bound ([#1442]), finite residue/chunk/piece splitting and
+  witness recovery ([#1447]) are proved mathematically. It still needs tensor/sparse-query programs,
+  native Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full
+  input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
+  size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
@@ -455,6 +456,15 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
+- **Weighted multigraph cuts and `PMF` event bounds** ([#1336]): extract `IsMultigraph` (renamed
+  e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal), `IsNonTrivialCut`,
+  `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
+  `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
+  `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
+  to `(Cslib.Multigraph.edgeCut ends C).card`, and move `toOuterMeasure_bind_ge_mul_ennreal`,
+  `toOuterMeasure_bind_le_mul_ennreal`, `toOuterMeasure_add_compl_ennreal`,
+  `toOuterMeasure_compl_le_one_sub`, and `two_branch_hit_prob_ge` into
+  `Complexity/Probability/PMF/Event.lean` (reusable by `toOuterMeasure_toReal_add_compl`).
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -547,9 +557,11 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
+[#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
+[#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449

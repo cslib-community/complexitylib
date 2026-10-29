@@ -325,32 +325,30 @@ theorem computableInPolyTime_verifier {enc : α ↪ List Bool} {V : α × List B
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (p q : Polynomial ℕ)
     (b : Bool) :
     ComputableInPolyTime (verifier enc p q V b) (encPair enc encBits) encBool := by
-  have hV := hV.tidy
-  refine .of_tidy ?_
-  have hP : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length + 1)
+  have hP : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length + 1)
       (encPair enc encBits) encUnary := by fun_prop
-  have hQ : ComputableTidilyInPolyTime (fun x : α × List Bool => q.eval (enc x.1).length)
+  have hQ : ComputableInPolyTime (fun x : α × List Bool => q.eval (enc x.1).length)
       (encPair enc encBits) encUnary := by fun_prop
-  have hlt : ComputableTidilyInPolyTime
+  have hlt : ComputableInPolyTime
       (fun x : (α × State) × List Bool => decide (binaryValue x.1.2.2.2.2.2 < binaryValue x.2.tail))
       (encPair (encPair enc encState) encBits) encBool :=
-    ComputableTidilyInPolyTime.binary_lt' (by fun_prop) (by fun_prop)
-  have hstep : ComputableTidilyInPolyTime
+    ComputableInPolyTime.binary_lt' (by fun_prop) (by fun_prop)
+  have hstep : ComputableInPolyTime
       (fun x : (α × State) × List Bool => step (fun c => V (x.1.1, c)) x.1.2 x.2)
       (encPair (encPair enc encState) encBits) encState := by
     unfold step
     fun_prop
-  have hfold := ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
+  have hfold := ComputableInPolyTime.foldlWith_of_bounded_growth
     (par := fun x : α × List Bool => x.1) (encP := enc)
     (list := fun x => listRows (q.eval (enc x.1).length) (p.eval (enc x.1).length + 1) x.2)
     (init := fun _ => init) (step := fun a s slot => step (fun c => V (a, c)) s slot)
-    (ComputableTidilyInPolyTime.fst enc encBits) (by fun_prop)
-    (ComputableTidilyInPolyTime.const init) hstep hP.polyBounded
+    (ComputableInPolyTime.fst enc encBits) (by fun_prop)
+    (ComputableInPolyTime.const init) hstep hP.polyBounded
     (fun x s slot hslot => by
       have := length_encState_step (fun c => V (x.1, c)) s slot
       rw [length_of_mem_listRows hslot] at this
       exact this)
-  have hacc : ComputableTidilyInPolyTime (accepts b) encState encBool := by
+  have hacc : ComputableInPolyTime (accepts b) encState encBool := by
     unfold accepts
     fun_prop
   exact hacc.comp hfold

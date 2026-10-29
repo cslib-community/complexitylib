@@ -18,55 +18,44 @@ run_elab do
     if (← Lean.getEnv).contains name then throwError "unexpected higher tidy calculus: {name}"
 
 -- The complete telescope: arbitrary element and input encodings, any sized list encoding,
--- a fixed default, a computed list and a computed binary index.
+-- a fixed default, a computed list and a computed binary or unary index, plus missing-instance
+-- failure checks.
 example {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {encL : List α ↪ List Bool} [ListEncoding encA encL] [SizedListEncoding encA encL]
-    {l : γ → List α} {i : γ → ℕ} (d : α)
-    (hl : ComputableInPolyTime l encIn encL) (hi : ComputableInPolyTime i encIn encNat) :
-    ComputableInPolyTime (fun x => (l x).getD (i x) d) encIn encA := by
-  -- Neither the unary lookup rule nor automation accepts a binary index certificate.
-  fail_if_success exact (ComputableInPolyTime.listGetD d).comp (hl.prod hi)
-  fail_if_success fun_prop
-  exact ComputableInPolyTime.listGetD_binary d hl hi
-
--- A unary index certificate does not match the binary premise.
-example {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {encL : List α ↪ List Bool} [ListEncoding encA encL] [SizedListEncoding encA encL]
-    {l : γ → List α} {i : γ → ℕ} (d : α)
-    (hl : ComputableInPolyTime l encIn encL) (hi : ComputableInPolyTime i encIn encUnary) :
-    ComputableInPolyTime (fun x => (l x).getD (i x) d) encIn encA := by
-  fail_if_success exact ComputableInPolyTime.listGetD_binary d hl hi
-  exact (ComputableInPolyTime.listGetD d).comp (hl.prod hi)
-
--- Without the size premise on the list encoding the rule does not apply.
-example {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {encL : List α ↪ List Bool} [ListEncoding encA encL]
-    {l : γ → List α} {i : γ → ℕ} (_d : α)
-    (_hl : ComputableInPolyTime l encIn encL) (_hi : ComputableInPolyTime i encIn encNat) :
-    True := by
+    {encL encLUnsized : List α ↪ List Bool}
+    [ListEncoding encA encL] [SizedListEncoding encA encL] [ListEncoding encA encLUnsized]
+    {l lUnsized : γ → List α} {iBin iUn : γ → ℕ} (d : α)
+    (hl : ComputableInPolyTime l encIn encL)
+    (_hlUnsized : ComputableInPolyTime lUnsized encIn encLUnsized)
+    (hiBin : ComputableInPolyTime iBin encIn encNat)
+    (hiUn : ComputableInPolyTime iUn encIn encUnary) :
+    ComputableInPolyTime (fun x => (l x).getD (iBin x) d) encIn encA ∧
+    ComputableInPolyTime (fun x => (l x).getD (iUn x) d) encIn encA := by
   fail_if_success
-    have := ComputableInPolyTime.listGetD_binary (encA := encA) (encL := encL) _d _hl _hi
-  trivial
+    have := ComputableInPolyTime.listGetD_binary
+      (encA := encA) (encL := encLUnsized) d _hlUnsized hiBin
+  refine ⟨?_, ?_⟩
+  · fail_if_success exact (ComputableInPolyTime.listGetD d).comp (hl.prod hiBin)
+    fail_if_success fun_prop
+    exact ComputableInPolyTime.listGetD_binary d hl hiBin
+  · fail_if_success exact ComputableInPolyTime.listGetD_binary d hl hiUn
+    exact (ComputableInPolyTime.listGetD d).comp (hl.prod hiUn)
 
--- Raw bit strings: read a bit at a binary position.
-example : ComputableInPolyTime (fun p : List Bool × ℕ => p.1.getD p.2 false)
-    (encPair encBits encNat) encBool :=
-  ComputableInPolyTime.listGetD_binary (encA := encBool) false
-    (ComputableInPolyTime.fst encBits encNat) (ComputableInPolyTime.snd encBits encNat)
-
--- Framed lists of binary naturals.
-example : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.getD p.2 0)
-    (encPair (encList encNat) encNat) encNat :=
-  ComputableInPolyTime.listGetD_binary 0
-    (ComputableInPolyTime.fst (encList encNat) encNat) (ComputableInPolyTime.snd _ encNat)
-
--- A binary index computed from the input: follow the pointer stored in the first entry.
-example : ComputableInPolyTime (fun l : List ℕ => l.getD (l.getD 0 0) 0) (encList encNat) encNat :=
-  ComputableInPolyTime.listGetD_binary 0 ComputableInPolyTime.id'
-    ((ComputableInPolyTime.listGetD 0).comp
-      (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const 0)))
-
--- Beyond the list every lookup returns the default, however large the binary index.
-example : ([true, false] : List Bool).getD 1 true = false := by decide
-example : ([true, false] : List Bool).getD (2 ^ 64) true = true := by decide
-example : ([] : List ℕ).getD (2 ^ 64) 7 = 7 := by decide
+-- Raw bit strings, framed lists of binary naturals, indirect pointer lookup, and out-of-bounds
+-- binary indices.
+example :
+    ComputableInPolyTime (fun p : List Bool × ℕ => p.1.getD p.2 false)
+      (encPair encBits encNat) encBool ∧
+    ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.getD p.2 0)
+      (encPair (encList encNat) encNat) encNat ∧
+    ComputableInPolyTime (fun l : List ℕ => l.getD (l.getD 0 0) 0) (encList encNat) encNat ∧
+    ([true, false] : List Bool).getD 1 true = false ∧
+    ([true, false] : List Bool).getD (2 ^ 64) true = true ∧
+    ([] : List ℕ).getD (2 ^ 64) 7 = 7 :=
+  ⟨ComputableInPolyTime.listGetD_binary (encA := encBool) false
+      (ComputableInPolyTime.fst encBits encNat) (ComputableInPolyTime.snd encBits encNat),
+    ComputableInPolyTime.listGetD_binary 0
+      (ComputableInPolyTime.fst (encList encNat) encNat) (ComputableInPolyTime.snd _ encNat),
+    ComputableInPolyTime.listGetD_binary 0 ComputableInPolyTime.id'
+      ((ComputableInPolyTime.listGetD 0).comp
+        (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const 0))),
+    by decide, by decide, by decide⟩

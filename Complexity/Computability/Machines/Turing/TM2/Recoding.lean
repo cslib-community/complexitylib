@@ -65,13 +65,12 @@ theorem computableInPolySpace {α β : Type}
     {space : α → ℕ} (hspace : PolyBounded (fun a => (encIn a).length) space)
     (hstacks : h.StacksBounded space) :
     ComputableInPolySpace f encIn encOut := by
-  apply ComputableInPolySpace.of_tidy
-  have hf := h.computableTidilyInPolySpace (encA := encFinEnum Bool) (encB := encFinEnum Bool)
+  have hf := h.computableInPolySpace_encList (encA := encFinEnum Bool) (encB := encFinEnum Bool)
     encIn.injective encOut.injective hspace hstacks
   obtain ⟨hinput, _⟩ := trans_encList_polyTime encIn (encFinEnum Bool)
   obtain ⟨_, houtput⟩ := trans_encList_polyTime encOut (encFinEnum Bool)
   simpa only [Function.comp_def] using
-    (ComputableTidilyInPolySpace.of_polyTime houtput.tidy).comp
-      (hf.comp (ComputableTidilyInPolySpace.of_polyTime hinput.tidy))
+    (ComputableInPolySpace.of_polyTime houtput).comp
+      (hf.comp (ComputableInPolySpace.of_polyTime hinput))
 
 end Turing.TM2Computable

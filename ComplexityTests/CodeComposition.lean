@@ -14,7 +14,7 @@ references, repeated outputs, zero-input constants and empty circuits. -/
 namespace ComplexityTests.CodeComposition
 
 open Cslib.Circuits Cslib.Circuits.Boolean
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 private def left : List (Op × List ℕ) × List ℕ := ([(.not, [0])], [2])
 
@@ -40,12 +40,11 @@ example : appendCode 0 ([], []) ([], []) = ([], []) := by decide
 
 /-- The constructor handles arbitrary raw codes and a binary input count uniformly. -/
 theorem constructor_polynomialTime :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ℕ × (List (Op × List ℕ) × List ℕ) × (List (Op × List ℕ) × List ℕ) =>
         appendCode p.1 p.2.1 p.2.2)
-      (encPair encNat (encPair encCode encCode)) encCode :=
-  (computableInPolyTime_appendCode (.of_tidy (fst _ _)) (.of_tidy (snd _ _).fst') (.of_tidy (snd
-    _ _).snd')).tidy
+      (encPair encNat (encPair encCode encCode)) encCode := by
+  fun_prop
 
 /-- The typed correspondence and resource theorem apply at zero dimensions. -/
 example (c d : Circuit signature 0 0) :
@@ -92,10 +91,9 @@ example : (appendCodes 0 [([], [0]), ([(.const true, [])], [0])]).2.map
 example : [evalOutput [] [] 0, evalOutput [] [(.const true, [])] 0] =
     [false, true] := by decide
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Varying-size construction is certified uniformly on all raw codes and binary input counts. -/
 theorem varying_bundler_polynomialTime :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : ℕ × List (List (Op × List ℕ) × List ℕ) => appendCodes p.1 p.2)
       (encPair encNat (encList encCode)) encCode := by fun_prop
 
@@ -112,25 +110,42 @@ example (w : ℕ) :
   rw [appendCodes_code, appendCodes_code, appendCode_code]
   rfl
 
-example (cs : Fin 0 → Circuit signature 0 1) :
-    appendCodes 0 (List.ofFn fun i => (cs i).code) = (Circuit.pi cs).code :=
-  appendCodes_code cs
-
 /-- The bundler has no block-size or well-formedness promise in its runtime certificate. -/
 theorem bundler_polynomialTime :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : (ℕ × ℕ) × List (List (Op × List ℕ) × List ℕ) =>
         bundleCode p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encNat) (encList encCode)) encCode :=
-  (computableInPolyTime_bundleCode (.of_tidy (fst _ _).fst') (.of_tidy (fst _ _).snd') (.of_tidy
-    (snd _ _))).tidy
+      (encPair (encPair encNat encNat) (encList encCode)) encCode := by
+  fun_prop
 
-/-- The typed family corollary includes an empty output family at zero input dimension. -/
+/-- At zero outputs, fixed-size bundling and varying-size concatenation agree on the empty code. -/
 example (cs : Fin 0 → Circuit signature 0 1) :
-    ∃ c : Circuit signature 0 0,
-      bundleCode 0 0 (List.ofFn (fun j => (cs j).code)) = c.code ∧
-        ∀ x j, c.eval interpretation x j = (cs j).eval interpretation x 0 :=
-  exists_circuit_bundleCode cs 0 (fun j => j.elim0)
+    bundleCode 0 0 (List.ofFn (fun j => (cs j).code)) =
+      appendCodes 0 (List.ofFn (fun j => (cs j).code)) ∧
+    (Circuit.pi cs).code = ([], []) := by
+  rw [bundleCode_code cs 0 (fun j => j.elim0), appendCodes_code cs]
+  exact ⟨rfl, rfl⟩
+
+/-- Bundling two 1-gateinverter blocks on 2 shared inputs yields a 2-output circuit of size 2. -/
+example :
+    let cs : Fin 2 → Circuit signature 2 1 :=
+      ![(Formula.input 0).not.toCircuit, (Formula.input 1).not.toCircuit]
+    ∃ c : Circuit signature 2 2,
+      bundleCode 2 1 (List.ofFn (fun j => (cs j).code)) = c.code ∧
+        c.size = 2 ∧
+        c.eval interpretation ![true, false] = ![false, true] := by
+  intro cs
+  have hsize : ∀ j, (cs j).size = 1 := by decide
+  obtain ⟨c, hcode, heval⟩ := exists_circuit_bundleCode cs 1 hsize
+  refine ⟨c, hcode, ?_, ?_⟩
+  · rw [← Circuit.length_code_fst, ← hcode, length_bundleCode]
+    · rfl
+    · intro code hmem
+      obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hmem
+      exact (Circuit.length_code_fst _).trans (hsize j)
+  · funext j
+    rw [heval]
+    fin_cases j <;> decide
 
 /-- info: 'Cslib.Circuits.Boolean.bundleCode_eq_foldl_appendCode' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
