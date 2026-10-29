@@ -21,7 +21,7 @@ open Turing Turing.MultiTapeTM
 run_elab do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
       `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInDegree,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO, `Turing.StepMachine.Tidy] do
+      `Turing.StepMachine.Tidy] do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus or old bundle: {name}"
 
