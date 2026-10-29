@@ -49,10 +49,10 @@ analysis of [Hertli][Hertli2011] uses.
   [Scheder, Steinberger, Theorem 4 (p. 9:4)][SchederSteinberger2017], which they attribute to
   Paturi, Pudlák, Saks and Zane: under w-implication of depth `h`, against formulas with clauses
   of at most `k` literals, a frozen variable is guessed with probability at most `1 - qbar k h`.
-  Their error notion (Definition 2) also covers liquid variables, which this bound does not.
-  Hertli's bound for his modified algorithm, [Hertli, Theorem 6 (p. 4)][Hertli2011], which he only
-  sketches, follows from it by monotonicity (`guessProb_le_of_subset`), since the modified
-  algorithm fixes more
+  Their error notion (Definition 2) quantifies over every variable, including those liquid in F
+  that become frozen in F|β; this bound needs `x` frozen under `restrict σ T`. Hertli's bound for
+  his modified algorithm, [Hertli, Theorem 6 (p. 4)][Hertli2011], which he only sketches, follows
+  from it by monotonicity (`guessProb_le_of_subset`), since the modified algorithm fixes more
   variables of `σ` before `x`. Here the critical clause tree is built on the restricted formula
   `φ.restrictBy τ` and rooted at `x` (`IsCriticalTreeAt`): flipping `x` and other unassigned
   variables gives an extension of `τ` that disagrees with `σ` on `x`, which falsifies `φ` since
