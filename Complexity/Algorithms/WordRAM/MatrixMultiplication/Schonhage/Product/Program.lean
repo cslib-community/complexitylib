@@ -35,52 +35,99 @@ open Cslib.WordRAM
 
 /-- Persistent caller depth. -/
 public abbrev depth : Fin 160 := 96
+/-- Original inner depth, determining the shared dimension `4^m`. -/
 public abbrev inner : Fin 160 := 97
+/-- Original outer matrix dimension. -/
 public abbrev rows : Fin 160 := 98
+/-- Number of original request occurrences, including duplicates. -/
 public abbrev queryCount : Fin 160 := 99
+/-- Computed shared dimension `4^m`. -/
 public abbrev columns : Fin 160 := 100
+/-- Number of masks visited by the actual subset-table scan. -/
 public abbrev masks : Fin 160 := 101
+/-- Number of cells in each padded band array. -/
 public abbrev cells : Fin 160 := 102
+/-- Number of leaf entries in each shared encoding. -/
 public abbrev leaves : Fin 160 := 103
+/-- Computed number of row bands, also used for column bands. -/
 public abbrev bands : Fin 160 := 104
+/-- Number of tile calls, the square of the band count. -/
 public abbrev tiles : Fin 160 := 105
+/-- Length of the complete original memory prefix, including word zero. -/
 public abbrev inputSize : Fin 160 := 106
+/-- Protected snapshot pointer used to restore the original input. -/
 public abbrev snapshot : Fin 160 := 107
+/-- Protected copy of the router's immutable prefix offsets. -/
 public abbrev offsets : Fin 160 := 108
+/-- Protected copy of the actual grouped query codes. -/
 public abbrev codes : Fin 160 := 109
+/-- Protected permutation from grouped positions to original occurrence indices. -/
 public abbrev originals : Fin 160 := 110
+/-- Base of the grouped answers written by tile calls. -/
 public abbrev grouped : Fin 160 := 111
+/-- Base of the reconstructed original-order answers, returned by halt. -/
 public abbrev output : Fin 160 := 112
+/-- Base of reusable pruned-kernel stack and cache space. -/
 public abbrev scratch : Fin 160 := 113
+/-- Base of the timestamp directory shared by all tiles. -/
 public abbrev stamps : Fin 160 := 114
+/-- One past the complete caller and kernel allocation. -/
 public abbrev memoryLimit : Fin 160 := 115
+/-- Returned kernel epoch propagated to the next tile. -/
 public abbrev epoch : Fin 160 := 116
+/-- Current tile, directory-entry or reporting-loop index. -/
 public abbrev index : Fin 160 := 117
+/-- First grouped position of the current tile's actual span. -/
 public abbrev first : Fin 160 := 118
+/-- One past the last grouped position of the current tile. -/
 public abbrev stop : Fin 160 := 119
+/-- Row band computed by division of the current tile key. -/
 public abbrev rowBand : Fin 160 := 120
+/-- Column band computed by remainder of the current tile key. -/
 public abbrev colBand : Fin 160 := 121
+/-- Actual shared left-encoding pointer for the current tile. -/
 public abbrev leftPointer : Fin 160 := 122
+/-- Actual shared right-encoding pointer for the current tile. -/
 public abbrev rightPointer : Fin 160 := 123
+/-- Actual grouped-query pointer passed to the kernel. -/
 public abbrev queryPointer : Fin 160 := 124
+/-- Current grouped-answer pointer passed to the kernel. -/
 public abbrev answerPointer : Fin 160 := 125
+/-- Source pointer supplied to a real native copy. -/
 public abbrev source : Fin 160 := 126
+/-- Destination pointer supplied to a real native copy. -/
 public abbrev destination : Fin 160 := 127
+/-- Number of words supplied to a real native copy. -/
 public abbrev length : Fin 160 := 128
+/-- Temporary address for scalar loads, stores and reporting. -/
 public abbrev address : Fin 160 := 129
+/-- Temporary loaded matrix value, answer or original-position index. -/
 public abbrev value : Fin 160 := 130
+/-- Persistent unsigned zero. -/
 public abbrev zero : Fin 160 := 131
+/-- Persistent loop-increment constant one. -/
 public abbrev one : Fin 160 := 132
+/-- Persistent multiplier two for raw-to-signed conversion. -/
 public abbrev two : Fin 160 := 133
+/-- Persistent constant four for header offsets and kernel stack sizing. -/
 public abbrev four : Fin 160 := 134
+/-- First original matrix-payload address, immediately after the four headers. -/
 public abbrev five : Fin 160 := 135
+/-- Persistent constant six used in the computed router allocation. -/
 public abbrev six : Fin 160 := 136
+/-- Total word count of both original matrix payloads. -/
 public abbrev matrixWords : Fin 160 := 137
+/-- Original coordinate-pair block address. -/
 public abbrev queryOffset : Fin 160 := 138
+/-- One past the actual router allocation. -/
 public abbrev wantedEnd : Fin 160 := 139
+/-- One past the shared-band producer allocation. -/
 public abbrev bandEnd : Fin 160 := 140
+/-- Temporary product used while computing separated buffer addresses. -/
 public abbrev temporary : Fin 160 := 141
+/-- Base of the producer's shared two-sided encoding catalogue. -/
 public abbrev catalogue : Fin 160 := 145
+/-- Persistent constant three used in the router allocation. -/
 public abbrev three : Fin 160 := 146
 
 /-- Compute genuine band scalars before selecting a protected caller area. No memory writes. -/
