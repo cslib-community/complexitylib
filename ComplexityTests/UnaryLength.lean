@@ -10,11 +10,11 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitativ
 
 open Turing.MultiTapeTM
 
-example : ComputableTidilyInO (fun l : List Bool => l.length) encBits encUnary
+example : ComputableInO (fun l : List Bool => l.length) encBits encUnary
     (fun l => l.length) fun l => l.length :=
-  ComputableTidilyInO.lengthUnary
+  ComputableInO.lengthUnary
 
-example : ComputableTidilyInO (fun l : List Bool => 2 ^ l.length) encBits encUnary
+example : ComputableInO (fun l : List Bool => 2 ^ l.length) encBits encUnary
     (fun l => l.length + (l.length + 1) * 2 ^ l.length)
     (fun l => l.length + 2 ^ l.length) :=
-  ComputableTidilyInO.unary_two_pow.comp ComputableTidilyInO.lengthUnary
+  ComputableInO.unary_two_pow.comp ComputableInO.lengthUnary

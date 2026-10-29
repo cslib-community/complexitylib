@@ -47,36 +47,26 @@ private theorem setOf_oddOnes_mem_DSPACE :
     ⟨oddOnes, h.computableInTimeAndSpace.mono (fun _ => le_rfl) fun _ => by simp,
       fun _ => Iff.rfl⟩⟩
 
-example : ∃ c, {w | oddOnes w = true} ∈ DTIME encBits fun n => (n + 2) * 2 ^ (c * 0) :=
-  exists_mem_DTIME_of_mem_DSPACE setOf_oddOnes_mem_DSPACE
-
-/-- Constant space is within logarithmic space. -/
-example : {w | oddOnes w = true} ∈ L encBits :=
-  mem_L_iff_mem_DSPACE.mpr (DSPACE_mono (fun _ => Nat.zero_le _) setOf_oddOnes_mem_DSPACE)
-
-example : {w | oddOnes w = true} ∈ PSPACE encBits :=
-  DSPACE_subset_PSPACE (by fun_prop) setOf_oddOnes_mem_DSPACE
+/-- Constant space is within linear time (by counting configurations), logarithmic space, and
+polynomial space. -/
+example :
+    (∃ c, {w | oddOnes w = true} ∈ DTIME encBits fun n => (n + 2) * 2 ^ (c * 0)) ∧
+    {w | oddOnes w = true} ∈ L encBits ∧
+    {w | oddOnes w = true} ∈ PSPACE encBits :=
+  ⟨exists_mem_DTIME_of_mem_DSPACE setOf_oddOnes_mem_DSPACE,
+    mem_L_iff_mem_DSPACE.mpr (DSPACE_mono (fun _ => Nat.zero_le _) setOf_oddOnes_mem_DSPACE),
+    DSPACE_subset_PSPACE (by fun_prop) setOf_oddOnes_mem_DSPACE⟩
 
 /-! ### Space-constructible bounds -/
 
-example : ∃ T, ComputableInO (fun x : List Bool => x.length) encBits encNat T
-    fun x => x.length :=
-  spaceConstructible_id.computableInO
-
-example : ∃ T, ComputableInO (fun x : List Bool => x.length + 1) encBits encNat T
-    fun x => x.length + 1 :=
-  spaceConstructible_succ.computableInO
-
-example : ∃ T, ComputableInO (fun x : List Bool => (x.length + 1) ^ 3) encBits encNat T
-    fun x => (x.length + 1) ^ 3 :=
-  (spaceConstructible_succ_pow 3).computableInO
-
-example : ∃ T, ComputableInO (fun _ : List Bool => 5) encBits encNat T fun _ => 5 :=
-  (spaceConstructible_const 5).computableInO
-
-example : ∃ T, ComputableInO (fun x : List Bool => 2 ^ x.length) encBits encNat T
-    fun x => 2 ^ x.length :=
-  spaceConstructible_two_pow.computableInO
+example :
+    SpaceConstructible (fun n => (n + 1) * 2 ^ n) ∧
+    ComputableInO (fun x : List Bool => (x.length + 1) * (x.length + 1) ^ 2) encBits encNat
+      (fun x => (x.length + 1) * (x.length + 1) ^ 2)
+      (fun x => (x.length + 1) * (x.length + 1) ^ 2) :=
+  ⟨(timeConstructible_two_pow.succ_mul fun _ => Nat.lt_two_pow_self.le).spaceConstructible,
+    ((timeConstructible_succ_pow (k := 2) (by decide)).succ_mul fun n =>
+      (Nat.le_succ n).trans (Nat.le_self_pow (by decide) _)).computableInO⟩
 
 /-- `L` and `PSPACE` through `DSPACE`, instantiated on `Set.univ` and `oddOnes`. -/
 example : (Set.univ : Set (List Bool)) ∈ DSPACE encBits Nat.log2 ∧

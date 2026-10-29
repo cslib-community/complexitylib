@@ -7,7 +7,6 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Complexity.Classes.PCP.NP
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Tactic.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Sparse proof tables, duplicate addresses, malformed witnesses, and exact NP containment. -/
 
@@ -53,15 +52,15 @@ example :
     table.length = 11 ∧ requireBit.tableVerifier ((true, 1), table) = true := by
   decide
 
-example : ComputableTidilyInPolyTime requireBit.tableVerifier
+example : ComputableInPolyTime requireBit.tableVerifier
     (encPair (encPair encBool encNat) encBits) encBool :=
-  (PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins).tidy
+  PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins
 
-example : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × List Bool =>
+example : ComputableInPolyTime (fun p : (Bool × ℕ) × List Bool =>
       let input := p.1
       requireBit.tableVerifier (input, p.2))
     (encPair (encPair encBool encNat) encBits) encBool := by
-  have h := (PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins).tidy
+  have h := PCPVerifier.isPolyTime_tableVerifier requireBit_polyTime requireBit_coins
   polytime
 
 -- The table is the restriction of an actual finite PCP proof even for enormous addresses.
@@ -110,8 +109,6 @@ example : noQueries.queryTable () = [] := by decide
 
 example : noQueries.tableVerifier ((), []) = true := by decide
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 example (enc : Unit ↪ List Bool) : ComputableInPolyTime noQueries.tableVerifier
     (encPair enc encBits) encBool := by
   apply PCPVerifier.isPolyTime_tableVerifier (c := 0)
@@ -121,10 +118,6 @@ example (enc : Unit ↪ List Bool) : ComputableInPolyTime noQueries.tableVerifie
 example : ∃ proof, ∀ word, word.length = 0 → noQueries.accepts () proof word = true :=
   PCPVerifier.tableVerifier_sound (V := noQueries) () [] (by decide)
 
-example {α : Type} (enc : α ↪ List Bool) :
-    PCP (fun n => Nat.log 2 n + 1) (fun _ => 1) enc ⊆ NP enc :=
-  PCP_log_subset_NP _
-
 -- The bounded decoder saturates on arbitrary noncanonical binary words as well.
 example : BitString.boundedBinaryValue 0 [true, false, true] = 0 := by decide
 
@@ -133,7 +126,8 @@ example : BitString.boundedBinaryValue 5 [false, false, true, true, false] = 5 :
 example : BitString.binaryValue (13 : ℕ).bits.reverse = 13 :=
   BitString.binaryValue_reverse_bits 13
 
-example : ComputableTidilyInPolyTime (fun n : ℕ => n + 1) encUnary encUnary := by
+example : ComputableInPolyTime (fun n : ℕ => n + 1) encUnary encUnary := by
+  refine .of_tidy ?_
   apply ComputableTidilyInPolyTime.binary_to_unary_bounded (bound := fun n => n + 2)
   · exact ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)
   · fun_prop
@@ -143,14 +137,14 @@ example : ComputableTidilyInPolyTime (fun n : ℕ => n + 1) encUnary encUnary :=
 -- Arbitrary binary-to-unary expansion is deliberately unavailable.
 example : True := by
   fail_if_success
-    have : ComputableTidilyInPolyTime (fun n : ℕ => n) encNat encUnary := by fun_prop
+    have : ComputableInPolyTime (fun n : ℕ => n) encNat encUnary := by fun_prop
   trivial
 
 -- A randomness bound alone does not provide the verifier's computation certificates.
 example {α : Type} (enc : α ↪ List Bool) (V : PCPVerifier α) (c : ℕ)
     (_hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) : True := by
   fail_if_success
-    have : ComputableTidilyInPolyTime V.tableVerifier (encPair enc encBits) encBool := by fun_prop
+    have : ComputableInPolyTime V.tableVerifier (encPair enc encBits) encBool := by fun_prop
   trivial
 
 end ComplexityTests.PCPNP

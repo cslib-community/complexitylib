@@ -41,32 +41,29 @@ private theorem prepend_bound (w : List Bool) (i : ℕ) (k : Unit) :
     exact (congrArg (fun cfg : prependMachine.Cfg => (cfg.stk ()).length) hfixed).le.trans
       (by change (false :: w).length ≤ w.length + 1; simp)
 
--- The endpoint starts from termination and a source-space bound, with no runtime argument.
+-- The endpoint starts from termination and a source-space bound, with no runtime argument; and
+-- `TM2.run_polySpace` exercises an explicit exponential binary clock.
 example : ComputableTidilyInPolySpace (fun w : List Bool => false :: w)
-    (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) := by
-  exact prependComputer.computableTidilyInPolySpace Function.injective_id Function.injective_id
-    (space := fun w => w.length + 1) (PolyBounded.self.add (.const 1))
-    (by
-      intro w i k
-      exact (prepend_bound (List.map prependComputer.inputAlphabet.symm w) i k).trans
-        (Nat.add_le_add_right (List.length_map prependComputer.inputAlphabet.symm).le 1))
-
--- Explicitly exercise an exponential binary clock. This machine halts early; padding does not
--- assert an exponential lower bound on its runtime.
-example : ComputableTidilyInPolySpace
-    (fun w : List Bool => (TM2.stepTotal prependMachine.m)^[2 ^ (w.length + 1)]
-      (initList prependMachine w)) (encList (encFinEnum Bool)) TM2.encCfg := by
-  have hlength := ComputableTidilyInPolyTime.length_list (encFinEnum Bool)
-  have hexponent := ComputableTidilyInPolyTime.unary_add.comp
-    (hlength.prod (ComputableTidilyInPolyTime.const 1))
-  have hstart : ComputableTidilyInPolyTime (fun w => w) (encList (encFinEnum Bool))
-      (encList (encFinite (prependMachine.Γ prependMachine.k₀))) :=
-    (ComputableTidilyInPolyTime.map
-      (.of_finite (encB := encFinite (prependMachine.Γ prependMachine.k₀)) id)).of_enc_eq
-      (fun _ => by simp only [List.map_id]; rfl)
-  exact TM2.run_polySpace prependMachine hstart
-    (ComputableTidilyInPolyTime.binary_two_pow.comp hexponent) hexponent.polyBounded
-    (fun w i _ k => prepend_bound w i k)
+    (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) ∧
+    ComputableTidilyInPolySpace
+      (fun w : List Bool => (TM2.stepTotal prependMachine.m)^[2 ^ (w.length + 1)]
+        (initList prependMachine w)) (encList (encFinEnum Bool)) TM2.encCfg := by
+  refine ⟨prependComputer.computableTidilyInPolySpace Function.injective_id Function.injective_id
+    (space := fun w => w.length + 1) (PolyBounded.self.add (.const 1)) ?_, ?_⟩
+  · intro w i k
+    exact (prepend_bound (List.map prependComputer.inputAlphabet.symm w) i k).trans
+      (Nat.add_le_add_right (List.length_map prependComputer.inputAlphabet.symm).le 1)
+  · have hlength := ComputableTidilyInPolyTime.length_list (encFinEnum Bool)
+    have hexponent := ComputableTidilyInPolyTime.unary_add.comp
+      (hlength.prod (ComputableTidilyInPolyTime.const 1))
+    have hstart : ComputableTidilyInPolyTime (fun w => w) (encList (encFinEnum Bool))
+        (encList (encFinite (prependMachine.Γ prependMachine.k₀))) :=
+      (ComputableTidilyInPolyTime.map
+        (.of_finite (encB := encFinite (prependMachine.Γ prependMachine.k₀)) id)).of_enc_eq
+        (fun _ => by simp only [List.map_id]; rfl)
+    exact TM2.run_polySpace prependMachine hstart
+      (ComputableTidilyInPolyTime.binary_two_pow.comp hexponent) hexponent.polyBounded
+      (fun w i _ k => prepend_bound w i k)
 
 private theorem identity_bound {Γ : Type} [Fintype Γ] (w : List Γ) (i : ℕ) (k : Unit) :
     (((TM2.stepTotal (idComputer Γ).m)^[i] (initList (idComputer Γ) w)).stk k).length ≤
@@ -87,18 +84,6 @@ private noncomputable abbrev identityComputer (Γ : Type) [Fintype Γ] :
   inputAlphabet := Equiv.refl _
   outputAlphabet := Equiv.refl _
   outputsFun _ := ⟨1, rfl⟩
-
--- An empty alphabet requires no artificial inhabitant, even in the counting proof.
-example : ComputableTidilyInPolySpace (id : List Empty → List Empty)
-    (encList (encFinEnum Empty)) (encList (encFinEnum Empty)) := by
-  let h := identityComputer Empty
-  let : ∀ k, Finite (h.tm.Γ k) := fun _ => inferInstanceAs (Finite Empty)
-  exact h.computableTidilyInPolySpace Function.injective_id Function.injective_id
-    (space := List.length) .self
-    (by
-      intro w i k
-      exact (identity_bound (Γ := Empty) (List.map h.inputAlphabet.symm w) i k).trans
-        (List.length_map h.inputAlphabet.symm).le)
 
 -- Input and output alphabets are independent, even when only the output alphabet is empty.
 private abbrev clearMachine : FinTM2 where
@@ -183,19 +168,6 @@ private theorem clear_bound (xs : List Bool) (i : ℕ) : ∀ k,
     exact fun k =>
       (congrArg (fun c : clearMachine.Cfg => (c.stk k).length) heq).le.trans (hstep _ ih k)
 
--- An infinite Boolean input domain and a distinct empty output alphabet. No default output
--- symbol is available; the empty output comes from clearing the input before halting.
-example : ComputableTidilyInPolySpace (fun _ : List Bool => ([] : List Empty))
-    (encList (encFinEnum Bool)) (encList (encFinEnum Empty)) := by
-  let : ∀ k, Finite (clearComputer.tm.Γ k) := fun k => by
-    change Finite (clearMachine.Γ k)
-    cases k <;> infer_instance
-  exact clearComputer.computableTidilyInPolySpace Function.injective_id Function.injective_id
-    (space := List.length) .self
-    (by
-      intro xs i k
-      simpa only [Equiv.refl_symm, Equiv.coe_refl, id_eq, List.map_id] using clear_bound xs i k)
-
 -- A concrete Boolean decider crosses the final framed-word-to-Boolean encoding conversion.
 private noncomputable abbrev boolComputer :
     TM2Computable encodeBool encodeBool (id : Bool → Bool) :=
@@ -203,18 +175,6 @@ private noncomputable abbrev boolComputer :
     inputAlphabet := Equiv.refl _
     outputAlphabet := Equiv.refl _
     outputsFun _ := ⟨1, rfl⟩ }
-
-example : {b : Bool | b = true} ∈ Cslib.Complexity.PSPACE
-    ((⟨encodeBool, encodingBoolBool.encode_injective⟩ : Bool ↪ List Bool).trans
-      (encList (encFinEnum Bool))) := by
-  let : ∀ k, Finite (boolComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
-  apply Cslib.Complexity.mem_PSPACE_of_tm2 boolComputer encodingBoolBool.encode_injective
-    encodingBoolBool.encode_injective (space := fun _ => 1) (.const 1) ?_ (fun _ => Iff.rfl)
-  intro b i k
-  have hbound := identity_bound (Γ := Bool)
-    (List.map boolComputer.inputAlphabet.symm (encodeBool b)) i k
-  exact hbound.trans ((List.length_map boolComputer.inputAlphabet.symm).le.trans
-    (show (encodeBool b).length ≤ 1 from le_rfl))
 
 -- A decider over all Boolean words, including empty and nonempty inputs. It saves the
 -- emptiness answer on a separate stack, clears the input, then halts with that one-bit output.
@@ -315,12 +275,43 @@ private theorem empty_bound (xs : List Bool) (i : ℕ) (k : Bool) :
     exact (congrArg (fun cfg : emptyMachine.Cfg => (cfg.stk k).length) heq).le.trans
       (hrun i xs xs.isEmpty false)
 
-example : {xs : List Bool | xs = []} ∈ Cslib.Complexity.PSPACE (encList (encFinEnum Bool)) := by
-  let : ∀ k, Finite (emptyComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
-  apply Cslib.Complexity.mem_PSPACE_of_tm2 emptyComputer Function.injective_id
-    encodingBoolBool.encode_injective (space := fun xs => xs.length + 1)
-    (PolyBounded.self.add (.const 1)) ?_ (by simp)
-  intro xs i k
-  simpa only [Equiv.refl_symm, Equiv.coe_refl, id_eq, List.map_id] using empty_bound xs i k
+-- Empty alphabets, independent input/output alphabets, and Boolean deciders in `PSPACE`.
+example :
+    ComputableTidilyInPolySpace (id : List Empty → List Empty)
+      (encList (encFinEnum Empty)) (encList (encFinEnum Empty)) ∧
+    ComputableTidilyInPolySpace (fun _ : List Bool => ([] : List Empty))
+      (encList (encFinEnum Bool)) (encList (encFinEnum Empty)) ∧
+    {b : Bool | b = true} ∈ Cslib.Complexity.PSPACE
+      ((⟨encodeBool, encodingBoolBool.encode_injective⟩ : Bool ↪ List Bool).trans
+        (encList (encFinEnum Bool))) ∧
+    {xs : List Bool | xs = []} ∈ Cslib.Complexity.PSPACE (encList (encFinEnum Bool)) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · let h := identityComputer Empty
+    let : ∀ k, Finite (h.tm.Γ k) := fun _ => inferInstanceAs (Finite Empty)
+    exact h.computableTidilyInPolySpace Function.injective_id Function.injective_id
+      (space := List.length) .self
+      (fun w i k => (identity_bound (Γ := Empty) (List.map h.inputAlphabet.symm w) i k).trans
+        (List.length_map h.inputAlphabet.symm).le)
+  · let : ∀ k, Finite (clearComputer.tm.Γ k) := fun k => by
+      change Finite (clearMachine.Γ k)
+      cases k <;> infer_instance
+    exact clearComputer.computableTidilyInPolySpace Function.injective_id Function.injective_id
+      (space := List.length) .self
+      (fun xs i k => by
+        simpa only [Equiv.refl_symm, Equiv.coe_refl, id_eq, List.map_id] using clear_bound xs i k)
+  · let : ∀ k, Finite (boolComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
+    apply Cslib.Complexity.mem_PSPACE_of_tm2 boolComputer encodingBoolBool.encode_injective
+      encodingBoolBool.encode_injective (space := fun _ => 1) (.const 1) ?_ (fun _ => Iff.rfl)
+    intro b i k
+    have hbound := identity_bound (Γ := Bool)
+      (List.map boolComputer.inputAlphabet.symm (encodeBool b)) i k
+    exact hbound.trans ((List.length_map boolComputer.inputAlphabet.symm).le.trans
+      (show (encodeBool b).length ≤ 1 from le_rfl))
+  · let : ∀ k, Finite (emptyComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
+    apply Cslib.Complexity.mem_PSPACE_of_tm2 emptyComputer Function.injective_id
+      encodingBoolBool.encode_injective (space := fun xs => xs.length + 1)
+      (PolyBounded.self.add (.const 1)) ?_ (by simp)
+    intro xs i k
+    simpa only [Equiv.refl_symm, Equiv.coe_refl, id_eq, List.map_id] using empty_bound xs i k
 
 end ComplexityTests.MathlibTM2Space

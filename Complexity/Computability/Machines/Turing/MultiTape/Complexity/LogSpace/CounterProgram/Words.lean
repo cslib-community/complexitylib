@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 
@@ -26,7 +27,8 @@ length, so that they are not finite-state transductions:
 Each program reads the length `n` of the framed first component and the unary second component
 into registers (`headerCode`), and keeps its registers below the input length, so it computes its
 function in logarithmic space by `Turing.CounterProgram.computableInLogSpace_of_reachesOut`.
-None of this uses logarithmic-space composition.
+None of this uses logarithmic-space composition, apart from the `fun_prop` forms at the end.
+The rules of `LogSpace/Words` are imported publicly, so that `fun_prop` has the full rule set.
 
 ## Main definitions
 
@@ -36,10 +38,14 @@ None of this uses logarithmic-space composition.
 
 ## Main results
 
+* `Turing.CounterProgram.Words.reachesOut_header`: the run of the header, for programs built on
+  it.
 * `Turing.MultiTapeTM.ComputableInLogSpace.bitsTake`,
   `Turing.MultiTapeTM.ComputableInLogSpace.bitsDrop`: taking and dropping bits.
 * `Turing.MultiTapeTM.ComputableInLogSpace.range`: the list `0, …, n - 1`.
 * `Turing.MultiTapeTM.ComputableInLogSpace.getElem?`: list lookup at a unary index.
+* `Turing.MultiTapeTM.ComputableInLogSpace.bitsTake'`, `.bitsDrop'`, `.getElem?'`: the same on
+  computed arguments, in the form used by `fun_prop`, with which `range` is also registered.
 
 ## References
 
@@ -113,7 +119,10 @@ def headerCode : List Instr :=
 
 variable {P : CounterProgram} {w : List Bool} {k B : ℕ}
 
-private theorem reachesOut_header (hP : P.CodeAt 0 headerCode)
+/-- **The run of `headerCode`**: from the initial registers it stores the length of the framed
+word in register `0` and the unary count in register `1`, and exits at label `4`, without
+emitting. -/
+theorem reachesOut_header (hP : P.CodeAt 0 headerCode)
     (hB : 2 * w.length + 1 + k ≤ B) :
     P.ReachesOut (frame w ++ List.replicate k true) (P.Active B) (0, [0, 0, 0, 0])
       (4, [w.length, k, 0, 0]) [] := by
@@ -642,5 +651,36 @@ theorem getElem? {α : Type} (enc : α ↪ List Bool) :
   refine lookupProgram.computableInLogSpace_of_reachesOut 1 fun ⟨l, k⟩ => ?_
   obtain ⟨s, fin, h, hhalt, rfl, hs⟩ := reachesOut_lookupProgram (enc := enc) (l := l) (k := k)
   exact ⟨s, _, [], h, hhalt, by simp [encOption], hs⟩
+
+/-! ### Automation -/
+
+section Automation
+
+variable {γ : Type} {encIn : γ ↪ List Bool}
+
+/-- The first `k` bits of a computed word, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem bitsTake' {w : γ → List Bool} {k : γ → ℕ} (hw : ComputableInLogSpace w encIn encBits)
+    (hk : ComputableInLogSpace k encIn encUnary) :
+    ComputableInLogSpace (fun a => (w a).take (k a)) encIn encBits :=
+  bitsTake.comp' (pair hw hk)
+
+/-- A computed word without its first `k` bits, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem bitsDrop' {w : γ → List Bool} {k : γ → ℕ} (hw : ComputableInLogSpace w encIn encBits)
+    (hk : ComputableInLogSpace k encIn encUnary) :
+    ComputableInLogSpace (fun a => (w a).drop (k a)) encIn encBits :=
+  bitsDrop.comp' (pair hw hk)
+
+/-- Looking up a computed unary index in a computed list, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem getElem?' {α : Type} {enc : α ↪ List Bool} {l : γ → List α} {k : γ → ℕ}
+    (hl : ComputableInLogSpace l encIn (encList enc)) (hk : ComputableInLogSpace k encIn encUnary) :
+    ComputableInLogSpace (fun a => (l a)[k a]?) encIn (encOption enc) :=
+  (getElem? enc).comp' (pair hl hk)
+
+attribute [fun_prop] range
+
+end Automation
 
 end Turing.MultiTapeTM.ComputableInLogSpace

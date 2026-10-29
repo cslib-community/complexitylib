@@ -11,19 +11,13 @@ open Turing.MultiTapeTM
 universe u
 
 example {α β : Type u} (a : α ↪ List Bool) (b : β ↪ List Bool) :
-    ComputableInDegree Prod.fst (encPair a b) a 1 1 :=
-  ComputableInDegree.fst a b
-
-example {α β : Type u} (a : α ↪ List Bool) (b : β ↪ List Bool) :
-    ComputableInDegree Prod.snd (encPair a b) b 1 1 :=
-  ComputableInDegree.snd a b
-
-example : ComputableInDegree Prod.fst
-    (encPair (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)))
-    (Function.Embedding.refl (List Bool)) 1 1 :=
-  ComputableInDegree.fst _ _
-
-example : ComputableInDegree Prod.snd
-    (encPair (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)))
-    (Function.Embedding.refl (List Bool)) 1 1 :=
-  ComputableInDegree.snd _ _
+    ComputableInDegree Prod.fst (encPair a b) a 1 1 ∧
+    ComputableInDegree Prod.snd (encPair a b) b 1 1 ∧
+    ComputableInDegree Prod.fst
+      (encPair (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)))
+      (Function.Embedding.refl (List Bool)) 1 1 ∧
+    ComputableInDegree Prod.snd
+      (encPair (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)))
+      (Function.Embedding.refl (List Bool)) 1 1 :=
+  ⟨ComputableInDegree.fst a b, ComputableInDegree.snd a b,
+    ComputableInDegree.fst _ _, ComputableInDegree.snd _ _⟩

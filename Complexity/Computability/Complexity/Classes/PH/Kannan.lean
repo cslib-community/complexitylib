@@ -83,24 +83,17 @@ open Circuits Circuits.Boolean Turing.MultiTapeTM Filter
 
 /-! ### Images of problems in `NP` -/
 
-open ComputableTidilyInPolyTime in
 /-- **Images of problems in `NP`.** The encodings of the members of a problem in `NP` form a
 problem in `NP` on words, when the encoding has a decoder: the verifier decodes the word, checks
 that it encodes what was decoded, and runs the verifier of the problem. -/
 theorem mem_NP_image {β : Type} {encB : β ↪ List Bool} (D : Decoder encB) {B : Set β}
     (hB : B ∈ NP encB) : encB '' B ∈ NP encBits := by
   obtain ⟨p, V, hV, hBV⟩ := mem_NP.mp hB
-  obtain ⟨d, e, hD⟩ := D.computable
-  have hdecoder : ComputableTidilyInPolyTime D.decode encBits encB := by
-    obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
-    exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
-      .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
-  have hdec : ComputableTidilyInPolyTime (fun x : List Bool × List Bool => D.decode x.1)
-      (encPair encBits encBits) encB := hdecoder.comp (fst _ _)
+  have hdec : ComputableInPolyTime (fun x : List Bool × List Bool => D.decode x.1)
+      (encPair encBits encBits) encB := D.computableInPolyTime.comp (.fst _ _)
+  have henc : ComputableInPolyTime (fun b => encB b) encB encBits := .of_eq fun _ => rfl
   refine mem_NP.mpr
-    ⟨p, fun x => decide (encB (D.decode x.1) = x.1) && V (D.decode x.1, x.2),
-      .of_tidy (bool_and' (decide_eq' ((encode encB).comp hdec) (fst _ _))
-        (hV.tidy.comp (hdec.prod (snd _ _)))),
+    ⟨p, fun x => decide (encB (D.decode x.1) = x.1) && V (D.decode x.1, x.2), by fun_prop,
       fun w => ?_⟩
   simp only [encBits_apply, Bool.and_eq_true, decide_eq_true_eq]
   constructor
@@ -435,65 +428,64 @@ private theorem isAlternatingVerifier_verifier (k : ℕ) :
 
 /-! ### Polynomial time -/
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- The verifier for Kannan's language is polynomial-time. -/
-private theorem computableTidilyInPolyTime_verifier (k : ℕ) :
-    ComputableTidilyInPolyTime (verifier k) (encPair encBits encBits) encBool := by
-  have hn : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => p.1.length)
+private theorem computableInPolyTime_verifier (k : ℕ) :
+    ComputableInPolyTime (verifier k) (encPair encBits encBits) encBool := by
+  have hn : ComputableInPolyTime (fun p : List Bool × List Bool => p.1.length)
       (encPair encBits encBits) encUnary :=
     length_bits.comp (fst _ _)
-  have hm : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => arity k p.1.length)
+  have hm : ComputableInPolyTime (fun p : List Bool × List Bool => arity k p.1.length)
       (encPair encBits encBits) encUnary := by
     unfold arity
     fun_prop
-  have htb : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => tableBound k p.1.length)
+  have htb : ComputableInPolyTime (fun p : List Bool × List Bool => tableBound k p.1.length)
       (encPair encBits encBits) encUnary := by
     unfold tableBound
     fun_prop
-  have hcb : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => certBound k p.1.length)
+  have hcb : ComputableInPolyTime (fun p : List Bool × List Bool => certBound k p.1.length)
       (encPair encBits encBits) encUnary := by
     unfold certBound certLength
     fun_prop
-  have hs : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => threshold k p.1.length)
+  have hs : ComputableInPolyTime (fun p : List Bool × List Bool => threshold k p.1.length)
       (encPair encBits encBits) encNat := by
     refine unary_to_binary.comp ?_
     fun_prop
-  have hM : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => 2 ^ arity k p.1.length)
+  have hM : ComputableInPolyTime (fun p : List Bool × List Bool => 2 ^ arity k p.1.length)
       (encPair encBits encBits) encUnary :=
     binary_to_unary_bounded (binary_two_pow.comp hm) htb fun p => two_pow_arity_le k _
-  have hT : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => table k p.1.length p.2)
+  have hT : ComputableInPolyTime (fun p : List Bool × List Bool => table k p.1.length p.2)
       (encPair encBits encBits) encBits :=
     bitsTakeWithInput (snd _ _) hM
-  have hT' : ComputableTidilyInPolyTime (fun p : List Bool × List Bool =>
+  have hT' : ComputableInPolyTime (fun p : List Bool × List Bool =>
       table k p.1.length (p.2.drop (tableBound k p.1.length))) (encPair encBits encBits) encBits :=
     bitsTakeWithInput (bitsDropWithInput (snd _ _) htb) hM
-  have hc : ComputableTidilyInPolyTime (fun p : List Bool × List Bool =>
+  have hc : ComputableInPolyTime (fun p : List Bool × List Bool =>
       p.2.drop (2 * tableBound k p.1.length)) (encPair encBits encBits) encBits :=
     bitsDropWithInput (snd _ _) (by fun_prop)
-  have hc' : ComputableTidilyInPolyTime (fun p : List Bool × List Bool =>
+  have hc' : ComputableInPolyTime (fun p : List Bool × List Bool =>
       p.2.drop (2 * tableBound k p.1.length + certBound k p.1.length))
       (encPair encBits encBits) encBits :=
     bitsDropWithInput (snd _ _) (by fun_prop)
-  have hval : ComputableTidilyInPolyTime (fun p : List Bool × List Bool =>
+  have hval : ComputableInPolyTime (fun p : List Bool × List Bool =>
       MCSP.tableValue (table k p.1.length p.2) (p.1.take (arity k p.1.length)))
       (encPair encBits encBits) encBool :=
-    MCSP.computableInPolyTime_tableValue.tidy.comp
+    MCSP.computableInPolyTime_tableValue.comp
       (hT.prod (bitsTakeWithInput (fst _ _) hm))
   unfold verifier
-  have hnotVerifier := bool_not.comp (MCSP.computableInPolyTime_tableVerifier.tidy.comp
+  have hnotVerifier := bool_not.comp (MCSP.computableInPolyTime_tableVerifier.comp
     ((hT.prod hs).prod hc))
-  have hlt := bool_not.comp (binary_lt'
-    (bitsBinaryValue.comp hT')
-    (bitsBinaryValue.comp hT))
-  have hverifier' := MCSP.computableInPolyTime_tableVerifier.tidy.comp ((hT'.prod hs).prod hc')
+  have hlt := bool_not.comp (binary_lt.comp ((bitsBinaryValue.comp hT').prod
+    (bitsBinaryValue.comp hT)))
+  have hverifier' := MCSP.computableInPolyTime_tableVerifier.comp ((hT'.prod hs).prod hc')
   have hor := bool_or.comp (hlt.prod hverifier')
-  have h := bool_and' (bool_and' hnotVerifier hor) hval
+  have h := bool_and.comp ((bool_and.comp (hnotVerifier.prod hor)).prod hval)
   exact h
 
 /-- **Kannan's language is in `Σ₃`.** -/
 theorem language_mem_SigmaP_three (k : ℕ) :
     (language k : Set (List Bool)) ∈ SigmaP 3 encBits :=
-  ⟨_, verifier k, rfl, .of_tidy (computableTidilyInPolyTime_verifier k),
+  ⟨_, verifier k, rfl, computableInPolyTime_verifier k,
     isAlternatingVerifier_verifier k⟩
 
 end Kannan

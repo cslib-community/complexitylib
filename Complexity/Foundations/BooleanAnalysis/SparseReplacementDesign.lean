@@ -71,8 +71,7 @@ Appendix B.2–B.3 cleared-denominator parity-polynomial zero-counting pipeline
      `natDegree_univariateClearedParityCoord_design_le`,
      `natDegree_univariateClearedParityTruncatedSum_design_le`),
    - the rational homogenization identity $\tilde{H}_s(T) = \Omega [V^s] H(T)$ over `ℚ[X]`
-     (`map_univariateClearedParityCoord_design`,
-     `map_univariateClearedParityTruncatedSum_design`),
+     (`map_univariateClearedParityCoord_design`),
    - the Appendix B.2 coordinate `ℓ₁`-norm bound
      (`coeffNorm1_univariateClearedParityCoord_design_le`),
    - exact integer division and modulo-`2 ^ ℓ` recovery of `commonZeroCount I P` when `n < ℓ` and
@@ -227,10 +226,6 @@ theorem designRowNormBound_pos (Q R : ℕ) : 0 < designRowNormBound Q R :=
 
 /-- `(commonDenom Q R : ℤ) ≠ 0`. -/
 theorem commonDenom_intCast_ne_zero (Q R : ℕ) : (commonDenom Q R : ℤ) ≠ 0 :=
-  Nat.cast_ne_zero.mpr (commonDenom_pos Q R).ne'
-
-/-- `(commonDenom Q R : ℚ) ≠ 0`. -/
-theorem commonDenom_ratCast_ne_zero (Q R : ℕ) : (commonDenom Q R : ℚ) ≠ 0 :=
   Nat.cast_ne_zero.mpr (commonDenom_pos Q R).ne'
 
 /-- The univariate rational replacement polynomial `⟨P⃗_e(T), x⟩ ∈ ℚ[X]` for incidence
@@ -472,16 +467,6 @@ theorem map_designReplacementScaledIntMap {F : Type*} [Fintype F]
       simp only [bitVal_true, bitVal_false, Int.cast_one, Int.cast_zero, Polynomial.C_1,
         Polynomial.C_0, mul_one, mul_zero]
 
-/-- `divDenomReplacement ℚ (commonDenom Q R : ℤ) (designReplacementScaledIntMap D emb)` agrees
-with `designReplacementMap D emb`. -/
-theorem divDenomReplacement_designReplacementScaledIntMap {F : Type*} [Fintype F]
-    {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
-    (x : Fin n → Bool) (i : κ) (v : Fin n) :
-    divDenomReplacement ℚ (commonDenom Q R : ℤ) (designReplacementScaledIntMap D emb) x i v =
-      designReplacementMap D emb x i v := by
-  rw [divDenomReplacement, map_designReplacementScaledIntMap, ← mul_assoc, ← Polynomial.C_mul,
-    Int.cast_natCast, inv_mul_cancel₀ (commonDenom_ratCast_ne_zero Q R), Polynomial.C_1, one_mul]
-
 /-- At `T = 0`, `designReplacementMap D emb x i v` evaluates to `bitVal ℚ (x v)`. -/
 theorem eval_zero_designReplacementMap {F : Type*} [Fintype F]
     {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
@@ -609,24 +594,6 @@ theorem map_univariateClearedParityCoord_design {F : Type*} [Fintype F]
   map_univariateClearedParityCoord I P (commonDenom Q R : ℤ) hℓ
     (designReplacementScaledIntMap D emb) (designReplacementMap D emb) hk
     (fun x i _ _ _ v _ => map_designReplacementScaledIntMap D emb x i v) s
-
-/-- **§5.4 & Appendix B.3 ($S_\ell(\tilde{H}(T)) = \Omega S_\ell(H(T))$ over `ℚ[X]` for
-`ReplacementDesign`)**: under the same hypotheses, mapping
-`univariateClearedParityTruncatedSum I P (commonDenom Q R : ℤ) k ℓ
-  (designReplacementScaledIntMap D emb)` into `ℚ[X]` equals
-`C (clearedProductDenom (commonDenom Q R : ℤ) k ℓ #I : ℚ)` times
-`univariateParityTruncatedSum I P ℓ (designReplacementMap D emb)`. -/
-theorem map_univariateClearedParityTruncatedSum_design {F : Type*} [Fintype F]
-    {scope : F → Finset (Fin n)} (D : ReplacementDesign scope Q r A₀ R τ) (emb : κ → F)
-    (I : Finset κ) (P : κ → Finset (Finset (Fin n))) {k ℓ : ℕ} (hℓ : 1 ≤ ℓ)
-    (hk : ∀ i ∈ I, ∀ M ∈ P i, #M ≤ k) :
-    (univariateClearedParityTruncatedSum I P (commonDenom Q R : ℤ) k ℓ
-        (designReplacementScaledIntMap D emb)).map (Int.castRingHom ℚ) =
-      Polynomial.C (clearedProductDenom (commonDenom Q R : ℤ) k ℓ #I : ℚ) *
-        univariateParityTruncatedSum I P ℓ (designReplacementMap D emb) :=
-  map_univariateClearedParityTruncatedSum I P (commonDenom Q R : ℤ) hℓ
-    (designReplacementScaledIntMap D emb) (designReplacementMap D emb) hk
-    (fun x i _ _ _ v _ => map_designReplacementScaledIntMap D emb x i v)
 
 /-- **Appendix B.2 coordinate `ℓ₁`-norm bound for `ReplacementDesign`**:
 if `∀ i ∈ I, ∀ M ∈ P i, #M ≤ k`, `∀ i ∈ I, #(P i) ≤ S_mon`, and

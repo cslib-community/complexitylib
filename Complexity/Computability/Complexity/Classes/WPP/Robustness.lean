@@ -32,8 +32,8 @@ Thus the proof uses certified word sums and powers, without assuming indexed-pro
 The two-sided acceptance/rejection-target generalization is proved in `WPP.TwoSided`.
 Oracle lowness is a separate result.
 
-The public polynomial-time interfaces use `Turing.MultiTapeTM.ComputableInPolyTime`. Private
-machine-construction lemmas remain tidy.
+The polynomial-time interfaces use `Turing.MultiTapeTM.ComputableInPolyTime`. The binary integer
+list product and list numbering are still certified in the tidy calculus.
 
 ## Main results
 
@@ -86,11 +86,12 @@ private theorem expansion_list (xs : List ℤ) (g : ℤ) :
   rw [selectedProduct_ofFn, mul_comm]
 
 private theorem polyTime_selectedProduct {α : Type} {enc : α ↪ List Bool} {f : α → List ℤ}
-    (hf : ComputableTidilyInPolyTime f enc (encList encIntBin)) :
-    ComputableTidilyInPolyTime (fun x : α × List Bool => selectedProduct (f x.1) x.2)
+    (hf : ComputableInPolyTime f enc (encList encIntBin)) :
+    ComputableInPolyTime (fun x : α × List Bool => selectedProduct (f x.1) x.2)
       (encPair enc encBits) encIntBin := by
+  have hf := hf.tidy
   unfold selectedProduct
-  apply ComputableTidilyInPolyTime.intBin_prod.comp
+  refine .of_tidy (ComputableTidilyInPolyTime.intBin_prod.comp ?_)
   apply ComputableTidilyInPolyTime.mapWithInput
   · exact (ComputableTidilyInPolyTime.zipIdx encIntBin).comp
       (hf.comp (.fst enc encBits))
@@ -103,14 +104,12 @@ theorem GapP.prod_sub_mem {α : Type} {enc : α ↪ List Bool}
     {f : α → List ℤ} {g : α → ℤ}
     (hf : ComputableInPolyTime f enc (encList encIntBin)) (hg : g ∈ GapP enc) :
     (fun a => ((f a).map (fun z => z - g a)).prod) ∈ GapP enc := by
-  have hf := hf.tidy
-  have hc := mem_GapP_of_polyTime (.of_tidy (polyTime_selectedProduct hf))
-  have hp := GapP.pow_mem_polyTime
-    (GapP.comp_mem (GapP.neg_mem hg) (.of_tidy (ComputableTidilyInPolyTime.fst enc encBits)))
-    (.of_tidy (show ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.countP id)
-      (encPair enc encBits) encUnary by fun_prop))
+  have hc := mem_GapP_of_polyTime (polyTime_selectedProduct hf)
+  have hp := GapP.pow_mem_polyTime (GapP.comp_mem (GapP.neg_mem hg) (.fst enc encBits))
+    (show ComputableInPolyTime (fun x : α × List Bool => x.2.countP id)
+      (encPair enc encBits) encUnary by fun_prop)
   have hs := GapP.sum_bits_mem (GapP.mul_mem hc hp)
-    (.of_tidy (show ComputableTidilyInPolyTime (fun a => (f a).length) enc encUnary by fun_prop))
+    (show ComputableInPolyTime (fun a => (f a).length) enc encUnary by fun_prop)
   convert hs using 1
   ext a
   rw [expansion_list]
@@ -118,22 +117,22 @@ theorem GapP.prod_sub_mem {α : Type} {enc : α ↪ List Bool}
 
 private theorem targetWitness {α : Type} {enc : α ↪ List Bool} {A : Set α}
     {g : α → ℤ} {f : α → List ℤ} (hg : g ∈ GapP enc)
-    (hf : ComputableTidilyInPolyTime f enc (encList encIntBin))
+    (hf : ComputableInPolyTime f enc (encList encIntBin))
     (hn : ∀ a, (0 : ℤ) ∉ f a)
     (hy : ∀ a, a ∈ A → g a ∈ f a) (hno : ∀ a, a ∉ A → g a = 0) :
     ∃ G ∈ GapP enc, (∀ a, G a = 0 ∨ G a = (f a).prod) ∧
       ∀ a, a ∈ A ↔ G a = (f a).prod := by
   let F : α → ℤ := fun a => (f a).prod
   let P : α → ℤ := fun a => ((f a).map (fun z => z - g a)).prod
-  have hF := ComputableTidilyInPolyTime.intBin_prod.comp hf
-  have hP := GapP.prod_sub_mem hf.computableInPolyTime hg
+  have hF := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp hf
+  have hP := GapP.prod_sub_mem hf hg
   have hFn (a : α) : F a ≠ 0 := List.prod_ne_zero (hn a)
   have hyes (a : α) (ha : a ∈ A) : P a = 0 := by
     apply List.prod_eq_zero_iff.mpr
     exact List.mem_map.mpr ⟨g a, hy a ha, sub_self _⟩
   have hnon (a : α) (ha : a ∉ A) : P a = F a := by
     simp [P, F, hno a ha]
-  refine ⟨F - P, GapP.sub_mem' (mem_GapP_of_polyTime (.of_tidy hF)) hP,
+  refine ⟨F - P, GapP.sub_mem' (mem_GapP_of_polyTime hF) hP,
     fun a => ?_, fun a => ?_⟩
   · change (F - P) a = 0 ∨ (F - P) a = F a
     by_cases ha : a ∈ A
@@ -154,8 +153,8 @@ theorem mem_WPP_of_polyTime_targets {α : Type} {enc : α ↪ List Bool} {A : Se
     (hn : ∀ a, (0 : ℤ) ∉ f a)
     (hy : ∀ a, a ∈ A → g a ∈ f a) (hno : ∀ a, a ∉ A → g a = 0) :
     A ∈ WPP enc := by
-  obtain ⟨G, hG, hR, hA⟩ := targetWitness hg hf.tidy hn hy hno
-  exact ⟨G, hG, _, .of_tidy (ComputableTidilyInPolyTime.intBin_prod.comp hf.tidy),
+  obtain ⟨G, hG, hR, hA⟩ := targetWitness hg hf hn hy hno
+  exact ⟨G, hG, _, (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp hf,
     fun a => List.prod_ne_zero (hn a), hR, hA⟩
 
 /-- **Polynomial-family robustness of LWPP.** The target list is uniformly computed from unary
@@ -166,9 +165,10 @@ theorem mem_LWPP_of_polyTime_targets {α : Type} {enc : α ↪ List Bool} {A : S
     (hn : ∀ n, (0 : ℤ) ∉ f n)
     (hy : ∀ a, a ∈ A → g a ∈ f (enc a).length) (hno : ∀ a, a ∉ A → g a = 0) :
     A ∈ LWPP enc := by
-  obtain ⟨G, hG, hR, hA⟩ := targetWitness hg (hf.tidy.comp (.encoding_length enc))
+  obtain ⟨G, hG, hR, hA⟩ := targetWitness hg (hf.comp (.encoding_length enc))
     (fun a => hn (enc a).length) hy hno
-  exact ⟨G, hG, fun n => (f n).prod, .of_tidy (ComputableTidilyInPolyTime.intBin_prod.comp hf.tidy),
+  exact ⟨G, hG, fun n => (f n).prod,
+    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp hf,
     fun n => List.prod_ne_zero (hn n), hR, hA⟩
 
 /-- The list of targets `f (a, 0), ..., f (a, r a - 1)` for an indexed target family. -/
@@ -181,8 +181,7 @@ theorem polyTime_indexedTargets {α : Type} {enc : α ↪ List Bool} {f : α × 
     {r : α → ℕ} (hf : ComputableInPolyTime f (encPair enc encUnary) encIntBin)
     (hr : ComputableInPolyTime r enc encUnary) :
     ComputableInPolyTime (indexedTargets f r) enc (encList encIntBin) :=
-  .of_tidy (ComputableTidilyInPolyTime.mapWithInput
-    (ComputableTidilyInPolyTime.range.comp hr.tidy) hf.tidy)
+  ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hr) hf
 
 /-- A value matching `f (a, i)` for some `i < r a` belongs to `indexedTargets f r a`. -/
 theorem mem_indexedTargets {α : Type} {f : α × ℕ → ℤ} {r : α → ℕ}

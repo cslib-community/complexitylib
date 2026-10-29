@@ -94,10 +94,10 @@ example : (OracleComp.interpret countCoins
   decide
 
 -- Budget generation is a reusable functional certificate, including zero coefficient and degree.
-example : MultiTapeTM.ComputableTidilyInPolyTime (MultiTapeTM.PolynomialClock.budget 0 7)
+example : MultiTapeTM.ComputableInPolyTime (MultiTapeTM.PolynomialClock.budget 0 7)
     MultiTapeTM.encBits MultiTapeTM.encBits := by fun_prop
 
-example : MultiTapeTM.ComputableTidilyInPolyTime (MultiTapeTM.PolynomialClock.budget 5 0)
+example : MultiTapeTM.ComputableInPolyTime (MultiTapeTM.PolynomialClock.budget 5 0)
     MultiTapeTM.encBits MultiTapeTM.encBits := by fun_prop
 
 end ComplexityTests.MachineClock

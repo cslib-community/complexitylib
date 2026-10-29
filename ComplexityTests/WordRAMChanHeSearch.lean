@@ -33,8 +33,6 @@ example : (Code.eval 8 3 Search.program (emptyInput 1)).map
 
 -- The positive case reduces the full renamed three-set query inside the search loop.
 set_option maxRecDepth 8192 in
-set_option maxHeartbeats 2000000 in
--- Kernel reduction of the complete native search exceeds the default heartbeat budget.
 /-- The first prime is accepted at three zero thresholds for three empty sets. -/
 example : (Code.eval 8 4 Search.program (emptyInput 2)).map
     (fun yn => [yn.1.regs Search.answer, yn.1.regs Search.found, yn.1.mem 12]) =
@@ -42,8 +40,6 @@ example : (Code.eval 8 4 Search.program (emptyInput 2)).map
 
 -- After accepting two, the search executes only the charged skip branch for three.
 set_option maxRecDepth 8192 in
-set_option maxHeartbeats 2000000 in
--- Kernel reduction includes the complete query and subsequent retained-answer iteration.
 /-- Later accepted primes cannot overwrite the minimum or rerun the collision query. -/
 example : (Code.eval 8 5 Search.program (emptyInput 3)).map
     (fun yn => [yn.1.regs Search.answer, yn.1.regs CountCall.modulus]) =
@@ -51,8 +47,6 @@ example : (Code.eval 8 5 Search.program (emptyInput 3)).map
 
 -- The rejected prime still runs all three native collision-counting calls.
 set_option maxRecDepth 8192 in
-set_option maxHeartbeats 2000000 in
--- Kernel reduction of the complete rejected query exceeds the default heartbeat budget.
 /-- The only prime fails because zero and two collide, so the answer is the default one. -/
 example : (Code.eval 8 4 Search.program
     ⟨Function.update (emptyInput 2).regs (CountCall.length 0) 2,
