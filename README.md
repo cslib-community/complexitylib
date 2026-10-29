@@ -115,7 +115,14 @@ git = "https://github.com/cslib-community/complexitylib"
 rev = "<commit SHA>"
 ```
 
-Then run these commands from your project directory:
+CSLib and Mathlib are transitive dependencies. If your project already requires either one,
+first align those requirements with the versions in Complexitylib's `lake-manifest.json` at
+the chosen revision.
+
+Then run the commands below from your project directory. When changing existing direct
+dependency pins, include those package names in the update command: for example,
+`lake update complexitylib cslib mathlib` when changing both. Updating only `complexitylib`
+leaves the other direct dependencies locked.
 
 ```bash
 lake update complexitylib
@@ -123,9 +130,7 @@ lake build
 ```
 
 Commit the resulting `lake-manifest.json` along with the Lake configuration and `lean-toolchain`.
-CSLib and Mathlib are transitive dependencies; if your project already requires either one,
-align those requirements with the versions in Complexitylib's `lake-manifest.json` at the chosen
-revision. Use the `Complexity.` imports shown in the [checked examples](#start-here).
+Use the `Complexity.` imports shown in the [checked examples](#start-here).
 
 ### Build the documentation
 
