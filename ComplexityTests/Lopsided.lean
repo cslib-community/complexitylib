@@ -5,6 +5,7 @@ Authors: Erik Demaine
 -/
 
 import Complexity.Algorithms.ExactTriangle.Lopsided
+import Complexity.Foundations.Data.Int.LogBounds
 import Mathlib.LinearAlgebra.Matrix.Notation
 
 /-! Concrete tests for padding, counts, queried answers and signed reconstruction. -/
@@ -80,7 +81,7 @@ example : (signedBitInstance signedX signedY {(0, 0)} true false 0 1).commonNeig
   classical
   simp only [signedBitInstance, commonNeighborCount_ofMatrices, ↓reduceIte]
   norm_num [signedX, signedY,
-    Cslib.IntMatrix.bit, posPart_def, negPart_def, Finset.univ_fin2,
+    Cslib.Matrix.bit, posPart_def, negPart_def, Finset.univ_fin2,
     Finset.filter_insert, Finset.filter_singleton]
 
 example : (signedBitInstance signedX signedY {(0, 0)} false true 1 0).commonNeighborCount
@@ -88,7 +89,7 @@ example : (signedBitInstance signedX signedY {(0, 0)} false true 1 0).commonNeig
   classical
   simp only [signedBitInstance, commonNeighborCount_ofMatrices, ↓reduceIte]
   norm_num [signedX, signedY,
-    Cslib.IntMatrix.bit, posPart_def, negPart_def, Finset.univ_fin2,
+    Cslib.Matrix.bit, posPart_def, negPart_def, Finset.univ_fin2,
     Finset.filter_insert, Finset.filter_singleton]
 
 -- Apply the signed reconstruction theorem to an actual product, including all four signs.
@@ -98,26 +99,27 @@ example : (∑ i ∈ Finset.range 2, ∑ j ∈ Finset.range 2, (2 : ℤ) ^ (i + 
       - ((signedBitInstance signedX signedY {(0, 0)} true false i j).commonNeighborCount 0 0 : ℤ)
       + ((signedBitInstance signedX signedY {(0, 0)} true true i j).commonNeighborCount 0 0 : ℤ)))
     = -8 := by
-  rw [← entries_from_counts signedX signedY {(0, 0)} 2
+  rw [← mul_apply_eq_sum_signedBitInstance_counts signedX signedY {(0, 0)} 2
     (by intro a j; fin_cases a; fin_cases j <;> norm_num [signedX])
     (by intro j b; fin_cases j <;> fin_cases b <;> norm_num [signedY])]
   norm_num [signedX, signedY, Matrix.mul_apply, Fin.sum_univ_two]
 
-example : Cslib.IntMatrix.bit (!![-1, 0, 3] : Matrix (Fin 1) (Fin 3) ℤ) 1 0 0 = 1 := by
-  norm_num [Cslib.IntMatrix.bit]
+example : Cslib.Matrix.bit (!![-1, 0, 3] : Matrix (Fin 1) (Fin 3) ℤ) 1 0 0 = 1 := by
+  norm_num [Cslib.Matrix.bit]
 
 example : |(-7 : ℤ)| < 2 ^ (Nat.log 2 7 + 1) := by
-  exact Cslib.IntMatrix.abs_lt_two_pow_log (-7) (by norm_num)
+  exact Int.abs_lt_two_pow_log_succ (-7) (by norm_num)
 
 example : |(0 : ℤ)| < 2 ^ (Nat.log 2 0 + 1) := by
-  exact Cslib.IntMatrix.abs_lt_two_pow_log 0 (by norm_num)
+  exact Int.abs_lt_two_pow_log_succ 0 (by norm_num)
 
 example : (signedX * (-signedY)) 0 0 = 8 := by
   norm_num [signedX, signedY, Matrix.mul_apply, Fin.sum_univ_two]
 
 example : (ofMatrices (!![1, 1] : Matrix (Fin 1) (Fin 2) ℤ) !![1; 1]
     {(0, 0)}).commonNeighborCount 0 0 = 2 := by
-  have h := zero_one (!![1, 1] : Matrix (Fin 1) (Fin 2) ℤ) !![1; 1] {(0, 0)}
+  have h := mul_apply_eq_commonNeighborCount_ofMatrices
+    (!![1, 1] : Matrix (Fin 1) (Fin 2) ℤ) !![1; 1] {(0, 0)}
     (by intro a j; fin_cases a; fin_cases j <;> simp)
     (by intro j b; fin_cases j <;> fin_cases b <;> simp) 0 0
   norm_num [Matrix.mul_apply, Fin.sum_univ_two] at h
@@ -128,7 +130,7 @@ example : (signedBitInstance signedX (-signedY) {(0, 0)} true true 0 1).commonNe
   classical
   simp only [signedBitInstance, commonNeighborCount_ofMatrices, ↓reduceIte]
   norm_num [signedX, signedY,
-    Cslib.IntMatrix.bit, posPart_def, negPart_def, Finset.univ_fin2,
+    Cslib.Matrix.bit, posPart_def, negPart_def, Finset.univ_fin2,
     Finset.filter_insert, Finset.filter_singleton]
 
 example : (signedBitInstances signedX signedY {(0, 0)} 2 (true, false, 0, 1)).W =
@@ -149,7 +151,7 @@ example : Set.EqOn (fun _ : Fin 0 × Fin 0 => (99 : ℕ))
 
 -- With beta zero, strict magnitude bounds are satisfied by zero matrices of nonempty shape.
 example : ((0 : Matrix (Fin 1) (Fin 2) ℤ) * (0 : Matrix (Fin 2) (Fin 1) ℤ)) 0 0 = 0 := by
-  have h := entries_from_counts (0 : Matrix (Fin 1) (Fin 2) ℤ) 0 {(0, 0)} 0
+  have h := mul_apply_eq_sum_signedBitInstance_counts (0 : Matrix (Fin 1) (Fin 2) ℤ) 0 {(0, 0)} 0
     (by simp) (by simp) 0 0
   simpa only [Finset.range_zero, Finset.sum_empty] using h
 

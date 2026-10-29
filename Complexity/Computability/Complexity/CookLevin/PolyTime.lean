@@ -11,16 +11,16 @@ public import Complexity.Computability.Complexity.CookLevin.Encoding
 
 import Complexity.Computability.Complexity.CookLevin.Clauses
 import Complexity.Computability.Complexity.CookLevin.Parameters
-import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
 /-!
 # Polynomial time for the complete Cook–Levin reduction
 
 The existing tableau is constructed from a bit-string prefix and unary certificate/time bounds.
-All clause families and intermediate lists are charged by the tidy machine calculus. Composing
-with the exact parameter computation and binary variable relabelling certifies `reduce` itself.
-The verifier, tape count, finite state type and polynomial bounds are fixed; one resulting machine
-and polynomial work for every encoded instance.
+All clause families and intermediate lists are charged by the polynomial-time machine calculus.
+Composing with the exact parameter computation and binary variable relabelling certifies `reduce`
+itself. The verifier, tape count, finite state type and polynomial bounds are fixed; one resulting
+machine and polynomial work for every encoded instance.
 
 ## Main results
 
@@ -40,16 +40,19 @@ open Turing Turing.MultiTapeTM
 
 variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Construct the whole tableau from its prefix and unary certificate/time bounds. -/
 @[fun_prop]
 theorem computableInPolyTime_tableau (tm : MultiTapeTM k Bool State) :
     ComputableInPolyTime (fun q : List Bool × ℕ × ℕ => tableau tm q.1 q.2.1 q.2.2)
       (encPair encBits (encPair encUnary encUnary))
       (encList (encList (encPair encVar encBool))) := by
-  refine .of_tidy ?_
   unfold tableau
-  polytime
+  refine (((by fun_prop : ComputableInPolyTime _ _ _).listAppend' ?_).listAppend' ?_).listAppend'
+    (by fun_prop)
+  · exact .flatMapWithInput (by fun_prop) (by fun_prop)
+  · refine .flatMapWithInput (by fun_prop) ?_
+    exact (((by fun_prop : ComputableInPolyTime _ _ _).listAppend' (by fun_prop)).listAppend'
+      (by fun_prop)).listAppend' (by fun_prop)
 
 /-- The existing Cook–Levin reduction is polynomial-time for every fixed verifier and bounds. -/
 @[fun_prop]

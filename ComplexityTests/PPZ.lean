@@ -51,4 +51,22 @@ example : (Finset.univ.filter fun π : Equiv.Perm (Fin 3) =>
   have h := card_isLast_mul (n := 3) (S := Finset.univ) (Finset.mem_univ (0 : Fin 3))
   simpa [Nat.factorial] using h
 
+/-! ### Prefixes of an order -/
+
+/-- The order `x₂, x₀, x₁` of three variables. -/
+def π₀ : Equiv.Perm (Fin 3) := Equiv.swap 0 2 * Equiv.swap 1 2
+
+example : π₀ 0 = 2 ∧ π₀ 1 = 0 ∧ π₀ 2 = 1 := by decide
+
+-- The first two steps process `x₂` and `x₀`, and step two adds `x₁`.
+example : prefixSet π₀ 2 = {0, 2} := by decide
+example : prefixSet π₀ 3 = insert 1 (prefixSet π₀ 2) := prefixSet_succ π₀ (by decide)
+
+-- Swapping `x₁` into position one keeps position zero: the new order processes `x₂, x₁` first.
+example : EqOnPrefix (Equiv.swap (π₀ 1) 1 * π₀) π₀ 1 ∧
+    ¬EqOnPrefix (Equiv.swap (π₀ 1) 1 * π₀) π₀ 2 := by decide
+example : prefixSet (Equiv.swap (π₀ ⟨1, by decide⟩) 1 * π₀) 2 = {1, 2} := by
+  rw [prefixSet_swap (by decide) (by decide)]
+  decide
+
 end ComplexityTests.PPZ

@@ -10,8 +10,11 @@ module
 public import Complexity.Languages.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import Complexity.Computability.Probabilistic.Adaptive
+import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Probabilistic.Repeat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Tactic.PPT
 
 /-!
@@ -47,19 +50,17 @@ theorem IsPPTOn.selectBest {α : Type} {input : α ↪ List Bool}
     (hcount : ComputableInPolyTime count input encUnary)
     (htrials : ComputableInPolyTime trials input encUnary) :
     IsPPTOn input encUnary (fun a => OracleComp.selectBest (count a) (trials a) (test a)) := by
-  have hcount := hcount.tidy
-  have htrials := htrials.tidy
   let stateEncoding := encPair encUnary (encPair encUnary encUnary)
   have htest' : IsPPTOn (encPair input stateEncoding) encBool
       (fun pair => test pair.1 pair.2.1) :=
     htest.preprocess (prepare := fun pair : α × (ℕ × ℕ × ℕ) => (pair.1, pair.2.1))
       (by dsimp only [stateEncoding]; fun_prop)
-  have htrials' : ComputableTidilyInPolyTime (fun pair : α × (ℕ × ℕ × ℕ) => trials pair.1)
+  have htrials' : ComputableInPolyTime (fun pair : α × (ℕ × ℕ × ℕ) => trials pair.1)
       (encPair input stateEncoding) encUnary := by fun_prop
   have hstep : IsPPTOn (encPair input stateEncoding) stateEncoding
       (fun pair => OracleComp.selectStep (trials pair.1) (test pair.1) pair.2) := by
     unfold OracleComp.selectStep
-    apply (htest'.countTrue (.of_tidy htrials')).map_with
+    apply (htest'.countTrue htrials').map_with
     dsimp only [OracleComp.selectUpdate, stateEncoding]
     apply ComputableInPolyTime.prod
     · exact ComputableInPolyTime.unary_succ.comp (by fun_prop)
@@ -73,18 +74,26 @@ theorem IsPPTOn.selectBest {α : Type} {input : α ↪ List Bool}
           (encPair (encPair input (encPair encUnary (encPair encUnary encUnary))) encUnary)
           encUnary)
       simpa only [decide_eq_true_eq] using hc.ite (by fun_prop) (by fun_prop)
-  have hloop := (IsPPTOn.iterateWith_spec (stateEncoding := stateEncoding)
-    (initial := fun _ => (0, 0, 0))
-    (step := fun a => OracleComp.selectStep (trials a) (test a)) hcount (by fun_prop) hstep
+  have horacle := IsOraclePPTOn.iterateWith_spec' (Operation := Empty)
+    (stateEncoding := stateEncoding) (initial := fun _ => (0, 0, 0))
+    (step := fun a s => ProbOracleComp.sample (OracleComp.selectStep (trials a) (test a) s))
+    hcount (by dsimp only [stateEncoding]; fun_prop)
+    (hstep.isOraclePPTOn (Operation := Empty))
     (fun a i state => state.1 = i ∧ state.2.1 ≤ i ∧ state.2.2 ≤ trials a)
     (by simp) (fun a i state _ hstate next hnext =>
-      ProbComp.selectStep_bounded (trials a) (test a) i state hstate next hnext)
+      ProbComp.selectStep_bounded (trials a) (test a) i state hstate next
+        ((ProbOracleComp.support_sample _).subset hnext))
     (size := fun a => 4 * count a + trials a + 2)
-    (ComputableTidilyInPolyTime.polyBounded (by fun_prop)) (by
+    (ComputableInPolyTime.polyBounded (by fun_prop)) (by
       intro a i state hi hstate
       dsimp only [stateEncoding]
       simp only [length_encPair, encUnary_apply, List.length_replicate]
-      lia)).1
+      lia)
+  have hloop : IsPPTOn input stateEncoding
+      (fun a => OracleComp.iterate (count a)
+        (OracleComp.selectStep (trials a) (test a)) (0, 0, 0)) := by
+    apply IsOraclePPTOn.isPPTOn
+    simpa only [ProbOracleComp.sample, OracleComp.interpret_iterate] using horacle.1
   exact hloop.map (by dsimp only [stateEncoding]; fun_prop)
 
 /-- Selecting from an efficiently computed list charges for the whole list and each test. -/
@@ -96,21 +105,18 @@ theorem IsPPTOn.selectFrom {α β : Type} {input : α ↪ List Bool} {output : �
     (htest : IsPPTOn (encPair input output) encBool (fun pair => test pair.1 pair.2)) :
     IsPPTOn input output
       (fun a => OracleComp.selectFrom (values a) (trials a) (test a) fallback) := by
-  have hvalues := hvalues.tidy
-  have htrials := htrials.tidy
   have hget : ComputableInPolyTime
       (fun p : α × ℕ => ((values p.1)[p.2]?).getD fallback)
       (encPair input encUnary) output := by
     simpa only [List.getD_eq_getElem?_getD, Function.comp_def] using
       (ComputableInPolyTime.listGetD (encA := output) fallback).comp
-        (((ComputableInPolyTime.of_tidy hvalues).comp
-          (ComputableInPolyTime.fst input encUnary)).prod
+        ((hvalues.comp (ComputableInPolyTime.fst input encUnary)).prod
           (ComputableInPolyTime.snd input encUnary))
   have htest' := htest.preprocess
     ((ComputableInPolyTime.fst input encUnary).prod hget)
-  have hlength := (ComputableTidilyInPolyTime.length_list output).comp hvalues
+  have hlength := (ComputableInPolyTime.length_list output).comp hvalues
   simpa only [OracleComp.selectFrom, bind_pure_comp, Function.comp_def] using
-    (IsPPTOn.selectBest htest' (.of_tidy hlength) (.of_tidy htrials)).map_with hget
+    (IsPPTOn.selectBest htest' hlength htrials).map_with hget
 
 /-- Sampling a polynomial candidate pool and selecting empirically is a uniform strict PPT
 program. Both the generator and the validation test may capture the original input. -/

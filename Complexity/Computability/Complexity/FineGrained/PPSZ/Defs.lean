@@ -66,6 +66,11 @@ noncomputable def implied (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bo
   if WImplied φ w τ x true then some true
   else if WImplied φ w τ x false then some false else none
 
+/-- `WImplied` is decidable, classically, as in `implied`. -/
+noncomputable instance instDecidableWImplied (φ : CNF (Fin n)) (w : ℕ)
+    (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) : Decidable (WImplied φ w τ x b) :=
+  Classical.dec _
+
 /-- One step of PPSZ on `x`: the implied value if there is one, and a uniform bit otherwise. -/
 noncomputable def step (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bool) (x : Fin n) :
     PMF Bool :=

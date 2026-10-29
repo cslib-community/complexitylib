@@ -36,7 +36,7 @@ open Lean Elab Command in
 run_cmd do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
       `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO, `Turing.MultiTapeTM.ComputableTidilyInSpace,
+      `Turing.MultiTapeTM.ComputableTidilyInSpace,
       `Turing.MultiTapeTM.ComputableTidilyInPolySpace] do
     if (← getEnv).contains name then
       throwError "A higher tidy calculus was imported: {name}"

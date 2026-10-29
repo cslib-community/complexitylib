@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Native generation of carry-save circuits
@@ -49,7 +50,7 @@ The underlying carry-save circuits are formalized in `Boolean.CarrySave`, follow
 
 namespace Cslib.Circuits.Boolean
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 private def sumTemplate : Formula signature 3 :=
   ((Formula.input 0).xor (.input 1)).xor (.input 2)
@@ -120,47 +121,42 @@ theorem csa3to2Code_eq_code (w : ℕ) : csa3to2Code w = (csa3to2 w).code := by
 /-- The actual three-to-two reducer has a uniform native generator on unary widths. -/
 @[fun_prop] theorem computableInPolyTime_csa3to2 :
     ComputableInPolyTime (fun w => (csa3to2 w).code) encUnary encCode := by
-  refine .of_tidy ?_
-  have hw : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1)
+  have hw : ComputableInPolyTime (fun p : ℕ × ℕ => p.1)
       (encPair encUnary encUnary) encNat := unary_to_binary.comp (fst _ _)
-  have hi : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.2)
+  have hi : ComputableInPolyTime (fun p : ℕ × ℕ => p.2)
       (encPair encUnary encUnary) encNat := unary_to_binary.comp (snd _ _)
-  have hs : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => csaSumCode p.1 p.2)
+  have hs : ComputableInPolyTime (fun p : ℕ × ℕ => csaSumCode p.1 p.2)
       (encPair encUnary encUnary) encCode := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_formulaCode _ (.of_tidy (by fun_prop))
+    apply computableInPolyTime_formulaCode _ (by fun_prop)
     intro j
-    apply ComputableInPolyTime.of_tidy
     fin_cases j
     · exact hi
-    · change ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + p.2) _ encNat
+    · change ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2) _ encNat
       fun_prop
-    · change ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + (p.1 + p.2)) _ encNat
+    · change ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + (p.1 + p.2)) _ encNat
       fun_prop
-  have hm : ComputableTidilyInPolyTime
+  have hm : ComputableInPolyTime
       (fun p : ℕ × ℕ => formulaCode (p.1 + (p.1 + p.1)) (maj3Formula (0 : Fin 3) 1 2)
         ![p.2 - 1, p.1 + (p.2 - 1), p.1 + (p.1 + (p.2 - 1))])
       (encPair encUnary encUnary) encCode := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_formulaCode _ (.of_tidy (by fun_prop))
+    apply computableInPolyTime_formulaCode _ (by fun_prop)
     intro j
-    apply ComputableInPolyTime.of_tidy
     fin_cases j
-    · change ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.2 - 1) _ encNat
+    · change ComputableInPolyTime (fun p : ℕ × ℕ => p.2 - 1) _ encNat
       fun_prop
-    · change ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + (p.2 - 1)) _ encNat
+    · change ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + (p.2 - 1)) _ encNat
       fun_prop
-    · change ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.1 + (p.1 + (p.2 - 1))) _ encNat
+    · change ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + (p.1 + (p.2 - 1))) _ encNat
       fun_prop
-  have hc : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => csaCarryCode p.1 p.2)
+  have hc : ComputableInPolyTime (fun p : ℕ × ℕ => csaCarryCode p.1 p.2)
       (encPair encUnary encUnary) encCode := by
     unfold csaCarryCode
     fun_prop
   have hw' := unary_to_binary
-  have hn : ComputableTidilyInPolyTime (fun w : ℕ => w + (w + w)) encUnary encNat := by fun_prop
-  have h := (computableInPolyTime_appendCode (.of_tidy hn)
-    (computableInPolyTime_appendCodes (.of_tidy hn) (.of_tidy (mapWith hs id' range)))
-    (computableInPolyTime_appendCodes (.of_tidy hn) (.of_tidy (mapWith hc id' range)))).tidy
+  have hn : ComputableInPolyTime (fun w : ℕ => w + (w + w)) encUnary encNat := by fun_prop
+  have h := computableInPolyTime_appendCode hn
+    (computableInPolyTime_appendCodes hn (mapWithInput range hs))
+    (computableInPolyTime_appendCodes hn (mapWithInput range hc))
   simpa only [← csa3to2Code_eq_code, csa3to2Code] using h
 
 private theorem csa4to2FirstIn_val (w : ℕ) (i : Fin (w + (w + w))) :
@@ -198,29 +194,28 @@ theorem csa4to2Code_eq_code (w : ℕ) : csa4to2Code w = (csa4to2 w).code := by
 /-- The actual four-to-two reducer has a uniform native generator on unary widths. -/
 @[fun_prop] theorem computableInPolyTime_csa4to2 :
     ComputableInPolyTime (fun w => (csa4to2 w).code) encUnary encCode := by
-  refine .of_tidy ?_
   have hw := unary_to_binary
-  have hn : ComputableTidilyInPolyTime
+  have hn : ComputableInPolyTime
       (fun w : ℕ => (w + w) + (w + w)) encUnary encNat := by fun_prop
-  have hfirst : ComputableTidilyInPolyTime
+  have hfirst : ComputableInPolyTime
       (fun w : ℕ => ([], List.range (w + (w + w)))) encUnary encCode := by
     have hr := unary_to_binary.map.comp
-      (range.comp (show ComputableTidilyInPolyTime (fun w : ℕ => w + (w + w))
+      (range.comp (show ComputableInPolyTime (fun w : ℕ => w + (w + w))
         encUnary encUnary from by fun_prop))
     simpa only [Function.comp_def, List.map_id_fun', id_eq] using (const []).prod hr
-  have hlast : ComputableTidilyInPolyTime
+  have hlast : ComputableInPolyTime
       (fun w : ℕ => ([], (List.range w).map (fun i => (w + w) + (w + i))))
       encUnary encCode := by
     have hw' := unary_to_binary.comp (fst encUnary encUnary)
     have hi := unary_to_binary.comp (snd encUnary encUnary)
-    exact (const []).prod (mapWithInput range (show ComputableTidilyInPolyTime
+    exact (const []).prod (mapWithInput range (show ComputableInPolyTime
       (fun p : ℕ × ℕ => (p.1 + p.1) + (p.1 + p.2)) (encPair encUnary encUnary) encNat
       from by fun_prop))
-  have h3 : ComputableTidilyInPolyTime csa3to2Code encUnary encCode := by
-    simpa only [← csa3to2Code_eq_code] using computableInPolyTime_csa3to2.tidy
-  have h := (computableInPolyTime_compCode (.of_tidy hn) (.of_tidy h3)
-    (computableInPolyTime_appendCode (.of_tidy hn) (.of_tidy hlast)
-      (computableInPolyTime_compCode (.of_tidy hn) (.of_tidy h3) (.of_tidy hfirst)))).tidy
+  have h3 : ComputableInPolyTime csa3to2Code encUnary encCode := by
+    simpa only [← csa3to2Code_eq_code] using computableInPolyTime_csa3to2
+  have h := computableInPolyTime_compCode hn h3
+    (computableInPolyTime_appendCode hn hlast
+      (computableInPolyTime_compCode hn h3 hfirst))
   simpa only [← csa4to2Code_eq_code, csa4to2Code] using h
 
 end Cslib.Circuits.Boolean

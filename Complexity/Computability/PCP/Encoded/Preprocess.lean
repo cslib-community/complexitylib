@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.PCP.Encoded.DegreeReduction
 public import Complexity.Computability.PCP.Encoded.AddTrivial
 public import Complexity.Computability.PCP.Preprocess
-import Complexity.Tactic.PolyTime
 
 /-!
 # Executable preprocessing of constraint graphs
