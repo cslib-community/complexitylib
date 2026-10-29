@@ -77,6 +77,11 @@ def entry (rightSide : Bool) (A : Args) (R : ℕ → ℕ) (q : ℕ) : ℕ :=
     if label = wanted then 1 else 0
   else 0
 
+/-- Every raw adjacency entry is a zero/one word, including padding. -/
+theorem entry_le_one (side : Bool) (A : Args) (R : ℕ → ℕ) (q : ℕ) :
+    entry side A R q ≤ 1 := by
+  cases side <;> dsimp only [entry] <;> split_ifs <;> omega
+
 /-- Residue input pointer. -/
 abbrev src : Fin 17 := 0
 /-- Output matrix pointer. -/
