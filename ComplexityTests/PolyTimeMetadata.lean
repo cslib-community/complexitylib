@@ -19,6 +19,12 @@ private theorem reverseCopy_polytime : ComputableInPolyTime reverseCopy encBits 
   unfold reverseCopy
   fun_prop
 
+-- Each predicate has its own user-certificate registration, so both metadata paths are tested.
+@[program_certificate]
+private theorem reverseCopy_tidy : ComputableTidilyInPolyTime reverseCopy encBits encBits := by
+  unfold reverseCopy
+  fun_prop
+
 attribute [irreducible] reverseCopy
 
 -- `fun_prop` and `polytime` ignore `no_index` goal metadata and local `let` bindings across plain
@@ -40,6 +46,15 @@ example {α : Type} (encoding : α ↪ List Bool) :
     no_index (ComputableInPolyTime
       (fun word : List Bool => let copied := word.tail; reverseCopy copied) encBits encBits) :=
   ⟨by fun_prop, by polytime, by polytime, by fun_prop, by polytime⟩
+
+-- Ordinary search also ignores metadata on tidy goals, including a user certificate call.
+example : no_index (ComputableTidilyInPolyTime
+    (fun word : List Bool => let copied := word.tail; copied.reverse) encBits encBits) := by
+  fun_prop
+
+example : no_index (ComputableTidilyInPolyTime
+    (fun word : List Bool => let copied := word.tail; reverseCopy copied) encBits encBits) := by
+  fun_prop
 
 example {α : Type} (encoding : α ↪ List Bool)
     (algBits : List Bool → List Bool) (hBits : ComputableInPolyTime algBits encBits encBits)

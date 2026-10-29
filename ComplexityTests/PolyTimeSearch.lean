@@ -20,12 +20,16 @@ example {α : Type} (input : α ↪ List Bool) (bound : α → ℕ)
     (hpredicate : ComputableTidilyInPolyTime (fun p : α × ℕ => decide (predicate p.1 p.2))
       (encPair input encUnary) encBool) :
     ComputableTidilyInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
+      input encUnary ∧
+    ComputableTidilyInPolyTime (fun a => Nat.findGreatest (predicate a) (bound a))
       input encUnary := by
-  fail_if_success (clear hbound; fun_prop)
-  fail_if_success (clear hpredicate; fun_prop)
-  fail_if_success (clear hbound; polytime)
-  fail_if_success (clear hpredicate; polytime)
-  fun_prop
+  constructor
+  · fail_if_success (clear hbound; fun_prop)
+    fail_if_success (clear hpredicate; fun_prop)
+    fun_prop
+  · fail_if_success (clear hbound; polytime)
+    fail_if_success (clear hpredicate; polytime)
+    polytime
 
 -- Framed and raw bit lists and arithmetic predicates with a computed unary bound are certified
 -- automatically.

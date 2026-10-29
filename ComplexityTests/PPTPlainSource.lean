@@ -144,6 +144,11 @@ example (callback : List Bool → List Bool)
   · fail_if_success (clear hplain hcontract; ppt)
     fun_prop
 
+-- The raw-premise API is checked independently of the ordinary global-search example above.
+example : IsPPTOn encBits encBits (aliasPure rawOnlyReverse) := by
+  fail_if_success ppt
+  exact aliasPure_raw rawOnlyReverse_tidy
+
 /-- A reducible client wrapper keeps the actual iteration operation visible to dispatch. -/
 abbrev wrappedIterate {State : Type} (count : ℕ) (step : State → ProbComp State)
     (initial : State) : ProbComp State :=
@@ -162,16 +167,29 @@ example (step : List Bool → ProbComp (List Bool))
     (hgrowth2 : ∀ word state next, next ∈ (ProbComp.eval (step2 word state)).support →
       next.length ≤ state.length + growth2 word) :
     IsPPTOn encBits encBits (fun word => OracleComp.iterate word.length step word) ∧
+    IsPPTOn encBits encBits (fun word => OracleComp.iterate word.length step word) ∧
+    IsPPTOn encBits encBits (fun word => wrappedIterate word.length step word) ∧
     IsPPTOn encBits encBits (fun word => wrappedIterate word.length step word) ∧
     IsPPTOn encBits encBits (fun word => wrappedIterate word.length (step2 word) word) := by
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  -- Direct iteration with shrinking state.
   · clear growth hgrowth step2 hstep2 growth2 hpoly2 hgrowth2
     fail_if_success (clear hstep; ppt)
     fail_if_success (clear hshrink; ppt)
     ppt
+  -- Direct iteration with additive growth; shrinking evidence is unavailable.
   · clear hshrink step2 hstep2 growth2 hpoly2 hgrowth2
     fail_if_success (clear hgrowth; ppt)
     ppt
+  -- The wrapper also supports additive growth.
+  · clear hshrink step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hgrowth; ppt)
+    ppt
+  -- Wrapped iteration with shrinking state; additive-growth evidence is unavailable.
+  · clear growth hgrowth step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hshrink; ppt)
+    ppt
+  -- Captured inputs have a polynomially bounded growth allowance.
   · clear step hstep hshrink growth hgrowth
     fail_if_success (clear hstep2; ppt)
     fail_if_success (clear hpoly2; ppt)
@@ -188,6 +206,23 @@ theorem implicationResult_raw (_h : RawAliasFull rawOnlyReverse encBits encBits)
     IsPPTOn encBits encBits implicationResult := by
   unfold implicationResult
   fun_prop
+
+-- Explicit construction and ordinary unfiltered search are independent of supplied evidence.
+example : IsPPTOn encBits encBits implicationResult := by
+  fail_if_success ppt
+  exact implicationResult_raw rawOnlyReverse_tidy
+
+example : IsPPTOn encBits encBits implicationResult := by
+  fail_if_success ppt
+  fun_prop
+
+-- A local implication alone cannot launch raw search during nested preprocessing.
+example (h : RawAliasFull rawOnlyReverse encBits encBits →
+    ComputableInPolyTime rawOnlyReverse encBits encBits) :
+    IsPPTOn (encPair encBits encBool) encBits (fun p => consume rawOnlyReverse p.1) := by
+  fail_if_success ppt
+  exact consume_ppt (h rawOnlyReverse_tidy) |>.preprocess
+    (ComputableInPolyTime.fst encBits encBool)
 
 -- Implication application, quantified families, global raw premises, and nested preprocessing.
 example (h : RawAliasFull rawOnlyReverse encBits encBits →
@@ -228,10 +263,12 @@ example (test : List Bool × Bool × ℕ → Bool) (list : List Bool × Bool →
     ComputableInPolyTime
       (fun word : List Bool => [false, true].any fun bit => bit && word.isEmpty)
       encBits encBool := by
-  refine ⟨?_, by polytime⟩
-  run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
-    Lean.Elab.Tactic.evalTactic (← `(tactic|
-      aesop (rule_sets := [-builtin, -default])
-        (add unsafe 100% tactic scanTwoLocalCallbacks)))
+  refine ⟨?_, ?_⟩
+  · run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
+      Lean.Elab.Tactic.evalTactic (← `(tactic|
+        aesop (rule_sets := [-builtin, -default])
+          (add unsafe 100% tactic scanTwoLocalCallbacks)))
+  · clear test list _hu _hb _hlu _hlb
+    polytime
 
 end ComplexityTests.PPTPlainSource
