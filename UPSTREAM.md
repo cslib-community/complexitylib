@@ -165,6 +165,17 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   length, count and magnitude bounds; `scanPairs` counts candidate-prime/element pairs and is not
   a charged running time. Generic finite-average and prime-counting lemmas live in Foundations.
   See milestone [#1435](https://github.com/cslib-community/complexitylib/issues/1435).
+  `Algorithms/ExactTriangle/Lopsided.lean` adapts the finite unweighted lopsided query/counting
+  interface from the same pin's `Sec3/MatrixLanguage.lean`: arbitrary-injection zero padding,
+  common-neighbor counts as product entries, detection, the zero/one converse, and signed products
+  from `4 * β²` count instances with the original queried edges. Its digit identities live in
+  `Foundations/Data/Matrix/IntegerBits.lean`, reuse Mathlib's pointwise positive/negative parts,
+  and give an explicit `Nat.log 2 U + 1` magnitude-bit bound including zero. Query answers use
+  `Set.EqOn`; no additional weighted-triangle predicate or source machine is introduced.
+  This is the mathematical interface milestone
+  [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
+  preprocessing/time claim or solver. Modular hashing/false-positive splitting and tensor/sparse
+  query programs remain in #1394, alongside the native and asymptotic composition below.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics
   were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
   input/time/width/asymptotic composition remain in

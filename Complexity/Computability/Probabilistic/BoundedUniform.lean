@@ -47,12 +47,11 @@ theorem isPPTOn_sampleUniformInterval {α : Type} {input : α ↪ List Bool}
     (hattempts : ComputableInPolyTime attempts input encUnary) :
     IsPPTOn input (encOption encUnary)
       (fun a => sampleUniformInterval (bound a) (attempts a)) := by
-  have hb := hbound.tidy
   have hs := (isPPTOn_sampleBoundedIndex hbound).replicate hattempts
-  have hfind : ComputableTidilyInPolyTime
+  have hfind : ComputableInPolyTime
       (fun p : α × List ℕ => p.2.find? (fun value => decide (value < bound p.1)))
       (encPair input (encList encUnary)) (encOption encUnary) := by fun_prop
-  exact hs.map_with (.of_tidy hfind)
+  exact hs.map_with hfind
 
 /-- Binary bounds need only a unary sampling width and attempt count. The width is the existing
 sampler's computed `log₂ bound + 1`, not a unary copy of `bound`; exponential cryptographic
@@ -81,13 +80,10 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
       (f := fun a value => min (bound a) value) (.of_tidy hmin)).congr
     intro a
     rw [sampleBoundedIndex_eq_binary, ← hwidth_eq a]
-  have hfind : ComputableTidilyInPolyTime
+  have hfind : ComputableInPolyTime
       (fun p : α × List ℕ => p.2.find? (fun value => decide (value < bound p.1)))
-      (encPair input (encList encNat)) (encOption encNat) := by
-    apply ComputableTidilyInPolyTime.findWithInput (by fun_prop)
-    exact ComputableTidilyInPolyTime.binary_lt.comp
-      ((ComputableTidilyInPolyTime.snd _ _).prod (by fun_prop))
-  exact (hs.replicate hattempts).map_with (.of_tidy hfind)
+      (encPair input (encList encNat)) (encOption encNat) := by fun_prop
+  exact (hs.replicate hattempts).map_with hfind
 
 /-- A runtime-varying integer box is sampled in uniform strict PPT when the numerical radius,
 dimension and per-coordinate attempt budget are efficiently supplied in unary. The full

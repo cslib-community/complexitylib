@@ -508,85 +508,38 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningOracle (M : MACScheme)
         (M.oneTimeSigningOracle sk)) prog).run []) := by
   rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
     ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  exact ProbOracleComp.run_interpret_map_state_of_invariant
-    (oracle := fun q (state : Bool × List (List Bool)) =>
+  -- Reconstruct the filter flag from the query log, so no state invariant is needed.
+  have hsim := ProbOracleComp.run_interpret_map_state
+    (oracle := fun q s => ProbComp.eval (M.oneTimeSigningOracle sk q s))
+    (oracle' := fun q (state : Bool × List (List Bool)) =>
       ((OracleComp.interpret
         (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
           (fun q s => ProbComp.eval (M.signingOracle sk q s)))
         ((SignatureScheme.oneTimeFilterHandler bound (n, []) q).run state.1)).run state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
-    (oracle' := fun q s => ProbComp.eval (M.oneTimeSigningOracle sk q s))
-    (represent := Prod.snd)
-    (invariant := fun state : Bool × List (List Bool) => state.1 = !state.2.isEmpty)
-    (preserve := by
-      intro ⟨⟨⟩, msg⟩ ⟨alreadyQueried, queried⟩ hinv value ⟨nextQueried, nextList⟩ hmem
-      simp only [PMF.mem_support_map_iff] at hmem
-      obtain ⟨⟨⟨v, nq⟩, nl⟩, hmem, heq⟩ := hmem
-      cases heq
-      cases alreadyQueried
-      · change ((v, nq), nl) ∈ ((OracleComp.interpret
-            (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (fun q s => ProbComp.eval (M.signingOracle sk q s)))
-            (SignatureScheme.oneTimeFilterHandler bound (n, []) ((), msg) false)).run
-              queried).support at hmem
-        simp only [SignatureScheme.oneTimeFilterHandler, Bool.false_eq_true, ↓reduceIte,
-          Functor.map_map, OracleComp.interpret_map, StateT.run_map,
-          ProbOracleComp.interpret_query, PMF.monad_map_eq_map, PMF.mem_support_map_iff] at hmem
-        obtain ⟨⟨rawTag, nl'⟩, htag, hpair⟩ := hmem
-        change (rawTag, nl') ∈
-          (ProbComp.eval (M.signingOracle sk ((), msg) queried)).support at htag
-        simp only [signingOracle, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at htag
-        obtain ⟨tag, _, htagEq⟩ := htag
-        cases htagEq
-        cases hpair
-        rfl
-      · change ((v, nq), nl) ∈ ((OracleComp.interpret
-            (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (fun q s => ProbComp.eval (M.signingOracle sk q s)))
-            (SignatureScheme.oneTimeFilterHandler bound (n, []) ((), msg) true)).run
-              queried).support at hmem
-        simp only [SignatureScheme.oneTimeFilterHandler, ↓reduceIte, OracleComp.interpret_pure,
-          StateT.run_pure, PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff] at hmem
-        cases hmem
-        simpa using hinv)
+    (represent := fun queried => (!queried.isEmpty, queried))
     (step := by
-      intro ⟨⟨⟩, msg⟩ ⟨alreadyQueried, queried⟩ hinv
-      dsimp at hinv
-      cases hq : queried.isEmpty
-      · have halready : alreadyQueried = true := by simp [hinv, hq]
-        subst halready
-        change PMF.map (fun (a, s') => (a, s'.2))
-            (((OracleComp.interpret
-              (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-                (fun q s => ProbComp.eval (M.signingOracle sk q s)))
-              (SignatureScheme.oneTimeFilterHandler bound (n, []) ((), msg) true)).run queried).map
-                (fun result => (result.1.1, result.1.2, result.2))) =
-          ProbComp.eval (M.oneTimeSigningOracle sk ((), msg) queried)
-        simp [SignatureScheme.oneTimeFilterHandler, oneTimeSigningOracle, hq,
-          OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
-      · have halready : alreadyQueried = false := by simp [hinv, hq]
-        subst halready
-        change PMF.map (fun (a, s') => (a, s'.2))
-            (((OracleComp.interpret
-              (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-                (fun q s => ProbComp.eval (M.signingOracle sk q s)))
-              (SignatureScheme.oneTimeFilterHandler bound (n, []) ((), msg) false)).run queried).map
-                (fun result => (result.1.1, result.1.2, result.2))) =
-          ProbComp.eval (M.oneTimeSigningOracle sk ((), msg) queried)
-        simp only [SignatureScheme.oneTimeFilterHandler, Bool.false_eq_true, ↓reduceIte,
-          Functor.map_map, OracleComp.interpret_map, StateT.run_map,
-          ProbOracleComp.interpret_query, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
-        change PMF.map (fun x : List Bool × List (List Bool) =>
-            (x.1.take (bound n msg.length), x.2))
-            (ProbComp.eval (M.signingOracle sk ((), msg) queried)) =
-          ProbComp.eval (M.oneTimeSigningOracle sk ((), msg) queried)
-        simp only [signingOracle, oneTimeSigningOracle, hq, ↓reduceIte,
+      intro ⟨⟨⟩, msg⟩ queried
+      change _ = ((OracleComp.interpret (m := StateT (List (List Bool)) PMF) _
+        (SignatureScheme.oneTimeFilterHandler bound (n, []) ((), msg)
+          (!queried.isEmpty))).run queried).map _
+      cases queried with
+      | nil =>
+        simp only [oneTimeSigningOracle, List.isEmpty_nil, ↓reduceIte, Bool.not_true,
+          SignatureScheme.oneTimeFilterHandler, Bool.false_eq_true, Functor.map_map,
+          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
+          PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def, signingOracle,
           ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind]
+        simp only [StateT.run, PMF.map_bind]
         refine PMF.bind_congr_on_support _ _ _ fun tag htag => ?_
-        rw [List.isEmpty_iff.mp hq]
-        simp [List.take_of_length_le (hbound msg tag htag)])
-    prog (false, []) rfl
+        simp [List.take_of_length_le (hbound msg tag htag)]
+      | cons head tail =>
+        simp [oneTimeSigningOracle, SignatureScheme.oneTimeFilterHandler, OracleComp.interpret_pure,
+          StateT.run_pure, ProbComp.eval_pure])
+    prog []
+  have hproj := congrArg (PMF.map (fun result => (result.1, result.2.2))) hsim
+  rw [PMF.map_comp] at hproj
+  exact hproj.symm.trans (PMF.map_id _)
 
 /-- Full EUF-CMA security implies one-time EUF-CMA security for any `MACScheme`. -/
 theorem EUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.EUFCMA) : M.OneTimeEUFCMA := by
