@@ -44,12 +44,11 @@ theorem computableInPolyTime {α β : Type}
     {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {f : α → β}
     (h : TM2ComputableInPolyTime encIn encOut f) [∀ stack, Finite (h.tm.Γ stack)] :
     ComputableInPolyTime f encIn encOut := by
-  apply ComputableInPolyTime.of_tidy
-  have hf := h.computableTidilyInPolyTime (encA := encFinEnum Bool) (encB := encFinEnum Bool)
+  have hf := h.computableInPolyTime_encList (encA := encFinEnum Bool) (encB := encFinEnum Bool)
     encIn.injective encOut.injective
   obtain ⟨hinput, _⟩ := trans_encList_polyTime encIn (encFinEnum Bool)
   obtain ⟨_, houtput⟩ := trans_encList_polyTime encOut (encFinEnum Bool)
-  simpa only [Function.comp_def] using houtput.tidy.comp (hf.comp hinput.tidy)
+  simpa only [Function.comp_def] using houtput.comp (hf.comp hinput)
 
 end Turing.TM2ComputableInPolyTime
 

@@ -43,26 +43,26 @@ private theorem prepend_bound (w : List Bool) (i : ℕ) (k : Unit) :
 
 -- The endpoint starts from termination and a source-space bound, with no runtime argument; and
 -- `TM2.run_polySpace` exercises an explicit exponential binary clock.
-example : ComputableTidilyInPolySpace (fun w : List Bool => false :: w)
+example : ComputableInPolySpace (fun w : List Bool => false :: w)
     (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) ∧
-    ComputableTidilyInPolySpace
+    ComputableInPolySpace
       (fun w : List Bool => (TM2.stepTotal prependMachine.m)^[2 ^ (w.length + 1)]
         (initList prependMachine w)) (encList (encFinEnum Bool)) TM2.encCfg := by
-  refine ⟨prependComputer.computableTidilyInPolySpace Function.injective_id Function.injective_id
+  refine ⟨prependComputer.computableInPolySpace_encList Function.injective_id Function.injective_id
     (space := fun w => w.length + 1) (PolyBounded.self.add (.const 1)) ?_, ?_⟩
   · intro w i k
     exact (prepend_bound (List.map prependComputer.inputAlphabet.symm w) i k).trans
       (Nat.add_le_add_right (List.length_map prependComputer.inputAlphabet.symm).le 1)
-  · have hlength := ComputableTidilyInPolyTime.length_list (encFinEnum Bool)
-    have hexponent := ComputableTidilyInPolyTime.unary_add.comp
-      (hlength.prod (ComputableTidilyInPolyTime.const 1))
-    have hstart : ComputableTidilyInPolyTime (fun w => w) (encList (encFinEnum Bool))
+  · have hlength := ComputableInPolyTime.length_list (encFinEnum Bool)
+    have hexponent := ComputableInPolyTime.unary_add.comp
+      (hlength.prod (ComputableInPolyTime.const 1))
+    have hstart : ComputableInPolyTime (fun w => w) (encList (encFinEnum Bool))
         (encList (encFinite (prependMachine.Γ prependMachine.k₀))) :=
-      (ComputableTidilyInPolyTime.map
-        (.of_finite (encB := encFinite (prependMachine.Γ prependMachine.k₀)) id)).of_enc_eq
+      (ComputableInPolyTime.map
+        (.of_finite (encOut := encFinite (prependMachine.Γ prependMachine.k₀)) id)).of_enc_eq
         (fun _ => by simp only [List.map_id]; rfl)
     exact TM2.run_polySpace prependMachine hstart
-      (ComputableTidilyInPolyTime.binary_two_pow.comp hexponent) hexponent.polyBounded
+      (ComputableInPolyTime.binary_two_pow.comp hexponent) hexponent.polyBounded
       (fun w i _ k => prepend_bound w i k)
 
 private theorem identity_bound {Γ : Type} [Fintype Γ] (w : List Γ) (i : ℕ) (k : Unit) :
@@ -277,9 +277,9 @@ private theorem empty_bound (xs : List Bool) (i : ℕ) (k : Bool) :
 
 -- Empty alphabets, independent input/output alphabets, and Boolean deciders in `PSPACE`.
 example :
-    ComputableTidilyInPolySpace (id : List Empty → List Empty)
+    ComputableInPolySpace (id : List Empty → List Empty)
       (encList (encFinEnum Empty)) (encList (encFinEnum Empty)) ∧
-    ComputableTidilyInPolySpace (fun _ : List Bool => ([] : List Empty))
+    ComputableInPolySpace (fun _ : List Bool => ([] : List Empty))
       (encList (encFinEnum Bool)) (encList (encFinEnum Empty)) ∧
     {b : Bool | b = true} ∈ Cslib.Complexity.PSPACE
       ((⟨encodeBool, encodingBoolBool.encode_injective⟩ : Bool ↪ List Bool).trans
@@ -288,14 +288,14 @@ example :
   refine ⟨?_, ?_, ?_, ?_⟩
   · let h := identityComputer Empty
     let : ∀ k, Finite (h.tm.Γ k) := fun _ => inferInstanceAs (Finite Empty)
-    exact h.computableTidilyInPolySpace Function.injective_id Function.injective_id
+    exact h.computableInPolySpace_encList Function.injective_id Function.injective_id
       (space := List.length) .self
       (fun w i k => (identity_bound (Γ := Empty) (List.map h.inputAlphabet.symm w) i k).trans
         (List.length_map h.inputAlphabet.symm).le)
   · let : ∀ k, Finite (clearComputer.tm.Γ k) := fun k => by
       change Finite (clearMachine.Γ k)
       cases k <;> infer_instance
-    exact clearComputer.computableTidilyInPolySpace Function.injective_id Function.injective_id
+    exact clearComputer.computableInPolySpace_encList Function.injective_id Function.injective_id
       (space := List.length) .self
       (fun xs i k => by
         simpa only [Equiv.refl_symm, Equiv.coe_refl, id_eq, List.map_id] using clear_bound xs i k)

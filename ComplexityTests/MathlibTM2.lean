@@ -26,10 +26,10 @@ private noncomputable def prependComputer :
   outputsFun _ := ⟨⟨1, rfl⟩, by simp⟩
 
 -- An infinite input domain and order-sensitive output; this includes the empty word.
-example : ComputableTidilyInPolyTime (fun w : List Bool => false :: w)
+example : ComputableInPolyTime (fun w : List Bool => false :: w)
     (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) := by
   let : ∀ k, Finite (prependComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
-  exact prependComputer.computableTidilyInPolyTime Function.injective_id Function.injective_id
+  exact prependComputer.computableInPolyTime_encList Function.injective_id Function.injective_id
 
 example : TM2.stepTotal prependMachine.m (initList prependMachine [true, true]) =
     haltList prependMachine [false, true, true] := rfl
@@ -47,10 +47,10 @@ private noncomputable def flippedComputer :
   time := 1
   outputsFun _ := ⟨⟨1, rfl⟩, by simp⟩
 
-example : ComputableTidilyInPolyTime (fun w : List Bool => true :: w)
+example : ComputableInPolyTime (fun w : List Bool => true :: w)
     (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) := by
   let : ∀ k, Finite (flippedComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
-  exact flippedComputer.computableTidilyInPolyTime Function.injective_id Function.injective_id
+  exact flippedComputer.computableInPolyTime_encList Function.injective_id Function.injective_id
 
 -- Register changes, peeking without popping, and a jump to a different label.
 private def peekMachine : FinTM2 where
@@ -147,30 +147,30 @@ private noncomputable def constantComputer :
 
 
 -- Independent input/output alphabets and a runtime that grows with the input length.
-example : ComputableTidilyInPolyTime (fun _ : List (Fin 4) => [(0 : Fin 1)])
+example : ComputableInPolyTime (fun _ : List (Fin 4) => [(0 : Fin 1)])
     (encList (encFinEnum (Fin 4))) (encList (encFinEnum (Fin 1))) := by
   let : ∀ k, Finite (constantComputer.tm.Γ k) := fun k => by
     change Finite (constantMachine.Γ k)
     cases k <;> infer_instance
-  exact constantComputer.computableTidilyInPolyTime Function.injective_id Function.injective_id
+  exact constantComputer.computableInPolyTime_encList Function.injective_id Function.injective_id
 
 -- Empty alphabets require no default symbol.
-example : ComputableTidilyInPolyTime (id : List Empty → List Empty)
+example : ComputableInPolyTime (id : List Empty → List Empty)
     (encList (encFinEnum Empty)) (encList (encFinEnum Empty)) := by
   let computer := idComputableInPolyTime (id : List Empty → List Empty)
   let : ∀ k, Finite (computer.tm.Γ k) := fun _ => inferInstanceAs (Finite Empty)
-  exact computer.computableTidilyInPolyTime Function.injective_id Function.injective_id
+  exact computer.computableInPolyTime_encList Function.injective_id Function.injective_id
 
 -- A structured infinite source type is retained, rather than replacing the function by a word map.
 private def naturalWord : ℕ ↪ List Bool :=
   ⟨Computability.encodeNat, Computability.encodingNatBool.encode_injective⟩
 
-example : ComputableTidilyInPolyTime (id : ℕ → ℕ)
+example : ComputableInPolyTime (id : ℕ → ℕ)
     (naturalWord.trans (encList (encFinEnum Bool)))
     (naturalWord.trans (encList (encFinEnum Bool))) := by
   let computer := idComputableInPolyTime Computability.encodeNat
   let : ∀ k, Finite (computer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
-  exact computer.computableTidilyInPolyTime
+  exact computer.computableInPolyTime_encList
     Computability.encodingNatBool.encode_injective Computability.encodingNatBool.encode_injective
 
 end ComplexityTests.MathlibTM2

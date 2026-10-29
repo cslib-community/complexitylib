@@ -18,6 +18,7 @@ public import Complexity.Probability.UniformNat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
+import Complexity.Foundations.Data.BitString.Affine
 import Complexity.Foundations.Data.Finset.Sampling
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Logics.Propositional.CNF.PolyTime
@@ -265,18 +266,6 @@ private theorem eval_hashCNF (σ : Var → Bool) (vars : List ℕ) (k : ℕ) (w 
     exact ⟨h0.trans (hoff ⟨i, hi⟩).symm, hL,
       fun j hj => (hs j hj).trans (by rw [hrow ⟨i, hi⟩ hj])⟩
 
-/-- A sequence that starts at `c` and adds `f j` at each step `j < n` holds `c + ∑ j' < j, f j'`
-up to step `n`. -/
-theorem eq_add_sum_of_step {z f : ℕ → Bool} {c : Bool} {n : ℕ} (h0 : z 0 = c)
-    (hstep : ∀ j < n, z (j + 1) = (z j ^^ f j)) :
-    ∀ j ≤ n, z j = c + ∑ j' ∈ Finset.range j, f j' := by
-  intro j hj
-  induction j with
-  | zero => simpa using h0
-  | succ j ih =>
-    rw [hstep j (by omega), ih (by omega), Finset.sum_range_succ, ← add_assoc]
-    rfl
-
 open BitString.LinearHash (affineHash isPairwiseIndependentHash_affineHash)
 
 /-- The variables `vars` read off an assignment of the original variables. -/
@@ -304,7 +293,7 @@ private theorem eq_auxValue_of_eval {σ : Var → Bool} {vars : List ℕ} {k : �
     (h : (hashCNF vars k w).eval σ = true) (i : Fin k) {j : ℕ} (hj : j ≤ vars.length) :
     σ (.inr (i, j)) = auxValue vars k w (σ ∘ .inl) i j := by
   obtain ⟨h0, -, hs⟩ := (eval_hashCNF σ vars k w).1 h i
-  refine eq_add_sum_of_step (z := fun j => σ (.inr (i, j))) h0 (fun j hj => ?_) j hj
+  refine BitString.eq_add_sum_of_step (z := fun j => σ (.inr (i, j))) h0 (fun j hj => ?_) j hj
   simp only [hs j hj, hj, dite_true, Function.comp_apply]
 
 /-- A satisfying assignment of the equations hashes its point to zero. -/

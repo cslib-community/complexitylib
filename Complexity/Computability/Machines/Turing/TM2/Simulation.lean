@@ -44,78 +44,87 @@ The statement semantics is `Turing.TM2.stepAux` in
 
 namespace Turing.TM2
 
-open MultiTapeTM ComputableTidilyInPolyTime
+open MultiTapeTM ComputableInPolyTime
 
 variable {K : Type} [Fintype K] {Γ : K → Type} {Λ σ : Type}
   [Finite Λ] [Finite σ] [∀ k, Finite (Γ k)]
 
-private theorem cfg_parts : ComputableTidilyInPolyTime
+private theorem cfg_parts : ComputableInPolyTime
     (fun cfg : Cfg Γ Λ σ => (cfg.l, cfg.var, cfg.stk)) encCfg
     (encPair (encFinite (Option Λ))
       (encPair (encFinite σ) (encDPi (fun k => encList (encFinite (Γ k)))))) :=
   of_eq fun _ => rfl
 
 /-- Reading the source label is efficient. -/
-@[fun_prop] theorem cfg_label : ComputableTidilyInPolyTime
+@[fun_prop] theorem cfg_label : ComputableInPolyTime
     (Cfg.l (Γ := Γ) (Λ := Λ) (σ := σ)) encCfg (encFinite (Option Λ)) := cfg_parts.fst'
 
 /-- Reading the finite register state is efficient. -/
-@[fun_prop] theorem cfg_var : ComputableTidilyInPolyTime
+@[fun_prop] theorem cfg_var : ComputableInPolyTime
     (Cfg.var (Γ := Γ) (Λ := Λ) (σ := σ)) encCfg (encFinite σ) := cfg_parts.snd'.fst'
 
 /-- Reading the complete stack family is efficient. -/
-@[fun_prop] theorem cfg_stacks : ComputableTidilyInPolyTime
+@[fun_prop] theorem cfg_stacks : ComputableInPolyTime
     (Cfg.stk (Γ := Γ) (Λ := Λ) (σ := σ)) encCfg
     (encDPi (fun k => encList (encFinite (Γ k)))) := cfg_parts.snd'.snd'
 
 /-- Construct a configuration while charging all retained storage. -/
 @[fun_prop] theorem cfg_mk {α : Type} {input : α ↪ List Bool}
     {label : α → Option Λ} {state : α → σ} {store : α → ∀ k, List (Γ k)}
-    (hl : ComputableTidilyInPolyTime label input (encFinite (Option Λ)))
-    (hv : ComputableTidilyInPolyTime state input (encFinite σ))
-    (hs : ComputableTidilyInPolyTime store input
+    (hl : ComputableInPolyTime label input (encFinite (Option Λ)))
+    (hv : ComputableInPolyTime state input (encFinite σ))
+    (hs : ComputableInPolyTime store input
       (encDPi (fun k => encList (encFinite (Γ k))))) :
-    ComputableTidilyInPolyTime (fun a => Cfg.mk (label a) (state a) (store a)) input encCfg :=
+    ComputableInPolyTime (fun a => Cfg.mk (label a) (state a) (store a)) input encCfg :=
   (hl.prod (hv.prod hs)).of_enc_eq fun _ => rfl
 
 private theorem map_head {α : Type} {input : α ↪ List Bool}
     {state : α → σ} {store : α → ∀ k, List (Γ k)}
-    (hv : ComputableTidilyInPolyTime state input (encFinite σ))
-    (hs : ComputableTidilyInPolyTime store input
+    (hv : ComputableInPolyTime state input (encFinite σ))
+    (hs : ComputableInPolyTime store input
       (encDPi (fun k => encList (encFinite (Γ k)))))
     (k : K) (f : σ → Option (Γ k) → σ) :
-    ComputableTidilyInPolyTime (fun a => f (state a) (store a k).head?) input (encFinite σ) := by
+    ComputableInPolyTime (fun a => f (state a) (store a k).head?) input (encFinite σ) := by
   have hhead := (head? (encFinite (Γ k))).comp
     ((dpi_apply (fun k => encList (encFinite (Γ k))) k).comp hs)
   exact (of_finite (fun p : σ × Option (Γ k) => f p.1 p.2)).comp (hv.prod hhead)
+
+omit [Fintype K] in
+private theorem listTail_encFinite (k : K) :
+    ComputableInPolyTime (List.tail : List (Γ k) → List (Γ k))
+      (encList (encFinite (Γ k))) (encList (encFinite (Γ k))) := by
+  obtain ⟨c, t, Q, hfin, tm, htm⟩ :=
+    ListEncoding.tail (enc₁ := encFinite (Γ k)) (enc := encList (encFinite (Γ k)))
+  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
+    t, Q, hfin, tm, fun l => htm l⟩
 
 variable [DecidableEq K]
 
 private theorem stepAux_with {α : Type} {input : α ↪ List Bool} (q : Stmt Γ Λ σ)
     {state : α → σ} {store : α → ∀ k, List (Γ k)}
-    (hv : ComputableTidilyInPolyTime state input (encFinite σ))
-    (hs : ComputableTidilyInPolyTime store input
+    (hv : ComputableInPolyTime state input (encFinite σ))
+    (hs : ComputableInPolyTime store input
       (encDPi (fun k => encList (encFinite (Γ k))))) :
-    ComputableTidilyInPolyTime (fun a => stepAux q (state a) (store a)) input encCfg := by
+    ComputableInPolyTime (fun a => stepAux q (state a) (store a)) input encCfg := by
   induction q generalizing state store with
   | push k f q ih =>
-    have hsymbol := (of_finite f (encB := encFinite (Γ k))).comp hv
+    have hsymbol := (of_finite f (encOut := encFinite (Γ k))).comp hv
     have hstack := (dpi_apply (fun k => encList (encFinite (Γ k))) k).comp hs
     exact ih hv (dpi_update hs (hsymbol.cons' hstack))
   | peek k f q ih => exact ih (map_head hv hs k f) hs
   | pop k f q ih =>
     have hstack := (dpi_apply (fun k => encList (encFinite (Γ k))) k).comp hs
-    exact ih (map_head hv hs k f) (dpi_update hs ((listTail _).comp hstack))
+    exact ih (map_head hv hs k f) (dpi_update hs ((listTail_encFinite k).comp hstack))
   | load f q ih => exact ih ((of_finite f).comp hv) hs
   | branch f q₁ q₂ ih₁ ih₂ =>
-    refine (((of_finite f).comp hv).cond (ih₁ hv hs) (ih₂ hv hs)).of_enc_eq ?_
+    refine (((of_finite f (encOut := encBool)).comp hv).ite (ih₁ hv hs) (ih₂ hv hs)).of_enc_eq ?_
     intro a
     cases hf : f (state a) <;> simp [stepAux, hf]
   | goto f => exact cfg_mk ((of_finite (fun v => some (f v))).comp hv) hv hs
   | halt => exact cfg_mk (const none) hv hs
 
 /-- Executing a fixed statement is efficient, including its straight-line continuations. -/
-theorem stepAux_polyTime (q : Stmt Γ Λ σ) : ComputableTidilyInPolyTime
+theorem stepAux_polyTime (q : Stmt Γ Λ σ) : ComputableInPolyTime
     (fun cfg : Cfg Γ Λ σ => stepAux q cfg.var cfg.stk) encCfg encCfg :=
   stepAux_with q (cfg_var (Γ := Γ) (Λ := Λ)) (cfg_stacks (Γ := Γ) (Λ := Λ))
 
@@ -125,7 +134,7 @@ def stepTotal (M : Λ → Stmt Γ Λ σ) (cfg : Cfg Γ Λ σ) : Cfg Γ Λ σ :=
 
 /-- The finite label chooses a fixed certified statement. -/
 theorem stepTotal_polyTime (M : Λ → Stmt Γ Λ σ) :
-    ComputableTidilyInPolyTime (stepTotal M) encCfg encCfg := by
+    ComputableInPolyTime (stepTotal M) encCfg encCfg := by
   exact (cfg_label (Γ := Γ) (Λ := Λ) (σ := σ)).finite_cases
     (branch := fun label (cfg : Cfg Γ Λ σ) =>
       label.elim cfg (fun l => stepAux (M l) cfg.var cfg.stk)) fun label => by

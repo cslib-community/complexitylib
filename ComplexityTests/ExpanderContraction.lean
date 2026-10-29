@@ -60,12 +60,12 @@ example : Function.IsPartialInv (RotationMap.finSlotEncode (by decide : 0 ≤ 0 
 example : ComputableInPolyTime threeVertices.rot
     (encPair (encFinEnum (Fin 3)) (encPair (encFinEnum (Fin 2)) (encFinEnum (Fin 5))))
     (encPair (encFinEnum (Fin 3)) (encPair (encFinEnum (Fin 2)) (encFinEnum (Fin 5)))) := by
-  have he : ComputableTidilyInPolyTime (RotationMap.finSlotEncode (by decide : 5 ≤ 2 * 3))
+  have he : ComputableInPolyTime (RotationMap.finSlotEncode (by decide : 5 ≤ 2 * 3))
       (encFinEnum (Fin 5)) (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 2))) := .of_finite _
-  have hd : ComputableTidilyInPolyTime (RotationMap.finSlotDecode (m := 5))
+  have hd : ComputableInPolyTime (RotationMap.finSlotDecode (m := 5))
       (encPair (encFinEnum (Fin 3)) (encFinEnum (Fin 2)))
       (encOption (encFinEnum (Fin 5))) := .of_finite _
-  have hg : ComputableTidilyInPolyTime completeFive.rot
+  have hg : ComputableInPolyTime completeFive.rot
       (encPair (encFinEnum (Fin 5)) (encFinEnum (Fin 5)))
       (encPair (encFinEnum (Fin 5)) (encFinEnum (Fin 5))) := .of_finite _
   fun_prop [threeVertices, RotationMap.contractFin]
@@ -73,9 +73,9 @@ example : ComputableInPolyTime threeVertices.rot
 example {V W I D : Type} (G : RotationMap V D) (encode : V → W × I)
     (decode : W × I → Option V) (hinv : Function.IsPartialInv encode decode)
     (ev : V ↪ List Bool) (ew : W ↪ List Bool) (ei : I ↪ List Bool) (ed : D ↪ List Bool)
-    (he : ComputableTidilyInPolyTime encode ev (encPair ew ei))
-    (hd : ComputableTidilyInPolyTime decode (encPair ew ei) (encOption ev))
-    (hg : ComputableTidilyInPolyTime G.rot (encPair ev ed) (encPair ev ed)) :
+    (he : ComputableInPolyTime encode ev (encPair ew ei))
+    (hd : ComputableInPolyTime decode (encPair ew ei) (encOption ev))
+    (hg : ComputableInPolyTime G.rot (encPair ev ed) (encPair ev ed)) :
     ComputableInPolyTime
       (fun p : (W × (I × D)) × Bool => ((RotationMap.contract encode decode hinv G).rot p.1, !p.2))
       (encPair (encPair ew (encPair ei ed)) encBool)

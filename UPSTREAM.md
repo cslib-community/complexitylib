@@ -203,11 +203,52 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
   The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
   This remains conditional on the supplied solver's native execution/correctness/frame theorem;
-  it does not establish a fast solver. Native Chan–He preprocessing, fast Exact Triangle and full
-  input/time/width/asymptotic composition remain in
+  it does not establish a fast solver. Fast Exact Triangle and its final native backend/asymptotic
+  composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.
+  Native numeric parameter computation, signed-residue/histogram counting, trial-division prime
+  tables, collision-tested least-prime scans and complete two-prime modulus selection also use
+  the existing `WordRAM.Code`/`ExecWithin` APIs. Their explicit local fit, frame and charged-cost
+  contracts are composed by a fixed 128-register bounded traversal with an explicit seven-word
+  stack frame and exact preorder packed output. The traversal consumes a root descriptor and
+  runtime fuel; its polynomial local envelope derives kernel fits and charges every stack,
+  descriptor and address operation. It does not invoke a Convolution-3SUM solver. Composition
+  from initialized input through every frontend root is proved in
+  `Algorithms/WordRAM/ThreeSum/ChanHe/Preprocessing.lean`. One finite 128-register program per
+  fixed magnitude exponent returns the existing exact finite instance list. All fits derive from
+  `(1300κ+7865) clog₂(n+2)` physical width; every run prefix uses polynomial words/addresses even
+  at wider admitted widths. Its charged cost is at most
+  `Kκ (n+2)(sqrt(n+2)+1)(log₂(n+2)+1)^13`, including the final halt. The complete native
+  preprocessing milestone is #1446. `Algorithms/WordRAM/ThreeSum/Decision.lean` composes that
+  actual initialized output with the Convolution host (#1559): raw registers 78/79/116 supply the
+  actual pointer table, count and common packed length. The caller-owned host reads each signed
+  payload directly and reserves matrices above twice the preprocessing polynomial word bound,
+  preserving every future instance. One finite program per fixed exponent and certified finite
+  Exact Triangle block returns the existing distinct-position verdict, with derived positive
+  logarithmic physical width, polynomial words/space at every admitted-width prefix, and a fully
+  charged compositional bound at the actual packed size. `Host.Callee` requires actual finite-code
+  execution, matrix correctness, logarithmic width and a protected-prefix frame on arbitrary old
+  scratch memory; `Host.Slow.callee` is a proved exhaustive native instance. This conditional host
+  does not provide a fast solver. The unconditional native solver/backend and final asymptotic
+  composition, including exponent 1.9992, remain #1394. These components do not affect the curated
+  headlines. The caller layout, exhaustive callee and ordinary composition are original; the
+  underlying finite reductions and builder retain their existing Anthropic credit.
+
+  Bounded API follow-ups from the traversal/preprocessing reviews: merge the stage proof modules
+  `PreprocessingSnapshot`, `PreprocessingPrimes`, `PreprocessingSetup`, `PreprocessingFinish`,
+  `PreprocessingInvariant`, `PreprocessingStep` and `PreprocessingLoop` with their controller
+  consumer `PreprocessingExecute`, or use `import all` to make their proof plumbing private.
+  This includes `Saved`, `ForestCursor`, `snapshot_exec`, `primes_exec`, `setupTraversal_exec`,
+  `finish_exec`, `execute_next_root` and `forest_body_exec`; keep the initialized-input, readback,
+  width and resource endpoints available through `Preprocessing`. Separately, move
+  `modulus_bounds_of_candidates` from `SelectorBounds` beside `Collisions`' `modulus_bounds` and
+  derive or cross-reference the stronger bound, migrating `TraversalCall` and selector tests.
+  Derive `Structured`'s `ExecWithin.loop_invariant` as the `Data`-state case of
+  `GhostLoop`'s `ExecWithin.loop_invariant_state`, preserving the existing copy/residue/padding/
+  search/reservation clients. Resolve the current import direction by keeping both rules in one
+  loop topic module before changing those clients.
 
   `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
   frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical
@@ -242,6 +283,20 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
   retain the source's exact real floor/ceiling specifications through checked bridges.
+  `Algorithms/WordRAM/ExactTriangle/` implements the complete initialized preparation component
+  ([#1532](https://github.com/cslib-community/complexitylib/issues/1532)). Fixed sixty-four-register
+  code of at most 641 flat instructions consumes raw `(D,g,n,p)` headers and signed-encoded
+  A–B, B–C and A–C weights. It computes the residue classes, query chunks and records and writes
+  both padded instance matrices. These matrices contain raw unsigned zero/one words; a signed
+  product consumer must charge their conversion. The supplied positive modulus is not selected
+  by this program. In the source regime `16 ≤ D ≤ n`, `1 ≤ g` and `p` in the square-root prime
+  window, actual initialized execution including halt costs at most `690n²Dg`. Every sufficiently
+  wide physical machine has the same output. Under `D,g,p ≤ n` and input magnitudes bounded by
+  `(n+2)^κ`, sufficient width is at most `(κ+18)clog₂(n+2)`, and every prefix's words and address
+  support are bounded by `(n+2)^(κ+19)`. The generic width and signed-fit topic modules are reused
+  unchanged from #1537 and #1552. These are actual execution and fit proofs, without supplied
+  layout, execution or solver contracts. Product composition #1581 and the full #1394 endpoint
+  remain separate.
   `Algorithms/MatrixMultiplication/Schonhage/` adapts the tensor-recursion core from the same pin's
   `Sec2/{Lemma6,Recursion,Lemma7_8,Lemma10}.lean`: the ten-term polynomial identity with explicit
   error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
@@ -256,8 +311,9 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
   problem-statement universe or solver/time hypothesis is imported.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
-  Tensor/sparse query programs, the full reduction host, native Chan–He preprocessing, fast Exact
-  Triangle and full input/time/width/asymptotic composition remain in
+  The conditional ordinary host and its exhaustive reference callee are complete. Native
+  pruned/sparse-query backend composition, a concrete fast Exact Triangle solver and the
+  unconditional fast input/time/width/asymptotic bound remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
   are retained; the native proofs and representation choices are local.

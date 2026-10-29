@@ -108,6 +108,7 @@ structure Node where
   S₃ : Finset ℤ
   /-- The modulus. -/
   M : ℕ
+  deriving DecidableEq
 
 /-- The nodes on the first `f` levels of the recursion tree with root `(S₁, S₂, S₃)`; for `f = 0`
 there are none.  A triple with an empty set is not a node and has no children.  Any other triple is

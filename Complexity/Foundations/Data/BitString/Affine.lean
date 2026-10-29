@@ -13,6 +13,8 @@ public import Cslib.Foundations.Data.BitString
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.BigOperators
 public import Mathlib.Data.Fintype.Option
+import Mathlib.Algebra.BigOperators.Pi
+import Mathlib.Tactic.Ring
 
 /-!
 # Affine maps over `𝔽₂`
@@ -39,6 +41,11 @@ An affine map from `BitString d` is determined by its values at `0` and at the u
   values at `0` and at the unit vectors.
 * `Cslib.BitString.card_isAffine_le`: at most `2 ^ (n (d + 1))` maps from `BitString d` to
   `BitString n` are affine.
+* `Cslib.BitString.exists_affine_of_add_add`: a Boolean function satisfying
+  `g (u + w) = g u + g w + g 0` and depending only on a finite set `M` is `g u = g 0 + ∑ i ∈ T, u i`
+  for some `T ⊆ M`.
+* `Cslib.BitString.eq_add_sum_of_step`: prefix sums of a step recurrence `z (j + 1) = z j + f j`
+  over `𝔽₂`.
 
 ## References
 
@@ -123,6 +130,50 @@ theorem card_isAffine_le (d n : ℕ) :
     _ = 2 ^ (n * (d + 1)) := by
       rw [card_univ, Fintype.card_fun, Fintype.card_fun, Fintype.card_option, Fintype.card_fin,
         Fintype.card_bool, Fintype.card_fin, ← pow_mul]
+
+/-- A function of bits that depends only on the coordinates in `M` and preserves sums of three
+points is affine: a constant plus the sum of the coordinates in some `T ⊆ M`. -/
+theorem exists_affine_of_add_add {ι : Type*} {M : Finset ι} {g : (ι → Bool) → Bool}
+    (hcongr : ∀ u u' : ι → Bool, (∀ j ∈ M, u j = u' j) → g u = g u')
+    (hadd : ∀ u u' u'' : ι → Bool, g (u + u' + u'') = g u + g u' + g u'') :
+    ∃ T ⊆ M, ∀ u, g u = g 0 + ∑ j ∈ T, u j := by
+  classical
+  let e : ι → ι → Bool := fun j => Pi.single j true
+  have hsum : ∀ A : Finset ι, g (∑ j ∈ A, e j) = g 0 + ∑ j ∈ A, (g (e j) + g 0) := by
+    intro A
+    induction A using Finset.induction_on with
+    | empty => simp
+    | @insert j A hj ih =>
+      rw [Finset.sum_insert hj, Finset.sum_insert hj]
+      have := hadd (e j) (∑ i ∈ A, e i) 0
+      rw [add_zero] at this
+      rw [this, ih]
+      ring
+  refine ⟨M.filter fun j => g (e j) + g 0 = true, Finset.filter_subset _ _, fun u => ?_⟩
+  have hu : g u = g (∑ j ∈ M.filter (fun j => u j = true), e j) := by
+    apply hcongr
+    intro i hi
+    rw [Finset.sum_apply, Finset.sum_pi_single]
+    simp only [Finset.mem_filter, hi, true_and]
+    cases u i <;> rfl
+  rw [hu, hsum]
+  congr 1
+  rw [Finset.sum_filter, Finset.sum_filter]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  cases u j <;> cases g (e j) + g 0 <;> rfl
+
+/-- A sequence that starts at `c` and adds `f j` at each step `j < n` holds `c + ∑ j' < j, f j'`
+up to step `n`. -/
+theorem eq_add_sum_of_step {z f : ℕ → Bool} {c : Bool} {n : ℕ} (h0 : z 0 = c)
+    (hstep : ∀ j < n, z (j + 1) = (z j ^^ f j)) :
+    ∀ j ≤ n, z j = c + ∑ j' ∈ Finset.range j, f j' := by
+  intro j hj
+  induction j with
+  | zero => simpa using h0
+  | succ j ih =>
+    rw [hstep j (Nat.lt_of_succ_le hj), ih (Nat.le_of_succ_le hj), Finset.sum_range_succ,
+      ← add_assoc]
+    rfl
 
 end Counting
 

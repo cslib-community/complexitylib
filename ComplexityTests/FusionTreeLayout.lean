@@ -56,8 +56,14 @@ example : span tree = 58 := by simp [tree, span, headerWords]
 
 /-- At a nonzero base, the actual table interleaves keys and absolute child pointers. -/
 example : [50, 51, 52, 53].map (memory zeroParameters tree 32) = [0, 54, 7, 72] := by
-  simp [memory, tree, encode, encodeForest, header, zeroParameters, List.ofFn_succ,
-    headerWords, childTable, childAddress, span, Tree.minimum]
+  have h : Block.HoldsList 32 (encode zeroParameters 32 tree)
+      (memory zeroParameters tree 32) := rep_memory zeroParameters tree 32
+  have hread (i : Fin 4) : memory zeroParameters tree 32 (50 + i.val) = ![0, 54, 7, 72] i := by
+    have hi := h.get (18 + i.val) (by fin_cases i <;> decide)
+    fin_cases i <;>
+      simpa [tree, encode, encodeForest, header, zeroParameters, List.ofFn_succ,
+        headerWords, childTable, childAddress, span, Tree.minimum] using hi
+  exact congrArg (fun f : Fin 4 → ℕ => [f 0, f 1, f 2, f 3]) (funext hread)
 
 example : decode 3 (memory zeroParameters tree 32) 32 = tree :=
   decode_encode (by simp [tree, Tree.Valid, Tree.keys] : Tree.Valid 2 tree)

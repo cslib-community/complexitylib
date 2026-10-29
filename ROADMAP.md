@@ -407,8 +407,17 @@ each statement against the numbered result. Organize modules by subject, not cha
   communication and interactive classes, with amplification, containments and complete
   problems.
 
+[#1459]: https://github.com/cslib-community/complexitylib/issues/1459
+[#1463]: https://github.com/cslib-community/complexitylib/issues/1463
+[#1481]: https://github.com/cslib-community/complexitylib/issues/1481
+[#1482]: https://github.com/cslib-community/complexitylib/issues/1482
+
 ## Machines, RAM and data structures
 
+- **Native distinct-position frontend** ([#1482]): initialized signed input produces exact
+  compact root descriptors, with derived logarithmic width and uniform
+  `Oκ((n+1) log²(n+2))` charged cost. This frontend is composed into the complete native
+  preprocessing and the conditional ordinary host described below.
 - **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
   with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
   The current interpreter has a stronger polynomial certificate and a streaming input lookup;
@@ -429,6 +438,24 @@ each statement against the numbered result. Organize modules by subject, not cha
   kept separate; and develop general open-program composition. Use Cook–Levin and GGM as
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
+- **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table,
+  collision-tested minimum-search and complete two-prime modulus programs have explicit local
+  fit/frame/cost contracts. The complete native distinct-position frontend ([#1482]) starts from
+  initialized signed input and produces exact compact root descriptors with derived logarithmic
+  width and uniform `Oκ((n+1) log²(n+2))` charged cost. The complete native one-node component
+  ([#1481]) computes all residues/histograms, three compact heavy arrays and exact packed output
+  in linear time. Native bounded recursive traversal ([#1512](https://github.com/cslib-community/complexitylib/issues/1512)) executes those components with an
+  explicit stack, exact preorder output, polynomial local fit/frame contracts and charged
+  ternary-tree bounds. Complete native preprocessing ([#1446]) composes every root from actual
+  initialized input, returns the exact finite packed instances and derives positive logarithmic
+  width, polynomial space/intermediates and an `Oκ(n^1.5 log¹³(n+2))` charged bound.
+- **Conditional native ordinary host** ([#1559](https://github.com/cslib-community/complexitylib/issues/1559)):
+  connects actual preprocessing output to caller-safe Convolution calls, proves the existing
+  distinct-position verdict from `State.init`, derives logarithmic width and every-prefix
+  polynomial words/space, and charges concrete callee work at the actual packed size. Its finite
+  callee contract has a proved slow exhaustive native instance; no fast backend or final
+  subquadratic bound is supplied. The native fast backend, Exact Triangle solver and final
+  input/time/width/asymptotic composition, including exponent 1.9992, remain under #1394.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
@@ -481,10 +508,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   shared encodings and pruned-evaluation core ([#1459](https://github.com/cslib-community/complexitylib/issues/1459)) include exact visited-leaf and passed-set
   bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
   ([#1463](https://github.com/cslib-community/complexitylib/issues/1463)) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
-  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. It still
-  needs native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
-  host, the fast Exact Triangle solver and full
-  input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
+  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. Complete
+  native preprocessing and the conditional ordinary host with an exhaustive reference callee
+  are available. Native pruned/sparse-query backend composition, a concrete fast Exact Triangle solver
+  and the unconditional fast input/time/width/asymptotic bound remain, including the improved
+  Section 4 route to exponent 1.9992;
   size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
@@ -523,6 +551,12 @@ each statement against the numbered result. Organize modules by subject, not cha
   so `BinaryHeap` and `FibonacciHeap` share a generic `run_ops_exact` theorem, and factor a common
   `ShortestPathSpec p bound` predicate in `Dijkstra/HeapStatement.lean` across `LogLinearSpec`,
   `FibonacciSpec`, and `FibonacciLinearSpec`.
+
+- **Native ExactTriangle preparation** ([#1532](https://github.com/cslib-community/complexitylib/issues/1532)):
+  initialized execution computes the complete catalogue and raw zero/one instance matrices,
+  with exact finite readback, logarithmic width, polynomial prefix words and address space,
+  and a `690n²Dg` charged bound in the source's admissible parameter regime. Prime selection,
+  solving the prepared instances, product/backend composition and the full #1394 endpoint remain.
 
 ## Coverage and reuse
 
@@ -645,6 +679,7 @@ not planned, not as proved.
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1442]: https://github.com/cslib-community/complexitylib/issues/1442
+[#1446]: https://github.com/cslib-community/complexitylib/issues/1446
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524

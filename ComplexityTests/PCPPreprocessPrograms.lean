@@ -120,8 +120,7 @@ example (T : ℕ) : ComputableInPolyTime
         (encPi (encFinEnum (ConstraintGraph.PreprocessLabel Bool)))))
     (encPair (encPair encUnary encBool)
       (encPi (encFinEnum (ConstraintGraph.PreprocessLabel Bool)))) := by
-  have hrot := isPolyTime_preprocessRotation_finEnum.tidy
-  refine .of_tidy ?_
+  have hrot := isPolyTime_preprocessRotation_finEnum
   fun_prop
 
 end ComplexityTests.PreprocessPrograms

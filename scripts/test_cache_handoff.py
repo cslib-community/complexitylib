@@ -154,10 +154,10 @@ class HandoffTests(unittest.TestCase):
                         {"DISABLE_BUILD_HANDOFF": "1"}, {"DISABLE_BUILD_HANDOFF": "true"}):
             with self.subTest(changes=changes), self.assertRaises(handoff.Rejected):
                 handoff.pack(self.root, self.output, {**self.env, **changes})
-        for allowed in ("0", "false", "FALSE", "no"):
+        for index, allowed in enumerate(("0", "false", "FALSE", "no")):
             with self.subTest(allowed=allowed), contextlib.redirect_stdout(io.StringIO()):
                 self.assertTrue(handoff.pack(
-                    self.root, self.base / f"packed-{allowed}",
+                    self.root, self.base / f"packed-{index}-{allowed}",
                     {**self.env, "DISABLE_BUILD_HANDOFF": allowed}))
         (self.base / "outputs").unlink()
         (self.root / "lean-toolchain").write_text("changed")

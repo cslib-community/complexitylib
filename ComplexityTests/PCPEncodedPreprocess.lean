@@ -224,7 +224,7 @@ example : ComputableInPolyTime
     (Graph.preprocess false true arithmeticExpanderRotate arithmeticLabels)
     (Graph.encoding encBool) (Graph.encoding (encOption (encPair encBool encBool))) :=
   Graph.isPolyTime_preprocess false true arithmeticExpanderRotate arithmeticLabels
-    (.of_tidy (polytime_arithmeticExpanderRotate (encFinEnum _)))
+    (polytime_arithmeticExpanderRotate (encFinEnum _))
 
 noncomputable example :
     (exampleGraph.toGraph constraintEval).PreprocessExpanders

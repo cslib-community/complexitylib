@@ -384,6 +384,106 @@ class CheckHygieneTests(unittest.TestCase):
         )
         self.assertEqual(check_hygiene.check_file(fixed_1367, root=self.root), [])
 
+    def test_docstring_reference_link_targets(self) -> None:
+        self.write("Complexity/Init.lean", "module\n-- upstream: candidate\n")
+        bad_targets = (
+            "/Complexity/Init.lean",  # The reference-link gap reported in #1616.
+            "Complexity/Init.lean",
+            "Init.html",
+            "Complexity/Missing.html#result",
+            "Complexity/../Init.html",
+            "mailto:example@example.com",
+        )
+        for target in bad_targets:
+            for destination in (target, f"<{target}>"):
+                with self.subTest(destination=destination):
+                    p = self.write(
+                        "Complexity/Reference.lean",
+                        "module\n-- upstream: candidate\n/-!\nSee [consumer][adjacency].\n\n"
+                        f"[adjacency]: {destination} 'Consumer'\n-/\n",
+                    )
+                    errors = check_hygiene.check_file(p, root=self.root)
+                    self.assertEqual(len(errors), 1, errors)
+                    self.assertIn(
+                        f"Complexity/Reference.lean:6: invalid docstring Markdown link target `{target}`",
+                        errors[0],
+                    )
+
+        good = self.write(
+            "Complexity/Reference.lean",
+            "module\n-- upstream: candidate\n/-!\n"
+            "See [consumer][module], [external] and [anchor][].\n\n"
+            "[module]: Complexity/Init.html#result \"Init\"\n"
+            " [external]: <https://example.com/paper.pdf> (Paper)\n"
+            "   [anchor]: #result\n"
+            "[dependency]: Mathlib/Data/Nat/Basic.html\n"
+            "[next-line]:\n  <Complexity/Init.html>\n"
+            "-/\n",
+        )
+        self.assertEqual(check_hygiene.check_file(good, root=self.root), [])
+
+    def test_reference_definitions_ignore_code_math_escapes_and_citation_prose(self) -> None:
+        p = self.write(
+            "Complexity/ReferenceExamples.lean",
+            "module\n-- upstream: candidate\n/-!\n"
+            "```markdown\n[example]: Missing.html\n```\n"
+            "`[inline]: Missing.html`\n"
+            "`multiline\n[code]: Missing.html\n`\n"
+            "$$\n[math]: Missing.html\n$$\n"
+            "\\[escaped]: Missing.html\n"
+            "    [indented]: Missing.html\n"
+            "`x`[not-a-definition]: Missing.html\n"
+            "[AroraBarak09]: for each input, the theorem applies.\n"
+            "[real]: Missing.html\n-/\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root)
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("invalid docstring Markdown link target `Missing.html`", errors[0])
+        self.assertIn(":18:", errors[0])
+
+    def test_wrapped_citation_prose_is_not_a_reference_destination(self) -> None:
+        p = self.write(
+            "Complexity/CitationProse.lean",
+            "module\n-- upstream: candidate\n/-!\n"
+            "[AroraBarak09, Theorem 1]: if\n"
+            "the hypothesis holds, the conclusion follows.\n\n"
+            "[AroraBarak09]: the\n"
+            "first part of the result.\n\n"
+            "[AroraBarak09]: /Complexity/Init.lean\n"
+            "[AroraBarak09]: <Missing>\n"
+            "[ordinary-label]: Missing\n-/\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root)
+        self.assertEqual(len(errors), 3, errors)
+        self.assertIn("`/Complexity/Init.lean`", errors[0])
+        self.assertIn("`Missing`", errors[1])
+        self.assertIn("`Missing`", errors[2])
+
+    def test_unmatched_backtick_does_not_hide_links_or_citations_in_later_paragraphs(self) -> None:
+        doc = "Literal unmatched ` in prose.\n\n[broken]: Missing.html\n\n[Unknown2026]\n\nLater `code`."
+        p = self.write(
+            "Complexity/Paragraphs.lean",
+            "module\n-- upstream: candidate\n/-!\n" + doc + "\n-/\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root)
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("`Missing.html`", errors[0])
+        self.assertEqual([key for _, key in check_hygiene.docstring_citations(doc)],
+                         ["Unknown2026"])
+
+    def test_reference_definition_next_line_and_dependency_existence(self) -> None:
+        self.write(".lake/packages/mathlib/Mathlib/Existing.lean", "module\n")
+        p = self.write(
+            "Complexity/Reference.lean",
+            "module\n-- upstream: candidate\n/-!\n"
+            "[missing]:\n   <Mathlib/Missing.html>\n"
+            "[existing]: Mathlib/Existing.html\n-/\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root)
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("Complexity/Reference.lean:4:", errors[0])
+        self.assertIn("target dependency module `Mathlib/Missing.lean` does not exist", errors[0])
+
     def test_docstring_nonexistent_complexity_module_or_fenced_code_path_fails(self) -> None:
         p = self.write(
             "Complexity/MissingTarget.lean",

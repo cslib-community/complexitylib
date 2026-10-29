@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.TowerTable
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Fin
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Tactic.PolyTime
@@ -56,7 +57,7 @@ private def vertexEncoding : Fin b ↪ List Bool :=
 /-- A table lookup charges its complete stored prefix and its returned entry. -/
 @[fun_prop]
 theorem polytime_lookup (label : D ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun p : TowerTable D × (ℕ × (D × D)) =>
+    ComputableInPolyTime (fun p : TowerTable D × (ℕ × (D × D)) =>
       p.1.lookup p.2.1 p.2.2)
       (encPair (encoding label) (encPair encUnary (encPair label label)))
       (encPair encUnary (encPair label label)) := by
@@ -96,63 +97,56 @@ theorem polytime_lookup (label : D ↪ List Bool) :
   have hargs := ComputableInPolyTime.snd rows (encPair encUnary (encPair label label))
   have hrow := hhead.comp (hdrop.comp (htable.prod hargs.fst'))
   have hp := ComputableInPolyTime.pi_apply' hrow hargs.snd'
-  have hplain : ComputableInPolyTime
-      (fun p : TowerTable D × (ℕ × (D × D)) => p.1.lookup p.2.1 p.2.2)
-      (encPair (encoding label) (encPair encUnary (encPair label label)))
-      (encPair encUnary (encPair label label)) := by
-    simpa only [lookup, List.headD_eq_head?_getD, List.head?_drop,
-      List.getD_eq_getElem?_getD, Function.comp_def, encoding, rows, row] using hp
-  obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hplain
-  exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
-    .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
+  simpa only [lookup, List.headD_eq_head?_getD, List.head?_drop,
+    List.getD_eq_getElem?_getD, Function.comp_def, encoding, rows, row] using hp
 
 /-- Each new row uses two stored rotations and fixed finite base operations. -/
 @[fun_prop]
 theorem polytime_nextRow (H : RotationMap (Fin b) D) (e : Fin b ≃ (Fin 2 → D × D))
     (hb : 0 < b) (label : D ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun p : TowerTable D × ℕ => nextRow H e hb p.1 p.2)
+    ComputableInPolyTime (fun p : TowerTable D × ℕ => nextRow H e hb p.1 p.2)
       (encPair (encoding label) encUnary)
       (encPi (encPair encUnary (encPair label label))) := by
-  have hbase : ComputableTidilyInPolyTime H.rot
+  have hbase : ComputableInPolyTime H.rot
       (encPair vertexEncoding label) (encPair vertexEncoding label) := .of_finite _
-  have hencode : ComputableTidilyInPolyTime (fun p : (D × D) × (D × D) =>
+  have hencode : ComputableInPolyTime (fun p : (D × D) × (D × D) =>
       e.symm ![p.1, p.2]) (encPair (encPair label label) (encPair label label))
       vertexEncoding := .of_finite _
-  have hleft : ComputableTidilyInPolyTime (fun vertex => e vertex 0) vertexEncoding
+  have hleft : ComputableInPolyTime (fun vertex => e vertex 0) vertexEncoding
       (encPair label label) := .of_finite _
-  have hright : ComputableTidilyInPolyTime (fun vertex => e vertex 1) vertexEncoding
+  have hright : ComputableInPolyTime (fun vertex => e vertex 1) vertexEncoding
       (encPair label label) := .of_finite _
-  have hval : ComputableTidilyInPolyTime (Fin.val : Fin b → ℕ) vertexEncoding encUnary :=
+  have hval : ComputableInPolyTime (Fin.val : Fin b → ℕ) vertexEncoding encUnary :=
     .of_eq (fun _ => rfl)
-  apply ComputableTidilyInPolyTime.pi
+  apply ComputableInPolyTime.pi
   intro edge
-  have htable := ComputableTidilyInPolyTime.fst (encoding label) encUnary
-  have hvertex := ComputableTidilyInPolyTime.snd (encoding label) encUnary
+  have htable := ComputableInPolyTime.fst (encoding label) encUnary
+  have hvertex := ComputableInPolyTime.snd (encoding label) encUnary
   have hfirst := hbase.comp
-    (((ComputableTidilyInPolyTime.unary_finMod hb vertexEncoding).comp hvertex).prod
-    (ComputableTidilyInPolyTime.const edge.1))
+    (((ComputableInPolyTime.unary_finMod hb vertexEncoding).comp hvertex).prod
+    (ComputableInPolyTime.const edge.1))
   have hmiddle₁ := (polytime_lookup label).comp (htable.prod
-    (((ComputableTidilyInPolyTime.unary_div_const b).comp hvertex).prod
+    (((ComputableInPolyTime.unary_div_const b).comp hvertex).prod
       (hleft.comp hfirst.fst')))
   have hmiddle₂ := (polytime_lookup label).comp
     (htable.prod (hmiddle₁.fst'.prod (hright.comp hfirst.fst')))
   have hlast := hbase.comp ((hencode.comp (hmiddle₂.snd'.prod hmiddle₁.snd')).prod
-    (ComputableTidilyInPolyTime.const edge.2))
+    (ComputableInPolyTime.const edge.2))
   unfold nextRow
-  exact ((ComputableTidilyInPolyTime.unary_add).comp
-    (((ComputableTidilyInPolyTime.unary_mul).comp
-      (hmiddle₂.fst'.prod (ComputableTidilyInPolyTime.const b))).prod
+  exact ((ComputableInPolyTime.unary_add).comp
+    (((ComputableInPolyTime.unary_mul).comp
+      (hmiddle₂.fst'.prod (ComputableInPolyTime.const b))).prod
       (hval.comp hlast.fst'))).prod (hlast.snd'.prod hfirst.snd')
 
 /-- Construct the complete next level, accounting for every row and label. -/
 @[fun_prop]
 theorem polytime_next (H : RotationMap (Fin b) D) (e : Fin b ≃ (Fin 2 → D × D))
     (hb : 0 < b) (label : D ↪ List Bool) :
-    ComputableTidilyInPolyTime (next H e hb) (encoding label) (encoding label) := by
+    ComputableInPolyTime (next H e hb) (encoding label) (encoding label) := by
   unfold next
   have hrow := polytime_nextRow H e hb label
   unfold encoding at hrow ⊢
-  exact ComputableTidilyInPolyTime.mapWithInput (by fun_prop) hrow
+  exact ComputableInPolyTime.mapWithInput (by fun_prop) hrow
 
 /-- Every stored word, finite table, and row delimiter contributes to the size bound. -/
 theorem length_encoding_le (label : D ↪ List Bool) {table : TowerTable D} (h : table.Valid)
@@ -197,13 +191,13 @@ The invariant bounds complete intermediate tables, not only their numbers of row
 @[fun_prop]
 theorem polytime_build (H : RotationMap (Fin b) D) (e : Fin b ≃ (Fin 2 → D × D))
     (hb : 1 < b) (label : D ↪ List Bool) :
-    ComputableTidilyInPolyTime (build H e (by lia)) encUnary (encoding label) := by
-  apply ComputableTidilyInPolyTime.iterate
+    ComputableInPolyTime (build H e (by lia)) encUnary (encoding label) := by
+  apply ComputableInPolyTime.iterate
     (count := fun size => Nat.clog b size - 1) (init := fun _ => initial H)
     (step := next H e (by lia)) (by fun_prop) (by fun_prop) (polytime_next H e (by lia) label)
     (bound := fun size => (b * (size + 1)) * (2 * Fintype.card (D × D) *
       (2 * (2 * (b * (size + 1)) + 3 * Finset.univ.sup (fun d => (label d).length) + 2) + 1) + 1))
-  · exact ComputableTidilyInPolyTime.polyBounded (by fun_prop)
+  · exact ComputableInPolyTime.polyBounded (by fun_prop)
   · intro size level hlevel
     exact length_encoding_le label (valid_iterate H e (by lia) level)
       (length_iterate_le H e hb hlevel)
