@@ -61,7 +61,6 @@ theorem exists_signed_verifier_machine (enc : α ↪ List Bool) (p : Polynomial 
           (if sign then
             2 ^ p.eval (enc a).length - Complexity.acceptCount verifier a (p.eval (enc a).length)
             else 2 ^ p.eval (enc a).length) := by
-  have hverify := hverify.tidy
   obtain ⟨k, State, hfinite, source, sourceClock, hnon, hm⟩ :=
     exists_verifier_machine enc p verifier hverify
   let machine := (verdictMachine sign).comp source true

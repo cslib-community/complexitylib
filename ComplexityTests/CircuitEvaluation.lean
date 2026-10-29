@@ -122,9 +122,8 @@ example (cost : constantSignature.Op → ℕ) :
 -- Distinct signature and carrier universes remain polymorphic, including compiler adapters.
 example {σ : Signature.{v}} {U : Type u} {n m : Nat} (c : Circuit σ n m)
     (i : Interpretation σ U) (x : Fin n → U) (j : Fin m) :
-    (c.evalVector i x).get j = c.eval i x j := by
+    (c.evalVector i x).get j = c.evalImpl i x j := by
+  rw [← Circuit.eval_eq_evalImpl]
   simp
-
-example : @Circuit.eval.{v, u} = @Circuit.evalImpl.{v, u} := Circuit.eval_eq_evalImpl
 
 end ComplexityTests.CircuitEvaluation

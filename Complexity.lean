@@ -14,6 +14,7 @@ public import Complexity.Algorithms.Lean.FusionTree.Routing
 public import Complexity.Algorithms.Lean.FusionTree.Sketch
 public import Complexity.Algorithms.Lean.FusionTree.Tree
 public import Complexity.Algorithms.Lean.FusionTree.XorCorrection
+public import Complexity.Algorithms.Lean.IndexedMinPQ
 public import Complexity.Algorithms.Lean.Queue
 public import Complexity.Algorithms.Lean.Retroactive
 public import Complexity.Algorithms.Lean.SearchTree.Basic
@@ -55,11 +56,7 @@ public import Complexity.Algorithms.ThreeSum.ChanHe.Sizes
 public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
-public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
-public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
-public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram
-public import Complexity.Algorithms.WordRAM.Dijkstra.HeapRelax
-public import Complexity.Algorithms.WordRAM.Dijkstra.HeapSift
+public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ
 public import Complexity.Algorithms.WordRAM.Dijkstra.HeapStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.Invariant
 public import Complexity.Algorithms.WordRAM.Dijkstra.ListEncode
@@ -94,10 +91,20 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.Karger.Contract
+public import Complexity.Algorithms.WordRAM.Karger.FastCut
+public import Complexity.Algorithms.WordRAM.Karger.Graph
+public import Complexity.Algorithms.WordRAM.KargerMinCut
+public import Complexity.Algorithms.WordRAM.KargerStein
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
 public import Complexity.Algorithms.WordRAM.PrefixSums.Update
+public import Complexity.Algorithms.WordRAM.PriorityQueue.Basic
+public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap
+public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Model
+public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Program
+public import Complexity.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Sift
 public import Complexity.Algorithms.WordRAM.Queue.Basic
 public import Complexity.Algorithms.WordRAM.Queue.Dynamic
 public import Complexity.Algorithms.WordRAM.Queue.Model
@@ -656,6 +663,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Ou
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Reduction
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Transducer
 public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
 public import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
 public import Complexity.Computability.Complexity.Classes.MIP
 public import Complexity.Computability.Complexity.Classes.MIP.Defs
@@ -815,11 +823,11 @@ public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
-public import Complexity.Computability.Complexity.FineGrained.GeneralCNFCountingAsymptotics
-public import Complexity.Computability.Complexity.FineGrained.GeneralCNFHermiteRecovery
 public import Complexity.Computability.Complexity.FineGrained.GraphProblems
 public import Complexity.Computability.Complexity.FineGrained.LocalMapCounting
 public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Basic
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Defs
 public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
@@ -828,7 +836,6 @@ public import Complexity.Computability.Complexity.FineGrained.ReplacementSchedul
 public import Complexity.Computability.Complexity.FineGrained.Schoening
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
-public import Complexity.Computability.Complexity.FineGrained.SparseCNFDesignSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
 public import Complexity.Computability.Complexity.FineGrained.Sparsification
@@ -1456,7 +1463,6 @@ public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidence
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStepCert
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
-public import Complexity.Computability.PolyTime.CNF.ClauseJetEval
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
@@ -1606,6 +1612,7 @@ public import Complexity.Computability.WordRAM.Controller
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
+public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Function
 public import Complexity.Computability.WordRAM.Generic
 public import Complexity.Computability.WordRAM.Heap
@@ -1633,6 +1640,7 @@ public import Complexity.Computability.WordRAM.RAM
 public import Complexity.Computability.WordRAM.RAMInput
 public import Complexity.Computability.WordRAM.Randomized.Defs
 public import Complexity.Computability.WordRAM.Randomized.Expected
+public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
 public import Complexity.Computability.WordRAM.Signed.Comparison
@@ -1642,6 +1650,7 @@ public import Complexity.Computability.WordRAM.Signed.Input
 public import Complexity.Computability.WordRAM.Signed.Operations
 public import Complexity.Computability.WordRAM.Signed.State
 public import Complexity.Computability.WordRAM.Structured
+public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
 public import Complexity.Crypto.Computational.Basic
@@ -1654,6 +1663,7 @@ public import Complexity.Crypto.Computational.CramerShoup.Scheme
 public import Complexity.Crypto.Computational.DiffieHellman
 public import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 public import Complexity.Crypto.Computational.DiffieHellman.MultiDDH
+public import Complexity.Crypto.Computational.DiffieHellman.Order
 public import Complexity.Crypto.Computational.DiscreteLog
 public import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 public import Complexity.Crypto.Computational.ElGamal
@@ -1851,6 +1861,10 @@ public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Sampling
 public import Complexity.Crypto.Protocols.Cipher.EvenMansour
 public import Complexity.Crypto.Protocols.Cipher.LubyRackoff
 public import Complexity.Crypto.Protocols.MAC.CarterWegman
+public import Complexity.Crypto.Protocols.MPC.Basic
+public import Complexity.Crypto.Protocols.MPC.CircuitEval
+public import Complexity.Crypto.Protocols.MPC.Composition
+public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 public import Complexity.Crypto.Protocols.SigmaProtocol.Composition
@@ -1912,7 +1926,6 @@ public import Complexity.Foundations.BooleanAnalysis.SignApproximation
 public import Complexity.Foundations.BooleanAnalysis.SparseBranching
 public import Complexity.Foundations.BooleanAnalysis.SparseClearedSpecialization
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
-public import Complexity.Foundations.BooleanAnalysis.SparseHermiteJetRecovery
 public import Complexity.Foundations.BooleanAnalysis.SparseHermiteRecovery
 public import Complexity.Foundations.BooleanAnalysis.SparseReplacementDesign
 public import Complexity.Foundations.BooleanAnalysis.Symmetrization
@@ -2250,6 +2263,7 @@ public import Complexity.Languages.Probabilistic.RandomPermutation
 public import Complexity.Languages.Probabilistic.Repeat
 public import Complexity.Languages.Probabilistic.Selection
 public import Complexity.Languages.Probabilistic.Semantics
+public import Complexity.Languages.Probabilistic.Sharing
 public import Complexity.Languages.Probabilistic.Simulation
 public import Complexity.Languages.Probabilistic.Sum
 public import Complexity.Languages.Probabilistic.Transcript
@@ -2348,7 +2362,6 @@ public import Complexity.Logics.Propositional.CNF.Planar.PairedCrossover
 public import Complexity.Logics.Propositional.CNF.Planar.PairedWire
 public import Complexity.Logics.Propositional.CNF.PolyTime
 public import Complexity.Logics.Propositional.CNF.PolynomialTests
-public import Complexity.Logics.Propositional.CNF.SatisfactionPolynomial
 public import Complexity.Logics.Propositional.CNF.SparseDesignCounter
 public import Complexity.Logics.Propositional.CNF.SparseParityCounter
 public import Complexity.Logics.Propositional.CNF.ThreeCNF
