@@ -404,6 +404,10 @@ each statement against the numbered result. Organize modules by subject, not cha
 
 ## Machines, RAM and data structures
 
+- **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
+  with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
+  The current interpreter has a stronger polynomial certificate and a streaming input lookup;
+  the buffered representation, its native cleanup routines and their amortized bounds remain.
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.

@@ -13,6 +13,7 @@ public import Complexity.Languages.Probabilistic.Oracle.QueryCount
 
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Languages.Probabilistic.RandomOracle.Probabilistic
 
 /-!
@@ -36,7 +37,7 @@ the source program still has exactly the joint result/cache law of `memoize`.
 ## References
 
 Adapted from Computability/Probabilistic/Memoize.lean on the cslib `crypto` branch at
-`5ff69ca93402e7c947208dc56396d6d86203ccd8`, reusing the tidy calculus and captured-input rules.
+`5ff69ca93402e7c947208dc56396d6d86203ccd8`, using plain computability and captured-input rules.
 -/
 
 @[expose] public section
@@ -65,20 +66,18 @@ theorem IsPPTOn.memoize {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input :
       (encList (encPair keyEncoding valueEncoding))) :
     IsPPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
       (fun a => memoize (compute a) (query a) (cache a)) := by
-  have hquery := hquery.tidy
-  have hcache := hcache.tidy
   let found (a : α) := (cache a).find? (fun entry => query a == entry.1)
-  have hfound : ComputableTidilyInPolyTime found input
+  have hfound : ComputableInPolyTime found input
       (encOption (encPair keyEncoding valueEncoding)) := by fun_prop
   let finish (a : α) (value : Value) :=
     if (found a).isSome then ((found a).getD (query a, value) |>.2, cache a)
     else (value, (query a, value) :: cache a)
-  have hpost : ComputableTidilyInPolyTime (fun p : α × Value => finish p.1 p.2)
+  have hpost : ComputableInPolyTime (fun p : α × Value => finish p.1 p.2)
       (encPair input valueEncoding)
       (encPair valueEncoding (encList (encPair keyEncoding valueEncoding))) := by
     unfold finish
     fun_prop
-  refine (hcompute.map_with (f := finish) (.of_tidy hpost)).congr ?_
+  refine (hcompute.map_with (f := finish) hpost).congr ?_
   intro a
   rw [Cslib.memoize, lookup_eq_map_find]
   cases h : (cache a).find? (fun entry => query a == entry.1) <;>

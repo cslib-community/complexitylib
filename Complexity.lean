@@ -1476,6 +1476,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compo
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Correct
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.ResourceBound
@@ -2211,6 +2212,7 @@ public import Complexity.Foundations.Data.Finset.SubsetSum
 public import Complexity.Foundations.Data.Finset.SymmDiff
 public import Complexity.Foundations.Data.Hamming
 public import Complexity.Foundations.Data.Hamming.Expansion
+public import Complexity.Foundations.Data.Int.LogBounds
 public import Complexity.Foundations.Data.Int.Order
 public import Complexity.Foundations.Data.Int.Residue
 public import Complexity.Foundations.Data.List.Append
@@ -2345,6 +2347,7 @@ public import Complexity.Foundations.NumberTheory.AKS.SmallR
 public import Complexity.Foundations.NumberTheory.Harmonic
 public import Complexity.Foundations.NumberTheory.PrimeCounting
 public import Complexity.Foundations.NumberTheory.PrimeWindow
+public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
 public import Complexity.Foundations.Order.BooleanSubalgebra
 public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.UpperLower

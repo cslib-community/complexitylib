@@ -41,8 +41,10 @@ the diagonal function `Cslib.Complexity.diagonal` has the clock `2 ^ n`.
 Decoding a description of `L` bits takes time polynomial in `L`, of a degree fixed by the decoder,
 hence `O(2 ^ L)`, which is `O(n)` on short descriptions; padded descriptions are short.
 
-The native universal machine simulates `J` steps of a description of length `B` within time
-`O(B ^ 5 * J ^ 3)` (`Turing.MultiTapeTM.Universal.universal_bounds_le`), so the problem decided by
+The resource estimate used here bounds `J` simulated steps by `O(B ^ 5 * J ^ 3)`,
+where `B` bounds the encoded description, input and clock length. This weakens the sharper
+`O((B + 1) ^ 4 * J ^ 2)` bound (`Turing.MultiTapeTM.Universal.universal_bounds_le`), so the problem
+decided by
 `timeDiagonal J` is in `DTIME ((n + 1) ^ 5 * (J n + 1) ^ 3)` for a time-constructible clock `J`
 (`Cslib.Complexity.setOf_timeDiagonal_mem_DTIME`). It is not in `DTIME f` when every `c * f n + c`
 is eventually below `J n`, by the diagonal argument
@@ -156,8 +158,12 @@ private theorem clockedBounds_aux (cA cD cO C₂ : ℕ) : ∃ K, ∀ {n A D N J 
       (Nat.pow_le_pow_right hY1 (show 2 ≤ 3 by omega))
     rwa [one_mul] at this
   -- the pieces
-  have hU' : 100000 * (P * (n + 1)) ^ 5 * (J + 1) ^ 3 = 100000 * P ^ 5 * W := by
-    simp only [hW, mul_pow, Nat.mul_assoc]
+  have hU' : 100000 * (P * (n + 1)) ^ 4 * (J + 1) ^ 2 ≤ 100000 * P ^ 5 * W := by
+    have hmono := Nat.mul_le_mul
+      (Nat.pow_le_pow_right hPX1 (show 4 ≤ 5 by omega))
+      (Nat.pow_le_pow_right hY1 (show 2 ≤ 3 by omega))
+    have hscaled := Nat.mul_le_mul_left 100000 hmono
+    simpa only [hW, mul_pow, Nat.mul_assoc] using hscaled
   have hrunZ : runBound D N J ≤ 200 * P ^ 2 * Z := by
     have : 200 * (P * (n + 1)) ^ 2 * (J + 1) = 200 * P ^ 2 * Z := by
       simp only [hZ, mul_pow, Nat.mul_assoc]
