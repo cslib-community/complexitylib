@@ -222,7 +222,7 @@ theorem computableInPolyTime_check :
   have hle : ComputableInPolyTime
       (fun ip : Instance × List Bool => decide (ip.2.length ≤ ip.1.size))
       (encPair enc encBits) encBool :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_le).comp (hlen.prod hsize)
+    unary_le.comp (hlen.prod hsize)
   exact bool_and.comp (hle.prod (hrun.decide_eq' hsome))
 
 /-- **`MINcKT` is in `NP`** (conditional analogue of [Hirahara, Definition 9][Hirahara2018]): a

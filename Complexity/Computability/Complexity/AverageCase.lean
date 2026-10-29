@@ -21,7 +21,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Map
-import Complexity.Tactic.PolyTime
 
 /-!
 # Mild Average-Case Hardness of Functions Against Efficient Heuristics
@@ -323,9 +322,9 @@ theorem MildlyHardOnAverageToOneSidedApprox.mildlyHardOnAverageToApprox {g : ℕ
   refine ⟨p, hp, fun H hppt => ?_⟩
   have hsub : ComputableInPolyTime (fun pair : List Bool × ℕ => pair.2 - g pair.1.length)
       (encPair encBits encNat) encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_sub'
-      (ComputableTidilyInPolyTime.snd encBits encNat)
-      (hg.tidy.comp (ComputableTidilyInPolyTime.fst encBits encNat)))
+    ComputableInPolyTime.binary_sub'
+      (ComputableInPolyTime.snd encBits encNat)
+      (hg.comp (ComputableInPolyTime.fst encBits encNat))
   have hppt' : IsPPTOn encBits encNat (fun x => (fun v => v - g x.length) <$> H x) :=
     hppt.map_with hsub
   filter_upwards [hH (fun x => (fun v => v - g x.length) <$> H x) hppt'] with n hn
@@ -357,7 +356,7 @@ theorem MildlyHardOnAverageToOneSidedApproxDet.mildlyHardOnAverageToApproxDet {g
   obtain ⟨p, hp, hH⟩ := h
   refine ⟨p, hp, fun H hpoly => ?_⟩
   have hpoly' : ComputableInPolyTime (fun x : List Bool => H x - g x.length) encBits encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_sub' hpoly.tidy hg.tidy)
+    ComputableInPolyTime.binary_sub' hpoly hg
   filter_upwards [hH (fun x => H x - g x.length) hpoly'] with n hn
   refine (map_decide_le_of_imp _ _ ?_).trans hn
   intro x hx hdist

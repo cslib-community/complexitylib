@@ -54,11 +54,7 @@ theorem isPPTOn_encryptBitsHybrid
     (hcut : ComputableInPolyTime cut input encUnary) :
     IsPPTOn input (encList encBits)
       (fun a => E.encryptBitsHybrid (n a) (pk a) (bits a) (cut a)) := by
-  have hn := hn.tidy
-  have hpk := hpk.tidy
-  have hbits := hbits.tidy
-  have hcut := hcut.tidy
-  apply isPPTOn_encryptBits hencrypt (.of_tidy hn) (.of_tidy hpk)
+  apply isPPTOn_encryptBits hencrypt hn hpk
   fun_prop
 
 /-- Copy the full supplied ciphertext between independently encrypted zero and original words. -/
@@ -71,15 +67,10 @@ theorem isPPTOn_spliceEncryptedBit
     (hchallenge : ComputableInPolyTime challenge input encBits) :
     IsPPTOn input (encList encBits)
       (fun a => E.spliceEncryptedBit (n a) (pk a) (before a) (after a) (challenge a)) := by
-  have hn := hn.tidy
-  have hpk := hpk.tidy
-  have hbefore := hbefore.tidy
-  have hafter := hafter.tidy
-  have hchallenge := hchallenge.tidy
-  have hfront := isPPTOn_encryptBits hencrypt (.of_tidy hn) (.of_tidy hpk)
-    (.of_tidy (show ComputableTidilyInPolyTime
-      (fun a => List.replicate (before a) false) input encBits by fun_prop))
-  have hback := isPPTOn_encryptBits hencrypt (.of_tidy hn) (.of_tidy hpk) (.of_tidy hafter)
+  have hfront := isPPTOn_encryptBits hencrypt hn hpk
+    (show ComputableInPolyTime
+      (fun a => List.replicate (before a) false) input encBits by fun_prop)
+  have hback := isPPTOn_encryptBits hencrypt hn hpk hafter
   unfold spliceEncryptedBit
   ppt
 

@@ -50,7 +50,7 @@ def spaceBound (ℓ H : ℕ) : ℕ := (ℓ + H + 1) * ((encNat ℓ).length + 1)
 private theorem length_lt_primeFor {ℓ v : ℕ} (hv : v ≤ primeFor ℓ) : (encNat v).length ≤
     (encNat ℓ).length + 3 :=
   by
-  refine (ComputableTidilyInO.length_encNat_mono (hv.trans (primeFor_le ℓ))).trans ?_
+  refine (length_encNat_mono (hv.trans (primeFor_le ℓ))).trans ?_
   rw [length_encNat_eq_size, length_encNat_eq_size]
   refine Nat.size_le.mpr ?_
   have := Nat.lt_size_self ℓ
@@ -119,7 +119,7 @@ theorem bounds_of_inv {ℓ H : ℕ} {s : State} (hs : Inv ℓ H s) : Bounds ℓ 
     obtain ⟨heq, hn⟩ := hs
     simp only [State.mk.injEq] at heq
     obtain ⟨rfl, rfl, rfl, rfl, rfl, rfl, -⟩ := heq
-    have := ComputableTidilyInO.length_encNat_mono hn
+    have := length_encNat_mono hn
     exact ⟨Nat.zero_le _, Nat.zero_le _, by simp, hempty, by simp, by simp,
       by simp only [Ctl.toTuple]; omega, by simp [Ctl.toTuple], by simp [Ctl.toTuple]⟩
   | hdrHeight n =>
@@ -127,7 +127,7 @@ theorem bounds_of_inv {ℓ H : ℕ} {s : State} (hs : Inv ℓ H s) : Bounds ℓ 
     simp only [State.mk.injEq] at heq
     obtain ⟨he, rfl, rfl, rfl, rfl, rfl, -⟩ := heq
     subst e
-    have := ComputableTidilyInO.length_encNat_mono hn
+    have := length_encNat_mono hn
     exact ⟨le_rfl, Nat.zero_le _, by simp, hempty, by simp, by simp,
       by simp only [Ctl.toTuple]; omega, by simp [Ctl.toTuple], by simp [Ctl.toTuple]⟩
   | prime q d =>
@@ -148,14 +148,14 @@ theorem bounds_of_inv {ℓ H : ℕ} {s : State} (hs : Inv ℓ H s) : Bounds ℓ 
   | leaf i =>
     dsimp only [Inv, RunInv] at hs
     obtain ⟨rfl, rfl, hp2, hpp, hR, hst, hrd, hi⟩ := hs
-    have := ComputableTidilyInO.length_encNat_mono hi
+    have := length_encNat_mono hi
     exact ⟨le_rfl, le_rfl, length_lt_primeFor hpp, bounds_regs_wf hR hpp, hst,
       fun fr hfr => length_lt_primeFor ((hrd fr hfr).le.trans hpp),
       by simp only [Ctl.toTuple]; omega, by simp [Ctl.toTuple], by simp [Ctl.toTuple]⟩
   | scan k acc =>
     dsimp only [Inv, RunInv] at hs
     obtain ⟨rfl, rfl, hp2, hpp, hR, hst, hrd, hk, hacc, hacc'⟩ := hs
-    have h₁ := (ComputableTidilyInO.length_encNat_mono hk).trans (length_tableLength_le e)
+    have h₁ := (length_encNat_mono hk).trans (length_tableLength_le e)
     have h₂ := length_encList_le encNat acc (b := (encNat e).length + 3)
       fun v hv => length_lt_primeFor ((hacc' v hv).le.trans hpp)
     rw [hacc] at h₂
@@ -177,8 +177,8 @@ theorem stateBudget_le {ℓ H : ℕ} {s : State} (hb : Bounds ℓ H s) :
   simp only at he hh hp hR hst hrd hn₁ hn₂ hacc
   set L := (encNat ℓ).length with hL
   have hHl := length_encNat_le_self H
-  have hel := ComputableTidilyInO.length_encNat_mono he
-  have hhl := (ComputableTidilyInO.length_encNat_mono hh).trans hHl
+  have hel := length_encNat_mono he
+  have hhl := (length_encNat_mono hh).trans hHl
   obtain ⟨hR0, hR0'⟩ := hR 0
   obtain ⟨hR1, hR1'⟩ := hR 1
   obtain ⟨hR2, hR2'⟩ := hR 2
