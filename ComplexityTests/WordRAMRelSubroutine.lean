@@ -13,7 +13,7 @@ public import Complexity.Computability.WordRAM.RelSubroutine
 /-!
 # Tests for Relational Word-RAM Subroutine Realizations
 
-Concrete non-vacuous tests for `Cslib.WordRAM.RelSubroutineDS`, `RelDynamicProgram`,
+Concrete non-vacuous tests for `Cslib.WordRAM.RelSubroutineDS`, `DynamicProgram`,
 `RelDynamicCertificate`, `SubroutineDS.toRelSubroutineDS`, `RelSubroutineDS.toStandard`,
 `RelSubroutineDS.call_rename`, `RelSubroutineDS.run_client_amortized`,
 `RelSubroutineDS.run_ops_exact_fresh`, and `RelSubroutineDS.run_ops_exact_reusable` on a
@@ -22,7 +22,7 @@ genuinely nondeterministic two-slot allocator specification.
 
 @[expose] public section
 
-namespace Cslib.WordRAM.Tests
+namespace ComplexityTests.WordRAMRelSubroutine
 
 open Cslib Cslib.Stateful Cslib.WordRAM
 
@@ -176,8 +176,8 @@ theorem allocPair_demonicValid :
 theorem twoSlot_run_client_amortized (w base : ℕ) (h2 : Fits w 2)
     {x : Data 6} (hr : (twoSlotSubroutine w base h2).rep (false, false) x) :
     ∃ a y traces s' tr,
-      Stateful.RelExecutes
-        ((twoSlotSubroutine w base h2).toStandard.toRelDynamicProgram.ExecOp w)
+      Stateful.Executes
+        ((twoSlotSubroutine w base h2).toStandard.toDynamicProgram.ExecOp w)
         allocPair x a y traces ∧
       TwoSlotAlloc.ClientRun (false, false) allocPair a s' tr ∧
       (twoSlotSubroutine w base h2).rep s' y ∧
@@ -348,4 +348,4 @@ def detCounter2RelSubroutine (w base : ℕ) (h2 : Fits w 2) :
     RelSubroutineDS twoSlotCode DetCounter2.toRelSpec w base Fin.elim0 0 :=
   (detCounter2Subroutine w base h2).toRelSubroutineDS
 
-end Cslib.WordRAM.Tests
+end ComplexityTests.WordRAMRelSubroutine

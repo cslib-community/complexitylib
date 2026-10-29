@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Boolean.Word
 public import Complexity.Computability.Circuit.Iteration
 public import Complexity.Foundations.Data.List.OfFn
 public import Mathlib.Order.Monotone.Defs
+import Complexity.Foundations.Data.Fin.Order
 
 /-!
 # Finding and selecting a colliding pair
@@ -56,36 +57,6 @@ section Collision
 
 variable {β : Type v} [LinearOrder β]
 
-/-- In an array with monotone keys, two different records with equal keys force an adjacent pair
-of different records with that key. -/
-theorem adjacent_distinct_of_equal_keys (records : Fin R → α) (key : α → β)
-    (hs : Monotone (key ∘ records)) (i j : Fin R) (hij : i < j)
-    (hne : records i ≠ records j) (heq : key (records i) = key (records j)) :
-    ∃ (p : ℕ) (hp : p + 1 < R),
-      records ⟨p, by omega⟩ ≠ records ⟨p + 1, hp⟩ ∧
-      key (records ⟨p, by omega⟩) = key (records ⟨p + 1, hp⟩) ∧
-      key (records ⟨p, by omega⟩) = key (records i) := by
-  classical
-  have hex : ∃ q, ∃ hq : q < R, i.val < q ∧ q ≤ j.val ∧ records ⟨q, hq⟩ ≠ records i :=
-    ⟨j.val, j.isLt, hij, le_rfl, hne.symm⟩
-  obtain ⟨hq, hiq, hqj, hdiff⟩ := Nat.find_spec hex
-  generalize hqdef : Nat.find hex = q at hq hiq hqj hdiff
-  have hmin : ∀ q' < q, ¬∃ hq : q' < R, i.val < q' ∧ q' ≤ j.val ∧ records ⟨q', hq⟩ ≠ records i :=
-    fun q' hq' => Nat.find_min hex (by omega)
-  have hsame : records ⟨q - 1, by omega⟩ = records i := by
-    by_contra h
-    have hlt : i.val < q - 1 := by
-      have hne : i.val ≠ q - 1 := fun he => h (congrArg records (Fin.ext he.symm))
-      omega
-    exact hmin (q - 1) (by omega) ⟨by omega, hlt, by omega, h⟩
-  have hqkey : key (records ⟨q, hq⟩) = key (records i) :=
-    le_antisymm ((hs (show (⟨q, hq⟩ : Fin R) ≤ j from hqj)).trans_eq heq.symm)
-      (hs (show i ≤ (⟨q, hq⟩ : Fin R) from hiq.le))
-  have hqp : q - 1 + 1 = q := by omega
-  refine ⟨q - 1, by omega, ?_, ?_, congrArg key hsame⟩
-  · simpa only [hqp, hsame] using hdiff.symm
-  · simpa only [hqp, hsame] using hqkey.symm
-
 /-- A sorter preserving complete records makes some collision between different records adjacent,
 with the original key. Identical adjacent records can therefore be rejected safely. -/
 theorem adjacent_distinct_collision (input output : Fin R → α) (key : α → β)
@@ -100,10 +71,11 @@ theorem adjacent_distinct_collision (input output : Fin R → α) (key : α → 
   have hdiff : output a ≠ output b := by rwa [ha, hb]
   have hkeys : key (output a) = key (output b) := by rwa [ha, hb]
   rcases lt_or_gt_of_ne fun h : a = b => hdiff (h ▸ rfl) with hlt | hlt
-  · obtain ⟨p, hp, hd, hk, hi⟩ := adjacent_distinct_of_equal_keys output key hs a b hlt hdiff hkeys
+  · obtain ⟨p, hp, hd, hk, hi⟩ :=
+      Fin.exists_adjacent_ne_of_monotone_comp output key hs a b hlt hdiff hkeys
     exact ⟨p, hp, hd, hk, hi.trans (congrArg key ha)⟩
   · obtain ⟨p, hp, hd, hk, hi⟩ :=
-      adjacent_distinct_of_equal_keys output key hs b a hlt hdiff.symm hkeys.symm
+      Fin.exists_adjacent_ne_of_monotone_comp output key hs b a hlt hdiff.symm hkeys.symm
     exact ⟨p, hp, hd, hk, hi.trans ((congrArg key hb).trans heq.symm)⟩
 
 end Collision
