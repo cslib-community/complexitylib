@@ -56,6 +56,9 @@ example :
       answer add 3 (-1) (-1) = some (encode (-2)) ∧
       answer subtract 3 0 (-1) = some (encode 1) ∧
       answer multiply 3 (-1) 0 = some (encode 0)) ∧
+    -- Multiplication's result-fit premise excludes signed overflow. These routines do not
+    -- promise to reproduce source faults: negating the minimum may succeed, while a larger
+    -- product faults.
     (¬Cslib.GenericRAM.Signed.Fits 4 ((-8 : ℤ) * -1) ∧
       answer multiply 6 (-8) (-1) = some (encode 8) ∧
       answer multiply 6 (-8) (-8) = none) :=

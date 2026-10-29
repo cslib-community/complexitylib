@@ -146,6 +146,13 @@ example {γ α : Type} {encIn : γ ↪ List Bool} {encA : α ↪ List Bool}
   fail_if_success (clear hright; fun_prop)
   fun_prop
 
+-- A captured computed word may change representation before the direct reverse recipe.
+example {γ : Type} {input : γ ↪ List Bool} {word : γ → List Bool}
+    (hword : ComputableInPolyTime word input encBits) :
+    ComputableInPolyTime (fun x => (word x).reverse) input encBits := by
+  fail_if_success (clear hword; fun_prop)
+  exact ComputableInPolyTime.bitsReverseWithInput hword
+
 /--
 info: 'Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput' depends on axioms:
 [propext, Classical.choice, Quot.sound]

@@ -84,8 +84,10 @@ instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 /-- `Hpoly` of `(1, 2)` at key `3` is `4`, `Hxpoly` is `2`, and `()` and `(0)` collide at key `1`
 but not at key `2`. -/
 example :
+    -- At key 3, Hpoly is 3² + 3 + 2 = 14 = 4 modulo 5; Hxpoly is 3 · 4 = 2.
     polyHash (3 : ZMod 5) [1, 2] = 4 ∧
     xpolyHash (3 : ZMod 5) [1, 2] = 2 ∧
+    -- The key power separates [] and [0] at key 2; at key 1, 1 = 1 + 0.
     polyHash (1 : ZMod 5) [] = polyHash 1 [0] ∧
     polyHash (2 : ZMod 5) [] ≠ polyHash 2 [0] := by decide
 
@@ -106,7 +108,9 @@ example :
 /-- Multiply-shift evaluations and collision counts on `4`-bit words: half of the eight
 multipliers make `3` and `1` collide in the top two bits, matching `2 ^ (4 - 2) = 4`. -/
 example :
+    -- Multiplier 2 · 3 + 1 = 7 gives products 21 ≡ 5 (mod 16) and 7, both with top bits 01.
     multiplyShift 4 2 3 3 = 1 ∧ multiplyShift 4 2 3 1 = 1 ∧
+    -- Multiplier 3 gives products 9 and 3, which differ in the top two bits.
     multiplyShift 4 2 1 3 = 2 ∧ multiplyShift 4 2 1 1 = 0 ∧
     (Finset.univ.filter fun b => multiplyShift 4 2 b 3 = multiplyShift 4 2 b 1).card = 4 ∧
     (Finset.univ.filter fun b => multiplyShift 4 2 b 3 = multiplyShift 4 2 b 1).card ≤
