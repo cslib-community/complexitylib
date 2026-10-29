@@ -32,6 +32,7 @@ public import Complexity.Algorithms.Lean.VanEmdeBoas.Layout
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Successor
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Alphabets
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Batch
+public import Complexity.Algorithms.MatrixMultiplication.Schonhage.CoordinateTransform
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Full
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Identity
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Layout
@@ -113,6 +114,17 @@ public import Complexity.Algorithms.WordRAM.Karger.FastCut
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.KargerMinCut
 public import Complexity.Algorithms.WordRAM.KargerStein
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Controller
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Copy
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Encoding
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Flat
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Forms
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Header
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Input
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Stage
 public import Complexity.Algorithms.WordRAM.NatClog
 public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatSqrt
@@ -321,6 +333,7 @@ public import Complexity.Computability.Circuit.Boolean.BinaryCost
 public import Complexity.Computability.Circuit.Boolean.BitBlast
 public import Complexity.Computability.Circuit.Boolean.BoundedError
 public import Complexity.Computability.Circuit.Boolean.Braverman.Approximation
+public import Complexity.Computability.Circuit.Boolean.Braverman.Fooling
 public import Complexity.Computability.Circuit.Boolean.Braverman.Gates
 public import Complexity.Computability.Circuit.Boolean.Broadcast
 public import Complexity.Computability.Circuit.Boolean.CarryLookahead

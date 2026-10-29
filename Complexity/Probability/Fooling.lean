@@ -49,6 +49,8 @@ two-sided bound of his Main Theorem from the one-sided Lemma 12.
   degree-`k` functions exactly.
 * `Cslib.Probability.IsKWiseIndependentHash.isKWiseIndependent_map`: seeded `k`-wise independent
   families induce `k`-wise independent distributions.
+* `Cslib.BitString.isKWiseIndependent_uniformOfFintype`: the uniform distribution is `k`-wise
+  independent for every `k`.
 * `Cslib.BitString.fools_bitVal_of_le`: two one-sided bounds fool a Boolean function.
 
 ## References
@@ -116,6 +118,11 @@ theorem sum_mul_eq_sum_fourierCoeff_mul_bias (X : PMF (ι → Bool)) (f : (ι �
         simp only [bias, mul_sum]
         rw [sum_comm]
         exact sum_congr rfl fun S _ => sum_congr rfl fun x _ => by ring
+
+/-- The uniform distribution is `k`-wise independent for every `k`. -/
+theorem isKWiseIndependent_uniformOfFintype (k : ℕ) :
+    IsKWiseIndependent k (PMF.uniformOfFintype (ι → Bool)) := fun S hS _ => by
+  rw [bias_uniformOfFintype, ite_eq_right hS.ne_empty, abs_zero]
 
 namespace IsKWiseIndependent
 

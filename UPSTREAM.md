@@ -154,6 +154,22 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   theorems preserve the complete source memory and register bank. This is forward correctness,
   not reflection of source faults; transfer from Anthropic's modular signed machine and its
   3SUM/APSP algorithms remains separate.
+* **Native shared tensor encoder.** `Algorithms/WordRAM/MatrixMultiplication/Schonhage/` implements the complete shared left/right
+  encoding milestone ([#1493](https://github.com/cslib-community/complexitylib/issues/1493)).
+  Fixed standard-WordRAM code with 32 registers transforms one coordinate at a time between
+  two disjoint `10^L` buffers. It starts from `State.init` with a depth header and `7^L`
+  sign-and-magnitude words, computes all public `encodingL`/`encodingR` values, and preserves
+  the input and every cell outside the two buffers. Mathlib's `finFunctionFinEquiv` supplies
+  least-significant-first string numbering. All stages, powers, indices, address arithmetic,
+  signed add/subtract blocks and the final output copy cost at most `240*(L+1)*10^L`
+  instructions; halt adds one. Signed operands have magnitude bounded from the original
+  input by `7^L*A < 2^(w-1)`; the explicit natural bound `L+64+64*10^L` must fit target width
+  `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
+  signed kernels, without a copied source machine or a whole-program simulation hypothesis.
+  The existing array-copy interface is retained, with a narrow generalization for disjoint
+  blocks in either address order or identical blocks.
+  This is the encoder component only; band/tile preparation and full native composition remain
+  in [#1394](https://github.com/cslib-community/complexitylib/issues/1394).
 * **Direct 3SUM adaptation.** `Algorithms/ThreeSum/Convolution.lean` adapts the explicit
   Convolution-3SUM to Exact Triangle correctness reduction from Anthropic's
   [`formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp),

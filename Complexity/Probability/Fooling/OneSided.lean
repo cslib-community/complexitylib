@@ -41,6 +41,9 @@ negation (`Cslib.BitString.fools_bitVal_of_le`).
 * `Cslib.BitString.IsKWiseIndependent.expect_bitVal_sub_le_of_le`: the one-sided chain.
 * `Cslib.BitString.IsKWiseIndependent.expect_bitVal_sub_le_of_eq_zero`: the squaring trick and the
   chain combined, [Braverman, Lemmas 11 and 12].
+* `Cslib.BitString.IsKWiseIndependent.expect_bitVal_sub_le_of_witness`,
+  `Cslib.BitString.IsKWiseIndependent.fools_bitVal_of_witness`: all three combined, for a function
+  approximated off a rare witness event whose indicator has a low-degree `L²` approximation.
 
 ## References
 
@@ -193,6 +196,57 @@ theorem expect_bitVal_sub_le_of_eq_zero (hX : IsKWiseIndependent k X) {f : (ι �
   hX.expect_bitVal_sub_le_of_le (lowDegree_mono hDk (one_sub_one_sub_sq_mem_lowDegree hf))
     (fun x => one_sub_one_sub_sq_le_bitVal (hf0 x)) hXa hUa
     ((expect_bitVal_sub_one_sub_one_sub_sq hf0).trans_le hb)
+
+section Witness
+
+variable {E : (ι → Bool) → Bool} {f e : (ι → Bool) → ℝ} {D t : ℕ} {L δ : ℝ}
+
+/-- **One-sided bound from an approximation with a witness** [Braverman, Lemmas 10–12]: suppose
+`f` has degree at most `D`, is bounded by `L` and agrees with `F` wherever an event `E` fails, `E`
+has probability at most `a` under both a `k`-wise independent distribution `X` and the uniform
+distribution, and `e` of degree at most `t`, with `2 (D + t) ≤ k`, approximates the indicator of
+`E` with squared `L²` error at most `δ`. Then the expectation of `F` under `X` is at least its
+uniform expectation minus `4 a + 2 L² δ`. -/
+theorem expect_bitVal_sub_le_of_witness (hX : IsKWiseIndependent k X)
+    (hf : f ∈ lowDegree ℝ ι D) (he : e ∈ lowDegree ℝ ι t) (hk : 2 * (D + t) ≤ k)
+    (hfE : ∀ x, E x = false → f x = bitVal ℝ (F x)) (hL : ∀ x, |f x| ≤ L)
+    (hXE : ∑ x, (X x).toReal * bitVal ℝ (E x) ≤ a) (hUE : 𝔼 x, bitVal ℝ (E x) ≤ a)
+    (hδ : 𝔼 x, (bitVal ℝ (E x) - e x) ^ 2 ≤ δ) :
+    𝔼 x, bitVal ℝ (F x) - 4 * a - 2 * L ^ 2 * δ ≤ ∑ x, (X x).toReal * bitVal ℝ (F x) := by
+  have hxor (x : ι → Bool) : bitVal ℝ (F x ^^ (F x || E x)) ≤ bitVal ℝ (E x) := by
+    cases F x <;> cases E x <;> norm_num
+  have hb : 𝔼 x, (bitVal ℝ (F x || E x) - f x * (1 - e x)) ^ 2 ≤ 2 * a + 2 * L ^ 2 * δ :=
+    (expect_sq_bitVal_or_sub_mul_one_sub_le hfE hL).trans (by gcongr)
+  have h := hX.expect_bitVal_sub_le_of_eq_zero (F' := fun x => F x || E x)
+    (mul_mem_lowDegree hf (one_sub_mem_lowDegree he)) hk
+    (fun x hx => mul_one_sub_eq_zero_of_or_eq_false (hfE x) hx)
+    ((sum_mul_le_sum_mul X hxor).trans hXE) ((expect_le_expect fun x _ => hxor x).trans hUE) hb
+  linarith
+
+/-- **Fooling from an approximation with a witness** [Braverman, Lemmas 10–12 and Main Theorem]:
+under the hypotheses of `expect_bitVal_sub_le_of_witness`, the `k`-wise independent distribution
+`X` fools `F` with error `4 a + 2 (L + 1)² δ`.
+
+Braverman obtains the other direction by applying Lemma 12 to `1 - F`, with a fresh
+approximation; reusing `f` and the witness via `1 - f` is our variant (it avoids a NOT layer). -/
+theorem fools_bitVal_of_witness (hX : IsKWiseIndependent k X)
+    (hf : f ∈ lowDegree ℝ ι D) (he : e ∈ lowDegree ℝ ι t) (hk : 2 * (D + t) ≤ k)
+    (hfE : ∀ x, E x = false → f x = bitVal ℝ (F x)) (hL : ∀ x, |f x| ≤ L)
+    (hXE : ∑ x, (X x).toReal * bitVal ℝ (E x) ≤ a) (hUE : 𝔼 x, bitVal ℝ (E x) ≤ a)
+    (hδ : 𝔼 x, (bitVal ℝ (E x) - e x) ^ 2 ≤ δ) :
+    Fools X (4 * a + 2 * (L + 1) ^ 2 * δ) fun x => bitVal ℝ (F x) := by
+  refine fools_bitVal_of_le ?_ ?_
+  · have h := hX.expect_bitVal_sub_le_of_witness hf he hk hfE
+      (fun x => (hL x).trans (le_add_of_nonneg_right zero_le_one)) hXE hUE hδ
+    linarith
+  · have h := hX.expect_bitVal_sub_le_of_witness (F := fun x => !F x) (f := fun x => 1 - f x)
+      (one_sub_mem_lowDegree hf) he hk (fun x hx => by rw [hfE x hx, bitVal_not])
+      (fun x => show |1 - f x| ≤ L + 1 from
+        abs_le.2 ⟨by linarith [(abs_le.1 (hL x)).2], by linarith [(abs_le.1 (hL x)).1]⟩)
+      hXE hUE hδ
+    linarith
+
+end Witness
 
 end IsKWiseIndependent
 

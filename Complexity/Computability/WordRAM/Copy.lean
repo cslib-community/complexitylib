@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Erik Demaine
 -/
 
 module
@@ -10,10 +10,10 @@ module
 public import Complexity.Computability.WordRAM.Allocation
 
 /-!
-# Copying disjoint arrays on the word RAM
+# Copying arrays on the word RAM
 
 The seven-register copy routine charges every address calculation, load, store, increment,
-and loop test. Its source precedes its destination, as in a bump-allocated growing array.
+and loop test. Source and destination may be disjoint in either order or equal.
 It is a fixed program: neither the length nor either address is baked into the code.
 
 ## Main definitions
@@ -29,6 +29,8 @@ It is a fixed program: neither the length nor either address is baked into the c
 
 * `Cslib.WordRAM.ArrayCopy.exec`: copying `n` words within `7 * n + 4` instructions,
   preserving the source and all cells outside the destination.
+* `Cslib.WordRAM.ArrayCopy.exec_of_separated_or_eq`: the same native program also supports
+  disjoint blocks in the reverse address order or identical source and destination.
 
 ## References
 
@@ -39,7 +41,7 @@ It is a fixed program: neither the length nor either address is baked into the c
 
 namespace Cslib.WordRAM.ArrayCopy
 
-/-- The memory after copying a prefix into a disjoint destination block. -/
+/-- The memory after copying a prefix into a destination block. -/
 def copyPrefix (mem : ℕ → ℕ) (src dst k : ℕ) : ℕ → ℕ :=
   fun a => if dst ≤ a ∧ a < dst + k then mem (src + (a - dst)) else mem a
 
@@ -94,10 +96,11 @@ def program : Code .standard 7 := ram[ idx ← #0; one ← #1; while idx < len d
 /-- Low-level structured copying charges register setup and all loop instructions, excluding
 the final halt. The one-past-end addresses must fit a word. Boundedness of the input memory and
 registers is a separate premise when using `ExecWithin.bounded` to obtain bounded-word execution. -/
-theorem exec {w : ℕ} (x : Data 7) (h1 : Fits w 1)
+theorem exec_of_separated_or_eq {w : ℕ} (x : Data 7) (h1 : Fits w 1)
     (hs : Fits w (x.regs src + x.regs len))
     (hd : Fits w (x.regs dst + x.regs len))
-    (hdisj : x.regs src + x.regs len ≤ x.regs dst) :
+    (hdisj : x.regs src + x.regs len ≤ x.regs dst ∨
+      x.regs dst + x.regs len ≤ x.regs src ∨ x.regs src = x.regs dst) :
     ∃ y, ExecWithin w program x y (7 * x.regs len + 4) ∧
       y.mem = copyPrefix x.mem (x.regs src) (x.regs dst) (x.regs len) ∧
       y.regs src = x.regs src ∧ y.regs dst = x.regs dst ∧ y.regs len = x.regs len := by
@@ -118,7 +121,7 @@ theorem exec {w : ℕ} (x : Data 7) (h1 : Fits w 1)
     have hread : y.mem (y.regs src + y.regs idx) = x.mem (x.regs src + y.regs idx) := by
       rw [hym, hys]
       apply copyPrefix_outside
-      omega
+      rcases hdisj with h | h | h <;> omega
     refine ⟨?z, ?run, ?inv, ?decrease⟩
     case run => ram_eval [body, hsrc, hdst, hinc, hyo]
     case inv =>
@@ -149,6 +152,16 @@ theorem exec {w : ℕ} (x : Data 7) (h1 : Fits w 1)
         Nat.sub_zero]
       omega
   · simpa [hend] using hym
+
+/-- Forward copying between disjoint arrays, retaining the original calling convention. -/
+theorem exec {w : ℕ} (x : Data 7) (h1 : Fits w 1)
+    (hs : Fits w (x.regs src + x.regs len))
+    (hd : Fits w (x.regs dst + x.regs len))
+    (hdisj : x.regs src + x.regs len ≤ x.regs dst) :
+    ∃ y, ExecWithin w program x y (7 * x.regs len + 4) ∧
+      y.mem = copyPrefix x.mem (x.regs src) (x.regs dst) (x.regs len) ∧
+      y.regs src = x.regs src ∧ y.regs dst = x.regs dst ∧ y.regs len = x.regs len :=
+  exec_of_separated_or_eq x h1 hs hd (Or.inl hdisj)
 
 end Cslib.WordRAM.ArrayCopy
 

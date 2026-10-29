@@ -27,3 +27,7 @@ This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 The prime-window proof also adapts Mathlib/NumberTheory/Bertrand.lean,
 Copyright (c) 2020 Patrick Stevens; authors Patrick Stevens, Bolton Bailey,
 under the Apache License, Version 2.0.
+
+The shared tensor encoder in
+Complexity/Algorithms/WordRAM/MatrixMultiplication/Schonhage/
+is also part of the Anthropic adaptation described above.
