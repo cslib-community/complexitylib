@@ -142,7 +142,8 @@ private theorem runLaw_output {s : Spec} {StmtIn StmtOut : Type}
   · exact e.elim
   · rfl
 
-private theorem toOuterMeasure_bind_le {α β : Type} (p : PMF α) (f : α → PMF β) (t : Set β)
+/-- A uniform upper bound on `(f a).toOuterMeasure t` bounds `(p.bind f).toOuterMeasure t`. -/
+theorem toOuterMeasure_bind_le {α β : Type} (p : PMF α) (f : α → PMF β) (t : Set β)
     {K : ℝ≥0∞} (h : ∀ a, (f a).toOuterMeasure t ≤ K) : (p.bind f).toOuterMeasure t ≤ K := by
   rw [PMF.toOuterMeasure_bind_apply]
   exact Probability.PMF.tsum_mul_le_of_forall_le _ h

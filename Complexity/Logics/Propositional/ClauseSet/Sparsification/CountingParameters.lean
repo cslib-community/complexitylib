@@ -95,7 +95,8 @@ theorem countingDepthCoeff_le_mul_pow {k M : ℕ} (hM : 1 ≤ M) :
       rw [← sum_mul]
       exact (Nat.mul_assoc _ _ _).symm
 
-private abbrev Accepts (k B m : ℕ) : Prop :=
+/-- Acceptance predicate for a candidate dyadic exponent `m` at width `k` and parameter `B`. -/
+abbrev Accepts (k B m : ℕ) : Prop :=
   countingBChoiceCoeff k ≤ 2 ^ m ∧
     B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k (2 ^ m) * 2 ^ m) ≤
       2 ^ m

@@ -216,22 +216,6 @@ theorem LogSpaceReducible.logSpaceCTTReducible (h : LogSpaceReducible encA encB 
   exact ⟨fun _ => 1, fun p => f p.1, ComputableInLogSpace.const 1, by fun_prop,
     fun a => by simp [hA a]⟩
 
-private theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
-    u.any id ≤ v.any id := by
-  induction h with
-  | nil => exact le_rfl
-  | cons hab _ ih =>
-    simp only [List.any_cons, id]
-    exact max_le_max hab ih
-
-private theorem all_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
-    u.all id ≤ v.all id := by
-  induction h with
-  | nil => exact le_rfl
-  | cons hab _ ih =>
-    simp only [List.all_cons, id]
-    exact min_le_min hab ih
-
 /-- A logspace disjunctive truth-table reduction is a logspace positive truth-table reduction,
 evaluated by `List.any id`. -/
 theorem LogSpaceDTTReducible.logSpacePTTReducible (h : LogSpaceDTTReducible encA encB A B) :

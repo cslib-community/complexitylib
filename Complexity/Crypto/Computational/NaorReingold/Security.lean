@@ -932,7 +932,9 @@ private theorem pi_uniformOfFintype {ι α : Type*} [Fintype ι] [DecidableEq ι
   simp only [PMF.pi_apply, PMF.uniformOfFintype_apply, Finset.prod_const, Finset.card_univ,
     Fintype.card_fun, Nat.cast_pow, ENNReal.inv_pow]
 
-private theorem iid_uniformOfFintype {α : Type*} [Fintype α] [Nonempty α] (k : ℕ) :
+/-- The `k`-fold independent product of `PMF.uniformOfFintype α` is
+`PMF.uniformOfFintype (Fin k → α)`. -/
+theorem iid_uniformOfFintype {α : Type*} [Fintype α] [Nonempty α] (k : ℕ) :
     PMF.iid (PMF.uniformOfFintype α) k = PMF.uniformOfFintype (Fin k → α) := by
   rw [PMF.iid_eq_pi, pi_uniformOfFintype]
 

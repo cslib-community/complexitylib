@@ -1264,14 +1264,14 @@ noncomputable def auxReplacementRowScaledInt (Q r A₀ R : ℕ) (u y : AuxLabel 
       M0ScaledInt Q r A₀ R u y)) +
     C (M0ScaledInt Q r A₀ R u y) * mismatchAnnihilatorScaledInt u y
 
-private theorem prod_fin_add_one_eq_factorial (Q : ℕ) :
-    (∏ s : Fin Q, ((s.1 : ℚ) + 1)) = (Q.factorial : ℚ) := by
+/-- The product `∏ s : Fin Q, (s.1 + 1)` equals `Q!`. -/
+theorem prod_fin_add_one_eq_factorial (Q : ℕ) :
+    (∏ s : Fin Q, (s.1 + 1)) = Q.factorial := by
   induction Q with
   | zero => simp
   | succ Q ih =>
     rw [Fin.prod_univ_castSucc]
-    simp only [Fin.val_castSucc, Fin.val_last, ih, Nat.factorial_succ, Nat.cast_mul,
-      Nat.cast_add, Nat.cast_one]
+    simp only [Fin.val_castSucc, Fin.val_last, ih, Nat.factorial_succ]
     ring
 
 theorem map_mismatchAnnihilatorScaledInt {Q r : ℕ} (u y : AuxLabel Q r) :
@@ -1295,7 +1295,8 @@ theorem map_mismatchAnnihilatorScaledInt {Q r : ℕ} (u y : AuxLabel Q r) :
       (∏ s ∈ (mismatchSet u y)ᶜ, ((s.1 : ℚ) + 1)) *
           (∏ s ∈ mismatchSet u y, ((s.1 : ℚ) + 1)) =
         (Q.factorial : ℚ) := by
-    rw [prod_compl_mul_prod, prod_fin_add_one_eq_factorial]
+    rw [prod_compl_mul_prod]
+    exact_mod_cast prod_fin_add_one_eq_factorial Q
   rw [hcompl, Algebra.smul_def, algebraMap_eq]
 
 theorem map_M0ScaledInt (Q r A₀ R : ℕ) :

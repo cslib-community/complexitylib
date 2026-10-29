@@ -47,11 +47,6 @@ namespace Cslib.Logic.PL.ClauseSet.Sparsification
 
 open Finset Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 
-private abbrev Accepts (k B m : ℕ) : Prop :=
-  countingBChoiceCoeff k ≤ 2 ^ m ∧
-    B * countingBChoiceCoeff k * Nat.clog 2 (4 * countingDepthCoeff k (2 ^ m) * 2 ^ m) ≤
-      2 ^ m
-
 private def firstExponent (k D B : ℕ) : ℕ :=
   ((List.range (D + 2 * Nat.clog 2 B + 1)).filter (fun m => decide (Accepts k B m))).headD 0
 

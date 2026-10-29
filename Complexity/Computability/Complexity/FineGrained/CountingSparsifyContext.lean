@@ -74,22 +74,6 @@ section PolyTime
 
 open ComputableInPolyTime
 
-@[local fun_prop]
-private theorem computableInPolyTime_listIsEmpty {β : Type} (enc : β ↪ List Bool) :
-    ComputableInPolyTime List.isEmpty (encList enc) encBool := by
-  have heq : (List.isEmpty : List β → Bool) = fun l => decide (l.length = 0) := by
-    funext l; cases l <;> simp
-  rw [heq]
-  fun_prop
-
-@[local fun_prop]
-private theorem computableInPolyTime_listTail {β : Type} (enc : β ↪ List Bool) :
-    ComputableInPolyTime List.tail (encList enc) (encList enc) := by
-  have heq : (List.tail : List β → List β) = fun l => l.drop 1 := by
-    funext l; cases l <;> rfl
-  rw [heq]
-  exact (dropUnary (encA := enc)).comp (id'.prod (const 1))
-
 /-- Search states with a context, encoded as framed tuples: the context, the weighting count in
 unary, the stack of formulas, and the accumulator in binary. -/
 local notation "encX" encC =>

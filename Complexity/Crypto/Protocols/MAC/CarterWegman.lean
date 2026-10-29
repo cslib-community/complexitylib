@@ -2805,15 +2805,6 @@ private theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ 
   exact ComputableTidilyInPolyTime.allWithInput (test := fun a x => (list a).count x == 1)
     hlist (by polytime)
 
-private theorem length_unframe_add_dropFrame_le :
-    ∀ v : List Bool, 2 * (unframe v).length + (dropFrame v).length ≤ v.length
-  | [] | [true] => by simp [unframe, dropFrame]
-  | false :: v => by simp [unframe, dropFrame]
-  | true :: b :: v => by
-    have ih := length_unframe_add_dropFrame_le v
-    simp only [unframe, dropFrame, List.length_cons]
-    omega
-
 /-- **Computational nonce-based Carter–Wegman MAC (`NonceMACScheme`)**
 ([BonehShoup2023], Section 7.5.1, Attack Game 7.4 and Theorem 7.10, p. 274):
 given a polynomial-time message-length schedule `msgLen : ℕ → ℕ`, a strict-PPT hash-key sampler

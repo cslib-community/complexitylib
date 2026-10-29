@@ -1662,7 +1662,7 @@ private theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ 
 
 /-- The unframed prefix and remaining suffix of any bit list satisfy
 `2 * (unframe v).length + (dropFrame v).length ≤ v.length`. -/
-private theorem length_unframe_add_dropFrame_le :
+theorem length_unframe_add_dropFrame_le :
     ∀ v : List Bool, 2 * (unframe v).length + (dropFrame v).length ≤ v.length
   | [] | [true] => by simp [unframe, dropFrame]
   | false :: v => by simp [unframe, dropFrame]

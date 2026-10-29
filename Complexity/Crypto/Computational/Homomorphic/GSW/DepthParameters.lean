@@ -224,11 +224,7 @@ theorem computableInPolyTime_modulus :
     ComputableInPolyTime modulus encUnary encNat :=
   binary_pow' (const 2) DepthParameters.computableInPolyTime_width
 
-private theorem polynomiallyBounded_of_unary {f : ℕ → ℕ}
-    (hf : ComputableInPolyTime f encUnary encUnary) : PolynomiallyBounded f :=
-  (show PolyBounded (fun n : ℕ => n) f by
-    simpa only [encUnary_apply, List.length_replicate] using
-      hf.polyBounded_length).polynomiallyBounded
+open Parameters (polynomiallyBounded_of_unary)
 
 /-- All unary parameters have polynomial bounds; the modulus is deliberately excluded. -/
 theorem polynomiallyBounded_parameters :
