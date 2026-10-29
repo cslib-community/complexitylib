@@ -32,12 +32,11 @@ example : (small.map Fin.val).leafCount = 3 := rfl
 
 /-! ### Trivial upper bounds -/
 
-example (f : BitString 3 → BitString 5 → Bool) : Protocol.ecomplexityFun f ≤ 4 :=
-  (Protocol.ecomplexityFun_le_min_succ f).trans_eq rfl
-
--- A function of an input from a five-element set: three bits suffice for the encoding.
-example (f : Fin 5 → ℕ → Bool) : Protocol.ecomplexityFun f ≤ 4 := by
-  have h := Protocol.ecomplexityFun_le_clog_card_succ f
+-- Even when Alice's input is infinite (`ℕ`), exchanging the players and encoding Bob's
+-- five-element input in `⌈log₂ 5⌉ = 3` bits gives a protocol sending at most `4` bits.
+example (f : ℕ → Fin 5 → Bool) : Protocol.ecomplexityFun f ≤ 4 := by
+  rw [← Protocol.ecomplexityFun_swap]
+  have h := Protocol.ecomplexityFun_le_clog_card_succ (fun y x => f x y)
   rw [Fintype.card_fin, show Nat.clog 2 5 = 3 by decide] at h
   exact_mod_cast h
 
@@ -59,11 +58,12 @@ example (p : Protocol (Fin 3) (Fin 3) Bool) (hp : p.run = equality) : 5 ≤ p.le
 
 /-! ### Intersection and inclusion -/
 
-example : Protocol.ecomplexityFun (fun x y : BitString 4 => !disjointness x y) = 5 :=
-  ecomplexityFun_not_disjointness (by decide)
-
-example : Protocol.ecomplexityFun (fun x y : BitString 4 => decide (x ≤ y)) = 5 :=
-  ecomplexityFun_decide_le (by decide)
+-- Set intersection and pointwise inclusion on 4-bit strings both cost 5 bits, so they have the
+-- same communication complexity.
+example :
+    Protocol.ecomplexityFun (fun x y : BitString 4 => !disjointness x y) =
+      Protocol.ecomplexityFun (fun x y : BitString 4 => decide (x ≤ y)) :=
+  (ecomplexityFun_not_disjointness (by decide)).trans (ecomplexityFun_decide_le (by decide)).symm
 
 -- Inclusion of subsets of a three-element set: the diagonal fooling set has `8` pairs.
 example (p : Protocol (Finset (Fin 3)) (Finset (Fin 3)) Bool)
@@ -74,37 +74,32 @@ example (p : Protocol (Finset (Fin 3)) (Finset (Fin 3)) Bool)
 
 /-! ### Rank bounds -/
 
-example (A B : Matrix (Fin 2) (Fin 3) ℚ) : (A - B).rank ≤ A.rank + B.rank :=
-  Matrix.rank_sub_le A B
+-- Relabelling the outputs of `small` in `ℚ` yields a matrix of rank at most `2 ^ small.depth = 4`.
+example : small.depth = 2 ∧ (Matrix.of fun x y => ((small.run x y : ℕ) : ℚ)).rank ≤ 4 :=
+  ⟨rfl, small.rank_comp_le_two_pow rfl fun z => ((z : ℕ) : ℚ)⟩
 
--- Scaling does not increase rank over `ℤ` either, including scaling by a non-unit.
-example (A : Matrix (Fin 2) (Fin 3) ℤ) : (2 • A).rank ≤ A.rank :=
-  Matrix.rank_smul_le 2 A
+-- The `8 × 8` sign matrix of the 3-bit inner product has full rank `8`, so by the sign-matrix
+-- rank bound any protocol computing it satisfies `8 ≤ 2 ^ p.depth`.
+example (p : Protocol (Fin 3 → Bool) (Fin 3 → Bool) Bool) (hp : p.run = fun x y => x ⬝ᵥ y) :
+    8 ≤ 2 ^ p.depth := by
+  have h := p.rank_signMatrix_le_two_pow (R := ℝ) hp
+  rwa [rank_signMatrix_dotProduct, Fintype.card_fin] at h
 
--- Any relabelling of the outputs of a protocol: here the values `0, 1, 2` as rationals.
-example {X Y : Type} [Fintype Y] (p : Protocol X Y (Fin 3)) :
-    (Matrix.of fun x y => ((p.run x y : ℕ) : ℚ)).rank ≤ 2 ^ p.depth :=
-  Protocol.rank_comp_le_two_pow (f := p.run) rfl fun z => ((z : ℕ) : ℚ)
-
-example (f : Fin 2 → Fin 3 → Bool) (x : Fin 2) (y : Fin 3) :
-    signMatrix ℝ f x y = BitString.signVal (f x y) :=
-  signMatrix_apply_eq_signVal f x y
-
-example {X Y : Type} [Fintype Y] (p : Protocol X Y Bool) :
-    (signMatrix ℝ p.run).rank ≤ 2 ^ p.depth :=
-  Protocol.rank_signMatrix_le_two_pow rfl
-
--- The inner product of two bits: its `4 × 4` matrix has rank `3` over `ℚ`.
-example : (communicationMatrix ℚ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank = 3 := by
-  rw [rank_communicationMatrix_dotProduct, Fintype.card_fin]
+-- For the 2-bit inner product, the `4 × 4` sign matrix has full rank `4` over `ℚ`, one more than
+-- the rank `3` of its `0/1` communication matrix.
+example :
+    (communicationMatrix ℚ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank + 1 =
+      (signMatrix ℚ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank := by
+  rw [rank_communicationMatrix_dotProduct, rank_signMatrix_dotProduct, Fintype.card_fin]
   rfl
 
-example : (signMatrix ℝ fun x y : Fin 2 → Bool => x ⬝ᵥ y).rank = 4 := by
-  rw [rank_signMatrix_dotProduct, Fintype.card_fin]
-  rfl
-
-example : (signMatrix ℤ fun x y : Fin 3 → Bool => x ⬝ᵥ y).IsHadamard :=
-  isHadamard_signMatrix_dotProduct ℤ
+-- Because the sign matrix `H` of the 3-bit inner product satisfies `H * H = 8 • 1`, scaling `H`
+-- by `1 / 8` over `ℚ` gives its right inverse.
+example :
+    signMatrix ℚ (fun x y : Fin 3 → Bool => x ⬝ᵥ y) *
+      ((1 / 8 : ℚ) • signMatrix ℚ (fun x y : Fin 3 → Bool => x ⬝ᵥ y)) = 1 := by
+  rw [Matrix.mul_smul, signMatrix_dotProduct_mul_self, Fintype.card_fin, smul_smul]
+  norm_num
 
 -- Character orthogonality holds over any ring, here one that is not a domain.
 example (w : Fin 3 → Bool) (hw : w ≠ 0) :

@@ -75,14 +75,17 @@ following builds while preserving the public cache's authorization boundary.
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
 check that falls back to all six gates does not download twice. Bare `lake` commands do not
-bootstrap. Before using Lean MCP diagnostics or another operation that can elaborate/build, run:
+bootstrap. Before using Lean MCP diagnostics or another operation that can elaborate/build in a
+cold checkout, restore available outputs with:
 
 ```bash
 scripts/cache/ensure.sh
 ```
 
-The instruction in `AGENTS.md` applies to every agent client. MCP's
-`lean_build(fetch_cache=true)` only fetches Mathlib's cache, so it does not replace this command.
+This guidance applies to every agent client. Retry for missing outputs or new toolchain/dependency
+inputs; a new commit or branch switch alone does not require a manual bootstrap when outputs are
+warm. MCP's `lean_build(fetch_cache=true)` only fetches Mathlib's cache, so it does not replace
+Complexitylib cache restoration.
 
 The bootstrap records a completed **attempt**, not a successful cache hit, in
 `.lake/cache-bootstrap/attempt.json`. For ten minutes it skips another attempt with the same
@@ -96,7 +99,9 @@ scripts/cache/ensure.sh --refresh             # retry now, e.g. after clearing c
 COMPLEXITYLIB_CACHE_AUTO=0 scripts/build.sh    # skip automatic downloads deliberately
 ```
 
-The opt-out also applies to `scripts/check.sh`, `scripts/worktree.sh` and direct bootstrap calls.
+For warm local builds, the opt-out avoids unnecessary remote attempts without disabling Lake's
+normal source/input checks. It also applies to `scripts/check.sh`, `scripts/worktree.sh` and direct
+bootstrap calls.
 It leaves existing build outputs and Lake's local cache in place. `scripts/cache/get.sh` remains
 the explicit, unstamped fetch command. Cache misses and download failures are optional: builds
 compile what is missing, and the bootstrap never claims that all requested artifacts were

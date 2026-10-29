@@ -133,8 +133,8 @@ def NPSPACE (enc : α ↪ List Bool) : Set (Set α) :=
 /-- **Polynomial time is within polynomial space.** -/
 theorem P_subset_PSPACE : P enc ⊆ PSPACE enc := fun A hA => by
   obtain ⟨f, hf, hA⟩ := mem_P.mp hA
-  obtain ⟨t, s, -, hs, hf⟩ := hf.tidy
-  exact ⟨f, ⟨t, s, hs, hf.computableInTimeAndSpace⟩, hA⟩
+  obtain ⟨t, s, -, hs, hf⟩ := hf
+  exact ⟨f, ⟨_, _, .of_polynomiallyBounded _ hs, hf⟩, hA⟩
 
 /-- **A deterministic polynomial-space machine is a nondeterministic one**, with one computation
 path (`Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_decidesInSpace`). -/

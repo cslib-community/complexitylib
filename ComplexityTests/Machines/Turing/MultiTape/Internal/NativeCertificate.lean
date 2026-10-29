@@ -33,13 +33,6 @@ theorem rawCopy : ComputableInTimeAndSpace (fun w : List Bool => w) word word
 def copy : NativeCertificate (fun w : List Bool => w) word word :=
   .ofTimeAndSpace rawCopy
 
-example (w : List Bool) : copy.time w = w.length + 1 := rfl
-example (w : List Bool) : copy.space w = 0 + (w.length + 1) := rfl
-
--- The public certificate charges the output although the raw machine has no work tapes.
-example (n : ℕ) : copy.space (List.replicate n true) = n + 1 := by
-  simp [copy, NativeCertificate.ofTimeAndSpace]
-
 theorem copyPolynomial : copy.IsPolynomial := by
   constructor
   · exact PolyBounded.of_forall_le 1 1 fun _ => by
@@ -47,34 +40,25 @@ theorem copyPolynomial : copy.IsPolynomial := by
   · exact PolyBounded.of_forall_le 1 1 fun _ => by
       simp [copy, NativeCertificate.ofTimeAndSpace, word]
 
-example : ComputableInPolyTime (fun w : List Bool => w) word word := copy.polyTime copyPolynomial
-
-example (w : List Bool) : (copy.comp copy).time w =
-    (w.length + 1) + (w.length + 1) := rfl
-
-example (w : List Bool) : (copy.comp copy).space w =
-    (0 + (w.length + 1)) + (0 + (w.length + 1)) := rfl
-
-example : (copy.comp copy).IsPolynomial := copy.comp_isPolynomial copy copyPolynomial copyPolynomial
-
-example : Nonempty (NativeCertificate (fun w : List Bool => w) word word) :=
-  NativeCertificate.nonempty_iff_isComputable.mpr copy.isComputable
-
-example : (NativeCertificate.ofPolyTime
-    (ComputableInPolyTime.const ([] : List Bool) (encIn := word) (encOut := word))).IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial _
-
--- Exact independent budgets are retained; only the output charge is added to workspace.
-example {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
+-- The public certificate charges the output although the raw machine has no work tapes,
+-- and exact independent budgets are retained.
+example (w : List Bool) (n : ℕ) {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
     {f : α → β} {t s : α → ℕ} (h : ComputableInTimeAndSpace f encIn encOut t s) :
-    (NativeCertificate.ofTimeAndSpace h).time = t := rfl
-
-example {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
-    {f : α → β} {t s : α → ℕ} (h : ComputableInTimeAndSpace f encIn encOut t s) :
-    (NativeCertificate.ofTimeAndSpace h).space = fun a => s a + t a := rfl
-
-/-- info: 'Cslib.GenericRAM.NativeCertificate.comp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Cslib.GenericRAM.NativeCertificate.comp
+    copy.time w = w.length + 1 ∧
+    copy.space w = 0 + (w.length + 1) ∧
+    copy.space (List.replicate n true) = n + 1 ∧
+    ComputableInPolyTime (fun w : List Bool => w) word word ∧
+    (copy.comp copy).time w = (w.length + 1) + (w.length + 1) ∧
+    (copy.comp copy).space w = (0 + (w.length + 1)) + (0 + (w.length + 1)) ∧
+    (copy.comp copy).IsPolynomial ∧
+    Nonempty (NativeCertificate (fun w : List Bool => w) word word) ∧
+    (NativeCertificate.ofPolyTime
+      (ComputableInPolyTime.const ([] : List Bool) (encIn := word) (encOut := word))).IsPolynomial ∧
+    (NativeCertificate.ofTimeAndSpace h).time = t ∧
+    (NativeCertificate.ofTimeAndSpace h).space = (fun a => s a + t a) :=
+  ⟨rfl, rfl, by simp [copy, NativeCertificate.ofTimeAndSpace], copy.polyTime copyPolynomial,
+    rfl, rfl, copy.comp_isPolynomial copy copyPolynomial copyPolynomial,
+    NativeCertificate.nonempty_iff_isComputable.mpr copy.isComputable,
+    NativeCertificate.ofPolyTime_isPolynomial _, rfl, rfl⟩
 
 end ComplexityTests.Internal.NativeCertificate

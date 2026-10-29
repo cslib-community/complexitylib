@@ -84,7 +84,7 @@ inner existential quantifier used in the Karp–Lipton argument.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {α β γ : Type} {enc : α ↪ List Bool} {p : Polynomial ℕ} {V : α × List Bool → Bool}
   {A : Set α}
@@ -146,14 +146,9 @@ theorem isVerifier_witnessVerifier (D : Decoder encW) {check : α × β → Bool
 theorem computableInPolyTime_witnessVerifier (D : Decoder encW) {check : α × β → Bool}
     (hcheck : ComputableInPolyTime check (encPair enc encW) encBool) :
     ComputableInPolyTime (witnessVerifier D check) (encPair enc encBits) encBool := by
-  have hcheck := hcheck.tidy
-  refine .of_tidy ?_
   obtain ⟨_, _, hD⟩ := D.computable
-  have hdecoder : ComputableTidilyInPolyTime D.decode encBits encW := by
-    obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
-    exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
-      .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
-  have hdecode : ComputableTidilyInPolyTime (fun x : α × List Bool => D.decode (unframe x.2))
+  have hdecoder : ComputableInPolyTime D.decode encBits encW := hD.computableInPolyTime
+  have hdecode : ComputableInPolyTime (fun x : α × List Bool => D.decode (unframe x.2))
       (encPair enc encBits) encW :=
     hdecoder.comp (unframe.comp (snd enc encBits))
   exact bool_and' (decide_eq' (bitsAppend ((bitsFrame encW).comp hdecode)
@@ -169,9 +164,8 @@ theorem mem_NP_of_witness (D : Decoder encW) {check : α × β → Bool} {R : α
     (hR : ∀ a b, check (a, b) = true ↔ R a b)
     (hp : ∀ a b, R a b → ∃ b', R a b' ∧ (encW b').length ≤ p.eval (enc a).length) :
     {a | ∃ b, R a b} ∈ NP enc := by
-  have hcheck := hcheck.tidy
   exact mem_NP.mpr
-    ⟨_, _, computableInPolyTime_witnessVerifier D (.of_tidy hcheck),
+    ⟨_, _, computableInPolyTime_witnessVerifier D hcheck,
       isVerifier_witnessVerifier D hR hp⟩
 
 end Witness
@@ -249,11 +243,9 @@ theorem mem_NP_of_subsetWitness {encγ : γ ↪ List Bool} {vs : α → List γ}
     {P : α → Finset γ → Prop}
     (hP : ∀ a l, l.Nodup → (∀ v ∈ l, v ∈ vs a) → (check (a, l) = true ↔ P a l.toFinset)) :
     {a | ∃ S : Finset γ, (∀ v ∈ S, v ∈ vs a) ∧ P a S} ∈ NP enc := by
-  have hvs := hvs.tidy
-  have hcheck := hcheck.tidy
   obtain ⟨p, hle⟩ := hvs.polyBounded_length.exists_polynomial
   refine mem_NP.mpr ⟨p, _,
-    computableInPolyTime_subsetVerifier (.of_tidy hvs) (.of_tidy hcheck),
+    computableInPolyTime_subsetVerifier hvs hcheck,
     isVerifier_subsetVerifier (fun a => ?_) hP⟩
   exact (length_le_length_encList encγ (vs a)).trans (hle a)
 
@@ -268,14 +260,13 @@ theorem PolyTimeReducible.mem_NP {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ NP encB) : A ∈ NP enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, W, hW, hWB⟩ := Complexity.mem_NP.mp hB
-  have hf := hf.tidy
-  have hlen : ComputableTidilyInPolyTime (fun a => q.eval (encB (f a)).length) enc encUnary :=
+  have hlen : ComputableInPolyTime (fun a => q.eval (encB (f a)).length) enc encUnary :=
     (unary_eval q).comp ((encoding_length encB).comp hf)
   obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
   refine Complexity.mem_NP.mpr ⟨p,
     fun x => W (f x.1, x.2.take (q.eval (encB (f x.1)).length)), ?_,
     IsVerifier.of_padding (fun a w hw h => ?_) fun a ha => ?_⟩
-  · exact .of_tidy <| hW.tidy.comp ((hf.comp (fst enc encBits)).prod
+  · exact hW.comp ((hf.comp (fst enc encBits)).prod
       (bitsTakeWithInput (snd enc encBits) (hlen.comp (fst enc encBits))))
   · refine (hAB a).2 ((hWB (f a)).2 ⟨_, List.length_take_of_le ?_, h⟩)
     rw [hw]
@@ -298,10 +289,9 @@ theorem mem_NP_setOf_exists_append {V : α × List Bool → Bool}
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (q : Polynomial ℕ) :
     {y : α × List Bool | ∃ v : List Bool, v.length = q.eval (enc y.1).length ∧
       V (y.1, y.2 ++ v) = true} ∈ NP (encPair enc encBits) := by
-  have hV := hV.tidy
   refine mem_NP.mpr
     ⟨q, fun z => V (z.1.1, z.1.2 ++ z.2.take (q.eval (enc z.1.1).length)), ?_, fun y => ?_⟩
-  · exact .of_tidy <| hV.comp ((fst _ _).fst'.prod (bitsAppend (fst _ _).snd'
+  · exact hV.comp ((fst _ _).fst'.prod (bitsAppend (fst _ _).snd'
       (bitsTakeWithInput (snd _ _) ((unary_eval q).comp ((encoding_length enc).comp
         (fst _ _).fst')))))
   · have hle : q.eval (enc y.1).length ≤ q.eval (encPair enc encBits y).length :=

@@ -113,7 +113,7 @@ example : IsPPTOn
     (fun p => Scheme.evaluateCircuit decryptionCircuits p.1 p.2.1 p.2.2.1
       p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2) := by
   apply Scheme.isPPTOn_evaluateCircuit decryptionCircuits encrypt_ppt evaluate_ppt
-    (.of_tidy circuits_poly)
+    circuits_poly
   all_goals fun_prop
 
 end ComplexityTests.HomomorphicEvaluation
