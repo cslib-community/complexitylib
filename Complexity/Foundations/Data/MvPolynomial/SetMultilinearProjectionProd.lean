@@ -226,7 +226,7 @@ variable [Field K]
 /-- Over a field, the sum over the injections of the parts of one set partition, normalized by the
 nonzero constant terms, is a rectangular permanent restricted to the injections whose image
 contains the factors `Z` with constant term `0` (original). -/
-theorem sum_embedding_eq_C_mul_rectPermSurj (blk : σ → Fin d) {S : Finset (Fin d)}
+private theorem sum_embedding_eq_C_mul_rectPermSurj (blk : σ → Fin d) {S : Finset (Fin d)}
     (P : Finpartition S) (f : ι → MvPolynomial σ K) {Z : Finset ι}
     (hZ : ∀ j, j ∈ Z ↔ constantCoeff (f j) = 0) {u : ι → K} (hu₀ : ∀ j ∈ Z, u j = 1)
     (hu : ∀ j ∉ Z, u j * constantCoeff (f j) = 1) :

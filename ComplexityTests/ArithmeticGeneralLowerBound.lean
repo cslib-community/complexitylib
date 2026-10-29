@@ -10,8 +10,10 @@ import Complexity.Computability.Circuit.Arithmetic.GeneralLowerBound
 # Set-multilinearization and the lower bound for formulas over any field
 
 The set-multilinear part of the formula `x₀ · (x₁ + 1)` on both blocks computes the
-set-multilinear part `x₀ x₁` of its polynomial, and is set-multilinear with product-depth at most
-two. The part of `x₀ · x₁` on one block is the formula `0`, since both factors vanish at `0`.
+set-multilinear part `x₀ x₁` of its polynomial, with product-depth exactly two and at most
+`smCost 2 * 5 = 116640` nodes. The part of `x₀ · (x₀ + 1)` on its one block has `17` nodes, against
+the bound `smCost 1 * 5 = 1280`. The part of `x₀ · x₁` on one block is the formula `0`, since both
+factors vanish at `0`.
 
 The headline holds over every field, of any characteristic, with no set-multilinearity
 hypothesis. At `d = 1331 = 11 ^ 3`, `Δ = 1`, `k = 614760` and `n ≥ 2 ^ k`, where
@@ -35,20 +37,99 @@ open Cslib.Circuits Cslib.Circuits.Arithmetic Cslib.Circuits.Arithmetic.SPFormul
 private noncomputable def F01 : SPFormula ℚ 2 :=
   .mul ![.input 0, add ![1, 1] ![.input 1, const 1]]
 
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).polynomial =
-    smProj (fun i : Fin 2 => i) Finset.univ F01.polynomial :=
-  polynomial_smPart _ _
+/-- A sum gate over a finite set is at least as deep as each of its children. -/
+private theorem le_productDepth_sumOn {ι : Type*} {s : Finset ι} {c : ι → ℚ}
+    {G : ι → SPFormula ℚ 2} {i : ι} (hi : i ∈ s) :
+    (G i).productDepth ≤ (sumOn s c G).productDepth := by
+  rw [sumOn, productDepth_add]
+  simpa using Finset.le_sup (f := fun j => (G (s.equivFin.symm j)).productDepth)
+    (Finset.mem_univ (s.equivFin ⟨i, hi⟩))
 
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).IsSetMultilinear (fun i : Fin 2 => i)
-    Finset.univ :=
-  isSetMultilinear_smPart _ _
+/-- A product gate over a finite set is deeper than each of its children. -/
+private theorem lt_productDepth_prodOn {ι : Type*} {s : Finset ι} {G : ι → SPFormula ℚ 2} {i : ι}
+    (hi : i ∈ s) : (G i).productDepth < (prodOn s G).productDepth := by
+  rw [prodOn, productDepth_mul, Nat.lt_succ_iff]
+  simpa using Finset.le_sup (f := fun j => (G (s.equivFin.symm j)).productDepth)
+    (Finset.mem_univ (s.equivFin ⟨i, hi⟩))
 
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).productDepth ≤ 2 * F01.productDepth :=
-  productDepth_smPart_le _ _
+/-- The constant terms of the factors of `x₀ · (x₁ + 1)` are `0` and `1`. -/
+private theorem constantCoeff_F01_args (j : Fin 2) :
+    constantCoeff (polynomial (![Formula.input 0, add ![1, 1] ![.input 1, const 1]] j :
+      SPFormula ℚ 2)) = ![0, 1] j := by
+  fin_cases j <;> simp [polynomial_add, polynomial_input, polynomial_const]
 
-example : (smPart (fun i : Fin 2 => i) Finset.univ F01).nodeCount ≤
-    smCost 2 ^ F01.productDepth * F01.nodeCount :=
-  nodeCount_smPart_le _ _
+/-- The product of `x₀ · (x₁ + 1)` becomes the two levels of products of the gadget: the
+set-multilinear part on both blocks has product-depth exactly `2 = 2 * F01.productDepth`. -/
+example : (smPart (fun i : Fin 2 => i) Finset.univ F01).productDepth = 2 := by
+  have hF : F01.productDepth = 1 := by simp [F01, productDepth_add]
+  refine le_antisymm ((productDepth_smPart_le _ _).trans (by rw [hF])) ?_
+  rw [F01, SPFormula.mul, smPart, mulGadget]
+  split_ifs with hZ
+  · exact absurd hZ (by simp only [mulGadget.zeroCols, constantCoeff_F01_args]; decide)
+  have hr : ({0} : Finset (Fin 2)) ∈ (⊥ : Finpartition (Finset.univ : Finset (Fin 2))).parts := by
+    simp [Finpartition.parts_bot]
+  refine (le_productDepth_sumOn (Finset.mem_univ ⊥)).trans' <|
+    (le_productDepth_sumOn (Finset.mem_univ 1)).trans' <|
+    (le_productDepth_sumOn (Finset.empty_mem_powerset _)).trans' <|
+    Nat.succ_le_of_lt <| (lt_productDepth_prodOn (Finset.mem_univ
+      (Quotient.mk _ ⟨{0}, hr⟩))).trans_le' <|
+    (le_productDepth_sumOn (i := 1) (by simp)).trans' <|
+    Nat.succ_le_of_lt ((Nat.zero_le _).trans_lt (lt_productDepth_prodOn (i := ⟨{0}, hr⟩) (by simp)))
+
+/-- On the two blocks, the size bound for `x₀ · (x₁ + 1)` evaluates to
+`smCost 2 ^ 1 * 5 = 23328 * 5`. -/
+example : (smPart (fun i : Fin 2 => i) Finset.univ F01).nodeCount ≤ 116640 := by
+  have hF : F01.productDepth = 1 := by simp [F01, productDepth_add]
+  refine (nodeCount_smPart_le _ _).trans_eq ?_
+  rw [hF]
+  simp [F01, smCost, gadgetCost]
+
+/-- The formula `x₀ · (x₀ + 1)`, over one block of one variable. -/
+private noncomputable def G1 : SPFormula ℚ 1 :=
+  .mul ![.input 0, add ![1, 1] ![.input 0, const 1]]
+
+/-- The set-multilinear part on the block of `x₀ · (x₀ + 1)` has `17` nodes: one set partition,
+one permutation, the two subsets of the factor `x₀` with constant term `0`, and a product of sums
+of products of the parts of the factors (`1` node for `x₀`, `3` for `x₀ + 1`). This is far below
+the bound `smCost 1 ^ 1 * 5 = 1280`. -/
+example : (smPart (fun i : Fin 1 => i) Finset.univ G1).nodeCount = 17 ∧
+    smCost 1 ^ G1.productDepth * G1.nodeCount = 1280 := by
+  have hG : G1.productDepth = 1 := by
+    rw [G1, productDepth_mul, add_eq_right, ← Nat.le_zero, Finset.sup_le_iff]
+    intro j _
+    fin_cases j <;> simp [productDepth_add]
+  refine ⟨?_, by rw [hG]; simp [G1, smCost, gadgetCost]⟩
+  have ha (j : Fin 2) : constantCoeff (polynomial (![Formula.input 0, add ![1, 1]
+      ![.input 0, const 1]] j : SPFormula ℚ 1)) = ![0, 1] j := by
+    fin_cases j <;> simp [polynomial_add, polynomial_input, polynomial_const]
+  have hg (j : Fin 2) (T : Finset (Fin 1)) : (smPart (fun i : Fin 1 => i) T
+      (![Formula.input 0, add ![1, 1] ![.input 0, const 1]] j : SPFormula ℚ 1)).nodeCount =
+      ![1, 3] j := by
+    fin_cases j <;> simp [smPart, add] <;> split_ifs <;> rfl
+  rw [G1, SPFormula.mul, smPart, mulGadget]
+  split_ifs with hZ
+  · exact absurd hZ (by simp only [mulGadget.zeroCols, ha]; decide)
+  simp only [nodeCount_sumOn, nodeCount_prodOn, hg, Finset.sum_const, smul_eq_mul]
+  have hZ0 : mulGadget.zeroCols (fun j => constantCoeff (polynomial (![Formula.input 0,
+      add ![1, 1] ![.input 0, const 1]] j : SPFormula ℚ 1))) = {0} := by
+    simp only [mulGadget.zeroCols, ha]
+    decide
+  have hAtom : IsAtom (Finset.univ : Finset (Fin 1)) := ⟨by decide, by decide⟩
+  let : Unique (Finpartition (Finset.univ : Finset (Fin 1))) :=
+    hAtom.uniqueFinpartition (P := ⊥)
+  rw [hZ0, Fintype.sum_unique]
+  set P : Finpartition (Finset.univ : Finset (Fin 1)) := default
+  have hP : Subsingleton P.parts :=
+    Finset.card_le_one_iff_subsingleton_coe.1 (P.card_parts_le_card.trans (by simp))
+  obtain ⟨t, ht⟩ := P.parts_nonempty (by simp)
+  have hr (r : P.parts) : r = ⟨t, ht⟩ := Subsingleton.elim _ _
+  rw [Fintype.sum_subsingleton _ (1 : Equiv.Perm P.parts),
+    show ({0} : Finset (Fin 2)).powerset = {∅, {0}} by decide, Finset.sum_pair (by decide),
+    Fintype.sum_subsingleton _ (Quotient.mk _ ⟨t, ht⟩),
+    Fintype.sum_subsingleton _ (Quotient.mk _ ⟨t, ht⟩), Finset.compl_empty,
+    show ({0} : Finset (Fin 2))ᶜ = {1} by decide, Fin.sum_univ_two, Finset.sum_singleton,
+    show ({r | ⟦r⟧ = ⟦⟨t, ht⟩⟧} : Finset P.parts) = {⟨t, ht⟩} by ext r; simp [hr r]]
+  simp
 
 /-- The part on both blocks of `x₀ · (x₁ + 1)` is `x₀ x₁`. -/
 example : (smPart (fun i : Fin 2 => i) Finset.univ F01).polynomial = X 0 * X 1 := by

@@ -8,9 +8,9 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Order/Partition/Finpartition.lean`)
 
 public import Complexity.Init
-public import Mathlib.Data.Finset.Max
-public import Mathlib.Data.Fintype.BigOperators
 public import Mathlib.Order.Partition.Finpartition
+import Mathlib.Data.Finset.Max
+import Mathlib.Data.Fintype.BigOperators
 
 /-!
 # Counting set partitions of a finset
@@ -25,8 +25,8 @@ A finset `s` in a linear order has at most `#s ^ #s` set partitions
 
 ## References
 
-The bound and its proof are original. The Bell number `B_n` counts the set partitions of an
-`n`-element set; the bound here is the crude `B_n ≤ n ^ n`.
+The bound is standard and its proof is original. The Bell number `B_n` counts the set partitions
+of an `n`-element set; the bound here is the crude `B_n ≤ n ^ n`.
 -/
 
 @[expose] public section
@@ -68,9 +68,9 @@ namespace Fintype
 
 open Finpartition
 
-/-- **The number of set partitions** (original bound): a finset `s` in a linear order has at most
-`#s ^ #s` set partitions. A set partition is determined by the largest element of the part of each
-point. -/
+/-- **The number of set partitions** (standard bound, proof original): a finset `s` in a linear
+order has at most `#s ^ #s` set partitions. A set partition is determined by the largest element of
+the part of each point. -/
 theorem card_finpartition_le {α : Type*} [LinearOrder α] (s : Finset α) :
     Fintype.card (Finpartition s) ≤ #s ^ #s := by
   have hinj : Function.Injective (partMax (s := s)) := by
