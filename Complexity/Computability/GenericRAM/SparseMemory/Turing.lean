@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.GenericRAM.SparseMemory.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
 
 /-!
 # Native Turing-machine certificates for sparse memory
@@ -18,7 +19,7 @@ The association list is encoded as a list of encoded address/value pairs. Equali
 search and filtering are implemented by the existing native multitape-machine calculus. No
 memory operation is an oracle. Bounds depend on encoded address lengths, rather than allocating
 space up to the numeric address. The cost functions are asymptotic bound expressions for
-`ComputableTidilyInO`, not exact native step counts: one finite machine and a constant factor
+`ComputableInO`, not exact native step counts: one finite machine and a constant factor
 work for all inputs, for each fixed choice of address and value encodings.
 
 ## Main definitions
@@ -46,7 +47,7 @@ calculus (`ComputableInO.eq`, `findWith`, and `filterWith`).
 namespace Cslib.GenericRAM.SparseMemory
 
 open Turing.MultiTapeTM
-open ComputableTidilyInO
+open ComputableInO
 
 variable {Address Value : Type}
 variable (encA : Address ↪ List Bool) (encV : Value ↪ List Bool)
@@ -207,23 +208,147 @@ theorem scanSpace_le_linear (q : Address × SparseMemory Address Value) :
 
 variable [DecidableEq Address]
 
+open ComputableTidilyInDegree
+  (findStep foldl_findStep filterStep foldl_filterStep length_encList_filter_le)
+
+private theorem findWith {γ α π : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
+    {encP : π ↪ List Bool} {par : γ → π} {list : γ → List α} {Tp Tl Sp Sl : γ → ℕ}
+    {t : π × α → Bool} {Tt St : π × α → ℕ}
+    (ht : ComputableInO t (encPair encP enc) encBool Tt St)
+    (hpar : ComputableInO par encIn encP Tp Sp)
+    (hlist : ComputableInO list encIn (encList enc) Tl Sl) :
+    ComputableInO (fun x => (list x).find? fun a => t (par x, a)) encIn (encOption enc)
+      (fun x => (encIn x).length + Tp x + Tl x + ((list x).length + 1) *
+        ((encP (par x)).length + (encList enc (list x)).length +
+          listMax (fun a => Tt (par x, a)) (list x)))
+      fun x => (encIn x).length + Sp x + Sl x + (encP (par x)).length +
+        (encList enc (list x)).length + listMax (fun a => St (par x, a)) (list x) := by
+  have hq := fst (encPair encP (encOption enc)) enc
+  have hel := snd (encPair encP (encOption enc)) enc
+  have hisSome := (ComputableInDegree.isSome enc).inO_one.comp_linear hq.snd'
+  have h := hisSome.ite hq.snd' ((ht.comp (hq.fst'.prod hel)).ite
+    ((ComputableInDegree.optionSome (enc₁ := enc)).inO_one.comp_linear hel) (const none))
+  have hstep : ComputableInO (fun q : (π × Option α) × α => findStep t q.1.1 q.1.2 q.2)
+      (encPair (encPair encP (encOption enc)) enc) (encOption enc)
+      (fun q => (encPair (encPair encP (encOption enc)) enc q).length + Tt (q.1.1, q.2))
+      fun q => (encPair (encPair encP (encOption enc)) enc q).length + St (q.1.1, q.2) := by
+    refine (h.mono 4 (fun q => ?_) fun q => ?_).of_enc_eq fun ⟨⟨p, acc⟩, a⟩ => ?_
+    · split_ifs <;> omega
+    · split_ifs <;> omega
+    · cases acc <;> simp [findStep]
+  have hst (x : γ) (i : ℕ) :
+      (encOption enc (((list x).take i).foldl (findStep t (par x)) none)).length ≤
+        (encList enc (list x)).length + 1 := by
+    rw [foldl_findStep, Option.none_or]
+    exact (length_encOption_find?_le enc _ _).trans
+      (Nat.add_le_add_right (length_encList_take_le enc _ _) 1)
+  have hfold := foldlWith (encL := encList enc) (encB := encOption enc) hpar hlist
+    (const none) hstep (R := fun x => 4 * (encP (par x)).length +
+      3 * (encList enc (list x)).length + 5 + listMax (fun a => Tt (par x, a)) (list x))
+    (Q := fun x => 4 * (encP (par x)).length +
+      3 * (encList enc (list x)).length + 5 + listMax (fun a => St (par x, a)) (list x))
+    (B := fun x => (encList enc (list x)).length + 1)
+    (fun x i hi => by
+      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
+      have h₂ := le_listMax (f := fun a => Tt (par x, a)) (List.getElem_mem hi)
+      have h₃ := hst x i
+      simp only [length_encPair] at h₂ ⊢
+      omega)
+    (fun x i hi => by
+      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
+      have h₂ := le_listMax (f := fun a => St (par x, a)) (List.getElem_mem hi)
+      have h₃ := hst x i
+      simp only [length_encPair] at h₂ ⊢
+      omega)
+    (fun x i _ => by have := hst x i; omega)
+  refine (hfold.mono 16 (fun x => ?_) fun x => ?_).of_enc_eq fun x => ?_
+  · have h₁ := length_le_length_encList enc (list x)
+    have h₂ : (list x).length ≤ (list x).length * (encList enc (list x)).length := by
+      rcases Nat.eq_zero_or_pos (list x).length with h | h
+      · simp [h]
+      · exact Nat.le_mul_of_pos_right _ (by omega)
+    ring_nf
+    omega
+  · omega
+  · rw [foldl_findStep, Option.none_or]
+
+private theorem filterWith {γ α π : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
+    {encP : π ↪ List Bool} {par : γ → π} {list : γ → List α} {Tp Tl Sp Sl : γ → ℕ}
+    {t : π × α → Bool} {Tt St : π × α → ℕ}
+    (ht : ComputableInO t (encPair encP enc) encBool Tt St)
+    (hpar : ComputableInO par encIn encP Tp Sp)
+    (hlist : ComputableInO list encIn (encList enc) Tl Sl) :
+    ComputableInO (fun x => (list x).filter fun a => t (par x, a)) encIn (encList enc)
+      (fun x => (encIn x).length + Tp x + Tl x + ((list x).length + 1) *
+        ((encP (par x)).length + (encList enc (list x)).length +
+          listMax (fun a => Tt (par x, a)) (list x)))
+      fun x => (encIn x).length + Sp x + Sl x + (encP (par x)).length +
+        (encList enc (list x)).length + listMax (fun a => St (par x, a)) (list x) := by
+  have hq := fst (encPair encP (encList enc)) enc
+  have hel := snd (encPair encP (encList enc)) enc
+  have h := (ht.comp (hq.fst'.prod hel)).ite
+    ((ComputableInDegree.snoc enc).inO_one.comp_linear (hq.snd'.prod hel)) hq.snd'
+  have hstep : ComputableInO
+      (fun q : (π × List α) × α => filterStep t q.1.1 q.1.2 q.2)
+      (encPair (encPair encP (encList enc)) enc) (encList enc)
+      (fun q => (encPair (encPair encP (encList enc)) enc q).length + Tt (q.1.1, q.2))
+      fun q => (encPair (encPair encP (encList enc)) enc q).length + St (q.1.1, q.2) := by
+    refine (h.mono 4 (fun q => ?_) fun q => ?_).of_enc_eq fun ⟨⟨p, acc⟩, a⟩ => ?_
+    · split_ifs <;> omega
+    · split_ifs <;> omega
+    · simp [filterStep]
+  have hst (x : γ) (i : ℕ) :
+      (encList enc (((list x).take i).foldl (filterStep t (par x)) [])).length ≤
+        (encList enc (list x)).length := by
+    rw [foldl_filterStep, List.nil_append]
+    exact (length_encList_filter_le enc _ _).trans (length_encList_take_le enc _ _)
+  have hfold := foldlWith (encL := encList enc) (encB := encList enc) hpar hlist
+    (const []) hstep (R := fun x => 4 * (encP (par x)).length +
+      3 * (encList enc (list x)).length + 5 + listMax (fun a => Tt (par x, a)) (list x))
+    (Q := fun x => 4 * (encP (par x)).length +
+      3 * (encList enc (list x)).length + 5 + listMax (fun a => St (par x, a)) (list x))
+    (B := fun x => (encList enc (list x)).length + 1)
+    (fun x i hi => by
+      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
+      have h₂ := le_listMax (f := fun a => Tt (par x, a)) (List.getElem_mem hi)
+      have h₃ := hst x i
+      simp only [length_encPair] at h₂ ⊢
+      omega)
+    (fun x i hi => by
+      have h₁ := length_le_encList_of_mem enc (List.getElem_mem hi)
+      have h₂ := le_listMax (f := fun a => St (par x, a)) (List.getElem_mem hi)
+      have h₃ := hst x i
+      simp only [length_encPair] at h₂ ⊢
+      omega)
+    (fun x i _ => by have := hst x i; omega)
+  refine (hfold.mono 16 (fun x => ?_) fun x => ?_).of_enc_eq fun x => ?_
+  · have h₁ := length_le_length_encList enc (list x)
+    have h₂ : (list x).length ≤ (list x).length * (encList enc (list x)).length := by
+      rcases Nat.eq_zero_or_pos (list x).length with h | h
+      · simp [h]
+      · exact Nat.le_mul_of_pos_right _ (by omega)
+    ring_nf
+    omega
+  · omega
+  · rw [foldl_filterStep, List.nil_append]
+
 private theorem compare_inO :
-    ComputableTidilyInO (fun q : Address × (Address × Value) => decide (q.1 = q.2.1))
+    ComputableInO (fun q : Address × (Address × Value) => decide (q.1 = q.2.1))
       (encPair encA (encPair encA encV)) encBool (compareTime encA encV)
       (compareSpace encA encV) := by
-  have h := (ComputableInO.eq encA).tidy.comp
+  have h := (ComputableInO.eq encA).comp
     ((fst encA (encPair encA encV)).prod (snd encA (encPair encA encV)).fst')
   convert h using 1 <;> funext q <;> simp [compareTime, compareSpace, two_mul]
 
 /-- A native multitape machine searches the finite store, with parameterized time and space. -/
 theorem find_inO :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : Address × SparseMemory Address Value =>
         (entries q.2).find? (fun e => decide (q.1 = e.1)))
       (queryEncoding encA encV) (encOption (encPair encA encV))
       (scanTime encA encV) (scanSpace encA encV) := by
   have hpar := fst encA (encoding encA encV)
-  have hlist : ComputableTidilyInO (fun q : Address × SparseMemory Address Value => entries q.2)
+  have hlist : ComputableInO (fun q : Address × SparseMemory Address Value => entries q.2)
       (queryEncoding encA encV) (encList (encPair encA encV))
       (fun q => (queryEncoding encA encV q).length)
       (fun q => (queryEncoding encA encV q).length) :=
@@ -234,15 +359,15 @@ theorem find_inO :
 
 /-- Filtering implements erasure using the same parameterized scan bounds. -/
 theorem erase_entries_inO :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : Address × SparseMemory Address Value =>
         (entries q.2).filter (fun e => decide (q.1 ≠ e.1)))
       (queryEncoding encA encV) (encList (encPair encA encV))
       (scanTime encA encV) (scanSpace encA encV) := by
-  have hnot := (ComputableTidilyInDegree.of_finite (encIn := encBool)
+  have hnot := (ComputableInDegree.of_finite (encIn := encBool)
     (encMid := encBool) Bool.not).inO_one
   have hcmp := hnot.comp_linear (compare_inO encA encV)
-  have hlist : ComputableTidilyInO (fun q : Address × SparseMemory Address Value => entries q.2)
+  have hlist : ComputableInO (fun q : Address × SparseMemory Address Value => entries q.2)
       (queryEncoding encA encV) (encList (encPair encA encV))
       (fun q => (queryEncoding encA encV q).length)
       (fun q => (queryEncoding encA encV q).length) :=
@@ -265,24 +390,24 @@ def writeSpace (q : (Address × Value) × SparseMemory Address Value) : ℕ :=
 
 /-- Native TM implementation of insertion/replacement, including all argument preparation. -/
 theorem insert_inO :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : (Address × Value) × SparseMemory Address Value => q.2.insert q.1.1 q.1.2)
       (writeEncoding encA encV) (encoding encA encV)
       (writeTime encA encV) (writeSpace encA encV) := by
   have hb := fst (encPair encA encV) (encoding encA encV)
   have hs := snd (encPair encA encV) (encoding encA encV)
   have hf := (erase_entries_inO encA encV).comp (hb.fst'.prod hs)
-  have hc := (ComputableTidilyInDegree.cons (encPair encA encV)).inO_one.comp_linear
+  have hc := (ComputableInDegree.cons (encPair encA encV)).inO_one.comp_linear
     (hb.prod hf)
   have hout := hc.of_enc_eq (g := fun q => q.2.insert q.1.1 q.1.2)
-    (encOut := encoding encA encV) (fun q => by
+    (encC := encoding encA encV) (fun q => by
       simp only [encoding_apply, entries_insert, Function.comp_def])
   convert hout using 1 <;> first | rfl |
     (funext q; simp only [writeTime, writeSpace, writeEncoding]; omega)
 
 omit [DecidableEq Address] in
 private theorem readResult_inO :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : Option (Address × Value) × Value => (q.1.map Prod.snd).getD q.2)
       (encPair (encOption (encPair encA encV)) encV) encV
       (fun q => (encPair (encOption (encPair encA encV)) encV q).length)
@@ -296,8 +421,8 @@ private theorem readResult_inO :
     | some e => exact isEmptyElim e
   · obtain ⟨e⟩ := h
     have ho := fst (encOption (encPair encA encV)) encV
-    have ht := (ComputableTidilyInDegree.isSome (encPair encA encV)).inO_one.comp_linear ho
-    have hv := ((ComputableTidilyInDegree.getD (enc₁ := encPair encA encV) e).inO_one
+    have ht := (ComputableInDegree.isSome (encPair encA encV)).inO_one.comp_linear ho
+    have hv := ((ComputableInDegree.getD (enc₁ := encPair encA encV) e).inO_one
       |>.comp_linear ho).snd'
     have hr := (ht.ite hv hd).mono
       (T' := fun q => (encPair (encOption (encPair encA encV)) encV q).length)
@@ -322,7 +447,7 @@ def readSpace (q : (Address × SparseMemory Address Value) × Value) : ℕ :=
 
 /-- Native TM implementation of total memory reads, uniform also in the default value. -/
 theorem read_inO :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : (Address × SparseMemory Address Value) × Value => read q.2 q.1.1 q.1.2)
       (readEncoding encA encV) encV (readTime encA encV) (readSpace encA encV) := by
   have hf := (find_inO encA encV).comp (fst (queryEncoding encA encV) encV)
@@ -334,7 +459,7 @@ theorem read_inO :
 
 /-- A cubic-time, linear-space specialization of the parameterized write certificate. -/
 theorem insert_inO_cube :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : (Address × Value) × SparseMemory Address Value => q.2.insert q.1.1 q.1.2)
       (writeEncoding encA encV) (encoding encA encV)
       (fun q => ((writeEncoding encA encV q).length + 1) ^ 3)
@@ -358,7 +483,7 @@ theorem insert_inO_cube :
 
 /-- A cubic-time, linear-space specialization of the parameterized read certificate. -/
 theorem read_inO_cube :
-    ComputableTidilyInO
+    ComputableInO
       (fun q : (Address × SparseMemory Address Value) × Value => read q.2 q.1.1 q.1.2)
       (readEncoding encA encV) encV
       (fun q => ((readEncoding encA encV q).length + 1) ^ 3)
@@ -382,19 +507,19 @@ theorem read_inO_cube :
 /-- Polynomial-time writes are a corollary of the native parameterized certificate. -/
 @[fun_prop]
 theorem insert_polytime :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun q : (Address × Value) × SparseMemory Address Value => q.2.insert q.1.1 q.1.2)
       (writeEncoding encA encV) (encoding encA encV) :=
-  (insert_inO_cube encA encV).computableTidilyInPolyTime
+  (insert_inO_cube encA encV).computableInPolyTime
     (.of_forall_le 1 3 (by simp)) .self
 
 /-- Polynomial-time reads are uniform in the queried address, store, and default value. -/
 @[fun_prop]
 theorem read_polytime :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun q : (Address × SparseMemory Address Value) × Value => read q.2 q.1.1 q.1.2)
       (readEncoding encA encV) encV :=
-  (read_inO_cube encA encV).computableTidilyInPolyTime
+  (read_inO_cube encA encV).computableInPolyTime
     (.of_forall_le 1 3 (by simp)) .self
 
 /-- Writing preserves maximum key length up to the newly supplied address. -/

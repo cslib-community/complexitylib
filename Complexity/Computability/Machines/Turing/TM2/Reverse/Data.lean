@@ -181,12 +181,12 @@ theorem state_run (tm : MultiTapeTM k Bool State) (input : List Bool) (t : ℕ) 
   (represents_run tm input t).state
 
 /-- Each action only appends to the output. -/
-private theorem output_prefix_step (d : Data k State) (a : Action k Bool State) :
+theorem output_prefix_step (d : Data k State) (a : Action k Bool State) :
     d.output <+: (d.step a).output :=
   ⟨a.output.toList, rfl⟩
 
 /-- Total steps only append to the output, including a step which halts. -/
-private theorem output_prefix_totalStep (tm : MultiTapeTM k Bool State) (d : Data k State) :
+theorem output_prefix_totalStep (tm : MultiTapeTM k Bool State) (d : Data k State) :
     d.output <+: (totalStep tm d).output := by
   cases hs : d.state with
   | none => rw [totalStep_of_halt tm hs]
@@ -202,7 +202,7 @@ theorem output_prefix_run (tm : MultiTapeTM k Bool State) (input : List Bool)
     exact ih.trans (output_prefix_totalStep tm _)
 
 /-- The amount of output never decreases. -/
-private theorem output_length_run_mono (tm : MultiTapeTM k Bool State) (input : List Bool) :
+theorem output_length_run_mono (tm : MultiTapeTM k Bool State) (input : List Bool) :
     Monotone (fun t => (run tm input t).output.length) :=
   fun _ _ h => (output_prefix_run tm input h).length_le
 
@@ -215,7 +215,7 @@ theorem run_eq_of_halt (tm : MultiTapeTM k Bool State) (input : List Bool) {t u 
   | succ u _ ih => rw [run_succ, ih, totalStep_of_halt tm hhalt]
 
 /-- Every intermediate output is bounded by the output of a terminating run. -/
-private theorem output_length_run_le_of_halt (tm : MultiTapeTM k Bool State) (input : List Bool)
+theorem output_length_run_le_of_halt (tm : MultiTapeTM k Bool State) (input : List Bool)
     {t : ℕ} (hhalt : (run tm input t).state = none) (u : ℕ) :
     (run tm input u).output.length ≤ (run tm input t).output.length := by
   rcases le_total u t with h | h
@@ -223,7 +223,7 @@ private theorem output_length_run_le_of_halt (tm : MultiTapeTM k Bool State) (in
   · rw [run_eq_of_halt tm input h hhalt]
 
 /-- Every raw output is a prefix of the complete output of a terminating native computation. -/
-private theorem output_prefix_run_of_computes {tm : MultiTapeTM k Bool State}
+theorem output_prefix_run_of_computes {tm : MultiTapeTM k Bool State}
     {input output : List Bool} (h : tm.Computes input output) (t : ℕ) :
     (run tm input t).output <+: output := by
   obtain ⟨u, hhalt, hout⟩ := h
@@ -239,7 +239,7 @@ theorem output_length_run_le_of_computes {tm : MultiTapeTM k Bool State}
   (output_prefix_run_of_computes h t).length_le
 
 /-- Each raw total step uses precisely the tape action along the represented native step. -/
-private theorem Represents.work_totalStep {d : Data k State} {sourceInput : List Bool}
+theorem Represents.work_totalStep {d : Data k State} {sourceInput : List Bool}
     {cfg : Cfg k Bool State sourceInput} (h : d.Represents cfg)
     (tm : MultiTapeTM k Bool State) (i : Fin k) :
     (Data.totalStep tm d).work i = (d.work i).step (RawTape.nativeAction tm cfg i) := by
@@ -256,7 +256,7 @@ private theorem Represents.work_totalStep {d : Data k State} {sourceInput : List
     rw [hi, hw]
 
 /-- The work tapes coincide with the raw tapes used by the exact visited-space theorem. -/
-private theorem work_run_eq_tape_run (tm : MultiTapeTM k Bool State) (input : List Bool)
+theorem work_run_eq_tape_run (tm : MultiTapeTM k Bool State) (input : List Bool)
     (t : ℕ) (i : Fin k) : (run tm input t).work i = RawTape.run tm input t i := by
   induction t with
   | zero => rfl
