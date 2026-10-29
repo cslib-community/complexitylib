@@ -245,3 +245,9 @@ theorem decide_ne [DecidableEq β] {left right : α → β}
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 /-! ### Plain polynomial-time automation -/
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+
+end Turing.MultiTapeTM.ComputableInPolyTime
