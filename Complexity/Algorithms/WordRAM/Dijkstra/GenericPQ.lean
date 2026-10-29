@@ -105,7 +105,8 @@ end OuterReg
 
 open OuterReg
 
-local macro "fin15" : tactic => `(tactic| simp +decide [Fin.ext_iff])
+-- These comparisons reduce on fixed register indices even though `r_pq` is a variable.
+local macro "fin15" : tactic => `(tactic| exact of_decide_eq_true rfl)
 
 private theorem outer_notMem_pqMap {r_pq : ℕ} {i : Fin (15 + r_pq)} (hi : i.val < 15) :
     i ∉ Set.range (pqMap (r_pq := r_pq)) := by
@@ -425,7 +426,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
   by_cases hD0 : y.mem (G.dbase + V) = 0
   · have hc_eq : (Cond.eq dv zero).Holds y₁ := by
       have hdv_y₁ : y₁.regs dv = 0 := by
-        have h : y₁.regs dv = y.mem (G.dbase + V) := by simp +decide [y₁]
+        have h : y₁.regs dv = y.mem (G.dbase + V) := rfl
         exact h.trans hD0
       have hz_y₁ : y₁.regs zero = 0 := (hy₁_out zero (by fin15)).trans hzero
       rw [Cond.holds_eq, hdv_y₁, hz_y₁]
@@ -438,16 +439,16 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
       hvis_eq ▸ card_visited_add_dom_lt_of_notMem G s y hV_not_vis hV_not_dom
     let y₂ := y₁.write (G.dbase + V) (B + C_wt)
     have e_st : ExecWithin (B := .exact) w (.op (.store t cand)) y₁ y₂ 1 := by
-      have ht_eq : y₁.regs t = G.dbase + V := by simp +decide [y₁, Fin.ext_iff]
-      have hc_eq' : y₁.regs cand = B + C_wt := by simp +decide [y₁, Fin.ext_iff]
+      have ht_eq : y₁.regs t = G.dbase + V := rfl
+      have hc_eq' : y₁.regs cand = B + C_wt := rfl
       dsimp only [y₂]
       rw [← ht_eq, ← hc_eq']
       exact ExecWithin.store
     obtain ⟨hr₂, hpot₂⟩ := frame_outer_write C hr₁ (G.dbase + V) (by unfold pqBase; omega) fC
     have hy₂_z : y₂.regs zero = 0 := (hy₁_out zero (by fin15)).trans hzero
     have hy₂_o : y₂.regs one = 1 := (hy₁_out one (by fin15)).trans hone
-    have hy₂_tv : y₂.regs tv = V.val := by dsimp only [y₂]; simp +decide [y₁, Fin.ext_iff]
-    have hy₂_cand : y₂.regs cand = B + C_wt := by dsimp only [y₂]; simp +decide [y₁, Fin.ext_iff]
+    have hy₂_tv : y₂.regs tv = V.val := rfl
+    have hy₂_cand : y₂.regs cand = B + C_wt := rfl
     obtain ⟨z, t_ins, e_ins, hr_z, hmod_z, hregs_z, hpot_ins⟩ :=
       pkg.code.callInsert_exec C hsp_lo hS_cert hK harg_eq pqMap_injective
         hz_out ho_out htv_out hcand_out hr₂ ⟨hV_none, hBC⟩ hy₂_z hy₂_o hy₂_tv hy₂_cand
@@ -462,7 +463,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
       refine (e_ins.bounded (e_st.bounded hy₁_bnd))
     have hzj : z.regs j = J + 1 := by
       rw [hregs_z j (outer_notMem_pqMap (by fin15))]
-      simp +decide [y₁, Fin.ext_iff]
+      rfl
     have hzjend : z.regs jend = y.regs jend := by
       rw [hregs_z jend (outer_notMem_pqMap (by fin15))]
       exact hy₁_out jend (by fin15)
@@ -526,16 +527,16 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
         have hsub : y.regs jend - J = (y.regs jend - (J + 1)) + 1 := by omega
         rw [hsub, Nat.mul_add, Nat.mul_one]
       dsimp only [cIns, cDec] at hmul1 hmul2 ⊢
-      linarith
+      linarith only [hpot_ins, hchg, hmul1, hmul2]
   · have hc_eq : ¬(Cond.eq dv zero).Holds y₁ := by
-      have hdv_y₁ : y₁.regs dv = y.mem (G.dbase + V) := by simp +decide [y₁]
+      have hdv_y₁ : y₁.regs dv = y.mem (G.dbase + V) := rfl
       have hz_y₁ : y₁.regs zero = 0 := (hy₁_out zero (by fin15)).trans hzero
       rw [Cond.holds_eq, hdv_y₁, hz_y₁]
       exact hD0
     by_cases hlt : B + C_wt < y.mem (G.dbase + V)
     · have hc_lt : (Cond.lt cand dv).Holds y₁ := by
-        have hcand_y₁ : y₁.regs cand = B + C_wt := by simp +decide [y₁, Fin.ext_iff]
-        have hdv_y₁ : y₁.regs dv = y.mem (G.dbase + V) := by simp +decide [y₁]
+        have hcand_y₁ : y₁.regs cand = B + C_wt := rfl
+        have hdv_y₁ : y₁.regs dv = y.mem (G.dbase + V) := rfl
         rw [Cond.holds_lt, hcand_y₁, hdv_y₁]
         exact hlt
       have hV_not_vis : V ∉ S_vis := fun hv => Nat.not_lt.mpr (hvis_le hv) hlt
@@ -547,16 +548,16 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
       have hsV : s V = some (y.mem (G.dbase + V)) := (hsync V hV_dom).2
       let y₂ := y₁.write (G.dbase + V) (B + C_wt)
       have e_st : ExecWithin (B := .exact) w (.op (.store t cand)) y₁ y₂ 1 := by
-        have ht_eq : y₁.regs t = G.dbase + V := by simp +decide [y₁, Fin.ext_iff]
-        have hc_eq' : y₁.regs cand = B + C_wt := by simp +decide [y₁, Fin.ext_iff]
+        have ht_eq : y₁.regs t = G.dbase + V := rfl
+        have hc_eq' : y₁.regs cand = B + C_wt := rfl
         dsimp only [y₂]
         rw [← ht_eq, ← hc_eq']
         exact ExecWithin.store
       obtain ⟨hr₂, hpot₂⟩ := frame_outer_write C hr₁ (G.dbase + V) (by unfold pqBase; omega) fC
       have hy₂_z : y₂.regs zero = 0 := (hy₁_out zero (by fin15)).trans hzero
       have hy₂_o : y₂.regs one = 1 := (hy₁_out one (by fin15)).trans hone
-      have hy₂_tv : y₂.regs tv = V.val := by dsimp only [y₂]; simp +decide [y₁, Fin.ext_iff]
-      have hy₂_cand : y₂.regs cand = B + C_wt := by dsimp only [y₂]; simp +decide [y₁, Fin.ext_iff]
+      have hy₂_tv : y₂.regs tv = V.val := rfl
+      have hy₂_cand : y₂.regs cand = B + C_wt := rfl
       obtain ⟨z, t_dec, e_dec, hr_z, hmod_z, hregs_z, hpot_dec⟩ :=
         pkg.code.callDecreaseKey_exec C hsp_lo hS_cert hK harg_eq pqMap_injective
           ho_out htv_out hcand_out hr₂ ⟨⟨y.mem (G.dbase + V), hsV, hlt.le⟩, hBC⟩
@@ -569,7 +570,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
       have hz_bnd : z.Bounded w := e_dec.bounded (e_st.bounded hy₁_bnd)
       have hzj : z.regs j = J + 1 := by
         rw [hregs_z j (outer_notMem_pqMap (by fin15))]
-        simp +decide [y₁, Fin.ext_iff]
+        rfl
       have hzjend : z.regs jend = y.regs jend := by
         rw [hregs_z jend (outer_notMem_pqMap (by fin15))]
         exact hy₁_out jend (by fin15)
@@ -630,10 +631,10 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
           have hsub : y.regs jend - J = (y.regs jend - (J + 1)) + 1 := by omega
           rw [hsub, Nat.mul_add, Nat.mul_one]
         dsimp only [cIns, cDec] at hmul1 hmul2 ⊢
-        linarith
+        linarith only [hpot_dec, hchg, hmul1, hmul2]
     · have hc_lt : ¬(Cond.lt cand dv).Holds y₁ := by
-        have hcand_y₁ : y₁.regs cand = B + C_wt := by simp +decide [y₁, Fin.ext_iff]
-        have hdv_y₁ : y₁.regs dv = y.mem (G.dbase + V) := by simp +decide [y₁]
+        have hcand_y₁ : y₁.regs cand = B + C_wt := rfl
+        have hdv_y₁ : y₁.regs dv = y.mem (G.dbase + V) := rfl
         rw [Cond.holds_lt, hcand_y₁, hdv_y₁]
         exact hlt
       let z := y₁.set t (y₁.regs t)
@@ -643,7 +644,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
         · simp only [z, Data.set_regs, Function.update_eq_self]
         · rfl
       rw [hz_eq] at e_nop
-      have hzj : y₁.regs j = J + 1 := by simp +decide [y₁, Fin.ext_iff]
+      have hzj : y₁.regs j = J + 1 := rfl
       have hzjend : y₁.regs jend = y.regs jend := hy₁_out jend (by fin15)
       have hz_word : ∀ v : Fin G.n, y₁.mem (G.dbase + v) =
           if V = v then edgeWord B C_wt (y.mem (G.dbase + v)) else y.mem (G.dbase + v) := by
@@ -668,7 +669,7 @@ private theorem edgeBody_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
         have hsub : y.regs jend - J = (y.regs jend - (J + 1)) + 1 := by omega
         rw [hsub, Nat.mul_add, Nat.mul_one]
       dsimp only [cIns, cDec] at hmul1 hmul2 ⊢
-      linarith
+      linarith only [hmul1, hmul2]
 
 end InnerScan
 
@@ -822,7 +823,7 @@ private theorem relaxEdges_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
   · dsimp only [Φ] at hΦ_end
     rw [stateOf_eq C hr', stateOf_eq C hr₀, hsub_z, hsub_x, Nat.add_zero, Nat.mul_zero,
       Nat.add_zero] at hΦ_end
-    linarith
+    simpa only [Nat.add_assoc] using hΦ_end
 
 end RelaxLoop
 
@@ -914,15 +915,14 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
       ram_exact_eval [outerHeader, x₀, Data.init_regs, G.init_n, G.init_source, hoff,
         f0, f1, f2, f3, fn, fn3, fn4, fm2, fm2n, fm2n3, hDb', fDb, fds, fpq, Fin.ext_iff]
     · rfl
-    · simp +decide [Fin.ext_iff]
-    · simp +decide [Fin.ext_iff]
-    · simp +decide [Fin.ext_iff]
-    · simp +decide [Fin.ext_iff]
-    · simp +decide [Fin.ext_iff]
-    · simp +decide [Fin.ext_iff]
-    · simp +decide only [Data.set_regs, Data.write_regs, Function.update_apply, Fin.ext_iff,
-        ↓reduceIte]
-    · simp +decide [pqBase]
+    · rfl
+    · rfl
+    · rfl
+    · rfl
+    · rfl
+    · rfl
+    · rfl
+    · rfl
   let x₁' := x₁.set (pqMap pkg.code.frontierReg) (pqBase G)
   let x₂ := x₁'.set (pqMap pkg.code.nReg) G.n
   have he_cp1 : ExecWithin (B := .exact) w (.op (.copy (pqMap pkg.code.frontierReg) t))
@@ -1055,7 +1055,7 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
         rw [hlow_mem a (by unfold pqBase; omega), hx₁_m, Function.update_of_ne (by omega)],
       ⟨s₀, hr_y, hsync_y, ?_, ?_⟩⟩,
     ?_, ?_⟩
-  · have hdv_y : y.regs dv = 0 := by simp +decide [y]
+  · have hdv_y : y.regs dv = 0 := rfl
     simp only [hdv_y, true_iff]
     exact hdom_ne
   · rw [hvis_y, hdist_y]
@@ -1082,7 +1082,7 @@ private theorem dijkstraSetup_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
         min G.n G.m * (pkg.insertTime G.n + 20) := Nat.mul_comm _ _
     have hcomm3 : (pkg.decreaseTime G.n + 20) * G.m = G.m * (pkg.decreaseTime G.n + 20) :=
       Nat.mul_comm _ _
-    linarith
+    linarith only [hmul_ins, hcomm1, hcomm2, hcomm3]
 
 private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
     (hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)))
@@ -1163,12 +1163,12 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
     rw [hx₂_in _ (by unfold ListInstance.dbase; omega),
       show (U : ℕ) + 3 + 1 = (U : ℕ) + 1 + 3 by omega, G.init_offset (by omega)]
   have hx₂_3 : x₂.regs three = 3 := by
-    have h : x₂.regs three = x₁.regs three := by simp +decide [x₂, x₁', Fin.ext_iff]
+    have h : x₂.regs three = x₁.regs three := rfl
     exact h.trans ((hx₁_out three (by fin15)).trans hy.three_eq)
   have hx₂_1 : x₂.regs one = 1 := by
-    have h : x₂.regs one = x₁.regs one := by simp +decide [x₂, x₁', Fin.ext_iff]
+    have h : x₂.regs one = x₁.regs one := rfl
     exact h.trans ((hx₁_out one (by fin15)).trans hy.one_eq)
-  have hx₂_u : x₂.regs u = U.val := by simp +decide [x₂, x₁', Fin.ext_iff]
+  have hx₂_u : x₂.regs u = U.val := rfl
   obtain ⟨x₃, he_off, hx₃_m, hx₃_j, hx₃_jend, hx₃_fr⟩ :
       ∃ x₃, ExecWithin w loadOffsets x₂ x₃ 4 ∧ x₃.mem = x₂.mem ∧
         x₃.regs j = G.offset U ∧ x₃.regs jend = G.offset ((U : ℕ) + 1) ∧
@@ -1177,8 +1177,8 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
     case e_off =>
       ram_exact_eval [loadOffsets, hx₂_u, hx₂_3, hx₂_1, hoff₀, hoff₁, hf_off0, hf_off1, Fin.ext_iff]
     · rfl
-    · simp +decide [Fin.ext_iff]
-    · simp +decide
+    · rfl
+    · rfl
     · intro i hi
       simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hi
       simp only [Data.set_regs, Function.update_of_ne hi.2.2, Function.update_of_ne hi.2.1,
@@ -1283,7 +1283,7 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
       ((hx₃_out_keep one (by fin15) (by fin15)).trans hy.one_eq)
       ((hx₃_out_keep eb (by fin15) (by fin15)).trans hy.eb_eq)
       ((hx₃_out_keep db (by fin15) (by fin15)).trans hy.db_eq)
-      (by rw [hx₃_fr best (by fin15)]; simp +decide [x₂, x₁'])
+      (by rw [hx₃_fr best (by fin15)]; rfl)
       hB_ne hx₃_j hx₃_jend hBC_all (fun a ha => (hx₃_m ▸ hx₂_in a ha))
       hr₃ hsync₃ hvis₃ hvis_le
   have hx₄_z : x₄.regs zero = 0 :=
@@ -1343,7 +1343,7 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
         rw [hx₅_low a (by unfold pqBase; omega), hx₄_in a ha, hx₃_m]
         exact hx₂_in a ha,
       ⟨s', hr_z, hsync_z, ?_, ?_⟩⟩
-    · have hdv_z : z.regs dv = x₅.regs (pqMap pkg.code.outFlag) := by simp +decide [z]
+    · have hdv_z : z.regs dv = x₅.regs (pqMap pkg.code.outFlag) := rfl
       rw [hdv_z]
       exact hflag₅
     · rw [hvis_z, hdist_z]
@@ -1417,7 +1417,7 @@ private theorem dijkstraRound_spec (pkg : PQPackage .exact r_pq) {G : ListInstan
   have hmul_dec : (pkg.decreaseTime G.n + 20) * remEdges G S_old =
       (pkg.decreaseTime G.n + 20) * R_after + (pkg.decreaseTime G.n + 20) * (G.adj U).length := by
     rw [hrem_split, Nat.mul_add]
-  linarith
+  linarith only [hpot_ext, hpot_emp, hpot_scan, hchg_ext, hchg_emp, hmul_rnd, hmul_dec]
 
 private theorem dijkstraExit_spec (pkg : PQPackage .exact r_pq) {G : ListInstance}
     {hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))}
@@ -1459,7 +1459,7 @@ theorem dijkstraCode_exec (pkg : PQPackage .exact r_pq) (G : ListInstance) (w : 
     ExecWithin.loop_potential (OuterInv pkg G hw_in hw_sp) (outerPot pkg G hw_in hw_sp)
       (fun _ h hc => dijkstraRound_spec pkg hw_in hw_sp h hc) hx_inv
   refine ⟨y, (he_set.seq he_loop).mono ?_, fun v => dijkstraExit_spec pkg hy_inv hc_exit v⟩
-  linarith
+  linarith only [hset_le, hpot_le]
 
 /-- **Black-box flat-program Dijkstra theorem.** Compiling `dijkstraCode pkg.code` produces a flat
 word-RAM program over `Basis.exact` that computes all single-source shortest-path distances and

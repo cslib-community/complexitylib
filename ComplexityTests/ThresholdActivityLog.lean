@@ -42,14 +42,48 @@ example (q : ℕ) : (∑ j ∈ range (0 + 1), (q.choose j : ℝ)) ≤
     (Real.exp 1 * q / 0) ^ (0 : ℕ) :=
   sum_choose_le_exp_one_mul_div_pow (Nat.zero_le q)
 
+-- Combining `card_attainableTranscripts_le_sum_choose_of_le` with `sum_choose_le_exp_mul_pow`
+-- at `t = 2` bounds the number of attainable transcripts for any activity bound `e`,
+-- even when `e > (inputGates p).card`.
+example {n g : ℕ} (p : Program signature n g) (e : ℕ) (he : inputActivity p ≤ e) :
+    ((attainableTranscripts p).card : ℝ) ≤ Real.exp ((inputGates p).card / 2) * 2 ^ e := by
+  have hcard : ((attainableTranscripts p).card : ℝ) ≤
+      ∑ j ∈ range (e + 1), ((inputGates p).card.choose j : ℝ) := by
+    exact_mod_cast card_attainableTranscripts_le_sum_choose_of_le p he
+  exact hcard.trans (sum_choose_le_exp_mul_pow (inputGates p).card e 2 (by norm_num))
+
+-- Combining `card_attainableTranscripts_le_sum_choose_of_le` with `inputActivity_le_card` and
+-- `sum_choose_le_exp_one_mul_div_pow`.
+example {n g : ℕ} (p : Program signature n g) :
+    ((attainableTranscripts p).card : ℝ) ≤
+      (Real.exp 1 * (inputGates p).card / inputActivity p) ^ inputActivity p := by
+  have hcard : ((attainableTranscripts p).card : ℝ) ≤
+      ∑ j ∈ range (inputActivity p + 1), ((inputGates p).card.choose j : ℝ) := by
+    exact_mod_cast card_attainableTranscripts_le_sum_choose_of_le p le_rfl
+  exact hcard.trans (sum_choose_le_exp_one_mul_div_pow (inputActivity_le_card p))
+
 -- The optimized estimate really needs e ≤ q, even though the parameterized bound does not.
 example : ¬ (∑ j ∈ range 5, ((1 : ℕ).choose j : ℝ)) ≤ (Real.exp 1 / 4) ^ (4 : ℕ) := by
   intro h
-  have hpow : (Real.exp 1 / 4) ^ (4 : ℕ) < (3 / 4 : ℝ) ^ (4 : ℕ) := by
+  have hpow : (3 / 4 : ℝ) ^ (4 : ℕ) < 1 := by norm_num
+  have hle : (Real.exp 1 / 4) ^ (4 : ℕ) ≤ (3 / 4 : ℝ) ^ (4 : ℕ) := by
     gcongr
-    exact Real.exp_one_lt_three
-  norm_num [sum_range_succ, Nat.choose] at h hpow
+    exact le_of_lt Real.exp_one_lt_three
+  norm_num [sum_range_succ, Nat.choose] at h
   linarith
+
+-- Combining `mul_rpow_le_of_two_pow_le_sum_choose_sq` with `Real.exp_one_lt_three` rules out
+-- `2 ^ 4 ≤ (∑ j ∈ range (1 + 1), Nat.choose 1 j) ^ 2`.
+example : ¬ 2 ^ 4 ≤ (∑ j ∈ range (1 + 1), Nat.choose 1 j) ^ 2 := by
+  intro h
+  have hrpow := mul_rpow_le_of_two_pow_le_sum_choose_sq (m := 4) (q := 1) (e := 1) le_rfl h
+  norm_num at hrpow
+  have h4 := (inv_mul_le_iff₀ (Real.exp_pos 1)).mp hrpow
+  linarith [Real.exp_one_lt_three]
+
+example (m : ℕ) (h : 2 ^ m ≤ (∑ j ∈ range (1 + 1), Nat.choose 1 j) ^ 2) :
+    (m : ℝ) / 2 ≤ Real.logb 2 (Real.exp 1) := by
+  simpa using le_mul_logb_of_two_pow_le_sum_choose_sq (m := m) (q := 1) (e := 1) le_rfl h
 
 example : (3 : ℝ) / 2 ≤ Real.logb 2 (Real.exp 1 * 2) := by
   simpa using le_mul_logb_of_two_pow_le_sum_choose_sq (m := 3) (q := 2) (e := 1)
@@ -69,13 +103,14 @@ example : 3 / Real.exp 1 * (2 : ℝ) ^ (7 / 6 : ℝ) ≤ 4 := by
   norm_num at h ⊢
   exact h
 
-example : (0 : ℝ) / 2 ≤ (0 : ℝ) * Real.logb 2 (Real.exp 1 * 0 / 0) := by
-  simpa only [Nat.cast_zero] using
-    le_mul_logb_of_two_pow_le_sum_choose_sq (m := 0) (q := 0) (e := 0) le_rfl (by decide)
-
-example : (0 : ℝ) / Real.exp 1 * (2 : ℝ) ^ ((0 : ℝ) / (2 * 0)) ≤ 0 := by
-  simpa only [Nat.cast_zero] using
-    mul_rpow_le_of_two_pow_le_sum_choose_sq (m := 0) (q := 0) (e := 0) le_rfl (by decide)
+example :
+    (0 : ℝ) / 2 ≤ (0 : ℝ) * Real.logb 2 (Real.exp 1 * 0 / 0) ∧
+      (0 : ℝ) / Real.exp 1 * (2 : ℝ) ^ ((0 : ℝ) / (2 * 0)) ≤ 0 := by
+  refine ⟨?_, ?_⟩
+  · simpa only [Nat.cast_zero] using
+      le_mul_logb_of_two_pow_le_sum_choose_sq (m := 0) (q := 0) (e := 0) le_rfl (by decide)
+  · simpa only [Nat.cast_zero] using
+      mul_rpow_le_of_two_pow_le_sum_choose_sq (m := 0) (q := 0) (e := 0) le_rfl (by decide)
 
 example (q : ℕ) : ¬ 2 ^ 1 ≤ (∑ j ∈ range (0 + 1), q.choose j) ^ 2 := by simp
 
@@ -98,7 +133,8 @@ private theorem andProgram_computes (x y : Fin 1 → Bool) :
       (inputOfSplit (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm x y) 0 = x ⬝ᵥ y :=
   andCircuit_computes x y
 
-example : inputActivity andCircuit.program = 1 ∧ (inputGates andCircuit.program).card = 1 := by
+private theorem andCircuit_inputActivity :
+    inputActivity andCircuit.program = 1 ∧ (inputGates andCircuit.program).card = 1 := by
   have hpos := inputActivity_pos_of_dotProduct andCircuit.program
     (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm (fun z => z 0) (by decide)
     andProgram_computes
@@ -107,20 +143,18 @@ example : inputActivity andCircuit.program = 1 ∧ (inputGates andCircuit.progra
     simpa using card_le_univ (inputGates andCircuit.program)
   omega
 
-example : (1 : ℝ) / 2 ≤ inputActivity andCircuit.program *
-    Real.logb 2 (Real.exp 1 * (inputGates andCircuit.program).card /
-      inputActivity andCircuit.program) := by
-  simpa using le_inputActivity_mul_logb_of_circuit_dotProduct andCircuit
+example :
+    (1 : ℝ) / 2 ≤ Real.logb 2 (Real.exp 1) ∧
+      1 / Real.exp 1 * (2 : ℝ) ^ (1 / 2 : ℝ) ≤ 1 := by
+  have hlog := le_inputActivity_mul_logb_of_circuit_dotProduct andCircuit
     (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm ⟨0, rfl⟩ andCircuit_computes
-
-example : inputActivity andCircuit.program / Real.exp 1 *
-    (2 : ℝ) ^ ((1 : ℝ) / (2 * inputActivity andCircuit.program)) ≤
-      (inputGates andCircuit.program).card := by
-  simpa using inputActivity_mul_rpow_le_card_of_circuit_dotProduct andCircuit
+  have hrpow := inputActivity_mul_rpow_le_card_of_circuit_dotProduct andCircuit
     (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm ⟨0, rfl⟩ andCircuit_computes
+  rw [andCircuit_inputActivity.1, andCircuit_inputActivity.2] at hlog hrpow
+  exact ⟨by simpa using hlog, by simpa using hrpow⟩
 
 -- This native example has maximum total activity equal to its full gate count.
-example : gateActivity andCircuit.program = 1 := by
+private theorem andCircuit_gateActivity : gateActivity andCircuit.program = 1 := by
   have hpos := inputActivity_pos_of_dotProduct andCircuit.program
     (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm (fun z => z 0) (by decide)
     andProgram_computes
@@ -128,41 +162,52 @@ example : gateActivity andCircuit.program = 1 := by
   have hcard : gateActivity andCircuit.program ≤ 1 := gateActivity_le andCircuit.program
   omega
 
-example : (1 : ℝ) / 2 ≤ gateActivity andCircuit.program *
-    Real.logb 2 (Real.exp 1 * andCircuit.size / gateActivity andCircuit.program) := by
-  simpa using le_gateActivity_mul_logb_of_circuit_dotProduct andCircuit
+-- Substitution reduces the total-activity bounds to the same numeric log/rpow inequalities.
+example :
+    gateActivity andCircuit.program = andCircuit.size ∧
+      (1 : ℝ) / 2 ≤ Real.logb 2 (Real.exp 1) ∧
+      1 / Real.exp 1 * (2 : ℝ) ^ (1 / 2 : ℝ) ≤ 1 := by
+  have hlog := le_gateActivity_mul_logb_of_circuit_dotProduct andCircuit
     (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm ⟨0, rfl⟩ andCircuit_computes
-
-example : gateActivity andCircuit.program / Real.exp 1 *
-    (2 : ℝ) ^ ((1 : ℝ) / (2 * gateActivity andCircuit.program)) ≤ andCircuit.size := by
-  simpa using gateActivity_mul_rpow_le_of_circuit_dotProduct andCircuit
+  have hrpow := gateActivity_mul_rpow_le_of_circuit_dotProduct andCircuit
     (finSumFinEquiv : Fin 1 ⊕ Fin 1 ≃ Fin 2).symm ⟨0, rfl⟩ andCircuit_computes
+  have hsize : andCircuit.size = 1 := rfl
+  rw [andCircuit_gateActivity, hsize] at hlog hrpow
+  exact ⟨andCircuit_gateActivity, by simpa using hlog, by simpa using hrpow⟩
 
 -- Zero coordinates and zero gates really attain the zero-activity boundary.
-example : (0 : ℝ) / 2 ≤ inputActivity (Program.empty : Program signature 0 0) *
-    Real.logb 2 (Real.exp 1 * (inputGates (Program.empty : Program signature 0 0)).card /
-      inputActivity (Program.empty : Program signature 0 0)) := by
-  simpa using le_inputActivity_mul_logb_of_dotProduct (Program.empty : Program signature 0 0)
-    (finSumFinEquiv : Fin 0 ⊕ Fin 0 ≃ Fin 0).symm (fun _ => false)
-    (fun _ _ => by simp [dotProduct, Bool.zero_eq_false])
+example :
+    (0 : ℝ) / 2 ≤ inputActivity (Program.empty : Program signature 0 0) *
+        Real.logb 2 (Real.exp 1 * (inputGates (Program.empty : Program signature 0 0)).card /
+          inputActivity (Program.empty : Program signature 0 0)) ∧
+      (0 : ℝ) / 2 ≤ gateActivity (Program.empty : Program signature 0 0) *
+        Real.logb 2 (Real.exp 1 * 0 / gateActivity (Program.empty : Program signature 0 0)) ∧
+      gateActivity (Program.empty : Program signature 0 0) / Real.exp 1 *
+        (2 : ℝ) ^ ((0 : ℝ) / (2 * gateActivity (Program.empty : Program signature 0 0))) ≤ 0 := by
+  refine ⟨?_, ?_, ?_⟩
+  · simpa using le_inputActivity_mul_logb_of_dotProduct (Program.empty : Program signature 0 0)
+      (finSumFinEquiv : Fin 0 ⊕ Fin 0 ≃ Fin 0).symm (fun _ => false)
+      (fun _ _ => by simp [dotProduct, Bool.zero_eq_false])
+  · simpa only [Fintype.card_fin, Nat.cast_zero] using
+      le_gateActivity_mul_logb_of_dotProduct (Program.empty : Program signature 0 0)
+      (finSumFinEquiv : Fin 0 ⊕ Fin 0 ≃ Fin 0).symm (fun _ => false)
+      (fun _ _ => by simp [dotProduct, Bool.zero_eq_false])
+  · simpa only [Fintype.card_fin, Nat.cast_zero] using
+      gateActivity_mul_rpow_le_of_dotProduct (Program.empty : Program signature 0 0)
+      (finSumFinEquiv : Fin 0 ⊕ Fin 0 ≃ Fin 0).symm (fun _ => false)
+      (fun _ _ => by simp [dotProduct, Bool.zero_eq_false])
 
-example : (0 : ℝ) / 2 ≤ gateActivity (Program.empty : Program signature 0 0) *
-    Real.logb 2 (Real.exp 1 * 0 / gateActivity (Program.empty : Program signature 0 0)) := by
-  simpa only [Fintype.card_fin, Nat.cast_zero] using
-    le_gateActivity_mul_logb_of_dotProduct (Program.empty : Program signature 0 0)
-    (finSumFinEquiv : Fin 0 ⊕ Fin 0 ≃ Fin 0).symm (fun _ => false)
-    (fun _ _ => by simp [dotProduct, Bool.zero_eq_false])
-
-example : gateActivity (Program.empty : Program signature 0 0) / Real.exp 1 *
-    (2 : ℝ) ^ ((0 : ℝ) / (2 * gateActivity (Program.empty : Program signature 0 0))) ≤ 0 := by
-  simpa only [Fintype.card_fin, Nat.cast_zero] using
-    gateActivity_mul_rpow_le_of_dotProduct (Program.empty : Program signature 0 0)
-    (finSumFinEquiv : Fin 0 ⊕ Fin 0 ≃ Fin 0).symm (fun _ => false)
-    (fun _ _ => by simp [dotProduct, Bool.zero_eq_false])
-
-example {n g : ℕ} {ι : Type u} [Fintype ι] (p : Program signature n g)
-    (split : Fin n ≃ ι ⊕ ι) (readout : (Fin g → Bool) → Bool)
-    (h : ∀ x y, readout (p.eval interpretation (inputOfSplit split x y)) = x ⬝ᵥ y) :
-    (Fintype.card ι : ℝ) / 2 ≤
-      inputActivity p * Real.logb 2 (Real.exp 1 * (inputGates p).card / inputActivity p) :=
-  le_inputActivity_mul_logb_of_dotProduct p split readout h
+-- A single weighted threshold gate cannot compute the inner product of 4-bit strings.
+example (p : Program signature 8 1) (split : Fin 8 ≃ Fin 4 ⊕ Fin 4)
+    (readout : (Fin 1 → Bool) → Bool) :
+    ¬ ∀ x y, readout (p.eval interpretation (inputOfSplit split x y)) = x ⬝ᵥ y := by
+  intro h
+  have hpos := inputActivity_pos_of_dotProduct p split readout (by decide) h
+  have hle := inputActivity_le_gateActivity p
+  have hg_le := gateActivity_le p
+  have hg : gateActivity p = 1 := by omega
+  have hrpow := gateActivity_mul_rpow_le_of_dotProduct p split readout h
+  rw [Fintype.card_fin, hg] at hrpow
+  norm_num at hrpow
+  have h4 := (inv_mul_le_iff₀ (Real.exp_pos 1)).mp hrpow
+  linarith [Real.exp_one_lt_three]
