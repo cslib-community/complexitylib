@@ -59,32 +59,26 @@ example :
   omega
 
 -- Levin's `Kt` on a concrete 4-bit string (`|[1, 0, 1, 0]| = 4`, `⌈log₂ 5⌉ = 3`).
-example : levinKt [true, false, true, false] ≤ (4 + copyOverhead + 3 : ℕ) :=
-  levinKt_le_length_add [true, false, true, false]
-
-example : levinKtNat [true, false, true, false] ≤ 4 + copyOverhead + 3 :=
-  levinKtNat_le_iff.mpr (levinKt_le_length_add [true, false, true, false])
-
 example (x : List Bool) (k : ℕ) :
-    levinKtNat x ≤ k ↔
+    levinKt [true, false, true, false] ≤ (4 + copyOverhead + 3 : ℕ) ∧
+    levinKtNat [true, false, true, false] ≤ 4 + copyOverhead + 3 ∧
+    (levinKtNat x ≤ k ↔
       ∃ (p : List Bool) (s : ℕ),
-        x ∈ (universalTM.run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k :=
-  levinKtNat_le_iff.trans levinKt_le_natCast_iff
+        x ∈ (universalTM.run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k) :=
+  ⟨levinKt_le_length_add [true, false, true, false],
+   levinKtNat_le_iff.mpr (levinKt_le_length_add [true, false, true, false]),
+   levinKtNat_le_iff.trans levinKt_le_natCast_iff⟩
 
 /-! ### Non-vacuous `MINKT`, `MINKTAt`, and `GapMINKT` instances -/
 
--- Concrete `MINKT` yes-instance `⟨x, |x| + 1, |x| + copyOverhead⟩`.
+-- Concrete `MINKT` and `MINKTAt` yes-instances.
 example (x : List Bool) :
-    (⟨x, x.length + 1, x.length + copyOverhead⟩ : MINKT.Instance) ∈ MINKT :=
-  MINKT.mk_mem_iff.mpr (timeBoundedAt_le_length_add le_rfl)
-
-example : (⟨[true, false, true], 4, 3 + copyOverhead⟩ : MINKT.Instance) ∈ MINKT :=
-  MINKT.mk_mem_iff.mpr (timeBoundedAt_le_length_add le_rfl)
-
--- Every string belongs to `MINKTAt (n ↦ n + 1) (n ↦ n + copyOverhead)`.
-example (x : List Bool) :
+    (⟨x, x.length + 1, x.length + copyOverhead⟩ : MINKT.Instance) ∈ MINKT ∧
+    (⟨[true, false, true], 4, 3 + copyOverhead⟩ : MINKT.Instance) ∈ MINKT ∧
     x ∈ MINKTAt (fun n => n + 1) (fun n => n + copyOverhead) :=
-  timeBounded_le (fun _ => le_rfl) x
+  ⟨MINKT.mk_mem_iff.mpr (timeBoundedAt_le_length_add le_rfl),
+   MINKT.mk_mem_iff.mpr (timeBoundedAt_le_length_add le_rfl),
+   timeBounded_le (fun _ => le_rfl) x⟩
 
 -- Concrete `MINKT` no-instance from an incompressible string of length `s + 1`.
 example (t s : ℕ) :

@@ -33,6 +33,8 @@ significant bit first), as well as `Nat.ofBits` and `Nat.testBit`, without addin
   `equivFin n`.
 * `Cslib.BitString.binaryValue_reverse_ofFn`: reading the reversed list of bits of an `n`-bit word
   gives its number in `equivFin n`.
+* `Cslib.BitString.lsbValue_lowBits`: reading `lowBits n x` with `lsbValue` recovers `x < 2 ^ n`.
+* `Cslib.BitString.lowBits_lsbValue`: re-encoding `lsbValue w` with `lowBits` recovers `w`.
 -/
 
 @[expose] public section
@@ -81,5 +83,28 @@ theorem binaryValue_reverse_ofFn {n : ℕ} (y : BitString n) :
     rw [Fin.cons_self_tail] at h
     rw [h, Nat.add_comm]
     rfl
+
+/-- The fixed-width word `lowBits n k` equals the bits of `(equivFin n).symm k`. -/
+theorem lowBits_eq_ofFn_equivFin_symm (n : ℕ) (k : Fin (2 ^ n)) :
+    lowBits n (k : ℕ) = List.ofFn ((equivFin n).symm k) := by
+  rw [lowBits_eq_ofFn]
+  congr 1
+  funext i
+  exact (equivFin_symm_apply k i).symm
+
+/-- For any `x < 2 ^ n`, reading `lowBits n x` with `lsbValue` recovers `x`. -/
+@[simp]
+theorem lsbValue_lowBits {n : ℕ} {x : ℕ} (hx : x < 2 ^ n) :
+    lsbValue (lowBits n x) = x := by
+  have := lsbValue_ofFn ((equivFin n).symm ⟨x, hx⟩)
+  rw [← lowBits_eq_ofFn_equivFin_symm n ⟨x, hx⟩] at this
+  simpa using this
+
+/-- Converting a bit word to a natural with `lsbValue` and re-encoding with `lowBits` of the same
+length recovers the original word. -/
+@[simp]
+theorem lowBits_lsbValue (w : List Bool) : lowBits w.length (lsbValue w) = w := by
+  refine lsbValue_injective (by simp) ?_
+  exact lsbValue_lowBits (lsbValue_lt w)
 
 end Cslib.BitString

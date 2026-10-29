@@ -73,7 +73,7 @@ theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
   have hcfg : ComputableInPolyTime cfg
       (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    (ComputableInPolyTime.of_tidy machine.replayPrefix_pt).comp
+    machine.computableInPolyTime_replayPrefix.comp
       (g := fun x : (α × List Bool) × ℕ => ((input x.1.1, x.1.2), x.2)) (by fun_prop)
   have hquery : ComputableInPolyTime
       (fun x => (machine.pendingQuery (cfg x)).isSome)
@@ -107,7 +107,7 @@ theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
         (fun x : α × List Bool => (input x.1, x.2))
         (encPair enc encBits) (encPair encBits encBits) := by fun_prop
     exact (ComputableInPolyTime.headD false).comp
-      ((ComputableInPolyTime.of_tidy machine.replayOutput_pt).comp hreindex)
+      (machine.computableInPolyTime_replayOutput.comp hreindex)
   have hmask : (fun x : α × List Bool =>
       if (machine.replayOutput (input x.1) x.2).headD false then (1 : ℤ) else 0) ∈
       GapP (encPair enc encBits) := GapP.ite_mem hout GapP.one_mem GapP.zero_mem

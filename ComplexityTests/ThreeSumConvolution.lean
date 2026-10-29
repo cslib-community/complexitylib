@@ -21,29 +21,22 @@ open WordRAM.Signed (encode result)
 
 private def values (i : ℕ) : ℤ := [9, -2, -4].getD i 0
 
-/-- Repeated indices are allowed: the entries at positions 1, 1, 2 solve this instance. -/
-example : Convolution 3 values := ⟨1, 1, by decide, by decide⟩
-
-/-- This convolution yes-instance is not an ordinary distinct-position 3SUM yes-instance. -/
-example : ¬∃ i j k : Fin 3, i ≠ j ∧ j ≠ k ∧ i ≠ k ∧
-    values i + values j + values k = 0 := by decide
-
-/-- A zero at index zero suffices even when the remaining entries are all positive. -/
-example : Convolution 3 (fun i => if i = 0 then 0 else 1) :=
-  ⟨0, 0, by decide, by decide⟩
-
-/-- The predicate accepts arbitrary matrices; the side length is inferred from their types. -/
-example : HasZeroTriangle (fun _ _ : Fin 1 => -2) (fun _ _ => 3) (fun _ _ => -1) ∧
-    ¬HasZeroTriangle (fun _ _ : Fin 1 => 1) (fun _ _ => 1) (fun _ _ => 1) := by
-  constructor
-  · exact ⟨0, 0, 0, by decide⟩
-  · rintro ⟨a, b, c, h⟩
-    exact (by decide : (1 : ℤ) + 1 + 1 ≠ 0) h
-
-/-- The corresponding triangle has two negative edges and a positive negated edge. -/
-example : weightAB 3 values 19 (0 : Fin 2) 1 = -2 ∧
+/-- Repeated indices are allowed, this convolution yes-instance is not an ordinary distinct-position
+3SUM yes-instance, a zero at index zero suffices, and the corresponding triangle has two negative
+edges and a positive negated edge. -/
+example :
+    Convolution 3 values ∧
+    (¬∃ i j k : Fin 3, i ≠ j ∧ j ≠ k ∧ i ≠ k ∧ values i + values j + values k = 0) ∧
+    Convolution 3 (fun i => if i = 0 then 0 else 1) ∧
+    HasZeroTriangle (fun _ _ : Fin 1 => -2) (fun _ _ => 3) (fun _ _ => -1) ∧
+    ¬HasZeroTriangle (fun _ _ : Fin 1 => 1) (fun _ _ => 1) (fun _ _ => 1) ∧
+    weightAB 3 values 19 (0 : Fin 2) 1 = -2 ∧
     weightBC 3 2 values 19 (1 : Fin 2) 0 = -2 ∧
-    weightAC 3 2 values 19 (0 : Fin 2) 0 = 4 := by decide
+    weightAC 3 2 values 19 (0 : Fin 2) 0 = 4 := by
+  refine ⟨⟨1, 1, by decide, by decide⟩, by decide, ⟨0, 0, by decide, by decide⟩,
+    ⟨0, 0, 0, by decide⟩, ?_, by decide, by decide, by decide⟩
+  rintro ⟨a, b, c, h⟩
+  exact (by decide : (1 : ℤ) + 1 + 1 ≠ 0) h
 
 /-- The public reduction theorem applies with satisfiable size and magnitude premises. -/
 example : ∃ s < 4, HasZeroTriangle (weightAB (t := 2) 3 values 19)
@@ -101,25 +94,23 @@ example : (args 2 (-19)).Bounded 8 := by
 open Algorithms.WordRAM.ThreeSum
 
 /-- Execute actual compiled instruction lists, with their halts charged: AB, BC and AC,
-including a negative index and an invalid AC index that must retain positive filler. -/
-example : WordRAM.run 8 ((Weight.store false).program result) 50 ⟨0, args 1 19⟩ =
+including a negative index, an invalid AC index that must retain positive filler, zero
+normalization, minimum signed negation, and destination aliasing. -/
+example :
+    WordRAM.run 8 ((Weight.store false).program result) 50 ⟨0, args 1 19⟩ =
       some (5, 13) ∧
     WordRAM.run 8 ((Weight.store false).program result) 50 ⟨0, args (-1) 19⟩ =
       some (38, 12) ∧
     WordRAM.run 8 ((Weight.store true).program result) 50 ⟨0, args 2 (-19)⟩ =
       some (8, 26) ∧
     WordRAM.run 8 ((Weight.store true).program result) 50 ⟨0, args 4 (-19)⟩ =
-      some (38, 26) := by decide
-
-/-- Zero is normalized, and the minimum signed value may be negated in the wider target word. -/
-example : (WordRAM.Code.eval 8 0 (Weight.store true) (args (-1) 0)).map
+      some (38, 26) ∧
+    (WordRAM.Code.eval 8 0 (Weight.store true) (args (-1) 0)).map
       (fun yn => yn.1.mem 20) = some 0 ∧
     (WordRAM.Code.eval 8 0 (Weight.store true) (args (-1) (-32))).map
-      (fun yn => yn.1.mem 20) = some 64 := by decide
-
-/-- A positive input becomes a negative weight, even when the destination aliases its cell. -/
-example : (WordRAM.Code.eval 8 0 (Weight.store true) (args 0 (-19) 5)).map
-    (fun yn => (yn.1.mem 5, yn.1.mem 6)) = some (19, 5) := by decide
+      (fun yn => yn.1.mem 20) = some 64 ∧
+    (WordRAM.Code.eval 8 0 (Weight.store true) (args 0 (-19) 5)).map
+      (fun yn => (yn.1.mem 5, yn.1.mem 6)) = some (19, 5) := by decide
 
 /-- The public charged theorem constructs a genuine AC weight, preserves unrelated memory
 and retains the argument registers. This checks the mathematical/native connection. -/

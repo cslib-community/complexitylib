@@ -42,10 +42,14 @@ example :
   decide
 
 /-- Yao's hardness amplification: weak and strong one-way functions are existentially equivalent,
-and any concrete weak one-way function amplifies to a strong one-way function. -/
+and any concrete weak one-way function amplifies to a polynomial-time computable strong one-way
+function. -/
 example (f : List Bool → List Bool) (hf : WeakOneWay f) :
-    (∃ F : List Bool → List Bool, OneWay F) ∧
-      ((∃ F : List Bool → List Bool, OneWay F) ↔ (∃ g : List Bool → List Bool, WeakOneWay g)) :=
-  ⟨hf.exists_oneWay, exists_oneWay_iff_exists_weakOneWay⟩
+    (∃ F : List Bool → List Bool,
+      OneWay F ∧ Turing.MultiTapeTM.ComputableInPolyTime F
+        Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encBits) ∧
+      ((∃ F : List Bool → List Bool, OneWay F) ↔ (∃ g : List Bool → List Bool, WeakOneWay g)) := by
+  obtain ⟨F, hF⟩ := hf.exists_oneWay
+  exact ⟨⟨F, hF, hF.polyTime⟩, exists_oneWay_iff_exists_weakOneWay⟩
 
 end Cslib.Crypto.OneWayAmplificationTests

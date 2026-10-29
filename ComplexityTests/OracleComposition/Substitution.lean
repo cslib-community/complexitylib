@@ -64,7 +64,7 @@ private theorem twoLevel_isOraclePPTOn :
   unfold twoLevel
   apply client_isOraclePPTOn.run_interpret_preprocess_open
     (resources := fun n request => 4 * request.length + 2 * n + 3)
-    ComputableTidilyInPolyTime.id' cached_isOraclePPTOn (.const [])
+    (by fun_prop) cached_isOraclePPTOn (.const [])
     (fun n cache => ∀ entry ∈ cache, entry.2.length ≤ n) (by simp) (by fun_prop)
   intro n request cache hcache result hresult
   obtain ⟨hreply, hcache', hgrowth⟩ := ProbOracleComp.memoize_call_size_le encBits encBits
@@ -155,7 +155,7 @@ private noncomputable def repeatHead (n : ℕ) : WordOracleComp Unit (List Bool)
 -- The repeated client is strict oracle PPT.
 example : IsOraclePPTOn encUnary encBits repeatHead := by
   refine IsOraclePPTOn.iterate_of_bounded_growth (count := fun n => n) (initial := fun _ => [])
-    ComputableTidilyInPolyTime.id' (.const []) (by fun_prop) (growth := 1) ?_
+    (by fun_prop) (.const []) (by fun_prop) (growth := 1) ?_
   intro _ next hnext
   obtain ⟨reply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
   simp only [encBits, Function.Embedding.coe_refl, id_eq]

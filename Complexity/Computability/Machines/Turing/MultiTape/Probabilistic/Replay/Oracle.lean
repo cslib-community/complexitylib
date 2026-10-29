@@ -214,20 +214,14 @@ section PolyTimeOutput
 variable [Finite Control] [Finite Operation]
 
 /-- The replayed output is polynomial-time. -/
-@[fun_prop] theorem replayOutput_pt : ComputableTidilyInPolyTime
+@[fun_prop] theorem computableInPolyTime_replayOutput : ComputableInPolyTime
     (fun p : List Bool × List Bool => machine.replayOutput p.1 p.2)
     (encPair encBits encBits) encBits := by
   let _ := Fintype.ofFinite Operation
   have hout : ComputableTidilyInPolyTime
       (fun cfg : FiniteConfig k Bool Control Operation => cfg.tapes.output)
       encFiniteConfig encBits := by fun_prop
-  exact hout.comp machine.replayConfig_pt
-
-/-- `Turing.MultiTapePTM.replayOutput_pt` for plain certificates. -/
-@[fun_prop] theorem computableInPolyTime_replayOutput : ComputableInPolyTime
-    (fun p : List Bool × List Bool => machine.replayOutput p.1 p.2)
-    (encPair encBits encBits) encBits :=
-  machine.replayOutput_pt.computableInPolyTime
+  exact (hout.comp machine.replayConfig_pt).computableInPolyTime
 
 /-- The next query in a guessed-reply execution is uniformly polynomial-time. -/
 @[fun_prop] theorem replayPrefix_pendingRequest_pt : ComputableTidilyInPolyTime

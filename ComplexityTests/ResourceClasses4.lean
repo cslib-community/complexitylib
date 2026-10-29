@@ -6,7 +6,6 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.Classes.Padding
 import Complexity.Computability.Complexity.Classes.RP
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-! Padding: the padded problem of a nondeterministic machine, the translation lemma and
 `P = NP → EXP = NEXP`; and error reduction for deciders of a nontrivial problem. -/
@@ -23,7 +22,7 @@ theorem computableInO_two_pow_length :
     ComputableInO (fun x : List Bool => 2 ^ x.length) encBits encUnary
       (fun x => x.length + (x.length + 1) * 2 ^ x.length)
       fun x => x.length + 2 ^ x.length :=
-  .of_tidy (ComputableTidilyInO.unary_two_pow.comp ComputableTidilyInO.lengthUnary)
+  ComputableInO.unary_two_pow.comp ComputableInO.lengthUnary
 
 /-- The translation lemma for nondeterministic time `O(2 ^ n)`. -/
 example (hNP : NP encBits ⊆ P encBits) :

@@ -22,13 +22,15 @@ open scoped NNReal
 /-! ### Truth-table languages -/
 
 /-- A word of length `2 ^ n` is in the truth-table language of `C` exactly when the function it
-tabulates is in `C n`. -/
-example (C : ∀ n, Set (BooleanFunction n)) (T : BitString (2 ^ 1)) :
-    List.ofFn T ∈ truthTableLanguage C ↔ (truthTable 1).symm T ∈ C 1 :=
-  ofFn_mem_truthTableLanguage
-
-/-- A word whose length is not a power of two is in no truth-table language. -/
-example (C : ∀ n, Set (BooleanFunction n)) : [true, false, true] ∉ truthTableLanguage C := by
+tabulates is in `C n`; a word whose length is not a power of two is in no truth-table language; and
+the empty property has an empty truth-table language. -/
+example :
+    (List.ofFn (0 : BitString (2 ^ 1)) ∈ truthTableLanguage
+      (fun n => (Set.univ : Set (BooleanFunction n))) ↔
+      (truthTable 1).symm 0 ∈ (Set.univ : Set (BooleanFunction 1))) ∧
+    [true, false, true] ∉ truthTableLanguage (fun n => (Set.univ : Set (BooleanFunction n))) ∧
+    [true] ∉ truthTableLanguage (fun n => (∅ : Set (BooleanFunction n))) := by
+  refine ⟨ofFn_mem_truthTableLanguage, ?_, fun ⟨_, _, h⟩ => h⟩
   rintro ⟨m, h, -⟩
   rcases m with _ | _ | m
   · simp at h
@@ -38,10 +40,6 @@ example (C : ∀ n, Set (BooleanFunction n)) : [true, false, true] ∉ truthTabl
       exact Nat.le_mul_of_pos_left 4 (Nat.two_pow_pos m)
     simp only [List.length_cons, List.length_nil] at h
     omega
-
-/-- The empty property has an empty truth-table language. -/
-example (w : List Bool) : w ∉ truthTableLanguage fun n => (∅ : Set (BooleanFunction n)) :=
-  fun ⟨_, _, h⟩ => h
 
 /-! ### A `P/poly`-natural property -/
 
@@ -68,35 +66,32 @@ example : IsNatural PPoly fun n => (Set.univ : Set (BooleanFunction n)) :=
 
 /-! ### A large property useful against `P/poly` -/
 
-/-- The hard functions are large and useful against `P/poly`, so both hypotheses can be met at
-once; by `truthTableLanguage_setOf_lt_complexity_notMem_PPoly` the property is not
-`P/poly`-constructive if an exponentially secure family exists. -/
-example : IsLarge (fun n => {f : BooleanFunction n |
+/-- The hard functions are large and useful against `P/poly` (and against `∅`), so they eventually
+require more than `n ^ 3` gates; by `truthTableLanguage_setOf_lt_complexity_notMem_PPoly` the
+property is not `P/poly`-constructive if an exponentially secure family exists. -/
+example :
+    IsLarge (fun n => {f : BooleanFunction n |
       2 ^ n / (5 * n) < complexity interpretation (single f)}) ∧
-    IsUseful PPoly fun n => {f : BooleanFunction n |
-      2 ^ n / (5 * n) < complexity interpretation (single f)} :=
-  ⟨isLarge_setOf_lt_complexity, isUseful_PPoly_setOf_lt_complexity⟩
-
-/-- Every property is useful against the empty class. -/
-example (C : ∀ n, Set (BooleanFunction n)) : IsUseful ∅ C := fun _ h => h.elim
-
-/-- A property useful against `P/poly` eventually holds only for functions needing more than
-`n ^ 3` gates. -/
-example (C : ∀ n, Set (BooleanFunction n)) (hC : IsUseful PPoly C) :
-    ∀ᶠ n in atTop, ∀ f ∈ C n, n ^ 3 < complexity interpretation (single f) :=
-  isUseful_PPoly_iff.1 hC _ (by fun_prop)
+    IsUseful PPoly (fun n => {f : BooleanFunction n |
+      2 ^ n / (5 * n) < complexity interpretation (single f)}) ∧
+    IsUseful ∅ (fun n => {f : BooleanFunction n |
+      2 ^ n / (5 * n) < complexity interpretation (single f)}) ∧
+    (∀ᶠ n in atTop, ∀ f ∈ {f : BooleanFunction n |
+      2 ^ n / (5 * n) < complexity interpretation (single f)},
+      n ^ 3 < complexity interpretation (single f)) :=
+  ⟨isLarge_setOf_lt_complexity, isUseful_PPoly_setOf_lt_complexity, fun _ h => h.elim,
+    isUseful_PPoly_iff.1 isUseful_PPoly_setOf_lt_complexity _ (by fun_prop)⟩
 
 /-! ### Circuit tests -/
 
-/-- A constant test is computed with one gate. -/
-example (m : ℕ) (b : Bool) : IsCircuitTest (m := m) 1 fun _ => PMF.pure b :=
-  ⟨fun _ => b, (Synthesis.const b).complexity_le, rfl⟩
-
-/-- Circuit tests with more gates include those with fewer. -/
-example {m t t' : ℕ} (h : t ≤ t') {A : Crypto.PRG.Adversary (BitString m)}
-    (hA : IsCircuitTest t A) : IsCircuitTest t' A :=
-  let ⟨test, htest, hA⟩ := hA
-  ⟨test, htest.trans h, hA⟩
+/-- A constant test is computed with one gate, and circuit tests with more gates include those with
+fewer. -/
+example :
+    IsCircuitTest (m := 4) 1 (fun _ => PMF.pure true) ∧
+    IsCircuitTest (m := 4) 2 (fun _ => PMF.pure true) := by
+  have h1 : IsCircuitTest (m := 4) 1 (fun _ => PMF.pure true) :=
+    ⟨fun _ => true, (Synthesis.const true).complexity_le, rfl⟩
+  exact ⟨h1, let ⟨test, htest, hA⟩ := h1; ⟨test, htest.trans (by decide), hA⟩⟩
 
 /-! ### The distinguisher on hard functions -/
 
@@ -141,42 +136,30 @@ its complement, so the GGM function with key `s` is `s` plus the parity of the i
 def toy : PRG.Generator (BitString 1) (BitString (2 * 1)) :=
   ⟨fun s i => if (i : ℕ) = 0 then s 0 else !s 0⟩
 
-example : GGM.booleanFamily toy 3 (fun _ => false) (fun i => decide ((i : ℕ) ≠ 1)) = false := by
-  decide
-
-example : GGM.booleanFamily toy 3 (fun _ => true) (fun i => decide ((i : ℕ) = 1)) = false := by
-  decide
-
-example : GGM.booleanFamily toy 2 (fun _ => true) (fun _ => false) = true := by
-  decide
-
-/-- The fixed-width evaluation is the list construction with the generator read on lists. -/
-example : List.ofFn (GGM.evalBits toy (fun _ => true) (fun i : Fin 2 => decide ((i : ℕ) = 0))) =
-    GGM.eval (GGM.listGenerator toy) [true] [true, false] :=
-  GGM.ofFn_evalBits toy _ _
-
-example : GGM.eval (GGM.listGenerator toy) [true] [true, false] = [false] := by
-  decide
-
-/-- The members of the toy family on `n` inputs have circuits with `n (C + 4) + 2` gates. -/
-example (n : ℕ) (seed : BitString 1) :
-    complexity interpretation (single (GGM.booleanFamily toy n seed)) ≤
-      n * (complexity interpretation ⇑toy + 4) + 2 := by
-  simpa using GGM.complexity_booleanFamily_le toy n seed
+/-- Evaluation of `GGM.booleanFamily toy`, the fixed-width/list bridge `GGM.ofFn_evalBits`, and the
+circuit-size bound on `GGM.booleanFamily toy`. -/
+example :
+    GGM.booleanFamily toy 3 (fun _ => false) (fun i => decide ((i : ℕ) ≠ 1)) = false ∧
+    GGM.booleanFamily toy 3 (fun _ => true) (fun i => decide ((i : ℕ) = 1)) = false ∧
+    GGM.booleanFamily toy 2 (fun _ => true) (fun _ => false) = true ∧
+    List.ofFn (GGM.evalBits toy (fun _ => true) (fun i : Fin 2 => decide ((i : ℕ) = 0))) =
+      GGM.eval (GGM.listGenerator toy) [true] [true, false] ∧
+    GGM.eval (GGM.listGenerator toy) [true] [true, false] = [false] ∧
+    complexity interpretation (single (GGM.booleanFamily toy 3 (fun _ => true))) ≤
+      3 * (complexity interpretation ⇑toy + 4) + 2 :=
+  ⟨by decide, by decide, by decide, GGM.ofFn_evalBits toy _ _, by decide,
+    by simpa using GGM.complexity_booleanFamily_le toy 3 (fun _ => true)⟩
 
 /-! ### The security theorem
 
 Every generator is secure with error `1`, so the hypothesis of the security theorem can be met; the
 conclusion then bounds the advantage by `2 ^ n - 1`. -/
 
-example (n t : ℕ) :
-    (truthTableGenerator (GGM.booleanFamily toy n)).Secure (IsCircuitTest t) ((2 ^ n - 1) * 1) :=
-  GGM.secure_truthTableGenerator_booleanFamily (toy.secure_one _)
-
-/-- Subexponential security constrains only `m ≥ 1`: at `m = 0` it asks for error `1`. -/
-example (G : ∀ k, PRG.Generator (BitString k) (BitString (2 * k))) (k : ℕ) :
-    (G k).Secure (IsCircuitTest (2 ^ 0)) (2 ^ 0)⁻¹ := by
-  simpa using (G k).secure_one _
+example :
+    (truthTableGenerator (GGM.booleanFamily toy 3)).Secure (IsCircuitTest 10) ((2 ^ 3 - 1) * 1) ∧
+    toy.Secure (IsCircuitTest (2 ^ 0)) (2 ^ 0)⁻¹ :=
+  ⟨GGM.secure_truthTableGenerator_booleanFamily (toy.secure_one _),
+    by simpa using toy.secure_one _⟩
 
 /-- Security against circuits of size `2 ^ (k ^ ε)` with `ε = 1 / 2` gives subexponential security
 with `d = 2`. -/

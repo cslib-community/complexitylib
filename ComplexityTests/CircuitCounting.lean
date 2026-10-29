@@ -89,37 +89,6 @@ private def sampleTernaryCircuit : Circuit ternarySig 5 1 :=
 private theorem sampleTernaryCircuit_fanIn : sampleTernaryCircuit.FanInAtMost 3 := by
   decide
 
-example : sampleTernaryCircuit.size = 2 := by
-  decide
-
-/-- Dead gate `1` (wire `6`) and its exclusively-read inputs `3, 4` are pruned from `toCSP` and
-`toSatCNF`, leaving `2` CSP constraints (`1` reachable gate + `1` output) on the `4` reachable
-wires `{0, 1, 2, 5}`. -/
-example : (Compiler.toCSP sampleTernaryCircuit).length = 2 := by
-  decide
-
-example : (Compiler.toSatCNF sampleTernaryCircuit ternaryInterp).numVars = 4 := by
-  decide
-
-example : ∀ cl ∈ Compiler.toSatCNF sampleTernaryCircuit ternaryInterp, cl.length ≤ 4 := by
-  decide
-
-example : Compiler.satFreeShift sampleTernaryCircuit ternaryInterp = 2 := by
-  decide
-
-example : (Compiler.toSatCNF sampleTernaryCircuit ternaryInterp).modelCount = 4 := by
-  decide
-
-example : sampleTernaryCircuit.satCount ternaryInterp = 16 := by
-  decide
-
-/-- Kernel check agreeing with `Compiler.satCount_eq_two_pow_satFreeShift_mul_modelCount`. -/
-example :
-    sampleTernaryCircuit.satCount ternaryInterp =
-      2 ^ Compiler.satFreeShift sampleTernaryCircuit ternaryInterp *
-        (Compiler.toSatCNF sampleTernaryCircuit ternaryInterp).modelCount :=
-  Compiler.satCount_eq_two_pow_satFreeShift_mul_modelCount sampleTernaryCircuit ternaryInterp
-
 /-- Multi-gate fan-out check on `n = 3` inputs: Gate `0` (`maj3(x₀, x₁, x₂)`) feeds Gate `1`
 (`mux(gate₀, x₀, x₁)`), giving `x₀` and `x₁` reachable fan-out `2`. -/
 private def fanOutMuxCircuit : Circuit ternarySig 3 1 :=
@@ -127,14 +96,29 @@ private def fanOutMuxCircuit : Circuit ternarySig 3 1 :=
       ⟨TernaryOp.mux, ![Wire.gate 0, Wire.input 0, Wire.input 1]⟩,
     fun _ => Wire.gate 1⟩
 
-example : fanOutMuxCircuit.satCount ternaryInterp = 4 := by
-  decide
-
+/-- Dead gate `1` (wire `6`) and its exclusively-read inputs `3, 4` are pruned from `toCSP` and
+`toSatCNF`, leaving `2` CSP constraints (`1` reachable gate + `1` output) on the `4` reachable
+wires `{0, 1, 2, 5}`; both `sampleTernaryCircuit` and `fanOutMuxCircuit` satisfy
+`satCount_eq_two_pow_satFreeShift_mul_modelCount`. -/
 example :
-    fanOutMuxCircuit.satCount ternaryInterp =
-      2 ^ Compiler.satFreeShift fanOutMuxCircuit ternaryInterp *
-        (Compiler.toSatCNF fanOutMuxCircuit ternaryInterp).modelCount :=
-  Compiler.satCount_eq_two_pow_satFreeShift_mul_modelCount fanOutMuxCircuit ternaryInterp
+    sampleTernaryCircuit.size = 2 ∧
+      (Compiler.toCSP sampleTernaryCircuit).length = 2 ∧
+      (Compiler.toSatCNF sampleTernaryCircuit ternaryInterp).numVars = 4 ∧
+      (∀ cl ∈ Compiler.toSatCNF sampleTernaryCircuit ternaryInterp, cl.length ≤ 4) ∧
+      Compiler.satFreeShift sampleTernaryCircuit ternaryInterp = 2 ∧
+      (Compiler.toSatCNF sampleTernaryCircuit ternaryInterp).modelCount = 4 ∧
+      sampleTernaryCircuit.satCount ternaryInterp = 16 ∧
+      sampleTernaryCircuit.satCount ternaryInterp =
+        2 ^ Compiler.satFreeShift sampleTernaryCircuit ternaryInterp *
+          (Compiler.toSatCNF sampleTernaryCircuit ternaryInterp).modelCount ∧
+      fanOutMuxCircuit.satCount ternaryInterp = 4 ∧
+      fanOutMuxCircuit.satCount ternaryInterp =
+        2 ^ Compiler.satFreeShift fanOutMuxCircuit ternaryInterp *
+          (Compiler.toSatCNF fanOutMuxCircuit ternaryInterp).modelCount :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide,
+    Compiler.satCount_eq_two_pow_satFreeShift_mul_modelCount sampleTernaryCircuit ternaryInterp,
+    by decide,
+    Compiler.satCount_eq_two_pow_satFreeShift_mul_modelCount fanOutMuxCircuit ternaryInterp⟩
 
 /-! ### Edge cases: pure wiring, zero inputs, unsatisfiable circuit, unconstrained output -/
 
@@ -143,25 +127,10 @@ example :
 private def wiringProj : Circuit ternarySig 4 1 :=
   Circuit.wiring ternarySig (fun _ => ⟨2, by decide⟩)
 
-example : (Compiler.toSatCNF wiringProj ternaryInterp).numVars = 1 := by
-  decide
-
-example : Compiler.satFreeShift wiringProj ternaryInterp = 3 := by
-  decide
-
-example : wiringProj.satCount ternaryInterp = 8 := by
-  decide
-
 /-- Zero-input (`n = 0`) constant-`true` circuit: the unique empty input satisfies it
 (`satCount = 1`). -/
 private def zeroInputTrue : Circuit ternarySig 0 1 :=
   ⟨Program.empty.gate ⟨TernaryOp.constTrue, ![]⟩, fun _ => Wire.gate 0⟩
-
-example : zeroInputTrue.satCount ternaryInterp = 1 := by
-  decide
-
-example : (Compiler.toSatCNF zeroInputTrue ternaryInterp).modelCount = 1 := by
-  decide
 
 /-- Unsatisfiable De Morgan circuit `x₀ ∧ ¬x₀` on `n = 2` inputs (input `1` unread):
 `satCount = 0` and `(toSatCNF).modelCount = 0`. -/
@@ -169,17 +138,6 @@ private def unsatDeMorgan : Circuit Boolean.signature 2 1 :=
   ⟨(Program.empty.gate ⟨Boolean.Op.not, ![Wire.input 0]⟩).gate
       ⟨Boolean.Op.and, ![Wire.input 0, Wire.gate 0]⟩,
     fun _ => Wire.gate 1⟩
-
-example : unsatDeMorgan.satCount Boolean.interpretation = 0 := by
-  decide
-
-example : (Compiler.toSatCNF unsatDeMorgan Boolean.interpretation).modelCount = 0 := by
-  decide
-
-example : (⟨2, unsatDeMorgan⟩ : Σ n, Circuit Boolean.signature n 1) ∉ CircuitSAT := by
-  rw [← signatureCircuitSAT_boolean, ← Compiler.satisfiable_toSatCNF_iff,
-    ← CNF.modelCount_pos_iff]
-  decide
 
 /-- Two-output De Morgan circuit on `n = 3` inputs (`outputs = [0, 1]`, input `2` unread) where
 output `0` must be `true` and output `1` is unconstrained (`fun _ => true`):
@@ -192,22 +150,30 @@ private def firstTrueSecondAny : Fin 2 → Bool → Bool
   | ⟨0, _⟩, b => b
   | ⟨1, _⟩, _ => true
 
-example : Compiler.freeShift twoOutCircuit Boolean.interpretation firstTrueSecondAny = 2 := by
-  decide
-
 example :
-    (Compiler.toCNF twoOutCircuit Boolean.interpretation firstTrueSecondAny).modelCount = 1 := by
-  decide
-
-example : twoOutCircuit.acceptCount Boolean.interpretation firstTrueSecondAny = 4 := by
+    (Compiler.toSatCNF wiringProj ternaryInterp).numVars = 1 ∧
+      Compiler.satFreeShift wiringProj ternaryInterp = 3 ∧
+      wiringProj.satCount ternaryInterp = 8 ∧
+      zeroInputTrue.satCount ternaryInterp = 1 ∧
+      (Compiler.toSatCNF zeroInputTrue ternaryInterp).modelCount = 1 ∧
+      unsatDeMorgan.satCount Boolean.interpretation = 0 ∧
+      (Compiler.toSatCNF unsatDeMorgan Boolean.interpretation).modelCount = 0 ∧
+      (⟨2, unsatDeMorgan⟩ : Σ n, Circuit Boolean.signature n 1) ∉ CircuitSAT ∧
+      Compiler.freeShift twoOutCircuit Boolean.interpretation firstTrueSecondAny = 2 ∧
+      (Compiler.toCNF twoOutCircuit Boolean.interpretation firstTrueSecondAny).modelCount = 1 ∧
+      twoOutCircuit.acceptCount Boolean.interpretation firstTrueSecondAny = 4 := by
+  refine ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, ?_,
+    by decide, by decide, by decide⟩
+  rw [← signatureCircuitSAT_boolean, ← Compiler.satisfiable_toSatCNF_iff,
+    ← CNF.modelCount_pos_iff]
   decide
 
 /-! ### Scale-bound sanity checks and nonvacuous endpoint instantiations -/
 
-example : interpolationScale 0 = 0 := interpolationScale_zero
-
-example (n : ℕ) : interpolationScale n ≤ interpolationScale (n + 1) :=
-  interpolationScale_mono (Nat.le_succ n)
+example :
+    interpolationScale 0 = 0 ∧
+      interpolationScale 4 ≤ interpolationScale 5 :=
+  ⟨interpolationScale_zero, interpolationScale_mono (by decide)⟩
 
 example :
     ∃ (count : (Σ n, Circuit ternarySig n 1) → ℕ) (A e b : ℕ),

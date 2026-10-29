@@ -73,11 +73,10 @@ def nested : (language L).Sentence :=
 def input3 : EncodedStructure := (3, [ [false, false, true] ])
 def input2 : EncodedStructure := (2, [ [false, false] ])
 
-example : queryLanguage vocabulary mixed ∈ Cslib.Complexity.L encStructure :=
-  queryLanguage_mem_L vocabulary mixed
-
-example : queryLanguage vocabulary nested ∈ Cslib.Complexity.L encStructure :=
-  queryLanguage_mem_L vocabulary nested
+example :
+    queryLanguage vocabulary mixed ∈ Cslib.Complexity.L encStructure ∧
+    queryLanguage vocabulary nested ∈ Cslib.Complexity.L encStructure :=
+  ⟨queryLanguage_mem_L vocabulary mixed, queryLanguage_mem_L vocabulary nested⟩
 
 lemma realize_mixed {a : EncodedStructure} [Fact (2 ≤ a.1)] :
     (letI := vocabulary.decode a; Fin a.1 ⊨ mixed) ↔
@@ -140,15 +139,16 @@ example : (9, [List.replicate 9 false]) ∉ queryLanguage vocabulary highBit := 
   change (8 : ℕ).testBit 8 = true at h
   contradiction
 
-/-- Well-shaped sizes zero and one are excluded by the ordered convention. -/
-example : (0, [ [] ]) ∉ queryLanguage vocabulary mixed :=
-  notMem_queryLanguage_of_lt_two vocabulary (by decide) mixed
-example : (1, [ [false] ]) ∉ queryLanguage vocabulary mixed :=
-  notMem_queryLanguage_of_lt_two vocabulary (by decide) mixed
-
-/-- Both a missing table and an incorrectly sized one are rejected. -/
-example : (3, []) ∉ queryLanguage vocabulary nested := fun h => absurd h.1 (by decide)
-example : (3, [ [false] ]) ∉ queryLanguage vocabulary nested := fun h => absurd h.1 (by decide)
+/-- Well-shaped sizes zero and one, missing tables, and incorrectly sized tables are rejected. -/
+example :
+    (0, [ [] ]) ∉ queryLanguage vocabulary mixed ∧
+    (1, [ [false] ]) ∉ queryLanguage vocabulary mixed ∧
+    (3, []) ∉ queryLanguage vocabulary nested ∧
+    (3, [ [false] ]) ∉ queryLanguage vocabulary nested :=
+  ⟨notMem_queryLanguage_of_lt_two vocabulary (by decide) mixed,
+    notMem_queryLanguage_of_lt_two vocabulary (by decide) mixed,
+    fun h => absurd h.1 (by decide),
+    fun h => absurd h.1 (by decide)⟩
 
 /-- A single binary relation for checking the existing table-index orientation. -/
 def graphVocabulary : Vocabulary Language.graph where
@@ -184,25 +184,24 @@ example : directedEdge ∉ queryLanguage graphVocabulary
   change false = true at h
   contradiction
 
-/-- The compiled input atom reads the framed table position for `(0,max)`. -/
-example : (match ModelChecker.formulaCode graphVocabulary
-    Empty.elim 3 forwardEdge 0 1 2 with
-  | [.read e _ _ _] => e.eval [3]
-  | _ => 0) = 20 := by decide
-
-/-- The BIT index is binary; its value is not used as the space budget. -/
-example : ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1.testBit p.2)
-    (encPair encNat encNat) encBool (fun p => (encPair encNat encNat p).length) :=
-  ComputableTidilyInSpace.natTestBit.weaken (ComputableTidilyInSpace.linear_mul 32)
-
-example : (Expr.bit (.const 8) (.const 3)).eval [] = 1 := by decide
-example : (Expr.bit (.const 8) (.const 8)).eval [] = 0 := by decide
-example : (Expr.sub (.const 0) (.const 1)).eval [] = 0 := rfl
-example : (Expr.bit (.sub (.reg 0) (.const 1)) (.const 0)).eval [9] = 0 := by decide
-
-example : ComputableTidilyInSpace
-    (fun regs => (Expr.bit (.sub (.reg 0) (.const 1)) (.reg 1)).eval regs)
-    (encList encNat) encNat (fun regs => (encList encNat regs).length) :=
-  Expr.eval_inSpace _
+/-- The compiled input atom reads the framed table position for `(0,max)`, and `Expr.bit` /
+`Expr.sub` evaluate within logarithmic space. -/
+example :
+    (match ModelChecker.formulaCode graphVocabulary Empty.elim 3 forwardEdge 0 1 2 with
+      | [.read e _ _ _] => e.eval [3]
+      | _ => 0) = 20 ∧
+    ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1.testBit p.2)
+      (encPair encNat encNat) encBool (fun p => (encPair encNat encNat p).length) ∧
+    (Expr.bit (.const 8) (.const 3)).eval [] = 1 ∧
+    (Expr.bit (.const 8) (.const 8)).eval [] = 0 ∧
+    (Expr.sub (.const 0) (.const 1)).eval [] = 0 ∧
+    (Expr.bit (.sub (.reg 0) (.const 1)) (.const 0)).eval [9] = 0 ∧
+    ComputableTidilyInSpace
+      (fun regs => (Expr.bit (.sub (.reg 0) (.const 1)) (.reg 1)).eval regs)
+      (encList encNat) encNat (fun regs => (encList encNat regs).length) :=
+  ⟨by decide,
+    ComputableTidilyInSpace.natTestBit.weaken (ComputableTidilyInSpace.linear_mul 32),
+    by decide, by decide, rfl, by decide,
+    Expr.eval_inSpace _⟩
 
 end Cslib.Tests.OrderedModelChecking
