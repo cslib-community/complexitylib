@@ -45,7 +45,7 @@ A data structure is packaged once as a `SubroutineCode B r_ds k_init` and certif
   standalone / inline specification and resource certificate for a Word-RAM data structure.
 * `Cslib.WordRAM.SubroutineCode.initFresh`, `Cslib.WordRAM.SubroutineCode.initClear`: `O(1)` fresh
   initialization on zeroed memory and generic `O(space)` dirty-memory re-initialization.
-* `Cslib.WordRAM.SubroutineBase.toDynamicProgram`, `Cslib.WordRAM.SubroutineDS.toCertificate`:
+* `Cslib.WordRAM.SubroutineCode.toDynamicProgram`, `Cslib.WordRAM.SubroutineDS.toCertificate`:
   standalone `.standard`-basis `DynamicProgram` and `DynamicCertificate` projections.
 
 ## Main results
@@ -206,6 +206,169 @@ def mapSimulates (φ : B.Simulates B') (P : SubroutineCode B r_ds k_init) :
 abbrev toStandard (P : SubroutineCode .exact r_ds k_init) : SubroutineCode .standard r_ds k_init :=
   P.mapSimulates .exactStandard
 
+/-- Project subroutine code and its calling convention to the same operation signature.
+The basis is retained, so this projection does not translate instructions or resource claims. -/
+def toDynamicProgram (P : SubroutineCode B r_ds k_init) {O : Type*} {Result : O → Type*}
+    (encode : O → Fin r_ds → ℕ) (decode : (o : O) → (Fin r_ds → ℕ) → Option (Result o)) :
+    DynamicProgram ⟨O, Result⟩ r_ds B where
+  code := P.code
+  output := P.output
+  input := P.input
+  encode := encode
+  decode := decode
+
+/-- Generic execution of `P.zeroFillCode` clearing `[base, base + space)` in `4 * space + 6`
+instructions over any basis `B`. -/
+theorem zeroFillCode_exec (P : SubroutineCode B r_ds k_init)
+    {w base space : ℕ} {params : Fin k_init → ℕ}
+    (hclear : [P.curReg, P.zeroReg, P.oneReg, P.baseReg, P.frontierReg].Nodup)
+    (hparams : ∀ j, P.initParams j ∉ [P.curReg, P.zeroReg, P.oneReg])
+    (hinc : ∀ {x : Data r_ds}, x.regs P.oneReg = 1 → Fits w (x.regs P.curReg + 1) →
+      P.incCur.eval w x = some (x.set P.curReg (x.regs P.curReg + 1)))
+    {x₁ : Data r_ds}
+    (hx₁ : x₁.Bounded w) (hb₁ : x₁.regs P.baseReg = base)
+    (hfr₁ : x₁.regs P.frontierReg = base + space)
+    (hpar₁ : ∀ j, x₁.regs (P.initParams j) = params j) :
+    ∃ x₂, ExecWithin w P.zeroFillCode x₁ x₂ (4 * space + 6) ∧
+      x₂.Bounded w ∧
+      x₂.regs P.baseReg = base ∧
+      x₂.regs P.frontierReg = base + space ∧
+      (∀ j, x₂.regs (P.initParams j) = params j) ∧
+      (∀ a ∈ (Block.mk base space).footprint, x₂.mem a = 0) ∧
+      Modifies (Block.mk base space).footprint x₁.mem x₂.mem := by
+  have hfit0 : Fits w 0 := (hx₁.1 P.baseReg).of_le (Nat.zero_le _)
+  have hfit_stop : Fits w (base + space) := hfr₁ ▸ hx₁.1 P.frontierReg
+  obtain ⟨hcur_not, hzero_not, hone_not, hbase_ne_fr, _⟩ :=
+    (List.nodup_cons.mp hclear).imp_right fun h =>
+      (List.nodup_cons.mp h).imp_right fun h =>
+        (List.nodup_cons.mp h).imp_right List.nodup_cons.mp
+  have hcur_ne_zero : P.curReg ≠ P.zeroReg := fun h => hcur_not (by simp [h])
+  have hcur_ne_one : P.curReg ≠ P.oneReg := fun h => hcur_not (by simp [h])
+  have hcur_ne_base : P.curReg ≠ P.baseReg := fun h => hcur_not (by simp [h])
+  have hcur_ne_fr : P.curReg ≠ P.frontierReg := fun h => hcur_not (by simp [h])
+  have hzero_ne_one : P.zeroReg ≠ P.oneReg := fun h => hzero_not (by simp [h])
+  have hzero_ne_base : P.zeroReg ≠ P.baseReg := fun h => hzero_not (by simp [h])
+  have hzero_ne_fr : P.zeroReg ≠ P.frontierReg := fun h => hzero_not (by simp [h])
+  have hone_ne_base : P.oneReg ≠ P.baseReg := fun h => hone_not (by simp [h])
+  have hone_ne_fr : P.oneReg ≠ P.frontierReg := fun h => hone_not (by simp [h])
+  by_cases hsp : 0 < space
+  · have hc_pos : (Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
+      simp only [Cond.Holds, hb₁, hfr₁]
+      omega
+    have hfit1 : Fits w 1 := hfit_stop.of_le (by omega)
+    let x_z := x₁.set P.zeroReg 0
+    let x_o := x_z.set P.oneReg 1
+    let x_c := x_o.set P.curReg (x_o.regs P.baseReg)
+    have hxc_base : x_c.regs P.baseReg = base := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_base.symm,
+        Function.update_of_ne hone_ne_base.symm, Function.update_of_ne hzero_ne_base.symm, hb₁]
+    have hxc_fr : x_c.regs P.frontierReg = base + space := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_fr.symm,
+        Function.update_of_ne hone_ne_fr.symm, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
+    have hxc_zero : x_c.regs P.zeroReg = 0 := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_zero.symm,
+        Function.update_of_ne hzero_ne_one]
+    have hxc_one : x_c.regs P.oneReg = 1 := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_one.symm]
+    have hxc_cur : x_c.regs P.curReg = base := by
+      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hone_ne_base.symm,
+        Function.update_of_ne hzero_ne_base.symm, hb₁]
+    let xs : ℕ → Data r_ds := fun i =>
+      ⟨Function.update x_c.regs P.curReg (base + i), clear x₁.mem base i⟩
+    have hxs0 : xs 0 = x_c := by
+      ext r
+      · by_cases hr : r = P.curReg
+        · subst hr
+          simp [xs, hxc_cur]
+        · simp [xs, Function.update_of_ne hr, x_c, x_o, x_z, Data.set]
+      · simp [xs, x_c, x_o, x_z, Data.set]
+    have hloop_cond : ∀ i < space, (Cond.lt P.curReg P.frontierReg).Holds (xs i) := by
+      intro i hi
+      simp only [Cond.Holds, xs, Function.update_self,
+        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
+      omega
+    have hloop_exit : ¬(Cond.lt P.curReg P.frontierReg).Holds (xs space) := by
+      simp only [Cond.Holds, xs, Function.update_self,
+        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
+      omega
+    have hloop_body : ∀ i < space,
+        ExecWithin w (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur))
+          (xs i) (xs (i + 1)) 2 := by
+      intro i hi
+      have hsi_zero : (xs i).regs P.zeroReg = 0 := by
+        simp [xs, Function.update_of_ne hcur_ne_zero.symm, hxc_zero]
+      have hsi_one : (xs i).regs P.oneReg = 1 := by
+        simp [xs, Function.update_of_ne hcur_ne_one.symm, hxc_one]
+      have hsi_cur : (xs i).regs P.curReg = base + i := by simp [xs]
+      let x_st := (xs i).write ((xs i).regs P.curReg) ((xs i).regs P.zeroReg)
+      have hst_one : x_st.regs P.oneReg = 1 := hsi_one
+      have hst_fit : Fits w (x_st.regs P.curReg + 1) := by
+        change Fits w ((xs i).regs P.curReg + 1)
+        rw [hsi_cur]
+        exact hfit_stop.of_le (by omega)
+      have hinc : ExecWithin w (.op P.incCur) x_st (x_st.set P.curReg (x_st.regs P.curReg + 1)) 1 :=
+        (Exec.op (hinc hst_one hst_fit)).within
+      have htarget : x_st.set P.curReg (x_st.regs P.curReg + 1) = xs (i + 1) := by
+        ext r
+        · simp only [x_st, Data.set, Data.write, xs, hsi_cur]
+          by_cases hr : r = P.curReg
+          · subst hr
+            simp [Nat.add_assoc]
+          · simp [Function.update_of_ne hr]
+        · simp only [x_st, Data.set, Data.write, hsi_cur, hsi_zero]
+          simp [xs, clear_succ]
+      rw [htarget] at hinc
+      exact ExecWithin.store.seq hinc
+    have hloop : ExecWithin w
+        (.loop (.lt P.curReg P.frontierReg) (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
+        x_c (xs space) (space * (2 + 2) + 2) := by
+      simpa [hxs0] using ExecWithin.loop xs space 2 hloop_cond hloop_exit hloop_body
+    have hbranch : ExecWithin w P.zeroFillCode x₁ (xs space) (4 * space + 6) := by
+      have hseq : ExecWithin w
+          (.seq (.op (.const P.zeroReg 0)) <|
+           .seq (.op (.const P.oneReg 1)) <|
+           .seq (.op (.copy P.curReg P.baseReg)) <|
+           .loop (.lt P.curReg P.frontierReg)
+             (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
+          x₁ (xs space) (3 + (space * 4 + 2)) := by
+        obtain ⟨n₁, hn₁, he₁⟩ := (ExecWithin.const (x := x₁) (d := P.zeroReg) hfit0)
+        obtain ⟨n₂, hn₂, he₂⟩ := (ExecWithin.const (x := x_z) (d := P.oneReg) hfit1)
+        obtain ⟨n₃, hn₃, he₃⟩ := (ExecWithin.copy (B := B) (w := w) (x := x_o)
+          (d := P.curReg) (s := P.baseReg))
+        obtain ⟨n₄, hn₄, he₄⟩ := hloop
+        exact ⟨n₁ + (n₂ + (n₃ + n₄)), by omega, he₁.seq (he₂.seq (he₃.seq he₄))⟩
+      exact (ExecWithin.branch_pos hc_pos hseq).mono (by omega)
+    refine ⟨xs space, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
+    · simp [xs, Function.update_of_ne hcur_ne_base.symm, hxc_base]
+    · simp [xs, Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
+    · intro j
+      have hne := hparams j
+      have h1 : P.initParams j ≠ P.curReg := fun h => hne (by simp [h])
+      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
+      have h3 : P.initParams j ≠ P.oneReg := fun h => hne (by simp [h])
+      simp [xs, x_c, x_o, x_z, Data.set, Function.update_of_ne h1, Function.update_of_ne h2,
+        Function.update_of_ne h3, hpar₁ j]
+    · intro a ha
+      exact clear_of_owns (Block.mem_footprint.mp ha)
+    · intro a ha
+      exact clear_of_not_owns (mt Block.mem_footprint.mpr ha)
+  · have hsp0 : space = 0 := by omega
+    have hc_neg : ¬(Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
+      simp only [Cond.Holds, hb₁, hfr₁, hsp0]
+      omega
+    have hbranch : ExecWithin w P.zeroFillCode x₁ (x₁.set P.zeroReg 0) (4 * space + 6) :=
+      (ExecWithin.branch_neg hc_neg (ExecWithin.const hfit0)).mono (by omega)
+    refine ⟨x₁.set P.zeroReg 0, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
+    · simp [Data.set, Function.update_of_ne hzero_ne_base.symm, hb₁]
+    · simp [Data.set, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
+    · intro j
+      have hne := hparams j
+      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
+      simp [Data.set, Function.update_of_ne h2, hpar₁ j]
+    · intro a ha
+      simp [hsp0, Block.footprint] at ha
+    · exact Modifies.refl _ _
+
 end SubroutineCode
 
 universe u v z
@@ -325,15 +488,10 @@ def mapSimulates (φ : B.Simulates B') (C : SubroutineBase P Result valid w base
     let ⟨y, he, hfr', hrep, hpot, hmod⟩ := C.setup_exec hx₁ hb hfr hpar hz
     ⟨y, he.mapSimulates φ, hfr', hrep, hpot, hmod⟩
 
-/-- Project a `.standard`-basis `SubroutineBase` to a standalone `DynamicProgram`. -/
-def toDynamicProgram {P_std : SubroutineCode .standard r_ds k_init}
-    (C : SubroutineBase P_std Result valid w base params s₀) :
-    DynamicProgram ⟨O, Result⟩ r_ds where
-  code := P_std.code
-  output := P_std.output
-  input := P_std.input
-  encode := C.encode
-  decode := C.decode
+/-- Project a subroutine bundle to its signature-level program, retaining the instruction basis. -/
+def toDynamicProgram (C : SubroutineBase P Result valid w base params s₀) :
+    DynamicProgram ⟨O, Result⟩ r_ds B :=
+  P.toDynamicProgram C.encode C.decode
 
 /-- Execute `P.initFresh` on zeroed `[base, base + C.space)` in `C.initTime` instructions. -/
 theorem initFresh_exec (C : SubroutineBase P Result valid w base params s₀) {x : Data r_ds}
@@ -378,152 +536,6 @@ theorem initFresh_rename (C : SubroutineBase P Result valid w base params s₀)
   · rw [Data.comap_extend hf]
     exact hpot
 
-/-- Generic execution of `P.zeroFillCode` clearing `[base, base + C.space)` in `4 * C.space + 6`
-instructions over any basis `B`. -/
-theorem zeroFillCode_exec (C : SubroutineBase P Result valid w base params s₀) {x₁ : Data r_ds}
-    (hx₁ : x₁.Bounded w) (hb₁ : x₁.regs P.baseReg = base)
-    (hfr₁ : x₁.regs P.frontierReg = base + C.space)
-    (hpar₁ : ∀ j, x₁.regs (P.initParams j) = params j) :
-    ∃ x₂, ExecWithin w P.zeroFillCode x₁ x₂ (4 * C.space + 6) ∧
-      x₂.Bounded w ∧
-      x₂.regs P.baseReg = base ∧
-      x₂.regs P.frontierReg = base + C.space ∧
-      (∀ j, x₂.regs (P.initParams j) = params j) ∧
-      (∀ a ∈ (Block.mk base C.space).footprint, x₂.mem a = 0) ∧
-      Modifies (Block.mk base C.space).footprint x₁.mem x₂.mem := by
-  have hfit0 : Fits w 0 := (hx₁.1 P.baseReg).of_le (Nat.zero_le _)
-  have hfit_stop : Fits w (base + C.space) := hfr₁ ▸ hx₁.1 P.frontierReg
-  obtain ⟨hcur_not, hzero_not, hone_not, hbase_ne_fr, _⟩ :=
-    (List.nodup_cons.mp C.clear_nodup).imp_right fun h =>
-      (List.nodup_cons.mp h).imp_right fun h =>
-        (List.nodup_cons.mp h).imp_right List.nodup_cons.mp
-  have hcur_ne_zero : P.curReg ≠ P.zeroReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_one : P.curReg ≠ P.oneReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_base : P.curReg ≠ P.baseReg := fun h => hcur_not (by simp [h])
-  have hcur_ne_fr : P.curReg ≠ P.frontierReg := fun h => hcur_not (by simp [h])
-  have hzero_ne_one : P.zeroReg ≠ P.oneReg := fun h => hzero_not (by simp [h])
-  have hzero_ne_base : P.zeroReg ≠ P.baseReg := fun h => hzero_not (by simp [h])
-  have hzero_ne_fr : P.zeroReg ≠ P.frontierReg := fun h => hzero_not (by simp [h])
-  have hone_ne_base : P.oneReg ≠ P.baseReg := fun h => hone_not (by simp [h])
-  have hone_ne_fr : P.oneReg ≠ P.frontierReg := fun h => hone_not (by simp [h])
-  by_cases hsp : 0 < C.space
-  · have hc_pos : (Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
-      simp only [Cond.Holds, hb₁, hfr₁]
-      omega
-    have hfit1 : Fits w 1 := hfit_stop.of_le (by omega)
-    let x_z := x₁.set P.zeroReg 0
-    let x_o := x_z.set P.oneReg 1
-    let x_c := x_o.set P.curReg (x_o.regs P.baseReg)
-    have hxc_base : x_c.regs P.baseReg = base := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_base.symm,
-        Function.update_of_ne hone_ne_base.symm, Function.update_of_ne hzero_ne_base.symm, hb₁]
-    have hxc_fr : x_c.regs P.frontierReg = base + C.space := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_fr.symm,
-        Function.update_of_ne hone_ne_fr.symm, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
-    have hxc_zero : x_c.regs P.zeroReg = 0 := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_zero.symm,
-        Function.update_of_ne hzero_ne_one]
-    have hxc_one : x_c.regs P.oneReg = 1 := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hcur_ne_one.symm]
-    have hxc_cur : x_c.regs P.curReg = base := by
-      simp [x_c, x_o, x_z, Data.set, Function.update_of_ne hone_ne_base.symm,
-        Function.update_of_ne hzero_ne_base.symm, hb₁]
-    let xs : ℕ → Data r_ds := fun i =>
-      ⟨Function.update x_c.regs P.curReg (base + i), clear x₁.mem base i⟩
-    have hxs0 : xs 0 = x_c := by
-      ext r
-      · by_cases hr : r = P.curReg
-        · subst hr
-          simp [xs, hxc_cur]
-        · simp [xs, Function.update_of_ne hr, x_c, x_o, x_z, Data.set]
-      · simp [xs, x_c, x_o, x_z, Data.set]
-    have hloop_cond : ∀ i < C.space, (Cond.lt P.curReg P.frontierReg).Holds (xs i) := by
-      intro i hi
-      simp only [Cond.Holds, xs, Function.update_self,
-        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-      omega
-    have hloop_exit : ¬(Cond.lt P.curReg P.frontierReg).Holds (xs C.space) := by
-      simp only [Cond.Holds, xs, Function.update_self,
-        Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-      omega
-    have hloop_body : ∀ i < C.space,
-        ExecWithin w (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur))
-          (xs i) (xs (i + 1)) 2 := by
-      intro i hi
-      have hsi_zero : (xs i).regs P.zeroReg = 0 := by
-        simp [xs, Function.update_of_ne hcur_ne_zero.symm, hxc_zero]
-      have hsi_one : (xs i).regs P.oneReg = 1 := by
-        simp [xs, Function.update_of_ne hcur_ne_one.symm, hxc_one]
-      have hsi_cur : (xs i).regs P.curReg = base + i := by simp [xs]
-      let x_st := (xs i).write ((xs i).regs P.curReg) ((xs i).regs P.zeroReg)
-      have hst_one : x_st.regs P.oneReg = 1 := hsi_one
-      have hst_fit : Fits w (x_st.regs P.curReg + 1) := by
-        change Fits w ((xs i).regs P.curReg + 1)
-        rw [hsi_cur]
-        exact hfit_stop.of_le (by omega)
-      have hinc : ExecWithin w (.op P.incCur) x_st (x_st.set P.curReg (x_st.regs P.curReg + 1)) 1 :=
-        (Exec.op (C.incCur_eval hst_one hst_fit)).within
-      have htarget : x_st.set P.curReg (x_st.regs P.curReg + 1) = xs (i + 1) := by
-        ext r
-        · simp only [x_st, Data.set, Data.write, xs, hsi_cur]
-          by_cases hr : r = P.curReg
-          · subst hr
-            simp [Nat.add_assoc]
-          · simp [Function.update_of_ne hr]
-        · simp only [x_st, Data.set, Data.write, hsi_cur, hsi_zero]
-          simp [xs, clear_succ]
-      rw [htarget] at hinc
-      exact ExecWithin.store.seq hinc
-    have hloop : ExecWithin w
-        (.loop (.lt P.curReg P.frontierReg) (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
-        x_c (xs C.space) (C.space * (2 + 2) + 2) := by
-      simpa [hxs0] using ExecWithin.loop xs C.space 2 hloop_cond hloop_exit hloop_body
-    have hbranch : ExecWithin w P.zeroFillCode x₁ (xs C.space) (4 * C.space + 6) := by
-      have hseq : ExecWithin w
-          (.seq (.op (.const P.zeroReg 0)) <|
-           .seq (.op (.const P.oneReg 1)) <|
-           .seq (.op (.copy P.curReg P.baseReg)) <|
-           .loop (.lt P.curReg P.frontierReg)
-             (.seq (.op (.store P.curReg P.zeroReg)) (.op P.incCur)))
-          x₁ (xs C.space) (3 + (C.space * 4 + 2)) := by
-        obtain ⟨n₁, hn₁, he₁⟩ := (ExecWithin.const (x := x₁) (d := P.zeroReg) hfit0)
-        obtain ⟨n₂, hn₂, he₂⟩ := (ExecWithin.const (x := x_z) (d := P.oneReg) hfit1)
-        obtain ⟨n₃, hn₃, he₃⟩ := (ExecWithin.copy (B := B) (w := w) (x := x_o)
-          (d := P.curReg) (s := P.baseReg))
-        obtain ⟨n₄, hn₄, he₄⟩ := hloop
-        exact ⟨n₁ + (n₂ + (n₃ + n₄)), by omega, he₁.seq (he₂.seq (he₃.seq he₄))⟩
-      exact (ExecWithin.branch_pos hc_pos hseq).mono (by omega)
-    refine ⟨xs C.space, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [xs, Function.update_of_ne hcur_ne_base.symm, hxc_base]
-    · simp [xs, Function.update_of_ne hcur_ne_fr.symm, hxc_fr]
-    · intro j
-      have hne := C.params_not_clear j
-      have h1 : P.initParams j ≠ P.curReg := fun h => hne (by simp [h])
-      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
-      have h3 : P.initParams j ≠ P.oneReg := fun h => hne (by simp [h])
-      simp [xs, x_c, x_o, x_z, Data.set, Function.update_of_ne h1, Function.update_of_ne h2,
-        Function.update_of_ne h3, hpar₁ j]
-    · intro a ha
-      exact clear_of_owns (Block.mem_footprint.mp ha)
-    · intro a ha
-      exact clear_of_not_owns (mt Block.mem_footprint.mpr ha)
-  · have hsp0 : C.space = 0 := by omega
-    have hc_neg : ¬(Cond.lt P.baseReg P.frontierReg).Holds x₁ := by
-      simp only [Cond.Holds, hb₁, hfr₁, hsp0]
-      omega
-    have hbranch : ExecWithin w P.zeroFillCode x₁ (x₁.set P.zeroReg 0) (4 * C.space + 6) :=
-      (ExecWithin.branch_neg hc_neg (ExecWithin.const hfit0)).mono (by omega)
-    refine ⟨x₁.set P.zeroReg 0, hbranch, hbranch.bounded hx₁, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [Data.set, Function.update_of_ne hzero_ne_base.symm, hb₁]
-    · simp [Data.set, Function.update_of_ne hzero_ne_fr.symm, hfr₁]
-    · intro j
-      have hne := C.params_not_clear j
-      have h2 : P.initParams j ≠ P.zeroReg := fun h => hne (by simp [h])
-      simp [Data.set, Function.update_of_ne h2, hpar₁ j]
-    · intro a ha
-      simp [hsp0, Block.footprint] at ha
-    · exact Modifies.refl _ _
-
 /-- Execute `P.initClear` on **arbitrary dirty memory** in `C.initTime + 4 * C.space + 6`
 instructions. -/
 theorem initClear_exec (C : SubroutineBase P Result valid w base params s₀) {x : Data r_ds}
@@ -536,7 +548,8 @@ theorem initClear_exec (C : SubroutineBase P Result valid w base params s₀) {x
       Modifies (Block.mk base C.space).footprint x.mem y.mem := by
   obtain ⟨x₁, he₁, hm₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
   obtain ⟨x₂, he₂, hx₂, hb₂, hfr₂, hpar₂, hz₂, hmod₂⟩ :=
-    C.zeroFillCode_exec (he₁.bounded hx) hb₁ hfr₁ hpar₁
+    P.zeroFillCode_exec C.clear_nodup C.params_not_clear C.incCur_eval
+      (he₁.bounded hx) hb₁ hfr₁ hpar₁
   obtain ⟨y, he₃, hfr₃, hrep, hpot, hmod₃⟩ := C.setup_exec hx₂ hb₂ hfr₂ hpar₂ hz₂
   rw [hm₁] at hmod₂
   have hmod : Modifies (Block.mk base C.space).footprint x.mem y.mem := by
