@@ -348,37 +348,6 @@ theorem isCollision_self (H : List Bool → List Bool → List Bool)
     isCollision H valid n k m m = false := by
   simp [isCollision]
 
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_isCollision
-    {H : List Bool → List Bool → List Bool} {valid : ℕ → List Bool → Bool}
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
-      (encPair encBits encBits) encBits)
-    (hvalid : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => valid p.1 p.2)
-      (encPair encUnary encBits) encBool)
-    {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {k m₁ m₂ : γ → List Bool}
-    (hn : ComputableTidilyInPolyTime n encIn encUnary)
-    (hk : ComputableTidilyInPolyTime k encIn encBits)
-    (hm₁ : ComputableTidilyInPolyTime m₁ encIn encBits)
-    (hm₂ : ComputableTidilyInPolyTime m₂ encIn encBits) :
-    ComputableTidilyInPolyTime
-      (fun a => isCollision H valid (n a) (k a) (m₁ a) (m₂ a)) encIn encBool := by
-  have hv₁ : ComputableTidilyInPolyTime (fun a => valid (n a) (m₁ a)) encIn encBool :=
-    hvalid.comp (hn.prod hm₁)
-  have hv₂ : ComputableTidilyInPolyTime (fun a => valid (n a) (m₂ a)) encIn encBool :=
-    hvalid.comp (hn.prod hm₂)
-  have hH₁ : ComputableTidilyInPolyTime (fun a => H (k a) (m₁ a)) encIn encBits :=
-    hH.comp (hk.prod hm₁)
-  have hH₂ : ComputableTidilyInPolyTime (fun a => H (k a) (m₂ a)) encIn encBits :=
-    hH.comp (hk.prod hm₂)
-  have hdiff := ComputableInPolyTime.bool_not.comp
-    (ComputableInPolyTime.beq (.of_tidy hm₁) (.of_tidy hm₂))
-  have hhash := ComputableInPolyTime.beq (.of_tidy hH₁) (.of_tidy hH₂)
-  have hplain := ComputableInPolyTime.bool_and.comp
-    ((ComputableInPolyTime.bool_and.comp
-      ((ComputableInPolyTime.bool_and.comp
-        ((ComputableInPolyTime.of_tidy hv₁).prod (.of_tidy hv₂))).prod hdiff)).prod hhash)
-  simpa only [isCollision, bne, Function.comp_def] using hplain.tidy
-
 /-- Testing whether `(m₁, m₂)` is a valid collision is polynomial-time when `H` and `valid` are
 polynomial-time. -/
 @[program_certificate]
@@ -392,9 +361,20 @@ theorem computableInPolyTime_isCollision
       (fun p : ℕ × List Bool × List Bool × List Bool =>
         isCollision H valid p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool := by
-  apply ComputableInPolyTime.of_tidy
-  exact computableTidilyInPolyTime_isCollision hH.tidy hvalid.tidy
-    (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
+  have hv₁ : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool × List Bool =>
+      valid p.1 p.2.2.1) (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool :=
+    hvalid.comp (.prod (.fst _ _) (by fun_prop))
+  have hv₂ : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool × List Bool =>
+      valid p.1 p.2.2.2) (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool :=
+    hvalid.comp (.prod (.fst _ _) (by fun_prop))
+  have hH₁ : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool × List Bool =>
+      H p.2.1 p.2.2.1) (encPair encUnary (encPair encBits (encPair encBits encBits))) encBits :=
+    hH.comp (.prod (by fun_prop) (by fun_prop))
+  have hH₂ : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool × List Bool =>
+      H p.2.1 p.2.2.2) (encPair encUnary (encPair encBits (encPair encBits encBits))) encBits :=
+    hH.comp (.prod (by fun_prop) (by fun_prop))
+  unfold isCollision
+  fun_prop
 
 /-- The keyed collision-finding experiment: sample a uniform `n`-bit key `k`, run `adversary n k`
 to obtain a candidate pair `(m₁, m₂)`, and accept when `isCollision H valid n k m₁ m₂` holds. -/

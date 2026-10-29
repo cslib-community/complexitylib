@@ -112,7 +112,7 @@ theorem polyTimeTuringAutoreducible_of_polyTimeReducible_fixedPointFree
   refine ⟨fun a => (fun reply => decide (reply = [true])) <$>
     (List.take 1 <$> OracleComp.query ((), encA (f a))), ?_, fun a q hq => ?_, fun a => ?_⟩
   · simp only [OracleComp.interpret_map, OracleComp.interpret_query]
-    exact (IsOraclePPTOn.query_take () hf.tidy (limit := fun _ => 1) (by fun_prop)).map
+    exact (IsOraclePPTOn.query_take' () hf (limit := fun _ => 1) (by fun_prop)).map'
       (by fun_prop)
   · simp only [OracleComp.queriesWith_map, OracleComp.queriesWith_query,
       List.mem_singleton] at hq
@@ -136,7 +136,7 @@ theorem polyTimeTuringAutoreducible_of_mem_P
     (hA : A ∈ P encA) : PolyTimeTuringAutoreducible encA A := by
   obtain ⟨f, hf, h_dec⟩ := hA
   refine ⟨fun a => pure (f a), ?_, fun a q hq => ?_, fun a => ?_⟩
-  · exact hf.tidy.isOraclePPTOn (Operation := Unit)
+  · exact hf.isOraclePPTOn (Operation := Unit)
   · simp only [OracleComp.queriesWith_pure, List.not_mem_nil] at hq
   · simp only [OracleComp.interpret_pure]
     exact h_dec a
@@ -176,14 +176,14 @@ private theorem isOraclePPTOn_queryWords :
     IsOraclePPTOn (encList encBits) encBits
       (fun words => OracleComp.interpret ProbOracleComp.query (queryWords words)) := by
   simp only [queryWords, OracleComp.interpret_map, OracleComp.interpret_iterate]
-  refine IsOraclePPTOn.map (IsOraclePPTOn.iterate_of_bounded_growth
+  refine IsOraclePPTOn.map' (IsOraclePPTOn.iterate_of_bounded_growth'
     (stateEncoding := encPair (encList encBits) encBits) (by fun_prop) (by fun_prop) ?_
     (growth := 0) ?_) (by fun_prop)
   · simp only [interpret_queryWordsStep]
-    refine IsOraclePPTOn.cond (by fun_prop)
-      (ComputableTidilyInPolyTime.id'.isOraclePPTOn) ?_
-    exact IsOraclePPTOn.map_with
-      (IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop))
+    refine IsOraclePPTOn.cond' (by fun_prop)
+      (ComputableInPolyTime.id'.isOraclePPTOn) ?_
+    exact IsOraclePPTOn.map_with'
+      (IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop))
       (by fun_prop)
   · intro state next hnext
     rw [interpret_queryWordsStep] at hnext
@@ -280,8 +280,8 @@ theorem PolyTimeTruthTableAutoreducible.polyTimeTuringAutoreducible
   let program : α → WordQueryComp Unit Bool := fun a =>
     (fun ans => d (a, ans)) <$> queryWords (words a)
   refine ⟨program, ?_, fun a qr hqr => ?_, fun a => ?_⟩
-  · have hcomp := IsOraclePPTOn.map_with (f := fun a ans => d (a, ans))
-      (isOraclePPTOn_queryWords.preprocess hwords.tidy) hd.tidy
+  · have hcomp := IsOraclePPTOn.map_with' (f := fun a ans => d (a, ans))
+      (isOraclePPTOn_queryWords.preprocess' hwords) hd
     refine hcomp.congr fun a => ?_
     simp [program]
   · simp only [program, OracleComp.queriesWith_map] at hqr

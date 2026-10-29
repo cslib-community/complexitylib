@@ -21,15 +21,14 @@ open Turing.MultiTapeTM
 
 namespace ComplexityTests.TuringAutoreducible
 
-/-- The empty language in `P` is polynomial-time Turing autoreducible. -/
-example : PolyTimeTuringAutoreducible encBits (∅ : Set (List Bool)) :=
-  polyTimeTuringAutoreducible_of_mem_P (show (∅ : Set (List Bool)) ∈ P encBits from
-    ⟨fun _ => false, by fun_prop, fun _ => by simp⟩)
-
-/-- The universal language `Set.univ` in `P` is polynomial-time Turing autoreducible. -/
-example : PolyTimeTuringAutoreducible encBits (Set.univ : Set (List Bool)) :=
-  polyTimeTuringAutoreducible_of_mem_P (show (Set.univ : Set (List Bool)) ∈ P encBits from
-    ⟨fun _ => true, by fun_prop, fun _ => by simp⟩)
+/-- The empty and universal languages in `P` are polynomial-time Turing autoreducible. -/
+example :
+    PolyTimeTuringAutoreducible encBits (∅ : Set (List Bool)) ∧
+    PolyTimeTuringAutoreducible encBits (Set.univ : Set (List Bool)) :=
+  ⟨polyTimeTuringAutoreducible_of_mem_P (show (∅ : Set (List Bool)) ∈ P encBits from
+      ⟨fun _ => false, by fun_prop, fun _ => by simp⟩),
+    polyTimeTuringAutoreducible_of_mem_P (show (Set.univ : Set (List Bool)) ∈ P encBits from
+      ⟨fun _ => true, by fun_prop, fun _ => by simp⟩)⟩
 
 /-- The language of even-length bitstrings. -/
 def paritySet : Set (List Bool) := {w : List Bool | w.length % 2 = 0}
@@ -50,13 +49,9 @@ theorem paritySet_autoreducible : PolyTimeTuringAutoreducible encBits paritySet 
     omega
   exact polyTimeTuringAutoreducible_of_polyTimeReducible_fixedPointFree hf hne hA
 
-/-- The parity language is Turing reducible to itself via its autoreduction. -/
-example : PolyTimeTuringReducible encBits encBits paritySet paritySet :=
-  paritySet_autoreducible.polyTimeTuringReducible
-
 /-- A concrete disjunctive truth-table autoreduction on non-empty bitstrings `{[]}ᶜ`,
 making 0 queries when `w = []` and querying `true :: w` otherwise, induces a polynomial-time
-Turing autoreduction. -/
+Turing autoreduction on both `{[]}ᶜ` and `{[]}`. -/
 theorem coEmpty_dtt_autoreducible :
     PolyTimeDTTAutoreducible encBits ({[]}ᶜ : Set (List Bool)) := by
   refine ⟨fun w => if w.isEmpty then 0 else 1,
@@ -65,13 +60,15 @@ theorem coEmpty_dtt_autoreducible :
   · cases w <;> simp at hi ⊢
   · cases w <;> simp
 
-example : PolyTimeTuringAutoreducible encBits ({[]}ᶜ : Set (List Bool)) :=
-  coEmpty_dtt_autoreducible.polyTimeTuringAutoreducible
-
-example : PolyTimeTuringAutoreducible encBits ({[]} : Set (List Bool)) := by
+example :
+    PolyTimeTuringReducible encBits encBits paritySet paritySet ∧
+    PolyTimeTuringAutoreducible encBits ({[]}ᶜ : Set (List Bool)) ∧
+    PolyTimeTuringAutoreducible encBits ({[]} : Set (List Bool)) := by
   have hctt : PolyTimeCTTAutoreducible encBits ({[]} : Set (List Bool)) := by
     simpa using polyTimeDTTAutoreducible_iff_polyTimeCTTAutoreducible_compl.mp
       coEmpty_dtt_autoreducible
-  exact hctt.polyTimeTuringAutoreducible
+  exact ⟨paritySet_autoreducible.polyTimeTuringReducible,
+    coEmpty_dtt_autoreducible.polyTimeTuringAutoreducible,
+    hctt.polyTimeTuringAutoreducible⟩
 
 end ComplexityTests.TuringAutoreducible

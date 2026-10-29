@@ -15,7 +15,6 @@ import Complexity.Probability.PMF.Map
 public import Complexity.Probability.Conditioning
 import Complexity.Probability.StatisticalDistance
 import Mathlib.Algebra.Order.Chebyshev
-import Mathlib.Analysis.Convex.SpecificFunctions.Pow
 
 /-!
 # Conditioning a product distribution with side information
@@ -32,11 +31,11 @@ divided by `Pr[W]` (`sum_mul_log_div_le_log_of_le`), so the coordinates move by
 **Holenstein's Corollary 6** (`sum_dist_filter_sideJoint_le`) lets the coordinates be independent
 only given a further random variable `t`, and lets the side information `v` depend on `t` and `u`:
 with `t ~ μ` and `(u, v) ~ J t`, where the first marginal of `J t` is the product `pi (K · t)`,
-`∑ⱼ ‖P_{TV Uⱼ | W} - P_{TV | W} P_{Uⱼ | T}‖ ≤ √(k · ln (|V| / Pr[W]) / 2)`. Revealing `(t, v)` turns
-each distance into an average of conditional distances (`dist_map_pair_bind_eq`); given `(t, v)`,
-the law of `u` is that of `J t` conditioned on the slice of `W` at `(t, v)`
-(`conditionalSnd_filter_sideJoint`), so the lemma above applies; and Jensen's inequality for the
-square root and the logarithm combines the slices. Holenstein uses the support `V*` of `v` under
+`∑ⱼ ‖P_{TV Uⱼ | W} - P_{TV | W} P_{Uⱼ | T}‖ ≤ √(k · ln (|V| / Pr[W]) / 2)`. Each squared distance is
+bounded by the average squared conditional distance after revealing `(t, v)`
+(`dist_bind_pair_sq_le`). Given `(t, v)`, the law of `u` is that of `J t` conditioned on the slice
+of `W` at `(t, v)` (`conditionalSnd_filter_sideJoint`), so the lemma above applies; the bound
+`ln x ≤ x - 1` and Cauchy–Schwarz combine the slices. Holenstein uses the support `V*` of `v` under
 `W` where this statement uses the whole alphabet `V`, which can only make the bound here weaker;
 the factor `1 / 2` from Pinsker's inequality in nats makes it stronger, since
 `ln x / 2 ≤ log₂ x` for `x ≥ 1`.
@@ -301,126 +300,83 @@ theorem sum_dist_filter_sideJoint_le (μ : PMF T) (K : ∀ i, T → PMF (β i))
   have hPw : 0 < Pw := (toOuterMeasure_toReal_pos_iff _ W).mpr hW
   set w : T × V → ℝ := fun s => ((Q.map Prod.fst) s).toReal
   set c : T × V → ℝ := fun s => ((J s.1).toOuterMeasure (sliceEvent W s.1 s.2)).toReal
-  set k : ℝ := (Fintype.card ι : ℝ)
+  set d : T × V → ι → ℝ := fun s j => dist ((conditionalSnd Q s).map fun u => u j) (K j s.1)
+  set D : ι → ℝ := fun j => dist (Q.map fun z => (z.1, z.2 j))
+    ((Q.map Prod.fst).bind fun s => (K j s.1).map (s, ·))
   have hw : ∀ s, w s = (μ s.1).toReal * c s / Pw := fun s =>
     map_fst_filter_sideJoint_toReal μ J W hW s.1 s.2
   have hw0 : ∀ s, 0 ≤ w s := fun s => ENNReal.toReal_nonneg
   have hwsum : ∑ s, w s = 1 := sum_toReal _
-  have hc1 : ∀ s, c s ≤ 1 := fun s => by
-    simpa using ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one _ _)
-  -- Per point bound.
-  set B : T × V → ℝ := fun s => k * Real.log (1 / c s) / 2
-  have hB0 : ∀ s, 0 ≤ B s := fun s => by
-    have : 0 ≤ Real.log (1 / c s) := by
-      rcases (show 0 ≤ c s from ENNReal.toReal_nonneg).eq_or_lt with h | h
-      · rw [← h]
-        simp
-      · exact Real.log_nonneg (by rw [le_div_iff₀ h]; linarith [hc1 s])
-    positivity
-  have hpoint : ∀ s, w s * ∑ j, dist ((conditionalSnd Q s).map fun u => u j) (K j s.1) ≤
-      w s * Real.sqrt (B s) := by
+  have hcpos : ∀ s, 0 < w s → 0 < c s := fun s hpos => by
+    rw [hw, div_pos_iff_of_pos_right hPw] at hpos
+    exact pos_of_mul_pos_right hpos ENNReal.toReal_nonneg
+  -- Apply the conditioning bound to each slice before averaging its squared distances.
+  have hpoint : ∀ s, w s * ∑ j, d s j ^ 2 ≤ w s * (Real.log (1 / c s) / 2) := by
     intro s
     rcases (hw0 s).eq_or_lt with h0 | hpos
     · rw [← h0, zero_mul, zero_mul]
     refine mul_le_mul_of_nonneg_left ?_ (hw0 s)
-    have hcpos : 0 < c s := by
-      rw [hw] at hpos
-      by_contra hc
-      have : c s = 0 := le_antisymm (not_lt.mp hc) ENNReal.toReal_nonneg
-      rw [this] at hpos
-      simp at hpos
-    have hs : s ∈ (Q.map Prod.fst).support := by
-      refine (PMF.mem_support_iff _ _).mpr fun h => ?_
-      have : w s = 0 := by simp only [w, h, ENNReal.toReal_zero]
-      linarith
+    have hs : s ∈ (Q.map Prod.fst).support :=
+      (PMF.mem_support_iff _ _).mpr fun h => by
+        simp only [w, h, ENNReal.toReal_zero, lt_self_iff_false] at hpos
     have hWs : ∃ x ∈ sliceEvent W s.1 s.2, x ∈ (J s.1).support :=
-      (toOuterMeasure_toReal_pos_iff _ _).mp hcpos
+      (toOuterMeasure_toReal_pos_iff _ _).mp (hcpos s hpos)
     have hcond := conditionalSnd_filter_sideJoint μ J W hW s.1 s.2 hs hWs
     have hside := sum_sq_dist_map_filter_le (fun i => K i s.1) (J s.1) (hJ s.1) _ hWs
     have hmap : ∀ j, (conditionalSnd Q s).map (fun u => u j) =
         ((J s.1).filter (sliceEvent W s.1 s.2) hWs).map fun x => x.1 j := fun j => by
       rw [hcond, PMF.map_comp]
       rfl
-    simp only [hmap]
-    refine Real.le_sqrt_of_sq_le ?_
-    have hcs := sq_sum_le_card_mul_sum_sq (s := Finset.univ)
-      (f := fun j => dist (((J s.1).filter (sliceEvent W s.1 s.2) hWs).map fun x => x.1 j)
-        (K j s.1))
-    rw [Finset.card_univ] at hcs
-    calc _ ≤ _ := hcs
-      _ ≤ k * (Real.log (1 / c s) / 2) := mul_le_mul_of_nonneg_left hside (by positivity)
-      _ = B s := by ring
-  -- Positive weights force positive slice probabilities.
-  have hcpos : ∀ s, 0 < w s → 0 < c s := fun s hpos => by
-    rw [hw] at hpos
-    by_contra hc
-    have : c s = 0 := le_antisymm (not_lt.mp hc) ENNReal.toReal_nonneg
-    rw [this] at hpos
-    simp at hpos
-  set S := Finset.univ.filter fun s : T × V => 0 < w s
-  have hsub : ∀ f : T × V → ℝ, (∀ s, w s = 0 → f s = 0) → ∑ s, f s = ∑ s ∈ S, f s := by
-    intro f hf
-    refine (Finset.sum_subset (Finset.subset_univ _) fun s _ hs => hf s ?_).symm
-    simp only [S, Finset.mem_filter, Finset.mem_univ, true_and, not_lt] at hs
-    exact le_antisymm hs (hw0 s)
-  have hwS : ∑ s ∈ S, w s = 1 := by
-    rw [← hsub w fun s h => h]
-    exact hwsum
-  -- Jensen for the logarithm on the positive weights.
-  have hjensen : ∑ s ∈ S, w s * Real.log (1 / c s) ≤ Real.log (∑ s ∈ S, w s * (1 / c s)) := by
-    have := strictConcaveOn_log_Ioi.concaveOn.le_map_sum (t := S) (w := w)
-      (p := fun s => 1 / c s) (fun s _ => hw0 s) hwS fun s hs => by
-        simp only [S, Finset.mem_filter, Finset.mem_univ, true_and] at hs
-        exact one_div_pos.mpr (hcpos s hs)
-    simpa only [smul_eq_mul] using this
-  have hratio : ∑ s ∈ S, w s * (1 / c s) ≤ Fintype.card V / Pw := by
-    calc ∑ s ∈ S, w s * (1 / c s) = ∑ s ∈ S, (μ s.1).toReal / Pw := by
-          refine Finset.sum_congr rfl fun s hs => ?_
-          simp only [S, Finset.mem_filter, Finset.mem_univ, true_and] at hs
+    simpa only [d, hmap] using hside
+  have hsq : ∀ j, D j ^ 2 ≤ ∑ s, w s * d s j ^ 2 := by
+    intro j
+    dsimp only [D, d]
+    nth_rewrite 1 [← bind_conditionalSnd Q]
+    simpa only [PMF.map_bind, PMF.map_comp, Function.comp_def] using
+      dist_bind_pair_sq_le (Q.map Prod.fst)
+        (fun s => (conditionalSnd Q s).map fun u => u j) (fun s => K j s.1)
+  have hV : 0 < (Fintype.card V : ℝ) := by
+    have : Nonempty V := ⟨hW.choose.1.2⟩
+    positivity
+  -- The logarithm's tangent bound lets us average over all slices, including zero weights.
+  have hlog : ∑ s, w s * Real.log (1 / c s) ≤ Real.log (Fintype.card V / Pw) := by
+    calc
+      _ ≤ ∑ s : T × V, (w s * Real.log (Fintype.card V / Pw) +
+          (μ s.1).toReal / Fintype.card V - w s) := by
+        refine sum_le_sum fun s _ => ?_
+        rcases (hw0 s).eq_or_lt with h0 | hpos
+        · simp only [← h0, zero_mul, zero_add, sub_zero]
+          exact div_nonneg ENNReal.toReal_nonneg hV.le
+        have hc := hcpos s hpos
+        have hratio : w s * ((1 / c s) / (Fintype.card V / Pw)) =
+            (μ s.1).toReal / Fintype.card V := by
           rw [hw]
-          field_simp [(hcpos s hs).ne']
-      _ ≤ ∑ s : T × V, (μ s.1).toReal / Pw := by
-          refine Finset.sum_le_sum_of_subset_of_nonneg (f := fun s : T × V => (μ s.1).toReal / Pw)
-            (Finset.subset_univ S) fun s _ _ => ?_
-          exact div_nonneg ENNReal.toReal_nonneg hPw.le
-      _ = Fintype.card V / Pw := by
-          rw [← Finset.sum_div, Fintype.sum_prod_type]
-          simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-          rw [← Finset.mul_sum, sum_toReal, mul_one]
-  have hratio_pos : 0 < ∑ s ∈ S, w s * (1 / c s) := by
-    have hne : S.Nonempty := by
-      by_contra h
-      rw [Finset.not_nonempty_iff_eq_empty.mp h, Finset.sum_empty] at hwS
-      exact zero_ne_one hwS
-    refine Finset.sum_pos (fun s hs => ?_) hne
-    simp only [S, Finset.mem_filter, Finset.mem_univ, true_and] at hs
-    exact mul_pos hs (one_div_pos.mpr (hcpos s hs))
-  have hkey : ∑ s, w s * B s ≤ k * Real.log (Fintype.card V / Pw) / 2 := by
-    rw [hsub (fun s => w s * B s) fun s h => by simp [h]]
-    calc ∑ s ∈ S, w s * B s = k / 2 * ∑ s ∈ S, w s * Real.log (1 / c s) := by
-          rw [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun s _ => ?_
-          simp only [B]
-          ring
-      _ ≤ k / 2 * Real.log (Fintype.card V / Pw) := by
-          gcongr
-          exact hjensen.trans (Real.log_le_log hratio_pos hratio)
-      _ = _ := by ring
-  -- Jensen for the square root.
-  have hsqrt : ∑ s, w s * Real.sqrt (B s) ≤ Real.sqrt (∑ s, w s * B s) := by
-    have := (Real.strictConcaveOn_sqrt).concaveOn.le_map_sum (t := Finset.univ) (w := w)
-      (p := B) (fun s _ => hw0 s) hwsum fun s _ => Set.mem_Ici.mpr (hB0 s)
-    simpa only [smul_eq_mul] using this
-  calc ∑ j, dist (Q.map fun z => (z.1, z.2 j)) ((Q.map Prod.fst).bind fun s => (K j s.1).map (s, ·))
-      = ∑ j, ∑ s, w s * dist ((conditionalSnd Q s).map fun u => u j) (K j s.1) :=
-        Finset.sum_congr rfl fun j _ =>
-          dist_map_pair_bind_eq Q (fun u => u j) fun s => K j s.1
-    _ = ∑ s, w s * ∑ j, dist ((conditionalSnd Q s).map fun u => u j) (K j s.1) := by
-        rw [Finset.sum_comm]
-        simp only [Finset.mul_sum]
-    _ ≤ ∑ s, w s * Real.sqrt (B s) := Finset.sum_le_sum fun s _ => hpoint s
-    _ ≤ Real.sqrt (∑ s, w s * B s) := hsqrt
-    _ ≤ _ := Real.sqrt_le_sqrt hkey
+          field_simp [hc.ne', hPw.ne', hV.ne']
+        have htangent := mul_le_mul_of_nonneg_left
+          (Real.log_le_sub_one_of_pos (div_pos (one_div_pos.mpr hc) (div_pos hV hPw)))
+          (hw0 s)
+        rw [Real.log_div (one_div_ne_zero hc.ne') (div_ne_zero hV.ne' hPw.ne')] at htangent
+        simp only [mul_sub, mul_one, hratio] at htangent
+        linarith
+      _ = _ := by
+        rw [sum_sub_distrib, sum_add_distrib, ← sum_mul, hwsum, one_mul,
+          ← sum_div, Fintype.sum_prod_type]
+        simp only [sum_const, card_univ, nsmul_eq_mul]
+        rw [← mul_sum, sum_toReal, mul_one, div_self hV.ne', add_sub_cancel_right]
+  have hsum : ∑ j, D j ^ 2 ≤ Real.log (Fintype.card V / Pw) / 2 := by
+    calc
+      _ ≤ ∑ j, ∑ s, w s * d s j ^ 2 := sum_le_sum fun j _ => hsq j
+      _ = ∑ s, w s * ∑ j, d s j ^ 2 := by rw [sum_comm]; simp only [mul_sum]
+      _ ≤ ∑ s, w s * (Real.log (1 / c s) / 2) := sum_le_sum fun s _ => hpoint s
+      _ = (∑ s, w s * Real.log (1 / c s)) / 2 := by simp only [sum_div, mul_div_assoc]
+      _ ≤ _ := div_le_div_of_nonneg_right hlog (by norm_num)
+  refine Real.le_sqrt_of_sq_le ?_
+  have hcs := sq_sum_le_card_mul_sum_sq (s := univ) (f := D)
+  rw [card_univ] at hcs
+  calc _ ≤ _ := hcs
+    _ ≤ Fintype.card ι * (Real.log (Fintype.card V / Pw) / 2) :=
+      mul_le_mul_of_nonneg_left hsum (Nat.cast_nonneg _)
+    _ = _ := by ring
 
 end Corollary
 
