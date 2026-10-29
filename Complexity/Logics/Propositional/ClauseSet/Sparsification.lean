@@ -55,22 +55,6 @@ namespace Cslib.Logic.PL
 
 open Finset Filter
 
-/-- A polynomial is eventually below an exponential with base `r > 1`. -/
-theorem exists_mul_pow_le_pow (C : ℝ) (d : ℕ) {r : ℝ} (hr : 1 < r) :
-    ∃ α : ℕ, 1 ≤ α ∧ C * (α : ℝ) ^ d ≤ r ^ α := by
-  have hlim := tendsto_pow_const_div_const_pow_of_one_lt d hr
-  have hC : 0 < |C| + 1 := by positivity
-  have hev := (hlim.eventually (gt_mem_nhds (inv_pos.mpr hC))).and (eventually_ge_atTop 1)
-  obtain ⟨α, hα, hα1⟩ := hev.exists
-  refine ⟨α, hα1, ?_⟩
-  have hrα : 0 < r ^ α := pow_pos (by linarith) α
-  rw [div_lt_iff₀ hrα] at hα
-  have hpow : 0 ≤ (α : ℝ) ^ d := by positivity
-  calc C * (α : ℝ) ^ d ≤ (|C| + 1) * (α : ℝ) ^ d :=
-        mul_le_mul_of_nonneg_right (by linarith [le_abs_self C]) hpow
-    _ ≤ (|C| + 1) * ((|C| + 1)⁻¹ * r ^ α) := mul_le_mul_of_nonneg_left hα.le hC.le
-    _ = r ^ α := by field_simp
-
 /-- **The leaves are few.** For every width `k ≥ 1` and every `ε > 0` there is a parameter `α ≥ 1`
 for which the bound `∑_{j ≤ (k - 1) N / α} (N k X ^ (2 k) choose j)` on the number of leaves
 (`ClauseSet.Sparsification.exists_leaves`) is at most `2 ^ (ε N)`, for every number `N` of
@@ -92,7 +76,8 @@ theorem ClauseSet.Sparsification.exists_sum_choose_le {k : ℕ} (hk : 1 ≤ k) {
   set r : ℝ := (2 : ℝ) ^ (ε / 2) with hr
   have hr1 : 1 < r := Real.one_lt_rpow (by norm_num) (by positivity)
   set C₀ : ℝ := ((M * k * (2 * k) ^ (2 * k) : ℕ) : ℝ) ^ (k - 1)
-  obtain ⟨α, hα, hαbound⟩ := exists_mul_pow_le_pow C₀ (2 * k * (k - 1)) hr1
+  obtain ⟨α, hα, hαbound⟩ :=
+    Real.exists_one_le_and_mul_pow_le_pow C₀ (2 * k * (k - 1)) hr1
   refine ⟨α, hα, fun N => ?_⟩
   set X := Sparsification.base k α
   set Λ := N * (k * X ^ (2 * k))

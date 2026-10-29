@@ -8,13 +8,18 @@ import Complexity.Computability.Circuit.Boolean.Synthesis
 import Complexity.Computability.Complexity.Classes.LogSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
+import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 import Complexity.Foundations.Data.BitString.Affine
 import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.Fin.Order
 import Complexity.Foundations.Data.List.Filter
 import Complexity.Foundations.Data.Nat.Asymptotics
+import Complexity.Foundations.Data.Nat.Choose.Real
 import Complexity.Foundations.Data.Nat.Div
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
+import Complexity.Foundations.LinearAlgebra.CubeSum
+import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.Tactic.FinCases
 
 /-! General lemmas in their library homes: the costs of projections and the one-gate lower bound
@@ -159,5 +164,37 @@ example (F : ℕ → ℕ) :
     ∑ q ∈ Finset.range (3 * 4), (if q % 4 = 2 then F q else 0) =
       ∑ k ∈ Finset.range 3, F (k * 4 + 2) :=
   Nat.sum_range_mul_ite_mod 3 (by decide : 2 < 4) F
+
+/-! ### Asymptotics, StateT folds, Boolean-cube product expansion and matrix scalar cancellation -/
+
+/-- `(n + 1) ^ k * n` is eventually below `2 ^ n`. -/
+example : ∀ᶠ n : ℕ in Filter.atTop, (n + 1) ^ 3 * n < 2 ^ n :=
+  Nat.eventually_add_one_pow_mul_lt_pow 3 Nat.one_lt_two
+
+/-- A real polynomial is eventually below an exponential with base `r > 1`. -/
+example : ∃ α : ℕ, 1 ≤ α ∧ (5 : ℝ) * (α : ℝ) ^ 3 ≤ (3 / 2 : ℝ) ^ α :=
+  Real.exists_one_le_and_mul_pow_le_pow 5 3 (by norm_num)
+
+/-- Running a `foldlM` in `StateT σ (Except ε)` chains results via `Except.bind`. -/
+example (g : ℕ → Bool → StateT ℕ (Except Unit) ℕ) :
+    (([true, false].foldlM g 0).run 1) =
+      [true, false].foldl (fun acc c => acc.bind fun p => (g p.1 c).run p.2) (.ok (0, 1)) :=
+  StateT.foldlM_run_except g [true, false] 0 1
+
+/-- Boolean-cube expansion of a product of differences over `ℤ`. -/
+example (f g : Fin 2 → ℤ) :
+    (∏ i, (f i - g i)) = ∑ w : Fin 2 → Bool,
+      (-1 : ℤ) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i :=
+  Cslib.prod_sub_eq_sum f g
+
+/-- The sum of all values in `Fin 4` is at most `4 * 4`. -/
+example : (∑ j : Fin 4, j.val) ≤ 4 * 4 ∧ (∑ j : Fin 4, j.val) = 6 :=
+  ⟨Fin.sum_val_le_mul_self 4, by decide⟩
+
+/-- Rescaling two matrices over `ℚ` by the same nonzero scalar cancels in `(c • A)⁻¹ * (c • B)`. -/
+example (B : Matrix (Fin 2) (Fin 2) ℚ) :
+    ((3 : ℚ) • (1 : Matrix (Fin 2) (Fin 2) ℚ))⁻¹ * ((3 : ℚ) • B) =
+      (1 : Matrix (Fin 2) (Fin 2) ℚ)⁻¹ * B :=
+  Matrix.inv_smul_mul_smul_of_ne_zero 1 B (by simp) (by norm_num)
 
 end ComplexityTests.Consolidation

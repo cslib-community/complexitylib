@@ -32,6 +32,8 @@ most `b ^ n` (`Nat.eventually_mul_add_one_pow_le_pow`) and at most `b ^ (n / m)`
 * `Nat.eventually_mul_add_one_pow_le_pow`: `∀ᶠ n in atTop, c * (n + 1) ^ k ≤ b ^ n` for `1 < b`.
 * `Nat.eventually_mul_pow_le_pow_div`:
   `∀ᶠ n in atTop, c * n ^ k ≤ b ^ (n / m)` for `1 < b` and `0 < m`.
+* `Nat.eventually_add_one_pow_mul_lt_pow`:
+  `∀ᶠ n in atTop, (n + 1) ^ k * n < b ^ n` for `1 < b`.
 -/
 
 @[expose] public section
@@ -97,5 +99,14 @@ theorem eventually_mul_pow_le_pow_div (c k m : ℕ) {b : ℕ} (hb : 1 < b) (hm :
     ∀ᶠ n : ℕ in atTop, c * n ^ k ≤ b ^ (n / m) :=
   (eventually_mul_add_one_pow_le_pow_div c k m hb hm).mono fun n =>
     (Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.le_succ n) k)).trans
+
+/-- Every `(n + 1) ^ k * n` is eventually strictly below `b ^ n` for `1 < b`. -/
+theorem eventually_add_one_pow_mul_lt_pow (k : ℕ) {b : ℕ} (hb : 1 < b) :
+    ∀ᶠ n : ℕ in atTop, (n + 1) ^ k * n < b ^ n := by
+  filter_upwards [eventually_mul_add_one_pow_le_pow 1 (k + 1) hb] with n hn
+  have hlt : (n + 1) ^ k * n < 1 * (n + 1) ^ (k + 1) := by
+    rw [one_mul, pow_succ]
+    exact Nat.mul_lt_mul_of_pos_left (Nat.lt_succ_self n) (Nat.pow_pos n.succ_pos)
+  exact hlt.trans_le hn
 
 end Nat

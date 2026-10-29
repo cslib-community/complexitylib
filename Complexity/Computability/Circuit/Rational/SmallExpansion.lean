@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Circuit.Rational.LaurentReduction
 public import Mathlib.RingTheory.Polynomial.DegreeLT
+import Complexity.Foundations.Data.Fin.Order
 
 /-!
 # Small-subspace expansion
@@ -280,19 +281,14 @@ theorem order_reversal_sum (M : ℕ) (a : K)
       Fintype.card_fin, smul_eq_mul]
   omega
 
-lemma sum_fin_val_le_square (h : ℕ) : (∑ j : Fin h, j.val) ≤ h * h := by
-  calc
-    _ ≤ ∑ _j : Fin h, h := Finset.sum_le_sum fun j _ => Nat.le_of_lt j.isLt
-    _ = h * h := by simp
-
 private lemma expansion_numeric (w B M N k l : ℕ) (hw : 1 ≤ w) (hN : 1 ≤ N)
     (hMN : M = N + 2 * w ^ 3 * B) (hk : 1 ≤ k) (hkB : k ≤ B)
     (hh : w * (k * (M - 1)) ≤ k * (N - 1) + w * (∑ j : Fin k, j.val) +
       (l * (M - 1) + w * (∑ j : Fin l, j.val))) :
     (w - 1) * k < l := by
   by_contra! hl
-  have hk2 := sum_fin_val_le_square k
-  have hl2 := sum_fin_val_le_square l
+  have hk2 := Fin.sum_val_le_mul_self k
+  have hl2 := Fin.sum_val_le_mul_self l
   have hh' : w * (k * (M - 1)) ≤ k * (N - 1) + w * (k * k) +
       (l * (M - 1) + w * (l * l)) := by
     exact hh.trans (by gcongr)
