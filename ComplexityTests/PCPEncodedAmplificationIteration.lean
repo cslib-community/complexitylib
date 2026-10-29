@@ -18,12 +18,12 @@ local notation "Constraint" => (Alphabet → Alphabet → Bool)
 
 variable {D Input : Type} [Fintype D] [DecidableEq D] {width : ℕ}
   {input : Input ↪ List Bool} {label : D ↪ List Bool} {graph : Input → Graph Constraint}
-  (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool))))
+  (hgraph : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool))))
   (hwellFormed : ∀ x, (graph x).WellFormed)
   (family : (n : ℕ) → RotationMap (Fin n) D) (rotate : ℕ × (ℕ × D) → ℕ × D)
   (hrotate : ∀ n (v : Fin n) d, rotate (n, v.val, d) =
     (((family n).rot (v, d)).1.val, ((family n).rot (v, d)).2))
-  (hcost : ComputableTidilyInPolyTime rotate
+  (hcost : ComputableInPolyTime rotate
     (encPair encUnary (encPair encUnary label)) (encPair encUnary label))
   (fallback : Constraint) (T q : ℕ) [NeZero q] (walks : List (Graph.PowerLabel D T q))
   (number : Graph.SelectedComposeSlot (Graph.PowerAlphabet D Alphabet T) ≃ Fin width)

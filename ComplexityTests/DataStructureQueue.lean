@@ -141,10 +141,53 @@ theorem adaptiveClient_reversed :
       (some 11) c' traces ∧ reversedQueue.rep [5, 8] c' :=
   adaptiveClient_backend reversed ⟨([], [11, 7]), rfl, rfl⟩
 
-/-- The backend substitutions genuinely change storage order. -/
-example : (reverseStep ⟨[3, 7], []⟩ (.inl (.push 9))).1 = ⟨[3, 7, 9], []⟩ := rfl
-
-example : (reverseStep ⟨[3, 7], []⟩ (.inl .pop)).2 = some 7 := rfl
+/-- The backend substitutions genuinely change storage order, every adaptive client starting from
+empty direct or reversed stacks satisfies the universal amortized call bound, and a nonnumeric
+payload exercises the polymorphic interface. -/
+example {α : Type} (p : (queue Nat).Client α)
+    {a₁ a₂ : α} {c₁'} {traces₁} {c₂'} {traces₂}
+    (he₁ : Executes directExec (link methods p) ([], []) a₁ c₁' traces₁)
+    (he₂ : Executes reverseExec (link methods p) ⟨[], []⟩ a₂ c₂' traces₂) :
+    (reverseStep ⟨[3, 7], []⟩ (.inl (.push 9))).1 = ⟨[3, 7, 9], []⟩ ∧
+    (reverseStep ⟨[3, 7], []⟩ (.inl .pop)).2 = some 7 ∧
+    (∃ c' traces, Executes directExec (link methods p) ([], [])
+        ((queue Nat).runClient [] p).1 c' traces ∧
+      directQueue.rep ((queue Nat).runClient [] p).2.1 c' ∧
+      traces.length ≤ ((queue Nat).runClient [] p).2.2.length * 3) ∧
+    (∃ c' traces, Executes reverseExec (link methods p) ⟨[], []⟩
+        ((queue Nat).runClient [] p).1 c' traces ∧
+      reversedQueue.rep ((queue Nat).runClient [] p).2.1 c' ∧
+      traces.length ≤ ((queue Nat).runClient [] p).2.2.length * 3) ∧
+    (a₁ = ((queue Nat).runClient [] p).1 ∧
+      traces₁.length ≤ ((queue Nat).runClient [] p).2.2.length * 3) ∧
+    (a₂ = ((queue Nat).runClient [] p).1 ∧
+      traces₂.length ≤ ((queue Nat).runClient [] p).2.2.length * 3) ∧
+    ((queue String).runClient []
+      (.liftBind (.enqueue "first") fun _ => .liftBind .dequeue fun answer => .pure answer)).1 =
+        some "first" := by
+  refine ⟨rfl, rfl, ?_, ?_, ?_, ?_, rfl⟩
+  · obtain ⟨c', traces, s', he, hr, hb, ht⟩ :=
+      realized_client direct (fun _ => 1) 1 direct_calls p
+        (q := []) (s := ([], [])) (c := ([], [])) rfl rfl
+    refine ⟨c', traces, he, ⟨s', hr, hb⟩, ?_⟩
+    simp [total_eq_sum_map] at ht
+    omega
+  · obtain ⟨c', traces, s', he, hr, hb, ht⟩ :=
+      realized_client reversed (fun _ => 1) 1 reversed_calls p
+        (q := []) (s := ([], [])) (c := ⟨[], []⟩) rfl rfl
+    refine ⟨c', traces, he, ⟨s', hr, hb⟩, ?_⟩
+    simp [total_eq_sum_map] at ht
+    omega
+  · obtain ⟨ha, s', hr, hb, ht⟩ := realized_client_bound direct (fun _ => 1) 1 direct_calls p
+      (q := []) (s := ([], [])) (c := ⟨[], []⟩) rfl rfl he₁
+    refine ⟨ha, ?_⟩
+    simp [total_eq_sum_map] at ht
+    omega
+  · obtain ⟨ha, s', hr, hb, ht⟩ := realized_client_bound reversed (fun _ => 1) 1 reversed_calls p
+      (q := []) (s := ([], [])) (c := ⟨[], []⟩) rfl rfl he₂
+    refine ⟨ha, ?_⟩
+    simp [total_eq_sum_map] at ht
+    omega
 
 /--
 info: 'ComplexityTests.DataStructureQueue.reverseStep_correct' depends on axioms:
@@ -170,60 +213,6 @@ info: 'ComplexityTests.DataStructureQueue.adaptiveClient_reversed' depends on ax
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms ComplexityTests.DataStructureQueue.adaptiveClient_reversed
-
-/-- Every adaptive client starting from empty direct stacks has the claimed call bound. -/
-example {α : Type} (p : (queue Nat).Client α) :
-    ∃ c' traces, Executes directExec (link methods p) ([], [])
-        ((queue Nat).runClient [] p).1 c' traces ∧
-      directQueue.rep ((queue Nat).runClient [] p).2.1 c' ∧
-      traces.length ≤ ((queue Nat).runClient [] p).2.2.length * 3 := by
-  obtain ⟨c', traces, s', he, hr, hb, ht⟩ :=
-    realized_client direct (fun _ => 1) 1 direct_calls p
-      (q := []) (s := ([], [])) (c := ([], [])) rfl rfl
-  refine ⟨c', traces, he, ⟨s', hr, hb⟩, ?_⟩
-  simp [total_eq_sum_map] at ht
-  omega
-
-/-- Changing the native representation and event type requires no new amortization proof. -/
-example {α : Type} (p : (queue Nat).Client α) :
-    ∃ c' traces, Executes reverseExec (link methods p) ⟨[], []⟩
-        ((queue Nat).runClient [] p).1 c' traces ∧
-      reversedQueue.rep ((queue Nat).runClient [] p).2.1 c' ∧
-      traces.length ≤ ((queue Nat).runClient [] p).2.2.length * 3 := by
-  obtain ⟨c', traces, s', he, hr, hb, ht⟩ :=
-    realized_client reversed (fun _ => 1) 1 reversed_calls p
-      (q := []) (s := ([], [])) (c := ⟨[], []⟩) rfl rfl
-  refine ⟨c', traces, he, ⟨s', hr, hb⟩, ?_⟩
-  simp [total_eq_sum_map] at ht
-  omega
-
-/-- The universal queue bound applies to every direct-backend execution of any adaptive client. -/
-example {α : Type} (p : (queue Nat).Client α) {a : α} {c'} {traces}
-    (he : Executes directExec (link methods p) ([], []) a c' traces) :
-    a = ((queue Nat).runClient [] p).1 ∧
-      traces.length ≤ ((queue Nat).runClient [] p).2.2.length * 3 := by
-  obtain ⟨ha, s', hr, hb, ht⟩ := realized_client_bound direct (fun _ => 1) 1 direct_calls p
-    (q := []) (s := ([], [])) (c := ⟨[], []⟩) rfl rfl he
-  refine ⟨ha, ?_⟩
-  simp [total_eq_sum_map] at ht
-  omega
-
-/-- The universal statement also survives changing representation and native event type. -/
-example {α : Type} (p : (queue Nat).Client α) {a : α} {c'} {traces}
-    (he : Executes reverseExec (link methods p) ⟨[], []⟩ a c' traces) :
-    a = ((queue Nat).runClient [] p).1 ∧
-      traces.length ≤ ((queue Nat).runClient [] p).2.2.length * 3 := by
-  obtain ⟨ha, s', hr, hb, ht⟩ := realized_client_bound reversed (fun _ => 1) 1 reversed_calls p
-    (q := []) (s := ([], [])) (c := ⟨[], []⟩) rfl rfl he
-  refine ⟨ha, ?_⟩
-  simp [total_eq_sum_map] at ht
-  omega
-
-/-- A nonnumeric payload exercises the polymorphic interface. -/
-example : ((queue String).runClient []
-    (.liftBind (.enqueue "first") fun _ => .liftBind .dequeue fun answer => .pure answer)).1 =
-      some "first" := rfl
-
 /--
 info: 'Cslib.Stateful.Realization.exists_executes' does not depend on any axioms
 -/

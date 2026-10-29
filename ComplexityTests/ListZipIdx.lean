@@ -16,24 +16,26 @@ open Turing.MultiTapeTM
 example : ([] : List Bool).zipIdx = [] := rfl
 example : [false, true, false].zipIdx = [(false, 0), (true, 1), (false, 2)] := rfl
 
-example (empty : Empty ↪ List Bool) : ComputableTidilyInPolyTime
+example (empty : Empty ↪ List Bool) : ComputableInPolyTime
     (fun list : List Empty => list.zipIdx) (encList empty)
     (encList (encPair empty encUnary)) := by fun_prop
 
 example {α Input : Type} (enc : α ↪ List Bool) (input : Input ↪ List Bool)
-    (list : Input → List α) (hlist : ComputableTidilyInPolyTime list input (encList enc)) :
-    ComputableTidilyInPolyTime (fun x => let values := list x; values.zipIdx)
+    (list : Input → List α) (hlist : ComputableInPolyTime list input (encList enc)) :
+    ComputableInPolyTime (fun x => let values := list x; values.zipIdx)
       input (encList (encPair enc encUnary)) := by
   fail_if_success (clear hlist; fun_prop)
-  polytime
+  exact .of_tidy (by polytime)
 
--- Framing supplies the length; no element decoder or computational hypothesis is needed.
+-- Framing supplies the length for any element encoding, without an element decoder.
 example {α : Type} (enc : α ↪ List Bool) :
     ComputableInPolyTime (fun list : List α => list.length) (encList enc) encUnary := by
   fun_prop
 
+-- Framing supplies the length; no element decoder or computational hypothesis is needed.
 example (empty : Empty ↪ List Bool) :
-    ComputableInPolyTime (fun list : List Empty => list.length) (encList empty) encUnary := by
+    ComputableInPolyTime (fun list : List Empty => list.zipIdx.length)
+      (encList empty) encUnary := by
   fun_prop
 
 -- The list may be computed from the complete caller context.

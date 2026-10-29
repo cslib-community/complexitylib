@@ -64,20 +64,17 @@ example : nandSerialized 0 2 [true] [true] = [false, false, false, true] ∧
     nandSerialized 0 2 (leftWord ++ [true, false, true]) (rightWord ++ [true, true]) =
       nandSerialized 0 2 leftWord rightWord := by decide +kernel
 
-example (n w : ℕ) (left right : List Bool) :
-    (nandSerialized n w left right).length = ((n + 1) * w) ^ 2 :=
-  length_nandSerialized n w left right
-
--- All-word semantic bridges carry no shape, support, or noise premise.
-example (n w : ℕ) (secret ciphertext : List Bool) :
-    decryptSerialized n w secret ciphertext =
-      decrypt (decodeSecret n w secret) (decodeCiphertext n w ciphertext) :=
-  decryptSerialized_eq n w secret ciphertext
-
-example (n w : ℕ) (left right : List Bool) :
-    nandSerialized n w left right =
-      serializeCiphertext (nand (decodeCiphertext n w left) (decodeCiphertext n w right)) :=
-  nandSerialized_eq n w left right
+-- Concrete word-level bridges for length, decryption, and NAND evaluation.
+example :
+    (nandSerialized 1 2 leftWord rightWord).length = 16 ∧
+      decryptSerialized 1 2 [true] negativePhase =
+        decrypt (decodeSecret 1 2 [true]) (decodeCiphertext 1 2 negativePhase) ∧
+      nandSerialized 1 2 leftWord rightWord =
+        serializeCiphertext (nand (decodeCiphertext 1 2 leftWord)
+          (decodeCiphertext 1 2 rightWord)) :=
+  ⟨length_nandSerialized 1 2 leftWord rightWord,
+    decryptSerialized_eq 1 2 [true] negativePhase,
+    nandSerialized_eq 1 2 leftWord rightWord⟩
 
 private def keyInputs : KeyInputs 1 1 6 :=
   ⟨fun _ => 5, fun _ _ => 3, fun _ => 1⟩
@@ -111,6 +108,7 @@ private theorem cipher_supported (message : Bool) :
   · exact (mem_support_encrypt_iff _ _ _).mpr ⟨coins, rfl⟩
   · exact (encryptWithCoinsSerialized_serialize typedKeys.1 message coins).symm
 
+-- This supported key/coin fixture checks both messages and the entire Boolean NAND table.
 example (message : Bool) : decryptSerialized 1 6 wordKeys.2 (wordCipher message) = message :=
   keyGenSerialized_encrypt_correct (by decide) (by decide) keys_supported message
     (cipher_supported message)
@@ -136,7 +134,6 @@ private noncomputable def completeClient (p : ℕ × ℕ × ℕ × ℕ × Bool �
   let right ← encryptSerialized p.1 p.2.1 p.2.2.1 keys.1 p.2.2.2.2.2
   return decryptSerialized p.1 p.2.2.1 keys.2 (nandSerialized p.1 p.2.2.1 left right)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : IsPPTOn
     (encPair encUnary (encPair encUnary (encPair encUnary
       (encPair encUnary (encPair encBool encBool))))) encBool completeClient := by

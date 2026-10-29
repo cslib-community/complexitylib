@@ -189,7 +189,6 @@ theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithO
     {f : α → β} {input : α ↪ List Bool} {output : β ↪ List Bool}
     (h : ComputableInPolyTime f input output) (A : Set (List Bool)) :
     ComputableInPolyTimeWithOracle A f input output := by
-  have h := h.tidy
   exact ⟨fun a => pure (f a), h.isOraclePPTOn, fun _ => rfl⟩
 
 /-- One deterministic polynomial-time oracle program whose function against every oracle language
@@ -217,7 +216,7 @@ theorem PolyTimeOracleProgram.of_polyTime {g : α → β} {input : α ↪ List B
     {output : β ↪ List Bool} {Admissible : Set (List Bool) → Prop} {Spec : (α → β) → Prop}
     (hg : ComputableInPolyTime g input output) (hSpec : ∀ A, Admissible A → Spec g) :
     PolyTimeOracleProgram input output Admissible Spec :=
-  ⟨fun a => pure (g a), hg.tidy.isOraclePPTOn, hSpec⟩
+  ⟨fun a => pure (g a), hg.isOraclePPTOn, hSpec⟩
 
 /-- Evaluating a `PolyTimeOracleProgram` against any admissible oracle language `A` yields a
 function computable in polynomial time relative to `A` satisfying `Spec`. -/
@@ -266,15 +265,11 @@ theorem mem_NPWithOracle {A : Set (List Bool)} {enc : α ↪ List Bool} {L : Set
       ComputableInPolyTimeWithOracle A V (encPair enc encBits) encBool ∧ IsVerifier enc p V L :=
   Iff.rfl
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every problem in `P` is in `P` relative to every oracle. -/
 theorem P_subset_PWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     P enc ⊆ PWithOracle A enc := fun _ ⟨f, hf, h⟩ =>
   ⟨f, hf.computableInPolyTimeWithOracle A, h⟩
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Every problem in `NP` is in `NP` relative to every oracle. -/
 theorem NP_subset_NPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     NP enc ⊆ NPWithOracle A enc := fun _ ⟨p, V, hV, h⟩ =>

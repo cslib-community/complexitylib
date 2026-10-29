@@ -539,16 +539,16 @@ non-isomorphic graphs with `n` distinct vertices each and `n!` many for isomorph
 theorem mem_AM : GraphNonIsomorphism ∈ AM (encPair encGraph encGraph) := by
   set N : Polynomial ℕ := 2 * Polynomial.X ^ 2 + 1 with hN
   set c : Polynomial ℕ := Polynomial.X ^ 2 + 1 with hc
-  have hK : ComputableTidilyInPolyTime
+  have hK : ComputableInPolyTime
       (fun a : Graph × Graph => 2 * a.1.distinctVertices.length.factorial)
       (encPair encGraph encGraph) encNat :=
-    (ComputableTidilyInPolyTime.const 2).binary_mul'
-      (ComputableTidilyInPolyTime.binary_factorial.comp
-        ((ComputableTidilyInPolyTime.length_list encNat).comp
-          (Graph.computableInPolyTime_distinctVertices.tidy.comp
-            (ComputableTidilyInPolyTime.fst encGraph encGraph))))
+    (ComputableInPolyTime.const 2).binary_mul'
+      ((ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_factorial).comp
+        ((ComputableInPolyTime.length_list encNat).comp
+          (Graph.computableInPolyTime_distinctVertices.comp
+            (ComputableInPolyTime.fst encGraph encGraph))))
   refine mem_AM_of_card_certifiedSet (N := N) (c := c) (R := test N)
-    (computableInPolyTime_test N) (.of_tidy hK) (fun a => by positivity) (fun a ha => ?_)
+    (computableInPolyTime_test N) hK (fun a => by positivity) (fun a ha => ?_)
     fun a ha => ?_
   · obtain ⟨G₀, G₁⟩ := a
     dsimp only

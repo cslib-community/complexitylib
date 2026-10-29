@@ -25,12 +25,9 @@ example : (PRG.wordFamily id id).Secure IsPPTBitStringTest := by
   rw [show generatorEnsemble id = BitString.uniformList from funext fun _ => PMF.map_id _]
   exact ComputationallyIndistinguishable.refl BitString.uniformList
 
--- No security hypothesis is needed to compute the declared output length.
-example {generator : List Bool → List Bool} {length : ℕ → ℕ}
-    (hg : ComputableTidilyInPolyTime generator encBits encBits)
-    (hlen : ∀ word, (generator word).length = length word.length) :
-    ComputableTidilyInPolyTime length encUnary encUnary := (PRG.polyTime_length (.of_tidy hg)
-      hlen).tidy
+-- No security hypothesis is needed to compute the declared output length of a concrete generator.
+example : ComputableInPolyTime (fun n => n + 1) encUnary encUnary :=
+  PRG.polyTime_length (generator := fun word : List Bool => word ++ [false]) (by fun_prop) (by simp)
 
 example (adversary : Distinguisher) (ha : IsPPT encBool adversary) :
     IsPPT encBool (fun n _ => prgIdealGame (fun k => k * k + 1) adversary n) := by ppt

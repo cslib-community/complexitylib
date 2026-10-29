@@ -65,7 +65,7 @@ $$\mathsf{MIP}_2 \subseteq \mathsf{MIP} \subseteq \mathsf{NEXP}.$$
    deterministic provers is accepted on more than half of the `2 ^ t` coin strings.
 4. **Upward translation from `NP` to `NEXP` (`preimage_mem_NTIME_of_mem_NP`,
    `preimage_pad_mem_NEXP`, `MIP_subset_NEXP`)**:
-   Composing the deterministic exponential-padding machine (`ComputableTidilyInO.unary_two_pow`)
+   Composing the deterministic exponential-padding machine (`ComputableInO.unary_two_pow`)
    with the halting fair-coin certificate-verifier machine (`IsPPTOn.exists_halting_machine`) via
    `MultiTapePTM.comp` and converting to `MultiTapeNTM` via `MultiTapePTM.toNTM` places the
    unpadded language in `NEXP`.
@@ -103,7 +103,7 @@ namespace Cslib.Complexity
 
 open Cslib.Probability Cslib.Complexity.Interaction
 open _root_.Turing _root_.Turing.MultiTapeTM _root_.Turing.MultiTapeMachine
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 open scoped ENNReal
 
 namespace MIP
@@ -204,8 +204,7 @@ theorem consistentHistStep_suffix {h₂ : History} {s : History × Bool × Bool}
 theorem computableInPolyTime_consistentHist :
     Turing.MultiTapeTM.ComputableInPolyTime (fun p : History × History => consistentHist p.1 p.2)
       (encPair encHistory encHistory) encBool := by
-  refine .of_tidy ?_
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun q : (History × Bool × Bool) × (List Bool × List Bool) => consistentHistStep q.1 q.2)
       (encPair (encPair encHistory (encPair encBool encBool)) (encPair encBits encBits))
       (encPair encHistory (encPair encBool encBool)) := by
@@ -226,7 +225,7 @@ theorem computableInPolyTime_consistentHist :
       have hp := length_le_encPair_right encHistory encHistory p
       simp only [length_encPair, encBool_apply, List.length_singleton]
       lia)).1
-  have hres : ComputableTidilyInPolyTime
+  have hres : ComputableInPolyTime
       (fun p : History × History => (p.1.foldl consistentHistStep (p.2, true, true)).2.2)
       (encPair encHistory encHistory) encBool := by fun_prop
   exact hres.of_enc_eq fun p => by
@@ -264,7 +263,7 @@ theorem computableInPolyTime_accepts [Finite Control] :
       accepts M q.1 q.2.1 q.2.2)
       (encPair encBits (encPair encBits encTaggedHistory)) encBool :=
   (Interaction.computableInPolyTime_accepts matchTaggedOp Prod.snd M
-    (fun op => .of_tidy (by unfold matchTaggedOp; fun_prop)) (.of_tidy (snd _ _)))
+    (fun op => by unfold matchTaggedOp; fun_prop) (.snd _ _))
 
 /-! ### Correspondence between `accepts` and `coinProgram` against deterministic provers -/
 
@@ -608,33 +607,39 @@ variable [Finite Control]
 theorem computableInPolyTime_checkCert (c d : ℕ) :
     Turing.MultiTapeTM.ComputableInPolyTime (fun q : List Bool × Cert => checkCert M c d q.1 q.2)
       (encPair encBits encCert) encBool := by
-  have haccepts := (computableInPolyTime_accepts M).tidy
-  have hproj := computableInPolyTime_projHistory.tidy
-  have hconsistent := computableInPolyTime_consistentHist.tidy
-  refine .of_tidy ?_
-  have ht : ComputableTidilyInPolyTime
+  have haccepts := computableInPolyTime_accepts M
+  have hproj := computableInPolyTime_projHistory
+  have hconsistent := computableInPolyTime_consistentHist
+  have ht : ComputableInPolyTime
       (fun q : List Bool × Cert => c * (q.1.length + 1) ^ d)
       (encPair encBits encCert) encUnary := by
-    have hlen : ComputableTidilyInPolyTime (fun q : List Bool × Cert => q.1.length)
+    have hlen : ComputableInPolyTime (fun q : List Bool × Cert => q.1.length)
         (encPair encBits encCert) encUnary := by fun_prop
     exact ((unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp hlen).of_enc_eq
       fun q => by simp
-  have h1 : ComputableTidilyInPolyTime
+  have h1 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         q.2.all fun e => (e.1.length == c * (q.1.length + 1) ^ d) && accepts M q.1 e.1 e.2)
       (encPair encBits encCert) encBool := by
     apply allWithInput (by fun_prop)
-    refine bool_and' ?_ (by fun_prop)
-    exact unary_beq (by fun_prop) (ht.comp (fst _ _))
-  have h2 : ComputableTidilyInPolyTime
+    have hbeq : ComputableInPolyTime (fun x : (List Bool × Cert) × (List Bool × TaggedHistory) =>
+        x.2.1.length == c * (x.1.1.length + 1) ^ d)
+        (encPair (encPair encBits encCert) encCertEntry) encBool :=
+      beq (by fun_prop) (ht.comp (fst _ _))
+    have hacc := haccepts.comp (encIn := encPair (encPair encBits encCert) encCertEntry)
+      (g := fun x : (List Bool × Cert) × (List Bool × TaggedHistory) => (x.1.1, x.2.1, x.2.2))
+      (by fun_prop)
+    have h := bool_and.comp (hbeq.prod hacc)
+    exact h
+  have h2 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         q.2.all fun e₁ => q.2.countP (fun e₂ => e₁.1 == e₂.1) == 1)
       (encPair encBits encCert) encBool := by
     apply allWithInput (by fun_prop)
-    refine unary_beq ?_ (const 1)
+    refine beq (encB := encUnary) ?_ (const 1)
     apply countPWithInput (by fun_prop)
     fun_prop
-  have h3 : ComputableTidilyInPolyTime
+  have h3 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         q.2.all fun e₁ => q.2.all fun e₂ =>
           (List.range p).all fun i => consistentHist (projHistory i e₁.2) (projHistory i e₂.2))
@@ -643,35 +648,34 @@ theorem computableInPolyTime_checkCert (c d : ℕ) :
     apply allWithInput (by fun_prop)
     apply allWithInput (range.comp (const p))
     fun_prop
-  have h4 : ComputableTidilyInPolyTime
+  have h4 : ComputableInPolyTime
       (fun q : List Bool × Cert =>
         decide (2 ^ (c * (q.1.length + 1) ^ d) < 2 * q.2.length))
       (encPair encBits encCert) encBool := by
-    have hpow : ComputableTidilyInPolyTime
+    have hpow : ComputableInPolyTime
         (fun q : List Bool × Cert => 2 ^ (c * (q.1.length + 1) ^ d))
         (encPair encBits encCert) encNat := binary_two_pow.comp ht
-    have hlen : ComputableTidilyInPolyTime
+    have hlen : ComputableInPolyTime
         (fun q : List Bool × Cert => q.2.length)
         (encPair encBits encCert) encNat :=
-      (ComputableInPolyTime.length_list_binary encCertEntry).tidy.comp (snd encBits encCert)
-    exact binary_lt' hpow (binary_mul' (const 2) hlen)
-  exact bool_and' (bool_and' (bool_and' h1 h2) h3) h4
+      (length_list_binary encCertEntry).comp (snd encBits encCert)
+    exact binary_lt.comp (hpow.prod (binary_mul' (const 2) hlen))
+  have h := bool_and.comp ((bool_and.comp ((bool_and.comp (h1.prod h2)).prod h3)).prod h4)
+  exact h
 
 /-- `checkPaddedCert` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_checkPaddedCert (c d : ℕ) :
     Turing.MultiTapeTM.ComputableInPolyTime (checkPaddedCert M c d) (encPair encBits encCert)
       encBool := by
-  refine .of_tidy ?_
-  have hunframe : ComputableTidilyInPolyTime unframe encBits encBits :=
-    .of_linear (.of_unframe fun _ => rfl)
-  have hlen : ComputableTidilyInPolyTime
+  have hlen : ComputableInPolyTime
       (fun q : List Bool × Cert => decide ((encCert q.2).length ≤ q.1.length))
       (encPair encBits encCert) encBool :=
     unary_le' ((encoding_length encCert).comp (snd encBits encCert))
       (length_bits.comp (fst encBits encCert))
-  exact bool_and' hlen ((computableInPolyTime_checkCert M c d).tidy.comp
-    ((hunframe.comp (fst encBits encCert)).prod (snd encBits encCert)))
+  have h := bool_and.comp (hlen.prod ((computableInPolyTime_checkCert M c d).comp
+    ((unframe.comp (fst encBits encCert)).prod (snd encBits encCert))))
+  exact h
 
 /-- The padded multiprover language `paddedMIP M c d` belongs to `NP encBits`. -/
 theorem paddedMIP_mem_NP (c d : ℕ) : paddedMIP M c d ∈ NP encBits := by
@@ -910,18 +914,11 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
   rintro A ⟨p, verifier, hV, hproto⟩
   obtain ⟨_, k, Control, hfinControl, M, c, d, hreal⟩ := hV
   let f (n : ℕ) : ℕ := 32 * (p + n + c * (n + 1) ^ d + 1) ^ 2 + c * (n + 1) ^ d
-  have hf : ComputableTidilyInPolyTime f encUnary encUnary := by
-    have hpoly : ComputableTidilyInPolyTime (fun n : ℕ => c * (n + 1) ^ d) encUnary encUnary :=
-      (unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).of_enc_eq fun n => by simp
-    have hB : ComputableTidilyInPolyTime (fun n : ℕ => p + n + c * (n + 1) ^ d + 1)
-        encUnary encUnary := by
-      have hp_n := unary_add.comp ((const p).prod id')
-      have hp_n_t := unary_add.comp (hp_n.prod hpoly)
-      exact unary_add.comp (hp_n_t.prod (const 1))
-    have hsq : ComputableTidilyInPolyTime
-        (fun n : ℕ => 32 * (p + n + c * (n + 1) ^ d + 1) ^ 2) encUnary encUnary :=
-      unary_mul.comp ((const 32).prod ((unary_pow 2).comp hB))
-    exact unary_add.comp (hsq.prod hpoly)
+  have hf : ComputableInPolyTime f encUnary encUnary := by
+    have hpoly : ComputableInPolyTime (fun n : ℕ => c * (n + 1) ^ d) encUnary encUnary :=
+      (ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).of_enc_eq
+        fun n => by simp
+    fun_prop
   have hn : ∀ n, n ≤ f n := fun n => by
     have hB : n ≤ p + n + c * (n + 1) ^ d + 1 := by lia
     have hsq : p + n + c * (n + 1) ^ d + 1 ≤ (p + n + c * (n + 1) ^ d + 1) ^ 2 :=
@@ -1022,7 +1019,7 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
         natCast_div_le_natCast_div_iff hpos (by norm_num)] at hineq
       lia
   rw [hpre]
-  exact preimage_pad_mem_NEXP hNP (.of_tidy hf) hn
+  exact preimage_pad_mem_NEXP hNP hf hn
 
 /-- **`MIP₂ ⊆ NEXP`**: every problem with a two-prover interactive proof is decidable in
 nondeterministic exponential time. -/

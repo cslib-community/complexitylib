@@ -134,11 +134,6 @@ def encodeTestTuple (m : ℕ) (γ : List (ℕ × Bool)) : ℕ :=
 
 @[simp] theorem decodeTestTuple_zero_right (m j : ℕ) : decodeTestTuple m 0 j = [] := rfl
 
-@[simp] theorem decodeTestTuple_zero_left (P j : ℕ) :
-    decodeTestTuple 0 P j = List.replicate P (0, false) := by
-  simp only [decodeTestTuple, ↓reduceIte, Nat.zero_div, Nat.zero_mod, zero_ne_one, decide_false,
-    List.map_const', List.length_range]
-
 @[simp] theorem length_decodeTestTuple (m P j : ℕ) : (decodeTestTuple m P j).length = P := by
   simp only [decodeTestTuple, List.length_map, List.length_range]
 
@@ -353,12 +348,6 @@ def materializeTestRow (m : ℕ) (γ : List (ℕ × Bool)) : List Bool :=
     (materializeTestRow m γ).length = m := by
   simp only [materializeTestRow, List.length_map, List.length_range]
 
-@[simp] theorem materializeTestRow_zero (γ : List (ℕ × Bool)) : materializeTestRow 0 γ = [] := rfl
-
-@[simp] theorem materializeTestRow_nil (m : ℕ) :
-    materializeTestRow m [] = List.replicate m false := by
-  simp only [materializeTestRow, List.foldl_nil, List.map_const', List.length_range]
-
 private theorem foldl_xor_eq_sum (e : ℕ) (γ : List (ℕ × Bool)) (init : Bool) :
     γ.foldl (fun acc p => if p.1 = e then xor acc p.2 else acc) init =
       init + (γ.map fun p => if p.1 = e then p.2 else 0).sum := by
@@ -377,10 +366,6 @@ theorem materializeTestRow_ofFn {m P : ℕ} (γ : Fin P → Fin m × Bool) :
   change (0 : Bool) + _ = _; rw [zero_add, ← List.sum_ofFn]
   exact congrArg (fun fn => (List.ofFn fn).sum)
     (funext fun r => by simp only [Function.comp_apply, Fin.ext_iff])
-
-@[simp] theorem ofList_materializeTestRow_ofFn {m P : ℕ} (γ : Fin P → Fin m × Bool) :
-    ofList m (materializeTestRow m (List.ofFn fun r => ((γ r).1.val, (γ r).2))) = testRow γ := by
-  rw [materializeTestRow_ofFn, ofList_ofFn]
 
 private theorem foldl_xor_eq_false_of_not_mem (e : ℕ) (γ : List (ℕ × Bool))
     (h : e ∉ γ.map Prod.fst) :
@@ -504,10 +489,6 @@ theorem greedyParityRowsAt_succ (countSys : List (List Bool) → ℕ)
       greedyParityRowsAt countSys m P initRows i ++
         [selectBestTestRow countSys m P (greedyParityRowsAt countSys m P initRows i)] :=
   Function.iterate_succ_apply' _ _ _
-
-@[simp] theorem greedyParityRows_zero_left (countSys : List (List Bool) → ℕ)
-    (m P : ℕ) (initRows : List (List Bool)) :
-    greedyParityRows countSys 0 m P initRows = initRows := rfl
 
 /-! ### Prefix invariant, tie-breaking, and minimality -/
 
@@ -638,22 +619,6 @@ private theorem prefix_greedyParityRowsAt (countSys : List (List Bool) → ℕ)
   induction i with
   | zero => exact List.prefix_rfl
   | succ i ih => rw [greedyParityRowsAt_succ]; exact ih.trans (List.prefix_append _ _)
-
-/-- Every row appended after `initRows` has exact length `m` and Hamming weight `≤ P`. -/
-theorem mem_drop_greedyParityRows (countSys : List (List Bool) → ℕ)
-    (n m P : ℕ) (initRows : List (List Bool)) {r : List Bool}
-    (hr : r ∈ (greedyParityRows countSys n m P initRows).drop initRows.length) :
-    r.length = m ∧ r.count true ≤ P := by
-  suffices ∀ i, ∀ r ∈ (greedyParityRowsAt countSys m P initRows i).drop initRows.length,
-      r.length = m ∧ r.count true ≤ P from this (3 * n) r hr
-  intro i; induction i with
-  | zero => intro _ h; simp only [greedyParityRowsAt_zero, List.drop_length, List.not_mem_nil] at h
-  | succ i ih =>
-    intro r h; rw [greedyParityRowsAt_succ, List.drop_append_of_le_length
-      (prefix_greedyParityRowsAt countSys m P initRows i).length_le, List.mem_append,
-      List.mem_singleton] at h
-    exact h.elim (ih r) fun hr =>
-      hr ▸ ⟨length_selectBestTestRow _ _ _ _, count_true_selectBestTestRow_le _ _ _ _⟩
 
 private theorem mem_greedyParityRowsAt (countSys : List (List Bool) → ℕ)
     {m P : ℕ} {initRows : List (List Bool)} {i : ℕ} {r : List Bool}
