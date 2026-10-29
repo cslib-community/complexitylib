@@ -21,7 +21,7 @@ and reads nonzero encoded product answers and their raw interleaved coordinates.
 pair invokes the real original-weight verifier. Once a witness is found, later scans are skipped.
 All memory is read-only in this phase; no result, catalogue or window snapshot is needed.
 
-The consumer adapts the control of the pinned `Witnesses/ScanPairs.lean` procedure in the
+The consumer adapts the control of the pinned `ScanPairs.lean` procedure in the
 proof of Theorem 17 at `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
 The native ABI, code and charged constants are original. These stage definitions are internal
 implementation interfaces. The outer instance loop and prime/global parameter choice are separate.

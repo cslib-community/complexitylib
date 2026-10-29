@@ -18,7 +18,7 @@ public import Mathlib.Data.List.Range
 oracle or an extra runtime computation: the execution invariant derives it from the actual
 loads and verifier calls. Scan and failure counts use Mathlib's `Nat.count` directly.
 
-The argument follows the scan-accounting portion of pinned `Witnesses/ScanPairs.lean`,
+The argument follows the scan-accounting portion of pinned `ScanPairs.lean`,
 `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. This controller starts
 with a false flag; the source's optional already-successful incoming flag is not needed.
 -/

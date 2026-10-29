@@ -17,7 +17,7 @@ in the supplied interval using two actual signed-addition kernels, and returns a
 an original vertex witnessing a zero sum. It writes no memory and preserves all arguments.
 This is the inner verifier used after a nonzero product answer, not a product or ET oracle.
 
-The interval scan follows the pinned `Witnesses/Scan.lean` procedure in the proof of Theorem 17
+The interval scan follows the pinned `Scan.lean` procedure in the proof of Theorem 17
 at `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. The native code,
 register layout and charged constants are rebuilt against the existing WordRAM APIs.
 The stage definitions are internal implementation interfaces.

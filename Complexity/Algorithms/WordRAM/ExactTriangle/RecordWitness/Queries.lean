@@ -16,7 +16,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Trace
 The proof derives its scan trace from the original answer words and the verifier's integer
 equation. Runtime execution receives neither trace nor witness function. Variable-cost loop
 accounting charges a complete scan exactly when the native controller actually invokes it.
-The finite scan bound follows the counting argument of pinned `Witnesses/ScanPairs.lean`;
+The finite scan bound follows the counting argument of pinned `ScanPairs.lean`;
 the native code, ABI and instruction constants are original.
 -/
 
