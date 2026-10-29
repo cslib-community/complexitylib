@@ -132,12 +132,6 @@ private theorem countingChild_false_subset {ψ : ClauseSet V} {c : ℕ} {H : Fin
     exact disjoint_left.mp (disjoint_flower_countingChild h false) hF hC
   · exact mem_union_right _ hCH
 
-/-- Each singleton clause in `negatedHeartUnits H` has cardinality `1`. -/
-private theorem card_of_mem_negatedHeartUnits {H : Finset (Literal V)} {C : Finset (Literal V)}
-    (hC : C ∈ negatedHeartUnits H) : C.card = 1 := by
-  obtain ⟨l, -, rfl⟩ := mem_image.mp hC
-  exact card_singleton _
-
 /-- Counting children keep the clause width `≤ k` when `1 ≤ k`. -/
 theorem card_le_of_mem_countingChild (hθ : ∀ j, 1 ≤ θ j) {ψ : ClauseSet V} {c k : ℕ}
     (hk1 : 1 ≤ k) {H : Finset (Literal V)} (h : Heavy θ ψ c H) (hk : ∀ C ∈ ψ, C.card ≤ k)

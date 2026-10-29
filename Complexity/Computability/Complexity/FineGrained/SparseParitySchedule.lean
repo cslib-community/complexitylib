@@ -433,7 +433,8 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule {β : ℕ} (hβ : 1 �
 
 /-! ### 4. Unconditional polylogarithmic schedule discharge for `B ≤ C_B * (Nat.clog 2 n) ^ β_B` -/
 
-private theorem clog_two_le_two_mul_of_le_two_mul {n n' : ℕ} (hn : n ≤ 2 * n') (hn' : 2 ≤ n') :
+/-- When `n ≤ 2 * n'` and `2 ≤ n'`, `Nat.clog 2 n ≤ 2 * Nat.clog 2 n'`. -/
+theorem clog_two_le_two_mul_of_le_two_mul {n n' : ℕ} (hn : n ≤ 2 * n') (hn' : 2 ≤ n') :
     Nat.clog 2 n ≤ 2 * Nat.clog 2 n' := by
   have h1 : 1 ≤ Nat.clog 2 n' :=
     (Nat.lt_clog_iff_pow_lt one_lt_two).mpr (by omega : 2 ^ 0 < n')

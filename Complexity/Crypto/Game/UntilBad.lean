@@ -164,9 +164,9 @@ theorem runStatelessOracle_bind_le {T α : Type} (μ : PMF T)
             (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * g x) + (Q : ℝ≥0∞) * δ := by
         calc ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * f x
             ≤ ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * (g x + (Q : ℝ≥0∞) * δ) :=
-              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
+              tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
           _ = (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * g x) + (Q : ℝ≥0∞) * δ := by
-              simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+              simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
       exact ⟨hsum _ _ (fun x => (ih x).1), hsum _ _ (fun x => (ih x).2)⟩
     · simp only [Sum.elim_inr]
       have hinr₁ :
@@ -184,13 +184,13 @@ theorem runStatelessOracle_bind_le {T α : Type} (μ : PMF T)
         simp only [PMF.bind_apply]
         calc ∑' τ, μ τ * f τ b
             ≤ ∑' τ, (μ τ * g τ b + μ τ * if isBad τ req.2 then 1 else 0) := by
-              refine ENNReal.tsum_le_tsum fun τ => ?_
+              refine tsum_le_tsum fun τ => ?_
               by_cases hb : isBad τ req.2 = true
               · simp only [hb, ↓reduceIte, mul_one]
                 exact le_add_of_le_right (mul_le_of_le_one_right zero_le (PMF.coe_le_one _ _))
               · simp only [Bool.not_eq_true] at hb
                 rw [hfg τ hb]; simp [hb]
-          _ = (∑' τ, μ τ * g τ b) + ∑' τ, μ τ * if isBad τ req.2 then 1 else 0 := ENNReal.tsum_add
+          _ = (∑' τ, μ τ * g τ b) + ∑' τ, μ τ * if isBad τ req.2 then 1 else 0 := tsum_add
           _ ≤ (∑' τ, μ τ * g τ b) + δ := add_le_add le_rfl (hbad req.2)
       have hstep1 := hstep
         (fun τ => runStatelessOracle (o₁ τ) (k (o₁ τ req.2)) (next τ))
@@ -372,20 +372,20 @@ theorem runStatelessOracle_le_runFinderOracle {α : Type}
             ≤ ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
                 (runStatelessOracle o₂ (k x) next b +
                   runFinderOracle o₂ isBad extract (k x) none isGood true) :=
-              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (ih x).1 zero_le
+              tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (ih x).1 zero_le
           _ = (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * runStatelessOracle o₂ (k x) next b) +
                 ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
                   runFinderOracle o₂ isBad extract (k x) none isGood true := by
-              simp only [mul_add, ENNReal.tsum_add]
+              simp only [mul_add, tsum_add]
       · calc ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * runStatelessOracle o₂ (k x) next b
             ≤ ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
                 (runStatelessOracle o₁ (k x) next b +
                   runFinderOracle o₂ isBad extract (k x) none isGood true) :=
-              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (ih x).2 zero_le
+              tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (ih x).2 zero_le
           _ = (∑' x, PMF.uniformOfFintype (Fin (m + 1)) x * runStatelessOracle o₁ (k x) next b) +
                 ∑' x, PMF.uniformOfFintype (Fin (m + 1)) x *
                   runFinderOracle o₂ isBad extract (k x) none isGood true := by
-              simp only [mul_add, ENNReal.tsum_add]
+              simp only [mul_add, tsum_add]
     · rw [runStatelessOracle_query_inr, runStatelessOracle_query_inr, runFinderOracle_query_inr]
       by_cases hb : isBad req.2 = true
       · simp only [hb, ↓reduceIte]

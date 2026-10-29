@@ -1107,7 +1107,7 @@ theorem toOuterMeasure_bind_ge_mul_ennreal {α β : Type*} (p : PMF α) (kernel 
     s₁ * s₂ ≤ p.toOuterMeasure pre * s₂ := mul_le_mul_of_nonneg_right hp zero_le
     _ ≤ (p.bind kernel).toOuterMeasure event := by
       rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
-      refine ENNReal.tsum_le_tsum fun a => ?_
+      refine tsum_le_tsum fun a => ?_
       by_cases ha : a ∈ pre
       · simp only [Set.indicator_of_mem ha]
         by_cases hs : a ∈ p.support
@@ -1131,7 +1131,7 @@ theorem toOuterMeasure_bind_le_mul_ennreal {α β : Type*} (p : PMF α) (kernel 
     (p.bind kernel).toOuterMeasure failure
       ≤ p.toOuterMeasure stillFailing * q₂ := by
         rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_mul_right]
-        refine ENNReal.tsum_le_tsum fun a => ?_
+        refine tsum_le_tsum fun a => ?_
         by_cases hs : a ∈ p.support
         · by_cases ha : a ∈ stillFailing
           · simp only [Set.indicator_of_mem ha]
@@ -1146,7 +1146,7 @@ valid on arbitrary types without measurability hypotheses. -/
 theorem toOuterMeasure_add_compl_ennreal {α : Type*} (p : PMF α) (s : Set α) :
     p.toOuterMeasure s + p.toOuterMeasure sᶜ = 1 := by
   classical
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_add]
+  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
   have hpt : (fun x => s.indicator p x + sᶜ.indicator p x) = p := by
     ext x
     by_cases hx : x ∈ s <;> simp [hx]

@@ -126,7 +126,7 @@ theorem eval_runClosed_orElse_apply (h₁ : first.toNTM.RunsInTime input t₁)
           exact congrArg _ (PMF.pure_apply_self _)
         · rw [add_zero]
     _ = q + ProbComp.eval (first.runClosed t₁ input) [true] * (1 - q) := by
-        rw [ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul, tsum_ite_eq]
+        rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul, tsum_ite_eq]
 
 /-- **Rejections multiply under `orElse`.** Counted on coin strings, the probability that
 `first.orElse second` does not accept is the product of the probabilities that `first` and

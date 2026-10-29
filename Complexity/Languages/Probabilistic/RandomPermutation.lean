@@ -1175,9 +1175,9 @@ theorem toOuterMeasure_bad_choose_two_le {ι σ β : Type} {spec : ι → Type}
     calc ∑' y, (handler q s) y *
           ((OracleComp.interpret handler (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}
         ≤ ∑' y, (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) :=
-          ENNReal.tsum_le_tsum hterm
+          tsum_le_tsum hterm
       _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
             PMF.toOuterMeasure_apply]
           congr 1
           refine tsum_congr fun y => ?_
@@ -1413,8 +1413,8 @@ theorem toOuterMeasure_forgetfulAnswer_le_pairwise_and_length_le_add {β : Type}
       {x | (x.2.Pairwise (fun a b => a.1 ≠ b.1) ∧
         x.2.Pairwise (fun a b => a.2 ≠ b.2) ∧ x.2.length ≤ Q) ∧ P x.2}) +
       q.toOuterMeasure {x | x.2.2 = true}
-  simp only [PMF.toOuterMeasure_apply, ← ENNReal.tsum_add]
-  refine ENNReal.tsum_le_tsum fun ⟨a, c, b⟩ => ?_
+  simp only [PMF.toOuterMeasure_apply, ← tsum_add]
+  refine tsum_le_tsum fun ⟨a, c, b⟩ => ?_
   by_cases hmem : (a, (c, b)) ∈ q.support
   · by_cases hP : P c
     · cases b with

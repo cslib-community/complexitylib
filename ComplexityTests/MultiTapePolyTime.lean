@@ -139,6 +139,7 @@ example {α : Type} (enc : α ↪ List Bool) (p : Polynomial ℕ) (c d : ℕ) :
     ComputableTidilyInPolyTime
       (fun a => List.range (Cslib.Complexity.CookLevin.parameters p c d enc a).2.2)
       enc (encList encUnary) := by
+  dsimp only [Cslib.Complexity.CookLevin.parameters]
   fun_prop
 
 private def finish (move : SignType) (symbol : Bool) : Turing.MultiTapeTM 0 Bool Unit :=

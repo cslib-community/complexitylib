@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.PolyTime.GreedySlotScore
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -563,10 +564,6 @@ public section
 namespace Cslib.BalancedSchedules
 
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
-open ComputableTidilyInO (length_encNat_mono)
-
-private theorem length_encNat_le_self (k : ℕ) : (encNat k).length ≤ k := by
-  rw [encNat_apply, Nat.size_eq_bits_len]; exact Nat.size_le_self k
 
 /-- Encoded bit-length bound for an incidence list `edges` with endpoints `< m` and `< n`. -/
 theorem length_encEdges_le_of_lt {n m : ℕ} {edges : List (ℕ × ℕ)}

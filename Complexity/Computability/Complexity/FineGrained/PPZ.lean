@@ -458,7 +458,7 @@ theorem runWith_apply_restrict {O : (Fin n → Option Bool) → Fin n → Option
       by_cases hsupp : τ ∈ (runWith O π i).support
       · rw [PMF.map_apply]
         convert mul_zero _
-        refine ENNReal.tsum_eq_zero.mpr fun b => ite_eq_right fun e => hτ ?_
+        refine tsum_eq_zero_iff.mpr fun b => ite_eq_right fun e => hτ ?_
         funext y
         by_cases hy : y = x
         · subst hy

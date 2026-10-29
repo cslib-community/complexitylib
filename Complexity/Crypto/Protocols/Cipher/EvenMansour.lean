@@ -1955,7 +1955,7 @@ private theorem idealGame_apply_le_realGame_add_of_keyDist (keyDist : PMF (G × 
     calc (∑' res : Bool × (Cache G × Cache G),
           M_ideal res * keyDist.toOuterMeasure {k | isBadEvenMansourKey res.2.1 res.2.2 k = true})
         ≤ ∑' res : Bool × (Cache G × Cache G), M_ideal res * ε := by
-          refine ENNReal.tsum_le_tsum fun res => ?_
+          refine tsum_le_tsum fun res => ?_
           by_cases hmem : res ∈ M_ideal.support
           · refine mul_le_mul_of_nonneg_left (hbad_le res.2.1 res.2.2 ?_ ?_) zero_le
             · simpa using length_fst_idealLazyHandler_le hcall.1 hmem
@@ -1968,14 +1968,14 @@ private theorem idealGame_apply_le_realGame_add_of_keyDist (keyDist : PMF (G × 
       ≤ ∑' k : G × G, keyDist k *
           ((((OracleComp.interpret (realLazyHandler k) program).run []).map Prod.fst) b +
             M_ideal.toOuterMeasure {res | isBadEvenMansourKey res.2.1 res.2.2 k = true}) :=
-        ENNReal.tsum_le_tsum fun k => mul_le_mul_of_nonneg_left (hpoint k) zero_le
+        tsum_le_tsum fun k => mul_le_mul_of_nonneg_left (hpoint k) zero_le
     _ = (∑' k : G × G,
           keyDist k *
             (((OracleComp.interpret (realLazyHandler k) program).run []).map Prod.fst) b) +
         (∑' k : G × G,
           keyDist k *
             M_ideal.toOuterMeasure {res | isBadEvenMansourKey res.2.1 res.2.2 k = true}) := by
-        simp_rw [mul_add, ENNReal.tsum_add]
+        simp_rw [mul_add, tsum_add]
     _ ≤ _ := add_le_add le_rfl hsum_bad
 
 private theorem advantage_le_of_forall_bool_le {g₁ g₂ : Game} {ε : ℝ≥0∞} (hε : ε ≠ ⊤)

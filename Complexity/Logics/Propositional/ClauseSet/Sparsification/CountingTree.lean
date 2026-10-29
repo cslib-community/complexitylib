@@ -93,7 +93,8 @@ private theorem mem_negatedHeartUnits {H : Finset (Literal V)} {C : Finset (Lite
     C ∈ negatedHeartUnits H ↔ ∃ l ∈ H, {Std.Sat.Literal.negate l} = C :=
   mem_image
 
-private theorem card_of_mem_negatedHeartUnits {H : Finset (Literal V)} {C : Finset (Literal V)}
+/-- Each singleton clause in `negatedHeartUnits H` has cardinality `1`. -/
+theorem card_of_mem_negatedHeartUnits {H : Finset (Literal V)} {C : Finset (Literal V)}
     (hC : C ∈ negatedHeartUnits H) : C.card = 1 := by
   obtain ⟨l, -, rfl⟩ := mem_negatedHeartUnits.mp hC
   exact card_singleton _

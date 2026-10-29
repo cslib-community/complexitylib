@@ -360,44 +360,7 @@ end LocalMap
 
 section PolyTime
 
-open ComputableInPolyTime
-
-private theorem computableInPolyTime_zip {α β : Type}
-    (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × List β => p.1.zip p.2)
-      (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) := by
-  rcases isEmpty_or_nonempty α with h | h
-  · have heq : (fun p : List α × List β => p.1.zip p.2) = fun _ => [] := by
-      funext p
-      cases p.1 with
-      | nil => rfl
-      | cons a _ => exact isEmptyElim a
-    rw [heq]
-    exact const []
-  rcases isEmpty_or_nonempty β with h' | h'
-  · have heq : (fun p : List α × List β => p.1.zip p.2) = fun _ => [] := by
-      funext p
-      cases p.2 with
-      | nil => simp
-      | cons b _ => exact isEmptyElim b
-    rw [heq]
-    exact const []
-  obtain ⟨a⟩ := h
-  obtain ⟨b⟩ := h'
-  have heq (p : List α × List β) : p.1.zip p.2 =
-      (List.range (p.1.length - (p.1.length - p.2.length))).map
-        (fun i => (p.1.getD i a, p.2.getD i b)) := by
-    have hmin : p.1.length - (p.1.length - p.2.length) = min p.1.length p.2.length := by omega
-    rw [hmin]
-    apply List.ext_getElem (by simp)
-    intro i hi hi'
-    have hleft : i < p.1.length := (Nat.lt_min.mp (by simpa only [List.length_zip] using hi)).1
-    have hright : i < p.2.length := (Nat.lt_min.mp (by simpa only [List.length_zip] using hi)).2
-    simp only [List.getElem_zip, List.getElem_map, List.getElem_range,
-      List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hleft,
-      List.getElem?_eq_getElem hright, Option.getD_some]
-  simp_rw [heq]
-  fun_prop
+open ComputableInPolyTime CSP
 
 private theorem list_contains_eq_any {α : Type*} [BEq α] [LawfulBEq α] (l : List α) (x : α) :
     l.contains x = l.any (fun y => y == x) := by

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Mathlib.Algebra.BigOperators.Group.List.Basic
 public import Mathlib.Data.Finset.Basic
 import Mathlib.Data.List.GetD
 
@@ -23,6 +24,8 @@ They are generalized from the canonical incidence-path occupancy proofs.
 * `List.exists_other_index_of_two_le_filter_contains`.
 * `List.toFinset_filter_not_mem`: filtering `C` by non-membership in `H` takes the set difference
   `C.toFinset \ H.toFinset`.
+* `List.countP_le_sum_map`: if `1 ≤ f x` whenever `p x = true` on `l`, then
+  `l.countP p ≤ (l.map f).sum`.
 -/
 
 @[expose] public section
@@ -116,5 +119,20 @@ theorem toFinset_filter_not_mem {α : Type*} [DecidableEq α] (C H : List α) :
   refine and_congr_right fun _ => ?_
   rw [Bool.not_eq_true', List.any_eq_false]
   exact ⟨fun h hl => h l hl (beq_self_eq_true l), fun h l' hl' heq => h (beq_iff_eq.mp heq ▸ hl')⟩
+
+/-- If `1 ≤ f x` whenever `p x = true` on `l`, then `l.countP p ≤ (l.map f).sum`. -/
+theorem countP_le_sum_map {α : Type*} {p : α → Bool} {f : α → ℕ} {l : List α}
+    (h : ∀ x ∈ l, p x = true → 1 ≤ f x) : l.countP p ≤ (l.map f).sum := by
+  induction l with
+  | nil => simp
+  | cons a l ih =>
+    rw [List.countP_cons, List.map_cons, List.sum_cons]
+    have := ih fun x hx => h x (List.mem_cons_of_mem _ hx)
+    by_cases hp : p a = true
+    · have := h a List.mem_cons_self hp
+      simp only [hp, ite_true]
+      omega
+    · simp only [hp, Bool.false_eq_true, ite_false]
+      omega
 
 end List

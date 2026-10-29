@@ -44,16 +44,6 @@ open _root_.Turing _root_.Turing.MultiTapeTM
 
 variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
 
-/-- Counting the words of length `n + 1` by their first bit. -/
-private theorem card_filter_ofFn_succ (n : ℕ) (P : List Bool → Prop) [DecidablePred P] :
-    (Finset.univ.filter fun r : Fin (n + 1) → Bool => P (List.ofFn r)).card =
-      (Finset.univ.filter fun w : Fin n → Bool => P (false :: List.ofFn w)).card +
-        (Finset.univ.filter fun w : Fin n → Bool => P (true :: List.ofFn w)).card := by
-  simp only [Finset.card_filter]
-  rw [← (Fin.consEquiv fun _ : Fin (n + 1) => Bool).sum_comp, Fintype.sum_prod_type,
-    Fintype.sum_bool, add_comm]
-  simp [List.ofFn_succ, Fin.consEquiv]
-
 /-- **`NP ⊆ PP`** [Gill][Gill1977]: on random strings `b :: w`, accept when `b = false` and run
 the verifier on `w` when `b = true`. The majority accepts exactly when the verifier accepts some
 certificate. -/
@@ -68,8 +58,8 @@ theorem NP_subset_PP : NP enc ⊆ PP enc := by
           (ComputableInPolyTime.bitsTail.comp (.snd _ _)))))
   refine ⟨p + 1, V', hV', fun a => ?_⟩
   have hcount (m : ℕ) : acceptCount V' a (m + 1) = 2 ^ m + acceptCount V a m := by
-    rw [acceptCount, card_filter_ofFn_succ m fun l => V' (a, l) = true]
-    simp [V', acceptCount]
+    rw [acceptCount, BitString.card_filter_ofFn_succ m fun l => V' (a, l) = true]
+    simp [V', acceptCount, add_comm]
   have heval : (p + 1).eval (enc a).length = p.eval (enc a).length + 1 := by simp
   rw [heval, hcount, hA a, ← acceptCount_pos_iff, pow_succ]
   omega
@@ -115,9 +105,9 @@ theorem compl_mem_PP (hA : A ∈ PP enc) : Aᶜ ∈ PP enc := by
     exact ⟨fun h => funext h, fun h i => by rw [h]⟩
   have hcount (m : ℕ) : acceptCount V' a (m + 1 + 1) = 2 ^ m + 1 +
       2 * (Finset.univ.filter fun w : Fin m → Bool => V (a, List.ofFn w) = false).card := by
-    rw [acceptCount, card_filter_ofFn_succ (m + 1) fun l => V' (a, l) = true,
-      card_filter_ofFn_succ m fun l => V' (a, false :: l) = true,
-      card_filter_ofFn_succ m fun l => V' (a, true :: l) = true]
+    rw [acceptCount, BitString.card_filter_ofFn_succ (m + 1) fun l => V' (a, l) = true,
+      BitString.card_filter_ofFn_succ m fun l => V' (a, false :: l) = true,
+      BitString.card_filter_ofFn_succ m fun l => V' (a, true :: l) = true]
     simp only [V', List.headD_cons, List.tail_cons, Bool.false_eq_true, ↓reduceIte, Bool.not_false,
       Bool.true_or, Bool.not_true, Bool.false_or, Finset.filter_true, Finset.card_univ,
       Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Bool.not_eq_true', hzero]

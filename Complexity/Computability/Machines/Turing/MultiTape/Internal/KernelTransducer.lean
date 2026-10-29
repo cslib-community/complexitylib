@@ -70,7 +70,7 @@ public def toTM : MultiTapeTM 0 Symbol (Q × Option Symbol × Bool) :=
           state := some (q, (τ.final q).tail.head?, true) }
 
 /-- A word of length at most two is its head followed by the head of its tail. -/
-lemma toList_head?_append {w : List Symbol} (h : w.length ≤ 2) :
+public lemma toList_head?_append {w : List Symbol} (h : w.length ≤ 2) :
     w.head?.toList ++ w.tail.head?.toList = w := by
   match w, h with
   | [], _ => rfl

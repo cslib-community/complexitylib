@@ -82,7 +82,7 @@ theorem hasSliceDecomposition_add (p q : ℕ) :
   have hexpand : (fun x y : ι → Bool => monomial K S.1 (x + y)) =
       ∑ T ∈ S.1.powerset, (fun x y => monomial K T x * monomial K (S.1 \ T) y) := by
     funext x y
-    simp only [sum_apply, monomial_add]
+    simp only [Finset.sum_apply, monomial_add]
   rw [hexpand]
   apply (sliceSpace (lowDegree K ι p) (lowDegree K ι q)).sum_mem
   intro T hT
