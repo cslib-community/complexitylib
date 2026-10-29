@@ -66,44 +66,37 @@ def language : Set (List Bool) :=
 theorem reduction : PolyTimeTruthTableReducible encBits encBits language headTrue :=
   ⟨count, query, combine, polyTime_count, polyTime_query, polyTime_combine, fun _ => Iff.rfl⟩
 
-example : language ∈ PP encBits := reduction.mem_PP headTrue_mem_PP
-
-example : language ∈ P encBits := reduction.mem_P headTrue_mem_P
-
-example : languageᶜ ∈ PP encBits := reduction.compl_left.mem_PP headTrue_mem_PP
-
-example : language ∈ PP encBits :=
-  reduction.compl_right.mem_PP (compl_mem_PP headTrue_mem_PP)
-
-example : languageᶜ ∈ PP encBits :=
-  reduction.compl.mem_PP (compl_mem_PP headTrue_mem_PP)
-
-example : headTrueᶜ ∈ PP encBits :=
-  (PolyTimeTruthTableReducible.refl encBits headTrue).compl_left.mem_PP headTrue_mem_PP
-
 theorem joint_mem_PP : query ⁻¹' headTrue ∈ PP (encPair encBits encUnary) :=
   PolyTimeReducible.mem_PP ⟨query, polyTime_query, fun _ => Iff.rfl⟩ headTrue_mem_PP
 
-example : language ∈ PP encBits :=
-  truthTable_mem_PP joint_mem_PP polyTime_count polyTime_combine
+/-- Truth-table reductions preserve `PP` and `P` membership, including under left, right, and
+two-sided complementation. -/
+example :
+    (language ∈ PP encBits ∧ language ∈ P encBits ∧ languageᶜ ∈ PP encBits) ∧
+    (language ∈ PP encBits ∧ languageᶜ ∈ PP encBits ∧ headTrueᶜ ∈ PP encBits) :=
+  ⟨⟨reduction.mem_PP headTrue_mem_PP,
+    reduction.mem_P headTrue_mem_P,
+    reduction.compl_left.mem_PP headTrue_mem_PP⟩,
+   ⟨reduction.compl_right.mem_PP (compl_mem_PP headTrue_mem_PP),
+    reduction.compl.mem_PP (compl_mem_PP headTrue_mem_PP),
+    (PolyTimeTruthTableReducible.refl encBits headTrue).compl_left.mem_PP headTrue_mem_PP⟩⟩
 
-example : {w : List Bool | ∀ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits :=
-  forall_lt_mem_PP joint_mem_PP polyTime_count
-
-example : {w : List Bool | ∃ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits :=
-  exists_lt_mem_PP joint_mem_PP polyTime_count
-
-example : headTrue ∩ secondTrue ∈ PP encBits :=
-  inter_mem_PP headTrue_mem_PP secondTrue_mem_PP
-
-example : headTrue ∪ secondTrue ∈ PP encBits :=
-  union_mem_PP headTrue_mem_PP secondTrue_mem_PP
-
-example : headTrue \ secondTrue ∈ PP encBits :=
-  diff_mem_PP headTrue_mem_PP secondTrue_mem_PP
-
-example : symmDiff headTrue secondTrue ∈ PP encBits :=
-  symmDiff_mem_PP headTrue_mem_PP secondTrue_mem_PP
+/-- Direct truth-table, bounded-quantifier, and Boolean closures in `PP`. -/
+example :
+    (language ∈ PP encBits ∧
+      {w : List Bool | ∀ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits ∧
+      {w : List Bool | ∃ i < count w, (w, i) ∈ query ⁻¹' headTrue} ∈ PP encBits) ∧
+    (headTrue ∩ secondTrue ∈ PP encBits ∧
+      headTrue ∪ secondTrue ∈ PP encBits ∧
+      headTrue \ secondTrue ∈ PP encBits ∧
+      symmDiff headTrue secondTrue ∈ PP encBits) :=
+  ⟨⟨truthTable_mem_PP joint_mem_PP polyTime_count polyTime_combine,
+    forall_lt_mem_PP joint_mem_PP polyTime_count,
+    exists_lt_mem_PP joint_mem_PP polyTime_count⟩,
+   ⟨inter_mem_PP headTrue_mem_PP secondTrue_mem_PP,
+    union_mem_PP headTrue_mem_PP secondTrue_mem_PP,
+    diff_mem_PP headTrue_mem_PP secondTrue_mem_PP,
+    symmDiff_mem_PP headTrue_mem_PP secondTrue_mem_PP⟩⟩
 
 example : [true, false] ∈ language := by
   simp [language, truthTableAnswers, count, query, headTrue, combine]

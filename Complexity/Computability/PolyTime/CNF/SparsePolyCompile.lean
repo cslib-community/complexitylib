@@ -899,26 +899,28 @@ theorem evalMonomialList_restrictEquation (v : ℕ) (val : Bool) (eq : List (Lis
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 local notation "encM" => encList encNat
 local notation "encEq" => encList (encList encNat)
 local notation "encSys" => encList (encList (encList encNat))
 local notation "encC" => encList (encPair encNat encBool)
 
-private theorem computableTidilyInPolyTime_toggleMonomial :
-    ComputableTidilyInPolyTime (fun p : List (List ℕ) × List ℕ => toggleMonomial p.1 p.2)
+private theorem computableInPolyTime_toggleMonomial :
+    ComputableInPolyTime (fun p : List (List ℕ) × List ℕ => toggleMonomial p.1 p.2)
       (encPair encEq encM) encEq := by
   unfold toggleMonomial; fun_prop
 
-private theorem computableTidilyInPolyTime_reduceEquation :
-    ComputableTidilyInPolyTime reduceEquation encEq encEq := by
+/-- Mod-2 duplicate monomial cancellation `reduceEquation` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_reduceEquation :
+    ComputableInPolyTime reduceEquation encEq encEq := by
   unfold reduceEquation
   have hq := fst (encPair encEq encEq) encM
   exact foldlWith_of_bounded_growth (encA := encM) (encL := encEq) (encB := encEq)
     (par := fun x => x) (list := fun x => x) (init := fun _ => [])
     (step := fun _ state m => toggleMonomial state m)
-    id' id' (const []) (computableTidilyInPolyTime_toggleMonomial.comp (hq.snd'.prod (snd _ _)))
+    id' id' (const []) (computableInPolyTime_toggleMonomial.comp (hq.snd'.prod (snd _ _)))
     (growth := fun eq => 2 * (encEq eq).length + 1)
     (((PolyBounded.const 2).mul .self).add (.const 1))
     (fun eq state m hm => by
@@ -928,24 +930,30 @@ private theorem computableTidilyInPolyTime_reduceEquation :
       · simp only [encList_append, encList_cons, encList_nil, List.append_nil, List.length_append,
           length_frame]; omega)
 
-private theorem computableTidilyInPolyTime_xorEquation :
-    ComputableTidilyInPolyTime (fun p : List (List ℕ) × List (List ℕ) => xorEquation p.1 p.2)
+/-- Mod-2 equation symmetric difference `xorEquation` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_xorEquation :
+    ComputableInPolyTime (fun p : List (List ℕ) × List (List ℕ) => xorEquation p.1 p.2)
       (encPair encEq encEq) encEq := by
-  have := computableTidilyInPolyTime_reduceEquation; unfold xorEquation; fun_prop
-private theorem computableTidilyInPolyTime_insertSorted :
-    ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => insertSorted p.1 p.2)
+  unfold xorEquation; fun_prop
+
+private theorem computableInPolyTime_insertSorted :
+    ComputableInPolyTime (fun p : List ℕ × ℕ => insertSorted p.1 p.2)
       (encPair encM encNat) encM := by
   unfold insertSorted; fun_prop
+
 private theorem length_encM_sortDedup_le (vs : List ℕ) :
     (encM (sortDedup vs)).length ≤ vs.length * (2 * (encM vs).length + 1) :=
   (length_encList_le encNat (sortDedup vs) fun u hu =>
     SizedListEncoding.length_elem_le (encA := encNat) (encL := encM) vs u (mem_sortDedup.mp hu)
     ).trans (Nat.mul_le_mul_right _ (length_sortDedup_le vs))
-private theorem computableTidilyInPolyTime_sortDedup :
-    ComputableTidilyInPolyTime sortDedup encM encM :=
+
+@[local fun_prop]
+private theorem computableInPolyTime_sortDedup :
+    ComputableInPolyTime sortDedup encM encM :=
   foldl' (encA := encNat) (encL := encM) (encB := encM)
     (list := fun x => x) (init := fun _ => []) (step := insertSorted)
-    id' (const []) computableTidilyInPolyTime_insertSorted
+    id' (const []) computableInPolyTime_insertSorted
     (B := fun vs => (encM vs).length * (2 * (encM vs).length + 1))
     (PolyBounded.self.mul (((PolyBounded.const 2).mul .self).add (.const 1)))
     (fun vs i _ => by
@@ -955,15 +963,19 @@ private theorem computableTidilyInPolyTime_sortDedup :
         (SizedListEncoding.length_le (encA := encNat) (encL := encM) vs)
       exact (length_encM_sortDedup_le (vs.take i)).trans
         (Nat.mul_le_mul hlen (Nat.add_le_add_right (Nat.mul_le_mul_left 2 htake) 1)))
-private theorem computableTidilyInPolyTime_isTautologicalClause :
-    ComputableTidilyInPolyTime isTautologicalClause encC encBool := by
+
+private theorem computableInPolyTime_isTautologicalClause :
+    ComputableInPolyTime isTautologicalClause encC encBool := by
   unfold isTautologicalClause; fun_prop
-private theorem computableTidilyInPolyTime_posVars :
-    ComputableTidilyInPolyTime posVars encC encM := by
-  have := computableTidilyInPolyTime_sortDedup; unfold posVars; fun_prop
-private theorem computableTidilyInPolyTime_negVars :
-    ComputableTidilyInPolyTime negVars encC encM := by
-  have := computableTidilyInPolyTime_sortDedup; unfold negVars; fun_prop
+
+private theorem computableInPolyTime_posVars :
+    ComputableInPolyTime posVars encC encM := by
+  unfold posVars; fun_prop
+
+private theorem computableInPolyTime_negVars :
+    ComputableInPolyTime negVars encC encM := by
+  unfold negVars; fun_prop
+
 private theorem length_encNat_le_of_mem_clause {c : Clause ℕ} {v : ℕ} {b : Bool}
     (h : (v, b) ∈ c) : (encNat v).length ≤ (encC c).length :=
   (length_le_encPair_left encNat encBool (v, b)).trans
@@ -1021,25 +1033,27 @@ private theorem expandPosVars_size_aux (base vs : List ℕ) (k B : ℕ)
   · rw [hr_len, List.length_singleton, Nat.one_mul]
     exact Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by omega) htake_len)
 
-private theorem computableTidilyInPolyTime_compileClauseBounded (k : ℕ) :
-    ComputableTidilyInPolyTime (compileClauseBounded k) encC encEq := by
-  have htake : ComputableTidilyInPolyTime (fun c : Clause ℕ => c.take k) encC encC :=
-    listTakeWithInput id' (const k)
-  have hstep : ComputableTidilyInPolyTime
+/-- For any fixed width bound `k : ℕ`, compiling a clause with width guard `k` into a canonical
+sparse `𝔽₂` polynomial is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_compileClauseBounded (k : ℕ) :
+    ComputableInPolyTime (compileClauseBounded k) encC encEq := by
+  have htake : ComputableInPolyTime (fun c : Clause ℕ => c.take k) encC encC := by fun_prop
+  have hstep : ComputableInPolyTime
       (fun p : List (List ℕ) × ℕ => p.1 ++ p.1.map fun m => insertSorted m p.2)
       (encPair encEq encNat) encEq := by
-    have := computableTidilyInPolyTime_insertSorted; fun_prop
-  have hexpand : ComputableTidilyInPolyTime
+    have := computableInPolyTime_insertSorted; fun_prop
+  have hexpand : ComputableInPolyTime
       (fun c : Clause ℕ => expandPosVars (negVars (c.take k)) (posVars (c.take k)))
       encC encEq := by
     unfold expandPosVars
-    have hp := computableTidilyInPolyTime_posVars.comp htake
-    have hn := computableTidilyInPolyTime_negVars.comp htake
+    have hp := computableInPolyTime_posVars.comp htake
+    have hn := computableInPolyTime_negVars.comp htake
     exact foldl' (encA := encNat) (encL := encM) (encB := encEq)
       (list := fun c : Clause ℕ => posVars (c.take k))
       (init := fun c : Clause ℕ => [negVars (c.take k)])
       (step := fun acc v => acc ++ acc.map fun m => insertSorted m v)
-      hp ((cons encM).comp (hn.prod (const []))) hstep
+      hp ((snoc encM).comp ((const []).prod hn)) hstep
       (B := fun c => 2 ^ k * (2 * ((2 * k) * (2 * (encC c).length + 1)) + 1))
       ((PolyBounded.const (2 ^ k)).mul
         (((PolyBounded.const 2).mul
@@ -1055,7 +1069,7 @@ private theorem computableTidilyInPolyTime_compileClauseBounded (k : ℕ) :
           (fun _ hu =>
             length_encNat_le_of_mem_clause (List.mem_of_mem_take (mem_posVars_iff.mp hu)))
           i hi)
-  exact (computableTidilyInPolyTime_isTautologicalClause.comp htake).ite' (const []) hexpand
+  exact (computableInPolyTime_isTautologicalClause.comp htake).ite (const []) hexpand
 
 /-- Reducing an equation modulo `2` (`reduceEquation`) does not increase its encoded length. -/
 theorem length_enc_reduceEquation_le (l : List (List ℕ)) :
@@ -1126,13 +1140,17 @@ private theorem length_encEq_compileClauseBounded_le (k : ℕ) (c : Clause ℕ) 
   · exact Nat.mul_le_mul_right _
       ((length_compileClause_le (c.take k)).trans (Nat.pow_le_pow_right (by omega) hc_len))
 
-private theorem computableTidilyInPolyTime_compileParityRowBounded (k : ℕ)
+/-- For any fixed width bound `k : ℕ`, compiling a parity-check row on `φ : CNF ℕ` is
+polynomial-time (for any sized Boolean list encoding `encRow`, such as `encBits` or
+`encList encBool`). -/
+@[fun_prop]
+theorem computableInPolyTime_compileParityRowBounded (k : ℕ)
     {encRow : List Bool ↪ List Bool} [ListEncoding encBool encRow]
     [SizedListEncoding encBool encRow] :
-    ComputableTidilyInPolyTime (fun p : CNF ℕ × List Bool => compileParityRowBounded k p.1 p.2)
+    ComputableInPolyTime (fun p : CNF ℕ × List Bool => compileParityRowBounded k p.1 p.2)
       (encPair encCNF encRow) encEq := by
   unfold encCNF
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun q : ((CNF ℕ × List Bool) × List (List ℕ)) × ℕ =>
         if q.1.1.2.getD q.2 false then
           xorEquation q.1.2 (compileClauseBounded k (q.1.1.1.getD q.2 []))
@@ -1140,17 +1158,17 @@ private theorem computableTidilyInPolyTime_compileParityRowBounded (k : ℕ)
       (encPair (encPair (encPair (encList encC) encRow) encEq) encUnary) encEq := by
     have hcond := (listGetD (encA := encBool) (encL := encRow) false).comp
       (((fst (encPair (encPair (encList encC) encRow) encEq) encUnary).fst'.snd').prod (snd _ _))
-    have hcl := (computableTidilyInPolyTime_compileClauseBounded k).comp
+    have hcl := (computableInPolyTime_compileClauseBounded k).comp
       ((listGetD (encA := encC) (encL := encList encC) []).comp
         (((fst (encPair (encPair (encList encC) encRow) encEq) encUnary).fst'.fst').prod (snd _ _)))
-    exact hcond.ite' (computableTidilyInPolyTime_xorEquation.comp (((fst _ _).snd').prod hcl))
+    exact hcond.ite (computableInPolyTime_xorEquation.comp (((fst _ _).snd').prod hcl))
       ((fst _ _).snd')
   have hfold := foldlWith_of_bounded_growth (encA := encUnary) (encL := encList encUnary)
     (encB := encEq) (par := fun p => p) (list := fun p : CNF ℕ × List Bool => List.range p.1.length)
     (init := fun _ => [])
     (step := fun p acc e =>
       if p.2.getD e false then xorEquation acc (compileClauseBounded k (p.1.getD e [])) else acc)
-    id' (range.comp ((length encC (encL := encList encC)).comp (fst _ _))) (const []) hstep
+    id' (range.comp ((length_list encC).comp (fst _ _))) (const []) hstep
     (growth := fun p =>
       2 ^ k * (2 * (k * (2 * (encPair (encList encC) encRow p).length + 1)) + 1))
     ((PolyBounded.const (2 ^ k)).mul
@@ -1175,89 +1193,6 @@ private theorem computableTidilyInPolyTime_compileParityRowBounded (k : ℕ)
       · exact Nat.le_add_right _ _)
   exact hfold.of_enc_eq fun p => congrArg encEq (compileParityRowBounded_eq_foldl k p.1 p.2)
 
-private theorem computableTidilyInPolyTime_compileParitySystemBounded (k : ℕ)
-    {encRow : List Bool ↪ List Bool} [ListEncoding encBool encRow]
-    [SizedListEncoding encBool encRow] :
-    ComputableTidilyInPolyTime
-      (fun p : CNF ℕ × List (List Bool) => compileParitySystemBounded k p.1 p.2)
-      (encPair encCNF (encList encRow)) (encList encEq) :=
-  mapWithInput (snd encCNF (encList encRow))
-    ((computableTidilyInPolyTime_compileParityRowBounded k (encRow := encRow)).comp
-      (((fst _ _).fst').prod (snd _ _)))
-
-private theorem computableTidilyInPolyTime_equationVars :
-    ComputableTidilyInPolyTime equationVars encEq encM := by
-  have := computableTidilyInPolyTime_sortDedup; unfold equationVars; fun_prop
-
-private theorem computableTidilyInPolyTime_varDegree :
-    ComputableTidilyInPolyTime (fun p : ℕ × List (List (List ℕ)) => varDegree p.1 p.2)
-      (encPair encNat encSys) encUnary := by
-  have := computableTidilyInPolyTime_equationVars; unfold varDegree; fun_prop
-
-private theorem computableTidilyInPolyTime_findHeavyVar :
-    ComputableTidilyInPolyTime
-      (fun p : (ℕ × ℕ) × List (List (List ℕ)) => findHeavyVar p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encNat) encSys) (encOption encNat) := by
-  have hdeg := computableTidilyInPolyTime_varDegree
-  have hrange : ComputableTidilyInPolyTime
-      (fun p : (ℕ × ℕ) × List (List (List ℕ)) => (List.range p.1.1).map fun v => v)
-      (encPair (encPair encUnary encNat) encSys) (encList encNat) :=
-    (map unary_to_binary).comp (range.comp ((fst _ _).fst'))
-  have hpred : ComputableTidilyInPolyTime
-      (fun q : ((ℕ × ℕ) × List (List (List ℕ))) × ℕ => decide (q.1.1.2 < varDegree q.2 q.1.2))
-      (encPair (encPair (encPair encUnary encNat) encSys) encNat) encBool :=
-    binary_lt' ((fst _ _).fst'.snd')
-      (unary_to_binary.comp (hdeg.comp ((snd _ _).prod ((fst _ _).snd'))))
-  have hfind := findWithInput (test := fun x v => decide (x.1.2 < varDegree v x.2)) hrange hpred
-  refine hfind.of_enc_eq fun p => congrArg (encOption encNat) ?_
-  rw [List.map_id']; rfl
-
-private theorem computableTidilyInPolyTime_restrictEquation :
-    ComputableTidilyInPolyTime
-      (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encBool) encEq) encEq := by
-  have := computableTidilyInPolyTime_reduceEquation; unfold restrictEquation; fun_prop
-
-private theorem computableTidilyInPolyTime_restrictSystem :
-    ComputableTidilyInPolyTime
-      (fun p : (ℕ × Bool) × List (List (List ℕ)) => restrictSystem p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encBool) encSys) encSys :=
-  mapWithInput (snd (encPair encNat encBool) encSys)
-    (computableTidilyInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))
-
-/-! #### Public Plain `ComputableInPolyTime` Theorems (Zero `Tidy` Surface) -/
-
-/-- Mod-2 duplicate monomial cancellation `reduceEquation` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_reduceEquation :
-    ComputableInPolyTime reduceEquation encEq encEq :=
-  .of_tidy computableTidilyInPolyTime_reduceEquation
-
-/-- Mod-2 equation symmetric difference `xorEquation` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_xorEquation :
-    ComputableInPolyTime (fun p : List (List ℕ) × List (List ℕ) => xorEquation p.1 p.2)
-      (encPair encEq encEq) encEq :=
-  .of_tidy computableTidilyInPolyTime_xorEquation
-
-/-- For any fixed width bound `k : ℕ`, compiling a clause with width guard `k` into a canonical
-sparse `𝔽₂` polynomial is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_compileClauseBounded (k : ℕ) :
-    ComputableInPolyTime (compileClauseBounded k) encC encEq :=
-  .of_tidy (computableTidilyInPolyTime_compileClauseBounded k)
-
-/-- For any fixed width bound `k : ℕ`, compiling a parity-check row on `φ : CNF ℕ` is
-polynomial-time (for any sized Boolean list encoding `encRow`, such as `encBits` or
-`encList encBool`). -/
-@[fun_prop]
-theorem computableInPolyTime_compileParityRowBounded (k : ℕ)
-    {encRow : List Bool ↪ List Bool} [ListEncoding encBool encRow]
-    [SizedListEncoding encBool encRow] :
-    ComputableInPolyTime (fun p : CNF ℕ × List Bool => compileParityRowBounded k p.1 p.2)
-      (encPair encCNF encRow) encEq :=
-  .of_tidy (computableTidilyInPolyTime_compileParityRowBounded k)
-
 /-- For any fixed width bound `k : ℕ`, compiling a list of parity-check rows on `φ : CNF ℕ` into a
 sparse degree-`≤ k` `𝔽₂` polynomial system is polynomial-time. -/
 @[fun_prop]
@@ -1267,22 +1202,41 @@ theorem computableInPolyTime_compileParitySystemBounded (k : ℕ)
     ComputableInPolyTime
       (fun p : CNF ℕ × List (List Bool) => compileParitySystemBounded k p.1 p.2)
       (encPair encCNF (encList encRow)) encSys :=
-  .of_tidy (computableTidilyInPolyTime_compileParitySystemBounded k)
+  mapWithInput (snd encCNF (encList encRow))
+    ((computableInPolyTime_compileParityRowBounded k (encRow := encRow)).comp
+      (((fst _ _).fst').prod (snd _ _)))
+
+@[local fun_prop]
+private theorem computableInPolyTime_equationVars :
+    ComputableInPolyTime equationVars encEq encM := by
+  unfold equationVars; fun_prop
 
 /-- Computing `varDegree v sys` (returned in unary) is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_varDegree :
     ComputableInPolyTime (fun p : ℕ × List (List (List ℕ)) => varDegree p.1 p.2)
-      (encPair encNat encSys) encUnary :=
-  .of_tidy computableTidilyInPolyTime_varDegree
+      (encPair encNat encSys) encUnary := by
+  unfold varDegree; fun_prop
 
 /-- Finding the first heavy variable `v < n` with `varDegree v sys > b₀` (`n` in unary, `b₀` in
 binary, result in `encOption encNat`) is polynomial-time. -/
 theorem computableInPolyTime_findHeavyVar :
     ComputableInPolyTime
       (fun p : (ℕ × ℕ) × List (List (List ℕ)) => findHeavyVar p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encNat) encSys) (encOption encNat) :=
-  .of_tidy computableTidilyInPolyTime_findHeavyVar
+      (encPair (encPair encUnary encNat) encSys) (encOption encNat) := by
+  have hdeg := computableInPolyTime_varDegree
+  have hrange : ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × List (List (List ℕ)) => (List.range p.1.1).map fun v => v)
+      (encPair (encPair encUnary encNat) encSys) (encList encNat) :=
+    mapWithInput (range.comp ((fst _ _).fst')) (unary_to_binary.comp (snd _ _))
+  have hpred : ComputableInPolyTime
+      (fun q : ((ℕ × ℕ) × List (List (List ℕ))) × ℕ => decide (q.1.1.2 < varDegree q.2 q.1.2))
+      (encPair (encPair (encPair encUnary encNat) encSys) encNat) encBool :=
+    binary_lt' ((fst _ _).fst'.snd')
+      (unary_to_binary.comp (hdeg.comp ((snd _ _).prod ((fst _ _).snd'))))
+  have hfind := findWithInput (test := fun x v => decide (x.1.2 < varDegree v x.2)) hrange hpred
+  refine hfind.of_enc_eq fun p => congrArg (encOption encNat) ?_
+  rw [List.map_id']; rfl
 
 @[fun_prop]
 theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List Bool}
@@ -1297,8 +1251,8 @@ theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List
 theorem computableInPolyTime_restrictEquation :
     ComputableInPolyTime
       (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encBool) encEq) encEq :=
-  .of_tidy computableTidilyInPolyTime_restrictEquation
+      (encPair (encPair encNat encBool) encEq) encEq := by
+  unfold restrictEquation; fun_prop
 
 @[fun_prop]
 theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ List Bool}
@@ -1315,7 +1269,8 @@ theorem computableInPolyTime_restrictSystem :
     ComputableInPolyTime
       (fun p : (ℕ × Bool) × List (List (List ℕ)) => restrictSystem p.1.1 p.1.2 p.2)
       (encPair (encPair encNat encBool) encSys) encSys :=
-  .of_tidy computableTidilyInPolyTime_restrictSystem
+  mapWithInput (snd (encPair encNat encBool) encSys)
+    (computableInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))
 
 @[fun_prop]
 theorem computableInPolyTime_restrictSystem_apply {α : Type} {encIn : α ↪ List Bool}

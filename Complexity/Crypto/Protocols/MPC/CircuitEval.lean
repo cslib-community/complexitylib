@@ -177,19 +177,19 @@ private def sumReceivedMsgs {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [Add
 
 /-- Received record for party `i` in round `p = (s, r)` constructed from party `i`'s inbox
 `inbox_i : Fin m → Msg`. -/
-private def receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
+@[expose] def receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
     (p : Fin m × Fin m) (i : Fin m) (inbox_i : Fin m → Msg) :
     (msgRound (spec := spec) Msg p).Received i :=
   fun _ => inbox_i p.1
 
 /-- Received transcript for party `i` along `msgSchedule Msg L` constructed from `inbox_i`. -/
-private def receivedScheduleOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
+@[expose] def receivedScheduleOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
     (i : Fin m) (inbox_i : Fin m → Msg) :
     (L : List (Fin m × Fin m)) → (msgSchedule (spec := spec) Msg L).Received i
   | [] => ()
   | p :: L => (receivedMsgOfInbox p i inbox_i, receivedScheduleOfInbox i inbox_i L)
 
-private theorem deliverMessage_eq_receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
+theorem deliverMessage_eq_receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
     (toSend : (s : Fin m) → Fin m → Msg) (p : Fin m × Fin m) (i : Fin m) :
     Round.deliverMessage (spec := spec) (sender := p.1) (receiver := p.2) (toSend p.1 p.2) i =
       receivedMsgOfInbox p i (fun s => toSend s i) := by
@@ -239,13 +239,15 @@ p. 706, with the completing share placed at `⊤ : Fin m`). -/
     Fin m → BitString n :=
   ProbComp.completeShares m x_s (fun k j => c_s j k)
 
-@[simp] private theorem shareInputBits_apply (m n : ℕ) (x_s : BitString n)
+theorem shareInputBits_apply (m n : ℕ) (x_s : BitString n)
     (c_s : Fin n → Fin (m - 1) → Bool) (r : Fin m) (j : Fin n) :
     shareInputBits m n x_s c_s r j = ProbComp.completeShares m (x_s j) (c_s j) r := by
   dsimp [shareInputBits, ProbComp.completeShares]
   split_ifs
   · rfl
   · simp [Finset.sum_apply]
+
+attribute [local simp] shareInputBits_apply
 
 @[simp] private theorem sum_shareInputBits (m n : ℕ) [NeZero m] (x_s : BitString n)
     (c_s : Fin n → Fin (m - 1) → Bool) :
@@ -285,7 +287,7 @@ received shares via `BitString.blocksEquiv.symm` into its initial input-wire val
     (fun _ st => shareInputBits m n st.1 st.2)
 
 /-- Deterministic Step 1 received transcript when party `s` has input `x s` and coins `c s`. -/
-private def deliverInputShares {m n : ℕ} (x : (i : Fin m) → BitString n)
+@[expose] def deliverInputShares {m n : ℕ} (x : (i : Fin m) → BitString n)
     (c : (i : Fin m) → Fin n → Fin (m - 1) → Bool) (i : Fin m) :
     (inputShareSchedule m n).Received i :=
   receivedScheduleOfInbox i (fun s => shareInputBits m n (x s) (c s) i) (allPairs m)
@@ -297,13 +299,15 @@ private theorem evalWith_inputShareSteps {m n : ℕ} (W : MultiOracleWorld (shar
   simp only [inputShareSteps, allToAllStepsWith, Steps.evalWith_mapState, evalWith_msgStepsWith]
   rfl
 
-@[simp] private theorem outputAt_inputShareSteps {m n : ℕ}
+theorem outputAt_inputShareSteps {m n : ℕ}
     (x : (i : Fin m) → BitString n) (c : (i : Fin m) → Fin n → Fin (m - 1) → Bool) (i : Fin m) :
     (inputShareSteps m n).outputAt i (x i, c i) (deliverInputShares x c i) =
       BitString.blocksEquiv.symm (fun s => shareInputBits m n (x s) (c s) i) := by
   simp [inputShareSteps, allToAllStepsWith, deliverInputShares]
 
-private theorem sum_outputAt_inputShareSteps {m n : ℕ} [NeZero m]
+attribute [local simp] outputAt_inputShareSteps
+
+theorem sum_outputAt_inputShareSteps {m n : ℕ} [NeZero m]
     (x : (i : Fin m) → BitString n) (c : (i : Fin m) → Fin n → Fin (m - 1) → Bool)
     (idx : Fin (m * n)) :
     (∑ i : Fin m, (inputShareSteps m n).outputAt i (x i, c i) (deliverInputShares x c i) idx) =
@@ -321,15 +325,19 @@ private theorem sum_outputAt_inputShareSteps {m n : ℕ} [NeZero m]
     Wire inputCount (g + 1) → Bool :=
   Wire.lastCases lastBit w
 
-@[simp] private theorem extendWire_last {inputCount g : ℕ} (lastBit : Bool)
+theorem extendWire_last {inputCount g : ℕ} (lastBit : Bool)
     (w : Wire inputCount g → Bool) :
     extendWire lastBit w (.gate (Fin.last g)) = lastBit := by
   simp [extendWire, Wire.lastCases]
 
-@[simp] private theorem extendWire_castSucc {inputCount g : ℕ} (lastBit : Bool)
+attribute [local simp] extendWire_last
+
+theorem extendWire_castSucc {inputCount g : ℕ} (lastBit : Bool)
     (w : Wire inputCount g → Bool) (wire : Wire inputCount g) :
     extendWire lastBit w wire.castSucc = w wire := by
   cases wire <;> simp [extendWire, Wire.lastCases]
+
+attribute [local simp] extendWire_castSucc
 
 /-- Canonical additive share of a public Boolean constant `b : Bool`: party `0` holds `b` and all
 other parties hold `false`. -/
@@ -406,7 +414,7 @@ Step 2, p. 706, adapted to the De Morgan basis `Boolean.signature`). -/
 
 /-- Deliver a single `sharedMulSpec m` oracle answer tuple `ans` as a 1-round `Schedule.Received`
 transcript. -/
-@[reducible] private def deliverMulOracle {m : ℕ} (ans : Fin m → Bool) (i : Fin m) :
+@[expose, reducible] def deliverMulOracle {m : ℕ} (ans : Fin m → Bool) (i : Fin m) :
     Schedule.Received (spec := sharedMulSpec m)
       [.oracle () (Function.Embedding.refl (Fin m))] i :=
   (Round.deliverOracle (spec := sharedMulSpec m) (op := ())
@@ -429,7 +437,7 @@ private theorem deliverMulOracle_eq_deliverSelfShare {m : ℕ} (ans : Fin m → 
 
 /-- Exact received-transcript sampler for a single gate `line` when the true wire values of `p` are
 `p.trace Boolean.interpretation x_flat`. -/
-private noncomputable def lineDist (m : ℕ) {inputCount g : ℕ}
+@[expose] noncomputable def lineDist (m : ℕ) {inputCount g : ℕ}
     (x_flat : Fin inputCount → Bool) (p : Program Boolean.signature inputCount g)
     (line : Line Boolean.signature inputCount g) :
     ProbComp ((i : Fin m) → (lineSchedule m line).Received i) :=
@@ -508,7 +516,7 @@ private theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
 
 /-- Exact received-transcript sampler for `prog : Program Boolean.signature inputCount g` on
 flattened input `x_flat`. -/
-private noncomputable def progDist (m : ℕ) {inputCount g : ℕ} (x_flat : Fin inputCount → Bool)
+@[expose] noncomputable def progDist (m : ℕ) {inputCount g : ℕ} (x_flat : Fin inputCount → Bool)
     (prog : Program Boolean.signature inputCount g) :
     ProbComp ((i : Fin m) → (progSchedule m prog).Received i) :=
   match prog with
@@ -518,7 +526,7 @@ private noncomputable def progDist (m : ℕ) {inputCount g : ℕ} (x_flat : Fin 
     let r_line ← lineDist m x_flat p line
     return fun i => Schedule.Received.append (r_p i) (r_line i)
 
-private theorem evalWith_progSteps {m inputCount g : ℕ} [NeZero m]
+theorem evalWith_progSteps {m inputCount g : ℕ} [NeZero m]
     (x_flat : Fin inputCount → Bool) (prog : Program Boolean.signature inputCount g)
     (st : (i : Fin m) → Fin inputCount → Bool)
     (hst : ∀ idx : Fin inputCount, (∑ i : Fin m, st i idx) = x_flat idx) :
@@ -637,7 +645,7 @@ applying `finish` at `.done`. -/
         (st.1.1, st.1.2.1, st.1.2.2 + extractBitFor s r i st.2))
 
 /-- Sum of party `i`'s received bits along `gatherSchedule m r S`. -/
-private def sumGatherBits {m : ℕ} {spec : MultiOracleSpec} (r : Fin m) :
+@[expose] def sumGatherBits {m : ℕ} {spec : MultiOracleSpec} (r : Fin m) :
     (S : List (Fin m)) → (i : Fin m) →
       (gatherSchedule m (spec := spec) r S).Received i → Bool
   | [], _, _ => 0
@@ -659,7 +667,7 @@ private def sumGatherBits {m : ℕ} {spec : MultiOracleSpec} (r : Fin m) :
     simp [gatherStepsWith, Steps.outputAt, ih, sumGatherBits, add_assoc]
 
 /-- Deterministic received transcript along `gatherSchedule m r S` when sender `s` sends `ans s`. -/
-private def deliverGather {m : ℕ} {spec : MultiOracleSpec} (r : Fin m) (ans : Fin m → Bool) :
+@[expose] def deliverGather {m : ℕ} {spec : MultiOracleSpec} (r : Fin m) (ans : Fin m → Bool) :
     (S : List (Fin m)) → (i : Fin m) → (gatherSchedule m (spec := spec) r S).Received i
   | [], _ => ()
   | s :: S, i => (Round.deliverMessage (ans s) i, deliverGather r ans S i)
@@ -682,7 +690,7 @@ private theorem evalWith_gatherStepsWith {m : ℕ} {spec : MultiOracleSpec}
       if i = r then b else 0 := by
   by_cases h : i = r <;> simp [extractBitFor, h]
 
-@[simp] private theorem sumGatherBits_deliverGather {m : ℕ} {spec : MultiOracleSpec}
+theorem sumGatherBits_deliverGather {m : ℕ} {spec : MultiOracleSpec}
     (r : Fin m) (ans : Fin m → Bool) (i : Fin m) :
     sumGatherBits (spec := spec) r (List.finRange m) i
       (deliverGather r ans (List.finRange m) i) =
@@ -698,6 +706,8 @@ private theorem evalWith_gatherStepsWith {m : ℕ} {spec : MultiOracleSpec}
   by_cases h : i = r
   · simp [h]
   · simp [h]
+
+attribute [local simp] sumGatherBits_deliverGather
 
 private theorem deliverGather_eq_of_ne {m : ℕ} {spec : MultiOracleSpec} {r i : Fin m}
     (hne : i ≠ r) (ans₁ ans₂ : Fin m → Bool) (S : List (Fin m)) :
@@ -737,7 +747,7 @@ reference arbitrary wires (including input wires, negated wires, or repeated wir
         (st.1, st.2 i rfl, 0))
 
 /-- Received transcript for `coordSchedule m r` when the refresh oracle returns `ans`. -/
-private def deliverCoord {m : ℕ} (r : Fin m) (ans : Fin m → Bool) (i : Fin m) :
+@[expose] def deliverCoord {m : ℕ} (r : Fin m) (ans : Fin m → Bool) (i : Fin m) :
     (coordSchedule m r).Received i :=
   (Round.deliverOracle (spec := sharedMulSpec m) (op := ())
     (Function.Embedding.refl (Fin m)) ans i,
@@ -760,12 +770,14 @@ private theorem evalWith_singleCoordSteps {m k : ℕ} [NeZero m] (coord : Fin m 
   simp [singleCoordSteps, sharedMulWorld, sharedMulFunctionality, hst, hmul_one,
     evalWith_gatherStepsWith, deliverCoord_eq, Round.deliverOracle, PMF.map, Function.comp_def]
 
-@[simp] private theorem outputAt_singleCoordSteps {m k : ℕ} [NeZero m] (coord : Fin m × Fin k)
+theorem outputAt_singleCoordSteps {m k : ℕ} [NeZero m] (coord : Fin m × Fin k)
     (ans : Fin m → Bool)
     (st_i : (Fin m → BitString k) × BitString k) (i : Fin m) :
     (singleCoordSteps m k coord).outputAt i st_i (deliverCoord coord.1 ans i) =
       (st_i.1, st_i.2 + if i = coord.1 then Pi.single coord.2 (∑ s : Fin m, ans s) else 0) := by
   by_cases h : i = coord.1 <;> simp [singleCoordSteps, Steps.outputAt, deliverCoord, h]
+
+attribute [local simp] outputAt_singleCoordSteps
 
 /-- Schedule for refreshing and reconstructing a list `L : List (Fin m × Fin k)` of output
 coordinates. -/
@@ -784,7 +796,7 @@ coordinates. -/
   | coord :: L => (singleCoordSteps m k coord).append (outCoordsSteps m k L)
 
 /-- Exact received-transcript sampler for `outCoordsSteps m k L` on output table `y`. -/
-private noncomputable def outCoordsDist (m k : ℕ) (y : Fin m → BitString k) :
+@[expose] noncomputable def outCoordsDist (m k : ℕ) (y : Fin m → BitString k) :
     (L : List (Fin m × Fin k)) →
       ProbComp ((i : Fin m) → (outCoordsSchedule m L).Received i)
   | [] => pure (fun _ => ())
@@ -856,7 +868,7 @@ extracts each party's shares of the `m * k` designated output wires `C.outputs` 
     (fun r j => w (C.outputs (finProdFinEquiv (r, j))), 0)
 
 /-- Exact received-transcript sampler for `outputSteps m n k C` when the circuit output is `y`. -/
-private noncomputable def outputDist (m k : ℕ) (y : Fin m → BitString k) :
+@[expose] noncomputable def outputDist (m k : ℕ) (y : Fin m → BitString k) :
     ProbComp ((i : Fin m) → (outputSchedule m k).Received i) :=
   outCoordsDist m k y (outCoords m k)
 
@@ -886,7 +898,7 @@ private theorem evalWith_outputSteps {m n k : ℕ} [NeZero m]
 
 /-- Extend a partial tuple `vI : (i : I) → α` on a coalition `I : Finset (Fin m)` to all `m`
 parties by padding parties outside `I` with `0`. -/
-private def extendByZero {m : ℕ} {α : Type} [Zero α] (I : Finset (Fin m)) (vI : (i : I) → α)
+@[expose] def extendByZero {m : ℕ} {α : Type} [Zero α] (I : Finset (Fin m)) (vI : (i : I) → α)
     (j : Fin m) : α :=
   if hj : j ∈ I then vI ⟨j, hj⟩ else 0
 
@@ -1076,10 +1088,12 @@ private abbrev GMWCircuitView (m n k : ℕ)
 /-- Joint view sampler for `gmwCircuitProtocol m n k C` given full input tuple `x` and output tuple
 `y`: samples Step 1 coins `c`, Step 2 gate transcripts `r_prog`, and Step 3 output transcripts
 `r_out` independently. -/
-private noncomputable def gmwCircuitRealViews (m n k : ℕ)
+@[expose] noncomputable def gmwCircuitRealViews (m n k : ℕ)
     (C : Cslib.Circuits.Circuit Boolean.signature (m * n) (m * k))
     (x : (i : Fin m) → BitString n) (y : (i : Fin m) → BitString k) :
-    ProbComp ((i : Fin m) → GMWCircuitView m n k C i) := do
+    ProbComp ((i : Fin m) →
+      PartyView (fun _ => BitString n) (fun _ => Fin n → Fin (m - 1) → Bool)
+        (gmwCircuitSchedule m n k C) i) := do
   let c ← OracleComp.pi (fun _ : Fin m => ProbComp.uniform (Fin n → Fin (m - 1) → Bool))
   let r_prog ← progDist m (BitString.blocksEquiv.symm x) C.program
   let r_out ← outputDist m k y
@@ -1171,7 +1185,7 @@ theorem snd_eq_circuitFunctionality_of_mem_support_evalWith {m n k : ℕ} [NeZer
 Proposition 7.3.10, pp. 647–648): extends the coalition's inputs `xI` and outputs `yI` by padding
 honest parties outside `I` with `0`, runs `gmwCircuitRealViews` on the extended tuples, and
 restricts the resulting party views to `I`. -/
-noncomputable def gmwCircuitSim (m n k : ℕ)
+@[expose] noncomputable def gmwCircuitSim (m n k : ℕ)
     (C : Cslib.Circuits.Circuit Boolean.signature (m * n) (m * k))
     (I : Finset (Fin m)) :
     CoalitionSimulator (gmwCircuitSchedule m n k C)

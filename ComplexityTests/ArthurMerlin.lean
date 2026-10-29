@@ -44,50 +44,46 @@ private theorem head_mem_MA_direct : {w : List Bool | w.headD false = true} ∈ 
     rw [Finset.filter_true_of_mem fun r _ => by simpa using hw]
     exact hcard w
 
-example : {w : List Bool | w.headD false = true} ∈ AM encBits := MA_subset_AM head_mem_MA_direct
-
-example : {w : List Bool | w.headD false = true} ∈ SBP encBits := MA_subset_SBP head_mem_MA
-
-example : {w : List Bool | w.headD false = true} ∈ SigmaP 2 encBits ∩ PiP 2 encBits :=
-  MA_subset_SigmaP_two_inter_PiP_two head_mem_MA
-
-example : {w : List Bool | w.headD false = true}ᶜ ∈ MA encBits :=
-  BPP_subset_MA (compl_mem_BPP (P_subset_BPP head_mem_P))
-
-example : SAT ∈ MA encCNF := NP_subset_MA SAT.mem_NP
-
-example : SAT ∈ AM encCNF := NP_subset_AM SAT.mem_NP
-
-example : SAT ∈ PiP 2 encCNF := AM_subset_PiP_two (NP_subset_AM SAT.mem_NP)
-
 private theorem tail_reduces_head : PolyTimeReducible encBits encBits
     {w : List Bool | w.tail.headD false = true} {w | w.headD false = true} :=
   ⟨List.tail, by fun_prop, fun _ => Iff.rfl⟩
 
-example : {w : List Bool | w.tail.headD false = true} ∈ MA encBits :=
-  tail_reduces_head.mem_MA head_mem_MA_direct
-
-example : {w : List Bool | w.tail.headD false = true} ∈ AM encBits :=
-  tail_reduces_head.mem_AM (MA_subset_AM head_mem_MA_direct)
+/-- `MA`, `AM`, `SBP`, `Σ₂`, and `Π₂` containments and reduction pullbacks on bit-string, `SAT`,
+and `GraphNonIsomorphism` witnesses. -/
+example :
+    ({w : List Bool | w.headD false = true} ∈ AM encBits ∧
+      {w : List Bool | w.headD false = true} ∈ SBP encBits ∧
+      {w : List Bool | w.headD false = true} ∈ SigmaP 2 encBits ∩ PiP 2 encBits ∧
+      {w : List Bool | w.headD false = true}ᶜ ∈ MA encBits) ∧
+    (SAT ∈ MA encCNF ∧ SAT ∈ AM encCNF ∧ SAT ∈ PiP 2 encCNF) ∧
+    ({w : List Bool | w.tail.headD false = true} ∈ MA encBits ∧
+      {w : List Bool | w.tail.headD false = true} ∈ AM encBits) ∧
+    ({w : List Bool | w.headD false = true} ∈ AM encBits ∧
+      GraphNonIsomorphism ∈ PiP 2 (encPair encGraph encGraph)) :=
+  ⟨⟨MA_subset_AM head_mem_MA_direct,
+    MA_subset_SBP head_mem_MA,
+    MA_subset_SigmaP_two_inter_PiP_two head_mem_MA,
+    BPP_subset_MA (compl_mem_BPP (P_subset_BPP head_mem_P))⟩,
+   ⟨NP_subset_MA SAT.mem_NP,
+    NP_subset_AM SAT.mem_NP,
+    AM_subset_PiP_two (NP_subset_AM SAT.mem_NP)⟩,
+   ⟨tail_reduces_head.mem_MA head_mem_MA_direct,
+    tail_reduces_head.mem_AM (MA_subset_AM head_mem_MA_direct)⟩,
+   ⟨SBP_subset_AM (MA_subset_SBP head_mem_MA),
+    AM_subset_PiP_two GraphNonIsomorphism.mem_AM⟩⟩
 
 /-- The error-exponent conditions are satisfiable, for every error exponent. -/
-example : ∃ q : Polynomial ℕ, ∀ e : Polynomial ℕ, ∃ (p : Polynomial ℕ)
-    (V : List Bool × List Bool → Bool),
-    ComputableInPolyTime V (encPair encBits encBits) encBool ∧
-      IsMerlinArthurVerifierWithErrorExponent encBits e q p V
-        {w : List Bool | w.headD false = true} :=
-  mem_MA_iff_exists_forall_errorExponent.mp head_mem_MA_direct
-
-example (e : Polynomial ℕ) : ∃ (p q : Polynomial ℕ) (V : _ × List Bool → Bool),
-    ComputableInPolyTime V (encPair encCNF encBits) encBool ∧
-      IsArthurMerlinVerifierWithErrorExponent encCNF e p q V SAT :=
-  mem_AM_iff_forall_errorExponent.mp (NP_subset_AM SAT.mem_NP) e
-
-example : {w : List Bool | w.headD false = true} ∈ AM encBits :=
-  SBP_subset_AM (MA_subset_SBP head_mem_MA)
-
-example : GraphNonIsomorphism ∈ PiP 2 (encPair encGraph encGraph) :=
-  AM_subset_PiP_two GraphNonIsomorphism.mem_AM
+example (e : Polynomial ℕ) :
+    (∃ q : Polynomial ℕ, ∀ e : Polynomial ℕ, ∃ (p : Polynomial ℕ)
+      (V : List Bool × List Bool → Bool),
+      ComputableInPolyTime V (encPair encBits encBits) encBool ∧
+        IsMerlinArthurVerifierWithErrorExponent encBits e q p V
+          {w : List Bool | w.headD false = true}) ∧
+    (∃ (p q : Polynomial ℕ) (V : _ × List Bool → Bool),
+      ComputableInPolyTime V (encPair encCNF encBits) encBool ∧
+        IsArthurMerlinVerifierWithErrorExponent encCNF e p q V SAT) :=
+  ⟨mem_MA_iff_exists_forall_errorExponent.mp head_mem_MA_direct,
+   mem_AM_iff_forall_errorExponent.mp (NP_subset_AM SAT.mem_NP) e⟩
 
 /-- Projecting an `AM` problem on pairs: the words whose first bit, followed by one more bit, is
 `true`. -/

@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Erik Demaine. All rights reserved.
+Copyright (c) 2026 Erik Demaine, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Erik Demaine
+Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 module
@@ -39,92 +39,62 @@ open Orthogonal
 
 -- Each closed certificate checks all consecutive-segment pairs in a table of at most
 -- sixty-six incidences. Separate declarations permit independent asynchronous elaboration.
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile0_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (0 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile1_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (1 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile2_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (2 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile3_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (3 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile4_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (4 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile5_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (5 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile6_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (6 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile7_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (7 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile8_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (8 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile9_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (9 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile10_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (10 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile11_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (11 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile12_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (12 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile13_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (13 : ClauseProfile)) := by
   decide +kernel
 
-set_option maxHeartbeats 8000000 in
--- Exhaustive kernel checking of a fixed table with at most sixty-six incidence routes.
 private theorem profile14_prefix_check :
     LocalGeometry.PrefixCheck (profilePrefixGeometry (14 : ClauseProfile)) := by
   decide +kernel

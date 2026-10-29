@@ -65,14 +65,19 @@ example : ((nodes true 1 \ (nodes true 0 ∪ nodes true 0)).filter (·.card = 2)
     rootReduced rootNontautological (m := 0) (by decide) (by decide)]
   decide
 
--- The property is clausewise: preservation does not require a satisfying assignment.
-example : ∀ C ∈ nodes false 1, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C := by
-  exact nontautological_counting_node θpos 1 (nodes false) (fun _ => 4)
-    (fun _ => heart) (fun _ => false) (steps false) (heavies false)
-    rootNontautological (t := 1) le_rfl
-
-example : ∀ C ∈ nodes true 1, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C := by
-  exact nontautological_countingChild θpos rootNontautological rootHeavy true
+-- Combining `intro_subset_countingChild` with `nontautological_counting_node` and
+-- `nontautological_countingChild` shows that every heart or petal introduced at `root` both
+-- survives in `nodes b 1` and is nontautological.
+example (b : Bool) (C : Finset (Literal (Fin 10))) (hC : C ∈ intro root 4 heart b) :
+    C ∈ nodes b 1 ∧ ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C := by
+  have hmem : C ∈ nodes b 1 :=
+    intro_subset_countingChild θpos rootReduced rootNontautological rootHeavy b hC
+  refine ⟨hmem, ?_⟩
+  cases b
+  · exact nontautological_counting_node θpos 1 (nodes false) (fun _ => 4)
+      (fun _ => heart) (fun _ => false) (steps false) (heavies false)
+      rootNontautological (t := 1) le_rfl C hmem
+  · exact nontautological_countingChild θpos rootNontautological rootHeavy true C hmem
 
 -- Existing negated units belong to the raw payload but are not new insertions. Extending the
 -- event equality from widths at least two to width one would fail in this same legal example.

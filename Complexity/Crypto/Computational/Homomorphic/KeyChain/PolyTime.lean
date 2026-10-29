@@ -14,6 +14,7 @@ import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Repeat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
 /-!
 # Uniform polynomial-time key-chain generation
@@ -56,9 +57,7 @@ theorem isPPTOn_generateKeys
     (hdepth : ComputableInPolyTime depth input encUnary) :
     IsPPTOn input (encList (encPair encBits encBits))
       (fun a => E.generateKeys (n a) (depth a)) := by
-  have hn := hn.tidy
-  have hdepth := hdepth.tidy
-  exact (hkeyGen.preprocess (.of_tidy hn)).replicate (by fun_prop)
+  exact (hkeyGen.preprocess hn).replicate (by fun_prop)
 
 include hencrypt in
 /-- Encrypt every adjacent secret-key link, including all copied public keys and key bits. -/
@@ -68,15 +67,30 @@ theorem isPPTOn_encryptKeyLinks
     (hkeys : ComputableInPolyTime keys input (encList (encPair encBits encBits))) :
     IsPPTOn input (encList (encList encBits))
       (fun a => E.encryptKeyLinks (n a) (keys a)) := by
-  have hn := hn.tidy
-  have hkeys := hkeys.tidy
-  apply IsPPTOn.mapMWith
-    (element := encPair (encPair encBits encBits) (encPair encBits encBits))
-  · apply isPPTOn_encryptBits hencrypt <;> fun_prop
-  · exact (ComputableTidilyInPolyTime.zip (encPair encBits encBits)
-      (encPair encBits encBits)).comp
-        (hkeys.prod ((ComputableTidilyInPolyTime.tail
-          (encA := encPair encBits encBits)).comp hkeys))
+  have hlist : ComputableInPolyTime
+      (fun a => (keys a).zip (keys a).tail)
+      input (encList (encPair (encPair encBits encBits) (encPair encBits encBits))) := by
+    have hzip : ComputableInPolyTime
+        (fun p : List (List Bool × List Bool) × List (List Bool × List Bool) => p.1.zip p.2)
+        (encPair (encList (encPair encBits encBits)) (encList (encPair encBits encBits)))
+        (encList (encPair (encPair encBits encBits) (encPair encBits encBits))) := by fun_prop
+    have htail : ComputableInPolyTime
+        (List.tail (α := List Bool × List Bool))
+        (encList (encPair encBits encBits)) (encList (encPair encBits encBits)) := by fun_prop
+    exact hzip.comp (hkeys.prod (htail.comp hkeys))
+  have hpairs : ComputableInPolyTime
+      (fun a => ((keys a).zip (keys a).tail).map fun b => (a, b))
+      input (encList (encPair input
+        (encPair (encPair encBits encBits) (encPair encBits encBits)))) :=
+    ComputableInPolyTime.mapWithInput hlist .id'
+  have hstep : IsPPTOn
+      (encPair input (encPair (encPair encBits encBits) (encPair encBits encBits)))
+      (encList encBits)
+      (fun p => E.encryptBits (n p.1) p.2.2.1 p.2.1.2) := by
+    apply isPPTOn_encryptBits hencrypt <;> fun_prop
+  apply (hstep.mapM.preprocess hpairs).congr
+  intro a
+  simp only [encryptKeyLinks, List.mapM_map, Function.comp_def]
 
 include hkeyGen hencrypt in
 /-- Generate the keys and their encrypted links with one uniform polynomial clock in the full
@@ -88,13 +102,14 @@ theorem isPPTOn_generateKeyChain
     IsPPTOn input
       (encPair (encList (encPair encBits encBits)) (encList (encList encBits)))
       (fun a => E.generateKeyChain (n a) (depth a)) := by
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hn
-  simp only [Turing.MultiTapeTM.computableInPolyTime_iff_computableTidilyInPolyTime] at hdepth
-  apply (isPPTOn_generateKeys hkeyGen (.of_tidy hn) (.of_tidy hdepth)).bind_with
-  simpa only [bind_pure_comp] using (isPPTOn_encryptKeyLinks hencrypt
-    (.of_tidy (show ComputableTidilyInPolyTime
+  apply (isPPTOn_generateKeys hkeyGen hn hdepth).bind_with
+  have hlinks := isPPTOn_encryptKeyLinks hencrypt
+    (show ComputableInPolyTime
       (fun p : α × List (List Bool × List Bool) => n p.1)
-      (encPair input (encList (encPair encBits encBits))) encUnary by fun_prop))
-    (.of_tidy (ComputableTidilyInPolyTime.snd _ _))).pair (ComputableTidilyInPolyTime.snd _ _)
+      (encPair input (encList (encPair encBits encBits))) encUnary by fun_prop)
+    (ComputableInPolyTime.snd _ _)
+  simpa only [bind_pure_comp] using hlinks.map_with
+    (((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.fst _ _)).prod
+      (ComputableInPolyTime.snd _ _))
 
 end Cslib.Crypto.Homomorphic.Scheme

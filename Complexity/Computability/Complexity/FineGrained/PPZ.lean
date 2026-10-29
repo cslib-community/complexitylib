@@ -49,6 +49,8 @@ with probability at least `2^{-(1 - 1/k) n}` (`round_success_of_satisfiable`).
 * `Cslib.Complexity.PPZ.runWith`, `Cslib.Complexity.PPZ.roundWith`: a run in a fixed order and a
   round in a uniformly random order, with values proposed by an oracle.
 * `Cslib.Complexity.PPZ.run`: the first `i` steps of a round in a fixed order.
+* `Cslib.Complexity.PPZ.prefixSet`, `Cslib.Complexity.PPZ.EqOnPrefix`: the variables processed in
+  the first `i` steps of an order, and agreement of two orders on their first `i` positions.
 * `Cslib.Complexity.PPZ.round`: one round of PPZ, in a uniformly random order.
 
 ## Main results
@@ -217,6 +219,120 @@ theorem restrict_prefixSet_self (σ : Fin n → Bool) (π : Equiv.Perm (Fin n)) 
   funext y
   simp [restrict, mem_prefixSet]
 
+/-- Restricting `σ` to one more variable `x` sets `x` to `σ x`. -/
+theorem restrict_insert (σ : Fin n → Bool) (D : Finset (Fin n)) (x : Fin n) :
+    restrict σ (insert x D) = Function.update (restrict σ D) x (some (σ x)) := by
+  funext y
+  by_cases hy : y = x
+  · subst hy
+    simp [restrict]
+  · simp [restrict, hy]
+
+/-! ### Prefixes of an order -/
+
+/-- The variables processed in the first `i` steps are those at positions below `i`. -/
+theorem mem_prefixSet_iff_exists {π : Equiv.Perm (Fin n)} {i : ℕ} {x : Fin n} :
+    x ∈ prefixSet π i ↔ ∃ j : Fin n, (j : ℕ) < i ∧ π j = x := by
+  rw [mem_prefixSet]
+  constructor
+  · intro h
+    exact ⟨π.symm x, h, π.apply_symm_apply x⟩
+  · rintro ⟨j, hj, rfl⟩
+    rwa [Equiv.symm_apply_apply]
+
+/-- No variable is processed in zero steps. -/
+theorem prefixSet_zero (π : Equiv.Perm (Fin n)) : prefixSet π 0 = ∅ := by
+  ext x
+  simp [mem_prefixSet]
+
+/-- All variables are processed in `n` steps. -/
+theorem prefixSet_self (π : Equiv.Perm (Fin n)) : prefixSet π n = univ := by
+  ext x
+  simp [mem_prefixSet]
+
+/-- The variable at position `i` is not processed in the first `i` steps. -/
+theorem apply_notMem_prefixSet_self (π : Equiv.Perm (Fin n)) {i : ℕ} (hi : i < n) :
+    π ⟨i, hi⟩ ∉ prefixSet π i := by
+  rw [mem_prefixSet, Equiv.symm_apply_apply]
+  exact lt_irrefl i
+
+/-- Step `i` adds the variable at position `i`. -/
+theorem prefixSet_succ (π : Equiv.Perm (Fin n)) {i : ℕ} (hi : i < n) :
+    prefixSet π (i + 1) = insert (π ⟨i, hi⟩) (prefixSet π i) := by
+  ext x
+  rw [mem_insert, mem_prefixSet, mem_prefixSet, ← Equiv.symm_apply_eq, Fin.ext_iff]
+  have : ((⟨i, hi⟩ : Fin n) : ℕ) = i := rfl
+  omega
+
+/-- The first `i ≤ n` steps process `i` variables. -/
+theorem card_prefixSet (π : Equiv.Perm (Fin n)) : ∀ {i : ℕ}, i ≤ n → (prefixSet π i).card = i
+  | 0, _ => by rw [prefixSet_zero, card_empty]
+  | i + 1, hi => by
+    rw [prefixSet_succ π (by omega : i < n),
+      card_insert_of_notMem (apply_notMem_prefixSet_self π _), card_prefixSet π (by omega)]
+
+/-- The order `π` agrees with `π₀` on the first `i` positions. -/
+def EqOnPrefix (π π₀ : Equiv.Perm (Fin n)) (i : ℕ) : Prop :=
+  ∀ j : Fin n, (j : ℕ) < i → π j = π₀ j
+
+/-- Agreement on a prefix is decidable. -/
+instance (π π₀ : Equiv.Perm (Fin n)) (i : ℕ) : Decidable (EqOnPrefix π π₀ i) :=
+  inferInstanceAs (Decidable (∀ j : Fin n, (j : ℕ) < i → π j = π₀ j))
+
+/-- Orders that agree on the first `i` positions process the same variables in the first `i`
+steps. -/
+theorem EqOnPrefix.prefixSet_eq {π π₀ : Equiv.Perm (Fin n)} {i : ℕ} (h : EqOnPrefix π π₀ i) :
+    prefixSet π i = prefixSet π₀ i := by
+  ext x
+  simp only [mem_prefixSet_iff_exists]
+  constructor
+  · rintro ⟨j, hj, rfl⟩
+    exact ⟨j, hj, (h j hj).symm⟩
+  · rintro ⟨j, hj, rfl⟩
+    exact ⟨j, hj, h j hj⟩
+
+/-- An order that agrees with `π₀` on the first `i` positions has at position `i` a variable that
+`π₀` does not process in its first `i` steps. -/
+theorem EqOnPrefix.apply_notMem_prefixSet {π π₀ : Equiv.Perm (Fin n)} {i : ℕ}
+    (h : EqOnPrefix π π₀ i) (hi : i < n) : π ⟨i, hi⟩ ∉ prefixSet π₀ i := by
+  rw [← h.prefixSet_eq]
+  exact apply_notMem_prefixSet_self π hi
+
+/-- The orders that agree with `π₀` on the first `i` positions and have `y` at position `i` are
+those that agree on the first `i + 1` positions with `π₀` followed by the swap of `y` with the
+variable of `π₀` at position `i`. -/
+theorem eqOnPrefix_swap_iff {π π₀ : Equiv.Perm (Fin n)} {i : ℕ} (hi : i < n) {y : Fin n}
+    (hy : y ∉ prefixSet π₀ i) :
+    EqOnPrefix π (Equiv.swap (π₀ ⟨i, hi⟩) y * π₀) (i + 1) ↔
+      EqOnPrefix π π₀ i ∧ π ⟨i, hi⟩ = y := by
+  have hlt : ∀ j : Fin n, (j : ℕ) < i → (Equiv.swap (π₀ ⟨i, hi⟩) y * π₀) j = π₀ j := by
+    intro j hj
+    rw [Equiv.Perm.mul_apply, Equiv.swap_apply_of_ne_of_ne]
+    · exact fun h => Nat.ne_of_lt hj (congrArg Fin.val (π₀.injective h))
+    · exact fun h => hy (by rw [← h]; exact mem_prefixSet_iff_exists.2 ⟨j, hj, rfl⟩)
+  have hi' : (Equiv.swap (π₀ ⟨i, hi⟩) y * π₀) ⟨i, hi⟩ = y := by
+    rw [Equiv.Perm.mul_apply, Equiv.swap_apply_left]
+  constructor
+  · intro h
+    exact ⟨fun j hj => (h j (by omega)).trans (hlt j hj),
+      (h ⟨i, hi⟩ (Nat.lt_succ_self i)).trans hi'⟩
+  · rintro ⟨h, hπ⟩ j hj
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hj with hj | hj
+    · rw [h j hj, hlt j hj]
+    · obtain rfl : j = ⟨i, hi⟩ := Fin.ext hj
+      rw [hπ, hi']
+
+/-- The first `i + 1` steps of `π₀` followed by the swap of `y` with the variable at position `i`
+process the first `i` variables of `π₀` and `y`. -/
+theorem prefixSet_swap {π₀ : Equiv.Perm (Fin n)} {i : ℕ} (hi : i < n) {y : Fin n}
+    (hy : y ∉ prefixSet π₀ i) :
+    prefixSet (Equiv.swap (π₀ ⟨i, hi⟩) y * π₀) (i + 1) = insert y (prefixSet π₀ i) := by
+  obtain ⟨h, hπ⟩ := (eqOnPrefix_swap_iff (π := Equiv.swap (π₀ ⟨i, hi⟩) y * π₀) hi hy).1
+    fun _ _ => rfl
+  rw [prefixSet_succ _ hi, hπ, h.prefixSet_eq]
+
+/-! ### Runs in a fixed order -/
+
 /-- A run only assigns the variables it has processed. -/
 theorem eq_none_of_mem_support_runWith {O : (Fin n → Option Bool) → Fin n → Option Bool}
     {π : Equiv.Perm (Fin n)} {i : ℕ} {τ : Fin n → Option Bool} (hτ : τ ∈ (runWith O π i).support)
@@ -258,7 +374,8 @@ def unforcedCountWith (O : (Fin n → Option Bool) → Fin n → Option Bool) (�
 def unforcedCount (φ : CNF (Fin n)) (σ : Fin n → Bool) (π : Equiv.Perm (Fin n)) (i : ℕ) : ℕ :=
   unforcedCountWith (forced φ) σ π i
 
-private theorem unforcedCountWith_succ (O : (Fin n → Option Bool) → Fin n → Option Bool)
+/-- Step `i` adds one to the count if the oracle has no value for the variable at position `i`. -/
+theorem unforcedCountWith_succ (O : (Fin n → Option Bool) → Fin n → Option Bool)
     (σ : Fin n → Bool) (π : Equiv.Perm (Fin n)) {i : ℕ} (h : i < n) :
     unforcedCountWith O σ π (i + 1) = unforcedCountWith O σ π i +
       if O (restrict σ (prefixSet π i)) (π ⟨i, h⟩) = none then 1 else 0 := by
@@ -309,30 +426,18 @@ theorem runWith_apply_restrict {O : (Fin n → Option Bool) → Fin n → Option
   | zero =>
     have : restrict σ (prefixSet π 0) = fun _ => none := by
       funext y
-      simp [restrict, prefixSet]
+      simp [restrict, prefixSet_zero]
     simp [runWith_zero, this, unforcedCountWith]
   | succ i ih =>
     have h : i < n := by omega
     set x := π ⟨i, h⟩
     set T := restrict σ (prefixSet π i)
     set T' := restrict σ (prefixSet π (i + 1))
-    have hxi : x ∉ prefixSet π i := by simp [mem_prefixSet, x]
-    have hxi' : x ∈ prefixSet π (i + 1) := by simp [mem_prefixSet, x]
+    have hxi : x ∉ prefixSet π i := apply_notMem_prefixSet_self π h
     have hT'x : T' = Function.update T x (some (σ x)) := by
-      funext y
-      by_cases hy : y = x
-      · subst hy
-        simp [T', restrict, hxi']
-      · rw [Function.update_of_ne hy]
-        simp only [T', T, restrict, mem_prefixSet]
-        have : (π.symm y : ℕ) ≠ i := by
-          intro e
-          apply hy
-          rw [show y = π (π.symm y) by simp]
-          congr 1
-          exact Fin.ext e
-        congr 1
-        exact propext ⟨fun h1 => by omega, fun h1 => by omega⟩
+      change restrict σ (prefixSet π (i + 1)) =
+        Function.update (restrict σ (prefixSet π i)) (π ⟨i, h⟩) (some (σ (π ⟨i, h⟩)))
+      rw [prefixSet_succ π h, restrict_insert]
     rw [runWith_succ O π h, PMF.bind_apply, tsum_eq_single T]
     · rw [PMF.map_apply, tsum_eq_single (σ x)]
       · rw [ite_eq_left hT'x, ih (by omega), unforcedCountWith_succ O σ π h, pow_add]

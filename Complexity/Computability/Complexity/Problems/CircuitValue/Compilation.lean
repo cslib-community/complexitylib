@@ -9,7 +9,11 @@ module
 
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Completeness
 public import Complexity.Computability.Circuit.Boolean.CodeSubstitution
-import Complexity.Tactic.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Uniform circuit compilation for polynomial-time function families
@@ -63,46 +67,46 @@ private theorem length_bitPrefix {α : Type} (enc : α ↪ List Bool) (m : α �
   omega
 
 private theorem polytime_bitPrefix {α : Type} {enc : α ↪ List Bool} {m : α → ℕ}
-    (hm : ComputableTidilyInPolyTime m enc encUnary) :
-    ComputableTidilyInPolyTime (fun p : α × ℕ => bitPrefix enc m p.1 p.2)
+    (hm : ComputableInPolyTime m enc encUnary) :
+    ComputableInPolyTime (fun p : α × ℕ => bitPrefix enc m p.1 p.2)
       (encPair enc encUnary) encBits := by
-  have hframe : ComputableTidilyInPolyTime frame encBits encBits :=
-    .of_linear (.of_frame fun _ => rfl)
+  have hframe : ComputableInPolyTime Turing.MultiTapeTM.frame encBits encBits :=
+    ComputableInPolyTime.frame
   unfold bitPrefix selector
-  polytime
+  fun_prop
 
 private theorem polytime_outputBit {α : Type} {enc : α ↪ List Bool}
     {F : α × List Bool → List Bool}
-    (hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits) :
-    ComputableTidilyInPolyTime
+    (hF : ComputableInPolyTime F (encPair enc encBits) encBits) :
+    ComputableInPolyTime
       (fun p : α × (List Bool × List Bool) => (F (p.1, p.2.2)).getD (p.2.1.count true) false)
       (encPair enc (encPair encBits encBits)) encBool := by
-  polytime
+  fun_prop
 
 private theorem exists_uniformOutputBits {α : Type} {enc : α ↪ List Bool}
     {n m : α → ℕ} {F : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hm : ComputableTidilyInPolyTime m enc encUnary)
-    (hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits) :
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hm : ComputableInPolyTime m enc encUnary)
+    (hF : ComputableInPolyTime F (encPair enc encBits) encBits) :
     ∃ cs : (a : α) → ℕ → Circuit signature (n a) 1,
-      ComputableTidilyInPolyTime (fun p : α × ℕ => (cs p.1 p.2).code)
+      ComputableInPolyTime (fun p : α × ℕ => (cs p.1 p.2).code)
         (encPair enc encUnary) encCode ∧
       (∀ a j, j ≤ m a → (cs a j).size = (cs a 0).size) ∧
       ∀ a j (x : Fin (n a) → Bool),
         (cs a j).eval interpretation x 0 = (F (a, List.ofFn x)).getD j false := by
-  obtain ⟨circuits, hcode, hcorrect⟩ := exists_uniformCircuits (.of_tidy (polytime_outputBit hF))
+  obtain ⟨circuits, hcode, hcorrect⟩ := exists_uniformCircuits (polytime_outputBit hF)
   let cs (a : α) (j : ℕ) : Circuit signature (n a) 1 :=
     prefixCircuit (bitPrefix enc m a j)
       (circuits ((bitPrefix enc m a j).length + n a))
   have hprefix := polytime_bitPrefix hm
-  have hlength : ComputableTidilyInPolyTime
+  have hlength : ComputableInPolyTime
       (fun p : α × ℕ => (bitPrefix enc m p.1 p.2).length + n p.1)
       (encPair enc encUnary) encUnary := by
-    polytime
+    fun_prop
   refine ⟨cs, ?_, ?_, ?_⟩
-  · have h := (computableInPolyTime_prefixCode (.of_tidy hprefix)
-      (.of_tidy (ComputableTidilyInPolyTime.unary_to_binary.comp (hn.comp
-        (ComputableTidilyInPolyTime.fst enc encUnary)))) (hcode.comp (.of_tidy hlength))).tidy
+  · have h := computableInPolyTime_prefixCode hprefix
+      (ComputableInPolyTime.unary_to_binary.comp (hn.comp (ComputableInPolyTime.fst enc encUnary)))
+      (hcode.comp hlength)
     exact h.of_enc_eq fun p => by
       rw [show (cs p.1 p.2).code = _ from code_prefixCircuit _ _]
       rfl
@@ -144,38 +148,30 @@ theorem exists_uniformCircuitFamily {α : Type} {enc : α ↪ List Bool}
       ComputableInPolyTime (fun a => (circuits a).code) enc encCode ∧
       ∀ a (x : Fin (n a) → Bool) (j : Fin (m a)),
         (circuits a).eval interpretation x j = (F (a, List.ofFn x)).getD j.val false := by
-  have hn := hn.tidy
-  have hm := hm.tidy
-  have hF := hF.tidy
-  have this : ∃ circuits : (a : α) → Circuit signature (n a) (m a), ComputableTidilyInPolyTime
-      (fun a => (circuits a).code) enc encCode ∧ ∀ a (x : Fin (n a) → Bool) (j : Fin (m a)),
-      (circuits a).eval interpretation x j = (F (a, List.ofFn x)).getD j.val false := by
-    obtain ⟨bits, hbits, hsize, hsem⟩ := exists_uniformOutputBits hn hm hF
-    let circuits (a : α) : Circuit signature (n a) (m a) :=
-      Circuit.pi (fun j : Fin (m a) => bits a j.val)
-    have hzero := hbits.comp ((ComputableTidilyInPolyTime.id' (encIn := enc)).prod
-      (ComputableTidilyInPolyTime.const 0))
-    have hblock : ComputableTidilyInPolyTime (fun a => (bits a 0).size) enc encNat := by
-      have h := (ComputableInPolyTime.length_list_binary encGate).tidy.comp hzero.fst'
-      convert h using 1
-      funext a
-      exact (Circuit.length_code_fst (bits a 0)).symm
-    have hlist := ComputableTidilyInPolyTime.mapWith hbits
-      (ComputableTidilyInPolyTime.id' (encIn := enc))
-      (ComputableTidilyInPolyTime.range.comp hm)
-    have hlistEq (a : α) : (List.range (m a)).map (fun j => (bits a j).code) =
-        List.ofFn (fun j : Fin (m a) => (bits a j.val).code) := by
-      apply List.ext_getElem (by simp)
-      intro i hi hj
-      simp
-    have hcompiled := (computableInPolyTime_bundleCode
-      (.of_tidy (ComputableTidilyInPolyTime.unary_to_binary.comp hn)) (.of_tidy hblock) (.of_tidy
-        hlist)).tidy
-    refine ⟨circuits, hcompiled.of_enc_eq (fun a => ?_), fun a x j => ?_⟩
-    · change encCode (circuits a).code = encCode
-        (bundleCode (n a) (bits a 0).size ((List.range (m a)).map (fun j => (bits a j).code)))
-      rw [hlistEq, bundleCode_code _ _ (fun j => hsize a j.val j.isLt.le)]
-    · exact (congrFun (Circuit.eval_pi _ x) j).trans (hsem a j.val x)
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  obtain ⟨bits, hbits, hsize, hsem⟩ := exists_uniformOutputBits hn hm hF
+  let circuits (a : α) : Circuit signature (n a) (m a) :=
+    Circuit.pi (fun j : Fin (m a) => bits a j.val)
+  have hzero := hbits.comp ((ComputableInPolyTime.id' (encIn := enc)).prod
+    (ComputableInPolyTime.const 0))
+  have hblock : ComputableInPolyTime (fun a => (bits a 0).size) enc encNat := by
+    have h := (ComputableInPolyTime.length_list_binary encGate).comp hzero.fst'
+    convert h using 1
+    funext a
+    exact (Circuit.length_code_fst (bits a 0)).symm
+  have hlist : ComputableInPolyTime
+      (fun a => (List.range (m a)).map (fun j => (bits a j).code)) enc (encList encCode) :=
+    ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hm) hbits
+  have hlistEq (a : α) : (List.range (m a)).map (fun j => (bits a j).code) =
+      List.ofFn (fun j : Fin (m a) => (bits a j.val).code) := by
+    apply List.ext_getElem (by simp)
+    intro i hi hj
+    simp
+  have hcompiled := computableInPolyTime_bundleCode
+    (ComputableInPolyTime.unary_to_binary.comp hn) hblock hlist
+  refine ⟨circuits, hcompiled.of_enc_eq (fun a => ?_), fun a x j => ?_⟩
+  · change encCode (circuits a).code = encCode
+      (bundleCode (n a) (bits a 0).size ((List.range (m a)).map (fun j => (bits a j).code)))
+    rw [hlistEq, bundleCode_code _ _ (fun j => hsize a j.val j.isLt.le)]
+  · exact (congrFun (Circuit.eval_pi _ x) j).trans (hsem a j.val x)
 
 end Cslib.Complexity.CircuitValue

@@ -14,7 +14,9 @@ import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
 import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParametersPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
@@ -99,8 +101,11 @@ private theorem computableInPolyTime_divisor_unary :
   have hn : ComputableInPolyTime (fun p : Context => p.2) encContext encNat :=
     ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _)
   have hs := ParameterCheck.computableInPolyTime_numGroups_unary.comp hn
-  exact (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_max).comp
-    ((ComputableInPolyTime.const 1).prod hs)
+  have h : ComputableInPolyTime
+      (fun p : Context => 1 + (numGroups p.2 - 1)) encContext encUnary := by fun_prop
+  refine h.of_enc_eq fun p => congrArg encUnary ?_
+  change max 1 (numGroups p.2) = 1 + (numGroups p.2 - 1)
+  omega
 
 private theorem computableInPolyTime_divisor :
     ComputableInPolyTime divisor encContext encNat :=
@@ -168,7 +173,7 @@ private theorem computableInPolyTime_valid (k : ℕ) :
     (ComputableInPolyTime.fst encUnary encCNF)
   have hlt : ComputableInPolyTime
       (fun x : Input × ℕ => decide (x.2 < x.1.1)) (encPair encInput encNat) encBool :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_lt).comp
+    ComputableInPolyTime.binary_lt.comp
       ((ComputableInPolyTime.snd _ _).prod (hN.comp (ComputableInPolyTime.fst _ _)))
   have hs : ComputableInPolyTime
       (fun x : Input => x.2.vars.all fun v => decide (v < x.1)) encInput encBool :=
@@ -208,10 +213,10 @@ private theorem exists_computableInO_selectedSearch (k : ℕ)
         if validDeclaredInput k x.1 x.2 then T (prepare x) else inputSize x)
       (fun x => (inputSize x + 1) ^ d +
         if validDeclaredInput k x.1 x.2 then S (prepare x) else inputSize x) := by
-  obtain ⟨dp, _, hp⟩ := computableInPolyTime_prepare.tidy.exists_degree
-  obtain ⟨dv, _, hv⟩ := (computableInPolyTime_valid k).tidy.exists_degree
-  have hcore := hsearch.comp (ComputableInO.of_tidy hp.inO)
-  have hguard := (ComputableInO.of_tidy hv.inO).ite hcore
+  obtain ⟨dp, _, hp⟩ := computableInPolyTime_prepare.exists_degree
+  obtain ⟨dv, _, hv⟩ := (computableInPolyTime_valid k).exists_degree
+  have hcore := hsearch.comp hp.inO
+  have hguard := hv.inO.ite hcore
     (ComputableInO.const (encIn := encInput) 0)
   have hsum (x : Input) : (inputSize x + 1) ^ dv + (inputSize x + 1) ^ dp ≤
       2 * (inputSize x + 1) ^ (dv + dp) := by
@@ -328,8 +333,8 @@ private theorem exists_common_dense_resources {count : Input → ℕ} {T S : Inp
       ComputableInO (fun φ => count (declareInput φ)) encCNF encNat t t ∧
       ∀ φ, (t φ : ℝ) ≤ C * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale φ.numVars) *
         (((encCNF φ).length : ℝ) + 1) ^ E) + C := by
-  obtain ⟨d, _, hp⟩ := computableInPolyTime_declareInput.tidy.exists_degree
-  have hcomp := hcount.comp (ComputableInO.of_tidy hp.inO)
+  obtain ⟨d, _, hp⟩ := computableInPolyTime_declareInput.exists_degree
+  have hcomp := hcount.comp hp.inO
   let P (φ : CNF ℕ) := ((encCNF φ).length + 1) ^ d + S (declareInput φ)
   have hspace : PolyBounded (fun x => (encInput x).length) S :=
     PolyBounded.of_forall_le a b hS

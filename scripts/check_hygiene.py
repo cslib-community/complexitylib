@@ -2,7 +2,7 @@
 """Static proof-hygiene and module-template checks for Complexitylib Lean files.
 
 Checks enforced by default (see AGENTS.md):
-1. Every module under Complexity/ has a valid `-- upstream:` marker.
+1. Every module under Complexity/ has a valid standalone `-- upstream:` line comment.
 2. No `sorry`, custom `axiom`, or `native_decide` in Complexity/, ComplexityTests/ or the
    dedicated abstract library.
 3. Every `set_option maxHeartbeats` or `set_option maxRecDepth` has an explanatory comment
@@ -59,16 +59,16 @@ from proof_lengths import (  # noqa: E402
     STRING_SPECIAL,
     masks,
 )
+from upstream import upstream_markers  # noqa: E402
 
-UPSTREAM_MARKER_RE = re.compile(
-    r"^--\s*upstream:\s*(?:"
+UPSTREAM_STATUS_RE = re.compile(
+    r"(?:"
     r"candidate(?:\s+.*)?|"
     r"submitted\s+#\d+(?:\s+@[0-9a-f]{7,40})?(?:\s+.*)?|"
     r"(?:vendored|subset of)\s+\S+(?:\s+@[0-9a-f]{7,40})?(?:\s+.*)?|"
     r"merged\s+@[0-9a-f]{7,40}(?:\s+.*)?|"
     r"local-only\s+\([^)]+\)"
-    r")\s*$",
-    re.M,
+    r")",
 )
 
 FORBIDDEN_TOKEN_RE = re.compile(r"\b(sorry|native_decide)\b")
@@ -314,10 +314,6 @@ def bibliography_keys(text: str) -> frozenset[str]:
     return frozenset(m.group(1) for m in BIB_KEY_RE.finditer(text))
 
 
-def is_candidate_module(text: str) -> bool:
-    return bool(re.search(r"^--\s*upstream:\s*candidate\b", text, re.M))
-
-
 def has_nearby_comment(raw_lines: list[str], code_lines: list[str], idx_0based: int) -> bool:
     start = max(0, idx_0based - 3)
     end = idx_0based + 1
@@ -446,7 +442,8 @@ def check_file(
     errors: list[str] = []
 
     in_complexity = rel.parts and rel.parts[0] == "Complexity"
-    if in_complexity and not UPSTREAM_MARKER_RE.search(raw):
+    markers = upstream_markers(raw) if in_complexity else []
+    if in_complexity and not any(UPSTREAM_STATUS_RE.fullmatch(status) for status in markers):
         errors.append(f"{rel}: missing or invalid `-- upstream:` marker")
     if in_complexity:
         errors.extend(check_docstring_links(raw, rel, root))
@@ -483,7 +480,7 @@ def check_file(
                        "the file to scripts/heartbeat_allowlist.txt with review")
                 )
 
-    if check_simp and in_complexity and is_candidate_module(raw):
+    if check_simp and any(re.match(r"candidate\b", status) for status in markers):
         for line_no in find_nonterminal_bare_simps(syntax):
             errors.append(f"{rel}:{line_no}: non-terminal bare `simp` (use `simp only`)")
 
