@@ -26,7 +26,7 @@ open Cslib.WordRAM Cslib.Matrix Cslib.Algorithms.ExactTriangle
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
-/-- The complete initialized standard-native program uses 400 fixed registers, fewer than
+/-- The complete initialized standard-native program uses 400 fixed registers, at most
 133120 flat instruction slots including halt, and never inspects physical word width. -/
 theorem entryProgram_fixed : (entryProgram.program Reg.found).length ≤ 133120 ∧
     ¬(entryProgram.program Reg.found).ReadsWidth := by
