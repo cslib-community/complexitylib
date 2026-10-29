@@ -25,6 +25,11 @@ defined separately.
 ## Main definitions
 
 * `NativeCertificate`: one implementation with independent, charged resource bounds.
+
+## Main results
+
+* `Cslib.GenericRAM.exists_mono_poly`, `Cslib.GenericRAM.exists_mono_poly_cert`: monotone polynomial
+  bounds extracted from `PolyBounded` and `ComputableInPolyTime`.
 -/
 
 @[expose] public section
@@ -116,5 +121,23 @@ theorem ofPolyTime_isPolynomial (h : ComputableInPolyTime f encIn encMid) :
     (ofPolyTime h).IsPolynomial := (exists_polynomial h).choose_spec
 
 end NativeCertificate
+
+/-- Extract an explicit monotone polynomial bound from a `PolyBounded` witness. -/
+theorem exists_mono_poly {α : Type} {size u : α → ℕ} (hu : PolyBounded size u) :
+    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧ ∀ a, u a ≤ p (size a) := by
+  obtain ⟨c, d, h⟩ := hu.exists_le
+  exact ⟨fun n => c * (n + 1) ^ d, by fun_prop,
+    fun _ _ hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hxy 1) d), h⟩
+
+/-- Extract a single monotone polynomial bounding both time and workspace of
+`NativeCertificate.ofPolyTime hf`. -/
+theorem exists_mono_poly_cert {α β : Type} {f : α → β}
+    {ei : α ↪ List Bool} {eo : β ↪ List Bool} (hf : ComputableInPolyTime f ei eo) :
+    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧
+      ∀ a, (NativeCertificate.ofPolyTime hf).time a ≤ p (ei a).length ∧
+        (NativeCertificate.ofPolyTime hf).space a ≤ p (ei a).length := by
+  have hc := NativeCertificate.ofPolyTime_isPolynomial hf
+  obtain ⟨p, hp, hmono, hle⟩ := exists_mono_poly (hc.1.add hc.2)
+  exact ⟨p, hp, hmono, fun a => ⟨by have := hle a; omega, by have := hle a; omega⟩⟩
 
 end Cslib.GenericRAM

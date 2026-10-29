@@ -53,12 +53,6 @@ open Fintype (expect_sq_le_of_expect_mul_le)
 open Real (expect_mul_le_sqrt_mul_sqrt)
 open scoped BigOperators
 
-/-- A bound on a square root from a bound on its argument. -/
-private theorem sqrt_le_mul_sqrt {x y c : ℝ} (hc : 0 ≤ c) (h : x ≤ c ^ 2 * y) :
-    √x ≤ c * √y := by
-  rw [← Real.sqrt_sq hc, ← Real.sqrt_mul (sq_nonneg c)]
-  exact Real.sqrt_le_sqrt h
-
 variable {V D E : Type*} (G : RotationMap V D) (H : RotationMap D E)
 
 /-- The **balanced replacement product** of a `D`-regular graph `G` on `V` with a graph `H` on the
@@ -137,8 +131,9 @@ private theorem expect_mul_walk_balancedReplacement_pow_three_le [Nonempty E] (h
       (G.zigzag H).spectralExpansion * (√(𝔼 p, h p ^ 2) * √(𝔼 p, f p ^ 2)) := by
     refine (expect_mul_le_sqrt_mul_sqrt univ _ _).trans ?_
     rw [mul_left_comm]
-    exact mul_le_mul_of_nonneg_left (sqrt_le_mul_sqrt (spectralExpansion_nonneg _)
-      ((G.zigzag H).expect_walk_sq_le_spectralExpansion_sq_mul hf)) (Real.sqrt_nonneg _)
+    refine mul_le_mul_of_nonneg_left ?_ (Real.sqrt_nonneg _)
+    rw [← Real.sqrt_sq (spectralExpansion_nonneg _), ← Real.sqrt_mul (sq_nonneg _)]
+    exact Real.sqrt_le_sqrt ((G.zigzag H).expect_walk_sq_le_spectralExpansion_sq_mul hf)
   set B := ((loops V Unit).tensor H).walk
   set A : Module.End ℝ (V × D → ℝ) := LinearMap.funLeft ℝ ℝ G.rot
   rw [walk_zigzag, ← LinearMap.comp_assoc] at hZ

@@ -26,6 +26,7 @@ import Complexity.Crypto.Computational.OneWayToPRF
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Languages.Probabilistic.Notation
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Map
 import Complexity.Probability.Uniform
@@ -371,10 +372,6 @@ theorem eventually_tableArity (c : ℕ) :
       _ = n ^ (c + 2) := by ring
       _ ≤ 2 ^ ((c + 2) * t) := hpow
 
-/-- A probability, as a real number, is at most one. -/
-private theorem toReal_apply_le_one {α : Type*} (q : PMF α) (a : α) : (q a).toReal ≤ 1 :=
-  ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using q.coe_le_one a)
-
 end KabanetsCai
 
 open KabanetsCai
@@ -419,7 +416,7 @@ theorem not_pseudorandomFunction_of_MCSP_mem_BPP (h : MCSP ∈ BPP MCSP.encInsta
           2 ^ m / (5 * m)⟩ : MCSP.Instance) ∈ MCSP
       · have : g table = true := decide_eq_true hx
         rw [this, PMF.pure_apply_self, ENNReal.toReal_one]
-        linarith [toReal_apply_le_one (ProbComp.eval (mcspRun p V ⟨m,
+        linarith [Cslib.Probability.PMF.toReal_apply_le_one (ProbComp.eval (mcspRun p V ⟨m,
           MCSP.truthTable m (KabanetsCai.restrictTable n m hn table), 2 ^ m / (5 * m)⟩)) true]
       · have : g table = false := decide_eq_false hx
         rw [this, PMF.pure_apply_of_ne _ _ Bool.false_ne_true.symm, ENNReal.toReal_zero,
