@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
@@ -178,16 +179,6 @@ private theorem savitch_existsEdge {β : Type} (f : β × List Bool → Bool) (x
     · simp [existsEdge, List.replicate_succ, hf]
     · simp [existsEdge, List.replicate_succ]
 
-private theorem polyTime_inO {β γ : Type} {encIn : β ↪ List Bool} {encOut : γ ↪ List Bool}
-    {f : β → γ} (hf : ComputableInPolyTime f encIn encOut) :
-    ∃ T S : β → ℕ, PolyBounded (fun x => (encIn x).length) S ∧
-      ComputableInO f encIn encOut T S := by
-  obtain ⟨t, s, ht, hs, hc⟩ := hf
-  exact ⟨fun x => t (encIn x).length, fun x => t (encIn x).length + s (encIn x).length,
-    .of_polynomiallyBounded _ (ht.add hs), 1,
-    hc.mono (fun _ => by dsimp only; omega) fun _ => by dsimp only; omega,
-    fun x => by have := hc.length_le x; dsimp only; omega⟩
-
 attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd'
     ComputableInPolyTime.bool_and' in
 /-- **`PSPACE` is closed under polynomially bounded existential quantification**: if `B ⊆ β × List
@@ -211,9 +202,9 @@ theorem setOf_exists_mem_PSPACE {β : Type} {encB : β ↪ List Bool} {B : Set (
   have he : ComputableInPolyTime
       (fun q : β × List Bool × List Bool => q.2.1.headD false && !(q.2.2.any fun b => !b))
       encQ encBool := by fun_prop
-  obtain ⟨Tg, Sg, hSg, hgO⟩ := polyTime_inO hg
-  obtain ⟨Tc, Sc, hSc, hcO⟩ := polyTime_inO hc
-  obtain ⟨Te, Se, hSe, heO⟩ := polyTime_inO he
+  obtain ⟨Tg, Sg, -, hSg, hgO⟩ := hg.exists_computableInO
+  obtain ⟨Tc, Sc, -, hSc, hcO⟩ := hc.exists_computableInO
+  obtain ⟨Te, Se, -, hSe, heO⟩ := he.exists_computableInO
   have hedge := hcO.ite (hf.comp hgO) heO
   -- the arguments of Savitch's algorithm
   have hin : ComputableInPolyTime
@@ -221,7 +212,7 @@ theorem setOf_exists_mem_PSPACE {β : Type} {encB : β ↪ List Bool} {B : Set (
       encB (Cslib.Reachability.encArgs encB) := by
     unfold Cslib.Reachability.encArgs
     fun_prop
-  obtain ⟨Ti, Si, hSi, hinO⟩ := polyTime_inO hin
+  obtain ⟨Ti, Si, -, hSi, hinO⟩ := hin.exists_computableInO
   have h := Cslib.Reachability.computableInO_savitch (edge := existsEdge f) (par := id)
     hedge hinO (fun _ => List.length_replicate ..) fun _ => List.length_replicate ..
   -- the space is polynomial

@@ -12,6 +12,8 @@ public import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Complexity.Problems.Hamiltonian.Directed
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # From directed to undirected Hamiltonian paths and cycles
@@ -64,7 +66,7 @@ becomes a triangle.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 namespace Graph
 
@@ -533,8 +535,8 @@ theorem split_mem_HamCycle_iff (G : Graph) : G.split ∈ HamCycle ↔ G ∈ DirH
 
 /-- Computing a gadget vertex is polynomial-time: the first-occurrence index is found in unary,
 paired with the unary position in the gadget, and converted to binary. -/
-private theorem computableTidilyInPolyTime_splitVertex :
-    ComputableTidilyInPolyTime (fun p : Graph × ℕ × ℕ => p.1.splitVertex p.2.1 p.2.2)
+private theorem computableInPolyTime_splitVertex :
+    ComputableInPolyTime (fun p : Graph × ℕ × ℕ => p.1.splitVertex p.2.1 p.2.2)
       (encPair encGraph (encPair encNat encUnary)) encNat := by
   unfold splitVertex encGraph
   exact unary_to_binary.comp (by fun_prop)
@@ -542,8 +544,7 @@ private theorem computableTidilyInPolyTime_splitVertex :
 /-- Splitting the vertices of a graph is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_split : ComputableInPolyTime split encGraph encGraph := by
-  refine .of_tidy ?_
-  have hsv := computableTidilyInPolyTime_splitVertex
+  have hsv := computableInPolyTime_splitVertex
   unfold split
   unfold encGraph at hsv ⊢
   fun_prop
@@ -561,14 +562,12 @@ def toHamPath (x : Graph × ℕ × ℕ) : Graph × ℕ × ℕ :=
 theorem toHamPath_mem_iff (x : Graph × ℕ × ℕ) : toHamPath x ∈ HamPath ↔ x ∈ DirHamPath :=
   Graph.split_mem_HamPath_iff x.1 x.2.1 x.2.2
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The reduction `DirHamPath.toHamPath` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toHamPath :
     ComputableInPolyTime toHamPath (encPair encGraph (encPair encNat encNat))
       (encPair encGraph (encPair encNat encNat)) := by
-  refine .of_tidy ?_
-  have hsv := Graph.computableTidilyInPolyTime_splitVertex
+  have hsv := Graph.computableInPolyTime_splitVertex
   unfold toHamPath
   fun_prop
 
