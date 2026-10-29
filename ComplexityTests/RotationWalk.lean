@@ -14,7 +14,7 @@ import Complexity.Tactic.PolyTime
 namespace ComplexityTests.RotationWalk
 
 open Cslib Turing.MultiTapeTM
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 private def rotate (p : ℕ × ((ℕ × Bool) × Bool)) : (ℕ × Bool) × Bool :=
   if p.2.1.1 = p.1 then ((p.2.1.1, !p.2.1.2), !p.2.2) else p.2
@@ -25,7 +25,7 @@ private def graph (selected : ℕ) : RotationMap (ℕ × Bool) Bool where
     rintro ⟨⟨n, b⟩, d⟩
     by_cases h : n = selected <;> simp [rotate, h]
 
-private theorem polytime_rotation : ComputableTidilyInPolyTime rotate
+private theorem polytime_rotation : ComputableInPolyTime rotate
     (encPair encUnary (encPair (encPair encUnary encBool) encBool))
     (encPair (encPair encUnary encBool) encBool) := by
   unfold rotate
@@ -34,7 +34,7 @@ private theorem polytime_rotation : ComputableTidilyInPolyTime rotate
 example (T : ℕ) : ComputableInPolyTime (RotationMap.powRotWithInput rotate T)
     (encPair encUnary (encPair (encPair encUnary encBool) (encPi encBool)))
     (encPair (encPair encUnary encBool) (encPi encBool)) :=
-  .of_tidy (rotationMap_powRotWithInput polytime_rotation T)
+  rotationMap_powRotWithInput polytime_rotation T
 
 example : RotationMap.powRotWithInput rotate 0 (4, (4, false), Fin.elim0) =
     ((4, false), Fin.elim0) := rfl
@@ -124,7 +124,7 @@ example (signal : Fin 2 ↪ List Bool) : ComputableInPolyTime
 
 example {P V D : Type} (input : P ↪ List Bool) (vertex : V ↪ List Bool)
     (label : D ↪ List Bool) (step : P × (V × D) → V × D)
-    (hstep : ComputableTidilyInPolyTime step
+    (hstep : ComputableInPolyTime step
       (encPair input (encPair vertex label)) (encPair vertex label)) (T : ℕ) :
     ComputableInPolyTime (RotationMap.powRotWithInput step T)
       (encPair input (encPair vertex (encPi label))) (encPair vertex (encPi label)) := by

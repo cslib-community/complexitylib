@@ -25,7 +25,7 @@ Mathlib's `FinTM2` alone only guarantees finiteness of the input alphabet.
 
 ## Main results
 
-* `Turing.TM2ComputableInPolyTime.computableTidilyInPolyTime`: transfer a typed Mathlib
+* `Turing.TM2ComputableInPolyTime.computableInPolyTime_encList`: transfer a typed Mathlib
   polynomial-time certificate to CSLib.
 
 This is the forward bridge. `TM2.Reverse.Transfer` supplies a direct reverse compiler and
@@ -35,8 +35,8 @@ polynomial-time equivalence, including explicit conversions for these word encod
 
 The source model and runtime convention are Mathlib's
 `Mathlib.Computability.TuringMachine.Computable` and
-`Mathlib.Computability.TuringMachine.StackTuringMachine`. This is a direct proof through the
-tidy calculus, independent of the TM2-to-TM0 compiler in
+`Mathlib.Computability.TuringMachine.StackTuringMachine`. This is a direct proof,
+independent of the TM2-to-TM0 compiler in
 [Complexitylib PR #72](https://github.com/SamuelSchlesinger/complexitylib/pull/72).
 -/
 
@@ -47,7 +47,7 @@ attribute [local instance] Turing.FinTM2.kFin Turing.FinTM2.ΛFin Turing.FinTM2.
 
 namespace Turing.TM2
 
-open MultiTapeTM ComputableTidilyInPolyTime
+open MultiTapeTM ComputableInPolyTime
 
 /-- A source clock may continue after halting without changing the result. -/
 theorem stepTotal_of_step {K : Type} [DecidableEq K] {Γ : K → Type} {Λ σ : Type}
@@ -92,22 +92,22 @@ theorem iterate_stepTotal_of_evals (tm : FinTM2) (input : List (tm.Γ tm.k₀))
 
 /-- Initialization copies the source input and supplies empty auxiliary stacks. -/
 theorem initList_polyTime (tm : FinTM2) [∀ k, Finite (tm.Γ k)] :
-    ComputableTidilyInPolyTime (initList tm) (encList (encFinite (tm.Γ tm.k₀))) encCfg := by
+    ComputableInPolyTime (initList tm) (encList (encFinite (tm.Γ tm.k₀))) encCfg := by
   apply cfg_mk (const (some tm.main)) (const tm.initialState)
   apply dpi
   intro k
   by_cases hk : k = tm.k₀
   · subst k
     simpa [initList] using
-      (id' : ComputableTidilyInPolyTime id
+      (id' : ComputableInPolyTime id
         (encList (encFinite (tm.Γ tm.k₀))) (encList (encFinite (tm.Γ tm.k₀))))
   · simpa [initList, hk] using
       (const (encIn := encList (encFinite (tm.Γ tm.k₀)))
-        (encMid := encList (encFinite (tm.Γ k))) [])
+        (encOut := encList (encFinite (tm.Γ k))) [])
 
 /-- Polynomially many source steps have polynomially bounded encoded intermediate states. -/
 theorem run_polyTime (tm : FinTM2) [∀ k, Finite (tm.Γ k)] (p : Polynomial ℕ) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun input => (stepTotal tm.m)^[p.eval input.length] (initList tm input))
       (encList (encFinite (tm.Γ tm.k₀))) encCfg := by
   have hlength := length_list (encFinite (tm.Γ tm.k₀))
@@ -144,27 +144,27 @@ end Turing.TM2
 
 namespace Turing.TM2ComputableInPolyTime
 
-open MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
+open MultiTapeTM MultiTapeTM.ComputableInPolyTime
 
-/-- A finite-alphabet Mathlib certificate gives tidy CSLib polynomial-time computation under
+/-- A finite-alphabet Mathlib certificate gives CSLib polynomial-time computation under
 the standard binary encodings of its input and output words. -/
-theorem computableTidilyInPolyTime {α β αΓ βΓ : Type} [Finite αΓ]
+theorem computableInPolyTime_encList {α β αΓ βΓ : Type} [Finite αΓ]
     {encA : αΓ ↪ List Bool} {encB : βΓ ↪ List Bool}
     {ea : α → List αΓ} {eb : β → List βΓ} {f : α → β}
     (h : TM2ComputableInPolyTime ea eb f) [∀ k, Finite (h.tm.Γ k)]
     (ha : Function.Injective ea) (hb : Function.Injective eb) :
-    ComputableTidilyInPolyTime f
+    ComputableInPolyTime f
       ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
       ((⟨eb, hb⟩ : β ↪ List βΓ).trans (encList encB)) := by
-  have hinput : ComputableTidilyInPolyTime ea
+  have hinput : ComputableInPolyTime ea
       ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
       (encList encA) := of_eq fun _ => rfl
   have hmap := (map (of_finite h.inputAlphabet.symm
-    (encB := encFinite (h.tm.Γ h.tm.k₀)))).comp hinput
+    (encOut := encFinite (h.tm.Γ h.tm.k₀)))).comp hinput
   have hrun := (TM2.run_polyTime h.tm h.time).comp hmap
   have hstacks := TM2.cfg_stacks.comp hrun
   have hout := (dpi_apply (fun k => encList (encFinite (h.tm.Γ k))) h.tm.k₁).comp hstacks
-  have hword := (map (of_finite h.outputAlphabet (encB := encB))).comp hout
+  have hword := (map (of_finite h.outputAlphabet (encOut := encB))).comp hout
   apply hword.of_enc_eq
   intro a
   have heval := TM2.iterate_stepTotal_of_evals h.tm _ _ _ (h.outputsFun a)

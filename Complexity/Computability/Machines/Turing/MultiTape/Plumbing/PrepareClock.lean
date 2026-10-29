@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.TransformsTapes
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.OutputToTape
 import Complexity.Computability.Machines.Turing.MultiTape.Run
 
@@ -28,7 +29,7 @@ and emits nothing. Its polynomial bound charges both generation and rewinding.
 
 ## Main results
 
-* `Turing.MultiTapeTM.PolynomialClock.computableTidilyInPolyTime_budget`: the functional generator
+* `Turing.MultiTapeTM.PolynomialClock.computableInPolyTime_budget`: the functional generator
   has a uniform polynomial-time TM certificate.
 * `Turing.MultiTapeTM.PolynomialClock.exists_prepare`: a finite machine prepares the budget on
   its last work tape, within one polynomial bound for every input.
@@ -49,9 +50,9 @@ def budget (coefficient degree : ℕ) (input : List Bool) : List Bool :=
   List.replicate (coefficient * (input.length + 1) ^ degree) true
 
 /-- Generate the budget using the existing functional polynomial-time calculus. -/
-@[fun_prop] theorem computableTidilyInPolyTime_budget (coefficient degree : ℕ) :
-    ComputableTidilyInPolyTime (budget coefficient degree) encBits encBits := by
-  have h : ComputableTidilyInPolyTime
+@[fun_prop] theorem computableInPolyTime_budget (coefficient degree : ℕ) :
+    ComputableInPolyTime (budget coefficient degree) encBits encBits := by
+  have h : ComputableInPolyTime
       (fun input : List Bool => coefficient * (input.length + 1) ^ degree)
       encBits encUnary := by fun_prop
   exact h.of_enc_eq (fun _ => rfl)
@@ -65,7 +66,7 @@ theorem exists_prepare (coefficient degree : ℕ) :
         wordsCfg input none (Function.update (fun _ => []) (Fin.last k)
           (budget coefficient degree input)) [] := by
   obtain ⟨t, s, ht, _, k, State, hfinite, machine, hmachine⟩ :=
-    computableTidilyInPolyTime_budget coefficient degree
+    ComputableInPolyTime.tidy (computableInPolyTime_budget coefficient degree)
   have hlength : PolyBounded List.length (fun input => (budget coefficient degree input).length) :=
     .of_forall_le coefficient degree (fun _ => by simp [budget])
   obtain ⟨c, d, hbound⟩ := ((ht.add hlength).add (PolyBounded.const 2)).exists_le

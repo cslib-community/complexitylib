@@ -86,12 +86,12 @@ example (l : List Bool) :
     MultiTapeTM.ComputableInTimeAndSpace (id : List Bool → List Bool)
       (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool))
       (fun a => 3 * a.length + 2 * 1 + 6) (fun a => 3 * a.length + 2 * 1 + 7) ∧
-    MultiTapeTM.ComputableTidilyInPolyTime (id : List Bool → List Bool)
+    MultiTapeTM.ComputableInPolyTime (id : List Bool → List Bool)
       (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)) :=
   ⟨MultiTapeTM.computesInTimeAndSpace_ofSingleTapeTM haltId (haltId_outputsWithinTime l),
    haltIdTimeComputable.computableInTimeAndSpace
      (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)) id (fun _ => rfl),
-   haltIdPolyTimeComputable.computableTidilyInPolyTime_id⟩
+   haltIdPolyTimeComputable.computableInPolyTime_id⟩
 
 /-! ### `Partrec` / `Computable` / `ManyOneReducible` bridges -/
 
@@ -101,7 +101,7 @@ example :
     ManyOneReducible (· ∈ MultiTapeTM.selfHaltingProblem) (· ∈ MultiTapeTM.selfHaltingProblem) :=
   ⟨haltId.partrec_eval,
    MultiTapeTM.IsComputable.computable_bits
-     haltIdPolyTimeComputable.computableTidilyInPolyTime_id.isComputable,
+     haltIdPolyTimeComputable.computableInPolyTime_id.isComputable,
    (MultiTapeTM.MappingReducible.refl MultiTapeTM.encBits
      MultiTapeTM.selfHaltingProblem).manyOneReducible_bits⟩
 

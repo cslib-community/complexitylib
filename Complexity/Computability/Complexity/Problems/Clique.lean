@@ -152,12 +152,6 @@ theorem computableInPolyTime_compl :
           ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _)) hpred)
         (by fun_prop)))
 
-/-- Complementing a graph on its declared vertices is polynomial-time. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_compl :
-    ComputableTidilyInPolyTime compl encGraph encGraph :=
-  computableInPolyTime_compl.tidy
-
 end Graph
 
 namespace Clique

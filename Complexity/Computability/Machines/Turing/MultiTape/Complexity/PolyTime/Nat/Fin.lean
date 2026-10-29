@@ -18,23 +18,23 @@ and encoding are fixed independently of the runtime input.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_finMod`: modular finite indices.
+* `Turing.MultiTapeTM.ComputableInPolyTime.unary_finMod`: modular finite indices.
 -/
 
 @[expose] public section
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Normalize a unary index into a fixed positive finite range, using any fixed output encoding. -/
 @[fun_prop]
 theorem unary_finMod {bound : ℕ} (hbound : 0 < bound) (output : Fin bound ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun index : ℕ =>
+    ComputableInPolyTime (fun index : ℕ =>
       (⟨index % bound, Nat.mod_lt _ hbound⟩ : Fin bound)) encUnary output := by
   let unary : Fin bound ↪ List Bool :=
     ⟨fun index => encUnary index.val, fun _ _ h => Fin.val_injective (encUnary.injective h)⟩
-  have hmod : ComputableTidilyInPolyTime (fun index : ℕ =>
+  have hmod : ComputableInPolyTime (fun index : ℕ =>
       (⟨index % bound, Nat.mod_lt _ hbound⟩ : Fin bound)) encUnary unary :=
     (unary_mod.comp (id'.prod (const bound))).of_enc_eq (fun _ => rfl)
-  exact (of_finite (encA := unary) (encB := output) id).comp hmod
+  exact (of_finite (encIn := unary) (encOut := output) id).comp hmod
 
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+end Turing.MultiTapeTM.ComputableInPolyTime
