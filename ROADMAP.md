@@ -168,9 +168,12 @@ index links to canonical definitions rather than keeping a second set.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
-- A tight time hierarchy, which needs a linear-overhead tape-indexed simulation, and the
-  `f log f` hierarchy with its simulation bound. The space hierarchy for `log n ≤ g n`, which
-  needs a universal simulation that does not hold its input.
+- **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
+  degrees `1 ≤ a < b`. Remaining targets include the general deterministic `f log f` hierarchy
+  with its simulation bound ([#800]), noninteger polynomial degrees and finer logarithmic
+  gaps, and sharp nondeterministic and alternating time hierarchies with certified simulators.
+- The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
+  its input.
 - **Space:** Savitch bounds for general space-constructible functions.
 - **Randomized logspace** ([#459], [#474]): RL and BPL, `USTCON ∈ RL`, Nisan's generator,
   `BPL ⊆ L²` and Saks–Zhou.
@@ -546,6 +549,7 @@ not planned, not as proved.
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
+[#800]: https://github.com/cslib-community/complexitylib/issues/800
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
 [#884]: https://github.com/cslib-community/complexitylib/issues/884
@@ -583,3 +587,4 @@ not planned, not as proved.
 [#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1463]: https://github.com/cslib-community/complexitylib/issues/1463
 [#1493]: https://github.com/cslib-community/complexitylib/issues/1493
+[#1572]: https://github.com/cslib-community/complexitylib/issues/1572

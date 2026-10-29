@@ -13,6 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
@@ -832,17 +833,10 @@ theorem exists_polyBounded_space_savitch {γ : Type} {encIn : γ ↪ List Bool}
         (fun x => savitch (edge (par x)) (width x) (depth x) (src x) (dst x)) encIn encBool t
         s := by
   have hlen := hin.polyBounded_length
-  obtain ⟨te, se, -, hse, he⟩ := hedge
-  obtain ⟨ti, si, hti, hsi, hi⟩ := hin
+  obtain ⟨_, se, -, hse, hedgeO⟩ := hedge.computableInPolyTime.exists_computableInO
+  obtain ⟨_, si, -, hsi, hinO⟩ := hin.computableInPolyTime.exists_computableInO
   obtain ⟨cs, ds, hcs⟩ := hse.exists_le
-  have hedgeO : ComputableTidilyInO _ _ encBool te se :=
-    ⟨1, he.mono (fun _ => by omega) fun _ => by omega, fun _ => by simp⟩
-  have hinO : ComputableTidilyInO _ encIn (encArgs encP) ti fun x => ti x + si x :=
-    ⟨1, hi.mono (fun _ => by omega) fun _ => by dsimp only; omega, fun x => by
-      have := hi.length_le x
-      dsimp only
-      omega⟩
-  obtain ⟨c, h, -⟩ := computableTidilyInO_savitch hedgeO hinO hsrc hdst
+  obtain ⟨c, h, -⟩ := (computableInO_savitch hedgeO hinO hsrc hdst).tidy
   refine ⟨_, _, ?_, h⟩
   -- the stack, the parameter and the edge test are polynomial in the encoded arguments
   set L := fun x => (encArgs encP (par x, width x, depth x, src x, dst x)).length
@@ -861,7 +855,7 @@ theorem exists_polyBounded_space_savitch {γ : Type} {encIn : γ ↪ List Bool}
   have hg : PolyBounded (fun x => (encIn x).length)
       fun x => (L x + 1) * (2 * L x + 1) + L x + cs * (5 * L x + 3) ^ ds + 1 :=
     PolyBounded.comp (size' := id) (g := L) (PolyBounded.of_polynomiallyBounded id hpoly) hlen
-  refine ((PolyBounded.const c).mul ((hti.add hsi).add hg)).mono fun x => ?_
+  refine ((PolyBounded.const c).mul (hsi.add hg)).mono fun x => ?_
   obtain ⟨hd, hw, hP⟩ := hL x
   have := Nat.mul_le_mul (show depth x + 1 ≤ L x + 1 by omega)
     (show depth x + width x + 1 ≤ 2 * L x + 1 by omega)

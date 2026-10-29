@@ -174,7 +174,7 @@ theorem evalOutput_appendCode_code {n m p : ℕ} (c : Circuit signature n m)
       exact ((c.append d).eval_eq_evalOutput x j).symm
     _ = _ := by rw [Circuit.eval_append, List.ofFn_fin_append]
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Shifting wire numbers is polynomial-time with all quantities encoded in binary. -/
 @[fun_prop]
@@ -183,10 +183,6 @@ theorem computableInPolyTime_shiftCodeWire {α : Type} {enc : α ↪ List Bool}
     (hoffset : ComputableInPolyTime offset enc encNat)
     (hi : ComputableInPolyTime i enc encNat) :
     ComputableInPolyTime (fun a => shiftCodeWire (n a) (offset a) (i a)) enc encNat := by
-  have hn := hn.tidy
-  have hoffset := hoffset.tidy
-  have hi := hi.tidy
-  refine .of_tidy ?_
   unfold shiftCodeWire
   fun_prop
 
@@ -204,25 +200,21 @@ theorem computableInPolyTime_shiftCode {α : Type} {enc : α ↪ List Bool}
     (hoffset : ComputableInPolyTime offset enc encNat)
     (hcode : ComputableInPolyTime code enc encCode) :
     ComputableInPolyTime (fun a => shiftCode (n a) (offset a) (code a)) enc encCode := by
-  have hn := hn.tidy
-  have hoffset := hoffset.tidy
-  have hcode := hcode.tidy
-  refine .of_tidy ?_
-  have hgate : ComputableTidilyInPolyTime
+  have hgate : ComputableInPolyTime
       (fun q : α × (Op × List ℕ) =>
         (q.2.1, q.2.2.map (shiftCodeWire (n q.1) (offset q.1))))
       (encPair enc encGate) encGate := by
     refine ((snd enc encGate).fst').prod ?_
     apply mapWithInput (snd enc encGate).snd'
-    exact (computableInPolyTime_shiftCodeWire
-      (.of_tidy (hn.comp ((fst _ _).comp (fst _ _))))
-      (.of_tidy (hoffset.comp ((fst _ _).comp (fst _ _)))) (.of_tidy (snd _ _))).tidy
+    exact computableInPolyTime_shiftCodeWire
+      (hn.comp ((fst _ _).comp (fst _ _)))
+      (hoffset.comp ((fst _ _).comp (fst _ _))) (snd _ _)
   have hgates := mapWithInput (encB := encGate)
     (f := fun a g => (g.1, g.2.map (shiftCodeWire (n a) (offset a)))) hcode.fst' hgate
   have houtputs := mapWithInput (encB := encNat)
     (f := fun a i => shiftCodeWire (n a) (offset a) i) hcode.snd'
-    (computableInPolyTime_shiftCodeWire (.of_tidy (hn.comp (fst _ _)))
-      (.of_tidy (hoffset.comp (fst _ _))) (.of_tidy (snd _ _))).tidy
+    (computableInPolyTime_shiftCodeWire (hn.comp (fst _ _))
+      (hoffset.comp (fst _ _)) (snd _ _))
   exact hgates.prod houtputs
 
 /-- Combining circuit codes is polynomial-time, including binary input and wire counts. -/
@@ -233,13 +225,9 @@ theorem computableInPolyTime_appendCode {α : Type} {enc : α ↪ List Bool}
     (hc : ComputableInPolyTime c enc encCode)
     (hd : ComputableInPolyTime d enc encCode) :
     ComputableInPolyTime (fun a => appendCode (n a) (c a) (d a)) enc encCode := by
-  have hn := hn.tidy
-  have hc := hc.tidy
-  have hd := hd.tidy
-  refine .of_tidy ?_
-  have hlen : ComputableTidilyInPolyTime (fun a => (c a).1.length) enc encNat :=
-    (ComputableInPolyTime.length_list_binary encGate).tidy.comp hc.fst'
-  have hshift := (computableInPolyTime_shiftCode (.of_tidy hn) (.of_tidy hlen) (.of_tidy hd)).tidy
+  have hlen : ComputableInPolyTime (fun a => (c a).1.length) enc encNat :=
+    (length_list_binary encGate).comp hc.fst'
+  have hshift := computableInPolyTime_shiftCode hn hlen hd
   exact (listAppend' hc.fst' hshift.fst').prod (listAppend' hc.snd' hshift.snd')
 
 /-- Combine a list of raw codes on shared inputs, preserving block and output order.
@@ -314,20 +302,20 @@ theorem computableInPolyTime_appendCodes {α : Type} {enc : α ↪ List Bool}
     (hn : ComputableInPolyTime n enc encNat)
     (hcodes : ComputableInPolyTime codes enc (encList encCode)) :
     ComputableInPolyTime (fun a => appendCodes (n a) (codes a)) enc encCode := by
-  have hn := hn.tidy
-  have hcodes := hcodes.tidy
-  refine .of_tidy ?_
   let encBlock := encPair encCode encUnary
-  have hblocks := (zipIdx encCode).comp hcodes
+  have hblocks : ComputableInPolyTime (fun a => (codes a).zipIdx) enc (encList encBlock) := by
+    fun_prop
   have hpar := fst enc encBlock
   have hentry := snd enc encBlock
-  have hprefix := listTakeWithInput (hcodes.comp hpar) hentry.snd'
+  have hprefix : ComputableInPolyTime
+      (fun q : α × ((List (Op × List ℕ) × List ℕ) × ℕ) => (codes q.1).take q.2.2)
+      (encPair enc encBlock) (encList encCode) := by
+    fun_prop
   have hprefixGates := flatMapWithInput (encB := encGate)
     (f := fun (_ : α × ((List (Op × List ℕ) × List ℕ) × ℕ)) c => c.1)
     hprefix ((snd _ encCode).fst')
-  have hoffset := (ComputableInPolyTime.length_list_binary encGate).tidy.comp hprefixGates
-  have hshift := (computableInPolyTime_shiftCode (.of_tidy (hn.comp hpar)) (.of_tidy hoffset)
-    (.of_tidy hentry.fst')).tidy
+  have hoffset := (length_list_binary encGate).comp hprefixGates
+  have hshift := computableInPolyTime_shiftCode (hn.comp hpar) hoffset hentry.fst'
   have hgates := flatMapWithInput (encB := encGate)
     (f := fun a (q : (List (Op × List ℕ) × List ℕ) × ℕ) =>
       (shiftCode (n a) (((codes a).take q.2).flatMap Prod.fst).length q.1).1)
@@ -337,7 +325,7 @@ theorem computableInPolyTime_appendCodes {α : Type} {enc : α ↪ List Bool}
       (shiftCode (n a) (((codes a).take q.2).flatMap Prod.fst).length q.1).2)
     hblocks hshift.snd'
   have h := hgates.prod houtputs
-  change ComputableTidilyInPolyTime (fun a => appendCodesDirect (n a) (codes a)) enc encCode at h
+  change ComputableInPolyTime (fun a => appendCodesDirect (n a) (codes a)) enc encCode at h
   simpa only [appendCodesDirect_eq_appendCodes] using h
 
 /-- Combining single-output circuit codes agrees exactly with `Circuit.pi`, with no restriction
@@ -366,18 +354,14 @@ theorem computableInPolyTime_bundleCode {α : Type} {enc : α ↪ List Bool}
     (hblock : ComputableInPolyTime blockSize enc encNat)
     (hcodes : ComputableInPolyTime codes enc (encList encCode)) :
     ComputableInPolyTime (fun a => bundleCode (n a) (blockSize a) (codes a)) enc encCode := by
-  have hn := hn.tidy
-  have hblock := hblock.tidy
-  have hcodes := hcodes.tidy
-  refine .of_tidy ?_
   let encBlock := encPair encCode encUnary
-  have hblocks := (zipIdx encCode).comp hcodes
+  have hblocks : ComputableInPolyTime (fun a => (codes a).zipIdx) enc (encList encBlock) := by
+    fun_prop
   have hpar := fst enc encBlock
   have hentry := snd enc encBlock
   have hindex := unary_to_binary.comp hentry.snd'
-  have hoffset := binary_mul.comp (hindex.prod (hblock.comp hpar))
-  have hshift := (computableInPolyTime_shiftCode (.of_tidy (hn.comp hpar)) (.of_tidy hoffset)
-    (.of_tidy hentry.fst')).tidy
+  have hoffset := binary_mul' hindex (hblock.comp hpar)
+  have hshift := computableInPolyTime_shiftCode (hn.comp hpar) hoffset hentry.fst'
   have hgates := flatMapWithInput (encB := encGate)
     (f := fun a (q : (List (Op × List ℕ) × List ℕ) × ℕ) =>
       (shiftCode (n a) (q.2 * blockSize a) q.1).1)
@@ -513,20 +497,15 @@ theorem compCode_code {n m p : ℕ} (d : Circuit signature m p)
     (hc : ComputableInPolyTime c enc encCode)
     (hi : ComputableInPolyTime i enc encNat) :
     ComputableInPolyTime (fun a => compCodeWire (n a) (c a) (i a)) enc encNat := by
-  have hn := hn.tidy
-  have hc := hc.tidy
-  have hi := hi.tidy
-  refine .of_tidy ?_
-  have houtputs : ComputableTidilyInPolyTime (fun a => (c a).2.length) enc encNat :=
-    (ComputableInPolyTime.length_list_binary encNat).tidy.comp hc.snd'
-  have hgates : ComputableTidilyInPolyTime (fun a => (c a).1.length) enc encNat :=
-    (ComputableInPolyTime.length_list_binary encGate).tidy.comp hc.fst'
-  have hlookup : ComputableTidilyInPolyTime (fun a => (c a).2.getD (i a) 0) enc encNat :=
+  have houtputs : ComputableInPolyTime (fun a => (c a).2.length) enc encNat :=
+    (length_list_binary encNat).comp hc.snd'
+  have hgates : ComputableInPolyTime (fun a => (c a).1.length) enc encNat :=
+    (length_list_binary encGate).comp hc.fst'
+  have hlookup : ComputableInPolyTime (fun a => (c a).2.getD (i a) 0) enc encNat :=
     listGetD_binary 0 hc.snd' hi
   unfold compCodeWire
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Construct sequential circuit codes in polynomial time. All wire indices and input counts
 are binary; list lengths, input lookup, gate relocation and the whole output code are charged. -/
 @[fun_prop] theorem computableInPolyTime_compCode {α : Type} {enc : α ↪ List Bool}
@@ -535,20 +514,17 @@ are binary; list lengths, input lookup, gate relocation and the whole output cod
     (hd : ComputableInPolyTime d enc encCode)
     (hc : ComputableInPolyTime c enc encCode) :
     ComputableInPolyTime (fun a => compCode (n a) (d a) (c a)) enc encCode := by
-  have hn := hn.tidy
-  have hd := hd.tidy
-  have hc := hc.tidy
-  refine .of_tidy ?_
-  have hwire : ComputableTidilyInPolyTime
+  have hwire : ComputableInPolyTime
       (fun p : α × ℕ => compCodeWire (n p.1) (c p.1) p.2)
       (encPair enc encNat) encNat := by fun_prop
-  have hgate : ComputableTidilyInPolyTime
+  have hgate : ComputableInPolyTime
       (fun p : α × (Op × List ℕ) => (p.2.1, p.2.2.map (compCodeWire (n p.1) (c p.1))))
       (encPair enc encGate) encGate := by
-    exact ((snd enc encGate).fst').prod
-      (mapWith hwire (fst enc encGate) ((snd enc encGate).snd'))
-  exact (listAppend' hc.fst' (mapWith hgate id' hd.fst')).prod
-    (mapWith hwire id' hd.snd')
+    refine ((snd enc encGate).fst').prod ?_
+    apply mapWithInput (snd enc encGate).snd'
+    exact hwire.comp ((fst _ _).fst'.prod (snd _ _))
+  exact (listAppend' hc.fst' (mapWithInput hd.fst' hgate)).prod
+    (mapWithInput hd.snd' hwire)
 
 end Boolean
 

@@ -43,7 +43,7 @@ not a claim of practical runtime at arbitrary fixed alphabets.
 
 namespace Cslib.PCP
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime Cslib.PCP.HadamardTester
+open Turing.MultiTapeTM Cslib.PCP.HadamardTester
 
 attribute [local instance] HadamardTester.instFinEnumBool HadamardTester.Rand.finEnum
 
