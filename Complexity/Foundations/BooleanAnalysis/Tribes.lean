@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Probability.Resilience
-import Complexity.Foundations.Data.BitString.Agree
+import Complexity.Foundations.Data.BitString.AgreeExpect
 
 /-!
 # The Tribes function
@@ -20,31 +20,40 @@ probability `1 - (1 - 2 ^ (-w)) ^ s` (`Cslib.BitString.expect_bitVal_tribes`)
 [O'Donnell, Fact 4.10][ODonnell2014].
 
 O'Donnell takes `s` largest with this probability at most `1 / 2`
-[O'Donnell, Definition 4.11][ODonnell2014]. For such `s` we show that the probability is within
-`2 ^ (-w)` of `1 / 2` (`Cslib.BitString.abs_expect_bitVal_tribes_sub_half_le`); this explicit bound
-is ours. O'Donnell's asymptotic statements, that then `2 ^ w = (n / ln n) (1 + o(1))` for
-`n = s w` with bias `1 / 2 - O(log n / n)` and that each bit has influence `(ln n / n) (1 ± o(1))`
+[O'Donnell, Definition 4.11][ODonnell2014]. This `s` exists for every `w`
+(`Cslib.BitString.tribesSize`) and lies in `[2 ^ (w - 1), 2 ^ w)` for `w ≥ 1`
+(`Cslib.BitString.two_pow_sub_one_le_tribesSize`, `Cslib.BitString.tribesSize_lt_two_pow`); these
+bounds are ours. For such `s` we show that the probability is within `2 ^ (-w)` of `1 / 2`
+(`Cslib.BitString.abs_expect_bitVal_tribes_sub_half_le`); this explicit bound is ours. O'Donnell's
+asymptotic statements, that then `2 ^ w = (n / ln n) (1 + o(1))` for `n = s w` with bias
+`1 / 2 - O(log n / n)` and that each bit has influence `(ln n / n) (1 ± o(1))`
 [O'Donnell, Propositions 4.12 and 4.13][ODonnell2014], are not formalized.
 
 A coalition `Q` leaves Tribes undetermined only if some tribe meets `Q` and is all `true` outside
 `Q`. A union bound over these tribes bounds the influence of `Q` by `2 ^ (|Q| - w)`
 (`Cslib.BitString.coalitionInfluence_tribes_le`), so Tribes is `(q, 2 ^ (q - w))`-resilient
 (`Cslib.BitString.isResilient_tribes`); the bound and its proof are ours. It is useful only for
-`q < w`, about `log n`: one whole tribe of `w` bits already has influence
-`(1 - 2 ^ (-w)) ^ (s - 1)`, about `1 / 2` for the `s` above, so Tribes is not
-`(q, O(q log n / n))`-resilient [O'Donnell, Section 9.6][ODonnell2014].
+`q < w`, about `log n`. Bribing one tribe, about `log n` voters, forces Tribes to `True`
+[O'Donnell, Section 9.6][ODonnell2014], and the largest coalitional influence toward `True` of at
+most `log n` bits is `1 / 2 + Θ(log n / n)` [O'Donnell, Exercise 9.25(g)][ODonnell2014]. In our
+terms, one whole tribe of `w` bits has influence `(1 - 2 ^ (-w)) ^ (s - 1)`, about `1 / 2` for the
+`s` above, so Tribes is not `(q, O(q log n / n))`-resilient for `q ≥ w`; this computation and
+conclusion are ours and are not formalized.
 
 ## Main definitions
 
 * `Cslib.BitString.tribes`: the Tribes function `Tribes_{w,s}`.
+* `Cslib.BitString.tribesSize`: the number of tribes of width `w` making Tribes nearly balanced.
 
 ## Main results
 
 * `Cslib.BitString.monotone_tribes`: Tribes is monotone.
 * `Cslib.BitString.expect_bitVal_tribes`: the probability that Tribes is true.
+* `Cslib.BitString.one_div_two_le_pow_tribesSize`,
+  `Cslib.BitString.pow_tribesSize_add_one_lt_one_div_two`,
+  `Cslib.BitString.two_pow_sub_one_le_tribesSize`, `Cslib.BitString.tribesSize_lt_two_pow`: the
+  number of tribes for which Tribes is nearly balanced.
 * `Cslib.BitString.abs_expect_bitVal_tribes_sub_half_le`: Tribes is nearly balanced.
-* `Cslib.BitString.expect_ite_forall_mem_eq`: a set of `k` uniformly random bits takes a given
-  value with probability `2 ^ (-k)`.
 * `Cslib.BitString.coalitionInfluence_tribes_le`, `Cslib.BitString.isResilient_tribes`: the
   influence of coalitions on Tribes.
 
@@ -59,24 +68,6 @@ namespace Cslib.BitString
 
 open Finset Function
 open scoped BigOperators
-
-/-! ### Uniformly random bits -/
-
-/-- The bits of a set `S` of uniformly random bits are all equal to `b` with probability
-`2 ^ (-|S|)`, for any decision procedure of the event. -/
-theorem expect_ite_forall_mem_eq {ι : Type*} [Fintype ι] [DecidableEq ι] (S : Finset ι)
-    (b : Bool) [DecidablePred fun x : ι → Bool => ∀ i ∈ S, x i = b] :
-    𝔼 x : ι → Bool, (if ∀ i ∈ S, x i = b then (1 : ℝ) else 0) = 2⁻¹ ^ #S := by
-  have hcard : #{x : ι → Bool | ∀ i ∈ S, x i = b} = 2 ^ #Sᶜ := by
-    rw [← card_filter_forall_notMem_eq Sᶜ fun _ => b]
-    refine congrArg card (filter_congr fun x _ => ?_)
-    simp only [mem_compl, not_not]
-  have hS : #S ≤ Fintype.card ι := card_le_univ S
-  rw [expect_eq_sum_div_card, sum_boole, hcard, card_compl, card_univ, Fintype.card_fun,
-    Fintype.card_bool]
-  obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_le hS
-  rw [hm, Nat.add_sub_cancel_left, Nat.cast_pow, Nat.cast_pow, Nat.cast_ofNat, pow_add, inv_pow,
-    mul_comm, ← div_div, div_self (by positivity), one_div]
 
 /-! ### The function -/
 
@@ -153,6 +144,77 @@ theorem expect_bitVal_tribes (w s : ℕ) :
     card_univ, Fintype.card_fun, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
     Fintype.card_fin, Nat.cast_pow, Nat.cast_pow, Nat.cast_ofNat, ← div_pow, sub_div,
     div_self (by positivity), inv_pow, one_div]
+
+/-! ### The number of tribes -/
+
+/-- By `1 - x ≤ exp (-x)`, `(1 - 2 ^ (-w)) ^ (2 ^ w) ≤ exp (-1) < 1 / 2`. -/
+private theorem pow_two_pow_lt_one_div_two (w : ℕ) : (1 - (2⁻¹ : ℝ) ^ w) ^ 2 ^ w < 1 / 2 := by
+  have h0 : 0 ≤ 1 - (2⁻¹ : ℝ) ^ w := sub_nonneg.2 (pow_le_one₀ (by norm_num) (by norm_num))
+  calc (1 - (2⁻¹ : ℝ) ^ w) ^ 2 ^ w ≤ Real.exp (-(2⁻¹ : ℝ) ^ w) ^ 2 ^ w := by
+        gcongr
+        exact Real.one_sub_le_exp_neg _
+    _ = Real.exp (-1) := by
+        rw [← Real.exp_nat_mul, Nat.cast_pow, Nat.cast_ofNat, mul_neg, ← mul_pow,
+          mul_inv_cancel₀ two_ne_zero, one_pow]
+    _ < 1 / 2 := by
+        have h := Real.add_one_lt_exp (one_ne_zero : (1 : ℝ) ≠ 0)
+        rw [Real.exp_neg, one_div]
+        exact inv_strictAnti₀ two_pos (by linarith)
+
+/-- By Bernoulli's inequality, `(1 - 2 ^ (-w)) ^ (2 ^ (w - 1)) ≥ 1 / 2` for `w ≥ 1`. -/
+private theorem one_div_two_le_pow_two_pow_sub_one {w : ℕ} (hw : 1 ≤ w) :
+    1 / 2 ≤ (1 - (2⁻¹ : ℝ) ^ w) ^ 2 ^ (w - 1) := by
+  have h := one_add_mul_le_pow (a := -(2⁻¹ : ℝ) ^ w)
+    (by linarith [pow_le_one₀ (n := w) (by norm_num : (0 : ℝ) ≤ 2⁻¹) (by norm_num)]) (2 ^ (w - 1))
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le' hw
+  rw [Nat.add_sub_cancel, ← sub_eq_add_neg] at h
+  refine le_trans (le_of_eq ?_) h
+  rw [Nat.cast_pow, Nat.cast_ofNat, mul_neg, pow_succ, ← mul_assoc, ← mul_pow,
+    mul_inv_cancel₀ two_ne_zero, one_pow, one_mul]
+  norm_num
+
+/-- The **number of tribes** of width `w` in O'Donnell's `Tribes_n`
+[O'Donnell, Definition 4.11][ODonnell2014]: the largest `s` with `(1 - 2 ^ (-w)) ^ s ≥ 1 / 2`, that
+is, with `Tribes_{w,s}` true with probability at most `1 / 2` (`expect_bitVal_tribes`). It is the
+least `s` with `(1 - 2 ^ (-w)) ^ (s + 1) < 1 / 2`, which exists since the base is less than `1`.
+O'Donnell defines it for `w ≥ 1`; for `w = 0` it is `0`. -/
+noncomputable def tribesSize (w : ℕ) : ℕ :=
+  Nat.find (p := fun s => (1 - (2⁻¹ : ℝ) ^ w) ^ (s + 1) < 1 / 2)
+    ⟨2 ^ w - 1, by rw [Nat.sub_add_cancel Nat.one_le_two_pow]; exact pow_two_pow_lt_one_div_two w⟩
+
+/-- `Tribes_{w, tribesSize w}` is true with probability at most `1 / 2`
+(`1 - (1 - 2 ^ (-w)) ^ s ≤ 1 / 2`). -/
+theorem one_div_two_le_pow_tribesSize (w : ℕ) :
+    1 / 2 ≤ (1 - (2⁻¹ : ℝ) ^ w) ^ tribesSize w := by
+  rcases Nat.eq_zero_or_pos (tribesSize w) with h | h
+  · rw [h, pow_zero]
+    norm_num
+  · have hmin : ¬(1 - (2⁻¹ : ℝ) ^ w) ^ (tribesSize w - 1 + 1) < 1 / 2 :=
+      Nat.find_min _ (Nat.sub_lt h one_pos : tribesSize w - 1 < tribesSize w)
+    rw [Nat.sub_add_cancel h] at hmin
+    exact not_lt.1 hmin
+
+/-- `tribesSize w` is largest: one more tribe makes Tribes true with probability more than
+`1 / 2`. -/
+theorem pow_tribesSize_add_one_lt_one_div_two (w : ℕ) :
+    (1 - (2⁻¹ : ℝ) ^ w) ^ (tribesSize w + 1) < 1 / 2 :=
+  Nat.find_spec (p := fun s => (1 - (2⁻¹ : ℝ) ^ w) ^ (s + 1) < 1 / 2) _
+
+/-- `tribesSize w < 2 ^ w`, our bound. -/
+theorem tribesSize_lt_two_pow (w : ℕ) : tribesSize w < 2 ^ w := by
+  have hle : tribesSize w ≤ 2 ^ w - 1 := Nat.find_min' _ (show
+    (1 - (2⁻¹ : ℝ) ^ w) ^ (2 ^ w - 1 + 1) < 1 / 2 by
+      rw [Nat.sub_add_cancel Nat.one_le_two_pow]
+      exact pow_two_pow_lt_one_div_two w)
+  exact hle.trans_lt (Nat.sub_lt Nat.one_le_two_pow one_pos)
+
+/-- `2 ^ (w - 1) ≤ tribesSize w` for `w ≥ 1`, our bound. -/
+theorem two_pow_sub_one_le_tribesSize {w : ℕ} (hw : 1 ≤ w) : 2 ^ (w - 1) ≤ tribesSize w := by
+  by_contra h
+  have h0 : 0 ≤ 1 - (2⁻¹ : ℝ) ^ w := sub_nonneg.2 (pow_le_one₀ (by norm_num) (by norm_num))
+  have h1 : 1 - (2⁻¹ : ℝ) ^ w ≤ 1 := sub_le_self _ (by positivity)
+  exact (pow_tribesSize_add_one_lt_one_div_two w).not_ge
+    ((one_div_two_le_pow_two_pow_sub_one hw).trans (pow_le_pow_of_le_one h0 h1 (by omega)))
 
 /-- **Tribes is nearly balanced**, our explicit form of
 [O'Donnell, Proposition 4.12, last statement][ODonnell2014]: if `s` is largest with

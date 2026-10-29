@@ -2166,6 +2166,7 @@ public import Complexity.Foundations.Data.BiTape
 public import Complexity.Foundations.Data.BitString.Affine
 public import Complexity.Foundations.Data.BitString.AffineSubspace
 public import Complexity.Foundations.Data.BitString.Agree
+public import Complexity.Foundations.Data.BitString.AgreeExpect
 public import Complexity.Foundations.Data.BitString.Basic
 public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Foundations.Data.BitString.Block

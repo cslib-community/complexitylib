@@ -5,6 +5,7 @@ Authors: Karn Seth
 -/
 
 import Complexity.Computability.Circuit.Boolean.Tribes
+import Complexity.Foundations.Data.BitString.AgreeExpect
 import ComplexityTests.BravermanFooling
 
 /-!
@@ -14,13 +15,16 @@ Concrete values of the Tribes function `Tribes_{w,s}`: the probability `7 / 16` 
 `w = s = 2` [O'Donnell, Fact 4.10][ODonnell2014], and the resilience bound `2 ^ (q - w)` for
 `w = 2`, `s = 1`, `q = 1`, which is attained. Then the instances of
 [Chattopadhyay–Zuckerman, Theorem 4.1][ChattopadhyayZuckerman2019] for Tribes under the even-parity
-distribution on all `s w` bits (`ComplexityTests.BravermanFooling`), for symbolic `w` and `s`.
+distribution on all `s w` bits (`ComplexityTests.BravermanFooling`), at the least widths for which
+the hypotheses hold: `w = 1015` with O'Donnell's number of tribes `s = tribesSize w` for the bias,
+and `w = 2723`, `s = 2 ^ w` for the influence. These concrete instances check that the hypotheses
+can be met.
 
-The hypotheses of these instances hold only for very large `w`, about `2800` and more, which is
-not checked here. For the bias, the circuit reads all `s w` bits and the even-parity distribution
-on them is not uniform. For the influence of a nonempty coalition `Q`, the influence depends only
-on the marginal outside `Q` (`Cslib.BitString.isUndetermined_congr`), which for the even-parity
-distribution is uniform, so that instance only checks that the statement applies.
+For the bias, the circuit reads all `s w` bits and the even-parity distribution on them is not
+uniform. For the influence of a nonempty coalition `Q`, the influence depends only on the marginal
+outside `Q` (`Cslib.BitString.isUndetermined_congr`), which for the even-parity distribution is
+uniform, so that instance adds nothing beyond `Cslib.BitString.coalitionInfluence_tribes_le` and
+only checks that the statement applies.
 -/
 
 namespace ComplexityTests.Tribes
@@ -61,9 +65,8 @@ theorem coalitionInfluence_tribes_two_one :
 
 -- `Tribes_{2,1}` is `(1, 1 / 2)`-resilient, by the bound `2 ^ (q - w)`.
 example : IsResilient 1 (1 / 2) (tribes 2 1) := by
-  have h := isResilient_tribes 2 1 1
-  norm_num at h
-  exact h
+  convert isResilient_tribes 2 1 1 using 1
+  norm_num
 
 -- The bound is attained: `Tribes_{2,1}` is not `(1, ε)`-resilient for any `ε < 1 / 2`.
 example {ε : ℝ} (hε : ε < 1 / 2) : ¬IsResilient 1 ε (tribes 2 1) := fun h => by
@@ -73,29 +76,37 @@ example {ε : ℝ} (hε : ε < 1 / 2) : ¬IsResilient 1 ε (tribes 2 1) := fun h
 
 /-! ### Theorem 4.1 of Chattopadhyay and Zuckerman -/
 
--- The bias: if `s` is largest with `(1 - 2 ^ (-w)) ^ s ≥ 1 / 2` and `s w = K + 1` with
--- `K ≥ (64 (w + 1)) ^ 64`, then `Tribes_{w,s}` is true with probability within
--- `2 ^ (-w) + 2 ^ (-(w + 1))` of `1 / 2` under the even-parity distribution on its `s w` bits.
-example {w s K : ℕ} (hs : s < 2 ^ w)
-    (h₁ : 1 / 2 ≤ (1 - (2⁻¹ : ℝ) ^ w) ^ s) (h₂ : (1 - (2⁻¹ : ℝ) ^ w) ^ (s + 1) < 1 / 2)
-    (hK : (64 * (w + 1)) ^ 64 ≤ K) (h : s * w = K + 1) :
-    |∑ x, (evenParity (s * w) x).toReal * bitVal ℝ (tribes w s x) - 1 / 2| ≤
-      2⁻¹ ^ w + 1 / 2 ^ (w + 1) :=
-  abs_sum_bitVal_tribes_sub_half_le (by omega)
-    (hs.trans (Nat.pow_lt_pow_right one_lt_two (Nat.lt_succ_self w)))
-    (Nat.lt_two_pow_self.trans (Nat.pow_lt_pow_right one_lt_two (Nat.lt_succ_self w))) h₁ h₂
-    hK (h ▸ isKWiseIndependent_evenParity K)
+-- The bias at `w = 1015` with `s = tribesSize 1015`, which is largest with
+-- `(1 - 2 ^ (-w)) ^ s ≥ 1 / 2`, and `p = w + 1`: under the even-parity distribution on its `s w`
+-- bits, `Tribes_{w,s}` is true with probability within `2 ^ (-1015) + 2 ^ (-1016)` of `1 / 2`.
+-- From `s ≥ 2 ^ (w - 1)`, `1015` is the least `w` with `2 ^ (w - 1) w - 1 ≥ (64 (w + 1)) ^ 64`.
+-- `norm_num` evaluates `2 ^ 1016`, beyond the default `exponentiation.threshold` of `256`.
+set_option exponentiation.threshold 1024 in
+example : |∑ x, (evenParity (tribesSize 1015 * 1015) x).toReal *
+      bitVal ℝ (tribes 1015 (tribesSize 1015) x) - 1 / 2| ≤ 2⁻¹ ^ 1015 + 1 / 2 ^ 1016 := by
+  have hs : 2 ^ (1015 - 1) ≤ tribesSize 1015 := two_pow_sub_one_le_tribesSize (by norm_num)
+  obtain ⟨K, hK⟩ : ∃ K, tribesSize 1015 * 1015 = K + 1 :=
+    Nat.exists_eq_add_one.2 (Nat.mul_pos ((Nat.two_pow_pos _).trans_le hs) (by norm_num))
+  have ht : (64 * 1016) ^ 64 ≤ K :=
+    Nat.le_of_succ_le_succ (((show (64 * 1016) ^ 64 + 1 ≤ 2 ^ (1015 - 1) * 1015 by norm_num).trans
+      (Nat.mul_le_mul_right 1015 hs)).trans hK.le)
+  exact abs_sum_bitVal_tribes_sub_half_le (by norm_num)
+    ((tribesSize_lt_two_pow 1015).trans (Nat.pow_lt_pow_right one_lt_two (by norm_num)))
+    (by norm_num) (one_div_two_le_pow_tribesSize 1015) (pow_tribesSize_add_one_lt_one_div_two 1015)
+    ht (hK ▸ isKWiseIndependent_evenParity K)
 
--- The influence: if `s ≤ 2 ^ w` and `s w = K + 1` with `K ≥ (64 (w + 4)) ^ 157`, then every
--- coalition `Q` has influence at most `2 ^ (|Q| - w) + 2 ^ (-(w + 4))` on `Tribes_{w,s}` under the
--- even-parity distribution on its `s w` bits.
-example {w s K : ℕ} (hs : s ≤ 2 ^ w) (hK : (64 * (w + 4)) ^ 157 ≤ K) (h : s * w = K + 1)
-    (Q : Finset (Fin (s * w))) :
-    coalitionInfluence (evenParity (s * w)) Q (tribes w s) ≤ 2 ^ #Q / 2 ^ w + 1 / 2 ^ (w + 4) := by
-  have h16 : 2 ^ (w + 4) = 2 ^ w * 16 := by rw [pow_add]; norm_num
-  have h1 : 1 ≤ 2 ^ w := Nat.one_le_two_pow
-  exact isKWiseResilient_tribes (by omega) (by omega)
-    (Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_right two_pos (Nat.le_add_right w 4))) hK Q rfl
-    _ (h ▸ isKWiseIndependent_evenParity K)
+-- The influence at `w = 2723`, `s = 2 ^ w` and `p = w + 4`: under the even-parity distribution on
+-- its `s w` bits, every coalition `Q` has influence at most `2 ^ (|Q| - 2723) + 2 ^ (-2727)` on
+-- `Tribes_{w,s}`. With `s ≤ 2 ^ w`, `2723` is the least `w` with `s w - 1 ≥ (64 (w + 4)) ^ 157`.
+-- `norm_num` evaluates `2 ^ 2727`, beyond the default `exponentiation.threshold` of `256`.
+set_option exponentiation.threshold 2727 in
+example (Q : Finset (Fin (2 ^ 2723 * 2723))) :
+    coalitionInfluence (evenParity (2 ^ 2723 * 2723)) Q (tribes 2723 (2 ^ 2723)) ≤
+      2 ^ #Q / 2 ^ 2723 + 1 / 2 ^ 2727 := by
+  obtain ⟨K, hK⟩ : ∃ K, 2 ^ 2723 * 2723 = K + 1 := Nat.exists_eq_add_one.2 (by positivity)
+  have ht : (64 * 2727) ^ 157 ≤ K :=
+    Nat.le_of_succ_le_succ ((show (64 * 2727) ^ 157 + 1 ≤ 2 ^ 2723 * 2723 by norm_num).trans hK.le)
+  exact isKWiseResilient_tribes (by norm_num) (by norm_num) (by norm_num) ht Q rfl _
+    (hK ▸ isKWiseIndependent_evenParity K)
 
 end ComplexityTests.Tribes

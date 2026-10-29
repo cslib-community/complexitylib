@@ -21,10 +21,10 @@ the unbounded fan-in basis, an `OR` of `s` `AND`s of `w` inputs each (`tribesCir
 (`Cslib.Circuits.Boolean.Braverman.isKWiseResilient_of_isResilient`), the resilience of Tribes
 (`Cslib.BitString.isResilient_tribes`) and its near balance
 (`Cslib.BitString.abs_expect_bitVal_tribes_sub_half_le`) carry over, with an error `2 ^ (-p)`, to
-every `t`-wise independent distribution with `t ≥ (64 p) ^ 157`, where `2 ^ p` exceeds the fan-in
-and twice the size; for the bias, `t ≥ (64 p) ^ 64` suffices. These exponents are those of the
-library's form of Braverman's theorem at depths `5` and `2`; they are ours, and Chattopadhyay and
-Zuckerman's exponent `3 d + 6` is not claimed.
+every `t`-wise independent distribution with `t ≥ (64 p) ^ 157`, where `p ≥ 2`, `2 s + 8 ≤ 2 ^ p`
+and `w < 2 ^ p`; for the bias, `t ≥ (64 p) ^ 64` suffices, where `p ≥ 1` and `s, w < 2 ^ p`. These
+exponents are those of the library's form of Braverman's theorem at depths `5` and `2`; they are
+ours, and Chattopadhyay and Zuckerman's exponent `3 d + 6` is not claimed.
 
 ## Main definitions
 
@@ -32,8 +32,6 @@ Zuckerman's exponent `3 d + 6` is not claimed.
 
 ## Main results
 
-* `Cslib.Circuits.Circuit.fanInAtMost_pi`: single-output circuits side by side keep a common
-  fan-in bound.
 * `Cslib.Circuits.Boolean.eval_tribesCircuit`, `Cslib.Circuits.Boolean.size_tribesCircuit`,
   `Cslib.Circuits.Boolean.depth_tribesCircuit_le`,
   `Cslib.Circuits.Boolean.fanInAtMost_tribesCircuit`: its function, size, depth and fan-in.
@@ -51,20 +49,7 @@ Zuckerman's exponent `3 d + 6` is not claimed.
 
 public section
 
-namespace Cslib.Circuits
-
-/-- Single-output circuits side by side keep a common fan-in bound. -/
-theorem Circuit.fanInAtMost_pi {σ : Signature} {n m r : ℕ} {cs : Fin m → Circuit σ n 1}
-    (h : ∀ j, (cs j).FanInAtMost r) : (Circuit.pi cs).FanInAtMost r := by
-  induction m with
-  | zero =>
-    rw [Circuit.pi]
-    exact Circuit.fanInAtMost_wiring _ _
-  | succ m ih =>
-    rw [Circuit.pi]
-    exact (ih fun j => h _).append (h _)
-
-namespace Boolean
+namespace Cslib.Circuits.Boolean
 
 open BitString
 
@@ -133,6 +118,4 @@ theorem abs_sum_bitVal_tribes_sub_half_le {p t : ℕ} {D : PMF (BitString (s * w
 
 end Braverman
 
-end Boolean
-
-end Cslib.Circuits
+end Cslib.Circuits.Boolean
