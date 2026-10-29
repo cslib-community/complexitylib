@@ -146,6 +146,7 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountPlace
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountPlaceMemory
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountTriple
+public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Modulus
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeExec
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeInitialize
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.NodeLayout

@@ -425,10 +425,11 @@ each statement against the numbered result. Organize modules by subject, not cha
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
 - **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table and
-  collision-tested minimum-search programs have explicit local fit/frame/cost contracts.
-  The complete native one-node component ([#1481]) computes all residues/histograms, three
-  compact heavy arrays and exact packed output in linear time. Frontend enumeration, recursive
-  traversal and global preprocessing width/time composition remain.
+  collision-tested minimum-search and complete two-prime modulus programs have explicit local
+  fit/frame/cost contracts. The complete native one-node component ([#1481]) computes all
+  residues/histograms, three compact heavy arrays and exact packed output in linear time;
+  frontend enumeration, recursive traversal and global preprocessing width/time composition
+  remain.
 - **Mathlib TM2:** sublinear work-space comparisons and a linear-space forward simulation.
 - **Generic RAM:** uniform arbitrary-program dispatch and general width-selection and input-fit
   theorems; simulating operations by programs over smaller bases; structured programs and time
