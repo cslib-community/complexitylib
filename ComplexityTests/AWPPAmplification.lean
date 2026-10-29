@@ -24,9 +24,9 @@ def language : Set (List Bool) := {w | w.headD false = true}
 private def numerator (w : List Bool) : ℤ := if w.headD false then 3 else 1
 
 private theorem numerator_gap : numerator ∈ GapP encBits := by
-  have h : ComputableTidilyInPolyTime
+  have h : ComputableInPolyTime
       (fun w : List Bool => if w.headD false then (3 : ℕ) else 1) encBits encNat := by fun_prop
-  convert SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime (.of_tidy h)) using 1
+  convert SharpP.natCast_mem_GapP (mem_SharpP_of_polyTime h) using 1
   ext w
   simp only [numerator]
   split_ifs <;> rfl
@@ -47,14 +47,21 @@ example : [true] ∈ language ∧ [false] ∉ language := by simp [language]
 /-- The original witness has genuine error one quarter on both sides. -/
 example : numerator [true] = 3 ∧ numerator [false] = 1 := by decide
 
-/-- One GapP witness simultaneously achieves a varying exponential error bound. -/
-example : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ, ∀ w : List Bool,
-    let D := (2 : ℤ) ^ P.eval w.length
-    (0 ≤ G w ∧ G w ≤ D) ∧
-      (w ∈ language → (2 : ℤ) ^ (w.length + 1) * (D - G w) ≤ D) ∧
-      (w ∉ language → (2 : ℤ) ^ (w.length + 1) * G w ≤ D) :=
-  exists_AWPP_gap_errorExponent language_mem (fun w => w.length + 1)
+/-- One GapP witness simultaneously achieves a varying exponential error bound, giving error at
+most `1 / 4` on the length-1 inputs `[true]` and `[false]`. -/
+example : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ,
+    (∀ w : List Bool,
+      let D := (2 : ℤ) ^ P.eval w.length
+      (0 ≤ G w ∧ G w ≤ D) ∧
+        (w ∈ language → (2 : ℤ) ^ (w.length + 1) * (D - G w) ≤ D) ∧
+        (w ∉ language → (2 : ℤ) ^ (w.length + 1) * G w ≤ D)) ∧
+    4 * ((2 : ℤ) ^ P.eval 1 - G [true]) ≤ (2 : ℤ) ^ P.eval 1 ∧
+    4 * G [false] ≤ (2 : ℤ) ^ P.eval 1 := by
+  obtain ⟨G, hG, P, h⟩ := exists_AWPP_gap_errorExponent language_mem (fun w => w.length + 1)
     (PolyBounded.self.add (.const 1))
+  refine ⟨G, hG, P, h, ?_, ?_⟩
+  · simpa [language] using (h [true]).2.1 (by simp [language])
+  · simpa [language] using (h [false]).2.2 (by simp [language])
 
 /-- A possibly noncomputable requested rate is handled by a fixed dominating polynomial. -/
 example (S : Set (List Bool)) : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ, ∀ w : List Bool,
@@ -69,14 +76,19 @@ example (S : Set (List Bool)) : ∃ G ∈ GapP encBits, ∃ P : Polynomial ℕ, 
     simp only [encBits_apply]
     split_ifs <;> lia
 
-/-- Zero requested exponent permits the empty majority experiment and its constant zero output. -/
-example (g D : ℤ) : AWPPAmplification.majorityPolynomial g D 0 = 0 := by
-  simp [AWPPAmplification.majorityPolynomial]
+/-- Zero requested exponent permits the empty majority experiment and its constant zero output,
+while one half-width gives a two-trial majority weight of `g ^ 2 = 9`. -/
+example : AWPPAmplification.majorityPolynomial 3 4 0 = 0 ∧
+    AWPPAmplification.majorityPolynomial 3 4 1 = 9 := by
+  decide
 
-/-- A denominator of one is allowed, including the exact accepting endpoint. -/
-example (e : ℕ) : (2 : ℤ) ^ e *
-    (1 - AWPPAmplification.majorityPolynomial 1 1 (6 * e)) ≤ 1 := by
-  simpa using (AWPPAmplification.majorityPolynomial_bounds
-    (g := 1) (m := 0) (e := e) (by norm_num) (by norm_num)).2.1 (by norm_num)
+/-- A denominator of one is allowed, forcing the exact accepting endpoint `1` at `e = 2`. -/
+example : AWPPAmplification.majorityPolynomial 1 1 12 = 1 := by
+  have hb := AWPPAmplification.majorityPolynomial_bounds
+    (g := 1) (m := 0) (e := 2) (by norm_num) (by norm_num)
+  have h1 : AWPPAmplification.majorityPolynomial 1 1 12 ≤ 1 := by simpa using hb.1.2
+  have h2 : 4 * (1 - AWPPAmplification.majorityPolynomial 1 1 12) ≤ 1 := by
+    simpa using hb.2.1 (by norm_num)
+  lia
 
 end Cslib.Complexity.Tests.UniformAWPP

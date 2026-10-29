@@ -7,7 +7,10 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BinaryCompare
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 public import Mathlib.Data.Nat.Size
 
 /-!
@@ -68,13 +71,14 @@ public theorem natAdd :
       (encNat ((· + 1)^[k] p.1)).length ≤ (encNat p.1).length + (encNat p.2).length + 1 := by
     rw [iterate_succ_eq]
     exact (length_encNat_mono (by omega : p.1 + k ≤ p.1 + p.2)).trans (length_encNat_add_le_add _ _)
-  have h := iterate (n := fun p : ℕ × ℕ => p.2) (init := fun p => p.1) (step := (· + 1))
-    (snd encNat encNat) (fst encNat encNat) natSucc
+  have h := (ComputableInO.iterate (n := fun p : ℕ × ℕ => p.2) (init := fun p => p.1)
+    (step := (· + 1)) (snd encNat encNat).computableInO (fst encNat encNat).computableInO
+    ComputableInO.natSucc
     (R := fun p => ((encNat p.1).length + (encNat p.2).length + 2) ^ 2)
     (Q := fun p => (encNat p.1).length + (encNat p.2).length + 2)
     (B := fun p => (encNat p.1).length + (encNat p.2).length + 1)
     (fun p k hk => Nat.pow_le_pow_left (by have := hle p k hk; omega) 2)
-    (fun p k hk => by have := hle p k hk; omega) (fun p k hk => hle p k hk)
+    (fun p k hk => by have := hle p k hk; omega) (fun p k hk => hle p k hk)).tidy
   refine (h.mono 8 (fun p => ?_) fun p => ?_).of_enc_eq fun p => by rw [iterate_succ_eq]
   · simp only [length_encPair]
     nlinarith [Nat.zero_le ((encNat p.1).length), Nat.zero_le ((encNat p.2).length),

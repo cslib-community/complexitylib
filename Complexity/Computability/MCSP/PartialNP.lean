@@ -59,6 +59,8 @@ giving a polynomial-time many-one reduction from `MCSP` to `PartialMCSP`
   soundness and padded completeness of `PartialMCSP.verifier`.
 * `Cslib.PartialMCSP.isVerifier`, `Cslib.PartialMCSP.isVerifier_encBinary`: verifier correctness.
 * `Cslib.PartialMCSP.computableInPolyTime_tableEntry`: table entry lookup is polynomial-time.
+* `Cslib.PartialMCSP.computableInPolyTime_id_enc_encBinary`: re-encoding from unary (`enc`) to
+  binary (`encBinary`) threshold is polynomial-time.
 * `Cslib.PartialMCSP.computableInPolyTime_verifier`,
   `Cslib.PartialMCSP.computableInPolyTime_verifier_encBinary`: plain polynomial-time certificates
   for the verifiers.
@@ -253,21 +255,27 @@ theorem computableInPolyTime_verifier_encBinary :
   rw [funext verifier_eq_tableVerifier]
   exact computableInPolyTime_tableVerifier.comp hraw
 
+/-- Re-encoding a `PartialMCSP.Instance` from unary threshold encoding (`enc`) to binary threshold
+encoding (`encBinary`) is computable in polynomial time. -/
+theorem computableInPolyTime_id_enc_encBinary :
+    ComputableInPolyTime id enc encBinary := by
+  have hraw : ComputableTidilyInPolyTime
+      (fun x : Instance => (List.ofFn x.table, x.threshold))
+      enc (encPair (encList (encOption encBool)) encUnary) :=
+    .of_eq fun _ => rfl
+  have hconv : ComputableTidilyInPolyTime
+      (fun r : List (Option Bool) × ℕ => (r.1, r.2))
+      (encPair (encList (encOption encBool)) encUnary)
+      (encPair (encList (encOption encBool)) encNat) :=
+    (fst _ _).prod (unary_to_binary.comp (snd _ _))
+  exact .of_tidy ((hconv.comp hraw).of_enc_eq fun _ => rfl)
+
 /-- The `PartialMCSP` verifier is computable in polynomial time under `enc` (unary threshold). -/
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair enc encBits) encBool := by
-  have hraw : ComputableInPolyTime
-      (fun p : Instance × List Bool => ((List.ofFn p.1.table, p.1.threshold), p.2))
-      (encPair enc encBits)
-      (encPair (encPair (encList (encOption encBool)) encUnary) encBits) :=
-    .of_eq fun _ => rfl
-  have hconv : ComputableInPolyTime
-      (fun r : (List (Option Bool) × ℕ) × List Bool => ((r.1.1, r.1.2), r.2))
-      (encPair (encPair (encList (encOption encBool)) encUnary) encBits)
-      (encPair (encPair (encList (encOption encBool)) encNat) encBits) :=
-    .of_tidy (((fst _ _).fst'.prod (unary_to_binary.comp (fst _ _).snd')).prod (snd _ _))
-  rw [funext verifier_eq_tableVerifier]
-  exact (computableInPolyTime_tableVerifier.comp hconv).comp hraw
+    ComputableInPolyTime verifier (encPair enc encBits) encBool :=
+  computableInPolyTime_verifier_encBinary.comp
+    ((computableInPolyTime_id_enc_encBinary.comp (.of_tidy (fst enc encBits))).prod
+      (.of_tidy (snd enc encBits)))
 
 /-- **`PartialMCSP` is in `NP`** under `PartialMCSP.enc` (framed `Option Bool` truth table and
 unary threshold) [Hirahara2022, ECCC TR22-119, Definition 8.4, p. 30]. -/

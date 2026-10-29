@@ -39,8 +39,7 @@ example : count [true] = 3 ∧ count [false] = 1 := by decide
 
 /-- The #P count may be exponential even though its unary exponent is polynomial-time. -/
 example : (fun w : List Bool => 3 ^ w.length) ∈ SharpP encBits :=
-  SharpP.pow_mem_polyTime (SharpP.natCast_mem 3)
-    (.of_tidy (by simpa using ComputableTidilyInPolyTime.encoding_length encBits))
+  SharpP.pow_mem_polyTime (SharpP.natCast_mem 3) (ComputableInPolyTime.encoding_length encBits)
 
 /-- Zero rows accept the empty tuple, even for an always-rejecting zero-width verifier. -/
 example : acceptCount (SharpP.powerVerifier (fun _ : Unit => 0) (fun _ => 0)

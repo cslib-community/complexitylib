@@ -29,21 +29,27 @@ example (c e : ℕ) :
       Encoding.encUnary Encoding.encUnary :=
   CryptographyBridge.polyTime_iff.mpr (by fun_prop)
 
-/-- `leveled` yields both a depth-indexed scheme family `E` with joint polynomial runtime in
-`(security, d)` (`NativeInDepth E`) and, for every unary-polynomial depth budget `budget`, a scheme
-`S` obtained by substituting `d = budget security` into `E`. -/
+/-- `leveled` yields a uniformly generated decryption circuit family `circuit`, a depth-indexed
+scheme family `E` with joint polynomial runtime in `(security, d)` (`NativeInDepth E`) and, for
+every unary-polynomial depth budget `budget`, a scheme `S` obtained by substituting
+`d = budget security` into `E`. -/
 example (hLWE : DecisionLWE) :
     ∃ (circuit : ∀ security, Cslib.Circuits.Circuit Cslib.Circuits.Boolean.signature
         ((3 * secretWidth security + 1) + (ciphertextWidth security + 1)) 1)
       (E : ℕ → Cslib.Crypto.Homomorphic.Scheme),
+      Computation.PolyTime
+        (fun security =>
+          (⟨(3 * secretWidth security + 1) + (ciphertextWidth security + 1), circuit security⟩ :
+            Σ k, Cslib.Circuits.Circuit Cslib.Circuits.Boolean.signature k 1))
+        Encoding.encUnary (Cslib.Circuits.Boolean.encCircuit 1) ∧
       NativeInDepth E ∧
       ∀ d : ℕ,
         DecryptsWith (E d) (fun security => 3 * secretWidth security + 1)
           (fun security => ciphertextWidth security + 1) circuit ∧
         Homomorphic (E d) (fun _ C => C.2.depth ≤ d) ∧
         ChosenMessageSecure (E d) := by
-  obtain ⟨circuit, E, -, -, -, hjoint, hd, -⟩ := leveled hLWE
-  exact ⟨circuit, E, hjoint, fun d => ⟨(hd d).2.2.1, (hd d).2.2.2.1, (hd d).2.2.2.2.2.2⟩⟩
+  obtain ⟨circuit, E, hgen, -, -, -, hjoint, hd, -⟩ := leveled hLWE
+  exact ⟨circuit, E, hgen, hjoint, fun d => ⟨(hd d).2.2.1, (hd d).2.2.2.1, (hd d).2.2.2.2.2.2⟩⟩
 
 /-- `unframe` reads back a framed word, whatever follows it. -/
 theorem unframe_frame_append (u v : List Bool) : unframe (Encoding.frame u ++ v) = u := by

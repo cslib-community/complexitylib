@@ -238,8 +238,6 @@ theorem mem_SharpP_of_polyTime_length {V : α × List Bool → Bool} {r : α →
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool)
     (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => acceptCount V a (r a)) ∈ SharpP enc := by
-  have hV := hV.tidy
-  have hr := hr.tidy
   obtain ⟨p, hle⟩ := hr.polyBounded.exists_polynomial
   refine ⟨p, andVerifier r V allFalseVerifier, by fun_prop, fun a => ?_⟩
   obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le (hle a)
@@ -250,12 +248,10 @@ required to be false, so they do not multiply the number of witnesses. -/
 theorem SharpP.comp_mem {β : Type} {encB : β ↪ List Bool} {f : β → ℕ} {g : α → β}
     (hf : f ∈ SharpP encB) (hg : ComputableInPolyTime g enc encB) :
     f ∘ g ∈ SharpP enc := by
-  have hg := hg.tidy
   obtain ⟨q, W, hW, hWB⟩ := mem_SharpP.mp hf
-  have hW := hW.tidy
   have h := mem_SharpP_of_polyTime_length
     (V := fun x => W (g x.1, x.2))
-    (r := fun a => q.eval (encB (g a)).length) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+    (r := fun a => q.eval (encB (g a)).length) (by fun_prop) (by fun_prop)
   change (fun a => acceptCount W (g a) (q.eval (encB (g a)).length)) ∈ SharpP enc at h
   simpa only [← hWB, Function.comp_def] using h
 

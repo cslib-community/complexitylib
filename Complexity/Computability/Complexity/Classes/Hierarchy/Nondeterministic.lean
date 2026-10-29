@@ -88,8 +88,8 @@ theorem not_NEXP_subset_NP : ¬ (NEXP encBits ⊆ NP encBits) := by
   have hB₁ : h₁ ⁻¹' ntm.padded c ∈ NP encBits :=
     hSub (preimage_append_two_pow_mem_NEXP (ntm.padded_mem_NP c))
   have hf_add : ComputableInPolyTime (fun n : ℕ => n + 4) encUnary encUnary :=
-    .of_tidy (ComputableTidilyInPolyTime.unary_add.comp
-      (ComputableTidilyInPolyTime.id'.prod (ComputableTidilyInPolyTime.const 4)))
+    (ComputableInPolyTime.unary_add.comp
+      (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const 4)))
   have hB₂ : g₂ ⁻¹' (h₁ ⁻¹' ntm.padded c) ∈ NEXP encBits :=
     preimage_pad_mem_NEXP hB₁ hf_add fun n => Nat.le_add_right n 4
   have hL_eq : L = g₂ ⁻¹' (h₁ ⁻¹' ntm.padded c) := by

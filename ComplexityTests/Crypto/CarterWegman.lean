@@ -13,14 +13,15 @@ import Mathlib.Algebra.Field.ZMod
 # Tests for Carter–Wegman MACs from Δ-universal hashing
 
 Checks concrete tag generation and verification for `xpolyHash` over `ZMod 7` and Boolean-matrix
-linear hashing over `BitString 2`, instantiates `OneTimeForger` and a two-query adaptive
-`CounterForger`, and exercises the one-time, multi-query counter, and pseudorandom-pad security
-bounds of `Complexity.Crypto.Protocols.MAC.CarterWegman`.
+linear hashing over `BitString 2`, instantiates `OneTimeForger`, `CounterForger`, `NonceForger`,
+`RandomNonceForger`, `NonceMACForger`, and `Forger` on multi-query adaptive programs, and exercises
+the one-time, multi-query counter, nonce-based, randomized, and computational (`NonceMACScheme` and
+`MACScheme`) security bounds of `Complexity.Crypto.Protocols.MAC.CarterWegman`.
 -/
 
 namespace ComplexityTests.Crypto.CarterWegman
 
-open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols.CarterWegman
+open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols.CarterWegman Turing.MultiTapeTM
 open scoped ENNReal
 
 instance : Fact (Nat.Prime 7) := ⟨by decide⟩
@@ -422,5 +423,188 @@ example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFun
     simp
   · rw [eval_prfIdealGame_prfPadDistinguisher]
     simp
+
+/-! ### Computational `NonceMACScheme` and `MACScheme` Carter–Wegman tests -/
+
+/-- Identity schedule `id : ℕ → ℕ` is computable in plain polynomial time in unary. -/
+theorem computableInPolyTime_id : ComputableInPolyTime (id : ℕ → ℕ) encUnary encUnary := by
+  polytime
+
+/-- Two-query adaptive `NonceMACForger` that queries `0^n` at nonce `0^n` (receiving `t₀`),
+then queries `1^n` at nonce `true :: 0^(n-1)` (receiving `t₁`), and outputs a candidate forgery
+`((0^n, true :: 0^(n-1)), BitString.listXor n [t₀, t₁])`. -/
+def twoQueryNonceMACForger : NonceMACForger :=
+  fun n _ => do
+    let t₀ ← List.take n <$>
+      ProbOracleComp.query
+        ((), encPair encBits encBits (List.replicate n false, List.replicate n false))
+    let t₁ ← List.take n <$>
+      ProbOracleComp.query
+        ((), encPair encBits encBits
+          (List.replicate n true, true :: List.replicate (n - 1) false))
+    return ((List.replicate n false, true :: List.replicate (n - 1) false),
+      BitString.listXor n [t₀, t₁])
+
+/-- `twoQueryNonceMACForger` is uniformly strict oracle-PPT. -/
+theorem isOraclePPT_twoQueryNonceMACForger :
+    IsOraclePPT (encPair (encPair encBits encBits) encBits) twoQueryNonceMACForger := by
+  have hq0 : IsOraclePPTOn (encPair encUnary encBits) encBits
+      (fun p : ℕ × List Bool =>
+        List.take p.1 <$>
+          ProbOracleComp.query
+            ((), encPair encBits encBits (List.replicate p.1 false, List.replicate p.1 false))) :=
+    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+  have hq1 : IsOraclePPTOn (encPair (encPair encUnary encBits) encBits) encBits
+      (fun q : (ℕ × List Bool) × List Bool =>
+        List.take q.1.1 <$>
+          ProbOracleComp.query
+            ((), encPair encBits encBits
+              (List.replicate q.1.1 true, true :: List.replicate (q.1.1 - 1) false))) :=
+    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+  have hstep1 := hq1.map_with
+    (output := encPair (encPair encBits encBits) encBits)
+    (f := fun (q : (ℕ × List Bool) × List Bool) t₁ =>
+      ((List.replicate q.1.1 false, true :: List.replicate (q.1.1 - 1) false),
+        BitString.listXor q.1.1 [q.2, t₁]))
+    (by polytime)
+  unfold twoQueryNonceMACForger
+  exact (hq0.bind_with hstep1).isOraclePPT
+
+-- Concrete `IsOraclePPT` admissibility check for `prfNonceToPrfDistinguisher` on the two-query
+-- adaptive `NonceMACForger` and `BitString.LinearHash.wordHash`.
+example :
+    IsOraclePPT encBool
+      (prfNonceToPrfDistinguisher id
+        (fun n => BitString.sampleList (n * id n))
+        BitString.LinearHash.wordHash
+        twoQueryNonceMACForger) :=
+  isOraclePPT_prfNonceToPrfDistinguisher
+    computableInPolyTime_id
+    (isPPTOn_linearHashSeed computableInPolyTime_id)
+    computableInPolyTime_linearHashWordHash
+    isOraclePPT_twoQueryNonceMACForger
+
+-- End-to-end asymptotic `NonceMACScheme.SUFCMA` and `NonceMACScheme.EUFCMA` checks for
+-- `linearHashNonceMAC`, plus quantitative SUF-CMA bound instantiated on `twoQueryNonceMACForger`.
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (linearHashNonceMAC id family computableInPolyTime_id hprf.polyTime).SUFCMA :=
+  hprf.sufCma_linearHashNonceMAC computableInPolyTime_id
+
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (linearHashNonceMAC id family computableInPolyTime_id hprf.polyTime).EUFCMA :=
+  hprf.eufCma_linearHashNonceMAC computableInPolyTime_id
+
+example {family : List Bool → List Bool → List Bool}
+    (hfamily : ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits) (n : ℕ) :
+    (ProbComp.eval
+      ((linearHashNonceMAC id family computableInPolyTime_id hfamily).sufCmaGame
+        twoQueryNonceMACForger n) true).toReal ≤
+      ((2 : ℝ) ^ n)⁻¹ + ((2 : ℝ) ^ n)⁻¹ +
+        (Game.advantage
+          (ProbComp.eval
+            (prfRealGame family
+              (prfNonceToPrfDistinguisher id (fun k => BitString.sampleList (k * id k))
+                BitString.LinearHash.wordHash twoQueryNonceMACForger) n))
+          (ProbComp.eval
+            (prfIdealGame
+              (prfNonceToPrfDistinguisher id (fun k => BitString.sampleList (k * id k))
+                BitString.LinearHash.wordHash twoQueryNonceMACForger) n)) : ℝ) :=
+  sufCmaGame_linearHashNonceMAC_toReal_le
+    computableInPolyTime_id hfamily n twoQueryNonceMACForger
+
+/-- Two-query adaptive `Forger` for randomized Carter–Wegman (`MACScheme`): queries `0^n`
+(receiving encoded `(nonce₀, tag₀)` of length at most `2 * n + 2`), queries `1^n` (receiving
+encoded `(nonce₁, tag₁)`), and outputs `(0^n, raw₁)` as its candidate forgery. -/
+def twoQueryRandomMACForger : Forger :=
+  fun n _ => do
+    let _ ← List.take (2 * n + 2) <$>
+      ProbOracleComp.query ((), List.replicate n false)
+    let raw₁ ← List.take (2 * n + 2) <$>
+      ProbOracleComp.query ((), List.replicate n true)
+    return (List.replicate n false, raw₁)
+
+/-- `twoQueryRandomMACForger` is uniformly strict oracle-PPT. -/
+theorem isOraclePPT_twoQueryRandomMACForger :
+    IsOraclePPT (encPair encBits encBits) twoQueryRandomMACForger := by
+  have hq0 : IsOraclePPTOn (encPair encUnary encBits) encBits
+      (fun p : ℕ × List Bool =>
+        List.take (2 * p.1 + 2) <$>
+          ProbOracleComp.query ((), List.replicate p.1 false)) :=
+    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+  have hq1 : IsOraclePPTOn (encPair (encPair encUnary encBits) encBits) encBits
+      (fun q : (ℕ × List Bool) × List Bool =>
+        List.take (2 * q.1.1 + 2) <$>
+          ProbOracleComp.query ((), List.replicate q.1.1 true)) :=
+    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+  have hstep1 := hq1.map_with
+    (output := encPair encBits encBits)
+    (f := fun (q : (ℕ × List Bool) × List Bool) raw₁ =>
+      (List.replicate q.1.1 false, raw₁))
+    (by polytime)
+  unfold twoQueryRandomMACForger
+  exact (hq0.bind_with hstep1).isOraclePPT
+
+/-- `twoQueryRandomMACForger` makes at most `2` signing queries. -/
+theorem isQueryBounded_twoQueryRandomMACForger (k : ℕ) :
+    (twoQueryRandomMACForger k []).IsQueryBounded 2 := by
+  unfold twoQueryRandomMACForger
+  refine OracleComp.IsCostBounded.bind (n := 1) (m := 1) ?_ fun _ => ?_
+  · rw [OracleComp.isCostBounded_map_iff]
+    exact ProbOracleComp.IsQueryBounded.query ((), List.replicate k false)
+  · refine OracleComp.IsCostBounded.bind (n := 1) (m := 0) ?_ fun _ => ?_
+    · rw [OracleComp.isCostBounded_map_iff]
+      exact ProbOracleComp.IsQueryBounded.query ((), List.replicate k true)
+    · exact OracleComp.IsCostBounded.pure _ 0
+
+-- Concrete `IsOraclePPT` admissibility check for `prfRandomNonceToPrfDistinguisher` on the
+-- two-query adaptive `Forger` and `BitString.LinearHash.wordHash`.
+example :
+    IsOraclePPT encBool
+      (prfRandomNonceToPrfDistinguisher id
+        (fun n => BitString.sampleList (n * id n))
+        BitString.LinearHash.wordHash
+        twoQueryRandomMACForger) :=
+  isOraclePPT_prfRandomNonceToPrfDistinguisher
+    computableInPolyTime_id
+    (isPPTOn_linearHashSeed computableInPolyTime_id)
+    computableInPolyTime_linearHashWordHash
+    isOraclePPT_twoQueryRandomMACForger
+
+-- End-to-end asymptotic `MACScheme.SUFCMA`, `MACScheme.EUFCMA`, and `MACScheme.OneTimeEUFCMA`
+-- checks for `linearHashRandomMAC`, plus quantitative SUF-CMA bound instantiated on
+-- `twoQueryRandomMACForger`.
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).SUFCMA :=
+  hprf.sufCma_linearHashRandomMAC computableInPolyTime_id
+
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).EUFCMA :=
+  hprf.eufCma_linearHashRandomMAC computableInPolyTime_id
+
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).OneTimeEUFCMA :=
+  hprf.oneTimeEUFCMA_linearHashRandomMAC computableInPolyTime_id
+
+example {family : List Bool → List Bool → List Bool}
+    (hfamily : ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits) (n : ℕ) :
+    (ProbComp.eval
+      ((linearHashRandomMAC id family computableInPolyTime_id hfamily).sufCmaGame
+        twoQueryRandomMACForger n) true).toReal ≤
+      (2 : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ((2 : ℝ) ^ n)⁻¹ +
+        (Game.advantage
+          (ProbComp.eval
+            (prfRealGame family
+              (prfRandomNonceToPrfDistinguisher id
+                (fun k => BitString.sampleList (k * id k))
+                BitString.LinearHash.wordHash twoQueryRandomMACForger) n))
+          (ProbComp.eval
+            (prfIdealGame
+              (prfRandomNonceToPrfDistinguisher id
+                (fun k => BitString.sampleList (k * id k))
+                BitString.LinearHash.wordHash twoQueryRandomMACForger) n)) : ℝ) :=
+  sufCmaGame_linearHashRandomMAC_toReal_le
+    computableInPolyTime_id hfamily (isQueryBounded_twoQueryRandomMACForger n)
 
 end ComplexityTests.Crypto.CarterWegman

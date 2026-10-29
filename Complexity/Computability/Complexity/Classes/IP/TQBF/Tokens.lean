@@ -138,7 +138,7 @@ theorem tokens_append_inj {e e' : ArithQBF ℕ} {r r' : List (Kind × ℕ)}
       exact ⟨rfl, rfl⟩
 
 /-- Linearizations come first in prefix order. -/
-theorem tokens_lins (xs : List ℕ) (e : ArithQBF ℕ) :
+private theorem tokens_lins (xs : List ℕ) (e : ArithQBF ℕ) :
     (lins xs e).tokens = xs.map (fun x => (Kind.lin, x)) ++ e.tokens := by
   induction xs with
   | nil => rfl

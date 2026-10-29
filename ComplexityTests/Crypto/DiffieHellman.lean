@@ -8,6 +8,7 @@ import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 import Complexity.Crypto.Computational.DiffieHellman
 import Complexity.Crypto.Computational.DiffieHellman.EncodingBounds
 import Complexity.Crypto.Computational.ElGamal
+import Complexity.Crypto.Computational.ElGamal.GeneralCipher
 import Complexity.Crypto.Computational.ElGamal.KDF
 import Complexity.Crypto.Computational.ElGamal.ProbComp
 import Complexity.Crypto.Negligible.Basic
@@ -630,5 +631,153 @@ example (d : ℕ → schnorrGroups.Desc)
     hDDH.indcpaOn_elGamalEncryptProb computableInPolyTime_twoElements
       admitsGroupElements_twoElements (by fun_prop),
     hDDH.indcpa_elGamalBitEncryptProb⟩
+
+/-! ### Theorem 11.5: General-cipher Hashed ElGamal tests -/
+
+/-- Equal-length challenge-pair admissibility predicate on bit words (`Attack Game 11.1`,
+[BonehShoup2023], p. 436). -/
+def equalLengthWords (_ : ℕ) (_ : List Bool) (m₀ m₁ : List Bool) : Bool :=
+  m₀.length == m₁.length
+
+/-- `equalLengthWords` is computable in polynomial time. -/
+theorem computableInPolyTime_equalLengthWords :
+    ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool × List Bool =>
+        equalLengthWords p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool := by
+  unfold equalLengthWords
+  have h1 : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool × List Bool => (p.2.2.1).length)
+      (encPair encUnary (encPair encBits (encPair encBits encBits))) encUnary :=
+    (ComputableInPolyTime.encoding_length encBits).comp (by fun_prop)
+  have h2 : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool × List Bool => (p.2.2.2).length)
+      (encPair encUnary (encPair encBits (encPair encBits encBits))) encUnary :=
+    (ComputableInPolyTime.encoding_length encBits).comp (by fun_prop)
+  have hbeq : ComputableInPolyTime (fun q : ℕ × ℕ => q.1 == q.2)
+      (encPair encUnary encUnary) encBool := by fun_prop
+  exact hbeq.comp (h1.prod h2)
+
+/-- Every encoded element of `schnorrGroups.Carrier d` has bit-length bounded by the description
+length `(schnorrGroups.encDesc d).length`. -/
+theorem schnorrGroups_encode_length_le (d : schnorrGroups.Desc) (x : schnorrGroups.Carrier d) :
+    (schnorrGroups.encode d x).length ≤ (schnorrGroups.encDesc d).length := by
+  have hbits (a b : ℕ) (h : a ≤ b) : a.bits.length ≤ b.bits.length := by
+    rw [Nat.size_eq_bits_len, Nat.size_eq_bits_len]
+    exact Nat.size_le_size h
+  have : NeZero d.1.1 := ⟨d.2.prime_modulus.ne_zero⟩
+  have hsize : (schnorrGroups.encode d x).length ≤ (encNat d.1.1).length :=
+    hbits _ _ (le_of_lt (ZMod.val_lt _))
+  have hdesc : (encNat d.1.1).length ≤ (schnorrGroups.encDesc d).length := by
+    change (encNat d.1.1).length ≤ (encPair encNat (encPair encNat encNat) d.1).length
+    simp only [encPair_apply, List.length_append, length_frame]
+    omega
+  exact hsize.trans hdesc
+
+/-- Concrete word-level round-trip check for `encodeHashedElGamalCipherEncrypt` and
+`decodeHashedElGamalCipher` on `d23` with `(a = 3, b = 5)` using `linearHashKDF (fun _ => 4)
+(fun _ => 6)` and a 4-bit bitwise-XOR cipher. -/
+example :
+    let dSeed : schnorrGroups.withSeed.Desc := (d23, List.replicate 52 true)
+    let H := schnorrGroups.linearHashKDF (fun _ => 4) (fun _ => 6)
+    let xorCipher (p : List Bool × List Bool) : List Bool := List.zipWith bne p.1 p.2
+    let pk := schnorrGroups.withSeed.encodeElGamalPublicKey (dSeed, 3)
+    let m := [true, false, true, false]
+    let ct := schnorrGroups.withSeed.encodeHashedElGamalCipherEncrypt H xorCipher (dSeed, pk, m, 5)
+    schnorrGroups.withSeed.decodeHashedElGamalCipher H xorCipher (dSeed, 3, ct.1, ct.2) = m := by
+  decide
+
+/-- Positive-side instantiation of `DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF`
+with a consistent polynomial description-dependent encoding bound
+`bound d := (schnorrGroups.encDesc d).length`, super-polynomial group order `2 ^ (2 * n) ≤ order d`,
+and the one-time pad symmetric word cipher `Encryption.otpWordEncrypt`
+(`Encryption.demOneTimeWordINDCPA_otpWordEncrypt`): IND-CPA security holds under `schnorrGroups.DDH`
+alone with no separate KDF or Game 2 assumption. -/
+example (setupProb : ℕ → ProbComp schnorrGroups.Desc)
+    (hsetup : IsPPTOn encUnary schnorrGroups.encDesc setupProb)
+    (hDDH : schnorrGroups.DDH (fun n => ProbComp.eval (setupProb n)))
+    (keyLen : schnorrGroups.Desc → ℕ)
+    (hkey_poly : ComputableInPolyTime keyLen schnorrGroups.encDesc encUnary)
+    (hkey : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support, keyLen d = n)
+    (hsize : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support,
+      2 ^ (2 * n) ≤ schnorrGroups.order d) :
+    Negligible fun n =>
+      Game.advantage
+        (schnorrGroups.withSeed.hashedElGamalCipherCPAGameOn equalLengthWords
+          (schnorrGroups.seededSetup (fun m => ProbComp.eval (setupProb m))
+            (schnorrGroups.linearHashSeedLen (fun n => n)
+              (fun d => (schnorrGroups.encDesc d).length)))
+          (schnorrGroups.linearHashKDF keyLen (fun d => (schnorrGroups.encDesc d).length))
+          Encryption.otpWordEncrypt hashedWordAdversary false n)
+        (schnorrGroups.withSeed.hashedElGamalCipherCPAGameOn equalLengthWords
+          (schnorrGroups.seededSetup (fun m => ProbComp.eval (setupProb m))
+            (schnorrGroups.linearHashSeedLen (fun n => n)
+              (fun d => (schnorrGroups.encDesc d).length)))
+          (schnorrGroups.linearHashKDF keyLen (fun d => (schnorrGroups.encDesc d).length))
+          Encryption.otpWordEncrypt hashedWordAdversary true n) := by
+  refine hDDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF
+    Encryption.demOneTimeWordINDCPA_otpWordEncrypt hsetup hkey_poly
+    (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
+    (fun _ => Nat.two_pow_pos _) hkey (fun _ d _ x => schnorrGroups_encode_length_le d x)
+    hsize ?_ computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
+    Encryption.isPPTOn_otpWordEncrypt hashedWordAdversary_isPPT
+  have h : (fun n => (2 : ℝ≥0) ^ n / ((2 ^ (2 * n) : ℕ) : ℝ≥0)) =
+      fun n => (1 / (2 ^ n : ℕ) : ℝ≥0) := by
+    funext n
+    push_cast
+    rw [two_mul, pow_add, div_mul_eq_div_div, div_self (by positivity)]
+  rw [h]
+  exact negligible_inv_two_pow
+
+/-- Negative-side symmetric cipher for Theorem 11.5: `identitySym` ignores the derived symmetric
+key `k` and outputs the message `m` in the clear. -/
+noncomputable def identitySym (_ : ℕ) (_ m : List Bool) : ProbComp (List Bool) :=
+  pure m
+
+/-- A uniform strict-PPT IND-CPA adversary that submits `([false], [true])` (equal length `1`) and
+returns the first bit of the symmetric ciphertext `dropFrame ct`. -/
+noncomputable def firstBitCipherAdversary : Encryption.WordAdversary where
+  choose _ _ := pure (([false], [true]), [])
+  guess _ _ ct := pure ((dropFrame ct).headD false)
+
+/-- `firstBitCipherAdversary` is uniform strict PPT. -/
+theorem firstBitCipherAdversary_isPPT : firstBitCipherAdversary.IsPPT where
+  choose := (ComputableInPolyTime.const _).isPPTOn
+  guess := by
+    have hdrop : ComputableInPolyTime dropFrame encBits encBits :=
+      ComputableInPolyTime.dropFrame
+    have hhead : ComputableInPolyTime (fun s : List Bool => s.headD false) encBits encBool :=
+      by fun_prop
+    have hct : ComputableInPolyTime
+        (fun p : ℕ × List Bool × List Bool => (dropFrame p.2.2).headD false)
+        (encPair encUnary (encPair encBits encBits)) encBool :=
+      hhead.comp (hdrop.comp (by fun_prop))
+    exact hct.isPPTOn
+
+/-- Negative-side test for Theorem 11.5: when the symmetric cipher `identitySym` is not
+semantically secure, `firstBitCipherAdversary` wins `hashedElGamalCipherCPAGameOn
+equalLengthWords` with advantage `1` at every security parameter `n` regardless of the KDF `H`. -/
+theorem advantage_hashedElGamalCipherCPAGameOn_identitySym
+    (H : schnorrGroups.Desc × List Bool → List Bool) (n : ℕ) :
+    Game.advantage
+      (schnorrGroups.hashedElGamalCipherCPAGameOn equalLengthWords
+        (fun _ => PMF.pure d23) H identitySym firstBitCipherAdversary false n)
+      (schnorrGroups.hashedElGamalCipherCPAGameOn equalLengthWords
+        (fun _ => PMF.pure d23) H identitySym firstBitCipherAdversary true n) = 1 := by
+  have hval : ∀ pk, equalLengthWords n pk [false] [true] = true := fun _ => rfl
+  have h0 :
+      schnorrGroups.hashedElGamalCipherCPAGameOn equalLengthWords
+        (fun _ => PMF.pure d23) H identitySym firstBitCipherAdversary false n =
+        PMF.pure false := by
+    simp [PrimeOrderGroupFamily.hashedElGamalCipherCPAGameOn, identitySym,
+      firstBitCipherAdversary, hval]
+  have h1 :
+      schnorrGroups.hashedElGamalCipherCPAGameOn equalLengthWords
+        (fun _ => PMF.pure d23) H identitySym firstBitCipherAdversary true n =
+        PMF.pure true := by
+    simp [PrimeOrderGroupFamily.hashedElGamalCipherCPAGameOn, identitySym,
+      firstBitCipherAdversary, hval]
+  rw [h0, h1, Game.advantage, Game.succProbability, Game.succProbability]
+  simp
 
 end ComplexityTests.Crypto.DiffieHellman

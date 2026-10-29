@@ -16,7 +16,7 @@ public import Mathlib.Data.Fintype.Basic
 The 26 clauses formalize Lichtenstein’s crossover [Lichtenstein1982, Figs. 4–5], drawn on a
 grid by MIT–ULB CompGeom Group [Tromino2025, Fig. 8(b)]. The Lean table is adapted from
 `edemaine/lean-trominoes` at `6d5b36c15cec6cb18d30137b7f1c7fb92ea24332`,
-`LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean`.
+[PlanarThreeSATGadgets.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean).
 This file uses the ordinary CNF semantics. Geometry and local degree reduction are separate.
 
 ## Main definitions

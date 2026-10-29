@@ -22,15 +22,12 @@ namespace ComplexityTests.WPPTruthTable
 
 def oracle : Set (List Bool) := {w | w.getD 0 false = true}
 
-def target (n : ℕ) : ℤ := -Int.ofNat (n + 1)
+def target (n : ℕ) : ℤ := -((n + 1 : ℕ) : ℤ)
 
 @[fun_prop]
-theorem polyTime_target : ComputableTidilyInPolyTime target encUnary encIntBin :=
-  ComputableTidilyInPolyTime.intBin_neg.comp
-    (ComputableTidilyInPolyTime.intBin_natCast.comp
-      (ComputableTidilyInPolyTime.unary_to_binary.comp
-        (ComputableTidilyInPolyTime.unary_add.comp
-          (ComputableTidilyInPolyTime.id'.prod (.const 1)))))
+theorem polyTime_target : ComputableInPolyTime target encUnary encIntBin := by
+  unfold target
+  fun_prop
 
 theorem target_ne_zero (n : ℕ) : target n ≠ 0 := by
   dsimp [target]
@@ -38,8 +35,8 @@ theorem target_ne_zero (n : ℕ) : target n ≠ 0 := by
 
 theorem oracle_mem_LWPP : oracle ∈ LWPP encBits := by
   let g (w : List Bool) : ℤ := if w.getD 0 false then target w.length else 0
-  have hg : ComputableTidilyInPolyTime g encBits encIntBin := by dsimp [g]; fun_prop
-  refine ⟨g, mem_GapP_of_polyTime (.of_tidy hg), target, .of_tidy polyTime_target, target_ne_zero,
+  have hg : ComputableInPolyTime g encBits encIntBin := by dsimp [g]; fun_prop
+  refine ⟨g, mem_GapP_of_polyTime hg, target, polyTime_target, target_ne_zero,
     ?_, ?_⟩
   · intro w
     dsimp [g]
@@ -56,17 +53,17 @@ def query (x : List Bool × ℕ) : List Bool := x.1.drop x.2
 def combine (x : List Bool × List Bool) : Bool :=
   x.2.getD 0 false ^^ x.2.getD 1 false
 
-theorem polyTime_count : ComputableTidilyInPolyTime count encBits encUnary := by
+theorem polyTime_count : ComputableInPolyTime count encBits encUnary := by
   unfold count
   fun_prop
 
 theorem polyTime_query :
-    ComputableTidilyInPolyTime query (encPair encBits encUnary) encBits := by
+    ComputableInPolyTime query (encPair encBits encUnary) encBits := by
   unfold query
   fun_prop
 
 theorem polyTime_combine :
-    ComputableTidilyInPolyTime combine (encPair encBits encBits) encBool := by
+    ComputableInPolyTime combine (encPair encBits encBits) encBool := by
   unfold combine
   fun_prop
 
@@ -74,22 +71,19 @@ def language : Set (List Bool) :=
   {w | combine (w, truthTableAnswers (query ⁻¹' oracle) count w) = true}
 
 theorem reduction : PolyTimeTruthTableReducible encBits encBits language oracle :=
-  ⟨count, query, combine, .of_tidy polyTime_count, .of_tidy polyTime_query,
-    .of_tidy polyTime_combine, fun _ => Iff.rfl⟩
+  ⟨count, query, combine, polyTime_count, polyTime_query,
+    polyTime_combine, fun _ => Iff.rfl⟩
 
-example : language ∈ LWPP encBits := reduction.mem_LWPP oracle_mem_LWPP
-
-example : language ∈ WPP encBits := reduction.mem_WPP (LWPP_subset_WPP oracle_mem_LWPP)
+example : language ∈ LWPP encBits ∧ language ∈ WPP encBits :=
+  ⟨reduction.mem_LWPP oracle_mem_LWPP,
+   reduction.mem_WPP (LWPP_subset_WPP oracle_mem_LWPP)⟩
 
 theorem joint_mem_LWPP : query ⁻¹' oracle ∈ LWPP (encPair encBits encUnary) :=
-  PolyTimeReducible.mem_LWPP ⟨query, .of_tidy polyTime_query, fun _ => Iff.rfl⟩ oracle_mem_LWPP
+  PolyTimeReducible.mem_LWPP ⟨query, polyTime_query, fun _ => Iff.rfl⟩ oracle_mem_LWPP
 
-example : language ∈ LWPP encBits :=
-  truthTable_mem_LWPP joint_mem_LWPP (.of_tidy polyTime_count) (.of_tidy polyTime_combine)
-
-example : language ∈ WPP encBits :=
-  truthTable_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) (.of_tidy polyTime_count)
-    (.of_tidy polyTime_combine)
+example : language ∈ LWPP encBits ∧ language ∈ WPP encBits :=
+  ⟨truthTable_mem_LWPP joint_mem_LWPP polyTime_count polyTime_combine,
+   truthTable_mem_WPP (LWPP_subset_WPP joint_mem_LWPP) polyTime_count polyTime_combine⟩
 
 example : count [true, false] = 2 ∧ count [false, true] = 0 := by decide
 
@@ -112,11 +106,11 @@ example : truthTableAnswers (query ⁻¹' oracle) count [] = [] := by
 
 example : {w | (fun _ : List Bool × List Bool => true)
     (w, truthTableAnswers (query ⁻¹' oracle) (fun _ => 0) w) = true} ∈ LWPP encBits :=
-  truthTable_mem_LWPP joint_mem_LWPP (.of_tidy (.const 0)) (.of_tidy (.const true))
+  truthTable_mem_LWPP joint_mem_LWPP (.const 0) (.const true)
 
 example : {w | (fun x : List Bool × List Bool => x.1.getD 0 false)
     (w, truthTableAnswers (query ⁻¹' oracle) (fun _ => 0) w) = true} ∈ LWPP encBits :=
   truthTable_mem_LWPP (d := fun x => x.1.getD 0 false)
-    joint_mem_LWPP (.of_tidy (.const 0)) (.of_tidy (by fun_prop))
+    joint_mem_LWPP (.const 0) (by fun_prop)
 
 end ComplexityTests.WPPTruthTable

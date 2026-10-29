@@ -163,8 +163,7 @@ theorem computableInPolyTime_noise :
 @[fun_prop]
 theorem computableInPolyTime_width :
     ComputableInPolyTime width encUnary encUnary := by
-  refine .of_tidy ?_
-  have := unary_clog_const 2
+  have := ComputableInPolyTime.unary_clog_const 2
   unfold width
   fun_prop
 
@@ -187,9 +186,8 @@ of a ceiling logarithm, rather than treating arbitrary unary exponentiation as e
 @[fun_prop]
 theorem computableInPolyTime_modulus :
     ComputableInPolyTime modulus encUnary encUnary := by
-  refine .of_tidy ?_
-  have := unary_pow_clog_const (input := encUnary) (size := fun security => security + 1)
-    (by fun_prop) 256 2
+  have := ComputableInPolyTime.unary_pow_clog_const (input := encUnary)
+    (size := fun security => security + 1) (by fun_prop) 256 2
   have hmodulus : modulus = fun security => 65536 * 256 ^ Nat.clog 2 (security + 1) := by
     funext security
     norm_num [modulus, width, pow_add, pow_mul]

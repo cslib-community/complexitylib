@@ -21,23 +21,18 @@ open Cslib.Complexity Cslib.Complexity.SipserLautemann Turing.MultiTapeTM
 
 /-! ### Parameter and boundary sanity checks -/
 
-example : halfRuns 0 = 48 := rfl
-example : runs 0 = 96 := rfl
-example : shifts 0 = 96 := rfl
-example : seedLen 0 = 0 := rfl
-example : witnessLen 0 = 0 := rfl
+example : halfRuns 0 = 48 ∧ runs 0 = 96 ∧ shifts 0 = 96 ∧ seedLen 0 = 0 ∧ witnessLen 0 = 0 :=
+  ⟨rfl, rfl, rfl, rfl, rfl⟩
 
-example : halfRuns 1 = 54 := rfl
-example : runs 1 = 108 := rfl
-example : shifts 1 = 108 := rfl
-example : seedLen 1 = 108 := rfl
-example : witnessLen 1 = 11664 := rfl
+example : halfRuns 1 = 54 ∧ runs 1 = 108 ∧ shifts 1 = 108 ∧ seedLen 1 = 108 ∧
+    witnessLen 1 = 11664 :=
+  ⟨rfl, rfl, rfl, rfl, rfl⟩
 
 -- Zero-length seed and malformed/short certificate strings evaluate cleanly: missing bits read
 -- as `false` and extra bits are ignored.
-example : trialSeed 0 [] 0 0 = [] := rfl
-example : trialSeed 2 [] 0 0 = [false, false] := rfl
-example : trialSeed 2 [true] 0 0 = [true, false] := rfl
+example : trialSeed 0 [] 0 0 = [] ∧ trialSeed 2 [] 0 0 = [false, false] ∧
+    trialSeed 2 [true] 0 0 = [true, false] :=
+  ⟨rfl, rfl, rfl⟩
 
 -- Strict majority tie convention: exactly `halfRuns m` accepting runs is a rejection;
 -- `halfRuns m + 1` accepting runs is an acceptance.
@@ -80,6 +75,7 @@ theorem noisyHeadVerifier_decides :
     DecidesWithBoundedError encBits (Polynomial.C 2) noisyHeadVerifier
       {x : List Bool | x.headD false = true} := by
   intro a
+  dsimp only [DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError, BoundedErrorAt]
   generalize hm : (Polynomial.C 2).eval (encBits a).length = m
   have hm2 : m = 2 := by rw [← hm, Polynomial.eval_C]
   subst hm2
@@ -122,7 +118,6 @@ theorem noisyHead_mem_PH : {x : List Bool | x.headD false = true} ∈ PH encBits
 attribute [local fun_prop] ComputableInPolySpace.tidy in
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Direct `fun_prop` synthesis on the Sipser-Lautemann matrix verifier for `noisyHeadVerifier`.
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 example : ComputableInPolyTime
     (verifier encBits (Polynomial.C 2) noisyHeadVerifier)
     (encPair encBits encBits) encBool := by

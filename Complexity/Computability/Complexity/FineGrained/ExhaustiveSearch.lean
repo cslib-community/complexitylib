@@ -8,7 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.FineGrained
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -19,7 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 
 Exponential and subexponential time bounds transfer along Turing reductions that branch over
 $2^{\nu(a)}$ polynomial-time subinstances $f(a, r)$ (`r < 2 ^ ν a`), implemented by iterating a
-polynomial-time step with a binary counter (`Turing.MultiTapeTM.ComputableTidilyInO.iterate`):
+polynomial-time step with a binary counter (`Turing.MultiTapeTM.ComputableInO.iterate`):
 * `Cslib.Complexity.DecidableInExpTime.of_computableInPolyTime`: a set decided in polynomial time is
   decidable within exponential time with exponent `0`.
 * `Cslib.Complexity.DecidableInExpTime.of_exhaustiveSearch`: if
@@ -264,7 +266,8 @@ theorem DecidableInExpTime.of_exhaustiveSearch {f : α × ℕ → β} {ν : α �
   have hstate (a : α) (k : ℕ) (hk : k ≤ rounds ν a) :
       (encState encA ((step f g)^[k] (init a))).length ≤ stBound a :=
     hst_bound g a k hk
-  have hiter := ComputableTidilyInO.iterate hn.inO hi.inO hstep hround hround hstate
+  have hiter := (ComputableInO.iterate hn.inO.computableInO hi.inO.computableInO
+    hstep.computableInO hround hround hstate).tidy
   have hsearch := ha.inO.comp hiter
   set C₁ := (c_st + 1) ^ d + c_st + c_st ^ 2
   set C₃ := (c_st + 1) ^ da

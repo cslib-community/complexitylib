@@ -27,7 +27,7 @@ private noncomputable def prependComputer :
 
 -- An infinite input domain and order-sensitive output; this includes the empty word.
 example : ComputableTidilyInPolyTime (fun w : List Bool => false :: w)
-    (encList (encFinite Bool)) (encList (encFinite Bool)) := by
+    (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) := by
   let : ∀ k, Finite (prependComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
   exact prependComputer.computableTidilyInPolyTime Function.injective_id Function.injective_id
 
@@ -48,7 +48,7 @@ private noncomputable def flippedComputer :
   outputsFun _ := ⟨⟨1, rfl⟩, by simp⟩
 
 example : ComputableTidilyInPolyTime (fun w : List Bool => true :: w)
-    (encList (encFinite Bool)) (encList (encFinite Bool)) := by
+    (encList (encFinEnum Bool)) (encList (encFinEnum Bool)) := by
   let : ∀ k, Finite (flippedComputer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
   exact flippedComputer.computableTidilyInPolyTime Function.injective_id Function.injective_id
 
@@ -148,7 +148,7 @@ private noncomputable def constantComputer :
 
 -- Independent input/output alphabets and a runtime that grows with the input length.
 example : ComputableTidilyInPolyTime (fun _ : List (Fin 4) => [(0 : Fin 1)])
-    (encList (encFinite (Fin 4))) (encList (encFinite (Fin 1))) := by
+    (encList (encFinEnum (Fin 4))) (encList (encFinEnum (Fin 1))) := by
   let : ∀ k, Finite (constantComputer.tm.Γ k) := fun k => by
     change Finite (constantMachine.Γ k)
     cases k <;> infer_instance
@@ -156,7 +156,7 @@ example : ComputableTidilyInPolyTime (fun _ : List (Fin 4) => [(0 : Fin 1)])
 
 -- Empty alphabets require no default symbol.
 example : ComputableTidilyInPolyTime (id : List Empty → List Empty)
-    (encList (encFinite Empty)) (encList (encFinite Empty)) := by
+    (encList (encFinEnum Empty)) (encList (encFinEnum Empty)) := by
   let computer := idComputableInPolyTime (id : List Empty → List Empty)
   let : ∀ k, Finite (computer.tm.Γ k) := fun _ => inferInstanceAs (Finite Empty)
   exact computer.computableTidilyInPolyTime Function.injective_id Function.injective_id
@@ -166,8 +166,8 @@ private def naturalWord : ℕ ↪ List Bool :=
   ⟨Computability.encodeNat, Computability.encodingNatBool.encode_injective⟩
 
 example : ComputableTidilyInPolyTime (id : ℕ → ℕ)
-    (naturalWord.trans (encList (encFinite Bool)))
-    (naturalWord.trans (encList (encFinite Bool))) := by
+    (naturalWord.trans (encList (encFinEnum Bool)))
+    (naturalWord.trans (encList (encFinEnum Bool))) := by
   let computer := idComputableInPolyTime Computability.encodeNat
   let : ∀ k, Finite (computer.tm.Γ k) := fun _ => inferInstanceAs (Finite Bool)
   exact computer.computableTidilyInPolyTime

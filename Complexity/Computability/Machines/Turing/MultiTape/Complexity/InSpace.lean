@@ -146,10 +146,10 @@ theorem iterate [Inhabited β] {n : α → ℕ} {init : α → β} {step : β �
   obtain ⟨_, hn⟩ := hn
   obtain ⟨_, hinit⟩ := hinit
   obtain ⟨Ts, hstep⟩ := hstep
-  exact ⟨_, ComputableTidilyInO.iterate hn hinit hstep
+  exact ⟨_, (ComputableInO.iterate hn.computableInO hinit.computableInO hstep.computableInO
     (R := fun x => listMax (fun k => Ts (step^[k] (init x))) (List.range (n x + 1)))
     (fun x k hk => le_listMax (f := fun k => Ts (step^[k] (init x)))
-      (List.mem_range.mpr (Nat.lt_succ_of_le hk))) hspace hstate⟩
+      (List.mem_range.mpr (Nat.lt_succ_of_le hk))) hspace hstate).tidy⟩
 
 /-- **Left folds**, within the space of the list, of the initial state, of a round and of the
 states. -/
@@ -168,13 +168,13 @@ theorem foldl {encA : δ ↪ List Bool} {encL : List δ ↪ List Bool} [ListEnco
   obtain ⟨_, hlist⟩ := hlist
   obtain ⟨_, hinit⟩ := hinit
   obtain ⟨Ts, hstep⟩ := hstep
-  exact ⟨_, ComputableTidilyInO.foldl hlist hinit hstep
+  exact ⟨_, (ComputableInO.foldl hlist.computableInO hinit.computableInO hstep.computableInO
     (R := fun x => listMax (fun i => ((list x)[i]?).elim 0 fun a =>
       Ts (((list x).take i).foldl step (init x), a)) (List.range (list x).length))
     (fun x i hi => by
       have := le_listMax (f := fun i => ((list x)[i]?).elim 0 fun a =>
         Ts (((list x).take i).foldl step (init x), a)) (List.mem_range.mpr hi)
-      simpa [List.getElem?_eq_getElem hi] using this) hspace hstate⟩
+      simpa [List.getElem?_eq_getElem hi] using this) hspace hstate).tidy⟩
 
 end ComputableTidilyInSpace
 

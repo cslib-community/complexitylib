@@ -107,23 +107,6 @@ theorem alternation_splitAlternatingBlocks (ns : List (ℕ × ℕ)) (q : Bool)
       · rintro ⟨⟨u, hu, hP⟩, ⟨v, hv, hQ⟩⟩
         exact ⟨u ++ v, by simp [hu, hv], (key u v hu hv false).2 ⟨hP, hQ⟩⟩
 
-private theorem computableTidilyInPolyTime_splitAlternatingBlocks {γ : Type}
-    {encIn : γ ↪ List Bool} (ps : List (Polynomial ℕ × Polynomial ℕ)) {N : γ → ℕ}
-    (hN : ComputableTidilyInPolyTime N encIn encUnary) {W : γ → List Bool}
-    (hW : ComputableTidilyInPolyTime W encIn encBits) :
-    ComputableTidilyInPolyTime
-      (fun x => splitAlternatingBlocks (ps.map fun pq => (pq.1.eval (N x), pq.2.eval (N x)))
-        (W x)) encIn (encPair encBits encBits) := by
-  induction ps generalizing W with
-  | nil => exact .const ([], [])
-  | cons pq ps ih =>
-    have hp := (ComputableTidilyInPolyTime.unary_eval pq.1).comp hN
-    have hq := (ComputableTidilyInPolyTime.unary_eval pq.2).comp hN
-    have ht := ih (hW.bitsDropWithInput (ComputableTidilyInPolyTime.unary_add.comp
-      (hp.prod hq)))
-    exact ((hW.bitsTakeWithInput hp).bitsAppend ht.fst').prod
-      (((hW.bitsDropWithInput hp).bitsTakeWithInput hq).bitsAppend ht.snd')
-
 /-- Splitting paired blocks is polynomial-time when their lengths are fixed polynomials of a
 computed unary size. -/
 theorem computableInPolyTime_splitAlternatingBlocks {γ : Type}
@@ -132,8 +115,16 @@ theorem computableInPolyTime_splitAlternatingBlocks {γ : Type}
     (hW : ComputableInPolyTime W encIn encBits) :
     ComputableInPolyTime
       (fun x => splitAlternatingBlocks (ps.map fun pq => (pq.1.eval (N x), pq.2.eval (N x)))
-        (W x)) encIn (encPair encBits encBits) :=
-  .of_tidy (computableTidilyInPolyTime_splitAlternatingBlocks ps hN.tidy hW.tidy)
+        (W x)) encIn (encPair encBits encBits) := by
+  induction ps generalizing W with
+  | nil => exact .const ([], [])
+  | cons pq ps ih =>
+    have hp := (ComputableInPolyTime.unary_eval pq.1).comp hN
+    have hq := (ComputableInPolyTime.unary_eval pq.2).comp hN
+    have ht := ih (hW.bitsDropWithInput (ComputableInPolyTime.unary_add.comp
+      (hp.prod hq)))
+    exact ((hW.bitsTakeWithInput hp).bitsAppend ht.fst').prod
+      (((hW.bitsDropWithInput hp).bitsTakeWithInput hq).bitsAppend ht.snd')
 
 variable {α : Type} {enc : α ↪ List Bool}
 
@@ -175,11 +166,10 @@ private theorem exists_inter_verifier {q : Bool} {k : ℕ} {A B : Set α}
   · simp [hp, hq]
   · have hn : ComputableInPolyTime (fun x : α × List Bool => (enc x.1).length)
         (encPair enc encBits) encUnary := by fun_prop
-    have hs := (computableInPolyTime_splitAlternatingBlocks (ps.zip qs) hn
-      (.snd enc encBits)).tidy
-    exact .of_tidy <|
-      (hV.tidy.comp ((ComputableTidilyInPolyTime.fst enc encBits).prod hs.fst')).bool_and'
-        (hW.tidy.comp ((ComputableTidilyInPolyTime.fst enc encBits).prod hs.snd'))
+    have hs := computableInPolyTime_splitAlternatingBlocks (ps.zip qs) hn (.snd enc encBits)
+    exact ComputableInPolyTime.bool_and.comp
+      ((hV.comp ((ComputableInPolyTime.fst enc encBits).prod hs.fst')).prod
+        (hW.comp ((ComputableInPolyTime.fst enc encBits).prod hs.snd')))
 
 variable {k : ℕ} {A B : Set α}
 

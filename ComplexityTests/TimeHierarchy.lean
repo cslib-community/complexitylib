@@ -17,38 +17,27 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Univers
 
 /-! ### Framed words and decoding -/
 
-example : frames [] = [] := frames_nil
+/-- Framing and splitting: two framed words, an incomplete final frame, and round-trip encoding of
+framed lists and padded descriptions. -/
+example (l : List (List Bool)) :
+    frames (frame [false] ++ frame []) = [[false], []] ∧
+    frames [true, true] = [[true]] ∧
+    frames (encList encBits l) = l ∧
+    (decodeDesc (unframe (frame (eDesc ⟨2, 3, []⟩) ++ [true, false]))).q₀ = 3 :=
+  ⟨by rw [frames_frame_append, ← List.append_nil (frame []), frames_frame_append, frames_nil],
+   by rw [frames_of_ne_nil (by simp)]; simp [unframe, dropFrame],
+   (frames_encList encBits l).trans (List.map_id l),
+   by rw [decodeDesc_unframe_frame_append]⟩
 
-/-- Two framed words, the first holding `false`. -/
-example : frames (frame [false] ++ frame []) = [[false], []] := by
-  rw [frames_frame_append, ← List.append_nil (frame []), frames_frame_append, frames_nil]
-
-/-- A final incomplete frame is closed. -/
-example : frames [true, true] = [[true]] := by
-  rw [frames_of_ne_nil (by simp)]
-  simp [unframe, dropFrame]
-
-/-- The encoded list of framed words splits back into its elements. -/
-example (l : List (List Bool)) : frames (encList encBits l) = l :=
-  (frames_encList encBits l).trans (List.map_id l)
-
-/-- A description, padded arbitrarily, is recovered. -/
-example (d : Desc) (pad : List Bool) : decodeDesc (unframe (frame (eDesc d) ++ pad)) = d :=
-  decodeDesc_unframe_frame_append d pad
-
-/-- The empty word decodes to the description without work tapes or transitions. -/
-example : decodeDesc [] = ⟨0, 0, []⟩ := by
-  simp [decodeDesc, descDecoder, Decoder.map, Decoder.pair, Decoder.list, Decoder.unary,
-    unframe, dropFrame]
-
-/-- Malformed words: a lone marker, and a unary number missing its closing symbol. -/
-example : decodeDesc [true] = ⟨0, 0, []⟩ := by
-  simp [decodeDesc, descDecoder, Decoder.map, Decoder.pair, Decoder.list, Decoder.unary,
-    unframe, dropFrame]
-
-example : decodeDesc [false, true, true] = ⟨0, 1, []⟩ := by
-  simp [decodeDesc, descDecoder, Decoder.map, Decoder.pair, Decoder.list, Decoder.unary,
-    unframe, dropFrame]
+/-- Decoding malformed and empty words: `[]`, a lone marker `[true]`, and an unclosed unary number
+`[false, true, true]`. -/
+example :
+    decodeDesc [] = ⟨0, 0, []⟩ ∧
+    decodeDesc [true] = ⟨0, 0, []⟩ ∧
+    decodeDesc [false, true, true] = ⟨0, 1, []⟩ := by
+  refine ⟨?_, ?_, ?_⟩ <;>
+    simp [decodeDesc, descDecoder, Decoder.map, Decoder.pair, Decoder.list, Decoder.unary,
+      unframe, dropFrame]
 
 /-- Every word decodes to a description of polynomial encoded length. -/
 example : ∃ e c : ℕ, ∀ w : List Bool, (eDesc (decodeDesc w)).length ≤ c * (w.length + 1) ^ e := by
@@ -58,10 +47,12 @@ example : ∃ e c : ℕ, ∀ w : List Bool, (eDesc (decodeDesc w)).length ≤ c 
 
 /-! ### The clock -/
 
-example : encNat (2 ^ 3) = [false, false, false, true] := encNat_two_pow 3
-
-example : ComputableTidilyInDegree (fun x : List Bool => 2 ^ x.length) encBits encNat 1 1 :=
-  ComputableTidilyInDegree.two_pow_length encBits
+example :
+    (encNat (2 ^ 5)).length = 6 ∧
+    ComputableInPolyTime (fun x : List Bool => 2 ^ x.length) encBits encNat :=
+  ⟨by rw [encNat_two_pow]; decide,
+   (ComputableTidilyInDegree.two_pow_length
+     encBits).computableTidilyInPolyTime.computableInPolyTime⟩
 
 /-! ### The diagonal on concrete machines -/
 
@@ -95,17 +86,16 @@ example (b : Bool) (pad : List Bool) :
 
 /-! ### The separation -/
 
-/-- The diagonal is computed in exponential time, up to a constant factor. -/
-example : ∃ c, ComputableTidilyInTimeAndSpace diagonal encBits encBool
-    (fun x => c * (2 ^ (4 * x.length) + 1)) fun x => c * (2 ^ (2 * x.length) + 1) := by
-  obtain ⟨c, h, -⟩ := computableInO_diagonal.tidy
-  exact ⟨c, h⟩
-
-example : {x | diagonal x = true} ∉ P encBits := diagonal_notMem_P
-
-/-- Plain machines do not compute the diagonal within a polynomial time bound either. -/
+/-- The diagonal is computed in exponential time (up to a constant factor), is not computable in
+polynomial time, and cannot be computed by any plain machine within a polynomial time bound. -/
 example (c d : ℕ) (s : List Bool → ℕ) :
-    ¬ComputableInTimeAndSpace diagonal encBits encBool (fun x => c * (x.length + 1) ^ d) s :=
-  not_computableInTimeAndSpace_diagonal (.of_forall_le c d fun _ => le_rfl)
+    (∃ c₀, ComputableTidilyInTimeAndSpace diagonal encBits encBool
+      (fun x => c₀ * (2 ^ (4 * x.length) + 1)) fun x => c₀ * (2 ^ (2 * x.length) + 1)) ∧
+    ¬ComputableInPolyTime diagonal encBits encBool ∧
+    ¬ComputableInTimeAndSpace diagonal encBits encBool (fun x => c * (x.length + 1) ^ d) s := by
+  obtain ⟨c₀, h, -⟩ := computableInO_diagonal.tidy
+  exact ⟨⟨c₀, h⟩,
+    fun hp => diagonal_notMem_P ⟨diagonal, hp, fun _ => Iff.rfl⟩,
+    not_computableInTimeAndSpace_diagonal (.of_forall_le c d fun _ => le_rfl)⟩
 
 end ComplexityTests.TimeHierarchy

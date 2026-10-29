@@ -208,36 +208,34 @@ quantifier at a time: an existential block by `Cslib.Complexity.setOf_exists_mem
 universal block as the complement of an existential block for the negated verifier. -/
 private theorem alternationSet_mem_PSPACE (ps : List (Polynomial ℕ)) :
     ∀ (q : Bool) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool →
+      ComputableInPolyTime V (encPair enc encBits) encBool →
         alternationSet enc q ps V ∈ PSPACE (encPair enc encBits) := by
   induction ps with
   | nil =>
     intro q V hV
-    exact P_subset_PSPACE ⟨V, .of_tidy hV, fun x => by simp [alternationSet]⟩
+    exact P_subset_PSPACE ⟨V, hV, fun x => by simp [alternationSet]⟩
   | cons p ps ih =>
     have hex (V : α × List Bool → Bool)
-        (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
+        (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
         alternationSet enc true (p :: ps) V ∈ PSPACE (encPair enc encBits) := by
       -- the remaining quantifiers, after the first block of certificates
       have hB : {y : (α × List Bool) × List Bool | (y.1.1, y.1.2 ++ y.2) ∈
           alternationSet enc false ps V} ∈ PSPACE (encPair (encPair enc encBits) encBits) :=
         PolyTimeReducible.mem_PSPACE ⟨fun y => (y.1.1, y.1.2 ++ y.2),
-          .of_tidy (((ComputableTidilyInPolyTime.fst _ _).comp (.fst _ _)).prod
-            (ComputableTidilyInPolyTime.bitsAppend
-              ((ComputableTidilyInPolyTime.snd _ _).comp (.fst _ _)) (.snd _ _))),
+          by fun_prop,
           fun _ => Iff.rfl⟩ (ih false V hV)
-      have hℓ : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
+      have hℓ : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
           (encPair enc encBits) encUnary :=
-        ((ComputableTidilyInPolyTime.unary_eval p).comp
-          (ComputableTidilyInPolyTime.encoding_length enc)).comp (.fst _ _)
-      convert setOf_exists_mem_PSPACE hB (.of_tidy hℓ) using 1
+        ((ComputableInPolyTime.unary_eval p).comp
+          (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
+      convert setOf_exists_mem_PSPACE hB (hℓ) using 1
       ext x
       simp only [alternationSet, List.map_cons, alternation_true_cons, Set.mem_ofPred_eq,
         List.append_assoc]
     intro q V hV
     cases q
     · -- a universal block is the complement of an existential block
-      convert compl_mem_PSPACE (hex (fun x => !V x) (ComputableTidilyInPolyTime.bool_not.comp hV))
+      convert compl_mem_PSPACE (hex (fun x => !V x) (ComputableInPolyTime.bool_not.comp hV))
         using 1
       ext x
       simp only [alternationSet, Set.mem_ofPred_eq, Set.mem_compl_iff, not_alternation,
@@ -250,7 +248,7 @@ theorem SigmaP_subset_PSPACE (k : ℕ) : SigmaP k enc ⊆ PSPACE enc := by
   rintro A ⟨ps, V, -, hV, hA⟩
   refine PolyTimeReducible.mem_PSPACE ⟨fun a => (a, []),
     ComputableInPolyTime.id'.prod (.const []), fun a => ?_⟩
-    (alternationSet_mem_PSPACE ps true V hV.tidy)
+    (alternationSet_mem_PSPACE ps true V hV)
   simp [alternationSet, hA a]
 
 /-- **`PH ⊆ PSPACE`** [Arora and Barak, Chapter 5][AroraBarak09],

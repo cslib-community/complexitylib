@@ -72,4 +72,11 @@ example : Graph.IsPlanarOrthogonalDrawing
 example : ([[]], [(0, 0)], []) ∉ DrawnPlanarThreeSATThree := by
   simp [DrawnPlanarThreeSATThree, ThreeSATThree, CNF.Satisfiable]
 
+-- The paired-port variable and placed-clause encodings are computable via `FinEnum`.
+example : SAT.ParsimoniousPlanar.encVariable ((0, 0), .inl (0, 0)) ≠
+    SAT.ParsimoniousPlanar.encVariable ((0, 0), .inr .center) := by decide +kernel
+
+example : (SAT.ParsimoniousPlanar.encPlacedClause
+    ([(((0, 0), .inl (0, 0)), true)], (0, 0), [[(0, 0)]])).isEmpty = false := by decide +kernel
+
 end ComplexityTests.PlanarThreeSATThree

@@ -49,6 +49,9 @@ logarithmically many bits.
 * `Cslib.Circuits.Line.ofCode`, `Cslib.Circuits.Program.pushCode`, `Cslib.Circuits.Program.ofCode`,
   `Cslib.Circuits.Circuit.ofCode`: decoding, with the well-formedness checks.
 * `Cslib.Circuits.Program.IsCodeFrom`: the lists of gates that are codes of programs.
+* `Cslib.Circuits.Circuit.encGate`, `Cslib.Circuits.Circuit.encCode`,
+  `Cslib.Circuits.Circuit.encCircuit`: binary encodings of circuits over an arbitrary signature
+  given an operation encoding.
 * `Cslib.Circuits.Boolean.Op.toNat`, `Cslib.Circuits.Boolean.encOp`,
   `Cslib.Circuits.Boolean.encGate`, `Cslib.Circuits.Boolean.encCode`,
   `Cslib.Circuits.Boolean.encCircuit`: binary encodings of De Morgan circuits.
@@ -66,8 +69,9 @@ logarithmically many bits.
 * `Cslib.Circuits.Circuit.code_injective`: coding is injective.
 * `Cslib.Circuits.Circuit.code_wiring`, `Cslib.Circuits.Circuit.code_wiring_eq_map`,
   `Cslib.Circuits.Circuit.code_wiring_id`: serialized codes of pure wirings.
-* `Cslib.Circuits.Boolean.le_length_encCircuit`: the encoding is at least as long as the number of
-  inputs.
+* `Cslib.Circuits.Circuit.le_length_encCircuit`, `Cslib.Circuits.Circuit.size_le_length_encCircuit`,
+  `Cslib.Circuits.Boolean.le_length_encCircuit`: the encoding is at least as long as the number of
+  inputs and the gate count.
 
 ## References
 
@@ -427,6 +431,56 @@ theorem code_wiring_eq_map {f : Fin m → Fin n} {g : ℕ → ℕ}
   simpa using
     code_wiring_eq_map (σ := σ) (f := (_root_.id : Fin n → Fin n)) (g := _root_.id) fun _ => rfl
 
+/-! ### Binary encodings of circuits over an arbitrary signature -/
+
+section SignatureEncoding
+
+/-- A gate with operation type `Op` as data: its operation encoded by `encOp`, then the framed
+binary numbers of the wires it reads. -/
+abbrev encGate {Op : Type} (encOp : Op ↪ List Bool) : (Op × List ℕ) ↪ List Bool :=
+  encPair encOp (encList encNat)
+
+/-- The serialized code of a circuit with operation type `Op`: its framed gates in program order,
+then its framed output wires, all wire numbers in binary. -/
+abbrev encCode {Op : Type} (encOp : Op ↪ List Bool) : (List (Op × List ℕ) × List ℕ) ↪ List Bool :=
+  encPair (encList (encGate encOp)) (encList encNat)
+
+variable {σ : Signature}
+
+/-- **Binary encoding of circuits** with `m` outputs over an arbitrary signature `σ` equipped with
+`encOp : σ.Op ↪ List Bool`: the input count `n` in unary, followed by the code of the circuit
+(`encCode encOp`). -/
+def encCircuit (encOp : σ.Op ↪ List Bool) (m : ℕ) : (Σ n, Circuit σ n m) ↪ List Bool :=
+  ⟨fun c => encPair encUnary (encCode encOp) (c.1, c.2.code), by
+    rintro ⟨n, c⟩ ⟨n', c'⟩ h
+    obtain ⟨hn, hc⟩ := Prod.ext_iff.1 ((encPair encUnary (encCode encOp)).injective h)
+    dsimp only at hn hc
+    subst hn
+    rw [Circuit.code_injective hc]⟩
+
+/-- Unfolding formula for `encCircuit encOp m c`. -/
+theorem encCircuit_apply (encOp : σ.Op ↪ List Bool) (c : Σ n, Circuit σ n m) :
+    encCircuit encOp m c = encPair encUnary (encCode encOp) (c.1, c.2.code) := rfl
+
+/-- The encoding of a circuit is at least as long as its number of inputs. -/
+theorem le_length_encCircuit (encOp : σ.Op ↪ List Bool) (c : Σ n, Circuit σ n m) :
+    c.1 ≤ (encCircuit encOp m c).length := by
+  rw [encCircuit_apply, length_encPair]
+  simp only [encUnary_apply, List.length_replicate]
+  omega
+
+/-- The encoding of a circuit is at least as long as its gate count `c.2.size`. -/
+theorem size_le_length_encCircuit (encOp : σ.Op ↪ List Bool) (c : Σ n, Circuit σ n m) :
+    c.2.size ≤ (encCircuit encOp m c).length := by
+  have h1 : c.2.code.1.length ≤ (encList (encGate encOp) c.2.code.1).length :=
+    SizedListEncoding.length_le (encA := encGate encOp) (encL := encList (encGate encOp)) _
+  rw [Circuit.length_code_fst] at h1
+  rw [encCircuit_apply, length_encPair, encCode, length_encPair]
+  dsimp only
+  omega
+
+end SignatureEncoding
+
 end Circuit
 
 /-! ### Encodings of De Morgan circuits -/
@@ -450,35 +504,27 @@ theorem Op.toNat_injective : Function.Injective Op.toNat := by
 def encOp : Op ↪ List Bool :=
   ⟨fun op => encUnary op.toNat, encUnary.injective.comp Op.toNat_injective⟩
 
-/-- A gate as data: its operation by `encOp`, then the framed binary numbers of the wires it
-reads. -/
-abbrev encGate : Op × List ℕ ↪ List Bool := encPair encOp (encList encNat)
+/-- A gate of the De Morgan basis as data: its operation by `encOp`, then the framed binary numbers
+of the wires it reads. -/
+abbrev encGate : Op × List ℕ ↪ List Bool := Circuit.encGate encOp
 
-/-- The code of a circuit: its framed gates in program order, then its framed output wires, all
-wire numbers in binary. -/
-abbrev encCode : List (Op × List ℕ) × List ℕ ↪ List Bool :=
-  encPair (encList encGate) (encList encNat)
+/-- The code of a De Morgan circuit: its framed gates in program order, then its framed output
+wires, all wire numbers in binary. -/
+abbrev encCode : List (Op × List ℕ) × List ℕ ↪ List Bool := Circuit.encCode encOp
 
 /-- **Binary encoding of De Morgan circuits** with `m` outputs and any number `n` of inputs: `n` in
 unary, then the code of the circuit (`encCode`), that is, its gates in program order and its output
 wires, with wire numbers in binary. -/
-def encCircuit (m : ℕ) : (Σ n, Circuit signature n m) ↪ List Bool :=
-  ⟨fun c => encPair encUnary encCode (c.1, c.2.code), by
-    rintro ⟨n, c⟩ ⟨n', c'⟩ h
-    obtain ⟨hn, hc⟩ := Prod.ext_iff.1 ((encPair encUnary encCode).injective h)
-    dsimp only at hn hc
-    subst hn
-    rw [Circuit.code_injective hc]⟩
+abbrev encCircuit (m : ℕ) : (Σ n, Circuit signature n m) ↪ List Bool :=
+  Circuit.encCircuit (σ := signature) encOp m
 
 /-- Unfolding formula for `encCircuit m c`. -/
 theorem encCircuit_apply (c : Σ n, Circuit signature n m) :
     encCircuit m c = encPair encUnary encCode (c.1, c.2.code) := rfl
 
 /-- The encoding of a circuit is at least as long as its number of inputs. -/
-theorem le_length_encCircuit (c : Σ n, Circuit signature n m) : c.1 ≤ (encCircuit m c).length := by
-  rw [encCircuit_apply, length_encPair]
-  simp only [encUnary_apply, List.length_replicate]
-  omega
+theorem le_length_encCircuit (c : Σ n, Circuit signature n m) : c.1 ≤ (encCircuit m c).length :=
+  Circuit.le_length_encCircuit (σ := signature) encOp c
 
 end Boolean
 

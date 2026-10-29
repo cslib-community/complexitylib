@@ -27,7 +27,7 @@ A computation in polynomial time relative to `A` is the clocked run, with every 
 `false`, of a finite oracle machine (`Cslib.Probability.IsOraclePPTOn.exists_fin_run_pure_false`).
 The run is simulated instruction by instruction, answering each query with the decider of `A` on
 the request, which is no longer than the clock
-(`Turing.MultiTapePTM.exists_computableTidilyInO_run`).
+(`Turing.MultiTapePTM.exists_computableInO_run`).
 So the space is polynomial, while the time charges the decider of `A` once per instruction
 (`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_computableInO`,
 `Cslib.Complexity.PWithOracle_subset_PSPACE`).
@@ -114,9 +114,9 @@ theorem ComputableInPolyTimeWithOracle.exists_computableInO {A : Set (List Bool)
   subst hg'
   obtain ⟨program, hcert, hprogram⟩ := hf
   obtain ⟨k, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
-  obtain ⟨T, S, hS, h⟩ := machine.exists_computableTidilyInO_run (input := enc) hg.tidy
+  obtain ⟨T, S, hS, h⟩ := machine.exists_computableInO_run (input := enc) hg
     (by simpa [encBits] using hSA) c d
-  refine ⟨T, S, hS, .of_tidy <| h.of_enc_eq fun a => ?_⟩
+  refine ⟨T, S, hS, h.of_enc_eq fun a => ?_⟩
   rw [← hprogram a, ← hrun a (languageOracle A)]
   rfl
 

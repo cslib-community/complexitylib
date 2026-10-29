@@ -23,40 +23,36 @@ variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
 
 section PlainTableauBudgets
 variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
-  {α : Type} {encIn : α ↪ List Bool} {Bs : α → ℕ} {n T g : α → ℕ}
+  {α : Type} {encIn : α ↪ List Bool} {Bs : α → ℕ} {n g : α → ℕ}
 
--- Same arbitrary input encoding, bound, time function and finite state family.
-example (hT : ComputableInSpace T encIn encNat Bs)
-    (hin : (fun x => (encIn x).length) ≼ Bs) :
-    ComputableInSpace (fun x => Tableau.gfStart k State (T x)) encIn encNat Bs :=
-  Tableau.gfStart_inSpace hT hin
-
-example (hT : ComputableInSpace T encIn encNat Bs)
-    (hin : (fun x => (encIn x).length) ≼ Bs) :
-    ComputableInSpace (fun x => Tableau.blockSize k State (T x)) encIn encNat Bs :=
-  Tableau.blockSize_inSpace hT hin
-
-example (tm : MultiTapeTM k Bool State)
+-- Composing `timeBound_inSpace` with `gfStart_inSpace`, `blockSize_inSpace`, `numGates_inSpace`,
+-- and `gateCode_inSpace`.
+example (tm : MultiTapeTM k Bool State) (C d : ℕ)
     (hn : ComputableInSpace n encIn encNat Bs)
-    (hT : ComputableInSpace T encIn encNat Bs)
     (hin : (fun x => (encIn x).length) ≼ Bs)
     (hg : ComputableInSpace g encIn encNat Bs) :
-    ComputableInSpace (fun x => Tableau.gateCode tm (n x) (T x) (g x)) encIn encGate Bs :=
-  Tableau.gateCode_inSpace tm hn hT hin hg
+    ComputableInSpace (fun x => Tableau.gfStart k State (CircuitValue.timeBound C d (n x)))
+      encIn encNat Bs ∧
+    ComputableInSpace (fun x => Tableau.blockSize k State (CircuitValue.timeBound C d (n x)))
+      encIn encNat Bs ∧
+    ComputableInSpace (fun x => Tableau.numGates k State (CircuitValue.timeBound C d (n x)))
+      encIn encNat Bs ∧
+    ComputableInSpace (fun x => Tableau.gateCode tm (n x) (CircuitValue.timeBound C d (n x)) (g x))
+      encIn encGate Bs :=
+  let hT := CircuitValue.timeBound_inSpace C d hin hn
+  ⟨Tableau.gfStart_inSpace hT hin,
+    Tableau.blockSize_inSpace hT hin,
+    CircuitValue.numGates_inSpace hin hT,
+    Tableau.gateCode_inSpace tm hn hT hin hg⟩
 end PlainTableauBudgets
 
-/-- The tableau is the code of a program, for every machine, input length and time bound. -/
-example (n T : ℕ) : Program.IsCodeFrom signature n 0 (Tableau.gates tm n T) :=
-  Tableau.isCodeFrom_gates tm n T
-
-/-- The output wire of the tableau is a wire of the circuit. -/
-example (n T : ℕ) : Tableau.outWire k State n T < n + (Tableau.gates tm n T).length := by
-  simpa [Tableau.gates] using Tableau.outWire_lt (k := k) (State := State) n T
-
-/-- The time bound of the reduction leaves room for the input head: `n < 2 T`. -/
-example (C d n : ℕ) : n < 2 * CircuitValue.timeBound C d n := by
-  simp only [CircuitValue.timeBound]
-  omega
+/-- The tableau's output wire lies within its wires, and the time bound of the reduction leaves
+room for the input head (`n < 2 T`). -/
+example (C d n T : ℕ) :
+    Tableau.outWire k State n T < n + (Tableau.gates tm n T).length ∧
+    n < 2 * CircuitValue.timeBound C d n :=
+  ⟨by simpa [Tableau.gates] using Tableau.outWire_lt (k := k) (State := State) n T,
+    by simp only [CircuitValue.timeBound]; omega⟩
 
 /-- The tableau circuit on the input `w` outputs whether the machine has written `[true]`. -/
 example (C d : ℕ) (w : List Bool) :
@@ -68,36 +64,29 @@ example (C d : ℕ) (w : List Bool) :
   simp only [CircuitValue.tableauInstance]
   rw [Tableau.eval_circuit tm (by simp only [CircuitValue.timeBound]; omega), hw]
 
-/-- The circuit value problem reduces to itself through the tableau of its decider. -/
-example : LogSpaceReducible encCircuitValue encCircuitValue CircuitValue CircuitValue :=
-  CircuitValue.logSpaceReducible_of_mem_P CircuitValue.mem_P
+/-- `CircuitValue` and its complement reduce to `CircuitValue` in logarithmic space and polynomial
+time. -/
+example :
+    LogSpaceReducible encCircuitValue encCircuitValue CircuitValue CircuitValue ∧
+    LogSpaceReducible encCircuitValue encCircuitValue CircuitValueᶜ CircuitValue ∧
+    PolyTimeReducible encCircuitValue encCircuitValue CircuitValueᶜ CircuitValue :=
+  ⟨CircuitValue.logSpaceReducible_of_mem_P CircuitValue.mem_P,
+    CircuitValue.logSpaceHard _ _ (compl_mem_P CircuitValue.mem_P),
+    CircuitValue.logSpaceComplete.polyTimeComplete.2 _ _ (compl_mem_P CircuitValue.mem_P)⟩
 
-/-- Its complement is in `P`, so it reduces to the circuit value problem too. -/
-example : LogSpaceReducible encCircuitValue encCircuitValue CircuitValueᶜ CircuitValue :=
-  CircuitValue.logSpaceHard _ _ (compl_mem_P CircuitValue.mem_P)
+/-- If `CircuitValue` lies in `L`, then `CircuitValueᶜ ∈ L`. -/
+example (h : CircuitValue ∈ L encCircuitValue) :
+    CircuitValueᶜ ∈ L encCircuitValue :=
+  CircuitValue.logSpaceHard.subset_L h encCircuitValue (compl_mem_P CircuitValue.mem_P)
 
-/-- Completeness under logspace reductions gives completeness under polynomial-time ones. -/
-example : PolyTimeComplete @P encCircuitValue CircuitValue :=
-  CircuitValue.logSpaceComplete.polyTimeComplete
-
-/-- If the circuit value problem were in `L`, every problem in `P` would be, for every encoding. -/
-example (h : CircuitValue ∈ L encCircuitValue) : P encBits = L encBits :=
-  CircuitValue.mem_L_iff_forall_P_eq_L.1 h encBits
-
-/-- Hardness transfers through the identity reduction. -/
-example : LogSpaceHard @P encCircuitValue CircuitValue :=
-  CircuitValue.logSpaceHard.trans (LogSpaceReducible.refl _ _)
-
-/-- A logspace-hard problem in `L` contains the whole source class in `L`. -/
-example (h : CircuitValue ∈ L encCircuitValue) : P encBits ⊆ L encBits :=
-  CircuitValue.logSpaceHard.subset_L h encBits
-
-/-- A single certified constructor provides circuits for every encoded input length. -/
-example {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
-    (hf : ComputableInPolyTime f enc encBool) :
+/-- Uniform circuit generation applied to the polynomial-time head-bit extractor `headD false`. -/
+example :
     ∃ circuits : (n : ℕ) → Circuit signature n 1,
       ComputableInPolyTime (fun n => (circuits n).code) encUnary encCode ∧
-      ∀ a, (circuits (enc a).length).eval interpretation (fun i => (enc a)[i]) 0 = f a :=
-  CircuitValue.exists_uniformCircuits hf
+      ∀ w : List Bool,
+        (circuits (encBits w).length).eval interpretation (fun i => (encBits w)[i]) 0 =
+          w.headD false :=
+  CircuitValue.exists_uniformCircuits (enc := encBits)
+    (ComputableInPolyTime.headD (encA := encBool) false)
 
 end ComplexityTests.CircuitValueCompleteness

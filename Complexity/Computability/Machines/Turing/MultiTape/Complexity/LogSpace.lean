@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
+public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
 public import Cslib.Computability.Machines.Turing.MultiTape.ConfigBound
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
@@ -65,9 +66,18 @@ tapes and counters of logarithmic length [Sipser, Section 8.5][Sipser2013].
   polynomially long values.
 * `Turing.MultiTapeTM.ComputableInLogSpace.comp`: logspace functions compose.
 * `Turing.MultiTapeTM.ComputableInLogSpace.id`, `Turing.MultiTapeTM.ComputableInLogSpace.const`,
-  `Turing.MultiTapeTM.ComputableInLogSpace.of_finite`: logspace functions in zero space.
-* `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
+  `Turing.MultiTapeTM.ComputableInLogSpace.of_finite`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.congr`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.of_eq`: logspace functions in zero space and congruence.
+* `Turing.MultiTapeTM.ComputableInLogSpace.computableInPolyTime`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.computableTidilyInPolyTime`: logspace functions are
   computable in polynomial time.
+* `Turing.MultiTapeTM.ComputableInLogSpace.comp'`,
+  `Turing.MultiTapeTM.ComputableInLogSpace.bool_not`: composition and negation in the form used by
+  `fun_prop`, for which `ComputableInLogSpace` is registered, with the inclusion in polynomial time
+  as a one-way transition.
+* `Turing.MultiTapeTM.Transducer.computableInLogSpace`: functions computed by finite-state
+  transducers are computable in logarithmic space.
 * `Turing.MultiTapeTM.polyBounded_log`: logarithmic bounds are polynomially bounded.
 * `Turing.MultiTapeTM.doubled_inSpace`: doubling bits uses linear work space.
 * `Turing.MultiTapeTM.doubled_flatten`, `Turing.MultiTapeTM.doubled_doubled_replicate`:
@@ -98,7 +108,15 @@ theorem core_runFrom_eq_of_core_eq {c₁ c₂ : Cfg k Symbol State input} (h : c
   | zero => exact h
   | succ m ih =>
     rw [runFrom_succ, runFrom_succ]
-    exact core_step_eq_of_core_eq ih
+    generalize tm.runFrom c₁ m = d₁ at ih ⊢
+    generalize tm.runFrom c₂ m = d₂ at ih ⊢
+    rcases d₁ with ⟨q₁, i₁, w₁, p₁, out₁⟩
+    rcases d₂ with ⟨q₂, i₂, w₂, p₂, out₂⟩
+    simp only [Cfg.core, Cfg.storage, Prod.mk.injEq, Storage.mk.injEq] at ih
+    obtain ⟨rfl, rfl, rfl, rfl⟩ := ih
+    cases q₁ with
+    | none => rw [step_of_halt rfl, step_of_halt rfl]; rfl
+    | some q => rw [step_of_state rfl, step_of_state rfl]; rfl
 
 /-- **A halting machine halts within the number of its cores.** Before it halts, a machine within
 space `s` repeats no core (input head position and storage), since from a repeated core it would
@@ -129,7 +147,11 @@ theorem haltsAt_le_card [Fintype Symbol] [Fintype State] {s u : ℕ}
     exact ⟨t, rfl⟩
   rw [Set.encard_coe_eq_coe_finsetCard, Finset.card_image_of_injOn hinj,
     Finset.card_range] at hsub
-  exact_mod_cast hsub.trans (tm.encard_cores_le (RunsInSpace.space_le hs))
+  -- every core of the run is the core at the end of a computation path
+  have hpath : (Set.range core).encard ≤
+      (Set.range fun p : tm.ComputationPath input => p.last.core).encard :=
+    Set.encard_le_encard (Set.range_subset_iff.2 fun t => ⟨.ofDeterministic tm input t, rfl⟩)
+  exact_mod_cast (hsub.trans hpath).trans (tm.encard_cores_le hs)
 
 /-- A machine that halts on `input` within space `s` does so within
 `(n + 2) * storageBound Symbol State k s` steps, with the same output. -/
@@ -214,6 +236,12 @@ theorem ComputableInLogSpace.computableTidilyInPolyTime {f : α → β}
     (.const c'),
     (PolyBounded.const c').mul (hlog.add (.const 1)), hc'⟩
 
+/-- **Logspace functions are computable in polynomial time.** -/
+theorem ComputableInLogSpace.computableInPolyTime {f : α → β}
+    (h : ComputableInLogSpace f encIn encMid) : ComputableInPolyTime f encIn encMid :=
+  let ⟨_, _, ⟨t, ht, htb⟩, ⟨s, hs, hsb⟩, h⟩ := h.computableTidilyInPolyTime
+  ⟨t, s, ht, hs, (h.mono htb hsb).computableInTimeAndSpace⟩
+
 /-- The binary length of `m + 1` is at least `log₂ m + 1`. -/
 private theorem log2_succ_le_length_encNat (m : ℕ) : Nat.log2 m + 1 ≤ (encNat (m + 1)).length := by
   rw [encNat_apply, Nat.size_eq_bits_len, Nat.succ_le_iff, Nat.lt_size]
@@ -265,6 +293,29 @@ theorem ComputableInLogSpace.comp {g : β → γ} {f : α → β}
 theorem ComputableInLogSpace.id : ComputableInLogSpace (fun a : α => a) encIn encIn :=
   ⟨_, 0, computableInTimeAndSpace_id.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
 
+/-- A function whose encoded values agree with those of a logspace function is computable in
+logarithmic space, by the same machine. -/
+theorem ComputableInLogSpace.congr {f : α → β} {g : α → γ}
+    (hf : ComputableInLogSpace f encIn encMid) (h : ∀ a, encOut (g a) = encMid (f a)) :
+    ComputableInLogSpace g encIn encOut := by
+  obtain ⟨t, c, k, State, hS, tm, htm⟩ := hf
+  refine ⟨t, c, k, State, hS, tm, fun a => ?_⟩
+  rw [h a]
+  exact htm a
+
+/-- A function pointwisely equal to a logspace function is computable in logarithmic space, by the
+same machine. -/
+theorem ComputableInLogSpace.congr_fun {f g : α → β}
+    (hf : ComputableInLogSpace f encIn encMid) (h : ∀ a, g a = f a) :
+    ComputableInLogSpace g encIn encMid :=
+  hf.congr fun a => congrArg encMid (h a)
+
+/-- A function whose encoded values equal its encoded arguments is computable in logarithmic
+space, indeed in zero space. -/
+theorem ComputableInLogSpace.of_eq {f : α → β} (h : ∀ a, encMid (f a) = encIn a) :
+    ComputableInLogSpace f encIn encMid :=
+  ComputableInLogSpace.id.congr h
+
 /-- Constant functions are computable in logarithmic space, indeed in zero space. -/
 theorem ComputableInLogSpace.const (b : β) : ComputableInLogSpace (fun _ : α => b) encIn encMid :=
   let ⟨_, h⟩ := computableInTimeAndSpace_of_const (encIn := encIn) (encOut := encMid) b
@@ -275,6 +326,32 @@ theorem ComputableInLogSpace.of_finite [Finite α] (f : α → β) :
     ComputableInLogSpace f encIn encMid :=
   let ⟨_, h⟩ := computableInTimeAndSpace_of_finite (encIn := encIn) (encOut := encMid) f
   ⟨_, 0, h.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
+
+/-! ### Automation
+
+`ComputableInLogSpace` is a `fun_prop` predicate. The identity, constants and composition are its
+core rules; pairing, projections, case distinctions and word operations are registered in
+`Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Words.lean`, and the
+counter-program primitives in
+`Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/CounterProgram/Words.lean`.
+The inclusion in polynomial time is a one-way transition rule: a logspace certificate closes a
+plain polynomial-time goal, and there is no rule back, so the search has no cycle. -/
+
+attribute [fun_prop] ComputableInLogSpace ComputableInLogSpace.id ComputableInLogSpace.const
+  ComputableInLogSpace.computableInPolyTime
+
+/-- Composition, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem ComputableInLogSpace.comp' {g : β → γ} {f : α → β}
+    (hg : ComputableInLogSpace g encMid encOut) (hf : ComputableInLogSpace f encIn encMid) :
+    ComputableInLogSpace (fun a => g (f a)) encIn encOut :=
+  hg.comp hf
+
+/-- Negating a computed Boolean, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem ComputableInLogSpace.bool_not {c : α → Bool} (hc : ComputableInLogSpace c encIn encBool) :
+    ComputableInLogSpace (fun a => !c a) encIn encBool :=
+  (ComputableInLogSpace.of_finite (encIn := encBool) not).comp' hc
 
 /-- Doubling one false bit gives its marker followed by `false`. -/
 @[simp] theorem doubled_false : doubled [false] = [true, false] := rfl
@@ -310,11 +387,18 @@ theorem doubled_inSpace :
     (doubledTransducer.computableTidilyInLinearTimeAndSpace fun l =>
       (doubledTransducer_run l).symm))
 
+/-- **A function computed by a finite-state transducer is computable in logarithmic space**: the
+transducer runs without work tapes. -/
+theorem Transducer.computableInLogSpace {Q : Type} [Finite Q] (τ : Transducer Bool Q)
+    {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {f : α → β}
+    (hf : ∀ a, encOut (f a) = τ.run τ.q₀ (encIn a)) : ComputableInLogSpace f encIn encOut :=
+  ⟨_, 0, (τ.computableTidilyInTimeAndSpace hf).computableInTimeAndSpace.mono (fun _ => le_rfl)
+    fun _ => Nat.zero_le _⟩
+
 /-- **Framing an encoded instance** takes no work space. -/
 theorem computableInLogSpace_frame {α : Type} (enc : α ↪ List Bool) :
-    ComputableInLogSpace (fun a => enc a) enc (encFramed encBits) := by
-  have h := Encodings.frameT.computableTidilyInTimeAndSpace (encOut := encFramed encBits)
-    (f := fun a => enc a) fun a => by rw [encFramed_apply, encBits_apply, Encodings.frameT_run]
-  exact ⟨_, 0, h.computableInTimeAndSpace.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
+    ComputableInLogSpace (fun a => enc a) enc (encFramed encBits) :=
+  Encodings.frameT.computableInLogSpace fun a => by
+    rw [encFramed_apply, encBits_apply, Encodings.frameT_run]
 
 end Turing.MultiTapeTM

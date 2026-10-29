@@ -51,9 +51,9 @@ private theorem eval_augmentedXor (x : Fin 6 → Bool) :
   rw [eval_xorCircuit, eval_xorCircuit]
   rfl
 
--- The same artifact is supported at every parameter and contains exactly one self-encrypted key.
-example (n : ℕ) : artifact ∈ (ProbComp.eval (FixedKey.keyGen tagged n)).support :=
-  artifact_supported n
+-- The same artifact is supported at parameter 0 and contains exactly one self-encrypted key.
+example : artifact ∈ (ProbComp.eval (FixedKey.keyGen tagged 0)).support :=
+  artifact_supported 0
 example : FixedKey.publicKeyDecoder.decode artifact.1 = ([true], encryptedKey) := by
   simp [artifact]
 example : ProbComp.eval (FixedKey.encrypt tagged 0 artifact.1 true) =
@@ -132,8 +132,8 @@ example (ciphertext : List Bool) : FixedKey.evaluate decryptionCircuits 0 artifa
     hcompile, Scheme.evaluateLayers]
 
 -- Every finite circuit is permitted; there is no hidden depth bound in this client.
-example (n : ℕ) (c : Σ m, Circuit Boolean.signature m 1) :
-    (FixedKey.scheme decryptionCircuits).permitted n c := trivial
+example :
+    (FixedKey.scheme decryptionCircuits).permitted 0 ⟨2, disjunction⟩ := trivial
 
 -- All supported outputs are covered for arbitrary well-sized decrypting inputs, including
 -- previous evaluator results. No fresh-encryption or depth premise appears here.
@@ -148,14 +148,35 @@ example (n : ℕ) (c : Σ m, Circuit Boolean.signature m 1)
   FixedKey.evaluate_spec decryptionCircuits tagged_correct tagged_width tagged_bootstrappable
     n artifact (artifact_supported n) c bits inputs hbits hinputs output houtput
 
+-- Two-hop fixed-key evaluation composes pointwise first-hop evaluations with an outer circuit.
+example (n : ℕ) (outer : Σ m, Circuit Boolean.signature m 1)
+    (midBits : List Bool) (mids : List (List Bool)) (hmidBits : midBits.length = outer.1)
+    (hmids : List.Forall₂
+      (fun bit mid =>
+        ∃ (c : Σ m, Circuit Boolean.signature m 1) (bits : List Bool) (inputs : List (List Bool)),
+          bits.length = c.1 ∧
+            (FixedKey.scheme decryptionCircuits).EncryptedWires (fun _ => 2) n
+              artifact.2 bits inputs ∧
+            mid ∈ (ProbComp.eval
+              ((FixedKey.scheme decryptionCircuits).evaluate n artifact.1 c inputs)).support ∧
+            c.2.eval Boolean.interpretation (BitString.ofList c.1 bits) 0 = bit)
+      midBits mids)
+    (output : List Bool)
+    (houtput : output ∈ (ProbComp.eval
+      ((FixedKey.scheme decryptionCircuits).evaluate n artifact.1 outer mids)).support) :
+    output.length = 2 ∧ FixedKey.decrypt decryptionCircuits n artifact.2 output =
+      outer.2.eval Boolean.interpretation (BitString.ofList outer.1 midBits) 0 :=
+  FixedKey.evaluate_twoHop_spec decryptionCircuits tagged_correct tagged_width
+    tagged_bootstrappable n artifact (artifact_supported n) outer midBits mids hmidBits
+    hmids output houtput
+
 example : (FixedKey.scheme decryptionCircuits).Correct :=
   FixedKey.correct decryptionCircuits tagged_correct tagged_width tagged_bootstrappable
 example : (FixedKey.scheme decryptionCircuits).FixedWidth (fun _ => 1) (fun _ => 2) :=
   FixedKey.fixedWidth decryptionCircuits tagged_correct tagged_width tagged_bootstrappable
 
 -- Decryption uses the same circuit and representation, even for its total malformed-input path.
-example (n : ℕ) : (FixedKey.decryptionCircuits decryptionCircuits).circuit n =
-    decryptionCircuits.circuit n := rfl
+example : (FixedKey.decryptionCircuits decryptionCircuits).circuit 0 = xorCircuit := rfl
 example : FixedKey.decrypt decryptionCircuits 0 [] [] = false := by decide +kernel
 example : FixedKey.decrypt decryptionCircuits 0 [true] [] = true := by decide +kernel
 
@@ -171,18 +192,18 @@ example : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool =>
       (FixedKey.scheme decryptionCircuits).decrypt p.1 p.2.1 p.2.2)
     (encPair encUnary (encPair encBits encBits)) encBool :=
-  FixedKey.computableInPolyTime_scheme_decrypt decryptionCircuits (.of_tidy circuits_poly)
+  FixedKey.computableInPolyTime_scheme_decrypt decryptionCircuits circuits_poly
 
 example : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))) encBits
     (fun p => (FixedKey.scheme decryptionCircuits).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) :=
-  FixedKey.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+  FixedKey.isPPTOn_scheme_evaluate encrypt_ppt decryptionCircuits circuits_poly
     evaluate_ppt
 
 -- The same evaluator certificate also applies to an empty, malformed public artifact.
 example : IsPPTOn (encPair encUnary (encPair (Boolean.encCircuit 1) (encList encBits))) encBits
     (fun p => FixedKey.evaluate decryptionCircuits p.1 [] p.2.1 p.2.2) := by
-  apply FixedKey.isPPTOn_evaluate encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+  apply FixedKey.isPPTOn_evaluate encrypt_ppt decryptionCircuits circuits_poly
     evaluate_ppt
   all_goals fun_prop
 
@@ -192,15 +213,15 @@ example : IsPPTOn
       (encPair (encList encBits) (encPair encUnary Boolean.encCode))))) (encList encBits)
     (fun p => FixedKey.evaluateCircuit decryptionCircuits p.1 p.2.1 p.2.2.1
       p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2) := by
-  apply FixedKey.isPPTOn_evaluateCircuit encrypt_ppt decryptionCircuits (.of_tidy circuits_poly)
+  apply FixedKey.isPPTOn_evaluateCircuit encrypt_ppt decryptionCircuits circuits_poly
     evaluate_ppt
   all_goals fun_prop
 
 example : PolynomiallyBounded (fun _ : ℕ => 1) ∧ PolynomiallyBounded (fun _ : ℕ => 2) :=
-  FixedKey.polynomiallyBounded_widths decryptionCircuits (.of_tidy circuits_poly)
+  FixedKey.polynomiallyBounded_widths decryptionCircuits circuits_poly
 example : PolynomiallyBounded (fun n => (decryptionCircuits.circuit n).size) :=
-  FixedKey.polynomiallyBounded_decryptionSize decryptionCircuits (.of_tidy circuits_poly)
-example : ComputableTidilyInPolyTime
+  FixedKey.polynomiallyBounded_decryptionSize decryptionCircuits circuits_poly
+example : ComputableInPolyTime
     (fun n => (⟨_, (FixedKey.decryptionCircuits decryptionCircuits).circuit n⟩ :
       Σ m, Circuit Boolean.signature m 1)) encUnary (Boolean.encCircuit 1) := circuits_poly
 

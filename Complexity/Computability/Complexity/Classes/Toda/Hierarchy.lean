@@ -81,37 +81,6 @@ namespace Toda
 
 variable {α : Type} {enc : α ↪ List Bool}
 
-/-! Tidy views of the plain certificates of `ParityP` and `Toda.Isolation`, for tidy `fun_prop`
-below. -/
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_hashesToZero
-    {γ : Type} {input : γ ↪ List Bool} {k : γ → ℕ}
-    {seed w : γ → List Bool}
-    (hk : ComputableTidilyInPolyTime k input encUnary)
-    (hseed : ComputableTidilyInPolyTime seed input encBits)
-    (hw : ComputableTidilyInPolyTime w input encBits) :
-    ComputableTidilyInPolyTime (fun x => hashesToZero (k x) (seed x) (w x)) input encBool :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_hashesToZero (.of_tidy hk) (.of_tidy hseed)
-      (.of_tidy hw)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_succTest
-    {γ : Type} {input : γ ↪ List Bool}
-    {g : γ → List Bool → Bool} {w : γ → List Bool}
-    (hg : ComputableTidilyInPolyTime (fun p : γ × List Bool => g p.1 p.2) (encPair input encBits)
-      encBool)
-    (hw : ComputableTidilyInPolyTime w input encBits) :
-    ComputableTidilyInPolyTime (fun x => succTest (g x) (w x)) input encBool :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_succTest (.of_tidy hg) (.of_tidy hw)))
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_succVerifier
-    {enc : α ↪ List Bool}
-    {V : α × List Bool → Bool} (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
-    ComputableTidilyInPolyTime (succVerifier V) (encPair enc encBits) encBool :=
-  (ComputableInPolyTime.tidy (computableInPolyTime_succVerifier (.of_tidy hV)))
-
 /-! ### Random parity representations -/
 
 open Classical in
@@ -173,10 +142,10 @@ def notVerifier (enc : α ↪ List Bool) (ℓ ρ : Polynomial ℕ) (W : α × Li
       y.2))
     (x.1, x.2.drop (ℓ.eval (enc x.1).length + ρ.eval (enc x.1).length))
 
-private theorem computableTidilyInPolyTime_notVerifier (ℓ ρ : Polynomial ℕ)
+private theorem computableInPolyTime_notVerifier (ℓ ρ : Polynomial ℕ)
     {W : α × List Bool → Bool}
-    (hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool) :
-    ComputableTidilyInPolyTime (notVerifier enc ℓ ρ W) (encPair enc encBits) encBool := by
+    (hW : ComputableInPolyTime W (encPair enc encBits) encBool) :
+    ComputableInPolyTime (notVerifier enc ℓ ρ W) (encPair enc encBits) encBool := by
   unfold notVerifier succVerifier
   fun_prop
 
@@ -236,24 +205,6 @@ def existsVerifier (enc : α ↪ List Bool) (ℓ m ρ ζ e : Polynomial ℕ) (W 
       4 * (e.eval (enc x.1).length + 1) * (m.eval (enc x.1).length + 3) *
         ((m.eval (enc x.1).length + 2) * (m.eval (enc x.1).length + 1))))
 
-private theorem computableTidilyInPolyTime_trialVerifier {W : α × List Bool → Bool}
-    (hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool)
-    {γ : Type} {input : γ ↪ List Bool} {a : γ → α} {u r seed block : γ → List Bool}
-    {M level : γ → ℕ}
-    (ha : ComputableTidilyInPolyTime a input enc)
-    (hu : ComputableTidilyInPolyTime u input encBits)
-    (hr : ComputableTidilyInPolyTime r input encBits)
-    (hM : ComputableTidilyInPolyTime M input encUnary)
-    (hlevel : ComputableTidilyInPolyTime level input encUnary)
-    (hseed : ComputableTidilyInPolyTime seed input encBits)
-    (hblock : ComputableTidilyInPolyTime block input encBits) :
-    ComputableTidilyInPolyTime (fun x => trialVerifier W (a x) (u x) (r x) (M x) (level x)
-      (seed x) (block x)) input encBool := by
-  unfold trialVerifier
-  fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_trialVerifier
-
 @[fun_prop]
 theorem computableInPolyTime_trialVerifier {W : α × List Bool → Bool}
     (hW : ComputableInPolyTime W (encPair enc encBits) encBool)
@@ -267,29 +218,9 @@ theorem computableInPolyTime_trialVerifier {W : α × List Bool → Bool}
     (hseed : ComputableInPolyTime seed input encBits)
     (hblock : ComputableInPolyTime block input encBits) :
     ComputableInPolyTime (fun x => trialVerifier W (a x) (u x) (r x) (M x) (level x)
-      (seed x) (block x)) input encBool :=
-  .of_tidy (computableTidilyInPolyTime_trialVerifier hW.tidy ha.tidy hu.tidy hr.tidy hM.tidy
-    hlevel.tidy hseed.tidy hblock.tidy)
-
-private theorem computableTidilyInPolyTime_trialsVerifier {W : α × List Bool → Bool}
-    (hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool)
-    {γ : Type} {input : γ ↪ List Bool} {a : γ → α} {u r seeds y : γ → List Bool}
-    {M Z T B : γ → ℕ}
-    (ha : ComputableTidilyInPolyTime a input enc)
-    (hu : ComputableTidilyInPolyTime u input encBits)
-    (hr : ComputableTidilyInPolyTime r input encBits)
-    (hseeds : ComputableTidilyInPolyTime seeds input encBits)
-    (hM : ComputableTidilyInPolyTime M input encUnary)
-    (hZ : ComputableTidilyInPolyTime Z input encUnary)
-    (hT : ComputableTidilyInPolyTime T input encUnary)
-    (hB : ComputableTidilyInPolyTime B input encUnary)
-    (hy : ComputableTidilyInPolyTime y input encBits) :
-    ComputableTidilyInPolyTime (fun x => trialsVerifier W (a x) (u x) (r x) (seeds x) (M x) (Z x)
-      (T x) (B x) (y x)) input encBool := by
-  unfold trialsVerifier
+      (seed x) (block x)) input encBool  := by
+  unfold trialVerifier
   fun_prop
-
-attribute [local fun_prop] computableTidilyInPolyTime_trialsVerifier
 
 @[fun_prop]
 theorem computableInPolyTime_trialsVerifier {W : α × List Bool → Bool}
@@ -306,13 +237,13 @@ theorem computableInPolyTime_trialsVerifier {W : α × List Bool → Bool}
     (hB : ComputableInPolyTime B input encUnary)
     (hy : ComputableInPolyTime y input encBits) :
     ComputableInPolyTime (fun x => trialsVerifier W (a x) (u x) (r x) (seeds x) (M x) (Z x)
-      (T x) (B x) (y x)) input encBool :=
-  .of_tidy (computableTidilyInPolyTime_trialsVerifier hW.tidy ha.tidy hu.tidy hr.tidy hseeds.tidy
-    hM.tidy hZ.tidy hT.tidy hB.tidy hy.tidy)
+      (T x) (B x) (y x)) input encBool  := by
+  unfold trialsVerifier
+  fun_prop
 
-private theorem computableTidilyInPolyTime_existsVerifier (ℓ m ρ ζ e : Polynomial ℕ)
-    {W : α × List Bool → Bool} (hW : ComputableTidilyInPolyTime W (encPair enc encBits) encBool) :
-    ComputableTidilyInPolyTime (existsVerifier enc ℓ m ρ ζ e W) (encPair enc encBits) encBool := by
+private theorem computableInPolyTime_existsVerifier (ℓ m ρ ζ e : Polynomial ℕ)
+    {W : α × List Bool → Bool} (hW : ComputableInPolyTime W (encPair enc encBits) encBool) :
+    ComputableInPolyTime (existsVerifier enc ℓ m ρ ζ e W) (encPair enc encBits) encBool := by
   unfold existsVerifier
   fun_prop
 
@@ -457,32 +388,26 @@ theorem exists_isRandomParityRep_alternation {V : α × List Bool → Bool}
       ComputableInPolyTime W (encPair enc encBits) encBool ∧
       IsRandomParityRep enc ℓ e ρ ζ W fun a u =>
         Alternation q (ps.map fun p => p.eval (enc a).length) fun w => V (a, u ++ w) = true := by
-  have hV := hV.tidy
-  have this : ∀ (q : Bool) (ℓ e : Polynomial ℕ), ∃ (ρ ζ : Polynomial ℕ) (W : α × List Bool → Bool),
-      ComputableTidilyInPolyTime W (encPair enc encBits) encBool ∧ IsRandomParityRep enc ℓ e ρ ζ W
-      fun a u => Alternation q (ps.map fun p => p.eval (enc a).length) fun w => V (a, u ++ w) =
-      true := by
-    induction ps with
-    | nil =>
-      intro q ℓ e
-      refine ⟨0, 0, _, by fun_prop, (isRandomParityRep_base ℓ e V).congr fun a u _ => ?_⟩
-      simp
-    | cons p ps ih =>
-      intro q ℓ e
-      cases q
-      · -- `∀ w, P (u ++ w)` is `¬∃ w, ¬P (u ++ w)`
-        obtain ⟨ρ, ζ, W, hW, h⟩ := ih true (ℓ + p) (e + p + 1)
-        refine ⟨_, _, _, computableTidilyInPolyTime_notVerifier _ _
-          (computableTidilyInPolyTime_existsVerifier ℓ p ρ (ζ + 1) e
-            (computableTidilyInPolyTime_notVerifier _ _ hW)), (h.not.exists.not).congr
-            fun a u _ => ?_⟩
-        simp only [List.map_cons, alternation_false_cons, List.append_assoc, not_exists, not_and,
-          not_not]
-      · obtain ⟨ρ, ζ, W, hW, h⟩ := ih false (ℓ + p) (e + p + 1)
-        refine ⟨_, _, _, computableTidilyInPolyTime_existsVerifier ℓ p ρ ζ e hW, h.exists.congr
+  induction ps with
+  | nil =>
+    intro q ℓ e
+    refine ⟨0, 0, _, by fun_prop, (isRandomParityRep_base ℓ e V).congr fun a u _ => ?_⟩
+    simp
+  | cons p ps ih =>
+    intro q ℓ e
+    cases q
+    · -- `∀ w, P (u ++ w)` is `¬∃ w, ¬P (u ++ w)`
+      obtain ⟨ρ, ζ, W, hW, h⟩ := ih true (ℓ + p) (e + p + 1)
+      refine ⟨_, _, _, computableInPolyTime_notVerifier _ _
+        (computableInPolyTime_existsVerifier ℓ p ρ (ζ + 1) e
+          (computableInPolyTime_notVerifier _ _ hW)), (h.not.exists.not).congr
           fun a u _ => ?_⟩
-        simp only [List.map_cons, alternation_true_cons, List.append_assoc]
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+      simp only [List.map_cons, alternation_false_cons, List.append_assoc, not_exists, not_and,
+        not_not]
+    · obtain ⟨ρ, ζ, W, hW, h⟩ := ih false (ℓ + p) (e + p + 1)
+      refine ⟨_, _, _, computableInPolyTime_existsVerifier ℓ p ρ ζ e hW, h.exists.congr
+        fun a u _ => ?_⟩
+      simp only [List.map_cons, alternation_true_cons, List.append_assoc]
 
 /-- Padding the witnesses of length `Z` to length `N ≥ Z` with `false`s keeps their number. -/
 private theorem acceptCount_padWitness (W : α × List Bool → Bool) (a : α) (r : List Bool) {Z N : ℕ}
@@ -539,7 +464,8 @@ theorem PH_subset_BPOp_ParityP : PH enc ⊆ BPOp enc (ParityP (encPair enc encBi
       (s := (univ : Finset (Fin (ρ.eval (enc a).length) → Bool)))
       (fun r => Odd (acceptCount (fun x => W (x.1, List.ofFn r ++ x.2)) a (ζ.eval (enc a).length)))
     simp only [card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] at hsplit
-    simp only [hL', Set.mem_ofPred_eq, decide_eq_true_eq, decide_eq_false_iff_not]
+    simp only [BoundedErrorAt, hL', Set.mem_ofPred_eq, decide_eq_true_eq,
+      decide_eq_false_iff_not]
     rw [← hLV a] at ha
     constructor
     · intro (haL : a ∈ L)

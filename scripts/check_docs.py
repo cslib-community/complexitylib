@@ -77,14 +77,20 @@ LOCKED_KEYS = ("type", "url", "rev", "subDir")
 
 def check_project(project, label, generator_name, root_packages, toolchain):
     """Check a documentation project that shares the library's toolchain and package checkouts."""
-    manifest = json.loads((ROOT / project / "lake-manifest.json").read_text())
+    lockfile = f"{project}/lake-manifest.json"
+    manifest = json.loads((ROOT / lockfile).read_text())
     packages = {p["name"].strip("«»"): p for p in manifest["packages"]}
     for package in root_packages:
         locked = packages.get(package["name"])
-        require(locked is not None, f"{label} lockfile omits {package['name']}")
+        require(locked is not None,
+                f"{label} lockfile omits {package['name']}; copy its entry from "
+                f"lake-manifest.json into {lockfile}")
         for key in LOCKED_KEYS:
             require(package.get(key) == locked.get(key),
-                    f"{label} lockfile differs for {package['name']}: {key}")
+                    f"{label} lockfile differs for {package['name']}: {key} is "
+                    f"{json.dumps(locked.get(key))} in {lockfile} but "
+                    f"{json.dumps(package.get(key))} in lake-manifest.json; update {lockfile} "
+                    f"to match the root pin")
     require((ROOT / project / "lean-toolchain").read_text().strip() == toolchain,
             f"{label} toolchain differs from the library")
     config = tomllib.loads((ROOT / project / "lakefile.toml").read_text())
@@ -309,6 +315,26 @@ def rewrite_external_dependency_links(docs, index, external_pages):
         if (docs / rel).is_file():
             local_anchors_by_page[rel].update(page_anchors(docs / rel, anchor_cache))
 
+    def recursor_parent_fragment(norm, fragment):
+        """Link omitted generated recursors to their indexed inductive/structure parent."""
+        if not fragment:
+            return fragment
+        anchor = unquote(fragment)
+        if anchor in local_anchors_by_page.get(norm, ()):
+            return fragment
+        parent, _, suffix = anchor.rpartition(".")
+        info = index.get("declarations", {}).get(parent, {})
+        if suffix != "rec" or info.get("kind") not in ("inductive", "structure"):
+            return fragment
+        parent_link = urlsplit(info.get("docLink", ""))
+        if (
+            normalize_doc_relpath(unquote(parent_link.path)) == norm
+            and unquote(parent_link.fragment) == parent
+            and parent in local_anchors_by_page.get(norm, ())
+        ):
+            return parent_link.fragment
+        return fragment
+
     for page in sorted(docs.rglob("*.html")):
         if not page.is_file():
             continue
@@ -368,6 +394,8 @@ def rewrite_external_dependency_links(docs, index, external_pages):
                             f"Broken dependency link in {rel_page}: {rel_target}")
                     if (docs / norm).is_file():
                         local_anchors_by_page[norm].update(page_anchors(docs / norm, anchor_cache))
+                    fragment = recursor_parent_fragment(norm, fragment)
+                    anchor = unquote(fragment) if fragment else None
                     if fragment and (norm, anchor) not in KERNEL_RECURSOR_ANCHORS:
                         require(anchor in local_anchors_by_page[norm],
                                 f"Broken dependency anchor in {rel_page}: {norm}#{anchor}")
@@ -396,6 +424,7 @@ def rewrite_external_dependency_links(docs, index, external_pages):
                     f"Broken dependency link in {rel_page}: {norm}")
             if (docs / norm).is_file():
                 local_anchors_by_page[norm].update(page_anchors(docs / norm, anchor_cache))
+            fragment = recursor_parent_fragment(norm, fragment)
             if fragment:
                 anchor = unquote(fragment)
                 if (norm, anchor) not in KERNEL_RECURSOR_ANCHORS:

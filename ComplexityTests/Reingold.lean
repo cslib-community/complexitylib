@@ -14,19 +14,19 @@ import Complexity.Foundations.Data.List.Append
 
 The concrete theorem `Cslib.Reachability.Reingold.reachable_iff_exists_walk` has no hypotheses
 beyond decidability of adjacency; its two directions are exercised on the complete and the empty
-graph on two vertices. The bundled hypotheses of the generic statements are discharged: the regular
-rotation map of every simple graph has at least half self-loops at every vertex, the connected
-component of a vertex is connected, the base graph has `λ ≤ 1 / 5`, and the depth and length
-conditions hold for the concrete depth and walk length (inside the proof of the concrete theorem).
-The complete graph with self-loops, of spectral expansion `0`, shows the hypothesis of
+graph on two vertices. The base graph has `λ ≤ 1 / 5` (fed into
+`Cslib.Reachability.Reingold.min_le_one_sub_spectralExpansion_reingoldStep`), and the depth and
+length conditions hold for the concrete depth and walk length (inside the proof of the concrete
+theorem). The complete graph with self-loops, of spectral expansion `0`, shows the hypothesis of
 `Cslib.RotationMap.exists_neighbor_pow_eq` is satisfiable.
 
 The language `Cslib.Complexity.USTCON` is neither empty nor everything: the edge on two vertices
 connects its ends, and the empty graph on two vertices does not; `Cslib.Complexity.USTCON_mem_L`
-places it in `L`, `Cslib.Complexity.USTCON_logSpaceComplete_SL` and
-`Cslib.Complexity.USTCON_logSpaceComplete_L` establish its completeness for `SL` and `L`, and
-`Cslib.Complexity.SL_eq_L` identifies `SL` with `L`. The encoding of the edge is pinned bit by bit:
-the header `11 0 0 1 0`, then the matrix `0110`.
+places it in `L` (and hence `P`), `Cslib.Complexity.USTCON_logSpaceComplete_SL` and
+`Cslib.Complexity.USTCON_logSpaceComplete_L` establish its completeness for `SL` and `L` (under
+both log-space and polynomial-time reductions), and `Cslib.Complexity.SL_eq_L` identifies `SL` with
+`L`. The encoding of the edge is pinned bit by bit: the header `11 0 0 1 0`, then the matrix
+`0110`.
 -/
 
 namespace ComplexityTests.Reingold
@@ -48,19 +48,14 @@ example (k : Fin (walkLength 1) → Label) :
   rw [SimpleGraph.reachable_bot] at this
   exact absurd this (by decide)
 
--- The hypotheses of the generic statements are satisfiable: the base graph is a good expander.
-example : base.spectralExpansion ≤ 1 / 5 :=
-  spectralExpansion_base_le
-
--- The regular rotation map of any simple graph has at least half self-loops at every vertex.
-example {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (v : Fin n × Fin n) :
-    Fintype.card Label ≤ 2 * (input G).edgeCount v v :=
-  card_le_two_mul_edgeCount_input G v
-
--- The connected component of a vertex satisfies the connectivity hypothesis of the spectral gap.
-example {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (s : Fin n × Fin n) :
-    ((input G).componentGraph s).toSimpleGraph.Preconnected :=
-  (input G).preconnected_componentGraph s
+-- The hypotheses of the generic statements are satisfiable: the base graph has `λ ≤ 1 / 5`, so
+-- one step of Reingold's transformation on the complete rotation map has spectral gap at least
+-- `1 / 5`.
+example :
+    (1 / 5 : ℝ) ≤ 1 - (reingoldStep base baseEquiv (complete Label)).spectralExpansion := by
+  have h := min_le_one_sub_spectralExpansion_reingoldStep base baseEquiv spectralExpansion_base_le
+    (complete Label) (γ := 1) zero_le_one (by rw [spectralExpansion_complete, sub_zero])
+  exact (by norm_num : (1 / 5 : ℝ) ≤ min (6 / 5 * 1) (1 / 5)).trans h
 
 -- The walk hypothesis is satisfiable: in the complete graph with self-loops one step reaches
 -- every vertex.
@@ -99,27 +94,26 @@ example : emptyInstance ∉ Complexity.USTCON := by
   cases p with
   | cons hadj _ => exact absurd hadj (by simp [emptyInstance, Complexity.USTCONInstance.graph])
 
-example : Complexity.USTCON ∈ Complexity.L Complexity.encUSTCON :=
-  Complexity.USTCON_mem_L
-
-example : Complexity.USTCON ∈ Complexity.SL Complexity.encUSTCON :=
-  Complexity.USTCON_mem_SL
-
-example : Complexity.LogSpaceComplete Complexity.SL Complexity.encUSTCON Complexity.USTCON :=
-  Complexity.USTCON_logSpaceComplete_SL
-
-example : Complexity.LogSpaceComplete Complexity.L Complexity.encUSTCON Complexity.USTCON :=
-  Complexity.USTCON_logSpaceComplete_L
-
-example {α : Type} (enc : α ↪ List Bool) : Complexity.SL enc = Complexity.L enc :=
-  Complexity.SL_eq_L
+example : Complexity.USTCON ∈ Complexity.P Complexity.encUSTCON :=
+  Complexity.L_subset_P Complexity.USTCON_mem_L
 
 example : Complexity.USTCONᶜ ∈ Complexity.SL Complexity.encUSTCON :=
   Complexity.compl_mem_SL Complexity.USTCON_mem_SL
 
-example {m m' : ℕ} {l l' : List Bool}
-    (h : List.replicate m true ++ false :: l = List.replicate m' true ++ false :: l') :
-    m = m' ∧ l = l' :=
-  List.replicate_true_append_false_inj h
+example : Complexity.USTCONᶜ ∈ Complexity.L Complexity.encUSTCON :=
+  Complexity.SL_eq_L ▸ Complexity.compl_mem_SL Complexity.USTCON_mem_SL
+
+example :
+    Complexity.LogSpaceReducible Complexity.encUSTCON Complexity.encUSTCON
+      Complexity.USTCONᶜ Complexity.USTCON :=
+  Complexity.USTCON_logSpaceComplete_SL.2 Complexity.encUSTCON Complexity.USTCONᶜ
+    (Complexity.compl_mem_SL Complexity.USTCON_mem_SL)
+
+example : Complexity.PolyTimeComplete Complexity.L Complexity.encUSTCON Complexity.USTCON :=
+  Complexity.USTCON_logSpaceComplete_L.polyTimeComplete
+
+example {m : ℕ} {l : List Bool} (hne : m ≠ 2) :
+    List.replicate m true ++ false :: l ≠ [true, true, false, true] :=
+  fun h => hne (List.replicate_true_append_false_inj (m' := 2) (l' := [true]) h).1
 
 end ComplexityTests.Reingold

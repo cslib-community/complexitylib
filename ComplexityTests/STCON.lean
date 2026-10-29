@@ -75,19 +75,18 @@ example : pathInstance.matrix = (List.range 3).flatMap fun u =>
     (List.range 3).map fun v => decide (u + 1 = v) :=
   pathInstance.matrix_eq_flatMap _ fun _ _ => rfl
 
-example : STCON ∈ NL encSTCON := STCON.mem_NL
+-- Each of `STCON` and `STCONᶜ` reduces in logarithmic space to the other via `NL`-completeness.
+example : LogSpaceReducible encSTCON encSTCON STCONᶜ STCON :=
+  STCON.logSpaceComplete.2 encSTCON STCONᶜ STCON.compl_mem_NL
 
-example : STCONᶜ ∈ NL encSTCON := STCON.compl_mem_NL
-
-example : LogSpaceComplete NL encSTCON STCON := STCON.logSpaceComplete
-
-example : LogSpaceComplete NL encSTCON STCONᶜ := STCON.compl_logSpaceComplete
+example : LogSpaceReducible encSTCON encSTCON STCON STCONᶜ :=
+  STCON.compl_logSpaceComplete.2 encSTCON STCON STCON.mem_NL
 
 -- The hardness hypothesis is satisfiable: undirected connectivity reduces to `STCON`.
 example : LogSpaceReducible encUSTCON encSTCON USTCON STCON :=
   STCON.logSpaceReducible_of_mem_NL (L_subset_NL USTCON_mem_L)
 
-example : STCON ∈ L encSTCON ↔ ∀ {α : Type} (enc : α ↪ List Bool), NL enc = L enc :=
-  STCON.mem_L_iff_forall_NL_eq_L
+example (h : STCON ∈ L encSTCON) : STCONᶜ ∈ L encSTCON :=
+  (STCON.mem_L_iff_forall_NL_eq_L.mp h encSTCON) ▸ STCON.compl_mem_NL
 
 end ComplexityTests.STCON

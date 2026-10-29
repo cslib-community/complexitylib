@@ -7,7 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Foundations.Data.BitString.Counter
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer
@@ -123,14 +125,14 @@ theorem iterate [Inhabited β] {n : α → ℕ} {init : α → β} {step : β �
   obtain ⟨Ti, Si, hSi, hinit⟩ := hinit
   obtain ⟨Ts, Ss, hSs, hstep⟩ := hstep
   obtain ⟨cs, ds, hSs⟩ := hSs.exists_le
-  have hit := ComputableTidilyInO.iterate hn'.inO hinit hstep
+  have hit := (ComputableInO.iterate hn'.inO.computableInO hinit.computableInO hstep.computableInO
     (R := fun a => (Finset.range (n a + 1)).sup fun k => Ts (step^[k] (init a)))
     (Q := fun a => cs * (B a + 1) ^ ds) (B := B)
     (fun a k hk => Finset.le_sup (f := fun k => Ts (step^[k] (init a)))
       (Finset.mem_range.mpr (Nat.lt_succ_of_le hk)))
     (fun a k hk => (hSs _).trans (Nat.mul_le_mul_left cs
       (Nat.pow_le_pow_left (Nat.add_le_add_right (hstate a k hk) 1) ds)))
-    hstate
+    hstate).tidy
   refine ⟨_, _, ?_, hit⟩
   have hQ : PolyBounded (fun a => (encIn a).length) fun a => cs * (B a + 1) ^ ds :=
     PolyBounded.comp (size' := id) (v := fun m => cs * (m + 1) ^ ds)

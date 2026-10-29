@@ -145,7 +145,8 @@ theorem isAlternatingVerifier_sigmaTwoVerifier {e q k p : Polynomial ℕ} {W : �
     obtain ⟨y, hy⟩ := (h a).1 ha
     have hS : 2 ^ e.eval (enc a).length * #(univ.filter fun r : BitString (p.eval (enc a).length) =>
         W (a, List.ofFn y ++ List.ofFn r) = true)ᶜ ≤ 2 ^ p.eval (enc a).length := by
-      simpa only [compl_filter, Bool.not_eq_true] using hy
+      simpa only [compl_filter, Bool.not_eq_true, ErrorExponentAt, Bool.not_true]
+        using hy
     obtain ⟨u, hu⟩ := BitString.exists_forall_exists_add_mem_of_two_pow_mul_card_compl_le _ hS
       (hcover _)
     refine ⟨List.ofFn y ++ List.ofFn (BitString.blocksEquiv.symm u), by simp, fun w hw => ?_⟩
@@ -188,8 +189,6 @@ def piTwoVerifier (enc : α ↪ List Bool) (k p q : Polynomial ℕ) (W : α × L
 theorem computableInPolyTime_piTwoVerifier {W : α × List Bool → Bool}
     (hW : ComputableInPolyTime W (encPair enc encBits) encBool) (k p q : Polynomial ℕ) :
     ComputableInPolyTime (piTwoVerifier enc k p q W) (encPair enc encBits) encBool := by
-  have hW := hW.tidy
-  refine .of_tidy ?_
   unfold piTwoVerifier
   fun_prop
 

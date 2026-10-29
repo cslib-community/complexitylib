@@ -34,8 +34,9 @@ example : acceptCount (succVerifier fun x : Unit × List Bool => x.2.headD false
   rw [acceptCount_succVerifier]
   decide
 
-/-- `BP·P` is `BPP`. -/
-example : BPOp encBits (P (encPair encBits encBits)) = BPP encBits := BPOp_P
+/-- `BP·P` is `BPP`, so any problem in `BPP` lies in `BP·⊕P` via `P ⊆ ⊕P`. -/
+example : BPP encBits ⊆ BPOp encBits (ParityP (encPair encBits encBits)) :=
+  BPOp_P.symm.subset.trans (BPOp_mono P_subset_ParityP)
 
 /-- The words starting with `true`, through the parity operator with one certificate bit: the
 pairs whose word and certificate both start with `true`. A word starting with `true` is accepted
@@ -125,11 +126,15 @@ example : AnswersBits encBits (fun _ => 0) ∅ := by
 
 /-! ### Toda's theorem -/
 
-/-- `P ⊆ P^#P`. -/
-example : P encBits ⊆ PWithSharpPOracle encBits := P_subset_PWithSharpPOracle
+/-- `P ⊆ P^#P` applied to the words starting with `true`. -/
+example : {w : List Bool | w.headD false = true} ∈ PWithSharpPOracle encBits :=
+  P_subset_PWithSharpPOracle ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
-/-- **Toda's theorem** for problems about words. -/
-example : PH encBits ⊆ PWithSharpPOracle encBits := PH_subset_PWithSharpPOracle
+/-- **Toda's theorem** places every `NP` problem in `P^#P`, here the universal language via
+`P ⊆ NP ⊆ PH`. -/
+example : (Set.univ : Set (List Bool)) ∈ PWithSharpPOracle encBits :=
+  PH_subset_PWithSharpPOracle (NP_subset_PH
+    (P_subset_NP ⟨fun _ => true, .const true, fun _ => by simp⟩))
 
 /-- `NP ⊆ P^#P`. -/
 example : NP encBits ⊆ PWithSharpPOracle encBits := NP_subset_PH.trans PH_subset_PWithSharpPOracle

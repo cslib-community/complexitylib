@@ -182,6 +182,75 @@ structure IntegralFrame {ι : Type*} (U : Submodule (F K) (ι → F K)) where
   /-- Reduction at zero preserves independence. -/
   reduced_independent : LinearIndependent K (fun j => reduce (vector j))
 
+/-- Prepending a normalized pivot `x ∈ U` with `x c = 1` to a spanning family of
+`U ⊓ ker (proj c)` spans `U`. -/
+private lemma span_finCons_eq_of_proj_eq_one {ι : Type*}
+    {U : Submodule (F K) (ι → F K)} {c : ι} {x : ι → F K} (hxU : x ∈ U) (hxc : x c = 1)
+    {m : ℕ} {v : Fin m → (ι → F K)}
+    (hv : Submodule.span (F K) (Set.range v) = U ⊓ LinearMap.ker (LinearMap.proj c)) :
+    Submodule.span (F K) (Set.range (Fin.cons x v)) = U := by
+  apply le_antisymm
+  · apply Submodule.span_le.mpr
+    rintro _ ⟨j, rfl⟩
+    exact Fin.cases hxU (fun i => (hv.le (Submodule.subset_span ⟨i, rfl⟩)).1) j
+  · intro y hy
+    have hr : y - y c • x ∈ U ⊓ LinearMap.ker (LinearMap.proj c) := by
+      refine ⟨U.sub_mem hy (U.smul_mem _ hxU), ?_⟩
+      change y c - y c * x c = 0
+      simp [hxc]
+    have hsub : U ⊓ LinearMap.ker (LinearMap.proj c) ≤
+        Submodule.span (F K) (Set.range (Fin.cons x v)) := by
+      refine hv.ge.trans (Submodule.span_mono ?_)
+      rw [Fin.range_cons]
+      exact Set.subset_insert x _
+    have hxspan : x ∈ Submodule.span (F K) (Set.range (Fin.cons x v)) :=
+      Submodule.subset_span ⟨0, by simp⟩
+    simpa only [sub_add_cancel] using (Submodule.span (F K) (Set.range (Fin.cons x v))).add_mem
+      (hsub hr) ((Submodule.span (F K) (Set.range (Fin.cons x v))).smul_mem (y c) hxspan)
+
+/-- Extending an `IntegralFrame` of `U ⊓ ker (proj c)` by a normalized integral pivot `x ∈ U`
+with `x c = 1` yields an `IntegralFrame` of `U`. -/
+private lemma nonempty_integralFrame_cons {ι : Type*}
+    {U : Submodule (F K) (ι → F K)} {c : ι} {x : ι → F K}
+    (hxU : x ∈ U) (hxI : IntegralVector x) (hxc : x c = 1)
+    (b : IntegralFrame (U ⊓ LinearMap.ker (LinearMap.proj c))) :
+    Nonempty (IntegralFrame U) := by
+  have hbc (j : Fin b.length) : b.vector j c = 0 :=
+    (b.span_eq.le (Submodule.subset_span ⟨j, rfl⟩)).2
+  let π : (ι → F K) →ₗ[F K] F K := LinearMap.proj c
+  let φ : Fin b.length → ((ι → F K) →ₗ[F K] F K) := fun j =>
+    b.coordinate j - b.coordinate j x • π
+  refine ⟨{ length := b.length + 1
+            vector := Fin.cons x b.vector
+            coordinate := Fin.cons π φ
+            span_eq := span_finCons_eq_of_proj_eq_one hxU hxc b.span_eq
+            vector_integral := fun j => Fin.cases hxI b.vector_integral j
+            coordinate_integral := fun j => Fin.cases (fun y hy => hy c)
+              (fun i y hy => (b.coordinate_integral i y hy).sub
+                ((b.coordinate_integral i x hxI).mul (hy c))) j
+            pairing := ?_
+            reduced_independent := ?_ }⟩
+  · intro i j
+    refine Fin.cases ?_ (fun a => ?_) i <;> refine Fin.cases ?_ (fun z => ?_) j
+    · simp [π, hxc]
+    · simp [π, hbc, Ne.symm (Fin.succ_ne_zero _)]
+    · simp [φ, π, hxc]
+    · simp [φ, π, hbc, b.pairing]
+  · rw [show (fun j : Fin (b.length + 1) => reduce ((Fin.cons x b.vector :
+        Fin (b.length + 1) → (ι → F K)) j)) =
+      Fin.cons (reduce x) (fun j => reduce (b.vector j)) from
+        funext fun j => Fin.cases rfl (fun _ => rfl) j, linearIndependent_finCons]
+    refine ⟨b.reduced_independent, fun hx => ?_⟩
+    have hsp : Submodule.span K (Set.range (fun j => reduce (b.vector j))) ≤
+        LinearMap.ker (LinearMap.proj c : (ι → K) →ₗ[K] K) := by
+      refine Submodule.span_le.mpr ?_
+      rintro _ ⟨j, rfl⟩
+      change reduction (b.vector j c) = 0
+      rw [hbc, reduction_zero]
+    have hh : reduction (x c) = 0 := hsp hx
+    rw [hxc, reduction_one] at hh
+    exact one_ne_zero hh
+
 /-- Valuation-adapted Gaussian elimination constructs an integral frame for
 any Laurent-series subspace. The coordinate functionals guarantee saturation. -/
 theorem exists_integralFrame {ι : Type*} [Finite ι]
@@ -205,89 +274,14 @@ theorem exists_integralFrame {ι : Type*} [Finite ι]
                pairing := fun i => Fin.elim0 i
                reduced_independent := linearIndependent_empty_type }⟩
     obtain ⟨v, hvU, hv⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hU
-    obtain ⟨c, u, hu, hxint, hxc⟩ := normalize_vector v hv
+    obtain ⟨c, u, _, hxint, hxc⟩ := normalize_vector v hv
     let x : ι → F K := u • v
     have hxU : x ∈ U := U.smul_mem u hvU
-    have hxI : IntegralVector x := hxint
-    have hxc' : x c = 1 := hxc
-    let π : (ι → F K) →ₗ[F K] F K := LinearMap.proj c
-    let W := U ⊓ LinearMap.ker π
-    have hWU : W < U := by
-      refine lt_of_le_of_ne inf_le_left ?_
-      intro he
-      have hxW : x ∈ W := he.symm ▸ hxU
-      have hh : x c = 0 := hxW.2
-      exact one_ne_zero (hxc'.symm.trans hh)
-    have hdimW : Module.finrank (F K) W < k := by
-      rw [← hdim]
-      exact Submodule.finrank_lt_finrank_of_lt hWU
-    obtain ⟨b⟩ := ih _ hdimW W rfl
-    have hbW : ∀ j, b.vector j ∈ W := by
-      intro j
-      exact b.span_eq.le (Submodule.subset_span ⟨j, rfl⟩)
-    have hbc : ∀ j, b.vector j c = 0 := fun j => (hbW j).2
-    let φ : Fin b.length → ((ι → F K) →ₗ[F K] F K) := fun j =>
-      b.coordinate j - b.coordinate j x • π
-    refine ⟨{ length := b.length + 1
-              vector := Fin.cons x b.vector
-              coordinate := Fin.cons π φ
-              span_eq := ?_
-              vector_integral := ?_
-              coordinate_integral := ?_
-              pairing := ?_
-              reduced_independent := ?_ }⟩
-    · apply le_antisymm
-      · apply Submodule.span_le.mpr
-        rintro _ ⟨j, rfl⟩
-        exact Fin.cases hxU (fun i => (hbW i).1) j
-      · intro y hy
-        have hr : y - y c • x ∈ W := by
-          refine ⟨U.sub_mem hy (U.smul_mem _ hxU), ?_⟩
-          change y c - y c * x c = 0
-          simp [hxc']
-        have hsub : W ≤ Submodule.span (F K) (Set.range (Fin.cons x b.vector)) := by
-          apply le_trans b.span_eq.ge
-          apply Submodule.span_mono
-          rw [Fin.range_cons]
-          exact Set.subset_insert x _
-        have hxspan : x ∈ Submodule.span (F K) (Set.range (Fin.cons x b.vector)) :=
-          Submodule.subset_span ⟨0, by simp⟩
-        have hh := (Submodule.span (F K) (Set.range (Fin.cons x b.vector))).add_mem
-          (hsub hr) ((Submodule.span (F K) (Set.range (Fin.cons x b.vector))).smul_mem (y c) hxspan)
-        simpa only [sub_add_cancel] using hh
-    · intro j
-      exact Fin.cases hxI b.vector_integral j
-    · intro j
-      refine Fin.cases ?_ (fun i => ?_) j
-      · exact fun y hy => hy c
-      · intro y hy
-        change Integral (b.coordinate i y - b.coordinate i x * y c)
-        exact (b.coordinate_integral i y hy).sub
-          ((b.coordinate_integral i x hxI).mul (hy c))
-    · intro i j
-      refine Fin.cases ?_ (fun a => ?_) i <;>
-        refine Fin.cases ?_ (fun z => ?_) j
-      · simp [π, hxc']
-      · simp [π, hbc, Ne.symm (Fin.succ_ne_zero _)]
-      · simp [φ, π, hxc']
-      · simp [φ, π, hbc, b.pairing]
-    · have he : (fun j : Fin (b.length + 1) => reduce ((Fin.cons x b.vector : Fin (b.length + 1)
-      → (ι → F K)) j)) =
-          Fin.cons (reduce x) (fun j => reduce (b.vector j)) := by
-        funext j
-        exact Fin.cases rfl (fun _ => rfl) j
-      rw [he, linearIndependent_finCons]
-      refine ⟨b.reduced_independent, ?_⟩
-      have hsp : Submodule.span K (Set.range (fun j => reduce (b.vector j))) ≤
-          LinearMap.ker (LinearMap.proj c : (ι → K) →ₗ[K] K) := by
-        apply Submodule.span_le.mpr
-        rintro _ ⟨j, rfl⟩
-        change reduction (b.vector j c) = 0
-        rw [hbc, reduction_zero]
-      intro hx
-      have hh : reduction (x c) = 0 := hsp hx
-      rw [hxc', reduction_one] at hh
-      exact one_ne_zero hh
+    let W := U ⊓ LinearMap.ker (LinearMap.proj c)
+    have hWU : W < U := lt_of_le_of_ne inf_le_left fun he =>
+      one_ne_zero (hxc.symm.trans (he.symm ▸ hxU : x ∈ W).2)
+    obtain ⟨b⟩ := ih _ (hdim ▸ Submodule.finrank_lt_finrank_of_lt hWU) W rfl
+    exact nonempty_integralFrame_cons hxU hxint hxc b
 
 namespace IntegralFrame
 

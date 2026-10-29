@@ -57,11 +57,13 @@ example : (packedTournamentCircuit 1 1 2).eval interpretation (packRecords recor
     List.drop_zero]
   decide
 
-example : (packedTournamentCircuit 1 1 2).size = 26 := by
-  simp
-
-example : (packedTournamentCircuit 1 1 2).depth ≤ 16 :=
-  depth_packedTournamentCircuit_le 1 1 2
+example : (packedTournamentCircuit 1 1 2).size = 26 ∧
+    (packedTournamentCircuit 1 1 2).depth ≤ 16 ∧
+    (packedTournamentCircuit 1 1 2).depth < (packedTournamentCircuit 1 1 2).size := by
+  have hsize : (packedTournamentCircuit 1 1 2).size = 26 := by simp
+  have hdepth : (packedTournamentCircuit 1 1 2).depth ≤ 16 :=
+    depth_packedTournamentCircuit_le 1 1 2
+  exact ⟨hsize, hdepth, by omega⟩
 
 example (r : BitString 3) :
     (packedTournamentCircuit 1 2 0).eval interpretation (packRecords (fun _ => r)) = r := by

@@ -93,6 +93,16 @@ private theorem HasFormula.congr {X : Type*} {k c : ℕ} {input : X → Fin k �
   obtain ⟨F, hF, cF⟩ := hP
   exact ⟨F, fun x => (hF x).trans (h x), cF⟩
 
+/-- Pair-preservation violations `BreaksPair pairs (y z)` can be compiled with `2 * pairs.length`
+AND gates when all auxiliary label polarities have zero-cost formulas. -/
+private theorem hasFormula_breaksPair {U X : Type*} {k : ℕ} (pairs : List (Set U × Set U))
+    (input : X → Fin k → Bool) (y : X → Fin (size pairs) → Bool)
+    (hy : ∀ i b, HasFormula input (fun z => y z i = b) 0) :
+    HasFormula input (fun z => BreaksPair pairs (y z)) (2 * pairs.length) := by
+  simpa [BreaksPair, Nat.mul_comm] using
+    HasFormula.exists_fintype _ (fun _ : Fin pairs.length => 2) fun i =>
+      (hy (left pairs i) true).and ((hy (right pairs i) true).and (hy (inter pairs i) false))
+
 /-- Compile consistency and pair-preservation violations using exactly five AND gates per pair.
 The primary source values and both polarities of each auxiliary label are supplied at zero cost. -/
 theorem exists_formula {U X : Type*} {n k : ℕ} (pairs : List (Set U × Set U))
@@ -114,8 +124,7 @@ theorem exists_formula {U X : Type*} {n k : ℕ} (pairs : List (Set U × Set U))
     cases i with
     | none =>
       cases b
-      · simpa only [label, eq_self] using
-          HasFormula.const input true
+      · simpa only [label, eq_self] using HasFormula.const input true
       · simpa only [label] using HasFormula.const input false
     | some i => exact hy i b
   let inner (j : Option (Fin (size pairs))) (z : X) : Prop :=
@@ -138,26 +147,14 @@ theorem exists_formula {U X : Type*} {n k : ℕ} (pairs : List (Set U × Set U))
       (fun j => (hlabel (some j) false).and (hinner (some j)))
   have hinvalid : HasFormula input (fun z => Invalid pairs sources (x z) (y z))
       (size pairs) := by
-    have h := (hinner none).or hgroups
-    apply (show HasFormula input _ (size pairs) from by simpa only [Nat.zero_add] using h).congr
-    intro z
-    constructor
-    · rintro (h | ⟨j, hj, h⟩)
-      · exact ⟨none, rfl, h⟩
-      · exact ⟨some j, hj, h⟩
-    · rintro ⟨j, hj, h⟩
-      cases j with
-      | none => exact Or.inl h
-      | some j => exact Or.inr ⟨j, hj, h⟩
-  have hbreak : HasFormula input (fun z => BreaksPair pairs (y z)) (2 * pairs.length) := by
-    have h := HasFormula.exists_fintype _ (fun _ : Fin pairs.length => 2) (fun i =>
-      (show HasFormula input (fun z => y z (left pairs i) = true) 0 from hy _ true).and
-        ((show HasFormula input (fun z => y z (right pairs i) = true) 0 from hy _ true).and
-          (show HasFormula input (fun z => y z (inter pairs i) = false) 0 from hy _ false)))
-    simpa [BreaksPair, Nat.mul_comm] using h
-  have hcost : size pairs + 2 * pairs.length = 5 * pairs.length := by
-    dsimp [size]
-    lia
-  simpa only [HasFormula, hcost] using hinvalid.or hbreak
+    refine (show HasFormula input _ (size pairs) from by
+      simpa only [Nat.zero_add] using (hinner none).or hgroups).congr fun z =>
+      ⟨?_, fun ⟨j, hj, h⟩ => by
+        cases j with | none => exact Or.inl h | some j => exact Or.inr ⟨j, hj, h⟩⟩
+    rintro (h | ⟨j, hj, h⟩)
+    · exact ⟨none, rfl, h⟩
+    · exact ⟨some j, hj, h⟩
+  have hcost : size pairs + 2 * pairs.length = 5 * pairs.length := by dsimp [size]; lia
+  simpa only [HasFormula, hcost] using hinvalid.or (hasFormula_breaksPair pairs input y hy)
 
 end Cslib.Circuits.Fusion.PairCertificate

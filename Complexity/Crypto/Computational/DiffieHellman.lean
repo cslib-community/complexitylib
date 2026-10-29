@@ -12,6 +12,7 @@ public import Complexity.Crypto.Computational.DiscreteLog
 public import Complexity.Crypto.Game.Statistical
 public import Complexity.Languages.Probabilistic.BitString
 public import Complexity.Languages.Probabilistic.Repeat
+public import Complexity.Languages.Probabilistic.UniformNat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Probabilistic.Repeat
@@ -68,6 +69,8 @@ assumptions are hypotheses, not theorems.
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeDDHRerandomize`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeGame`: algebraic, word-level, and game-level
   DDH rerandomisation ([BonehShoup2023], Exercises 10.8–10.9, pp. 425–426).
+* `Cslib.Crypto.PrimeOrderGroupFamily.sampleExp`: approximate uniform exponent sampling modulo
+  `F.order d` via `ProbComp.sampleModNat` with statistical distance at most `1 / 2 ^ n`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhSampleModExponents`,
   `Cslib.Crypto.PrimeOrderGroupFamily.sampleModZModLaw`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhSelfReduceDistinguisher`,
@@ -97,7 +100,9 @@ assumptions are hypotheses, not theorems.
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRerandomizeGame_eq`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhRerandomizeGame`: word-level and game-level
   consequences of Exercises 10.8–10.9 (pp. 425–426).
-* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhSampleModExponents`,
+* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_sampleExp`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_bind_sampleExp_le`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhSampleModExponents`,
   `Cslib.Crypto.PrimeOrderGroupFamily.dist_sampleModZModLaw_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhSelfReduceDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le`,
@@ -602,6 +607,59 @@ theorem computableInPolyTime_encodeDDHRerandomize :
   have hc₃₂ := F.computableInPolyTime_add.comp (hd.prod (hc₃₁.prod hs₁v))
   have hc₃ := F.computableInPolyTime_add.comp (hd.prod (hc₃₂.prod hs₁s₂g))
   exact hc₁.prod (hc₂.prod hc₃)
+
+/-- Sample one approximate uniform exponent modulo `F.order d` using `n + |encNat (F.order d)|`
+fair coins via `ProbComp.sampleModNat`, within statistical distance `1 / 2 ^ n` of exact uniform on
+`ZMod (F.order d)`. -/
+noncomputable def sampleExp (n : ℕ) (d : F.Desc) : ProbComp ℕ :=
+  ProbComp.sampleModNat (n + (encNat (F.order d)).length) (F.order d)
+
+/-- `sampleExp` is uniform strict PPT whenever `n` and `d` are computable in polynomial time. -/
+theorem isPPTOn_sampleExp {γ : Type} {encIn : γ ↪ List Bool}
+    {n : γ → ℕ} {d : γ → F.Desc}
+    (hn : ComputableInPolyTime n encIn encUnary)
+    (hd : ComputableInPolyTime d encIn F.encDesc) :
+    IsPPTOn encIn encNat (fun a => F.sampleExp (n a) (d a)) := by
+  have hord : ComputableInPolyTime (fun a => F.order (d a)) encIn encNat :=
+    F.computableInPolyTime_order.comp hd
+  have hlen : ComputableInPolyTime
+      (fun a => (encNat (F.order (d a))).length) encIn encUnary :=
+    (ComputableInPolyTime.encoding_length encNat).comp hord
+  have hadd : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
+      (encPair encUnary encUnary) encUnary := by fun_prop
+  have hwidth : ComputableInPolyTime
+      (fun a => n a + (encNat (F.order (d a))).length) encIn encUnary :=
+    hadd.comp (hn.prod hlen)
+  exact isPPTOn_sampleModNat hwidth hord
+
+/-- Replacing one `sampleExp n d` draw by an exact uniform draw on `ZMod (F.order d)`
+changes `Game.advantage` by at most `1 / 2 ^ n`. -/
+theorem advantage_bind_sampleExp_le (n : ℕ) (d : F.Desc)
+    (k : ZMod (F.order d) → Game) :
+    Game.advantage
+      ((ProbComp.eval (F.sampleExp n d)).bind fun s => k (s : ZMod (F.order d)))
+      ((PMF.uniformOfFintype (ZMod (F.order d))).bind k) ≤
+      1 / 2 ^ n := by
+  have hmap :
+      ((ProbComp.eval (F.sampleExp n d)).bind fun s => k (s : ZMod (F.order d))) =
+        ((ProbComp.eval (F.sampleExp n d)).map
+          (Nat.cast : ℕ → ZMod (F.order d))).bind k :=
+    (PMF.bind_map _ _ _).symm
+  have hlt : F.order d < 2 ^ (encNat (F.order d)).length := by
+    simpa only [encNat_apply, ← Nat.size_eq_bits_len] using Nat.lt_size_self (F.order d)
+  have hord_le : (F.order d : ℝ) ≤ 2 ^ (encNat (F.order d)).length := by
+    exact_mod_cast hlt.le
+  rw [← NNReal.coe_le_coe, hmap, Game.advantage_eq_nndist, coe_nndist]
+  refine (PMF.dist_bind_le _ _ k).trans ?_
+  refine (ProbComp.dist_map_natCast_eval_sampleModNat_le
+    (n + (encNat (F.order d)).length) (F.order d)).trans ?_
+  rw [Nat.add_comm n, pow_add, ← div_div]
+  have hdiv : (F.order d : ℝ) / 2 ^ (encNat (F.order d)).length ≤ 1 :=
+    (div_le_one (by positivity)).mpr hord_le
+  have hbound :
+      (F.order d : ℝ) / 2 ^ (encNat (F.order d)).length / 2 ^ n ≤ 1 / 2 ^ n :=
+    div_le_div_of_nonneg_right hdiv (by positivity)
+  simpa using hbound
 
 /-- Sample three independent nearly-uniform exponents modulo `F.order d` at statistical distance
 at most `1 / 2 ^ n` each using `ProbComp.sampleModNat ((F.order d).size + n) (F.order d)`

@@ -133,6 +133,55 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   bound (`hStepsBound`) and a polynomial bound on the encoded intermediate run results
   (`hOutLen`); `transport_polyTime_of_le_const` derives both from a constant step bound. Uniform
   arbitrary-program dispatch and charged configuration selection remain separate.
+* **Signed programs on unsigned words.** `WordRAM/Signed/*` reuse `GenericRAM.Signed`'s
+  range, arithmetic and interpreter. The sign-and-magnitude encoding needs one extra unsigned
+  bit; the arithmetic blocks use two. `State`, `Operations`, `Compile` and `Input` extend them
+  to complete programs over the full five-operation signed model (constants, copies,
+  addition, subtraction, multiplication, Euclidean division/remainder with Lean's total
+  zero-divisor conventions, memory, signed tests, jumps and halt). Successful source runs of `t`
+  instructions transfer to one fixed unsigned program at width `w + 2` within `32*t + 5`
+  instructions, including the five-instruction length header conversion and the final halt. Each
+  source integer uses one target word, source memory addresses are unchanged, nine scratch
+  registers precede the source register bank, and each source instruction occupies sixty-four
+  target code slots. Code labels need not fit a data word in the target model. Run-prefix
+  theorems preserve the complete source memory and register bank. This is forward correctness,
+  not reflection of source faults; transfer from Anthropic's modular signed machine and its
+  3SUM/APSP algorithms remains separate.
+* **Direct 3SUM adaptation.** `Algorithms/ThreeSum/Convolution.lean` adapts the explicit
+  Convolution-3SUM to Exact Triangle correctness reduction from Anthropic's
+  [`formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp),
+  `Sec3/Theorem21a/Convolution.lean`. Its reduction uses the arbitrary-matrix predicate in
+  `Algorithms/ExactTriangle/Defs.lean`, shared with future Exact Triangle solvers.
+  The three weight matrices use the original formulas; an explicit nonnegative magnitude bound
+  also handles empty input. The native builder in `Algorithms/WordRAM/ThreeSum/{Cell,Fill,Memory}.lean`
+  extends the one-weight kernel with index/address calculations and the complete matrix loop.
+  Given its arguments in registers, it writes one instance in at most `131*t² + 5` instructions
+  at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
+  preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
+  `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
+  frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical
+  reduction: minimum-prime searches, collision/heavy-element bounds, light-element arrays, bounded
+  ternary recursion and composition with the frontend. At polynomial magnitudes it gives explicit
+  length, count and magnitude bounds; `scanPairs` counts candidate-prime/element pairs and is not
+  a charged running time. Generic finite-average and prime-counting lemmas live in Foundations.
+  See milestone [#1435](https://github.com/cslib-community/complexitylib/issues/1435).
+  `Algorithms/ExactTriangle/Lopsided.lean` adapts the finite unweighted lopsided query/counting
+  interface from the same pin's `Sec3/MatrixLanguage.lean`: arbitrary-injection zero padding,
+  common-neighbor counts as product entries, detection, the zero/one converse, and signed products
+  from `4 * β²` count instances with the original queried edges. Its digit identities live in
+  `Foundations/Data/Matrix/IntegerBits.lean`, reuse Mathlib's pointwise positive/negative parts,
+  and give an explicit `Nat.log 2 U + 1` magnitude-bit bound including zero. Query answers use
+  `Set.EqOn`; no additional weighted-triangle predicate or source machine is introduced.
+  This is the mathematical interface milestone
+  [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
+  preprocessing/time claim or solver. Modular hashing/false-positive splitting and tensor/sparse
+  query programs remain in #1394, alongside the native and asymptotic composition below.
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics
+  were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
+  input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.

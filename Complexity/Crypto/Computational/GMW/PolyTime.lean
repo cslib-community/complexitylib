@@ -538,7 +538,8 @@ theorem isPPTOn_runTwoRound {α Caller : Type} {enc : α ↪ List Bool} {input :
     simp only [stateEncoding, length_encPair, encUnary_apply, List.length_replicate,
       encBits_apply, hs2]
     omega
-  refine hV.run_interpret_preprocess (stateEncoding := stateEncoding)
+  refine hV.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
+    (stateEncoding := stateEncoding)
     (handler := fun c q s =>
       pure (twoRoundStep (fun x => reply1 (c, x)) (fun x => reply2 (c, x)) q.2 s))
     (prepare := prepare)

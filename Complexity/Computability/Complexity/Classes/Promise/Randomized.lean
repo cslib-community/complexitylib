@@ -430,13 +430,6 @@ private theorem probability_and2 (M : α → ProbComp Bool) (a : α) :
     simp [ProbComp.eval_map, PMF.map_apply]
   rw [htrue, hfalse, mul_zero, add_zero]
 
-/-- The program sampling a random string for a seeded verifier accepts with the accepted
-fraction of the strings. -/
-private theorem probability_sampleList_verifier (V : β × List Bool → Bool) (b : β) (n : ℕ) :
-    Pr[(fun w => V (b, w)) <$> BitString.sampleList n] = (acceptCount V b n : ℝ) / 2 ^ n := by
-  simp only [ProbComp.eval_map, BitString.eval_sampleList]
-  exact uniformList_acceptCount_toReal V b n
-
 /-- **`PromiseCoRP` is closed under `RPReducible`** (library lemma): if `X` reduces to `Y` by a
 randomized one-sided reduction and `Y ∈ PromiseCoRP encB`, then `X ∈ PromiseCoRP encA`. -/
 theorem RPReducible.mem_PromiseCoRP (hXY : RPReducible encA encB X Y)
@@ -502,14 +495,14 @@ theorem RPReducible.mem_PromiseBPP (hXY : RPReducible encA encB X Y)
     have hsum := acceptCount_add_card_filter_eq_false (V := V) (a := b)
       (n := p.eval (encB b).length)
     have h := (hYV b).1 hb
-    simp only [Polynomial.eval_ofNat] at h
+    simp only [ErrorExponentAt, Bool.not_true, Polynomial.eval_ofNat] at h
     have h' : (7 : ℝ) * 2 ^ p.eval (encB b).length ≤ 8 * acceptCount V b (p.eval (encB b).length) :=
       by exact_mod_cast (by omega)
     linarith
   have hMno (b : β) (hb : b ∈ Y.no) : Pr[M b] ≤ 1 / 8 := by
     rw [probability_sampleList_verifier, div_le_iff₀ (by positivity)]
     have h := (hYV b).2 hb
-    simp only [Polynomial.eval_ofNat] at h
+    simp only [ErrorExponentAt, Bool.not_false, Polynomial.eval_ofNat] at h
     rw [← acceptCount] at h
     have h' : (8 : ℝ) * acceptCount V b (p.eval (encB b).length) ≤ 2 ^ p.eval (encB b).length :=
       by exact_mod_cast h

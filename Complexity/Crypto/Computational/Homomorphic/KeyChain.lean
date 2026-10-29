@@ -92,6 +92,20 @@ theorem ValidLinks.length_eq {n : ℕ} {keys : List (List Bool × List Bool)}
     using hlength.symm
 
 variable {E} in
+/-- Dropping a prefix of keys and links preserves link validity on the remaining suffix. -/
+theorem ValidLinks.drop {n : ℕ} {keys : List (List Bool × List Bool)}
+    {links : List (List (List Bool))} (h : E.ValidLinks n keys links) (start : ℕ) :
+    E.ValidLinks n (keys.drop start) (links.drop start) := by
+  induction start generalizing keys links with
+  | zero => exact h
+  | succ start ih =>
+    rcases keys with _ | ⟨k₁, _ | ⟨k₂, ks⟩⟩ <;> cases h
+    · simp [ValidLinks]
+    · simp [ValidLinks]
+    · rename_i htail
+      exact ih htail
+
+variable {E} in
 /-- At each link index, the link freshly encrypts that level's secret under the next public key.
 The bounds ensure that none of the default values is used. -/
 theorem ValidLinks.getD {n : ℕ} {keys : List (List Bool × List Bool)}

@@ -88,7 +88,8 @@ private theorem auxiliaryLength_run_time_le (tm : MultiTapeTM k Bool State)
     auxiliaryLength (store (Data.run tm input t)) ≤ input.length + k * (t + 1) := by
   rw [auxiliaryLength_store, Data.input_length_run]
   have hw := Data.sum_work_sides_run_add_eq_space tm input t
-  have hs := tm.space_linear (tm.initCfg input) t
+  have hs : (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ k * t + k :=
+    (MultiTapeNTM.RunPath.space_le_mul_time_add_one _).trans_eq (Nat.mul_add_one _ _)
   simp only [Nat.mul_add, Nat.mul_one]
   omega
 

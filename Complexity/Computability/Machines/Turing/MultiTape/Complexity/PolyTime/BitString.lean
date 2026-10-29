@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListToBits
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Foundations.Data.BitString.Enumeration
@@ -41,14 +42,15 @@ polynomial bound on the complete encoded output. The operations are total on emp
   framing and bounded padding, including arbitrary encoded inputs and overlong words.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsGetElem?`: optional lookup in raw bits.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.mapToBitsWithInput`, `.bitsFilterWithInput`,
-  `.bitsAnyWithInput`, `.bitsAllWithInput`, `.bitsFoldlWithInput`, `.bitsZipWithInput`:
-  compositional bit operations.
+  `.bitsAnyWithInput`, `.bitsFoldlWithInput`, `.bitsZipWithInput`, and
+  `Turing.MultiTapeTM.ComputableInPolyTime.bitsAllWithInput`: compositional bit operations.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsStrictMajority`, `.bitsSingle`, `.bitsSingles`,
   `.bitsXorSelected`, `.bitsXorWithInput`: finite-mask algorithms.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCountPWithInput`, `.bitsCountWithInput`:
-  unary counts under captured predicates or computed labels.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsNonpositiveMarginWithInput`:
-  compare the correct-vote count with the word length.
+* `Turing.MultiTapeTM.ComputableInPolyTime.bitsCountPWithInput`,
+  `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsCountWithInput`: unary counts under captured
+  predicates or computed labels.
+* `Turing.MultiTapeTM.ComputableInPolyTime.bitsNonpositiveMarginWithInput`: compare the
+  correct-vote count with the word length.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsEnumList`: output-bounded enumeration.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsBoundedBinaryValue`: capped binary decoding
   to unary, with every intermediate accumulator bounded by the supplied cap.
@@ -243,15 +245,6 @@ theorem bitsFilterWithInput {list : α → List Bool} {test : α → Bool → Bo
     ComputableTidilyInPolyTime (fun a => (list a).filter (test a)) input encBits :=
   listToBits.comp (filterWithInput (bitsToList.comp hlist) htest)
 
-/-- Count predicate matches in a raw bit string, including a captured input. -/
-@[fun_prop]
-theorem bitsCountPWithInput {list : α → List Bool} {test : α → Bool → Bool}
-    (hlist : ComputableTidilyInPolyTime list input encBits)
-    (htest : ComputableTidilyInPolyTime (fun p : α × Bool => test p.1 p.2)
-      (encPair input encBool) encBool) :
-    ComputableTidilyInPolyTime (fun x => (list x).countP (test x)) input encUnary :=
-  countPWith htest id' hlist
-
 /-- Count occurrences of a computed bit in a raw bit string. -/
 @[fun_prop]
 theorem bitsCountWithInput {list : α → List Bool} {value : α → Bool}
@@ -271,15 +264,6 @@ theorem bitsAnyWithInput {list : α → List Bool} {test : α → Bool → Bool}
       (encPair input encBool) encBool) :
     ComputableTidilyInPolyTime (fun a => (list a).any (test a)) input encBool :=
   anyWithEncoding htest id' hlist
-
-/-- Test whether every bit satisfies a captured predicate. -/
-@[fun_prop]
-theorem bitsAllWithInput {list : α → List Bool} {test : α → Bool → Bool}
-    (hlist : ComputableTidilyInPolyTime list input encBits)
-    (htest : ComputableTidilyInPolyTime (fun p : α × Bool => test p.1 p.2)
-      (encPair input encBool) encBool) :
-    ComputableTidilyInPolyTime (fun a => (list a).all (test a)) input encBool :=
-  allWithEncoding htest id' hlist
 
 /-- A Boolean fold has constant-sized state, so no separate state bound is needed. -/
 @[fun_prop]
@@ -330,17 +314,6 @@ theorem bitsStrictMajorityWithInput {votes : α → List Bool}
     ComputableTidilyInPolyTime (fun a => Cslib.BitString.listStrictMajority (votes a))
       input encBool :=
   bitsStrictMajority.comp hvotes
-
-/-- The training test is polynomial time in the vote list and its supplied label. -/
-@[fun_prop]
-theorem bitsNonpositiveMarginWithInput
-    {votes : α → List Bool} {truth : α → Bool}
-    (hvotes : ComputableTidilyInPolyTime votes input encBits)
-    (htruth : ComputableTidilyInPolyTime truth input encBool) :
-    ComputableTidilyInPolyTime (fun a => Cslib.BitString.listNonpositiveMargin (votes a) (truth a))
-      input encBool := by
-  unfold Cslib.BitString.listNonpositiveMargin
-  fun_prop
 
 /-- Generate one coordinate mask from its unary width and index. -/
 @[fun_prop]
@@ -509,11 +482,6 @@ theorem bitsZipWithInput (op : Bool → Bool → Bool) {α : Type} {input : α �
     ComputableInPolyTime (fun a => (left a).zipWith op (right a)) input encBits :=
   .of_tidy (ComputableTidilyInPolyTime.bitsZipWithInput op hleft.tidy hright.tidy)
 
-/-- Convert framed Boolean lists to raw words without changing their contents. -/
-@[fun_prop]
-theorem listToBits : ComputableInPolyTime (fun l => l) (encList encBool) encBits :=
-  .of_tidy ComputableTidilyInPolyTime.listToBits
-
 /-- Read a row of a computed word, charging padding and both computed unary indices. -/
 @[fun_prop]
 theorem bitsRowWithInput {α : Type} {input : α ↪ List Bool}
@@ -669,10 +637,7 @@ theorem bitsCountPWithInput {list : α → List Bool} {test : α → Bool → Bo
     (htest : ComputableInPolyTime (fun p : α × Bool => test p.1 p.2)
       (encPair input encBool) encBool) :
     ComputableInPolyTime (fun x => (list x).countP (test x)) input encUnary :=
-  .of_tidy (ComputableTidilyInPolyTime.bitsCountPWithInput (list := list)
-    (test := test)
-    (hlist := hlist.tidy)
-    (htest := htest.tidy))
+  .of_tidy (ComputableTidilyInPolyTime.countPWith htest.tidy .id' hlist.tidy)
 
 /-- Count occurrences of a computed bit in a raw bit string. -/
 @[fun_prop]
@@ -692,10 +657,7 @@ theorem bitsAllWithInput {list : α → List Bool} {test : α → Bool → Bool}
     (htest : ComputableInPolyTime (fun p : α × Bool => test p.1 p.2)
       (encPair input encBool) encBool) :
     ComputableInPolyTime (fun a => (list a).all (test a)) input encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.bitsAllWithInput (list := list)
-    (test := test)
-    (hlist := hlist.tidy)
-    (htest := htest.tidy))
+  .of_tidy (ComputableTidilyInPolyTime.allWithEncoding htest.tidy .id' hlist.tidy)
 
 /-- A Boolean fold has constant-sized state, so no separate state bound is needed. -/
 @[fun_prop]
@@ -735,11 +697,9 @@ theorem bitsNonpositiveMarginWithInput
     (hvotes : ComputableInPolyTime votes input encBits)
     (htruth : ComputableInPolyTime truth input encBool) :
     ComputableInPolyTime (fun a => Cslib.BitString.listNonpositiveMargin (votes a) (truth a))
-      input encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.bitsNonpositiveMarginWithInput (votes := votes)
-    (truth := truth)
-    (hvotes := hvotes.tidy)
-    (htruth := htruth.tidy))
+      input encBool := by
+  unfold Cslib.BitString.listNonpositiveMargin
+  fun_prop
 
 /-- Generate one coordinate mask from its unary width and index. -/
 @[fun_prop]

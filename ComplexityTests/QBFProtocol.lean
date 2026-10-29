@@ -118,21 +118,19 @@ example : degreeBound (QBF.ex 0 (.var 0)) = 4 := rfl
 
 example : primeBound (QBF.ex 0 (.var 0)) = 144 := rfl
 
-example : (modulus (QBF.ex 0 (.var 0))).Prime ∧ 144 < modulus (QBF.ex 0 (.var 0)) :=
-  prime_modulus _
-
 /-- A formula with a free variable is rejected without interaction. -/
 example : verifier (QBF.var 0) = pure false := by
   rw [verifier, decide_eq_false (by decide)]
   rfl
 
-example : TQBF ∈ IP encQBF := TQBF_mem_IP
+example : TQBFᶜ ∈ IP encQBF :=
+  IP_eq_PSPACE encQBF ▸ compl_mem_PSPACE (IP_eq_PSPACE encQBF ▸ TQBF_mem_IP)
 
-example {α : Type} (enc : α ↪ List Bool) : IP enc = PSPACE enc := IP_eq_PSPACE enc
+example {α : Type} (enc : α ↪ List Bool) {A : Set α} (hA : A ∈ coNP enc) : Aᶜ ∈ IP enc :=
+  IP_eq_PSPACE enc ▸ compl_mem_PSPACE (IP_eq_PSPACE enc ▸ coNP_subset_IP enc hA)
 
-example {α : Type} (enc : α ↪ List Bool) : coNP enc ⊆ IP enc := coNP_subset_IP enc
-
-example {α : Type} (enc : α ↪ List Bool) : PH enc ⊆ IP enc := PH_subset_IP enc
+example {α : Type} (enc : α ↪ List Bool) (k : ℕ) : SigmaP k enc ⊆ PSPACE enc :=
+  IP_eq_PSPACE enc ▸ (SigmaP_subset_PH k).trans (PH_subset_IP enc)
 
 /-! ### Axioms -/
 

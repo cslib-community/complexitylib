@@ -17,7 +17,7 @@ namespace ComplexityTests.Crypto.GSWFullyHomomorphic
 
 open Cslib Cslib.Crypto Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto.Homomorphic
 open Cslib.Crypto.Homomorphic.GSW Cslib.Crypto.Homomorphic.GSW.DepthParameters
-open Cslib.Probability
+open Cslib.Probability Turing.MultiTapeTM
 open Parameters (dimension noise)
 
 -- At security parameter zero the base secret holds one 65536-bit residue, and a ciphertext is a
@@ -26,6 +26,17 @@ open Parameters (dimension noise)
 example : secretWidth 0 = 65536 ∧ ciphertextWidth 0 = 131072 ^ 2 ∧
     3 * secretWidth 0 + 1 = 196609 := by
   decide +kernel
+
+/-- For any polynomial-time unary budget family and strict-PPT leveled adversary, the composed
+decision-LWE distinguisher for the leveled GSW reduction is native strict PPT. -/
+example {budget : ℕ → ℕ} (hbudget : ComputableInPolyTime budget encUnary encUnary)
+    {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT) :
+    IsPPT encBool
+      (lweDistinguisher dimension samples width
+        (Leveled.leveledAdversary scheme (fun k => 2 * budget k) secretWidth adversary)) :=
+  GSW.isPPT_lweDistinguisher Parameters.computableInPolyTime_dimension
+    computableInPolyTime_samples computableInPolyTime_width
+    (isPPT_leveledAdversary hbudget hadversary)
 
 /-- Under decision LWE alone, one leveled scheme evaluates the compiled NAND circuit, whose
 depth is two, on all supported fresh encryptions. -/
@@ -37,7 +48,7 @@ example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k)
           ((Leveled.scheme decryptionCircuits budget).evaluate k keys.1 ⟨2, nandCircuit⟩
             inputs)).support,
         (Leveled.scheme decryptionCircuits budget).decrypt k keys.2 c = !(a && b) := by
-  obtain ⟨-, -, -, -, -, -, hleveled⟩ := exists_leveled_of_decisionLWE hLWE
+  obtain ⟨-, -, -, -, -, -, -, hleveled⟩ := exists_leveled_of_decisionLWE hLWE
   obtain ⟨budget, -, -, -, hcorrect, hpermitted, -⟩ := hleveled _ (PolynomiallyBounded.const 2)
   refine ⟨budget, fun k keys hkeys a b inputs hinputs c hc => ?_⟩
   have h := hcorrect.decrypt_evaluate k keys hkeys ⟨2, nandCircuit⟩
@@ -46,10 +57,14 @@ example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k)
   rfl
 
 /-- The schemes for two different depth families share one decryption algorithm, computed by one
-polynomial-size circuit family chosen before either depth, as in Gentry's Definition 3. -/
+uniformly generated polynomial-size circuit family chosen before either depth, as in Gentry's
+Definition 3. -/
 example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k))) :
     ∃ circuits : ∀ k, Circuit Boolean.signature
         ((3 * secretWidth k + 1) + (ciphertextWidth k + 1)) 1,
+      ComputableInPolyTime
+        (fun k => (⟨_, circuits k⟩ : Σ m, Circuit Boolean.signature m 1))
+        encUnary (Boolean.encCircuit 1) ∧
       PolynomiallyBounded (fun k => (circuits k).size) ∧
       ∃ shallow deep : ℕ → ℕ, (∀ k, 2 ≤ shallow k ∧ k ≤ deep k) ∧
         (Leveled.scheme decryptionCircuits shallow).decrypt =
@@ -58,10 +73,11 @@ example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k)
           (circuits k).eval Boolean.interpretation
               (BitString.ofList ((3 * secretWidth k + 1) + (ciphertextWidth k + 1)) (sk ++ c)) 0 =
             (Leveled.scheme decryptionCircuits deep).decrypt k sk c := by
-  obtain ⟨circuits, hsize, hcircuits, -, -, -, hleveled⟩ := exists_leveled_of_decisionLWE hLWE
+  obtain ⟨circuits, hgen, hsize, hcircuits, -, -, -, hleveled⟩ :=
+    exists_leveled_of_decisionLWE hLWE
   obtain ⟨shallow, -, hshallow, hdecShallow, -⟩ := hleveled _ (PolynomiallyBounded.const 2)
   obtain ⟨deep, -, hdeep, hdecDeep, -⟩ := hleveled _ PolynomiallyBounded.id
-  refine ⟨circuits, hsize, shallow, deep, fun k => ⟨hshallow k, hdeep k⟩,
+  refine ⟨circuits, hgen, hsize, shallow, deep, fun k => ⟨hshallow k, hdeep k⟩,
     hdecShallow.trans hdecDeep.symm, fun k sk c hsk hc => ?_⟩
   rw [hdecDeep]
   exact hcircuits k sk c hsk hc

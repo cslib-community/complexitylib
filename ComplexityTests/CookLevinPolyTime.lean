@@ -92,27 +92,33 @@ example : ComputableInPolyTime (fun q : List Bool × ℕ × ℕ =>
 
 -- Fixed parameter lists need no encoding or finiteness instance for their element type.
 example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
-    ComputableTidilyInPolyTime (fun n =>
+    ComputableInPolyTime (fun n =>
       (parameters.filter (fun i => decide (weight i ≤ n))).map
         (fun i => List.replicate (n + weight i) true))
-      encUnary (encList encBits) := by fun_prop
+      encUnary (encList encBits) := .of_tidy (by fun_prop)
 
 -- Equivalent functional selection through flatMap uses the same finite-template calculus.
 example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
-    ComputableTidilyInPolyTime (fun n => parameters.flatMap fun i =>
+    ComputableInPolyTime (fun n => parameters.flatMap fun i =>
       if weight i ≤ n then [List.replicate (n + weight i) true] else [])
-      encUnary (encList encBits) := by fun_prop
+      encUnary (encList encBits) := .of_tidy (by fun_prop)
 
 -- Total input-head movement clips even an out-of-range starting position.
 example : Turing.moveInputPosNat 0 9 .neg = 1 ∧
     Turing.moveInputPosNat 0 9 .zero = 1 ∧ Turing.moveInputPosNat 0 9 .pos = 1 ∧
     Turing.moveInputPosNat 3 0 .neg = 0 := by decide
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × ℤ => decide (|p.2 - (-1 : SignType)| ≤ (p.1 : ℤ)))
-    (encPair encUnary encInt) encBool := by fun_prop
+    (encPair encUnary encInt) encBool :=
+  .of_tidy (by fun_prop)
 
-example : NPComplete encCNF SAT := SAT_npComplete
-example : coNPComplete encCNF UNSAT := UNSAT_coNPComplete
+example : PolyTimeReducible encBits encCNF {w : List Bool | w.headD false = true} SAT :=
+  SAT_npComplete.2 encBits _
+    (P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩)
+
+example : PolyTimeReducible encBits encCNF {w : List Bool | w.headD false = true} UNSAT :=
+  UNSAT_coNPComplete.2 encBits _
+    (P_subset_coNP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩)
 
 end ComplexityTests.CookLevinPolyTime
