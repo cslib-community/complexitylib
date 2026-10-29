@@ -3,3 +3,6 @@
 # rejects any budget above the default in a file not listed here, or above its cap, and reports
 # entries that are no longer needed, so this list only shrinks. Add an entry only with review,
 # and link the issue tracking its reduction.
+
+# #1583: split native parameter segment/frame proofs to reach the default budget.
+Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/Parameters.lean 300000
