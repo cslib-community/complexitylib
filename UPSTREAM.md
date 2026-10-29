@@ -245,7 +245,22 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   signed kernels and reporting. Its complete initialized runs and callable pointer/epoch kernel
   have explicit source-magnitude, address and outside-frame contracts. The actual bound including
   halt is `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)`. The source Light implementation's
-  semantics and instruction constants are not reused. Query grouping, sparse-product/Exact
+  semantics and instruction constants are not reused.
+  Native wanted-query routing ([#1561](https://github.com/cslib-community/complexitylib/issues/1561))
+  uses actual count, prefix and stable-scatter passes after computing the subset table and each
+  query's tile/code. It reuses `MaskTable.layout`, `outStrOfPos`, `wantedStrings` and the existing
+  `PrunedQuery.queryIndex`/encoder leaf order; no parallel layout or output-string universe is
+  added. Primitive counts use Mathlib's `Nat.count` and its prefix/monotonicity APIs directly.
+  The generic `CountingSort` topic module adds stable positions, their permutation and
+  bucket-span meaning, without redundant count/offset definitions. The narrow `WordRAM.Sequence`
+  proof module reassociates existing
+  structured execution derivations without changing code or charges. Original scalar headers
+  and raw coordinate pairs are the entire initialized input. Fixed 96-register standard code
+  computes all tables and grouped arrays, preserves the original input/outside frame, and
+  charges at most `128*(L+1)*(Q+numBands²+2^L+1)` instructions including halt. Its positive
+  ceiling-logarithmic admission threshold depends only on the original numerical budget.
+  Within-tile order is stable input order; no sorted or duplicate-free query premise is needed
+  by the pruned kernel. Shared-band/kernel calls, answer reconstruction, sparse-product/Exact
   Triangle solving and full input/time/width composition, including the improved Section 4 route
   to exponent 1.9992, remain in #1394. The band catalogue retains the same leaf ordering and
   canonical signed words. Raw 0/1 matrix producers must

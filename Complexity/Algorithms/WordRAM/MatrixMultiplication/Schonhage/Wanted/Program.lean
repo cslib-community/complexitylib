@@ -25,7 +25,17 @@ No sorted request list, layout certificate or dispatch decision is supplied as i
 * `Wanted.program`: computed tables followed by counting, prefix and stable scatter passes.
 
 These programs use only the existing standard unsigned instructions. Correctness, width,
-frame and resource theorems are separate from the definitions.
+frame and resource theorems are separate from the definitions. Supporting `exec_*` lemmas
+are internal implementation APIs exported across proof modules; consumers use `runs`,
+`runs_grouped` or the generic-memory `exec_program` when composing a caller.
+
+## References
+
+The routing goal comes from [AlmanWilliams2026, Section 2.4.4] and Anthropic's pinned
+[Wanted/Codes.lean](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Programs/Sec2/Theorem5/Wanted/Codes.lean) at revision
+`16a5ce41304fcdaea4e0be7c132e1c361dc26da5`. This is original native code with its own charged
+proofs, using the existing finite output-string definitions. It does not import the source
+Light machine, its sorting procedure or its instruction counts.
 -/
 
 @[expose] public section
@@ -182,8 +192,8 @@ def scatter : Code .standard 96 :=
 
 /-- Complete initialized native routing; no mathematical layout is an input word. -/
 def program : Code .standard 96 :=
-  .seq BandPreparation.header (.seq BandPreparation.countCode (.seq setup
-    (.seq BandPreparation.tablesCode (.seq clearCounts
-      (.seq countQueries (.seq prefixCode scatter))))))
+  .seq (.seq BandPreparation.header (.seq BandPreparation.countCode
+    (.seq setup BandPreparation.tablesCode)))
+    (.seq clearCounts (.seq countQueries (.seq prefixCode scatter)))
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted

@@ -53,12 +53,12 @@ theorem exec_countStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ �
     (hinput : x.mem (5 + 2 * n) = (pairs n).1 ∧
       x.mem (5 + 2 * n + 1) = (pairs n).2)
     (hcounts : ∀ t < numBands L m N ^ 2,
-      x.mem (countAddress L Q + t) = CountingSort.count (tileKey L m N ∘ pairs) n t)
+      x.mem (countAddress L Q + t) = Nat.count (fun k => (tileKey L m N ∘ pairs) k = t) n)
     (hfit : Fits w (wordBudget L m N Q)) :
     ∃ y, ExecWithin w countStep x y 14 ∧ Parameters L m N Q y ∧ y.regs index = n + 1 ∧
       (∀ t < numBands L m N ^ 2,
         y.mem (countAddress L Q + t) =
-          CountingSort.count (tileKey L m N ∘ pairs) (n + 1) t) ∧
+          Nat.count (fun k => (tileKey L m N ∘ pairs) k = t) (n + 1)) ∧
       (∀ a, a < countAddress L Q ∨ countAddress L Q + numBands L m N ^ 2 ≤ a →
         y.mem a = x.mem a) := by
   let I := (pairs n).1
@@ -67,7 +67,7 @@ theorem exec_countStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ �
   let β := bandOf L m I
   let γ := bandOf L m J
   let key := tileKey L m N ∘ pairs
-  let c := CountingSort.count key n (key n)
+  let c := Nat.count (fun k => key k = (key n)) n
   have ht : key n < B ^ 2 := tileKey_lt hm _ hpair.1 hpair.2
   have hβ : β < B := bandOf_lt_numBands hm N I hpair.1
   have hγ : γ < B := bandOf_lt_numBands hm N J hpair.2
@@ -75,7 +75,7 @@ theorem exec_countStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ �
   have hBeq : B ^ 2 = numBands L m N ^ 2 := rfl
   have h10 := Nat.zero_le (10 ^ L)
   have hprod : β * B ≤ key n := by dsimp [key, tileKey, Function.comp_def, β, B, I]; omega
-  have hcle : c ≤ n := CountingSort.count_le _ _ _
+  have hcle : c ≤ n := Nat.count_le _
   have hl := local_fits hfit
   have hend := memoryLimit_eq L m N Q
   have hf (v : ℕ) (hv : v ≤ memoryLimit L m N Q) : Fits w v := hl.of_le (by omega)
@@ -113,15 +113,15 @@ theorem exec_countStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ �
       Fin.mk.injEq]
   refine ⟨y, he, countStep_parameters hx he, by simp [y, index], ?_, ?_⟩
   · intro t ht'
-    change y.mem (countAddress L Q + t) = CountingSort.count key (n + 1) t
-    rw [CountingSort.count_succ]
+    change y.mem (countAddress L Q + t) = Nat.count (fun k => key k = t) (n + 1)
+    rw [Nat.count_succ]
     change (Function.update x.mem (countAddress L Q + key n) (c + 1))
       (countAddress L Q + t) = _
     by_cases h : key n = t
     · subst t
       simp only [Function.update_self, ↓reduceIte]
       rfl
-    · have hc' : x.mem (countAddress L Q + t) = CountingSort.count key n t := hcounts t ht'
+    · have hc' : x.mem (countAddress L Q + t) = Nat.count (fun k => key k = t) n := hcounts t ht'
       rw [Function.update_of_ne (by omega), hc', ite_eq_right h]
       omega
   · intro a ha

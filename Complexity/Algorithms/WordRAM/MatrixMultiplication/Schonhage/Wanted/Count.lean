@@ -114,7 +114,7 @@ theorem exec_countQueries {w L m N Q : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ 
     (hfit : Fits w (wordBudget L m N Q)) :
     ∃ y, ExecWithin w countQueries x y (16 * Q + 3) ∧ Parameters L m N Q y ∧
       (∀ t < numBands L m N ^ 2,
-        y.mem (countAddress L Q + t) = CountingSort.count (tileKey L m N ∘ pairs) Q t) ∧
+        y.mem (countAddress L Q + t) = Nat.count (fun k => (tileKey L m N ∘ pairs) k = t) Q) ∧
       (∀ a, a < countAddress L Q ∨ countAddress L Q + numBands L m N ^ 2 ≤ a →
         y.mem a = x.mem a) := by
   let key := tileKey L m N ∘ pairs
@@ -122,7 +122,7 @@ theorem exec_countQueries {w L m N Q : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ 
   let I (z : Data 96) : Prop := Parameters L m N Q z ∧ z.regs index ≤ Q ∧
     (∀ i < Q, z.mem (5 + 2 * i) = (pairs i).1 ∧
       z.mem (5 + 2 * i + 1) = (pairs i).2) ∧
-    (∀ t < T, z.mem (countAddress L Q + t) = CountingSort.count key (z.regs index) t) ∧
+    (∀ t < T, z.mem (countAddress L Q + t) = Nat.count (fun k => key k = t) (z.regs index)) ∧
     (∀ a, a < countAddress L Q ∨ countAddress L Q + T ≤ a → z.mem a = x.mem a)
   let start := x.set index 0
   have hs : ExecWithin w (ram[index ← #0] : Code .standard 96) x start 1 := by
@@ -137,7 +137,7 @@ theorem exec_countQueries {w L m N Q : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ 
     refine ⟨hsp, by simp [start], hinput, ?_, by simp [start]⟩
     intro t ht
     simpa only [start, Data.set_regs, Function.update_self, Data.set_mem,
-      CountingSort.count_zero] using hzero t ht
+      Nat.count_zero] using hzero t ht
   have hb (z : Data 96) (hz : I z) (hc : (Cond.lt index queryCount).Holds z) :
       ∃ u, ExecWithin w countStep z u 14 ∧ I u ∧
         Q - u.regs index < Q - z.regs index := by
@@ -148,6 +148,7 @@ theorem exec_countQueries {w L m N Q : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ 
     refine ⟨u, he, ⟨hu, by rw [hidx]; omega, ?_, ?_, ?_⟩, by rw [hidx]; omega⟩
     · intro i hi
       have ha : 5 + 2 * i + 1 < countAddress L Q := by
+        have h2 := Nat.zero_le (2 ^ L)
         unfold countAddress tableAddress inputLimit
         omega
       rw [hf _ (Or.inl (by omega)), hf _ (Or.inl ha)]

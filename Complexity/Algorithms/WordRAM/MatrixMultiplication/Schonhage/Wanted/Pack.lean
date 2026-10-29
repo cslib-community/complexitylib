@@ -176,7 +176,9 @@ theorem exec_packBody {w L M R C : ℕ} (x : Data 16) (hx : PackProgress L M R C
       omega
     · have hv := hx.value
       rw [hrest, pack, ite_eq_right hb] at hv
-      simp [y, mask, row, col, code, power, level, bit, digit, temporary]
+      simp only [bit, Fin.isValue, mask, digit, temporary, power, code, level, Data.set_regs,
+        ne_eq, Fin.reduceEq, not_false_eq_true, Function.update_of_ne, Function.update_self,
+        row, col, y]
       nlinarith only [hv]
     · change L - (x.regs level + 1) < L - x.regs level
       omega
