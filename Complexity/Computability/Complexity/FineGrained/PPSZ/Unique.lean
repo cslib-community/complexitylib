@@ -36,8 +36,9 @@ This is the analogue, for w-implication, of the finite-depth bound of
 
 ## Main results
 
-* `Cslib.Complexity.PPSZ.Q_le_bernoulliProb_cut`: the cut event of a critical clause tree has
-  probability at least `Q k h r` under independent inclusion.
+* `Cslib.Complexity.PPSZ.IsCriticalTreeAt.Q_le_bernoulliProb_cut`: the cut event of a rooted
+  critical clause tree has probability at least `Q k h r` under independent inclusion.
+* `Cslib.Complexity.PPSZ.Q_le_bernoulliProb_cut`: the same for a critical clause tree.
 * `Cslib.Complexity.PPSZ.qbar_le_card_filter_forced_div_factorial`: every variable is forced in
   at least a `qbar k h` fraction of the orders.
 * `Cslib.Complexity.PPSZ.round_success_of_isolated`: one round outputs an `h`-isolated satisfying
@@ -62,6 +63,30 @@ open Cslib.Logic.PL Finset
 
 variable {n : ℕ}
 
+/-- **The cut probability of a rooted critical clause tree**
+[Paturi, Pudlák, Saks, Zane, Lemma 7 and p. 351][PaturiPudlakSaksZane2005]. Let `C` label a
+critical clause tree of height `h` rooted at `x` for a satisfying assignment `σ` of a formula whose
+clauses have at most `k` literals. If every variable other than `x` is included independently with
+probability `r`, then every path from the root `x` to depth `h` meets the included set with
+probability at least `Q k h r`. -/
+theorem IsCriticalTreeAt.Q_le_bernoulliProb_cut {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
+    {x : Fin n} {C : List (Fin n) → Clause (Fin n)} (hC : IsCriticalTreeAt φ σ x h C)
+    (hσ : φ.eval σ = true) (hlen : ∀ c ∈ φ, c.length ≤ k) {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) :
+    Q k h r ≤ bernoulliProb (univ.erase x) r fun A => Cut C A h [x] := by
+  refine Q_le_bernoulliProb hr (fun d p A => Cut C A d p)
+    (fun d p => x ∈ p ∧ p.length + d ≤ h + 1) (children C) (fun p y => y :: p)
+    (fun _ _ _ _ _ hAB => Cut.mono hAB) ?_ ?_ ?_ ?_ h [x]
+    ⟨List.mem_singleton_self x, by rw [List.length_singleton]; omega⟩
+  · rintro d p ⟨hxp, hp⟩
+    exact ⟨fun y hy => mem_erase.mpr ⟨fun e => notMem_of_mem_children hy (e ▸ hxp), mem_univ y⟩,
+      card_children_le hσ hC hlen hxp (by omega)⟩
+  · rintro d p ⟨hxp, hp⟩ y -
+    exact ⟨List.mem_cons_of_mem y hxp, by rw [List.length_cons]; omega⟩
+  · rintro d p - y - S
+    exact cut_insert_of_mem (List.mem_cons_self ..)
+  · rintro d p - S -
+    exact cut_succ C S d p
+
 /-- **The cut probability of a critical clause tree**
 [Paturi, Pudlák, Saks, Zane, Lemma 7 and p. 351][PaturiPudlakSaksZane2005]. Let `C` label a
 critical clause tree of height `h` for a satisfying assignment `σ` of a formula whose clauses have
@@ -71,20 +96,8 @@ least `Q k h r`. -/
 theorem Q_le_bernoulliProb_cut {k h : ℕ} {φ : CNF (Fin n)} {σ : Fin n → Bool}
     {C : List (Fin n) → Clause (Fin n)} (hσ : φ.eval σ = true) (hC : IsCriticalTree φ σ h C)
     (hlen : ∀ c ∈ φ, c.length ≤ k) (x : Fin n) {r : ℝ} (hr : r ∈ Set.Icc (0 : ℝ) 1) :
-    Q k h r ≤ bernoulliProb (univ.erase x) r fun A => Cut C A h [x] := by
-  refine Q_le_bernoulliProb hr (fun d p A => Cut C A d p)
-    (fun d p => x ∈ p ∧ p.length + d ≤ h + 1) (children C) (fun p y => y :: p)
-    (fun _ _ _ _ _ hAB => Cut.mono hAB) ?_ ?_ ?_ ?_ h [x]
-    ⟨List.mem_singleton_self x, by rw [List.length_singleton]; omega⟩
-  · rintro d p ⟨hxp, hp⟩
-    exact ⟨fun y hy => mem_erase.mpr ⟨fun e => notMem_of_mem_children hy (e ▸ hxp), mem_univ y⟩,
-      card_children_le hσ hC hlen (List.ne_nil_of_mem hxp) (by omega)⟩
-  · rintro d p ⟨hxp, hp⟩ y -
-    exact ⟨List.mem_cons_of_mem y hxp, by rw [List.length_cons]; omega⟩
-  · rintro d p - y - S
-    exact cut_insert_of_mem (List.mem_cons_self ..)
-  · rintro d p - S -
-    exact cut_succ C S d p
+    Q k h r ≤ bernoulliProb (univ.erase x) r fun A => Cut C A h [x] :=
+  (hC.isCriticalTreeAt x).Q_le_bernoulliProb_cut hσ hlen hr
 
 /-- The variables placed before `x` are the variables PPZ and PPSZ have processed when they reach
 `x`. (`placedBefore` is defined separately in the formula-free file

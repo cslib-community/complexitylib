@@ -15,7 +15,10 @@ public import Mathlib.Combinatorics.SimpleGraph.Clique
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Independent sets
@@ -75,7 +78,7 @@ first-order interpretations.
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The graphs with an independent set of `m` of their vertices
 [Arora and Barak, Section 2.4][AroraBarak09]. -/
@@ -276,7 +279,6 @@ theorem toIndependentSet_mem_iff (φ : CNF ℕ) : toIndependentSet φ ∈ Indepe
 @[fun_prop]
 theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_vertex :
     ComputableInPolyTime Occurrence.vertex encOccurrence encNat := by
-  refine .of_tidy ?_
   unfold Occurrence.vertex encOccurrence Cslib.Logic.PL.encOccurrence
   exact unary_to_binary.comp (by fun_prop)
 
@@ -288,15 +290,12 @@ theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_conflict :
   unfold Occurrence.Conflict encOccurrence Cslib.Logic.PL.encOccurrence
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Karp's reduction `toIndependentSet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toIndependentSet :
     ComputableInPolyTime toIndependentSet encCNF (encPair encGraph encNat) := by
-  refine .of_tidy ?_
-  have hocc := computableInPolyTime_occurrences.tidy
-  have hlen : ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.length) encCNF encNat :=
-    (ComputableInPolyTime.length_list_binary _).tidy
+  have hlen : ComputableInPolyTime (fun φ : CNF ℕ => φ.length) encCNF encNat :=
+    length_list_binary _
   unfold toIndependentSet encGraph
   fun_prop
 

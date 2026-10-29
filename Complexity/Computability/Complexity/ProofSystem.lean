@@ -80,7 +80,7 @@ that instance when the verifier and certificate-length checks pass, and a fixed 
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableTidilyInPolyTime
+open Turing.MultiTapeTM Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α : Type} {enc : α ↪ List Bool} {L : Set α}
 
@@ -196,8 +196,7 @@ theorem PolynomiallyBounded.mem_NP {P : ProofSystem enc L} (hP : P.PolynomiallyB
   obtain ⟨p, hp⟩ := hP
   have hcheck : ComputableInPolyTime (fun x : α × List Bool => decide (P x.2 = x.1))
       (encPair enc encBits) encBool :=
-    .of_tidy (ComputableTidilyInPolyTime.decide_eq' (P.computable.tidy.comp (.snd enc encBits))
-      (.fst enc encBits))
+    decide_eq' (P.computable.comp (snd enc encBits)) (fst enc encBits)
   have h := mem_NP_of_witness (p := p) Decoder.bits hcheck (R := fun a π => P π = a)
     (fun _ _ => decide_eq_true_iff) fun a π hπ => hp a (hπ ▸ P.mem π)
   have hL : {a | ∃ π, P π = a} = L := P.range_eq
@@ -226,19 +225,15 @@ def ofVerifier (D : Decoder enc) (hV : ComputableInPolyTime V (encPair enc encBi
   toFun π := if verifierAccepts D p V π then verifierInstance D π else a₀
   computable := by
     obtain ⟨_, _, hD⟩ := D.computable
-    have hdecoder : ComputableTidilyInPolyTime D.decode encBits enc := by
-      obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
-      exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
-        .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
-    have hi : ComputableTidilyInPolyTime (verifierInstance D) encBits enc :=
-      hdecoder.comp .unframe
-    have hlen : ComputableTidilyInPolyTime
+    have hi : ComputableInPolyTime (verifierInstance D) encBits enc :=
+      hD.computableInPolyTime.comp unframe
+    have hlen : ComputableInPolyTime
         (fun π => p.eval (enc (verifierInstance D π)).length) encBits encUnary :=
       (unary_eval p).comp ((encoding_length enc).comp hi)
-    have hacc : ComputableTidilyInPolyTime (verifierAccepts D p V) encBits encBool :=
-      .bool_and' (hV.tidy.comp (hi.prod .dropFrame))
-        (.decide_eq' (length_bits.comp .dropFrame) hlen)
-    exact (hacc.cond hi (.const a₀)).computableInPolyTime
+    have hacc : ComputableInPolyTime (verifierAccepts D p V) encBits encBool :=
+      bool_and' (hV.comp (hi.prod dropFrame))
+        (decide_eq' (length_bits.comp dropFrame) hlen)
+    exact hacc.ite' hi (const a₀)
   range_eq := by
     refine Set.Subset.antisymm ?_ fun a ha => ?_
     · rintro _ ⟨π, rfl⟩

@@ -49,8 +49,6 @@ namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM
 
-attribute [local fun_prop] ComputableInPolyTime.tidy
-
 /-- Exact-one satisfiable formulas, without a clause-size or polarity restriction. -/
 def OneSAT : Set (CNF ℕ) := {φ | φ.OneSatisfiable}
 
@@ -77,8 +75,7 @@ theorem computableInPolyTime_clause_count :
       (fun p : (CNF ℕ × List Bool) × Clause ℕ =>
         p.2.countP (Literal.eval (SAT.assignment p.1.1 p.1.2)))
       (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encUnary := by
-  refine .of_tidy ?_
-  apply ComputableTidilyInPolyTime.countPWithInput
+  apply ComputableInPolyTime.countPWithInput
   · fun_prop
   · fun_prop [Literal.eval, SAT.assignment]
 
@@ -89,17 +86,13 @@ theorem computableInPolyTime_clause :
       (fun p : (CNF ℕ × List Bool) × Clause ℕ =>
         p.2.evalOne (SAT.assignment p.1.1 p.1.2))
       (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encBool := by
-  refine .of_tidy ?_
   unfold Clause.evalOne
-  exact ComputableTidilyInPolyTime.unary_beq computableInPolyTime_clause_count.tidy
-    (ComputableTidilyInPolyTime.const 1)
+  exact ComputableInPolyTime.beq computableInPolyTime_clause_count (.const 1)
 
 /-- The exact-one verifier is polynomial-time for binary formula labels. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  have hclause := computableInPolyTime_clause.tidy
-  refine .of_tidy ?_
   fun_prop [verifier, CNF.evalOne]
 
 /-- Exact-one satisfiability belongs to NP. -/
@@ -132,7 +125,6 @@ theorem exactClauseCheck_iff (c : Clause ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_positiveCheck :
     ComputableInPolyTime positiveCheck encCNF encBool := by
-  refine .of_tidy ?_
   unfold positiveCheck encCNF
   fun_prop
 
@@ -140,19 +132,18 @@ theorem computableInPolyTime_positiveCheck :
 @[fun_prop]
 theorem computableInPolyTime_exactClauseCheck :
     ComputableInPolyTime exactClauseCheck (encList (encPair encNat encBool)) encBool := by
-  refine .of_tidy ?_
-  have hvars : ComputableTidilyInPolyTime (fun c : Clause ℕ => c.map Prod.fst)
+  have hvars : ComputableInPolyTime (fun c : Clause ℕ => c.map Prod.fst)
       (encList (encPair encNat encBool)) (encList encNat) := by fun_prop
-  have hread (i : ℕ) : ComputableTidilyInPolyTime
+  have hread (i : ℕ) : ComputableInPolyTime
       (fun c : Clause ℕ => (c.map Prod.fst).getD i 0)
       (encList (encPair encNat encBool)) encNat :=
-    (ComputableTidilyInPolyTime.listGetD (encA := encNat) (encL := encList encNat) 0).comp
-      (hvars.prod (ComputableTidilyInPolyTime.const i))
-  have hlen : ComputableTidilyInPolyTime (fun c : Clause ℕ => c.length == 3)
+    (ComputableInPolyTime.listGetD (encA := encNat) (encL := encList encNat) 0).comp
+      (hvars.prod (.const i))
+  have hlen : ComputableInPolyTime (fun c : Clause ℕ => c.length == 3)
       (encList (encPair encNat encBool)) encBool :=
-    ComputableTidilyInPolyTime.unary_beq
-      (ComputableTidilyInPolyTime.length (encPair encNat encBool))
-      (ComputableTidilyInPolyTime.const 3)
+    ComputableInPolyTime.beq
+      (ComputableInPolyTime.length_list (encPair encNat encBool))
+      (.const 3)
   have h01 := (hread 0).beq (hread 1)
   have h02 := (hread 0).beq (hread 2)
   have h12 := (hread 1).beq (hread 2)
@@ -193,8 +184,6 @@ theorem syntaxCheck_iff (φ : CNF ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_syntaxCheck :
     ComputableInPolyTime syntaxCheck encCNF encBool := by
-  have hp := OneSAT.computableInPolyTime_positiveCheck.tidy
-  refine .of_tidy ?_
   fun_prop [syntaxCheck, encCNF]
 
 /-- Positive width-three exact-one satisfiability belongs to NP. -/
@@ -224,9 +213,6 @@ theorem syntaxCheck_iff (φ : CNF ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_syntaxCheck :
     ComputableInPolyTime syntaxCheck encCNF encBool := by
-  have hp := OneSAT.computableInPolyTime_positiveCheck.tidy
-  have he := OneSAT.computableInPolyTime_exactClauseCheck.tidy
-  refine .of_tidy ?_
   fun_prop [syntaxCheck, encCNF]
 
 /-- Positive exact-three exact-one satisfiability belongs to NP. -/

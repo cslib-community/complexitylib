@@ -28,41 +28,25 @@ open Cslib.FunctionalGraph
 
 /-! ### Word computations -/
 
--- `13 = 1 + 4 + 8` modulo `5`, streamed from the most significant bit.
-example : (streamRemainder (BitVec.ofNat 4 5) ![true, false, true, true]).toNat = 3 := by decide
-
--- A zero-bit number has remainder zero.
-example (d : BitVec 3) : streamRemainder d (fun i : Fin 0 => i.elim0) = 0 := rfl
-
--- `(2 - 7) mod 5 = 0` and `(7 - 2) mod 5 = 0`, `(1 - 3) mod 5 = 3`.
-example : (subMod (BitVec.ofNat 4 2) (BitVec.ofNat 4 7) (BitVec.ofNat 4 5)).toNat = 0 := by decide
-
-example : (subMod (BitVec.ofNat 4 1) (BitVec.ofNat 4 3) (BitVec.ofNat 4 5)).toNat = 3 := by decide
-
--- The least of `3, 1, 2` and the fallback `5`, and the fallback when nothing is scanned.
-example : scanMin ![3, 1, 2] 5 3 = 1 := by decide
-
-example : scanMin ![3, 1, 2] 5 0 = 5 := rfl
-
--- The first flagged position is `1`, also when a later position is flagged.
-example : firstIndex (w := 3) ![false, true, true] = BitVec.ofNat 3 1 := by decide
-
--- Without flags, the first position is zero.
-example : firstIndex (w := 3) ![false, false] = 0 := by decide
-
--- The binary search finds every threshold below `2 ^ 3`.
-example : ∀ μ < 8, (if μ = 0 then 0 else searchBelow 3 μ 3 + 1) = μ := by decide
-
--- Correcting a label by `j` steps subtracts `j` from its phase modulo its length.
-example : labelPhase (correctLabel (labelBits ![true] (BitVec.ofNat 3 3) (BitVec.ofNat 3 1)) 5) =
-    BitVec.ofNat 3 2 := by decide
-
--- With two-bit states the time `5` is kept, and the time `12` becomes `4 + (12 - 4) mod 3 = 6`.
-example : compressedTime 2 (BitVec.ofNat 5 3) ![true, false, true, false] = BitVec.ofNat 5 5 := by
-  decide
-
-example : compressedTime 2 (BitVec.ofNat 5 3) ![false, false, true, true] = BitVec.ofNat 5 6 := by
-  decide
+-- `13 = 1 + 4 + 8` modulo `5`, streamed from the most significant bit; a zero-bit number has
+-- remainder zero; modular differences in both orders; minimum and first-position scans; binary
+-- threshold search; label correction; and time compression below and above `2 ^ n`.
+example (d : BitVec 3) :
+    (streamRemainder (BitVec.ofNat 4 5) ![true, false, true, true]).toNat = 3 ∧
+    streamRemainder d (fun i : Fin 0 => i.elim0) = 0 ∧
+    (subMod (BitVec.ofNat 4 2) (BitVec.ofNat 4 7) (BitVec.ofNat 4 5)).toNat = 0 ∧
+    (subMod (BitVec.ofNat 4 1) (BitVec.ofNat 4 3) (BitVec.ofNat 4 5)).toNat = 3 ∧
+    scanMin ![3, 1, 2] 5 3 = 1 ∧
+    scanMin ![3, 1, 2] 5 0 = 5 ∧
+    firstIndex (w := 3) ![false, true, true] = BitVec.ofNat 3 1 ∧
+    firstIndex (w := 3) ![false, false] = 0 ∧
+    (∀ μ < 8, (if μ = 0 then 0 else searchBelow 3 μ 3 + 1) = μ) ∧
+    labelPhase (correctLabel (labelBits ![true] (BitVec.ofNat 3 3) (BitVec.ofNat 3 1)) 5) =
+      BitVec.ofNat 3 2 ∧
+    compressedTime 2 (BitVec.ofNat 5 3) ![true, false, true, false] = BitVec.ofNat 5 5 ∧
+    compressedTime 2 (BitVec.ofNat 5 3) ![false, false, true, true] = BitVec.ofNat 5 6 :=
+  ⟨by decide, rfl, by decide, by decide, by decide, rfl, by decide, by decide,
+   by decide, by decide, by decide, by decide⟩
 
 /-! ### Circuits -/
 
@@ -136,21 +120,42 @@ example : ∃ out : Circuit signature (1 + 1) 1,
     out.size ≤ 80000 * powerBudget 1 flip.size (2 ^ 1) 1 + 6 * 1 + 1 :=
   synchronous_coalescence flip 1 one_pos (by decide)
 
--- Recurring and eventually permanent targets.
-example (c : Circuit signature 2 2) (p : Circuit signature 2 1) :
-    ∃ out : Circuit signature 2 1,
-      (∀ x, out.eval interpretation x 0 = true ↔
-        ∀ a, ∃ t, a ≤ t ∧ p.eval interpretation ((c.eval interpretation)^[t] x) 0 = true) ∧
-      (out.size : ℝ) ≤ 240000 * optimizedBudget 2 (c.size + p.size + 4 * 2) (2 ^ 2) + p.size :=
-  recurring_target_optimized c p
+-- Every flipped input returns to true arbitrarily late, so the recurring-target query is true.
+example : ∃ out : Circuit signature 1 1,
+    (∀ x, out.eval interpretation x 0 = true) ∧
+    (out.size : ℝ) ≤
+      240000 * optimizedBudget 1 (flip.size + (Circuit.id signature 1).size + 4 * 1) (2 ^ 1) +
+        (Circuit.id signature 1).size := by
+  obtain ⟨out, hcorrect, hsize⟩ := recurring_target_optimized flip (Circuit.id signature 1)
+  refine ⟨out, ?_, hsize⟩
+  intro x
+  apply (hcorrect x).mpr
+  intro a
+  by_cases hx : ((flip.eval interpretation)^[a] x) 0 = true
+  · exact ⟨a, le_rfl, hx⟩
+  · refine ⟨a + 1, Nat.le_succ a, ?_⟩
+    rw [Function.iterate_succ_apply']
+    change !(((flip.eval interpretation)^[a] x) 0) = true
+    cases hb : ((flip.eval interpretation)^[a] x) 0 <;> simp_all
 
-example (c : Circuit signature 2 2) (p : Circuit signature 2 1) :
-    ∃ out : Circuit signature 2 1,
-      (∀ x, out.eval interpretation x 0 = true ↔
-        ∃ a, ∀ t, a ≤ t → p.eval interpretation ((c.eval interpretation)^[t] x) 0 = true) ∧
-      (out.size : ℝ) ≤
-        240000 * optimizedBudget 2 (c.size + (p.size + 1) + 4 * 2) (2 ^ 2) + p.size + 2 :=
-  eventually_always_target_optimized c p
+-- After one step zero stays false, so no input is eventually always in the true target.
+example : ∃ out : Circuit signature 1 1,
+    (∀ x, out.eval interpretation x 0 = false) ∧
+    (out.size : ℝ) ≤
+      240000 *
+        optimizedBudget 1 (zero.size + ((Circuit.id signature 1).size + 1) + 4 * 1) (2 ^ 1) +
+        (Circuit.id signature 1).size + 2 := by
+  obtain ⟨out, hcorrect, hsize⟩ := eventually_always_target_optimized zero (Circuit.id signature 1)
+  refine ⟨out, ?_, hsize⟩
+  intro x
+  have hnot : ¬ out.eval interpretation x 0 = true := by
+    intro hx
+    obtain ⟨a, ha⟩ := (hcorrect x).mp hx
+    have hbad := ha (a + 1) (Nat.le_succ a)
+    rw [Function.iterate_succ_apply'] at hbad
+    change false = true at hbad
+    cases hbad
+  simpa only [Bool.not_eq_true] using hnot
 
 -- Long input times on the flip, for a time much wider than the state.
 example : ∃ out : Circuit signature (1 + 10) 1,

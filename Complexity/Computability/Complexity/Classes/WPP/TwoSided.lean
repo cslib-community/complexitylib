@@ -58,7 +58,7 @@ private theorem polyTime_transformedTargets {α : Type} {enc : α ↪ List Bool}
       enc (encList encIntBin) := by
   unfold transformedTargets
   apply ComputableInPolyTime.mapWithInput hy
-  apply ComputableTidilyInPolyTime.intBin_prod.computableInPolyTime.comp
+  apply (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
   apply ComputableInPolyTime.mapWithInput (hn.comp (.fst enc encIntBin))
   fun_prop
 

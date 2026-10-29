@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.FusionTree.Parameters
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
+public import Complexity.Computability.WordRAM.RegisterFrame
 
 /-!
 # Register banks for fusion-node queries
@@ -75,25 +76,12 @@ theorem bank_injective {k offset : ℕ} (hk : offset + k ≤ registers) :
   dsimp only [bank] at this
   omega
 
-/-- A renamed subroutine cannot write a register outside its embedding. This proof treats
-the subroutine structurally and does not expand its instruction graph. -/
-private theorem preserves_rename {k : ℕ} {f : Fin k → Fin registers} (c : Code .standard k)
-    (i : Fin registers) (hi : ∀ j, f j ≠ i) : (c.rename f).Preserves i := by
-  induction c with
-  | op o =>
-    cases o <;> simp only [Code.rename, Code.Preserves, Op.rename, Op.dest,
-      ne_eq, Option.some.injEq, reduceCtorEq, not_false_eq_true] <;> apply hi
-  | seq a b iha ihb => exact ⟨iha, ihb⟩
-  | branch cond pos neg ihp ihn => exact ⟨ihp, ihn⟩
-  | loop cond body ih => exact ih
-  | rand dst src => simpa only [Code.rename, Code.Preserves] using hi dst
-
 /-- In particular, a contiguous bank frames every physical register outside its interval. -/
 theorem preserves_bank {k offset : ℕ} (hk : offset + k ≤ registers)
     (c : Code .standard k) (i : Fin registers)
     (hi : i.val < offset ∨ offset + k ≤ i.val) :
     (c.rename (bank offset hk)).Preserves i := by
-  apply preserves_rename
+  apply Code.preserves_rename_of_forall_ne
   intro j he
   have := congrArg Fin.val he
   dsimp only [bank] at this

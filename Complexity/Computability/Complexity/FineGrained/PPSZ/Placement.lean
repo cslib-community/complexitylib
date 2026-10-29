@@ -54,6 +54,8 @@ PPSZ recursion (`Q_le_bernoulliProb`)
 ## Main results
 
 * `Cslib.Complexity.PPSZ.qbar_three_two`: `qbar 3 2 = 31 / 70`.
+* `Cslib.Complexity.PPSZ.antitone_qbar_width`: `qbar k d` is antitone in the clause width `k`
+  (original).
 * `Cslib.Complexity.PPSZ.integral_pow_mul_one_sub_pow`: the Beta integral
   `∫₀¹ r ^ i * (1 - r) ^ j dr = i! * j! / (i + j + 1)!`.
 * `Cslib.Complexity.PPSZ.card_filter_placedBefore_mul_choose`: the set placed before `x` is a given
@@ -63,6 +65,10 @@ PPSZ recursion (`Q_le_bernoulliProb`)
   (original).
 * `Cslib.Complexity.PPSZ.bernoulliProb_eq_bernoulliAverage`: `bernoulliProb` is the
   `BitString.bernoulliAverage` of the indicator of the event, over masks `U → Bool`.
+* `Cslib.Complexity.PPSZ.bernoulliProb_union_of_forall_insert`: elements that an event ignores
+  can be dropped (original).
+* `Cslib.Complexity.PPSZ.card_add_one_mul_integral_bernoulliProb`: conditioning a random order on
+  its first element, in the form of independent inclusion (original).
 * `Cslib.Complexity.PPSZ.bernoulliProb_mul_le`: the Harris inequality for increasing events.
 * `Cslib.Complexity.PPSZ.prod_le_bernoulliProb_forall_or`: Lemma 7 of the paper, for a fixed
   `r`, with all `qᵢ = r` [Paturi, Pudlák, Saks, Zane, Lemma 7][PaturiPudlakSaksZane2005].
@@ -73,6 +79,7 @@ PPSZ recursion (`Q_le_bernoulliProb`)
 
 ## References
 
+* [T. Hertli, *3-SAT faster and simpler*][Hertli2011]
 * [R. Paturi, P. Pudlák, M. Saks, F. Zane, *An improved exponential-time algorithm for
   k-SAT*][PaturiPudlakSaksZane2005]
 -/
@@ -182,6 +189,29 @@ theorem qbar_le_one : qbar k d ≤ 1 := by
 theorem monotone_qbar : Monotone (qbar k) := fun _ _ hde =>
   intervalIntegral.integral_mono_on zero_le_one ((continuous_Q k _).intervalIntegrable 0 1)
     ((continuous_Q k _).intervalIntegrable 0 1) fun _ hr => monotone_Q hr hde
+
+/-- `Q` is antitone in the clause width `k` on `[0, 1]`: wider clauses give smaller bounds. The
+idea is the remark of [Hertli, p. 8][Hertli2011] that `S_k` increases with `k`; the proof, by
+induction on the depth, is original. -/
+theorem antitone_Q_width (hr : r ∈ Set.Icc (0 : ℝ) 1) (d : ℕ) : Antitone fun k => Q k d r := by
+  intro j k hjk
+  dsimp only
+  induction d with
+  | zero => exact le_rfl
+  | succ d ih =>
+    obtain ⟨hb0, hb1⟩ := add_one_sub_mul_mem_Icc hr (Q_mem_Icc (k := k) (d := d) hr)
+    calc Q k (d + 1) r ≤ (r + (1 - r) * Q k d r) ^ (j - 1) :=
+          pow_le_pow_of_le_one hb0 hb1 (Nat.sub_le_sub_right hjk 1)
+      _ ≤ Q j (d + 1) r :=
+          pow_le_pow_left₀ hb0 ((add_le_add_iff_left r).2
+            (mul_le_mul_of_nonneg_left ih (sub_nonneg.2 hr.2))) _
+
+/-- `qbar` is antitone in the clause width `k`; in particular `qbar k d ≤ qbar 3 d` for
+`k ≥ 3`. This is the finite-depth form of the remark of [Hertli, p. 8][Hertli2011] that `S_k`
+increases with `k`. -/
+theorem antitone_qbar_width (d : ℕ) : Antitone fun k => qbar k d := fun _ _ hjk =>
+  intervalIntegral.integral_mono_on zero_le_one ((continuous_Q _ d).intervalIntegrable 0 1)
+    ((continuous_Q _ d).intervalIntegrable 0 1) fun _ hr => antitone_Q_width hr d hjk
 
 /-- At depth one the bound is `1 / k`, the bound of PPZ. -/
 theorem qbar_one (hk : 1 ≤ k) : qbar k 1 = 1 / k := by
@@ -383,6 +413,112 @@ theorem bernoulliProb_mem {v : α} (hv : v ∈ U) :
   rw [bernoulliProb_congr (E := fun S => v ∈ S) (F := fun S => v ∈ S ∨ False)
       fun S _ => by simp,
     bernoulliProb_mem_or hv fun _ => Iff.rfl, bernoulliProb_false, mul_zero, add_zero]
+
+/-- **Ignored elements do not matter** (original). If `D` is disjoint from `U` and `E` does not
+depend on the elements of `D`, then a random subset of `U ∪ D` satisfies `E` with the same
+probability as a random subset of `U`. -/
+theorem bernoulliProb_union_of_forall_insert [DecidableEq α] {D : Finset α} (hUD : Disjoint U D)
+    (hE : ∀ v ∈ D, ∀ S, E (insert v S) ↔ E S) :
+    bernoulliProb (U ∪ D) r E = bernoulliProb U r E := by
+  induction D using Finset.induction_on with
+  | empty => rw [union_empty]
+  | insert v D hv ih =>
+    have hvU : v ∉ U ∪ D := by
+      rw [mem_union, not_or]
+      exact ⟨fun h => disjoint_left.1 hUD h (mem_insert_self v D), hv⟩
+    rw [union_insert, bernoulliProb_insert hvU,
+      bernoulliProb_congr (E := fun S => E (insert v S)) (F := E)
+        fun S _ => hE v (mem_insert_self v D) S,
+      ih (disjoint_of_subset_right (subset_insert v D) hUD) fun u hu => hE u (mem_insert_of_mem hu)]
+    ring
+
+/-- **Averaging independent inclusion over `r`** (original): `∫₀¹ Pr[E] dr` gives each subset
+`S ⊆ U` the weight `|S|! * (|U| - |S|)! / (|U| + 1)!`, by the Beta integral. -/
+theorem integral_bernoulliProb (U : Finset α) (E : Finset α → Prop) [DecidablePred E] :
+    ∫ r in (0 : ℝ)..1, bernoulliProb U r E =
+      ∑ S ∈ U.powerset with E S,
+        ((#S).factorial * (#U - #S).factorial : ℝ) / (#U + 1).factorial := by
+  simp only [bernoulliProb_eq_sum]
+  rw [intervalIntegral.integral_finsetSum fun S _ =>
+    (by fun_prop : Continuous fun r : ℝ => r ^ #S * (1 - r) ^ (#U - #S)).intervalIntegrable 0 1]
+  refine sum_congr rfl fun S hS => ?_
+  have := card_le_card (mem_powerset.1 (mem_filter.1 hS).1)
+  rw [integral_pow_mul_one_sub_pow, show #S + (#U - #S) + 1 = #U + 1 by omega]
+
+/-- Summing over the elements of the subsets of `U` is summing over the elements `y` of `U` and
+the subsets of `U` containing `y`. -/
+private theorem sum_powerset_sum_eq_sum_sum_powerset_erase [DecidableEq α] {β : Type*}
+    [AddCommMonoid β] (U : Finset α) (g : α → Finset α → β) :
+    ∑ S ∈ U.powerset, ∑ y ∈ S, g y S = ∑ y ∈ U, ∑ S ∈ (U.erase y).powerset, g y (insert y S) := by
+  calc ∑ S ∈ U.powerset, ∑ y ∈ S, g y S
+        = ∑ S ∈ U.powerset, ∑ y ∈ U, if y ∈ S then g y S else 0 := by
+          refine sum_congr rfl fun S hS => ?_
+          rw [← sum_filter, filter_mem_eq_inter, inter_eq_right.2 (mem_powerset.1 hS)]
+    _ = ∑ y ∈ U, ∑ S ∈ U.powerset, if y ∈ S then g y S else 0 := sum_comm
+    _ = _ := by
+          refine sum_congr rfl fun y hy => ?_
+          conv_lhs => rw [← insert_erase hy]
+          rw [sum_powerset_insert (notMem_erase y U),
+            sum_eq_zero fun S hS => ite_eq_right fun h => notMem_erase y U (mem_powerset.1 hS h),
+            zero_add]
+          exact sum_congr rfl fun S _ => ite_eq_left (mem_insert_self y S)
+
+/-- **The first element of a random order, for independent inclusion** (original). For every
+event `E` on subsets of `U`,
+`(|U| + 1) * ∫₀¹ Pr_U[E] dr = [E ∅] + ∑ y ∈ U, ∫₀¹ Pr_{U ∖ {y}}[E (insert y ·)] dr`.
+By `card_filter_placedBefore_div_factorial_eq_integral`, the integrals are probabilities over a
+uniformly random order of `U` and one more element `x`, of the event on the set placed before `x`.
+The identity conditions on the first element of the order: it is `x` with probability
+`1 / (|U| + 1)`, and the set placed before `x` is then empty; it is `y ∈ U` with the same
+probability, and the rest of the order is then uniform. -/
+theorem card_add_one_mul_integral_bernoulliProb [DecidableEq α] (U : Finset α)
+    (E : Finset α → Prop) [DecidablePred E] :
+    (#U + 1 : ℝ) * ∫ r in (0 : ℝ)..1, bernoulliProb U r E =
+      (if E ∅ then 1 else 0) +
+        ∑ y ∈ U, ∫ r in (0 : ℝ)..1, bernoulliProb (U.erase y) r fun S => E (insert y S) := by
+  set N := #U with hN
+  set d : Finset α → ℝ := fun S => ((#S).factorial * (N - 1 - #S).factorial : ℝ) / N.factorial
+  have hNf : (N.factorial : ℝ) ≠ 0 := by positivity
+  -- the weight of `S` splits over the elements of `S`
+  have hc : ∀ S ⊆ U, (#U + 1 : ℝ) *
+      (((#S).factorial * (#U - #S).factorial : ℝ) / (#U + 1).factorial) =
+      (if S = ∅ then 1 else 0) + ∑ y ∈ S, d (S.erase y) := by
+    intro S hS
+    have hSN : #S ≤ N := card_le_card hS
+    rw [← hN, Nat.factorial_succ, Nat.cast_mul, Nat.cast_add_one]
+    rcases S.eq_empty_or_nonempty with rfl | hne
+    · rw [ite_eq_left rfl, sum_empty, card_empty, Nat.factorial_zero, Nat.sub_zero]
+      field_simp
+      norm_num
+    · have hS0 : 0 < #S := hne.card_pos
+      rw [ite_eq_right hne.ne_empty, zero_add, sum_congr rfl fun y hy =>
+        show d (S.erase y) = ((#S - 1).factorial * (N - #S).factorial : ℝ) / N.factorial by
+          simp only [d, card_erase_of_mem hy]
+          rw [show N - 1 - (#S - 1) = N - #S by omega], sum_const, nsmul_eq_mul,
+        ← Nat.mul_factorial_pred hS0.ne', Nat.cast_mul]
+      field_simp
+  have hd : ∀ y ∈ U, ∀ S ∈ (U.erase y).powerset,
+      ((#S).factorial * (#(U.erase y) - #S).factorial : ℝ) / (#(U.erase y) + 1).factorial =
+        d S := by
+    intro y hy S _
+    rw [card_erase_of_mem hy, ← hN, show N - 1 + 1 = N by have := card_pos.2 ⟨y, hy⟩; omega]
+  rw [integral_bernoulliProb, mul_sum, sum_filter]
+  simp only [integral_bernoulliProb]
+  rw [sum_congr rfl fun y hy => (sum_congr rfl fun S hS => hd y hy S (mem_filter.1 hS).1).trans
+    (sum_filter (fun S => E (insert y S)) d)]
+  rw [← hN, sum_congr rfl fun S hS => show (if E S then (N + 1 : ℝ) *
+      (((#S).factorial * (N - #S).factorial : ℝ) / (N + 1).factorial) else 0) =
+      (if E S ∧ S = ∅ then 1 else 0) + ∑ y ∈ S, if E S then d (S.erase y) else 0 by
+    rw [hN, hc S (mem_powerset.1 hS)]
+    by_cases hES : E S
+    · simp only [hES, true_and, ite_true]
+    · simp only [hES, false_and, ite_false, sum_const_zero, add_zero]]
+  rw [sum_add_distrib, sum_eq_single_of_mem ∅ (empty_mem_powerset U)
+    fun S _ hS => ite_eq_right fun h => hS h.2, sum_powerset_sum_eq_sum_sum_powerset_erase]
+  congr 1
+  · simp only [and_true]
+  · refine sum_congr rfl fun y _ => sum_congr rfl fun S hS => ?_
+    rw [erase_insert fun h => notMem_erase y U (mem_powerset.1 hS h)]
 
 /-- **The Harris inequality.** Increasing events are positively correlated under independent
 inclusion; a consequence of the FKG inequality (Mathlib's `fkg`). -/

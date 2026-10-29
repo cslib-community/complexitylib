@@ -518,7 +518,8 @@ private theorem computableInPolyTime_toSysInput (k : ℕ) :
 
 private theorem computableInPolyTime_rowLenGuard :
     ComputableInPolyTime (fun q : (ℕ × CNF ℕ) × List (List Bool) => decide (q.2.length ≤ 6 * q.1.1))
-      encCandIn encBool := .of_tidy (by unfold encCandIn encCandCtx; fun_prop)
+      encCandIn encBool := by
+  unfold encCandIn encCandCtx; fun_prop
 
 private noncomputable def compiledRowCertificate (k : ℕ)
     (cPoly : NativeCertificate polyCounter (encPair encUnary encSys) encNat) :
@@ -596,37 +597,36 @@ private theorem computableInPolyTime_validDeclaredInput (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (fun x : P × CNF ℕ => validDeclaredInput k (NOf x.1) x.2)
       (encPair encP encCNF) encBool := by
-  refine .of_tidy ?_
-  have hN_nat := ComputableTidilyInPolyTime.unary_to_binary.comp
-    (hNOf.tidy.comp (ComputableTidilyInPolyTime.fst encP encCNF))
-  have h1 : ComputableTidilyInPolyTime (fun x : P × CNF ℕ => x.2.all fun c => decide (c.length ≤ k))
+  have hN_nat := (show ComputableInPolyTime id encUnary encNat by fun_prop).comp
+    (hNOf.comp (ComputableInPolyTime.fst encP encCNF))
+  have h1 : ComputableInPolyTime (fun x : P × CNF ℕ => x.2.all fun c => decide (c.length ≤ k))
       (encPair encP encCNF) encBool := by
-    apply ComputableTidilyInPolyTime.allWithInput (by fun_prop)
-    have := (SAT.computableInPolyTime_clause_length (by fun_prop : ComputableInPolyTime Prod.snd
-      (encPair (encPair encP encCNF) (encList (encPair encNat encBool))) _)).tidy
+    apply ComputableInPolyTime.allWithInput (by fun_prop)
+    have := SAT.computableInPolyTime_clause_length (by fun_prop : ComputableInPolyTime Prod.snd
+      (encPair (encPair encP encCNF) (encList (encPair encNat encBool))) _)
     fun_prop
-  have h2 : ComputableTidilyInPolyTime
+  have h2 : ComputableInPolyTime
       (fun x : P × CNF ℕ => x.2.vars.all fun v => decide (v < NOf x.1))
       (encPair encP encCNF) encBool := by
-    apply ComputableTidilyInPolyTime.allWithInput
-      (SAT.computableInPolyTime_vars.tidy.comp (ComputableTidilyInPolyTime.snd encP encCNF))
-    exact ComputableTidilyInPolyTime.binary_lt'
-      (ComputableTidilyInPolyTime.snd (encPair encP encCNF) encNat)
-      (hN_nat.comp (ComputableTidilyInPolyTime.fst (encPair encP encCNF) encNat))
-  unfold validDeclaredInput; exact ComputableTidilyInPolyTime.bool_and' h1 h2
+    apply ComputableInPolyTime.allWithInput
+      (SAT.computableInPolyTime_vars.comp (ComputableInPolyTime.snd encP encCNF))
+    exact ComputableInPolyTime.binary_lt'
+      (ComputableInPolyTime.snd (encPair encP encCNF) encNat)
+      (hN_nat.comp (ComputableInPolyTime.fst (encPair encP encCNF) encNat))
+  unfold validDeclaredInput; exact ComputableInPolyTime.bool_and' h1 h2
 
 private theorem computableInPolyTime_isEmptyCNF :
     ComputableInPolyTime (fun x : P × CNF ℕ => x.2.isEmpty) (encPair encP encCNF) encBool :=
-  .of_tidy ((ComputableTidilyInPolyTime.listIsEmpty' _).comp
-    (ComputableTidilyInPolyTime.snd encP encCNF))
+  (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.snd encP encCNF)
+    (.const [])).of_enc_eq fun x => congrArg encBool (by cases x.2 <;> rfl)
 
 private theorem computableInPolyTime_hasEmptyClause :
-    ComputableInPolyTime (fun x : P × CNF ℕ => hasEmptyClause x.2) (encPair encP encCNF) encBool :=
-  .of_tidy (by
-    unfold hasEmptyClause
-    apply ComputableTidilyInPolyTime.anyWithInput (ComputableTidilyInPolyTime.snd encP encCNF)
-    exact (ComputableTidilyInPolyTime.listIsEmpty' _).comp
-      (ComputableTidilyInPolyTime.snd (encPair encP encCNF) _))
+    ComputableInPolyTime (fun x : P × CNF ℕ => hasEmptyClause x.2)
+      (encPair encP encCNF) encBool := by
+  unfold hasEmptyClause
+  apply ComputableInPolyTime.anyWithInput (ComputableInPolyTime.snd encP encCNF)
+  exact (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.snd (encPair encP encCNF) _)
+    (.const [])).of_enc_eq fun p => congrArg encBool (by cases p.2 <;> rfl)
 
 private theorem computableInPolyTime_twoPowN (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (fun x : P × CNF ℕ => 2 ^ NOf x.1) (encPair encP encCNF) encNat :=
@@ -636,11 +636,10 @@ private theorem computableInPolyTime_baseGuard (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (fun x : P × CNF ℕ =>
       validDeclaredInput k (NOf x.1) x.2 && !x.2.isEmpty && !hasEmptyClause x.2)
-      (encPair encP encCNF) encBool := by
-  have := (computableInPolyTime_validDeclaredInput k hNOf).tidy
-  have := (computableInPolyTime_isEmptyCNF (encP := encP)).tidy
-  have := (computableInPolyTime_hasEmptyClause (encP := encP)).tidy
-  exact .of_tidy (by fun_prop)
+      (encPair encP encCNF) encBool :=
+  ((computableInPolyTime_validDeclaredInput k hNOf).bool_and'
+    (ComputableInPolyTime.bool_not.comp (computableInPolyTime_isEmptyCNF (encP := encP)))).bool_and'
+    (ComputableInPolyTime.bool_not.comp (computableInPolyTime_hasEmptyClause (encP := encP)))
 
 private theorem computableInPolyTime_entersSparseFastPath (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary)
@@ -648,17 +647,16 @@ private theorem computableInPolyTime_entersSparseFastPath (k N₀ : ℕ)
     ComputableInPolyTime
       (fun x : P × CNF ℕ => entersSparseFastPath k N₀ (NOf x.1) (BOf x.1) x.2)
       (encPair encP encCNF) encBool := by
-  have := (computableInPolyTime_baseGuard k hNOf).tidy
-  have hN := hNOf.comp (by fun_prop : ComputableInPolyTime Prod.fst (encPair encP encCNF) encP)
-  have hB := hBOf.comp (by fun_prop : ComputableInPolyTime Prod.fst (encPair encP encCNF) encP)
-  have hm := SAT.computableInPolyTime_length
-    (by fun_prop : ComputableInPolyTime Prod.snd (encPair encP encCNF) encCNF)
-  have := (by fun_prop : ComputableInPolyTime (fun x : P × CNF ℕ => decide (NOf x.1 < N₀))
-    (encPair encP encCNF) encBool).tidy
-  have := (by fun_prop : ComputableInPolyTime
-    (fun x : P × CNF ℕ => decide (x.2.length ≤ BOf x.1 * NOf x.1))
-    (encPair encP encCNF) encBool).tidy
-  refine .of_tidy ?_; unfold entersSparseFastPath; fun_prop
+  have hbase := computableInPolyTime_baseGuard k hNOf
+  have hN := hNOf.comp (ComputableInPolyTime.fst encP encCNF)
+  have hB := hBOf.comp (ComputableInPolyTime.fst encP encCNF)
+  have hm := SAT.computableInPolyTime_length (ComputableInPolyTime.snd encP encCNF)
+  have hlt : ComputableInPolyTime (fun x : P × CNF ℕ => decide (NOf x.1 < N₀))
+      (encPair encP encCNF) encBool := by fun_prop
+  have hle : ComputableInPolyTime (fun x : P × CNF ℕ => decide (x.2.length ≤ BOf x.1 * NOf x.1))
+      (encPair encP encCNF) encBool := by fun_prop
+  unfold entersSparseFastPath
+  exact (hbase.bool_and' (ComputableInPolyTime.bool_not.comp hlt)).bool_and' hle
 
 private def nonExhGuard {P : Type*} (NOf : P → ℕ) (k N₀ : ℕ) (x : P × CNF ℕ) : Bool :=
   !(validDeclaredInput k (NOf x.1) x.2 && !x.2.isEmpty && !hasEmptyClause x.2 &&
@@ -673,19 +671,19 @@ private def sparseCNFNonFastFallback {P : Type*} (NOf : P → ℕ) (k N₀ : ℕ
 private theorem computableInPolyTime_nonExhGuard (k N₀ : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (nonExhGuard NOf k N₀) (encPair encP encCNF) encBool := by
-  have := (computableInPolyTime_baseGuard k hNOf).tidy
-  have hN := hNOf.comp (by fun_prop : ComputableInPolyTime Prod.fst (encPair encP encCNF) encP)
-  have := (by fun_prop : ComputableInPolyTime (fun x : P × CNF ℕ => decide (NOf x.1 < N₀))
-    (encPair encP encCNF) encBool).tidy
-  refine .of_tidy ?_; unfold nonExhGuard; fun_prop
+  have hbase := computableInPolyTime_baseGuard k hNOf
+  have hN := hNOf.comp (ComputableInPolyTime.fst encP encCNF)
+  have hlt : ComputableInPolyTime (fun x : P × CNF ℕ => decide (NOf x.1 < N₀))
+      (encPair encP encCNF) encBool := by fun_prop
+  unfold nonExhGuard
+  exact ComputableInPolyTime.bool_not.comp (hbase.bool_and' hlt)
 
 private theorem computableInPolyTime_nonExhDirect (k : ℕ)
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (nonExhDirect NOf k) (encPair encP encCNF) encNat :=
-  .of_tidy ((ComputableTidilyInPolyTime.bool_and'
-    (computableInPolyTime_validDeclaredInput k hNOf).tidy
-    (computableInPolyTime_isEmptyCNF (encP := encP)).tidy).ite'
-    (computableInPolyTime_twoPowN hNOf).tidy (ComputableTidilyInPolyTime.const 0))
+  ((computableInPolyTime_validDeclaredInput k hNOf).bool_and'
+    (computableInPolyTime_isEmptyCNF (encP := encP))).ite'
+    (computableInPolyTime_twoPowN hNOf) (.const 0)
 
 private theorem computableInPolyTime_exhInput (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (fun x : P × CNF ℕ => (NOf x.1, x.2))
@@ -769,11 +767,12 @@ private def capByTwoPow (NOf : P → ℕ) (y : (P × CNF ℕ) × ℕ) : ℕ := m
 private theorem computableInPolyTime_capByTwoPow
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (capByTwoPow NOf) (encPair (encPair encP encCNF) encNat) encNat := by
-  have h2pow := (computableInPolyTime_twoPowN hNOf).tidy.comp
-    (ComputableTidilyInPolyTime.fst (encPair encP encCNF) encNat)
-  have hres := ComputableTidilyInPolyTime.snd (encPair encP encCNF) encNat
-  refine .of_tidy (((ComputableTidilyInPolyTime.binary_le' h2pow hres).ite' h2pow hres).of_enc_eq
-    fun y => congrArg encNat ?_)
+  have h2pow := (computableInPolyTime_twoPowN hNOf).comp
+    (ComputableInPolyTime.fst (encPair encP encCNF) encNat)
+  have hres := ComputableInPolyTime.snd (encPair encP encCNF) encNat
+  have hle := (show ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
+    (encPair encNat encNat) encBool by fun_prop).comp (h2pow.prod hres)
+  refine (hle.ite' h2pow hres).of_enc_eq fun y => congrArg encNat ?_
   by_cases h : 2 ^ NOf y.1.1 ≤ y.2 <;> simp [capByTwoPow, h, Nat.le_of_not_le]
 
 private noncomputable def initRowsCertificate (hBOf : ComputableInPolyTime BOf encP encUnary) :
@@ -1170,12 +1169,11 @@ private def shiftAmount (NOf : P → ℕ) (x : P × CNF ℕ) : ℕ := NOf x.1 - 
 private theorem computableInPolyTime_shiftAmount
     (hNOf : ComputableInPolyTime NOf encP encUnary) :
     ComputableInPolyTime (shiftAmount NOf) (encPair encP encCNF) encNat := by
-  refine .of_tidy ?_
-  have hN := ComputableTidilyInPolyTime.unary_to_binary.comp
-    (hNOf.tidy.comp (ComputableTidilyInPolyTime.fst encP encCNF))
-  have hnv := ComputableTidilyInPolyTime.unary_to_binary.comp
-    (SAT.computableInPolyTime_numVars.tidy.comp (ComputableTidilyInPolyTime.snd encP encCNF))
-  refine (ComputableTidilyInPolyTime.binary_sub' hN hnv).of_enc_eq fun x => congrArg encNat ?_
+  have u2b : ComputableInPolyTime id encUnary encNat := by fun_prop
+  have hN := u2b.comp (hNOf.comp (ComputableInPolyTime.fst encP encCNF))
+  have hnv := u2b.comp
+    (SAT.computableInPolyTime_numVars.comp (ComputableInPolyTime.snd encP encCNF))
+  refine (ComputableInPolyTime.binary_sub' hN hnv).of_enc_eq fun x => congrArg encNat ?_
   rw [shiftAmount, CNF.length_distinctVars]; rfl
 
 /-- **Native resource certificate for `normalizeDeclaredLeaf NOf h`**, composing `cLeaf` with

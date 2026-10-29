@@ -130,8 +130,10 @@ tooling.
   coordinator responsibility: do not treat a PR as done when it is merely queued. Monitor queued
   batches until they land on `main`, rebase or re-queue PRs ejected by conflicts or transient
   failures, sequence broad tree-wide refactors so they do not stall smaller PRs behind cold cache
-  rebuilds, and diagnose and fix merge-queue or CI bottlenecks when the queue jams. Close
-  completed issues and link any remaining work once the change lands.
+  rebuilds, and diagnose and fix merge-queue or CI bottlenecks when the queue jams. The queue
+  squash-merges: a stacked PR that edits lines a lower PR introduces conflicts with that PR's
+  squashed commit and is ejected, so queue it once the lower PRs land and it has merged `main`.
+  Close completed issues and link any remaining work once the change lands.
 - For your own implementation, follow the worker rules and obtain non-author review under
   [Review cycle](#review-cycle). Changing roles does not make self-review independent.
 

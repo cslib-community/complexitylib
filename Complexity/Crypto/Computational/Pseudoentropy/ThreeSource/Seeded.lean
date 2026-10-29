@@ -10,7 +10,7 @@ module
 public import Complexity.Crypto.Computational.Pseudoentropy.ThreeSource
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Probabilistic.LinearHash
-import Complexity.Tactic.PolyTime
+import Complexity.Tactic.PolyTime.Init
 
 /-!
 # Deterministic three-source extraction
@@ -139,8 +139,22 @@ theorem isPolyTime_generate {α : Type} {input : α ↪ List Bool}
     (htape : ComputableInPolyTime tape input encBits) :
     ComputableInPolyTime (fun a => generate (count a) (seedBits a) (bound a)
       (observationBits a) (labelBits a) (remainingBits a) (evaluate a) (tape a)) input encBits := by
+  have hcb := ComputableInPolyTime.unary_mul' hcount hseed
+  have hcoins := ComputableInPolyTime.bitsTakeWithInput htape hcb
+  have htape1 := ComputableInPolyTime.bitsDropWithInput htape hcb
+  have hrk := ComputableInPolyTime.unary_mul' hremaining hcb
+  have hlastKey := ComputableInPolyTime.bitsTakeWithInput htape1 hrk
+  have htape2 := ComputableInPolyTime.bitsDropWithInput htape1 hrk
+  have hlc := ComputableInPolyTime.unary_mul' hlabel hcount
+  have hmiddleKey := ComputableInPolyTime.bitsTakeWithInput htape2 hlc
+  have hfirstKey := ComputableInPolyTime.bitsDropWithInput htape2 hlc
+  have hrows := ComputableInPolyTime.bitsRowsWithInput hcount hseed hcoins
+  have hsamples := ComputableInPolyTime.mapWithInput
+    (f := fun a seed => (evaluate a seed, seed)) hrows
+    (hevaluate.prod (ComputableInPolyTime.snd input encBits))
   unfold generate
-  polytime
+  exact isPolyTime_hashSamples hcount hseed hbound hobservation hlabel hremaining
+    hsamples hfirstKey hmiddleKey hlastKey
 
 attribute [program_certificate] isPolyTime_generate
 

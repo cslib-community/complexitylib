@@ -16,6 +16,8 @@ import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Logics.Propositional.CNF.PolyTime
 import Complexity.Logics.Propositional.CNF.ThreeCNF.PolyTime
 
@@ -52,7 +54,7 @@ relabelling and the Cook–Levin theorem proves that `ThreeSAT` is `NP`-complete
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM
 
 /-- The satisfiable formulas whose clauses have at most three literals [Karp1972],
 [Arora and Barak, Section 2.3.1][AroraBarak09]. -/
@@ -98,68 +100,50 @@ private theorem encNat_two_mul_add_one (n : ℕ) :
     encNat (2 * n + 1) = true :: encNat n :=
   Nat.bit1_bits n
 
-private theorem sumElim {α β γ : Type} {left : α ↪ List Bool} {right : β ↪ List Bool}
-    {encC : γ ↪ List Bool} {f : α → γ} {g : β → γ}
-    (hf : ComputableTidilyInPolyTime f left encC)
-    (hg : ComputableTidilyInPolyTime g right encC) :
-    ComputableTidilyInPolyTime (Sum.elim f g) (encSum left right) encC := by
-  let encS := encSum left right
-  have hc : ComputableTidilyInPolyTime Sum.isRight encS encBool :=
-    ((headD (encA := encBool) false).comp (encode encS)).of_enc_eq fun x => by cases x <;> rfl
-  let encR := (Function.Embedding.subtype (Sum.isRight · = true)).trans encS
-  let unRight : {x : α ⊕ β // x.isRight = true} → β
-    | ⟨.inr b, _⟩ => b
-    | ⟨.inl _, h⟩ => by cases h
-  have hunRight : ComputableTidilyInPolyTime unRight encR right :=
-    (bitsTail.comp (encode encR)).of_enc_eq fun x => by
-      rcases x with ⟨a | b, h⟩
-      · cases h
-      · rfl
-  let encL := (Function.Embedding.subtype (Sum.isRight · = false)).trans encS
-  let unLeft : {x : α ⊕ β // x.isRight = false} → α
-    | ⟨.inl a, _⟩ => a
-    | ⟨.inr _, h⟩ => by cases h
-  have hunLeft : ComputableTidilyInPolyTime unLeft encL left :=
-    (bitsTail.comp (encode encL)).of_enc_eq fun x => by
-      rcases x with ⟨a | b, h⟩
-      · rfl
-      · cases h
-  have hR : ComputableTidilyInPolyTime (Sum.elim f g ∘ Subtype.val) encR encC := by
-    convert hg.comp hunRight using 1
-    funext x
-    rcases x with ⟨a | b, hx⟩
-    · cases hx
-    · rfl
-  have hL : ComputableTidilyInPolyTime (Sum.elim f g ∘ Subtype.val) encL encC := by
-    convert hf.comp hunLeft using 1
-    funext x
-    rcases x with ⟨a | b, hx⟩
-    · rfl
-    · cases hx
-  simpa only [ite_self] using hc.ite hR hL
-
 /-- Variable numbering after clause splitting is polynomial-time: original binary variables shift
 by one bit, and unary fresh-variable pairs are paired and converted to odd binary numbers. -/
 @[fun_prop]
 theorem computableInPolyTime_splitVarToNat :
     ComputableInPolyTime splitVarToNat
       (encSum encNat (encPair encUnary encUnary)) encNat := by
-  refine .of_tidy ?_
-  have hdouble : ComputableTidilyInPolyTime (2 * ·) encNat encNat :=
-    (show ComputableTidilyInPolyTime
+  let encS := encSum encNat (encPair encUnary encUnary)
+  let D₁ : Decoder encNat := .nat
+  let D₂ : Decoder (encPair encUnary encUnary) := .pair .unary .unary
+  have hraw : ComputableInPolyTime (fun x => encS x) encS encBits := .of_eq fun _ => rfl
+  have hc : ComputableInPolyTime Sum.isRight encS encBool :=
+    ((ComputableInPolyTime.headD false).comp hraw).of_enc_eq fun x => by cases x <;> rfl
+  have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by
+    unfold Nat.pair
+    fun_prop
+  have hdouble : ComputableInPolyTime (2 * ·) encNat encNat :=
+    (show ComputableInPolyTime
         (fun n : ℕ => if (encNat n).isEmpty then ([] : List Bool) else false :: encNat n)
         encNat encBits by fun_prop).of_enc_eq encNat_two_mul
-  have hodd : ComputableTidilyInPolyTime (fun n : ℕ => 2 * n + 1) encNat encNat :=
-    (show ComputableTidilyInPolyTime (fun n : ℕ => true :: encNat n)
+  have hodd : ComputableInPolyTime (fun n : ℕ => 2 * n + 1) encNat encNat :=
+    (show ComputableInPolyTime (fun n : ℕ => true :: encNat n)
         encNat encBits by fun_prop).of_enc_eq encNat_two_mul_add_one
-  exact sumElim hdouble (hodd.comp (unary_to_binary.comp unary_pair))
+  have hl : ComputableInPolyTime (fun x => 2 * D₁.decode (encS x).tail) encS encNat :=
+    hdouble.comp (D₁.computableInPolyTime.comp (ComputableInPolyTime.bitsTail.comp hraw))
+  have hr : ComputableInPolyTime
+      (fun x => 2 * (let p := D₂.decode (encS x).tail; Nat.pair p.1 p.2) + 1) encS encNat :=
+    hodd.comp (ComputableInPolyTime.unary_to_binary.comp
+      (hpair.comp (D₂.computableInPolyTime.comp (ComputableInPolyTime.bitsTail.comp hraw))))
+  refine (hc.ite hr hl).of_enc_eq fun x => ?_
+  rcases x with a | ⟨b, c⟩
+  · rw [encNat.injective.eq_iff]
+    simp only [splitVarToNat, encS, encSum_inl, List.tail_cons, Sum.isRight_inl,
+      Bool.false_eq_true, ↓reduceIte, Sum.elim_inl, D₁.decode_enc]
+  · rw [encNat.injective.eq_iff]
+    simp only [splitVarToNat, encS, encSum_inr, List.tail_cons, Sum.isRight_inr,
+      ↓reduceIte, Sum.elim_inr, D₂.decode_enc]
 
 /-- The reduction `toThreeSAT` is computable in polynomial time under `encCNF`. -/
 @[fun_prop]
 theorem computableInPolyTime_toThreeSAT :
     ComputableInPolyTime toThreeSAT encCNF encCNF :=
-  .of_tidy ((CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat).tidy.comp
-    (CNF.isPolyTime_to3CNF encNat).tidy)
+  (CNF.computableInPolyTime_relabel computableInPolyTime_splitVarToNat).comp
+    (CNF.isPolyTime_to3CNF encNat)
 
 namespace ThreeSAT
 

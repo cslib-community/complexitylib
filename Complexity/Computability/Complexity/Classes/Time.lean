@@ -13,8 +13,8 @@ public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 import Complexity.Computability.Complexity.Classes.SharpP.Probability
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
 import Complexity.Computability.Probabilistic.PPT.Capture
@@ -22,7 +22,6 @@ import Complexity.Computability.Probabilistic.PPT.Clock
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Probability.PMF.Map
 import Mathlib.Data.Set.Finite.List
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Time classes
@@ -64,8 +63,8 @@ steps is a verifier replaying `T` coins
 A problem `B` decidable within time `O(t' m)` on instances of length `m` pulls back along a
 function `g` computable within time `O(T a)` to a problem decidable within time
 `O(T a + t' |encB (g a)|)` (`Cslib.Complexity.preimage_mem_DTIME`): compute `g a`, then decide
-whether it is in `B`. A decider of `B` within time `O(t' m)` is first brought to the tidy form,
-within time and space `O(t' m)`
+whether it is in `B`. A decider of `B` within time `O(t' m)` gives a plain `ComputableInO`
+certificate within time and space `O(t' m)`
 (`Cslib.Complexity.computableInO_indicator_of_mem_DTIME`), in which computations compose.
 
 ## Main definitions
@@ -216,36 +215,24 @@ theorem computableInO_indicator_of_mem_DTIME {A : Set α} {t : ℕ → ℕ}
     (h : A ∈ DTIME enc t) :
     Turing.MultiTapeTM.ComputableInO (indicator A) enc encBool (fun a => t (enc a).length)
       fun a => t (enc a).length := by
-  have this : ComputableTidilyInO (indicator A) enc encBool (fun a => t (enc a).length) fun a => t
-      (enc a).length := by
-    obtain ⟨c₁, c₂, s, hA⟩ := h
-    obtain ⟨g, hg, hgA⟩ := decidableInTimeAndSpace_iff.mp hA
-    obtain ⟨c, hg⟩ := hg.exists_space_linear
-    obtain ⟨d, hg⟩ := hg.exists_computableTidilyInTimeAndSpace
-    rw [indicator_eq_iff.mpr hgA]
-    refine .of_bounds hg ((2 + 3 * c) * (c₁ + c₂) + 3 * c + d + d * (c * (c₁ + c₂) + c + 1) + 1)
-      (fun a => ?_) (fun a => ?_) fun a => ?_
-    · set T := t (enc a).length
-      have hu : c₁ * T + c₂ ≤ (c₁ + c₂) * (T + 1) := by nlinarith
-      calc 2 * (c₁ * T + c₂) + 3 * (c * (c₁ * T + c₂) + c) + d
-          = (2 + 3 * c) * (c₁ * T + c₂) + (3 * c + d) := by ring
-        _ ≤ (2 + 3 * c) * ((c₁ + c₂) * (T + 1)) + (3 * c + d) * (T + 1) :=
-            Nat.add_le_add (Nat.mul_le_mul_left _ hu) (Nat.le_mul_of_pos_right _ (by omega))
-        _ = ((2 + 3 * c) * (c₁ + c₂) + 3 * c + d) * (T + 1) := by ring
-        _ ≤ _ := Nat.mul_le_mul_right _ (by omega)
-    · set T := t (enc a).length
-      have hu : c₁ * T + c₂ ≤ (c₁ + c₂) * (T + 1) := by nlinarith
-      calc d * (c * (c₁ * T + c₂) + c + 1)
-          ≤ d * (c * ((c₁ + c₂) * (T + 1)) + (c + 1) * (T + 1)) :=
-            Nat.mul_le_mul_left _ (by
-              have := Nat.mul_le_mul_left c hu
-              have : c + 1 ≤ (c + 1) * (T + 1) := Nat.le_mul_of_pos_right _ (by omega)
-              omega)
-        _ = d * (c * (c₁ + c₂) + c + 1) * (T + 1) := by ring
-        _ ≤ _ := Nat.mul_le_mul_right _ (by omega)
-    · simp only [encBool_apply, List.length_singleton]
-      exact Nat.one_le_iff_ne_zero.mpr (Nat.mul_ne_zero (by omega) (by omega))
-  simpa only [Turing.MultiTapeTM.computableInO_iff_computableTidilyInO] using this
+  obtain ⟨c₁, c₂, s, hA⟩ := h
+  obtain ⟨g, hg, hgA⟩ := decidableInTimeAndSpace_iff.mp hA
+  obtain ⟨c, hg⟩ := hg.exists_space_linear
+  rw [indicator_eq_iff.mpr hgA]
+  refine .of_bounds hg ((c + 1) * (c₁ + c₂) + c + 1)
+    (fun a => ?_) (fun a => ?_) fun a => ?_
+  · set T := t (enc a).length
+    have hu : c₁ * T + c₂ ≤ (c₁ + c₂) * (T + 1) := by nlinarith
+    exact hu.trans (Nat.mul_le_mul_right _ (by nlinarith))
+  · set T := t (enc a).length
+    have hu : c₁ * T + c₂ ≤ (c₁ + c₂) * (T + 1) := by nlinarith
+    calc c * (c₁ * T + c₂) + c
+        ≤ c * ((c₁ + c₂) * (T + 1)) + c * (T + 1) :=
+          Nat.add_le_add (Nat.mul_le_mul_left _ hu) (Nat.le_mul_of_pos_right _ (by omega))
+      _ = (c * (c₁ + c₂) + c) * (T + 1) := by ring
+      _ ≤ _ := Nat.mul_le_mul_right _ (by nlinarith)
+  · simp only [encBool_apply, List.length_singleton]
+    exact Nat.one_le_iff_ne_zero.mpr (Nat.mul_ne_zero (by omega) (by omega))
 
 /-- **`DTIME` under timed reductions.** If `B` is decidable within time `O(t' m)` on instances whose
 encoding has length `m`, and `g` is computable within time `O(T a)`, then `g ⁻¹' B` is decidable
@@ -255,14 +242,13 @@ theorem preimage_mem_DTIME {B : Set β} {t' t : ℕ → ℕ} {g : α → β} {T 
     (hB : B ∈ DTIME encB t') (hg : Turing.MultiTapeTM.ComputableInO g enc encB T S)
     (ht : ∀ a, T a + t' (encB (g a)).length ≤ C * t (enc a).length + C) :
     g ⁻¹' B ∈ DTIME enc t := by
-  have hg := hg.tidy
-  have h := (computableInO_indicator_of_mem_DTIME hB).tidy.comp hg
+  have h := (computableInO_indicator_of_mem_DTIME hB).comp hg
   have hset : g ⁻¹' B = {a | (indicator B ∘ g) a = true} := by
     ext a
     simp [indicator]
   rw [hset]
   exact DTIME_mono_of_le_mul_add (C := C) (fun _ => le_rfl)
-    (setOf_mem_DTIME_of_computableInO (t := fun n => C * t n + C) (.of_tidy h) ht)
+    (setOf_mem_DTIME_of_computableInO (t := fun n => C * t n + C) h ht)
 
 end TimedReductions
 
