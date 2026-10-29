@@ -39,12 +39,8 @@ theorem copyFlag_computable :
   intro p k hk
   simp only [encBool_apply, List.length_singleton, le_refl]
 
-example (b : Bool) : copyFlag (0, b) = false := by
-  simp only [copyFlag, Nat.fold_zero]
-
-example (n : ℕ) (b : Bool) : copyFlag (n + 1, b) = b := by
-  simp only [copyFlag, Nat.fold_succ]
-
-example (n : ℕ) : n.fold (fun _ _ a => a + 1) 0 = n := count_spec.2 n
+example (n : ℕ) (b : Bool) :
+    copyFlag (0, b) = false ∧ copyFlag (n + 1, b) = b ∧ n.fold (fun _ _ a => a + 1) 0 = n :=
+  ⟨by simp only [copyFlag, Nat.fold_zero], by simp only [copyFlag, Nat.fold_succ], count_spec.2 n⟩
 
 end ComplexityTests.PolySpaceFold

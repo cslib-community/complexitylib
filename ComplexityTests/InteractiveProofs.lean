@@ -6,6 +6,8 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.Classes.IP.GraphNonIsomorphism
 import Complexity.Computability.Complexity.Classes.IP.PSPACE
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-! Interactive proofs: concrete graphs, honest and cheating provers, class inclusions, and the
 polynomial-space evaluation of the optimal prover. -/
@@ -133,11 +135,10 @@ example : (∅ : Set (List Bool)) ∈ IP encBits :=
 
 -- A guessing round whose message does not depend on the secret bit is passed with probability at
 -- most one half by every prover, and the cheating prover attains it.
-example (P : Prover Unit) : acceptProb (guessingRound fun _ => pure [true]) P ≤ 1 / 2 :=
-  acceptProb_guessingRound_le_half rfl P
-
-example : acceptProb (guessingRound fun _ => pure [true]) alwaysSecond = 1 / 2 :=
-  acceptProb_guessingRound_alwaysSecond _
+example (P : Prover Unit) :
+    acceptProb (guessingRound fun _ => pure [true]) P ≤ 1 / 2 ∧
+    acceptProb (guessingRound fun _ => pure [true]) alwaysSecond = 1 / 2 :=
+  ⟨acceptProb_guessingRound_le_half rfl P, acceptProb_guessingRound_alwaysSecond _⟩
 
 -- Zero repetitions accept every prover.
 example (round : WordOracleComp Unit Bool) (P : Prover Unit) :
@@ -146,13 +147,12 @@ example (round : WordOracleComp Unit Bool) (P : Prover Unit) :
 
 /-! ### `IP ⊆ PSPACE` -/
 
--- Graph non-isomorphism is in polynomial space, through its interactive proof.
-example : GraphNonIsomorphism ∈ PSPACE (encPair encGraph encGraph) :=
-  IP_subset_PSPACE _ GraphNonIsomorphism.mem_IP
-
--- `NP ⊆ PSPACE` and `BPP ⊆ PSPACE` follow through `IP`.
-example : GraphIsomorphism ∈ PSPACE (encPair encGraph encGraph) :=
-  IP_subset_PSPACE _ (NP_subset_IP _ GraphIsomorphism.mem_NP)
+-- Graph non-isomorphism and graph isomorphism are in polynomial space through interactive proofs.
+example :
+    GraphNonIsomorphism ∈ PSPACE (encPair encGraph encGraph) ∧
+    GraphIsomorphism ∈ PSPACE (encPair encGraph encGraph) :=
+  ⟨IP_subset_PSPACE _ GraphNonIsomorphism.mem_IP,
+   IP_subset_PSPACE _ (NP_subset_IP _ GraphIsomorphism.mem_NP)⟩
 
 example : (∅ : Set (List Bool)) ∈ PSPACE encBits :=
   IP_subset_PSPACE _ (BPP_subset_IP _ ⟨0, fun _ => false, .const false,
@@ -172,7 +172,8 @@ example : BitString.increment [true, true, false] = [false, false, true] ∧
 -- Polynomial space is closed under composition and contains polynomial time, through `fun_prop`.
 example : ComputableInPolySpace (fun w => BitString.increment (BitString.increment w))
     encBits encBits :=
-  .of_tidy (by fun_prop)
+  have h : ComputableInPolySpace BitString.increment encBits encBits := .of_polyTime (by fun_prop)
+  h.comp h
 
 -- A Boolean function computable within polynomial space decides a problem in `PSPACE`.
 example : {w : List Bool | w.headD false = true} ∈ PSPACE encBits :=
