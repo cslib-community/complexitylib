@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Foldl
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 
 /-!
 # Tidy computability in polynomial time
@@ -281,10 +282,12 @@ public theorem ComputableTidilyInPolyTime.foldl {γ α β : Type u} {encIn : γ 
       ((hlen.add (.const 1)).mul ((hmax.add hlMax').add (.const 1)))),
     (PolyBounded.const c).mul ((((hs₁.add hs₂).add hmax).add hlMax').add (.const 1)), h⟩
 
-/-- The successor is tidily computable in polynomial time, in the binary encoding `encNat`. -/
+/-- The successor is tidily computable in polynomial time, in the binary encoding `encNat`, from
+the transducer certificate `computableInTimeAndSpace_succ`. -/
 @[fun_prop]
 public theorem computableTidilyInPolyTime_succ : ComputableTidilyInPolyTime (· + 1) encNat encNat :=
-  let ⟨c, h⟩ := computableTidilyInTimeAndSpace_succ
-  ⟨_, _, .of_forall_le c 2 (fun _ => le_rfl), .of_forall_le c 1 (fun _ => by simp), h⟩
+  let ⟨c, h⟩ := computableInTimeAndSpace_succ.exists_computableTidilyInTimeAndSpace
+  ⟨_, _, .of_forall_le (c + 6) 1 (fun _ => by simp only [pow_one]; nlinarith),
+    .of_forall_le c 0 (fun _ => by simp), h⟩
 
 end Turing.MultiTapeTM

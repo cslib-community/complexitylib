@@ -75,13 +75,6 @@ example :
   simp only [← countSystemExhaustive_eq_rootCount]
   decide +kernel
 
-private theorem foldl_max_le_of_all {B : ℕ} :
-    ∀ (init : ℕ) (l : List ℕ), init ≤ B → (∀ x ∈ l, x ≤ B) → l.foldl max init ≤ B
-  | _, [], hi, _ => hi
-  | init, a :: as, hi, hall =>
-    foldl_max_le_of_all (max init a) as (Nat.max_le.mpr ⟨hi, hall a List.mem_cons_self⟩)
-      fun x hx => hall x (List.mem_cons_of_mem a hx)
-
 /-- Nonvacuous feasible witnesses for `evalBoundedIncidenceBranch_eq_rootCount`: there exists a
 concrete dimension `n' ≥ 20` on which both `(n', [])` and the nonlinear quadratic system
 `(n', [[[0, 1], []]])` pass `checkBranchFeasible 0` and execute the non-fallback branch evaluator
@@ -98,9 +91,13 @@ example : ∃ n' : ℕ, 20 ≤ n' ∧
   have hlam : 2 ≤ Nat.clog 2 N₁ :=
     (show 2 = Nat.clog 2 (2 ^ 2) from (Nat.clog_pow 2 2 Nat.one_lt_two).symm).trans_le
       (Nat.clog_mono_right 2 (by omega))
-  have hb0 : branchMaxFactorIncidence N₁ [] ≤ 2 :=
-    Nat.succ_le_succ (foldl_max_le_of_all 0 _ (Nat.zero_le 1) fun x hx => by
-      obtain ⟨_, _, rfl⟩ := List.mem_map.mp hx; exact Nat.zero_le 1)
+  have hb0 : branchMaxFactorIncidence N₁ [] ≤ 2 := by
+    apply Nat.succ_le_succ
+    refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+    simp only [List.mem_cons, forall_eq_or_imp]
+    refine ⟨Nat.zero_le 1, fun x hx => ?_⟩
+    obtain ⟨_, _, rfl⟩ := List.mem_map.mp hx
+    exact Nat.zero_le 1
   have hfeas0 : checkBranchFeasible 0 (N₁, []) = true :=
     (hth le_rfl (by simp only [List.not_mem_nil, IsEmpty.forall_iff, implies_true])
       (by simp only [List.not_mem_nil, IsEmpty.forall_iff, implies_true])
@@ -109,9 +106,14 @@ example : ∃ n' : ℕ, 20 ≤ n' ∧
     checkVarsLt_eq_true_iff.mp (by decide +kernel)
   have hvars1 : ∀ eq ∈ ([[[0, 1], []]] : List (List (List ℕ))), ∀ m ∈ eq, ∀ v ∈ m, v < N₁ :=
     fun eq heq m hm v hv => (hvars2 eq heq m hm v hv).trans_le (by omega)
-  have hb1 : branchMaxFactorIncidence N₁ [[[0, 1], []]] ≤ 2 :=
-    Nat.succ_le_succ (foldl_max_le_of_all 0 _ (Nat.zero_le 1) fun x hx => by
-      obtain ⟨_, _, rfl⟩ := List.mem_map.mp hx; unfold varDegree; exact List.countP_le_length)
+  have hb1 : branchMaxFactorIncidence N₁ [[[0, 1], []]] ≤ 2 := by
+    apply Nat.succ_le_succ
+    refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+    simp only [List.mem_cons, forall_eq_or_imp]
+    refine ⟨Nat.zero_le 1, fun x hx => ?_⟩
+    obtain ⟨_, _, rfl⟩ := List.mem_map.mp hx
+    unfold varDegree
+    exact List.countP_le_length
   have hw1 : branchMaxFactorWidth N₁ [[[0, 1], []]] = 2 := by
     unfold branchMaxFactorWidth
     simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]

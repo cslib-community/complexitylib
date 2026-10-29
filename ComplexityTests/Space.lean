@@ -256,8 +256,7 @@ example : stuck.savitchDecide 0 0 [] = false := by
 /-- The decider of a fixed machine is an actual polynomial-space computation. -/
 example : ∃ t s, PolyBounded (fun word : List Bool => (encBits word).length) s ∧
     ComputableInTimeAndSpace (fun word => loopOrAccept.savitchDecide 0 0 (encBits word))
-      encBits encBool t s := by
-  obtain ⟨t, s, hs, h⟩ := loopOrAccept.exists_polyBounded_space_savitchDecide encBits 0 0
-  exact ⟨t, s, hs, h.computableInTimeAndSpace⟩
+      encBits encBool t s :=
+  loopOrAccept.exists_polyBounded_space_savitchDecide encBits 0 0
 
 end ComplexityTests.Space

@@ -1662,7 +1662,7 @@ private theorem ennreal_tsum_finsetSum {α β : Type*}
   induction s using Finset.induction_on with
   | empty => simp
   | insert b s hb ih =>
-    simp only [Finset.sum_insert hb, ENNReal.tsum_add, ih]
+    simp only [Finset.sum_insert hb, tsum_add, ih]
 
 private theorem eval_ccaRejectWithBadOracle_false (E : SymmetricCipher) (n : ℕ) (k : List Bool)
     (bit : Bool) (request : Bool × List Bool) (queried : List (List Bool)) :
@@ -1761,7 +1761,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
                   (fun x =>
                     PMF.pure (!x.2.2.contains x.2.1.2.2 && (E.decrypt n k x.2.1.2.2).isSome))
                   true :=
-            ENNReal.tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (ih a queried) zero_le
+            tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (ih a queried) zero_le
         _ = _ := by
           simp only [Finset.mul_sum]
           rw [ennreal_tsum_finsetSum]
@@ -1818,7 +1818,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
                             PMF.pure (!x.2.2.contains x.2.1.2.2 &&
                               (E.decrypt n k x.2.1.2.2).isSome))
                           true :=
-                  ENNReal.tsum_le_tsum fun ct =>
+                  tsum_le_tsum fun ct =>
                     mul_le_mul_of_nonneg_left (ih ct (ct :: queried)) zero_le
               _ = _ := by
                 simp only [Finset.mul_sum]
@@ -1993,8 +1993,8 @@ private theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ct
       ProbOracleComp.eval_run_interpret, hrejEq]
     exact PMF.bind_apply _ _ _
   have hle1 : pCCA ≤ pRej + pSum := by
-    rw [hCCA_eq, hRej_eq, hsum_eq, ← ENNReal.tsum_add]
-    refine ENNReal.tsum_le_tsum fun k => ?_
+    rw [hCCA_eq, hRej_eq, hsum_eq, ← tsum_add]
+    refine tsum_le_tsum fun k => ?_
     rw [← mul_add]
     by_cases hk : k ∈ (ProbComp.eval (E.keyGen n)).support
     · refine mul_le_mul_of_nonneg_left ?_ zero_le
@@ -2007,8 +2007,8 @@ private theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ct
       rw [eval_ciGame_ccaToCIAtIndexAdversary_key E ctBound j bit adversary n k hk hctBound]
     · rw [(PMF.apply_eq_zero_iff _ _).mpr hk, zero_mul, zero_mul]
   have hle2 : pRej ≤ pCCA + pSum := by
-    rw [hCCA_eq, hRej_eq, hsum_eq, ← ENNReal.tsum_add]
-    refine ENNReal.tsum_le_tsum fun k => ?_
+    rw [hCCA_eq, hRej_eq, hsum_eq, ← tsum_add]
+    refine tsum_le_tsum fun k => ?_
     rw [← mul_add]
     by_cases hk : k ∈ (ProbComp.eval (E.keyGen n)).support
     · refine mul_le_mul_of_nonneg_left ?_ zero_le

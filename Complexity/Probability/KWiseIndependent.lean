@@ -53,6 +53,12 @@ tuples gives a better constant.
 * `Cslib.Probability.IsKWiseIndependentHash.isPairwiseIndependentHash`,
   `Cslib.Probability.isKWiseIndependentHash_two_iff`: for `k ≥ 2` the family is pairwise
   independent, and `2`-wise independence is pairwise independence with a seed.
+* `Cslib.Probability.IsKWiseIndependentHash.comp_seedEquiv`,
+  `Cslib.Probability.IsKWiseIndependentHash.comp`,
+  `Cslib.Probability.IsKWiseIndependentHash.map_equiv`,
+  `Cslib.Probability.IsKWiseIndependentHash.comp_surjective_addMonoidHom`: preservation of
+  `k`-wise independence under seed equivalences, injective domain maps, output equivalences, and
+  surjective additive group homomorphisms.
 * `Cslib.Probability.isKWiseIndependentHash_of_surjective`: an additive family whose restrictions
   to sets of at most `k` points are onto is `k`-wise independent.
 * `Cslib.Probability.IsKWiseIndependentHash.expect_sum_pow_le`: the `2 m`-th moment bound.
@@ -108,6 +114,59 @@ theorem mono (hh : IsKWiseIndependentHash k h) {k' : ℕ} (hk : k' ≤ k) :
     IsKWiseIndependentHash k' h where
   dens_filter_restrict_eq hT y := hh.dens_filter_restrict_eq (hT.trans hk) y
 
+/-- Relabelling the seed space by an equivalence `e : ι' ≃ ι` preserves `k`-wise independence. -/
+theorem comp_seedEquiv {ι' : Type*} [Fintype ι'] (hh : IsKWiseIndependentHash k h)
+    (e : ι' ≃ ι) : IsKWiseIndependentHash k (fun i' x => h (e i') x) where
+  dens_filter_restrict_eq {T} hT y := by
+    rw [dens_eq_card_div_card, ← hh.dens_filter_restrict_eq hT y, dens_eq_card_div_card,
+      Fintype.card_congr e]
+    congr 2
+    exact card_equiv e fun i' => by simp
+
+/-- Precomposing the input domain with an injective map `e : X' → X` preserves `k`-wise
+independence. -/
+theorem comp {X' : Type*} (hh : IsKWiseIndependentHash k h) {e : X' → X}
+    (he : Function.Injective e) : IsKWiseIndependentHash k (fun i x' => h i (e x')) where
+  dens_filter_restrict_eq {T} hT y := by
+    let emb : X' ↪ X := ⟨e, he⟩
+    have hmem (z : T.map emb) : ∃ x' ∈ T, emb x' = z.1 := mem_map.1 z.2
+    let eT : T ≃ T.map emb :=
+      { toFun := fun x => ⟨e x.1, mem_map_of_mem emb x.2⟩
+        invFun := fun z => ⟨(hmem z).choose, (hmem z).choose_spec.1⟩
+        left_inv := fun x =>
+          Subtype.ext (he (hmem ⟨e x.1, mem_map_of_mem emb x.2⟩).choose_spec.2)
+        right_inv := fun z => Subtype.ext (hmem z).choose_spec.2 }
+    have hcard : #(T.map emb) = #T := card_map emb
+    have hmap : #(T.map emb) ≤ k := hcard.le.trans hT
+    have hdens := hh.dens_filter_restrict_eq hmap (fun z => y (eT.symm z))
+    rw [hcard] at hdens
+    rw [← hdens]
+    congr 1
+    ext i
+    simp only [mem_filter, mem_univ, true_and]
+    constructor
+    · intro hi
+      funext z
+      have hz : (T.map emb).restrict (h i) z = T.restrict (fun x' => h i (e x')) (eT.symm z) := by
+        simp only [restrict]
+        exact congrArg (h i) (congrArg Subtype.val (eT.apply_symm_apply z)).symm
+      rw [hz, hi]
+    · intro hi
+      funext x
+      have hx := congrFun hi (eT x)
+      rw [Equiv.symm_apply_apply] at hx
+      exact hx
+
+/-- Postcomposing the output values with an equivalence `e : Y ≃ Z` preserves `k`-wise
+independence. -/
+theorem map_equiv {Z : Type*} [Fintype Z] [DecidableEq Z] (hh : IsKWiseIndependentHash k h)
+    (e : Y ≃ Z) : IsKWiseIndependentHash k (fun i x => e (h i x)) where
+  dens_filter_restrict_eq {T} hT z := by
+    rw [← Fintype.card_congr e, ← hh.dens_filter_restrict_eq hT (fun x => e.symm (z x))]
+    congr 1
+    ext i
+    simp only [mem_filter, mem_univ, true_and, funext_iff, restrict, Equiv.eq_symm_apply]
+
 section Expect
 
 variable {𝕜 : Type*} [Semifield 𝕜] [CharZero 𝕜]
@@ -144,6 +203,26 @@ theorem expect_prod (hh : IsKWiseIndependentHash k h) {T : Finset X} (hT : #T �
     card_univ, ← Fintype.prod_sum, Fintype.card_fun, Nat.cast_pow, inv_pow]
 
 end Expect
+
+/-- Postcomposing the output values with a surjective additive group homomorphism `π : Y →+ Z`
+between finite additive groups preserves `k`-wise independence. -/
+theorem comp_surjective_addMonoidHom {Z : Type*} [AddGroup Y] [AddGroup Z] [Fintype Z]
+    [DecidableEq Z] (hh : IsKWiseIndependentHash k h) (π : Y →+ Z)
+    (hπ : Function.Surjective π) : IsKWiseIndependentHash k (fun i x => π (h i x)) where
+  dens_filter_restrict_eq {T} hT z := by
+    classical
+    let πT (y : T → Y) : T → Z := fun x => π (y x)
+    have hexp := hh.expect_restrict hT (fun y : T → Y => if πT y = z then (1 : ℚ≥0) else 0)
+    simp only [Fintype.expect_boole, NNRat.cast_id] at hexp
+    have hfun (i : ι) : (πT (T.restrict (h i)) = z) ↔ (T.restrict (fun x => π (h i x)) = z) :=
+      Iff.rfl
+    simp only [hfun] at hexp
+    rw [hexp]
+    have hshift := dens_filter_eq_of_shift (f := πT) (fun c => by
+      refine ⟨Equiv.addRight (fun x => (hπ (c x)).choose), fun y => funext fun x => ?_⟩
+      simp [πT, Pi.add_apply, map_add, (hπ (c x)).choose_spec]) z
+    rw [Fintype.card_fun, Fintype.card_coe, Nat.cast_pow] at hshift
+    exact hshift
 
 /-- A `k`-wise independent family with `k ≥ 2` is pairwise independent. -/
 theorem isPairwiseIndependentHash (hh : IsKWiseIndependentHash k h)

@@ -13,6 +13,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Primitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 
 /-!
 # Space bounds on plain machines

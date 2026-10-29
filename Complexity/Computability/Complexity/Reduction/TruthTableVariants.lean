@@ -396,7 +396,8 @@ theorem PolyTimePTTReducible.polyTimeTruthTableReducible (h : PolyTimePTTReducib
   let ⟨r, q, d, hr, hq, hd, _, hL⟩ := h
   ⟨r, q, d, hr, hq, hd, hL⟩
 
-private theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
+/-- `List.any id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
+theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
     u.any id ≤ v.any id := by
   induction h with
   | nil => exact le_rfl
@@ -404,7 +405,8 @@ private theorem any_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (·
     simp only [List.any_cons, id]
     exact max_le_max hab ih
 
-private theorem all_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
+/-- `List.all id` is monotone with respect to `List.Forall₂ (· ≤ ·)`. -/
+theorem all_id_le_of_forall₂ {u v : List Bool} (h : List.Forall₂ (· ≤ ·) u v) :
     u.all id ≤ v.all id := by
   induction h with
   | nil => exact le_rfl

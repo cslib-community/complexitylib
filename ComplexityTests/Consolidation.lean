@@ -246,4 +246,11 @@ example :
     (fun _ a => by cases a <;> norm_num) (fun _ _ => (1 / 2 : ℚ))
     (fun _ _ => by norm_num) (fun _ => by norm_num)
 
+/-- Counting elements satisfying `p` is bounded by the sum of `f` when `1 ≤ f x` on matches. -/
+example :
+    ([1, 0, 3, 2].countP (· > 0)) ≤ (([1, 0, 3, 2].map id).sum) :=
+  List.countP_le_sum_map fun x hx hp => by
+    simp only [decide_eq_true_eq] at hp
+    exact hp
+
 end ComplexityTests.Consolidation

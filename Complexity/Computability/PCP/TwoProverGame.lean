@@ -117,7 +117,7 @@ theorem winProb_shared_le_value [Nonempty A] [Nonempty B] {R : Type*} (ρ : PMF 
     exact ENNReal.ofReal_le_ofReal (G.winProb_le_value (fun x => ha x r) (fun y => hb y r))
   calc ∑' r, ρ r * (G.questions.map fun q => (q, ha q.1 r, hb q.2 r)).toOuterMeasure
         {z | G.accepts z.1.1 z.1.2 z.2.1 z.2.2}
-      ≤ ∑' r, ρ r * ENNReal.ofReal G.value := ENNReal.tsum_le_tsum fun r => by gcongr; exact hr r
+      ≤ ∑' r, ρ r * ENNReal.ofReal G.value := tsum_le_tsum fun r => by gcongr; exact hr r
     _ = ENNReal.ofReal G.value := by rw [ENNReal.tsum_mul_right, ρ.tsum_coe, one_mul]
 
 end Finite

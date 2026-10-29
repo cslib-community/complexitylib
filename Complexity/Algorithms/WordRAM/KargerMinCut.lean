@@ -1181,7 +1181,7 @@ theorem ampLoop_spec {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : �
         obtain ⟨m_r, hm_r, _, hsup_r, _⟩ := hnext z₁ hz₁
         rw [hml_def, hm_r.codeComp_eq, PMF.toOuterMeasure_map_apply,
           PMF.toOuterMeasure_apply]
-        convert ENNReal.tsum_eq_zero.mpr _
+        refine tsum_eq_zero_iff.mpr ?_
         intro z₂
         by_cases hz₂_eval : z₂ ∈ m_r.eval.support
         · have hz₂ : z₂ ∈ m_r.support := (ProbComp.support_eval m_r) ▸ hz₂_eval

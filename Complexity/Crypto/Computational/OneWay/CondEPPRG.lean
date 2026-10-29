@@ -676,6 +676,17 @@ private theorem fullGen_eq_rawGen {g : List Bool → List Bool} {imgLen : ℕ �
   rw [fullGen, List.take_left' hraw_len]
 
 @[local fun_prop]
+private theorem computableTidilyInPolyTime_wordHash {α : Type} {encode : α ↪ List Bool}
+    {count : α → ℕ} {seed input : α → List Bool}
+    (hcount : ComputableTidilyInPolyTime count encode encUnary)
+    (hseed : ComputableTidilyInPolyTime seed encode encBits)
+    (hinput : ComputableTidilyInPolyTime input encode encBits) :
+    ComputableTidilyInPolyTime (fun a => LinearHash.wordHash (count a) (seed a) (input a))
+      encode encBits :=
+  (LinearHash.computableInPolyTime_wordHash hcount.computableInPolyTime
+    hseed.computableInPolyTime hinput.computableInPolyTime).tidy
+
+@[local fun_prop]
 private theorem computableTidilyInPolyTime_rawGen {g : List Bool → List Bool} {imgLen : ℕ → ℕ}
     (hg : ComputableTidilyInPolyTime g encBits encBits)
     (himgLen : ComputableTidilyInPolyTime imgLen encUnary encUnary)

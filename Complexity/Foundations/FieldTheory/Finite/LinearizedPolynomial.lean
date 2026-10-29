@@ -252,7 +252,7 @@ private theorem comp_eq_X_pow_card_sub_X [Fintype F] {P Q : F[X]}
       ⟨by rw [natDegree_comp, hdeg], hQm.comp hPm hPdeg⟩
     have hX : IsMonicOfDegree (X ^ Fintype.card F - X : F[X]) (Fintype.card F) := by
       rw [isMonicOfDegree_iff]
-      refine ⟨(FiniteField.X_pow_card_sub_X_natDegree_eq F hq1).le, ?_⟩
+      refine ⟨(natDegree_X_pow_sub_X (R := F) hq1).le, ?_⟩
       have h1 : (1 : ℕ) ≠ Fintype.card F := hq1.ne
       simp [coeff_X, h1]
     rw [← sub_eq_zero]
@@ -410,10 +410,10 @@ theorem exists_subfield_card_le [Finite F] {n k : ℕ} (hn : finrank (ZMod 2) F 
     have h1 : 1 < 2 ^ k := Nat.one_lt_two_pow hk0.ne'
     have hcard : Fintype.card F = 2 ^ n := by
       rw [Module.card_eq_pow_finrank (K := ZMod 2) (V := F), ZMod.card, hn]
-    refine FiniteField.X_pow_card_sub_X_ne_zero F h1
+    refine X_pow_sub_X_ne_zero (R := F) h1
       (eq_zero_of_natDegree_lt_card_of_eval_eq_zero _ (f := id) Function.injective_id
         (fun x => by simp [hall x]) ?_)
-    rw [FiniteField.X_pow_card_sub_X_natDegree_eq F h1, hcard]
+    rw [natDegree_X_pow_sub_X (R := F) h1, hcard]
     exact Nat.pow_lt_pow_right (by norm_num) hkn
   · by_cases hW : ∃ y₀ ∈ W, y₀ ≠ 0
     · obtain ⟨y₀, hy₀W, hy₀⟩ := hW

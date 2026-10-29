@@ -43,7 +43,8 @@ theorem clauseGeometry_clause_length (φ : CNF ℕ) (d : Graph.OrthogonalDrawing
   simpa only [clauseGeometry, collaredPrefixGeometry, profilePrefixGeometry,
     LocalGeometry.toPrefix, List.length_map] using profileGeometry_clause_length (clauseProfile c)
 
-private theorem map_getD_zipIdx {A B : Type*} (xs : List A) (ys : List B) (fallback : B)
+/-- Mapping `ys.getD a.2 fallback` over `xs.zipIdx` recovers `ys` when `ys.length = xs.length`. -/
+theorem map_getD_zipIdx {A B : Type*} (xs : List A) (ys : List B) (fallback : B)
     (hlen : ys.length = xs.length) :
     (xs.zipIdx.map fun a => ys.getD a.2 fallback) = ys := by
   apply List.ext_getElem

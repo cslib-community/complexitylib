@@ -663,7 +663,7 @@ private theorem map_bool_apply_true {α : Type*} (p : PMF α) (P : α → Bool) 
 
 private theorem ennreal_tsum_finsetSum {α ι : Type*} (s : Finset ι) (g : ι → α → ℝ≥0∞) :
     (∑' a, ∑ i ∈ s, g i a) = ∑ i ∈ s, ∑' a, g i a :=
-  Summable.tsum_finsetSum fun _ _ => ENNReal.summable
+  Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable
 
 /-- **Lamport's one-time signature theorem**: for any one-way function `f`, `lamportScheme f` is
 existentially unforgeable under one-time adaptive chosen-message attack (`OneTimeEUFCMA`). -/
@@ -817,7 +817,7 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
         ≤ ∑' out, ∑ j : Fin (dyadicSize (2 * n)),
             if j.val < 2 * n then
               runWith (pkOf w) (dummySkOf w j.val) out * (if invWin w j.val out then 1 else 0)
-            else 0 := ENNReal.tsum_le_tsum (hpointwise w hw)
+            else 0 := tsum_le_tsum (hpointwise w hw)
       _ = ∑ j : Fin (dyadicSize (2 * n)),
             ∑' out, if j.val < 2 * n then
               runWith (pkOf w) (dummySkOf w j.val) out * (if invWin w j.val out then 1 else 0)
@@ -845,7 +845,7 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
             if j.val < 2 * n then
               ((runWith (pkOf w) (dummySkOf w j.val)).map (invWin w j.val)) true
             else 0 := by
-          refine ENNReal.tsum_le_tsum fun w => ?_
+          refine tsum_le_tsum fun w => ?_
           by_cases hw : w ∈ μ.support
           · exact mul_le_mul_right (hw_sum w hw) (μ w)
           · simp [(PMF.apply_eq_zero_iff μ w).mpr hw]

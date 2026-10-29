@@ -130,7 +130,7 @@ example : ComputableInPolyTime
 
 example : IsPPTOn encEmpty encEmpty
     (fun a : Empty => (a.elim : Empty → ProbComp Empty) a) :=
-  IsPPTOn.finite_cases (ComputableTidilyInPolyTime.id' (encIn := encEmpty)) (fun tag => tag.elim)
+  IsPPTOn.finite_cases (ComputableInPolyTime.id' (encIn := encEmpty)) (fun tag => tag.elim)
 
 -- A concrete branch selector combines finite control, unbounded state and independent sampling.
 private noncomputable def choose (tag : Bool) (word : List Bool) :

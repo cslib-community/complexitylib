@@ -340,17 +340,17 @@ theorem add_blockRank_le_cutRank_add_transpose [Finite ι]
     (hfg.symm.mono inter_subset_right inter_subset_right)
     (fun i hi j hj hj' => by
       have hjY : j ∉ Y := fun h => hj' ⟨hj, h⟩
-      simp only [add_apply, transpose_apply, hMY i j hjY, hMY j i (hnotY i hi.2), add_zero])
+      simp only [Matrix.add_apply, transpose_apply, hMY i j hjY, hMY j i (hnotY i hi.2), add_zero])
     (fun i hi j hj hj' => by
       have hjX : j ∉ X := fun h => hj' ⟨hj, h⟩
-      simp only [add_apply, transpose_apply, hMX i j (hnotX i hi.2), hMX j i hjX, add_zero])
+      simp only [Matrix.add_apply, transpose_apply, hMX i j (hnotX i hi.2), hMX j i hjX, add_zero])
   have hb₁ : R.blockRank (f ⁻¹' U) (g ⁻¹' Uᶜ) ≤ (M + Mᵀ).blockRank (U ∩ X) Uᶜ := by
     calc R.blockRank (f ⁻¹' U) (g ⁻¹' Uᶜ)
         = M.blockRank (U ∩ X) (Uᶜ ∩ Y) := by
           rw [← hMR, M.blockRank_submatrix hf hg, image_preimage_eq_inter_range,
             image_preimage_eq_inter_range]
       _ = (M + Mᵀ).blockRank (U ∩ X) (Uᶜ ∩ Y) := blockRank_congr fun i hi j _ => by
-            simp only [add_apply, transpose_apply, hMY j i (hnotY i hi.2), add_zero]
+            simp only [Matrix.add_apply, transpose_apply, hMY j i (hnotY i hi.2), add_zero]
       _ ≤ (M + Mᵀ).blockRank (U ∩ X) Uᶜ := blockRank_mono_right _ _ inter_subset_left
   have hb₂ : R.blockRank (f ⁻¹' Uᶜ) (g ⁻¹' U) ≤ (M + Mᵀ).blockRank (U ∩ Y) Uᶜ := by
     calc R.blockRank (f ⁻¹' Uᶜ) (g ⁻¹' U)
@@ -359,7 +359,7 @@ theorem add_blockRank_le_cutRank_add_transpose [Finite ι]
             image_preimage_eq_inter_range]
       _ = Mᵀ.blockRank (U ∩ Y) (Uᶜ ∩ X) := (M.blockRank_transpose _ _).symm
       _ = (M + Mᵀ).blockRank (U ∩ Y) (Uᶜ ∩ X) := blockRank_congr fun i hi j _ => by
-            simp only [add_apply, transpose_apply, hMX i j (hnotX i hi.2), zero_add]
+            simp only [Matrix.add_apply, transpose_apply, hMX i j (hnotX i hi.2), zero_add]
       _ ≤ (M + Mᵀ).blockRank (U ∩ Y) Uᶜ := blockRank_mono_right _ _ inter_subset_left
   unfold cutRank
   omega

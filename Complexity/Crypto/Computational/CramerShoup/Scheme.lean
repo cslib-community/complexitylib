@@ -1008,7 +1008,7 @@ private theorem tsum_and_isCramerShoupBadDH_le
         rw [hpre, Bool.true_and, ← hvElem, ← hwElem, encodeProjHash2_encode, he_equiv τ]
       rw [hbad_eq]
       cases cond <;> cases F.encode d (e_equiv τ • F.generator d) == parts.2.2.2 <;> simp
-    exact (ENNReal.tsum_le_tsum fun τ =>
+    exact (tsum_le_tsum fun τ =>
       mul_le_mul_of_nonneg_left (hle τ) zero_le).trans
         (F.tsum_uniform_smul_generator_eq e_equiv parts.2.2.2)
   · simp only [Bool.not_eq_true] at hpre

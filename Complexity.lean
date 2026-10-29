@@ -6,6 +6,7 @@ public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.Dictionary
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -147,6 +148,7 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.Hashing.MultiplyShift
 public import Complexity.Algorithms.WordRAM.Histogram
 public import Complexity.Algorithms.WordRAM.Karger.Contract
 public import Complexity.Algorithms.WordRAM.Karger.FastCut
@@ -1000,6 +1002,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Re
 public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Transducer
 public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Amplification
 public import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
 public import Complexity.Computability.Complexity.Classes.MIP
 public import Complexity.Computability.Complexity.Classes.MIP.Defs
@@ -1430,6 +1433,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Str
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.ZipTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
@@ -1586,7 +1590,6 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.S
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
-public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatStream
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
@@ -1611,6 +1614,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Partrec
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Reduction
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.Rice
 public import Complexity.Computability.Machines.Turing.MultiTape.Halting.SMN
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryCounter
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
@@ -1637,6 +1641,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Kernel
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZeroSpace
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZipTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearCodecPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPairPrimitives
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.LinearPrimitives
@@ -1719,6 +1724,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.E
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.InputFromTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Loop
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OrElse
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OutputPrefix
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OutputToTape
@@ -2455,6 +2461,7 @@ public import Complexity.Foundations.Data.BitString.ParityTestBounds
 public import Complexity.Foundations.Data.BitString.ParityTests
 public import Complexity.Foundations.Data.BitString.PartialAssignment
 public import Complexity.Foundations.Data.BitString.PartialAssignment.Counting
+public import Complexity.Foundations.Data.BitString.Prefix
 public import Complexity.Foundations.Data.BitString.Propagation
 public import Complexity.Foundations.Data.BitString.ShortWords
 public import Complexity.Foundations.Data.BitString.Sign
@@ -2583,6 +2590,7 @@ public import Complexity.Foundations.FieldTheory.Finite.BinaryField
 public import Complexity.Foundations.FieldTheory.Finite.LinearizedPolynomial
 public import Complexity.Foundations.FieldTheory.Finite.ReducedMonomial
 public import Complexity.Foundations.FieldTheory.Finite.Subfield
+public import Complexity.Foundations.FieldTheory.Finite.Trinomial
 public import Complexity.Foundations.FieldTheory.Finite.UnitSum
 public import Complexity.Foundations.FieldTheory.TensorBasis
 public import Complexity.Foundations.Geometry.Euclidean.Angle.Cap
@@ -2889,6 +2897,7 @@ public import Complexity.Probability.IID
 public import Complexity.Probability.Isolation
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.KWiseIndependent.Polynomial
+public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
 public import Complexity.Probability.MinEntropy

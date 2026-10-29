@@ -138,7 +138,7 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
           (((F.order d - 1 : ℕ) : ℝ≥0∞) * ((F.order d : ℝ≥0∞)⁻¹ * (F.order d : ℝ≥0∞)⁻¹))) := by
     dsimp only [ddhRealGame, ddhZeroDistinguisher]
     simp only [ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.bind_apply]
-    rw [← ENNReal.tsum_add]
+    rw [← tsum_add]
     refine tsum_congr fun d => ?_
     have hstep :
         (∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
@@ -164,7 +164,7 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
         2 * ∑' d, setup n d *
           (((F.order d - 1 : ℕ) : ℝ≥0∞) * ((F.order d : ℝ≥0∞)⁻¹ * (F.order d : ℝ≥0∞)⁻¹)) := by
     rw [← ENNReal.tsum_mul_left]
-    refine ENNReal.tsum_le_tsum fun d => ?_
+    refine tsum_le_tsum fun d => ?_
     rw [← mul_assoc, mul_comm (2 : ℝ≥0∞) (setup n d), mul_assoc]
     refine mul_le_mul_of_nonneg_left ?_ zero_le
     have hq2 : 2 ≤ F.order d := (F.prime_order d).two_le

@@ -101,7 +101,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
     have hclock : ComputableTidilyInPolyTime (fun n => c * (n + 1) ^ d) encUnary encUnary := by
       fun_prop
     exact hclock.comp (ComputableTidilyInPolyTime.length_bits.comp hword)
-  have hrun := OpenOracleSimulation.isOraclePPTOn_run machine hword hcount hhandler hinitial
+  have hrun := OpenOracleSimulation.isOraclePPTOn_run machine
+    hword.computableInPolyTime hcount.computableInPolyTime hhandler hinitial.computableInPolyTime
     invariant hinit hallowance (fun a request state hstate result hresult => by
       obtain ⟨hstate', hreply, hgrowth⟩ := hpreserve a request state hstate result hresult
       exact ⟨hstate', hreply.trans (hbound' a request.2),

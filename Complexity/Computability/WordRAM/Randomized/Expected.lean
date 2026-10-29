@@ -117,7 +117,7 @@ theorem evalRand_haltedSet_mono (w : ℕ) (p : Program B r) (s : State r) :
     rw [evalRand, runRand_add w p T 1, ProbComp.eval_bind]
     simp only [evalRand, runRand_succ, runRand_zero, bind_pure]
   rw [hstep, PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_apply]
-  refine ENNReal.tsum_le_tsum fun cfg => ?_
+  refine tsum_le_tsum fun cfg => ?_
   by_cases hcfg : cfg ∈ RandCfg.haltedSet r
   · have hmem := hcfg
     obtain ⟨v, d, rfl⟩ := hcfg
@@ -139,7 +139,7 @@ theorem RandHaltsWithin.almostSurelyHalts {w T : ℕ} {p : Program B r} {s : Sta
     exact hnot (h cfg hmem)
   have hsum : (evalRand w p T s).toOuterMeasure (RandCfg.haltedSet r) +
       (evalRand w p T s).toOuterMeasure (RandCfg.haltedSet r)ᶜ = 1 := by
-    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_add]
+    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
     convert (evalRand w p T s).tsum_coe using 1
     congr 1
     funext cfg
@@ -172,7 +172,7 @@ theorem expectedStepsFrom_faulted (w : ℕ) (p : Program B r) :
 
 private theorem tsum_nat_eq_zero_add (g : ℕ → ℝ≥0∞) :
     ∑' t : ℕ, g t = g 0 + ∑' t : ℕ, g (t + 1) := by
-  rw [ENNReal.tsum_eq_add_tsum_ite (f := g) 0]
+  rw [tsum_eq_add_tsum_ite (f := g) 0]
   congr 1
   have hsh := Function.Injective.tsum_eq Nat.succ_injective
     (f := fun t => if t = 0 then 0 else g t) fun t ht => by
@@ -199,7 +199,7 @@ theorem expectedStepsFrom_running (w : ℕ) (p : Program B r) (s : State r) :
     intro t
     rw [runRand_succ, ProbComp.eval_bind, PMF.toOuterMeasure_bind_apply]
   simp only [hsucc]
-  rw [ENNReal.tsum_comm]
+  rw [tsum_comm]
   simp only [ProbComp.expect, expectedStepsFrom, ENNReal.tsum_mul_left]
 
 /-- Under `RandFaultFree`, every horizon partitions probability `1` between `.running` and
@@ -208,7 +208,7 @@ theorem RandFaultFree.running_add_halted_eq_one {w : ℕ} {p : Program B r} {s :
     (hf : RandFaultFree w p s) (t : ℕ) :
     (evalRand w p t s).toOuterMeasure {cfg | ∃ u, cfg = .running u} +
       (evalRand w p t s).toOuterMeasure (RandCfg.haltedSet r) = 1 := by
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← ENNReal.tsum_add]
+  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← tsum_add]
   convert (evalRand w p t s).tsum_coe using 1
   congr 1
   funext cfg
@@ -242,7 +242,7 @@ theorem AlmostSurelyHalts.of_expectedTime_ne_top {w : ℕ} {p : Program B r} {s 
   have hinf : (⊤ : ℝ≥0∞) ≤ expectedTime w p s := by
     calc
       (⊤ : ℝ≥0∞) = ∑' _ : ℕ, (1 - supH) := (ENNReal.tsum_const_eq_top_of_ne_zero hpos.ne').symm
-      _ ≤ expectedTime w p s := ENNReal.tsum_le_tsum hle_run
+      _ ≤ expectedTime w p s := tsum_le_tsum hle_run
   exact htop (top_unique hinf)
 
 /-- Under `RandHaltsWithin w p s T`, the active-configuration tail sum vanishes from `T` onward and

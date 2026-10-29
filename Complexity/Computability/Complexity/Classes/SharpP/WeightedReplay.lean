@@ -79,14 +79,14 @@ theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
       (fun x => (machine.pendingQuery (cfg x)).isSome)
       (encPair (encPair enc encBits) encUnary) encBool :=
     (ComputableInPolyTime.of_finite Option.isSome).comp
-      ((ComputableInPolyTime.of_tidy machine.pendingQuery_pt).comp hcfg)
+      (machine.pendingQuery_pt.comp hcfg)
   have hrequest : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => (x.1.1, machine.pendingRequest (cfg x)))
       (encPair (encPair enc encBits) encUnary) (encPair enc encBits) := by
     have hinstance : ComputableInPolyTime
         (fun x : (α × List Bool) × ℕ => x.1.1)
         (encPair (encPair enc encBits) encUnary) enc := by fun_prop
-    exact hinstance.prod ((ComputableInPolyTime.of_tidy machine.pendingRequest_pt).comp hcfg)
+    exact hinstance.prod (machine.pendingRequest_pt.comp hcfg)
   let p : (α × List Bool) × ℕ → ℤ := fun x =>
     if (machine.pendingQuery (cfg x)).isSome then H (x.1.1, machine.pendingRequest (cfg x)) else 0
   have hp : p ∈ GapP (encPair (encPair enc encBits) encUnary) :=
