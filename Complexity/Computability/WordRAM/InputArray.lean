@@ -19,6 +19,9 @@ import Mathlib.Data.List.GetD
   including the machine's length header.
 
 This is a representation lemma for the existing `Data.init`, with no alternate input convention.
+It lives in a narrow input-array module to keep the list `getD` dependency and initialization
+bridge out of `Allocation`. This avoids changing the allocation interface and rebuilding its
+unrelated importers when the input representation API changes.
 -/
 
 @[expose] public section

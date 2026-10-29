@@ -39,6 +39,34 @@ example : ∃ y n, n ≤ timeBound (L := 0) ([0, 0] : List (Fin 1)) ∧
 -- The conservative address admission is explicit and has a checked failing boundary.
 example : Fits 10 (addressBound 0 2) ∧ ¬Fits 9 (addressBound 0 2) := by decide +kernel
 
+-- The bilinear specialization has an admitted signed client: the supplied leaf arrays are
+-- proved to be the actual encodingL/R of the original zero-depth arrays. Its same returned
+-- memory witness is reached from State.init and holds -3 * 2 = -6 after the charged run.
+example : InputFits 10 (input 0 (fun _ => -3) (fun _ => 2) [0]) ∧
+    ∃ y n, n ≤ timeBound (L := 0) ([0] : List (Fin 1)) ∧
+      Runs 10 (program.program output) (State.init (input 0 (fun _ => -3) (fun _ => 2) [0]))
+        ⟨program.size, y⟩ n ∧
+      Executes 10 (program.program output)
+        (State.init (input 0 (fun _ => -3) (fun _ => 2) [0])) 6 (n + 1) ∧
+      y.mem 6 = encode (-6) := by
+  obtain ⟨hi, y, n, hn, hr, he, _, hv, _⟩ :=
+    runs_bilinear (w := 8) (L := 0) (A := 3) (B := 2) (by decide)
+      (fun _ => -3) (fun _ => 2) ([0] : List (Fin 1)) (fun _ => -3) (fun _ => 2)
+      (by
+        intro v
+        simp [Cslib.Algorithms.MatrixMultiplication.Schonhage.encodingL,
+          Cslib.Algorithms.MatrixMultiplication.Schonhage.encodeLeft])
+      (by
+        intro v
+        simp [Cslib.Algorithms.MatrixMultiplication.Schonhage.encodingR,
+          Cslib.Algorithms.MatrixMultiplication.Schonhage.encodeRight])
+      (by intro i; decide) (by intro i; decide) (by decide) (by decide)
+  refine ⟨hi, y, n, hn, hr, he, ?_⟩
+  simpa +decide [outputBase, Cslib.Algorithms.MatrixMultiplication.Schonhage.bilinearProduct,
+    Cslib.Algorithms.MatrixMultiplication.Schonhage.Leaf.Contributes,
+    Cslib.Algorithms.MatrixMultiplication.Schonhage.encodeLeft,
+    Cslib.Algorithms.MatrixMultiplication.Schonhage.encodeRight] using hv 0
+
 -- The input-derived physical threshold is positive and guarantees actual runs at every larger
 -- width. It is a conservative sufficient threshold, rather than a claim of necessity.
 example : admissionWidth 0 2 3 2 = 13 := by decide +kernel

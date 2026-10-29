@@ -573,3 +573,5 @@ not planned, not as proved.
 [#1459]: https://github.com/cslib-community/complexitylib/issues/1459
 [#1463]: https://github.com/cslib-community/complexitylib/issues/1463
 [#1493]: https://github.com/cslib-community/complexitylib/issues/1493
+[#1523]: https://github.com/cslib-community/complexitylib/issues/1523
+[#1526]: https://github.com/cslib-community/complexitylib/issues/1526

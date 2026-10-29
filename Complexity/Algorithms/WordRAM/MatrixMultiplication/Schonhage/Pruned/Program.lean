@@ -23,6 +23,11 @@ array at every node. Encoded products and sums use the existing native signed ke
 * `PrunedQuery.program`: initialized-input wrapper computing all addresses from the depth and
   query-count headers.
 
+Client execution interfaces are `exec_kernel` in `Pruned.Kernel`, `runs` and `runs_bilinear`
+in `Pruned.Flat`, and `runs_wide` in `Pruned.Width`. Other stage `exec_*` lemmas and controller
+invariants under `Pruned/` are internal implementation APIs. They are public to compose proofs
+across the stage modules, rather than intended as independent caller contracts.
+
 ## References
 
 The query-set recursion is from [AlmanWilliams2026, Section 2.4.2], selectively adapted from

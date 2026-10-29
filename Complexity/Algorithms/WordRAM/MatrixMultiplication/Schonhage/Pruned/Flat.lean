@@ -21,6 +21,9 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Prune
 The single fixed program returns the unsigned pointer to its encoded answer list. Queries may
 repeat and their order is preserved. Its 96 registers and code-size bound are independent of
 depth, query count, input values and physical word width.
+These initialized-run theorems, `runs_wide` in `Pruned.Width` and `exec_kernel` in
+`Pruned.Kernel` are the client interfaces. Stage `exec_*` lemmas in their dependencies are
+internal implementation APIs exported for proof composition.
 -/
 
 @[expose] public section

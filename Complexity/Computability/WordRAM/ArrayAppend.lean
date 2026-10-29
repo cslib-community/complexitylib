@@ -17,6 +17,10 @@ public import Mathlib.Data.Fin.Tuple.Basic
 
 * `Block.Realizes.snoc`: the actual one-cell memory update realizes `Fin.snoc` of the prior
   finite array. This is a memory identity; a caller must separately charge its store instruction.
+
+This narrow topic module keeps the `Fin.snoc` dependency and append-specific proof out of
+`Allocation`. Clients of core allocation then avoid an interface change and rebuild when the
+append API changes; consumers import this module alongside `Block.Realizes.update` as needed.
 -/
 
 @[expose] public section
