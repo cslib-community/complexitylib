@@ -405,6 +405,13 @@ example (c : Circuit signature (2 * (2 + 2)) (2 * (2 + 2)))
   obtain ⟨hsingle, _⟩ := counterBatch_lower_bounds 1 two_pos c hc
   exact ⟨hsingle, counterBatch_size_ge_of_ne_id 1 power_one_two_ne_id c hc⟩
 
+-- The combined theorem also supplies its independent per-block lower-bound route.
+example (c : Circuit signature (2 * (2 + 2)) (2 * (2 + 2)))
+    (hc : c.Computes interpretation (counterBatchPower (r := 2) (k := 2) 1)) :
+    2 ≤ c.size := by
+  obtain ⟨_, hbatch⟩ := counterBatch_lower_bounds 1 two_pos c hc
+  exact hbatch power_one_two_ne_id
+
 -- Combined upper and lower bounds for batched hard counter powers at k = 64.
 example :
     ∃ T < ModulusCounter.period 64, ∀ r, 0 < r → r ≤ 2 ^ (64 + 64) →

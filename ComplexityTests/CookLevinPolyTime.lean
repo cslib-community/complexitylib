@@ -86,14 +86,14 @@ example :
 -- Fixed parameter lists need no encoding or finiteness instance for their element type, whether
 -- selected via `filter` or `flatMap`.
 example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
-    ComputableTidilyInPolyTime (fun n =>
+    ComputableInPolyTime (fun n =>
       (parameters.filter (fun i => decide (weight i ≤ n))).map
         (fun i => List.replicate (n + weight i) true))
       encUnary (encList encBits) ∧
-    ComputableTidilyInPolyTime (fun n => parameters.flatMap fun i =>
+    ComputableInPolyTime (fun n => parameters.flatMap fun i =>
       if weight i ≤ n then [List.replicate (n + weight i) true] else [])
       encUnary (encList encBits) :=
-  ⟨by fun_prop, by fun_prop⟩
+  ⟨.of_tidy (by fun_prop), .of_tidy (by fun_prop)⟩
 
 -- Total input-head movement clips even an out-of-range starting position.
 example : Turing.moveInputPosNat 0 9 .neg = 1 ∧

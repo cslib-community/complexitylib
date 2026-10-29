@@ -120,27 +120,42 @@ example : ∃ out : Circuit signature (1 + 1) 1,
     out.size ≤ 80000 * powerBudget 1 flip.size (2 ^ 1) 1 + 6 * 1 + 1 :=
   synchronous_coalescence flip 1 one_pos (by decide)
 
--- Recurring and eventually permanent targets on `flip` and `zero`.
-example :
-    (∃ out : Circuit signature 1 1,
-      (∀ x, out.eval interpretation x 0 = true ↔
-        ∀ a, ∃ t, a ≤ t ∧
-          (Circuit.id signature 1).eval interpretation ((flip.eval interpretation)^[t] x) 0 =
-            true) ∧
-      (out.size : ℝ) ≤
-        240000 * optimizedBudget 1 (flip.size + (Circuit.id signature 1).size + 4 * 1) (2 ^ 1) +
-          (Circuit.id signature 1).size) ∧
-    (∃ out : Circuit signature 1 1,
-      (∀ x, out.eval interpretation x 0 = true ↔
-        ∃ a, ∀ t, a ≤ t →
-          (Circuit.id signature 1).eval interpretation ((zero.eval interpretation)^[t] x) 0 =
-            true) ∧
-      (out.size : ℝ) ≤
-        240000 *
-          optimizedBudget 1 (zero.size + ((Circuit.id signature 1).size + 1) + 4 * 1) (2 ^ 1) +
-          (Circuit.id signature 1).size + 2) :=
-  ⟨recurring_target_optimized flip (Circuit.id signature 1),
-   eventually_always_target_optimized zero (Circuit.id signature 1)⟩
+-- Every flipped input returns to true arbitrarily late, so the recurring-target query is true.
+example : ∃ out : Circuit signature 1 1,
+    (∀ x, out.eval interpretation x 0 = true) ∧
+    (out.size : ℝ) ≤
+      240000 * optimizedBudget 1 (flip.size + (Circuit.id signature 1).size + 4 * 1) (2 ^ 1) +
+        (Circuit.id signature 1).size := by
+  obtain ⟨out, hcorrect, hsize⟩ := recurring_target_optimized flip (Circuit.id signature 1)
+  refine ⟨out, ?_, hsize⟩
+  intro x
+  apply (hcorrect x).mpr
+  intro a
+  by_cases hx : ((flip.eval interpretation)^[a] x) 0 = true
+  · exact ⟨a, le_rfl, hx⟩
+  · refine ⟨a + 1, Nat.le_succ a, ?_⟩
+    rw [Function.iterate_succ_apply']
+    change !(((flip.eval interpretation)^[a] x) 0) = true
+    cases hb : ((flip.eval interpretation)^[a] x) 0 <;> simp_all
+
+-- After one step zero stays false, so no input is eventually always in the true target.
+example : ∃ out : Circuit signature 1 1,
+    (∀ x, out.eval interpretation x 0 = false) ∧
+    (out.size : ℝ) ≤
+      240000 *
+        optimizedBudget 1 (zero.size + ((Circuit.id signature 1).size + 1) + 4 * 1) (2 ^ 1) +
+        (Circuit.id signature 1).size + 2 := by
+  obtain ⟨out, hcorrect, hsize⟩ := eventually_always_target_optimized zero (Circuit.id signature 1)
+  refine ⟨out, ?_, hsize⟩
+  intro x
+  have hnot : ¬ out.eval interpretation x 0 = true := by
+    intro hx
+    obtain ⟨a, ha⟩ := (hcorrect x).mp hx
+    have hbad := ha (a + 1) (Nat.le_succ a)
+    rw [Function.iterate_succ_apply'] at hbad
+    change false = true at hbad
+    cases hbad
+  simpa only [Bool.not_eq_true] using hnot
 
 -- Long input times on the flip, for a time much wider than the state.
 example : ∃ out : Circuit signature (1 + 10) 1,
