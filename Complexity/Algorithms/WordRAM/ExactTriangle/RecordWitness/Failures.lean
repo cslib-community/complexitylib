@@ -7,8 +7,7 @@ Authors: Anthropic, PBC, Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.Detection
-public import Complexity.Algorithms.WordRAM.ExactTriangle.WitnessScan.Finite
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.FailureCount
 
 /-!
 # Original false positives bound the actual native failed occurrences
@@ -50,27 +49,10 @@ theorem native_failed_occurrences_le {m n g p : ℕ} (values : ℕ → ℤ)
     Nat.count (fun i => mem (out + i) ≠ 0 ∧
       ∀ c : Fin length, AB (a i) (b i) + BC (b i) (first + c.val) +
         AC (a i) (first + c.val) ≠ 0) qs.length ≤ falsePositiveCount wAB wBC wAC p := by
-  apply (Nat.count_mono_left (q := fun i =>
-    (RecordProduct.leftMatrix m n g p values idx * RecordProduct.rightMatrix m n g p values idx)
-        (qs.getD i default).1 (qs.getD i default).2 ≠ 0 ∧
-      scanPiece wAB wBC wAC (D m) g idx.2.2
-        (qs.getD i default).1 (qs.getD i default).2 = none) ?_).trans
+  exact (native_failed_count_le values AB BC AC wAB wBC wAC hD hg hAB hBC hAC
+    idx qs default a b hcoords mem out hanswer).trans
     (RecordProduct.failed_occurrences_le values wAB wBC wAC hD hg hp
       hvaluesBC hvaluesAC idx hidx qs default hqs hquery)
-  intro i hi hn
-  let j : Fin qs.length := ⟨i, hi⟩
-  have hget : qs.getD i default = qs.get j := by
-    rw [List.getD_eq_getElem _ _ hi, List.get_eq_getElem]
-  rw [hget]
-  constructor
-  · intro hz
-    apply hn.1
-    rw [hanswer j, hz]
-    rfl
-  · apply (WitnessScan.fails_iff_scanPiece_eq_none AB BC AC wAB wBC wAC
-      hD hg hAB hBC hAC (qs.get j).1 (qs.get j).2).mp
-    obtain ⟨ha, hb⟩ := hcoords j
-    simpa only [j, ha, hb] using hn.2
 
 /-- The actual native success condition is exactly an original zero triangle in the selected
 existing chunk and piece. The nonzero-product condition is derived for every genuine zero. -/
