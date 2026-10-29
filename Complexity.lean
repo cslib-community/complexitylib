@@ -178,13 +178,17 @@ public import Complexity.Computability.Circuit.Arithmetic.Hessian.SourceComplexi
 public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
+public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
 public import Complexity.Computability.Circuit.Arithmetic.SetMultilinear
+public import Complexity.Computability.Circuit.Arithmetic.SetMultilinearLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.SigmaPi
 public import Complexity.Computability.Circuit.Arithmetic.VNP
 public import Complexity.Computability.Circuit.Arithmetic.VP
 public import Complexity.Computability.Circuit.Arithmetic.Waring
 public import Complexity.Computability.Circuit.Arithmetic.Waring.Basic
 public import Complexity.Computability.Circuit.Arithmetic.Waring.Compilation
+public import Complexity.Computability.Circuit.Arithmetic.Word
+public import Complexity.Computability.Circuit.Arithmetic.WordPolynomial
 public import Complexity.Computability.Circuit.Balanced
 public import Complexity.Computability.Circuit.Basic
 public import Complexity.Computability.Circuit.BipartiteMatching
@@ -876,6 +880,7 @@ public import Complexity.Computability.Complexity.FineGrained.OrthogonalVectors
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Basic
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.CriticalTree
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Defs
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Limit
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Placement
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Unique
 public import Complexity.Computability.Complexity.FineGrained.PPZ
@@ -1011,6 +1016,8 @@ public import Complexity.Computability.DecisionTree.AffineScore
 public import Complexity.Computability.DecisionTree.Basic
 public import Complexity.Computability.DecisionTree.CanonicalTree
 public import Complexity.Computability.DecisionTree.Certificate
+public import Complexity.Computability.DecisionTree.Composition
+public import Complexity.Computability.DecisionTree.Cost
 public import Complexity.Computability.DecisionTree.Fourier
 public import Complexity.Computability.DecisionTree.Granularity
 public import Complexity.Computability.DecisionTree.Influence
@@ -1141,6 +1148,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Boolean
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Nondeterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.HaltingTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting
@@ -1917,6 +1925,7 @@ public import Complexity.Crypto.Protocols.MAC.CarterWegman
 public import Complexity.Crypto.Protocols.MPC.Basic
 public import Complexity.Crypto.Protocols.MPC.CircuitEval
 public import Complexity.Crypto.Protocols.MPC.Composition
+public import Complexity.Crypto.Protocols.MPC.PolyTime
 public import Complexity.Crypto.Protocols.MPC.SharedMul
 public import Complexity.Crypto.Protocols.SigmaProtocol.Abort
 public import Complexity.Crypto.Protocols.SigmaProtocol.Basic
@@ -2173,6 +2182,7 @@ public import Complexity.Foundations.Data.MvPolynomial.DualNumber
 public import Complexity.Foundations.Data.MvPolynomial.Hessian
 public import Complexity.Foundations.Data.MvPolynomial.HessianRank
 public import Complexity.Foundations.Data.MvPolynomial.SetMultilinear
+public import Complexity.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import Complexity.Foundations.Data.Nat.ArithmeticProgression
 public import Complexity.Foundations.Data.Nat.Asymptotics
 public import Complexity.Foundations.Data.Nat.BinarySize
@@ -2254,6 +2264,7 @@ public import Complexity.Foundations.LinearAlgebra.KernelVector
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
 public import Complexity.Foundations.LinearAlgebra.Matrix.Kronecker
 public import Complexity.Foundations.LinearAlgebra.Matrix.Lindsey
+public import Complexity.Foundations.LinearAlgebra.Matrix.ListProd
 public import Complexity.Foundations.LinearAlgebra.Matrix.Moore
 public import Complexity.Foundations.LinearAlgebra.Matrix.Rank
 public import Complexity.Foundations.LinearAlgebra.Matrix.RectPermanent
