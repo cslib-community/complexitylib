@@ -35,15 +35,18 @@ namespace Cslib.BitString
 
 open Finset Module
 
-variable {K ι : Type*} [Field K] [Fintype ι]
+variable {K ι : Type*} [Field K]
 
 /-- The squarefree monomials on a finite Boolean cube are linearly independent over any field. -/
-theorem linearIndependent_monomial : LinearIndependent K (monomial K (ι := ι)) := by
+theorem linearIndependent_monomial [Finite ι] : LinearIndependent K (monomial K (ι := ι)) := by
   classical
+  let : Fintype ι := Fintype.ofFinite ι
   apply linearIndependent_of_top_le_span_of_card_eq_finrank
   · intro f _
     exact (Submodule.span_mono (Set.image_subset_range _ _)) (mem_lowDegree_self f)
   · simp [Module.finrank_fintype_fun_eq_card]
+
+variable [Fintype ι]
 
 /-- The dimension of the functions of degree at most `D` is exactly the number of coordinate
 sets of cardinality at most `D`. -/

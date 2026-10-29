@@ -139,10 +139,11 @@ theorem HasSliceDecomposition.comp {π : A → B → X} {U : Submodule K (A → 
 private def evaluation (U : Submodule K (A → K)) (a : A) : Module.Dual K U :=
   (LinearMap.proj a).comp U.subtype
 
-private theorem exists_evaluation_set [Fintype A] (U : Submodule K (A → K)) :
+private theorem exists_evaluation_set [Finite A] (U : Submodule K (A → K)) :
     ∃ s : Finset A, s.card ≤ finrank K U ∧
       ∀ a, evaluation U a ∈ Submodule.span K (evaluation U '' (s : Set A)) := by
   classical
+  let : Fintype A := Fintype.ofFinite A
   obtain ⟨ι, f, hf, hspan, hind⟩ := exists_linearIndependent' K (evaluation U)
   let : Fintype ι := Fintype.ofInjective f hf
   refine ⟨univ.image f, ?_, ?_⟩
@@ -193,7 +194,7 @@ private theorem eq_zero_of_mem_sliceSpace {U : Submodule K (A → K)}
 
 /-- Select at most `dim U` rows and `dim W` columns. Their images cover every output except
 for at most `|X| - dim V` outputs, each of which is still in the image of `π`. -/
-theorem exists_image_cover_with_exceptions [Fintype A] [Fintype B] [Fintype X]
+theorem exists_image_cover_with_exceptions [Finite A] [Finite B] [Fintype X]
     {π : A → B → X} {U : Submodule K (A → K)} {W : Submodule K (B → K)}
     {V : Submodule K (X → K)} (h : HasSliceDecomposition π U W V) :
     ∃ (s : Finset A) (t : Finset B) (e : Finset X),
@@ -246,7 +247,7 @@ space, the image is covered by rows and columns with total budget
 
 The construction is nonuniform: each exceptional output is absorbed by choosing one of its
 preimages. No algorithm for finding the selected coordinates is asserted. -/
-theorem exists_image_cover [Fintype A] [Fintype B] [Fintype X]
+theorem exists_image_cover [Finite A] [Finite B] [Fintype X]
     {π : A → B → X} {U : Submodule K (A → K)} {W : Submodule K (B → K)}
     {V : Submodule K (X → K)} (h : HasSliceDecomposition π U W V) :
     ∃ (s : Finset A) (t : Finset B),

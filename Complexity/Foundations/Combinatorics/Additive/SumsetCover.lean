@@ -43,7 +43,7 @@ namespace Cslib.BitString
 open Finset Module ImageSparsification
 open scoped Pointwise
 
-variable {ι : Type*} [Fintype ι] [DecidableEq ι]
+variable {ι : Type*} [Fintype ι]
 
 /-- Restricting the degree-`p` and degree-`q` evaluation spaces to the two summands yields an
 exact sumset cover with budget `D(p) + D(q) + 2^n - D(p+q+1)`. Parentheses around the

@@ -58,7 +58,7 @@ variable {n : ℕ}
 
 /-- A finite disjunction of translated functions pays for the input negations only once.
 Each term uses a circuit for its function, with free rewiring of the translated inputs. -/
-theorem complexity_exists_translate_le {α : Type*} [DecidableEq α]
+theorem complexity_exists_translate_le {α : Type*}
     (s : Finset α) (f : α → BooleanFunction n) (shift : α → BitString n) :
     complexity interpretation (single fun x =>
       decide (∃ i ∈ s, f i (x + shift i) = true)) ≤
