@@ -36,9 +36,10 @@ private def gadget (op : SumOfTerms.Op Unit) :
   | .term _ => binaryPowerCircuit () 13
 
 -- This executable circuit has ten multiplication gates and one addition gate.
-example : (source.simulateWithContext 1 gadget).size = 11 := by decide
-
-example : (source.simulateWithContext 1 gadget).program.cost ArithOp.mulCost = 10 := by decide
+example :
+    (source.simulateWithContext 1 gadget).size = 11 ∧
+    (source.simulateWithContext 1 gadget).program.cost ArithOp.mulCost = 10 := by
+  decide
 
 /-- info: [8192, 16384, 8192] -/
 #guard_msgs in
@@ -78,10 +79,11 @@ private def contextWire (op : SumOfTerms.Op Unit) :
   | .add => Circuit.oneGate (σ := arithSignature Unit) .add (Fin.natAdd 1)
   | .term _ => Circuit.wiring (arithSignature Unit) (fun _ => 0)
 
-example : (source.simulateWithContext 1 contextWire).size = 1 := by decide
-
-example : (source.simulateWithContext 1 contextWire).eval
-    (arithInterpretationWith Unit (fun _ => (0 : ℕ))) (fun _ => 7) = ![7, 14, 7] := by decide
+example :
+    (source.simulateWithContext 1 contextWire).size = 1 ∧
+    (source.simulateWithContext 1 contextWire).eval
+      (arithInterpretationWith Unit (fun _ => (0 : ℕ))) (fun _ => 7) = ![7, 14, 7] := by
+  decide
 
 -- At context two, every multiplication reads positive values, for any source circuit.
 -- Addition gadgets may read arbitrary arguments; they have no multiplication atoms.
@@ -141,44 +143,29 @@ private def productGadget (op : SumOfTerms.Op Unit) :
   | .add => Circuit.oneGate (σ := arithSignature Unit) .add (Fin.natAdd 2)
   | .term _ => Circuit.oneGate (σ := arithSignature Unit) .mul id
 
-example : (source.simulateWithContext 2 productGadget).eval
-    (arithInterpretationWith Unit (fun _ => (0 : ℕ))) ![3, 7] = ![21, 42, 21] := by decide
-
--- Raw source inputs retain their identity after a context prefix is added.
-example (ctx : Fin 2 → ℕ) (x : Fin 1 → ℕ) :
+-- Context-2 product gadget, raw source input identity, zero-context wiring, and
+-- `binaryPowerCircuit` size, cost, and evaluation checks.
+example (ctx : Fin 2 → ℕ) (x : Fin 1 → ℕ) (e : ℕ) :
+    (source.simulateWithContext 2 productGadget).eval
+      (arithInterpretationWith Unit (fun _ => (0 : ℕ))) ![3, 7] = ![21, 42, 21] ∧
     ((Circuit.id (SumOfTerms.signature Unit) 1).simulateWithContext 2
       (fun op => Circuit.oneGate (σ := SumOfTerms.signature Unit) op (Fin.natAdd 2))).eval
-        (SumOfTerms.interpretation (fun _ : Unit => 0)) (Fin.append ctx x) = x := by
-  rw [Circuit.eval_simulateWithContext]
-  rfl
-
--- Zero context and no outputs need no gates.
-example : ((Circuit.wiring (arithSignature Unit) (Fin.elim0 : Fin 0 → Fin 0)).simulateWithContext
-    0 (fun op => Circuit.oneGate op (Fin.natAdd 0))).size = 0 := by decide
-
--- Constants are charged at exponent zero; no One instance on the symbol type is needed.
-example : (binaryPowerCircuit () 0).program.cost (fun _ => 17) = 17 := by decide
-
-example : (binaryPowerCircuit () 0).size = 1 := by decide
-
-example : (binaryPowerCircuit () 1).size = 0 := by decide
-
-example : (binaryPowerCircuit () 0).program.cost ArithOp.mulCost = 0 := by decide
-
--- Mapping the designated symbol to zero does not satisfy the power-zero correctness premise.
-example : (binaryPowerCircuit () 0).eval
-    (arithInterpretationWith Unit (fun _ => (0 : ℕ))) (fun _ => 7) 0 = 0 := by decide
-
--- Binary powering is a concrete algorithm, without a claim of optimal multiplication count.
-example : binaryMultiplicationCount 15 = 6 := by decide
-
-example : (binaryPowerCircuit () 1024).size = 10 := by decide
-
-example : (binaryPowerCircuit () 13).program.cost
-    (fun op => match op with | .mul => 7 | .add => 11 | .const _ => 19) = 35 := by decide
-
-example (e : ℕ) : (binaryPowerCircuit () e).program.cost
-    (fun op => match op with | .add => 1 | _ => 0) = 0 := by
+        (SumOfTerms.interpretation (fun _ : Unit => 0)) (Fin.append ctx x) = x ∧
+    ((Circuit.wiring (arithSignature Unit) (Fin.elim0 : Fin 0 → Fin 0)).simulateWithContext
+      0 (fun op => Circuit.oneGate op (Fin.natAdd 0))).size = 0 ∧
+    ((binaryPowerCircuit () 0).program.cost (fun _ => 17) = 17 ∧
+      (binaryPowerCircuit () 0).size = 1 ∧
+      (binaryPowerCircuit () 1).size = 0 ∧
+      (binaryPowerCircuit () 0).program.cost ArithOp.mulCost = 0 ∧
+      (binaryPowerCircuit () 0).eval
+        (arithInterpretationWith Unit (fun _ => (0 : ℕ))) (fun _ => 7) 0 = 0 ∧
+      binaryMultiplicationCount 15 = 6 ∧
+      (binaryPowerCircuit () 1024).size = 10 ∧
+      (binaryPowerCircuit () 13).program.cost
+        (fun op => match op with | .mul => 7 | .add => 11 | .const _ => 19) = 35) ∧
+    (binaryPowerCircuit () e).program.cost
+      (fun op => match op with | .add => 1 | _ => 0) = 0 := by
+  refine ⟨by decide, by rw [Circuit.eval_simulateWithContext]; rfl, by decide, by decide, ?_⟩
   rw [cost_program_binaryPowerCircuit]
   split_ifs <;> simp
 

@@ -26,72 +26,58 @@ private def initial : (Fin 2 → Option Word) × (Fin 1 → Option Word) :=
   (fun _ => none, fun _ => none)
 private def slots : List (Fin 2 ⊕ Fin 1) := [.inl 0, .inl 1, .inr 0]
 
-/-- A complete run chooses complementary variable labels without a supplied witness. -/
-theorem two_variables_run : List.ofFn (fun v => List.ofFn
-    ((greedySchedules (T := Fin 1) (G := Fin 2)
-      (fun v : Fin 2 => ((0 : Fin 1), v)) 2 0).1 v)) =
-    [[0], [1]] := by decide +kernel
-example : List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2) edge 2 0).2 0) = [0] := by
-  dsimp only [greedySchedules]
-  simp only [show (0 : Fin 1) = (edge (0 : Fin 2)).1 from rfl]
-  rw [@normalizeEmptyFactors_factorOf (Fin 2) inferInstance (Fin 1) (Fin 1) (Fin 2)
-    FinEnum.decEq (fun e => (edge e).1) 0 _ (0 : Fin 2)]
-  decide +kernel
-
--- The real output beats the initial average; no supplied good-label witness appears.
-example : normalizedPartialScore edge
-    (fun v => some ((greedySchedules (T := Fin 1) (G := Fin 2) edge 2 0).1 v))
-    (fun f => some ((greedySchedules (T := Fin 1) (G := Fin 2) edge 2 0).2 f)) 2 = 1 / 4 := by
-  decide +kernel
-example : normalizedPartialScore edge initial.1 initial.2 2 = 1 := by decide +kernel
-
--- List order determines the first tie, but the later variable still balances the group.
-example : ((greedyLabelPass edge 2 words.reverse slots initial).1 0).map (fun w => w 0) =
-    some 1 := by decide +kernel
-example : ((greedyLabelPass edge 2 words.reverse slots initial).1 1).map (fun w => w 0) =
-    some 0 := by decide +kernel
-
--- Repeated slots retain earlier choices instead of overwriting them.
-example : List.ofFn (fun v => ((greedyLabelPass edge 2 words
-    [.inl 0, .inl 0, .inl 1, .inr 0, .inl 0] initial).1 v).map (fun w => w 0)) =
-    [some 0, some 1] := by decide +kernel
-
--- An externally fixed label is preserved even when its slot is visited again.
-example : ((greedyLabelPass edge 2 words [.inl 0]
-    (fun _ => some (fun _ => 1), fun _ => none)).1 0).map (fun w => w 0) = some 1 := by
-  decide +kernel
-
--- Without complete slots or candidates, the pass makes no false completion claim.
-example : (greedyLabelPass edge 2 words [.inl 0] initial).1 1 = none := by decide +kernel
-example : (greedyLabelPass edge 2 [] slots initial).1 0 = none := by decide +kernel
-
--- An empty-scope factor receives the specified default, not the first enumerated label.
 private def edgeWithEmptyFactor (v : Fin 2) : Fin 2 × Fin 2 := (0, v)
-example : List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2)
-    edgeWithEmptyFactor 2 1).2 1) = [1] := by
-  rw [greedySchedules_empty_factor _ _ _ (by decide +kernel)]
-  rfl
-example : List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2)
-    edgeWithEmptyFactor 2 1).2 0) = [0] := by
-  dsimp only [greedySchedules]
-  change List.ofFn (normalizeEmptyFactors (T := Fin 1)
-    (fun e => (edgeWithEmptyFactor e).1) 1 _ (edgeWithEmptyFactor (0 : Fin 2)).1) = [0]
-  rw [@normalizeEmptyFactors_factorOf (Fin 2) inferInstance (Fin 2) (Fin 1) (Fin 2)
-    FinEnum.decEq (fun e => (edgeWithEmptyFactor e).1) 1 _ (0 : Fin 2)]
+
+/-- Complete two-variable run produces distinct single-bit words. -/
+theorem two_variables_run :
+    List.ofFn (fun v => List.ofFn
+      ((greedySchedules (T := Fin 1) (G := Fin 2)
+        (fun v : Fin 2 => ((0 : Fin 1), v)) 2 0).1 v)) = [[0], [1]] := by
   decide +kernel
 
--- Whole-label enumeration keeps all four coordinate combinations, not just constant words.
-example : (List.Pi.enum (fun _ : Fin 2 => Fin 2)).map List.ofFn =
-    [[0, 0], [0, 1], [1, 0], [1, 1]] := by decide +kernel
-
--- Empty coordinate sets have exactly one whole label; the algorithm remains executable.
-example : List.ofFn (fun v => List.ofFn
-    ((greedySchedules (T := Fin 0) (G := Fin 2) edge 2 0).1 v)) =
-    [[], []] := by decide +kernel
-
--- No-variable/no-factor input runs the empty traversal and returns empty schedule tables.
-example : List.ofFn (fun v => List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2)
-    (Fin.elim0 : Fin 0 → Fin 0 × Fin 0) 0 (0 : Fin 2)).1 v)) = [] := by decide +kernel
+-- Normalized partial scores, tie-breaking, repeated/fixed slots, incomplete inputs,
+-- empty-scope factors, coordinate enumeration, and empty variable/factor regimes.
+example :
+    List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2) edge 2 0).2 0) = [0] ∧
+    normalizedPartialScore edge
+      (fun v => some ((greedySchedules (T := Fin 1) (G := Fin 2) edge 2 0).1 v))
+      (fun f => some ((greedySchedules (T := Fin 1) (G := Fin 2) edge 2 0).2 f)) 2 = 1 / 4 ∧
+    normalizedPartialScore edge initial.1 initial.2 2 = 1 ∧
+    (((greedyLabelPass edge 2 words.reverse slots initial).1 0).map (fun w => w 0) = some 1 ∧
+      ((greedyLabelPass edge 2 words.reverse slots initial).1 1).map (fun w => w 0) = some 0) ∧
+    List.ofFn (fun v => ((greedyLabelPass edge 2 words
+      [.inl 0, .inl 0, .inl 1, .inr 0, .inl 0] initial).1 v).map (fun w => w 0)) =
+      [some 0, some 1] ∧
+    ((greedyLabelPass edge 2 words [.inl 0]
+      (fun _ => some (fun _ => 1), fun _ => none)).1 0).map (fun w => w 0) = some 1 ∧
+    ((greedyLabelPass edge 2 words [.inl 0] initial).1 1 = none ∧
+      (greedyLabelPass edge 2 [] slots initial).1 0 = none) ∧
+    List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2)
+      edgeWithEmptyFactor 2 1).2 1) = [1] ∧
+    List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2)
+      edgeWithEmptyFactor 2 1).2 0) = [0] ∧
+    (List.Pi.enum (fun _ : Fin 2 => Fin 2)).map List.ofFn =
+      [[0, 0], [0, 1], [1, 0], [1, 1]] ∧
+    List.ofFn (fun v => List.ofFn
+      ((greedySchedules (T := Fin 0) (G := Fin 2) edge 2 0).1 v)) = [[], []] ∧
+    List.ofFn (fun v => List.ofFn ((greedySchedules (T := Fin 1) (G := Fin 2)
+      (Fin.elim0 : Fin 0 → Fin 0 × Fin 0) 0 (0 : Fin 2)).1 v)) = [] := by
+  refine ⟨?_, (by decide +kernel), (by decide +kernel), (by decide +kernel),
+    (by decide +kernel), (by decide +kernel), (by decide +kernel), ?_, ?_, (by decide +kernel),
+    (by decide +kernel), (by decide +kernel)⟩
+  · dsimp only [greedySchedules]
+    simp only [show (0 : Fin 1) = (edge (0 : Fin 2)).1 from rfl]
+    rw [@normalizeEmptyFactors_factorOf (Fin 2) inferInstance (Fin 1) (Fin 1) (Fin 2)
+      FinEnum.decEq (fun e => (edge e).1) 0 _ (0 : Fin 2)]
+    decide +kernel
+  · rw [greedySchedules_empty_factor _ _ _ (by decide +kernel)]
+    rfl
+  · dsimp only [greedySchedules]
+    change List.ofFn (normalizeEmptyFactors (T := Fin 1)
+      (fun e => (edgeWithEmptyFactor e).1) 1 _ (edgeWithEmptyFactor (0 : Fin 2)).1) = [0]
+    rw [@normalizeEmptyFactors_factorOf (Fin 2) inferInstance (Fin 2) (Fin 1) (Fin 2)
+      FinEnum.decEq (fun e => (edgeWithEmptyFactor e).1) 1 _ (0 : Fin 2)]
+    decide +kernel
 
 -- A genuine matching incidence family satisfies both of the manuscript's size hypotheses.
 -- Applying the algorithmic theorem here avoids reducing the entire 128-slot program in a test.
