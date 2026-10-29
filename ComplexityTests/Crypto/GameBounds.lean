@@ -63,6 +63,16 @@ example (game1 game2 err : Bool → Game) {ε : ℝ≥0}
    Game.advantage_bind_le_succProbability_bind _ game1 game2 err herr,
    Game.advantage_bind_comm _ _ f g⟩
 
+-- The two continuations agree on `pure true`'s support but disagree at `false`.
+example : Game.advantage
+    ((PMF.pure true).bind fun bit => PMF.pure bit)
+    ((PMF.pure true).bind fun _ => PMF.pure true) ≤ 0 := by
+  apply Game.advantage_bind_le_of_support
+  intro bit hbit
+  have hbit : bit = true := by simpa only [PMF.support_pure, Set.mem_singleton_iff] using hbit
+  subst bit
+  simp
+
 open Cslib.Probability in
 -- Concrete check of `succProbability_uniform_bool_xor`: when `g false = PMF.pure true` and
 -- `g true = PMF.pure false`, `guess ^^ bit` is always `true`, so the success probability is `1`.

@@ -346,22 +346,27 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
   exact schnorrGroups.advantage_cramerShoupGroupCCA2Game_le (fun _ => PMF.pure d23)
     testHash isSchnorrElem hmem adversary Q₁ Q₂ hQ n 11 (by decide) hm
 
-/-- End-to-end `Encryption.INDCCA2On` instantiation for `schnorrGroups` on `d23` (`m _ = 11`). -/
+/-- Conditional API client over a parameterized group family. This does not assert DDH security
+for the fixed finite fixture `d23`; the group-order lower bound must grow with the parameter. -/
 example {H : schnorrGroups.Desc × List Bool → List Bool}
     {isElem : schnorrGroups.Desc × List Bool → Bool}
+    {d : ℕ → schnorrGroups.Desc}
     (hH : ComputableInPolyTime H (encPair schnorrGroups.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair schnorrGroups.encDesc encBits) encBool)
-    (hd : ComputableInPolyTime (fun _ : ℕ => d23) encUnary schnorrGroups.encDesc)
+    (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
-    (hDDH : schnorrGroups.DDH (fun _ => PMF.pure d23))
-    (hCR : CollisionResistantFor schnorrGroups.encDesc (fun _ => PMF.pure d23)
+    (hDDH : schnorrGroups.DDH (fun n => PMF.pure (d n)))
+    (hCR : CollisionResistantFor schnorrGroups.encDesc (fun n => PMF.pure (d n))
       (schnorrGroups.cramerShoupHashMod H))
-    (hinv : Negligible fun _ : ℕ => (1 / 11 : ℝ≥0)) :
-    INDCCA2On (schnorrGroups.cramerShoupValid isElem (fun _ => d23)) encBits encBits
-      (schnorrGroups.cramerShoupKeyGenProb (fun _ => d23))
-      (schnorrGroups.cramerShoupEncryptProb H (fun _ => d23))
-      (schnorrGroups.cramerShoupDecryptOpt H isElem (fun _ => d23)) :=
-  hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR (m := fun _ => 11)
-    (fun _ => by decide) (fun _ => by decide) hinv
+    {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n) (hm : ∀ n, m n ≤ schnorrGroups.order (d n))
+    (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
+    INDCCA2On (schnorrGroups.cramerShoupValid isElem d) encBits encBits
+      (schnorrGroups.cramerShoupKeyGenProb d) (schnorrGroups.cramerShoupEncryptProb H d)
+      (schnorrGroups.cramerShoupDecryptOpt H isElem d) :=
+  hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv
+
+-- A fixed nonzero inverse-order bound cannot supply the asymptotic security premise.
+example : ¬ Negligible (fun _ : ℕ => (1 / 11 : ℝ≥0)) :=
+  not_negligible_const (by norm_num)
 
 end ComplexityTests.Crypto.CramerShoup

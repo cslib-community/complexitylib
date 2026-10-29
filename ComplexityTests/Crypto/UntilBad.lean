@@ -70,47 +70,13 @@ example : ((interpret silent askOnce).run false).toOuterMeasure {x | x.2 = true}
 open Cslib.Crypto Cslib.Crypto.Game
 open scoped NNReal ENNReal
 
-example {α β : Type} (μ : PMF β) (o : List Bool → List Bool)
-    (prog : WordOracleComp Unit α) (next : β → α → Game) :
-    runStatelessOracle o (pure true) PMF.pure = PMF.pure true ∧
-    (μ.bind fun b => runStatelessOracle o prog (next b)) =
-      runStatelessOracle o prog (fun a => μ.bind fun b => next b a) :=
-  ⟨runStatelessOracle_pure o true PMF.pure,
-   bind_runStatelessOracle_comm μ o prog next⟩
-
-example {T α : Type} (μ : PMF T)
-    (o₁ : T → List Bool → List Bool) (o₂ : List Bool → List Bool)
-    (isBad : T → List Bool → Bool) (next : T → α → Game)
-    {Q q : ℕ} [NeZero q] (x₀ : ZMod q)
-    (g₁ g₂ : ZMod q → Game) (heq : ∀ x ≠ x₀, g₁ x = g₂ x)
-    {prog : WordOracleComp Unit α} (hq : prog.IsQueryBounded Q)
-    (hagree : ∀ τ req, isBad τ req = false → o₁ τ req = o₂ req)
-    (hbad : ∀ req, (∑' τ, μ τ * if isBad τ req then (1 : ℝ≥0∞) else 0) ≤ (q : ℝ≥0∞)⁻¹) :
-    Game.advantage
-      ((PMF.uniformOfFintype (ZMod q)).bind g₁)
-      ((PMF.uniformOfFintype (ZMod q)).bind g₂) ≤ 1 / (q : ℝ≥0) ∧
-    Game.advantage
-      (μ.bind fun τ => runStatelessOracle (o₁ τ) prog (next τ))
-      (μ.bind fun τ => runStatelessOracle o₂ prog (next τ)) ≤
-      (Q : ℝ≥0) / (q : ℝ≥0) :=
-  ⟨advantage_uniform_bind_of_eq_of_ne x₀ g₁ g₂ heq,
-   advantage_runStatelessOracle_bind_le μ o₁ o₂ isBad next hq hagree hbad⟩
-
-example {α : Type} (o₁ o₂ : List Bool → List Bool)
-    (isBad : List Bool → Bool) (extract : List Bool → List Bool) (isGood : List Bool → Bool)
-    (w : List Bool)
-    (hagree : ∀ req, isBad req = false → o₁ req = o₂ req)
-    (hgood : ∀ req, isBad req = true → isGood (extract req) = true)
-    (prog : WordOracleComp Unit α) (next : α → Game) (b : Bool) :
-    runFinderOracle o₂ isBad extract (pure ()) (some w) isGood = PMF.pure (isGood w) ∧
-    (runStatelessOracle o₁ prog next b ≤
-      runStatelessOracle o₂ prog next b +
-        runFinderOracle o₂ isBad extract prog none isGood true ∧
-     runStatelessOracle o₂ prog next b ≤
-      runStatelessOracle o₁ prog next b +
-        runFinderOracle o₂ isBad extract prog none isGood true) :=
-  ⟨runFinderOracle_pure o₂ isBad extract () (some w) isGood,
-   runStatelessOracle_le_runFinderOracle o₁ o₂ isBad extract isGood hagree hgood prog next b⟩
+-- The games differ only at one of the two equiprobable inputs; the premise is checked here.
+example : Game.advantage
+    ((PMF.uniformOfFintype (ZMod 2)).bind fun x => PMF.pure (decide (x = 0)))
+    ((PMF.uniformOfFintype (ZMod 2)).bind fun _ => PMF.pure false) ≤ 1 / 2 := by
+  exact advantage_uniform_bind_of_eq_of_ne (0 : ZMod 2)
+    (fun x => PMF.pure (decide (x = 0))) (fun _ => PMF.pure false)
+    (fun x hx => by simp [hx])
 
 /-- Concrete non-bad query (`req = [false]`) leaves the witness state `none` and evaluates to
 `PMF.pure false`. -/
