@@ -17,20 +17,14 @@ open Cslib Cslib.BitString Finset
 
 /-! ### Parities -/
 
-/-- Without noise, two distinct parities are at relative Hamming distance one half. -/
-example : noiseDist 1 (parityOn ({0} : Finset (Fin 3))) (parityOn {1, 2}) = 1 / 2 := by
-  rw [noiseDist_parityOn 1 (by decide)]
-  norm_num
-
-/-- At `ρ = 1 / 2`, a parity on one coordinate and one on two are at noise distance
-`(1 / 4 + 1 / 16) / 4`: the larger set is damped more. -/
-example : noiseDist (1 / 2) (parityOn ({0} : Finset (Fin 3))) (parityOn {1, 2}) = 5 / 64 := by
-  rw [noiseDist_parityOn _ (by decide)]
-  norm_num
-
-/-- The relative Hamming distance between the parities, through the Fourier coefficients. -/
-example : (hammingDist (parityOn ({0} : Finset (Fin 3))) (parityOn {1, 2}) : ℝ) / 2 ^ 3 =
-    1 / 2 := by
+/-- Noise distance between distinct parities at `ρ = 1` (`1 / 2`) and `ρ = 1 / 2` (`5 / 64`), and
+their relative Hamming distance read off the Fourier coefficients. -/
+example :
+    noiseDist 1 (parityOn ({0} : Finset (Fin 3))) (parityOn {1, 2}) = 1 / 2 ∧
+      noiseDist (1 / 2) (parityOn ({0} : Finset (Fin 3))) (parityOn {1, 2}) = 5 / 64 ∧
+      (hammingDist (parityOn ({0} : Finset (Fin 3))) (parityOn {1, 2}) : ℝ) / 2 ^ 3 = 1 / 2 := by
+  refine ⟨by rw [noiseDist_parityOn 1 (by decide)]; norm_num,
+    by rw [noiseDist_parityOn _ (by decide)]; norm_num, ?_⟩
   have h := noiseDist_one (parityOn ({0} : Finset (Fin 3))) (parityOn {1, 2})
   rw [noiseDist_parityOn 1 (by decide), Fintype.card_fin] at h
   rw [← h]
@@ -48,34 +42,25 @@ example : 1 / 4 * ∑ S : Finset (Fin 2), (fourierCoeff (fun _ => signVal false)
 
 /-! ### Separation and the metric -/
 
-/-- **Separation needs `ρ ≠ 0`.** At `ρ = 0` only the means are compared, and two distinct
-parities on nonempty sets both have mean zero. -/
-example : noiseDist 0 (parityOn ({0} : Finset (Fin 2))) (parityOn {1}) = 0 ∧
-    parityOn ({0} : Finset (Fin 2)) ≠ parityOn {1} := by
-  refine ⟨?_, ?_⟩
-  · rw [noiseDist_parityOn 0 (by decide)]
-    norm_num
-  · intro h
-    exact absurd (congrFun h ![true, false]) (by decide)
-
-/-- For `ρ ≠ 0`, the same parities are at positive noise distance. -/
-example : 0 < noiseDist (1 / 3) (parityOn ({0} : Finset (Fin 2))) (parityOn {1}) := by
-  rw [noiseDist_parityOn _ (by decide)]
-  norm_num
-
-/-- The metric `√D_1` on Boolean functions of two bits: the two constants are at distance one. -/
-example :
-    (noiseMetricSpace (ι := Fin 2) one_ne_zero).dist (fun _ => false) (fun _ => true) = 1 := by
+/-- **Separation needs `ρ ≠ 0`**: at `ρ = 0` distinct parities have noise distance zero, whereas
+at `ρ = 1 / 3` their noise distance is positive; `√D_1` is a metric and satisfies the triangle
+inequality. -/
+example (ρ : ℝ) :
+    noiseDist 0 (parityOn ({0} : Finset (Fin 2))) (parityOn {1}) = 0 ∧
+      parityOn ({0} : Finset (Fin 2)) ≠ parityOn {1} ∧
+      0 < noiseDist (1 / 3) (parityOn ({0} : Finset (Fin 2))) (parityOn {1}) ∧
+      (noiseMetricSpace (ι := Fin 2) one_ne_zero).dist (fun _ => false) (fun _ => true) = 1 ∧
+      √(noiseDist ρ (parityOn ({0} : Finset (Fin 2))) (parityOn {1})) ≤
+        √(noiseDist ρ (parityOn ({0} : Finset (Fin 2))) (parityOn {0, 1})) +
+          √(noiseDist ρ (parityOn ({0, 1} : Finset (Fin 2))) (parityOn {1})) := by
+  refine ⟨by rw [noiseDist_parityOn 0 (by decide)]; norm_num,
+    fun h => absurd (congrFun h ![true, false]) (by decide),
+    by rw [noiseDist_parityOn _ (by decide)]; norm_num,
+    ?_,
+    sqrt_noiseDist_triangle ρ _ _ _⟩
   have h : (hammingDist (fun _ : Fin 2 → Bool => false) fun _ => true : ℝ) / 2 ^ 2 = 1 := by
     simp [hammingDist]
     norm_num
   rw [noiseMetricSpace_dist, noiseDist_one, Fintype.card_fin, h, Real.sqrt_one]
-
-/-- The triangle inequality for `√D_ρ`, at a concrete triple. -/
-example (ρ : ℝ) :
-    √(noiseDist ρ (parityOn ({0} : Finset (Fin 2))) (parityOn {1})) ≤
-      √(noiseDist ρ (parityOn ({0} : Finset (Fin 2))) (parityOn {0, 1})) +
-        √(noiseDist ρ (parityOn ({0, 1} : Finset (Fin 2))) (parityOn {1})) :=
-  sqrt_noiseDist_triangle ρ _ _ _
 
 end ComplexityTests.CircuitHamming.Parseval

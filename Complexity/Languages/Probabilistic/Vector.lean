@@ -181,6 +181,71 @@ theorem eval_pi_map {m : ℕ} {α β : Fin m → Type}
     ext i
     exact Fin.cases rfl (fun _ => rfl) i
 
+/-- Evaluating `pi` on pure coordinate programs yields `PMF.pure`. -/
+@[simp] theorem eval_pi_pure {m : ℕ} {α : Fin m → Type} (x : (i : Fin m) → α i) :
+    eval (OracleComp.pi (fun i => (pure (x i) : ProbComp (α i)))) = PMF.pure x := by
+  induction m with
+  | zero =>
+    simp only [OracleComp.pi_zero, eval_pure]
+    exact congrArg PMF.pure (funext fun i => i.elim0)
+  | succ m ih =>
+    simp only [OracleComp.pi_succ, eval_bind, eval_map, eval_pure,
+      ih (fun i => x i.succ), PMF.pure_bind, PMF.pure_map]
+    exact congrArg PMF.pure (funext fun i => Fin.cases rfl (fun _ => rfl) i)
+
+/-- Coordinatewise monadic bind distributes over `eval (OracleComp.pi ...)`. -/
+theorem eval_pi_bind {m : ℕ} {α β : Fin m → Type}
+    (p : (i : Fin m) → ProbComp (α i)) (q : (i : Fin m) → α i → ProbComp (β i)) :
+    eval (OracleComp.pi (fun i => p i >>= q i)) =
+      (eval (OracleComp.pi p)).bind fun a =>
+        eval (OracleComp.pi (fun i => q i (a i))) := by
+  induction m with
+  | zero =>
+    simp only [OracleComp.pi_zero, eval_pure, PMF.pure_bind]
+  | succ m ih =>
+    simp only [OracleComp.pi_succ, eval_bind, eval_map, ih,
+      PMF.bind_bind, PMF.bind_map, PMF.map_bind]
+    refine congrArg (eval (p 0)).bind (funext fun a0 => ?_)
+    rw [PMF.bind_comm]
+    refine congrArg (eval (OracleComp.pi fun i => p i.succ)).bind (funext fun a_rest => ?_)
+    refine congrArg (eval (q 0 a0)).bind (funext fun b0 => ?_)
+    rfl
+
+/-- Pairing independent coordinate programs in `OracleComp.pi` is equivalent to binding two
+independent `OracleComp.pi` runs. -/
+theorem eval_pi_pair {m : ℕ} {α β : Fin m → Type}
+    (p : (i : Fin m) → ProbComp (α i)) (q : (i : Fin m) → ProbComp (β i)) :
+    eval (OracleComp.pi (fun i => do
+      let a ← p i
+      let b ← q i
+      return (a, b))) =
+      (eval (OracleComp.pi p)).bind fun a =>
+        (eval (OracleComp.pi q)).map fun b i => (a i, b i) := by
+  simp only [bind_pure_comp]
+  rw [eval_pi_bind]
+  refine congrArg (eval (OracleComp.pi p)).bind (funext fun a => ?_)
+  exact eval_pi_map q (fun i b => (a i, b))
+
+/-- Swapping `Fin m` and `Fin k` in a nested `OracleComp.pi` preserves the evaluated `PMF`. -/
+theorem eval_pi_comm {m k : ℕ} {α : Fin m → Fin k → Type}
+    (p : (i : Fin m) → (s : Fin k) → ProbComp (α i s)) :
+    eval (OracleComp.pi (fun i => OracleComp.pi (fun s => p i s))) =
+      (eval (OracleComp.pi (fun s => OracleComp.pi (fun i => p i s)))).map
+        (fun f i s => f s i) := by
+  induction k with
+  | zero =>
+    simp only [OracleComp.pi_zero, eval_pi_pure, eval_pure, PMF.pure_map]
+    exact congrArg PMF.pure (funext fun _ => funext fun s => s.elim0)
+  | succ k ih =>
+    simp only [OracleComp.pi_succ (m := k)]
+    rw [eval_pi_bind]
+    simp only [eval_pi_map, ih (fun i s => p i s.succ),
+      eval_bind, eval_map, PMF.map_bind, PMF.map_comp]
+    refine congrArg (eval (OracleComp.pi fun i => p i 0)).bind (funext fun first => ?_)
+    refine congrArg (PMF.map · _) (funext fun rest => ?_)
+    ext i s
+    exact Fin.cases rfl (fun _ => rfl) s
+
 /-- When each coordinate type is finite, `eval (pi programs)` is the independent product
 distribution `PMF.pi`. -/
 theorem eval_pi {m : ℕ} {α : Fin m → Type} [∀ i, Finite (α i)]

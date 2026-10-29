@@ -687,13 +687,13 @@ theorem CCA2AdversaryOf.IsPPT.restrict {Msg : Type} {encMsg : Msg ↪ List Bool}
     exact (hadversary.choose.on.bind_with hpost.isOraclePPTOn).isOraclePPT
   guess := by
     let EGuess := encPair encUnary (encPair encBits encBits)
-    have hcond : ComputableTidilyInPolyTime
+    have hcond : ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool => p.2.1.headD false) EGuess encBool := by polytime
-    have hprep : ComputableTidilyInPolyTime
+    have hprep : ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool => (p.1, p.2.1.tail, p.2.2)) EGuess EGuess := by
       polytime
-    exact IsOraclePPTOn.cond hcond (hadversary.guess.preprocess hprep)
-      (ComputableTidilyInPolyTime.const false).isOraclePPTOn
+    exact IsOraclePPTOn.cond' hcond (hadversary.guess.preprocess' hprep)
+      (ComputableInPolyTime.const false).isOraclePPTOn
 
 /-- Unrestricted 1CCA security implies 1CCA security under every polynomial-time admissibility
 predicate. -/

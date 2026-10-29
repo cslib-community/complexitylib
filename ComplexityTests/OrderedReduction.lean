@@ -112,30 +112,23 @@ def targetSent : (language Language.graph).Sentence :=
     (Relations.boundedFormula₂ (L := language Language.graph) (.inr NumericRelation.bit)
       (max Language.graph) (.var (.inr 0)))).ex
 
-example : ComputableInLogSpace
-    (advInterp.encodedMap vocabulary graphVocabulary)
-    encStructure encStructure :=
-  advInterp.computableInLogSpace_encodedMap vocabulary
-    graphVocabulary
-
-example : Cslib.Complexity.LogSpaceReducible encStructure encStructure
-    (Ordered.queryLanguage vocabulary (advInterp.onSentence targetSent))
-    (Ordered.queryLanguage graphVocabulary targetSent) :=
-  advInterp.logSpaceReducible_onSentence vocabulary
-    graphVocabulary (by decide) targetSent
-
-/-- Exact output cardinality `3^2 = 9` on `input3P`. -/
-example : (advInterp.encodedMap vocabulary
-    graphVocabulary input3P).1 = 9 :=
-  advInterp.card_encodedMap vocabulary graphVocabulary
-    (by decide) (by decide)
-
-/-- Exact framed output length `2 * 9 + 1 + (2 * 81 + 1) = 182` on `input3P`. -/
-example : (encStructure (advInterp.encodedMap vocabulary
-    graphVocabulary input3P)).length = 182 := by
-  rw [advInterp.length_encStructure_encodedMap vocabulary
-    graphVocabulary (by decide) (by decide)]
-  decide
+/-- Log-space computability, query-language reduction, output cardinality `3^2 = 9`, and framed
+output length `2 * 9 + 1 + (2 * 81 + 1) = 182` on `input3P`. -/
+example :
+    ComputableInLogSpace (advInterp.encodedMap vocabulary graphVocabulary)
+      encStructure encStructure ∧
+    Cslib.Complexity.LogSpaceReducible encStructure encStructure
+      (Ordered.queryLanguage vocabulary (advInterp.onSentence targetSent))
+      (Ordered.queryLanguage graphVocabulary targetSent) ∧
+    (advInterp.encodedMap vocabulary graphVocabulary input3P).1 = 9 ∧
+    (encStructure (advInterp.encodedMap vocabulary graphVocabulary input3P)).length = 182 :=
+  ⟨advInterp.computableInLogSpace_encodedMap vocabulary graphVocabulary,
+    advInterp.logSpaceReducible_onSentence vocabulary graphVocabulary (by decide) targetSent,
+    advInterp.card_encodedMap vocabulary graphVocabulary (by decide) (by decide),
+    by
+      rw [advInterp.length_encStructure_encodedMap vocabulary graphVocabulary
+        (by decide) (by decide)]
+      decide⟩
 
 private theorem realize_advInterp {a : EncodedStructure} [Fact (2 ≤ a.1)]
     (v : Fin 2 × Fin 2 → Fin a.1) :
@@ -307,64 +300,47 @@ example : input3Empty ∉ Ordered.queryLanguage vocabulary (advInterp.onSentence
   decide
 
 /-- Size-`2` boundary (`n = 2, k = 2`, output cardinality `4`), dimension-`1` identity,
-nullary target, and empty target vocabulary. -/
-example : (advInterp.encodedMap vocabulary
-    graphVocabulary input2P).1 = 4 :=
-  advInterp.card_encodedMap vocabulary graphVocabulary
-    (by decide) (by decide)
-
-example (x0 : Fin 3) :
-    (vocabulary.table (idInterp.encodedMap vocabulary vocabulary input3P)
-      ⟨1, Relation.mark⟩).getD (tupleIndex ![x0]) false = true ↔
-      x0 = 1 := by
-  refine (idInterp.table_encodedMap vocabulary vocabulary (a := input3P)
-    (by decide) (by decide) Relation.mark ![x0]).trans ?_
-  change (vocabulary.table input3P ⟨1, Relation.mark⟩).getD
-      (tupleIndex ![(lexEquiv (n := 3) (k := 1)).symm x0 0]) false = true ↔ x0 = 1
-  revert x0
-  decide
-
-example (x : Fin 0 → Fin (input3P.1 ^ 1)) :
+nullary target, empty target vocabulary, and rejection of small sizes (`0`, `1`) and malformed
+shapes (missing, extra, or wrong-length tables). -/
+example (x0 : Fin 3) (x : Fin 0 → Fin (input3P.1 ^ 1)) :
+    (advInterp.encodedMap vocabulary graphVocabulary input2P).1 = 4 ∧
+    ((vocabulary.table (idInterp.encodedMap vocabulary vocabulary input3P)
+      ⟨1, Relation.mark⟩).getD (tupleIndex ![x0]) false = true ↔ x0 = 1) ∧
     (nullaryVocabulary.table (nullaryInterp.encodedMap vocabulary nullaryVocabulary input3P)
-      ⟨0, ()⟩).getD (tupleIndex x) false = true := by
-  rw [nullaryInterp.table_encodedMap vocabulary nullaryVocabulary (a := input3P)
-    (by decide) (by decide) (r := 0) () x]
-  change (vocabulary.table input3P ⟨1, Relation.mark⟩).getD
-      (tupleIndex ![(1 : Fin 3)]) false = true
-  decide
-
-example : emptyTargetInterp.encodedMap vocabulary emptyVocabulary input3P = (3, []) := by
-  rw [emptyTargetInterp.encodedMap_of_admissible vocabulary emptyVocabulary (by decide) (by decide)]
-  decide
-
-/-- Small sizes (`0`, `1`) and malformed shapes (missing, extra, or wrong-length tables) map to the
-malformed sentinel outside every target query language, even for an empty target vocabulary. -/
-example : ¬emptyVocabulary.WellFormed
-    (emptyTargetInterp.encodedMap vocabulary emptyVocabulary (0, [ [] ])) := by
-  rw [emptyTargetInterp.wellFormed_encodedMap_iff]
-  decide
-
-example : ¬emptyVocabulary.WellFormed
-    (emptyTargetInterp.encodedMap vocabulary emptyVocabulary (1, [ [false] ])) := by
-  rw [emptyTargetInterp.wellFormed_encodedMap_iff]
-  decide
-
-example : ¬graphVocabulary.WellFormed
-    (advInterp.encodedMap vocabulary graphVocabulary (3, [])) := by
-  rw [advInterp.wellFormed_encodedMap_iff]
-  decide
-
-example : ¬graphVocabulary.WellFormed
-    (advInterp.encodedMap vocabulary graphVocabulary
-      (3, [ [false, true, false], [] ])) := by
-  rw [advInterp.wellFormed_encodedMap_iff]
-  decide
-
-example : ¬graphVocabulary.WellFormed
-    (advInterp.encodedMap vocabulary graphVocabulary
-      (3, [ [false] ])) := by
-  rw [advInterp.wellFormed_encodedMap_iff]
-  decide
+      ⟨0, ()⟩).getD (tupleIndex x) false = true ∧
+    emptyTargetInterp.encodedMap vocabulary emptyVocabulary input3P = (3, []) ∧
+    ¬emptyVocabulary.WellFormed
+      (emptyTargetInterp.encodedMap vocabulary emptyVocabulary (0, [ [] ])) ∧
+    ¬emptyVocabulary.WellFormed
+      (emptyTargetInterp.encodedMap vocabulary emptyVocabulary (1, [ [false] ])) ∧
+    ¬graphVocabulary.WellFormed
+      (advInterp.encodedMap vocabulary graphVocabulary (3, [])) ∧
+    ¬graphVocabulary.WellFormed
+      (advInterp.encodedMap vocabulary graphVocabulary (3, [ [false, true, false], [] ])) ∧
+    ¬graphVocabulary.WellFormed
+      (advInterp.encodedMap vocabulary graphVocabulary (3, [ [false] ])) := by
+  refine ⟨advInterp.card_encodedMap vocabulary graphVocabulary (by decide) (by decide),
+    ?_, ?_,
+    by
+      rw [emptyTargetInterp.encodedMap_of_admissible vocabulary emptyVocabulary
+        (by decide) (by decide)]
+      decide,
+    by rw [emptyTargetInterp.wellFormed_encodedMap_iff]; decide,
+    by rw [emptyTargetInterp.wellFormed_encodedMap_iff]; decide,
+    by rw [advInterp.wellFormed_encodedMap_iff]; decide,
+    by rw [advInterp.wellFormed_encodedMap_iff]; decide,
+    by rw [advInterp.wellFormed_encodedMap_iff]; decide⟩
+  · refine (idInterp.table_encodedMap vocabulary vocabulary (a := input3P)
+      (by decide) (by decide) Relation.mark ![x0]).trans ?_
+    change (vocabulary.table input3P ⟨1, Relation.mark⟩).getD
+        (tupleIndex ![(lexEquiv (n := 3) (k := 1)).symm x0 0]) false = true ↔ x0 = 1
+    revert x0
+    decide
+  · rw [nullaryInterp.table_encodedMap vocabulary nullaryVocabulary (a := input3P)
+      (by decide) (by decide) (r := 0) () x]
+    change (vocabulary.table input3P ⟨1, Relation.mark⟩).getD
+        (tupleIndex ![(1 : Fin 3)]) false = true
+    decide
 
 /-- One-dimensional restriction to the marked elements, keeping `mark`. On `input3P` its domain
 has a single tuple, below the ordered size proviso; the encoded map is still defined and well
@@ -374,26 +350,21 @@ def markedInterp : DomainInterpretation L L 1 where
   rel
     | .mark => Relations.boundedFormula₁ (L := language L) (.inl Relation.mark) (.var (.inl (0, 0)))
 
-example : ComputableInLogSpace (markedInterp.encodedMap vocabulary vocabulary)
-    encStructure encStructure :=
-  markedInterp.computableInLogSpace_encodedMap vocabulary vocabulary
-
-example : vocabulary.WellFormed (markedInterp.encodedMap vocabulary vocabulary input3P) :=
-  (markedInterp.wellFormed_encodedMap_iff vocabulary vocabulary).mpr ⟨by decide, by decide⟩
-
-example :
-    ¬vocabulary.WellFormed (markedInterp.encodedMap vocabulary vocabulary (1, [ [true] ])) := by
-  rw [markedInterp.wellFormed_encodedMap_iff]
-  decide
-
-/-- Level-1 reduction through an admissible interpretation: the two-dimensional full-tuple
-interpretation `advInterp`, as a domain interpretation, reduces every pulled-back ordered query. -/
+/-- Domain-interpretation log-space computability, well-formedness on `input3P`, rejection on size
+`1`, and level-1 reduction through `advInterp.toDomainInterpretation`. -/
 example (K' : Query Language.graph) :
+    ComputableInLogSpace (markedInterp.encodedMap vocabulary vocabulary)
+      encStructure encStructure ∧
+    vocabulary.WellFormed (markedInterp.encodedMap vocabulary vocabulary input3P) ∧
+    ¬vocabulary.WellFormed (markedInterp.encodedMap vocabulary vocabulary (1, [ [true] ])) ∧
     Cslib.Complexity.LogSpaceReducible encStructure encStructure
       (Query.encodedLanguage (L := L) {M | advInterp.toDomainInterpretation.map
         (advInterp.admissible_toDomainInterpretation (by decide)) M ∈ K'} vocabulary)
       (K'.encodedLanguage graphVocabulary) :=
-  advInterp.toDomainInterpretation.logSpaceReducible vocabulary graphVocabulary
-    (advInterp.admissible_toDomainInterpretation (by decide)) fun _ => Iff.rfl
+  ⟨markedInterp.computableInLogSpace_encodedMap vocabulary vocabulary,
+    (markedInterp.wellFormed_encodedMap_iff vocabulary vocabulary).mpr ⟨by decide, by decide⟩,
+    by rw [markedInterp.wellFormed_encodedMap_iff]; decide,
+    advInterp.toDomainInterpretation.logSpaceReducible vocabulary graphVocabulary
+      (advInterp.admissible_toDomainInterpretation (by decide)) fun _ => Iff.rfl⟩
 
 end Cslib.Tests.OrderedReduction

@@ -983,6 +983,42 @@ theorem length_bits_comp {α : Type} {input : α ↪ List Bool} {word : α → L
     ComputableInPolyTime (fun a => (word a).length) input encUnary :=
   length_bits.comp hword
 
+/-- Find the first list element passing a test that captures the original input. -/
+@[fun_prop]
+theorem findWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {test : γ → α → Bool} {list : γ → List α}
+    (hlist : ComputableInPolyTime list encIn (encList encA))
+    (htest : ComputableInPolyTime (fun p : γ × α => test p.1 p.2) (encPair encIn encA) encBool) :
+    ComputableInPolyTime (fun x => (list x).find? (test x)) encIn (encOption encA) :=
+  .of_tidy (ComputableTidilyInPolyTime.findWithInput hlist.tidy htest.tidy)
+
+/-- Count the list elements passing a test with a parameter, in unary. -/
+theorem countPWith {α γ π : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {encP : π ↪ List Bool} {encL : List α ↪ List Bool} [ListEncoding encA encL]
+    [SizedListEncoding encA encL] {test : π × α → Bool} {par : γ → π} {list : γ → List α}
+    (htest : ComputableInPolyTime test (encPair encP encA) encBool)
+    (hpar : ComputableInPolyTime par encIn encP) (hlist : ComputableInPolyTime list encIn encL) :
+    ComputableInPolyTime (fun x => (list x).countP fun a => test (par x, a)) encIn encUnary :=
+  .of_tidy (ComputableTidilyInPolyTime.countPWith htest.tidy hpar.tidy hlist.tidy)
+
+/-- Test whether some list element passes a test with a parameter. -/
+theorem anyWithEncoding {α γ π : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {encP : π ↪ List Bool} {encL : List α ↪ List Bool} [ListEncoding encA encL]
+    [SizedListEncoding encA encL] {test : π × α → Bool} {par : γ → π} {list : γ → List α}
+    (htest : ComputableInPolyTime test (encPair encP encA) encBool)
+    (hpar : ComputableInPolyTime par encIn encP) (hlist : ComputableInPolyTime list encIn encL) :
+    ComputableInPolyTime (fun x => (list x).any fun a => test (par x, a)) encIn encBool :=
+  .of_tidy (ComputableTidilyInPolyTime.anyWithEncoding htest.tidy hpar.tidy hlist.tidy)
+
+/-- Test whether every list element passes a test with a parameter. -/
+theorem allWithEncoding {α γ π : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
+    {encP : π ↪ List Bool} {encL : List α ↪ List Bool} [ListEncoding encA encL]
+    [SizedListEncoding encA encL] {test : π × α → Bool} {par : γ → π} {list : γ → List α}
+    (htest : ComputableInPolyTime test (encPair encP encA) encBool)
+    (hpar : ComputableInPolyTime par encIn encP) (hlist : ComputableInPolyTime list encIn encL) :
+    ComputableInPolyTime (fun x => (list x).all fun a => test (par x, a)) encIn encBool :=
+  .of_tidy (ComputableTidilyInPolyTime.allWithEncoding htest.tidy hpar.tidy hlist.tidy)
+
 end Turing.MultiTapeTM.ComputableInPolyTime
 
 namespace Turing.MultiTapeTM

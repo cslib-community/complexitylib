@@ -19,10 +19,7 @@ open Turing.MultiTapeTM Cslib.GenericRAM
 variable {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {f : α → β}
 
 example (h₁ h₂ : ComputableInPolyTime f encIn encOut) :
-    NativeCertificate.ofPolyTime h₁ = NativeCertificate.ofPolyTime h₂ := rfl
-
-example (h₁ h₂ : ComputableInPolyTime f encIn encOut) :
-    (NativeCertificate.ofPolyTime h₁).time = (NativeCertificate.ofPolyTime h₂).time := rfl
-
-example (h₁ h₂ : ComputableInPolyTime f encIn encOut) :
-    (NativeCertificate.ofPolyTime h₁).space = (NativeCertificate.ofPolyTime h₂).space := rfl
+    NativeCertificate.ofPolyTime h₁ = NativeCertificate.ofPolyTime h₂ ∧
+    (NativeCertificate.ofPolyTime h₁).time = (NativeCertificate.ofPolyTime h₂).time ∧
+    (NativeCertificate.ofPolyTime h₁).space = (NativeCertificate.ofPolyTime h₂).space :=
+  ⟨rfl, rfl, rfl⟩
