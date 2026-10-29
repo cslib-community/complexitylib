@@ -28,6 +28,8 @@ The final tidy normalization clears the working storage and restores all heads.
 
 ## Main results
 
+* `Turing.MultiTapePTM.computableInLinearTimeAndSpace_runClosedCoins`: deterministic replay is
+  linear-time and linear-work-space in the encoded coins/input pair.
 * `Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`: deterministic replay is
   polynomial-time.
 
@@ -252,6 +254,15 @@ private theorem computableTidilyInLinearTimeAndSpace_runClosedCoins [Finite Stat
   refine ⟨(d + 5) * (b + 1), htidy.mono (fun p => ?_) (fun p => ?_)⟩ <;>
     dsimp only [size] <;>
     nlinarith [Nat.zero_le (d * b * (encPair encBits encBits p).length)]
+
+/-- Saved-coin replay retains linear time and linear workspace in the encoded coins/input pair. -/
+theorem computableInLinearTimeAndSpace_runClosedCoins [Finite State]
+    (machine : MultiTapePTM k Bool State) :
+    ComputableInLinearTimeAndSpace
+      (fun p : List Bool × List Bool => machine.runClosedCoins p.1 p.2)
+      (encPair encBits encBits) encBits := by
+  obtain ⟨c, h⟩ := computableTidilyInLinearTimeAndSpace_runClosedCoins machine
+  exact ⟨c, h.computableInTimeAndSpace⟩
 
 /-- The ordinary functional polynomial-time API can invoke saved-coin replay directly. -/
 @[local fun_prop] private theorem computableTidilyInPolyTime_runClosedCoins [Finite State]

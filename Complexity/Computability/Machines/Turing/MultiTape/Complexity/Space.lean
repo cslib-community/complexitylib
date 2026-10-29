@@ -51,6 +51,8 @@ the accepting code are polynomial-time.
 
 * `Turing.MultiTapeNTM.viewStepB_iff`: the test decides `Turing.MultiTapeNTM.ViewStep`.
 * `Turing.MultiTapeNTM.computableInPolyTime_viewStepB`: the test is polynomial-time.
+* `Turing.MultiTapeNTM.computableInPolyTime_decodeView`: reading the view of a computed code is
+  polynomial-time.
 * `Turing.MultiTapeNTM.accepts_iff_reflTransGen_codeStep`: acceptance is reachability of the
   accepting code.
 * `Turing.MultiTapeNTM.computableInPolyTime_codeEdge`,
@@ -307,6 +309,13 @@ private theorem computableTidilyInPolyTime_decodeView {code : α → List Bool}
     ((ComputableTidilyInPolyTime.optionSome _).comp
       (ComputableInPolyTime.decodeFiniteCfg.tidy.comp (ComputableTidilyInPolyTime.unframe.comp
       (ComputableTidilyInPolyTime.tail (encA := encBool) |>.comp hcode))))
+
+/-- Reading the view of a computed code is polynomial-time. -/
+theorem computableInPolyTime_decodeView {code : α → List Bool}
+    (hcode : ComputableInPolyTime code encA encBits) :
+    ComputableInPolyTime (fun a => decodeView (k := k) (State := State) (code a)) encA
+      (encOption encFiniteCfg) :=
+  (computableTidilyInPolyTime_decodeView hcode.tidy).computableInPolyTime
 
 /-- The edge test by cases on the decoded views and the tag of the second code. -/
 theorem codeEdge_eq (code next : List Bool) : ntm.codeEdge code next =

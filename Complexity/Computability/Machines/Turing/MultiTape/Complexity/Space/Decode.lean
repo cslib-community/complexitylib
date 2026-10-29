@@ -31,11 +31,14 @@ folded into a canonical tape by `StackTape.cons`, last cell first.
 ## Main definitions
 
 * `Turing.MultiTapeTM.decodeStackTape`, `Turing.MultiTapeTM.decodeBiTape`: decoders of tapes.
+* `Turing.MultiTapeTM.decodeTapes`: the decoder of a fixed finite family of tapes.
 * `Turing.MultiTapeTM.decodeFiniteCfg`: the decoder of finite configurations.
 
 ## Main results
 
 * `Turing.MultiTapeTM.decodeFiniteCfg_encFiniteCfg`: decoding inverts the encoding.
+* `Turing.MultiTapeTM.ComputableInPolyTime.decodeTapes`: decoding a fixed finite family of
+  tapes is polynomial-time.
 * `Turing.MultiTapeTM.ComputableInPolyTime.decodeFiniteCfg`: decoding is polynomial-time.
 
 ## Implementation notes
@@ -384,6 +387,11 @@ theorem decodeStackTape :
 theorem decodeBiTape :
     ComputableInPolyTime MultiTapeTM.decodeBiTape encBits (encBiTape encBool) :=
   ComputableTidilyInPolyTime.decodeBiTape.computableInPolyTime
+
+/-- Decoding a fixed finite family of tapes is polynomial-time. -/
+theorem decodeTapes (k : ℕ) :
+    ComputableInPolyTime (MultiTapeTM.decodeTapes k) encBits (encPi (encBiTape encBool)) :=
+  (ComputableTidilyInPolyTime.decodeTapes k).computableInPolyTime
 
 variable {k : ℕ} {State : Type} [Finite State]
 
