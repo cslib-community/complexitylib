@@ -262,7 +262,7 @@ theorem exists_integralFrame {ι : Type*} [Finite ι]
     this _ U rfl
   intro k
   induction k using Nat.strong_induction_on with
-  | h k ih =>
+  | ind k ih =>
     intro U hdim
     by_cases hU : U = ⊥
     · subst U
