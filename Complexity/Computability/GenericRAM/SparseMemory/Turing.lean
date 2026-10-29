@@ -208,14 +208,8 @@ theorem scanSpace_le_linear (q : Address × SparseMemory Address Value) :
 
 variable [DecidableEq Address]
 
-private def findStep {π α : Type} (t : π × α → Bool) (p : π) (acc : Option α) (a : α) :
-    Option α :=
-  if acc.isSome then acc else if t (p, a) then some a else none
-
-private lemma foldl_findStep {π α : Type} (t : π × α → Bool) (p : π) (l : List α)
-    (acc : Option α) :
-    l.foldl (findStep t p) acc = acc.or (l.find? fun a => t (p, a)) := by
-  induction l generalizing acc <;> cases acc <;> grind [findStep]
+open ComputableTidilyInDegree
+  (findStep foldl_findStep filterStep foldl_filterStep length_encList_filter_le)
 
 private theorem findWith {γ α π : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
     {encP : π ↪ List Bool} {par : γ → π} {list : γ → List α} {Tp Tl Sp Sl : γ → ℕ}
@@ -277,18 +271,6 @@ private theorem findWith {γ α π : Type} {encIn : γ ↪ List Bool} {enc : α 
     omega
   · omega
   · rw [foldl_findStep, Option.none_or]
-
-private def filterStep {π α : Type} (t : π × α → Bool) (p : π) (acc : List α) (a : α) : List α :=
-  if t (p, a) then acc ++ [a] else acc
-
-private lemma foldl_filterStep {π α : Type} (t : π × α → Bool) (p : π) (l acc : List α) :
-    l.foldl (filterStep t p) acc = acc ++ l.filter fun a => t (p, a) := by
-  induction l generalizing acc <;> grind [filterStep]
-
-private lemma length_encList_filter_le {α : Type} (enc : α ↪ List Bool) (f : α → Bool)
-    (l : List α) :
-    (encList enc (l.filter f)).length ≤ (encList enc l).length :=
-  (List.filter_sublist.flatMap (frame ∘ enc)).length_le
 
 private theorem filterWith {γ α π : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
     {encP : π ↪ List Bool} {par : γ → π} {list : γ → List α} {Tp Tl Sp Sl : γ → ℕ}
