@@ -12,6 +12,7 @@ public import Complexity.Foundations.Data.Polynomial.CoeffNorm1
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.Ring.Abs
+import Mathlib.Data.Nat.Factorial.BigOperators
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Positivity
@@ -710,7 +711,9 @@ theorem coeffNorm1_mismatchAnnihilatorScaledInt_le {Q r : ℕ} (u y : AuxLabel Q
     _ = 2 ^ #(mismatchSet u y) * Q.factorial := by
       rw [prod_mul_distrib, prod_const, ← mul_assoc,
         mul_comm (∏ s ∈ (mismatchSet u y)ᶜ, (s.1 + 1)) (2 ^ #(mismatchSet u y)),
-        mul_assoc, prod_compl_mul_prod, prod_fin_add_one_eq_factorial]
+        mul_assoc, prod_compl_mul_prod,
+        Fin.prod_univ_eq_prod_range (fun i => i + 1) Q,
+        Finset.prod_range_add_one_eq_factorial]
     _ ≤ Q.factorial * 2 ^ Q := by
       rw [mul_comm]
       exact Nat.mul_le_mul_left _

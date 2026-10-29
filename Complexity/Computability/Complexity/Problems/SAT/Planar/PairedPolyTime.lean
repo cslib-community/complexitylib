@@ -86,7 +86,8 @@ private theorem computable_intLt {α : Type} {enc : α ↪ List Bool} {f g : α 
   (show ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.1 < p.2))
     (encPair encIntBin encIntBin) encBool by fun_prop).comp (hf.prod hg)
 
-attribute [local fun_prop] computable_intLt
+attribute [local fun_prop] PlanarCompile.computable_intAdd computable_intLt
+  PlanarCompile.computable_natCast PlanarCompile.computable_layoutCenter
 
 private theorem computable_side :
     ComputableInPolyTime (fun p : Point × Point => side p.1 p.2)

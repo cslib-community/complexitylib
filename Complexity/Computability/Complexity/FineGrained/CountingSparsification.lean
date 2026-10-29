@@ -524,7 +524,7 @@ section PolyTime
 open ComputableInPolyTime
 
 /-- Test whether a framed list is empty in polynomial time. -/
-@[fun_prop]
+@[local fun_prop]
 theorem computableInPolyTime_listIsEmpty {β : Type} (enc : β ↪ List Bool) :
     ComputableInPolyTime List.isEmpty (encList enc) encBool := by
   have heq : (List.isEmpty : List β → Bool) = fun l => decide (l.length = 0) := by
@@ -533,7 +533,7 @@ theorem computableInPolyTime_listIsEmpty {β : Type} (enc : β ↪ List Bool) :
   fun_prop
 
 /-- Compute the tail of a framed list in polynomial time. -/
-@[fun_prop]
+@[local fun_prop]
 theorem computableInPolyTime_listTail {β : Type} (enc : β ↪ List Bool) :
     ComputableInPolyTime List.tail (encList enc) (encList enc) := by
   have heq : (List.tail : List β → List β) = fun l => l.drop 1 := by

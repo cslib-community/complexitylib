@@ -49,7 +49,6 @@ open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
 open Turing.MultiTapeTM
 
 /-- Pointwise binary integer addition is polynomial-time computable. -/
-@[fun_prop]
 theorem computable_intAdd {α : Type} {enc : α ↪ List Bool} {f g : α → ℤ}
     (hf : ComputableInPolyTime f enc encIntBin)
     (hg : ComputableInPolyTime g enc encIntBin) :
@@ -58,7 +57,6 @@ theorem computable_intAdd {α : Type} {enc : α ↪ List Bool} {f g : α → ℤ
     (encPair encIntBin encIntBin) encIntBin by fun_prop).comp (hf.prod hg)
 
 /-- Casting a unary natural number to a binary integer is polynomial-time computable. -/
-@[fun_prop]
 theorem computable_natCast :
     ComputableInPolyTime (fun n : ℕ => (n : ℤ)) encUnary encIntBin :=
   ComputableInPolyTime.intBin_natCast.comp ComputableInPolyTime.unary_to_binary
@@ -67,7 +65,7 @@ private theorem computable_finVal :
     ComputableInPolyTime (fun s : Fin 3 => s.val) (encFinEnum (Fin 3)) encUnary :=
   ComputableInPolyTime.of_finite _
 
-attribute [local fun_prop] computable_finVal
+attribute [local fun_prop] computable_intAdd computable_natCast computable_finVal
 
 private theorem computable_incidencePort :
     ComputableInPolyTime (fun p : Graph × ℕ => p.1.incidencePort p.2)
@@ -108,7 +106,6 @@ private theorem computable_canonicalPorts :
 attribute [local fun_prop] computable_canonicalPorts
 
 /-- `Layout.center` is computable in polynomial time from a unary index. -/
-@[fun_prop]
 theorem computable_layoutCenter :
     ComputableInPolyTime Layout.center encUnary encPoint := by
   unfold Layout.center encPoint

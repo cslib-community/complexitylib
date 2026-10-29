@@ -23,6 +23,7 @@ import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Pi
 import Mathlib.Data.Fintype.Prod
+import Mathlib.Data.Nat.Factorial.BigOperators
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Tactic.Linarith
@@ -1264,16 +1265,6 @@ noncomputable def auxReplacementRowScaledInt (Q r A₀ R : ℕ) (u y : AuxLabel 
       M0ScaledInt Q r A₀ R u y)) +
     C (M0ScaledInt Q r A₀ R u y) * mismatchAnnihilatorScaledInt u y
 
-/-- The product `∏ s : Fin Q, (s.1 + 1)` equals `Q!`. -/
-theorem prod_fin_add_one_eq_factorial (Q : ℕ) :
-    (∏ s : Fin Q, (s.1 + 1)) = Q.factorial := by
-  induction Q with
-  | zero => simp
-  | succ Q ih =>
-    rw [Fin.prod_univ_castSucc]
-    simp only [Fin.val_castSucc, Fin.val_last, ih, Nat.factorial_succ]
-    ring
-
 theorem map_mismatchAnnihilatorScaledInt {Q r : ℕ} (u y : AuxLabel Q r) :
     (mismatchAnnihilatorScaledInt u y).map (Int.castRingHom ℚ) =
       (Q.factorial : ℚ) • mismatchAnnihilator u y := by
@@ -1296,7 +1287,8 @@ theorem map_mismatchAnnihilatorScaledInt {Q r : ℕ} (u y : AuxLabel Q r) :
           (∏ s ∈ mismatchSet u y, ((s.1 : ℚ) + 1)) =
         (Q.factorial : ℚ) := by
     rw [prod_compl_mul_prod]
-    exact_mod_cast prod_fin_add_one_eq_factorial Q
+    exact_mod_cast (Fin.prod_univ_eq_prod_range (fun i => i + 1) Q).trans
+      (Finset.prod_range_add_one_eq_factorial Q)
   rw [hcompl, Algebra.smul_def, algebraMap_eq]
 
 theorem map_M0ScaledInt (Q r A₀ R : ℕ) :
