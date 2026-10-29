@@ -60,24 +60,16 @@ theorem shrinkingFramedFold_polyTime {routine : List Bool → List Bool}
   have hgrowth := shrinkingStep_length routine
   polytime
 
-example : ComputableInPolyTime (fun p : List Bool × List Bool => p.1 ++ p.2)
-    (encPair encBits encBits) encBits := by
-  polytime
-
-example : ComputableInPolyTime (fun p : List Bool × List Bool => p.1 ++ p.2)
-    (encPair (encList encBool) (encList encBool)) (encList encBool) := by
-  polytime
-
-example : ComputableInPolyTime (fun p : Bool × List Bool => p.1 :: p.2)
-    (encPair encBool (encList encBool)) (encList encBool) := by
-  polytime
-
-example : ComputableInPolyTime (fun p : Bool × List Bool => p.1 :: p.2)
-    (encPair encBool encBits) encBits := by
-  polytime
-
 example {routine : List Bool → List Bool}
     (hroutine : ComputableInPolyTime routine encBits encBits) (growth : ℕ) :
+    ComputableInPolyTime (fun p : List Bool × List Bool => p.1 ++ p.2)
+      (encPair encBits encBits) encBits ∧
+    ComputableInPolyTime (fun p : List Bool × List Bool => p.1 ++ p.2)
+      (encPair (encList encBool) (encList encBool)) (encList encBool) ∧
+    ComputableInPolyTime (fun p : Bool × List Bool => p.1 :: p.2)
+      (encPair encBool (encList encBool)) (encList encBool) ∧
+    ComputableInPolyTime (fun p : Bool × List Bool => p.1 :: p.2)
+      (encPair encBool encBits) encBits ∧
     ComputableInPolyTime
       (fun p : ℕ × List Bool => (fun state => shrinkingStep routine state true)^[p.1] p.2)
       (encPair encUnary encBits) encBits := by
@@ -86,7 +78,7 @@ example {routine : List Bool → List Bool}
   have hgrowth : ∀ state, (shrinkingStep routine state true).length ≤ state.length + growth := by
     intro state
     exact (shrinkingStep_length routine state true).trans (Nat.le_add_right _ _)
-  polytime
+  exact ⟨by polytime, by polytime, by polytime, by polytime, by polytime⟩
 
 -- A reducible full-arity alias must not disguise a raw search transition.
 /-- This routine has only a global raw certificate and stays opaque to plain search. -/
@@ -97,10 +89,6 @@ example {routine : List Bool → List Bool}
     ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits := by
   unfold rawOnlyReverseProbe
   exact ComputableInPolyTime.bitsReverse.tidy
-
-example : ComputableInPolyTime rawOnlyReverseProbe encBits encBits := by
-  fail_if_success polytime
-  exact .of_tidy rawOnlyReverseProbe_tidy
 
 /-- All predicate arguments are explicit, as in an ordinary client-defined abbreviation. -/
 abbrev RawAliasFull {α β : Type*} (f : α → β)
@@ -113,10 +101,6 @@ abbrev RawAliasFull {α β : Type*} (f : α → β)
     (h : RawAliasFull f input output) : ComputableInPolyTime f input output :=
   .of_tidy h
 
-example : ComputableInPolyTime rawOnlyReverseProbe encBits encBits := by
-  fail_if_success polytime
-  exact .of_tidy rawOnlyReverseProbe_tidy
-
 /-- Function-table rules must respect the same boundary as transition rules. -/
 @[irreducible] def aliasRoutine (routine : List Bool → List Bool) (word : List Bool) :
     List Bool := routine word
@@ -128,13 +112,18 @@ example : ComputableInPolyTime rawOnlyReverseProbe encBits encBits := by
   unfold aliasRoutine
   exact .of_tidy h
 
-example : ComputableInPolyTime (aliasRoutine rawOnlyReverseProbe) encBits encBits := by
-  fail_if_success polytime
-  exact aliasRoutine_plain rawOnlyReverseProbe_tidy
-
--- The copied search tables do not remove the ordinary global function rule.
-example : ComputableInPolyTime (aliasRoutine rawOnlyReverseProbe) encBits encBits := by
-  fun_prop
+-- Explicit proofs and ordinary global search run in separate conjuncts and local contexts.
+example :
+    ComputableInPolyTime rawOnlyReverseProbe encBits encBits ∧
+    ComputableInPolyTime (aliasRoutine rawOnlyReverseProbe) encBits encBits ∧
+    ComputableInPolyTime (aliasRoutine rawOnlyReverseProbe) encBits encBits := by
+  refine ⟨?_, ?_, ?_⟩
+  · fail_if_success polytime
+    exact .of_tidy rawOnlyReverseProbe_tidy
+  · fail_if_success polytime
+    exact aliasRoutine_plain rawOnlyReverseProbe_tidy
+  · fail_if_success polytime
+    fun_prop
 
 /-- A distinct opaque result makes implication consumption, rather than fact conversion,
 decisive. -/
@@ -142,31 +131,31 @@ decisive. -/
 
 -- Without the raw fact, a local implication cannot launch global raw search. Ordinary
 -- `fun_prop` still uses the same implication and existing global construction proof afterward.
+-- The supplied-raw `polytime` check is a separate conjunct from that `fun_prop` fallback.
 example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime localImplicationResult encBits encBits) :
+      ComputableInPolyTime localImplicationResult encBits encBits)
+    (hf : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits)
+    (hprobe : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
+      ComputableInPolyTime rawOnlyReverseProbe encBits encBits)
+    (halias : RawAliasFull rawOnlyReverseProbe encBits encBits →
+      ComputableInPolyTime localImplicationResult encBits encBits) :
+    ComputableInPolyTime localImplicationResult encBits encBits ∧
+    ComputableInPolyTime localImplicationResult encBits encBits ∧
+    ComputableInPolyTime rawOnlyReverseProbe encBits encBits ∧
     ComputableInPolyTime localImplicationResult encBits encBits := by
-  fail_if_success polytime
-  fun_prop
-
-example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime localImplicationResult encBits encBits)
-    (hf : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits) :
-    ComputableInPolyTime localImplicationResult encBits encBits := by
-  fail_if_success (clear hf; polytime)
-  polytime
-
--- The original reported statement, with its explicit closing proof using the supplied rule.
-example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime rawOnlyReverseProbe encBits encBits) :
-    ComputableInPolyTime rawOnlyReverseProbe encBits encBits := by
-  fail_if_success polytime
-  exact h rawOnlyReverseProbe_tidy
-
-example (h : RawAliasFull rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime localImplicationResult encBits encBits) :
-    ComputableInPolyTime localImplicationResult encBits encBits := by
-  fail_if_success polytime
-  fun_prop
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · clear hprobe halias
+    fail_if_success (clear hf; polytime)
+    clear hf
+    fun_prop
+  · clear hprobe halias
+    polytime
+  · clear h hf halias
+    fail_if_success polytime
+    exact hprobe rawOnlyReverseProbe_tidy
+  · clear h hf hprobe
+    fail_if_success polytime
+    fun_prop
 
 /-- The index is visible to local theorem matching, rather than an unconstrained parameter. -/
 @[irreducible] def indexedRawOnly (_index : ℕ) (word : List Bool) : List Bool := word.reverse
@@ -180,30 +169,31 @@ example (h : RawAliasFull rawOnlyReverseProbe encBits encBits →
 /-- The corresponding result has no public global certificate. -/
 @[irreducible] def indexedLocalResult (_index : ℕ) (word : List Bool) : List Bool := word
 
+-- Quantified fallback and supplied-evidence search are likewise checked independently.
 example (h : ∀ index, RawAliasFull (indexedRawOnly index) encBits encBits →
-    ComputableInPolyTime (indexedLocalResult index) encBits encBits) :
-    ComputableInPolyTime (indexedLocalResult 0) encBits encBits := by
-  fail_if_success polytime
-  fun_prop
-
-example (h : ∀ index, RawAliasFull (indexedRawOnly index) encBits encBits →
-    ComputableInPolyTime (indexedLocalResult index) encBits encBits)
-    (hf : ∀ index, RawAliasFull (indexedRawOnly index) encBits encBits) :
-    ComputableInPolyTime (indexedLocalResult 0) encBits encBits := by
-  fail_if_success (clear hf; polytime)
-  polytime
-
-example (routine : ℕ → List Bool → List Bool)
-    (hf : ∀ index, ComputableInPolyTime (routine index) encBits encBits) (index : ℕ) :
-    ComputableInPolyTime (routine index) encBits encBits := by
-  fail_if_success (clear hf; polytime)
-  polytime
-
-example (routine : ℕ → List Bool → List Bool)
-    (hf : ∀ index, ComputableTidilyInPolyTime (routine index) encBits encBits) (index : ℕ) :
+      ComputableInPolyTime (indexedLocalResult index) encBits encBits)
+    (hf : ∀ index, RawAliasFull (indexedRawOnly index) encBits encBits)
+    (routine : ℕ → List Bool → List Bool)
+    (hplain : ∀ index, ComputableInPolyTime (routine index) encBits encBits)
+    (htidy : ∀ index, ComputableTidilyInPolyTime (routine index) encBits encBits)
+    (index : ℕ) :
+    ComputableInPolyTime (indexedLocalResult 0) encBits encBits ∧
+    ComputableInPolyTime (indexedLocalResult 0) encBits encBits ∧
+    ComputableInPolyTime (routine index) encBits encBits ∧
     ComputableTidilyInPolyTime (routine index) encBits encBits := by
-  fail_if_success (clear hf; polytime)
-  polytime
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · clear routine hplain htidy index
+    fail_if_success (clear hf; polytime)
+    clear hf
+    fun_prop
+  · clear routine hplain htidy index
+    polytime
+  · clear h hf htidy
+    fail_if_success (clear hplain; polytime)
+    polytime
+  · clear h hf hplain
+    fail_if_success (clear htidy; polytime)
+    polytime
 
 /-- A named result is opaque to generic decomposition. -/
 @[irreducible] def namedConditionalResult (word : List Bool) : List Bool := rawOnlyReverseProbe word
@@ -216,14 +206,6 @@ theorem namedConditional_plain
   unfold namedConditionalResult
   exact .of_tidy h
 
-example : ComputableInPolyTime namedConditionalResult encBits encBits := by
-  fail_if_success polytime
-  exact namedConditional_plain rawOnlyReverseProbe_tidy
-
-example : ComputableInPolyTime namedConditionalResult encBits encBits := by
-  fail_if_success polytime
-  fun_prop
-
 /-- A separate named target isolates the full-arity alias variant. -/
 @[irreducible] def namedAliasResult (word : List Bool) : List Bool := rawOnlyReverseProbe word
 
@@ -233,10 +215,6 @@ theorem namedAlias_plain (h : RawAliasFull rawOnlyReverseProbe encBits encBits) 
     ComputableInPolyTime namedAliasResult encBits encBits := by
   unfold namedAliasResult
   exact .of_tidy h
-
-example : ComputableInPolyTime namedAliasResult encBits encBits := by
-  fail_if_success polytime
-  exact namedAlias_plain rawOnlyReverseProbe_tidy
 
 /-- The matching raw construction key must retain its conditional certificate. -/
 @[program_certificate h]
@@ -263,20 +241,34 @@ private meta def plainNamedOnly : Aesop.RuleTac :=
 private meta def rawNamedOnly : Aesop.RuleTac :=
   Cslib.Tactic.applyCertificates ``ComputableTidilyInPolyTime
 
+-- The explicit named API must not put its conclusion in scope for the global search check.
 example (routine : List Bool → List Bool)
     (h : ComputableInPolyTime routine encBits encBits) :
-    ComputableInPolyTime (safeNamedResult routine) encBits encBits := by
-  fail_if_success (clear h; polytime)
-  fail_if_success aesop
-  run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
-    Lean.Elab.Tactic.evalTactic (← `(tactic|
-      aesop (rule_sets := [-builtin, -default]) (add unsafe 100% tactic plainNamedOnly)))
-
-example : ComputableTidilyInPolyTime namedConditionalResult encBits encBits := by
-  fail_if_success aesop
-  run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
-    Lean.Elab.Tactic.evalTactic (← `(tactic|
-      aesop (rule_sets := [-builtin, -default]) (add unsafe 100% tactic rawNamedOnly)))
+    ComputableInPolyTime namedConditionalResult encBits encBits ∧
+    ComputableInPolyTime namedConditionalResult encBits encBits ∧
+    ComputableInPolyTime namedAliasResult encBits encBits ∧
+    ComputableInPolyTime (safeNamedResult routine) encBits encBits ∧
+    ComputableTidilyInPolyTime namedConditionalResult encBits encBits := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · clear routine h
+    fail_if_success polytime
+    exact namedConditional_plain rawOnlyReverseProbe_tidy
+  · clear routine h
+    fail_if_success polytime
+    fun_prop
+  · clear routine h
+    fail_if_success polytime
+    exact namedAlias_plain rawOnlyReverseProbe_tidy
+  · fail_if_success (clear h; polytime)
+    fail_if_success aesop
+    run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
+      Lean.Elab.Tactic.evalTactic (← `(tactic|
+        aesop (rule_sets := [-builtin, -default]) (add unsafe 100% tactic plainNamedOnly)))
+  · clear routine h
+    fail_if_success aesop
+    run_tac Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
+      Lean.Elab.Tactic.evalTactic (← `(tactic|
+        aesop (rule_sets := [-builtin, -default]) (add unsafe 100% tactic rawNamedOnly)))
 
 /-- A genuine plain eager premise starts its own nested certificate search. -/
 @[irreducible] def eagerLocalResult (word : List Bool) : List Bool := localImplicationResult word
@@ -288,66 +280,10 @@ theorem eagerLocal_plain (h : ComputableInPolyTime localImplicationResult encBit
   unfold eagerLocalResult
   exact h
 
-example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime localImplicationResult encBits encBits) :
-    ComputableInPolyTime eagerLocalResult encBits encBits := by
-  fail_if_success polytime
-  exact eagerLocal_plain (h rawOnlyReverseProbe_tidy)
-
-example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime localImplicationResult encBits encBits)
-    (hf : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits) :
-    ComputableInPolyTime eagerLocalResult encBits encBits := by
-  fail_if_success (clear hf; polytime)
-  polytime
-
--- Ordinary Aesop is not constrained by the scoped public-search policy.
-example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime localImplicationResult encBits encBits) :
-    ComputableInPolyTime localImplicationResult encBits encBits := by
-  fail_if_success polytime
-  aesop (rule_sets := [PolyTime])
-
--- A successful scoped search also restores the ordinary builtin descriptor.
-example (routine : List Bool → List Bool)
-    (hf : ComputableInPolyTime routine encBits encBits)
-    (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-      ComputableInPolyTime localImplicationResult encBits encBits) :
-    ComputableInPolyTime routine encBits encBits ∧
-      ComputableInPolyTime localImplicationResult encBits encBits := by
-  constructor
-  · polytime
-  · aesop (rule_sets := [PolyTime])
-
--- Catching an exception does not leave the copied builtin rule in the caller environment.
-example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
-    ComputableInPolyTime localImplicationResult encBits encBits) :
-    ComputableInPolyTime localImplicationResult encBits encBits := by
-  run_tac do
-    try
-      Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
-        throwError "test scoped restoration"
-    catch _ => pure ()
-    Lean.Elab.Tactic.evalTactic (← `(tactic| aesop (rule_sets := [PolyTime])))
-
--- An already supplied alias certificate is evidence, not a raw search request.
-example (routine : List Bool → List Bool) (h : RawAliasFull routine encBits encBits) :
-    ComputableInPolyTime routine encBits encBits := by
-  polytime
-
 /-- The reverse conversion likewise uses only an existing local plain certificate. -/
 abbrev PlainAliasFull {α β : Type*} (f : α → β)
     (input : α ↪ List Bool) (output : β ↪ List Bool) : Prop :=
   ComputableInPolyTime f input output
-
-example (routine : List Bool → List Bool) (h : PlainAliasFull routine encBits encBits) :
-    ComputableTidilyInPolyTime routine encBits encBits := by
-  polytime
-
--- Local conversions do not install a global proof or unfilter later searches.
-example : ComputableInPolyTime rawOnlyReverseProbe encBits encBits := by
-  fail_if_success polytime
-  exact .of_tidy rawOnlyReverseProbe_tidy
 
 /-- Ordinary plain contracts remain a supported transition source. -/
 @[irreducible] def RoutineContract (f : List Bool → List Bool) : Prop :=
@@ -361,16 +297,53 @@ attribute [fun_prop] RoutineContract
   unfold RoutineContract at hf
   exact hf
 
-example (routine : List Bool → List Bool) (h : RoutineContract routine) :
-    ComputableInPolyTime routine encBits encBits := by
-  polytime
-
--- A genuine plain contract implication and its supplied premise remain usable local rules.
-example (routine : List Bool → List Bool) (hc : RoutineContract routine)
-    (h : RoutineContract routine → ComputableInPolyTime localImplicationResult encBits encBits) :
+-- The explicit eager API and nested supplied-evidence search have independent proof contexts.
+example (h : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits →
+      ComputableInPolyTime localImplicationResult encBits encBits)
+    (hf : ComputableTidilyInPolyTime rawOnlyReverseProbe encBits encBits)
+    (routine : List Bool → List Bool)
+    (hplain : ComputableInPolyTime routine encBits encBits)
+    (hrawAlias : RawAliasFull routine encBits encBits)
+    (hplainAlias : PlainAliasFull routine encBits encBits)
+    (hc : RoutineContract routine)
+    (hcImp : RoutineContract routine →
+      ComputableInPolyTime localImplicationResult encBits encBits) :
+    ComputableInPolyTime eagerLocalResult encBits encBits ∧
+    ComputableInPolyTime eagerLocalResult encBits encBits ∧
+    (ComputableInPolyTime routine encBits encBits ∧
+      ComputableInPolyTime localImplicationResult encBits encBits) ∧
+    ComputableInPolyTime localImplicationResult encBits encBits ∧
+    ComputableInPolyTime routine encBits encBits ∧
+    ComputableTidilyInPolyTime routine encBits encBits ∧
+    ComputableInPolyTime rawOnlyReverseProbe encBits encBits ∧
+    ComputableInPolyTime routine encBits encBits ∧
     ComputableInPolyTime localImplicationResult encBits encBits := by
-  fail_if_success (clear hc; polytime)
-  polytime
+  refine ⟨?_, ?_, ?_, ?_, by clear h hf hplain hplainAlias hc hcImp; polytime,
+    by clear h hf hplain hrawAlias hc hcImp; polytime, ?_,
+    by clear h hf hplain hrawAlias hplainAlias hcImp; polytime, ?_⟩
+  · clear routine hplain hrawAlias hplainAlias hc hcImp
+    fail_if_success (clear hf; polytime)
+    exact eagerLocal_plain (h rawOnlyReverseProbe_tidy)
+  · clear routine hplain hrawAlias hplainAlias hc hcImp
+    polytime
+  · clear hf hrawAlias hplainAlias hc hcImp
+    fail_if_success (clear hplain; polytime)
+    refine ⟨by polytime, ?_⟩
+    fail_if_success polytime
+    aesop (rule_sets := [PolyTime])
+  · clear hf routine hplain hrawAlias hplainAlias hc hcImp
+    run_tac do
+      try
+        Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
+          throwError "test scoped restoration"
+      catch _ => pure ()
+      Lean.Elab.Tactic.evalTactic (← `(tactic| aesop (rule_sets := [PolyTime])))
+  · clear h hf routine hplain hrawAlias hplainAlias hc hcImp
+    fail_if_success polytime
+    exact .of_tidy rawOnlyReverseProbe_tidy
+  · clear h hf hplain hrawAlias hplainAlias
+    fail_if_success (clear hc; polytime)
+    polytime
 
 end ComplexityTests.PolyTimePlainSource
 

@@ -4810,10 +4810,6 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
       (fun p : ((ℕ × List Bool) × List Bool) ×
           ((Unit × List Bool) × List (List Bool × List Bool)) =>
         cwRandomNonceLogHandler msgLen hash p.1.1.1 p.1.2 p.2.1 p.2.2) := by
-  have hmsgLen_tidy := hmsgLen.tidy
-  have hhash_tidy := hhash.tidy
-  have hframe : ComputableTidilyInPolyTime frame encBits encBits :=
-    ComputableInPolyTime.frame.tidy
   unfold cwRandomNonceLogHandler
   have hcond : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) ×
@@ -4846,6 +4842,10 @@ private theorem isOraclePPTOn_cwRandomNonceLogHandler
           encBits)
         encBits)
       encBits := by
+    -- plain `polytime` runs out of heartbeats here; the tidy search with tidy context does not
+    have hhash_tidy := hhash.tidy
+    have hframe : ComputableTidilyInPolyTime frame encBits encBits :=
+      ComputableInPolyTime.frame.tidy
     unfold mkFullTag
     polytime
   have hpost : ComputableInPolyTime

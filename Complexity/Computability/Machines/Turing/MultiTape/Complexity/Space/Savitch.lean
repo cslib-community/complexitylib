@@ -132,8 +132,7 @@ theorem computableInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d
 @[fun_prop]
 theorem computableInPolyTime_viewCodeWidth (c d : ℕ) :
     ComputableInPolyTime (ntm.viewCodeWidth c d) encBits encUnary := by
-  refine .of_tidy ?_
-  have := computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := encBits) c d
+  have := computableInPolyTime_codeWidth (ntm := ntm) (enc := encBits) c d
   unfold viewCodeWidth
   fun_prop
 

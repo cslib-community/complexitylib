@@ -115,31 +115,21 @@ example (f g : List Bool → List Bool)
   (show ComputableTidilyInDegree (fun x => f (g x)) encBits encBits 3 1 by
     fun_prop (disch := lia)).computableTidilyInPolyTime
 
--- A recognizably functional scan gets linear time and constant workspace.
-example : ComputableTidilyInO (fun l : List Bool => l.foldl (· ^^ ·) false)
-    encBits encBool List.length (fun _ => 0) := by
-  fun_prop
-
-example : ComputableTidilyInO (List.foldl (fun state bit => state ^^ bit) false)
-    encBits (encFramed encBool) (fun l => l.length) (fun _ => 0) := by
-  fun_prop
-
--- The finite-state rule works for arbitrary fixed transition tables and encodings.
-example {σ : Type} [Finite σ] (enc : σ ↪ List Bool) (step : σ → Bool → σ) (init : σ) :
-    ComputableTidilyInO (fun l => l.foldl step init) encBits enc List.length (fun _ => 0) := by
-  fun_prop
-
--- Emitting each mapped bit uses no work-tape cells, even though the output grows.
-example (f : Bool → Bool) :
+-- A recognizably functional scan gets linear time and constant workspace, and emitting each
+-- mapped bit uses no work-tape cells even though the output grows.
+example {σ : Type} [Finite σ] (enc : σ ↪ List Bool) (step : σ → Bool → σ) (init : σ)
+    (f : Bool → Bool) :
+    ComputableTidilyInO (fun l : List Bool => l.foldl (· ^^ ·) false)
+      encBits encBool List.length (fun _ => 0) ∧
+    ComputableTidilyInO (List.foldl (fun state bit => state ^^ bit) false)
+      encBits (encFramed encBool) (fun l => l.length) (fun _ => 0) ∧
+    ComputableTidilyInO (fun l => l.foldl step init) encBits enc List.length (fun _ => 0) ∧
     ComputableTidilyInTimeAndSpace (fun l : List Bool => l.map f) encBits encBits
-      (fun l => 4 * l.length + 8) (fun _ => 0) := by
-  fun_prop
-
--- The same growing-list expression has a streaming implementation after a functional rewrite.
-example (f : Bool → Bool) :
+      (fun l => 4 * l.length + 8) (fun _ => 0) ∧
     ComputableTidilyInTimeAndSpace (fun l : List Bool =>
       l.foldl (fun acc b => acc ++ [f b]) []) encBits encBits
       (fun l => 4 * l.length + 8) (fun _ => 0) := by
+  refine ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop, ?_⟩
   simpa only [List.foldl_append_eq_append, List.nil_append, ← List.flatMap_def,
     ← List.map_eq_flatMap] using ComputableTidilyInTimeAndSpace.map_bits f
 
@@ -250,32 +240,24 @@ example : ∃ c, ComputableTidilyInTimeAndSpace (fun l => l.foldl resetStep []) 
     apply Nat.mul_le_mul_left c
     nlinarith
 
--- An empty input still retains and emits the nonempty initial state.
-example : ¬ (∀ l : List Bool, ∀ i ≤ l.length,
-    (encBits ((l.take i).foldl (fun state _ => state) [true])).length ≤ 0) := by
-  intro h
-  have := h [] 0 (by simp)
-  simp at this
-
--- A one-bit input charges the successor state even when the initial state is empty.
-example : ¬ (∀ l : List Bool, ∀ i ≤ l.length,
-    (encBits ((l.take i).foldl (fun state bit => state ++ [bit]) [])).length ≤ 0) := by
-  intro h
-  have := h [true] 1 (by simp)
-  simp at this
-
--- Reversal, dropLast and getLast have linear time, zero workspace and exact output degrees.
-example : ComputableTidilyInTimeAndSpace (List.reverse (α := Bool)) encBits encBits
-    (fun l => 2 * l.length + 2) (fun _ => 0) := by
-  fun_prop
-
-example : ComputableTidilyInTimeAndSpace (List.dropLast (α := Bool)) encBits encBits
-    (fun l => 4 * l.length + 8) (fun _ => 0) := by
-  fun_prop
-
-example : ComputableTidilyInTimeAndSpace (fun l : List Bool => l.getLast?.toList) encBits encBits
-    (fun l => 4 * l.length + 8) (fun _ => 0) := by
-  fun_prop
+-- Empty input retains and emits the nonempty initial state; one-bit input charges successor state;
+-- reversal, dropLast, and getLast have linear time and zero workspace.
+example :
+    ¬ (∀ l : List Bool, ∀ i ≤ l.length,
+      (encBits ((l.take i).foldl (fun state _ => state) [true])).length ≤ 0) ∧
+    ¬ (∀ l : List Bool, ∀ i ≤ l.length,
+      (encBits ((l.take i).foldl (fun state bit => state ++ [bit]) [])).length ≤ 0) ∧
+    ComputableTidilyInTimeAndSpace (List.reverse (α := Bool)) encBits encBits
+      (fun l => 2 * l.length + 2) (fun _ => 0) ∧
+    ComputableTidilyInTimeAndSpace (List.dropLast (α := Bool)) encBits encBits
+      (fun l => 4 * l.length + 8) (fun _ => 0) ∧
+    ComputableTidilyInTimeAndSpace (fun l : List Bool => l.getLast?.toList) encBits encBits
+      (fun l => 4 * l.length + 8) (fun _ => 0) := by
+  refine ⟨fun h => ?_, fun h => ?_, by fun_prop, by fun_prop, by fun_prop⟩
+  · have := h [] 0 (by simp)
+    simp at this
+  · have := h [true] 1 (by simp)
+    simp at this
 
 example (f : List Bool → List Bool) (hf : ComputableTidilyInDegree f encBits encBits 2 1) :
     ComputableTidilyInDegree (fun x => (f x).dropLast.reverse) encBits encBits 2 1 := by
@@ -344,14 +326,11 @@ theorem ggm_eval_quantitative {generator : List Bool → List Bool}
   · nlinarith
 
 -- Concrete boundary evaluations of `GGM.eval` (empty query, empty seed, multi-bit path).
-example : Cslib.Crypto.GGM.eval (fun s => s ++ s.map (!·)) [true, false] [] =
-    [true, false] := rfl
-
-example : Cslib.Crypto.GGM.eval (fun s => s ++ s.map (!·)) [] [true, false, true] =
-    [] := rfl
-
-example : Cslib.Crypto.GGM.eval (fun s => s ++ s.map (!·)) [true, false] [false, true] =
-    [false, true] := by decide
+example :
+    Cslib.Crypto.GGM.eval (fun s => s ++ s.map (!·)) [true, false] [] = [true, false] ∧
+    Cslib.Crypto.GGM.eval (fun s => s ++ s.map (!·)) [] [true, false, true] = [] ∧
+    Cslib.Crypto.GGM.eval (fun s => s ++ s.map (!·)) [true, false] [false, true] =
+      [false, true] := by decide
 
 /-- info: 'Turing.MultiTapeTM.read_rawFrameReader' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
