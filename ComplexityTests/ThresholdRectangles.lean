@@ -22,17 +22,28 @@ example (a : ℝ) (ha : 0 ≤ a) (ha₁ : a ≤ 1) :
       (1 - a) * 3 ≤ ((({-2, 0, 3} : Finset ℤ).filter fun _ => (7 : ℝ) ≤ 7).card : ℝ) := by
   simpa using Finset.exists_quantile ({-2, 0, 3} : Finset ℤ) (by simp) (fun _ => (7 : ℝ)) ha ha₁
 
-example : ∃ p ∈ ({-2, 0, 3} : Finset ℤ),
-    0 ≤ ((({-2, 0, 3} : Finset ℤ).filter fun x => x ≤ p).card : ℝ) ∧
-    3 ≤ ((({-2, 0, 3} : Finset ℤ).filter fun x => p ≤ x).card : ℝ) := by
-  simpa using Finset.exists_quantile ({-2, 0, 3} : Finset ℤ) (by simp) id
+-- At `a = 0` and `a = 1`, the quantile witness on `{-2, 0, 3}` must be `-2` and `3` respectively.
+example : ∃ p ∈ ({-2, 0, 3} : Finset ℤ), p = -2 ∧
+    3 ≤ (({-2, 0, 3} : Finset ℤ).filter fun x => p ≤ x).card := by
+  obtain ⟨p, hp, hle, hge⟩ := Finset.exists_quantile ({-2, 0, 3} : Finset ℤ) (by simp) id
     (a := 0) (by norm_num) (by norm_num)
+  have hge' : 3 ≤ (({-2, 0, 3} : Finset ℤ).filter fun x => p ≤ x).card := by
+    simpa using hge
+  clear hle hge
+  refine ⟨p, hp, ?_, hge'⟩
+  revert p hp hge'
+  decide
 
-example : ∃ p ∈ ({-2, 0, 3} : Finset ℤ),
-    3 ≤ ((({-2, 0, 3} : Finset ℤ).filter fun x => x ≤ p).card : ℝ) ∧
-    0 ≤ ((({-2, 0, 3} : Finset ℤ).filter fun x => p ≤ x).card : ℝ) := by
-  simpa using Finset.exists_quantile ({-2, 0, 3} : Finset ℤ) (by simp) id
+example : ∃ p ∈ ({-2, 0, 3} : Finset ℤ), p = 3 ∧
+    3 ≤ (({-2, 0, 3} : Finset ℤ).filter fun x => x ≤ p).card := by
+  obtain ⟨p, hp, hle, hge⟩ := Finset.exists_quantile ({-2, 0, 3} : Finset ℤ) (by simp) id
     (a := 1) (by norm_num) (by norm_num)
+  have hle' : 3 ≤ (({-2, 0, 3} : Finset ℤ).filter fun x => x ≤ p).card := by
+    simpa using hle
+  clear hle hge
+  refine ⟨p, hp, ?_, hle'⟩
+  revert p hp hle'
+  decide
 
 example : ¬ ∃ p ∈ (∅ : Finset ℤ), (0 : ℝ) ≤ 1 := by simp
 
@@ -113,19 +124,25 @@ example : ∃ t : DecisionTree (SeparableComparison Bool Bool) Bool,
   intro x y
   cases x <;> cases y <;> norm_num [xorTree, DecisionTree.eval, SeparableComparison.eval]
 
--- Structural node count, rank, decision-list predicate, and energy on `unbalanced` and `xorTree`.
-example : unbalanced.nodeCount = 2 := rfl
-example : unbalanced.leafCount = unbalanced.nodeCount + 1 :=
-  unbalanced.leafCount_eq_nodeCount_add_one
-example : unbalanced.rank = 1 := rfl
-example : unbalanced.energy = 2 := rfl
-example : unbalanced.IsDecisionList := Or.inl ⟨rfl, Or.inl ⟨rfl, trivial⟩⟩
-example : unbalanced.leafCount ≤
-    ∑ j ∈ Finset.range (unbalanced.rank + 1), unbalanced.depth.choose j :=
-  unbalanced.leafCount_le_sum_choose_rank
-example : unbalanced.leafCount ≤
-    ∑ j ∈ Finset.range (unbalanced.energy + 1), unbalanced.depth.choose j :=
-  unbalanced.leafCount_le_sum_choose_energy
+-- Structural node count, rank, decision-list predicate, and energy on `unbalanced`.
+example :
+    unbalanced.nodeCount = 2 ∧
+      unbalanced.leafCount = 2 + 1 ∧
+      unbalanced.rank = 1 ∧
+      unbalanced.energy = 2 :=
+  ⟨rfl, unbalanced.leafCount_eq_nodeCount_add_one, rfl, rfl⟩
+
+example : unbalanced.IsDecisionList ∧ unbalanced.rank ≤ 1 := by
+  have hdl : unbalanced.IsDecisionList := Or.inl ⟨rfl, Or.inl ⟨rfl, trivial⟩⟩
+  exact ⟨hdl, hdl.rank_le_one⟩
+
+example :
+    unbalanced.leafCount =
+        ∑ j ∈ Finset.range (unbalanced.rank + 1), unbalanced.depth.choose j ∧
+      unbalanced.leafCount <
+        ∑ j ∈ Finset.range (unbalanced.energy + 1), unbalanced.depth.choose j :=
+  ⟨le_antisymm unbalanced.leafCount_le_sum_choose_rank (by decide),
+    lt_of_le_of_ne unbalanced.leafCount_le_sum_choose_energy (by decide)⟩
 
 -- Concrete `BiMonotoneComparison` queries using `ofMax` and `ofMin`.
 private noncomputable def maxCompare : BiMonotoneComparison (Fin 5) (Fin 7) :=

@@ -30,18 +30,28 @@ example : ((range 2).filter fun m =>
 example : ((range 2).filter fun m =>
     dirs false m = true ∧ sizes m - (hearts m).card = 1).card = 0 := by decide
 
--- The first B-step saturates its petal charge: four width-two petals for theta(2)=4.
-example : 4 ≤ countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 := by
-  exact mul_card_counting_petalSteps_le θpos 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (fun i hi => (choices true i hi).1) rootReduced 2
-
-example : countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 = 4 := by decide
+-- The first B-step saturates its petal charge with equality: `2 ^ 2 * 1 = 4` width-two insertions.
+example :
+    θ 2 * ((range 2).filter fun m =>
+        dirs true m = true ∧ sizes m - (hearts m).card = 2).card =
+      countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 := by
+  apply le_antisymm
+  · exact mul_card_counting_petalSteps_le θpos 2 (nodes true) sizes hearts (dirs true)
+      (steps true) (fun i hi => (choices true i hi).1) rootReduced 2
+  · rw [four_pair_insertion_events]
+    decide
 
 -- Unit-petal charges are valid too: the second B-step inserts two unit petals as well as its
--- negated-heart unit. Unit events from the earlier step remain part of the total.
-example : 2 ≤ countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 1 := by
-  exact mul_card_counting_petalSteps_le θpos 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (fun i hi => (choices true i hi).1) rootReduced 1
+-- negated-heart unit. Unit events from the earlier step remain part of the total (`2 < 4`).
+example :
+    θ 1 * ((range 2).filter fun m =>
+        dirs true m = true ∧ sizes m - (hearts m).card = 1).card ≤
+      countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 1 ∧
+    θ 1 * ((range 2).filter fun m =>
+        dirs true m = true ∧ sizes m - (hearts m).card = 1).card <
+      countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 1 := by
+  refine ⟨mul_card_counting_petalSteps_le θpos 2 (nodes true) sizes hearts (dirs true)
+    (steps true) (fun i hi => (choices true i hi).1) rootReduced 1, by decide⟩
 
 -- Obtain a positive new-clause witness from the actual second step, then prove it has width one.
 example : ∃ C ∈ countingIntro (nodes true 1) (sizes 1) (hearts 1) (dirs true 1) \
@@ -55,40 +65,49 @@ example : ∃ C ∈ countingIntro (nodes true 1) (sizes 1) (hearts 1) (dirs true
   change C.card < 2 at hlt
   exact ⟨C, hC, by omega⟩
 
-example : 2 ≤ ∑ j ∈ Ico 1 3, countingInsertionCount 2 (nodes true) sizes hearts (dirs true) j := by
-  exact counting_length_le_sum_insertions θpos 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (fun i hi => (choices true i hi).1) rootReduced (by decide)
-
 example :
-    (∑ j ∈ Ico 1 3, countingInsertionCount 2 (nodes true) sizes hearts (dirs true) j) = 8 := by
-  decide
+    2 ≤ ∑ j ∈ Ico 1 3, countingInsertionCount 2 (nodes true) sizes hearts (dirs true) j ∧
+      (∑ j ∈ Ico 1 3, countingInsertionCount 2 (nodes true) sizes hearts (dirs true) j) = 8 :=
+  ⟨counting_length_le_sum_insertions θpos 2 (nodes true) sizes hearts (dirs true)
+    (steps true) (fun i hi => (choices true i hi).1) rootReduced (by decide), by decide⟩
 
 -- The preserved width is three, not two; this root-width premise is checked on the fixture.
-example : ¬ ∀ C ∈ root, C.card ≤ 2 := by decide
-example : ∀ C ∈ nodes true 2, C.card ≤ 3 := by
-  exact card_le_counting_node θpos 2 (nodes true) sizes hearts (dirs true) (steps true)
-    (fun i hi => (choices true i hi).1) (by decide) le_rfl
+example : (¬ ∀ C ∈ root, C.card ≤ 2) ∧ ∀ C ∈ nodes true 2, C.card ≤ 3 :=
+  ⟨by decide, card_le_counting_node θpos 2 (nodes true) sizes hearts (dirs true) (steps true)
+    (fun i hi => (choices true i hi).1) (by decide) le_rfl⟩
 
--- For k=3 and M=2 the source constants are C=28 and Gamma=16, rather than a coarser rate.
-example : 2 ≤ 252 := by
-  exact counting_length_le (M := 2) (by decide) 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (choices true) rootReduced rootNontautological (k := 3) (by decide) univ
-    (by intro C hC l hl; exact mem_univ _)
+-- Any legal counting path starting from `root` (`k = 3`, `M = 2`, `9` variables) has length at
+-- most `252` and at most `72` B-choices (`2 * #B ≤ 144`).
+example (N : ℕ) (ψ : ℕ → ClauseSet (Fin 9)) (c : ℕ → ℕ)
+    (H : ℕ → Finset (Literal (Fin 9))) (b : ℕ → Bool) (hroot : ψ 0 = root)
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hchoice : ∀ i < N, Choice θ (ψ i) (c i) (H i)) :
+    N ≤ 252 ∧ ((range N).filter fun m => b m = true).card ≤ 72 := by
+  have hred : Reduced (ψ 0) := hroot ▸ rootReduced
+  have hnt : ∀ C ∈ ψ 0, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C := hroot ▸ rootNontautological
+  have hk : ∀ C ∈ ψ 0, C.card ≤ 3 := by rw [hroot]; decide
+  have hsup : ∀ C ∈ ψ 0, ∀ l ∈ C, l.1 ∈ (univ : Finset (Fin 9)) := fun _ _ _ _ => mem_univ _
+  have hlen : N ≤ 252 :=
+    counting_length_le (M := 2) (by decide) N ψ c H b hstep hchoice hred hnt hk univ hsup
+  have hB : 2 * ((range N).filter fun m => b m = true).card ≤ 144 :=
+    mul_card_counting_B_le (M := 2) (by decide) N ψ c H b hstep hchoice hred hnt hk univ hsup
+  exact ⟨hlen, by omega⟩
 
-example : 2 * ((range 2).filter fun m => dirs true m = true).card ≤ 144 := by
-  exact mul_card_counting_B_le (M := 2) (by decide) 2 (nodes true) sizes hearts (dirs true)
-    (steps true) (choices true) rootReduced rootNontautological (k := 3) (by decide) univ
-    (by intro C hC l hl; exact mem_univ _)
-
-example : 2 * ((range 2).filter fun m => dirs false m = true).card ≤ 144 := by
-  exact mul_card_counting_B_le (M := 2) (by decide) 2 (nodes false) sizes hearts (dirs false)
-    (steps false) (choices false) rootReduced rootNontautological (k := 3) (by decide) univ
-    (by intro C hC l hl; exact mem_univ _)
-
-example : 2 ≤ 280 ∧ 2 * ((range 2).filter fun m => dirs true m = true).card ≤ 160 := by
-  exact counting_path_budgets_of_card_le (M := 2) (by decide) 2 (nodes true) sizes hearts
-    (dirs true) (steps true) (choices true) rootReduced rootNontautological (k := 3)
-    (by decide) univ (by intro C hC l hl; exact mem_univ _) (n := 10) (by decide)
+-- Declared-budget form `counting_path_budgets_of_card_le` for any declared variable budget `n ≥ 9`.
+example (N : ℕ) (ψ : ℕ → ClauseSet (Fin 9)) (c : ℕ → ℕ)
+    (H : ℕ → Finset (Literal (Fin 9))) (b : ℕ → Bool) (hroot : ψ 0 = root)
+    (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
+    (hchoice : ∀ i < N, Choice θ (ψ i) (c i) (H i)) {n : ℕ} (hn : 9 ≤ n) :
+    N ≤ 28 * n ∧ ((range N).filter fun m => b m = true).card ≤ 8 * n := by
+  have hred : Reduced (ψ 0) := hroot ▸ rootReduced
+  have hnt : ∀ C ∈ ψ 0, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C := hroot ▸ rootNontautological
+  have hk : ∀ C ∈ ψ 0, C.card ≤ 3 := by rw [hroot]; decide
+  have hsup : ∀ C ∈ ψ 0, ∀ l ∈ C, l.1 ∈ (univ : Finset (Fin 9)) := fun _ _ _ _ => mem_univ _
+  obtain ⟨hlen, hB⟩ := counting_path_budgets_of_card_le (M := 2) (by decide) N ψ c H b
+    hstep hchoice hred hnt hk univ hsup (n := n) (by simpa using hn)
+  have hlen' : N ≤ 28 * n := hlen
+  have hB' : 2 * ((range N).filter fun m => b m = true).card ≤ 16 * n := hB
+  exact ⟨hlen', by omega⟩
 
 /-- A root of two contradictory unit clauses cannot make even one legal branching step.
 This derives zero length from the width-one bound; zero length is not a premise. -/

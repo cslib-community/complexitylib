@@ -28,17 +28,15 @@ open Cslib.Turing _root_.Turing Cslib.Kolmogorov.DescriptionMethod
 
 /-! ### Tape equivalences (`StackTape` ↔ `ListBlank`, `BiTape` ↔ `Turing.Tape`) -/
 
-example (l : List Bool) :
-    (StackTape.mapSome l).equivListBlank = ListBlank.mk (l.map some) :=
-  StackTape.equivListBlank_mapSome l
-
-example (l : List Bool) :
-    BiTape.equivTape (BiTape.mk₁ l) = Tape.mk₁ (l.map some) :=
-  BiTape.equivTape_mk₁ l
-
-example (l : List Bool) :
-    (BiTape.mk₁ l).extractWord = some l :=
-  BiTape.extractWord_mk₁ l
+example :
+    (StackTape.mapSome [true, false]).equivListBlank =
+      ListBlank.mk ([true, false].map some) ∧
+    BiTape.equivTape (BiTape.mk₁ [true, false]) =
+      Tape.mk₁ ([true, false].map some) ∧
+    (BiTape.mk₁ [true, false]).extractWord = some [true, false] :=
+  ⟨StackTape.equivListBlank_mapSome [true, false],
+   BiTape.equivTape_mk₁ [true, false],
+   rfl⟩
 
 /-! ### Concrete `SingleTapeTM`, `TM0`, and `TM1` machines -/
 
@@ -61,13 +59,11 @@ theorem haltId_outputs (l : List Bool) :
   exact h.reflTransGen
 
 example (l : List Bool) :
-    ∃ v, Nonempty (StateTransition.EvalsToInTime (_root_.Turing.TM1.step haltId.toTM1)
-      (_root_.Turing.TM1.init (l.map some)) (some (haltId.toTM1Cfg (haltId.haltCfg l) v)) 1) :=
-  (haltId.outputsWithinTime_iff_evalsToInTime_toTM1 l l 1).mp (haltId_outputsWithinTime l)
-
-example (l : List Bool) :
+    (∃ v, Nonempty (StateTransition.EvalsToInTime (_root_.Turing.TM1.step haltId.toTM1)
+      (_root_.Turing.TM1.init (l.map some)) (some (haltId.toTM1Cfg (haltId.haltCfg l) v)) 1)) ∧
     ListBlank.mk (l.map some) ∈ _root_.Turing.TM0.eval haltId.toTM0 (l.map some) :=
-  haltId.outputs_imp_mem_eval_toTM0 (haltId_outputs l)
+  ⟨(haltId.outputsWithinTime_iff_evalsToInTime_toTM1 l l 1).mp (haltId_outputsWithinTime l),
+   haltId.outputs_imp_mem_eval_toTM0 (haltId_outputs l)⟩
 
 def haltIdTimeComputable : SingleTapeTM.TimeComputable (id : List Bool → List Bool) where
   tm := haltId
@@ -86,44 +82,37 @@ noncomputable def haltIdPolyTimeComputable :
 
 example (l : List Bool) :
     let T := 2 * l.length + 4 + (1 + (l.length + 1))
-    (MultiTapeTM.ofSingleTapeTM haltId).ComputesInTimeAndSpace l l T (T + 1) :=
-  MultiTapeTM.computesInTimeAndSpace_ofSingleTapeTM haltId (haltId_outputsWithinTime l)
-
-example :
+    (MultiTapeTM.ofSingleTapeTM haltId).ComputesInTimeAndSpace l l T (T + 1) ∧
     MultiTapeTM.ComputableInTimeAndSpace (id : List Bool → List Bool)
       (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool))
-      (fun a => 3 * a.length + 2 * 1 + 6) (fun a => 3 * a.length + 2 * 1 + 7) :=
-  haltIdTimeComputable.computableInTimeAndSpace
-    (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)) id (fun _ => rfl)
-
-example :
+      (fun a => 3 * a.length + 2 * 1 + 6) (fun a => 3 * a.length + 2 * 1 + 7) ∧
     MultiTapeTM.ComputableTidilyInPolyTime (id : List Bool → List Bool)
       (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)) :=
-  haltIdPolyTimeComputable.computableTidilyInPolyTime_id
+  ⟨MultiTapeTM.computesInTimeAndSpace_ofSingleTapeTM haltId (haltId_outputsWithinTime l),
+   haltIdTimeComputable.computableInTimeAndSpace
+     (Function.Embedding.refl (List Bool)) (Function.Embedding.refl (List Bool)) id (fun _ => rfl),
+   haltIdPolyTimeComputable.computableTidilyInPolyTime_id⟩
 
 /-! ### `Partrec` / `Computable` / `ManyOneReducible` bridges -/
 
-example : Partrec haltId.eval :=
-  haltId.partrec_eval
-
-example : Computable (id : List Bool → List Bool) :=
-  MultiTapeTM.IsComputable.computable_bits
-    haltIdPolyTimeComputable.computableTidilyInPolyTime_id.isComputable
-
 example :
+    Partrec haltId.eval ∧
+    Computable (id : List Bool → List Bool) ∧
     ManyOneReducible (· ∈ MultiTapeTM.selfHaltingProblem) (· ∈ MultiTapeTM.selfHaltingProblem) :=
-  (MultiTapeTM.MappingReducible.refl MultiTapeTM.encBits
-    MultiTapeTM.selfHaltingProblem).manyOneReducible_bits
+  ⟨haltId.partrec_eval,
+   MultiTapeTM.IsComputable.computable_bits
+     haltIdPolyTimeComputable.computableTidilyInPolyTime_id.isComputable,
+   (MultiTapeTM.MappingReducible.refl MultiTapeTM.encBits
+     MultiTapeTM.selfHaltingProblem).manyOneReducible_bits⟩
 
 /-! ### Kolmogorov complexity simulations and optimality -/
 
-example (x : List Bool) :
-    (ofMultiTapeTM (MultiTapeTM.ofSingleTapeTM haltId)).ecomplexity x ≤
-      (ofSingleTapeTM haltId).ecomplexity x :=
-  ecomplexity_ofMultiTapeTM_ofSingleTapeTM_le haltId x
-
-example : ∃ c : ℕ, ∀ n : ℕ,
-    universal.ecomplexity n ≤ (ofSingleTapeTM haltId).ecomplexity n.bits + c :=
-  exists_ecomplexity_universal_le_ofSingleTapeTM_bits haltId
+example :
+    (ofMultiTapeTM (MultiTapeTM.ofSingleTapeTM haltId)).ecomplexity [true, false] ≤
+      (ofSingleTapeTM haltId).ecomplexity [true, false] ∧
+    ∃ c : ℕ, ∀ n : ℕ,
+      universal.ecomplexity n ≤ (ofSingleTapeTM haltId).ecomplexity n.bits + c :=
+  ⟨ecomplexity_ofMultiTapeTM_ofSingleTapeTM_le haltId [true, false],
+   exists_ecomplexity_universal_le_ofSingleTapeTM_bits haltId⟩
 
 end ComplexityTests.PostTuringMachine
