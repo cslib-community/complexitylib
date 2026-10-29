@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Crypto.Protocols.MPC.Basic
 import Complexity.Crypto.Protocols.MPC.CircuitEval
 import Complexity.Crypto.Protocols.MPC.Composition
+import Complexity.Crypto.Protocols.MPC.PolyTime
 import Complexity.Crypto.Protocols.MPC.SharedMul
 import Cslib.Computability.Circuit.Boolean.Basic
 import Mathlib.Algebra.Ring.BooleanRing
@@ -771,5 +772,74 @@ theorem not_perfectSemiHonestPrivate_coinEchoRandomizedWrapper_univ :
   rw [hUniv] at hBadIdeal
   have hEq := hRealEq badRes hBadIdeal
   exact Bool.noConfusion hEq
+
+/-! ### Milestone 5: Word-level $\text{OT}_1^4$ runner, bridge lemma, and polynomial-time
+completeness (Theorem 7.5.12) -/
+
+/-- `encodeCoinsAndInputs 2 1 2` packs two 2-bit party inputs followed by a 1-bit coin tape into a
+5-bit list. -/
+example :
+    encodeCoinsAndInputs 2 1 2 ![true] ![![false, true], ![true, false]] =
+      [false, true, true, false, true] := by
+  decide
+
+/-- Concrete check of `ot14WordHandler` on `encodeOT14Query` for table `![false, true, false, true]`
+and selection index `3 : Fin 4`: returns `[true]`. -/
+example :
+    ot14WordHandler
+      ((), encodeOT14Query (Fin.cases ![false, true, false, true] (fun _ => (3 : Fin 4)))) () =
+    PMF.pure ([true], ()) :=
+  rfl
+
+/-- Bridge lemma (`Protocol.eval_runEncoded_eq_evalWith_map`) instantiated on
+`gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit`. -/
+example (x : Fin 2 → BitString 1) :
+    (Cslib.ProbOracleComp.runWith ot14WordHandler
+      ((gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit).runEncoded
+        (encGMWPartyView 2 1 1 1 randomizedAndCoinCircuit)
+        (fun _ y => List.ofFn y) x) ()).map Prod.fst =
+    ((gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit).evalWith ot14World x).map
+      (encodeViewsAndOutputs
+        (encGMWPartyView 2 1 1 1 randomizedAndCoinCircuit)
+        (fun _ y => List.ofFn y)) :=
+  Protocol.eval_runEncoded_eq_evalWith_map
+    (encGMWPartyView 2 1 1 1 randomizedAndCoinCircuit)
+    (fun _ y => List.ofFn y)
+    (gmwOT14RandomizedProtocol 2 1 1 1 randomizedAndCoinCircuit) x
+
+/-- Concrete end-to-end instantiation of Theorem 7.5.12
+(`exists_perfectSemiHonestPrivate_ot14_of_polyTime`) on the polynomial-time family indexed by
+`a : ℕ` (`encUnary`) with `m = 2`, `coins a = a`, `n a = a`, `k a = a`, and projection functionality
+`F (a, w) = w`. -/
+example :
+    ∃ C : (a : ℕ) → Cslib.Circuits.Circuit Boolean.signature (2 * a + a) (2 * a),
+      Turing.MultiTapeTM.ComputableInPolyTime (fun a => (C a).code)
+        Turing.MultiTapeTM.encUnary Boolean.encCode ∧
+      (∀ a (xr : Fin (2 * a + a) → Bool) (j : Fin (2 * a)),
+        (C a).eval Boolean.interpretation xr j = (List.ofFn xr).getD j.val false) ∧
+      (∀ a, PerfectSemiHonestPrivateProper
+        (gmwOT14RandomizedProtocol 2 a a a (C a)) ot14World
+        (wordRandomizedFunctionality 2 id id id Prod.snd a)
+        (gmwOT14RandomizedSim 2 a a a (C a))) ∧
+      Cslib.Probability.IsOraclePPTOn
+        (encFamilyRunInput Turing.MultiTapeTM.encUnary 2 id)
+        Turing.MultiTapeTM.encBits
+        (fun inp =>
+          (gmwOT14RandomizedProtocol 2 inp.1 inp.1 inp.1 (C inp.1)).runEncoded
+            (encGMWPartyView 2 inp.1 inp.1 inp.1 (C inp.1))
+            (fun _ y => List.ofFn y) inp.2) ∧
+      (∀ (I : Finset (Fin 2)), I ≠ Finset.univ →
+        Cslib.Probability.IsPPTOn
+          (encFamilySimInput Turing.MultiTapeTM.encUnary 2 id id I)
+          Turing.MultiTapeTM.encBits
+          (fun inp =>
+            encodeCoalitionView (encGMWPartyView 2 inp.1 inp.1 inp.1 (C inp.1)) I <$>
+              gmwOT14RandomizedSim 2 inp.1 inp.1 inp.1 (C inp.1) I inp.2.1 inp.2.2)) :=
+  exists_perfectSemiHonestPrivate_ot14_of_polyTime 2
+    Turing.MultiTapeTM.ComputableInPolyTime.id'
+    Turing.MultiTapeTM.ComputableInPolyTime.id'
+    Turing.MultiTapeTM.ComputableInPolyTime.id'
+    (Turing.MultiTapeTM.ComputableInPolyTime.snd
+      Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)
 
 end ComplexityTests.Crypto.MPC
