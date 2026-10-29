@@ -181,14 +181,14 @@ private theorem isOraclePPTOn_queryWords :
     Probability.IsOraclePPTOn (encList encBits) encBits
       (fun words => OracleComp.interpret ProbOracleComp.query (queryWords words)) := by
   simp only [queryWords, OracleComp.interpret_map, OracleComp.interpret_iterate]
-  refine Probability.IsOraclePPTOn.map (Probability.IsOraclePPTOn.iterate_of_bounded_growth
+  refine Probability.IsOraclePPTOn.map' (Probability.IsOraclePPTOn.iterate_of_bounded_growth'
     (stateEncoding := encPair (encList encBits) encBits) (by fun_prop) (by fun_prop) ?_
     (growth := 0) ?_) (by fun_prop)
   · simp only [interpret_queryWordsStep]
-    refine Probability.IsOraclePPTOn.cond (by fun_prop)
-      (ComputableTidilyInPolyTime.id'.isOraclePPTOn) ?_
-    exact Probability.IsOraclePPTOn.map_with
-      (Probability.IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop))
+    refine Probability.IsOraclePPTOn.cond' (by fun_prop)
+      (ComputableInPolyTime.id'.isOraclePPTOn) ?_
+    exact Probability.IsOraclePPTOn.map_with'
+      (Probability.IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop))
       (by fun_prop)
   · intro state next hnext
     rw [interpret_queryWordsStep] at hnext

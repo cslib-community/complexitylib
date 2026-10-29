@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Ba
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Tactic.Linarith
 
@@ -45,6 +46,8 @@ configuration graph, which has polynomially many vertices [Sipser, Section 8.4][
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.expand`: a round in polynomial time.
 * `Turing.MultiTapeNTM.exists_computableTidilyInPolyTime_searchAccepts`: under a logarithmic space
   bound, enough rounds of breadth-first search run in polynomial time.
+* `Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`: the same for plain
+  certificates.
 
 ## References
 
@@ -292,5 +295,15 @@ theorem exists_computableTidilyInPolyTime_searchAccepts {α : Type} {enc : α �
         (ComputableTidilyInPolyTime.const [true])))
   exact ComputableTidilyInPolyTime.anyWithInput hsearch
     (htest.comp (ComputableTidilyInPolyTime.snd _ _))
+
+open scoped Classical in
+/-- `exists_computableTidilyInPolyTime_searchAccepts` for plain certificates. -/
+theorem exists_computableInPolyTime_searchAccepts {α : Type} {enc : α ↪ List Bool} {c : ℕ}
+    (hs : ∀ a, ntm.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1))) :
+    ∃ rounds : α → ℕ, (∀ a, 2 ^ (2 * coreLengthBound k State (enc a).length
+        (c * (Nat.log2 (enc a).length + 1)) + 1) ≤ rounds a) ∧
+      ComputableInPolyTime (fun a => ntm.searchAccepts (rounds a) (enc a)) enc encBool :=
+  let ⟨rounds, hrounds, h⟩ := exists_computableTidilyInPolyTime_searchAccepts hs
+  ⟨rounds, hrounds, h.computableInPolyTime⟩
 
 end Turing.MultiTapeNTM
