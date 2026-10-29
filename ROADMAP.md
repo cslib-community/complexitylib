@@ -425,6 +425,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   theorems; simulating operations by programs over smaller bases; structured programs and time
   classes over arbitrary value domains with weighted or bit costs; simulations between instances;
   the typed core proposed in [CSLib #1158](https://github.com/leanprover/cslib/pull/1158).
+- **Shared native matrix encoders** ([#1493]): compute all `10^L` leaf values from `7^L`
+  signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
+  with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
 - **Word RAM:** an AC⁰ basis; wider-fragment and Turing-machine simulations;
   transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
   has the Convolution-3SUM/Exact Triangle correctness reduction, a charged native single-instance
@@ -436,11 +439,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   shared encodings and pruned-evaluation core ([#1459]) include exact visited-leaf and passed-set
   bounds, with the empty zero-depth root handled explicitly. The finite thin-product component
   ([#1463]) proves valid layouts, arbitrary-size padding/tiling, exact queried signed products and
-  sparse encoding/leaf/passed-set totals. Those counts are not native instruction costs.
-  The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
-  signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
-  with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
-  Band/tile preparation, native pruned/sparse-query programs, native Chan–He preprocessing, the reduction
+  sparse encoding/leaf/passed-set totals. These counts are not native instruction costs. It still
+  needs native tensor/sparse-query programs, native Chan–He preprocessing, the reduction
   host, the fast Exact Triangle solver and full
   input/time/width/asymptotic composition, then the improved Section 4 route to exponent 1.9992;
   size-based width
