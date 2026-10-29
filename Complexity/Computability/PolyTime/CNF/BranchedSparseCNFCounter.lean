@@ -174,11 +174,9 @@ private theorem computableInPolyTime_leafDensityRatio_binary (k : ℕ) :
     ComputableInPolyTime (leafDensityRatio k) encNat encNat := by
   open ComputableInPolyTime in
   have hmax1 : ComputableInPolyTime (fun x : ℕ => max 1 x) encNat encNat :=
-    .of_tidy (((ComputableTidilyInPolyTime.binary_le' (ComputableTidilyInPolyTime.const 1)
-      ComputableTidilyInPolyTime.id').ite' ComputableTidilyInPolyTime.id'
-        (ComputableTidilyInPolyTime.const 1)).of_enc_eq fun x =>
-          congrArg encNat (by
-            split_ifs with hx <;> simp only [decide_eq_true_eq] at hx <;> omega))
+    ((binary_lt' id' (const 1)).ite (const 1) id').of_enc_eq fun x =>
+      congrArg encNat (by
+        split_ifs with hx <;> simp only [decide_eq_true_eq] at hx <;> omega)
   have hM : ComputableInPolyTime (leafThresholdBase k) encNat encNat :=
     (computableInPolyTime_countingThresholdBase (max 2 k)).comp
       (hmax1.comp ParameterCheck.computableInPolyTime_numGroups)
@@ -336,7 +334,7 @@ private theorem computableInPolyTime_mkPaperInputConst (k : ℕ) :
     ComputableInPolyTime (fun y : ℕ × List (List (List ℕ)) => mkPaperSparseInput y.1 k y.2)
       (encPair encUnary encSys) encSparseSystemInput := by
   have hk : ComputableInPolyTime (fun _ : ℕ × List (List (List ℕ)) => k)
-      (encPair encUnary encSys) encUnary := .of_tidy (ComputableTidilyInPolyTime.const k)
+      (encPair encUnary encSys) encUnary := ComputableInPolyTime.const k
   exact computableInPolyTime_mkPaperSparseInput.comp
     (((ComputableInPolyTime.fst encUnary encSys).prod hk).prod
       (ComputableInPolyTime.snd encUnary encSys))
@@ -381,16 +379,16 @@ private theorem computableInPolyTime_denseFallbackGuard (k : ℕ) :
       encLeafIn encUnary :=
     SAT.computableInPolyTime_length (ComputableInPolyTime.snd encLeafCtx encCNF)
   have h1 :=
-    (computableInPolyTime_validDeclaredInput k (ComputableInPolyTime.snd encUnit encUnary)).tidy
-  have h2 : ComputableTidilyInPolyTime
+    computableInPolyTime_validDeclaredInput k (ComputableInPolyTime.snd encUnit encUnary)
+  have h2 : ComputableInPolyTime
       (fun x : (Unit × ℕ) × CNF ℕ => decide (leafDensityRatio k x.1.2 * x.1.2 < x.2.length))
       encLeafIn encBool :=
-    ComputableTidilyInPolyTime.binary_lt'
-      (ComputableTidilyInPolyTime.binary_mul'
-        (ComputableTidilyInPolyTime.unary_to_binary.comp hB_u.tidy)
-        (ComputableTidilyInPolyTime.unary_to_binary.comp hN_u.tidy))
-      (ComputableTidilyInPolyTime.unary_to_binary.comp hm_u.tidy)
-  exact .of_tidy (ComputableTidilyInPolyTime.bool_and' h1 h2)
+    ComputableInPolyTime.binary_lt'
+      (ComputableInPolyTime.binary_mul'
+        (ComputableInPolyTime.unary_to_binary.comp hB_u)
+        (ComputableInPolyTime.unary_to_binary.comp hN_u))
+      (ComputableInPolyTime.unary_to_binary.comp hm_u)
+  exact ComputableInPolyTime.bool_and' h1 h2
 
 private theorem computableInPolyTime_leafExhProj :
     ComputableInPolyTime (fun x : (Unit × ℕ) × CNF ℕ => (x.1.2, x.2))
