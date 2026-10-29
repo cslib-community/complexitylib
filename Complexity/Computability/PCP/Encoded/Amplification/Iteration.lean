@@ -48,7 +48,7 @@ certificates need no completeness assumption on those lists; gap and satisfiabil
 
 namespace Cslib.PCP.Encoded.Graph
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime Cslib.PCP.HadamardTester
+open Turing.MultiTapeTM ComputableInPolyTime Cslib.PCP.HadamardTester
 
 local notation "Constraint" => (SelectedAlphabet → SelectedAlphabet → Bool)
 
@@ -85,9 +85,6 @@ theorem isPolyTime_amplifyIter_clog {Input : Type} {input : Input ↪ List Bool}
       (fun x => amplifyIter fallback rotate T q walks number coins queries
         (Nat.clog 2 (graph x).edges.length) (graph x))
       input (encoding (encPi (encPi encBool))) := by
-  have hgraph := hgraph.tidy
-  have hcost := hcost.tidy
-  refine .of_tidy ?_
   let factor := (2 + 2 * walks.length) * width + 2 * walks.length * coins.length * queries.length
   let descriptorBound := Fintype.card SelectedAlphabet * (6 * Fintype.card SelectedAlphabet + 1)
   have hgrowth (g : Graph Constraint) :
@@ -99,15 +96,13 @@ theorem isPolyTime_amplifyIter_clog {Input : Type} {input : Input ↪ List Bool}
            ring
       _ ≤ _ := Nat.mul_le_mul_left _ (Nat.le_add_left _ _)
   have heval :=
-    (isPolyTime_constraintTableEval (α := SelectedAlphabet) (encPair encBool (encPi encBool))).tidy
-  have hedges := (isPolyTime_edges (graph := fun g : Graph Constraint => g)
-    (enc := encPi (encPi encBool)) (.of_tidy .id')).tidy
-  have hamplify := ComputableInPolyTime.tidy (isPolyTime_amplify (graph := id) (eval := id)
-    (alphabet := encPair encBool (encPi encBool)) (.of_tidy .id') (.of_tidy hcost)
-    (.of_tidy heval) fallback T q walks number coins queries)
+    isPolyTime_constraintTableEval (α := SelectedAlphabet) (encPair encBool (encPi encBool))
+  have hamplify := isPolyTime_amplify (graph := id) (eval := id)
+    (alphabet := encPair encBool (encPi encBool)) .id' hcost
+    heval fallback T q walks number coins queries
   unfold amplifyIter
-  apply ComputableTidilyInPolyTime.iterate (by fun_prop) hgraph (by fun_prop)
-    (polyBounded_iterationSize_clog (.of_tidy hgraph) factor descriptorBound)
+  apply ComputableInPolyTime.iterate (by fun_prop) hgraph (by fun_prop)
+    (polyBounded_iterationSize_clog hgraph factor descriptorBound)
   exact fun x _ hi => iterate_length_encoding_le (valid := WellFormed) factor descriptorBound
     (fun g _ =>
       g.wellFormed_amplify id fallback family rotate hrotate T q walks number coins queries)

@@ -61,7 +61,7 @@ Arora, Lund, Motwani, Sudan and Szegedy [AroraLundMotwaniSudanSzegedy1998].
 
 namespace Cslib.PCP.Encoded.Graph
 
-open Cslib.Logic.PL Cslib.Complexity Finset Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Cslib.Complexity Finset Turing.MultiTapeTM ComputableInPolyTime
 
 variable {α : Type} {k : ℕ}
 
@@ -256,26 +256,32 @@ fixed list `pairs` is tested against its constraint table. -/
 @[fun_prop]
 theorem isPolyTime_toCNF :
     ComputableInPolyTime (toCNF e pairs) (encoding (encPi (encPi encBool))) encCNF := by
-  refine .of_tidy ?_
-  have hsrc := (Edge.isPolyTime_src (enc := encPi (encPi encBool))
-    (edge := fun d : Edge (α → α → Bool) => d) (.of_tidy .id')).tidy
-  have hdst := (Edge.isPolyTime_dst (enc := encPi (encPi encBool))
-    (edge := fun d : Edge (α → α → Bool) => d) (.of_tidy .id')).tidy
-  have hclause (p : α × α) : ComputableTidilyInPolyTime
+  have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by
+    have hleft : ComputableInPolyTime (fun p : ℕ × ℕ => p.2 * p.2 + p.1)
+        (encPair encUnary encUnary) encUnary := by fun_prop
+    have hright : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.1 + p.1 + p.2)
+        (encPair encUnary encUnary) encUnary := by fun_prop
+    simpa [Nat.pair] using unary_lt.ite hleft hright
+  have hclause (p : α × α) : ComputableInPolyTime
       (fun d : Edge (α → α → Bool) => excludeClause e d.src d.dst p)
       (Edge.encoding (encPi (encPi encBool))) (encList (encPair encNat encBool)) := by
     unfold excludeClause
     fun_prop
-  have htest (p : α × α) : ComputableTidilyInPolyTime
+  have htest (p : α × α) : ComputableInPolyTime
       (fun d : Edge (α → α → Bool) => !d.constraint p.1 p.2)
       (Edge.encoding (encPi (encPi encBool))) encBool := by
-    have hconstraint := (Edge.isPolyTime_constraint (enc := encPi (encPi encBool))
-      (edge := fun d : Edge (α → α → Bool) => d) (.of_tidy .id')).tidy
     fun_prop
-  have hedge : ComputableTidilyInPolyTime (edgeCNF e pairs)
-      (Edge.encoding (encPi (encPi encBool))) encCNF :=
-    mapFilterConst pairs (fun p _ => htest p) (fun p _ => hclause p)
-  exact flatMapWithInput (isPolyTime_edges (.of_tidy id')).tidy (hedge.comp (snd _ _))
+  have hmapFilter (l : List (α × α)) : ComputableInPolyTime
+      (fun d : Edge (α → α → Bool) =>
+        (l.filter fun p => !d.constraint p.1 p.2).map (excludeClause e d.src d.dst))
+      (Edge.encoding (encPi (encPi encBool))) encCNF := by
+    induction l with
+    | nil => exact const []
+    | cons p l ih =>
+      simp only [List.filter_cons, List.map_cons, apply_ite]
+      exact (htest p).ite ((hclause p).cons' ih) ih
+  exact flatMapWithInput (isPolyTime_edges id') ((hmapFilter pairs).comp (snd _ _))
 
 end Cslib.PCP.Encoded.Graph
 
@@ -333,7 +339,7 @@ theorem polyTimeReducible_GapTwoCSP_GapThreeSAT {α : Type} [Fintype α] {k : �
   have hlen : pairs.length = Fintype.card α ^ 2 := by
     simp [pairs, Fintype.card_prod, sq]
   refine ⟨fun g => toThreeSAT (Graph.toCNF e pairs g),
-    .of_tidy (computableInPolyTime_toThreeSAT.tidy.comp (Graph.isPolyTime_toCNF e pairs).tidy),
+    computableInPolyTime_toThreeSAT.comp (Graph.isPolyTime_toCNF e pairs),
     fun g hg => ?_, fun g hg => ?_⟩
   · rw [yes_GapThreeSAT, mem_ThreeSAT_toThreeSAT_iff]
     exact Graph.satisfiable_toCNF e pairs (mem_yes_GapTwoCSP.1 hg)

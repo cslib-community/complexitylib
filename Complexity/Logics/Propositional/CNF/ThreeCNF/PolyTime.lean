@@ -41,7 +41,7 @@ variables keep their supplied encoding; fresh variables use their unary clause a
 
 namespace Cslib.Logic.PL
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {V W Input : Type}
 
@@ -96,12 +96,7 @@ theorem Clause.isPolyTime_splitAux {input : Input ↪ List Bool} {enc : W ↪ Li
       (encPair input encUnary) enc) :
     ComputableInPolyTime (fun x => Clause.splitAux (fresh x) (index x) (carry x) (rest x))
       input (encList (encList (encPair enc encBool))) := by
-  have hrest := hrest.tidy
-  have hcarry := hcarry.tidy
-  have hindex := hindex.tidy
-  have hfresh := hfresh.tidy
-  refine .of_tidy ?_
-  have hdrop : ComputableTidilyInPolyTime (fun x => (rest x).drop ((rest x).length - 2))
+  have hdrop : ComputableInPolyTime (fun x => (rest x).drop ((rest x).length - 2))
       input (encList (encPair enc encBool)) :=
     (dropUnary (encA := encPair enc encBool)).comp (hrest.prod (by fun_prop))
   simp_rw [splitAux_eq_map, List.getD_eq_getElem?_getD]
@@ -117,19 +112,15 @@ theorem Clause.isPolyTime_split3 {input : Input ↪ List Bool} {enc : W ↪ List
       (encPair input encUnary) enc) :
     ComputableInPolyTime (fun x => Clause.split3 (fresh x) (index x) (clause x))
       input (encList (encList (encPair enc encBool))) := by
-  have hclause := hclause.tidy
-  have hindex := hindex.tidy
-  have hfresh := hfresh.tidy
-  refine .of_tidy ?_
   have heq (f : ℕ → W) (j : ℕ) (c : Clause W) : Clause.split3 f j c =
       c.head?.elim [[]] (fun carry => Clause.splitAux f j carry c.tail) := by
     cases c <;> rfl
   simp_rw [heq]
   apply optionElimWithInput (encB := encPair enc encBool) (by fun_prop) (by fun_prop)
-  exact (Clause.isPolyTime_splitAux (input := encPair input (encPair enc encBool))
+  exact Clause.isPolyTime_splitAux (input := encPair input (encPair enc encBool))
     (fresh := fun p => fresh p.1) (index := fun p => index p.1) (carry := fun p => p.2)
-    (rest := fun p => (clause p.1).tail) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))).tidy
+    (rest := fun p => (clause p.1).tail) (by fun_prop) (by fun_prop)
+    (by fun_prop) (by fun_prop)
 
 /-- Convert an arbitrary CNF formula to 3CNF, encoding fresh variables by unary clause and
 chain indices. The certificate includes relabelling, clause traversal, and all output copying. -/
@@ -138,16 +129,15 @@ theorem CNF.isPolyTime_to3CNF (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.to3CNF (V := V))
       (encList (encList (encPair enc encBool)))
       (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool))) := by
-  refine .of_tidy ?_
-  have hsplit : ComputableTidilyInPolyTime
+  have hsplit : ComputableInPolyTime
       (fun p : CNF V × (Clause V × ℕ) => Clause.split3 (fun j => Sum.inr (p.2.2, j)) 0
         (Clause.relabel Sum.inl p.2.1))
       (encPair (encList (encList (encPair enc encBool)))
         (encPair (encList (encPair enc encBool)) encUnary))
       (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool))) :=
-    ComputableInPolyTime.tidy <| Clause.isPolyTime_split3
-      ((Clause.computableInPolyTime_relabel (.of_tidy (by fun_prop))).comp
-        (.of_tidy (by fun_prop))) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+    Clause.isPolyTime_split3
+      ((Clause.computableInPolyTime_relabel (by fun_prop)).comp
+        (by fun_prop)) (by fun_prop) (by fun_prop)
   unfold CNF.to3CNF
   fun_prop
 

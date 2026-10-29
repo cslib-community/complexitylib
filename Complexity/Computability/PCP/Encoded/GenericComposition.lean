@@ -125,18 +125,13 @@ theorem isPolyTime_composePosition [Finite I] [Finite P] (number : ComposeSlot I
     (hposition : ComputableInPolyTime position input positionEncoding) :
     ComputableInPolyTime
       (fun x => composePosition number (edge x) (src x) (dst x) (position x)) input encUnary := by
-  have hedge := hedge.tidy
-  have hsrc := hsrc.tidy
-  have hdst := hdst.tidy
-  have hposition := hposition.tidy
-  refine .of_tidy ?_
-  apply ComputableTidilyInPolyTime.finite_cases
+  apply ComputableInPolyTime.finite_cases
     (branch := fun p x => composePosition number (edge x) (src x) (dst x) p) hposition
   rintro (⟨b, r⟩ | p)
   · dsimp only [composePosition, Sum.elim_inl]
-    split_ifs <;> polytime
+    split_ifs <;> fun_prop
   · dsimp only [composePosition, Sum.elim_inr]
-    polytime
+    fun_prop
 
 /-- A gadget edge is computed uniformly in the original edge, its index, coins, and query. -/
 @[fun_prop]

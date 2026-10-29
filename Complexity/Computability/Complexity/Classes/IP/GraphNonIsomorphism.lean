@@ -551,9 +551,9 @@ private theorem isPPTOn_relabelMessage {γ : Type} {input : γ ↪ List Bool} {G
       (G x).distinctVertices.length) input encUnary := by fun_prop
   have hw : ComputableInPolyTime (fun x => keyWidth (G x).distinctVertices.length) input
       encUnary :=
-    (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.unary_clog_const 2)).comp hsize
+    (ComputableInPolyTime.unary_clog_const 2).comp hsize
   have hpow : ComputableInPolyTime (fun x => 2 ^ keyWidth (G x).distinctVertices.length)
-      input encUnary := .of_tidy (ComputableTidilyInPolyTime.unary_pow_clog_const hsize.tidy 2 2)
+      input encUnary := ComputableInPolyTime.unary_pow_clog_const hsize 2 2
   have hcount : ComputableInPolyTime (fun x => (G x).distinctVertices.length *
       keyWidth (G x).distinctVertices.length) input encUnary := by fun_prop
   have hkeys : ComputableInPolyTime (fun p : γ × List Bool =>

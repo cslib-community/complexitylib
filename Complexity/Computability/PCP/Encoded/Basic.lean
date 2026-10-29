@@ -76,7 +76,7 @@ def encoding (enc : C ↪ List Bool) : Edge C ↪ List Bool :=
         (congrArg (fun p => p.2.2) h)⟩
 
 private theorem isPolyTime_toPair (enc : C ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun e : Edge C => (e.src, e.dst, e.constraint))
+    ComputableInPolyTime (fun e : Edge C => (e.src, e.dst, e.constraint))
       (encoding enc) (encPair encUnary (encPair encUnary enc)) :=
   .of_eq fun _ => rfl
 
@@ -84,25 +84,22 @@ private theorem isPolyTime_toPair (enc : C ↪ List Bool) :
 @[fun_prop]
 theorem isPolyTime_src {edge : Input → Edge C}
     (hedge : ComputableInPolyTime edge input (encoding enc)) :
-    ComputableInPolyTime (fun x => (edge x).src) input encUnary := by
-  have hedge := hedge.tidy
-  exact .of_tidy ((isPolyTime_toPair enc).fst'.comp hedge)
+    ComputableInPolyTime (fun x => (edge x).src) input encUnary :=
+  (isPolyTime_toPair enc).fst'.comp hedge
 
 /-- Reading an edge's second endpoint is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_dst {edge : Input → Edge C}
     (hedge : ComputableInPolyTime edge input (encoding enc)) :
-    ComputableInPolyTime (fun x => (edge x).dst) input encUnary := by
-  have hedge := hedge.tidy
-  exact .of_tidy ((isPolyTime_toPair enc).snd'.fst'.comp hedge)
+    ComputableInPolyTime (fun x => (edge x).dst) input encUnary :=
+  (isPolyTime_toPair enc).snd'.fst'.comp hedge
 
 /-- Reading an edge's constraint descriptor is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_constraint {edge : Input → Edge C}
     (hedge : ComputableInPolyTime edge input (encoding enc)) :
-    ComputableInPolyTime (fun x => (edge x).constraint) input enc := by
-  have hedge := hedge.tidy
-  exact .of_tidy ((isPolyTime_toPair enc).snd'.snd'.comp hedge)
+    ComputableInPolyTime (fun x => (edge x).constraint) input enc :=
+  (isPolyTime_toPair enc).snd'.snd'.comp hedge
 
 /-- Assemble computed endpoints and a computed constraint into an edge. -/
 @[fun_prop]
@@ -112,11 +109,8 @@ theorem isPolyTime_mk {Input : Type} {input : Input ↪ List Bool} {enc : C ↪ 
     (hdst : ComputableInPolyTime dst input encUnary)
     (hconstraint : ComputableInPolyTime constraint input enc) :
     ComputableInPolyTime (fun x => Edge.mk (src x) (dst x) (constraint x))
-      input (encoding enc) := by
-  have hsrc := hsrc.tidy
-  have hdst := hdst.tidy
-  have hconstraint := hconstraint.tidy
-  exact .of_tidy ((hsrc.prod (hdst.prod hconstraint)).of_enc_eq fun _ => rfl)
+      input (encoding enc) :=
+  (hsrc.prod (hdst.prod hconstraint)).of_enc_eq fun _ => rfl
 
 end Edge
 
@@ -142,7 +136,7 @@ def encoding (enc : C ↪ List Bool) : Graph C ↪ List Bool :=
       exact Graph.ext (congrArg Prod.fst heq) (congrArg Prod.snd heq)⟩
 
 private theorem isPolyTime_toPair (enc : C ↪ List Bool) :
-    ComputableTidilyInPolyTime (fun g : Graph C => (g.vertices, g.edges))
+    ComputableInPolyTime (fun g : Graph C => (g.vertices, g.edges))
       (encoding enc) (encPair encUnary (encList (Edge.encoding enc))) :=
   .of_eq fun _ => rfl
 
@@ -150,17 +144,15 @@ private theorem isPolyTime_toPair (enc : C ↪ List Bool) :
 @[fun_prop]
 theorem isPolyTime_vertices {graph : Input → Graph C}
     (hgraph : ComputableInPolyTime graph input (encoding enc)) :
-    ComputableInPolyTime (fun x => (graph x).vertices) input encUnary := by
-  have hgraph := hgraph.tidy
-  exact .of_tidy ((isPolyTime_toPair enc).fst'.comp hgraph)
+    ComputableInPolyTime (fun x => (graph x).vertices) input encUnary :=
+  (isPolyTime_toPair enc).fst'.comp hgraph
 
 /-- Reading the edge list is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_edges {graph : Input → Graph C}
     (hgraph : ComputableInPolyTime graph input (encoding enc)) :
-    ComputableInPolyTime (fun x => (graph x).edges) input (encList (Edge.encoding enc)) := by
-  have hgraph := hgraph.tidy
-  exact .of_tidy ((isPolyTime_toPair enc).snd'.comp hgraph)
+    ComputableInPolyTime (fun x => (graph x).edges) input (encList (Edge.encoding enc)) :=
+  (isPolyTime_toPair enc).snd'.comp hgraph
 
 /-- Assemble a computed vertex count and edge list into a graph. -/
 @[fun_prop]
@@ -168,10 +160,8 @@ theorem isPolyTime_mk {Input : Type} {input : Input ↪ List Bool} {enc : C ↪ 
     {vertices : Input → ℕ} {edges : Input → List (Edge C)}
     (hvertices : ComputableInPolyTime vertices input encUnary)
     (hedges : ComputableInPolyTime edges input (encList (Edge.encoding enc))) :
-    ComputableInPolyTime (fun x => Graph.mk (vertices x) (edges x)) input (encoding enc) := by
-  have hvertices := hvertices.tidy
-  have hedges := hedges.tidy
-  exact .of_tidy ((hvertices.prod hedges).of_enc_eq fun _ => rfl)
+    ComputableInPolyTime (fun x => Graph.mk (vertices x) (edges x)) input (encoding enc) :=
+  (hvertices.prod hedges).of_enc_eq fun _ => rfl
 
 /-- All listed endpoints are among the declared vertices. -/
 def WellFormed (g : Graph C) : Prop :=
@@ -186,14 +176,12 @@ def isWellFormed (g : Graph C) : Bool :=
 theorem isWellFormed_eq_true (g : Graph C) : g.isWellFormed = true ↔ g.WellFormed := by
   simp [isWellFormed, WellFormed]
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Checking all endpoint bounds is uniformly polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_isWellFormed (enc : C ↪ List Bool) :
     ComputableInPolyTime (isWellFormed (C := C)) (encoding enc) encBool := by
-  refine .of_tidy ?_
   unfold isWellFormed
-  polytime
+  fun_prop
 
 /-- Read an edge by its natural-number index, returning a specified fallback if it is absent. -/
 def edgeAt (fallback : C) (g : Graph C) (i : ℕ) : Edge C :=
@@ -205,12 +193,9 @@ theorem isPolyTime_edgeAt {graph : Input → Graph C} {index : Input → ℕ}
     (hgraph : ComputableInPolyTime graph input (encoding enc))
     (hindex : ComputableInPolyTime index input encUnary) (fallback : C) :
     ComputableInPolyTime (fun x => (graph x).edgeAt fallback (index x))
-      input (Edge.encoding enc) := by
-  have hgraph := hgraph.tidy
-  have hindex := hindex.tidy
-  exact .of_tidy ((ComputableTidilyInPolyTime.listGetD (encA := Edge.encoding enc)
-    (Edge.mk 0 0 fallback)).comp
-    ((isPolyTime_edges (.of_tidy hgraph)).tidy.prod hindex))
+      input (Edge.encoding enc) :=
+  (ComputableInPolyTime.listGetD (encA := Edge.encoding enc)
+    (Edge.mk 0 0 fallback)).comp ((isPolyTime_edges hgraph).prod hindex)
 
 /-- Check a numbered edge against a list of labels. Both lookups are total, with explicit
 fallbacks; the correctness theorem applies to valid edge indices. -/

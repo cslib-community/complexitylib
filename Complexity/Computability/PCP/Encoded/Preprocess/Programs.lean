@@ -11,7 +11,6 @@ public import Complexity.Computability.PCP.Encoded.Preprocess
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Tactic.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Rotation and constraint programs for preprocessing
@@ -147,14 +146,14 @@ variable {enc : C ↪ List Bool} {labelEncoding : D ↪ List Bool}
 The numerical rotation certificate is joint in size, vertex and edge label. -/
 private theorem polytime_preprocessRotation [Finite D] (fallback : C)
     (rotate : ℕ × (ℕ × D) → ℕ × D)
-    (hrotate : ComputableTidilyInPolyTime rotate
+    (hrotate : ComputableInPolyTime rotate
       (encPair encUnary (encPair encUnary labelEncoding)) (encPair encUnary labelEncoding)) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : Graph C × ((ℕ × Bool) × PreprocessLabel D) =>
         p.1.preprocessRotation fallback rotate p.2)
       (encPair (encoding enc) (encPair (encPair encUnary encBool) dartEncoding))
       (encPair (encPair encUnary encBool) dartEncoding) := by
-  have hbranch (d : PreprocessLabel D) : ComputableTidilyInPolyTime
+  have hbranch (d : PreprocessLabel D) : ComputableInPolyTime
       (fun p : Graph C × ((ℕ × Bool) × PreprocessLabel D) =>
         p.1.preprocessRotation fallback rotate (p.2.1, d))
       (encPair (encoding enc) (encPair (encPair encUnary encBool) dartEncoding))
@@ -162,55 +161,50 @@ private theorem polytime_preprocessRotation [Finite D] (fallback : C)
     rcases d with ((u | d) | d) | u
     · simp only [preprocessRotation]
       fun_prop
-    · have hcloud : ComputableTidilyInPolyTime
+    · have hcloud : ComputableInPolyTime
           (fun p : Graph C × ((ℕ × Bool) × PreprocessLabel D) =>
             p.1.cloudRotation fallback rotate (p.2.1, d))
           (encPair (encoding enc) (encPair (encPair encUnary encBool) dartEncoding))
           (encPair (encPair encUnary encBool) labelEncoding) :=
-        ComputableInPolyTime.tidy (isPolyTime_cloudRotation (.of_tidy (.fst _ _))
-          (.of_tidy ((ComputableTidilyInPolyTime.snd _ _).fst'.prod (.const d)))
-          (.of_tidy hrotate) fallback)
-      have hlabel : ComputableTidilyInPolyTime
+        isPolyTime_cloudRotation (.fst _ _)
+          (((ComputableInPolyTime.snd _ _).fst').prod (.const d)) hrotate fallback
+      have hlabel : ComputableInPolyTime
           (fun d : D => (Sum.inl (Sum.inl (Sum.inr d)) : PreprocessLabel D))
           labelEncoding dartEncoding := .of_finite _
       exact hcloud.fst'.prod (hlabel.comp hcloud.snd')
-    · have hnext : ComputableTidilyInPolyTime
+    · have hnext : ComputableInPolyTime
           (fun p : Graph C × ((ℕ × Bool) × PreprocessLabel D) =>
             rotate (2 * p.1.edges.length, halfEdgeNumber p.2.1, d))
           (encPair (encoding enc) (encPair (encPair encUnary encBool) dartEncoding))
           (encPair encUnary labelEncoding) := by
-        have hedges := (isPolyTime_edges (enc := enc) (.of_tidy .id')).tidy
-        have hnumber := isPolyTime_halfEdgeNumber.tidy
         fun_prop
-      have hlabel : ComputableTidilyInPolyTime
+      have hlabel : ComputableInPolyTime
           (fun d : D => (Sum.inl (Sum.inr d) : PreprocessLabel D))
           labelEncoding dartEncoding := .of_finite _
-      exact (isPolyTime_halfEdgeOfNumber.tidy.comp hnext.fst').prod (hlabel.comp hnext.snd')
+      exact (isPolyTime_halfEdgeOfNumber.comp hnext.fst').prod (hlabel.comp hnext.snd')
     · simp only [preprocessRotation]
       fun_prop
-  exact ((ComputableTidilyInPolyTime.snd _ _).snd').finite_cases hbranch
+  exact ((ComputableInPolyTime.snd _ _).snd').finite_cases hbranch
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Constraint evaluation charges the original descriptor and both endpoint labels. -/
 private theorem polytime_preprocessRelation [Finite D] [DecidableEq α]
     {alphabet : α ↪ List Bool} (eval : C → α → α → Bool) (fallback : C)
-    (heval : ComputableTidilyInPolyTime (fun p : C × (α × α) => eval p.1 p.2.1 p.2.2)
+    (heval : ComputableInPolyTime (fun p : C × (α × α) => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : Graph C × (((ℕ × Bool) × PreprocessLabel D) × (α × α)) =>
         p.1.preprocessRelation eval fallback p.2.1 p.2.2.1 p.2.2.2)
       (encPair (encoding enc)
         (encPair (encPair (encPair encUnary encBool) dartEncoding) (encPair alphabet alphabet)))
       encBool := by
-  have hbranch (d : PreprocessLabel D) : ComputableTidilyInPolyTime
+  have hbranch (d : PreprocessLabel D) : ComputableInPolyTime
       (fun p : Graph C × (((ℕ × Bool) × PreprocessLabel D) × (α × α)) =>
         p.1.preprocessRelation eval fallback (p.2.1.1, d) p.2.2.1 p.2.2.2)
       (encPair (encoding enc)
         (encPair (encPair (encPair encUnary encBool) dartEncoding) (encPair alphabet alphabet)))
       encBool := by
     rcases d with ((u | d) | d) | u <;> simp only [preprocessRelation] <;> fun_prop
-  exact ((ComputableTidilyInPolyTime.snd _ _).fst'.snd').finite_cases hbranch
+  exact ((ComputableInPolyTime.snd _ _).fst'.snd').finite_cases hbranch
 
 /-- Computed graph and dart arguments determine their encodings before composition. -/
 @[fun_prop]
@@ -225,10 +219,6 @@ theorem isPolyTime_preprocessRotation [Finite D] {Input : Type} {input : Input �
     (fallback : C) : ComputableInPolyTime
       (fun x => (graph x).preprocessRotation fallback rotate (dart x))
       input (encPair (encPair encUnary encBool) dartEncoding) := by
-  have hgraph := hgraph.tidy
-  have hdart := hdart.tidy
-  have hrotate := hrotate.tidy
-  refine .of_tidy ?_
   have hf := polytime_preprocessRotation (enc := enc) (dartEncoding := dartEncoding)
     fallback rotate hrotate
   have hg := hgraph.prod hdart
@@ -249,14 +239,8 @@ theorem isPolyTime_preprocessRelation [Finite D] [DecidableEq α]
     (hright : ComputableInPolyTime right input alphabet) (fallback : C) :
     ComputableInPolyTime
       (fun x => (graph x).preprocessRelation eval fallback (dart x) (left x) (right x))
-      input encBool := by
-  have hgraph := hgraph.tidy
-  have hdart := hdart.tidy
-  have heval := heval.tidy
-  have hleft := hleft.tidy
-  have hright := hright.tidy
-  exact .of_tidy
-    ((polytime_preprocessRelation (dartEncoding := dartEncoding) eval fallback heval).comp
-    (hgraph.prod (hdart.prod (hleft.prod hright))))
+      input encBool :=
+  (polytime_preprocessRelation (dartEncoding := dartEncoding) eval fallback heval).comp
+    (hgraph.prod (hdart.prod (hleft.prod hright)))
 
 end Cslib.PCP.Encoded.Graph

@@ -36,7 +36,7 @@ public section
 
 namespace Cslib.Circuits.Boolean.Modular
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 local notation "Code" => List (Op × List ℕ) × List ℕ
 
@@ -93,42 +93,44 @@ theorem innerProductCode_eq_code (k w : ℕ) :
 @[fun_prop] theorem computableInPolyTime_innerProduct :
     ComputableInPolyTime (fun p : ℕ × ℕ => (innerProduct p.1 p.2).code)
       (encPair encUnary encUnary) encCode := by
-  have hw : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2)
+  have hw : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2)
       (encPair (encPair encUnary encUnary) encUnary) encUnary := by fun_prop
-  have hk : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1)
-      (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-  have hj : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2)
-      (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-  have hw' := unary_to_binary.comp hw
-  have hwire : ComputableTidilyInPolyTime
+  have hwire : ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × ℕ => p.1.2 * p.1.1.2 + p.2)
-      (encPair (encPair (encPair encUnary encUnary) encUnary) encUnary) encNat := by fun_prop
-  have hwire' : ComputableTidilyInPolyTime
+      (encPair (encPair (encPair encUnary encUnary) encUnary) encUnary) encNat :=
+    unary_to_binary.comp (by fun_prop)
+  have hwire' : ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × ℕ => p.1.1.1 * p.1.1.2 +
         (p.1.2 * p.1.1.2 + p.2))
-      (encPair (encPair (encPair encUnary encUnary) encUnary) encUnary) encNat := by fun_prop
-  have hin : ComputableTidilyInPolyTime
+      (encPair (encPair (encPair encUnary encUnary) encUnary) encUnary) encNat :=
+    unary_to_binary.comp (by fun_prop)
+  have hin : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => innerProductInputsCode p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) encUnary) encCode :=
-    (const (encMid := encList encGate) []).prod
-      (listAppend' (mapWith hwire id' (range.comp hw))
-        (mapWith hwire' id' (range.comp hw)))
-  have hleaf : ComputableTidilyInPolyTime
+    (const (encOut := encList encGate) []).prod
+      (listAppend' (mapWithInput (range.comp hw) hwire)
+        (mapWithInput (range.comp hw) hwire'))
+  have hmul : ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × ℕ => multiplyCode p.1.2)
+      (encPair (encPair encUnary encUnary) encUnary) encCode := by
+    simpa only [multiplyCode_eq_code, Function.comp_def] using
+      computableInPolyTime_multiply.comp hw
+  have hn_leaf : ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × ℕ => p.1.1 * p.1.2 + p.1.1 * p.1.2)
+      (encPair (encPair encUnary encUnary) encUnary) encNat :=
+    unary_to_binary.comp (by fun_prop)
+  have hleaf : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => pairWithZeroCode (p.1.1 * p.1.2 + p.1.1 * p.1.2)
         p.1.2 (compCode (p.1.1 * p.1.2 + p.1.1 * p.1.2)
           (multiplyCode p.1.2) (innerProductInputsCode p.1.1 p.1.2 p.2)))
-      (encPair (encPair encUnary encUnary) encUnary) encCode := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_pairWithZeroCode (.of_tidy (by fun_prop)) (.of_tidy hw)
-    apply ComputableInPolyTime.of_tidy
-    apply (computableInPolyTime_compCode (.of_tidy (by fun_prop)) (.of_tidy _) (.of_tidy hin)).tidy
-    simpa only [multiplyCode_eq_code, Function.comp_def] using
-      computableInPolyTime_multiply.tidy.comp hw
-  have h := computableInPolyTime_sumPairsCode
-    (show ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.2 + p.1 * p.2)
-      (encPair encUnary encUnary) encNat from .of_tidy (by fun_prop))
-    (.of_tidy (snd _ _))
-    (.of_tidy (mapWith hleaf id' (range.comp (fst _ _))))
-  simpa only [← innerProductCode_eq_code, innerProductCode, Function.comp_def] using h
+      (encPair (encPair encUnary encUnary) encUnary) encCode :=
+    computableInPolyTime_pairWithZeroCode hn_leaf hw
+      (computableInPolyTime_compCode hn_leaf hmul hin)
+  suffices ComputableInPolyTime (fun p : ℕ × ℕ => innerProductCode p.1 p.2)
+      (encPair encUnary encUnary) encCode by
+    simpa only [← innerProductCode_eq_code] using this
+  unfold innerProductCode
+  exact computableInPolyTime_sumPairsCode (by fun_prop) (snd _ _)
+    (mapWithInput (by fun_prop) hleaf)
 
 end Cslib.Circuits.Boolean.Modular
