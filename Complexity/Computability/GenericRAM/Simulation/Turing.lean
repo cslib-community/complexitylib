@@ -154,11 +154,7 @@ def fields (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc)) :=
 /-- Read a fixed register, using the complete tuple input-length guarantee. -/
 def register (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc)) (i : Fin r) :
     NativeCertificate (fun a => (s a).regs i) ei enc.value :=
-  post (fst (snd (fields enc c))) (show ComputableInO (fun values : Fin r → M.Value => values i)
-      (encPi enc.value) enc.value (fun values => (encPi enc.value values).length)
-      (fun values => (encPi enc.value values).length) from by
-    obtain ⟨c, ⟨k, Q, hfin, tm, htm⟩, hout⟩ := ComputableTidilyInO.pi_apply enc.value i
-    exact ⟨c, ⟨k, Q, hfin, tm, fun a => (htm a).computesInTimeAndSpace⟩, hout⟩)
+  post (fst (snd (fields enc c))) (ComputableInO.pi_apply enc.value i)
 
 @[simp] theorem register_time (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc))
     (i : Fin r) : (register enc c i).time = c.time := rfl
@@ -170,12 +166,7 @@ def register (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc)) (i :
 def operands (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc))
     {n : ℕ} (args : Fin n → Fin r) :
     NativeCertificate (fun a => (s a).regs ∘ args) ei (encPi enc.value) :=
-  post (fst (snd (fields enc c))) (show ComputableInO
-      (fun values : Fin r → M.Value => values ∘ args)
-      (encPi enc.value) (encPi enc.value) (fun values => (encPi enc.value values).length)
-      (fun values => (encPi enc.value values).length) from by
-    obtain ⟨c, ⟨k, Q, hfin, tm, htm⟩, hout⟩ := ComputableTidilyInO.pi_gather enc.value args
-    exact ⟨c, ⟨k, Q, hfin, tm, fun a => (htm a).computesInTimeAndSpace⟩, hout⟩)
+  post (fst (snd (fields enc c))) (ComputableInO.pi_gather enc.value args)
 
 @[simp] theorem operands_time (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc))
     {n : ℕ} (args : Fin n → Fin r) : (operands enc c args).time = c.time := rfl
@@ -188,13 +179,7 @@ def setCertificate (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc)
     (d : Fin r) (value : NativeCertificate v ei enc.value) :
     NativeCertificate (fun a => (s a).set d (v a)) ei (encoding enc) :=
   let fs := fields enc c
-  let regs := post (prod (fst (snd fs)) value) (show ComputableInO
-      (fun p : (Fin r → M.Value) × M.Value => Function.update p.1 d p.2)
-      (encPair (encPi enc.value) enc.value) (encPi enc.value)
-      (fun p => (encPair (encPi enc.value) enc.value p).length)
-      (fun p => (encPair (encPi enc.value) enc.value p).length) from by
-    obtain ⟨c, ⟨k, Q, hfin, tm, htm⟩, hout⟩ := ComputableTidilyInO.pi_update enc.value d
-    exact ⟨c, ⟨k, Q, hfin, tm, fun a => (htm a).computesInTimeAndSpace⟩, hout⟩)
+  let regs := post (prod (fst (snd fs)) value) (ComputableInO.pi_update enc.value d)
   post (prod (fst fs) (prod regs (snd (snd fs)))) (pack enc).computes
 
 @[simp] theorem setCertificate_time (enc : M.Encoding)
@@ -240,14 +225,7 @@ def readCertificate (enc : M.Encoding) (c : NativeCertificate s ei (encoding enc
   let fs := fields enc c
   (⟨SparseMemory.readTime enc.address enc.value,
     SparseMemory.readSpace enc.address enc.value,
-    (show ComputableInO
-      (fun q : (M.Address × SparseMemory M.Address M.Value) × M.Value =>
-        SparseMemory.read q.2 q.1.1 q.1.2)
-      (SparseMemory.readEncoding enc.address enc.value) enc.value
-      (SparseMemory.readTime enc.address enc.value)
-      (SparseMemory.readSpace enc.address enc.value) from by
-    obtain ⟨c, ⟨k, Q, hfin, tm, htm⟩, hout⟩ := SparseMemory.read_inO enc.address enc.value
-    exact ⟨c, ⟨k, Q, hfin, tm, fun a => (htm a).computesInTimeAndSpace⟩, hout⟩)⟩ :
+    SparseMemory.read_inO enc.address enc.value⟩ :
       NativeCertificate _ _ _).comp
       (prod (prod address (snd (snd (snd fs)))) (fst (snd (snd fs))))
 
@@ -274,14 +252,7 @@ def writeCertificate (enc : M.Encoding) (c : NativeCertificate s ei (encoding en
   let memory :=
     (⟨SparseMemory.writeTime enc.address enc.value,
       SparseMemory.writeSpace enc.address enc.value,
-      (show ComputableInO
-      (fun q : (M.Address × M.Value) × SparseMemory M.Address M.Value => q.2.insert q.1.1 q.1.2)
-      (SparseMemory.writeEncoding enc.address enc.value)
-      (SparseMemory.encoding enc.address enc.value)
-      (SparseMemory.writeTime enc.address enc.value)
-      (SparseMemory.writeSpace enc.address enc.value) from by
-    obtain ⟨c, ⟨k, Q, hfin, tm, htm⟩, hout⟩ := SparseMemory.insert_inO enc.address enc.value
-    exact ⟨c, ⟨k, Q, hfin, tm, fun a => (htm a).computesInTimeAndSpace⟩, hout⟩)⟩ :
+      SparseMemory.insert_inO enc.address enc.value⟩ :
       NativeCertificate _ _ _).comp
         (prod (prod address value) (snd (snd (snd fs))))
   post (prod (fst fs) (prod (fst (snd fs)) (prod (fst (snd (snd fs))) memory)))
@@ -503,10 +474,9 @@ def stepSpace (enc : M.Encoding) (N : M.NativePrimitives enc) (p : Program M r) 
 The existential machine and constant are outside the quantifier over all configurations/states;
 they may depend on the fixed program and register count. -/
 theorem step_inO (enc : M.Encoding) (N : M.NativePrimitives enc) (p : Program M r) :
-    ComputableTidilyInO (fun q : M.Config × FiniteState M r => step q.1 p q.2)
-      (inputEncoding enc) (resultEncoding enc) (stepTime enc N p) (stepSpace enc N p) := by
-  obtain ⟨c, htm, hout⟩ := Internal.NormalForm.inO (stepCertificate enc N p).computes
-  exact ⟨c, htm, hout⟩
+    ComputableInO (fun q : M.Config × FiniteState M r => step q.1 p q.2)
+      (inputEncoding enc) (resultEncoding enc) (stepTime enc N p) (stepSpace enc N p) :=
+  (stepCertificate enc N p).computes
 
 @[simp] theorem dispatchTime_nil (enc : M.Encoding) (N : M.NativePrimitives enc)
     (pc : ℕ) (q : M.Config × FiniteState M r) :
