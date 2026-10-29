@@ -14,7 +14,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -275,21 +276,20 @@ theorem codeCheck_eq_true_iff {n : ℕ} {gates : List (Op × List ℕ)} :
 
 /-! ### Reading certificates in polynomial time -/
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 /-- Reading a gate from a row is polynomial-time, for the field width in unary. -/
 private theorem computableInPolyTime_readRow :
     ComputableInPolyTime (fun p : ℕ × List Bool => readRow p.1 p.2)
       (encPair encUnary encBits) encGate := by
-  refine .of_tidy ?_
-  have hop : ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+  have hop : ComputableInPolyTime (fun p : ℕ × List Bool =>
       Op.ofBits (p.2.getD 0 false, p.2.getD 1 false, p.2.getD 2 false))
       (encPair encUnary encBits) encOp :=
-    (of_finite (encA := encPair encBool (encPair encBool encBool)) Op.ofBits).comp (by fun_prop)
-  have hc₀ : ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+    (of_finite (encIn := encPair encBool (encPair encBool encBool)) Op.ofBits).comp (by fun_prop)
+  have hc₀ : ComputableInPolyTime (fun p : ℕ × List Bool =>
       ((p.2.drop 3).take p.1).count true) (encPair encUnary encBits) encNat :=
     unary_to_binary.comp (by fun_prop)
-  have hc₁ : ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+  have hc₁ : ComputableInPolyTime (fun p : ℕ × List Bool =>
       ((p.2.drop (3 + p.1)).take p.1).count true) (encPair encUnary encBits) encNat :=
     unary_to_binary.comp (by fun_prop)
   unfold readRow
@@ -308,17 +308,16 @@ theorem computableInPolyTime_codeCheck {γ : Type} {encIn : γ ↪ List Bool}
     {n : γ → ℕ} {gates : γ → List (Op × List ℕ)} (hn : ComputableInPolyTime n encIn encUnary)
     (hgates : ComputableInPolyTime gates encIn (encList encGate)) :
     ComputableInPolyTime (fun a => codeCheck (n a) (gates a)) encIn encBool := by
-  have hn := hn.tidy
-  have hgates := hgates.tidy
-  refine .of_tidy ?_
-  have harity : ComputableTidilyInPolyTime (fun op : Op => signature.Arity op) encOp encUnary :=
+  have harity : ComputableInPolyTime (fun op : Op => signature.Arity op) encOp encUnary :=
     of_finite _
-  have hbound : ComputableTidilyInPolyTime (fun p : (γ × ((Op × List ℕ) × ℕ)) × ℕ =>
+  have hbound : ComputableInPolyTime (fun p : (γ × ((Op × List ℕ) × ℕ)) × ℕ =>
       decide (p.2 < n p.1.1 + p.1.2.2))
       (encPair (encPair encIn (encPair encGate encUnary)) encNat) encBool :=
     binary_lt' (snd _ _) (unary_to_binary.comp (by fun_prop))
+  have hzip : ComputableInPolyTime (fun a => (gates a).zipIdx)
+      encIn (encList (encPair encGate encUnary)) := by fun_prop
   unfold codeCheck
-  exact allWithInput ((zipIdx _).comp hgates) (bool_and'
+  exact allWithInput hzip (bool_and'
     (decide_eq' (by fun_prop) (harity.comp (by fun_prop))) (allWithInput (by fun_prop) hbound))
 
 /-- **Reading certificates is polynomial-time**, for the number of inputs and the number of gates
@@ -330,27 +329,23 @@ theorem computableInPolyTime_readCertificate {γ : Type} {encIn : γ ↪ List Bo
     (hw : ComputableInPolyTime w encIn encBits) :
     ComputableInPolyTime (fun a => readCertificate (n a) (s a) (w a)) encIn
       (encPair (encList encGate) encNat) := by
-  have hn := hn.tidy
-  have hs := hs.tidy
-  have hw := hw.tidy
-  refine .of_tidy ?_
-  have hrow := computableInPolyTime_readRow.tidy
   unfold readCertificate
-  have hk : ComputableTidilyInPolyTime (fun a => ((w a).take (s a)).count true) encIn encUnary :=
+  have hk : ComputableInPolyTime (fun a => ((w a).take (s a)).count true) encIn encUnary :=
     bitsCountWithInput (bitsTakeWithInput hw hs) (const true)
-  have hwidth : ComputableTidilyInPolyTime (fun a => 3 + 2 * (n a + s a)) encIn encUnary := by
+  have hwidth : ComputableInPolyTime (fun a => 3 + 2 * (n a + s a)) encIn encUnary := by
     fun_prop
-  have hdrop : ComputableTidilyInPolyTime (fun a => (w a).drop (s a + (n a + s a))) encIn encBits :=
+  have hdrop : ComputableInPolyTime (fun a => (w a).drop (s a + (n a + s a))) encIn encBits :=
     bitsDropWithInput hw (by fun_prop)
-  have hrows : ComputableTidilyInPolyTime (fun a => BitString.listRows (((w a).take (s a)).count
+  have hrows : ComputableInPolyTime (fun a => BitString.listRows (((w a).take (s a)).count
       true) (3 + 2 * (n a + s a)) ((w a).drop (s a + (n a + s a)))) encIn (encList encBits) :=
     bitsRowsWithInput hk hwidth hdrop
-  have hout : ComputableTidilyInPolyTime (fun a => (((w a).drop (s a)).take (n a + s a)).count true)
+  have hout : ComputableInPolyTime (fun a => (((w a).drop (s a)).take (n a + s a)).count true)
       encIn encUnary :=
     bitsCountWithInput (bitsTakeWithInput (bitsDropWithInput hw hs) (by fun_prop)) (const true)
-  have hpair : ComputableTidilyInPolyTime (fun p : γ × List Bool => (n p.1 + s p.1, p.2))
+  have hpair : ComputableInPolyTime (fun p : γ × List Bool => (n p.1 + s p.1, p.2))
       (encPair encIn encBits) (encPair encUnary encBits) := by
     fun_prop
-  exact (mapWithInput hrows (hrow.comp hpair)).prod (unary_to_binary.comp hout)
+  exact (mapWithInput hrows (computableInPolyTime_readRow.comp hpair)).prod
+    (unary_to_binary.comp hout)
 
 end Cslib.Circuits.Boolean

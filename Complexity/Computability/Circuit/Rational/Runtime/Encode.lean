@@ -75,8 +75,7 @@ theorem encodeNat_eq (a : ℕ) :
 @[fun_prop, program_certificate]
 theorem encodeNat_polytime :
     ComputableInPolyTime encodeNat encNat encBits := by
-  refine .of_tidy ?_
-  have h : ComputableTidilyInPolyTime
+  have h : ComputableInPolyTime
       (fun a : ℕ => List.replicate a.bits.length true ++ false :: a.bits) encNat encBits := by
     fun_prop
   exact h.of_enc_eq fun a => congrArg encBits (encodeNat_eq a)
@@ -138,36 +137,30 @@ computable in polynomial time. -/
 theorem encodeDivInt_polytime :
     ComputableInPolyTime (fun p : ℤ × ℤ => encodeRat (Rat.divInt p.1 p.2))
       (encPair encIntBin encIntBin) encBits := by
-  refine .of_tidy ?_
-  have ha0 : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => decide (p.1 = 0))
-      (encPair encIntBin encIntBin) encBool :=
-    ComputableTidilyInPolyTime.intBin_isZero.comp (ComputableTidilyInPolyTime.fst _ _)
-  have hb0 : ComputableTidilyInPolyTime (fun p : ℤ × ℤ => decide (p.2 = 0))
-      (encPair encIntBin encIntBin) encBool :=
-    ComputableTidilyInPolyTime.intBin_isZero.comp (ComputableTidilyInPolyTime.snd _ _)
-  have hxor : ComputableTidilyInPolyTime
+  have ha0 : ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.1 = 0))
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have hb0 : ComputableInPolyTime (fun p : ℤ × ℤ => decide (p.2 = 0))
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have hxor : ComputableInPolyTime
       (fun p : ℤ × ℤ => decide (p.1 < 0) ^^ decide (p.2 < 0))
-      (encPair encIntBin encIntBin) encBool :=
-    ComputableTidilyInPolyTime.bool_xor.comp
-      ((ComputableTidilyInPolyTime.intBin_isNeg.comp (ComputableTidilyInPolyTime.fst _ _)).prod
-        (ComputableTidilyInPolyTime.intBin_isNeg.comp (ComputableTidilyInPolyTime.snd _ _)))
-  have hsign : ComputableTidilyInPolyTime
+      (encPair encIntBin encIntBin) encBool := by fun_prop
+  have hsign : ComputableInPolyTime
       (fun p : ℤ × ℤ =>
         if p.1 = 0 then false
         else if p.2 = 0 then false
         else (decide (p.1 < 0) ^^ decide (p.2 < 0)))
       (encPair encIntBin encIntBin) encBool :=
     ha0.ite_decide (.const false) (hb0.ite_decide (.const false) hxor)
-  have hnum : ComputableTidilyInPolyTime
+  have hnum : ComputableInPolyTime
       (fun p : ℤ × ℤ => if p.2 = 0 then 0 else p.1.natAbs / Nat.gcd p.1.natAbs p.2.natAbs)
       (encPair encIntBin encIntBin) encNat :=
     hb0.ite_decide (.const 0) (by fun_prop)
-  have hden : ComputableTidilyInPolyTime
+  have hden : ComputableInPolyTime
       (fun p : ℤ × ℤ => if p.2 = 0 then 1 else p.2.natAbs / Nat.gcd p.1.natAbs p.2.natAbs)
       (encPair encIntBin encIntBin) encNat :=
     hb0.ite_decide (.const 1) (by fun_prop)
   have h := hsign.bitsCons
-    ((encodeNat_polytime.tidy.comp hnum).bitsAppend (encodeNat_polytime.tidy.comp hden))
+    ((encodeNat_polytime.comp hnum).bitsAppend (encodeNat_polytime.comp hden))
   exact h.of_enc_eq fun p => congrArg encBits (encodeRat_divInt p.1 p.2)
 
 /-- Encode the reduced rational quotient of two computed binary integers. -/
