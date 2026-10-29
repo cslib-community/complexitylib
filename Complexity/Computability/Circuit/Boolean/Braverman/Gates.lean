@@ -41,7 +41,7 @@ choose the sets greedily, one at a time, each by an average over a single random
 constant `41 / 50` is Braverman's `0.82`.
 
 The sup-norm bounds are our own; they replace [Braverman, Proposition 9][Braverman2010] in the
-circuit-level approximation (`Braverman/Approximation.lean`).
+circuit-level approximation (`Braverman.exists_lowDegree_approx`).
 
 ## Main definitions
 
