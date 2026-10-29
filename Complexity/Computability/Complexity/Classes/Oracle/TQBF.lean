@@ -190,9 +190,9 @@ def kindDecoder : Decoder encKind where
   decode_enc k := by cases k <;> rfl
   computable := by
     have h : ComputableInPolyTime (fun w : List Bool => min w.length 7) encBits encUnary :=
-      ComputableTidilyInPolyTime.unary_min.computableInPolyTime.comp ((by fun_prop :
-        ComputableInPolyTime (fun w : List Bool => w.length) encBits encUnary).prod
-        (ComputableInPolyTime.const 7))
+      (by fun_prop :
+        ComputableInPolyTime (fun w : List Bool => w.length - (w.length - 7)) encBits encUnary)
+      |>.of_enc_eq fun w => congrArg encUnary (by omega)
     have hp : ComputableInPolyTime (fun w : List Bool => kindOfIndex w.length)
         encBits encKind := h.of_enc_eq fun w => by
       change encUnary (kindIndex (kindOfIndex w.length)) = _

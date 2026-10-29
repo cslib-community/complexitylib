@@ -230,15 +230,15 @@ private theorem image_eq {n : ℕ} {w : List Bool} {i c : ℕ} (hc : c < n)
     List.count_eq_one_of_mem List.nodup_range (List.mem_range.2 hc), List.replicate_one]
   rfl
 
-private theorem computableTidilyInPolyTime_image {γ : Type} {input : γ ↪ List Bool} {n i : γ → ℕ}
-    {w : γ → List Bool} (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hw : ComputableTidilyInPolyTime w input encBits)
-    (hi : ComputableTidilyInPolyTime i input encUnary) :
-    ComputableTidilyInPolyTime (fun x => image (n x) (w x) (i x)) input encUnary := by
+private theorem computableInPolyTime_image {γ : Type} {input : γ ↪ List Bool} {n i : γ → ℕ}
+    {w : γ → List Bool} (hn : ComputableInPolyTime n input encUnary)
+    (hw : ComputableInPolyTime w input encBits)
+    (hi : ComputableInPolyTime i input encUnary) :
+    ComputableInPolyTime (fun x => image (n x) (w x) (i x)) input encUnary := by
   unfold image
   fun_prop
 
-attribute [local fun_prop] computableTidilyInPolyTime_image
+attribute [local fun_prop] computableInPolyTime_image
 
 /-- The map read from the matrix starting after `k` bits of a word: row `i` selects its first set
 bit (`image`). -/
@@ -329,14 +329,106 @@ def test (N : Polynomial ℕ) (x : (Graph × Graph) × List Bool) : Bool :=
       (x.2.take (N.eval (encPair encGraph encGraph x.1).length))
       (x.2.drop (N.eval (encPair encGraph encGraph x.1).length))
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
+private theorem bool_or'_pt {α : Type} {encA : α ↪ List Bool} {left right : α → Bool}
+    (hleft : ComputableInPolyTime left encA encBool)
+    (hright : ComputableInPolyTime right encA encBool) :
+    ComputableInPolyTime (fun a => left a || right a) encA encBool :=
+  ComputableInPolyTime.bool_or.comp (hleft.prod hright)
+
+private theorem decide_ne_pt {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    [DecidableEq β] {left right : α → β}
+    (hleft : ComputableInPolyTime left encA encB)
+    (hright : ComputableInPolyTime right encA encB) :
+    ComputableInPolyTime (fun x => decide (left x ≠ right x)) encA encBool := by
+  simpa only [Function.comp_def, decide_not] using
+    ComputableInPolyTime.bool_not.comp (hleft.decide_eq' hright)
+
+private theorem computableInPolyTime_check {γ : Type} {input : γ ↪ List Bool}
+    {n E : γ → ℕ} {adj : γ → Bool → ℕ → ℕ → Bool} {u v : γ → List Bool}
+    (hn : ComputableInPolyTime n input encUnary)
+    (hE : ComputableInPolyTime E input encUnary)
+    (hadj : ∀ {δ : Type} {encD : δ ↪ List Bool} {g : δ → γ} {b : δ → Bool} {i j : δ → ℕ},
+      ComputableInPolyTime g encD input →
+      ComputableInPolyTime b encD encBool →
+      ComputableInPolyTime i encD encUnary →
+      ComputableInPolyTime j encD encUnary →
+      ComputableInPolyTime (fun d => adj (g d) (b d) (i d) (j d)) encD encBool)
+    (hu : ComputableInPolyTime u input encBits)
+    (hv : ComputableInPolyTime v input encBits) :
+    ComputableInPolyTime (fun x => check (n x) (E x) (adj x) (u x) (v x)) input encBool := by
+  unfold check
+  dsimp only
+  have hpad : ComputableInPolyTime
+      (fun x => (List.range (E x - 2 * (n x * n x))).all fun p =>
+        !(u x).getD (2 * (n x * n x) + p) false)
+      input encBool :=
+    ComputableInPolyTime.allWithInput (by fun_prop) (by fun_prop)
+  refine hpad.bool_and' (ComputableInPolyTime.allWithInput (ComputableInPolyTime.range.comp hn)
+    (ComputableInPolyTime.allWithInput
+      (ComputableInPolyTime.range.comp (hn.comp (.fst input encUnary))) ?_))
+  let encQ := encPair (encPair input encUnary) encUnary
+  have hx : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => q.1.1) encQ input :=
+    (ComputableInPolyTime.fst input encUnary).comp (.fst _ encUnary)
+  have hi : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => q.1.2) encQ encUnary :=
+    (ComputableInPolyTime.snd input encUnary).comp (.fst _ encUnary)
+  have hj : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => q.2) encQ encUnary :=
+    .snd _ encUnary
+  have hnq : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => n q.1.1) encQ encUnary := hn.comp hx
+  have huq : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => u q.1.1) encQ encBits := hu.comp hx
+  have hvq : ComputableInPolyTime (fun q : (γ × ℕ) × ℕ => v q.1.1) encQ encBits := hv.comp hx
+  have hudrop : ComputableInPolyTime
+      (fun q : (γ × ℕ) × ℕ => (u q.1.1).drop (n q.1.1 * n q.1.1)) encQ encBits :=
+    ComputableInPolyTime.bitsDropWithInput huq (hnq.unary_mul' hnq)
+  have hvdrop : ComputableInPolyTime
+      (fun q : (γ × ℕ) × ℕ => (v q.1.1).drop 1) encQ encBits :=
+    ComputableInPolyTime.bitsDropWithInput hvq (.const 1)
+  have hfi := computableInPolyTime_image hnq hudrop hi
+  have hfj := computableInPolyTime_image hnq hudrop hj
+  have hτi := computableInPolyTime_image hnq hvdrop hi
+  have hτj := computableInPolyTime_image hnq hvdrop hj
+  have hc₁ := (ComputableInPolyTime.bitsGetDWithInput huq
+    ((hnq.unary_mul' hnq).unary_add' ((hi.unary_mul' hnq).unary_add' hj)) false).beq
+    (hfi.decide_eq' hj)
+  have hc₂ := bool_or'_pt (hi.decide_eq' hj) (decide_ne_pt hfi hfj)
+  have hc₃ := (ComputableInPolyTime.bitsGetDWithInput huq
+    ((hfi.unary_mul' hnq).unary_add' hfj) false).beq
+    (ComputableInPolyTime.bitsGetDWithInput huq ((hi.unary_mul' hnq).unary_add' hj) false)
+  have hc₄ := bool_or'_pt (hi.decide_eq' hj) (decide_ne_pt hτi hτj)
+  have hc₅ := (ComputableInPolyTime.bitsGetDWithInput huq
+    ((hτi.unary_mul' hnq).unary_add' hτj) false).beq
+    (hadj hx (ComputableInPolyTime.bitsGetDWithInput hvq (.const 0) false) hi hj)
+  exact (((hc₁.bool_and' hc₂).bool_and' hc₃).bool_and' hc₄).bool_and' hc₅
+
 /-- The test is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_test (N : Polynomial ℕ) :
     ComputableInPolyTime (test N) (encPair (encPair encGraph encGraph) encBits) encBool := by
-  unfold test check
-  dsimp only
-  exact .of_tidy (by fun_prop)
+  let encX := encPair (encPair encGraph encGraph) encBits
+  have hg₁ : ComputableInPolyTime (fun x : (Graph × Graph) × List Bool => x.1.1) encX encGraph :=
+    (ComputableInPolyTime.fst encGraph encGraph).comp (.fst _ encBits)
+  have hg₂ : ComputableInPolyTime (fun x : (Graph × Graph) × List Bool => x.1.2) encX encGraph :=
+    (ComputableInPolyTime.snd encGraph encGraph).comp (.fst _ encBits)
+  have hn₁ : ComputableInPolyTime
+      (fun x : (Graph × Graph) × List Bool => x.1.1.distinctVertices.length) encX encUnary :=
+    (ComputableInPolyTime.length_list encNat).comp
+      (Graph.computableInPolyTime_distinctVertices.comp hg₁)
+  have hn₂ : ComputableInPolyTime
+      (fun x : (Graph × Graph) × List Bool => x.1.2.distinctVertices.length) encX encUnary :=
+    (ComputableInPolyTime.length_list encNat).comp
+      (Graph.computableInPolyTime_distinctVertices.comp hg₂)
+  have hE : ComputableInPolyTime
+      (fun x : (Graph × Graph) × List Bool => N.eval (encPair encGraph encGraph x.1).length)
+      encX encUnary :=
+    (ComputableInPolyTime.unary_eval N).comp
+      ((ComputableInPolyTime.encoding_length (encPair encGraph encGraph)).comp (.fst _ encBits))
+  unfold test
+  exact bool_or'_pt (decide_ne_pt hn₂ hn₁)
+    (computableInPolyTime_check hn₁ hE
+      (fun hg hb hi hj => hb.ite
+        (Graph.computableInPolyTime_adjIndex hg.fst'.snd' hi hj)
+        (Graph.computableInPolyTime_adjIndex hg.fst'.fst' hi hj))
+      (ComputableInPolyTime.bitsTakeWithInput (.snd _ encBits) hE)
+      (ComputableInPolyTime.bitsDropWithInput (.snd _ encBits) hE))
 
 /-! ### Counting the certified pairs -/
 

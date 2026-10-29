@@ -53,7 +53,6 @@ def iterationSize (factor descriptorBound rounds : ℕ) (g : Graph C) : ℕ :=
   let size := max factor 1 ^ rounds * (g.vertices + g.edges.length)
   2 * size + 1 + size * (8 * size + 2 * descriptorBound + 5)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The logarithmic-round state bound is polynomial in any efficiently computed initial graph.
 Its fixed-factor power is computed by the existing charged logarithm/power certificate. -/
 theorem polyBounded_iterationSize_clog {graph : Input → Graph C}
@@ -62,10 +61,9 @@ theorem polyBounded_iterationSize_clog {graph : Input → Graph C}
     PolyBounded (fun x => (input x).length)
       (fun x => iterationSize factor descriptorBound (Nat.clog 2 (graph x).edges.length)
         (graph x)) := by
-  have hgraph := hgraph.tidy
-  apply ComputableTidilyInPolyTime.polyBounded
+  apply ComputableInPolyTime.polyBounded
   unfold iterationSize
-  polytime
+  fun_prop
 
 /-- A preserved graph invariant with fixed linear cardinality growth and bounded descriptors
 bounds every intermediate encoding, including the initial state and all list framing. -/
