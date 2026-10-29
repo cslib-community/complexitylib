@@ -368,8 +368,9 @@ each statement against the numbered result. Organize modules by subject, not cha
   of Babai, Fortnow, Nisan and Wigderson.
 - **Extractors** ([#895]) beyond Chor–Goldreich: two-source extractors for lower min-entropy,
   where the `t`-wise independent parts of Chattopadhyay–Zuckerman's Theorem 4.1 are formalized with
-  exponent `O(d²)` in place of their `3 d + 6` (the almost `t`-wise independent parts are not), and
-  their resilient functions (Theorems 3 and 4) and extractor (Theorem 1) are not yet formalized;
+  exponent `O(d²)` in place of their `3 d + 6` (the almost `t`-wise independent parts are not), with
+  Tribes as a small instance (coalitions of fewer than `w` bits only), and their resilient functions
+  (Theorems 3 and 4) and extractor (Theorem 1) are not yet formalized;
   condensers, limited independence, explicit expanders and space-bounded generators, with finite
   guarantees separate from uniform construction and decoding costs.
 - **Codes:** Guruswami–Sudan list decoding and local decoding, keeping interpolation,
