@@ -51,7 +51,7 @@ example : ¬SIS (fun _ => 0) (fun _ => 1) (fun _ => 1) (fun _ => 1) := fun h => 
       PMF.pure_bind, hsol, decide_true, PMF.bind_const]
   refine not_negligible_const one_ne_zero ?_
   simpa only [hwin, Game.succProbability, PMF.pure_apply_self, ENNReal.toNNReal_one] using
-    h _ (ComputableTidilyInPolyTime.const [true]).isPPT
+    h (fun _ _ => pure [true]) (ComputableInPolyTime.const [true]).isPPTOn
 
 /-! ### Lyubashevsky's protocol
 

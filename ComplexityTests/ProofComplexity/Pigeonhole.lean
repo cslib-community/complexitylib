@@ -18,28 +18,7 @@ namespace ComplexityTests.ProofComplexity.Pigeonhole
 
 open Cslib Cslib.Logic.PL Finset
 
-/-! ### Satisfiability and size of small pigeonhole formulas -/
-
-example : (CNF.pigeonhole 2 2).Satisfiable :=
-  CNF.satisfiable_pigeonhole_iff.2 (by decide)
-
-example : ¬ (CNF.pigeonhole 2 1).Satisfiable :=
-  CNF.not_satisfiable_pigeonhole (by decide)
-
-example : ¬ (CNF.pigeonhole 3 2).Satisfiable :=
-  CNF.not_satisfiable_pigeonhole (by decide)
-
-example : (CNF.pigeonhole 3 2).length ≤ 3 + 2 * 3 ^ 2 :=
-  CNF.length_pigeonhole_le 3 2
-
-example : (CNF.pigeonhole 3 2).vars.toFinset.card ≤ 3 * 2 :=
-  CNF.card_toFinset_vars_pigeonhole_le 3 2
-
-/-! ### A concrete resolution refutation of `PHP^2_1` -/
-
-example : CNF.pigeonhole 2 1 =
-    [[((0, 0), true)], [((1, 0), true)], [((0, 0), false), ((1, 0), false)]] := by
-  decide
+/-! ### Satisfiability, size, and concrete resolution refutation of small pigeonhole formulas -/
 
 /-- Refute `PHP^2_1` in five lines by resolving the two pigeon clauses against the hole clause. -/
 private def php21Proof : List (Clause (Fin 2 × Fin 1)) :=
@@ -60,28 +39,42 @@ private theorem isProof_php21 : (CNF.pigeonhole 2 1).IsProof php21Proof := by
     (by decide) (by decide) (by decide) (by decide)
   exact h₃
 
-example : (CNF.pigeonhole 2 1).RefutableInSize 5 :=
-  ⟨php21Proof, isProof_php21, by decide, le_rfl⟩
-
-/-- Both pairs `(0, 0)` and `(1, 0)` satisfy the hole clause `¬x_{0,0} ∨ ¬x_{1,0}` under
-`matchPair`. -/
-example : #(Pigeonhole.satPairs (univ : Finset (Fin 2)) (univ : Finset (Fin 1))
-    (CNF.holeClause 0 1 0)) = 2 := by
-  decide
+example :
+    (CNF.pigeonhole 2 2).Satisfiable ∧
+    ¬ (CNF.pigeonhole 2 1).Satisfiable ∧
+    ¬ (CNF.pigeonhole 3 2).Satisfiable ∧
+    (CNF.pigeonhole 3 2).length = 9 ∧
+    (CNF.pigeonhole 3 2).length ≤ 3 + 2 * 3 ^ 2 ∧
+    (CNF.pigeonhole 3 2).vars.toFinset.card = 6 ∧
+    (CNF.pigeonhole 3 2).vars.toFinset.card ≤ 3 * 2 ∧
+    CNF.pigeonhole 2 1 =
+      [[((0, 0), true)], [((1, 0), true)], [((0, 0), false), ((1, 0), false)]] ∧
+    (CNF.pigeonhole 2 1).RefutableInSize 5 ∧
+    #(Pigeonhole.satPairs (univ : Finset (Fin 2)) (univ : Finset (Fin 1))
+      (CNF.holeClause 0 1 0)) = 2 :=
+  ⟨CNF.satisfiable_pigeonhole_iff.2 (by decide),
+    CNF.not_satisfiable_pigeonhole (by decide),
+    CNF.not_satisfiable_pigeonhole (by decide),
+    by decide,
+    CNF.length_pigeonhole_le 3 2,
+    by decide,
+    CNF.card_toFinset_vars_pigeonhole_le 3 2,
+    by decide,
+    ⟨php21Proof, isProof_php21, by decide, le_rfl⟩,
+    by decide⟩
 
 /-! ### Lower-bound instances -/
 
-/-- For `n = 8`, the recurrence bound `12 ^ 2 ≤ 11 ^ 2 · s` forces `2 ≤ s`. -/
-example {s : ℕ} (hs : (CNF.pigeonhole 9 8).RefutableInSize s) : 2 ≤ s := by
+/-- Recurrence lower bound at `n = 8` (`2 ≤ s`), and non-refutability at `n = 24` (`s = 1`)
+and `n = 48` (`s = 3`). -/
+example :
+    (∀ {s : ℕ}, (CNF.pigeonhole 9 8).RefutableInSize s → 2 ≤ s) ∧
+    ¬ (CNF.pigeonhole 25 24).RefutableInSize 1 ∧
+    ¬ (CNF.pigeonhole 49 48).RefutableInSize 3 := by
+  refine ⟨fun hs => ?_,
+    CNF.not_refutableInSize_pigeonhole (n := 24) (by decide),
+    CNF.not_refutableInSize_pigeonhole (n := 48) (by decide)⟩
   have := CNF.pow_le_mul_of_refutableInSize_pigeonhole (n := 8) (by decide) hs
   omega
-
-/-- For `n = 24`, no resolution refutation of `PHP^{25}_{24}` has fewer than `2` lines. -/
-example : ¬ (CNF.pigeonhole 25 24).RefutableInSize 1 :=
-  CNF.not_refutableInSize_pigeonhole (n := 24) (by decide)
-
-/-- For `n = 48`, no resolution refutation of `PHP^{49}_{48}` has at most `3` lines. -/
-example : ¬ (CNF.pigeonhole 49 48).RefutableInSize 3 :=
-  CNF.not_refutableInSize_pigeonhole (n := 48) (by decide)
 
 end ComplexityTests.ProofComplexity.Pigeonhole

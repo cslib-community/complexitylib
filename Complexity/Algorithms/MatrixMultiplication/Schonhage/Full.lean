@@ -38,7 +38,8 @@ instruction-cost interpretation.
 Part of [AlmanWilliams2026, Section 2]. Direct mathematical adaptation of
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Definitions are selectively extracted from that pin's `PaperStatements.lean`; no machine
-semantics or running-time statement is imported. Source-derived prose is paraphrased below.
+semantics or running-time statement is imported. The docstrings below explain the local
+declarations in our own words.
 -/
 
 @[expose] public section
@@ -47,23 +48,17 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-- Section 2.3.1: An array a on the left strings of length L assigns an integer a[u] to each u
-that is a left string of length L.  So such an array is a function `LeftStr L → ℤ`, and likewise
-for right strings, output strings and leaves.
-
-the slice of a at a left variable s is the array a_s on the strings of length L - 1 given by
-a_s[u'] := a[s u']; the same definition is used for every alphabet.
+/-- Fix the first coordinate of a tuple-indexed array and retain the shorter tuple as its
+argument. The construction works for any coordinate alphabet and value type.
 -/
 def sliceAt {α β : Type} {L : ℕ} (a : (Fin (L + 1) → α) → β) (s : α) : (Fin L → α) → β :=
   fun u' => a (Fin.cons s u')
 
-/-- Section 2.3.1, step (2) of `Full.result`: A_λ := ∑_s φ_λ(s) a_s.
--/
+/-- Apply the left coefficient form for `lam` to all first-coordinate slices of the input array. -/
 def encodeStepL {L : ℕ} (lam : Term) (a : LeftStr (L + 1) → ℤ) : LeftStr L → ℤ :=
   fun u' => ∑ s, phi lam s * sliceAt a s u'
 
-/-- Section 2.3.1, step (2) of `Full.result`: B_λ := ∑_t ψ_λ(t) b_t.
--/
+/-- Apply the right coefficient form for `lam` to all first-coordinate slices of the input array. -/
 def encodeStepR {L : ℕ} (lam : Term) (b : RightStr (L + 1) → ℤ) : RightStr L → ℤ :=
   fun v' => ∑ t, psi lam t * sliceAt b t v'
 
@@ -84,31 +79,27 @@ def Full.run : (L : ℕ) → (LeftStr L → ℤ) → (RightStr L → ℤ) → (O
         | .z0 => ∑ lam, (R lam).1 (Fin.tail w),
       fun τ => (R (τ 0)).2 (Fin.tail τ))
 
-/-- The array that `Full.result(a, b)` returns.
--/
+/-- Project the output array from full evaluation, discarding its record of leaf operands. -/
 def Full.result (L : ℕ) (a : LeftStr L → ℤ) (b : RightStr L → ℤ) : OutStr L → ℤ :=
   (Full.run L a b).1
 
-/-- The two numbers that `Full.result(a, b)` multiplies at the leaf `τ`, the left one first.
--/
+/-- Read the ordered pair of leaf operands recorded by `Full.run`. -/
 def Full.multipliedAt (L : ℕ) (a : LeftStr L → ℤ) (b : RightStr L → ℤ) (τ : Leaf L) : ℤ × ℤ :=
   (Full.run L a b).2 τ
 
 /-! ### 2.3.2 Unraveling the recursion computation -/
 
-/-- Section 2.3.2: Φ_τ(a) := ∑_u a[u] ∏_{ℓ=1}^{L} φ_{τ_ℓ}(u_ℓ), the sum over all left strings `u`.
+/-- Evaluate the left encoding at one leaf by weighting each input entry with the product of its
+coordinate coefficients.
 -/
 def encodeLeft {L : ℕ} (τ : Leaf L) (a : LeftStr L → ℤ) : ℤ := ∑ u, a u * ∏ ℓ, phi (τ ℓ) (u ℓ)
 
-/-- Section 2.3.2: Ψ_τ(b) := ∑_v b[v] ∏_{ℓ=1}^{L} ψ_{τ_ℓ}(v_ℓ), the sum over all right strings
-`v`.
+/-- Evaluate the right encoding at one leaf using the corresponding products of right
+coefficients.
 -/
 def encodeRight {L : ℕ} (τ : Leaf L) (b : RightStr L → ℤ) : ℤ := ∑ v, b v * ∏ ℓ, psi (τ ℓ) (v ℓ)
 
-/-- Section 2.3.2: a vertex τ₁ ⋯ τ_k contributes to an output string w if τ_ℓ contributes to w_ℓ
-at every level ℓ ≤ k, for a leaf, that is, for `k = L`: the leaf `τ` contributes to `w` if `τ_ℓ`
-contributes to `w_ℓ` at every level `ℓ`.
--/
+/-- A leaf is relevant to an output tuple when its labels are relevant at every coordinate. -/
 def Leaf.Contributes {L : ℕ} (τ : Leaf L) (w : OutStr L) : Prop :=
   ∀ ℓ, (τ ℓ).Contributes (w ℓ)
 
@@ -116,71 +107,57 @@ instance Leaf.instDecidableContributes {L : ℕ} (τ : Leaf L) (w : OutStr L) :
     Decidable (Leaf.Contributes τ w) :=
   inferInstanceAs (Decidable (∀ ℓ, (τ ℓ).Contributes (w ℓ)))
 
-/-- Equation (2): bilinearProduct(a, b)[w] := ∑_{τ contributing to w} Φ_τ(a) Ψ_τ(b).
--/
+/-- For each output tuple, sum the products of left and right encodings over its relevant leaves. -/
 def bilinearProduct {L : ℕ} (a : LeftStr L → ℤ) (b : RightStr L → ℤ) : OutStr L → ℤ :=
   fun w => ∑ τ : Leaf L with Leaf.Contributes τ w, encodeLeft τ a * encodeRight τ b
 
-/-- Equation (3): γ(s, t, z) := ∑_{λ contributing to z} φ_λ(s) ψ_λ(t).
+/-- The coefficient linking one left, right and output coordinate, obtained by summing products of
+the relevant label coefficients.
 -/
 def coefficient (s : LeftVar) (t : RightVar) (z : OutVar) : ℤ :=
   ∑ lam : Term with lam.Contributes z, phi lam s * psi lam t
 
-/-- Section 2.4.1: The encoding of a is the array of the 10^L numbers Φ_τ(a), indexed by the
-leaves τ.
--/
+/-- Package all left-encoding values into an array indexed by leaves. -/
 def encodingL {L : ℕ} (a : LeftStr L → ℤ) : Leaf L → ℤ := fun τ => encodeLeft τ a
 
-/-- Section 2.4.1: The encoding of b, the array of the numbers Ψ_τ(b).
--/
+/-- Package all right-encoding values into an array indexed by leaves. -/
 def encodingR {L : ℕ} (b : RightStr L → ℤ) : Leaf L → ℤ := fun τ => encodeRight τ b
 
-/-- Section 2.4.2: For a set U of output strings of length L, we write leaves(U) for the set of
-leaves that contribute to some output string of U.
--/
+/-- Take the union of the relevant-leaf sets of all requested output tuples. -/
 def leaves {L : ℕ} (U : Finset (OutStr L)) : Finset (Leaf L) :=
   univ.filter fun τ => ∃ w ∈ U, Leaf.Contributes τ w
 
-/-- Section 2.3.1: an array on the left strings of length `L` has 7^L entries in total.
--/
+/-- Counting length-`L` left tuples gives `7^L`. -/
 theorem card_leftStr (L : ℕ) : Fintype.card (LeftStr L) = 7 ^ L := by
   rw [Fintype.card_fun, card_leftVar, Fintype.card_fin]
 
-/-- Section 2.3.1: an array on the right strings of length `L` has `7^L` entries.
--/
+/-- Counting length-`L` right tuples gives `7^L`. -/
 theorem card_rightStr (L : ℕ) : Fintype.card (RightStr L) = 7 ^ L := by
   rw [Fintype.card_fun, card_rightVar, Fintype.card_fin]
 
-/-- Section 2.3.1: At depth k there are 10^k vertices; in particular there are `10^L` leaves.
--/
+/-- A depth-`k` label sequence has ten independent choices at each position. -/
 theorem card_vertex (k : ℕ) : Fintype.card (Vertex k) = 10 ^ k := by
   rw [Fintype.card_fun, card_term, Fintype.card_fin]
 
-/-- Section 2.3.1: φ_λ(s) ∈ {0, ±1}.
--/
+/-- Every left coefficient has absolute value at most one. -/
 theorem abs_phi_le_one (lam : Term) (s : LeftVar) : |phi lam s| ≤ 1 := by
   decide +revert
 
-/-- Section 2.3.1: `ψ_λ(t) ∈ {0, ±1}`.
--/
+/-- Every right coefficient has absolute value at most one. -/
 theorem abs_psi_le_one (lam : Term) (t : RightVar) : |psi lam t| ≤ 1 := by
   decide +revert
 
-/-- Section 2.3.1: for each term λ, at most three of the seven values φ_λ(s) are nonzero.
--/
+/-- The support of any left coefficient form has cardinality at most three. -/
 theorem card_support_phi_le (lam : Term) : (univ.filter fun s => phi lam s ≠ 0).card ≤ 3 := by
   decide +revert
 
-/-- Section 2.3.1: and similarly for the seven values ψ_λ(t).
--/
+/-- The support of any right coefficient form has cardinality at most three. -/
 theorem card_support_psi_le (lam : Term) : (univ.filter fun t => psi lam t ≠ 0).card ≤ 3 := by
   decide +revert
 
 /-! ### Which leaves contribute to an output string -/
 
-/-- In the proof of Lemma 7: the leaves contributing to zw' are the λτ' with λ contributing to z
-and τ' contributing to w'.  Here `λ = τ 0`, `τ' = Fin.tail τ`, `z = w 0` and `w' = Fin.tail w`.
--/
+/-- Split coordinatewise leaf relevance into the first label and the remaining label tuple. -/
 theorem Leaf.contributes_succ {L : ℕ} {τ : Leaf (L + 1)} {w : OutStr (L + 1)} :
     Leaf.Contributes τ w
       ↔ (τ 0).Contributes (w 0) ∧ Leaf.Contributes (Fin.tail τ) (Fin.tail w) := by
@@ -205,9 +182,7 @@ theorem Leaf.sum_contributes_succ {L : ℕ} (w : OutStr (L + 1)) (f : Leaf (L + 
   refine sum_congr rfl fun lam _ => ?_
   by_cases h : lam.Contributes (w 0) <;> simp [h]
 
-/-- In the proof of Lemma 8: the leaves contributing to `w` are the leaves whose term at level ℓ
-contributes to w_ℓ, independently for each ℓ.
--/
+/-- The relevant-leaf filter is a product of the allowed label sets at individual coordinates. -/
 theorem Leaf.filter_contributes_eq_piFinset {L : ℕ} (w : OutStr L) :
     (univ.filter fun τ : Leaf L => Leaf.Contributes τ w)
       = Fintype.piFinset fun ℓ => univ.filter fun lam : Term => lam.Contributes (w ℓ) := by
@@ -228,18 +203,17 @@ section encodeWith
 
 variable {α : Type} [Fintype α] (c : Term → α → ℤ) {L : ℕ}
 
-/-- The number `∑_u a[u] ∏_ℓ c_{τ_ℓ}(u_ℓ)`, for an array `a` on the strings over a finite alphabet
-and the coefficients `c` of a family of linear forms, one for each term. By definition it is
-`Φ_τ(a)` for `c = φ` and `Ψ_τ(b)` for `c = ψ`.
+/-- Encoding for an arbitrary coefficient family: weight each array entry by the product of
+coefficients selected by the leaf. This specializes to both input encodings.
 -/
 def encodeWith (τ : Leaf L) (a : (Fin L → α) → ℤ) : ℤ := ∑ u, a u * ∏ ℓ, c (τ ℓ) (u ℓ)
 
-/-- For `L = 0` the only string is empty, and so are the products over the levels.
--/
+/-- With no coordinates, the encoding evaluates the array at its unique empty argument. -/
 theorem encodeWith_zero (τ : Leaf 0) (a : (Fin 0 → α) → ℤ) : encodeWith c τ a = a Fin.elim0 := by
   simp [encodeWith, Subsingleton.elim (default : Fin 0 → α) Fin.elim0]
 
-/-- The number at the leaf `λτ'` for `a` is the number at the leaf `τ'` for `∑_s c_λ(s) a_s`.
+/-- Process the first label of an encoding by combining the first-coordinate slices, then encode
+the resulting shorter array.
 -/
 theorem encodeWith_cons (lam : Term) (τ' : Leaf L) (a : (Fin (L + 1) → α) → ℤ) :
     encodeWith c (Fin.cons lam τ' : Leaf (L + 1)) a
@@ -253,22 +227,19 @@ end encodeWith
 
 /-! ### Lemma 7 -/
 
-/-- In the proof of Lemma 7: for every leaf λτ' we have Φ_{λτ'}(a) = ∑_s φ_λ(s) Φ_{τ'}(a_s) =
-Φ_{τ'}(A_λ).
--/
+/-- The left encoding at a cons leaf is the tail encoding of the array produced by `encodeStepL`. -/
 theorem encodeLeft_cons {L : ℕ} (lam : Term) (τ' : Leaf L) (a : LeftStr (L + 1) → ℤ) :
     encodeLeft (Fin.cons lam τ' : Leaf (L + 1)) a = encodeLeft τ' (encodeStepL lam a) :=
   encodeWith_cons phi lam τ' a
 
-/-- In the proof of Lemma 7: and similarly Ψ_{λτ'}(b) = Ψ_{τ'}(B_λ).
+/-- The right encoding at a cons leaf is the tail encoding of the array produced by
+`encodeStepR`.
 -/
 theorem encodeRight_cons {L : ℕ} (lam : Term) (τ' : Leaf L) (b : RightStr (L + 1) → ℤ) :
     encodeRight (Fin.cons lam τ' : Leaf (L + 1)) b = encodeRight τ' (encodeStepR lam b) :=
   encodeWith_cons psi lam τ' b
 
-/-- For L = 0, the only leaf is the empty string τ, and Φ_τ(a) = a […], as the products over the
-levels are empty (proof of Lemma 7).
--/
+/-- The zero-depth left encoding reads the array at the empty tuple. -/
 private theorem encodeLeft_zero (τ : Leaf 0) (a : LeftStr 0 → ℤ) : encodeLeft τ a = a Fin.elim0 :=
   encodeWith_zero phi τ a
 
@@ -278,7 +249,8 @@ private theorem encodeRight_zero (τ : Leaf 0) (b : RightStr 0 → ℤ) :
     encodeRight τ b = b Fin.elim0 :=
   encodeWith_zero psi τ b
 
-/-- **Lemma 7**, first half.  At the leaf τ, Full.result(a, b) multiplies Φ_τ(a) by Ψ_τ(b).
+/-- The operand record of full evaluation agrees with `encodeLeft` and `encodeRight` at every
+leaf.
 -/
 theorem Full.multipliedAt_eq_encoding {L : ℕ} (a : LeftStr L → ℤ) (b : RightStr L → ℤ)
     (τ : Leaf L) :
@@ -294,8 +266,8 @@ theorem Full.multipliedAt_eq_encoding {L : ℕ} (a : LeftStr L → ℤ) (b : Rig
         = Full.multipliedAt L (encodeStepL (τ 0) a) (encodeStepR (τ 0) b) (Fin.tail τ) := rfl
     rw [hstep, ih, ← encodeLeft_cons, ← encodeRight_cons, Fin.cons_self_tail]
 
-/-- Step (4) of `Full.result`, as it is read in the proof of Lemma 7: `c[z w'] = ∑_{λ contributing
-to z} C_λ[w']`.
+/-- Unfold full evaluation once and express decoding as a sum over labels relevant to the leading
+output coordinate.
 -/
 theorem Full.result_succ {L : ℕ} (a : LeftStr (L + 1) → ℤ) (b : RightStr (L + 1) → ℤ)
     (w : OutStr (L + 1)) :
@@ -304,9 +276,7 @@ theorem Full.result_succ {L : ℕ} (a : LeftStr (L + 1) → ℤ) (b : RightStr (
   rw [Term.sum_contributes]
   rfl
 
-/-- In the proof of Lemma 7: `bilinearProduct(a, b)[z w'] = ∑_{λ contributing to z}
-bilinearProduct(A_λ, B_λ)[w']`.
--/
+/-- The bilinear product obeys the same first-coordinate decoding recurrence as full evaluation. -/
 theorem bilinearProduct_succ {L : ℕ} (a : LeftStr (L + 1) → ℤ) (b : RightStr (L + 1) → ℤ)
     (w : OutStr (L + 1)) :
     bilinearProduct a b w = ∑ lam : Term with lam.Contributes (w 0),
@@ -336,9 +306,8 @@ theorem full_spec {L : ℕ} (a : LeftStr L → ℤ) (b : RightStr L → ℤ) :
 
 /-! ### Lemma 8 -/
 
-/-- The display in the proof of Lemma 8: the sum, over the leaves `τ` contributing to `w`, of `∏_ℓ
-φ_{τ_ℓ}(u_ℓ) ψ_{τ_ℓ}(v_ℓ)` is the product of sums ∏_ℓ ∑_{τ_ℓ contributing to w_ℓ} φ_{τ_ℓ}(u_ℓ)
-ψ_{τ_ℓ}(v_ℓ) = ∏_ℓ γ(u_ℓ, v_ℓ, w_ℓ) by (3).
+/-- Expand the product of one-coordinate coefficients as a sum of coefficient products indexed by
+relevant leaves.
 -/
 theorem prod_gamma_eq_sum_contributes {L : ℕ} (u : LeftStr L) (v : RightStr L) (w : OutStr L) :
     ∏ ℓ, coefficient (u ℓ) (v ℓ) (w ℓ)

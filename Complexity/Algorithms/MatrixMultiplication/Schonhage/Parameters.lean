@@ -9,7 +9,7 @@ module
 
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Sparse
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Tiling
-public import Complexity.Foundations.Combinatorics.BinomialUpperBound
+public import Complexity.Foundations.Data.Nat.Choose.Real
 public import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!

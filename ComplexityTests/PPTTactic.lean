@@ -29,9 +29,9 @@ example {γ α β : Type} (input : γ ↪ List Bool) (element : α ↪ List Bool
     (stateEncoding : β ↪ List Bool) (listEncoding : List α ↪ List Bool)
     [ListEncoding element listEncoding] [SizedListEncoding element listEncoding]
     (list : γ → List α) (initial : γ → β) (step : γ → β → α → β)
-    (hlist : ComputableTidilyInPolyTime list input listEncoding)
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
-    (hstep : ComputableTidilyInPolyTime (fun p : (γ × β) × α => step p.1.1 p.1.2 p.2)
+    (hlist : ComputableInPolyTime list input listEncoding)
+    (hinitial : ComputableInPolyTime initial input stateEncoding)
+    (hstep : ComputableInPolyTime (fun p : (γ × β) × α => step p.1.1 p.1.2 p.2)
       (encPair (encPair input stateEncoding) element) stateEncoding)
     (growth : γ → ℕ) (hpoly : PolyBounded (fun x => (input x).length) growth)
     (hgrowth : ∀ x state value, value ∈ list x →
@@ -42,7 +42,7 @@ example {γ α β : Type} (input : γ ↪ List Bool) (element : α ↪ List Bool
 
 -- Scans capture a sampled bit and reuse certificates at either fixed or runtime indices.
 example (rounds : ℕ) (test : List Bool × Bool × ℕ → Bool)
-    (htest : ComputableTidilyInPolyTime test
+    (htest : ComputableInPolyTime test
       (encPair encBits (encPair encBool encUnary)) encBool) :
     IsPPTOn encBits encBool (fun word => do
       let bit ← ProbComp.uniform Bool
@@ -50,7 +50,7 @@ example (rounds : ℕ) (test : List Bool × Bool × ℕ → Bool)
   ppt
 
 example (test : List Bool × Bool × ℕ → Bool)
-    (htest : ComputableTidilyInPolyTime test
+    (htest : ComputableInPolyTime test
       (encPair encBits (encPair encBool encUnary)) encBool) :
     IsPPTOn encBits encBool (fun word => do
       let bit ← ProbComp.uniform Bool
@@ -147,9 +147,9 @@ example (shared samplerOnly continuationOnly : ℕ ↪ List Bool)
 example (shared samplerOnly continuationOnly : ℕ ↪ List Bool)
     (sample : List Bool → ProbComp ℕ) (next : List Bool → ℕ → Bool)
     (hsShared : IsPPTOn encBits shared sample) (_hsOther : IsPPTOn encBits samplerOnly sample)
-    (hnShared : ComputableTidilyInPolyTime (fun pair => next pair.1 pair.2)
+    (hnShared : ComputableInPolyTime (fun pair => next pair.1 pair.2)
       (encPair encBits shared) encBool)
-    (_hnOther : ComputableTidilyInPolyTime (fun pair => next pair.1 pair.2)
+    (_hnOther : ComputableInPolyTime (fun pair => next pair.1 pair.2)
       (encPair encBits continuationOnly) encBool) :
     IsPPTOn encBits encBool (fun word => next word <$> sample word) := by
   ppt
@@ -257,9 +257,9 @@ example (c a b : ℕ ↪ List Bool) (sample : List Bool → ProbComp ℕ)
 -- Deterministic captured iteration composes with probabilistic code through the shared rules.
 example {α β : Type} (input : α ↪ List Bool) (stateEncoding : β ↪ List Bool)
     (count : α → ℕ) (initial : α → β) (step : α → β → β)
-    (hcount : ComputableTidilyInPolyTime count input encUnary)
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
-    (hstep : ComputableTidilyInPolyTime (fun p : α × β => step p.1 p.2)
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hinitial : ComputableInPolyTime initial input stateEncoding)
+    (hstep : ComputableInPolyTime (fun p : α × β => step p.1 p.2)
       (encPair input stateEncoding) stateEncoding)
     (growth : α → ℕ) (hpoly : PolyBounded (fun x => (input x).length) growth)
     (hgrowth : ∀ x state, (stateEncoding (step x state)).length ≤

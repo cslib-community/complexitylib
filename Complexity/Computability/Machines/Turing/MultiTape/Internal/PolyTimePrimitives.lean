@@ -281,6 +281,13 @@ theorem snd' {β₁ β₂ : Type u} {enc₁ : β₁ ↪ List Bool} {enc₂ : β�
 theorem bool_and : ComputableInPolyTime (fun p : Bool × Bool => p.1 && p.2)
     (encPair encBool encBool) encBool := of_finite _
 
+/-- Conjunction of two computed Booleans. -/
+theorem bool_and' {γ : Type} {input : γ ↪ List Bool} {left right : γ → Bool}
+    (hleft : ComputableInPolyTime left input encBool)
+    (hright : ComputableInPolyTime right input encBool) :
+    ComputableInPolyTime (fun a => left a && right a) input encBool :=
+  bool_and.comp (hleft.prod hright)
+
 /-- Boolean negation on its fixed finite input domain. -/
 @[fun_prop]
 theorem bool_not : ComputableInPolyTime Bool.not encBool encBool := of_finite _

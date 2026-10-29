@@ -85,15 +85,15 @@ example {α : Type} {enc : α ↪ List Bool} {decode : List Bool → α}
     ComputableInPolyTime (fun word => (frames word).map decode) encBits (encList enc) := by
   fun_prop
 
--- Both the list and its natural-number elements vary at runtime.
-example : ComputableInPolyTime (List.map (fun n : ℕ => n + 1))
-    (encList encUnary) (encList encUnary) := by
-  exact ComputableInPolyTime.map ComputableInPolyTime.unary_succ
-
+-- Both the list and its natural-number elements vary at runtime; empty element types also work.
 example :
     let enc : Empty ↪ List Bool := ⟨Empty.elim, fun x => x.elim⟩
-    ComputableInPolyTime (List.map (id : Empty → Empty)) (encList enc) (encList enc) := by
-  exact ComputableInPolyTime.map ComputableInPolyTime.id'
+    ComputableInPolyTime (List.map (fun n : ℕ => n + 1)) (encList encUnary) (encList encUnary) ∧
+    ComputableInPolyTime (List.map (id : Empty → Empty)) (encList enc) (encList enc) ∧
+    ComputableInPolyTime (List.reverse : List Empty → List Empty) (encList enc) (encList enc) :=
+  ⟨ComputableInPolyTime.map ComputableInPolyTime.unary_succ,
+    ComputableInPolyTime.map ComputableInPolyTime.id',
+    ComputableInPolyTime.listReverseWithInput ComputableInPolyTime.id'⟩
 
 example (_f : ℕ → ℕ) : True := by
   fail_if_success
@@ -101,20 +101,24 @@ example (_f : ℕ → ℕ) : True := by
       fun_prop
   trivial
 
-example : ComputableInPolyTime List.tail encBits encBits := by fun_prop
-example : ComputableInPolyTime List.isEmpty encBits encBool := by fun_prop
-
 -- The condition's Boolean encoding and the tail/reverse branch are inferred from real rules.
-example : ComputableInPolyTime
-    (fun word : List Bool => if word.isEmpty then [] else word.tail.reverse) encBits encBits := by
-  fun_prop
+example :
+    ComputableInPolyTime List.tail encBits encBits ∧
+    ComputableInPolyTime List.isEmpty encBits encBool ∧
+    ComputableInPolyTime
+      (fun word : List Bool => if word.isEmpty then [] else word.tail.reverse)
+      encBits encBits ∧
+    ComputableInPolyTime (fun p : ℕ × List ℕ => (p.1 :: p.2).reverse ++ p.2)
+      (encPair encUnary (encList encUnary)) (encList encUnary) :=
+  ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop⟩
 
-example : ([] : List Bool).tail = [] := by decide
-example : ([] : List Bool).isEmpty = true := by decide
-example : ([false] : List Bool).isEmpty = false := by decide
-
-example : List.range 0 = [] := by decide
-example : (encList encUnary (List.range 4)).length = 16 := by decide
+example :
+    ([] : List Bool).tail = [] ∧
+    ([] : List Bool).isEmpty = true ∧
+    ([false] : List Bool).isEmpty = false ∧
+    List.range 0 = [] ∧
+    (encList encUnary (List.range 4)).length = 16 ∧
+    (([false, true] : List Bool).reverse ++ [true]) = [true, false, true] := by decide
 
 /--
 info: 'Turing.MultiTapeTM.ComputableInPolyTime.bitsReverse' depends on axioms:
@@ -148,18 +152,6 @@ example {γ : Type} {input : γ ↪ List Bool} {word : γ → List Bool}
     ComputableInPolyTime (fun x => (word x).reverse) input encBits := by
   fail_if_success (clear hword; fun_prop)
   exact ComputableInPolyTime.bitsReverseWithInput hword
-
--- Framed reversal also works when the element type is empty.
-example (encoding : Empty ↪ List Bool) :
-    ComputableInPolyTime (List.reverse : List Empty → List Empty)
-      (encList encoding) (encList encoding) := by
-  exact ComputableInPolyTime.listReverseWithInput ComputableInPolyTime.id'
-
-example : ComputableInPolyTime (fun p : ℕ × List ℕ => (p.1 :: p.2).reverse ++ p.2)
-    (encPair encUnary (encList encUnary)) (encList encUnary) := by
-  fun_prop
-
-example : (([false, true] : List Bool).reverse ++ [true]) = [true, false, true] := rfl
 
 /--
 info: 'Turing.MultiTapeTM.ComputableInPolyTime.listReverseWithInput' depends on axioms:

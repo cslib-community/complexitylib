@@ -23,23 +23,14 @@ open Cslib Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Satisfiability parameterized by the number of variables -/
 
-example : SAT ∈ FPT encCNF CNF.numVars := SAT_mem_FPT
-
-example : KSAT 3 ∈ FPT encCNF CNF.numVars := KSAT_mem_FPT 3
-
-example : SAT ∈ XP encCNF CNF.numVars := FPT_subset_XP SAT_mem_FPT
-
 /-- A larger parameter: the number of occurrences of variables bounds the number of distinct
-variables. -/
-example : SAT ∈ FPT encCNF fun φ => φ.vars.length :=
-  FPT_subset_FPT_of_le_comp (h := id) CNF.numVars_le_length_vars SAT_mem_FPT
-
-example : SATᶜ ∈ FPT encCNF CNF.numVars := compl_mem_FPT SAT_mem_FPT
-
-/-- The fpt bound of exhaustive search can be read off with a monotone function. -/
-example : ∃ f : ℕ → ℕ, Monotone f ∧ ∃ c : ℕ, DecidableInTimeO SAT encCNF
-    fun φ => f φ.numVars * ((encCNF φ).length + 1) ^ c :=
-  mem_FPT_iff_exists_monotone.mp SAT_mem_FPT
+variables, placing `SAT` in `FPT` and `SATᶜ` in `XP`. -/
+example :
+    SAT ∈ FPT encCNF (fun φ => φ.vars.length) ∧
+      SATᶜ ∈ XP encCNF (fun φ => φ.vars.length) :=
+  ⟨FPT_subset_FPT_of_le_comp (h := id) CNF.numVars_le_length_vars SAT_mem_FPT,
+    FPT_subset_XP (compl_mem_FPT
+      (FPT_subset_FPT_of_le_comp (h := id) CNF.numVars_le_length_vars SAT_mem_FPT))⟩
 
 /-! ### A problem in `P` -/
 
@@ -49,33 +40,28 @@ private def Narrow : Set (CNF ℕ) := {φ | ∀ c ∈ φ, c.length ≤ 3}
 private theorem narrow_mem_P : Narrow ∈ P encCNF :=
   ⟨_, (computableInPolyTime_all_length_le 3), fun φ => by simp [Narrow]⟩
 
-example : Narrow ∈ FPT encCNF CNF.numVars := P_subset_FPT narrow_mem_P
-
-/-- Every parameter works for a problem in `P`, even the length of the formula. -/
-example : Narrow ∈ FPT encCNF List.length := P_subset_FPT narrow_mem_P
-
-example : KSAT 3 = Narrow ∩ SAT := by
-  ext φ
-  rfl
-
-/-- 3SAT is the intersection of a problem in `P` and one in `FPT`. -/
-example : KSAT 3 ∈ FPT encCNF CNF.numVars := by
+/-- Every parameter works for a problem in `P`, and 3SAT is the intersection of `Narrow` and `SAT`
+so both `KSAT 3` and `Narrow ∪ SAT` lie in `FPT`. -/
+example :
+    Narrow ∈ FPT encCNF List.length ∧
+      KSAT 3 = Narrow ∩ SAT ∧
+      KSAT 3 ∈ FPT encCNF CNF.numVars ∧
+      Narrow ∪ SAT ∈ FPT encCNF CNF.numVars := by
+  refine ⟨P_subset_FPT narrow_mem_P, by ext φ; rfl, ?_,
+    union_mem_FPT (P_subset_FPT narrow_mem_P) SAT_mem_FPT⟩
   have : KSAT 3 = Narrow ∩ SAT := Set.ext fun _ => Iff.rfl
   rw [this]
   exact inter_mem_FPT (P_subset_FPT narrow_mem_P) SAT_mem_FPT
 
-example : Narrow ∪ SAT ∈ FPT encCNF CNF.numVars :=
-  union_mem_FPT (P_subset_FPT narrow_mem_P) SAT_mem_FPT
-
 /-! ### Bounded parameters -/
 
-example : FPT encCNF (fun _ => 0) = P encCNF := FPT_eq_P_of_le (K := 0) fun _ => le_rfl
-
-example : XP encCNF (fun _ => 5) = P encCNF := XP_eq_P_of_le (K := 5) fun _ => le_rfl
-
-/-- `SAT ∈ FPT` for a constant parameter would put `SAT` in `P`. -/
-example (h : SAT ∈ FPT encCNF fun _ => 7) : SAT ∈ P encCNF :=
-  FPT_eq_P_of_le (K := 7) (fun _ => le_rfl) ▸ h
+/-- Constant-parameter `FPT` and `XP` both collapse to `P`, so they coincide and contain
+`Narrow`. -/
+example :
+    FPT encCNF (fun _ => 7) = XP encCNF (fun _ => 5) ∧
+      Narrow ∈ XP encCNF (fun _ => 5) :=
+  ⟨(FPT_eq_P_of_le (K := 7) fun _ => le_rfl).trans (XP_eq_P_of_le (K := 5) fun _ => le_rfl).symm,
+    (XP_eq_P_of_le (K := 5) fun _ => le_rfl).symm ▸ narrow_mem_P⟩
 
 /-! ### An fpt-reduction from 3SAT to SAT -/
 
@@ -83,9 +69,9 @@ example (h : SAT ∈ FPT encCNF fun _ => 7) : SAT ∈ P encCNF :=
 private def toSAT (φ : CNF ℕ) : CNF ℕ :=
   if φ.all (fun c => decide (c.length ≤ 3)) then φ else [[]]
 
-private theorem toSAT_polyTime : ComputableTidilyInPolyTime toSAT encCNF encCNF :=
-  ComputableTidilyInPolyTime.ite' (computableInPolyTime_all_length_le 3).tidy
-    ComputableTidilyInPolyTime.id' (ComputableTidilyInPolyTime.const _)
+private theorem toSAT_polyTime : ComputableInPolyTime toSAT encCNF encCNF :=
+  ComputableInPolyTime.ite' (computableInPolyTime_all_length_le 3)
+    ComputableInPolyTime.id' (ComputableInPolyTime.const _)
 
 private theorem numVars_toSAT_le (φ : CNF ℕ) : (toSAT φ).numVars ≤ φ.numVars := by
   unfold toSAT
@@ -106,35 +92,23 @@ private theorem mem_SAT_toSAT (φ : CNF ℕ) : φ ∈ ThreeSAT ↔ toSAT φ ∈ 
 
 private theorem threeSAT_fptReducible_SAT :
     FPTReducible encCNF encCNF CNF.numVars CNF.numVars ThreeSAT SAT :=
-  FPTReducible.of_computableInPolyTime (.of_tidy toSAT_polyTime) (h := id) numVars_toSAT_le
+  FPTReducible.of_computableInPolyTime toSAT_polyTime (h := id) numVars_toSAT_le
     mem_SAT_toSAT
 
-/-- The reduction does not map the formula `x₀ ∧ (x₀ ∨ x₁ ∨ x₂ ∨ x₃)` to itself. -/
-example : toSAT [[(0, true)], [(0, true), (1, true), (2, true), (3, true)]] = [[]] := by decide
-
-example : toSAT [[(0, true)], [(0, false), (1, true)]] = [[(0, true)], [(0, false), (1, true)]] :=
-  by decide
-
-example : ThreeSAT ∈ FPT encCNF CNF.numVars :=
-  threeSAT_fptReducible_SAT.mem_FPT SAT_mem_FPT
-
-example : ThreeSATᶜ ∈ XP encCNF CNF.numVars :=
-  threeSAT_fptReducible_SAT.compl.mem_XP (FPT_subset_XP (compl_mem_FPT SAT_mem_FPT))
-
-example : FPTReducible encCNF encCNF CNF.numVars CNF.numVars ThreeSAT ThreeSAT :=
-  .refl _ _ _
-
-/-- Composing the reduction with the identity reduction on SAT. -/
-example : FPTReducible encCNF encCNF CNF.numVars CNF.numVars ThreeSAT SAT :=
-  threeSAT_fptReducible_SAT.trans (.refl _ _ _)
+/-- `toSAT` collapses non-3CNF formulas while preserving 3CNF formulas, yielding `ThreeSAT ∈ FPT`,
+`ThreeSATᶜ ∈ XP`, and transitive `FPTReducible` closure. -/
+example :
+    toSAT [[(0, true)], [(0, true), (1, true), (2, true), (3, true)]] = [[]] ∧
+      toSAT [[(0, true)], [(0, false), (1, true)]] = [[(0, true)], [(0, false), (1, true)]] ∧
+      ThreeSAT ∈ FPT encCNF CNF.numVars ∧
+      ThreeSATᶜ ∈ XP encCNF CNF.numVars ∧
+      FPTReducible encCNF encCNF CNF.numVars CNF.numVars ThreeSAT SAT :=
+  ⟨by decide, by decide,
+    threeSAT_fptReducible_SAT.mem_FPT SAT_mem_FPT,
+    threeSAT_fptReducible_SAT.compl.mem_XP (FPT_subset_XP (compl_mem_FPT SAT_mem_FPT)),
+    threeSAT_fptReducible_SAT.trans (.refl _ _ _)⟩
 
 /-! ### Kernelization -/
-
-example : HasKernel encCNF CNF.numVars SAT := hasKernel_of_mem_FPT SAT_mem_FPT
-
-example : HasPolyKernel encCNF CNF.numVars Narrow := hasPolyKernel_of_mem_P narrow_mem_P
-
-example : HasKernel encCNF CNF.numVars Narrow := (hasPolyKernel_of_mem_P narrow_mem_P).hasKernel
 
 /-- A concrete kernelization for `Narrow`: map every narrow formula to `[]` and every other formula
 to a single four-literal clause. -/
@@ -146,8 +120,8 @@ private def narrowKernel (φ : CNF ℕ) : CNF ℕ :=
 private theorem isKernelization_narrowKernel :
     IsKernelization encCNF CNF.numVars Narrow narrowKernel
       fun _ => (encCNF ([] : CNF ℕ)).length + (encCNF narrowNo).length + 1 := by
-  refine ⟨.of_tidy (ComputableTidilyInPolyTime.ite' (computableInPolyTime_all_length_le 3).tidy
-    (ComputableTidilyInPolyTime.const []) (ComputableTidilyInPolyTime.const narrowNo)),
+  refine ⟨ComputableInPolyTime.ite' (computableInPolyTime_all_length_le 3)
+    (ComputableInPolyTime.const []) (ComputableInPolyTime.const narrowNo),
     fun φ => ?_, fun φ => ?_, fun φ => ?_⟩
   · unfold narrowKernel
     by_cases hφ : ∀ c ∈ φ, c.length ≤ 3
@@ -168,10 +142,12 @@ private theorem isKernelization_narrowKernel :
     · have : CNF.numVars narrowNo = 1 := by decide
       omega
 
-example : FPTReducible encCNF encCNF CNF.numVars CNF.numVars Narrow Narrow :=
-  isKernelization_narrowKernel.fptReducible
-
-example : Narrow ∈ FPT encCNF CNF.numVars ↔ HasKernel encCNF CNF.numVars Narrow := by
+example :
+    HasKernel encCNF CNF.numVars Narrow ∧
+      FPTReducible encCNF encCNF CNF.numVars CNF.numVars Narrow Narrow ∧
+      (Narrow ∈ FPT encCNF CNF.numVars ↔ HasKernel encCNF CNF.numVars Narrow) := by
+  refine ⟨(hasPolyKernel_of_mem_P narrow_mem_P).hasKernel,
+    isKernelization_narrowKernel.fptReducible, ?_⟩
   obtain ⟨k, hk⟩ := mem_P_iff_exists_mem_DTIME.mp narrow_mem_P
   exact mem_FPT_iff_hasKernel hk
 
@@ -180,27 +156,20 @@ example : Narrow ∈ FPT encCNF CNF.numVars ↔ HasKernel encCNF CNF.numVars Nar
 /-- The triangle on `{0, 1, 2}`. -/
 private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (0, 2)])
 
-example : VertexCover.search (triangle, 1) = false := by decide
-
-example : VertexCover.search (triangle, 2) = true := by decide
-
-example : VertexCover.search (triangle, 3) = true := by decide
-
-/-- Targets exceeding the number of distinct declared vertices are rejected. -/
-example : VertexCover.search (triangle, 4) = false := by decide
-
-example : (triangle, 2) ∈ VertexCover :=
-  (VertexCover.search_eq_true_iff (triangle, 2)).mp (by decide)
-
-example : (triangle, 1) ∉ VertexCover := by
+/-- Bounded search tree evaluations and membership witnesses on the triangle graph, plus `XP`
+closure for `VertexCoverᶜ`. -/
+example :
+    VertexCover.search (triangle, 1) = false ∧
+      VertexCover.search (triangle, 2) = true ∧
+      VertexCover.search (triangle, 3) = true ∧
+      VertexCover.search (triangle, 4) = false ∧
+      (triangle, 2) ∈ VertexCover ∧
+      (triangle, 1) ∉ VertexCover ∧
+      VertexCoverᶜ ∈ XP (encPair encGraph encNat) Prod.snd := by
+  refine ⟨by decide, by decide, by decide, by decide,
+    (VertexCover.search_eq_true_iff (triangle, 2)).mp (by decide), ?_,
+    FPT_subset_XP (compl_mem_FPT VertexCover_mem_FPT)⟩
   rw [← VertexCover.search_eq_true_iff]
   decide
-
-example : DecidableInExpTime VertexCover (encPair encGraph encNat) Prod.snd 1 :=
-  VertexCover_decidableInExpTime_one
-
-example : VertexCover ∈ FPT (encPair encGraph encNat) Prod.snd := VertexCover_mem_FPT
-
-example : HasKernel (encPair encGraph encNat) Prod.snd VertexCover := VertexCover_hasKernel
 
 end ComplexityTests.Parameterized

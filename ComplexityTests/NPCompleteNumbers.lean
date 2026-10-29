@@ -56,29 +56,24 @@ example : ZeroOneIP ∈ NP (encList (encPair (encList encNat) encNat)) ∧
     PolyTimeReducible encCNF (encList (encPair (encList encNat) encNat)) SAT ZeroOneIP :=
   ⟨ZeroOneIP_npComplete.1, ZeroOneIP_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example : PolyTimeReducible encCNF (encList encNat) ThreeSAT Partition :=
-  polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Partition
-
-example : PolyTimeReducible encCNF encKnapsack ThreeSAT Knapsack :=
-  polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Knapsack
+example :
+    PolyTimeReducible encCNF (encList encNat) ThreeSAT Partition ∧
+    PolyTimeReducible encCNF encKnapsack ThreeSAT Knapsack :=
+  ⟨polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Partition,
+   polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Knapsack⟩
 
 /-! ### Compositional `fun_prop` synthesis -/
 
-example : ComputableInPolyTime ThreeSAT.toSubsetSum encCNF
-    (encPair (encList encNat) encNat) := by
-  fun_prop
-
-example : ComputableInPolyTime (fun x => SubsetSum.toPartition x)
-    (encPair (encList encNat) encNat) (encList encNat) := by
-  fun_prop
-
-example : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 + p.2 ≤ 2 * p.1))
-    (encPair encNat encNat) encBool := by
-  fun_prop
-
-example : ComputableInPolyTime (fun l : List ℕ => decide (l.sum < 2 ^ l.length))
-    (encList encNat) encBool := by
-  fun_prop
+example :
+    ComputableInPolyTime ThreeSAT.toSubsetSum encCNF
+      (encPair (encList encNat) encNat) ∧
+    ComputableInPolyTime (fun x => SubsetSum.toPartition x)
+      (encPair (encList encNat) encNat) (encList encNat) ∧
+    ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 + p.2 ≤ 2 * p.1))
+      (encPair encNat encNat) encBool ∧
+    ComputableInPolyTime (fun l : List ℕ => decide (l.sum < 2 ^ l.length))
+      (encList encNat) encBool :=
+  ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop⟩
 
 /-! ### Binary comparison -/
 

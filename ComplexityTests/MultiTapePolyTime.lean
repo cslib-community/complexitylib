@@ -25,46 +25,35 @@ namespace ComplexityTests.MultiTapePolyTime
 
 open Turing.MultiTapeTM
 
--- Captured bit maps compose with raw-word projections, without framing in client code.
-example : ComputableTidilyInPolyTime
-    (fun p : Bool × List Bool => p.2.map (fun bit => p.1 ^^ bit))
-    (encPair encBool encBits) encBits := by fun_prop
-
--- The fallback itself is computed from an independently encoded input.
-example : ComputableTidilyInPolyTime
-    (fun p : Option ℕ × ℕ => p.1.getD (p.2 + 1))
-    (encPair (encOption encUnary) encUnary) encUnary := by fun_prop
-
--- Both binary and unary input logarithms feed subsequent unary arithmetic.
-example : ComputableTidilyInPolyTime (fun n => Nat.log 2 n + 1) encNat encUnary := by fun_prop
-example : ComputableTidilyInPolyTime (fun n => Nat.log 2 (n ^ 2 + 1)) encUnary encUnary := by
-  fun_prop
-
--- `fun_prop` assembles polynomial-time computability from the closure properties.
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.2, p.1 + 1 + 1))
-    (encPair encNat encNat) (encPair encNat encNat) := by
-  fun_prop
+-- Captured bit maps, option fallback, binary/unary logarithms, and arithmetic closure.
+example :
+    ComputableTidilyInPolyTime
+      (fun p : Bool × List Bool => p.2.map (fun bit => p.1 ^^ bit))
+      (encPair encBool encBits) encBits ∧
+    ComputableTidilyInPolyTime
+      (fun p : Option ℕ × ℕ => p.1.getD (p.2 + 1))
+      (encPair (encOption encUnary) encUnary) encUnary ∧
+    ComputableTidilyInPolyTime (fun n => Nat.log 2 n + 1) encNat encUnary ∧
+    ComputableTidilyInPolyTime (fun n => Nat.log 2 (n ^ 2 + 1)) encUnary encUnary ∧
+    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => (p.2, p.1 + 1 + 1))
+      (encPair encNat encNat) (encPair encNat encNat) :=
+  ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop, by fun_prop⟩
 
 example {c : ℕ → Bool} (hc : ComputableTidilyInPolyTime c encNat encBool) :
     ComputableTidilyInPolyTime (fun n => if c n then n + 1 else n) encNat encNat := by
   fun_prop
 
-example : ComputableTidilyInPolyTime (List.map (fun n : ℕ => n + 1))
-    (encList encNat) (encList encNat) := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => p.1.idxOf p.2)
-    (encPair (encList encNat) encNat) encUnary := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime (fun p : List Bool × ℕ => p.1.getD p.2 false)
-    (encPair encBits encUnary) encBool := by
-  fun_prop
-
--- Composition infers the unary index encoding from `idxOf` before applying lookup.
-example : ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => p.1.getD (p.1.idxOf p.2) 0)
-    (encPair (encList encNat) encNat) encNat := by
-  fun_prop
+-- List map, idxOf, getD, and their composition.
+example :
+    ComputableTidilyInPolyTime (List.map (fun n : ℕ => n + 1))
+      (encList encNat) (encList encNat) ∧
+    ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => p.1.idxOf p.2)
+      (encPair (encList encNat) encNat) encUnary ∧
+    ComputableTidilyInPolyTime (fun p : List Bool × ℕ => p.1.getD p.2 false)
+      (encPair encBits encUnary) encBool ∧
+    ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => p.1.getD (p.1.idxOf p.2) 0)
+      (encPair (encList encNat) encNat) encNat :=
+  ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop⟩
 
 -- Scans, like folds, use an explicit rule for the captured parameter.
 example : ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => p.1.any fun n => decide (p.2 = n))
@@ -73,26 +62,19 @@ example : ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => p.1.any fun n =
     (ComputableTidilyInPolyTime.snd (encList encNat) encNat)
     (ComputableTidilyInPolyTime.fst (encList encNat) encNat)
 
--- Both raw and framed lists infer the element encoding for unary lengths.
-example : ComputableTidilyInPolyTime (fun w : List Bool => List.range w.length)
-    encBits (encList encUnary) := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime (fun l : List ℕ => List.range l.length)
-    (encList encNat) (encList encUnary) := by
-  fun_prop
-
--- The intermediate range has quadratic encoded length, so the parameterized map must
--- accept polynomial-sized lists, not just lists with a linear output bound.
-example : ComputableTidilyInPolyTime (fun n => (List.range n).map fun i => (n, i))
-    encUnary (encList (encPair encUnary encUnary)) := by
-  fun_prop
-
--- Both traversals capture data from outside their body. No encoding of a function is needed.
-example : ComputableTidilyInPolyTime
-    (fun p : ℕ × List ℕ => (List.range p.1).flatMap fun i => p.2.map fun j => i + j)
-    (encPair encUnary (encList encUnary)) (encList encUnary) := by
-  fun_prop
+-- Both raw and framed lists infer the element encoding for unary lengths, and parameterized
+-- maps/flatMaps accept polynomial-sized intermediate lists and captured parameters.
+example :
+    ComputableTidilyInPolyTime (fun w : List Bool => List.range w.length)
+      encBits (encList encUnary) ∧
+    ComputableTidilyInPolyTime (fun l : List ℕ => List.range l.length)
+      (encList encNat) (encList encUnary) ∧
+    ComputableTidilyInPolyTime (fun n => (List.range n).map fun i => (n, i))
+      encUnary (encList (encPair encUnary encUnary)) ∧
+    ComputableTidilyInPolyTime
+      (fun p : ℕ × List ℕ => (List.range p.1).flatMap fun i => p.2.map fun j => i + j)
+      (encPair encUnary (encList encUnary)) (encList encUnary) :=
+  ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop⟩
 
 example : ComputableTidilyInPolyTime (fun n => (List.range n).flatMap fun i => List.replicate i n)
     encUnary (encList encUnary) := by
@@ -176,16 +158,21 @@ example (symbol : Bool) :
   exact ⟨⟨1, h⟩, (runsInTime_iff_halted.mpr h.1).mono (by cases b <;> decide), by simp⟩
 
 
-/-- `length_le_length_encList` holds in every universe. -/
-example {α : Type 1} (enc : α ↪ List Bool) (l : List α) :
-    l.length ≤ (Turing.MultiTapeTM.encList enc l).length :=
-  Turing.MultiTapeTM.length_le_length_encList enc l
+/-- `length_le_length_encList` holds in higher universes and on concrete lifted lists. -/
+example :
+    let enc : ULift.{1} Bool ↪ List Bool :=
+      ⟨fun b => [b.down], fun _ _ h => ULift.ext (by simpa using h)⟩
+    let l : List (ULift.{1} Bool) := [ULift.up true, ULift.up false, ULift.up true]
+    l.length = 3 ∧ l.length ≤ (Turing.MultiTapeTM.encList enc l).length :=
+  ⟨rfl, Turing.MultiTapeTM.length_le_length_encList _ _⟩
 
 -- Fixed division covers both degenerate constants and compositions of computed unary counters.
-example : ComputableTidilyInPolyTime (fun n : ℕ => n / 0) encUnary encUnary := by fun_prop
-example : ComputableTidilyInPolyTime (fun n : ℕ => n / 1) encUnary encUnary := by fun_prop
-example (divisor : ℕ) : ComputableTidilyInPolyTime
-    (fun p : ℕ × ℕ => ((p.1 + p.2) / divisor == p.2, (p.1 * p.2 + 1) / 2))
-    (encPair encUnary encUnary) (encPair encBool encUnary) := by fun_prop
+example (divisor : ℕ) :
+    ComputableTidilyInPolyTime (fun n : ℕ => n / 0) encUnary encUnary ∧
+    ComputableTidilyInPolyTime (fun n : ℕ => n / 1) encUnary encUnary ∧
+    ComputableTidilyInPolyTime
+      (fun p : ℕ × ℕ => ((p.1 + p.2) / divisor == p.2, (p.1 * p.2 + 1) / 2))
+      (encPair encUnary encUnary) (encPair encBool encUnary) :=
+  ⟨by fun_prop, by fun_prop, by fun_prop⟩
 
 end ComplexityTests.MultiTapePolyTime

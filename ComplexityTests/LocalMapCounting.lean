@@ -36,55 +36,46 @@ def map3to2 : LocalMap :=
 
 /-! ### 1. Validity and Evaluation on Concrete Maps -/
 
-example : map3to2.Valid 2 = true := by decide
-example : map3to2.Valid 1 = false := by decide
-example : map3to2.numVars = 3 ∧ map3to2.numOutputs = 2 := by decide
-
-example : map3to2.evalBits [false, false, false] = [false, false] := by decide
-example : map3to2.evalBits [true, false, true] = [true, false] := by decide
-example : map3to2.evalBits [true, true, true] = [false, true] := by decide
+example :
+    map3to2.Valid 2 = true ∧
+    map3to2.Valid 1 = false ∧
+    map3to2.numVars = 3 ∧
+    map3to2.numOutputs = 2 ∧
+    map3to2.evalBits [false, false, false] = [false, false] ∧
+    map3to2.evalBits [true, false, true] = [true, false] ∧
+    map3to2.evalBits [true, true, true] = [false, true] := by
+  decide
 
 /-! ### 2. CSP / Exact-Multiplicity CNF Reduction and Preimage Counts -/
-
--- For target `[false, false]`: `x₁ && x₂ = false` and `x₀ = x₁`.
--- Solutions in `{0, 1}³`: `(0, 0, 0)`, `(0, 0, 1)`, `(1, 1, 0)` -> 3 preimages.
-example : map3to2.preimageCount [false, false] = 3 := by decide
-example :
-    (map3to2.toCSP [false, false]).modelCountOn LocalMap.cspSem (Finset.range 3) = 3 := by decide
-example :
-    (LocalMap.toDeclaredCNF 2 (map3to2, [false, false])).2.modelCountOn (Finset.range 3) = 3 := by
-  decide
-
--- For target `[false, true]`: `x₁ && x₂ = true` (so `x₁ = x₂ = 1`) and `x₀ = x₁ = 1`.
--- Unique solution: `(1, 1, 1)` -> 1 preimage.
-example : map3to2.preimageCount [false, true] = 1 := by decide
-example :
-    (map3to2.toCSP [false, true]).modelCountOn LocalMap.cspSem (Finset.range 3) = 1 := by decide
-example :
-    (LocalMap.toDeclaredCNF 2 (map3to2, [false, true])).2.modelCountOn (Finset.range 3) = 1 := by
-  decide
-
--- Target of mismatched length has 0 preimages and reduces via `LocalMap.toDeclaredCNF` to `[[]]`.
-example : map3to2.preimageCount [true] = 0 := by decide
-example :
-    (LocalMap.toDeclaredCNF 2 (map3to2, [true])).2.modelCountOn (Finset.range 3) = 0 := by decide
 
 -- A 1-local map `G : {0, 1}² → {0, 1}²` with constant-zero outputs (`satTable = []`).
 def zeroMap : LocalMap :=
   (2, [([0], []), ([0], [])])
 
-example : zeroMap.Valid 1 = true := by decide
-example : zeroMap.preimageCount [true, true] = 0 := by decide
-example : zeroMap.preimageCount [false, false] = 4 := by decide
+-- Preimage counts and CSP / declared-CNF reductions on `[false, false]` (3 preimages),
+-- `[false, true]` (1 preimage), mismatched target `[true]` (0 preimages), and `zeroMap`.
+example :
+    map3to2.preimageCount [false, false] = 3 ∧
+    (map3to2.toCSP [false, false]).modelCountOn LocalMap.cspSem (Finset.range 3) = 3 ∧
+    (LocalMap.toDeclaredCNF 2 (map3to2, [false, false])).2.modelCountOn (Finset.range 3) = 3 ∧
+    map3to2.preimageCount [false, true] = 1 ∧
+    (map3to2.toCSP [false, true]).modelCountOn LocalMap.cspSem (Finset.range 3) = 1 ∧
+    (LocalMap.toDeclaredCNF 2 (map3to2, [false, true])).2.modelCountOn (Finset.range 3) = 1 ∧
+    map3to2.preimageCount [true] = 0 ∧
+    (LocalMap.toDeclaredCNF 2 (map3to2, [true])).2.modelCountOn (Finset.range 3) = 0 ∧
+    zeroMap.Valid 1 = true ∧
+    zeroMap.preimageCount [true, true] = 0 ∧
+    zeroMap.preimageCount [false, false] = 4 := by
+  decide
 
 /-! ### 3. Prefix Self-Reduction and Preimage Finding -/
 
-example : map3to2.findPreimage 2 [false, true] = some [true, true, true] := by decide
-example : map3to2.findPreimage 2 [false, false] = some [false, false, false] := by decide
-example : zeroMap.findPreimage 1 [true, true] = none := by decide
-example : zeroMap.findPreimage 1 [false, false] = some [false, false] := by decide
-
--- Invalid locality returns `none`.
-example : map3to2.findPreimage 1 [false, true] = none := by decide
+example :
+    map3to2.findPreimage 2 [false, true] = some [true, true, true] ∧
+    map3to2.findPreimage 2 [false, false] = some [false, false, false] ∧
+    zeroMap.findPreimage 1 [true, true] = none ∧
+    zeroMap.findPreimage 1 [false, false] = some [false, false] ∧
+    map3to2.findPreimage 1 [false, true] = none := by
+  decide
 
 end ComplexityTests.LocalMapCounting

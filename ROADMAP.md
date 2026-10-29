@@ -432,14 +432,19 @@ each statement against the numbered result. Organize modules by subject, not cha
   The shared native left/right encoders ([#1493]) compute all `10^L` leaf values from `7^L`
   signed inputs within `240*(L+1)*10^L` standard WordRAM instructions, plus the final halt,
   with fixed code/registers and concrete initialized inputs, frames and explicit width bounds.
+  Native shared-band preparation ([#1523]) computes deterministic subset tables and a valid layout,
+  prepares padded signed matrix bands, invokes both shared encoders for every band, and restores the
+  original initialized input. Fixed 96-register code has a complete charged bound
+  `4096*(L+1)*(1+N*4^m+2^L+2*numBands*10^L)`; at `L=19m`, `N≥(4^m)^18`, including halt, this is at most
+  `81920*(L+1)*N²/(4^m)^(1/18)`.
   The native pruned-query evaluator ([#1526]) uses fixed 96-register code to compute its own
   distinct root/child queries, stack traversal and signed accumulators. Actual initialized flat
   runs preserve query order and duplicates, the input and outside frame. Setup, sparse clearing,
   all control/index work and halt fit `8192*(L+Q+1+(L+1)*|leaves(requested queries)|)` instructions;
   widths follow from explicit original magnitude/address bounds. A callable pointer/epoch kernel
   permits directory reuse across tiles. This does not construct the product's tile query groups
-  or supply a sparse-product/Exact Triangle solver. Band/tile preparation ([#1523]) is a separate
-  producer; native Chan–He preprocessing and the reduction host are separate stack components.
+  or supply a sparse-product/Exact Triangle solver. Native Chan–He preprocessing and the reduction
+  host are separate stack components.
   Native sparse-product and Exact Triangle solving, full input/time/width/asymptotic composition,
   and the improved Section 4 route to exponent 1.9992 remain under #1394;
   size-based width
@@ -458,6 +463,12 @@ each statement against the numbered result. Organize modules by subject, not cha
 - **A typed-call evaluator** for fixed-program Word-RAM clients, returning the typed observation,
   final state and halt-inclusive instruction cost, so the prefix-sum and stack clients no longer
   assemble preparation, evaluation and halt accounting by hand.
+- **Priority-queue and shortest-path consolidation** ([#1363]): lift operation-count helpers
+  (`numQueries`, `numInserts`, `numDecreaseKeys`, `numExtractMins`) to `IndexedMinPQ`, parameterize
+  flat-program operation-sequence execution (`RunsOps`) over `PQCode` in `PriorityQueue/Basic.lean`
+  so `BinaryHeap` and `FibonacciHeap` share a generic `run_ops_exact` theorem, and factor a common
+  `ShortestPathSpec p bound` predicate in `Dijkstra/HeapStatement.lean` across `LogLinearSpec`,
+  `FibonacciSpec`, and `FibonacciLinearSpec`.
 
 ## Coverage and reuse
 
@@ -471,6 +482,15 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
+- **Weighted multigraph cuts and `PMF` event bounds** ([#1336]): extract `IsMultigraph` (renamed
+  e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal), `IsNonTrivialCut`,
+  `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
+  `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
+  `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
+  to `(Cslib.Multigraph.edgeCut ends C).card`, and move `toOuterMeasure_bind_ge_mul_ennreal`,
+  `toOuterMeasure_bind_le_mul_ennreal`, `toOuterMeasure_add_compl_ennreal`,
+  `toOuterMeasure_compl_le_one_sub`, and `two_branch_hit_prob_ge` into
+  `Complexity/Probability/PMF/Event.lean` (reusable by `toOuterMeasure_toReal_add_compl`).
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -563,7 +583,9 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
+[#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
+[#1363]: https://github.com/cslib-community/complexitylib/issues/1363
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
 [#1438]: https://github.com/cslib-community/complexitylib/issues/1438
