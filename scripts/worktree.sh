@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Manage isolated git worktrees under .worktrees/ with pre-seeded .lake caches.
+# Manage isolated git worktrees under .worktrees/, optionally seeding .lake caches.
 #
 # Usage:
-#   scripts/worktree.sh create <branch> [dir_name] [base_ref] [--copy-cslib | --copy-packages]
-#                              [--force-reset]
+#   scripts/worktree.sh create <branch> [dir_name] [base_ref]
+#                              [--copy-cslib | --copy-packages | --source-only] [--force-reset]
 #   scripts/worktree.sh seed <worktree_path> [--copy-cslib | --copy-packages]
 #   scripts/worktree.sh list
 #   scripts/worktree.sh prune-merged [base_ref] [--dry-run]
@@ -30,6 +30,10 @@
 #   worktree unless `COMPLEXITYLIB_WORKTREE_SKIP_CACHE_BOOTSTRAP=1` is set.
 #   Do not edit shared package sources. `--copy-cslib` also copies cslib's sources
 #   (for upstream edits or a pin bump); `--copy-packages` copies every package's sources.
+#   `create --source-only` skips all initial .lake copies, including package sources and Git
+#   controls; Lake materializes dependencies normally and may reuse its immutable artifact cache.
+#   It still checks isolation and bootstraps, unless bootstrap is explicitly disabled as above.
+#   It cannot be combined with either --copy-* flag.
 #   Seeding refuses the primary checkout and skips existing destination caches.
 #
 # Pruning considers registered worktrees directly under `.worktrees/`, retaining locked,
@@ -305,15 +309,26 @@ refuse_primary_or_symlink_target() {
         echo "Refusing to seed through destination package symlink: $pkg_entry" >&2
         return 1
       fi
+      for path in "$pkg_entry/.lake" "$pkg_entry/.lake/build" "$pkg_entry/.lake/config"; do
+        if [ -L "$path" ]; then
+          echo "Refusing to seed through destination cache symlink: $path" >&2
+          return 1
+        fi
+      done
     done
   fi
 }
 
-# seed_lake <worktree_path> <copy_mode>, where copy_mode is `none`, `cslib` or `all`.
-seed_lake() {
+# prepare_lake <worktree_path> <copy_mode> [source_only], where copy_mode is `none`, `cslib` or `all`.
+prepare_lake() {
   local wt_path="$1"
   local copy_mode="${2:-none}"
+  local source_only="${3:-false}"
   refuse_primary_or_symlink_target "$wt_path" "seed"
+  if [ "$source_only" = "true" ]; then
+    bootstrap_worktree_cache "$wt_path"
+    return 0
+  fi
   if [ ! -d "$ROOT/.lake" ]; then
     echo "No root .lake directory found at $ROOT/.lake; skipping cache seed."
     bootstrap_worktree_cache "$wt_path"
@@ -361,15 +376,18 @@ shift || true
 
 case "$cmd" in
   create)
-    branch="${1:?Usage: scripts/worktree.sh create <branch> [dir_name] [base_ref] [--copy-cslib | --copy-packages] [--force-reset]}"
+    branch="${1:?Usage: scripts/worktree.sh create <branch> [dir_name] [base_ref] [--copy-cslib | --copy-packages | --source-only] [--force-reset]}"
     shift
     dir_name=""
     base_ref=""
     copy_mode="none"
+    source_only="false"
     force_reset="false"
     for arg in "$@"; do
       if [ "$arg" = "--copy-cslib" ] || [ "$arg" = "--copy-packages" ]; then
         copy_mode="$(copy_mode_flag "$copy_mode" "$arg")"
+      elif [ "$arg" = "--source-only" ]; then
+        source_only="true"
       elif [ "$arg" = "--force-reset" ]; then
         force_reset="true"
       elif [ -z "$dir_name" ]; then
@@ -381,6 +399,10 @@ case "$cmd" in
         exit 1
       fi
     done
+    if [ "$source_only" = "true" ] && [ "$copy_mode" != "none" ]; then
+      echo "--source-only cannot be combined with --copy-cslib or --copy-packages." >&2
+      exit 1
+    fi
     if [ -z "$dir_name" ]; then
       dir_name="${branch//\//-}"
     fi
@@ -390,7 +412,7 @@ case "$cmd" in
       if [ "$force_reset" = "true" ]; then
         effective_base="${base_ref:-origin/main}"
         git worktree add -B "$branch" "$wt_path" "$effective_base"
-        seed_lake "$wt_path" "$copy_mode"
+        prepare_lake "$wt_path" "$copy_mode" "$source_only"
         echo "Ready: $wt_path (branch $branch reset to $effective_base)"
       else
         if [ -n "$base_ref" ]; then
@@ -398,7 +420,7 @@ case "$cmd" in
           exit 1
         fi
         git worktree add "$wt_path" "$branch"
-        seed_lake "$wt_path" "$copy_mode"
+        prepare_lake "$wt_path" "$copy_mode" "$source_only"
         echo "Ready: $wt_path (existing branch $branch)"
       fi
     else
@@ -413,17 +435,17 @@ case "$cmd" in
         fi
         if [ -n "$base_ref" ]; then
           git worktree add --no-track -b "$branch" "$wt_path" "$base_ref"
-          seed_lake "$wt_path" "$copy_mode"
+          prepare_lake "$wt_path" "$copy_mode" "$source_only"
           echo "Ready: $wt_path (new branch $branch from $base_ref; origin/$branch ignored by --force-reset)"
         else
           git worktree add --track -b "$branch" "$wt_path" "origin/$branch"
-          seed_lake "$wt_path" "$copy_mode"
+          prepare_lake "$wt_path" "$copy_mode" "$source_only"
           echo "Ready: $wt_path (branch $branch tracking origin/$branch)"
         fi
       else
         effective_base="${base_ref:-origin/main}"
         git worktree add --no-track -b "$branch" "$wt_path" "$effective_base"
-        seed_lake "$wt_path" "$copy_mode"
+        prepare_lake "$wt_path" "$copy_mode" "$source_only"
         echo "Ready: $wt_path (new branch $branch from $effective_base)"
       fi
     fi
@@ -440,7 +462,7 @@ case "$cmd" in
         exit 1
       fi
     done
-    seed_lake "$wt_path" "$copy_mode"
+    prepare_lake "$wt_path" "$copy_mode"
     echo "Seeded .lake cache in $wt_path"
     ;;
   list)

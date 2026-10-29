@@ -107,12 +107,28 @@ the explicit, unstamped fetch command. Cache misses and download failures are op
 compile what is missing, and the bootstrap never claims that all requested artifacts were
 available.
 
-`scripts/worktree.sh create` and `scripts/worktree.sh seed` run `scripts/cache/ensure.sh` in the
-worktree after seeding `.lake` caches. The helper never points a worktree at the primary checkout,
-refuses targets or destination cache symlinks that do, isolates dependency `.git` directories and
+By default, `scripts/worktree.sh create` and `scripts/worktree.sh seed` run
+`scripts/cache/ensure.sh` in the worktree after seeding `.lake` caches. The helper never points a
+worktree at the primary checkout, refuses targets or destination cache symlinks that do,
+isolates dependency `.git` directories and
 `gitdir:` pointer files so Git operations in a worktree cannot modify the primary checkout's `HEAD`
 or `index`, and dereferences any package symlink whose target is absolute or escapes the package
 directory. Pass `--copy-cslib` or `--copy-packages` when package sources must change.
+
+When the primary checkout's outputs are changing or use different pins, create a worktree without
+copying its initial `.lake` contents:
+
+```bash
+scripts/worktree.sh create feature/example example origin/main --source-only
+```
+
+`--source-only` skips initial root and dependency outputs, package sources and package Git controls.
+The same target and cache isolation checks still run before bootstrap. Bootstrap remains automatic
+unless `COMPLEXITYLIB_WORKTREE_SKIP_CACHE_BOOTSTRAP=1` or the usual cache opt-out is set; it may
+populate the new checkout with independently materialized dependencies and restored outputs.
+Lake can reuse its immutable artifact cache, but expect dependency downloads and disk use for
+independent package checkouts, and compilation when outputs are unavailable. This option cannot
+be combined with `--copy-cslib` or `--copy-packages`; the default seeded behavior is unchanged.
 
 ## Trust and privacy
 
