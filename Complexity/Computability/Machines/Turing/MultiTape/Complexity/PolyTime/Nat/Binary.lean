@@ -177,7 +177,6 @@ theorem bitsToNat : ComputableTidilyInPolyTime ofBits encBits encNat := by
   exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
     .of_forall_le c d (fun _ => le_rfl), k, State, hfin, tm, htm⟩
 
-
 /-- The binary digits of a natural number, as a raw bit string. -/
 @[fun_prop]
 theorem natBits : ComputableTidilyInPolyTime Nat.bits encNat encBits := of_eq fun _ => rfl
@@ -532,6 +531,14 @@ theorem binary_shiftRight' {α : Type} {input : α ↪ List Bool} {left right : 
     ComputableInPolyTime (fun a => left a >>> right a) input encNat :=
   binary_shiftRight.comp (hleft.prod hright)
 
+/-- The strict order of two computed numbers in binary. -/
+@[fun_prop]
+theorem binary_lt' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encNat)
+    (hright : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun a => decide (left a < right a)) input encBool :=
+  binary_lt.comp (hleft.prod hright)
+
 end Turing.MultiTapeTM.ComputableInPolyTime
 
 /-! ### Plain polynomial-time automation -/
@@ -547,5 +554,24 @@ theorem binary_two_pow :
     ComputableInPolyTime (fun (k : ℕ) => 2 ^ k)
   encUnary encNat :=
   .of_tidy Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_two_pow
+
+end Turing.MultiTapeTM.ComputableInPolyTime
+
+namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_sub'` for plain certificates. -/
+theorem binary_sub' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encNat)
+    (hright : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun a => left a - right a) input encNat :=
+  .of_tidy (ComputableTidilyInPolyTime.binary_sub' (hleft := hleft.tidy) (hright := hright.tidy))
+
+/-- `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_pow'` for plain certificates. -/
+theorem binary_pow' {α : Type} {input : α ↪ List Bool} {base exponent : α → ℕ}
+    (hbase : ComputableInPolyTime base input encNat)
+    (hexponent : ComputableInPolyTime exponent input encUnary) :
+    ComputableInPolyTime (fun a => base a ^ exponent a) input encNat :=
+  .of_tidy (ComputableTidilyInPolyTime.binary_pow' (hbase := hbase.tidy)
+    (hexponent := hexponent.tidy))
 
 end Turing.MultiTapeTM.ComputableInPolyTime

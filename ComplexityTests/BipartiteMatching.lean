@@ -21,61 +21,54 @@ open Cslib Cslib.Circuits Cslib.Circuits.BipartiteMatching Cslib.Communication
 
 /-! ### The function -/
 
--- The complete bipartite graph `K_{3,3}` has a perfect matching, the empty graph has none.
-example : bipartitePerfectMatching 3 (fun _ => true) = true :=
-  bipartitePerfectMatching_eq_true_iff.mpr ⟨Equiv.refl _, fun _ => rfl⟩
-
-example : bipartitePerfectMatching 3 (fun _ => false) = false := by
-  rw [Bool.eq_false_iff]
-  rintro h
-  obtain ⟨σ, hσ⟩ := bipartitePerfectMatching_eq_true_iff.mp h
-  exact Bool.false_ne_true (hσ 0)
-
-example : Monotone (bipartitePerfectMatching 4) :=
-  monotone_bipartitePerfectMatching
-
--- Hall's theorem: the empty graph on `K_{2,2}` has no perfect matching, as `{0}` has no neighbour.
-example : ¬HasPerfectMatching (fun _ : Fin 2 × Fin 2 => false) := by
-  rw [hasPerfectMatching_iff_forall_card_le]
-  intro h
-  simpa using h {0}
-
--- The hard direction of Hall's theorem: the graph on `K_{2,2}` without the edge `(0, 0)` satisfies
--- Hall's condition, so it has a perfect matching.
-example : HasPerfectMatching (fun e : Fin 2 × Fin 2 => decide (e ≠ (0, 0))) :=
-  (hasPerfectMatching_iff_forall_card_le _).2 (by decide)
+-- The complete bipartite graph `K_{3,3}` has a perfect matching, the empty graph has none,
+-- `bipartitePerfectMatching 4` is monotone, and Hall's theorem characterizes `K_{2,2}` graphs.
+example :
+    bipartitePerfectMatching 3 (fun _ => true) = true ∧
+      bipartitePerfectMatching 3 (fun _ => false) = false ∧
+      Monotone (bipartitePerfectMatching 4) ∧
+      ¬HasPerfectMatching (fun _ : Fin 2 × Fin 2 => false) ∧
+      HasPerfectMatching (fun e : Fin 2 × Fin 2 => decide (e ≠ (0, 0))) := by
+  refine ⟨bipartitePerfectMatching_eq_true_iff.mpr ⟨Equiv.refl _, fun _ => rfl⟩, ?_,
+    monotone_bipartitePerfectMatching, ?_,
+    (hasPerfectMatching_iff_forall_card_le _).2 (by decide)⟩
+  · rw [Bool.eq_false_iff]
+    rintro h
+    obtain ⟨σ, hσ⟩ := bipartitePerfectMatching_eq_true_iff.mp h
+    exact Bool.false_ne_true (hσ 0)
+  · rw [hasPerfectMatching_iff_forall_card_le]
+    intro h
+    simpa using h {0}
 
 /-! ### The graphs of the reduction -/
 
+-- Alice's graph has a perfect matching, Bob's graph has none, and the matching edges at `b₀` and
+-- `b₂` are missing from Bob's graph when `x = y = {1, 2}` and `i₀ = 0`.
 example :
-    HasPerfectMatching (RazWigderson.aliceGraph (e := 1) (![true, false, true] : BitString 3)) :=
-  RazWigderson.hasPerfectMatching_aliceGraph _
-
-example : ¬HasPerfectMatching (RazWigderson.bobGraph (e := 1) (1 : Fin 3) ![false, true, true]) :=
-  RazWigderson.not_hasPerfectMatching_bobGraph _ _
-
--- With `x = y = {1, 2}` and `i₀ = 0`, the matching edges at `b₀` and `b₂` are both missing from
--- Bob's graph.
-example : RazWigderson.aliceGraph (e := 0) (![false, true, true] : BitString 3)
-    (.inl (.inl 2), RazWigderson.aliceMatching ![false, true, true] (.inl (.inl 2))) = true ∧
+    HasPerfectMatching (RazWigderson.aliceGraph (e := 1) (![true, false, true] : BitString 3)) ∧
+      ¬HasPerfectMatching (RazWigderson.bobGraph (e := 1) (1 : Fin 3) ![false, true, true]) ∧
+      RazWigderson.aliceGraph (e := 0) (![false, true, true] : BitString 3)
+        (.inl (.inl 2), RazWigderson.aliceMatching ![false, true, true] (.inl (.inl 2))) = true ∧
       RazWigderson.bobGraph (e := 0) (0 : Fin 3) ![false, true, true]
         (.inl (.inl 2), RazWigderson.aliceMatching ![false, true, true] (.inl (.inl 2))) =
-          false := by
-  decide
+          false :=
+  ⟨RazWigderson.hasPerfectMatching_aliceGraph _,
+    RazWigderson.not_hasPerfectMatching_bobGraph _ _,
+    by decide⟩
 
 /-! ### Lower bounds -/
 
-example : PublicCoin.ecomplexityFun (1 / 2 ^ 1) (disjointness : BitString 1 → BitString 1 → Bool) ≤
-    1 * (Protocol.ecomplexity ExceedsAt {x | bipartitePerfectMatching 2 x = true}
-      {y | bipartitePerfectMatching 2 y = false} + 1) :=
-  ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching (by norm_num)
-    (by norm_num) (by norm_num)
-
--- The depth is finite (the function is monotone), so the bound below is not vacuous.
-example : Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) ≠ ⊤ :=
-  Monotone.eformulaDepth_ne_top_iff.2 monotone_bipartitePerfectMatching
-
-example : (126 : ℕ∞) ≤ Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) := by
+-- Public-coin communication reduction from disjointness, finiteness of monotone formula depth,
+-- and the concrete depth lower bound `126 ≤ eformulaDepth (bipartitePerfectMatching (2 ^ 20))`.
+example :
+    PublicCoin.ecomplexityFun (1 / 2 ^ 1) (disjointness : BitString 1 → BitString 1 → Bool) ≤
+      1 * (Protocol.ecomplexity ExceedsAt {x | bipartitePerfectMatching 2 x = true}
+        {y | bipartitePerfectMatching 2 y = false} + 1) ∧
+    Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) ≠ ⊤ ∧
+    (126 : ℕ∞) ≤ Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) := by
+  refine ⟨ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching (by norm_num)
+    (by norm_num) (by norm_num),
+    Monotone.eformulaDepth_ne_top_iff.2 monotone_bipartitePerfectMatching, ?_⟩
   have h := Monotone.le_mul_eformulaDepth_bipartitePerfectMatching_add (2 ^ 20)
   cases hd : Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) using ENat.recTopCoe with
   | top => exact le_top

@@ -66,44 +66,38 @@ theorem le_hammingDist_xor_junta (a : Fin 6) :
     2 ≤ hammingDist (fun s : BitString 2 => s 0 ^^ s 1) (junta a) := by
   fin_cases a <;> decide
 
-/-- **The lower-bound principle in Hamming terms**: the exclusive or is two samples away from
-every one-bit junta and each gate errs on at most one, so it needs at least two gates. -/
-example : 2 ≤ complexity interpretation (single fun x : BitString 2 => x 0 ^^ x 1) := by
-  simpa using
-    juntaScheme.le_mul_complexity_of_le_hammingDist id _ (fun _ => le_rfl) le_hammingDist_xor_junta
-
-/-- The same bound from the failures of the approximate values. -/
-example : 2 ≤ 1 * complexity interpretation (single fun x : BitString 2 => x 0 ^^ x 1) := by
-  refine juntaScheme.le_mul_complexity univ _ (fun _ => le_rfl) fun a => ?_
-  fin_cases a <;> decide
-
-/-- The weighted bound for the uniform distribution: each gate errs with probability at most one
-quarter, and the exclusive or fails with probability at least one half against every junta. -/
-example :
-    (1 / 2 : ℝ) ≤ 1 / 4 * complexity interpretation (single fun x : BitString 2 => x 0 ^^ x 1) := by
-  refine juntaScheme.le_mul_complexity_of_le_sum_failures (μ := fun _ => 1 / 4)
-    (fun _ => by norm_num) univ _ (fun op a => ?_) fun a => ?_
-  · have h : ((#(juntaExceptions op a) : ℕ) : ℝ) ≤ 1 := by
-      exact_mod_cast card_juntaExceptions_le op a
-    change ∑ s ∈ juntaExceptions op a, (1 / 4 : ℝ) ≤ 1 / 4
-    rw [sum_const, nsmul_eq_mul]
-    nlinarith
-  · have h : 2 ≤ #(juntaScheme.failures univ a fun s : BitString 2 => s 0 ^^ s 1) := by
-      fin_cases a <;> decide
-    have h' : (2 : ℝ) ≤ #(juntaScheme.failures univ a fun s : BitString 2 => s 0 ^^ s 1) := by
-      exact_mod_cast h
-    rw [sum_const, nsmul_eq_mul]
-    linarith
-
 /-- A one-gate circuit for the conjunction. -/
 private def andCircuit : Circuit signature 2 1 :=
   ⟨.gate .empty ⟨.and, fun a => .input a⟩, fun _ => .gate 0⟩
 
-/-- The decoded output of the conjunction circuit is within the total local error, one, of the
-conjunction. -/
-example : hammingDist (fun s : BitString 2 => s 0 && s 1)
-    (junta (andCircuit.eval approxJunta ![2, 3] 0)) ≤ 1 :=
-  (juntaScheme.hammingDist_le_sum_errorCost id andCircuit fun _ => rfl).trans_eq rfl
+/-- **The lower-bound principle in Hamming, counting, and uniform-weighted terms** for the
+two-input exclusive or, together with the one-gate conjunction approximation error bound. -/
+example :
+    2 ≤ complexity interpretation (single fun x : BitString 2 => x 0 ^^ x 1) ∧
+      2 ≤ 1 * complexity interpretation (single fun x : BitString 2 => x 0 ^^ x 1) ∧
+      (1 / 2 : ℝ) ≤
+        1 / 4 * complexity interpretation (single fun x : BitString 2 => x 0 ^^ x 1) ∧
+      hammingDist (fun s : BitString 2 => s 0 && s 1)
+        (junta (andCircuit.eval approxJunta ![2, 3] 0)) ≤ 1 := by
+  refine ⟨?_,
+    juntaScheme.le_mul_complexity univ _ (fun _ => le_rfl) fun a => by fin_cases a <;> decide,
+    ?_,
+    (juntaScheme.hammingDist_le_sum_errorCost id andCircuit fun _ => rfl).trans_eq rfl⟩
+  · simpa using juntaScheme.le_mul_complexity_of_le_hammingDist id _
+      (fun _ => le_rfl) le_hammingDist_xor_junta
+  · refine juntaScheme.le_mul_complexity_of_le_sum_failures (μ := fun _ => 1 / 4)
+      (fun _ => by norm_num) univ _ (fun op a => ?_) fun a => ?_
+    · have h : ((#(juntaExceptions op a) : ℕ) : ℝ) ≤ 1 := by
+        exact_mod_cast card_juntaExceptions_le op a
+      change ∑ s ∈ juntaExceptions op a, (1 / 4 : ℝ) ≤ 1 / 4
+      rw [sum_const, nsmul_eq_mul]
+      nlinarith
+    · have h : 2 ≤ #(juntaScheme.failures univ a fun s : BitString 2 => s 0 ^^ s 1) := by
+        fin_cases a <;> decide
+      have h' : (2 : ℝ) ≤ #(juntaScheme.failures univ a fun s : BitString 2 => s 0 ^^ s 1) := by
+        exact_mod_cast h
+      rw [sum_const, nsmul_eq_mul]
+      linarith
 
 /-! ### Exact evaluation on truth tables -/
 

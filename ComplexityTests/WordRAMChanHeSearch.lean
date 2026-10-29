@@ -87,4 +87,51 @@ example : ∃ y, ExecWithin 8 Search.program (emptyInput 2) y (3 * 132 + 9) ∧
   change y.regs Search.answer = minOrOne (Nat.primesLE 2) at ha
   exact ha.trans hselect
 
+private def laterInput : Data 64 :=
+  ⟨Function.update (Function.update (emptyInput 3).regs (CountCall.length 0) 2) Search.factor 2,
+    Function.update (emptyInput 3).mem 2 8⟩
+
+private def laterValues (j : Fin 3) (i : ℕ) : ℤ := if j = 0 then if i = 0 then 0 else 4 else 0
+
+-- Factor two queries moduli four and six. The first collides on {0,4}; the second does not.
+-- The actual answer, accepted flag, encoded modulus and charged bound are all observed.
+/-- info: true -/
+#guard_msgs in
+#eval decide ((Code.eval 8 8 Search.program laterInput).map (fun yn =>
+  ([yn.1.regs Search.answer, yn.1.regs Search.found, yn.1.regs CountCall.modulus],
+    decide (yn.2 ≤ 1049))) = some ([3, 1, 12], true))
+
+-- The same nonempty factor-two case discharges every fit, array and bitmap premise of the
+-- complete native execution theorem; its output witness is the actual executed state.
+example : ∃ y, ExecWithin 8 Search.program laterInput y 1049 ∧ y.regs Search.answer = 3 := by
+  obtain ⟨y, he, _, _, ha⟩ := Search.exec (w := 6) laterInput laterValues
+    (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by intro q hq; change q ≤ 3 at hq; interval_cases q <;> decide)
+    (by intro j i _; unfold laterValues; split; split <;> decide; decide)
+    (by intro j; fin_cases j <;> decide) (by intro j; fin_cases j <;> decide)
+    (by decide) (by intro j; fin_cases j <;> decide) (by intro j; fin_cases j <;> decide)
+    (by intro j; fin_cases j <;> decide) (by intro j; fin_cases j <;> decide)
+    (by
+      intro j i hi
+      fin_cases j
+      · have hi' : i < 2 := hi
+        interval_cases i <;> decide
+      · have hi' : i < 0 := hi
+        omega
+      · have hi' : i < 0 := hi
+        omega)
+    (by
+      intro j i hi k hk he
+      fin_cases j
+      · have hi' : i < 2 := Finset.mem_range.mp hi
+        have hk' : k < 2 := Finset.mem_range.mp hk
+        interval_cases i <;> interval_cases k <;> simp [laterValues] at he ⊢
+      · have hi' : i < 0 := Finset.mem_range.mp hi
+        omega
+      · have hi' : i < 0 := Finset.mem_range.mp hi
+        omega)
+  refine ⟨y, ?_, ha.trans (by decide)⟩
+  convert he using 1
+  decide
+
 end ComplexityTests.WordRAMChanHeSearch

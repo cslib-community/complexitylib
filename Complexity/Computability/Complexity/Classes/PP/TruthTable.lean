@@ -149,21 +149,21 @@ private theorem two_pow_mul_newmanAmp_neg_le {M K : ℕ} {z : ℤ} (hz₁ : 1 �
 
 private theorem newmanAmp_mem_GapP {M r : α → ℕ} {h : α × ℕ → ℤ}
     (hh : h ∈ GapP (encPair enc encUnary))
-    (hM : ComputableTidilyInPolyTime M enc encUnary)
-    (hr : ComputableTidilyInPolyTime r enc encUnary) :
+    (hM : ComputableInPolyTime M enc encUnary)
+    (hr : ComputableInPolyTime r enc encUnary) :
     (fun x : α × ℕ => newmanAmp (M x.1) (r x.1 + 1) (h x)) ∈ GapP (encPair enc encUnary) := by
   have htwo : (fun _ : (α × ℕ) × ℕ => (2 : ℤ)) ∈
       GapP (encPair (encPair enc encUnary) encUnary) :=
     GapP.add_mem GapP.one_mem GapP.one_mem
   have hpow2 : (fun p : (α × ℕ) × ℕ => (2 : ℤ) ^ p.2) ∈
       GapP (encPair (encPair enc encUnary) encUnary) :=
-    GapP.pow_mem_polyTime htwo (.of_tidy (.snd (encPair enc encUnary) encUnary))
+    GapP.pow_mem_polyTime htwo ((.snd (encPair enc encUnary) encUnary))
   have hbody : (fun p : (α × ℕ) × ℕ => (2 : ℤ) ^ p.2 + h p.1) ∈
       GapP (encPair (encPair enc encUnary) encUnary) :=
-    GapP.add_mem hpow2 (GapP.comp_mem hh (.of_tidy (.fst (encPair enc encUnary) encUnary)))
+    GapP.add_mem hpow2 (GapP.comp_mem hh ((.fst (encPair enc encUnary) encUnary)))
   have hprod : (fun x : α × ℕ => newmanPoly (M x.1) (h x)) ∈ GapP (encPair enc encUnary) :=
-    GapP.prod_range_mem hbody (.of_tidy (by fun_prop))
-  exact GapP.pow_mem_polyTime hprod (.of_tidy (by fun_prop))
+    GapP.prod_range_mem hbody (by fun_prop)
+  exact GapP.pow_mem_polyTime hprod (by fun_prop)
 
 /-! ### Word weights and truth-table gap construction -/
 
@@ -179,12 +179,12 @@ private def ppTruthTableGap (M r : α → ℕ) (g : α × ℕ → ℤ) (d : α �
 
 private theorem ppTruthTableGap_mem {M r : α → ℕ} {g : α × ℕ → ℤ} {d : α × List Bool → Bool}
     (hg : g ∈ GapP (encPair enc encUnary))
-    (hM : ComputableTidilyInPolyTime M enc encUnary)
-    (hr : ComputableTidilyInPolyTime r enc encUnary)
-    (hd : ComputableTidilyInPolyTime d (encPair enc encBits) encBool) :
+    (hM : ComputableInPolyTime M enc encUnary)
+    (hr : ComputableInPolyTime r enc encUnary)
+    (hd : ComputableInPolyTime d (encPair enc encBits) encBool) :
     ppTruthTableGap M r g d ∈ GapP enc := by
   let q : (α × List Bool) × ℕ → α × ℕ := fun x => (x.1.1, x.2)
-  have hq : ComputableTidilyInPolyTime q
+  have hq : ComputableInPolyTime q
       (encPair (encPair enc encBits) encUnary) (encPair enc encUnary) := by dsimp [q]; fun_prop
   have hpos := newmanAmp_mem_GapP hg hM hr
   have hneg := newmanAmp_mem_GapP (GapP.neg_mem hg) hM hr
@@ -194,12 +194,12 @@ private theorem ppTruthTableGap_mem {M r : α → ℕ} {g : α × ℕ → ℤ} {
       else
         newmanAmp (M x.1.1) (r x.1.1 + 1) (-g (x.1.1, x.2))) ∈
       GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.ite_mem (.of_tidy (by fun_prop)) (GapP.comp_mem hpos (.of_tidy hq))
-      (GapP.comp_mem hneg (.of_tidy hq))
-  have hp := GapP.prod_range_mem hs (.of_tidy (hr.comp (.fst enc encBits)))
-  have hw : ComputableTidilyInPolyTime
+    GapP.ite_mem (by fun_prop) (GapP.comp_mem hpos hq)
+      (GapP.comp_mem hneg hq)
+  have hp := GapP.prod_range_mem hs ((hr.comp (.fst enc encBits)))
+  have hw : ComputableInPolyTime
       (fun x => if d x then (1 : ℤ) else -1) (encPair enc encBits) encIntBin := by fun_prop
-  exact GapP.sum_bits_mem (GapP.mul_mem (mem_GapP_of_polyTime (.of_tidy hw)) hp) (.of_tidy hr)
+  exact GapP.sum_bits_mem (GapP.mul_mem (mem_GapP_of_polyTime hw) hp) hr
 
 private theorem ppWordWeight_eq_prod_univ (M r : α → ℕ) (g : α × ℕ → ℤ) (a : α)
     (w : Fin (r a) → Bool) :
@@ -300,8 +300,6 @@ theorem truthTable_mem_PP (hA : A ∈ PP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary)
     (hd : ComputableInPolyTime d (encPair enc encBits) encBool) :
     {a | d (a, truthTableAnswers A r a) = true} ∈ PP enc := by
-  have hr := hr.tidy
-  have hd := hd.tidy
   classical
   obtain ⟨g₀, hg₀, hAg₀⟩ := mem_PP_iff_exists_GapP.mp hA
   let g : α × ℕ → ℤ := fun x => (g₀ x + g₀ x) - 1
@@ -309,7 +307,7 @@ theorem truthTable_mem_PP (hA : A ∈ PP (encPair enc encUnary))
     GapP.sub_mem' (GapP.add_mem hg₀ hg₀) GapP.one_mem
   obtain ⟨p, hp⟩ := GapP.exists_abs_le_two_pow hg
   let M : α → ℕ := fun a => p.eval (2 * (enc a).length + 1 + r a)
-  have hM : ComputableTidilyInPolyTime M enc encUnary := by dsimp [M]; fun_prop
+  have hM : ComputableInPolyTime M enc encUnary := by dsimp [M]; fun_prop
   refine mem_PP_iff_exists_GapP.mpr ⟨ppTruthTableGap M r g d, ppTruthTableGap_mem hg hM hr hd,
     fun a => ?_⟩
   let v : Fin (r a) → Bool := fun i => decide ((a, i.1) ∈ A)
@@ -360,12 +358,11 @@ theorem PolyTimeTruthTableReducible.mem_PP {β : Type} {encB : β ↪ List Bool}
 theorem forall_lt_mem_PP (hA : A ∈ PP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary) :
     {a | ∀ i < r a, (a, i) ∈ A} ∈ PP enc := by
-  have hr := hr.tidy
-  have hd : ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.all id)
+  have hd : ComputableInPolyTime (fun x : α × List Bool => x.2.all id)
       (encPair enc encBits) encBool :=
-    ComputableTidilyInPolyTime.allWithEncoding (encP := encBool) (encA := encBool) (encL := encBits)
+    ComputableInPolyTime.allWithEncoding (encP := encBool) (encA := encBool) (encL := encBits)
       (test := fun p : Bool × Bool => p.2) (by fun_prop) (.const false) (.snd enc encBits)
-  convert truthTable_mem_PP hA (.of_tidy hr) (.of_tidy hd) using 1
+  convert truthTable_mem_PP hA hr hd using 1
   ext a
   simp [truthTableAnswers, List.all_eq_true, Fin.forall_iff]
 
@@ -373,12 +370,11 @@ theorem forall_lt_mem_PP (hA : A ∈ PP (encPair enc encUnary))
 theorem exists_lt_mem_PP (hA : A ∈ PP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary) :
     {a | ∃ i < r a, (a, i) ∈ A} ∈ PP enc := by
-  have hr := hr.tidy
-  have hd : ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.any id)
+  have hd : ComputableInPolyTime (fun x : α × List Bool => x.2.any id)
       (encPair enc encBits) encBool :=
-    ComputableTidilyInPolyTime.anyWithEncoding (encP := encBool) (encA := encBool) (encL := encBits)
+    ComputableInPolyTime.anyWithEncoding (encP := encBool) (encA := encBool) (encL := encBits)
       (test := fun p : Bool × Bool => p.2) (by fun_prop) (.const false) (.snd enc encBits)
-  convert truthTable_mem_PP hA (.of_tidy hr) (.of_tidy hd) using 1
+  convert truthTable_mem_PP hA hr hd using 1
   ext a
   simp [truthTableAnswers, List.any_eq_true, Fin.exists_iff]
 
@@ -392,13 +388,13 @@ theorem inter_mem_PP {A B : Set α} (hA : A ∈ PP enc) (hB : B ∈ PP enc) :
   let C : Set (α × ℕ) := {x | if x.2 = 0 then x.1 ∈ A else x.1 ∈ B}
   have hC : C ∈ PP (encPair enc encUnary) := by
     refine mem_PP_iff_exists_GapP.mpr ⟨fun x => if decide (x.2 = 0) then gA x.1 else gB x.1,
-      GapP.ite_mem (.of_tidy (by fun_prop)) (GapP.comp_mem hgA (.of_tidy (.fst enc encUnary)))
-        (GapP.comp_mem hgB (.of_tidy (.fst enc encUnary))), fun x => ?_⟩
+      GapP.ite_mem (by fun_prop) (GapP.comp_mem hgA (.fst enc encUnary))
+        (GapP.comp_mem hgB (.fst enc encUnary)), fun x => ?_⟩
     by_cases h : x.2 = 0 <;> simp [C, h, hAg x.1, hBg x.1]
-  have hd : ComputableTidilyInPolyTime
+  have hd : ComputableInPolyTime
       (fun x : α × List Bool => x.2.getD 0 false && x.2.getD 1 false)
       (encPair enc encBits) encBool := by fun_prop
-  convert truthTable_mem_PP (r := fun _ => 2) hC (.of_tidy (by fun_prop)) (.of_tidy hd) using 1
+  convert truthTable_mem_PP (r := fun _ => 2) hC (by fun_prop) hd using 1
   ext a
   simp [C, truthTableAnswers]
 

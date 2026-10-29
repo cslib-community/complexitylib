@@ -97,9 +97,9 @@ theorem mem_PPWithOracle_iff_exists_GapPWithOracle {L : Set α} :
         (encPair enc encBits) encBool :=
       computableInPolyTime_allFalseVerifier.computableInPolyTimeWithOracle A
     have hW₁ : ComputableInPolyTimeWithOracle A W₁ (encPair enc encBits) encBool :=
-      computableInPolyTimeWithOracle_andVerifier ((by fun_prop)) h₁ hfalse
+      computableInPolyTimeWithOracle_andVerifier (by fun_prop) h₁ hfalse
     have hW₂ : ComputableInPolyTimeWithOracle A W₂ (encPair enc encBits) encBool :=
-      computableInPolyTimeWithOracle_andVerifier ((by fun_prop)) h₂ hfalse
+      computableInPolyTimeWithOracle_andVerifier (by fun_prop) h₂ hfalse
     refine ⟨p + q + 1, selectVerifier W₁ (fun x => !W₂ x),
       computableInPolyTimeWithOracle_selectVerifier hW₁
         (hW₂.map (ComputableInPolyTime.bool_not)), fun a => ?_⟩

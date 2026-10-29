@@ -168,59 +168,59 @@ private def replayWeightedSum (machine : MultiTapePTM tapes Bool Control Operati
 private theorem replayStepFactor_mem_SharpP [Finite Control] [Finite Operation]
     (machine : MultiTapePTM tapes Bool Control Operation) {input : α → List Bool}
     {fYes fNo : List Bool → ℕ}
-    (hinput : ComputableTidilyInPolyTime input enc encBits)
+    (hinput : ComputableInPolyTime input enc encBits)
     (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits) :
     replayStepFactor machine input fYes fNo ∈ SharpP (encPair (encPair enc encBits) encUnary) := by
   let _ := Fintype.ofFinite Operation
   let cfg : (α × List Bool) × ℕ → FiniteConfig tapes Bool Control Operation :=
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
-  have hcfg : ComputableTidilyInPolyTime cfg
+  have hcfg : ComputableInPolyTime cfg
       (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.replayPrefix_pt.comp (g := fun x : (α × List Bool) × ℕ =>
+    machine.computableInPolyTime_replayPrefix.comp (g := fun x : (α × List Bool) × ℕ =>
       ((input x.1.1, x.1.2), x.2)) (by fun_prop)
-  have hquery : ComputableTidilyInPolyTime
+  have hquery : ComputableInPolyTime
       (fun x => (machine.pendingQuery (cfg x)).isSome)
       (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableTidilyInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp hcfg)
-  have hreq : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.of_finite Option.isSome).comp
+      (machine.pendingQuery_pt.computableInPolyTime.comp hcfg)
+  have hreq : ComputableInPolyTime
       (fun x => machine.pendingRequest (cfg x))
       (encPair (encPair enc encBits) encUnary) encBits :=
-    machine.pendingRequest_pt.comp hcfg
-  have hbit : ComputableTidilyInPolyTime
+    machine.pendingRequest_pt.computableInPolyTime.comp hcfg
+  have hbit : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  exact SharpP.ite_mem (.of_tidy hquery)
-    (SharpP.ite_mem (.of_tidy hbit) (SharpP.comp_mem hYes (.of_tidy hreq))
-      (SharpP.comp_mem hNo (.of_tidy hreq)))
-    (SharpP.ite_mem (.of_tidy hbit) SharpP.zero_mem SharpP.one_mem)
+  exact SharpP.ite_mem hquery
+    (SharpP.ite_mem hbit (SharpP.comp_mem hYes hreq)
+      (SharpP.comp_mem hNo hreq))
+    (SharpP.ite_mem hbit SharpP.zero_mem SharpP.one_mem)
 
 private theorem replayPathCount_mem_SharpP [Finite Control] [Finite Operation]
     (machine : MultiTapePTM tapes Bool Control Operation) {input : α → List Bool}
     {fYes fNo : List Bool → ℕ}
-    (hinput : ComputableTidilyInPolyTime input enc encBits)
+    (hinput : ComputableInPolyTime input enc encBits)
     (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits) :
     replayPathCount machine input fYes fNo ∈ SharpP (encPair enc encBits) :=
   SharpP.prod_range_mem (replayStepFactor_mem_SharpP machine hinput hYes hNo)
-    (r := fun x : α × List Bool => x.2.length) (.of_tidy (by fun_prop))
+    (r := fun x : α × List Bool => x.2.length) (by fun_prop)
 
 private theorem replayWeightedSum_mem_SharpP [Finite Control] [Finite Operation]
     (machine : MultiTapePTM tapes Bool Control Operation) {input : α → List Bool}
     {T : α → ℕ} {fYes fNo : List Bool → ℕ} {F : α × List Bool → ℕ}
-    (hinput : ComputableTidilyInPolyTime input enc encBits)
-    (hT : ComputableTidilyInPolyTime T enc encUnary)
+    (hinput : ComputableInPolyTime input enc encBits)
+    (hT : ComputableInPolyTime T enc encUnary)
     (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits)
     (hF : F ∈ SharpP (encPair enc encBits)) :
     replayWeightedSum machine input T fYes fNo F ∈ SharpP enc := by
   have hpath := replayPathCount_mem_SharpP machine hinput hYes hNo
-  have hpair : ComputableTidilyInPolyTime
+  have hpair : ComputableInPolyTime
       (fun x : α × List Bool => (input x.1, x.2))
       (encPair enc encBits) (encPair encBits encBits) := by fun_prop
   have hout : (fun x : α × List Bool => F (x.1, machine.replayOutput (input x.1) x.2)) ∈
       SharpP (encPair enc encBits) :=
-    SharpP.comp_mem hF (.of_tidy ((ComputableTidilyInPolyTime.fst enc encBits).prod
-      (machine.replayOutput_pt.comp hpair)))
-  exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hout) (.of_tidy hT)
+    SharpP.comp_mem hF ((ComputableInPolyTime.fst enc encBits).prod
+      (machine.computableInPolyTime_replayOutput.comp hpair))
+  exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hout) hT
 
 private theorem replayStepFactor_pos_iff (machine : MultiTapePTM tapes Bool Control Operation)
     (input : α → List Bool) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
@@ -365,11 +365,11 @@ theorem SharpP.encoded_comp_mem_of_computableInPolyTimeWithOracle
     rw [show (0 < fNo q) ↔ fNo q = 1 by omega]
     simp only [g, decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo_iff q]
   let T : α → ℕ := fun a => c * ((enc a).length + 1) ^ d
-  have hT : ComputableTidilyInPolyTime T enc encUnary :=
-    ((ComputableTidilyInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableTidilyInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
-  have hinput : ComputableTidilyInPolyTime (fun a : α => enc a) enc encBits :=
-    ComputableTidilyInPolyTime.id'
+  have hT : ComputableInPolyTime T enc encUnary :=
+    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
+      (ComputableInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
+  have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
+    ComputableInPolyTime.id'
   have hmem := replayWeightedSum_mem_SharpP machine hinput hT hYes_mem hNo_mem hF
   convert hmem using 1
   funext a
@@ -389,7 +389,7 @@ theorem SharpP.comp_mem_of_computableInPolyTimeWithOracle
     (hF : F ∈ SharpP encBits) :
     (F ∘ f) ∈ SharpP enc :=
   SharpP.encoded_comp_mem_of_computableInPolyTimeWithOracle hA_up hA_coup hf
-    (SharpP.comp_mem hF (.of_tidy (.snd enc encBits)))
+    (SharpP.comp_mem hF (.snd enc encBits))
 
 /-- **`GapP` precomposition with encoded `FP^(UP ∩ coUP)` outputs.** -/
 theorem GapP.encoded_comp_mem_of_computableInPolyTimeWithOracle
@@ -411,7 +411,7 @@ theorem GapP.comp_mem_of_computableInPolyTimeWithOracle
     (hG : G ∈ GapP encBits) :
     (G ∘ f) ∈ GapP enc :=
   GapP.encoded_comp_mem_of_computableInPolyTimeWithOracle hA_up hA_coup hf
-    (GapP.comp_mem hG (.of_tidy (.snd enc encBits)))
+    (GapP.comp_mem hG (.snd enc encBits))
 
 /-! ### Exact characterization of `#P` oracle lowness (`Low(#P) = UP ∩ coUP`) -/
 
@@ -424,21 +424,21 @@ theorem SharpPWithOracle_eq_SharpP_of_mem_UP_of_mem_coUP
     SharpPWithOracle A enc = SharpP enc := by
   apply Set.Subset.antisymm ?_ (SharpP_subset_SharpPWithOracle A enc)
   rintro f ⟨p, V, hV, hf⟩
-  have hbit : ComputableTidilyInPolyTime
+  have hbit : ComputableInPolyTime
       (fun x : (α × List Bool) × List Bool => x.2.headD false)
       (encPair (encPair enc encBits) encBits) encBool := by fun_prop
   have hF_ind : (fun x : (α × List Bool) × List Bool => if x.2.headD false then 1 else 0) ∈
       SharpP (encPair (encPair enc encBits) encBits) :=
-    SharpP.ite_mem (.of_tidy hbit) SharpP.one_mem SharpP.zero_mem
+    SharpP.ite_mem hbit SharpP.one_mem SharpP.zero_mem
   have hV_sharp : (fun x : α × List Bool => if V x then 1 else 0) ∈
       SharpP (encPair enc encBits) := by
     convert SharpP.encoded_comp_mem_of_computableInPolyTimeWithOracle hA_up hA_coup hV hF_ind
       using 1
     funext x
     simp [encBool_apply]
-  have hr : ComputableTidilyInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by
+  have hr : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by
     fun_prop
-  have hsum := SharpP.sum_bits_mem hV_sharp (.of_tidy hr)
+  have hsum := SharpP.sum_bits_mem hV_sharp hr
   convert hsum using 1
   funext a
   simp only [hf a, acceptCount, card_filter]
@@ -455,7 +455,7 @@ zero-bit witness length `p = 0`. -/
 theorem indicator_mem_SharpPWithOracle_self (A : Set (List Bool)) :
     (fun q : List Bool => if q ∈ A then 1 else 0) ∈ SharpPWithOracle A encBits := by
   obtain ⟨fA, hfA, hA_iff⟩ := mem_PWithOracle_self A
-  refine ⟨0, fun x => fA x.1, hfA.preprocess (.of_tidy (by fun_prop)), fun q => ?_⟩
+  refine ⟨0, fun x => fA x.1, hfA.preprocess (by fun_prop), fun q => ?_⟩
   simp only [Polynomial.eval_zero, acceptCount_zero, hA_iff q]
 
 open Classical in
@@ -463,8 +463,8 @@ open Classical in
 theorem indicator_compl_mem_SharpPWithOracle_self (A : Set (List Bool)) :
     (fun q : List Bool => if q ∉ A then 1 else 0) ∈ SharpPWithOracle A encBits := by
   obtain ⟨fA, hfA, hA_iff⟩ := mem_PWithOracle_self A
-  refine ⟨0, fun x => !fA x.1, (hfA.preprocess (.of_tidy (by fun_prop))).map
-    (.of_tidy (by fun_prop)), fun q => ?_⟩
+  refine ⟨0, fun x => !fA x.1, (hfA.preprocess (by fun_prop)).map
+    (by fun_prop), fun q => ?_⟩
   simp only [Polynomial.eval_zero, acceptCount_zero, hA_iff q]
   cases fA q <;> simp
 
@@ -599,7 +599,7 @@ theorem SBP_subset_SBPWithFixedTarget (A : Set (List Bool)) (enc : α ↪ List B
 theorem PWithOracle_subset_UPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     PWithOracle A enc ⊆ UPWithOracle A enc := by
   rintro L ⟨f, hf, hL⟩
-  refine mem_UPWithOracle.mpr ⟨0, fun x => f x.1, hf.preprocess (.of_tidy (by fun_prop)), ?_, ?_⟩
+  refine mem_UPWithOracle.mpr ⟨0, fun x => f x.1, hf.preprocess (by fun_prop), ?_, ?_⟩
   · intro a
     simp only [Polynomial.eval_zero, acceptCount_zero]
     split <;> omega

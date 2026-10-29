@@ -30,13 +30,12 @@ private def selectedPayload (u : BitString 16) : BitString 2 →ᵃ[Bool] BitStr
   if u 0 then AffineMap.const Bool (BitString 2) ![false, true] + shear
   else AffineMap.id Bool (BitString 2)
 
--- The matrix is not symmetric: transposing its row/column indexing changes this output.
-example : shear ![false, true] = ![true, true] := by decide
-
--- Both the translation and the linear part depend on the controller.
-example : selectedPayload (fun _ => false) ![false, true] = ![false, true] := by decide
-
-example : selectedPayload (fun _ => true) ![false, true] = ![true, false] := by decide
+-- The matrix is not symmetric, and both translation and linear part depend on the controller.
+example :
+    shear ![false, true] = ![true, true] ∧
+      selectedPayload (fun _ => false) ![false, true] = ![false, true] ∧
+      selectedPayload (fun _ => true) ![false, true] = ![true, false] := by
+  decide
 
 private theorem fourth_power :
     (controlledBits flipController (fun u => selectedPayload u))^[4]
@@ -66,18 +65,16 @@ example (T : ℕ) : ∃ c : Circuit signature (16 + 16) (16 + 16),
   simpa [affineControllerSynthesisBudget] using
     affine_controller_power_shannon (by decide : 16 ≤ 16) flipController translatedPayload T
 
--- At q = p = 16 the new budget is more than three times smaller than the old one.
-example : affineControllerSynthesisBudget 16 16 (27 * 2 ^ 16 / 16) = 31851872 ∧
-    affineControllerBudget 16 16 = 100728834 ∧
-    3 * affineControllerSynthesisBudget 16 16 (27 * 2 ^ 16 / 16) <
-      affineControllerBudget 16 16 := by
-  norm_num [affineControllerSynthesisBudget, affineControllerBudget]
-
--- At q = p = 32 the verified saving exceeds a factor of six.
-example : affineControllerSynthesisBudget 32 32 (27 * 2 ^ 32 / 32) = 3942779983040 ∧
-    affineControllerBudget 32 32 = 24193550778370 ∧
-    6 * affineControllerSynthesisBudget 32 32 (27 * 2 ^ 32 / 32) <
-      affineControllerBudget 32 32 := by
+-- At q = p = 16 the new budget is > 3× smaller, and at q = p = 32 the saving exceeds 6×.
+example :
+    (affineControllerSynthesisBudget 16 16 (27 * 2 ^ 16 / 16) = 31851872 ∧
+      affineControllerBudget 16 16 = 100728834 ∧
+      3 * affineControllerSynthesisBudget 16 16 (27 * 2 ^ 16 / 16) <
+        affineControllerBudget 16 16) ∧
+    (affineControllerSynthesisBudget 32 32 (27 * 2 ^ 32 / 32) = 3942779983040 ∧
+      affineControllerBudget 32 32 = 24193550778370 ∧
+      6 * affineControllerSynthesisBudget 32 32 (27 * 2 ^ 32 / 32) <
+        affineControllerBudget 32 32) := by
   norm_num [affineControllerSynthesisBudget, affineControllerBudget]
 
 -- An empty payload leaves a nontrivial controller transition, without phantom payload costs.

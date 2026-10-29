@@ -42,16 +42,15 @@ example (adversary : Inverter) (ha : IsPPT encBits adversary) :
       let candidate ← adversary (n + 1) (input ++ seed)
       return candidate.length ≤ n) := by ppt
 
-example (f : List Bool → List Bool) (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (adversary : Inverter) (ha : IsPPT encBits adversary) :
-    IsPPT encBool (fun n _ => inversionGame f adversary n) := by ppt
+example : IsPPT encBool (fun n _ =>
+    inversionGame (fun x => x ++ [false]) (fun _ y => pure (y.take (y.length - 1))) n) := by ppt
 
 section
 
 attribute [local irreducible] inversionGame
 
 -- A sampler with no auxiliary argument uses its unary certificate when the parameter changes.
-example (f : List Bool → List Bool) (hf : ComputableTidilyInPolyTime f encBits encBits)
+example (f : List Bool → List Bool) (hf : ComputableInPolyTime f encBits encBits)
     (adversary : Inverter) (ha : IsPPT encBits adversary) :
     IsPPT encBool (fun n input => inversionGame f adversary (n + input.length)) := by ppt
 
@@ -109,10 +108,9 @@ example : True := by
   trivial
 
 -- Semantic tests are admissible only through a uniform program realization.
-example (adversary : Distinguisher) (ha : IsPPT encBool adversary) :
-    IsPPTTest (fun n word => ProbComp.eval (adversary n word)) := isPPTTest_eval.mpr ha
-
-example (X : ℕ → PMF (List Bool)) : ComputationallyIndistinguishable X X := .refl _
+example : IsPPTTest (fun n (word : List Bool) =>
+    ProbComp.eval ((fun m w => pure (w.length == m)) n word)) :=
+  isPPTTest_eval.mpr (by ppt)
 
 example {X Y : ℕ → PMF (List Bool)} (h : ComputationallyIndistinguishable X Y) :
     ComputationallyIndistinguishable
@@ -121,14 +119,13 @@ example {X Y : ℕ → PMF (List Bool)} (h : ComputationallyIndistinguishable X 
   h.bind sampleWithPrefix_ppt
 
 -- The finite PRG bridge holds for arbitrary whole-family admissibility restrictions.
-example {Seed Output : ℕ → Type}
-    [∀ n, Fintype (Seed n)] [∀ n, Nonempty (Seed n)]
-    [∀ n, Fintype (Output n)] [∀ n, Nonempty (Output n)]
-    (G : PRG.Family Seed Output) (Admissible : (∀ n, PRG.Adversary (Output n)) → Prop)
-    (h : G.Secure Admissible) :
-    Game.Indistinguishable (fun adversary n => (G n).realExperiment (adversary n))
-      (fun adversary n => PRG.Generator.idealExperiment (adversary n)) Admissible :=
-  (G.secure_iff_indistinguishable Admissible).mp h
+example :
+    PRG.Family.Secure (Seed := fun _ => Bool) (Output := fun _ => Bool)
+      (fun _ : ℕ => ⟨id⟩) (fun _ => True) := by
+  rw [PRG.Family.secure_iff_indistinguishable]
+  intro adversary _
+  simpa only [PRG.Generator.realExperiment, PRG.Generator.outputDist, PRG.Generator.coe_mk,
+    PRG.Generator.idealExperiment, PMF.map_id, Game.advantage_self] using negligible_zero
 
 -- A many-to-one function accepts a different preimage, even one of a different length.
 example (n : ℕ) :
@@ -138,12 +135,20 @@ example (n : ℕ) :
 example : ¬ OneWay (fun word => word) :=
   not_oneWay_of_inverse _ (fun _ y => y) (by ppt) (fun _ => rfl)
 
-example (word : List Bool) : ¬ OneWay (fun _ => word) := not_oneWay_const word
+example : ¬ OneWay (fun _ => [true, false]) := not_oneWay_const [true, false]
 
--- Length-preserving permutations have exactly the claimed ideal output law, without assuming OWPs.
-example (n : ℕ) :
-    (BitString.uniformList n).bind (fun word =>
-      (Cslib.Probability.PMF.uniformOfFintype Bool).map (fun bit => word ++ [bit])) =
-        BitString.uniformList (n + 1) := (BitString.uniformList_snoc n).symm
+-- Appending an independent uniform bit gives this three-bit word its exact uniform probability.
+example :
+    ((BitString.uniformList 2).bind (fun word =>
+      (Cslib.Probability.PMF.uniformOfFintype Bool).map (fun bit => word ++ [bit])))
+      [true, false, true] = (1 : ENNReal) / 8 := by
+  rw [(BitString.uniformList_snoc 2).symm]
+  have h := BitString.uniformList_map_apply id 3 [true, false, true]
+  simp only [PMF.map_id, id_eq] at h
+  rw [h]
+  have hcount : (Finset.univ.filter fun r : Fin 3 → Bool =>
+      List.ofFn r = [true, false, true]).card = 1 := by decide
+  rw [hcount]
+  norm_num
 
 end ComplexityTests.ComputationalCrypto

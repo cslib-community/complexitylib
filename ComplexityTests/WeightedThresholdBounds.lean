@@ -166,22 +166,18 @@ example : 1 < (∅ : Finset (Fin 1)).card + (inputGates negateCircuit.program).c
     omega
 
 -- Shifted-baseline activity and Corollary 3.3 rectangle-density bounds.
-example : inputActivityFrom negateCircuit.program 0 = inputActivity negateCircuit.program :=
-  inputActivityFrom_zero negateCircuit.program
-
-example : gateActivityFrom negateCircuit.program 0 = gateActivity negateCircuit.program :=
-  gateActivityFrom_zero negateCircuit.program
-
-example (v : inputGates negateCircuit.program → Bool) :
+example (vIn : inputGates negateCircuit.program → Bool) (vGate : Fin 2 → Bool) :
+    inputActivityFrom negateCircuit.program 0 = inputActivity negateCircuit.program ∧
+    gateActivityFrom negateCircuit.program 0 = gateActivity negateCircuit.program ∧
     (attainableTranscripts negateCircuit.program).card ≤
-      ∑ j ∈ Finset.range (inputActivityFrom negateCircuit.program v + 1),
-        (inputGates negateCircuit.program).card.choose j :=
-  card_attainableTranscripts_le_sum_choose_inputActivityFrom negateCircuit.program v
-
-example (v : Fin 2 → Bool) :
+      ∑ j ∈ Finset.range (inputActivityFrom negateCircuit.program vIn + 1),
+        (inputGates negateCircuit.program).card.choose j ∧
     (attainableTranscripts negateCircuit.program).card ≤
-      ∑ j ∈ Finset.range (gateActivityFrom negateCircuit.program v + 1), Nat.choose 2 j :=
-  card_attainableTranscripts_le_sum_choose_gateActivityFrom negateCircuit.program v
+      ∑ j ∈ Finset.range (gateActivityFrom negateCircuit.program vGate + 1), Nat.choose 2 j :=
+  ⟨inputActivityFrom_zero negateCircuit.program,
+   gateActivityFrom_zero negateCircuit.program,
+   card_attainableTranscripts_le_sum_choose_inputActivityFrom negateCircuit.program vIn,
+   card_attainableTranscripts_le_sum_choose_gateActivityFrom negateCircuit.program vGate⟩
 
 example (v : inputGates (Program.empty : Program signature 0 0) → Bool) :
     (Finset.univ : Finset (Fin 0 → Bool)).card *
@@ -228,11 +224,10 @@ example (x : Fin 1 → Bool) :
     negatePrior.eval interpretation x 1 =
       decide (gateThreshold negatePrior 1 ≤
         (∑ a : Fin 1, inputWeight negatePrior 1 a * (x a).toNat) +
-          pendingBiasTrace negatePrior x 1 ⟨0, by decide⟩) :=
-  eval_eq_decide_pendingBiasTrace negatePrior x 1
-
-example : (pendingBiasStates negatePrior 1).card ≤ 2 ^ 1 :=
-  card_pendingBiasStates_le_two_pow negatePrior 1
+          pendingBiasTrace negatePrior x 1 ⟨0, by decide⟩) ∧
+    (pendingBiasStates negatePrior 1).card ≤ 2 ^ 1 :=
+  ⟨eval_eq_decide_pendingBiasTrace negatePrior x 1,
+   card_pendingBiasStates_le_two_pow negatePrior 1⟩
 
 example : (pendingBiasStates negatePrior 1).card ≤ 1 + 1 := by
   refine card_pendingBiasStates_le_add_one_of_row_const negatePrior 1 (fun _ => -1) ?_
@@ -329,36 +324,29 @@ private theorem negatePrior_along (j : Fin 2) :
 
 example :
     PiecesAtMost (scalarTranscript negatePrior (fun _ => 1))
-      (attainableTranscripts negatePrior).card :=
-  piecesAtMost_scalarTranscript negatePrior (fun _ => 1) negatePrior_along
-
-example :
+      (attainableTranscripts negatePrior).card ∧
     ChangesAtMost (scalarReadout negatePrior (fun _ => 1) (fun z => z 1))
-      ((attainableTranscripts negatePrior).card - 1) :=
-  changesAtMost_scalarReadout negatePrior (fun _ => 1) negatePrior_along (fun z => z 1)
-
-example :
+      ((attainableTranscripts negatePrior).card - 1) ∧
     2 ^ 1 < 16 * 2 ^ 2 *
-      ∑ j ∈ Finset.range (inputActivity negateCircuit.program + 1),
-        (inputGates negateCircuit.program).card.choose j :=
-  circuit_two_pow_lt_mul_sum_choose_of_direction negateCircuit ⟨(1 : Fin 2), rfl⟩
-    (fun _ => 1) negatePrior_along negateCircuit_eval (oneBit_rectangleFree _)
-
-example :
+      (∑ j ∈ Finset.range (inputActivity negateCircuit.program + 1),
+        (inputGates negateCircuit.program).card.choose j) ∧
     2 ^ 1 < 16 * 2 ^ 2 *
-      ∑ j ∈ Finset.range (gateActivity negateCircuit.program + 1),
-        negateCircuit.size.choose j :=
-  circuit_two_pow_lt_mul_sum_choose_gateActivity_of_direction negateCircuit ⟨(1 : Fin 2), rfl⟩
-    (fun _ => 1) negatePrior_along negateCircuit_eval (oneBit_rectangleFree _)
+      (∑ j ∈ Finset.range (gateActivity negateCircuit.program + 1),
+        negateCircuit.size.choose j) :=
+  ⟨piecesAtMost_scalarTranscript negatePrior (fun _ => 1) negatePrior_along,
+   changesAtMost_scalarReadout negatePrior (fun _ => 1) negatePrior_along (fun z => z 1),
+   circuit_two_pow_lt_mul_sum_choose_of_direction negateCircuit ⟨(1 : Fin 2), rfl⟩
+     (fun _ => 1) negatePrior_along negateCircuit_eval (oneBit_rectangleFree _),
+   circuit_two_pow_lt_mul_sum_choose_gateActivity_of_direction negateCircuit ⟨(1 : Fin 2), rfl⟩
+     (fun _ => 1) negatePrior_along negateCircuit_eval (oneBit_rectangleFree _)⟩
 
-example (z : Fin 3 → Bool) :
-    BitString.coverDecode 3 3 (BitString.coverRank 3 z) = z :=
-  BitString.coverDecode_coverRank z (BitString.weight_le_length z)
-
-example (t : ℕ) (ht : t < BitString.ballSize 3 2) :
+example (z : Fin 3 → Bool) (t : ℕ) (ht : t < BitString.ballSize 3 2) :
+    BitString.coverDecode 3 3 (BitString.coverRank 3 z) = z ∧
     BitString.coverRank 2 (BitString.coverDecode 3 2 t) = t ∧
-      BitString.weight (BitString.coverDecode 3 2 t) ≤ 2 :=
-  ⟨BitString.coverRank_coverDecode ht, BitString.weight_coverDecode_le 3 2 t⟩
+    BitString.weight (BitString.coverDecode 3 2 t) ≤ 2 :=
+  ⟨BitString.coverDecode_coverRank z (BitString.weight_le_length z),
+   BitString.coverRank_coverDecode ht,
+   BitString.weight_coverDecode_le 3 2 t⟩
 
 /-! ### Unambiguous transcript cells and quadratic-potential unique sinks -/
 
@@ -384,39 +372,28 @@ private theorem sampleStrictMarginProgram_abs_score_le_one (x : Fin 1 → Bool) 
   · cases x 0 <;> norm_num
   · cases z 0 <;> norm_num
 
-example (x : Fin 1 → Bool) (z : Fin 2 → Bool) :
-    sampleStrictMarginProgram.inTranscriptCell x z ↔ z = sampleStrictMarginProgram.eval x :=
-  sampleStrictMarginProgram.inTranscriptCell_iff_eq_eval x z
-
-example (x : Fin 1 → Bool) :
-    ∃! z : Fin 2 → Bool, sampleStrictMarginProgram.inTranscriptCell x z :=
-  sampleStrictMarginProgram.existsUnique_inTranscriptCell x
-
-example (U : Finset (Fin 1)) (x : Fin 1 → Bool) (z : Fin 2 → Bool) :
-    sampleStrictMarginProgram.inTranscriptCell x z ↔
+example (U : Finset (Fin 1)) (fixed : Finset (Fin 2)) (val : Fin 2 → Bool)
+    (x : Fin 1 → Bool) (z : Fin 2 → Bool) :
+    (sampleStrictMarginProgram.inTranscriptCell x z ↔ z = sampleStrictMarginProgram.eval x) ∧
+    (∃! z' : Fin 2 → Bool, sampleStrictMarginProgram.inTranscriptCell x z') ∧
+    (sampleStrictMarginProgram.inTranscriptCell x z ↔
       ∀ i : Fin 2,
         sampleStrictMarginProgram.rightDemand U z x i ≤
-          sampleStrictMarginProgram.leftSupply U z x i :=
-  sampleStrictMarginProgram.inTranscriptCell_iff_dominance U x z
-
-example (x : Fin 1 → Bool) (z : Fin 2 → Bool) :
-    sampleStrictMarginProgram.ilpValid (fun _ => 1) x z ↔ z = sampleStrictMarginProgram.eval x :=
-  sampleStrictMarginProgram.ilpValid_iff_eq_eval (sampleStrictMarginProgram_abs_score_le_one x z)
-
-example (fixed : Finset (Fin 2)) (val : Fin 2 → Bool) (x : Fin 1 → Bool) (z : Fin 2 → Bool) :
-    sampleStrictMarginProgram.IsSinkOnFace fixed val x z ↔
-      z = sampleStrictMarginProgram.faceEval fixed val x :=
-  sampleStrictMarginProgram.isSinkOnFace_iff_eq_faceEval fixed val x z
-
-example (x : Fin 1 → Bool) (z : Fin 2 → Bool) :
-    sampleStrictMarginProgram.IsSinkOnFace ∅ (fun _ => false) x z ↔
-      z = sampleStrictMarginProgram.eval x :=
-  sampleStrictMarginProgram.isSink_iff_eq_eval x z
-
-example (fixed : Finset (Fin 2)) (val : Fin 2 → Bool) (x : Fin 1 → Bool) (z : Fin 2 → Bool) :
+          sampleStrictMarginProgram.leftSupply U z x i) ∧
+    (sampleStrictMarginProgram.ilpValid (fun _ => 1) x z ↔ z = sampleStrictMarginProgram.eval x) ∧
+    (sampleStrictMarginProgram.IsSinkOnFace fixed val x z ↔
+      z = sampleStrictMarginProgram.faceEval fixed val x) ∧
+    (sampleStrictMarginProgram.IsSinkOnFace ∅ (fun _ => false) x z ↔
+      z = sampleStrictMarginProgram.eval x) ∧
     sampleStrictMarginProgram.sweep fixed val x z 2 =
       sampleStrictMarginProgram.faceEval fixed val x :=
-  sampleStrictMarginProgram.sweep_eq_faceEval fixed val x z
+  ⟨sampleStrictMarginProgram.inTranscriptCell_iff_eq_eval x z,
+   sampleStrictMarginProgram.existsUnique_inTranscriptCell x,
+   sampleStrictMarginProgram.inTranscriptCell_iff_dominance U x z,
+   sampleStrictMarginProgram.ilpValid_iff_eq_eval (sampleStrictMarginProgram_abs_score_le_one x z),
+   sampleStrictMarginProgram.isSinkOnFace_iff_eq_faceEval fixed val x z,
+   sampleStrictMarginProgram.isSink_iff_eq_eval x z,
+   sampleStrictMarginProgram.sweep_eq_faceEval fixed val x z⟩
 
 example (i : Fin 2) :
     sampleStrictMarginProgram.priority i ≤ (2 + 1) ^ (2 - 1 - i.val) := by

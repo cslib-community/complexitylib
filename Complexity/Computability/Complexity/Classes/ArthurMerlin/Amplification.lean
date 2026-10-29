@@ -118,8 +118,6 @@ def merlinArthurRepeat (enc : α ↪ List Bool) (q r p : Polynomial ℕ) (V : α
 theorem computableInPolyTime_merlinArthurRepeat {V : α × List Bool → Bool}
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (q r p : Polynomial ℕ) :
     ComputableInPolyTime (merlinArthurRepeat enc q r p V) (encPair enc encBits) encBool := by
-  have hV := hV.tidy
-  refine .of_tidy ?_
   unfold merlinArthurRepeat repeatMajority repeatVotes
   fun_prop
 
@@ -208,8 +206,6 @@ def arthurMerlinRepeat (enc : α ↪ List Bool) (r p q : Polynomial ℕ) (V : α
 theorem computableInPolyTime_arthurMerlinRepeat {V : α × List Bool → Bool}
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (r p q : Polynomial ℕ) :
     ComputableInPolyTime (arthurMerlinRepeat enc r p q V) (encPair enc encBits) encBool := by
-  have hV := hV.tidy
-  refine .of_tidy ?_
   unfold arthurMerlinRepeat
   fun_prop
 
@@ -337,12 +333,12 @@ theorem MA_subset_AM : MA enc ⊆ AM enc := by
   have h' := h.repeatMajority (q + 2)
   set W := merlinArthurRepeat enc q (6 * (q + 2)) p V with hW
   set P : Polynomial ℕ := 12 * (q + 2) * p with hP
-  have hPu : ComputableTidilyInPolyTime (fun a => P.eval (enc a).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval P).comp (ComputableTidilyInPolyTime.encoding_length enc)
+  have hPu : ComputableInPolyTime (fun a => P.eval (enc a).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval P).comp (ComputableInPolyTime.encoding_length enc)
   refine ⟨P, q, fun x => W (x.1, x.2.drop (P.eval (enc x.1).length) ++
     x.2.take (P.eval (enc x.1).length)), ?_, fun a => ?_⟩
-  · exact .of_tidy <| (computableInPolyTime_merlinArthurRepeat hV _ _ _).tidy.comp
-      ((ComputableTidilyInPolyTime.fst enc encBits).prod
+  · exact (computableInPolyTime_merlinArthurRepeat hV _ _ _).comp
+      ((ComputableInPolyTime.fst enc encBits).prod
         (.bitsAppend (.bitsDropWithInput (.snd enc encBits) (hPu.comp (.fst enc encBits)))
           (.bitsTakeWithInput (.snd enc encBits) (hPu.comp (.fst enc encBits)))))
   have hswap (r : Fin (P.eval (enc a).length) → Bool) (y : Fin (q.eval (enc a).length) → Bool) :
@@ -426,11 +422,11 @@ theorem MA_subset_SBP : MA enc ⊆ SBP enc := by
   set P : Polynomial ℕ := 12 * (q + 2) * p with hP
   have hf : (fun a => acceptCount W a ((q + P).eval (enc a).length)) ∈ SharpP enc :=
     ⟨q + P, W, (computableInPolyTime_merlinArthurRepeat hV _ _ _), fun _ => rfl⟩
-  have hd : ComputableTidilyInPolyTime (fun a => 2 ^ P.eval (enc a).length) enc encNat :=
-    ComputableTidilyInPolyTime.binary_two_pow.comp
-      ((ComputableTidilyInPolyTime.unary_eval P).comp (.encoding_length enc))
+  have hd : ComputableInPolyTime (fun a => 2 ^ P.eval (enc a).length) enc encNat :=
+    ComputableInPolyTime.binary_two_pow.comp
+      ((ComputableInPolyTime.unary_eval P).comp (.encoding_length enc))
   refine ⟨_, SharpP.mul_mem (SharpP.natCast_mem 4) hf, fun a => 3 * 2 ^ P.eval (enc a).length,
-    .of_tidy ((ComputableTidilyInPolyTime.const 3).binary_mul' hd), fun a => ?_⟩
+    ((ComputableInPolyTime.const 3).binary_mul' hd), fun a => ?_⟩
   change (a ∈ A → 3 * 2 ^ P.eval (enc a).length ≤
       4 * acceptCount W a ((q + P).eval (enc a).length)) ∧
     (a ∉ A → 2 * (4 * acceptCount W a ((q + P).eval (enc a).length)) <
@@ -464,21 +460,21 @@ private theorem computableInPolyTime_existsAMVerifier {VB : (α × List Bool) ×
       x.2.take (P.eval (enc x.1).length) ++
         x.2.drop (P.eval (enc x.1).length + p.eval (enc x.1).length)))
       (encPair enc encBits) encBool := by
-  have hP : ComputableTidilyInPolyTime (fun x : α × List Bool => P.eval (enc x.1).length)
+  have hP : ComputableInPolyTime (fun x : α × List Bool => P.eval (enc x.1).length)
       (encPair enc encBits) encUnary :=
-    ((ComputableTidilyInPolyTime.unary_eval _).comp
-      (ComputableTidilyInPolyTime.encoding_length enc)).comp (.fst _ _)
-  have hp : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
+    ((ComputableInPolyTime.unary_eval _).comp
+      (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
+  have hp : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
       (encPair enc encBits) encUnary :=
-    ((ComputableTidilyInPolyTime.unary_eval _).comp
-      (ComputableTidilyInPolyTime.encoding_length enc)).comp (.fst _ _)
-  exact .of_tidy <| hVB.tidy.comp (((ComputableTidilyInPolyTime.fst _ _).prod
-    (ComputableTidilyInPolyTime.bitsTakeWithInput
-      (ComputableTidilyInPolyTime.bitsDropWithInput (.snd _ _) hP) hp)).prod
-    (ComputableTidilyInPolyTime.bitsAppend
-      (ComputableTidilyInPolyTime.bitsTakeWithInput (.snd _ _) hP)
-      (ComputableTidilyInPolyTime.bitsDropWithInput (.snd _ _)
-        (ComputableTidilyInPolyTime.unary_add.comp (hP.prod hp)))))
+    ((ComputableInPolyTime.unary_eval _).comp
+      (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
+  exact hVB.comp (((ComputableInPolyTime.fst _ _).prod
+    (ComputableInPolyTime.bitsTakeWithInput
+      (ComputableInPolyTime.bitsDropWithInput (.snd _ _) hP) hp)).prod
+    (ComputableInPolyTime.bitsAppend
+      (ComputableInPolyTime.bitsTakeWithInput (.snd _ _) hP)
+      (ComputableInPolyTime.bitsDropWithInput (.snd _ _)
+        (ComputableInPolyTime.unary_add.comp (hP.prod hp)))))
 
 /-- On `List.ofFn r ++ List.ofFn y`, the existential `AM` verifier extracts the first component of
 `y` as the word and passes `r` followed by the second component of `y` to `VB`. -/

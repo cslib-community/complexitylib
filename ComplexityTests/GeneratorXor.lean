@@ -23,12 +23,12 @@ example : listXor 3 [] = [false, false, false] := by decide
 
 example : listXor 0 [[true], [false, true]] = [] := by decide
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × List (List Bool) =>
+example : ComputableInPolyTime (fun p : ℕ × List (List Bool) =>
     listXor (p.1 + 1) (p.2.reverse ++ [[true]]))
     (encPair encUnary (encList encBits)) encBits := by fun_prop
 
 -- The same collection program accepts rows represented as framed Boolean lists.
-example : ComputableTidilyInPolyTime (fun p : ℕ × List (List Bool) =>
+example : ComputableInPolyTime (fun p : ℕ × List (List Bool) =>
     listXor (p.1 + 1) (p.2.map fun row => row.reverse))
     (encPair encUnary (encList (encList encBool))) encBits := by polytime
 
@@ -48,23 +48,23 @@ example : GeneratorXor.generate 2 0 2 candidate [] = [true, false] := by decide
 example : GeneratorXor.generate 2 2 0 candidate [true] = [] := by decide
 
 example (generator : ℕ → ℕ → List Bool → List Bool)
-    (hgenerator : ComputableTidilyInPolyTime (fun p => generator p.1.1 p.1.2 p.2)
+    (hgenerator : ComputableInPolyTime (fun p => generator p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) encBits) encBits) :
-    ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+    ComputableInPolyTime (fun p : ℕ × List Bool =>
       GeneratorXor.generate (p.1 + 1) (p.1 + 2) (p.1 + 3) (generator p.1) p.2.reverse)
       (encPair encUnary encBits) encBits := by
   fail_if_success (clear hgenerator; polytime)
   polytime
 
 -- Expanded ordinary collection code has the same certificate as the named combiner.
-example : ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+example : ComputableInPolyTime (fun p : ℕ × List Bool =>
     listXor (p.1 + 3) ((List.range (p.1 + 1)).map fun i =>
       listRow (p.1 + 2) i p.2 ++ [decide (i = 0)]))
     (encPair encUnary encBits) encBits := by fun_prop
 
 example (generator : ℕ → ℕ → List Bool → List Bool)
     (adversary : ℕ → List Bool → ProbComp Bool)
-    (hgenerator : ComputableTidilyInPolyTime (fun p => generator p.1.1 p.1.2 p.2)
+    (hgenerator : ComputableInPolyTime (fun p => generator p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary encUnary) encBits) encBits)
     (hadversary : IsPPTOn (encPair encUnary encBits) encBool
       (fun p => adversary p.1 p.2)) :
@@ -90,7 +90,8 @@ example : ((uniformList 2).map (candidate 1)).bind (fun challenge =>
     (uniformList 4).map (GeneratorXor.generate 2 2 3 candidate) :=
   GeneratorXor.real_distribution 2 2 3 candidate ⟨1, by decide⟩
 
--- Uniformity places no efficiency or quality requirement on the other candidate.
+-- The whole output law is uniform, without efficiency or quality assumptions on the other
+-- candidate.
 example (other : List Bool → List Bool) :
     (uniformList 3).bind (fun challenge =>
       (uniformList 4).map (GeneratorXor.generate 2 2 3

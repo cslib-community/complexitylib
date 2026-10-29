@@ -14,15 +14,12 @@ namespace ComplexityTests.TimeReductions
 
 open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
+/-- Composing linear-factor `DTIME` monotonicity with `computableInO_indicator_of_mem_DTIME`. -/
 example {α : Type} {enc : α ↪ List Bool} {t : ℕ → ℕ} {A : Set α}
-    (hA : A ∈ DTIME enc t) :
-    ComputableTidilyInO (indicator A) enc encBool (fun a => t (enc a).length)
+    (hA : A ∈ DTIME enc (fun n => 2 * t n + 2)) :
+    ComputableInO (indicator A) enc encBool (fun a => t (enc a).length)
       fun a => t (enc a).length :=
-  (computableInO_indicator_of_mem_DTIME hA).tidy
-
-example {α : Type} {enc : α ↪ List Bool} {t : ℕ → ℕ} :
-    DTIME enc (fun n => 2 * t n + 2) ⊆ DTIME enc t :=
-  DTIME_mono_of_le_mul_add (fun _ => le_rfl)
+  computableInO_indicator_of_mem_DTIME (DTIME_mono_of_le_mul_add (fun _ => le_rfl) hA)
 
 /-- **`DTIME` under timed reductions**, for a problem outside `P`: the diagonal problem pulled back
 along the linear-time map from unary numbers to words of ones stays in exponential time. -/
