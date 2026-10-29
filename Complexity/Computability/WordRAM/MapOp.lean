@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -11,7 +11,7 @@ public import Complexity.Computability.WordRAM.Compile
 public import Complexity.Computability.WordRAM.Time
 
 /-!
-# Running word-RAM programs over a larger basis
+# Running word-RAM programs over a larger or simulating basis
 
 A map of bases `φ : B.Hom B'` (`Cslib.WordRAM.Basis.Hom`) sends every operation of `B` to an
 operation of `B'` with the same meaning at every word size. Replacing each operation of a program
@@ -24,17 +24,31 @@ the basis. This is the word-RAM analogue of translating circuits along a map of 
 
 A result proved over a small basis thus holds over every basis containing it: over
 `Cslib.WordRAM.Basis.standard`, and over any other basis that interprets the same operations in the
-same way. The converse direction, simulating an operation by a program over a smaller basis with an
-instruction budget, is not formalized here.
+same way. More generally, a defined-evaluation simulation `ψ : B.Simulates B'`
+(`Cslib.WordRAM.Basis.Simulates`) only requires `B'` to agree with `B` on operations that evaluate
+to `some v` in `B`, allowing `B'` to define values on inputs where `B` faults (as in
+`Cslib.WordRAM.Basis.Simulates.exactStandard : Basis.Simulates .exact .standard`). Every
+non-faulting structured execution transfers instruction-for-instruction along `ψ`
+(`Cslib.WordRAM.Exec.mapSimulates`, `Cslib.WordRAM.ExecWithin.mapSimulates`), and every basis
+homomorphism `φ : B.Hom B'` induces a simulation `Basis.Simulates.ofHom φ` with
+`Op.mapOp φ = Op.mapSimulates (.ofHom φ)` and `Code.mapOp φ = Code.mapSimulates (.ofHom φ)`.
 
 ## Main definitions
 
+* `Cslib.WordRAM.Basis.Simulates`, `Cslib.WordRAM.Basis.Simulates.ofHom`,
+  `Cslib.WordRAM.Basis.Simulates.exactStandard`: defined-evaluation basis simulation and the
+  canonical simulation of `Basis.exact` by `Basis.standard`.
+* `Cslib.WordRAM.Op.mapSimulates`, `Cslib.WordRAM.Code.mapSimulates`: translation of data
+  instructions and structured programs along a defined-evaluation simulation.
 * `Cslib.WordRAM.Op.mapOp`, `Cslib.WordRAM.Instr.mapOp`, `Cslib.WordRAM.Program.mapOp`,
   `Cslib.WordRAM.Code.mapOp`, `Cslib.WordRAM.WordSizeDependentProgram.mapOp`: translation along a
   map of bases.
 
 ## Main results
 
+* `Cslib.WordRAM.Op.eval_mapSimulates_of_some`, `Cslib.WordRAM.Exec.mapSimulates`,
+  `Cslib.WordRAM.ExecWithin.mapSimulates`: non-faulting structured executions transfer along a
+  defined-evaluation simulation.
 * `Cslib.WordRAM.Op.eval_mapOp`, `Cslib.WordRAM.step_mapOp`: translated instructions have the same
   effect.
 * `Cslib.WordRAM.executes_mapOp_iff`, `Cslib.WordRAM.Exec.mapOp`: translated programs halt in the
@@ -53,17 +67,79 @@ instruction budget, is not formalized here.
 
 namespace Cslib.WordRAM
 
+open Cslib.Circuits
+
 variable {B B' B'' : Basis} {r : ℕ} {α : Type*}
+
+/-! ## Defined-evaluation basis simulation -/
+
+/-- `B` is simulated by `B'` on defined evaluations when every non-faulting operation in `B`
+evaluates to the same value in `B'` without introducing `ReadsWidth`. Unlike `Basis.Hom`, `B'` may
+define values on inputs where `B` faults (such as `Basis.exact` vs `Basis.standard`). -/
+structure Basis.Simulates (B B' : Basis) extends B.toSignature.Hom B'.toSignature where
+  /-- Every defined operation value in `B` is preserved in `B'`. -/
+  eval_some (w : ℕ) (f : B.Op) (args : Fin (B.Arity f) → ℕ) {v : ℕ} :
+    B.interp w f args = some v →
+    B'.interp w (toHom f) (fun a => args (Fin.cast (toHom.arity_eq f) a)) = some v
+  /-- Simulation does not introduce word-size reads. -/
+  readsWidth_of_map (f : B.Op) : B'.ReadsWidth (toHom f) → B.ReadsWidth f
+
+namespace Basis.Simulates
+
+/-- Image of an operation symbol under a simulation. -/
+abbrev map (φ : B.Simulates B') (f : B.Op) : B'.Op := φ.toHom f
+
+/-- Simulation preserves operation arity. -/
+theorem arity_map (φ : B.Simulates B') (f : B.Op) : B'.Arity (φ.map f) = B.Arity f :=
+  φ.toHom.arity_eq f
+
+/-- Identity basis simulation. -/
+protected def id (B : Basis) : B.Simulates B where
+  toHom := Signature.Hom.id _
+  eval_some _ _ _ {_} h := h
+  readsWidth_of_map _ h := h
+
+/-- Composition of basis simulations. -/
+def comp (ψ : B'.Simulates B'') (φ : B.Simulates B') : B.Simulates B'' where
+  toHom := ψ.toHom.comp φ.toHom
+  eval_some w f args {_} h := ψ.eval_some w (φ.toHom f) _ (φ.eval_some w f args h)
+  readsWidth_of_map f h := φ.readsWidth_of_map f (ψ.readsWidth_of_map _ h)
+
+/-- Every exact basis homomorphism induces a defined-evaluation simulation. -/
+def ofHom (φ : B.Hom B') : B.Simulates B' where
+  toHom := φ.toHom
+  eval_some w f args {_} h := (φ.preserves w f args).trans h
+  readsWidth_of_map := φ.readsWidth_of_map
+
+/-- Every non-faulting `Basis.exact` operation evaluates to the same value in `Basis.standard`. -/
+def exactStandard : Basis.Simulates .exact .standard where
+  toHom :=
+    { toFun := id
+      arity_eq := fun _ => rfl }
+  eval_some w f args {v} h := by
+    cases f with
+    | width => exact h
+    | bin b =>
+      cases b <;>
+        dsimp only [Basis.exact, Basis.standard, StandardOp.evalExact, StandardOp.eval,
+          BinOp.evalExact, BinOp.eval] at h ⊢ <;>
+        (try split_ifs at h) <;> exact h
+  readsWidth_of_map _ h := h
+
+end Basis.Simulates
 
 /-! ## Instructions -/
 
-/-- The data instruction applying `φ f` in place of each operation `f`. -/
-def Op.mapOp (φ : B.Hom B') : Op B r → Op B' r
+/-- The data instruction applying `φ f` in place of each operation `f` along a basis simulation. -/
+def Op.mapSimulates (φ : B.Simulates B') : Op B r → Op B' r
   | .const d v => .const d v
   | .copy d s => .copy d s
   | .alu f d args => .alu (φ.map f) d fun a => args (Fin.cast (φ.arity_map f) a)
   | .load d a => .load d a
   | .store a s => .store a s
+
+/-- The data instruction applying `φ f` in place of each operation `f`. -/
+abbrev Op.mapOp (φ : B.Hom B') : Op B r → Op B' r := Op.mapSimulates (.ofHom φ)
 
 /-- The instruction applying `φ f` in place of each operation `f`. -/
 def Instr.mapOp (φ : B.Hom B') : Instr B r → Instr B' r
@@ -76,13 +152,17 @@ def Instr.mapOp (φ : B.Hom B') : Instr B r → Instr B' r
 /-- The program applying `φ f` in place of each operation `f`, instruction for instruction. -/
 def Program.mapOp (φ : B.Hom B') (p : Program B r) : Program B' r := p.map (Instr.mapOp φ)
 
-/-- The structured program applying `φ f` in place of each operation `f`. -/
-def Code.mapOp (φ : B.Hom B') : Code B r → Code B' r
-  | .op o => .op (o.mapOp φ)
-  | .seq c₁ c₂ => .seq (c₁.mapOp φ) (c₂.mapOp φ)
-  | .branch c pos neg => .branch c (pos.mapOp φ) (neg.mapOp φ)
-  | .loop c body => .loop c (body.mapOp φ)
+/-- The structured program applying `φ f` in place of each operation `f` along a basis simulation.
+-/
+def Code.mapSimulates (φ : B.Simulates B') : Code B r → Code B' r
+  | .op o => .op (o.mapSimulates φ)
+  | .seq c₁ c₂ => .seq (c₁.mapSimulates φ) (c₂.mapSimulates φ)
+  | .branch c pos neg => .branch c (pos.mapSimulates φ) (neg.mapSimulates φ)
+  | .loop c body => .loop c (body.mapSimulates φ)
   | .rand dst src => .rand dst src
+
+/-- The structured program applying `φ f` in place of each operation `f`. -/
+abbrev Code.mapOp (φ : B.Hom B') : Code B r → Code B' r := Code.mapSimulates (.ofHom φ)
 
 variable (φ : B.Hom B')
 
@@ -91,10 +171,31 @@ variable (φ : B.Hom B')
 theorem Program.length_mapOp (p : Program B r) : (p.mapOp φ).length = p.length :=
   List.length_map _
 
-/-- Translating a structured program along a basis homomorphism preserves its size. -/
+/-- Translating along a basis simulation preserves compiled program size. -/
 @[simp]
-theorem Code.size_mapOp (c : Code B r) : (c.mapOp φ).size = c.size := by
-  induction c <;> simp_all [Code.mapOp]
+theorem Code.size_mapSimulates (ψ : B.Simulates B') (c : Code B r) :
+    (c.mapSimulates ψ).size = c.size := by
+  induction c <;> simp_all [Code.mapSimulates]
+
+/-- Translating a structured program along a basis homomorphism preserves its size. -/
+theorem Code.size_mapOp (c : Code B r) : (c.mapOp φ).size = c.size :=
+  Code.size_mapSimulates (.ofHom φ) c
+
+/-- Any non-faulting evaluation of a data instruction is preserved under `Op.mapSimulates`. -/
+theorem Op.eval_mapSimulates_of_some {w : ℕ} (ψ : B.Simulates B')
+    {o : Op B r} {x y : Data r} (h : o.eval w x = some y) :
+    (o.mapSimulates ψ).eval w x = some y := by
+  cases o with
+  | alu f d args =>
+    rw [Op.eval_alu] at h
+    obtain ⟨v, hv, hput⟩ := Option.bind_eq_some_iff.mp h
+    rw [Op.mapSimulates, Op.eval_alu]
+    have hv' : B'.interp w (ψ.map f)
+        (x.regs ∘ fun a => args (Fin.cast (ψ.arity_map f) a)) = some v :=
+      ψ.eval_some w f (x.regs ∘ args) hv
+    rw [hv', Option.bind_some]
+    exact hput
+  | _ => exact h
 
 /-- A translated data instruction has the same effect. -/
 @[simp]
@@ -103,11 +204,17 @@ theorem Op.eval_mapOp (o : Op B r) (w : ℕ) (x : Data r) : (o.mapOp φ).eval w 
   | alu f d args => exact congrArg (·.bind (x.put w d)) (φ.interp_map w f (x.regs ∘ args))
   | _ => rfl
 
-/-- A translated data instruction reads the word size only if the instruction does. -/
-theorem Op.readsWidth_of_mapOp {o : Op B r} (h : (o.mapOp φ).ReadsWidth) : o.ReadsWidth := by
+/-- A data instruction translated along a simulation reads the word size only if the instruction
+does. -/
+theorem Op.readsWidth_of_mapSimulates (ψ : B.Simulates B') {o : Op B r}
+    (h : (o.mapSimulates ψ).ReadsWidth) : o.ReadsWidth := by
   cases o with
-  | alu f d args => exact φ.readsWidth_of_map f h
+  | alu f d args => exact ψ.readsWidth_of_map f h
   | _ => exact h
+
+/-- A translated data instruction reads the word size only if the instruction does. -/
+theorem Op.readsWidth_of_mapOp {o : Op B r} (h : (o.mapOp φ).ReadsWidth) : o.ReadsWidth :=
+  Op.readsWidth_of_mapSimulates (.ofHom φ) h
 
 /-- A translated instruction reads the word size only if the instruction does. -/
 theorem Instr.readsWidth_of_mapOp {i : Instr B r} (h : (i.mapOp φ).ReadsWidth) : i.ReadsWidth := by
@@ -122,14 +229,20 @@ theorem Program.readsWidth_of_mapOp {p : Program B r} (h : (p.mapOp φ).ReadsWid
   obtain ⟨j, hj, rfl⟩ := List.mem_map.1 hi
   exact ⟨j, hj, Instr.readsWidth_of_mapOp φ hr⟩
 
-/-- A translated structured program reads the word size only if the program does. -/
-theorem Code.readsWidth_of_mapOp {c : Code B r} (h : (c.mapOp φ).ReadsWidth) : c.ReadsWidth := by
+/-- A structured program translated along a simulation reads the word size only if the program
+does. -/
+theorem Code.readsWidth_of_mapSimulates (ψ : B.Simulates B') {c : Code B r}
+    (h : (c.mapSimulates ψ).ReadsWidth) : c.ReadsWidth := by
   induction c with
-  | op o => exact Op.readsWidth_of_mapOp φ h
+  | op o => exact Op.readsWidth_of_mapSimulates ψ h
   | seq _ _ ih₁ ih₂ => exact h.imp ih₁ ih₂
   | branch _ _ _ ihp ihn => exact h.imp ihp ihn
   | loop _ _ ih => exact ih h
   | rand _ _ => exact h
+
+/-- A translated structured program reads the word size only if the program does. -/
+theorem Code.readsWidth_of_mapOp {c : Code B r} (h : (c.mapOp φ).ReadsWidth) : c.ReadsWidth :=
+  Code.readsWidth_of_mapSimulates (.ofHom φ) h
 
 /-- Translating an instruction along a basis homomorphism preserves `IsRandFree`. -/
 @[simp]
@@ -141,10 +254,15 @@ theorem Instr.isRandFree_mapOp (i : Instr B r) : (i.mapOp φ).IsRandFree ↔ i.I
 theorem Program.isRandFree_mapOp (p : Program B r) : (p.mapOp φ).IsRandFree ↔ p.IsRandFree := by
   simp [Program.mapOp, Program.IsRandFree]
 
-/-- Translating a structured program along a basis homomorphism preserves `IsRandFree`. -/
+/-- Translating a structured program along a basis simulation preserves `IsRandFree`. -/
 @[simp]
-theorem Code.isRandFree_mapOp (c : Code B r) : (c.mapOp φ).IsRandFree ↔ c.IsRandFree := by
-  induction c <;> simp_all [Code.mapOp, Code.IsRandFree]
+theorem Code.isRandFree_mapSimulates (ψ : B.Simulates B') (c : Code B r) :
+    (c.mapSimulates ψ).IsRandFree ↔ c.IsRandFree := by
+  induction c <;> simp_all [Code.mapSimulates, Code.IsRandFree]
+
+/-- Translating a structured program along a basis homomorphism preserves `IsRandFree`. -/
+theorem Code.isRandFree_mapOp (c : Code B r) : (c.mapOp φ).IsRandFree ↔ c.IsRandFree :=
+  Code.isRandFree_mapSimulates (.ofHom φ) c
 
 /-! ## Runs -/
 
@@ -186,32 +304,44 @@ theorem run_mapOp (w : ℕ) (p : Program B r) (fuel : ℕ) (s : State r) :
 
 /-! ## Structured programs -/
 
-/-- A translated structured program runs in the same way, with the same instruction count. -/
-theorem Exec.mapOp {w : ℕ} {c : Code B r} {x y : Data r} {n : ℕ} (h : Exec w c x y n) :
-    Exec w (c.mapOp φ) x y n := by
+/-- Non-faulting structured executions transfer instruction-for-instruction along `Simulates`. -/
+theorem Exec.mapSimulates {w : ℕ} (ψ : B.Simulates B') {c : Code B r} {x y : Data r} {n : ℕ}
+    (h : Exec w c x y n) : Exec w (c.mapSimulates ψ) x y n := by
   induction h with
-  | op ho => exact .op (by rw [Op.eval_mapOp]; exact ho)
+  | op ho => exact .op (Op.eval_mapSimulates_of_some ψ ho)
   | seq _ _ ih₁ ih₂ => exact .seq ih₁ ih₂
   | branch_pos hc _ ih => exact .branch_pos hc ih
   | branch_neg hc _ ih => exact .branch_neg hc ih
   | loop_exit hc => exact .loop_exit hc
   | loop_iter hc _ _ ihb ihl => exact .loop_iter hc ihb ihl
 
+/-- A translated structured program runs in the same way, with the same instruction count. -/
+theorem Exec.mapOp {w : ℕ} {c : Code B r} {x y : Data r} {n : ℕ} (h : Exec w c x y n) :
+    Exec w (c.mapOp φ) x y n :=
+  h.mapSimulates (.ofHom φ)
+
+/-- Bounded-step structured executions transfer along `Simulates`. -/
+theorem ExecWithin.mapSimulates {w T : ℕ} (ψ : B.Simulates B') {c : Code B r} {x y : Data r}
+    (h : ExecWithin w c x y T) : ExecWithin w (c.mapSimulates ψ) x y T :=
+  let ⟨n, hn, he⟩ := h
+  ⟨n, hn, he.mapSimulates ψ⟩
+
 /-- Bounded-step execution of a structured program transfers along a basis homomorphism. -/
 theorem ExecWithin.mapOp {w T : ℕ} {c : Code B r} {x y : Data r} (h : ExecWithin w c x y T) :
     ExecWithin w (c.mapOp φ) x y T :=
-  let ⟨n, hn, he⟩ := h
-  ⟨n, hn, he.mapOp φ⟩
+  h.mapSimulates (.ofHom φ)
 
 /-- Translation commutes with assembly. -/
 theorem Code.assemble_mapOp (c : Code B r) (pc : ℕ) :
     (c.mapOp φ).assemble pc = (c.assemble pc).mapOp φ := by
   induction c generalizing pc with
   | op o => rfl
-  | seq c₁ c₂ ih₁ ih₂ => simp [Code.mapOp, Code.assemble, Program.mapOp, ih₁, ih₂]
+  | seq c₁ c₂ ih₁ ih₂ =>
+    simp [Code.mapOp, Code.mapSimulates, Code.assemble, Program.mapOp, ih₁, ih₂]
   | branch c pos neg ihp ihn =>
-    simp [Code.mapOp, Code.assemble, Program.mapOp, ihp, ihn, Instr.mapOp]
-  | loop c body ih => simp [Code.mapOp, Code.assemble, Program.mapOp, ih, Instr.mapOp]
+    simp [Code.mapOp, Code.mapSimulates, Code.assemble, Program.mapOp, ihp, ihn, Instr.mapOp]
+  | loop c body ih =>
+    simp [Code.mapOp, Code.mapSimulates, Code.assemble, Program.mapOp, ih, Instr.mapOp]
   | rand _ _ => rfl
 
 /-- Translation commutes with compiling a structured program into a complete halting program. -/

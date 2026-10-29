@@ -25,9 +25,11 @@ open Cslib.FunctionalGraph
 attribute [local instance] counterChartWordOrder
 
 -- 6 + 6 overflows three bits, but the widened modular adder gives 12 mod 7 = 5.
-example : addResidue (7 : BitVec 3) 6 6 = 5 := by decide
-example : addResidue (7 : BitVec 3) 0 0 = 0 := by decide
-example : addResidue (0 : BitVec 0) 0 0 = 0 := by decide
+example :
+    addResidue (7 : BitVec 3) 6 6 = 5 ∧
+    addResidue (7 : BitVec 3) 0 0 = 0 ∧
+    addResidue (0 : BitVec 0) 0 0 = 0 := by
+  decide
 
 -- The zero-time-width circuit returns the input state.
 example (f : Equiv.Perm (BitVec 2)) : ∃ out : Circuit signature (2 + 0) 2,
@@ -90,13 +92,12 @@ private def twoIntervalChart : CounterIntervalChart twoCycles 2 where
     interval_cases d <;> fin_cases j <;> decide
 
 -- The chart's two intervals genuinely satisfy encoding and decoding on every state.
-example (x : BitVec 2) : twoIntervalChart.encode x = wordCycleLabel twoCycles x :=
-  twoIntervalChart.encode_spec twoCycles.injective x
-
 example (x : BitVec 2) :
+    twoIntervalChart.encode x = wordCycleLabel twoCycles x ∧
     twoIntervalChart.decode (canonicalCycle twoCycles x)
-      (BitVec.ofNat (chartWidth 2) (phase twoCycles x)) = fun i => x.getLsbD i.val :=
-  twoIntervalChart.decode_spec twoCycles.injective x
+      (BitVec.ofNat (chartWidth 2) (phase twoCycles x)) = (fun i => x.getLsbD i.val) :=
+  ⟨twoIntervalChart.encode_spec twoCycles.injective x,
+   twoIntervalChart.decode_spec twoCycles.injective x⟩
 
 example (m : ℕ) : ∃ out : Circuit signature (2 + m) 2,
     out.Computes interpretation (fun z i =>
@@ -124,29 +125,28 @@ example (m : ℕ) : ∃ out : Circuit signature (2 + m) 2,
   rw [he] at h
   simpa [Nat.add_comm, Nat.add_left_comm] using h
 
--- Reduced modular subtraction: both direct (a ≥ b) and wraparound/borrow (a < b) cases.
-example : subtractResidues (5 : BitVec 3) 2 7 = 3 := by decide
-example : subtractResidues (2 : BitVec 3) 5 7 = 4 := by decide
-example : subtractResidues (0 : BitVec 3) 6 7 = 1 := by decide
-example : subtractResidues (0 : BitVec 0) 0 0 = 0 := by decide
+-- Reduced modular subtraction (both direct a ≥ b and wraparound/borrow a < b cases) and
+-- arithmetic progression visit counts (before first hit, singleton period 0, and periodic).
+example :
+    subtractResidues (5 : BitVec 3) 2 7 = 3 ∧
+    subtractResidues (2 : BitVec 3) 5 7 = 4 ∧
+    subtractResidues (0 : BitVec 3) 6 7 = 1 ∧
+    subtractResidues (0 : BitVec 0) 0 0 = 0 ∧
+    arithmeticProgressionCount 5 3 4 = 0 ∧
+    arithmeticProgressionCount 2 0 10 = 1 ∧
+    arithmeticProgressionCount 2 3 11 = 4 := by
+  decide
 
--- Arithmetic progression visit counts: before first hit, singleton (period 0), and periodic.
-example : arithmeticProgressionCount 5 3 4 = 0 := by decide
-example : arithmeticProgressionCount 2 0 10 = 1 := by decide
-example : arithmeticProgressionCount 2 3 11 = 4 := by decide
-
--- Visit schedule from a first hit on `twoCycles`.
-example (t : ℕ) : (twoCycles : BitVec 2 → BitVec 2)^[t] 0 = 1 ↔
-    ∃ k, t = 1 + k * Function.minimalPeriod (twoCycles : BitVec 2 → BitVec 2) 1 :=
-  visit_schedule_of_first (twoCycles : BitVec 2 → BitVec 2) 0 1 1 rfl
-    (by intro j hj; interval_cases j; decide) t
-
--- Cycle-label visit schedule specification on `twoCycles`.
-example (x y : BitVec 2) (t : ℕ) :
-    (twoCycles : BitVec 2 → BitVec 2)^[t] x = y ↔
+-- Visit schedule from a first hit and cycle-label visit schedule specification on `twoCycles`.
+example (t : ℕ) :
+    ((twoCycles : BitVec 2 → BitVec 2)^[t] 0 = 1 ↔
+      ∃ k, t = 1 + k * Function.minimalPeriod (twoCycles : BitVec 2 → BitVec 2) 1) ∧
+    ((twoCycles : BitVec 2 → BitVec 2)^[t] 0 = 1 ↔
       visitScheduleContains
-        (cycleLabelVisits (wordCycleLabel twoCycles x) (wordCycleLabel twoCycles y)) t :=
-  cycleLabelVisits_spec twoCycles twoCycles.injective x y t
+        (cycleLabelVisits (wordCycleLabel twoCycles 0) (wordCycleLabel twoCycles 1)) t) :=
+  ⟨visit_schedule_of_first (twoCycles : BitVec 2 → BitVec 2) 0 1 1 rfl
+     (by intro j hj; interval_cases j; decide) t,
+   cycleLabelVisits_spec twoCycles twoCycles.injective 0 1 t⟩
 
 -- Sparse-counter visit schedule and hitting time on `twoCycles`.
 example : ∃ out : Circuit signature (2 + 2) (visitScheduleWidth 2),

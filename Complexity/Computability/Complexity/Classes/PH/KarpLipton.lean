@@ -136,7 +136,7 @@ private theorem computableInPolyTime_verifier {f : α × List Bool → CNF ℕ}
     have hn' := hn.comp (fst (encPair enc encBits) encCNF)
     exact computableInPolyTime_evalAdvice_eval S W hn'
       (bitsTakeWithInput ((snd _ _).comp (fst _ _)) ((unary_eval P).comp hn'))
-      ((of_tidy (ComputableTidilyInPolyTime.encode encCNF)).comp (snd _ _))
+      ((of_eq (f := encCNF) (encOut := encBits) fun _ => rfl).comp (snd _ _))
   exact SAT.computableInPolyTime_verifier.comp (hφ.prod (SAT.computableInPolyTime_search hD hφ))
 
 end KarpLipton
@@ -240,7 +240,7 @@ theorem PolyTimeReducible.mem_PPolyOn {β : Type} {encB : β ↪ List Bool} {A :
     evalAdvice (S.eval (enc x.2).length) (W.eval (enc x.2).length) x.1 (encB (f x.2))
   have hg : ComputableInPolyTime g (encPair encBits enc) encBool :=
     computableInPolyTime_evalAdvice_eval S W ((encoding_length enc).comp (snd _ _)) (fst _ _)
-      ((of_tidy (ComputableTidilyInPolyTime.encode encB)).comp (hf.comp (snd _ _)))
+      ((of_eq (f := encB) (encOut := encBits) fun _ => rfl).comp (hf.comp (snd _ _)))
   obtain ⟨M, hM, hgM⟩ := PPoly.exists_of_polyTime hg
   let L : Language Bool := {x : List Bool | frame (α_adv x.length) ++ x ∈ M}
   refine ⟨L, PPoly.of_advice hM α_adv hα (fun _ => Iff.rfl), fun a => ?_⟩
@@ -271,10 +271,10 @@ theorem mem_PPoly_of_exists_frame_append
   have hV : ComputableInPolyTime V (encPair encBits encBits) encBool := by
     have hx : ComputableInPolyTime (fun z : List Bool × List Bool => dropFrame z.1)
         (encPair encBits encBits) encBits :=
-      (of_tidy ComputableTidilyInPolyTime.dropFrame).comp (fst _ _)
+      dropFrame.comp (fst _ _)
     have hu : ComputableInPolyTime (fun z : List Bool × List Bool => unframe z.1)
         (encPair encBits encBits) encBits :=
-      (of_tidy ComputableTidilyInPolyTime.unframe).comp (fst _ _)
+      unframe.comp (fst _ _)
     have hn : ComputableInPolyTime (fun z : List Bool × List Bool => (dropFrame z.1).length)
         (encPair encBits encBits) encUnary := length_bits.comp hx
     have hw : ComputableInPolyTime
@@ -323,12 +323,9 @@ theorem PPolyOn.exists_of_computableInPolyTime_length
   have hred : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
       B {p : α × List Bool | P p.1 p.2} := by
     refine ⟨fun p => (p.1, p.2.take (N p.1)), ?_, fun _ => Iff.rfl⟩
-    exact .of_tidy ((ComputableTidilyInPolyTime.fst enc encBits).prod
-      (ComputableTidilyInPolyTime.bitsTakeWithInput
-        (ComputableTidilyInPolyTime.snd enc encBits)
-        (hN.tidy.comp (ComputableTidilyInPolyTime.fst enc encBits))))
+    exact (fst enc encBits).prod (bitsTakeWithInput (snd enc encBits) (hN.comp (fst enc encBits)))
   obtain ⟨M, hM, hBM⟩ := hred.mem_PPolyOn hP
-  obtain ⟨p, hp⟩ := hN.tidy.polyBounded.exists_polynomial
+  obtain ⟨p, hp⟩ := hN.polyBounded.exists_polynomial
   refine ⟨{x : List Bool | ∃ w : List Bool, w.length = p.eval x.length ∧ frame x ++ w ∈ M},
     mem_PPoly_of_exists_frame_append hNP hM p, fun a => ?_⟩
   have hle : N a ≤ p.eval (enc a).length := hp a
