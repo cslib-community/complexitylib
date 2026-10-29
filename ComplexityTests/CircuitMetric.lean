@@ -51,8 +51,6 @@ private theorem complexity_single_nx₀ : complexity interpretation (single nx�
       fin_cases i
       exact absurd (congrFun h fun _ => true) (by decide))
 
-example : circuitDist x₀ x₀ = 0 := circuitDist_self x₀
-
 /-- The input bit is at distance four from zero: the projection needs no gates. -/
 theorem circuitDist_x₀_zero : circuitDist x₀ 0 = 4 := by
   rw [circuitDist_of_ne x₀_ne_zero, show (fun x : BitString 1 => x₀ x ^^ (0 : BooleanFunction 1) x)
@@ -69,30 +67,31 @@ theorem circuitDist_x₀_nx₀ : circuitDist x₀ nx₀ = 5 := by
   rw [circuitDist_of_ne x₀_ne_nx₀, show (fun x : BitString 1 => x₀ x ^^ nx₀ x) = fun _ => true
     from funext fun x => by cases h : x 0 <;> simp [x₀, nx₀, h], complexity_single_true]
 
-/-- The two constants differ by the constant `true`. -/
-example : circuitDist (0 : BooleanFunction 1) 1 = 5 := by
-  rw [circuitDist_of_ne fun h => absurd (congrFun h fun _ => true) (by decide),
-    show (fun x : BitString 1 => (0 : BooleanFunction 1) x ^^ (1 : BooleanFunction 1) x) =
-      fun _ => true from rfl, complexity_single_true]
-
-example : circuitDist nx₀ x₀ = 5 := by rw [circuitDist_comm, circuitDist_x₀_nx₀]
-
-/-- The Lipschitz bound on an example: the complexities `0` and `1` differ by at most `5`. -/
-example : Nat.dist (complexity interpretation (single x₀)) (complexity interpretation (single nx₀))
-    ≤ 5 :=
-  circuitDist_x₀_nx₀ ▸ dist_complexity_single_le_circuitDist x₀ nx₀
-
-example : circuitNorm 1 x₀ = 4 := by rw [circuitNorm_apply, circuitDist_x₀_zero]; norm_num
-
-/-- The input bit is in the closed ball of radius four about zero, its negation is not. -/
-example : letI := circuitNormedAddCommGroup 1
-    x₀ ∈ Metric.closedBall 0 4 ∧ nx₀ ∉ Metric.closedBall 0 4 := by
+/-- Self-distance, distance between constants, symmetry, the Lipschitz bound on `x₀` and `nx₀`,
+norm of `x₀`, and closed-ball membership around zero. -/
+example :
+    letI := circuitNormedAddCommGroup 1
+    circuitDist x₀ x₀ = 0 ∧
+    circuitDist (0 : BooleanFunction 1) 1 = 5 ∧
+    circuitDist nx₀ x₀ = 5 ∧
+    Nat.dist (complexity interpretation (single x₀)) (complexity interpretation (single nx₀)) ≤ 5 ∧
+    circuitNorm 1 x₀ = 4 ∧
+    x₀ ∈ Metric.closedBall 0 4 ∧
+    nx₀ ∉ Metric.closedBall 0 4 := by
   have hx := (complexity_single_le_iff_mem_closedBall x₀_ne_zero 0).mp
     (complexity_single_proj (0 : Fin 1)).le
   have hnx := (complexity_single_le_iff_mem_closedBall nx₀_ne_zero 0).not.mp
     (by rw [complexity_single_nx₀]; omega)
   simp only [Nat.cast_zero, zero_add] at hx hnx
-  exact ⟨hx, hnx⟩
+  exact ⟨circuitDist_self x₀,
+    by
+      rw [circuitDist_of_ne fun h => absurd (congrFun h fun _ => true) (by decide),
+        show (fun x : BitString 1 => (0 : BooleanFunction 1) x ^^ (1 : BooleanFunction 1) x) =
+          fun _ => true from rfl, complexity_single_true],
+    by rw [circuitDist_comm, circuitDist_x₀_nx₀],
+    circuitDist_x₀_nx₀ ▸ dist_complexity_single_le_circuitDist x₀ nx₀,
+    by rw [circuitNorm_apply, circuitDist_x₀_zero]; norm_num,
+    hx, hnx⟩
 
 end OneBit
 
@@ -136,8 +135,6 @@ namespace Full
 /-- The full binary basis over `ZMod 3`, which is complete. -/
 private abbrev full3 : Interpretation (fullSignature 2 (ZMod 3)) (ZMod 3) := fullInterpretation
 
-example : full3.IsComplete := inferInstance
-
 /-- Addition costs one gate. -/
 private theorem full3_add : complexity full3 (single fun y : Fin 2 → ZMod 3 => y 0 + y 1) ≤ 1 :=
   (Synthesis.full_binary (Synthesis.of_mem (s := inputs 2) ⟨0, rfl⟩)
@@ -147,18 +144,6 @@ private theorem full3_add : complexity full3 (single fun y : Fin 2 → ZMod 3 =>
 private theorem full3_neg : complexity full3 (single fun y : Fin 1 → ZMod 3 => -y 0) ≤ 1 :=
   (Synthesis.full_gate (k := 2) (s := inputs 1) (by norm_num) (fun v : Fin 1 → ZMod 3 => -v 0)
     (fun _ x => x 0) fun _ => ⟨0, rfl⟩).complexity_le
-
-/-- The generic hypotheses hold with `c = 1`: a translation-invariant quasi-metric. -/
-example (f g h : (Fin 1 → ZMod 3) → ZMod 3) :
-    diffDist full3 1 f h ≤ diffDist full3 1 f g + diffDist full3 1 g h :=
-  diffDist_triangle full3_add f g h
-
-example (f g : (Fin 1 → ZMod 3) → ZMod 3) : diffDist full3 1 g f ≤ diffDist full3 1 f g + 1 :=
-  diffDist_comm_le full3_neg f g
-
-example (f g a : (Fin 1 → ZMod 3) → ZMod 3) :
-    diffDist full3 1 (f + a) (g + a) = diffDist full3 1 f g :=
-  diffDist_add_right f g a
 
 /-- The input. -/
 private abbrev z₀ : (Fin 1 → ZMod 3) → ZMod 3 := fun x => x 0
@@ -179,10 +164,19 @@ theorem diffDist_zero_z₀ : diffDist full3 1 0 z₀ = 2 := by
       exact absurd (congrFun h fun _ => 1) (by decide)
   omega
 
-/-- **The difference distance is not symmetric in general.** -/
-example : diffDist full3 1 z₀ 0 ≠ diffDist full3 1 0 z₀ := by
-  rw [diffDist_z₀_zero, diffDist_zero_z₀]
-  decide
+/-- Completeness, translation-invariant quasi-metric laws with `c = 1`, and asymmetry of
+`diffDist full3 1` on `z₀` and `0`. -/
+example (f g h a : (Fin 1 → ZMod 3) → ZMod 3) :
+    full3.IsComplete ∧
+    diffDist full3 1 f h ≤ diffDist full3 1 f g + diffDist full3 1 g h ∧
+    diffDist full3 1 g f ≤ diffDist full3 1 f g + 1 ∧
+    diffDist full3 1 (f + a) (g + a) = diffDist full3 1 f g ∧
+    diffDist full3 1 z₀ 0 ≠ diffDist full3 1 0 z₀ :=
+  ⟨inferInstance,
+    diffDist_triangle full3_add f g h,
+    diffDist_comm_le full3_neg f g,
+    diffDist_add_right f g a,
+    by rw [diffDist_z₀_zero, diffDist_zero_z₀]; decide⟩
 
 end Full
 

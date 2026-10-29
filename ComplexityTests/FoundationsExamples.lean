@@ -60,14 +60,16 @@ private theorem kernelVec_spec_of_lt {F : Type*} [Field F] [DecidableEq F] {r n 
 private def kerMat : Matrix (Fin 2) (Fin 3) (ZMod 2) := !![1, 1, 0; 0, 1, 1]
 
 -- Two rows and three columns: the output is a nonzero kernel vector, namely the all-ones vector,
--- the only nonzero solution.
-example : kerMat *ᵥ kernelVec kerMat = 0 ∧ kernelVec kerMat ≠ 0 :=
-  kernelVec_spec_of_lt kerMat (by decide)
-
-example : kernelVec kerMat = ![1, 1, 1] := by decide +kernel
-
--- With a trivial kernel the output is the zero vector.
-example : kernelVec (1 : Matrix (Fin 2) (Fin 2) (ZMod 2)) = 0 := by decide +kernel
+-- while a matrix with trivial kernel yields the zero vector.
+example :
+    kerMat *ᵥ kernelVec kerMat = 0 ∧
+    kernelVec kerMat ≠ 0 ∧
+    kernelVec kerMat = ![1, 1, 1] ∧
+    kernelVec (1 : Matrix (Fin 2) (Fin 2) (ZMod 2)) = 0 :=
+  ⟨(kernelVec_spec_of_lt kerMat (by decide)).1,
+    (kernelVec_spec_of_lt kerMat (by decide)).2,
+    by decide +kernel,
+    by decide +kernel⟩
 
 end KernelVector
 
@@ -86,13 +88,12 @@ private def pts5 : Fin 5 → ZMod 5 := fun i => (i : ℕ)
 private def word5 : Fin 5 → ZMod 5 := ![1, 2, 3, 0, 1]
 
 -- Six monomials of `(1, 1)`-weighted degree at most `2` exceed the five points, so elimination
--- yields a Sudan interpolant.
-example : Sudan.IsInterpolant pts5 word5 1 2 (Sudan.interpolant pts5 word5 1 2) :=
-  Sudan.isInterpolant_interpolant pts5 word5 le_rfl (by decide)
-
--- Moreover `2 < 5`, and `X + 1` agrees with the word at three points, more than `D = 2`. So the
--- hint `τ + 1` at `τ` decodes the value `1` at `0` for all but `D - d = 1` hint points.
-example : #{τ : ZMod 5 | hintDecode pts5 word5 1 2 τ (τ + 1) ≠ 1} ≤ 1 := by
+-- yields a Sudan interpolant; and the hint `τ + 1` at `τ` decodes `1` at `0` for all but at most
+-- `D - d = 1` hint points.
+example :
+    Sudan.IsInterpolant pts5 word5 1 2 (Sudan.interpolant pts5 word5 1 2) ∧
+    #{τ : ZMod 5 | hintDecode pts5 word5 1 2 τ (τ + 1) ≠ 1} ≤ 1 := by
+  refine ⟨Sudan.isInterpolant_interpolant pts5 word5 le_rfl (by decide), ?_⟩
   have h := card_hintDecode_ne_le (α := pts5) (w := word5) (d := 1) (D := 2) (by decide) le_rfl
     (by decide) (by simp [ZMod.card]) (P := X + C 1) (natDegree_X_add_C 1).le (by
       simp only [eval_add, eval_X, eval_C]
@@ -116,18 +117,17 @@ private def andF (u : Fin 2 → Bool) : ZMod 3 := if u 0 && u 1 then 1 else 0
 /-- The disjunction of two bits, with values in `ZMod 3`. -/
 private def orF (u : Fin 2 → Bool) : ZMod 3 := if u 0 || u 1 then 1 else 0
 
--- The extension agrees with the function on the grid `{0, 1} ^ 2`.
-example : lowDegreeExtension boolEmb andF ![1, 1] = 1 := by
-  rw [show (![1, 1] : Fin 2 → ZMod 3) = fun i => boolEmb (![true, true] i) by decide,
-    lowDegreeExtension_apply_embed]
-  rfl
-
--- It is a Reed–Muller codeword of degree `2 * (2 - 1) = 2`.
-example : lowDegreeExtension boolEmb andF ∈ reedMuller (ZMod 3) 2 2 := by
-  simpa using lowDegreeExtension_mem_reedMuller boolEmb andF
-
--- Distinct functions on the grid have extensions differing on at least `3` of the `9` points.
-example : 3 ≤ hammingDist (lowDegreeExtension boolEmb andF) (lowDegreeExtension boolEmb orF) := by
+-- The extension agrees with the function on `{0, 1} ^ 2`, is a Reed–Muller codeword of degree
+-- `2 * (2 - 1) = 2`, and differs from `lowDegreeExtension boolEmb orF` on at least `3` points.
+example :
+    lowDegreeExtension boolEmb andF ![1, 1] = 1 ∧
+    lowDegreeExtension boolEmb andF ∈ reedMuller (ZMod 3) 2 2 ∧
+    3 ≤ hammingDist (lowDegreeExtension boolEmb andF) (lowDegreeExtension boolEmb orF) := by
+  refine ⟨by
+      rw [show (![1, 1] : Fin 2 → ZMod 3) = fun i => boolEmb (![true, true] i) by decide,
+        lowDegreeExtension_apply_embed]
+      rfl,
+    by simpa using lowDegreeExtension_mem_reedMuller boolEmb andF, ?_⟩
   have hne : lowDegreeExtension boolEmb andF ≠ lowDegreeExtension boolEmb orF := fun h => by
     have := congrFun h fun i => boolEmb (![true, false] i)
     rw [lowDegreeExtension_apply_embed, lowDegreeExtension_apply_embed] at this
@@ -151,21 +151,22 @@ private theorem isFiveCycle_finRotate : IsFiveCycle (finRotate 5) := by
   have h := isFiveCycle_formPerm (l := ([0, 1, 2, 3, 4] : List (Fin 5))) (by decide) rfl
   rwa [show ([0, 1, 2, 3, 4] : List (Fin 5)).formPerm = finRotate 5 by decide] at h
 
--- The rotation of `Fin 5` is an even five-cycle and a commutator of two five-cycles.
-example : finRotate 5 ∈ alternatingGroup (Fin 5) := isFiveCycle_finRotate.mem_alternatingGroup
-
-example : ∃ τ₁ τ₂ : Perm (Fin 5), IsFiveCycle τ₁ ∧ IsFiveCycle τ₂ ∧ ⁅τ₁, τ₂⁆ = finRotate 5 :=
-  isFiveCycle_finRotate.exists_commutator
-
--- A transposition is odd, so it is not a five-cycle.
-example : ¬ IsFiveCycle (swap (0 : Fin 5) 1) := fun h => by
-  have := h.sign
-  rw [sign_swap (by decide)] at this
-  exact absurd this (by decide)
-
--- Stepping forward from the last point wraps around to `0`, and all points share one cycle.
-example : (finRotate 5 4 : ℕ) = 0 ∧ (finRotate 5).SameCycle 1 4 :=
-  ⟨by rw [val_finRotate]; rfl, sameCycle_finRotate 1 4⟩
+-- The rotation of `Fin 5` is an even five-cycle and a commutator of two five-cycles, while a
+-- transposition is not a five-cycle; stepping forward from `4` wraps to `0` in one cycle.
+example :
+    finRotate 5 ∈ alternatingGroup (Fin 5) ∧
+    (∃ τ₁ τ₂ : Perm (Fin 5), IsFiveCycle τ₁ ∧ IsFiveCycle τ₂ ∧ ⁅τ₁, τ₂⁆ = finRotate 5) ∧
+    ¬ IsFiveCycle (swap (0 : Fin 5) 1) ∧
+    (finRotate 5 4 : ℕ) = 0 ∧
+    (finRotate 5).SameCycle 1 4 :=
+  ⟨isFiveCycle_finRotate.mem_alternatingGroup,
+    isFiveCycle_finRotate.exists_commutator,
+    fun h => by
+      have := h.sign
+      rw [sign_swap (by decide)] at this
+      exact absurd this (by decide),
+    by rw [val_finRotate]; rfl,
+    sameCycle_finRotate 1 4⟩
 
 -- Of the `3! = 6` orders of `Fin 3`, half put `2` after `0`.
 example : #{σ : Perm (Fin 3) | ∀ u ∈ ({0, 2} : Finset (Fin 3)), σ u ≤ σ 2} = 3 := by
@@ -196,14 +197,13 @@ private theorem lines_interpolate (f : ℚ → ℚ) :
   simp only [mem_insert, mem_singleton] at hx
   rcases hx with rfl | rfl <;> simp [lineBasis]
 
-/-- The interpolation bound is attained: lines interpolate on the two points `{0, 1}`. -/
-example : #({0, 1} : Finset ℚ) ≤ #(univ : Finset (Fin 2)) :=
-  card_le_of_forall_exists_mem_span_eq _ _ lineBasis lines_interpolate
-
-/-- Lines do not interpolate on three points. -/
-example : ¬∀ f : ℚ → ℚ, ∃ g ∈ Submodule.span ℚ (lineBasis '' (univ : Finset (Fin 2))),
-    ∀ x ∈ ({0, 1, 2} : Finset ℚ), g x = f x := fun h =>
-  absurd (card_le_of_forall_exists_mem_span_eq _ _ lineBasis h) (by simp)
+/-- The interpolation bound is attained on `{0, 1}` and fails on `{0, 1, 2}`. -/
+example :
+    #({0, 1} : Finset ℚ) ≤ #(univ : Finset (Fin 2)) ∧
+    ¬∀ f : ℚ → ℚ, ∃ g ∈ Submodule.span ℚ (lineBasis '' (univ : Finset (Fin 2))),
+      ∀ x ∈ ({0, 1, 2} : Finset ℚ), g x = f x :=
+  ⟨card_le_of_forall_exists_mem_span_eq _ _ lineBasis lines_interpolate,
+    fun h => absurd (card_le_of_forall_exists_mem_span_eq _ _ lineBasis h) (by simp)⟩
 
 end Interpolation
 
@@ -248,20 +248,19 @@ section Toeplitz
 
 open Cslib.Probability Matrix
 
--- `2 × 3` Toeplitz matrices reach every value at the nonzero vector `(0, 1, 0)`, but not at `0`.
-example (c : Fin 2 → ZMod 2) : ∃ a : Fin (2 + 3 - 1) → ZMod 2, toeplitz a *ᵥ ![0, 1, 0] = c :=
-  toeplitz_mulVec_surjective (by decide) c
-
-example : ¬ Function.Surjective fun a : Fin (2 + 3 - 1) → ZMod 2 =>
-    toeplitz a *ᵥ (0 : Fin 3 → ZMod 2) := fun h => by
-  obtain ⟨a, ha⟩ := h ![1, 0]
-  simp only [mulVec_zero] at ha
-  exact absurd ha (by decide)
-
--- Toeplitz seeds from `(ZMod 2) ^ 3` to `(ZMod 2) ^ 2` have `6` bits, against `8` for the full
--- affine family.
-example : Fintype.card ((Fin (2 + 3 - 1) → ZMod 2) × (Fin 2 → ZMod 2)) = 2 ^ 6 := by
-  rw [card_toeplitzHash_seed, ZMod.card]
+-- `2 × 3` Toeplitz matrices reach every value at the nonzero vector `(0, 1, 0)`, but not at `0`,
+-- and Toeplitz seeds from `(ZMod 2) ^ 3` to `(ZMod 2) ^ 2` have `6` bits.
+example :
+    (∃ a : Fin (2 + 3 - 1) → ZMod 2, toeplitz a *ᵥ ![0, 1, 0] = ![1, 0]) ∧
+    (¬ Function.Surjective fun a : Fin (2 + 3 - 1) → ZMod 2 =>
+      toeplitz a *ᵥ (0 : Fin 3 → ZMod 2)) ∧
+    Fintype.card ((Fin (2 + 3 - 1) → ZMod 2) × (Fin 2 → ZMod 2)) = 2 ^ 6 :=
+  ⟨toeplitz_mulVec_surjective (by decide) ![1, 0],
+    fun h => by
+      obtain ⟨a, ha⟩ := h ![1, 0]
+      simp only [mulVec_zero] at ha
+      exact absurd ha (by decide),
+    by rw [card_toeplitzHash_seed, ZMod.card]⟩
 
 end Toeplitz
 

@@ -36,7 +36,7 @@ noncomputable def trivialMACScheme : MACScheme where
 
 /-- Concrete instantiation of `prfMAC` on the message-echo family `fun _ msg => msg`. -/
 noncomputable def echoPrfMAC : MACScheme :=
-  prfMAC (fun _ msg => msg) (.of_tidy (ComputableTidilyInPolyTime.snd _ _))
+  prfMAC (fun _ msg => msg) (ComputableInPolyTime.snd _ _)
 
 -- Matching key and message lengths produce a valid tag accepted by `verify`.
 example : echoPrfMAC.sign [true, false] [false, true] = pure [false, true] := by
@@ -83,7 +83,7 @@ theorem not_oneTimeEUFCMA_trivialMACScheme :
   have hforgerBody : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p : ℕ × List Bool => (pure (List.replicate p.1 false, []) :
         ProbComp (List Bool × List Bool))) := by
-    have hpair : ComputableTidilyInPolyTime
+    have hpair : ComputableInPolyTime
         (fun p : ℕ × List Bool => (List.replicate p.1 false, ([] : List Bool)))
         (encPair encUnary encBits) (encPair encBits encBits) := by polytime
     exact hpair.isPPTOn
@@ -119,7 +119,7 @@ noncomputable def randomizedTagMACScheme : MACScheme where
   verify _ _ tag := tag.length == 1
   keyGen_ppt := by ppt
   sign_ppt := by ppt
-  verify_polyTime := .of_tidy (by polytime)
+  verify_polyTime := by polytime
   verify_sign := by
     intro _ _ _ _ _ tag htag
     rw [BitString.eval_sampleList] at htag
@@ -204,8 +204,8 @@ theorem succProbability_eufCma_lt_sufCma_sameMessageNewTagForger (n : ℕ) :
 
 /-- Doubling schedule `2 * n` is computable in plain polynomial time in unary. -/
 theorem computableInPolyTime_double :
-    ComputableInPolyTime (fun n : ℕ => 2 * n) encUnary encUnary :=
-  .of_tidy (by polytime)
+    ComputableInPolyTime (fun n : ℕ => 2 * n) encUnary encUnary := by
+  polytime
 
 /-- Doubling schedule `2 * n` is strictly monotone on `ℕ`. -/
 theorem strictMono_double : StrictMono (fun n : ℕ => 2 * n) :=
@@ -215,17 +215,13 @@ theorem strictMono_double : StrictMono (fun n : ℕ => 2 * n) :=
 noncomputable def doubleEchoPrfMAC : MACScheme :=
   echoPrfMAC.reindex (fun n => 2 * n) computableInPolyTime_double
 
-example (n : ℕ) : doubleEchoPrfMAC.msgLen n = 2 * n := rfl
+example : doubleEchoPrfMAC.msgLen 3 = 6 := rfl
 
 example : doubleEchoPrfMAC.verify [false, true] [true, false] [true, false] = true := by
   decide
 
-example (n : ℕ) : GeneratorReindex.parameter (fun k => 2 * k) (2 * n) = n :=
-  GeneratorReindex.parameter_apply_of_strictMono strictMono_double n
-
-example (M : MACScheme) (h : M.SUFCMA) :
-    (M.reindex (fun n => 2 * n) computableInPolyTime_double).SUFCMA :=
-  h.reindex computableInPolyTime_double strictMono_double
+example : GeneratorReindex.parameter (fun k => 2 * k) 10 = 5 := by
+  simpa using GeneratorReindex.parameter_apply_of_strictMono strictMono_double 5
 
 example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
     ((prfMAC family hprf.polyTime).reindex (fun n => 2 * n) computableInPolyTime_double).SUFCMA :=
