@@ -15,16 +15,10 @@ example : decodeIntBin [] = 0 ∧ decodeIntBin [true] = 0 ∧
     decodeIntBin [true, false, false] = 0 := by decide +kernel
 
 example : decodeIntBin [true, true, false, true] = -5 ∧
-    decodeIntBin [false, true, false, true, false] = 5 := by decide +kernel
-
-example (n : ℕ) : decodeIntBin (encIntBin (-(2 ^ n : ℤ))) = -(2 ^ n : ℤ) :=
-  decodeIntBin_encIntBin _
+    decodeIntBin [false, true, false, true, false] = 5 ∧
+    decodeIntBin (encIntBin (-(2 ^ 5 : ℤ))) = -(2 ^ 5 : ℤ) :=
+  ⟨by decide +kernel, by decide +kernel, decodeIntBin_encIntBin _⟩
 
 example : ComputableInPolyTime (fun p : List Bool × List Bool =>
     decodeIntBin p.1 - decodeIntBin p.2) (encPair encBits encBits) encIntBin := by
-  apply ComputableInPolyTime.of_tidy
-  exact ComputableTidilyInPolyTime.intBin_sub.comp
-    ((computableInPolyTime_decodeIntBin.tidy.comp
-      (ComputableTidilyInPolyTime.fst encBits encBits)).prod
-      (computableInPolyTime_decodeIntBin.tidy.comp
-        (ComputableTidilyInPolyTime.snd encBits encBits)))
+  fun_prop

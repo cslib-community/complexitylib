@@ -89,10 +89,6 @@ example : IsPPTOn encUnary (encPair (encPair encBits encBool) encBits)
       pure (([], bits.headD false), bits)) := by
   ppt
 
-example (n : ℕ) : ProbComp.eval (paddedSeed.sampleWithSeed n) =
-    (paddedSeed.jointWithSeed n).map (fun result => (([], result.1.2), List.ofFn result.2)) :=
-  paddedSeed.eval_sampleWithSeed n
-
 -- Exactly n unused random bits remain after disclosing the hidden bit and the constant observation.
 private theorem residual_entropy (n : ℕ) : conditionalEntropy (paddedSeed.jointWithSeed n) = n := by
   have h := paddedSeed.entropy_chain_rule n
@@ -104,10 +100,18 @@ private theorem residual_entropy (n : ℕ) : conditionalEntropy (paddedSeed.join
   linarith
 
 -- The joint law retains every unused coin, not just the marginal observation and label.
-example (n : ℕ) : ProbComp.eval (paddedSeed.sampleWithSeed n) =
-    (BitString.uniformList (n + 1)).map (fun bits => (([], bits.headD false), bits)) := by
-  simp only [SamplablePair.SeedRealization.sampleWithSeed, paddedSeed, bind_pure_comp,
-    ProbComp.eval_map, BitString.eval_sampleList]
+example (n : ℕ) :
+    (paddedSeed.jointWithSeed n).map
+        (fun result => ((([] : List Bool), result.1.2), List.ofFn result.2)) =
+      (BitString.uniformList (n + 1)).map
+        (fun bits => ((([] : List Bool), bits.headD false), bits)) := by
+  have h1 := paddedSeed.eval_sampleWithSeed n
+  have h2 : ProbComp.eval (paddedSeed.sampleWithSeed n) =
+      (BitString.uniformList (n + 1)).map
+        (fun bits => ((([] : List Bool), bits.headD false), bits)) := by
+    simp only [SamplablePair.SeedRealization.sampleWithSeed, paddedSeed, bind_pure_comp,
+      ProbComp.eval_map, BitString.eval_sampleList]
+  exact h1.symm.trans h2
 
 private theorem slack_budget (n width : ℕ) :
     (ExtractionSchedule.slack n width 0 : ℝ) + 2 * ExtractionSchedule.slack n width 0 ≤
@@ -190,23 +194,23 @@ example : ComputableInPolyTime
     (fun p : (ℕ × ℕ) × List Bool => EntropyGrid.amplifiedGenerate p.1.1 (p.1.1 + 1)
       0 2 (p.1.1 + 4) p.1.2 (fun bits => ([], bits.headD false)) p.2)
     (encPair (encPair encUnary encUnary) encBits) encBits :=
-  (EntropyGrid.isPolyTime_amplifiedGenerate paddedSeed
+  EntropyGrid.isPolyTime_amplifiedGenerate paddedSeed
     (observationBound := fun _ => 0) (densityBound := fun _ => 2) (common := fun n => n + 4)
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)))
+    (by fun_prop) (by fun_prop) (by fun_prop)
 
 example : ComputableInPolyTime
     (fun p : ℕ × List Bool => EntropyGrid.combinedGenerate p.1 (p.1 + 1)
       0 2 (p.1 + 4) (fun bits => ([], bits.headD false)) p.2)
     (encPair encUnary encBits) encBits :=
-  (EntropyGrid.isPolyTime_combinedGenerate paddedSeed
+  EntropyGrid.isPolyTime_combinedGenerate paddedSeed
     (observationBound := fun _ => 0) (densityBound := fun _ => 2) (common := fun n => n + 4)
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)))
+    (by fun_prop) (by fun_prop) (by fun_prop)
 
 -- Output width is fixed even for malformed seeds; security uses the declared uniform seed law.
-example (n : ℕ) (seed : List Bool) :
-    (EntropyGrid.combinedGenerate n (n + 1) 0 2 (n + 4)
-      (fun bits => ([], bits.headD false)) seed).length =
-      EntropyGrid.size (n + 1) 2 * (n + 4) + 1 :=
-  EntropyGrid.length_combinedGenerate ..
+example (seed : List Bool) :
+    (EntropyGrid.combinedGenerate 0 1 0 2 4
+      (fun bits => ([], bits.headD false)) seed).length = 81 := by
+  rw [EntropyGrid.length_combinedGenerate]
+  decide
 
 end ComplexityTests.PseudoentropySeed

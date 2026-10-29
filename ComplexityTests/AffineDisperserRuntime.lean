@@ -25,27 +25,26 @@ open Cslib Cslib.AffineDisperser Cslib.AffineDisperser.Explicit Turing.MultiTape
 
 /-! ### Binary polynomials -/
 
--- `X ^ 4 = X` modulo `X ^ 2 + X + 1`, since `X ^ 3 = 1` there.
-example : modBits [true, true, true] [false, false, false, false, true] = [false, true] := by
-  decide
-
--- `X ^ 2 + 1 = (X + 1) ^ 2` is reducible, and `X ^ 2 + X + 1` is irreducible.
-example : isIrreducibleCode 5 = false := by decide
-example : isIrreducibleCode 7 = true := by decide
-
--- The least irreducible polynomial of degree `5` is `X ^ 5 + X ^ 2 + 1`, with code `37`.
-example : leastIrreducibleCode 64 5 = 37 := by decide
-
-example : leastIrreducible 5 = polyOfCode 37 := by
+-- `X ^ 4 = X` modulo `X ^ 2 + X + 1`, `X ^ 2 + 1` is reducible while `X ^ 2 + X + 1` is
+-- irreducible, and the least irreducible polynomial of degree `5` has code `37`.
+example :
+    modBits [true, true, true] [false, false, false, false, true] = [false, true] ∧
+      isIrreducibleCode 5 = false ∧
+      isIrreducibleCode 7 = true ∧
+      leastIrreducibleCode 64 5 = 37 ∧
+      leastIrreducible 5 = polyOfCode 37 := by
+  refine ⟨by decide, by decide, by decide, by decide, ?_⟩
   rw [← polyOfCode_leastIrreducibleCode (B := 64) (by norm_num) (by norm_num),
     show leastIrreducibleCode 64 5 = 37 by decide]
 
 /-! ### The explicit disperser on `512` bits -/
 
-example : degreePrimes 512 = [5] := by decide
-example : fieldDegree 512 = 5 := by decide
-example : numBlocks 512 = 102 := by decide
-example : symDegree 512 = 10 := by decide
+example :
+    degreePrimes 512 = [5] ∧
+      fieldDegree 512 = 5 ∧
+      numBlocks 512 = 102 ∧
+      symDegree 512 = 10 := by
+  decide
 
 /-- Pseudorandom bits from the linear congruential generator `s ↦ 1103515245 s + 12345` modulo
 `2 ^ 31`, reading bit `16` of each state. -/
@@ -59,20 +58,16 @@ def lcgBits (N seed : ℕ) : List Bool :=
 #eval ((lcgBits 512 4).length, explicitDisperserProgram (lcgBits 512 4),
   explicitDisperserProgram (lcgBits 512 5))
 
-/-- The program computes the explicit disperser, so the two runs above are values of
-`explicitDisperser 512`. -/
+/-- The program computes the explicit disperser, and the roots `binaryRoot` satisfy the
+root-independence theorem at `N = 512`. -/
 example (seed : ℕ) :
     explicitDisperserProgram (lcgBits 512 seed) =
       explicitDisperser (lcgBits 512 seed).length
-        (BitString.ofList (lcgBits 512 seed).length (lcgBits 512 seed)) :=
-  explicitDisperserProgram_eq _
-
-/-- The hypothesis of the root-independence theorem is satisfiable: the roots `binaryRoot`. -/
-example (N : ℕ) :
-    traceSymBits (1 : ExplicitField N) (numBlocks N) (symDegree N)
-        (rootBasis N (fun j => binaryRoot (degreePrime N j) (fieldDegree N))
-          (aeval_binaryRoot_degreePrime N)) (explicitPos N) =
-      explicitDisperser N :=
-  traceSymBits_rootBasis_eq_explicitDisperser N _ _
+        (BitString.ofList (lcgBits 512 seed).length (lcgBits 512 seed)) ∧
+    traceSymBits (1 : ExplicitField 512) (numBlocks 512) (symDegree 512)
+        (rootBasis 512 (fun j => binaryRoot (degreePrime 512 j) (fieldDegree 512))
+          (aeval_binaryRoot_degreePrime 512)) (explicitPos 512) =
+      explicitDisperser 512 :=
+  ⟨explicitDisperserProgram_eq _, traceSymBits_rootBasis_eq_explicitDisperser 512 _ _⟩
 
 end ComplexityTests.AffineDisperserRuntime

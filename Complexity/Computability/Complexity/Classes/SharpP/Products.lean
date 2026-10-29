@@ -63,10 +63,6 @@ theorem polyTime_indexedProductVerifier {r k : α → ℕ} {V : (α × ℕ) × L
     (hk : ComputableInPolyTime k enc encUnary)
     (hV : ComputableInPolyTime V (encPair (encPair enc encUnary) encBits) encBool) :
     ComputableInPolyTime (indexedProductVerifier r k V) (encPair enc encBits) encBool := by
-  have hr := hr.tidy
-  have hk := hk.tidy
-  have hV := hV.tidy
-  refine .of_tidy ?_
   unfold indexedProductVerifier
   fun_prop
 
@@ -90,7 +86,6 @@ theorem acceptCount_indexedProductVerifier (r k : α → ℕ)
     simpa only [BitString.listRow_eq_ofFn (k a) ⟨i, hi⟩, BitString.ofList_ofFn,
       BitString.blocksEquiv_apply] using h ⟨i, hi⟩
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- A jointly uniform #P family on an instance and unary index may be multiplied over a
 polynomial-time unary range. If the original certificate polynomial is `p`, a common row width
 is `p(2|a|+1+r(a))`, and the unpadded total length is `r(a)` times that width. -/
@@ -98,17 +93,16 @@ theorem prod_range_mem {f : α × ℕ → ℕ} {r : α → ℕ}
     (hf : f ∈ SharpP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => ∏ i ∈ range (r a), f (a, i)) ∈ SharpP enc := by
-  have hr := hr.tidy
   obtain ⟨p, V, hV, hf⟩ := mem_SharpP.mp hf
   let width : α × ℕ → ℕ := fun x => p.eval ((encPair enc encUnary) x).length
   let k : α → ℕ := fun a => p.eval (2 * (enc a).length + 1 + r a)
   let W := andVerifier width V allFalseVerifier
-  have hk : ComputableTidilyInPolyTime k enc encUnary := by dsimp [k]; fun_prop
-  have hW : ComputableTidilyInPolyTime W
+  have hk : ComputableInPolyTime k enc encUnary := by dsimp [k]; fun_prop
+  have hW : ComputableInPolyTime W
       (encPair (encPair enc encUnary) encBits) encBool := by dsimp [W, width]; fun_prop
   convert mem_SharpP_of_polyTime_length
-    (polyTime_indexedProductVerifier (.of_tidy hr) (.of_tidy hk) (.of_tidy hW))
-    (.of_tidy (ComputableTidilyInPolyTime.unary_mul.comp (hr.prod hk))) using 1
+    (polyTime_indexedProductVerifier hr hk hW)
+    ((ComputableInPolyTime.unary_mul.comp (hr.prod hk))) using 1
   ext a
   change _ = acceptCount (indexedProductVerifier r k W) a (r a * k a)
   rw [acceptCount_indexedProductVerifier]

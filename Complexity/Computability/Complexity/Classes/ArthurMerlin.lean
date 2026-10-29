@@ -198,11 +198,11 @@ private theorem two_mul_two_pow_le_card_filter_take {m M : ℕ} (hle : m ≤ M)
   exact Nat.mul_le_mul_left _ h
 
 private theorem exists_truncated_verifier {encB : β ↪ List Bool} {f : α → β}
-    (hf : ComputableTidilyInPolyTime f enc encB) (p₁ p₂ : Polynomial ℕ)
+    (hf : ComputableInPolyTime f enc encB) (p₁ p₂ : Polynomial ℕ)
     {V : β × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair encB encBits) encBool) :
+    (hV : ComputableInPolyTime V (encPair encB encBits) encBool) :
     ∃ (P₁ P₂ : Polynomial ℕ) (V' : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V' (encPair enc encBits) encBool ∧
+      ComputableInPolyTime V' (encPair enc encBits) encBool ∧
       (∀ a, p₁.eval (encB (f a)).length ≤ P₁.eval (enc a).length) ∧
       (∀ a, p₂.eval (encB (f a)).length ≤ P₂.eval (enc a).length) ∧
       ∀ (a : α) (u : Fin (P₁.eval (enc a).length) → Bool)
@@ -210,16 +210,16 @@ private theorem exists_truncated_verifier {encB : β ↪ List Bool} {f : α → 
         V' (a, List.ofFn u ++ List.ofFn v) =
           V (f a, (List.ofFn u).take (p₁.eval (encB (f a)).length) ++
             (List.ofFn v).take (p₂.eval (encB (f a)).length)) := by
-  have hp₁ : ComputableTidilyInPolyTime (fun a => p₁.eval (encB (f a)).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval p₁).comp
-      ((ComputableTidilyInPolyTime.encoding_length encB).comp hf)
-  have hp₂ : ComputableTidilyInPolyTime (fun a => p₂.eval (encB (f a)).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval p₂).comp
-      ((ComputableTidilyInPolyTime.encoding_length encB).comp hf)
+  have hp₁ : ComputableInPolyTime (fun a => p₁.eval (encB (f a)).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval p₁).comp
+      ((ComputableInPolyTime.encoding_length encB).comp hf)
+  have hp₂ : ComputableInPolyTime (fun a => p₂.eval (encB (f a)).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval p₂).comp
+      ((ComputableInPolyTime.encoding_length encB).comp hf)
   obtain ⟨P₁, hP₁⟩ := hp₁.polyBounded.exists_polynomial
   obtain ⟨P₂, hP₂⟩ := hp₂.polyBounded.exists_polynomial
-  have hP₁u : ComputableTidilyInPolyTime (fun a => P₁.eval (enc a).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval P₁).comp (ComputableTidilyInPolyTime.encoding_length enc)
+  have hP₁u : ComputableInPolyTime (fun a => P₁.eval (enc a).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval P₁).comp (ComputableInPolyTime.encoding_length enc)
   refine ⟨P₁, P₂, fun x => V (f x.1, x.2.take (p₁.eval (encB (f x.1)).length) ++
       (x.2.drop (P₁.eval (enc x.1).length)).take (p₂.eval (encB (f x.1)).length)),
     hV.comp ((hf.comp (.fst enc encBits)).prod
@@ -237,8 +237,8 @@ theorem PolyTimeReducible.mem_MA {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ MA encB) : A ∈ MA enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, p, V, hV, hVB⟩ := hB
-  obtain ⟨Q, P, V', hV', hQe, hPe, hsplit⟩ := exists_truncated_verifier hf.tidy q p hV.tidy
-  refine ⟨Q, P, V', .of_tidy hV', fun a => ?_⟩
+  obtain ⟨Q, P, V', hV', hQe, hPe, hsplit⟩ := exists_truncated_verifier hf q p hV
+  refine ⟨Q, P, V', hV', fun a => ?_⟩
   dsimp only [BoundedErrorAt]
   simp only [hsplit]
   constructor
@@ -262,8 +262,8 @@ theorem PolyTimeReducible.mem_AM {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ AM encB) : A ∈ AM enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨p, q, V, hV, hVB⟩ := hB
-  obtain ⟨P, Q, V', hV', hPe, hQe, hsplit⟩ := exists_truncated_verifier hf.tidy p q hV.tidy
-  refine ⟨P, Q, V', .of_tidy hV', fun a => ?_⟩
+  obtain ⟨P, Q, V', hV', hPe, hQe, hsplit⟩ := exists_truncated_verifier hf p q hV
+  refine ⟨P, Q, V', hV', fun a => ?_⟩
   have hex (r : Fin (P.eval (enc a).length) → Bool) :
       (∃ y : Fin (Q.eval (enc a).length) → Bool, V (f a, (List.ofFn r).take
           (p.eval (encB (f a)).length) ++ (List.ofFn y).take (q.eval (encB (f a)).length)) = true) ↔

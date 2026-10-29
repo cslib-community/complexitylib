@@ -74,33 +74,24 @@ noncomputable def sampleCounterForger :
       ⟨[2, 1], by decide⟩
     return (0, ⟨[0, 3], by decide⟩, t₀ + t₁)
 
--- Concrete instantiation of one-time polynomial Carter–Wegman security over `ZMod 7` (`ℓ = 2`):
--- forgery probability is at most `3 / 7`.
+-- Concrete instantiation of one-time, two-query adaptive counter, and zero-query polynomial
+-- Carter–Wegman security over `ZMod 7` (`ℓ = 2`).
 example :
     oneTimeGame (PMF.uniformOfFintype (ZMod 7))
       (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
-      sampleOneTimeForger true ≤ (2 + 1) / Fintype.card (ZMod 7) :=
-  oneTimeGame_xpolyHash_le 2 sampleOneTimeForger
-
--- Concrete instantiation of two-query adaptive counter Carter–Wegman security over `ZMod 7`:
--- forgery probability is still at most `3 / 7`.
-example :
+      sampleOneTimeForger true ≤ (2 + 1) / Fintype.card (ZMod 7) ∧
     counterGame (PMF.uniformOfFintype (ZMod 7))
       (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
-      sampleCounterForger true ≤ (2 + 1) / Fintype.card (ZMod 7) :=
-  counterGame_xpolyHash_le 2 sampleCounterForger
-
-example :
+      sampleCounterForger true ≤ (2 + 1) / Fintype.card (ZMod 7) ∧
     counterStrongGame (PMF.uniformOfFintype (ZMod 7))
       (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
-      sampleCounterForger true ≤ (2 + 1) / Fintype.card (ZMod 7) :=
-  counterStrongGame_xpolyHash_le 2 sampleCounterForger
-
--- Concrete instantiation of the zero-query exact `1 / 7` bound over `ZMod 7`.
-example :
+      sampleCounterForger true ≤ (2 + 1) / Fintype.card (ZMod 7) ∧
     zeroQueryGame (PMF.uniformOfFintype (ZMod 7)) (xpolyHash (F := ZMod 7))
       (PMF.pure ([1, 2], 5)) true = (Fintype.card (ZMod 7) : ℝ≥0∞)⁻¹ :=
-  zeroQueryGame_apply_true _ _ _
+  ⟨oneTimeGame_xpolyHash_le 2 sampleOneTimeForger,
+   counterGame_xpolyHash_le 2 sampleCounterForger,
+   counterStrongGame_xpolyHash_le 2 sampleCounterForger,
+   zeroQueryGame_apply_true _ _ _⟩
 
 -- Concrete instantiation of the pseudorandom-pad hybrid bound over `ZMod 7`.
 example (padDist : PMF (ZMod 7)) :
@@ -295,14 +286,12 @@ noncomputable def sampleNonceForger :
 example :
     nonceStrongGame (PMF.uniformOfFintype (ZMod 7))
       (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
-      sampleNonceForger true ≤ (2 + 1) / Fintype.card (ZMod 7) :=
-  nonceStrongGame_xpolyHash_le 2 sampleNonceForger
-
-example :
+      sampleNonceForger true ≤ (2 + 1) / Fintype.card (ZMod 7) ∧
     nonceGame (PMF.uniformOfFintype (ZMod 7))
       (fun k (m : {m : List (ZMod 7) // m.length ≤ 2}) => xpolyHash k m)
       sampleNonceForger true ≤ (2 + 1) / Fintype.card (ZMod 7) :=
-  nonceGame_xpolyHash_le 2 sampleNonceForger
+  ⟨nonceStrongGame_xpolyHash_le 2 sampleNonceForger,
+   nonceGame_xpolyHash_le 2 sampleNonceForger⟩
 
 /-- Concrete two-query adaptive randomized Carter–Wegman forger over `ZMod 7` messages of length at
 most `2`: queries `m₀ = [1, 2]` (receiving `(x₀, t₀)`), queries `m₁ = [2, 1]` (receiving
@@ -487,12 +476,10 @@ example :
 -- End-to-end asymptotic `NonceMACScheme.SUFCMA` and `NonceMACScheme.EUFCMA` checks for
 -- `linearHashNonceMAC`, plus quantitative SUF-CMA bound instantiated on `twoQueryNonceMACForger`.
 example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
-    (linearHashNonceMAC id family computableInPolyTime_id hprf.polyTime).SUFCMA :=
-  hprf.sufCma_linearHashNonceMAC computableInPolyTime_id
-
-example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (linearHashNonceMAC id family computableInPolyTime_id hprf.polyTime).SUFCMA ∧
     (linearHashNonceMAC id family computableInPolyTime_id hprf.polyTime).EUFCMA :=
-  hprf.eufCma_linearHashNonceMAC computableInPolyTime_id
+  ⟨hprf.sufCma_linearHashNonceMAC computableInPolyTime_id,
+   hprf.eufCma_linearHashNonceMAC computableInPolyTime_id⟩
 
 example {family : List Bool → List Bool → List Bool}
     (hfamily : ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)
@@ -575,16 +562,12 @@ example :
 -- checks for `linearHashRandomMAC`, plus quantitative SUF-CMA bound instantiated on
 -- `twoQueryRandomMACForger`.
 example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
-    (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).SUFCMA :=
-  hprf.sufCma_linearHashRandomMAC computableInPolyTime_id
-
-example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
-    (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).EUFCMA :=
-  hprf.eufCma_linearHashRandomMAC computableInPolyTime_id
-
-example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).SUFCMA ∧
+    (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).EUFCMA ∧
     (linearHashRandomMAC id family computableInPolyTime_id hprf.polyTime).OneTimeEUFCMA :=
-  hprf.oneTimeEUFCMA_linearHashRandomMAC computableInPolyTime_id
+  ⟨hprf.sufCma_linearHashRandomMAC computableInPolyTime_id,
+   hprf.eufCma_linearHashRandomMAC computableInPolyTime_id,
+   hprf.oneTimeEUFCMA_linearHashRandomMAC computableInPolyTime_id⟩
 
 example {family : List Bool → List Bool → List Bool}
     (hfamily : ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)

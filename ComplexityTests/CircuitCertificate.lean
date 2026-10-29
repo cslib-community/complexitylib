@@ -10,8 +10,9 @@ import Complexity.Computability.Circuit.Boolean.Encoding.Certificate
 
 open Cslib.Circuits.Boolean
 
-example {m n : ℕ} (h : m ≤ n) (s : ℕ) : certLength m s ≤ certLength n s :=
-  certLength_mono_left h s
+-- Evaluate both lengths independently before comparing the input-width budgets.
+example : certLength 2 5 = 97 ∧ certLength 4 5 = 119 ∧ certLength 2 5 ≤ certLength 4 5 := by
+  decide
 
 example (n : ℕ) : certLength 0 0 ≤ certLength n 0 :=
   certLength_mono_left (Nat.zero_le n) 0

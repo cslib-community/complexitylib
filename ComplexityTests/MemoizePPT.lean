@@ -12,18 +12,8 @@ namespace ComplexityTests.MemoizePPT
 
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
--- Neither key nor value types have an Inhabited instance in this generic client.
-example {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input : α ↪ List Bool}
-    {keyEncoding : Key ↪ List Bool} {valueEncoding : Value ↪ List Bool}
-    {compute : α → Key → ProbComp Value} {query : α → Key} {cache : α → List (Key × Value)}
-    (hcompute : IsPPTOn input valueEncoding (fun a => compute a (query a)))
-    (hquery : ComputableTidilyInPolyTime query input keyEncoding)
-    (hcache : ComputableTidilyInPolyTime cache input
-      (encList (encPair keyEncoding valueEncoding))) :
-    IsPPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
-      (fun a => memoize (compute a) (query a) (cache a)) := by ppt
-
--- The same generic interface also consumes plain query/cache certificates directly.
+-- Neither key nor value types have an Inhabited instance in this generic client, and it consumes
+-- plain query/cache certificates directly.
 example {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input : α ↪ List Bool}
     {keyEncoding : Key ↪ List Bool} {valueEncoding : Value ↪ List Bool}
     {compute : α → Key → ProbComp Value} {query : α → Key} {cache : α → List (Key × Value)}
@@ -99,7 +89,7 @@ example : IsPPTOn (encPair (encPair encBits encUnary) cacheEncoding) cacheEncodi
     ppt
   have hsize : PolyBounded
       (fun p => (encPair (encPair encBits encUnary) cacheEncoding p).length)
-      (fun p => 6 * p.1.1.length + 3) := ComputableTidilyInPolyTime.polyBounded (by fun_prop)
+      (fun p => 6 * p.1.1.length + 3) := ComputableInPolyTime.polyBounded (by fun_prop)
   have hgrowth := fun (p : (List Bool × ℕ) × Cache) => fillCache_growth p.1.1
   ppt
 

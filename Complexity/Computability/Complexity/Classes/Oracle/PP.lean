@@ -118,7 +118,7 @@ theorem P_subset_PWithPPOracle : P enc ⊆ PWithPPOracle enc := by
 theorem PP_subset_PWithPPOracle : PP enc ⊆ PWithPPOracle enc := by
   classical
   intro L hL
-  exact ⟨α, enc, L, hL, .of_query (.of_tidy (ComputableTidilyInPolyTime.encode enc))
+  exact ⟨α, enc, L, hL, .of_query (.of_eq fun _ => rfl)
     fun A hA a => (hA a).symm.trans decide_eq_true_iff.symm⟩
 
 /-- **`P^A ⊆ P^PP` for `A ∈ PP`**: a polynomial-time oracle program relative to a language in
@@ -147,9 +147,8 @@ theorem exists_mem_PP_mem_PWithOracle_image (hL : L ∈ PWithPPOracle enc) :
 theorem setOf_le_mem_PP {f : α → ℕ} (hf : f ∈ SharpP enc) :
     {x : α × ℕ | x.2 ≤ f x.1} ∈ PP (encPair enc encNat) := by
   refine mem_PP_iff_exists_GapP.2 ⟨fun x => ((f x.1 + 1 : ℕ) : ℤ) - (x.2 : ℕ),
-    ⟨_, SharpP.add_one_mem
-      (SharpP.comp_mem hf (.of_tidy (ComputableTidilyInPolyTime.fst enc encNat))), _,
-      mem_SharpP_of_polyTime (.of_tidy (ComputableTidilyInPolyTime.snd enc encNat)), fun _ => rfl⟩,
+    ⟨_, SharpP.add_one_mem (SharpP.comp_mem hf (.fst enc encNat)), _,
+      mem_SharpP_of_polyTime (.snd enc encNat), fun _ => rfl⟩,
     fun x => ?_⟩
   simp only [Set.mem_ofPred_eq, sub_pos, Nat.cast_lt]
   omega
@@ -378,7 +377,7 @@ theorem PWithSharpPOracle_subset_PWithPPOracle : PWithSharpPOracle enc ⊆ PWith
         OracleComp.interpret ProbOracleComp.query (bitQuery r ((), w))) := by
       simp only [bitQuery, OracleComp.interpret_map]
       exact (isOraclePPTOn_search (u := unframe) (N := fun w => r.eval w.length + 1)
-        (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))).map_with hlast
+        (by fun_prop) (by fun_prop)).map_with hlast
     have hhandler : IsOraclePPTOn
         (encPair enc (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)))
         (encPair encBits (encFinEnum Unit))

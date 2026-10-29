@@ -77,8 +77,8 @@ private theorem exists_endomorphismCodes {n : α → ℕ} {F : α × List Bool �
     (hlen : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
     ∃ code : α → CircuitCode, ComputableInPolyTime code enc encCode ∧
       ∀ a u, u.length = n a → evalCircuitCode (n a) (code a) u = F (a, u) := by
-  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes (hn) (hn)
-    (hF) hlen
+  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes hn hn
+    hF hlen
   refine ⟨code, hcode, fun a u hu => ?_⟩
   rw [evalCircuitCode, hsem a u hu, padBits_of_length_eq (hlen a u hu)]
 
@@ -167,7 +167,7 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
   have hword : ComputableInPolyTime
       (fun p : α × List Bool => binaryWord (m p.1) (C p)) (encPair enc encBits) encBits := by
     have hbits := (ComputableInPolyTime.of_eq (f := Nat.bits)
-      (encIn := encNat) (encOut := encBits) fun _ => rfl).comp (hC)
+      (encIn := encNat) (encOut := encBits) fun _ => rfl).comp hC
     have hwidth := (hm).comp
       (ComputableInPolyTime.fst enc encBits)
     have hpadding := ComputableInPolyTime.unary_sub.comp
@@ -186,8 +186,8 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
       exact hb
     simp only [binaryWord, List.length_append, List.length_replicate, List.length_reverse]
     omega
-  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes (hn) (hm)
-    (hword) hword_len
+  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes hn hm
+    hword hword_len
   refine ⟨code, hcode, fun a u hu => ?_⟩
   rw [hsem a u hu, binaryValue_binaryWord]
 
