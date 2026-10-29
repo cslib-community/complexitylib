@@ -36,7 +36,7 @@ section Captured
 
 variable {V Input : Type} [DecidableEq V] {enc : V ↪ List Bool}
   {input : Input ↪ List Bool} {formula : Input → CNF V}
-  (hformula : ComputableTidilyInPolyTime formula input
+  (hformula : ComputableInPolyTime formula input
     (encList (encList (encPair enc encBool))))
 
 example : ComputableInPolyTime (fun x => gapGraph (formula x)) input

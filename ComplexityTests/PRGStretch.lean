@@ -24,7 +24,7 @@ example : PRGStretch.stretch expand (fun _ => 2) [] = [false, false] := by decid
 example (seed : List Bool) : PRGStretch.stretch expand (fun _ => 0) seed = seed := rfl
 
 -- Efficiency works uniformly on arbitrary initial words, with the generator capturing a bit.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (ℕ × Bool) × List Bool =>
       PRGStretch.iterate (fun seed => seed ++ [p.1.2]) p.1.1 (p.1.1 ^ 2 + 1) p.2)
     (encPair (encPair encUnary encBool) encBits) encBits := by polytime
@@ -60,19 +60,22 @@ example (generator : List Bool → List Bool) (adversary : Distinguisher) (n : �
     PRGStretch.advantage_eq generator (fun _ => 2) adversary n
 
 -- A captured loop may add an input-dependent block at each iteration.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun word : List Bool => (fun state => state ++ word)^[word.length] []) encBits encBits := by
+  apply ComputableInPolyTime.of_tidy
   apply ComputableTidilyInPolyTime.iterateWith_of_bounded_growth
     (par := id) (step := fun word state => state ++ word) (growth := List.length)
     (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
-    (by simpa using ComputableTidilyInPolyTime.id'.polyBounded_length (encIn := encBits))
+    (by
+      have h : ComputableInPolyTime id encBits encBits := by fun_prop
+      simpa using h.polyBounded_length)
   intro word state
   simp
 
 -- Arbitrary iteration is deliberately not inferred from the step's polynomial-time certificate.
 example : True := by
   fail_if_success
-    have : ComputableTidilyInPolyTime
+    have : ComputableInPolyTime
         (fun word : List Bool => (fun state => state ++ state)^[word.length] [true])
         encBits encBits := by polytime
   trivial
@@ -239,11 +242,11 @@ example (count : ℕ → ℕ) (hcount : ComputableInDegree count encUnary encUna
     have : ComputableInDegree (PRGStretch.stretch expand count) encBits encBits 3 1 := h.mono
   exact h.mono
 
--- Recover `ComputableTidilyInPolyTime` directly from the quantitative stretch theorem.
-example : ComputableTidilyInPolyTime
+-- Recover `ComputableInPolyTime` directly from the quantitative stretch theorem.
+example : ComputableInPolyTime
     (PRGStretch.stretch expand (fun n => n * n + 1)) encBits encBits :=
-  (PRGStretch.polyTime_stretch_of_length_eq length_expand
-    (.of_tidy (by unfold expand; fun_prop)) (.of_tidy (by fun_prop))).tidy
+  PRGStretch.polyTime_stretch_of_length_eq length_expand
+    (by unfold expand; fun_prop) (by fun_prop)
 
 -- Quantitative captured-parameter certificate for `PRGStretch.iterate`.
 example : ∃ (tGen : Bool × List Bool → ℕ) (csG c : ℕ),

@@ -19,24 +19,18 @@ namespace ComplexityTests.FormulaMagnification
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Turing.MultiTapeTM
 
--- Encoded bit length for n = 1, q = 2 samples, threshold s = 1 is 4*1 + 3 + 2*(8*1 + 10) + 1 = 44.
-example : SuccinctMCSP.ofFunctionEncLength 1 2 1 = 44 := by decide
-
--- `succinctWord 1 Finset.univ 1` has length 44 and every coordinate formula has leafSize ≤ 1.
-example : (succinctWord 1 Finset.univ 1).length = 44 := by decide
-
-example : ((succinctWord 1 Finset.univ 1).map Formula.leafSize).all (· ≤ 1) = true := by decide
-
--- Concrete evaluation of `succinctWord` on the 1-input negation truth table `![true, false]`.
+-- Encoded bit length 44, `succinctWord` length and leafSize ≤ 1, evaluation on `![true, false]`,
+-- and Adleman's exponential inequality.
 example :
+    SuccinctMCSP.ofFunctionEncLength 1 2 1 = 44 ∧
+    (succinctWord 1 Finset.univ 1).length = 44 ∧
+    ((succinctWord 1 Finset.univ 1).map Formula.leafSize).all (· ≤ 1) = true ∧
     evalWord (succinctWord 1 Finset.univ 1) ![true, false] =
       SuccinctMCSP.enc
         (SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable 1).symm ![true, false])
-          Finset.univ 1) := by
+          Finset.univ 1) ∧
+    2 ^ 2 * (3 - 1) ^ (3 * (2 + 1)) < 3 ^ (3 * (2 + 1)) := by
   decide
-
--- Concrete instances of the Adleman exponential inequality `two_pow_mul_pred_pow_lt`.
-example : 2 ^ 2 * (3 - 1) ^ (3 * (2 + 1)) < 3 ^ (3 * (2 + 1)) := by decide
 
 -- Non-vacuity of `exists_seed_tuple_of_one_sided_error` on `Ω = Bool`, `N = 1`, `k = 2`.
 example :
@@ -102,54 +96,32 @@ example :
         (Finset.mem_range.mpr (Nat.lt_succ_of_le hm)))
   exact ⟨F, hleaf, hyes, hno ![true, true] const_true_mem_approxMCSP_noSet⟩
 
--- Concrete check of `PartialMCSP.Instance.restrictTable` on `![true, false]` and `{![false]}`.
-example :
-    (PartialMCSP.Instance.restrictTable (n := 1) ![true, false] {![false]} 1).partialFunction
-      ![false] = some true := by
-  decide
-
-example :
-    (PartialMCSP.Instance.restrictTable (n := 1) ![true, false] {![false]} 1).partialFunction
-      ![true] = none := by
-  decide
-
--- Concrete checks for `FormulaSIZE`, `FormulaPoly`, `FormulaSIZEOn`, and `FormulaPolyOn`.
-example : (0 : Language Bool) ∈ FormulaPoly := FormulaPoly.zero_mem
-
-example : (⊤ : Language Bool) ∈ FormulaPoly := FormulaPoly.top_mem
-
-example :
-    ((0 : Language Bool) : Set (List Bool)) ∈ FormulaPolyOn encBits :=
-  mem_FormulaPolyOn_encBits_iff.mpr FormulaPoly.zero_mem
-
--- Concrete check of `card_filter_agreesOn_eq_two_pow`: on `n = 1` with sample set `{![false]}`,
--- exactly `2 ^ (2 ^ 1 - 1) = 2` of the 4 truth tables agree with `fun x => x 0` on `{![false]}`.
-example :
-    (Finset.univ.filter fun T : BitString (2 ^ 1) =>
-      ∀ y ∈ ({![false]} : Finset (BitString 1)),
-        (MCSP.truthTable 1).symm T y = y 0).card = 2 := by
-  simpa using card_filter_agreesOn_eq_two_pow 1 {![false]} (fun x => x 0)
-
--- Concrete check of Lemma 26 (`card_filter_ofFunction_mem_succinctMCSP_le`) on `n = 1`, `s = 0`,
--- `S = Finset.univ`: at most `(computableFunctions 1 0).card * 2 ^ 0 ≤ 2` truth tables are in
--- `SuccinctMCSP` at threshold `0`.
+-- Concrete checks of `PartialMCSP.Instance.restrictTable`, `FormulaPoly`, `FormulaPolyOn`,
+-- `card_filter_agreesOn_eq_two_pow`, `computableFunctionsLogBound`, and Lemma 26.
 open Classical in
 example :
+    (PartialMCSP.Instance.restrictTable (n := 1) ![true, false] {![false]} 1).partialFunction
+      ![false] = some true ∧
+    (PartialMCSP.Instance.restrictTable (n := 1) ![true, false] {![false]} 1).partialFunction
+      ![true] = none ∧
+    (0 : Language Bool) ∈ FormulaPoly ∧
+    (⊤ : Language Bool) ∈ FormulaPoly ∧
+    ((0 : Language Bool) : Set (List Bool)) ∈ FormulaPolyOn encBits ∧
+    (Finset.univ.filter fun T : BitString (2 ^ 1) =>
+      ∀ y ∈ ({![false]} : Finset (BitString 1)),
+        (MCSP.truthTable 1).symm T y = y 0).card = 2 ∧
     (Finset.univ.filter fun T : BitString (2 ^ 1) =>
       SuccinctMCSP.Instance.ofFunction
-        ((MCSP.truthTable 1).symm T) Finset.univ 0 ∈ SuccinctMCSP).card ≤ 2 := by
+        ((MCSP.truthTable 1).symm T) Finset.univ 0 ∈ SuccinctMCSP).card ≤ 2 ∧
+    computableFunctionsLogBound 2 3 = 36 ∧
+    computableFunctionsLogBound 4 0 + 1 ≤ 2 ^ 4 := by
   have hle := card_filter_ofFunction_mem_succinctMCSP_le 1 Finset.univ 0
   have hcard : (Finset.univ : Finset (BitString 1)).card = 2 ^ 1 := by simp [BitString]
   rw [hcard, Nat.sub_self, pow_zero, mul_one] at hle
-  exact hle.trans card_computableFunctions_one_zero_le
-
--- Concrete value check of `computableFunctionsLogBound` at `n = 2, s = 3`
--- (`(3 + 1) * (2 * 3 + 3) = 36`).
-example : computableFunctionsLogBound 2 3 = 36 := by decide
-
--- Genuine non-vacuity check for `exists_formula_zero_error_average_case_of_succinctMCSP` at
--- `n = 4, s = 0, r = 1`, where `computableFunctionsLogBound 4 0 + 1 = 9 + 1 = 10 ≤ 16 = 2 ^ 4`.
-example : computableFunctionsLogBound 4 0 + 1 ≤ 2 ^ 4 := by decide
+  exact ⟨by decide, by decide, FormulaPoly.zero_mem, FormulaPoly.top_mem,
+    mem_FormulaPolyOn_encBits_iff.mpr FormulaPoly.zero_mem,
+    by simpa using card_filter_agreesOn_eq_two_pow 1 {![false]} (fun x => x 0),
+    hle.trans card_computableFunctions_one_zero_le, by decide, by decide⟩
 
 open Classical in
 example :

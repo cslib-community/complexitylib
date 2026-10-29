@@ -44,34 +44,30 @@ private theorem degree_andPair : degree andPair = 2 := by
     change #({0, 1} : Finset (Fin 3)) ≤ degree andPair at h
     simpa using h
 
-/-- There is a sensitive pair at the all-false input but no sensitive singleton. -/
-example : sensitivityAt andPair (fun _ => false) = 0 ∧
-    blockSensitivityAt andPair (fun _ => false) = 1 ∧
-    IsSensitiveBlock andPair (fun _ => false) {0, 1} := by
-  decide
-
-/-- The sensitive-block conclusion holds simultaneously at every input for a proper subset of
-the three input coordinates. -/
-example : ∃ S : Finset (Fin 3), #S = 2 ∧ ∀ x, ∃ B, B ⊆ S ∧ IsSensitiveBlock andPair x B := by
-  simpa only [degree_andPair] using
-    exists_card_eq_degree_forall_exists_isSensitiveBlock_subset andPair
-      (by rw [degree_andPair]; decide)
-
-/-- The native product bound uses the exact computed block sensitivity. -/
-example : DecisionTree.complexity andPair ≤ 4 := by
-  have h := DecisionTree.complexity_le_degree_mul_blockSensitivity andPair
-  rwa [degree_andPair, show blockSensitivity andPair = 2 by decide] at h
-
-/-- Irrelevant inputs do not weaken the degree bound; `16` is smaller than the input length. -/
-example : DecisionTree.complexity (fun x : BitString 100 => x 0 && x 1) ≤ 16 :=
-  (DecisionTree.complexity_le_two_mul_degree_pow_three _).trans
-    (Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left (degree_and_le_two 0 1) 3))
-
-/-- The bound also covers constants, including the zero-coordinate cube. -/
-example (n : ℕ) (b : Bool) : DecisionTree.complexity (fun _ : BitString n => b) = 0 := by
-  have hdeg : degree (fun _ : BitString n => b) = 0 :=
-    Nat.eq_zero_of_le_zero (degree_le_iff_mem_lowDegree.2 (const_mem_lowDegree 0 _))
-  have h := DecisionTree.complexity_le_two_mul_degree_pow_three (fun _ : BitString n => b)
-  exact Nat.eq_zero_of_le_zero (by simpa [hdeg] using h)
+/-- Sensitive block vs. singleton at the all-false input, simultaneous proper-subset sensitive
+blocks, the native `deg · bs` product bound (`D ≤ 4`), the cubic bound with irrelevant inputs
+(`D ≤ 16`), and the zero-degree constant case. -/
+example (n : ℕ) (b : Bool) :
+    (sensitivityAt andPair (fun _ => false) = 0 ∧
+      blockSensitivityAt andPair (fun _ => false) = 1 ∧
+      IsSensitiveBlock andPair (fun _ => false) {0, 1}) ∧
+    (∃ S : Finset (Fin 3), #S = 2 ∧ ∀ x, ∃ B, B ⊆ S ∧ IsSensitiveBlock andPair x B) ∧
+    DecisionTree.complexity andPair ≤ 4 ∧
+    DecisionTree.complexity (fun x : BitString 100 => x 0 && x 1) ≤ 16 ∧
+    DecisionTree.complexity (fun _ : BitString n => b) = 0 := by
+  refine ⟨by decide,
+    by simpa only [degree_andPair] using
+      exists_card_eq_degree_forall_exists_isSensitiveBlock_subset andPair
+        (by rw [degree_andPair]; decide),
+    ?_,
+    (DecisionTree.complexity_le_two_mul_degree_pow_three _).trans
+      (Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left (degree_and_le_two 0 1) 3)),
+    ?_⟩
+  · have h := DecisionTree.complexity_le_degree_mul_blockSensitivity andPair
+    rwa [degree_andPair, show blockSensitivity andPair = 2 by decide] at h
+  · have hdeg : degree (fun _ : BitString n => b) = 0 :=
+      Nat.eq_zero_of_le_zero (degree_le_iff_mem_lowDegree.2 (const_mem_lowDegree 0 _))
+    have h := DecisionTree.complexity_le_two_mul_degree_pow_three (fun _ : BitString n => b)
+    exact Nat.eq_zero_of_le_zero (by simpa [hdeg] using h)
 
 end ComplexityTests.QueryComplexity.Midrijanis

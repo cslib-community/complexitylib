@@ -34,13 +34,16 @@ example : lyubashevskyExtractList ((2, 0), (([], none), ([], none))) = [0, 0] :=
 
 example : lyubashevskyExtractWord [] = encList encIntBin [] := by decide +kernel
 
-example (input : LyubashevskyExtractInput) :
-    lyubashevskyExtractWord (encLyubashevskyExtractInput input) =
-      encList encIntBin (lyubashevskyExtractList input) := lyubashevskyExtractWord_enc input
-
--- This is one word function for all dimensions and magnitudes, rather than fixed-size machines.
-example : ComputableInPolyTime lyubashevskyExtractWord encBits encBits :=
-  computableInPolyTime_lyubashevskyExtractWord
+-- Round-trip encoding and polynomial-time projection composition on a concrete input.
+example :
+    lyubashevskyExtractWord (encLyubashevskyExtractInput
+      ((1, 1), (([true], some [-2]), ([false], some [3])))) =
+      encList encIntBin (lyubashevskyExtractList
+        ((1, 1), (([true], some [-2]), ([false], some [3])))) ∧
+    ComputableInPolyTime (lyubashevskyExtractWord ∘ fun p : List Bool × List Bool => p.1)
+      (encPair encBits encBits) encBits :=
+  ⟨lyubashevskyExtractWord_enc ((1, 1), (([true], some [-2]), ([false], some [3]))),
+   computableInPolyTime_lyubashevskyExtractWord.comp (by polytime)⟩
 
 -- The actual typed protocol extractor has the same negative response / positive challenge tail.
 example : List.ofFn (fun i : Fin 3 =>

@@ -16,7 +16,7 @@ open Turing Turing.MultiTapeTM Turing.MultiTapeMachine Cslib.Turing
 private abbrev Config := FiniteConfig 2 Bool (Fin 2) (Fin 2)
 
 -- Initialization, reply installation, local actions and projections compose as ordinary code.
-example (action : Action 2 Bool (Fin 2)) : ComputableTidilyInPolyTime
+example (action : Action 2 Bool (Fin 2)) : ComputableInPolyTime
     (fun pair : Config × List Bool =>
       let next := pair.1.receive 0 1 pair.2
       ((next.step action (fun _ => none) (fun _ => .pos)).tapes.output,
@@ -24,38 +24,38 @@ example (action : Action 2 Bool (Fin 2)) : ComputableTidilyInPolyTime
     (encPair encFiniteConfig encBits) (encPair encBits (encOption encBool)) := by fun_prop
 
 -- Structure update syntax exposes the same certified constructor.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun cfg : FiniteCfg 2 Bool (Fin 2) =>
       { cfg with output := cfg.output ++ cfg.input }) encFiniteCfg encFiniteCfg := by fun_prop
 
 -- Native observation and state guards do not expose the tuple encoding to clients.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun cfg : Config => if cfg.tapes.state = none then cfg.tapes.output else cfg.tapes.input)
-    encFiniteConfig encBits := by polytime
+    encFiniteConfig encBits := .of_tidy (by polytime)
 
 -- Explicit lambdas, named projections and a captured configuration have the same certificates.
 example {α : Type} (input : α ↪ List Bool) (cfg : α → Config)
-    (hcfg : ComputableTidilyInPolyTime cfg input encFiniteConfig) :
-    ComputableTidilyInPolyTime (fun a => (cfg a).tapes.inputSymbol) input
+    (hcfg : ComputableInPolyTime cfg input encFiniteConfig) :
+    ComputableInPolyTime (fun a => (cfg a).tapes.inputSymbol) input
       (encFinEnum (Option Bool)) := by fun_prop
 
 -- A different input encoding uses its existing conversion certificate; no program rewrite.
-example : ComputableTidilyInPolyTime (FiniteConfig.init (k := 2) (Oracle := Fin 2) (0 : Fin 2))
+example : ComputableInPolyTime (FiniteConfig.init (k := 2) (Oracle := Fin 2) (0 : Fin 2))
     (encList encBool) encFiniteConfig := by fun_prop
 
 -- Boundary positions remain valid even with no input bits or work tapes.
-example (action : Action 0 Bool Empty) : ComputableTidilyInPolyTime
+example (action : Action 0 Bool Empty) : ComputableInPolyTime
     (fun cfg : FiniteCfg 0 Bool Empty => (cfg.step action).inputPos.val)
     encFiniteCfg encUnary := by fun_prop
 
 -- The full configuration may have no oracle channels.
-example : ComputableTidilyInPolyTime (FiniteConfig.init (k := 0) (Oracle := Empty) ())
+example : ComputableInPolyTime (FiniteConfig.init (k := 0) (Oracle := Empty) ())
     encBits encFiniteConfig := by fun_prop
 
 -- Installing a reply of arbitrary length is charged to the encoded input of the operation.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun pair : Config × List Bool => pair.1.receive 1 0 (pair.2 ++ pair.2))
-    (encPair encFiniteConfig encBits) encFiniteConfig := by polytime
+    (encPair encFiniteConfig encBits) encFiniteConfig := .of_tidy (by polytime)
 
 -- One constant covers every input and every reply, including replies longer than the clock.
 example : ∃ c : ℕ, ∀ word answer : List Bool,

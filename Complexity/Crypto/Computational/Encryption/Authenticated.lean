@@ -428,30 +428,30 @@ def detCPAAdversary : OracleDistinguisher :=
 
 /-- `detCPAAdversary` is uniformly strict oracle-PPT (`IsOraclePPT encBool`). -/
 theorem isOraclePPT_detCPAAdversary : IsOraclePPT encBool detCPAAdversary := by
-  have hq1 : ComputableTidilyInPolyTime
+  have hq1 : ComputableInPolyTime
       (fun p : ℕ × List Bool =>
         encPair encBits encBits (List.replicate p.1 false, List.replicate p.1 true))
       (encPair encUnary encBits) encBits := by
     polytime
-  have hlim1 : ComputableTidilyInPolyTime
+  have hlim1 : ComputableInPolyTime
       (fun p : ℕ × List Bool => p.1) (encPair encUnary encBits) encUnary := by
     fun_prop
-  have hq2 : ComputableTidilyInPolyTime
+  have hq2 : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool =>
         encPair encBits encBits (List.replicate p.1.1 false, List.replicate p.1.1 false))
       (encPair (encPair encUnary encBits) encBits) encBits := by
     polytime
-  have hlim2 : ComputableTidilyInPolyTime
+  have hlim2 : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool => p.1.1)
       (encPair (encPair encUnary encBits) encBits) encUnary := by
     fun_prop
-  have hout : ComputableTidilyInPolyTime
+  have hout : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × List Bool) × List Bool => p.1.2 == p.2)
       (encPair (encPair (encPair encUnary encBits) encBits) encBits) encBool := by
     polytime
   unfold detCPAAdversary
-  exact ((IsOraclePPTOn.query_take () hq1 hlim1).bind_with
-    ((IsOraclePPTOn.query_take () hq2 hlim2).bind_with
+  exact ((IsOraclePPTOn.query_take' () hq1 hlim1).bind_with
+    ((IsOraclePPTOn.query_take' () hq2 hlim2).bind_with
       hout.isOraclePPTOn)).isOraclePPT
 
 /-- In Experiment `false`, `detCPAAdversary` receives two encryptions of `0^n`; when all supported
@@ -1234,115 +1234,114 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
   let ECaller := encPair (encPair encUnary encBits) encUnary
   let EState := encPair encUnary (encPair encBool encBits)
   let EIn := encPair ECaller (encPair (encPair encBool encBits) EState)
-  have hcaptured : ComputableTidilyInPolyTime
+  have hcaptured : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         p.2.2.2.1)
       EIn encBool := by
     dsimp only [EIn, ECaller, EState]; fun_prop
-  have hremZero : ComputableTidilyInPolyTime
+  have hremZero : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         p.2.2.1 == 0)
-      EIn encBool :=
-    ComputableTidilyInPolyTime.unary_beq (by dsimp only [EIn, ECaller, EState]; fun_prop)
-      (ComputableTidilyInPolyTime.const 0)
-  have hop : ComputableTidilyInPolyTime
+      EIn encBool := by
+    dsimp only [EIn, ECaller, EState]; polytime
+  have hop : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         p.2.1.1)
       EIn encBool := by
     dsimp only [EIn, ECaller, EState]; fun_prop
-  have hencCond : ComputableTidilyInPolyTime
+  have hencCond : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         ((unframe p.2.1.2).length == p.1.1.1) && ((dropFrame p.2.1.2).length == p.1.1.1))
       EIn encBool := by
     dsimp only [EIn, ECaller, EState]; polytime
-  have hm0 : ComputableTidilyInPolyTime
+  have hm0 : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         unframe p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.unframe.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
-  have hm1 : ComputableTidilyInPolyTime
+    ComputableInPolyTime.unframe.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
+  have hm1 : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         dropFrame p.2.1.2)
       EIn encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
-  have hmsg : ComputableTidilyInPolyTime
+    ComputableInPolyTime.dropFrame.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
+  have hmsg : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         if bit then dropFrame p.2.1.2 else unframe p.2.1.2)
       EIn encBits := by
     cases bit <;> simpa using (by first | exact hm1 | exact hm0)
-  have hlimit : ComputableTidilyInPolyTime
+  have hlimit : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         ctBound p.1.1.1)
       EIn encUnary :=
-    hctBound.tidy.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
-  have hdecRem : ComputableTidilyInPolyTime
+    hctBound.comp (by dsimp only [EIn, ECaller, EState]; fun_prop)
+  have hdecRem : ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         (p.2.2.1 - 1, (false, ([] : List Bool))))
       EIn EState := by
     dsimp only [EIn, ECaller, EState]
-    exact ComputableTidilyInPolyTime.prod
-      (ComputableTidilyInPolyTime.unary_sub.comp
-        (ComputableTidilyInPolyTime.prod (by fun_prop) (ComputableTidilyInPolyTime.const 1)))
-      (ComputableTidilyInPolyTime.const (false, []))
+    exact ComputableInPolyTime.prod
+      (ComputableInPolyTime.unary_sub.comp
+        (ComputableInPolyTime.prod (by fun_prop) (ComputableInPolyTime.const 1)))
+      (ComputableInPolyTime.const (false, []))
   have hbranchCaptured : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         pure ([], (p.2.2.1, (true, p.2.2.2.2)))) := by
     dsimp only [EIn, ECaller, EState]
-    exact (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const [])
-      (ComputableTidilyInPolyTime.prod (by fun_prop)
-        (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const true)
-          (by fun_prop)))).isPPTOn.isOraclePPTOn
+    exact (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
+      (ComputableInPolyTime.prod (by fun_prop)
+        (ComputableInPolyTime.prod (ComputableInPolyTime.const true)
+          (by fun_prop)))).isOraclePPTOn
   have hbranchZeroDec : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         pure ([], (0, (true, p.2.1.2)))) := by
     dsimp only [EIn, ECaller, EState]
-    exact (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const [])
-      (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const 0)
-        (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const true)
-          (by fun_prop)))).isPPTOn.isOraclePPTOn
+    exact (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
+      (ComputableInPolyTime.prod (ComputableInPolyTime.const 0)
+        (ComputableInPolyTime.prod (ComputableInPolyTime.const true)
+          (by fun_prop)))).isOraclePPTOn
   have hbranchZeroEnc : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
       (fun _ => pure ([], (0, (true, ([] : List Bool))))) :=
-    (ComputableTidilyInPolyTime.const ([], (0, (true, [])))).isPPTOn.isOraclePPTOn
+    (ComputableInPolyTime.const ([], (0, (true, [])))).isOraclePPTOn
   have hbranchStepNo : IsOraclePPTOn (Operation := Unit) EIn (encPair encBits EState)
       (fun p => pure ([], (p.2.2.1 - 1, (false, ([] : List Bool))))) :=
-    (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const [])
-      hdecRem).isPPTOn.isOraclePPTOn
+    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
+      hdecRem).isOraclePPTOn
   have hbranchStepQuery : IsOraclePPTOn EIn (encPair encBits EState)
       (fun p : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         (fun ct => (ct, (p.2.2.1 - 1, (false, ([] : List Bool))))) <$>
           (List.take (ctBound p.1.1.1) <$>
             ProbOracleComp.query ((), if bit then dropFrame p.2.1.2 else unframe p.2.1.2))) :=
-    (IsOraclePPTOn.query_take (Operation := Unit) () hmsg hlimit).map_with
-      (ComputableTidilyInPolyTime.prod (by fun_prop)
-        (hdecRem.comp (ComputableTidilyInPolyTime.fst EIn encBits)))
+    (IsOraclePPTOn.query_take' (Operation := Unit) () hmsg hlimit).map_with'
+      (ComputableInPolyTime.prod (by fun_prop)
+        (hdecRem.comp (ComputableInPolyTime.fst EIn encBits)))
   have hhandler : IsOraclePPTOn EIn (encPair encBits EState)
       (fun pair : ((ℕ × List Bool) × ℕ) × ((Bool × List Bool) × (ℕ × (Bool × List Bool))) =>
         ccaToCIHandler pair.1.1.1 (ctBound pair.1.1.1) bit pair.2.1 pair.2.2) := by
     unfold ccaToCIHandler
-    exact IsOraclePPTOn.cond hcaptured hbranchCaptured
-      (IsOraclePPTOn.cond hremZero
-        (IsOraclePPTOn.cond hop hbranchZeroDec hbranchZeroEnc)
-        (IsOraclePPTOn.cond hop hbranchStepNo
-          (IsOraclePPTOn.cond hencCond hbranchStepQuery hbranchStepNo)))
-  have hres : ComputableTidilyInPolyTime
+    exact IsOraclePPTOn.cond' hcaptured hbranchCaptured
+      (IsOraclePPTOn.cond' hremZero
+        (IsOraclePPTOn.cond' hop hbranchZeroDec hbranchZeroEnc)
+        (IsOraclePPTOn.cond' hop hbranchStepNo
+          (IsOraclePPTOn.cond' hencCond hbranchStepQuery hbranchStepNo)))
+  have hres : ComputableInPolyTime
       (fun pair : ((ℕ × List Bool) × ℕ) × List Bool => ctBound pair.1.1.1 + pair.2.length + 4)
       (encPair ECaller encBits) encUnary := by
     dsimp only [ECaller]
-    have hct : ComputableTidilyInPolyTime
+    have hct : ComputableInPolyTime
         (fun pair : ((ℕ × List Bool) × ℕ) × List Bool => ctBound pair.1.1.1)
         (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encUnary :=
-      hctBound.tidy.comp (by fun_prop)
-    have hqlen : ComputableTidilyInPolyTime
+      hctBound.comp (by fun_prop)
+    have hqlen : ComputableInPolyTime
         (fun pair : ((ℕ × List Bool) × ℕ) × List Bool => pair.2.length + 4)
         (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encUnary := by
       polytime
-    exact ComputableTidilyInPolyTime.unary_add.comp (ComputableTidilyInPolyTime.prod hct hqlen)
-  have hinit : ComputableTidilyInPolyTime
+    exact ComputableInPolyTime.unary_add.comp (ComputableInPolyTime.prod hct hqlen)
+  have hinit : ComputableInPolyTime
       (fun caller : (ℕ × List Bool) × ℕ => (caller.2, (false, ([] : List Bool))))
       ECaller EState := by
     dsimp only [ECaller, EState]
-    exact ComputableTidilyInPolyTime.prod (by fun_prop)
-      (ComputableTidilyInPolyTime.const (false, []))
+    exact ComputableInPolyTime.prod (by fun_prop)
+      (ComputableInPolyTime.const (false, []))
   have hrun : IsOraclePPTOn ECaller (encPair encBool EState)
       (fun caller : (ℕ × List Bool) × ℕ =>
         (OracleComp.interpret
@@ -1350,7 +1349,7 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
             (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
             (ccaToCIHandler caller.1.1 (ctBound caller.1.1) bit))
           (adversary caller.1.1 [])).run (caller.2, (false, []))) := by
-    apply hadversary.run_interpret_preprocess_open
+    apply hadversary.run_interpret_preprocess_open'
       (prepare := fun caller : (ℕ × List Bool) × ℕ => (caller.1.1, ([] : List Bool)))
       (initial := fun caller : (ℕ × List Bool) × ℕ => (caller.2, (false, ([] : List Bool))))
       (resources := fun caller query => ctBound caller.1.1 + query.length + 4)
@@ -1403,12 +1402,12 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
       (fun caller : ℕ × List Bool =>
         ProbOracleComp.sample (ProbComp.sampleDyadicIndex (Q caller.1))) :=
     (isPPTOn_sampleDyadicIndex (hQ.comp (by fun_prop))).isOraclePPTOn (Operation := Unit)
-  have hpost : ComputableTidilyInPolyTime
+  have hpost : ComputableInPolyTime
       (fun out : Bool × (ℕ × (Bool × List Bool)) => out.2.2.2)
       (encPair encBool EState) encBits := by
     dsimp only [EState]; fun_prop
   unfold ccaToCIAdversary ccaToCIAtIndexAdversary
-  simpa only [bind_pure_comp] using (hsample.bind_with (hrun.map hpost)).isOraclePPT
+  simpa only [bind_pure_comp] using (hsample.bind_with (hrun.map' hpost)).isOraclePPT
 
 /-- `ccaToCIHiddenBitAdversary` preserves strict oracle-PPT admissibility (`IsOraclePPT`). -/
 theorem isOraclePPT_ccaToCIHiddenBitAdversary {ctBound Q : ℕ → ℕ}
@@ -1420,10 +1419,10 @@ theorem isOraclePPT_ccaToCIHiddenBitAdversary {ctBound Q : ℕ → ℕ}
       (fun _ : ℕ × List Bool => ProbOracleComp.sample (BitString.sampleList 1)) :=
     (ComputableInPolyTime.sampleList
       (ComputableInPolyTime.const 1)).isOraclePPTOn (Operation := Unit)
-  have hcond : ComputableTidilyInPolyTime
+  have hcond : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × List Bool => pair.2 == [true])
       (encPair (encPair encUnary encBits) encBits) encBool :=
-    ComputableTidilyInPolyTime.beq (by fun_prop) (ComputableTidilyInPolyTime.const [true])
+    ComputableInPolyTime.beq (by fun_prop) (ComputableInPolyTime.const [true])
   have htrue : IsOraclePPTOn (encPair (encPair encUnary encBits) encBits) encBits
       (fun pair : (ℕ × List Bool) × List Bool =>
         ccaToCIAdversary ctBound Q true adversary pair.1.1 pair.1.2) :=
@@ -1433,7 +1432,7 @@ theorem isOraclePPT_ccaToCIHiddenBitAdversary {ctBound Q : ℕ → ℕ}
         ccaToCIAdversary ctBound Q false adversary pair.1.1 pair.1.2) :=
     (isOraclePPT_ccaToCIAdversary hctBound hQ false hadversary).on.preprocess (by fun_prop)
   unfold ccaToCIHiddenBitAdversary
-  exact (hsample.bind_with (IsOraclePPTOn.cond hcond htrue hfalse)).isOraclePPT
+  exact (hsample.bind_with (IsOraclePPTOn.cond' hcond htrue hfalse)).isOraclePPT
 
 /-! #### Difference-Lemma Hop and Query-Budget Induction for Theorem 9.1 -/
 

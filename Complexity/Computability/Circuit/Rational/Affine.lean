@@ -148,7 +148,7 @@ therefore also proceed by induction on the native constructors. -/
 
 /-- The realization of a formula has one more row than the formula has nodes. -/
 theorem card_index (f : Formula n) : Fintype.card f.Index = f.nodeCount + 1 := by
-  rw [nodeCount]
+  rw [Circuits.Formula.nodeCount]
   induction f with
   | input i => simp [Index]
   | gate op args ih =>

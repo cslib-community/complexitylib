@@ -55,27 +55,19 @@ private theorem withUnused_inputGates : inputGates withUnused = {0} := by
     simp only [hz, ne_eq, not_true_eq_false, exists_false, Finset.mem_singleton]
     decide
 
-example (readout : (Fin 3 → Bool) → Bool) :
-    (blockDecomposition withUnused readout).cost = 4 := by
-  simp [cost_blockDecomposition, withUnused_inputGates]
-
-example (readout : (Fin 3 → Bool) → Bool) :
-    (blockDecomposition withUnused readout).kind 0 = .oneDim 1 ∧
+example (readout : (Fin 3 → Bool) → Bool) (x : Fin 1 → Bool) :
+    (blockDecomposition withUnused readout).cost = 4 ∧
+    ((blockDecomposition withUnused readout).kind 0 = .oneDim 1 ∧
       (blockDecomposition withUnused readout).kind 1 = .oneDim 0 ∧
-      (blockDecomposition withUnused readout).kind 2 = .oneDim 0 := by
-  simp [blockDecomposition, withUnused_inputGates]
-
-example (x : Fin 1 → Bool) :
-    (blockDecomposition withUnused (fun z => z 1)).history 2 x 1 = !x 0 := by
-  change (negatePrior.gate _).eval interpretation x (Fin.castSucc 1) = !x 0
-  rw [Program.eval_gate_castSucc]
-  exact negatePrior_eval x
-
-example (x : Fin 1 → Bool) :
+      (blockDecomposition withUnused readout).kind 2 = .oneDim 0) ∧
+    (blockDecomposition withUnused (fun z => z 1)).history 2 x 1 = !x 0 ∧
     (blockDecomposition withUnused (fun z => z 1)).history 2 x 2 = false ∧
-      (blockDecomposition withUnused (fun z => z 1)).history 3 x 2 = true := by
-  constructor
-  · rfl
+    (blockDecomposition withUnused (fun z => z 1)).history 3 x 2 = true := by
+  refine ⟨by simp [cost_blockDecomposition, withUnused_inputGates],
+    by simp [blockDecomposition, withUnused_inputGates], ?_, rfl, ?_⟩
+  · change (negatePrior.gate _).eval interpretation x (Fin.castSucc 1) = !x 0
+    rw [Program.eval_gate_castSucc]
+    exact negatePrior_eval x
   · change (negatePrior.gate _).eval interpretation x (Fin.last 2) = true
     rw [Program.eval_gate_last]
     simp [Line.eval, interpretation]
@@ -140,57 +132,47 @@ example (n : ℕ) (threshold : ℝ) (readout : (Fin 1 → Bool) → Bool) :
     exact Finset.sum_eq_zero fun a _ => a.elim0
   simp [inputGates, hzero]
 
--- Arbitrary effective gate-only programs have unit cost, including the zero-input case.
+-- Arbitrary effective gate-only programs have unit cost, including the zero-input case,
+-- and raw-input circuit outputs cannot be represented as a readout of an empty gate vector.
 example {n g : ℕ} (p : Program signature n g) (readout : (Fin g → Bool) → Bool)
-    (h : ∀ gate input, inputWeight p gate input = 0) :
-    (blockDecomposition p readout).cost = 1 := by
-  simp [cost_blockDecomposition, inputGates, h]
-
-example {g : ℕ} (p : Program signature 0 g) (readout : (Fin g → Bool) → Bool) :
-    (blockDecomposition p readout).cost = 1 := by
-  simp [cost_blockDecomposition, inputGates]
-
-example (n : ℕ) (readout : (Fin 0 → Bool) → Bool) :
-    (blockDecomposition (Program.empty : Program signature n 0) readout).cost = 1 := by
-  simp [cost_blockDecomposition, inputGates]
-
-example {g : ℕ} (p : Program signature 0 g) (readout : (Fin g → Bool) → Bool) :
-    2 ^ 0 < 4 * 2 ^ 2 * 4 ^ (inputGates p).card := by
-  apply two_pow_lt_mul_four_pow_inputGates p readout (fun _ => rfl)
-  intro b
-  apply Frontier.rectangleFree_iff.mpr
-  intro X A B _
-  left
-  have : A.ncard ≤ 1 := by simpa using Set.ncard_le_ncard (Set.subset_univ A)
-  omega
-
--- Raw-input circuit outputs cannot be represented as a readout of an empty gate vector.
-example : ¬ ∃ gate, (Circuit.id signature 1).outputs 0 = .gate gate := by
-  rintro ⟨gate, _⟩
-  exact gate.elim0
-
-example : ¬ ∃ readout : (Fin 0 → Bool) → Bool, ∀ x : Fin 1 → Bool,
-    readout (Program.empty.eval interpretation x) = x 0 := by
-  rintro ⟨readout, h⟩
-  have hf := h (fun _ => false)
-  have ht := h (fun _ => true)
-  exact Bool.false_ne_true (hf.symm.trans ht)
+    (h : ∀ gate input, inputWeight p gate input = 0)
+    (p0 : Program signature 0 g) (readout0 : (Fin 0 → Bool) → Bool) :
+    (blockDecomposition p readout).cost = 1 ∧
+    (blockDecomposition p0 readout).cost = 1 ∧
+    (blockDecomposition (Program.empty : Program signature n 0) readout0).cost = 1 ∧
+    2 ^ 0 < 4 * 2 ^ 2 * 4 ^ (inputGates p0).card ∧
+    (¬ ∃ gate, (Circuit.id signature 1).outputs 0 = .gate gate) ∧
+    (¬ ∃ r : (Fin 0 → Bool) → Bool, ∀ x : Fin 1 → Bool,
+      r (Program.empty.eval interpretation x) = x 0) := by
+  refine ⟨by simp [cost_blockDecomposition, inputGates, h],
+    by simp [cost_blockDecomposition, inputGates],
+    by simp [cost_blockDecomposition, inputGates], ?_,
+    fun ⟨gate, _⟩ => gate.elim0, ?_⟩
+  · apply two_pow_lt_mul_four_pow_inputGates p0 readout (fun _ => rfl)
+    intro b
+    apply Frontier.rectangleFree_iff.mpr
+    intro X A B _
+    left
+    have : A.ncard ≤ 1 := by simpa using Set.ncard_le_ncard (Set.subset_univ A)
+    omega
+  · rintro ⟨r, hr⟩
+    have hf := hr (fun _ => false)
+    have ht := hr (fun _ => true)
+    exact Bool.false_ne_true (hf.symm.trans ht)
 
 -- Piece bounds and direction-run capacity bounds on native programs and circuits.
-example {β : Type*} {Φ : ℝ → β} (h : PiecesAtMost Φ 4) : ChangesAtMost Φ 3 :=
-  h.changesAtMost
-
-example (x : Fin 1 → Bool) (gate : Fin 3) :
+open scoped Classical in
+example (x : Fin 1 → Bool) (gate : Fin 3) (slope : Fin 3 → ℝ) :
     evalFrom withUnused ∅ (fun _ => false)
       (fun g => ∑ i, inputWeight withUnused g i * (x i).toNat) gate =
-      withUnused.eval interpretation x gate :=
-  evalFrom_eq_eval withUnused gate (by simp) (fun _ _ _ => rfl)
-
-open scoped Classical in
-example (slope : Fin 3 → ℝ) :
+      withUnused.eval interpretation x gate ∧
     PiecesAtMost (fun t => evalFrom withUnused ∅ (fun _ => false) (fun g => slope g * t))
-      (2 ^ (Finset.univ.filter fun g : Fin 3 => g ∉ (∅ : Finset (Fin 3)) ∧ slope g ≠ 0).card) :=
-  piecesAtMost_evalFrom withUnused ∅ (fun _ => false) slope
+      (2 ^ (Finset.univ.filter fun g : Fin 3 => g ∉ (∅ : Finset (Fin 3)) ∧ slope g ≠ 0).card) ∧
+    ChangesAtMost (fun t => evalFrom withUnused ∅ (fun _ => false) (fun g => slope g * t))
+      (2 ^ (Finset.univ.filter fun g : Fin 3 => g ∉ (∅ : Finset (Fin 3)) ∧ slope g ≠ 0).card - 1) :=
+  ⟨evalFrom_eq_eval withUnused gate (by simp) (fun _ _ _ => rfl),
+    piecesAtMost_evalFrom withUnused ∅ (fun _ => false) slope,
+    (piecesAtMost_evalFrom withUnused ∅ (fun _ => false) slope).changesAtMost⟩
 
 private theorem withUnused_along_one (gate : Fin 3) :
     ∃ c : ℝ, inputWeight withUnused gate = c • (fun _ : Fin 1 => (1 : ℝ)) :=
@@ -199,31 +181,25 @@ private theorem withUnused_along_one (gate : Fin 3) :
 private def withUnusedSingleRun : DirectionRuns withUnused 1 :=
   singleRun withUnused (fun _ => 1) withUnused_along_one
 
-example : ∑ i ∈ Finset.range 3, (gateRuns withUnused).size i = 1 := by
-  rw [(gateRuns withUnused).sum_size, withUnused_inputGates]
-  rfl
-
-example : 1 < 2 * 1 + 2 + 2 * (inputGates negateCircuit.program).card :=
-  circuit_lt_two_mul_add_two_mul_inputGates negateCircuit ⟨(1 : Fin 3), rfl⟩ le_rfl
-    negateCircuit_eval (oneBit_rectangleFree _)
-
-example : 2 ^ 1 < 16 * 2 ^ 2 * 2 ^ (inputGates negateCircuit.program).card :=
-  circuit_two_pow_lt_of_direction negateCircuit ⟨(1 : Fin 3), rfl⟩ (fun _ => 1)
-    withUnused_along_one negateCircuit_eval (oneBit_rectangleFree _)
-
-example : 1 < 2 * 1 + 4 + (inputGates negateCircuit.program).card :=
-  circuit_lt_of_direction negateCircuit ⟨(1 : Fin 3), rfl⟩ (fun _ => 1)
-    withUnused_along_one le_rfl negateCircuit_eval (oneBit_rectangleFree _)
-
-example : 2 ^ 1 < 4 * 2 ^ 2 * 4 ^ 1 * 2 ^ (inputGates negateCircuit.program).card :=
-  circuit_two_pow_lt_of_runs negateCircuit ⟨(1 : Fin 3), rfl⟩ withUnusedSingleRun
-    negateCircuit_eval (oneBit_rectangleFree _)
-
-example : 1 < 2 * 1 + 2 + 2 * 1 + (inputGates negateCircuit.program).card :=
-  circuit_lt_of_runs negateCircuit ⟨(1 : Fin 3), rfl⟩ withUnusedSingleRun le_rfl
-    negateCircuit_eval (oneBit_rectangleFree _)
-
-example : 2 ^ 1 < 4 * 2 ^ 2 * max 1 (4 * 0) :=
-  two_pow_lt_of_multilevel (f := fun _ : Fin 1 → Bool => false) (K := 2)
-    (fun _ => 0) (fun _ => false) (ChangesAtMost.const false) (fun _ => rfl)
-    (oneBit_rectangleFree _)
+example :
+    ∑ i ∈ Finset.range 3, (gateRuns withUnused).size i = 1 ∧
+    1 < 2 * 1 + 2 + 2 * (inputGates negateCircuit.program).card ∧
+    2 ^ 1 < 16 * 2 ^ 2 * 2 ^ (inputGates negateCircuit.program).card ∧
+    1 < 2 * 1 + 4 + (inputGates negateCircuit.program).card ∧
+    2 ^ 1 < 4 * 2 ^ 2 * 4 ^ 1 * 2 ^ (inputGates negateCircuit.program).card ∧
+    1 < 2 * 1 + 2 + 2 * 1 + (inputGates negateCircuit.program).card ∧
+    2 ^ 1 < 4 * 2 ^ 2 * max 1 (4 * 0) :=
+  ⟨by rw [(gateRuns withUnused).sum_size, withUnused_inputGates]; rfl,
+    circuit_lt_two_mul_add_two_mul_inputGates negateCircuit ⟨(1 : Fin 3), rfl⟩ le_rfl
+      negateCircuit_eval (oneBit_rectangleFree _),
+    circuit_two_pow_lt_of_direction negateCircuit ⟨(1 : Fin 3), rfl⟩ (fun _ => 1)
+      withUnused_along_one negateCircuit_eval (oneBit_rectangleFree _),
+    circuit_lt_of_direction negateCircuit ⟨(1 : Fin 3), rfl⟩ (fun _ => 1)
+      withUnused_along_one le_rfl negateCircuit_eval (oneBit_rectangleFree _),
+    circuit_two_pow_lt_of_runs negateCircuit ⟨(1 : Fin 3), rfl⟩ withUnusedSingleRun
+      negateCircuit_eval (oneBit_rectangleFree _),
+    circuit_lt_of_runs negateCircuit ⟨(1 : Fin 3), rfl⟩ withUnusedSingleRun le_rfl
+      negateCircuit_eval (oneBit_rectangleFree _),
+    two_pow_lt_of_multilevel (f := fun _ : Fin 1 → Bool => false) (K := 2)
+      (fun _ => 0) (fun _ => false) (ChangesAtMost.const false) (fun _ => rfl)
+      (oneBit_rectangleFree _)⟩

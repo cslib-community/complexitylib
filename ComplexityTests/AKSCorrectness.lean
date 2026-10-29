@@ -29,8 +29,7 @@ theorem logb_sq_lt : Real.logb 2 (31 : ℕ) ^ 2 < orderOf ((31 : ℕ) : ZMod 29)
   nlinarith
 
 -- The hypotheses of `prime_of_passes` hold together: `31` passes for `r = 29`.
-example : Passes 31 29 := passes_of_prime (by decide) 29
-
-example : Nat.Prime 31 ↔ Passes 31 29 := prime_iff_passes (by norm_num) logb_sq_lt
+example : Passes 31 29 ∧ (Nat.Prime 31 ↔ Passes 31 29) :=
+  ⟨passes_of_prime (by decide) 29, prime_iff_passes (by norm_num) logb_sq_lt⟩
 
 end ComplexityTests.AKSCorrectness

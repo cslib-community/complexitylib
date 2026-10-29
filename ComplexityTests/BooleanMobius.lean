@@ -55,79 +55,71 @@ private theorem subsetSum_eq {ι A : Type*} [Fintype ι] [CommRing A]
 private noncomputable def dependentFamily (x : Fin 2 → Bool) : MvPolynomial (Fin 2) ℤ :=
   if x 0 then X 1 else C 3
 
-example : subsetSum 1 dependentFamily = 7 := by
-  rw [subsetSum_eq]
-  · simp only [dependentFamily, apply_ite, MvPolynomial.eval_X, MvPolynomial.eval_C]
-    rw [cube_two_sum]
-    · decide +kernel
-    · intro x; simp
-  · intro x
-    unfold dependentFamily
-    split_ifs <;> simp only [MvPolynomial.totalDegree_X, MvPolynomial.totalDegree_C] <;> decide
-
--- Degree zero still permits arbitrary dependence of the coefficients on the full assignment.
-example : subsetSum 0 (fun x : Fin 2 → Bool => C (if x 0 then (-2 : ℤ) else 3)) = 2 := by
-  rw [subsetSum_eq]
-  · simp only [MvPolynomial.eval_C]
-    rw [cube_two_sum]
-    · decide +kernel
-    · intro x; simp
-  · intro x
-    simp only [MvPolynomial.totalDegree_C, Nat.le_refl]
-
--- No positive dimension or nonempty variable type is required.
-example : subsetSum 0 (fun _ : Fin 0 → Bool => C (-7 : ℤ)) = -7 := by
-  rw [subsetSum_eq]
-  · simp only [MvPolynomial.eval_C]
-    decide +kernel
-  · intro x
-    simp only [MvPolynomial.totalDegree_C, Nat.le_refl]
-
--- The degree bound can exceed the dimension, and Boolean powers still collapse correctly.
-example : subsetSum 5 (fun _ : Fin 1 → Bool => (X 0 : MvPolynomial (Fin 1) ℤ) ^ 3) = 1 := by
-  rw [subsetSum_eq]
-  · simp only [map_pow, MvPolynomial.eval_X]
+-- Assignment-dependent polynomials, degree-0 families on `Fin 2` and `Fin 0`, degree bounds
+-- exceeding dimension, characteristic-2 cancellation, trivial ring `ZMod 1`, and truncation loss
+-- when the degree bound is violated.
+example :
+    subsetSum 1 dependentFamily = 7 ∧
+      subsetSum 0 (fun x : Fin 2 → Bool => C (if x 0 then (-2 : ℤ) else 3)) = 2 ∧
+      subsetSum 0 (fun _ : Fin 0 → Bool => C (-7 : ℤ)) = -7 ∧
+      subsetSum 5 (fun _ : Fin 1 → Bool => (X 0 : MvPolynomial (Fin 1) ℤ) ^ 3) = 1 ∧
+      subsetSum 1 (fun x : Fin 2 → Bool =>
+        if x 0 then (X 1 : MvPolynomial (Fin 2) (ZMod 2)) else 0) = 1 ∧
+      subsetSum 0 (fun _ : Fin 1 → Bool => (0 : MvPolynomial (Fin 1) (ZMod 1))) = 0 ∧
+      (∑ x : Fin 1 → Bool,
+        MvPolynomial.eval (fun i => bitVal ℤ (x i)) (X 0 : MvPolynomial (Fin 1) ℤ)) = 1 ∧
+      subsetSum 0 (fun _ : Fin 1 → Bool => (X 0 : MvPolynomial (Fin 1) ℤ)) = 0 := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [subsetSum_eq]
+    · simp only [dependentFamily, apply_ite, MvPolynomial.eval_X, MvPolynomial.eval_C]
+      rw [cube_two_sum]
+      · decide +kernel
+      · intro x; simp
+    · intro x
+      unfold dependentFamily
+      split_ifs <;> simp only [MvPolynomial.totalDegree_X, MvPolynomial.totalDegree_C] <;> decide
+  · rw [subsetSum_eq]
+    · simp only [MvPolynomial.eval_C]
+      rw [cube_two_sum]
+      · decide +kernel
+      · intro x; simp
+    · intro x
+      simp only [MvPolynomial.totalDegree_C, Nat.le_refl]
+  · rw [subsetSum_eq]
+    · simp only [MvPolynomial.eval_C]
+      decide +kernel
+    · intro x
+      simp only [MvPolynomial.totalDegree_C, Nat.le_refl]
+  · rw [subsetSum_eq]
+    · simp only [map_pow, MvPolynomial.eval_X]
+      rw [cube_one_sum]
+      · decide +kernel
+      · intro x; simp
+    · intro x
+      simp only [MvPolynomial.totalDegree_X_pow]
+      decide
+  · rw [subsetSum_eq]
+    · simp only [apply_ite, MvPolynomial.eval_X, map_zero]
+      rw [cube_two_sum]
+      · decide +kernel
+      · intro x; simp
+    · intro x
+      split_ifs <;> simp only [MvPolynomial.totalDegree_X, MvPolynomial.totalDegree_zero] <;> decide
+  · rw [subsetSum_eq]
+    · simp only [map_zero, sum_const_zero]
+    · intro x
+      simp only [MvPolynomial.totalDegree_zero, Nat.le_refl]
+  · simp only [MvPolynomial.eval_X]
     rw [cube_one_sum]
     · decide +kernel
     · intro x; simp
-  · intro x
-    simp only [MvPolynomial.totalDegree_X_pow]
-    decide
-
--- Characteristic two: signs coincide, but subset cancellation and assignment dependence remain.
-example : subsetSum 1 (fun x : Fin 2 → Bool =>
-    if x 0 then (X 1 : MvPolynomial (Fin 2) (ZMod 2)) else 0) = 1 := by
-  rw [subsetSum_eq]
-  · simp only [apply_ite, MvPolynomial.eval_X, map_zero]
-    rw [cube_two_sum]
-    · decide +kernel
-    · intro x; simp
-  · intro x
-    split_ifs <;> simp only [MvPolynomial.totalDegree_X, MvPolynomial.totalDegree_zero] <;> decide
-
--- A trivial coefficient ring is allowed; no hidden Nontrivial instance is needed.
-example : subsetSum 0 (fun _ : Fin 1 → Bool => (0 : MvPolynomial (Fin 1) (ZMod 1))) = 0 := by
-  rw [subsetSum_eq]
-  · simp only [map_zero, sum_const_zero]
-  · intro x
-    simp only [MvPolynomial.totalDegree_zero, Nat.le_refl]
-
--- Without the supplied degree bound, truncating to E=empty really can lose the answer.
-example : (∑ x : Fin 1 → Bool,
-    MvPolynomial.eval (fun i => bitVal ℤ (x i)) (X 0 : MvPolynomial (Fin 1) ℤ)) = 1 := by
-  simp only [MvPolynomial.eval_X]
-  rw [cube_one_sum]
-  · decide +kernel
-  · intro x; simp
-
-example : subsetSum 0 (fun _ : Fin 1 → Bool => (X 0 : MvPolynomial (Fin 1) ℤ)) = 0 := by
-  classical
-  have hfilter : (univ : Finset (Fin 1)).powerset.filter (fun E => #E ≤ 0) = {∅} := by
-    ext E
-    simp only [mem_filter, mem_powerset, Nat.le_zero, card_eq_zero, mem_singleton]
-    exact and_iff_right_of_imp (fun h => by simp [h])
-  unfold subsetSum
-  rw [hfilter]
-  simp [bitVal]
+  · classical
+    have hfilter : (univ : Finset (Fin 1)).powerset.filter (fun E => #E ≤ 0) = {∅} := by
+      ext E
+      simp only [mem_filter, mem_powerset, Nat.le_zero, card_eq_zero, mem_singleton]
+      exact and_iff_right_of_imp (fun h => by simp [h])
+    unfold subsetSum
+    rw [hfilter]
+    simp [bitVal]
 
 end BooleanMobiusTests

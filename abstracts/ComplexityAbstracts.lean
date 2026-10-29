@@ -17,6 +17,8 @@ import ComplexityAbstracts.DijkstraBridge
 import ComplexityAbstracts.Encoding
 import ComplexityAbstracts.FaginAbstract
 import ComplexityAbstracts.FaginBridge
+import ComplexityAbstracts.FibonacciHeapAbstract
+import ComplexityAbstracts.FibonacciHeapBridge
 import ComplexityAbstracts.FormulaBoundsAbstract
 import ComplexityAbstracts.FormulaBoundsBridge
 import ComplexityAbstracts.GSW

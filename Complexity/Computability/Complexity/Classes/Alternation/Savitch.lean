@@ -295,40 +295,39 @@ theorem computableInPolyTime_savitchVerifier :
     Turing.MultiTapeTM.ComputableInPolyTime (savitchVerifier (enc := enc) ntm c d)
       (encPair enc encBits)
       encBool := by
-  refine .of_tidy ?_
-  have hwidth : ComputableTidilyInPolyTime (fun x : α × List Bool => ntm.codeWidth c d (enc x.1))
+  have hword : ComputableInPolyTime (fun x : α × List Bool => enc x.1) (encPair enc encBits)
+      encBits :=
+    (ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
+      (ComputableInPolyTime.fst enc encBits)
+  have hwidth : ComputableInPolyTime (fun x : α × List Bool => ntm.codeWidth c d (enc x.1))
       (encPair enc encBits) encUnary :=
-    (MultiTapeNTM.computableTidilyInPolyTime_codeWidth c d).comp
-      (ComputableTidilyInPolyTime.fst enc encBits)
-  have hw : ComputableTidilyInPolyTime
+    (MultiTapeNTM.computableInPolyTime_codeWidth c d).comp (ComputableInPolyTime.fst enc encBits)
+  have hw : ComputableInPolyTime
       (fun x : α × List Bool => ntm.viewCodeWidth c d (enc x.1)) (encPair enc encBits)
       encUnary :=
-    (ntm.computableInPolyTime_viewCodeWidth c d).tidy.comp
-      ((ComputableTidilyInPolyTime.encode enc).comp (ComputableTidilyInPolyTime.fst enc encBits))
-  have hinit : ComputableTidilyInPolyTime (fun x : α × List Bool =>
+    (ntm.computableInPolyTime_viewCodeWidth c d).comp hword
+  have hinit : ComputableInPolyTime (fun x : α × List Bool =>
       (MultiTapeNTM.viewCode (ntm.codeWidth c d (enc x.1)) (ntm.initView (enc x.1)),
         MultiTapeNTM.acceptCode (ntm.codeWidth c d (enc x.1)), x.2))
       (encPair enc encBits) (encPair encBits (encPair encBits encBits)) :=
-    (MultiTapeNTM.computableTidilyInPolyTime_viewCode_initView hwidth
-      ((ComputableTidilyInPolyTime.encode enc).comp
-        (ComputableTidilyInPolyTime.fst enc encBits))).prod
-      ((MultiTapeNTM.computableTidilyInPolyTime_acceptCode hwidth).prod
-        (ComputableTidilyInPolyTime.snd enc encBits))
-  have hloop := ComputableTidilyInPolyTime.iterateWith_of_bounded_growth hw hw hinit
-    computableInPolyTime_midpointStep.tidy
+    (MultiTapeNTM.computableInPolyTime_viewCode_initView hwidth hword).prod
+      ((MultiTapeNTM.computableInPolyTime_acceptCode hwidth).prod
+        (ComputableInPolyTime.snd enc encBits))
+  have hloop := ComputableInPolyTime.iterateWith_of_bounded_growth hw hw hinit
+    computableInPolyTime_midpointStep
     (growth := fun x => 2 * ntm.viewCodeWidth c d (enc x.1))
-    (ComputableTidilyInPolyTime.polyBounded (by fun_prop)) fun x s => by
+    (ComputableInPolyTime.polyBounded (by fun_prop)) fun x s => by
       unfold midpointStep
       split <;> simp only [length_encPair, encBits_apply, List.length_drop,
         length_midpointMoves] <;> omega
-  have hfst := ComputableTidilyInPolyTime.fst encBits (encPair encBits encBits)
-  have hsnd := (ComputableTidilyInPolyTime.fst encBits encBits).comp
-    (ComputableTidilyInPolyTime.snd encBits (encPair encBits encBits))
-  have hfinal : ComputableTidilyInPolyTime (fun s : List Bool × List Bool × List Bool =>
+  have hfst := ComputableInPolyTime.fst encBits (encPair encBits encBits)
+  have hsnd := (ComputableInPolyTime.fst encBits encBits).comp
+    (ComputableInPolyTime.snd encBits (encPair encBits encBits))
+  have hfinal : ComputableInPolyTime (fun s : List Bool × List Bool × List Bool =>
       decide (s.1 = s.2.1) || ntm.codeEdge s.1 s.2.1) (encPair encBits (encPair encBits encBits))
       encBool :=
-    ComputableTidilyInPolyTime.bool_or.comp ((ComputableTidilyInPolyTime.decide_eq' hfst hsnd).prod
-      (ntm.computableTidilyInPolyTime_codeEdge hfst hsnd))
+    ComputableInPolyTime.bool_or.comp ((ComputableInPolyTime.decide_eq' hfst hsnd).prod
+      (ntm.computableInPolyTime_codeEdge hfst hsnd))
   convert hfinal.comp hloop using 1
   funext x
   rw [savitchVerifier, midpointGame_eq_iterate]
