@@ -22,6 +22,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Prune
 The query function specifies the words of the supplied input list. The machine computes its own
 distinct set, every recursive child list and every reported index. All scratch addresses, signed
 fits, fresh generations and instruction charges follow from the ordinary numerical premises.
+This module is an internal implementation API used to prove the initialized and pointer-based
+client interfaces in `Pruned.Flat`, `Pruned.Width` and `Pruned.Kernel`.
 -/
 
 @[expose] public section

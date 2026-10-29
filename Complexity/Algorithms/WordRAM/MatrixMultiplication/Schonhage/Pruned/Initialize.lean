@@ -20,6 +20,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Prune
 
 The prefix uses `4L+27` instructions, including its power loop. Its continuation is the existing
 structured sequence rule, so composing it with evaluation gives the original fixed program.
+This continuation lemma is an internal implementation API for the complete initialized-run
+theorems in `Pruned.Flat` and `Pruned.Width`.
 -/
 
 @[expose] public section

@@ -23,6 +23,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Prune
 The induction composes only `Code.ExecWithin` for the existing standard unsigned machine. Its
 continuation form stops the inductive node at the parent return cursor; at the root the proved
 zero active flag supplies the ordinary native loop-exit execution.
+The stage execution lemmas and node invariants here are internal implementation APIs,
+exported for proof composition across modules. Callers use `Pruned.Kernel` or `Pruned.Flat`.
 -/
 
 @[expose] public section

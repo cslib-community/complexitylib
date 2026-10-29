@@ -250,6 +250,15 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   to exponent 1.9992, remain in #1394. The band catalogue retains the same leaf ordering and
   canonical signed words. Raw 0/1 matrix producers must
   actually double entries before copying into signed input arrays, with that work charged.
+  Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
+  callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
+  `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies
+  and interface changes away from the widely imported `Allocation` core.
+  Post-integration [#1553](https://github.com/cslib-community/complexitylib/issues/1553) includes
+  replacing pruned `powers` with sibling #1536's generic `Power.program`, preserving the
+  `4L+10` budget via five retained constant initializations plus its `4L+5` run. Its exact
+  register map, affected execution/width/cost clients and sibling integration order are
+  recorded there. This documentation/test repair does not change either sibling's program.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
