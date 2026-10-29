@@ -967,6 +967,8 @@ public import Complexity.Computability.DecisionTree.AffineScore
 public import Complexity.Computability.DecisionTree.Basic
 public import Complexity.Computability.DecisionTree.CanonicalTree
 public import Complexity.Computability.DecisionTree.Certificate
+public import Complexity.Computability.DecisionTree.Composition
+public import Complexity.Computability.DecisionTree.Cost
 public import Complexity.Computability.DecisionTree.Fourier
 public import Complexity.Computability.DecisionTree.Granularity
 public import Complexity.Computability.DecisionTree.Influence
