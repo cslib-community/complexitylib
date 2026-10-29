@@ -30,7 +30,7 @@ decides this once it has run for as many rounds as there are reachable views
 many (`Turing.MultiTapeNTM.length_le_of_nodup_reachable`), so a polynomial number of rounds
 suffices, each round is polynomial-time in the views found so far, and these are polynomially
 many views of linear size. The decision is therefore polynomial-time
-(`Turing.MultiTapeNTM.exists_computableTidilyInPolyTime_searchAccepts`): reachability in the
+(`Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`): reachability in the
 configuration graph, which has polynomially many vertices [Sipser, Section 8.4][Sipser2013].
 
 ## Main definitions
@@ -44,10 +44,8 @@ configuration graph, which has polynomially many vertices [Sipser, Section 8.4][
 * `Turing.MultiTapeNTM.searchAccepts_iff`: enough rounds decide acceptance.
 * `Turing.MultiTapeNTM.computableTidilyInPolyTime_viewSucc`: the successors in polynomial time.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.expand`: a round in polynomial time.
-* `Turing.MultiTapeNTM.exists_computableTidilyInPolyTime_searchAccepts`: under a logarithmic space
+* `Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`: under a logarithmic space
   bound, enough rounds of breadth-first search run in polynomial time.
-* `Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`: the same for plain
-  certificates.
 
 ## References
 
@@ -239,14 +237,15 @@ If every computation prefix of `ntm` on every encoded instance `enc a` stays wit
 `c * (Nat.log2 n + 1)`, then some polynomial number of rounds suffices for
 `Turing.MultiTapeNTM.searchAccepts_iff`, and breadth-first search for that many rounds is
 polynomial-time in the encoded instance. -/
-theorem exists_computableTidilyInPolyTime_searchAccepts {α : Type} {enc : α ↪ List Bool} {c : ℕ}
+theorem exists_computableInPolyTime_searchAccepts {α : Type} {enc : α ↪ List Bool} {c : ℕ}
     (hs : ∀ a, ntm.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1))) :
     ∃ rounds : α → ℕ, (∀ a, 2 ^ (2 * coreLengthBound k State (enc a).length
         (c * (Nat.log2 (enc a).length + 1)) + 1) ≤ rounds a) ∧
-      ComputableTidilyInPolyTime (fun a => ntm.searchAccepts (rounds a) (enc a)) enc encBool := by
+      ComputableInPolyTime (fun a => ntm.searchAccepts (rounds a) (enc a)) enc encBool := by
   set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
   set rounds : α → ℕ := fun a => 2 * 2 ^ D * ((enc a).length + 1) ^ D
-  refine ⟨rounds, fun a => rounds_le k State c _, ?_⟩
+  refine ⟨rounds, fun a => rounds_le k State c _,
+    ComputableTidilyInPolyTime.computableInPolyTime ?_⟩
   -- the number of rounds in unary
   have hcount : ComputableTidilyInPolyTime rounds enc encUnary :=
     ComputableTidilyInPolyTime.unary_mul.comp ((ComputableTidilyInPolyTime.const _).prod
@@ -295,15 +294,5 @@ theorem exists_computableTidilyInPolyTime_searchAccepts {α : Type} {enc : α �
         (ComputableTidilyInPolyTime.const [true])))
   exact ComputableTidilyInPolyTime.anyWithInput hsearch
     (htest.comp (ComputableTidilyInPolyTime.snd _ _))
-
-open scoped Classical in
-/-- `exists_computableTidilyInPolyTime_searchAccepts` for plain certificates. -/
-theorem exists_computableInPolyTime_searchAccepts {α : Type} {enc : α ↪ List Bool} {c : ℕ}
-    (hs : ∀ a, ntm.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1))) :
-    ∃ rounds : α → ℕ, (∀ a, 2 ^ (2 * coreLengthBound k State (enc a).length
-        (c * (Nat.log2 (enc a).length + 1)) + 1) ≤ rounds a) ∧
-      ComputableInPolyTime (fun a => ntm.searchAccepts (rounds a) (enc a)) enc encBool :=
-  let ⟨rounds, hrounds, h⟩ := exists_computableTidilyInPolyTime_searchAccepts hs
-  ⟨rounds, hrounds, h.computableInPolyTime⟩
 
 end Turing.MultiTapeNTM

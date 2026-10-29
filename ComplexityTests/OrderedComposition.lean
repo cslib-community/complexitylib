@@ -48,23 +48,23 @@ def outer : FullTupleInterpretation L L 3 where
 
 def rows : Fin 3 → Fin 2 → Fin 3 := ![![0, 1], ![1, 2], ![2, 0] ]
 
-example : (fun j => lexRank (rows j)) = ![1, 5, 6] := by decide
-example : lexRank (flattenTuple rows) = 132 := by decide
-example : lexRank (flattenTuple (fun i j => rows j i)) = 150 := by decide
-example : lexRank (flattenTuple rows) = lexRank (fun j => lexEquiv (rows j)) :=
-  lexRank_flattenTuple rows
-
-/-- The constant validity hypothesis is inhabited even at the smallest permitted source size. -/
-example : inner.constants.Valid (Fin 2) := inner.constants_valid (by decide)
-example (I : FullTupleInterpretation L L 0) : ¬I.constants.Valid (Fin 3) := by
-  intro h
-  obtain ⟨x, hx, _⟩ := h .zero
-  exact hx
-example : (outer.comp inner).constants.Valid (Fin 3) :=
-  (outer.comp inner).constants_valid (by decide)
-example : lexRank ((outer.comp inner).constants.value
-    ((outer.comp inner).constants_valid (n := 3) (by decide)) .one).val = 1 :=
-  (outer.comp inner).lexRank_constants_value (by decide) .one
+/-- Flattened tuple ranks and constant validity across `inner`, `outer.comp inner`, and dimension
+`0`. -/
+example (I : FullTupleInterpretation L L 0) :
+    (fun j => lexRank (rows j)) = ![1, 5, 6] ∧
+    lexRank (flattenTuple rows) = 132 ∧
+    lexRank (flattenTuple (fun i j => rows j i)) = 150 ∧
+    lexRank (flattenTuple rows) = lexRank (fun j => lexEquiv (rows j)) ∧
+    inner.constants.Valid (Fin 2) ∧
+    ¬I.constants.Valid (Fin 3) ∧
+    (outer.comp inner).constants.Valid (Fin 3) ∧
+    lexRank ((outer.comp inner).constants.value
+      ((outer.comp inner).constants_valid (n := 3) (by decide)) .one).val = 1 :=
+  ⟨by decide, by decide, by decide, lexRank_flattenTuple rows,
+    inner.constants_valid (by decide),
+    fun h => let ⟨_, hx, _⟩ := h .zero; hx,
+    (outer.comp inner).constants_valid (by decide),
+    (outer.comp inner).lexRank_constants_value (by decide) .one⟩
 
 /-- Both input relation tests in this composite are true, with nontrivial numeric conjuncts. -/
 example : ((outer.comp inner).rel Relation.mark).Realize
@@ -82,47 +82,46 @@ example : ((outer.comp inner).rel Relation.mark).Realize
 
 def bitQuery : (language L).Formula (Fin 2) := bit L (.var 0) (.var 1)
 
-/-- Index seven is larger than the base universe, and the value has rank 132. -/
-example : ((outer.comp inner).onFormula bitQuery).Realize
-    (fun p => if p.1 = 0 then flattenTuple rows p.2 else
-      (![0, 0, 0, 0, 2, 1] : Fin 6 → Fin 3) p.2) := by
+/-- Index seven is larger than the base universe (value rank `132`), while a maximal index is
+rejected by the composite native BIT pullback. -/
+example :
+    ((outer.comp inner).onFormula bitQuery).Realize
+      (fun p => if p.1 = 0 then flattenTuple rows p.2 else
+        (![0, 0, 0, 0, 2, 1] : Fin 6 → Fin 3) p.2) ∧
+    ¬((outer.comp inner).onFormula bitQuery).Realize
+      (fun p => if p.1 = 0 then flattenTuple rows p.2 else (2 : Fin 3)) := by
   let := (outer.comp inner).inputStructure (n := 3)
   let : Fact (2 ≤ 3 ^ (3 * 2)) := ⟨by decide⟩
-  rw [(outer.comp inner).realize_onFormula (by decide) bitQuery
-    (fun a i => if a = 0 then flattenTuple rows i else ![0, 0, 0, 0, 2, 1] i)]
-  rw [bitQuery, realize_bit]
-  decide
-
-/-- A maximal index is rejected by the composite native BIT pullback. -/
-example : ¬((outer.comp inner).onFormula bitQuery).Realize
-    (fun p => if p.1 = 0 then flattenTuple rows p.2 else (2 : Fin 3)) := by
-  let := (outer.comp inner).inputStructure (n := 3)
-  let : Fact (2 ≤ 3 ^ (3 * 2)) := ⟨by decide⟩
-  rw [(outer.comp inner).realize_onFormula (by decide) bitQuery
-    (fun a i => if a = 0 then flattenTuple rows i else 2)]
-  rw [bitQuery, realize_bit]
-  decide
+  refine ⟨?_, ?_⟩
+  · rw [(outer.comp inner).realize_onFormula (by decide) bitQuery
+      (fun a i => if a = 0 then flattenTuple rows i else ![0, 0, 0, 0, 2, 1] i)]
+    rw [bitQuery, realize_bit]
+    decide
+  · rw [(outer.comp inner).realize_onFormula (by decide) bitQuery
+      (fun a i => if a = 0 then flattenTuple rows i else 2)]
+    rw [bitQuery, realize_bit]
+    decide
 
 /-- Genuine numeric constants occur under a universal quantifier. -/
 noncomputable def oneBits : (language L).Sentence :=
   closeAll Unit ((bit L (one L) (.var ())).iff ((Term.var ()).equal (zero L)))
 
-example : Fin 3 ⊨ (outer.comp inner).onSentence oneBits := by
+-- Composition commutes with `onSentence` and `onFormula` for the concrete queries below.
+example (v : Fin 2 → Fin 3 → Fin 2 → Fin 3) :
+    Fin 3 ⊨ (outer.comp inner).onSentence oneBits ∧
+    (Fin 3 ⊨ (outer.comp inner).onSentence oneBits ↔
+      Fin 3 ⊨ inner.onSentence (outer.onSentence oneBits)) ∧
+    (((outer.comp inner).onFormula bitQuery).Realize (fun p => flattenTuple (v p.1) p.2) ↔
+      (inner.onFormula (outer.onFormula bitQuery)).Realize (fun p => v p.1.1 p.1.2 p.2)) := by
+  refine ⟨?_,
+    outer.realize_comp_onSentence inner (by decide) (by decide) oneBits,
+    outer.realize_comp_onFormula inner (by decide) (by decide) bitQuery v⟩
   rw [(outer.comp inner).realize_onSentence (by decide)]
   simp only [oneBits, realize_closeAll, Formula.realize_iff, realize_bit,
     Formula.realize_equal, Term.realize_var, realize_one_val]
-  intro v
-  change ((1 : ℕ).testBit (v ()).val = true) ↔ v () = 0
+  intro u
+  change ((1 : ℕ).testBit (u ()).val = true) ↔ u () = 0
   rw [Nat.testBit_one_eq_true_iff_self_eq_zero, Fin.ext_iff]
   rfl
-
-example (φ : (language L).Sentence) :
-    Fin 3 ⊨ (outer.comp inner).onSentence φ ↔ Fin 3 ⊨ inner.onSentence (outer.onSentence φ) :=
-  outer.realize_comp_onSentence inner (by decide) (by decide) φ
-
-example (φ : (language L).Formula (Fin 2)) (v : Fin 2 → Fin 3 → Fin 2 → Fin 3) :
-    ((outer.comp inner).onFormula φ).Realize (fun p => flattenTuple (v p.1) p.2) ↔
-      (inner.onFormula (outer.onFormula φ)).Realize (fun p => v p.1.1 p.1.2 p.2) :=
-  outer.realize_comp_onFormula inner (by decide) (by decide) φ v
 
 end Cslib.Tests.OrderedComposition

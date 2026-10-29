@@ -15,19 +15,19 @@ namespace ComplexityTests.EmpiricalProbability
 open Cslib Cslib.Probability Turing.MultiTapeTM
 
 -- Computed labels and captured predicates work for ordinary framed lists.
-example : ComputableTidilyInPolyTime (fun p : List ℕ × ℕ => p.1.count p.2)
+example : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.count p.2)
     (encPair (encList encUnary) encUnary) encUnary := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List ℕ × ℕ => p.1.countP (fun n => decide (n ≤ p.2 + 1)))
     (encPair (encList encUnary) encUnary) encUnary := by polytime
 
 -- Equivalent spellings, with both raw and framed bit-list inputs.
-example : ComputableTidilyInPolyTime (fun word : List Bool => word.count true)
+example : ComputableInPolyTime (fun word : List Bool => word.count true)
     encBits encUnary := by fun_prop
-example : ComputableTidilyInPolyTime (fun word : List Bool => word.countP (· == true))
+example : ComputableInPolyTime (fun word : List Bool => word.countP (· == true))
     encBits encUnary := by polytime
-example : ComputableTidilyInPolyTime (fun word : List Bool => word.count true)
+example : ComputableInPolyTime (fun word : List Bool => word.count true)
     (encList encBool) encUnary := by fun_prop
 
 private noncomputable def sampledTest (word : List Bool) : ProbComp Bool :=

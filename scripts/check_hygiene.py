@@ -2,7 +2,7 @@
 """Static proof-hygiene and module-template checks for Complexitylib Lean files.
 
 Checks enforced by default (see AGENTS.md):
-1. Every module under Complexity/ has a valid `-- upstream:` marker.
+1. Every module under Complexity/ has a valid standalone `-- upstream:` line comment.
 2. No `sorry`, custom `axiom`, or `native_decide` in Complexity/, ComplexityTests/ or the
    dedicated abstract library.
 3. Every `set_option maxHeartbeats` or `set_option maxRecDepth` has an explanatory comment
@@ -28,10 +28,18 @@ Checks enforced by default (see AGENTS.md):
    fenced code, math, escaped brackets, inline links `[text](target)` and block quotes (`> ...`,
    which quote a source's own citations) are not scanned. Keys without digits are not recognized.
 
+7. (Default selection and explicit paths.) No `set_option maxHeartbeats N` exceeds the 200000
+   default unless its file is listed in `scripts/heartbeat_allowlist.txt` with a cap of at least
+   `N` (one `<path> <cap>` entry per line, `#` comments allowed). Zero means unlimited in Lean
+   and requires an explicit zero cap; finite caps never permit it. Unparsed values fail closed.
+   Inline and multiline settings and decimal/hexadecimal numerals are checked. With the default
+   selection, an entry whose file no longer needs it (no budget above the default, or a cap above the largest
+   budget) is reported as stale, so the allowlist only shrinks as budgets are reduced (#1528).
+
 Opt-in heuristic checks:
-7. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
+8. (`--check-simp`) Flag non-terminal bare `simp` tactics in `-- upstream: candidate` modules
    under Complexity/.
-8. (`--max-lines N`) Flag Lean files exceeding N lines.
+9. (`--max-lines N`) Flag Lean files exceeding N lines.
 """
 
 from __future__ import annotations
@@ -51,16 +59,16 @@ from proof_lengths import (  # noqa: E402
     STRING_SPECIAL,
     masks,
 )
+from upstream import upstream_markers  # noqa: E402
 
-UPSTREAM_MARKER_RE = re.compile(
-    r"^--\s*upstream:\s*(?:"
+UPSTREAM_STATUS_RE = re.compile(
+    r"(?:"
     r"candidate(?:\s+.*)?|"
     r"submitted\s+#\d+(?:\s+@[0-9a-f]{7,40})?(?:\s+.*)?|"
     r"(?:vendored|subset of)\s+\S+(?:\s+@[0-9a-f]{7,40})?(?:\s+.*)?|"
     r"merged\s+@[0-9a-f]{7,40}(?:\s+.*)?|"
     r"local-only\s+\([^)]+\)"
-    r")\s*$",
-    re.M,
+    r")",
 )
 
 FORBIDDEN_TOKEN_RE = re.compile(r"\b(sorry|native_decide)\b")
@@ -68,7 +76,10 @@ CUSTOM_AXIOM_RE = re.compile(
     r"^\s*(?:@\[(?:[^\[\]\n]|\[[^\[\]\n]*\])*\]\s*)*(?:(?:public|private|protected|noncomputable|scoped|local)\s+)*axiom\b",
     re.M,
 )
-SET_OPTION_RE = re.compile(r"^\s*set_option\s+(maxHeartbeats|maxRecDepth)\b")
+SET_OPTION_RE = re.compile(r"\bset_option\s+(maxHeartbeats|maxRecDepth)\b(?:\s+\S+)?")
+HEARTBEAT_VALUE_RE = re.compile(r"\bset_option\s+maxHeartbeats\b\s*([^\s;,)]+)?")
+DEFAULT_MAX_HEARTBEATS = 200000
+HEARTBEAT_ALLOWLIST = ROOT / "scripts" / "heartbeat_allowlist.txt"
 # cslib pads some keys with spaces.
 BIB_KEY_RE = re.compile(r"^@\w+\s*\{\s*([^,\s]+)\s*,", re.M)
 
@@ -303,10 +314,6 @@ def bibliography_keys(text: str) -> frozenset[str]:
     return frozenset(m.group(1) for m in BIB_KEY_RE.finditer(text))
 
 
-def is_candidate_module(text: str) -> bool:
-    return bool(re.search(r"^--\s*upstream:\s*candidate\b", text, re.M))
-
-
 def has_nearby_comment(raw_lines: list[str], code_lines: list[str], idx_0based: int) -> bool:
     start = max(0, idx_0based - 3)
     end = idx_0based + 1
@@ -365,12 +372,67 @@ def find_nonterminal_bare_simps(code: str) -> list[int]:
     return violations
 
 
+def load_heartbeat_allowlist(path: pathlib.Path = HEARTBEAT_ALLOWLIST) -> dict[str, int]:
+    """Parse `<path> <cap>` lines (blank lines and `#` comments ignored) into a cap per file."""
+    caps: dict[str, int] = {}
+    if not path.exists():
+        return caps
+    for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        entry = line.split("#", 1)[0].split()
+        if not entry:
+            continue
+        if len(entry) != 2 or not entry[1].isdigit():
+            raise ValueError(f"{path}:{line_no}: expected `<path> <cap>`, got {line!r}")
+        caps[entry[0]] = int(entry[1])
+    return caps
+
+
+def heartbeat_budgets(code_lines: list[str]) -> list[tuple[int, int | None]]:
+    """Find inline/multiline budgets in masked code; None denotes an unparsed value."""
+    code = "\n".join(code_lines)
+    budgets: list[tuple[int, int | None]] = []
+    for match in HEARTBEAT_VALUE_RE.finditer(code):
+        token = (match.group(1) or "").replace("_", "")
+        try:
+            value = int(token, 16 if token.lower().startswith("0x") else 10)
+            if value < 0:
+                value = None
+        except ValueError:
+            value = None
+        budgets.append((code.count("\n", 0, match.start()) + 1, value))
+    return budgets
+
+
+def check_heartbeat_allowlist_stale(caps: dict[str, int], root: pathlib.Path = ROOT) -> list[str]:
+    """Report allowlist entries whose file no longer needs them, so the list only shrinks."""
+    errors: list[str] = []
+    for rel, cap in sorted(caps.items()):
+        path = root / rel
+        if not path.exists():
+            errors.append(f"scripts/heartbeat_allowlist.txt: `{rel}` does not exist; remove it")
+            continue
+        code, _ = masks(path.read_text(encoding="utf-8"))
+        values = [v for _, v in heartbeat_budgets(code.split("\n")) if v is not None]
+        # Lean's zero means unlimited, above every finite cap.
+        if 0 in values:
+            continue
+        largest = max(values, default=0)
+        if largest <= DEFAULT_MAX_HEARTBEATS:
+            errors.append(f"scripts/heartbeat_allowlist.txt: `{rel}` has no budget above "
+                          f"{DEFAULT_MAX_HEARTBEATS}; remove its entry")
+        elif cap == 0 or cap > largest:
+            errors.append(f"scripts/heartbeat_allowlist.txt: `{rel}` cap {cap} exceeds its "
+                          f"largest budget {largest}; lower the cap to {largest}")
+    return errors
+
+
 def check_file(
     path: pathlib.Path,
     root: pathlib.Path = ROOT,
     check_simp: bool = False,
     max_lines: int | None = None,
     bib_keys: frozenset[str] | None = None,
+    heartbeat_caps: dict[str, int] | None = None,
 ) -> list[str]:
     rel = path.relative_to(root) if path.is_relative_to(root) else path
     raw = path.read_text(encoding="utf-8")
@@ -380,7 +442,8 @@ def check_file(
     errors: list[str] = []
 
     in_complexity = rel.parts and rel.parts[0] == "Complexity"
-    if in_complexity and not UPSTREAM_MARKER_RE.search(raw):
+    markers = upstream_markers(raw) if in_complexity else []
+    if in_complexity and not any(UPSTREAM_STATUS_RE.fullmatch(status) for status in markers):
         errors.append(f"{rel}: missing or invalid `-- upstream:` marker")
     if in_complexity:
         errors.extend(check_docstring_links(raw, rel, root))
@@ -395,14 +458,29 @@ def check_file(
         line_no = syntax.count("\n", 0, m.start()) + 1
         errors.append(f"{rel}:{line_no}: forbidden custom `axiom` declaration")
 
-    for idx, c_line in enumerate(code_lines):
-        m_opt = SET_OPTION_RE.match(c_line)
-        if m_opt and not has_nearby_comment(raw_lines, code_lines, idx):
+    for match in SET_OPTION_RE.finditer(code):
+        idx = code.count("\n", 0, match.start())
+        value_idx = code.count("\n", 0, match.end())
+        if not any(has_nearby_comment(raw_lines, code_lines, line)
+                   for line in range(idx, value_idx + 1)):
             errors.append(
-                f"{rel}:{idx + 1}: `set_option {m_opt.group(1)}` requires a justifying comment"
+                f"{rel}:{idx + 1}: `set_option {match.group(1)}` requires a justifying comment"
             )
 
-    if check_simp and in_complexity and is_candidate_module(raw):
+    if heartbeat_caps is not None:
+        cap = heartbeat_caps.get(rel.as_posix(), DEFAULT_MAX_HEARTBEATS)
+        for line_no, value in heartbeat_budgets(code_lines):
+            if value is None:
+                errors.append(f"{rel}:{line_no}: cannot parse `set_option maxHeartbeats` budget")
+            elif cap != 0 and (value == 0 or value > cap):
+                errors.append(
+                    f"{rel}:{line_no}: `set_option maxHeartbeats {value}` exceeds "
+                    + (f"its allowlisted cap {cap}" if cap > DEFAULT_MAX_HEARTBEATS else
+                       f"the {DEFAULT_MAX_HEARTBEATS} default; reduce the proof's cost, or add "
+                       "the file to scripts/heartbeat_allowlist.txt with review")
+                )
+
+    if check_simp and any(re.match(r"candidate\b", status) for status in markers):
         for line_no in find_nonterminal_bare_simps(syntax):
             errors.append(f"{rel}:{line_no}: non-terminal bare `simp` (use `simp only`)")
 
@@ -436,6 +514,7 @@ def check_paths(
     check_simp: bool = False,
     max_lines: int | None = None,
     bib_keys: frozenset[str] | None = None,
+    heartbeat_caps: dict[str, int] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     checked = 0
@@ -450,7 +529,7 @@ def check_paths(
         for f in files:
             checked += 1
             errors.extend(check_file(f, root=root, check_simp=check_simp, max_lines=max_lines,
-                                     bib_keys=bib_keys))
+                                     bib_keys=bib_keys, heartbeat_caps=heartbeat_caps))
     if not checked and not errors:
         errors.append("no source files found in selected paths")
     return errors
@@ -483,15 +562,18 @@ def main() -> int:
         targets = [ROOT / "Complexity", ROOT / "ComplexityTests", ROOT / "abstracts/ComplexityAbstracts"]
 
     bibliography = (ROOT / "references.bib").read_text(encoding="utf-8")
+    heartbeat_caps = load_heartbeat_allowlist()
     errors = check_paths(
         targets,
         root=ROOT,
         check_simp=args.check_simp,
         max_lines=args.max_lines,
         bib_keys=bibliography_keys(bibliography),
+        heartbeat_caps=heartbeat_caps,
     )
     if not args.paths:
         errors += check_bibliography(bibliography)
+        errors += check_heartbeat_allowlist_stale(heartbeat_caps)
     if errors:
         for err in errors:
             print(f"ERROR: {err}", file=sys.stderr)

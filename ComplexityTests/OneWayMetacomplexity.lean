@@ -21,7 +21,7 @@ open Turing.MultiTapeTM Cslib Cslib.Crypto Cslib.Complexity
 
 -- The preimage-prefix problem of a concrete polynomial-time function is in `NP`.
 example : preimagePrefix (fun x => x ++ x) ∈ NP encPreimagePrefix :=
-  preimagePrefix_mem_NP (.of_tidy (by fun_prop))
+  preimagePrefix_mem_NP (by fun_prop)
 
 -- The search hypothesis is satisfiable: with an exact (classical) decision procedure, the search
 -- recovers the input of an injective function.
@@ -74,8 +74,9 @@ example : {b : Bool | b = true} ∈ BPP encBool :=
 -- empty reply.
 example : OracleComp.interpret (ProbOracleComp.handler ProbComp.unifFin
     fun request => pure (List.reverse request.2))
-      (KabanetsCai.queryTable [[true, false], [], [false, true]]) = pure [false, false, true] :=
-  KabanetsCai.interpret_queryTable _ _ _
+      (KabanetsCai.queryTable [[true, false], [], [false, true]]) = pure [false, false, true] := by
+  rw [KabanetsCai.interpret_queryTable]
+  rfl
 
 -- The circuit bound applies to a concrete polynomial-time keyed family.
 example : ∃ c : ℕ, ∀ (key : List Bool) (m : ℕ), m ≤ key.length →
@@ -83,17 +84,19 @@ example : ∃ c : ℕ, ∀ (key : List Bool) (m : ℕ), m ≤ key.length →
       (Circuits.single (KabanetsCai.restriction (fun query => key ++ query) key.length m)) ≤
         c * (3 * key.length + 2) ^ c + 2 :=
   KabanetsCai.exists_complexity_restriction_le (family := fun key query => key ++ query)
-    (.of_tidy (by fun_prop))
+    (by fun_prop)
 
--- A random function restricts to a uniformly random Boolean function.
-example : (Probability.PMF.uniformOfFintype (BitString 3 → BitString 3)).map
-    (KabanetsCai.restrictTable 3 2 (by norm_num)) =
-      Probability.PMF.uniformOfFintype (BooleanFunction 2) :=
-  KabanetsCai.uniformOfFintype_map_restrictTable _ (by norm_num)
+-- Restricting a uniformly random `BitString 3 → BitString 3` table gives the all-false
+-- `BooleanFunction 2` with probability `1 / 16`.
+example :
+    ((Probability.PMF.uniformOfFintype (BitString 3 → BitString 3)).map
+      (KabanetsCai.restrictTable 3 2 (by norm_num))) (fun _ => false) = 1 / 16 := by
+  rw [KabanetsCai.uniformOfFintype_map_restrictTable _ (by norm_num)]
+  simp [Probability.PMF.uniformOfFintype_apply]
 
 -- The distinguisher certificate applies to a concrete polynomial-time decider.
 example : Probability.IsOraclePPT Turing.MultiTapeTM.encBool
     (KabanetsCai.mcspDistinguisher 0 (fun x => x.2.isEmpty) 3) :=
-  KabanetsCai.isOraclePPT_mcspDistinguisher 3 (.of_tidy (by fun_prop))
+  KabanetsCai.isOraclePPT_mcspDistinguisher 3 (by fun_prop)
 
 end ComplexityTests.OneWayMetacomplexity

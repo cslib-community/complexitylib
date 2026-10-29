@@ -131,17 +131,17 @@ def swapCode : Code .exact rBin := ram_exact[
   t ← pb + vp; *t ← k;
   t ← pb + vk; *t ← p ]
 
-/-- Set `t := 1` iff `EntryLT (vA, dA) (vB, dB)`, else `t := 0`. -/
+/-- Set `t := 1` iff `IndexedMinPQ.RawPrioLT (vA, dA) (vB, dB)`, else `t := 0`. -/
 abbrev cmpEntries (vA dA vB dB : Fin rBin) : Code .exact rBin := ram_exact[
   if dA < dB then [ t ← one ] else [
     if dA = dB then [
       if vA < vB then [ t ← one ] else [ t ← zero ] ]
     else [ t ← zero ] ] ]
 
-/-- Set `t := 1` iff `EntryLT (vk, dk) (vp, dp)`, else `t := 0`. -/
+/-- Set `t := 1` iff `IndexedMinPQ.RawPrioLT (vk, dk) (vp, dp)`, else `t := 0`. -/
 abbrev cmpKP : Code .exact rBin := cmpEntries vk dk vp dp
 
-/-- Set `t := 1` iff `EntryLT (vp, dp) (vk, dk)`, else `t := 0`. -/
+/-- Set `t := 1` iff `IndexedMinPQ.RawPrioLT (vp, dp) (vk, dk)`, else `t := 0`. -/
 abbrev cmpPK : Code .exact rBin := cmpEntries vp dp vk dk
 
 /-- One iteration of `siftUp` from `k ≥ 2`, using `k >>> one = k / 2` for the parent position. -/
@@ -167,8 +167,8 @@ def siftDownChoose : Code .exact rBin := ram_exact[
     if zero < t then [ p ← l + one; vp ← vk; dp ← dk ] else [ p ← p ] ]
   else [ p ← p ] ]
 
-/-- Swap `k` with chosen child `(p, vp, dp)` if `EntryLT (vp, dp) (vk, dk)`, else stop `siftDown`.
--/
+/-- Swap `k` with chosen child `(p, vp, dp)` if `IndexedMinPQ.RawPrioLT (vp, dp) (vk, dk)`, else
+stop `siftDown`. -/
 def siftDownSink : Code .exact rBin := ram_exact[
   t ← hb + k; vk ← *t; t ← baseReg + vk; dk ← *t;
   ⟪cmpPK⟫;

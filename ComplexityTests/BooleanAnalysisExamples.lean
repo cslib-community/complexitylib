@@ -56,33 +56,29 @@ theorem blrAcceptance_and₂ : blrAcceptance and₂ = 5 / 8 := by
       Bool.true_eq_false, add_zero, zero_div, one_div, zero_add]
   norm_num
 
--- Through the Fourier formula for the acceptance, the cubed coefficients sum to `1 / 4`.
-example : ∑ S, fourierCoeff (fun x => signVal (and₂ x)) S ^ 3 = 1 / 4 := by
-  have h := blrAcceptance_eq_sum_fourierCoeff_pow_three and₂
-  rw [blrAcceptance_and₂] at h
-  linarith
-
--- The conjunction is not a parity: parities pass the test with probability one.
-example (S : Finset (Fin 2)) : and₂ ≠ parityOn S := by
-  intro h
-  have h₁ := blrAcceptance_parityOn S
-  rw [← h, blrAcceptance_and₂] at h₁
-  norm_num at h₁
-
--- Soundness at `ε = 3 / 8` on this non-parity: some parity differs from it on at most one of
--- the four inputs.
-example : ∃ S, hammingDist and₂ (parityOn S) ≤ 1 := by
-  obtain ⟨S, hS⟩ := exists_hammingDist_parityOn_le_of_le_blrAcceptance
-    (f := and₂) (ε := 3 / 8) (by rw [blrAcceptance_and₂]; norm_num)
-  refine ⟨S, ?_⟩
-  have h : (hammingDist and₂ (parityOn S) : ℝ) < 2 := by
-    rw [Fintype.card_fin] at hS
+-- Through the Fourier formula for the acceptance, the cubed coefficients sum to `1 / 4`;
+-- `and₂` is not a parity, BLR soundness at `ε = 3 / 8` gives distance at most `1` to some parity,
+-- and `parityOn ∅` attains that bound.
+example (S : Finset (Fin 2)) :
+    ∑ T, fourierCoeff (fun x => signVal (and₂ x)) T ^ 3 = 1 / 4 ∧
+    and₂ ≠ parityOn S ∧
+    (∃ T, hammingDist and₂ (parityOn T) ≤ 1) ∧
+    hammingDist and₂ (parityOn ∅) = 1 := by
+  refine ⟨?_, ?_, ?_, by decide⟩
+  · have h := blrAcceptance_eq_sum_fourierCoeff_pow_three and₂
+    rw [blrAcceptance_and₂] at h
     linarith
-  exact Nat.lt_succ_iff.mp (by exact_mod_cast h)
-
--- The bound is attained by the constant parity `parityOn ∅`.
-example : hammingDist and₂ (parityOn ∅) = 1 := by
-  decide
+  · intro h
+    have h₁ := blrAcceptance_parityOn S
+    rw [← h, blrAcceptance_and₂] at h₁
+    norm_num at h₁
+  · obtain ⟨T, hT⟩ := exists_hammingDist_parityOn_le_of_le_blrAcceptance
+      (f := and₂) (ε := 3 / 8) (by rw [blrAcceptance_and₂]; norm_num)
+    refine ⟨T, ?_⟩
+    have h : (hammingDist and₂ (parityOn T) : ℝ) < 2 := by
+      rw [Fintype.card_fin] at hT
+      linarith
+    exact Nat.lt_succ_iff.mp (by exact_mod_cast h)
 
 /-! ### Noise sensitivity and influence -/
 
@@ -113,13 +109,12 @@ theorem totalInfluence_and₂ : totalInfluence (fun x => signVal (and₂ x)) = 1
       add_self_div_two, zero_ne_one, add_zero, zero_div]
   norm_num
 
--- `NS_δ ≤ δ I` on the conjunction; the computed value `δ - δ ^ 2 / 2` agrees.
-example {δ : ℝ} (hδ : δ ≤ 1) : noiseSensitivity δ and₂ ≤ δ := by
-  simpa [totalInfluence_and₂] using noiseSensitivity_le_mul_totalInfluence hδ and₂
-
--- The `L⁴` norm of the derivative of the conjunction in its first bit is `(1 / 2) ^ (1 / 4)`.
-example : lpNorm 4 (derivative 0 fun x => signVal (and₂ x)) = (1 / 2) ^ (4 : ℝ)⁻¹ := by
-  rw [lpNorm_derivative_signVal and₂ 0 (by norm_num), influence_and₂]
+-- `NS_δ ≤ δ I` on the conjunction and the `L⁴` norm of the derivative in its first bit.
+example {δ : ℝ} (hδ : δ ≤ 1) :
+    noiseSensitivity δ and₂ ≤ δ ∧
+    lpNorm 4 (derivative 0 fun x => signVal (and₂ x)) = (1 / 2) ^ (4 : ℝ)⁻¹ :=
+  ⟨by simpa [totalInfluence_and₂] using noiseSensitivity_le_mul_totalInfluence hδ and₂,
+    by rw [lpNorm_derivative_signVal and₂ 0 (by norm_num), influence_and₂]⟩
 
 /-! ### The Hadamard tester -/
 
@@ -140,34 +135,29 @@ example : ∃ x : Fin 2 → Bool,
 
 /-! ### Random masks -/
 
--- Both coordinates of a mask of rate `p` are selected with probability `p ^ 2`.
-example (p : ℝ) :
-    bernoulliAverage p (fun P : Fin 2 → Bool => if P 0 && P 1 then (1 : ℝ) else 0) = p ^ 2 := by
-  simp only [Fin.isValue, Bool.and_eq_true, bernoulliAverage_cons, Nat.reduceAdd, Fin.cons_zero,
-      Bool.false_eq_true, Fin.cons_one, false_and, ↓reduceIte, bernoulliAverage_const, mul_zero,
-      true_and, mul_one, zero_add]
-  ring
-
--- A mask of rate `1 / 3` on three coordinates selects one coordinate on average.
-example : bernoulliAverage (1 / 3) (fun P : Fin 3 → Bool => (weight P : ℝ)) = 1 := by
-  rw [bernoulliAverage_weight, Fintype.card_fin]
-  norm_num
-
--- For masks of rate `1 / 2`, the difference selects each coordinate of the union with rate
--- `1 / 3`, so a coordinate lies in `P \ Q` with probability `3 / 4 · 1 / 3 = 1 / 4`.
-example : conditionalSamplingRate (1 / 2) (1 / 2) = 1 / 3 := by
-  norm_num [conditionalSamplingRate]
-
-example {ι : Type} [Fintype ι] [DecidableEq ι] (i : ι) :
+-- Bernoulli mask averages: both coordinates selected with probability `p ^ 2`, expected weight `1`
+-- at rate `1 / 3` on three coordinates, and union-difference conditional sampling rate `1 / 3`.
+example (p : ℝ) {ι : Type} [Fintype ι] [DecidableEq ι] (i : ι) :
+    bernoulliAverage p (fun P : Fin 2 → Bool => if P 0 && P 1 then (1 : ℝ) else 0) = p ^ 2 ∧
+    bernoulliAverage (1 / 3) (fun P : Fin 3 → Bool => (weight P : ℝ)) = 1 ∧
+    conditionalSamplingRate (1 / 2) (1 / 2) = 1 / 3 ∧
     bernoulliAverage (1 / 2) (fun P : ι → Bool => bernoulliAverage (1 / 2) (fun Q =>
       if P i && !Q i then (1 : ℝ) else 0)) = 1 / 4 := by
-  rw [bernoulliAverage_union_difference (1 / 2) (1 / 2) (1 / 3) (by norm_num)
-    (fun _ D => if D i then (1 : ℝ) else 0)]
-  have h (S : ι → Bool) : bernoulliAverage (1 / 3) (fun T => if (S i && T i) = true then
-      (1 : ℝ) else 0) = 1 / 3 * if S i then 1 else 0 := by
-    cases S i <;> simp [bernoulliAverage_const, bernoulliAverage_coordinate]
-  simp only [h, bernoulliAverage_const_mul, bernoulliAverage_coordinate]
-  norm_num
+  refine ⟨?_,
+    by rw [bernoulliAverage_weight, Fintype.card_fin]; norm_num,
+    by norm_num [conditionalSamplingRate],
+    ?_⟩
+  · simp only [Fin.isValue, Bool.and_eq_true, bernoulliAverage_cons, Nat.reduceAdd, Fin.cons_zero,
+      Bool.false_eq_true, Fin.cons_one, false_and, ↓reduceIte, bernoulliAverage_const, mul_zero,
+      true_and, mul_one, zero_add]
+    ring
+  · rw [bernoulliAverage_union_difference (1 / 2) (1 / 2) (1 / 3) (by norm_num)
+      (fun _ D => if D i then (1 : ℝ) else 0)]
+    have h (S : ι → Bool) : bernoulliAverage (1 / 3) (fun T => if (S i && T i) = true then
+        (1 : ℝ) else 0) = 1 / 3 * if S i then 1 else 0 := by
+      cases S i <;> simp [bernoulliAverage_const, bernoulliAverage_coordinate]
+    simp only [h, bernoulliAverage_const_mul, bernoulliAverage_coordinate]
+    norm_num
 
 /-! ### Fibers, light patterns and mirror sets -/
 
@@ -237,20 +227,21 @@ example {ι : Type} [Fintype ι] [DecidableEq ι] :
 def oneTwo (x : Fin 1 → Bool) : ℝ :=
   if x 0 then 2 else 1
 
--- Selecting every coordinate gives the harmonic mean `4 / 3` of `1` and `2` ...
-example : harmonicTransform oneTwo (fun _ => true) = 4 / 3 := by
-  rw [harmonicTransform_full, Cslib.harmonicMean_of_pos (fun x => by
-    unfold oneTwo; split_ifs <;> norm_num)]
-  simp only [oneTwo, Fin.expect_univ_cons, Fintype.expect_bool, Fintype.expect_unique]
-  norm_num
-
--- ... which is at most their mean `3 / 2`.
-example : harmonicTransform oneTwo (fun _ => true) ≤ 3 / 2 := by
-  have h := harmonicTransform_le_expect (f := oneTwo)
-    (fun x => by unfold oneTwo; split_ifs <;> norm_num) (fun _ => true)
-  simp only [oneTwo, Fin.expect_univ_cons, Fintype.expect_bool, Fintype.expect_unique] at h
-  norm_num at h
-  exact h
+-- Selecting every coordinate gives the harmonic mean `4 / 3` of `1` and `2`, which is at most
+-- their mean `3 / 2`.
+example :
+    harmonicTransform oneTwo (fun _ => true) = 4 / 3 ∧
+    harmonicTransform oneTwo (fun _ => true) ≤ 3 / 2 := by
+  refine ⟨?_, ?_⟩
+  · rw [harmonicTransform_full, Cslib.harmonicMean_of_pos (fun x => by
+      unfold oneTwo; split_ifs <;> norm_num)]
+    simp only [oneTwo, Fin.expect_univ_cons, Fintype.expect_bool, Fintype.expect_unique]
+    norm_num
+  · have h := harmonicTransform_le_expect (f := oneTwo)
+      (fun x => by unfold oneTwo; split_ifs <;> norm_num) (fun _ => true)
+    simp only [oneTwo, Fin.expect_univ_cons, Fintype.expect_bool, Fintype.expect_unique] at h
+    norm_num at h
+    exact h
 
 /-! ### Multilinear extensions -/
 
@@ -266,16 +257,13 @@ theorem eval_multilinearExtension_and₂ (z : Fin 2 → ℚ) :
     simp [h, bitVal]
   · simp
 
--- Off the cube, at `(1 / 2, 1 / 3)`, it takes the value `1 / 6` ...
-example : MvPolynomial.eval ![1 / 2, 1 / 3] (multilinearExtension fun x => bitVal ℚ (and₂ x)) =
-    1 / 6 := by
-  rw [eval_multilinearExtension_and₂]
-  norm_num
-
--- ... and on the cube it agrees with the conjunction.
-example : MvPolynomial.eval (fun i => bitVal ℚ (![true, false] i))
-    (multilinearExtension fun x => bitVal ℚ (and₂ x)) = 0 := by
-  rw [eval_multilinearExtension]
-  simp [and₂, bitVal]
+-- Off the cube, at `(1 / 2, 1 / 3)`, it takes the value `1 / 6`, and on the cube it agrees with
+-- the conjunction.
+example :
+    MvPolynomial.eval ![1 / 2, 1 / 3] (multilinearExtension fun x => bitVal ℚ (and₂ x)) = 1 / 6 ∧
+    MvPolynomial.eval (fun i => bitVal ℚ (![true, false] i))
+      (multilinearExtension fun x => bitVal ℚ (and₂ x)) = 0 :=
+  ⟨by rw [eval_multilinearExtension_and₂]; norm_num,
+    by rw [eval_multilinearExtension]; simp [and₂, bitVal]⟩
 
 end ComplexityTests.BooleanAnalysisExamples

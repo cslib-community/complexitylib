@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.LogSpace
 public import Complexity.Computability.Complexity.Reduction.TruthTable
 public import Complexity.Computability.Complexity.Reduction.TruthTableVariants
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Words
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 
@@ -511,15 +512,9 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
   have hr : ComputableInLogSpace r encA encUnary := by
     simp only [r]
     fun_prop
-  have hdiv : ComputableInLogSpace (fun m : ℕ => min m (k₁ * k₂) / k₂) encUnary encUnary :=
-    ComputableInLogSpace.unaryBoundedMap (k₁ * k₂) (fun m => m / k₂)
-  have hmod : ComputableInLogSpace (fun m : ℕ => min m (k₁ * k₂) % k₂) encUnary encUnary :=
-    ComputableInLogSpace.unaryBoundedMap (k₁ * k₂) (fun m => m % k₂)
-  have hq : ComputableInLogSpace q (encPair encA encUnary) encC :=
-    hq₂.comp (ComputableInLogSpace.pair
-      (hq₁.comp (ComputableInLogSpace.pair
-        (ComputableInLogSpace.fst _ _) (hdiv.comp (ComputableInLogSpace.snd _ _))))
-      (hmod.comp (ComputableInLogSpace.snd _ _)))
+  have hq : ComputableInLogSpace q (encPair encA encUnary) encC := by
+    simp only [q]
+    fun_prop
   have h_innerAns : ComputableInLogSpace innerAns
       (encPair (encPair encA encBits) encUnary) encBool := by
     simp only [innerAns]
