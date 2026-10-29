@@ -530,9 +530,19 @@ each statement against the numbered result. Organize modules by subject, not cha
   `D=4^m`, `L=19m`, `D^18≤N` and `Q*2^m≤N²`, the full charge including halt is at most
   `17301504*(19m+1)*N²/D^(1/18)`. Distinct-set sparsity retains an additive occurrence charge.
   Every width at least `256*clog₂(base+N+Q+P+5)` suffices for initialized caller-word bound `P`.
-  The reserved window is at most `(2*(N+Q+3))^128` and is not bulk-initialized. Actual ET-record
-  reads, matrix/query placement, producer-readback composition and the full [#1394] endpoint
-  remain open.
+  The reserved window is at most `(2*(N+Q+3))^128` and is not bulk-initialized.
+- **Prepared ET-record product calls** ([#1626](https://github.com/cslib-community/complexitylib/issues/1626)):
+  the native adapter reads the computed six-word record, recovers the depth with actual binary
+  logarithm code, and copies raw matrices and query occurrences above the producer's heap.
+  It invokes the complete callable product in a separate register bank and preserves the
+  catalogue, sources and producer registers. The fixed 320-register initialized client runs
+  the producer and consumes its first record; the caller interface supports every occupied
+  ordinal. Original polynomial headers/weights give positive logarithmic admission and
+  polynomial words/address support at every wider width. Adaptation costs `O(nD+Q)` beyond
+  the actual callee; actual chunks derive `Q*2^m≤n²`, giving the per-record halt-inclusive bound
+  `34603008*(19m+1)*n²/D^(1/18)` at `D=4^m`, `L=19m`, `D^18≤n`.
+  The outer instance loop, aggregate subcubic ET bound, backend/witness reconstruction and
+  the full [#1394] ordinary-3SUM 1.9992 endpoint remain open.
 - **Conditional Convolution-3SUM host** ([#1524]): the charged native host initializes from the
   ordinary input and runs every generated instance, conditional on a concrete solver's execution,
   correctness and frame theorem. This completes the conditional host milestone. Integrating the
