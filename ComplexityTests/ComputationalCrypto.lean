@@ -137,12 +137,18 @@ example : ¬ OneWay (fun word => word) :=
 
 example : ¬ OneWay (fun _ => [true, false]) := not_oneWay_const [true, false]
 
--- Length-preserving permutations have exactly the claimed ideal output law, without assuming OWPs.
+-- Appending an independent uniform bit gives this three-bit word its exact uniform probability.
 example :
     ((BitString.uniformList 2).bind (fun word =>
       (Cslib.Probability.PMF.uniformOfFintype Bool).map (fun bit => word ++ [bit])))
-      [true, false, true] ≤ (1 : ENNReal) / 2 ^ 3 := by
+      [true, false, true] = (1 : ENNReal) / 8 := by
   rw [(BitString.uniformList_snoc 2).symm]
-  exact BitString.uniformList_apply_le 3 [true, false, true]
+  have h := BitString.uniformList_map_apply id 3 [true, false, true]
+  simp only [PMF.map_id, id_eq] at h
+  rw [h]
+  have hcount : (Finset.univ.filter fun r : Fin 3 → Bool =>
+      List.ofFn r = [true, false, true]).card = 1 := by decide
+  rw [hcount]
+  norm_num
 
 end ComplexityTests.ComputationalCrypto

@@ -282,13 +282,12 @@ example :
         schnorrGroups.ddhIdealTupleLaw d23 :=
   schnorrGroups.ddhRerandomizeLaw_ideal d23 (by decide)
 
-/-- Encoded elements of `d23` satisfy the uniform polynomial encoding-length bound. -/
+/-- Encoded elements of any Schnorr group have bit-length polynomially bounded in the description
+bit-length. -/
 example :
-    ∃ c k : ℕ,
-      (schnorrGroups.encode d23 (schnorrGroups.generator d23)).length ≤
-        c * ((schnorrGroups.encDesc d23).length + 1) ^ k :=
-  let ⟨c, k, h⟩ := schnorrGroups.exists_length_encode_le
-  ⟨c, k, h d23 (schnorrGroups.generator d23)⟩
+    ∃ c k : ℕ, ∀ d : schnorrGroups.Desc, ∀ x : schnorrGroups.Carrier d,
+      (schnorrGroups.encode d x).length ≤ c * ((schnorrGroups.encDesc d).length + 1) ^ k :=
+  schnorrGroups.exists_length_encode_le
 
 /-! ### Exercise 10.10: Worst-case DDH decider tests -/
 
@@ -504,19 +503,22 @@ example (distinguisher : ℕ → schnorrGroups.withSeed.Desc × List Bool × Lis
       subst hd
       decide)
 
-/-- Positive-side non-degenerate asymptotic `SecureKDF` instantiation (`k = 8 > 0`): for any setup
+/-- Positive-side non-degenerate asymptotic `SecureKDF` instantiation (`k = 4 > 0`): for any setup
 law whose supported descriptions have group order at least `2 ^ n`, `schnorrGroups.withSeed` admits
-a `SecureKDF` with output key length `8 > 0` (constructed via `linearHashKDF` using the canonical
+a `SecureKDF` with output key length `4 > 0` (constructed via `linearHashKDF` using the canonical
 polynomial encoding-length bound of `schnorrGroups`). -/
 example (setup : ℕ → PMF schnorrGroups.Desc)
     (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
     ∃ (seedLen : ℕ → schnorrGroups.Desc → ℕ)
       (H : schnorrGroups.withSeed.Desc × List Bool → List Bool),
+      ComputableInPolyTime (fun p => seedLen p.1 p.2)
+        (encPair encUnary schnorrGroups.encDesc) encUnary ∧
+      ComputableInPolyTime H
+        (encPair schnorrGroups.withSeed.encDesc encBits) encBits ∧
+      (∀ ds : schnorrGroups.withSeed.Desc, ∀ w : List Bool, (H (ds, w)).length = 4) ∧
       schnorrGroups.withSeed.SecureKDF
-        (schnorrGroups.seededSetup setup seedLen) H (fun _ => 8) :=
-  let ⟨seedLen, H, _, _, _, hsec⟩ :=
-    schnorrGroups.exists_secureKDF_withSeed setup 8 Nat.two_pow_pos hsize negligible_inv_two_pow
-  ⟨seedLen, H, hsec⟩
+        (schnorrGroups.seededSetup setup seedLen) H (fun _ => 4) :=
+  schnorrGroups.exists_secureKDF_withSeed setup 4 Nat.two_pow_pos hsize negligible_inv_two_pow
 
 /-- Negative-side KDF counterexample: a constant 1-bit KDF `constZeroKDF := fun _ => [false]`
 always outputs `[false]` instead of a uniform 1-bit key. -/
