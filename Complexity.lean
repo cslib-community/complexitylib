@@ -145,7 +145,6 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountFrame
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.CountTriple
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
-public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Parameters
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Residues
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 public import Complexity.Algorithms.WordRAM.ThreeSum.Fill
