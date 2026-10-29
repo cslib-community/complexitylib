@@ -61,19 +61,6 @@ def space (N : ℕ) : ℕ := 3 * N + 1
 theorem space_lower (N : ℕ) : N + 1 ≤ space N := by
   unfold space; omega
 
-/-- Deprecated name for the shared raw priority comparison. -/
-@[deprecated IndexedMinPQ.RawPrioLT (since := "2026-10-29")]
-abbrev EntryLT (a b : ℕ × ℕ) : Prop := IndexedMinPQ.RawPrioLT a b
-
-@[deprecated (since := "2026-10-29")]
-alias instDecidableEntryLT := IndexedMinPQ.instDecidableRawPrioLT
-
-@[deprecated (since := "2026-10-29")]
-alias EntryLT.le := IndexedMinPQ.RawPrioLT.le
-
-@[deprecated (since := "2026-10-29")]
-alias not_entryLT := IndexedMinPQ.not_rawPrioLT_iff_rawPrioLE
-
 /-- Decreasing a handle's key improves its priority under `IndexedMinPQ.RawPrioLE`. -/
 theorem entryLE_of_key_le {u k₁ k₂ : ℕ} (h : k₁ ≤ k₂) :
     IndexedMinPQ.RawPrioLE (u, k₁) (u, k₂) := by
