@@ -53,11 +53,6 @@ public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.Deduplicate.Count
 public import Complexity.Algorithms.WordRAM.Deduplicate.Model
 public import Complexity.Algorithms.WordRAM.Deduplicate.Program
-public import Complexity.Algorithms.WordRAM.Dijkstra.BinaryHeap
-public import Complexity.Algorithms.WordRAM.Dijkstra.ExactNotation
-public import Complexity.Algorithms.WordRAM.Dijkstra.HeapProgram
-public import Complexity.Algorithms.WordRAM.Dijkstra.HeapRelax
-public import Complexity.Algorithms.WordRAM.Dijkstra.HeapSift
 public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
 public import Complexity.Algorithms.WordRAM.Dijkstra.FibonacciStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ
