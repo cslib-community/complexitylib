@@ -21,10 +21,12 @@ that many steps and whether it has halted by then. One machine computes it for e
 machine, whatever its number of work tapes, states and symbols
 (`Turing.MultiTapeTM.Universal.universal_desc`).
 
-It is tidily computable within time `O((t + 1) * stepBound D N t)` for `t` steps, a description of
-length `D` and an input of encoded length `N` (`Turing.MultiTapeTM.Universal.stepBound`), and space
-`O(runBound D N t + log t)`: the simulation iterates a step, counting down `t` in binary, and keeps
-the description, the input, the configuration and the output so far.
+For `t` steps, a description of encoded length `D`, an input of encoded length `N`, and a binary
+clock of length `L`, the time certificate is
+`O((t + 1) * (stepBound D N t + runBound D N t + (L + 1)^2) + (I + 1)^2)`,
+where `I` is the complete encoded input length. The space certificate is `O(runBound D N t + I)`.
+The simulation iterates a step, counting down `t` in binary, and keeps the description, the input,
+the configuration and the output so far. The setup term is included even when the clock is zero.
 
 ## Main definitions
 

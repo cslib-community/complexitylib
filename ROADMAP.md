@@ -168,6 +168,10 @@ index links to canonical definitions rather than keeping a second set.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
+- **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
+  with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
+  The current interpreter has a stronger polynomial certificate and a streaming input lookup;
+  the buffered representation, its native cleanup routines and their amortized bounds remain.
 - A tight time hierarchy, which needs a linear-overhead tape-indexed simulation, and the
   `f log f` hierarchy with its simulation bound. The space hierarchy for `log n ≤ g n`, which
   needs a universal simulation that does not hold its input.
@@ -536,6 +540,7 @@ not planned, not as proved.
 [#643]: https://github.com/cslib-community/complexitylib/issues/643
 [#645]: https://github.com/cslib-community/complexitylib/issues/645
 [#798]: https://github.com/cslib-community/complexitylib/issues/798
+[#800]: https://github.com/cslib-community/complexitylib/issues/800
 [#862]: https://github.com/cslib-community/complexitylib/issues/862
 [#881]: https://github.com/cslib-community/complexitylib/issues/881
 [#884]: https://github.com/cslib-community/complexitylib/issues/884

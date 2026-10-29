@@ -8,6 +8,7 @@ module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -268,11 +269,14 @@ public abbrev ctxBound (D N j : ℕ) : ℕ := 2 * (2 * D + 1 + N) + 1 + cfgBound
 /-- The bound on the time of a step after `j` steps, for a description of length `D` and an input
 of encoded length `N`: `Turing.MultiTapeTM.Universal.stepTime` at the largest sizes the invariant
 allows. -/
-@[expose] public def stepBound (D N j : ℕ) : ℕ := (2 * D + N + 2) * (ctxBound D N j + 1) ^ 2
+@[expose] public def stepBound (D N j : ℕ) : ℕ :=
+  (2 * D + 1) * (D + 1) * (ctxBound D N j + 1) +
+    (N + 1) * ((encNat (N + 1)).length + 1) ^ 2
 
 public lemma stepBound_mono {D N j D' N' j' : ℕ} (hD : D ≤ D') (hN : N ≤ N') (hj : j ≤ j') :
     stepBound D N j ≤ stepBound D' N' j' := by
   unfold stepBound ctxBound cfgBound tapeBound
+  have hbits := ComputableTidilyInO.length_encNat_mono (Nat.add_le_add_right hN 1)
   gcongr
 
 public lemma length_eCtx_le (x : List ℕ) {j : ℕ} {c : SCfg} (h : Inv (descLen d) x.length j c) :
@@ -298,7 +302,12 @@ public theorem stepTime_iterate_le (x : List ℕ) (j : ℕ) :
   have hE := table_le d
   have hp := hinv.inputPos
   have hL := length_eCtx_le d x hinv
+  have hbits := ComputableTidilyInO.length_encNat_mono
+    (show cfg.inputPos ≤ (encList encUnary x).length + 1 by omega)
   unfold stepTime stepBound
-  exact Nat.mul_le_mul (by dsimp only; omega) (Nat.pow_le_pow_left (by omega) 2)
+  dsimp only
+  exact Nat.add_le_add
+    (Nat.mul_le_mul (Nat.mul_le_mul_right _ (by omega)) (by omega))
+    (Nat.mul_le_mul (by omega) (by gcongr))
 
 end Turing.MultiTapeTM.Universal
