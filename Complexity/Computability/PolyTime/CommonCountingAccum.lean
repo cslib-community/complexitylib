@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fo
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
+import Complexity.Foundations.Data.List.Fold
 import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.List
@@ -451,14 +452,6 @@ theorem jetL1Norm_weightedProdJet_le (J ℓ : ℕ) (w : ℤ) (groups : List JetR
 
 section SharedHelpers
 
-theorem foldl_keep_fst {ι π α : Type*} (step : π → α → ι → α)
-    (par : π) (xs : List ι) (init : α) :
-    xs.foldl (fun pa i => (pa.1, step pa.1 pa.2 i)) (par, init) =
-      (par, xs.foldl (step par) init) := by
-  induction xs generalizing init with
-  | nil => rfl
-  | cons _ _ ih => exact ih _
-
 private def rangeAddJet (J ℓ j : ℕ) (f : ℕ → JetRows) : JetRows :=
   (List.range j).foldl (fun acc i => addJet J ℓ acc (f i)) (zeroJet J ℓ)
 private theorem isTableShape_rangeAddJet (J ℓ j : ℕ) (f : ℕ → JetRows) :
@@ -742,7 +735,7 @@ private theorem streamGroupJetSumRunPrefix_snd_snd_foldl (J ℓ d j : ℕ) (ctx 
     (BooleanFold.runPrefix (groupSumBody evalGroupProd) d j (((J, ℓ), ctx), zeroJet J ℓ)).2.2 =
       (((J, ℓ), ctx), rangeAddJet J ℓ j fun i => evalGroupProd (ctx, (d, lowBits d i))) :=
   (BooleanFold.prefix_accumulator (groupSumBody evalGroupProd) d j _).trans
-    (foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc i =>
+    (List.foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc i =>
       addJet par.1.1 par.1.2 acc (evalGroupProd (par.2, (d, lowBits d i))))
       ((J, ℓ), ctx) (List.range j) (zeroJet J ℓ))
 theorem streamGroupJetSumPrefix_eq_foldl (J ℓ d j : ℕ) (ctx : α) :
@@ -757,7 +750,7 @@ theorem toJetTable_streamGroupJetSum_eq_sum (J ℓ d : ℕ) (ctx : α) :
       (enumList d).foldl (fun acc w => addJet J ℓ acc (evalGroupProd (ctx, (d, w))))
         (zeroJet J ℓ) :=
     congrArg Prod.snd ((BooleanFold.run_accumulator (groupSumBody evalGroupProd) d _).trans
-      (foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc w =>
+      (List.foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc w =>
         addJet par.1.1 par.1.2 acc (evalGroupProd (par.2, (d, w))))
         ((J, ℓ), ctx) (enumList d) (zeroJet J ℓ)))
   rw [hfold, toJetTable_foldl_addJet, toJetTable_zeroJet, zero_add, enumList, List.map_map,
@@ -976,7 +969,7 @@ private theorem streamOuterJetAccumRunPrefix_snd_foldl (J ℓ j : ℕ) (ctx : α
       (((J, ℓ), ctx), rangeAddJet J ℓ j fun idx =>
         weightedProdJet J ℓ (evalRound (ctx, idx)).1 (evalRound (ctx, idx)).2) :=
   (IndexFold.run_accumulator (outerAccumBody evalRound) j _).trans
-    (foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc idx =>
+    (List.foldl_keep_fst (fun (par : (ℕ × ℕ) × α) acc idx =>
       combineOuterRound par.1.1 par.1.2 acc (evalRound (par.2, idx)))
       ((J, ℓ), ctx) (List.range j) (zeroJet J ℓ))
 theorem streamOuterJetAccumPrefix_eq_foldl (J ℓ j : ℕ) (ctx : α) :

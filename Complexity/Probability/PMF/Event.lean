@@ -39,7 +39,8 @@ masses of `true` and `false` under a Boolean distribution sum to one
   `Cslib.Probability.PMF.toOuterMeasure_toReal_pos_iff`: real-valued event probabilities.
 * `Cslib.Probability.PMF.filter_apply_toReal`: conditioned masses.
 * `Cslib.Probability.PMF.toOuterMeasure_bind_toReal`: averaging over a first stage.
-* `Cslib.Probability.PMF.toOuterMeasure_bind_failure_le`,
+* `Cslib.Probability.PMF.toOuterMeasure_bind_le`,
+  `Cslib.Probability.PMF.toOuterMeasure_bind_failure_le`,
   `Cslib.Probability.PMF.toOuterMeasure_bind_failure_toReal_le`,
   `Cslib.Probability.PMF.toOuterMeasure_bind_ge_mul`: composing failure and success bounds.
 * `Cslib.Probability.PMF.toOuterMeasure_rate_ge`: average bias as the probability of good inputs.
@@ -143,6 +144,16 @@ theorem toOuterMeasure_bind_toReal [Fintype α] (p : PMF α) (kernel : α → PM
   rw [PMF.toOuterMeasure_bind_apply, tsum_fintype, ENNReal.toReal_sum
     (fun a _ => ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (toOuterMeasure_ne_top _ _))]
   simp only [ENNReal.toReal_mul]
+
+/-- A uniform upper bound on `(kernel a).toOuterMeasure event` bounds
+`(p.bind kernel).toOuterMeasure event`. -/
+theorem toOuterMeasure_bind_le (p : PMF α) (kernel : α → PMF β) (event : Set β)
+    {error : ENNReal} (h : ∀ a, (kernel a).toOuterMeasure event ≤ error) :
+    (p.bind kernel).toOuterMeasure event ≤ error := by
+  rw [PMF.toOuterMeasure_bind_apply]
+  calc ∑' a, p a * (kernel a).toOuterMeasure event
+      ≤ ∑' a, p a * error := ENNReal.tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h a) zero_le
+    _ = error := by rw [ENNReal.tsum_mul_right, p.tsum_coe, one_mul]
 
 /-- A randomized continuation can fail because its precondition was already false or because
 it fails from a valid input. No independence or finite-state assumption is needed. -/

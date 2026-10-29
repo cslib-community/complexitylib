@@ -433,7 +433,7 @@ private theorem advantage_evalNaorReingoldTape_uniform_le (inLen outLen : ℕ �
     rw [PMF.bind_comm (Cslib.BitString.uniformList H) ν]
     congr 1; funext α₀
     rw [PMF.bind_comm (Cslib.BitString.uniformList H)
-      (PMF.uniformOfFintype (Fin m → ZMod (F.order d))), ← iid_uniformOfFintype m]
+      (PMF.uniformOfFintype (Fin m → ZMod (F.order d))), ← PMF.iid_uniformOfFintype m]
   change Game.advantage
     ((Cslib.BitString.uniformList (E + (m * E + H))).bind _)
     (F.naorReingoldHashedRealGame _ _ _ _ _ n) ≤ _

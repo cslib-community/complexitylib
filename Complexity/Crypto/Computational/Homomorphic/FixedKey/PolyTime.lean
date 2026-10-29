@@ -174,9 +174,7 @@ theorem polynomiallyBounded_widths :
       (fun c : Σ m, Circuit Boolean.signature m 1 => (c.1, c.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
   have htotal : PolynomiallyBounded (fun n => secretWidth n + ciphertextWidth n) :=
-    (show PolyBounded (fun n : ℕ => n) (fun n => secretWidth n + ciphertextWidth n) by
-      simpa only [encUnary_apply, List.length_replicate, Function.comp_def] using
-        (hview.fst'.comp hD).polyBounded_length).polynomiallyBounded
+    (hview.fst'.comp hD).polynomiallyBounded
   exact ⟨htotal.mono_of_le (fun n => Nat.le_add_right (secretWidth n) (ciphertextWidth n)),
     htotal.mono_of_le (fun n => Nat.le_add_left (ciphertextWidth n) (secretWidth n))⟩
 
@@ -189,11 +187,7 @@ theorem polynomiallyBounded_decryptionSize :
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
   have hlen : ComputableInPolyTime (fun n => (D.circuit n).code.1.length) encUnary encUnary :=
     (ComputableInPolyTime.length_list Boolean.encGate).comp (hview.snd'.fst'.comp hD)
-  have hlength : PolynomiallyBounded (fun n => (D.circuit n).code.1.length) :=
-    (show PolyBounded (fun n : ℕ => n) (fun n => (D.circuit n).code.1.length) by
-      simpa only [encUnary_apply, List.length_replicate] using
-        hlen.polyBounded_length).polynomiallyBounded
-  exact hlength.mono_of_le (fun n => (Circuit.length_code_fst (D.circuit n)).ge)
+  exact hlen.polynomiallyBounded.mono_of_le (fun n => (Circuit.length_code_fst (D.circuit n)).ge)
 
 include hkeyGen hencrypt in
 /-- The constructed scheme's actual key generator is strict PPT. -/

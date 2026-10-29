@@ -32,6 +32,8 @@ import Mathlib.Data.List.OfFn
   updates and bound defaulted reads of numeric register files.
 * `List.getD_map_range`: read a function tabulated over a bounded range.
 * `List.map_range_eq_ofFn`: runtime tabulation agrees with the finite coordinate view.
+* `List.map_getD_zipIdx`: mapping `ys.getD a.2 fallback` over `xs.zipIdx` recovers `ys` when
+  `ys.length = xs.length`.
 * `List.find?_range_getD_eq_sInf`: the least index below `m` passing a test, or `m`, as a search
   over a range.
 -/
@@ -126,6 +128,16 @@ theorem List.map_range_eq_ofFn {α : Type*} (n : ℕ) (f : ℕ → α) :
   apply List.ext_getElem (by simp)
   intro i hi hi'
   simp
+
+/-- Mapping `ys.getD a.2 fallback` over `xs.zipIdx` recovers `ys` when `ys.length = xs.length`. -/
+theorem List.map_getD_zipIdx {α β : Type*} (xs : List α) (ys : List β) (fallback : β)
+    (hlen : ys.length = xs.length) :
+    (xs.zipIdx.map fun a => ys.getD a.2 fallback) = ys := by
+  apply List.ext_getElem
+  · simpa using hlen.symm
+  · intro i hi hj
+    simp only [List.getElem_map, List.getElem_zipIdx, Nat.zero_add]
+    rw [List.getD_eq_getElem _ _ hj]
 
 /-- The least index below `m` passing a test, or `m`, as a search over `List.range m`. -/
 theorem List.find?_range_getD_eq_sInf (m : ℕ) (p : ℕ → Bool) :
