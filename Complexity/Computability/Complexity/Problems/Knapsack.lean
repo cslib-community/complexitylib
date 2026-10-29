@@ -17,7 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 `Knapsack` is the decision version of the 0-1 knapsack problem: given items, each with a weight
 and a value, a capacity and a goal, some sub-multiset of the items has total weight at most the
 capacity and total value at least the goal [GareyJohnson1979]. All numbers are encoded in binary
-(`encNat`); the verifier compares the sums in binary (`ComputableTidilyInPolyTime.binary_le`).
+(`encNat`); the verifier compares the sums in binary (`ComputableInPolyTime.binary_le`).
 
 Giving every number of a subset sum instance equal weight and value, and taking the target as
 both capacity and goal, reduces `SubsetSum` to `Knapsack`. Karp's KNAPSACK [Karp1972] is the
@@ -48,7 +48,7 @@ subset sum form of the problem.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 open scoped List
 
 /-- Instances `(items, capacity, goal)` of the 0-1 knapsack problem, items given as
@@ -91,10 +91,20 @@ theorem isVerifier : IsVerifier encKnapsack Polynomial.X verifier Knapsack := by
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encKnapsack encBits) encBool := by
-  have hmask := (computableInPolyTime_maskSelect (encPair encNat encNat)).tidy
-  refine .of_tidy ?_
-  unfold verifier
-  fun_prop
+  have hx11 : ComputableInPolyTime (fun x : (List (ℕ × ℕ) × ℕ × ℕ) × List Bool => x.1.1)
+      (encPair encKnapsack encBits) (encList (encPair encNat encNat)) :=
+    (fst _ _).comp (fst _ _)
+  have hx12 : ComputableInPolyTime (fun x : (List (ℕ × ℕ) × ℕ × ℕ) × List Bool => x.1.2)
+      (encPair encKnapsack encBits) (encPair encNat encNat) :=
+    (snd _ _).comp (fst _ _)
+  have hsel : ComputableInPolyTime
+      (fun x : (List (ℕ × ℕ) × ℕ × ℕ) × List Bool => maskSelect x.1.1 x.2)
+      (encPair encKnapsack encBits) (encList (encPair encNat encNat)) :=
+    (computableInPolyTime_maskSelect (encPair encNat encNat)).comp (hx11.prod (snd _ _))
+  have hsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
+  have hw := hsum.comp ((map (fst encNat encNat)).comp hsel)
+  have hv := hsum.comp ((map (snd encNat encNat)).comp hsel)
+  exact bool_and' (binary_le' hw ((fst _ _).comp hx12)) (binary_le' ((snd _ _).comp hx12) hv)
 
 /-- `Knapsack` belongs to `NP`. -/
 theorem mem_NP : Knapsack ∈ NP encKnapsack :=
@@ -125,9 +135,8 @@ theorem toKnapsack_mem_iff (x : List ℕ × ℕ) : toKnapsack x ∈ Knapsack ↔
 /-- The reduction to `Knapsack` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toKnapsack :
-    ComputableInPolyTime toKnapsack (encPair (encList encNat) encNat) encKnapsack := by
-  unfold toKnapsack
-  fun_prop
+    ComputableInPolyTime toKnapsack (encPair (encList encNat) encNat) encKnapsack :=
+  ((map (id'.prod id')).comp (fst _ _)).prod ((snd _ _).prod (snd _ _))
 
 end SubsetSum
 
