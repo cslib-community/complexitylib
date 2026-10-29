@@ -31,9 +31,9 @@ def d23 : SchnorrGroup.Desc :=
 
 example : schnorrGroups.order d23 = 11 := rfl
 
-/-- The encoded generator is the binary digits of `2`. -/
-example : schnorrGroups.encode d23 (schnorrGroups.generator d23) = Nat.bits 2 :=
-  SchnorrGroup.encode_generator d23
+/-- The encoded generator is the binary digits `[false, true]` of `2`. -/
+example : schnorrGroups.encode d23 (schnorrGroups.generator d23) = [false, true] :=
+  (SchnorrGroup.encode_generator d23).trans rfl
 
 /-- `2 ^ 7 = 13` in `(ZMod 23)ˣ`, computed on encodings. -/
 example : schnorrGroups.smul (d23, 7, Nat.bits 2) = Nat.bits 13 := by decide
@@ -48,23 +48,16 @@ noncomputable def silent : schnorrGroups.SchnorrImpersonator where
 
 /-- The silent impersonator is uniform strict PPT. -/
 theorem silent_isPPT : silent.IsPPT :=
-  ⟨ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _),
-    ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _)⟩
+  ⟨(ComputableInPolyTime.const _).isPPTOn,
+    (ComputableInPolyTime.const _).isPPTOn⟩
 
 /-- `n`-bit challenges have negligible guessing probability `1 / 2 ^ n`. -/
 theorem negligible_inv_two_pow : Negligible fun n => (1 : ℝ≥0) / 2 ^ n := by
   simpa only [one_div, inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
 
 /-- Under the discrete-logarithm assumption for Schnorr groups of order at least `2 ^ n`,
-Schnorr identification with `n`-bit challenges resists every uniform strict PPT impersonator. -/
-example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
-    (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d)
-    (A : schnorrGroups.SchnorrImpersonator) (hA : A.IsPPT) :
-    Negligible fun n => Game.succProbability (schnorrGroups.schnorrDirectGame setup id A n) :=
-  PrimeOrderGroupFamily.negligible_schnorrDirectGame hDL (ComputableInPolyTime.of_eq fun _ => rfl)
-    hsize negligible_inv_two_pow hA
-
-/-- In particular, the silent impersonator succeeds with negligible probability. -/
+Schnorr identification with `n`-bit challenges resists the silent impersonator with negligible
+success probability. -/
 example (setup : ℕ → PMF schnorrGroups.Desc) (hDL : schnorrGroups.DiscreteLog setup)
     (hsize : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d) :
     Negligible fun n => Game.succProbability (schnorrGroups.schnorrDirectGame setup id silent n) :=

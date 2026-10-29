@@ -17,17 +17,17 @@ namespace ComplexityTests.FiniteControl
 open Turing.MultiTapeTM Cslib Cslib.Probability
 
 -- Stored table/index pairs use ordinary function application.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun pair : (Bool → List Bool) × Bool => pair.1 pair.2)
-    (encPair (encPi encBits) encBool) encBits := by fun_prop
+    (encPair (encPi encBits) encBool) encBits := by polytime
 
 -- Computed tables and indices use the general application rule without a default value.
 example {α Index Value : Type} [Fintype Index] {input : α ↪ List Bool}
     {enc : Value ↪ List Bool} {indexEnc : Index ↪ List Bool}
     (values : α → Index → Value) (index : α → Index)
-    (hv : ComputableTidilyInPolyTime values input (encPi enc))
-    (hi : ComputableTidilyInPolyTime index input indexEnc) :
-    ComputableTidilyInPolyTime (fun a => values a (index a)) input enc := by
+    (hv : ComputableInPolyTime values input (encPi enc))
+    (hi : ComputableInPolyTime index input indexEnc) :
+    ComputableInPolyTime (fun a => values a (index a)) input enc := by
   fail_if_success (clear hv; polytime)
   fail_if_success (clear hi; polytime)
   polytime
@@ -36,21 +36,21 @@ example {α Index Value : Type} [Fintype Index] {input : α ↪ List Bool}
 example {α Index Value : Type} [Fintype Index] {input : α ↪ List Bool}
     {enc : Value ↪ List Bool} {indexEnc : Index ↪ List Bool}
     (values : α → Index → Value) (index : α → Index)
-    (hv : ComputableTidilyInPolyTime values input (encPi enc))
-    (hi : ComputableTidilyInPolyTime index input indexEnc) :
-    ComputableTidilyInPolyTime
+    (hv : ComputableInPolyTime values input (encPi enc))
+    (hi : ComputableInPolyTime index input indexEnc) :
+    ComputableInPolyTime
       (fun a => let table := values a; let i := index a; table i) input enc := by polytime
 
 -- The same application rule is available inside a deterministic return in a PPT program.
 example {α Index Value : Type} [Fintype Index] {input : α ↪ List Bool}
     {enc : Value ↪ List Bool} {indexEnc : Index ↪ List Bool}
     (values : α → Index → Value) (index : α → Index)
-    (hv : ComputableTidilyInPolyTime values input (encPi enc))
-    (hi : ComputableTidilyInPolyTime index input indexEnc) :
+    (hv : ComputableInPolyTime values input (encPi enc))
+    (hi : ComputableInPolyTime index input indexEnc) :
     IsPPTOn input enc (fun a => pure (values a (index a))) := by ppt
 
 -- A different encoding of the same index type uses the same lookup rule.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun pair : (Bool → List Bool) × Bool => pair.1 pair.2)
     (encPair (encPi encBits) (encFinEnum Bool)) encBits := by polytime
 
@@ -63,20 +63,20 @@ example : ComputableTidilyInPolyTime
 #eval encFinEnum (Option Bool) (some true)
 
 -- Computed update and lookup preserve unbounded words in all unselected entries.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun pair : (Bool → List Bool) × Bool =>
       Function.update pair.1 pair.2 (pair.1 pair.2).reverse)
     (encPair (encPi encBits) encBool) (encPi encBits) := by fun_prop
 
 -- Naming the shared tuple gives the same program certificate.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun pair : (Bool → List Bool) × Bool =>
       let data := pair
       Function.update data.1 data.2 (data.1 data.2).reverse)
     (encPair (encPi encBits) encBool) (encPi encBits) := by polytime
 
 -- Update and reversal expose their inner computed lookup to the same application rule.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun pair : (Bool → List Bool) × Bool =>
       let data := (pair.1, !pair.2)
       Function.update data.1 data.2 (data.1 data.2).reverse)
@@ -88,44 +88,45 @@ example {α Index Value : Type} [Fintype Index] [DecidableEq Index]
     (input : α ↪ List Bool) (element : Value ↪ List Bool) (indexEnc : Index ↪ List Bool)
     (values : α → Index → List Value) (index : α → Index)
     (_replacement : α → List Value)
-    (hv : ComputableTidilyInPolyTime values input (encPi (encList element)))
-    (hi : ComputableTidilyInPolyTime index input indexEnc) :
-    ComputableTidilyInPolyTime (fun a =>
+    (hv : ComputableInPolyTime values input (encPi (encList element)))
+    (hi : ComputableInPolyTime index input indexEnc) :
+    ComputableInPolyTime (fun a =>
       Function.update (values a) (index a) ((values a) (index a)).reverse)
       input (encPi (encList element)) := by
   fail_if_success (clear hv; polytime)
   fail_if_success (clear hi; polytime)
   fail_if_success
-    have : ComputableTidilyInPolyTime
+    have : ComputableInPolyTime
         (fun a => Function.update (values a) (index a) (_replacement a))
         input (encPi (encList element)) := by polytime
   polytime
 
 -- Finite dispatch retains the original unbounded input in every branch.
-example {α β Tag : Type} [Finite Tag] (input : α ↪ List Bool) (output : β ↪ List Bool)
-    (tagEncoding : Tag ↪ List Bool) (tag : α → Tag) (branch : Tag → α → β)
-    (htag : ComputableTidilyInPolyTime tag input tagEncoding)
-    (hbranch : ∀ choice, ComputableTidilyInPolyTime (branch choice) input output) :
-    ComputableTidilyInPolyTime (fun a => branch (tag a) a) input output :=
-  htag.finite_cases hbranch
+example : ComputableInPolyTime
+    (fun word : List Bool =>
+      (fun choice w => if choice then w.reverse else w) word.isEmpty word)
+    encBits encBits :=
+  .of_tidy (ComputableTidilyInPolyTime.finite_cases (tag := List.isEmpty)
+    (branch := fun choice word => if choice then word.reverse else word)
+    (by fun_prop) (fun choice => by cases choice <;> fun_prop))
 
 -- Probabilistic branches may return both output and private state.
-example {α β State Tag : Type} [Finite Tag] (input : α ↪ List Bool)
-    (output : β ↪ List Bool) (stateEncoding : State ↪ List Bool)
-    (tagEncoding : Tag ↪ List Bool) (tag : α → Tag)
-    (branch : Tag → α → ProbComp (β × State))
-    (htag : ComputableTidilyInPolyTime tag input tagEncoding)
-    (hbranch : ∀ choice, IsPPTOn input (encPair output stateEncoding) (branch choice)) :
-    IsPPTOn input (encPair output stateEncoding) (fun a => branch (tag a) a) :=
-  IsPPTOn.finite_cases htag hbranch
+example : IsPPTOn encBits (encPair encBits encBits)
+    (fun word : List Bool =>
+      (fun choice w => if choice then pure (w.reverse, w) else pure (w, w.reverse))
+        word.isEmpty word) :=
+  IsPPTOn.finite_cases (tagEncoding := encBool) (tag := List.isEmpty)
+    (branch := fun choice w =>
+      if choice then pure (w.reverse, w) else pure (w, w.reverse))
+    (by fun_prop) (fun choice => by cases choice <;> ppt)
 
 private def encEmpty : Empty ↪ List Bool := ⟨Empty.elim, fun value => value.elim⟩
 
 -- Empty finite control requires no fallback program or inhabited result type.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun a : Empty => (a.elim : Empty → Empty) a) encEmpty encEmpty :=
-  ComputableTidilyInPolyTime.finite_cases
-    (ComputableTidilyInPolyTime.id' (encIn := encEmpty)) (fun tag => tag.elim)
+  .of_tidy (ComputableTidilyInPolyTime.finite_cases
+    (ComputableTidilyInPolyTime.id' (encIn := encEmpty)) (fun tag => tag.elim))
 
 example : IsPPTOn encEmpty encEmpty
     (fun a : Empty => (a.elim : Empty → ProbComp Empty) a) :=

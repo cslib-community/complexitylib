@@ -34,7 +34,8 @@ functions over integers; no arithmetic operation is treated as a native machine 
 Part of [AlmanWilliams2026, Section 2]. Direct mathematical adaptation of
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Definitions are selectively extracted from that pin's `PaperStatements.lean`; no machine
-semantics or running-time statement is imported. Source-derived prose is paraphrased below.
+semantics or running-time statement is imported. The docstrings below explain the local
+declarations in our own words.
 -/
 
 @[expose] public section
@@ -43,29 +44,28 @@ open Finset
 
 namespace Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-/-- Section 2.2: We call x₁, x₂, x₃, p₁₁, p₁₂, p₂₁, p₂₂ the seven left variables.
--/
+/-- Left input coordinates: three `x` coordinates and a two-by-two family of `p` coordinates. -/
 inductive LeftVar : Type
   | x (i : Fin 3)
   | p (i j : Fin 2)
   deriving DecidableEq, Fintype
 
-/-- Section 2.2: and y₁, y₂, y₃, q₁₁, q₁₂, q₂₁, q₂₂ the seven right variables.
--/
+/-- Right input coordinates: three `y` coordinates and a two-by-two family of `q` coordinates. -/
 inductive RightVar : Type
   | y (j : Fin 3)
   | q (i j : Fin 2)
   deriving DecidableEq, Fintype
 
-/-- Section 2.2: We will also use ten output variables z_ij (for 1 ≤ i, j ≤ 3) and z₀.
+/-- Output coordinates comprise a three-by-three outer family and one distinguished inner
+coordinate.
 -/
 inductive OutVar : Type
   | z (i j : Fin 3)
   | z0
   deriving DecidableEq, Fintype
 
-/-- Section 2.2: Schönhage's identity has ten terms, which we name P_ij (for 1 ≤ i, j ≤ 3,
-corresponding to the entries of p̂ and q̂) and P₀.
+/-- The multiplication labels consist of nine indexed labels `P i j` and the additional label
+`P0`.
 -/
 inductive Term : Type
   | P (i j : Fin 3)
@@ -91,46 +91,44 @@ def zForm (i j : Fin 3) : OutVar → ℤ := Pi.single (OutVar.z i j) 1
 -/
 def z0Form : OutVar → ℤ := Pi.single OutVar.z0 1
 
-/-- Section 2.2: the 3 × 3 matrix `p̂` of linear forms, p̂ = (p₁₁, p₁₂, 0; p₂₁, p₂₂, 0; -p₁₁-p₂₁,
--p₁₂-p₂₂, 0).
+/-- Extend the two-by-two `p` family to three rows by cancelling each column sum; the third column
+is zero.
 -/
 def pHat : Matrix (Fin 3) (Fin 3) (LeftVar → ℤ) :=
   !![pForm 0 0, pForm 0 1, 0;
      pForm 1 0, pForm 1 1, 0;
      -pForm 0 0 - pForm 1 0, -pForm 0 1 - pForm 1 1, 0]
 
-/-- Section 2.2: the 3 × 3 matrix `q̂` of linear forms, q̂ = (q₁₁, q₁₂, -q₁₁-q₁₂; q₂₁, q₂₂,
--q₂₁-q₂₂; 0, 0, 0).
+/-- Extend the two-by-two `q` family to three columns by cancelling each row sum; the third row is
+zero.
 -/
 def qHat : Matrix (Fin 3) (Fin 3) (RightVar → ℤ) :=
   !![qForm 0 0, qForm 0 1, -qForm 0 0 - qForm 0 1;
      qForm 1 0, qForm 1 1, -qForm 1 0 - qForm 1 1;
      0, 0, 0]
 
-/-- Section 2.2: the linear form `φ_λ` in the left variables, φ_{P_ij} = x_i + p̂_ij and φ_{P₀} =
--(x₁ + x₂ + x₃). Section 2.3.1: let φ_λ(s) ∈ {0, ±1} denote the coefficient of s in φ_λ; this is
-`phi lam s`.
+/-- Left coefficients for each multiplication label. An indexed label adds its `x` coordinate to
+the corresponding `pHat` form; `P0` negates the sum of the three `x` coordinates.
 -/
 def phi : Term → LeftVar → ℤ
   | .P i j => xForm i + pHat i j
   | .P0 => -(xForm 0 + xForm 1 + xForm 2)
 
-/-- Section 2.2: the linear form `ψ_λ` in the right variables, ψ_{P_ij} = y_j + q̂_ij and ψ_{P₀} =
-y₁ + y₂ + y₃. Section 2.3.1: `ψ_λ(t)`, the coefficient of `t` in `ψ_λ`, is `psi lam t`.
+/-- Right coefficients for each multiplication label. Indexed labels use `y` plus `qHat`, whereas
+`P0` uses the sum of the three `y` coordinates.
 -/
 def psi : Term → RightVar → ℤ
   | .P i j => yForm j + qHat i j
   | .P0 => yForm 0 + yForm 1 + yForm 2
 
-/-- Section 2.2: the linear form `χ_λ` in the output variables, χ_{P_ij} = z_ij + z₀ and χ_{P₀} =
-z₀.
+/-- Output coefficients: each indexed label occurs in its own outer coordinate and in `z0`; `P0`
+occurs only in `z0`.
 -/
 def chi : Term → OutVar → ℤ
   | .P i j => zForm i j + z0Form
   | .P0 => z0Form
 
-/-- Section 2.2: the output variable `z₀` is inner, the `z_ij` are outer.
--/
+/-- Select the distinguished output coordinate, excluding the indexed outer coordinates. -/
 def OutVar.IsInner : OutVar → Prop
   | .z _ _ => False
   | .z0 => True
@@ -139,36 +137,28 @@ instance OutVar.instDecidablePredIsInner : DecidablePred OutVar.IsInner
   | .z _ _ => isFalse fun h => h
   | .z0 => isTrue trivial
 
-/-- Section 2.2: We say that a term λ contributes to an output variable z if z appears in χ_λ.
--/
+/-- A label is relevant to an output coordinate when its output coefficient is nonzero. -/
 def Term.Contributes (lam : Term) (z : OutVar) : Prop := chi lam z ≠ 0
 
 instance Term.instDecidableContributes (lam : Term) (z : OutVar) : Decidable (lam.Contributes z) :=
   inferInstanceAs (Decidable (chi lam z ≠ 0))
 
-/-- The term that the private leaf has at a level where the output string has the variable `z`:
-`P₀` for `z₀` and `P_ij` for `z_ij`.
+/-- Choose the indexed label for an outer coordinate and `P0` for the inner coordinate. Applying
+this choice coordinatewise defines a private leaf.
 -/
 def OutVar.privateTerm : OutVar → Term
   | .z i j => .P i j
   | .z0 => .P0
 
-/-- Section 2.3.1: A left string of length L is a string u = u₁ u₂ ⋯ u_L of L left variables, and
-we call u_ℓ its variable at level ℓ.
--/
+/-- A length-`L` tuple of left coordinates, indexed from zero. -/
 abbrev LeftStr (L : ℕ) : Type := Fin L → LeftVar
-/-- Section 2.3.1: right strings of length `L`.
--/
+/-- A length-`L` tuple with entries in `RightVar`. -/
 abbrev RightStr (L : ℕ) : Type := Fin L → RightVar
-/-- Section 2.3.1: output strings of length `L`.
--/
+/-- A length-`L` tuple with entries in `OutVar`. -/
 abbrev OutStr (L : ℕ) : Type := Fin L → OutVar
-/-- Section 2.3.1: We refer to the call reached by choosing the terms τ₁, …, τ_k at levels 1, …, k
-as the vertex τ₁ ⋯ τ_k, a string of k terms. It is at depth k.
--/
+/-- The sequence of multiplication labels identifying a depth-`k` recursion vertex. -/
 abbrev Vertex (k : ℕ) : Type := Fin k → Term
-/-- Section 2.3.1: the leaves, the vertices τ = τ₁ ⋯ τ_L at depth L.
--/
+/-- A terminal vertex, whose label sequence has the full recursion depth. -/
 abbrev Leaf (L : ℕ) : Type := Vertex L
 
 /-! ### The alphabets -/
@@ -209,46 +199,40 @@ def Term.equiv : Term ≃ Option (Fin 3 × Fin 3) where
   left_inv t := by cases t <;> rfl
   right_inv t := by rcases t with _ | ⟨_, _⟩ <;> rfl
 
-/-- Section 2.2: there are seven left variables.
--/
+/-- The left alphabet has cardinality seven. -/
 theorem card_leftVar : Fintype.card LeftVar = 7 := by
   simp [Fintype.card_congr LeftVar.equiv]
 
-/-- Section 2.2: there are seven right variables.
--/
+/-- The right alphabet has cardinality seven. -/
 theorem card_rightVar : Fintype.card RightVar = 7 := by
   simp [Fintype.card_congr RightVar.equiv]
 
-/-- Section 2.2: Schönhage's identity has ten terms.
--/
+/-- There are ten multiplication labels. -/
 theorem card_term : Fintype.card Term = 10 := by
   simp [Fintype.card_congr Term.equiv]
 
 /-! ### Which terms contribute to which output variables -/
 
-/-- Section 2.2, second observation: every term contributes to z₀.
--/
+/-- The inner coordinate receives a contribution from every multiplication label. -/
 @[simp]
 theorem Term.contributes_z0 (lam : Term) : lam.Contributes .z0 := by
   cases lam <;> simp [Term.Contributes, chi, zForm, z0Form]
 
-/-- Section 2.2, second observation: only P_ij contributes to z_ij.
--/
+/-- For an outer coordinate, relevance determines both indices of the multiplication label. -/
 @[simp]
 theorem Term.contributes_z_iff (lam : Term) (i j : Fin 3) :
     lam.Contributes (.z i j) ↔ lam = .P i j := by
   cases lam <;> simp [Term.Contributes, chi, zForm, z0Form, Pi.single_apply, eq_comm]
 
-/-- The second observation in one statement: a term contributes to `z` if and only if `z` is
-inner, that is `z₀`, or the term is `z.privateTerm`, which is `P_ij` for `z = z_ij`. (This is the
-term that the private leaf of Section 2.4.3 has at a level with the variable `z`.)
+/-- Relevance has two possibilities: the output is inner, or the label is the private label
+selected by that output.
 -/
 theorem Term.contributes_iff (lam : Term) (z : OutVar) :
     lam.Contributes z ↔ z.IsInner ∨ lam = z.privateTerm := by
   decide +revert
 
-/-- A sum over the terms contributing to `z` has the one summand `P_ij` for `z = z_ij`, and runs
-over all terms for `z = z₀`. This is how step (4) of the recursions assembles the slice at `z`.
+/-- Separate decoding into its two cases: an outer output selects one summand; the inner output
+sums the whole label family.
 -/
 theorem Term.sum_contributes {A : Type*} [AddCommMonoid A] (c : Term → A) (z : OutVar) :
     ∑ lam : Term with lam.Contributes z, c lam
@@ -259,9 +243,7 @@ theorem Term.sum_contributes {A : Type*} [AddCommMonoid A] (c : Term → A) (z :
   | z i j => simp [filter_eq']
   | z0 => simp
 
-/-- Section 2.2: the χ_λ forms are all sums of output variables (without any minus signs or other
-coefficients).
--/
+/-- Each output coefficient is the zero-or-one indicator of `Term.Contributes`. -/
 theorem chi_eq_ite (lam : Term) (z : OutVar) :
     chi lam z = if lam.Contributes z then 1 else 0 := by
   decide +revert

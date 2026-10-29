@@ -68,11 +68,11 @@ example : ((ProbComp.eval (run (fun code _ => listStrictMajority code)
       Parameters.denominator, dyadicSize])
 
 -- The storage invariant needs neither valid tests nor a correct learner.
-example (params : Parameters) :
+example :
     ∀ state ∈ (ProbComp.eval (run (fun _ _ => false) (pure ([], true))
-      (fun _ => pure (List.replicate (params.codeBound + 10) true)) params)).support,
-      State.Bounded params.clock params.codeBound state :=
-  run_bounded _ _ _ _
+      (fun _ => pure (List.replicate (parameters.codeBound + 10) true)) parameters)).support,
+      State.Bounded parameters.clock parameters.codeBound state :=
+  run_bounded _ _ _ parameters
 
 example : ComputableInPolyTime
     (fun word : List Bool => (⟨false, word.length, [word]⟩ : State)) encBits State.encoding := by

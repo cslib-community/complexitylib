@@ -13,21 +13,18 @@ namespace ComplexityTests.AKSCriterion
 
 open Polynomial Cslib.AKS
 
--- The identity holds for the prime `7`.
-example : (X + C (1 : ZMod 7)) ^ 7 = X ^ 7 + C 1 := add_pow_eq_of_prime (by decide) 1
-
--- It fails for the composite `4`, with the unit `1`.
-example : (X + C (1 : ZMod 4)) ^ 4 ≠ X ^ 4 + C 1 := fun h =>
-  absurd ((prime_iff_add_pow_eq (by norm_num) isUnit_one).mpr h) (by decide)
-
--- `4 ∤ C(4, 2) = 6`.
-example : ¬ 4 ∣ Nat.choose 4 2 := not_dvd_choose_of_prime_dvd Nat.prime_two (by norm_num)
-  (by norm_num)
-
--- The prime `7` passes the AKS tests for every `r`.
-example (r : ℕ) : Passes 7 r := passes_of_prime (by decide) r
-
--- `8 = 2³` is a perfect power, so it fails step 1.
-example : ¬ Passes 8 3 := fun h => h.1 ⟨2, 3, by norm_num, by norm_num⟩
+-- The identity holds for the prime `7`, fails for the composite `4` with unit `1`, `4 ∤ C(4, 2)`,
+-- the prime `7` passes the AKS tests for every `r`, and `8 = 2³` fails step 1.
+example (r : ℕ) :
+    (X + C (1 : ZMod 7)) ^ 7 = X ^ 7 + C 1 ∧
+      (X + C (1 : ZMod 4)) ^ 4 ≠ X ^ 4 + C 1 ∧
+      ¬ 4 ∣ Nat.choose 4 2 ∧
+      Passes 7 r ∧
+      ¬ Passes 8 3 :=
+  ⟨add_pow_eq_of_prime (by decide) 1,
+    fun h => absurd ((prime_iff_add_pow_eq (by norm_num) isUnit_one).mpr h) (by decide),
+    not_dvd_choose_of_prime_dvd Nat.prime_two (by norm_num) (by norm_num),
+    passes_of_prime (by decide) r,
+    fun h => h.1 ⟨2, 3, by norm_num, by norm_num⟩⟩
 
 end ComplexityTests.AKSCriterion

@@ -11,6 +11,7 @@ public import Complexity.Computability.GenericRAM.Native.ExhaustiveCountFallback
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Tactic.PolyTime
 
 /-!
 # Kernel-checked tests for `Cslib.GenericRAM.ExhaustiveCountFallback`
@@ -29,35 +30,27 @@ open Cslib.GenericRAM.ExhaustiveCountFallback Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### 1. Sparse `𝔽₂` Polynomial System Counter (`countSystemExhaustive`) -/
 
--- Empty system `[] ↦ 2 ^ n`, including `n = 0`.
-example : countSystemExhaustive (0, []) = 1 := by decide
-example : countSystemExhaustive (3, []) = 8 := by decide
-example : countSystemExhaustive (4, []) = 16 := by decide
-
--- Contradictory constant equation `[[]]` (`1 = 0`) yields `0`, even with other equations.
-example : countSystemExhaustive (0, [[[]]]) = 0 := by decide
-example : countSystemExhaustive (3, [[[]]]) = 0 := by decide
-example : countSystemExhaustive (4, [[[0, 2]], [[]]]) = 0 := by decide
-
--- Single quadratic equation `x₀ x₂ = 0` on `{0, 2}`: 3 valid `(x₀, x₂)` pairs, doubled per unused
--- declared variable `< n` (`n = 3` gives `3 * 2 = 6`; `n = 4` gives `3 * 4 = 12`).
-example : countSystemExhaustive (3, [[[0, 2]]]) = 6 := by decide
-example : countSystemExhaustive (4, [[[0, 2]]]) = 12 := by decide
-example : countSystemExhaustive (4, [[[0, 2]]]) = 2 * countSystemExhaustive (3, [[[0, 2]]]) := by
-  decide
-
 /-- Canonical sparse `𝔽₂` system on `{0, 2}` (`x₀ + x₂ = 0` and `x₀ x₂ = 0`), forcing
 `x₀ = x₂ = 0`. -/
 def sysZeroTwo : List (List (List ℕ)) := [[[0], [2]], [[0, 2]]]
 
-example : countSystemExhaustive (3, sysZeroTwo) = 2 := by decide
-example : countSystemExhaustive (4, sysZeroTwo) = 4 := by decide
-
--- Streaming prefix state at `j = 6` (`idx = 5` is `(1, 0, 1)`, rejected) preserves `(n, sys)`
--- and satisfies `Z = 5 ≤ j = 6 ≤ 2 ^ 3 = 8`.
-example : (countSystemPrefix (3, [[[0, 2]]]) 6).2.2.1 = (3, [[[0, 2]]]) ∧
-    (countSystemPrefix (3, [[[0, 2]]]) 6).2.2.2 = 5 ∧
-    (countSystemPrefix (3, [[[0, 2]]]) 6).2.2.2 ≤ 6 := by decide
+-- Empty system `[] ↦ 2 ^ n`, contradictory constant equation `[[]]` (`1 = 0`), single quadratic
+-- equation `x₀ x₂ = 0` on `{0, 2}`, `sysZeroTwo`, and streaming prefix state at `j = 6`.
+example :
+    countSystemExhaustive (0, []) = 1 ∧
+      countSystemExhaustive (3, []) = 8 ∧
+      countSystemExhaustive (4, []) = 16 ∧
+      countSystemExhaustive (0, [[[]]]) = 0 ∧
+      countSystemExhaustive (3, [[[]]]) = 0 ∧
+      countSystemExhaustive (4, [[[0, 2]], [[]]]) = 0 ∧
+      countSystemExhaustive (3, [[[0, 2]]]) = 6 ∧
+      countSystemExhaustive (4, [[[0, 2]]]) = 12 ∧
+      countSystemExhaustive (4, [[[0, 2]]]) = 2 * countSystemExhaustive (3, [[[0, 2]]]) ∧
+      countSystemExhaustive (3, sysZeroTwo) = 2 ∧
+      countSystemExhaustive (4, sysZeroTwo) = 4 ∧
+      (countSystemPrefix (3, [[[0, 2]]]) 6).2.2.1 = (3, [[[0, 2]]]) ∧
+      (countSystemPrefix (3, [[[0, 2]]]) 6).2.2.2 = 5 ∧
+      (countSystemPrefix (3, [[[0, 2]]]) 6).2.2.2 ≤ 6 := by decide
 
 -- Exact agreement with `Cslib.BitString.commonZeroCount` on `n = 4` with variables `{0, 2}`.
 example :
@@ -70,37 +63,30 @@ example :
 
 /-! ### 2. Declared-Variable `CNF` Model Counter (`countCNFExhaustive`) -/
 
--- Empty formula `[] ↦ 2 ^ n`, including `n = 0`.
-example : countCNFExhaustive (0, []) = 1 := by decide
-example : countCNFExhaustive (3, []) = 8 := by decide
-example : countCNFExhaustive (4, []) = 16 := by decide
-
--- Unsatisfiable clauses (`[] ∈ φ` and contradictory unit clauses) give `0`.
-example : countCNFExhaustive (0, [[]]) = 0 := by decide
-example : countCNFExhaustive (4, [[]]) = 0 := by decide
-example : countCNFExhaustive (3, [[(1, true)], [(1, false)]]) = 0 := by decide
-
 /-- Equivalence `x₀ ↔ x₂` using only variables `{0, 2}` (`numVars = 2`, `modelCount = 2`):
 declaring `n = 3` (unused `{1}`) doubles to `4`; declaring `n = 4` (unused `{1, 3}`) gives `8`. -/
 def eqvZeroTwo : CNF ℕ := [[(0, true), (2, false)], [(0, false), (2, true)]]
 
-example : eqvZeroTwo.modelCount = 2 := by decide
-example : countCNFExhaustive (3, eqvZeroTwo) = 4 := by decide
-example : countCNFExhaustive (4, eqvZeroTwo) = 8 := by decide
-example : countCNFExhaustive (4, eqvZeroTwo) = 2 * countCNFExhaustive (3, eqvZeroTwo) := by decide
-
--- Concrete `decide` agreement with `CNF.modelCountOn φ (Finset.range n)` across `n = 0, 3, 4`.
-example : countCNFExhaustive (0, []) = CNF.modelCountOn ([] : CNF ℕ) (Finset.range 0) := by decide
-example : countCNFExhaustive (3, eqvZeroTwo) = eqvZeroTwo.modelCountOn (Finset.range 3) := by decide
-example : countCNFExhaustive (4, eqvZeroTwo) = eqvZeroTwo.modelCountOn (Finset.range 4) := by decide
-
--- Boundary control: out-of-range variable `v ≥ n` defaults to `false`.
-example : countCNFExhaustive (2, [[(5, true)]]) = 0 := by decide
-example : countCNFExhaustive (2, [[(5, false)]]) = 4 := by decide
-
--- Streaming prefix state preserves `(n, φ)` and obeys `Z ≤ j ≤ 2 ^ n`.
-example : (countCNFPrefix (4, eqvZeroTwo) 7).2.2.1 = (4, eqvZeroTwo) ∧
-    (countCNFPrefix (4, eqvZeroTwo) 7).2.2.2 ≤ 7 := by decide
+-- Empty formula `[] ↦ 2 ^ n`, unsatisfiable clauses, `eqvZeroTwo`, concrete agreement with
+-- `CNF.modelCountOn φ (Finset.range n)`, out-of-range variable boundary, and `countCNFPrefix`.
+example :
+    countCNFExhaustive (0, []) = 1 ∧
+      countCNFExhaustive (3, []) = 8 ∧
+      countCNFExhaustive (4, []) = 16 ∧
+      countCNFExhaustive (0, [[]]) = 0 ∧
+      countCNFExhaustive (4, [[]]) = 0 ∧
+      countCNFExhaustive (3, [[(1, true)], [(1, false)]]) = 0 ∧
+      eqvZeroTwo.modelCount = 2 ∧
+      countCNFExhaustive (3, eqvZeroTwo) = 4 ∧
+      countCNFExhaustive (4, eqvZeroTwo) = 8 ∧
+      countCNFExhaustive (4, eqvZeroTwo) = 2 * countCNFExhaustive (3, eqvZeroTwo) ∧
+      countCNFExhaustive (0, []) = CNF.modelCountOn ([] : CNF ℕ) (Finset.range 0) ∧
+      countCNFExhaustive (3, eqvZeroTwo) = eqvZeroTwo.modelCountOn (Finset.range 3) ∧
+      countCNFExhaustive (4, eqvZeroTwo) = eqvZeroTwo.modelCountOn (Finset.range 4) ∧
+      countCNFExhaustive (2, [[(5, true)]]) = 0 ∧
+      countCNFExhaustive (2, [[(5, false)]]) = 4 ∧
+      (countCNFPrefix (4, eqvZeroTwo) 7).2.2.1 = (4, eqvZeroTwo) ∧
+      (countCNFPrefix (4, eqvZeroTwo) 7).2.2.2 ≤ 7 := by decide
 
 /-! ### 3. Guarded-Fallback Combinator & Constant Absorption Across `n < 3` vs `n ≥ 3` -/
 
@@ -118,23 +104,21 @@ def targetDemo (x : ℕ × CNF ℕ) : ℕ :=
 
 -- Concrete checks across threshold `n = 0, 1, 2` (`ok3 = false`, running `countCNFExhaustive`)
 -- and `n = 3, 4` (`ok3 = true`, running `fastBranchDemo`).
-example : targetDemo (0, []) = 1 := by decide
-example : targetDemo (1, [[(0, true)]]) = 1 := by decide
-example : targetDemo (2, [[(0, true)]]) = 2 := by decide
-example : targetDemo (2, [[(0, true)], [(0, false)]]) = 0 := by decide
-example : targetDemo (3, []) = countCNFExhaustive (3, []) := by decide
-example : targetDemo (4, []) = countCNFExhaustive (4, []) := by decide
-example : targetDemo (3, [[]]) = countCNFExhaustive (3, [[]]) := by decide
-example : targetDemo (4, eqvZeroTwo) = 0 := by decide
+example :
+    targetDemo (0, []) = 1 ∧
+      targetDemo (1, [[(0, true)]]) = 1 ∧
+      targetDemo (2, [[(0, true)]]) = 2 ∧
+      targetDemo (2, [[(0, true)], [(0, false)]]) = 0 ∧
+      targetDemo (3, []) = countCNFExhaustive (3, []) ∧
+      targetDemo (4, []) = countCNFExhaustive (4, []) ∧
+      targetDemo (3, [[]]) = countCNFExhaustive (3, [[]]) ∧
+      targetDemo (4, eqvZeroTwo) = 0 := by decide
 
-open ComputableTidilyInPolyTime in
 theorem computableInPolyTime_ok3 :
     ComputableInPolyTime ok3 (encPair encUnary encCNF) encBool := by
   unfold ok3 encCNF
-  refine .of_tidy ?_
-  exact unary_le.comp ((const 3).prod (fst encUnary (encList (encList (encPair encNat encBool)))))
+  polytime
 
-open ComputableTidilyInPolyTime in
 theorem computableInPolyTime_isEmptyCNF :
     ComputableInPolyTime (fun x : ℕ × CNF ℕ => x.2.isEmpty) (encPair encUnary encCNF) encBool := by
   have heq : (fun x : ℕ × CNF ℕ => x.2.isEmpty) = fun x => decide (x.2.length = 0) := by
@@ -142,9 +126,7 @@ theorem computableInPolyTime_isEmptyCNF :
     cases x.2 <;> rfl
   rw [heq]
   unfold encCNF
-  refine .of_tidy ?_
-  exact ((length (encList (encPair encNat encBool))).comp
-    (snd encUnary (encList (encList (encPair encNat encBool))))).decide_eq' (const 0)
+  polytime
 
 /-- Polynomial-time `NativeCertificate` for `fastBranchDemo`. -/
 noncomputable def fastBranchDemoCert :

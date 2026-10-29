@@ -19,50 +19,39 @@ namespace Cslib.Complexity.Tests.Kannan
 
 open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity Turing.MultiTapeTM
 
-/-! ### Parameters -/
+/-! ### Parameters and truth tables -/
 
 -- At length `3`, `k = 0` asks for hard functions of `3 (⌊log₂ 4⌋ + 1) = 9` inputs, with more than
--- `4` gates.
-example : Kannan.arity 0 3 = 9 := by decide
-example : Kannan.threshold 0 3 = 4 := rfl
-example : Kannan.arity 1 7 = 16 := by decide
-example : Kannan.threshold 1 2 = 9 := rfl
-example : Kannan.tableBound 0 0 = 8 := rfl
-example : Kannan.certBound 0 0 = 16 := rfl
-
-/-! ### Truth tables -/
-
--- Truth tables are indexed by the input read least significant bit first.
-example : MCSP.tableFunction 2 [false, true, true, false] ![true, false] = true := by decide
-example : MCSP.tableFunction 2 [false, true, true, false] ![true, true] = false := by decide
-example : Kannan.table 0 0 (List.replicate 10 true) = List.replicate 8 true := by decide
+-- `4` gates; truth tables are indexed by the input read least significant bit first.
+example :
+    Kannan.arity 0 3 = 9 ∧
+    Kannan.threshold 0 3 = 4 ∧
+    Kannan.arity 1 7 = 16 ∧
+    Kannan.threshold 1 2 = 9 ∧
+    Kannan.tableBound 0 0 = 8 ∧
+    Kannan.certBound 0 0 = 16 ∧
+    MCSP.tableFunction 2 [false, true, true, false] ![true, false] = true ∧
+    MCSP.tableFunction 2 [false, true, true, false] ![true, true] = false ∧
+    Kannan.table 0 0 (List.replicate 10 true) = List.replicate 8 true ∧
+    BitString.binaryValue [true, false, true] = 5 := by
+  decide
 
 -- Words whose length is not a power of two belong to neither side of GapMCSP.
-example (s : ℕ → ℕ) : [true, false, true] ∉ (GapMCSP s s fun _ => le_rfl).yes := by
-  rintro ⟨n, hn, -⟩
-  match n with
-  | 0 => revert hn; decide
-  | 1 => revert hn; decide
-  | k + 2 =>
-    have h : 3 < 2 ^ (k + 2) :=
-      calc 3 < 2 ^ 2 := by decide
-      _ ≤ 2 ^ (k + 2) := Nat.pow_le_pow_right (by omega) (by omega)
-    revert hn
-    exact ne_of_lt (by simpa using h)
+example (s : ℕ → ℕ) :
+    [true, false, true] ∉ (GapMCSP s s fun _ => le_rfl).yes ∧
+    [true, false, true] ∉ (GapMCSP s s fun _ => le_rfl).no := by
+  have hnot (n : ℕ) (hn : [true, false, true].length = 2 ^ n) : False := by
+    match n with
+    | 0 => revert hn; decide
+    | 1 => revert hn; decide
+    | k + 2 =>
+      have hlt : 3 < 2 ^ (k + 2) :=
+        calc 3 < 2 ^ 2 := by decide
+        _ ≤ 2 ^ (k + 2) := Nat.pow_le_pow_right (by omega) (by omega)
+      exact ne_of_lt (by simpa using hlt) hn
+  exact ⟨fun ⟨n, hn, _⟩ => hnot n hn, fun ⟨n, hn, _⟩ => hnot n hn⟩
 
-example (s : ℕ → ℕ) : [true, false, true] ∉ (GapMCSP s s fun _ => le_rfl).no := by
-  rintro ⟨n, hn, -⟩
-  match n with
-  | 0 => revert hn; decide
-  | 1 => revert hn; decide
-  | k + 2 =>
-    have h : 3 < 2 ^ (k + 2) :=
-      calc 3 < 2 ^ 2 := by decide
-      _ ≤ 2 ^ (k + 2) := Nat.pow_le_pow_right (by omega) (by omega)
-    revert hn
-    exact ne_of_lt (by simpa using h)
-
-example : BitString.binaryValue [true, false, true] = 5 := by decide
+-- Keep the equal-length decoding client independent of the GapMCSP hypotheses.
 example {u v : List Bool} (hlen : u.length = v.length)
     (h : BitString.binaryValue u = BitString.binaryValue v) : u = v :=
   BitString.binaryValue_injective_of_length_eq hlen h
@@ -76,17 +65,16 @@ def T₀ : List Bool := true :: List.replicate 7 false
 wire `3`. -/
 def falseCertificate : List Bool := certificate 3 1 [(.const false, [])] 3
 
-example : falseCertificate.length = Kannan.certBound 0 0 := rfl
-
 -- On the empty input, `T₀` gives `true`. The second block holds the earlier constant-`false` table
 -- and a certificate that is not a circuit for `T₀`, and the third block is a circuit for the
--- earlier table, so the verifier accepts.
-example : Kannan.verifier 0 ([], T₀ ++ (List.replicate 8 false ++ List.replicate 16 false) ++
-    falseCertificate) = true := by decide
-
--- Without a circuit for the earlier table, the verifier rejects.
-example : Kannan.verifier 0 ([], T₀ ++ (List.replicate 8 false ++ List.replicate 16 false) ++
-    List.replicate 16 false) = false := by decide
+-- earlier table, so the verifier accepts; without a circuit for the earlier table, it rejects.
+example :
+    falseCertificate.length = Kannan.certBound 0 0 ∧
+    Kannan.verifier 0 ([], T₀ ++ (List.replicate 8 false ++ List.replicate 16 false) ++
+      falseCertificate) = true ∧
+    Kannan.verifier 0 ([], T₀ ++ (List.replicate 8 false ++ List.replicate 16 false) ++
+      List.replicate 16 false) = false :=
+  ⟨rfl, by decide, by decide⟩
 
 /-! ### Non-vacuity -/
 
@@ -101,20 +89,17 @@ theorem zero_mem_SIZE {c : ℕ} (hc : 1 ≤ c) (k : ℕ) :
   rw [this, complexity_const]
   exact Nat.one_le_iff_ne_zero.2 (Nat.mul_ne_zero (by omega) (pow_ne_zero _ (Nat.succ_ne_zero n)))
 
--- First hard truth tables exist at all large lengths.
-example (k : ℕ) : ∀ᶠ n in Filter.atTop, ∃ T, Kannan.IsFirstHard k n T :=
-  (Kannan.eventually_exists_isHard k).mono fun _ => Kannan.exists_isFirstHard
-
-example : (Kannan.language 2 : Set (List Bool)) ∈ PH encBits :=
-  SigmaP_subset_PH 3 (Kannan.language_mem_SigmaP_three 2)
-
-example (c : ℕ) : Kannan.language 2 ∉ SIZE fun n => c * (n + 1) ^ 2 :=
-  Kannan.language_notMem_SIZE 2 c
-
--- No polynomial budget of a fixed degree holds all of `Σ₂`.
-example (k c : ℕ) : ¬∀ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits →
-    L ∈ SIZE fun n => c * (n + 1) ^ k := fun h =>
-  let ⟨L, hL, hS⟩ := exists_mem_SigmaP_two_notMem_SIZE k
-  hS c (h L hL)
+-- First hard truth tables exist at all large lengths, `Kannan.language 2` lies in `PH \ SIZE(n²)`,
+-- and no polynomial budget of a fixed degree holds all of `Σ₂`.
+example (k c : ℕ) :
+    (∀ᶠ n in Filter.atTop, ∃ T, Kannan.IsFirstHard k n T) ∧
+    (Kannan.language 2 : Set (List Bool)) ∈ PH encBits ∧
+    (Kannan.language 2 ∉ SIZE fun n => c * (n + 1) ^ 2) ∧
+    ¬∀ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits →
+      L ∈ SIZE fun n => c * (n + 1) ^ k :=
+  ⟨(Kannan.eventually_exists_isHard k).mono fun _ => Kannan.exists_isFirstHard,
+    SigmaP_subset_PH 3 (Kannan.language_mem_SigmaP_three 2),
+    Kannan.language_notMem_SIZE 2 c,
+    fun h => let ⟨L, hL, hS⟩ := exists_mem_SigmaP_two_notMem_SIZE k; hS c (h L hL)⟩
 
 end Cslib.Complexity.Tests.Kannan

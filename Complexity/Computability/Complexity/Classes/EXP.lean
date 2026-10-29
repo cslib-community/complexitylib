@@ -13,7 +13,6 @@ public import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Exponential time
@@ -172,20 +171,21 @@ unary number, then the words `y` with `Ψ (y, 2 ^ |y|)` form a problem in `E`: t
 theorem setOf_mem_E_of_computableInPolyTime_pad {Ψ : List Bool × ℕ → Bool}
     (hΨ : ComputableInPolyTime Ψ (encPair encBits encUnary) encBool) :
     {y : List Bool | Ψ (y, 2 ^ y.length) = true} ∈ E encBits := by
-  have hΨ := hΨ.tidy
   obtain ⟨t, s, ht, hs, h⟩ := hΨ
-  obtain ⟨c, d, hcd⟩ := (ht.add hs).exists_le
+  obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.mp (ht.add hs)
   -- the problem decided by `Ψ`, within polynomial time
   have hB : {x | Ψ x = true} ∈ DTIME (encPair encBits encUnary) fun n => c * (n + 1) ^ d :=
-    setOf_mem_DTIME_of_computableInO (T := fun x => t x + s x) (S := fun x => t x + s x)
-      (.of_tidy (.of_bounds h 1 (fun _ => by omega) (fun _ => by omega)
-        fun x => (h.length_le x).trans (by omega))) hcd
+    setOf_mem_DTIME_of_computableInO
+      (T := fun x => t (encPair encBits encUnary x).length + s (encPair encBits encUnary x).length)
+      (S := fun x => t (encPair encBits encUnary x).length + s (encPair encBits encUnary x).length)
+      (.of_bounds h 1 (fun _ => by omega) (fun _ => by omega)
+        fun x => (h.length_le x).trans (by omega)) fun x => hcd _
   -- the padding `y ↦ (y, 2 ^ |y|)`
-  have hgO : ComputableTidilyInO (fun y : List Bool => (y, 2 ^ y.length)) encBits
+  have hgO : ComputableInO (fun y : List Bool => (y, 2 ^ y.length)) encBits
       (encPair encBits encUnary) (fun y => 3 * 4 ^ y.length) fun y => 3 * 4 ^ y.length := by
-    have h₁ := (ComputableTidilyInO.of_linear
+    have h₁ := (ComputableInO.of_linear
       (.of_eq (f := fun y : List Bool => y) (encMid := encBits) fun _ => rfl)).prod
-      (ComputableTidilyInO.unary_two_pow.comp ComputableTidilyInO.lengthUnary)
+      (ComputableInO.unary_two_pow.comp ComputableInO.lengthUnary)
     have hbound : ∀ y : List Bool, y.length + (y.length + (y.length + 1) * 2 ^ y.length) ≤
         3 * 4 ^ y.length := fun y => by
       have h2 : y.length + 1 ≤ 2 ^ y.length := Nat.lt_two_pow_self
@@ -199,7 +199,7 @@ theorem setOf_mem_E_of_computableInPolyTime_pad {Ψ : List Bool × ℕ → Bool}
       have := hbound y
       simp only [encBits_apply]
       nlinarith
-  refine mem_E_iff.2 ⟨d + 2, preimage_mem_DTIME (C := c * 4 ^ d + 3) hB (.of_tidy hgO) fun y => ?_⟩
+  refine mem_E_iff.2 ⟨d + 2, preimage_mem_DTIME (C := c * 4 ^ d + 3) hB hgO fun y => ?_⟩
   -- the time bound is `2 ^ O(n)`
   set n := (encBits y).length
   have hn : n = y.length := by simp [n, encBits_apply]
@@ -231,14 +231,16 @@ theorem PolyTimeReducible.mem_EXP {α β : Type} {encA : α ↪ List Bool} {encB
     A ∈ EXP encA := by
   obtain ⟨f, hf, hred⟩ := hAB
   obtain ⟨k, hk⟩ := mem_EXP_iff.mp hB
-  obtain ⟨t, s, ht, hs, h⟩ := hf.tidy
-  obtain ⟨c, d, hcd⟩ := (ht.add hs).exists_le
+  obtain ⟨t, s, ht, hs, h⟩ := hf
+  obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.mp (ht.add hs)
   have hfO : ComputableInO f encA encB (fun a => c * ((encA a).length + 1) ^ d)
       (fun a => c * ((encA a).length + 1) ^ d) :=
-    .of_tidy ((ComputableTidilyInO.of_bounds h 1 (fun _ => by omega) (fun _ => by omega)
-      fun a => (h.length_le a).trans (by omega)).mono_le (fun a => hcd _) (fun a => hcd _))
+    (ComputableInO.of_bounds h 1 (T := fun a => t (encA a).length + s (encA a).length)
+      (S := fun a => t (encA a).length + s (encA a).length) (fun _ => by omega)
+      (fun _ => by omega) fun a => (h.length_le a).trans (by omega)).mono_le
+      (fun a => hcd _) (fun a => hcd _)
   have hlen (a : α) : (encB (f a)).length ≤ c * ((encA a).length + 1) ^ d :=
-    (h.length_le a).trans ((Nat.le_add_right _ _).trans (hcd a))
+    (h.length_le a).trans ((Nat.le_add_right _ _).trans (hcd _))
   have hpre : f ⁻¹' B ∈ DTIME encA
       (fun n => c * (n + 1) ^ d + 2 ^ (c * (n + 1) ^ d) ^ k) := by
     refine preimage_mem_DTIME (C := 1) hk hfO fun a => ?_

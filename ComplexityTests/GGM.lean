@@ -55,7 +55,7 @@ example : IsPPTOn (encPair encUnary encBits) (encPair encBits GGM.cacheEncoding)
 example : IsPPTOn (encPair encUnary encUnary) encBool
     (fun pair => GGM.hybridGame (fun seed => seed ++ seed)
       (fun n input => pure (decide (input.length ≤ n))) pair.1 pair.2) :=
-  GGM.isPPTOn_hybridGame (.of_tidy (by fun_prop)) (by fun_prop)
+  GGM.isPPTOn_hybridGame (by fun_prop) (by fun_prop)
 
 -- An empty seed and query still create exactly one empty root entry.
 example (generator : List Bool → List Bool) :
@@ -129,19 +129,18 @@ example {generator : List Bool → List Bool} {sample : ℕ → ProbComp (List B
     (hs : IsPPTOn encUnary encBits sample) {adversary : OracleDistinguisher}
     (ha : IsOraclePPT encBool adversary) : IsPPTOn encUnary encBool
       (fun n => GGM.expansionGame generator (sample n) adversary n (n + 1)) :=
-  GGM.isPPTOn_expansionGame hg hs (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) ha
+  GGM.isPPTOn_expansionGame hg hs (by fun_prop) (by fun_prop) ha
 
 -- Saved challenges may be short, oversized or absent, and the requested depth may exceed width.
 example {adversary : OracleDistinguisher} (ha : IsOraclePPT encBool adversary) :
     IsPPTOn (encPair encUnary (encList encBits)) encBool (fun pair =>
       GGM.sampleGame List.tail adversary pair.1 (pair.1 + 1) pair.2) :=
-  GGM.isPPTOn_sampleGame (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-    fun_prop)) (.of_tidy (by fun_prop)) ha
+  GGM.isPPTOn_sampleGame (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) ha
 
 -- The complete reduction has a concrete certificate without any cryptographic premise.
 example : IsPPT encBool (GGM.reduction (fun seed => seed ++ seed)
     (fun n word => pure (decide (word.length ≤ n))) (fun n => n ^ 2 + 3)) :=
-  GGM.isPPT_reduction (.of_tidy (by fun_prop)) (by fun_prop) (.of_tidy (by fun_prop))
+  GGM.isPPT_reduction (by fun_prop) (by fun_prop) (by fun_prop)
 
 -- The semantic sibling client has a bound on its external calls, including its private coin.
 private theorem siblings_queryBounds (n : ℕ) : (siblings n []).IsQueryBounded 2 :=
@@ -162,10 +161,15 @@ example (generator : List Bool → List Bool) :
             GGM.reduction generator siblings (fun _ => 2) 1)) :=
   GGM.reduction_advantage generator siblings (fun _ => 2) 1 (siblings_queryBounds 1)
 
--- Any PRG, including the strict zero-width convention, supplies the full adaptive PRF contract.
+-- The conditional PRG-to-PRF theorem supplies the family; its certificate projects the evaluator
+-- bound. This example checks API use, rather than a concrete secure generator.
 example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (h : PseudorandomGenerator generator length) :
-    ∃ family : List Bool → List Bool → List Bool, PseudorandomFunction family :=
-  h.exists_pseudorandomFunction
+    ∃ family : List Bool → List Bool → List Bool,
+      PseudorandomFunction family ∧
+        ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)
+          (encPair encBits encBits) encBits := by
+  obtain ⟨family, hprf⟩ := h.exists_pseudorandomFunction
+  exact ⟨family, hprf, hprf.polyTime⟩
 
 end ComplexityTests.GGM

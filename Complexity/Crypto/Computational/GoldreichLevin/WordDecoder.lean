@@ -237,11 +237,6 @@ theorem polyTime_wordCheckCandidates {α : Type} {input : α ↪ List Bool}
     (hcandidates : ComputableInPolyTime candidates input (encList encBits)) :
     ComputableInPolyTime
       (fun a => wordCheckCandidates f (dimension a) (image a) (candidates a)) input encBits := by
-  have hf := hf.tidy
-  have hdimension := hdimension.tidy
-  have himage := himage.tidy
-  have hcandidates := hcandidates.tidy
-  refine .of_tidy ?_
   unfold wordCheckCandidates
   fun_prop
 

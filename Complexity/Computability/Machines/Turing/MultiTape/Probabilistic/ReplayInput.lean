@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.R
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.PreparePair
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.InputFromTape
@@ -29,6 +30,8 @@ The final tidy normalization clears the working storage and restores all heads.
 
 * `Turing.MultiTapePTM.computableTidilyInLinearTimeAndSpace_runClosedCoins`: deterministic replay
   has a uniform linear time and space bound in the encoded pair length.
+* `Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`: deterministic replay is
+  polynomial-time, for plain certificates.
 
 ## References
 
@@ -259,5 +262,13 @@ theorem computableTidilyInLinearTimeAndSpace_runClosedCoins [Finite State]
       (fun p : List Bool × List Bool => machine.runClosedCoins p.1 p.2)
       (encPair encBits encBits) encBits :=
   .of_linear (computableTidilyInLinearTimeAndSpace_runClosedCoins machine)
+
+/-- `computableTidilyInPolyTime_runClosedCoins` for plain certificates. -/
+@[fun_prop] theorem computableInPolyTime_runClosedCoins [Finite State]
+    (machine : MultiTapePTM k Bool State) :
+    ComputableInPolyTime
+      (fun p : List Bool × List Bool => machine.runClosedCoins p.1 p.2)
+      (encPair encBits encBits) encBits :=
+  (computableTidilyInPolyTime_runClosedCoins machine).computableInPolyTime
 
 end Turing.MultiTapePTM

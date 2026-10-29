@@ -25,9 +25,31 @@ open Cslib.Logic.PL Cslib.Complexity
 
 private def oneTriple : CNF ℕ := [[(0, true), (1, true), (2, true)]]
 
-example : oneTriple.oneModelCount = 3 := by decide
-example : oneTriple.modelCount = 7 := by decide
-example : oneTriple ∈ PositiveOneInExactThreeSATThree := by
+/-- The four triples on four variables have no exact-one assignment, although every variable
+has degree three and every clause is positive and distinct. -/
+private def fourTriples : CNF ℕ :=
+  [[(0, true), (1, true), (2, true)], [(0, true), (1, true), (3, true)],
+    [(0, true), (2, true), (3, true)], [(1, true), (2, true), (3, true)]]
+
+private def binarySource : CNF ℕ := [[(0, true), (1, true)]]
+
+/-- The empty positive instance has exactly one assignment on its empty support. -/
+theorem empty_formula_count : CNF.oneModelCount ([] : CNF ℕ) = 1 := by decide
+
+example :
+    oneTriple.oneModelCount = 3 ∧
+    oneTriple.modelCount = 7 ∧
+    oneTriple ∈ PositiveOneInExactThreeSATThree ∧
+    fourTriples.oneModelCount = 0 ∧
+    ¬fourTriples.OneSatisfiable ∧
+    (CNF.oneModelCount [[(0, true), (0, true), (0, true)]] : ℕ) = 0 ∧
+    CNF.oneModelCount ([[]] : CNF ℕ) = 0 ∧
+    CNF.oneModelCount [[(0, true), (0, false)]] = 2 ∧
+    OneSAT.positiveCheck [[(0, false)]] = false ∧
+    OneSAT.exactClauseCheck [(0, true), (0, true), (1, true)] = false := by
+  refine ⟨by decide, by decide, ?_, by decide,
+    by rw [← CNF.oneModelCount_pos_iff]; decide,
+    by decide, by decide, by decide, rfl, rfl⟩
   refine ⟨⟨by decide, rfl, fun v => v == 0, by decide⟩, ?_⟩
   intro v
   by_cases h₀ : v = 0
@@ -38,81 +60,45 @@ example : oneTriple ∈ PositiveOneInExactThreeSATThree := by
   · subst v; decide
   simp [oneTriple, CNF.vars, Ne.symm h₀, Ne.symm h₁, Ne.symm h₂]
 
-/-- The four triples on four variables have no exact-one assignment, although every variable
-has degree three and every clause is positive and distinct. -/
-private def fourTriples : CNF ℕ :=
-  [[(0, true), (1, true), (2, true)], [(0, true), (1, true), (3, true)],
-    [(0, true), (2, true), (3, true)], [(1, true), (2, true), (3, true)]]
+/-- The compiler preserves model counts and obeys clause/variable bounds across `binarySource`,
+`[]`, `[[]]`, `[[(2 ^ 100, true)]]`, `[[(0, true), (0, false)]]`, and a malformed width-four
+clause. -/
+example :
+    (toPositiveOneInExactThreeSATThree binarySource).oneModelCount = 3 ∧
+    (toPositiveOneInExactThreeSATThree ([] : CNF ℕ)).oneModelCount = 1 ∧
+    (toPositiveOneInExactThreeSATThree ([[]] : CNF ℕ)).oneModelCount = 0 ∧
+    (toPositiveOneInExactThreeSATThree binarySource).length ≤ 507 ∧
+    (toPositiveOneInExactThreeSATThree binarySource).vars.length ≤ 1521 ∧
+    (toPositiveOneInExactThreeSATThree [[(2 ^ 100, true)]]).length ≤ 338 ∧
+    (toPositiveOneInExactThreeSATThree [[(0, true), (0, false)]]).oneModelCount = 2 ∧
+    SharpPositiveOneInExactThreeSATThree
+      (toPositiveOneInExactThreeSATThree
+        [[(0, true), (0, false), (0, true), (0, false)]]) = 0 := by
+  refine ⟨by rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by decide)]; decide,
+    by rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by simp)]; decide,
+    by rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by decide)]; decide,
+    by
+      have h := (size_toPositiveOneInExactThreeSATThree binarySource (by decide)).1
+      simpa [binarySource, CNF.vars] using h,
+    by
+      have h := (size_toPositiveOneInExactThreeSATThree binarySource (by decide)).2
+      simpa [binarySource, CNF.vars] using h,
+    by
+      have h := (size_toPositiveOneInExactThreeSATThree [[(2 ^ 100, true)]] (by decide)).1
+      simpa [CNF.vars] using h,
+    by rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by decide)]; decide,
+    by rw [sharpPositiveOneInExactThreeSATThree_toPositiveOneInExactThreeSATThree]; decide⟩
 
-example : fourTriples.oneModelCount = 0 := by decide
-example : ¬fourTriples.OneSatisfiable := by
-  rw [← CNF.oneModelCount_pos_iff]
-  decide
-
-/-- Repeated variables count as repeated literal positions. -/
-example : (CNF.oneModelCount [[(0, true), (0, true), (0, true)]] : ℕ) = 0 := by decide
-
-/-- The empty positive instance has exactly one assignment on its empty support. -/
-theorem empty_formula_count : CNF.oneModelCount ([] : CNF ℕ) = 1 := by decide
-example : CNF.oneModelCount ([[]] : CNF ℕ) = 0 := by decide
-
-example : CNF.oneModelCount [[(0, true), (0, false)]] = 2 := by decide
-
-example : OneSAT.positiveCheck [[(0, false)]] = false := rfl
-
-example : OneSAT.exactClauseCheck [(0, true), (0, true), (1, true)] = false := rfl
-
-private def binarySource : CNF ℕ := [[(0, true), (1, true)]]
-
-/-- The compiler preserves three models of a binary disjunction without enumerating its
-many fresh variables. -/
-example : (toPositiveOneInExactThreeSATThree binarySource).oneModelCount = 3 := by
-  rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by decide)]
-  decide
-
-example : (toPositiveOneInExactThreeSATThree ([] : CNF ℕ)).oneModelCount = 1 := by
-  rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by simp)]
-  decide
-
-example : (toPositiveOneInExactThreeSATThree ([[]] : CNF ℕ)).oneModelCount = 0 := by
-  rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by decide)]
-  decide
-
-example : (toPositiveOneInExactThreeSATThree binarySource).length ≤ 507 := by
-  have h := (size_toPositiveOneInExactThreeSATThree binarySource (by decide)).1
-  simpa [binarySource, CNF.vars] using h
-
-example : (toPositiveOneInExactThreeSATThree binarySource).vars.length ≤ 1521 := by
-  have h := (size_toPositiveOneInExactThreeSATThree binarySource (by decide)).2
-  simpa [binarySource, CNF.vars] using h
-
-/-- Size bounds do not depend on the numeric magnitude of binary source labels. -/
-example : (toPositiveOneInExactThreeSATThree [[(2 ^ 100, true)]]).length ≤ 338 := by
-  have h := (size_toPositiveOneInExactThreeSATThree [[(2 ^ 100, true)]] (by decide)).1
-  simpa [CNF.vars] using h
-
-example : (toPositiveOneInExactThreeSATThree [[(0, true), (0, false)]]).oneModelCount = 2 := by
-  rw [oneModelCount_toPositiveOneInExactThreeSATThree _ (by decide)]
-  decide
-
-/-- Malformed width-four syntax is rejected with count zero by the total reduction. -/
-example : SharpPositiveOneInExactThreeSATThree
-    (toPositiveOneInExactThreeSATThree
-      [[(0, true), (0, false), (0, true), (0, false)]]) = 0 := by
-  rw [sharpPositiveOneInExactThreeSATThree_toPositiveOneInExactThreeSATThree]
-  decide
-
-example : CNF.ExactOneGadget.DisjunctionHolds false true true true false false true true := by
-  decide
-
-/-- The formerly ambiguous input has exactly the canonical values. -/
+/-- The formerly ambiguous input has the canonical auxiliary values. -/
 example (u v w t x : Bool) :
-    CNF.ExactOneGadget.DisjunctionHolds false true true u v w t x ↔
-      u = true ∧ v = false ∧ w = false ∧ t = true ∧ x = true := by
-  simpa [CNF.ExactOneGadget.firstAux, CNF.ExactOneGadget.secondAux,
-    CNF.ExactOneGadget.thirdAux, CNF.ExactOneGadget.fourthAux,
-    CNF.ExactOneGadget.fifthAux] using
-      CNF.ExactOneGadget.disjunctionHolds_iff false true true u v w t x
+    CNF.ExactOneGadget.DisjunctionHolds false true true true false false true true ∧
+    (CNF.ExactOneGadget.DisjunctionHolds false true true u v w t x ↔
+      u = true ∧ v = false ∧ w = false ∧ t = true ∧ x = true) :=
+  ⟨by decide, by
+    simpa [CNF.ExactOneGadget.firstAux, CNF.ExactOneGadget.secondAux,
+      CNF.ExactOneGadget.thirdAux, CNF.ExactOneGadget.fourthAux,
+      CNF.ExactOneGadget.fifthAux] using
+        CNF.ExactOneGadget.disjunctionHolds_iff false true true u v w t x⟩
 
 end Cslib.Tests.PositiveOneInThreeSAT
 

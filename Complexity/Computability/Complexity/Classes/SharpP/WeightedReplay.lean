@@ -68,53 +68,50 @@ theorem GapP.weightedReplay_mem [Finite Control] [Finite Operation]
     (hR : Turing.MultiTapeTM.ComputableInPolyTime R enc encUnary)
     (hH : H ∈ GapP (encPair enc encBits)) :
     weightedReplay machine input T R H ∈ GapP enc := by
-  have hinput := hinput.tidy
-  have hT := hT.tidy
-  have hR := hR.tidy
   let _ := Fintype.ofFinite Operation
   let cfg : (α × List Bool) × ℕ → FiniteConfig k Bool Control Operation :=
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
-  have hcfg : ComputableTidilyInPolyTime cfg
+  have hcfg : ComputableInPolyTime cfg
       (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.replayPrefix_pt.comp (g := fun x : (α × List Bool) × ℕ =>
-      ((input x.1.1, x.1.2), x.2)) (by fun_prop)
-  have hquery : ComputableTidilyInPolyTime
+    machine.computableInPolyTime_replayPrefix.comp
+      (g := fun x : (α × List Bool) × ℕ => ((input x.1.1, x.1.2), x.2)) (by fun_prop)
+  have hquery : ComputableInPolyTime
       (fun x => (machine.pendingQuery (cfg x)).isSome)
       (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableTidilyInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp hcfg)
-  have hrequest : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.of_finite Option.isSome).comp
+      ((ComputableInPolyTime.of_tidy machine.pendingQuery_pt).comp hcfg)
+  have hrequest : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => (x.1.1, machine.pendingRequest (cfg x)))
       (encPair (encPair enc encBits) encUnary) (encPair enc encBits) := by
-    have hinstance : ComputableTidilyInPolyTime
+    have hinstance : ComputableInPolyTime
         (fun x : (α × List Bool) × ℕ => x.1.1)
         (encPair (encPair enc encBits) encUnary) enc := by fun_prop
-    exact hinstance.prod (machine.pendingRequest_pt.comp hcfg)
+    exact hinstance.prod ((ComputableInPolyTime.of_tidy machine.pendingRequest_pt).comp hcfg)
   let p : (α × List Bool) × ℕ → ℤ := fun x =>
     if (machine.pendingQuery (cfg x)).isSome then H (x.1.1, machine.pendingRequest (cfg x)) else 0
   have hp : p ∈ GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.ite_mem (.of_tidy hquery) (GapP.comp_mem hH (.of_tidy hrequest)) GapP.zero_mem
+    GapP.ite_mem hquery (GapP.comp_mem hH hrequest) GapP.zero_mem
   have hdenom : (fun x : (α × List Bool) × ℕ => (2 : ℤ) ^ R x.1.1) ∈
       GapP (encPair (encPair enc encBits) encUnary) :=
-    mem_GapP_of_polyTime (.of_tidy (by fun_prop))
-  have hbit : ComputableTidilyInPolyTime
+    mem_GapP_of_polyTime (by fun_prop)
+  have hbit : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  have hfactor := GapP.ite_mem (.of_tidy hbit) hp (GapP.sub_mem' hdenom hp)
+  have hfactor := GapP.ite_mem hbit hp (GapP.sub_mem' hdenom hp)
   have hprod := GapP.prod_range_mem hfactor
-    (r := fun x : α × List Bool => x.2.length) (.of_tidy (by fun_prop))
-  have hout : ComputableTidilyInPolyTime
+    (r := fun x : α × List Bool => x.2.length) (by fun_prop)
+  have hout : ComputableInPolyTime
       (fun x : α × List Bool => (machine.replayOutput (input x.1) x.2).headD false)
       (encPair enc encBits) encBool := by
-    have hreindex : ComputableTidilyInPolyTime
+    have hreindex : ComputableInPolyTime
         (fun x : α × List Bool => (input x.1, x.2))
         (encPair enc encBits) (encPair encBits encBits) := by fun_prop
-    exact (ComputableTidilyInPolyTime.headD false).comp
-      (machine.replayOutput_pt.comp hreindex)
+    exact (ComputableInPolyTime.headD false).comp
+      (machine.computableInPolyTime_replayOutput.comp hreindex)
   have hmask : (fun x : α × List Bool =>
       if (machine.replayOutput (input x.1) x.2).headD false then (1 : ℤ) else 0) ∈
-      GapP (encPair enc encBits) := GapP.ite_mem (.of_tidy hout) GapP.one_mem GapP.zero_mem
-  have hsum := GapP.sum_bits_mem (GapP.mul_mem hprod hmask) (.of_tidy hT)
+      GapP (encPair enc encBits) := GapP.ite_mem hout GapP.one_mem GapP.zero_mem
+  have hsum := GapP.sum_bits_mem (GapP.mul_mem hprod hmask) hT
   convert hsum using 1
   funext a
   rw [weightedReplay, acceptWeight_eq_sum]

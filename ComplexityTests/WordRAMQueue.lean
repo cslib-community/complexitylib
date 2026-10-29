@@ -87,11 +87,14 @@ example : ∃ ready y traces, Exec 4 (WordRAM.Queue.initializeCode 3 2) stale re
   exact WordRAM.Queue.run_initialized (by decide) (by decide) (cycle 0 15)
     stale_bounded (cycle_valid (by decide) (by decide) (by decide))
 
--- Capacity zero allows an empty dequeue, but no enqueue (even of zero).
-example : ¬(WordRAM.Queue.spec 4 0).valid [] (.enqueue 0) := by decide
-example : (WordRAM.Queue.spec 4 0).valid [] .dequeue := trivial
-example : ¬(WordRAM.Queue.spec 4 2).valid [0, 15] (.enqueue 1) := by decide
-example : ¬(WordRAM.Queue.spec 4 2).valid [] (.enqueue 16) := by decide
+-- Capacity zero allows an empty dequeue, but no enqueue (even of zero), and capacity/width bounds
+-- are enforced.
+example :
+    ¬(WordRAM.Queue.spec 4 0).valid [] (.enqueue 0) ∧
+    (WordRAM.Queue.spec 4 0).valid [] .dequeue ∧
+    ¬(WordRAM.Queue.spec 4 2).valid [0, 15] (.enqueue 1) ∧
+    ¬(WordRAM.Queue.spec 4 2).valid [] (.enqueue 16) :=
+  ⟨by decide, trivial, by decide, by decide⟩
 
 -- A refill of two rear words costs 28 including halt: a false 27 bound is rejected.
 example {x y : Data 11} {a : Option ℕ} {trace : DynamicProgram.OperationTrace}
@@ -102,9 +105,11 @@ example {x y : Data 11} {a : Option ℕ} {trace : DynamicProgram.OperationTrace}
   change trace.instructions = 28 at h
   omega
 
--- Empty and zero-valued observations are semantically distinct.
-example : (WordRAM.Queue.pairStep ([], []) .dequeue).2 = none := rfl
-example : (WordRAM.Queue.pairStep ([], [0]) .dequeue).2 = some 0 := rfl
-example : (WordRAM.Queue.footprint 3 2).card = 4 := WordRAM.Queue.footprint_card _ _
+-- Empty and zero-valued observations are semantically distinct, and the footprint size is `2 * c`.
+example :
+    (WordRAM.Queue.pairStep ([], []) .dequeue).2 = none ∧
+    (WordRAM.Queue.pairStep ([], [0]) .dequeue).2 = some 0 ∧
+    (WordRAM.Queue.footprint 3 2).card = 4 :=
+  ⟨rfl, rfl, WordRAM.Queue.footprint_card _ _⟩
 
 end WordRAMQueueTest
