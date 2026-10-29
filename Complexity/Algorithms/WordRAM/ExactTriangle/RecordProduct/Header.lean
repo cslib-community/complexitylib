@@ -60,8 +60,8 @@ theorem exec_writeHeader {W b m n A Q : ℕ} (x : Data 320)
   refine ⟨y, he, ?_, ?_, ?_⟩
   · intro j
     change y.mem (b + j.val) = _
-    fin_cases j <;> simp +decide [y, Nat.add_assoc, Nat.mul_comm]
-    omega
+    fin_cases j <;> simp +decide [y, two_mul, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm,
+      Nat.mul_comm]
   · intro a ha
     have h0 : a ≠ b := by omega
     have h1 : a ≠ b + 1 := by omega
