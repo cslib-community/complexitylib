@@ -67,14 +67,19 @@ theorem clmul_and_reduce_t0 :
   rw [h2, mk_polyOfCode_reduceTrinomialCode, polyOfCode_clmul]
 
 /-- Concrete check of 4-limb reduction at `t = 1` (`r = 3`, degree `6`, modulus
-`X ^ 6 + X ^ 3 + 1`): for `c = 2 ^ 11 + 2 ^ 7 + 5 < 2 ^ 12`, `reduceTrinomialCode 1 c < 64` and
-represents the same element of `TrinomialField 1`. -/
+`X ^ 6 + X ^ 3 + 1`): for `c = 2 ^ 11 + 2 ^ 7 + 5 = 2181 < 2 ^ 12`, `reduceTrinomialCode 1 c = 19`
+(`X ^ 4 + X + 1`) and represents the same element of `TrinomialField 1`. -/
 theorem reduce_t1_sound :
     let c := 2 ^ 11 + 2 ^ 7 + 5
+    reduceTrinomialCode 1 c = 19 ∧
     reduceTrinomialCode 1 c < 64 ∧
-    AdjoinRoot.mk (trinomial 1) (polyOfCode (reduceTrinomialCode 1 c)) =
-      AdjoinRoot.mk (trinomial 1) (polyOfCode c) :=
-  ⟨reduceTrinomialCode_lt 1 (by decide), mk_polyOfCode_reduceTrinomialCode 1 _⟩
+    AdjoinRoot.mk (trinomial 1) (polyOfCode 19) =
+      AdjoinRoot.mk (trinomial 1) (polyOfCode c) := by
+  have hred : reduceTrinomialCode 1 (2 ^ 11 + 2 ^ 7 + 5) = 19 := by decide
+  refine ⟨hred, reduceTrinomialCode_lt 1 (by decide), ?_⟩
+  have h19 : polyOfCode 19 = polyOfCode (reduceTrinomialCode 1 (2 ^ 11 + 2 ^ 7 + 5)) :=
+    congrArg polyOfCode hred.symm
+  rw [h19, mk_polyOfCode_reduceTrinomialCode]
 
 /-! ## 2. Exact `5`-wise independent trinomial polynomial hashing -/
 
@@ -90,11 +95,11 @@ theorem five_wise_independent_auto_step (U M : ℕ) :
     let t := trinomialStep U M
     U ≤ 2 ^ (2 * 3 ^ t) ∧
     M ≤ 2 * 3 ^ t ∧
-    2 * 3 ^ t ≤ 6 * max (Nat.clog 2 (max U 2)) (max M 1) ∧
+    2 * 3 ^ t ≤ 3 * max (Nat.clog 2 (max U 2)) (max M 1) ∧
     IsKWiseIndependentHash 5 (trinomialPolyHash t 5 U M) :=
   ⟨le_two_pow_trinomialDeg U M,
    le_trinomialDeg U M,
-   trinomialDeg_le U M,
+   trinomialDeg_le_three_mul U M,
    isKWiseIndependentHash_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M)⟩
 
 /-- Concrete check of `trinomialStep`: for `U = 1000, M = 10`, `trinomialStep 1000 10 = 2` and

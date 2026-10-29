@@ -53,8 +53,8 @@ tuples gives a better constant.
 * `Cslib.Probability.IsKWiseIndependentHash.isPairwiseIndependentHash`,
   `Cslib.Probability.isKWiseIndependentHash_two_iff`: for `k ≥ 2` the family is pairwise
   independent, and `2`-wise independence is pairwise independence with a seed.
-* `Cslib.Probability.IsKWiseIndependentHash.reindex_equiv`,
-  `Cslib.Probability.IsKWiseIndependentHash.comp_injective`,
+* `Cslib.Probability.IsKWiseIndependentHash.comp_seedEquiv`,
+  `Cslib.Probability.IsKWiseIndependentHash.comp`,
   `Cslib.Probability.IsKWiseIndependentHash.map_equiv`,
   `Cslib.Probability.IsKWiseIndependentHash.comp_surjective_addMonoidHom`: preservation of
   `k`-wise independence under seed equivalences, injective domain maps, output equivalences, and
@@ -114,8 +114,8 @@ theorem mono (hh : IsKWiseIndependentHash k h) {k' : ℕ} (hk : k' ≤ k) :
     IsKWiseIndependentHash k' h where
   dens_filter_restrict_eq hT y := hh.dens_filter_restrict_eq (hT.trans hk) y
 
-/-- Reindexing the seed space by an equivalence `e : ι' ≃ ι` preserves `k`-wise independence. -/
-theorem reindex_equiv {ι' : Type*} [Fintype ι'] (hh : IsKWiseIndependentHash k h)
+/-- Relabelling the seed space by an equivalence `e : ι' ≃ ι` preserves `k`-wise independence. -/
+theorem comp_seedEquiv {ι' : Type*} [Fintype ι'] (hh : IsKWiseIndependentHash k h)
     (e : ι' ≃ ι) : IsKWiseIndependentHash k (fun i' x => h (e i') x) where
   dens_filter_restrict_eq {T} hT y := by
     rw [dens_eq_card_div_card, ← hh.dens_filter_restrict_eq hT y, dens_eq_card_div_card,
@@ -125,7 +125,7 @@ theorem reindex_equiv {ι' : Type*} [Fintype ι'] (hh : IsKWiseIndependentHash k
 
 /-- Precomposing the input domain with an injective map `e : X' → X` preserves `k`-wise
 independence. -/
-theorem comp_injective {X' : Type*} (hh : IsKWiseIndependentHash k h) {e : X' → X}
+theorem comp {X' : Type*} (hh : IsKWiseIndependentHash k h) {e : X' → X}
     (he : Function.Injective e) : IsKWiseIndependentHash k (fun i x' => h i (e x')) where
   dens_filter_restrict_eq {T} hT y := by
     let emb : X' ↪ X := ⟨e, he⟩

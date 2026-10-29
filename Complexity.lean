@@ -2456,6 +2456,7 @@ public import Complexity.Foundations.Data.BitString.ParityTestBounds
 public import Complexity.Foundations.Data.BitString.ParityTests
 public import Complexity.Foundations.Data.BitString.PartialAssignment
 public import Complexity.Foundations.Data.BitString.PartialAssignment.Counting
+public import Complexity.Foundations.Data.BitString.Prefix
 public import Complexity.Foundations.Data.BitString.Propagation
 public import Complexity.Foundations.Data.BitString.ShortWords
 public import Complexity.Foundations.Data.BitString.Sign

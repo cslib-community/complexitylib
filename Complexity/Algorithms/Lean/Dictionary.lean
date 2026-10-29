@@ -28,8 +28,8 @@ dependent `Fin V` proof obligations inside register decoding.
 An insertion `insert u v` is admissible whenever `v < V` and either the current number of stored
 keys `(dom s).card` is strictly below the capacity bound `n_max`, or `u` is already present in `s`
 (in which case updating `s u` to `some v` overwrites the existing value in place without increasing
-`(dom s).card`). Deletion (`erase`) is left as a follow-up extension, as dynamic deletions interact
-nontrivially with open-addressing tombstones and rehashing invariants.
+`(dom s).card`). This specification models lookup-and-insert dictionaries without a deletion
+operation.
 
 ## Main definitions
 
@@ -60,8 +60,7 @@ public section
 
 namespace Cslib.Algorithms.Lean.Dictionary
 
-/-- Operations on a dictionary over keys `Fin U` and natural-number values.
-Deletion (`erase`) is deferred to a follow-up extension. -/
+/-- Lookup and insertion operations on a dictionary over keys `Fin U` and natural-number values. -/
 inductive Op (U : ℕ) where
   /-- Look up the value associated with key `u`, if present. -/
   | get (u : Fin U)

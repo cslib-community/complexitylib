@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Foundations.FieldTheory.Finite.BinaryField
 public import Complexity.Foundations.Data.BitString.Basic
+public import Complexity.Foundations.Data.BitString.Binary
 public import Mathlib.RingTheory.Polynomial.Cyclotomic.Basic
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Factorization
 import Mathlib.RingTheory.ZMod.UnitsCyclic
@@ -22,24 +23,25 @@ explicit trinomial
 `Cslib.trinomial t = X ^ (2 * 3 ^ t) + X ^ (3 ^ t) + 1`.
 Because `2` is a primitive root modulo `3 ^ (t + 1)` for every `t` (`orderOf 2 = 2 * 3 ^ t`),
 `Cslib.trinomial t` is irreducible over `ZMod 2` (`Cslib.irreducible_trinomial`) [Lidl and
-Niederreiter, Theorem 2.47 and Exercise 3.96][LidlNiederreiter1997].
+Niederreiter, Theorem 2.47][LidlNiederreiter1997].
 
 Unlike `Cslib.BinaryField w`, whose modulus `Cslib.leastIrreducible w` is defined by an exhaustive
 search over binary codes, `Cslib.TrinomialField t = AdjoinRoot (trinomial t)` has a closed-form
 sparse modulus of degree `2 * 3 ^ t` for every `t : ℕ` without any runtime polynomial search.
 Moreover, because `(X ^ (3 ^ t) + 1) * trinomial t = X ^ (3 ^ (t + 1)) + 1` over `ZMod 2`, any
-binary polynomial of degree less than `4 * 3 ^ t` reduces modulo `trinomial t` in closed form using
-only bitwise shifts, masks, and exclusive-or (`Cslib.reduceTrinomialCode`,
-`Cslib.mk_polyOfCode_reduceTrinomialCode`). Paired with carryless multiplication `Cslib.clmul`
-(`Cslib.polyOfCode_clmul`), this gives loop-free arithmetic for `Cslib.TrinomialField t` on
-unsigned machine words.
+binary polynomial of degree less than `4 * 3 ^ t` (whose binary code below `2 ^ (4 * 3 ^ t)` splits
+into four `3 ^ t`-bit limbs, with the low two limbs kept together as a `2 * 3 ^ t`-bit word)
+reduces modulo `trinomial t` in closed form using only bitwise shifts, masks, and exclusive-or
+(`Cslib.reduceTrinomialCode`, `Cslib.mk_polyOfCode_reduceTrinomialCode`). Paired with carryless
+multiplication `Cslib.clmul` (`Cslib.polyOfCode_clmul`), this gives loop-free arithmetic for
+`Cslib.TrinomialField t` on unsigned machine words.
 
 ## Main definitions
 
 * `Cslib.trinomial`: the binary trinomial `X ^ (2 * 3 ^ t) + X ^ (3 ^ t) + 1`.
 * `Cslib.clmul`: carryless multiplication of natural-number polynomial codes over `𝔽₂`.
 * `Cslib.reduceTrinomialCode`: 4-limb bitwise reduction modulo `trinomial t` on natural-number
-  codes below `2 ^ (4 * 3 ^ t)`.
+  codes below `2 ^ (4 * 3 ^ t)` (four `3 ^ t`-bit limbs).
 * `Cslib.TrinomialField`: the explicit binary field `AdjoinRoot (trinomial t)` of degree
   `2 * 3 ^ t`.
 * `Cslib.TrinomialField.basis`, `Cslib.TrinomialField.equivBits`,
@@ -190,20 +192,26 @@ theorem polyOfCode_eq_C_add_X_mul (m : ℕ) :
   · simp [polyOfCode_zero]
   · rw [polyOfCode, ite_eq_right hm]
 
+/-- Helper characterizing `(m : ZMod 2)` from `m % 2`. -/
+private theorem natCast_zmod_two_eq (m : ℕ) :
+    (m : ZMod 2) = if m % 2 = 1 then 1 else 0 := by
+  rcases Nat.mod_two_eq_zero_or_one m with h0 | h1
+  · have hm : (m : ZMod 2) = 0 := (ZMod.natCast_eq_zero_iff m 2).mpr (Nat.dvd_of_mod_eq_zero h0)
+    simp [h0, hm]
+  · have hm : (m : ZMod 2) = 1 := by
+      rw [← Nat.div_add_mod m 2, h1, Nat.cast_add, Nat.cast_mul, ZMod.natCast_self,
+        zero_mul, zero_add, Nat.cast_one]
+    simp [h1, hm]
+
 /-- Coefficient `i` of `polyOfCode m` is bit `i` of `m` read in `ZMod 2`. -/
 theorem coeff_polyOfCode (m i : ℕ) :
     (polyOfCode m).coeff i = bitEquiv.symm (m.testBit i) := by
   induction i generalizing m with
   | zero =>
     rw [polyOfCode_eq_C_add_X_mul]
-    simp only [coeff_add, coeff_C_zero, coeff_X_mul_zero, add_zero, Nat.testBit_zero]
-    rcases Nat.mod_two_eq_zero_or_one m with h0 | h1
-    · have hm : (m : ZMod 2) = 0 := (ZMod.natCast_eq_zero_iff m 2).mpr (Nat.dvd_of_mod_eq_zero h0)
-      simp [h0, hm]
-    · have hm : (m : ZMod 2) = 1 := by
-        rw [← Nat.div_add_mod m 2, h1, Nat.cast_add, Nat.cast_mul, ZMod.natCast_self,
-          zero_mul, zero_add, Nat.cast_one]
-      simp [h1, hm]
+    simp only [coeff_add, coeff_C_zero, coeff_X_mul_zero, add_zero, Nat.testBit_zero,
+      natCast_zmod_two_eq]
+    rcases Nat.mod_two_eq_zero_or_one m with h | h <;> simp [h]
   | succ i ih =>
     rw [polyOfCode_eq_C_add_X_mul, coeff_add, coeff_C_succ, zero_add, coeff_X_mul,
       ih (m / 2), Nat.testBit_succ]
@@ -290,14 +298,8 @@ theorem polyOfCode_clmul (a b : ℕ) :
         ih (b / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero hb) one_lt_two)]
       conv_rhs => rw [polyOfCode_eq_C_add_X_mul b]
       have hbit : polyOfCode (if b % 2 = 1 then a else 0) = polyOfCode a * C (b : ZMod 2) := by
-        rcases Nat.mod_two_eq_zero_or_one b with h0 | h1
-        · have hb0 : (b : ZMod 2) = 0 :=
-            (ZMod.natCast_eq_zero_iff b 2).mpr (Nat.dvd_of_mod_eq_zero h0)
-          simp [h0, hb0]
-        · have hb1 : (b : ZMod 2) = 1 := by
-            rw [← Nat.div_add_mod b 2, h1, Nat.cast_add, Nat.cast_mul, ZMod.natCast_self,
-              zero_mul, zero_add, Nat.cast_one]
-          simp [h1, hb1]
+        rw [natCast_zmod_two_eq]
+        split_ifs <;> simp
       rw [hbit]
       ring
 
@@ -360,8 +362,9 @@ theorem clmul_lt_two_pow_two_mul {a b q : ℕ} (ha : a < 2 ^ q) (hb : b < 2 ^ q)
   exact clmul_lt_two_pow ha hb
 
 /-- **8-operation loop-free 4-limb reduction modulo `trinomial t`**:
-reduces any code `c < 2 ^ (4 * 3 ^ t)` to a code `< 2 ^ (2 * 3 ^ t)` representing the same element
-of `AdjoinRoot (trinomial t)`. -/
+viewing a code `c < 2 ^ (4 * 3 ^ t)` as four `3 ^ t`-bit limbs (with the low two limbs kept
+together as `cLow`), reduces `c` to a code `< 2 ^ (2 * 3 ^ t)` representing the same element of
+`AdjoinRoot (trinomial t)`. -/
 @[expose] def reduceTrinomialCode (t c : ℕ) : ℕ :=
   let r := 3 ^ t
   let c3 := c >>> (3 * r)
@@ -508,40 +511,18 @@ theorem equivBits_mk (t : ℕ) {p : (ZMod 2)[X]} (hp : p.degree < (2 * 3 ^ t : �
 @[expose] noncomputable def equivFin (t : ℕ) : TrinomialField t ≃ Fin (2 ^ (2 * 3 ^ t)) :=
   (equivBits t).toEquiv.trans (BitString.equivFin (2 * 3 ^ t))
 
-/-- Helper: the unsigned value of the `n`-bit string `j ↦ c.testBit j` for `c < 2 ^ n` is `c`. -/
-private theorem val_equivFin_testBit {n c : ℕ} (hc : c < 2 ^ n) :
-    (BitString.equivFin n (fun j : Fin n => c.testBit j.val)).val = c := by
-  induction n generalizing c with
-  | zero =>
-    have hc0 : c = 0 := by omega
-    subst hc0
-    exact (BitString.equivFin 0 _).isLt |> Nat.lt_one_iff.mp
-  | succ n ih =>
-    have hcons : (fun j : Fin (n + 1) => c.testBit j.val) =
-        Fin.cons (c.testBit 0) (fun j : Fin n => (c / 2).testBit j.val) := by
-      ext j
-      refine Fin.cases ?_ ?_ j
-      · rfl
-      · intro i
-        simp [Nat.testBit_succ]
-    rw [hcons, BitString.val_equivFin_cons, ih (by rw [pow_succ] at hc; omega)]
-    have hbit : (c.testBit 0).toNat = c % 2 := by
-      rw [Nat.testBit_zero]
-      rcases Nat.mod_two_eq_zero_or_one c with h | h <;> simp [h]
-    rw [hbit]
-    omega
-
 /-- For `c < 2 ^ (2 * 3 ^ t)`, the `equivFin t` coordinate of
 `AdjoinRoot.mk (trinomial t) (polyOfCode c)` is `c`. -/
 theorem val_equivFin_mk_polyOfCode (t : ℕ) {c : ℕ} (hc : c < 2 ^ (2 * 3 ^ t)) :
     (equivFin t (AdjoinRoot.mk (trinomial t) (polyOfCode c))).val = c := by
   have hbits : equivBits t (AdjoinRoot.mk (trinomial t) (polyOfCode c)) =
-      fun j : Fin (2 * 3 ^ t) => c.testBit j.val := by
+      (BitString.equivFin (2 * 3 ^ t)).symm ⟨c, hc⟩ := by
     ext j
-    rw [equivBits_mk t (degree_polyOfCode_lt hc) j, coeff_polyOfCode, RingEquiv.apply_symm_apply]
+    rw [equivBits_mk t (degree_polyOfCode_lt hc) j, coeff_polyOfCode, RingEquiv.apply_symm_apply,
+      BitString.equivFin_symm_apply]
   change (BitString.equivFin (2 * 3 ^ t)
     (equivBits t (AdjoinRoot.mk (trinomial t) (polyOfCode c)))).val = c
-  rw [hbits, val_equivFin_testBit hc]
+  rw [hbits, Equiv.apply_symm_apply]
 
 /-- The inverse of `equivFin t` sends `m : Fin (2 ^ (2 * 3 ^ t))` to
 `AdjoinRoot.mk (trinomial t) (polyOfCode m.val)`. -/

@@ -255,14 +255,6 @@ theorem evalData_regs_x (w₀ M : ℕ) (d : Data 5) :
 theorem evalData_mem (w₀ M : ℕ) (d : Data 5) :
     (evalData w₀ M d).mem = d.mem := by rfl
 
-/-- Exact binary operation execution helper over `Basis.exact` when `evalExact` returns `some v`. -/
-private theorem exec_exactBin {w r : ℕ} {f : BinOp} {dst i j : Fin r} {d : Data r} {v : ℕ}
-    (hev : f.evalExact (d.regs i) (d.regs j) = some v) (hfit : Fits w v) :
-    Exec w (.op (.exactBin f dst i j) : Code .exact r) d (d.set dst v) 1 := by
-  apply Exec.op
-  rw [Op.eval_exactBin, hev]
-  exact Data.put_of_fits hfit
-
 /-- **Exact `9`-instruction execution of `evalCode w₀ M`** without intermediate word overflow when
 `0 < w₀`, `2 * w₀ ≤ w`, `d.regs regB < 2 ^ (w₀ - 1)`, and `d.regs regX < 2 ^ w₀`. -/
 theorem evalCode_exec {w₀ M w : ℕ} (hw₀ : 0 < w₀) (hw : 2 * w₀ ≤ w)
@@ -314,27 +306,27 @@ theorem evalCode_exec {w₀ M w : ℕ} (hw₀ : 0 < w₀) (hw : 2 * w₀ ≤ w)
   have s1 : Exec w (.op (.const regT1 2) : Code .exact 5) d d1 1 := Exec.const hfit_2
   set d2 := d1.set regT1 (2 * b)
   have s2 : Exec w (.op (.exactBin .mul regT1 regT1 regB)) d1 d2 1 :=
-    exec_exactBin (by simp [d1, b, regT1, regB]) hfit_2b
+    Exec.alu (by simp [StandardOp.evalExact, d1, b, regT1, regB]) hfit_2b
   set d3 := d2.set regT2 1
   have s3 : Exec w (.op (.const regT2 1) : Code .exact 5) d2 d3 1 := Exec.const hfit_1
   set d4 := d3.set regT1 (2 * b + 1)
   have s4 : Exec w (.op (.exactBin .add regT1 regT1 regT2)) d3 d4 1 :=
-    exec_exactBin (by simp [d3, d2, regT1, regT2]) hfit_2b1
+    Exec.alu (by simp [StandardOp.evalExact, d3, d2, regT1, regT2]) hfit_2b1
   set d5 := d4.set regT1 ((2 * b + 1) * x)
   have s5 : Exec w (.op (.exactBin .mul regT1 regT1 regX)) d4 d5 1 :=
-    exec_exactBin (by simp [d4, d3, d2, d1, x, regT1, regT2, regX]) hfit_prod
+    Exec.alu (by simp [StandardOp.evalExact, d4, d3, d2, d1, x, regT1, regT2, regX]) hfit_prod
   set d6 := d5.set regT2 (2 ^ w₀ - 1)
   have s6 : Exec w (.op (.const regT2 (2 ^ w₀ - 1)) : Code .exact 5) d5 d6 1 :=
     Exec.const hfit_mask
   set d7 := d6.set regT1 (((2 * b + 1) * x) &&& (2 ^ w₀ - 1))
   have s7 : Exec w (.op (.exactBin .and regT1 regT1 regT2)) d6 d7 1 :=
-    exec_exactBin (by simp [d6, d5, regT1, regT2]) hfit_low
+    Exec.alu (by simp [StandardOp.evalExact, d6, d5, regT1, regT2]) hfit_low
   set d8 := d7.set regT2 (w₀ - M)
   have s8 : Exec w (.op (.const regT2 (w₀ - M)) : Code .exact 5) d7 d8 1 :=
     Exec.const hfit_shift
   set d9 := d8.set regOut ((((2 * b + 1) * x) &&& (2 ^ w₀ - 1)) >>> (w₀ - M))
   have s9 : Exec w (.op (.exactBin .shiftRight regOut regT1 regT2)) d8 d9 1 :=
-    exec_exactBin (by simp [d8, d7, regT1, regT2]) hfit_out
+    Exec.alu (by simp [StandardOp.evalExact, d8, d7, regT1, regT2]) hfit_out
   have hseq := s1.seq (s2.seq (s3.seq (s4.seq (s5.seq (s6.seq (s7.seq (s8.seq s9)))))))
   have hd9 : d9 = evalData w₀ M d := by
     ext i
