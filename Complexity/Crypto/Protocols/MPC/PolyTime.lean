@@ -1417,7 +1417,8 @@ private theorem isPPTOn_simGateCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
     exact hans.bind hot
   refine (IsPPTOn.finite_cases
     (tagEncoding := encFinite (Boolean.Op × (Fin m → Bool × Bool)))
-    (tag := id) (branch := fun choice _ => simGateCore m I choice) id' ?_).congr
+    (tag := id) (branch := fun choice _ => simGateCore m I choice)
+    ComputableInPolyTime.id' ?_).congr
     fun _ => rfl
   rintro ⟨op, x⟩
   cases op with
@@ -1685,7 +1686,8 @@ private theorem isPPTOn_simOutCore (m : ℕ) [NeZero m] (I : Finset (Fin m)) :
     IsPPTOn (encFinite (OutItem m)) (encStep3Acc m) (simOutCore m I) := by
   refine (IsPPTOn.finite_cases
     (tagEncoding := encFinite (OutItem m))
-    (tag := id) (branch := fun item _ => simOutCore m I item) id' ?_).congr
+    (tag := id) (branch := fun item _ => simOutCore m I item)
+    ComputableInPolyTime.id' ?_).congr
     fun _ => rfl
   intro item
   have hans : IsPPTOn (encFinite (OutItem m)) (encFinite (Fin m → Bool))

@@ -563,15 +563,12 @@ public section
 namespace Cslib.BalancedSchedules
 
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
+open ComputableTidilyInO (length_encNat_mono)
 
 private theorem length_encNat_le_self (k : ℕ) : (encNat k).length ≤ k := by
   rw [encNat_apply, Nat.size_eq_bits_len]; exact Nat.size_le_self k
 
 /-- Encoded bit-length bound for an incidence list `edges` with endpoints `< m` and `< n`. -/
-private theorem length_encNat_mono {a b : ℕ} (h : a ≤ b) :
-    (encNat a).length ≤ (encNat b).length := by
-  simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h
-
 theorem length_encEdges_le_of_lt {n m : ℕ} {edges : List (ℕ × ℕ)}
     (h : ∀ e ∈ edges, e.1 < m ∧ e.2 < n) :
     (encList (encPair encNat encNat) edges).length ≤

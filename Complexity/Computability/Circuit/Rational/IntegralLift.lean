@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.Circuit.Rational.Generator
+import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
 
 /-!
 # Integer form of the regular lift
@@ -396,14 +397,6 @@ lemma U_bound (n N e H : ℕ) (x : Fin 3 → ℕ) (hH : 1 ≤ H) (hx : ∀ l, x 
     CyclotomicRing.dimension e + 2 * CyclotomicRing.dimension e by omega, pow_add]
   ring
 
-lemma scaled_normalization {d : ℕ} (A B : Mat d) (hA : A.det ≠ 0) (c : ℚ) (hc : c ≠ 0) :
-    (c • A)⁻¹ * (c • B) = A⁻¹ * B := by
-  let : Invertible c := invertibleOfNonzero hc
-  have hi : (c • A)⁻¹ = c⁻¹ • A⁻¹ := by
-    simpa only [invOf_eq_inv] using Matrix.inv_smul (A := A) c (isUnit_iff_ne_zero.mpr hA)
-  rw [hi, Matrix.smul_mul, Matrix.mul_smul, smul_smul]
-  simp [hc]
-
 /-- When `(rationalLift n N e x 0).det ≠ 0`, the normalized matrix `tupleAt n N e x a` is the
 ratio `(integralLift n N e x 0)⁻¹ * integralLift n N e x a.succ` over `ℚ`. -/
 lemma tupleAt_integer (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N e x 0).det ≠ 0)
@@ -411,7 +404,8 @@ lemma tupleAt_integer (n N e : ℕ) (x : Fin 3 → ℕ) (hz : (rationalLift n N 
     tupleAt n N e x a = ((integralLift n N e x 0).map (Int.castRingHom ℚ))⁻¹ *
       (integralLift n N e x a.succ).map (Int.castRingHom ℚ) := by
   rw [U_cast, U_cast,
-    scaled_normalization _ _ hz _ (by exact_mod_cast (CyclotomicRing.dimension_pos e).ne')]
+    Matrix.inv_smul_mul_smul_of_ne_zero _ _ hz
+      (by exact_mod_cast (CyclotomicRing.dimension_pos e).ne')]
   rfl
 
 /-- If `(rationalLift n N e x 0).det ≠ 0`, then `(integralLift n N e x 0).det ≠ 0`. -/

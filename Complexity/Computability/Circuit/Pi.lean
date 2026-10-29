@@ -27,7 +27,8 @@ largest of their depths (`Circuit.depth_pi_le`), also with costs (`Circuit.depth
 
 * `Cslib.Circuits.Circuit.eval_pi`, `Cslib.Circuits.Circuit.size_pi`,
   `Cslib.Circuits.Circuit.depth_pi_le`: the function, size and depth of circuits side by side.
-* `Cslib.Circuits.Circuit.depth_oneGate`: one gate has depth one.
+* `Cslib.Circuits.Circuit.depth_oneGate`, `Cslib.Circuits.Circuit.fanInAtMost_oneGate`: one gate
+  has depth one, and fan-in the arity of its operation.
 * `Cslib.Circuits.Circuit.depthWith_pi_le`, `Cslib.Circuits.Circuit.depthWith_oneGate`: the same
   for depths with costs.
 -/
@@ -105,5 +106,10 @@ theorem depth_pi_le {m : ℕ} (cs : Fin m → Circuit σ n 1) {D : ℕ} (h : ∀
 @[simp] theorem depth_oneGate (op : σ.Op) (args : Fin (σ.Arity op) → Fin n) :
     (oneGate op args).depth = 1 := by
   simpa only [Circuit.depthWith_one, Pi.one_apply] using depthWith_oneGate 1 op args
+
+/-- One gate has fan-in at most `r` exactly when its operation has arity at most `r`. -/
+@[simp] theorem fanInAtMost_oneGate (op : σ.Op) (args : Fin (σ.Arity op) → Fin n) (r : ℕ) :
+    (oneGate op args).FanInAtMost r ↔ σ.Arity op ≤ r :=
+  ⟨fun h => h.2, fun h => ⟨trivial, h⟩⟩
 
 end Cslib.Circuits.Circuit

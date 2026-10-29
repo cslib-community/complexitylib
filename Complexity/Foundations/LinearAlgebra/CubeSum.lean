@@ -9,8 +9,10 @@ module
 
 public import Complexity.Init
 public import Mathlib.Algebra.Algebra.ZMod
+public import Mathlib.Data.List.OfFn
 public import Mathlib.Data.ZMod.Defs
 public import Mathlib.LinearAlgebra.Matrix.Permanent
+import Complexity.Foundations.Data.List.OfFn
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Fintype.Option
 import Mathlib.Tactic.FinCases
@@ -36,6 +38,8 @@ assignments are the bijections, and the sum is the permanent of the coefficient 
   coefficient.
 * `Cslib.sum_cube_prod_affine_eq_permanent`: with as many factors as variables, the sum is the
   permanent of the coefficient matrix.
+* `Cslib.prod_sub_mul_eq_sum`, `Cslib.prod_sub_eq_sum`: Boolean-cube expansion of a product of
+  differences `∏ i, (f i - c * g i)` over any commutative ring.
 
 ## References
 
@@ -178,5 +182,32 @@ theorem sum_cube_prod_affine_eq_permanent (a : κ → R) (b : κ → κ → R) :
   refine Finset.sum_congr rfl fun π _ => ?_
   rw [← Equiv.prod_comp π]
   simp
+
+/-- Expanding a product of `(f i - c * g i)` over Boolean choices pulls out `(-c)` to the number of
+true bits. -/
+theorem prod_sub_mul_eq_sum {R : Type*} [CommRing R] {n : ℕ} (f g : Fin n → R) (c : R) :
+    (∏ i, (f i - c * g i)) = ∑ w : Fin n → Bool,
+      (-c) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i := by
+  have h (w : Fin n → Bool) :
+      (∏ i, if w i then -(c * g i) else f i) =
+        (-c) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i := by
+    calc
+      _ = ∏ i, (if w i then -c else 1) * (if w i then g i else f i) := by
+        apply Finset.prod_congr rfl
+        intro i _
+        cases w i <;> simp
+      _ = _ := by
+        rw [Finset.prod_mul_distrib, Finset.prod_ite]
+        simp only [Finset.prod_const, one_pow, mul_one, List.countP_ofFn, Finset.card_filter, id_eq]
+  simp_rw [← h]
+  rw [← Fintype.prod_sum (fun (i : Fin n) (b : Bool) => if b then -(c * g i) else f i)]
+  simp [sub_eq_add_neg, add_comm]
+
+/-- Expanding a product of differences over Boolean choices: each term selects `g i` where `w i` is
+true and `f i` where `w i` is false, weighted by `(-1)` to the number of true bits. -/
+theorem prod_sub_eq_sum {R : Type*} [CommRing R] {n : ℕ} (f g : Fin n → R) :
+    (∏ i, (f i - g i)) = ∑ w : Fin n → Bool,
+      (-1 : R) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i := by
+  simpa using prod_sub_mul_eq_sum f g 1
 
 end Cslib

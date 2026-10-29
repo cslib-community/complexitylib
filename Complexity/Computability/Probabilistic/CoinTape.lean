@@ -75,7 +75,7 @@ theorem IsPPTOn.exists_polyTime_coin_evaluator (h : IsPPTOn input output program
         (BitString.uniformList (c * ((input a).length + 1) ^ d)).map
           (fun coins => evaluate coins (input a)) := by
   obtain ⟨k, State, _, machine, c, d, hm⟩ := h.exists_coin_machine
-  exact ⟨c, d, machine.runClosedCoins, machine.computableTidilyInPolyTime_runClosedCoins, hm⟩
+  exact ⟨c, d, machine.runClosedCoins, machine.computableInPolyTime_runClosedCoins.tidy, hm⟩
 
 /-- Every typed PPT program has a total deterministic polynomial-time evaluator. Every seed
 produces a supported result. Short seeds are padded; longer seeds are truncated to the program's

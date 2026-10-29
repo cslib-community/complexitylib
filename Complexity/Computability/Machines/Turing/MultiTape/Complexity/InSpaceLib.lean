@@ -798,7 +798,7 @@ theorem natSub :
 theorem natAdd :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat
       fun p => (encPair encNat encNat p).length + 1 :=
-  of_inO ComputableTidilyInO.natAdd
+  of_inO ComputableInO.natAdd.tidy
 
 theorem dispatch {κ : Type*} (l : List κ) (d : κ) (F : κ → α → β)
     (hF : ∀ x, ComputableTidilyInSpace (F x) encIn encB fun a => (encIn a).length) {i : α → ℕ}

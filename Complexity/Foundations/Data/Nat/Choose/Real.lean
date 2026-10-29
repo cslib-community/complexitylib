@@ -39,6 +39,8 @@ generating-function bound, motivated by the geometric thresholds in Appendix A.3
 * `Cslib.sum_choose_le_two_pow_div_add_one`: its natural-number rounded form.
 * `Cslib.le_mul_logb_of_two_pow_le_sum_choose_sq`: the logarithmic consequence.
 * `Cslib.mul_rpow_le_of_two_pow_le_sum_choose_sq`: the rearranged size lower bound.
+* `Real.exists_one_le_and_mul_pow_le_pow`: a polynomial is eventually below an exponential with base
+  `r > 1`.
 
 ## References
 
@@ -257,3 +259,25 @@ theorem mul_rpow_le_of_two_pow_le_sum_choose_sq {m q e : ℕ} (heq : e ≤ q)
     _ = q := by field_simp
 
 end Cslib
+
+namespace Real
+
+open Filter
+
+/-- A polynomial is eventually below an exponential with base `r > 1`. -/
+theorem exists_one_le_and_mul_pow_le_pow (C : ℝ) (d : ℕ) {r : ℝ} (hr : 1 < r) :
+    ∃ α : ℕ, 1 ≤ α ∧ C * (α : ℝ) ^ d ≤ r ^ α := by
+  have hlim := tendsto_pow_const_div_const_pow_of_one_lt d hr
+  have hC : 0 < |C| + 1 := by positivity
+  have hev := (hlim.eventually (gt_mem_nhds (inv_pos.mpr hC))).and (eventually_ge_atTop 1)
+  obtain ⟨α, hα, hα1⟩ := hev.exists
+  refine ⟨α, hα1, ?_⟩
+  have hrα : 0 < r ^ α := pow_pos (by linarith) α
+  rw [div_lt_iff₀ hrα] at hα
+  have hpow : 0 ≤ (α : ℝ) ^ d := by positivity
+  calc C * (α : ℝ) ^ d ≤ (|C| + 1) * (α : ℝ) ^ d :=
+        mul_le_mul_of_nonneg_right (by linarith [le_abs_self C]) hpow
+    _ ≤ (|C| + 1) * ((|C| + 1)⁻¹ * r ^ α) := mul_le_mul_of_nonneg_left hα.le hC.le
+    _ = r ^ α := by field_simp
+
+end Real

@@ -17,6 +17,9 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Resour
 
 The original three plain rules are moved unchanged from the degree-calculus module to keep
 ordinary clients independent of its legacy construction calculus.
+
+Charged `ComputableInO` bounds also give degree certificates: a lower workspace degree bounds
+encoded output at that lower degree, even when the time bound has a higher degree.
 -/
 
 @[expose] public section
@@ -69,5 +72,19 @@ theorem inO_one (h : ComputableInDegree f encIn encOut 1 e) :
   h.inO.mono 1 (fun _ => by simp) (fun _ => by simp)
 
 end ComputableInDegree
+
+/-- Charged workspace of degree `e` bounds the encoded output at that same degree. When
+`e ≤ d`, independent degree bounds on time and workspace give cost degree `d` and output
+degree `e`, retaining the realizing machine and its original resource bounds. -/
+theorem ComputableInO.computableInDegree
+    {α β : Type*} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
+    {T S : α → ℕ} {d e : ℕ} (h : ComputableInO f encIn encOut T S)
+    (hT : DegreeBounded (fun a => (encIn a).length) T d)
+    (hS : DegreeBounded (fun a => (encIn a).length) S e) (hed : e ≤ d) :
+    ComputableInDegree f encIn encOut d e := by
+  obtain ⟨c, hc, hl⟩ := h
+  have ht := (hT.add_const 1).smul c
+  have hs := (hS.add_const 1).smul c
+  exact ⟨⟨_, _, ht, hs.mono_deg hed, hc⟩, hs.mono hl⟩
 
 end Turing.MultiTapeTM

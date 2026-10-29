@@ -85,6 +85,7 @@ normalizers `numEdges * C` or `Q * n` by `1`.
 namespace Cslib.BalancedSchedules
 
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
+open ComputableTidilyInO (length_encNat_mono)
 open scoped BigOperators
 
 /-! ### Section 1: Radix-`r` candidate word decoder and bijections -/
@@ -214,10 +215,6 @@ theorem mem_candidateScheduleList {r : ℕ} (hr : 1 ≤ r) (Q : ℕ) (a : Fin Q 
   let j := finFunctionFinEquiv a; refine List.mem_map.mpr ⟨j.val, List.mem_range.mpr j.isLt, ?_⟩
   rw [wordToSchedule_decodeLabelWord_eq_finFunctionFinEquiv_symm hr Q j]
   exact Equiv.symm_apply_apply _ _
-
-private theorem length_encNat_mono {a b : ℕ} (h : a ≤ b) :
-    (encNat a).length ≤ (encNat b).length := by
-  simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h
 
 /-- Encoded bit-length bound for any word of length `Q` with digits `< max r 1`. -/
 theorem length_encList_word_le {Q r : ℕ} {w : List ℕ} (hlen : w.length = Q)
@@ -936,6 +933,7 @@ end
 public section
 namespace Cslib.BalancedSchedules
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
+open ComputableTidilyInO (length_encNat_mono)
 
 /-- All-prefix live-state bit-length bound for the inner `IndexFold.run selectSlotStep` loop across
 every visited prefix `j ≤ r ^ Q` (never multiplying workspace by `r ^ Q`). -/

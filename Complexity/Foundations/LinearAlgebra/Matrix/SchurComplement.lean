@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Mathlib.Data.Matrix.ColumnRowPartitioned
+public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
 # Invertibility and Schur complements for 2×2 block matrices over general rings
@@ -32,6 +33,8 @@ entries themselves are matrices (e.g. in rational circuit evaluations).
   corner and an invertible corner.
 * `Matrix.isUnit_fromBlocks_zero₂₂_iff`: invertibility of a block matrix with a zero corner via
   its Schur complement.
+* `Matrix.inv_smul_mul_smul`, `Matrix.inv_smul_mul_smul_of_ne_zero`: rescaling two matrices by the
+  same invertible scalar cancels in `(c • A)⁻¹ * (c • B) = A⁻¹ * B`.
 
 ## References
 
@@ -95,5 +98,21 @@ theorem isUnit_fromBlocks_zero₂₂_iff (A A' : Matrix ι ι R) (B : Matrix ι 
   rw [← hu, ← hv, Units.isUnit_mul_units, Units.isUnit_units_mul, isUnit_fromBlocks_diagonal_iff]
   have hA : IsUnit A := isUnit_iff_exists.mpr ⟨A', hAA', hA'A⟩
   simp [hA, Matrix.neg_mul, IsUnit.neg_iff]
+
+/-- Rescaling two matrices by the same invertible scalar cancels in `(c • A)⁻¹ * (c • B) = A⁻¹ * B`
+when `A.det` is a unit. -/
+theorem inv_smul_mul_smul {S : Type*} [CommRing S] {m : Type*} (A : Matrix ι ι S)
+    (B : Matrix ι m S) (hA : IsUnit A.det) (c : S) [Invertible c] :
+    (c • A)⁻¹ * (c • B) = A⁻¹ * B := by
+  have hi : (c • A)⁻¹ = ⅟c • A⁻¹ := Matrix.inv_smul (A := A) c hA
+  rw [hi, Matrix.smul_mul, Matrix.mul_smul, smul_smul, invOf_mul_self, one_smul]
+
+/-- Over a field, rescaling two matrices by the same nonzero scalar cancels in
+`(c • A)⁻¹ * (c • B) = A⁻¹ * B` when `A.det ≠ 0`. -/
+theorem inv_smul_mul_smul_of_ne_zero {K : Type*} [Field K] {m : Type*} (A : Matrix ι ι K)
+    (B : Matrix ι m K) (hA : A.det ≠ 0) {c : K} (hc : c ≠ 0) :
+    (c • A)⁻¹ * (c • B) = A⁻¹ * B := by
+  let : Invertible c := invertibleOfNonzero hc
+  exact inv_smul_mul_smul A B (isUnit_iff_ne_zero.mpr hA) c
 
 end Matrix

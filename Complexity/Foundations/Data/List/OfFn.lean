@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 OpenAI, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: OpenAI, Karn Seth, Samuel Schlesinger
 -/
 
 module
@@ -11,8 +11,8 @@ public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.List.OfFn
 public import Mathlib.Data.Finset.Card
+public import Mathlib.Order.Interval.Finset.Fin
 import Mathlib.Data.List.FinRange
-import Mathlib.Order.Interval.Finset.Fin
 
 /-!
 # Finite-array permutations and ranks
@@ -27,7 +27,8 @@ other keys may repeat. The key order need only be a partial order.
 * `List.Perm.card_filter_ofFn_eq`: preservation of predicate counts.
 * `List.countP_range_eq_card_filter`: counting the numbers below `n` that pass a test is counting
   the elements of `Fin n` that pass it.
-* `List.sum_map_range`: a sum over `List.range n` is a sum over `Fin n`.
+* `List.sum_map_range`, `List.sum_map_drop_range`, `List.sum_map_drop_range_fin`: sums over
+  `List.range n` and its tails as `Fin` or interval sums.
 * `Fin.card_lt_of_monotone_of_unique`: a unique value in a monotone array has its index many
   smaller entries.
 * `List.Perm.key_ofFn_eq_of_rank`: a unique key occurs at its rank after sorting.
@@ -35,8 +36,9 @@ other keys may repeat. The key order need only be a partial order.
 
 ## References
 
-The rank argument supports the two-sort routing construction in
-[S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
+* The rank argument supports the two-sort routing construction in
+  [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
+* [OpenAI2026RationalHitting]
 -/
 
 @[expose] public section
@@ -69,6 +71,35 @@ theorem List.sum_map_range {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → 
     ((List.range n).map f).sum = ∑ i : Fin n, f i := by
   rw [← List.map_coe_finRange_eq_range, List.map_map, ← List.ofFn_eq_map, List.sum_ofFn]
   rfl
+
+/-- A tail of `List.range n`, summed as a list, is the sum over `Finset.Ico lo n`. -/
+theorem List.sum_map_drop_range {M : Type*} [AddCommMonoid M] (n lo : ℕ) (f : ℕ → M) :
+    (((List.range n).drop lo).map f).sum = ∑ k ∈ Finset.Ico lo n, f k := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    by_cases h : lo ≤ n
+    · rw [List.range_succ, List.drop_append_of_le_length (by simpa using h), List.map_append,
+        List.sum_append, ih, List.map_singleton, List.sum_singleton,
+        Nat.Ico_succ_right_eq_insert_Ico h, Finset.sum_insert (by simp), add_comm]
+    · have hle : n + 1 ≤ lo := by omega
+      rw [List.drop_eq_nil_of_le (by simpa using hle), Finset.Ico_eq_empty_of_le hle,
+        List.map_nil, List.sum_nil, Finset.sum_empty]
+
+/-- A tail of `List.range n` after `i : Fin n`, summed as a list, is the sum over
+`Finset.Ioi i`. -/
+theorem List.sum_map_drop_range_fin {M : Type*} [AddCommMonoid M] {n : ℕ} (i : Fin n)
+    (f : ℕ → M) :
+    (((List.range n).drop (i.val + 1)).map f).sum = ∑ k ∈ Finset.Ioi i, f k.val := by
+  rw [List.sum_map_drop_range]
+  calc _ = ∑ k ∈ (Finset.range n).filter (i.val < ·), f k := by
+         congr 1
+         ext
+         simp only [Finset.mem_Ico, Finset.mem_filter, Finset.mem_range]
+         lia
+       _ = ∑ k ∈ Finset.range n, if i.val < k then f k else 0 := by rw [Finset.sum_filter]
+       _ = ∑ k : Fin n, if i.val < k.val then f k.val else 0 := by rw [← Fin.sum_univ_eq_sum_range]
+       _ = _ := by simp [← Finset.sum_filter, Finset.filter_lt_eq_Ioi]
 
 /-- Permuting a finite array preserves the number of entries satisfying a predicate. -/
 theorem List.Perm.card_filter_ofFn_eq {α : Type*} {n : ℕ} {f g : Fin n → α}

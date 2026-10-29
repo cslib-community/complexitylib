@@ -66,8 +66,8 @@ bounded-incidence, bounded-width $\mathbb{F}_2$ polynomial-system branch evaluat
 
 namespace Cslib.Complexity.SubexponentialSAT.SparsePolyCounter
 
-open Finset Cslib Cslib.BitString Cslib.Complexity Cslib.GenericRAM Cslib.LinearAlgebra
-open Turing.MultiTapeTM
+open Finset Cslib Cslib.BitString Cslib.CommonCountingAccum Cslib.Complexity Cslib.GenericRAM
+open Cslib.LinearAlgebra Turing.MultiTapeTM
 
 local notation "encSys" => encList (encList (encList encNat))
 

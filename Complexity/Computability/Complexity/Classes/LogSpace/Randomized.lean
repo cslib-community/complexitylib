@@ -30,6 +30,9 @@ instance.
 * `Cslib.Complexity.RL`: members are accepted with probability at least `1/2`, non-members never.
 * `Cslib.Complexity.BPL`: members with probability at least `2/3`, non-members at most `1/3`.
 
+The threshold `1/2` for `RL` can be raised to `1 - 2 ^ (-r)` for any fixed `r` by repetition
+(`Cslib.Complexity.mem_RL_iff_error_le`), which also gives `Cslib.Complexity.RL_subset_BPL`.
+
 The model follows the decision recorded in issue #474: one-way coins, halting on every branch with
 the polynomial clock a derived lemma, acceptance by counting coin strings, and space as for `NL`
 [Arora and Barak, Section 7.7][AroraBarak09].

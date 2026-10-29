@@ -8,13 +8,22 @@ import Complexity.Computability.Circuit.Boolean.Synthesis
 import Complexity.Computability.Complexity.Classes.LogSpace
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
+import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 import Complexity.Foundations.Data.BitString.Affine
 import Complexity.Foundations.Data.BitString.Parity
+import Complexity.Foundations.Data.Fin.Order
+import Complexity.Foundations.Data.Finset.Average
 import Complexity.Foundations.Data.List.Filter
+import Complexity.Foundations.Data.List.OfFn
 import Complexity.Foundations.Data.Nat.Asymptotics
+import Complexity.Foundations.Data.Nat.Choose.Real
 import Complexity.Foundations.Data.Nat.Div
 import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
+import Complexity.Foundations.LinearAlgebra.CubeSum
+import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
+import Complexity.Foundations.LinearAlgebra.Rank
+import Complexity.Foundations.NumberTheory.PrimeCounting
 import Mathlib.Tactic.FinCases
 
 /-! General lemmas in their library homes: the costs of projections and the one-gate lower bound
@@ -159,5 +168,82 @@ example (F : ℕ → ℕ) :
     ∑ q ∈ Finset.range (3 * 4), (if q % 4 = 2 then F q else 0) =
       ∑ k ∈ Finset.range 3, F (k * 4 + 2) :=
   Nat.sum_range_mul_ite_mod 3 (by decide : 2 < 4) F
+
+/-! ### Asymptotics, StateT folds, Boolean-cube product expansion and matrix scalar cancellation -/
+
+/-- `(n + 1) ^ k * n` is eventually below `2 ^ n`. -/
+example : ∀ᶠ n : ℕ in Filter.atTop, (n + 1) ^ 3 * n < 2 ^ n :=
+  Nat.eventually_add_one_pow_mul_lt_pow 3 Nat.one_lt_two
+
+/-- A real polynomial is eventually below an exponential with base `r > 1`. -/
+example : ∃ α : ℕ, 1 ≤ α ∧ (5 : ℝ) * (α : ℝ) ^ 3 ≤ (3 / 2 : ℝ) ^ α :=
+  Real.exists_one_le_and_mul_pow_le_pow 5 3 (by norm_num)
+
+/-- Running a `foldlM` in `StateT σ (Except ε)` chains results via `Except.bind`. -/
+example (g : ℕ → Bool → StateT ℕ (Except Unit) ℕ) :
+    (([true, false].foldlM g 0).run 1) =
+      [true, false].foldl (fun acc c => acc.bind fun p => (g p.1 c).run p.2) (.ok (0, 1)) :=
+  StateT.foldlM_run_except g [true, false] 0 1
+
+/-- Boolean-cube expansion of a product of differences over `ℤ`. -/
+example (f g : Fin 2 → ℤ) :
+    (∏ i, (f i - g i)) = ∑ w : Fin 2 → Bool,
+      (-1 : ℤ) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i :=
+  Cslib.prod_sub_eq_sum f g
+
+/-- The sum of all values in `Fin 4` is at most `4 * 4`. -/
+example : (∑ j : Fin 4, j.val) ≤ 4 * 4 ∧ (∑ j : Fin 4, j.val) = 6 :=
+  ⟨Fin.sum_val_le_mul_self 4, by decide⟩
+
+/-- Rescaling two matrices over `ℚ` by the same nonzero scalar cancels in `(c • A)⁻¹ * (c • B)`. -/
+example (B : Matrix (Fin 2) (Fin 2) ℚ) :
+    ((3 : ℚ) • (1 : Matrix (Fin 2) (Fin 2) ℚ))⁻¹ * ((3 : ℚ) • B) =
+      (1 : Matrix (Fin 2) (Fin 2) ℚ)⁻¹ * B :=
+  Matrix.inv_smul_mul_smul_of_ne_zero 1 B (by simp) (by norm_num)
+
+/-! ### `Nat.lcmUpto` bounds, monotone-key collisions, `Fin` subfamilies, range tail sums,
+and vertex-choice bounds -/
+
+/-- `lcm(1, …, m + n)` divides `lcm(1, …, m) * C(m + n, m)` and `2 * lcm(1, …, n) ≤ 4 ^ n`. -/
+example :
+    Nat.lcmUpto (4 + 2) ∣ Nat.lcmUpto 4 * (4 + 2).choose 4 ∧
+      2 * Nat.lcmUpto 6 ≤ 4 ^ 6 ∧ Nat.lcmUpto 6 < 4 ^ 6 :=
+  ⟨Nat.lcmUpto_add_dvd (by decide),
+   Nat.two_mul_lcmUpto_le_four_pow 6 (by decide),
+   Nat.lcmUpto_lt_four_pow 6 (by decide)⟩
+
+/-- Distinct entries with equal keys in a monotone-key array force an adjacent collision. -/
+example :
+    let records : Fin 3 → ℕ × ℕ := ![(1, 0), (1, 1), (2, 0)]
+    ∃ (p : ℕ) (hp : p + 1 < 3),
+      records ⟨p, by omega⟩ ≠ records ⟨p + 1, hp⟩ ∧
+      (records ⟨p, by omega⟩).1 = (records ⟨p + 1, hp⟩).1 ∧
+      (records ⟨p, by omega⟩).1 = (records 0).1 :=
+  Fin.exists_adjacent_ne_of_monotone_comp ![(1, 0), (1, 1), (2, 0)] Prod.fst
+    (fun i j hij => by fin_cases i <;> fin_cases j <;> revert hij <;> decide)
+    0 1 (by decide) (by decide) rfl
+
+/-- Any `Fin`-indexed family over `ℚ` has a `Fin`-indexed linearly independent spanning
+subfamily. -/
+example (v : Fin 3 → Fin 2 → ℚ) :
+    ∃ (k : ℕ) (a : Fin k → Fin 3), Function.Injective a ∧
+      Submodule.span ℚ (Set.range (v ∘ a)) = Submodule.span ℚ (Set.range v) ∧
+      LinearIndependent ℚ (v ∘ a) :=
+  Submodule.exists_linearIndependent_fin_comp ℚ v
+
+/-- Summing a tail of `List.range 4` after index `1 : Fin 4` matches the sum over `Finset.Ioi 1`. -/
+example (f : ℕ → ℤ) :
+    (((List.range 4).drop ((1 : Fin 4).val + 1)).map f).sum =
+      ∑ k ∈ Finset.Ioi (1 : Fin 4), f k.val :=
+  List.sum_map_drop_range_fin (1 : Fin 4) f
+
+/-- Deterministic vertex-wise maximum choice beats any sub-probability weighting. -/
+example :
+    ∃ f : Fin 2 → Bool,
+      (∑ _i : Fin 2, ∑ a : Bool, (1 / 2 : ℚ) * (if a = true then 1 else 0)) ≤
+        ∑ i : Fin 2, (if f i = true then (1 : ℚ) else 0) :=
+  Finset.exists_choice_sum_le id (fun _ a => if a = true then (1 : ℚ) else 0)
+    (fun _ a => by cases a <;> norm_num) (fun _ _ => (1 / 2 : ℚ))
+    (fun _ _ => by norm_num) (fun _ => by norm_num)
 
 end ComplexityTests.Consolidation

@@ -7,11 +7,11 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.PreparePair
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.InputFromTape
@@ -28,10 +28,10 @@ The final tidy normalization clears the working storage and restores all heads.
 
 ## Main results
 
-* `Turing.MultiTapePTM.computableTidilyInLinearTimeAndSpace_runClosedCoins`: deterministic replay
-  has a uniform linear time and space bound in the encoded pair length.
+* `Turing.MultiTapePTM.computableInLinearTimeAndSpace_runClosedCoins`: deterministic replay is
+  linear-time and linear-work-space in the encoded coins/input pair.
 * `Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`: deterministic replay is
-  polynomial-time, for plain certificates.
+  polynomial-time.
 
 ## References
 
@@ -205,7 +205,7 @@ end Replay
 /-- Running a fixed machine on a supplied pair of coins and input is tidily computable in linear
 time and space. The bound charges input preparation, every supplied coin, and final cleanup;
 it does not assume that the source machine halts. -/
-theorem computableTidilyInLinearTimeAndSpace_runClosedCoins [Finite State]
+private theorem computableTidilyInLinearTimeAndSpace_runClosedCoins [Finite State]
     (machine : MultiTapePTM k Bool State) :
     ComputableTidilyInLinearTimeAndSpace
       (fun p : List Bool × List Bool => machine.runClosedCoins p.1 p.2)
@@ -255,15 +255,25 @@ theorem computableTidilyInLinearTimeAndSpace_runClosedCoins [Finite State]
     dsimp only [size] <;>
     nlinarith [Nat.zero_le (d * b * (encPair encBits encBits p).length)]
 
+/-- Saved-coin replay retains linear time and linear workspace in the encoded coins/input pair. -/
+theorem computableInLinearTimeAndSpace_runClosedCoins [Finite State]
+    (machine : MultiTapePTM k Bool State) :
+    ComputableInLinearTimeAndSpace
+      (fun p : List Bool × List Bool => machine.runClosedCoins p.1 p.2)
+      (encPair encBits encBits) encBits := by
+  obtain ⟨c, h⟩ := computableTidilyInLinearTimeAndSpace_runClosedCoins machine
+  exact ⟨c, h.computableInTimeAndSpace⟩
+
 /-- The ordinary functional polynomial-time API can invoke saved-coin replay directly. -/
-@[fun_prop] theorem computableTidilyInPolyTime_runClosedCoins [Finite State]
+@[local fun_prop] private theorem computableTidilyInPolyTime_runClosedCoins [Finite State]
     (machine : MultiTapePTM k Bool State) :
     ComputableTidilyInPolyTime
       (fun p : List Bool × List Bool => machine.runClosedCoins p.1 p.2)
       (encPair encBits encBits) encBits :=
   .of_linear (computableTidilyInLinearTimeAndSpace_runClosedCoins machine)
 
-/-- `computableTidilyInPolyTime_runClosedCoins` for plain certificates. -/
+/-- Running a fixed machine on a supplied pair of coins and input is computable in polynomial
+time. -/
 @[fun_prop] theorem computableInPolyTime_runClosedCoins [Finite State]
     (machine : MultiTapePTM k Bool State) :
     ComputableInPolyTime

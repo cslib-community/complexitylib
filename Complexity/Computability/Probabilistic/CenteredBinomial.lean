@@ -7,13 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Languages.Probabilistic.CenteredBinomial
-public import Complexity.Computability.Probabilistic.Repeat
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
+public import Complexity.Computability.Probabilistic.Repeat
+public import Complexity.Languages.Probabilistic.CenteredBinomial
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Native centered binomial sampling
@@ -25,7 +25,7 @@ charges both blocks of independent trials, their counts, and signed subtraction.
 ## Main results
 
 * `isPPTOn_sampleCenteredBinomial`: the unary-input, binary-output sampler certificate.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleCenteredBinomial`: composition with an
+* `Turing.MultiTapeTM.ComputableInPolyTime.sampleCenteredBinomial`: composition with an
   efficiently computed unary parameter.
 
 ## References
@@ -66,10 +66,9 @@ end Cslib.Probability
 
 /-- Sample a centered-binomial integer using an efficiently computed unary parameter. -/
 @[fun_prop]
-theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.sampleCenteredBinomial {α : Type}
+theorem Turing.MultiTapeTM.ComputableInPolyTime.sampleCenteredBinomial {α : Type}
     {input : α ↪ List Bool} {parameter : α → ℕ}
-    (hparameter : ComputableTidilyInPolyTime parameter input encUnary) :
+    (hparameter : ComputableInPolyTime parameter input encUnary) :
     Cslib.Probability.IsPPTOn input encIntBin
       (fun a => Cslib.ProbComp.sampleCenteredBinomial (parameter a)) :=
-  Cslib.Probability.isPPTOn_sampleCenteredBinomial.preprocess
-    (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy hparameter)
+  Cslib.Probability.isPPTOn_sampleCenteredBinomial.preprocess hparameter

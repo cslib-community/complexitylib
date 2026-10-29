@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
 import all Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
+import Complexity.Foundations.Combinatorics.SharedSummaries
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -24,7 +25,9 @@ evaluator `evalBoundedIncidenceBranch` from
 `Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics`, formalizing the
 semantic correctness half of Proposition 5.3 of
 [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH] (§§3.4–3.5, §4.6, §§5.3–5.5,
-Proposition 5.3, and Appendix B.2–B.3, pp. 24–26, 33–34, 37–39, 48–50).
+Proposition 5.3, and Appendix B.2–B.3, pp. 24–26, 33–34, 37–39, 48–50). The measurement-fiber
+step instantiates the generic decoupled sum–product identity
+`Cslib.SharedSummaries.sum_prod_eq_sum_measurement_fibers` on the executable group data.
 
 Exactness holds on feasible prepared inputs (`prepareBranchEvalInput (n', eqs')` when
 `checkBranchFeasible N₀_branch (n', eqs') = true`). Invalid raw `BranchEvalInput` tuples fail
@@ -288,36 +291,24 @@ private theorem formalEqParityFactor_congr_fiber {n' D_cap Q r A₀ R k' ℓ : �
     (f_aug : Fin augScopes.length) {g : Fin r} (hfg : D.factorAssign f_aug t = g)
     {𝓜 : Finset (Finset (Fin n'))}
     (hscope : equationScope 𝓜 ⊆ listScopeFamily n' augScopes f_aug) (dDen : ℤ)
-    (rep u : ∀ h : Fin r, BitString ((data.varGroups.getD t.1 []).getD h.1 []).length)
+    (x x' : ∀ h : Fin r, BitString ((data.varGroups.getD t.1 []).getD h.1 []).length)
     (hmeas_eq : ∀ h : Fin r,
       BooleanMeasurements.evalBoolMatrix ((data.groupMeasurementMatrices.getD t.1 []).getD h.1 [])
-        (List.ofFn (rep h)) =
+        (List.ofFn (x h)) =
       BooleanMeasurements.evalBoolMatrix ((data.groupMeasurementMatrices.getD t.1 []).getD h.1 [])
-        (List.ofFn (u h))) :
+        (List.ofFn (x' h))) (hg_eq : x g = x' g) :
     let scope := listScopeFamily n' augScopes
     let rows : Fin n' → Fin n' → Polynomial ℤ := fun v i =>
       if hv : v ∈ scope f_aug then
         varReplacementRowScaledInt Q r A₀ R D.place (BalancedSchedules.scopeVarOf scope)
           ⟨f_aug, ⟨v, hv⟩⟩ i
       else 0
-    formalEqParityFactor dDen k' ℓ rows ((t.1 : ℤ) + 1)
-        (localBitsEquiv hVG (Function.update rep g (u g))) 𝓜 =
-      formalEqParityFactor dDen k' ℓ rows ((t.1 : ℤ) + 1) (localBitsEquiv hVG u) 𝓜 := by
+    formalEqParityFactor dDen k' ℓ rows ((t.1 : ℤ) + 1) (localBitsEquiv hVG x) 𝓜 =
+      formalEqParityFactor dDen k' ℓ rows ((t.1 : ℤ) + 1) (localBitsEquiv hVG x') 𝓜 := by
   intro scope rows
   subst hfg
-  let g := D.factorAssign f_aug t
-  let u' := Function.update rep g (u g)
-  let x₁ := localBitsEquiv hVG u'
-  let x₂ := localBitsEquiv hVG u
-  have hu'_meas : ∀ h : Fin r,
-      BooleanMeasurements.evalBoolMatrix ((data.groupMeasurementMatrices.getD t.1 []).getD h.1 [])
-        (List.ofFn (u' h)) =
-      BooleanMeasurements.evalBoolMatrix ((data.groupMeasurementMatrices.getD t.1 []).getD h.1 [])
-        (List.ofFn (u h)) := fun h => by
-    dsimp only [u']
-    by_cases hhg : h = g
-    · subst hhg; rw [Function.update_self]
-    · rw [Function.update_of_ne hhg]; exact hmeas_eq h
+  let x₁ := localBitsEquiv hVG x
+  let x₂ := localBitsEquiv hVG x'
   have hmulVec : (varMeasurementMatrix Q r A₀ R ℚ D.place
         (BalancedSchedules.scopeVarOf scope)).mulVec (fun i => bitVal ℚ (x₁ i)) =
       (varMeasurementMatrix Q r A₀ R ℚ D.place
@@ -339,14 +330,14 @@ private theorem formalEqParityFactor_congr_fiber {n' D_cap Q r A₀ R k' ℓ : �
         rw [List.map_map, getD_map_range _ [] t.2, Function.comp_apply, List.map_map,
           getD_map_range _ [] h.2, Function.comp_apply,
           getD_map_range _ [] t.2, getD_map_range _ [] h.2]
-      have hget := congrArg (fun L : List ℤ => L.getD idx 0) (hCth ▸ hu'_meas h)
+      have hget := congrArg (fun L : List ℤ => L.getD idx 0) (hCth ▸ hmeas_eq h)
       dsimp only [BooleanMeasurements.evalBoolMatrix, CopyPlacement.restrictGroupColumns] at hget
       have hlen1 : idx < (List.map (fun r_sub => BooleanMeasurements.evalBoolRow r_sub
-          (List.ofFn (u' h))) (List.map (fun r0 => List.map (fun v => r0.getD v 0)
+          (List.ofFn (x h))) (List.map (fun r0 => List.map (fun v => r0.getD v 0)
             ((data.varGroups.getD t.1 []).getD h.1 [])) data.measurementMatrix)).length := by
         simpa only [List.length_map] using hidx
       have hlen2 : idx < (List.map (fun r_sub => BooleanMeasurements.evalBoolRow r_sub
-          (List.ofFn (u h))) (List.map (fun r0 => List.map (fun v => r0.getD v 0)
+          (List.ofFn (x' h))) (List.map (fun r0 => List.map (fun v => r0.getD v 0)
             ((data.varGroups.getD t.1 []).getD h.1 [])) data.measurementMatrix)).length := by
         simpa only [List.length_map] using hidx
       rw [List.getD_eq_getElem _ 0 hlen1, List.getD_eq_getElem _ 0 hlen2,
@@ -357,12 +348,10 @@ private theorem formalEqParityFactor_congr_fiber {n' D_cap Q r A₀ R k' ℓ : �
         (∑ i : Fin n', (data.measurementMatrix[idx].getD i.1 0 : ℚ) * bitVal ℚ (x₂ i)) := by
       simpa only [Int.cast_sum, Int.cast_mul, hbit] using congrArg (Int.cast : ℤ → ℚ) hint_eq
     simp only [mul_sub, Finset.sum_sub_distrib, hq_eq, sub_self]
-  have hgrp : ∀ w ∈ varGroup D.varAssign t g, x₁ w = x₂ w := fun w hw => by
-    have hwg : g = D.varAssign w t := (mem_varGroup.mp hw).symm
+  have hgrp : ∀ w ∈ varGroup D.varAssign t (D.factorAssign f_aug t), x₁ w = x₂ w := fun w hw => by
+    have key : ∀ h, h = D.factorAssign f_aug t → x h = x' h := by rintro h rfl; exact hg_eq
     dsimp only [x₁, x₂]
-    rw [localBitsEquiv_apply hVG, localBitsEquiv_apply hVG]
-    dsimp only [u']
-    rw [hwg, Function.update_self]
+    rw [localBitsEquiv_apply hVG, localBitsEquiv_apply hVG, key _ (mem_varGroup.mp hw)]
   unfold formalEqParityFactor formalClearedMonomialSum
   congr 1; refine Finset.sum_congr rfl fun M hM => ?_
   congr 1; refine Finset.prod_congr rfl fun v hvM => ?_
@@ -599,20 +588,32 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
         Finset.mem_univ, p_pred, decide_eq_true_eq]
       rw [← hemb_val f, href.2.2.2.1 (emb f) t, Fin.ext_iff]
     rw [hfil_set]
-  let term : (∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length) → JetTable J ℓ ℤ := fun u =>
+  -- The executable fold is the shared-summary factorization of `Cslib.SharedSummaries`, with
+  -- measurement map `meas`, restricted local cubes `allowed` and grouped factors `factor`.
+  let meas : ∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length → List ℤ := fun g ug =>
+    BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 []) (List.ofFn ug)
+  let allowed : ∀ g : Fin r, Finset (BitString (vGroups_t.getD g.1 []).length) := fun g =>
+    univ.filter fun ug => checkRestrictedGroup n' indE (vGroups_t.getD g.1 []) (List.ofFn ug) = true
+  let factor : Fin r → (∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length) →
+      JetTable J ℓ ℤ := fun g u =>
     evalJetHom n' J ℓ y_U
-      (∏ f : Fin eqs'.length, formalEqParityFactor dDen k' ℓ (designRows f) node
-        (localBitsEquiv hVG u) (P_eq f))
-  let inFiber : List ℤ → (∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length) → Prop :=
-    fun word u => (∀ i ∈ supportOfList n' indE, localBitsEquiv hVG u i = true) ∧
-      ∀ g : Fin r, BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 []) (List.ofFn (u g)) =
-        (word.drop (g.1 * m_rows)).take m_rows
+      (∏ f ∈ univ.filter (fun f : Fin eqs'.length => D.factorAssign (emb f) t = g),
+        formalEqParityFactor dDen k' ℓ (designRows f) node (localBitsEquiv hVG u) (P_eq f))
+  let rep₀ : ∀ y : (Fin r → List ℤ), (∀ g, ∃ ug, meas g ug = y g) →
+      ∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length := fun y hy g => (hy g).choose
+  let split : List ℤ → Fin r → List ℤ := fun word g => (word.drop (g.1 * m_rows)).take m_rows
+  let fiber : (Fin r → List ℤ) → JetTable J ℓ ℤ :=
+    SharedSummaries.fiberContribution meas allowed factor rep₀
+  have hloc : ∀ g x x', (∀ h, meas h (x h) = meas h (x' h)) → x g = x' g →
+      factor g x = factor g x' := fun g x x' hm hg =>
+    congrArg (evalJetHom n' J ℓ y_U) (Finset.prod_congr rfl fun f hf =>
+      formalEqParityFactor_congr_fiber (k' := k') (ℓ := ℓ) hdata href t hVG (emb f)
+        (Finset.mem_filter.mp hf).2 (hscope_eq f).symm.subset dDen x x' hm hg)
   have hstep : ∀ (p_par : ℕ × ℕ) (word : List ℤ) (acc : JetRows),
       (measurementStepBody ((p_par, word), (measCtx, acc))).1 = measCtx ∧
       CommonCountingAccum.toJetTable J ℓ
         (measurementStepBody ((p_par, word), (measCtx, acc))).2 =
-      CommonCountingAccum.toJetTable J ℓ acc +
-        ∑ u ∈ univ.filter (inFiber word), term u := by
+      CommonCountingAccum.toJetTable J ℓ acc + fiber (split word) := by
     intro p_par word acc
     unfold measurementStepBody
     dsimp only [measCtx]
@@ -671,112 +672,41 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
       change CommonCountingAccum.toJetTable J ℓ (CommonCountingAccum.prodJet J ℓ _) = _
       rw [hgj_ofFn, CommonCountingAccum.toJetTable_prodJet, List.map_ofFn, List.prod_ofFn]
       simp only [Function.comp_apply, CommonCountingAccum.toJetTable_streamGroupJetSum_eq_sum]
-      rw [Fintype.prod_sum, Finset.sum_filter]
-      refine Finset.sum_congr rfl fun u _ => ?_
-      by_cases hfib_u : inFiber word u
-      · rw [ite_eq_left hfib_u]
-        have hg_each : ∀ g : Fin r,
-            CommonCountingAccum.toJetTable J ℓ
-              (evalGroupFactorJet
-                (((n', J, ℓ, k'), (node, dDen),
-                  (vGroups_t.getD g.1 [], grpMeas_t.getD g.1 [],
-                    (word.drop (g.1 * m_rows)).take m_rows),
-                  (indE, indU, xStar), grpEqLists.getD g.1 []),
-                ((vGroups_t.getD g.1 []).length, List.ofFn (u g)))) =
-            evalJetHom n' J ℓ y_U
-              (∏ f ∈ univ.filter (fun f : Fin eqs'.length => D.factorAssign (emb f) t = g),
-                formalEqParityFactor dDen k' ℓ (designRows f) node (localBitsEquiv hVG u)
-                  (P_eq f)) := by
-          intro g
-          unfold evalGroupFactorJet; dsimp only
-          have hchk_g : checkRestrictedGroup n' indE (vGroups_t.getD g.1 []) (List.ofFn (u g)) =
-              true := by
-            rw [checkRestrictedGroup_ofFn_iff indE (hVG g).2.1]
-            intro j hj
-            let v := (groupIdxEquiv hVG g j).1
-            have hv_eq : (⟨(vGroups_t.getD g.1 [])[j], (hVG g).2.1 _ (List.getElem_mem j.2)⟩ :
-                Fin n') = v := rfl
-            have h1 := hfib_u.1 v (hv_eq ▸ hj)
-            rwa [localBitsEquiv_apply_of_eq hVG u (groupIdxEquiv hVG g j).2,
-              (groupIdxEquiv hVG g).symm_apply_apply j] at h1
-          have hdec_g : decide (BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 [])
-              (List.ofFn (u g)) = (word.drop (g.1 * m_rows)).take m_rows) = true :=
-            decide_eq_true (hfib_u.2 g)
-          simp only [hchk_g, hdec_g, Bool.and_self, ↓reduceIte]
-          rw [hgrp_prod g]
-          have hx_upd : (fun i : Fin n' =>
-              (applyGroupBits n' (vGroups_t.getD g.1 []) (List.ofFn (u g)) xStar).getD i.1 false) =
-              localBitsEquiv hVG (Function.update rep g (u g)) :=
-            funext (getD_applyGroupBits_buildBaseAssignment hVG rep hreps_ofFn g (u g))
-          rw [hx_upd]
-          refine congrArg (evalJetHom n' J ℓ y_U) (Finset.prod_congr rfl fun f hf => ?_)
-          exact formalEqParityFactor_congr_fiber (k' := k') (ℓ := ℓ) hdata href t hVG
-            (emb f) (Finset.mem_filter.mp hf).2 (hscope_eq f).symm.subset dDen rep u fun h =>
-              (hrep_meas h).trans (hfib_u.2 h).symm
-        simp only [hg_each, ← map_prod]
-        exact congrArg (evalJetHom n' J ℓ y_U)
-          (Finset.prod_fiberwise_of_maps_to (fun f _ => Finset.mem_univ _) _)
-      · rw [ite_eq_right hfib_u]
-        have hex_zero : ∃ g : Fin r,
-            CommonCountingAccum.toJetTable J ℓ
-              (evalGroupFactorJet
-                (((n', J, ℓ, k'), (node, dDen),
-                  (vGroups_t.getD g.1 [], grpMeas_t.getD g.1 [],
-                    (word.drop (g.1 * m_rows)).take m_rows),
-                  (indE, indU, xStar), grpEqLists.getD g.1 []),
-                ((vGroups_t.getD g.1 []).length, List.ofFn (u g)))) = 0 := by
-          by_cases hE : ∀ i ∈ supportOfList n' indE, localBitsEquiv hVG u i = true
-          · have hnot_m : ¬ ∀ g : Fin r, BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 [])
-                (List.ofFn (u g)) = (word.drop (g.1 * m_rows)).take m_rows := fun hm =>
-              hfib_u ⟨hE, hm⟩
-            push Not at hnot_m
-            obtain ⟨g, hg_ne⟩ := hnot_m
-            refine ⟨g, ?_⟩
-            unfold evalGroupFactorJet; dsimp only
-            simp only [decide_eq_false hg_ne, Bool.and_false, Bool.false_eq_true, ↓reduceIte,
-              CommonCountingAccum.toJetTable_zeroJet]
-          · push Not at hE
-            obtain ⟨i, hiE, hi_ne⟩ := hE
-            let g := D.varAssign i t
-            let j := (groupIdxEquiv hVG g).symm ⟨i, rfl⟩
-            refine ⟨g, ?_⟩
-            unfold evalGroupFactorJet; dsimp only
-            have hchk_f : checkRestrictedGroup n' indE (vGroups_t.getD g.1 []) (List.ofFn (u g)) =
-                false := by
-              apply Bool.eq_false_iff.mpr; intro hchk_t
-              rw [checkRestrictedGroup_ofFn_iff indE (hVG g).2.1] at hchk_t
-              have hv_eq : (⟨(vGroups_t.getD g.1 [])[j], (hVG g).2.1 _ (List.getElem_mem j.2)⟩ :
-                  Fin n') = i :=
-                congrArg Subtype.val ((groupIdxEquiv hVG g).apply_symm_apply ⟨i, rfl⟩)
-              have huj : u g j = true := hchk_t j (hv_eq.symm ▸ hiE)
-              apply hi_ne
-              rw [localBitsEquiv_apply hVG u i]; exact huj
-            simp only [hchk_f, Bool.false_and, Bool.false_eq_true, ↓reduceIte,
-              CommonCountingAccum.toJetTable_zeroJet]
-        obtain ⟨g, hg0⟩ := hex_zero
-        exact Finset.prod_eq_zero (Finset.mem_univ g) hg0
+      have hy : ∀ g, ∃ ug, meas g ug = split word g := fun g => ⟨rep g, hrep_meas g⟩
+      dsimp only [fiber]
+      unfold SharedSummaries.fiberContribution
+      rw [dite_eq_left hy]
+      refine Finset.prod_congr rfl fun g _ => ?_
+      rw [Finset.filter_filter, Finset.sum_filter]
+      refine Finset.sum_congr rfl fun ug _ => ?_
+      unfold evalGroupFactorJet
+      dsimp only
+      split_ifs with h1 h2 h2
+      · rw [hgrp_prod g,
+          funext (getD_applyGroupBits_buildBaseAssignment hVG rep hreps_ofFn g ug)]
+        refine hloc g _ _ (fun h => ?_) (by simp only [Function.update_self])
+        by_cases hhg : h = g
+        · subst hhg; simp only [Function.update_self]
+        · simp only [Function.update_of_ne hhg]
+          exact (hrep_meas h).trans (hy h).choose_spec.symm
+      · simp only [Bool.and_eq_true, decide_eq_true_eq] at h1
+        exact absurd h1 h2
+      · exact absurd (by simpa only [Bool.and_eq_true, decide_eq_true_eq] using h2) h1
+      · exact CommonCountingAccum.toJetTable_zeroJet J ℓ
     · refine ⟨rfl, ?_⟩
-      have hemp : univ.filter (inFiber word) = ∅ := by
-        rw [Finset.filter_eq_empty_iff]
-        intro u _ hfib_u
-        apply hAll
-        rw [List.all_eq_true]
-        intro opt hopt
+      have hy : ¬ ∀ g, ∃ ug, meas g ug = split word g := fun hy => by
+        refine hAll (List.all_eq_true.mpr fun opt hopt => ?_)
         obtain ⟨g_nat, hg_mem, rfl⟩ := List.mem_map.mp hopt
         let g : Fin r := ⟨g_nat, List.mem_range.mp hg_mem⟩
         change (BooleanMeasurements.search Prod.fst Prod.snd
           ((grpMeas_t.getD g.1 [], (word.drop (g.1 * m_rows)).take m_rows),
             min (2 * n') (vGroups_t.getD g.1 []).length)).isSome = true
-        rw [hdg_eq g]
-        by_contra hns
-        have hnone : BooleanMeasurements.search Prod.fst Prod.snd
-            ((grpMeas_t.getD g.1 [], (word.drop (g.1 * m_rows)).take m_rows),
-              (vGroups_t.getD g.1 []).length) = none :=
-          Option.eq_none_iff_forall_not_mem.mpr fun a ha =>
-            hns (by rw [Option.mem_def.mp ha]; rfl)
-        exact (BooleanMeasurements.search_eq_none_iff_cube Prod.fst Prod.snd _).mp hnone (u g)
-          (hfib_u.2 g)
-      rw [hemp, Finset.sum_empty, add_zero]
+        rw [hdg_eq g, Option.isSome_iff_ne_none]
+        exact fun hnone => (BooleanMeasurements.search_eq_none_iff_cube Prod.fst Prod.snd _).mp
+          hnone (hy g).choose (hy g).choose_spec
+      dsimp only [fiber]
+      unfold SharedSummaries.fiberContribution
+      rw [dite_eq_right hy, add_zero]
   rw [MeasurementFold.run_accumulator]
   let c_meas := r * m_rows
   let D_cap := r ^ (2 * Q)
@@ -786,8 +716,7 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
         measCtx ∧
       CommonCountingAccum.toJetTable J ℓ
         (ws.foldl (fun st w => measurementStepBody (((c_meas, D_cap), w), st)) (measCtx, acc)).2 =
-        CommonCountingAccum.toJetTable J ℓ acc +
-          (ws.map fun w => ∑ u ∈ univ.filter (inFiber w), term u).sum := by
+        CommonCountingAccum.toJetTable J ℓ acc + (ws.map fun w => fiber (split w)).sum := by
     intro ws
     induction ws with
     | nil => intro acc; simp only [List.foldl_nil, List.map_nil, List.sum_nil, add_zero, and_self]
@@ -803,76 +732,89 @@ private theorem toJetTable_measurementFold_eq {n' Q r A₀ R J ℓ k' : ℕ} {τ
       exact ⟨ih1, by rw [ih2, h1.2, add_assoc]⟩
   rw [(hfold _ (zeroJet J ℓ)).2, CommonCountingAccum.toJetTable_zeroJet, zero_add, List.map_map]
   have hrange_ofFn : List.map
-      ((fun w => ∑ u ∈ univ.filter (inFiber w), term u) ∘
-        Cslib.Radix.measurementValues c_meas D_cap) (List.range N_cnt) =
+      ((fun w => fiber (split w)) ∘ Cslib.Radix.measurementValues c_meas D_cap) (List.range N_cnt) =
       List.ofFn (fun idx : Fin N_cnt =>
-        ∑ u ∈ univ.filter (inFiber (Cslib.Radix.measurementValues c_meas D_cap idx.1)),
-          term u) := by
+        fiber (split (Cslib.Radix.measurementValues c_meas D_cap idx.1))) := by
     refine List.ext_getElem (by simp only [List.length_map, List.length_range, List.length_ofFn])
       fun k _ hk => ?_
     simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, Function.comp_apply]
   rw [hrange_ofFn, List.sum_ofFn]
-  simp only [Finset.sum_filter]
-  rw [Finset.sum_comm]
-  have hu_collapse : ∀ u : (∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length),
-      (∑ idx : Fin N_cnt,
-        if inFiber (Cslib.Radix.measurementValues c_meas D_cap idx.1) u then term u else 0) =
-      if ∀ i ∈ supportOfList n' indE, localBitsEquiv hVG u i = true then term u else 0 := by
+  -- Each local assignment has exactly one decoded measurement index.
+  have hlen : ∀ g ug, (meas g ug).length = m_rows := fun g ug => by
+    dsimp only [meas]; rw [BooleanMeasurements.length_evalBoolMatrix, (hgms g).2.1]
+  have hcov : ∀ u : (∀ g : Fin r, BitString (vGroups_t.getD g.1 []).length),
+      ∃! idx : Fin N_cnt, split (Cslib.Radix.measurementValues c_meas D_cap idx.1) =
+        fun g => meas g (u g) := by
     intro u
-    by_cases hEu : ∀ i ∈ supportOfList n' indE, localBitsEquiv hVG u i = true
-    · rw [ite_eq_left hEu]
-      let L_u : Fin r → List ℤ := fun g =>
-        BooleanMeasurements.evalBoolMatrix (grpMeas_t.getD g.1 []) (List.ofFn (u g))
-      have hLu_len : ∀ g : Fin r, (L_u g).length = m_rows := fun g => by
-        dsimp only [L_u]; rw [BooleanMeasurements.length_evalBoolMatrix, (hgms g).2.1]
-      let W : List ℤ := (List.ofFn L_u).flatten
-      have hW_len : W.length = c_meas := by
-        dsimp only [W, c_meas]
-        have hmap_l : List.map List.length (List.ofFn L_u) = List.replicate r m_rows := by
-          refine List.ext_getElem (by simp only [List.length_map, List.length_ofFn,
-            List.length_replicate]) fun k _ hk => ?_
-          have hk_lt : k < r := by simpa only [List.length_replicate] using hk
-          simp only [List.getElem_map, List.getElem_ofFn, List.getElem_replicate,
-            hLu_len ⟨k, hk_lt⟩]
-        rw [List.length_flatten, hmap_l, List.sum_replicate, smul_eq_mul]
-      have hW_bnd : ∀ z ∈ W, -(D_cap : ℤ) ≤ z ∧ z ≤ (D_cap : ℤ) := by
-        intro z hz
-        obtain ⟨sub, hsub, hz_sub⟩ := List.mem_flatten.mp hz
-        obtain ⟨g, rfl⟩ := List.mem_ofFn.mp hsub
-        obtain ⟨row, hrow, rfl⟩ := List.mem_map.mp hz_sub
-        have habs : (BooleanMeasurements.evalBoolRow row (List.ofFn (u g))).natAbs ≤ D_cap :=
-          (natAbs_evalBoolRow_le_sum row _).trans ((hgms g).2.2 row hrow).2
-        have hcast :
-            |(BooleanMeasurements.evalBoolRow row (List.ofFn (u g)) : ℤ)| ≤ (D_cap : ℤ) := by
-          rw [← Int.natCast_natAbs]; exact Int.ofNat_le.mpr habs
-        exact abs_le.mp hcast
-      obtain ⟨idx₀, hidx₀_eq, hidx₀_uniq⟩ :=
-        Cslib.Radix.measurementValues_coverage c_meas D_cap W hW_len hW_bnd
-      let idx₀' : Fin N_cnt := ⟨idx₀.1, idx₀.2⟩
-      rw [Finset.sum_eq_single idx₀']
-      · have hf₀ : inFiber (Cslib.Radix.measurementValues c_meas D_cap idx₀'.1) u :=
-          ⟨hEu, fun g => ((sliceBlocks_iff_eq_flatten L_u hLu_len
-            (Cslib.Radix.length_measurementValues c_meas D_cap idx₀'.1)).mpr hidx₀_eq g).symm⟩
-        exact ite_eq_left hf₀
-      · intro idx _ hne
-        have hnf : ¬ inFiber (Cslib.Radix.measurementValues c_meas D_cap idx.1) u := fun hf =>
-          hne (Fin.ext (congrArg Fin.val (hidx₀_uniq ⟨idx.1, idx.2⟩
-            ((sliceBlocks_iff_eq_flatten L_u hLu_len
-              (Cslib.Radix.length_measurementValues c_meas D_cap idx.1)).mp
-              fun g => (hf.2 g).symm))))
-        exact ite_eq_right hnf
-      · intro hmem; exact (hmem (Finset.mem_univ idx₀')).elim
-    · rw [ite_eq_right hEu]
-      refine Finset.sum_eq_zero fun idx _ => ?_
-      have hnf : ¬ inFiber (Cslib.Radix.measurementValues c_meas D_cap idx.1) u :=
-        fun hf => hEu hf.1
-      exact ite_eq_right hnf
-  simp only [hu_collapse]
-  exact Equiv.sum_comp (localBitsEquiv hVG) fun x =>
-    if ∀ i ∈ supportOfList n' indE, x i = true then
-      evalJetHom n' J ℓ y_U
-        (∏ f : Fin eqs'.length, formalEqParityFactor dDen k' ℓ (designRows f) node x (P_eq f))
-    else 0
+    have hW_len : (List.ofFn fun g => meas g (u g)).flatten.length = r * m_rows := by
+      simp only [List.length_flatten, List.map_ofFn, Function.comp_def, hlen, List.sum_ofFn,
+        Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+    have hW_bnd : ∀ z ∈ (List.ofFn fun g => meas g (u g)).flatten,
+        -(D_cap : ℤ) ≤ z ∧ z ≤ (D_cap : ℤ) := by
+      intro z hz
+      obtain ⟨sub, hsub, hz_sub⟩ := List.mem_flatten.mp hz
+      obtain ⟨g, rfl⟩ := List.mem_ofFn.mp hsub
+      obtain ⟨row, hrow, rfl⟩ := List.mem_map.mp hz_sub
+      refine abs_le.mp ?_
+      rw [← Int.natCast_natAbs]
+      exact Int.ofNat_le.mpr ((natAbs_evalBoolRow_le_sum row _).trans ((hgms g).2.2 row hrow).2)
+    obtain ⟨idx, hidx, huniq⟩ :=
+      Cslib.Radix.measurementValues_coverage c_meas D_cap _ hW_len hW_bnd
+    have hsplit : ∀ j : Fin N_cnt, split (Cslib.Radix.measurementValues c_meas D_cap j.1) =
+        (fun g => meas g (u g)) ↔ Cslib.Radix.measurementValues c_meas D_cap j.1 =
+          (List.ofFn fun g => meas g (u g)).flatten := fun j =>
+      funext_iff.trans (sliceBlocks_iff_eq_flatten _ (fun g => hlen g (u g))
+        (Cslib.Radix.length_measurementValues c_meas D_cap j.1))
+    exact ⟨⟨idx.1, idx.2⟩, (hsplit _).mpr hidx,
+      fun j hj => Fin.ext (congrArg Fin.val (huniq ⟨j.1, j.2⟩ ((hsplit j).mp hj)))⟩
+  have hreal : ∀ y, fiber y ≠ 0 → ∀ g, ∃ ug, meas g ug = y g := fun y hy => by
+    by_contra h
+    exact hy (by dsimp only [fiber]; unfold SharedSummaries.fiberContribution; rw [dite_eq_right h])
+  -- Reindex the decoded measurement words by the measurement box, then factor.
+  refine (Finset.sum_bij_ne_zero (t := Fintype.piFinset fun g => univ.image (meas g)) (g := fiber)
+    (fun idx _ _ => split (Cslib.Radix.measurementValues c_meas D_cap idx.1)) ?_ ?_ ?_
+    fun _ _ _ => rfl).trans ?_
+  · intro idx _ hne
+    refine Fintype.mem_piFinset.mpr fun g => ?_
+    obtain ⟨ug, hug⟩ := hreal _ hne g
+    exact Finset.mem_image.mpr ⟨ug, Finset.mem_univ _, hug⟩
+  · intro a _ ha b _ _ hab
+    choose u hu using hreal _ ha
+    have hua : split (Cslib.Radix.measurementValues c_meas D_cap a.1) = fun g => meas g (u g) :=
+      funext fun g => (hu g).symm
+    exact (hcov u).unique hua (hab.symm.trans hua)
+  · intro y _ hne
+    choose u hu using hreal y hne
+    obtain ⟨idx, hidx, -⟩ := hcov u
+    have hy : split (Cslib.Radix.measurementValues c_meas D_cap idx.1) = y :=
+      hidx.trans (funext hu)
+    exact ⟨idx, Finset.mem_univ _, hy ▸ hne, hy⟩
+  refine (SharedSummaries.sum_prod_eq_sum_measurement_fibers meas _
+    (fun g ug => Finset.mem_image_of_mem _ (Finset.mem_univ ug)) allowed factor hloc rep₀
+    fun y hy g => (hy g).choose_spec).symm.trans ?_
+  have hmem : ∀ u, u ∈ Fintype.piFinset allowed ↔
+      ∀ i ∈ supportOfList n' indE, localBitsEquiv hVG u i = true := by
+    intro u
+    simp only [Fintype.mem_piFinset, allowed, Finset.mem_filter, Finset.mem_univ, true_and]
+    refine ⟨fun h i hi => ?_, fun h g =>
+      (checkRestrictedGroup_ofFn_iff indE (hVG g).2.1 (u g)).mpr fun j hj => ?_⟩
+    · rw [localBitsEquiv_apply hVG]
+      have hv : ((groupIdxEquiv hVG _) ((groupIdxEquiv hVG (D.varAssign i t)).symm ⟨i, rfl⟩)).1 =
+          i := congrArg Subtype.val ((groupIdxEquiv hVG _).apply_symm_apply ⟨i, rfl⟩)
+      exact (checkRestrictedGroup_ofFn_iff indE (hVG _).2.1 _).mp (h _) _ (by rwa [← hv] at hi)
+    · have h' := h (groupIdxEquiv hVG g j).1 hj
+      rwa [localBitsEquiv_apply_of_eq hVG u (groupIdxEquiv hVG g j).2,
+        (groupIdxEquiv hVG g).symm_apply_apply] at h'
+  refine Finset.sum_nbij' (localBitsEquiv hVG) (localBitsEquiv hVG).symm
+    (fun u hu => Finset.mem_filter.mpr ⟨Finset.mem_univ _, (hmem u).mp hu⟩)
+    (fun x hx => (hmem _).mpr (by
+      rw [Equiv.apply_symm_apply]; exact (Finset.mem_filter.mp hx).2))
+    (fun _ _ => (localBitsEquiv hVG).symm_apply_apply _)
+    (fun _ _ => (localBitsEquiv hVG).apply_symm_apply _) fun u _ => ?_
+  dsimp only [factor]
+  rw [← map_prod]
+  exact congrArg (evalJetHom n' J ℓ y_U)
+    (Finset.prod_fiberwise_of_maps_to (fun f _ => Finset.mem_univ _) _)
 
 /-! ### 4. Restricted Subset-Pair Möbius Fold and Exact Node Taylor-Jet Identity -/
 

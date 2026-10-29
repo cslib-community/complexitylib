@@ -19,6 +19,12 @@ The original carry, borrow and leading-zero normalization folds compute successo
 Their time is quadratic and their charged workspace linear in the binary input length. The zero
 test uses the existing empty-word machine. All round certificates are plain; normalization occurs
 only when the internal machine combinators construct the fold.
+
+## Main results
+
+* `ComputableInO.succStep`, `ComputableInO.succFinish`: shared linear carry-round certificates.
+* `ComputableInO.natSucc`, `ComputableInO.natPred`: quadratic-time, linear-space binary counters.
+* `ComputableInO.natIsZero`: linear zero testing.
 -/
 
 @[expose] public section
@@ -58,7 +64,8 @@ private theorem decrStep_inO :
       (fun p => (encPair (encPair encBool encBits) encBool p).length) :=
   digitStep (op := fun c b => c && !b) (· ^^ ·)
 
-private theorem succStep_inO :
+/-- One consuming carry round has linear time and charged workspace. -/
+theorem succStep :
     ComputableInO (fun p : (Bool × List Bool) × Bool => NatSucc.succStep p.1 p.2)
       (encPair (encPair encBool encBits) encBool) (encPair encBool encBits)
       (fun p => (encPair (encPair encBool encBits) encBool p).length)
@@ -99,7 +106,8 @@ private theorem normFinish_inO :
       (S' := fun p => (encPair (encOption encBool) encBits p).length) 3
       (fun _ => by split_ifs <;> omega) (fun _ => by split_ifs <;> omega)
 
-private theorem succFinish_inO :
+/-- Appending the final carry has linear time and charged workspace. -/
+theorem succFinish :
     ComputableInO NatSucc.succFinish (encPair encBool encBits) encBits
       (fun p => (encPair encBool encBits p).length)
       (fun p => (encPair encBool encBits p).length) := by
@@ -139,12 +147,12 @@ theorem foldl_bits {β : Type} {encB : β ↪ List Bool} {init : β} {step : β 
 theorem natSucc :
     ComputableInO (· + 1) encNat encNat (fun n => ((encNat n).length + 1) ^ 2)
       (fun n => (encNat n).length + 1) := by
-  have hfold := foldl_bits (init := (true, [])) succStep_inO 3 fun l i => by
+  have hfold := foldl_bits (init := (true, [])) succStep 3 fun l i => by
     rw [NatSucc.length_encAcc, NatSucc.length_foldl_succStep]
     simp only [List.length_nil, Nat.zero_add]
     have := List.length_take_le' i l
     omega
-  have h := (succFinish_inO.comp_linear hfold).of_encIn_eq (encD := encNat) Nat.bits (fun _ => rfl)
+  have h := (succFinish.comp_linear hfold).of_encIn_eq (encD := encNat) Nat.bits (fun _ => rfl)
   refine h.of_enc_eq fun n => ?_
   simp only [encNat_apply, encBits_apply, Function.comp_apply, NatSucc.succFinish_foldl,
     List.nil_append, NatSucc.bits_succ]

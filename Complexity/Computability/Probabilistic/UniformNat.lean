@@ -51,8 +51,8 @@ namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 /-- Compute the dyadic range in unary via capped binary decoding. Its exponential expression
 does not authorize exponential output: the proved linear cap supplies the implementation. -/
-@[fun_prop]
-theorem unary_dyadicSize : ComputableTidilyInPolyTime Cslib.Probability.dyadicSize
+@[local fun_prop]
+private theorem unary_dyadicSize : ComputableTidilyInPolyTime Cslib.Probability.dyadicSize
     encUnary encUnary := by
   change ComputableTidilyInPolyTime (fun n => Cslib.Probability.dyadicSize n) encUnary encUnary
   simp only [Cslib.Probability.dyadicSize_eq_boundedBinaryValue]

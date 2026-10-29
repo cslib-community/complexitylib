@@ -9,10 +9,10 @@ module
 
 public import Complexity.Computability.Complexity.Classes.WPP
 public import Complexity.Computability.Complexity.Classes.SharpP.Aggregation
-import Complexity.Computability.Complexity.Classes.SharpP.Products
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.List.OfFn
+import Complexity.Foundations.LinearAlgebra.CubeSum
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise

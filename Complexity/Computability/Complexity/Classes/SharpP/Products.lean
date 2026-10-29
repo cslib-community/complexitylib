@@ -14,7 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import Complexity.Foundations.Data.List.OfFn
+import Complexity.Foundations.LinearAlgebra.CubeSum
 import Cslib.Foundations.Data.Polynomial.Monotone
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 
@@ -115,33 +115,6 @@ theorem prod_range_mem {f : α × ℕ → ℕ} {r : α → ℕ}
   rw [hn, acceptCount_andVerifier_allFalseVerifier, hf]
 
 end SharpP
-
-/-- Expanding a product of `(f i - c * g i)` over Boolean choices pulls out `(-c)` to the number of
-true bits. -/
-theorem prod_sub_mul_eq_sum {n : ℕ} (f g : Fin n → ℤ) (c : ℤ) :
-    (∏ i, (f i - c * g i)) = ∑ w : Fin n → Bool,
-      (-c) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i := by
-  have h (w : Fin n → Bool) :
-      (∏ i, if w i then -(c * g i) else f i) =
-        (-c) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i := by
-    calc
-      _ = ∏ i, (if w i then -c else 1) * (if w i then g i else f i) := by
-        apply prod_congr rfl
-        intro i _
-        cases w i <;> simp
-      _ = _ := by
-        rw [prod_mul_distrib, prod_ite]
-        simp only [prod_const, one_pow, mul_one, List.countP_ofFn, card_filter, id_eq]
-  simp_rw [← h]
-  rw [← Fintype.prod_sum (fun (i : Fin n) (b : Bool) => if b then -(c * g i) else f i)]
-  simp [sub_eq_add_neg, add_comm]
-
-/-- Expanding a product of differences over Boolean choices: each term selects `g i` where `w i` is
-true and `f i` where `w i` is false, weighted by `(-1)` to the number of true bits. -/
-theorem prod_sub_eq_sum {n : ℕ} (f g : Fin n → ℤ) :
-    (∏ i, (f i - g i)) = ∑ w : Fin n → Bool,
-      (-1 : ℤ) ^ (List.ofFn w).countP id * ∏ i, if w i then g i else f i := by
-  simpa using prod_sub_mul_eq_sum f g 1
 
 /-- A jointly uniform GapP family on an instance and unary index may be multiplied over a
 polynomial-time unary range. Boolean expansion uses certified #P products and a polynomial-time
