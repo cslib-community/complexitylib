@@ -15,10 +15,11 @@ open Cslib.Logic.PL
 
 namespace ComplexityTests.CNFDeclaredCount
 
--- Declared and occurring model counts across empty, unit-clause, tautological, and undeclared
--- variable regimes.
-theorem empty_declared_count (n : ℕ) :
-    CNF.modelCountOn ([] : CNF Empty) ∅ = 1 ∧
+-- The ambient variable type and the declared set can both be empty.
+theorem empty_declared_count : CNF.modelCountOn ([] : CNF Empty) ∅ = 1 := by decide
+
+-- Other declared and occurring model counts across unit, tautological and undeclared variables.
+example (n : ℕ) :
     CNF.modelCountOn ([[]] : CNF Empty) ∅ = 0 ∧
     CNF.modelCountOn ([] : CNF (Fin 0)) Finset.univ = 1 ∧
     CNF.modelCountOn ([] : CNF (Fin n)) Finset.univ = 2 ^ n ∧
@@ -32,7 +33,7 @@ theorem empty_declared_count (n : ℕ) :
     (let φ : CNF ℕ := [[(0, true)]];
       ¬φ.vars.toFinset ⊆ (∅ : Finset ℕ) ∧
         φ.modelCountOn ∅ ≠ 2 ^ ((∅ : Finset ℕ).card - φ.numVars) * φ.modelCount) :=
-  ⟨by decide, by decide, by decide, by simp, by decide, by decide, by decide, by decide,
+  ⟨by decide, by decide, by simp, by decide, by decide, by decide, by decide,
    by decide, by decide, by decide⟩
 
 private def repeated : CNF ℕ :=
@@ -52,5 +53,12 @@ example :
     CNF.modelCountOn (CNF.relabel (CNF.distinctVars ([] : CNF ℕ)).idxOf []) (Finset.range 0) = 1 ∧
     (repeated.relabel repeated.distinctVars.idxOf).map List.length = repeated.map List.length := by
   decide
+
+universe u
+
+-- The transport preserves the raw width contract, rather than deduplicating literals.
+example {V : Type u} [DecidableEq V] (φ : CNF V) :
+    (φ.relabel φ.distinctVars.idxOf).map List.length = φ.map List.length := by
+  simp [CNF.relabel, Clause.relabel]
 
 end ComplexityTests.CNFDeclaredCount

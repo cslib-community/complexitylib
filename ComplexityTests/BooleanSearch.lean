@@ -18,7 +18,9 @@ open Cslib.GenericRAM Cslib.GenericRAM.BooleanSearch Turing.MultiTapeTM
 -- A one-row measurement selecting the first coordinate, with the desired value in context.
 private def measurementTest (p : Bool × List Bool) : Bool := p.2.headD false == p.1
 
--- A one-row measurement selecting the second coordinate.
+-- Measurements are checked without the later fixed-bit constraint x₀ = true.
+-- The unrestricted representative may fail that constraint although its fiber contains a word
+-- satisfying it (the second scan uses that word).
 private def secondCoordinate (p : Bool × List Bool) : Bool := p.2[1]?.getD false == p.1
 
 -- Empty cube, first-match order, context-dependent measurement tests, unrestricted second

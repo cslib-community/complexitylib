@@ -31,6 +31,8 @@ example :
         (p.2.1, p.2.2 ++ [p.1.2.headD 0 + (p.2.1 : ℤ) + p.1.1.2])) (1, 1) (7, []) =
         (3, ((1, 1), (7, [7, 8, 9])))) ∧
     (count (8, 1) = 6561 ∧ (encNat (count (8, 1))).length = 13) ∧
+    -- Keep these large boundary inputs: use the algebraic one/zero-exponent laws rather than
+    -- asking the evaluator to expand a thousand-step power under its default safety threshold.
     (count (0, 1000) = 1 ∧ count (1000, 0) = 1) ∧
     (((BinarySub.digitPairs (3, 5)).foldl BinarySub.subStep (false, [])).1 = true ∧
       ((13 : ℕ).bits.reverse.foldl (BinaryDiv.divModStep 3) (0, 0)) = (4, 1) ∧
@@ -73,6 +75,7 @@ example (body : ((ℕ × ℕ) × List ℤ) × Bool → Bool) (c D j : ℕ) (hj :
     (encPair encNat (encPair (encPair encUnary encNat) encBool)
       (runPrefix body (c, D) j false)).length ≤
       2 * (c * (D.size + 1) + 1) + 4 * c + 2 * D.size + 5 ∧
+    -- Decoder/callback composition is polynomial per visit; whole-loop time is not claimed PT.
     (visitCertificate toggle).IsPolynomial ∧
     IsComputable (fun p : ℕ × ℕ =>
       run (fun q : ((ℕ × ℕ) × List ℤ) × Bool => !q.2) p false)

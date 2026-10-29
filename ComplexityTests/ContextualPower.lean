@@ -169,4 +169,18 @@ example (ctx : Fin 2 → ℕ) (x : Fin 1 → ℕ) (e : ℕ) :
   rw [cost_program_binaryPowerCircuit]
   split_ifs <;> simp
 
+-- No commutativity or distributivity is needed for the power circuit's semantics.
+example {R : Type*} [Add R] [Monoid R] (x : R) (e : ℕ) :
+    (binaryPowerCircuit () e).eval (arithInterpretationWith Unit (fun _ => (1 : R)))
+      (fun _ => x) 0 = x ^ e :=
+  eval_binaryPowerCircuit () (fun _ => (1 : R)) rfl e _
+
+-- The two signatures and carrier have independent universe levels.
+example {σ : Signature.{u}} {τ : Signature.{v}} {R : Type w} {n m q : ℕ}
+    (c : Circuit σ n m) (impl : ∀ op : σ.Op, Circuit τ (q + σ.Arity op) 1)
+    (J : Interpretation τ R) (ctx : Fin q → R) (x : Fin n → R) :
+    (c.simulateWithContext q impl).eval J (Fin.append ctx x) =
+      c.eval (fun op args => (impl op).eval J (Fin.append ctx args) 0) x :=
+  c.eval_simulateWithContext q impl J ctx x
+
 end ComplexityTests.ContextualPower
