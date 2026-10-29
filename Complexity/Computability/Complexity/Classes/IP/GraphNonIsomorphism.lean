@@ -73,7 +73,7 @@ exactly the same distribution (`relabelFin_comp`), and keys collide with probabi
 
 namespace Cslib.Complexity
 
-open Cslib.Probability Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Probability Turing.MultiTapeTM ComputableInPolyTime
 
 namespace GraphNonIsomorphism
 
@@ -543,19 +543,20 @@ theorem isInteractiveProof_verifier :
 
 /-- Relabeling a computed graph by random keys is strict PPT. -/
 private theorem isPPTOn_relabelMessage {γ : Type} {input : γ ↪ List Bool} {G : γ → Graph}
-    (hG : ComputableTidilyInPolyTime G input encGraph) :
+    (hG : ComputableInPolyTime G input encGraph) :
     IsPPTOn input encBits (fun x => relabelMessage (G x)) := by
-  have hn : ComputableTidilyInPolyTime (fun x => (G x).distinctVertices.length) input encUnary :=
-    (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.tidy.comp hG)
-  have hsize : ComputableTidilyInPolyTime (fun x => 16 * (G x).distinctVertices.length *
+  have hn : ComputableInPolyTime (fun x => (G x).distinctVertices.length) input encUnary :=
+    (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp hG)
+  have hsize : ComputableInPolyTime (fun x => 16 * (G x).distinctVertices.length *
       (G x).distinctVertices.length) input encUnary := by fun_prop
-  have hw : ComputableTidilyInPolyTime (fun x => keyWidth (G x).distinctVertices.length) input
-      encUnary := (unary_clog_const 2).comp hsize
-  have hpow : ComputableTidilyInPolyTime (fun x => 2 ^ keyWidth (G x).distinctVertices.length)
-      input encUnary := unary_pow_clog_const hsize 2 2
-  have hcount : ComputableTidilyInPolyTime (fun x => (G x).distinctVertices.length *
+  have hw : ComputableInPolyTime (fun x => keyWidth (G x).distinctVertices.length) input
+      encUnary :=
+    (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.unary_clog_const 2)).comp hsize
+  have hpow : ComputableInPolyTime (fun x => 2 ^ keyWidth (G x).distinctVertices.length)
+      input encUnary := .of_tidy (ComputableTidilyInPolyTime.unary_pow_clog_const hsize.tidy 2 2)
+  have hcount : ComputableInPolyTime (fun x => (G x).distinctVertices.length *
       keyWidth (G x).distinctVertices.length) input encUnary := by fun_prop
-  have hkeys : ComputableTidilyInPolyTime (fun p : γ × List Bool =>
+  have hkeys : ComputableInPolyTime (fun p : γ × List Bool =>
       keysOf (G p.1).distinctVertices.length (keyWidth (G p.1).distinctVertices.length) p.2)
       (encPair input encBits) (encList encUnary) :=
     mapWithInput (bitsRowsWithInput (hn.comp (fst input encBits)) (hw.comp (fst input encBits))
@@ -563,8 +564,8 @@ private theorem isPPTOn_relabelMessage {γ : Type} {input : γ ↪ List Bool} {G
       (bitsBoundedBinaryValueWithInput (hpow.comp ((fst input encBits).comp
         (fst (encPair input encBits) encBits))) (snd (encPair input encBits) encBits))
   exact IsPPTOn.map_with (f := fun x bits => relabel (G x) (keysOf (G x).distinctVertices.length
-    (keyWidth (G x).distinctVertices.length) bits)) (ComputableInPolyTime.of_tidy hcount).sampleList
-    (computableInPolyTime_relabel (.of_tidy (hG.comp (fst input encBits))) (.of_tidy hkeys))
+    (keyWidth (G x).distinctVertices.length) bits)) hcount.sampleList
+    (computableInPolyTime_relabel (hG.comp (fst input encBits)) hkeys)
 
 /-- The verifier is strict oracle PPT. -/
 theorem isOraclePPTOn_verifier :

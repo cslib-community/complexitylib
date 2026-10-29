@@ -265,12 +265,11 @@ private noncomputable def bppVerifier (enc : α ↪ List Bool) (p : Polynomial �
 
 /-- The verifier without messages of a polynomial-time decider is strict oracle PPT. -/
 private theorem isOraclePPTOn_bppVerifier {p : Polynomial ℕ} {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
     IsOraclePPTOn enc encBool (bppVerifier enc p V) := by
-  have hcount : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary := by
+  have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary := by
     fun_prop
-  exact (IsPPTOn.map_with (f := fun a r => V (a, r))
-    (ComputableInPolyTime.of_tidy hcount).sampleList (.of_tidy hV)).isOraclePPTOn
+  exact (IsPPTOn.map_with (f := fun a r => V (a, r)) hcount.sampleList hV).isOraclePPTOn
 
 /-- The verifier without messages accepts every prover with the fraction of accepted random
 strings. -/
@@ -293,7 +292,7 @@ private theorem natCast_div_le_natCast_div {a b c d : ℕ} (hb : b ≠ 0) (hd : 
 /-- **`BPP ⊆ IP`**, without messages. -/
 theorem BPP_subset_IP (enc : α ↪ List Bool) : BPP enc ⊆ IP enc := by
   rintro A ⟨p, V, hV, hA⟩
-  refine ⟨_, isOraclePPTOn_bppVerifier (p := p) hV.tidy, fun a ha => ⟨Prover.const [], ?_⟩,
+  refine ⟨_, isOraclePPTOn_bppVerifier (p := p) hV, fun a ha => ⟨Prover.const [], ?_⟩,
     fun a ha P => ?_⟩ <;> rw [acceptProb_bppVerifier]
   · have h := (hA a).1 ha
     unfold BoundedErrorAt at h

@@ -98,35 +98,30 @@ private theorem literal_lower_bound : (1 : ℕ∞) ≤
   exact le_pairCoverComplexity_iff.mpr fun c => by
     exact_mod_cast positive_cover literalWitness c
 
-example : ecomplexityFrom Monotone.interpretation Monotone.andCost difference literals = 1 :=
+private theorem difference_complexity :
+    ecomplexityFrom Monotone.interpretation Monotone.andCost difference literals = 1 :=
   le_antisymm (ecomplexityFrom_le_of_computesFrom andLiterals andLiterals_computes)
     literal_lower_bound
 
--- Both spellings of the literal family use the same ordinary computation certificate.
-example : andLiterals.ComputesFrom Monotone.interpretation difference
-    (fun x i => Fin.addCases x (Bool.not ∘ x) i) := andLiterals_computes
-
-example : andLiterals.eval (Monotone.setInterpretation (Fin 2 → Bool))
-    (fun i => {x | literals x i = true}) = (fun o => {x | difference x o = true}) :=
-  (Monotone.eval_setOf_iff_computesFrom andLiterals literals difference).mpr andLiterals_computes
-
--- General positive/negative set generators use the same interface, without a literal datatype.
-example {n m : ℕ} (c : Circuit Monotone.signature (n + n) m)
-    (f : (Fin n → Bool) → Fin m → Bool) :
-    c.eval (Monotone.setInterpretation (Fin n → Bool))
-      (Fin.append (fun i => {x | x i = true}) (fun i => {x | x i = false})) =
-        (fun o => {x | f x o = true}) ↔
-      c.ComputesFrom Monotone.interpretation f (fun x => Fin.append x (fun i => !x i)) := by
-  have h : (fun i => {x : Fin n → Bool | Fin.append x (fun j => !x j) i = true}) =
+-- Both spellings of the literal family use the same computation certificate and set generators.
+example :
+    andLiterals.ComputesFrom Monotone.interpretation difference
+        (fun x i => Fin.addCases x (Bool.not ∘ x) i) ∧
+      andLiterals.eval (Monotone.setInterpretation (Fin 2 → Bool))
+        (Fin.append (fun i => {x : Fin 2 → Bool | x i = true}) (fun i => {x | x i = false})) =
+          (fun o => {x | difference x o = true}) := by
+  refine ⟨andLiterals_computes, ?_⟩
+  have h : (fun i => {x : Fin 2 → Bool | literals x i = true}) =
       Fin.append (fun i => {x | x i = true}) (fun i => {x | x i = false}) := by
     funext i
     refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-    · simp only [Fin.append_left]
-    · simp only [Fin.append_right]
+    · simp only [literals, Fin.append_left]
+    · simp only [literals, Fin.append_right]
       ext x
       simp
-  simpa only [h] using Monotone.eval_setOf_iff_computesFrom c
-    (fun x => Fin.append x (fun i => !x i)) f
+  rw [← h]
+  exact (Monotone.eval_setOf_iff_computesFrom andLiterals literals difference).mpr
+    andLiterals_computes
 
 private def pointFilter {U : Type*} (x : U) : Semifilter U where
   toFun s := x ∈ s
@@ -204,12 +199,11 @@ example : shared.eval (Monotone.setInterpretation (Fin 2 → Bool))
       (fun x => List.ofFn (shared.eval Monotone.interpretation (literals x))),
   shared.size, shared.program.cost Monotone.andCost, shared.program.cost mixedWeight)
 
-example {U : Type*} {n m : ℕ} (inputs : Fin n → Set U) (target : Fin m → Set U) :
-    ecomplexityFrom Monotone.interpretation mixedWeight
-      (fun x o => (target o).boolIndicator x) (fun x i => (inputs i).boolIndicator x) =
-        ecomplexityFrom (Monotone.setInterpretation U) mixedWeight
-          (fun _ : Unit => target) (fun _ => inputs) :=
-  Monotone.ecomplexityFrom_boolIndicator _ _ _
+example : ecomplexityFrom (Monotone.setInterpretation (Fin 2 → Bool)) Monotone.andCost
+    (fun _ : Unit => fun o => {x | difference x o = true})
+      (fun _ => fun i => {x | literals x i = true}) = 1 := by
+  rw [← Monotone.ecomplexityFrom_boolIndicator]
+  simpa [Set.boolIndicator] using difference_complexity
 
 private def zero : Circuit Monotone.signature 0 1 :=
   Circuit.oneGate (.const false) Fin.elim0

@@ -176,14 +176,14 @@ private theorem observe_ppt : IsPPTOn
     (encPair encUnary (encPair (encList encBits) (encList (encList encBits)))) encBool
     (fun p => observe p.1 p.2) := by
   unfold observe
-  apply ComputableTidilyInPolyTime.isPPTOn
-  apply ComputableTidilyInPolyTime.bitsGetDWithInput
-  · apply (ComputableTidilyInPolyTime.listGetD
+  apply ComputableInPolyTime.isPPTOn
+  apply ComputableInPolyTime.bitsGetDWithInput
+  · apply (ComputableInPolyTime.listGetD
       (encA := encBits) (encL := encList encBits) []).comp
       (g := fun p : ℕ × (List (List Bool) × List (List (List Bool))) =>
         (p.2.2.getD 0 [], 1))
-    apply ComputableTidilyInPolyTime.prod
-    · apply (ComputableTidilyInPolyTime.listGetD
+    apply ComputableInPolyTime.prod
+    · apply (ComputableInPolyTime.listGetD
         (encA := encList encBits) (encL := encList (encList encBits)) []).comp
         (g := fun p : ℕ × (List (List Bool) × List (List (List Bool))) => (p.2.2, 0))
       fun_prop
@@ -192,13 +192,11 @@ private theorem observe_ppt : IsPPTOn
 
 -- A nonconstant depth family is one uniform native adversary, not separately chosen advice.
 example : (fixture.linkAdversary (fun n => n + 2) (fun _ => 3) observe).IsPPT :=
-  fixture.isPPT_linkAdversary keyGen_ppt encrypt_ppt observe_ppt (.of_tidy (by
-    fun_prop)) (by fun_prop)
+  fixture.isPPT_linkAdversary keyGen_ppt encrypt_ppt observe_ppt (by fun_prop) (by fun_prop)
 
 -- Total decoding and guessing are charged on arbitrary complete saved words and ciphertexts.
 example : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBool
     (fun p => fixture.guessLink observe p.1 p.2.1 p.2.2) :=
-  Scheme.isPPTOn_guessLink encrypt_ppt observe_ppt (.of_tidy (by fun_prop)) (.of_tidy (by
-    fun_prop)) (.of_tidy (by fun_prop))
+  Scheme.isPPTOn_guessLink encrypt_ppt observe_ppt (by fun_prop) (by fun_prop) (by fun_prop)
 
 end ComplexityTests.Crypto.KeyChainSecurity

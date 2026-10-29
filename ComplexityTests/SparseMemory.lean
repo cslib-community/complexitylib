@@ -31,52 +31,47 @@ def high : ℕ := 2 ^ 128
 /-- Two cells, one at a large address. -/
 def sample : SparseMemory ℕ ℕ := ((∅ : SparseMemory ℕ ℕ).insert high 7).insert 3 11
 
-example : entries sample = [(3, 11), (high, 7)] := by decide
-example : read 19 4 sample = 19 := by decide
-example : read 0 high sample = 7 := by decide
-example : read 0 high (sample.insert high 0) = 0 := by decide
-example : (entries (sample.insert high 0)).length = 2 := by decide
-example : (entries (sample.insert 4 0)).length = 3 := by decide
-example : read 91 high (∅ : SparseMemory ℕ ℕ) = 91 := rfl
+example (a v d : ℕ) :
+    entries sample = [(3, 11), (high, 7)] ∧
+    read 19 4 sample = 19 ∧
+    read 0 high sample = 7 ∧
+    read 0 high (sample.insert high 0) = 0 ∧
+    (entries (sample.insert high 0)).length = 2 ∧
+    (entries (sample.insert 4 0)).length = 3 ∧
+    read 91 high (∅ : SparseMemory ℕ ℕ) = 91 ∧
+    read d a ((∅ : SparseMemory ℕ ℕ).insert a v) = v ∧
+    (encoding encNat encNat (∅ : SparseMemory ℕ ℕ)).length = 0 :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide, rfl,
+   by simpa using congrFun (read_insert d a v ∅) a, rfl⟩
 
--- No hypothesis restricts the numeric magnitude of the queried address.
-example (a v d : ℕ) : read d a ((∅ : SparseMemory ℕ ℕ).insert a v) = v := by
-  simpa using congrFun (read_insert d a v ∅) a
-
-example : (encoding encNat encNat (∅ : SparseMemory ℕ ℕ)).length = 0 := rfl
-
-example : ComputableTidilyInO
-    (fun q : (ℕ × SparseMemory ℕ ℕ) × ℕ => read q.2 q.1.1 q.1.2)
-    (readEncoding encNat encNat) encNat (readTime encNat encNat) (readSpace encNat encNat) :=
-  read_inO encNat encNat
-
-example : ComputableTidilyInO
-    (fun q : (ℕ × Bool) × SparseMemory ℕ Bool => q.2.insert q.1.1 q.1.2)
-    (writeEncoding encNat encBool) (encoding encNat encBool)
-    (writeTime encNat encBool) (writeSpace encNat encBool) := insert_inO encNat encBool
-
-example : ComputableTidilyInPolyTime
-    (fun q : (ℕ × SparseMemory ℕ Bool) × Bool => read q.2 q.1.1 q.1.2)
-    (readEncoding encNat encBool) encBool := by fun_prop
-
-example : ComputableTidilyInPolyTime
-    (fun q : (ℕ × Bool) × SparseMemory ℕ Bool => q.2.insert q.1.1 q.1.2)
-    (writeEncoding encNat encBool) (encoding encNat encBool) := by fun_prop
+example :
+    ComputableTidilyInO
+      (fun q : (ℕ × SparseMemory ℕ ℕ) × ℕ => read q.2 q.1.1 q.1.2)
+      (readEncoding encNat encNat) encNat (readTime encNat encNat) (readSpace encNat encNat) ∧
+    ComputableTidilyInO
+      (fun q : (ℕ × Bool) × SparseMemory ℕ Bool => q.2.insert q.1.1 q.1.2)
+      (writeEncoding encNat encBool) (encoding encNat encBool)
+      (writeTime encNat encBool) (writeSpace encNat encBool) ∧
+    ComputableTidilyInPolyTime
+      (fun q : (ℕ × SparseMemory ℕ Bool) × Bool => read q.2 q.1.1 q.1.2)
+      (readEncoding encNat encBool) encBool ∧
+    ComputableTidilyInPolyTime
+      (fun q : (ℕ × Bool) × SparseMemory ℕ Bool => q.2.insert q.1.1 q.1.2)
+      (writeEncoding encNat encBool) (encoding encNat encBool) :=
+  ⟨read_inO encNat encNat, insert_inO encNat encBool, by fun_prop, by fun_prop⟩
 
 -- Compose actual native machines: prepare the write, keep its address, then read it back.
-example : ∃ T S, ComputableTidilyInO
-    (fun q : (ℕ × ℕ) × SparseMemory ℕ ℕ => read 0 q.1.1 (q.2.insert q.1.1 q.1.2))
-    (writeEncoding encNat encNat) encNat T S := by
+example (q : (ℕ × ℕ) × SparseMemory ℕ ℕ) :
+    (∃ T S, ComputableTidilyInO
+      (fun q : (ℕ × ℕ) × SparseMemory ℕ ℕ => read 0 q.1.1 (q.2.insert q.1.1 q.1.2))
+      (writeEncoding encNat encNat) encNat T S) ∧
+    read 0 q.1.1 (q.2.insert q.1.1 q.1.2) = q.1.2 := by
   have hb := ComputableTidilyInO.fst (encPair encNat encNat) (encoding encNat encNat)
   have hw := insert_inO encNat encNat
   have hp := (hb.fst'.prod hw).prod
     (ComputableTidilyInO.const (encIn := writeEncoding encNat encNat) (encMid := encNat) 0)
-  have h := (read_inO encNat encNat).comp hp
-  exact ⟨_, _, h⟩
-
-example (q : (ℕ × ℕ) × SparseMemory ℕ ℕ) :
-    read 0 q.1.1 (q.2.insert q.1.1 q.1.2) = q.1.2 := by
-  simpa using congrFun (read_insert 0 q.1.1 q.1.2 q.2) q.1.1
+  exact ⟨⟨_, _, (read_inO encNat encNat).comp hp⟩,
+    by simpa using congrFun (read_insert 0 q.1.1 q.1.2 q.2) q.1.1⟩
 
 -- Extract an actual native finite-state machine that handles this concrete large-address input.
 theorem large_address_native :

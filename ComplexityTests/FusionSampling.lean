@@ -45,27 +45,26 @@ example : ¬ nonemptySets.PreservesPair (booleanPairSample target none false (fu
   exact hn hx
 
 open Classical in
-example : (1 : ℝ) / 24 ≤ 𝔼 level : Option (Fin 2), 𝔼 b : Bool,
-    𝔼 h : (Fin 2 → Bool) → Bool,
-      if ¬ nonemptySets.PreservesPair (booleanPairSample target level b h) then 1 else 0 := by
-  simpa [show (8 : ℝ) * 2 + 8 = 24 by norm_num] using
-    le_booleanPairSample_expect nonemptySets point matching
+example :
+    ((1 : ℝ) / 24 ≤ 𝔼 level : Option (Fin 2), 𝔼 b : Bool,
+      𝔼 h : (Fin 2 → Bool) → Bool,
+        if ¬ nonemptySets.PreservesPair (booleanPairSample target level b h) then 1 else 0) ∧
+    ∃ p : Set ↥(targetᶜ) × Set ↥(targetᶜ),
+      (1 : ℝ) / 24 ≤ if ¬ nonemptySets.PreservesPair p then 1 else 0 := by
+  refine ⟨?_, ?_⟩
+  · simpa [show (8 : ℝ) * 2 + 8 = 24 by norm_num] using
+      le_booleanPairSample_expect nonemptySets point matching
+  · simpa [show (8 : ℝ) * 2 + 8 = 24 by norm_num] using
+      exists_pair_weight_ge (fun _ : Unit => nonemptySets) (fun _ => point)
+      (fun _ => matching) (fun _ => 1) (fun _ => zero_le_one)
 
 open Classical in
-example : ∃ p : Set ↥(targetᶜ) × Set ↥(targetᶜ),
-    (1 : ℝ) / 24 ≤ if ¬ nonemptySets.PreservesPair p then 1 else 0 := by
-  simpa [show (8 : ℝ) * 2 + 8 = 24 by norm_num] using
-    exists_pair_weight_ge (fun _ : Unit => nonemptySets) (fun _ => point)
-    (fun _ => matching) (fun _ => 1) (fun _ => zero_le_one)
-
-open Classical in
-example {d : ℝ} (hd : ∀ p : Set ↥(targetᶜ) × Set ↥(targetᶜ),
-    (if ¬ nonemptySets.PreservesPair p then (1 : ℝ) else 0) ≤ d) :
-    0 < d ∧ 1 / d ≤ 24 := by
-  simpa [show (8 : ℝ) * 2 + 8 = 24 by norm_num] using
-    fixedDistribution_counting_bound (fun _ : Unit => nonemptySets)
+example : ¬ ∀ p : Set ↥(targetᶜ) × Set ↥(targetᶜ),
+    (if ¬ nonemptySets.PreservesPair p then (1 : ℝ) else 0) ≤ 1 / 25 := by
+  intro hd
+  have h := fixedDistribution_counting_bound (fun _ : Unit => nonemptySets)
     (fun _ => point) (fun _ => matching) (fun _ => 1) (fun _ => zero_le_one)
-    (by simp) (by simpa [show (8 : ℝ) * 2 + 8 = 24 by norm_num] using
-    hd)
+    (by simp) (d := 1 / 25) (by simpa using hd)
+  norm_num at h
 
 end ComplexityTests.FusionSampling

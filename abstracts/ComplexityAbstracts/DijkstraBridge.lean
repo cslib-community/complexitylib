@@ -37,15 +37,15 @@ machine.
 
 ## Syntax in the imports
 
-The library's Dijkstra program is written in the word-RAM program syntax of
+The library's Dijkstra program and binary min-heap are written in the word-RAM program syntax of
 `Complexity/Computability/WordRAM/Notation.lean` and its exact-basis variant
-`Complexity/Algorithms/WordRAM/Dijkstra/ExactNotation.lean`, so the import of the library theorem
-brings both files in (`LogLinear` → `HeapRelax` → `HeapSift` → `BinaryHeap` → `HeapProgram` →
-`ExactNotation` → `Notation`). All their syntax rules, `macro_rules` and tactics are scoped, to
-`Cslib.WordRAM` and to `Cslib.Algorithms.WordRAM.Dijkstra`. Only the syntax category `wramStmt` and
-the syntax abbreviation `wramBlock` are global, since Lean cannot scope them, and outside those
-namespaces `wramStmt` has no rules. `DijkstraAbstract.lean` opens neither namespace, so none of
-this syntax is active there.
+`Complexity/Computability/WordRAM/ExactNotation.lean`, so the import of the library theorem
+brings both files in (`LogLinear` → `GenericPQ` → `PriorityQueue.Basic` → `ExactNotation` →
+`Notation`, and `LogLinear` → `BinaryHeap` → `Sift` → `Program` → `PriorityQueue.Basic`). All
+their syntax rules, `macro_rules` and tactics are scoped to `Cslib.WordRAM`. Only the syntax
+category `wramStmt` and the syntax abbreviation `wramBlock` are global, since Lean cannot scope
+them, and outside `Cslib.WordRAM` `wramStmt` has no rules. `DijkstraAbstract.lean` does not open
+`Cslib.WordRAM`, so none of this syntax is active there.
 -/
 
 namespace ComplexityAbstracts.DijkstraBridge

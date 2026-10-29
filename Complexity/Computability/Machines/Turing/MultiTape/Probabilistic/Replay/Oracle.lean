@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.R
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Deterministic replay of Boolean oracle replies
@@ -37,6 +38,9 @@ supplied random coins for a closed machine using an additional work tape.
 
 * `Turing.MultiTapePTM.replayConfig_pt`: replay is polynomial-time.
 * `Turing.MultiTapePTM.replayPrefix_pt`: prefix configurations are uniformly polynomial-time.
+* `Turing.MultiTapePTM.computableInPolyTime_replayPrefix`,
+  `Turing.MultiTapePTM.computableInPolyTime_replayOutput`: prefix configurations and the replayed
+  output are polynomial-time, for plain certificates.
 * `Turing.MultiTapePTM.length_pendingRequest_replayPrefix_le`: request size is bounded by the
   number of elapsed instructions.
 * `Turing.MultiTapePTM.replayOutput_oracleReplies`: canonical replay is the certified oracle run.
@@ -197,6 +201,12 @@ variable [Finite Control] [Fintype Operation]
   exact machine.replayConfig_pt.comp (g := fun p : (List Bool × List Bool) × ℕ =>
     (p.1.1, p.1.2.take p.2)) (by fun_prop)
 
+/-- `Turing.MultiTapePTM.replayPrefix_pt` for plain certificates. -/
+@[fun_prop] theorem computableInPolyTime_replayPrefix : ComputableInPolyTime
+    (fun p : (List Bool × List Bool) × ℕ => machine.replayPrefix p.1.1 p.1.2 p.2)
+    (encPair (encPair encBits encBits) encUnary) encFiniteConfig :=
+  machine.replayPrefix_pt.computableInPolyTime
+
 end PolyTime
 
 section PolyTimeOutput
@@ -212,6 +222,12 @@ variable [Finite Control] [Finite Operation]
       (fun cfg : FiniteConfig k Bool Control Operation => cfg.tapes.output)
       encFiniteConfig encBits := by fun_prop
   exact hout.comp machine.replayConfig_pt
+
+/-- `Turing.MultiTapePTM.replayOutput_pt` for plain certificates. -/
+@[fun_prop] theorem computableInPolyTime_replayOutput : ComputableInPolyTime
+    (fun p : List Bool × List Bool => machine.replayOutput p.1 p.2)
+    (encPair encBits encBits) encBits :=
+  machine.replayOutput_pt.computableInPolyTime
 
 /-- The next query in a guessed-reply execution is uniformly polynomial-time. -/
 @[fun_prop] theorem replayPrefix_pendingRequest_pt : ComputableTidilyInPolyTime
