@@ -19,15 +19,15 @@ example (bound : ℕ) (word : List Bool) :
     BitString.padWord bound word =
       encPair encBits encBits (word, List.replicate (2 * (bound - word.length)) false) := rfl
 
+example (word : List Bool) : BitString.padWord 0 word = frame word := by
+  simp [BitString.padWord]
+
 example : BitString.padWord 0 [] = [false] ∧
     BitString.padWord 0 [true] = [true, true, false] ∧
     BitString.padWord 1 [] = [false, false, false] ∧
     BitString.padWord 1 [false] = [true, false, false] := by decide
 
 example : BitString.padWord 0 [false] ≠ BitString.padWord 1 [] := by decide
-
-example (word : List Bool) : BitString.padWord 0 word = frame word := by
-  simp [BitString.padWord]
 
 -- Computed bounds work with either input encoding, including bounds too small for the word.
 example : ComputableInPolyTime
@@ -69,8 +69,11 @@ example : Game.succProbability (ProbComp.eval (inversionGame
   simp [inversionGame, Game.succProbability]
 
 example {f : List Bool → List Bool} (hf : OneWay f) :
-    ∃ (g : List Bool → List Bool) (length : ℕ → ℕ), OneWay g ∧
+    ∃ (g : List Bool → List Bool) (length : ℕ → ℕ),
+      OneWay g ∧ ComputableInPolyTime g encBits encBits ∧
       (∀ input, (g input).length = length input.length) ∧
-      ComputableInPolyTime length encUnary encUnary := hf.exists_fixedOutputLength
+      ComputableInPolyTime length encUnary encUnary := by
+  obtain ⟨g, length, hg, hlen, hcomp⟩ := hf.exists_fixedOutputLength
+  exact ⟨g, length, hg, hg.polyTime, hlen, hcomp⟩
 
 end ComplexityTests.OneWayNormalization

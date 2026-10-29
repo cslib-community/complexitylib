@@ -66,10 +66,16 @@ example : (((uniformList 1).map (fun word => firstBit ((), word))) true).toReal 
 example : ¬ (((uniformList 0).map (fun _ => true)) true).toReal ≤ 1 / 2 := by
   norm_num
 
+private def firstBitVerifier : PCPVerifier Unit where
+  coins _ := 1
+  queries _ := []
+  verdict p := firstBit p.1
+
 -- The same bridge applies directly to the library's nonadaptive PCP verifier contract.
-example {α : Type} (V : PCPVerifier α) (a : α) (proof : List Bool)
-    (h : (((uniformList (V.coins a)).map (V.accepts a proof)) true).toReal ≤ 1 / 2) :
-    2 * acceptCount (fun p => V.accepts p.1 proof p.2) a (V.coins a) ≤ 2 ^ V.coins a :=
-  (acceptCount_le_half_iff _ _ _).mpr h
+example :
+    2 * acceptCount (fun p => firstBitVerifier.accepts p.1 [] p.2) () (firstBitVerifier.coins ()) ≤
+      2 ^ firstBitVerifier.coins () :=
+  (acceptCount_le_half_iff _ _ _).mpr
+    ((acceptCount_le_half_iff firstBit () 1).mp (by rw [firstBit_count]; decide))
 
 end ComplexityTests.VerifierProbability

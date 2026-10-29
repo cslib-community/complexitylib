@@ -206,9 +206,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   from exact contributing-leaf counts. Generic function-position counts, ordered gluing, binomial
   and finite-sum bounds live in small Foundations modules. Mathlib `Finset.orderEmbOfFin` indexes
   both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
-  problem-statement universe or solver/time hypothesis is imported. Native tensor/sparse-query
-  programs, native preprocessing/solvers and full input/time/width composition, including the
-  improved Section 4 route to exponent 1.9992, remain in #1394.
+  problem-statement universe or solver/time hypothesis is imported.
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
+  Tensor/sparse query programs, the full reduction host, native Chan–He preprocessing, fast Exact
+  Triangle and full input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
