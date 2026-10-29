@@ -118,15 +118,12 @@ theorem isVerifier : IsVerifier encCNF Polynomial.X verifier ThreeSATThree := by
   rw [he]
   exact SAT.isVerifier.guard
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The width/occurrence tests and SAT evaluation run in native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  have hv := (CNF.computableInPolyTime_vars encNat).tidy
-  have hs := SAT.computableInPolyTime_verifier.tidy
-  refine .of_tidy ?_
   unfold verifier
+  simp only [List.count_eq_countP]
   fun_prop
 
 /-- 3SAT-3 belongs to NP under the ordinary binary CNF encoding. -/

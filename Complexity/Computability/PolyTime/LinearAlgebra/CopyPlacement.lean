@@ -1118,21 +1118,31 @@ theorem ofCoeffList_pullbackReplacementRow_ofFn_eq_varReplacementRowScaledInt
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
+
+private theorem cp_take : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.take p.2)
+    (encPair (encList encNat) encUnary) (encList encNat) := by fun_prop
+
+private theorem cp_count : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.count p.2)
+    (encPair (encList encNat) encNat) encUnary := by fun_prop
+
+private theorem cp_zip {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
+    ComputableInPolyTime (fun p : List α × List β => p.1.zip p.2)
+      (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) := by fun_prop
+
+private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin) encIntBin := by
+  fun_prop
 
 /-- Compositional plain polynomial-time certificate for `fiberRanks`. -/
 @[fun_prop] theorem computableInPolyTime_fiberRanksWithInput {Input : Type}
     {encIn : Input ↪ List Bool} {labels : Input → List ℕ}
     (hlabels : ComputableInPolyTime labels encIn (encList encNat)) :
     ComputableInPolyTime (fun x => fiberRanks (labels x)) encIn (encList encNat) := by
-  have hlabels := hlabels.tidy; refine .of_tidy ?_; unfold fiberRanks
-  apply mapWithInput (by fun_prop)
-  have htake : ComputableTidilyInPolyTime (fun p : Input × ℕ => (labels p.1).take p.2)
-      (encPair encIn encUnary) (encList encNat) := by fun_prop
-  have hval : ComputableTidilyInPolyTime (fun p : Input × ℕ => (labels p.1).getD p.2 0)
-      (encPair encIn encUnary) encNat :=
-    (listGetD 0).comp ((hlabels.comp (fst encIn encUnary)).prod (snd encIn encUnary))
-  exact unary_to_binary.comp (countWithInput htake hval)
+  unfold fiberRanks
+  apply mapWithInput (range.comp ((length_list encNat).comp hlabels))
+  have htake := cp_take.comp ((hlabels.comp (fst encIn encUnary)).prod (snd encIn encUnary))
+  have hval := listGetDWithInput (hlabels.comp (fst encIn encUnary)) (snd encIn encUnary) 0
+  exact unary_to_binary.comp (cp_count.comp (htake.prod hval))
 
 /-- `fiberRanks` is computable in polynomial time on framed lists of binary naturals. -/
 @[fun_prop] theorem computableInPolyTime_fiberRanks :
@@ -1144,9 +1154,12 @@ open ComputableTidilyInPolyTime
     (hD : ComputableInPolyTime D encIn encNat)
     (hlabels : ComputableInPolyTime labels encIn (encList encNat)) :
     ComputableInPolyTime (fun x => flatPlacement (D x) (labels x)) encIn (encList encNat) := by
-  have hfib := (computableInPolyTime_fiberRanksWithInput hlabels).tidy
-  have hD := hD.tidy; have hlabels := hlabels.tidy; refine .of_tidy ?_; unfold flatPlacement
-  apply mapWithInput ((zip encNat encNat).comp (hfib.prod hlabels)); fun_prop
+  have hfib := computableInPolyTime_fiberRanksWithInput hlabels
+  unfold flatPlacement
+  apply mapWithInput ((cp_zip encNat encNat).comp (hfib.prod hlabels))
+  have hp1 := fst encIn (encPair encNat encNat)
+  have hp2 := snd encIn (encPair encNat encNat)
+  exact binary_add.comp ((binary_mul' hp2.fst' (hD.comp hp1)).prod hp2.snd')
 
 /-- `flatPlacement` is computable in polynomial time from `(D, labels)`. -/
 @[fun_prop] theorem computableInPolyTime_flatPlacement :
@@ -1160,16 +1173,16 @@ open ComputableTidilyInPolyTime
     (ht : ComputableInPolyTime t encIn encNat) (hg : ComputableInPolyTime g encIn encNat) :
     ComputableInPolyTime (fun x => varGroupList (varSchedules x) (t x) (g x))
       encIn (encList encNat) := by
-  have hsched := hsched.tidy; have ht := ht.tidy; have hg := hg.tidy; refine .of_tidy ?_
-  have hfilt : ComputableTidilyInPolyTime
+  have hfilt : ComputableInPolyTime
       (fun x => varGroupList (varSchedules x) (t x) (g x)) encIn (encList encUnary) := by
-    unfold varGroupList; apply filterWithInput (by fun_prop)
-    have hrow : ComputableTidilyInPolyTime (fun p : Input × ℕ => (varSchedules p.1).getD p.2 [])
-        (encPair encIn encUnary) (encList encNat) :=
-      (listGetD []).comp ((hsched.comp (fst encIn encUnary)).prod (snd encIn encUnary))
-    exact (decide_eq encNat).comp
-      ((listGetD_binary 0 hrow (ht.comp (fst encIn encUnary))).prod (hg.comp (fst encIn encUnary)))
-  exact ((map unary_to_binary).comp hfilt).of_enc_eq fun _ => congrArg (encList encNat) (by simp)
+    unfold varGroupList
+    apply filterWithInput (range.comp ((length_list (encList encNat)).comp hsched))
+    have hrow := listGetDWithInput (hsched.comp (fst encIn encUnary)) (snd encIn encUnary) []
+    exact decide_eq'
+      (listGetD_binary 0 hrow (ht.comp (fst encIn encUnary))) (hg.comp (fst encIn encUnary))
+  have hmap : ComputableInPolyTime (List.map id) (encList encUnary) (encList encNat) :=
+    mapWithInput id' (unary_to_binary.comp (snd (encList encUnary) encUnary))
+  exact (hmap.comp hfilt).of_enc_eq fun _ => congrArg (encList encNat) (by simp)
 
 /-- `varGroupList` is computable in polynomial time on `(varSchedules, (t, g))`. -/
 @[fun_prop] theorem computableInPolyTime_varGroupList :
@@ -1177,15 +1190,14 @@ open ComputableTidilyInPolyTime
       (encPair (encList (encList encNat)) (encPair encNat encNat)) (encList encNat) := by fun_prop
 
 private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂ b₁ b₂ : Q → ℕ}
-    {val : Q → ℤ} (ha₁ : ComputableTidilyInPolyTime a₁ encQ encNat)
-    (ha₂ : ComputableTidilyInPolyTime a₂ encQ encNat)
-    (hb₁ : ComputableTidilyInPolyTime b₁ encQ encNat)
-    (hb₂ : ComputableTidilyInPolyTime b₂ encQ encNat)
-    (hval : ComputableTidilyInPolyTime val encQ encIntBin) :
-    ComputableTidilyInPolyTime
+    {val : Q → ℤ} (ha₁ : ComputableInPolyTime a₁ encQ encNat)
+    (ha₂ : ComputableInPolyTime a₂ encQ encNat)
+    (hb₁ : ComputableInPolyTime b₁ encQ encNat)
+    (hb₂ : ComputableInPolyTime b₂ encQ encNat)
+    (hval : ComputableInPolyTime val encQ encIntBin) :
+    ComputableInPolyTime
       (fun q => if a₁ q = a₂ q ∧ b₁ q = b₂ q then val q else 0) encQ encIntBin := by
-  have hcond := bool_and.comp
-    (((decide_eq encNat).comp (ha₁.prod ha₂)).prod ((decide_eq encNat).comp (hb₁.prod hb₂)))
+  have hcond := bool_and.comp ((decide_eq' ha₁ ha₂).prod (decide_eq' hb₁ hb₂))
   refine (hcond.ite' hval (const 0)).of_enc_eq fun q => congrArg encIntBin ?_
   dsimp only [Function.comp_def]
   by_cases h1 : a₁ q = a₂ q <;> [by_cases h2 : b₁ q = b₂ q <;> simp [h1, h2]; simp [h1]]
@@ -1202,12 +1214,10 @@ private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂
     ComputableInPolyTime
       (fun x => pullbackMeasurementRow (n x) (placements x) (incVars x) (copyIdx x) (auxRow x))
       encIn (encList encIntBin) := by
-  have hn := hn.tidy; have hpl := hpl.tidy; have hinc := hinc.tidy
-  have hcopy := hcopy.tidy; have haux := haux.tidy; refine .of_tidy ?_
-  unfold pullbackMeasurementRow; apply mapWithInput (range.comp hn); apply intBin_sum.comp
-  apply mapWithInput ((zip (encPair encNat encNat) encNat).comp
+  unfold pullbackMeasurementRow; apply mapWithInput (range.comp hn); apply cp_intBin_sum.comp
+  apply mapWithInput ((cp_zip (encPair encNat encNat) encNat).comp
     ((hpl.comp (fst encIn encUnary)).prod (hinc.comp (fst encIn encUnary))))
-  have hxin : ComputableTidilyInPolyTime (fun q : (Input × ℕ) × ((ℕ × ℕ) × ℕ) => q.1.1)
+  have hxin : ComputableInPolyTime (fun q : (Input × ℕ) × ((ℕ × ℕ) × ℕ) => q.1.1)
       (encPair (encPair encIn encUnary) (encPair (encPair encNat encNat) encNat)) encIn :=
     (fst encIn encUnary).comp (fst _ _)
   exact ite_eq_and_intBin
@@ -1236,15 +1246,14 @@ unary). -/
     ComputableInPolyTime
       (fun x => pullbackMeasurementMatrix (n x) (h x) (placements x) (incVars x) (blockMeas x))
       encIn (encList (encList encIntBin)) := by
-  have hh_tidy := hh.tidy; have hmeas_tidy := hmeas.tidy; refine .of_tidy ?_
-  unfold pullbackMeasurementMatrix; apply flatMapWithInput (range.comp hh_tidy)
-  apply mapWithInput (hmeas_tidy.comp (fst encIn encUnary))
-  exact (computableInPolyTime_pullbackMeasurementRowWithInput
-    (hn.comp (.of_tidy ((fst encIn encUnary).comp (fst _ _))))
-    (hpl.comp (.of_tidy ((fst encIn encUnary).comp (fst _ _))))
-    (hinc.comp (.of_tidy ((fst encIn encUnary).comp (fst _ _))))
-    (.of_tidy (unary_to_binary.comp ((snd encIn encUnary).comp (fst _ _))))
-    (.of_tidy (snd _ _))).tidy
+  unfold pullbackMeasurementMatrix; apply flatMapWithInput (range.comp hh)
+  apply mapWithInput (hmeas.comp (fst encIn encUnary))
+  exact computableInPolyTime_pullbackMeasurementRowWithInput
+    (hn.comp ((fst encIn encUnary).comp (fst _ _)))
+    (hpl.comp ((fst encIn encUnary).comp (fst _ _)))
+    (hinc.comp ((fst encIn encUnary).comp (fst _ _)))
+    (unary_to_binary.comp ((snd encIn encUnary).comp (fst _ _)))
+    (snd _ _)
 
 /-- `pullbackMeasurementMatrix` is computable in polynomial time with `(n, h)` in `encUnary`. -/
 @[fun_prop] theorem computableInPolyTime_pullbackMeasurementMatrix :
@@ -1262,7 +1271,6 @@ unary). -/
     (hmat : ComputableInPolyTime mat encIn (encList (encList encIntBin))) :
     ComputableInPolyTime (fun x => restrictGroupColumns (groupVars x) (mat x))
       encIn (encList (encList encIntBin)) := by
-  have hgroup := hgroup.tidy; have hmat := hmat.tidy; refine .of_tidy ?_
   unfold restrictGroupColumns; apply mapWithInput hmat
   apply mapWithInput (hgroup.comp (fst encIn (encList encIntBin)))
   exact listGetD_binary 0 ((snd encIn (encList encIntBin)).comp (fst _ _)) (snd _ _)
@@ -1288,20 +1296,19 @@ unary). -/
       encIn (encList (encList encIntBin)) := by
   unfold pullbackReplacementRow
   refine Cslib.computableInPolyTime_tabulateTable hn hR ?_
-  have hpl := hpl.tidy; have hinc := hinc.tidy; have he := he.tidy; have hrepl := hrepl.tidy
-  refine .of_tidy ?_; dsimp only [Cslib.rowEntry]
-  have hpe : ComputableTidilyInPolyTime _ encIn (encPair encNat encNat) :=
+  dsimp only [Cslib.rowEntry]
+  have hpe : ComputableInPolyTime _ encIn (encPair encNat encNat) :=
     listGetD_binary (0, 0) hpl he
   have hce := (fst encNat encNat).comp hpe
-  have huRow : ComputableTidilyInPolyTime _ encIn (encList (encList encIntBin)) :=
+  have huRow : ComputableInPolyTime _ encIn (encList (encList encIntBin)) :=
     listGetD_binary [] hrepl ((snd encNat encNat).comp hpe)
-  have hzip0 := (zip (encPair encNat encNat) encNat).comp (hpl.prod hinc)
-  have hxin_vk : ComputableTidilyInPolyTime (fun vk : (Input × ℕ) × ℕ => vk.1.1)
+  have hzip0 := (cp_zip (encPair encNat encNat) encNat).comp (hpl.prod hinc)
+  have hxin_vk : ComputableInPolyTime (fun vk : (Input × ℕ) × ℕ => vk.1.1)
       (encPair (encPair encIn encUnary) encUnary) encIn := (fst encIn encUnary).comp (fst _ _)
-  apply intBin_sum.comp; apply mapWithInput (hzip0.comp hxin_vk)
+  apply cp_intBin_sum.comp; apply mapWithInput (hzip0.comp hxin_vk)
   have hxin := hxin_vk.comp (fst (encPair (encPair encIn encUnary) encUnary)
     (encPair (encPair encNat encNat) encNat))
-  have hpoly : ComputableTidilyInPolyTime _ _ (encList encIntBin) :=
+  have hpoly : ComputableInPolyTime _ _ (encList encIntBin) :=
     listGetD_binary [] (huRow.comp hxin) ((snd encNat encNat).comp ((fst _ _).comp (snd _ _)))
   exact ite_eq_and_intBin
     ((fst encNat encNat).comp ((fst _ _).comp (snd _ _))) (hce.comp hxin)

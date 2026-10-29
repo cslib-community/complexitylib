@@ -12,10 +12,9 @@ public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Complexity.Logics.Propositional.CNF.ModelCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
 /-!
 # The exponential time hypotheses
@@ -144,23 +143,19 @@ theorem DecidableInTimeO.exists_computableInO (h : DecidableInTimeO A enc T) :
   obtain ⟨c, t, s, ht, h⟩ := h
   obtain ⟨g, hg, hA⟩ := decidableInTimeAndSpace_iff.mp h
   obtain ⟨k, hg⟩ := ComputableInTimeAndSpace.exists_space_linear hg
-  obtain ⟨d, hg⟩ := ComputableInTimeAndSpace.exists_computableTidilyInTimeAndSpace hg
-  refine ⟨g, t, c, .of_tidy <| ComputableTidilyInO.of_bounds hg (2 + 3 * k + d + d * k + d)
+  refine ⟨g, t, c, ComputableInO.of_bounds hg (k + 1)
     (fun a => ?_) (fun a => ?_) (fun a => ?_), hA, ht⟩
   all_goals
-    have e : (2 + 3 * k + d + d * k + d) * (t a + 1) = 2 * t a + 3 * (k * t a + k) + d +
-        (2 + d * t a + d * (k * t a + k + 1) + d * t a) := by ring
     try simp only [encBool_apply, List.length_singleton]
-    omega
+    nlinarith
 
 /-- A decider within time `O(t)`, for `t ≤ T`, decides within time `O(T)`. -/
 theorem DecidableInTimeO.of_computableInO {g : α → Bool} {t S : α → ℕ}
     (hg : ComputableInO g enc encBool t S) (hA : ∀ a, a ∈ A ↔ g a = true)
     (hT : ∀ a, (t a : ℝ) ≤ T a) : DecidableInTimeO A enc T := by
-  have hg := hg.tidy
   obtain ⟨c, hg, -⟩ := hg
   refine ⟨c, _, _, fun a => ?_,
-    decidableInTimeAndSpace_iff.mpr ⟨g, hg.computableInTimeAndSpace, hA⟩⟩
+    decidableInTimeAndSpace_iff.mpr ⟨g, hg, hA⟩⟩
   push_cast
   nlinarith [hT a, (Nat.cast_nonneg c : (0 : ℝ) ≤ c)]
 
@@ -172,14 +167,12 @@ theorem DecidableInTimeO.inter {p : α → Bool} (hp : ComputableInPolyTime p en
     (hB : DecidableInTimeO B enc T) (hT : ∀ a, 0 ≤ T a) :
     ∃ e : ℕ, DecidableInTimeO ({a | p a = true} ∩ B) enc
       fun a => (if p a = true then T a else 0) + ((enc a).length + 1) ^ e := by
-  have hp := hp.tidy
   obtain ⟨g, t, c, hg, hgB, ht⟩ := hB.exists_computableInO
-  have hg := hg.tidy
   obtain ⟨d, _, hp⟩ := hp.exists_degree
-  have h := hp.inO.ite hg (ComputableTidilyInO.const false)
+  have h := hp.inO.ite hg (ComputableInO.const false)
   refine ⟨d + 1, DecidableInTimeO.mono (T := fun a => ((((enc a).length + 1) ^ d +
     if p a then t a else (enc a).length : ℕ) : ℝ))
-    (DecidableInTimeO.of_computableInO (.of_tidy h) (fun a => ?_) fun a => le_rfl) (c + 2)
+    (DecidableInTimeO.of_computableInO h (fun a => ?_) fun a => le_rfl) (c + 2)
     (fun a => ?_) fun a => ?_⟩
   · simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, hgB]
     cases p a <;> simp

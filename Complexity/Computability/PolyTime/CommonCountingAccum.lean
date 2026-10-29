@@ -13,7 +13,6 @@ public import Complexity.Computability.GenericRAM.Native.BooleanFold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 public import Complexity.Computability.PolyTime.JetArray
 public import Complexity.Foundations.Data.Polynomial.StagedJetArithmetic
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -301,14 +300,14 @@ theorem rowEntry_extractCoordNodeJets_eq_taylor {J ℓ : ℕ} {K : Type*} [CommR
     (hnodeJets : ComputableInPolyTime nodeJets encIn encJets) :
     ComputableInPolyTime (fun x => extractCoordNodeJets (J x) (u x) (nodeJets x)) encIn encJet := by
   have hr : ComputableInPolyTime (fun x => (nodeJets x).length) encIn encUnary :=
-    .of_tidy ((ComputableTidilyInPolyTime.length_list encJet).comp hnodeJets.tidy)
+    (ComputableInPolyTime.length_list encJet).comp hnodeJets
   let eP1 := encPair encIn encUnary
-  have hx := (ComputableTidilyInPolyTime.fst encIn encUnary).comp (.fst eP1 encUnary)
-  have hi := (ComputableTidilyInPolyTime.snd encIn encUnary).comp (.fst eP1 encUnary)
-  have hget := (ComputableTidilyInPolyTime.listGetD (encA := encJet) []).comp
-    ((hnodeJets.tidy.comp hx).prod hi)
-  exact computableInPolyTime_tabulateTable hr hJ (computableInPolyTime_rowEntry (.of_tidy hget)
-    (.of_tidy (.snd eP1 encUnary)) (.of_tidy (hu.tidy.comp hx)))
+  have hx := (ComputableInPolyTime.fst encIn encUnary).comp (.fst eP1 encUnary)
+  have hi := (ComputableInPolyTime.snd encIn encUnary).comp (.fst eP1 encUnary)
+  have hget := (ComputableInPolyTime.listGetD (encA := encJet) []).comp
+    ((hnodeJets.comp hx).prod hi)
+  exact computableInPolyTime_tabulateTable hr hJ (computableInPolyTime_rowEntry hget
+    (.snd eP1 encUnary) (hu.comp hx))
 
 @[fun_prop] theorem computableInPolyTime_extractAllCoordNodeJets {α : Type} {encIn : α ↪ List Bool}
     {J ℓ : α → ℕ} {nodeJets : α → List JetRows}
@@ -316,13 +315,11 @@ theorem rowEntry_extractCoordNodeJets_eq_taylor {J ℓ : ℕ} {K : Type*} [CommR
     (hnodeJets : ComputableInPolyTime nodeJets encIn encJets) :
     ComputableInPolyTime (fun x => extractAllCoordNodeJets (J x) (ℓ x) (nodeJets x))
       encIn encJets := by
-  have hfst := ComputableTidilyInPolyTime.fst encIn encUnary
+  have hfst := ComputableInPolyTime.fst encIn encUnary
   have hbody := computableInPolyTime_extractCoordNodeJets
     (J := fun p : α × ℕ => J p.1) (u := fun p : α × ℕ => p.2) (nodeJets := fun p => nodeJets p.1)
-    (.of_tidy (hJ.tidy.comp hfst)) (.of_tidy (.snd encIn encUnary))
-    (.of_tidy (hnodeJets.tidy.comp hfst))
-  exact .of_tidy (ComputableTidilyInPolyTime.mapWithInput
-    (ComputableTidilyInPolyTime.range.comp hℓ.tidy) hbody.tidy)
+    (hJ.comp hfst) (.snd encIn encUnary) (hnodeJets.comp hfst)
+  exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hℓ) hbody
 
 /-- Truncated `r`-fold product in `ℤ[V]/(V^ℓ)[z]/(z^J)` from `constJet J ℓ 1`
 ([OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], eq. (3.11) and Appendix B.2,
@@ -404,18 +401,18 @@ theorem size_natAbs_rowEntry_prodJet_le {J ℓ b : ℕ} {factors : List JetRows}
     (hJ : ComputableInPolyTime J encIn encUnary) (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hfactors : ComputableInPolyTime factors encIn encJets) :
     ComputableInPolyTime (fun x => prodJet (J x) (ℓ x) (factors x)) encIn encJet := by
-  have hinit := (computableInPolyTime_constJet hJ hℓ (.of_tidy (.const 1))).tidy
+  have hinit := computableInPolyTime_constJet hJ hℓ (.const 1)
   let Lf : α → ℕ := fun x => (encJets (factors x)).length
   let B : α → ℕ := fun x => J x * (2 * (ℓ x * (2 * (1 + Lf x * (Lf x + J x * ℓ x)) + 3)) + 1)
-  have hJ_pb := hJ.tidy.polyBounded; have hℓ_pb := hℓ.tidy.polyBounded
-  have hLf_pb := hfactors.tidy.polyBounded_length
+  have hJ_pb := hJ.polyBounded; have hℓ_pb := hℓ.polyBounded
+  have hLf_pb := hfactors.polyBounded_length
   have hB : PolyBounded (fun x => (encIn x).length) B :=
     hJ_pb.mul (((PolyBounded.const 2).mul (hℓ_pb.mul (((PolyBounded.const 2).mul
       ((PolyBounded.const 1).add (hLf_pb.mul (hLf_pb.add (hJ_pb.mul hℓ_pb))))).add
         (.const 3)))).add (.const 1))
-  refine .of_tidy (ComputableTidilyInPolyTime.foldlWith
+  refine ComputableInPolyTime.foldlWith
     (par := fun x => (J x, ℓ x)) (step := fun p acc A => convJet p.1 p.2 acc A)
-    (hJ.tidy.prod hℓ.tidy) hfactors.tidy hinit convJet_polytime.tidy hB fun x i _ => ?_)
+    (hJ.prod hℓ) hfactors hinit convJet_polytime hB fun x i _ => ?_
   have hentry : ∀ F ∈ (factors x).take i, ∀ row ∈ F, ∀ z ∈ row, z.natAbs.size ≤ Lf x :=
     fun F hF _ hrow _ hz =>
       (size_natAbs_le_length_encJetRows hrow hz).trans
@@ -512,8 +509,12 @@ private def HasPolySpace {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ Lis
   PolyBounded (fun a => (ei a).length) c.space
 private theorem polyBounded_length_of_hasPolySpace {α β : Type} {ei : α ↪ List Bool}
     {eo : β ↪ List Bool} {f : α → β} {c : NativeCertificate f ei eo} (hc : HasPolySpace c) :
-    PolyBounded (fun a => (ei a).length) (fun a => (eo (f a)).length) :=
-  ComputableTidilyInPolySpace.polyBounded_length ⟨c.time, c.space, hc, c.computes.tidy⟩
+    PolyBounded (fun a => (ei a).length) (fun a => (eo (f a)).length) := by
+  obtain ⟨c₀, d₀, hs⟩ := hc.exists_le
+  obtain ⟨k, _, hl⟩ := c.computes
+  refine .of_forall_le (k * (c₀ + 1)) d₀ fun a => (hl a).trans ?_
+  have h1 : 1 ≤ ((ei a).length + 1) ^ d₀ := Nat.one_le_pow _ _ (Nat.succ_pos _)
+  have := hs a; nlinarith
 private theorem hasPolySpace_comp {α β γ : Type} {ei : α ↪ List Bool} {em : β ↪ List Bool}
     {eo : γ ↪ List Bool} {f : α → β} {g : β → γ} {d : NativeCertificate g em eo}
     {c : NativeCertificate f ei em} (hd : HasPolySpace d) (hc : HasPolySpace c) :
@@ -525,7 +526,24 @@ private theorem hasPolySpace_prod {α β γ : Type} {ei : α ↪ List Bool} {em 
 private theorem exists_cert_of_polySpace {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
     {f : α → β} (h : ComputableInPolySpace f ei eo) :
     ∃ c : NativeCertificate f ei eo, HasPolySpace c := by
-  obtain ⟨T, S, hS, hc⟩ := h.tidy; exact ⟨⟨T, S, hc.computableInO⟩, hS⟩
+  obtain ⟨t, s, hs, hc, hl⟩ := h
+  exact ⟨⟨t, fun a => s (ei a).length, 1,
+    hc.mono (fun _ => by omega) (fun _ => by dsimp only; omega),
+    fun a => (hl a).trans (by dsimp only; omega)⟩,
+    .of_polynomiallyBounded (fun a => (ei a).length) hs⟩
+private theorem computableInPolySpace_of_inO {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
+    {f : α → β} {T P : α → ℕ} (hP : PolyBounded (fun x => (ei x).length) P)
+    (hc : ComputableInO f ei eo T P) : ComputableInPolySpace f ei eo := by
+  obtain ⟨c₀, d₀, hPb⟩ := hP.exists_le
+  obtain ⟨k, htm, hl⟩ := hc
+  let b (n : ℕ) := k * (c₀ * (n + 1) ^ d₀ + 1)
+  have hk (x : α) : k * (P x + 1) ≤ b (ei x).length :=
+    Nat.mul_le_mul_left k (Nat.add_le_add_right (hPb x) 1)
+  exact ⟨_, b, by dsimp only [b]; fun_prop, htm.mono (fun _ => le_rfl) hk,
+    fun x => (hl x).trans (hk x)⟩
+private theorem length_encNat_mono {a b : ℕ} (h : a ≤ b) :
+    (encNat a).length ≤ (encNat b).length := by
+  simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size h
 private theorem pb_aff {ι : Type} {sz f g : ι → ℕ} (a b c : ℕ)
     (hf : PolyBounded sz f) (hg : PolyBounded sz g) :
     PolyBounded sz (fun x => a * f x + b * g x + c) :=
@@ -828,8 +846,8 @@ private theorem groupJetSum_run_inO {J ℓ d : ι → ℕ} {ctx : ι → α}
     ∃ P : ι → ℕ, PolyBounded (fun x => (encIn x).length) P ∧
       ComputableInO (fun x => streamGroupJetSum evalGroupProd (J x) (ℓ x) (d x) (ctx x))
         encIn encJet (fun x => (2 ^ d x + 1) * (R x + P x)) P := by
-  have hJ_pb := hJ.tidy.polyBounded; have hℓ_pb := hℓ.tidy.polyBounded
-  have hd_pb := hd.tidy.polyBounded; have hctx_pb := hctx.tidy.polyBounded_length
+  have hJ_pb := hJ.polyBounded; have hℓ_pb := hℓ.polyBounded
+  have hd_pb := hd.polyBounded; have hctx_pb := hctx.polyBounded_length
   obtain ⟨M_bits, hM_pb, hM_le⟩ := exists_natAbs_rowEntry_le_two_pow
     (polyBounded_length_of_hasPolySpace hcprod_sp) (pb_aff 2 3 2 hctx_pb hd_pb)
   let B_acc : ι → ℕ := fun x => J x * (2 * (ℓ x * (2 * ((d x + 1) + (M_bits x + 1)) + 3)) + 1)
@@ -923,7 +941,7 @@ theorem computableInO_streamGroupJetSum {J ℓ d : ι → ℕ} {ctx : ι → α}
     fun x j hj => by
       simpa only [Nat.zero_mul, Nat.add_zero] using le_listMax (f := fun i => cv.time (runAt x i))
         (List.mem_range.mpr (Nat.lt_succ_of_le hj))
-  exact .of_tidy ⟨_, P, hP_pb, hcomp.tidy⟩
+  exact computableInPolySpace_of_inO hP_pb hcomp
 
 end GroupJetSum
 
@@ -1081,8 +1099,8 @@ theorem computableInO_outerJetAccumCertificate {J ℓ T_rounds : ι → ℕ} {ct
   have hwp_pt : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × (ℤ × List JetRows) => weightedProdJet p.1.1 p.1.2 p.2.1 p.2.2)
       (encPair encDims encRoundOut) encJet := by fun_prop
-  have hJ_pb := (cJ.polyTime hcJ).tidy.polyBounded
-  have hℓ_pb := (cℓ.polyTime hcℓ).tidy.polyBounded
+  have hJ_pb := (cJ.polyTime hcJ).polyBounded
+  have hℓ_pb := (cℓ.polyTime hcℓ).polyBounded
   have hT_pb := (cT.polyTime hcT).polyBounded_length
   have hctx_pb := (cctx.polyTime hcctx).polyBounded_length
   obtain ⟨co, do_, hout_le⟩ := (polyBounded_length_of_hasPolySpace hcround_space).exists_le
@@ -1091,7 +1109,7 @@ theorem computableInO_outerJetAccumCertificate {J ℓ T_rounds : ι → ℕ} {ct
   let R_out : ι → ℕ := fun x => co * (inRoundLen x + 1) ^ do_
   have hRout_pb := NativeCertificate.polyBounded_pow_of_polyBounded
     (pb_aff 2 1 1 hctx_pb hT_pb) co do_
-  obtain ⟨M_bits, hM_pb, hM_le⟩ := exists_natAbs_rowEntry_le_two_pow hwp_pt.tidy.polyBounded_length
+  obtain ⟨M_bits, hM_pb, hM_le⟩ := exists_natAbs_rowEntry_le_two_pow hwp_pt.polyBounded_length
     ((pb_aff 4 2 3 hJ_pb hℓ_pb).add hRout_pb)
   let B_acc : ι → ℕ := fun x =>
     J x * (2 * (ℓ x * (2 * ((encNat (T_rounds x)).length + (M_bits x + 1)) + 3)) + 1)
@@ -1111,7 +1129,7 @@ theorem computableInO_outerJetAccumCertificate {J ℓ T_rounds : ι → ℕ} {ct
           (J := J x) (ℓ := ℓ x) (M_prod := 2 ^ M_bits x) (ctx x) hj fun idx hlt j' _ u' _ =>
             hM_le x ((J x, ℓ x), evalRound (ctx x, idx)) (by
               have hrin : (encPair encCtx encNat (ctx x, idx)).length ≤ inRoundLen x := by
-                have := ComputableTidilyInO.length_encNat_mono hlt.le
+                have := length_encNat_mono hlt.le
                 dsimp only [inRoundLen]; simp only [length_encPair]; omega
               have hr := (hout_le (ctx x, idx)).trans
                 (Nat.mul_le_mul_left co (Nat.pow_le_pow_left (Nat.add_le_add_right hrin 1) do_))
@@ -1158,7 +1176,7 @@ theorem computableInO_streamOuterJetAccum {J ℓ T_rounds : ι → ℕ} {ctx : �
   obtain ⟨ct, dt, ht_le⟩ := hcround.1.exists_le
   let inRoundLen : ι → ℕ := fun x =>
     2 * (encCtx (ctx x)).length + 1 * (encNat (T_rounds x)).length + 1
-  have hinRound_pb := pb_aff 2 1 1 hctx.tidy.polyBounded_length hT.tidy.polyBounded_length
+  have hinRound_pb := pb_aff 2 1 1 hctx.polyBounded_length hT.polyBounded_length
   let R_round : ι → ℕ := fun x => ct * (inRoundLen x + 1) ^ dt
   have hR_pb := NativeCertificate.polyBounded_pow_of_polyBounded hinRound_pb ct dt
   obtain ⟨P, hP_pb, hcomp⟩ := computableInO_outerJetAccumCertificate
@@ -1167,7 +1185,7 @@ theorem computableInO_streamOuterJetAccum {J ℓ T_rounds : ι → ℕ} {ctx : �
     (NativeCertificate.ofPolyTime_isPolynomial hT) (NativeCertificate.ofPolyTime_isPolynomial hctx)
     hcround.2 R_round fun x idx hidx => by
       have hrin : (encPair encCtx encNat (ctx x, idx)).length ≤ inRoundLen x := by
-        have := ComputableTidilyInO.length_encNat_mono hidx
+        have := length_encNat_mono hidx
         dsimp only [inRoundLen]; simp only [length_encPair]; omega
       exact (ht_le (ctx x, idx)).trans
         (Nat.mul_le_mul_left ct (Nat.pow_le_pow_left (Nat.add_le_add_right hrin 1) dt))
@@ -1191,7 +1209,7 @@ computable in polynomial space. -/
     hcround_space (fun x => listMax (fun i => cround.time (ctx x, i)) (List.range (T_rounds x + 1)))
     fun x idx hidx => le_listMax (f := fun i => cround.time (ctx x, i))
       (List.mem_range.mpr (Nat.lt_succ_of_le hidx))
-  exact .of_tidy ⟨_, P, hP_pb, hcomp.tidy⟩
+  exact computableInPolySpace_of_inO hP_pb hcomp
 
 end OuterJetAccum
 

@@ -166,7 +166,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
   preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
   The existing signed and unsigned APIs were reused; no source machine or separate run semantics
-  were copied. The full reduction host, native Chan–He preprocessing, fast Exact Triangle and full
+  were copied. `Algorithms/WordRAM/ThreeSum/Host/` adds the complete charged native host: ordinary
+  header initialization, polynomial magnitude computation, square root, consecutive matrix layout,
+  all `2t` instances and a finite solver program in a disjoint register bank. Its initialized run
+  theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
+  The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
+  This remains conditional on the supplied solver's native execution/correctness/frame theorem;
+  it does not establish a fast solver. Native Chan–He preprocessing, fast Exact Triangle and full
   input/time/width/asymptotic composition remain in
   [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
   Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
