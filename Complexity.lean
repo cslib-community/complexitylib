@@ -4,7 +4,6 @@ public import Complexity.Algorithms.ExactTriangle.Defs
 public import Complexity.Algorithms.ExactTriangle.Hashing
 public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.ExactTriangle.Weights
-public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
