@@ -8,10 +8,12 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Space.TQBF.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Closedness of a quantified Boolean formula in polynomial time
@@ -132,18 +134,18 @@ end Cslib.Logic.PL.QBF
 
 namespace Cslib.Complexity.TQBF
 
-open _root_.Turing _root_.Turing.MultiTapeTM Cslib.Logic.PL ComputableTidilyInPolyTime
+open _root_.Turing _root_.Turing.MultiTapeTM Cslib.Logic.PL ComputableInPolyTime
 
 /-- A step of the scan for a fixed kind of token is polynomial-time. -/
 private theorem freeVarStepAt_pt (k : QBF.Kind) :
-    ComputableTidilyInPolyTime (fun p : List (List ℕ) × (QBF.Kind × ℕ) =>
+    ComputableInPolyTime (fun p : List (List ℕ) × (QBF.Kind × ℕ) =>
       QBF.freeVarStepAt k p.2.2 p.1) (encPair (encList (encList encNat)) encToken)
       (encList (encList encNat)) := by
   cases k <;> simp only [QBF.freeVarStepAt] <;> fun_prop
 
 /-- A step of the scan is polynomial-time. -/
 private theorem freeVarStep_pt :
-    ComputableTidilyInPolyTime (fun p : List (List ℕ) × (QBF.Kind × ℕ) =>
+    ComputableInPolyTime (fun p : List (List ℕ) × (QBF.Kind × ℕ) =>
       QBF.freeVarStep p.1 p.2) (encPair (encList (encList encNat)) encToken)
       (encList (encList encNat)) :=
   finite_cases (tagEncoding := encKind) (tag := fun p : List (List ℕ) × (QBF.Kind × ℕ) => p.2.1)
@@ -203,11 +205,9 @@ private theorem length_freeVarStep_le (stack : List (List ℕ)) (t : QBF.Kind ×
 /-- **Closedness is decided in polynomial time.** -/
 theorem computableInPolyTime_decide_closed :
     Turing.MultiTapeTM.ComputableInPolyTime (fun φ : QBF ℕ => decide φ.Closed) encQBF encBool := by
-  have htokens := computableInPolyTime_tokens.tidy
-  refine .of_tidy ?_
   simp only [← QBF.isClosed_tokens]
   unfold QBF.isClosed
-  have hfold : ComputableTidilyInPolyTime (fun φ : QBF ℕ =>
+  have hfold : ComputableInPolyTime (fun φ : QBF ℕ =>
       φ.tokens.reverse.foldl QBF.freeVarStep []) encQBF (encList (encList encNat)) := by
     refine foldlWith_of_bounded_growth (encA := encToken) (encL := encList encToken)
       (encP := encBool)

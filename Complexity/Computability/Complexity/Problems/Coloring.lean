@@ -12,8 +12,11 @@ public import Complexity.Computability.Complexity.Problems.ThreeSAT
 public import Mathlib.Combinatorics.SimpleGraph.Coloring.Vertex
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Complexity.Foundations.Data.List.Counting
 import Mathlib.Data.List.GetD
 
@@ -80,7 +83,7 @@ remaining three, so `KColoring k` is `NP`-complete for every `k ≥ 3`.
 
 namespace Cslib.Complexity
 
-open Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The graphs whose declared vertices can be colored with `k` colors, adjacent vertices getting
 different colors [Karp1972]. -/
@@ -158,10 +161,9 @@ theorem isVerifier (k : ℕ) :
 theorem computableInPolyTime_colorOf (k : ℕ) :
     ComputableInPolyTime (fun p : (List ℕ × List Bool) × ℕ => colorOf k p.1.1 p.1.2 p.2)
       (encPair (encPair (encList encNat) encBits) encNat) encUnary := by
-  refine .of_tidy ?_
-  have hrange : ComputableTidilyInPolyTime (fun _ : (List ℕ × List Bool) × ℕ => List.range k)
+  have hrange : ComputableInPolyTime (fun _ : (List ℕ × List Bool) × ℕ => List.range k)
       (encPair (encPair (encList encNat) encBits) encNat) (encList encUnary) := const _
-  have hk : ComputableTidilyInPolyTime (fun _ : ((List ℕ × List Bool) × ℕ) × ℕ => k)
+  have hk : ComputableInPolyTime (fun _ : ((List ℕ × List Bool) × ℕ) × ℕ => k)
       (encPair (encPair (encPair (encList encNat) encBits) encNat) encUnary) encUnary := const _
   exact countPWithInput hrange (by fun_prop)
 
@@ -169,28 +171,27 @@ theorem computableInPolyTime_colorOf (k : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_verifier (k : ℕ) :
     ComputableInPolyTime (verifier k) (encPair encGraph encBits) encBool := by
-  refine .of_tidy ?_
-  have hV : ComputableTidilyInPolyTime (fun x : Graph × List Bool => x.1.1)
+  have hV : ComputableInPolyTime (fun x : Graph × List Bool => x.1.1)
       (encPair encGraph encBits) (encList encNat) := by
     unfold encGraph
     fun_prop
-  have hcol : ComputableTidilyInPolyTime
+  have hcol : ComputableInPolyTime
       (fun p : (Graph × List Bool) × ℕ => colorOf k p.1.1.1 p.1.2 p.2)
       (encPair (encPair encGraph encBits) encNat) encUnary :=
-    (computableInPolyTime_colorOf k).tidy.comp
+    (computableInPolyTime_colorOf k).comp
       (g := fun p : (Graph × List Bool) × ℕ => ((p.1.1.1, p.1.2), p.2))
       (by unfold encGraph; fun_prop)
-  have hproj : ComputableTidilyInPolyTime
+  have hproj : ComputableInPolyTime
       (fun p : ((Graph × List Bool) × ℕ) × ℕ => ((p.1.1.1, p.1.2), p.2))
       (encPair (encPair (encPair encGraph encBits) encNat) encNat)
       (encPair (encPair encGraph encNat) encNat) := by fun_prop
-  have hproj' : ComputableTidilyInPolyTime
+  have hproj' : ComputableInPolyTime
       (fun p : ((Graph × List Bool) × ℕ) × ℕ => (p.1.1, p.2))
       (encPair (encPair (encPair encGraph encBits) encNat) encNat)
       (encPair (encPair encGraph encBits) encNat) := by fun_prop
   exact allWithInput hV (bool_and' (unary_lt' hcol (const k))
     (allWithInput (hV.comp (fst _ _)) (bool_not.comp
-      (bool_and' (Graph.computableInPolyTime_adjBool.tidy.comp hproj)
+      (bool_and' (Graph.computableInPolyTime_adjBool.comp hproj)
         ((hcol.comp (fst _ _)).decide_eq' (hcol.comp hproj'))))))
 
 /-- `KColoring k` belongs to `NP`. -/
@@ -505,22 +506,83 @@ theorem toThreeColoring_mem_iff (φ : CNF ℕ) : toThreeColoring φ ∈ ThreeCol
 
 /-! ### Polynomial-time reduction -/
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
+private theorem computableInPolyTime_literalVertex {γ : Type} {enc : γ ↪ List Bool}
+    {φ : γ → CNF ℕ} {l : γ → Literal ℕ}
+    (hφ : ComputableInPolyTime φ enc encCNF)
+    (hl : ComputableInPolyTime l enc (encPair encNat encBool)) :
+    ComputableInPolyTime (fun x => literalVertex (φ x) (l x)) enc encNat := by
+  have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by fun_prop
+  have hvars : ComputableInPolyTime (CNF.vars (V := ℕ)) encCNF (encList encNat) := by
+    unfold encCNF
+    fun_prop
+  have hidx : ComputableInPolyTime (fun x => (φ x).vars.idxOf (l x).1) enc encUnary :=
+    idxOfWithInput (hvars.comp hφ) hl.fst'
+  have hb : ComputableInPolyTime (fun x => (l x).2.toNat) enc encUnary :=
+    (of_finite Bool.toNat).comp hl.snd'
+  exact unary_to_binary.comp (hpair.comp ((const 1).prod (hpair.comp (hidx.prod hb))))
+
+private theorem computableInPolyTime_gadgetVertex {γ : Type} {enc : γ ↪ List Bool}
+    {i j r : γ → ℕ}
+    (hi : ComputableInPolyTime i enc encUnary)
+    (hj : ComputableInPolyTime j enc encUnary)
+    (hr : ComputableInPolyTime r enc encUnary) :
+    ComputableInPolyTime (fun x => gadgetVertex (i x) (j x) (r x)) enc encNat := by
+  have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by fun_prop
+  exact unary_to_binary.comp (hpair.comp ((const 2).prod
+    (hpair.comp (hi.prod (hpair.comp (hj.prod hr))))))
+
+attribute [local fun_prop] computableInPolyTime_literalVertex computableInPolyTime_gadgetVertex
+
+private theorem computableInPolyTime_coloringEdges :
+    ComputableInPolyTime coloringEdges encCNF (encList (encPair encNat encNat)) := by
+  have hvar : ComputableInPolyTime (fun p : CNF ℕ × ℕ => variableEdges p.1 p.2)
+      (encPair encCNF encNat) (encList (encPair encNat encNat)) := by
+    unfold variableEdges
+    fun_prop
+  have hstage : ComputableInPolyTime
+      (fun p : (CNF ℕ × Clause ℕ × ℕ) × Literal ℕ × ℕ => stageEdges p.1.1 p.1.2.2 p.2.2 p.2.1)
+      (encPair (encPair encCNF (encPair (encList (encPair encNat encBool)) encUnary))
+        (encPair (encPair encNat encBool) encUnary))
+      (encList (encPair encNat encNat)) := by
+    unfold stageEdges
+    fun_prop
+  have hclause : ComputableInPolyTime
+      (fun p : CNF ℕ × Clause ℕ × ℕ => clauseEdges p.1 p.2.2 p.2.1)
+      (encPair encCNF (encPair (encList (encPair encNat encBool)) encUnary))
+      (encList (encPair encNat encNat)) := by
+    have hclen : ComputableInPolyTime (fun p : CNF ℕ × Clause ℕ × ℕ => p.2.1.length)
+        (encPair encCNF (encPair (encList (encPair encNat encBool)) encUnary)) encUnary :=
+      (length_list (encPair encNat encBool)).comp (by fun_prop)
+    have hzip : ComputableInPolyTime (List.zipIdx (α := Literal ℕ))
+        (encList (encPair encNat encBool))
+        (encList (encPair (encPair encNat encBool) encUnary)) := by fun_prop
+    have hczip : ComputableInPolyTime (fun p : CNF ℕ × Clause ℕ × ℕ => p.2.1.zipIdx)
+        (encPair encCNF (encPair (encList (encPair encNat encBool)) encUnary))
+        (encList (encPair (encPair encNat encBool) encUnary)) :=
+      hzip.comp (by fun_prop)
+    unfold clauseEdges
+    exact listAppend' (by fun_prop) (flatMapWithInput hczip hstage)
+  have hvars : ComputableInPolyTime (CNF.vars (V := ℕ)) encCNF (encList encNat) := by
+    unfold encCNF
+    fun_prop
+  have hφzip : ComputableInPolyTime (List.zipIdx (α := Clause ℕ)) encCNF
+      (encList (encPair (encList (encPair encNat encBool)) encUnary)) := by
+    unfold encCNF
+    fun_prop
+  unfold coloringEdges
+  exact listAppend' (listAppend' (const _) (flatMapWithInput hvars hvar))
+    (flatMapWithInput hφzip hclause)
+
+attribute [local fun_prop] computableInPolyTime_coloringEdges
+
 /-- The reduction `toThreeColoring` is computable in polynomial time: vertex labels are computed in
 unary from clause, position and first-occurrence indices, then converted to binary. -/
 @[fun_prop]
 theorem computableInPolyTime_toThreeColoring :
     ComputableInPolyTime toThreeColoring encCNF encGraph := by
-  refine .of_tidy ?_
-  have hlit : ComputableTidilyInPolyTime (fun p : CNF ℕ × Literal ℕ => literalVertex p.1 p.2)
-      (encPair encCNF (encPair encNat encBool)) encNat := by
-    unfold literalVertex
-    exact unary_to_binary.comp (by fun_prop)
-  have hgad : ComputableTidilyInPolyTime (fun p : ℕ × ℕ × ℕ => gadgetVertex p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair encUnary encUnary)) encNat := by
-    unfold gadgetVertex
-    exact unary_to_binary.comp (by fun_prop)
-  unfold toThreeColoring coloringEdges clauseEdges stageEdges variableEdges encGraph
+  unfold toThreeColoring encGraph
   fun_prop
 
 /-! ### Size -/
@@ -723,17 +785,29 @@ theorem toKColoring_mem_iff (m : ℕ) (φ : CNF ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_toKColoring (m : ℕ) :
     ComputableInPolyTime (toKColoring m) encCNF encGraph := by
-  refine .of_tidy ?_
-  have hG := computableInPolyTime_toThreeColoring.tidy
-  have hU : ComputableTidilyInPolyTime (fun r => universalVertex r) encUnary encNat :=
-    unary_to_binary.comp (show ComputableTidilyInPolyTime (fun r => Nat.pair 3 r) _ _ by
-      fun_prop)
-  have hrange : ComputableTidilyInPolyTime (fun _ : CNF ℕ => List.range m) encCNF
+  have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
+      (encPair encUnary encUnary) encUnary := by fun_prop
+  have hU : ComputableInPolyTime universalVertex encUnary encNat :=
+    unary_to_binary.comp (hpair.comp ((const 3).prod id'))
+  have hrange : ComputableInPolyTime (fun _ : CNF ℕ => List.range m) encCNF
       (encList encUnary) := const _
-  have hE : ComputableTidilyInPolyTime coloringEdges encCNF (encList (encPair encNat encNat)) :=
-    (snd (encList encNat) (encList (encPair encNat encNat))).comp hG
-  unfold toKColoring kColoringEdges
-  fun_prop
+  have hends0 : ComputableInPolyTime
+      (fun φ : CNF ℕ => (coloringEdges φ).flatMap fun e => [e.1, e.2])
+      encCNF (encList encNat) :=
+    flatMapWithInput computableInPolyTime_coloringEdges (by fun_prop)
+  have hends : ComputableInPolyTime
+      (fun p : CNF ℕ × ℕ => (coloringEdges p.1).flatMap fun e => [e.1, e.2])
+      (encPair encCNF encUnary) (encList encNat) :=
+    hends0.comp (fst _ _)
+  have hr2 : ComputableInPolyTime (fun p : CNF ℕ × ℕ => List.range p.2)
+      (encPair encCNF encUnary) (encList encUnary) :=
+    range.comp (snd _ _)
+  have hke : ComputableInPolyTime (kColoringEdges m) encCNF (encList (encPair encNat encNat)) :=
+    listAppend' computableInPolyTime_coloringEdges
+      (flatMapWithInput hrange
+        (listAppend' (mapWithInput hends (by fun_prop)) (mapWithInput hr2 (by fun_prop))))
+  unfold toKColoring encGraph
+  exact (flatMapWithInput hke (by fun_prop)).prod hke
 
 end SAT
 
@@ -747,8 +821,13 @@ theorem polyTimeReducible_SAT_ThreeColoring :
 three literals is mapped to the gadget graph of the empty clause, which is not 3-colorable. -/
 theorem polyTimeReducible_ThreeSAT_ThreeColoring :
     PolyTimeReducible encCNF encGraph ThreeSAT ThreeColoring := by
+  have hcheck : ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ 3))
+      encCNF encBool :=
+    allWithInput (by unfold encCNF; exact id')
+      (unary_le' ((length_list (encPair encNat encBool)).comp (snd _ _)) (const 3))
   refine ⟨fun φ => if φ.all (fun c => decide (c.length ≤ 3)) then SAT.toThreeColoring φ
-    else SAT.toThreeColoring [[]], by fun_prop, fun φ => ?_⟩
+    else SAT.toThreeColoring [[]],
+    hcheck.ite SAT.computableInPolyTime_toThreeColoring (const _), fun φ => ?_⟩
   simp only [ThreeSAT, Set.mem_ofPred_eq]
   split_ifs with h
   · rw [SAT.toThreeColoring_mem_iff, mem_SAT]

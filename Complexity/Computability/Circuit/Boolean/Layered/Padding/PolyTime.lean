@@ -34,7 +34,7 @@ schedules longer than the target.
 
 namespace Cslib.Circuits.Boolean.Layered
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {α : Type} {input : α ↪ List Bool}
 
@@ -43,10 +43,8 @@ variable {α : Type} {input : α ↪ List Bool}
 theorem computableInPolyTime_identityLayer {width : α → ℕ}
     (hwidth : ComputableInPolyTime width input encUnary) :
     ComputableInPolyTime (fun a => identityLayer (width a)) input (encList encNode) := by
-  have hwidth := hwidth.tidy
-  refine .of_tidy ?_
   simpa only [identityLayer, Function.comp_def] using
-    (computableInPolyTime_nodeCopy.tidy.comp unary_to_binary).map.comp (range.comp hwidth)
+    (computableInPolyTime_nodeCopy.comp unary_to_binary).map.comp (range.comp hwidth)
 
 /-- Padding is polynomial in the complete encoded input, including its unary target. -/
 @[fun_prop]
@@ -57,13 +55,12 @@ theorem computableInPolyTime_padTo {inputCount target : α → ℕ}
     (hlayers : ComputableInPolyTime layers input (encList (encList encNode))) :
     ComputableInPolyTime (fun a => padTo (inputCount a) (target a) (layers a))
       input (encList (encList encNode)) := by
-  have hn := hn.tidy
-  have htarget := htarget.tidy
-  have hlayers := hlayers.tidy
-  refine .of_tidy ?_
-  have hlength := (length_list (encList encNode)).comp hlayers
-  have hcopies := (computableInPolyTime_identityLayer
-    (computableInPolyTime_outputWidth (.of_tidy hn) (.of_tidy hlayers))).tidy
-  exact hlayers.listAppend' (replicate (by fun_prop) hcopies)
+  have hcopies := computableInPolyTime_identityLayer
+    (computableInPolyTime_outputWidth hn hlayers)
+  have hrep : ComputableInPolyTime
+      (fun a => List.replicate (target a - (layers a).length)
+        (identityLayer (outputWidth (inputCount a) (layers a))))
+      input (encList (encList encNode)) := by fun_prop
+  exact hlayers.listAppend' hrep
 
 end Cslib.Circuits.Boolean.Layered

@@ -36,8 +36,8 @@ bounds linear in the counted value.
   quadratic time and linear space.
 * `Turing.MultiTapeTM.ComputableInO.unaryLe`: the comparison of unary numbers, within
   quadratic time and linear space.
-* `Turing.MultiTapeTM.ComputableInO.natToUnary`: from binary to unary, within cubic time and
-  linear space.
+* `Turing.MultiTapeTM.ComputableInO.natToUnary`: from binary to unary, within quadratic time
+  and linear space.
 -/
 
 @[expose] public section
@@ -155,9 +155,10 @@ theorem unaryLe : ComputableInO (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
 
 end ComputableInO
 
-/-- **From binary to unary**, by counting down: within time `O((n + 1) ^ 3)` and space `O(n)`. -/
+/-- **From binary to unary**, by counting down: within time `O((n + 1) ^ 2)` and space `O(n)`.
+The counter's squared binary length is `O(n + 1)`, so each of the `n` rounds costs `O(n + 1)`. -/
 theorem ComputableInO.natToUnary : ComputableInO (fun n : ℕ => n) encNat encUnary
-    (fun n => (n + 1) ^ 3) fun n => n := by
+    (fun n => (n + 1) ^ 2) fun n => n := by
   have hiter (n : ℕ) : (· + 1)^[n] 0 = n := by
     induction n with
     | zero => rfl
@@ -170,13 +171,12 @@ theorem ComputableInO.natToUnary : ComputableInO (fun n : ℕ => n) encNat encUn
     (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)
     (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk)
     (fun n k hk => by simp only [hiter, encUnary_apply, List.length_replicate]; exact hk))
-  refine (h.of_enc_eq fun n => by rw [hiter]).mono 8 (fun n => ?_) fun n => ?_
+  obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 2
+  refine (h.of_enc_eq fun n => by rw [hiter]).mono (C + 8) (fun n => ?_) fun n => ?_
   all_goals
     have := Universal.length_encNat_le n
-    have h₁ : (n + 1) ^ 2 ≤ (n + 1) ^ 3 := Nat.pow_le_pow_right (by omega) (by omega)
-    have h₂ : n + 1 ≤ (n + 1) ^ 2 := Nat.le_self_pow (by norm_num) _
-    have h₃ := Nat.pow_le_pow_left (show (encNat n).length + 1 ≤ n + 1 by omega) 2
+  · have hc := Nat.mul_le_mul_left (n + 1) (hC n)
+    nlinarith
   · nlinarith
-  · omega
 
 end Turing.MultiTapeTM

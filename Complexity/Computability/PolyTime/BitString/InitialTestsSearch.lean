@@ -366,16 +366,14 @@ private theorem allPositiveIndices_cert {α γ : Type} {encIn : α ↪ List Bool
     HasKPolyCert (fun a => allPositiveIndices (width a) (ctx a) (initOk a) test) encIn encBool
       (fun a => 2 ^ width a + 1) := by
   have hcount : ComputableInPolyTime (fun a => 2 ^ width a) encIn encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_two_pow.comp hw.tidy)
+    ComputableInPolyTime.binary_two_pow.comp hw
   let body := fun p : ℕ × (γ × Bool) => (p.2.1, p.2.2 && (decide (p.1 = 0) || test p.2.1 p.1))
   have hbody : ComputableInPolyTime body
-      (encPair encNat (encPair encCtx encBool)) (encPair encCtx encBool) := .of_tidy (by
-    have htest' := htest.tidy
-    have heq0 : ComputableTidilyInPolyTime (fun p : ℕ × (γ × Bool) => decide (p.1 = 0))
-        (encPair encNat (encPair encCtx encBool)) encBool := by
-      simpa only [Nat.le_zero] using
-        ComputableTidilyInPolyTime.binary_le' (by fun_prop) (.const 0)
-    dsimp only [body]; fun_prop)
+      (encPair encNat (encPair encCtx encBool)) (encPair encCtx encBool) := by
+    have heq0 : ComputableInPolyTime (fun p : ℕ × (γ × Bool) => decide (p.1 = 0))
+        (encPair encNat (encPair encCtx encBool)) encBool :=
+      ComputableInPolyTime.decide_eq' (ComputableInPolyTime.fst _ _) (.const 0)
+    dsimp only [body]; fun_prop
   refine ((HasKPolyCert.indexFold (K := fun _ => 1) (B := fun a => 2 * (encCtx (ctx a)).length + 2)
     (fun _ => le_rfl) hcount (hctx.prod hinit) (.of_polyTime hbody)
     (((PolyBounded.const 2).mul hctx.polyBounded_length).add (.const 2))
@@ -448,32 +446,32 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
   let encSt := encPair encQ encPay; let encFull := encPair encNat encSt
   have hra := hrows.comp hq; have hca := hcols.comp hq
   have hrcQ : ComputableInPolyTime (fun q => rowsOf q * colsOf q) encQ encUnary :=
-    .of_tidy (by have := hrows.tidy; have := hcols.tidy; fun_prop)
+    ComputableInPolyTime.unary_mul' hrows hcols
   have hcount : ComputableInPolyTime
       (fun a => 2 ^ (rowsOf (qOf a) * colsOf (qOf a))) encIn encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_two_pow.comp (hrcQ.comp hq).tidy)
+    ComputableInPolyTime.binary_two_pow.comp (hrcQ.comp hq)
   have hinit : ComputableInPolyTime
       (fun a => (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))) encIn encSt :=
-    hq.prod ((ComputableInPolyTime.const false).prod (.of_tidy
-      (ComputableTidilyInPolyTime.bitsRowsWithInput hra.tidy hca.tidy (.const []))))
-  have hpQ : ComputableTidilyInPolyTime (fun p : ℕ × Q × Bool × List (List Bool) => p.2.1)
+    hq.prod ((ComputableInPolyTime.const false).prod
+      (ComputableInPolyTime.bitsRowsWithInput hra hca (.const [])))
+  have hpQ : ComputableInPolyTime (fun p : ℕ × Q × Bool × List (List Bool) => p.2.1)
       encFull encQ := by dsimp only [encFull, encSt, encPay]; fun_prop
-  have hpPay : ComputableTidilyInPolyTime (fun p : ℕ × Q × Bool × List (List Bool) => p.2.2)
+  have hpPay : ComputableInPolyTime (fun p : ℕ × Q × Bool × List (List Bool) => p.2.2)
       encFull encPay := by dsimp only [encFull, encSt, encPay]; fun_prop
-  have hcandT := ComputableTidilyInPolyTime.bitsRowsWithInput (hrows.tidy.comp hpQ)
-    (hcols.tidy.comp hpQ) (ComputableTidilyInPolyTime.bitsLow (hrcQ.tidy.comp hpQ)
-      (ComputableTidilyInPolyTime.fst encNat encSt))
+  have hcand := ComputableInPolyTime.bitsRowsWithInput (hrows.comp hpQ)
+    (hcols.comp hpQ) (ComputableInPolyTime.bitsLow (hrcQ.comp hpQ)
+      (ComputableInPolyTime.fst encNat encSt))
   have hSel : ComputableInPolyTime
       (fun x : ((Bool × List (List Bool)) × List (List Bool)) × Bool =>
         if x.1.1.1 then x.1.1 else if x.2 then (true, x.1.2) else x.1.1)
       (encPair (encPair encPay (encList encBits)) encBool) encPay := by
     dsimp only [encPay]; fun_prop
-  have hPayStep := ((HasKPolyCert.of_polyTime (.of_tidy (hpPay.prod hcandT))).prod
-    (hCheck.comp_polyPre (fun _ => Nat.le_add_left 1 _) (.of_tidy (hpQ.prod hcandT)))).polyPost
+  have hPayStep := ((HasKPolyCert.of_polyTime (hpPay.prod hcand)).prod
+    (hCheck.comp_polyPre (fun _ => Nat.le_add_left 1 _) (hpQ.prod hcand))).polyPost
     (fun _ => Nat.le_add_right 1 _) hSel
   have hStep : HasKPolyCert (searchMatrixStep rowsOf colsOf check) encFull encSt
       (fun p => 2 ^ wCheck p.2.1 + 1) :=
-    (((HasKPolyCert.of_polyTime (.of_tidy hpQ)).prod hPayStep).mono_const 3
+    (((HasKPolyCert.of_polyTime hpQ).prod hPayStep).mono_const 3
       (fun p => by dsimp only; generalize 2 ^ wCheck p.2.1 = z; omega)).congr (fun _ => rfl)
   let B (a : α) : ℕ :=
     2 * (encQ (qOf a)).length + 1 + (3 + rowsOf (qOf a) * (2 * colsOf (qOf a) + 1))
@@ -506,11 +504,10 @@ private theorem checkMatrixShape_polyTime {α : Type} {encIn : α ↪ List Bool}
     (hc : ComputableInPolyTime c encIn encUnary)
     (hM : ComputableInPolyTime M encIn (encList encBits)) :
     ComputableInPolyTime (fun a => ((M a).length == r a) && (M a).all fun row => row.length == c a)
-      encIn encBool := .of_tidy (by
-  have hr' := hr.tidy; have hc' := hc.tidy; have hM' := hM.tidy
-  have hall : ComputableTidilyInPolyTime (fun a => (M a).all fun row => row.length == c a)
-      encIn encBool := by apply ComputableTidilyInPolyTime.allWithInput hM'; fun_prop
-  fun_prop)
+      encIn encBool := by
+  have hall : ComputableInPolyTime (fun a => (M a).all fun row => row.length == c a)
+      encIn encBool := by apply ComputableInPolyTime.allWithInput hM; fun_prop
+  fun_prop
 private theorem list_eq_ofFn_ofList {r c : ℕ} {M : List (List Bool)}
     (hlen : M.length = r) (hrows : ∀ row ∈ M, row.length = c) :
     M = List.ofFn fun i : Fin r => List.ofFn (ofList c (M.getD i.val [])) := by
@@ -606,17 +603,22 @@ private theorem checkSmallBiasShifts_cert_aux :
     let diff := (q.1.2.1 - 2 * odd) + (2 * odd - q.1.2.1)
     decide (diff * q.1.2.2.2 ≤ q.1.2.2.1 * q.1.2.1)
   have htest : ComputableInPolyTime (fun p : BiasQ × ℕ => testFn p.1 p.2)
-      (encPair encBiasQ encNat) encBool := .of_tidy (by
+      (encPair encBiasQ encNat) encBool := by
     unfold testFn bitDot
-    have hodd : ComputableTidilyInPolyTime (fun p : BiasQ × ℕ => p.1.2.countP fun row =>
+    have hodd : ComputableInPolyTime (fun p : BiasQ × ℕ => p.1.2.countP fun row =>
         ((row.zipWith Bool.and (lowBits p.1.1.1 p.2)).foldl Bool.xor false))
         (encPair encBiasQ encNat) encUnary := by
-      apply ComputableTidilyInPolyTime.countPWithInput (by fun_prop); fun_prop
-    exact ComputableTidilyInPolyTime.binary_le'
-      (ComputableTidilyInPolyTime.binary_mul'
-        (ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)) (by fun_prop))
-      (ComputableTidilyInPolyTime.binary_mul' (by fun_prop)
-        (ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop))))
+      apply ComputableInPolyTime.countPWithInput (by dsimp only [encBiasQ]; fun_prop)
+      dsimp only [encBiasQ, encBiasHdr]; fun_prop
+    have hle : ComputableInPolyTime (fun x : ℕ × ℕ => decide (x.1 ≤ x.2))
+        (encPair encNat encNat) encBool := by fun_prop
+    have hu2b : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat := by fun_prop
+    exact hle.comp
+      ((ComputableInPolyTime.binary_mul'
+        (hu2b.comp (by dsimp only [encBiasQ, encBiasHdr]; fun_prop))
+        (by dsimp only [encBiasQ, encBiasHdr]; fun_prop)).prod
+      (ComputableInPolyTime.binary_mul' (by dsimp only [encBiasQ, encBiasHdr]; fun_prop)
+        (hu2b.comp (by dsimp only [encBiasQ, encBiasHdr]; fun_prop))))
   exact (allPositiveIndices_cert (fun q => q.1.1) id
     (fun q => (q.2.length == q.1.2.1) && q.2.all (fun row => row.length == q.1.1)) testFn
     (by dsimp only [encBiasQ, encBiasHdr]; fun_prop) (.of_eq fun _ => rfl) hshape htest).congr
@@ -720,13 +722,14 @@ private theorem checkLocalCodeDistance_cert_aux :
     let w := lowBits q.1.2.1 idx
     !(q.2.all (fun row => !bitDot row w)) || decide (q.1.2.2 ≤ w.count true)
   have htest : ComputableInPolyTime (fun p : LocalQ × ℕ => testFn p.1 p.2)
-      (encPair encLocalQ encNat) encBool := .of_tidy (by
+      (encPair encLocalQ encNat) encBool := by
     unfold testFn bitDot
-    have hker : ComputableTidilyInPolyTime (fun p : LocalQ × ℕ => p.1.2.all fun row =>
+    have hker : ComputableInPolyTime (fun p : LocalQ × ℕ => p.1.2.all fun row =>
         !((row.zipWith Bool.and (lowBits p.1.1.2.1 p.2)).foldl Bool.xor false))
         (encPair encLocalQ encNat) encBool := by
-      apply ComputableTidilyInPolyTime.allWithInput (by fun_prop); fun_prop
-    dsimp only; fun_prop)
+      apply ComputableInPolyTime.allWithInput (by dsimp only [encLocalQ]; fun_prop)
+      dsimp only [encLocalQ, encLocalHdr]; fun_prop
+    dsimp only [encLocalQ, encLocalHdr]; fun_prop
   exact (allPositiveIndices_cert (fun q => q.1.2.1) id
     (fun q => (q.2.length == q.1.1) && q.2.all (fun row => row.length == q.1.2.1)) testFn
     (by dsimp only [encLocalQ, encLocalHdr]; fun_prop) (.of_eq fun _ => rfl) hshape htest).congr
@@ -1010,18 +1013,31 @@ theorem buildShortenedTannerRows_polyTime {α : Type} {encIn : α ↪ List Bool}
       encIn (encList encBits) := by
   have hq : ComputableInPolyTime (fun a => 2 ^ ell a) encIn encUnary :=
     ComputableInPolyTime.binary_to_unary_bounded
-      (.of_tidy (ComputableTidilyInPolyTime.binary_two_pow.comp hell.tidy)) hbound hle
-  refine .of_tidy ?_
-  have hm' := hm.tidy; have hell' := hell.tidy; have hd' := hd.tidy; have hc' := hc.tidy
-  have hq' := hq.tidy; have hshifts' := hshifts.tidy; have hH0' := hH0.tidy
+      (ComputableInPolyTime.binary_two_pow.comp hell) hbound hle
   unfold buildShortenedTannerRows
-  apply ComputableTidilyInPolyTime.flatMapConst [false, true]; intro _ _
-  apply ComputableTidilyInPolyTime.flatMapWithInput (ComputableTidilyInPolyTime.range.comp hq')
-  apply ComputableTidilyInPolyTime.mapWithInput
-    (ComputableTidilyInPolyTime.range.comp (hc'.comp (by fun_prop)))
-  apply ComputableTidilyInPolyTime.mapToBitsWithInput
-    (ComputableTidilyInPolyTime.range.comp (hm'.comp (by fun_prop)))
-  dsimp only; fun_prop
+  have hside (side : Bool) : ComputableInPolyTime
+      (fun a => (List.range (2 ^ ell a)).flatMap fun vIdx =>
+        let vBits := lowBits (ell a) vIdx
+        (List.range (c a)).map fun i =>
+          let aRow := (H0 a).getD i []
+          (List.range (m a)).map fun e =>
+            if d a == 0 then false else
+              let uBits := lowBits (ell a) (e / d a); let port := e % d a
+              let sBits := listRow (ell a) 0 ((shifts a).getD port [])
+              let endBits := if side then uBits.zipWith Bool.xor sBits else uBits
+              if !(endBits.zipWith Bool.xor vBits).any id then aRow.getD port false else false)
+      encIn (encList encBits) := by
+    apply ComputableInPolyTime.flatMapWithInput (ComputableInPolyTime.range.comp hq)
+    apply ComputableInPolyTime.mapWithInput
+      (ComputableInPolyTime.range.comp (hc.comp (by fun_prop)))
+    apply ComputableInPolyTime.mapToBitsWithInput
+      (ComputableInPolyTime.range.comp (hm.comp (by fun_prop)))
+    dsimp only; fun_prop
+  have happ : ComputableInPolyTime
+      (fun p : List (List Bool) × List (List Bool) => p.1 ++ p.2)
+      (encPair (encList encBits) (encList encBits)) (encList encBits) := by fun_prop
+  refine (happ.comp ((hside false).prod (hside true))).of_enc_eq fun a => ?_
+  simp only [Function.comp_apply, List.flatMap_cons, List.flatMap_nil, List.append_nil]
 
 /-! ### Unconditional Lemma 6.1 initial-tests assembly and native resource bounds -/
 
@@ -1163,8 +1179,8 @@ theorem initialTestsRows_computableInO :
   have hSh := findSmallBiasShifts_cert_aux (encIn := encMB)
     (fun p => ellG p.1 p.2) (fun p => dG p.1 p.2) (fun _ => 1) (fun p => biasDen p.1 p.2)
     (by dsimp only [encMB]; fun_prop) (by dsimp only [encMB]; fun_prop) (.const 1)
-    (.of_tidy (ComputableTidilyInPolyTime.unary_to_binary.comp
-      (biasDen_polyTime (by dsimp only [encMB]; fun_prop) (by dsimp only [encMB]; fun_prop)).tidy))
+    ((show ComputableInPolyTime (fun n : ℕ => n) encUnary encNat by fun_prop).comp
+      (biasDen_polyTime (by dsimp only [encMB]; fun_prop) (by dsimp only [encMB]; fun_prop)))
   have hLo := findLocalCheckMatrix_cert_aux (encIn := encMB)
     (fun p => cG p.1 p.2) (fun p => dG p.1 p.2) (fun p => hDist p.1 p.2 + 1)
     (by dsimp only [encMB]; fun_prop) (by dsimp only [encMB]; fun_prop)

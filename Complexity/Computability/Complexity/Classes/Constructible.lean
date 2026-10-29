@@ -9,13 +9,10 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.SpaceInTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Compose
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Constructible resource bounds
@@ -75,30 +72,18 @@ def TimeConstructible (t : ℕ → ℕ) : Prop :=
 theorem TimeConstructible.computableInO {t : ℕ → ℕ} (ht : TimeConstructible t) :
     ComputableInO (fun x : List Bool => t x.length) encBits encNat (fun x => t x.length)
       fun x => t x.length := by
-  refine .of_tidy ?_
   obtain ⟨c, s, h⟩ := ht
   obtain ⟨k, h⟩ := ComputableInTimeAndSpace.exists_space_linear h
-  obtain ⟨d, h⟩ := h.exists_computableTidilyInTimeAndSpace
-  have ht (T : ℕ) : 2 * (c * T + c) + 3 * (k * (c * T + c) + k) + d ≤
-      ((2 + 3 * k) * c + 3 * k + d) * (T + 1) := by
-    have e₁ : 2 * (c * T + c) + 3 * (k * (c * T + c) + k) + d =
-        (2 + 3 * k) * c * (T + 1) + (3 * k + d) := by ring
-    have e₂ : ((2 + 3 * k) * c + 3 * k + d) * (T + 1) =
-        (2 + 3 * k) * c * (T + 1) + (3 * k + d) * (T + 1) := by ring
-    have := Nat.le_mul_of_pos_right (3 * k + d) (show 0 < T + 1 by omega)
+  refine .of_bounds h (k * c + c + k + 1) (fun x => ?_) (fun x => ?_)
+    fun x => (length_encNat_le _).trans ?_
+  · dsimp only
+    simp only [encBits_apply]
+    ring_nf
     omega
-  have hs (T : ℕ) : d * (k * (c * T + c) + k + 1) ≤ d * (k * c + k + 1) * (T + 1) := by
-    have e₁ : d * (k * (c * T + c) + k + 1) = d * (k * c) * (T + 1) + d * (k + 1) := by ring
-    have e₂ : d * (k * c + k + 1) * (T + 1) =
-        d * (k * c) * (T + 1) + d * (k + 1) * (T + 1) := by ring
-    have := Nat.le_mul_of_pos_right (d * (k + 1)) (show 0 < T + 1 by omega)
+  · dsimp only
+    simp only [encBits_apply]
+    ring_nf
     omega
-  refine .of_bounds h ((2 + 3 * k) * c + 3 * k + d + d * (k * c + k + 1) + 1) (fun x => ?_)
-    (fun x => ?_) fun x => (length_encNat_le _).trans ?_
-  · simp only [encBits_apply]
-    exact (ht _).trans (Nat.mul_le_mul_right _ (by omega))
-  · simp only [encBits_apply]
-    exact (hs _).trans (Nat.mul_le_mul_right _ (by omega))
   · exact (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (by omega))
 
 /-- A computation of `t n` in binary within time `O(t n)` makes `t` time-constructible. -/
@@ -119,7 +104,7 @@ theorem TimeConstructible.of_computableInO {t : ℕ → ℕ} {T S : List Bool �
 /-- `2 ^ n` is time-constructible: its binary digits are `n` zeros followed by a one. -/
 theorem timeConstructible_two_pow : TimeConstructible (2 ^ ·) :=
   TimeConstructible.of_computableInO 1
-    (.of_tidy (ComputableTidilyInDegree.two_pow_length encBits).inO_one)
+    (ComputableInDegree.two_pow_length encBits).inO_one
     (s := fun n => n) (fun x => by
       simp only [encBits_apply]
       have := Nat.lt_two_pow_self (n := x.length)
@@ -148,7 +133,7 @@ private theorem succ_mul_two_pow_le_two_pow_two_pow : ∀ n : ℕ, (n + 1) * 2 ^
 binary as `2 ^ n` zeros followed by a one. -/
 theorem timeConstructible_two_pow_two_pow : TimeConstructible fun n => 2 ^ (2 ^ n) := by
   have h₁ := ComputableInO.unary_two_pow.comp ComputableInO.lengthUnary
-  have h₂ := ((ComputableTidilyInDegree.two_pow_length encUnary).inO_one.computableInO.comp
+  have h₂ := ((ComputableInDegree.two_pow_length encUnary).inO_one.comp
     h₁).of_enc_eq (encC := encNat) (g := fun x : List Bool => 2 ^ (2 ^ x.length)) fun x => by
       simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
   refine TimeConstructible.of_computableInO 3 h₂
@@ -179,7 +164,7 @@ theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List 
     (hT : ∀ x, T x ≤ c * ((x.length + 1) * f x.length) + c) (hn : ∀ n, n ≤ f n) :
     TimeConstructible fun n => (n + 1) * f n := by
   have hlen := ComputableInO.natSucc.comp ComputableInO.lengthNat
-  have h := computableTidilyInDegree_mul.inO.computableInO.comp (hlen.prod hf)
+  have h := computableInDegree_mul.inO.comp (hlen.prod hf)
   obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 3
   obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
   refine TimeConstructible.of_computableInO (150 * C + C₂ + c + 10) h (fun x => ?_)
@@ -269,9 +254,7 @@ theorem SpaceConstructible.computableInO {s : ℕ → ℕ} (hs : SpaceConstructi
     ∃ T, ComputableInO (fun x : List Bool => s x.length) encBits encNat T
       fun x => s x.length := by
   obtain ⟨c, t, h⟩ := hs
-  obtain ⟨d, h⟩ := ComputableInTimeAndSpace.exists_computableTidilyInTimeAndSpace h
-  refine ⟨_, .of_tidy <| .of_bounds h (d * (c + 1) + 1) (T := fun x => 2 * t x.length +
-    3 * (c * s x.length + c) + d) (fun x => ?_) (fun x => ?_) fun x => ?_⟩
+  refine ⟨fun x => t x.length, .of_bounds h (c + 1) (fun x => ?_) (fun x => ?_) fun x => ?_⟩
   · exact (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (by omega))
   · dsimp only [encBits_apply]
     nlinarith

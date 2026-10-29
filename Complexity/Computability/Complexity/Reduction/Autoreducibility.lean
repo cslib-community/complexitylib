@@ -117,7 +117,7 @@ theorem LogSpaceManyOneAutoreducible.logSpaceReducible (h : LogSpaceManyOneAutor
 /-- **Logspace many-one autoreducibility implies polynomial-time many-one autoreducibility.** -/
 theorem LogSpaceManyOneAutoreducible.polyTimeManyOneAutoreducible
     (h : LogSpaceManyOneAutoreducible encA A) : PolyTimeManyOneAutoreducible encA A :=
-  ManyOneReducibleBy.mono (fun _ hf => ⟨.of_tidy hf.1.computableTidilyInPolyTime, hf.2⟩) h
+  ManyOneReducibleBy.mono (fun _ hf => ⟨hf.1.computableInPolyTime, hf.2⟩) h
 
 /-- Many-one autoreducibility is preserved under taking complements. -/
 theorem PolyTimeManyOneAutoreducible.compl (h : PolyTimeManyOneAutoreducible encA A) :
@@ -256,15 +256,15 @@ theorem PolyTimeManyOneAutoreducible.polyTimeTruthTableAutoreducible
 
 private theorem computableInPolyTime_any_answers :
     ComputableInPolyTime (fun x : α × List Bool => x.2.any id) (encPair encA encBits) encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.anyWithEncoding (encA := encBool) (encL := encBits)
+  ComputableInPolyTime.anyWithEncoding (encA := encBool) (encL := encBits)
     (test := fun p : α × Bool => p.2) (.snd encA encBool) (.fst encA encBits)
-    (.snd encA encBits))
+    (.snd encA encBits)
 
 private theorem computableInPolyTime_all_answers :
     ComputableInPolyTime (fun x : α × List Bool => x.2.all id) (encPair encA encBits) encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.allWithEncoding (encA := encBool) (encL := encBits)
+  ComputableInPolyTime.allWithEncoding (encA := encBool) (encL := encBits)
     (test := fun p : α × Bool => p.2) (.snd encA encBool) (.fst encA encBits)
-    (.snd encA encBits))
+    (.snd encA encBits)
 
 /-- A disjunctive truth-table autoreduction is a truth-table autoreduction. -/
 theorem PolyTimeDTTAutoreducible.polyTimeTruthTableAutoreducible
@@ -300,8 +300,8 @@ private theorem computableInPolyTime_negate_combiner {d : α × List Bool → Bo
       (encPair encA encBits) encBool := by
   have hmap : ComputableInPolyTime (fun x : α × List Bool => x.2.map (!·))
       (encPair encA encBits) encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsMapWithInput (f := fun _ b => !b)
-      (.snd encA encBits) (by fun_prop))
+    ComputableInPolyTime.bitsMapWithInput (f := fun _ b => !b)
+      (.snd encA encBits) (by fun_prop)
   have hd' : ComputableInPolyTime (fun x : α × List Bool => d (x.1, x.2.map (!·)))
       (encPair encA encBits) encBool := by fun_prop
   fun_prop

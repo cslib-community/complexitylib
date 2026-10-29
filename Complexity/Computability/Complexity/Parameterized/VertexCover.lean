@@ -257,23 +257,15 @@ theorem search_eq_true_iff (x : Graph × ℕ) : search x = true ↔ x ∈ Vertex
 
 /-! ### Running time -/
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- The capped depth `cap` is computable in polynomial time in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_cap :
     ComputableInPolyTime cap (encPair encGraph encNat) encUnary := by
-  refine .of_tidy ?_
-  have heq : cap = fun x : Graph × ℕ =>
-      Cslib.BitString.boundedBinaryValue x.1.distinctVertices.length (encNat x.2).reverse := by
-    funext x
-    rw [cap, Cslib.BitString.boundedBinaryValue_eq, encNat_apply,
-      Cslib.BitString.binaryValue_reverse_bits]
-  rw [heq]
-  exact bitsBoundedBinaryValueWithInput
-    ((length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.tidy.comp (fst _ _)))
-    (bitsReverse.comp ((encode encNat).comp (snd _ _)))
+  unfold cap
+  exact binary_min_unary' (by fun_prop) (snd _ _)
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- A single step of the bounded search tree is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_branchStep :
@@ -313,10 +305,10 @@ private abbrev Cand : Type := ((Graph × ℕ) × ℕ) × ℕ
 private abbrev encCand : Cand ↪ List Bool :=
   encPair (encPair (encPair encGraph encNat) encUnary) encNat
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- Computing the `m` branching bits of path `i` is polynomial-time. -/
-private theorem computableTidilyInPolyTime_branchBits :
-    ComputableTidilyInPolyTime (fun s : Cand => (List.range s.1.2).map s.2.testBit)
+private theorem computableInPolyTime_branchBits :
+    ComputableInPolyTime (fun s : Cand => (List.range s.1.2).map s.2.testBit)
       encCand (encList encBool) := by
   have heq : (fun s : Cand => (List.range s.1.2).map s.2.testBit) =
       fun s => (List.range s.1.2).map fun j => (encNat s.2).getD j false := by
@@ -327,24 +319,25 @@ private theorem computableTidilyInPolyTime_branchBits :
     rfl
   rw [heq]
   exact mapWithInput (range.comp ((snd _ _).comp (fst _ _)))
-    (bitsGetDWithInput ((encode encNat).comp ((snd _ _).comp (fst _ _)))
-      (snd _ _) false)
+    (bitsGetDWithInput
+      ((of_eq (f := encNat) (encIn := encNat) (encOut := encBits) fun _ => rfl).comp
+        ((snd _ _).comp (fst _ _))) (snd _ _) false)
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- Following a root-to-leaf path in the bounded search tree is polynomial-time. -/
-private theorem computableTidilyInPolyTime_foldBranch :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_foldBranch :
+    ComputableInPolyTime
       (fun s : Cand => foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit))
       encCand (encList encNat) := by
-  have hG : ComputableTidilyInPolyTime (fun s : Cand => s.1.1.1) encCand encGraph := by fun_prop
+  have hG : ComputableInPolyTime (fun s : Cand => s.1.1.1) encCand encGraph := by fun_prop
   have hgrowth_poly : PolyBounded (fun s : Cand => (encCand s).length)
       (fun s : Cand => 2 * (encGraph s.1.1.1).length + 2) :=
     ((PolyBounded.const 2).mul hG.polyBounded_length).add (.const 2)
-  exact foldlWith_of_bounded_growth hG computableTidilyInPolyTime_branchBits (const [])
-    computableInPolyTime_branchStep.tidy hgrowth_poly
+  exact foldlWith_of_bounded_growth hG computableInPolyTime_branchBits (const [])
+    computableInPolyTime_branchStep hgrowth_poly
     fun s C b _ => length_encList_branchStep_le s.1.1.1 C b
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- Checking whether candidate path `i` yields a valid vertex cover of size `k ≤ |V|` is
 polynomial-time. -/
 private theorem computableInPolyTime_checkCand :
@@ -353,20 +346,20 @@ private theorem computableInPolyTime_checkCand :
         decide (s.1.2 = s.1.1.2) &&
           isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit)))
       encCand encBool := by
-  refine .of_tidy ?_
-  have hcov : ComputableTidilyInPolyTime
+  have hcov : ComputableInPolyTime
       (fun s : Cand => isCover s.1.1.1 (foldBranch s.1.1.1 ((List.range s.1.2).map s.2.testBit)))
       encCand encBool :=
-    computableInPolyTime_isCover.tidy.comp
-      ((show ComputableTidilyInPolyTime (fun s : Cand => s.1.1.1) encCand encGraph
-        by fun_prop).prod computableTidilyInPolyTime_foldBranch)
+    computableInPolyTime_isCover.comp
+      ((show ComputableInPolyTime (fun s : Cand => s.1.1.1) encCand encGraph
+        by fun_prop).prod computableInPolyTime_foldBranch)
   exact bool_and'
-    ((unary_to_binary.comp ((snd _ _).comp (fst _ _))).decide_eq' (by fun_prop))
+    (((unary_to_binary.comp ((snd _ _).comp (fst _ _))).beq
+      ((snd _ _).comp ((fst _ _).comp (fst _ _)))).of_enc_eq
+      fun _ => by simp [beq_eq_decide])
     hcov
 
 end VertexCover
 
-open ComputableTidilyInPolyTime in
 /-- **`VertexCover` by bounded search tree**: `VertexCover` is decidable within time `2 ^ k` times
 a polynomial in the length of the encoded instance, for target cover size `k`. -/
 theorem VertexCover_decidableInExpTime_one :
@@ -380,9 +373,7 @@ theorem VertexCover_decidableInExpTime_one :
     .of_computableInPolyTime VertexCover.computableInPolyTime_checkCand (fun _ => Iff.rfl)
   have hf : ComputableInPolyTime
       (fun q : (Graph × ℕ) × ℕ => ((q.1, VertexCover.cap q.1), q.2))
-      (encPair (encPair encGraph encNat) encNat) VertexCover.encCand := by
-    have := VertexCover.computableInPolyTime_cap.tidy
-    exact .of_tidy (by fun_prop)
+      (encPair (encPair encGraph encNat) encNat) VertexCover.encCand := by fun_prop
   have hfA (x : Graph × ℕ) : x ∈ VertexCover ↔ ∃ i < 2 ^ VertexCover.cap x,
       ((x, VertexCover.cap x), i) ∈
         {s : VertexCover.Cand |

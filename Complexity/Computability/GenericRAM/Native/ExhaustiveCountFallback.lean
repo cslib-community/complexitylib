@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.BitString.ZModTwo
 import Mathlib.Data.List.GetD
+import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -174,7 +175,7 @@ private theorem run_count_eq_card_filter (pred : P → List Bool → Bool) (x : 
       (Finset.univ.filter fun σ : BitString x.1 => pred x.2 (List.ofFn σ) = true).card := by
   rw [BooleanFold.run_accumulator, foldl_countStep, Nat.zero_add, countP_enumList]
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- If evaluating `pred` on `(payload, word)` is polynomial-time, then one streaming `countStep`
 callback is polynomial-time. -/
 theorem computableInPolyTime_countStep {pred : P → List Bool → Bool}
@@ -183,15 +184,14 @@ theorem computableInPolyTime_countStep {pred : P → List Bool → Bool}
     ComputableInPolyTime (countStep pred)
       (encPair (encPair encUnary encBits) (encPair (encPair encUnary encP) encNat))
       (encPair (encPair encUnary encP) encNat) := by
-  refine .of_tidy ?_
   have hacc := snd (encPair encUnary encBits) (encPair (encPair encUnary encP) encNat)
   have hx := (fst (encPair encUnary encP) encNat).comp hacc
   have hp := (snd encUnary encP).comp hx
   have hw := (snd encUnary encBits).comp
     (fst (encPair encUnary encBits) (encPair (encPair encUnary encP) encNat))
   have hz := (snd (encPair encUnary encP) encNat).comp hacc
-  have htest := hpred.tidy.comp (hp.prod hw)
-  have hinc := binary_add' hz (const 1)
+  have htest := hpred.comp (hp.prod hw)
+  have hinc := binary_add.comp (hz.prod (const 1))
   exact hx.prod (htest.ite' hinc hz)
 
 /-- Generic `NativeCertificate` for counting `n`-bit assignments satisfying `pred` via
@@ -219,7 +219,9 @@ private theorem length_prefix_state_le (pred : P → List Bool → Bool) (x : �
     (prefix_count_le_index pred x j).trans hj
   have hlen_z :
       (encNat (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2.2).length ≤ x.1 + 1 := by
-    have hm := ComputableTidilyInO.length_encNat_mono hz_le
+    have hm : (encNat (BooleanFold.runPrefix (countStep pred) x.1 j (x, 0)).2.2.2).length ≤
+        (encNat (2 ^ x.1)).length := by
+      simpa [Nat.size_eq_bits_len] using Nat.size_le_size hz_le
     rw [BooleanFold.length_clock] at hm
     exact hm
   have hacc_le :
@@ -514,21 +516,20 @@ theorem countSystemExhaustive_eq_zero_of_nil_mem {n : ℕ} {sys : List (List (Li
   have heval := (evalSystem_eq_true_iff sys _).mp hsat [[]] h
   simp only [evalMonomialList_singleton, List.all_nil, Bool.true_eq_false] at heval
 
-open ComputableTidilyInPolyTime in
+open ComputableInPolyTime in
 /-- Evaluating a sparse `𝔽₂` polynomial system `sys` on `(word.getD v false)` is polynomial-time in
 the pair encoding `(encList (encList (encList encNat)), encBits)`. -/
 theorem computableInPolyTime_evalSystem_word :
     ComputableInPolyTime
       (fun p : List (List (List ℕ)) × List Bool => evalSystem p.1 (fun v => p.2.getD v false))
       (encPair encSys encBits) encBool := by
-  refine .of_tidy ?_
-  have hmon : ComputableTidilyInPolyTime
+  have hmon : ComputableInPolyTime
       (fun q : List ℕ × List Bool => q.1.all (fun v => q.2.getD v false))
       (encPair (encList encNat) encBits) encBool :=
     allWithInput (fst (encList encNat) encBits)
       (listGetD_binary (encA := encBool) (encL := encBits) false
         ((snd (encList encNat) encBits).comp (fst _ _)) (snd _ _))
-  have heq : ComputableTidilyInPolyTime
+  have heq : ComputableInPolyTime
       (fun q : List (List ℕ) × List Bool => evalMonomialList q.1 (fun v => q.2.getD v false))
       (encPair (encList (encList encNat)) encBits) encBool := by
     refine foldlWith (encA := encList encNat) (encL := encList (encList encNat))
@@ -680,22 +681,19 @@ theorem countCNFExhaustive_eq_zero_of_nil_mem {n : ℕ} {φ : CNF ℕ} (h : [] �
   rw [countCNFExhaustive_eq_modelCountOn_range]
   exact CNF.modelCountOn_eq_zero_of_nil_mem h (Finset.range n)
 
-open ComputableTidilyInPolyTime in
-private theorem bitsGetD_binary_tidy {γ : Type} {encIn : γ ↪ List Bool}
+@[local fun_prop]
+private theorem computableInPolyTime_bitsGetD_binary {γ : Type} {encIn : γ ↪ List Bool}
     {w : γ → List Bool} {i : γ → ℕ}
-    (hw : ComputableTidilyInPolyTime w encIn encBits)
-    (hi : ComputableTidilyInPolyTime i encIn encNat) :
-    ComputableTidilyInPolyTime (fun x => (w x).getD (i x) false) encIn encBool :=
-  listGetD_binary (encA := encBool) (encL := encBits) false hw hi
+    (hw : ComputableInPolyTime w encIn encBits)
+    (hi : ComputableInPolyTime i encIn encNat) :
+    ComputableInPolyTime (fun x => (w x).getD (i x) false) encIn encBool :=
+  ComputableInPolyTime.listGetD_binary (encA := encBool) (encL := encBits) false hw hi
 
-attribute [local fun_prop] bitsGetD_binary_tidy in
-open ComputableTidilyInPolyTime in
 /-- Evaluating `φ : CNF ℕ` on `(word.getD v false)` is polynomial-time in `(encCNF, encBits)`. -/
 theorem computableInPolyTime_evalCNF_word :
     ComputableInPolyTime (fun p : CNF ℕ × List Bool => p.1.eval (fun v => p.2.getD v false))
       (encPair encCNF encBits) encBool := by
   unfold encCNF
-  refine .of_tidy ?_
   fun_prop [CNF.eval, Clause.eval, Literal.eval]
 
 /-- Native resource certificate for `countCNFExhaustive` over `(encUnary, encCNF) → encNat`. -/

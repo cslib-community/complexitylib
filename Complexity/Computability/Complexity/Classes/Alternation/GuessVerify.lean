@@ -12,7 +12,6 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Alternating.Gue
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.InputFromTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.OutputToTape
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
@@ -190,27 +189,25 @@ alternately, and then runs the verifier. -/
 theorem IsGameVerifier.mem_AP
     (hV : Turing.MultiTapeTM.ComputableInPolyTime V (encPair enc encBits) encBool)
     (h : IsGameVerifier enc p V A) : A ∈ AP enc := by
-  have hV := hV.tidy
   -- the number of moves, and the word prepared on tape `B`
   set L : α → ℕ := fun a => 2 * p.eval (enc a).length
-  have hL : ComputableTidilyInPolyTime L enc encUnary :=
-    ComputableTidilyInPolyTime.unary_mul.comp ((ComputableTidilyInPolyTime.const 2).prod
-      ((ComputableTidilyInPolyTime.unary_eval p).comp
-        (ComputableTidilyInPolyTime.encoding_length enc)))
+  have hL : ComputableInPolyTime L enc encUnary := by fun_prop
   set g : α → List Bool := fun a => frame (List.replicate (L a) true) ++ enc a with hg_def
-  have hg : ComputableTidilyInPolyTime g enc encBits :=
-    (((ComputableTidilyInPolyTime.bitsReplicate true).comp hL).prod
-      (ComputableTidilyInPolyTime.of_eq (encMid := enc) fun _ => rfl)).encoded
-  have hLb : PolyBounded (fun a => (enc a).length) L := hL.polyBounded
+  have hg : ComputableInPolyTime g enc encBits :=
+    (hL.prod ComputableInPolyTime.id').of_enc_eq fun _ => rfl
+  have hLb : PolyBounded (fun a => (enc a).length) L := by
+    simpa only [encUnary_apply, List.length_replicate] using hL.polyBounded_length
   have hgl : PolyBounded (fun a => (enc a).length) fun a => (g a).length :=
     hg.polyBounded_length
-  have hV' : ComputableTidilyInPolyTime (fun x : List Bool × α => V (x.2, x.1))
+  have hV' : ComputableInPolyTime (fun x : List Bool × α => V (x.2, x.1))
       (encPair encBits enc) encBool :=
-    hV.comp ((ComputableTidilyInPolyTime.snd encBits enc).prod
-      (ComputableTidilyInPolyTime.fst encBits enc))
-  obtain ⟨tg, sg, htg, -, k₁, S₁, _, Tg, hTg⟩ := hg
-  obtain ⟨tv, sv, htv, -, k₂, S₂, _, Tv, hTv⟩ := hV'
-  obtain ⟨cv, dv, htv⟩ := htv.exists_le
+    hV.comp ((ComputableInPolyTime.snd encBits enc).prod
+      (ComputableInPolyTime.fst encBits enc))
+  obtain ⟨cg, dg, k₁, S₁, _, Tg, hTg⟩ := Internal.NormalForm.polyTime hg
+  obtain ⟨cv, dv, k₂, S₂, _, Tv, hTv⟩ := Internal.NormalForm.polyTime hV'
+  let tg : α → ℕ := fun a => cg * ((enc a).length + 1) ^ dg
+  have htg : PolyBounded (fun a => (enc a).length) tg :=
+    PolyBounded.of_forall_le cg dg fun _ => le_rfl
   -- the machine
   have hk₁ : k₁ + 1 ≤ k₁ + 1 + (k₂ + 2) := by omega
   have hk₂ : k₂ + 2 ≤ k₁ + 1 + (k₂ + 2) := by omega
@@ -238,7 +235,7 @@ theorem IsGameVerifier.mem_AP
     obtain ⟨ws, em, hrun, ⟨rfl, rfl⟩, -⟩ := transformsTapes_iff_runFrom.mp
       (((hTv (z, a)).inputFromWord_extendTapes true
         (placeAt_self hk₂ (Fin.natAdd k₂ 0) B)).mono
-        (Nat.add_le_add_right ((htv (z, a)).trans_eq (by rw [hlen])) 4) le_rfl)
+        (by rw [hlen]) le_rfl)
       (enc a) _ [] rfl
     have hrun' : verify.runFrom (wordsCfg (enc a) (some verify.q₀)
         (Function.update (fun _ => []) B (frame z ++ enc a)) []) (t₂ a) = _ := hrun

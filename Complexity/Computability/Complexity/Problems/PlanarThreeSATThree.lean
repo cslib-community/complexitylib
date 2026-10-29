@@ -99,17 +99,12 @@ private theorem rejection_drawing : Graph.IsPlanarOrthogonalDrawing
   refine ⟨rfl, rfl, by decide, by decide, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   all_goals simp [SAT.incidenceGraph, Cslib.Logic.PL.occurrences]
 
-attribute [local fun_prop] ComputableInPolyTime.tidy
-
 /-- The formula and explicit binary-coordinate drawing are computed in native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toDrawnPlanarThreeSATThree :
     ComputableInPolyTime toDrawnPlanarThreeSATThree encCNF
       (encPair encCNF Graph.encOrthogonalDrawing) := by
-  refine .of_tidy ?_
-  change ComputableTidilyInPolyTime (fun φ => toDrawnPlanarThreeSATThree φ) _ _
-  dsimp only [toDrawnPlanarThreeSATThree]
-  unfold Graph.encOrthogonalDrawing
+  unfold toDrawnPlanarThreeSATThree Graph.encOrthogonalDrawing
   fun_prop
 
 /-- Dropping the computed drawing gives a native polynomial-time formula compiler. -/
