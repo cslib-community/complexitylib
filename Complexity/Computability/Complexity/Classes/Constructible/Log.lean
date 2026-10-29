@@ -11,11 +11,12 @@ public import Complexity.Computability.Complexity.Classes.Constructible
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.NatPolynomial
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 
 /-!
 # Logarithmic inflation of constructible clocks
@@ -50,8 +51,8 @@ length of `f n` is absorbed in `O(f n + 1)` before composition. -/
 theorem TimeConstructible.comp_of_computableInPolyTime {f g : ℕ → ℕ}
     (hf : TimeConstructible f) (hg : ComputableInPolyTime g encNat encNat)
     (hfg : ∀ n, f n ≤ g (f n)) : TimeConstructible fun n => g (f n) := by
-  have h := hg.nat_inO.tidy.comp hf.computableInO.tidy
-  refine TimeConstructible.of_computableInO 2 (.of_tidy h)
+  have h := hg.nat_inO.comp hf.computableInO
+  refine TimeConstructible.of_computableInO 2 h
     (s := fun n => f n + f n) (fun x => ?_) fun _ => le_rfl
   have := hfg x.length
   omega
@@ -60,15 +61,13 @@ theorem TimeConstructible.comp_of_computableInPolyTime {f g : ℕ → ℕ}
 time constructibility, including at the zero value of the clock. -/
 theorem TimeConstructible.mul_size_succ {f : ℕ → ℕ} (hf : TimeConstructible f) :
     TimeConstructible fun n => f n * (Nat.size (f n) + 1) := by
-  have hsize : ComputableTidilyInPolyTime Nat.size encNat encNat := by
-    have h := ComputableTidilyInPolyTime.unary_to_binary.comp
-      (ComputableTidilyInPolyTime.encoding_length encNat)
+  have hsize : ComputableInPolyTime Nat.size encNat encNat := by
+    have h := ComputableInPolyTime.unary_to_binary.comp
+      (ComputableInPolyTime.encoding_length encNat)
     simpa only [Function.comp_def, encNat_apply, Nat.size_eq_bits_len] using h
-  have hg : ComputableInPolyTime (fun m : ℕ => m * (Nat.size m + 1)) encNat encNat := by
-    apply ComputableInPolyTime.of_tidy
-    exact ComputableTidilyInPolyTime.binary_mul'
-      ComputableTidilyInPolyTime.id'
-      (ComputableTidilyInPolyTime.binary_add' hsize (ComputableTidilyInPolyTime.const 1))
+  have hg : ComputableInPolyTime (fun m : ℕ => m * (Nat.size m + 1)) encNat encNat :=
+    ComputableInPolyTime.binary_mul' ComputableInPolyTime.id'
+      (ComputableInPolyTime.binary_add.comp (hsize.prod (ComputableInPolyTime.const 1)))
   exact hf.comp_of_computableInPolyTime hg fun n =>
     Nat.le_mul_of_pos_right _ (Nat.succ_pos _)
 
