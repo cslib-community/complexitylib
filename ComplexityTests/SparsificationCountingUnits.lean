@@ -61,6 +61,22 @@ example (N : ℕ) (ψ : ℕ → ClauseSet (Fin 5)) (c : ℕ → ℕ)
     N ψ c H b hstep hheavy hred univ (by intro C _ l _; exact mem_univ _)
   simpa using h
 
+-- Exercise the actual path budget, with both proper heavy steps checked and root support charged.
+example : (∑ i ∈ range 2, (countingUnitInsertions (nodes i) (sizes i) heart true).card) ≤ 10 := by
+  have hstep : ∀ i < 2, nodes (i + 1) = countingChild (nodes i) (sizes i) heart true := by
+    intro i hi
+    have : i = 0 ∨ i = 1 := by omega
+    rcases this with rfl | rfl <;> rfl
+  have hheavy : ∀ i < 2, Heavy (fun _ => 1) (nodes i) (sizes i) heart := by
+    intro i hi
+    have : i = 0 ∨ i = 1 := by omega
+    rcases this with rfl | rfl <;> unfold Heavy <;> decide
+  have hred : Reduced (nodes 0) := by unfold Reduced; decide
+  have h := sum_countingUnitInsertions_le (θ := fun _ => 1) (by intro; decide)
+    2 nodes sizes (fun _ => heart) (fun _ => true) hstep hheavy hred univ
+    (by intro C hC l hl; exact mem_univ _)
+  simpa using h
+
 -- A second A step may create the opposite unit; neither signed unit is deleted.
 example : countingUnitInsertions middle 3 heart false =
     ({ {(0, true)} } : ClauseSet (Fin 5)) := by decide

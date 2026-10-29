@@ -31,6 +31,11 @@ private def parent : ClauseSet (Fin 3) :=
 
 private def heart : Finset (Literal (Fin 3)) := {(0, true)}
 
+-- Independently enumerate all assignments, rather than deriving this count from the split law.
+example : parent.toCNF.modelCountOn Finset.univ = 5 := by
+  rw [count_eq_card]
+  decide
+
 -- The old decision branches overlap at x=y=z=true, so their counts must not simply be added.
 private theorem child_false_count :
     (child parent 2 heart false).toCNF.modelCountOn Finset.univ = 4 := by
@@ -75,6 +80,11 @@ example :
 -- A fourth declared variable remains free in every branch, even though it never occurs.
 private def parentFour : ClauseSet (Fin 4) :=
   {{(0, true), (1, true)}, {(0, true), (2, true)}}
+
+-- The declared unused variable doubles the independently enumerated parent count.
+example : parentFour.toCNF.modelCountOn Finset.univ = 10 := by
+  rw [count_eq_card]
+  decide
 
 private theorem parentFour_false_count :
     (countingChild parentFour 2 {(0, true)} false).toCNF.modelCountOn Finset.univ = 8 := by

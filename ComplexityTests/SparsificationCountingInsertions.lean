@@ -147,6 +147,12 @@ example (N : ℕ) (ψ : ℕ → ClauseSet (Fin 9)) (c : ℕ → ℕ)
       hred hnt univ hsup (j := 2) (by decide)
   exact ⟨h1, by omega, hpow⟩
 
+-- Actual full-Choice clients of the recurrence and the source's unchanged closed constant.
+example : countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 ≤ 88 := by
+  exact countingInsertionCount_le_rec θpos 2 (nodes true) sizes hearts (dirs true)
+    (steps true) (choices true) rootReduced rootNontautological univ
+    (by intro C hC l hl; exact mem_univ _) (by decide)
+
 -- Declared-variable budget form `countingInsertionCount_le_pow_of_card_le` for any `n ≥ 9`.
 example (n : ℕ) (hn : 9 ≤ n) :
     countingInsertionCount 2 (nodes true) sizes hearts (dirs true) 2 ≤ 24 * n := by
@@ -170,13 +176,14 @@ example (N : ℕ) (ψ : ℕ → ClauseSet Empty) (c : ℕ → ℕ)
 -- insertion, and `countingInsertionCount_one_le` bounds unit insertions on `{()}` by `2`.
 private def oneVariable : ClauseSet Unit := {{((), true)}, {((), false)}}
 
+example : countingInsertionCount 0 (fun _ => oneVariable) (fun _ => 0)
+    (fun _ => ∅) (fun _ => false) 1 = 0 := by decide
+
 example (N : ℕ) (ψ : ℕ → ClauseSet Unit) (c : ℕ → ℕ)
     (H : ℕ → Finset (Literal Unit)) (b : ℕ → Bool) (hroot : ψ 0 = oneVariable)
     (hstep : ∀ i < N, ψ (i + 1) = countingChild (ψ i) (c i) (H i) (b i))
     (hheavy : ∀ i < N, Heavy θ (ψ i) (c i) (H i)) :
-    countingInsertionCount 0 (fun _ => oneVariable) (fun _ => 0) (fun _ => ∅) (fun _ => false) 1 =
-      0 ∧ countingInsertionCount N ψ c H b 1 ≤ 2 := by
-  refine ⟨by decide, ?_⟩
+    countingInsertionCount N ψ c H b 1 ≤ 2 := by
   have h := countingInsertionCount_one_le θpos N ψ c H b hstep hheavy
     (by rw [hroot]; unfold Reduced; decide) {()}
     (by intro C _ l _; exact mem_singleton.mpr (Subsingleton.elim _ _))

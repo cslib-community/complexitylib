@@ -279,6 +279,10 @@ example :
   exact ⟨⟨i, hi, (huniq_i ⟨1, by decide⟩ rfl).symm⟩,
     ⟨a, ha, (huniq_a 4 ⟨by decide, rfl⟩).symm⟩⟩
 
+-- Singleton list at index `0`.
+example : ∃! i : Fin [true].length, [true][i] = true :=
+  List.existsUnique_fin_of_countP_eq_one (l := [true]) (p := id) (by decide)
+
 -- End-to-end unique-leaf wrappers on `multiRoot` and `witnessAssign`.
 example : ∃! i : Fin (countingLeaves (2 ^ ·) multiRoot).length,
     ((countingLeaves (2 ^ ·) multiRoot)[i]).Sat witnessAssign :=
