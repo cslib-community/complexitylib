@@ -18,9 +18,11 @@ example : IsOraclePPT (Operation := Unit) encBits (fun n word =>
 example : IsOraclePPT (Operation := Bool) encBool (fun n word =>
     pure (decide (word.length ≤ n))) := by fun_prop
 
--- The ideal game has a PPT realization for every certified adaptive adversary.
-example {adversary : OracleDistinguisher} (h : IsOraclePPT encBool adversary) :
-    IsPPT encBool (fun n _ => prfIdealGame adversary n) := isPPT_prfIdealGame h
+-- The ideal game has a PPT realization for a concrete adaptive oracle distinguisher.
+example :
+    IsPPT encBool (fun n _ => prfIdealGame (fun m word =>
+      pure (decide (word.length ≤ m))) n) :=
+  isPPT_prfIdealGame (by fun_prop)
 
 private noncomputable def repeatQuery (n : ℕ) (_ : List Bool) : WordOracleComp Unit Bool := do
   let word ← ProbOracleComp.sample (BitString.sampleList n)
@@ -29,21 +31,21 @@ private noncomputable def repeatQuery (n : ℕ) (_ : List Bool) : WordOracleComp
   let second ← ProbOracleComp.query ((), word)
   return (first == second) && bit
 
--- A private random query gets a consistent answer; intervening private randomness stays fresh.
-example (n : ℕ) : ProbComp.eval (prfIdealGame repeatQuery n) = PMF.uniformOfFintype Bool := by
-  simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret]
-  simpa [repeatQuery, OracleComp.interpret_bind, ProbOracleComp.interpret_sample] using
-    (show OracleComp.interpret ProbComp.unifOracle (ProbComp.uniform Bool) =
-      PMF.uniformOfFintype Bool from ProbComp.eval_uniform Bool)
-
--- The same exact law holds for the executable list cache.
+-- A private random query gets a consistent answer; intervening private randomness stays fresh,
+-- and the executable list cache produces the same uniform distribution.
 example (n : ℕ) :
-    ProbComp.eval (prfIdealGame repeatQuery n) =
+    ProbComp.eval (prfIdealGame repeatQuery n) = PMF.uniformOfFintype Bool ∧
       ProbComp.eval (Prod.fst <$> (OracleComp.interpret
         (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
-          (fun request => cachedRandomFunctionOracle n request.2)) (repeatQuery n [])).run []) :=
-  prfIdealGame_eq_cached repeatQuery n
+          (fun request => cachedRandomFunctionOracle n request.2)) (repeatQuery n [])).run []) =
+        PMF.uniformOfFintype Bool := by
+  have h : ProbComp.eval (prfIdealGame repeatQuery n) = PMF.uniformOfFintype Bool := by
+    simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+      ProbOracleComp.eval_interpret]
+    simpa [repeatQuery, OracleComp.interpret_bind, ProbOracleComp.interpret_sample] using
+      (show OracleComp.interpret ProbComp.unifOracle (ProbComp.uniform Bool) =
+        PMF.uniformOfFintype Bool from ProbComp.eval_uniform Bool)
+  exact ⟨h, (prfIdealGame_eq_cached repeatQuery n).symm.trans h⟩
 
 -- Malformed words neither sample an answer nor alter even a preassigned cache.
 example (cache : List (List Bool × List Bool)) :

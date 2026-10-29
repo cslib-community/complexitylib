@@ -27,10 +27,10 @@ bound on the resource function; hierarchy theorems state the lower bounds they n
 
 The shared length and arithmetic routines give concrete constructible bounds, without importing
 any hierarchy theorem. The length of a word in binary
-(`Turing.MultiTapeTM.ComputableTidilyInO.lengthNat`) and the bounds on binary digits
+(`Turing.MultiTapeTM.ComputableInO.lengthNat`) and the bounds on binary digits
 (`Turing.MultiTapeTM.exists_pow_length_encNat_le`) are in
 `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible`; unary word
-length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableTidilyInO.lengthUnary`).
+length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableInO.lengthUnary`).
 
 ## Main definitions
 
@@ -147,11 +147,11 @@ private theorem succ_mul_two_pow_le_two_pow_two_pow : ∀ n : ℕ, (n + 1) * 2 ^
 /-- `2 ^ (2 ^ n)` is time-constructible: count `2 ^ n` in unary and then write `2 ^ (2 ^ n)` in
 binary as `2 ^ n` zeros followed by a one. -/
 theorem timeConstructible_two_pow_two_pow : TimeConstructible fun n => 2 ^ (2 ^ n) := by
-  have h₁ := ComputableTidilyInO.unary_two_pow.comp ComputableTidilyInO.lengthUnary
-  have h₂ := ((ComputableTidilyInDegree.two_pow_length encUnary).inO_one.comp h₁).of_enc_eq
-    (encOut := encNat) (g := fun x : List Bool => 2 ^ (2 ^ x.length)) fun x => by
+  have h₁ := ComputableInO.unary_two_pow.comp ComputableInO.lengthUnary
+  have h₂ := ((ComputableTidilyInDegree.two_pow_length encUnary).inO_one.computableInO.comp
+    h₁).of_enc_eq (encC := encNat) (g := fun x : List Bool => 2 ^ (2 ^ x.length)) fun x => by
       simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
-  refine TimeConstructible.of_computableInO 3 (.of_tidy h₂)
+  refine TimeConstructible.of_computableInO 3 h₂
     (s := fun n => n + 2 ^ n + 2 ^ n) (fun x => ?_) fun x => ?_
   · simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
     have hle := succ_mul_two_pow_le_two_pow_two_pow x.length
@@ -178,12 +178,11 @@ theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List 
       fun x => S x.length)
     (hT : ∀ x, T x ≤ c * ((x.length + 1) * f x.length) + c) (hn : ∀ n, n ≤ f n) :
     TimeConstructible fun n => (n + 1) * f n := by
-  have hf := hf.tidy
-  have hlen := ComputableInO.natSucc.tidy.comp ComputableTidilyInO.lengthNat
-  have h := computableTidilyInDegree_mul.inO.comp (hlen.prod hf)
+  have hlen := ComputableInO.natSucc.comp ComputableInO.lengthNat
+  have h := computableTidilyInDegree_mul.inO.computableInO.comp (hlen.prod hf)
   obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 3
   obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
-  refine TimeConstructible.of_computableInO (150 * C + C₂ + c + 10) (.of_tidy h) (fun x => ?_)
+  refine TimeConstructible.of_computableInO (150 * C + C₂ + c + 10) h (fun x => ?_)
     (s := fun n =>
     n + 1 + ((encNat n).length + 1) + S n + (2 * (encNat (n + 1)).length + 1 +
       (encNat (f n)).length + 1) ^ 3) fun x => ?_
@@ -232,10 +231,10 @@ theorem TimeConstructible.succ_mul {f : ℕ → ℕ} (hf : TimeConstructible f) 
 
 /-- `(n + 1) ^ 2` is time-constructible. -/
 theorem timeConstructible_succ_sq : TimeConstructible fun n => (n + 1) ^ 2 := by
-  have hlen := ComputableInO.natSucc.tidy.comp ComputableTidilyInO.lengthNat
+  have hlen := ComputableInO.natSucc.comp ComputableInO.lengthNat
   obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
   have h := TimeConstructible.succ_mul_of_computableInO (f := fun n => n + 1)
-    (S := fun n => n + 1 + ((encNat n).length + 1)) (C₂ + 2) (.of_tidy hlen) (fun x => by
+    (S := fun n => n + 1 + ((encNat n).length + 1)) (C₂ + 2) hlen (fun x => by
       have := hC₂ x.length
       have e : (C₂ + 2) * ((x.length + 1) * (x.length + 1)) =
           C₂ * ((x.length + 1) * (x.length + 1)) + 2 * ((x.length + 1) * (x.length + 1)) := by
@@ -301,12 +300,12 @@ theorem SpaceConstructible.of_computableInO {s : ℕ → ℕ} {T S : List Bool �
 
 /-- `n` is space-constructible: count the length of the word in binary. -/
 theorem spaceConstructible_id : SpaceConstructible fun n => n :=
-  SpaceConstructible.of_computableInO 1 (.of_tidy ComputableTidilyInO.lengthNat) fun x => by omega
+  SpaceConstructible.of_computableInO 1 ComputableInO.lengthNat fun x => by omega
 
 /-- `n + 1` is space-constructible. -/
 theorem spaceConstructible_succ : SpaceConstructible fun n => n + 1 :=
   SpaceConstructible.of_computableInO 2
-    (.of_tidy (ComputableInO.natSucc.tidy.comp ComputableTidilyInO.lengthNat))
+    (ComputableInO.natSucc.comp ComputableInO.lengthNat)
     fun x => by have := Universal.length_encNat_le x.length; omega
 
 /-- Constant bounds are space-constructible, in zero space. -/
