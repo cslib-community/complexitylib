@@ -421,8 +421,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   transfer of Anthropic's modular machine and 3SUM/APSP algorithms; direct 3SUM adaptation ([#1394])
   has the Convolution-3SUM/Exact Triangle correctness reduction, a charged native single-instance
   matrix builder and the complete finite mathematical Chan–He reduction ([#1435]), including
-  ordinary distinct-position inputs and explicit size bounds. It still needs native Chan–He
-  preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
+  ordinary distinct-position inputs and explicit size bounds. The finite lopsided matrix/counting
+  interface ([#1438]) adds padding, detection and signed digit reconstruction; it still needs
+  modular Exact Triangle hashing/false-positive splitting, tensor/sparse-query programs, native
+  Chan–He preprocessing, the reduction host, the fast Exact Triangle solver and full input/time/width/
   asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
@@ -458,9 +460,9 @@ reuse is demonstrated.
   `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
   `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
   to `(Cslib.Multigraph.edgeCut ends C).card`, and move `toOuterMeasure_bind_ge_mul_ennreal`,
-  `toOuterMeasure_bind_le_mul_ennreal`, `toOuterMeasure_add_compl_ennreal`, and
-  `toOuterMeasure_compl_le_one_sub` into `Complexity/Probability/PMF/Event.lean` (reusable by
-  `toOuterMeasure_toReal_add_compl`).
+  `toOuterMeasure_bind_le_mul_ennreal`, `toOuterMeasure_add_compl_ennreal`,
+  `toOuterMeasure_compl_le_one_sub`, and `two_branch_hit_prob_ge` into
+  `Complexity/Probability/PMF/Event.lean` (reusable by `toOuterMeasure_toReal_add_compl`).
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -556,6 +558,6 @@ not planned, not as proved.
 [#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
-
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
+[#1438]: https://github.com/cslib-community/complexitylib/issues/1438
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449

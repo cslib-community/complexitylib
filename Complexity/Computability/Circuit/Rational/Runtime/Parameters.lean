@@ -140,7 +140,6 @@ theorem computableInPolyTime_exponent (hn : ComputableInPolyTime n input encUnar
   change ComputableInPolyTime (fun a => Nat.log 2 (threshold (n a) (s a))) input encUnary
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The ambient dimension, in unary, by repeated doubling up to the ceiling logarithm. -/
 @[fun_prop]
 theorem computableInPolyTime_ambientDimension
@@ -148,11 +147,8 @@ theorem computableInPolyTime_ambientDimension
     (hs : ComputableInPolyTime s input encUnary) :
     ComputableInPolyTime (fun a => Parameters.ambientDimension (n a) (s a))
       input encUnary := by
-  have hn := hn.tidy
-  have hs := hs.tidy
-  refine .of_tidy ?_
   simp only [Parameters.ambientDimension_eq]
-  exact unary_pow_clog_const (by fun_prop) 2 2
+  fun_prop
 
 /-- The cyclotomic degree, in unary. -/
 @[fun_prop]

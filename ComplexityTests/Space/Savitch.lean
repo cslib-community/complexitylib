@@ -113,6 +113,19 @@ example : ∃ T S, ComputableTidilyInO
   exact ⟨_, _, computableTidilyInO_savitch (edge := fun _ u v => decide (u = v)) hedge hin
     (fun _ => rfl) fun _ => rfl⟩
 
+-- The same family, from a plain certificate of the edge test.
+example : ∃ T S, ComputableInO
+    (fun n : ℕ => savitch (fun u v => decide (u = v)) 1 n [false] [true]) encUnary encBool T S := by
+  obtain ⟨Te, Se, hedge⟩ := exists_inO_eq
+  have hin : ComputableInO (fun n : ℕ => ((), 1, n, [false], [true])) encUnary
+      (encArgs encUnit) _ _ :=
+    ((ComputableTidilyInO.const ()).prod ((ComputableTidilyInO.const 1).prod
+      ((ComputableTidilyInO.of_linear (.of_eq fun _ => rfl)).prod
+        ((ComputableTidilyInO.const [false]).prod
+          (ComputableTidilyInO.const [true]))))).computableInO
+  exact ⟨_, _, computableInO_savitch (edge := fun _ u v => decide (u = v)) hedge.computableInO
+    hin (fun _ => rfl) fun _ => rfl⟩
+
 -- The same family, in polynomial space.
 example : ∃ t s, PolyBounded (fun n : ℕ => (encUnary n).length) s ∧
     ComputableTidilyInTimeAndSpace

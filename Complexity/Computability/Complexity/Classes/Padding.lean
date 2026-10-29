@@ -122,11 +122,8 @@ noncomputable def checkPadded (ntm : MultiTapeNTM k Bool State) (x : List Bool �
 @[fun_prop]
 theorem computableInPolyTime_checkPadded (ntm : MultiTapeNTM k Bool State) :
     ComputableInPolyTime ntm.checkPadded (encPair encBits encBits) encBool := by
-  refine .of_tidy ?_
-  have hunframe : ComputableTidilyInPolyTime unframe encBits encBits :=
-    .of_linear (.of_unframe fun _ => rfl)
-  exact (ntm.computableInPolyTime_checkChoices).tidy.comp
-    ((hunframe.comp (.fst encBits encBits)).prod (.snd encBits encBits))
+  exact ntm.computableInPolyTime_checkChoices.comp
+    ((ComputableInPolyTime.unframe.comp (.fst encBits encBits)).prod (.snd encBits encBits))
 
 /-- **The padded problem** of `ntm`: the bit words `x` such that some `c * |x|` coins encode an
 accepting computation of `ntm` on the word `unframe x` framed at the start of `x`. -/
@@ -264,7 +261,7 @@ theorem NE_subset_E_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NE enc ⊆
     NTIME_mono (fun n => Nat.pow_le_pow_right (by norm_num)
       (Nat.mul_le_mul_right n (Nat.le_succ k))) hk
   obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P hNP
-    (f := fun n => (k + 1) * n) (.of_tidy (by fun_prop))
+    (f := fun n => (k + 1) * n) (by fun_prop)
       (fun n => Nat.le_mul_of_pos_left n (Nat.succ_pos k))
     hk')
   exact mem_E_iff.mpr ⟨d * (k + 1), by simpa only [Nat.mul_assoc] using hd⟩
@@ -277,7 +274,7 @@ theorem NEXP_subset_EXP_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NEXP e
     NTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr ⟨1, fun n hn =>
       Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_right hn (Nat.le_succ k))⟩) hk
   obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P hNP
-    (.of_tidy (ComputableTidilyInPolyTime.unary_pow (k + 1)))
+    (ComputableInPolyTime.unary_pow (k + 1))
       (fun n => Nat.le_self_pow (by omega) n) hk')
   refine mem_EXP_iff.mpr ⟨k + 2, DTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr
     ⟨d, fun n hn => Nat.pow_le_pow_right (by norm_num) ?_⟩) hd⟩
@@ -301,7 +298,6 @@ theorem P_ne_NP_of_EXP_ne_NEXP (h : EXP enc ≠ NEXP enc) : P encBits ≠ NP enc
 section Translation
 
 open Cslib.Probability
-open _root_.Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
 variable {α : Type} {enc : α ↪ List Bool}
 
@@ -345,11 +341,9 @@ theorem preimage_mem_NTIME_of_mem_NP {B : Set (List Bool)} {g : α → List Bool
   obtain ⟨p, V, hV, hVer⟩ := hB
   let program (x : List Bool) : ProbComp Bool :=
     (fun w => V (x, w)) <$> BitString.sampleList (p.eval x.length)
-  have hcount : ComputableTidilyInPolyTime (fun x : List Bool => p.eval x.length)
-      encBits encUnary :=
-    (unary_eval p).comp (encoding_length encBits)
-  have hprogram : IsPPTOn encBits encBool program :=
-    (ComputableInPolyTime.of_tidy hcount).sampleList.map_with hV
+  have hcount : ComputableInPolyTime (fun x : List Bool => p.eval x.length) encBits encUnary :=
+    (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length encBits)
+  have hprogram : IsPPTOn encBits encBool program := hcount.sampleList.map_with hV
   obtain ⟨k₁, State₁, hfinite₁, M_NP, c₁, d₁, heval₂, hhalt₂⟩ := hprogram.exists_halting_machine
   set t₂ : α → ℕ := fun a => c₁ * (t₁ a + 1) ^ d₁
   have ht₂_le (a : α) : c₁ * ((g a).length + 1) ^ d₁ ≤ t₂ a :=

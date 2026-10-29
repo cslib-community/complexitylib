@@ -101,20 +101,15 @@ private def queriesAgree (start : ℕ) : Bool :=
     (structuredAnswer query).map Prod.fst == some (if query ∈ [0, 1, 3] then 1 else 0)) =
     true
 
-example : queriesAgree 0 := by decide
-example : queriesAgree 64 := by decide
-example : queriesAgree 128 := by decide
-example : queriesAgree 192 := by decide
-
-example : flatAnswer 4 = structuredAnswer 4 := by decide
-example : flatAnswer 255 = structuredAnswer 255 := by decide
-example : flatAnswer 0 = structuredAnswer 0 := by decide
-example : flatAnswer 1 = structuredAnswer 1 := by decide
-example : flatAnswer 2 = structuredAnswer 2 := by decide
-example : flatAnswer 3 = structuredAnswer 3 := by decide
-
--- The adversarial leaf remains outside the represented region.
-example : poisonedMemory 28 = 1 ∧ poisonedMemory 29 = 0 ∧ poisonedMemory 1000 = 173 := by
+example :
+    (queriesAgree 0 ∧ queriesAgree 64 ∧ queriesAgree 128 ∧ queriesAgree 192) ∧
+    (flatAnswer 4 = structuredAnswer 4 ∧
+      flatAnswer 255 = structuredAnswer 255 ∧
+      flatAnswer 0 = structuredAnswer 0 ∧
+      flatAnswer 1 = structuredAnswer 1 ∧
+      flatAnswer 2 = structuredAnswer 2 ∧
+      flatAnswer 3 = structuredAnswer 3) ∧
+    (poisonedMemory 28 = 1 ∧ poisonedMemory 29 = 0 ∧ poisonedMemory 1000 = 173) := by
   decide
 
 private def adaptiveAnswers : Option (List ℕ) := do
@@ -125,15 +120,17 @@ private def adaptiveAnswers : Option (List ℕ) := do
   let (c, _) ← program.eval 8 3 (b.set arg q')
   pure [a.regs out, b.regs out, c.regs out]
 
-example : adaptiveAnswers = some [1, 0, 1] := by decide
-
 -- Empty extrema may be stale even inside the represented interval.
 private def staleEmptyMemory (a : ℕ) : ℕ :=
   if a ∈ [8, 13, 18, 23, 16, 17, 21, 22, 26, 27] then 0
   else if a = 11 then 2 else if a = 12 then 5 else 173
 
-example : Rep (Tree.empty 1) 8 staleEmptyMemory := by
-  refine ⟨?_, ?_, ?_⟩
+example :
+    adaptiveAnswers = some [1, 0, 1] ∧
+    Rep (Tree.empty 1) 8 staleEmptyMemory ∧
+    ((program.eval 8 3 ⟨(caller 255).regs, staleEmptyMemory⟩).map
+      (fun yn => yn.1.regs out)) = some 0 := by
+  refine ⟨by decide, ⟨?_, ?_, ?_⟩, by decide⟩
   · change Header 1 none 8 staleEmptyMemory
     unfold Header
     decide
@@ -142,9 +139,6 @@ example : Rep (Tree.empty 1) 8 staleEmptyMemory := by
     decide
   · intro i
     fin_cases i <;> change Header 0 none _ staleEmptyMemory <;> unfold Header <;> decide
-
-example : ((program.eval 8 3 ⟨(caller 255).regs, staleEmptyMemory⟩).map
-    (fun yn => yn.1.regs out)) = some 0 := by decide
 
 /-- Initial state for depth-1 initialization at base 8 on hostile nonzero memory (`173`). -/
 def initStart : Data 32 where
@@ -206,8 +200,6 @@ private def initZeroCheck : Option (ℕ × Bool) := do
     s0.mem 11 == 0 && s0.mem 12 == 0 && s0.mem 7 == 173 && s0.mem 17 == 173
   pure (s0.regs out, ok)
 
-example : initZeroCheck = some (13, true) := by decide
-
 /-- Concrete evaluation of native `insert 3` at depth `1` on `staleEmptyMemory` (with nonzero stale
 extrema and `173` outside), checking that the root header becomes `(1, 3, 3)` and outside memory
 remains `173`. -/
@@ -215,8 +207,6 @@ private def insertStaleCheck : Option Bool := do
   let s0 : Data 32 := ⟨(caller 0).regs, staleEmptyMemory⟩
   let (s1, _) ← program.eval 8 3 ((s0.set tag 0).set arg 3)
   pure (s1.mem 8 == 1 && s1.mem 9 == 3 && s1.mem 10 == 3 && s1.mem 7 == 173 && s1.mem 28 == 173)
-
-example : insertStaleCheck = some true := by decide
 
 /-- Native strict-successor query on the represented `fixtureTree` (`{0, 1, 3}`), covering
 in-cluster successor (`0 ↦ some 1`), summary-backed cross-cluster successor (`1 ↦ some 3`),
@@ -226,11 +216,15 @@ private def askFixtureSuccessor (q : ℕ) : Option (Option ℕ × Bool) := do
   let ans := if r.regs found = 0 then none else some (r.regs out)
   pure (ans, r.mem 7 == 173 && r.mem 32 == 0)
 
-example : askFixtureSuccessor 0 = some (some 1, true) := by decide
-example : askFixtureSuccessor 1 = some (some 3, true) := by decide
-example : askFixtureSuccessor 2 = some (some 3, true) := by decide
-example : askFixtureSuccessor 3 = some (none, true) := by decide
-example : askFixtureSuccessor 255 = some (none, true) := by decide
+example :
+    initZeroCheck = some (13, true) ∧
+    insertStaleCheck = some true ∧
+    askFixtureSuccessor 0 = some (some 1, true) ∧
+    askFixtureSuccessor 1 = some (some 3, true) ∧
+    askFixtureSuccessor 2 = some (some 3, true) ∧
+    askFixtureSuccessor 3 = some (none, true) ∧
+    askFixtureSuccessor 255 = some (none, true) := by
+  decide
 
 /-- Adaptive client that inserts `1` and `3`, queries `successor 0`, and branches on the answer
 before inserting a third key and querying `successor 1`. -/

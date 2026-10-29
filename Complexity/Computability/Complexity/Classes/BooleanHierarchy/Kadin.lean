@@ -81,7 +81,7 @@ these `k` hard-prefix branches places `A` in `Σ₃ᴾ`.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime Polynomial
+open Turing.MultiTapeTM ComputableInPolyTime Polynomial
 
 variable {α β : Type} {enc : α ↪ List Bool}
 
@@ -108,12 +108,12 @@ private theorem shiftVerifier_append {p : Polynomial ℕ} {V : (α × List Bool)
     shiftVerifier enc p V ((a, s), u ++ v) = V ((a, s ++ u), v) := by
   simp [shiftVerifier, ← hu]
 
-private theorem computableTidilyInPolyTime_shiftVerifier (p : Polynomial ℕ)
+private theorem computableInPolyTime_shiftVerifier (p : Polynomial ℕ)
     {V : (α × List Bool) × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair (encPair enc encBits) encBits) encBool) :
-    ComputableTidilyInPolyTime (shiftVerifier enc p V)
+    (hV : ComputableInPolyTime V (encPair (encPair enc encBits) encBits) encBool) :
+    ComputableInPolyTime (shiftVerifier enc p V)
       (encPair (encPair enc encBits) encBits) encBool := by
-  have hn : ComputableTidilyInPolyTime
+  have hn : ComputableInPolyTime
       (fun x : (α × List Bool) × List Bool => p.eval (enc x.1.1).length)
       (encPair (encPair enc encBits) encBits) encUnary :=
     (unary_eval p).comp ((encoding_length enc).comp (fst _ _).fst')
@@ -153,7 +153,7 @@ private theorem congr_poly (h : OnSliceAlt enc b k q R) {q' : Polynomial ℕ}
 private theorem mem_SigmaP (h : OnSliceAlt enc true k 0 R) : {a | R a []} ∈ SigmaP k enc := by
   obtain ⟨ps, V, hk, hV, hR⟩ := h
   refine Complexity.mem_SigmaP.mpr ⟨ps, fun x => V ((x.1, []), x.2), hk, ?_, fun a => ?_⟩
-  · exact .of_tidy (hV.tidy.comp (((fst enc encBits).prod (.const [])).prod (snd enc encBits)))
+  · exact hV.comp (((fst enc encBits).prod (.const [])).prod (snd enc encBits))
   · exact hR a [] (by simp)
 
 /-- Negating the verifier swaps quantifier polarities. -/
@@ -193,11 +193,11 @@ private theorem and (h₁ : OnSliceAlt enc b k q R₁) (h₂ : OnSliceAlt enc b 
   · have hn : ComputableInPolyTime
         (fun x : (α × List Bool) × List Bool => (enc x.1.1).length)
         (encPair (encPair enc encBits) encBits) encUnary :=
-      .of_tidy ((encoding_length enc).comp (fst _ _).fst')
-    have hs := (computableInPolyTime_splitAlternatingBlocks pqs hn (.snd _ _)).tidy
-    exact .of_tidy <|
-      (hV.tidy.comp ((fst _ _).prod hs.fst')).bool_and'
-        (hW.tidy.comp ((fst _ _).prod hs.snd'))
+      (encoding_length enc).comp (fst _ _).fst'
+    have hs := computableInPolyTime_splitAlternatingBlocks pqs hn (.snd _ _)
+    have h := bool_and.comp ((hV.comp ((fst _ _).prod hs.fst')).prod
+      (hW.comp ((fst _ _).prod hs.snd')))
+    exact h
   · dsimp only
     rw [hR₁ a s hs, hR₂ a s hs]
     have hfst : pqs.map Prod.fst = ps := List.map_fst_zip hlen.le
@@ -249,11 +249,11 @@ private theorem drop (p : Polynomial ℕ) (h : OnSliceAlt enc b k q R) :
   obtain ⟨ps, V, hk, hV, hR⟩ := h
   refine ⟨ps, fun x => V ((x.1.1, x.1.2.drop (p.eval (enc x.1.1).length)), x.2), hk, ?_,
     fun a s hs => ?_⟩
-  · have hn : ComputableTidilyInPolyTime
+  · have hn : ComputableInPolyTime
         (fun x : (α × List Bool) × List Bool => p.eval (enc x.1.1).length)
         (encPair (encPair enc encBits) encBits) encUnary :=
       (unary_eval p).comp ((encoding_length enc).comp (fst _ _).fst')
-    exact .of_tidy <| hV.tidy.comp (((fst _ _).fst'.prod
+    exact hV.comp (((fst _ _).fst'.prod
       (bitsDropWithInput (fst _ _).snd' hn)).prod (snd _ _))
   · refine hR a (s.drop (p.eval (enc a).length)) ?_
     simp [hs]
@@ -264,7 +264,7 @@ private theorem exists_append_flip (p : Polynomial ℕ) (h : OnSliceAlt enc fals
       (fun a s => ∃ u : List Bool, u.length = p.eval (enc a).length ∧ R a (s ++ u)) := by
   obtain ⟨ps, V, hk, hV, hR⟩ := h
   refine ⟨p :: ps, shiftVerifier enc p V, by simp [hk],
-    .of_tidy (computableTidilyInPolyTime_shiftVerifier p hV.tidy), fun a s hs => ?_⟩
+    computableInPolyTime_shiftVerifier p hV, fun a s hs => ?_⟩
   simp only [List.map_cons, alternation_true_cons]
   refine exists_congr fun u => and_congr_right fun hu => ?_
   have hsu : (s ++ u).length = (q + p).eval (enc a).length := by
@@ -278,7 +278,7 @@ private theorem forall_append_flip (p : Polynomial ℕ) (h : OnSliceAlt enc true
       (fun a s => ∀ u : List Bool, u.length = p.eval (enc a).length → R a (s ++ u)) := by
   obtain ⟨ps, V, hk, hV, hR⟩ := h
   refine ⟨p :: ps, shiftVerifier enc p V, by simp [hk],
-    .of_tidy (computableTidilyInPolyTime_shiftVerifier p hV.tidy), fun a s hs => ?_⟩
+    computableInPolyTime_shiftVerifier p hV, fun a s hs => ?_⟩
   simp only [List.map_cons, alternation_false_cons]
   refine forall_congr' fun u => imp_congr_right fun hu => ?_
   have hsu : (s ++ u).length = (q + p).eval (enc a).length := by
@@ -295,7 +295,7 @@ private theorem exists_append_same (p : Polynomial ℕ) (h : OnSliceAlt enc true
   rcases ps with _ | ⟨p₁, ps⟩
   · cases hk
   refine ⟨(p + p₁) :: ps, shiftVerifier enc p V, by simpa using hk,
-    .of_tidy (computableTidilyInPolyTime_shiftVerifier p hV.tidy), fun a s hs => ?_⟩
+    computableInPolyTime_shiftVerifier p hV, fun a s hs => ?_⟩
   simp only [List.map_cons, Polynomial.eval_add, alternation_true_cons]
   constructor
   · rintro ⟨u, hu, hRu⟩
@@ -357,20 +357,20 @@ theorem kadinChain_mem_BH {m : Polynomial ℕ} {E : Set (α × List Bool)}
   induction r with
   | zero => simp [kadinChain]
   | succ r ih =>
-    have hn : ComputableTidilyInPolyTime
+    have hn : ComputableInPolyTime
         (fun x : α × List Bool => (r • m).eval (enc x.1).length)
         (encPair enc encBits) encUnary :=
       (unary_eval (r • m)).comp ((encoding_length enc).comp (fst _ _))
     have hdrop : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
         {x : α × List Bool | (x.1, x.2.drop ((r • m).eval (enc x.1).length)) ∈ E} E :=
       ⟨fun x => (x.1, x.2.drop ((r • m).eval (enc x.1).length)),
-        .of_tidy ((fst _ _).prod (bitsDropWithInput (snd _ _) hn)), fun _ => Iff.rfl⟩
+        (fst _ _).prod (bitsDropWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
     have htake : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
         {x : α × List Bool |
           (x.1, x.2.take ((r • m).eval (enc x.1).length)) ∈ kadinChain enc m E r}
         (kadinChain enc m E r) :=
       ⟨fun x => (x.1, x.2.take ((r • m).eval (enc x.1).length)),
-        .of_tidy ((fst _ _).prod (bitsTakeWithInput (snd _ _) hn)), fun _ => Iff.rfl⟩
+        (fst _ _).prod (bitsTakeWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
     exact ⟨_, hdrop.mem_NP hE, _, htake.mem_BH ih, rfl⟩
 
 /-- The `NP` language checking that each of the first `d` consecutive blocks of length `m |enc a|`
@@ -398,19 +398,19 @@ theorem allWordsIn_mem_NP {m : Polynomial ℕ} {E : Set (α × List Bool)}
   induction d with
   | zero => exact ⟨0, fun _ => true, .const _, by simp [IsVerifier]⟩
   | succ d ih =>
-    have hn : ComputableTidilyInPolyTime
+    have hn : ComputableInPolyTime
         (fun x : α × List Bool => m.eval (enc x.1).length)
         (encPair enc encBits) encUnary :=
       (unary_eval m).comp ((encoding_length enc).comp (fst _ _))
     have htake : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
         {x : α × List Bool | (x.1, x.2.take (m.eval (enc x.1).length)) ∈ E} E :=
       ⟨fun x => (x.1, x.2.take (m.eval (enc x.1).length)),
-        .of_tidy ((fst _ _).prod (bitsTakeWithInput (snd _ _) hn)), fun _ => Iff.rfl⟩
+        (fst _ _).prod (bitsTakeWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
     have hdrop : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
         {x : α × List Bool | (x.1, x.2.drop (m.eval (enc x.1).length)) ∈ allWordsIn enc m E d}
         (allWordsIn enc m E d) :=
       ⟨fun x => (x.1, x.2.drop (m.eval (enc x.1).length)),
-        .of_tidy ((fst _ _).prod (bitsDropWithInput (snd _ _) hn)), fun _ => Iff.rfl⟩
+        (fst _ _).prod (bitsDropWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
     exact inter_mem_NP (htake.mem_NP hE) (hdrop.mem_NP ih)
 
 /-- Unpack a `BH (r + 1)` language `D ⊆ U` (where `U ∈ NP`) into `D = B \ D₁` with
@@ -767,13 +767,13 @@ theorem exists_mem_BH_encBits_and_polyTimeReducible {r : ℕ} {A : Set α} (hA :
         ⟨cnfDecoder.decode, cnfDecoder.computableInPolyTime, fun _ => Iff.rfl⟩
         SAT.mem_NP
     have hunframe : PolyTimeReducible encBits encBits {w | unframe w ∈ B₀} B₀ :=
-      ⟨unframe, .of_tidy ComputableTidilyInPolyTime.unframe, fun _ => Iff.rfl⟩
+      ⟨unframe, ComputableInPolyTime.unframe, fun _ => Iff.rfl⟩
     have hdrop : PolyTimeReducible encBits encBits {w | dropFrame w ∈ B₁} B₁ :=
-      ⟨dropFrame, .of_tidy ComputableTidilyInPolyTime.dropFrame, fun _ => Iff.rfl⟩
+      ⟨dropFrame, ComputableInPolyTime.dropFrame, fun _ => Iff.rfl⟩
     refine ⟨{w | unframe w ∈ B₀} \ {w | dropFrame w ∈ B₁},
       ⟨_, hunframe.mem_NP hB₀, _, hdrop.mem_BH hB₁, rfl⟩,
       fun a => encPair encBits encBits (encCNF (f₀ a), f₁ a),
-      .of_tidy ((hf₀.tidy.encoded.prod hf₁.tidy).encoded),
+      (hf₀.encoding_comp.prod hf₁).encoding_comp,
       fun a => ?_⟩
     simp [B₀, unframe_frame_append, dropFrame_frame_append, cnfDecoder.decode_enc, hiff₀ a,
       hiff₁ a]
@@ -811,7 +811,7 @@ theorem PiP_three_subset_SigmaP_three_of_coBH_subset_BH {k : ℕ}
     {y | ∃ u₃ : List Bool, u₃.length = p₃.eval (enc y.1).length ∧ (!V (y.1, y.2 ++ u₃)) = true}
   have hE : E ∈ NP (encPair enc encBits) :=
     mem_NP_setOf_exists_append (V := fun x => !V x)
-      (.of_tidy (ComputableTidilyInPolyTime.bool_not.comp hV.tidy)) p₃
+      (ComputableInPolyTime.bool_not.comp hV) p₃
   let m := p₁ + p₂
   have hLk_compl : (kadinChain enc m E k)ᶜ ∈ BH (encPair enc encBits) k :=
     h (compl_mem_coBH_iff.mpr (kadinChain_mem_BH hE k))
