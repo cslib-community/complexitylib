@@ -436,8 +436,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   from actual initialized input, returns the exact finite packed instances and derives positive
   logarithmic width, polynomial space/intermediates and an `Oκ(n^1.5 log¹³(n+2))` charged bound.
   It still needs tensor/sparse-query programs, native Chan–He/Exact Triangle host composition,
-  the fast Exact Triangle solver and full input/time/width/
-  asymptotic composition, then the improved Section 4 route to exponent 1.9992; size-based width
+  the fast Exact Triangle solver and full input/time/width/asymptotic composition, then the improved
+  Section 4 route to exponent 1.9992; size-based width
   selection with an input-fit guarantee and explicit overhead; expected-time rules for unbounded
   almost-surely terminating structured loops; random-tape equivalence and BPP/RP/ZPP simulation
   bridges for the randomized word RAM ([#1124]); transfer of cell-probe lower bounds; and the
