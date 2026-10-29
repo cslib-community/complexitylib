@@ -193,8 +193,8 @@ private theorem time_zero (n U : ℕ) : time 0 n U - 20 = 44 + 5 * Nat.sqrt n +
   dsimp [time]
   omega
 
-set_option maxHeartbeats 800000 in
--- Elaborating twelve native segments and their explicit register frames exceeds the default budget.
+set_option maxHeartbeats 300000 in
+-- Measured 256376 heartbeats for the twelve native segments and explicit register frames.
 private theorem exec_calculate {w n U : ℕ} (x : Data 24)
     (hlen : x.regs len = n) (hU : x.regs magnitude = U)
     (h1 : x.regs one = 1) (h2 : x.regs two = 2) (h3 : x.regs three = 3)

@@ -1242,6 +1242,15 @@ end LubyRackoff3
 
 /-! ### 3-round PRF-to-Feistel hybrid reductions (Boneh–Shoup Theorem 4.9) -/
 
+/-- A bound uniform in an independently sampled inner parameter survives averaging. -/
+private theorem advantage_bind_right_le {α β γ : Type*}
+    (p : PMF α) (q : PMF β) (d : PMF γ) (game₁ : α → γ → Game) (game₂ : β → γ → Game)
+    {ε : ℝ} (h : ∀ c, (Game.advantage (p.bind (game₁ · c)) (q.bind (game₂ · c)) : ℝ) ≤ ε) :
+    (Game.advantage (p.bind fun a => d.bind (game₁ a))
+      (q.bind fun b => d.bind (game₂ b)) : ℝ) ≤ ε := by
+  rw [PMF.bind_comm p d, PMF.bind_comm q d]
+  exact Game.advantage_bind_le d _ _ h
+
 section Hybrid3
 
 variable {K K₁ G : Type} [AddGroup G] [Fintype G] [DecidableEq G] [Nonempty G]
@@ -1366,83 +1375,35 @@ theorem advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le
   have hhop1 :
       (Game.advantage (feistel3KeyedGame keyGen F program)
         (feistel3Hybrid₁ keyGen F program) : ℝ) ≤ ε₁ := by
-    have hl : feistel3KeyedGame keyGen F program =
-        keyGen.bind fun k₂ => keyGen.bind fun k₃ =>
-          prfSingleRealGame keyGen F (feistel3Reduction₁ (F k₂) (F k₃) program) := by
-      simp only [feistel3KeyedGame, prfSingleRealGame, interpret_feistel3Reduction₁,
-        Probability.PMF.monad_bind_eq_bind]
-      rw [PMF.bind_comm keyGen keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₂ => ?_)
-      exact PMF.bind_comm keyGen keyGen _
-    have hr : feistel3Hybrid₁ keyGen F program =
-        keyGen.bind fun k₂ => keyGen.bind fun k₃ =>
-          prfSingleIdealGame (feistel3Reduction₁ (F k₂) (F k₃) program) := by
-      simp only [feistel3Hybrid₁, prfSingleIdealGame, interpret_feistel3Reduction₁,
-        Probability.PMF.monad_bind_eq_bind]
-      rw [PMF.bind_comm _ keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₂ => ?_)
-      exact PMF.bind_comm _ keyGen _
-    rw [hl, hr]
-    exact Game.advantage_bind_le keyGen _ _ fun k₂ =>
-      Game.advantage_bind_le keyGen _ _ fun k₃ => h₁ (F k₂) (F k₃)
+    simp only [feistel3KeyedGame, feistel3Hybrid₁, Probability.PMF.monad_bind_eq_bind]
+    refine advantage_bind_right_le _ _ _ _ _ fun k₂ =>
+      advantage_bind_right_le _ _ _ _ _ fun k₃ => ?_
+    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel3Reduction₁,
+      Probability.PMF.monad_bind_eq_bind] using h₁ (F k₂) (F k₃)
   have hhop2 :
       (Game.advantage (feistel3Hybrid₁ keyGen F program)
         (feistel3Hybrid₂ keyGen F program) : ℝ) ≤ ε₂ := by
-    have hl : feistel3Hybrid₁ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ => keyGen.bind fun k₃ =>
-          prfSingleRealGame keyGen F (feistel3Reduction₂ f₁ (F k₃) program) := by
-      simp only [feistel3Hybrid₁, prfSingleRealGame, interpret_feistel3Reduction₂,
-        Probability.PMF.monad_bind_eq_bind]
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₁ => ?_)
-      exact PMF.bind_comm keyGen keyGen _
-    have hr : feistel3Hybrid₂ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ => keyGen.bind fun k₃ =>
-          prfSingleIdealGame (feistel3Reduction₂ f₁ (F k₃) program) := by
-      simp only [feistel3Hybrid₂, prfSingleIdealGame, interpret_feistel3Reduction₂,
-        Probability.PMF.monad_bind_eq_bind]
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₁ => ?_)
-      exact PMF.bind_comm _ keyGen _
-    rw [hl, hr]
-    exact Game.advantage_bind_le _ _ _ fun f₁ =>
-      Game.advantage_bind_le keyGen _ _ fun k₃ => h₂ f₁ (F k₃)
+    simp only [feistel3Hybrid₁, feistel3Hybrid₂, Probability.PMF.monad_bind_eq_bind]
+    refine Game.advantage_bind_le _ _ _ fun f₁ =>
+      advantage_bind_right_le _ _ _ _ _ fun k₃ => ?_
+    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel3Reduction₂,
+      Probability.PMF.monad_bind_eq_bind] using h₂ f₁ (F k₃)
   have hhop3 :
       (Game.advantage (feistel3Hybrid₂ keyGen F program)
         (feistel3RandomRoundsGame program) : ℝ) ≤ ε₃ := by
-    have hl : feistel3Hybrid₂ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          (PMF.uniformOfFintype (G → G)).bind fun f₂ =>
-            prfSingleRealGame keyGen F (feistel3Reduction₃ f₁ f₂ program) := by
-      simp only [feistel3Hybrid₂, prfSingleRealGame, interpret_feistel3Reduction₃,
-        Probability.PMF.monad_bind_eq_bind]
-    have hr : feistel3RandomRoundsGame program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          (PMF.uniformOfFintype (G → G)).bind fun f₂ =>
-            prfSingleIdealGame (feistel3Reduction₃ f₁ f₂ program) := by
-      simp only [feistel3RandomRoundsGame, feistel3FixedGame, prfSingleIdealGame,
-        interpret_feistel3Reduction₃, Probability.PMF.monad_bind_eq_bind]
-    rw [hl, hr]
-    exact Game.advantage_bind_le _ _ _ fun f₁ =>
-      Game.advantage_bind_le _ _ _ fun f₂ => h₃ f₁ f₂
-  have htri1 := Game.advantage_triangle (feistel3KeyedGame keyGen F program)
-    (feistel3Hybrid₁ keyGen F program) (feistel3RandomRoundsGame program)
-  have htri2 := Game.advantage_triangle (feistel3Hybrid₁ keyGen F program)
-    (feistel3Hybrid₂ keyGen F program) (feistel3RandomRoundsGame program)
-  have htri1' :
-      (Game.advantage (feistel3KeyedGame keyGen F program)
-        (feistel3RandomRoundsGame program) : ℝ) ≤
-      (Game.advantage (feistel3KeyedGame keyGen F program)
-        (feistel3Hybrid₁ keyGen F program) : ℝ) +
-      (Game.advantage (feistel3Hybrid₁ keyGen F program)
-        (feistel3RandomRoundsGame program) : ℝ) := by
-    exact_mod_cast htri1
-  have htri2' :
-      (Game.advantage (feistel3Hybrid₁ keyGen F program)
-        (feistel3RandomRoundsGame program) : ℝ) ≤
-      (Game.advantage (feistel3Hybrid₁ keyGen F program)
-        (feistel3Hybrid₂ keyGen F program) : ℝ) +
-      (Game.advantage (feistel3Hybrid₂ keyGen F program)
-        (feistel3RandomRoundsGame program) : ℝ) := by
-    exact_mod_cast htri2
+    simp only [feistel3Hybrid₂, feistel3RandomRoundsGame, feistel3FixedGame,
+      Probability.PMF.monad_bind_eq_bind]
+    refine Game.advantage_bind_le _ _ _ fun f₁ =>
+      Game.advantage_bind_le _ _ _ fun f₂ => ?_
+    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel3Reduction₃,
+      Probability.PMF.monad_bind_eq_bind] using h₃ f₁ f₂
+  have htri1 := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (feistel3KeyedGame keyGen F program) (feistel3Hybrid₁ keyGen F program)
+    (feistel3RandomRoundsGame program))
+  have htri2 := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (feistel3Hybrid₁ keyGen F program) (feistel3Hybrid₂ keyGen F program)
+    (feistel3RandomRoundsGame program))
+  simp only [NNReal.coe_add] at htri1 htri2
   linarith
 
 /-- **The Luby–Rackoff theorem** ([BonehShoup2023], Section 4.5, Theorem 4.9; [LubyRackoff1988]): a
@@ -1465,17 +1426,12 @@ theorem advantage_feistel3KeyedGame_randomFunctionGame_le
     (Game.advantage (feistel3KeyedGame keyGen F program)
       (randomFunctionGame program) : ℝ) ≤
       ε₁ + ε₂ + ε₃ + 2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ := by
-  have htri := Game.advantage_triangle (feistel3KeyedGame keyGen F program)
-    (feistel3RandomRoundsGame program) (randomFunctionGame program)
-  have hprf := advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le h₁ h₂ h₃
-  have hlr := advantage_feistel3RandomRoundsGame_randomFunctionGame_le hQ
-  have htri' :
-      (Game.advantage (feistel3KeyedGame keyGen F program) (randomFunctionGame program) : ℝ) ≤
-        (Game.advantage (feistel3KeyedGame keyGen F program)
-          (feistel3RandomRoundsGame program) : ℝ) +
-        (Game.advantage (feistel3RandomRoundsGame program) (randomFunctionGame program) : ℝ) := by
-    exact_mod_cast htri
-  linarith
+  have htri := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (feistel3KeyedGame keyGen F program) (feistel3RandomRoundsGame program)
+    (randomFunctionGame program))
+  simp only [NNReal.coe_add] at htri
+  linarith [advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le h₁ h₂ h₃,
+    advantage_feistel3RandomRoundsGame_randomFunctionGame_le hQ]
 
 /-- **The Luby–Rackoff PRP theorem** ([BonehShoup2023], Section 4.5, Theorem 4.9;
 [LubyRackoff1988]): a 3-round
@@ -1499,16 +1455,12 @@ theorem advantage_feistel3KeyedGame_idealPermGame_le
       (idealPermGame program) : ℝ) ≤
       ε₁ + ε₂ + ε₃ + 2 * (Q.choose 2 : ℝ) * (Fintype.card G : ℝ)⁻¹ +
         (Q.choose 2 : ℝ) * ((Fintype.card G : ℝ)⁻¹) ^ 2 := by
-  have htri :
-      (Game.advantage (feistel3KeyedGame keyGen F program) (idealPermGame program) : ℝ) ≤
-        (Game.advantage (feistel3KeyedGame keyGen F program)
-          (feistel3RandomRoundsGame program) : ℝ) +
-        (Game.advantage (feistel3RandomRoundsGame program) (idealPermGame program) : ℝ) := by
-    exact_mod_cast Game.advantage_triangle (feistel3KeyedGame keyGen F program)
-      (feistel3RandomRoundsGame program) (idealPermGame program)
-  have hprf := advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le h₁ h₂ h₃
-  have hlr := advantage_feistel3RandomRoundsGame_idealPermGame_le hQ
-  linarith
+  have htri := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (feistel3KeyedGame keyGen F program) (feistel3RandomRoundsGame program)
+    (idealPermGame program))
+  simp only [NNReal.coe_add] at htri
+  linarith [advantage_feistel3KeyedGame_feistel3RandomRoundsGame_le h₁ h₂ h₃,
+    advantage_feistel3RandomRoundsGame_idealPermGame_le hQ]
 
 /-- Concrete instantiation of the 3-round Luby–Rackoff theorem on `BitString n` (block size `2n`):
 the information-theoretic collision error is at most `2 * Q.choose 2 / 2 ^ n`. -/
@@ -2181,133 +2133,53 @@ theorem advantage_feistel4StrongKeyedGame_feistel4StrongRandomRoundsGame_le
   have hhop1 :
       (Game.advantage (feistel4StrongKeyedGame keyGen F program)
         (feistel4StrongHybrid₁ keyGen F program) : ℝ) ≤ ε₁ := by
-    have hl : feistel4StrongKeyedGame keyGen F program =
-        keyGen.bind fun k₂ => keyGen.bind fun k₃ => keyGen.bind fun k₄ =>
-          prfSingleRealGame keyGen F (feistel4StrongReduction₁ (F k₂) (F k₃) (F k₄) program) := by
-      simp only [feistel4StrongKeyedGame, prfSingleRealGame, interpret_feistel4StrongReduction₁,
-        Probability.PMF.monad_bind_eq_bind]
-      rw [PMF.bind_comm keyGen keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₂ => ?_)
-      rw [PMF.bind_comm keyGen keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₃ => ?_)
-      exact PMF.bind_comm keyGen keyGen _
-    have hr : feistel4StrongHybrid₁ keyGen F program =
-        keyGen.bind fun k₂ => keyGen.bind fun k₃ => keyGen.bind fun k₄ =>
-          prfSingleIdealGame (feistel4StrongReduction₁ (F k₂) (F k₃) (F k₄) program) := by
-      simp only [feistel4StrongHybrid₁, prfSingleIdealGame, interpret_feistel4StrongReduction₁,
-        Probability.PMF.monad_bind_eq_bind]
-      rw [PMF.bind_comm _ keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₂ => ?_)
-      rw [PMF.bind_comm _ keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₃ => ?_)
-      exact PMF.bind_comm _ keyGen _
-    rw [hl, hr]
-    exact Game.advantage_bind_le keyGen _ _ fun k₂ =>
-      Game.advantage_bind_le keyGen _ _ fun k₃ =>
-        Game.advantage_bind_le keyGen _ _ fun k₄ => h₁ (F k₂) (F k₃) (F k₄)
+    simp only [feistel4StrongKeyedGame, feistel4StrongHybrid₁,
+      Probability.PMF.monad_bind_eq_bind]
+    refine advantage_bind_right_le _ _ _ _ _ fun k₂ =>
+      advantage_bind_right_le _ _ _ _ _ fun k₃ =>
+        advantage_bind_right_le _ _ _ _ _ fun k₄ => ?_
+    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₁,
+      Probability.PMF.monad_bind_eq_bind] using h₁ (F k₂) (F k₃) (F k₄)
   have hhop2 :
       (Game.advantage (feistel4StrongHybrid₁ keyGen F program)
         (feistel4StrongHybrid₂ keyGen F program) : ℝ) ≤ ε₂ := by
-    have hl : feistel4StrongHybrid₁ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          keyGen.bind fun k₃ => keyGen.bind fun k₄ =>
-            prfSingleRealGame keyGen F (feistel4StrongReduction₂ f₁ (F k₃) (F k₄) program) := by
-      simp only [feistel4StrongHybrid₁, prfSingleRealGame, interpret_feistel4StrongReduction₂,
-        Probability.PMF.monad_bind_eq_bind]
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₁ => ?_)
-      rw [PMF.bind_comm keyGen keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₃ => ?_)
-      exact PMF.bind_comm keyGen keyGen _
-    have hr : feistel4StrongHybrid₂ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          keyGen.bind fun k₃ => keyGen.bind fun k₄ =>
-            prfSingleIdealGame (feistel4StrongReduction₂ f₁ (F k₃) (F k₄) program) := by
-      simp only [feistel4StrongHybrid₂, prfSingleIdealGame, interpret_feistel4StrongReduction₂,
-        Probability.PMF.monad_bind_eq_bind]
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₁ => ?_)
-      rw [PMF.bind_comm _ keyGen]
-      refine congrArg (keyGen.bind) (funext fun k₃ => ?_)
-      exact PMF.bind_comm _ keyGen _
-    rw [hl, hr]
-    exact Game.advantage_bind_le _ _ _ fun f₁ =>
-      Game.advantage_bind_le keyGen _ _ fun k₃ =>
-        Game.advantage_bind_le keyGen _ _ fun k₄ => h₂ f₁ (F k₃) (F k₄)
+    simp only [feistel4StrongHybrid₁, feistel4StrongHybrid₂,
+      Probability.PMF.monad_bind_eq_bind]
+    refine Game.advantage_bind_le _ _ _ fun f₁ =>
+      advantage_bind_right_le _ _ _ _ _ fun k₃ =>
+        advantage_bind_right_le _ _ _ _ _ fun k₄ => ?_
+    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₂,
+      Probability.PMF.monad_bind_eq_bind] using h₂ f₁ (F k₃) (F k₄)
   have hhop3 :
       (Game.advantage (feistel4StrongHybrid₂ keyGen F program)
         (feistel4StrongHybrid₃ keyGen F program) : ℝ) ≤ ε₃ := by
-    have hl : feistel4StrongHybrid₂ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          (PMF.uniformOfFintype (G → G)).bind fun f₂ => keyGen.bind fun k₄ =>
-            prfSingleRealGame keyGen F (feistel4StrongReduction₃ f₁ f₂ (F k₄) program) := by
-      simp only [feistel4StrongHybrid₂, prfSingleRealGame, interpret_feistel4StrongReduction₃,
-        Probability.PMF.monad_bind_eq_bind]
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₁ => ?_)
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₂ => ?_)
-      exact PMF.bind_comm keyGen keyGen _
-    have hr : feistel4StrongHybrid₃ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          (PMF.uniformOfFintype (G → G)).bind fun f₂ => keyGen.bind fun k₄ =>
-            prfSingleIdealGame (feistel4StrongReduction₃ f₁ f₂ (F k₄) program) := by
-      simp only [feistel4StrongHybrid₃, prfSingleIdealGame, interpret_feistel4StrongReduction₃,
-        Probability.PMF.monad_bind_eq_bind]
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₁ => ?_)
-      refine congrArg ((PMF.uniformOfFintype (G → G)).bind) (funext fun f₂ => ?_)
-      exact PMF.bind_comm _ keyGen _
-    rw [hl, hr]
-    exact Game.advantage_bind_le _ _ _ fun f₁ =>
+    simp only [feistel4StrongHybrid₂, feistel4StrongHybrid₃,
+      Probability.PMF.monad_bind_eq_bind]
+    refine Game.advantage_bind_le _ _ _ fun f₁ =>
       Game.advantage_bind_le _ _ _ fun f₂ =>
-        Game.advantage_bind_le keyGen _ _ fun k₄ => h₃ f₁ f₂ (F k₄)
+        advantage_bind_right_le _ _ _ _ _ fun k₄ => ?_
+    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₃,
+      Probability.PMF.monad_bind_eq_bind] using h₃ f₁ f₂ (F k₄)
   have hhop4 :
       (Game.advantage (feistel4StrongHybrid₃ keyGen F program)
         (feistel4StrongRandomRoundsGame program) : ℝ) ≤ ε₄ := by
-    have hl : feistel4StrongHybrid₃ keyGen F program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          (PMF.uniformOfFintype (G → G)).bind fun f₂ =>
-            (PMF.uniformOfFintype (G → G)).bind fun f₃ =>
-              prfSingleRealGame keyGen F (feistel4StrongReduction₄ f₁ f₂ f₃ program) := by
-      simp only [feistel4StrongHybrid₃, prfSingleRealGame, interpret_feistel4StrongReduction₄,
-        Probability.PMF.monad_bind_eq_bind]
-    have hr : feistel4StrongRandomRoundsGame program =
-        (PMF.uniformOfFintype (G → G)).bind fun f₁ =>
-          (PMF.uniformOfFintype (G → G)).bind fun f₂ =>
-            (PMF.uniformOfFintype (G → G)).bind fun f₃ =>
-              prfSingleIdealGame (feistel4StrongReduction₄ f₁ f₂ f₃ program) := by
-      simp only [feistel4StrongRandomRoundsGame, prfSingleIdealGame,
-        interpret_feistel4StrongReduction₄, Probability.PMF.monad_bind_eq_bind]
-    rw [hl, hr]
-    exact Game.advantage_bind_le _ _ _ fun f₁ =>
+    simp only [feistel4StrongHybrid₃, feistel4StrongRandomRoundsGame,
+      Probability.PMF.monad_bind_eq_bind]
+    refine Game.advantage_bind_le _ _ _ fun f₁ =>
       Game.advantage_bind_le _ _ _ fun f₂ =>
-        Game.advantage_bind_le _ _ _ fun f₃ => h₄ f₁ f₂ f₃
-  have htri1 := Game.advantage_triangle (feistel4StrongKeyedGame keyGen F program)
-    (feistel4StrongHybrid₁ keyGen F program) (feistel4StrongRandomRoundsGame program)
-  have htri2 := Game.advantage_triangle (feistel4StrongHybrid₁ keyGen F program)
-    (feistel4StrongHybrid₂ keyGen F program) (feistel4StrongRandomRoundsGame program)
-  have htri3 := Game.advantage_triangle (feistel4StrongHybrid₂ keyGen F program)
-    (feistel4StrongHybrid₃ keyGen F program) (feistel4StrongRandomRoundsGame program)
-  have htri1' :
-      (Game.advantage (feistel4StrongKeyedGame keyGen F program)
-        (feistel4StrongRandomRoundsGame program) : ℝ) ≤
-      (Game.advantage (feistel4StrongKeyedGame keyGen F program)
-        (feistel4StrongHybrid₁ keyGen F program) : ℝ) +
-      (Game.advantage (feistel4StrongHybrid₁ keyGen F program)
-        (feistel4StrongRandomRoundsGame program) : ℝ) := by
-    exact_mod_cast htri1
-  have htri2' :
-      (Game.advantage (feistel4StrongHybrid₁ keyGen F program)
-        (feistel4StrongRandomRoundsGame program) : ℝ) ≤
-      (Game.advantage (feistel4StrongHybrid₁ keyGen F program)
-        (feistel4StrongHybrid₂ keyGen F program) : ℝ) +
-      (Game.advantage (feistel4StrongHybrid₂ keyGen F program)
-        (feistel4StrongRandomRoundsGame program) : ℝ) := by
-    exact_mod_cast htri2
-  have htri3' :
-      (Game.advantage (feistel4StrongHybrid₂ keyGen F program)
-        (feistel4StrongRandomRoundsGame program) : ℝ) ≤
-      (Game.advantage (feistel4StrongHybrid₂ keyGen F program)
-        (feistel4StrongHybrid₃ keyGen F program) : ℝ) +
-      (Game.advantage (feistel4StrongHybrid₃ keyGen F program)
-        (feistel4StrongRandomRoundsGame program) : ℝ) := by
-    exact_mod_cast htri3
+        Game.advantage_bind_le _ _ _ fun f₃ => ?_
+    simpa only [prfSingleRealGame, prfSingleIdealGame, interpret_feistel4StrongReduction₄,
+      Probability.PMF.monad_bind_eq_bind] using h₄ f₁ f₂ f₃
+  have htri1 := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (feistel4StrongKeyedGame keyGen F program) (feistel4StrongHybrid₁ keyGen F program)
+    (feistel4StrongRandomRoundsGame program))
+  have htri2 := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (feistel4StrongHybrid₁ keyGen F program) (feistel4StrongHybrid₂ keyGen F program)
+    (feistel4StrongRandomRoundsGame program))
+  have htri3 := NNReal.coe_le_coe.mpr (Game.advantage_triangle
+    (feistel4StrongHybrid₂ keyGen F program) (feistel4StrongHybrid₃ keyGen F program)
+    (feistel4StrongRandomRoundsGame program))
+  simp only [NNReal.coe_add] at htri1 htri2 htri3
   linarith
 
 /-! ### 4-round bidirectional random-round collision analysis and strong PRP Luby–Rackoff theorem -/

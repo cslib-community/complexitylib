@@ -165,31 +165,29 @@ variable {α : Type} {ei : α ↪ List Bool} {m B : α → ℕ}
   (hm : ComputableInPolyTime m ei encUnary) (hB : ComputableInPolyTime B ei encUnary)
 include hm hB
 @[fun_prop] theorem greedyRowListLength_polyTime :
-    ComputableInPolyTime (fun a => greedyRowListLength (B a) (m a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold greedyRowListLength; fun_prop)
+    ComputableInPolyTime (fun a => greedyRowListLength (B a) (m a)) ei encUnary := by
+  unfold greedyRowListLength; fun_prop
 @[fun_prop] theorem initialRowWeightBound_polyTime :
-    ComputableInPolyTime (fun a => initialRowWeightBound (B a) (m a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold initialRowWeightBound; fun_prop)
+    ComputableInPolyTime (fun a => initialRowWeightBound (B a) (m a)) ei encUnary := by
+  unfold initialRowWeightBound; fun_prop
 @[fun_prop] theorem dG_polyTime :
-    ComputableInPolyTime (fun a => dG (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold dG initialRowWeightBound; fun_prop)
+    ComputableInPolyTime (fun a => dG (m a) (B a)) ei encUnary := by
+  unfold dG initialRowWeightBound; fun_prop
 @[fun_prop] theorem ellG_polyTime :
-    ComputableInPolyTime (fun a => ellG (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold ellG dG initialRowWeightBound; fun_prop)
+    ComputableInPolyTime (fun a => ellG (m a) (B a)) ei encUnary := by
+  unfold ellG dG initialRowWeightBound; fun_prop
 @[fun_prop] theorem qG_polyTime :
-    ComputableInPolyTime (fun a => qG (m a) (B a)) ei encUnary :=
-  .of_tidy (by
-    have := hm.tidy; have := hB.tidy; unfold qG ellG dG initialRowWeightBound
-    exact ComputableTidilyInPolyTime.unary_pow_clog_const (by fun_prop) 2 2)
+    ComputableInPolyTime (fun a => qG (m a) (B a)) ei encUnary := by
+  unfold qG ellG dG initialRowWeightBound; fun_prop
 @[fun_prop] theorem cG_polyTime :
-    ComputableInPolyTime (fun a => cG (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold cG dG initialRowWeightBound; fun_prop)
+    ComputableInPolyTime (fun a => cG (m a) (B a)) ei encUnary := by
+  unfold cG dG initialRowWeightBound; fun_prop
 @[fun_prop] theorem hDist_polyTime :
-    ComputableInPolyTime (fun a => hDist (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold hDist dG initialRowWeightBound; fun_prop)
+    ComputableInPolyTime (fun a => hDist (m a) (B a)) ei encUnary := by
+  unfold hDist dG initialRowWeightBound; fun_prop
 @[fun_prop] theorem biasDen_polyTime :
-    ComputableInPolyTime (fun a => biasDen (m a) (B a)) ei encUnary :=
-  .of_tidy (by have := hm.tidy; have := hB.tidy; unfold biasDen; fun_prop)
+    ComputableInPolyTime (fun a => biasDen (m a) (B a)) ei encUnary := by
+  unfold biasDen; fun_prop
 end
 
 /-! ### Private streaming `IndexFold` and matrix-search combinators -/

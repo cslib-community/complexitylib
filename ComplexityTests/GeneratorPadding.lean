@@ -21,26 +21,26 @@ example : ∃ c d : ℕ, ∀ n i, i < n + 1 → (n + i) ^ 2 ≤ c * (n + 1) ^ d 
   ComputableTidilyInPolyTime.indexed_polynomial_bound (by polytime) (by fun_prop)
 
 -- The grid parameters and entry index may all depend on the ordinary functional input.
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ =>
+example : ComputableInPolyTime (fun p : ℕ × ℕ =>
     (EntropyGrid.seedLength p.1 (p.1 + 1) (p.2 + 1) p.1 p.2,
       EntropyGrid.outputLength p.1 (p.1 + 1) (p.2 + 1) p.1 p.2))
     (encPair encUnary encUnary) (encPair encUnary encUnary) := by polytime
 
-example : ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+example : ComputableInPolyTime (fun p : ℕ × List Bool =>
     EntropyGrid.generate p.1 2 1 3 p.1 (fun seed => (seed.take 1, seed.getD 1 false)) p.2)
     (encPair encUnary encBits) encBits := by polytime
 
 example (generator : ℕ → List Bool → List Bool)
-    (hgenerator : ComputableTidilyInPolyTime (fun p => generator p.1 p.2)
+    (hgenerator : ComputableInPolyTime (fun p => generator p.1 p.2)
       (encPair encUnary encBits) encBits) :
-    ComputableTidilyInPolyTime (fun p : ℕ × List Bool =>
+    ComputableInPolyTime (fun p : ℕ × List Bool =>
       GeneratorPadding.generate p.1 (p.1 + 3) (generator p.1) p.2)
       (encPair encUnary encBits) encBits := by
   fail_if_success (clear hgenerator; polytime)
   polytime
 
 -- The same slicing program also works through the framed list encoding.
-example : ComputableTidilyInPolyTime (fun seed : List Bool =>
+example : ComputableInPolyTime (fun seed : List Bool =>
     ((seed.take 2 ++ [true]) ++ seed.drop 2).take 5) (encList encBool) encBits := by polytime
 
 example (adversary : ℕ → List Bool → ProbComp Bool)
@@ -97,7 +97,7 @@ example (adversary : List Bool → ProbComp Bool) :
   GeneratorPadding.advantage_eq extend adversary (by decide) (by decide)
 
 -- Every entry of a concrete polynomial-size grid fits one increasing efficient schedule.
-example : ∃ common : ℕ → ℕ, ComputableTidilyInPolyTime common encUnary encUnary ∧
+example : ∃ common : ℕ → ℕ, ComputableInPolyTime common encUnary encUnary ∧
     StrictMono common ∧ (∀ n, n + 1 ≤ common n) ∧
     ∀ n index, index < EntropyGrid.size (n + 1) (16 * (n + 7)) →
       EntropyGrid.seedLength n (n + 1) 2 (16 * (n + 7)) index ≤ common n := by
@@ -105,6 +105,6 @@ example : ∃ common : ℕ → ℕ, ComputableTidilyInPolyTime common encUnary e
     EntropyGrid.exists_common_seedLength
       (sourceBits := fun n => n + 1) (observationBound := fun _ => 2)
       (densityBound := fun n => 16 * (n + 7)) (by polytime) (by polytime) (by polytime)
-  exact ⟨common, hcommon.tidy, hmono, hself, hbound⟩
+  exact ⟨common, hcommon, hmono, hself, hbound⟩
 
 end ComplexityTests.GeneratorPadding

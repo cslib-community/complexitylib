@@ -50,44 +50,37 @@ example : (literal.map List.length).ecomplexity 3 ≤ 3 := by
   exact (ecomplexity_map_le List.length literal [true, false, true]).trans_eq (by simp)
 
 -- Concrete finiteness, optimality, and time-bounded attainment for `universal`.
-example : universal.ecomplexity 0 ≠ ⊤ := ecomplexity_universal_ne_top 0
-
-example : universal.ecomplexity 42 ≠ ⊤ := ecomplexity_universal_ne_top 42
-
-example : (universal.complexity 42 : ℕ∞) = universal.ecomplexity 42 :=
-  natCast_complexity_universal 42
-
-example : ∃ p : List Bool,
-    universal.Produces p 42 ∧ (p.length : ℕ∞) = universal.ecomplexity 42 :=
-  universal.exists_length_eq_ecomplexity (ecomplexity_universal_ne_top 42)
-
-example : ∃ t, universal.etimeBoundedComplexity t 42 = universal.ecomplexity 42 :=
-  universal.exists_etimeBoundedComplexity_eq_ecomplexity 42
+example :
+    universal.ecomplexity 0 ≠ ⊤ ∧
+    universal.ecomplexity 42 ≠ ⊤ ∧
+    (universal.complexity 42 : ℕ∞) = universal.ecomplexity 42 ∧
+    (∃ p : List Bool, universal.Produces p 42 ∧ (p.length : ℕ∞) = universal.ecomplexity 42) ∧
+    (∃ t, universal.etimeBoundedComplexity t 42 = universal.ecomplexity 42) :=
+  ⟨ecomplexity_universal_ne_top 0,
+   ecomplexity_universal_ne_top 42,
+   natCast_complexity_universal 42,
+   universal.exists_length_eq_ecomplexity (ecomplexity_universal_ne_top 42),
+   universal.exists_etimeBoundedComplexity_eq_ecomplexity 42⟩
 
 /-! ### Growth and uncomputability of plain Kolmogorov complexity -/
 
--- All but finitely many numbers have complexity at least ten.
-example : ∀ᶠ x in atTop, 10 ≤ universal.complexity x :=
-  tendsto_atTop.1 tendsto_complexity_universal 10
-
--- `K(2 ^ x) ≤ x + O(1)`: the binary representation of `2 ^ x` has `x + 1` bits.
-example : ∃ c, ∀ x, universal.complexity (2 ^ x) ≤ x + c := by
+-- Growth, composition bound, square-root separation, and uncomputability for `universal`.
+example :
+    (∀ᶠ x in atTop, 10 ≤ universal.complexity x) ∧
+    (∃ c, ∀ x, universal.complexity (2 ^ x) ≤ x + c) ∧
+    (∃ c, ∀ x, universal.complexity (x + 1) ≤ universal.complexity x + c) ∧
+    (∃ᶠ x in atTop, universal.complexity x < Nat.sqrt x) ∧
+    ¬ Computable universal.complexity := by
+  refine ⟨tendsto_atTop.1 tendsto_complexity_universal 10, ?_,
+    exists_complexity_universal_comp_le Computable.succ,
+    frequently_complexity_universal_lt_of_computable Primrec.nat_sqrt.to_comp
+      (fun k => ⟨k * k, (Nat.sqrt_eq k).ge⟩),
+    not_computable_complexity_universal⟩
   obtain ⟨c, hc⟩ := exists_complexity_universal_le_size_add
   refine ⟨c + 1, fun x => ?_⟩
   have h := hc (2 ^ x)
   rw [Nat.size_pow] at h
   omega
-
--- The successor increases complexity by at most a constant.
-example : ∃ c, ∀ x, universal.complexity (x + 1) ≤ universal.complexity x + c :=
-  exists_complexity_universal_comp_le Computable.succ
-
--- The integer square root is not a lower bound for `K`, not even eventually.
-example : ∃ᶠ x in atTop, universal.complexity x < Nat.sqrt x :=
-  frequently_complexity_universal_lt_of_computable Primrec.nat_sqrt.to_comp
-    fun k => ⟨k * k, (Nat.sqrt_eq k).ge⟩
-
-example : ¬ Computable universal.complexity := not_computable_complexity_universal
 
 /-! ### Binary words of bounded length -/
 
@@ -117,16 +110,13 @@ private theorem strictMono_logSqStretch : StrictMono logSqStretch := fun _ _ hab
 example : logSqStretch 64 < 2 * 64 := by decide
 
 example {G : List Bool → List Bool} (hG : PseudorandomGenerator G logSqStretch)
-    (hgap : Negligible fun n => (1 / 2 : ℝ≥0) ^ (logSqStretch n - n)) : OneWay G :=
-  hG.oneWay_of_injective strictMono_logSqStretch.injective hgap
-
-example {G : List Bool → List Bool} {ℓ : ℕ → ℕ} (hG : PseudorandomGenerator G ℓ) :
-    ∃ f : List Bool → List Bool, OneWay f :=
-  hG.exists_oneWay
-
-example :
-    (∃ f : List Bool → List Bool, OneWay f) ↔
-      ∃ (G : List Bool → List Bool) (ℓ : ℕ → ℕ), PseudorandomGenerator G ℓ :=
-  exists_oneWay_iff_exists_pseudorandomGenerator
+    (hgap : Negligible fun n => (1 / 2 : ℝ≥0) ^ (logSqStretch n - n)) :
+    OneWay G ∧
+    (∃ f : List Bool → List Bool, OneWay f) ∧
+    ((∃ f : List Bool → List Bool, OneWay f) ↔
+      ∃ (G' : List Bool → List Bool) (ℓ : ℕ → ℕ), PseudorandomGenerator G' ℓ) :=
+  ⟨hG.oneWay_of_injective strictMono_logSqStretch.injective hgap,
+   hG.exists_oneWay,
+   exists_oneWay_iff_exists_pseudorandomGenerator⟩
 
 end ComplexityTests.KolmogorovCrypto

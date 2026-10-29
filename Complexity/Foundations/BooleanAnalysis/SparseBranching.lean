@@ -131,20 +131,6 @@ def univariateMonomialSumPoly (R : Type*) [CommSemiring R] (q : ι → Polynomia
     (𝓜 : Finset (Finset ι)) : Polynomial R :=
   ∑ M ∈ 𝓜, univariateMonomialPoly R q M
 
-/-- `univariateMonomialPoly R q M` agrees with evaluating `monomialPoly R M` at `q`. -/
-theorem univariateMonomialPoly_eq_eval₂ [CommSemiring R] (q : ι → Polynomial R) (M : Finset ι) :
-    univariateMonomialPoly R q M = (monomialPoly R M).eval₂ Polynomial.C q := by
-  rw [univariateMonomialPoly, monomialPoly, MvPolynomial.eval₂_prod]
-  refine prod_congr rfl fun v _ => ?_
-  rw [MvPolynomial.eval₂_X]
-
-/-- `univariateMonomialSumPoly R q 𝓜` agrees with evaluating `monomialSumPoly R 𝓜` at `q`. -/
-theorem univariateMonomialSumPoly_eq_eval₂ [CommSemiring R] (q : ι → Polynomial R)
-    (𝓜 : Finset (Finset ι)) :
-    univariateMonomialSumPoly R q 𝓜 = (monomialSumPoly R 𝓜).eval₂ Polynomial.C q := by
-  rw [univariateMonomialSumPoly, monomialSumPoly, MvPolynomial.eval₂_sum]
-  exact sum_congr rfl fun M _ => univariateMonomialPoly_eq_eval₂ q M
-
 /-- Pointwise evaluation of `univariateMonomialPoly R q M` at `t : R`. -/
 theorem eval_univariateMonomialPoly [CommSemiring R] (q : ι → Polynomial R) (M : Finset ι)
     (t : R) :
@@ -461,15 +447,6 @@ theorem monomialSum_relabelRestrictedMonomials [Fintype ι] [DecidableEq ι] [De
     (fun x _ => ?_)
   simp only [extendFreeAssignment, x.2, ↓reduceDIte]
 
-/-- Over `ZMod 2`, evaluating `relabelRestrictedMonomials S e b 𝓜` at `y : ι' → Bool` equals
-evaluating the original equation `𝓜` at `patchAssignment S b (extendFreeAssignment S e y)`. -/
-theorem monomialSum_zmod_two_relabelRestrictedMonomials [Fintype ι] [DecidableEq ι]
-    [DecidableEq ι'] (S : Finset ι) (e : ↥(univ \ S) ≃ ι') (b : ι → Bool)
-    (𝓜 : Finset (Finset ι)) (y : ι' → Bool) :
-    monomialSum (ZMod 2) (relabelRestrictedMonomials S e b 𝓜) y =
-      monomialSum (ZMod 2) 𝓜 (patchAssignment S b (extendFreeAssignment S e y)) := by
-  rw [monomialSum_relabelRestrictedMonomials, monomialSum_zmod_two_restrictMonomials]
-
 /-- **§5.5–5.6 (Theorem 2.2 additive branch decomposition on the relabeled free-variable cube
 `ι' → Bool`)**: for any branch variable set `S` and equivalence `e : ↥(univ \ S) ≃ ι'`, the
 common-zero count `commonZeroCount I P` equals the sum over `b ∈ branchAssignments S` of
@@ -709,41 +686,6 @@ theorem card_sdiff_heavyVars_ge_half [DecidableEq ι] (V : Finset ι) (F : Finse
 unrestricted system on `n` variables and every free-variable branch. -/
 def branchPrecision (n : ℕ) : ℕ :=
   n + 1
-
-/-- The branch precision `branchPrecision n` is always at least `1`. -/
-theorem one_le_branchPrecision (n : ℕ) : 1 ≤ branchPrecision n :=
-  Nat.succ_pos n
-
-/-- Strict inequality `2 ^ n < 2 ^ branchPrecision n`. -/
-theorem two_pow_lt_two_pow_branchPrecision (n : ℕ) :
-    2 ^ n < 2 ^ branchPrecision n :=
-  Nat.pow_lt_pow_right (by decide) (Nat.lt_succ_self n)
-
-/-- **§5.1 ($N(\mathcal{P}) < 2^\ell$)**: the common-zero count on `ι` is strictly smaller than
-`2 ^ branchPrecision (Fintype.card ι)`. -/
-theorem commonZeroCount_lt_two_pow_branchPrecision [Fintype ι] [DecidableEq ι] (I : Finset κ)
-    (P : κ → Finset (Finset ι)) :
-    commonZeroCount I P < 2 ^ branchPrecision (Fintype.card ι) :=
-  lt_of_le_of_lt (commonZeroCount_le_two_pow I P)
-    (two_pow_lt_two_pow_branchPrecision (Fintype.card ι))
-
-/-- **§5.5 (branch count $< 2^\ell$ at original precision $\ell = n + 1$)**: for any subset `S`
-and branch assignment `b : ι → Bool`, the relabeled branch common-zero count on `ι'` is strictly
-smaller than `2 ^ branchPrecision (Fintype.card ι)` whenever `e : ↥(univ \ S) ≃ ι'`. -/
-theorem commonZeroCount_relabelRestrictedMonomials_lt_two_pow_branchPrecision [Fintype ι]
-    [Fintype ι'] [DecidableEq ι] [DecidableEq ι'] (S : Finset ι) (e : ↥(univ \ S) ≃ ι')
-    (I : Finset κ) (P : κ → Finset (Finset ι)) (b : ι → Bool) :
-    commonZeroCount I (fun i => relabelRestrictedMonomials S e b (P i)) <
-      2 ^ branchPrecision (Fintype.card ι) := by
-  have hcard : Fintype.card ι' ≤ Fintype.card ι := by
-    rw [← Fintype.card_congr e, Fintype.card_coe]
-    exact card_le_univ (univ \ S)
-  calc
-    commonZeroCount I (fun i => relabelRestrictedMonomials S e b (P i))
-      ≤ 2 ^ Fintype.card ι' := commonZeroCount_le_two_pow _ _
-    _ ≤ 2 ^ Fintype.card ι := Nat.pow_le_pow_right (by decide) hcard
-    _ < 2 ^ branchPrecision (Fintype.card ι) :=
-      two_pow_lt_two_pow_branchPrecision (Fintype.card ι)
 
 /-- **§5.5 (exact branch recovery at original precision $\ell = n + 1$)**: on any branch `(S, b)`
 relabeled along `e : ↥(univ \ S) ≃ ι'`, evaluating `univariateParityTruncatedSum` at `T = 0` with

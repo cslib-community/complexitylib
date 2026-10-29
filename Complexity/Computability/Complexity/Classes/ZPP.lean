@@ -124,19 +124,18 @@ end DecidesWithZeroError
 theorem compl_mem_ZPP {A : Set α} (hA : A ∈ ZPP enc) : Aᶜ ∈ ZPP enc := by
   obtain ⟨p, V, hV, h⟩ := mem_ZPP.mp hA
   refine mem_ZPP.mpr ⟨p, fun x => (V x).map Bool.not, ?_, h.compl⟩
-  have : ComputableTidilyInPolyTime (fun x => (V x).elim none fun b => some !b)
+  have : ComputableInPolyTime (fun x => (V x).elim none fun b => some !b)
       (encPair enc encBits) (encOption encBool) :=
-    ComputableTidilyInPolyTime.optionElimWithInput hV.tidy (.const none)
-      ((ComputableTidilyInPolyTime.optionSome encBool).comp
-        (ComputableTidilyInPolyTime.bool_not.comp (.snd _ _)))
-  refine .of_tidy ?_
+    ComputableInPolyTime.optionElimWithInput hV (.const none)
+      ((ComputableInPolyTime.optionSome encBool).comp
+        (ComputableInPolyTime.bool_not.comp (.snd _ _)))
   convert this using 2 with x
   cases V x <;> rfl
 
 /-- **`ZPP ⊆ RP`**: accept exactly on the answer `some true`. -/
 theorem ZPP_subset_RP : ZPP enc ⊆ RP enc := fun _ ⟨p, V, hV, h⟩ =>
   ⟨p, fun x => (V x).getD false,
-    .of_tidy (ComputableTidilyInPolyTime.optionGetDWithInput hV.tidy (.const false)),
+    (ComputableInPolyTime.optionGetDWithInput hV (.const false)),
     h.decidesWithOneSidedError⟩
 
 /-- **`ZPP ⊆ coRP`**: the complement is in `ZPP`, hence in `RP`. -/
@@ -185,20 +184,20 @@ theorem RP_inter_coRP_subset_ZPP : RP enc ∩ coRP enc ⊆ ZPP enc := by
   let V (x : α × List Bool) : Option Bool :=
     if V₁ (x.1, x.2.take (len x.1)) then some true
     else if V₂ (x.1, x.2.drop (len x.1)) then some false else none
-  have hlen : ComputableTidilyInPolyTime (fun x : α × List Bool => len x.1) (encPair enc encBits)
+  have hlen : ComputableInPolyTime (fun x : α × List Bool => len x.1) (encPair enc encBits)
       encUnary :=
-    ((ComputableTidilyInPolyTime.unary_eval p₁).comp
-      (ComputableTidilyInPolyTime.encoding_length enc)).comp (.fst _ _)
-  have hpoly : ComputableTidilyInPolyTime V (encPair enc encBits) (encOption encBool) :=
-    ComputableTidilyInPolyTime.cond
-      (hV₁.tidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
-        (ComputableTidilyInPolyTime.bitsTakeWithInput (.snd _ _) hlen)))
+    ((ComputableInPolyTime.unary_eval p₁).comp
+      (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
+  have hpoly : ComputableInPolyTime V (encPair enc encBits) (encOption encBool) :=
+    ComputableInPolyTime.ite'
+      (hV₁.comp ((ComputableInPolyTime.fst _ _).prod
+        (ComputableInPolyTime.bitsTakeWithInput (.snd _ _) hlen)))
       (.const _)
-      (ComputableTidilyInPolyTime.cond
-        (hV₂.tidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
-          (ComputableTidilyInPolyTime.bitsDropWithInput (.snd _ _) hlen)))
+      (ComputableInPolyTime.ite'
+        (hV₂.comp ((ComputableInPolyTime.fst _ _).prod
+          (ComputableInPolyTime.bitsDropWithInput (.snd _ _) hlen)))
         (.const _) (.const _))
-  refine ⟨p₁ + p₂, V, .of_tidy hpoly, fun a => ?_⟩
+  refine ⟨p₁ + p₂, V, hpoly, fun a => ?_⟩
   have heval : (p₁ + p₂).eval (enc a).length = len a + p₂.eval (enc a).length :=
     Polynomial.eval_add
   rw [heval]
