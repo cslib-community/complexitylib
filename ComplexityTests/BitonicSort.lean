@@ -20,34 +20,47 @@ namespace ComplexityTests.BitonicSort
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
--- Functional bitonic sorting (ascending, descending, and unstable equal-key ties), depth-0
--- identity behavior, exact circuit sizes (`120`, `192`, and `0` on empty records), and monotone
--- output key ordering.
-example (key₀ : Fin 2 → Fin 2) (ascending : Bool) (x₀ : Fin 1 → ℕ) (x : BitString (1 * 2))
-    (depth : ℕ) (x₂ : BitString (BitonicSort.arity 2 * 2)) :
-    List.ofFn (BitonicSort.sort id 2 true (![3, 1, 2, 0] : Fin 4 → ℕ)) = [0, 1, 2, 3] ∧
-      List.ofFn (BitonicSort.sort id 2 false (![3, 1, 2, 0] : Fin 4 → ℕ)) = [3, 2, 1, 0] ∧
-      List.ofFn (BitonicSort.sort (fun _ : ℕ => 0) 2 true ![10, 11, 12, 13]) = [10, 11, 13, 12] ∧
-      BitonicSort.sort id 0 ascending x₀ = x₀ ∧
-      (bitonicSortCircuit key₀ 0 ascending).eval interpretation x = x ∧
-      (bitonicSortCircuit (fun _ : Fin 1 => (0 : Fin 2)) 2 true).size = 120 ∧
-      (bitonicSortCircuit (![1, 0, 1] : Fin 3 → Fin 2) 2 false).size = 192 ∧
-      (bitonicSortCircuit (Fin.elim0 : Fin 0 → Fin 0) depth ascending).size = 0 ∧
-      Monotone (fun j => toLex (directProductInput
-        ((bitonicSortCircuit key₀ 2 true).eval interpretation x₂) j ∘ key₀)) := by
-  refine ⟨by decide +kernel, by decide +kernel, by decide +kernel, rfl, ?_, ?_, ?_, ?_,
-    monotone_bitonicSortCircuit key₀ 2 x₂⟩
-  · change BitString (BitonicSort.arity 0 * 2) at x
-    simpa only [BitonicSort.sort, bitonicSortTraceCircuit.flatten_directProductInput] using
-      congrArg bitonicSortTraceCircuit.flatten (eval_bitonicSortCircuit key₀ 0 ascending x)
-  · have h := four_mul_size_bitonicSortCircuit (fun _ : Fin 1 => (0 : Fin 2)) 2 true
-    norm_num at h
-    lia
-  · have h := four_mul_size_bitonicSortCircuit (![1, 0, 1] : Fin 3 → Fin 2) 2 false
-    norm_num at h
-    lia
-  · have h := four_mul_size_bitonicSortCircuit (Fin.elim0 : Fin 0 → Fin 0) depth ascending
-    simpa using h
+example : List.ofFn (BitonicSort.sort id 2 true (![3, 1, 2, 0] : Fin 4 → ℕ)) =
+    [0, 1, 2, 3] := by
+  decide +kernel
+
+example : List.ofFn (BitonicSort.sort id 2 false (![3, 1, 2, 0] : Fin 4 → ℕ)) =
+    [3, 2, 1, 0] := by
+  decide +kernel
+
+-- The full algorithm is deliberately not claimed stable: descending intermediate ties swap.
+example : List.ofFn (BitonicSort.sort (fun _ : ℕ => 0) 2 true ![10, 11, 12, 13]) =
+    [10, 11, 13, 12] := by
+  decide +kernel
+
+example {α κ : Type*} [LinearOrder κ] (key : α → κ) (x : Fin 1 → α) (ascending : Bool) :
+    BitonicSort.sort key 0 ascending x = x := rfl
+
+example {k r : ℕ} (key : Fin k → Fin r) (ascending : Bool) (x : BitString (1 * r)) :
+    (bitonicSortCircuit key 0 ascending).eval interpretation x = x := by
+  change BitString (BitonicSort.arity 0 * r) at x
+  simpa only [BitonicSort.sort, bitonicSortTraceCircuit.flatten_directProductInput] using
+    congrArg bitonicSortTraceCircuit.flatten (eval_bitonicSortCircuit key 0 ascending x)
+
+example : (bitonicSortCircuit (fun _ : Fin 1 => (0 : Fin 2)) 2 true).size = 120 := by
+  have h := four_mul_size_bitonicSortCircuit (fun _ : Fin 1 => (0 : Fin 2)) 2 true
+  norm_num at h
+  lia
+
+example : (bitonicSortCircuit (![1, 0, 1] : Fin 3 → Fin 2) 2 false).size = 192 := by
+  have h := four_mul_size_bitonicSortCircuit (![1, 0, 1] : Fin 3 → Fin 2) 2 false
+  norm_num at h
+  lia
+
+example (depth : ℕ) (ascending : Bool) :
+    (bitonicSortCircuit (Fin.elim0 : Fin 0 → Fin 0) depth ascending).size = 0 := by
+  have h := four_mul_size_bitonicSortCircuit (Fin.elim0 : Fin 0 → Fin 0) depth ascending
+  simpa using h
+
+example {k r : ℕ} (key : Fin k → Fin r) (depth : ℕ) (x : BitString (BitonicSort.arity depth * r)) :
+    Monotone (fun j => toLex (directProductInput
+      ((bitonicSortCircuit key depth true).eval interpretation x) j ∘ key)) :=
+  monotone_bitonicSortCircuit key depth x
 
 /-- info: #[] -/
 #guard_msgs in

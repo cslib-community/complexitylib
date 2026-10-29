@@ -113,20 +113,21 @@ private def sortKey {h k : ℕ} (key : Fin k → Fin h) (tag : Fin h) (width : �
   Circuit.wiring signature (Fin.snoc (α := fun _ => Fin (h + width))
     (Fin.castAdd width ∘ key) (Fin.castAdd width tag))
 
-example (x : BitString (BitonicSort.arity 2 * (3 + 2)))
-    (destination : Fin (BitonicSort.arity 2))
-    (htag : header ((keyedSortCircuit (sortKey metadataKey 1 2) 2 true).eval interpretation x)
-      destination 1 = true) (bit : Fin 2) :
-    let sorted := (keyedSortCircuit (sortKey metadataKey 1 2) 2 true).eval interpretation x
-    value ((broadcastCircuit metadataKey 1 (BitonicSort.arity 2) 2).eval interpretation sorted)
+example {h k width depth : ℕ} (key : Fin k → Fin h) (tag : Fin h)
+    (x : BitString (BitonicSort.arity depth * (h + width)))
+    (destination : Fin (BitonicSort.arity depth))
+    (htag : header ((keyedSortCircuit (sortKey key tag width) depth true).eval interpretation x)
+      destination tag = true) (bit : Fin width) :
+    let sorted := (keyedSortCircuit (sortKey key tag width) depth true).eval interpretation x
+    value ((broadcastCircuit key tag (BitonicSort.arity depth) width).eval interpretation sorted)
       destination bit = true ↔
-      ∃ source, header sorted source ∘ metadataKey = header sorted destination ∘ metadataKey ∧
-        header sorted source 1 = false ∧ value sorted source bit = true := by
+      ∃ source, header sorted source ∘ key = header sorted destination ∘ key ∧
+        header sorted source tag = false ∧ value sorted source bit = true := by
   dsimp only
-  apply eval_broadcastCircuit_value_eq_true_iff metadataKey 1 _ _ destination htag bit
+  apply eval_broadcastCircuit_value_eq_true_iff key tag _ _ destination htag bit
   simpa only [sortKey, Circuit.eval_wiring, Fin.comp_snoc, Function.comp_assoc,
     Function.comp_apply, header] using
-    monotone_keyedSortCircuit (sortKey metadataKey 1 2) 2 x
+    monotone_keyedSortCircuit (sortKey key tag width) depth x
 
 -- Compare the whole unsorted scan with a direct existential over constant-key intervals.
 -- Also check the all-source OR specification whenever the input is sorted and tagged destination.

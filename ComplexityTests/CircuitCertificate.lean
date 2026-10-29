@@ -10,7 +10,9 @@ import Complexity.Computability.Circuit.Boolean.Encoding.Certificate
 
 open Cslib.Circuits.Boolean
 
--- Certificate-length monotonicity on concrete input widths (`2 ≤ 4`) and from `0`.
-example (n : ℕ) :
-    certLength 2 5 ≤ certLength 4 5 ∧ certLength 0 0 ≤ certLength n 0 :=
-  ⟨certLength_mono_left (by decide : 2 ≤ 4) 5, certLength_mono_left (Nat.zero_le n) 0⟩
+-- Evaluate both lengths independently before comparing the input-width budgets.
+example : certLength 2 5 = 97 ∧ certLength 4 5 = 119 ∧ certLength 2 5 ≤ certLength 4 5 := by
+  decide
+
+example (n : ℕ) : certLength 0 0 ≤ certLength n 0 :=
+  certLength_mono_left (Nat.zero_le n) 0

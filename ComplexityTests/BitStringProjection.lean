@@ -16,7 +16,7 @@ namespace BitStringProjectionTests
 repeated, and unsorted position lists, and prefix boundaries. -/
 example :
     (differingBits 0 1 2 = ∅ ∧ highestDiff 0 1 2 = 0 ∧ highestDiff 4 9 9 = 0) ∧
-    (highestDiff 4 8 9 = 0 ∧ highestDiff 4 1 8 = 3) ∧
+    (highestDiff 4 8 9 = 0 ∧ highestDiff 4 1 8 = 3 ∧ highestDiff 4 5 13 = 3) ∧
     (projectBits [] 9 = 0 ∧ projectBits [0, 0] 1 = 3 ∧
       projectBits [3, 0] 1 = 2 ∧ projectBits [3, 0] 8 = 1) ∧
     (lowerBoundary 13 2 = 11 ∧ upperBoundary 13 2 = 12) := by
