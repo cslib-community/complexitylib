@@ -6,7 +6,7 @@
  "Complexity/Computability/Machines/ReadMachine/Tidy.lean": 2,
  "Complexity/Computability/Machines/Turing/MultiTape/Combinators/Encoding.lean": 8,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/Arith.lean": 2,
- "Complexity/Computability/Machines/Turing/MultiTape/Complexity/BigO.lean": 39,
+ "Complexity/Computability/Machines/Turing/MultiTape/Complexity/BigO.lean": 32,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/BigO/Option.lean": 1,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/BigO/Pi.lean": 5,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/BigO/Plain.lean": 2,

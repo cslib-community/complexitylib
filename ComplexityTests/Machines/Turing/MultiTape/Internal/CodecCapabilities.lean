@@ -23,7 +23,6 @@ run_cmd do
   for n in [`Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace,
       `Turing.MultiTapeTM.ComputableTidilyInPolyTime,
       `Turing.MultiTapeTM.ComputableTidilyInDegree,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO,
       `Turing.MultiTapeTM.ComputableTidilyInO,
       `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.comp_linear,
       `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.ite,

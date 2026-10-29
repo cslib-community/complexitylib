@@ -26,7 +26,6 @@ example (n : ℕ) (w : List Bool) :
 open Lean Elab Command in
 run_cmd do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO] do
+      `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO] do
     if (← getEnv).contains name then
       throwError "A higher tidy calculus was imported: {name}"
