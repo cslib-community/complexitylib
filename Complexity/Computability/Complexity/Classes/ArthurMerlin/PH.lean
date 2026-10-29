@@ -189,8 +189,6 @@ def piTwoVerifier (enc : α ↪ List Bool) (k p q : Polynomial ℕ) (W : α × L
 theorem computableInPolyTime_piTwoVerifier {W : α × List Bool → Bool}
     (hW : ComputableInPolyTime W (encPair enc encBits) encBool) (k p q : Polynomial ℕ) :
     ComputableInPolyTime (piTwoVerifier enc k p q W) (encPair enc encBits) encBool := by
-  have hW := hW.tidy
-  refine .of_tidy ?_
   unfold piTwoVerifier
   fun_prop
 

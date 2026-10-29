@@ -1,0 +1,5 @@
+# Files allowed `set_option maxHeartbeats` above the 200000 default, with the largest permitted
+# value (0 explicitly permits unlimited budgets). Format: `<path relative to the repository root> <cap>`. `scripts/check_hygiene.py`
+# rejects any budget above the default in a file not listed here, or above its cap, and reports
+# entries that are no longer needed, so this list only shrinks. Add an entry only with review,
+# and link the issue tracking its reduction.

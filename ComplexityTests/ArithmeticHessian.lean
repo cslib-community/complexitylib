@@ -24,17 +24,6 @@ open Cslib.Circuits MvPolynomial
 private def product (K : Type*) : Circuit (arithSignature K) 2 1 :=
   Circuit.oneGate .mul id
 
-example {K : Type*} [Field K] :
-    (product K).eval (arithInterpretationWith K MvPolynomial.C) X 0 =
-      (X 0 * X 1 : MvPolynomial (Fin 2) K) := by
-  simp [product]
-
-example {K : Type*} [Field K] (x : Fin 2 → K) :
-    MvPolynomial.eval x
-      ((product K).eval (arithInterpretationWith K MvPolynomial.C) X 0) =
-        (product K).eval (arithInterpretation K) x 0 :=
-  (product K).eval_arithInterpretationWith_mvPolynomial id x 0
-
 private theorem hessian_product {K : Type*} [Field K] (x : Fin 2 → K) :
     hessian x (X 0 * X 1) = !![0, 1; 1, 0] := by
   ext i j
@@ -47,17 +36,23 @@ private theorem rank_hessian_product {K : Type*} [Field K] (x : Fin 2 → K) :
   · rw [Matrix.isUnit_iff_isUnit_det]
     simp [Matrix.det_fin_two]
 
--- The lower bound is nontrivial and sharp over every field.
-example {K : Type*} [Field K] (c : Circuit (arithSignature K) 2 1)
+-- Formal-polynomial evaluation, value evaluation, and the sharp Hessian multiplication lower bound
+-- for the two-variable product over every field (including characteristic two).
+example {K : Type*} [Field K] (x : Fin 2 → K) (c : Circuit (arithSignature K) 2 1)
     (hc : c.eval (arithInterpretationWith K MvPolynomial.C) X 0 = X 0 * X 1) :
-    1 ≤ c.program.cost ArithOp.mulCost := by
-  have h := c.hessian_rank_ceilDiv_two_le id (fun _ => 0) 0 _ hc
-  simpa [rank_hessian_product] using h
-
-example : (product (ZMod 2)).program.cost ArithOp.mulCost = 1 := rfl
-
-example : (hessian (fun _ => (0 : ZMod 2)) (X (0 : Fin 2) * X 1)).rank = 2 :=
-  rank_hessian_product _
+    (product K).eval (arithInterpretationWith K MvPolynomial.C) X 0 =
+        (X 0 * X 1 : MvPolynomial (Fin 2) K) ∧
+      MvPolynomial.eval x
+        ((product K).eval (arithInterpretationWith K MvPolynomial.C) X 0) =
+          (product K).eval (arithInterpretation K) x 0 ∧
+      1 ≤ c.program.cost ArithOp.mulCost ∧
+      (product (ZMod 2)).program.cost ArithOp.mulCost = 1 ∧
+      (hessian (fun _ => (0 : ZMod 2)) (X (0 : Fin 2) * X 1)).rank = 2 :=
+  ⟨by simp [product],
+    (product K).eval_arithInterpretationWith_mvPolynomial id x 0,
+    by simpa [rank_hessian_product] using c.hessian_rank_ceilDiv_two_le id (fun _ => 0) 0 _ hc,
+    rfl,
+    rank_hessian_product _⟩
 
 -- One product is read twice by an addition. An unused constant follows both output gates.
 private def sharedProduct : Circuit (arithSignature ℚ) 2 3 where
@@ -66,42 +61,23 @@ private def sharedProduct : Circuit (arithSignature ℚ) 2 3 where
     ⟨.add, fun _ => .gate 0⟩).gate ⟨.const 7, Fin.elim0⟩
   outputs := ![.gate 0, .gate 1, .input 0]
 
-example : sharedProduct.program.cost ArithOp.mulCost = 1 := rfl
-
-example : sharedProduct.eval (arithInterpretationWith ℚ MvPolynomial.C) X =
-    ![X 0 * X 1, X 0 * X 1 + X 0 * X 1, (X 0 : MvPolynomial (Fin 2) ℚ)] := by
-  funext j
-  fin_cases j <;> rfl
-
 example (x : Fin 2 → ℚ) (j : Fin 3) :
-    (hessian x (sharedProduct.eval (arithInterpretationWith ℚ MvPolynomial.C) X j)).rank ≤ 2 :=
-  sharedProduct.hessian_rank_le id x j
-
-example (x : Fin 2 → ℚ) :
-    (hessian x (sharedProduct.eval (arithInterpretationWith ℚ MvPolynomial.C) X 2)).rank = 0 := by
-  change (hessian x (X 0)).rank = 0
-  simp
-
--- The empty program can expose an input without paying for a gate.
-example (x : Fin 2 → ℚ) :
-    (hessian x ((Circuit.id (arithSignature ℚ) 2).eval
-      (arithInterpretationWith ℚ MvPolynomial.C) X 0)).rank ≤ 0 :=
-  (Circuit.id (arithSignature ℚ) 2).hessian_rank_le id x 0
+    sharedProduct.program.cost ArithOp.mulCost = 1 ∧
+      sharedProduct.eval (arithInterpretationWith ℚ MvPolynomial.C) X =
+        ![X 0 * X 1, X 0 * X 1 + X 0 * X 1, (X 0 : MvPolynomial (Fin 2) ℚ)] ∧
+      (hessian x (sharedProduct.eval (arithInterpretationWith ℚ MvPolynomial.C) X j)).rank ≤ 2 ∧
+      (hessian x (sharedProduct.eval (arithInterpretationWith ℚ MvPolynomial.C) X 2)).rank = 0 ∧
+      (hessian x ((Circuit.id (arithSignature ℚ) 2).eval
+        (arithInterpretationWith ℚ MvPolynomial.C) X 0)).rank ≤ 0 :=
+  ⟨rfl,
+    by funext k; fin_cases k <;> rfl,
+    sharedProduct.hessian_rank_le id x j,
+    by change (hessian x (X 0)).rank = 0; simp,
+    (Circuit.id (arithSignature ℚ) 2).hessian_rank_le id x 0⟩
 
 -- Constants can be indexed by a different type, and a constant circuit needs no inputs.
 private def constantCircuit : Circuit (arithSignature Bool) 0 1 :=
   Circuit.oneGate (.const true) Fin.elim0
-
-example : constantCircuit.eval
-    (arithInterpretationWith Bool (fun b => MvPolynomial.C (if b then (7 : ℚ) else 0))) X 0 =
-      MvPolynomial.C 7 := by
-  simp [constantCircuit]
-
-example : constantCircuit.program.cost ArithOp.mulCost = 0 := rfl
-
-example : (hessian (Fin.elim0 : Fin 0 → ℚ) (MvPolynomial.C 7)).rank ⌈/⌉ 2 ≤
-    constantCircuit.program.cost ArithOp.mulCost :=
-  constantCircuit.hessian_rank_ceilDiv_two_le (fun b => if b then 7 else 0) Fin.elim0 0 _ rfl
 
 -- Scalar multiplication is included in the chosen cost model.
 private def scalarProduct : Circuit (arithSignature ℚ) 1 1 where
@@ -110,32 +86,39 @@ private def scalarProduct : Circuit (arithSignature ℚ) 1 1 where
     ⟨.mul, ![.input 0, .gate 0]⟩
   outputs := fun _ => .gate 1
 
-example : scalarProduct.program.cost ArithOp.mulCost = 1 := rfl
-
-example (x : Fin 1 → ℚ) : scalarProduct.eval (arithInterpretation ℚ) x 0 = x 0 * 3 := rfl
-
--- Supplied affine polynomials are free inputs to the program-level theorem.
-example (x : Fin 2 → ℚ) :
-    (hessian x ((Program.empty : Program (arithSignature ℚ) 1 0).trace
-      (arithInterpretationWith ℚ MvPolynomial.C) (fun _ => X 0 + MvPolynomial.C 3)
-        (.input 0))).rank ≤ 0 := by
-  apply Program.rank_hessian_trace_le (constant := id)
-  intro i
-  simp
+example (x₁ : Fin 1 → ℚ) (x₂ : Fin 2 → ℚ) :
+    constantCircuit.eval
+        (arithInterpretationWith Bool (fun b => MvPolynomial.C (if b then (7 : ℚ) else 0))) X 0 =
+          MvPolynomial.C 7 ∧
+      constantCircuit.program.cost ArithOp.mulCost = 0 ∧
+      (hessian (Fin.elim0 : Fin 0 → ℚ) (MvPolynomial.C 7)).rank ⌈/⌉ 2 ≤
+        constantCircuit.program.cost ArithOp.mulCost ∧
+      scalarProduct.program.cost ArithOp.mulCost = 1 ∧
+      scalarProduct.eval (arithInterpretation ℚ) x₁ 0 = x₁ 0 * 3 ∧
+      (hessian x₂ ((Program.empty : Program (arithSignature ℚ) 1 0).trace
+        (arithInterpretationWith ℚ MvPolynomial.C) (fun _ => X 0 + MvPolynomial.C 3)
+          (.input 0))).rank ≤ 0 :=
+  ⟨by simp [constantCircuit],
+    rfl,
+    constantCircuit.hessian_rank_ceilDiv_two_le (fun b => if b then 7 else 0) Fin.elim0 0 _ rfl,
+    rfl,
+    rfl,
+    by apply Program.rank_hessian_trace_le (constant := id); intro i; simp⟩
 
 private noncomputable def vanishingPolynomial : MvPolynomial (Fin 2) (ZMod 2) :=
   (X 0 ^ 2 - X 0) * X 1
 
-example (x : Fin 2 → ZMod 2) : MvPolynomial.eval x vanishingPolynomial = 0 := by
-  have h (a : ZMod 2) : a ^ 2 = a := by revert a; decide
-  simp [vanishingPolynomial, h]
-
-example (x : Fin 2 → ZMod 2) : (hessian x vanishingPolynomial).rank = 2 := by
-  have h : hessian x vanishingPolynomial = !![0, 1; 1, 0] := by
-    ext i j
-    fin_cases i <;> fin_cases j <;>
-      simp [vanishingPolynomial, hessian, pow_two, ZModModule.add_self, ZModModule.neg_eq_self]
-  rw [h, ← hessian_product x]
-  exact rank_hessian_product x
+example (x : Fin 2 → ZMod 2) :
+    MvPolynomial.eval x vanishingPolynomial = 0 ∧
+      (hessian x vanishingPolynomial).rank = 2 := by
+  refine ⟨?_, ?_⟩
+  · have h (a : ZMod 2) : a ^ 2 = a := by revert a; decide
+    simp [vanishingPolynomial, h]
+  · have h : hessian x vanishingPolynomial = !![0, 1; 1, 0] := by
+      ext i j
+      fin_cases i <;> fin_cases j <;>
+        simp [vanishingPolynomial, hessian, pow_two, ZModModule.add_self, ZModModule.neg_eq_self]
+    rw [h, ← hessian_product x]
+    exact rank_hessian_product x
 
 end ComplexityTests.ArithmeticHessian

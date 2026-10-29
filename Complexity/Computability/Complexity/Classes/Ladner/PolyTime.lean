@@ -71,7 +71,7 @@ descriptions and coding their input bits use the shared polynomial-time rules in
 
 namespace Cslib.Complexity.Ladner
 
-open Turing.MultiTapeTM Turing.MultiTapeTM.Universal ComputableTidilyInPolyTime
+open Turing.MultiTapeTM Turing.MultiTapeTM.Universal ComputableInPolyTime
 open Cslib.Logic.PL
 
 /-! ### Decoding formulas -/
@@ -111,8 +111,8 @@ def capPow (b e c : ℕ) : ℕ := min (b ^ e) c
 
 /-- **Capped powers in unary.** `min (b ^ e) c` is polynomial-time on unary numbers: multiplying
 `e` times and capping at `c` never holds a number larger than the input. -/
-private theorem computableTidilyInPolyTime_capPow_pair :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ × ℕ => capPow p.1 p.2.1 p.2.2)
+private theorem computableInPolyTime_capPow_pair :
+    ComputableInPolyTime (fun p : ℕ × ℕ × ℕ => capPow p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encUnary encUnary)) encUnary := by
   have h := iterateWith (encIn := encPair encUnary (encPair encUnary encUnary))
     (encState := encUnary) (encPar := encPair encUnary encUnary)
@@ -132,8 +132,7 @@ theorem computableInPolyTime_capPow {α : Type} {input : α ↪ List Bool}
     (hexp : ComputableInPolyTime exp input encUnary)
     (hcap : ComputableInPolyTime cap input encUnary) :
     ComputableInPolyTime (fun x => capPow (base x) (exp x) (cap x)) input encUnary :=
-  .of_tidy (computableTidilyInPolyTime_capPow_pair.comp
-    (hbase.tidy.prod (hexp.tidy.prod hcap.tidy)))
+  computableInPolyTime_capPow_pair.comp (hbase.prod (hexp.prod hcap))
 
 /-! ### Words by index -/
 
@@ -195,8 +194,8 @@ theorem mem_padSAT_iff {e : ℕ → ℕ} {y : List Bool} :
   simp only [padCheck_eq_some_iff, padSAT, Set.mem_ofPred_eq]
   exact ⟨fun ⟨φ, hφ, h⟩ => ⟨φ, h, hφ⟩, fun ⟨φ, h, hφ⟩ => ⟨φ, hφ, h⟩⟩
 
-private theorem computableTidilyInPolyTime_idxOf_false_reverse :
-    ComputableTidilyInPolyTime (fun y : List Bool => y.reverse.idxOf false) encBits encUnary :=
+private theorem computableInPolyTime_idxOf_false_reverse :
+    ComputableInPolyTime (fun y : List Bool => y.reverse.idxOf false) encBits encUnary :=
   idxOfWithInput (encA := encBool) (list := fun y : List Bool => y.reverse)
     (value := fun _ => false) (bitsToList.comp bitsReverse) (const false)
 
@@ -205,7 +204,7 @@ private theorem computableTidilyInPolyTime_idxOf_false_reverse :
 theorem computableInPolyTime_unpad :
     ComputableInPolyTime unpad encBits (encPair encBits encUnary) := by
   have hk : ComputableInPolyTime (fun y : List Bool => y.reverse.idxOf false) encBits encUnary :=
-    .of_tidy computableTidilyInPolyTime_idxOf_false_reverse
+    computableInPolyTime_idxOf_false_reverse
   unfold unpad
   fun_prop
 
@@ -213,17 +212,10 @@ theorem computableInPolyTime_unpad :
 private theorem computableInPolyTime_padCheckAt :
     ComputableInPolyTime (fun p : List Bool × ℕ => padCheckAt p.1 p.2)
       (encPair encBits encUnary) (encOption encCNF) := by
-  have henc : ComputableTidilyInPolyTime (fun φ => encCNF φ) encCNF encBits := encode encCNF
-  have hdec := computableInPolyTime_decodeCNF.tidy
-  have hunpad := computableInPolyTime_unpad.tidy
-  have hcap : ∀ {α : Type} {input : α ↪ List Bool} {b e c : α → ℕ},
-      ComputableTidilyInPolyTime b input encUnary →
-      ComputableTidilyInPolyTime e input encUnary →
-      ComputableTidilyInPolyTime c input encUnary →
-      ComputableTidilyInPolyTime (fun x => capPow (b x) (e x) (c x)) input encUnary :=
-    fun hb he hc => computableTidilyInPolyTime_capPow_pair.comp (hb.prod (he.prod hc))
+  have henc : ComputableInPolyTime (fun φ => encCNF φ) encCNF encBits := .of_eq fun _ => rfl
+  have hdec := computableInPolyTime_decodeCNF
   unfold padCheckAt
-  exact .of_tidy (by fun_prop)
+  fun_prop
 
 /-- Reading the formula padded along a computed exponent function is polynomial-time. The
 exponent function may capture the input. -/
@@ -342,15 +334,15 @@ private theorem computableInPolyTime_agreesB :
   fun_prop
 
 /-- The step of the exponent function is polynomial-time in its table. -/
-private theorem computableTidilyInPolyTime_hstepB :
-    ComputableTidilyInPolyTime hstepB (encList encUnary) encUnary := by
+private theorem computableInPolyTime_hstepB :
+    ComputableInPolyTime hstepB (encList encUnary) encUnary := by
   have ha := computableInPolyTime_agreesB.tidy
   have hall : ComputableTidilyInPolyTime
       (fun p : List ℕ × ℕ => (List.range p.1.length).all fun j => agreesB p.1 p.2 j)
       (encPair (encList encUnary) encUnary) encBool := by
     fun_prop
   unfold hstepB
-  fun_prop
+  exact .of_tidy (by fun_prop)
 
 /-! ### The exponent function -/
 
@@ -359,9 +351,10 @@ theorem Htable_eq_iterate (n : ℕ) : Htable n = (fun T => T ++ [hstepB T])^[n] 
   | zero => rfl
   | succ n ih => rw [Htable, Function.iterate_succ_apply', ← ih, hstepB_eq]
 
-private theorem computableTidilyInPolyTime_Htable :
-    ComputableTidilyInPolyTime Htable encUnary (encList encUnary) := by
-  have hs := computableTidilyInPolyTime_hstepB
+/-- The tables of `H` are polynomial-time in their length, in unary. -/
+theorem computableInPolyTime_Htable :
+    ComputableInPolyTime Htable encUnary (encList encUnary) := by
+  have hs := computableInPolyTime_hstepB
   have h := iterate (encIn := encUnary) (encState := encList encUnary) (count := fun n => n)
     (init := fun _ => []) (step := fun T => T ++ [hstepB T]) (by fun_prop) (by fun_prop)
     (by fun_prop) (bound := fun n => n * (2 * n + 1))
@@ -376,17 +369,12 @@ private theorem computableTidilyInPolyTime_Htable :
         _ ≤ n * (2 * n + 1) := by rw [length_Htable]; exact Nat.mul_le_mul_right _ hi)
   simpa only [← Htable_eq_iterate] using h
 
-/-- The tables of `H` are polynomial-time in their length, in unary. -/
-theorem computableInPolyTime_Htable :
-    ComputableInPolyTime Htable encUnary (encList encUnary) :=
-  .of_tidy (computableTidilyInPolyTime_Htable)
-
 /-- **`H` is polynomial-time** on unary numbers. -/
 @[fun_prop]
 theorem computableInPolyTime_H : ComputableInPolyTime H encUnary encUnary := by
-  have h := computableTidilyInPolyTime_hstepB.comp computableTidilyInPolyTime_Htable
+  have h := computableInPolyTime_hstepB.comp computableInPolyTime_Htable
   have heq : hstepB ∘ Htable = H := funext fun n => hstepB_eq _
-  exact .of_tidy (heq ▸ h)
+  exact heq ▸ h
 
 /-! ### Ladner's language is in NP -/
 

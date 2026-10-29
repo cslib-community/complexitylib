@@ -23,15 +23,22 @@ example : BitString.listRows 3 0 [true] = [[], [], []] := by rfl
 example : BitString.listRows 0 4 [true] = [] := by rfl
 
 -- Both dimensions are runtime values; short inputs are padded and all output cells are charged.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (ℕ × ℕ) × List Bool => BitString.listRows p.1.1 p.1.2 p.2)
     (encPair (encPair encUnary encUnary) encBits) (encList encBits) := by fun_prop
 
--- The joint law contains two independent fair bits, including the probability of disagreement.
-example : (BitString.uniformList 2).map (BitString.listRows 2 1) =
-    (PMF.uniformOfFintype (Fin 2 → BitString 1)).map
-      (fun rows => List.ofFn (fun i => List.ofFn (rows i))) :=
-  BitString.uniformList_listRows 2 1
+-- Two independent one-bit rows disagree in this specified order with probability `1 / 4`.
+example : ((BitString.uniformList 2).map (BitString.listRows 2 1))
+    [[true], [false]] = 1 / 4 := by
+  change ((BitString.uniformList (2 * 1)).map (BitString.listRows 2 1)) _ = _
+  rw [BitString.uniformList_listRows, PMF.map_apply, tsum_fintype]
+  simp only [PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool,
+    Fintype.card_fin]
+  rw [Finset.sum_ite, Finset.sum_const_zero, add_zero, Finset.sum_const]
+  have hcount : (Finset.univ.filter fun rows : Fin 2 → BitString 1 =>
+      [[true], [false]] = List.ofFn (fun i => List.ofFn (rows i))).card = 1 := by decide
+  rw [hcount]
+  norm_num
 
 private noncomputable def grow (state : List Bool) : ProbComp (List Bool) := do
   let bit ← ProbComp.uniform Bool
@@ -73,7 +80,7 @@ example (step : ℕ → List Bool → ProbComp (List Bool))
     (_hgrowth : ∀ n state next, next ∈ (ProbComp.eval (step n state)).support →
       next.length ≤ state.length + n) : True := by
   have hsize : PolyBounded (fun n => (encUnary n).length) id :=
-    ComputableTidilyInPolyTime.polyBounded (by fun_prop)
+    ComputableInPolyTime.polyBounded (by fun_prop)
   fail_if_success
     have : IsPPTOn encUnary encBits (fun n => OracleComp.iterate n (step n) []) := by ppt
   trivial
@@ -81,7 +88,7 @@ example (step : ℕ → List Bool → ProbComp (List Bool))
 -- An implicit binary graph is supplied by an efficient transition function. The loop contract
 -- certifies both its machine time and that every possible output is reachable from its input.
 example (neighbor : List Bool → Bool → List Bool)
-    (hefficient : ComputableTidilyInPolyTime (fun p : List Bool × Bool => neighbor p.1 p.2)
+    (hefficient : ComputableInPolyTime (fun p : List Bool × Bool => neighbor p.1 p.2)
       (encPair encBits encBool) encBits)
     (hsize : ∀ state bit, (neighbor state bit).length ≤ state.length) :
     let step (state : List Bool) : ProbComp (List Bool) := do
@@ -97,7 +104,8 @@ example (neighbor : List Bool → Bool → List Bool)
     let bit ← ProbComp.uniform Bool
     return neighbor state bit
   have hstep : IsPPTOn encBits encBits step := by dsimp only [step]; ppt
-  exact IsPPTOn.iterate_spec (by fun_prop) ComputableTidilyInPolyTime.id' hstep
+  exact IsPPTOn.iterate_spec (by fun_prop) (by fun_prop : ComputableTidilyInPolyTime id encBits _)
+    hstep
     (fun start _ state => state.length ≤ start.length ∧
       Relation.ReflTransGen (fun a b => ∃ bit, neighbor a bit = b) start state)
     (fun _ => ⟨le_rfl, .refl⟩)
@@ -107,7 +115,7 @@ example (neighbor : List Bool → Bool → List Bool)
       obtain ⟨bit, _, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hnext
       exact ⟨by simpa only [← heq] using (hsize state bit).trans hstate.1,
         hstate.2.tail ⟨bit, heq⟩⟩)
-    (size := List.length) (ComputableTidilyInPolyTime.polyBounded (by fun_prop))
+    (size := List.length) (ComputableInPolyTime.polyBounded (by fun_prop))
     (fun _ _ _ _ h => h.1)
 
 private noncomputable def cappedStep (limit state : ℕ) : ProbComp ℕ := do
@@ -115,12 +123,12 @@ private noncomputable def cappedStep (limit state : ℕ) : ProbComp ℕ := do
   return if bit && decide (state < limit) then state + 1 else state
 
 -- Compound guards retain ordinary functional syntax through deterministic and PPT automation.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (ℕ × ℕ) × Bool =>
       if p.2 && decide (p.1.2 < p.1.1) then p.1.2 + 1 else p.1.2)
     (encPair (encPair encUnary encUnary) encBool) encUnary := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : ℕ × ℕ => if p.1 ≤ p.2 ∧ p.2 < p.1 + 3 then p.1 + 1 else p.2)
     (encPair encUnary encUnary) encUnary := by polytime
 
@@ -145,7 +153,7 @@ example : IsPPTOn encUnary encUnary
           have := of_decide_eq_true (Bool.and_eq_true_iff.mp hmove).2
           lia
       · exact hstate)
-    (size := id) (ComputableTidilyInPolyTime.polyBounded (by fun_prop))
+    (size := id) (ComputableInPolyTime.polyBounded (by fun_prop))
     (fun _ _ _ _ h => by simpa using h)
 
 -- Zero iterations perform no transition, including for the captured-input client.
@@ -187,7 +195,7 @@ private theorem sampledRows_spec :
     obtain ⟨bit, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hnext
     simpa only [List.length_cons, hrows.1, List.mem_cons, forall_eq_or_imp, true_and]
       using hrows.2
-  · exact ComputableTidilyInPolyTime.polyBounded (by fun_prop)
+  · exact ComputableInPolyTime.polyBounded (by fun_prop)
   · intro p i rows hi hrows
     calc
       (encList encBits rows).length ≤ rows.length * (2 * (p.1.length + 1) + 1) :=

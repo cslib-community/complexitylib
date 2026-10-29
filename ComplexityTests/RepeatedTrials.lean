@@ -43,12 +43,12 @@ example :
   simp only [repeatMajority, Polynomial.eval_one]
   decide
 
-/-- The generic full-tape equation is available with the smaller import. -/
-example {α : Type} (trials width : ℕ) (V : α × List Bool → Bool) (a : α)
-    (x : BitString (trials * width)) :
-    repeatVotes trials width V (a, List.ofFn x) =
-      List.ofFn (fun i => V (a, List.ofFn (BitString.block x i))) :=
-  repeatVotes_ofFn a x
+/-- The full-tape equation `repeatVotes_ofFn` evaluates two 1-bit blocks. -/
+example :
+    repeatVotes 2 1 (fun x : Unit × List Bool => x.2.headD false)
+      ((), List.ofFn (![true, false] : BitString (2 * 1))) = [true, false] := by
+  rw [repeatVotes_ofFn]
+  decide
 
 /-- Polynomial-time certification composes through input-dependent dimensions. -/
 example (trials width : Polynomial ℕ) :
@@ -59,11 +59,10 @@ example (trials width : Polynomial ℕ) :
 
 /-- The existing aggregation certificates are available without BPP or RP. -/
 example {α : Type} {enc : α ↪ List Bool} {V : α × List Bool → Bool}
-    (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool)
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool)
     (trials width : Polynomial ℕ) :
-    ComputableTidilyInPolyTime (repeatAny enc trials width V) (encPair enc encBits) encBool ∧
-    ComputableTidilyInPolyTime (repeatMajority enc trials width V) (encPair enc encBits) encBool :=
-  ⟨(computableInPolyTime_repeatAny (.of_tidy hV) _ _).tidy,
-    (computableInPolyTime_repeatMajority (.of_tidy hV) _ _).tidy⟩
+    ComputableInPolyTime (repeatAny enc trials width V) (encPair enc encBits) encBool ∧
+    ComputableInPolyTime (repeatMajority enc trials width V) (encPair enc encBits) encBool :=
+  ⟨computableInPolyTime_repeatAny hV _ _, computableInPolyTime_repeatMajority hV _ _⟩
 
 end ComplexityTests.RepeatedTrials

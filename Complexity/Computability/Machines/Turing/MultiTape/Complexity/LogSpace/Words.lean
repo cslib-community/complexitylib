@@ -45,14 +45,18 @@ unary numbers, as well as bounded-count batch evaluation (`map_range_const`, `ma
   `Turing.MultiTapeTM.ComputableInLogSpace.fst`, `Turing.MultiTapeTM.ComputableInLogSpace.snd`,
   `Turing.MultiTapeTM.ComputableInLogSpace.pair`: concatenation and pairing.
 * `Turing.MultiTapeTM.ComputableInLogSpace.optionSome`, `.optionGetD`: option operations.
-* `Turing.MultiTapeTM.ComputableInLogSpace.listSingleton`, `.listAppend`, `.listHeadD`:
-  framed-list operations.
+* `Turing.MultiTapeTM.ComputableInLogSpace.listSingleton`, `.listCons`, `.listAppend`,
+  `.listHeadD`, `.listLength`: framed-list operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.bitsAppend`, `.bitsHeadD`, `.bitsMap`, `.bitsFoldl`,
   `.bitsAll`, `.bitsAny`: bit-word operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.unaryAdd`, `.unaryMulConst`, `.unaryLeConst`,
   `.unaryBoundedMap`: unary-number operations.
 * `Turing.MultiTapeTM.ComputableInLogSpace.map_range_const`, `.map_range_of_le`,
   `.mapToBits_range_const`, `.mapToBits_range_of_le`: bounded-count batch evaluation.
+* `Turing.MultiTapeTM.ComputableInLogSpace.fst'`, `.snd'`, `.bool_and`, `.bool_or`,
+  `.ite_decide`: projections of a computed pair, Boolean connectives and case distinctions on
+  decidable propositions, in the form used by `fun_prop`, with which the closure rules and word
+  operations above are registered.
 
 ## References
 
@@ -236,6 +240,15 @@ theorem listSingleton :
     ComputableInLogSpace (fun b : β => [b]) encOut (encList encOut) :=
   of_frame fun b => by simp [encList_cons, encList_nil]
 
+/-- Prepending a computed element to a computed framed list in logarithmic space. -/
+theorem listCons {f₁ : α → β} {f₂ : α → List β} (h₁ : ComputableInLogSpace f₁ encIn encOut)
+    (h₂ : ComputableInLogSpace f₂ encIn (encList encOut)) :
+    ComputableInLogSpace (fun a => f₁ a :: f₂ a) encIn (encList encOut) :=
+  append
+    ((of_frame (encIn := encOut) (encOut := encFramed encOut) (f := fun b => b)
+      fun _ => rfl).comp h₁)
+    h₂ fun _ => rfl
+
 /-- Concatenating two framed lists computed in logarithmic space from a common input. -/
 theorem listAppend {f₁ f₂ : α → List β}
     (h₁ : ComputableInLogSpace f₁ encIn (encList encOut))
@@ -251,6 +264,34 @@ theorem listHeadD (d : β) :
     ComputableInLogSpace (fun l : List β => l.headD d) (encList encOut) encOut :=
   of_isEmpty_ite d (fun l hl => by cases l <;> simp_all)
     (of_unframe fun ⟨l, hl⟩ => by cases l <;> simp at hl ⊢)
+
+/-- The transducer counting the frames of a word in unary: in state `false` it reads a marker, and
+emits `true` at an end marker; in state `true` it skips the bit after a `true` marker. -/
+private def frameCountT : Transducer Bool Bool where
+  q₀ := false
+  step
+    | false, true => (true, [])
+    | false, false => (false, [true])
+    | true, _ => (false, [])
+  final _ := []
+  length_step_le q a := by cases q <;> cases a <;> simp
+  length_final_le _ := by simp
+
+private theorem frameCountT_run_frame (w rest : List Bool) :
+    frameCountT.run false (frame w ++ rest) = true :: frameCountT.run false rest := by
+  induction w with
+  | nil => rfl
+  | cons b w ih => simpa [frame_cons, Transducer.run_cons, frameCountT] using ih
+
+/-- The length of a framed list, in unary, in logarithmic space. -/
+theorem listLength : ComputableInLogSpace (fun l : List β => l.length) (encList encOut) encUnary :=
+  frameCountT.computableInLogSpace fun l => by
+    induction l with
+    | nil => rfl
+    | cons b l ih =>
+      change _ = frameCountT.run false _ at ih ⊢
+      rw [encList_cons, frameCountT_run_frame, ← ih]
+      simp [List.replicate_succ]
 
 /-- Concatenating two bit words computed in logarithmic space from a common input. -/
 theorem bitsAppend {f₁ f₂ : α → List Bool}
@@ -463,5 +504,51 @@ theorem mapToBits_range_of_le (k : ℕ) {r : α → ℕ} {f : α × ℕ → Bool
       simp [heq]
     refine (ite_subtype hle htrue hfalse).congr_fun fun a => ?_
     split_ifs <;> rfl
+
+/-! ### Automation
+
+The closure rules for pairing, projections and case distinctions, and the word operations, are
+registered with `fun_prop`. Projections are stated for a computed pair, so the pair certificate
+fixes the encodings of the components. -/
+
+/-- The first component of a computed pair, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem fst' {f : α → β₁ × β₂} (hf : ComputableInLogSpace f encIn (encPair enc₁ enc₂)) :
+    ComputableInLogSpace (fun a => (f a).1) encIn enc₁ :=
+  (fst enc₁ enc₂).comp hf
+
+/-- The second component of a computed pair, in the form used by `fun_prop`. -/
+@[fun_prop]
+theorem snd' {f : α → β₁ × β₂} (hf : ComputableInLogSpace f encIn (encPair enc₁ enc₂)) :
+    ComputableInLogSpace (fun a => (f a).2) encIn enc₂ :=
+  (snd enc₁ enc₂).comp hf
+
+/-- The conjunction of two computed Booleans. -/
+@[fun_prop]
+theorem bool_and {c₁ c₂ : α → Bool} (h₁ : ComputableInLogSpace c₁ encIn encBool)
+    (h₂ : ComputableInLogSpace c₂ encIn encBool) :
+    ComputableInLogSpace (fun a => c₁ a && c₂ a) encIn encBool :=
+  (of_finite (encIn := encPair encBool encBool) fun p : Bool × Bool => p.1 && p.2).comp'
+    (pair h₁ h₂)
+
+/-- The disjunction of two computed Booleans. -/
+@[fun_prop]
+theorem bool_or {c₁ c₂ : α → Bool} (h₁ : ComputableInLogSpace c₁ encIn encBool)
+    (h₂ : ComputableInLogSpace c₂ encIn encBool) :
+    ComputableInLogSpace (fun a => c₁ a || c₂ a) encIn encBool :=
+  (of_finite (encIn := encPair encBool encBool) fun p : Bool × Bool => p.1 || p.2).comp'
+    (pair h₁ h₂)
+
+/-- A case distinction on a decidable proposition whose truth value is computed. -/
+@[fun_prop]
+theorem ite_decide {encC : Bool ↪ List Bool} {p : α → Prop} {_ : DecidablePred p} {f g : α → β}
+    (hp : ComputableInLogSpace (fun a => decide (p a)) encIn encC)
+    (hf : ComputableInLogSpace f encIn encOut) (hg : ComputableInLogSpace g encIn encOut) :
+    ComputableInLogSpace (fun a => if p a then f a else g a) encIn encOut :=
+  (ite hp hf hg).congr_fun fun a => by by_cases h : p a <;> simp [h]
+
+attribute [fun_prop] pair ite optionSome optionGetD listSingleton listCons listAppend listHeadD
+  listLength
+  bitsAppend bitsHeadD bitsMap bitsFoldl bitsAll bitsAny unaryAdd unaryMulConst unaryLeConst
 
 end Turing.MultiTapeTM.ComputableInLogSpace

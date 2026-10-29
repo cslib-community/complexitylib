@@ -37,6 +37,12 @@ theorem length_le {f : α → β} (h : ComputableInO f encIn encMid T S) :
   let ⟨c, _, hl⟩ := h
   ⟨c, hl⟩
 
+/-- The encoded value is within the time bound, since the machine writes it. -/
+theorem length_le_time {f : α → β} (h : ComputableInO f encIn encMid T S) :
+    ∃ c, ∀ a, (encMid (f a)).length ≤ c * (T a + 1) :=
+  let ⟨c, ⟨_, _, _, _, htm⟩, _⟩ := h
+  ⟨c, fun a => (htm a).length_output_le⟩
+
 /-- A common linear certificate includes the output bound through its actual clock. -/
 theorem of_linear {f : α → β} (h : ComputableInLinearTimeAndSpace f encIn encMid) :
     ComputableInO f encIn encMid (fun a => (encIn a).length) (fun a => (encIn a).length) := by

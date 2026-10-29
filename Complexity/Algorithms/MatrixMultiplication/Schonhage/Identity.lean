@@ -33,7 +33,8 @@ The error term is retained; it cannot be discarded for unrestricted inputs.
 Part of [AlmanWilliams2026, Section 2]. Direct mathematical adaptation of
 [Anthropic's pinned formal source](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Sec2).
 Definitions are selectively extracted from that pin's `PaperStatements.lean`; no machine
-semantics or running-time statement is imported. Source-derived prose is paraphrased below.
+semantics or running-time statement is imported. The docstrings below explain the local
+declarations in our own words.
 -/
 
 @[expose] public section
@@ -70,13 +71,15 @@ noncomputable def formR (f : RightVar → ℤ) : TriPoly := ∑ t, MvPolynomial.
 -/
 noncomputable def formO (f : OutVar → ℤ) : TriPoly := ∑ z, MvPolynomial.C (f z) * polyO z
 
-/-- Section 2.2: G := ∑_{i,j=1}^{3} x_i y_j z_ij + (∑_{i,j=1}^{2} p_ij q_ij) z₀.
+/-- The target polynomial combines the nine outer `x`-`y` products with the four `p`-`q` products
+attached to the inner coordinate.
 -/
 noncomputable def G : TriPoly :=
   (∑ i : Fin 3, ∑ j : Fin 3, polyL (.x i) * polyR (.y j) * polyO (.z i j))
     + (∑ i : Fin 2, ∑ j : Fin 2, polyL (.p i j) * polyR (.q i j)) * polyO .z0
 
-/-- Lemma 6: E := ∑_{i,j=1}^{3} (x_i q̂_ij + p̂_ij y_j + p̂_ij q̂_ij) z_ij.
+/-- The error polynomial collects the additional outer-coordinate terms involving `pHat` or
+`qHat`. It has no inner-coordinate summand.
 -/
 noncomputable def E : TriPoly :=
   ∑ i : Fin 3, ∑ j : Fin 3,
@@ -128,50 +131,48 @@ theorem formR_single (t : RightVar) : formR (Pi.single t 1) = polyR t := by
 theorem formO_single (z : OutVar) : formO (Pi.single z 1) = polyO z := by
   simp [formO_eq_linearCombination]
 
-/-- Section 2.2, the display of the linear forms: `φ_{P_ij} = x_i + p̂_ij`.
+/-- Interpret an indexed left coefficient form as the sum of its `x` variable and its extended `p`
+form.
 -/
 theorem formL_phi_P (i j : Fin 3) : formL (phi (.P i j)) = polyL (.x i) + formL (pHat i j) := by
   simp [phi, xForm, formL_eq_linearCombination]
 
-/-- Section 2.2, the display of the linear forms: `ψ_{P_ij} = y_j + q̂_ij`.
+/-- Interpret an indexed right coefficient form as the sum of its `y` variable and its extended
+`q` form.
 -/
 theorem formR_psi_P (i j : Fin 3) : formR (psi (.P i j)) = polyR (.y j) + formR (qHat i j) := by
   simp [psi, yForm, formR_eq_linearCombination]
 
-/-- Section 2.2, the display of the linear forms: `χ_{P_ij} = z_ij + z₀`.
+/-- Interpret an indexed output form as the sum of the corresponding outer variable and the inner
+variable.
 -/
 theorem formO_chi_P (i j : Fin 3) : formO (chi (.P i j)) = polyO (.z i j) + polyO .z0 := by
   simp [chi, zForm, z0Form, formO_eq_linearCombination]
 
-/-- Section 2.2, the display of the linear forms: `φ_{P₀} = -(x₁ + x₂ + x₃)`.
--/
+/-- The distinguished left form is the negative sum of the three `x` polynomials. -/
 theorem formL_phi_P0 : formL (phi .P0) = -(polyL (.x 0) + polyL (.x 1) + polyL (.x 2)) := by
   simp [phi, xForm, formL_eq_linearCombination]
 
-/-- Section 2.2, the display of the linear forms: `ψ_{P₀} = y₁ + y₂ + y₃`.
--/
+/-- The distinguished right form is the sum of the three `y` polynomials. -/
 theorem formR_psi_P0 : formR (psi .P0) = polyR (.y 0) + polyR (.y 1) + polyR (.y 2) := by
   simp [psi, yForm, formR_eq_linearCombination]
 
-/-- Section 2.2, the display of the linear forms: `χ_{P₀} = z₀`.
--/
+/-- The distinguished output form denotes the inner polynomial variable alone. -/
 theorem formO_chi_P0 : formO (chi .P0) = polyO .z0 :=
   formO_single .z0
 
 /-! ### Lemma 6 -/
 
-/-- Section 2.2: every column of p̂ […] sums to zero.
--/
+/-- Summing `pHat` over the row index gives the zero coefficient function. -/
 theorem pHat_column_sum (j : Fin 3) : ∑ i, pHat i j = 0 := by
   fin_cases j <;> simp [Fin.sum_univ_three, pHat]
 
-/-- Section 2.2: every row of q̂ sums to zero.
--/
+/-- Summing `qHat` over the column index gives the zero coefficient function. -/
 theorem qHat_row_sum (i : Fin 3) : ∑ j, qHat i j = 0 := by
   fin_cases i <;> simp [Fin.sum_univ_three, qHat]
 
-/-- Section 2.2: Notice that ∑_{i,j=1}^{3} p̂_ij q̂_ij = ∑_{i,j=1}^{2} p_ij q_ij is the desired
-inner product.
+/-- The product sum for the extended arrays reduces to the four products from their original
+two-by-two arrays.
 -/
 theorem sum_pHat_mul_qHat :
     ∑ i : Fin 3, ∑ j : Fin 3, formL (pHat i j) * formR (qHat i j)

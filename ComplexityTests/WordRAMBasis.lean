@@ -28,20 +28,17 @@ def addOp : Basis.additive.Op := ⟨.bin .add, by decide⟩
 /-- Multiplication is an arithmetic operation. -/
 def mulOp : Basis.arithmetic.Op := ⟨.bin .mul, by decide⟩
 
-/-- The operations of the sub-bases are those listed, and the word size is not one of them. -/
+/-- The operations of the sub-bases are those listed, the word size is not one of them, and the
+two routes from the additive to the standard basis agree on `addOp`. -/
 example : (∀ f : Basis.additive.Op, f.1 = .bin .add ∨ f.1 = .bin .sub) ∧
-    ¬∃ f : Basis.arithmetic.Op, f.1 = .width := by
-  constructor
+    (¬∃ f : Basis.arithmetic.Op, f.1 = .width) ∧
+    (Basis.arithmeticHomStandard.comp Basis.additiveHomArithmetic).map addOp =
+      Basis.additiveHomStandard.map addOp := by
+  refine ⟨?_, ?_, Basis.arithmeticHomStandard_comp_additiveHomArithmetic addOp⟩
   · rintro ⟨f, hf⟩
     simpa using hf
   · rintro ⟨⟨f, hf⟩, rfl⟩
     simp at hf
-
-/-- The two routes from the additive to the standard basis agree. -/
-example (f : Basis.additive.Op) :
-    (Basis.arithmeticHomStandard.comp Basis.additiveHomArithmetic).map f =
-      Basis.additiveHomStandard.map f :=
-  Basis.arithmeticHomStandard_comp_additiveHomArithmetic f
 
 /-! ## Running a program over a smaller basis -/
 
@@ -53,26 +50,18 @@ def double : Program .additive 2 :=
 def doubleStandard : Program .standard 2 :=
   [.op (.const 1 1), .op (.load 0 1), .op (.bin .add 0 0 0), .halt 0]
 
-/-- Translating along the inclusion yields the program written with standard instructions. -/
-example : double.mapOp Basis.additiveHomStandard = doubleStandard := by decide
-
-/-- The additive program doubles the first input word, and overflow faults: `4 + 4` does not fit
-a three-bit word. -/
-example : run 4 double 10 (.init [3]) = some (6, 4) ∧ run 3 double 10 (.init [4]) = none := by
-  decide
-
-/-- The translation runs identically, at every word size and from every state. -/
-example (w fuel : ℕ) (s : State 2) :
-    run w doubleStandard fuel s = run w double fuel s := by
-  rw [← run_mapOp Basis.additiveHomStandard]
-  rfl
-
-/-- Programs over the additive basis never read the word size, and neither do their
-translations. -/
-example : ¬double.ReadsWidth ∧ ¬doubleStandard.ReadsWidth := by decide
-
-/-- The standard word-size operation is the only one that reads the word size. -/
-example (f : StandardOp) : Basis.standard.ReadsWidth f ↔ f = .width := Iff.rfl
+/-- Translating along the inclusion yields `doubleStandard`, the additive program doubles `3` at
+width `4` and faults on `4 + 4` at width `3`, the translation runs identically via `run_mapOp`,
+and neither program reads the word size. -/
+example :
+    double.mapOp Basis.additiveHomStandard = doubleStandard ∧
+    (run 4 double 10 (.init [3]) = some (6, 4) ∧ run 3 double 10 (.init [4]) = none) ∧
+    run 4 doubleStandard 10 (.init [3]) = run 4 double 10 (.init [3]) ∧
+    (¬double.ReadsWidth ∧ ¬doubleStandard.ReadsWidth) ∧
+    (Basis.standard.ReadsWidth .width ∧ ¬Basis.standard.ReadsWidth (.bin .add)) :=
+  ⟨by decide, by decide,
+   (run_mapOp Basis.additiveHomStandard 4 double 10 (.init [3])).symm,
+   by decide, by decide⟩
 
 /-- A program that does not read the word size halts in the same way at every larger word size. -/
 example (w : ℕ) (hw : 4 ≤ w) : Executes w double (.init [3]) 6 4 :=
@@ -117,21 +106,18 @@ example (w : ℕ) (hw : 4 ≤ w) : Executes w (applyExact .sub) (.init [5, 3]) 2
 /-! ## Decision grows with the basis -/
 
 example {α : Type} {A : Set α} {encode : ℕ → α → List ℕ} {size : α → ℕ}
-    (h : LinearTime .additive A encode size) : LinearTime .standard A encode size :=
-  (h.mapOp Basis.additiveHomArithmetic).mapOp Basis.arithmeticHomStandard
-
-example {α : Type} {A : Set α} {encode : ℕ → α → List ℕ} {size : α → ℕ}
-    (h : PolynomialTime .arithmetic A encode size) : PolynomialTime .standard A encode size :=
-  h.mapOp Basis.arithmeticHomStandard
-
-example {α : Type} {A : Set α} {encode : ℕ → α → List ℕ} {size : α → ℕ}
-    (h : UniformLinearTime .additive A encode size) : UniformLinearTime .standard A encode size :=
-  (h.mapOp Basis.additiveHomArithmetic).mapOp Basis.arithmeticHomStandard
-
-example {α : Type} {A : Set α} {encode : ℕ → α → List ℕ} {size : α → ℕ}
-    (h : UniformPolynomialTime .arithmetic A encode size) :
+    (hLin : LinearTime .additive A encode size)
+    (hPoly : PolynomialTime .arithmetic A encode size)
+    (hULin : UniformLinearTime .additive A encode size)
+    (hUPoly : UniformPolynomialTime .arithmetic A encode size) :
+    LinearTime .standard A encode size ∧
+    PolynomialTime .standard A encode size ∧
+    UniformLinearTime .standard A encode size ∧
     UniformPolynomialTime .standard A encode size :=
-  h.mapOp Basis.arithmeticHomStandard
+  ⟨(hLin.mapOp Basis.additiveHomArithmetic).mapOp Basis.arithmeticHomStandard,
+   hPoly.mapOp Basis.arithmeticHomStandard,
+   (hULin.mapOp Basis.additiveHomArithmetic).mapOp Basis.arithmeticHomStandard,
+   hUPoly.mapOp Basis.arithmeticHomStandard⟩
 
 /--
 info: 'Cslib.WordRAM.executes_mapOp_iff' depends on axioms: [propext, Quot.sound]

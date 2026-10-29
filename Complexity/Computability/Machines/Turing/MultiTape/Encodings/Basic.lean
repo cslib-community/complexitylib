@@ -89,17 +89,6 @@ public theorem of_isEmpty {f : α → Bool} (h : ∀ a, f a = (encIn a).isEmpty)
     ComputableTidilyInLinearTimeAndSpace f encIn encBool :=
   isEmptyT.computableTidilyInLinearTimeAndSpace fun a => by rw [h, isEmptyT_run]; rfl
 
-/-- A function with a fixed value `d` on the input encoded by the empty word, and tidily computable
-in linear time and space on the other inputs. -/
-public theorem of_isEmpty_ite (d : β) (hd : ∀ a, encIn a = [] → f a = d)
-    (h : ComputableTidilyInLinearTimeAndSpace (f ∘ Subtype.val)
-      ((Function.Embedding.subtype fun a => (encIn a).isEmpty = false).trans encIn) encOut) :
-    ComputableTidilyInLinearTimeAndSpace f encIn encOut := by
-  convert ite (c := fun a => (encIn a).isEmpty) (of_isEmpty fun _ => rfl) ((const d).restrict _) h
-    using 1
-  funext a
-  split_ifs with ha <;> simp_all
-
 end ComputableTidilyInLinearTimeAndSpace
 
 

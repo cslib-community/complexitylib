@@ -22,11 +22,11 @@ open Cslib Cslib.Logic Cslib.Logic.InferenceSystem Cslib.Logic.PL
 
 /-! ### Width -/
 
-/-- Repeated literals count once. -/
-example : Clause.width ([(0, true), (0, true), (1, false)] : Clause ℕ) = 2 := by decide
-
-/-- Complementary literals count twice. -/
-example : Clause.width ([(0, true), (0, false)] : Clause ℕ) = 2 := by decide
+/-- Repeated literals count once; complementary literals count twice. -/
+example :
+    Clause.width ([(0, true), (0, true), (1, false)] : Clause ℕ) = 2 ∧
+    Clause.width ([(0, true), (0, false)] : Clause ℕ) = 2 := by
+  decide
 
 /-! ### A refutation -/
 
@@ -37,10 +37,10 @@ private def φ : CNF ℕ := [[(0, true)], [(0, false), (1, true)], [(1, false)]]
 private def proof : List (Clause ℕ) := [[], [(1, true)], [(1, false)], [(0, false), (1, true)],
   [(0, true)]]
 
-example : Clause.resolvent ([(0, true)] : Clause ℕ) [(0, false), (1, true)] 0 = [(1, true)] := by
+example :
+    Clause.resolvent ([(0, true)] : Clause ℕ) [(0, false), (1, true)] 0 = [(1, true)] ∧
+    Clause.resolvent ([(1, true)] : Clause ℕ) [(1, false)] 1 = [] := by
   decide
-
-example : Clause.resolvent ([(1, true)] : Clause ℕ) [(1, false)] 1 = [] := by decide
 
 private theorem isProof : φ.IsProof proof := by
   have h₃ : φ.IsProof [[(1, false)], [(0, false), (1, true)], [(0, true)]] :=
@@ -51,15 +51,15 @@ private theorem isProof : φ.IsProof proof := by
     (by decide) (by decide)
   exact h₅
 
-example : φ.RefutableInSize 5 := ⟨proof, isProof, by decide, le_rfl⟩
-
-example : φ.RefutableInWidth 2 := ⟨proof, isProof, by decide, by decide⟩
-
-example : ¬ φ.Satisfiable :=
-  CNF.exists_refutableInSize_iff_not_satisfiable.1 ⟨5, proof, isProof, by decide, le_rfl⟩
-
-/-- Fixing `x₁` to `false` leaves a refutation of `x₀ ∧ ¬x₀`, with at most as many lines. -/
-example : φ.restrict 1 false = [[(0, true)], [(0, false)]] := by decide
+example :
+    φ.RefutableInSize 5 ∧
+    φ.RefutableInWidth 2 ∧
+    ¬ φ.Satisfiable ∧
+    φ.restrict 1 false = [[(0, true)], [(0, false)]] :=
+  ⟨⟨proof, isProof, by decide, le_rfl⟩,
+    ⟨proof, isProof, by decide, by decide⟩,
+    CNF.exists_refutableInSize_iff_not_satisfiable.1 ⟨5, proof, isProof, by decide, le_rfl⟩,
+    by decide⟩
 
 example : ∃ ls, (φ.restrict 1 false).IsProof ls ∧ [] ∈ ls ∧ ls.length ≤ 5 := by
   obtain ⟨ls, h, hlen, hsub, -⟩ := isProof.restrict 1 false
@@ -90,12 +90,11 @@ private def treeRefutation : ψ.Derivation [] :=
   .resolvent (c₁ := [(0, true)]) (c₂ := [(0, false)]) 0 (.mem (by decide)) (.mem (by decide))
     (by decide) (by decide)
 
-example : treeRefutation.size = 3 := rfl
-
-example : treeRefutation.toDecisionTree = .node 0 (.leaf [(0, true)]) (.leaf [(0, false)]) := rfl
-
-example : treeRefutation.toDecisionTree.FindsFalsifiedClause ψ :=
-  treeRefutation.findsFalsifiedClause_toDecisionTree
+example :
+    treeRefutation.size = 3 ∧
+    treeRefutation.toDecisionTree = .node 0 (.leaf [(0, true)]) (.leaf [(0, false)]) ∧
+    treeRefutation.toDecisionTree.FindsFalsifiedClause ψ :=
+  ⟨rfl, rfl, treeRefutation.findsFalsifiedClause_toDecisionTree⟩
 
 /-- A DPLL tree querying `x₀` twice finds a falsified clause; it gives a tree-like refutation. -/
 private def dpllTree : DecisionTree ℕ (Clause ℕ) :=
@@ -113,26 +112,27 @@ private def inferenceRefutation : ⇓(ψ, ([] : Clause ℕ)) := treeRefutation
 
 private def setRefutation : {d // d ∈ ψ}⇓([] : Clause ℕ) := treeRefutation
 
-example : InferenceSystem.Derivable (ψ, ([] : Clause ℕ)) := ⟨inferenceRefutation⟩
-
-example : InferenceSystem.DerivableIn {d | d ∈ ψ} ([] : Clause ℕ) := ⟨setRefutation⟩
-
-example : ψ.Derives [] := CNF.derives_iff_derivable.2 ⟨inferenceRefutation⟩
-
-example : ψ.Derives [] := CNF.derives_iff_derivableIn.2 ⟨setRefutation⟩
+example :
+    InferenceSystem.Derivable (ψ, ([] : Clause ℕ)) ∧
+    InferenceSystem.DerivableIn {d | d ∈ ψ} ([] : Clause ℕ) ∧
+    (ψ.Derives [] ↔ InferenceSystem.Derivable (ψ, ([] : Clause ℕ))) ∧
+    (ψ.Derives [] ↔ InferenceSystem.DerivableIn {d | d ∈ ψ} ([] : Clause ℕ)) ∧
+    ψ.Derives [] :=
+  ⟨⟨inferenceRefutation⟩, ⟨setRefutation⟩, CNF.derives_iff_derivable, CNF.derives_iff_derivableIn,
+    CNF.derives_iff_derivable.2 ⟨inferenceRefutation⟩⟩
 
 /-! ### The size–width tradeoff -/
 
-/-- Short tree-like refutations are narrow: `3 ≤ 2 ^ 2` nodes give width at most `1 + 2`. -/
-example : ψ.RefutableInWidth 3 :=
-  CNF.RefutableInWidth.of_derivation (k := 1) (b := 2) (by decide) treeRefutation rfl (by decide)
-
-/-- The hypothesis `s (2N - d) ^ b < (2N) ^ b` is satisfiable: `3 * (2 - 1) ^ 2 < 2 ^ 2`. -/
-example : ψ.RefutableInWidth (max 1 1 + 2) :=
-  CNF.RefutableInWidth.of_refutableInSize (s := 3) (N := 1) (by decide) (by decide)
-    treeRefutation.refutableInSize (by decide)
-
-example : ∃ w : ℕ, φ.RefutableInWidth w ∧ (w : ℝ) ≤ 2 + 2 * √(2 * 2 * Real.log 5) + 2 := by
+/-- Short tree-like refutations are narrow (`3 ≤ 2 ^ 2` nodes give width at most `1 + 2`), and the
+size–width tradeoff bounds refutation width from refutation size. -/
+example :
+    ψ.RefutableInWidth 3 ∧
+    ψ.RefutableInWidth (max 1 1 + 2) ∧
+    ∃ w : ℕ, φ.RefutableInWidth w ∧ (w : ℝ) ≤ 2 + 2 * √(2 * 2 * Real.log 5) + 2 := by
+  refine ⟨CNF.RefutableInWidth.of_derivation (k := 1) (b := 2) (by decide) treeRefutation
+      rfl (by decide),
+    CNF.RefutableInWidth.of_refutableInSize (s := 3) (N := 1) (by decide) (by decide)
+      treeRefutation.refutableInSize (by decide), ?_⟩
   exact_mod_cast CNF.exists_refutableInWidth_le_of_refutableInSize (k := 2) (N := 2)
     (by decide) (by decide) ⟨proof, isProof, by decide, le_rfl⟩
 

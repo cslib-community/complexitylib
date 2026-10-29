@@ -37,7 +37,7 @@ unary, the two words, and the formula of level `0`
 The formula of level `0` numbers the variables of a Cook–Levin tableau by odd numbers
 (`Cslib.Complexity.TQBF.computableInPolyTime_tabVar`), and is polynomial-time in the tableau.
 Composed with the polynomial-time width and codes of the views
-(`Turing.MultiTapeNTM.computableTidilyInPolyTime_codeWidth`) and the polynomial-time Cook–Levin
+(`Turing.MultiTapeNTM.computableInPolyTime_codeWidth`) and the polynomial-time Cook–Levin
 tableau (`Cslib.Complexity.CookLevin.computableInPolyTime_tableau`), the reduction
 `Cslib.Complexity.TQBF.reduce` is polynomial-time, for every machine standing for the test of one
 step or none and every polynomial time bound
@@ -65,7 +65,7 @@ step or none and every polynomial time bound
 
 namespace Cslib.Complexity.TQBF
 
-open _root_.Turing _root_.Turing.MultiTapeTM Cslib.Logic.PL ComputableTidilyInPolyTime
+open _root_.Turing _root_.Turing.MultiTapeTM Cslib.Logic.PL ComputableInPolyTime
 
 variable {γ : Type} {encIn : γ ↪ List Bool}
 
@@ -82,8 +82,7 @@ theorem computableInPolyTime_of_tokens {f : γ → QBF ℕ} {l : γ → List (QB
     (hl : Turing.MultiTapeTM.ComputableInPolyTime l encIn (encList encToken))
       (h : ∀ x, (f x).tokens = l x) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn encQBF := by
-  have hl := hl.tidy
-  exact .of_tidy (hl.of_enc_eq fun x => by rw [encQBF_apply, h])
+  exact hl.of_enc_eq fun x => by rw [encQBF_apply, h]
 
 /-- A variable, from its number in binary. -/
 @[fun_prop]
@@ -195,11 +194,8 @@ theorem computableInPolyTime_blockVar {kind i j : γ → ℕ}
     (hj : Turing.MultiTapeTM.ComputableInPolyTime j encIn encUnary) :
     Turing.MultiTapeTM.ComputableInPolyTime (fun x => blockVar (kind x) (i x) (j x)) encIn encNat :=
       by
-  have hkind := hkind.tidy
-  have hi := hi.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
-  have h : ComputableTidilyInPolyTime (fun x => blockVar (kind x) (i x) (j x)) encIn encUnary := by
+  have h : Turing.MultiTapeTM.ComputableInPolyTime (fun x => blockVar (kind x) (i x) (j x)) encIn
+      encUnary := by
     unfold blockVar
     fun_prop
   exact unary_to_binary.comp h
@@ -294,9 +290,9 @@ section Base
 variable {k : ℕ} {State : Type} [Fintype State]
 
 /-- The index of a tableau variable in unary, the identity on encoded values. -/
-private theorem computableTidilyInPolyTime_index_unary :
-    ComputableTidilyInPolyTime (CookLevin.Var.index (k := k) (State := State)) CookLevin.encVar
-      encUnary :=
+private theorem computableInPolyTime_index_unary :
+    Turing.MultiTapeTM.ComputableInPolyTime (CookLevin.Var.index (k := k) (State := State))
+      CookLevin.encVar encUnary :=
   of_eq fun _ => rfl
 
 /-- The numbering of the tableau variables by odd numbers, in binary. -/
@@ -304,28 +300,22 @@ private theorem computableTidilyInPolyTime_index_unary :
 theorem computableInPolyTime_tabVar :
     Turing.MultiTapeTM.ComputableInPolyTime (tabVar (k := k) (State := State)) CookLevin.encVar
       encNat := by
-  refine .of_tidy ?_
-  have := computableTidilyInPolyTime_index_unary (k := k) (State := State)
-  have h : ComputableTidilyInPolyTime (fun v => tabVar (k := k) (State := State) v)
+  have := computableInPolyTime_index_unary (k := k) (State := State)
+  have h : Turing.MultiTapeTM.ComputableInPolyTime (fun v => tabVar (k := k) (State := State) v)
       CookLevin.encVar encUnary := by
     unfold tabVar
     fun_prop
   exact unary_to_binary.comp h
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolyTime.tidy in
 /-- The block variable holding a certificate bit, from the width and the index in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_certVar {w j : γ → ℕ}
     (hw : Turing.MultiTapeTM.ComputableInPolyTime w encIn encUnary)
     (hj : Turing.MultiTapeTM.ComputableInPolyTime j encIn encUnary) :
     Turing.MultiTapeTM.ComputableInPolyTime (fun x => certVar (w x) (j x)) encIn encNat := by
-  have hw := hw.tidy
-  have hj := hj.tidy
-  refine .of_tidy ?_
   unfold certVar
   fun_prop
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolyTime.tidy in
 /-- **A tableau as the formula of level `0` is polynomial-time** in the tableau and the width in
 unary. -/
 @[fun_prop]
@@ -335,15 +325,12 @@ theorem computableInPolyTime_baseFormula {tab : γ → CNF (CookLevin.Var k Stat
       (encList (encList (encPair CookLevin.encVar encBool))))
     (hw : Turing.MultiTapeTM.ComputableInPolyTime w encIn encUnary) :
     Turing.MultiTapeTM.ComputableInPolyTime (fun x => baseFormula (tab x) (w x)) encIn encQBF := by
-  have htab := htab.tidy
-  have hw := hw.tidy
-  refine .of_tidy ?_
-  have hvars : ComputableTidilyInPolyTime (fun x => (tab x).vars) encIn
+  have hvars : Turing.MultiTapeTM.ComputableInPolyTime (fun x => (tab x).vars) encIn
       (encList CookLevin.encVar) :=
-    (CNF.computableInPolyTime_vars CookLevin.encVar).tidy.comp htab
-  have hrelabel : ComputableTidilyInPolyTime (fun x => CNF.relabel tabVar (tab x)) encIn
-      (encList (encList (encPair encNat encBool))) :=
-    (CNF.computableInPolyTime_relabel computableInPolyTime_tabVar).tidy.comp htab
+    (CNF.computableInPolyTime_vars CookLevin.encVar).comp htab
+  have hrelabel : Turing.MultiTapeTM.ComputableInPolyTime (fun x => CNF.relabel tabVar (tab x))
+      encIn (encList (encList (encPair encNat encBool))) :=
+    (CNF.computableInPolyTime_relabel computableInPolyTime_tabVar).comp htab
   unfold baseFormula baseVars certLinks
   fun_prop
 
@@ -361,32 +348,29 @@ concatenation of the two codes. -/
 theorem computableInPolyTime_edgeTest :
     Turing.MultiTapeTM.ComputableInPolyTime (edgeTest enc ntm c d) (encPair enc encBits) encBool :=
       by
-  refine .of_tidy ?_
-  have hw : ComputableTidilyInPolyTime (fun p : α × List Bool => ntm.viewCodeWidth c d (enc p.1))
-      (encPair enc encBits) encUnary :=
-    (ntm.computableInPolyTime_viewCodeWidth c d).tidy.comp ((encode enc).comp (fst _ _))
-  have hx : ComputableTidilyInPolyTime
+  have hw : Turing.MultiTapeTM.ComputableInPolyTime
+      (fun p : α × List Bool => ntm.viewCodeWidth c d (enc p.1)) (encPair enc encBits) encUnary :=
+    (ntm.computableInPolyTime_viewCodeWidth c d).comp (encoding_comp (fst _ _))
+  have hx : Turing.MultiTapeTM.ComputableInPolyTime
       (fun p : α × List Bool => p.2.take (ntm.viewCodeWidth c d (enc p.1)))
       (encPair enc encBits) encBits := by fun_prop
-  have hy : ComputableTidilyInPolyTime
+  have hy : Turing.MultiTapeTM.ComputableInPolyTime
       (fun p : α × List Bool => p.2.drop (ntm.viewCodeWidth c d (enc p.1)))
       (encPair enc encBits) encBits := by fun_prop
-  have he := ntm.computableTidilyInPolyTime_codeEdge hx hy
+  have he := ntm.computableInPolyTime_codeEdge hx hy
   unfold edgeTest
   simp only [Cslib.Reachability.reach]
   fun_prop
 
-attribute [local fun_prop] Turing.MultiTapeTM.ComputableInPolyTime.tidy in
 /-- **The reduction to `TQBF` is polynomial-time**, for every machine `tmV` standing for the test
 of one step or none and every time bound `cV * (n + 1) ^ dV` allowed to it. -/
 theorem computableInPolyTime_reduce {kV : ℕ} {StateV : Type} [Fintype StateV]
     [DecidableEq StateV] (tmV : MultiTapeTM kV Bool StateV) (cV dV : ℕ) :
     Turing.MultiTapeTM.ComputableInPolyTime (reduce enc ntm c d tmV cV dV) enc encQBF := by
-  refine .of_tidy ?_
-  have hW := MultiTapeNTM.computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
-  have hinit := ntm.computableTidilyInPolyTime_viewCode_initView hW (.encode enc)
-  have hacc := MultiTapeNTM.computableTidilyInPolyTime_acceptCode hW
-  have htab := (CookLevin.computableInPolyTime_tableau tmV).tidy
+  have hW := MultiTapeNTM.computableInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
+  have hinit := ntm.computableInPolyTime_viewCode_initView (word := enc) hW (.of_eq fun _ => rfl)
+  have hacc := MultiTapeNTM.computableInPolyTime_acceptCode hW
+  have htab := CookLevin.computableInPolyTime_tableau tmV
   have hframe := bitsFrame enc
   unfold reduce edgeTime
   fun_prop
