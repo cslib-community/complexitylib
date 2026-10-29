@@ -21,18 +21,6 @@ namespace ComplexityTests.BatchOr
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean ComplexityTests.CircuitMaterialize
 
--- Concrete instantiation of `eval_batchOrCircuit_iff` for two 1-bit source keys, two 2-bit
--- values, and three 1-bit queries over a 9-bit input.
-example (sourceKeys : Fin 2 → Fin 1 → Fin 9 ⊕ Bool)
-    (sourceValues : Fin 2 → Fin 2 → Fin 9 ⊕ Bool)
-    (queryKeys : Fin 3 → Fin 1 → Fin 9 ⊕ Bool)
-    (x : BitString 9) (request : Fin 3) (bit : Fin 2) :
-    (batchOrCircuit sourceKeys sourceValues queryKeys).eval interpretation x
-        (finProdFinEquiv (request, bit)) = true ↔
-      ∃ source, substitute (sourceKeys source) x = substitute (queryKeys request) x ∧
-        substitute (sourceValues source) x bit = true :=
-  eval_batchOrCircuit_iff sourceKeys sourceValues queryKeys x request bit
-
 -- Two one-bit source keys, two two-bit values, and three one-bit queries: all 512 inputs.
 /-- info: true -/
 #guard_msgs in

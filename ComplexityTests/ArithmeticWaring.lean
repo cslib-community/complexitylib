@@ -96,8 +96,7 @@ private def weightedProgram : Program (SumOfTerms.signature ℚ) 0 4 :=
     ⟨.add, fun _ => .gate 0⟩).gate ⟨.add, ![.gate 0, .gate 1]⟩).gate
       ⟨.term 0, Fin.elim0⟩
 
--- Odd-degree Waring bound, free zero-feature inputs, weighted dictionary costs, and independent
--- coefficient-field / index universes (`ULift.{v} (Fin 2)` vs `ULift.{u} ℚ`).
+-- Odd-degree Waring bound, free zero-feature inputs and weighted dictionary costs.
 example :
     Nat.choose 3 1 ≤ (Finset.univ : Finset (Fin 4)).card ∧
       ((LinearMap.lsmul ℚ ℚ) ((Program.empty : Program (SumOfTerms.signature ℚ) 1 0).trace
@@ -105,10 +104,9 @@ example :
       weightedProgram.trace (SumOfTerms.interpretation id) Fin.elim0 (.gate 2) = 9 ∧
       weightedProgram.cost (SumOfTerms.dictionaryCost fun t => if t = 0 then 0 else 1) = 1 ∧
       ((LinearMap.lsmul ℚ ℚ)
-        (weightedProgram.trace (SumOfTerms.interpretation id) Fin.elim0 (.gate 2))).rank ≤ 1 ∧
-      2 ≤ (Finset.univ : Finset (ULift.{v} (Fin 2))).card := by
+        (weightedProgram.trace (SumOfTerms.interpretation id) Fin.elim0 (.gate 2))).rank ≤ 1 := by
   refine ⟨Waring.choose_le_card 1 Finset.univ (fun _ => 1 / 24) cubicCoefficients cubic_sum,
-    ?_, by change (3 : ℚ) + (3 + 3) = 9; norm_num, rfl, ?_, ?_⟩
+    ?_, by change (3 : ℚ) + (3 + 3) = 9; norm_num, rfl, ?_⟩
   · apply SumOfTerms.rank_trace_le (weight := fun _ => 1)
     · intro t
       exact (LinearMap.rank_le_domain _).trans_eq (Module.rank_self ℚ)
@@ -123,11 +121,12 @@ example :
       · simpa [ht] using
           (LinearMap.rank_le_domain ((LinearMap.lsmul ℚ ℚ) t)).trans_eq (Module.rank_self ℚ)
     · exact fun i => i.elim0
-  · exact Waring.choose_le_card 1 (Finset.univ : Finset (ULift.{v} (Fin 2)))
-      (fun i => (![1 / 4, -(1 / 4)] i.down : ℚ))
-      (fun i j => (!![1, 1; 1, -1] i.down j : ℚ))
-      ((Equiv.ulift.sum_comp (fun i : Fin 2 =>
-        C (![1 / 4, -(1 / 4)] i : ℚ) *
-          (∑ j : Fin 2, C (!![1, 1; 1, -1] i j : ℚ) * X j) ^ 2)).trans product_sum)
+
+-- The coefficient field need not be in the same universe as the finite matrix indices.
+example {K : Type u} [Field K] [CharZero K] {ι : Type v} (indices : Finset ι)
+    (scale : ι → K) (a : ι → Fin 2 → K)
+    (h : ∑ i ∈ indices, C (scale i) * (∑ j, C (a i j) * X j) ^ 2 = ∏ j : Fin 2, X j) :
+    2 ≤ indices.card :=
+  Waring.choose_le_card 1 indices scale a h
 
 end ComplexityTests.ArithmeticWaring

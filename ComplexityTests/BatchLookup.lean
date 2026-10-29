@@ -21,27 +21,34 @@ namespace ComplexityTests.BatchLookup
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 open bitonicSortTraceCircuit ComplexityTests.CircuitMaterialize
 
--- Concrete evaluation, complexity upper bound, padded program cost decomposition, and exact gate
--- counts (`substituteCircuit`, `batchLookupCircuit table 3`, and `batchLookupCircuit table₀ 0`).
-example (table : BitString 2 → BitString 1) (table₀ : BitString 0 → BitString 0)
-    (x : BitString (3 * 2)) (cost : signature.Op → ℕ) :
-    (batchLookupCircuit table 3).eval interpretation x = blockMap table 3 x ∧
-      complexity interpretation (blockMap table 3) ≤
-        48 * (3 + 2 ^ 2) * (Nat.clog 2 (3 + 2 ^ 2) + 1) ^ 2 * (2 + 1 + 1) ∧
-      (batchLookupCircuit.withPadding table
-        (by decide : 3 + (2 ^ 2 + 1) = BitonicSort.arity 3)).program.cost cost =
-        (routeValuesCircuit Fin.castSucc (Fin.last 2) 3 1).program.cost cost +
-          cost (.const false) + cost (.const true) ∧
-      (substituteCircuit (Fin.elim0 : Fin 0 → Fin 0 ⊕ Bool)).size = 2 ∧
-      (batchLookupCircuit table 3).size = 1327 ∧
-      (batchLookupCircuit table₀ 0).size = 3 :=
-  ⟨by simp,
-    complexity_blockMap_le_lookup table 3,
-    batchLookupCircuit.cost_program_withPadding table
-      (by decide : 3 + (2 ^ 2 + 1) = BitonicSort.arity 3) cost,
-    by simp,
-    by rw [batchLookupCircuit, batchLookupCircuit.size_withPadding]; rfl,
-    by rw [batchLookupCircuit, batchLookupCircuit.size_withPadding]; rfl⟩
+example {k v : ℕ} (table : BitString k → BitString v) (requests : ℕ)
+    (x : BitString (requests * k)) :
+    (batchLookupCircuit table requests).eval interpretation x = blockMap table requests x := by
+  simp
+
+example {k v : ℕ} (table : BitString k → BitString v) (requests : ℕ) :
+    complexity interpretation (blockMap table requests) ≤
+      48 * (requests + 2 ^ k) * (Nat.clog 2 (requests + 2 ^ k) + 1) ^ 2 * (k + v + 1) :=
+  complexity_blockMap_le_lookup table requests
+
+example {k v requests padding d : ℕ} (table : BitString k → BitString v)
+    (h : requests + (2 ^ k + padding) = BitonicSort.arity d) (cost : signature.Op → ℕ) :
+    (batchLookupCircuit.withPadding table h).program.cost cost =
+      (routeValuesCircuit Fin.castSucc (Fin.last k) d v).program.cost cost +
+        cost (.const false) + cost (.const true) :=
+  batchLookupCircuit.cost_program_withPadding table h cost
+
+-- The substitution uses two constant gates even for an empty output.
+example : (substituteCircuit (Fin.elim0 : Fin 0 → Fin 0 ⊕ Bool)).size = 2 := by
+  simp
+
+example (table : BitString 2 → BitString 1) : (batchLookupCircuit table 3).size = 1327 := by
+  rw [batchLookupCircuit, batchLookupCircuit.size_withPadding]
+  rfl
+
+example (table : BitString 0 → BitString 0) : (batchLookupCircuit table 0).size = 3 := by
+  rw [batchLookupCircuit, batchLookupCircuit.size_withPadding]
+  rfl
 
 -- All 16 Boolean tables on two-bit keys and all 64 triples of queries: 1024 cases.
 /-- info: true -/

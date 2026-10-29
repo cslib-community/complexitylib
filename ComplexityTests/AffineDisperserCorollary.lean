@@ -100,12 +100,12 @@ theorem exists_circuit_three_mul_lt_size :
 -- `explicitDisperserLanguage` agrees with `explicitDisperser` on each slice, lies in `P`, and
 -- satisfies the `3.5 N - O(N / log N)` circuit lower bound for all large `N`.
 example :
-    explicitDisperserLanguage.slice (2 ^ 70) = explicitDisperser (2 ^ 70) ∧
+    (∀ N, explicitDisperserLanguage.slice N = explicitDisperser N) ∧
       (explicitDisperserLanguage : Set (List Bool)) ∈ Complexity.P encBits ∧
       ∀ᶠ N in Filter.atTop, ∀ C : Circuit (fullSignature 2 Bool) N 1,
         C.Computes fullInterpretation (single (explicitDisperserLanguage.slice N)) →
           7 / 2 * (N : ℝ) - 42 * N / (Nat.log 2 N + 1) - 7 ≤ C.size :=
-  ⟨slice_explicitDisperserLanguage (2 ^ 70),
+  ⟨(fun N => slice_explicitDisperserLanguage N),
     explicitDisperserLanguage_mem_P,
     by simpa only [slice_explicitDisperserLanguage] using
       eventually_le_size_of_computes_explicitDisperser⟩
