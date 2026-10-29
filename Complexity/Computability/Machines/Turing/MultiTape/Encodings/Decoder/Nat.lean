@@ -26,7 +26,8 @@ namespace Turing.MultiTapeTM
 
 /-! ### Binary digits -/
 
-private theorem rdropWhile_append {α : Type*} (p : α → Bool) (l₁ l₂ : List α) :
+/-- Dropping from the right of an appended list drops from the suffix first. -/
+theorem rdropWhile_append {α : Type*} (p : α → Bool) (l₁ l₂ : List α) :
     (l₁ ++ l₂).rdropWhile p =
       if l₂.rdropWhile p = [] then l₁.rdropWhile p else l₁ ++ l₂.rdropWhile p := by
   simp only [List.rdropWhile, List.reverse_append, List.dropWhile_append]
@@ -34,7 +35,8 @@ private theorem rdropWhile_append {α : Type*} (p : α → Bool) (l₁ l₂ : Li
   · simp [h]
   · simp [h]
 
-private theorem bits_eq_nil_iff {n : ℕ} : n.bits = [] ↔ n = 0 := by
+/-- The binary digit list of `n` is empty if and only if `n = 0`. -/
+theorem bits_eq_nil_iff {n : ℕ} : n.bits = [] ↔ n = 0 := by
   rw [← List.length_eq_zero_iff, Nat.size_eq_bits_len, Nat.size_eq_zero]
 
 /-- Binary digits, least significant first, read as a number. -/
