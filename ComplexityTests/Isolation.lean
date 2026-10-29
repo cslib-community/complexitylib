@@ -76,35 +76,29 @@ example : ¬CNF.Satisfiable (reduce ([[(0, true)]], [false, true, true, false]))
   cases h₀ : σ 0 <;> cases h₁ : σ 1 <;> cases h₃ : σ 3 <;>
     simp [h₀, h₁, h₃] at hσ
 
-/-- The affine hash family of bit strings is pairwise independent. -/
-example : IsPairwiseIndependentHash (BitString.LinearHash.affineHash (k := 2) (n := 3)) :=
-  BitString.LinearHash.isPairwiseIndependentHash_affineHash 2 3
+/-- The affine hash family of bit strings is pairwise independent, agrees with the general
+`affineHash` over `Bool`, and words of three bits represent `5`. -/
+example (p : (Fin 2 → BitString 3) × BitString 2) (x : BitString 3) :
+    IsPairwiseIndependentHash (BitString.LinearHash.affineHash (k := 2) (n := 3)) ∧
+    BitString.LinearHash.affineHash p x = affineHash (m := Fin 2) (n := Fin 3) (F := Bool) p x ∧
+    (∃ u : Fin 3 → Bool, BitString.binaryValue (List.ofFn u) = 5) :=
+  ⟨BitString.LinearHash.isPairwiseIndependentHash_affineHash 2 3,
+   BitString.LinearHash.affineHash_eq_affineHash p x,
+   BitString.exists_binaryValue_eq (by norm_num)⟩
 
 open Classical in
-/-- The success bound for the satisfiable formula `x₀`: at least a `3 / 128` fraction of the
-random words of any length `m ≥ randomBits [[x₀]]` give a uniquely satisfiable formula. -/
+/-- The success bound (both cardinality and density) for the satisfiable formula `x₀`: at least a
+`3 / 128` fraction of the random words of any length `m ≥ randomBits [[x₀]]` give a uniquely
+satisfiable formula. -/
 example (m : ℕ) (hm : randomBits [[(0, true)]] ≤ m) :
+    randomBits [[(0, true)]] = 8 ∧
     3 * 2 ^ m ≤ 32 * 4 * (Finset.univ.filter fun r : Fin m → Bool =>
-      reduce ([[(0, true)]], List.ofFn r) ∈ USAT).card :=
-  three_mul_two_pow_le_card_reduce_mem_USAT (φ := [[(0, true)]]) ⟨fun _ => true, rfl⟩ hm
-
-example : randomBits [[(0, true)]] = 8 := by decide
-
-open Classical in
-/-- The same bound as a density: at least `3 / 128`. -/
-example (m : ℕ) (hm : randomBits [[(0, true)]] ≤ m) :
+      reduce ([[(0, true)]], List.ofFn r) ∈ USAT).card ∧
     3 / (32 * (1 + 3)) ≤ Finset.dens (Finset.univ.filter fun r : Fin m → Bool =>
       reduce ([[(0, true)]], List.ofFn r) ∈ USAT) :=
-  three_div_le_dens_reduce_mem_USAT (φ := [[(0, true)]]) ⟨fun _ => true, rfl⟩ hm
-
-/-- The hash family is the affine hash over `Bool`. -/
-example (p : (Fin 2 → BitString 3) × BitString 2) (x : BitString 3) :
-    BitString.LinearHash.affineHash p x = affineHash (m := Fin 2) (n := Fin 3) (F := Bool) p x :=
-  BitString.LinearHash.affineHash_eq_affineHash p x
-
-/-- Words of three bits represent `5`. -/
-example : ∃ u : Fin 3 → Bool, BitString.binaryValue (List.ofFn u) = 5 :=
-  BitString.exists_binaryValue_eq (by norm_num)
+  ⟨by decide,
+   three_mul_two_pow_le_card_reduce_mem_USAT (φ := [[(0, true)]]) ⟨fun _ => true, rfl⟩ hm,
+   three_div_le_dens_reduce_mem_USAT (φ := [[(0, true)]]) ⟨fun _ => true, rfl⟩ hm⟩
 
 /-- An unsatisfiable formula stays unsatisfiable. -/
 example (r : List Bool) : reduce ([[(0, true)], [(0, false)]], r) ∈ UNSAT := by

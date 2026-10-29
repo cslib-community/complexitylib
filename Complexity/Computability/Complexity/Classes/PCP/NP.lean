@@ -13,7 +13,6 @@ public import Mathlib.Data.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
 
 /-!
@@ -65,14 +64,14 @@ variable {V} {enc : α ↪ List Bool} {c : ℕ}
 
 private theorem coins_unary (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
-    ComputableTidilyInPolyTime V.coins enc encUnary :=
-  .binary_to_unary_bounded hV.1.tidy (by fun_prop) hcoins
+    ComputableInPolyTime V.coins enc encUnary :=
+  .binary_to_unary_bounded hV.1 (by fun_prop) hcoins
 
 private theorem enum_coins (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
-    ComputableTidilyInPolyTime (fun a => BitString.enumList (V.coins a))
+    ComputableInPolyTime (fun a => BitString.enumList (V.coins a))
       enc (encList encBits) := by
-  apply ComputableTidilyInPolyTime.bitsEnumList (coins_unary hV hcoins)
+  apply ComputableInPolyTime.bitsEnumList (coins_unary hV hcoins)
     (size := fun n => 2 ^ (c * (Nat.log 2 n + 1)) * (2 * (c * (Nat.log 2 n + 1)) + 1))
   · have hpow := polynomiallyBounded_two_pow_mul_log c
     fun_prop
@@ -84,9 +83,8 @@ private theorem enum_coins (hV : V.PolyTime enc)
 theorem isPolyTime_queryTable (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.queryTable enc (encList encNat) := by
-  refine .of_tidy ?_
   have he := enum_coins hV hcoins
-  have hq := hV.2.1.tidy
+  have hq := hV.2.1
   unfold queryTable
   fun_prop
 
@@ -94,11 +92,7 @@ theorem isPolyTime_queryTable (hV : V.PolyTime enc)
 theorem isPolyTime_tableVerifier (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.tableVerifier (encPair enc encBits) encBool := by
-  have he : ComputableInPolyTime (fun a => BitString.enumList (V.coins a))
-      enc (encList encBits) := by
-    obtain ⟨t, s, ⟨T, hT, ht⟩, ⟨S, hS, hs⟩, k, Q, hfin, tm, htm⟩ := enum_coins hV hcoins
-    exact ⟨T, S, hT, hS, k, Q, hfin, tm,
-      fun a => ((htm a).mono (ht a) (hs a)).computesInTimeAndSpace⟩
+  have he := enum_coins hV hcoins
   have hq := hV.2.1
   have hv := hV.2.2
   have ht := isPolyTime_queryTable hV hcoins
@@ -173,7 +167,7 @@ theorem PCP_log_subset_NP (q : ℕ → ℕ) :
     PCP (fun n => Nat.log 2 n + 1) q enc ⊆ NP enc := by
   rintro A ⟨V, c, d, hV, hcoins, hqueries, hcomplete, hsound⟩
   obtain ⟨p, hlength⟩ :=
-    (PCPVerifier.isPolyTime_queryTable hV hcoins).tidy.polyBounded_length.exists_polynomial
+    (PCPVerifier.isPolyTime_queryTable hV hcoins).polyBounded_length.exists_polynomial
   have hbound (a : α) : (V.queryTable a).length ≤ p.eval (enc a).length := by
     exact (length_le_length_encList encNat (V.queryTable a)).trans (hlength a)
   refine ⟨p, V.tableVerifier, (PCPVerifier.isPolyTime_tableVerifier hV hcoins),

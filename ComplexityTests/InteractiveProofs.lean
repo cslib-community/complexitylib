@@ -6,6 +6,8 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.Classes.IP.GraphNonIsomorphism
 import Complexity.Computability.Complexity.Classes.IP.PSPACE
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-! Interactive proofs: concrete graphs, honest and cheating provers, class inclusions, and the
 polynomial-space evaluation of the optimal prover. -/
@@ -126,18 +128,17 @@ example (a : List Bool) :
 
 example : (∅ : Set (List Bool)) ∈ IP encBits :=
   BPP_subset_IP _ ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ => by
-    simp only [Polynomial.eval_zero, pow_zero, mul_one]
+    simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
     exact le_trans (by norm_num : 2 ≤ 3 * 1)
       (Nat.mul_le_mul_left 3 (Finset.card_pos.2
         ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩
 
 -- A guessing round whose message does not depend on the secret bit is passed with probability at
 -- most one half by every prover, and the cheating prover attains it.
-example (P : Prover Unit) : acceptProb (guessingRound fun _ => pure [true]) P ≤ 1 / 2 :=
-  acceptProb_guessingRound_le_half rfl P
-
-example : acceptProb (guessingRound fun _ => pure [true]) alwaysSecond = 1 / 2 :=
-  acceptProb_guessingRound_alwaysSecond _
+example (P : Prover Unit) :
+    acceptProb (guessingRound fun _ => pure [true]) P ≤ 1 / 2 ∧
+    acceptProb (guessingRound fun _ => pure [true]) alwaysSecond = 1 / 2 :=
+  ⟨acceptProb_guessingRound_le_half rfl P, acceptProb_guessingRound_alwaysSecond _⟩
 
 -- Zero repetitions accept every prover.
 example (round : WordOracleComp Unit Bool) (P : Prover Unit) :
@@ -146,32 +147,38 @@ example (round : WordOracleComp Unit Bool) (P : Prover Unit) :
 
 /-! ### `IP ⊆ PSPACE` -/
 
--- Graph non-isomorphism is in polynomial space, through its interactive proof.
-example : GraphNonIsomorphism ∈ PSPACE (encPair encGraph encGraph) :=
-  IP_subset_PSPACE _ GraphNonIsomorphism.mem_IP
+-- Graph non-isomorphism and graph isomorphism are in polynomial space through interactive proofs.
+example :
+    GraphNonIsomorphism ∈ PSPACE (encPair encGraph encGraph) ∧
+    GraphIsomorphism ∈ PSPACE (encPair encGraph encGraph) :=
+  ⟨IP_subset_PSPACE _ GraphNonIsomorphism.mem_IP,
+   IP_subset_PSPACE _ (NP_subset_IP _ GraphIsomorphism.mem_NP)⟩
 
--- `NP ⊆ PSPACE` and `BPP ⊆ PSPACE` follow through `IP`.
-example {α : Type} (enc : α ↪ List Bool) : NP enc ⊆ PSPACE enc :=
-  (NP_subset_IP enc).trans (IP_subset_PSPACE enc)
-
-example {α : Type} (enc : α ↪ List Bool) : BPP enc ⊆ PSPACE enc :=
-  (BPP_subset_IP enc).trans (IP_subset_PSPACE enc)
+example : (∅ : Set (List Bool)) ∈ PSPACE encBits :=
+  IP_subset_PSPACE _ (BPP_subset_IP _ ⟨0, fun _ => false, .const false,
+    fun _ => ⟨fun h => h.elim, fun _ => by
+      simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
+      exact le_trans (by norm_num : 2 ≤ 3 * 1)
+        (Nat.mul_le_mul_left 3 (Finset.card_pos.2
+          ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩)
 
 -- The binary counter counts, least significant bit first, and wraps around.
-example : BitString.increment [true, true, false] = [false, false, true] := rfl
-example : BitString.increment^[5] [false, false, false] = [true, false, true] := rfl
-example : BitString.increment [true, true] = [false, false] := rfl
-example : BitString.lsbValue [true, false, true] = 5 := rfl
+example : BitString.increment [true, true, false] = [false, false, true] ∧
+    BitString.increment^[5] [false, false, false] = [true, false, true] ∧
+    BitString.increment [true, true] = [false, false] ∧
+    BitString.lsbValue [true, false, true] = 5 :=
+  ⟨rfl, rfl, rfl, rfl⟩
 
 -- Polynomial space is closed under composition and contains polynomial time, through `fun_prop`.
-example : ComputableTidilyInPolySpace (fun w => BitString.increment (BitString.increment w))
-    encBits encBits := by
-  fun_prop
+example : ComputableInPolySpace (fun w => BitString.increment (BitString.increment w))
+    encBits encBits :=
+  have h : ComputableInPolySpace BitString.increment encBits encBits := .of_polyTime (by fun_prop)
+  h.comp h
 
 -- A Boolean function computable within polynomial space decides a problem in `PSPACE`.
 example : {w : List Bool | w.headD false = true} ∈ PSPACE encBits :=
   mem_PSPACE_of_computableInPolySpace (f := fun w => w.headD false)
-    (.of_polyTime (.of_tidy (ComputableTidilyInPolyTime.headD false))) fun _ => Iff.rfl
+    (.of_polyTime (ComputableInPolyTime.headD false)) fun _ => Iff.rfl
 
 -- The seven codes of length `3` decode to the seven words of length at most `2`, each once.
 example : (List.range (Interaction.codeCount 2)).map (fun i =>
@@ -183,22 +190,22 @@ example : Interaction.encodeWord 3 [true] = [false, false, true, true] := rfl
 
 -- A game tree with two messages and two replies, of depth one: the root has leaf value `1`, and
 -- the child reached by the message `i` and the reply `j` has leaf value `2 * i + j`, so the value
--- is `1 + max 0 1 + max 2 3 = 5`. The evaluator returns it after `GameTree.time 2 1 = 9` steps.
+-- is `1 + max 0 1 + max 2 3 = 5` (or `4` when capped at `4`). The evaluator returns `5` after
+-- `GameTree.time 2 1 = 9` steps.
 private def treeLeaf : List (ℕ × ℕ) → ℕ
   | [] => 1
   | (i, j) :: _ => 2 * i + j
 
-example : GameTree.value 2 100 0 Nat.succ treeLeaf 1 [] = 5 := by decide
+example : GameTree.value 2 100 0 Nat.succ treeLeaf 1 [] = 5 ∧
+    GameTree.value 2 4 0 Nat.succ treeLeaf 1 [] = 4 := by decide
 
 example : (GameTree.step 1 100 0 Nat.succ (fun i => decide (i = 1)) treeLeaf)^[GameTree.time 2 1]
     ([], none) = ([], some 5) := by decide
 
 example : (GameTree.step 1 100 0 Nat.succ (fun i => decide (i = 1)) treeLeaf)^[GameTree.time 2 1]
-    ([], none) = ([], some (GameTree.value 2 100 0 Nat.succ treeLeaf 1 [])) :=
-  GameTree.iterate_step_eval (by norm_num) (fun i hi => by interval_cases i <;> rfl) le_rfl
-
--- A cap below the value caps the sums.
-example : GameTree.value 2 4 0 Nat.succ treeLeaf 1 [] = 4 := by decide
+    ([], none) = ([], some 5) := by
+  rw [GameTree.iterate_step_eval (by norm_num) (fun i hi => by interval_cases i <;> rfl) le_rfl]
+  decide
 
 -- A verifier with two coin values that accepts without sending a message is a bounded family with
 -- no rounds; its value is the number of coin values, and no prover can do better.
@@ -209,13 +216,13 @@ private theorem isBounded_acceptAll : Interaction.IsBounded acceptAll 0 0 where
   message r h m hm := by cases h <;> simp [Interaction.outcome, acceptAll] at hm
   reply r h m y e := by cases h <;> rfl
 
-example : Interaction.value acceptAll 0 0 [] = 2 := by
-  have h (r : Fin 2) : Interaction.outcome (acceptAll r) [] = .done true := rfl
-  simp [Interaction.value, Interaction.accepted, h]
-
 example (P : Prover Unit) :
-    ∑ r, Interaction.acceptFrom P P.init (some (acceptAll r)) ≤
-      Interaction.value acceptAll 0 0 [] :=
-  Interaction.sum_acceptFrom_le_value isBounded_acceptAll P
+    Interaction.value acceptAll 0 0 [] = 2 ∧
+      ∑ r, Interaction.acceptFrom P P.init (some (acceptAll r)) ≤ 2 := by
+  have hval : Interaction.value acceptAll 0 0 [] = 2 := by
+    have h (r : Fin 2) : Interaction.outcome (acceptAll r) [] = .done true := rfl
+    simp [Interaction.value, Interaction.accepted, h]
+  refine ⟨hval, (Interaction.sum_acceptFrom_le_value isBounded_acceptAll P).trans_eq ?_⟩
+  exact_mod_cast hval
 
 end ComplexityTests.InteractiveProofs

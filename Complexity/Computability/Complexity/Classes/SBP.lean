@@ -73,25 +73,22 @@ theorem mem_SBP : A ∈ SBP enc ↔ ∃ f ∈ SharpP enc, ∃ k : α → ℕ, Co
 theorem mem_SBP_iff_exists_pos_threshold : A ∈ SBP enc ↔
     ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableInPolyTime k enc encNat ∧
       (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 * f a < k a) := by
-  have this : A ∈ SBP enc ↔ ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
-      (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 * f a < k a) := by
-    rw [mem_SBP]
+  rw [mem_SBP]
+  constructor
+  · rintro ⟨f, hf, k, hk, hA⟩
+    refine ⟨f + f + 1, SharpP.add_mem (SharpP.add_mem hf hf) SharpP.one_mem,
+      fun a => k a + k a + 1, by fun_prop,
+      fun a => by positivity, fun a => ?_⟩
+    simp only [Pi.add_apply, Pi.one_apply]
     constructor
-    · rintro ⟨f, hf, k, hk, hA⟩
-      refine ⟨f + f + 1, SharpP.add_mem (SharpP.add_mem hf hf) SharpP.one_mem,
-        fun a => k a + k a + 1, by have hk := hk.tidy; fun_prop,
-        fun a => by positivity, fun a => ?_⟩
-      simp only [Pi.add_apply, Pi.one_apply]
-      constructor
-      · intro ha
-        have := (hA a).1 ha
-        lia
-      · intro ha
-        have := (hA a).2 ha
-        lia
-    · rintro ⟨f, hf, k, hk, -, hA⟩
-      exact ⟨f, hf, k, (.of_tidy hk), hA⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+    · intro ha
+      have := (hA a).1 ha
+      lia
+    · intro ha
+      have := (hA a).2 ha
+      lia
+  · rintro ⟨f, hf, k, hk, -, hA⟩
+    exact ⟨f, hf, k, hk, hA⟩
 
 /-- Threshold one recognizes precisely the positive #P counts. -/
 theorem NP_subset_SBP : NP enc ⊆ SBP enc := by
@@ -114,7 +111,7 @@ theorem BPP_subset_SBP : BPP enc ⊆ SBP enc := by
     (n := p.eval (enc a).length)
   have hp : 0 < 2 ^ p.eval (enc a).length := by positivity
   have h := hA a
-  simp only [Polynomial.eval_ofNat] at h
+  simp only [ErrorExponentAt, Bool.not_true, Bool.not_false, Polynomial.eval_ofNat] at h
   change (a ∈ A → _ ≤ 3 * acceptCount V a (p.eval (enc a).length)) ∧ _
   constructor <;> intro ha
   · have := h.1 ha
@@ -184,19 +181,15 @@ theorem exists_SBP_gap_pow (hA : A ∈ SBP enc) {m : ℕ} (hm : 0 < m) :
     ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableInPolyTime k enc encNat ∧
       (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧
         (a ∉ A → 2 ^ m * f a < k a) := by
-  have this : ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
-      (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 ^ m * f a < k a) := by
-    obtain ⟨f, hf, k, hk, hkpos, h⟩ := mem_SBP_iff_exists_pos_threshold.mp hA
-    refine ⟨f ^ m, SharpP.pow_mem hf m, fun a => k a ^ m,
-      hk.tidy.binary_pow' (.const m), fun a => pow_pos (hkpos a) _, fun a => ⟨?_, ?_⟩⟩
-    · intro ha
-      exact Nat.pow_le_pow_left ((h a).1 ha) m
-    · intro ha
-      simpa only [Pi.pow_apply, mul_pow] using
-        Nat.pow_lt_pow_left ((h a).2 ha) (Nat.ne_of_gt hm)
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  obtain ⟨f, hf, k, hk, hkpos, h⟩ := mem_SBP_iff_exists_pos_threshold.mp hA
+  refine ⟨f ^ m, SharpP.pow_mem hf m, fun a => k a ^ m,
+    hk.binary_pow' (.const m), fun a => pow_pos (hkpos a) _, fun a => ⟨?_, ?_⟩⟩
+  · intro ha
+    exact Nat.pow_le_pow_left ((h a).1 ha) m
+  · intro ha
+    simpa only [Pi.pow_apply, mul_pow] using
+      Nat.pow_lt_pow_left ((h a).2 ha) (Nat.ne_of_gt hm)
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Intersecting an SBP language with a BPP language preserves SBP.
 Square the SBP gap, amplify BPP beyond the exponential bound on that count,
 and multiply counts. This is an elementary consequence of counting closure and
@@ -210,14 +203,15 @@ theorem inter_mem_SBP_of_mem_BPP (hA : A ∈ SBP enc) (hB : B ∈ BPP enc) :
   have hc : c ∈ SharpP enc := ⟨q, V, hV, fun _ => rfl⟩
   refine ⟨_, SharpP.mul_mem (SharpP.natCast_mem 4) (SharpP.mul_mem hf hc),
     fun a => 3 * (k a * 2 ^ q.eval (enc a).length),
-    .of_tidy (by fun_prop), fun a => ?_⟩
+    (by fun_prop), fun a => ?_⟩
   have hs := acceptCount_add_card_filter_eq_false (V := V) (a := a)
     (n := q.eval (enc a).length)
   have hc_le : c a ≤ 2 ^ q.eval (enc a).length := acceptCount_le_two_pow
   have hD : 0 < 2 ^ q.eval (enc a).length := by positivity
   have hp1 : 1 ≤ 2 ^ p.eval (enc a).length := Nat.one_le_pow _ _ (by decide)
   have h := hB a
-  simp only [Polynomial.eval_add, Polynomial.eval_ofNat, pow_add] at h
+  simp only [ErrorExponentAt, Bool.not_true, Bool.not_false,
+    Polynomial.eval_add, Polynomial.eval_ofNat, pow_add] at h
   change (a ∈ A ∩ B → 3 * (k a * 2 ^ q.eval (enc a).length) ≤ 4 * (f a * c a)) ∧
     (a ∉ A ∩ B → 2 * (4 * (f a * c a)) < 3 * (k a * 2 ^ q.eval (enc a).length))
   constructor

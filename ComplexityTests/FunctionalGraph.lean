@@ -68,21 +68,19 @@ noncomputable def sampleForestEdgeTable : ForestEdgeTable toZero Finset.univ 1 :
   Classical.choice (exists_forest_edge_table toZero Finset.univ 1 one_pos
     (fun x => Or.inr ⟨0, by decide, Finset.mem_univ _⟩))
 
-example : sampleForestEdgeTable.count ≤ (forestMarks toZero Finset.univ).card :=
-  sampleForestEdgeTable.card_le
-
--- Interval labels distinguish ancestors before cycle entry on `toZero`.
-example : ∃ low high : Fin 2 → Fin (Nat.card (Fin 2)),
-    ∀ x y, (low y ≤ low x ∧ low x ≤ high y) ↔
-      ∃ t ≤ transientDepth toZero x, toZero^[t] x = y :=
-  exists_forest_intervals toZero
-
--- Lexicographic prefix interval lemmas (`List.isPrefix_le`, `List.IsPrefix.of_le_of_le`).
-example (c : List ℕ) (h1 : [1, 2] ≤ c) (h2 : c ≤ [1, 2, 3]) : [1, 2] <+: c :=
-  List.IsPrefix.of_le_of_le ⟨[3], rfl⟩ h1 h2
-
-example : ([1, 2] : List ℕ) ≤ [1, 2, 3] :=
-  List.isPrefix_le ⟨[3], rfl⟩
+-- Edge-table cardinality bound, forest intervals on `toZero`, and lexicographic prefix interval
+-- lemmas.
+example (c : List ℕ) (h1 : [1, 2] ≤ c) (h2 : c ≤ [1, 2, 3]) :
+    sampleForestEdgeTable.count ≤ (forestMarks toZero Finset.univ).card ∧
+    (∃ low high : Fin 2 → Fin (Nat.card (Fin 2)),
+      ∀ x y, (low y ≤ low x ∧ low x ≤ high y) ↔
+        ∃ t ≤ transientDepth toZero x, toZero^[t] x = y) ∧
+    [1, 2] <+: c ∧
+    ([1, 2] : List ℕ) ≤ [1, 2, 3] :=
+  ⟨sampleForestEdgeTable.card_le,
+    exists_forest_intervals toZero,
+    List.IsPrefix.of_le_of_le ⟨[3], rfl⟩ h1 h2,
+    List.isPrefix_le ⟨[3], rfl⟩⟩
 
 /-! ### Nontrivial compressed edge, navigation, and off-hull key collision on `Fin 5`
 

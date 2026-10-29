@@ -145,7 +145,7 @@ in polynomial time (`polyTimeReducible_iff_manyOneReducibleBy`).
 Construct a proof as `⟨f, by fun_prop, h⟩`, where `h` proves the membership equivalence for every
 source instance. Write `f` with certified Boolean, list and arithmetic operations, including
 `decide` of connectives, (in)equalities and list membership; unfold local definitions so
-`fun_prop` or `polytime` can see them. Cost and correctness are separate obligations: automation
+`fun_prop` can see them. Cost and correctness are separate obligations: automation
 does not prove `h`. See the checked graph-complement example in `ComplexityTests.NPCompleteness`.
 -/
 def PolyTimeReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α) (B : Set β) :
@@ -249,7 +249,7 @@ theorem PolyTimeReducible.mem_compl {C : Set (Set α)} {D : Set (Set β)}
 /-- A polynomial-time reduction is a mapping reduction. -/
 theorem PolyTimeReducible.mappingReducible (h : PolyTimeReducible encA encB A B) :
     MappingReducible encA encB A B :=
-  ManyOneReducibleBy.mono (fun _ hf => hf.tidy.isComputable) h
+  ManyOneReducibleBy.mono (fun _ ⟨_, _, _, _, hf⟩ => hf.isComputable) h
 
 section Hardness
 

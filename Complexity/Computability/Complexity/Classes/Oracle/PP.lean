@@ -118,7 +118,7 @@ theorem P_subset_PWithPPOracle : P enc ⊆ PWithPPOracle enc := by
 theorem PP_subset_PWithPPOracle : PP enc ⊆ PWithPPOracle enc := by
   classical
   intro L hL
-  exact ⟨α, enc, L, hL, .of_query (.of_tidy (ComputableTidilyInPolyTime.encode enc))
+  exact ⟨α, enc, L, hL, .of_query (.of_eq fun _ => rfl)
     fun A hA a => (hA a).symm.trans decide_eq_true_iff.symm⟩
 
 /-- **`P^A ⊆ P^PP` for `A ∈ PP`**: a polynomial-time oracle program relative to a language in
@@ -147,9 +147,8 @@ theorem exists_mem_PP_mem_PWithOracle_image (hL : L ∈ PWithPPOracle enc) :
 theorem setOf_le_mem_PP {f : α → ℕ} (hf : f ∈ SharpP enc) :
     {x : α × ℕ | x.2 ≤ f x.1} ∈ PP (encPair enc encNat) := by
   refine mem_PP_iff_exists_GapP.2 ⟨fun x => ((f x.1 + 1 : ℕ) : ℤ) - (x.2 : ℕ),
-    ⟨_, SharpP.add_one_mem
-      (SharpP.comp_mem hf (.of_tidy (ComputableTidilyInPolyTime.fst enc encNat))), _,
-      mem_SharpP_of_polyTime (.of_tidy (ComputableTidilyInPolyTime.snd enc encNat)), fun _ => rfl⟩,
+    ⟨_, SharpP.add_one_mem (SharpP.comp_mem hf (.fst enc encNat)), _,
+      mem_SharpP_of_polyTime (.snd enc encNat), fun _ => rfl⟩,
     fun x => ?_⟩
   simp only [Set.mem_ofPred_eq, sub_pos, Nat.cast_lt]
   omega
@@ -244,6 +243,15 @@ theorem interpret_id_search {F N : ℕ} {A : Set (List Bool)} {u : List Bool}
   simp only [interpret_id_searchQuery hA]
   exact fst_iterate_step hF
 
+private theorem cond_pt {β γ : Type} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+    {c : β → Bool} {yes no : β → γ}
+    (hc : ComputableInPolyTime c encB encBool)
+    (hyes : ComputableInPolyTime yes encB encC)
+    (hno : ComputableInPolyTime no encB encC) :
+    ComputableInPolyTime (fun x => if c x then yes x else no x) encB encC :=
+  hc.ite hyes hno
+
+attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd' cond_pt in
 /-- **Binary search is strict oracle PPT**: `N` rounds, with `N` computed in unary, each building
 one request and reading one reply bit, on states of a binary number below `2 ^ N` and a unary
 counter. -/
@@ -252,26 +260,24 @@ theorem isOraclePPTOn_search {input : α ↪ List Bool} {u : α → List Bool} {
     (hN : ComputableInPolyTime N input encUnary) :
     IsOraclePPTOn input encNat
       (fun a => OracleComp.interpret ProbOracleComp.query (search (u a) (N a))) := by
-  have hu := hu.tidy
-  have hN := hN.tidy
   simp only [search, OracleComp.interpret_map, OracleComp.interpret_iterate]
-  have hinit : ComputableTidilyInPolyTime (fun a => ((0 : ℕ), N a)) input
+  have hinit : ComputableInPolyTime (fun a => ((0 : ℕ), N a)) input
       (encPair encNat encUnary) :=
-    (ComputableTidilyInPolyTime.const 0).prod hN
+    (ComputableInPolyTime.const 0).prod hN
   have hstep₀ : IsOraclePPTOn (encPair encBits (encPair encNat encUnary))
       (encPair encNat encUnary) (fun pair : List Bool × (ℕ × ℕ) =>
         OracleComp.interpret ProbOracleComp.query (searchQuery pair.1 pair.2)) := by
     simp only [interpret_searchQuery]
-    refine IsOraclePPTOn.ite (by fun_prop)
-      (ComputableTidilyInPolyTime.snd encBits (encPair encNat encUnary)).isOraclePPTOn ?_
-    exact IsOraclePPTOn.map_with (IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop))
+    refine IsOraclePPTOn.ite' (by fun_prop)
+      (ComputableInPolyTime.snd encBits (encPair encNat encUnary)).isOraclePPTOn ?_
+    exact IsOraclePPTOn.map_with' (IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop))
       (by fun_prop)
   have hstep : IsOraclePPTOn (encPair input (encPair encNat encUnary)) (encPair encNat encUnary)
       (fun pair : α × (ℕ × ℕ) =>
         OracleComp.interpret ProbOracleComp.query (searchQuery (u pair.1) pair.2)) :=
-    hstep₀.preprocess (prepare := fun pair : α × (ℕ × ℕ) => (u pair.1, pair.2))
-      ((hu.comp (ComputableTidilyInPolyTime.fst input (encPair encNat encUnary))).prod
-        (ComputableTidilyInPolyTime.snd input (encPair encNat encUnary)))
+    hstep₀.preprocess' (prepare := fun pair : α × (ℕ × ℕ) => (u pair.1, pair.2))
+      ((hu.comp (ComputableInPolyTime.fst input (encPair encNat encUnary))).prod
+        (ComputableInPolyTime.snd input (encPair encNat encUnary)))
   have hpreserve (a : α) (i : ℕ) (s : ℕ × ℕ) (hi : i < N a)
       (hinv : s.2 = N a - i ∧ s.1 + 2 ^ s.2 ≤ 2 ^ N a) (next : ℕ × ℕ)
       (hnext : next ∈ OracleComp.support
@@ -297,12 +303,14 @@ theorem isOraclePPTOn_search {input : α ↪ List Bool} {u : α → List Bool} {
     rw [← Nat.size_eq_bits_len] at hsize
     simp only [length_encPair, encNat_apply, encUnary_apply, List.length_replicate]
     omega
-  exact (IsOraclePPTOn.iterateWith_spec
+  have hNpoly : PolyBounded (fun a => (input a).length) N :=
+    hN.polyBounded_length.mono fun _ => by simp [encUnary_apply]
+  exact (IsOraclePPTOn.iterateWith_spec'
     (step := fun a s => OracleComp.interpret ProbOracleComp.query (searchQuery (u a) s))
     hN hinit hstep (fun a i s => s.2 = N a - i ∧ s.1 + 2 ^ s.2 ≤ 2 ^ N a)
     (fun a => ⟨by simp, by simp⟩) hpreserve
-    (((PolyBounded.const 3).mul hN.polyBounded).add (.const 1)) hbound).1.map
-    (ComputableTidilyInPolyTime.fst encNat encUnary)
+    (((PolyBounded.const 3).mul hNpoly).add (.const 1)) hbound).1.map'
+    (ComputableInPolyTime.fst encNat encUnary)
 
 /-! ### Answering bit requests -/
 
@@ -349,6 +357,7 @@ end BinarySearch
 /-! ### `P^#P ⊆ P^PP` -/
 
 open BinarySearch in
+attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd' cond_pt in
 /-- **`P^#P ⊆ P^PP`**: every request of a `P^#P` program for a bit of a `#P` value `f b` is
 answered by binary search with queries `k ≤ f b` to the `PP` problem `{(b, k) | k ≤ f b}`. -/
 theorem PWithSharpPOracle_subset_PWithPPOracle : PWithSharpPOracle enc ⊆ PWithPPOracle enc := by
@@ -358,46 +367,40 @@ theorem PWithSharpPOracle_subset_PWithPPOracle : PWithSharpPOracle enc ⊆ PWith
   refine ⟨β × ℕ, encPair encβ encNat, {x | x.2 ≤ f x.1}, setOf_le_mem_PP hf,
     fun a => OracleComp.interpret (bitQuery r) (program a), ?_, fun A hA a => ?_⟩
   · -- substitute the binary search for every bit request
-    have hindex : ComputableTidilyInPolyTime
+    have hindex : ComputableInPolyTime
         (fun pair : List Bool × ℕ => min (ofBits (dropFrame pair.1)) (r.eval pair.1.length + 1))
-        (encPair encBits encNat) encUnary := by
-      refine ComputableTidilyInPolyTime.binary_to_unary_bounded
-        (bound := fun pair : List Bool × ℕ => r.eval pair.1.length + 1) ?_ (by fun_prop)
-        fun _ => Nat.min_le_right _ _
-      have h : ComputableTidilyInPolyTime (fun pair : List Bool × ℕ =>
-          if ofBits (dropFrame pair.1) ≤ r.eval pair.1.length + 1 then ofBits (dropFrame pair.1)
-          else r.eval pair.1.length + 1) (encPair encBits encNat) encNat := by
-        fun_prop
-      exact h.of_enc_eq fun pair => by rw [Nat.min_def]
-    have hlast : ComputableTidilyInPolyTime (fun pair : List Bool × ℕ =>
+        (encPair encBits encNat) encUnary :=
+      (ComputableInPolyTime.binary_min_unary' (by fun_prop) (by fun_prop)).of_enc_eq
+        fun _ => congrArg encUnary (Nat.min_comm _ _)
+    have hlast : ComputableInPolyTime (fun pair : List Bool × ℕ =>
         [pair.2.testBit (min (ofBits (dropFrame pair.1)) (r.eval pair.1.length + 1))])
         (encPair encBits encNat) encBits :=
-      (ComputableTidilyInPolyTime.binary_testBit (ComputableTidilyInPolyTime.snd encBits encNat)
-        hindex).of_enc_eq fun pair => (encBool_apply _).symm
+      (ComputableInPolyTime.binary_testBit (ComputableInPolyTime.snd encBits encNat)
+        hindex).of_enc_eq fun _ => (encBool_apply _).symm
     have hG : IsOraclePPTOn encBits encBits (fun w : List Bool =>
         OracleComp.interpret ProbOracleComp.query (bitQuery r ((), w))) := by
       simp only [bitQuery, OracleComp.interpret_map]
       exact (isOraclePPTOn_search (u := unframe) (N := fun w => r.eval w.length + 1)
-        (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))).map_with hlast
+        (by fun_prop) (by fun_prop)).map_with' hlast
     have hhandler : IsOraclePPTOn
         (encPair enc (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)))
         (encPair encBits (encFinEnum Unit))
         (fun pair : α × (Unit × List Bool) × Unit => (fun reply => (reply, ())) <$>
           OracleComp.interpret ProbOracleComp.query (bitQuery r pair.2.1)) :=
-      (hG.preprocess (prepare := fun pair : α × (Unit × List Bool) × Unit => pair.2.1.2)
-        (by fun_prop)).map (by fun_prop)
-    have hsub := hcert.run_interpret_preprocess_open (State := Unit)
+      (hG.preprocess' (prepare := fun pair : α × (Unit × List Bool) × Unit => pair.2.1.2)
+        (by fun_prop)).map' (by fun_prop)
+    have hsub := hcert.run_interpret_preprocess_open' (State := Unit)
       (handler := fun _ q _ => (fun reply => (reply, ())) <$>
         OracleComp.interpret ProbOracleComp.query (bitQuery r q))
       (prepare := id) (initial := fun _ => ()) (resources := fun _ _ => 1)
-      ComputableTidilyInPolyTime.id' hhandler (ComputableTidilyInPolyTime.const ())
-      (fun _ _ => True) (fun _ => trivial) (ComputableTidilyInPolyTime.const 1)
+      ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ())
+      (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.const 1)
       (fun a request state _ result hresult => by
         obtain ⟨reply, hreply, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
         rw [bitQuery, OracleComp.interpret_map] at hreply
         obtain ⟨lo, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
         exact ⟨trivial, by simp, Nat.le_add_right _ _⟩)
-    refine (hsub.map (ComputableTidilyInPolyTime.fst encBool (encFinEnum Unit))).congr
+    refine (hsub.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
       fun a State oracle s => ?_
     congr 2
     rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]

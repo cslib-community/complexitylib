@@ -45,27 +45,17 @@ def notCircuit : Circuit signature 1 1 :=
 def andCircuit : Circuit signature 2 1 :=
   ⟨Program.empty.gate ⟨Op.and, ![Wire.input 0, Wire.input 1]⟩, fun _ => Wire.gate 0⟩
 
-example : notCircuit.program.cost binaryCost = 0 := by
-  decide
-
-example : andCircuit.program.cost binaryCost = 1 := by
-  decide
-
-/-- `notCircuit` has one non-binary (`NOT`) gate, so its `binaryCost` (0) is strictly less than its
-gate count (1). -/
-example : ¬∀ k : Fin notCircuit.size, (notCircuit.program.lines k).op.IsBinary := by
-  rw [← Program.cost_binaryCost_eq_iff_forall_isBinary]
-  decide
-
-/-- Every gate in `andCircuit` is binary, so its `binaryCost` equals its gate count (1). -/
-example : ∀ k : Fin andCircuit.size, (andCircuit.program.lines k).op.IsBinary := by
-  rw [← Program.cost_binaryCost_eq_iff_forall_isBinary]
-  decide
-
-/-- For `andCircuit`, the input-support bound `card ≤ 1 + cost binaryCost = 2` holds with
-equality. -/
-example : andCircuit.inputSupport.card = 1 + andCircuit.program.cost binaryCost := by
-  decide
+example :
+    notCircuit.program.cost binaryCost = 0 ∧
+      andCircuit.program.cost binaryCost = 1 ∧
+      (¬∀ k : Fin notCircuit.size, (notCircuit.program.lines k).op.IsBinary) ∧
+      (∀ k : Fin andCircuit.size, (andCircuit.program.lines k).op.IsBinary) ∧
+      andCircuit.inputSupport.card = 1 + andCircuit.program.cost binaryCost := by
+  refine ⟨by decide, by decide, ?_, ?_, by decide⟩
+  · rw [← Program.cost_binaryCost_eq_iff_forall_isBinary]
+    decide
+  · rw [← Program.cost_binaryCost_eq_iff_forall_isBinary]
+    decide
 
 /-- Coordinate 0 is essential for the single-variable negation table. -/
 example : (⟨1, ![some true, some false], 0⟩ : PartialMCSP.Instance).EssentialAt 0 := by
@@ -142,157 +132,101 @@ example : (⟨2, ![some false, some false, some false, some true], 0⟩ : Partia
 
 /-! ### NP verifier certificates -/
 
--- The identity function on one input is verified by a 0-gate wire certificate.
-example : PartialMCSP.verifier (⟨1, ![some false, some true], 0⟩, certificate 1 0 [] 0) = true := by
-  decide
-
--- Single-variable negation is verified by the 1-gate NOT certificate at threshold 1.
-example : PartialMCSP.verifier
-    (⟨1, ![some true, some false], 1⟩, certificate 1 1 [(.not, [0])] 1) = true := by
-  decide
-
--- A corrupted certificate where a gate reads itself is rejected.
-example : PartialMCSP.verifier
-    (⟨1, ![some true, some false], 1⟩, certificate 1 1 [(.not, [1])] 1) = false := by
-  decide
-
--- Single-variable negation is rejected at threshold 0 by the 0-gate certificate.
-example : PartialMCSP.verifier
-    (⟨1, ![some true, some false], 0⟩, certificate 1 0 [] 0) = false := by
-  decide
-
--- Two-variable conjunction is verified by a 1-gate AND certificate at threshold 1.
-example : PartialMCSP.verifier
-    (⟨2, ![some false, some false, some false, some true], 1⟩,
-      certificate 2 1 [(.and, [0, 1])] 2) = true := by
-  decide
+-- Verifier evaluations for the 0-gate identity, 1-gate NOT, self-reading corrupted gate,
+-- 0-gate rejection of NOT, and 1-gate 2-input AND.
+example :
+    PartialMCSP.verifier (⟨1, ![some false, some true], 0⟩, certificate 1 0 [] 0) = true ∧
+      PartialMCSP.verifier
+        (⟨1, ![some true, some false], 1⟩, certificate 1 1 [(.not, [0])] 1) = true ∧
+      PartialMCSP.verifier
+        (⟨1, ![some true, some false], 1⟩, certificate 1 1 [(.not, [1])] 1) = false ∧
+      PartialMCSP.verifier
+        (⟨1, ![some true, some false], 0⟩, certificate 1 0 [] 0) = false ∧
+      PartialMCSP.verifier
+        (⟨2, ![some false, some false, some false, some true], 1⟩,
+          certificate 2 1 [(.and, [0, 1])] 2) = true := by decide
 
 /-! ### Bipartite Permutation Independent Set -/
 
-/-- An edgeless $n \times n$ bipartite permutation graph is always satisfiable. -/
-example (n : ℕ) : ((n, []) : BipartitePermutationGraph) ∈ BipartitePermutationIndependentSet :=
-  ⟨1, 1, fun _ h => by simp at h⟩
-
-/-- A self-loop on every pair $(0, j)$ for $n = 1$ makes the instance unsatisfiable. -/
-example : ((1, [((0, 0), (0, 0))]) : BipartitePermutationGraph) ∉
-    BipartitePermutationIndependentSet := by
-  rintro ⟨π₁, π₂, h⟩
-  exact h ((0, 0), (0, 0)) (by simp) (by decide) (by decide) (by decide) (by decide)
-    (Subsingleton.elim (π₁ 0) 0) (Subsingleton.elim (π₂ 0) 0)
-
-/-- On the empty graph on 0 vertices, `bpisOfColoring` at index 0 produces the 1-block BPIS
-instance `(1, [((0, 0), (0, 0))])`, which is unsatisfiable. -/
-example : (BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0)).1 = 1 := by decide
-example : (BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0)).2 =
-    [((0, 0), (0, 0))] := by decide
-
-example : BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0) ∉
-    BipartitePermutationIndependentSet := by
-  have hG : BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0) =
-      (1, [((0, 0), (0, 0))]) := by decide
-  rw [hG]
-  rintro ⟨π₁, π₂, h⟩
-  exact h ((0, 0), (0, 0)) (by simp) (by decide) (by decide) (by decide) (by decide)
-    (Subsingleton.elim (π₁ 0) 0) (Subsingleton.elim (π₂ 0) 0)
+/-- An edgeless $n \times n$ bipartite permutation graph is always satisfiable, whereas a self-loop
+on $(0, 0)$ for $n = 1$ (including `bpisOfColoring (([], []), 0)`) is unsatisfiable. -/
+example (n : ℕ) :
+    ((n, []) : BipartitePermutationGraph) ∈ BipartitePermutationIndependentSet ∧
+      ((1, [((0, 0), (0, 0))]) : BipartitePermutationGraph) ∉
+        BipartitePermutationIndependentSet ∧
+      (BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0)).1 = 1 ∧
+      (BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0)).2 =
+        [((0, 0), (0, 0))] ∧
+      BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0) ∉
+        BipartitePermutationIndependentSet := by
+  refine ⟨⟨1, 1, fun _ h => by simp at h⟩, ?_, by decide, by decide, ?_⟩
+  · rintro ⟨π₁, π₂, h⟩
+    exact h ((0, 0), (0, 0)) (by simp) (by decide) (by decide) (by decide) (by decide)
+      (Subsingleton.elim (π₁ 0) 0) (Subsingleton.elim (π₂ 0) 0)
+  · have hG : BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0) =
+        (1, [((0, 0), (0, 0))]) := by decide
+    rw [hG]
+    rintro ⟨π₁, π₂, h⟩
+    exact h ((0, 0), (0, 0)) (by simp) (by decide) (by decide) (by decide) (by decide)
+      (Subsingleton.elim (π₁ 0) 0) (Subsingleton.elim (π₂ 0) 0)
 
 /-! ### Ilango's $n = 2$ reduction: Clauses (1)–(7) of `ilangoGamma` and `ilangoPosFormula` -/
-
--- Evaluates `ilangoGamma` clauses on the $n = 1$ edgeless graph.
-example : PartialMCSP.ilangoGamma (1, []) (fun _ => false) = some false := by decide
-
-example : PartialMCSP.ilangoGamma (1, [])
-    (PartialMCSP.packXYZ PartialMCSP.ones2n (fun _ => false) (fun _ => true)) = some true := by
-  decide
 
 /-- Concrete $n = 2$ bipartite permutation graph with a single conflict edge $((0, 0), (1, 1))$
 forbidding simultaneous assignments $\pi_1(0) = 0$ and $\pi_2(1) = 1$. -/
 abbrev bpisG2 : BipartitePermutationGraph := (2, [((0, 0), (1, 1))])
-
-/-- **Clause (1)** ($x = 0^4$): $\gamma_{G_2}(0^4, y, z) = \bigvee_i (y_i \wedge z_i)$. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ PartialMCSP.zeros2n ![true, false, false, false]
-      ![true, false, false, false]) = some true := by
-  decide
-
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ PartialMCSP.zeros2n ![true, false, false, false]
-      ![false, true, false, false]) = some false := by
-  decide
-
-/-- **Clause (2)** ($x = 1^4$): $\gamma_{G_2}(1^4, y, z) = \bigvee_i z_i$. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ PartialMCSP.ones2n PartialMCSP.zeros2n
-      ![false, false, true, false]) = some true := by
-  decide
-
-/-- **Clause (3)** ($z = 1^4$): $\gamma_{G_2}(x, y, 1^4) = \bigvee_i (x_i \vee y_i)$. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ ![false, true, false, false] PartialMCSP.zeros2n
-      PartialMCSP.ones2n) = some true := by
-  decide
-
-/-- **Clause (4)** ($z = 0^4$): $\gamma_{G_2}(x, y, 0^4) = 0$. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ ![true, false, false, false] ![false, true, false, false]
-      PartialMCSP.zeros2n) = some false := by
-  decide
-
-/-- **Clause (5)** ($z = 1^2 0^2$, $y = 0^4$): $\gamma_{G_2}(x, 0^4, 1^2 0^2) = x_0 \vee x_1$. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ ![false, true, false, false] PartialMCSP.zeros2n
-      PartialMCSP.leftHalfOnes) = some true := by
-  decide
-
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ ![false, false, true, false] PartialMCSP.zeros2n
-      PartialMCSP.leftHalfOnes) = some false := by
-  decide
-
-/-- **Clause (6)** ($z = 0^2 1^2$, $y = 0^4$): $\gamma_{G_2}(x, 0^4, 0^2 1^2) = x_2 \vee x_3$. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ ![false, false, true, false] PartialMCSP.zeros2n
-      PartialMCSP.rightHalfOnes) = some true := by
-  decide
-
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ ![true, false, false, false] PartialMCSP.zeros2n
-      PartialMCSP.rightHalfOnes) = some false := by
-  decide
-
-/-- **Clause (7)** (conflict edge $((0, 0), (1, 1)) \in E$): on
-$(x, y, z) = (\overline{e_0}\,\overline{e_1}, 0^4, e_0 e_1)$, $\gamma_{G_2}$ outputs `some true`. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 1) PartialMCSP.zeros2n
-      (PartialMCSP.unitPair (n := 2) 0 1)) = some true := by
-  decide
-
-/-- **Default (`none`) branch**: on the non-edge pair $((0, 0), (1, 0)) \notin E$,
-$(x, y, z) = (\overline{e_0}\,\overline{e_0}, 0^4, e_0 e_1)$ falls through Clauses (1)–(7) and
-outputs `none`. -/
-example : PartialMCSP.ilangoGamma bpisG2
-    (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 0) PartialMCSP.zeros2n
-      (PartialMCSP.unitPair (n := 2) 0 1)) = none := by
-  decide
-
-/-- The identity permutation $\pi = 1 \in S_4$ hits the conflict edge $((0, 0), (1, 1))$ of
-`bpisG2`, so `ilangoPosFormula` for $\pi = 1$ evaluates to `false` on the Clause (7) probe input
-where $\gamma_{G_2}$ requires `true`. -/
-example : (PartialMCSP.ilangoPosFormula (by decide : 0 < bpisG2.1) 1).eval
-    (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 1) PartialMCSP.zeros2n
-      (PartialMCSP.unitPair (n := 2) 0 1)) = false := by
-  decide
 
 /-- Block-preserving permutation $\pi_{\mathrm{swap}} = (2\;\;3) \in S_4$ that fixes the left
 block $\{0, 1\}$ and swaps the right block $\{2, 3\}$. -/
 abbrev bpisG2Perm : Equiv.Perm (Fin (2 * bpisG2.1)) :=
   Equiv.swap (2 : Fin 4) (3 : Fin 4)
 
-/-- Because $\pi_{\mathrm{swap}}(3) = 2 \neq 3$, `ilangoPosFormula` for $\pi_{\mathrm{swap}}$
-evaluates to `true` on the Clause (7) probe input for $((0, 0), (1, 1))$. -/
-example : (PartialMCSP.ilangoPosFormula (by decide : 0 < bpisG2.1) bpisG2Perm).eval
-    (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 1) PartialMCSP.zeros2n
-      (PartialMCSP.unitPair (n := 2) 0 1)) = true := by
-  decide
+/-- Evaluates Clauses (1)–(7) and the default `none` branch of `ilangoGamma` on $(1, [])$ and
+`bpisG2`, and checks `ilangoPosFormula` on the Clause (7) probe input for $\pi = 1$ and
+$\pi_{\mathrm{swap}}$. -/
+example :
+    PartialMCSP.ilangoGamma (1, []) (fun _ => false) = some false ∧
+      PartialMCSP.ilangoGamma (1, [])
+        (PartialMCSP.packXYZ PartialMCSP.ones2n (fun _ => false) (fun _ => true)) = some true ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ PartialMCSP.zeros2n ![true, false, false, false]
+          ![true, false, false, false]) = some true ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ PartialMCSP.zeros2n ![true, false, false, false]
+          ![false, true, false, false]) = some false ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ PartialMCSP.ones2n PartialMCSP.zeros2n
+          ![false, false, true, false]) = some true ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ ![false, true, false, false] PartialMCSP.zeros2n
+          PartialMCSP.ones2n) = some true ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ ![true, false, false, false] ![false, true, false, false]
+          PartialMCSP.zeros2n) = some false ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ ![false, true, false, false] PartialMCSP.zeros2n
+          PartialMCSP.leftHalfOnes) = some true ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ ![false, false, true, false] PartialMCSP.zeros2n
+          PartialMCSP.leftHalfOnes) = some false ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ ![false, false, true, false] PartialMCSP.zeros2n
+          PartialMCSP.rightHalfOnes) = some true ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ ![true, false, false, false] PartialMCSP.zeros2n
+          PartialMCSP.rightHalfOnes) = some false ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 1) PartialMCSP.zeros2n
+          (PartialMCSP.unitPair (n := 2) 0 1)) = some true ∧
+      PartialMCSP.ilangoGamma bpisG2
+        (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 0) PartialMCSP.zeros2n
+          (PartialMCSP.unitPair (n := 2) 0 1)) = none ∧
+      (PartialMCSP.ilangoPosFormula (by decide : 0 < bpisG2.1) 1).eval
+        (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 1) PartialMCSP.zeros2n
+          (PartialMCSP.unitPair (n := 2) 0 1)) = false ∧
+      (PartialMCSP.ilangoPosFormula (by decide : 0 < bpisG2.1) bpisG2Perm).eval
+        (PartialMCSP.packXYZ (PartialMCSP.antiUnitPair (n := 2) 0 1) PartialMCSP.zeros2n
+          (PartialMCSP.unitPair (n := 2) 0 1)) = true := by decide
 
 /-- `bpisG2Perm` is block-preserving and avoids the conflict edge $((0, 0), (1, 1))$ of `bpisG2`. -/
 theorem bpisG2_satisfiesUndirected : bpisG2.SatisfiesUndirected bpisG2Perm := by
@@ -326,5 +260,19 @@ example : PartialMCSP.ilangoReduction bpisG2 ∈ PartialMCSP.MonotoneReadOnce �
       bpisG2).mp hmem,
     (PartialMCSP.mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem
       bpisG2).mp hmem⟩
+
+/-- Unary-to-binary threshold re-encoding is polynomial-time computable. -/
+example : ComputableInPolyTime id PartialMCSP.enc PartialMCSP.encBinary :=
+  PartialMCSP.computableInPolyTime_id_enc_encBinary
+
+/-- Under `ETH`, `PartialMCSP.MonotoneReadOnce` is not decidable in time $2^{o(m \log m)}$ under
+either unary or binary threshold encoding. -/
+example (h : ETH) :
+    ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.enc
+      (fun I => I.arity * Nat.log 2 I.arity) ∧
+    ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.encBinary
+      (fun I => I.arity * Nat.log 2 I.arity) :=
+  ⟨h.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce,
+    h.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce_encBinary⟩
 
 end ComplexityTests.PartialMCSP

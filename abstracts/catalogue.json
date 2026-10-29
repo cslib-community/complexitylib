@@ -145,6 +145,19 @@
       "namespace": "ComplexityTests.Abstracts.FormulaBoundsAbstract"
     },
     {
+      "id": "constant-depth-arithmetic",
+      "title": "Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic circuits for IMM need superpolynomial size",
+      "module": "ComplexityAbstracts.ConstantDepthArithmeticAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.ConstantDepthArithmeticAbstract.superpolynomial"
+      ],
+      "supporting_theorems": [
+        "ComplexityAbstracts.ConstantDepthArithmeticAbstract.explicit_bound"
+      ],
+      "summary": "Over every field, simple algebraic circuits (product gates reading distinct wires) of constant product-depth computing iterated matrix multiplication of d = ⌊log₂ ⌊log₂ n⌋⌋ generic n × n matrices need more than n^c gates for every c and all large n.",
+      "scope": "Any field, formal polynomials, unbounded fan-in sum and product gates, product gates reading distinct wires, size counting all gates; explicit non-asymptotic bound with exponent d^(1/(4^Δ-1)); constant product-depth Δ and the single value d = ⌊log₂ ⌊log₂ n⌋⌋; nonuniform."
+    },
+    {
       "id": "cryptography",
       "title": "One-way functions yield pseudorandom generators and adaptive functions",
       "module": "ComplexityAbstracts.CryptographyAbstract",
@@ -170,12 +183,13 @@
         "ComplexityTests.Abstracts.GSWFHEAbstract.fullyHomomorphic"
       ],
       "summary": "Bootstrapping the GSW scheme gives leveled fully homomorphic encryption from decision LWE, and fully homomorphic encryption under an additional circular-security assumption.",
-      "scope": "Explicit GSW key generation, encryption and decryption at a centered-binomial LWE family with quasi-polynomial modulus. The leveled scheme family E has joint native strict PPT runtime in (security, d) via NativeInDepth, its fresh-ciphertext key pair has the GSW key-generation law, and the fully homomorphic scheme's key generation is Gentry's self-loop key; the evaluator, the rest of the leveled keys and the decryption circuits are existential. Perfect correctness on fresh encryptions, fixed widths, polynomial-size decryption circuits, native strict PPT algorithms and asymptotic IND-CPA. Circular security is a separate hypothesis; no lattice hardness, circuit privacy, multi-hop evaluation or concrete loss.",
+      "scope": "Explicit GSW key generation, encryption and decryption at a centered-binomial LWE family with quasi-polynomial modulus. The leveled scheme family E has joint native strict PPT runtime in (security, d) via NativeInDepth, its fresh-ciphertext key pair has the GSW key-generation law, and the fully homomorphic scheme's key generation is Gentry's self-loop key; the evaluator, the rest of the leveled keys and the decryption circuits are existential. Perfect correctness on fresh encryptions, fixed widths, uniformly generated polynomial-size decryption circuits, native strict PPT algorithms and asymptotic IND-CPA. Circular security is a separate hypothesis; no lattice hardness, circuit privacy, multi-hop evaluation or concrete loss.",
       "namespace": "ComplexityTests.Abstracts.GSWFHEAbstract",
       "foundations": [
         "ComplexityAbstracts.Encoding",
         "ComplexityAbstracts.Computation",
-        "ComplexityAbstracts.Randomized"
+        "ComplexityAbstracts.Randomized",
+        "ComplexityAbstracts.GSW"
       ]
     },
     {
@@ -231,6 +245,25 @@
       "scope": "Arbitrary sources with real min-entropy bounds, the exact bias bound 2^((n - k1 - k2)/2)/2 and its strong form, and sharpness at k1 + k2 = n; information-theoretic, with no running time asserted."
     },
     {
+      "id": "subexponential-sat",
+      "title": "OpenAI: the Exponential Time Hypothesis is false",
+      "module": "ComplexityAbstracts.SubexponentialSATAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.SubexponentialSATAbstract.exact_count",
+        "ComplexityAbstracts.SubexponentialSATAbstract.not_eth",
+        "ComplexityAbstracts.SubexponentialSATAbstract.not_seth",
+        "ComplexityAbstracts.SubexponentialSATAbstract.satExponent_eq_zero"
+      ],
+      "supporting_theorems": [
+        "ComplexityAbstracts.SubexponentialSATAbstract.length_encCNF"
+      ],
+      "summary": "For each fixed clause width, one deterministic native machine exactly counts satisfying assignments in subexponential time and polynomial space. Every fixed-width SAT exponent is zero, and ETH and SETH are false. Native formalization of OpenAI's manuscript, revised 25 October 2026, by the contributors to #1226.",
+      "scope": "Explicit CNF semantics, model counts over the occurring variables, and binary formula/output encodings; the interpolation-scale exponent n (log log (n + 16))² / sqrt(log(n + 16)) from §§3–6 and Proposition 6.4, where n is the number of variables, with polynomial time overhead and polynomial workspace in the encoded formula length. Includes all fixed widths and sizes; the count is exact on every formula of the given width. This does not establish the sharper Theorem 1.1 / Appendix D bound.",
+      "foundations": [
+        "ComplexityAbstracts.Encoding"
+      ]
+    },
+    {
       "id": "partial-mcsp",
       "title": "Ilango: Partial MCSP is hard under the Exponential Time Hypothesis",
       "module": "ComplexityAbstracts.PartialMCSPAbstract",
@@ -244,7 +277,7 @@
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP",
         "ComplexityAbstracts.PartialMCSPAbstract.partialMCSP_mem_NP_encBinary"
       ],
-      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions requires at least quasi-polynomial time in the truth-table size. Note (October 2026): OpenAI's manuscript “The Exponential Time Hypothesis is False” claims, with a Lean formalization, a deterministic subexponential-time algorithm for k-SAT. If it holds, ETH is false and this conditional theorem, while still valid, is vacuous; a native port into complexitylib is in progress.",
+      "summary": "Under the Exponential Time Hypothesis, deciding circuit size for partial Boolean functions requires at least quasi-polynomial time in the truth-table size. Note (October 2026): the native formalization of OpenAI's manuscript now proves ETH false; see the catalogue entry ‘OpenAI: the Exponential Time Hypothesis is false’. This conditional theorem is retained and remains valid, but its premise is false.",
       "scope": "Explicit 3SAT and PartialMCSP encodings (both unary and binary size thresholds), De Morgan all-gates and binary-gate cost measures, and deterministic multi-tape subexponential-time lower bounds 2^o(m log m) = N^o(log log N).",
       "foundations": [
         "ComplexityAbstracts.Encoding",

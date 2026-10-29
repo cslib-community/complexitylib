@@ -9,7 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.TM2.Reverse.Tape
 public import Complexity.Computability.Machines.Turing.MultiTape.Deterministic
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
+public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
 
 /-!
 # Raw tape storage equals native visited space
@@ -106,10 +106,11 @@ theorem represents_run (tm : MultiTapeTM k Symbol State) (input : List Symbol) (
 
 private theorem visited_succ (tm : MultiTapeTM k Symbol State)
     (c : Cfg k Symbol State input) (n : ℕ) (i : Fin k) :
-    tm.visitedByTapeHead c (n + 1) i =
-      insert ((tm.runFrom c (n + 1)).workTapePos i) (tm.visitedByTapeHead c n i) := by
+    (MultiTapeNTM.RunPath.ofDeterministic tm c (n + 1)).visitedByTapeHead i =
+      insert ((tm.runFrom c (n + 1)).workTapePos i)
+        ((MultiTapeNTM.RunPath.ofDeterministic tm c n).visitedByTapeHead i) := by
   ext z
-  simp only [tm.mem_visitedByTapeHead, Finset.mem_insert]
+  simp only [MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic, Finset.mem_insert]
   constructor
   · rintro ⟨m, hm, hz⟩
     by_cases h : m = n + 1
@@ -123,9 +124,12 @@ private theorem visited_succ (tm : MultiTapeTM k Symbol State)
 theorem window_run (tm : MultiTapeTM k Symbol State) (input : List Symbol) (n : ℕ)
     (i : Fin k) :
     (run tm input n i).window ((tm.runFrom (tm.initCfg input) n).workTapePos i) =
-      tm.visitedByTapeHead (tm.initCfg input) n i := by
+      (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) n).visitedByTapeHead i := by
   induction n with
-  | zero => simp [run, window, init, MultiTapeTM.visitedByTapeHead, runFrom, MultiTapeNTM.initCfg]
+  | zero =>
+    ext z
+    rw [MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic]
+    simp [run, window, init, runFrom, MultiTapeNTM.initCfg, eq_comm]
   | succ n ih =>
     rw [run, runFrom_succ, nativeAction_pos, window_step, ih, visited_succ, runFrom_succ,
       nativeAction_pos]
@@ -133,13 +137,15 @@ theorem window_run (tm : MultiTapeTM k Symbol State) (input : List Symbol) (n : 
 /-- Raw tape storage is exactly the number of native visited cells on that tape. -/
 theorem span_run_eq_spaceUsedByTape (tm : MultiTapeTM k Symbol State) (input : List Symbol)
     (n : ℕ) (i : Fin k) :
-    (run tm input n i).span = tm.spaceUsedByTape (tm.initCfg input) n i := by
+    (run tm input n i).span =
+      (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) n).spaceUsedByTape i := by
   rw [← card_window _ ((tm.runFrom (tm.initCfg input) n).workTapePos i), window_run]
   rfl
 
 /-- Summed raw storage equals native space, with no runtime term. -/
 theorem sum_span_run_eq_space (tm : MultiTapeTM k Symbol State) (input : List Symbol) (n : ℕ) :
-    ∑ i, (run tm input n i).span = tm.space (tm.initCfg input) n := by
+    ∑ i, (run tm input n i).span =
+      (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) n).space := by
   simp only [span_run_eq_spaceUsedByTape]
   rfl
 

@@ -148,7 +148,7 @@ therefore also proceed by induction on the native constructors. -/
 
 /-- The realization of a formula has one more row than the formula has nodes. -/
 theorem card_index (f : Formula n) : Fintype.card f.Index = f.nodeCount + 1 := by
-  rw [nodeCount]
+  rw [Circuits.Formula.nodeCount]
   induction f with
   | input i => simp [Index]
   | gate op args ih =>
@@ -342,6 +342,38 @@ private theorem fromBlocks_zero₂₂_inverse {ι κ : Type*} [Fintype ι] [Fint
       Matrix.fromCols_mul_fromBlocks, fromCols_mul_fromRows,
       Matrix.mul_assoc, Matrix.neg_mul, Matrix.mul_neg]
 
+/-- Affine realization for a multiplication gate from realizations of its two arguments. -/
+private theorem realization_mul (args : Fin (ratSignature.Arity .mul) → Formula n) {a b : R}
+    {Mf : Matrix (args 0).Index (args 0).Index R}
+    {Mg : Matrix (args 1).Index (args 1).Index R}
+    (hf1 : realized c X (args 0) * Mf = 1) (hf2 : Mf * realized c X (args 0) = 1)
+    (hfr : rowR c (args 0) * Mf * colR c (args 0) = scalar a)
+    (hg1 : realized c X (args 1) * Mg = 1) (hg2 : Mg * realized c X (args 1) = 1)
+    (hgr : rowR c (args 1) * Mg * colR c (args 1) = scalar b) :
+    ∃ M : Matrix ((args 0).Index ⊕ (args 1).Index) ((args 0).Index ⊕ (args 1).Index) R,
+      realized c X (.gate .mul args) * M = 1 ∧
+      M * realized c X (.gate .mul args) = 1 ∧
+      rowR c (.gate .mul args) * M * colR c (.gate .mul args) = scalar (a * b) := by
+  let B := Mf * colR c (args 0) * rowR c (args 1) * Mg
+  have hB1 : realized c X (args 0) * B = colR c (args 0) * rowR c (args 1) * Mg := by
+    simp [B, ← Matrix.mul_assoc, hf1, Matrix.one_mul]
+  have hB2 : B * realized c X (args 1) = Mf * colR c (args 0) * rowR c (args 1) := by
+    simp [B, Matrix.mul_assoc, hg2, Matrix.mul_one]
+  refine ⟨fromBlocks Mf B 0 Mg, ?_, ?_, ?_⟩
+  · rw [realized_mul, fromBlocks_multiply]
+    simp [hf1, hg1, hB1, Matrix.mul_zero, Matrix.zero_mul, Matrix.neg_mul]
+  · rw [realized_mul, fromBlocks_multiply]
+    simp [hf2, hg2, hB2, Matrix.mul_zero, Matrix.zero_mul, Matrix.mul_neg, Matrix.neg_mul,
+      ← Matrix.mul_assoc]
+  · rw [rowR_mul, colR_mul, fromCols_mul_fromBlocks, fromCols_mul_fromRows]
+    simp only [Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add, B]
+    have hh : rowR c (args 0) * (Mf * colR c (args 0) * rowR c (args 1) * Mg) *
+        colR c (args 1) = rowR c (args 0) * Mf * colR c (args 0) *
+          (rowR c (args 1) * Mg * colR c (args 1)) := by
+      simp only [Matrix.mul_assoc]
+    rw [hh, hfr, hgr]
+    exact (map_mul (Matrix.uniqueRingEquiv (m := Unit)).symm a b).symm
+
 /-- Exact affine realization of every defined formula: the evaluated pencil is invertible, and
 the row, its inverse and the column multiply to the value. -/
 theorem Eval.realization {f : Formula n} {v : R} (hv : f.Eval c X v) :
@@ -375,25 +407,7 @@ theorem Eval.realization {f : Formula n} {v : R} (hv : f.Eval c X v) :
       obtain ⟨a, b, ha, hb, rfl⟩ := hv
       obtain ⟨Mf, hf1, hf2, hfr⟩ := ih 0 ha
       obtain ⟨Mg, hg1, hg2, hgr⟩ := ih 1 hb
-      let B := Mf * colR c (args 0) * rowR c (args 1) * Mg
-      have hB1 : realized c X (args 0) * B = colR c (args 0) * rowR c (args 1) * Mg := by
-        simp [B, ← Matrix.mul_assoc, hf1, Matrix.one_mul]
-      have hB2 : B * realized c X (args 1) = Mf * colR c (args 0) * rowR c (args 1) := by
-        simp [B, Matrix.mul_assoc, hg2, Matrix.mul_one]
-      refine ⟨fromBlocks Mf B 0 Mg, ?_, ?_, ?_⟩
-      · rw [realized_mul, fromBlocks_multiply]
-        simp [hf1, hg1, hB1, Matrix.mul_zero, Matrix.zero_mul, Matrix.neg_mul]
-      · rw [realized_mul, fromBlocks_multiply]
-        simp [hf2, hg2, hB2, Matrix.mul_zero, Matrix.zero_mul, Matrix.mul_neg, Matrix.neg_mul,
-          ← Matrix.mul_assoc]
-      · rw [rowR_mul, colR_mul, fromCols_mul_fromBlocks, fromCols_mul_fromRows]
-        simp only [Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add, B]
-        have hh : rowR c (args 0) * (Mf * colR c (args 0) * rowR c (args 1) * Mg) *
-            colR c (args 1) = rowR c (args 0) * Mf * colR c (args 0) *
-              (rowR c (args 1) * Mg * colR c (args 1)) := by
-          simp only [Matrix.mul_assoc]
-        rw [hh, hfr, hgr]
-        exact (map_mul (Matrix.uniqueRingEquiv (m := Unit)).symm a b).symm
+      exact realization_mul c X args hf1 hf2 hfr hg1 hg2 hgr
     | inv =>
       obtain ⟨a, ha, hab, hba⟩ := hv
       obtain ⟨Mf, hf1, hf2, hfr⟩ := ih 0 ha

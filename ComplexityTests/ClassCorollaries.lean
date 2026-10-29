@@ -19,13 +19,19 @@ open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 
 /-! ### `NP ⊆ BPP ⇒ PH = Σ₂` -/
 
-example (h : SAT ∈ BPP encCNF) : PH encBits = SigmaP 2 encBits :=
-  PH_eq_SigmaP_two_of_SAT_mem_BPP h
-
-/-- The collapse applies to languages over `Bool`, with words encoded as themselves. -/
-example (h : ∀ {β : Type} (encB : β ↪ List Bool), NP encB ⊆ BPP encB) :
-    PH encBits = SigmaP 2 encBits :=
-  PH_eq_SigmaP_two_of_NP_subset_BPP h
+/-- If `SAT ∈ BPP` (or `NP ⊆ BPP` uniformly), the polynomial hierarchy collapses to `Σ₂`,
+so `Σ₃ ⊆ Σ₂` on bit strings. -/
+example :
+    (SAT ∈ BPP encCNF →
+      PH encBits = SigmaP 2 encBits ∧ SigmaP 3 encBits ⊆ SigmaP 2 encBits) ∧
+    ((∀ {β : Type} (encB : β ↪ List Bool), NP encB ⊆ BPP encB) →
+      PH encBits = SigmaP 2 encBits ∧ SigmaP 3 encBits ⊆ SigmaP 2 encBits) :=
+  ⟨fun h =>
+    have hcol := PH_eq_SigmaP_two_of_SAT_mem_BPP h
+    ⟨hcol, fun _ hL => hcol ▸ SigmaP_subset_PH 3 hL⟩,
+   fun h =>
+    have hcol := PH_eq_SigmaP_two_of_NP_subset_BPP h
+    ⟨hcol, fun _ hL => hcol ▸ SigmaP_subset_PH 3 hL⟩⟩
 
 /-! ### Oracles in `P` -/
 
@@ -33,14 +39,13 @@ example (h : ∀ {β : Type} (encB : β ↪ List Bool), NP encB ⊆ BPP encB) :
 theorem univ_mem_P : (Set.univ : Set (List Bool)) ∈ P encBits :=
   ⟨fun _ => true, .const true, fun _ => by simp⟩
 
-example {α : Type} (enc : α ↪ List Bool) : PWithOracle Set.univ enc = P enc :=
-  PWithOracle_eq_P univ_mem_P enc
-
-example {α : Type} (enc : α ↪ List Bool) : NPWithOracle Set.univ enc = NP enc :=
-  NPWithOracle_eq_NP univ_mem_P enc
-
-example {α : Type} (enc : α ↪ List Bool) : RPWithOracle Set.univ enc = RP enc :=
-  RPWithOracle_eq_RP univ_mem_P enc
+example {α : Type} (enc : α ↪ List Bool) :
+    PWithOracle Set.univ enc = P enc ∧
+    NPWithOracle Set.univ enc = NP enc ∧
+    RPWithOracle Set.univ enc = RP enc :=
+  ⟨PWithOracle_eq_P univ_mem_P enc,
+   NPWithOracle_eq_NP univ_mem_P enc,
+   RPWithOracle_eq_RP univ_mem_P enc⟩
 
 open Classical in
 /-- The decision problem of all numbers, as a promise problem in `PromiseP` under the binary
@@ -58,51 +63,49 @@ example {α : Type} (enc : α ↪ List Bool) :
 
 /-! ### Valiant–Vazirani collapses -/
 
-example (h : PromiseUSAT ∈ PromiseP encCNF) : NP encBits = RP encBits :=
-  NP_eq_RP_of_PromiseUSAT_mem_PromiseP h encBits
-
-example (h : USAT ∈ P encCNF) : NP encCNF = RP encCNF :=
-  NP_eq_RP_of_USAT_mem_P h encCNF
+example :
+    (PromiseUSAT ∈ PromiseP encCNF →
+      NP encBits = RP encBits ∧ SAT ∈ RP encCNF) ∧
+    (USAT ∈ P encCNF →
+      NP encCNF = RP encCNF ∧ SAT ∈ RP encCNF) :=
+  ⟨fun h =>
+    ⟨NP_eq_RP_of_PromiseUSAT_mem_PromiseP h encBits,
+     NP_eq_RP_of_PromiseUSAT_mem_PromiseP h encCNF ▸ SAT.mem_NP⟩,
+   fun h =>
+    have hcol := NP_eq_RP_of_USAT_mem_P h encCNF
+    ⟨hcol, hcol ▸ SAT.mem_NP⟩⟩
 
 /-! ### `P^PP` and Toda's theorem -/
 
-example : (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits :=
-  P_subset_PWithPPOracle univ_mem_P
+example {α : Type} (enc : α ↪ List Bool) :
+    (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits ∧
+    PWithOracle Set.univ enc ⊆ PWithPPOracle enc ∧
+    (∃ (β : Type) (encβ : β ↪ List Bool) (B : Set β), B ∈ PP encβ ∧
+      (Set.univ : Set (List Bool)) ∈ PWithOracle (encβ '' B) encBits) ∧
+    SAT ∈ PWithPPOracle encCNF :=
+  ⟨PP_subset_PWithPPOracle (BPP_subset_PP (P_subset_BPP univ_mem_P)),
+   PWithOracle_subset_PWithPPOracle (BPP_subset_PP (P_subset_BPP univ_mem_P)),
+   exists_mem_PP_mem_PWithOracle_image (P_subset_PWithPPOracle univ_mem_P),
+   PH_subset_PWithPPOracle (NP_subset_PH SAT.mem_NP)⟩
 
-example : (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits :=
-  PP_subset_PWithPPOracle (BPP_subset_PP (P_subset_BPP univ_mem_P))
-
-example {α : Type} (enc : α ↪ List Bool) : PWithOracle Set.univ enc ⊆ PWithPPOracle enc :=
-  PWithOracle_subset_PWithPPOracle (BPP_subset_PP (P_subset_BPP univ_mem_P))
-
-example {α : Type} {enc : α ↪ List Bool} {L : Set α} (hL : L ∈ PWithPPOracle enc) :
-    ∃ (β : Type) (encβ : β ↪ List Bool) (B : Set β), B ∈ PP encβ ∧
-      L ∈ PWithOracle (encβ '' B) enc :=
-  exists_mem_PP_mem_PWithOracle_image hL
-
-/-- Binary search for the constant `1 ∈ #P` reads its bit `0`. -/
-example : (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits :=
-  mem_PWithPPOracle_of_testBit SharpP.one_mem (p := 0) fun _ => by simp
-
-/-- Binary search terminates on the value. -/
-example : (BinarySearch.step 5)^[3] (0, 3) = (5, 0) := by decide
-
-example {α : Type} (enc : α ↪ List Bool) : PH enc ⊆ PWithPPOracle enc :=
-  PH_subset_PWithPPOracle
+/-- Binary search for the constant `1 ∈ #P` reads its bit `0` and terminates in three steps
+on `5`. -/
+example :
+    (Set.univ : Set (List Bool)) ∈ PWithPPOracle encBits ∧
+    (BinarySearch.step 5)^[3] (0, 3) = (5, 0) :=
+  ⟨mem_PWithPPOracle_of_testBit SharpP.one_mem (p := 0) fun _ => by simp, by decide⟩
 
 example {α : Type} (enc : α ↪ List Bool) :
-    BPOp enc (ParityP (encPair enc encBits)) ⊆ PWithPPOracle enc :=
-  BPOp_ParityP_subset_PWithPPOracle
+    BPP enc ⊆ PWithPPOracle enc ∧ NP enc ⊆ PWithPPOracle enc :=
+  ⟨(BPOp_P.symm.subset.trans (BPOp_mono P_subset_ParityP)).trans
+     BPOp_ParityP_subset_PWithPPOracle,
+   (NP_subset_PH.trans PH_subset_PWithSharpPOracle).trans PWithSharpPOracle_subset_PWithPPOracle⟩
 
 /-- Binary search on the codes of a word, with one round more than its length, is strict oracle
 PPT. -/
 example : IsOraclePPTOn encBits encNat (fun w => OracleComp.interpret ProbOracleComp.query
     (BinarySearch.search w (w.length + 1))) :=
-  BinarySearch.isOraclePPTOn_search (.of_tidy ComputableTidilyInPolyTime.id')
-    (.of_tidy (by fun_prop))
-
-example {α : Type} (enc : α ↪ List Bool) : PWithSharpPOracle enc ⊆ PWithPPOracle enc :=
-  PWithSharpPOracle_subset_PWithPPOracle
+  BinarySearch.isOraclePPTOn_search .id' (by fun_prop)
 
 open Classical in
 /-- Binary search against the oracle of `k ≤ 5`, on codes `(u, k)`, finds `5` in three rounds. -/
@@ -115,17 +118,17 @@ example (u : List Bool) :
 
 /-! ### `FewP ⊆ SPP` -/
 
-/-- A problem in `P`, hence in `UP` and `FewP`, is in `SPP`. -/
-example : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
-  FewP_subset_SPP (UP_subset_FewP (P_subset_UP univ_mem_P))
-
 /-- Every word has exactly two accepted certificates of length one, so the problem of all words
 is in `FewP` with ambiguity two. -/
 theorem univ_mem_FewP_two : (Set.univ : Set (List Bool)) ∈ FewP encBits :=
   ⟨fun _ => 2, ⟨1, fun _ => true, .const true, fun _ => by simp⟩, 2, fun _ => by simp,
     fun _ => by simp⟩
 
-/-- A problem of `FewP` with two witnesses on every instance is in `SPP`. -/
+/-- `P ⊆ UP ⊆ FewP ⊆ SPP` places `Set.univ` in `SPP`. -/
+example : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
+  FewP_subset_SPP (UP_subset_FewP (P_subset_UP univ_mem_P))
+
+/-- A two-witness `FewP` certificate also places `Set.univ` in `SPP`. -/
 example : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
   FewP_subset_SPP univ_mem_FewP_two
 

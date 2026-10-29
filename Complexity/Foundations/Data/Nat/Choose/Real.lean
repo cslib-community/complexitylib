@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Anthropic, PBC, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, OpenAI, Anthropic, PBC, Erik Demaine
 -/
 
 module
@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Data.Nat.Choose.Sum
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -24,10 +25,18 @@ The generating-function proof is shared with the sparsification lemma. The logar
 consequences turn an exponential lower bound on the square of a partial binomial sum into
 size-activity bounds; they include the zero-radius case using the usual total real operations.
 
+An exact integer logarithm test also bounds the tail of dimension `C * N` and radius
+`Γ * N / M` by `2 ^ (N / B)` for every `N`. This is an original specialization of the
+generating-function bound, motivated by the geometric thresholds in Appendix A.3 of
+[OpenAI2026ETH]; it does not construct the parameters or bound the cost of selecting them.
+
 ## Main results
 
 * `Cslib.sum_choose_le_exp_mul_pow`: a real-parameter generating-function bound.
 * `Cslib.sum_choose_le_exp_one_mul_div_pow`: the bound with parameter `q / e`.
+* `Nat.choose_le_exp_mul_div_pow`: its single-binomial-coefficient consequence, for all `n, k`.
+* `Cslib.sum_choose_le_two_rpow_div`: the geometric tail under an exact integer budget test.
+* `Cslib.sum_choose_le_two_pow_div_add_one`: its natural-number rounded form.
 * `Cslib.le_mul_logb_of_two_pow_le_sum_choose_sq`: the logarithmic consequence.
 * `Cslib.mul_rpow_le_of_two_pow_le_sum_choose_sq`: the rearranged size lower bound.
 
@@ -37,6 +46,7 @@ size-activity bounds; they include the zero-radius case using the usual total re
   [ThresholdCircuitRepresentations2026]
 * [C. Calabro, R. Impagliazzo, R. Paturi, *A duality between clause width and clause density for
   SAT*][CalabroImpagliazzoPaturi2006]
+* [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.3, pp. 46–47][OpenAI2026ETH]
 -/
 
 @[expose] public section
@@ -103,6 +113,113 @@ theorem sum_choose_le_exp_one_mul_div_pow {q e : ℕ} (heq : e ≤ q) :
     _ = (Real.exp 1 * q / e) ^ e := by
         rw [mul_div_assoc, mul_pow, ← Real.exp_nat_mul]
         simp
+
+end Cslib
+
+namespace Nat
+
+/-- A single binomial coefficient is at most `(exp 1 * n / k)^k`, including `k = 0`.
+This follows from `Cslib.sum_choose_le_exp_one_mul_div_pow` when `k ≤ n`; otherwise the
+coefficient vanishes. The statement is also present in
+[Anthropic's formal source](https://github.com/anthropics/formal-math/blob/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp/ThreeSumApsp/Util/Choose.lean#L52-L53);
+this proof reuses the partial-sum bound. -/
+theorem choose_le_exp_mul_div_pow (n k : ℕ) :
+    (n.choose k : ℝ) ≤ (Real.exp 1 * (n : ℝ) / (k : ℝ)) ^ k := by
+  by_cases hkn : k ≤ n
+  · calc
+      (n.choose k : ℝ) ≤ ∑ j ∈ Finset.range (k + 1), (n.choose j : ℝ) :=
+        Finset.single_le_sum (fun j _ => Nat.cast_nonneg (n.choose j))
+          (Finset.mem_range.mpr (by omega))
+      _ ≤ (Real.exp 1 * (n : ℝ) / (k : ℝ)) ^ k :=
+        Cslib.sum_choose_le_exp_one_mul_div_pow hkn
+  · rw [choose_eq_zero_of_lt (by omega), cast_zero]
+    positivity
+
+end Nat
+
+namespace Cslib
+
+open Finset
+
+/-- For any input size `N`, the tail with dimension `C * N` and radius `Γ * N / M` is at most
+`2 ^ (N / B)` when the exact integer test `B * Γ * ⌈log₂ (4 * C * M)⌉ ≤ M` holds.
+This is an original corollary of `sum_choose_le_exp_mul_pow`, motivated by Appendix A.3 of
+[OpenAI2026ETH], rather than a verbatim result from that source. Zero input and zero radius are
+included. The parameters are supplied; no parameter-selection or complexity bound is asserted. -/
+theorem sum_choose_le_two_rpow_div {C Γ M B : ℕ} (hC : 4 ≤ C) (hΓ : 4 ≤ Γ)
+    (hM : Γ ≤ M) (hB : 1 ≤ B) (hbudget : B * Γ * Nat.clog 2 (4 * C * M) ≤ M)
+    (N : ℕ) :
+    (∑ j ∈ range (Γ * N / M + 1), ((C * N).choose j : ℝ)) ≤ (2 : ℝ) ^ ((N : ℝ) / B) := by
+  have hC0 : (0 : ℝ) < C := by exact_mod_cast (show 0 < C by omega)
+  have hΓ0 : (0 : ℝ) < Γ := by exact_mod_cast (show 0 < Γ by omega)
+  have hM0 : (0 : ℝ) < M := by exact_mod_cast (show 0 < M by omega)
+  have hB0 : (0 : ℝ) < B := by exact_mod_cast (show 0 < B by omega)
+  let T : ℝ := C * M / Γ
+  let a : ℝ := Γ * N / M
+  let h := Nat.clog 2 (4 * C * M)
+  have hT : 1 ≤ T := by
+    apply (le_div_iff₀ hΓ0).mpr
+    have hCM : (1 : ℝ) ≤ C := by exact_mod_cast (show 1 ≤ C by omega)
+    have hΓM : (Γ : ℝ) ≤ M := by exact_mod_cast hM
+    nlinarith
+  have hT0 : 0 < T := lt_of_lt_of_le zero_lt_one hT
+  have ha : 0 ≤ a := by dsimp only [a]; positivity
+  have hradius : ((Γ * N / M : ℕ) : ℝ) ≤ a := by
+    apply (le_div_iff₀ hM0).mpr
+    exact_mod_cast Nat.div_mul_le_self (Γ * N) M
+  have hratio : ((C * N : ℕ) : ℝ) / T = a := by
+    dsimp only [T, a]
+    push_cast
+    field_simp
+  have hexp : Real.exp 1 ≤ (Γ : ℝ) :=
+    Real.exp_one_lt_three.le.trans (by exact_mod_cast (show 3 ≤ Γ by omega))
+  have hbase : Real.exp 1 * T ≤ (4 * C * M : ℕ) := by
+    calc Real.exp 1 * T ≤ Γ * T := mul_le_mul_of_nonneg_right hexp hT0.le
+      _ = C * M := by dsimp only [T]; field_simp
+      _ ≤ (4 * C * M : ℕ) := by push_cast; nlinarith
+  have hpow : ((4 * C * M : ℕ) : ℝ) ≤ (2 : ℝ) ^ h := by
+    exact_mod_cast Nat.le_pow_clog (by decide : 1 < 2) (4 * C * M)
+  have hexponent : (h : ℝ) * a ≤ (N : ℝ) / B := by
+    have hb : (B : ℝ) * Γ * h ≤ M := by exact_mod_cast hbudget
+    dsimp only [a]
+    rw [← mul_div_assoc, div_le_div_iff₀ hM0 hB0]
+    nlinarith [mul_le_mul_of_nonneg_right hb (Nat.cast_nonneg N)]
+  calc (∑ j ∈ range (Γ * N / M + 1), ((C * N).choose j : ℝ))
+      ≤ Real.exp (((C * N : ℕ) : ℝ) / T) * T ^ (Γ * N / M) :=
+        sum_choose_le_exp_mul_pow (C * N) (Γ * N / M) T hT
+    _ = Real.exp a * T ^ (Γ * N / M) := by rw [hratio]
+    _ ≤ Real.exp a * T ^ a := by
+      apply mul_le_mul_of_nonneg_left _ (Real.exp_pos a).le
+      rw [← Real.rpow_natCast]
+      exact Real.rpow_le_rpow_of_exponent_le hT hradius
+    _ = (Real.exp 1 * T) ^ a := by
+      rw [Real.mul_rpow (Real.exp_pos 1).le hT0.le, ← Real.exp_mul, one_mul]
+    _ ≤ ((4 * C * M : ℕ) : ℝ) ^ a :=
+      Real.rpow_le_rpow (by positivity) hbase ha
+    _ ≤ ((2 : ℝ) ^ h) ^ a := Real.rpow_le_rpow (by positivity) hpow ha
+    _ = (2 : ℝ) ^ ((h : ℝ) * a) := by
+      rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num)]
+    _ ≤ (2 : ℝ) ^ ((N : ℝ) / B) :=
+      Real.rpow_le_rpow_of_exponent_le (by norm_num) hexponent
+
+/-- The natural-number rounding of `sum_choose_le_two_rpow_div`, suitable for a discrete
+leaf-count or round budget. The division in the conclusion is natural-number division. -/
+theorem sum_choose_le_two_pow_div_add_one {C Γ M B : ℕ} (hC : 4 ≤ C) (hΓ : 4 ≤ Γ)
+    (hM : Γ ≤ M) (hB : 1 ≤ B) (hbudget : B * Γ * Nat.clog 2 (4 * C * M) ≤ M)
+    (N : ℕ) :
+    ∑ j ∈ range (Γ * N / M + 1), (C * N).choose j ≤ 2 ^ (N / B + 1) := by
+  have hB0 : (0 : ℝ) < B := by exact_mod_cast (show 0 < B by omega)
+  have hround : (N : ℝ) / B ≤ ((N / B + 1 : ℕ) : ℝ) := by
+    apply (div_le_iff₀ hB0).mpr
+    have hn : N < B * (N / B + 1) := by
+      have := Nat.mod_lt N (show 0 < B by omega)
+      have := Nat.div_add_mod N B
+      nlinarith
+    exact_mod_cast (show N ≤ (N / B + 1) * B by simpa only [Nat.mul_comm] using hn.le)
+  have h := (sum_choose_le_two_rpow_div hC hΓ hM hB hbudget N).trans
+    (Real.rpow_le_rpow_of_exponent_le (by norm_num) hround)
+  rw [Real.rpow_natCast] at h
+  exact_mod_cast h
 
 /-- If the square of the radius-`e` binomial sum is at least `2 ^ m`, then
 `m / 2 ≤ e * log₂ (exp 1 * q / e)`. The statement includes `e = 0`, which forces `m = 0`. -/

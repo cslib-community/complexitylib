@@ -48,6 +48,169 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("missing or invalid `-- upstream:` marker", errors[0])
 
+    def test_upstream_marker_must_be_a_standalone_line_comment(self) -> None:
+        examples = (
+            '/- Example:\n-- upstream: candidate\n-/\n',
+            '/- Outer /- nested -/\n-- upstream: candidate\n-/\n',
+            'def text := "\n-- upstream: candidate\n"\n',
+            'def text := r##"\n-- upstream: candidate\n"##\n',
+            'def value := 0 -- upstream: candidate\n',
+        )
+        for example in examples:
+            with self.subTest(example=example):
+                p = self.write("Complexity/NoMarker.lean", "module\n" + example)
+                self.assertEqual(check_hygiene.check_file(p, root=self.root),
+                                 ["Complexity/NoMarker.lean: missing or invalid `-- upstream:` marker"])
+
+    def test_standalone_upstream_status_forms_pass(self) -> None:
+        statuses = ("candidate", "submitted #123 @deadbeef",
+                    "vendored contributor:feature/api @deadbeef (unsubmitted)",
+                    "merged @deadbeef", "local-only (test scaffolding)")
+        for status in statuses:
+            for indent in ("", "  "):
+                with self.subTest(status=status, indent=indent):
+                    p = self.write("Complexity/Marker.lean",
+                                   f"module\n{indent}-- upstream: {status}\n")
+                    self.assertEqual(check_hygiene.check_file(p, root=self.root), [])
+
+    def test_candidate_marker_examples_do_not_enable_simp_check(self) -> None:
+        for example in ('/-\n-- upstream: candidate\n-/\n',
+                        'def text := r#"\n-- upstream: candidate\n"#\n'):
+            with self.subTest(example=example):
+                p = self.write(
+                    "Complexity/Local.lean",
+                    "module\n-- upstream: local-only (test scaffolding)\n" + example
+                    + "theorem demo : True := by\n  simp\n  trivial\n",
+                )
+                self.assertEqual(check_hygiene.check_file(p, root=self.root, check_simp=True), [])
+
+    def heartbeat_module(self, rel: str, value: int | str) -> pathlib.Path:
+        return self.write(
+            rel,
+            "module\n"
+            "-- upstream: candidate\n\n"
+            "-- Justified: a large closed certificate.\n"
+            f"set_option maxHeartbeats {value} in\n"
+            "theorem demo : True := trivial\n",
+        )
+
+    def test_heartbeat_above_default_requires_allowlist(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+        self.assertEqual(len(errors), 1)
+        self.assertIn("exceeds the 200000 default", errors[0])
+        # The default itself, and smaller budgets, need no entry.
+        q = self.heartbeat_module("Complexity/Default.lean", 200000)
+        self.assertEqual(check_hygiene.check_file(q, root=self.root, heartbeat_caps={}), [])
+
+    def test_heartbeat_allowlist_cap_is_enforced(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        ok = {"Complexity/Big.lean": 400000}
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps=ok), [])
+        low = {"Complexity/Big.lean": 300000}
+        errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps=low)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("exceeds its allowlisted cap 300000", errors[0])
+
+    def test_heartbeat_check_is_off_without_caps(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.assertEqual(check_hygiene.check_file(p, root=self.root), [])
+
+    def test_heartbeat_budget_in_a_comment_is_ignored(self) -> None:
+        p = self.write(
+            "Complexity/Commented.lean",
+            "module\n-- upstream: candidate\n\n"
+            "-- An earlier version used set_option maxHeartbeats 8000000 here.\n"
+            "theorem demo : True := trivial\n",
+        )
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps={}), [])
+
+    def test_stale_heartbeat_allowlist_entries_are_reported(self) -> None:
+        self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.heartbeat_module("Complexity/Small.lean", 100000)
+        caps = {"Complexity/Big.lean": 500000, "Complexity/Small.lean": 400000,
+                "Complexity/Gone.lean": 400000}
+        errors = check_hygiene.check_heartbeat_allowlist_stale(caps, root=self.root)
+        self.assertEqual(len(errors), 3)
+        self.assertTrue(any("cap 500000 exceeds its largest budget 400000" in e for e in errors))
+        self.assertTrue(any("`Complexity/Small.lean` has no budget above" in e for e in errors))
+        self.assertTrue(any("`Complexity/Gone.lean` does not exist" in e for e in errors))
+        exact = {"Complexity/Big.lean": 400000}
+        self.assertEqual(check_hygiene.check_heartbeat_allowlist_stale(exact, root=self.root), [])
+
+    def test_heartbeat_alternate_forms_are_checked(self) -> None:
+        settings = [
+            "set_option maxHeartbeats 400_000 in\ntheorem demo : True := trivial",
+            "set_option maxHeartbeats 0x61A80 in\ntheorem demo : True := trivial",
+            "set_option maxHeartbeats\n  400000 in\ntheorem demo : True := trivial",
+            "theorem demo : True := by set_option maxHeartbeats 400000 in trivial",
+            "example : True := by\n  skip; set_option maxHeartbeats 400000 in trivial",
+        ]
+        for setting in settings:
+            with self.subTest(setting=setting):
+                p = self.write("Complexity/Big.lean", "module\n-- upstream: candidate\n\n"
+                               "-- Justified: closed certificate.\n" + setting + "\n")
+                errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+                self.assertTrue(any("exceeds the 200000 default" in e for e in errors), errors)
+                self.assertEqual(check_hygiene.check_file(
+                    p, root=self.root, heartbeat_caps={"Complexity/Big.lean": 400000}), [])
+
+    def test_zero_budget_requires_explicit_unlimited_cap(self) -> None:
+        p = self.heartbeat_module("Complexity/Big.lean", 0)
+        for caps in ({}, {"Complexity/Big.lean": 8000000}):
+            with self.subTest(caps=caps):
+                self.assertTrue(check_hygiene.check_file(p, root=self.root, heartbeat_caps=caps))
+        caps = {"Complexity/Big.lean": 0}
+        self.assertEqual(check_hygiene.check_file(p, root=self.root, heartbeat_caps=caps), [])
+        self.assertEqual(check_hygiene.check_heartbeat_allowlist_stale(caps, self.root), [])
+        self.heartbeat_module("Complexity/Big.lean", 400000)
+        self.assertTrue(check_hygiene.check_heartbeat_allowlist_stale(caps, self.root))
+
+    def test_unparsed_heartbeat_budget_fails_closed(self) -> None:
+        for token in ("unlimited", "-1", "400000oops"):
+            with self.subTest(token=token):
+                p = self.heartbeat_module("Complexity/Big.lean", token)
+                errors = check_hygiene.check_file(
+                    p, root=self.root, heartbeat_caps={"Complexity/Big.lean": 0})
+                self.assertTrue(any("cannot parse" in e for e in errors), errors)
+
+    def test_inline_and_multiline_options_require_justification(self) -> None:
+        for setting in ("example : True := by set_option maxHeartbeats 400000 in trivial",
+                        "set_option maxRecDepth\n  1000 in\nexample : True := trivial"):
+            with self.subTest(setting=setting):
+                p = self.write("Complexity/Big.lean", "module\n-- upstream: candidate\n"
+                               + "\n" * 5 + setting + "\n")
+                errors = check_hygiene.check_file(p, root=self.root)
+                self.assertTrue(any("justifying comment" in e for e in errors), errors)
+
+    def test_options_in_interpolated_terms_are_checked(self) -> None:
+        # Interpolation braces contain executable Lean terms, including tactic proofs.
+        for option, value in (("maxHeartbeats", 400000), ("maxRecDepth", 1000)):
+            with self.subTest(option=option):
+                p = self.write(
+                    "Complexity/Interpolation.lean",
+                    "module\n-- upstream: candidate\n" + "\n" * 5
+                    + f'def text := s!"{{(by set_option {option} {value} '
+                    'in exact (0 : Nat))}"\n',
+                )
+                errors = check_hygiene.check_file(p, root=self.root, heartbeat_caps={})
+                self.assertEqual(len(errors), 2 if option == "maxHeartbeats" else 1, errors)
+                self.assertTrue(all(e.startswith("Complexity/Interpolation.lean:8:")
+                                    for e in errors), errors)
+                self.assertIn("requires a justifying comment", errors[0])
+                if option == "maxHeartbeats":
+                    self.assertIn("exceeds the 200000 default", errors[1])
+
+    def test_heartbeat_allowlist_parsing(self) -> None:
+        path = self.write("scripts/heartbeat_allowlist.txt",
+                          "# header\n\nComplexity/Big.lean 400000  # see #1528\n")
+        self.assertEqual(check_hygiene.load_heartbeat_allowlist(path),
+                         {"Complexity/Big.lean": 400000})
+        self.assertEqual(check_hygiene.load_heartbeat_allowlist(self.root / "missing.txt"), {})
+        bad = self.write("scripts/bad.txt", "Complexity/Big.lean lots\n")
+        with self.assertRaises(ValueError):
+            check_hygiene.load_heartbeat_allowlist(bad)
+
     def test_unjustified_set_option_fails(self) -> None:
         p = self.write(
             "Complexity/UnjustifiedOption.lean",
@@ -141,6 +304,142 @@ class CheckHygieneTests(unittest.TestCase):
         self.assertEqual(check_hygiene.check_file(p, root=self.root),
                          ["Complexity/QuotedText.lean:7: forbidden `native_decide`"])
 
+    def test_docstring_markdown_links_and_module_paths_from_1358_and_1367(self) -> None:
+        self.write(
+            "Complexity/Computability/Circuit/Monotone/Clique/LogarithmicPetals.lean",
+            "module\n-- upstream: candidate\n",
+        )
+        self.write(
+            "Complexity/Computability/Circuit/Monotone/Clique/Asymptotic.lean",
+            "module\n-- upstream: candidate\n",
+        )
+        self.write(
+            "Complexity/Logics/Propositional/ClauseSet/Sparsification/Tree.lean",
+            "module\n-- upstream: candidate\n",
+        )
+
+        # Before #1358: bare sibling `.html` link, root-relative `.lean` code spans, and brace-expanded paths.
+        broken_1358 = self.write(
+            "Complexity/Broken1358.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "[LogarithmicPetals](LogarithmicPetals.html) gives stronger bounds.\n"
+            "See `Monotone/Clique/Asymptotic.lean` and `Sparsification/Tree.lean`.\n"
+            "Adapted from `LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean` and\n"
+            "`SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`.\n"
+            "-/\n",
+        )
+        errors_1358 = check_hygiene.check_file(broken_1358, root=self.root)
+        self.assertEqual(len(errors_1358), 5, errors_1358)
+        self.assertIn("Complexity/Broken1358.lean:4: invalid docstring Markdown link target `LogarithmicPetals.html`",
+                      errors_1358[0])
+        self.assertIn("Complexity/Broken1358.lean:5: invalid docstring module path `Monotone/Clique/Asymptotic.lean`",
+                      errors_1358[1])
+        self.assertIn("Complexity/Broken1358.lean:5: invalid docstring module path `Sparsification/Tree.lean`",
+                      errors_1358[2])
+        self.assertIn("Complexity/Broken1358.lean:6: invalid docstring module path `LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean`",
+                      errors_1358[3])
+        self.assertIn("Complexity/Broken1358.lean:7: invalid docstring module path `SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`",
+                      errors_1358[4])
+
+        # After #1358: root-qualified `Complexity/...` paths, external URLs, bare filenames without `/`, and dependency paths.
+        fixed_1358 = self.write(
+            "Complexity/Fixed1358.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "[LogarithmicPetals](Complexity/Computability/Circuit/Monotone/Clique/LogarithmicPetals.html)\n"
+            "gives stronger bounds than `Complexity/Computability/Circuit/Monotone/Clique/Asymptotic.lean`\n"
+            "and `Complexity/Logics/Propositional/ClauseSet/Sparsification/Tree.lean` (`Game.lean`).\n"
+            "Also see `Cslib/Foundations/Data/BitString.lean`, `Mathlib/Data/Nat/Log.lean`,\n"
+            "[#anchor](#section-anchor), [decl](##SomeDecl), and\n"
+            "[PlanarThreeSATGadgets.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean).\n"
+            "-/\n",
+        )
+        self.assertEqual(check_hygiene.check_file(fixed_1358, root=self.root), [])
+
+        # Before #1367: unescaped bracketed notation `MCSP-C[s](y)` parsed as a Markdown link.
+        broken_1367 = self.write(
+            "Complexity/Broken1367.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "> • D is never incorrect. For each y, D(y) ∈ {MCSP-C[s](y), \"?\"}.\n"
+            "-/\n",
+        )
+        errors_1367 = check_hygiene.check_file(broken_1367, root=self.root)
+        self.assertEqual(len(errors_1367), 1, errors_1367)
+        self.assertIn("Complexity/Broken1367.lean:4: invalid docstring Markdown link target `y`",
+                      errors_1367[0])
+
+        # After #1367: escaped `MCSP-C\[s\](y)`, math spans `$...[A, H](\lambda)$`, and inline code `` `MCSP-C[s](y)` ``.
+        fixed_1367 = self.write(
+            "Complexity/Fixed1367.lean",
+            "module\n-- upstream: candidate\n"
+            "-- Ordinary comment `Foo/Bar.lean` and MCSP-C[s](y) are not docstrings.\n"
+            "/- Non-doc block comment `Foo/Bar.lean` and MCSP-C[s](y) -/\n"
+            "/-!\n"
+            "> • D is never incorrect. For each y, D(y) ∈ {MCSP-C\\[s\\](y), \"?\"}.\n"
+            "Math span $\\mathsf{Adv}^{\\text{cr}}[\\mathcal{A}, H](\\lambda)$ and code `MCSP-C[s](y)`.\n"
+            "Link with code label [`LeanTrominoes/SAT/Planar/PlanarThreeSATGadgets.lean`](https://example.com/file.lean).\n"
+            "-/\n",
+        )
+        self.assertEqual(check_hygiene.check_file(fixed_1367, root=self.root), [])
+
+    def test_docstring_nonexistent_complexity_module_or_fenced_code_path_fails(self) -> None:
+        p = self.write(
+            "Complexity/MissingTarget.lean",
+            "module\n-- upstream: candidate\n"
+            "/--\n"
+            "Broken HTML target [Missing](Complexity/DoesNotExist.html#sec) and\n"
+            "missing module `Complexity/AlsoMissing.lean`.\n"
+            "```lean\n"
+            "-- see Monotone/Clique/Asymptotic.lean\n"
+            "```\n"
+            "-/\n"
+            "theorem demo : True := trivial\n",
+        )
+        errors = check_hygiene.check_file(p, root=self.root)
+        self.assertEqual(len(errors), 3, errors)
+        self.assertIn("Complexity/MissingTarget.lean:7: invalid docstring module path `Monotone/Clique/Asymptotic.lean`",
+                      errors[0])
+        self.assertIn("Complexity/MissingTarget.lean:4: invalid docstring Markdown link target `Complexity/DoesNotExist.html#sec`",
+                      errors[1])
+        self.assertIn("Complexity/MissingTarget.lean:5: invalid docstring module path `Complexity/AlsoMissing.lean`",
+                      errors[2])
+
+    def test_docstring_link_schemes_titles_and_angles(self) -> None:
+        self.write("Complexity/Init.lean", "module\n-- upstream: candidate\n")
+
+        # doc-gen4's `extendLink` prefixes `getRoot` to `mailto:` and `//`, so both must fail;
+        # single-quoted/parenthesized titles with bad targets must also fail.
+        bad = self.write(
+            "Complexity/BadSchemesAndTitles.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "Bad schemes: [me](mailto:a@b.c) and [proto](//example.com/y).\n"
+            "Bad titled links: [s](Foo.html 'single') and [p](Bar.html (parens)).\n"
+            "-/\n",
+        )
+        errors = check_hygiene.check_file(bad, root=self.root)
+        self.assertEqual(len(errors), 4, errors)
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:4: invalid docstring Markdown link target `mailto:a@b.c`",
+                      errors[0])
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:4: invalid docstring Markdown link target `//example.com/y`",
+                      errors[1])
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:5: invalid docstring Markdown link target `Foo.html`",
+                      errors[2])
+        self.assertIn("Complexity/BadSchemesAndTitles.lean:5: invalid docstring Markdown link target `Bar.html`",
+                      errors[3])
+
+        # Angle-bracket targets and titled valid links pass.
+        good = self.write(
+            "Complexity/GoodAnglesAndTitles.lean",
+            "module\n-- upstream: candidate\n"
+            "/-!\n"
+            "Angle target [init](<Complexity/Init.html>) and [titled](Complexity/Init.html 'Init').\n"
+            "-/\n",
+        )
+        self.assertEqual(check_hygiene.check_file(good, root=self.root), [])
+
 
 class BibliographyTests(unittest.TestCase):
     def test_sorted_unique_keys_pass(self) -> None:
@@ -158,6 +457,67 @@ class BibliographyTests(unittest.TestCase):
     def test_repository_bibliography_is_sorted(self) -> None:
         text = (check_hygiene.ROOT / "references.bib").read_text(encoding="utf-8")
         self.assertEqual(check_hygiene.check_bibliography(text), [])
+
+
+class CitationTests(unittest.TestCase):
+    keys = frozenset({"AroraBarak09", "Ilango2020FOCS", "Sipser2013"})
+
+    def citations(self, doc: str) -> list[str]:
+        return [key for _, key in check_hygiene.docstring_citations(doc)]
+
+    def test_citation_forms(self) -> None:
+        doc = ("See [Sipser2013], [AroraBarak09, Theorem 2.1], [Ilango2020FOCS; Sipser2013] and\n"
+               "[Arora and Barak, Section 3][AroraBarak09] or [*Title*, Section 4]\n"
+               "  [Khrapchenko1971b]; [NISTFIPS203].")
+        self.assertEqual(self.citations(doc), [
+            "Sipser2013", "AroraBarak09", "Ilango2020FOCS", "Sipser2013", "AroraBarak09",
+            "Khrapchenko1971b", "NISTFIPS203",
+        ])
+
+    def test_text_that_is_not_a_citation(self) -> None:
+        doc = ("MCSP[s], [Section 4], [n], [x1], `xs[Foo2020]`, $v[Foo2020]$, \\[Foo2020\\],\n"
+               "[Foo2020](https://example.com), ![Foo2020](image.png) and AC[2].\n"
+               "> **Definition 43** (Average-case MCSP [HS17]). Quoted from the source.\n"
+               "```lean\nexample := xs[Foo2020]\n```\n")
+        self.assertEqual(self.citations(doc), [])
+
+    def test_brackets_after_a_word_character_are_not_citations(self) -> None:
+        # Indexing and subscripts written outside backticks; a bracket after `)` still counts.
+        doc = ("xs[i10], H[SHA256], A_n[Foo2020], α[x10] and f(x)[Bar2021].\n[Sipser2013] (see\n"
+               "[AroraBarak09]), \"[Ilango2020FOCS]\" and —[Baz2022].")
+        self.assertEqual(self.citations(doc),
+                         ["Bar2021", "Sipser2013", "AroraBarak09", "Ilango2020FOCS", "Baz2022"])
+
+    def test_unknown_key_reports_file_line_and_key(self) -> None:
+        # #1415 cited `[BussHay1991]` without a bibliography entry.
+        raw = ("/-! # Title\n\nSee [Sipser2013].\n-/\n\n"
+               "/-- Shown in [BussHay1991, Theorem 3] and [AroraBarak09]. -/\n"
+               "theorem t : True := trivial\n"
+               "-- [Comment2020] is not a docstring.\n")
+        self.assertEqual(
+            check_hygiene.check_docstring_citations(raw, pathlib.Path("Complexity/X.lean"),
+                                                    self.keys),
+            ["Complexity/X.lean:6: docstring cites `BussHay1991`, which is not a key in "
+             "references.bib (add the entry, or escape the brackets `\\[...\\]` if it is not a "
+             "citation)"])
+
+    def test_check_file_checks_citations_only_with_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            path = root / "ComplexityTests/X.lean"
+            path.parent.mkdir()
+            path.write_text("/-- [Missing2024] -/\ntheorem t : True := trivial\n",
+                            encoding="utf-8")
+            self.assertEqual(check_hygiene.check_file(path, root=root), [])
+            errors = check_hygiene.check_file(path, root=root, bib_keys=self.keys)
+            self.assertEqual(len(errors), 1)
+            self.assertTrue(errors[0].startswith(
+                "ComplexityTests/X.lean:1: docstring cites `Missing2024`"), errors)
+
+    def test_bibliography_keys(self) -> None:
+        text = "@book{ AroraBarak09,\n}\n@misc{Sipser2013,\n  note = {@inline{Not, a key}}\n}\n"
+        self.assertEqual(check_hygiene.bibliography_keys(text),
+                         frozenset({"AroraBarak09", "Sipser2013"}))
 
 
 class CheckHygieneCLITests(unittest.TestCase):
@@ -209,6 +569,16 @@ class CheckHygieneCLITests(unittest.TestCase):
         self.assertIn(f"ERROR: {self.bad}:1: forbidden `sorry`\n", result.stderr)
         self.assertNotIn("no source files", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
+
+    def test_explicit_path_checks_citations_against_the_repository_bibliography(self) -> None:
+        cited = self.root / "Cited.lean"
+        cited.write_text("/-- [Sipser2013], [BussHay1991] -/\ntheorem t : True := trivial\n",
+                         encoding="utf-8")
+        result = self.run_checker(cited)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn(f"ERROR: {cited}:1: docstring cites `BussHay1991`", result.stderr)
+        self.assertNotIn("Sipser2013", result.stderr)
 
 
 if __name__ == "__main__":

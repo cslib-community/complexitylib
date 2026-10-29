@@ -46,8 +46,6 @@ sentence over `L`.
 
 ## Main definitions
 
-* `Cslib.Logic.Vocabulary.maxArity`: one more than the largest relation arity of `v`, a positive
-  strict upper bound on all relation arities.
 * `Cslib.Logic.Vocabulary.npPowerSentence`: the existential second-order sentence over
   `v.powerLanguage` combining input-tape layout synthesis and the accepting tableau of `tm`.
 
@@ -94,17 +92,6 @@ variable {L : Language.{u, v}} (v : Vocabulary L)
 
 /-! ### Polynomial bounds on encoded structure length and tableau size -/
 
-/-- One more than the largest relation arity of `v`: a positive strict upper bound on all relation
-arities of `v`. -/
-def maxArity : ℕ :=
-  Finset.univ.sup v.arity + 1
-
-theorem one_le_maxArity : 1 ≤ v.maxArity :=
-  Nat.le_add_left 1 _
-
-theorem arity_le_maxArity (i : Fin v.count) : v.arity i ≤ v.maxArity :=
-  (Finset.le_sup (Finset.mem_univ i)).trans (Nat.le_add_right _ 1)
-
 /-- For a well-formed input `a` with `1 ≤ a.1`, the `m`-th prefix of `encStructure a` has length at
 most `(m + 1) * (2 * a.1 ^ v.maxArity + 1)`. -/
 private theorem length_encStructurePrefix_le_pow {a : EncodedStructure} (ha : v.WellFormed a)
@@ -149,8 +136,8 @@ theorem exists_pow_bound (p : Polynomial ℕ) (c d : ℕ) :
         (frame (encStructure a)).length + p.eval (encStructure a).length + 2 ≤ a.1 ^ k ∧
         c * ((frame (encStructure a)).length + p.eval (encStructure a).length + 1) ^ d + 1 ≤
           a.1 ^ k := by
-  obtain ⟨cp, dp, hp⟩ := Cslib.polynomiallyBounded_iff_le.mp
-    (ComputableTidilyInPolyTime.polynomiallyBounded (ComputableTidilyInPolyTime.unary_eval p))
+  obtain ⟨cp, dp, hp⟩ := (ComputableInPolyTime.unary_eval p).polyBounded.exists_le
+  simp only [encUnary_apply, List.length_replicate] at hp
   let g : ℕ → ℕ := fun n => (v.count + 1) * (2 * n ^ v.maxArity + 1)
   let F : ℕ → ℕ := fun n =>
     (c + 1) * (2 * g n + 1 + cp * (g n + 1) ^ dp + 1) ^ (d + 1) + 1
@@ -253,27 +240,43 @@ theorem exists_powerSentence_of_mem_NP {K : Set EncodedStructure} (hNP : K ∈ N
         v.WellFormed a → 2 ≤ a.1 →
         (a ∈ K ↔ letI := v.powerStructure a (a.1 ^ k); Ψ.Realize (Fin (a.1 ^ k))) := by
   rcases hNP with ⟨p, V, hVpoly, hV⟩
-  obtain ⟨t, s, ht, -, m, State, hfin, tm, htm⟩ :=
-    (computableInPolyTime_strictVerifier encStructure p hVpoly).tidy
-  obtain ⟨c, d, ht⟩ := ht.exists_le
+  obtain ⟨t₀, _, ht₀, -, m, State, hfin, tm, htm⟩ :=
+    computableInPolyTime_strictVerifier encStructure p hVpoly
+  obtain ⟨c, d, ht⟩ := Cslib.polynomiallyBounded_iff_le.mp ht₀
   let _ := Fintype.ofFinite State
   classical
   obtain ⟨k, hk, har, hpow⟩ := v.exists_pow_bound p c d
   refine ⟨k, hk, har, v.npPowerSentence tm, fun a ha h2 => ?_⟩
   obtain ⟨hB1, hB2⟩ := hpow a ha h2
-  rw [v.realize_npPowerSentence tm ha (by omega)]
-  have hsat := CookLevin.exists_tableau_satisfiable_iff_of_strictVerifier hV htm
-    (a := a) (M := a.1 ^ k - 2 - (frame (encStructure a)).length) (T := a.1 ^ k - 1)
-    (by omega) fun w hw => ?_
-  · rw [← hsat]
-    refine exists_congr fun L => and_congr_left fun _ => ?_
-    omega
-  · have htw := ht (a, w)
+  rw [v.realize_npPowerSentence tm ha (by omega), hV.exists_strictVerifier_eq_true_iff]
+  constructor
+  · rintro ⟨w, hw⟩
+    have hlen := length_eq_of_strictVerifier_eq_true hw
     have hlen_pair : (encPair encStructure encBits (a, w)).length =
         (frame (encStructure a)).length + p.eval (encStructure a).length := by
-      rw [encPair_apply, List.length_append, encBits_apply, hw]
-    rw [hlen_pair] at htw
-    omega
+      rw [encPair_apply, List.length_append, encBits_apply, hlen]
+    have hle : t₀ (encPair encStructure encBits (a, w)).length ≤ a.1 ^ k - 1 := by
+      rw [hlen_pair]
+      have htw := ht ((frame (encStructure a)).length + p.eval (encStructure a).length)
+      omega
+    obtain ⟨hhalt, hout⟩ := (htm (a, w)).runFrom_of_le hle
+    simp only [encPair_apply, encBits_apply, hw, encBool_apply] at hhalt hout
+    exact ⟨w.length, by omega, CookLevin.tableau_satisfiable_iff.2 ⟨w, rfl, hhalt, hout⟩⟩
+  · rintro ⟨L, -, hsat⟩
+    obtain ⟨w, -, hhalt, hout⟩ := CookLevin.tableau_satisfiable_iff.1 hsat
+    obtain ⟨hhalt₀, hout₀⟩ := (htm (a, w)).runFrom_of_le (le_refl _)
+    rw [encPair_apply, encBits_apply] at hhalt₀ hout₀
+    dsimp only at hhalt₀ hout₀
+    have h₁ := runFrom_eq_of_halt tm (tm.initCfg (frame (encStructure a) ++ w))
+      (Nat.le_max_left (a.1 ^ k - 1) (t₀ (encPair encStructure encBits (a, w)).length)) hhalt
+    have h₂ := runFrom_eq_of_halt tm (tm.initCfg (frame (encStructure a) ++ w))
+      (Nat.le_max_right (a.1 ^ k - 1) (t₀ (encPair encStructure encBits (a, w)).length)) hhalt₀
+    have hout_eq : (tm.runFrom (tm.initCfg (frame (encStructure a) ++ w)) (a.1 ^ k - 1)).output =
+        (tm.runFrom (tm.initCfg (frame (encStructure a) ++ w))
+          (t₀ (encPair encStructure encBits (a, w)).length)).output := by
+      rw [← h₁, ← h₂]
+    rw [hout, hout₀, encBool_apply, List.singleton_inj] at hout_eq
+    exact ⟨w, hout_eq.symm⟩
 
 end Vocabulary
 

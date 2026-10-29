@@ -42,19 +42,22 @@ private theorem isSunflower_star :
   simp only [mem_coe]
   decide
 
--- The edges of `K₅` contain that sunflower directly.
-example : ContainsSunflower 3 ((univ : Finset (Fin 5)).powersetCard 2) :=
-  ⟨{{0, 1}, {0, 2}, {0, 3}}, by decide, by decide, {0}, isSunflower_star⟩
-
--- The sunflower lemma finds it too: `K₅` has `10 > (3 - 1) ^ 2 * 2! = 8` edges. Compare
--- `Sunflower.not_containsSunflower_twoTriangles`, six edges and no such sunflower.
-example : ContainsSunflower 3 ((univ : Finset (Fin 5)).powersetCard 2) :=
-  containsSunflower_of_forall_card_le 3 2 _ (fun _ hs => (mem_powersetCard.1 hs).2.le)
-    (by decide)
+-- The edges of `K₅` contain that sunflower directly and by the sunflower lemma (`10 > 8`), and
+-- plucking with three petals leaves at most eight sets and no such sunflower.
+example :
+    ContainsSunflower 3 ((univ : Finset (Fin 5)).powersetCard 2) ∧
+    (pluckNormalForm 3 ((univ : Finset (Fin 5)).powersetCard 2)).card ≤ 8 ∧
+    ¬ ContainsSunflower 3 (pluckNormalForm 3 ((univ : Finset (Fin 5)).powersetCard 2)) :=
+  ⟨containsSunflower_of_forall_card_le 3 2 _ (fun _ hs => (mem_powersetCard.1 hs).2.le) (by decide),
+    card_pluckNormalForm_le (w := 2) (by decide) fun _ hs => (mem_powersetCard.1 hs).2.le,
+    not_containsSunflower_pluckNormalForm (by decide) _⟩
 
 -- Plucking the singletons `{0}, {1}, {2}` with two petals must end at `{∅}`: the normal form has
 -- at most `sunflowerBound 2 1 = 1` set, and that set lies inside both `{0}` and `{1}`.
-example : pluckNormalForm 2 ({{0}, {1}, {2}} : Finset (Finset (Fin 3))) = {∅} := by
+example :
+    ContainsSunflower 3 ((univ : Finset (Fin 5)).powersetCard 2) ∧
+    pluckNormalForm 2 ({{0}, {1}, {2}} : Finset (Finset (Fin 3))) = {∅} := by
+  refine ⟨⟨{{0, 1}, {0, 2}, {0, 3}}, by decide, by decide, {0}, isSunflower_star⟩, ?_⟩
   set F : Finset (Finset (Fin 3)) := {{0}, {1}, {2}}
   have hcard : (pluckNormalForm 2 F).card ≤ 1 :=
     card_pluckNormalForm_le (w := 1) le_rfl (by decide)
@@ -68,12 +71,6 @@ example : pluckNormalForm 2 ({{0}, {1}, {2}} : Finset (Finset (Fin 3))) = {∅} 
     have h1 := mem_singleton.1 (hu1 hx)
     exact absurd (h0.symm.trans h1) (by decide)
   exact eq_singleton_iff_unique_mem.2 ⟨ht, fun x hx => card_le_one.1 hcard x hx ∅ ht⟩
-
--- Plucking the edges of `K₅` with three petals leaves at most eight sets and no such sunflower.
-example : (pluckNormalForm 3 ((univ : Finset (Fin 5)).powersetCard 2)).card ≤ 8 ∧
-    ¬ ContainsSunflower 3 (pluckNormalForm 3 ((univ : Finset (Fin 5)).powersetCard 2)) :=
-  ⟨card_pluckNormalForm_le (w := 2) (by decide) fun _ hs => (mem_powersetCard.1 hs).2.le,
-    not_containsSunflower_pluckNormalForm (by decide) _⟩
 
 /-! ### Valiant's depth reduction -/
 
@@ -124,15 +121,41 @@ example : #{v | (cycleGraph 5).edist 0 v ≤ (1 : ℕ)} = 3 := by
       simp
   exact le_trans (by decide : 3 ≤ #({0, 1, 4} : Finset (Fin 5))) (card_le_card hsub)
 
-/-! ### Central binomial coefficients -/
+/-! ### Central binomial coefficients, hypergeometric, and binomial tails -/
 
--- At `m = 3`: `C(6, 3) = 20` and `20 ^ 2 * 7 = 2800 ≤ 16 ^ 3 = 4096`.
-example : Nat.centralBinom 3 = 20 ∧ Nat.centralBinom 3 ^ 2 * 7 ≤ 16 ^ 3 :=
-  ⟨by decide, centralBinom_sq_mul_le 3⟩
-
--- At `n = 5`: `C(5, 2) = 10` and `10 ^ 2 * 6 = 600 ≤ 4 ^ 5 = 1024`.
-example : Nat.choose 5 2 = 10 ∧ Nat.choose 5 2 ^ 2 * 6 ≤ 4 ^ 5 :=
-  ⟨by decide, choose_half_sq_mul_le 5⟩
+-- Central binomial and tail bounds at `m = 3`, `n = 5`, `n = 99`, and hypergeometric / majority
+-- vote bounds.
+example :
+    Nat.centralBinom 3 = 20 ∧
+    Nat.centralBinom 3 ^ 2 * 7 ≤ 16 ^ 3 ∧
+    Nat.choose 5 2 = 10 ∧
+    Nat.choose 5 2 ^ 2 * 6 ≤ 4 ^ 5 ∧
+    10 * (univ.filter fun S : Finset (Fin 99) => S.card ≤ 49).card ≤ 6 * 2 ^ 99 ∧
+    ∑ J ∈ (range 4).powersetCard 2, #(range 2 ∩ J) =
+      #(range 2) * (#(range 4) - 1).choose (2 - 1) ∧
+    ∑ J ∈ (range 4).powersetCard 2, #(range 2 ∩ J) = 6 ∧
+    2 * #{J ∈ (range 16).powersetCard 12 | #(range 12 ∩ J) < 4} ≤ Nat.choose 16 12 ∧
+    #{x ∈ (range 4).powerset | #(range 3 ∩ x) ≤ 0} = 2 ∧
+    2 ^ 3 * #{x ∈ (range 4).powerset | #(range 3 ∩ x) ≤ 0} ≤ 3 ^ 3 * 2 ^ 1 ∧
+    (univ.filter fun ω : Fin (2 * 1) → Fin 3 =>
+      (univ.filter fun i => ω i ∈ ({0, 1} : Finset (Fin 3))).card ≤ 1).card = 5 ∧
+    9 ^ 1 * (univ.filter fun ω : Fin (2 * 1) → Fin 3 =>
+      (univ.filter fun i => ω i ∈ ({0, 1} : Finset (Fin 3))).card ≤ 1).card ≤
+      8 ^ 1 * Fintype.card (Fin 3) ^ (2 * 1) :=
+  ⟨by decide, centralBinom_sq_mul_le 3,
+    by decide, choose_half_sq_mul_le 5,
+    by simpa using ten_mul_card_filter_card_le_le 99 0 (by norm_num),
+    sum_card_inter_powersetCard (range_subset_range.2 (by norm_num)) (by norm_num),
+    by decide,
+    by
+      simpa using two_mul_card_filter_card_inter_lt_le (s := range 16) (U := range 12) (ℓ := 12)
+        (range_subset_range.2 (by norm_num)) (by simp) (by simp) (m := 4) (by simp),
+    by decide,
+    by
+      simpa only [card_range] using
+        two_pow_mul_card_filter_card_inter_le (range_subset_range.2 (by norm_num : 3 ≤ 4)) 0,
+    by decide,
+    card_filter_card_filter_le_le ({0, 1} : Finset (Fin 3)) (by decide) 1⟩
 
 -- For `m ≥ 12` the bound gives `5 * C(2m, m) ≤ 4 ^ m`, since then `2m + 1 ≥ 25`.
 example (m : ℕ) (hm : 12 ≤ m) : 5 * m.centralBinom ≤ 4 ^ m := by
@@ -141,43 +164,6 @@ example (m : ℕ) (hm : 12 ≤ m) : 5 * m.centralBinom ≤ 4 ^ m := by
     _ ≤ m.centralBinom ^ 2 * (2 * m + 1) := Nat.mul_le_mul_left _ (by omega)
     _ ≤ 16 ^ m := centralBinom_sq_mul_le m
     _ = (4 ^ m) ^ 2 := by rw [← pow_mul, mul_comm, pow_mul]; norm_num
-
--- With `n = 99` and `t = 0` the hypothesis `100 (t + 1) ^ 2 ≤ n + 1` holds with equality: at most
--- `6 / 10` of the subsets of `Fin 99` have at most `49` elements.
-example : 10 * (univ.filter fun S : Finset (Fin 99) => S.card ≤ 49).card ≤ 6 * 2 ^ 99 := by
-  simpa using ten_mul_card_filter_card_le_le 99 0 (by norm_num)
-
-/-! ### Hypergeometric and binomial tails -/
-
--- The first moment: over the six `2`-subsets `J` of `{0, 1, 2, 3}`, the sizes of `{0, 1} ∩ J`
--- sum to `#U * C(#s - 1, ℓ - 1) = 2 * 3 = 6`, as a direct count confirms.
-example : ∑ J ∈ (range 4).powersetCard 2, #(range 2 ∩ J) =
-      #(range 2) * (#(range 4) - 1).choose (2 - 1) ∧
-    ∑ J ∈ (range 4).powersetCard 2, #(range 2 ∩ J) = 6 :=
-  ⟨sum_card_inter_powersetCard (range_subset_range.2 (by norm_num)) (by norm_num), by decide⟩
-
--- Sixteen points, `U` the first twelve and `12`-subsets: `μ = 12 * 12 / 16 = 9 ≥ 8`, so at most
--- half of the `12`-subsets meet `U` in fewer than `4 ≤ μ / 2` points.
-example : 2 * #{J ∈ (range 16).powersetCard 12 | #(range 12 ∩ J) < 4} ≤ Nat.choose 16 12 := by
-  simpa using two_mul_card_filter_card_inter_lt_le (s := range 16) (U := range 12) (ℓ := 12)
-    (range_subset_range.2 (by norm_num)) (by simp) (by simp) (m := 4) (by simp)
-
--- The weighted count with `K = {0, 1, 2} ⊆ S = {0, 1, 2, 3}` and `j = 0`: the two subsets of `S`
--- missing `K`, `∅` and `{3}`, satisfy `2 ^ 3 * 2 ≤ 3 ^ 3 * 2 ^ 1`.
-example : #{x ∈ (range 4).powerset | #(range 3 ∩ x) ≤ 0} = 2 ∧
-    2 ^ 3 * #{x ∈ (range 4).powerset | #(range 3 ∩ x) ≤ 0} ≤ 3 ^ 3 * 2 ^ 1 :=
-  ⟨by decide, by
-    simpa only [card_range] using
-      two_pow_mul_card_filter_card_inter_le (range_subset_range.2 (by norm_num : 3 ≤ 4)) 0⟩
-
--- Majority votes: two of the three outcomes in `Fin 3` are good. Five of the nine pairs have at
--- most one good entry, and the bound gives `9 * 5 ≤ 8 * 3 ^ 2`.
-example : (univ.filter fun ω : Fin (2 * 1) → Fin 3 =>
-      (univ.filter fun i => ω i ∈ ({0, 1} : Finset (Fin 3))).card ≤ 1).card = 5 ∧
-    9 ^ 1 * (univ.filter fun ω : Fin (2 * 1) → Fin 3 =>
-      (univ.filter fun i => ω i ∈ ({0, 1} : Finset (Fin 3))).card ≤ 1).card ≤
-      8 ^ 1 * Fintype.card (Fin 3) ^ (2 * 1) :=
-  ⟨by decide, card_filter_card_filter_le_le {0, 1} (by decide) 1⟩
 
 /-! ### Rotation maps and the expander mixing lemma -/
 
@@ -191,29 +177,23 @@ private def cycleFour : RotationMap (Fin 4) Bool where
 private theorem isSimple_cycleFour : cycleFour.IsSimple :=
   ⟨by decide, by decide⟩
 
--- The simple graph of the 4-cycle is `2`-regular, and one walk step averages over the two
--- neighbors.
-example : cycleFour.toSimpleGraph.IsRegularOfDegree 2 :=
-  isSimple_cycleFour.isRegularOfDegree
-
-example (f : Fin 4 → ℝ) : cycleFour.walk f 0 = (f 1 + f 3) / 2 := by
-  rw [isSimple_cycleFour.walk_apply_eq_sum_neighborFinset,
-    show cycleFour.toSimpleGraph.neighborFinset 0 = {1, 3} by decide, sum_pair (by decide)]
-  simp
-
--- The complete graph with loops on four vertices has `λ = 0`, so the mixing lemma counts edges
--- exactly: `e(S, T) = 4 * |S| * |T| / 4`, which is `2` for `S = {0, 1}` and `T = {2}`.
-example : #((RotationMap.complete (Fin 4)).interedges {0, 1} {2}) = 2 := by
-  have h := (RotationMap.complete (Fin 4)).abs_card_interedges_sub_le {0, 1} {2}
-  rw [RotationMap.spectralExpansion_complete, zero_mul, zero_mul, zero_div,
-    abs_nonpos_iff, sub_eq_zero] at h
-  have h' : (#((RotationMap.complete (Fin 4)).interedges {0, 1} {2}) : ℝ) = 2 := by
-    rw [h]
+-- The simple graph of the 4-cycle is `2`-regular, one walk step averages over the two neighbors,
+-- and the complete graph with loops on four vertices has `λ = 0`, so `e({0, 1}, {2}) = 2`.
+example (f : Fin 4 → ℝ) :
+    cycleFour.toSimpleGraph.IsRegularOfDegree 2 ∧
+    cycleFour.walk f 0 = (f 1 + f 3) / 2 ∧
+    #((RotationMap.complete (Fin 4)).interedges {0, 1} {2}) = 2 := by
+  refine ⟨isSimple_cycleFour.isRegularOfDegree, ?_, ?_⟩
+  · rw [isSimple_cycleFour.walk_apply_eq_sum_neighborFinset,
+      show cycleFour.toSimpleGraph.neighborFinset 0 = {1, 3} by decide, sum_pair (by decide)]
     simp
-  exact_mod_cast h'
-
-example : #((RotationMap.complete (Fin 4)).interedges {0, 1} {2}) = 2 := by
-  decide
+  · have h := (RotationMap.complete (Fin 4)).abs_card_interedges_sub_le {0, 1} {2}
+    rw [RotationMap.spectralExpansion_complete, zero_mul, zero_mul, zero_div,
+      abs_nonpos_iff, sub_eq_zero] at h
+    have h' : (#((RotationMap.complete (Fin 4)).interedges {0, 1} {2}) : ℝ) = 2 := by
+      rw [h]
+      simp
+    exact_mod_cast h'
 
 -- The affine plane over `ZMod 3` (nine vertices, degree three) has `λ ≤ √(1 / 3) < 1`, so every
 -- nonempty set of at most four vertices has an edge leaving it.

@@ -57,18 +57,18 @@ example : acceptCount (orVerifier (fun _ : Unit => 1) (fun x => x.2.headD false)
 
 /-! ### `#P` and `GapP` -/
 
-example : (1 : List Bool → ℕ) + 1 ∈ SharpP encBits :=
-  SharpP.add_one_mem SharpP.one_mem
-
-example : (fun w : List Bool => 2 ^ Polynomial.X.eval (encBits w).length) *
-    (fun w => 2 ^ Polynomial.X.eval (encBits w).length) ∈ SharpP encBits :=
-  SharpP.mul_mem (SharpP.two_pow_mem _) (SharpP.two_pow_mem _)
-
-example : (fun w : List Bool => 2 ^ Polynomial.X.eval (encBits w).length) ^ 3 ∈ SharpP encBits :=
-  SharpP.pow_mem (SharpP.two_pow_mem _) 3
-
-example : ∑ i ∈ Finset.range 4, ((i : ℕ) : List Bool → ℕ) ∈ SharpP encBits :=
-  SharpP.sum_mem _ fun i _ => SharpP.natCast_mem i
+example :
+    ((1 : List Bool → ℕ) + 1 ∈ SharpP encBits ∧
+      (fun w : List Bool => 2 ^ Polynomial.X.eval (encBits w).length) *
+        (fun w => 2 ^ Polynomial.X.eval (encBits w).length) ∈ SharpP encBits) ∧
+    ((fun w : List Bool => 2 ^ Polynomial.X.eval (encBits w).length) ^ 3 ∈ SharpP encBits ∧
+      ∑ i ∈ Finset.range 4, ((i : ℕ) : List Bool → ℕ) ∈ SharpP encBits) ∧
+    -((3 : ℕ) : List Bool → ℤ) ∈ GapP encBits :=
+  ⟨⟨SharpP.add_one_mem SharpP.one_mem,
+    SharpP.mul_mem (SharpP.two_pow_mem _) (SharpP.two_pow_mem _)⟩,
+   ⟨SharpP.pow_mem (SharpP.two_pow_mem _) 3,
+    SharpP.sum_mem _ fun i _ => SharpP.natCast_mem i⟩,
+   GapP.neg_mem (natCast_mem (GapP.subring encBits) 3)⟩
 
 /-- The complementary count of the constant function `1`. -/
 example : ∃ p : Polynomial ℕ,
@@ -82,32 +82,22 @@ example : (fun _ : List Bool => (1 : ℤ)) * (fun _ => (1 : ℤ)) - (fun _ => (1
     simpa using SharpP.natCast_mem_GapP (SharpP.one_mem (enc := encBits))
   exact GapP.sub_mem' (GapP.mul_mem h h) h
 
-example : -((3 : ℕ) : List Bool → ℤ) ∈ GapP encBits :=
-  GapP.neg_mem (natCast_mem (GapP.subring encBits) 3)
-
 /-! ### `PP` -/
 
-/-- The non-strict majority condition is satisfiable: the constant verifier `true` accepts all of
-the single random string of length `0`. -/
-example : Set.univ ∈ PP encBits :=
-  mem_PP_iff_decidesByNonstrictMajority.2 ⟨0, fun _ => true, .const true, fun _ => by simp⟩
-
-example : ∃ g ∈ GapP encBits, ∀ w, w ∈ (Set.univ : Set (List Bool)) ↔ 0 < g w :=
-  mem_PP_iff_exists_GapP.1 (mem_PP_iff_decidesByNonstrictMajority.2
-    ⟨0, fun _ => true, .const true, fun _ => by simp⟩)
-
-/-- Through `#P`: the constant function `1` and the polynomial `0` give `2 ^ 0 < 2 * 1` on every
-instance. -/
-example : Set.univ ∈ PP encBits :=
-  mem_PP_iff_exists_SharpP.2 ⟨1, SharpP.one_mem, 0, fun _ => by simp⟩
-
-/-- `ThreeSAT` reduces to `SAT`, which is in `PP` since `NP ⊆ PP`. -/
-example : ThreeSAT ∈ PP encCNF :=
-  (CookLevin.SAT_npHard encCNF ThreeSAT ThreeSAT.mem_NP).mem_PP
-    (NP_subset_PP CookLevin.SAT_npComplete.1)
-
-example : UNSAT ∈ PP encCNF :=
-  coNP_subset_PP CookLevin.UNSAT_coNPComplete.1
+/-- The non-strict majority, `GapP`, and `#P` characterizations of `PP`, together with
+`ThreeSAT` and `UNSAT` membership in `PP`. -/
+example :
+    (Set.univ ∈ PP encBits ∧
+      (∃ g ∈ GapP encBits, ∀ w, w ∈ (Set.univ : Set (List Bool)) ↔ 0 < g w) ∧
+      Set.univ ∈ PP encBits) ∧
+    (ThreeSAT ∈ PP encCNF ∧ UNSAT ∈ PP encCNF) :=
+  have huniv : (Set.univ : Set (List Bool)) ∈ PP encBits :=
+    mem_PP_iff_decidesByNonstrictMajority.2 ⟨0, fun _ => true, .const true, fun _ => by simp⟩
+  ⟨⟨huniv, mem_PP_iff_exists_GapP.1 huniv,
+    mem_PP_iff_exists_SharpP.2 ⟨1, SharpP.one_mem, 0, fun _ => by simp⟩⟩,
+   ⟨(CookLevin.SAT_npHard encCNF ThreeSAT ThreeSAT.mem_NP).mem_PP
+      (NP_subset_PP CookLevin.SAT_npComplete.1),
+    coNP_subset_PP CookLevin.UNSAT_coNPComplete.1⟩⟩
 
 /-! ### `P`, `RP`, `coRP` and `ZPP` -/
 
@@ -115,58 +105,49 @@ example : UNSAT ∈ PP encCNF :=
 theorem headD_mem_P : {w : List Bool | w.headD false = true} ∈ P encBits :=
   ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
-example : {w : List Bool | w.headD false = true}ᶜ ∈ coNP encBits :=
-  P_subset_coNP (compl_mem_P headD_mem_P)
-
-example : {w : List Bool | w.headD false = true} ∪ {w | w.headD false = true}ᶜ ∈ RP encBits :=
-  union_mem_RP (P_subset_RP headD_mem_P) (P_subset_RP (compl_mem_P headD_mem_P))
-
-example : {w : List Bool | w.headD false = true} ∩ {w | w.headD false = true}ᶜ ∈ ZPP encBits :=
-  inter_mem_ZPP (P_subset_ZPP headD_mem_P) (P_subset_ZPP (compl_mem_P headD_mem_P))
-
-example : {w : List Bool | w.headD false = true} ∈ ZPP encBits ∩ (NP encBits ∩ coNP encBits) :=
-  ⟨P_subset_ZPP headD_mem_P, ZPP_subset_NP_inter_coNP (P_subset_ZPP headD_mem_P)⟩
-
-example : {w : List Bool | w.headD false = true} \ {w | w.headD false = true}ᶜ ∈ P encBits :=
-  diff_mem_P headD_mem_P (compl_mem_P headD_mem_P)
-
-example : {w : List Bool | w.headD false = true} ∩ {w | w.headD false = true}ᶜ ∈ BPP encBits :=
-  inter_mem_BPP (P_subset_BPP headD_mem_P) (P_subset_BPP (compl_mem_P headD_mem_P))
-
-example : {w : List Bool | w.headD false = true} ∪ {w | w.headD false = true}ᶜ ∈ BPP encBits :=
-  union_mem_BPP (P_subset_BPP headD_mem_P) (P_subset_BPP (compl_mem_P headD_mem_P))
-
-example : {w : List Bool | w.headD false = true} ∩ {w | w.headD false = true}ᶜ ∈ PSPACE encBits :=
-  inter_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE (compl_mem_P headD_mem_P))
-
-example : {w : List Bool | w.headD false = true} ∪ {w | w.headD false = true}ᶜ ∈ PSPACE encBits :=
-  union_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE (compl_mem_P headD_mem_P))
+example :
+    ({w : List Bool | w.headD false = true}ᶜ ∈ coNP encBits ∧
+      {w : List Bool | w.headD false = true} \ {w | w.headD false = true}ᶜ ∈ P encBits) ∧
+    ({w : List Bool | w.headD false = true} ∪ {w | w.headD false = true}ᶜ ∈ RP encBits ∧
+      {w : List Bool | w.headD false = true} ∩ {w | w.headD false = true}ᶜ ∈ ZPP encBits ∧
+      {w : List Bool | w.headD false = true} ∈ ZPP encBits ∩ (NP encBits ∩ coNP encBits)) ∧
+    ({w : List Bool | w.headD false = true} ∩ {w | w.headD false = true}ᶜ ∈ BPP encBits ∧
+      {w : List Bool | w.headD false = true} ∪ {w | w.headD false = true}ᶜ ∈ BPP encBits) ∧
+    ({w : List Bool | w.headD false = true} ∩ {w | w.headD false = true}ᶜ ∈ PSPACE encBits ∧
+      {w : List Bool | w.headD false = true} ∪ {w | w.headD false = true}ᶜ ∈ PSPACE encBits) :=
+  have hc := compl_mem_P headD_mem_P
+  ⟨⟨P_subset_coNP hc, diff_mem_P headD_mem_P hc⟩,
+   ⟨union_mem_RP (P_subset_RP headD_mem_P) (P_subset_RP hc),
+    inter_mem_ZPP (P_subset_ZPP headD_mem_P) (P_subset_ZPP hc),
+    ⟨P_subset_ZPP headD_mem_P, ZPP_subset_NP_inter_coNP (P_subset_ZPP headD_mem_P)⟩⟩,
+   ⟨inter_mem_BPP (P_subset_BPP headD_mem_P) (P_subset_BPP hc),
+    union_mem_BPP (P_subset_BPP headD_mem_P) (P_subset_BPP hc)⟩,
+   ⟨inter_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE hc),
+    union_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE hc)⟩⟩
 
 /-! ### `SAT` and `P` -/
 
-example : SAT ∈ P encCNF ↔ ∀ {β : Type} (e : β ↪ List Bool), P e = NP e :=
-  SAT_mem_P_iff
-
-example : ExactThreeSAT ∈ P encCNF ↔ SAT ∈ P encCNF :=
-  ExactThreeSAT_npComplete.mem_P_iff_mem_P CookLevin.SAT_npComplete
-
-example : UNSAT ∈ P encCNF ↔ ThreeSAT ∈ P encCNF :=
-  UNSAT_mem_P_iff_SAT_mem_P.trans ThreeSAT_mem_P_iff_SAT_mem_P.symm
-
-/-- `SAT ∈ P` collapses `BPP` to `P`. -/
-example (h : SAT ∈ P encCNF) : BPP encBits = P encBits :=
-  BPP_eq_P_of_NP_subset_P fun e => (SAT_mem_P_iff.1 h e).symm.subset
+example :
+    (ExactThreeSAT ∈ P encCNF ↔ SAT ∈ P encCNF) ∧
+    (UNSAT ∈ P encCNF ↔ ThreeSAT ∈ P encCNF) ∧
+    (SAT ∈ P encCNF → BPP encBits = P encBits) :=
+  ⟨ExactThreeSAT_npComplete.mem_P_iff_mem_P CookLevin.SAT_npComplete,
+   UNSAT_mem_P_iff_SAT_mem_P.trans ThreeSAT_mem_P_iff_SAT_mem_P.symm,
+   fun h => BPP_eq_P_of_NP_subset_P fun e => (SAT_mem_P_iff.1 h e).symm.subset⟩
 
 /-! ### `PCP` without randomness -/
 
-example : {w : List Bool | w.headD false = true} ∈ PCP (fun _ => 0) (fun _ => 0) encBits :=
-  PCP_zero_zero.symm ▸ headD_mem_P
+example :
+    {w : List Bool | w.headD false = true} ∈ PCP (fun _ => 0) (fun _ => 0) encBits ∧
+    ∃ k : ℕ, SAT ∈ PCP (fun _ => 0) (fun n => (n + 1) ^ k) encCNF :=
+  ⟨PCP_zero_zero.symm ▸ headD_mem_P,
+   mem_NP_iff_exists_PCP_zero.1 CookLevin.SAT_npComplete.1⟩
 
-example : PCPVerifier.answers [true, false, true] (List.range 3) = [true, false, true] :=
-  PCPVerifier.answers_range_length _
-
-example : ∃ k : ℕ, SAT ∈ PCP (fun _ => 0) (fun n => (n + 1) ^ k) encCNF :=
-  mem_NP_iff_exists_PCP_zero.1 CookLevin.SAT_npComplete.1
+example :
+    (PCPVerifier.answers [true, false, true] (List.range [true, false, true].length)).count true =
+      2 := by
+  rw [PCPVerifier.answers_range_length]
+  decide
 
 /-! ### Exact 3SAT -/
 

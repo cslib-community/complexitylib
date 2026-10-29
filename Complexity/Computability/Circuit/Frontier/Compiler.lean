@@ -58,6 +58,9 @@ This file proves the graph-theoretic and counting properties of `Compiler.graph 
   inside a closed set of vertices.
 * `Cslib.Circuits.Frontier.Compiler.cycleRank_add_ncard_read_le`: the cycle rank and the number
   of inputs read add up to at most `(r - 1) s + 1`, where `s` counts the inner gates.
+* `Cslib.Circuits.Frontier.Compiler.card_signal_le_innerSize`,
+  `Cslib.Circuits.Frontier.Compiler.card_signal_le`: there are at most `r s + m` (hence at most
+  `r * c.size + m`) reachable signals.
 * `Cslib.Circuits.Frontier.Compiler.card_vertex_le`: there are at most `2 r s + 3 m` vertices.
 
 ## References
@@ -346,6 +349,21 @@ private theorem card_signal_le_card_consumer : Nat.card (Signal c) ≤ Nat.card 
   rw [← Nat.card_congr (junctionEquiv c)]
   exact Nat.card_le_card_of_injective (fun w => ⟨w, ⟨0, fanout_pos w⟩⟩) fun w w' h =>
     congrArg Sigma.fst h
+
+/-- **The number of signals** is at most `r s + m` for fan-in at most `r`, where `s` counts the
+inner gates and `m` the outputs. -/
+theorem card_signal_le_innerSize {r : ℕ} (hfan : c.FanInAtMost r) :
+    Nat.card (Signal c) ≤ r * c.innerSize + m := by
+  have hslot : Nat.card (Slot c) ≤ r * c.innerSize := by
+    have h := (card_slot_le hfan univ).trans (Nat.mul_le_mul_left r (card_innerGateIn_le univ))
+    rwa [Nat.card_congr (Equiv.subtypeUnivEquiv fun t => mem_univ (owner (.inl t)))] at h
+  exact card_signal_le_card_consumer.trans (card_consumer ▸ Nat.add_le_add_right hslot m)
+
+/-- **The number of signals** is at most `r * c.size + m` for fan-in at most `r`. -/
+theorem card_signal_le {r : ℕ} (hfan : c.FanInAtMost r) :
+    Nat.card (Signal c) ≤ r * c.size + m :=
+  (card_signal_le_innerSize hfan).trans
+    (Nat.add_le_add_right (Nat.mul_le_mul_left r c.innerSize_le_size) m)
 
 /-! ### Counting inside a closed set of vertices
 

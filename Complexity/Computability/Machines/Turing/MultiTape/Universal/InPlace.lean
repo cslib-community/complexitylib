@@ -6,8 +6,8 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133; `try` steps that the
--- unused-tactic linter flags are dropped
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122; `try` steps
+-- that the unused-tactic linter flags are dropped
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Translate
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
@@ -15,6 +15,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Space
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # The universal machine, reading its input in place
@@ -372,10 +373,10 @@ public lemma foldNext_inO : ComputableTidilyInO foldNext (encPair eSt encBool) e
   have hr := hn.fst'
   have hk := hn.snd'.fst'
   have hcur := hn.snd'.snd'
-  have hk1 := (eq encNat).comp (hk.prod (const (encMid := encNat) 1))
+  have hk1 := (ComputableInO.eq encNat).tidy.comp (hk.prod (const (encMid := encNat) 1))
   have hsucc := (of_linear (.of_cons_true (f := (· + 1)) (encIn := encUnary) (encOut := encUnary)
     fun n => rfl)).comp_linear hcur
-  have hkpred := natPred.comp hk
+  have hkpred := ComputableInO.natPred.tidy.comp hk
   have hdigit := hdc.prod (hr.prod (hk.prod (hk1.ite hsucc hcur)))
   have hend := hdc.prod (hr.prod (hkpred.prod hcur))
   refine ((hb.ite hdigit hend).of_enc_eq (g := foldNext) fun p => ?_).mono 100 (fun p => ?_)
@@ -410,12 +411,20 @@ lemma wTime_le (s : St) : wTime (s.1, symAt s) ≤ 9 * ((eSt s).length + 1) ^ 3 
   have hl : s.1.2.workTapes.length + s.1.1.table.length + 1 ≤ (eSt s).length + 1 := by
     simp only [length_encPair, eCfg_apply, eDesc_apply] at ht hd ⊢
     omega
+  have hdesc : (eDesc s.1.1).length ≤ (eSt s).length := by
+    simp only [length_encPair]
+    omega
+  have hpos : (encNat s.1.2.inputPos).length ≤ (eSt s).length := by
+    simp only [length_encPair, eCfg_apply]
+    omega
+  have hproduct : (s.1.2.workTapes.length + s.1.1.table.length + 1) *
+      ((eDesc s.1.1).length + 1) * ((eWCtx (s.1, symAt s)).length + 1) ≤
+        ((eSt s).length + 1) * ((eSt s).length + 1) * ((eSt s).length + 2) :=
+    Nat.mul_le_mul (Nat.mul_le_mul hl (by omega)) (by omega)
+  have hdigits := Nat.pow_le_pow_left (Nat.succ_le_succ hpos) 2
   unfold wTime
-  calc _ ≤ ((eSt s).length + 1) * ((eSt s).length + 2) ^ 2 :=
-        Nat.mul_le_mul hl (Nat.pow_le_pow_left (by omega) 2)
-    _ ≤ ((eSt s).length + 1) * (4 * ((eSt s).length + 1) ^ 2) :=
-        Nat.mul_le_mul_left _ (by nlinarith)
-    _ ≤ 9 * ((eSt s).length + 1) ^ 3 := by ring_nf; omega
+  dsimp only at hproduct hdigits ⊢
+  nlinarith [Nat.le_self_pow (show 2 ≠ 0 by decide) ((eSt s).length + 1)]
 
 /-- The step at the end of a pass. -/
 public lemma stepAt_inO : ComputableTidilyInO stepAt eSt (encPair eCfg eSym)
@@ -430,7 +439,8 @@ public lemma stepAt_inO : ComputableTidilyInO stepAt eSt (encPair eCfg eSym)
   have hcur := hn.snd'.snd'
   have hor := (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
     (encMid := encBool) fun b : Bool × Bool => b.1 || !b.2).inO_one.comp_linear
-      ((natIsZero.comp_linear hpos).prod (natIsZero.comp_linear hk))
+      ((ComputableInO.natIsZero.tidy.comp_linear hpos).prod
+        (ComputableInO.natIsZero.tidy.comp_linear hk))
   have hsym : ComputableTidilyInO symAt eSt eSym _ _ :=
     (hor.ite (const none) ((ComputableTidilyInDegree.optionSome (enc₁ := encUnary)
       (enc := eSym)).inO_one.comp_linear hcur)).of_enc_eq fun s => by
@@ -438,8 +448,8 @@ public lemma stepAt_inO : ComputableTidilyInO stepAt eSt (encPair eCfg eSym)
         split_ifs <;> simp_all
   have hstep := stepWith_inO.comp (hdc.prod hsym)
   have hidle := hc.prod (const (encMid := eSym) none)
-  refine (((natIsZero.comp_linear hr).ite hidle hstep).of_enc_eq (g := stepAt) fun s => ?_).mono 100
-    (fun s => ?_) fun s => ?_
+  refine (((ComputableInO.natIsZero.tidy.comp_linear hr).ite hidle hstep).of_enc_eq (g := stepAt)
+    fun s => ?_).mono 100 (fun s => ?_) fun s => ?_
   · simp only [stepAt, Function.comp_apply]
     split_ifs <;> simp_all
   all_goals
@@ -465,7 +475,7 @@ public lemma foldEnd_inO : ComputableTidilyInO foldEnd eSt eSt
   have hpos := (hc.of_enc_eq (encOut := eCfgFields)
     (g := fun s : St => ((stepAt s).1.state, (stepAt s).1.inputPos, (stepAt s).1.workTapes))
     fun _ => rfl).snd'.fst'
-  have hr := natPred.comp hn.fst'
+  have hr := ComputableInO.natPred.tidy.comp hn.fst'
   refine (((hdc.fst'.prod hc).prod (hr.prod (hpos.prod (const (encMid := encUnary) 0)))).of_enc_eq
     (g := foldEnd) fun s => rfl).mono 100 (fun s => ?_) fun s => ?_
   all_goals
@@ -503,7 +513,7 @@ public lemma foldCont_inO : ComputableTidilyInO foldCont eSt encBool
     (fun s => ((eSt s).length + 1) ^ 3) fun s => (eSt s).length + 1 := by
   have hr := (snd (encPair eDesc eCfg) (encPair encNat (encPair encNat encUnary))).fst'
   refine (((ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
-    fun b : Bool => !b).inO_one.comp_linear (natIsZero.comp_linear hr)).of_enc_eq
+    fun b : Bool => !b).inO_one.comp_linear (ComputableInO.natIsZero.tidy.comp_linear hr)).of_enc_eq
     (g := foldCont) fun s => by simp [foldCont]).mono 1 (fun s => ?_) fun s => ?_ <;>
   · have hL : (eSt s).length + 1 ≤ ((eSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
     have : (encNat s.2.1).length ≤ (eSt s).length := by simp only [length_encPair]; omega
@@ -809,7 +819,8 @@ the number of steps, plus the largest symbol of the input. -/
 public theorem stateSpace_desc {k : ℕ} {Symbol S : Type} [Fintype S] [Fintype Symbol]
     (eS : S ↪ ℕ) (eY : Symbol ↪ ℕ) (tm : MultiTapeTM k Symbol S) (x : List Symbol) (t : ℕ) :
     stateSpace (desc eS eY tm) (x.map eY) t ≤
-      60 * (descLen (desc eS eY tm) + 1) * (tm.space (tm.initCfg x) t + 1) +
+      60 * (descLen (desc eS eY tm) + 1) *
+          ((MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg x) t).space + 1) +
         6 * (encNat (x.length + 1)).length + 2 * (encNat t).length + (x.map eY).foldr max 0 := by
   simpa [simSpace_desc] using stateSpace_le (desc eS eY tm) (x.map eY) t
 

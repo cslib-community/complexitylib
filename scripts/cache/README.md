@@ -26,6 +26,12 @@ CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, L
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
 complete set on every run, although `.lake` usually has most of it.
 
+The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
+about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
+not download the toolchain. On a miss, `.github/actions/install-lean` installs them with bounded
+retries and saves the entry before any Lake command runs, so it never contains the local artifact
+cache above.
+
 ## Merge-queue handoff
 
 After all required checks pass, a merge-group run packages its root `.lake/build` outputs in a
@@ -47,19 +53,39 @@ existing hard-linked cache objects. Merge groups do not publish to GCS: the norm
 `main` run remains the only public-cache writer. This makes its outputs available sooner to
 following builds while preserving the public cache's authorization boundary.
 
+- **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF` to `1` or `true`
+  (`gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
+  restoration without a commit; `scripts/cache_handoff.py` also honors `DISABLE_BUILD_HANDOFF` in
+  its environment (treating any value other than empty, `0`, `false`, or `no` as disabled) as a
+  defence in depth.
+- **Trace and warning retention.** The handoff archive preserves `.trace` files, which record both
+  the input hashes and each module's build log. Lake replays a saved log when it treats a restored
+  module as up to date, so `main` still shows the merge-group warnings and `lake build --wfail`
+  still fails on them. The producer also stages the handoff only after its own `--wfail --iofail`
+  build and tests have passed on the same commit and platform.
+- **Interrupted swap fallback.** `install_build` moves any existing `.lake/build` aside to a
+  staging backup before renaming the unpacked directory into place, rolling back if the rename
+  fails. If the process is killed between moving the previous `.lake/build` aside and completing
+  either the new rename or the rollback, `.lake/build` is absent (with the original outputs
+  retained in the temporary staging directory) and the subsequent `lake build` safely recompiles
+  from source and the local artifact cache.
+
 ## Automatic restoration
 
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
 check that falls back to all six gates does not download twice. Bare `lake` commands do not
-bootstrap. Before using Lean MCP diagnostics or another operation that can elaborate/build, run:
+bootstrap. Before using Lean MCP diagnostics or another operation that can elaborate/build in a
+cold checkout, restore available outputs with:
 
 ```bash
 scripts/cache/ensure.sh
 ```
 
-The instruction in `AGENTS.md` applies to every agent client. MCP's
-`lean_build(fetch_cache=true)` only fetches Mathlib's cache, so it does not replace this command.
+This guidance applies to every agent client. Retry for missing outputs or new toolchain/dependency
+inputs; a new commit or branch switch alone does not require a manual bootstrap when outputs are
+warm. MCP's `lean_build(fetch_cache=true)` only fetches Mathlib's cache, so it does not replace
+Complexitylib cache restoration.
 
 The bootstrap records a completed **attempt**, not a successful cache hit, in
 `.lake/cache-bootstrap/attempt.json`. For ten minutes it skips another attempt with the same
@@ -73,7 +99,9 @@ scripts/cache/ensure.sh --refresh             # retry now, e.g. after clearing c
 COMPLEXITYLIB_CACHE_AUTO=0 scripts/build.sh    # skip automatic downloads deliberately
 ```
 
-The opt-out also applies to `scripts/check.sh`, `scripts/worktree.sh` and direct bootstrap calls.
+For warm local builds, the opt-out avoids unnecessary remote attempts without disabling Lake's
+normal source/input checks. It also applies to `scripts/check.sh`, `scripts/worktree.sh` and direct
+bootstrap calls.
 It leaves existing build outputs and Lake's local cache in place. `scripts/cache/get.sh` remains
 the explicit, unstamped fetch command. Cache misses and download failures are optional: builds
 compile what is missing, and the bootstrap never claims that all requested artifacts were

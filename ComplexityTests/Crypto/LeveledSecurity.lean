@@ -118,55 +118,74 @@ private theorem encrypt_ppt : IsPPTOn (encPair encUnary (encPair encBits encBool
   dsimp only [fixture]
   ppt
 
-@[fun_prop]
 private theorem stateBit_poly : ComputableInPolyTime stateBit encBits encBool := by
-  have hcontext := publicKeyDecoder.computableInPolyTime.tidy
+  have hcontext := publicKeyDecoder.computableInPolyTime
   dsimp only [encPublicKey] at hcontext
-  have hpk := (ComputableTidilyInPolyTime.listGetD
+  have hpk := (ComputableInPolyTime.listGetD
     (encA := encBits) (encL := encList encBits) []).comp
-      (hcontext.fst'.prod (ComputableTidilyInPolyTime.const 0))
-  have hfirst := (ComputableTidilyInPolyTime.bitsGetD false).comp
-    (hpk.prod (ComputableTidilyInPolyTime.const 0))
-  have hlink := (ComputableTidilyInPolyTime.listGetD
+      (hcontext.fst'.prod (ComputableInPolyTime.const 0))
+  have hfirst := (ComputableInPolyTime.bitsGetD false).comp
+    (hpk.prod (ComputableInPolyTime.const 0))
+  have hlink := (ComputableInPolyTime.listGetD
     (encA := encList encBits) (encL := encList (encList encBits)) []).comp
-      (hcontext.snd'.prod (ComputableTidilyInPolyTime.const 0))
-  have hct := (ComputableTidilyInPolyTime.listGetD
+      (hcontext.snd'.prod (ComputableInPolyTime.const 0))
+  have hct := (ComputableInPolyTime.listGetD
     (encA := encBits) (encL := encList encBits) []).comp
-      (hlink.prod (ComputableTidilyInPolyTime.const 1))
-  have hnonce := (ComputableTidilyInPolyTime.bitsGetD false).comp
-    (hct.prod (ComputableTidilyInPolyTime.const 2))
+      (hlink.prod (ComputableInPolyTime.const 1))
+  have hnonce := (ComputableInPolyTime.bitsGetD false).comp
+    (hct.prod (ComputableInPolyTime.const 2))
   unfold stateBit
   simpa only [Function.comp_def] using
-    ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.bool_xor.comp (hfirst.prod hnonce))
+    ComputableInPolyTime.bool_xor.comp (hfirst.prod hnonce)
+
+attribute [local fun_prop] stateBit_poly
 
 private theorem adversary_ppt : adversary.IsPPT := by
-  have hstate := stateBit_poly.tidy
   constructor <;> dsimp only [adversary] <;> ppt
 
 -- Both stages charge the full artifact and saved word. A nonconstant family is still uniform.
 example : (zeroLinkAdversary fixture (fun _ => 0) adversary).IsPPT :=
-  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (.of_tidy (by fun_prop))
+  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (by fun_prop)
 
 example : (zeroLinkAdversary fixture (fun n => n + 2) adversary).IsPPT :=
-  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (.of_tidy (by fun_prop))
+  isPPT_zeroLinkAdversary encrypt_ppt adversary_ppt keyGen_ppt (by fun_prop)
+
+example : (leveledAdversary fixture (fun n => 2 * (n + 1)) (fun _ => 2) adversary).IsPPT :=
+  isPPT_leveledAdversary encrypt_ppt adversary_ppt keyGen_ppt (by fun_prop) (by fun_prop)
+
+example (n : ℕ) :
+    Game.advantage
+      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
+        adversary false n))
+      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
+        adversary true n)) =
+    4 * (dyadicSize (2 * 1) : NNReal) * dyadicSize 2 *
+      Game.advantage
+        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) false n))
+        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) true n)) :=
+  advantage_game_eq_leveledAdversary fixture (fun _ => 1) (fun _ => 2) adversary n 2
+    (secret_width n) le_rfl
+
+example (n : ℕ) :
+    Game.advantage
+      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
+        adversary false n))
+      (ProbComp.eval (Encryption.game (fun n => keyGen fixture n 1) (encrypt fixture)
+        adversary true n)) ≤
+    16 * (2 * (1 : ℕ) + 1 : NNReal) * ((2 : ℕ) + 1) *
+      Game.advantage
+        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) false n))
+        (ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+          (leveledAdversary fixture (fun _ => 2 * 1) (fun _ => 2) adversary) true n)) :=
+  advantage_game_le_mul_leveledAdversary fixture (fun _ => 1) (fun _ => 2) adversary n 2
+    (secret_width n) le_rfl
 
 example (bit : Bool) : IsPPTOn (encPair encUnary encPublicKey) encBool
     (fun p => publicKeyGame fixture adversary bit p.1 p.2) :=
   isPPTOn_publicKeyGame encrypt_ppt adversary_ppt bit
-
--- Scope guard: no Scheme.Correct, Bootstrappable, FixedWidth or width-runtime premise is needed.
--- The decryption family identifies the actual scheme whose security is proved.
-example {E : Scheme} (hsecure : Encryption.INDCPA E.keyGen E.encrypt)
-    (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => E.encrypt p.1 p.2.1 p.2.2))
-    {width budget secretWidth ciphertextWidth : ℕ → ℕ}
-    (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
-      keys.2.length = width n)
-    (hbudget : ComputableInPolyTime budget encUnary encUnary)
-    (D : DecryptionCircuits E secretWidth ciphertextWidth) :
-    Encryption.INDCPA (scheme D budget).keyGen (scheme D budget).encrypt :=
-  indCPA_scheme hsecure hkeyGen hencrypt hwidth hbudget D
 
 /-- The deliberately degenerate encryption algorithm discards its message completely. -/
 private noncomputable def forgetful : Scheme :=

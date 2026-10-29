@@ -256,52 +256,50 @@ theorem GapP.generalWeightedReplay_mem {k : ℕ} {Control Operation : Type}
     (hD : D ∈ GapP enc)
     (hH : H ∈ GapP (encPair enc encBits)) :
     generalWeightedReplay machine input T D H ∈ GapP enc := by
-  have hinput := hinput.tidy
-  have hT := hT.tidy
   let _ := Fintype.ofFinite Operation
   let cfg : (α × List Bool) × ℕ → FiniteConfig k Bool Control Operation :=
     fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
-  have hcfg : ComputableTidilyInPolyTime cfg
+  have hcfg : ComputableInPolyTime cfg
       (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.replayPrefix_pt.comp (g := fun x : (α × List Bool) × ℕ =>
+    machine.computableInPolyTime_replayPrefix.comp (g := fun x : (α × List Bool) × ℕ =>
       ((input x.1.1, x.1.2), x.2)) (by fun_prop)
-  have hquery : ComputableTidilyInPolyTime
+  have hquery : ComputableInPolyTime
       (fun x => (machine.pendingQuery (cfg x)).isSome)
       (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableTidilyInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp hcfg)
-  have hrequest : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.of_finite Option.isSome).comp
+      (machine.pendingQuery_pt.computableInPolyTime.comp hcfg)
+  have hrequest : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => (x.1.1, machine.pendingRequest (cfg x)))
       (encPair (encPair enc encBits) encUnary) (encPair enc encBits) := by
-    have hinstance : ComputableTidilyInPolyTime
+    have hinstance : ComputableInPolyTime
         (fun x : (α × List Bool) × ℕ => x.1.1)
         (encPair (encPair enc encBits) encUnary) enc := by fun_prop
-    exact hinstance.prod (machine.pendingRequest_pt.comp hcfg)
+    exact hinstance.prod (machine.pendingRequest_pt.computableInPolyTime.comp hcfg)
   let p : (α × List Bool) × ℕ → ℤ := fun x =>
     if (machine.pendingQuery (cfg x)).isSome then H (x.1.1, machine.pendingRequest (cfg x)) else 0
   have hp : p ∈ GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.ite_mem (.of_tidy hquery) (GapP.comp_mem hH (.of_tidy hrequest)) GapP.zero_mem
+    GapP.ite_mem hquery (GapP.comp_mem hH hrequest) GapP.zero_mem
   have hdenom : (fun x : (α × List Bool) × ℕ => D x.1.1) ∈
       GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.comp_mem hD (.of_tidy (by fun_prop))
-  have hbit : ComputableTidilyInPolyTime
+    GapP.comp_mem hD (by fun_prop)
+  have hbit : ComputableInPolyTime
       (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  have hfactor := GapP.ite_mem (.of_tidy hbit) hp (GapP.sub_mem' hdenom hp)
+  have hfactor := GapP.ite_mem hbit hp (GapP.sub_mem' hdenom hp)
   have hprod := GapP.prod_range_mem hfactor
-    (r := fun x : α × List Bool => x.2.length) (.of_tidy (by fun_prop))
-  have hout : ComputableTidilyInPolyTime
+    (r := fun x : α × List Bool => x.2.length) (by fun_prop)
+  have hout : ComputableInPolyTime
       (fun x : α × List Bool => (machine.replayOutput (input x.1) x.2).headD false)
       (encPair enc encBits) encBool := by
-    have hreindex : ComputableTidilyInPolyTime
+    have hreindex : ComputableInPolyTime
         (fun x : α × List Bool => (input x.1, x.2))
         (encPair enc encBits) (encPair encBits encBits) := by fun_prop
-    exact (ComputableTidilyInPolyTime.headD false).comp
-      (machine.replayOutput_pt.comp hreindex)
+    exact (ComputableInPolyTime.headD false).comp
+      (machine.computableInPolyTime_replayOutput.comp hreindex)
   have hmask : (fun x : α × List Bool =>
       if (machine.replayOutput (input x.1) x.2).headD false then (1 : ℤ) else 0) ∈
-      GapP (encPair enc encBits) := GapP.ite_mem (.of_tidy hout) GapP.one_mem GapP.zero_mem
-  have hsum := GapP.sum_bits_mem (GapP.mul_mem hprod hmask) (.of_tidy hT)
+      GapP (encPair enc encBits) := GapP.ite_mem hout GapP.one_mem GapP.zero_mem
+  have hsum := GapP.sum_bits_mem (GapP.mul_mem hprod hmask) hT
   convert hsum using 1
   funext a
   rw [generalWeightedReplay, acceptWeight_eq_sum]
@@ -382,22 +380,22 @@ private theorem sharpPWithOracle_mem_GapP_of_mem_SPP (hA : A ∈ SPP encBits)
     Probability.IsOraclePPTOn.exists_fin_run_pure_false hprogram
   let r : α → ℕ := fun a => p.eval (enc a).length
   let T : α → ℕ := fun a => c₀ * (2 * (enc a).length + 1 + r a + 1) ^ d₀
-  have hr : ComputableTidilyInPolyTime r enc encUnary := by dsimp [r]; fun_prop
-  have hT : ComputableTidilyInPolyTime T enc encUnary := by dsimp [T]; fun_prop
+  have hr : ComputableInPolyTime r enc encUnary := by dsimp [r]; fun_prop
+  have hT : ComputableInPolyTime T enc encUnary := by dsimp [T]; fun_prop
   let input : α × List Bool → List Bool := encPair enc encBits
   let T' : α × List Bool → ℕ := fun x => T x.1
   let D' : α × List Bool → ℤ := fun _ => 1
   let H' : (α × List Bool) × List Bool → ℤ := fun x => g x.2
   let F := generalWeightedReplay machine input T' D' H'
-  have hinput_pt : ComputableTidilyInPolyTime input (encPair enc encBits) encBits := by
+  have hinput_pt : ComputableInPolyTime input (encPair enc encBits) encBits := by
     dsimp [input]; fun_prop
-  have hT'_pt : ComputableTidilyInPolyTime T' (encPair enc encBits) encUnary := by
+  have hT'_pt : ComputableInPolyTime T' (encPair enc encBits) encUnary := by
     dsimp [T']; fun_prop
   have hF : F ∈ GapP (encPair enc encBits) :=
-    GapP.generalWeightedReplay_mem machine hinput_pt.computableInPolyTime
-      hT'_pt.computableInPolyTime GapP.one_mem (GapP.comp_mem hg (.of_tidy (by fun_prop)))
+    GapP.generalWeightedReplay_mem machine hinput_pt
+      hT'_pt GapP.one_mem (GapP.comp_mem hg (by fun_prop))
   have hsum : (fun a => ∑ w : Fin (r a) → Bool, F (a, List.ofFn w)) ∈ GapP enc :=
-    GapP.sum_bits_mem hF (.of_tidy hr)
+    GapP.sum_bits_mem hF hr
   convert hsum using 1
   funext a
   have hF_eval (w : Fin (r a) → Bool) :
@@ -463,7 +461,7 @@ theorem PPWithOracle_eq_PP_of_mem_SPP (hA : A ∈ SPP encBits) (enc : α ↪ Lis
 
 private theorem exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP (hA : A ∈ LWPP encBits)
     {c : α → ℕ} (hc : c ∈ SharpPWithOracle A enc) :
-    ∃ S : ℕ → ℤ, ComputableTidilyInPolyTime S encUnary encIntBin ∧
+    ∃ S : ℕ → ℤ, ComputableInPolyTime S encUnary encIntBin ∧
       (∀ n, S n ≠ 0) ∧ (fun a => S (enc a).length * (c a : ℤ)) ∈ GapP enc := by
   obtain ⟨g, hg, f, hf, hfn, hrange, hmem⟩ := mem_LWPP.mp hA
   have hg_eq (w : List Bool) : g w = open Classical in if w ∈ A then f w.length else 0 := by
@@ -477,54 +475,56 @@ private theorem exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP (hA : A ∈ 
   let r : α → ℕ := fun a => p.eval (enc a).length
   let τ : ℕ → ℕ := fun n => c₀ * (2 * n + 1 + p.eval n + 1) ^ d₀
   let T : α → ℕ := fun a => τ (enc a).length
-  have hr : ComputableTidilyInPolyTime r enc encUnary := by dsimp [r]; fun_prop
-  have hτ : ComputableTidilyInPolyTime τ encUnary encUnary := by dsimp [τ]; fun_prop
-  have hT : ComputableTidilyInPolyTime T enc encUnary := by dsimp [T]; fun_prop
+  have hr : ComputableInPolyTime r enc encUnary := by dsimp [r]; fun_prop
+  have hτ : ComputableInPolyTime τ encUnary encUnary := by dsimp [τ]; fun_prop
+  have hT : ComputableInPolyTime T enc encUnary := by dsimp [T]; fun_prop
   let bound : ℕ → ℕ := fun n => τ n + 1
-  have hbound : ComputableTidilyInPolyTime bound encUnary encUnary := by dsimp [bound]; fun_prop
+  have hbound : ComputableInPolyTime bound encUnary encUnary := by dsimp [bound]; fun_prop
   let D : ℕ → ℤ := fun n => ((List.range (bound n)).map f).prod
-  have hD : ComputableTidilyInPolyTime D encUnary encIntBin :=
-    ComputableTidilyInPolyTime.intBin_prod.comp
-      ((ComputableTidilyInPolyTime.map hf.tidy).comp
-        (ComputableTidilyInPolyTime.range.comp hbound))
+  have hD : ComputableInPolyTime D encUnary encIntBin :=
+    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
+      ((ComputableInPolyTime.map hf).comp
+        (ComputableInPolyTime.range.comp hbound))
   have hDn (n : ℕ) : D n ≠ 0 := List.prod_ne_zero (by simp [hfn])
   let S : ℕ → ℤ := fun n => D n ^ τ n
-  have hS : ComputableTidilyInPolyTime S encUnary encIntBin := hD.intBin_pow' hτ
+  -- elaborated without the expected type, which would unfold `S`
+  have hS : ComputableInPolyTime S encUnary encIntBin :=
+    ((ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_pow).comp (hD.prod hτ) :)
   have hSn (n : ℕ) : S n ≠ 0 := pow_ne_zero (τ n) (hDn n)
   let K : α × List Bool → ℤ := fun x =>
     (((List.range (bound (enc x.1).length)).filter (fun i => decide (i ≠ x.2.length))).map f).prod
-  have hlist : ComputableTidilyInPolyTime
+  have hlist : ComputableInPolyTime
       (fun x : α × List Bool => List.range (bound (enc x.1).length))
       (encPair enc encBits) (encList encUnary) :=
-    ((ComputableTidilyInPolyTime.range.comp hbound).comp (.encoding_length enc)).comp
+    ((ComputableInPolyTime.range.comp hbound).comp (.encoding_length enc)).comp
       (.fst enc encBits)
-  have htest : ComputableTidilyInPolyTime
+  have htest : ComputableInPolyTime
       (fun y : (α × List Bool) × ℕ => decide (y.2 ≠ y.1.2.length))
       (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  have hK : ComputableTidilyInPolyTime K (encPair enc encBits) encIntBin :=
-    ComputableTidilyInPolyTime.intBin_prod.comp
-      ((ComputableTidilyInPolyTime.map hf.tidy).comp
-        (ComputableTidilyInPolyTime.filterWithInput hlist htest))
+  have hK : ComputableInPolyTime K (encPair enc encBits) encIntBin :=
+    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
+      ((ComputableInPolyTime.map hf).comp
+        (ComputableInPolyTime.filterWithInput hlist htest))
   let H : α × List Bool → ℤ := fun x => g x.2 * K x
   have hH : H ∈ GapP (encPair enc encBits) :=
-    GapP.mul_mem (GapP.comp_mem hg (.of_tidy (by fun_prop))) (mem_GapP_of_polyTime (.of_tidy hK))
+    GapP.mul_mem (GapP.comp_mem hg (by fun_prop)) (mem_GapP_of_polyTime hK)
   let input : α × List Bool → List Bool := encPair enc encBits
   let T' : α × List Bool → ℕ := fun x => T x.1
   let D' : α × List Bool → ℤ := fun x => D (enc x.1).length
   let H' : (α × List Bool) × List Bool → ℤ := fun x => H (x.1.1, x.2)
   let F := generalWeightedReplay machine input T' D' H'
-  have hinput_pt : ComputableTidilyInPolyTime input (encPair enc encBits) encBits := by
+  have hinput_pt : ComputableInPolyTime input (encPair enc encBits) encBits := by
     dsimp [input]; fun_prop
-  have hT'_pt : ComputableTidilyInPolyTime T' (encPair enc encBits) encUnary := by
+  have hT'_pt : ComputableInPolyTime T' (encPair enc encBits) encUnary := by
     dsimp [T']; fun_prop
-  have hD'_pt : ComputableTidilyInPolyTime D' (encPair enc encBits) encIntBin :=
+  have hD'_pt : ComputableInPolyTime D' (encPair enc encBits) encIntBin :=
     (hD.comp (.encoding_length enc)).comp (.fst enc encBits)
   have hF : F ∈ GapP (encPair enc encBits) :=
-    GapP.generalWeightedReplay_mem machine hinput_pt.computableInPolyTime
-      hT'_pt.computableInPolyTime (mem_GapP_of_polyTime (.of_tidy hD'_pt))
-        (GapP.comp_mem hH (.of_tidy (by fun_prop)))
+    GapP.generalWeightedReplay_mem machine hinput_pt
+      hT'_pt (mem_GapP_of_polyTime hD'_pt)
+        (GapP.comp_mem hH (by fun_prop))
   have hsum : (fun a => ∑ w : Fin (r a) → Bool, F (a, List.ofFn w)) ∈ GapP enc :=
-    GapP.sum_bits_mem hF (.of_tidy hr)
+    GapP.sum_bits_mem hF hr
   refine ⟨S, hS, hSn, ?_⟩
   convert hsum using 1
   funext a
@@ -567,12 +567,12 @@ theorem exists_mul_mem_GapP_of_mem_LWPP (hA : A ∈ LWPP encBits) {h : α → �
   obtain ⟨S₁, hS₁, hS₁n, hG₁⟩ := exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP hA hc₁
   obtain ⟨S₂, hS₂, hS₂n, hG₂⟩ := exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP hA hc₂
   let S : ℕ → ℤ := fun n => S₁ n * S₂ n
-  have hS : ComputableTidilyInPolyTime S encUnary encIntBin := hS₁.intBin_mul' hS₂
+  have hS : ComputableInPolyTime S encUnary encIntBin := hS₁.intBin_mul' hS₂
   have hS₁_gap : (fun a : α => S₁ (enc a).length) ∈ GapP enc :=
-    mem_GapP_of_polyTime (.of_tidy (hS₁.comp (.encoding_length enc)))
+    mem_GapP_of_polyTime (hS₁.comp (.encoding_length enc))
   have hS₂_gap : (fun a : α => S₂ (enc a).length) ∈ GapP enc :=
-    mem_GapP_of_polyTime (.of_tidy (hS₂.comp (.encoding_length enc)))
-  refine ⟨S, hS.computableInPolyTime, fun n => mul_ne_zero (hS₁n n) (hS₂n n), ?_⟩
+    mem_GapP_of_polyTime (hS₂.comp (.encoding_length enc))
+  refine ⟨S, hS, fun n => mul_ne_zero (hS₁n n) (hS₂n n), ?_⟩
   have hcomb := GapP.sub_mem' (GapP.mul_mem hS₂_gap hG₁) (GapP.mul_mem hS₁_gap hG₂)
   convert hcomb using 1
   funext a
@@ -589,7 +589,7 @@ theorem LWPPWithFixedTarget_eq_LWPP_of_mem_LWPP (hA : A ∈ LWPP encBits) (enc :
   rintro L ⟨g, hg, f, hf, hfn, hrange, hL⟩
   obtain ⟨S, hS, hSn, hSg⟩ := exists_mul_mem_GapP_of_mem_LWPP hA hg
   refine ⟨fun a => S (enc a).length * g a, hSg, fun n => S n * f n,
-    .of_tidy (hS.tidy.intBin_mul' hf.tidy), fun n => mul_ne_zero (hSn n) (hfn n),
+    hS.intBin_mul' hf, fun n => mul_ne_zero (hSn n) (hfn n),
     fun a => ?_, fun a => ?_⟩
   · rcases hrange a with h0 | hfa
     · exact Or.inl (by simp only [h0, mul_zero])
@@ -606,7 +606,7 @@ theorem WPPWithFixedTarget_eq_WPP_of_mem_LWPP (hA : A ∈ LWPP encBits) (enc : �
   rintro L ⟨g, hg, f, hf, hfn, hrange, hL⟩
   obtain ⟨S, hS, hSn, hSg⟩ := exists_mul_mem_GapP_of_mem_LWPP hA hg
   refine ⟨fun a => S (enc a).length * g a, hSg, fun a => S (enc a).length * f a,
-    .of_tidy ((hS.tidy.comp (.encoding_length enc)).intBin_mul' hf.tidy),
+    (hS.comp (.encoding_length enc)).intBin_mul' hf,
     fun a => mul_ne_zero (hSn (enc a).length) (hfn a), fun a => ?_, fun a => ?_⟩
   · rcases hrange a with h0 | hfa
     · exact Or.inl (by simp only [h0, mul_zero])

@@ -25,7 +25,7 @@ in which the existential player wins when the strict table, replayed from the mo
 alternating quantifiers `Cslib.Complexity.Alternation` of the polynomial hierarchy.
 
 Since replaying the strict table of a fixed finite machine is polynomial-time
-(`Turing.MultiTapeATM.computableTidilyInPolyTime_gameVerifier`), every problem in `AP` has a
+(`Turing.MultiTapeATM.computableInPolyTime_gameVerifier`), every problem in `AP` has a
 polynomial-time game verifier (`Cslib.Complexity.IsGameVerifier`): a polynomial-time `V` and a
 polynomial `p` such that `a ∈ A` exactly when the existential player wins the game of
 `2 * p (enc a).length` moves with `V (a, ·)` as the winning condition
@@ -239,12 +239,9 @@ variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
 theorem exists_isGameVerifier_of_mem_AP (h : A ∈ AP enc) :
     ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
       ComputableInPolyTime V (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
-  have this : ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool), ComputableTidilyInPolyTime V
-      (encPair enc encBits) encBool ∧ IsGameVerifier enc p V A := by
-    obtain ⟨t, ht, k, State, hfinite, atm, hdecides⟩ := h
-    obtain ⟨c, d, hle⟩ := ht.exists_le
-    exact ⟨_, atm.gameVerifier enc, atm.computableTidilyInPolyTime_gameVerifier,
-      (hdecides.mono hle).isGameVerifier⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  obtain ⟨t, ht, k, State, hfinite, atm, hdecides⟩ := h
+  obtain ⟨c, d, hle⟩ := ht.exists_le
+  exact ⟨_, atm.gameVerifier enc, atm.computableInPolyTime_gameVerifier,
+    (hdecides.mono hle).isGameVerifier⟩
 
 end Cslib.Complexity

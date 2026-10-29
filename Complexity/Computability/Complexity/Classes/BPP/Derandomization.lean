@@ -16,8 +16,9 @@ import Complexity.Computability.Circuit.Boolean.PolynomialTime
 import Complexity.Computability.Circuit.Boolean.Substitution
 import Complexity.Computability.Complexity.Classes.BPP.Derandomization.Generator
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
-import Complexity.Tactic.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 
 /-!
 # Derandomizing BPP from average-case hardness
@@ -116,7 +117,7 @@ private theorem listStrictMajority_map_enumList (ℓ : ℕ) (vote : List Bool �
 
 /-! ### The main theorem -/
 
-private theorem computableTidilyInPolyTime_nwDecider_of_params {α : Type} (enc : α ↪ List Bool)
+private theorem computableInPolyTime_nwDecider_of_params {α : Type} (enc : α ↪ List Bool)
     {V : α × List Bool → Bool} (hV : ComputableInPolyTime V (encPair enc encBits) encBool)
     {g : List Bool → Bool} {k : ℕ}
     (hg : ComputableInO g encBits encBool (fun y => 2 ^ (k * y.length))
@@ -124,12 +125,16 @@ private theorem computableTidilyInPolyTime_nwDecider_of_params {α : Type} (enc 
     (n₀ e c : ℕ) (p : Polynomial ℕ) :
     let t := fun N => n₀ + 3 + e * (Nat.log 2 N + 1)
     let b := 2 ^ (8 * c + 1)
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (nwDecider V g (fun x => (b + 1) * t (enc x).length) (fun x => c * (4 * t (enc x).length))
         (fun x => t (enc x).length - 1) (fun x => p.eval (enc x).length))
       enc encBool := by
   intro t b
-  have hlog : ComputableTidilyInPolyTime (fun x => t (enc x).length) enc encUnary := by fun_prop
+  have hlog2 : ComputableInPolyTime (fun x => Nat.log 2 (enc x).length) enc encUnary :=
+    ComputableInPolyTime.binary_log_two.comp
+      (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.encoding_length enc))
+  have hlog : ComputableInPolyTime (fun x => t (enc x).length) enc encUnary := by
+    dsimp only [t]; fun_prop
   have hbudget (d : ℕ) : PolyBounded (fun x => (enc x).length) fun x =>
       2 ^ (d * t (enc x).length) := by
     refine PolyBounded.of_polynomiallyBounded (fun x => (enc x).length)
@@ -137,18 +142,18 @@ private theorem computableTidilyInPolyTime_nwDecider_of_params {α : Type} (enc 
       ((PolynomiallyBounded.const _).mul (polynomiallyBounded_two_pow_mul_log _)) |>.mono
       fun x => le_of_eq ?_
     rw [← pow_add]; dsimp [t]; ring_nf
-  have hseedO : ComputableTidilyInPolyTime (fun x => (b + 1) * t (enc x).length) enc encUnary := by
+  have hseedO : ComputableInPolyTime (fun x => (b + 1) * t (enc x).length) enc encUnary := by
     fun_prop
-  have hblockO : ComputableTidilyInPolyTime (fun x => c * (4 * t (enc x).length)) enc encUnary := by
+  have hblockO : ComputableInPolyTime (fun x => c * (4 * t (enc x).length)) enc encUnary := by
     fun_prop
-  have hoverlapO : ComputableTidilyInPolyTime (fun x => t (enc x).length - 1) enc encUnary := by
+  have hoverlapO : ComputableInPolyTime (fun x => t (enc x).length - 1) enc encUnary := by
     fun_prop
-  have houtO : ComputableTidilyInPolyTime (fun x => p.eval (enc x).length) enc encUnary := by
+  have houtO : ComputableInPolyTime (fun x => p.eval (enc x).length) enc encUnary := by
     fun_prop
   refine (computableInPolyTime_nwDecider hV
-    (fun _ _ h => Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left k h)) hg (.of_tidy hseedO)
-    (.of_tidy hblockO) (.of_tidy hoverlapO) (.of_tidy houtO)
-    (hbudget (b + 1)) ((hbudget (k * (c * 4))).mono fun x => le_of_eq ?_)).tidy
+    (fun _ _ h => Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left k h)) hg hseedO
+    hblockO hoverlapO houtO
+    (hbudget (b + 1)) ((hbudget (k * (c * 4))).mono fun x => le_of_eq ?_))
   ring_nf
 
 private theorem nw_design_and_size_bounds {c m Tc τ : ℕ} (hc : 0 < c) (hτ3 : 3 ≤ τ)
@@ -269,7 +274,7 @@ theorem BPP_subset_P_of_isAverageCaseHard {L : Language Bool} {c : ℕ}
   refine ⟨nwDecider V g (fun x => (b + 1) * t (enc x).length)
     (fun x => c * (4 * t (enc x).length)) (fun x => t (enc x).length - 1)
     (fun x => p.eval (enc x).length),
-    .of_tidy (computableTidilyInPolyTime_nwDecider_of_params enc hV hg n₀ e c p), fun x => ?_⟩
+    (computableInPolyTime_nwDecider_of_params enc hV hg n₀ e c p), fun x => ?_⟩
   set N := (enc x).length
   set τ := t N with hτ
   set m := p.eval N

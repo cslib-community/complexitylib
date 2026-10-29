@@ -46,8 +46,9 @@ spelled out.
 
 ## Main definitions
 
-* `Cslib.Logic.Vocabulary`, `Cslib.Logic.Vocabulary.index`, `Cslib.Logic.Vocabulary.arity`: an
-  enumeration of the relation symbols of a language, with their indices and arities.
+* `Cslib.Logic.Vocabulary`, `Cslib.Logic.Vocabulary.index`, `Cslib.Logic.Vocabulary.arity`,
+  `Cslib.Logic.Vocabulary.maxArity`: an enumeration of the relation symbols of a language, with
+  their indices, arities, and a positive upper bound on their arities.
 * `Cslib.Logic.EncodedStructure`, `Cslib.Logic.encStructure`, `Cslib.Logic.Vocabulary.table`:
   inputs, their binary encoding, and relation table lookup.
 * `Cslib.Logic.Vocabulary.decode`, `Cslib.Logic.Vocabulary.decoded`,
@@ -119,6 +120,17 @@ theorem index_lt (r : Σ n, L.Relations n) : v.index r < v.count :=
 /-- The arity of the relation symbol at a position. -/
 def arity (i : Fin v.count) : ℕ :=
   (v.symbol i).1
+
+/-- One more than the largest relation arity of `v`: a positive upper bound on all relation
+arities of `v`. -/
+def maxArity : ℕ :=
+  Finset.univ.sup v.arity + 1
+
+theorem one_le_maxArity : 1 ≤ v.maxArity :=
+  Nat.le_add_left 1 _
+
+theorem arity_le_maxArity (i : Fin v.count) : v.arity i ≤ v.maxArity :=
+  (Finset.le_sup (Finset.mem_univ i)).trans (Nat.le_add_right _ 1)
 
 /-- The truth table of a relation symbol in an input, empty if the input has none. -/
 def table (a : EncodedStructure) (r : Σ n, L.Relations n) : List Bool :=

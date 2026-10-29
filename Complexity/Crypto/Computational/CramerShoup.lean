@@ -1109,7 +1109,7 @@ private noncomputable def cramerShoupCCA2InnerSK
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
           F.cramerShoupCCA2InnerB H isElem d adversary bit n α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut β
       else
-        (ProbComp.eval (F.sampleCramerShoupExp n d)).bind fun b =>
+        (ProbComp.eval (F.sampleExp n d)).bind fun b =>
           F.cramerShoupCCA2InnerB H isElem d adversary bit n α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut
             (b : ZMod (F.order d))
     else
@@ -1134,7 +1134,7 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
       ProbComp.eval
         (cca2GameOn (F.cramerShoupValid isElem d) encBits (F.cramerShoupKeyGenProb d)
           (F.cramerShoupEncryptProb H d) (F.cramerShoupDecryptOpt H isElem d) adversary bit n) =
-      (ProbComp.eval (F.sampleCramerShoupExp n (d n))).bind fun a =>
+      (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
         (ProbComp.eval (F.sampleCramerShoupSK n (d n))).bind fun sk =>
           F.cramerShoupCCA2InnerSK H isElem (d n) adversary bit n
             (a : ZMod (F.order (d n)))
@@ -1198,7 +1198,7 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
                 (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun τ₂ =>
                   F.cramerShoupCCA2InnerSK H isElem (d n) adversary bit n
                     α σ τ σ₁ τ₁ σ₂ τ₂ false) _
-    (F.advantage_bind_sampleCramerShoupExp_le n (d n) (fun α =>
+    (F.advantage_bind_sampleExp_le n (d n) (fun α =>
       (ProbComp.eval (F.sampleCramerShoupSK n (d n))).bind fun sk =>
         F.cramerShoupCCA2InnerSK H isElem (d n) adversary bit n α
           (sk.1.1 : ZMod (F.order (d n))) (sk.1.2 : ZMod (F.order (d n)))
@@ -1219,7 +1219,7 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
   refine advantage_bind_le_nnreal _ _ _ fun choiceOut => ?_
   by_cases h : (isElem (d n, choiceOut.1.1.1) && isElem (d n, choiceOut.1.1.2)) = true
   · simp only [h, ↓reduceIte, Bool.false_eq_true]
-    exact F.advantage_bind_sampleCramerShoupExp_le n (d n)
+    exact F.advantage_bind_sampleExp_le n (d n)
       (F.cramerShoupCCA2InnerB H isElem (d n) adversary bit n α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut)
   · simp only [h, Bool.false_eq_true, ↓reduceIte, Game.advantage_self, zero_le]
 

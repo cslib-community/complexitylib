@@ -8,12 +8,20 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 public import Mathlib.Tactic.FunProp
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Arithmetic
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
+import Mathlib.Data.Nat.Size
+import Mathlib.Tactic.FinCases
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 
 /-!
 # Quantitative computability rules
 
-`fun_prop (disch := lia)` composes degree certificates without replacing output-size bounds by
+`fun_prop (disch := lia)` composes degree certificates (`ComputableInDegree` and
+`ComputableTidilyInDegree`) without replacing output-size bounds by
 runtime bounds. Computation premises determine the intermediate encodings and degrees before the
 arithmetic obligations compare the resulting degrees with the requested ones. The same `fun_prop`
 interface recognizes ordinary finite-state bit folds with linear time and constant work space.
@@ -23,23 +31,26 @@ Framed-list and option rules infer the payload encoding from the representation 
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInO.comp_enc`: reuse a bit-word computation on encoded
+* `Turing.MultiTapeTM.ComputableInDegree.foldl'`,
+  `Turing.MultiTapeTM.ComputableInDegree.foldlWith`: plain left folds with degree bounds.
+* `Turing.MultiTapeTM.computableInDegree_add`, `Turing.MultiTapeTM.computableInDegree_mul`:
+  plain binary addition (quadratic) and multiplication (cubic).
+* `Turing.MultiTapeTM.ComputableInO.comp_enc`: reuse a bit-word computation on encoded
   instances, with bounds evaluated on their encodings.
-* `Turing.MultiTapeTM.ComputableTidilyInO.lengthUnary`: compute bit-word length in unary within
+* `Turing.MultiTapeTM.ComputableInO.lengthUnary`: compute bit-word length in unary within
   linear time and space.
-* `Turing.MultiTapeTM.ComputableTidilyInO.unary_two_pow`: compute `2 ^ n` from unary `n` within
+* `Turing.MultiTapeTM.ComputableInO.unary_two_pow`: compute `2 ^ n` from unary `n` within
   time `O((n + 1) * 2 ^ n)` and space `O(2 ^ n)`.
-* `Turing.MultiTapeTM.ComputableTidilyInDegree.comp_le`: composition at requested degrees.
-* `Turing.MultiTapeTM.ComputableTidilyInDegree.prod_le`: pairing at requested degrees, retaining
-  the components' output-size bounds.
-* `Turing.MultiTapeTM.ComputableTidilyInDegree.bitsReverse`,
-  `Turing.MultiTapeTM.ComputableTidilyInDegree.bitsDropLast`,
-  `Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast?ToList`,
-  `Turing.MultiTapeTM.ComputableTidilyInDegree.bitsGetLast?`,
-  `Turing.MultiTapeTM.ComputableTidilyInDegree.optionBoolToList`,
-  `Turing.MultiTapeTM.ComputableTidilyInDegree.bitsAppend`,
-  `Turing.MultiTapeTM.ComputableTidilyInDegree.unaryAdd`: degree rules for raw bit-list reversal,
-  prefix, last-bit extraction, concatenation, and unary addition.
+* `Turing.MultiTapeTM.ComputableInDegree.comp_le`, `.prod_le`, `.ite_le`: plain composition,
+  pairing, and branching at requested degrees, retaining output-size bounds.
+* `Turing.MultiTapeTM.ComputableInDegree.bitsReverse`,
+  `Turing.MultiTapeTM.ComputableInDegree.bitsDropLast`,
+  `Turing.MultiTapeTM.ComputableInDegree.bitsGetLast?ToList`,
+  `Turing.MultiTapeTM.ComputableInDegree.bitsGetLast?`,
+  `Turing.MultiTapeTM.ComputableInDegree.optionBoolToList`,
+  `Turing.MultiTapeTM.ComputableInDegree.bitsAppend`,
+  `Turing.MultiTapeTM.ComputableInDegree.unaryAdd`: plain degree rules for raw bit-list reversal,
+  prefix, last-bit extraction, concatenation, and unary addition (alongside tidy counterparts).
 
 ## References
 
@@ -52,6 +63,552 @@ Uses Christian Reitwiessner's degree calculus and streaming backend; see the sou
 namespace Turing.MultiTapeTM
 
 universe u
+
+namespace ComputableInDegree
+
+/-- A common linear time and workspace bound gives cost and output degree one. -/
+theorem of_linear {α β : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool} {f : α → β}
+    (h : ComputableInLinearTimeAndSpace f encIn encMid) :
+    ComputableInDegree f encIn encMid 1 1 :=
+  let ⟨c, hc⟩ := h
+  of_bounds ⟨c, fun _ => by simp⟩ ⟨c, fun _ => by simp⟩ hc
+
+/-- Restricting to a subtype preserves the realizing machine and both degrees. -/
+theorem restrict {α β : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool} {d e : ℕ}
+    {f : α → β} (h : ComputableInDegree f encIn encMid d e) (p : α → Prop) :
+    ComputableInDegree (f ∘ Subtype.val) ((Function.Embedding.subtype p).trans encIn) encMid d e :=
+  h.of_encIn_eq Subtype.val fun _ => rfl
+
+/-- The first component of a pair computed with given degrees. -/
+theorem fst' {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
+    {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool} {d e : ℕ}
+    {f : α → β₁ × β₂} (h : ComputableInDegree f encIn (encPair enc₁ enc₂) d e) :
+    ComputableInDegree (fun x => (f x).1) encIn enc₁ (max d e) e :=
+  ((fst enc₁ enc₂).comp h).mono
+
+/-- The second component of a pair computed with given degrees. -/
+theorem snd' {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
+    {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool} {d e : ℕ}
+    {f : α → β₁ × β₂} (h : ComputableInDegree f encIn (encPair enc₁ enc₂) d e) :
+    ComputableInDegree (fun x => (f x).2) encIn enc₂ (max d e) e :=
+  ((snd enc₁ enc₂).comp h).mono
+
+/-- `List.headD` on any list encoding. -/
+theorem headD {β : Type*} {enc₁ : β ↪ List Bool} {enc : List β ↪ List Bool}
+    [ListEncoding enc₁ enc] (d : β) :
+    ComputableInDegree (fun l => l.headD d) enc enc₁ 1 1 :=
+  of_linear (ListEncoding.headD d)
+
+/-- `List.tail` on any list encoding. -/
+theorem tail {β : Type*} {enc₁ : β ↪ List Bool} {enc : List β ↪ List Bool}
+    [ListEncoding enc₁ enc] :
+    ComputableInDegree List.tail enc enc 1 1 :=
+  of_linear (ListEncoding.tail (enc₁ := enc₁))
+
+/-- `List.isEmpty` on any list encoding. -/
+theorem isEmpty {β : Type*} {enc₁ : β ↪ List Bool} {enc : List β ↪ List Bool}
+    [ListEncoding enc₁ enc] :
+    ComputableInDegree List.isEmpty enc encBool 1 1 :=
+  of_linear (ListEncoding.isEmpty (enc₁ := enc₁))
+
+/-- **Left folds with bounds of given degrees**, compiled directly from plain degree
+certificates. -/
+theorem foldl' {γ α β : Type} {encIn : γ ↪ List Bool}
+    {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encL : List α ↪ List Bool}
+    [ListEncoding encA encL] [hS : SizedListEncoding encA encL]
+    {list : γ → List α} {init : γ → β} {step : β → α → β} {dL eL dI eI dS eS b : ℕ}
+    (hlist : ComputableInDegree list encIn encL dL eL)
+    (hinit : ComputableInDegree init encIn encB dI eI)
+    (hstep : ComputableInDegree (fun p : β × α => step p.1 p.2) (encPair encB encA) encB dS eS)
+    {B : γ → ℕ} (hB : DegreeBounded (fun x => (encIn x).length) B b)
+    (hstates : ∀ x, ∀ i ≤ (list x).length,
+      (encB (((list x).take i).foldl step (init x))).length ≤ B x) :
+    ComputableInDegree (fun x => (list x).foldl step (init x)) encIn encB
+      (max (max dL dI) (eL + max 1 dS * max b eL)) b := by
+  have hl := hlist.2
+  obtain ⟨t₁, s₁, ht₁, hs₁, kl, Ql, _, tml, h₁⟩ := Internal.NormalForm.degree hlist
+  obtain ⟨t₂, s₂, ht₂, hs₂, ki, Qi, _, tmi, h₂⟩ := Internal.NormalForm.degree hinit
+  obtain ⟨tS, sS, ⟨ct, htS⟩, ⟨cs, hsS⟩, ks, Qs, _, tms, hS'⟩ := Internal.NormalForm.degree hstep
+  set a := max b eL
+  set D := max 1 dS * a
+  have haMax : DegreeBounded (fun x => (encIn x).length)
+      (fun x => 2 * B x + 1 + (encL (list x)).length) a :=
+    ((hB.smul 2).add_const 1).add_max hl
+  have hlMax : DegreeBounded (fun x => (encIn x).length)
+      (fun x => 2 * (encL (list x)).length + 1 + B x) a :=
+    ((hl.mono_deg (le_max_right _ _)).smul 2 |>.add_const 1).add (hB.mono_deg (le_max_left _ _))
+  have hround {c : ℕ} : DegreeBounded (fun x => (encIn x).length)
+      (fun x => c * (2 * B x + 1 + (encL (list x)).length + 1) ^ dS) D :=
+    (DegreeBounded.comp (size' := id) (v := fun n => c * (n + 1) ^ dS) ⟨c, fun _ => le_rfl⟩
+      haMax).mono_deg (by rw [Nat.mul_comm]; exact Nat.mul_le_mul_right _ (le_max_right _ _))
+  have hargs : ∀ x i (hi : i < (list x).length),
+      (encPair encB encA (((list x).take i).foldl step (init x), (list x)[i])).length ≤
+        2 * B x + 1 + (encL (list x)).length := fun x i hi => by
+    have h₁ := hstates x i hi.le
+    have h₂ := hS.length_elem_le (list x) _ (List.getElem_mem hi)
+    simp only [length_encPair]
+    omega
+  have hrest : ∀ x, ∀ i ≤ (list x).length,
+      (encPair encL encB ((list x).drop i, ((list x).take i).foldl step (init x))).length ≤
+        2 * (encL (list x)).length + 1 + B x := fun x i hi => by
+    have h₁ := hstates x i hi
+    have h₂ := hS.length_drop_le (list x) i
+    simp only [length_encPair]
+    omega
+  have haD : a ≤ D := Nat.le_mul_of_pos_left _ (lt_of_lt_of_le Nat.one_pos (le_max_left _ _))
+  obtain ⟨c, k, Q, hfin, tm, htm⟩ := Internal.FoldCompiler.foldl (encA := encA) (encL := encL)
+    (encBA := encPair encB encA) (encS := encPair encL encB)
+    (encO := encOption (encPair encL encB))
+    (t := fun x => t₁ x + t₂ x) (s := fun x => s₁ x + s₂ x)
+    (fun x => (h₁ x).mono (Nat.le_add_right _ _) (Nat.le_add_right _ _))
+    (fun x => (h₂ x).mono (Nat.le_add_left _ _) (Nat.le_add_left _ _)) hS'
+    (tMax := fun x => ct * (2 * B x + 1 + (encL (list x)).length + 1) ^ dS)
+    (sMax := fun x => cs * (2 * B x + 1 + (encL (list x)).length + 1) ^ dS)
+    (lMax := fun x => 2 * (encL (list x)).length + 1 + B x)
+    (fun x i hi => (htS _).trans (Nat.mul_le_mul_left ct (Nat.pow_le_pow_left
+      (Nat.add_le_add_right (hargs x i hi) 1) dS)))
+    (fun x i hi => (hsS _).trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left
+      (Nat.add_le_add_right (hargs x i hi) 1) dS))) hrest
+  have hd₀ : max dL dI ≤ max (max dL dI) (eL + D) := le_max_left _ _
+  have hd₁ : eL + D ≤ max (max dL dI) (eL + D) := le_max_right _ _
+  have hlen : DegreeBounded (fun x => (encIn x).length) (fun x => (list x).length + 1) eL :=
+    (hl.add_const 1).mono fun x => Nat.add_le_add_right (hS.length_le _) 1
+  have ht := ht₁.add_max ht₂
+  have hs := hs₁.add_max hs₂
+  refine ⟨⟨_, _, ((ht.mono_deg hd₀).add ((hlen.mul ((hround.add (hlMax.mono_deg haD)).add_const
+    1)).mono_deg hd₁)).smul c, ((((hs.mono_deg hd₀).add (hround.mono_deg (by omega))).add
+      (hlMax.mono_deg (by omega))).add_const 1).smul c,
+    k, Q, hfin, tm, fun x => (htm x).computesInTimeAndSpace⟩, hB.mono fun x => ?_⟩
+  simpa using hstates x _ le_rfl
+
+/-- **Left folds with a parameter**, keeping `par x` in the fold state. -/
+theorem foldlWith {γ α β π : Type} {encIn : γ ↪ List Bool}
+    {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encL : List α ↪ List Bool}
+    {encP : π ↪ List Bool} [ListEncoding encA encL] [SizedListEncoding encA encL]
+    {par : γ → π} {list : γ → List α} {init : γ → β} {step : π → β → α → β}
+    {dP eP dL eL dI eI dS eS b : ℕ}
+    (hpar : ComputableInDegree par encIn encP dP eP)
+    (hlist : ComputableInDegree list encIn encL dL eL)
+    (hinit : ComputableInDegree init encIn encB dI eI)
+    (hstep : ComputableInDegree (fun p : (π × β) × α => step p.1.1 p.1.2 p.2)
+      (encPair (encPair encP encB) encA) encB dS eS)
+    {B : γ → ℕ} (hB : DegreeBounded (fun x => (encIn x).length) B b)
+    (hstates : ∀ x, ∀ i ≤ (list x).length,
+      (encB (((list x).take i).foldl (step (par x)) (init x))).length ≤ B x) :
+    ComputableInDegree (fun x => (list x).foldl (step (par x)) (init x)) encIn encB
+      (max (max dL (max dP dI)) (eL + max 1 dS * max (max eP b) eL)) b := by
+  have heq (l : List α) (s : π × β) :
+      l.foldl (fun s a => (s.1, step s.1 s.2 a)) s = (s.1, l.foldl (step s.1) s.2) :=
+    List.foldl_hom (fun acc => (s.1, acc)) (fun _ _ => rfl)
+  have hfold := foldl' (encB := encPair encP encB) hlist
+    (hpar.prod hinit) (step := fun s a => (s.1, step s.1 s.2 a))
+    (((fst encP encB).comp (fst (encPair encP encB) encA)).prod hstep)
+    (B := fun x => 2 * (encP (par x)).length + 1 + B x)
+    ((((hpar.2.mono_deg (le_max_left eP b)).smul 2).add_const 1).add
+      (hB.mono_deg (le_max_right eP b)))
+    (fun x i hi => by
+      have := hstates x i hi
+      rw [heq]
+      simp only [length_encPair]
+      omega)
+  have h := (snd encP encB).comp hfold
+  have hf : (Prod.snd ∘ fun x => (list x).foldl (fun s a => (s.1, step s.1 s.2 a))
+      (par x, init x)) = fun x => (list x).foldl (step (par x)) (init x) := by
+    funext x
+    simp [heq]
+  rw [hf, show max 1 (max (max 1 (1 * 1)) dS) = max 1 dS by omega, Nat.mul_one] at h
+  have hY : max eP b ≤ max (max dL (max dP dI)) (eL + max 1 dS * max (max eP b) eL) :=
+    le_max_of_le_right (le_add_left ((le_max_left _ eL).trans
+      (Nat.le_mul_of_pos_left _ (lt_of_lt_of_le Nat.one_pos (le_max_left _ _)))))
+  exact ⟨(h.mono (max_le le_rfl hY) le_rfl).1, hB.mono fun x => by simpa using hstates x _ le_rfl⟩
+
+/-- Adding an element in front of a framed list: the identity on encoded words. -/
+theorem cons {α : Type} (enc : α ↪ List Bool) :
+    ComputableInDegree (fun p : α × List α => p.1 :: p.2) (encPair enc (encList enc))
+      (encList enc) 1 1 :=
+  of_eq fun _ => rfl
+
+/-- Adding an element at the end of a framed list. -/
+theorem snoc {α : Type} (enc : α ↪ List Bool) :
+    ComputableInDegree (fun p : List α × α => p.1 ++ [p.2]) (encPair (encList enc) enc)
+      (encList enc) 1 1 :=
+  ((fst (encList enc) enc).append ((of_linear
+    (ComputableInLinearTimeAndSpace.of_frame (f := id) (encIn := enc)
+      (encMid := encFramed enc) fun _ => rfl)).comp (snd (encList enc) enc))
+    (enc₂ := encFramed enc) fun _ => by simp).mono
+
+/-- Concatenating two framed lists. -/
+theorem listAppend {α : Type} (enc : α ↪ List Bool) :
+    ComputableInDegree (fun p : List α × List α => p.1 ++ p.2)
+      (encPair (encList enc) (encList enc)) (encList enc) 1 1 :=
+  ((fst (encList enc) (encList enc)).append (snd (encList enc) (encList enc))
+    fun _ => by simp).mono
+
+/-- Truncated subtraction of unary numbers. -/
+theorem unary_sub :
+    ComputableInDegree (fun p : ℕ × ℕ => p.1 - p.2) (encPair encUnary encUnary)
+      encUnary 2 1 := by
+  have hrep (a b : ℕ) : (List.replicate b true).foldl (fun n _ => n - 1) a = a - b := by
+    induction b generalizing a with
+    | zero => rfl
+    | succ b ih => rw [List.replicate_succ, List.foldl_cons, ih]; omega
+  have hfold := foldl' (encA := encBool) (encL := encBits) (encB := encUnary)
+    (list := fun p : ℕ × ℕ => List.replicate p.2 true) (step := fun n _ => n - 1)
+    ((of_eq (f := fun n => List.replicate n true) (encIn := encUnary) (encMid := encBits)
+      fun _ => rfl).comp (snd encUnary encUnary))
+    (fst encUnary encUnary) (unary_pred.comp (fst encUnary encBool))
+    (B := fun p => (encPair encUnary encUnary p).length) .self (fun p i _ => by
+      rw [List.take_replicate, hrep]
+      simp only [encPair_apply, encUnary_apply, List.length_append, length_frame,
+        List.length_replicate]
+      omega)
+  convert hfold.mono (d' := 2) (e' := 1) using 1
+  funext p
+  rw [hrep]
+
+/-- The minimum of unary numbers. -/
+theorem unary_min :
+    ComputableInDegree (fun p : ℕ × ℕ => min p.1 p.2) (encPair encUnary encUnary)
+      encUnary 2 1 := by
+  convert (unary_sub.comp ((fst encUnary encUnary).prod unary_sub)).mono (d' := 2) (e' := 1)
+    using 1
+  funext p
+  simp only [Function.comp_apply]
+  omega
+
+private def intSuccT : Transducer Bool (Fin 3) where
+  q₀ := 0
+  step q b := match q, b with
+    | 0, false => (2, [false, true])
+    | 0, true => (1, [])
+    | 1, b => (2, [b])
+    | _, b => (2, [b])
+  final q := if q = 1 then [false] else []
+  length_step_le q b := by fin_cases q <;> cases b <;> simp
+  length_final_le q := by split_ifs <;> simp
+
+private def intPredT : Transducer Bool (Fin 3) where
+  q₀ := 0
+  step q b := match q, b with
+    | 0, false => (1, [])
+    | 0, true => (2, [true, true])
+    | 1, _ => (2, [false])
+    | _, b => (2, [b])
+  final q := if q = 1 then [true] else []
+  length_step_le q b := by fin_cases q <;> cases b <;> simp
+  length_final_le q := by split_ifs <;> simp
+
+private lemma run_copy_fin3 (T : Transducer Bool (Fin 3)) (hT : ∀ b, T.step 2 b = (2, [b]))
+    (hf : T.final 2 = []) (w : List Bool) : T.run 2 w = w := by
+  induction w with
+  | nil => simp [hf]
+  | cons b w ih => simp [hT, ih]
+
+/-- Adding one on unary-magnitude signed integers. -/
+theorem int_succ : ComputableInDegree (· + 1) encInt encInt 1 1 := by
+  refine of_linear (.of_transducer intSuccT fun z => ?_)
+  have hc := run_copy_fin3 intSuccT (fun b => by cases b <;> rfl) rfl
+  rcases z with n | _ | n
+  · rw [show intSuccT.q₀ = 0 from rfl]
+    simp only [encInt_ofNat, Transducer.run_cons]
+    change false :: true :: List.replicate n true =
+      [false, true] ++ intSuccT.run 2 (List.replicate n true)
+    simp [hc]
+  · rfl
+  · change encInt (Int.negSucc n) =
+      intSuccT.run 0 (true :: true :: List.replicate n true)
+    simp only [encInt_negSucc, Transducer.run_cons]
+    change true :: List.replicate n true =
+      [] ++ ([true] ++ intSuccT.run 2 (List.replicate n true))
+    simp [hc]
+
+/-- Subtracting one on unary-magnitude signed integers. -/
+theorem int_pred : ComputableInDegree (· - 1) encInt encInt 1 1 := by
+  refine of_linear (.of_transducer intPredT fun z => ?_)
+  have hc := run_copy_fin3 intPredT (fun b => by cases b <;> rfl) rfl
+  rcases z with (_ | n) | n
+  · rfl
+  · rw [show Int.ofNat (n + 1) - 1 = Int.ofNat n by simp, show intPredT.q₀ = 0 from rfl]
+    simp only [encInt_ofNat, List.replicate_succ, Transducer.run_cons]
+    change false :: List.replicate n true =
+      [] ++ ([false] ++ intPredT.run 2 (List.replicate n true))
+    simp [hc]
+  · change encInt (Int.negSucc (n + 1)) =
+      intPredT.run 0 (true :: List.replicate n true)
+    simp only [encInt_negSucc, List.replicate_succ, Transducer.run_cons]
+    change true :: true :: List.replicate n true =
+      [true, true] ++ intPredT.run 2 (List.replicate n true)
+    simp [hc]
+
+/-- Equality of bit words in quadratic time/space and constant output length. -/
+theorem eqWords :
+    ComputableInDegree (fun p : List Bool × List Bool => decide (p.1 = p.2))
+      (encPair encBits encBits) encBool 2 0 := by
+  have hfold := foldl' (encA := encBool) (encL := encBits)
+    (encB := encPair encBits encBool) (fst encBits encBits)
+    ((snd encBits encBits).prod (const true)) eqWordsStep
+    (B := fun p => 2 * (encPair encBits encBits p).length + 2)
+    ((DegreeBounded.self.smul 2).add_const 2)
+    (fun p i _ => by
+      rw [show ((p.1.take i).foldl EqWords.step (p.2, true)) =
+        ((p.2.drop (p.1.take i).length), ((p.1.take i).foldl EqWords.step (p.2, true)).2) from
+          Prod.ext (EqWords.foldl_fst _ _ _) rfl]
+      simp only [encPair_apply, encBits_apply, encBool_apply, List.length_append, length_frame,
+        List.length_drop, List.length_singleton]
+      omega)
+  have h : ComputableInDegree (_ ∘ _) _ encBool 2 0 := (eqWordsResult.comp hfold).mono
+  convert h using 1
+  funext p
+  simpa using (EqWords.foldl_result p.1 p.2 true).symm
+
+/-- Equality for any encoding in quadratic time/space and constant output length. -/
+theorem eq {α : Type} [DecidableEq α] (enc : α ↪ List Bool) :
+    ComputableInDegree (fun p : α × α => decide (p.1 = p.2)) (encPair enc enc) encBool 2 0 := by
+  have h : ComputableInDegree (_ ∘ _) _ encBool 2 0 := (eqWords.comp (of_eq
+    (f := fun p : α × α => (enc p.1, enc p.2)) (encIn := encPair enc enc)
+    (encMid := encPair encBits encBits) fun _ => rfl)).mono
+  convert h using 1
+  funext p
+  simp [enc.injective.eq_iff]
+
+end ComputableInDegree
+
+open NatSucc NatAdd in
+/-- **Addition is computable in quadratic time and space**, with linear output length, in the
+binary encoding. -/
+theorem computableInDegree_add :
+    ComputableInDegree (fun p : ℕ × ℕ => p.1 + p.2) (encPair encNat encNat) encNat 2 1 := by
+  let encS := encPair encBool (encPair encBits encBits)
+  have hstep : ComputableInDegree (fun p : _ × Bool => addStep p.1 p.2)
+      (encPair encS encBool) encS 1 1 := by
+    have hs := ComputableInDegree.fst encS encBool
+    have hr := hs.snd'.fst'
+    have habc := (ComputableInDegree.snd encS encBool).prod
+      (((ComputableInDegree.headD (enc₁ := encBool) false).comp hr).prod hs.fst')
+    have hcarry := (ComputableInDegree.of_finite
+      (encIn := encPair encBool (encPair encBool encBool))
+      (encMid := encBool) fun t : Bool × Bool × Bool => carry t.1 t.2.1 t.2.2).comp habc
+    have hdigit := (ComputableInDegree.of_finite
+      (encIn := encPair encBool (encPair encBool encBool))
+      (encMid := encBool) fun t : Bool × Bool × Bool => t.1 ^^ (t.2.1 ^^ t.2.2)).comp habc
+    exact (hcarry.prod (((ComputableInDegree.tail (enc₁ := encBool)).comp hr).prod
+      (hs.snd'.snd'.append hdigit (encOut := encBits) fun _ => rfl))).mono
+  have hsize : DegreeBounded (fun p : ℕ × ℕ => (encPair encNat encNat p).length)
+      (fun p => 2 * (encPair encNat encNat p).length + 4) 1 :=
+    (DegreeBounded.self.smul 2).add_const 4
+  have hfold := ComputableInDegree.foldl' (encL := encBits) (encB := encS)
+    (list := fun p : ℕ × ℕ => p.1.bits) (init := fun p => (false, p.2.bits, []))
+    (ComputableInDegree.of_eq (encIn := encNat) (encMid := encBits) (f := Nat.bits)
+      (fun _ => rfl) |>.comp (ComputableInDegree.fst encNat encNat))
+    ((ComputableInDegree.const false).prod
+      ((ComputableInDegree.of_eq (encIn := encNat) (encMid := encBits) (f := Nat.bits)
+        (fun _ => rfl) |>.comp (ComputableInDegree.snd encNat encNat)).prod
+        (ComputableInDegree.const [])))
+    hstep hsize (by
+      intro p i _
+      obtain ⟨h₁, h₂⟩ := length_foldl_addStep (p.1.bits.take i) (false, p.2.bits, [])
+      simp only [encS, length_encPair, encBool_apply, List.length_singleton, encBits_apply,
+        encNat_apply, List.length_take, List.length_nil] at h₁ h₂ ⊢
+      omega)
+  let encAcc := encPair encBool encBits
+  have hsuccStep : ComputableInDegree (fun p : (Bool × List Bool) × Bool => succStep p.1 p.2)
+      (encPair encAcc encBool) encAcc 1 1 := by
+    have hs := ComputableInDegree.fst encAcc encBool
+    have hb := ComputableInDegree.snd encAcc encBool
+    have hc := (ComputableInDegree.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
+      fun q : Bool × Bool => q.1 && q.2).comp (hs.fst'.prod hb)
+    have hd := (ComputableInDegree.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
+      fun q : Bool × Bool => q.1 ^^ q.2).comp (hs.fst'.prod hb)
+    exact (hc.prod (hs.snd'.append hd (encOut := encBits) fun _ => rfl)).mono
+  have hsuccFin : ComputableInDegree succFinish encAcc encBits 1 1 := by
+    have hword := ComputableInDegree.snd encBool encBits
+    have hyes : ComputableInDegree (fun p : Bool × List Bool => p.2 ++ [true])
+        encAcc encBits 1 1 :=
+      hword.append (ComputableInDegree.const (encMid := encBool) true)
+        (encOut := encBits) (fun _ => rfl)
+    exact ((ComputableInDegree.fst encBool encBits).ite (hyes.restrict _)
+      (hword.restrict _)).mono
+  have hfin : ComputableInDegree (fun s : Bool × List Bool × List Bool =>
+      succFinish (s.2.1.foldl succStep (s.1, s.2.2))) encS encBits 2 1 := by
+    have hs := ComputableInDegree.of_eq (encIn := encS) (encMid := encS) (f := id) fun _ => rfl
+    refine (hsuccFin.comp (ComputableInDegree.foldl' (encL := encBits) (encB := encAcc)
+      hs.snd'.fst' (hs.fst'.prod hs.snd'.snd') hsuccStep
+      (B := fun s => (encS s).length + 3) (DegreeBounded.self.add_const 3) fun s i _ => ?_)).mono
+    simp only [length_foldl_succStep, encS, encAcc, length_encPair, encBool_apply, id_eq,
+      List.length_singleton, encBits_apply, List.length_take]
+    omega
+  refine ((hfin.comp hfold).of_enc_eq fun p => ?_).mono
+  simp only [Function.comp_apply, encBits_apply, encNat_apply]
+  rw [succFinish_foldl, ← foldl_addStep, List.nil_append, addBits_bits]
+  rfl
+
+open NatMul in
+/-- **Multiplication is computable in cubic time and space**, with linear output length, in the
+binary encoding. -/
+theorem computableInDegree_mul :
+    ComputableInDegree (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat 3 1 := by
+  let encS := encPair encNat encNat
+  have hadd := computableInDegree_add
+  have hstep : ComputableInDegree (fun p : (ℕ × ℕ) × Bool => mulStep p.1 p.2)
+      (encPair encS encBool) encS 2 1 := by
+    have hs := ComputableInDegree.fst encS encBool
+    exact (((ComputableInDegree.snd encS encBool).ite ((hadd.comp hs).restrict _)
+      (hs.fst'.restrict _)).prod (hadd.comp (hs.snd'.prod hs.snd'))).mono
+  have hfold := ComputableInDegree.foldl' (encL := encBits) (encB := encS)
+    (list := fun p : ℕ × ℕ => p.1.bits) (init := fun p => (0, p.2))
+    (ComputableInDegree.of_eq (encIn := encNat) (encMid := encBits) (f := Nat.bits)
+      (fun _ => rfl) |>.comp (ComputableInDegree.fst encNat encNat))
+    ((ComputableInDegree.const 0).prod (ComputableInDegree.snd encNat encNat)) hstep
+    (B := fun p => 3 * (encPair encNat encNat p).length + 1)
+    ((DegreeBounded.self.smul 3).add_const 1) fun p i _ => ?_
+  · have h : ComputableInDegree (_ ∘ _) _ encNat 3 1 :=
+      ((ComputableInDegree.fst encNat encNat).comp hfold).mono
+    convert h using 1
+    funext p
+    simp [foldl_mulStep]
+  · obtain ⟨h₁, h₂⟩ := foldl_mulStep_le (p.1.bits.take i) 0 p.2
+    have hi' : (p.1.bits.take i).length ≤ p.1.size := by simp [← Nat.size_eq_bits_len]
+    have hacc := size_le_of_le _ (by omega : (List.foldl mulStep (0, p.2) (p.1.bits.take i)).1 ≤
+      2 ^ (p.1.bits.take i).length * p.2)
+    have hsh := size_le_of_le _ h₂.le
+    simp only [encS, length_encPair, encNat_apply, Nat.size_eq_bits_len] at hacc hsh hi' ⊢
+    omega
+
+attribute [fun_prop] ComputableInDegree
+attribute [fun_prop] ComputableInDegree.const ComputableInDegree.fst
+  ComputableInDegree.snd ComputableInDegree.comp ComputableInDegree.prod
+  ComputableInDegree.fst' ComputableInDegree.snd'
+  ComputableInDegree.cons ComputableInDegree.snoc
+  ComputableInDegree.listAppend ComputableInDegree.isSome
+  ComputableInDegree.unary_succ ComputableInDegree.unary_pred
+  ComputableInDegree.unary_sub ComputableInDegree.unary_min
+  ComputableInDegree.int_succ ComputableInDegree.int_pred
+
+namespace ComputableInDegree
+
+/-- The result encoding fixes the element encoding, without reversing `ListEncoding` inference. -/
+@[fun_prop]
+theorem listTail {α : Type*} (enc : α ↪ List Bool) :
+    ComputableInDegree List.tail (encList enc) (encList enc) 1 1 :=
+  tail (enc₁ := enc)
+
+/-- The framed input list determines the encoding of its head, including a fixed fallback. -/
+@[fun_prop]
+theorem listHeadD {α : Type*} (enc : α ↪ List Bool) (fallback : α) :
+    ComputableInDegree (fun l => l.headD fallback) (encList enc) enc 1 1 :=
+  headD (enc₁ := enc) fallback
+
+/-- Testing a framed list for emptiness. -/
+@[fun_prop]
+theorem listIsEmpty {α : Type*} (enc : α ↪ List Bool) :
+    ComputableInDegree List.isEmpty (encList enc) encBool 1 1 :=
+  isEmpty (enc₁ := enc)
+
+/-- The option encoding determines the encoding used for the payload and fallback. -/
+@[fun_prop]
+theorem optionGetD {α : Type*} (enc : α ↪ List Bool) (fallback : α) :
+    ComputableInDegree (fun o => o.getD fallback) (encOption enc) enc 1 1 :=
+  getD (enc₁ := enc) fallback
+
+/-- Copy an encoded value. This identity rule also lets `fun_prop` retain a shared let binding. -/
+@[fun_prop]
+theorem id' {α : Type*} {enc : α ↪ List Bool} :
+    ComputableInDegree (fun x : α => x) enc enc 1 1 :=
+  of_eq fun _ => rfl
+
+/-- Reverse a raw bit list in linear time and linear output size. -/
+@[fun_prop]
+theorem bitsReverse :
+    ComputableInDegree List.reverse encBits encBits 1 1 :=
+  of_bounds ⟨2, fun _ => by simp; omega⟩ ⟨0, fun _ => by simp⟩
+    ComputableTidilyInTimeAndSpace.reverse_bits.computableInTimeAndSpace
+
+/-- Drop the last bit of a raw bit list in linear time and linear output size. -/
+@[fun_prop]
+theorem bitsDropLast :
+    ComputableInDegree List.dropLast encBits encBits 1 1 :=
+  of_bounds ⟨8, fun _ => by simp; omega⟩ ⟨0, fun _ => by simp⟩
+    ComputableTidilyInTimeAndSpace.dropLast_bits.computableInTimeAndSpace
+
+/-- Extract the last bit of a raw bit list as a 0-or-1-element list in linear time and constant
+output size. -/
+@[fun_prop]
+theorem bitsGetLast?ToList :
+    ComputableInDegree (fun l : List Bool => l.getLast?.toList) encBits encBits 1 0 :=
+  ⟨⟨_, _, ⟨8, fun _ => by simp; omega⟩, ⟨0, fun _ => by simp⟩,
+    ComputableTidilyInTimeAndSpace.getLast?_toList_bits.computableInTimeAndSpace⟩,
+    ⟨1, fun l => by simp [Option.length_toList_le]⟩⟩
+
+/-- Extract the last bit of a raw bit list as an `Option Bool` in linear time and constant output
+size. -/
+@[fun_prop]
+theorem bitsGetLast? :
+    ComputableInDegree (List.getLast? (α := Bool)) encBits (encOption encBool) 1 0 :=
+  ⟨⟨_, _, ⟨8, fun _ => by simp; omega⟩, ⟨0, fun _ => by simp⟩,
+    ComputableTidilyInTimeAndSpace.getLast?_bits.computableInTimeAndSpace⟩,
+    ⟨2, fun l => by cases h : l.getLast? <;> simp [h]⟩⟩
+
+/-- Convert an `Option Bool` to a 0-or-1-element bit list in linear time and linear output size. -/
+@[fun_prop]
+theorem optionBoolToList :
+    ComputableInDegree (Option.toList (α := Bool)) (encOption encBool) encBits 1 1 :=
+  (Internal.DecoderWords.tail_degree.comp
+    (of_eq (f := encOption encBool) (encIn := encOption encBool) (encMid := encBits)
+      fun _ => rfl)).of_enc_eq fun o => by cases o <;> rfl
+
+/-- Concatenate two raw bit lists while preserving their time and output degrees independently. -/
+@[fun_prop]
+theorem bitsAppend {α : Type*} {encIn : α ↪ List Bool} {f g : α → List Bool}
+    {df ef dg eg d e : ℕ}
+    (hf : ComputableInDegree f encIn encBits df ef)
+    (hg : ComputableInDegree g encIn encBits dg eg)
+    (hd : max df dg ≤ d) (he : max ef eg ≤ e) :
+    ComputableInDegree (fun x => f x ++ g x) encIn encBits d e :=
+  (hf.append hg fun _ => rfl).mono hd he
+
+/-- Add two unary natural numbers while preserving their time and output degrees independently. -/
+@[fun_prop]
+theorem unaryAdd {α : Type*} {encIn : α ↪ List Bool} {f g : α → ℕ}
+    {df ef dg eg d e : ℕ}
+    (hf : ComputableInDegree f encIn encUnary df ef)
+    (hg : ComputableInDegree g encIn encUnary dg eg)
+    (hd : max df dg ≤ d) (he : max ef eg ≤ e) :
+    ComputableInDegree (fun x => f x + g x) encIn encUnary d e :=
+  (hf.append hg fun _ => List.replicate_add _ _ true).mono hd he
+
+/-- Compose using the intermediate output size. The computation premises determine the degrees
+before arithmetic compares them with the requested bound. -/
+@[fun_prop]
+theorem comp_le {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}
+    {encOut : γ ↪ List Bool} {f : β → γ} {g : α → β} {df ef dg eg d e : ℕ}
+    (hg : ComputableInDegree g encIn encMid dg eg)
+    (hf : ComputableInDegree f encMid encOut df ef)
+    (hd : max dg (eg * df) ≤ d) (he : eg * ef ≤ e) :
+    ComputableInDegree (fun x => f (g x)) encIn encOut d e :=
+  (hf.comp hg).mono hd he
+
+/-- Pair two results while preserving their output degrees independently of computation time. -/
+@[fun_prop]
+theorem prod_le {α β γ : Type u} {encIn : α ↪ List Bool} {encF : β ↪ List Bool}
+    {encG : γ ↪ List Bool} {f : α → β} {g : α → γ} {df ef dg eg d e : ℕ}
+    (hf : ComputableInDegree f encIn encF df ef)
+    (hg : ComputableInDegree g encIn encG dg eg)
+    (hd : max df dg ≤ d) (he : max ef eg ≤ e) :
+    ComputableInDegree (fun x => (f x, g x)) encIn (encPair encF encG) d e :=
+  (hf.prod hg).mono hd he
+
+/-- Branching on a computed Boolean, retaining each branch's output degree. -/
+@[fun_prop]
+theorem ite_le {α β : Type*} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
+    {condition : α → Bool} {f g : α → β} {dc ec df ef dg eg d e : ℕ}
+    (hc : ComputableInDegree condition encIn encBool dc ec)
+    (hf : ComputableInDegree f encIn encOut df ef)
+    (hg : ComputableInDegree g encIn encOut dg eg)
+    (hd : max dc (max df dg) ≤ d) (he : max ef eg ≤ e) :
+    ComputableInDegree (fun x => if condition x then f x else g x) encIn encOut d e :=
+  (hc.ite (hf.restrict _) (hg.restrict _)).mono hd he
+
+end ComputableInDegree
 
 attribute [fun_prop] ComputableTidilyInDegree ComputableTidilyInO
 attribute [fun_prop] ComputableTidilyInTimeAndSpace
@@ -192,24 +749,24 @@ theorem ite_le {α β : Type*} {encIn : α ↪ List Bool} {encOut : β ↪ List 
 
 end ComputableTidilyInDegree
 
-namespace ComputableTidilyInO
+namespace ComputableInO
 
 variable {α β : Type} {encOut : β ↪ List Bool}
 
 /-- A function of bit words computed within given bounds is computed by the same machine on encoded
 instances. -/
 theorem comp_enc {f : List Bool → β} {T S : List Bool → ℕ}
-    (h : ComputableTidilyInO f encBits encOut T S) (enc : α ↪ List Bool) :
-    ComputableTidilyInO (fun a => f (enc a)) enc encOut (fun a => T (enc a)) fun a => S (enc a) :=
-  let ⟨c, ⟨k, State, hfinite, tm, htm⟩, hl⟩ := h
-  ⟨c, ⟨k, State, hfinite, tm, fun a => htm (enc a)⟩, fun a => hl (enc a)⟩
+    (h : ComputableInO f encBits encOut T S) (enc : α ↪ List Bool) :
+    ComputableInO (fun a => f (enc a)) enc encOut (fun a => T (enc a)) fun a => S (enc a) :=
+  h.of_encIn_eq enc fun _ => rfl
 
 /-- The length of a bit word in unary, within linear time and space, by the streaming machine of
 `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.length_bits`. -/
-theorem lengthUnary : ComputableTidilyInO (fun l : List Bool => l.length) encBits encUnary
+theorem lengthUnary : ComputableInO (fun l : List Bool => l.length) encBits encUnary
     (fun l => l.length) fun l => l.length :=
-  .of_bounds ComputableTidilyInTimeAndSpace.length_bits 8 (fun l => by omega)
-    (fun _ => Nat.zero_le _) fun l => by simp only [encUnary_apply, List.length_replicate]; omega
+  .of_bounds ComputableTidilyInTimeAndSpace.length_bits.computableInTimeAndSpace 8
+    (fun l => by omega) (fun _ => Nat.zero_le _)
+    fun l => by simp only [encUnary_apply, List.length_replicate]; omega
 
 /-- Doubling `m` once for each element of a list of length `n` multiplies it by `2 ^ n`. -/
 private theorem foldl_double (n m : ℕ) :
@@ -222,13 +779,13 @@ private theorem foldl_double (n m : ℕ) :
 
 /-- **`2 ^ n` in unary**, by doubling `n` times, within time `O((n + 1) * 2 ^ n)` and space
 `O(2 ^ n)`. -/
-theorem unary_two_pow : ComputableTidilyInO (fun n : ℕ => 2 ^ n) encUnary encUnary
+theorem unary_two_pow : ComputableInO (fun n : ℕ => 2 ^ n) encUnary encUnary
     (fun n => (n + 1) * 2 ^ n) fun n => 2 ^ n := by
-  have hstep : ComputableTidilyInO (fun p : ℕ × Bool => p.1 + p.1) (encPair encUnary encBool)
+  have hstep : ComputableInO (fun p : ℕ × Bool => p.1 + p.1) (encPair encUnary encBool)
       encUnary (fun p => (encPair encUnary encBool p).length)
       fun p => (encPair encUnary encBool p).length :=
-    (ComputableTidilyInDegree.unaryAdd (ComputableTidilyInDegree.fst encUnary encBool)
-      (ComputableTidilyInDegree.fst encUnary encBool) le_rfl le_rfl).inO_one
+    (ComputableInDegree.unaryAdd (ComputableInDegree.fst encUnary encBool)
+      (ComputableInDegree.fst encUnary encBool) le_rfl le_rfl).inO_one
   have hstate (n i : ℕ) : (encUnary (((List.replicate n true).take i).foldl
       (fun m _ => m + m) 1)).length ≤ 2 ^ n := by
     rw [List.take_replicate, foldl_double, encUnary_apply, List.length_replicate, one_mul]
@@ -258,6 +815,6 @@ theorem unary_two_pow : ComputableTidilyInO (fun n : ℕ => 2 ^ n) encUnary encU
     omega
   · rw [foldl_double, one_mul]
 
-end ComputableTidilyInO
+end ComputableInO
 
 end Turing.MultiTapeTM

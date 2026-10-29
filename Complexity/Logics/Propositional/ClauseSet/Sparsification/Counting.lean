@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Anton Kovsharov, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Anton Kovsharov, Samuel Schlesinger
 -/
 
 module
@@ -32,6 +32,8 @@ termination, insertion, size or leaf-count bounds for the refined branching proc
 
 * `Cslib.Logic.PL.ClauseSet.Sparsification.sat_countingChild_false_iff`: the heart case.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.sat_countingChild_true_iff`: the complementary case.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.modelCountOn_toCNF_toClauseSet`: round-tripping a CNF
+  formula through `toClauseSet` and `toCNF` preserves `modelCountOn`.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.modelCountOn_countingChild`: the additive count identity.
 -/
 
@@ -170,5 +172,16 @@ theorem modelCountOn_countingChild (ψ : ClauseSet V) (c : ℕ)
       (countingChild ψ c H true).toCNF.eval (extend σ) = true).card
   rw [hA, hB]
   exact (Finset.card_filter_add_card_filter_not p).symm
+
+/-- Round-tripping `φ : CNF V` through `toClauseSet` and `toCNF` preserves `modelCountOn` on any
+declared variable set. -/
+@[simp]
+theorem modelCountOn_toCNF_toClauseSet (φ : CNF V) (declared : Finset V) :
+    φ.toClauseSet.toCNF.modelCountOn declared = φ.modelCountOn declared := by
+  simp only [CNF.modelCountOn]
+  congr 1
+  ext σ
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and, ClauseSet.eval_toCNF_eq_true_iff,
+    CNF.sat_toClauseSet_iff]
 
 end Cslib.Logic.PL.ClauseSet.Sparsification

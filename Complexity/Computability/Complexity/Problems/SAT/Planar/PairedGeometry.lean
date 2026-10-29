@@ -246,9 +246,6 @@ private def finalLocalRoute (s : Fin 4) : Route :=
     cellOrigin 120 (PairedPorts.neighbor s) +
       PairedPorts.variablePosition (PairedPorts.oppositeSide s) (PairedPorts.spokeLane s)]
 
-private def consecutiveContact (a b : Point × Point) : List Point :=
-  if a.2 = b.1 then [a.2] else if b.2 = a.1 then [a.1] else []
-
 private theorem finalLocalRoute_orthogonal : ∀ s, IsOrthogonal (finalLocalRoute s) := by
   decide +kernel
 

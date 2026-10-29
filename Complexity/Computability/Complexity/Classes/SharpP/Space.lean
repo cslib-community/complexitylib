@@ -10,7 +10,9 @@ module
 public import Complexity.Computability.Complexity.Classes.SharpP
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -131,35 +133,32 @@ theorem computableInPolySpace_acceptCount {V : α × List Bool → Bool} {r : α
     (hV : Turing.MultiTapeTM.ComputableInPolyTime V (encPair enc encBits) encBool)
     (hr : Turing.MultiTapeTM.ComputableInPolyTime r enc encUnary) :
     Turing.MultiTapeTM.ComputableInPolySpace (fun a => acceptCount V a (r a)) enc encNat := by
-  have hV := hV.tidy
-  have hr := hr.tidy
-  refine .of_tidy ?_
   classical
   rcases isEmpty_or_nonempty α with hα | hα
-  · exact (ComputableTidilyInPolySpace.of_polyTime
-      (ComputableTidilyInPolyTime.const 0)).congr fun a => isEmptyElim a
+  · exact (ComputableInPolySpace.of_polyTime
+      (ComputableInPolyTime.const 0)).congr fun a => isEmptyElim a
   let _ : Inhabited α := Classical.inhabited_of_nonempty hα
-  have hn : ComputableTidilyInPolyTime (fun a => 2 ^ r a) enc encNat :=
-    ComputableTidilyInPolyTime.binary_two_pow.comp hr
-  have hinit : ComputableTidilyInPolyTime
+  have hn : ComputableInPolyTime (fun a => 2 ^ r a) enc encNat :=
+    ComputableInPolyTime.binary_two_pow.comp hr
+  have hinit : ComputableInPolyTime
       (fun a => (a, List.replicate (r a) false, 0)) enc
       (encPair enc (encPair encBits encNat)) :=
-    ComputableTidilyInPolyTime.id'.prod
-      (((ComputableTidilyInPolyTime.bitsReplicate false).comp hr).prod
-        (ComputableTidilyInPolyTime.const 0))
-  have hinc := ComputableTidilyInPolyTime.increment
-  have hstep : ComputableTidilyInPolyTime (acceptCountStep V)
+    ComputableInPolyTime.id'.prod
+      (((ComputableInPolyTime.bitsReplicate false).comp hr).prod
+        (ComputableInPolyTime.const 0))
+  have hinc := ComputableInPolyTime.increment
+  have hstep : ComputableInPolyTime (acceptCountStep V)
       (encPair enc (encPair encBits encNat)) (encPair enc (encPair encBits encNat)) := by
     unfold acceptCountStep
     fun_prop
   have hlen := hr.polyBounded_length
   simp only [encUnary_apply, List.length_replicate] at hlen
-  have hit := ComputableTidilyInPolySpace.iterate hn (.of_polyTime hinit) (.of_polyTime hstep)
+  have hit := ComputableInPolySpace.iterate hn (.of_polyTime hinit) (.of_polyTime hstep)
     (B := fun a => 2 * (enc a).length + 3 * r a + 5)
     ((((PolyBounded.const 2).mul .self).add ((PolyBounded.const 3).mul hlen)).add (.const 5))
     (fun a j hj => ?_)
-  · exact ((ComputableTidilyInPolySpace.of_polyTime
-      ((ComputableTidilyInPolyTime.snd _ _).snd')).comp hit).congr
+  · exact ((ComputableInPolySpace.of_polyTime
+      ((ComputableInPolyTime.snd _ _).snd')).comp hit).congr
         fun a => streamAcceptCount_eq_acceptCount V a (r a)
   · rw [iterate_acceptCountStep]
     have hcard : ((Finset.range j).filter fun i =>
@@ -176,19 +175,17 @@ theorem computableInPolySpace_acceptCount {V : α × List Bool → Bool} {r : α
 /-- Every #P function is computable in polynomial space when its output is written in binary. -/
 theorem SharpP.computableInPolySpace {f : α → ℕ} (hf : f ∈ SharpP enc) :
     Turing.MultiTapeTM.ComputableInPolySpace f enc encNat := by
-  refine .of_tidy ?_
   obtain ⟨p, V, hV, hf⟩ := mem_SharpP.mp hf
-  exact (computableInPolySpace_acceptCount hV (.of_tidy (by fun_prop))).tidy.congr fun a =>
+  exact (computableInPolySpace_acceptCount hV (by fun_prop)).congr fun a =>
     (hf a).symm
 
 /-- Every GapP function is computable in polynomial space with binary sign-magnitude output. -/
 theorem GapP.computableInPolySpace {g : α → ℤ} (hg : g ∈ GapP enc) :
     Turing.MultiTapeTM.ComputableInPolySpace g enc encIntBin := by
-  refine .of_tidy ?_
   obtain ⟨f₁, h₁, f₂, h₂, hg⟩ := hg
-  have hcast := ComputableTidilyInPolySpace.of_polyTime ComputableTidilyInPolyTime.intBin_natCast
-  exact ((ComputableTidilyInPolySpace.of_polyTime ComputableTidilyInPolyTime.intBin_sub).comp
-    ((hcast.comp (SharpP.computableInPolySpace h₁).tidy).prod
-      (hcast.comp (SharpP.computableInPolySpace h₂).tidy))).congr fun a => (hg a).symm
+  have hcast := ComputableInPolySpace.of_polyTime ComputableInPolyTime.intBin_natCast
+  exact ((ComputableInPolySpace.of_polyTime ComputableInPolyTime.intBin_sub).comp
+    ((hcast.comp (SharpP.computableInPolySpace h₁)).prod
+      (hcast.comp (SharpP.computableInPolySpace h₂)))).congr fun a => (hg a).symm
 
 end Cslib.Complexity

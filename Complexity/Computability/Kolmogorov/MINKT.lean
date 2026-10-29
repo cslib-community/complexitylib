@@ -25,8 +25,7 @@ unary), and defines Hirahara's promise problem `Cslib.Kolmogorov.GapMINKT`.
 
 ## Threshold conventions
 
-Following the design recorded in [#798](https://github.com/cslib-community/complexitylib/issues/798),
-both standard formulations of the time-bounded Kolmogorov complexity decision problem are provided
+Both standard formulations of the time-bounded Kolmogorov complexity decision problem are provided
 and bridged:
 
 * **Thresholds in the instance (`Cslib.Kolmogorov.MINKT`):**
@@ -243,7 +242,7 @@ theorem computableInPolyTime_check :
   have hle : ComputableInPolyTime
       (fun ip : Instance × List Bool => decide (ip.2.length ≤ ip.1.size))
       (encPair enc encBits) encBool :=
-    (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_le).comp (hlen.prod hsize)
+    unary_le.comp (hlen.prod hsize)
   exact bool_and.comp (hle.prod (hrun.decide_eq' hsome))
 
 /-- **`MINKT` is in `NP`** ([Ko][Ko1991]; [Hirahara][Hirahara2018]): a witness for `(x, 1^t, 1^s)`

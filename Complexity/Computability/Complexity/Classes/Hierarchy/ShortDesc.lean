@@ -13,7 +13,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitativ
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
 import Mathlib.Data.Nat.Size
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Short descriptions
@@ -61,28 +60,25 @@ theorem shortDesc_eq_decide (x : List Bool) :
 theorem computableInO_shortDesc :
     ComputableInO shortDesc encBits encBool (fun x => (x.length + 1) ^ 2)
       fun x => x.length + 1 := by
-  have this : ComputableTidilyInO shortDesc encBits encBool (fun x => (x.length + 1) ^ 2) fun x =>
-      x.length + 1 := by
-    have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
-      ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
-    have ha := ComputableTidilyInDegree.unary_succ.inO_one.comp
-      (ComputableTidilyInO.lengthUnary.comp hu)
-    have hb := ComputableTidilyInO.lengthUnary.comp
-      (ComputableTidilyInO.lengthNat.of_enc_eq (encOut := encBits)
-        (g := fun x : List Bool => encNat x.length) fun _ => rfl)
-    have h := ComputableTidilyInO.unaryLe.comp (ha.prod hb)
-    refine (h.mono 64 (fun x => ?_) fun x => ?_).of_enc_eq fun x => ?_
-    · have h₁ := length_unframe_le x
-      have h₂ := Universal.length_encNat_le x.length
-      simp only [Function.comp_apply, length_encPair, encUnary_apply,
-        List.length_replicate] at h₁ h₂ ⊢
-      nlinarith
-    · have h₁ := length_unframe_le x
-      have h₂ := Universal.length_encNat_le x.length
-      simp only [Function.comp_apply, length_encPair, encUnary_apply,
-        List.length_replicate] at h₁ h₂ ⊢
-      omega
-    · simp only [Function.comp_apply, shortDesc_eq_decide]
-  simpa only [computableInO_iff_computableTidilyInO] using this
+  have hu : ComputableInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
+    ComputableInO.of_linear (.of_unframe fun _ => rfl)
+  have ha := ComputableInDegree.unary_succ.inO_one.comp
+    (ComputableInO.lengthUnary.comp hu)
+  have hb := ComputableInO.lengthUnary.comp
+    (ComputableInO.lengthNat.of_enc_eq (encC := encBits)
+      (g := fun x : List Bool => encNat x.length) fun _ => rfl)
+  have h := ComputableInO.unaryLe.comp (ha.prod hb)
+  refine (h.mono 64 (fun x => ?_) fun x => ?_).of_enc_eq fun x => ?_
+  · have h₁ := length_unframe_le x
+    have h₂ := Universal.length_encNat_le x.length
+    simp only [Function.comp_apply, length_encPair, encUnary_apply,
+      List.length_replicate] at h₁ h₂ ⊢
+    nlinarith
+  · have h₁ := length_unframe_le x
+    have h₂ := Universal.length_encNat_le x.length
+    simp only [Function.comp_apply, length_encPair, encUnary_apply,
+      List.length_replicate] at h₁ h₂ ⊢
+    omega
+  · simp only [Function.comp_apply, shortDesc_eq_decide]
 
 end Cslib.Complexity.Diagonal

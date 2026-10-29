@@ -10,26 +10,24 @@ import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 
 /-! Plain-field total decoder clients, preserving malformed-word and independent-degree scope. -/
 open Turing.MultiTapeTM
-example : Decoder.bits.decode [] = [] := rfl
-example (w : List Bool) : Decoder.bits.decode w = w := rfl
-example : Decoder.bool.decode [] = false := rfl
-example (w : List Bool) : Decoder.bool.decode (true :: w) = true := rfl
-example : Decoder.unary.decode [false, true, false] = 3 := rfl
-example (n : ℕ) : Decoder.unary.decode (encUnary n) = n := Decoder.unary.decode_enc n
-example : ComputableInPolyTime Decoder.bool.decode encBits encBool :=
-  Decoder.bool.computableInPolyTime
-example {α : Type} (a : α ↪ List Bool) (D : Decoder a) :
-    ∃ d e, ComputableInDegree D.decode encBits a d e := D.computable
-example {α : Type} (a : α ↪ List Bool) (D : Decoder a) :
-    ComputableInPolyTime D.decode encBits a := by fun_prop
-example {α : Type} (a : α ↪ List Bool) (D : Decoder a) :
-    (Decoder.map D id id (fun _ => rfl) (fun _ => rfl)).decode = D.decode := rfl
+example {α : Type} (a : α ↪ List Bool) (D : Decoder a) (w : List Bool) (n : ℕ) :
+    Decoder.bits.decode [] = [] ∧
+    Decoder.bits.decode w = w ∧
+    Decoder.bool.decode [] = false ∧
+    Decoder.bool.decode (true :: w) = true ∧
+    Decoder.unary.decode [false, true, false] = 3 ∧
+    Decoder.unary.decode (encUnary n) = n ∧
+    ComputableInPolyTime Decoder.bool.decode encBits encBool ∧
+    (∃ d e, ComputableInDegree D.decode encBits a d e) ∧
+    ComputableInPolyTime D.decode encBits a ∧
+    (Decoder.map D id id (fun _ => rfl) (fun _ => rfl)).decode = D.decode :=
+  ⟨rfl, rfl, rfl, rfl, rfl, Decoder.unary.decode_enc n, Decoder.bool.computableInPolyTime,
+    D.computable, by fun_prop, rfl⟩
 
 open Lean Elab Command in
 run_cmd do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO] do
+      `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO] do
     if (← getEnv).contains name then
       throwError "A higher tidy calculus was imported: {name}"
 
@@ -38,31 +36,24 @@ example {α : Type} (a : α ↪ List Bool) (decode : List Bool → α)
     (hround : ∀ x, decode (a x) = x) (h : ComputableInDegree decode encBits a 0 0) :
     Decoder a := ⟨decode, hround, 0, 0, h⟩
 
-example : (Decoder.option Decoder.bool).decode [] = none := rfl
-example : (Decoder.option Decoder.bool).decode [false] = some false := rfl
-example : (Decoder.option Decoder.bool).decode [true] = some false := rfl
-example (b : Bool) : (Decoder.option Decoder.bool).decode (encOption encBool (some b)) = some b :=
-  (Decoder.option Decoder.bool).decode_enc (some b)
-example {α : Type} (a : α ↪ List Bool) (D : Decoder a) :
-    ComputableInPolyTime (Decoder.option D).decode encBits (encOption a) :=
-  (Decoder.option D).computableInPolyTime
-
-example : (Decoder.pair Decoder.bool Decoder.bool).decode [] = (false, false) := rfl
-example : (Decoder.pair Decoder.bool Decoder.bool).decode [true] = (false, false) := rfl
 example {α β : Type} (a : α ↪ List Bool) (b : β ↪ List Bool)
-    (D₁ : Decoder a) (D₂ : Decoder b) (x : α × β) :
-    (Decoder.pair D₁ D₂).decode (encPair a b x) = x := (Decoder.pair D₁ D₂).decode_enc x
-example {α β : Type} (a : α ↪ List Bool) (b : β ↪ List Bool)
-    (D₁ : Decoder a) (D₂ : Decoder b) :
-    ComputableInPolyTime (Decoder.pair D₁ D₂).decode encBits (encPair a b) :=
-  (Decoder.pair D₁ D₂).computableInPolyTime
-
--- An inhabited total decoder with actual zero cost/output degrees, on unbounded runtime words.
-example : ∃ (a : Unit ↪ List Bool) (D : Decoder a),
-    ComputableInDegree D.decode encBits a 0 0 := by
-  let a : Unit ↪ List Bool := ⟨fun _ => [], fun x y _ => Subsingleton.elim x y⟩
-  obtain ⟨c, h⟩ := computableInTimeAndSpace_of_const (encIn := encBits) (encOut := a) ()
-  have hd : ComputableInDegree (fun _ : List Bool => ()) encBits a 0 0 :=
+    (D₁ : Decoder a) (D₂ : Decoder b) (bit : Bool) (x : α × β) :
+    (Decoder.option Decoder.bool).decode [] = none ∧
+    (Decoder.option Decoder.bool).decode [false] = some false ∧
+    (Decoder.option Decoder.bool).decode [true] = some false ∧
+    (Decoder.option Decoder.bool).decode (encOption encBool (some bit)) = some bit ∧
+    ComputableInPolyTime (Decoder.option D₁).decode encBits (encOption a) ∧
+    (Decoder.pair Decoder.bool Decoder.bool).decode [] = (false, false) ∧
+    (Decoder.pair Decoder.bool Decoder.bool).decode [true] = (false, false) ∧
+    (Decoder.pair D₁ D₂).decode (encPair a b x) = x ∧
+    ComputableInPolyTime (Decoder.pair D₁ D₂).decode encBits (encPair a b) ∧
+    (∃ (u : Unit ↪ List Bool) (Du : Decoder u), ComputableInDegree Du.decode encBits u 0 0) := by
+  refine ⟨rfl, rfl, rfl, (Decoder.option Decoder.bool).decode_enc (some bit),
+    (Decoder.option D₁).computableInPolyTime, rfl, rfl, (Decoder.pair D₁ D₂).decode_enc x,
+    (Decoder.pair D₁ D₂).computableInPolyTime, ?_⟩
+  let u : Unit ↪ List Bool := ⟨fun _ => [], fun x y _ => Subsingleton.elim x y⟩
+  obtain ⟨c, h⟩ := computableInTimeAndSpace_of_const (encIn := encBits) (encOut := u) ()
+  have hd : ComputableInDegree (fun _ : List Bool => ()) encBits u 0 0 :=
     ⟨⟨fun _ => c, fun _ => 0, DegreeBounded.const c, DegreeBounded.const 0, h⟩,
       DegreeBounded.const 0⟩
-  exact ⟨a, ⟨fun _ => (), fun x => Subsingleton.elim _ x, 0, 0, hd⟩, hd⟩
+  exact ⟨u, ⟨fun _ => (), fun x => Subsingleton.elim _ x, 0, 0, hd⟩, hd⟩

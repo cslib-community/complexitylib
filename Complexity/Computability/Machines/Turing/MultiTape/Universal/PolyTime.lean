@@ -160,7 +160,7 @@ theorem universal_bounds_unary (i : Desc × List ℕ × ℕ) :
     (i.2.2 + 1) * (stepBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 +
         runBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 +
           ((encNat i.2.2).length + 1) ^ 2) + ((eIn i).length + 1) ^ 2 ≤
-      100025 * ((encPair eDesc (encPair (encList encUnary) encUnary) i).length + 1) ^ 8 ∧
+      100025 * ((encPair eDesc (encPair (encList encUnary) encUnary) i).length + 1) ^ 6 ∧
     runBound (descLen i.1) (encList encUnary i.2.1).length i.2.2 + (eIn i).length ≤
       205 * ((encPair eDesc (encPair (encList encUnary) encUnary) i).length + 1) ^ 3 := by
   obtain ⟨d, x, t⟩ := i
@@ -180,23 +180,23 @@ theorem universal_bounds_unary (i : Desc × List ℕ × ℕ) :
   have hrun := runBound_mono (D := descLen d) (N := (encList encUnary x).length)
     (Nat.le_add_right t 1)
   have ht : t + 1 ≤ n + 1 := by omega
-  have hpow : (t + 1) ^ 3 ≤ (n + 1) ^ 3 := Nat.pow_le_pow_left ht 3
+  have hpow : (t + 1) ^ 2 ≤ (n + 1) ^ 2 := Nat.pow_le_pow_left ht 2
   simp only at h₁ h₂ hstep hrun ⊢
   constructor
   · have hA : (t + 1) * (stepBound (descLen d) (encList encUnary x).length t +
         runBound (descLen d) (encList encUnary x).length t + ((encNat t).length + 1) ^ 2) ≤
-        100000 * (n + 1) ^ 5 * (n + 1) ^ 3 :=
+        100000 * (n + 1) ^ 4 * (n + 1) ^ 2 :=
       calc _ ≤ (t + 1 + 1) * (stepBound (descLen d) (encList encUnary x).length (t + 1) +
             runBound (descLen d) (encList encUnary x).length (t + 1) +
               ((encNat t).length + 1) ^ 2) := Nat.mul_le_mul (by omega) (by omega)
         _ ≤ _ := h₁
         _ ≤ _ := Nat.mul_le_mul_left _ hpow
-    have hB : ((eIn (d, x, t)).length + 1) ^ 2 ≤ 25 * (n + 1) ^ 8 := by
+    have hB : ((eIn (d, x, t)).length + 1) ^ 2 ≤ 25 * (n + 1) ^ 6 := by
       calc _ ≤ (5 * (n + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
         _ = 25 * (n + 1) ^ 2 := by ring
-        _ ≤ 25 * (n + 1) ^ 8 := Nat.mul_le_mul_left _
+        _ ≤ 25 * (n + 1) ^ 6 := Nat.mul_le_mul_left _
             (Nat.pow_le_pow_right (by omega) (by omega))
-    have : 100000 * (n + 1) ^ 5 * (n + 1) ^ 3 = 100000 * (n + 1) ^ 8 := by ring
+    have : 100000 * (n + 1) ^ 4 * (n + 1) ^ 2 = 100000 * (n + 1) ^ 6 := by ring
     omega
   · have hA : runBound (descLen d) (encList encUnary x).length t ≤ 200 * (n + 1) ^ 3 :=
       calc _ ≤ _ := hrun
@@ -222,7 +222,7 @@ theorem computableTidilyInPolyTime_universal :
   obtain ⟨d, e, hdeg⟩ := hconv.exists_degree
   exact (computableTidilyInO_universal.comp hdeg.inO).computableTidilyInPolyTime
     ((PolyBounded.of_forall_le 1 d fun _ => by simp).add
-      (PolyBounded.of_forall_le 100025 8 fun i => (universal_bounds_unary i).1))
+      (PolyBounded.of_forall_le 100025 6 fun i => (universal_bounds_unary i).1))
     ((PolyBounded.of_forall_le 1 d fun _ => by simp).add
       (PolyBounded.of_forall_le 205 3 fun i => (universal_bounds_unary i).2))
 
@@ -251,11 +251,9 @@ time. -/
 @[fun_prop]
 theorem computableInPolyTime_map_ne_zero :
     ComputableInPolyTime (fun l : List ℕ => l.map (· != 0)) (encList encUnary) encBits := by
-  have hbit : ComputableTidilyInPolyTime (fun n : ℕ => n != 0) encUnary encBool := by
-    convert bool_not.comp ComputableTidilyInDegree.unary_isZero.computableTidilyInPolyTime using 1
-    funext n
-    cases n <;> rfl
-  exact .of_tidy (listToBits.comp (ComputableTidilyInPolyTime.map hbit))
+  have hbit : ComputableInPolyTime (fun n : ℕ => n != 0) encUnary encBool :=
+    .bne .id' (.const 0)
+  exact ComputableInPolyTime.listToBits.comp (.map hbit)
 
 /-- Plain polynomial-time certificate for the universal simulator with a unary step budget. -/
 @[fun_prop]

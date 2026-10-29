@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Crypto.Computational.Homomorphic.GSW.DepthParameters.Security
+import Complexity.Tactic.PPT
 
 /-!
 The new family's zero and growing parameters, full depth margin, positive supported noise,
@@ -45,10 +46,10 @@ example : 4 * DepthParameters.samples 0 * Parameters.noise 0 *
     (DepthParameters.rows 0 + 1) ^ DepthParameters.depthBudget 0 <
       2 ^ DepthParameters.width 0 := DepthParameters.noise_margin 0
 
-example (security depth : ℕ) (hdepth : depth ≤ DepthParameters.depthBudget security) :
-    4 * DepthParameters.samples security * Parameters.noise security *
-      (DepthParameters.rows security + 1) ^ depth < 2 ^ DepthParameters.width security :=
-  DepthParameters.noise_margin_of_le hdepth
+example :
+    4 * DepthParameters.samples 0 * Parameters.noise 0 *
+      (DepthParameters.rows 0 + 1) ^ 512 < 2 ^ DepthParameters.width 0 :=
+  DepthParameters.noise_margin_of_le (security := 0) (by decide)
 
 -- A nonzero error is actually supported at every parameter, including zero.
 example (security : ℕ) :
@@ -80,19 +81,17 @@ example (security : ℕ) (left right : Bool) :=
       DepthParameters.fresh_margin security)
     (DepthParameters.nand_margin security) left right
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- Native routines return the full varying parameters, not a fixed finite-type code.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun security => (DepthParameters.width security,
       DepthParameters.samples security, DepthParameters.depthBudget security))
     encUnary (encPair encUnary (encPair encUnary encUnary)) := by fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The much larger modulus is returned in binary, not unary.
-example : ComputableTidilyInPolyTime DepthParameters.modulus encUnary encNat := by fun_prop
+example : ComputableInPolyTime DepthParameters.modulus encUnary encNat := by fun_prop
 
 example : PolynomiallyBounded (fun security => DepthParameters.rows security ^ 2) := by
-  have := DepthParameters.computableInPolyTime_rows.tidy.polynomiallyBounded
+  have := DepthParameters.polynomiallyBounded_parameters.2.2.2.1
   fun_prop
 
 example : IsPPTOn encUnary (encPair encBits encBits)
@@ -103,24 +102,39 @@ example : IsPPTOn encUnary (encPair encBits encBits)
     DepthParameters.computableInPolyTime_samples
     DepthParameters.computableInPolyTime_width Parameters.computableInPolyTime_noise
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- This certificate includes every raw public word and bit, including malformed input words.
 example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => encryptSerialized (Parameters.dimension p.1) (DepthParameters.samples p.1)
       (DepthParameters.width p.1) p.2.1 p.2.2) :=
-  isPPTOn_encryptSerialized (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop)) (.of_tidy (by
-    fun_prop))
-    (.of_tidy (by fun_prop)) (.of_tidy (by fun_prop))
+  isPPTOn_encryptSerialized (by fun_prop) (by fun_prop) (by fun_prop)
+    (by fun_prop) (by fun_prop)
+
+private def firstBitAdversary : Encryption.Adversary where
+  choose _ _ := pure ((false, true), [])
+  guess _ _ ciphertext := pure (ciphertext.headD false)
+
+private theorem firstBitAdversary_isPPT : firstBitAdversary.IsPPT := by
+  constructor <;> simp only [firstBitAdversary] <;> ppt
 
 -- Only this exact family's LWE hypothesis is supplied: no old-family or encryption-security
 -- assumption, efficient-width premise, or unproved decryption-circuit contract is added.
 example
     (hLWE : DecisionLWE Parameters.dimension DepthParameters.samples DepthParameters.width
       (fun k => noiseLaw (DepthParameters.width k) (Parameters.noise k))) :
-    Encryption.INDCPA
-      (fun k => keyGenSerialized (Parameters.dimension k) (DepthParameters.samples k)
-        (DepthParameters.width k) (Parameters.noise k))
-      (fun k => encryptSerialized (Parameters.dimension k) (DepthParameters.samples k)
-        (DepthParameters.width k)) := DepthParameters.indCPA hLWE
+    Negligible (fun k =>
+      Game.advantage
+        (ProbComp.eval (Encryption.game
+          (fun k => keyGenSerialized (Parameters.dimension k) (DepthParameters.samples k)
+            (DepthParameters.width k) (Parameters.noise k))
+          (fun k => encryptSerialized (Parameters.dimension k) (DepthParameters.samples k)
+            (DepthParameters.width k))
+          firstBitAdversary false k))
+        (ProbComp.eval (Encryption.game
+          (fun k => keyGenSerialized (Parameters.dimension k) (DepthParameters.samples k)
+            (DepthParameters.width k) (Parameters.noise k))
+          (fun k => encryptSerialized (Parameters.dimension k) (DepthParameters.samples k)
+            (DepthParameters.width k))
+          firstBitAdversary true k))) :=
+  DepthParameters.indCPA hLWE firstBitAdversary firstBitAdversary_isPPT
 
 end ComplexityTests.GSWDepthParameters

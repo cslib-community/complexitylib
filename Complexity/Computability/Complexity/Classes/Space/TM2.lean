@@ -43,17 +43,19 @@ The hypothesis `hstacks` uses `Turing.TM2.stepTotal`, which agrees with Mathlib'
 (`Turing.TM2.stepTotal_of_step`). Thus it bounds the ordinary source run, including its initial
 and final configurations; padding beyond halting imposes no additional stack bound. -/
 theorem mem_PSPACE_of_tm2 {α αΓ βΓ : Type} [Finite αΓ] [Finite βΓ]
+    {encA : αΓ ↪ List Bool}
     {ea : α → List αΓ} {eb : Bool → List βΓ} {f : α → Bool} {A : Set α}
     (h : TM2Computable ea eb f) [∀ k, Finite (h.tm.Γ k)]
     (ha : Function.Injective ea) (hb : Function.Injective eb)
     {space : α → ℕ} (hspace : PolyBounded (fun a => (ea a).length) space)
     (hstacks : h.StacksBounded space)
     (hA : ∀ a, a ∈ A ↔ f a = true) :
-    A ∈ PSPACE ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList (encFinite αΓ))) := by
-  have hf := h.computableTidilyInPolySpace ha hb hspace hstacks
-  have hbool := ComputableTidilyInPolyTime.of_finite (id : Bool → Bool)
-    (encA := (⟨eb, hb⟩ : Bool ↪ List βΓ).trans (encList (encFinite βΓ))) (encB := encBool)
-  exact mem_PSPACE_of_computableInPolySpace
-    (.of_tidy ((ComputableTidilyInPolySpace.of_polyTime hbool).comp hf)) hA
+    A ∈ PSPACE ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA)) := by
+  have hf := h.computableInPolySpace_encList (encA := encA) (encB := encFinite βΓ)
+    ha hb hspace hstacks
+  have hbool := ComputableInPolyTime.of_finite (id : Bool → Bool)
+    (encIn := (⟨eb, hb⟩ : Bool ↪ List βΓ).trans (encList (encFinite βΓ))) (encOut := encBool)
+  exact mem_PSPACE_of_computableInPolySpace ((ComputableInPolySpace.of_polyTime hbool).comp hf)
+    hA
 
 end Cslib.Complexity

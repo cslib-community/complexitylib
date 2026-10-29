@@ -15,6 +15,7 @@ import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -39,12 +40,16 @@ clause and the conjunction of the finished clauses at fixed offsets from the end
 
 ## Main definitions
 
+* `Cslib.Complexity.SignatureCircuitSAT`: the satisfiable single-output circuits over an arbitrary
+  Boolean signature and interpretation.
 * `Cslib.Complexity.CircuitSAT`: the satisfiable De Morgan circuits with one output.
 * `Cslib.Complexity.CircuitSAT.verifier`: evaluation on the first bits of a certificate.
 * `Cslib.Complexity.SAT.toCircuit`: the circuit of a formula in conjunctive normal form.
 
 ## Main results
 
+* `Cslib.Complexity.signatureCircuitSAT_boolean`: specializing `SignatureCircuitSAT` to the De
+  Morgan basis recovers `CircuitSAT`.
 * `Cslib.Complexity.CircuitSAT.mem_NP`: circuit satisfiability is in `NP`.
 * `Cslib.Complexity.SAT.toCircuit_mem_CircuitSAT_iff`: the circuit of a formula is satisfiable
   exactly when the formula is.
@@ -64,10 +69,27 @@ namespace Cslib.Complexity
 
 open Circuits Circuits.Boolean Turing.MultiTapeTM Cslib.Logic.PL
 
+/-- **Circuit satisfiability over an arbitrary Boolean signature**: the single-output circuits
+over `σ` that output `true` under `I` on some input. -/
+def SignatureCircuitSAT {σ : Signature} (I : Interpretation σ Bool) :
+    Set (Σ n, Circuit σ n 1) :=
+  {c | ∃ x : BitString c.1, c.2.eval I x 0 = true}
+
+/-- Membership in `SignatureCircuitSAT I`. -/
+theorem mem_SignatureCircuitSAT {σ : Signature} {I : Interpretation σ Bool}
+    {c : Σ n, Circuit σ n 1} :
+    c ∈ SignatureCircuitSAT I ↔ ∃ x : BitString c.1, c.2.eval I x 0 = true :=
+  Iff.rfl
+
 /-- **Circuit satisfiability**: the De Morgan circuits with one output that output true on some
 input [Arora and Barak, Section 6.1][AroraBarak09]. -/
 def CircuitSAT : Set (Σ n, Circuit signature n 1) :=
   {c | ∃ x : BitString c.1, c.2.eval interpretation x 0 = true}
+
+/-- Specializing `SignatureCircuitSAT` to the De Morgan basis recovers `CircuitSAT`. -/
+@[simp]
+theorem signatureCircuitSAT_boolean :
+    SignatureCircuitSAT interpretation = CircuitSAT := rfl
 
 theorem mem_CircuitSAT {c : Σ n, Circuit signature n 1} :
     c ∈ CircuitSAT ↔ ∃ x : BitString c.1, c.2.eval interpretation x 0 = true :=
@@ -101,22 +123,19 @@ private theorem verifier_eq_evalOutput (p : (Σ n, Circuit signature n 1) × Lis
   rw [verifier, Circuit.eval_eq_evalOutput, h]
   rfl
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The `CircuitSAT` verifier is polynomial-time, on certificates of arbitrary length. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair (encCircuit 1) encBits) encBool := by
-  refine .of_tidy ?_
-  have hraw : ComputableTidilyInPolyTime
+  have hraw : ComputableInPolyTime
       (fun p : (Σ n, Circuit signature n 1) × List Bool => ((p.1.1, p.1.2.code), p.2))
       (encPair (encCircuit 1) encBits) (encPair (encPair encUnary encCode) encBits) :=
     .of_eq fun _ => rfl
-  have hout : ComputableTidilyInPolyTime
+  have hout : ComputableInPolyTime
       (fun r : (ℕ × (List (Op × List ℕ) × List ℕ)) × List Bool =>
         evalOutput ((List.range r.1.1).map fun i => r.2.getD i false) r.1.2.1 (r.1.2.2.headD 0))
       (encPair (encPair encUnary encCode) encBits) encBool := by
-    apply ComputableInPolyTime.tidy
-    apply computableInPolyTime_evalOutput <;> exact .of_tidy (by fun_prop)
+    apply computableInPolyTime_evalOutput <;> fun_prop
   rw [funext verifier_eq_evalOutput]
   exact hout.comp hraw
 
@@ -346,34 +365,35 @@ theorem toCircuit_mem_CircuitSAT_iff (φ : CNF ℕ) : toCircuit φ ∈ CircuitSA
 
 /-! ### The reduction is polynomial-time -/
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 /-- Listing the instructions of the circuit of a formula is polynomial-time. -/
-private theorem computableTidilyInPolyTime_circuitSteps
-    : ComputableTidilyInPolyTime circuitSteps encCNF
+@[local fun_prop]
+private theorem computableInPolyTime_circuitSteps
+    : ComputableInPolyTime circuitSteps encCNF
     (encList (encPair (encPair encNat encBool) encBool)) := by
   unfold circuitSteps encCNF
   fun_prop
 
 /-- Writing the block of an instruction is polynomial-time, from the position `p` and the input
 `i` in unary; the gates use their binary numbers. -/
-private theorem computableTidilyInPolyTime_circuitBlock :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_circuitBlock :
+    ComputableInPolyTime
       (fun q : ((ℕ × ℕ) × Bool) × Bool => circuitBlock q.1.1.1 q.1.1.2 q.1.2 q.2)
       (encPair (encPair (encPair encUnary encUnary) encBool) encBool) (encList encGate) := by
-  have hp (c : ℕ) : ComputableTidilyInPolyTime (fun q : ((ℕ × ℕ) × Bool) × Bool => q.1.1.1 + c)
+  have hp (c : ℕ) : ComputableInPolyTime (fun q : ((ℕ × ℕ) × Bool) × Bool => q.1.1.1 + c)
       (encPair (encPair (encPair encUnary encUnary) encBool) encBool) encNat :=
     unary_to_binary.comp (unary_add.comp ((fst _ _).fst'.fst'.prod (const c)))
-  have hi : ComputableTidilyInPolyTime (fun q : ((ℕ × ℕ) × Bool) × Bool => q.1.1.2)
+  have hi : ComputableInPolyTime (fun q : ((ℕ × ℕ) × Bool) × Bool => q.1.1.2)
       (encPair (encPair (encPair encUnary encUnary) encBool) encBool) encNat :=
     unary_to_binary.comp (fst _ _).fst'.snd'
   have hgate (op : Op) {args : ((ℕ × ℕ) × Bool) × Bool → List ℕ}
-      (h : ComputableTidilyInPolyTime args
+      (h : ComputableInPolyTime args
         (encPair (encPair (encPair encUnary encUnary) encBool) encBool) (encList encNat)) :
-      ComputableTidilyInPolyTime (fun q => (op, args q))
+      ComputableInPolyTime (fun q => (op, args q))
         (encPair (encPair (encPair encUnary encUnary) encBool) encBool) encGate :=
     (const op).prod h
-  have hnil {β : Type} (enc : β ↪ List Bool) : ComputableTidilyInPolyTime
+  have hnil {β : Type} (enc : β ↪ List Bool) : ComputableInPolyTime
       (fun _ : ((ℕ × ℕ) × Bool) × Bool => ([] : List β))
       (encPair (encPair (encPair encUnary encUnary) encBool) encBool) (encList enc) := const []
   unfold circuitBlock
@@ -387,33 +407,33 @@ private theorem computableTidilyInPolyTime_circuitBlock :
         (cons' (hgate .and (cons' (hp 2) (cons' (hp 2) (hnil _)))) (hnil _)))
 
 /-- Writing the gates of the circuit of a formula is polynomial-time. -/
-private theorem computableTidilyInPolyTime_circuitGates :
-    ComputableTidilyInPolyTime circuitGates encCNF (encList encGate) := by
-  have hsteps := computableTidilyInPolyTime_circuitSteps
-  have hvars := SAT.computableInPolyTime_vars.tidy
-  have hargs : ComputableTidilyInPolyTime (fun p : CNF ℕ × ((Literal ℕ × Bool) × ℕ) =>
+private theorem computableInPolyTime_circuitGates :
+    ComputableInPolyTime circuitGates encCNF (encList encGate) := by
+  have hvars := SAT.computableInPolyTime_vars
+  have hzip : ComputableInPolyTime (fun φ => (circuitSteps φ).zipIdx) encCNF
+      (encList (encPair (encPair (encPair encNat encBool) encBool) encUnary)) := by
+    fun_prop
+  have hargs : ComputableInPolyTime (fun p : CNF ℕ × ((Literal ℕ × Bool) × ℕ) =>
       (((p.1.vars.length + 3 * p.2.2, p.1.vars.idxOf p.2.1.1.1), p.2.1.1.2), p.2.1.2))
       (encPair encCNF (encPair (encPair (encPair encNat encBool) encBool) encUnary))
       (encPair (encPair (encPair encUnary encUnary) encBool) encBool) := by
     fun_prop
   unfold circuitGates
-  exact listAppend' (const _) (flatMapWithInput ((zipIdx _).comp hsteps)
-    (computableTidilyInPolyTime_circuitBlock.comp hargs))
+  exact listAppend' (const _) (flatMapWithInput hzip
+    (computableInPolyTime_circuitBlock.comp hargs))
 
 /-- Building the circuit of a formula is polynomial-time, from the encoding `encCNF` of formulas
 to the binary encoding `encCircuit 1` of circuits. -/
 private theorem computableInPolyTime_toCircuit :
     ComputableInPolyTime toCircuit encCNF (encCircuit 1) := by
-  refine .of_tidy ?_
-  have hg := computableTidilyInPolyTime_circuitGates
-  have hs := computableTidilyInPolyTime_circuitSteps
-  have hvars := SAT.computableInPolyTime_vars.tidy
-  have hn : ComputableTidilyInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary := by
+  have hg := computableInPolyTime_circuitGates
+  have hvars := SAT.computableInPolyTime_vars
+  have hn : ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary := by
     fun_prop
-  have hout : ComputableTidilyInPolyTime
+  have hout : ComputableInPolyTime
       (fun φ : CNF ℕ => φ.vars.length + 3 * (circuitSteps φ).length + 2) encCNF encNat :=
     unary_to_binary.comp (by fun_prop)
-  have h : ComputableTidilyInPolyTime (fun φ : CNF ℕ => (φ.vars.length, circuitCode φ)) encCNF
+  have h : ComputableInPolyTime (fun φ : CNF ℕ => (φ.vars.length, circuitCode φ)) encCNF
       (encPair encUnary encCode) :=
     hn.prod (hg.prod (cons' hout (const [])))
   exact h.of_enc_eq fun φ => by rw [encCircuit_apply, code_toCircuit]; rfl

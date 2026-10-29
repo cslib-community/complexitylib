@@ -38,7 +38,7 @@ history, and in exponential time.
   `Cslib.Complexity.streamAcceptCount`, and the accepting ones are counted with a binary accumulator
   (`Cslib.Complexity.Interaction.countAccepts`,
   `Cslib.Complexity.Interaction.countAccepts_eq_accepted`), within polynomial space
-  (`Turing.MultiTapeTM.ComputableTidilyInPolySpace`,
+  (`Turing.MultiTapeTM.ComputableInPolySpace`,
   `Cslib.Complexity.Interaction.computableInPolySpace_countAccepts`).
 
 ## Main definitions
@@ -234,7 +234,7 @@ end SingleProver
 
 section PolyTime
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 variable [Finite Control] [Fintype Operation] {encEntry : Entry ↪ List Bool}
   (hmatch : ∀ op, ComputableInPolyTime (matchOp op) encEntry encBool)
@@ -247,12 +247,12 @@ private noncomputable abbrev encAliveState (encEntry : Entry ↪ List Bool) :
 
 omit [DecidableEq Operation] in
 /-- The instruction is polynomial-time: it reads finitely many observations. -/
-private theorem computableTidilyInPolyTime_instruction :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_instruction :
+    ComputableInPolyTime
       (fun p : MultiTapeMachine.FiniteConfig k Bool Control Operation × Bool =>
         instruction M p.1 p.2) (encPair encFiniteConfig encBool)
       (encFinite (Option (MultiTapeMachine.Action k Bool Control Operation))) := by
-  have hobs : ComputableTidilyInPolyTime
+  have hobs : ComputableInPolyTime
       (fun p : MultiTapeMachine.FiniteConfig k Bool Control Operation × Bool =>
         (p.1.tapes.state, p.1.tapes.inputSymbol, p.1.tapes.workTapeSymbols, p.1.answerSymbols, p.2))
       (encPair encFiniteConfig encBool)
@@ -266,21 +266,20 @@ private theorem computableTidilyInPolyTime_instruction :
 
 include hmatch hpair in
 /-- Answering from the history is polynomial-time. -/
-private theorem computableTidilyInPolyTime_answerFromHistory (op : Operation) (next : Control) :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_answerFromHistory (op : Operation) (next : Control) :
+    ComputableInPolyTime
       (fun p : (ℕ × AliveState k Control Operation Entry) × Bool =>
         answerFromHistory matchOp entryPair p.1.1 op next p.1.2)
       (encPair (encPair encUnary (encAliveState encEntry)) encBool)
       (encAliveState encEntry) := by
-  have hmatchOp := (hmatch op).tidy
-  have hpairTidy := hpair.tidy
+  have hmatchOp := hmatch op
   unfold answerFromHistory
   fun_prop
 
 include hmatch hpair in
 /-- **A step of the live replay is polynomial-time.** -/
-private theorem computableTidilyInPolyTime_aliveStep :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_aliveStep :
+    ComputableInPolyTime
       (fun p : (ℕ × AliveState k Control Operation Entry) × Bool =>
         aliveStep matchOp entryPair M p.1.1 p.1.2 p.2)
       (encPair (encPair encUnary (encAliveState encEntry)) encBool)
@@ -291,7 +290,7 @@ private theorem computableTidilyInPolyTime_aliveStep :
     (branch := fun tag p => taggedStep matchOp entryPair p.1.1 tag p.1.2)
     (tagEncoding := encPair encBool (encFinite (Option (MultiTapeMachine.Action k Bool Control
       Operation)))) ?_ ?_
-  · have h := computableTidilyInPolyTime_instruction M
+  · have h := computableInPolyTime_instruction M
     fun_prop
   · rintro ⟨_ | _, _ | (⟨action, symbol, move⟩ | ⟨op, next⟩)⟩
     · exact (fst _ _).snd'
@@ -300,7 +299,7 @@ private theorem computableTidilyInPolyTime_aliveStep :
     · exact (fst _ _).snd'
     · simp only [taggedStep]
       fun_prop
-    · exact computableTidilyInPolyTime_answerFromHistory matchOp entryPair hmatch hpair op next
+    · exact computableInPolyTime_answerFromHistory matchOp entryPair hmatch hpair op next
 
 omit [Finite Control] [Fintype Operation] in
 /-- A step of the live replay grows the storage by a bounded amount and consumes the history. -/
@@ -337,8 +336,8 @@ private theorem aliveStep_spaceBound {n i t : ℕ} {h : List Entry}
 
 include hmatch hpair in
 /-- **The live replay is polynomial-time** in the input, the coins and the history. -/
-private theorem computableTidilyInPolyTime_aliveRun :
-    ComputableTidilyInPolyTime (fun p : List Bool × List Bool × List Entry =>
+private theorem computableInPolyTime_aliveRun :
+    ComputableInPolyTime (fun p : List Bool × List Bool × List Entry =>
       aliveRun matchOp entryPair M p.1 p.2.1 p.2.2)
       (encPair encBits (encPair encBits (encList encEntry)))
       (encAliveState encEntry) := by
@@ -349,7 +348,7 @@ private theorem computableTidilyInPolyTime_aliveRun :
     (init := fun p => (MultiTapeMachine.FiniteConfig.init M.initial p.1, p.2.2, true))
     (step := aliveStep matchOp entryPair M) (encP := encUnary) (encA := encBool) (encL := encBits)
     (by fun_prop) (by fun_prop) (by fun_prop)
-    (computableTidilyInPolyTime_aliveStep matchOp entryPair M hmatch hpair)
+    (computableInPolyTime_aliveStep matchOp entryPair M hmatch hpair)
     (fun p consumed s => MultiTapeMachine.FiniteConfig.SpaceBound p.1.length consumed.length
       p.2.1.length s.1 ∧ s.2.1 <:+ p.2.2)
     (fun p => ⟨MultiTapeMachine.FiniteConfig.spaceBound_init _ _ _, List.suffix_refl _⟩)
@@ -378,9 +377,8 @@ theorem computableInPolyTime_accepts [Finite Operation] :
     Turing.MultiTapeTM.ComputableInPolyTime (fun p : List Bool × List Bool × List Entry =>
       accepts matchOp entryPair M p.1 p.2.1 p.2.2)
       (encPair encBits (encPair encBits (encList encEntry))) encBool := by
-  refine .of_tidy ?_
   cases nonempty_fintype Operation
-  have h := computableTidilyInPolyTime_aliveRun matchOp entryPair M
+  have h := computableInPolyTime_aliveRun matchOp entryPair M
     (encEntry := encEntry) hmatch hpair
   unfold accepts
   fun_prop
@@ -414,19 +412,17 @@ theorem computableInPolySpace_countAccepts [Finite Control]
     (hfuel : Turing.MultiTapeTM.ComputableInPolyTime fuel enc encUnary) :
     Turing.MultiTapeTM.ComputableInPolySpace (countAccepts MUnit enc fuel) (encPair enc encHistory)
       encNat := by
-  have hfuel := hfuel.tidy
-  refine .of_tidy ?_
-  have hfuel' : ComputableTidilyInPolyTime (fun q : α × History => fuel q.1)
-      (encPair enc encHistory) encUnary := hfuel.comp (ComputableTidilyInPolyTime.fst _ _)
+  have hfuel' : ComputableInPolyTime (fun q : α × History => fuel q.1)
+      (encPair enc encHistory) encUnary := hfuel.comp (ComputableInPolyTime.fst _ _)
   have hacc := (computableInPolyTime_accepts (fun _ _ => true) id MUnit
     (encEntry := encPair encBits encBits)
-    (fun _ => .of_tidy (ComputableTidilyInPolyTime.const true))
-    (.of_tidy ComputableTidilyInPolyTime.id')).tidy
-  have hverify : ComputableTidilyInPolyTime
+    (fun _ => (ComputableInPolyTime.const true))
+    (ComputableInPolyTime.id'))
+  have hverify : ComputableInPolyTime
       (fun p : (α × History) × List Bool =>
         accepts (fun _ _ => true) id MUnit (enc p.1.1) p.2 p.1.2)
       (encPair (encPair enc encHistory) encBits) encBool := by fun_prop
-  exact (computableInPolySpace_acceptCount (.of_tidy hverify) (.of_tidy hfuel')).tidy.congr fun q =>
+  exact (computableInPolySpace_acceptCount hverify (hfuel')).congr fun q =>
     (streamAcceptCount_eq_acceptCount _ q _).symm
 
 end Count

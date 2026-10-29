@@ -31,18 +31,17 @@ open Cslib Cslib.AffineDisperser Cslib.AffineDisperser.Explicit Cslib.Circuits M
 /-! ### Affine maps and affine subspaces -/
 
 -- The image of the zero extension `BitString 2 → BitString 5` is an affine subspace of
--- dimension `2`.
-example : finrank Bool ((⊤ : AffineSubspace Bool (BitString 2)).map
-    (BitString.isAffine_zeroExtend (d := 2) (d' := 5)).toAffineMap).direction = 2 := by
-  rw [BitString.IsAffine.finrank_direction_map_top _ (BitString.zeroExtend_injective (by norm_num)),
-    Module.finrank_fin_fun]
-
--- Its linear part is the zero extension itself, since `zeroExtend 0 = 0`.
+-- dimension `2`, and its linear part is the zero extension itself.
 example (x : BitString 2) :
+    finrank Bool ((⊤ : AffineSubspace Bool (BitString 2)).map
+      (BitString.isAffine_zeroExtend (d := 2) (d' := 5)).toAffineMap).direction = 2 ∧
     (BitString.isAffine_zeroExtend (d := 2) (d' := 5)).linearMap x = BitString.zeroExtend x := by
-  rw [BitString.IsAffine.linearMap_apply,
-    show (BitString.zeroExtend (0 : BitString 2) : BitString 5) = 0 by
-      funext i; simp [BitString.zeroExtend], add_zero]
+  refine ⟨?_, ?_⟩
+  · rw [BitString.IsAffine.finrank_direction_map_top _
+      (BitString.zeroExtend_injective (by norm_num)), Module.finrank_fin_fun]
+  · rw [BitString.IsAffine.linearMap_apply,
+      show (BitString.zeroExtend (0 : BitString 2) : BitString 5) = 0 by
+        funext i; simp [BitString.zeroExtend], add_zero]
 
 /-! ### The explicit disperser on `2 ^ 70` bits -/
 
@@ -98,23 +97,22 @@ theorem exists_circuit_three_mul_lt_size :
 
 /-! ### The language in `P` -/
 
-example (N : ℕ) : explicitDisperserLanguage.slice N = explicitDisperser N :=
-  slice_explicitDisperserLanguage N
-
-example : (explicitDisperserLanguage : Set (List Bool)) ∈ Complexity.P encBits :=
-  explicitDisperserLanguage_mem_P
-
--- The asymptotic bound, for all large `N`.
-example : ∀ᶠ N in Filter.atTop, ∀ C : Circuit (fullSignature 2 Bool) N 1,
-    C.Computes fullInterpretation (single (explicitDisperserLanguage.slice N)) →
-      7 / 2 * (N : ℝ) - 42 * N / (Nat.log 2 N + 1) - 7 ≤ C.size := by
-  simpa only [slice_explicitDisperserLanguage] using
-    eventually_le_size_of_computes_explicitDisperser
+-- `explicitDisperserLanguage` agrees with `explicitDisperser` on each slice, lies in `P`, and
+-- satisfies the `3.5 N - O(N / log N)` circuit lower bound for all large `N`.
+example :
+    (∀ N, explicitDisperserLanguage.slice N = explicitDisperser N) ∧
+      (explicitDisperserLanguage : Set (List Bool)) ∈ Complexity.P encBits ∧
+      ∀ᶠ N in Filter.atTop, ∀ C : Circuit (fullSignature 2 Bool) N 1,
+        C.Computes fullInterpretation (single (explicitDisperserLanguage.slice N)) →
+          7 / 2 * (N : ℝ) - 42 * N / (Nat.log 2 N + 1) - 7 ≤ C.size :=
+  ⟨(fun N => slice_explicitDisperserLanguage N),
+    explicitDisperserLanguage_mem_P,
+    by simpa only [slice_explicitDisperserLanguage] using
+      eventually_le_size_of_computes_explicitDisperser⟩
 
 /-! ### The explicit field with two prime factors -/
 
-example : degreePrimes 5915 = [5, 7] := by decide
-example : fieldDegree 5915 = 35 := by decide
+example : degreePrimes 5915 = [5, 7] ∧ fieldDegree 5915 = 35 := by decide
 
 /-- Pseudorandom bits from the linear congruential generator `s ↦ 1103515245 s + 12345` modulo
 `2 ^ 31`, reading bit `16` of each state. -/

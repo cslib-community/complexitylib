@@ -6,8 +6,8 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133; `try` steps that the
--- unused-tactic linter flags are dropped
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122; `try` steps
+-- that the unused-tactic linter flags are dropped
 
 public import Complexity.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.InPlace
@@ -16,6 +16,7 @@ import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Composition within small space
@@ -64,7 +65,8 @@ public lemma haltsAt_pos {input : List Symbol} {h : ℕ} (hh : tm.HaltsAt (tm.in
 
 /-- A space bound bounds the space of every run. -/
 public lemma RunsInSpace.space_le {input : List Symbol} {s : ℕ}
-    (h : tm.RunsInSpace input s) (t : ℕ) : tm.space (tm.initCfg input) t ≤ s := by
+    (h : tm.RunsInSpace input s) (t : ℕ) :
+    (MultiTapeNTM.RunPath.ofDeterministic tm (tm.initCfg input) t).space ≤ s := by
   let p : tm.ComputationPath input :=
     { toRunPath :=
         { length := t
@@ -392,7 +394,8 @@ lemma countSym_inO {α : Type} {enc : α ↪ List Bool} {p k cur : α → ℕ} {
       (fun a => T a + (enc a).length) fun a => S a + (enc a).length := by
   have hor := (ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
     (encMid := encBool) fun b : Bool × Bool => b.1 || !b.2).inO_one.comp_linear
-      ((natIsZero.comp_linear hp).prod (natIsZero.comp_linear hk))
+      ((ComputableInO.natIsZero.tidy.comp_linear hp).prod
+        (ComputableInO.natIsZero.tidy.comp_linear hk))
   refine (((hor.ite (const none) ((ComputableTidilyInDegree.optionSome (enc₁ := encUnary)
     (enc := eSym)).inO_one.comp_linear hcur)).of_enc_eq fun a => ?_)).mono 4 (fun a => ?_)
     fun a => ?_
@@ -406,13 +409,24 @@ lemma countSym_inO {α : Type} {enc : α ↪ List Bool} {p k cur : α → ℕ} {
 public lemma wTime_le' (c : WCtx) : wTime c ≤ 2 * ((eWCtx c).length + 1) ^ 3 := by
   have ht := length_le_length_encList eTape c.1.2.workTapes
   have hd := length_le_length_encList (encPair eKey eAct) c.1.1.table
-  have hl : c.1.2.workTapes.length + c.1.1.table.length + 1 ≤ 2 * ((eWCtx c).length + 1) := by
+  have hl : c.1.2.workTapes.length + c.1.1.table.length + 1 ≤ (eWCtx c).length + 1 := by
     simp only [length_encPair, eCfg_apply, eDesc_apply] at ht hd ⊢
     omega
+  have hdesc : (eDesc c.1.1).length + 1 ≤ (eWCtx c).length + 1 := by
+    simp only [length_encPair]
+    omega
+  have hpos : (encNat c.1.2.inputPos).length + 1 ≤ (eWCtx c).length + 1 := by
+    simp only [length_encPair, eCfg_apply]
+    omega
+  have hproduct := Nat.mul_le_mul_right ((eWCtx c).length + 1) (Nat.mul_le_mul hl hdesc)
+  have hdigits := Nat.pow_le_pow_left hpos 2
+  have hsquare : ((eWCtx c).length + 1) ^ 2 ≤ ((eWCtx c).length + 1) ^ 3 :=
+    Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
   unfold wTime
-  calc _ ≤ 2 * ((eWCtx c).length + 1) * ((eWCtx c).length + 1) ^ 2 :=
-        Nat.mul_le_mul_right _ hl
-    _ = 2 * ((eWCtx c).length + 1) ^ 3 := by ring
+  calc _ ≤ ((eWCtx c).length + 1) * ((eWCtx c).length + 1) * ((eWCtx c).length + 1) +
+          ((eWCtx c).length + 1) ^ 2 := Nat.add_le_add hproduct hdigits
+    _ = ((eWCtx c).length + 1) ^ 3 + ((eWCtx c).length + 1) ^ 2 := by ring
+    _ ≤ 2 * ((eWCtx c).length + 1) ^ 3 := by omega
 
 /-- A step of `g`, with the symbol found by the countdown. -/
 public lemma stepG_inO :
@@ -514,11 +528,12 @@ lemma fBranch_inO : ComputableTidilyInO (fun s : CSt =>
   have hsome := (ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear ho
   have hn := (ComputableTidilyInDegree.getD (enc₁ := encUnary) (enc := eSym) 0).inO_one.comp_linear
     ho
-  have hk1 := (eq encNat).comp (hk.prod (const (encMid := encNat) 1))
+  have hk1 := (ComputableInO.eq encNat).tidy.comp (hk.prod (const (encMid := encNat) 1))
   have hsum := ComputableTidilyInO.append (g := fun s : CSt => s.1.2.2 +
     (stepWith s.1.1.2.1 s.1.1.2.2 (xSym s)).2.getD 0) (encOut := encUnary) hcur hn
     fun s => by simp
-  have hnew := hsome.ite ((natPred.comp hk).prod (hk1.ite hsum hcur)) (hk.prod hcur)
+  have hnew := hsome.ite ((ComputableInO.natPred.tidy.comp hk).prod (hk1.ite hsum hcur))
+    (hk.prod hcur)
   refine ((((hc.fst'.fst').prod (hc.fst'.snd'.fst'.prod stepF_inO.fst')).prod hnew).of_enc_eq
     fun s => ?_).mono 100 (fun s => ?_) fun s => ?_
   · simp only [Function.comp_apply, emitScan_eq]
@@ -620,11 +635,11 @@ public lemma cNext_inO : ComputableTidilyInO cNext (encPair eCSt encBool) eCSt
   have hb := snd eCSt encBool
   have hk := hs.snd'.fst'
   have hcur := hs.snd'.snd'
-  have hk1 := (eq encNat).comp (hk.prod (const (encMid := encNat) 1))
+  have hk1 := (ComputableInO.eq encNat).tidy.comp (hk.prod (const (encMid := encNat) 1))
   have hbit := (ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encUnary)
     eBit).inO_one.comp_linear hb
-  refine ((hs.fst'.prod ((natPred.comp hk).prod (hk1.ite hbit hcur))).of_enc_eq (g := cNext)
-    fun p => ?_).mono 100 (fun p => ?_) fun p => ?_
+  refine ((hs.fst'.prod ((ComputableInO.natPred.tidy.comp hk).prod (hk1.ite hbit hcur))).of_enc_eq
+    (g := cNext) fun p => ?_).mono 100 (fun p => ?_) fun p => ?_
   · simp only [cNext, bitScan, Function.comp_apply]
     split_ifs <;> simp_all
   all_goals

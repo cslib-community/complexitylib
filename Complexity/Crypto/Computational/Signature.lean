@@ -186,7 +186,7 @@ theorem isPPTOn_eufCmaGame (S : SignatureScheme) {adversary : Forger}
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × (List Bool × List Bool)) × ((Unit × List Bool) × List (List Bool)) =>
         S.signingOracle pair.1.2.2 pair.2.1 pair.2.2) := by
@@ -292,7 +292,7 @@ theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forg
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair (encFinite Unit) encBits) (encList encBits)))
+        (encPair (encPair (encFinEnum Unit) encBits) (encList encBits)))
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × (List Bool × List Bool)) × ((Unit × List Bool) × List (List Bool)) =>
         S.oneTimeSigningOracle pair.1.2.2 pair.2.1 pair.2.2) := by
@@ -508,7 +508,7 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
   have hbound := hbound.tidy
   have hhandler : IsOraclePPTOn
       (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinite Unit) encBits) encBool))
+        (encPair (encPair (encFinEnum Unit) encBits) encBool))
       (encPair encBits encBool)
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
         oneTimeFilterHandler bound pair.1 pair.2.1 pair.2.2) := by
@@ -516,13 +516,13 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
     have hprep1 : ComputableTidilyInPolyTime
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => (p.1.1, p.2.1.2.length))
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         (encPair encUnary encUnary) := by
       polytime
     have hbound' := hbound.comp hprep1
     have hq : IsOraclePPTOn
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         encBits
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) =>
           List.take (bound p.1.1 p.2.1.2.length) <$> ProbOracleComp.query ((), p.2.1.2)) :=
@@ -532,14 +532,14 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
       polytime
     have hyes : IsOraclePPTOn
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         (encPair encBits encBool)
         (fun _ => pure ([], true)) :=
       (ComputableTidilyInPolyTime.const ([], true)).isOraclePPTOn (Operation := Unit)
     have hcond : ComputableTidilyInPolyTime
         (fun p : (ℕ × List Bool) × ((Unit × List Bool) × Bool) => p.2.2)
         (encPair (encPair encUnary encBits)
-          (encPair (encPair (encFinite Unit) encBits) encBool))
+          (encPair (encPair (encFinEnum Unit) encBits) encBool))
         encBool := by
       polytime
     exact IsOraclePPTOn.cond hcond hyes (hq.map hpair)
@@ -597,84 +597,37 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningOracle (S : SignatureScheme
         (S.oneTimeSigningOracle sk)) prog).run []) := by
   rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
     ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  have hsim := ProbOracleComp.run_interpret_map_state_of_invariant
-    (oracle := fun q (state : Bool × List (List Bool)) =>
+  -- Reconstruct the filter flag from the query log, so no state invariant is needed.
+  have hsim := ProbOracleComp.run_interpret_map_state
+    (oracle := fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
+    (oracle' := fun q (state : Bool × List (List Bool)) =>
       ((OracleComp.interpret
         (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
           (fun q s => ProbComp.eval (S.signingOracle sk q s)))
         ((oneTimeFilterHandler bound (n, pk) q).run state.1)).run state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
-    (oracle' := fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
-    (represent := Prod.snd)
-    (invariant := fun state : Bool × List (List Bool) => state.1 = !state.2.isEmpty)
-    (preserve := by
-      intro ⟨⟨⟩, msg⟩ ⟨alreadyQueried, queried⟩ hinv value ⟨nextQueried, nextList⟩ hmem
-      simp only [PMF.mem_support_map_iff] at hmem
-      obtain ⟨⟨⟨v, nq⟩, nl⟩, hmem, heq⟩ := hmem
-      cases heq
-      cases alreadyQueried
-      · change ((v, nq), nl) ∈ ((OracleComp.interpret
-            (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (fun q s => ProbComp.eval (S.signingOracle sk q s)))
-            (oneTimeFilterHandler bound (n, pk) ((), msg) false)).run queried).support at hmem
-        simp only [oneTimeFilterHandler, Bool.false_eq_true, ↓reduceIte, Functor.map_map,
-          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
-          PMF.monad_map_eq_map, PMF.mem_support_map_iff] at hmem
-        obtain ⟨⟨rawSig, nl'⟩, hsig, hpair⟩ := hmem
-        change (rawSig, nl') ∈
-          (ProbComp.eval (S.signingOracle sk ((), msg) queried)).support at hsig
-        simp only [signingOracle, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hsig
-        obtain ⟨sig, _, hsigEq⟩ := hsig
-        cases hsigEq
-        cases hpair
-        rfl
-      · change ((v, nq), nl) ∈ ((OracleComp.interpret
-            (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (fun q s => ProbComp.eval (S.signingOracle sk q s)))
-            (oneTimeFilterHandler bound (n, pk) ((), msg) true)).run queried).support at hmem
-        simp only [oneTimeFilterHandler, ↓reduceIte, OracleComp.interpret_pure,
-          StateT.run_pure, PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff] at hmem
-        cases hmem
-        simpa using hinv)
+    (represent := fun queried => (!queried.isEmpty, queried))
     (step := by
-      intro ⟨⟨⟩, msg⟩ ⟨alreadyQueried, queried⟩ hinv
-      dsimp at hinv
-      cases hq : queried.isEmpty
-      · have halready : alreadyQueried = true := by simp [hinv, hq]
-        subst halready
-        change PMF.map (fun (a, s') => (a, s'.2))
-            (((OracleComp.interpret
-              (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-                (fun q s => ProbComp.eval (S.signingOracle sk q s)))
-              (oneTimeFilterHandler bound (n, pk) ((), msg) true)).run queried).map
-                (fun result => (result.1.1, result.1.2, result.2))) =
-          ProbComp.eval (S.oneTimeSigningOracle sk ((), msg) queried)
-        simp [oneTimeFilterHandler, oneTimeSigningOracle, hq, OracleComp.interpret_pure,
-          StateT.run_pure, ProbComp.eval_pure]
-      · have halready : alreadyQueried = false := by simp [hinv, hq]
-        subst halready
-        change PMF.map (fun (a, s') => (a, s'.2))
-            (((OracleComp.interpret
-              (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifOracle k))
-                (fun q s => ProbComp.eval (S.signingOracle sk q s)))
-              (oneTimeFilterHandler bound (n, pk) ((), msg) false)).run queried).map
-                (fun result => (result.1.1, result.1.2, result.2))) =
-          ProbComp.eval (S.oneTimeSigningOracle sk ((), msg) queried)
-        simp only [oneTimeFilterHandler, Bool.false_eq_true, ↓reduceIte, Functor.map_map,
+      intro ⟨⟨⟩, msg⟩ queried
+      change _ = ((OracleComp.interpret (m := StateT (List (List Bool)) PMF) _
+        (oneTimeFilterHandler bound (n, pk) ((), msg) (!queried.isEmpty))).run queried).map _
+      cases queried with
+      | nil =>
+        simp only [oneTimeSigningOracle, List.isEmpty_nil, ↓reduceIte, Bool.not_true,
+          oneTimeFilterHandler, Bool.false_eq_true, Functor.map_map,
           OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
-          PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
-        change PMF.map (fun x : List Bool × List (List Bool) =>
-            (x.1.take (bound n msg.length), x.2))
-            (ProbComp.eval (S.signingOracle sk ((), msg) queried)) =
-          ProbComp.eval (S.oneTimeSigningOracle sk ((), msg) queried)
-        simp only [signingOracle, oneTimeSigningOracle, hq, ↓reduceIte,
+          PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def, signingOracle,
           ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind]
+        simp only [StateT.run, PMF.map_bind]
         refine PMF.bind_congr_on_support _ _ _ fun sig hsig => ?_
-        rw [List.isEmpty_iff.mp hq]
-        simp [List.take_of_length_le (hbound msg sig hsig)])
-    prog (false, []) rfl
-  exact hsim
+        simp [List.take_of_length_le (hbound msg sig hsig)]
+      | cons head tail =>
+        simp [oneTimeSigningOracle, oneTimeFilterHandler, OracleComp.interpret_pure,
+          StateT.run_pure, ProbComp.eval_pure])
+    prog []
+  have hproj := congrArg (PMF.map (fun result => (result.1, result.2.2))) hsim
+  rw [PMF.map_comp] at hproj
+  exact hproj.symm.trans (PMF.map_id _)
 
 /-- Full EUF-CMA security implies one-time EUF-CMA security. -/
 theorem EUFCMA.oneTimeEUFCMA {S : SignatureScheme} (h : S.EUFCMA) : S.OneTimeEUFCMA := by

@@ -64,14 +64,13 @@ theorem IsVerifier.exists_decidesInTime
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapePTM k Bool State) (c d : ℕ),
       machine.toNTM.DecidesInTime enc A (fun a => c * ((enc a).length + 1) ^ d) ∧
       ∀ input (cfg : Cfg k Bool State input), ∃ cfg', machine.toNTM.Step cfg cfg' := by
-  have hV := hV.tidy
   -- guess a certificate of the required length, then verify it
   let program (a : α) : ProbComp Bool :=
     (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length)
-  have hcount : ComputableTidilyInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval p).comp (ComputableTidilyInPolyTime.encoding_length enc)
+  have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length enc)
   have hprogram : IsPPTOn enc encBool program :=
-    (ComputableInPolyTime.of_tidy hcount).sampleList.map_with (.of_tidy hV)
+    (hcount).sampleList.map_with hV
   obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
   refine ⟨k, State, hfinite, machine, c, d, fun a => ?_, fun _ => machine.exists_step_toNTM⟩
   have htime : machine.toNTM.RunsInTime (enc a) (c * ((enc a).length + 1) ^ d) :=
@@ -91,8 +90,6 @@ theorem IsVerifier.exists_decidesInTime
   · rintro ⟨b, ⟨w, hw, hV⟩, rfl⟩
     exact ⟨w, hw, hV⟩
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Problems in `NP` are decidable in polynomial time by nondeterministic machines with a binary
 alphabet and finitely many states. -/
 theorem decidableInPolyTime_of_mem_NP (h : A ∈ NP enc) :

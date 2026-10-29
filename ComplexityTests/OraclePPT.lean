@@ -35,16 +35,16 @@ private theorem randomized_queryBounds : randomized.IsQueryBounded 2 :=
         (ProbOracleComp.IsQueryBounded.query first).bind fun repeated =>
           OracleComp.IsCostBounded.pure (answer, second, repeated) 0).mono (by norm_num)
 
--- The structural budget is exactly the bound on every logged execution.
-example (program : ProbOracleComp (fun _ : Bool => Bool) Unit) (calls : ℕ) :
-    program.IsQueryBounded calls ↔
-      ∀ (State : Type) (oracle : Bool → StateT State PMF Bool)
-        (s s' : State) (result : Unit) (transcript : OracleComp.Transcript (fun _ : Bool => Bool)),
-        (result, s', transcript) ∈ ((OracleComp.interpret
-          (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
-            (OracleComp.withTranscript oracle)) program).run (s, [])).support →
-              (transcript.map fun _ => 1).sum ≤ calls :=
-  ProbOracleComp.isCostBounded_iff_transcript_cost_le
+-- The structural budget bounds every logged execution of `randomized` by 2 external calls.
+example (State : Type) (oracle : Bool → StateT State PMF Bool)
+    (s s' : State) (result : Bool × Bool × Bool)
+    (transcript : OracleComp.Transcript (fun _ : Bool => Bool))
+    (h : (result, s', transcript) ∈ ((OracleComp.interpret
+      (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+        (OracleComp.withTranscript oracle)) randomized).run (s, [])).support) :
+    (transcript.map fun _ => 1).sum ≤ 2 :=
+  ProbOracleComp.isCostBounded_iff_transcript_cost_le.mp randomized_queryBounds
+    State oracle s s' result transcript h
 
 -- With an empty reply type there is no oracle at all, so a bound on logged executions holds
 -- vacuously. The structural budget still counts the call.
@@ -101,31 +101,29 @@ example : ¬duplicatedRequests.IsQueryBounded 1 := by
     (by rw [run_duplicatedRequests]; simp)
   norm_num at hbound
 
--- Private sampling remains fresh while an external query is answered consistently.
-example :
-    (do
-      let table ← PMF.uniformOfFintype (Bool → Bool)
-      OracleComp.interpret
-        (ProbOracleComp.handler ProbComp.unifOracle (fun q => PMF.pure (table q))) randomized) =
-      ((OracleComp.interpret
-        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
-          (Cslib.RandomOracle.answer (fun _ => PMF.uniformOfFintype Bool))) randomized).run
-            (fun _ => none)).map Prod.fst :=
-  Cslib.RandomOracle.uniform_interpret_prob_eq_lazy randomized
-
--- Executable list memoization implements this same randomized adaptive table experiment.
+-- Executable list memoization implements both the eager and lazy randomized adaptive table
+-- experiments on `randomized`.
 example :
     ProbComp.eval (Prod.fst <$> (OracleComp.interpret
       (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
         (memoize (fun _ : Bool => ProbComp.uniform Bool))) randomized).run []) =
-      (do
-        let table ← PMF.pi (fun _ : Bool => PMF.uniformOfFintype Bool)
-        OracleComp.interpret
-          (ProbOracleComp.handler ProbComp.unifOracle (fun q => PMF.pure (table q)))
-            randomized) := by
-  simpa only [ProbComp.eval_uniform] using
-    Cslib.RandomOracle.eval_run_interpret_memoize_prob_eq_eager
-      (fun _ : Bool => ProbComp.uniform Bool) randomized
+      ((OracleComp.interpret
+        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifOracle n))
+          (Cslib.RandomOracle.answer (fun _ => PMF.uniformOfFintype Bool))) randomized).run
+            (fun _ => none)).map Prod.fst := by
+  have heager :
+      ProbComp.eval (Prod.fst <$> (OracleComp.interpret
+        (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
+          (memoize (fun _ : Bool => ProbComp.uniform Bool))) randomized).run []) =
+        (do
+          let table ← PMF.pi (fun _ : Bool => PMF.uniformOfFintype Bool)
+          OracleComp.interpret
+            (ProbOracleComp.handler ProbComp.unifOracle (fun q => PMF.pure (table q)))
+              randomized) := by
+    simpa only [ProbComp.eval_uniform] using
+      Cslib.RandomOracle.eval_run_interpret_memoize_prob_eq_eager
+        (fun _ : Bool => ProbComp.uniform Bool) randomized
+  rw [heager, PMF.pi_uniformOfFintype, Cslib.RandomOracle.uniform_interpret_prob_eq_lazy]
 
 -- Two external calls give at most 18 encoded bits, including pair/list framing; draws are free
 -- only with respect to this storage bound, not the separate machine time certificate.
@@ -177,15 +175,17 @@ private theorem requestHead_isOraclePPTOn : IsOraclePPTOn encBits encBits reques
 private theorem requestHead_isOraclePPT : IsOraclePPT encBits (fun _ word => requestHead word) :=
   IsOraclePPTOn.isOraclePPT (IsOraclePPTOn.query_take () (.const []) (.const 1))
 
-example : ∃ c d : ℕ, ∀ n input,
-    (requestHead input).IsQueryBounded (c * (n + input.length + 2) ^ d) ∧
-    (requestHead input).QueriesSatisfy fun request =>
-      request.2.length ≤ c * (n + input.length + 2) ^ d := requestHead_isOraclePPT.query_bounds
-
--- The resource contract derives a uniform budget for this concrete functional oracle client.
-example : ∃ c d : ℕ, ∀ input, (requestHead input).IsQueryBounded (c * (input.length + 1) ^ d) ∧
-    (requestHead input).QueriesSatisfy fun request =>
-      request.2.length ≤ c * (input.length + 1) ^ d := requestHead_isOraclePPTOn.query_bounds
+-- The resource contracts derive uniform query budgets for `requestHead` on the empty input.
+example :
+    (∃ c d : ℕ, (requestHead []).IsQueryBounded (c * 2 ^ d) ∧
+      (requestHead []).QueriesSatisfy fun request => request.2.length ≤ c * 2 ^ d) ∧
+    (∃ c d : ℕ, (requestHead []).IsQueryBounded (c * 1 ^ d) ∧
+      (requestHead []).QueriesSatisfy fun request => request.2.length ≤ c * 1 ^ d) := by
+  refine ⟨?_, ?_⟩
+  · obtain ⟨c, d, h⟩ := requestHead_isOraclePPT.query_bounds
+    exact ⟨c, d, by simpa using h 0 []⟩
+  · obtain ⟨c, d, h⟩ := requestHead_isOraclePPTOn.query_bounds
+    exact ⟨c, d, by simpa using h []⟩
 
 private noncomputable def respond (caller : List Bool) (_ : Unit × List Bool)
     (state : List Bool) : ProbComp (List Bool × List Bool) := do
@@ -198,10 +198,10 @@ example : IsPPTOn encBits (encPair encBits encBits) (fun word =>
     (OracleComp.interpret
       (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
         (requestHead word)).run word) := by
-  apply requestHead_isOraclePPTOn.run_interpret_preprocess
+  apply requestHead_isOraclePPTOn.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller _ => caller.length + 1)
-    ComputableTidilyInPolyTime.id' (by unfold respond; fun_prop)
-    ComputableTidilyInPolyTime.id' (fun caller state => caller.length ≤ state.length)
+    (by fun_prop) (by unfold respond; fun_prop)
+    (by fun_prop) (fun caller state => caller.length ≤ state.length)
     (fun _ => le_rfl) (by fun_prop)
   intro caller request state hstate result hresult
   simp only [respond, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hresult
@@ -228,18 +228,17 @@ example : IsPPTOn (encList encBool) (encPair encBits encBits) (fun word =>
     (OracleComp.interpret
       (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n)) (respond word))
         (requestHead word.reverse)).run word) := by
-  apply requestHead_isOraclePPTOn.run_interpret_preprocess
+  apply requestHead_isOraclePPTOn.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller _ => caller.length + 1)
     (ComputableTidilyInPolyTime.bitsReverse.comp ComputableTidilyInPolyTime.listToBits)
     (by
       have h : IsPPTOn
-          (encPair encBits (encPair (encPair (encFinite Unit) encBits) encBits))
+          (encPair encBits (encPair (encPair (encFinEnum Unit) encBits) encBits))
           (encPair encBits encBits) (fun pair => respond pair.1 pair.2.1 pair.2.2) := by
         unfold respond
         fun_prop
-      apply h.preprocess
-      exact ComputableInPolyTime.of_tidy ((ComputableTidilyInPolyTime.listToBits.comp
-        (ComputableTidilyInPolyTime.fst _ _)).prod (ComputableTidilyInPolyTime.snd _ _)))
+      exact h.preprocess
+        ((ComputableInPolyTime.listToBits.comp (by fun_prop)).prod (by fun_prop)))
     (by fun_prop)
     (fun caller state => caller.length ≤ state.length) (fun _ => le_rfl) (by fun_prop)
   intro caller request state hstate result hresult
@@ -267,9 +266,9 @@ example {β : Type} {output : β ↪ List Bool} {program : List Bool → WordOra
         (ProbOracleComp.handler (fun n => StateT.lift (ProbComp.unifFin n))
           (fun request => memoize (fun _ => BitString.sampleList word.length) request.2))
             (program word)).run []) := by
-  apply hprogram.run_interpret_preprocess
+  apply hprogram.run_interpret_preprocess (operationEncoding := encFinEnum Unit)
     (resources := fun caller query => 4 * query.length + 2 * caller.length + 3)
-    ComputableTidilyInPolyTime.id' (by fun_prop) (by fun_prop)
+    (by fun_prop) (by fun_prop) (by fun_prop)
     (fun caller cache => ∀ entry ∈ cache, entry.2.length ≤ caller.length)
     (by simp) (by fun_prop)
   intro caller request cache hcache result hresult
@@ -315,7 +314,8 @@ example : IsPPTOn (encPair encBits (encList encBits))
           (OracleComp.withSampleList [] (fun value _ state =>
             pure (value.take pair.1.length, value.take pair.1.length ++ state))))
               (requestHead pair.1)).run (pair.1, pair.2)) := by
-  apply requestHead_isOraclePPTOn.run_interpret_withSampleList []
+  apply requestHead_isOraclePPTOn.run_interpret_withSampleList
+    (operationEncoding := encFinEnum Unit) []
     (prepare := fun pair => pair.1) (resources := fun pair _ => pair.1.length)
     (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
     (fun _ _ => True) (by simp) (by fun_prop)

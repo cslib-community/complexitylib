@@ -50,18 +50,17 @@ theorem PolyTimeReducible.mem_BPP (h : PolyTimeReducible enc encB A B) (hB : B �
   rw [Complexity.mem_BPP] at hB ⊢
   obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨q, W, hW, hWB⟩ := hB
-  have hg := hg.tidy
-  have hW := hW.tidy
-  have hlen : ComputableTidilyInPolyTime (fun a => q.eval (encB (g a)).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval q).comp
-      ((ComputableTidilyInPolyTime.encoding_length encB).comp hg)
+  have hlen : ComputableInPolyTime (fun a => q.eval (encB (g a)).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval q).comp
+      ((ComputableInPolyTime.encoding_length encB).comp hg)
   obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
   refine ⟨p,
     andVerifier (fun a => q.eval (encB (g a)).length) (fun x => W (g x.1, x.2)) fun _ => true,
-    .of_tidy (computableTidilyInPolyTime_andVerifier hlen
+    (computableInPolyTime_andVerifier hlen
       (hW.comp ((hg.comp (.fst enc encBits)).prod (.snd enc encBits))) (.const true)),
     fun a => ?_⟩
   obtain ⟨j, hj⟩ := Nat.exists_eq_add_of_le (hle a)
+  dsimp only [DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError, BoundedErrorAt]
   rw [hj]
   set k := q.eval (encB (g a)).length
   set V := andVerifier (fun a => q.eval (encB (g a)).length) (fun x => W (g x.1, x.2))
@@ -85,7 +84,10 @@ theorem PolyTimeReducible.mem_BPP (h : PolyTimeReducible enc encB A B) (hB : B �
   · have h : 2 * 2 ^ k ≤ 3 * acceptCount W (g a) k := (hWB (g a)).1 ((hAB a).1 ha)
     have := Nat.mul_le_mul_right (2 ^ j) h
     linarith
-  · have := Nat.mul_le_mul_right (2 ^ j) ((hWB (g a)).2 fun hgB => ha ((hAB a).2 hgB))
+  · have h : 2 * 2 ^ k ≤
+        3 * (Finset.univ.filter fun r : Fin k → Bool => W (g a, List.ofFn r) = false).card :=
+      (hWB (g a)).2 fun hgB => ha ((hAB a).2 hgB)
+    have := Nat.mul_le_mul_right (2 ^ j) h
     linarith
 
 end Cslib.Complexity

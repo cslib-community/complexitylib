@@ -27,58 +27,52 @@ instance : Fact (2 ≤ 5) := ⟨by decide⟩
 def x : Fin 2 → Fin 3 := ![0, 2]
 def y : Fin 2 → Fin 3 := ![1, 0]
 
-example : lexRank x = 2 := by decide
-example : lexRank y = 3 := by decide
-example : tupleIndex x = 6 := by decide
-example : tupleIndex y = 1 := by decide
-example : lexRank x < lexRank y ∧ tupleIndex y < tupleIndex x := by decide
+/-- Lexicographic vs. colexicographic tuple numbering, base-five digits, zero-dimensional universe,
+and endpoint tuples (`tupleZero`, `tupleOne`, `tupleMax`). -/
+example :
+    lexRank x = 2 ∧
+    lexRank y = 3 ∧
+    tupleIndex x = 6 ∧
+    tupleIndex y = 1 ∧
+    lexRank x < lexRank y ∧
+    tupleIndex y < tupleIndex x ∧
+    Pi.Lex (· < ·) (· < ·) x y ∧
+    lexRank (![3, 2] : Fin 2 → Fin 5) = 17 ∧
+    ((lexEquiv.symm (17 : Fin (5 ^ 2))) 0).val = 3 ∧
+    ((lexEquiv.symm (17 : Fin (5 ^ 2))) 1).val = 2 ∧
+    lexRank (Fin.elim0 : Fin 0 → Fin 0) = 0 ∧
+    lexRank (tupleZero (n := 3) (k := 2)) = 0 ∧
+    lexRank (tupleOne (n := 3) (k := 1)) = 1 ∧
+    lexRank (tupleMax (n := 3) (k := 2)) = 8 ∧
+    lexRank (tupleMax (n := 5) (k := 3)) = 124 :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide,
+    (lexRank_lt_iff_lex x y).mp (by decide),
+    by decide,
+    by rw [lexEquiv_symm_apply_val]; decide,
+    by rw [lexEquiv_symm_apply_val]; decide,
+    by rw [lexRank_apply]; simp,
+    lexRank_tupleZero, lexRank_tupleOne, lexRank_tupleMax, lexRank_tupleMax⟩
 
-example : Pi.Lex (· < ·) (· < ·) x y :=
-  (lexRank_lt_iff_lex x y).mp (by decide)
-
-/-- Base five also uses arithmetic digits, not concatenated binary coordinates. -/
-example : lexRank (![3, 2] : Fin 2 → Fin 5) = 17 := by decide
-example : ((lexEquiv.symm (17 : Fin (5 ^ 2))) 0).val = 3 := by
-  rw [lexEquiv_symm_apply_val]
-  decide
-example : ((lexEquiv.symm (17 : Fin (5 ^ 2))) 1).val = 2 := by
-  rw [lexEquiv_symm_apply_val]
-  decide
-
-/-- The zero-dimensional universe has one tuple, even at base zero. -/
-example (z : Fin 0 → Fin 0) : lexRank z = 0 := by
-  rw [lexRank_apply]
-  simp
-
-example : lexRank (tupleZero (n := 3) (k := 2)) = 0 := lexRank_tupleZero
-example : lexRank (tupleOne (n := 3) (k := 1)) = 1 := lexRank_tupleOne
-example : lexRank (tupleMax (n := 3) (k := 2)) = 8 := lexRank_tupleMax
-example : lexRank (tupleMax (n := 5) (k := 3)) = 124 := lexRank_tupleMax
-
-example : (tupleLt L 2).IsQF := isQF_tupleLt L 2
-example : (tupleLe L 2).IsQF := isQF_tupleLe L 2
-
-example : (tupleLt L 2).Realize (fun p => if p.1 = 0 then x p.2 else y p.2) := by
-  rw [realize_tupleLt]
-  decide
-
-example : ¬ (tupleLe L 2).Realize (fun p => if p.1 = 0 then y p.2 else x p.2) := by
-  rw [realize_tupleLe]
-  decide
-
-example : (tupleLe L 0).Realize (fun p => p.2.elim0 : Fin 2 × Fin 0 → Fin 3) := by
-  rw [realize_tupleLe]
-
-/-- A genuine validity witness for target constants on the full two-dimensional domain. -/
-example : (tupleConstants L 1).Valid (Fin 3) := tupleConstants_valid
-example : ((tupleConstants L 1).constant .one).IsQF := isQF_tupleConstants L 1 .one
-example : ((tupleConstants L 1).constant .one).Realize (![0, 1] : Fin 2 → Fin 3) := by
-  rw [realize_tupleConstants]
-  decide
-example : lexRank ((tupleConstants L 1).value (tupleConstants_valid (n := 3)) .max).val = 8 :=
-  lexRank_tupleConstants_value .max
-example : lexRank ((tupleConstants L 2).value (tupleConstants_valid (n := 5)) .one).val = 1 :=
-  lexRank_tupleConstants_value .one
+/-- Quantifier-freeness and realization of `tupleLt`, `tupleLe`, and `tupleConstants`. -/
+example :
+    (tupleLt L 2).IsQF ∧
+    (tupleLe L 2).IsQF ∧
+    (tupleLt L 2).Realize (fun p => if p.1 = 0 then x p.2 else y p.2) ∧
+    ¬ (tupleLe L 2).Realize (fun p => if p.1 = 0 then y p.2 else x p.2) ∧
+    (tupleLe L 0).Realize (fun p => p.2.elim0 : Fin 2 × Fin 0 → Fin 3) ∧
+    (tupleConstants L 1).Valid (Fin 3) ∧
+    ((tupleConstants L 1).constant .one).IsQF ∧
+    ((tupleConstants L 1).constant .one).Realize (![0, 1] : Fin 2 → Fin 3) ∧
+    lexRank ((tupleConstants L 1).value (tupleConstants_valid (n := 3)) .max).val = 8 ∧
+    lexRank ((tupleConstants L 2).value (tupleConstants_valid (n := 5)) .one).val = 1 :=
+  ⟨isQF_tupleLt L 2, isQF_tupleLe L 2,
+    by rw [realize_tupleLt]; decide,
+    by rw [realize_tupleLe]; decide,
+    by rw [realize_tupleLe],
+    tupleConstants_valid, isQF_tupleConstants L 1 .one,
+    by rw [realize_tupleConstants]; decide,
+    lexRank_tupleConstants_value .max,
+    lexRank_tupleConstants_value .one⟩
 
 /-- A sentence with target constants pulls back through the full tuple interpretation. -/
 def separated : Language.empty[[NumericFunction 0]].Sentence :=

@@ -65,7 +65,7 @@ input, and registered with `fun_prop`.
 
 namespace Cslib.Circuits.Rational
 
-open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
+open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
 
 /-- The rank expansion threshold: the ambient dimension is the least power of two above it. -/
 def threshold (n s : ℕ) : ℕ := Parameters.rankBound s * Parameters.delta n s
@@ -140,7 +140,6 @@ theorem computableInPolyTime_exponent (hn : ComputableInPolyTime n input encUnar
   change ComputableInPolyTime (fun a => Nat.log 2 (threshold (n a) (s a))) input encUnary
   fun_prop
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The ambient dimension, in unary, by repeated doubling up to the ceiling logarithm. -/
 @[fun_prop]
 theorem computableInPolyTime_ambientDimension
@@ -148,11 +147,8 @@ theorem computableInPolyTime_ambientDimension
     (hs : ComputableInPolyTime s input encUnary) :
     ComputableInPolyTime (fun a => Parameters.ambientDimension (n a) (s a))
       input encUnary := by
-  have hn := hn.tidy
-  have hs := hs.tidy
-  refine .of_tidy ?_
   simp only [Parameters.ambientDimension_eq]
-  exact unary_pow_clog_const (by fun_prop) 2 2
+  fun_prop
 
 /-- The cyclotomic degree, in unary. -/
 @[fun_prop]
@@ -212,6 +208,6 @@ theorem computableInPolyTime_hittingList_dimension :
 theorem computableInPolyTime_hittingList_dimension_binary :
     ComputableInPolyTime (fun p : ℕ × ℕ => (hittingList p.1 p.2).dimension)
       (encPair encUnary encUnary) encNat :=
-  .of_tidy (unary_to_binary.comp computableInPolyTime_hittingList_dimension.tidy)
+  unary_to_binary.comp computableInPolyTime_hittingList_dimension
 
 end Cslib.Circuits.Rational

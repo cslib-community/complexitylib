@@ -5,8 +5,6 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
-import Complexity.Computability.Complexity.Classes.SharpP.Completeness
-import Complexity.Computability.Complexity.Classes.TFNP
 import Complexity.Computability.Complexity.Parameterized
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Complexity.Classes.Promise.Reduction
@@ -108,93 +106,43 @@ example : LogSpaceHard 𝒞 encB B ↔
 example : LogSpaceComplete 𝒞 encB B ↔ B ∈ 𝒞 encB ∧ LogSpaceHard 𝒞 encB B :=
   Iff.rfl
 
-/-- Both reducibilities are many-one reducibility by their class of maps. -/
-example : PolyTimeReducible encA encB A B ↔
-    ManyOneReducibleBy (ComputableInPolyTime · encA encB) A B :=
-  polyTimeReducible_iff_manyOneReducibleBy
-
-example : LogSpaceReducible encA encB A B ↔
-    ManyOneReducibleBy (ComputableInLogSpace · encA encB) A B :=
-  logSpaceReducible_iff_manyOneReducibleBy
-
-/-- A core reduction by logspace maps, built from the core's `refl`, is a logspace reduction
-through the bridge. -/
-example : LogSpaceReducible encA encA A A :=
-  logSpaceReducible_iff_manyOneReducibleBy.mpr (ManyOneReducibleBy.refl ComputableInLogSpace.id A)
-
-/-- A core reduction by polynomial-time maps is a polynomial-time reduction through the bridge. -/
-example : PolyTimeReducible encA encA A A :=
-  polyTimeReducible_iff_manyOneReducibleBy.mpr
-    (ManyOneReducibleBy.refl ComputableInPolyTime.id' A)
-
-/-- Completeness under logspace reductions is `CompleteUnder` for `LogSpaceReducible`. -/
-example (h : LogSpaceComplete 𝒞 encB B) :
-    CompleteUnder (fun enc => LogSpaceReducible enc encB) 𝒞 encB B :=
-  logSpaceComplete_iff_completeUnder.mp h
+/-- Both reducibilities are many-one reducibility by their class of maps: concrete reductions,
+core `refl` witnesses, and `USTCON`'s logspace completeness transport across the bridges. -/
+example :
+    ManyOneReducibleBy (ComputableInPolyTime · encBits encBits)
+      {w : List Bool | w.tail.headD false = true} {w | w.headD false = true} ∧
+    LogSpaceReducible encA encA A A ∧
+    PolyTimeReducible encA encA A A ∧
+    CompleteUnder (fun enc => LogSpaceReducible enc encUSTCON) L encUSTCON USTCON :=
+  ⟨polyTimeReducible_iff_manyOneReducibleBy.mp ⟨List.tail, by fun_prop, fun _ => Iff.rfl⟩,
+   logSpaceReducible_iff_manyOneReducibleBy.mpr (ManyOneReducibleBy.refl ComputableInLogSpace.id A),
+   polyTimeReducible_iff_manyOneReducibleBy.mpr
+     (ManyOneReducibleBy.refl ComputableInPolyTime.id' A),
+   logSpaceComplete_iff_completeUnder.mp USTCON_logSpaceComplete_L⟩
 
 /-! ### Mapping reductions and fpt-reductions -/
 
-example : MappingReducible encA encB A B ↔
-    ∃ f : α → β, IsComputable f encA encB ∧ ∀ a, a ∈ A ↔ f a ∈ B :=
-  Iff.rfl
+/-- The identity, computable in polynomial time, bounds the parameter by itself, and both
+`MappingReducible` and `FPTReducible` transport `ManyOneReducibleBy.refl` across their bridges. -/
+example {κA : α → ℕ} :
+    ComputableInFPTWithParam encA encA κA κA id ∧
+    MappingReducible encA encA A A ∧
+    FPTReducible encA encA κA κA A A := by
+  have hid : ComputableInFPTWithParam encA encA κA κA id :=
+    ⟨ComputableInPolyTime.id'.computableInFPTTime κA, id, fun _ => le_rfl⟩
+  exact ⟨hid,
+    mappingReducible_iff_manyOneReducibleBy.mpr
+      (ManyOneReducibleBy.refl (isComputable_id encA) A),
+    fptReducible_iff_manyOneReducibleBy.mpr (ManyOneReducibleBy.refl hid A)⟩
 
-example : MappingReducible encA encB A B ↔
-    ManyOneReducibleBy (IsComputable · encA encB) A B :=
-  mappingReducible_iff_manyOneReducibleBy
+/-! ### Promise reductions -/
 
-example {κA : α → ℕ} {κB : β → ℕ} : FPTReducible encA encB κA κB A B ↔
-    ∃ f : α → β, (ComputableInFPTTime f encA encB κA ∧
-      ∃ h : ℕ → ℕ, ∀ a, κB (f a) ≤ h (κA a)) ∧ ∀ a, a ∈ A ↔ f a ∈ B :=
-  Iff.rfl
-
-example {κA : α → ℕ} {κB : β → ℕ} : FPTReducible encA encB κA κB A B ↔
-    ManyOneReducibleBy (ComputableInFPTWithParam encA encB κA κB) A B :=
-  fptReducible_iff_manyOneReducibleBy
-
-/-- The identity, computable in polynomial time, bounds the parameter by itself. -/
-example {κA : α → ℕ} : ComputableInFPTWithParam encA encA κA κA id :=
-  ⟨(ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.id').computableInFPTTime κA, id,
-    fun _ => le_rfl⟩
-
-/-! ### Non-`Set` hardness and completeness instances -/
-
-example {g : β → ℕ} : SharpPHard encB g ↔
-    ∀ {α : Type} (enc : α ↪ List Bool) (f : α → ℕ), f ∈ SharpP enc →
-      ParsimoniousReducible enc encB f g :=
-  Iff.rfl
-
-example {g : β → ℕ} : SharpPHard encB g ↔
-    HardUnder (fun enc => ParsimoniousReducible enc encB) @SharpP g :=
-  sharpPHard_iff_hardUnder
-
-example {g : β → ℕ} : SharpPComplete encB g ↔
-    CompleteUnder (fun enc => ParsimoniousReducible enc encB) @SharpP encB g :=
-  sharpPComplete_iff_completeUnder
-
-example {𝒮 : ∀ {α : Type}, (α ↪ List Bool) → Set (α → List Bool → Prop)}
-    {S : β → List Bool → Prop} : SearchHard 𝒮 encB S ↔
-    ∀ {α : Type} (enc : α ↪ List Bool) (R : α → List Bool → Prop), R ∈ 𝒮 enc →
-      SearchReducible enc encB R S :=
-  Iff.rfl
-
-example {𝒮 : ∀ {α : Type}, (α ↪ List Bool) → Set (α → List Bool → Prop)}
-    {S : β → List Bool → Prop} : SearchHard 𝒮 encB S ↔
-    HardUnder (fun enc => SearchReducible enc encB) @𝒮 S :=
-  searchHard_iff_hardUnder
-
-example {𝒮 : ∀ {α : Type}, (α ↪ List Bool) → Set (α → List Bool → Prop)}
-    {S : β → List Bool → Prop} : SearchComplete 𝒮 encB S ↔
-    CompleteUnder (fun enc => SearchReducible enc encB) @𝒮 encB S :=
-  searchComplete_iff_completeUnder
-
-example {Y : PromiseProblem β} : PromiseProblem.NPHard encB Y ↔
-    ∀ {α : Type} (enc : α ↪ List Bool) (A : Set α), A ∈ NP enc →
-      PromiseProblem.PolyTimeReducible enc encB (.ofSet A) Y :=
-  Iff.rfl
-
-example {Y : PromiseProblem β} : PromiseProblem.NPHard encB Y ↔
-    HardUnder (fun enc A Y => PromiseProblem.PolyTimeReducible enc encB (.ofSet A) Y) @NP Y :=
-  PromiseProblem.npHard_iff_hardUnder
+/-- `PromiseProblem.ofSet SAT` is `HardUnder` promise polynomial-time reductions for `NP`. -/
+example :
+    HardUnder (fun enc A Y => PromiseProblem.PolyTimeReducible enc encCNF (.ofSet A) Y)
+      @NP (.ofSet SAT) :=
+  PromiseProblem.npHard_iff_hardUnder.mp
+    (PromiseProblem.npHard_of_polyTimeReducible_SAT (.refl encCNF (.ofSet SAT)))
 
 universe u in
 example {α : Type u} (enc : α ↪ List Bool) (X : PromiseProblem α) :

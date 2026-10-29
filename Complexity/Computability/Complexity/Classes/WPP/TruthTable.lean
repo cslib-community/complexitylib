@@ -60,22 +60,21 @@ private def answerGap {α : Type} (g f : α × ℕ → ℤ) (r : α → ℕ)
 private theorem answerGap_mem {α : Type} {enc : α ↪ List Bool}
     {g f : α × ℕ → ℤ} {r : α → ℕ} {d : α × List Bool → Bool}
     (hg : g ∈ GapP (encPair enc encUnary)) (hf : f ∈ GapP (encPair enc encUnary))
-    (hr : ComputableTidilyInPolyTime r enc encUnary)
-    (hd : ComputableTidilyInPolyTime d (encPair enc encBits) encBool) :
+    (hr : ComputableInPolyTime r enc encUnary)
+    (hd : ComputableInPolyTime d (encPair enc encBits) encBool) :
     answerGap g f r d ∈ GapP enc := by
   let q : (α × List Bool) × ℕ → α × ℕ := fun x => (x.1.1, x.2)
-  have hq : ComputableTidilyInPolyTime q
+  have hq : ComputableInPolyTime q
       (encPair (encPair enc encBits) encUnary) (encPair enc encUnary) := by dsimp [q]; fun_prop
   have hs : (fun x : (α × List Bool) × ℕ =>
       if x.1.2.getD x.2 false then g (x.1.1, x.2) else
         f (x.1.1, x.2) - g (x.1.1, x.2)) ∈
       GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.ite_mem (.of_tidy (by fun_prop)) (GapP.comp_mem hg (.of_tidy hq))
-      (GapP.comp_mem (GapP.sub_mem' hf hg) (.of_tidy hq))
-  have hp := GapP.prod_range_mem hs (.of_tidy (hr.comp (.fst enc encBits)))
-  have hw : ComputableTidilyInPolyTime
+    GapP.ite_mem (by fun_prop) (GapP.comp_mem hg hq) (GapP.comp_mem (GapP.sub_mem' hf hg) hq)
+  have hp := GapP.prod_range_mem hs (hr.comp (.fst enc encBits))
+  have hw : ComputableInPolyTime
       (fun x => if d x then (1 : ℤ) else 0) (encPair enc encBits) encIntBin := by fun_prop
-  exact GapP.sum_bits_mem (GapP.mul_mem (mem_GapP_of_polyTime (.of_tidy hw)) hp) (.of_tidy hr)
+  exact GapP.sum_bits_mem (GapP.mul_mem (mem_GapP_of_polyTime hw) hp) hr
 
 private theorem answerGap_eq {α : Type} {A : Set (α × ℕ)} {g f : α × ℕ → ℤ}
     {r : α → ℕ} {d : α × List Bool → Bool}
@@ -124,14 +123,12 @@ theorem truthTable_mem_WPP (hA : A ∈ WPP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary)
     (hd : ComputableInPolyTime d (encPair enc encBits) encBool) :
     {a | d (a, truthTableAnswers A r a) = true} ∈ WPP enc := by
-  have hr := hr.tidy
-  have hd := hd.tidy
   rw [mem_WPP] at hA ⊢
   obtain ⟨g, hg, f, hf, hn, hR, hA⟩ := hA
   have hF (a) : (∏ i ∈ range (r a), f (a, i)) ≠ 0 :=
     prod_ne_zero_iff.mpr fun i _ => hn (a, i)
   refine ⟨answerGap g f r d, answerGap_mem hg (mem_GapP_of_polyTime hf) hr hd,
-    _, .of_tidy (ComputableTidilyInPolyTime.intBin_prod_range hf.tidy hr), hF, ?_, ?_⟩
+    _, ComputableInPolyTime.intBin_prod_range hf hr, hF, ?_, ?_⟩
   · intro a
     rw [answerGap_eq hR hA]
     split_ifs <;> simp
@@ -146,22 +143,18 @@ theorem truthTable_mem_LWPP (hA : A ∈ LWPP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary)
     (hd : ComputableInPolyTime d (encPair enc encBits) encBool) :
     {a | d (a, truthTableAnswers A r a) = true} ∈ LWPP enc := by
-  have hr := hr.tidy
-  have hd := hd.tidy
   obtain ⟨g, hg, f, hf, hn, hR, hA⟩ := mem_LWPP.mp hA
   let F (x : α × ℕ) := f ((encPair enc encUnary x).length)
-  have hF : ComputableTidilyInPolyTime F (encPair enc encUnary) encIntBin :=
-    hf.tidy.comp (.encoding_length _)
+  have hF : ComputableInPolyTime F (encPair enc encUnary) encIntBin :=
+    hf.comp (.encoding_length _)
   have he := answerGap_eq (f := F) (r := r) (d := d) hR hA
   obtain ⟨p, hb⟩ := hr.polyBounded.exists_polynomial
   let T (x : ℕ × ℕ) := ∏ i ∈ range x.2, f (2 * x.1 + 1 + i)
-  have hT : ComputableTidilyInPolyTime T (encPair encUnary encUnary) encIntBin := by
-    have hf := hf.tidy
-    apply ComputableTidilyInPolyTime.intBin_prod_range
-      (f := fun x : (ℕ × ℕ) × ℕ => f (2 * x.1.1 + 1 + x.2)) <;> fun_prop
-  have hp : ComputableTidilyInPolyTime (fun n => p.eval n + 1) encUnary encUnary := by fun_prop
-  apply mem_LWPP_of_indexed_targets (answerGap_mem hg (mem_GapP_of_polyTime (.of_tidy hF)) hr hd)
-    hT.computableInPolyTime hp.computableInPolyTime
+  have hT : ComputableInPolyTime T (encPair encUnary encUnary) encIntBin := by
+    refine ComputableInPolyTime.intBin_prod_range
+      (f := fun x : (ℕ × ℕ) × ℕ => f (2 * x.1.1 + 1 + x.2)) ?_ ?_ <;> fun_prop
+  have hp : ComputableInPolyTime (fun n => p.eval n + 1) encUnary encUnary := by fun_prop
+  apply mem_LWPP_of_indexed_targets (answerGap_mem hg (mem_GapP_of_polyTime hF) hr hd) hT hp
   · intro n k _
     exact prod_ne_zero_iff.mpr fun i _ => hn _
   · intro a ha

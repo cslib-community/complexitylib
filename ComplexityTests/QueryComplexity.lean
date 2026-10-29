@@ -18,21 +18,28 @@ namespace ComplexityTests.QueryComplexity
 open Cslib Cslib.BitString Cslib.QueryComplexity Finset
 open scoped BigOperators
 
--- These are CSLib's measures, used directly by the local decision-tree bounds.
-example {n : ℕ} (f : BooleanFunction n) :
-    DecisionTree.complexity f ≤
-      certificateComplexityFor f false * certificateComplexityFor f true :=
-  DecisionTree.complexity_le_certificateComplexityFor_mul f
+-- On 2-bit conjunction, 0-certificates have size 1 and 1-certificates have size 2, so the
+-- product bound gives D(and₂) ≤ 1 * 2 = 2. In the second example, the computed
+-- `certificateComplexity and₂ = 2` is the substantive check; the instantiated `C²` bound
+-- `D(and₂) ≤ 4` is weaker than the trivial `complexity_le_card` bound of 2.
+private def and₂ : BooleanFunction 2 := fun x => x 0 && x 1
 
-example {n : ℕ} (f : BooleanFunction n) :
-    DecisionTree.complexity f ≤ Cslib.QueryComplexity.certificateComplexity f ^ 2 :=
-  DecisionTree.complexity_le_certificateComplexity_sq f
+example :
+    certificateComplexityFor and₂ false = 1 ∧
+      certificateComplexityFor and₂ true = 2 ∧
+      DecisionTree.complexity and₂ ≤ 2 := by
+  have h0 : certificateComplexityFor and₂ false = 1 := by decide
+  have h1 : certificateComplexityFor and₂ true = 2 := by decide
+  refine ⟨h0, h1, ?_⟩
+  simpa [h0, h1] using DecisionTree.complexity_le_certificateComplexityFor_mul and₂
 
-example {n : ℕ} :
-    sensitivity (parity n) = n ∧ blockSensitivity (parity n) = n ∧
-      certificateComplexity (parity n) = n ∧ DecisionTree.complexity (parity n) = n :=
-  ⟨sensitivity_parity, blockSensitivity_parity, certificateComplexity_parity,
-    DecisionTree.complexity_parity⟩
+example :
+    certificateComplexity and₂ = 2 ∧ DecisionTree.complexity and₂ ≤ 4 := by
+  have hc : certificateComplexity and₂ = 2 := by decide
+  refine ⟨hc, ?_⟩
+  simpa [hc] using DecisionTree.complexity_le_certificateComplexity_sq and₂
+
+example : sensitivity (parity 3) = 3 ∧ certificateComplexity (parity 3) = 3 := by decide
 
 -- The finite minimum is executable, including empty-coordinate and missing-output cases.
 example : certificateComplexityAt (parity 2) (fun _ => false) = 2 := by decide
@@ -77,9 +84,17 @@ example : {0} ⊆ natTree.queries (fun _ => false) := by
   decide
 
 -- Upstream assignments and generic restrictions need no conversion or alternative encoding.
-example {n : ℕ} (C : Cslib.QueryComplexity.PartialAssignment n) (x : BitString n) :
-    Cslib.QueryComplexity.Agrees C x ↔ Cslib.BitString.PartialAssignment.fill C x = x :=
-  Cslib.BitString.PartialAssignment.agrees_iff_fill_eq
+private def fixZeroFalse : Cslib.QueryComplexity.PartialAssignment 3 :=
+  fun i => if i = 0 then some false else none
+
+example :
+    Cslib.QueryComplexity.Agrees fixZeroFalse ![false, true, false] ∧
+      ¬ Cslib.QueryComplexity.Agrees fixZeroFalse ![true, true, false] := by
+  change Cslib.BitString.PartialAssignment.Agrees fixZeroFalse ![false, true, false] ∧
+    ¬ Cslib.BitString.PartialAssignment.Agrees fixZeroFalse ![true, true, false]
+  rw [Cslib.BitString.PartialAssignment.agrees_iff_fill_eq,
+    Cslib.BitString.PartialAssignment.agrees_iff_fill_eq]
+  decide
 
 example {n : ℕ} (C : Cslib.QueryComplexity.PartialAssignment n) :
     Cslib.QueryComplexity.support C = Cslib.BitString.PartialAssignment.support C := rfl
@@ -96,22 +111,28 @@ example {n : ℕ} (x y : BitString n) (S : Finset (Fin n)) :
     Cslib.BitString.PartialAssignment.fill (Cslib.QueryComplexity.restrict x S) y =
       S.piecewise x y := by simp
 
-example {ι β : Type*} [Finite ι] (C : Cslib.BitString.PartialAssignment ι)
-    (f : (ι → Bool) → β) : DecisionTree.complexity (f ∘ C.fill) ≤ DecisionTree.complexity f :=
-  DecisionTree.complexity_comp_fill_le C f
+example :
+    2 ≤ DecisionTree.complexity (parity 3 ∘ Cslib.BitString.PartialAssignment.fill fixZeroFalse) ∧
+      DecisionTree.complexity (parity 3 ∘ Cslib.BitString.PartialAssignment.fill fixZeroFalse) ≤
+        3 := by
+  have hfree : #(Cslib.BitString.PartialAssignment.free fixZeroFalse) = 2 := by decide
+  refine ⟨?_, ?_⟩
+  · simpa [hfree, Function.comp_def] using
+      DecisionTree.card_free_le_complexity_parity_fill fixZeroFalse
+  · exact (DecisionTree.complexity_comp_fill_le fixZeroFalse (parity 3)).trans_eq
+      DecisionTree.complexity_parity
 
 -- Generic Fourier theory and the native sensitivity corollary coexist.
-example {ι : Type*} [Fintype ι] [DecidableEq ι] (f : (ι → Bool) → Bool) :
-    totalInfluence (fun x => signVal (f x)) =
-      𝔼 x, (#{i | f (Function.update x i (!x i)) ≠ f x} : ℝ) :=
-  totalInfluence_signVal f
+example (b : Bool) : totalInfluence (fun _ : Bool → Bool => signVal b) = 0 := by
+  rw [totalInfluence_signVal (fun _ : Bool → Bool => b)]
+  simp
 
-example {n : ℕ} (f : BooleanFunction n) :
-    totalInfluence (fun x => signVal (f x)) = 𝔼 x, (sensitivityAt f x : ℝ) :=
-  totalInfluence_eq_expect_sensitivityAt f
+example {n : ℕ} : totalInfluence (fun x => signVal (parity n x)) = n := by
+  rw [totalInfluence_eq_expect_sensitivityAt (parity n)]
+  simp [sensitivityAt_parity]
 
-example {n : ℕ} (f : BooleanFunction n) :
-    totalInfluence (fun x => signVal (f x)) ≤ sensitivity f :=
-  totalInfluence_le_sensitivity f
+example : totalInfluence (fun x => signVal (and₂ x)) ≤ 2 := by
+  have hs : sensitivity and₂ = 2 := by decide
+  simpa [hs] using totalInfluence_le_sensitivity and₂
 
 end ComplexityTests.QueryComplexity

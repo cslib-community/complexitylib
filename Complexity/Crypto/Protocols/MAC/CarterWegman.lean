@@ -7,13 +7,17 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Computability.Probabilistic.LinearHash
+public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.PseudorandomFunction
+public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Languages.Probabilistic.Simulation
 public import Complexity.Probability.BitString.LinearHash
 public import Complexity.Probability.BitString.SubsetSum
 public import Complexity.Probability.HashFamily
 public import Complexity.Probability.HashFamily.Polynomial
 public import Complexity.Probability.PairwiseIndependentHash.Universal
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Crypto.Negligible.Basic
@@ -113,15 +117,20 @@ This module formalizes:
    `maskedNonceStrongGame`, `maskedNonceGame`, `nonceFnDistinguisher`, `prfFnDist`,
    `prfNonceStrongGame`, `prfNonceGame`, `prfNonceStrongGame_le_of_distinguisher`,
    `prfNonceGame_le_of_distinguisher`, `PseudorandomFunction.negligible_prfNonceStrongGame`,
-   `PseudorandomFunction.negligible_prfNonceGame`)**: models Boneh–Shoup Attack Game 7.4 and
-   Theorem 7.10 ([BonehShoup2023], Section 7.5.1, p. 274) under a statistical `IsDeltaUniversalHash`
-   family, where the adversary adaptively chooses distinct signing nonces `x_i : N` and outputs a
-   candidate forgery `((m', x'), t')` at any (issued or unissued) nonce `x'`, achieving forgery
-   probability at most `max ε (1 / |Y|) ≤ ε + 1 / |Y|` under a random function
-   `rf ← PMF.uniformOfFintype (N → Y)`, and at most `ε.toReal + (2 ^ n)⁻¹ + Game.advantage ...`
-   under a PRF pad family `prfFnDist family n` when given an `OracleDistinguisher` `D` simulating
-   `nonceFnDistinguisher` (constructing `D` from a word-level `IsOraclePPT` nonce-MAC forger remains
-   open in #736).
+   `PseudorandomFunction.negligible_prfNonceGame`, `carterWegmanNonceMAC`, `cwNonceLogHandler`,
+   `prfNonceToPrfDistinguisher`, `isOraclePPT_prfNonceToPrfDistinguisher`,
+   `eval_prfRealGame_prfNonceToPrfDistinguisher`,
+   `eval_prfIdealGame_prfNonceToPrfDistinguisher_le`, `sufCmaGame_carterWegmanNonceMAC_toReal_le`,
+   `PseudorandomFunction.sufCma_carterWegmanNonceMAC`,
+   `PseudorandomFunction.eufCma_carterWegmanNonceMAC`)**: models Boneh–Shoup Attack Game 7.4 and
+   Theorem 7.10 ([BonehShoup2023], Section 7.5.1, p. 274) both information-theoretically and
+   computationally (`NonceMACScheme`), where the adversary adaptively chooses distinct signing
+   nonces `x_i : N` and outputs a candidate forgery `((m', x'), t')` at any (issued or unissued)
+   nonce `x'`, achieving forgery probability at most `max ε (1 / |Y|) ≤ ε + 1 / |Y|` under a random
+   function `rf ← PMF.uniformOfFintype (N → Y)`, at most `ε.toReal + (2 ^ n)⁻¹ + Game.advantage ...`
+   under a PRF pad family `prfFnDist family n` via the `IsOraclePPT encBool` reduction wrapper
+   `prfNonceToPrfDistinguisher`, and asymptotic `NonceMACScheme.SUFCMA` and `NonceMACScheme.EUFCMA`
+   security under `PseudorandomFunction family` and `Negligible ε`.
 8. **Randomized Carter–Wegman MAC (`RandomNonceForger`, `randomNonceFnHandler`,
    `randomNonceSimHandler`, `checkRandomNonceSUF`, `checkRandomNonceEUF`,
    `randomNonceStrongGame`, `randomNonceGame`, `randomNonceStrongGame_le`, `randomNonceGame_le`,
@@ -129,18 +138,27 @@ This module formalizes:
    `prfRandomNonceStrongGame`, `prfRandomNonceGame`,
    `prfRandomNonceStrongGame_le_of_distinguisher`, `prfRandomNonceGame_le_of_distinguisher`,
    `PseudorandomFunction.negligible_prfRandomNonceStrongGame`,
-   `PseudorandomFunction.negligible_prfRandomNonceGame`)**: models Boneh–Shoup Section 7.4,
-   Theorem 7.9 ([BonehShoup2023], pp. 267–270) under a statistical `IsDeltaUniversalHash` family,
-   where the signer samples a fresh uniform nonce `x_i ← PMF.uniformOfFintype N` on each signing
-   query, bounding any `Q`-query adaptive forger's winning probability by
+   `PseudorandomFunction.negligible_prfRandomNonceGame`, `carterWegmanRandomMAC`,
+   `cwRandomNonceLogHandler`, `prfRandomNonceToPrfDistinguisher`,
+   `isOraclePPT_prfRandomNonceToPrfDistinguisher`,
+   `eval_prfRealGame_prfRandomNonceToPrfDistinguisher`,
+   `eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le`,
+   `sufCmaGame_carterWegmanRandomMAC_toReal_le`,
+   `PseudorandomFunction.sufCma_carterWegmanRandomMAC`,
+   `PseudorandomFunction.eufCma_carterWegmanRandomMAC`,
+   `PseudorandomFunction.oneTimeEUFCMA_carterWegmanRandomMAC`)**: models Boneh–Shoup Section 7.4,
+   Theorem 7.9 ([BonehShoup2023], pp. 267–270) both information-theoretically and computationally
+   (`MACScheme`), where the signer samples a fresh uniform nonce `x_i ← PMF.uniformOfFintype N` on
+   each signing query, bounding any `Q`-query adaptive forger's winning probability by
    `((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / |N| + max ε (1 / |Y|) ≤`
    `Q ^ 2 / (2 * |N|) + 1 / |Y| + ε`
-   under a random function and adding the PRF distinguishing advantage under `prfFnDist family n`
-   when given an `OracleDistinguisher` `D` simulating `randomNonceFnDistinguisher` (constructing `D`
-   from a word-level `IsOraclePPT` forger and packaging randomized Carter–Wegman as a `MACScheme`
-   with `SUFCMA` remain open in #736).
+   under a random function, adding the PRF distinguishing advantage of the `IsOraclePPT encBool`
+   reduction wrapper `prfRandomNonceToPrfDistinguisher` under `prfFnDist family n`, and proving
+   asymptotic `MACScheme.SUFCMA`, `MACScheme.EUFCMA`, and `MACScheme.OneTimeEUFCMA` security under
+   `PseudorandomFunction family` and `Negligible ε`.
 9. **Concrete instantiations** for Carter–Wegman polynomial hashing (`xpolyHash`, bound
-   `(ℓ + 1) / |F|`), Boolean-matrix linear hashing (`BitString.LinearHash.hash`, bound `2⁻ᵐ`),
+   `(ℓ + 1) / |F|`), Boolean-matrix linear hashing (`BitString.LinearHash.hash` and computational
+   `linearHashNonceMAC` / `linearHashRandomMAC` via `BitString.LinearHash.wordHash`, bound `2⁻ᵐ`),
    subset-sum hashing (`BitString.SubsetSum.hash`, bound `1 / |G|`), and pairwise independent
    hash families (`IsPairwiseIndependentHash`, bound `1 / |Y|`).
 
@@ -192,7 +210,12 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.nonceFnDistinguisher`,
   `Cslib.Crypto.Protocols.CarterWegman.prfFnDist`,
   `Cslib.Crypto.Protocols.CarterWegman.prfNonceStrongGame`,
-  `Cslib.Crypto.Protocols.CarterWegman.prfNonceGame`: full nonce-based Carter–Wegman experiments
+  `Cslib.Crypto.Protocols.CarterWegman.prfNonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.carterWegmanNonceMAC`,
+  `Cslib.Crypto.Protocols.CarterWegman.cwNonceLogHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfNonceToPrfDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.linearHashNonceMAC`: full nonce-based Carter–Wegman
+  experiments, `NonceMACScheme` packaging, and `OracleDistinguisher` reduction wrapper
   (Boneh–Shoup Attack Game 7.4 and Theorem 7.10).
 * `Cslib.Crypto.Protocols.CarterWegman.RandomNonceForger`,
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceFnHandler`,
@@ -205,7 +228,12 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.maskedRandomNonceGame`,
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceFnDistinguisher`,
   `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceStrongGame`,
-  `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceGame`: randomized Carter–Wegman experiments
+  `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.carterWegmanRandomMAC`,
+  `Cslib.Crypto.Protocols.CarterWegman.cwRandomNonceLogHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceToPrfDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.linearHashRandomMAC`: randomized Carter–Wegman experiments,
+  `MACScheme` packaging, and `OracleDistinguisher` reduction wrapper
   (Boneh–Shoup Section 7.4, Theorem 7.9, p. 270).
 
 ## Main results
@@ -253,6 +281,7 @@ This module formalizes:
   PRF-masked Carter–Wegman security, `IsOraclePPT` admissibility, and asymptotic security
   (after Boneh–Shoup Section 7.5, Theorem 7.10).
 * `Cslib.Crypto.Protocols.CarterWegman.uniform_bind_run_interpret_nonceFnHandler`,
+  `Cslib.Crypto.Protocols.CarterWegman.probOracleComp_uniform_bind_run_interpret_nonceFnHandler`,
   `Cslib.Crypto.Protocols.CarterWegman.seed_uniform_checkNonceSUF_le`,
   `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_le_max`,
   `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_le`,
@@ -262,10 +291,20 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.prfNonceStrongGame_le_of_distinguisher`,
   `Cslib.Crypto.Protocols.CarterWegman.prfNonceGame_le_of_distinguisher`,
   `Cslib.Crypto.PseudorandomFunction.negligible_prfNonceStrongGame`,
-  `Cslib.Crypto.PseudorandomFunction.negligible_prfNonceGame`: full nonce-based Carter–Wegman
+  `Cslib.Crypto.PseudorandomFunction.negligible_prfNonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.isOraclePPT_prfNonceToPrfDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.eval_prfRealGame_prfNonceToPrfDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.eval_prfIdealGame_prfNonceToPrfDistinguisher_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.sufCmaGame_carterWegmanNonceMAC_toReal_le`,
+  `Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanNonceMAC`,
+  `Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC`: full nonce-based Carter–Wegman
   security (Boneh–Shoup Attack Game 7.4 and Theorem 7.10).
 * `Cslib.Crypto.Protocols.CarterWegman.uniform_bind_run_interpret_randomNonceFnHandler`,
+`Cslib.Crypto.Protocols.CarterWegman.probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler`
+  (`ProbOracleComp` lift),
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceSimHandler_not_nodup_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.probOracleComp_randomNonceSimHandler_not_nodup_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.seed_uniform_probOracleComp_checkRandomNonceSUF_le`,
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame_le_sum_add_max`,
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame_le`,
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceGame_le`,
@@ -273,7 +312,14 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceStrongGame_le_of_distinguisher`,
   `Cslib.Crypto.Protocols.CarterWegman.prfRandomNonceGame_le_of_distinguisher`,
   `Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceStrongGame`,
-  `Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceGame`: randomized Carter–Wegman
+  `Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceGame`,
+  `Cslib.Crypto.Protocols.CarterWegman.isOraclePPT_prfRandomNonceToPrfDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.eval_prfRealGame_prfRandomNonceToPrfDistinguisher`,
+  `Cslib.Crypto.Protocols.CarterWegman.eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.sufCmaGame_carterWegmanRandomMAC_toReal_le`,
+  `Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanRandomMAC`,
+  `Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanRandomMAC`,
+  `Cslib.Crypto.PseudorandomFunction.oneTimeEUFCMA_carterWegmanRandomMAC`: randomized Carter–Wegman
   security (Boneh–Shoup Section 7.4, Theorem 7.9, p. 270).
 * `Cslib.Crypto.Protocols.CarterWegman.oneTimeGame_xpolyHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.counterGame_xpolyHash_le`,
@@ -284,6 +330,14 @@ This module formalizes:
   `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_linearHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.randomNonceStrongGame_linearHash_le`,
   `Cslib.Crypto.Protocols.CarterWegman.prfOneTimeGame_linearHash_le`,
+  `Cslib.Crypto.Protocols.CarterWegman.isDeltaUniversalHash_linearHashWordHash`,
+  `Cslib.Crypto.Protocols.CarterWegman.sufCmaGame_linearHashNonceMAC_toReal_le`,
+  `Cslib.Crypto.PseudorandomFunction.sufCma_linearHashNonceMAC`,
+  `Cslib.Crypto.PseudorandomFunction.eufCma_linearHashNonceMAC`,
+  `Cslib.Crypto.Protocols.CarterWegman.sufCmaGame_linearHashRandomMAC_toReal_le`,
+  `Cslib.Crypto.PseudorandomFunction.sufCma_linearHashRandomMAC`,
+  `Cslib.Crypto.PseudorandomFunction.eufCma_linearHashRandomMAC`,
+  `Cslib.Crypto.PseudorandomFunction.oneTimeEUFCMA_linearHashRandomMAC`,
   `Cslib.Crypto.Protocols.CarterWegman.oneTimeGame_subsetSum_le`,
   `Cslib.Crypto.Protocols.CarterWegman.counterGame_subsetSum_le`,
   `Cslib.Crypto.Protocols.CarterWegman.nonceStrongGame_subsetSum_le`,
@@ -1104,7 +1158,7 @@ theorem isOraclePPT_prfPadDistinguisher
   have hq : IsOraclePPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool =>
         List.take p.1 <$> ProbOracleComp.query ((), List.replicate p.1 false)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   exact (hq.bind_with ((htest.preprocess
     (prepare := fun p : (ℕ × List Bool) × List Bool => (p.1.1, p.2))
     (by polytime)).isOraclePPTOn)).isOraclePPT
@@ -1734,32 +1788,30 @@ theorem isOraclePPT_prfMultiPadDistinguisher
       (fun p : ℕ × List (List Bool) =>
         test p.1 (fun i => BitString.ofList p.1 (p.2.getD i [])))) :
     IsOraclePPT encBool (prfMultiPadDistinguisher Q nonce test) := by
-  have hQ_tidy := hQ.tidy
-  have hnonce_tidy := hnonce.tidy
   have hq : IsOraclePPTOn
       (encPair (encPair encUnary encBits) (encList encBits))
       encBits
       (fun p : (ℕ × List Bool) × List (List Bool) =>
         List.take p.1.1 <$> ProbOracleComp.query ((), nonce p.1.1 p.2.length)) :=
-    IsOraclePPTOn.query_take () (by polytime) (by polytime)
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
   have hstep : IsOraclePPTOn
       (encPair (encPair encUnary encBits) (encList encBits))
       (encList encBits)
       (fun p : (ℕ × List Bool) × List (List Bool) =>
         prfPadCollectStep p.1.1 nonce p.2) := by
     unfold prfPadCollectStep
-    exact hq.map_with
+    exact hq.map_with'
       (f := fun (p : (ℕ × List Bool) × List (List Bool)) reply => p.2 ++ [reply])
       (by polytime)
   have hpoly : PolyBounded (fun p : ℕ × List Bool => (encPair encUnary encBits p).length)
       (fun p : ℕ × List Bool => 2 * p.1 + 2) := by
-    have h1 : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => 2 * p.1 + 2)
+    have h1 : ComputableInPolyTime (fun p : ℕ × List Bool => 2 * p.1 + 2)
         (encPair encUnary encBits) encUnary := by polytime
     simpa only [encUnary_apply, List.length_replicate] using h1.polyBounded_length
   have hiter : IsOraclePPTOn (encPair encUnary encBits) (encList encBits)
       (fun p : ℕ × List Bool =>
         OracleComp.iterate (Q p.1) (prfPadCollectStep p.1 nonce) []) := by
-    refine IsOraclePPTOn.iterateWith_of_bounded_growth
+    refine IsOraclePPTOn.iterateWith_of_bounded_growth'
       (initial := fun _ : ℕ × List Bool => ([] : List (List Bool)))
       (count := fun p : ℕ × List Bool => Q p.1)
       (step := fun (p : ℕ × List Bool) pads => prfPadCollectStep p.1 nonce pads)
@@ -2047,7 +2099,7 @@ private theorem not_nodup_map_append_of_mem {tr : List ((M × N) × Y)} (m : M) 
 omit [AddGroup Y] in
 private theorem run_interpret_bind_of_not_nodup {ι : Type} {spec : OracleSpec ι} {α β : Type}
     (oracle : (q : ι) → StateT (List ((M × N) × Y)) PMF (spec q))
-    (happ : ∀ q tr res, res ∈ (oracle q tr).support → ∃ e, res.2 = tr ++ [e])
+    (happ : ∀ q tr res, res ∈ (oracle q tr).support → ∃ s, res.2 = tr ++ s)
     (prog : OracleComp spec α) {tr : List ((M × N) × Y)}
     (hnot : ¬ (tr.map (fun e => e.1.2)).Nodup)
     (g : α → List ((M × N) × Y) → PMF β) (c : PMF β)
@@ -2063,7 +2115,7 @@ private theorem run_interpret_bind_of_not_nodup {ι : Type} {spec : OracleSpec �
         ((OracleComp.interpret oracle (cont res.1)).run res.2).bind
           (fun res' => g res'.1 res'.2) = c := by
       intro res hres
-      obtain ⟨e, he⟩ := happ q tr res hres
+      obtain ⟨s, he⟩ := happ q tr res hres
       refine ih res.1 (he ▸ ?_)
       rw [List.map_append]
       exact fun h => hnot (h.sublist (List.sublist_append_left _ _))
@@ -2089,18 +2141,19 @@ theorem uniform_bind_run_interpret_nonceFnHandler {α β : Type} [Fintype N] [De
       (PMF.uniformOfFintype (N → Y)).bind fun table =>
         post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
   have happ_fn (padFn : N → Y) :
-      ∀ q tr₁ res, res ∈ (nonceFnHandler hash k padFn q tr₁).support → ∃ e, res.2 = tr₁ ++ [e] := by
+      ∀ q tr₁ res, res ∈ (nonceFnHandler hash k padFn q tr₁).support →
+        ∃ s, res.2 = tr₁ ++ s := by
     intro q tr₁ res hres
     simp only [nonceFnHandler, PMF.support_pure, Set.mem_singleton_iff] at hres
-    exact ⟨(q, _), congrArg Prod.snd hres⟩
+    exact ⟨[(q, _)], congrArg Prod.snd hres⟩
   have happ_sim :
       ∀ q tr₁ res, res ∈ (nonceSimHandler (M := M) (N := N) (Y := Y) q tr₁).support →
-        ∃ e, res.2 = tr₁ ++ [e] := by
+        ∃ s, res.2 = tr₁ ++ s := by
     intro q tr₁ res hres
     simp only [nonceSimHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hres
     rcases hres with ⟨t, -, hres⟩
-    exact ⟨(q, t), congrArg Prod.snd hres⟩
+    exact ⟨[(q, t)], congrArg Prod.snd hres⟩
   have hpost_sim : ∀ a tr', ¬ (tr'.map (fun e => e.1.2)).Nodup →
       ((PMF.uniformOfFintype (N → Y)).bind fun table =>
         post a tr' (reconstructPadFn hash k tr' table)) = c := by
@@ -2146,6 +2199,124 @@ theorem uniform_bind_run_interpret_nonceFnHandler {α β : Type} [Fintype N] [De
           (fun a tr' h => hpost a tr' _ h)
       have hrhs :
           ((OracleComp.interpret nonceSimHandler (OracleComp.query q >>= cont)).run tr).bind
+            (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+              post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+        run_interpret_bind_of_not_nodup _ happ_sim _ hnodup _ c hpost_sim
+      simp only [hlhs, hrhs, PMF.bind_const]
+
+/-- **Multi-query simulation equivalence for `nonceFnHandler` on `ProbOracleComp`**:
+lifting `uniform_bind_run_interpret_nonceFnHandler` to programs with private coin flips
+(`ProbOracleComp (fun _ : M × N => Y) α`). -/
+theorem probOracleComp_uniform_bind_run_interpret_nonceFnHandler {α β : Type}
+    [Fintype N] [DecidableEq N] [Fintype Y] [Nonempty Y] (hash : K → M → Y) (k : K)
+    (prog : ProbOracleComp (fun _ : M × N => Y) α) (tr : List ((M × N) × Y))
+    (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+      ((OracleComp.interpret
+        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (nonceFnHandler hash k (reconstructPadFn hash k tr table))) prog).run tr).bind
+        fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) =
+    (((OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        nonceSimHandler) prog).run tr).bind fun res =>
+      (PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
+  have happ_fn (padFn : N → Y) :
+      ∀ q tr₁ res, res ∈ (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (nonceFnHandler hash k padFn) q tr₁).support → ∃ s, res.2 = tr₁ ++ s := by
+    intro q tr₁ res hres
+    cases q with
+    | inl m =>
+      simp only [ProbOracleComp.handler, StateT.lift, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      rcases hres with ⟨i, -, hres⟩
+      exact ⟨[], by simp [congrArg Prod.snd hres]⟩
+    | inr q =>
+      simp only [ProbOracleComp.handler, nonceFnHandler, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      exact ⟨[(q, _)], congrArg Prod.snd hres⟩
+  have happ_sim :
+      ∀ q tr₁ res, res ∈ (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (nonceSimHandler (M := M) (N := N) (Y := Y)) q tr₁).support →
+        ∃ s, res.2 = tr₁ ++ s := by
+    intro q tr₁ res hres
+    cases q with
+    | inl m =>
+      simp only [ProbOracleComp.handler, StateT.lift, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      rcases hres with ⟨i, -, hres⟩
+      exact ⟨[], by simp [congrArg Prod.snd hres]⟩
+    | inr q =>
+      simp only [ProbOracleComp.handler, nonceSimHandler, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      rcases hres with ⟨t, -, hres⟩
+      exact ⟨[(q, t)], congrArg Prod.snd hres⟩
+  have hpost_sim : ∀ a tr', ¬ (tr'.map (fun e => e.1.2)).Nodup →
+      ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post a tr' (reconstructPadFn hash k tr' table)) = c := by
+    intro a tr' hnot
+    simp only [hpost a tr' _ hnot, PMF.bind_const]
+  induction prog using OracleComp.induction generalizing tr with
+  | pure a =>
+    simp [PMF.monad_pure_eq_pure]
+  | query_bind q cont ih =>
+    by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
+    · cases q with
+      | inl m =>
+        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          ProbOracleComp.handler, StateT.lift, PMF.monad_bind_eq_bind,
+          PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+        rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (ProbComp.unifOracle m)]
+        congr 1; funext i
+        exact ih i tr
+      | inr q =>
+        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          ProbOracleComp.handler, nonceFnHandler, nonceSimHandler, PMF.monad_bind_eq_bind,
+          PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+        by_cases hx : q.2 ∈ tr.map (fun e => e.1.2)
+        · have hnot (t : Y) : ¬ ((tr ++ [(q, t)]).map (fun e => e.1.2)).Nodup :=
+            not_nodup_map_append_of_mem q.1 t hx
+          have hlhs (table : N → Y) :
+              ((OracleComp.interpret
+                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (nonceFnHandler hash k (reconstructPadFn hash k tr table)))
+                (cont (sign hash k (reconstructPadFn hash k tr table q.2) q.1))).run
+                (tr ++ [(q, sign hash k (reconstructPadFn hash k tr table q.2) q.1)])).bind
+                (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+            run_interpret_bind_of_not_nodup _ (happ_fn _) _ (hnot _) _ c
+              (fun a tr' h => hpost a tr' _ h)
+          have hrhs (t : Y) :
+              ((OracleComp.interpret
+                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  nonceSimHandler) (cont t)).run (tr ++ [(q, t)])).bind
+                (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+                  post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+            run_interpret_bind_of_not_nodup _ happ_sim _ (hnot t) _ c hpost_sim
+          simp only [hlhs, hrhs, PMF.bind_const]
+        · rw [uniform_reconstructPadFn_step hash k q.1 hx
+            (fun t tr' fn =>
+              ((OracleComp.interpret
+                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (nonceFnHandler hash k fn)) (cont t)).run tr').bind
+                fun res => post res.1 res.2 fn)]
+          congr 1; funext t
+          exact ih t (tr ++ [(q, t)])
+    · have hlhs (table : N → Y) :
+          ((OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (nonceFnHandler hash k (reconstructPadFn hash k tr table)))
+            (OracleComp.query q >>= cont)).run tr).bind
+            (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+        run_interpret_bind_of_not_nodup _ (happ_fn _) _ hnodup _ c
+          (fun a tr' h => hpost a tr' _ h)
+      have hrhs :
+          ((OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              nonceSimHandler) (OracleComp.query q >>= cont)).run tr).bind
             (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
               post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
         run_interpret_bind_of_not_nodup _ happ_sim _ hnodup _ c hpost_sim
@@ -2559,6 +2730,867 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfNonceGame
   exact ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
     (maskedNonceGame_le_maskedNonceStrongGame (seed n) (prfFnDist family n) (hash n) (forger n))
 
+private theorem interpret_deterministic_run_interpret {State α : Type}
+    (g : List Bool → List Bool)
+    (handler : Unit × List Bool → StateT State (WordOracleComp Unit) (List Bool))
+    (prog : WordOracleComp Unit α) (s : State) :
+    OracleComp.interpret
+      (ProbOracleComp.handler ProbComp.unifFin (fun request => pure (g request.2)))
+      ((OracleComp.interpret
+        (ProbOracleComp.handler
+          (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
+          handler)
+        prog).run s) =
+    (OracleComp.interpret
+      (ProbOracleComp.handler
+        (fun k => StateT.lift (ProbComp.unifFin k))
+        (fun request state =>
+          OracleComp.interpret
+            (ProbOracleComp.handler ProbComp.unifFin (fun req => pure (g req.2)))
+            (handler request state)))
+      prog).run s := by
+  have hf : IsMonadHom (WordOracleComp Unit) ProbComp
+      (OracleComp.interpret
+        (ProbOracleComp.handler ProbComp.unifFin (fun request => pure (g request.2)))) :=
+    PFunctor.FreeM.isMonadHom_liftM _
+  rw [OracleComp.map_run_interpret hf]
+  congr 2
+  funext q state
+  cases q with
+  | inl k => simp [ProbOracleComp.handler, StateT.lift, ProbComp.unifFin]
+  | inr request => rfl
+
+@[simp]
+private theorem interpret_unifFin {α : Type} (p : ProbComp α) :
+    OracleComp.interpret ProbComp.unifFin p = p :=
+  OracleComp.interpret_query_eq_self p
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_contains {γ α : Type} [BEq α] [LawfulBEq α]
+    {encIn : γ ↪ List Bool} {encElem : α ↪ List Bool}
+    {list : γ → List α} {elem : γ → α}
+    (hlist : ComputableTidilyInPolyTime list encIn (encList encElem))
+    (helem : ComputableTidilyInPolyTime elem encIn encElem) :
+    ComputableTidilyInPolyTime (fun a => (list a).contains (elem a)) encIn encBool := by
+  have heq : (fun a => (list a).contains (elem a)) =
+      (fun a => (list a).any (fun x => elem a == x)) := by
+    funext a
+    rw [Bool.eq_iff_iff, List.contains_iff_mem, List.any_eq_true]
+    simp only [beq_iff_eq]
+    exact ⟨fun h => ⟨elem a, h, rfl⟩, fun ⟨_, h, heq⟩ => heq ▸ h⟩
+  rw [heq]
+  exact ComputableTidilyInPolyTime.anyWithInput (test := fun a x => elem a == x) hlist
+    (ComputableTidilyInPolyTime.beq (encB := encElem)
+      (helem.comp (ComputableTidilyInPolyTime.fst _ _))
+      (ComputableTidilyInPolyTime.snd _ _))
+
+@[local fun_prop]
+private theorem computableTidilyInPolyTime_decide_nodup {γ : Type} {encIn : γ ↪ List Bool}
+    {list : γ → List (List Bool)}
+    (hlist : ComputableTidilyInPolyTime list encIn (encList encBits)) :
+    ComputableTidilyInPolyTime (fun a => decide (list a).Nodup) encIn encBool := by
+  have heq : (fun a => decide (list a).Nodup) =
+      (fun a => (list a).all (fun x => (list a).count x == 1)) := by
+    funext a
+    rw [Bool.eq_iff_iff, decide_eq_true_eq, List.all_eq_true, List.nodup_iff_count_le_one]
+    simp only [beq_iff_eq]
+    refine ⟨fun h x hx => ?_, fun h x => ?_⟩
+    · have hle := h x
+      have hpos := List.count_pos_iff.mpr hx
+      omega
+    · by_cases hx : x ∈ list a
+      · exact (h x hx).le
+      · simp [List.count_eq_zero.mpr hx]
+  rw [heq]
+  exact ComputableTidilyInPolyTime.allWithInput (test := fun a x => (list a).count x == 1)
+    hlist (by polytime)
+
+private theorem length_unframe_add_dropFrame_le :
+    ∀ v : List Bool, 2 * (unframe v).length + (dropFrame v).length ≤ v.length
+  | [] | [true] => by simp [unframe, dropFrame]
+  | false :: v => by simp [unframe, dropFrame]
+  | true :: b :: v => by
+    have ih := length_unframe_add_dropFrame_le v
+    simp only [unframe, dropFrame, List.length_cons]
+    omega
+
+/-- **Computational nonce-based Carter–Wegman MAC (`NonceMACScheme`)**
+([BonehShoup2023], Section 7.5.1, Attack Game 7.4 and Theorem 7.10, p. 274):
+given a polynomial-time message-length schedule `msgLen : ℕ → ℕ`, a strict-PPT hash-key sampler
+`seed : ℕ → ProbComp (List Bool)`, a polynomial-time hash evaluator
+`hash : ℕ → List Bool → List Bool → List Bool`, and a polynomial-time PRF family
+`family : List Bool → List Bool → List Bool`:
+* `keyGen n` samples `k ← seed n` and `prfKey ← BitString.sampleList n`, returning the framed pair
+  `encPair encBits encBits (k, prfKey)`.
+* `sign sk msg nonce` recovers `k := unframe sk`, `prfKey := dropFrame sk`, and
+  `n := prfKey.length`; if `msg.length == msgLen n` and `nonce.length == n`, it returns the `n`-bit
+  Carter–Wegman tag `BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n]`,
+  and otherwise `[]`.
+* `verify sk msg nonce tag` checks `msg.length == msgLen n`, `nonce.length == n`, and
+  `BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n] == tag`. -/
+noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
+    (seed : ℕ → ProbComp (List Bool))
+    (hash : ℕ → List Bool → List Bool → List Bool)
+    (family : List Bool → List Bool → List Bool)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits) : NonceMACScheme where
+  msgLen := msgLen
+  nonceLen n := n
+  msgLen_polyTime := hmsgLen
+  nonceLen_polyTime := by polytime
+  keyGen n := do
+    let k ← seed n
+    let prfKey ← BitString.sampleList n
+    return encPair encBits encBits (k, prfKey)
+  sign sk msg nonce :=
+    let k := unframe sk
+    let prfKey := dropFrame sk
+    let n := prfKey.length
+    if (msg.length == msgLen n) && (nonce.length == n) then
+      pure (BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n])
+    else
+      pure []
+  verify sk msg nonce tag :=
+    let k := unframe sk
+    let prfKey := dropFrame sk
+    let n := prfKey.length
+    (msg.length == msgLen n) && (nonce.length == n) &&
+      (BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n] == tag)
+  keyGen_ppt := by ppt
+  sign_ppt := by
+    have hmsgLen_tidy := hmsgLen.tidy
+    have hhash_tidy := hhash.tidy
+    have hfamily_tidy := hfamily.tidy
+    have hprf : ComputableTidilyInPolyTime
+        (fun p : List Bool × List Bool × List Bool =>
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2)
+        (encPair encBits (encPair encBits encBits)) encBits := by
+      have heq : (fun p : List Bool × List Bool × List Bool =>
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2) =
+          (fun p : List Bool × List Bool × List Bool =>
+            if p.2.2.length == (dropFrame p.1).length then
+              family (dropFrame p.1) p.2.2
+            else
+              []) := by
+        funext p
+        simp [prfOracle]
+      rw [heq]
+      polytime
+    have hbody : ComputableTidilyInPolyTime
+        (fun p : List Bool × List Bool × List Bool =>
+          let k := unframe p.1
+          let prfKey := dropFrame p.1
+          let n := prfKey.length
+          if (p.2.1.length == msgLen n) && (p.2.2.length == n) then
+            BitString.listXor n [hash n k p.2.1, (prfOracle family n prfKey p.2.2).take n]
+          else
+            [])
+        (encPair encBits (encPair encBits encBits)) encBits := by
+      polytime
+    have hpure : (fun p : List Bool × List Bool × List Bool =>
+        let k := unframe p.1
+        let prfKey := dropFrame p.1
+        let n := prfKey.length
+        if (p.2.1.length == msgLen n) && (p.2.2.length == n) then
+          (pure (BitString.listXor n
+            [hash n k p.2.1, (prfOracle family n prfKey p.2.2).take n]) : ProbComp (List Bool))
+        else
+          pure []) =
+        (fun p : List Bool × List Bool × List Bool =>
+          pure (
+            let k := unframe p.1
+            let prfKey := dropFrame p.1
+            let n := prfKey.length
+            if (p.2.1.length == msgLen n) && (p.2.2.length == n) then
+              BitString.listXor n [hash n k p.2.1, (prfOracle family n prfKey p.2.2).take n]
+            else
+              [])) := by
+      funext p
+      dsimp only
+      split <;> rfl
+    rw [hpure]
+    exact hbody.isPPTOn
+  verify_polyTime := by
+    have hmsgLen_tidy := hmsgLen.tidy
+    have hhash_tidy := hhash.tidy
+    have hfamily_tidy := hfamily.tidy
+    have hprf : ComputableTidilyInPolyTime
+        (fun p : List Bool × List Bool × List Bool × List Bool =>
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2.1)
+        (encPair encBits (encPair encBits (encPair encBits encBits))) encBits := by
+      have heq : (fun p : List Bool × List Bool × List Bool × List Bool =>
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) p.2.2.1) =
+          (fun p : List Bool × List Bool × List Bool × List Bool =>
+            if p.2.2.1.length == (dropFrame p.1).length then
+              family (dropFrame p.1) p.2.2.1
+            else
+              []) := by
+        funext p
+        simp [prfOracle]
+      rw [heq]
+      polytime
+    exact .of_tidy (by polytime)
+  verify_sign := by
+    intro n sk hsk msg hmsg nonce hnonce tag htag
+    simp only [ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hsk
+    rcases hsk with ⟨k, -, prfKey, hprfKey, rfl⟩
+    have hprfLen : prfKey.length = n := BitString.length_of_mem_support_uniformList hprfKey
+    simp only [encPair_apply, encBits_apply, dropFrame_frame_append,
+      hprfLen, hmsg, hnonce, beq_self_eq_true, Bool.and_self, ↓reduceIte,
+      ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag ⊢
+    subst htag
+    simp
+
+/-- Open stateful handler for the nonce-based Carter–Wegman PRF reduction
+([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274): given the hash key `k` and a framed
+signing request `request.2`, it decodes `msg := unframe request.2` and
+`nonce := dropFrame request.2`. When `msg.length == msgLen n` and `nonce.length == n`, it queries
+the external oracle on `((), nonce)` (reading `n` bits `pad`), computes
+`tag := BitString.listXor n [hash n k msg, pad]`, and prepends `((msg, nonce), tag)` to
+`queriedTriples`; otherwise it returns `[]` and prepends `((msg, nonce), [])` without querying the
+external oracle. -/
+def cwNonceLogHandler (msgLen : ℕ → ℕ) (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (request : Unit × List Bool) :
+    StateT (List ((List Bool × List Bool) × List Bool)) (WordOracleComp Unit) (List Bool) :=
+  fun queriedTriples =>
+    let msg := unframe request.2
+    let nonce := dropFrame request.2
+    if (msg.length == msgLen n) && (nonce.length == n) then
+      (fun pad =>
+        let tag := BitString.listXor n [hash n k msg, pad]
+        (tag, ((msg, nonce), tag) :: queriedTriples)) <$>
+        (List.take n <$> ProbOracleComp.query ((), nonce))
+    else
+      pure ([], ((msg, nonce), []) :: queriedTriples)
+
+/-- Oracle reduction turning an adaptive word-level `NonceMACForger` into an `OracleDistinguisher`
+for the PRF security game ([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274):
+1. Sample `k ← seed n`.
+2. Run `adversary n []`, answering each signing query via `cwNonceLogHandler msgLen hash n k`.
+3. Query the external oracle on the candidate nonce `out.1.1.2` (reading `n` bits `pad`), and
+   accept iff `msg.length == msgLen n`, `nonce.length == n`, all queried nonces were pairwise
+   distinct, the candidate `((msg, nonce), tag)` triple was not returned by the signing oracle, and
+   `BitString.listXor n [hash n k msg, pad] == tag`. -/
+def prfNonceToPrfDistinguisher (msgLen : ℕ → ℕ) (seed : ℕ → ProbComp (List Bool))
+    (hash : ℕ → List Bool → List Bool → List Bool) (adversary : NonceMACForger) :
+    OracleDistinguisher := fun n _ => do
+  let k ← ProbOracleComp.sample (seed n)
+  let out ←
+    (OracleComp.interpret
+      (ProbOracleComp.handler
+        (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+        (cwNonceLogHandler msgLen hash n k))
+      (adversary n [])).run []
+  (fun pad => (out.1.1.1.length == msgLen n) && (out.1.1.2.length == n) &&
+    decide (out.2.map (fun e => e.1.2)).Nodup && !out.2.contains out.1 &&
+    (BitString.listXor n [hash n k out.1.1.1, pad] == out.1.2)) <$>
+    (List.take n <$> ProbOracleComp.query ((), out.1.1.2))
+
+/-- `prfNonceToPrfDistinguisher` is uniformly strict oracle-PPT (`IsOraclePPT encBool`) whenever
+`msgLen`, `seed`, `hash`, and `adversary` are uniformly polynomial-time / strict PPT. -/
+theorem isOraclePPT_prfNonceToPrfDistinguisher
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool} {adversary : NonceMACForger}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
+    IsOraclePPT encBool (prfNonceToPrfDistinguisher msgLen seed hash adversary) := by
+  have hhandler : IsOraclePPTOn
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encFinite Unit) encBits)
+          (encList (encPair (encPair encBits encBits) encBits))))
+      (encPair encBits (encList (encPair (encPair encBits encBits) encBits)))
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
+        cwNonceLogHandler msgLen hash p.1.1.1 p.1.2 p.2.1 p.2.2) := by
+    unfold cwNonceLogHandler
+    have hcond : ComputableInPolyTime
+        (fun p : ((ℕ × List Bool) × List Bool) ×
+            ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
+          ((unframe p.2.1.2).length == msgLen p.1.1.1) &&
+            ((dropFrame p.2.1.2).length == p.1.1.1))
+        (encPair (encPair (encPair encUnary encBits) encBits)
+          (encPair (encPair (encFinite Unit) encBits)
+            (encList (encPair (encPair encBits encBits) encBits))))
+        encBool := by
+      polytime
+    have hyes : IsOraclePPTOn
+        (encPair (encPair (encPair encUnary encBits) encBits)
+          (encPair (encPair (encFinite Unit) encBits)
+            (encList (encPair (encPair encBits encBits) encBits))))
+        (encPair encBits (encList (encPair (encPair encBits encBits) encBits)))
+        (fun p : ((ℕ × List Bool) × List Bool) ×
+            ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
+          (fun pad =>
+            let msg := unframe p.2.1.2
+            let nonce := dropFrame p.2.1.2
+            let tag := BitString.listXor p.1.1.1 [hash p.1.1.1 p.1.2 msg, pad]
+            (tag, ((msg, nonce), tag) :: p.2.2)) <$>
+            (List.take p.1.1.1 <$> ProbOracleComp.query ((), dropFrame p.2.1.2))) :=
+      (IsOraclePPTOn.query_take' () (by polytime) (by polytime)).map_with' (by polytime)
+    have hno : IsOraclePPTOn
+        (encPair (encPair (encPair encUnary encBits) encBits)
+          (encPair (encPair (encFinite Unit) encBits)
+            (encList (encPair (encPair encBits encBits) encBits))))
+        (encPair encBits (encList (encPair (encPair encBits encBits) encBits)))
+        (fun p : ((ℕ × List Bool) × List Bool) ×
+            ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
+          pure ([], ((unframe p.2.1.2, dropFrame p.2.1.2), []) :: p.2.2)) :=
+      (show ComputableInPolyTime
+        (fun p : ((ℕ × List Bool) × List Bool) ×
+            ((Unit × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
+          (([] : List Bool),
+            ((unframe p.2.1.2, dropFrame p.2.1.2), ([] : List Bool)) :: p.2.2))
+        (encPair (encPair (encPair encUnary encBits) encBits)
+          (encPair (encPair (encFinite Unit) encBits)
+            (encList (encPair (encPair encBits encBits) encBits))))
+        (encPair encBits (encList (encPair (encPair encBits encBits) encBits))) by
+          polytime).isOraclePPTOn (Operation := Unit)
+    exact IsOraclePPTOn.cond' hcond hyes hno
+  have hrun : IsOraclePPTOn
+      (encPair (encPair encUnary encBits) encBits)
+      (encPair (encPair (encPair encBits encBits) encBits)
+        (encList (encPair (encPair encBits encBits) encBits)))
+      (fun caller : (ℕ × List Bool) × List Bool =>
+        (OracleComp.interpret
+          (ProbOracleComp.handler
+            (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+            (cwNonceLogHandler msgLen hash caller.1.1 caller.2))
+          (adversary caller.1.1 [])).run []) := by
+    apply hadversary.run_interpret_preprocess_open'
+      (prepare := fun caller : (ℕ × List Bool) × List Bool => (caller.1.1, ([] : List Bool)))
+      (initial := fun _ => ([] : List ((List Bool × List Bool) × List Bool)))
+      (resources := fun caller query => 2 * caller.1.1 + 4 * query.length + 14)
+      (by fun_prop) hhandler (by fun_prop)
+      (fun _ _ => True) (fun _ => trivial) (by polytime)
+    intro caller request queriedTriples _ result hresult
+    dsimp only [cwNonceLogHandler] at hresult
+    have hsplit := length_unframe_add_dropFrame_le request.2
+    split at hresult
+    · obtain ⟨pad, -, rfl⟩ := ProbOracleComp.mem_support_map hresult
+      refine ⟨trivial, ?_, ?_⟩
+      · rw [BitString.length_listXor]
+        lia
+      · simp only [encList_cons, encPair_apply, encBits_apply, List.length_append, length_frame,
+          BitString.length_listXor]
+        lia
+    · have hres := ProbOracleComp.eq_of_mem_support_pure hresult
+      subst hres
+      refine ⟨trivial, ?_, ?_⟩
+      · simp
+      · simp only [encList_cons, encPair_apply, encBits_apply, List.length_append, length_frame,
+          List.length_nil]
+        lia
+  have hk : IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) encBits
+      (fun p : ℕ × List Bool => ProbOracleComp.sample (seed p.1)) :=
+    (hseed.preprocess (ComputableInPolyTime.fst _ _)).isOraclePPTOn
+  have hq : IsOraclePPTOn
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encPair encBits encBits) encBits)
+          (encList (encPair (encPair encBits encBits) encBits))))
+      encBits
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          (((List Bool × List Bool) × List Bool) × List ((List Bool × List Bool) × List Bool)) =>
+        List.take p.1.1.1 <$> ProbOracleComp.query ((), p.2.1.1.2)) :=
+    IsOraclePPTOn.query_take' () (by polytime) (by polytime)
+  have hpost : ComputableTidilyInPolyTime
+      (fun p : (((ℕ × List Bool) × List Bool) ×
+          (((List Bool × List Bool) × List Bool) × List ((List Bool × List Bool) × List Bool))) ×
+          List Bool =>
+        (p.1.2.1.1.1.length == msgLen p.1.1.1.1) && (p.1.2.1.1.2.length == p.1.1.1.1) &&
+          decide (p.1.2.2.map (fun e => e.1.2)).Nodup && !p.1.2.2.contains p.1.2.1 &&
+          (BitString.listXor p.1.1.1.1
+            [hash p.1.1.1.1 p.1.1.2 p.1.2.1.1.1, p.2] == p.1.2.1.2))
+      (encPair
+        (encPair (encPair (encPair encUnary encBits) encBits)
+          (encPair (encPair (encPair encBits encBits) encBits)
+            (encList (encPair (encPair encBits encBits) encBits))))
+        encBits)
+      encBool := by
+    have hmsgLen_tidy := hmsgLen.tidy
+    have hhash_tidy := hhash.tidy
+    polytime
+  unfold prfNonceToPrfDistinguisher
+  exact (hk.bind_with (hrun.bind_with (hq.map_with hpost))).isOraclePPT
+
+/-- Running `prfNonceToPrfDistinguisher msgLen seed hash adversary` in `prfRealGame family`
+produces the exact same Boolean distribution as `(carterWegmanNonceMAC ...).sufCmaGame adversary n`.
+-/
+theorem eval_prfRealGame_prfNonceToPrfDistinguisher
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits)
+    (adversary : NonceMACForger) (n : ℕ) :
+    ProbComp.eval (prfRealGame family (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) =
+      ProbComp.eval
+        ((carterWegmanNonceMAC msgLen seed hash family hmsgLen hseed hhash hfamily).sufCmaGame
+          adversary n) := by
+  let M := carterWegmanNonceMAC msgLen seed hash family hmsgLen hseed hhash hfamily
+  change ProbComp.eval
+      (prfRealGame family (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) =
+    ProbComp.eval (M.sufCmaGame adversary n)
+  simp only [prfRealGame, prfNonceToPrfDistinguisher, NonceMACScheme.sufCmaGame, M,
+    carterWegmanNonceMAC, Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
+    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+    PMF.bind_bind, PMF.pure_bind]
+  rw [PMF.bind_comm (ProbComp.eval (BitString.sampleList n)) (ProbComp.eval (seed n))]
+  refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
+  refine PMF.bind_congr_on_support _ _ _ fun prfKey hprfKey => ?_
+  rw [BitString.eval_sampleList] at hprfKey
+  have hprfLen : prfKey.length = n := BitString.length_of_mem_support_uniformList hprfKey
+  rw [interpret_deterministic_run_interpret]
+  have hhandler :
+      (fun request state =>
+        OracleComp.interpret
+          (ProbOracleComp.handler ProbComp.unifFin (fun req =>
+            pure (prfOracle family n prfKey req.2)))
+          (cwNonceLogHandler msgLen hash n k request state)) =
+      M.signingPairOracle (encPair encBits encBits (k, prfKey)) := by
+    funext request state
+    simp only [cwNonceLogHandler, NonceMACScheme.signingPairOracle, M, carterWegmanNonceMAC,
+      encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, hprfLen]
+    split
+    · simp [OracleComp.interpret_map, ProbOracleComp.interpret_query]
+    · simp
+  rw [hhandler]
+  congr 1; funext out
+  simp only [PMF.pure_map, encPair_apply, encBits_apply, unframe_frame_append,
+    dropFrame_frame_append, hprfLen]
+  congr 1
+  cases out.1.1.1.length == msgLen n <;> cases out.1.1.2.length == n <;> simp
+
+open scoped List
+
+private def toBitTriple (m n : ℕ)
+    (e : (List Bool × List Bool) × List Bool) :
+    (BitString m × BitString n) × BitString n :=
+  ((BitString.ofList m e.1.1, BitString.ofList n e.1.2), BitString.ofList n e.2)
+
+private def ofBitTriple {m n : ℕ}
+    (e : (BitString m × BitString n) × BitString n) :
+    (List Bool × List Bool) × List Bool :=
+  ((List.ofFn e.1.1, List.ofFn e.1.2), List.ofFn e.2)
+
+private theorem ofBitTriple_toBitTriple {m n : ℕ}
+    {e : (List Bool × List Bool) × List Bool}
+    (hmsg : e.1.1.length = m) (hnonce : e.1.2.length = n) (htag : e.2.length = n) :
+    ofBitTriple (toBitTriple m n e) = e := by
+  rcases e with ⟨⟨msg, nonce⟩, tag⟩
+  dsimp only [ofBitTriple, toBitTriple]
+  rw [BitString.ofFn_ofList hmsg, BitString.ofFn_ofList hnonce, BitString.ofFn_ofList htag]
+
+private def adaptNonceStep (msgLen : ℕ → ℕ) (n : ℕ) (request : Unit × List Bool) :
+    StateT (List ((List Bool × List Bool) × List Bool))
+      (ProbOracleComp (fun _ : BitString (msgLen n) × BitString n => BitString n)) (List Bool) :=
+  fun queriedTriples =>
+    let msg := unframe request.2
+    let nonce := dropFrame request.2
+    if (msg.length == msgLen n) && (nonce.length == n) then
+      (fun t =>
+        let tag := List.ofFn t
+        (tag, ((msg, nonce), tag) :: queriedTriples)) <$>
+        ProbOracleComp.query (BitString.ofList (msgLen n) msg, BitString.ofList n nonce)
+    else
+      pure ([], ((msg, nonce), []) :: queriedTriples)
+
+private def cwNonceIdealCheck (msgLen : ℕ → ℕ)
+    (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (table : BitString n → BitString n)
+    (out : ((List Bool × List Bool) × List Bool) × List ((List Bool × List Bool) × List Bool)) :
+    Bool :=
+  (out.1.1.1.length == msgLen n) && (out.1.1.2.length == n) &&
+    decide (out.2.map (fun e => e.1.2)).Nodup && !out.2.contains out.1 &&
+    (BitString.listXor n
+      [hash n k out.1.1.1, (randomFunctionOracle n table out.1.1.2).take n] == out.1.2)
+
+private theorem cwNonceIdealCheck_imp_checkNonceSUF (msgLen : ℕ → ℕ)
+    (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (table : BitString n → BitString n)
+    {out : ((List Bool × List Bool) × List Bool) × List ((List Bool × List Bool) × List Bool)}
+    {tr : List ((BitString (msgLen n) × BitString n) × BitString n)}
+    (hsub : tr.map ofBitTriple <+ out.2.reverse)
+    (hcheck : cwNonceIdealCheck msgLen hash n k table out = true) :
+    checkNonceSUF
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+      k table tr (toBitTriple (msgLen n) n out.1) = true := by
+  simp only [cwNonceIdealCheck, Bool.and_eq_true, Bool.not_eq_true', List.contains_eq_mem,
+    beq_iff_eq, decide_eq_true_eq, decide_eq_false_iff_not] at hcheck
+  rcases hcheck with ⟨⟨⟨⟨hmsg, hnonce⟩, hnodup⟩, hnotmem⟩, htag_eq⟩
+  have htag_len : out.1.2.length = n := by
+    rw [← htag_eq, BitString.length_listXor]
+  have hround : ofBitTriple (toBitTriple (msgLen n) n out.1) = out.1 :=
+    ofBitTriple_toBitTriple hmsg hnonce htag_len
+  have htr_nodup : (tr.map (fun e => e.1.2)).Nodup := by
+    have hrev : (out.2.reverse.map (fun e => e.1.2)).Nodup := by
+      rw [List.map_reverse]
+      exact List.nodup_reverse.mpr hnodup
+    have hsub_map : (tr.map (fun e => e.1.2)).map List.ofFn <+
+        out.2.reverse.map (fun e => e.1.2) := by
+      simpa only [List.map_map, Function.comp_def, ofBitTriple] using
+        hsub.map (fun e => e.1.2)
+    exact List.Nodup.of_map List.ofFn (hrev.sublist hsub_map)
+  have htr_notmem : toBitTriple (msgLen n) n out.1 ∉ tr := by
+    intro hmem
+    have hmem_map : out.1 ∈ tr.map ofBitTriple := by
+      rw [← hround]
+      exact List.mem_map_of_mem hmem
+    exact hnotmem (List.mem_reverse.mp (hsub.subset hmem_map))
+  have hverify :
+      verify (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+        k (table (toBitTriple (msgLen n) n out.1).1.2)
+        (toBitTriple (msgLen n) n out.1).1.1
+        (toBitTriple (msgLen n) n out.1).2 = true := by
+    simp only [verify, toBitTriple, BitString.ofFn_ofList hmsg, decide_eq_true_eq]
+    have h1 := congrArg (BitString.ofList n) htag_eq
+    simpa only [randomFunctionOracle, hnonce, ↓reduceIte, BitString.listXor_pair,
+      ofList_take, BitString.ofList_ofFn] using h1
+  simp only [checkNonceSUF, Bool.and_eq_true, Bool.not_eq_true', List.contains_eq_mem,
+    decide_eq_true_eq, decide_eq_false_iff_not]
+  exact ⟨⟨htr_nodup, htr_notmem⟩, hverify⟩
+
+private theorem eval_cwNonceLogHandler_randomFunctionOracle_le
+    (msgLen : ℕ → ℕ) (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (table : BitString n → BitString n)
+    (prog : WordOracleComp Unit ((List Bool × List Bool) × List Bool))
+    (init : List ((List Bool × List Bool) × List Bool))
+    (tr : List ((BitString (msgLen n) × BitString n) × BitString n))
+    (hsub : tr.map ofBitTriple <+ init.reverse) :
+    ((OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (fun request state =>
+          ProbComp.eval
+            (OracleComp.interpret
+              (ProbOracleComp.handler ProbComp.unifFin (fun req =>
+                pure (randomFunctionOracle n table req.2)))
+              (cwNonceLogHandler msgLen hash n k request state))))
+      prog).run init).bind
+      (fun out => PMF.pure (cwNonceIdealCheck msgLen hash n k table out)) true ≤
+    ((OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (nonceFnHandler
+          (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+          k table))
+      ((OracleComp.interpret
+        (ProbOracleComp.handler
+          (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+          (adaptNonceStep msgLen n))
+        prog).run init)).run tr).bind
+      (fun res =>
+        PMF.pure
+          (checkNonceSUF
+            (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+            k table res.2 (toBitTriple (msgLen n) n res.1.1))) true := by
+  induction prog using OracleComp.induction generalizing init tr with
+  | pure a =>
+    simp only [OracleComp.run_interpret_pure, PMF.monad_pure_eq_pure, PMF.pure_bind]
+    by_cases h : cwNonceIdealCheck msgLen hash n k table (a, init) = true
+    · rw [h, cwNonceIdealCheck_imp_checkNonceSUF msgLen hash n k table hsub h]
+    · simp [Bool.eq_false_iff.mpr h]
+  | query_bind q cont ih =>
+    rw [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      OracleComp.run_interpret_bind]
+    cases q with
+    | inl m =>
+      have hsample :
+          (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)) init :
+            ProbOracleComp (fun _ : BitString (msgLen n) × BitString n => BitString n)
+              (Fin (m + 1) × List ((List Bool × List Bool) × List Bool))) =
+          (OracleComp.query (Sum.inl m) >>= fun i => pure (i, init)) := by
+        simp [StateT.lift, ProbOracleComp.sample, ProbComp.unifFin]
+      rw [ProbOracleComp.handler, ProbOracleComp.handler, hsample,
+        OracleComp.run_interpret_bind, OracleComp.run_interpret_query]
+      simp only [ProbOracleComp.handler, StateT.lift, OracleComp.run_interpret_pure,
+        PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      refine bind_apply_mono_on_support (ProbComp.unifOracle m) true fun i _ => ?_
+      exact ih i init tr hsub
+    | inr request =>
+      dsimp only [ProbOracleComp.handler, cwNonceLogHandler, adaptNonceStep]
+      let msg := unframe request.2
+      let nonce := dropFrame request.2
+      change (((OracleComp.interpret
+            (ProbOracleComp.handler ProbComp.unifFin fun req =>
+              pure (randomFunctionOracle n table req.2))
+            (if (msg.length == msgLen n && nonce.length == n) = true then
+              (fun pad =>
+                let tag := BitString.listXor n [hash n k msg, pad]
+                (tag, ((msg, nonce), tag) :: init)) <$>
+                (List.take n <$> ProbOracleComp.query ((), nonce))
+            else
+              pure ([], ((msg, nonce), []) :: init))).eval.bind fun x =>
+          ((OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              fun request state =>
+                (OracleComp.interpret
+                  (ProbOracleComp.handler ProbComp.unifFin fun req =>
+                    pure (randomFunctionOracle n table req.2))
+                  (cwNonceLogHandler msgLen hash n k request state)).eval)
+            (cont x.1)).run x.2)).bind
+          fun out => PMF.pure (cwNonceIdealCheck msgLen hash n k table out)) true ≤
+        (((OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (nonceFnHandler
+                (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+                k table))
+            (if (msg.length == msgLen n && nonce.length == n) = true then
+              (fun t => (List.ofFn t, ((msg, nonce), List.ofFn t) :: init)) <$>
+                ProbOracleComp.query
+                  (BitString.ofList (msgLen n) msg, BitString.ofList n nonce)
+            else
+              pure ([], ((msg, nonce), []) :: init))).run tr >>= fun x =>
+          (OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (nonceFnHandler
+                (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+                k table))
+            ((OracleComp.interpret
+              (ProbOracleComp.handler
+                (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+                (adaptNonceStep msgLen n))
+              (cont x.1.1)).run x.1.2)).run x.2).bind
+          fun res =>
+            PMF.pure
+              (checkNonceSUF
+                (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+                k table res.2 (toBitTriple (msgLen n) n res.1.1))) true
+      by_cases hcond : (msg.length == msgLen n && nonce.length == n) = true
+      · simp only [hcond, ↓reduceIte]
+        rw [OracleComp.run_interpret_map]
+        have hq_rhs :
+            (OracleComp.interpret
+              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                (nonceFnHandler
+                  (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+                  k table))
+              (ProbOracleComp.query
+                (BitString.ofList (msgLen n) msg, BitString.ofList n nonce))).run tr =
+            nonceFnHandler
+              (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+              k table (BitString.ofList (msgLen n) msg, BitString.ofList n nonce) tr :=
+          OracleComp.run_interpret_query _
+            (Sum.inr (BitString.ofList (msgLen n) msg, BitString.ofList n nonce)) tr
+        rw [hq_rhs]
+        simp only [Functor.map_map, OracleComp.interpret_map, ProbOracleComp.interpret_query,
+          ProbComp.eval_map, ProbComp.eval_pure, nonceFnHandler,
+          PMF.monad_bind_eq_bind, PMF.monad_map_eq_map,
+          PMF.pure_map, PMF.pure_bind]
+        simp only [Bool.and_eq_true, beq_iff_eq] at hcond
+        rcases hcond with ⟨hmsg, hnonce⟩
+        let t := sign
+          (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+          k (table (BitString.ofList n nonce)) (BitString.ofList (msgLen n) msg)
+        have htag : List.ofFn t =
+            BitString.listXor n [hash n k msg, (randomFunctionOracle n table nonce).take n] := by
+          simp only [t, sign, BitString.ofFn_ofList hmsg, randomFunctionOracle, hnonce,
+            ↓reduceIte, BitString.listXor_pair, ofList_take, BitString.ofList_ofFn]
+        rw [← htag]
+        have hsub' :
+            (tr ++ [((BitString.ofList (msgLen n) msg, BitString.ofList n nonce), t)]).map
+              ofBitTriple <+ (((msg, nonce), List.ofFn t) :: init).reverse := by
+          rw [List.map_append, List.map_singleton, List.reverse_cons]
+          have he : ofBitTriple ((BitString.ofList (msgLen n) msg, BitString.ofList n nonce), t) =
+              ((msg, nonce), List.ofFn t) := by
+            simp [ofBitTriple, BitString.ofFn_ofList hmsg, BitString.ofFn_ofList hnonce]
+          rw [he]
+          exact hsub.append (List.Sublist.refl _)
+        exact ih (List.ofFn t) (((msg, nonce), List.ofFn t) :: init)
+          (tr ++ [((BitString.ofList (msgLen n) msg, BitString.ofList n nonce), t)]) hsub'
+      · have hcond' : (msg.length == msgLen n && nonce.length == n) = false :=
+          Bool.eq_false_iff.mpr hcond
+        simp only [hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure,
+          ProbComp.eval_pure, StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+          PMF.pure_bind]
+        have hsub' : tr.map ofBitTriple <+ (((msg, nonce), []) :: init).reverse := by
+          rw [List.reverse_cons]
+          exact hsub.trans (List.sublist_append_left _ _)
+        exact ih [] (((msg, nonce), []) :: init) tr hsub'
+
+/-- **Ideal-game bound for `prfNonceToPrfDistinguisher`** ([BonehShoup2023], Section 7.5.1,
+Theorem 7.10, p. 274): under `IsDeltaUniversalHash (ProbComp.eval (seed n)) ... ε`, the ideal-game
+acceptance probability of `prfNonceToPrfDistinguisher msgLen seed hash adversary` at parameter `n`
+is at most `max ε ((2 : ℝ≥0∞) ^ n)⁻¹`. -/
+theorem eval_prfIdealGame_prfNonceToPrfDistinguisher_le
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool} {n : ℕ} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) ε)
+    (adversary : NonceMACForger) :
+    ProbComp.eval (prfIdealGame (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) true ≤
+      max ε ((2 : ℝ≥0∞) ^ n)⁻¹ := by
+  let hashBit : List Bool → BitString (msgLen n) → BitString n :=
+    fun k m => BitString.ofList n (hash n k (List.ofFn m))
+  let adaptProg : ProbOracleComp (fun _ : BitString (msgLen n) × BitString n => BitString n)
+      (((List Bool × List Bool) × List Bool) × List ((List Bool × List Bool) × List Bool)) :=
+    (OracleComp.interpret
+      (ProbOracleComp.handler
+        (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+        (adaptNonceStep msgLen n))
+      (adversary n [])).run []
+  have hle :
+      ProbComp.eval (prfIdealGame (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) true ≤
+        ((ProbComp.eval (seed n)).bind fun k =>
+          (PMF.uniformOfFintype (BitString n → BitString n)).bind fun table =>
+            ((OracleComp.interpret
+              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                (nonceFnHandler hashBit k table))
+              adaptProg).run []).bind fun res =>
+                PMF.pure
+                  (checkNonceSUF hashBit k table res.2
+                    (toBitTriple (msgLen n) n res.1.1))) true := by
+    simp only [prfIdealGame, prfNonceToPrfDistinguisher, Functor.map_map, OracleComp.interpret_bind,
+      OracleComp.interpret_map, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
+      interpret_unifFin, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+      ProbComp.eval_uniform, PMF.pure_map]
+    rw [PMF.bind_comm (PMF.uniformOfFintype (BitString n → BitString n)) (ProbComp.eval (seed n))]
+    refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
+    refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
+      fun table _ => ?_
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    exact eval_cwNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
+      (adversary n []) [] [] (List.Sublist.refl [])
+  refine hle.trans ?_
+  have hsim (k : List Bool) :
+      ((PMF.uniformOfFintype (BitString n → BitString n)).bind fun table =>
+        ((OracleComp.interpret
+          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+            (nonceFnHandler hashBit k table))
+          adaptProg).run []).bind fun res =>
+            PMF.pure
+              (checkNonceSUF hashBit k table res.2 (toBitTriple (msgLen n) n res.1.1))) =
+      (((OracleComp.interpret
+        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          nonceSimHandler) adaptProg).run []).bind fun res =>
+        (PMF.uniformOfFintype (BitString n → BitString n)).bind fun table =>
+          PMF.pure (checkNonceSUF hashBit k (reconstructPadFn hashBit k res.2 table)
+            res.2 (toBitTriple (msgLen n) n res.1.1))) := by
+    simpa only [reconstructPadFn_nil] using
+      probOracleComp_uniform_bind_run_interpret_nonceFnHandler hashBit k adaptProg []
+        (fun out tr' padFn =>
+          PMF.pure (checkNonceSUF hashBit k padFn tr' (toBitTriple (msgLen n) n out.1)))
+        (PMF.pure false)
+        (fun out tr' padFn hnot => by simp [checkNonceSUF, hnot])
+  simp only [hsim]
+  rw [PMF.bind_comm (ProbComp.eval (seed n)), PMF.bind_apply]
+  refine tsum_mul_le_of_forall_le _ fun ⟨out, tr⟩ => ?_
+  simpa only [BitString.card, Nat.cast_pow, Nat.cast_ofNat] using
+    seed_uniform_checkNonceSUF_le hh tr (toBitTriple (msgLen n) n out.1)
+
+/-- **Quantitative SUF-CMA bound for `carterWegmanNonceMAC`** ([BonehShoup2023], Section 7.5.1,
+Theorem 7.10, p. 274): at security parameter `n`, the SUF-CMA forgery probability of any
+`NonceMACForger` against `carterWegmanNonceMAC` is at most `ε.toReal + (2 ^ n)⁻¹` plus the PRF
+distinguishing advantage of `prfNonceToPrfDistinguisher msgLen seed hash adversary`. -/
+theorem sufCmaGame_carterWegmanNonceMAC_toReal_le
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits)
+    {n : ℕ} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) ε)
+    (hε : ε ≠ ⊤) (adversary : NonceMACForger) :
+    (ProbComp.eval
+      ((carterWegmanNonceMAC msgLen seed hash family hmsgLen hseed hhash hfamily).sufCmaGame
+        adversary n) true).toReal ≤
+      ε.toReal + ((2 : ℝ) ^ n)⁻¹ +
+        (Game.advantage
+          (ProbComp.eval
+            (prfRealGame family (prfNonceToPrfDistinguisher msgLen seed hash adversary) n))
+          (ProbComp.eval
+            (prfIdealGame (prfNonceToPrfDistinguisher msgLen seed hash adversary) n)) : ℝ) := by
+  rw [← eval_prfRealGame_prfNonceToPrfDistinguisher hmsgLen hseed hhash hfamily adversary n]
+  have hinv_ne_top : ((2 : ℝ≥0∞) ^ n)⁻¹ ≠ ⊤ := by simp
+  have hideal :
+      (ProbComp.eval
+        (prfIdealGame (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) true).toReal ≤
+        ε.toReal + ((2 : ℝ) ^ n)⁻¹ := by
+    have hle := (eval_prfIdealGame_prfNonceToPrfDistinguisher_le hh adversary).trans
+      (max_le_add_of_nonneg zero_le zero_le)
+    have htr := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hε, hinv_ne_top⟩) hle
+    simpa only [ENNReal.toReal_add hε hinv_ne_top, ENNReal.toReal_inv, ENNReal.toReal_pow,
+      ENNReal.toReal_ofNat] using htr
+  rw [Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
+  linarith [le_abs_self
+    ((ProbComp.eval
+      (prfRealGame family (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) true).toReal -
+      (ProbComp.eval
+        (prfIdealGame (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) true).toReal)]
+
+/-- **Asymptotic `NonceMACScheme.SUFCMA` security of `carterWegmanNonceMAC`**
+([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274): if `family` is a `PseudorandomFunction`
+and `(seed n, hash n)` is an `(ε n)`-almost-Δ-universal hash family on `BitString (msgLen n)` into
+`BitString n` with `Negligible ε`, then `carterWegmanNonceMAC` satisfies `NonceMACScheme.SUFCMA`. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanNonceMAC
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    {ε : ℕ → ℝ≥0}
+    (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
+    (hε : Negligible ε) :
+    (carterWegmanNonceMAC msgLen seed hash family hmsgLen hseed hhash hprf.polyTime).SUFCMA := by
+  refine NonceMACScheme.SUFCMA.of_negligible fun adversary hadversary => ?_
+  have hgeom : Negligible (fun n => ((2 : ℝ≥0) ^ n)⁻¹) := by
+    simpa only [inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
+  have hdist := hprf.secure (prfNonceToPrfDistinguisher msgLen seed hash adversary)
+    (isOraclePPT_prfNonceToPrfDistinguisher hmsgLen hseed hhash hadversary)
+  refine negligible_of_le ((hε.add hgeom).add hdist) fun n => ?_
+  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
+  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_inv, NNReal.coe_pow, NNReal.coe_ofNat]
+  simpa only [ENNReal.coe_toReal] using
+    sufCmaGame_carterWegmanNonceMAC_toReal_le hmsgLen hseed hhash hprf.polyTime
+      (hh n) ENNReal.coe_ne_top adversary
+
+/-- **Asymptotic `NonceMACScheme.EUFCMA` security of `carterWegmanNonceMAC`**
+([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274). -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    {ε : ℕ → ℝ≥0}
+    (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
+    (hε : Negligible ε) :
+    (carterWegmanNonceMAC msgLen seed hash family hmsgLen hseed hhash hprf.polyTime).EUFCMA :=
+  (hprf.sufCma_carterWegmanNonceMAC hmsgLen hseed hhash hh hε).eufCma
+
 end Nonce
 
 /-! ### Randomized Carter–Wegman MAC (Boneh–Shoup Section 7.4, Theorem 7.9) -/
@@ -2621,20 +3653,20 @@ theorem uniform_bind_run_interpret_randomNonceFnHandler {α β : Type}
         post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
   have happ_fn (padFn : N → Y) :
       ∀ m tr₁ res, res ∈ (randomNonceFnHandler hash k padFn m tr₁).support →
-        ∃ e, res.2 = tr₁ ++ [e] := by
+        ∃ s, res.2 = tr₁ ++ s := by
     intro m tr₁ res hres
     simp only [randomNonceFnHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hres
     rcases hres with ⟨x, -, hres⟩
-    exact ⟨((m, x), _), congrArg Prod.snd hres⟩
+    exact ⟨[((m, x), _)], congrArg Prod.snd hres⟩
   have happ_sim :
       ∀ m tr₁ res, res ∈ (randomNonceSimHandler (M := M) (N := N) (Y := Y) m tr₁).support →
-        ∃ e, res.2 = tr₁ ++ [e] := by
+        ∃ s, res.2 = tr₁ ++ s := by
     intro m tr₁ res hres
     simp only [randomNonceSimHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hres
     rcases hres with ⟨x, -, t, -, hres⟩
-    exact ⟨((m, x), t), congrArg Prod.snd hres⟩
+    exact ⟨[((m, x), t)], congrArg Prod.snd hres⟩
   have hpost_sim : ∀ a tr', ¬ (tr'.map (fun e => e.1.2)).Nodup →
       ((PMF.uniformOfFintype (N → Y)).bind fun table =>
         post a tr' (reconstructPadFn hash k tr' table)) = c := by
@@ -3215,6 +4247,1346 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfRandomNonceGame
     (maskedRandomNonceGame_le_maskedRandomNonceStrongGame (seed n) (prfFnDist family n)
       (hash n) (forger n))
 
+omit [DecidableEq M] [DecidableEq Y] in
+/-- **Multi-query simulation equivalence for `randomNonceFnHandler` on `ProbOracleComp` programs
+under a random function**: lifting `uniform_bind_run_interpret_randomNonceFnHandler` to programs
+that also draw private coins via `ProbComp.unifOracle`. -/
+theorem probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler {α β : Type}
+    (hash : K → M → Y) (k : K)
+    (prog : ProbOracleComp (fun _ : M => N × Y) α) (tr : List ((M × N) × Y))
+    (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+      ((OracleComp.interpret
+        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (randomNonceFnHandler hash k (reconstructPadFn hash k tr table)))
+        prog).run tr).bind
+        fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) =
+    (((OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        randomNonceSimHandler) prog).run tr).bind fun res =>
+      (PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post res.1 res.2 (reconstructPadFn hash k res.2 table)) := by
+  have happ_fn (padFn : N → Y) :
+      ∀ q tr₁ res,
+        res ∈ (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (randomNonceFnHandler hash k padFn) q tr₁).support →
+        ∃ s, res.2 = tr₁ ++ s := by
+    intro q tr₁ res hres
+    cases q with
+    | inl num =>
+      simp only [ProbOracleComp.handler, StateT.lift, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      rcases hres with ⟨i, -, hres⟩
+      exact ⟨[], by simp [congrArg Prod.snd hres]⟩
+    | inr m =>
+      simp only [ProbOracleComp.handler, randomNonceFnHandler, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      rcases hres with ⟨x, -, hres⟩
+      exact ⟨[((m, x), _)], congrArg Prod.snd hres⟩
+  have happ_sim :
+      ∀ q tr₁ res,
+        res ∈ (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (randomNonceSimHandler (M := M) (N := N) (Y := Y)) q tr₁).support →
+        ∃ s, res.2 = tr₁ ++ s := by
+    intro q tr₁ res hres
+    cases q with
+    | inl num =>
+      simp only [ProbOracleComp.handler, StateT.lift, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      rcases hres with ⟨i, -, hres⟩
+      exact ⟨[], by simp [congrArg Prod.snd hres]⟩
+    | inr m =>
+      simp only [ProbOracleComp.handler, randomNonceSimHandler, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.support_pure,
+        Set.mem_singleton_iff] at hres
+      rcases hres with ⟨x, -, t, -, hres⟩
+      exact ⟨[((m, x), t)], congrArg Prod.snd hres⟩
+  have hpost_sim : ∀ a tr', ¬ (tr'.map (fun e => e.1.2)).Nodup →
+      ((PMF.uniformOfFintype (N → Y)).bind fun table =>
+        post a tr' (reconstructPadFn hash k tr' table)) = c := by
+    intro a tr' hnot
+    simp only [hpost a tr' _ hnot, PMF.bind_const]
+  induction prog using OracleComp.induction generalizing tr with
+  | pure a =>
+    simp [PMF.monad_pure_eq_pure]
+  | query_bind q cont ih =>
+    cases q with
+    | inl num =>
+      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        ProbOracleComp.handler, StateT.lift, PMF.monad_bind_eq_bind,
+        PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (ProbComp.unifOracle num)]
+      congr 1; funext i
+      exact ih i tr
+    | inr m =>
+      by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
+      · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          ProbOracleComp.handler, randomNonceFnHandler, randomNonceSimHandler,
+          PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+        rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (PMF.uniformOfFintype N)]
+        congr 1; funext x
+        by_cases hx : x ∈ tr.map (fun e => e.1.2)
+        · have hnot (t : Y) : ¬ ((tr ++ [((m, x), t)]).map (fun e => e.1.2)).Nodup :=
+            not_nodup_map_append_of_mem m t hx
+          have hlhs (table : N → Y) :
+              ((OracleComp.interpret
+                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (randomNonceFnHandler hash k (reconstructPadFn hash k tr table)))
+                (cont (x, sign hash k (reconstructPadFn hash k tr table x) m))).run
+                (tr ++ [((m, x), sign hash k (reconstructPadFn hash k tr table x) m)])).bind
+                (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+            run_interpret_bind_of_not_nodup _ (happ_fn _) _ (hnot _) _ c
+              (fun a tr' h => hpost a tr' _ h)
+          have hrhs (t : Y) :
+              ((OracleComp.interpret
+                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  randomNonceSimHandler) (cont (x, t))).run
+                (tr ++ [((m, x), t)])).bind
+                (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+                  post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+            run_interpret_bind_of_not_nodup _ happ_sim _ (hnot t) _ c hpost_sim
+          simp only [hlhs, hrhs, PMF.bind_const]
+        · rw [uniform_reconstructPadFn_step hash k m hx
+            (fun t tr' fn =>
+              ((OracleComp.interpret
+                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  (randomNonceFnHandler hash k fn)) (cont (x, t))).run tr').bind
+                fun res => post res.1 res.2 fn)]
+          congr 1; funext t
+          exact ih (x, t) (tr ++ [((m, x), t)])
+      · have hlhs (table : N → Y) :
+            ((OracleComp.interpret
+              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                (randomNonceFnHandler hash k (reconstructPadFn hash k tr table)))
+              (OracleComp.query (Sum.inr m) >>= cont)).run tr).bind
+              (fun res => post res.1 res.2 (reconstructPadFn hash k tr table)) = c :=
+          run_interpret_bind_of_not_nodup _ (happ_fn _) _ hnodup _ c
+            (fun a tr' h => hpost a tr' _ h)
+        have hrhs :
+            ((OracleComp.interpret
+              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                randomNonceSimHandler) (OracleComp.query (Sum.inr m) >>= cont)).run tr).bind
+              (fun res => (PMF.uniformOfFintype (N → Y)).bind fun table =>
+                post res.1 res.2 (reconstructPadFn hash k res.2 table)) = c :=
+          run_interpret_bind_of_not_nodup _ happ_sim _ hnodup _ c hpost_sim
+        simp only [hlhs, hrhs, PMF.bind_const]
+
+omit [AddGroup Y] [DecidableEq M] [DecidableEq Y] in
+/-- Birthday-collision bound for `randomNonceSimHandler` on `ProbOracleComp` programs: starting
+from `tr`, any `Q`-query-bounded `ProbOracleComp` program produces a transcript with a repeated
+nonce with probability at most
+`((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N` when
+`(tr.map (fun e => e.1.2)).Nodup`, and at most `1` otherwise. -/
+theorem probOracleComp_randomNonceSimHandler_not_nodup_le {α : Type}
+    {prog : ProbOracleComp (fun _ : M => N × Y) α} {Q : ℕ}
+    (hprog : prog.IsQueryBounded Q) (tr : List ((M × N) × Y)) :
+    (((OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        randomNonceSimHandler) prog).run tr).bind fun res =>
+      PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
+      if (tr.map (fun e => e.1.2)).Nodup then
+        ((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N
+      else 1 := by
+  induction hprog generalizing tr with
+  | pure a Q =>
+    by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup <;>
+      simp [hnodup, PMF.monad_pure_eq_pure]
+  | liftBind q cont Q hcont ih =>
+    cases q with
+    | inl num =>
+      simp only [Sum.elim_inl, Nat.add_zero]
+      change (((OracleComp.interpret
+        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          randomNonceSimHandler) (OracleComp.query (Sum.inl num) >>= cont)).run tr).bind
+        fun res => PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤ _
+      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+        ProbOracleComp.handler, StateT.lift, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+        PMF.bind_bind, PMF.pure_bind]
+      rw [PMF.bind_apply]
+      exact tsum_mul_le_of_forall_le (ProbComp.unifOracle num) fun i => ih i tr
+    | inr m =>
+      simp only [Sum.elim_inr]
+      change (((OracleComp.interpret
+        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          randomNonceSimHandler) (OracleComp.query (Sum.inr m) >>= cont)).run tr).bind
+        fun res => PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤ _
+      by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
+      · simp only [hnodup, ↓reduceIte, OracleComp.run_interpret_bind,
+          OracleComp.run_interpret_query, ProbOracleComp.handler, randomNonceSimHandler,
+          PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+        let B : ℝ≥0∞ :=
+          ((∑ i ∈ Finset.range Q, (tr.length + 1 + i) : ℕ) : ℝ≥0∞) / Fintype.card N
+        have hxt (x : N) (t : Y) :
+            (((OracleComp.interpret
+              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                randomNonceSimHandler) (cont (x, t))).run
+              (tr ++ [((m, x), t)])).bind fun res =>
+                PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
+            (PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
+          by_cases hx : x ∈ tr.map (fun e => e.1.2)
+          · simp only [decide_eq_true hx, PMF.pure_apply, ↓reduceIte]
+            exact (PMF.coe_le_one _ _).trans le_self_add
+          · have hnodup' : ((tr ++ [((m, x), t)]).map (fun e => e.1.2)).Nodup := by
+              rw [List.map_append, List.map_singleton, List.nodup_append]
+              refine ⟨hnodup, List.nodup_singleton _, fun a ha b hb hab => ?_⟩
+              rw [List.mem_singleton] at hb
+              subst hb; subst hab
+              exact hx ha
+            have hih := ih (x, t) (tr ++ [((m, x), t)])
+            simp only [hnodup', ↓reduceIte, List.length_append, List.length_singleton] at hih
+            simp only [decide_eq_false hx, PMF.pure_apply, Bool.true_eq_false, ↓reduceIte,
+              zero_add]
+            exact hih
+        have hx_bound (x : N) :
+            ((PMF.uniformOfFintype Y).bind fun t =>
+              ((OracleComp.interpret
+                (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                  randomNonceSimHandler) (cont (x, t))).run
+                (tr ++ [((m, x), t)])).bind fun res =>
+                  PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
+            (PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
+          rw [PMF.bind_apply]
+          exact tsum_mul_le_of_forall_le (PMF.uniformOfFintype Y) (hxt x)
+        have hmem_le :
+            ((PMF.uniformOfFintype N).bind fun x =>
+              PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true ≤
+            (tr.length : ℝ≥0∞) / Fintype.card N := by
+          let s : Set N := {x | x ∈ tr.map (fun e => e.1.2)}
+          have h_eq :
+              ((PMF.uniformOfFintype N).bind fun x =>
+                PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true =
+              (PMF.uniformOfFintype N).toOuterMeasure s := by
+            rw [PMF.bind_apply, PMF.toOuterMeasure_apply]
+            change ∑' x, PMF.uniformOfFintype N x * (PMF.pure (decide (x ∈ s))) true =
+              ∑' x, s.indicator (PMF.uniformOfFintype N) x
+            refine tsum_congr fun x => ?_
+            by_cases hx : x ∈ s <;> simp [hx]
+          rw [h_eq, Probability.PMF.toOuterMeasure_uniformOfFintype, div_eq_mul_inv]
+          gcongr
+          have hsub : Finset.univ.filter (· ∈ s) ⊆ (tr.map (fun e => e.1.2)).toFinset := by
+            intro x hx
+            rw [Finset.mem_filter] at hx
+            exact List.mem_toFinset.mpr hx.2
+          have hcard : (Finset.univ.filter (· ∈ s)).card ≤ tr.length :=
+            (Finset.card_le_card hsub).trans
+              ((List.toFinset_card_le _).trans (by simp))
+          exact_mod_cast hcard
+        rw [PMF.bind_apply]
+        calc ∑' x, PMF.uniformOfFintype N x *
+                ((PMF.uniformOfFintype Y).bind fun t =>
+                  ((OracleComp.interpret
+                    (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                      randomNonceSimHandler) (cont (x, t))).run
+                    (tr ++ [((m, x), t)])).bind fun res =>
+                      PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true
+            ≤ ∑' x, PMF.uniformOfFintype N x *
+                ((PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B) :=
+              ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hx_bound x) zero_le
+          _ = ((PMF.uniformOfFintype N).bind fun x =>
+                PMF.pure (decide (x ∈ tr.map (fun e => e.1.2)))) true + B := by
+              simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right,
+                (PMF.uniformOfFintype N).tsum_coe, one_mul, PMF.bind_apply]
+          _ ≤ (tr.length : ℝ≥0∞) / Fintype.card N + B := add_le_add hmem_le le_rfl
+          _ = ((∑ i ∈ Finset.range (Q + 1), (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N := by
+              dsimp only [B]
+              rw [← ENNReal.add_div, ← Nat.cast_add]
+              congr 2
+              rw [Finset.sum_range_succ', Nat.add_zero, add_comm (tr.length)]
+              congr 1
+              refine Finset.sum_congr rfl fun i _ => by omega
+      · simp only [hnodup, ↓reduceIte]
+        exact PMF.coe_le_one _ _
+
+/-- **Ideal randomized Carter–Wegman SUF-CMA bound for `ProbOracleComp` programs**:
+under `IsDeltaUniversalHash seed hash ε`, any `Q`-query-bounded `ProbOracleComp` program `prog`
+against `randomNonceFnHandler` satisfies `checkRandomNonceSUF` on `out res.1` with probability at
+most `(Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + (Fintype.card Y : ℝ≥0∞)⁻¹ + ε`. -/
+theorem seed_uniform_probOracleComp_checkRandomNonceSUF_le {α : Type}
+    {seed : PMF K} {hash : K → M → Y} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash seed hash ε)
+    {prog : ProbOracleComp (fun _ : M => N × Y) α} {Q : ℕ}
+    (hprog : prog.IsQueryBounded Q) (out : α → (M × N) × Y) :
+    (seed.bind fun k =>
+      (PMF.uniformOfFintype (N → Y)).bind fun rf =>
+        ((OracleComp.interpret
+          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+            (randomNonceFnHandler hash k rf))
+          prog).run []).bind
+          fun res => PMF.pure (checkRandomNonceSUF hash k rf res.2 (out res.1))) true ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + (Fintype.card Y : ℝ≥0∞)⁻¹ + ε := by
+  have hmono :
+      (seed.bind fun k =>
+        (PMF.uniformOfFintype (N → Y)).bind fun rf =>
+          ((OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (randomNonceFnHandler hash k rf))
+            prog).run []).bind
+            fun res => PMF.pure (checkRandomNonceSUF hash k rf res.2 (out res.1))) true ≤
+      (seed.bind fun k =>
+        (PMF.uniformOfFintype (N → Y)).bind fun rf =>
+          ((OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (randomNonceFnHandler hash k rf))
+            prog).run []).bind
+            fun res =>
+              PMF.pure (checkRandomNonceOrCollision hash k rf res.2 (out res.1))) true := by
+    refine bind_apply_mono_on_support seed true fun k _ => ?_
+    refine bind_apply_mono_on_support (PMF.uniformOfFintype (N → Y)) true fun rf _ => ?_
+    refine bind_apply_mono_on_support
+      ((OracleComp.interpret
+        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          (randomNonceFnHandler hash k rf))
+        prog).run []) true fun res _ => ?_
+    by_cases h : checkRandomNonceSUF hash k rf res.2 (out res.1) = true
+    · rw [h, checkRandomNonceSUF_imp_checkRandomNonceOrCollision hash k rf res.2 (out res.1) h]
+    · simp [Bool.eq_false_iff.mpr h]
+  refine hmono.trans ?_
+  have hsim (k : K) :
+      ((PMF.uniformOfFintype (N → Y)).bind fun rf =>
+        ((OracleComp.interpret
+          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+            (randomNonceFnHandler hash k rf))
+          prog).run []).bind
+          fun res => PMF.pure (checkRandomNonceOrCollision hash k rf res.2 (out res.1))) =
+      (((OracleComp.interpret
+        (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+          randomNonceSimHandler) prog).run []).bind fun res =>
+        (PMF.uniformOfFintype (N → Y)).bind fun table =>
+          PMF.pure
+            (checkRandomNonceOrCollision hash k
+              (reconstructPadFn hash k res.2 table) res.2 (out res.1))) := by
+    simpa only [reconstructPadFn_nil] using
+      probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler hash k prog []
+        (fun a tr' padFn => PMF.pure (checkRandomNonceOrCollision hash k padFn tr' (out a)))
+        (PMF.pure true)
+        (fun a tr' padFn hnot => by simp [checkRandomNonceOrCollision, hnot])
+  simp only [hsim]
+  let simPMF :=
+    (OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        randomNonceSimHandler) prog).run []
+  rw [PMF.bind_comm seed simPMF]
+  have hpoint (res : α × List ((M × N) × Y)) :
+      (seed.bind fun k =>
+        (PMF.uniformOfFintype (N → Y)).bind fun table =>
+          PMF.pure
+            (checkRandomNonceOrCollision hash k
+              (reconstructPadFn hash k res.2 table) res.2 (out res.1))) true ≤
+      (PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
+        max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+    by_cases hnodup : (res.2.map (fun e => e.1.2)).Nodup
+    · have heq (k : K) (table : N → Y) :
+          checkRandomNonceOrCollision hash k
+            (reconstructPadFn hash k res.2 table) res.2 (out res.1) =
+          checkNonceSUF hash k (reconstructPadFn hash k res.2 table) res.2 (out res.1) := by
+        simp [checkRandomNonceOrCollision, hnodup]
+      simp only [heq, decide_eq_true hnodup, Bool.not_true, PMF.pure_apply, Bool.true_eq_false,
+        ↓reduceIte, zero_add]
+      exact seed_uniform_checkNonceSUF_le hh res.2 (out res.1)
+    · simp only [decide_eq_false hnodup, Bool.not_false, PMF.pure_apply, ↓reduceIte]
+      exact (PMF.coe_le_one _ _).trans le_self_add
+  have hsum_nat : 2 * (∑ i ∈ Finset.range Q, i) ≤ Q ^ 2 := by
+    rw [Finset.sum_range_id, sq]
+    exact (Nat.mul_div_le (Q * (Q - 1)) 2).trans (Nat.mul_le_mul_left Q (Nat.sub_le Q 1))
+  have hsum : ((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) := by
+    rw [← ENNReal.mul_div_mul_left _ _ (by norm_num : (2 : ℝ≥0∞) ≠ 0) ENNReal.ofNat_ne_top]
+    gcongr
+    exact_mod_cast hsum_nat
+  have hmax : max ε (Fintype.card Y : ℝ≥0∞)⁻¹ ≤ (Fintype.card Y : ℝ≥0∞)⁻¹ + ε := by
+    rw [add_comm]
+    exact max_le_add_of_nonneg zero_le zero_le
+  rw [add_assoc, PMF.bind_apply]
+  calc ∑' res, simPMF res *
+          (seed.bind fun k =>
+            (PMF.uniformOfFintype (N → Y)).bind fun table =>
+              PMF.pure
+                (checkRandomNonceOrCollision hash k
+                  (reconstructPadFn hash k res.2 table) res.2 (out res.1))) true
+      ≤ ∑' res, simPMF res *
+          ((PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
+            max ε (Fintype.card Y : ℝ≥0∞)⁻¹) :=
+        ENNReal.tsum_le_tsum fun res => mul_le_mul_of_nonneg_left (hpoint res) zero_le
+    _ = (simPMF.bind fun res =>
+          PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true +
+        max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, simPMF.tsum_coe, one_mul,
+          PMF.bind_apply]
+    _ ≤ ((∑ i ∈ Finset.range Q, i : ℕ) : ℝ≥0∞) / Fintype.card N +
+        max ε (Fintype.card Y : ℝ≥0∞)⁻¹ := by
+        refine add_le_add ?_ le_rfl
+        have hcol := probOracleComp_randomNonceSimHandler_not_nodup_le hprog []
+        simpa using hcol
+    _ ≤ (Q : ℝ≥0∞) ^ 2 / (2 * Fintype.card N) + ((Fintype.card Y : ℝ≥0∞)⁻¹ + ε) :=
+        add_le_add hsum hmax
+
+/-! #### Word-level `MACScheme` packaging and `IsOraclePPT` PRF reduction (Theorem 7.9) -/
+
+/-- **Computational randomized Carter–Wegman MAC (`MACScheme`)**
+([BonehShoup2023], Section 7.4, Theorem 7.9, pp. 267–270):
+given a polynomial-time message-length schedule `msgLen : ℕ → ℕ`, a strict-PPT hash-key sampler
+`seed : ℕ → ProbComp (List Bool)`, a polynomial-time hash evaluator
+`hash : ℕ → List Bool → List Bool → List Bool`, and a polynomial-time PRF family
+`family : List Bool → List Bool → List Bool`:
+* `keyGen n` samples `k ← seed n` and `prfKey ← BitString.sampleList n`, returning the framed pair
+  `encPair encBits encBits (k, prfKey)`.
+* `sign sk msg` recovers `k := unframe sk`, `prfKey := dropFrame sk`, and `n := prfKey.length`,
+  samples a fresh uniform `n`-bit nonce `nonce ← BitString.sampleList n`, and when
+  `msg.length == msgLen n` returns the framed pair `encPair encBits encBits (nonce, tag)` where
+  `tag = BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n]` (and `[]`
+  otherwise).
+* `verify sk msg fullTag` decodes `nonce := unframe fullTag`, computes the expected `n`-bit tag
+  `tag := BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n]`, and checks
+  `msg.length == msgLen n`, `nonce.length == n`, and
+  `encPair encBits encBits (nonce, tag) == fullTag`. -/
+noncomputable def carterWegmanRandomMAC (msgLen : ℕ → ℕ)
+    (seed : ℕ → ProbComp (List Bool))
+    (hash : ℕ → List Bool → List Bool → List Bool)
+    (family : List Bool → List Bool → List Bool)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits) : MACScheme where
+  msgLen := msgLen
+  msgLen_polyTime := hmsgLen
+  keyGen n := do
+    let k ← seed n
+    let prfKey ← BitString.sampleList n
+    return encPair encBits encBits (k, prfKey)
+  sign sk msg := do
+    let nonce ← BitString.sampleList (dropFrame sk).length
+    let k := unframe sk
+    let prfKey := dropFrame sk
+    let n := prfKey.length
+    return if msg.length == msgLen n then
+      encPair encBits encBits
+        (nonce, BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n])
+    else
+      []
+  verify sk msg fullTag :=
+    let k := unframe sk
+    let prfKey := dropFrame sk
+    let n := prfKey.length
+    let nonce := unframe fullTag
+    let tag := BitString.listXor n [hash n k msg, (prfOracle family n prfKey nonce).take n]
+    (msg.length == msgLen n) && (nonce.length == n) &&
+      (encPair encBits encBits (nonce, tag) == fullTag)
+  keyGen_ppt := by ppt
+  sign_ppt := by
+    have hmsgLen_tidy := hmsgLen.tidy
+    have hhash_tidy := hhash.tidy
+    have hfamily_tidy := hfamily.tidy
+    have hprf : ComputableTidilyInPolyTime
+        (fun p : (List Bool × List Bool) × List Bool =>
+          prfOracle family (dropFrame p.1.1).length (dropFrame p.1.1) p.2)
+        (encPair (encPair encBits encBits) encBits) encBits := by
+      have heq : (fun p : (List Bool × List Bool) × List Bool =>
+          prfOracle family (dropFrame p.1.1).length (dropFrame p.1.1) p.2) =
+          (fun p : (List Bool × List Bool) × List Bool =>
+            if p.2.length == (dropFrame p.1.1).length then
+              family (dropFrame p.1.1) p.2
+            else
+              []) := by
+        funext p
+        simp [prfOracle]
+      rw [heq]
+      polytime
+    have hbody : ComputableTidilyInPolyTime
+        (fun p : (List Bool × List Bool) × List Bool =>
+          let k := unframe p.1.1
+          let prfKey := dropFrame p.1.1
+          let n := prfKey.length
+          if p.1.2.length == msgLen n then
+            encPair encBits encBits
+              (p.2, BitString.listXor n [hash n k p.1.2, (prfOracle family n prfKey p.2).take n])
+          else
+            [])
+        (encPair (encPair encBits encBits) encBits) encBits := by
+      polytime
+    exact (ComputableInPolyTime.sampleList (by polytime)).bind_with hbody.isPPTOn
+  verify_polyTime := by
+    have hmsgLen_tidy := hmsgLen.tidy
+    have hhash_tidy := hhash.tidy
+    have hfamily_tidy := hfamily.tidy
+    have hprf : ComputableTidilyInPolyTime
+        (fun p : List Bool × List Bool × List Bool =>
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (unframe p.2.2))
+        (encPair encBits (encPair encBits encBits)) encBits := by
+      have heq : (fun p : List Bool × List Bool × List Bool =>
+          prfOracle family (dropFrame p.1).length (dropFrame p.1) (unframe p.2.2)) =
+          (fun p : List Bool × List Bool × List Bool =>
+            if (unframe p.2.2).length == (dropFrame p.1).length then
+              family (dropFrame p.1) (unframe p.2.2)
+            else
+              []) := by
+        funext p
+        simp [prfOracle]
+      rw [heq]
+      polytime
+    exact .of_tidy (by polytime)
+  verify_sign := by
+    intro n sk hsk msg hmsg fullTag htag
+    simp only [ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
+      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hsk htag
+    rcases hsk with ⟨k, -, prfKey, hprfKey, rfl⟩
+    have hprfLen : prfKey.length = n := BitString.length_of_mem_support_uniformList hprfKey
+    rcases htag with ⟨nonce, hnonce, rfl⟩
+    simp only [encPair_apply, encBits_apply, dropFrame_frame_append, unframe_frame_append,
+      hprfLen, hmsg, beq_self_eq_true, ↓reduceIte] at hnonce ⊢
+    have hnonceLen : nonce.length = n := BitString.length_of_mem_support_uniformList hnonce
+    simp [hnonceLen]
+
+/-- Open stateful handler for the randomized Carter–Wegman PRF reduction
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): given the hash key `k` and a signing request
+`msg := request.2`, when `msg.length == msgLen n` it samples a fresh uniform `n`-bit nonce
+`nonce ← BitString.sampleList n`, queries the external oracle on `((), nonce)` (reading `n` bits
+`pad`), computes `tag := BitString.listXor n [hash n k msg, pad]` and
+`fullTag := encPair encBits encBits (nonce, tag)`, and prepends `(msg, fullTag)` to `queriedPairs`;
+otherwise it returns `[]` and prepends `(msg, [])` without querying the external oracle. -/
+noncomputable def cwRandomNonceLogHandler (msgLen : ℕ → ℕ)
+    (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (request : Unit × List Bool) :
+    StateT (List (List Bool × List Bool)) (WordOracleComp Unit) (List Bool) :=
+  fun queriedPairs =>
+    let msg := request.2
+    if msg.length == msgLen n then do
+      let nonce ← ProbOracleComp.sample (BitString.sampleList n)
+      (fun pad =>
+        let tag := BitString.listXor n [hash n k msg, pad]
+        let fullTag := encPair encBits encBits (nonce, tag)
+        (fullTag, (msg, fullTag) :: queriedPairs)) <$>
+        (List.take n <$> ProbOracleComp.query ((), nonce))
+    else
+      pure ([], (msg, []) :: queriedPairs)
+
+/-- Oracle reduction turning an adaptive word-level `Forger` into an `OracleDistinguisher`
+for the PRF security game ([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270):
+1. Sample `k ← seed n`.
+2. Run `adversary n []`, answering each signing query via `cwRandomNonceLogHandler msgLen hash n k`.
+3. Query the external oracle on the candidate nonce `unframe out.1.2` (reading `n` bits `pad`), and
+   accept iff `msg.length == msgLen n`, `(unframe fullTag).length == n`, the candidate
+   `(msg, fullTag)` pair was not returned by the signing oracle, and
+   `encPair encBits encBits (unframe fullTag, BitString.listXor n [hash n k msg, pad]) == fullTag`.
+-/
+noncomputable def prfRandomNonceToPrfDistinguisher (msgLen : ℕ → ℕ)
+    (seed : ℕ → ProbComp (List Bool))
+    (hash : ℕ → List Bool → List Bool → List Bool) (adversary : Forger) :
+    OracleDistinguisher := fun n _ => do
+  let k ← ProbOracleComp.sample (seed n)
+  let out ←
+    (OracleComp.interpret
+      (ProbOracleComp.handler
+        (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+        (cwRandomNonceLogHandler msgLen hash n k))
+      (adversary n [])).run []
+  (fun pad =>
+    let msg := out.1.1
+    let fullTag := out.1.2
+    let nonce := unframe fullTag
+    let tag := BitString.listXor n [hash n k msg, pad]
+    (msg.length == msgLen n) && (nonce.length == n) && !out.2.contains out.1 &&
+      (encPair encBits encBits (nonce, tag) == fullTag)) <$>
+    (List.take n <$> ProbOracleComp.query ((), unframe out.1.2))
+
+private theorem isOraclePPTOn_cwRandomNonceLogHandler
+    {msgLen : ℕ → ℕ} {hash : ℕ → List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits) :
+    IsOraclePPTOn
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encFinite Unit) encBits)
+          (encList (encPair encBits encBits))))
+      (encPair encBits (encList (encPair encBits encBits)))
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool)) =>
+        cwRandomNonceLogHandler msgLen hash p.1.1.1 p.1.2 p.2.1 p.2.2) := by
+  unfold cwRandomNonceLogHandler
+  have hcond : ComputableInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool)) =>
+        p.2.1.2.length == msgLen p.1.1.1)
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encFinite Unit) encBits)
+          (encList (encPair encBits encBits))))
+      encBool := by
+    polytime
+  have hsample : IsOraclePPTOn (Operation := Unit)
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encFinite Unit) encBits)
+          (encList (encPair encBits encBits))))
+      encBits
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool)) =>
+        ProbOracleComp.sample (BitString.sampleList p.1.1.1)) :=
+    (ComputableInPolyTime.sampleList (by polytime)).isOraclePPTOn
+  let mkFullTag (r : ((((ℕ × List Bool) × List Bool) ×
+      ((Unit × List Bool) × List (List Bool × List Bool))) × List Bool) × List Bool) :
+      List Bool :=
+    frame r.1.2 ++ BitString.listXor r.1.1.1.1.1 [hash r.1.1.1.1.1 r.1.1.1.2 r.1.1.2.1.2, r.2]
+  have hmkFullTag : ComputableInPolyTime mkFullTag
+      (encPair
+        (encPair
+          (encPair (encPair (encPair encUnary encBits) encBits)
+            (encPair (encPair (encFinite Unit) encBits)
+              (encList (encPair encBits encBits))))
+          encBits)
+        encBits)
+      encBits := by
+    -- plain `polytime` runs out of heartbeats here; the tidy search with tidy context does not
+    have hhash_tidy := hhash.tidy
+    have hframe : ComputableTidilyInPolyTime frame encBits encBits :=
+      ComputableInPolyTime.frame.tidy
+    unfold mkFullTag
+    polytime
+  have hpost : ComputableInPolyTime
+      (fun r : ((((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool))) × List Bool) × List Bool =>
+        (mkFullTag r, (r.1.1.2.1.2, mkFullTag r) :: r.1.1.2.2))
+      (encPair
+        (encPair
+          (encPair (encPair (encPair encUnary encBits) encBits)
+            (encPair (encPair (encFinite Unit) encBits)
+              (encList (encPair encBits encBits))))
+          encBits)
+        encBits)
+      (encPair encBits (encList (encPair encBits encBits))) :=
+    ComputableInPolyTime.prod hmkFullTag
+      (ComputableInPolyTime.cons'
+        (ComputableInPolyTime.prod (by polytime) hmkFullTag)
+        (by polytime))
+  have hquery : IsOraclePPTOn
+      (encPair
+        (encPair (encPair (encPair encUnary encBits) encBits)
+          (encPair (encPair (encFinite Unit) encBits)
+            (encList (encPair encBits encBits))))
+        encBits)
+      (encPair encBits (encList (encPair encBits encBits)))
+      (fun q : (((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool))) × List Bool =>
+        (fun pad =>
+          let msg := q.1.2.1.2
+          let nonce := q.2
+          let tag := BitString.listXor q.1.1.1.1 [hash q.1.1.1.1 q.1.1.2 msg, pad]
+          let fullTag := encPair encBits encBits (nonce, tag)
+          (fullTag, (msg, fullTag) :: q.1.2.2)) <$>
+          (List.take q.1.1.1.1 <$> ProbOracleComp.query ((), q.2))) :=
+    (IsOraclePPTOn.query_take' () (by polytime) (by polytime)).map_with' hpost
+  have hyes : IsOraclePPTOn
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encFinite Unit) encBits)
+          (encList (encPair encBits encBits))))
+      (encPair encBits (encList (encPair encBits encBits)))
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool)) => do
+        let nonce ← ProbOracleComp.sample (BitString.sampleList p.1.1.1)
+        (fun pad =>
+          let msg := p.2.1.2
+          let tag := BitString.listXor p.1.1.1 [hash p.1.1.1 p.1.2 msg, pad]
+          let fullTag := encPair encBits encBits (nonce, tag)
+          (fullTag, (msg, fullTag) :: p.2.2)) <$>
+          (List.take p.1.1.1 <$> ProbOracleComp.query ((), nonce))) :=
+    hsample.bind_with hquery
+  have hno : IsOraclePPTOn (Operation := Unit)
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encFinite Unit) encBits)
+          (encList (encPair encBits encBits))))
+      (encPair encBits (encList (encPair encBits encBits)))
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool)) =>
+        pure ([], (p.2.1.2, []) :: p.2.2)) :=
+    (show ComputableInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((Unit × List Bool) × List (List Bool × List Bool)) =>
+        (([] : List Bool), (p.2.1.2, ([] : List Bool)) :: p.2.2))
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair (encFinite Unit) encBits)
+          (encList (encPair encBits encBits))))
+      (encPair encBits (encList (encPair encBits encBits))) by
+        polytime).isOraclePPTOn (Operation := Unit)
+  exact IsOraclePPTOn.cond' hcond hyes hno
+
+private theorem isOraclePPTOn_cwRandomNonceCheck
+    {msgLen : ℕ → ℕ} {hash : ℕ → List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits) :
+    IsOraclePPTOn
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
+      encBool
+      (fun p : ((ℕ × List Bool) × List Bool) ×
+          ((List Bool × List Bool) × List (List Bool × List Bool)) =>
+        (fun pad =>
+          let msg := p.2.1.1
+          let fullTag := p.2.1.2
+          let nonce := unframe fullTag
+          let tag := BitString.listXor p.1.1.1 [hash p.1.1.1 p.1.2 msg, pad]
+          (msg.length == msgLen p.1.1.1) && (nonce.length == p.1.1.1) &&
+            !p.2.2.contains p.2.1 &&
+            (encPair encBits encBits (nonce, tag) == fullTag)) <$>
+          (List.take p.1.1.1 <$> ProbOracleComp.query ((), unframe p.2.1.2))) := by
+  have hmsgLen_tidy := hmsgLen.tidy
+  have hhash_tidy := hhash.tidy
+  have hunframe : ComputableTidilyInPolyTime unframe encBits encBits :=
+    ComputableInPolyTime.unframe.tidy
+  let encR :=
+    encPair
+      (encPair (encPair (encPair encUnary encBits) encBits)
+        (encPair (encPair encBits encBits) (encList (encPair encBits encBits))))
+      encBits
+  let expectedFullTag (r : (((ℕ × List Bool) × List Bool) ×
+      ((List Bool × List Bool) × List (List Bool × List Bool))) × List Bool) : List Bool :=
+    frame (unframe r.1.2.1.2) ++
+      BitString.listXor r.1.1.1.1 [hash r.1.1.1.1 r.1.1.2 r.1.2.1.1, r.2]
+  have hexpected : ComputableTidilyInPolyTime expectedFullTag encR encBits :=
+    ComputableTidilyInPolyTime.bitsAppend
+      (ComputableInPolyTime.frame.tidy.comp (hunframe.comp (by polytime)))
+      (by polytime)
+  have hc1 : ComputableTidilyInPolyTime
+      (fun r : (((ℕ × List Bool) × List Bool) ×
+          ((List Bool × List Bool) × List (List Bool × List Bool))) × List Bool =>
+        r.1.2.1.1.length == msgLen r.1.1.1.1) encR encBool := by
+    polytime
+  have hlenEq : ComputableTidilyInPolyTime
+      (fun p : List Bool × ℕ => p.1.length == p.2)
+      (encPair encBits encUnary) encBool := by
+    polytime
+  have hc2 : ComputableTidilyInPolyTime
+      (fun r : (((ℕ × List Bool) × List Bool) ×
+          ((List Bool × List Bool) × List (List Bool × List Bool))) × List Bool =>
+        (unframe r.1.2.1.2).length == r.1.1.1.1) encR encBool :=
+    hlenEq.comp ((hunframe.comp (by polytime)).prod (by polytime))
+  have hc3 : ComputableTidilyInPolyTime
+      (fun r : (((ℕ × List Bool) × List Bool) ×
+          ((List Bool × List Bool) × List (List Bool × List Bool))) × List Bool =>
+        !r.1.2.2.contains r.1.2.1) encR encBool := by
+    polytime
+  have hbitsEq : ComputableTidilyInPolyTime
+      (fun p : List Bool × List Bool => p.1 == p.2)
+      (encPair encBits encBits) encBool := by
+    polytime
+  have hc4 : ComputableTidilyInPolyTime
+      (fun r : (((ℕ × List Bool) × List Bool) ×
+          ((List Bool × List Bool) × List (List Bool × List Bool))) × List Bool =>
+        expectedFullTag r == r.1.2.1.2) encR encBool :=
+    hbitsEq.comp (hexpected.prod (by polytime))
+  have hand : ComputableTidilyInPolyTime
+      (fun p : Bool × Bool => p.1 && p.2) (encPair encBool encBool) encBool :=
+    ComputableInPolyTime.bool_and.tidy
+  have hpost : ComputableTidilyInPolyTime
+      (fun r : (((ℕ × List Bool) × List Bool) ×
+          ((List Bool × List Bool) × List (List Bool × List Bool))) × List Bool =>
+        (r.1.2.1.1.length == msgLen r.1.1.1.1) && ((unframe r.1.2.1.2).length == r.1.1.1.1) &&
+          !r.1.2.2.contains r.1.2.1 &&
+          (expectedFullTag r == r.1.2.1.2)) encR encBool :=
+    hand.comp ((hand.comp ((hand.comp (hc1.prod hc2)).prod hc3)).prod hc4)
+  exact (IsOraclePPTOn.query_take () (hunframe.comp (by polytime)) (by polytime)).map_with hpost
+
+/-- `prfRandomNonceToPrfDistinguisher` is uniformly strict oracle-PPT (`IsOraclePPT encBool`)
+whenever `msgLen`, `seed`, `hash`, and `adversary` are uniformly polynomial-time / strict PPT. -/
+theorem isOraclePPT_prfRandomNonceToPrfDistinguisher
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool} {adversary : Forger}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsOraclePPT encBool (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) := by
+  have hhandler := isOraclePPTOn_cwRandomNonceLogHandler hmsgLen hhash
+  have hrun : IsOraclePPTOn
+      (encPair (encPair encUnary encBits) encBits)
+      (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))
+      (fun caller : (ℕ × List Bool) × List Bool =>
+        (OracleComp.interpret
+          (ProbOracleComp.handler
+            (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+            (cwRandomNonceLogHandler msgLen hash caller.1.1 caller.2))
+          (adversary caller.1.1 [])).run []) := by
+    apply hadversary.run_interpret_preprocess_open
+      (prepare := fun caller : (ℕ × List Bool) × List Bool => (caller.1.1, ([] : List Bool)))
+      (initial := fun _ => ([] : List (List Bool × List Bool)))
+      (resources := fun caller query => 6 * caller.1.1 + 4 * query.length + 10)
+      (by fun_prop) hhandler (by fun_prop)
+      (fun _ _ => True) (fun _ => trivial) (by fun_prop)
+    intro caller request queriedPairs _ result hresult
+    dsimp only [cwRandomNonceLogHandler] at hresult
+    by_cases hcond : (request.2.length == msgLen caller.1.1) = true
+    · simp only [hcond, ↓reduceIte, OracleComp.mem_supportWith_bind_iff,
+        OracleComp.mem_supportWith_map_iff] at hresult
+      rcases hresult with ⟨nonce, hnonce, pad, -, rfl⟩
+      change nonce ∈ OracleComp.support
+        (ProbOracleComp.sample (BitString.sampleList caller.1.1)) at hnonce
+      rw [ProbOracleComp.support_sample, BitString.eval_sampleList] at hnonce
+      have hnonceLen : nonce.length = caller.1.1 :=
+        BitString.length_of_mem_support_uniformList hnonce
+      refine ⟨trivial, ?_, ?_⟩
+      · simp only [length_encPair, encBits_apply, hnonceLen, BitString.length_listXor]
+        lia
+      · simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply,
+          hnonceLen, BitString.length_listXor]
+        lia
+    · have hcond' : (request.2.length == msgLen caller.1.1) = false :=
+        Bool.eq_false_iff.mpr hcond
+      simp only [hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.supportWith_pure,
+        Set.mem_singleton_iff] at hresult
+      subst hresult
+      refine ⟨trivial, ?_, ?_⟩
+      · simp
+      · simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply,
+          List.length_nil]
+        lia
+  have hk : IsOraclePPTOn (Operation := Unit) (encPair encUnary encBits) encBits
+      (fun caller : ℕ × List Bool => ProbOracleComp.sample (seed caller.1)) :=
+    (hseed.preprocess (ComputableInPolyTime.fst _ _)).isOraclePPTOn
+  have hcheck := isOraclePPTOn_cwRandomNonceCheck hmsgLen hhash
+  exact (hk.bind_with (hrun.bind_with hcheck)).isOraclePPT
+
+/-- **Real-game simulation for `prfRandomNonceToPrfDistinguisher`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): running `prfRandomNonceToPrfDistinguisher` in
+`prfRealGame family` at security parameter `n` has the exact same acceptance distribution as the
+computational `MACScheme.sufCmaGame` of `carterWegmanRandomMAC`. -/
+theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits)
+    (adversary : Forger) (n : ℕ) :
+    ProbComp.eval (prfRealGame family
+      (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) =
+    ProbComp.eval
+      ((carterWegmanRandomMAC msgLen seed hash family hmsgLen hseed hhash hfamily).sufCmaGame
+        adversary n) := by
+  let M := carterWegmanRandomMAC msgLen seed hash family hmsgLen hseed hhash hfamily
+  change ProbComp.eval
+      (prfRealGame family (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) =
+    ProbComp.eval (M.sufCmaGame adversary n)
+  dsimp only [prfRealGame, prfRandomNonceToPrfDistinguisher, MACScheme.sufCmaGame, M,
+    carterWegmanRandomMAC]
+  simp only [Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
+    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
+    PMF.pure_map]
+  rw [PMF.bind_comm (ProbComp.eval (BitString.sampleList n)) (ProbComp.eval (seed n))]
+  refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
+  refine PMF.bind_congr_on_support _ _ _ fun prfKey hprfKey => ?_
+  rw [BitString.eval_sampleList] at hprfKey
+  have hprfLen : prfKey.length = n := BitString.length_of_mem_support_uniformList hprfKey
+  rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret,
+    ProbOracleComp.eval_run_interpret]
+  have hstep :
+      (fun request state =>
+        ProbComp.eval
+          (OracleComp.interpret
+            (ProbOracleComp.handler ProbComp.unifFin
+              (fun req => pure (prfOracle family n prfKey req.2)))
+            (cwRandomNonceLogHandler msgLen hash n k request state))) =
+      (fun request state =>
+        ProbComp.eval
+          (M.signingPairOracle (encPair encBits encBits (k, prfKey)) request state)) := by
+    funext request state
+    dsimp only [cwRandomNonceLogHandler, MACScheme.signingPairOracle, M, carterWegmanRandomMAC]
+    simp only [encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append,
+      hprfLen]
+    by_cases hcond : (request.2.length == msgLen n) = true
+    · simp [hcond, Functor.map_map]
+    · have hcond' : (request.2.length == msgLen n) = false := Bool.eq_false_iff.mpr hcond
+      have hconst :
+          PMF.map (fun _ : List Bool => (([] : List Bool), (request.2, []) :: state))
+            (BitString.uniformList n) =
+          PMF.pure (([] : List Bool), (request.2, []) :: state) :=
+        PMF.map_const (BitString.uniformList n) (([] : List Bool), (request.2, []) :: state)
+      simp [hcond', hconst]
+  rw [hstep]
+  refine PMF.bind_congr_on_support _ _ _ fun out _ => ?_
+  simp only [encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, hprfLen]
+  congr 1
+  cases (out.1.1.length == msgLen n) <;> cases ((unframe out.1.2).length == n) <;>
+    cases out.2.contains out.1 <;> rfl
+
+open scoped List
+
+/-- Decode a candidate `(msg, fullTag)` pair into a typed triple on
+`BitString (msgLen n) × BitString n × BitString n`. -/
+private def toRandomBitTriple (msgLen : ℕ → ℕ) (n : ℕ) (out : List Bool × List Bool) :
+    (BitString (msgLen n) × BitString n) × BitString n :=
+  ((BitString.ofList (msgLen n) out.1, BitString.ofList n (unframe out.2)),
+    BitString.ofList n (dropFrame out.2))
+
+/-- Encode a typed `((m, x), t)` triple back to
+`(List.ofFn m, encPair encBits encBits (List.ofFn x, List.ofFn t))`. -/
+private def ofRandomBitTriple {m n : ℕ} (e : (BitString m × BitString n) × BitString n) :
+    List Bool × List Bool :=
+  (List.ofFn e.1.1, encPair encBits encBits (List.ofFn e.1.2, List.ofFn e.2))
+
+/-- Step adapter translating word-level signing requests `request.2` into typed queries on
+`BitString (msgLen n)` while maintaining the word-level pair log `queriedPairs`. -/
+private def adaptRandomNonceStep (msgLen : ℕ → ℕ) (n : ℕ) (request : Unit × List Bool)
+    (queriedPairs : List (List Bool × List Bool)) :
+    ProbOracleComp (fun _ : BitString (msgLen n) => BitString n × BitString n)
+      (List Bool × List (List Bool × List Bool)) :=
+  let msg := request.2
+  if msg.length == msgLen n then
+    (fun xt : BitString n × BitString n =>
+      let fullTag := encPair encBits encBits (List.ofFn xt.1, List.ofFn xt.2)
+      (fullTag, (msg, fullTag) :: queriedPairs)) <$>
+      ProbOracleComp.query (BitString.ofList (msgLen n) msg)
+  else
+    pure ([], (msg, []) :: queriedPairs)
+
+private theorem isQueryBounded_adaptRandomNonceStep (msgLen : ℕ → ℕ) (n : ℕ)
+    {α : Type} {prog : WordOracleComp Unit α} {Q : ℕ} (hprog : prog.IsQueryBounded Q)
+    (init : List (List Bool × List Bool)) :
+    ((OracleComp.interpret
+      (ProbOracleComp.handler
+        (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+        (adaptRandomNonceStep msgLen n))
+      prog).run init).IsQueryBounded Q := by
+  refine OracleComp.IsCostBounded.run_interpret (fun q s => ?_) hprog init
+  cases q with
+  | inl m =>
+    simp only [ProbOracleComp.handler, StateT.run_lift, Sum.elim_inl]
+    simpa using (ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin m)).bind
+      fun a => .pure (a, s) 0
+  | inr req =>
+    dsimp only [ProbOracleComp.handler, StateT.run, adaptRandomNonceStep, Sum.elim_inr]
+    split_ifs
+    · rw [OracleComp.isCostBounded_map_iff]
+      exact ProbOracleComp.IsQueryBounded.query (BitString.ofList (msgLen n) req.2)
+    · exact OracleComp.IsCostBounded.pure _ 1
+
+/-- Word-level acceptance check of `prfRandomNonceToPrfDistinguisher` in `prfIdealGame` against a
+random function `table : BitString n → BitString n`. -/
+private def cwRandomNonceIdealCheck (msgLen : ℕ → ℕ)
+    (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (table : BitString n → BitString n)
+    (out : (List Bool × List Bool) × List (List Bool × List Bool)) : Bool :=
+  let msg := out.1.1
+  let fullTag := out.1.2
+  let nonce := unframe fullTag
+  let pad := (randomFunctionOracle n table nonce).take n
+  let tag := BitString.listXor n [hash n k msg, pad]
+  (msg.length == msgLen n) && (nonce.length == n) && !out.2.contains out.1 &&
+    (encPair encBits encBits (nonce, tag) == fullTag)
+
+private theorem cwRandomNonceIdealCheck_imp_checkRandomNonceSUF
+    (msgLen : ℕ → ℕ) (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (table : BitString n → BitString n)
+    (out : (List Bool × List Bool) × List (List Bool × List Bool))
+    (tr : List ((BitString (msgLen n) × BitString n) × BitString n))
+    (hsub : tr.map ofRandomBitTriple <+ out.2.reverse)
+    (hcheck : cwRandomNonceIdealCheck msgLen hash n k table out = true) :
+    checkRandomNonceSUF
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+      k table tr (toRandomBitTriple msgLen n out.1) = true := by
+  dsimp only [cwRandomNonceIdealCheck] at hcheck
+  simp only [Bool.and_eq_true, Bool.not_eq_true', List.contains_eq_mem, decide_eq_false_iff_not,
+    beq_iff_eq] at hcheck
+  rcases hcheck with ⟨⟨⟨hmsg, hnonce⟩, hnotmem⟩, hfullTag⟩
+  have hdrop :
+      dropFrame out.1.2 =
+        BitString.listXor n
+          [hash n k out.1.1, (randomFunctionOracle n table (unframe out.1.2)).take n] := by
+    have h := congrArg dropFrame hfullTag.symm
+    simpa only [encPair_apply, encBits_apply, dropFrame_frame_append] using h
+  have htag : (dropFrame out.1.2).length = n := by
+    rw [hdrop, BitString.length_listXor]
+  have hround : ofRandomBitTriple (toRandomBitTriple msgLen n out.1) = out.1 := by
+    dsimp only [ofRandomBitTriple, toRandomBitTriple]
+    rw [BitString.ofFn_ofList hmsg, BitString.ofFn_ofList hnonce, BitString.ofFn_ofList htag,
+      hdrop, hfullTag]
+  simp only [checkRandomNonceSUF, Bool.and_eq_true, Bool.not_eq_true', List.contains_eq_mem,
+    decide_eq_false_iff_not]
+  refine ⟨?_, ?_⟩
+  · intro hin
+    have hmem : out.1 ∈ tr.map ofRandomBitTriple := by
+      rw [← hround]
+      exact List.mem_map_of_mem hin
+    exact hnotmem (List.mem_reverse.mp (hsub.subset hmem))
+  · simp only [verify, toRandomBitTriple, BitString.ofFn_ofList hmsg, decide_eq_true_eq]
+    rw [hdrop]
+    simp only [randomFunctionOracle, hnonce, ↓reduceIte, BitString.listXor_pair,
+      ofList_take, BitString.ofList_ofFn]
+
+private theorem eval_cwRandomNonceLogHandler_randomFunctionOracle_le
+    (msgLen : ℕ → ℕ) (hash : ℕ → List Bool → List Bool → List Bool)
+    (n : ℕ) (k : List Bool) (table : BitString n → BitString n)
+    (prog : WordOracleComp Unit (List Bool × List Bool))
+    (init : List (List Bool × List Bool))
+    (tr : List ((BitString (msgLen n) × BitString n) × BitString n))
+    (hsub : tr.map ofRandomBitTriple <+ init.reverse) :
+    (((OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (fun request state =>
+          ProbComp.eval
+            (OracleComp.interpret
+              (ProbOracleComp.handler ProbComp.unifFin
+                (fun req => pure (randomFunctionOracle n table req.2)))
+              (cwRandomNonceLogHandler msgLen hash n k request state))))
+      prog).run init).bind fun out =>
+        PMF.pure (cwRandomNonceIdealCheck msgLen hash n k table out)) true ≤
+    (((OracleComp.interpret
+      (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+        (randomNonceFnHandler
+          (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+          k table))
+      ((OracleComp.interpret
+        (ProbOracleComp.handler
+          (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+          (adaptRandomNonceStep msgLen n))
+        prog).run init)).run tr).bind fun res =>
+          PMF.pure
+            (checkRandomNonceSUF
+              (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+              k table res.2 (toRandomBitTriple msgLen n res.1.1))) true := by
+  induction prog using OracleComp.induction generalizing init tr with
+  | pure a =>
+    simp only [OracleComp.run_interpret_pure, PMF.monad_pure_eq_pure, PMF.pure_bind]
+    by_cases h : cwRandomNonceIdealCheck msgLen hash n k table (a, init) = true
+    · rw [h, cwRandomNonceIdealCheck_imp_checkRandomNonceSUF msgLen hash n k table (a, init) tr
+        hsub h]
+    · simp [Bool.eq_false_iff.mpr h]
+  | query_bind q cont ih =>
+    rw [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+      OracleComp.run_interpret_bind]
+    cases q with
+    | inl num =>
+      have hsample :
+          (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin num)) init :
+            ProbOracleComp (fun _ : BitString (msgLen n) => BitString n × BitString n)
+              (Fin (num + 1) × List (List Bool × List Bool))) =
+          (OracleComp.query (Sum.inl num) >>= fun i => pure (i, init)) := by
+        simp [StateT.lift, ProbOracleComp.sample, ProbComp.unifFin]
+      rw [ProbOracleComp.handler, ProbOracleComp.handler, hsample,
+        OracleComp.run_interpret_bind, OracleComp.run_interpret_query]
+      simp only [ProbOracleComp.handler, StateT.lift, OracleComp.run_interpret_pure,
+        PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      refine bind_apply_mono_on_support (ProbComp.unifOracle num) true fun i _ => ?_
+      exact ih i init tr hsub
+    | inr req =>
+      dsimp only [ProbOracleComp.handler, cwRandomNonceLogHandler, adaptRandomNonceStep]
+      let msg := req.2
+      change (((OracleComp.interpret
+          (ProbOracleComp.handler ProbComp.unifFin
+            (fun r => pure (randomFunctionOracle n table r.2)))
+          (if (msg.length == msgLen n) = true then do
+            let nonce ← ProbOracleComp.sample (BitString.sampleList n)
+            (fun pad =>
+              let tag := BitString.listXor n [hash n k msg, pad]
+              let fullTag := encPair encBits encBits (nonce, tag)
+              (fullTag, (msg, fullTag) :: init)) <$>
+              (List.take n <$> ProbOracleComp.query ((), nonce))
+          else
+            pure ([], (msg, []) :: init))).eval >>= fun x =>
+          ((OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (fun request state =>
+                ProbComp.eval
+                  (OracleComp.interpret
+                    (ProbOracleComp.handler ProbComp.unifFin
+                      (fun req => pure (randomFunctionOracle n table req.2)))
+                    (cwRandomNonceLogHandler msgLen hash n k request state))))
+            (cont x.1)).run x.2)).bind
+          fun out => PMF.pure (cwRandomNonceIdealCheck msgLen hash n k table out)) true ≤
+        (((OracleComp.interpret
+          (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+            (randomNonceFnHandler
+              (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+              k table))
+          (if (msg.length == msgLen n) = true then
+            (fun xt : BitString n × BitString n =>
+              let fullTag := encPair encBits encBits (List.ofFn xt.1, List.ofFn xt.2)
+              (fullTag, (msg, fullTag) :: init)) <$>
+              ProbOracleComp.query (BitString.ofList (msgLen n) msg)
+          else
+            pure ([], (msg, []) :: init))).run tr >>= fun x =>
+          (OracleComp.interpret
+            (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+              (randomNonceFnHandler
+                (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+                k table))
+            ((OracleComp.interpret
+              (ProbOracleComp.handler
+                (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+                (adaptRandomNonceStep msgLen n))
+              (cont x.1.1)).run x.1.2)).run x.2).bind
+          fun res =>
+            PMF.pure
+              (checkRandomNonceSUF
+                (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+                k table res.2 (toRandomBitTriple msgLen n res.1.1))) true
+      by_cases hcond : (msg.length == msgLen n) = true
+      · simp only [hcond, ↓reduceIte]
+        rw [OracleComp.run_interpret_map]
+        have hq_rhs :
+            (OracleComp.interpret
+              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                (randomNonceFnHandler
+                  (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+                  k table))
+              (ProbOracleComp.query (BitString.ofList (msgLen n) msg))).run tr =
+            randomNonceFnHandler
+              (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+              k table (BitString.ofList (msgLen n) msg) tr :=
+          OracleComp.run_interpret_query _ (Sum.inr (BitString.ofList (msgLen n) msg)) tr
+        rw [hq_rhs]
+        simp only [Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
+          ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin,
+          ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, BitString.eval_sampleList,
+          randomNonceFnHandler, PMF.monad_bind_eq_bind, PMF.monad_map_eq_map,
+          PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
+        rw [BitString.uniformList, PMF.bind_map]
+        refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n)) true fun x _ => ?_
+        simp only [Function.comp_def]
+        simp only [beq_iff_eq] at hcond
+        let t := sign
+          (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m)))
+          k (table x) (BitString.ofList (msgLen n) msg)
+        have htag : List.ofFn t =
+            BitString.listXor n
+              [hash n k msg, (randomFunctionOracle n table (List.ofFn x)).take n] := by
+          simp only [t, sign, BitString.ofFn_ofList hcond, randomFunctionOracle, List.length_ofFn,
+            ↓reduceIte, BitString.listXor_pair, ofList_take, BitString.ofList_ofFn]
+        rw [← htag]
+        let fullTag := encPair encBits encBits (List.ofFn x, List.ofFn t)
+        have hsub' :
+            (tr ++ [((BitString.ofList (msgLen n) msg, x), t)]).map ofRandomBitTriple <+
+              ((msg, fullTag) :: init).reverse := by
+          rw [List.map_append, List.map_singleton, List.reverse_cons]
+          have he : ofRandomBitTriple ((BitString.ofList (msgLen n) msg, x), t) =
+              (msg, fullTag) := by
+            simp [ofRandomBitTriple, fullTag, BitString.ofFn_ofList hcond]
+          rw [he]
+          exact hsub.append (List.Sublist.refl _)
+        exact ih fullTag ((msg, fullTag) :: init)
+          (tr ++ [((BitString.ofList (msgLen n) msg, x), t)]) hsub'
+      · have hcond' : (msg.length == msgLen n) = false := Bool.eq_false_iff.mpr hcond
+        simp only [hcond', Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure,
+          ProbComp.eval_pure, StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+          PMF.pure_bind]
+        have hsub' : tr.map ofRandomBitTriple <+ ((msg, []) :: init).reverse := by
+          rw [List.reverse_cons]
+          exact hsub.trans (List.sublist_append_left _ _)
+        exact ih [] ((msg, []) :: init) tr hsub'
+
+/-- **Ideal-game bound for `prfRandomNonceToPrfDistinguisher`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): under
+`IsDeltaUniversalHash (ProbComp.eval (seed n)) ... ε`, if `adversary n []` makes at most `Q` signing
+queries, the ideal-game acceptance probability of
+`prfRandomNonceToPrfDistinguisher msgLen seed hash adversary` at parameter `n` is at most
+`(Q : ℝ≥0∞) ^ 2 / (2 * (2 : ℝ≥0∞) ^ n) + ((2 : ℝ≥0∞) ^ n)⁻¹ + ε`. -/
+theorem eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool} {n Q : ℕ} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) ε)
+    {adversary : Forger} (hq : (adversary n []).IsQueryBounded Q) :
+    ProbComp.eval
+      (prfIdealGame (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) true ≤
+      (Q : ℝ≥0∞) ^ 2 / (2 * (2 : ℝ≥0∞) ^ n) + ((2 : ℝ≥0∞) ^ n)⁻¹ + ε := by
+  let hashBit : List Bool → BitString (msgLen n) → BitString n :=
+    fun k m => BitString.ofList n (hash n k (List.ofFn m))
+  let adaptProg : ProbOracleComp (fun _ : BitString (msgLen n) => BitString n × BitString n)
+      ((List Bool × List Bool) × List (List Bool × List Bool)) :=
+    (OracleComp.interpret
+      (ProbOracleComp.handler
+        (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
+        (adaptRandomNonceStep msgLen n))
+      (adversary n [])).run []
+  have hle :
+      ProbComp.eval
+        (prfIdealGame (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) true ≤
+        ((ProbComp.eval (seed n)).bind fun k =>
+          (PMF.uniformOfFintype (BitString n → BitString n)).bind fun table =>
+            ((OracleComp.interpret
+              (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
+                (randomNonceFnHandler hashBit k table))
+              adaptProg).run []).bind fun res =>
+                PMF.pure
+                  (checkRandomNonceSUF hashBit k table res.2
+                    (toRandomBitTriple msgLen n res.1.1))) true := by
+    simp only [prfIdealGame, prfRandomNonceToPrfDistinguisher, Functor.map_map,
+      OracleComp.interpret_bind, OracleComp.interpret_map, ProbOracleComp.interpret_sample,
+      ProbOracleComp.interpret_query, interpret_unifFin, ProbComp.eval_bind, ProbComp.eval_map,
+      ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_map]
+    rw [PMF.bind_comm (PMF.uniformOfFintype (BitString n → BitString n)) (ProbComp.eval (seed n))]
+    refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
+    refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
+      fun table _ => ?_
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    exact eval_cwRandomNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
+      (adversary n []) [] [] (List.Sublist.refl [])
+  refine hle.trans ?_
+  have hq_adapt : adaptProg.IsQueryBounded Q :=
+    isQueryBounded_adaptRandomNonceStep msgLen n hq []
+  simpa only [BitString.card, Nat.cast_pow, Nat.cast_ofNat] using
+    seed_uniform_probOracleComp_checkRandomNonceSUF_le hh hq_adapt
+      (fun out => toRandomBitTriple msgLen n out.1)
+
+/-- **Quantitative SUF-CMA bound for `carterWegmanRandomMAC`** ([BonehShoup2023], Section 7.4,
+Theorem 7.9, p. 270): at security parameter `n`, the SUF-CMA forgery probability of any `Q`-query
+`Forger` against `carterWegmanRandomMAC` is at most
+`(Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ε.toReal` plus the PRF distinguishing
+advantage of `prfRandomNonceToPrfDistinguisher msgLen seed hash adversary`. -/
+theorem sufCmaGame_carterWegmanRandomMAC_toReal_le
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits)
+    {n Q : ℕ} {ε : ℝ≥0∞}
+    (hh : IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) ε)
+    (hε : ε ≠ ⊤) {adversary : Forger} (hq : (adversary n []).IsQueryBounded Q) :
+    (ProbComp.eval
+      ((carterWegmanRandomMAC msgLen seed hash family hmsgLen hseed hhash hfamily).sufCmaGame
+        adversary n) true).toReal ≤
+      (Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ε.toReal +
+        (Game.advantage
+          (ProbComp.eval
+            (prfRealGame family
+              (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n))
+          (ProbComp.eval
+            (prfIdealGame
+              (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n)) : ℝ) := by
+  rw [← eval_prfRealGame_prfRandomNonceToPrfDistinguisher hmsgLen hseed hhash hfamily adversary n]
+  have hcol_ne_top : (Q : ℝ≥0∞) ^ 2 / (2 * (2 : ℝ≥0∞) ^ n) ≠ ⊤ :=
+    ENNReal.div_ne_top (ENNReal.pow_ne_top (ENNReal.natCast_ne_top Q))
+      (mul_ne_zero (by norm_num) (pow_ne_zero n (by norm_num)))
+  have hinv_ne_top : ((2 : ℝ≥0∞) ^ n)⁻¹ ≠ ⊤ := by simp
+  have hideal :
+      (ProbComp.eval
+        (prfIdealGame
+          (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) true).toReal ≤
+        (Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ε.toReal := by
+    have htr := ENNReal.toReal_mono
+      (ENNReal.add_ne_top.mpr ⟨ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩, hε⟩)
+      (eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le hh hq)
+    simpa only [ENNReal.toReal_add (ENNReal.add_ne_top.mpr ⟨hcol_ne_top, hinv_ne_top⟩) hε,
+      ENNReal.toReal_add hcol_ne_top hinv_ne_top, ENNReal.toReal_div, ENNReal.toReal_pow,
+      ENNReal.toReal_natCast, ENNReal.toReal_mul, ENNReal.toReal_ofNat,
+      ENNReal.toReal_inv] using htr
+  rw [Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
+  linarith [le_abs_self
+    ((ProbComp.eval
+      (prfRealGame family
+        (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) true).toReal -
+      (ProbComp.eval
+        (prfIdealGame
+          (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) true).toReal)]
+
+/-- **Asymptotic `MACScheme.SUFCMA` security of `carterWegmanRandomMAC`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): if `family` is a `PseudorandomFunction` and
+`(seed n, hash n)` is an `(ε n)`-almost-Δ-universal hash family on `BitString (msgLen n)` into
+`BitString n` with `Negligible ε`, then `carterWegmanRandomMAC` satisfies `MACScheme.SUFCMA`. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanRandomMAC
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    {ε : ℕ → ℝ≥0}
+    (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
+    (hε : Negligible ε) :
+    (carterWegmanRandomMAC msgLen seed hash family hmsgLen hseed hhash hprf.polyTime).SUFCMA := by
+  refine MACScheme.SUFCMA.of_negligible fun adversary hadversary => ?_
+  obtain ⟨c, d, hbound⟩ := hadversary.query_bounds
+  let Q (n : ℕ) : ℕ := c * (n + 2) ^ d
+  have hQ : PolynomiallyBounded Q := by
+    refine polynomiallyBounded_iff_le.2 ⟨c * 2 ^ d, d, fun n => ?_⟩
+    have hle : n + 2 ≤ 2 * (n + 1) := by omega
+    calc c * (n + 2) ^ d
+        ≤ c * (2 * (n + 1)) ^ d := Nat.mul_le_mul_left c (Nat.pow_le_pow_left hle d)
+      _ = c * 2 ^ d * (n + 1) ^ d := by rw [Nat.mul_pow, Nat.mul_assoc]
+  have hgeom : Negligible (fun n => ((2 : ℝ≥0) ^ n)⁻¹) := by
+    simpa only [inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
+  have hcol : Negligible (fun n => (Q n : ℝ≥0) ^ 2 / (2 * (2 : ℝ≥0) ^ n)) := by
+    refine negligible_of_le (hgeom.polynomiallyBounded_mul (hQ.pow 2)) fun n => ?_
+    rw [div_eq_mul_inv, mul_inv, Nat.cast_pow]
+    exact mul_le_mul_of_nonneg_left
+      (mul_le_of_le_one_left zero_le (by norm_num : (2⁻¹ : ℝ≥0) ≤ 1)) zero_le
+  have hdist := hprf.secure (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary)
+    (isOraclePPT_prfRandomNonceToPrfDistinguisher hmsgLen hseed hhash hadversary)
+  refine negligible_of_le (((hcol.add hgeom).add hε).add hdist) fun n => ?_
+  have hq_n : (adversary n []).IsQueryBounded (Q n) := by
+    simpa [Q] using (hbound n []).1
+  rw [← NNReal.coe_le_coe, Game.coe_succProbability]
+  simp only [Pi.add_apply, NNReal.coe_add, NNReal.coe_div, NNReal.coe_pow, NNReal.coe_natCast,
+    NNReal.coe_mul, NNReal.coe_ofNat, NNReal.coe_inv]
+  simpa only [ENNReal.coe_toReal] using
+    sufCmaGame_carterWegmanRandomMAC_toReal_le hmsgLen hseed hhash hprf.polyTime
+      (hh n) ENNReal.coe_ne_top hq_n
+
+/-- **Asymptotic `MACScheme.EUFCMA` security of `carterWegmanRandomMAC`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270). -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanRandomMAC
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    {ε : ℕ → ℝ≥0}
+    (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
+    (hε : Negligible ε) :
+    (carterWegmanRandomMAC msgLen seed hash family hmsgLen hseed hhash hprf.polyTime).EUFCMA :=
+  (hprf.sufCma_carterWegmanRandomMAC hmsgLen hseed hhash hh hε).eufCma
+
+/-- **Asymptotic `MACScheme.OneTimeEUFCMA` security of `carterWegmanRandomMAC`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270). -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.oneTimeEUFCMA_carterWegmanRandomMAC
+    {msgLen : ℕ → ℕ} {seed : ℕ → ProbComp (List Bool)}
+    {hash : ℕ → List Bool → List Bool → List Bool}
+    {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hseed : IsPPTOn encUnary encBits seed)
+    (hhash : ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits)
+    {ε : ℕ → ℝ≥0}
+    (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
+      (fun k (m : BitString (msgLen n)) => BitString.ofList n (hash n k (List.ofFn m))) (ε n))
+    (hε : Negligible ε) :
+    (carterWegmanRandomMAC msgLen seed hash family
+      hmsgLen hseed hhash hprf.polyTime).OneTimeEUFCMA :=
+  (hprf.sufCma_carterWegmanRandomMAC hmsgLen hseed hhash hh hε).oneTimeEUFCMA
+
 end Randomized
 
 /-! ### Concrete Carter–Wegman instantiations -/
@@ -3428,6 +5800,205 @@ theorem nonceStrongGame_of_isPairwiseIndependentHash_le {K M N Y : Type} [Fintyp
     (hh : IsPairwiseIndependentHash hash) (forger : NonceForger M N Y) :
     nonceStrongGame (PMF.uniformOfFintype K) hash forger true ≤ (Fintype.card Y : ℝ≥0∞)⁻¹ := by
   simpa only [max_self] using nonceStrongGame_le_max hh.isDeltaUniversalHash forger
+
+/-- Sampling an `(n * msgLen n)`-bit Boolean-matrix seed is uniformly strict PPT whenever `msgLen`
+is computable in polynomial time. -/
+theorem isPPTOn_linearHashSeed {msgLen : ℕ → ℕ}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
+    IsPPTOn encUnary encBits (fun n => BitString.sampleList (n * msgLen n)) := by
+  have hmsgLen_tidy := hmsgLen.tidy
+  exact ComputableInPolyTime.sampleList (by polytime)
+
+/-- Uncurried `BitString.LinearHash.wordHash` is computable in plain polynomial time. -/
+theorem computableInPolyTime_linearHashWordHash :
+    ComputableInPolyTime
+      (fun p : ℕ × List Bool × List Bool => BitString.LinearHash.wordHash p.1 p.2.1 p.2.2)
+      (encPair encUnary (encPair encBits encBits)) encBits := by
+  polytime
+
+/-- Under a uniform `(n * msgLen n)`-bit seed `BitString.sampleList (n * msgLen n)`, the executable
+Boolean-matrix hash `BitString.LinearHash.wordHash n` on `BitString (msgLen n)` into `BitString n`
+is `(2 ^ n)⁻¹`-almost-Δ-universal (`IsDeltaUniversalHash`). -/
+theorem isDeltaUniversalHash_linearHashWordHash (msgLen : ℕ → ℕ) (n : ℕ) :
+    IsDeltaUniversalHash (ProbComp.eval (BitString.sampleList (n * msgLen n)))
+      (fun k (m : BitString (msgLen n)) =>
+        BitString.ofList n (BitString.LinearHash.wordHash n k (List.ofFn m)))
+      ((2 : ℝ≥0∞) ^ n)⁻¹ := by
+  let prepare (k : List Bool) : Fin n → BitString (msgLen n) :=
+    BitString.block (BitString.ofList (n * msgLen n) k)
+  have hfn :
+      (fun k (m : BitString (msgLen n)) =>
+        BitString.ofList n (BitString.LinearHash.wordHash n k (List.ofFn m))) =
+      (fun k (m : BitString (msgLen n)) => BitString.LinearHash.hash (prepare k) m) := by
+    funext k m
+    rw [BitString.LinearHash.wordHash_eq_ofFn, BitString.ofList_ofFn]
+  have hmap :
+      (ProbComp.eval (BitString.sampleList (n * msgLen n))).map prepare =
+        PMF.uniformOfFintype (Fin n → BitString (msgLen n)) := by
+    rw [BitString.eval_sampleList, BitString.uniformList, PMF.map_comp]
+    have hcomp :
+        prepare ∘ List.ofFn =
+          (BitString.blocksEquiv (m := n) (k := msgLen n) :
+            BitString (n * msgLen n) ≃ (Fin n → BitString (msgLen n))) := by
+      funext s
+      simp [prepare, BitString.ofList_ofFn, BitString.blocksEquiv_apply]
+    rw [hcomp, PMF.uniformOfFintype_map_equiv]
+  rw [hfn]
+  refine IsDeltaUniversalHash.precompose_seed
+    (ProbComp.eval (BitString.sampleList (n * msgLen n))) prepare ?_
+  rw [hmap]
+  simpa only [BitString.card, Nat.cast_pow, Nat.cast_ofNat] using
+    BitString.LinearHash.isDeltaUniversalHash (msgLen n) n
+
+/-- **Concrete computational nonce-based Carter–Wegman MAC (`NonceMACScheme`) from Boolean-matrix
+linear hashing (`BitString.LinearHash.wordHash`) and a PRF family `family`**
+([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274). -/
+noncomputable def linearHashNonceMAC (msgLen : ℕ → ℕ)
+    (family : List Bool → List Bool → List Bool)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits) : NonceMACScheme :=
+  carterWegmanNonceMAC msgLen (fun n => BitString.sampleList (n * msgLen n))
+    BitString.LinearHash.wordHash family hmsgLen (isPPTOn_linearHashSeed hmsgLen)
+    computableInPolyTime_linearHashWordHash hfamily
+
+/-- **Quantitative SUF-CMA bound for `linearHashNonceMAC`**
+([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274): at security parameter `n`, the SUF-CMA
+forgery probability of any `NonceMACForger` against `linearHashNonceMAC` is at most
+`2 * (2 ^ n)⁻¹` plus the PRF distinguishing advantage of `prfNonceToPrfDistinguisher`. -/
+theorem sufCmaGame_linearHashNonceMAC_toReal_le
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits)
+    (n : ℕ) (adversary : NonceMACForger) :
+    (ProbComp.eval
+      ((linearHashNonceMAC msgLen family hmsgLen hfamily).sufCmaGame adversary n) true).toReal ≤
+      ((2 : ℝ) ^ n)⁻¹ + ((2 : ℝ) ^ n)⁻¹ +
+        (Game.advantage
+          (ProbComp.eval
+            (prfRealGame family
+              (prfNonceToPrfDistinguisher msgLen (fun k => BitString.sampleList (k * msgLen k))
+                BitString.LinearHash.wordHash adversary) n))
+          (ProbComp.eval
+            (prfIdealGame
+              (prfNonceToPrfDistinguisher msgLen (fun k => BitString.sampleList (k * msgLen k))
+                BitString.LinearHash.wordHash adversary) n)) : ℝ) := by
+  have h := sufCmaGame_carterWegmanNonceMAC_toReal_le hmsgLen (isPPTOn_linearHashSeed hmsgLen)
+    computableInPolyTime_linearHashWordHash hfamily
+    (isDeltaUniversalHash_linearHashWordHash msgLen n) (by simp) adversary
+  simpa only [linearHashNonceMAC, ENNReal.toReal_inv, ENNReal.toReal_pow,
+    ENNReal.toReal_ofNat] using h
+
+/-- **Asymptotic `NonceMACScheme.SUFCMA` security of `linearHashNonceMAC`**
+([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274): for any `PseudorandomFunction family` and
+polynomial-time message-length schedule `msgLen`, `linearHashNonceMAC` satisfies
+`NonceMACScheme.SUFCMA`. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_linearHashNonceMAC
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
+    (linearHashNonceMAC msgLen family hmsgLen hprf.polyTime).SUFCMA := by
+  have hgeom : Negligible (fun n => ((2 : ℝ≥0) ^ n)⁻¹) := by
+    simpa only [inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
+  exact hprf.sufCma_carterWegmanNonceMAC hmsgLen (isPPTOn_linearHashSeed hmsgLen)
+    computableInPolyTime_linearHashWordHash
+    (fun n => by
+      simpa only [ENNReal.coe_inv (pow_ne_zero n two_ne_zero), ENNReal.coe_pow,
+        ENNReal.coe_ofNat] using isDeltaUniversalHash_linearHashWordHash msgLen n)
+    hgeom
+
+/-- **Asymptotic `NonceMACScheme.EUFCMA` security of `linearHashNonceMAC`**
+([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274). -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_linearHashNonceMAC
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
+    (linearHashNonceMAC msgLen family hmsgLen hprf.polyTime).EUFCMA :=
+  (hprf.sufCma_linearHashNonceMAC hmsgLen).eufCma
+
+/-- **Concrete computational randomized Carter–Wegman MAC (`MACScheme`) from Boolean-matrix linear
+hashing (`BitString.LinearHash.wordHash`) and a PRF family `family`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270). -/
+noncomputable def linearHashRandomMAC (msgLen : ℕ → ℕ)
+    (family : List Bool → List Bool → List Bool)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits) : MACScheme :=
+  carterWegmanRandomMAC msgLen (fun n => BitString.sampleList (n * msgLen n))
+    BitString.LinearHash.wordHash family hmsgLen (isPPTOn_linearHashSeed hmsgLen)
+    computableInPolyTime_linearHashWordHash hfamily
+
+/-- **Quantitative SUF-CMA bound for `linearHashRandomMAC`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): at security parameter `n`, the SUF-CMA
+forgery probability of any `Q`-query `Forger` against `linearHashRandomMAC` is at most
+`(Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ((2 : ℝ) ^ n)⁻¹` plus the PRF distinguishing
+advantage of `prfRandomNonceToPrfDistinguisher`. -/
+theorem sufCmaGame_linearHashRandomMAC_toReal_le
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
+    (hfamily : ComputableInPolyTime
+      (fun p : List Bool × List Bool => family p.1 p.2)
+      (encPair encBits encBits) encBits)
+    {n Q : ℕ} {adversary : Forger} (hq : (adversary n []).IsQueryBounded Q) :
+    (ProbComp.eval
+      ((linearHashRandomMAC msgLen family hmsgLen hfamily).sufCmaGame adversary n) true).toReal ≤
+      (Q : ℝ) ^ 2 / (2 * (2 : ℝ) ^ n) + ((2 : ℝ) ^ n)⁻¹ + ((2 : ℝ) ^ n)⁻¹ +
+        (Game.advantage
+          (ProbComp.eval
+            (prfRealGame family
+              (prfRandomNonceToPrfDistinguisher msgLen
+                (fun k => BitString.sampleList (k * msgLen k))
+                BitString.LinearHash.wordHash adversary) n))
+          (ProbComp.eval
+            (prfIdealGame
+              (prfRandomNonceToPrfDistinguisher msgLen
+                (fun k => BitString.sampleList (k * msgLen k))
+                BitString.LinearHash.wordHash adversary) n)) : ℝ) := by
+  dsimp only [linearHashRandomMAC]
+  have h := sufCmaGame_carterWegmanRandomMAC_toReal_le hmsgLen (isPPTOn_linearHashSeed hmsgLen)
+    computableInPolyTime_linearHashWordHash hfamily
+    (isDeltaUniversalHash_linearHashWordHash msgLen n) (by simp) hq
+  simpa only [ENNReal.toReal_inv, ENNReal.toReal_pow, ENNReal.toReal_ofNat] using h
+
+/-- **Asymptotic `MACScheme.SUFCMA` security of `linearHashRandomMAC`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270): for any `PseudorandomFunction family` and
+polynomial-time message-length schedule `msgLen`, `linearHashRandomMAC` satisfies
+`MACScheme.SUFCMA`. -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_linearHashRandomMAC
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
+    (linearHashRandomMAC msgLen family hmsgLen hprf.polyTime).SUFCMA := by
+  have hgeom : Negligible (fun n => ((2 : ℝ≥0) ^ n)⁻¹) := by
+    simpa only [inv_pow] using negligible_geometric (ratio := 2⁻¹) (by norm_num)
+  exact hprf.sufCma_carterWegmanRandomMAC hmsgLen (isPPTOn_linearHashSeed hmsgLen)
+    computableInPolyTime_linearHashWordHash
+    (fun n => by
+      simpa only [ENNReal.coe_inv (pow_ne_zero n two_ne_zero), ENNReal.coe_pow,
+        ENNReal.coe_ofNat] using isDeltaUniversalHash_linearHashWordHash msgLen n)
+    hgeom
+
+/-- **Asymptotic `MACScheme.EUFCMA` security of `linearHashRandomMAC`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270). -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_linearHashRandomMAC
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
+    (linearHashRandomMAC msgLen family hmsgLen hprf.polyTime).EUFCMA :=
+  (hprf.sufCma_linearHashRandomMAC hmsgLen).eufCma
+
+/-- **Asymptotic `MACScheme.OneTimeEUFCMA` security of `linearHashRandomMAC`**
+([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270). -/
+theorem _root_.Cslib.Crypto.PseudorandomFunction.oneTimeEUFCMA_linearHashRandomMAC
+    {msgLen : ℕ → ℕ} {family : List Bool → List Bool → List Bool}
+    (hprf : PseudorandomFunction family)
+    (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary) :
+    (linearHashRandomMAC msgLen family hmsgLen hprf.polyTime).OneTimeEUFCMA :=
+  (hprf.sufCma_linearHashRandomMAC hmsgLen).oneTimeEUFCMA
 
 end Instantiations
 

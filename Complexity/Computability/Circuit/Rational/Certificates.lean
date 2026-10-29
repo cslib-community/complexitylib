@@ -154,42 +154,27 @@ theorem formula_invertible_value (hχ : χ.IsPrimitive) (f : Formula n)
   let inc : Matrix (ZMod d) (ZMod d) O →+*
       Matrix (ZMod d) (ZMod d) (HahnSeries Exponents K) :=
     (intoField ev PolynomialHahn.embed PolynomialHahn.embed_injective).mapMatrix
-  have hX : (fun i => eps (X i)) = W := by
-    funext i
-    change (evaluate ev).mapMatrix ((algebraMap P O).mapMatrix (polynomialLift χ (W i))) = W i
-    have heq : (evaluate ev).mapMatrix ((algebraMap P O).mapMatrix (polynomialLift χ (W i))) =
-        ev.mapMatrix (polynomialLift χ (W i)) := by
-      ext j k
-      exact evaluate_algebraMap ev _
-    rw [heq]
+  have hX : (fun i => eps (X i)) = W := funext fun i => by
+    rw [show eps (X i) = ev.mapMatrix (polynomialLift χ (W i)) from
+      Matrix.ext fun j k => evaluate_algebraMap ev _]
     exact polynomialLift_specialize χ hχ (W i)
   have ha' : f.Eval (eps.comp cO) (fun i => eps (X i)) a := by
-    rw [hX, RingHom.ext_rat (eps.comp cO) (algebraMap ℚ _)]
-    exact ha
+    rwa [hX, RingHom.ext_rat (eps.comp cO) (algebraMap ℚ _)]
   obtain ⟨y, hy, hyval⟩ := ha'.lift eps (matrix_reflects_units ev)
-  have hy0 : y ≠ 0 := by
-    intro hz
-    apply ha0
-    rw [← hyval, hz, map_zero]
-  have hinc : Function.Injective inc := Matrix.map_injective (intoField_injective ev _ _)
-  have hb0 : inc y ≠ 0 := by
-    intro hz
-    exact hy0 (hinc (hz.trans (map_zero inc).symm))
-  have hiX : (fun i => inc (X i)) = (fun i => representation χ (liftD χ (W i))) := by
-    funext i
-    have heq : inc (X i) = PolynomialHahn.embed.mapMatrix (polynomialLift χ (W i)) := by
-      funext j k
-      exact intoField_algebraMap ev PolynomialHahn.embed PolynomialHahn.embed_injective _
-    rw [heq]
-    exact polynomialLift_embed χ (W i)
+  have hy0 : y ≠ 0 := fun hz => ha0 (by rw [← hyval, hz, map_zero])
+  have hb0 : inc y ≠ 0 :=
+    (map_ne_zero_iff inc (Matrix.map_injective (intoField_injective ev _ _))).mpr hy0
+  have hiX : (fun i => inc (X i)) = (fun i => representation χ (liftD χ (W i))) :=
+    funext fun i => by
+      rw [show inc (X i) = PolynomialHahn.embed.mapMatrix (polynomialLift χ (W i)) from
+        Matrix.ext fun j k => intoField_algebraMap ev _ PolynomialHahn.embed_injective _]
+      exact polynomialLift_embed χ (W i)
   have hb : f.Eval (algebraMap ℚ _) (fun i => representation χ (liftD χ (W i))) (inc y) := by
-    have hh := hy.map inc
-    rw [hiX, RingHom.ext_rat (inc.comp cO) (algebraMap ℚ _)] at hh
-    exact hh
-  let : CharZero (divisionSubring χ) :=
-    (representation χ).charZero
+    simpa only [hiX, RingHom.ext_rat (inc.comp cO) (algebraMap ℚ _)] using hy.map inc
+  let : CharZero (divisionSubring χ) := (representation χ).charZero
   refine ⟨inc y, hb, ?_⟩
-  apply Formula.Eval.unit_of_division_lift (representation χ) (c := Rat.castHom (divisionSubring χ))
+  apply Formula.Eval.unit_of_division_lift (representation χ)
+    (c := Rat.castHom (divisionSubring χ))
     (X := fun i => liftD χ (W i)) (h := f) _ hb0
   rwa [RingHom.ext_rat ((representation χ).comp (Rat.castHom (divisionSubring χ)))
     (algebraMap ℚ _)]

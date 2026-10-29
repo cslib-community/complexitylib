@@ -63,14 +63,6 @@ theorem profile_prefix_variable_bounds (p : ClauseProfile) :
       0 ≤ q.1 ∧ q.1 ≤ 180000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 180000 := by
   fin_cases p <;> decide +kernel
 
-/-- Every auxiliary variable lies strictly inside the inner square. -/
-theorem profile_prefix_auxiliary_interior (p : ClauseProfile) :
-    ∀ v : Fin (profilePrefixGeometry p).variablePositions.length,
-      v.val ∉ (profilePrefixGeometry p).terminalVariables →
-        let q := (profilePrefixGeometry p).variablePosition v
-        0 < q.1 ∧ q.1 < 180000 ∧ 0 < q.2 ∧ q.2 < 180000 := by
-  fin_cases p <;> decide +kernel
-
 /-- An auxiliary variable never occupies a source boundary port. -/
 theorem profile_prefix_auxiliary_ne_terminal (p : ClauseProfile) :
     ∀ v : Fin (profilePrefixGeometry p).variablePositions.length,
@@ -85,12 +77,6 @@ theorem profile_prefix_clause_bounds (p : ClauseProfile) :
     ∀ i : Fin (profilePrefixGeometry p).clausePositions.length,
       let q := (profilePrefixGeometry p).clausePosition i
       0 ≤ q.1 ∧ q.1 ≤ 180000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 180000 := by
-  fin_cases p <;> decide +kernel
-
-/-- Every actual clause vertex lies strictly inside the inner square. -/
-theorem profile_prefix_clause_interior (p : ClauseProfile) :
-    ∀ q ∈ (profilePrefixGeometry p).clausePositions,
-      0 < q.1 ∧ q.1 < 180000 ∧ 0 < q.2 ∧ q.2 < 180000 := by
   fin_cases p <;> decide +kernel
 
 /-- All listed incidence points lie in the inner square, independently of the expensive

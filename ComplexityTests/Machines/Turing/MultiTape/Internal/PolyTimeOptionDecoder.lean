@@ -11,23 +11,17 @@ import Lean.Elab.Command
 /-! The concrete Decoder Option automation regression, with no high-raw fallback in scope. -/
 open Turing.MultiTapeTM
 
-example {α : Type} {a : α ↪ List Bool} (D : Decoder a) :
-    ComputableInPolyTime (Decoder.option D).decode encBits (encOption a) := by fun_prop
-
-
-example (w : List Bool) : (Decoder.option Decoder.bool).decode (true :: w) =
-    some (Decoder.bool.decode w) := rfl
-example : (Decoder.option Decoder.bool).decode [] = none := rfl
-example : (Decoder.option Decoder.bool).decode [false] = some false := rfl
+example {α : Type} {a : α ↪ List Bool} (D : Decoder a) (w : List Bool) :
+    ComputableInPolyTime (Decoder.option D).decode encBits (encOption a) ∧
+    (Decoder.option Decoder.bool).decode (true :: w) = some (Decoder.bool.decode w) ∧
+    (Decoder.option Decoder.bool).decode [] = none ∧
+    (Decoder.option Decoder.bool).decode [false] = some false ∧
+    ComputableInPolyTime (Decoder.option Decoder.nat).decode encBits (encOption encNat) :=
+  ⟨by fun_prop, rfl, rfl, rfl, by fun_prop⟩
 
 open Lean Elab Command in
 run_cmd do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO] do
+       `Turing.MultiTapeTM.ComputableTidilyInDegree, `Turing.MultiTapeTM.ComputableTidilyInO] do
     if (← getEnv).contains name then
       throwError "A higher tidy calculus was imported: {name}"
-
-example :
-    ComputableInPolyTime (Decoder.option Decoder.nat).decode encBits (encOption encNat) := by
-  fun_prop

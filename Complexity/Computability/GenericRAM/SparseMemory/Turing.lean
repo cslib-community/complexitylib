@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.GenericRAM.SparseMemory.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Native Turing-machine certificates for sparse memory
@@ -37,7 +38,7 @@ work for all inputs, for each fixed choice of address and value encodings.
 ## References
 
 Uses Mathlib's association lists and Christian Reitwiessner's encoded native multitape-machine
-calculus (`ComputableTidilyInO.eq`, `findWith`, and `filterWith`).
+calculus (`ComputableInO.eq`, `findWith`, and `filterWith`).
 -/
 
 @[expose] public section
@@ -210,7 +211,7 @@ private theorem compare_inO :
     ComputableTidilyInO (fun q : Address × (Address × Value) => decide (q.1 = q.2.1))
       (encPair encA (encPair encA encV)) encBool (compareTime encA encV)
       (compareSpace encA encV) := by
-  have h := (ComputableTidilyInO.eq encA).comp
+  have h := (ComputableInO.eq encA).tidy.comp
     ((fst encA (encPair encA encV)).prod (snd encA (encPair encA encV)).fst')
   convert h using 1 <;> funext q <;> simp [compareTime, compareSpace, two_mul]
 

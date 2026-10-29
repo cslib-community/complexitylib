@@ -47,6 +47,7 @@ theorem; the quadratic bound `NSPACE(s) ⊆ DSPACE(s ^ 2)` for sublinear `s` is 
 ## Main results
 
 * `Turing.MultiTapeNTM.savitchDecide_eq_true_iff`: the decider decides acceptance.
+* `Turing.MultiTapeNTM.computableInPolyTime_codeWidth`: the width of the codes is polynomial-time.
 * `Turing.MultiTapeNTM.computableInPolyTime_viewCodeWidth`: the bit-length of the codes of the views
   is polynomial-time.
 * `Turing.MultiTapeNTM.exists_polyBounded_space_savitchDecide`: it runs in polynomial space.
@@ -122,12 +123,16 @@ theorem computableTidilyInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool
   simp only [codeWidth, viewLengthBound, initView]
   fun_prop
 
+/-- `computableTidilyInPolyTime_codeWidth` for plain certificates. -/
+theorem computableInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d : ℕ) :
+    ComputableInPolyTime (fun a => ntm.codeWidth c d (enc a)) enc encUnary :=
+  (computableTidilyInPolyTime_codeWidth c d).computableInPolyTime
+
 /-- The bit-length of the codes of the views is polynomial-time, in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_viewCodeWidth (c d : ℕ) :
     ComputableInPolyTime (ntm.viewCodeWidth c d) encBits encUnary := by
-  refine .of_tidy ?_
-  have := computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := encBits) c d
+  have := computableInPolyTime_codeWidth (ntm := ntm) (enc := encBits) c d
   unfold viewCodeWidth
   fun_prop
 
@@ -137,25 +142,23 @@ polynomially bounded in the length of the encoded instance. -/
 theorem exists_polyBounded_space_savitchDecide {α : Type} (enc : α ↪ List Bool) (c d : ℕ) :
     ∃ t s, PolyBounded (fun a => (enc a).length) s ∧
       ComputableTidilyInTimeAndSpace (fun a => ntm.savitchDecide c d (enc a)) enc encBool t s := by
-  have hwidth := computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
-  have hcodes : ComputableTidilyInPolyTime
-      (fun a => ntm.viewCodeWidth c d (enc a)) enc encUnary :=
-    (ntm.computableInPolyTime_viewCodeWidth c d).tidy.comp (.encode enc)
-  have hedge : ComputableTidilyInPolyTime
+  have hwidth := computableInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
+  have hedge : ComputableInPolyTime
       (fun q : Unit × List Bool × List Bool => (fun _ => ntm.codeEdge) q.1 q.2.1 q.2.2)
       (encPair (encFinEnum Unit) (encPair encBits encBits)) encBool :=
-    ntm.computableTidilyInPolyTime_codeEdge ((ComputableTidilyInPolyTime.fst _ _).comp (.snd _ _))
-      ((ComputableTidilyInPolyTime.snd _ _).comp (.snd _ _))
-  have hin : ComputableTidilyInPolyTime
+    ntm.computableInPolyTime_codeEdge (by fun_prop) (by fun_prop)
+  have hin : ComputableInPolyTime
       (fun a => ((), ntm.viewCodeWidth c d (enc a), ntm.viewCodeWidth c d (enc a),
         viewCode (ntm.codeWidth c d (enc a)) (ntm.initView (enc a)),
         acceptCode (ntm.codeWidth c d (enc a)))) enc
-      (Cslib.Reachability.encArgs (encFinEnum Unit)) :=
-    (ComputableTidilyInPolyTime.const ()).prod (hcodes.prod (hcodes.prod
-      ((computableTidilyInPolyTime_viewCode_initView hwidth (.encode enc)).prod
-        (computableTidilyInPolyTime_acceptCode hwidth))))
+      (Cslib.Reachability.encArgs (encFinEnum Unit)) := by
+    have := computableInPolyTime_viewCode_initView (ntm := ntm) hwidth
+      (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) fun _ => rfl)
+    have := computableInPolyTime_acceptCode hwidth
+    unfold viewCodeWidth Cslib.Reachability.encArgs
+    fun_prop
   exact Cslib.Reachability.exists_polyBounded_space_savitch (edge := fun _ => ntm.codeEdge)
-    (par := fun _ => ()) hedge hin
+    (par := fun _ => ()) hedge.tidy hin.tidy
     (fun _ => length_viewCode (Nat.le_add_right _ _)) fun _ => List.length_replicate ..
 
 end Turing.MultiTapeNTM

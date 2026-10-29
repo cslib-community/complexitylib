@@ -6,9 +6,9 @@ Authors: Samuel Schlesinger
 
 
 import ComplexityTests.PCPNumbering
+import Complexity.Computability.PCP.Encoded.AssignmentTester.Enumeration
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Tests for exact gadget enumeration, numbering, soundness, and composition certificates. -/
 
@@ -16,6 +16,8 @@ namespace ComplexityTests.PCPEncodedComposition
 
 open Cslib Cslib.PCP Cslib.PCP.HadamardTester Cslib.PCP.Encoded Turing.MultiTapeTM
 open ComplexityTests.PCPNumbering
+
+attribute [local instance] HadamardTester.instFinEnumBool Rand.finEnum
 
 -- The complete empty-alphabet gadget is small enough to evaluate: 8 coins, 17 queries.
 private def emptyAlphabet : Numbering (Fin 0) := ⟨0, Equiv.refl _⟩
@@ -78,42 +80,42 @@ example : (boolGadgets.edges.map Edge.src).getD 17 0 =
     (boolGadgets.edges.map Edge.src).getD 0 0 + (numberSlots boolAlphabet).1 := by decide
 example : boolGadgets.isWellFormed = true := by decide
 
-example (g : Graph (Bool → Bool → Bool)) :
-    ((g.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
-      Graph.composeEval).Satisfiable ↔
-      (g.toGraph id).Satisfiable :=
-  Graph.satisfiable_compose_iff _ _ _ g (nodup_coins _) nodup_queries (mem_coins _) mem_queries
+-- The third edge rejects every assignment; the fixture is genuinely unsatisfiable.
+private theorem boolGraph_not_satisfiable : ¬ (boolGraph.toGraph id).Satisfiable := by
+  rintro ⟨σ, hσ⟩
+  exact Bool.false_ne_true (hσ ⟨2, by decide⟩)
 
-example (g : Graph (Bool → Bool → Bool)) :
-    (g.toGraph id).unsatVal / 476 ≤
-      ((g.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
-        Graph.composeEval).unsatVal :=
-  Graph.le_unsatVal_compose _ _ _ g (nodup_coins _) nodup_queries (mem_coins _) mem_queries
+example : ¬ ((boolGraph.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
+    Graph.composeEval).Satisfiable := by
+  intro h
+  exact boolGraph_not_satisfiable ((Graph.satisfiable_compose_iff _ _ _ boolGraph
+    (nodup_coins _) nodup_queries (mem_coins _) mem_queries).mp h)
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : 0 < ((boolGraph.compose (numberSlots boolAlphabet).2 boolCoins queries).toGraph
+    Graph.composeEval).unsatVal := by
+  have hgap := (boolGraph.toGraph id).unsatVal_pos_iff.mpr boolGraph_not_satisfiable
+  exact (div_pos hgap (by norm_num : (0 : ℝ) < 476)).trans_le
+    (Graph.le_unsatVal_compose _ _ _ boolGraph (nodup_coins _) nodup_queries (mem_coins _)
+      mem_queries)
+
+example : ComputableInPolyTime
     (Graph.compose (numberSlots boolAlphabet).2 boolCoins queries)
     (Graph.encoding (encPi (encPi encBool)))
     (Graph.encoding (encPair (encPi (encPi encBool))
-      (encPair (encFinite (Rand Bool)) (encFinEnum Query)))) := by fun_prop
+      (encPair (encFinEnum (Rand Bool)) (encFinEnum Query)))) := by fun_prop
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- The composed descriptors normalize to fixed tables over the 17-query answer alphabet.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun g : Graph (Bool → Bool → Bool) =>
       g.composeTabulated (numberSlots boolAlphabet).2 boolCoins queries)
     (Graph.encoding (encPi (encPi encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by
   polytime
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 -- A captured graph may use an arbitrary outer representation; its certificate is still required.
 example {Input : Type} (input : Input ↪ List Bool) (graph : Input → Graph (Bool → Bool → Bool))
-    (hgraph : ComputableTidilyInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))) :
-    ComputableTidilyInPolyTime
+    (hgraph : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool)))) :
+    ComputableInPolyTime
       (fun x => (graph x).composeTabulated (numberSlots boolAlphabet).2 boolCoins queries)
       input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hgraph; polytime)

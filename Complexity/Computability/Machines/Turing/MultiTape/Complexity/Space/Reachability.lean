@@ -8,11 +8,16 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Reachability.Savitch
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 
 /-!
 # Savitch's algorithm in the space of its stack
@@ -47,6 +52,7 @@ polynomial time, the space is polynomial (`Cslib.Reachability.exists_polyBounded
 
 * `Cslib.Reachability.Savitch.computableTidilyInO_roundStep`: the time and space of a round.
 * `Cslib.Reachability.computableTidilyInO_savitch`: the time and space of Savitch's algorithm.
+* `Cslib.Reachability.computableInO_savitch`: the same bounds for plain certificates.
 * `Cslib.Reachability.exists_polyBounded_space_savitch`: Savitch's algorithm in polynomial space.
 
 ## References
@@ -429,7 +435,7 @@ theorem computableTidilyInO_roundStep {edge : π → List Bool → List Bool →
       (encList encFrame) 1 1 := by
     fun_prop (disch := first | apply le_refl | lia)
   have hval := or_deg.inO_one.comp_linear
-    ((ComputableTidilyInO.eqWords.comp hends.inO_one).prod (hedge.comp hargs.inO_one))
+    ((ComputableInO.eqWords.tidy.comp hends.inO_one).prod (hedge.comp hargs.inO_one))
   have hbase := hkeep.inO_one.prod (stateMk_deg.inO_one.comp_linear
     (hstack.inO_one.prod (ret_deg.inO_one.comp_linear hval)))
   refine ((hc.inO_one.ite hbase hrest.inO_one).mono 8 (fun q => ?_) fun q => ?_).of_enc_eq
@@ -633,8 +639,9 @@ private theorem steps_inO :
     rw [List.take_replicate, foldl_countStep, List.nil_append, List.length_replicate]
     rw [Nat.mul_comm]
     exact Nat.mul_le_mul_left _ (min_le_right _ _)
-  have hfold := ComputableTidilyInO.foldlWith (encL := encBits) (encB := encBits) hpar.inO_one
-    hlist.inO_one (ComputableTidilyInO.const []) hstep.inO_one
+  have hfold := (ComputableInO.foldlWith (encL := encBits) (encB := encBits)
+    hpar.inO_one.computableInO hlist.inO_one.computableInO
+    (ComputableTidilyInO.const []).computableInO hstep.inO_one.computableInO
     (R := fun t => 6 * ((t.1 + 2) * (t.2 + 1)) + 4)
     (Q := fun t => 6 * ((t.1 + 2) * (t.2 + 1)) + 4)
     (B := fun t => (t.1 + 2) * (t.2 + 1))
@@ -648,7 +655,7 @@ private theorem steps_inO :
       simp only [length_encPair, encUnary_apply, encBits_apply, encBool_apply,
         List.length_replicate, List.length_singleton]
       nlinarith)
-    (fun t i _ => by simpa using hacc t i)
+    (fun t i _ => by simpa using hacc t i)).tidy
   refine (hfold.mono 32 (fun t => ?_) fun t => ?_).of_enc_eq fun t => ?_
   all_goals
     have hK : t.1 + t.2 + 2 ≤ (t.1 + 2) * (t.2 + 1) := by nlinarith
@@ -748,7 +755,8 @@ theorem computableTidilyInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
       (s := ⟨[], .call (depth x) (src x) (dst x)⟩) _ ⟨trivial, fun i u v h => by
         obtain ⟨rfl, rfl, rfl⟩ := Reg.call.inj h
         exact ⟨by simp, hsrc x, hdst x⟩⟩ k
-  have hiter := ComputableTidilyInO.iterate hn hinit (computableTidilyInO_roundStep hedge)
+  have hiter := (ComputableInO.iterate hn.computableInO hinit.computableInO
+    (computableTidilyInO_roundStep hedge).computableInO
     (R := fun x => (stateBound (encP (par x)).length (width x) (depth x) + 1) ^ 2 +
       edgeMax Te (par x) (width x))
     (Q := fun x => stateBound (encP (par x)).length (width x) (depth x) +
@@ -763,7 +771,7 @@ theorem computableTidilyInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
       exact Nat.add_le_add (length_encRound_le (hinv x k)) (edgeCost_le Se _ (hinv x k)))
     (fun x k _ => by
       simp only [Function.comp_apply, roundStep_iterate]
-      exact length_encRound_le (hinv x k))
+      exact length_encRound_le (hinv x k))).tidy
   refine ((answer_deg.inO_one.comp_linear hiter).mono 900 (fun x => ?_) fun x => ?_).of_enc_eq
     fun x => ?_
   all_goals simp only [Function.comp_apply]
@@ -789,6 +797,24 @@ theorem computableTidilyInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
     nlinarith
   · rw [roundStep_iterate, savitch, answer_eq]
 
+/-- `computableTidilyInO_savitch` for plain certificates. -/
+theorem computableInO_savitch {γ : Type} {encIn : γ ↪ List Bool}
+    {edge : π → List Bool → List Bool → Bool} {Te Se : π × List Bool × List Bool → ℕ}
+    (hedge : ComputableInO (fun q : π × List Bool × List Bool => edge q.1 q.2.1 q.2.2)
+      (encPair encP (encPair encBits encBits)) encBool Te Se)
+    {par : γ → π} {width depth : γ → ℕ} {src dst : γ → List Bool} {Tin Sin : γ → ℕ}
+    (hin : ComputableInO (fun x => (par x, width x, depth x, src x, dst x)) encIn
+      (encArgs encP) Tin Sin)
+    (hsrc : ∀ x, (src x).length = width x) (hdst : ∀ x, (dst x).length = width x) :
+    ComputableInO (fun x => savitch (edge (par x)) (width x) (depth x) (src x) (dst x))
+      encIn encBool
+      (fun x => Tin x + 2 ^ ((width x + 2) * (depth x + 1)) *
+        (((depth x + 1) * (depth x + width x + 1) + (encP (par x)).length + 1) ^ 2 +
+          edgeMax Te (par x) (width x)))
+      fun x => Sin x + (depth x + 1) * (depth x + width x + 1) + (encP (par x)).length +
+        edgeMax Se (par x) (width x) :=
+  (computableTidilyInO_savitch hedge.tidy hin.tidy hsrc hdst).computableInO
+
 /-- **Savitch's algorithm in polynomial space.** If the edge test is tidily computable in
 polynomial time, and the parameter, the width and depth in unary, and endpoints of width `w` are
 computable from `x` in polynomial time, then Savitch's algorithm is tidily computable within
@@ -808,17 +834,10 @@ theorem exists_polyBounded_space_savitch {γ : Type} {encIn : γ ↪ List Bool}
         (fun x => savitch (edge (par x)) (width x) (depth x) (src x) (dst x)) encIn encBool t
         s := by
   have hlen := hin.polyBounded_length
-  obtain ⟨te, se, -, hse, he⟩ := hedge
-  obtain ⟨ti, si, hti, hsi, hi⟩ := hin
+  obtain ⟨_, se, -, hse, hedgeO⟩ := hedge.computableInPolyTime.exists_computableInO
+  obtain ⟨_, si, -, hsi, hinO⟩ := hin.computableInPolyTime.exists_computableInO
   obtain ⟨cs, ds, hcs⟩ := hse.exists_le
-  have hedgeO : ComputableTidilyInO _ _ encBool te se :=
-    ⟨1, he.mono (fun _ => by omega) fun _ => by omega, fun _ => by simp⟩
-  have hinO : ComputableTidilyInO _ encIn (encArgs encP) ti fun x => ti x + si x :=
-    ⟨1, hi.mono (fun _ => by omega) fun _ => by dsimp only; omega, fun x => by
-      have := hi.length_le x
-      dsimp only
-      omega⟩
-  obtain ⟨c, h, -⟩ := computableTidilyInO_savitch hedgeO hinO hsrc hdst
+  obtain ⟨c, h, -⟩ := (computableInO_savitch hedgeO hinO hsrc hdst).tidy
   refine ⟨_, _, ?_, h⟩
   -- the stack, the parameter and the edge test are polynomial in the encoded arguments
   set L := fun x => (encArgs encP (par x, width x, depth x, src x, dst x)).length
@@ -837,7 +856,7 @@ theorem exists_polyBounded_space_savitch {γ : Type} {encIn : γ ↪ List Bool}
   have hg : PolyBounded (fun x => (encIn x).length)
       fun x => (L x + 1) * (2 * L x + 1) + L x + cs * (5 * L x + 3) ^ ds + 1 :=
     PolyBounded.comp (size' := id) (g := L) (PolyBounded.of_polynomiallyBounded id hpoly) hlen
-  refine ((PolyBounded.const c).mul ((hti.add hsi).add hg)).mono fun x => ?_
+  refine ((PolyBounded.const c).mul (hsi.add hg)).mono fun x => ?_
   obtain ⟨hd, hw, hP⟩ := hL x
   have := Nat.mul_le_mul (show depth x + 1 ≤ L x + 1 by omega)
     (show depth x + width x + 1 ≤ 2 * L x + 1 by omega)

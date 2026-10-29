@@ -12,8 +12,9 @@ import Complexity.Probability.BitString
 
 Provides concrete instantiations of `prfCipher`, `encryptThenMAC`, and `prfEncryptThenMAC`,
 verifies decryption completeness and tamper rejection on concrete inputs, and exercises the
-runtime certificates (`IsOraclePPT`), quantitative bounds, and asymptotic security theorems for
-Boneh–Shoup Theorem 5.2 (`PRF ⇒ INDCPA` for `prfCipher`) and Theorem 9.2 (`Encrypt-then-MAC`).
+composed runtime certificates (`IsPPT`, `IsOraclePPT`) and quantitative security bounds for
+Boneh–Shoup Theorem 5.2 (`PRF ⇒ INDCPA` for `prfCipher`) and Theorem 9.2 (`Encrypt-then-MAC`) on
+`echoPrfCipher`, `echoPrfMAC`, and `echoPrfEtM`.
 -/
 
 namespace ComplexityTests.Crypto.EncryptThenMAC
@@ -27,8 +28,9 @@ def echoFamily (_ x : List Bool) : List Bool := x
 
 theorem echoFamily_polyTime :
     ComputableInPolyTime (fun p : List Bool × List Bool => echoFamily p.1 p.2)
-      (encPair encBits encBits) encBits :=
-  .of_tidy (ComputableTidilyInPolyTime.snd _ _)
+      (encPair encBits encBits) encBits := by
+  dsimp [echoFamily]
+  polytime
 
 theorem echoFamily_length (key query : List Bool) (h : query.length = key.length) :
     (echoFamily key query).length = key.length :=
@@ -93,115 +95,129 @@ example :
     none := by
   rfl
 
-/-! ### API, Certificate, and Non-Vacuity Smoke Checks -/
+/-! ### Concrete Reduction Certificates and Quantitative Bounds on `echoPrfCipher` and `echoPrfEtM`
+-/
 
-section CertificatesAndReductions
+/-- Concrete reindexed `prfMAC` on `echoFamily` authenticating `2 * n`-bit ciphertexts. -/
+noncomputable def echoPrfMAC : MACScheme :=
+  (prfMAC echoFamily echoFamily_polyTime).reindex (fun n => 2 * n) (by polytime)
 
-variable (E : SymmetricCipher) (M : MACScheme)
-  (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-    ∀ msg, msg.length = n →
-    ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
-  {tagBound : ℕ → ℕ} (htagBound : ComputableInPolyTime tagBound encUnary encUnary)
-  {cpaAdv : OracleDistinguisher} (hcpaAdv : IsOraclePPT encBool cpaAdv)
-  {ciAdv : CIAdversary} (hciAdv : IsOraclePPT encBits ciAdv)
-  (family : List Bool → List Bool → List Bool)
-  (hpoly : ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)
-    (encPair encBits encBits) encBits)
-  (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length)
-  (hprf : PseudorandomFunction family)
+/-- Zero-query CPA distinguisher that always outputs `false`. -/
+def zeroCPAAdversary : OracleDistinguisher :=
+  fun _ _ => ProbOracleComp.sample (pure false)
 
--- Theorem 9.2 and Theorem 5.2 reduction `IsOraclePPT` certificates.
-example : IsOraclePPT (encPair encBits encBits) (etmToMACForger E M tagBound ciAdv) :=
-  isOraclePPT_etmToMACForger E M htagBound hciAdv
+theorem isOraclePPT_zeroCPAAdversary : IsOraclePPT encBool zeroCPAAdversary := by
+  have hbody : IsPPTOn (encPair encUnary encBits) encBool
+      (fun _ : ℕ × List Bool => (pure false : ProbComp Bool)) :=
+    (ComputableInPolyTime.const false).isPPTOn
+  exact hbody.isOraclePPTOn.isOraclePPT
 
-example : IsOraclePPT encBool (etmToCPAAdversary M cpaAdv) :=
-  isOraclePPT_etmToCPAAdversary M hcpaAdv
+theorem isQueryBounded_zeroCPAAdversary (n : ℕ) :
+    (zeroCPAAdversary n []).IsQueryBounded 0 :=
+  ProbOracleComp.IsQueryBounded.sample (pure false)
 
-example (bit : Bool) : IsOraclePPT encBool (cpaToPrfDistinguisher cpaAdv bit) :=
-  isOraclePPT_cpaToPrfDistinguisher hcpaAdv bit
+/-- Zero-query CI adversary that outputs `0^n`. -/
+def zeroCIAdversary : CIAdversary :=
+  fun n _ => ProbOracleComp.sample (pure (List.replicate n false))
 
--- Quantitative security equations and bounds (Theorem 9.2 and Theorem 5.2).
-example (n : ℕ)
-    (htagBoundN : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ c, c.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n) :
-    Game.succProbability (ProbComp.eval ((encryptThenMAC E M hctLen).ciGame ciAdv n)) =
+theorem isOraclePPT_zeroCIAdversary : IsOraclePPT encBits zeroCIAdversary := by
+  have hrep : ComputableInPolyTime
+      (fun p : ℕ × List Bool => List.replicate p.1 false)
+      (encPair encUnary encBits) encBits := by polytime
+  exact hrep.isPPTOn.isOraclePPTOn.isOraclePPT
+
+-- Composed closed-game `IsPPT` and Theorem 9.2 / Theorem 5.2 reduction `IsOraclePPT` certificates
+-- on `echoPrfCipher` and `echoPrfMAC`.
+example (bit : Bool) :
+    IsPPT encBool
+      (fun n _ =>
+        echoPrfMAC.sufCmaGame
+          (etmToMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary) n) ∧
+    IsPPT encBool
+      (fun n _ =>
+        echoPrfCipher.cpaGame (etmToCPAAdversary echoPrfMAC zeroCPAAdversary) bit n) ∧
+    IsOraclePPT encBool
+      (cpaToPrfDistinguisher (etmToCPAAdversary echoPrfMAC zeroCPAAdversary) bit) :=
+  ⟨echoPrfMAC.isPPT_sufCmaGame
+    (isOraclePPT_etmToMACForger echoPrfCipher echoPrfMAC (by polytime) isOraclePPT_zeroCIAdversary),
+   echoPrfCipher.isPPT_cpaGame
+    (isOraclePPT_etmToCPAAdversary echoPrfMAC isOraclePPT_zeroCPAAdversary) bit,
+   isOraclePPT_cpaToPrfDistinguisher
+    (isOraclePPT_etmToCPAAdversary echoPrfMAC isOraclePPT_zeroCPAAdversary) bit⟩
+
+-- Quantitative Theorem 9.2 and Theorem 5.2 equations and bounds instantiated on `echoPrfCipher`,
+-- `echoPrfMAC`, and `echoPrfEtM`.
+example (n : ℕ) :
+    Game.succProbability (ProbComp.eval (echoPrfEtM.ciGame zeroCIAdversary n)) =
       Game.succProbability
-        (ProbComp.eval (M.sufCmaGame (etmToMACForger E M tagBound ciAdv) n)) :=
-  succProbability_ciGame_encryptThenMAC_eq E M hctLen tagBound ciAdv n htagBoundN
+        (ProbComp.eval
+          (echoPrfMAC.sufCmaGame
+            (etmToMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary) n)) := by
+  have htag (km : List Bool) (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
+      (c : List Bool) (_hc : c.length = echoPrfMAC.msgLen n)
+      (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km c)).support) :
+      tag.length ≤ 2 * n := by
+    change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
+    rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
+    change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km c))).support at htag
+    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
+    subst htag
+    unfold prfOracle
+    split_ifs with hlen
+    · exact (echoFamily_length km c hlen).le.trans hkm.le
+    · simp
+  exact succProbability_ciGame_encryptThenMAC_eq echoPrfCipher echoPrfMAC
+    (prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length)
+    (fun n => 2 * n) zeroCIAdversary n htag
+
+example (n Q : ℕ) (cpaAdv : OracleDistinguisher)
+    (hq : (etmToCPAAdversary echoPrfMAC cpaAdv n []).IsQueryBounded Q) :
+    (Game.advantage
+        (ProbComp.eval (echoPrfEtM.cpaGame cpaAdv false n))
+        (ProbComp.eval (echoPrfEtM.cpaGame cpaAdv true n)) : ℝ) ≤
+      (Game.advantage
+        (ProbComp.eval
+          (prfRealGame echoFamily
+            (cpaToPrfDistinguisher (etmToCPAAdversary echoPrfMAC cpaAdv) false) n))
+        (ProbComp.eval
+          (prfIdealGame
+            (cpaToPrfDistinguisher (etmToCPAAdversary echoPrfMAC cpaAdv) false) n)) : ℝ) +
+      (Game.advantage
+        (ProbComp.eval
+          (prfRealGame echoFamily
+            (cpaToPrfDistinguisher (etmToCPAAdversary echoPrfMAC cpaAdv) true) n))
+        (ProbComp.eval
+          (prfIdealGame
+            (cpaToPrfDistinguisher (etmToCPAAdversary echoPrfMAC cpaAdv) true) n)) : ℝ) +
+      2 * (Q : ℝ) ^ 2 / (2 : ℝ) ^ n := by
+  have heq :
+      Game.advantage
+        (ProbComp.eval (echoPrfEtM.cpaGame cpaAdv false n))
+        (ProbComp.eval (echoPrfEtM.cpaGame cpaAdv true n)) =
+      Game.advantage
+        (ProbComp.eval
+          (echoPrfCipher.cpaGame (etmToCPAAdversary echoPrfMAC cpaAdv) false n))
+        (ProbComp.eval
+          (echoPrfCipher.cpaGame (etmToCPAAdversary echoPrfMAC cpaAdv) true n)) :=
+    advantage_cpaGame_encryptThenMAC_eq echoPrfCipher echoPrfMAC
+      (prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length)
+      cpaAdv n
+  rw [heq]
+  exact advantage_cpaGame_prfCipher_le echoFamily echoFamily_polyTime echoFamily_length
+    (etmToCPAAdversary echoPrfMAC cpaAdv) n Q hq
 
 example (n : ℕ) :
-    Game.advantage
-      (ProbComp.eval ((encryptThenMAC E M hctLen).cpaGame cpaAdv false n))
-      (ProbComp.eval ((encryptThenMAC E M hctLen).cpaGame cpaAdv true n)) =
-    Game.advantage
-      (ProbComp.eval (E.cpaGame (etmToCPAAdversary M cpaAdv) false n))
-      (ProbComp.eval (E.cpaGame (etmToCPAAdversary M cpaAdv) true n)) :=
-  advantage_cpaGame_encryptThenMAC_eq E M hctLen cpaAdv n
-
-example (n Q : ℕ) (hq : (cpaAdv n []).IsQueryBounded Q) :
     (Game.advantage
-        (ProbComp.eval ((prfCipher family hpoly hlen).cpaGame cpaAdv false n))
-        (ProbComp.eval ((prfCipher family hpoly hlen).cpaGame cpaAdv true n)) : ℝ) ≤
+        (ProbComp.eval (echoPrfCipher.cpaGame zeroCPAAdversary false n))
+        (ProbComp.eval (echoPrfCipher.cpaGame zeroCPAAdversary true n)) : ℝ) ≤
       (Game.advantage
-        (ProbComp.eval (prfRealGame family (cpaToPrfDistinguisher cpaAdv false) n))
-        (ProbComp.eval (prfIdealGame (cpaToPrfDistinguisher cpaAdv false) n)) : ℝ) +
+        (ProbComp.eval (prfRealGame echoFamily (cpaToPrfDistinguisher zeroCPAAdversary false) n))
+        (ProbComp.eval (prfIdealGame (cpaToPrfDistinguisher zeroCPAAdversary false) n)) : ℝ) +
       (Game.advantage
-        (ProbComp.eval (prfRealGame family (cpaToPrfDistinguisher cpaAdv true) n))
-        (ProbComp.eval (prfIdealGame (cpaToPrfDistinguisher cpaAdv true) n)) : ℝ) +
-      2 * (Q : ℝ) ^ 2 / (2 : ℝ) ^ n :=
-  advantage_cpaGame_prfCipher_le family hpoly hlen cpaAdv n Q hq
-
--- Generic asymptotic compositions (Theorem 9.2).
-example (hmac : M.SUFCMA) : (encryptThenMAC E M hctLen).CiphertextIntegrity :=
-  ciphertextIntegrity_encryptThenMAC E M hctLen hmac
-
-example (hcpa : E.INDCPA) : (encryptThenMAC E M hctLen).INDCPA :=
-  indcpa_encryptThenMAC E M hctLen hcpa
-
-example (hcpa : E.INDCPA) (hmac : M.SUFCMA) :
-    (encryptThenMAC E M hctLen).AuthenticatedEncryption :=
-  authenticatedEncryption_encryptThenMAC E M hctLen hcpa hmac
-
-example (hcpa : E.INDCPA) (hmac : M.SUFCMA) :
-    (encryptThenMAC E M hctLen).INDCCA :=
-  indcca_encryptThenMAC E M hctLen hcpa hmac
-
--- Reindexed `prfMAC` corollaries.
-example {ctLen : ℕ → ℕ}
-    (hctPoly : ComputableInPolyTime ctLen encUnary encUnary)
-    (hctMono : StrictMono ctLen)
-    (hctLenPrf : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = ctLen n)
-    (hcpa : E.INDCPA) :
-    (encryptThenMAC E
-      ((prfMAC family hprf.polyTime).reindex ctLen hctPoly)
-      hctLenPrf).AuthenticatedEncryption :=
-  authenticatedEncryption_encryptThenMAC_prfMAC E hprf hctPoly hctMono hctLenPrf hcpa
-
-example {ctLen : ℕ → ℕ}
-    (hctPoly : ComputableInPolyTime ctLen encUnary encUnary)
-    (hctMono : StrictMono ctLen)
-    (hctLenPrf : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = ctLen n)
-    (hcpa : E.INDCPA) :
-    (encryptThenMAC E
-      ((prfMAC family hprf.polyTime).reindex ctLen hctPoly)
-      hctLenPrf).INDCCA :=
-  indcca_encryptThenMAC_prfMAC E hprf hctPoly hctMono hctLenPrf hcpa
-
--- End-to-end non-vacuous instantiation from `PseudorandomFunction` (Theorems 5.2 and 9.2).
-example : (prfCipher family hprf.polyTime hprf.length_eq).INDCPA :=
-  hprf.indcpa_prfCipher
-
-example : (prfEncryptThenMAC family hprf.polyTime hprf.length_eq).AuthenticatedEncryption :=
-  hprf.authenticatedEncryption_prfEncryptThenMAC
-
-example : (prfEncryptThenMAC family hprf.polyTime hprf.length_eq).INDCCA :=
-  hprf.indcca_prfEncryptThenMAC
-
-end CertificatesAndReductions
+        (ProbComp.eval (prfRealGame echoFamily (cpaToPrfDistinguisher zeroCPAAdversary true) n))
+        (ProbComp.eval (prfIdealGame (cpaToPrfDistinguisher zeroCPAAdversary true) n)) : ℝ) := by
+  have h := advantage_cpaGame_prfCipher_le echoFamily echoFamily_polyTime echoFamily_length
+    zeroCPAAdversary n 0 (isQueryBounded_zeroCPAAdversary n)
+  simpa [echoPrfCipher] using h
 
 end ComplexityTests.Crypto.EncryptThenMAC

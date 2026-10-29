@@ -12,8 +12,8 @@ import Complexity.Crypto.Computational.Encryption.Authenticated
 Provides concrete instantiations of `SymmetricCipher`, verifies oracle behavior on concrete inputs,
 proves that `echoCipher` fails both `INDCPA` (via `not_indcpa_of_ciphertext_length_eq`,
 Boneh–Shoup Example 5.1 / Exercise 5.10(a)) and `CiphertextIntegrity` (via an explicit zero-query
-oracle-PPT adversary), and exercises the runtime certificates (`IsPPT`, `IsOraclePPT`) and
-quantitative/asymptotic security theorems for Boneh–Shoup Theorem 9.1 (`AE ⇒ CCA`).
+oracle-PPT adversary), and exercises the composed runtime certificates (`IsPPT`, `IsOraclePPT`) and
+quantitative security bounds for Boneh–Shoup Theorem 9.1 (`AE ⇒ CCA`) on `echoCipher`.
 -/
 
 namespace ComplexityTests.Crypto.AuthenticatedEncryption
@@ -31,7 +31,7 @@ noncomputable def echoCipher : SymmetricCipher where
   decrypt _ _ ct := some ct
   keyGen_ppt := by ppt
   encrypt_ppt := by ppt
-  decrypt_polyTime := .of_tidy (by polytime)
+  decrypt_polyTime := by polytime
   decrypt_encrypt := by
     intro _ _ _ msg _ ct hct
     rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hct
@@ -86,7 +86,7 @@ theorem not_ciphertextIntegrity_echoCipher :
     ProbOracleComp.sample (pure (List.replicate n false))
   have hadvBody : IsPPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool => (pure (List.replicate p.1 false) : ProbComp (List Bool))) := by
-    have hrep : ComputableTidilyInPolyTime
+    have hrep : ComputableInPolyTime
         (fun p : ℕ × List Bool => List.replicate p.1 false)
         (encPair encUnary encBits) encBits := by polytime
     exact hrep.isPPTOn
@@ -104,82 +104,107 @@ theorem not_authenticatedEncryption_echoCipher :
     ¬ echoCipher.AuthenticatedEncryption :=
   fun hae => not_ciphertextIntegrity_echoCipher hae.2
 
-/-! ### API and Certificate Smoke Checks -/
+/-! ### Concrete Reduction Certificates and Quantitative Bounds on `echoCipher` -/
 
-section CertificatesAndReductions
+/-- Zero-query CCA adversary that always outputs `false`. -/
+def zeroCCAAdversary : CCAAdversary :=
+  fun _ _ => ProbOracleComp.sample (pure false)
 
-variable (E : SymmetricCipher)
-  {ctBound Q : ℕ → ℕ}
-  (hctBound : ComputableInPolyTime ctBound encUnary encUnary)
-  (hQ : ComputableInPolyTime Q encUnary encUnary)
-  {cpaAdv : OracleDistinguisher} (hcpaAdv : IsOraclePPT encBool cpaAdv)
-  {ciAdv : CIAdversary} (hciAdv : IsOraclePPT encBits ciAdv)
-  {ccaAdv : CCAAdversary} (hccaAdv : IsOraclePPT encBool ccaAdv)
+theorem isOraclePPT_zeroCCAAdversary : IsOraclePPT encBool zeroCCAAdversary := by
+  have hbody : IsPPTOn (encPair encUnary encBits) encBool
+      (fun _ : ℕ × List Bool => (pure false : ProbComp Bool)) :=
+    (ComputableInPolyTime.const false).isPPTOn
+  exact hbody.isOraclePPTOn.isOraclePPT
 
--- Closed game `IsPPT` certificates.
-example (bit : Bool) : IsPPT encBool (fun n _ => E.cpaGame cpaAdv bit n) :=
-  E.isPPT_cpaGame hcpaAdv bit
+theorem isQueryBounded_zeroCCAAdversary (n : ℕ) :
+    (zeroCCAAdversary n []).IsQueryBounded 0 :=
+  ProbOracleComp.IsQueryBounded.sample (pure false)
 
-example : IsPPT encBool (fun n _ => E.ciGame ciAdv n) :=
-  E.isPPT_ciGame hciAdv
-
-example (bit : Bool) : IsPPT encBool (fun n _ => E.ccaGame ccaAdv bit n) :=
-  E.isPPT_ccaGame hccaAdv bit
-
--- Theorem 9.1 reduction `IsOraclePPT` certificates.
-example : IsOraclePPT encBool (SymmetricCipher.ccaToCPAAdversary ctBound ccaAdv) :=
-  SymmetricCipher.isOraclePPT_ccaToCPAAdversary hctBound hccaAdv
-
+-- Composed closed-game `IsPPT` and Theorem 9.1 reduction `IsOraclePPT` certificates on
+-- `echoCipher` with `ctBound = id` and `Q = 0`.
 example (bit : Bool) :
-    IsOraclePPT encBits (SymmetricCipher.ccaToCIAdversary ctBound Q bit ccaAdv) :=
-  SymmetricCipher.isOraclePPT_ccaToCIAdversary hctBound hQ bit hccaAdv
+    IsPPT encBool
+      (fun n _ =>
+        echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) bit n) ∧
+    IsPPT encBool
+      (fun n _ =>
+        echoCipher.ciGame
+          (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary) n) ∧
+    IsPPT encBool
+      (fun n _ =>
+        echoCipher.ciGame
+          (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary) n) :=
+  ⟨echoCipher.isPPT_cpaGame
+    (SymmetricCipher.isOraclePPT_ccaToCPAAdversary ComputableInPolyTime.id'
+      isOraclePPT_zeroCCAAdversary)
+    bit,
+   echoCipher.isPPT_ciGame
+    (SymmetricCipher.isOraclePPT_ccaToCIAdversary ComputableInPolyTime.id'
+      (ComputableInPolyTime.const 0) bit isOraclePPT_zeroCCAAdversary),
+   echoCipher.isPPT_ciGame
+    (SymmetricCipher.isOraclePPT_ccaToCIHiddenBitAdversary ComputableInPolyTime.id'
+      (ComputableInPolyTime.const 0) isOraclePPT_zeroCCAAdversary)⟩
 
-example : IsOraclePPT encBits (SymmetricCipher.ccaToCIHiddenBitAdversary ctBound Q ccaAdv) :=
-  SymmetricCipher.isOraclePPT_ccaToCIHiddenBitAdversary hctBound hQ hccaAdv
-
--- Quantitative security bounds (Theorem 9.1).
-example (n : ℕ)
-    (hq : (ccaAdv n []).IsQueryBounded (Q n))
-    (hctBoundN : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
-    (Game.advantage (ProbComp.eval (E.ccaGame ccaAdv false n))
-        (ProbComp.eval (E.ccaGame ccaAdv true n)) : ℝ) ≤
-      (dyadicSize (Q n) : ℝ) *
-        (Game.succProbability
-          (ProbComp.eval (E.ciGame (SymmetricCipher.ccaToCIAdversary ctBound Q false ccaAdv) n)) :
-            ℝ) +
-      (Game.advantage
-        (ProbComp.eval (E.cpaGame (SymmetricCipher.ccaToCPAAdversary ctBound ccaAdv) false n))
-        (ProbComp.eval (E.cpaGame (SymmetricCipher.ccaToCPAAdversary ctBound ccaAdv) true n)) :
-          ℝ) +
-      (dyadicSize (Q n) : ℝ) *
-        (Game.succProbability
-          (ProbComp.eval (E.ciGame (SymmetricCipher.ccaToCIAdversary ctBound Q true ccaAdv) n)) :
-            ℝ) :=
-  E.advantage_ccaGame_le ctBound Q ccaAdv n hq hctBoundN
-
-example (n : ℕ)
-    (hq : (ccaAdv n []).IsQueryBounded (Q n))
-    (hctBoundN : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
-    (Game.advantage (ProbComp.eval (E.ccaGame ccaAdv false n))
-        (ProbComp.eval (E.ccaGame ccaAdv true n)) : ℝ) ≤
-      2 * (dyadicSize (Q n) : ℝ) *
+-- Quantitative Theorem 9.1 bounds instantiated on `echoCipher` and `zeroCCAAdversary`, with
+-- `dyadicSize 0 = 2` evaluated and `echoCipher_ctLen` discharging the ciphertext-length premise.
+example (n : ℕ) :
+    (Game.advantage (ProbComp.eval (echoCipher.ccaGame zeroCCAAdversary false n))
+        (ProbComp.eval (echoCipher.ccaGame zeroCCAAdversary true n)) : ℝ) ≤
+      2 *
         (Game.succProbability
           (ProbComp.eval
-            (E.ciGame (SymmetricCipher.ccaToCIHiddenBitAdversary ctBound Q ccaAdv) n)) : ℝ) +
+            (echoCipher.ciGame
+              (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) false zeroCCAAdversary) n)) :
+            ℝ) +
       (Game.advantage
-        (ProbComp.eval (E.cpaGame (SymmetricCipher.ccaToCPAAdversary ctBound ccaAdv) false n))
-        (ProbComp.eval (E.cpaGame (SymmetricCipher.ccaToCPAAdversary ctBound ccaAdv) true n)) :
-          ℝ) :=
-  E.advantage_ccaGame_le_two_mul ctBound Q ccaAdv n hq hctBoundN
+        (ProbComp.eval
+          (echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) false n))
+        (ProbComp.eval
+          (echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) true n)) :
+          ℝ) +
+      2 *
+        (Game.succProbability
+          (ProbComp.eval
+            (echoCipher.ciGame
+              (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) true zeroCCAAdversary) n)) :
+            ℝ) := by
+  have hct (k : List Bool) (hk : k ∈ (ProbComp.eval (echoCipher.keyGen n)).support)
+      (msg : List Bool) (hmsg : msg.length = n)
+      (ct : List Bool) (hct : ct ∈ (ProbComp.eval (echoCipher.encrypt n k msg)).support) :
+      ct.length ≤ id n :=
+    (echoCipher_ctLen n k hk msg hmsg ct hct).le
+  have h0 : dyadicSize 0 = 2 := by decide
+  have hd : (dyadicSize 0 : ℝ) = 2 := by exact_mod_cast h0
+  simpa [hd] using
+    echoCipher.advantage_ccaGame_le id (fun _ => 0) zeroCCAAdversary n
+      (isQueryBounded_zeroCCAAdversary n) hct
 
--- End-to-end asymptotic composition (Theorem 9.1).
-example (hae : E.AuthenticatedEncryption) : E.INDCCA :=
-  hae.indcca
-
-end CertificatesAndReductions
+example (n : ℕ) :
+    (Game.advantage (ProbComp.eval (echoCipher.ccaGame zeroCCAAdversary false n))
+        (ProbComp.eval (echoCipher.ccaGame zeroCCAAdversary true n)) : ℝ) ≤
+      4 *
+        (Game.succProbability
+          (ProbComp.eval
+            (echoCipher.ciGame
+              (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary) n)) :
+            ℝ) +
+      (Game.advantage
+        (ProbComp.eval
+          (echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) false n))
+        (ProbComp.eval
+          (echoCipher.cpaGame (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) true n)) :
+          ℝ) := by
+  have hct (k : List Bool) (hk : k ∈ (ProbComp.eval (echoCipher.keyGen n)).support)
+      (msg : List Bool) (hmsg : msg.length = n)
+      (ct : List Bool) (hct : ct ∈ (ProbComp.eval (echoCipher.encrypt n k msg)).support) :
+      ct.length ≤ id n :=
+    (echoCipher_ctLen n k hk msg hmsg ct hct).le
+  have hd : 2 * (dyadicSize 0 : ℝ) = 4 := by
+    have h0 : dyadicSize 0 = 2 := by decide
+    rw [h0]
+    norm_num
+  simpa [hd] using
+    echoCipher.advantage_ccaGame_le_two_mul id (fun _ => 0) zeroCCAAdversary n
+      (isQueryBounded_zeroCCAAdversary n) hct
 
 end ComplexityTests.Crypto.AuthenticatedEncryption

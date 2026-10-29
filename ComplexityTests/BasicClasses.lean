@@ -25,27 +25,24 @@ private theorem head_mem_P : {w : List Bool | w.headD false = true} ∈ P encBit
   ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
 private theorem tail_mem_P : {w : List Bool | w.tail.headD false = true} ∈ P encBits :=
-  ⟨fun w => w.tail.headD false, .of_tidy (by fun_prop), fun _ => Iff.rfl⟩
+  ⟨fun w => w.tail.headD false, by fun_prop, fun _ => Iff.rfl⟩
 
-example : {w : List Bool | w.headD false = true} ∩ {w | w.tail.headD false = true} ∈ P encBits :=
-  inter_mem_P head_mem_P tail_mem_P
-
-example : {w : List Bool | w.headD false = true} ∪ {w | w.tail.headD false = true} ∈ P encBits :=
-  union_mem_P head_mem_P tail_mem_P
-
-example : SAT ∩ SAT ∈ NP encCNF := inter_mem_NP SAT.mem_NP SAT.mem_NP
-example : SAT ∪ SAT ∈ NP encCNF := union_mem_NP SAT.mem_NP SAT.mem_NP
-example : UNSAT ∩ UNSAT ∈ coNP encCNF := inter_mem_coNP UNSAT_mem_coNP UNSAT_mem_coNP
-example : UNSAT ∪ UNSAT ∈ coNP encCNF := union_mem_coNP UNSAT_mem_coNP UNSAT_mem_coNP
-
-example : {w : List Bool | w.headD false = true} ∆ {w | w.tail.headD false = true} ∈
-    ParityP encBits :=
-  symmDiff_mem_ParityP (P_subset_ParityP head_mem_P) (P_subset_ParityP tail_mem_P)
+example :
+    ({w : List Bool | w.headD false = true} ∩ {w | w.tail.headD false = true} ∈ P encBits ∧
+      {w : List Bool | w.headD false = true} ∪ {w | w.tail.headD false = true} ∈ P encBits) ∧
+    (SAT ∩ SAT ∈ NP encCNF ∧ SAT ∪ SAT ∈ NP encCNF) ∧
+    (UNSAT ∩ UNSAT ∈ coNP encCNF ∧ UNSAT ∪ UNSAT ∈ coNP encCNF) ∧
+    {w : List Bool | w.headD false = true} ∆ {w | w.tail.headD false = true} ∈ ParityP encBits :=
+  ⟨⟨inter_mem_P head_mem_P tail_mem_P, union_mem_P head_mem_P tail_mem_P⟩,
+   ⟨inter_mem_NP SAT.mem_NP SAT.mem_NP, union_mem_NP SAT.mem_NP SAT.mem_NP⟩,
+   ⟨inter_mem_coNP UNSAT_mem_coNP UNSAT_mem_coNP,
+    union_mem_coNP UNSAT_mem_coNP UNSAT_mem_coNP⟩,
+   symmDiff_mem_ParityP (P_subset_ParityP head_mem_P) (P_subset_ParityP tail_mem_P)⟩
 
 /-- A variable-length precomposition preserves the count `2 ^ |tail w|` without a padding factor. -/
 example : (fun w : List Bool => 2 ^ w.tail.length) ∈ SharpP encBits := by
   simpa [Function.comp_def] using SharpP.comp_mem (SharpP.two_pow_mem (enc := encBits) Polynomial.X)
-    (.of_tidy (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop))
+    (show ComputableInPolyTime List.tail encBits encBits by fun_prop)
 
 /-- Requiring padding to be false gives exactly one extension, including zero padding. -/
 example (n : ℕ) : acceptCount
@@ -57,26 +54,26 @@ example (n : ℕ) : acceptCount
 example : (fun w : List Bool => (2 ^ w.tail.length : ℕ) - (1 : ℤ)) ∈ GapP encBits := by
   simpa [Function.comp_def] using GapP.comp_mem
     (GapP.natCast_sub_natCast_mem (SharpP.two_pow_mem (enc := encBits) Polynomial.X) SharpP.one_mem)
-    (.of_tidy (show ComputableTidilyInPolyTime List.tail encBits encBits by fun_prop))
+    (show ComputableInPolyTime List.tail encBits encBits by fun_prop)
 
-example : {w : List Bool | w.headD false = true} ∈ UP encBits := P_subset_UP head_mem_P
-
-example : Set.univ ∈ UP encBits :=
-  ⟨1, SharpP.one_mem, fun _ => le_rfl, fun _ => by simp⟩
-
-example : (∅ : Set (List Bool)) ∈ UP encBits :=
-  ⟨0, SharpP.zero_mem, fun _ => by simp, fun _ => by simp⟩
-
-example : {w : List Bool | w.headD false = true} ∈ NP encBits ∩ ParityP encBits :=
-  ⟨UP_subset_NP (P_subset_UP head_mem_P), UP_subset_ParityP (P_subset_UP head_mem_P)⟩
-
-example : {w : List Bool | w.headD false = true} ∈ UP encBits :=
-  (PolyTimeReducible.refl _ _).mem_UP (P_subset_UP head_mem_P)
-
-example : Set.univ ∈ CeqP encBits := ⟨0, GapP.zero_mem, fun _ => by simp⟩
-example : (∅ : Set (List Bool)) ∈ CeqP encBits := ⟨1, GapP.one_mem, fun _ => by simp⟩
-example : UNSAT ∈ CeqP encCNF := coNP_subset_CeqP UNSAT_mem_coNP
-example : UNSAT ∈ PP encCNF := CeqP_subset_PP (coNP_subset_CeqP UNSAT_mem_coNP)
+example :
+    ({w : List Bool | w.headD false = true} ∈ UP encBits ∧
+      Set.univ ∈ UP encBits ∧
+      (∅ : Set (List Bool)) ∈ UP encBits ∧
+      {w : List Bool | w.headD false = true} ∈ NP encBits ∩ ParityP encBits) ∧
+    (Set.univ ∈ CeqP encBits ∧
+      (∅ : Set (List Bool)) ∈ CeqP encBits ∧
+      UNSAT ∈ CeqP encCNF ∧
+      UNSAT ∈ PP encCNF) :=
+  have hup := P_subset_UP head_mem_P
+  ⟨⟨(PolyTimeReducible.refl _ _).mem_UP hup,
+    ⟨1, SharpP.one_mem, fun _ => le_rfl, fun _ => by simp⟩,
+    ⟨0, SharpP.zero_mem, fun _ => by simp, fun _ => by simp⟩,
+    ⟨UP_subset_NP hup, UP_subset_ParityP hup⟩⟩,
+   ⟨⟨0, GapP.zero_mem, fun _ => by simp⟩,
+    ⟨1, GapP.one_mem, fun _ => by simp⟩,
+    coNP_subset_CeqP UNSAT_mem_coNP,
+    CeqP_subset_PP (coNP_subset_CeqP UNSAT_mem_coNP)⟩⟩
 
 /-- Satisfiable and unsatisfiable instances both exist in the concrete product language. -/
 example : (([] : CNF ℕ), ([[]] : CNF ℕ)) ∈ SATUNSAT := by
@@ -89,12 +86,12 @@ example : (([] : CNF ℕ), ([] : CNF ℕ)) ∉ SATUNSAT := by
   rintro ⟨-, h⟩
   exact h ⟨fun _ => true, rfl⟩
 
-example : DPComplete (encPair encCNF encCNF) SATUNSAT := SATUNSAT_dpComplete
-
-example : (SATUNSAT ∩ SATUNSAT) ∈ DP (encPair encCNF encCNF) :=
-  inter_mem_DP SATUNSAT_dpComplete.1 SATUNSAT_dpComplete.1
-
-example : SATUNSAT ∈ DP (encPair encCNF encCNF) :=
-  (PolyTimeReducible.refl _ _).mem_DP SATUNSAT_dpComplete.1
+example :
+    PolyTimeReducible encCNF (encPair encCNF encCNF) (SAT ∩ UNSAT) SATUNSAT ∧
+    (SATUNSAT ∩ SATUNSAT) ∈ DP (encPair encCNF encCNF) ∧
+    SATUNSAT ∈ DP (encPair encCNF encCNF) :=
+  ⟨SATUNSAT_dpComplete.2 encCNF (SAT ∩ UNSAT) ⟨SAT, SAT.mem_NP, UNSAT, UNSAT_mem_coNP, rfl⟩,
+   inter_mem_DP SATUNSAT_dpComplete.1 SATUNSAT_dpComplete.1,
+   (PolyTimeReducible.refl _ _).mem_DP SATUNSAT_dpComplete.1⟩
 
 end ComplexityTests.BasicClasses

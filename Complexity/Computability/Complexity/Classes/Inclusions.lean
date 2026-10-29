@@ -14,8 +14,8 @@ public import Complexity.Computability.Complexity.Reduction
 public import Complexity.Computability.Complexity.Classes.Space.Closure
 public import Complexity.Computability.Complexity.Classes.Space.Savitch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -44,7 +44,7 @@ of `PSPACE` in `Complexity.Computability.Complexity.Classes.Space.Closure`.
   is within `NPSPACE`, which is `PSPACE` by Savitch's theorem
   (`Cslib.Complexity.NPSPACE_subset_PSPACE`).
 * `PSPACE ⊆ EXP` (`Cslib.Complexity.PSPACE_subset_EXP`): Savitch's decider runs within time
-  exponential in a polynomial (`Cslib.Reachability.computableTidilyInO_savitch`).
+  exponential in a polynomial (`Cslib.Reachability.computableInO_savitch`).
 * `PH ⊆ PSPACE` (`Cslib.Complexity.PH_subset_PSPACE`): `PSPACE` contains `P`, is closed under
   complement (`Cslib.Complexity.compl_mem_PSPACE`), under polynomial-time reductions
   (`Cslib.Complexity.PolyTimeReducible.mem_PSPACE`) and under polynomially bounded existential
@@ -120,52 +120,49 @@ private theorem exists_eventually_le_two_pow_pow {P Q R : ℕ → ℕ} (hP : Pol
 within polynomial space (`Cslib.Complexity.PSPACE_subset_NPSPACE`), and Savitch's decider for it
 runs within time exponential in a polynomial: its codes have polynomial width `w`, and it runs
 `2 ^ ((w + 2) * (w + 1))` rounds of polynomial cost
-(`Cslib.Reachability.computableTidilyInO_savitch`). -/
+(`Cslib.Reachability.computableInO_savitch`). -/
 theorem PSPACE_subset_EXP : PSPACE enc ⊆ EXP enc := by
   intro A hA
   obtain ⟨k, State, hfinite, ntm, s, hs, hAn⟩ := PSPACE_subset_NPSPACE hA
   obtain ⟨c, d, hcd⟩ := hs.exists_le
   -- the inputs and the edge test of Savitch's decider are polynomial-time
-  have hwidth := MultiTapeNTM.computableTidilyInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
-  have hcodes : ComputableTidilyInPolyTime
+  have hwidth := MultiTapeNTM.computableInPolyTime_codeWidth (ntm := ntm) (enc := enc) c d
+  have hcodes : ComputableInPolyTime
       (fun a => 2 * ntm.codeWidth c d (enc a) + 2) enc encUnary :=
-    ComputableTidilyInPolyTime.unary_add.comp ((ComputableTidilyInPolyTime.unary_mul.comp
-      ((ComputableTidilyInPolyTime.const 2).prod hwidth)).prod (ComputableTidilyInPolyTime.const 2))
-  have hedge : ComputableTidilyInPolyTime
+    ComputableInPolyTime.unary_add.comp ((ComputableInPolyTime.unary_mul.comp
+      ((ComputableInPolyTime.const 2).prod hwidth)).prod (ComputableInPolyTime.const 2))
+  set encE := encPair (encFinEnum Unit) (encPair encBits encBits)
+  have hedge : ComputableInPolyTime
       (fun q : Unit × List Bool × List Bool => (fun _ => ntm.codeEdge) q.1 q.2.1 q.2.2)
-      (encPair (encFinEnum Unit) (encPair encBits encBits)) encBool :=
-    ntm.computableTidilyInPolyTime_codeEdge ((ComputableTidilyInPolyTime.fst _ _).comp (.snd _ _))
-      ((ComputableTidilyInPolyTime.snd _ _).comp (.snd _ _))
-  have hin : ComputableTidilyInPolyTime
+      encE encBool :=
+    ntm.computableInPolyTime_codeEdge ((ComputableInPolyTime.fst _ _).comp (.snd _ _))
+      ((ComputableInPolyTime.snd _ _).comp (.snd _ _))
+  have hin : ComputableInPolyTime
       (fun a => ((), 2 * ntm.codeWidth c d (enc a) + 2, 2 * ntm.codeWidth c d (enc a) + 2,
         MultiTapeNTM.viewCode (ntm.codeWidth c d (enc a)) (ntm.initView (enc a)),
         MultiTapeNTM.acceptCode (ntm.codeWidth c d (enc a)))) enc
       (Cslib.Reachability.encArgs (encFinEnum Unit)) :=
-    (ComputableTidilyInPolyTime.const ()).prod (hcodes.prod (hcodes.prod
-      ((MultiTapeNTM.computableTidilyInPolyTime_viewCode_initView hwidth (.encode enc)).prod
-        (MultiTapeNTM.computableTidilyInPolyTime_acceptCode hwidth))))
-  obtain ⟨te, se, hte, -, he⟩ := hedge
-  obtain ⟨ti, si, hti, -, hi⟩ := hin
-  have hedgeO : ComputableTidilyInO _ _ encBool te se :=
-    ⟨1, he.mono (fun _ => by omega) fun _ => by omega, fun _ => by simp⟩
-  have hinO : ComputableTidilyInO _ enc (Cslib.Reachability.encArgs (encFinEnum Unit)) ti
-      fun a => ti a + si a :=
-    ⟨1, hi.mono (fun _ => by omega) fun _ => by dsimp only; omega, fun a => by
-      have := hi.length_le a
-      dsimp only
-      omega⟩
-  have h := Cslib.Reachability.computableTidilyInO_savitch (edge := fun _ => ntm.codeEdge)
+    (ComputableInPolyTime.const ()).prod (hcodes.prod (hcodes.prod
+      ((MultiTapeNTM.computableInPolyTime_viewCode_initView hwidth
+        (.of_eq fun _ => rfl)).prod
+        (MultiTapeNTM.computableInPolyTime_acceptCode hwidth))))
+  -- only the time bounds feed `EXP`, so the coarser charged space (time plus space) is harmless
+  obtain ⟨Te, _, hTe, -, hedgeO⟩ := hedge.exists_computableInO
+  obtain ⟨Ti, _, hTi, -, hinO⟩ := hin.exists_computableInO
+  have h := Cslib.Reachability.computableInO_savitch (edge := fun _ => ntm.codeEdge)
     (par := fun _ => ()) hedgeO hinO
     (fun _ => MultiTapeNTM.length_viewCode (Nat.le_add_right _ _)) fun _ => List.length_replicate ..
   -- polynomial bounds on the width, the inputs and the edge test
   obtain ⟨cW, dW, hW⟩ := hwidth.polyBounded_length.exists_le
-  obtain ⟨cT, dT, hT⟩ := hti.exists_le
-  obtain ⟨cE, dE, hE⟩ := hte.exists_le
+  obtain ⟨cT, dT, hT⟩ := hTi.exists_le
+  obtain ⟨cE, dE, hE⟩ := hTe.exists_le
   set L := (encFinEnum Unit ()).length
-  have hedgeMax (w : ℕ) : Cslib.Reachability.edgeMax te () w ≤ cE * (2 * L + 3 * w + 3) ^ dE :=
+  have hedgeMax (w : ℕ) :
+      Cslib.Reachability.edgeMax Te () w ≤
+        cE * (2 * L + 3 * w + 3) ^ dE :=
     listMax_le fun u hu => listMax_le fun v hv => by
       refine (hE _).trans (Nat.mul_le_mul_left cE (Nat.pow_le_pow_left ?_ dE))
-      simp only [length_encPair, encBits_apply, Cslib.BitString.mem_enumList.mp hu,
+      simp only [encE, length_encPair, encBits_apply, Cslib.BitString.mem_enumList.mp hu,
         Cslib.BitString.mem_enumList.mp hv]
       omega
   set B : ℕ → ℕ := fun n => 2 * (cW * (n + 1) ^ dW) + 2
@@ -173,7 +170,7 @@ theorem PSPACE_subset_EXP : PSPACE enc ⊆ EXP enc := by
     (Q := fun n => (B n + 2) * (B n + 1))
     (R := fun n => ((B n + 1) * (B n + B n + 1) + L + 1) ^ 2 + cE * (2 * L + 3 * B n + 3) ^ dE)
     (by fun_prop) (by simp only [B]; fun_prop) (by simp only [B]; fun_prop)
-  have hmem := setOf_mem_DTIME_of_computableInO (.of_tidy h)
+  have hmem := setOf_mem_DTIME_of_computableInO h
     (t := fun n => cT * (n + 1) ^ dT + 2 ^ ((B n + 2) * (B n + 1)) *
       (((B n + 1) * (B n + B n + 1) + L + 1) ^ 2 + cE * (2 * L + 3 * B n + 3) ^ dE))
     fun a => by
@@ -208,36 +205,34 @@ quantifier at a time: an existential block by `Cslib.Complexity.setOf_exists_mem
 universal block as the complement of an existential block for the negated verifier. -/
 private theorem alternationSet_mem_PSPACE (ps : List (Polynomial ℕ)) :
     ∀ (q : Bool) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool →
+      ComputableInPolyTime V (encPair enc encBits) encBool →
         alternationSet enc q ps V ∈ PSPACE (encPair enc encBits) := by
   induction ps with
   | nil =>
     intro q V hV
-    exact P_subset_PSPACE ⟨V, .of_tidy hV, fun x => by simp [alternationSet]⟩
+    exact P_subset_PSPACE ⟨V, hV, fun x => by simp [alternationSet]⟩
   | cons p ps ih =>
     have hex (V : α × List Bool → Bool)
-        (hV : ComputableTidilyInPolyTime V (encPair enc encBits) encBool) :
+        (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
         alternationSet enc true (p :: ps) V ∈ PSPACE (encPair enc encBits) := by
       -- the remaining quantifiers, after the first block of certificates
       have hB : {y : (α × List Bool) × List Bool | (y.1.1, y.1.2 ++ y.2) ∈
           alternationSet enc false ps V} ∈ PSPACE (encPair (encPair enc encBits) encBits) :=
         PolyTimeReducible.mem_PSPACE ⟨fun y => (y.1.1, y.1.2 ++ y.2),
-          .of_tidy (((ComputableTidilyInPolyTime.fst _ _).comp (.fst _ _)).prod
-            (ComputableTidilyInPolyTime.bitsAppend
-              ((ComputableTidilyInPolyTime.snd _ _).comp (.fst _ _)) (.snd _ _))),
+          by fun_prop,
           fun _ => Iff.rfl⟩ (ih false V hV)
-      have hℓ : ComputableTidilyInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
+      have hℓ : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
           (encPair enc encBits) encUnary :=
-        ((ComputableTidilyInPolyTime.unary_eval p).comp
-          (ComputableTidilyInPolyTime.encoding_length enc)).comp (.fst _ _)
-      convert setOf_exists_mem_PSPACE hB (.of_tidy hℓ) using 1
+        ((ComputableInPolyTime.unary_eval p).comp
+          (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
+      convert setOf_exists_mem_PSPACE hB (hℓ) using 1
       ext x
       simp only [alternationSet, List.map_cons, alternation_true_cons, Set.mem_ofPred_eq,
         List.append_assoc]
     intro q V hV
     cases q
     · -- a universal block is the complement of an existential block
-      convert compl_mem_PSPACE (hex (fun x => !V x) (ComputableTidilyInPolyTime.bool_not.comp hV))
+      convert compl_mem_PSPACE (hex (fun x => !V x) (ComputableInPolyTime.bool_not.comp hV))
         using 1
       ext x
       simp only [alternationSet, Set.mem_ofPred_eq, Set.mem_compl_iff, not_alternation,
@@ -250,7 +245,7 @@ theorem SigmaP_subset_PSPACE (k : ℕ) : SigmaP k enc ⊆ PSPACE enc := by
   rintro A ⟨ps, V, -, hV, hA⟩
   refine PolyTimeReducible.mem_PSPACE ⟨fun a => (a, []),
     ComputableInPolyTime.id'.prod (.const []), fun a => ?_⟩
-    (alternationSet_mem_PSPACE ps true V hV.tidy)
+    (alternationSet_mem_PSPACE ps true V hV)
   simp [alternationSet, hA a]
 
 /-- **`PH ⊆ PSPACE`** [Arora and Barak, Chapter 5][AroraBarak09],

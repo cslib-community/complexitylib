@@ -189,20 +189,15 @@ def kindDecoder : Decoder encKind where
   decode w := kindOfIndex w.length
   decode_enc k := by cases k <;> rfl
   computable := by
-    have h : ComputableTidilyInPolyTime (fun w : List Bool => min w.length 7) encBits encUnary :=
-      ComputableTidilyInPolyTime.unary_min.comp ((by fun_prop :
-        ComputableTidilyInPolyTime (fun w : List Bool => w.length) encBits encUnary).prod
-        (ComputableTidilyInPolyTime.const 7))
-    have hp : ComputableTidilyInPolyTime (fun w : List Bool => kindOfIndex w.length)
+    have h : ComputableInPolyTime (fun w : List Bool => min w.length 7) encBits encUnary :=
+      (by fun_prop :
+        ComputableInPolyTime (fun w : List Bool => w.length - (w.length - 7)) encBits encUnary)
+      |>.of_enc_eq fun w => congrArg encUnary (by omega)
+    have hp : ComputableInPolyTime (fun w : List Bool => kindOfIndex w.length)
         encBits encKind := h.of_enc_eq fun w => by
       change encUnary (kindIndex (kindOfIndex w.length)) = _
       rw [kindIndex_kindOfIndex]
-    obtain ⟨t, s, ⟨T, hT, ht⟩, ⟨S, hS, hs⟩, k, Q, hfin, tm, htm⟩ := hp
-    have hplain : ComputableInPolyTime (fun w : List Bool => kindOfIndex w.length)
-        encBits encKind :=
-      ⟨T, S, hT, hS, k, Q, hfin, tm,
-        fun w => ((htm w).mono (ht w) (hs w)).computesInTimeAndSpace⟩
-    exact hplain.exists_degree
+    exact hp.exists_degree
 
 /-- Token lists are decoded element by element. -/
 def tokensDecoder : Decoder (encList encToken) := .list (.pair kindDecoder .nat)
@@ -221,48 +216,48 @@ theorem wellFormed_iff (ts : List (QBF.Kind × ℕ)) :
   · rintro ⟨φ, rfl⟩
     exact ⟨[φ], rfl, by simp⟩
 
-private theorem wellFormed_pt : ComputableTidilyInPolyTime wellFormed
+private theorem wellFormed_pt : ComputableInPolyTime wellFormed
     (encList encToken) encBool := by
-  have hstep : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => wfStep p.1 p.2)
+  have hstep : ComputableInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => wfStep p.1 p.2)
       (encPair (encPair encBool encUnary) encToken) (encPair encBool encUnary) := by
-    have hok : ComputableTidilyInPolyTime tokenOk encToken encBool := by
-      refine ComputableTidilyInPolyTime.finite_cases (tag := fun t : QBF.Kind × ℕ => t.1)
+    have hok : ComputableInPolyTime tokenOk encToken encBool := by
+      refine ComputableInPolyTime.finite_cases (tag := fun t : QBF.Kind × ℕ => t.1)
         (tagEncoding := encKind) (branch := fun k t => match k with
           | .var | .ex | .all => true
-          | _ => decide (t.2 = 0)) (ComputableTidilyInPolyTime.fst encKind encNat) ?_
+          | _ => decide (t.2 = 0)) (ComputableInPolyTime.fst encKind encNat) ?_
       intro k
-      cases k <;> first | exact ComputableTidilyInPolyTime.const _ | fun_prop
-    have hn : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => p.1.2)
+      cases k <;> first | exact ComputableInPolyTime.const _ | fun_prop
+    have hn : ComputableInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => p.1.2)
         (encPair (encPair encBool encUnary) encToken) encUnary := by fun_prop
-    have hpos : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) =>
+    have hpos : ComputableInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) =>
         decide (p.1.2 ≠ 0)) (encPair (encPair encBool encUnary) encToken) encBool :=
-      (ComputableTidilyInPolyTime.unary_lt' (ComputableTidilyInPolyTime.const 0) hn).of_enc_eq
+      (ComputableInPolyTime.unary_lt' (ComputableInPolyTime.const 0) hn).of_enc_eq
         fun p => by simp [Nat.pos_iff_ne_zero]
-    have harity : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) =>
+    have harity : ComputableInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) =>
         arity p.2.1) (encPair (encPair encBool encUnary) encToken) encUnary :=
-      (ComputableTidilyInPolyTime.of_finite arity).comp
-        ((ComputableTidilyInPolyTime.fst encKind encNat).comp
-          (ComputableTidilyInPolyTime.snd (encPair encBool encUnary) encToken))
-    have hb : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => p.1.1)
+      (ComputableInPolyTime.of_finite arity).comp
+        ((ComputableInPolyTime.fst encKind encNat).comp
+          (ComputableInPolyTime.snd (encPair encBool encUnary) encToken))
+    have hb : ComputableInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => p.1.1)
         (encPair (encPair encBool encUnary) encToken) encBool := by fun_prop
-    have hokp : ComputableTidilyInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => tokenOk p.2)
+    have hokp : ComputableInPolyTime (fun p : (Bool × ℕ) × (QBF.Kind × ℕ) => tokenOk p.2)
         (encPair (encPair encBool encUnary) encToken) encBool :=
-      hok.comp (ComputableTidilyInPolyTime.snd (encPair encBool encUnary) encToken)
-    exact ((ComputableTidilyInPolyTime.of_finite (fun q : Bool × Bool × Bool =>
+      hok.comp (ComputableInPolyTime.snd (encPair encBool encUnary) encToken)
+    exact ((ComputableInPolyTime.of_finite (fun q : Bool × Bool × Bool =>
       q.1 && q.2.1 && q.2.2)).comp (hb.prod (hpos.prod hokp))).prod
-      (ComputableTidilyInPolyTime.unary_add.comp ((ComputableTidilyInPolyTime.unary_sub.comp
-        (hn.prod (ComputableTidilyInPolyTime.const 1))).prod harity))
-  have hfold := ComputableTidilyInPolyTime.foldl_of_bounded_growth
+      (ComputableInPolyTime.unary_add.comp ((ComputableInPolyTime.unary_sub.comp
+        (hn.prod (ComputableInPolyTime.const 1))).prod harity))
+  have hfold := ComputableInPolyTime.foldl_of_bounded_growth
     (encB := encPair encBool encUnary)
     (encIn := encList encToken) (encL := encList encToken)
     (list := fun ts : List (QBF.Kind × ℕ) => ts) (init := fun _ => (true, 1))
-    ComputableTidilyInPolyTime.id' (ComputableTidilyInPolyTime.const _) hstep (growth := 2)
+    ComputableInPolyTime.id' (ComputableInPolyTime.const _) hstep (growth := 2)
     (fun state t => by
       simp only [wfStep, length_encPair, encBool_apply, List.length_singleton, encUnary_apply,
         List.length_replicate]
       have : arity t.1 ≤ 2 := by cases t.1 <;> simp [arity]
       omega)
-  exact (ComputableTidilyInPolyTime.decide_eq' hfold (ComputableTidilyInPolyTime.const _)).of_enc_eq
+  exact (ComputableInPolyTime.decide_eq' hfold (ComputableInPolyTime.const _)).of_enc_eq
     fun _ => rfl
 
 
@@ -284,17 +279,13 @@ theorem isCode_iff (w : List Bool) : isCode w = true ↔ ∃ φ, encQBF φ = w :
 
 /-- Whether a word encodes a formula is decidable in polynomial time. -/
 theorem isCode_pt : Turing.MultiTapeTM.ComputableInPolyTime isCode encBits encBool := by
-  refine .of_tidy ?_
   obtain ⟨d, e, hD⟩ := tokensDecoder.computable
-  have hD : ComputableTidilyInPolyTime tokensDecoder.decode encBits (encList encToken) := by
-    obtain ⟨c, d, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.polyTime hD.computableInPolyTime
-    exact ⟨_, _, .of_forall_le c d (fun _ => le_rfl),
-      .of_forall_le c d (fun _ => le_rfl), k, Q, hfin, tm, htm⟩
-  have hre : ComputableTidilyInPolyTime (fun w => encList encToken (tokensDecoder.decode w))
+  have hD := hD.computableInPolyTime
+  have hre : ComputableInPolyTime (fun w => encList encToken (tokensDecoder.decode w))
       encBits encBits := hD.of_enc_eq fun _ => rfl
-  exact (ComputableTidilyInPolyTime.of_finite (fun q : Bool × Bool => q.1 && q.2)).comp
+  exact (ComputableInPolyTime.of_finite (fun q : Bool × Bool => q.1 && q.2)).comp
     ((wellFormed_pt.comp hD).prod
-      (ComputableTidilyInPolyTime.decide_eq' hre ComputableTidilyInPolyTime.id'))
+      (ComputableInPolyTime.decide_eq' hre ComputableInPolyTime.id'))
 
 open Classical in
 /-- The formula a word encodes, or `bot` if it encodes none. -/
@@ -312,8 +303,8 @@ private theorem encQBF_decodeQBF (w : List Bool) :
 
 /-- `decodeQBF` is polynomial-time. -/
 theorem decodeQBF_pt : Turing.MultiTapeTM.ComputableInPolyTime decodeQBF encBits encQBF :=
-  .of_tidy ((ComputableTidilyInPolyTime.ite' isCode_pt.tidy ComputableTidilyInPolyTime.id'
-    (ComputableTidilyInPolyTime.const (encQBF .bot))).of_enc_eq fun w => encQBF_decodeQBF w)
+  (ComputableInPolyTime.ite' isCode_pt ComputableInPolyTime.id'
+    (ComputableInPolyTime.const (encQBF .bot))).of_enc_eq fun w => encQBF_decodeQBF w
 
 theorem decodeQBF_encQBF (φ : QBF ℕ) : decodeQBF (encQBF φ) = φ :=
   encQBF.injective (by simp [encQBF_decodeQBF, (isCode_iff _).mpr ⟨φ, rfl⟩])
@@ -340,10 +331,10 @@ theorem mem_image_TQBF_iff (w : List Bool) :
 tested for encoding a formula in polynomial time, and then evaluated. -/
 theorem image_TQBF_mem_PSPACE : encQBF '' TQBF ∈ PSPACE encBits := by
   obtain ⟨e, he⟩ := exists_computableInO_evaluate
-  obtain ⟨dc, _, hc⟩ := isCode_pt.tidy.exists_degree
-  obtain ⟨dd, _, hd⟩ := decodeQBF_pt.tidy.exists_degree
-  have h := hc.inO.ite (he.tidy.comp hd.inO) (ComputableTidilyInO.const false)
-  refine mem_PSPACE_of_computableInO (.of_tidy <| h.mono_le (T' := _) (S' := fun w =>
+  obtain ⟨dc, _, hc⟩ := isCode_pt.exists_degree
+  obtain ⟨dd, _, hd⟩ := decodeQBF_pt.exists_degree
+  have h := hc.inO.ite (he.comp hd.inO) (ComputableInO.const false)
+  refine mem_PSPACE_of_computableInO (h.mono_le (T' := _) (S' := fun w =>
       (w.length + 1) ^ dc + ((w.length + 1) ^ dd +
         (w.length + (encQBF .bot).length + 1) ^ e + w.length)) (fun _ => le_rfl) fun w => ?_) ?_
     fun w => ?_

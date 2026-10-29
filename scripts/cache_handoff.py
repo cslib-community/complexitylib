@@ -45,6 +45,8 @@ def directory(path: Path) -> None:
 
 
 def source_context(root: Path, env: dict, event: str) -> dict:
+    disabled = str(env.get("DISABLE_BUILD_HANDOFF", "")).strip().lower()
+    require(disabled in ("", "0", "false", "no"), "Build handoff is disabled by DISABLE_BUILD_HANDOFF")
     require(env.get("GITHUB_EVENT_NAME") == event, f"Expected {event} event")
     if event == "push":
         require(env.get("GITHUB_REF") == "refs/heads/main", "Not a push to main")

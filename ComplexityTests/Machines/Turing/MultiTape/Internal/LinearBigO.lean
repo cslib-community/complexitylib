@@ -20,7 +20,7 @@ def word : List Bool ↪ List Bool := Function.Embedding.refl _
 
 run_elab do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
-      `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInBigO] do
+      `Turing.MultiTapeTM.ComputableTidilyInO] do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus: {name}"
 
@@ -34,29 +34,20 @@ theorem streamingIdentity :
     show tm.ComputesInTimeAndSpace w w (w.length + 1) 1 from
       ⟨(htm w).1, (htm w).2.1, (htm w).2.2.mono (Nat.zero_le 1)⟩
 
--- The charged predicate cannot be silently substituted for that contract.
-example : ¬ ComputableInO (fun w : List Bool => w) word word List.length (fun _ => 0) := by
-  rintro ⟨c, _, hl⟩
-  have h := hl (List.replicate (c + 1) true)
-  simp only [word, Function.Embedding.refl_apply, List.length_replicate, zero_add, mul_one] at h
-  omega
-
-example : ComputableInLinearTimeAndSpace (fun w : List Bool => w) word word :=
-  .of_eq fun _ => rfl
-
-example : ComputableInLinearTimeAndSpace (fun _ : List Bool => []) word word :=
-  .const []
-
-example : ComputableInLinearTimeAndSpace (fun _ : List Bool => []) word word :=
-  (ComputableInLinearTimeAndSpace.const []).comp (.of_eq fun _ => rfl)
-
--- Independent functions and unrelated input/output universes are preserved by normalization.
+-- The charged predicate cannot be silently substituted for that contract, while linear-time
+-- combinators and BigO normal forms preserve independent functions and universes.
 example {α β : Type*} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
     {f : α → β} {T S : α → ℕ} (h : ComputableInBigO f encIn encOut T S) :
-    ∃ c, ∃ (k : ℕ) (State : Type) (_ : Finite State) (tm : Turing.MultiTapeTM k Bool State),
+    (¬ ComputableInO (fun w : List Bool => w) word word List.length (fun _ => 0)) ∧
+    ComputableInLinearTimeAndSpace (fun w : List Bool => w) word word ∧
+    ComputableInLinearTimeAndSpace (fun _ : List Bool => []) word word ∧
+    (∃ c, ∃ (k : ℕ) (State : Type) (_ : Finite State) (tm : Turing.MultiTapeTM k Bool State),
       ∀ a, tm.ComputesTidilyInTimeAndSpace (encIn a) (encOut (f a))
-        (c * (T a + 1)) (c * (S a + 1)) := Internal.NormalForm.bigO h
-
-/-- info: 'Turing.MultiTapeTM.ComputableInLinearTimeAndSpace.comp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.MultiTapeTM.ComputableInLinearTimeAndSpace.comp
+        (c * (T a + 1)) (c * (S a + 1))) := by
+  refine ⟨?_, .of_eq fun _ => rfl,
+    (ComputableInLinearTimeAndSpace.const []).comp (.of_eq fun _ => rfl),
+    Internal.NormalForm.bigO h⟩
+  rintro ⟨c, _, hl⟩
+  have hc := hl (List.replicate (c + 1) true)
+  simp only [word, Function.Embedding.refl_apply, List.length_replicate, zero_add, mul_one] at hc
+  omega

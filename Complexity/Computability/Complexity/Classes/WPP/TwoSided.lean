@@ -23,8 +23,7 @@ of the differences between rejection targets and the original gap. This vanishes
 and on acceptance takes one of a uniformly computed family of nonzero products. The uniform
 product theorem and one-sided robustness then finish the construction.
 
-The public interfaces ask for `Turing.MultiTapeTM.ComputableInPolyTime` certificates, following
-the plain-statement convention of #456.
+The public interfaces ask for `Turing.MultiTapeTM.ComputableInPolyTime` certificates.
 
 ## Main results
 
@@ -53,14 +52,14 @@ private def transformedTargets (yes no : List ℤ) : List ℤ :=
 
 private theorem polyTime_transformedTargets {α : Type} {enc : α ↪ List Bool}
     {yes no : α → List ℤ}
-    (hy : ComputableTidilyInPolyTime yes enc (encList encIntBin))
-    (hn : ComputableTidilyInPolyTime no enc (encList encIntBin)) :
-    ComputableTidilyInPolyTime (fun a => transformedTargets (yes a) (no a))
+    (hy : ComputableInPolyTime yes enc (encList encIntBin))
+    (hn : ComputableInPolyTime no enc (encList encIntBin)) :
+    ComputableInPolyTime (fun a => transformedTargets (yes a) (no a))
       enc (encList encIntBin) := by
   unfold transformedTargets
-  apply ComputableTidilyInPolyTime.mapWithInput hy
-  apply ComputableTidilyInPolyTime.intBin_prod.comp
-  apply ComputableTidilyInPolyTime.mapWithInput (hn.comp (.fst enc encIntBin))
+  apply ComputableInPolyTime.mapWithInput hy
+  apply (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.intBin_prod).comp
+  apply ComputableInPolyTime.mapWithInput (hn.comp (.fst enc encIntBin))
   fun_prop
 
 private theorem transformedTargets_nonzero {yes no : List ℤ} (hd : yes.Disjoint no) :
@@ -80,7 +79,7 @@ theorem mem_WPP_of_disjoint_targets {α : Type} {enc : α ↪ List Bool} {A : Se
     (hyes : ∀ a, a ∈ A → g a ∈ yes a) (hno : ∀ a, a ∉ A → g a ∈ no a) :
     A ∈ WPP enc := by
   apply mem_WPP_of_polyTime_targets (GapP.prod_sub_mem hn hg)
-    (polyTime_transformedTargets hy.tidy hn.tidy).computableInPolyTime
+    (polyTime_transformedTargets hy hn)
     (fun a => transformedTargets_nonzero (hd a))
   · intro a ha
     exact List.mem_map.mpr ⟨g a, hyes a ha, rfl⟩
@@ -100,8 +99,8 @@ theorem mem_LWPP_of_disjoint_targets {α : Type} {enc : α ↪ List Bool} {A : S
     (hno : ∀ a, a ∉ A → g a ∈ no (enc a).length) : A ∈ LWPP enc := by
   apply mem_LWPP_of_polyTime_targets
     (GapP.prod_sub_mem
-      (hn.comp (ComputableTidilyInPolyTime.encoding_length enc).computableInPolyTime) hg)
-    (polyTime_transformedTargets hy.tidy hn.tidy).computableInPolyTime
+      (hn.comp (ComputableInPolyTime.encoding_length enc)) hg)
+    (polyTime_transformedTargets hy hn)
     (fun n => transformedTargets_nonzero (hd n))
   · intro a ha
     exact List.mem_map.mpr ⟨g a, hyes a ha, rfl⟩

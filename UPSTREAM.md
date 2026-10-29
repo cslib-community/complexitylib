@@ -40,6 +40,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   and their helpers) and the blocks marked `@9cce4cc7` in older copies come from a later local
   rewrite of the branch that is not yet published; `scripts/upstream_sync.py` reports them
   against the published head until it is. The rest of the branch is still copied at `@7f7c0696`.
+* **Universal simulation.** The local universal interpreter preserves Christian Reitwiessner’s
+  description format and execution semantics. Its resource certificates now separate
+  transition-description size and binary input-head length from the copied configuration;
+  `Universal/Input` uses the existing native streaming fold to emit a selected input symbol
+  without repeatedly copying list tails. Retain these local improvements when synchronizing
+  `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
+  This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
 * **Polynomial bounds.** The tidy calculus's size-parameterized `PolyBounded` adapts CSLib's
   `PolynomiallyBounded` and shares its closure API. Coordinate this adaptation with the tidy
   branch; preserve it when resynchronizing the vendored files.
@@ -133,6 +140,96 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   bound (`hStepsBound`) and a polynomial bound on the encoded intermediate run results
   (`hOutLen`); `transport_polyTime_of_le_const` derives both from a constant step bound. Uniform
   arbitrary-program dispatch and charged configuration selection remain separate.
+* **Signed programs on unsigned words.** `WordRAM/Signed/*` reuse `GenericRAM.Signed`'s
+  range, arithmetic and interpreter. The sign-and-magnitude encoding needs one extra unsigned
+  bit; the arithmetic blocks use two. `State`, `Operations`, `Compile` and `Input` extend them
+  to complete programs over the full five-operation signed model (constants, copies,
+  addition, subtraction, multiplication, Euclidean division/remainder with Lean's total
+  zero-divisor conventions, memory, signed tests, jumps and halt). Successful source runs of `t`
+  instructions transfer to one fixed unsigned program at width `w + 2` within `32*t + 5`
+  instructions, including the five-instruction length header conversion and the final halt. Each
+  source integer uses one target word, source memory addresses are unchanged, nine scratch
+  registers precede the source register bank, and each source instruction occupies sixty-four
+  target code slots. Code labels need not fit a data word in the target model. Run-prefix
+  theorems preserve the complete source memory and register bank. This is forward correctness,
+  not reflection of source faults; transfer from Anthropic's modular signed machine and its
+  3SUM/APSP algorithms remains separate.
+* **Direct 3SUM adaptation.** `Algorithms/ThreeSum/Convolution.lean` adapts the explicit
+  Convolution-3SUM to Exact Triangle correctness reduction from Anthropic's
+  [`formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`](https://github.com/anthropics/formal-math/tree/16a5ce41304fcdaea4e0be7c132e1c361dc26da5/3sum-apsp),
+  `Sec3/Theorem21a/Convolution.lean`. Its reduction uses the arbitrary-matrix predicate in
+  `Algorithms/ExactTriangle/Defs.lean`, shared with future Exact Triangle solvers.
+  The three weight matrices use the original formulas; an explicit nonnegative magnitude bound
+  also handles empty input. The native builder in `Algorithms/WordRAM/ThreeSum/{Cell,Fill,Memory}.lean`
+  extends the one-weight kernel with index/address calculations and the complete matrix loop.
+  Given its arguments in registers, it writes one instance in at most `131*t² + 5` instructions
+  at width `w + 2`, excluding the halt; its theorem identifies the three encoded matrices and
+  preserves the input. Layout, signed index/filler bounds and target address bounds are explicit.
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics
+  were copied. `Algorithms/WordRAM/ThreeSum/Host/` adds the complete charged native host: ordinary
+  header initialization, polynomial magnitude computation, square root, consecutive matrix layout,
+  all `2t` instances and a finite solver program in a disjoint register bank. Its initialized run
+  theorem connects the actual pre-halt state to the Convolution-3SUM answer and preserves the input.
+  The host's source-width threshold is `(20κ+125)clog₂(N+2)`; signed kernels use target width `w+2`.
+  This remains conditional on the supplied solver's native execution/correctness/frame theorem;
+  it does not establish a fast solver. Native Chan–He preprocessing, fast Exact Triangle and full
+  input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
+
+  `Algorithms/ThreeSum/ThreeSets.lean` and `ArrayPacking.lean` provide the generic distinct-position
+  frontend and three-array packing. `Algorithms/ThreeSum/ChanHe/` now adapts the core mathematical
+  reduction: minimum-prime searches, collision/heavy-element bounds, light-element arrays, bounded
+  ternary recursion and composition with the frontend. At polynomial magnitudes it gives explicit
+  length, count and magnitude bounds; `scanPairs` counts candidate-prime/element pairs and is not
+  a charged running time. Generic finite-average and prime-counting lemmas live in Foundations.
+  See milestone [#1435](https://github.com/cslib-community/complexitylib/issues/1435).
+  `Algorithms/ExactTriangle/Lopsided.lean` adapts the finite unweighted lopsided query/counting
+  interface from the same pin's `Sec3/MatrixLanguage.lean`: arbitrary-injection zero padding,
+  common-neighbor counts as product entries, detection, the zero/one converse, and signed products
+  from `4 * β²` count instances with the original queried edges. Its digit identities live in
+  `Foundations/Data/Matrix/IntegerBits.lean`, reuse Mathlib's pointwise positive/negative parts,
+  with descriptive lemmas in `Cslib.Matrix`. The scalar magnitude-bit bound, including zero,
+  lives in `Foundations/Data/Int/LogBounds.lean`. Count answers use `Set.EqOn`; detection
+  consumes a direct iff on queried edges. No additional weighted-triangle predicate or source
+  machine is introduced.
+  This is the mathematical interface milestone
+  [#1438](https://github.com/cslib-community/complexitylib/issues/1438), with no sparsity assumption,
+  preprocessing/time claim or solver. `Algorithms/ExactTriangle/{Weights,Hashing}.lean` now adapts
+  the modular counting/coefficient identities, minimum-count prime and uniform false-positive
+  bound from `Sec3/Theorem17/Hashing.lean`, using supplied matrices and the existing decision
+  predicate. The application-independent `Nat.sqrtPrimeWindow` API lives in
+  `Foundations/NumberTheory/SqrtPrimeWindow.lean`; its integer-square characterization supports
+  native enumeration, and splitting and witness recovery reuse it.
+  The quotient/coefficient API lives in `Foundations/RingTheory/CyclicIntRing.lean`; the uniform
+  all-window prime-count bound lives in `Foundations/NumberTheory/PrimeWindow.lean`, retaining
+  the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
+  statements, not native instructions or an assumed solver. See
+  [#1442](https://github.com/cslib-community/complexitylib/issues/1442).
+  `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
+  witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
+  using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
+  retain the source's exact real floor/ceiling specifications through checked bridges.
+  `Algorithms/MatrixMultiplication/Schonhage/` adapts the tensor-recursion core from the same pin's
+  `Sec2/{Lemma6,Recursion,Lemma7_8,Lemma10}.lean`: the ten-term polynomial identity with explicit
+  error, full evaluation, shared encodings, pruned values, visited leaves and passed-set totals.
+  Its pure finite recursion traces are not native machine semantics or charged instruction costs.
+  The zero-depth empty-query root exception is explicit, with an unconditional root-or-leaf API.
+  See [#1459](https://github.com/cslib-community/complexitylib/issues/1459). The complete finite
+  thin-product component ([#1463](https://github.com/cslib-community/complexitylib/issues/1463))
+  adapts `Sec2/{Levels,Lemma9,Tiling,Orders,Lemma11,Theorem5}` and needed finite magnitude bounds.
+  Layouts contain only indexing choices, whose existence is proved; sparse bounds are derived
+  from exact contributing-leaf counts. Generic function-position counts, ordered gluing, binomial
+  and finite-sum bounds live in small Foundations modules. Mathlib `Finset.orderEmbOfFin` indexes
+  both a level set and its complement, and `Finset.piecewise` restricts answers. No source machine,
+  problem-statement universe or solver/time hypothesis is imported.
+  The existing signed and unsigned APIs were reused; no source machine or separate run semantics were copied.
+  Tensor/sparse query programs, the full reduction host, native Chan–He preprocessing, fast Exact
+  Triangle and full input/time/width/asymptotic composition remain in
+  [#1394](https://github.com/cslib-community/complexitylib/issues/1394), including the improved
+  Section 4 route needed for the published exponent 1.9992. Anthropic's copyright and attribution
+  are retained; the native proofs and representation choices are local.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
@@ -211,6 +308,7 @@ agreement during upstream review.
 | `Foundations/Combinatorics/{FiniteCover,Hoeffding,Hypergeometric,PowersetTail,Sunflower}` | Consider Mathlib combinatorics; probabilistic-method lemmas belong near `Combinatorics/Probabilistic`. |
 | `Foundations/Data/Finset/Expect` | Product-type expectation helpers extracted from `Foundations/Combinatorics/Expander/Products` (#317); Mathlib candidates. |
 | `Foundations/Data/Finset/Markov` | Mathlib candidate: `Algebra/Order/BigOperators/Group/Finset` (`Finset.card_filter_mul_le_sum`, `Finset.mul_card_filter_le_sum`). |
+| `Foundations/Data/Finset/OrderGlue` | Follow-up to #1496: rename the generic `forall_level_iff`, `exists_innerLevel`, `outerLevel_notMem` and `filter_glue` using order-embedding/complement terminology (for example `forall_iff_orderEmb_and_compl`), retaining this topic module. Migrate the concrete `Schonhage/Levels` and `Schonhage/Batch` clients together with the active native band-preparation client; defer that API migration until the latter is stable. |
 | `Foundations/Data/Matrix/Permanent` | Mathlib candidate: Laplace expansion of the permanent along row and column 0, beside `LinearAlgebra/Matrix/Permanent` (mirroring `Matrix.det_succ_row_zero`). |
 | `Foundations/LinearAlgebra/{Rank,Matrix/CutRank,Matrix/Lindsey}` | Mathlib candidates: `LinearAlgebra/Dimension/LinearMap` and `LinearAlgebra/Matrix/Rank`; placement of Lindsey's lemma needs agreement. |
 | `Probability/PairwiseIndependentHash/Shift` | Consider integration into `PairwiseIndependentHash`. |

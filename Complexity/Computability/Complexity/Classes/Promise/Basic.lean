@@ -214,21 +214,15 @@ theorem mem_PromiseNP_iff : Q ∈ PromiseNP enc ↔ ∃ (p : Polynomial ℕ) (V 
     ComputableInPolyTime V (encPair enc encBits) encBool ∧
       (∀ a ∈ Q.yes, ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true) ∧
       ∀ a ∈ Q.no, ∀ w : List Bool, w.length = p.eval (enc a).length → V (a, w) = false := by
-  have this : Q ∈ PromiseNP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-      (∀ a ∈ Q.yes, ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true) ∧ ∀ a ∈
-      Q.no, ∀ w : List Bool, w.length = p.eval (enc a).length → V (a, w) = false := by
-    constructor
-    · rintro ⟨A, ⟨p, V, hV, h⟩, hyes, hno⟩
-      refine ⟨p, V, hV.tidy, fun a ha => (h a).1 (hyes ha), fun a ha w hw => ?_⟩
-      rw [← Bool.not_eq_true]
-      exact fun hVw => Set.disjoint_right.1 hno ha ((h a).2 ⟨w, hw, hVw⟩)
-    · rintro ⟨p, V, hV, hyes, hno⟩
-      refine ⟨{a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true},
-        ⟨p, V, .of_tidy hV, fun _ => Iff.rfl⟩, hyes, Set.disjoint_right.2 fun a ha ⟨w, hw, hVw⟩ =>
-          ?_⟩
-      simp [hno a ha w hw] at hVw
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  constructor
+  · rintro ⟨A, ⟨p, V, hV, h⟩, hyes, hno⟩
+    refine ⟨p, V, hV, fun a ha => (h a).1 (hyes ha), fun a ha w hw => ?_⟩
+    rw [← Bool.not_eq_true]
+    exact fun hVw => Set.disjoint_right.1 hno ha ((h a).2 ⟨w, hw, hVw⟩)
+  · rintro ⟨p, V, hV, hyes, hno⟩
+    refine ⟨{a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ V (a, w) = true},
+      ⟨p, V, hV, fun _ => Iff.rfl⟩, hyes, Set.disjoint_right.2 fun a ha ⟨w, hw, hVw⟩ => ?_⟩
+    simp [hno a ha w hw] at hVw
 
 @[simp] theorem ofSet_mem_PromiseNP {A : Set α} : ofSet A ∈ PromiseNP enc ↔ A ∈ NP enc :=
   ofSet_mem_promiseClass

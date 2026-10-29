@@ -6,7 +6,6 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.Classes.Padding
 import Complexity.Computability.Complexity.Classes.RP
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-! Padding: the padded problem of a nondeterministic machine, the translation lemma and
 `P = NP → EXP = NEXP`; and error reduction for deciders of a nontrivial problem. -/
@@ -19,42 +18,34 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
 /-- `2 ^ n` is computed in unary from any word of length `n` within time
 `O(n + (n + 1) * 2 ^ n)`: the hypothesis of the translation lemma is satisfiable. -/
-theorem computableTidilyInO_two_pow_length :
-    ComputableTidilyInO (fun x : List Bool => 2 ^ x.length) encBits encUnary
+theorem computableInO_two_pow_length :
+    ComputableInO (fun x : List Bool => 2 ^ x.length) encBits encUnary
       (fun x => x.length + (x.length + 1) * 2 ^ x.length)
       fun x => x.length + 2 ^ x.length :=
-  ComputableTidilyInO.unary_two_pow.comp ComputableTidilyInO.lengthUnary
+  ComputableInO.unary_two_pow.comp ComputableInO.lengthUnary
 
 /-- The translation lemma for nondeterministic time `O(2 ^ n)`. -/
 example (hNP : NP encBits ⊆ P encBits) :
     NTIME encBits (2 ^ ·) ⊆
       ⋃ d, DTIME encBits fun n => (n + (n + (n + 1) * 2 ^ n) + 1) ^ d :=
-  NTIME_subset_iUnion_DTIME_of_NP_subset_P hNP (.of_tidy computableTidilyInO_two_pow_length)
+  NTIME_subset_iUnion_DTIME_of_NP_subset_P hNP computableInO_two_pow_length
 
-/-- Every nondeterministic machine has a padded problem in `NP`. -/
-example {k : ℕ} {State : Type} [Finite State] (ntm : MultiTapeNTM k Bool State) (c : ℕ) :
-    ntm.padded c ∈ NP encBits :=
-  ntm.padded_mem_NP c
-
-/-- **Padded instances decide the original problem.** A problem in `NTIME t` is the preimage of
-the padded problem of its machine along `a ↦ frame (enc a) ++ 1 ^ t n`, for enough coins per
-padded bit. -/
+/-- **Padded instances decide the original problem.** Every nondeterministic machine has a padded
+problem in `NP`, and a problem in `NTIME t` is the preimage of the padded problem of its machine
+along `a ↦ frame (enc a) ++ 1 ^ t n`, for enough coins per padded bit. -/
 example {α : Type} {enc : α ↪ List Bool} {t : ℕ → ℕ} {A : Set α} (hA : A ∈ NTIME enc t) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (ntm : MultiTapeNTM k Bool State) (c : ℕ),
-      ∀ a, frame (enc a) ++ List.replicate (t (enc a).length) true ∈ ntm.padded c ↔ a ∈ A := by
+      ntm.padded c ∈ NP encBits ∧
+        ∀ a, frame (enc a) ++ List.replicate (t (enc a).length) true ∈ ntm.padded c ↔ a ∈ A := by
   obtain ⟨c₁, c₂, k, State, hfinite, ntm, hdec⟩ := hA
   refine ⟨k, State, hfinite, ntm, Nat.card (Turing.Action k Bool State) * (c₁ + c₂),
-    fun a => hdec.frame_append_mem_padded_iff ?_⟩
+    ntm.padded_mem_NP _, fun a => hdec.frame_append_mem_padded_iff ?_⟩
   rw [List.length_append, List.length_replicate, length_frame, Nat.mul_assoc]
   exact Nat.mul_le_mul_left _ (by nlinarith)
 
-/-- `P = NP` would collapse exponential time, for problems on bit words and on natural numbers in
-binary. -/
-example (h : P encBits = NP encBits) : EXP encBits = NEXP encBits ∧ E encNat = NE encNat :=
-  ⟨EXP_eq_NEXP_of_P_eq_NP h, E_eq_NE_of_P_eq_NP h⟩
-
-example (h : EXP encNat ≠ NEXP encNat) : P encBits ≠ NP encBits :=
-  P_ne_NP_of_EXP_ne_NEXP h
+/-- Separating linear-exponential time `E` and `NE` separates `P` from `NP`. -/
+example : E encNat ≠ NE encNat → P encBits ≠ NP encBits :=
+  fun hE hP => hE (E_eq_NE_of_P_eq_NP hP)
 
 /-! ### Error reduction on a nontrivial problem -/
 
@@ -80,18 +71,22 @@ theorem decidesWithBoundedError_orAnd : DecidesWithBoundedError encBits 2 orAnd 
     decide
   rcases ha : a.headD false
   · refine ⟨fun h => absurd (ha.symm.trans h) Bool.false_ne_true, fun _ => ?_⟩
-    simp only [orAnd, ha, Bool.false_eq_true, ↓reduceIte]
+    simp only [BoundedErrorAt, orAnd, ha, Bool.false_eq_true, ↓reduceIte]
     exact hand _ (Polynomial.eval_ofNat 2 _)
   · refine ⟨fun _ => ?_, fun h => absurd ha h⟩
-    simp only [orAnd, ha, ↓reduceIte]
+    simp only [BoundedErrorAt, orAnd, ha, ↓reduceIte]
     exact hor _ (Polynomial.eval_ofNat 2 _)
 
 /-- Majority votes of `12 q(n)` runs of `orAnd` decide `startsTrue` with error at most
-`2 ^ (-q(n))`. -/
+`2 ^ (-q(n))`, and at `q + 2` recover bounded error `1 / 3`. -/
 example (q : Polynomial ℕ) :
     DecidesWithErrorExponent encBits q (12 * q * 2) (repeatMajority encBits (6 * q) 2 orAnd)
-      startsTrue :=
-  decidesWithBoundedError_orAnd.repeatMajority q
+      startsTrue ∧
+    DecidesWithBoundedError encBits (12 * (q + 2) * 2)
+      (repeatMajority encBits (6 * (q + 2)) 2 orAnd) startsTrue :=
+  ⟨decidesWithBoundedError_orAnd.repeatMajority q,
+    (decidesWithBoundedError_orAnd.repeatMajority (q + 2)).solvesWithBoundedError
+      (fun _ => by simp)⟩
 
 example : startsTrue ∈ BPP encBits :=
   ⟨2, orAnd, by unfold orAnd; fun_prop, decidesWithBoundedError_orAnd⟩
@@ -113,11 +108,16 @@ theorem decidesWithOneSidedError_andHead :
     simp only [andHead, ha, Bool.true_and]
     exact key _ Polynomial.eval_one
 
-/-- `q(n)` runs of `andHead` decide `startsTrue` with one-sided error at most `2 ^ (-q(n))`. -/
+/-- `q(n)` runs of `andHead` decide `startsTrue` with one-sided error at most `2 ^ (-q(n))`, and
+at `q + 1` recover one-sided error `1 / 2`. -/
 example (q : Polynomial ℕ) :
     DecidesWithOneSidedErrorExponent encBits q (q * 1) (repeatAny encBits q 1 andHead)
+      startsTrue ∧
+    DecidesWithOneSidedError encBits ((q + 1) * 1) (repeatAny encBits (q + 1) 1 andHead)
       startsTrue :=
-  decidesWithOneSidedError_andHead.repeatAny q
+  ⟨decidesWithOneSidedError_andHead.repeatAny q,
+    (decidesWithOneSidedError_andHead.repeatAny (q + 1)).solvesWithOneSidedError
+      (fun _ => by simp)⟩
 
 example : startsTrue ∈ RP encBits :=
   ⟨1, andHead, by unfold andHead; fun_prop, decidesWithOneSidedError_andHead⟩

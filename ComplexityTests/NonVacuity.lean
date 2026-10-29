@@ -68,7 +68,7 @@ theorem computesTidily_constTM (b : Bool) (w : List Bool) :
     (constTM b).ComputesTidilyInTimeAndSpace w [b] 1 0 := by
   rw [computesTidily_iff]
   refine ⟨.ofDeterministic (constTM b) (wordsCfg w (some (constTM b).q₀) (fun _ => []) []) 1, rfl,
-    ?_, le_rfl, (space_zero_tapes_eq_zero _ _ rfl).le⟩
+    ?_, le_rfl, by simp [MultiTapeNTM.RunPath.space]⟩
   rw [MultiTapeNTM.RunPath.last_ofDeterministic, runFrom_one, step_of_state (q := ()) rfl]
   simp only [constTM, tr_ofTr, wordsCfg, Action.apply, moveInputPos_zero]
   congr <;> funext i <;> exact i.elim0
@@ -78,27 +78,23 @@ theorem polyTime_const {α : Type} (enc : α ↪ List Bool) (b : Bool) :
   ⟨fun _ => 1, fun _ => 0, .const 1, .const 0,
     0, Unit, inferInstance, constTM b, fun a => computesTidily_constTM b (enc a)⟩
 
-example : (∅ : Set (List Bool)) ∈ Cslib.Complexity.P encBits :=
-  ⟨fun _ => false, .const false, fun _ => by simp⟩
-
-example : (Set.univ : Set (List Bool)) ∈ Cslib.Complexity.P encBits :=
-  ⟨fun _ => true, .const true, fun _ => by simp⟩
-
-example : (∅ : Set (List Bool)) ∈ NP encBits :=
-  ⟨0, fun _ => false, .const false, fun _ => by simp⟩
-
-example : (Set.univ : Set (List Bool)) ∈ NP encBits :=
-  ⟨0, fun _ => true, .const true, fun _ => by simp⟩
-
-example : (∅ : Set (List Bool)) ∈ BPP encBits :=
-  ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ => by
-      simp only [Polynomial.eval_zero, pow_zero, mul_one]
+example :
+    (∅ : Set (List Bool)) ∈ Cslib.Complexity.P encBits ∧
+    (Set.univ : Set (List Bool)) ∈ Cslib.Complexity.P encBits ∧
+    (∅ : Set (List Bool)) ∈ NP encBits ∧
+    (Set.univ : Set (List Bool)) ∈ NP encBits ∧
+    (∅ : Set (List Bool)) ∈ BPP encBits ∧
+    (∅ : Set (List Bool)) ∈ RP encBits :=
+  ⟨⟨fun _ => false, .const false, fun _ => by simp⟩,
+   ⟨fun _ => true, .const true, fun _ => by simp⟩,
+   ⟨0, fun _ => false, .const false, fun _ => by simp⟩,
+   ⟨0, fun _ => true, .const true, fun _ => by simp⟩,
+   ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ => by
+      simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
       exact le_trans (by norm_num : 2 ≤ 3 * 1)
         (Nat.mul_le_mul_left 3 (Finset.card_pos.2
-          ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩
-
-example : (∅ : Set (List Bool)) ∈ RP encBits :=
-  ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ _ => rfl⟩⟩
+          ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩,
+   ⟨0, fun _ => false, .const false, fun _ => ⟨fun h => h.elim, fun _ _ => rfl⟩⟩⟩
 
 /-- `P ⊆ P/poly` applies to a language in `P`. -/
 example : (⊤ : Language Bool) ∈ PPoly :=
@@ -109,37 +105,30 @@ example : (⊤ : Language Bool) ∈ PPoly :=
 example : (⊥ : Language Bool) ∈ PPoly :=
   mem_PPolyOn_encBits_iff.1 (BPP_subset_PPolyOn ⟨0, fun _ => false, .const false,
     fun _ => ⟨fun h => h.elim, fun _ => by
-      simp only [Polynomial.eval_zero, pow_zero, mul_one]
+      simp only [BoundedErrorAt, Polynomial.eval_zero, pow_zero, mul_one]
       exact le_trans (by norm_num : 2 ≤ 3 * 1)
         (Nat.mul_le_mul_left 3 (Finset.card_pos.2
           ⟨fun _ => false, Finset.mem_filter.2 ⟨Finset.mem_univ _, trivial⟩⟩))⟩⟩)
 
-/-- The monotone lower bound for cliques is about a finite complexity. -/
-example : Cslib.Circuits.ecomplexity Cslib.Circuits.Monotone.interpretation
-    (Cslib.Circuits.single (Cslib.Circuits.clique 16 2)) ≠ ⊤ :=
-  Cslib.Circuits.Monotone.ecomplexity_clique_ne_top 16 2
-
-/-- Schnorr's bound applies to the parity of three bits, which has De Morgan circuits. -/
-example : 6 ≤ Cslib.Circuits.complexity Cslib.Circuits.Boolean.interpretation
-    (Cslib.Circuits.single (Cslib.parity 3)) :=
-  Cslib.Circuits.Boolean.three_mul_le_complexity_parity 3
-
-/-- Khrapchenko's bound applies to the parity of four bits, which has a formula of leaf size 16. -/
-example : ∃ F : Cslib.Circuits.Formula Cslib.Circuits.Boolean.signature (2 ^ 2),
-    F.Computes Cslib.Circuits.Boolean.interpretation (Cslib.parity (2 ^ 2)) ∧
-      F.leafSize = 16 :=
-  Cslib.Circuits.Boolean.exists_formula_parity_two_pow 2
-
-/-- The constant-depth classes are inhabited, by the constants. -/
-example : (⊤ : Language Bool) ∈ AC0 ∧ (⊥ : Language Bool) ∈ AC0 :=
-  ⟨ConstDepth.top_mem (Cslib.Circuits.Signature.Hom.id _),
-    ConstDepth.bot_mem (Cslib.Circuits.Signature.Hom.id _)⟩
-
-example : (⊤ : Language Bool) ∈ TC0 :=
-  ConstDepth.top_mem Unbounded.toExt
-
-example : (⊥ : Language Bool) ∈ AC0Mod 3 :=
-  ConstDepth.bot_mem Unbounded.toExt
+/-- The monotone lower bound for cliques, Schnorr's and Khrapchenko's parity bounds, and the
+constant-depth classes (`AC0`, `TC0`, `AC0Mod 3`) are inhabited. -/
+example :
+    Cslib.Circuits.ecomplexity Cslib.Circuits.Monotone.interpretation
+      (Cslib.Circuits.single (Cslib.Circuits.clique 16 2)) ≠ ⊤ ∧
+    6 ≤ Cslib.Circuits.complexity Cslib.Circuits.Boolean.interpretation
+      (Cslib.Circuits.single (Cslib.parity 3)) ∧
+    (∃ F : Cslib.Circuits.Formula Cslib.Circuits.Boolean.signature (2 ^ 2),
+      F.Computes Cslib.Circuits.Boolean.interpretation (Cslib.parity (2 ^ 2)) ∧
+        F.leafSize = 16) ∧
+    ((⊤ : Language Bool) ∈ AC0 ∧ (⊥ : Language Bool) ∈ AC0 ∧
+      (⊤ : Language Bool) ∈ TC0 ∧ (⊥ : Language Bool) ∈ AC0Mod 3) :=
+  ⟨Cslib.Circuits.Monotone.ecomplexity_clique_ne_top 16 2,
+   Cslib.Circuits.Boolean.three_mul_le_complexity_parity 3,
+   Cslib.Circuits.Boolean.exists_formula_parity_two_pow 2,
+   ⟨ConstDepth.top_mem (Cslib.Circuits.Signature.Hom.id _),
+    ConstDepth.bot_mem (Cslib.Circuits.Signature.Hom.id _),
+    ConstDepth.top_mem Unbounded.toExt,
+    ConstDepth.bot_mem Unbounded.toExt⟩⟩
 
 /-- First-order model checking applies: over the empty language, the atomic facts of a structure
 on `Fin n` are enumerated by `Fin 0`. -/
@@ -170,11 +159,11 @@ example : (Cslib.Circuits.Circuit.oneGate (σ := Unbounded.signature) (n := 1) .
       1 := by
   decide
 
-/-- The tidy normal form applies to upstream's machine for the identity, which is not tidy: it
-leaves its input head at the end of the input. -/
-example {α : Type} (enc : α ↪ List Bool) :
-    ∃ c, ComputableTidilyInTimeAndSpace (id : α → α) enc enc
-      (fun a => 2 * ((enc a).length + 1) + 3 * 0 + c) (fun _ => c * (0 + 1)) :=
+/-- The tidy normal form applies to upstream's machine for the identity on `encBits`, which is not
+tidy: it leaves its input head at the end of the input. -/
+example :
+    ∃ c, ComputableTidilyInTimeAndSpace (id : List Bool → List Bool) encBits encBits
+      (fun a => 2 * ((encBits a).length + 1) + 3 * 0 + c) (fun _ => c * (0 + 1)) :=
   computableInTimeAndSpace_id.exists_computableTidilyInTimeAndSpace
 
 /-- The Fourier analysis of the cube applies to any finite index type: on the cube `Bool → Bool`,

@@ -1,12 +1,21 @@
 # Project Instructions
 
 Complexitylib is a Lean 4 library of computational complexity theory built on **cslib**
-(`leanprover/cslib`). Its defining constraint: **every module must be upstreamable into cslib
-unchanged**, apart from rewriting the import prefix `Complexity.` → `Cslib.`. cslib's own rules
-therefore apply here verbatim; read cslib's `AGENTS.md`, `CONTRIBUTING.md` and `CODESTYLE.md`
-(pinned checkout: `.lake/packages/cslib`, or a local clone at `../cslib`) and follow them.
-`ROADMAP.md` records outstanding work;
-`UPSTREAM.md` records coordination and exceptional integration decisions.
+(`leanprover/cslib`). Library modules must be upstreamable unchanged apart from rewriting
+`Complexity.` → `Cslib.`. General mathematics destined for Mathlib and local project scaffolding
+are documented exceptions; see `UPSTREAM.md` and the source markers.
+
+Read the pinned cslib `AGENTS.md`, `CONTRIBUTING.md` and `CODESTYLE.md` in
+`.lake/packages/cslib` (or a checkout at the same revision). Follow its mathematical, API and
+style conventions. This repository's workflow, validation and test layout are defined here and
+in `CONTRIBUTING.md`; when submitting upstream, follow that repository's current process.
+`ROADMAP.md` records outstanding directions; `UPSTREAM.md` records coordination decisions.
+
+At the start of work and when resuming, read the current checkout's instructions. Old task text
+and copied policy snapshots may describe superseded decisions. Surface material conflicts with
+current user instructions rather than silently following stale policy; explicit user directions
+control. Keep policy changes focused on recurring problems, and update linked guidance and
+templates together instead of adding another exception for each incident.
 
 ## Writing in issues and PRs
 
@@ -29,17 +38,16 @@ Each agent works as either a **coordinator** or a **worker**. Follow the role as
 human or coordinating agent; otherwise default to worker. State your role when starting work.
 Changing roles does not make an author eligible to approve their own changes.
 
-Maximize useful parallel progress: both coordinators and workers may handle multiple tasks
-and spawn subagents. Roles define responsibilities, not concurrency limits. Give each subagent
-a role and a clear scope; use separate issues for independently deliverable tasks and record
-smaller delegated subtasks in the parent issue. Keep ownership, branches, and mutable build
-outputs distinct where concurrent edits could conflict. The delegating agent remains responsible
-for tracking delegated work, keeping issue status current, and bringing results to completion.
+Use parallel agents where their work can proceed independently. Give each a role, clear scope
+and distinct ownership, branches and mutable build outputs. The delegating agent tracks the
+work and brings it to completion. When review or integration is the bottleneck, prioritize
+requested fixes, reviews and landing existing work before starting more PRs.
 
-Issues are the task queue and durable record of ownership and progress. Humans, coordinators,
-and workers may create tasks. Search existing issues and PRs before creating a duplicate; use
-an existing human-created issue when it describes the work. Give each task a concrete scope,
-completion criteria, and relevant dependencies.
+Use issues for substantial tasks, dependencies and remaining objectives; a small fix may use its
+PR as the durable task record. Search existing issues and PRs before creating a duplicate.
+Record smaller delegated subtasks in the parent task. Split work into independently useful,
+reviewable changes; batch closely related mechanical fixes when they share a contract and
+validation. Do not create a separate issue or PR for each incidental cleanup.
 
 ### Completion and scope
 
@@ -63,8 +71,9 @@ documentation progress.
 
 ### Durable records
 
-The issue owns scope, ownership and remaining work; the PR owns the final change, validation and
-review. Link between them instead of mirroring reports. Record tested and reviewed revisions once,
+When there is an issue, it owns scope, ownership and remaining work; the PR owns the final
+change, validation and review. For small fixes without an issue, the PR holds both. Link between
+records instead of mirroring reports. Record tested and reviewed revisions once,
 in GitHub review/CI metadata or a concise PR record; link reusable evidence rather than reproducing
 it. Without a PR, record evidence in the commit description and link it from the issue.
 A local path alone is insufficient for a handoff.
@@ -74,39 +83,28 @@ when a milestone completes only part of it.
 
 ### Workers
 
-1. Before implementation, create or claim an issue and assign it to yourself. Post a claim
-   comment identifying your agent/session, scope, and branch or worktree. Agents sharing a
-   GitHub account must use distinct agent/session IDs in comments; the assignee alone does not
-   identify the active worker. A worker may own multiple active issues; identify the responsible
-   agent for each delegated task in its issue.
-2. Post a brief issue update at least hourly while active or retaining blocked work, and when
-   blocked, handing off or stopping. Give the agent/session, state and next step; link the branch
-   or PR for code and evidence. One line suffices when nothing changed. A delegating agent may
-   report for its workers. Do not promise unattended updates after stopping.
-3. If active work has had no status report from its owner or delegating agent for **three hours**,
-   another worker may claim it. Re-read the issue and linked PR immediately before taking over,
-   post a takeover comment, update the assignment, and verify ownership before editing.
-   Preserve existing work and credit.
-   If claims overlap, ask a coordinator to resolve ownership; do not work competing versions.
-   A returning worker must check ownership before resuming. Explicitly released work is
-   available immediately.
-4. Implement, self-review, and validate according to the requirements below. Include documentation
-   changes caused by your work and assess the headline abstract catalogue before submitting the PR.
-5. When ready, open a PR linked to the issue, record validation and remaining limitations, and
-   request coordinator review. Post an `awaiting review` status with the PR link in the issue.
-   Keep the issue open until the work is merged or explicitly dispositioned by a coordinator.
-   Awaiting review is a handoff, not abandoned active work: hourly worker reports and the
-   three-hour takeover rule are suspended while the PR waits in the coordinator's queue.
-6. Await coordinator review for that PR while progressing other tasks; do not approve or merge
-   your own PR. Address requested changes on your open PRs before opening new ones, post an
-   `active` status when resuming,
-   restart hourly reports, and request fresh review of the updated revision. If unavailable,
-   release the task explicitly so another worker can take over.
+1. Before substantial implementation, claim the existing issue or create one with concrete scope
+   and completion criteria. Identify your agent/session and branch in the task record; assign
+   the issue when possible. For a small fix, record this in the PR instead. A shared GitHub
+   account does not identify the active agent.
+2. Update the task when scope changes, a blocker needs help, work is handed off, or you stop.
+   Give the state and next step, linking code or evidence. Keep unchanged polling and internal
+   agent discussion out of public threads. Do not promise unattended updates after stopping.
+3. Before taking over, inspect the issue, linked PR, recent commits and available activity
+   evidence; contact the owner or coordinating agent. Silence or elapsed time alone does not
+   release ownership. Explicitly released work is available immediately; a coordinator may
+   reassign stale work after checking activity and notifying the owner. Preserve work and credit,
+   resolve overlapping claims before editing, and check ownership when returning.
+4. Implement, self-review and validate. Update documentation and selected abstracts when the
+   change affects them, according to the requirements below.
+5. Open a PR with validation and limitations; link its issue when there is one and request
+   coordinator review. Record the handoff once. Awaiting review is not abandoned work. Keep
+   linked issues open until integration or an explicit disposition.
+6. Address requested changes on open PRs before starting more work. Request review of the delta
+   after fixes; release work explicitly if unavailable. Do not approve or merge your own PR.
 
-Use plain issue comments for states such as `active`, `blocked`, `available`,
-`awaiting review`, and `changes requested`; this workflow does not depend on custom labels or
-automation. Blocked work must have a status update or be released, rather than retaining
-ownership indefinitely.
+Plain comments such as `active`, `blocked`, `available`, `awaiting review` and `changes requested`
+are sufficient; no custom labels or recurring heartbeat comments are required.
 
 ### Coordinators
 
@@ -122,9 +120,8 @@ tooling.
 
 - Read the PR and existing reviews. Arrange review of uncovered questions under the review cycle
   below; do not commission a fresh review merely because a new coordinator arrived.
-- Give a clear verdict. For requested changes, post a short link in the task issue. This ends the
-  review-wait exemption and starts a fresh three-hour response window; the worker reports active,
-  blocked or released status, with the usual reporting and takeover rules thereafter.
+- Give a clear verdict and a useful next step. Link requested changes from the task issue when
+  needed for handoff; resolve unavailable ownership using the worker rules above.
 - Resolve ownership and dependency conflicts, and help stale tasks reach a useful next step.
 - Check affected `ROADMAP.md`, `abstracts/catalogue.json`, `UPSTREAM.md` and other documentation.
   Preserve source credit and the distinction between a completed milestone and its open objective.
@@ -133,13 +130,12 @@ tooling.
   coordinator responsibility: do not treat a PR as done when it is merely queued. Monitor queued
   batches until they land on `main`, rebase or re-queue PRs ejected by conflicts or transient
   failures, sequence broad tree-wide refactors so they do not stall smaller PRs behind cold cache
-  rebuilds, and diagnose and fix merge-queue or CI bottlenecks when the queue jams. Close
-  completed issues and link any remaining work once the change lands.
-- For your own implementation, follow the worker rules and obtain another coordinator's review.
-  Changing roles or delegating authorship never makes an author eligible to approve their work.
-  The exceptions are validated coordinator fixes and the delegated-review exception for changes
-  that preserve every public statement's meaning, both described under
-  [Review cycle](#review-cycle).
+  rebuilds, and diagnose and fix merge-queue or CI bottlenecks when the queue jams. The queue
+  squash-merges: a stacked PR that edits lines a lower PR introduces conflicts with that PR's
+  squashed commit and is ejected, so queue it once the lower PRs land and it has merged `main`.
+  Close completed issues and link any remaining work once the change lands.
+- For your own implementation, follow the worker rules and obtain non-author review under
+  [Review cycle](#review-cycle). Changing roles does not make self-review independent.
 
 If a shared GitHub account prevents formal approval, use one brief PR comment naming the reviewer
 agent/session, revision and verdict. This is agent review, not platform or human approval.
@@ -153,8 +149,8 @@ reviewable milestones. Record unfinished work in `ROADMAP.md` without claiming i
 
 Contributors self-review and validate their changes. Maintainers arrange independent API and
 correctness reviews of the exact revision before integration; reviewers report findings, and
-fixes receive a fresh review. Preserve source credit and record all contributors and review
-results in the pull request or commit description.
+fixes receive review of the affected delta under the review cycle below. Preserve source credit
+and record contributors and review results in the pull request or commit description.
 
 ### Repository isolation
 
@@ -181,7 +177,7 @@ Place reusable definitions and general lemmas in the lowest suitable mathematica
 Specialized theorem modules should import their prerequisites. During review, look for general
 APIs buried in a particular application or proof. Extract them when the dependency improvement is
 concrete and the change is small; otherwise record a specific follow-up with declaration names,
-consumers, and a proposed home. Preserve public interfaces under the compatibility rules below.
+consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
 Do not expand a bounded PR into an unbounded architectural cleanup.
 
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
@@ -205,32 +201,28 @@ abstractions; a familiar pattern alone is not a reason to adopt it. Reuse the pl
 compatibility and review rules here.
 
 Keep the evidence proportional. A small friction fix usually needs a short explanation and a
-checked example; broader API changes need representative affected clients and a compatibility
-plan. Investigate performance when it is material to the change, without requiring a benchmark
-campaign or separate design study for every small improvement.
+checked example; broader API changes need representative affected clients and an in-repository
+migration plan. Investigate performance when it is material to the change, without requiring a
+benchmark campaign or separate design study for every small improvement.
 
 ## Lean development: use the Lean MCP server first
 
-Before the first Lean MCP operation that can elaborate or build in a checkout, run
-`scripts/cache/ensure.sh`. Run it again after pulling, switching branches, or changing the
-toolchain or dependency pins. This applies regardless of the agent client: MCP's
-`lean_build(fetch_cache=true)` fetches Mathlib's cache, not the Complexitylib cache.
-The bootstrap attempts both and suppresses repeated downloads for the same checkout state
-for ten minutes; `scripts/cache/ensure.sh --refresh` retries immediately. A miss or download
-failure leaves Lean to compile the missing outputs.
+Bootstrap a cold checkout with `scripts/cache/ensure.sh` before Lean elaboration or building.
+Retry when needed artifacts are missing or toolchain/dependency changes require new ones;
+a new commit or branch switch alone does not require a manual bootstrap if outputs are warm.
+MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not Complexitylib's. Cache misses
+or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
+and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
 Use MCP goal inspection, diagnostics and theorem search while iterating; reserve builds for
 validation checkpoints. `scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and
 `scripts/worktree.sh create` run the same bootstrap automatically. Bare `lake` and MCP commands do
 not invoke it. If MCP tools are unavailable, say so and use the smallest shell check.
 
-`scripts/worktree.sh` never points a worktree at the primary checkout, refuses targets or cache
-symlinks that do, and isolates dependency Git control files and external symlinks so worktree
-operations cannot write into the primary checkout. Lake's local artifact cache then shares
-Complexitylib outputs between checkouts on the same machine with the same inputs. Proof-only edits
-do not rebuild dependents; statement and definition changes in widely imported modules do.
-[scripts/cache/README.md](scripts/cache/README.md) describes the caches and the deliberate opt-out
-for builds that must not download artifacts.
+Use `scripts/worktree.sh` for isolated worktrees; follow its
+[cache and isolation guidance](scripts/cache/README.md). Exported API changes can rebuild
+dependents; proof edits can too when axiom dependencies change or a client uses `import all`.
+See [the module-system guidance](CONTRIBUTING.md#public-surface-under-the-module-system).
 
 ## Validation sequence
 
@@ -244,14 +236,23 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` restores optional caches and runs this sequence. CI runs the same checks.
+For Lean, dependency or build changes, all six gates must pass on the final source revision before
+integration. A successful hosted run covering that revision supplies full validation; do not
+repeat it locally merely to satisfy a second reporting requirement. Use local full validation
+when hosted coverage is unavailable; changes to validation machinery also need direct checks of
+the changed behavior. Required CI and merge-group checks still apply.
+
+During development, check affected modules and representative clients before requesting review;
+a PR may use CI for the full run. For documentation-only changes, check consistency, links and
+any Lean examples introduced; a local whole-library rebuild is unnecessary.
 
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. Quick mode skips the global test/lint/style/init-import gates and is not full
 validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts and
-ambiguous change/import analysis fall back to all six gates. Run the default command before
-submitting a PR; quick success does not satisfy that requirement.
+ambiguous change/import analysis fall back to all six gates. Quick success alone does not satisfy
+the full validation requirement above; documentation-only checks need not invoke quick mode.
 
 `lake exe mk_all` regenerates `Complexity.lean` after adding a file. New test files go in
 `ComplexityTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -261,10 +262,12 @@ submitting a PR; quick success does not satisfy that requirement.
 1. **Path and namespace mirror cslib.** `Complexity/Foundations/Data/Encoding.lean` is destined
    for `Cslib/Foundations/Data/Encoding.lean`; multi-tape machine files use the upstream root
    namespace `Turing`, everything else `Cslib.*` as upstream does.
-2. **Template** (cslib's): Apache header with the exact wording below, `module`, an
-   `-- upstream:` marker line, `public import` of API dependencies (plain `import` for proof-only
-   ones), a module docstring with `## Main definitions` / `## Main results` / `## References`,
-   then `@[expose] public section` or per-declaration `public`.
+2. **File template:** use the Apache header below, `module`, an `-- upstream:` marker,
+   `public import` for API dependencies and plain `import` for proof-only dependencies. Add a
+   module docstring describing the actual API, with applicable `## Main definitions`,
+   `## Main results` and `## References` sections; omit empty sections. Use `public section`
+   with `private` helpers, or per-declaration `public`. Add `@[expose]` only to definitions
+   whose bodies downstream clients need to unfold; do not default to blanket exposure.
    ```lean
    /-
    Copyright (c) <year> <authors>. All rights reserved.
@@ -276,6 +279,14 @@ submitting a PR; quick success does not satisfy that requirement.
    -- upstream: candidate
 
    public import Complexity.Init
+
+   /-!
+   # <Module topic>
+
+   <Purpose, public API and mathematical sources.>
+   -/
+
+   public section
    ```
 3. **Upstream marker** values: `candidate`, `submitted #N @SHA` (a copy of an open cslib pull
    request at its head `SHA`), `vendored <owner>:<branch> @SHA (unsubmitted)` (a copy of a branch
@@ -296,16 +307,7 @@ submitting a PR; quick success does not satisfy that requirement.
    mirrored path, keeping the
    original authors and declaration names, marked `-- upstream: submitted #N @SHA` (or
    `vendored …`). A copy holds only what the pinned cslib lacks: when a PR modifies an existing
-   cslib file, the copy contains just its additions. Copies are deleted when the work merges.
-
-## Staying current with upstream
-
-- `lakefile.toml` pins cslib `main`; move the pin forward whenever `main` moves, fixing breakage
-  in the same commit.
-- `scripts/upstream_sync.py` reports, for every copied module, whether its pull request has
-  merged (bump the pin past it and delete the copy), whether its head has moved (re-sync the
-  copy) or whether it was closed. Run it whenever upstream is checked, and act on every line that
-  is not `CURRENT`.
+   cslib file, the copy contains just its additions. Copies are deleted when the pin adopts the merged work.
 6. **Bit strings.** Declarations about bit strings and the cube `ι → Bool` (operations, sampling,
    Fourier analysis, sensitivity, influence, codes) live in `Cslib.BitString`; only the named
    Boolean functions `parityOn`, `parity`, `threshold`, `majority`, `strictMajority` sit in `Cslib`
@@ -313,13 +315,29 @@ submitting a PR; quick success does not satisfy that requirement.
    single bits with `^^`.
 7. **Citations.** Cite textbook sources in docstrings via `references.bib` keys
    (`[AroraBarak09]`, `[Papadimitriou94]`, `[Sipser2013]`, `[Jukna2012]`, …). Add new entries in cslib's
-   format at their place in key order (`scripts/check_hygiene.py` checks it), keeping bibliography
-   and project-documentation changes in focused commits.
+   format at their place in key order (`scripts/check_hygiene.py` checks the order and that every
+   cited key has an entry), keeping bibliography and project-documentation changes in focused
+   commits.
+
+## Staying current with upstream
+
+Keep the cslib pin on an upstream `main` SHA. Coordinate updates in focused dependency PRs,
+fixing breakage in the same change; update it within another task when that task needs new
+upstream code or removes a merged copy. Merely inspecting upstream does not require a pin bump.
+
+Run `scripts/upstream_sync.py` during synchronization work. Inspect changed, merged or closed
+upstream PRs against source markers and `UPSTREAM.md`; preserve documented local adaptations
+and contributor work rather than blindly replacing copies. When adopting merged work, advance
+the pin past it and remove the superseded local copy together. Record unresolved decisions in
+`UPSTREAM.md` or a linked task instead of expanding an unrelated PR.
 
 ## Proof hygiene
 
 - No `sorry` on `main`, no custom `axiom`, no `native_decide`.
-- `set_option maxHeartbeats` / `maxRecDepth` overrides need a justifying comment.
+- `set_option maxHeartbeats` / `maxRecDepth` overrides need a justifying comment. A
+  `maxHeartbeats` above the 200000 default, or zero (unlimited), also needs a reviewed entry in
+  `scripts/heartbeat_allowlist.txt`, which `scripts/check_hygiene.py` enforces and keeps
+  shrinking; prefer reducing the proof's cost.
 - Never put `[simp]` on machine step functions or transition tables (goals explode).
 - Non-terminal `simp` only as `simp only`; definitions as terms, not `by` blocks, where possible.
 - Prefer `do` notation for sequential monadic computations, including probabilistic experiments
@@ -327,10 +345,11 @@ submitting a PR; quick success does not satisfy that requirement.
   laws directly, and for operations such as `PMF.bind` between different universes that the standard
   monad interface cannot express. Retain concise point-free composition and maps when naming an
   intermediate value would not improve readability. Check affected proofs when changing notation.
-- The library supports no downstream users yet, so renaming, moving, removing or privatizing a
-  public declaration needs no deprecated alias: update every client in this repository (library,
-  tests, abstracts and guide) in the same change. Delete existing deprecated aliases when touching
-  their area. Revisit this rule before the first supported release.
+- Before the first supported release, do not add deprecated aliases or compatibility wrappers
+  for renamed, moved, removed or privatized declarations. Update all in-repository clients
+  (library, tests, abstracts and guide) and remove the superseded interface in the same change.
+  Remove obsolete aliases as part of the relevant migration, not unrelated cleanup. Revisit
+  compatibility guarantees before supporting external consumers.
 - `ComplexityTests/Axioms.lean` audits all declarations stored in imported `Complexity` modules
   for dependencies beyond `propext`, `Classical.choice` and `Quot.sound`. Because that audit
   already covers the standard set, add a named `#print axioms` guard only when a result is meant
@@ -362,26 +381,24 @@ invalidates earlier conclusions. Reuse existing reviews after verifying their sc
 identity; do not repeat a full review of unchanged code. Before merging, confirm that the current
 revision is covered and required validation passes.
 
-A coordinator may push a fix to a PR directly, instead of passing it back, when they are confident
-in it and have validated it. Typical cases are rebases and conflict resolution, refreshed generated
-baselines, imports, lint, proof repairs that leave statements unchanged, and corrections to
-documentation, citations or `ROADMAP.md`. Check the head first and add commits on top; force-push
-only for an announced rebase. Preserve the author's credit, and name the commits and their
-validation in the PR. Such a fix needs no second reviewer: the coordinator who made it may approve
-the resulting revision. Other reviewers, and coordinators for everything else, send findings back to
-the author as review comments. That includes changes to public statements, the meaning of
-definitions or the API, and any fix the coordinator is less sure of.
+A coordinator may fix conflicts and review findings directly when authorized to edit the branch.
+Check its head and coordinate ownership first; add commits on top, or announce a necessary rebase.
+Preserve author credit and record the delta and validation. Fixing a PR does not make self-review
+independent.
 
-**Delegated-review exception (coordinators only).** A coordinator may approve a PR authored under
-its own delegation when the change leaves the meaning of every public statement and definition
-unchanged: proof-only, documentation-only and test-only changes, mechanical refactors,
-privatizations, restacks and generated-baseline updates. The review is performed by a reviewing
-agent that did not author the change, working in a context separate from the one that briefed the
-author, and the verdict names this delegated-review exception and the classification. A reviewer
-outside the delegating fleet must still approve any PR that introduces or changes a public theorem
-statement or definition, a curated abstract or a security claim, and any PR whose classification is
-in doubt. Another coordinator audits a sample of these approvals. Workers and non-coordinator
-reviewers never approve work from their own fleet.
+Existing independent approval can carry across a mechanical delta when the coordinator verifies
+that it preserves meaning, exported availability, attributes, imports and automation behavior,
+and checks affected clients. Record that limited carry-forward decision. A clean rebase or typo
+fix may qualify; a proof repair, privatization, changed test coverage or conflict resolution is
+not automatically mechanical. Changed reasoning, API, source claims, security claims or abstracts,
+and uncertain cases, need fresh non-author review of the affected delta.
+
+A non-authoring agent may independently review work from the same coordinator or account. It must
+inspect the source and evidence in a separate review context and reach its own verdict; an
+implementation agent's self-check or a coordinator's summary is not independent review. Reviewers
+who participated in the implementation or its design cannot supply that review. The coordinator
+may integrate after this review and required validation, but must not present it as self-approval
+or human review. Add expertise for uncovered questions, not an approval count or agent affiliation.
 
 Finish with a short approval or a clear request for changes. A substantive concern may need a
 long explanation; a clean review does not need a checklist of everything inspected. Record the
@@ -394,22 +411,22 @@ and [API review with explicit nonblocking nits](https://github.com/leanprover/cs
 
 ## New statements and definitions
 
-When a declaration claims to formalize a cited result, the PR quotes the source statement with its
-exact locator and maps the source's notation to the Lean statement: quantifiers, models, encodings
-and resource conventions. Reviewers check that mapping rather than an impression. Text presented as
-a quotation is copied from the pinned source version, with its locator checked there rather than
-taken from an issue, a PR or other library text; anything else is labeled as a paraphrase. Reviewers
-check quotations against the source, and a quoted passage that is not in the source blocks approval.
-New mathematics and new proof ideas need no source; label them as original.
+When a declaration claims to formalize a cited result, give its precise source version and locator
+and map the source claim to Lean: quantifiers, hypotheses, models, encodings and resource
+conventions. An accurate paraphrase is sufficient; identify material differences or weaker scope.
+Reviewers check the primary source and mapping. If quoting, verify the exact words and locator
+against that source; invented or misattributed quotations block approval. New mathematics and
+new proof ideas need no source; label them as original without implying a cited endpoint was proved.
 
 Whether a new definition needs checked examples on both sides (an instance where it holds and one
 where it fails) is for the author and reviewers to judge; reviewers may ask for them when a
 definition could be vacuous or trivially satisfied.
 
-Reuse existing definitions rather than adding parallel notions; extend or generalize them instead.
-A PR that adds a public definition states in its description the existing notions it considered
-and why none could be reused or generalized, and reviewers treat a definition whose body matches an
-existing one up to its carrier or argument types as a finding.
+Search for existing notions before adding public definitions. Reuse or extend them when they
+express the intended mathematics; explain a non-obvious decision to introduce a parallel notion.
+Syntactic similarity is a prompt to inspect reuse, not proof that models should be identified.
+Generalization should improve concrete clients without obscuring semantics or making inference
+and usage harder.
 
 ## Curated formal abstracts
 
@@ -427,14 +444,14 @@ Partial constructions, conditional substitutes for a standard theorem, bounded e
 helper APIs do not become headlines by acquiring an abstract. Prefer a small coherent selection.
 Preserve Samuel's editorial choices and source credit; keep outstanding endpoints in `ROADMAP.md`.
 
-Before opening or updating **every AI-authored PR**, assess the selected abstracts against the
-final Lean changes. Update affected statements, definitions, scope notes and catalogue entries.
-New library theorems need not become headlines. Record a no-impact assessment when appropriate,
-including proof-only refactors with unchanged statements and scope.
+Assess abstract impact when Lean statements, definitions, models, encodings, bounds or catalogue
+selection change. Update affected statements and scope notes, and record the assessment once in
+the PR. Reuse it while the relevant source is unchanged; metadata edits and unrelated changes
+need no new no-impact report. New library theorems need not become headlines.
 
-Follow the local `lean-abstract` skill and run `#check_abstract`. An allowlist may expose narrowly
-identified foundational models with their meaning explained; it must not hide the result or its
-complexity-class semantics. The audit checks elaborated dependencies, not human interpretation.
+For abstract changes, follow the local `lean-abstract` skill and run the affected `#check_abstract`
+audits. An allowlist may expose narrowly identified foundational models with their meaning
+explained; it must not hide the result or its complexity-class semantics. The audit checks elaborated dependencies, not human interpretation.
 Independent review must cover API quality, correctness and each changed abstract against the final
 Lean sources, including quantifiers, encoding, resource bounds, nonvacuity and readability. This may
 be part of the same review above; reuse unchanged evidence. Record revisions and findings once in
@@ -445,17 +462,16 @@ source digests and exact declaration links. The **Formal abstract PDFs** workflo
 and main artifacts, and the **API documentation** workflow publishes main builds under
 `https://www.cslib.io/complexitylib/abstracts/`. When abstracts or rendering
 change, inspect affected rendered pages and declaration links before integration; record the
-artifact/run and revisions. If abstracts and rendering are unaffected, record no impact; no new
-PDF review is needed. Local generation is supported. Generated TeX, PDFs and auxiliary products
-are not versioned.
+artifact/run and revisions. Unaffected abstracts and rendering need no new PDF review. Local
+generation is supported. Generated TeX, PDFs and auxiliary products are not versioned.
 
 ## Design commitments (do not re-litigate casually)
 
 - Base pin is upstream cslib `main` at a SHA; never a fork.
 - One parametric machine extending upstream `Turing.Cfg`/`Turing.Action`, with `Choose := Id`
   recovering `MultiTapeTM` and `Choose := Set` recovering `MultiTapeNTM`, step-exactly.
-- Computability predicates (`PolyTime`, `InTimeSpace`, …) are `@[fun_prop]`-registered; loops
-  go through Hoare-style `iterate_spec` rules and the Aesop `polytime` set.
+- Computability predicates are `@[fun_prop]`-registered; loops go through Hoare-style
+  `iterate_spec` rules and the Aesop `polytime` set.
 - Definitions and public results use plain computability with independent time and space bounds:
   upstream `ComputableInTimeAndSpace…` and the notions built on it, such as `ComputableInPolyTime`.
   The tidy computability calculus is being deleted (#862); tidiness survives only as a machine-level

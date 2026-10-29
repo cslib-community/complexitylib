@@ -21,7 +21,9 @@ cycles used in [Papadimitriou, Proposition 9.3][Papadimitriou94].
 
 Adapted from the cycle construction in `lean-trominoes`, revision
 `6d5b36c15cec6cb18d30137b7f1c7fb92ea24332`,
-`LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`.
+[PeriodicThreeSATThree.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThree.lean),
+[PeriodicThreeSATThreeCorrectness.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeCorrectness.lean), and
+[PeriodicThreeSATThreeExactSize.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeExactSize.lean).
 No periodic semantics is used here.
 
 ## Main definitions

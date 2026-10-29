@@ -151,25 +151,22 @@ private theorem branch_refines {w n : ℕ} (h2 : Fits w 2) :
     intro s x _
     exact ⟨x.set out 2, (Exec.const h2).within, by simp [Data.set]⟩
 
-example : ∃ y, ExecWithin (B := .standard) 2
-    (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2)))
-    (Data.init []) y 3 ∧ y.regs out = 1 := by
-  obtain ⟨_, y, he, hr⟩ := branch_refines (n := 0) (show Fits 2 2 by decide)
+example :
+    (∃ y, ExecWithin (B := .standard) 2
+      (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2)))
+      (Data.init []) y 3 ∧ y.regs out = 1) ∧
+    (∃ y, ExecWithin (B := .standard) 2
+      (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2)))
+      ((Data.init []).set out 1) y 3 ∧ y.regs out = 2) ∧
+    Executes 2 (Stack.Controller.code.program out) (State.init [0]) 1 49 ∧
+    Executes 2 (Stack.Controller.code.program out) (State.init [3]) 3 29 := by
+  obtain ⟨_, y₀, he₀, hr₀⟩ := branch_refines (n := 0) (show Fits 2 2 by decide)
     [] (Data.init []) ⟨rfl, rfl, rfl⟩
-  exact ⟨y, he, hr⟩
-
-example : ∃ y, ExecWithin (B := .standard) 2
-    (.branch (.eq out len) (.op (.const out 1)) (.op (.const out 2)))
-    ((Data.init []).set out 1) y 3 ∧ y.regs out = 2 := by
-  obtain ⟨_, y, he, hr⟩ := branch_refines (n := 1) (show Fits 2 2 by decide)
+  obtain ⟨_, y₁, he₁, hr₁⟩ := branch_refines (n := 1) (show Fits 2 2 by decide)
     [] ((Data.init []).set out 1) ⟨rfl, by simp [Data.set], by decide⟩
-  exact ⟨y, he, hr⟩
-
-example : Executes 2 (Stack.Controller.code.program out) (State.init [0]) 1 49 := by
-  exact Stack.Controller.executes (by decide) (by decide)
-
-example : Executes 2 (Stack.Controller.code.program out) (State.init [3]) 3 29 := by
-  exact Stack.Controller.executes (by decide) (by decide)
+  exact ⟨⟨y₀, he₀, hr₀⟩, ⟨y₁, he₁, hr₁⟩,
+    Stack.Controller.executes (by decide) (by decide),
+    Stack.Controller.executes (by decide) (by decide)⟩
 
 /-- The actual zero-input execution refutes a forty-eight-step whole-program budget. -/
 theorem rejects_short_budget :
@@ -192,22 +189,19 @@ example {w n : ℕ} (h3 : Fits w 3) (hn : InputFits w [n]) :
       (fun _ _ => if n = 0 then 48 else 28) Stack.Controller.code := by
   stateful
 
-example : UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id := by
-  polytime
-
-example : UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id := by
-  fun_prop
-
-@[fun_prop, program_certificate]
+@[program_certificate]
 private theorem nonuniform_positive_polytime :
     ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id :=
   Stack.Controller.positive_polytime.computableInPolyTime
 
-example : ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id := by
-  polytime
+attribute [local fun_prop] nonuniform_positive_polytime
 
-example : ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id := by
-  fun_prop
+example :
+    UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
+    UniformComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
+    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id ∧
+    ComputableInPolyTime .standard Stack.Controller.positive (fun _ n => [n]) id :=
+  ⟨by polytime, by fun_prop, by polytime, by fun_prop⟩
 
 /-- The family puts its width in the instruction's literal, rather than reading it at runtime. -/
 private def widthCountdown (w : ℕ) : Code .standard 3 :=
@@ -271,12 +265,11 @@ private theorem widthCountdown_computes :
     exact he.mono (by rw [hx0, hz0]; omega)
 
 -- A concrete fitting instance demonstrates that the family contract is not vacuous.
-example : InputFits 3 [5, 3] := by decide
-
-example : ∃ r, ∃ P : WordSizeDependentProgram .standard r, P.BoundedCode ∧
-    ∃ t, Executes 3 (P 3) (State.init [5, 3]) 0 t ∧ t ≤ 32 := by
+example : InputFits 3 [5, 3] ∧
+    (∃ r, ∃ P : WordSizeDependentProgram .standard r, P.BoundedCode ∧
+      ∃ t, Executes 3 (P 3) (State.init [5, 3]) 0 t ∧ t ≤ 32) := by
   obtain ⟨r, P, hP, hp⟩ := widthCountdown_computes
-  exact ⟨r, P, hP, hp 5 3 (show 1 ≤ 3 by decide) (by decide)⟩
+  exact ⟨by decide, r, P, hP, hp 5 3 (show 1 ≤ 3 by decide) (by decide)⟩
 
 example (_f : ℕ → ℕ) : True := by
   fail_if_success

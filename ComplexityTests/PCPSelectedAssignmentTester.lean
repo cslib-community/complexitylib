@@ -5,17 +5,19 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.PCP.Encoded.SelectedAssignmentTester
+import Complexity.Computability.PCP.Encoded.AssignmentTester.Enumeration
 import Complexity.Computability.PCP.SelectedComposition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import Complexity.Tactic.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-! Semantic regressions and client certificates for the selected assignment tester. -/
 
 namespace ComplexityTests.PCPSelectedAssignmentTester
 
 open Cslib.PCP Cslib.PCP.HadamardTester Turing.MultiTapeTM
+
+attribute [local instance] HadamardTester.instFinEnumBool Rand.finEnum
 
 private def same : Bool → Bool → Bool := fun a b => a == b
 
@@ -67,23 +69,30 @@ example (constraint : Bool → Bool → Bool) (σ : Fin 2 → Bool)
   simpa only [LocalTest.Passes, Encoded.SelectedHadamardTester.query_eq] using
     passes_selected_honestProof (C := fun a b => constraint a b = true) hσ ω
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (Bool → Bool → Bool) × (Fin 5 × Rand Bool) × Fin 6 =>
       Encoded.SelectedHadamardTester.query p.1 p.2.1 p.2.2)
     (encPair (encPi (encPi encBool))
-      (encPair (encFinite (Fin 5 × Rand Bool)) (encFinEnum (Fin 6))))
+      (encPair (encFinEnum (Fin 5 × Rand Bool)) (encFinEnum (Fin 6))))
     (encFinEnum (Pos Bool)) := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : (Bool → Bool → Bool) × (Fin 5 × Rand Bool) × (Fin 6 → Bool) =>
       Encoded.SelectedHadamardTester.accepts p.1 p.2.1 p.2.2)
     (encPair (encPi (encPi encBool))
-      (encPair (encFinite (Fin 5 × Rand Bool)) (encPi encBool))) encBool := by polytime
+      (encPair (encFinEnum (Fin 5 × Rand Bool)) (encPi encBool))) encBool := by polytime
 
-example {V E : Type} [Fintype E] (G : ConstraintGraph V E Bool) :
-    G.unsatVal / 840 ≤ G.composeSelected.unsatVal := G.le_unsatVal_composeSelected
+private def rejectingGraph : ConstraintGraph Unit Unit Bool where
+  src _ := ()
+  dst _ := ()
+  rel _ _ _ := False
+
+-- Every labelling violates the single edge, so composition retains a strictly positive gap.
+example : 1 / 840 ≤ rejectingGraph.composeSelected.unsatVal := by
+  have hvalue : rejectingGraph.unsatVal = 1 := by
+    simp [ConstraintGraph.unsatVal, ConstraintGraph.unsatFrac, ConstraintGraph.unsatEdges,
+      ConstraintGraph.Satisfies, rejectingGraph]
+  simpa only [hvalue] using rejectingGraph.le_unsatVal_composeSelected
 
 example : Fintype.card (Bool × (Fin 6 → Bool)) = 128 :=
   ConstraintGraph.card_alphabet_composeSelected

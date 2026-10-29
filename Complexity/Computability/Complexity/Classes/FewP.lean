@@ -62,16 +62,11 @@ theorem mem_FewP : A ∈ FewP enc ↔ ∃ (p q : Polynomial ℕ) (V : α × List
     ComputableInPolyTime V (encPair enc encBits) encBool ∧
     (∀ a, acceptCount V a (p.eval (enc a).length) ≤ q.eval (enc a).length) ∧
     ∀ a, a ∈ A ↔ 0 < acceptCount V a (p.eval (enc a).length) := by
-  have this : A ∈ FewP enc ↔ ∃ (p q : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧
-      (∀ a, acceptCount V a (p.eval (enc a).length) ≤ q.eval (enc a).length) ∧ ∀ a, a ∈ A ↔ 0 <
-      acceptCount V a (p.eval (enc a).length) := by
-    constructor
-    · rintro ⟨f, ⟨p, V, hV, hf⟩, q, hle, hA⟩
-      exact ⟨p, q, V, hV.tidy, fun a => hf a ▸ hle a, fun a => by rw [hA a, hf a]⟩
-    · rintro ⟨p, q, V, hV, hle, hA⟩
-      exact ⟨_, ⟨p, V, .of_tidy hV, fun _ => rfl⟩, q, hle, hA⟩
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  constructor
+  · rintro ⟨f, ⟨p, V, hV, hf⟩, q, hle, hA⟩
+    exact ⟨p, q, V, hV, fun a => hf a ▸ hle a, fun a => by rw [hA a, hf a]⟩
+  · rintro ⟨p, q, V, hV, hle, hA⟩
+    exact ⟨_, ⟨p, V, hV, fun _ => rfl⟩, q, hle, hA⟩
 
 /-- A bound of one is a polynomial ambiguity bound. -/
 theorem UP_subset_FewP : UP enc ⊆ FewP enc := by
@@ -105,9 +100,9 @@ theorem PolyTimeReducible.mem_FewP {β : Type} {encB : β ↪ List Bool} {B : Se
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ FewP encB) : A ∈ FewP enc := by
   obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨f, hf, p, hp, hB⟩ := hB
-  have hlen : ComputableTidilyInPolyTime (fun a => p.eval (encB (g a)).length) enc encUnary :=
-    (ComputableTidilyInPolyTime.unary_eval p).comp
-      ((ComputableTidilyInPolyTime.encoding_length encB).comp hg.tidy)
+  have hlen : ComputableInPolyTime (fun a => p.eval (encB (g a)).length) enc encUnary :=
+    (ComputableInPolyTime.unary_eval p).comp
+      ((ComputableInPolyTime.encoding_length encB).comp hg)
   obtain ⟨q, hle⟩ := hlen.polyBounded.exists_polynomial
   exact ⟨f ∘ g, SharpP.comp_mem hf hg, q,
     fun a => (hp (g a)).trans (hle a), fun a => (hAB a).trans (hB (g a))⟩

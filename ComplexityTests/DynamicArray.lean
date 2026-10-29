@@ -71,49 +71,45 @@ theorem repTwo_boundedRep : DynamicArray.BoundedRep 8 [10, 20] repTwoState :=
       rcases a with _ | _ | _ | a <;> simp [repTwoState, mkState, Fits]⟩,
    repTwo_rep⟩
 
-/-- `initProgram` allocates the 1-word block at address `0` (`ptr = 0, len = 0, cap = 1,
-frontier = 1`) and zeroes cell `0` in `15` instructions. -/
-example : (DynamicArray.initProgram.eval 8 4 blank).map (snapshot [0, 1]) =
-    some (15, (0, 0, 1, 1), [0, 0]) := by decide
-
-/-- First append (`10` into `[]` at `cap = 1`): no doubling, writes `mem 0 = 10` in `7`
-instructions. -/
-example : (DynamicArray.program.eval 8 4 (mkState 0 0 1 1 10 [0])).map (snapshot [0, 1]) =
-    some (7, (0, 1, 1, 1), [10, 0]) := by decide
-
-/-- Second append (`20` into `[10]` at `cap = 1`): triggers doubling `1 → 2`, allocates `[1, 3)`,
-copies `10` to `mem 1`, writes `20` to `mem 2`, advances `frontier` to `3`, in `34` instructions
-(`34 + potential [10, 20] - potential [10] = 34 + 30 - 15 = 49`). -/
-example : (DynamicArray.program.eval 8 4 (mkState 0 1 1 1 20 [10])).map (snapshot [0, 1, 2, 3]) =
-    some (34, (1, 2, 2, 3), [10, 10, 20, 0]) := by decide
-
-/-- Third append (`30` into `[10, 20]` at `cap = 2`): triggers doubling `2 → 4`, allocates `[3, 7)`,
-copies `[10, 20]` to `mem 3..4`, writes `30` to `mem 5`, leaves `mem 6 = 0`, advances `frontier`
-to `7`, in `49` instructions (`49 + 30 - 30 = 49`). -/
-example : (DynamicArray.program.eval 8 8 (mkState 1 2 2 3 30 [10, 10, 20])).map
-    (snapshot [3, 4, 5, 6]) =
-  some (49, (3, 3, 4, 7), [10, 20, 30, 0]) := by decide
-
-/-- Fourth append (`40` into `[10, 20, 30]` at `cap = 4`): no doubling, writes `40` to `mem 6` in
-`7` instructions. -/
-example : (DynamicArray.program.eval 8 8
-    (mkState 3 3 4 7 40 [10, 10, 20, 10, 20, 30, 0])).map (snapshot [3, 4, 5, 6]) =
-  some (7, (3, 4, 4, 7), [10, 20, 30, 40]) := by decide
-
-/-- Fifth append (`50` into `[10, 20, 30, 40]` at `cap = 4`): triggers doubling `4 → 8`, allocates
-`[7, 15)`, copies `[10, 20, 30, 40]` to `mem 7..10`, writes `50` to `mem 11`, zeroes `mem 12..14`,
-advances `frontier` to `15 < 4 * 5 = 20`, in `79` instructions (`79 + 30 - 60 = 49`). -/
-example : (DynamicArray.program.eval 8 10
-    (mkState 3 4 4 7 50 [10, 10, 20, 10, 20, 30, 40])).map
-    (snapshot [7, 8, 9, 10, 11, 12, 13, 14]) =
-  some (79, (7, 5, 8, 15), [10, 20, 30, 40, 50, 0, 0, 0]) := by decide
-
-/-- Indexed read (`getProgram`) reads element `4` (`50`) from the `cap = 8` block at `ptr = 7` in
-`2` instructions. -/
-example : (DynamicArray.getProgram.eval 8 0
-    (mkState 7 5 8 15 4 [10, 10, 20, 10, 20, 30, 40, 10, 20, 30, 40, 50, 0, 0, 0])).map
-    (fun yn => (yn.2, yn.1.regs DynamicArray.temp)) =
-  some (2, 50) := by decide
+/-- Concrete execution trace across `initProgram`, five appends (`1 → 2 → 4 → 8` capacity
+doublings), and `getProgram`, plus precondition rejections for out-of-range read and word overflow.
+-/
+example :
+    -- Init allocates the one-word block at address 0, zeroes it and sets frontier = 1 in 15 steps.
+    (DynamicArray.initProgram.eval 8 4 blank).map (snapshot [0, 1]) =
+      some (15, (0, 0, 1, 1), [0, 0]) ∧
+    -- First append: capacity 1 suffices; write 10 at address 0 in 7 steps.
+    (DynamicArray.program.eval 8 4 (mkState 0 0 1 1 10 [0])).map (snapshot [0, 1]) =
+      some (7, (0, 1, 1, 1), [10, 0]) ∧
+    -- Second append doubles 1 → 2, allocates [1, 3), copies 10 and writes 20.
+    -- Frontier becomes 3; amortized charge is 34 + 30 - 15 = 49.
+    (DynamicArray.program.eval 8 4 (mkState 0 1 1 1 20 [10])).map (snapshot [0, 1, 2, 3]) =
+      some (34, (1, 2, 2, 3), [10, 10, 20, 0]) ∧
+    -- Third append doubles 2 → 4, copies to addresses 3..4, writes 30 at 5 and leaves cell 6 zero.
+    -- Frontier becomes 7; amortized charge is 49 + 30 - 30 = 49.
+    (DynamicArray.program.eval 8 8 (mkState 1 2 2 3 30 [10, 10, 20])).map
+      (snapshot [3, 4, 5, 6]) =
+      some (49, (3, 3, 4, 7), [10, 20, 30, 0]) ∧
+    -- Fourth append uses spare capacity, writing 40 at address 6 in 7 steps.
+    (DynamicArray.program.eval 8 8
+      (mkState 3 3 4 7 40 [10, 10, 20, 10, 20, 30, 0])).map (snapshot [3, 4, 5, 6]) =
+      some (7, (3, 4, 4, 7), [10, 20, 30, 40]) ∧
+    -- Fifth append doubles 4 → 8, copies to 7..10, writes 50 at 11 and zeroes 12..14.
+    -- Frontier becomes 15 < 4 * 5 = 20; amortized charge is 79 + 30 - 60 = 49.
+    (DynamicArray.program.eval 8 10
+      (mkState 3 4 4 7 50 [10, 10, 20, 10, 20, 30, 40])).map
+      (snapshot [7, 8, 9, 10, 11, 12, 13, 14]) =
+      some (79, (7, 5, 8, 15), [10, 20, 30, 40, 50, 0, 0, 0]) ∧
+    -- Read index 4 from the block at address 7, returning 50 in 2 steps.
+    (DynamicArray.getProgram.eval 8 0
+      (mkState 7 5 8 15 4 [10, 10, 20, 10, 20, 30, 40, 10, 20, 30, 40, 50, 0, 0, 0])).map
+      (fun yn => (yn.2, yn.1.regs DynamicArray.temp)) =
+      some (2, 50) ∧
+    -- Reject an out-of-range read and an append value that overflows the word width.
+    ¬(DynamicArray.spec 8).valid [10, 20] (.get 2) ∧
+    ¬(DynamicArray.spec 4).valid [10, 20] (.append 5) :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, by decide,
+    by decide⟩
 
 /-- Adaptive client: append `11` and `22`, read index `0`, then append the observed value plus
 `33` and read index `2`. -/
@@ -162,10 +158,6 @@ example : ∃ ready y traces, Exec 8 DynamicArray.initProgram blank ready 15 ∧
     DynamicArray.run_appendAll (w := 8) (vs := [10, 20, 30, 40, 50])
       (by decide : Fits 8 1) blank_bounded (by decide) (by decide)
   exact ⟨ready, y, traces, hi, he, hy, hb, hspace (by decide)⟩
-
--- Precondition rejections: out-of-range read index and word overflow.
-example : ¬(DynamicArray.spec 8).valid [10, 20] (.get 2) := by decide
-example : ¬(DynamicArray.spec 4).valid [10, 20] (.append 5) := by decide
 
 /-- info: 'Cslib.Algorithms.WordRAM.DynamicArray.Rep.space' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in

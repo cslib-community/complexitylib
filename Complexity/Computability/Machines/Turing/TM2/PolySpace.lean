@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Mathlib stack-machine computations within polynomial space
@@ -34,6 +35,8 @@ preserve sublinear native work-space bounds.
   stacks give a polynomial-space simulation.
 * `Turing.TM2Computable.computableTidilyInPolySpace`: transfer termination and a polynomial
   source-stack bound to tidy polynomial-space computation.
+* `Turing.TM2Computable.computableInPolySpace_encList`: the same for plain polynomial-space
+  computation.
 
 ## References
 
@@ -88,28 +91,29 @@ def StacksBounded {α β αΓ βΓ : Type} {ea : α → List αΓ} {eb : β → 
 computable within polynomial space. No source runtime bound or computable space bound is needed.
 The bound includes the input and output stacks at initialization, during execution and at
 halting. -/
-theorem computableTidilyInPolySpace {α β αΓ βΓ : Type} [Finite αΓ] [Finite βΓ]
+theorem computableTidilyInPolySpace {α β αΓ βΓ : Type} [Finite αΓ]
+    {encA : αΓ ↪ List Bool} {encB : βΓ ↪ List Bool}
     {ea : α → List αΓ} {eb : β → List βΓ} {f : α → β}
     (h : TM2Computable ea eb f) [∀ k, Finite (h.tm.Γ k)]
     (ha : Function.Injective ea) (hb : Function.Injective eb)
     {space : α → ℕ} (hspace : PolyBounded (fun a => (ea a).length) space)
     (hstacks : h.StacksBounded space) :
     ComputableTidilyInPolySpace f
-      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList (encFinite αΓ)))
-      ((⟨eb, hb⟩ : β ↪ List βΓ).trans (encList (encFinite βΓ))) := by
+      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
+      ((⟨eb, hb⟩ : β ↪ List βΓ).trans (encList encB)) := by
   have hinput : ComputableTidilyInPolyTime ea
-      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList (encFinite αΓ)))
-      (encList (encFinite αΓ)) := of_eq fun _ => rfl
+      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
+      (encList encA) := of_eq fun _ => rfl
   have hmap := (map (of_finite h.inputAlphabet.symm
     (encB := encFinite (h.tm.Γ h.tm.k₀)))).comp hinput
-  have hlength := (length_list (encFinite αΓ)).comp hinput
+  have hlength := (length_list encA).comp hinput
   obtain ⟨p, hp⟩ := hspace.exists_polynomial
   have hpBound := ((unary_eval p).comp hlength).polyBounded
   obtain ⟨C, hC⟩ := TM2.exists_exponential_clock h.tm
   let q : Polynomial ℕ := Polynomial.C C * (p + 1) + 1
   have hclock : ComputableTidilyInPolyTime
       (fun a => 2 ^ (C * (p.eval (ea a).length + 1) + 1))
-      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList (encFinite αΓ))) encNat := by
+      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA)) encNat := by
     simpa only [Function.comp_def, q, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
       Polynomial.eval_one] using binary_two_pow.comp ((unary_eval q).comp hlength)
   have hrun := TM2.run_polySpace h.tm hmap hclock hpBound
@@ -118,7 +122,7 @@ theorem computableTidilyInPolySpace {α β αΓ βΓ : Type} [Finite αΓ] [Fini
   have hout := (ComputableTidilyInPolySpace.of_polyTime
     (dpi_apply (fun k => encList (encFinite (h.tm.Γ k))) h.tm.k₁)).comp hstacks'
   have hword := (ComputableTidilyInPolySpace.of_polyTime
-    (map (of_finite h.outputAlphabet (encB := encFinite βΓ)))).comp hout
+    (map (of_finite h.outputAlphabet (encB := encB)))).comp hout
   obtain ⟨T, S, hS, hword⟩ := hword
   refine ⟨T, S, hS, hword.of_enc_eq ?_⟩
   intro a
@@ -130,6 +134,19 @@ theorem computableTidilyInPolySpace {α β αΓ βΓ : Type} [Finite αΓ] [Fini
       (((TM2.stepTotal h.tm.m)^[2 ^ (C * (p.eval (ea a).length + 1) + 1)]
         (initList h.tm (List.map h.inputAlphabet.symm (ea a)))).stk h.tm.k₁) = eb (f a) := by
     simpa [haltList] using houtput
-  exact congrArg (encList (encFinite βΓ)) hresult.symm
+  exact congrArg (encList encB) hresult.symm
+
+/-- `Turing.TM2Computable.computableTidilyInPolySpace` for plain certificates. -/
+theorem computableInPolySpace_encList {α β αΓ βΓ : Type} [Finite αΓ]
+    {encA : αΓ ↪ List Bool} {encB : βΓ ↪ List Bool}
+    {ea : α → List αΓ} {eb : β → List βΓ} {f : α → β}
+    (h : TM2Computable ea eb f) [∀ k, Finite (h.tm.Γ k)]
+    (ha : Function.Injective ea) (hb : Function.Injective eb)
+    {space : α → ℕ} (hspace : PolyBounded (fun a => (ea a).length) space)
+    (hstacks : h.StacksBounded space) :
+    ComputableInPolySpace f
+      ((⟨ea, ha⟩ : α ↪ List αΓ).trans (encList encA))
+      ((⟨eb, hb⟩ : β ↪ List βΓ).trans (encList encB)) :=
+  .of_tidy (h.computableTidilyInPolySpace ha hb hspace hstacks)
 
 end Turing.TM2Computable

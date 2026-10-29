@@ -29,24 +29,22 @@ private theorem direct_sound (α : Type) :
   intro C π h
   simp [directTester, LocalTest.acceptProb, LocalTest.Passes, h]
 
-example {V E α : Type} [Fintype E] [Nonempty α] (G : ConstraintGraph V E α) :
-    ((directTester α).compose G).unsatVal ≤ G.unsatVal :=
-  AssignmentTester.unsatVal_compose_le (direct_complete α) G
-
-example {V E α : Type} [Fintype E] [Nonempty α] (G : ConstraintGraph V E α) :
-    G.unsatVal / 2 ≤ ((directTester α).compose G).unsatVal := by
-  simpa using AssignmentTester.le_unsatVal_compose (direct_sound α) (by norm_num) G
-
-example {V E α : Type} [Finite E] [Nonempty α] (G : ConstraintGraph V E α) :
-    ((directTester α).compose G).Satisfiable ↔ G.Satisfiable :=
-  AssignmentTester.satisfiable_compose_iff (direct_complete α) (direct_sound α) (by norm_num) G
-
 private def rejecting : ConstraintGraph Unit Unit Bool :=
   ⟨fun _ => (), fun _ => (), fun _ _ _ => False⟩
+
+private def emptyGraph : ConstraintGraph Unit Empty Bool :=
+  ⟨Empty.elim, Empty.elim, fun e _ _ => e.elim⟩
 
 example : ¬ rejecting.Satisfiable := by
   rintro ⟨σ, hσ⟩
   exact hσ ()
+
+example :
+    ((directTester Bool).compose rejecting).unsatVal ≤ rejecting.unsatVal ∧
+      (((directTester Bool).compose rejecting).Satisfiable ↔ rejecting.Satisfiable) :=
+  ⟨AssignmentTester.unsatVal_compose_le (direct_complete Bool) rejecting,
+    AssignmentTester.satisfiable_compose_iff (direct_complete Bool) (direct_sound Bool)
+      (by norm_num) rejecting⟩
 
 example : 1 / 2 ≤ ((directTester Bool).compose rejecting).unsatVal := by
   have h := AssignmentTester.le_unsatVal_compose (direct_sound Bool) (by norm_num) rejecting
@@ -58,8 +56,9 @@ example : 1 / 2 ≤ ((directTester Bool).compose rejecting).unsatVal := by
       rejecting]
   simpa [hreject] using h
 
-example (G : ConstraintGraph Unit Empty Bool) :
-    ((directTester Bool).compose G).unsatVal = 0 := ConstraintGraph.unsatVal_of_isEmpty _
+example :
+    ((directTester Bool).compose emptyGraph).unsatVal = 0 :=
+  ConstraintGraph.unsatVal_of_isEmpty _
 
 -- The old concrete graph definitions remain definitionally identical to the generic construction.
 example {V E α : Type} [Fintype α] [DecidableEq α] (G : ConstraintGraph V E α) :

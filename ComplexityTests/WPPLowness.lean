@@ -27,7 +27,7 @@ theorem univ_mem_SPP : (Set.univ : Set (List Bool)) ∈ SPP encBits :=
 
 /-- A non-SPP-style `LWPP` witness for the universal language with target `-2`. -/
 theorem univ_mem_LWPP : (Set.univ : Set (List Bool)) ∈ LWPP encBits :=
-  ⟨fun _ => -2, mem_GapP_of_polyTime (.of_tidy (.const (-2))), fun _ => -2, .const (-2),
+  ⟨fun _ => -2, mem_GapP_of_polyTime (.const (-2)), fun _ => -2, .const (-2),
     fun _ => by lia, fun _ => Or.inr rfl, fun _ => by simp⟩
 
 /-- The empty language in `LWPP` with target `-2`. -/
@@ -43,38 +43,49 @@ theorem univ_mem_WPP : (Set.univ : Set (List Bool)) ∈ WPP encBits :=
 example : ([] : List Bool) ∉ (∅ : Set (List Bool)) ∧
     ([] : List Bool) ∈ (Set.univ : Set (List Bool)) := by simp
 
-example : GapPWithOracle (∅ : Set (List Bool)) encBits = GapP encBits :=
-  GapPWithOracle_eq_GapP_of_mem_SPP empty_mem_SPP encBits
+/-- An `SPP` oracle is low for `GapP`, `SPP`, `LWPP` (fixed target), `WPP` (fixed target),
+`CeqP`, and `PP`. -/
+example :
+    (GapPWithOracle (∅ : Set (List Bool)) encBits = GapP encBits ∧
+      GapPWithOracle (Set.univ : Set (List Bool)) encBits = GapP encBits) ∧
+    SPPWithOracle (Set.univ : Set (List Bool)) encBits = SPP encBits ∧
+    LWPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = LWPP encBits ∧
+    WPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = WPP encBits ∧
+    CeqPWithOracle (Set.univ : Set (List Bool)) encBits = CeqP encBits ∧
+    PPWithOracle (Set.univ : Set (List Bool)) encBits = PP encBits :=
+  ⟨⟨GapPWithOracle_eq_GapP_of_mem_SPP empty_mem_SPP encBits,
+    GapPWithOracle_eq_GapP_of_mem_SPP univ_mem_SPP encBits⟩,
+   SPPWithOracle_eq_SPP_of_mem_SPP univ_mem_SPP encBits,
+   LWPPWithFixedTarget_eq_LWPP_of_mem_SPP univ_mem_SPP encBits,
+   WPPWithFixedTarget_eq_WPP_of_mem_SPP univ_mem_SPP encBits,
+   CeqPWithOracle_eq_CeqP_of_mem_SPP univ_mem_SPP encBits,
+   PPWithOracle_eq_PP_of_mem_SPP univ_mem_SPP encBits⟩
 
-example : SPPWithOracle (Set.univ : Set (List Bool)) encBits = SPP encBits :=
-  SPPWithOracle_eq_SPP_of_mem_SPP univ_mem_SPP encBits
+/-- An `LWPP` oracle (witnessed with target `-2`) is low for `LWPP` (fixed target),
+`WPP` (fixed target), `CeqP`, and `PP`, equating the `∅` and `Set.univ` oracle classes. -/
+example :
+    (LWPPWithFixedTarget (∅ : Set (List Bool)) encBits =
+        LWPPWithFixedTarget (Set.univ : Set (List Bool)) encBits ∧
+      LWPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = LWPP encBits) ∧
+    WPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = WPP encBits ∧
+    CeqPWithOracle (Set.univ : Set (List Bool)) encBits = CeqP encBits ∧
+    PPWithOracle (Set.univ : Set (List Bool)) encBits = PP encBits :=
+  have h0 := LWPPWithFixedTarget_eq_LWPP_of_mem_LWPP empty_mem_LWPP encBits
+  have h1 := LWPPWithFixedTarget_eq_LWPP_of_mem_LWPP univ_mem_LWPP encBits
+  ⟨⟨h0.trans h1.symm, h1⟩,
+   WPPWithFixedTarget_eq_WPP_of_mem_LWPP univ_mem_LWPP encBits,
+   CeqPWithOracle_eq_CeqP_of_mem_LWPP univ_mem_LWPP encBits,
+   PPWithOracle_eq_PP_of_mem_LWPP univ_mem_LWPP encBits⟩
 
-example : LWPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = LWPP encBits :=
-  LWPPWithFixedTarget_eq_LWPP_of_mem_SPP univ_mem_SPP encBits
-
-example : WPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = WPP encBits :=
-  WPPWithFixedTarget_eq_WPP_of_mem_SPP univ_mem_SPP encBits
-
-example : CeqPWithOracle (Set.univ : Set (List Bool)) encBits = CeqP encBits :=
-  CeqPWithOracle_eq_CeqP_of_mem_SPP univ_mem_SPP encBits
-
-example : PPWithOracle (Set.univ : Set (List Bool)) encBits = PP encBits :=
-  PPWithOracle_eq_PP_of_mem_SPP univ_mem_SPP encBits
-
-example : LWPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = LWPP encBits :=
-  LWPPWithFixedTarget_eq_LWPP_of_mem_LWPP univ_mem_LWPP encBits
-
-example : WPPWithFixedTarget (Set.univ : Set (List Bool)) encBits = WPP encBits :=
-  WPPWithFixedTarget_eq_WPP_of_mem_LWPP univ_mem_LWPP encBits
-
-example : CeqPWithOracle (Set.univ : Set (List Bool)) encBits = CeqP encBits :=
-  CeqPWithOracle_eq_CeqP_of_mem_LWPP univ_mem_LWPP encBits
-
-example : PPWithOracle (Set.univ : Set (List Bool)) encBits = PP encBits :=
-  PPWithOracle_eq_PP_of_mem_LWPP univ_mem_LWPP encBits
-
-example : PPWithOracle (Set.univ : Set (List Bool)) encBits = PP encBits :=
-  PPWithOracle_eq_PP_of_mem_WPP univ_mem_WPP encBits
+/-- A `WPP` oracle is low for `PP`, and its relativized `PP` class coincides with that of
+an `SPP` oracle. -/
+example :
+    PPWithOracle (Set.univ : Set (List Bool)) encBits = PP encBits ∧
+    PPWithOracle (∅ : Set (List Bool)) encBits =
+      PPWithOracle (Set.univ : Set (List Bool)) encBits :=
+  have h_wpp := PPWithOracle_eq_PP_of_mem_WPP univ_mem_WPP encBits
+  have h_spp := PPWithOracle_eq_PP_of_mem_SPP empty_mem_SPP encBits
+  ⟨h_wpp, h_spp.trans h_wpp.symm⟩
 
 /-- Concrete scaling simulation on the constant-one `GapPWithOracle` function over an `LWPP`
 oracle with target `-2`. -/

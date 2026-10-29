@@ -56,7 +56,9 @@ theorem transformsTapes_iff_runFrom
       (out : List Symbol), P input ws → ∃ ws' emitted,
         tm.runFrom (wordsCfg input (some tm.q₀) ws out) t =
           wordsCfg input none ws' (out ++ emitted) ∧
-        Q input ws ws' emitted ∧ tm.space (wordsCfg input (some tm.q₀) ws out) t ≤ s := by
+        Q input ws ws' emitted ∧
+          (MultiTapeNTM.RunPath.ofDeterministic tm (wordsCfg input (some tm.q₀) ws out) t).space ≤
+            s := by
   refine forall₄_congr fun input ws out _ => exists₂_congr fun ws' emitted => ?_
   rw [exists_runPath_iff_runFrom rfl]
   tauto

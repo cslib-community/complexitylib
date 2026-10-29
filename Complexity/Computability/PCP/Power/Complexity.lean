@@ -33,9 +33,14 @@ not a certificate uniform in varying walk lengths, killing rates or alphabet enc
 
 namespace Cslib.PCP.RegularConstraintGraph
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime RotationMap
+open Turing.MultiTapeTM ComputableInPolyTime RotationMap
 
-variable {P W D α : Type} [Fintype D]
+variable {P W D α : Type}
+  {input : P ↪ List Bool} {vertex : W ↪ List Bool}
+  {label : D ↪ List Bool} {alphabet : α ↪ List Bool}
+  {rotate : P × (W × D) → W × D} {rel : P × ((W × D) × (α × α)) → Bool}
+
+variable [Fintype D]
 
 /-- The runtime graph, vertex, complete walk and both opinion tables are all stored explicitly. -/
 noncomputable def powerInputEncoding (input : P ↪ List Bool) (vertex : W ↪ List Bool)
@@ -43,10 +48,6 @@ noncomputable def powerInputEncoding (input : P ↪ List Bool) (vertex : W ↪ L
     (signal : Fin q ↪ List Bool) : PowerInput P W D α T q ↪ List Bool :=
   encPair input (encPair (encPair vertex (encPair (encPi label) (encPi signal)))
     (encPair (encPi alphabet) (encPi alphabet)))
-
-variable {input : P ↪ List Bool} {vertex : W ↪ List Bool}
-  {label : D ↪ List Bool} {alphabet : α ↪ List Bool}
-  {rotate : P × (W × D) → W × D} {rel : P × ((W × D) × (α × α)) → Bool}
 
 /-- Every original relation call, intermediate walk vertex, reverse-label table and opinion
 lookup is charged. The finite dispatch depends only on the fixed walk parameters. -/
@@ -59,17 +60,14 @@ theorem isPolyTime_powerRelationWithInput
     (T q : ℕ) [NeZero q] (signal : Fin q ↪ List Bool) :
     ComputableInPolyTime (powerRelationWithInput rotate rel T q)
       (powerInputEncoding input vertex label alphabet T q signal) encBool := by
-  have hrotate := hrotate.tidy
-  have hrel := hrel.tidy
-  refine .of_tidy ?_
   let enc := powerInputEncoding input vertex label alphabet T q signal
-  have hbranch (s : (Fin T → D) × (Fin T → Fin q)) : ComputableTidilyInPolyTime
+  have hbranch (s : (Fin T → D) × (Fin T → Fin q)) : ComputableInPolyTime
       (fun p : PowerInput P W D α T q =>
         powerRelationWithInput rotate rel T q (p.1, (p.2.1.1, s), p.2.2)) enc encBool := by
-    have hreturned : ComputableTidilyInPolyTime
+    have hreturned : ComputableInPolyTime
         (fun p : PowerInput P W D α T q => killedPowRotWithInput rotate T q (p.1, p.2.1.1, s))
         enc (encPair vertex (encPair (encPi label) (encPi signal))) :=
-      (rotationMap_killedPowRotWithInput hrotate T q signal).comp
+      (ComputableInPolyTime.rotationMap_killedPowRotWithInput hrotate T q signal).comp
         ((fst _ _).prod (((snd _ _).fst'.fst').prod (const s)))
     let check (p : PowerInput P W D α T q) (i : Fin T) : Bool :=
       if i.val < killTime s.2 then
@@ -78,16 +76,16 @@ theorem isPolyTime_powerRelationWithInput
           p.2.2.2 (.take (killTime s.2 - (i.val + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
             (killedPowRotWithInput rotate T q (p.1, p.2.1.1, s)).2.1))
       else true
-    have hcheck (i : Fin T) : ComputableTidilyInPolyTime (fun p => check p i) enc encBool := by
+    have hcheck (i : Fin T) : ComputableInPolyTime (fun p => check p i) enc encBool := by
       by_cases hi : i.val < killTime s.2
-      · have hwalk : ComputableTidilyInPolyTime
+      · have hwalk : ComputableInPolyTime
             (fun p : PowerInput P W D α T q => walkAtWithInput rotate (p.1, p.2.1.1, s.1) i.val)
-            enc vertex := (rotationMap_walkAtWithInput hrotate T i.val).comp
+            enc vertex := (ComputableInPolyTime.rotationMap_walkAtWithInput hrotate T i.val).comp
           ((fst _ _).prod (((snd _ _).fst'.fst').prod (const s.1)))
-        have hleft : ComputableTidilyInPolyTime
+        have hleft : ComputableInPolyTime
             (fun p : PowerInput P W D α T q => p.2.2.1 (.take i.val i.isLt.le s.1))
             enc alphabet := (pi_apply alphabet _).comp ((snd _ _).snd'.fst')
-        have hprefix : ComputableTidilyInPolyTime
+        have hprefix : ComputableInPolyTime
             (fun k : Fin T → D => WalkLabels.take (killTime s.2 - (i.val + 1))
               ((Nat.sub_le _ _).trans (killTime_le _)) k)
             (encPi label) (encFinite (WalkLabels D T)) := .of_finite _

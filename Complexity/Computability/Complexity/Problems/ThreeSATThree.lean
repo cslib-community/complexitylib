@@ -32,7 +32,9 @@ Original natural labels stay binary throughout; only syntactic positions use una
 
 The construction is adapted from `lean-trominoes` revision
 `6d5b36c15cec6cb18d30137b7f1c7fb92ea24332`,
-`SAT/ThreeSAT/PeriodicThreeSATThree{,Correctness,ExactSize}.lean`.
+[PeriodicThreeSATThree.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThree.lean),
+[PeriodicThreeSATThreeCorrectness.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeCorrectness.lean), and
+[PeriodicThreeSATThreeExactSize.lean](https://github.com/edemaine/lean-trominoes/blob/6d5b36c15cec6cb18d30137b7f1c7fb92ea24332/LeanTrominoes/SAT/ThreeSAT/PeriodicThreeSATThreeExactSize.lean).
 This endpoint imposes no planarity condition.
 
 ## Main definitions
@@ -116,15 +118,12 @@ theorem isVerifier : IsVerifier encCNF Polynomial.X verifier ThreeSATThree := by
   rw [he]
   exact SAT.isVerifier.guard
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The width/occurrence tests and SAT evaluation run in native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encCNF encBits) encBool := by
-  have hv := (CNF.computableInPolyTime_vars encNat).tidy
-  have hs := SAT.computableInPolyTime_verifier.tidy
-  refine .of_tidy ?_
   unfold verifier
+  simp only [List.count_eq_countP]
   fun_prop
 
 /-- 3SAT-3 belongs to NP under the ordinary binary CNF encoding. -/

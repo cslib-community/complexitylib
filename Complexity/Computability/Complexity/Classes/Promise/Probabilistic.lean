@@ -10,7 +10,9 @@ module
 public import Complexity.Computability.Complexity.Classes.BPP
 public import Complexity.Computability.Complexity.Classes.Promise.Reduction
 public import Complexity.Computability.Complexity.Classes.RP
+public import Complexity.Computability.Complexity.Classes.SharpP
 public import Complexity.Computability.Probabilistic.PPT
+public import Complexity.Languages.Probabilistic.BitString
 public import Complexity.Languages.Probabilistic.Notation
 import Complexity.Computability.Complexity.Classes.RP.Closure
 import Complexity.Computability.Complexity.Classes.SharpP.Probability
@@ -51,6 +53,8 @@ reductions (`PromiseProblem.PolyTimeReducible.mem_PromiseBPP`,
   complement relations between `PromiseRP` and `PromiseCoRP`.
 * `Cslib.Complexity.PromiseP_subset_PromiseRP`, `Cslib.Complexity.PromiseP_subset_PromiseCoRP`,
   `Cslib.Complexity.PromiseP_subset_PromiseBPP`.
+* `Cslib.Complexity.probability_sampleList_verifier`: acceptance probability of sampling a uniform
+  random word for a seeded verifier.
 * `Cslib.Complexity.mem_PromiseBPP_iff_exists_isPPTOn`,
   `Cslib.Complexity.mem_PromiseRP_iff_exists_isPPTOn`,
   `Cslib.Complexity.mem_PromiseCoRP_iff_exists_isPPTOn`: characterizations by uniform strict PPT
@@ -132,6 +136,13 @@ theorem PromiseP_subset_PromiseCoRP : PromiseP enc ⊆ PromiseCoRP enc :=
 theorem PromiseP_subset_PromiseBPP : PromiseP enc ⊆ PromiseBPP enc :=
   (promiseClass_mono P_subset_BPP).trans promiseClass_BPP_subset_PromiseBPP
 
+/-- The program sampling a random string for a seeded verifier accepts with the accepted
+fraction of the strings. -/
+theorem probability_sampleList_verifier (V : α × List Bool → Bool) (a : α) (n : ℕ) :
+    Pr[(fun w => V (a, w)) <$> BitString.sampleList n] = (acceptCount V a n : ℝ) / 2 ^ n := by
+  simp only [ProbComp.eval_map, BitString.eval_sampleList]
+  exact uniformList_acceptCount_toReal V a n
+
 /-- **Probabilistic-program characterization of `PromiseBPP`**: a promise problem is in
 `PromiseBPP` exactly when a uniform strict PPT Boolean program accepts every yes-instance with
 probability at least `2 / 3` and rejects every no-instance with probability at least `2 / 3`. -/
@@ -146,14 +157,13 @@ theorem mem_PromiseBPP_iff_exists_isPPTOn : Q ∈ PromiseBPP enc ↔
       IsPPTOn.of_seeded ((ComputableInPolyTime.unary_eval p).comp
         (ComputableInPolyTime.encoding_length enc)) hV,
       fun a ha => ?_, fun a ha => ?_⟩
-    · simp only [ProbComp.eval_map, BitString.eval_sampleList]
-      rw [uniformList_acceptCount_toReal, le_div_iff₀ (by positivity)]
+    · rw [probability_sampleList_verifier, le_div_iff₀ (by positivity)]
       have h : (2 : ℝ) * 2 ^ p.eval (enc a).length ≤
           3 * (acceptCount V a (p.eval (enc a).length) : ℝ) := by
         exact_mod_cast (hQ a).1 ha
       linarith
-    · simp only [Functor.map_map, ProbComp.eval_map, BitString.eval_sampleList]
-      rw [uniformList_acceptCount_toReal (V := fun x => !V x), le_div_iff₀ (by positivity)]
+    · rw [Functor.map_map, probability_sampleList_verifier (V := fun x => !V x),
+        le_div_iff₀ (by positivity)]
       have h : (2 : ℝ) * 2 ^ p.eval (enc a).length ≤
           3 * (acceptCount (fun x => !V x) a (p.eval (enc a).length) : ℝ) := by
         simpa only [acceptCount, Bool.not_eq_true'] using
@@ -165,6 +175,7 @@ theorem mem_PromiseBPP_iff_exists_isPPTOn : Q ∈ PromiseBPP enc ↔
       fun a => ⟨fun ha => ?_, fun ha => ?_⟩⟩
     · have hp : (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (enc a).length =
           c * ((enc a).length + 1) ^ d := by simp
+      dsimp only [BoundedErrorAt]
       rw [hp]
       have hprob := hyes a ha
       rw [hlaw a, uniformList_acceptCount_toReal (V := fun x => evalM x.1 x.2),
@@ -175,6 +186,7 @@ theorem mem_PromiseBPP_iff_exists_isPPTOn : Q ∈ PromiseBPP enc ↔
       exact_mod_cast h3
     · have hp : (Polynomial.C c * (Polynomial.X + 1) ^ d).eval (enc a).length =
           c * ((enc a).length + 1) ^ d := by simp
+      dsimp only [BoundedErrorAt]
       rw [hp]
       have hprob := hno a ha
       have hmap : ProbComp.eval (Bool.not <$> M a) =
@@ -204,8 +216,7 @@ theorem mem_PromiseRP_iff_exists_isPPTOn : Q ∈ PromiseRP enc ↔
       IsPPTOn.of_seeded ((ComputableInPolyTime.unary_eval p).comp
         (ComputableInPolyTime.encoding_length enc)) hV,
       fun a ha => ?_, fun a ha hmem => ?_⟩
-    · simp only [ProbComp.eval_map, BitString.eval_sampleList]
-      rw [uniformList_acceptCount_toReal, le_div_iff₀ (by positivity)]
+    · rw [probability_sampleList_verifier, le_div_iff₀ (by positivity)]
       have h : (2 : ℝ) ^ p.eval (enc a).length ≤
           2 * (acceptCount V a (p.eval (enc a).length) : ℝ) := by
         exact_mod_cast (hQ a).1 ha

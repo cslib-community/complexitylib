@@ -19,12 +19,12 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 
 /-! ### Inhabitants -/
 
-example : (∅ : Set (List Bool)) ∈ PSPACE encBits :=
-  P_subset_PSPACE ⟨fun _ => false, ComputableInPolyTime.const false, fun _ => by simp⟩
-
-example : (Set.univ : Set (List Bool)) ∈ NPSPACE encBits :=
-  PSPACE_subset_NPSPACE (P_subset_PSPACE
-    ⟨fun _ => true, ComputableInPolyTime.const true, fun _ => by simp⟩)
+example :
+    (∅ : Set (List Bool)) ∈ PSPACE encBits ∧
+    (Set.univ : Set (List Bool)) ∈ NPSPACE encBits :=
+  ⟨P_subset_PSPACE ⟨fun _ => false, ComputableInPolyTime.const false, fun _ => by simp⟩,
+   PSPACE_subset_NPSPACE (P_subset_PSPACE
+     ⟨fun _ => true, ComputableInPolyTime.const true, fun _ => by simp⟩)⟩
 
 /-! ### A branch running forever -/
 
@@ -130,12 +130,13 @@ example (input : List Bool) (n : ℕ) : ∃ p : loopOrAccept.ComputationPath inp
 
 /-! ### Views -/
 
-/-- Repeated output is not acceptance: `[true, true]` is summarized as `[false]`. -/
-example : MultiTapeNTM.outputClass [true, true] = [false] := rfl
-
-example : MultiTapeNTM.outputClass [true] = [true] := rfl
-
-example : MultiTapeNTM.outputClass [false] = [false] := rfl
+/-- Repeated output is not acceptance: `[true, true]` is summarized as `[false]`, while `[true]`
+and `[false]` are preserved. -/
+example :
+    MultiTapeNTM.outputClass [true, true] = [false] ∧
+    MultiTapeNTM.outputClass [true] = [true] ∧
+    MultiTapeNTM.outputClass [false] = [false] :=
+  ⟨rfl, rfl, rfl⟩
 
 /-- Acceptance of the looping machine is witnessed by a reachable halted view with output
 `[true]`, on the empty input. -/
@@ -193,8 +194,10 @@ example : (decodeStackTape (encList (encOption encBool) [some true, none, none])
   rw [decodeStackTape_encList]
   rfl
 
-example (finite : FiniteCfg 2 Bool Bool) : decodeFiniteCfg (encFiniteCfg finite) = finite :=
-  decodeFiniteCfg_encFiniteCfg finite
+example : (decodeFiniteCfg (k := 0) (State := Bool)
+    (encFiniteCfg (stuck.initView [true, false]))).input = [true, false] := by
+  rw [decodeFiniteCfg_encFiniteCfg]
+  rfl
 
 /-- The accepting code is no view's code. -/
 example : MultiTapeNTM.decodeView (k := 0) (State := Bool) (MultiTapeNTM.acceptCode 3) = none :=
@@ -220,15 +223,18 @@ example : ¬Relation.ReflTransGen (stuck.CodeStep loopWidth)
     (not_accepts_stuck [])
 
 /-- The edge test is polynomial-time on pairs of words. -/
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : List Bool × List Bool => loopOrAccept.codeEdge p.1 p.2) (encPair encBits encBits)
       encBool :=
-  loopOrAccept.computableTidilyInPolyTime_codeEdge (.fst _ _) (.snd _ _)
+  loopOrAccept.computableInPolyTime_codeEdge (by fun_prop) (by fun_prop)
 
 /-! ### Savitch's theorem -/
 
-/-- The classes coincide, here for raw words. -/
-example : NPSPACE encBits = PSPACE encBits := NPSPACE_eq_PSPACE
+/-- Nondeterministic polynomial-space membership transfers to deterministic polynomial-space
+decidability (`NPSPACE = PSPACE`). -/
+example {A : Set (List Bool)} (hA : A ∈ NPSPACE encBits) :
+    ∃ t s, PolyBounded (fun a => (encBits a).length) s ∧ DecidableInTimeAndSpace A encBits t s :=
+  mem_PSPACE_iff.mp (NPSPACE_eq_PSPACE (enc := encBits) ▸ hA)
 
 /-- A machine with a forever-looping branch is decided deterministically: Savitch's theorem needs
 no time bound, so the problem it recognizes, every word, is in `PSPACE`. -/
@@ -249,8 +255,9 @@ example : stuck.savitchDecide 0 0 [] = false := by
 
 /-- The decider of a fixed machine is an actual polynomial-space computation. -/
 example : ∃ t s, PolyBounded (fun word : List Bool => (encBits word).length) s ∧
-    ComputableTidilyInTimeAndSpace (fun word => loopOrAccept.savitchDecide 0 0 (encBits word))
-      encBits encBool t s :=
-  loopOrAccept.exists_polyBounded_space_savitchDecide encBits 0 0
+    ComputableInTimeAndSpace (fun word => loopOrAccept.savitchDecide 0 0 (encBits word))
+      encBits encBool t s := by
+  obtain ⟨t, s, hs, h⟩ := loopOrAccept.exists_polyBounded_space_savitchDecide encBits 0 0
+  exact ⟨t, s, hs, h.computableInTimeAndSpace⟩
 
 end ComplexityTests.Space

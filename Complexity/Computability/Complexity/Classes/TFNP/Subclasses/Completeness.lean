@@ -9,8 +9,9 @@ module
 
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
 public import Complexity.Computability.Complexity.Problems.CircuitValue.Compilation
-import Complexity.Tactic.PolyTime
 import Mathlib.Data.List.GetD
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 
 /-!
@@ -44,7 +45,7 @@ words with leading zeros, preserving numerical values rather than merely the exi
 namespace Cslib.Complexity
 
 open Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 variable {α : Type} {enc : α ↪ List Bool}
 
@@ -72,14 +73,14 @@ theorem exists_uniformCircuitCodes {n m : α → ℕ} {F : α × List Bool → L
   exact List.getD_eq_getElem _ _ hj
 
 private theorem exists_endomorphismCodes {n : α → ℕ} {F : α × List Bool → List Bool}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hF : ComputableTidilyInPolyTime F (encPair enc encBits) encBits)
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hF : ComputableInPolyTime F (encPair enc encBits) encBits)
     (hlen : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
-    ∃ code : α → CircuitCode, ComputableTidilyInPolyTime code enc encCode ∧
+    ∃ code : α → CircuitCode, ComputableInPolyTime code enc encCode ∧
       ∀ a u, u.length = n a → evalCircuitCode (n a) (code a) u = F (a, u) := by
-  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes (.of_tidy hn) (.of_tidy hn)
-    (.of_tidy hF) hlen
-  refine ⟨code, hcode.tidy, fun a u hu => ?_⟩
+  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes hn hn
+    hF hlen
+  refine ⟨code, hcode, fun a u hu => ?_⟩
   rw [evalCircuitCode, hsem a u hu, padBits_of_length_eq (hlen a u hu)]
 
 /-- A uniform polynomial-time pigeonhole family reduces to the canonical circuit problem. -/
@@ -88,11 +89,9 @@ theorem pigeonRel_searchReducible_Pigeon {n : α → ℕ} {F : α × List Bool �
     (hF : ComputableInPolyTime F (encPair enc encBits) encBits)
     (hlen : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
     SearchReducible enc encPigeon (pigeonRel n F) Pigeon := by
-  have hn := hn.tidy
-  have hF := hF.tidy
   obtain ⟨code, hcode, hsem⟩ := exists_endomorphismCodes hn hF hlen
-  apply SearchReducible.of_isTotalSearch isTotalSearch_Pigeon (.of_tidy (hn.prod hcode))
-    (.of_tidy (snd enc encBits))
+  apply SearchReducible.of_isTotalSearch isTotalSearch_Pigeon ((hn.prod hcode))
+    ((snd enc encBits))
   intro a w hw
   change pigeonRel (fun a => n a) (fun p => evalCircuitCode (n p.1) (code p.1) p.2) a w at hw
   obtain ⟨hw, h⟩ := hw
@@ -114,13 +113,10 @@ theorem endOfLineRel_searchReducible_EndOfLine {n : α → ℕ}
     (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
     (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
     SearchReducible enc encEndOfLine (endOfLineRel n P S) EndOfLine := by
-  have hn := hn.tidy
-  have hP := hP.tidy
-  have hS := hS.tidy
   obtain ⟨cP, hcP, hPs⟩ := exists_endomorphismCodes hn hP hP_len
   obtain ⟨cS, hcS, hSs⟩ := exists_endomorphismCodes hn hS hS_len
   apply SearchReducible.of_isTotalSearch isTotalSearch_EndOfLine
-    (.of_tidy (hn.prod (hcP.prod hcS))) (.of_tidy (snd enc encBits))
+    ((hn.prod (hcP.prod hcS))) ((snd enc encBits))
   intro a u hw
   let P' (p : α × List Bool) := evalCircuitCode (n p.1) (cP p.1) p.2
   let S' (p : α × List Bool) := evalCircuitCode (n p.1) (cS p.1) p.2
@@ -140,13 +136,10 @@ theorem leafRel_searchReducible_Leaf {n : α → ℕ} {N₁ N₂ : α × List Bo
     (hN₁_len : ∀ a u, u.length = n a → (N₁ (a, u)).length = n a)
     (hN₂_len : ∀ a u, u.length = n a → (N₂ (a, u)).length = n a) :
     SearchReducible enc encLeaf (leafRel n N₁ N₂) Leaf := by
-  have hn := hn.tidy
-  have hN₁ := hN₁.tidy
-  have hN₂ := hN₂.tidy
   obtain ⟨c₁, hc₁, h₁⟩ := exists_endomorphismCodes hn hN₁ hN₁_len
   obtain ⟨c₂, hc₂, h₂⟩ := exists_endomorphismCodes hn hN₂ hN₂_len
   apply SearchReducible.of_isTotalSearch isTotalSearch_Leaf
-    (.of_tidy (hn.prod (hc₁.prod hc₂))) (.of_tidy (snd enc encBits))
+    ((hn.prod (hc₁.prod hc₂))) ((snd enc encBits))
   intro a u hw
   let N₁' (p : α × List Bool) := evalCircuitCode (n p.1) (c₁ p.1) p.2
   let N₂' (p : α × List Bool) := evalCircuitCode (n p.1) (c₂ p.1) p.2
@@ -163,27 +156,33 @@ theorem leafRel_searchReducible_Leaf {n : α → ℕ} {N₁ N₂ : α × List Bo
   exact ⟨hu, by simpa only [hodd] using hw.2⟩
 
 private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
-    (hn : ComputableTidilyInPolyTime n enc encUnary)
-    (hC : ComputableTidilyInPolyTime C (encPair enc encBits) encNat) :
-    ∃ code : α → CircuitCode, ComputableTidilyInPolyTime code enc encCode ∧
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hC : ComputableInPolyTime C (encPair enc encBits) encNat) :
+    ∃ code : α → CircuitCode, ComputableInPolyTime code enc encCode ∧
       ∀ a u, u.length = n a → binaryValue (evalCircuitOutputs (code a) u) = C (a, u) := by
   obtain ⟨c, d, hbound⟩ := hC.polyBounded_length.exists_le
   let m (a : α) := c * (2 * (enc a).length + n a + 2) ^ d
-  have hm : ComputableTidilyInPolyTime m enc encUnary := by
-    unfold m
-    polytime
-  have hword : ComputableTidilyInPolyTime
+  have hm : ComputableInPolyTime m enc encUnary :=
+    ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const c)
+      ((ComputableInPolyTime.unary_pow d).comp
+        (ComputableInPolyTime.unary_add'
+          (ComputableInPolyTime.unary_add'
+            (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+              (ComputableInPolyTime.encoding_length enc))
+            hn)
+          (ComputableInPolyTime.const 2)))
+  have hword : ComputableInPolyTime
       (fun p : α × List Bool => binaryWord (m p.1) (C p)) (encPair enc encBits) encBits := by
     have hbits := (ComputableInPolyTime.of_eq (f := Nat.bits)
-      (encIn := encNat) (encOut := encBits) fun _ => rfl).comp (.of_tidy hC)
-    have hwidth := (ComputableInPolyTime.of_tidy hm).comp
+      (encIn := encNat) (encOut := encBits) fun _ => rfl).comp hC
+    have hwidth := (hm).comp
       (ComputableInPolyTime.fst enc encBits)
     have hpadding := ComputableInPolyTime.unary_sub.comp
       (hwidth.prod (ComputableInPolyTime.length_bits.comp hbits))
     have hplain := ComputableInPolyTime.bitsAppend
       ((ComputableInPolyTime.bitsReplicate false).comp hpadding)
       (ComputableInPolyTime.bitsReverse.comp hbits)
-    simpa only [binaryWord, Function.comp_def] using hplain.tidy
+    simpa only [binaryWord, Function.comp_def] using hplain
   have hword_len (a : α) (u : List Bool) (hu : u.length = n a) :
       (binaryWord (m a) (C (a, u))).length = m a := by
     have hb := hbound (a, u)
@@ -194,9 +193,9 @@ private theorem exists_costCodes {n : α → ℕ} {C : α × List Bool → ℕ}
       exact hb
     simp only [binaryWord, List.length_append, List.length_replicate, List.length_reverse]
     omega
-  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes (.of_tidy hn) (.of_tidy hm)
-    (.of_tidy hword) hword_len
-  refine ⟨code, hcode.tidy, fun a u hu => ?_⟩
+  obtain ⟨code, hcode, hsem⟩ := exists_uniformCircuitCodes hn hm
+    hword hword_len
+  refine ⟨code, hcode, fun a u hu => ?_⟩
   rw [hsem a u hu, binaryValue_binaryWord]
 
 /-- A uniform polynomial-time local-search family reduces to the canonical circuit problem.
@@ -208,13 +207,10 @@ theorem localOptRel_searchReducible_LocalOpt {n : α → ℕ}
     (hC : ComputableInPolyTime C (encPair enc encBits) encNat)
     (hlen : ∀ a u, u.length = n a → (N (a, u)).length = n a) :
     SearchReducible enc encLocalOpt (localOptRel n N C) LocalOpt := by
-  have hn := hn.tidy
-  have hN := hN.tidy
-  have hC := hC.tidy
   obtain ⟨cN, hcN, hNs⟩ := exists_endomorphismCodes hn hN hlen
   obtain ⟨cC, hcC, hCs⟩ := exists_costCodes hn hC
   apply SearchReducible.of_isTotalSearch isTotalSearch_LocalOpt
-    (.of_tidy (hn.prod (hcN.prod hcC))) (.of_tidy (snd enc encBits))
+    ((hn.prod (hcN.prod hcC))) ((snd enc encBits))
   intro a u hw
   change u.length = n a ∧
     binaryValue (evalCircuitOutputs (cC a) u) ≤

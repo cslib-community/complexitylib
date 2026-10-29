@@ -124,6 +124,40 @@ private theorem Circuit.inputSupport_subset_reachableInputs
   obtain ⟨output, supported⟩ := present
   exact ⟨c.outputs output, ⟨output, rfl⟩, supported⟩
 
+/-- Opening the last gate `g` along `line` increases the frontier size by at most `w line.op`
+whenever `σ.Arity line.op ≤ 1 + w line.op`. -/
+private theorem Line.card_opened_le (line : Line σ n g) (w : σ.Op → ℕ)
+    (hw : σ.Arity line.op ≤ 1 + w line.op) (frontier : Finset (Wire n (g + 1))) :
+    (let prior := Finset.univ.filter fun wire : Wire n g => wire.castSucc ∈ frontier
+     if Wire.gate (Fin.last g) ∈ frontier then
+       prior ∪ Finset.univ.image line.wires
+     else prior).card ≤ frontier.card + w line.op := by
+  dsimp only
+  let prior := Finset.univ.filter fun wire : Wire n g => wire.castSucc ∈ frontier
+  let lineInputs := Finset.univ.image line.wires
+  have priorBound : prior.card ≤ frontier.card :=
+    Finset.card_le_card_of_injOn Wire.castSucc (fun wire present => by simpa [prior] using present)
+      Wire.castSucc_injective.injOn
+  have lineBound : lineInputs.card ≤ 1 + w line.op :=
+    (Finset.card_image_le.trans_eq (by simp)).trans hw
+  split_ifs with lastSelected
+  · have priorEraseBound : prior.card ≤ (frontier.erase (Wire.gate (Fin.last g))).card := by
+      refine Finset.card_le_card_of_injOn Wire.castSucc (fun wire present => ?_)
+        Wire.castSucc_injective.injOn
+      rw [Finset.mem_coe, Finset.mem_erase]
+      refine ⟨?_, by simpa [prior] using present⟩
+      cases wire with
+      | input i => simp
+      | gate j => simp [Fin.castSucc_ne_last]
+    have erased := Finset.card_erase_of_mem lastSelected
+    have frontierPositive : 1 ≤ frontier.card := Finset.one_le_card.mpr ⟨_, lastSelected⟩
+    calc
+      (prior ∪ lineInputs).card ≤ prior.card + lineInputs.card := Finset.card_union_le _ _
+      _ ≤ (frontier.erase (Wire.gate (Fin.last g))).card + (1 + w line.op) :=
+        Nat.add_le_add priorEraseBound lineBound
+      _ = frontier.card + w line.op := by omega
+  · exact priorBound.trans (Nat.le_add_right _ _)
+
 /-- In any circuit program, the number of reachable inputs from a frontier of wires is bounded
 by the size of the frontier plus the cost of the program, for any weight function that bounds gate
 arities by `1 + w op`. -/
@@ -148,48 +182,8 @@ private theorem Program.card_reachableInputs_le_cost
       let lineInputs := Finset.univ.image line.wires
       let opened :=
         if Wire.gate (Fin.last g) ∈ frontier then prior ∪ lineInputs else prior
-      have priorBound : prior.card ≤ frontier.card := by
-        apply Finset.card_le_card_of_injOn Wire.castSucc
-        · intro wire present
-          simpa [prior] using present
-        · exact Wire.castSucc_injective.injOn
-      have lineBound : lineInputs.card ≤ 1 + w line.op := by
-        calc
-          lineInputs.card ≤ (Finset.univ : Finset (Fin (σ.Arity line.op))).card :=
-            Finset.card_image_le
-          _ = σ.Arity line.op := by simp
-          _ ≤ 1 + w line.op := hw line.op
-      have openedBound : opened.card ≤ frontier.card + w line.op := by
-        by_cases lastSelected : Wire.gate (Fin.last g) ∈ frontier
-        · have priorEraseBound : prior.card ≤
-              (frontier.erase (Wire.gate (Fin.last g))).card := by
-            apply Finset.card_le_card_of_injOn Wire.castSucc
-            · intro wire present
-              change Wire.castSucc wire ∈ frontier.erase (Wire.gate (Fin.last g))
-              rw [Finset.mem_erase]
-              refine ⟨?_, by simpa [prior] using present⟩
-              cases wire with
-              | input i => simp
-              | gate j => simp [Fin.castSucc_ne_last]
-            · exact Wire.castSucc_injective.injOn
-          have erased := Finset.card_erase_of_mem lastSelected
-          have openedEq : opened = prior ∪ lineInputs := by
-            simp [opened, lastSelected]
-          rw [openedEq]
-          calc
-            (prior ∪ lineInputs).card ≤ prior.card + lineInputs.card :=
-              Finset.card_union_le _ _
-            _ ≤ (frontier.erase (Wire.gate (Fin.last g))).card + (1 + w line.op) :=
-              Nat.add_le_add priorEraseBound lineBound
-            _ = frontier.card - 1 + (1 + w line.op) := by rw [erased]
-            _ = frontier.card + w line.op := by
-              have frontierPositive : 1 ≤ frontier.card :=
-                Finset.one_le_card.mpr ⟨_, lastSelected⟩
-              omega
-        · have openedEq : opened = prior := by
-            simp [opened, lastSelected]
-          rw [openedEq]
-          omega
+      have openedBound : opened.card ≤ frontier.card + w line.op :=
+        line.card_opened_le w (hw line.op) frontier
       change (program.reachableInputs opened).card ≤ _
       calc
         (program.reachableInputs opened).card ≤ opened.card + program.cost w :=

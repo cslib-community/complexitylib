@@ -59,7 +59,6 @@ theorem negligible_publicKeyChainHybrid {E : Scheme}
     Negligible (fun n => Game.advantage
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) (depth n) >>= test n))
       (ProbComp.eval (E.publicKeyChainHybrid n (depth n) 0 >>= test n))) := by
-  have hdepth := hdepth.tidy
   obtain ⟨c, d, hcapacity, hbound⟩ := Encryption.exists_keyLength_bound hkeyGen
   let capacity := fun n => c * (n + 1) ^ d
   have hwidth_le (n : ℕ) : width n ≤ capacity n := by
@@ -67,10 +66,16 @@ theorem negligible_publicKeyChainHybrid {E : Scheme}
     have h := hbound n keys hkeys
     rw [hwidth n keys hkeys] at h
     exact (Nat.le_add_left _ _).trans h
-  have hred := isPPT_linkAdversary hkeyGen hencrypt htest (.of_tidy hdepth) hcapacity
+  have hred := isPPT_linkAdversary hkeyGen hencrypt htest hdepth hcapacity
   have hpoly : PolynomiallyBounded (fun n => dyadicSize (depth n) * dyadicSize (capacity n)) := by
-    have hd : PolynomiallyBounded depth := hdepth.polynomiallyBounded
-    have hc : PolynomiallyBounded capacity := hcapacity.tidy.polynomiallyBounded
+    have hd : PolynomiallyBounded depth :=
+      (show PolyBounded (fun n : ℕ => n) depth by
+        simpa only [encUnary_apply, List.length_replicate] using
+          hdepth.polyBounded_length).polynomiallyBounded
+    have hc : PolynomiallyBounded capacity :=
+      (show PolyBounded (fun n : ℕ => n) capacity by
+        simpa only [encUnary_apply, List.length_replicate] using
+          hcapacity.polyBounded_length).polynomiallyBounded
     fun_prop
   have hneg := (hsecure _ hred).polynomiallyBounded_mul hpoly
   refine negligible_of_le hneg (fun n => ?_)

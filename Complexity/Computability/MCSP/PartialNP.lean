@@ -59,6 +59,8 @@ giving a polynomial-time many-one reduction from `MCSP` to `PartialMCSP`
   soundness and padded completeness of `PartialMCSP.verifier`.
 * `Cslib.PartialMCSP.isVerifier`, `Cslib.PartialMCSP.isVerifier_encBinary`: verifier correctness.
 * `Cslib.PartialMCSP.computableInPolyTime_tableEntry`: table entry lookup is polynomial-time.
+* `Cslib.PartialMCSP.computableInPolyTime_id_enc_encBinary`: re-encoding from unary (`enc`) to
+  binary (`encBinary`) threshold is polynomial-time.
 * `Cslib.PartialMCSP.computableInPolyTime_verifier`,
   `Cslib.PartialMCSP.computableInPolyTime_verifier_encBinary`: plain polynomial-time certificates
   for the verifiers.
@@ -194,7 +196,7 @@ theorem isVerifier_encBinary : IsVerifier encBinary MCSP.certPolynomial verifier
 
 /-! ### Polynomial time -/
 
-open ComputableTidilyInPolyTime
+open ComputableInPolyTime
 
 /-- The verifier on a raw partial truth-table list, a threshold, and a certificate, with the number
 of inputs read from the length of the table. -/
@@ -216,11 +218,11 @@ theorem computableInPolyTime_tableEntry :
       (fun p : List (Option Bool) × List Bool => tableEntry p.1 p.2)
       (encPair (encList (encOption encBool)) encBits) (encOption encBool) := by
   unfold tableEntry
-  exact .of_tidy
-    ((listGetD (encA := encOption encBool) (encL := encList (encOption encBool)) none).comp
-      ((fst _ _).prod (bitsBoundedBinaryValueWithInput
-        ((length_list (encOption encBool)).comp (fst _ _))
-        (bitsReverse.comp (snd _ _)))))
+  exact listGetDWithInput (fst _ _)
+    (bitsBoundedBinaryValueWithInput
+      ((length_list (encOption encBool)).comp (fst _ _))
+      ((show ComputableInPolyTime List.reverse encBits encBits by fun_prop).comp (snd _ _)))
+    none
 
 /-- The verifier on raw data is computable in polynomial time. -/
 theorem computableInPolyTime_tableVerifier :
@@ -232,13 +234,13 @@ theorem computableInPolyTime_tableVerifier :
       (fun p : (List (Option Bool) × List Bool) × Bool =>
         (tableEntry p.1.1 p.1.2).getD p.2 == p.2)
       (encPair encP encBool) encBool := by
-    have hentry := computableInPolyTime_tableEntry.tidy.comp
+    have hentry := computableInPolyTime_tableEntry.comp
       (((fst encP encBool).fst').prod ((fst encP encBool).snd'))
     have hval := optionGetDWithInput hentry (snd encP encBool)
-    exact .of_tidy (ComputableTidilyInPolyTime.beq hval (snd encP encBool))
+    exact ComputableInPolyTime.beq hval (snd encP encBool)
   exact MCSP.computableInPolyTime_checkCertificate_table
     (accept := fun T y out => (tableEntry T y).getD out == out)
-    (.of_tidy (length_list (encOption encBool)))
+    (length_list (encOption encBool))
     (fun T => SizedListEncoding.length_le (encA := encOption encBool) T)
     haccept
 
@@ -253,21 +255,26 @@ theorem computableInPolyTime_verifier_encBinary :
   rw [funext verifier_eq_tableVerifier]
   exact computableInPolyTime_tableVerifier.comp hraw
 
-/-- The `PartialMCSP` verifier is computable in polynomial time under `enc` (unary threshold). -/
-theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair enc encBits) encBool := by
+/-- Re-encoding a `PartialMCSP.Instance` from unary threshold encoding (`enc`) to binary threshold
+encoding (`encBinary`) is computable in polynomial time. -/
+theorem computableInPolyTime_id_enc_encBinary :
+    ComputableInPolyTime id enc encBinary := by
   have hraw : ComputableInPolyTime
-      (fun p : Instance × List Bool => ((List.ofFn p.1.table, p.1.threshold), p.2))
-      (encPair enc encBits)
-      (encPair (encPair (encList (encOption encBool)) encUnary) encBits) :=
+      (fun x : Instance => (List.ofFn x.table, x.threshold))
+      enc (encPair (encList (encOption encBool)) encUnary) :=
     .of_eq fun _ => rfl
   have hconv : ComputableInPolyTime
-      (fun r : (List (Option Bool) × ℕ) × List Bool => ((r.1.1, r.1.2), r.2))
-      (encPair (encPair (encList (encOption encBool)) encUnary) encBits)
-      (encPair (encPair (encList (encOption encBool)) encNat) encBits) :=
-    .of_tidy (((fst _ _).fst'.prod (unary_to_binary.comp (fst _ _).snd')).prod (snd _ _))
-  rw [funext verifier_eq_tableVerifier]
-  exact (computableInPolyTime_tableVerifier.comp hconv).comp hraw
+      (fun r : List (Option Bool) × ℕ => (r.1, r.2))
+      (encPair (encList (encOption encBool)) encUnary)
+      (encPair (encList (encOption encBool)) encNat) :=
+    (fst _ _).prod (unary_to_binary.comp (snd _ _))
+  exact (hconv.comp hraw).of_enc_eq fun _ => rfl
+
+/-- The `PartialMCSP` verifier is computable in polynomial time under `enc` (unary threshold). -/
+theorem computableInPolyTime_verifier :
+    ComputableInPolyTime verifier (encPair enc encBits) encBool :=
+  computableInPolyTime_verifier_encBinary.comp
+    ((computableInPolyTime_id_enc_encBinary.comp (fst enc encBits)).prod (snd enc encBits))
 
 /-- **`PartialMCSP` is in `NP`** under `PartialMCSP.enc` (framed `Option Bool` truth table and
 unary threshold) [Hirahara2022, ECCC TR22-119, Definition 8.4, p. 30]. -/
@@ -288,13 +295,13 @@ private theorem foldl_cons_some (l : List Bool) (acc : List (Option Bool)) :
   | cons b l ih =>
     simp [ih, List.map_append]
 
-private theorem computableTidilyInPolyTime_bitsMapSome :
-    ComputableTidilyInPolyTime (List.map some) encBits (encList (encOption encBool)) := by
+private theorem computableInPolyTime_bitsMapSome :
+    ComputableInPolyTime (List.map some) encBits (encList (encOption encBool)) := by
   have hfold := foldl_of_bounded_growth (encA := encBool) (encL := encBits)
     (encB := encList (encOption encBool))
     (step := fun acc b => some b :: acc) (init := fun _ => [])
-    bitsReverse (const [])
-    (show ComputableTidilyInPolyTime
+    (by fun_prop : ComputableInPolyTime List.reverse encBits encBits) (const [])
+    (show ComputableInPolyTime
       (fun p : List (Option Bool) × Bool => some p.2 :: p.1)
       (encPair (encList (encOption encBool)) encBool) (encList (encOption encBool)) by fun_prop)
     (growth := 5) (fun acc b => by
@@ -308,21 +315,19 @@ private theorem computableTidilyInPolyTime_bitsMapSome :
 in polynomial time. -/
 theorem computableInPolyTime_ofTotal_encBinary :
     ComputableInPolyTime Instance.ofTotal MCSP.encInstance encBinary := by
-  have hraw : ComputableTidilyInPolyTime
+  have hraw : ComputableInPolyTime
       (fun x : MCSP.Instance => (List.ofFn x.table, x.threshold))
       MCSP.encInstance (encPair encBits encNat) :=
     .of_eq fun _ => rfl
-  have hmap : ComputableTidilyInPolyTime
+  have hmap : ComputableInPolyTime
       (fun p : List Bool × ℕ => (p.1.map some, p.2))
       (encPair encBits encNat) (encPair (encList (encOption encBool)) encNat) :=
-    (computableTidilyInPolyTime_bitsMapSome.comp (fst encBits encNat)).prod (snd encBits encNat)
-  have hout : ComputableTidilyInPolyTime Instance.ofTotal MCSP.encInstance encBinary := by
-    refine (hmap.comp hraw).of_enc_eq fun x => ?_
-    have hofFn : (List.ofFn x.table).map some = List.ofFn (Instance.ofTotal x).table := by
-      ext i b
-      simp [Instance.ofTotal]
-    simp [encBinary_apply, hofFn, Instance.ofTotal]
-  exact .of_tidy hout
+    (computableInPolyTime_bitsMapSome.comp (fst encBits encNat)).prod (snd encBits encNat)
+  refine (hmap.comp hraw).of_enc_eq fun x => ?_
+  have hofFn : (List.ofFn x.table).map some = List.ofFn (Instance.ofTotal x).table := by
+    ext i b
+    simp [Instance.ofTotal]
+  simp [encBinary_apply, hofFn, Instance.ofTotal]
 
 /-- `MCSP` reduces to `PartialMCSP` in polynomial time via `Instance.ofTotal`. -/
 theorem polyTimeReducible_MCSP_PartialMCSP_encBinary :

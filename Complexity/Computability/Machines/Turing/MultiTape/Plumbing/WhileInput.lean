@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner
 
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
--- vendored: `spaceUsed` is `space` since cslib #1133
+-- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122
 
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Cursor
@@ -116,7 +116,8 @@ lemma exists_runFrom_round {c : Cfg k Symbol (RepeatUntilBlankState State) input
     {τ σ : ℕ} (hc : ConfinedRun (whileInput tm) c (wordsCfgAt input p (some .check) w out) t σ)
     (hsym : inputSymbolAt input p ≠ none)
     (hrun : tm.runFrom (wordsCfgAt input p (some tm.q₀) w out) τ = wordsCfgAt input p' none w' out')
-    (hsp : tm.space (wordsCfgAt input p (some tm.q₀) w out) τ ≤ σ) :
+    (hsp : (MultiTapeNTM.RunPath.ofDeterministic tm (wordsCfgAt input p (some tm.q₀) w out)
+      τ).space ≤ σ) :
     ∃ u ≤ τ, ConfinedRun (whileInput tm) c (wordsCfgAt input p' (some .check) w' out')
       (t + (u + 1)) σ := by
   obtain ⟨u, hu, hhalt⟩ := exists_haltsAt (show (tm.runFrom _ τ).Halted by rw [hrun]; rfl)
@@ -139,7 +140,7 @@ lemma exists_runFrom_round {c : Cfg k Symbol (RepeatUntilBlankState State) input
     obtain hlt | rfl := (Nat.lt_succ_iff.mp hm).lt_or_eq
     · rw [runFrom_runCfg hhalt hlt.le]
       exact visitedByTapeHead_subset_Icc _ rfl ((space_mono tm _ hu).trans hsp)
-        (mem_visitedByTapeHead.mpr ⟨m, by lia, rfl⟩)
+        (MultiTapeNTM.RunPath.mem_visitedByTapeHead_ofDeterministic.mpr ⟨m, by lia, rfl⟩)
     · rw [runFrom_runCfg hhalt le_rfl, ← hhalt.runFrom_eq hu, hrun]
       simp [runCfg]
 
@@ -178,7 +179,8 @@ public theorem transformsTapesAt_whileInput {tm : MultiTapeTM k Symbol State}
     induction n with
     | zero =>
       exact ⟨0, by simp, p, ws, [], ⟨by simp [runFrom, hstart], fun l => by
-        simp [visitedByTapeHead, runFrom, hstart, Finset.subset_iff]⟩, hP0⟩
+        simp [MultiTapeNTM.RunPath.visitedByTapeHead, MultiTapeNTM.RunPath.ofDeterministic,
+          hstart, Finset.subset_iff]⟩, hP0⟩
     | succ n ih =>
       obtain ⟨m, hm, pn, wsn, acc, hc, hPn⟩ := ih (by lia)
       obtain ⟨pn', wsn', e, hrunTm, hQ, hsp⟩ := hround n (by lia) acc input pn wsn (out ++ acc) hPn

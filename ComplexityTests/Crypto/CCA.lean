@@ -14,12 +14,16 @@ import Mathlib.Algebra.Field.ZMod
 
 Two-sided nonvacuity and regression tests for `Complexity.Crypto.Computational.Encryption.CCA` and
 `Complexity.Crypto.Computational.CollisionResistant`:
-1. **Satisfiable `INDCCA2` instance**: a constant-ciphertext scheme satisfies `INDCCA2`.
+1. **Satisfiable `INDCCA2` and `WordINDCCA2` instances**: a constant-ciphertext scheme satisfies
+   `INDCCA2`, and a length-only word scheme satisfies `WordINDCCA2` (and hence `WordINDCPA` via
+   `WordINDCCA2.wordINDCPA`) while violating unrestricted `INDCCA2Of encBits encOut` via
+   `INDCCA2Of.indcpaOf`.
 2. **Refutable `INDCCA2` instance**: the plaintext-leaking scheme from
    `ComplexityTests.Crypto.Encryption` violates `INDCCA2` via `INDCCA2.indcpa`.
-3. **Concrete `cca2Phase2Oracle` and `CCA2Adversary.IsPPT` checks**: `cca2Phase2Oracle` returns
+3. **Concrete `cca2Phase2Oracle` and `CCA2AdversaryOf.IsPPT` checks**: `cca2Phase2Oracle` returns
    `[]` on the challenge ciphertext and `encOption encBool (decrypt …)` otherwise, and
-   `CCA2Adversary.isPPT_ofCPA` constructs a concrete strict oracle PPT 1CCA adversary.
+   `CCA2AdversaryOf.isPPT_ofCPA` and `CCA2AdversaryOf.IsPPT.restrict` construct concrete strict
+   oracle PPT 1CCA adversaries.
 4. **Live Phase-2 decryption-oracle test**: for a scheme whose decryption ignores trailing bits
    (`decrypt _ _ ct := ct.head?`), a Phase-2 adversary querying `ct ++ [true] ≠ ct` bypasses the
    challenge-ciphertext guard and recovers the challenge bit with probability `1`.
@@ -74,6 +78,57 @@ theorem wordINDCCA2_lenEncrypt : WordINDCCA2 constKeyGen lenEncrypt lenDecrypt :
       simp [hl]
     · simp [hlen]
   simpa only [heq, Game.advantage_self] using negligible_zero
+
+/-- `WordINDCCA2.wordINDCPA` transfers equal-length 1CCA security to `WordINDCPA`. -/
+theorem wordINDCPA_lenEncrypt : WordINDCPA constKeyGen lenEncrypt :=
+  wordINDCCA2_lenEncrypt.wordINDCPA
+
+/-- A word CPA adversary that submits the unequal-length pair `([], [false])` and tests whether the
+ciphertext is `[false]`. -/
+def lenAdversary : WordAdversary where
+  choose _ _ := pure (([], [false]), [])
+  guess _ _ ct := pure (decide (ct = [false]))
+
+/-- `lenAdversary` is uniform strict PPT. -/
+theorem lenAdversary_isPPT : lenAdversary.IsPPT where
+  choose := (ComputableInPolyTime.const _).isPPTOn
+  guess := by
+    have hct : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2)
+        (encPair encUnary (encPair encBits encBits)) encBits := by fun_prop
+    exact (ComputableInPolyTime.decide_eq' (encB := encBits) hct
+      (ComputableInPolyTime.const [false])).isPPTOn
+
+/-- Without the equal-length admissibility guard, `lenEncrypt` violates `INDCPAOf encBits`. -/
+theorem not_indcpaOf_lenEncrypt : ¬ INDCPAOf encBits constKeyGen lenEncrypt := by
+  intro hsecure
+  have hneg := hsecure lenAdversary lenAdversary_isPPT
+  have hfalse (n : ℕ) :
+      ProbComp.eval (game constKeyGen lenEncrypt lenAdversary false n) = PMF.pure false := by
+    simp [game, gameOn, constKeyGen, lenEncrypt, lenAdversary]
+  have htrue (n : ℕ) :
+      ProbComp.eval (game constKeyGen lenEncrypt lenAdversary true n) = PMF.pure true := by
+    simp [game, gameOn, constKeyGen, lenEncrypt, lenAdversary]
+  simp only [hfalse, htrue] at hneg
+  have hone : Game.advantage (PMF.pure false) (PMF.pure true) = 1 := by
+    simp [Game.advantage, Game.succProbability]
+  rw [hone] at hneg
+  exact not_negligible_const one_ne_zero hneg
+
+/-- By `INDCCA2Of.indcpaOf`, `lenEncrypt` also violates unrestricted `INDCCA2Of encBits encOut` for
+every decryption function, whereas `wordINDCCA2_lenEncrypt` shows it satisfies `WordINDCCA2`
+(demonstrating that `WordINDCCA2` is strictly weaker than `INDCCA2Of encBits encBits`, while
+`INDCCA2Of.wordINDCCA2` gives the forward implication). -/
+theorem not_indcca2Of_lenEncrypt {Out : Type} (encOut : Out ↪ List Bool)
+    (decrypt : ℕ → List Bool → List Bool → Option Out) :
+    ¬ INDCCA2Of encBits encOut constKeyGen lenEncrypt decrypt :=
+  fun hCCA => not_indcpaOf_lenEncrypt hCCA.indcpaOf
+
+/-- Concrete witness for `WordCCA2Adversary.IsPPT` via `CCA2AdversaryOf.isPPT_ofCPA` and
+`CCA2AdversaryOf.IsPPT.restrict`. -/
+example :
+    ((CCA2AdversaryOf.ofCPA lenAdversary).restrict
+      (fun _ _ (m₀ m₁ : List Bool) => m₀.length == m₁.length)).IsPPT encBits :=
+  (CCA2AdversaryOf.isPPT_ofCPA lenAdversary_isPPT).restrict (by polytime)
 
 /-! ### 2. Refutable `INDCCA2` instance via `INDCCA2.indcpa` -/
 
@@ -136,12 +191,15 @@ example :
       4 () [false] [true] = true := by
   decide
 
-example (H : List Bool → List Bool → List Bool)
-    (valid : ℕ → List Bool → Bool) (adversary : CollisionFinder) (n : ℕ) :
+example :
     collisionGameFor (Param := List Bool) (Digest := fun _ => List Bool)
-      (fun m => ProbComp.eval (BitString.sampleList m)) H (fun m _ => valid m) adversary n =
-      ProbComp.eval (collisionGame H valid adversary n) :=
-  collisionGameFor_sampleList_eq H valid adversary n
+      (fun m => ProbComp.eval (BitString.sampleList m))
+      (fun k _ => k) (fun _ _ _ => true) (fun _ _ => pure ([false], [true])) 2 =
+      PMF.pure true := by
+  rw [collisionGameFor_sampleList_eq]
+  have hbne : ([false] != [true]) = true := rfl
+  simp only [collisionGame, isCollision, hbne, Bool.and_self, beq_self_eq_true, pure_bind,
+    ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure, PMF.bind_const]
 
 /-- Constant `ZMod 11`-valued hash family indexed by `Unit`. -/
 def constZModHash (_ : Unit) (_ : List Bool) : ZMod 11 := 0
@@ -151,14 +209,14 @@ def constZModFinder : CollisionFinderFor Unit := fun _ _ => pure ([false], [true
 
 /-- `constZModFinder` is uniformly strict PPT. -/
 theorem isPPTOn_constZModFinder :
-    IsPPTOn (encPair encUnary (encFinite Unit)) (encPair encBits encBits)
+    IsPPTOn (encPair encUnary (encFinEnum Unit)) (encPair encBits encBits)
       (fun p => constZModFinder p.1 p.2) :=
-  (ComputableTidilyInPolyTime.const ([false], [true])).isPPTOn
+  (ComputableInPolyTime.const ([false], [true])).isPPTOn
 
 /-- The constant `ZMod 11`-valued hash family is not collision-resistant. -/
 theorem not_collisionResistantFor_constZModHash :
     ¬ CollisionResistantFor (Param := Unit) (Digest := fun _ => ZMod 11)
-        (encFinite Unit) (fun _ => PMF.pure ()) constZModHash := by
+        (encFinEnum Unit) (fun _ => PMF.pure ()) constZModHash := by
   refine not_collisionResistantForOn_of_le_succProbability (c := 1) one_ne_zero
     constZModFinder isPPTOn_constZModFinder (fun n => ?_)
   have heval :

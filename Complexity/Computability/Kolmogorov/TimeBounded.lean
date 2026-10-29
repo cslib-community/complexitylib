@@ -27,8 +27,6 @@ time-bounded Kolmogorov complexity `Cslib.Kolmogorov.levinKt` (`Kt`).
 
 ## Modeling conventions
 
-Following the design recorded in [#798](https://github.com/cslib-community/complexitylib/issues/798):
-
 * **Clock counts steps of the described machine:**
   A binary program `p : List Bool` is parsed into a multi-tape Turing machine description
   `decodeDesc (unframe p)` (`Turing.MultiTapeTM.Universal.decodeDesc`) and an input bit string
@@ -211,12 +209,8 @@ theorem computableInPolyTime_universalTMRunFor :
   open ComputableInPolyTime in
   have hp := fst encBits encUnary
   have ht := snd encBits encUnary
-  have hunf : ComputableInPolyTime unframe encBits encBits :=
-    .of_tidy ComputableTidilyInPolyTime.unframe
-  have hdrop : ComputableInPolyTime dropFrame encBits encBits :=
-    .of_tidy ComputableTidilyInPolyTime.dropFrame
-  have hd := computableInPolyTime_decodeDesc.comp (hunf.comp hp)
-  have hw := computableInPolyTime_map_eBit.comp (hdrop.comp hp)
+  have hd := computableInPolyTime_decodeDesc.comp (unframe.comp hp)
+  have hw := computableInPolyTime_map_eBit.comp (dropFrame.comp hp)
   have hsim := computableInPolyTime_universal.comp (hd.prod (hw.prod ht))
   have hf : ComputableInPolyTime (fun r : List ℕ × Bool => r.1) eOut (encList encUnary) :=
     fst (encList encUnary) encBool

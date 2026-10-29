@@ -15,7 +15,7 @@ import Complexity.Computability.Complexity.CookLevin.PolyTime
 /-!
 # The parsimonious Cook–Levin theorem
 
-The Cook–Levin reduction is polynomial-time (`computableTidilyInPolyTime_reduce`) and
+The Cook–Levin reduction is polynomial-time (`computableInPolyTime_reduce`) and
 parsimonious (`modelCount_reduce`): applied to the verifier of a function `f` in `#P`, it maps an
 instance `a` to a formula with exactly `f a` satisfying assignments. Together with
 `SharpSAT.mem_SharpP`, this proves that `#SAT` is `#P`-complete under parsimonious polynomial-time
@@ -46,14 +46,12 @@ open Turing Turing.MultiTapeTM Cslib.Logic.PL
 /-- **The parsimonious Cook–Levin theorem**: every function in `#P` reduces parsimoniously to
 `#SAT`, through the tableau of its verifier. -/
 theorem SharpSAT_sharpPHard : SharpPHard encCNF SharpSAT := by
-  rintro α enc f ⟨p, V, hV, hf⟩
-  obtain ⟨t, s, ht, -, k, State, hfin, tm, htm⟩ := hV.tidy
-  obtain ⟨c, d, ht⟩ := ht.exists_le
+  rintro α enc f ⟨p, V, ⟨t, _, ht, -, k, State, hfin, tm, htm⟩, hf⟩
+  obtain ⟨c, d, ht⟩ := polynomiallyBounded_iff_le.mp ht
   have := Fintype.ofFinite State
   classical
-  have htm' := htm.mono (fun x => ht x) (fun _ => le_rfl)
-  exact ⟨reduce tm p c d enc, (computableInPolyTime_reduce tm p c d enc), fun a => by
-    rw [hf a, SharpSAT, modelCount_reduce a fun w _ => (htm' (a, w)).runFrom_initCfg]⟩
+  exact ⟨reduce tm p c d enc, computableInPolyTime_reduce tm p c d enc, fun a => by
+    rw [hf a, SharpSAT, modelCount_reduce a fun w _ => (htm (a, w)).runFrom_of_le (ht _)]⟩
 
 /-- **`#SAT` is `#P`-complete** under parsimonious polynomial-time reductions. -/
 theorem SharpSAT_sharpPComplete : SharpPComplete encCNF SharpSAT :=

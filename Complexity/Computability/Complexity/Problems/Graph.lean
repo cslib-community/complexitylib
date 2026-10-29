@@ -14,7 +14,10 @@ public import Mathlib.Data.Fintype.Sets
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
 import Mathlib.Data.List.GetD
 import Mathlib.SetTheory.Cardinal.Finite
 
@@ -85,7 +88,7 @@ This module holds the tools these problems share:
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- A graph on natural numbers, given by its vertices and its edges. -/
 abbrev Graph : Type := List ℕ × List (ℕ × ℕ)
@@ -205,11 +208,8 @@ uses. -/
 theorem computableInPolyTime_adjBool_comp {γ : Type} {enc : γ ↪ List Bool}
     {G : γ → Graph} {u v : γ → ℕ} (hG : ComputableInPolyTime G enc encGraph)
     (hu : ComputableInPolyTime u enc encNat) (hv : ComputableInPolyTime v enc encNat) :
-    ComputableInPolyTime (fun c => (G c).adjBool (u c) (v c)) enc encBool := by
-  have hG := hG.tidy
-  have hu := hu.tidy
-  have hv := hv.tidy
-  exact .of_tidy (computableInPolyTime_adjBool.tidy.comp ((hG.prod hu).prod hv))
+    ComputableInPolyTime (fun c => (G c).adjBool (u c) (v c)) enc encBool :=
+  computableInPolyTime_adjBool.comp ((hG.prod hu).prod hv)
 
 /-- Verify a cardinality-`m` vertex subset problem with pairwise relation `rel`: select distinct
 declared vertices from `G.1` by the certificate mask, compare the selected count with `m` in
@@ -271,14 +271,6 @@ theorem isVerifier_verifySubset {rel : Graph → ℕ → ℕ → Bool} {P : Grap
     · exact Or.inl huv
     · exact Or.inr ((hrel x.1 u v huv).2 (h hu hv huv))
 
-private theorem bool_or' {α : Type} {encA : α ↪ List Bool} {left right : α → Bool}
-    (hleft : ComputableTidilyInPolyTime left encA encBool)
-    (hright : ComputableTidilyInPolyTime right encA encBool) :
-    ComputableTidilyInPolyTime (fun a => left a || right a) encA encBool :=
-  bool_or.comp (hleft.prod hright)
-
-attribute [local fun_prop] bool_or'
-
 /-- `verifySubset` is computable in polynomial time whenever the pairwise test `rel` is. -/
 @[fun_prop]
 theorem computableInPolyTime_verifySubset {rel : Graph → ℕ → ℕ → Bool}
@@ -286,19 +278,16 @@ theorem computableInPolyTime_verifySubset {rel : Graph → ℕ → ℕ → Bool}
       (encPair (encPair encGraph encNat) encNat) encBool) :
     ComputableInPolyTime (verifySubset rel)
       (encPair (encPair encGraph encNat) encBits) encBool := by
-  have hrel := hrel.tidy
-  refine .of_tidy ?_
-  refine (computableInPolyTime_subsetVerifier (encγ := encNat)
-    (.of_tidy (by unfold encGraph; fun_prop)) (.of_tidy (bool_and' ?_ ?_))).tidy
-  · exact (((ComputableInPolyTime.length_list_binary encNat).tidy.comp (snd _ _)).decide_eq'
-      (by fun_prop))
+  refine computableInPolyTime_subsetVerifier (encγ := encNat)
+    (by unfold encGraph; fun_prop) (bool_and' ?_ ?_)
+  · exact ((length_list_binary encNat).comp (snd _ _)).decide_eq' (by fun_prop)
   · apply allWithInput (snd _ _)
     apply allWithInput ((snd _ _).comp (fst _ _))
-    have hproj : ComputableTidilyInPolyTime
+    have hproj : ComputableInPolyTime
         (fun p : (((Graph × ℕ) × List ℕ) × ℕ) × ℕ => ((p.1.1.1.1, p.1.2), p.2))
         (encPair (encPair (encPair (encPair encGraph encNat) (encList encNat)) encNat) encNat)
         (encPair (encPair encGraph encNat) encNat) := by fun_prop
-    exact bool_or' (by fun_prop) (hrel.comp hproj)
+    exact bool_or.comp ((by fun_prop : ComputableInPolyTime _ _ encBool).prod (hrel.comp hproj))
 
 end Graph
 
@@ -429,27 +418,24 @@ theorem isVerifier_verifyOrdering {α : Type} {enc : α ↪ List Bool} {V : α �
     exact ⟨_, hnd, hmem, hP⟩
 
 /-- Testing whether a list lists every vertex of another exactly once is polynomial-time. -/
-private theorem computableTidilyInPolyTime_enumeratesBool :
-    ComputableTidilyInPolyTime (fun x : List ℕ × List ℕ => enumeratesBool x.1 x.2)
+@[local fun_prop]
+private theorem computableInPolyTime_enumeratesBool :
+    ComputableInPolyTime (fun x : List ℕ × List ℕ => enumeratesBool x.1 x.2)
       (encPair (encList encNat) (encList encNat)) encBool := by
   unfold enumeratesBool
   fun_prop
 
-attribute [local fun_prop] computableTidilyInPolyTime_enumeratesBool
-
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Decoding a list of vertices from a certificate is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_decodeVertexList :
     ComputableInPolyTime (fun x : List ℕ × List Bool => decodeVertexList x.1 x.2)
       (encPair (encList encNat) encBits) (encList encNat) := by
-  refine .of_tidy ?_
-  have hn : ComputableTidilyInPolyTime (fun x : List ℕ × List Bool => x.1.dedup.length)
+  have hn : ComputableInPolyTime (fun x : List ℕ × List Bool => x.1.dedup.length)
       (encPair (encList encNat) encBits) encUnary := by
     simp only [← List.card_toFinset, ← length_selectDistinct_replicate]
     have := bitsReplicate true
-    fun_prop
-  have hblock : ComputableTidilyInPolyTime
+    exact (length_list encNat).comp (by fun_prop)
+  have hblock : ComputableInPolyTime
       (fun q : (List ℕ × List Bool) × ℕ =>
         (List.range q.1.1.length).countP fun c => q.1.2.getD (q.1.1.length * q.2 + c) false)
       (encPair (encPair (encList encNat) encBits) encUnary) encUnary := by
@@ -465,15 +451,12 @@ theorem computableInPolyTime_verifyOrdering {α : Type} {enc : α ↪ List Bool}
     (hcheck : ComputableInPolyTime (fun q : α × List ℕ => check q.1 q.2)
       (encPair enc (encList encNat)) encBool) :
     ComputableInPolyTime (verifyOrdering V check) (encPair enc encBits) encBool := by
-  have hV := hV.tidy
-  have hcheck := hcheck.tidy
-  refine .of_tidy ?_
-  have hV' : ComputableTidilyInPolyTime (fun x : α × List Bool => V x.1) (encPair enc encBits)
+  have hV' : ComputableInPolyTime (fun x : α × List Bool => V x.1) (encPair enc encBits)
       (encList encNat) := hV.comp (fst _ _)
-  have hp : ComputableTidilyInPolyTime (fun x : α × List Bool => decodeVertexList (V x.1) x.2)
+  have hp : ComputableInPolyTime (fun x : α × List Bool => decodeVertexList (V x.1) x.2)
       (encPair enc encBits) (encList encNat) :=
-    computableInPolyTime_decodeVertexList.tidy.comp (hV'.prod (snd _ _))
-  exact (computableTidilyInPolyTime_enumeratesBool.comp (hV'.prod hp)).bool_and'
+    computableInPolyTime_decodeVertexList.comp (hV'.prod (snd _ _))
+  exact (computableInPolyTime_enumeratesBool.comp (hV'.prod hp)).bool_and'
     (hcheck.comp ((fst _ _).prod hp))
 
 end Graph

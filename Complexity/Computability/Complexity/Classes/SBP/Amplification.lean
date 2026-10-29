@@ -48,18 +48,14 @@ theorem exists_SBP_gap_pow_polyTime (hA : A ∈ SBP enc) {r : α → ℕ}
     ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableInPolyTime k enc encNat ∧
       (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧
         (a ∉ A → 2 ^ r a * f a < k a) := by
-  have hr := hr.tidy
-  have this : ∃ f ∈ SharpP enc, ∃ k : α → ℕ, ComputableTidilyInPolyTime k enc encNat ∧
-      (∀ a, 0 < k a) ∧ ∀ a, (a ∈ A → k a ≤ f a) ∧ (a ∉ A → 2 ^ r a * f a < k a) := by
-    obtain ⟨f, hf, k, hk, hkpos, h⟩ := mem_SBP_iff_exists_pos_threshold.mp hA
-    refine ⟨_, SharpP.pow_mem_polyTime hf (.of_tidy hr), fun a => k a ^ r a,
-      hk.tidy.binary_pow' hr, fun a => pow_pos (hkpos a) _, fun a => ⟨?_, ?_⟩⟩
-    · intro ha
-      exact Nat.pow_le_pow_left ((h a).1 ha) (r a)
-    · intro ha
-      simpa only [mul_pow] using
-        Nat.pow_lt_pow_left ((h a).2 ha) (Nat.ne_of_gt (hpos a))
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  obtain ⟨f, hf, k, hk, hkpos, h⟩ := mem_SBP_iff_exists_pos_threshold.mp hA
+  refine ⟨_, SharpP.pow_mem_polyTime hf hr, fun a => k a ^ r a,
+    hk.binary_pow' hr, fun a => pow_pos (hkpos a) _, fun a => ⟨?_, ?_⟩⟩
+  · intro ha
+    exact Nat.pow_le_pow_left ((h a).1 ha) (r a)
+  · intro ha
+    simpa only [mul_pow] using
+      Nat.pow_lt_pow_left ((h a).2 ha) (Nat.ne_of_gt (hpos a))
 
 /-- **Uniform SBP amplification.** One #P witness and one positive polynomial-time binary
 threshold achieve gap `2 ^ r(a)` for every polynomially bounded requested exponent. The request

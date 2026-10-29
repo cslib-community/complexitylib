@@ -23,7 +23,6 @@ run_cmd do
   for n in [`Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace,
       `Turing.MultiTapeTM.ComputableTidilyInPolyTime,
       `Turing.MultiTapeTM.ComputableTidilyInDegree,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO,
       `Turing.MultiTapeTM.ComputableTidilyInO,
       `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.comp_linear,
       `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.ite,
@@ -41,66 +40,55 @@ variable {α β γ : Type u} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
   {encP : α × β ↪ List Bool}
 
 -- Arbitrary element types/encodings; no finite-domain or inhabited-type assumption.
-example [ListEncoding encA encL] (d : α) :
-    ComputableInLinearTimeAndSpace (fun xs : List α => xs.tail.headD d) encL encA :=
-  (ListEncoding.headD d).comp (ListEncoding.tail (enc₁ := encA))
-
-example [ListEncoding encA encL] :
-    ComputableInLinearTimeAndSpace (fun xs : List α => xs.tail.isEmpty) encL encBool :=
-  (ListEncoding.isEmpty (enc₁ := encA)).comp (ListEncoding.tail (enc₁ := encA))
-
-example [OptionEncoding encA encO] (d : α) :
-    ComputableInLinearTimeAndSpace (fun a : α => (some a).getD d) encA encA :=
-  (OptionEncoding.getD (enc := encO) d).comp OptionEncoding.some
-
-example [OptionEncoding encA encO] : encO none = [] := OptionEncoding.none_eq encA
-
-example [PairEncoding encA encB encP] {f : γ → α} {g : γ → β}
-    {t₁ s₁ t₂ s₂ : γ → ℕ}
+example [ListEncoding encA encL] [OptionEncoding encA encO] [PairEncoding encA encB encP]
+    (d : α) {f : γ → α} {g : γ → β} {t₁ s₁ t₂ s₂ : γ → ℕ}
     (hf : ComputableInTimeAndSpace f encIn encA t₁ s₁)
-    (hg : ComputableInTimeAndSpace g encIn encB t₂ s₂) :
-    ∃ c, ComputableInTimeAndSpace (fun x => (f x, g x)) encIn encP
+    (hg : ComputableInTimeAndSpace g encIn encB t₂ s₂)
+    (_hfLin : ComputableInLinearTimeAndSpace f encIn encA) :
+    ComputableInLinearTimeAndSpace (fun xs : List α => xs.tail.headD d) encL encA ∧
+    ComputableInLinearTimeAndSpace (fun xs : List α => xs.tail.isEmpty) encL encBool ∧
+    ComputableInLinearTimeAndSpace (fun a : α => (some a).getD d) encA encA ∧
+    encO none = [] ∧
+    (∃ c, ComputableInTimeAndSpace (fun x => (f x, g x)) encIn encP
       (fun x => c * (t₁ x + t₂ x + 1))
-      (fun x => c * (s₁ x + s₂ x + (encP (f x, g x)).length + 1)) :=
-  PairEncoding.pair_mono hf hg
+      (fun x => c * (s₁ x + s₂ x + (encP (f x, g x)).length + 1))) := by
+  fail_if_success
+    have : ComputableInLinearTimeAndSpace (fun x => (f x, g x)) encIn encP :=
+      _hfLin.pair (by assumption)
+  exact ⟨(ListEncoding.headD d).comp (ListEncoding.tail (enc₁ := encA)),
+    (ListEncoding.isEmpty (enc₁ := encA)).comp (ListEncoding.tail (enc₁ := encA)),
+    (OptionEncoding.getD (enc := encO) d).comp OptionEncoding.some,
+    OptionEncoding.none_eq encA,
+    PairEncoding.pair_mono hf hg⟩
 
 example : True := by
   fail_if_success have : ListEncoding encA encL := inferInstance
   fail_if_success have : OptionEncoding encA encO := inferInstance
   fail_if_success have : PairEncoding encA encB encP := inferInstance
   trivial
-
-example [PairEncoding encA encB encP] {f : γ → α} {g : γ → β}
-    (hf : ComputableInLinearTimeAndSpace f encIn encA) : hf = hf ∧ g = g := by
-  fail_if_success
-    have : ComputableInLinearTimeAndSpace (fun x => (f x, g x)) encIn encP :=
-      hf.pair (by assumption)
-  exact ⟨rfl, rfl⟩
 end Generic
 
--- The actual pair instance allows zero-workspace callbacks with independent time/output charge.
-example : ∃ c, ComputableInTimeAndSpace (fun w : List Bool => (w, w)) encBits
-    (encPair encBits encBits) (fun w => c * (w.length + 2))
-    (fun w => c * ((encPair encBits encBits (w, w)).length + 1)) := by
+-- The actual pair instance allows zero-workspace callbacks with independent time/output charge,
+-- and empty/default and malformed-word behavior matches the original encoding/parser behavior.
+example (w xs d : List Bool) (enc : Empty ↪ List Bool) :
+    (∃ c, ComputableInTimeAndSpace (fun w : List Bool => (w, w)) encBits
+      (encPair encBits encBits) (fun w => c * (w.length + 2))
+      (fun w => c * ((encPair encBits encBits (w, w)).length + 1))) ∧
+    encOption encBits (some w) = true :: w ∧
+    encOption encBits none = [] ∧
+    encPair encBits encBits (xs, []) = frame xs ++ [] ∧
+    encList encBits [] = [] ∧
+    unframe [true] = [] ∧
+    dropFrame [true] = [] ∧
+    unframe [true, false, true] = [false] ∧
+    dropFrame [true, false, true] = [] ∧
+    ComputableInDegree (some (α := Empty)) enc (encOption enc) 1 1 ∧
+    (encList encBits ([] : List (List Bool))) = [] ∧
+    ([] : List (List Bool)).headD d = d ∧
+    (none : Option (List Bool)).getD d = d := by
+  refine ⟨?_, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, ComputableInDegree.optionSome,
+    rfl, rfl, rfl⟩
   obtain ⟨k, Q, hfin, tm, htm⟩ := computableInTimeAndSpace_id (enc := encBits)
   have hi : ComputableInTimeAndSpace id encBits encBits (fun w => w.length + 1) (fun _ => 0) :=
     ⟨k, Q, hfin, tm, htm⟩
   simpa [Nat.add_assoc] using PairEncoding.pair (enc := encPair encBits encBits) hi hi
-
--- Empty/default and malformed-word behavior remains the original encoding/parser behavior.
-example (w : List Bool) : encOption encBits (some w) = true :: w := rfl
-example : encOption encBits none = [] := rfl
-example (xs : List Bool) : encPair encBits encBits (xs, []) = frame xs ++ [] := rfl
-example : encList encBits [] = [] := rfl
-example : unframe [true] = [] := rfl
-example : dropFrame [true] = [] := rfl
-example : unframe [true, false, true] = [false] := rfl
-example : dropFrame [true, false, true] = [] := rfl
-
-example (enc : Empty ↪ List Bool) :
-    ComputableInDegree (some (α := Empty)) enc (encOption enc) 1 1 :=
-  ComputableInDegree.optionSome
-
-example : (encList encBits ([] : List (List Bool))) = [] := rfl
-example (d : List Bool) : ([] : List (List Bool)).headD d = d := rfl
-example (d : List Bool) : (none : Option (List Bool)).getD d = d := rfl

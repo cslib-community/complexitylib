@@ -1,9 +1,15 @@
 # Contributing
 
-Follow CSLib's [contribution guidelines](https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md)
-and [code style](https://github.com/leanprover/cslib/blob/main/CODESTYLE.md).
-The pinned copies are in `.lake/packages/cslib/` after fetching dependencies.
-[AGENTS.md](AGENTS.md) records the local file, proof, validation, and review requirements.
+Follow the mathematical, API and style conventions in CSLib's
+[contribution guidelines](https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md) and
+[code style](https://github.com/leanprover/cslib/blob/main/CODESTYLE.md), using the pinned copies
+in `.lake/packages/cslib/` after fetching dependencies. [AGENTS.md](AGENTS.md) defines this
+repository's workflow, file layout, proof, validation and review requirements. Upstream
+submissions follow the target repository's current process.
+
+For setup, start with [Build a checkout](README.md#build-a-checkout). The
+[guide](https://www.cslib.io/complexitylib/guide/) and
+[checked examples](README.md#start-here) introduce the APIs before you change them.
 
 ## Proposing and contributing work
 
@@ -12,10 +18,14 @@ before implementing it.
 State the mathematical endpoint, cite its source, identify existing APIs and missing dependencies,
 and propose a first independently useful milestone. [ROADMAP.md](ROADMAP.md) lists open directions;
 an item there is not an assignment or a claim that its prerequisites are complete.
-Small fixes and API improvements can go directly to a pull request.
+Small fixes and API improvements can go directly to a pull request. Use the existing issue or
+PR to record ownership and handoffs; do not create duplicate task records. Prioritize fixes and
+landing open PRs when review or integration is the bottleneck.
 
-Keep a pull request small enough to review as one mathematical or engineering change. Include a
-checked client for a new API and instances showing that bundled hypotheses can be met. Preserve
+Keep a pull request small enough to review as one mathematical or engineering change. Batch
+related mechanical fixes when they share a contract and validation; split at independently useful
+boundaries rather than creating a PR per cleanup. Include a checked client for a new API and
+instances showing that bundled hypotheses can be met. Preserve
 the original authors and licenses when porting code; cite mathematical sources in module
 docstrings through [references.bib](references.bib), whose entries stay sorted by key.
 
@@ -48,9 +58,11 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
 6. **Placement.** No duplicates; small topic modules; clients import what they use.
 7. **Documentation.** Definitions and theorems are documented, citing sources; module docstrings
    list the actual public API; each area has a chapter in the guide.
-8. **Tests.** Checked, nonvacuous examples of the area's main API: each exercises a concrete
-   instance (a small input, a run, a counterexample). A one-line `example … := someTheorem` that
-   only restates a signature is not a test; keep such lines only where they pin a curated abstract.
+8. **Tests.** Checked, nonvacuous examples exercise concrete inputs, runs, counterexamples or
+   meaningful client behavior such as inference, imports and automation. Merely restating a
+   signature adds no behavioral coverage (curated abstracts separately pin public claims).
+   Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
+   become weaker inequalities, and regression cases must not become tautologies.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
@@ -117,11 +129,12 @@ Maintainers decide scope and acceptance, and arrange the independent API and cor
 required by [AGENTS.md](AGENTS.md#review-cycle). Contributors need not install a maintainer's
 agent tooling to submit a change.
 
-Run `scripts/build.sh [Lake build arguments]` for a build or `scripts/check.sh` for the six project
-checks; both attempt cache restoration first. Before the first MCP elaboration/build in a
-checkout, and after changing branches or pins, run `scripts/cache/ensure.sh`. The command is
-shared by all agent clients. See the [cache guide](scripts/cache/README.md#automatic-restoration)
-for retries and intentional opt-out.
+Use the [validation sequence](AGENTS.md#validation-sequence) for the six project gates and
+when focused local checks or hosted CI supply the required evidence. `scripts/build.sh` and
+`scripts/check.sh` attempt cache restoration automatically. Bootstrap cold checkouts before MCP
+elaboration with `scripts/cache/ensure.sh`; retry for missing outputs or changed dependencies,
+not merely a new commit with warm artifacts. See the
+[cache guide](scripts/cache/README.md#automatic-restoration) for actual retries and opt-out.
 
 The test suite audits the axiom dependencies of every declaration stored in imported `Complexity`
 modules. Named `#print axioms` checks are added only for results meant to depend on fewer axioms
@@ -137,7 +150,8 @@ observed concurrency and memory use. Keep mutable build outputs separate between
 (for example with `scripts/worktree.sh create <branch> [dir_name]`, which seeds `.lake/build` from
 the root checkout and, when `<branch>` exists only on `origin`, checks it out tracking
 `origin/<branch>`). Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
-forbidden proof tokens, `set_option` justifications and the key order of `references.bib`
+forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
+every docstring citation key has an entry there
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in
 candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
@@ -156,7 +170,9 @@ preserves existing destination caches and does not repair worktrees created with
 caches by an older helper; use a fresh worktree for isolated validation.
 
 Coordinate with a run's owner before rescheduling it, preserve completed artifacts, and record
-an interrupted run as incomplete. A fresh run must pass all six strict checks on the final revision.
+an interrupted run as incomplete. Full validation must cover the final source revision as
+specified in [AGENTS.md](AGENTS.md#validation-sequence); a successful hosted run counts, and
+required merge-group checks still apply.
 
 Record validation and review in the PR, or in the commit description for work without a PR:
 the tested revision (or base revision and exact diff), commands and outcomes, reviewer/tool and
@@ -165,9 +181,9 @@ there for another contributor to assess the change; a path into a local `.lake/`
 a durable review record. Recheck changes made after review and identify the final reviewed revision.
 Link the hosted CI run for the final revision rather than asserting which checks passed. Keep review
 verdicts short: the revision, the verdict and the findings, linking evidence rather than pasting it.
-Before requesting review, run `python3 scripts/check_pr_names.py --pr N` on the PR head: it lists
-backticked Lean names in the description that the head does not declare (CI posts the same advisory
-notice).
+For descriptions with Lean declaration names, `python3 scripts/check_pr_names.py --pr N` can
+catch backticked names absent from the PR head. CI posts the same advisory notice; fix relevant
+findings without requiring a duplicate local run.
 
 ## Documentation
 
@@ -190,7 +206,7 @@ The [README](README.md#build-and-use) explains how to generate API documentation
 [Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
 the library's toolchain and dependency checkouts, and `docbuild` its bibliography. After changing
 library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update complexitylib`
-and the same with `-d guide`. When changing Lean, also update the doc-gen4 tag in
+and the same with `-d guide`. When changing the Lean toolchain, also update the doc-gen4 tag in
 `docbuild/lakefile.toml` and the Verso tag in `guide/lakefile.toml`, both named after the Lean
 version, and run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update doc-gen4` and
 `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d guide update verso`. Commit the refreshed lockfiles and
@@ -205,24 +221,16 @@ selection is an editorial decision, not an automatic consequence of adding a the
 must establish a substantial full endpoint with conventional semantics and nonvacuous premises.
 Keep incomplete endpoints in `ROADMAP.md` and credit mathematical and formalization sources.
 
-Every AI-authored PR must assess its final Lean changes against the selection. Update affected
-abstracts and scope notes, or explain why the catalogue is unaffected. Proof-only changes with
-unchanged statements and scope can record that assessment without rewriting the abstract. Follow the
-repository's `lean-abstract` skill, import new abstracts in `ComplexityTests/Abstracts/All.lean`,
-and run their `#check_abstract` audits. Allow only narrow, explained foundational models; do not
-allowlist the result's class definitions or construction to evade a self-contained statement.
+Follow [the abstract requirements](AGENTS.md#curated-formal-abstracts) for impact assessment,
+source layout, independent review and `#check_abstract` audits. These apply to affected claims
+and artifacts; unrelated edits need no no-impact boilerplate or repeated PDF inspection.
 
-Arrange independent API, correctness and abstract reviews against the final source revision.
-Reviewers must check quantifiers, semantics, encodings, bounds, nonvacuity and readability. Record
-reviewers, exact revisions, findings and resolutions. These checks supplement Lean's proof checking;
-they are not a proof that the English interpretation is equivalent or human editorial approval.
-
-Run `python3 -B scripts/build_abstracts.py --check` to check the selection. The **Formal abstract
-PDFs** workflow generates individual PDFs and a combined catalogue with source digests, revision
-provenance and exact declaration links. Inspect its rendered pages and links before integration,
-recording the artifact/run and source revisions. Local generation is supported; see
-[the build guide](abstracts/README.md). The documentation site publishes the latest main
-build under `https://www.cslib.io/complexitylib/abstracts/`. Generated TeX and PDFs stay untracked; the former paper/TeX index has been retired.
+When selection or abstract sources change, run `python3 -B scripts/build_abstracts.py --check`.
+When abstracts or rendering change, inspect affected rendered pages and declaration links before
+integration and link the artifact/run and source revision. The **Formal abstract PDFs** workflow
+generates review artifacts; **API documentation** publishes main builds under
+`https://www.cslib.io/complexitylib/abstracts/`. See [the build guide](abstracts/README.md) for local
+generation. Generated TeX and PDFs stay untracked.
 
 ## Upstreaming
 

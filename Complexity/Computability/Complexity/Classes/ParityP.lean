@@ -11,7 +11,6 @@ public import Complexity.Computability.Complexity.Classes.Operators
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.BitString.WordCount
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # The class parity-P
@@ -134,21 +133,15 @@ variable {enc : α ↪ List Bool} {L : Set α}
 theorem mem_ParityP : L ∈ ParityP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
     ComputableInPolyTime V (encPair enc encBits) encBool ∧
       ∀ a, a ∈ L ↔ Odd (acceptCount V a (p.eval (enc a).length)) := by
-  have this : L ∈ ParityP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool → Bool),
-      ComputableTidilyInPolyTime V (encPair enc encBits) encBool ∧ ∀ a, a ∈ L ↔ Odd
-      (acceptCount V a (p.eval (enc a).length)) := by
-    classical
-    constructor
-    · rintro ⟨p, L', ⟨f, hf, hL'⟩, h⟩
-      refine ⟨p, f, hf.tidy, fun a => (h a).trans ?_⟩
-      rw [acceptCount_congr (W := f) fun w => by simp [hL' (a, w)]]
-    · rintro ⟨p, V, hV, h⟩
-      refine ⟨p, {x | V x = true}, ⟨V, .of_tidy hV, fun _ => Iff.rfl⟩, fun a => (h a).trans ?_⟩
-      exact Iff.of_eq (congrArg Odd (acceptCount_congr (W := V) (fun w => by simp) _).symm)
-  simpa only [computableInPolyTime_iff_computableTidilyInPolyTime] using this
+  classical
+  constructor
+  · rintro ⟨p, L', ⟨f, hf, hL'⟩, h⟩
+    refine ⟨p, f, hf, fun a => (h a).trans ?_⟩
+    rw [acceptCount_congr (W := f) fun w => by simp [hL' (a, w)]]
+  · rintro ⟨p, V, hV, h⟩
+    refine ⟨p, {x | V x = true}, ⟨V, hV, fun _ => Iff.rfl⟩, fun a => (h a).trans ?_⟩
+    exact Iff.of_eq (congrArg Odd (acceptCount_congr (W := V) (fun w => by simp) _).symm)
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`⊕P` through `#P`**: a problem is in `⊕P` exactly when it is the set of instances where some
 function in `#P` is odd. -/
 theorem mem_ParityP_iff_exists_SharpP :
@@ -167,12 +160,10 @@ theorem compl_mem_ParityP (hL : L ∈ ParityP enc) : Lᶜ ∈ ParityP enc := by
   rw [Set.mem_compl_iff, h a, Polynomial.eval_add, Polynomial.eval_one,
     odd_acceptCount_succVerifier_iff]
 
-attribute [local fun_prop] ComputableInPolySpace.tidy in
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- **`P ⊆ ⊕P`**: a decider accepts the empty string or nothing. -/
 theorem P_subset_ParityP : P enc ⊆ ParityP enc := by
   rintro L ⟨f, hf, h⟩
-  refine mem_ParityP.2 ⟨0, fun x => f x.1, .of_tidy (hf.tidy.comp (.fst enc encBits)), fun a => ?_⟩
+  refine mem_ParityP.2 ⟨0, fun x => f x.1, (hf.comp (.fst enc encBits)), fun a => ?_⟩
   rw [h a, Polynomial.eval_zero]
   cases hfa : f a <;> simp [acceptCount, hfa]
 

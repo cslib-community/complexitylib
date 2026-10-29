@@ -66,7 +66,7 @@ theorem mem_UP : A ∈ UP enc ↔ ∃ (p : Polynomial ℕ) (V : α × List Bool 
 /-- A deterministic decider uses only the empty certificate. -/
 theorem P_subset_UP : P enc ⊆ UP enc := by
   rintro A ⟨f, hf, hA⟩
-  refine mem_UP.mpr ⟨0, fun x => f x.1, .of_tidy (hf.tidy.comp (.fst enc encBits)), ?_, ?_⟩
+  refine mem_UP.mpr ⟨0, fun x => f x.1, (hf.comp (.fst enc encBits)), ?_, ?_⟩
   · intro a
     simp only [Polynomial.eval_zero, acceptCount_zero]
     split <;> omega

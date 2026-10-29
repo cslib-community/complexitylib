@@ -6,7 +6,7 @@ Authors: Samuel Schlesinger
 
 module
 -- upstream: candidate (redo of the withdrawn cslib PR #1101); blocked on the definitions of
--- `Complexity.P` (crei's `ComputableTidilyInPolyTime`, built on the merged #1126)
+-- `Complexity.P` (`ComputableInPolyTime`, built on the merged #1126)
 
 public import Complexity.Computability.Circuit.Boolean.BoundedError
 public import Complexity.Computability.Circuit.Boolean.MachineSimulation
@@ -15,7 +15,6 @@ public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Complexity.Classes.RP
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
-public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 
 /-!
 # P ⊆ P/poly and BPP ⊆ P/poly
@@ -65,16 +64,14 @@ preimage, under the encoding, of a language in `P/poly`. -/
 theorem PPoly.exists_of_polyTime {α : Type*} {enc : α ↪ List Bool} {f : α → Bool}
     (hf : ComputableInPolyTime f enc encBool) :
     ∃ L ∈ PPoly, ∀ a, f a = true ↔ enc a ∈ L := by
-  have hf := hf.tidy
   obtain ⟨t, s, ht, -, k, State, hfin, tm, htm⟩ := hf
-  obtain ⟨c, d, ht⟩ := ht.exists_le
+  obtain ⟨c, d, ht⟩ := polynomiallyBounded_iff_le.mp ht
   have := Fintype.ofFinite State
   classical
   refine ⟨acceptedWithin tm fun n => c * (n + 1) ^ d, acceptedWithin_mem_PPoly tm (by fun_prop),
     fun a => ?_⟩
-  obtain ⟨hhalt, hout⟩ := (htm a).runFrom_initCfg
-  rw [mem_acceptedWithin_iff, MultiTapeTM.runFrom_eq_of_halt tm _ (ht a) hhalt, hout,
-    encBool_apply]
+  obtain ⟨-, hout⟩ := (htm a).runFrom_of_le (ht (enc a).length)
+  rw [mem_acceptedWithin_iff, hout, encBool_apply]
   simp [OutView.ofList]
 
 /-- **P ⊆ P/poly.** A problem in `P`, with any encoding `enc` of its instances, is the preimage
@@ -179,6 +176,7 @@ theorem BPP_subset_PPolyOn : Complexity.BPP enc ⊆ PPolyOn enc := by
     (polynomiallyBounded_complexity_framedSlice hL' (by fun_prop)) (encodes enc)
     (encodesMember enc A) fun n x ⟨a, ha⟩ => by
       have h := hdec a
+      dsimp only [Complexity.BoundedErrorAt] at h
       rw [ha, List.length_ofFn] at h
       by_cases haA : a ∈ A
       · rw [(encodesMember_eq_true_iff ha).2 haA]

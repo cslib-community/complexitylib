@@ -16,18 +16,18 @@ open Cslib Cslib.RotationMap Turing.MultiTapeTM
 
 namespace ComplexityTests.PCPExpander
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun index : ℕ => (⟨index % 1, Nat.mod_lt _ (by decide)⟩ : Fin 1))
     encUnary (encFinEnum (Fin 1)) :=
-  ComputableTidilyInPolyTime.unary_finMod (by decide) _
+  .of_tidy (ComputableTidilyInPolyTime.unary_finMod (by decide) _)
 
 -- The fixed finite output may use binary indices instead of the finite-rank encoding.
 example :
     let output : Fin 3 ↪ List Bool :=
       ⟨fun index => encNat index.val, fun _ _ h => Fin.val_injective (encNat.injective h)⟩
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun index : ℕ => (⟨index % 3, Nat.mod_lt _ (by decide)⟩ : Fin 3)) encUnary output :=
-  ComputableTidilyInPolyTime.unary_finMod (by decide) _
+  .of_tidy (ComputableTidilyInPolyTime.unary_finMod (by decide) _)
 
 private def base : RotationMap (Fin 16) (Fin 2) := .loops _ _
 
@@ -37,15 +37,16 @@ private def coordinates : Fin 16 ≃ (Fin 2 → Fin 2 × Fin 2) :=
       (finProdFinEquiv : Fin 2 × Fin 2 ≃ Fin 4).symm).trans
         (finTwoArrowEquiv (Fin 2 × Fin 2)).symm)
 
-example : ComputableTidilyInPolyTime (TowerTable.build base coordinates (by decide))
+example : ComputableInPolyTime (TowerTable.build base coordinates (by decide))
     encUnary (TowerTable.encoding (encFinEnum (Fin 2))) :=
-  TowerTable.polytime_build base coordinates (by decide) _
+  (TowerTable.polytime_build base coordinates (by decide) _).computableInPolyTime
 
 -- Equivalent call spellings and captured inputs use the same uniform certificate.
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun p : Bool × ℕ => TowerTable.build base coordinates (by decide) (p.2 + 1))
     (encPair encBool encUnary) (TowerTable.encoding (encFinEnum (Fin 2))) := by
-  have h := TowerTable.polytime_build base coordinates (by decide) (encFinEnum (Fin 2))
+  have h := (TowerTable.polytime_build base coordinates (by decide)
+    (encFinEnum (Fin 2))).computableInPolyTime
   polytime
 
 example : (TowerTable.build base coordinates (by decide) 0).length = 16 := by decide
@@ -65,20 +66,21 @@ example : (TowerTable.build base coordinates (by decide) 17).lookup 0 (0, 1) =
 example : (TowerTable.build base coordinates (by decide) 1).lookup 16 (0, 1) =
     (0, (0, 1)) := by decide
 
-example (size : ℕ) (vertex : Fin (16 ^ (Nat.clog 16 size - 1 + 1))) (label : Fin 2 × Fin 2) :
+example :
     (TowerTable.build (base.reindex (Equiv.refl _)) ((Equiv.refl _).symm.trans coordinates)
-      (by decide) size).lookup vertex.val label =
-      let target := ((zigzagTower base coordinates (Nat.clog 16 size - 1)).reindex
-        (ZigzagTowerVertex.equivFin (Equiv.refl _) (Nat.clog 16 size - 1))).rot (vertex, label)
+      (by decide) 17).lookup 0 (0, 1) =
+      let target := ((zigzagTower base coordinates (Nat.clog 16 17 - 1)).reindex
+        (ZigzagTowerVertex.equivFin (Equiv.refl _) (Nat.clog 16 17 - 1))).rot
+          (⟨0, by decide⟩, (0, 1))
       (target.1.val, target.2) :=
-  TowerTable.lookup_build base coordinates (Equiv.refl _) (by decide) size vertex label
+  TowerTable.lookup_build base coordinates (Equiv.refl _) (by decide) 17 ⟨0, by decide⟩ (0, 1)
 
-example : ComputableTidilyInPolyTime (TowerTable.rotateFamily base coordinates (by decide))
+example : ComputableInPolyTime (TowerTable.rotateFamily base coordinates (by decide))
     (encPair encUnary (encPair encUnary
       (encFinEnum ((Fin 16 × (Fin 2 × Fin 2)) ⊕ (Fin 16 × (Fin 2 × Fin 2))))))
     (encPair encUnary (encFinEnum ((Fin 16 × (Fin 2 × Fin 2)) ⊕
       (Fin 16 × (Fin 2 × Fin 2))))) :=
-  TowerTable.polytime_rotateFamily base coordinates (by decide) _
+  (TowerTable.polytime_rotateFamily base coordinates (by decide) _).computableInPolyTime
 
 example : TowerTable.rotateFamily base coordinates (by decide)
     (0, 3, .inl (0, (0, 1))) = (3, .inl (0, (0, 1))) := by decide
@@ -101,10 +103,13 @@ example (label : AffinePlaneFamilyLabel (ZMod 257) 257) :
     arithmeticExpanderRotate (1, 0, label) = (0, label) := rfl
 
 -- The positive-gap family itself has the uniform machine certificate, independently of size.
-example : ComputableTidilyInPolyTime arithmeticExpanderRotate
+local instance : FinEnum (ZMod 257) :=
+  FinEnum.ofEquiv (Fin 257) (ZMod.finEquiv 257).toEquiv.symm
+
+example : ComputableInPolyTime arithmeticExpanderRotate
     (encPair encUnary (encPair encUnary
-      (encFinite (AffinePlaneFamilyLabel (ZMod 257) 257))))
-    (encPair encUnary (encFinite (AffinePlaneFamilyLabel (ZMod 257) 257))) :=
-  polytime_arithmeticExpanderRotate _
+      (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))))
+    (encPair encUnary (encFinEnum (AffinePlaneFamilyLabel (ZMod 257) 257))) :=
+  (polytime_arithmeticExpanderRotate _).computableInPolyTime
 
 end ComplexityTests.PCPExpander

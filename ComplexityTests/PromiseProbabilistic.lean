@@ -4,86 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Complexity.Classes.BPP.Amplification
 import Complexity.Computability.Complexity.Classes.Promise.Randomized
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
-/-! Tests for probabilistic promise classes (`PromiseBPP`, `PromiseRP`, `PromiseCoRP`) and
-randomized one-sided promise reductions (`RPReducible`, `RPReducibleWithError`), including
-nonvacuous coin-flip solvers, soundness strictly between `2 / 3` and `1`, and the `s ≤ 0` edge
-case. -/
+/-! Tests for probabilistic promise classes (`PromiseBPP`, `PromiseRP`, `PromiseCoRP`),
+`probability_sampleList_verifier`, error amplification (`SolvesWithBoundedError.repeatMajority`) on
+a genuinely partial promise problem, and randomized one-sided promise reductions (`RPReducible`,
+`RPReducibleWithError`). -/
 
 namespace ComplexityTests.PromiseProbabilistic
 
 open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
-
-variable {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
-
-/-! ### Randomized reductions on promise problems -/
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} :
-    PromiseProblem.RPReducible encA encB X Y ↔
-      ∃ R : α → Cslib.ProbComp β, Cslib.Probability.IsPPTOn encA encB R ∧
-        (∀ a ∈ X.yes, ∀ b ∈ (Cslib.ProbComp.eval (R a)).support, b ∈ Y.yes) ∧
-        ∀ a ∈ X.no, 2 / 3 ≤ ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.no).toReal :=
-  Iff.rfl
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} :
-    PromiseProblem.RPReducible encA encB X Y ↔
-      ∃ R : α → Cslib.ProbComp β, Cslib.Probability.IsPPTOn encA encB R ∧
-        (∀ a ∈ X.yes, ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.yes).toReal = 1) ∧
-        ∀ a ∈ X.no, 2 / 3 ≤ ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.no).toReal :=
-  PromiseProblem.rpReducible_iff_toOuterMeasure_eq_one
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} {s : α → ℝ} :
-    PromiseProblem.RPReducibleWithError encA encB s Xᶜ Yᶜ ↔
-      ∃ R : α → Cslib.ProbComp β, Cslib.Probability.IsPPTOn encA encB R ∧
-        (∀ a ∈ X.no, ∀ b ∈ (Cslib.ProbComp.eval (R a)).support, b ∈ Y.no) ∧
-        ∀ a ∈ X.yes, s a ≤ ((Cslib.ProbComp.eval (R a)).toOuterMeasure Y.yes).toReal :=
-  PromiseProblem.rpReducibleWithError_compl_iff
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (h : PromiseProblem.PolyTimeReducible encA encB X Y) :
-    PromiseProblem.RPReducible encA encB X Y :=
-  h.rpReducible
-
-example {X : PromiseProblem α} : PromiseProblem.RPReducible encA encA X X :=
-  PromiseProblem.RPReducible.refl encA X
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} {Z : PromiseProblem γ}
-    {s₁ : α → ℝ} {s₂ : ℝ} (hs₂ : 0 ≤ s₂)
-    (hXY : PromiseProblem.RPReducibleWithError encA encB s₁ X Y)
-    (hYZ : PromiseProblem.RPReducibleWithError encB encC (fun _ => s₂) Y Z) :
-    PromiseProblem.RPReducibleWithError encA encC (fun a => s₁ a * s₂) X Z :=
-  hXY.trans hYZ hs₂
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} {Z : PromiseProblem γ}
-    {s₁ : α → ℝ} {s₂ : ℝ} (hs₂ : s₂ ≤ 1)
-    (hXY : PromiseProblem.RPReducibleWithError encA encB s₁ X Y)
-    (hYZ : PromiseProblem.RPReducibleWithError encB encC (fun _ => s₂) Y Z) :
-    PromiseProblem.RPReducibleWithError encA encC (fun a => s₁ a + s₂ - 1) X Z :=
-  hXY.trans_add hYZ hs₂
-
-example {X : PromiseProblem α} {Y : PromiseProblem β} {Z : PromiseProblem γ}
-    {s : β → ℝ} {f : α → β} (hf : ComputableInPolyTime f encA encB)
-    (hyes : Set.MapsTo f X.yes Y.yes) (hno : Set.MapsTo f X.no Y.no)
-    (hYZ : PromiseProblem.RPReducibleWithError encB encC s Y Z) :
-    PromiseProblem.RPReducibleWithError encA encC (fun a => s (f a)) X Z :=
-  hYZ.of_computableInPolyTime hf hyes hno
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (hXY : PromiseProblem.RPReducible encA encB X Y)
-    (hY : Y ∈ PromiseCoRP encB) : X ∈ PromiseCoRP encA :=
-  hXY.mem_PromiseCoRP hY
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (hXY : PromiseProblem.RPReducible encA encB X Y)
-    (hY : Y ∈ PromiseBPP encB) : X ∈ PromiseBPP encA :=
-  hXY.mem_PromiseBPP hY
-
-example {X : PromiseProblem α} {Y : PromiseProblem β}
-    (hXY : PromiseProblem.RPReducible encA encB Xᶜ Yᶜ)
-    (hY : Y ∈ PromiseRP encB) : X ∈ PromiseRP encA :=
-  hXY.mem_PromiseRP_of_compl hY
 
 /-! ### Nonvacuous concrete instances -/
 
@@ -138,5 +70,62 @@ example : PromiseProblem.RPReducibleWithError encBool encBool (fun _ => 0)
     fun a _ b hb => ?_, fun _ _ => ENNReal.toReal_nonneg⟩
   simp only [ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at hb
   exact hb
+
+/-! ### Error amplification on a genuinely partial promise problem -/
+
+/-- A genuinely partial promise problem on bit strings (`yes = {[true]}`, `no = {[false]}`),
+leaving `[]` outside the promise. -/
+def partialSingletonBit : PromiseProblem (List Bool) where
+  yes := {[true]}
+  no := {[false]}
+  disjoint := by simp
+
+/-- The promise of `partialSingletonBit` is a proper subset of `Set.univ` (`[]` is outside the
+promise). -/
+example : partialSingletonBit.yes ∪ partialSingletonBit.no ≠ Set.univ := by
+  intro h
+  have hmem : ([] : List Bool) ∈ partialSingletonBit.yes ∪ partialSingletonBit.no :=
+    h ▸ Set.mem_univ []
+  simp [partialSingletonBit] at hmem
+
+/-- A 1-bit verifier that returns the first input bit when present and falls back to the first
+random bit on `[]`. -/
+def partialVerifier (p : List Bool × List Bool) : Bool :=
+  p.1.headD (p.2.headD false)
+
+/-- On the out-of-promise input `[]`, `partialVerifier` accepts with probability `1 / 2`, violating
+the `2 / 3` bounded-error margin on both sides. -/
+example :
+    Pr[(fun w => partialVerifier ([], w)) <$> BitString.sampleList 1] = 1 / 2 := by
+  rw [probability_sampleList_verifier]
+  have hcard : acceptCount partialVerifier [] 1 = 1 := by decide
+  rw [hcard]
+  norm_num
+
+/-- Despite accepting the out-of-promise instance `[]` with probability `1 / 2`, `partialVerifier`
+solves `partialSingletonBit` with bounded error. -/
+theorem solvesWithBoundedError_partialSingletonBit :
+    partialSingletonBit.SolvesWithBoundedError encBits 1 partialVerifier := by
+  intro a
+  refine ⟨fun ha => ?_, fun ha => ?_⟩
+  · obtain rfl : a = [true] := ha
+    dsimp only [BoundedErrorAt]
+    generalize hk : (1 : Polynomial ℕ).eval (encBits [true]).length = k
+    rw [Polynomial.eval_one] at hk
+    subst hk
+    decide
+  · obtain rfl : a = [false] := ha
+    dsimp only [BoundedErrorAt]
+    generalize hk : (1 : Polynomial ℕ).eval (encBits [false]).length = k
+    rw [Polynomial.eval_one] at hk
+    subst hk
+    decide
+
+/-- Majority amplification (`SolvesWithBoundedError.repeatMajority`) reduces the error on
+`partialSingletonBit` to `2 ^ (-q(n))` without requiring any margin outside the promise. -/
+example (q : Polynomial ℕ) :
+    partialSingletonBit.SolvesWithErrorExponent encBits q (12 * q * 1)
+      (repeatMajority encBits (6 * q) 1 partialVerifier) :=
+  solvesWithBoundedError_partialSingletonBit.repeatMajority q
 
 end ComplexityTests.PromiseProbabilistic

@@ -271,6 +271,7 @@ theorem solvesWithOneSidedError (h : Q.SolvesWithOneSidedErrorExponent enc q p V
 theorem solvesWithErrorExponent (h : Q.SolvesWithOneSidedErrorExponent enc q p V) :
     Q.SolvesWithErrorExponent enc q p V := fun a => by
   refine ⟨(h a).1, fun ha => ?_⟩
+  simp only [ErrorExponentAt, Bool.not_false]
   rw [Finset.filter_false_of_mem fun r _ => by simp [(h a).2 ha r]]
   simp
 

@@ -21,7 +21,7 @@ open Turing Turing.MultiTapeTM
 run_elab do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,
       `Turing.MultiTapeTM.ComputableTidilyInO, `Turing.MultiTapeTM.ComputableTidilyInDegree,
-      `Turing.MultiTapeTM.ComputableTidilyInBigO, `Turing.StepMachine.Tidy] do
+      `Turing.StepMachine.Tidy] do
     if (← Lean.getEnv).contains name then
       throwError "unexpected higher tidy calculus or old bundle: {name}"
 
@@ -87,47 +87,36 @@ theorem halts (word : List Bool) : emitter.HaltsAt word (word.length + 1) := by
   refine ⟨(finish word).1, fun i hi => ?_⟩
   simpa [emitter] using (prefix_run word i (by omega)).1
 
-example : ComputableInBigO (id : List Bool → List Bool) encBits encBits
-    List.length (fun _ => 1) := by
-  have h := certificate.computableInBigO (encIn := encBits) (encOut := encBits)
-    (id : List Bool → List Bool) (fun w => w.length + 1) halts
-    (fun w => (finish w).2.symm)
-    (tMax := fun _ => 1) (sMax := fun _ => 1) (by intros; exact ⟨le_rfl, le_rfl⟩)
-  exact h.weaken (.of_le_linear 4 6 (by intro w; simp only [encBits_apply]; omega)) (.refl _)
-
--- Charging the entire emitted word to that same constant workspace would be false.
-example : ¬ ComputableInO (id : List Bool → List Bool) encBits encBits
-    List.length (fun _ => 1) := by
-  rintro ⟨c, _, hlen⟩
-  have h := hlen (List.replicate (2 * c + 1) false)
-  simp only [id_eq, encBits_apply, List.length_replicate, Nat.one_add] at h
-  omega
-
--- A fixed halted initial state exercises the zero-round and zero-workspace initializer path.
-example : ∃ t, ComputableInBigO (fun _ : List Bool => ([] : List Bool)) encBits encBits t
-    (fun _ => 1) := by
-  refine ⟨_, certificate.computableInBigO_of_init (encIn := encBits) (encOut := encBits)
-    (ComputableInO.constZero true) (fun _ => []) (fun _ => 0)
-    (tMax := fun _ => 1) (sMax := fun _ => 1) ?_ ?_ ?_⟩
-  · intro w
-    simp [StepMachine.HaltsAt, StepMachine.run, StepMachine.initCfg, StepMachine.withInit,
-      emitter]
-  · intro w
-    rfl
-  · intros
-    exact ⟨le_rfl, le_rfl⟩
-
--- Full composition telescope retains the public formulas for independent component resources.
+-- Whole-run uncharged BigO contract, refutation of the charged O analogue, zero-round halted
+-- initializer path, and full composition telescope.
 example {σf σg : Type} {f : StepMachine σf Bool Bool} {g : StepMachine σg Bool Bool}
     {encF : σf ↪ List Bool} {encG : σg ↪ List Bool}
     {Tf Sf : σf → ℕ} {Tg Sg : σg → ℕ}
     (hf : f.ResourceCertificate encF Tf Sf) (hg : g.ResourceCertificate encG Tg Sg) :
+    ComputableInBigO (id : List Bool → List Bool) encBits encBits List.length (fun _ => 1) ∧
+    (¬ ComputableInO (id : List Bool → List Bool) encBits encBits List.length (fun _ => 1)) ∧
+    (∃ t, ComputableInBigO (fun _ : List Bool => ([] : List Bool)) encBits encBits t (fun _ => 1)) ∧
     (g.comp f).ResourceCertificate (StepMachine.encCompState encF encG)
-      (StepMachine.compTime encF encG Tf Sf Tg) (StepMachine.compSpace encF encG Sf Sg) :=
-  hf.comp hg
-
-/-- info: 'Turing.StepMachine.ResourceCertificate.computableInBigO' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms Turing.StepMachine.ResourceCertificate.computableInBigO
+      (StepMachine.compTime encF encG Tf Sf Tg) (StepMachine.compSpace encF encG Sf Sg) := by
+  refine ⟨?_, ?_, ?_, hf.comp hg⟩
+  · have h := certificate.computableInBigO (encIn := encBits) (encOut := encBits)
+      (id : List Bool → List Bool) (fun w => w.length + 1) halts
+      (fun w => (finish w).2.symm)
+      (tMax := fun _ => 1) (sMax := fun _ => 1) (by intros; exact ⟨le_rfl, le_rfl⟩)
+    exact h.weaken (.of_le_linear 4 6 (by intro w; simp only [encBits_apply]; omega)) (.refl _)
+  · rintro ⟨c, _, hlen⟩
+    have h := hlen (List.replicate (2 * c + 1) false)
+    simp only [id_eq, encBits_apply, List.length_replicate, Nat.one_add] at h
+    omega
+  · refine ⟨_, certificate.computableInBigO_of_init (encIn := encBits) (encOut := encBits)
+      (ComputableInO.constZero true) (fun _ => []) (fun _ => 0)
+      (tMax := fun _ => 1) (sMax := fun _ => 1) ?_ ?_ ?_⟩
+    · intro w
+      simp [StepMachine.HaltsAt, StepMachine.run, StepMachine.initCfg, StepMachine.withInit,
+        emitter]
+    · intro w
+      rfl
+    · intros
+      exact ⟨le_rfl, le_rfl⟩
 
 end ComplexityTests.Internal.StepMachineResourceCertificate

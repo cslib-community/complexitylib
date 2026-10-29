@@ -64,7 +64,8 @@ theorem runFrom_extendTapes (tm : MultiTapeTM k Symbol State) (e : Fin k ↪ Fin
 view, plus one cell for each tape the machine does not use. -/
 theorem space_extendTapes_le (tm : MultiTapeTM k Symbol State) (e : Fin k ↪ Fin k')
     (cfg : Cfg k' Symbol State input) (n : ℕ) :
-    (tm.extendTapes e).space cfg n ≤ tm.space (viewCfg e cfg) n + (k' - k) := by
+    (MultiTapeNTM.RunPath.ofDeterministic (tm.extendTapes e) cfg n).space ≤
+      (MultiTapeNTM.RunPath.ofDeterministic tm (viewCfg e cfg) n).space + (k' - k) := by
   conv_lhs => rw [← embed_viewCfg e cfg]
   exact space_embed_le _ _ _ _ _ _
 

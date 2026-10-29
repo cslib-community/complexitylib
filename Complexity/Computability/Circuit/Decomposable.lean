@@ -276,6 +276,33 @@ theorem exists_mem_stops (hK : 1 < K) (hS : K ≤ P.accepted.ncard) {x : ι → 
     exact ⟨hsmall (P.rank_product v l r hg).1 (.left hxv hg),
       hsmall (P.rank_product v l r hg).2 (.right hxv hg)⟩
 
+/-- For a product node `v` with children `l` and `r`, the number of inputs stopping at `v` is at
+most `(K - 1) ^ 2 * (P.contexts v).ncard`: an input is determined by its parts on the scopes of
+both children and its context. -/
+private theorem ncard_stops_product_le {v l r : N} (hg : P.gate v = .product l r) :
+    (P.stops K v).ncard ≤ (K - 1) ^ 2 * (P.contexts v).ncard := by
+  by_cases hsmall : (P.values l).ncard < K ∧ (P.values r).ncard < K
+  swap
+  · simp [stops, hg, hsmall]
+  calc (P.stops K v).ncard
+      ≤ (P.values l ×ˢ P.values r ×ˢ P.contexts v).ncard := by
+        refine ncard_le_ncard_of_injOn
+          (fun x => ((P.scope l).domRestrict x, (P.scope r).domRestrict x,
+            (P.scope v)ᶜ.domRestrict x)) ?_ ?_ (toFinite _)
+        · rintro x ⟨hx, -, -⟩
+          have h := (P.values_product v l r hg x).mp hx.accepts
+          exact ⟨h.1, h.2, x, hx, rfl⟩
+        · intro x _ y _ h
+          simp only [Prod.mk.injEq, domRestrict_eq_domRestrict_iff] at h
+          refine domRestrict_prodMk_injective (P.scope v) (Prod.ext ?_ ?_)
+          · refine domRestrict_eq_domRestrict_iff.mpr fun i hi => ?_
+            rw [P.scope_product v l r hg] at hi
+            exact hi.elim (fun hil => h.1 hil) fun hir => h.2.1 hir
+          · exact domRestrict_eq_domRestrict_iff.mpr h.2.2
+    _ ≤ (K - 1) ^ 2 * (P.contexts v).ncard := by
+        rw [ncard_prod, ncard_prod, sq, mul_assoc]
+        exact Nat.mul_le_mul (by omega) (Nat.mul_le_mul (by omega) le_rfl)
+
 /-- **The charge at a node.** If the accepted set is `K`-rectangle-free, the descent stops at a
 node `v` for at most the budget of `v` inputs. -/
 private theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
@@ -290,25 +317,20 @@ private theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
     -- An input is determined by the child through which it stops, its part on the scope of that
     -- child, and its context.
     let T (u : N) := {x | P.Occurs x v ∧ x ∈ P.accepts u ∧ (P.values u).ncard < K}
-    have hcover : P.stops K v ⊆ ⋃ u ∈ c, T u := by
-      rintro x ⟨hx, -, hs⟩
-      simp only [hg] at hs
-      obtain ⟨u, hu, hxu, hsmall⟩ := hs
+    have hcover : P.stops K v ⊆ ⋃ u ∈ c, T u := fun x ⟨hx, _, hs⟩ => by
+      obtain ⟨u, hu, hxu, hsmall⟩ := hg ▸ hs
       exact mem_iUnion₂.mpr ⟨u, hu, hx, hxu, hsmall⟩
     have hT (u : N) (hu : u ∈ c) : (T u).ncard ≤ (K - 1) ^ 2 := by
       by_cases hsmall : (P.values u).ncard < K
       swap
       · simp [T, hsmall]
       calc (T u).ncard
-          ≤ (P.values u ×ˢ P.contexts v).ncard := by
-            refine ncard_le_ncard_of_injOn
-              (fun x => ((P.scope u).domRestrict x, (P.scope v)ᶜ.domRestrict x)) ?_ ?_
+          ≤ (P.values u ×ˢ P.contexts v).ncard :=
+            ncard_le_ncard_of_injOn
+              (fun x => ((P.scope u).domRestrict x, (P.scope v)ᶜ.domRestrict x))
+              (fun x ⟨hx, hxu, _⟩ => ⟨hxu, x, hx, rfl⟩)
+              (fun x _ y _ h => domRestrict_prodMk_injective _ (P.scope_union v c hg u hu ▸ h))
               (toFinite _)
-            · rintro x ⟨hx, hxu, -⟩
-              exact ⟨hxu, x, hx, rfl⟩
-            · intro x _ y _ h
-              rw [P.scope_union v c hg u hu] at h
-              exact domRestrict_prodMk_injective _ h
         _ ≤ (K - 1) ^ 2 := by
             rw [ncard_prod, sq]
             exact Nat.mul_le_mul (by omega) hout
@@ -318,29 +340,10 @@ private theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
       _ ≤ ∑ _u ∈ c, (K - 1) ^ 2 := Finset.sum_le_sum hT
       _ = P.budget K v := by simp [budget, hg, mul_comm]
   | product l r =>
-    -- An input is determined by its parts on the scopes of both children and its context.
-    by_cases hsmall : (P.values l).ncard < K ∧ (P.values r).ncard < K
-    swap
-    · simp [stops, hg, hsmall]
     calc (P.stops K v).ncard
-        ≤ (P.values l ×ˢ P.values r ×ˢ P.contexts v).ncard := by
-          refine ncard_le_ncard_of_injOn
-            (fun x => ((P.scope l).domRestrict x, (P.scope r).domRestrict x,
-              (P.scope v)ᶜ.domRestrict x)) ?_ ?_ (toFinite _)
-          · rintro x ⟨hx, -, -⟩
-            have h := (P.values_product v l r hg x).mp hx.accepts
-            exact ⟨h.1, h.2, x, hx, rfl⟩
-          · intro x _ y _ h
-            simp only [Prod.mk.injEq, domRestrict_eq_domRestrict_iff] at h
-            refine domRestrict_prodMk_injective (P.scope v) (Prod.ext ?_ ?_)
-            · refine domRestrict_eq_domRestrict_iff.mpr fun i hi => ?_
-              rw [P.scope_product v l r hg] at hi
-              exact hi.elim (fun hil => h.1 hil) fun hir => h.2.1 hir
-            · exact domRestrict_eq_domRestrict_iff.mpr h.2.2
-      _ ≤ (K - 1) ^ 3 := by
-          rw [ncard_prod, ncard_prod, pow_succ', sq]
-          exact Nat.mul_le_mul (by omega) (Nat.mul_le_mul (by omega) hout)
-      _ = P.budget K v := by simp [budget, hg]
+        ≤ (K - 1) ^ 2 * (P.contexts v).ncard := P.ncard_stops_product_le hg
+      _ ≤ (K - 1) ^ 2 * (K - 1) := Nat.mul_le_mul_left _ hout
+      _ = P.budget K v := by rw [budget, hg, pow_succ (K - 1) 2]
 
 variable [Fintype N]
 

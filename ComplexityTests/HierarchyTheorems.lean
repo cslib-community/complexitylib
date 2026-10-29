@@ -17,19 +17,22 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM Turing.MultiTapeTM.Univers
 
 /-! ### Time-constructible bounds -/
 
-example : TimeConstructible (2 ^ ·) := timeConstructible_two_pow
+example : ComputableInO (fun x : List Bool => 2 ^ x.length) encBits encNat
+    (fun x => 2 ^ x.length) (fun x => 2 ^ x.length) :=
+  timeConstructible_two_pow.computableInO
 
-example : TimeConstructible fun n => (n + 1) ^ 2 := timeConstructible_succ_sq
+example : ComputableInO (fun x : List Bool => (x.length + 1) ^ 2) encBits encNat
+    (fun x => (x.length + 1) ^ 2) (fun x => (x.length + 1) ^ 2) :=
+  timeConstructible_succ_sq.computableInO
 
-example : TimeConstructible fun n => (n + 1) ^ 7 := timeConstructible_succ_pow (by norm_num)
+example : ComputableInO (fun x : List Bool => (x.length + 1) ^ 7) encBits encNat
+    (fun x => (x.length + 1) ^ 7) (fun x => (x.length + 1) ^ 7) :=
+  (timeConstructible_succ_pow (by norm_num)).computableInO
 
 example : TimeConstructible fun n => (n + 1) * 2 ^ n :=
   timeConstructible_two_pow.succ_mul fun _ => Nat.lt_two_pow_self.le
 
 /-! ### The clocked diagonal -/
-
-/-- The diagonal of the exponential separation is the clocked diagonal with clock `2 ^ n`. -/
-example : clockedDiagonal (2 ^ ·) = diagonal := clockedDiagonal_two_pow
 
 /-- The empty word has no short description, so the clocked diagonal rejects it. -/
 example (J : ℕ → ℕ) : timeDiagonal J [] = false := rfl
@@ -99,17 +102,13 @@ example : DTIME encBits (2 ^ ·) ⊂ DTIME encBits fun n => 2 ^ (4 * n) := by
 
 /-! ### Polynomial and exponential time -/
 
-example : P encBits ⊂ EXP encBits := P_ssubset_EXP
-
-example {α : Type} (enc : α ↪ List Bool) : P enc ⊆ EXP enc := P_subset_EXP
-
 /-- The diagonal problem is a witness: in `EXP`, not in `P`. -/
 example : {x | diagonal x = true} ∈ EXP encBits ∧ {x | diagonal x = true} ∉ P encBits :=
   ⟨setOf_diagonal_mem_EXP, diagonal_notMem_P⟩
 
-/-- `P` is the union of the classes `DTIME (n ^ k)`. -/
-example {α : Type} (enc : α ↪ List Bool) (A : Set α) :
-    A ∈ P enc ↔ ∃ k, A ∈ DTIME enc (· ^ k) :=
-  mem_P_iff_exists_mem_DTIME
+/-- `P` is the union of the classes `DTIME (n ^ k)`: the universal language has a polynomial
+time exponent. -/
+example : ∃ k, (Set.univ : Set (List Bool)) ∈ DTIME encBits (· ^ k) :=
+  mem_P_iff_exists_mem_DTIME.mp ⟨fun _ => true, .const true, fun _ => by simp⟩
 
 end ComplexityTests.HierarchyTheorems

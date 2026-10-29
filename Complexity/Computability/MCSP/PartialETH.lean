@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.ReadOnce
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.MCSP.PartialNP
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -97,8 +98,8 @@ subexponential time $2^{o(m \log m)} = N^{o(\log \log N)}$ (`¬DecidableInSubexp
   `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_encBinary`,
   `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_binaryGate`,
   `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_binaryGate_encBinary`,
-  `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMonotoneReadOnceMCSP`,
-  `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMonotoneReadOnceMCSP_encBinary`,
+  `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce`,
+  `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce_encBinary`,
   `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_tableSize`,
   `Cslib.Complexity.ETH.not_decidableInSubexpTime_PartialMCSP_tableSize_encBinary`: Ilango's FOCS
   2020 Theorem I.3 / ECCC TR20-183 Section 1.2.2 Theorem 3 (under `ETH`, `PartialMCSP` and its
@@ -114,7 +115,7 @@ subexponential time $2^{o(m \log m)} = N^{o(\log \log N)}$ (`¬DecidableInSubexp
   Problems*][LokshtanovMarxSaurabh2018]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
@@ -128,7 +129,7 @@ namespace PartialMCSP
 TR20-183, Section 3, Theorem 11, p. 20]: instances `x : PartialMCSP.Instance` that agree with some
 read-once positive Boolean formula `F : PosFormula x.arity` with at most `x.threshold` binary
 gates. -/
-def MonotoneReadOnce : Set Instance :=
+@[expose] def MonotoneReadOnce : Set Instance :=
   {x | ∃ F : PosFormula x.arity, F.IsReadOnce ∧ F.size ≤ x.threshold ∧ x.AgreesWith F.eval}
 
 theorem mem_monotoneReadOnce_iff {x : Instance} :
@@ -157,60 +158,60 @@ theorem monotoneReadOnce_subset_binaryGate : MonotoneReadOnce ⊆ BinaryGate :=
 variable {n : ℕ}
 
 /-- Coordinate `i : Fin (2 * n)` of the first block `x` in `Fin (6 * n)`. -/
-def xVar (i : Fin (2 * n)) : Fin (6 * n) :=
+@[expose] def xVar (i : Fin (2 * n)) : Fin (6 * n) :=
   ⟨i.1, by omega⟩
 
 /-- Coordinate `i : Fin (2 * n)` of the second block `y` in `Fin (6 * n)`. -/
-def yVar (i : Fin (2 * n)) : Fin (6 * n) :=
+@[expose] def yVar (i : Fin (2 * n)) : Fin (6 * n) :=
   ⟨2 * n + i.1, by omega⟩
 
 /-- Coordinate `i : Fin (2 * n)` of the third block `z` in `Fin (6 * n)`. -/
-def zVar (i : Fin (2 * n)) : Fin (6 * n) :=
+@[expose] def zVar (i : Fin (2 * n)) : Fin (6 * n) :=
   ⟨4 * n + i.1, by omega⟩
 
-theorem xVar_injective : Function.Injective (xVar (n := n)) := by
+private theorem xVar_injective : Function.Injective (xVar (n := n)) := by
   intro i j h
   ext
   exact Fin.mk.inj h
 
-theorem yVar_injective : Function.Injective (yVar (n := n)) := by
+private theorem yVar_injective : Function.Injective (yVar (n := n)) := by
   intro i j h
   ext
   have := Fin.mk.inj h
   omega
 
-theorem zVar_injective : Function.Injective (zVar (n := n)) := by
+private theorem zVar_injective : Function.Injective (zVar (n := n)) := by
   intro i j h
   ext
   have := Fin.mk.inj h
   omega
 
-@[simp] theorem xVar_inj {i j : Fin (2 * n)} : xVar i = xVar j ↔ i = j :=
+@[simp] private theorem xVar_inj {i j : Fin (2 * n)} : xVar i = xVar j ↔ i = j :=
   xVar_injective.eq_iff
 
-@[simp] theorem yVar_inj {i j : Fin (2 * n)} : yVar i = yVar j ↔ i = j :=
+@[simp] private theorem yVar_inj {i j : Fin (2 * n)} : yVar i = yVar j ↔ i = j :=
   yVar_injective.eq_iff
 
-@[simp] theorem zVar_inj {i j : Fin (2 * n)} : zVar i = zVar j ↔ i = j :=
+@[simp] private theorem zVar_inj {i j : Fin (2 * n)} : zVar i = zVar j ↔ i = j :=
   zVar_injective.eq_iff
 
-theorem xVar_ne_yVar (i j : Fin (2 * n)) : xVar i ≠ yVar j := by
+private theorem xVar_ne_yVar (i j : Fin (2 * n)) : xVar i ≠ yVar j := by
   intro h
   have := Fin.mk.inj h
   omega
 
-theorem xVar_ne_zVar (i j : Fin (2 * n)) : xVar i ≠ zVar j := by
+private theorem xVar_ne_zVar (i j : Fin (2 * n)) : xVar i ≠ zVar j := by
   intro h
   have := Fin.mk.inj h
   omega
 
-theorem yVar_ne_zVar (i j : Fin (2 * n)) : yVar i ≠ zVar j := by
+private theorem yVar_ne_zVar (i j : Fin (2 * n)) : yVar i ≠ zVar j := by
   intro h
   have := Fin.mk.inj h
   omega
 
 /-- Every coordinate in `Fin (6 * n)` belongs to the `x`, `y`, or `z` block. -/
-theorem eq_xVar_or_yVar_or_zVar (v : Fin (6 * n)) :
+private theorem eq_xVar_or_yVar_or_zVar (v : Fin (6 * n)) :
     (∃ i, v = xVar i) ∨ (∃ i, v = yVar i) ∨ (∃ i, v = zVar i) := by
   by_cases h₁ : v.1 < 2 * n
   · exact Or.inl ⟨⟨v.1, h₁⟩, rfl⟩
@@ -221,81 +222,81 @@ theorem eq_xVar_or_yVar_or_zVar (v : Fin (6 * n)) :
       ext; dsimp [zVar]; omega
 
 /-- The finset of `z`-coordinates in `Fin (6 * n)`. -/
-def zSet (n : ℕ) : Finset (Fin (6 * n)) :=
+private def zSet (n : ℕ) : Finset (Fin (6 * n)) :=
   Finset.univ.image zVar
 
-theorem mem_zSet {v : Fin (6 * n)} : v ∈ zSet n ↔ ∃ i, v = zVar i := by
+private theorem mem_zSet {v : Fin (6 * n)} : v ∈ zSet n ↔ ∃ i, v = zVar i := by
   simp [zSet, eq_comm]
 
-@[simp] theorem zVar_mem_zSet (i : Fin (2 * n)) : zVar i ∈ zSet n :=
+@[simp] private theorem zVar_mem_zSet (i : Fin (2 * n)) : zVar i ∈ zSet n :=
   mem_zSet.mpr ⟨i, rfl⟩
 
-@[simp] theorem xVar_notMem_zSet (i : Fin (2 * n)) : xVar i ∉ zSet n := by
+@[simp] private theorem xVar_notMem_zSet (i : Fin (2 * n)) : xVar i ∉ zSet n := by
   rw [mem_zSet]
   rintro ⟨j, hj⟩
   exact xVar_ne_zVar i j hj
 
-@[simp] theorem yVar_notMem_zSet (i : Fin (2 * n)) : yVar i ∉ zSet n := by
+@[simp] private theorem yVar_notMem_zSet (i : Fin (2 * n)) : yVar i ∉ zSet n := by
   rw [mem_zSet]
   rintro ⟨j, hj⟩
   exact yVar_ne_zVar i j hj
 
-@[simp] theorem card_zSet (n : ℕ) : (zSet n).card = 2 * n := by
+@[simp] private theorem card_zSet (n : ℕ) : (zSet n).card = 2 * n := by
   rw [zSet, Finset.card_image_of_injective _ zVar_injective, Finset.card_univ, Fintype.card_fin]
 
 /-- Extract the `x`-block of a $6n$-bit string. -/
-def unpackX (w : BitString (6 * n)) : BitString (2 * n) :=
+@[expose] def unpackX (w : BitString (6 * n)) : BitString (2 * n) :=
   fun i => w (xVar i)
 
 /-- Extract the `y`-block of a $6n$-bit string. -/
-def unpackY (w : BitString (6 * n)) : BitString (2 * n) :=
+@[expose] def unpackY (w : BitString (6 * n)) : BitString (2 * n) :=
   fun i => w (yVar i)
 
 /-- Extract the `z`-block of a $6n$-bit string. -/
-def unpackZ (w : BitString (6 * n)) : BitString (2 * n) :=
+@[expose] def unpackZ (w : BitString (6 * n)) : BitString (2 * n) :=
   fun i => w (zVar i)
 
 /-- Pack three $2n$-bit strings `(x, y, z)` into a single $6n$-bit string. -/
-def packXYZ (x y z : BitString (2 * n)) (v : Fin (6 * n)) : Bool :=
+@[expose] def packXYZ (x y z : BitString (2 * n)) (v : Fin (6 * n)) : Bool :=
   if h₁ : v.1 < 2 * n then x ⟨v.1, h₁⟩
   else if h₂ : v.1 < 4 * n then y ⟨v.1 - 2 * n, by omega⟩
   else z ⟨v.1 - 4 * n, by omega⟩
 
-@[simp] theorem packXYZ_xVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) :
+@[simp] private theorem packXYZ_xVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) :
     packXYZ x y z (xVar i) = x i := by
   simp [packXYZ, xVar, i.2]
 
-@[simp] theorem packXYZ_yVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) :
+@[simp] private theorem packXYZ_yVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) :
     packXYZ x y z (yVar i) = y i := by
   have h₁ : ¬(2 * n + i.1 < 2 * n) := by omega
   have h₂ : 2 * n + i.1 < 4 * n := by omega
   simp [packXYZ, yVar, h₁, h₂]
 
-@[simp] theorem packXYZ_zVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) :
+@[simp] private theorem packXYZ_zVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) :
     packXYZ x y z (zVar i) = z i := by
   have h₁ : ¬(4 * n + i.1 < 2 * n) := by omega
   have h₂ : ¬(4 * n + i.1 < 4 * n) := by omega
   simp [packXYZ, zVar, h₁, h₂]
 
-@[simp] theorem unpackX_packXYZ (x y z : BitString (2 * n)) :
+@[simp] private theorem unpackX_packXYZ (x y z : BitString (2 * n)) :
     unpackX (packXYZ x y z) = x := by
   funext i; simp [unpackX]
 
-@[simp] theorem unpackY_packXYZ (x y z : BitString (2 * n)) :
+@[simp] private theorem unpackY_packXYZ (x y z : BitString (2 * n)) :
     unpackY (packXYZ x y z) = y := by
   funext i; simp [unpackY]
 
-@[simp] theorem unpackZ_packXYZ (x y z : BitString (2 * n)) :
+@[simp] private theorem unpackZ_packXYZ (x y z : BitString (2 * n)) :
     unpackZ (packXYZ x y z) = z := by
   funext i; simp [unpackZ]
 
-@[simp] theorem packXYZ_unpack (w : BitString (6 * n)) :
+@[simp] private theorem packXYZ_unpack (w : BitString (6 * n)) :
     packXYZ (unpackX w) (unpackY w) (unpackZ w) = w := by
   funext v
   rcases eq_xVar_or_yVar_or_zVar v with ⟨i, rfl⟩ | ⟨i, rfl⟩ | ⟨i, rfl⟩ <;>
     simp [unpackX, unpackY, unpackZ]
 
-theorem update_packXYZ_xVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : Bool) :
+private theorem update_packXYZ_xVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : Bool) :
     Function.update (packXYZ x y z) (xVar i) b = packXYZ (Function.update x i b) y z := by
   funext v
   rcases eq_xVar_or_yVar_or_zVar v with ⟨j, rfl⟩ | ⟨j, rfl⟩ | ⟨j, rfl⟩
@@ -305,7 +306,7 @@ theorem update_packXYZ_xVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : B
   · simp [Function.update_of_ne (xVar_ne_yVar i j).symm]
   · simp [Function.update_of_ne (xVar_ne_zVar i j).symm]
 
-theorem update_packXYZ_yVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : Bool) :
+private theorem update_packXYZ_yVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : Bool) :
     Function.update (packXYZ x y z) (yVar i) b = packXYZ x (Function.update y i b) z := by
   funext v
   rcases eq_xVar_or_yVar_or_zVar v with ⟨j, rfl⟩ | ⟨j, rfl⟩ | ⟨j, rfl⟩
@@ -315,7 +316,7 @@ theorem update_packXYZ_yVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : B
     · simp [Function.update_of_ne (yVar_inj.not.mpr h), Function.update_of_ne h]
   · simp [Function.update_of_ne (yVar_ne_zVar i j).symm]
 
-theorem update_packXYZ_zVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : Bool) :
+private theorem update_packXYZ_zVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : Bool) :
     Function.update (packXYZ x y z) (zVar i) b = packXYZ x y (Function.update z i b) := by
   funext v
   rcases eq_xVar_or_yVar_or_zVar v with ⟨j, rfl⟩ | ⟨j, rfl⟩ | ⟨j, rfl⟩
@@ -328,34 +329,36 @@ theorem update_packXYZ_zVar (x y z : BitString (2 * n)) (i : Fin (2 * n)) (b : B
 /-! ### Special $2n$-bit vectors and Ilango's partial function $\gamma_G$ -/
 
 /-- All-zeros vector $0^{2n}$. -/
-def zeros2n : BitString (2 * n) := fun _ => false
+@[expose] def zeros2n : BitString (2 * n) := fun _ => false
 
 /-- All-ones vector $1^{2n}$. -/
-def ones2n : BitString (2 * n) := fun _ => true
+@[expose] def ones2n : BitString (2 * n) := fun _ => true
 
 /-- Left-half indicator $1^n 0^n$. -/
-def leftHalfOnes : BitString (2 * n) := fun i => decide (i.1 < n)
+@[expose] def leftHalfOnes : BitString (2 * n) := fun i => decide (i.1 < n)
 
 /-- Right-half indicator $0^n 1^n$. -/
-def rightHalfOnes : BitString (2 * n) := fun i => decide (n ≤ i.1)
+@[expose] def rightHalfOnes : BitString (2 * n) := fun i => decide (n ≤ i.1)
 
 /-- Pair-of-units vector $e_j e_{j'} \in \{0, 1\}^{2n}$ with ones at $j$ and $n + j'$. -/
-def unitPair (j j' : Fin n) : BitString (2 * n) :=
+@[expose] def unitPair (j j' : Fin n) : BitString (2 * n) :=
   fun i => decide (i.1 = j.1 ∨ i.1 = n + j'.1)
 
 /-- Complemented pair-of-units vector $\overline{e_k}\,\overline{e_{k'}} \in \{0, 1\}^{2n}$ with
 zeros at $k$ and $n + k'$ and ones elsewhere. -/
-def antiUnitPair (k k' : Fin n) : BitString (2 * n) :=
+@[expose] def antiUnitPair (k k' : Fin n) : BitString (2 * n) :=
   fun i => !decide (i.1 = k.1 ∨ i.1 = n + k'.1)
 
-@[simp] theorem zeros2n_apply (i : Fin (2 * n)) : zeros2n i = false := rfl
-@[simp] theorem ones2n_apply (i : Fin (2 * n)) : ones2n i = true := rfl
-@[simp] theorem leftHalfOnes_apply (i : Fin (2 * n)) : leftHalfOnes i = decide (i.1 < n) := rfl
-@[simp] theorem rightHalfOnes_apply (i : Fin (2 * n)) : rightHalfOnes i = decide (n ≤ i.1) := rfl
+@[simp] private theorem zeros2n_apply (i : Fin (2 * n)) : zeros2n i = false := rfl
+@[simp] private theorem ones2n_apply (i : Fin (2 * n)) : ones2n i = true := rfl
+@[simp] private theorem leftHalfOnes_apply (i : Fin (2 * n)) : leftHalfOnes i = decide (i.1 < n) :=
+  rfl
+@[simp] private theorem rightHalfOnes_apply (i : Fin (2 * n)) :
+    rightHalfOnes i = decide (n ≤ i.1) := rfl
 
 /-- **Ilango's partial Boolean function $\gamma_G$** [Ilango2020FOCS, Section III.B, p. 428; ECCC
 TR20-183, Section 3, p. 21] on $6n$ variables for a `BipartitePermutationGraph` $G = (n, E)$. -/
-def ilangoGamma (G : BipartitePermutationGraph) (w : BitString (6 * G.1)) : Option Bool :=
+@[expose] def ilangoGamma (G : BipartitePermutationGraph) (w : BitString (6 * G.1)) : Option Bool :=
   let n := G.1
   let x := unpackX w
   let y := unpackY w
@@ -382,7 +385,7 @@ def ilangoGamma (G : BipartitePermutationGraph) (w : BitString (6 * G.1)) : Opti
 /-- **Ilango's `PartialMCSP` instance** [Ilango2020FOCS, Section III.B, p. 428; ECCC TR20-183,
 Section 3, Theorem 11, pp. 20–21]: partial truth table $\gamma_G$ on $6n$ variables with size
 threshold $s = 6n - 1$. -/
-def ilangoInstance (G : BipartitePermutationGraph) : Instance where
+@[expose] def ilangoInstance (G : BipartitePermutationGraph) : Instance where
   arity := 6 * G.1
   table i := ilangoGamma G ((BitString.equivFin (6 * G.1)).symm i)
   threshold := 6 * G.1 - 1
@@ -404,14 +407,14 @@ def ilangoInstance (G : BipartitePermutationGraph) : Instance where
 /-! ### Evaluation of `ilangoGamma` on each of the seven clauses -/
 
 /-- Clause (1): when $x = 0^{2n}$, $\gamma_G(0^{2n}, y, z) = \bigvee_i (y_i \wedge z_i)$. -/
-@[simp] theorem ilangoGamma_zeros2n_x (G : BipartitePermutationGraph)
+@[simp] private theorem ilangoGamma_zeros2n_x (G : BipartitePermutationGraph)
     (y z : BitString (2 * G.1)) :
     ilangoGamma G (packXYZ zeros2n y z) =
       some (decide (∃ i : Fin (2 * G.1), y i = true ∧ z i = true)) := by
   simp [ilangoGamma]
 
 /-- Clause (2): when $x = 1^{2n}$, $\gamma_G(1^{2n}, y, z) = \bigvee_i z_i$. -/
-@[simp] theorem ilangoGamma_ones2n_x (G : BipartitePermutationGraph)
+@[simp] private theorem ilangoGamma_ones2n_x (G : BipartitePermutationGraph)
     (y z : BitString (2 * G.1)) :
     ilangoGamma G (packXYZ ones2n y z) =
       some (decide (∃ i : Fin (2 * G.1), z i = true)) := by
@@ -424,7 +427,7 @@ def ilangoInstance (G : BipartitePermutationGraph) : Instance where
   · rfl
 
 /-- Clause (3): when $z = 1^{2n}$, $\gamma_G(x, y, 1^{2n}) = \bigvee_i (x_i \vee y_i)$. -/
-@[simp] theorem ilangoGamma_ones2n_z (G : BipartitePermutationGraph)
+@[simp] private theorem ilangoGamma_ones2n_z (G : BipartitePermutationGraph)
     (x y : BitString (2 * G.1)) :
     ilangoGamma G (packXYZ x y ones2n) =
       some (decide (∃ i : Fin (2 * G.1), x i = true ∨ y i = true)) := by
@@ -438,7 +441,7 @@ def ilangoInstance (G : BipartitePermutationGraph) : Instance where
   · rfl
 
 /-- Clause (4): when $z = 0^{2n}$, $\gamma_G(x, y, 0^{2n}) = 0$. -/
-@[simp] theorem ilangoGamma_zeros2n_z (G : BipartitePermutationGraph)
+@[simp] private theorem ilangoGamma_zeros2n_z (G : BipartitePermutationGraph)
     (x y : BitString (2 * G.1)) :
     ilangoGamma G (packXYZ x y zeros2n) = some false := by
   unfold ilangoGamma
@@ -454,7 +457,7 @@ def ilangoInstance (G : BipartitePermutationGraph) : Instance where
 
 /-- Clause (5): when $z = 1^n 0^n$ and $y = 0^{2n}$, $\gamma_G(x, 0^{2n}, 1^n 0^n) =
 \bigvee_{i < n} x_i$. -/
-@[simp] theorem ilangoGamma_leftHalfOnes (G : BipartitePermutationGraph)
+@[simp] private theorem ilangoGamma_leftHalfOnes (G : BipartitePermutationGraph)
     (x : BitString (2 * G.1)) :
     ilangoGamma G (packXYZ x zeros2n leftHalfOnes) =
       some (decide (∃ i : Fin (2 * G.1), i.1 < G.1 ∧ x i = true)) := by
@@ -478,7 +481,7 @@ def ilangoInstance (G : BipartitePermutationGraph) : Instance where
 
 /-- Clause (6): when $z = 0^n 1^n$ and $y = 0^{2n}$, $\gamma_G(x, 0^{2n}, 0^n 1^n) =
 \bigvee_{n \le i < 2n} x_i$. -/
-@[simp] theorem ilangoGamma_rightHalfOnes (G : BipartitePermutationGraph)
+@[simp] private theorem ilangoGamma_rightHalfOnes (G : BipartitePermutationGraph)
     (x : BitString (2 * G.1)) :
     ilangoGamma G (packXYZ x zeros2n rightHalfOnes) =
       some (decide (∃ i : Fin (2 * G.1), G.1 ≤ i.1 ∧ x i = true)) := by
@@ -509,52 +512,35 @@ def ilangoInstance (G : BipartitePermutationGraph) : Instance where
 
 /-- Clause (7): for $2 \le G.1$ and any edge $((j, k), (j', k')) \in G.2$,
 $\gamma_G(\overline{e_k}\,\overline{e_{k'}}, 0^{2n}, e_j\,e_{j'}) = 1$. -/
-theorem ilangoGamma_edge {G : BipartitePermutationGraph} (hn : 2 ≤ G.1)
+private theorem ilangoGamma_edge {G : BipartitePermutationGraph} (hn : 2 ≤ G.1)
     (j j' k k' : Fin G.1) (he : ((j.1, k.1), (j'.1, k'.1)) ∈ G.2) :
     ilangoGamma G (packXYZ (antiUnitPair k k') zeros2n (unitPair j j')) = some true := by
   unfold ilangoGamma
   simp only [unpackX_packXYZ, unpackY_packXYZ, unpackZ_packXYZ, and_true, true_and]
-  have hx0 : antiUnitPair k k' ≠ zeros2n := by
-    intro h
-    let m : Fin (2 * G.1) := ⟨1 - k.1, by omega⟩
-    have hm := congrFun h m
-    have hk2 := k.2
-    dsimp [antiUnitPair, zeros2n, m] at hm
-    simp only [Bool.not_eq_false', decide_eq_true_eq] at hm
+  have hx0 : antiUnitPair k k' ≠ zeros2n := fun h => by
+    have hm := congrFun h ⟨1 - k.1, by omega⟩
+    simp only [antiUnitPair, zeros2n, Bool.not_eq_false', decide_eq_true_eq] at hm
     omega
-  have hx1 : antiUnitPair k k' ≠ ones2n := by
-    intro h
-    have hk := congrFun h ⟨k.1, by omega⟩
-    simp [antiUnitPair, ones2n] at hk
-  have hz1 : unitPair j j' ≠ ones2n := by
-    intro h
-    let m : Fin (2 * G.1) := ⟨1 - j.1, by omega⟩
-    have hm := congrFun h m
-    have hj2 := j.2
-    dsimp [unitPair, ones2n, m] at hm
-    simp only [decide_eq_true_eq] at hm
+  have hx1 : antiUnitPair k k' ≠ ones2n := fun h => by
+    simpa [antiUnitPair, ones2n] using congrFun h ⟨k.1, by omega⟩
+  have hz1 : unitPair j j' ≠ ones2n := fun h => by
+    have hm := congrFun h ⟨1 - j.1, by omega⟩
+    simp only [unitPair, ones2n, decide_eq_true_eq] at hm
     omega
-  have hz0 : unitPair j j' ≠ zeros2n := by
-    intro h
+  have hz0 : unitPair j j' ≠ zeros2n := fun h => by
+    simpa [unitPair, zeros2n] using congrFun h ⟨j.1, by omega⟩
+  have hz_left : unitPair j j' ≠ leftHalfOnes := fun h => by
+    simpa [unitPair, leftHalfOnes] using congrFun h ⟨G.1 + j'.1, by omega⟩
+  have hz_right : unitPair j j' ≠ rightHalfOnes := fun h => by
     have hj := congrFun h ⟨j.1, by omega⟩
-    simp [unitPair, zeros2n] at hj
-  have hz_left : unitPair j j' ≠ leftHalfOnes := by
-    intro h
-    have hj' := congrFun h ⟨G.1 + j'.1, by omega⟩
-    simp [unitPair, leftHalfOnes] at hj'
-  have hz_right : unitPair j j' ≠ rightHalfOnes := by
-    intro h
-    have hj := congrFun h ⟨j.1, by omega⟩
-    have hj2 := j.2
-    dsimp [unitPair, rightHalfOnes] at hj
-    simp only [true_or, decide_true, eq_comm (a := true), decide_eq_true_eq] at hj
+    simp only [unitPair, rightHalfOnes, true_or, decide_true, eq_comm (a := true),
+      decide_eq_true_eq] at hj
     omega
   have hedge : decide (∃ j₁ j₁' k₁ k₁' : Fin G.1,
       ((j₁.1, k₁.1), (j₁'.1, k₁'.1)) ∈ G.2 ∧
       antiUnitPair k k' = antiUnitPair k₁ k₁' ∧
-      unitPair j j' = unitPair j₁ j₁') = true := by
-    rw [decide_eq_true_iff]
-    exact ⟨j, j', k, k', he, rfl, rfl⟩
+      unitPair j j' = unitPair j₁ j₁') = true :=
+    decide_eq_true ⟨j, j', k, k', he, rfl, rfl⟩
   simp only [hx0, hx1, hz1, hz0, hz_left, hz_right, hedge, ↓reduceIte]
 
 /-! ### Positive essentiality of all $6n$ variables (`Claim 13`) -/
@@ -566,7 +552,7 @@ theorem ilangoGamma_edge {G : BipartitePermutationGraph} (hn : 2 ≤ G.1)
 /-- **Claim 13** [ECCC TR20-183, Section 3, p. 24]: when $1 \le G.1$, every variable $v \in
 \mathrm{Fin}\,(6n)$ is positively essential for any total function $f$ agreeing with
 `ilangoInstance G`. -/
-theorem ilangoInstance_posEssential {G : BipartitePermutationGraph} (_hn : 0 < G.1)
+private theorem ilangoInstance_posEssential {G : BipartitePermutationGraph} (_hn : 0 < G.1)
     {f : BitString (6 * G.1) → Bool} (hf : (ilangoInstance G).AgreesWith f)
     (v : Fin (6 * G.1)) :
     ∃ w : BitString (6 * G.1),
@@ -600,26 +586,26 @@ theorem ilangoInstance_posEssential {G : BipartitePermutationGraph} (_hn : 0 < G
 /-! ### Ilango's Lemma 12: Structural characterization of read-once formulas for Clauses 1–4 -/
 
 /-- The finset of `x`-coordinates in `Fin (6 * n)`. -/
-def xSet (n : ℕ) : Finset (Fin (6 * n)) :=
+private def xSet (n : ℕ) : Finset (Fin (6 * n)) :=
   Finset.univ.image xVar
 
 /-- The finset of `y`-coordinates in `Fin (6 * n)`. -/
-def ySet (n : ℕ) : Finset (Fin (6 * n)) :=
+private def ySet (n : ℕ) : Finset (Fin (6 * n)) :=
   Finset.univ.image yVar
 
-@[simp] theorem mem_xSet {v : Fin (6 * n)} : v ∈ xSet n ↔ ∃ i, v = xVar i := by
+@[simp] private theorem mem_xSet {v : Fin (6 * n)} : v ∈ xSet n ↔ ∃ i, v = xVar i := by
   simp [xSet, eq_comm]
 
-@[simp] theorem mem_ySet {v : Fin (6 * n)} : v ∈ ySet n ↔ ∃ i, v = yVar i := by
+@[simp] private theorem mem_ySet {v : Fin (6 * n)} : v ∈ ySet n ↔ ∃ i, v = yVar i := by
   simp [ySet, eq_comm]
 
-@[simp] theorem card_xSet (n : ℕ) : (xSet n).card = 2 * n := by
+@[simp] private theorem card_xSet (n : ℕ) : (xSet n).card = 2 * n := by
   rw [xSet, Finset.card_image_of_injective _ xVar_injective, Finset.card_univ, Fintype.card_fin]
 
-@[simp] theorem card_ySet (n : ℕ) : (ySet n).card = 2 * n := by
+@[simp] private theorem card_ySet (n : ℕ) : (ySet n).card = 2 * n := by
   rw [ySet, Finset.card_image_of_injective _ yVar_injective, Finset.card_univ, Fintype.card_fin]
 
-theorem disjoint_xSet_ySet (n : ℕ) : Disjoint (xSet n) (ySet n) := by
+private theorem disjoint_xSet_ySet (n : ℕ) : Disjoint (xSet n) (ySet n) := by
   rw [Finset.disjoint_left]
   intro v hvx hvy
   obtain ⟨i, rfl⟩ := mem_xSet.mp hvx
@@ -835,14 +821,14 @@ private theorem not_mem_leafSupport_zVar_of_isSubformula_and_right {F : PosFormu
   exact Bool.false_ne_true (hf₀.symm.trans (heq.trans hf₁))
 
 /-- Number of `z`-variables in `S.leafSupport`. -/
-def zCount (S : PosFormula (6 * n)) : ℕ :=
+private def zCount (S : PosFormula (6 * n)) : ℕ :=
   (S.leafSupport ∩ zSet n).card
 
 /-- Predicate stating that `S` is not a bare `z`-variable leaf `.var (zVar i)`. -/
-def NotZLeaf (S : PosFormula (6 * n)) : Prop :=
+private def NotZLeaf (S : PosFormula (6 * n)) : Prop :=
   ∀ i : Fin (2 * n), S ≠ .var (zVar i)
 
-@[simp] theorem zCount_var_zVar (i : Fin (2 * n)) :
+@[simp] private theorem zCount_var_zVar (i : Fin (2 * n)) :
     zCount (.var (zVar i) : PosFormula (6 * n)) = 1 := by
   have : ({zVar i} ∩ zSet n : Finset (Fin (6 * n))) = {zVar i} :=
     Finset.inter_eq_left.mpr (Finset.singleton_subset_iff.mpr (zVar_mem_zSet i))
@@ -876,6 +862,16 @@ private theorem zCount_or_of_isReadOnce {L R : PosFormula (6 * n)}
     zCount (.or L R) = zCount L + zCount R :=
   zCount_union_of_disjoint hro.2.2
 
+private theorem disjoint_leafSupport_zSet_of_forall_notMem {A : PosFormula (6 * n)}
+    (h : ∀ j, zVar j ∉ A.leafSupport) :
+    Disjoint A.leafSupport (zSet n) ∧ zCount A = 0 := by
+  have hdisj : Disjoint A.leafSupport (zSet n) := by
+    rw [Finset.disjoint_left]
+    rintro v hvA hvz
+    obtain ⟨j, rfl⟩ := mem_zSet.mp hvz
+    exact h j hvA
+  exact ⟨hdisj, Finset.card_eq_zero.mpr (Finset.disjoint_iff_inter_eq_empty.mp hdisj)⟩
+
 /-- Every subformula `S` of `F` that is not a single `z`-leaf satisfies `zCount S ≤ S.numAnd`. -/
 private theorem zCount_le_numAnd_of_notZLeaf {F S : PosFormula (6 * n)} (hro : F.IsReadOnce)
     (hC1 : ∀ y z : BitString (2 * n),
@@ -888,54 +884,42 @@ private theorem zCount_le_numAnd_of_notZLeaf {F S : PosFormula (6 * n)} (hro : F
   | var v =>
     rw [zCount_var_of_notZLeaf hnotZ, PosFormula.numAnd_var]
   | or L R ihL ihR =>
-    have hroS := hsub.isReadOnce hro
     have hnotZL : NotZLeaf L := fun i hL =>
       not_isSubformula_or_var_zVar_left hro hC1 hC3 i R (hL ▸ hsub)
     have hnotZR : NotZLeaf R := fun i hR =>
       not_isSubformula_or_var_zVar_right hro hC1 hC3 i L (hR ▸ hsub)
     have hL := ihL hsub.of_or_left hnotZL
     have hR := ihR hsub.of_or_right hnotZR
-    rw [zCount_or_of_isReadOnce hroS, PosFormula.numAnd_or]
+    rw [zCount_or_of_isReadOnce (hsub.isReadOnce hro), PosFormula.numAnd_or]
     omega
   | and L R ihL ihR =>
-    have hroS := hsub.isReadOnce hro
-    rw [zCount_and_of_isReadOnce hroS, PosFormula.numAnd_and]
+    rw [zCount_and_of_isReadOnce (hsub.isReadOnce hro), PosFormula.numAnd_and]
     by_cases hL : ∃ i, L = .var (zVar i)
     · obtain ⟨i, rfl⟩ := hL
-      have hR0 : zCount R = 0 := by
-        rw [zCount, Finset.card_eq_zero, Finset.eq_empty_iff_forall_notMem]
-        intro v hv
-        obtain ⟨hR, hz⟩ := Finset.mem_inter.mp hv
-        obtain ⟨j, rfl⟩ := mem_zSet.mp hz
-        exact not_mem_leafSupport_zVar_of_isSubformula_and_left hro hC1 hsub hR
+      have hR0 := (disjoint_leafSupport_zSet_of_forall_notMem fun j =>
+        not_mem_leafSupport_zVar_of_isSubformula_and_left hro hC1 hsub).2
       rw [zCount_var_zVar, hR0]
       omega
     · by_cases hR : ∃ i, R = .var (zVar i)
       · obtain ⟨i, rfl⟩ := hR
-        have hL0 : zCount L = 0 := by
-          rw [zCount, Finset.card_eq_zero, Finset.eq_empty_iff_forall_notMem]
-          intro v hv
-          obtain ⟨hL', hz⟩ := Finset.mem_inter.mp hv
-          obtain ⟨j, rfl⟩ := mem_zSet.mp hz
-          exact not_mem_leafSupport_zVar_of_isSubformula_and_right hro hC1 hsub hL'
+        have hL0 := (disjoint_leafSupport_zSet_of_forall_notMem fun j =>
+          not_mem_leafSupport_zVar_of_isSubformula_and_right hro hC1 hsub).2
         rw [zCount_var_zVar, hL0]
         omega
-      · have hnotZL : NotZLeaf L := fun i hi => hL ⟨i, hi⟩
-        have hnotZR : NotZLeaf R := fun i hi => hR ⟨i, hi⟩
-        have hL_le := ihL hsub.of_and_left hnotZL
-        have hR_le := ihR hsub.of_and_right hnotZR
+      · have hL_le := ihL hsub.of_and_left fun i hi => hL ⟨i, hi⟩
+        have hR_le := ihR hsub.of_and_right fun i hi => hR ⟨i, hi⟩
         omega
 
 /-- Variables appearing above all `and` gates in `S` (the set $I$ in Claim 17 of
 [ECCC TR20-183, p. 25]). -/
-def topOrVars : PosFormula (6 * n) → Finset (Fin (6 * n))
+private def topOrVars : PosFormula (6 * n) → Finset (Fin (6 * n))
   | .var v => {v}
   | .or L R => topOrVars L ∪ topOrVars R
   | .and _ _ => ∅
 
 /-- Variables paired with `zVar i` inside an `and` gate of `S` (the set $I_i$ in
 [ECCC TR20-183, p. 26]). -/
-def zPartnerVars (i : Fin (2 * n)) : PosFormula (6 * n) → Finset (Fin (6 * n))
+private def zPartnerVars (i : Fin (2 * n)) : PosFormula (6 * n) → Finset (Fin (6 * n))
   | .var _ => ∅
   | .or L R => zPartnerVars i L ∪ zPartnerVars i R
   | .and L R =>
@@ -955,6 +939,98 @@ private theorem zPartnerVars_subset_leafSupport (i : Fin (2 * n)) (S : PosFormul
     · exact Finset.subset_union_left
     · exact Finset.empty_subset _
 
+/-- Structural decomposition of a subformula `S` of `F` into top-level `or`-variables
+`topOrVars S` and `z`-partner variable sets `zPartnerVars i S`
+[ECCC TR20-183, Section 3, pp. 25–26]. -/
+private structure ZDecomp (S : PosFormula (6 * n)) : Prop where
+  disjoint_top : Disjoint (topOrVars S) (zSet n)
+  disjoint_partner : ∀ i, Disjoint (zPartnerVars i S) (zSet n)
+  disjoint_ij : ∀ i j, i ≠ j → Disjoint (zPartnerVars i S) (zPartnerVars j S)
+  eval_eq : ∀ w : BitString (6 * n),
+    S.eval w =
+      decide ((∃ v ∈ topOrVars S, w v = true) ∨
+        (∃ i : Fin (2 * n), w (zVar i) = true ∧ ∃ v ∈ zPartnerVars i S, w v = true))
+
+private theorem ZDecomp.of_or {L R : PosFormula (6 * n)}
+    (hroS : (PosFormula.or L R).IsReadOnce) (hL : ZDecomp L) (hR : ZDecomp R) :
+    ZDecomp (.or L R) where
+  disjoint_top := Finset.disjoint_union_left.mpr ⟨hL.disjoint_top, hR.disjoint_top⟩
+  disjoint_partner i :=
+    Finset.disjoint_union_left.mpr ⟨hL.disjoint_partner i, hR.disjoint_partner i⟩
+  disjoint_ij i j hij := by
+    have hLR := hroS.2.2.mono
+      (zPartnerVars_subset_leafSupport i L) (zPartnerVars_subset_leafSupport j R)
+    have hRL := hroS.2.2.symm.mono
+      (zPartnerVars_subset_leafSupport i R) (zPartnerVars_subset_leafSupport j L)
+    exact Finset.disjoint_union_left.mpr
+      ⟨Finset.disjoint_union_right.mpr ⟨hL.disjoint_ij i j hij, hLR⟩,
+        Finset.disjoint_union_right.mpr ⟨hRL, hR.disjoint_ij i j hij⟩⟩
+  eval_eq w := by
+    rw [PosFormula.eval_or, hL.eval_eq w, hR.eval_eq w, ← Bool.decide_or, decide_eq_decide]
+    simp only [topOrVars, zPartnerVars, Finset.mem_union]
+    exact ⟨fun
+      | .inl (.inl ⟨v, hv, hw⟩) => .inl ⟨v, .inl hv, hw⟩
+      | .inl (.inr ⟨i, hi, v, hv, hw⟩) => .inr ⟨i, hi, v, .inl hv, hw⟩
+      | .inr (.inl ⟨v, hv, hw⟩) => .inl ⟨v, .inr hv, hw⟩
+      | .inr (.inr ⟨i, hi, v, hv, hw⟩) => .inr ⟨i, hi, v, .inr hv, hw⟩,
+    fun
+      | .inl ⟨v, .inl hv, hw⟩ => .inl (.inl ⟨v, hv, hw⟩)
+      | .inl ⟨v, .inr hv, hw⟩ => .inr (.inl ⟨v, hv, hw⟩)
+      | .inr ⟨i, hi, v, .inl hv, hw⟩ => .inl (.inr ⟨i, hi, v, hv, hw⟩)
+      | .inr ⟨i, hi, v, .inr hv, hw⟩ => .inr (.inr ⟨i, hi, v, hv, hw⟩)⟩
+
+private theorem ZDecomp.of_single_zPartner {S A : PosFormula (6 * n)} {i₀ : Fin (2 * n)}
+    (htop : topOrVars S = ∅)
+    (hpart : ∀ i, zPartnerVars i S = if i = i₀ then A.leafSupport else ∅)
+    (hdisj : Disjoint A.leafSupport (zSet n)) (hand0 : A.numAnd = 0)
+    (heval : ∀ w : BitString (6 * n), S.eval w = (w (zVar i₀) && A.eval w)) :
+    ZDecomp S where
+  disjoint_top := htop ▸ Finset.disjoint_empty_left _
+  disjoint_partner i := by
+    rw [hpart i]
+    split_ifs
+    · exact hdisj
+    · exact Finset.disjoint_empty_left _
+  disjoint_ij i j hij := by
+    rw [hpart i, hpart j]
+    split_ifs with hi hj
+    · exact absurd (hi.trans hj.symm) hij
+    · exact Finset.disjoint_empty_right _
+    · exact Finset.disjoint_empty_left _
+    · exact Finset.disjoint_empty_left _
+  eval_eq w := by
+    rw [heval w, PosFormula.eval_eq_decide_exists_of_numAnd_eq_zero hand0 w]
+    simp only [htop, Finset.notMem_empty, false_and, exists_false, false_or, hpart]
+    rw [← Bool.decide_coe (w (zVar i₀)), ← Bool.decide_and, decide_eq_decide]
+    refine ⟨fun ⟨hwz, v, hv, hwv⟩ => ⟨i₀, hwz, v, by simp [hv], hwv⟩, ?_⟩
+    rintro ⟨i, hwz, v, hv, hwv⟩
+    by_cases hi : i = i₀
+    · subst hi
+      exact ⟨hwz, v, by simpa using hv, hwv⟩
+    · simp [hi] at hv
+
+private theorem zPartnerVars_and_var_left {R : PosFormula (6 * n)} {i₀ i : Fin (2 * n)}
+    (hdisj : Disjoint R.leafSupport (zSet n)) :
+    zPartnerVars i (.and (.var (zVar i₀)) R) = if i = i₀ then R.leafSupport else ∅ := by
+  dsimp [zPartnerVars]
+  have hneR : R ≠ .var (zVar i) := by
+    rintro rfl
+    exact Finset.disjoint_left.mp hdisj (Finset.mem_singleton_self _) (zVar_mem_zSet i)
+  by_cases hi : i = i₀
+  · subst hi; simp
+  · simp [hi, Ne.symm hi, hneR]
+
+private theorem zPartnerVars_and_var_right {L : PosFormula (6 * n)} {i₀ i : Fin (2 * n)}
+    (hdisj : Disjoint L.leafSupport (zSet n)) :
+    zPartnerVars i (.and L (.var (zVar i₀))) = if i = i₀ then L.leafSupport else ∅ := by
+  dsimp [zPartnerVars]
+  have hneL : L ≠ .var (zVar i) := by
+    rintro rfl
+    exact Finset.disjoint_left.mp hdisj (Finset.mem_singleton_self _) (zVar_mem_zSet i)
+  by_cases hi : i = i₀
+  · subst hi; simp [hneL]
+  · simp [hi, Ne.symm hi, hneL]
+
 /-- Structural decomposition of any subformula `S` of `F` satisfying `NotZLeaf S` and
 `zCount S = S.numAnd` [ECCC TR20-183, Section 3, pp. 25–26]. -/
 private theorem structure_of_zCount_eq_numAnd {F S : PosFormula (6 * n)} (hro : F.IsReadOnce)
@@ -963,21 +1039,14 @@ private theorem structure_of_zCount_eq_numAnd {F S : PosFormula (6 * n)} (hro : 
     (hC3 : ∀ x y : BitString (2 * n),
       F.eval (packXYZ x y ones2n) = decide (∃ j, x j = true ∨ y j = true))
     (hsub : PosFormula.IsSubformula S F) (hnotZ : NotZLeaf S) (hz : zCount S = S.numAnd) :
-    Disjoint (topOrVars S) (zSet n) ∧
-    (∀ i, Disjoint (zPartnerVars i S) (zSet n)) ∧
-    (∀ i j, i ≠ j → Disjoint (zPartnerVars i S) (zPartnerVars j S)) ∧
-    (∀ w : BitString (6 * n),
-      S.eval w =
-        decide ((∃ v ∈ topOrVars S, w v = true) ∨
-          (∃ i : Fin (2 * n), w (zVar i) = true ∧ ∃ v ∈ zPartnerVars i S, w v = true))) := by
+    ZDecomp S := by
   induction S with
   | var v =>
     refine ⟨?_, fun _ => Finset.disjoint_empty_left _, fun _ _ _ => Finset.disjoint_empty_left _,
-      fun w => ?_⟩
-    · rw [topOrVars, Finset.disjoint_singleton_left, mem_zSet]
-      rintro ⟨i, rfl⟩
-      exact hnotZ i rfl
-    · simp [topOrVars, zPartnerVars]
+      fun w => by simp [topOrVars, zPartnerVars]⟩
+    rw [topOrVars, Finset.disjoint_singleton_left, mem_zSet]
+    rintro ⟨i, rfl⟩
+    exact hnotZ i rfl
   | or L R ihL ihR =>
     have hroS := hsub.isReadOnce hro
     have hnotZL : NotZLeaf L := fun i hL =>
@@ -987,131 +1056,128 @@ private theorem structure_of_zCount_eq_numAnd {F S : PosFormula (6 * n)} (hro : 
     have hL_le := zCount_le_numAnd_of_notZLeaf hro hC1 hC3 hsub.of_or_left hnotZL
     have hR_le := zCount_le_numAnd_of_notZLeaf hro hC1 hC3 hsub.of_or_right hnotZR
     rw [zCount_or_of_isReadOnce hroS, PosFormula.numAnd_or] at hz
-    obtain ⟨hdL_top, hdL_part, hdL_ij, hevalL⟩ :=
-      ihL hsub.of_or_left hnotZL (by omega)
-    obtain ⟨hdR_top, hdR_part, hdR_ij, hevalR⟩ :=
-      ihR hsub.of_or_right hnotZR (by omega)
-    refine ⟨Finset.disjoint_union_left.mpr ⟨hdL_top, hdR_top⟩,
-      fun i => Finset.disjoint_union_left.mpr ⟨hdL_part i, hdR_part i⟩,
-      fun i j hij => ?_, fun w => ?_⟩
-    · have hLR : Disjoint (zPartnerVars i L) (zPartnerVars j R) :=
-        hroS.2.2.mono (zPartnerVars_subset_leafSupport i L) (zPartnerVars_subset_leafSupport j R)
-      have hRL : Disjoint (zPartnerVars i R) (zPartnerVars j L) :=
-        hroS.2.2.symm.mono (zPartnerVars_subset_leafSupport i R)
-          (zPartnerVars_subset_leafSupport j L)
-      exact Finset.disjoint_union_left.mpr
-        ⟨Finset.disjoint_union_right.mpr ⟨hdL_ij i j hij, hLR⟩,
-          Finset.disjoint_union_right.mpr ⟨hRL, hdR_ij i j hij⟩⟩
-    · rw [PosFormula.eval_or, hevalL w, hevalR w, ← Bool.decide_or, decide_eq_decide]
-      simp only [topOrVars, zPartnerVars, Finset.mem_union]
-      constructor
-      · rintro ((⟨v, hv, hw⟩ | ⟨i, hi, v, hv, hw⟩) | (⟨v, hv, hw⟩ | ⟨i, hi, v, hv, hw⟩))
-        · exact Or.inl ⟨v, Or.inl hv, hw⟩
-        · exact Or.inr ⟨i, hi, v, Or.inl hv, hw⟩
-        · exact Or.inl ⟨v, Or.inr hv, hw⟩
-        · exact Or.inr ⟨i, hi, v, Or.inr hv, hw⟩
-      · rintro (⟨v, hv | hv, hw⟩ | ⟨i, hi, v, hv | hv, hw⟩)
-        · exact Or.inl (Or.inl ⟨v, hv, hw⟩)
-        · exact Or.inr (Or.inl ⟨v, hv, hw⟩)
-        · exact Or.inl (Or.inr ⟨i, hi, v, hv, hw⟩)
-        · exact Or.inr (Or.inr ⟨i, hi, v, hv, hw⟩)
+    exact ZDecomp.of_or hroS
+      (ihL hsub.of_or_left hnotZL (by omega)) (ihR hsub.of_or_right hnotZR (by omega))
   | and L R _ _ =>
-    have hroS := hsub.isReadOnce hro
-    rw [zCount_and_of_isReadOnce hroS, PosFormula.numAnd_and] at hz
+    rw [zCount_and_of_isReadOnce (hsub.isReadOnce hro), PosFormula.numAnd_and] at hz
     have h_has_z : (∃ i, L = .var (zVar i)) ∨ (∃ i, R = .var (zVar i)) := by
       by_contra! h
       have hL_le := zCount_le_numAnd_of_notZLeaf hro hC1 hC3 hsub.of_and_left h.1
       have hR_le := zCount_le_numAnd_of_notZLeaf hro hC1 hC3 hsub.of_and_right h.2
       omega
     rcases h_has_z with ⟨i₀, rfl⟩ | ⟨i₀, rfl⟩
-    · have hR_disj : Disjoint R.leafSupport (zSet n) := by
-        rw [Finset.disjoint_left]
-        intro v hvR hvz
-        obtain ⟨j, rfl⟩ := mem_zSet.mp hvz
-        exact not_mem_leafSupport_zVar_of_isSubformula_and_left hro hC1 hsub hvR
-      have hR_z0 : zCount R = 0 :=
-        Finset.card_eq_zero.mpr (Finset.disjoint_iff_inter_eq_empty.mp hR_disj)
+    · obtain ⟨hR_disj, hR_z0⟩ := disjoint_leafSupport_zSet_of_forall_notMem fun j =>
+        not_mem_leafSupport_zVar_of_isSubformula_and_left hro hC1 hsub
       rw [zCount_var_zVar, hR_z0, PosFormula.numAnd_var] at hz
-      have hR_and0 : R.numAnd = 0 := by omega
-      have hpart_eq (i : Fin (2 * n)) :
-          zPartnerVars i (.and (.var (zVar i₀)) R) = if i = i₀ then R.leafSupport else ∅ := by
-        dsimp [zPartnerVars]
-        by_cases hi : i = i₀
-        · subst hi; simp
-        · have hneL : (PosFormula.var (zVar i₀) : PosFormula (6 * n)) ≠ .var (zVar i) := by
-            simp [Ne.symm hi]
-          have hneR : R ≠ .var (zVar i) := by
-            intro hR_eq
-            have hmem : zVar i ∈ R.leafSupport := by simp [hR_eq]
-            exact not_mem_leafSupport_zVar_of_isSubformula_and_left hro hC1 hsub hmem
-          simp [hi, hneL, hneR]
-      refine ⟨Finset.disjoint_empty_left _, fun i => ?_, fun i j hij => ?_, fun w => ?_⟩
-      · rw [hpart_eq]
-        split_ifs
-        · exact hR_disj
-        · exact Finset.disjoint_empty_left _
-      · rw [hpart_eq i, hpart_eq j]
-        split_ifs with hi hj
-        · exact absurd (hi.trans hj.symm) hij
-        · exact Finset.disjoint_empty_right _
-        · exact Finset.disjoint_empty_left _
-        · exact Finset.disjoint_empty_left _
-      · rw [PosFormula.eval_and, PosFormula.eval_var,
-          PosFormula.eval_eq_decide_exists_of_numAnd_eq_zero hR_and0 w]
-        simp only [topOrVars, Finset.notMem_empty, false_and, exists_false, false_or, hpart_eq]
-        rw [← Bool.decide_coe (w (zVar i₀)), ← Bool.decide_and, decide_eq_decide]
-        constructor
-        · rintro ⟨hwz, v, hv, hwv⟩
-          exact ⟨i₀, hwz, v, by simp [hv], hwv⟩
-        · rintro ⟨i, hwz, v, hv, hwv⟩
-          by_cases hi : i = i₀
-          · subst hi
-            exact ⟨hwz, v, by simpa using hv, hwv⟩
-          · simp [hi] at hv
-    · have hL_disj : Disjoint L.leafSupport (zSet n) := by
-        rw [Finset.disjoint_left]
-        intro v hvL hvz
-        obtain ⟨j, rfl⟩ := mem_zSet.mp hvz
-        exact not_mem_leafSupport_zVar_of_isSubformula_and_right hro hC1 hsub hvL
-      have hL_z0 : zCount L = 0 :=
-        Finset.card_eq_zero.mpr (Finset.disjoint_iff_inter_eq_empty.mp hL_disj)
+      exact ZDecomp.of_single_zPartner rfl (fun _ => zPartnerVars_and_var_left hR_disj)
+        hR_disj (by omega) fun _ => rfl
+    · obtain ⟨hL_disj, hL_z0⟩ := disjoint_leafSupport_zSet_of_forall_notMem fun j =>
+        not_mem_leafSupport_zVar_of_isSubformula_and_right hro hC1 hsub
       rw [zCount_var_zVar, hL_z0, PosFormula.numAnd_var] at hz
-      have hL_and0 : L.numAnd = 0 := by omega
-      have hpart_eq (i : Fin (2 * n)) :
-          zPartnerVars i (.and L (.var (zVar i₀))) = if i = i₀ then L.leafSupport else ∅ := by
-        dsimp [zPartnerVars]
-        have hneL : L ≠ .var (zVar i) := by
-          intro hL_eq
-          have hmem : zVar i ∈ L.leafSupport := by simp [hL_eq]
-          exact not_mem_leafSupport_zVar_of_isSubformula_and_right hro hC1 hsub hmem
-        by_cases hi : i = i₀
-        · subst hi; simp [hneL]
-        · have hneR : (PosFormula.var (zVar i₀) : PosFormula (6 * n)) ≠ .var (zVar i) := by
-            simp [Ne.symm hi]
-          simp [hi, hneL, hneR]
-      refine ⟨Finset.disjoint_empty_left _, fun i => ?_, fun i j hij => ?_, fun w => ?_⟩
-      · rw [hpart_eq]
-        split_ifs
-        · exact hL_disj
-        · exact Finset.disjoint_empty_left _
-      · rw [hpart_eq i, hpart_eq j]
-        split_ifs with hi hj
-        · exact absurd (hi.trans hj.symm) hij
-        · exact Finset.disjoint_empty_right _
-        · exact Finset.disjoint_empty_left _
-        · exact Finset.disjoint_empty_left _
-      · rw [PosFormula.eval_and, PosFormula.eval_var,
-          PosFormula.eval_eq_decide_exists_of_numAnd_eq_zero hL_and0 w, Bool.and_comm]
-        simp only [topOrVars, Finset.notMem_empty, false_and, exists_false, false_or, hpart_eq]
-        rw [← Bool.decide_coe (w (zVar i₀)), ← Bool.decide_and, decide_eq_decide]
-        constructor
-        · rintro ⟨hwz, v, hv, hwv⟩
-          exact ⟨i₀, hwz, v, by simp [hv], hwv⟩
-        · rintro ⟨i, hwz, v, hv, hwv⟩
-          by_cases hi : i = i₀
-          · subst hi
-            exact ⟨hwz, v, by simpa using hv, hwv⟩
-          · simp [hi] at hv
+      exact ZDecomp.of_single_zPartner rfl (fun _ => zPartnerVars_and_var_right hL_disj)
+        hL_disj (by omega) fun w => Bool.and_comm _ _
+
+/-- **Claim 17** [ECCC TR20-183, Section 3, p. 25]: under `ZDecomp F` and Clause (4),
+`topOrVars F = ∅`, so `F.eval (packXYZ x y z)` is determined by the partner sets
+`zPartnerVars i F`. -/
+private theorem ZDecomp.eval_packXYZ_of_clause4 {F : PosFormula (6 * n)} (hd : ZDecomp F)
+    (hC4 : ∀ x y : BitString (2 * n), F.eval (packXYZ x y zeros2n) = false) :
+    (∀ x y z : BitString (2 * n),
+      F.eval (packXYZ x y z) =
+        decide (∃ i : Fin (2 * n), z i = true ∧
+          ∃ v ∈ zPartnerVars i F, packXYZ x y z v = true)) ∧
+    (∀ x y : BitString (2 * n), ∀ i : Fin (2 * n),
+      F.eval (packXYZ x y (Function.update zeros2n i true)) =
+        decide (∃ v ∈ zPartnerVars i F,
+          packXYZ x y (Function.update zeros2n i true) v = true)) := by
+  have htop_empty : topOrVars F = ∅ := by
+    rw [Finset.eq_empty_iff_forall_notMem]
+    intro v hv
+    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp hd.disjoint_top hv
+    have hwv : packXYZ ones2n ones2n zeros2n v = true := by
+      rcases eq_xVar_or_yVar_or_zVar v with ⟨i, rfl⟩ | ⟨i, rfl⟩ | ⟨i, rfl⟩
+      · simp
+      · simp
+      · exact absurd (zVar_mem_zSet i) hv_notZ
+    have h1 : F.eval (packXYZ ones2n ones2n zeros2n) = true := by
+      rw [hd.eval_eq, decide_eq_true_iff]
+      exact Or.inl ⟨v, hv, hwv⟩
+    exact Bool.false_ne_true ((hC4 ones2n ones2n).symm.trans h1)
+  have heval' (x y z : BitString (2 * n)) :
+      F.eval (packXYZ x y z) =
+        decide (∃ i : Fin (2 * n), z i = true ∧
+          ∃ v ∈ zPartnerVars i F, packXYZ x y z v = true) := by
+    simpa [htop_empty] using hd.eval_eq (packXYZ x y z)
+  refine ⟨heval', fun x y i => ?_⟩
+  rw [heval', decide_eq_decide]
+  refine ⟨?_, fun ⟨v, hv, hwv⟩ => ⟨i, by simp, v, hv, hwv⟩⟩
+  rintro ⟨j, hj, v, hv, hwv⟩
+  have hji : j = i := by
+    by_contra hne
+    simp [Function.update_of_ne hne] at hj
+  exact ⟨v, hji ▸ hv, hwv⟩
+
+private theorem exists_perm_and_mem_iff_of_disjoint
+    {P : Fin (2 * n) → Finset (Fin (6 * n))}
+    (hd_ij : ∀ i j, i ≠ j → Disjoint (P i) (P j))
+    {var : Fin (2 * n) → Fin (6 * n)}
+    (hex : ∀ i, ∃ k, var k ∈ P i) :
+    ∃ π : Equiv.Perm (Fin (2 * n)), ∀ i k, var k ∈ P i ↔ k = π i := by
+  let f (i : Fin (2 * n)) : Fin (2 * n) := (hex i).choose
+  have hf_mem (i : Fin (2 * n)) : var (f i) ∈ P i := (hex i).choose_spec
+  have hf_inj : Function.Injective f := fun i j hij => by
+    by_contra hne
+    exact Finset.disjoint_left.mp (hd_ij i j hne) (hf_mem i) (hij ▸ hf_mem j)
+  let π : Equiv.Perm (Fin (2 * n)) :=
+    Equiv.ofBijective f (Finite.injective_iff_bijective.mp hf_inj)
+  have hπ_mem (i : Fin (2 * n)) : var (π i) ∈ P i := hf_mem i
+  refine ⟨π, fun i k => ⟨fun hk => ?_, fun h => h ▸ hπ_mem i⟩⟩
+  have hsymm : var k ∈ P (π.symm k) := by simpa [π] using hπ_mem (π.symm k)
+  have hi_eq : i = π.symm k := by
+    by_contra hne
+    exact Finset.disjoint_left.mp (hd_ij i (π.symm k) hne) hk hsymm
+  rw [hi_eq, Equiv.apply_symm_apply]
+
+/-- Clauses (1) and (2) identify the `x`- and `y`-variables in each `zPartnerVars i F`:
+`yVar k ∈ zPartnerVars i F ↔ k = i` and `xVar k ∈ zPartnerVars i F ↔ k = π i` for some
+permutation `π` [ECCC TR20-183, Section 3, p. 26]. -/
+private theorem ZDecomp.exists_perm_zPartnerVars {F : PosFormula (6 * n)} (hd : ZDecomp F)
+    (heval_unit : ∀ x y : BitString (2 * n), ∀ i : Fin (2 * n),
+      F.eval (packXYZ x y (Function.update zeros2n i true)) =
+        decide (∃ v ∈ zPartnerVars i F,
+          packXYZ x y (Function.update zeros2n i true) v = true))
+    (hC1 : ∀ y z : BitString (2 * n),
+      F.eval (packXYZ zeros2n y z) = decide (∃ i, y i = true ∧ z i = true))
+    (hC2 : ∀ y z : BitString (2 * n),
+      F.eval (packXYZ ones2n y z) = decide (∃ i, z i = true)) :
+    ∃ π : Equiv.Perm (Fin (2 * n)),
+      (∀ i k, xVar k ∈ zPartnerVars i F ↔ k = π i) ∧
+      (∀ i k, yVar k ∈ zPartnerVars i F ↔ k = i) := by
+  have hy_mem (i : Fin (2 * n)) : yVar i ∈ zPartnerVars i F := by
+    have h := hC1 (Function.update zeros2n i true) (Function.update zeros2n i true)
+    rw [heval_unit, decide_eq_decide] at h
+    obtain ⟨v, hv, hwv⟩ := h.mpr ⟨i, by simp, by simp⟩
+    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp (hd.disjoint_partner i) hv
+    rcases eq_xVar_or_yVar_or_zVar v with ⟨k, rfl⟩ | ⟨k, rfl⟩ | ⟨k, rfl⟩
+    · simp at hwv
+    · have hki : k = i := by
+        by_contra hne
+        simp [Function.update_of_ne hne] at hwv
+      exact hki ▸ hv
+    · exact absurd (zVar_mem_zSet k) hv_notZ
+  have hx_exists (i : Fin (2 * n)) : ∃ k : Fin (2 * n), xVar k ∈ zPartnerVars i F := by
+    have h := hC2 zeros2n (Function.update zeros2n i true)
+    rw [heval_unit, decide_eq_decide] at h
+    obtain ⟨v, hv, hwv⟩ := h.mpr ⟨i, by simp⟩
+    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp (hd.disjoint_partner i) hv
+    rcases eq_xVar_or_yVar_or_zVar v with ⟨k, rfl⟩ | ⟨k, rfl⟩ | ⟨k, rfl⟩
+    · exact ⟨k, hv⟩
+    · simp at hwv
+    · exact absurd (zVar_mem_zSet k) hv_notZ
+  obtain ⟨π, hx_iff⟩ := exists_perm_and_mem_iff_of_disjoint hd.disjoint_ij hx_exists
+  refine ⟨π, hx_iff, fun i k => ⟨fun hk => ?_, fun h => h ▸ hy_mem i⟩⟩
+  by_contra hne
+  exact Finset.disjoint_left.mp (hd.disjoint_ij k i hne) (hy_mem k) hk
 
 /-- **Ilango's Lemma 12** [ECCC TR20-183, Section 3, Lemma 12, pp. 22, 24–26]: if
 `F : PosFormula (6 * n)` is a read-once positive formula of leaf size $6n$ that agrees with
@@ -1132,109 +1198,18 @@ theorem _root_.Cslib.Circuits.Boolean.PosFormula.exists_perm_of_agreesWith_ilang
     ∃ π : Equiv.Perm (Fin (2 * n)), ∀ x y z : BitString (2 * n),
       F.eval (packXYZ x y z) =
         decide (∃ i : Fin (2 * n), (x (π i) || y i) && z i) := by
-  have hsupp : F.leafSupport = Finset.univ := by
-    have hcard : F.leafSupport.card = 6 * n :=
-      ((F.isReadOnce_iff_card_leafSupport_eq_leafSize).mp hro).trans hleaf
-    exact Finset.eq_univ_of_card F.leafSupport (by simpa using hcard)
-  have hnotZF : NotZLeaf F := by
-    intro i hF
+  have hsupp : F.leafSupport = Finset.univ :=
+    Finset.eq_univ_of_card F.leafSupport
+      (by simpa using ((F.isReadOnce_iff_card_leafSupport_eq_leafSize).mp hro).trans hleaf)
+  have hnotZF : NotZLeaf F := fun i hF => by
     have : F.leafSize = 1 := by rw [hF, PosFormula.leafSize_var]
     omega
-  have hzF : zCount F = 2 * n := by
-    simp [zCount, hsupp]
+  have hzF : zCount F = 2 * n := by simp [zCount, hsupp]
   have hand_le := (numAnd_le_two_mul_of_clause3 hro hleaf hC3).2
   have hz_le := zCount_le_numAnd_of_notZLeaf hro hC1 hC3 (.refl F) hnotZF
-  have hz_eq : zCount F = F.numAnd := by omega
-  obtain ⟨hd_top, hd_part, hd_ij, heval⟩ :=
-    structure_of_zCount_eq_numAnd hro hC1 hC3 (.refl F) hnotZF hz_eq
-  -- Claim 17: `topOrVars F = ∅` from Clause (4).
-  have htop_empty : topOrVars F = ∅ := by
-    rw [Finset.eq_empty_iff_forall_notMem]
-    intro v hv
-    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp hd_top hv
-    have hwv : packXYZ ones2n ones2n zeros2n v = true := by
-      rcases eq_xVar_or_yVar_or_zVar v with ⟨i, rfl⟩ | ⟨i, rfl⟩ | ⟨i, rfl⟩
-      · simp
-      · simp
-      · exact absurd (zVar_mem_zSet i) hv_notZ
-    have h1 : F.eval (packXYZ ones2n ones2n zeros2n) = true := by
-      rw [heval, decide_eq_true_iff]
-      exact Or.inl ⟨v, hv, hwv⟩
-    exact Bool.false_ne_true ((hC4 ones2n ones2n).symm.trans h1)
-  have heval' (x y z : BitString (2 * n)) :
-      F.eval (packXYZ x y z) =
-        decide (∃ i : Fin (2 * n), z i = true ∧
-          ∃ v ∈ zPartnerVars i F, packXYZ x y z v = true) := by
-    simpa [htop_empty] using heval (packXYZ x y z)
-  have heval_unit (x y : BitString (2 * n)) (i : Fin (2 * n)) :
-      F.eval (packXYZ x y (Function.update zeros2n i true)) =
-        decide (∃ v ∈ zPartnerVars i F,
-          packXYZ x y (Function.update zeros2n i true) v = true) := by
-    rw [heval', decide_eq_decide]
-    constructor
-    · rintro ⟨j, hj, v, hv, hwv⟩
-      have hji : j = i := by
-        by_contra hne
-        simp [Function.update_of_ne hne] at hj
-      subst hji
-      exact ⟨v, hv, hwv⟩
-    · rintro ⟨v, hv, hwv⟩
-      exact ⟨i, by simp, v, hv, hwv⟩
-  -- Clause (1) determines the `y`-variables in `zPartnerVars i F`.
-  have hy_mem (i : Fin (2 * n)) : yVar i ∈ zPartnerVars i F := by
-    have h := hC1 (Function.update zeros2n i true) (Function.update zeros2n i true)
-    rw [heval_unit, decide_eq_decide] at h
-    have htrue : ∃ j : Fin (2 * n),
-        Function.update (zeros2n (n := n)) i true j = true ∧
-        Function.update (zeros2n (n := n)) i true j = true := ⟨i, by simp, by simp⟩
-    obtain ⟨v, hv, hwv⟩ := h.mpr htrue
-    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp (hd_part i) hv
-    rcases eq_xVar_or_yVar_or_zVar v with ⟨k, rfl⟩ | ⟨k, rfl⟩ | ⟨k, rfl⟩
-    · simp at hwv
-    · have hki : k = i := by
-        by_contra hne
-        simp [Function.update_of_ne hne] at hwv
-      subst hki
-      exact hv
-    · exact absurd (zVar_mem_zSet k) hv_notZ
-  have hy_iff (i k : Fin (2 * n)) : yVar k ∈ zPartnerVars i F ↔ k = i := by
-    constructor
-    · intro hk
-      by_contra hne
-      exact Finset.disjoint_left.mp (hd_ij k i hne) (hy_mem k) hk
-    · rintro rfl
-      exact hy_mem k
-  -- Clause (2) provides an `x`-variable in each `zPartnerVars i F`.
-  have hx_exists (i : Fin (2 * n)) : ∃ k : Fin (2 * n), xVar k ∈ zPartnerVars i F := by
-    have h := hC2 zeros2n (Function.update zeros2n i true)
-    rw [heval_unit, decide_eq_decide] at h
-    obtain ⟨v, hv, hwv⟩ := h.mpr ⟨i, by simp⟩
-    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp (hd_part i) hv
-    rcases eq_xVar_or_yVar_or_zVar v with ⟨k, rfl⟩ | ⟨k, rfl⟩ | ⟨k, rfl⟩
-    · exact ⟨k, hv⟩
-    · simp at hwv
-    · exact absurd (zVar_mem_zSet k) hv_notZ
-  let f (i : Fin (2 * n)) : Fin (2 * n) := (hx_exists i).choose
-  have hf_mem (i : Fin (2 * n)) : xVar (f i) ∈ zPartnerVars i F :=
-    (hx_exists i).choose_spec
-  have hf_inj : Function.Injective f := by
-    intro i j hij
-    by_contra hne
-    exact Finset.disjoint_left.mp (hd_ij i j hne) (hf_mem i) (hij ▸ hf_mem j)
-  let π : Equiv.Perm (Fin (2 * n)) :=
-    Equiv.ofBijective f (Finite.injective_iff_bijective.mp hf_inj)
-  have hπ_mem (i : Fin (2 * n)) : xVar (π i) ∈ zPartnerVars i F := hf_mem i
-  have hx_iff (i k : Fin (2 * n)) : xVar k ∈ zPartnerVars i F ↔ k = π i := by
-    constructor
-    · intro hk
-      have hsymm : xVar k ∈ zPartnerVars (π.symm k) F := by
-        simpa [π] using hπ_mem (π.symm k)
-      have hi_eq : i = π.symm k := by
-        by_contra hne
-        exact Finset.disjoint_left.mp (hd_ij i (π.symm k) hne) hk hsymm
-      rw [hi_eq, Equiv.apply_symm_apply]
-    · rintro rfl
-      exact hπ_mem i
+  have hd := structure_of_zCount_eq_numAnd hro hC1 hC3 (.refl F) hnotZF (by omega)
+  obtain ⟨heval', heval_unit⟩ := hd.eval_packXYZ_of_clause4 hC4
+  obtain ⟨π, hx_iff, hy_iff⟩ := hd.exists_perm_zPartnerVars heval_unit hC1 hC2
   refine ⟨π, fun x y z => ?_⟩
   rw [heval', decide_eq_decide]
   refine exists_congr fun i => ?_
@@ -1242,7 +1217,7 @@ theorem _root_.Cslib.Circuits.Boolean.PosFormula.exists_perm_of_agreesWith_ilang
   constructor
   · rintro ⟨hz, v, hv, hwv⟩
     refine ⟨?_, hz⟩
-    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp (hd_part i) hv
+    have hv_notZ : v ∉ zSet n := Finset.disjoint_left.mp (hd.disjoint_partner i) hv
     rcases eq_xVar_or_yVar_or_zVar v with ⟨k, rfl⟩ | ⟨k, rfl⟩ | ⟨k, rfl⟩
     · rw [(hx_iff i k).mp hv] at hwv
       exact Or.inl (by simpa using hwv)
@@ -1250,61 +1225,46 @@ theorem _root_.Cslib.Circuits.Boolean.PosFormula.exists_perm_of_agreesWith_ilang
       exact Or.inr (by simpa using hwv)
     · exact absurd (zVar_mem_zSet k) hv_notZ
   · rintro ⟨hx | hy, hz⟩
-    · exact ⟨hz, xVar (π i), hπ_mem i, by simpa using hx⟩
-    · exact ⟨hz, yVar i, hy_mem i, by simpa using hy⟩
+    · exact ⟨hz, xVar (π i), (hx_iff i (π i)).mpr rfl, by simpa using hx⟩
+    · exact ⟨hz, yVar i, (hy_iff i i).mpr rfl, by simpa using hy⟩
 
 /-! ## Section 5: Ilango's Theorem 11 (Exact Equivalence for $n \ge 2$) -/
-
-/-- The $i$-th summand $(x_{\pi(i)} \vee y_i) \wedge z_i$ in Ilango's target formula
-[ECCC TR20-183, Section 3, p. 22]. -/
-def ilangoTerm (π : Equiv.Perm (Fin (2 * n))) (i : Fin (2 * n)) : PosFormula (6 * n) :=
-  .and (.or (.var (xVar (π i))) (.var (yVar i))) (.var (zVar i))
 
 /-- The read-once positive formula $\bigvee_{i=1}^{2n} ((x_{\pi(i)} \vee y_i) \wedge z_i)$ of
 gate size $6n - 1$ corresponding to a permutation $\pi \in S_{2n}$ [ECCC TR20-183, Section 3,
 p. 22]. -/
-def ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) : PosFormula (6 * n) :=
-  PosFormula.orFin (2 * n) (by omega) (ilangoTerm π)
+@[expose] def ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) : PosFormula (6 * n) :=
+  PosFormula.orFin (2 * n) (by omega) fun i =>
+    .and (.or (.var (xVar (π i))) (.var (yVar i))) (.var (zVar i))
 
-@[simp] theorem eval_ilangoTerm (π : Equiv.Perm (Fin (2 * n))) (i : Fin (2 * n))
-    (w : BitString (6 * n)) :
-    (ilangoTerm π i).eval w = ((w (xVar (π i)) || w (yVar i)) && w (zVar i)) := rfl
-
-@[simp] theorem leafSize_ilangoTerm (π : Equiv.Perm (Fin (2 * n))) (i : Fin (2 * n)) :
-    (ilangoTerm π i).leafSize = 3 := rfl
-
-theorem eval_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n)))
+private theorem eval_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n)))
     (x y z : BitString (2 * n)) :
     (ilangoPosFormula hn π).eval (packXYZ x y z) =
       decide (∃ i : Fin (2 * n), (x (π i) || y i) && z i) := by
   rw [ilangoPosFormula, PosFormula.eval_orFin]
-  simp
+  simp [PosFormula.eval]
 
-theorem leafSize_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
+private theorem leafSize_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
     (ilangoPosFormula hn π).leafSize = 6 * n := by
-  rw [ilangoPosFormula, PosFormula.leafSize_orFin_of_eq (2 * n) (by omega) (ilangoTerm π) 3
-    (leafSize_ilangoTerm π)]
+  rw [ilangoPosFormula, PosFormula.leafSize_orFin_of_eq (2 * n) (by omega) _ 3 (fun _ => rfl)]
   omega
 
-theorem size_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
+private theorem size_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
     (ilangoPosFormula hn π).size = 6 * n - 1 := by
   have h1 := (ilangoPosFormula hn π).size_add_one
   have h2 := leafSize_ilangoPosFormula hn π
   omega
 
-theorem leafSupport_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
+private theorem leafSupport_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
     (ilangoPosFormula hn π).leafSupport = Finset.univ := by
   ext v
   simp only [Finset.mem_univ, iff_true, ilangoPosFormula, PosFormula.mem_leafSupport_orFin]
   rcases eq_xVar_or_yVar_or_zVar v with ⟨k, rfl⟩ | ⟨i, rfl⟩ | ⟨i, rfl⟩
-  · refine ⟨π.symm k, ?_⟩
-    simp [ilangoTerm]
-  · refine ⟨i, ?_⟩
-    simp [ilangoTerm]
-  · refine ⟨i, ?_⟩
-    simp [ilangoTerm]
+  · exact ⟨π.symm k, by simp [PosFormula.leafSupport]⟩
+  · exact ⟨i, by simp [PosFormula.leafSupport]⟩
+  · exact ⟨i, by simp [PosFormula.leafSupport]⟩
 
-theorem isReadOnce_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
+private theorem isReadOnce_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n))) :
     (ilangoPosFormula hn π).IsReadOnce := by
   rw [PosFormula.isReadOnce_iff_card_leafSupport_eq_leafSize,
     leafSupport_ilangoPosFormula, leafSize_ilangoPosFormula]
@@ -1314,7 +1274,7 @@ theorem isReadOnce_ilangoPosFormula (hn : 0 < n) (π : Equiv.Perm (Fin (2 * n)))
 $j, j', k, k' \in \mathrm{Fin}\, n$, evaluating $\bigvee_i ((x_{\pi(i)} \vee y_i) \wedge z_i)$ on
 $(\overline{e_k}\,\overline{e_{k'}}, 0^{2n}, e_j\,e_{j'})$ tests whether $\pi$ avoids mapping
 both $j \mapsto k$ and $n + j' \mapsto n + k'$. -/
-theorem eval_antiUnitPair_unitPair_of_isBlockPreserving
+private theorem eval_antiUnitPair_unitPair_of_isBlockPreserving
     {π : Equiv.Perm (Fin (2 * n))} (hblock : BipartitePermutationGraph.IsBlockPreserving π)
     (j j' k k' : Fin n) :
     (∃ i : Fin (2 * n),
@@ -1336,17 +1296,11 @@ theorem eval_antiUnitPair_unitPair_of_isBlockPreserving
   · rintro ⟨i, hi⟩
     simp only [zeros2n, Bool.or_false, Bool.and_eq_true, unitPair, decide_eq_true_eq] at hi
     rcases hi.2 with hij | hij'
-    · left
-      have hi_eq : i = ⟨j.1, by omega⟩ := Fin.ext hij
-      exact hi_eq ▸ hi.1
-    · right
-      have hi_eq : i = ⟨n + j'.1, by omega⟩ := Fin.ext hij'
-      exact hi_eq ▸ hi.1
+    · exact Or.inl ((Fin.ext hij : i = ⟨j.1, by omega⟩) ▸ hi.1)
+    · exact Or.inr ((Fin.ext hij' : i = ⟨n + j'.1, by omega⟩) ▸ hi.1)
   · rintro (h | h)
-    · refine ⟨⟨j.1, by omega⟩, ?_⟩
-      simp [unitPair, h]
-    · refine ⟨⟨n + j'.1, by omega⟩, ?_⟩
-      simp [unitPair, h]
+    · exact ⟨⟨j.1, by omega⟩, by simp [unitPair, h]⟩
+    · exact ⟨⟨n + j'.1, by omega⟩, by simp [unitPair, h]⟩
 
 /-- If $\pi \in S_{2n}$ satisfies `G.SatisfiesUndirected π`, then the read-once positive formula
 `ilangoPosFormula hn π` agrees with `ilangoInstance G` on every defined entry
@@ -1356,55 +1310,36 @@ theorem agreesWith_ilangoPosFormula_of_satisfiesUndirected {G : BipartitePermuta
     (ilangoInstance G).AgreesWith (ilangoPosFormula hn π).eval := by
   intro w b hwb
   change (ilangoInstance G).partialFunction w = some b at hwb
-  rw [ilangoInstance_partialFunction] at hwb
-  rw [← packXYZ_unpack w] at hwb ⊢
+  rw [ilangoInstance_partialFunction] at hwb; rw [← packXYZ_unpack w] at hwb ⊢
   generalize unpackX w = x, unpackY w = y, unpackZ w = z at hwb ⊢
   rw [eval_ilangoPosFormula]
   unfold ilangoGamma at hwb
   simp only [unpackX_packXYZ, unpackY_packXYZ, unpackZ_packXYZ] at hwb
   split_ifs at hwb with hx0 hx1 hz1 hz0 hleft hright hedge
-  · injection hwb with hwb
-    rw [← hwb, hx0]
-    simp
-  · injection hwb with hwb
-    rw [← hwb, hx1]
-    simp
-  · injection hwb with hwb
-    rw [← hwb, hz1, decide_eq_decide]
+  · exact Option.some.inj hwb ▸ by simp [hx0]
+  · exact Option.some.inj hwb ▸ by simp [hx1]
+  · rw [← Option.some.inj hwb, hz1, decide_eq_decide]
     simp only [ones2n, Bool.and_true, Bool.or_eq_true, exists_or]
-    refine or_congr_left ⟨fun ⟨i, hi⟩ => ⟨π i, hi⟩, fun ⟨j, hj⟩ => ⟨π.symm j, by simpa using hj⟩⟩
-  · injection hwb with hwb
-    rw [← hwb, hz0]
-    simp
-  · injection hwb with hwb
-    rw [← hwb, hleft.1, hleft.2, decide_eq_decide]
+    exact or_congr_left ⟨fun ⟨i, hi⟩ => ⟨π i, hi⟩, fun ⟨j, hj⟩ => ⟨π.symm j, by simpa using hj⟩⟩
+  · exact Option.some.inj hwb ▸ by simp [hz0]
+  · rw [← Option.some.inj hwb, hleft.1, hleft.2, decide_eq_decide]
     simp only [zeros2n, leftHalfOnes, Bool.or_false, Bool.and_eq_true, decide_eq_true_eq]
-    constructor
-    · rintro ⟨i, hx, hi⟩
-      exact ⟨π i, (hπ.1 i).mp hi, hx⟩
-    · rintro ⟨j, hj, hx⟩
-      exact ⟨π.symm j, by simpa using hx, (hπ.1.symm j).mp hj⟩
-  · injection hwb with hwb
-    rw [← hwb, hright.1, hright.2, decide_eq_decide]
+    exact ⟨fun ⟨i, hx, hi⟩ => ⟨π i, (hπ.1 i).mp hi, hx⟩,
+      fun ⟨j, hj, hx⟩ => ⟨π.symm j, by simpa using hx, (hπ.1.symm j).mp hj⟩⟩
+  · rw [← Option.some.inj hwb, hright.1, hright.2, decide_eq_decide]
     simp only [zeros2n, rightHalfOnes, Bool.or_false, Bool.and_eq_true, decide_eq_true_eq]
-    constructor
-    · rintro ⟨i, hx, hi⟩
-      have hge : G.1 ≤ (π i).1 :=
-        Nat.le_of_not_lt (mt (hπ.1 i).mpr (Nat.not_lt.mpr hi))
-      exact ⟨π i, hge, hx⟩
-    · rintro ⟨j, hj, hx⟩
-      have hge : G.1 ≤ (π.symm j).1 :=
-        Nat.le_of_not_lt (mt (hπ.1.symm j).mpr (Nat.not_lt.mpr hj))
-      exact ⟨π.symm j, by simpa using hx, hge⟩
+    exact ⟨fun ⟨i, hx, hi⟩ => ⟨π i, not_lt.mp (mt (hπ.1 i).mpr (not_lt.mpr hi)), hx⟩,
+      fun ⟨j, hj, hx⟩ =>
+        ⟨π.symm j, by simpa using hx, not_lt.mp (mt (hπ.1.symm j).mpr (not_lt.mpr hj))⟩⟩
   · rw [decide_eq_true_iff] at hedge
     obtain ⟨j, j', k, k', he, rfl, rfl, rfl⟩ := hedge
-    injection hwb with hwb
-    rw [← hwb, decide_eq_true_iff, eval_antiUnitPair_unitPair_of_isBlockPreserving hπ.1]
+    rw [← Option.some.inj hwb, decide_eq_true_iff,
+      eval_antiUnitPair_unitPair_of_isBlockPreserving hπ.1]
     exact hπ.2 ((j.1, k.1), (j'.1, k'.1)) he j.2 k.2 j'.2 k'.2
 
 /-- **Backward direction of Ilango's Theorem 11**: if $1 \le G.1$ and
 `G ∈ BipartitePermutationIndependentSet`, then `ilangoInstance G ∈ PartialMCSP.MonotoneReadOnce`. -/
-theorem ilangoInstance_mem_monotoneReadOnce_of_mem {G : BipartitePermutationGraph}
+private theorem ilangoInstance_mem_monotoneReadOnce_of_mem {G : BipartitePermutationGraph}
     (hn : 0 < G.1) (hG : G ∈ BipartitePermutationIndependentSet) :
     ilangoInstance G ∈ PartialMCSP.MonotoneReadOnce := by
   obtain ⟨π, hπ⟩ :=
@@ -1415,10 +1350,36 @@ theorem ilangoInstance_mem_monotoneReadOnce_of_mem {G : BipartitePermutationGrap
     by rw [size_ilangoPosFormula],
     agreesWith_ilangoPosFormula_of_satisfiesUndirected hn hπ⟩
 
+private theorem isBlockPreserving_of_agreesWith_leftHalfOnes {n : ℕ}
+    {π : Equiv.Perm (Fin (2 * n))}
+    (h : ∀ x : BitString (2 * n),
+      decide (∃ i : Fin (2 * n), ((x (π i) || zeros2n i) && leftHalfOnes i) = true) =
+        decide (∃ i : Fin (2 * n), i.1 < n ∧ x i = true)) :
+    BipartitePermutationGraph.IsBlockPreserving π := by
+  intro i
+  have h1 := h (Function.update zeros2n (π i) true)
+  rw [decide_eq_decide] at h1
+  simp only [zeros2n, leftHalfOnes, Bool.or_false, Bool.and_eq_true, decide_eq_true_eq] at h1
+  have hLHS : (∃ j : Fin (2 * n),
+      Function.update (zeros2n (n := n)) (π i) true (π j) = true ∧ j.1 < n) ↔ i.1 < n := by
+    refine ⟨fun ⟨j, hj, hj_lt⟩ => ?_, fun hi_lt => ⟨i, by simp, hi_lt⟩⟩
+    have hji : j = i := by
+      by_contra hne
+      simp [Function.update_of_ne (π.injective.ne hne)] at hj
+    exact hji ▸ hj_lt
+  have hRHS : (∃ j : Fin (2 * n),
+      j.1 < n ∧ Function.update (zeros2n (n := n)) (π i) true j = true) ↔ (π i).1 < n := by
+    refine ⟨fun ⟨j, hj_lt, hj⟩ => ?_, fun hπ_lt => ⟨π i, hπ_lt, by simp⟩⟩
+    have hji : j = π i := by
+      by_contra hne
+      simp [Function.update_of_ne hne] at hj
+    exact hji ▸ hj_lt
+  exact (hLHS.symm.trans h1).trans hRHS
+
 /-- **Forward direction of Ilango's Theorem 11** [ECCC TR20-183, Section 3, Theorem 11, pp. 21–24]:
 if $2 \le G.1$ and `ilangoInstance G ∈ PartialMCSP.BinaryGate`, then
 `G ∈ BipartitePermutationIndependentSet`. -/
-theorem mem_BipartitePermutationIndependentSet_of_ilangoInstance_mem_binaryGate
+private theorem mem_BipartitePermutationIndependentSet_of_ilangoInstance_mem_binaryGate
     {G : BipartitePermutationGraph} (hG : 2 ≤ G.1)
     (hmem : ilangoInstance G ∈ PartialMCSP.BinaryGate) :
     G ∈ BipartitePermutationIndependentSet := by
@@ -1426,8 +1387,6 @@ theorem mem_BipartitePermutationIndependentSet_of_ilangoInstance_mem_binaryGate
   change (c : Circuit signature (6 * G.1) 1).program.cost binaryCost ≤ 6 * G.1 - 1 at hc_cost
   change (ilangoInstance G).AgreesWith
     (fun y => (c : Circuit signature (6 * G.1) 1).eval interpretation y 0) at hc_agrees
-  have hpos6 : 0 < 6 * G.1 := by omega
-  have hcost' : c.program.cost binaryCost + 1 ≤ 6 * G.1 := by omega
   have hpos (i : Fin (6 * G.1)) : ∃ y₀ y₁ : BitString (6 * G.1),
       (∀ k, k ≠ i → y₀ k = y₁ k) ∧ y₀ i = false ∧ y₁ i = true ∧
       c.eval interpretation y₀ 0 = false ∧ c.eval interpretation y₁ 0 = true := by
@@ -1435,65 +1394,26 @@ theorem mem_BipartitePermutationIndependentSet_of_ilangoInstance_mem_binaryGate
     exact ⟨Function.update w i false, Function.update w i true,
       fun k hk => by simp [Function.update_of_ne hk], by simp, by simp, h0, h1⟩
   obtain ⟨F, hro, hleaf, _, _, hF_eval⟩ :=
-    c.exists_posFormula_of_cost_binaryCost_le hpos6 hcost' hpos
-  have hF_agrees : ∀ w : BitString (6 * G.1), ∀ b : Bool,
-      ilangoGamma G w = some b → F.eval w = b := by
-    intro w b hwb
+    c.exists_posFormula_of_cost_binaryCost_le (show 0 < 6 * G.1 by omega)
+      (show c.program.cost binaryCost + 1 ≤ 6 * G.1 by omega) hpos
+  have hF_agrees (w : BitString (6 * G.1)) (b : Bool) (hwb : ilangoGamma G w = some b) :
+      F.eval w = b := by
     rw [hF_eval]
-    apply hc_agrees w b
-    rwa [ilangoInstance_partialFunction]
-  have hC1 (y z : BitString (2 * G.1)) :
-      F.eval (packXYZ zeros2n y z) = decide (∃ i, y i = true ∧ z i = true) :=
-    hF_agrees _ _ (ilangoGamma_zeros2n_x G y z)
-  have hC2 (y z : BitString (2 * G.1)) :
-      F.eval (packXYZ ones2n y z) = decide (∃ i, z i = true) :=
-    hF_agrees _ _ (ilangoGamma_ones2n_x G y z)
-  have hC3 (x y : BitString (2 * G.1)) :
-      F.eval (packXYZ x y ones2n) = decide (∃ i, x i = true ∨ y i = true) :=
-    hF_agrees _ _ (ilangoGamma_ones2n_z G x y)
-  have hC4 (x y : BitString (2 * G.1)) :
-      F.eval (packXYZ x y zeros2n) = false :=
-    hF_agrees _ _ (ilangoGamma_zeros2n_z G x y)
-  obtain ⟨π, hF_π⟩ :=
-    PosFormula.exists_perm_of_agreesWith_ilango hro hleaf hC1 hC2 hC3 hC4
+    exact hc_agrees w b (by rwa [ilangoInstance_partialFunction])
+  obtain ⟨π, hF_π⟩ := PosFormula.exists_perm_of_agreesWith_ilango hro hleaf
+    (fun y z => hF_agrees _ _ (ilangoGamma_zeros2n_x G y z))
+    (fun y z => hF_agrees _ _ (ilangoGamma_ones2n_x G y z))
+    (fun x y => hF_agrees _ _ (ilangoGamma_ones2n_z G x y))
+    (fun x y => hF_agrees _ _ (ilangoGamma_zeros2n_z G x y))
   rw [BipartitePermutationIndependentSet.mem_iff_exists_satisfiesUndirected]
-  have hblock : BipartitePermutationGraph.IsBlockPreserving π := by
-    intro i
-    have h1 := hF_agrees _ _
-      (ilangoGamma_leftHalfOnes G (Function.update zeros2n (π i) true))
-    rw [hF_π, decide_eq_decide] at h1
-    simp only [zeros2n, leftHalfOnes, Bool.or_false, Bool.and_eq_true, decide_eq_true_eq] at h1
-    have hLHS : (∃ j : Fin (2 * G.1),
-        Function.update (zeros2n (n := G.1)) (π i) true (π j) = true ∧ j.1 < G.1) ↔ i.1 < G.1 := by
-      constructor
-      · rintro ⟨j, hj, hj_lt⟩
-        have hji : j = i := by
-          by_contra hne
-          have hπne : π j ≠ π i := π.injective.ne hne
-          simp [Function.update_of_ne hπne] at hj
-        exact hji ▸ hj_lt
-      · intro hi_lt
-        exact ⟨i, by simp, hi_lt⟩
-    have hRHS : (∃ j : Fin (2 * G.1),
-        j.1 < G.1 ∧ Function.update (zeros2n (n := G.1)) (π i) true j = true) ↔
-        (π i).1 < G.1 := by
-      constructor
-      · rintro ⟨j, hj_lt, hj⟩
-        have hji : j = π i := by
-          by_contra hne
-          simp [Function.update_of_ne hne] at hj
-        exact hji ▸ hj_lt
-      · intro hπ_lt
-        exact ⟨π i, hπ_lt, by simp⟩
-    exact (hLHS.symm.trans h1).trans hRHS
+  have hblock : BipartitePermutationGraph.IsBlockPreserving π :=
+    isBlockPreserving_of_agreesWith_leftHalfOnes fun x => by
+      rw [← hF_π]
+      exact hF_agrees _ _ (ilangoGamma_leftHalfOnes G x)
   refine ⟨π, hblock, fun e he hu₁ hu₂ hv₁ hv₂ => ?_⟩
-  let j : Fin G.1 := ⟨e.1.1, hu₁⟩
-  let k : Fin G.1 := ⟨e.1.2, hu₂⟩
-  let j' : Fin G.1 := ⟨e.2.1, hv₁⟩
-  let k' : Fin G.1 := ⟨e.2.2, hv₂⟩
-  have h7 := hF_agrees _ _ (ilangoGamma_edge hG j j' k k' he)
-  rw [hF_π, decide_eq_true_iff, eval_antiUnitPair_unitPair_of_isBlockPreserving hblock] at h7
-  exact h7
+  have h7 := hF_agrees _ _
+    (ilangoGamma_edge hG ⟨e.1.1, hu₁⟩ ⟨e.2.1, hv₁⟩ ⟨e.1.2, hu₂⟩ ⟨e.2.2, hv₂⟩ he)
+  rwa [hF_π, decide_eq_true_iff, eval_antiUnitPair_unitPair_of_isBlockPreserving hblock] at h7
 
 /-- **Ilango's Theorem 11 (monotone read-once equivalence for $n \ge 2$)**
 [ECCC TR20-183, Section 3, Theorem 11, p. 20, proof pp. 21–24]: for $2 \le G.1$,
@@ -1530,27 +1450,27 @@ theorem mem_BipartitePermutationIndependentSet_iff_ilangoInstance_mem
 
 /-- Trivial yes-instance of `PartialMCSP` on 1 variable with threshold 0 and all entries
 undefined (`none`). -/
-def trivialYesInstance : Instance where
+private def trivialYesInstance : Instance where
   arity := 1
   table _ := none
   threshold := 0
 
 /-- Trivial no-instance of `PartialMCSP` on 2 variables with threshold 0 and truth table for
 $x_0 \wedge x_1$. -/
-def trivialNoInstance : Instance where
+private def trivialNoInstance : Instance where
   arity := 2
   table i := some (i.1 == 3)
   threshold := 0
 
-theorem trivialYesInstance_mem_monotoneReadOnce :
+private theorem trivialYesInstance_mem_monotoneReadOnce :
     trivialYesInstance ∈ PartialMCSP.MonotoneReadOnce :=
   ⟨.var ⟨0, Nat.zero_lt_one⟩, trivial, le_rfl, fun _ _ h => by cases h⟩
 
-theorem trivialYesInstance_mem_binaryGate :
+private theorem trivialYesInstance_mem_binaryGate :
     trivialYesInstance ∈ PartialMCSP.BinaryGate :=
   monotoneReadOnce_subset_binaryGate trivialYesInstance_mem_monotoneReadOnce
 
-theorem trivialYesInstance_mem :
+private theorem trivialYesInstance_mem :
     trivialYesInstance ∈ PartialMCSP :=
   monotoneReadOnce_subset trivialYesInstance_mem_monotoneReadOnce
 
@@ -1558,39 +1478,37 @@ private theorem trivialNoInstance_essentialAt :
     ∀ j : Fin trivialNoInstance.arity, trivialNoInstance.EssentialAt j := by
   intro j
   fin_cases j
-  · refine ⟨fun i => decide (i.1 = 1), fun _ => true, false, true, ?_, ?_, ?_, by decide⟩
-    · intro k hk
-      fin_cases k
-      · exact absurd rfl hk
-      · rfl
-    · decide
-    · decide
-  · refine ⟨fun i => decide (i.1 = 0), fun _ => true, false, true, ?_, ?_, ?_, by decide⟩
-    · intro k hk
-      fin_cases k
-      · rfl
-      · exact absurd rfl hk
-    · decide
-    · decide
+  · refine ⟨fun i => decide (i.1 = 1), fun _ => true, false, true, ?_, by decide, by decide,
+      by decide⟩
+    intro k hk
+    fin_cases k
+    · exact absurd rfl hk
+    · rfl
+  · refine ⟨fun i => decide (i.1 = 0), fun _ => true, false, true, ?_, by decide, by decide,
+      by decide⟩
+    intro k hk
+    fin_cases k
+    · rfl
+    · exact absurd rfl hk
 
-theorem trivialNoInstance_not_mem_binaryGate :
+private theorem trivialNoInstance_not_mem_binaryGate :
     trivialNoInstance ∉ PartialMCSP.BinaryGate :=
   not_mem_binaryGate_of_threshold_lt trivialNoInstance_essentialAt (by decide)
 
-theorem trivialNoInstance_not_mem :
+private theorem trivialNoInstance_not_mem :
     trivialNoInstance ∉ PartialMCSP :=
   fun h => trivialNoInstance_not_mem_binaryGate (mem_binaryGate_of_mem h)
 
-theorem trivialNoInstance_not_mem_monotoneReadOnce :
+private theorem trivialNoInstance_not_mem_monotoneReadOnce :
     trivialNoInstance ∉ PartialMCSP.MonotoneReadOnce :=
   fun h => trivialNoInstance_not_mem (monotoneReadOnce_subset h)
 
 /-- Direct decision procedure for `BipartitePermutationIndependentSet` when $G.1 < 2$. -/
-def decideSmallBPIS (G : BipartitePermutationGraph) : Bool :=
+private def decideSmallBPIS (G : BipartitePermutationGraph) : Bool :=
   if G.1 == 0 then true
   else !(G.2.any fun e => e.1.1 == 0 && e.1.2 == 0 && e.2.1 == 0 && e.2.2 == 0)
 
-theorem decideSmallBPIS_eq_true_iff {G : BipartitePermutationGraph} (hG : G.1 < 2) :
+private theorem decideSmallBPIS_eq_true_iff {G : BipartitePermutationGraph} (hG : G.1 < 2) :
     decideSmallBPIS G = true ↔ G ∈ BipartitePermutationIndependentSet := by
   rcases G with ⟨n, E⟩
   dsimp at hG
@@ -1599,13 +1517,11 @@ theorem decideSmallBPIS_eq_true_iff {G : BipartitePermutationGraph} (hG : G.1 < 
     exact ⟨1, 1, fun e _ hu₁ => absurd hu₁ (Nat.not_lt_zero _)⟩
   · simp only [decideSmallBPIS, show (1 == 0) = false by rfl, Bool.false_eq_true, ↓reduceIte,
       Bool.not_eq_true', List.any_eq_false, Bool.and_eq_true, beq_iff_eq]
-    constructor
-    · intro h
-      refine ⟨1, 1, fun e he hu₁ hu₂ hv₁ hv₂ _ _ => ?_⟩
-      exact absurd ⟨⟨⟨by omega, by omega⟩, by omega⟩, by omega⟩ (h e he)
-    · rintro ⟨π₁, π₂, hSat⟩ e he ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩
-      exact hSat e he (by omega) (by omega) (by omega) (by omega)
-        (Subsingleton.elim _ _) (Subsingleton.elim _ _)
+    refine ⟨fun h => ⟨1, 1, fun e he hu₁ hu₂ hv₁ hv₂ _ _ =>
+      absurd ⟨⟨⟨by omega, by omega⟩, by omega⟩, by omega⟩ (h e he)⟩, ?_⟩
+    rintro ⟨π₁, π₂, hSat⟩ e he ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩
+    exact hSat e he (by omega) (by omega) (by omega) (by omega)
+      (Subsingleton.elim _ _) (Subsingleton.elim _ _)
 
 /-- **Total reduction from `BipartitePermutationIndependentSet` to `PartialMCSP`**
 [Ilango2020FOCS, Section III.B, p. 428; ECCC TR20-183, Section 3, Theorem 11, pp. 20–21]: maps $G$
@@ -1655,7 +1571,7 @@ theorem mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem
 /-! ### Bitwise list evaluator and $2^{O(n)}$-time computability of `ilangoReduction` -/
 
 /-- Bitwise list evaluator for the $m$-th truth-table entry of `ilangoInstance G`. -/
-def ilangoEntry (G : BipartitePermutationGraph) (m : ℕ) : Option Bool :=
+private def ilangoEntry (G : BipartitePermutationGraph) (m : ℕ) : Option Bool :=
   let n := G.1
   let idx := List.range (2 * n)
   if idx.all fun i => !m.testBit i then
@@ -1694,118 +1610,97 @@ private theorem range_any_eq_decide {m : ℕ} (f : ℕ → Bool) (p : Fin m → 
     (List.range m).any f = decide (∃ i : Fin m, p i) := by
   rw [← Bool.decide_coe ((List.range m).any f), decide_eq_decide, List.any_eq_true]
   simp only [List.mem_range]
-  constructor
-  · rintro ⟨i, hi, hfi⟩
-    exact ⟨⟨i, hi⟩, by rwa [hf ⟨i, hi⟩, decide_eq_true_iff] at hfi⟩
-  · rintro ⟨⟨i, hi⟩, hpi⟩
-    exact ⟨i, hi, by rw [hf ⟨i, hi⟩, decide_eq_true_iff]; exact hpi⟩
+  exact ⟨fun ⟨i, hi, hfi⟩ => ⟨⟨i, hi⟩, by rwa [hf ⟨i, hi⟩, decide_eq_true_iff] at hfi⟩,
+    fun ⟨⟨i, hi⟩, hpi⟩ => ⟨i, hi, by rw [hf ⟨i, hi⟩, decide_eq_true_iff]; exact hpi⟩⟩
 
-theorem ilangoEntry_eq_table (G : BipartitePermutationGraph) (k : Fin (2 ^ (6 * G.1))) :
-    ilangoEntry G k.1 = (ilangoInstance G).table k := by
-  set w := (BitString.equivFin (6 * G.1)).symm k
-  set x := unpackX w
-  set y := unpackY w
-  set z := unpackZ w
-  have hx (i : Fin (2 * G.1)) : k.1.testBit i.1 = x i := by
-    simp [x, w, unpackX, xVar]
-  have hy (i : Fin (2 * G.1)) : k.1.testBit (2 * G.1 + i.1) = y i := by
-    simp [y, w, unpackY, yVar]
-  have hz (i : Fin (2 * G.1)) : k.1.testBit (4 * G.1 + i.1) = z i := by
-    simp [z, w, unpackZ, zVar]
-  have hcond1 : ((List.range (2 * G.1)).all fun i => !k.1.testBit i) = decide (x = zeros2n) :=
-    range_all_eq_decide _ x zeros2n fun i => by simp [hx i, zeros2n]
-  have hcond2 : ((List.range (2 * G.1)).all fun i => k.1.testBit i) = decide (x = ones2n) :=
-    range_all_eq_decide _ x ones2n fun i => by simp [hx i, ones2n]
-  have hcond3 : ((List.range (2 * G.1)).all fun i => k.1.testBit (4 * G.1 + i)) =
-      decide (z = ones2n) :=
-    range_all_eq_decide _ z ones2n fun i => by simp [hz i, ones2n]
-  have hcond4 : ((List.range (2 * G.1)).all fun i => !k.1.testBit (4 * G.1 + i)) =
-      decide (z = zeros2n) :=
-    range_all_eq_decide _ z zeros2n fun i => by simp [hz i, zeros2n]
-  have hcondy0 : ((List.range (2 * G.1)).all fun i => !k.1.testBit (2 * G.1 + i)) =
-      decide (y = zeros2n) :=
-    range_all_eq_decide _ y zeros2n fun i => by simp [hy i, zeros2n]
-  have hcondzL : ((List.range (2 * G.1)).all fun i =>
-      k.1.testBit (4 * G.1 + i) == decide (i < G.1)) = decide (z = leftHalfOnes) :=
-    range_all_eq_decide _ z leftHalfOnes fun i => by simp [hz i, leftHalfOnes]
-  have hcondzR : ((List.range (2 * G.1)).all fun i =>
-      k.1.testBit (4 * G.1 + i) == decide (G.1 ≤ i)) = decide (z = rightHalfOnes) :=
-    range_all_eq_decide _ z rightHalfOnes fun i => by simp [hz i, rightHalfOnes]
-  have hval1 : ((List.range (2 * G.1)).any fun i =>
-      k.1.testBit (2 * G.1 + i) && k.1.testBit (4 * G.1 + i)) =
-      decide (∃ i : Fin (2 * G.1), y i = true ∧ z i = true) :=
-    range_any_eq_decide _ (fun i => y i = true ∧ z i = true) fun i => by
-      simp [hy i, hz i, Bool.decide_and]
-  have hval2 : ((List.range (2 * G.1)).any fun i => k.1.testBit (4 * G.1 + i)) =
-      decide (∃ i : Fin (2 * G.1), z i = true) :=
-    range_any_eq_decide _ (fun i => z i = true) fun i => by simp [hz i]
-  have hval3 : ((List.range (2 * G.1)).any fun i =>
-      k.1.testBit i || k.1.testBit (2 * G.1 + i)) =
-      decide (∃ i : Fin (2 * G.1), x i = true ∨ y i = true) :=
-    range_any_eq_decide _ (fun i => x i = true ∨ y i = true) fun i => by
-      simp [hx i, hy i, Bool.decide_or]
-  have hval5 : ((List.range (2 * G.1)).any fun i => decide (i < G.1) && k.1.testBit i) =
-      decide (∃ i : Fin (2 * G.1), i.1 < G.1 ∧ x i = true) :=
-    range_any_eq_decide _ (fun i => i.1 < G.1 ∧ x i = true) fun i => by
-      simp [hx i, Bool.decide_and]
-  have hval6 : ((List.range (2 * G.1)).any fun i => decide (G.1 ≤ i) && k.1.testBit i) =
-      decide (∃ i : Fin (2 * G.1), G.1 ≤ i.1 ∧ x i = true) :=
-    range_any_eq_decide _ (fun i => G.1 ≤ i.1 ∧ x i = true) fun i => by
-      simp [hx i, Bool.decide_and]
-  have hcond7 : (G.2.any fun e =>
+private theorem ilangoEntry_edge_eq_decide (G : BipartitePermutationGraph) (m : ℕ)
+    (x y z : BitString (2 * G.1))
+    (hx : ∀ i : Fin (2 * G.1), m.testBit i.1 = x i)
+    (hy : ∀ i : Fin (2 * G.1), m.testBit (2 * G.1 + i.1) = y i)
+    (hz : ∀ i : Fin (2 * G.1), m.testBit (4 * G.1 + i.1) = z i) :
+    (G.2.any fun e =>
       decide (e.1.1 < G.1) && decide (e.1.2 < G.1) &&
       decide (e.2.1 < G.1) && decide (e.2.2 < G.1) &&
       ((List.range (2 * G.1)).all fun i =>
-        k.1.testBit i == !(i == e.1.2 || i == G.1 + e.2.2)) &&
-      ((List.range (2 * G.1)).all fun i => !k.1.testBit (2 * G.1 + i)) &&
+        m.testBit i == !(i == e.1.2 || i == G.1 + e.2.2)) &&
+      ((List.range (2 * G.1)).all fun i => !m.testBit (2 * G.1 + i)) &&
       ((List.range (2 * G.1)).all fun i =>
-        k.1.testBit (4 * G.1 + i) == (i == e.1.1 || i == G.1 + e.2.1))) =
+        m.testBit (4 * G.1 + i) == (i == e.1.1 || i == G.1 + e.2.1))) =
       decide (∃ j j' k₀ k₀' : Fin G.1,
         ((j.1, k₀.1), (j'.1, k₀'.1)) ∈ G.2 ∧
         x = antiUnitPair k₀ k₀' ∧ y = zeros2n ∧ z = unitPair j j') := by
-    rw [← Bool.decide_coe (G.2.any _), decide_eq_decide, List.any_eq_true]
-    constructor
-    · rintro ⟨e, he, h⟩
-      simp only [Bool.and_eq_true, decide_eq_true_eq] at h
-      obtain ⟨⟨⟨⟨⟨⟨hj, hk₀⟩, hj'⟩, hk₀'⟩, hx_eq⟩, hy_eq⟩, hz_eq⟩ := h
-      let j : Fin G.1 := ⟨e.1.1, hj⟩
-      let k₀ : Fin G.1 := ⟨e.1.2, hk₀⟩
-      let j' : Fin G.1 := ⟨e.2.1, hj'⟩
-      let k₀' : Fin G.1 := ⟨e.2.2, hk₀'⟩
-      have hx' : x = antiUnitPair k₀ k₀' := by
-        rw [range_all_eq_decide _ x (antiUnitPair k₀ k₀') (fun i => by
-          simp [hx i, antiUnitPair, k₀, k₀', Bool.decide_or, beq_eq_decide]),
-          decide_eq_true_iff] at hx_eq
-        exact hx_eq
-      have hy' : y = zeros2n := by
-        rwa [hcondy0, decide_eq_true_iff] at hy_eq
-      have hz' : z = unitPair j j' := by
-        rw [range_all_eq_decide _ z (unitPair j j') (fun i => by
-          simp [hz i, unitPair, j, j', Bool.decide_or, beq_eq_decide]),
-          decide_eq_true_iff] at hz_eq
-        exact hz_eq
-      exact ⟨j, j', k₀, k₀', he, hx', hy', hz'⟩
-    · rintro ⟨j, j', k₀, k₀', he, hx_eq, hy_eq, hz_eq⟩
-      refine ⟨((j.1, k₀.1), (j'.1, k₀'.1)), he, ?_⟩
-      simp only [Bool.and_eq_true, decide_eq_true_eq, j.2, k₀.2, j'.2, k₀'.2, true_and]
-      refine ⟨⟨?_, ?_⟩, ?_⟩
-      · rw [range_all_eq_decide _ x (antiUnitPair k₀ k₀') (fun i => by
-          simp [hx i, antiUnitPair, Bool.decide_or, beq_eq_decide]), hx_eq]
-        exact decide_eq_true rfl
-      · rw [hcondy0, hy_eq]
-        exact decide_eq_true rfl
-      · rw [range_all_eq_decide _ z (unitPair j j') (fun i => by
-          simp [hz i, unitPair, Bool.decide_or, beq_eq_decide]), hz_eq]
-        exact decide_eq_true rfl
+  have hcondy0 : ((List.range (2 * G.1)).all fun i => !m.testBit (2 * G.1 + i)) =
+      decide (y = zeros2n) :=
+    range_all_eq_decide _ y zeros2n fun i => by simp [hy i, zeros2n]
+  rw [← Bool.decide_coe (G.2.any _), decide_eq_decide, List.any_eq_true]
+  constructor
+  · rintro ⟨e, he, h⟩
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at h
+    obtain ⟨⟨⟨⟨⟨⟨hj, hk₀⟩, hj'⟩, hk₀'⟩, hx_eq⟩, hy_eq⟩, hz_eq⟩ := h
+    let j : Fin G.1 := ⟨e.1.1, hj⟩
+    let k₀ : Fin G.1 := ⟨e.1.2, hk₀⟩
+    let j' : Fin G.1 := ⟨e.2.1, hj'⟩
+    let k₀' : Fin G.1 := ⟨e.2.2, hk₀'⟩
+    rw [range_all_eq_decide _ x (antiUnitPair k₀ k₀') (fun i => by
+      simp [hx i, antiUnitPair, k₀, k₀', Bool.decide_or, beq_eq_decide]),
+      decide_eq_true_iff] at hx_eq
+    rw [hcondy0, decide_eq_true_iff] at hy_eq
+    rw [range_all_eq_decide _ z (unitPair j j') (fun i => by
+      simp [hz i, unitPair, j, j', Bool.decide_or, beq_eq_decide]),
+      decide_eq_true_iff] at hz_eq
+    exact ⟨j, j', k₀, k₀', he, hx_eq, hy_eq, hz_eq⟩
+  · rintro ⟨j, j', k₀, k₀', he, hx_eq, hy_eq, hz_eq⟩
+    refine ⟨((j.1, k₀.1), (j'.1, k₀'.1)), he, ?_⟩
+    simp only [Bool.and_eq_true, decide_eq_true_eq, j.2, k₀.2, j'.2, k₀'.2, true_and]
+    refine ⟨⟨?_, by rw [hcondy0, hy_eq]; exact decide_eq_true rfl⟩, ?_⟩
+    · rw [range_all_eq_decide _ x (antiUnitPair k₀ k₀') (fun i => by
+        simp [hx i, antiUnitPair, Bool.decide_or, beq_eq_decide]), hx_eq]
+      exact decide_eq_true rfl
+    · rw [range_all_eq_decide _ z (unitPair j j') (fun i => by
+        simp [hz i, unitPair, Bool.decide_or, beq_eq_decide]), hz_eq]
+      exact decide_eq_true rfl
+
+private theorem ilangoEntry_eq_table (G : BipartitePermutationGraph) (k : Fin (2 ^ (6 * G.1))) :
+    ilangoEntry G k.1 = (ilangoInstance G).table k := by
+  set w := (BitString.equivFin (6 * G.1)).symm k
+  set x := unpackX w; set y := unpackY w; set z := unpackZ w
+  have hx (i : Fin (2 * G.1)) : k.1.testBit i.1 = x i := by simp [x, w, unpackX, xVar]
+  have hy (i : Fin (2 * G.1)) : k.1.testBit (2 * G.1 + i.1) = y i := by simp [y, w, unpackY, yVar]
+  have hz (i : Fin (2 * G.1)) : k.1.testBit (4 * G.1 + i.1) = z i := by simp [z, w, unpackZ, zVar]
+  have hcond1 := range_all_eq_decide (fun i => !k.1.testBit i) x zeros2n fun i => by
+    simp [hx i, zeros2n]
+  have hcond2 := range_all_eq_decide (fun i => k.1.testBit i) x ones2n fun i => by
+    simp [hx i, ones2n]
+  have hcond3 := range_all_eq_decide (fun i => k.1.testBit (4 * G.1 + i)) z ones2n fun i => by
+    simp [hz i, ones2n]
+  have hcond4 := range_all_eq_decide (fun i => !k.1.testBit (4 * G.1 + i)) z zeros2n fun i => by
+    simp [hz i, zeros2n]
+  have hcondy0 := range_all_eq_decide (fun i => !k.1.testBit (2 * G.1 + i)) y zeros2n fun i => by
+    simp [hy i, zeros2n]
+  have hcondzL := range_all_eq_decide (fun i => k.1.testBit (4 * G.1 + i) == decide (i < G.1))
+    z leftHalfOnes fun i => by simp [hz i, leftHalfOnes]
+  have hcondzR := range_all_eq_decide (fun i => k.1.testBit (4 * G.1 + i) == decide (G.1 ≤ i))
+    z rightHalfOnes fun i => by simp [hz i, rightHalfOnes]
+  have hval1 := range_any_eq_decide
+    (fun i => k.1.testBit (2 * G.1 + i) && k.1.testBit (4 * G.1 + i))
+    (fun i => y i = true ∧ z i = true) fun i => by simp [hy i, hz i, Bool.decide_and]
+  have hval2 := range_any_eq_decide (fun i => k.1.testBit (4 * G.1 + i))
+    (fun i => z i = true) fun i => by simp [hz i]
+  have hval3 := range_any_eq_decide (fun i => k.1.testBit i || k.1.testBit (2 * G.1 + i))
+    (fun i => x i = true ∨ y i = true) fun i => by simp [hx i, hy i, Bool.decide_or]
+  have hval5 := range_any_eq_decide (fun i => decide (i < G.1) && k.1.testBit i)
+    (fun i => i.1 < G.1 ∧ x i = true) fun i => by simp [hx i, Bool.decide_and]
+  have hval6 := range_any_eq_decide (fun i => decide (G.1 ≤ i) && k.1.testBit i)
+    (fun i => G.1 ≤ i.1 ∧ x i = true) fun i => by simp [hx i, Bool.decide_and]
   dsimp [ilangoEntry, ilangoInstance, ilangoGamma]
   change (if ((List.range (2 * G.1)).all fun i => !k.1.testBit i) = true then _ else _) =
     if x = zeros2n then _ else _
-  rw [hcond7, hcond1, hcond2, hcond3, hcond4, hcondzL, hcondzR, hcondy0, hval1, hval2, hval3,
-    hval5, hval6]
+  rw [ilangoEntry_edge_eq_decide G k.1 x y z hx hy hz, hcond1, hcond2, hcond3, hcond4, hcondzL,
+    hcondzR, hcondy0, hval1, hval2, hval3, hval5, hval6]
   simp only [Bool.and_eq_true, decide_eq_true_eq]
   rfl
 
-theorem ofFn_ilangoInstance_table (G : BipartitePermutationGraph) :
+private theorem ofFn_ilangoInstance_table (G : BipartitePermutationGraph) :
     List.ofFn (ilangoInstance G).table =
       (List.range (2 ^ (6 * G.1))).map (ilangoEntry G) := by
   apply List.ext_getElem
@@ -1816,7 +1711,7 @@ theorem ofFn_ilangoInstance_table (G : BipartitePermutationGraph) :
 
 /-- Raw pair representation `(List.ofFn (ilangoReduction G).table, (ilangoReduction G).threshold)`
 computed from `(G, 2 ^ (6 * G.1))`. -/
-def ilangoRawFromFuel (p : BipartitePermutationGraph × ℕ) : List (Option Bool) × ℕ :=
+private def ilangoRawFromFuel (p : BipartitePermutationGraph × ℕ) : List (Option Bool) × ℕ :=
   if decide (p.1.1 < 2) then
     if decideSmallBPIS p.1 then
       ([none, none], 0)
@@ -1825,7 +1720,7 @@ def ilangoRawFromFuel (p : BipartitePermutationGraph × ℕ) : List (Option Bool
   else
     ((List.range p.2).map (ilangoEntry p.1), 6 * p.1.1 - 1)
 
-theorem ilangoRawFromFuel_eq (G : BipartitePermutationGraph) :
+private theorem ilangoRawFromFuel_eq (G : BipartitePermutationGraph) :
     ilangoRawFromFuel (G, 2 ^ (6 * G.1)) =
       (List.ofFn (ilangoReduction G).table, (ilangoReduction G).threshold) := by
   change ilangoRawFromFuel (G, 2 ^ (6 * G.1)) =
@@ -1835,11 +1730,9 @@ theorem ilangoRawFromFuel_eq (G : BipartitePermutationGraph) :
   by_cases hG : G.1 < 2
   · by_cases hsmall : decideSmallBPIS G
     · have hred : ilangoReduction G = trivialYesInstance := by simp [ilangoReduction, hG, hsmall]
-      rw [hred]
-      simp [hG, hsmall, trivialYesInstance]
+      rw [hred]; simp [hG, hsmall, trivialYesInstance]
     · have hred : ilangoReduction G = trivialNoInstance := by simp [ilangoReduction, hG, hsmall]
-      rw [hred]
-      simp [hG, hsmall, trivialNoInstance]
+      rw [hred]; simp [hG, hsmall, trivialNoInstance]
   · have hred : ilangoReduction G = ilangoInstance G := by simp [ilangoReduction, hG]
     rw [hred]
     simp only [hG, decide_false, Bool.false_eq_true, ↓reduceIte, Prod.mk.injEq]
@@ -1879,20 +1772,6 @@ private theorem computableInPolyTime_ilangoRawFromFuel :
     (ite' (by fun_prop) (by fun_prop) (by fun_prop)) ?_
   fun_prop
 
-open ComputableInPolyTime in
-private theorem computableInPolyTime_ilangoRawFromFuel_binary :
-    ComputableInPolyTime ilangoRawFromFuel
-      (encPair encBipartitePermutationGraph encUnary)
-      (encPair (encList (encOption encBool)) encNat) := by
-  have hconv : ComputableInPolyTime
-      (fun q : List (Option Bool) × ℕ => (q.1, q.2))
-      (encPair (encList (encOption encBool)) encUnary)
-      (encPair (encList (encOption encBool)) encNat) :=
-    (fst (encList (encOption encBool)) encUnary).prod
-      ((ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_to_binary).comp
-        (snd (encList (encOption encBool)) encUnary))
-  exact hconv.comp computableInPolyTime_ilangoRawFromFuel
-
 private theorem foldl_double_replicate (k : ℕ) (acc : ℕ) :
     (List.replicate k true).foldl (fun n _ => n + n) acc = acc * 2 ^ k := by
   induction k generalizing acc with
@@ -1901,52 +1780,43 @@ private theorem foldl_double_replicate (k : ℕ) (acc : ℕ) :
     rw [List.replicate_succ, List.foldl_cons, ih]
     ring
 
-private theorem computableTidilyInO_twoPow :
-    ComputableTidilyInO (fun m : ℕ => 2 ^ m) encUnary encUnary
+private theorem computableInO_twoPow :
+    ComputableInO (fun m : ℕ => 2 ^ m) encUnary encUnary
       (fun m => 2 ^ (2 * m)) (fun m => 2 ^ (2 * m)) := by
-  have hlist : ComputableTidilyInO (fun m : ℕ => List.replicate m true) encUnary encBits
+  have hlist : ComputableInO (fun m : ℕ => List.replicate m true) encUnary encBits
       (fun m => (encUnary m).length) (fun m => (encUnary m).length) :=
-    ComputableTidilyInO.of_linear (.of_eq (encIn := encUnary) (encMid := encBits) fun _ => rfl)
-  have hinit : ComputableTidilyInO (fun _ : ℕ => 1) encUnary encUnary
-      (fun m => (encUnary m).length) (fun m => (encUnary m).length) :=
-    ComputableTidilyInO.const 1
-  have hstep : ComputableTidilyInO (fun p : ℕ × Bool => p.1 + p.1)
+    ComputableInO.of_eq (encIn := encUnary) (encMid := encBits) fun _ => rfl
+  have hstep : ComputableInO (fun p : ℕ × Bool => p.1 + p.1)
       (encPair encUnary encBool) encUnary
       (fun p => (encPair encUnary encBool p).length + (encPair encUnary encBool p).length)
       (fun p => (encPair encUnary encBool p).length + (encPair encUnary encBool p).length) :=
-    (ComputableTidilyInO.fst encUnary encBool).append
-      (ComputableTidilyInO.fst encUnary encBool)
+    (ComputableInO.fst encUnary encBool).append
+      (ComputableInO.fst encUnary encBool)
       (fun _ => by simp only [encUnary_apply, List.replicate_add])
-  have hpow_le (m i : ℕ) : 2 ^ min i m ≤ 2 ^ m :=
-    Nat.pow_le_pow_right two_pos (Nat.min_le_right i m)
-  have hfold := ComputableTidilyInO.foldl (encA := encBool) (encL := encBits) (encB := encUnary)
-    (step := fun n _ => n + n) hlist hinit hstep
+  have hstep_bound (m i : ℕ) (_ : i < (List.replicate m true).length) :
+      (let p := (((List.replicate m true).take i).foldl (fun n _ => n + n) 1,
+        (List.replicate m true)[i]);
+      (encPair encUnary encBool p).length + (encPair encUnary encBool p).length) ≤
+        4 * 2 ^ m + 4 := by
+    have := Nat.pow_le_pow_right two_pos (Nat.min_le_right i m)
+    rw [List.take_replicate, foldl_double_replicate, one_mul]
+    simp only [length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
+      List.length_singleton]
+    omega
+  have hfold := ComputableInO.foldl (encA := encBool) (encL := encBits) (encB := encUnary)
+    (step := fun n _ => n + n) hlist (ComputableInO.const 1) hstep
     (R := fun m => 4 * 2 ^ m + 4) (Q := fun m => 4 * 2 ^ m + 4) (B := fun m => 2 ^ m)
-    (fun m i _ => by
-      have := hpow_le m i
-      rw [List.take_replicate, foldl_double_replicate, one_mul]
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
-        List.length_singleton]
-      omega)
-    (fun m i _ => by
-      have := hpow_le m i
-      rw [List.take_replicate, foldl_double_replicate, one_mul]
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBool_apply,
-        List.length_singleton]
-      omega)
-    (fun m i _ => by
-      have := hpow_le m i
-      rw [List.take_replicate, foldl_double_replicate, one_mul]
-      simp only [encUnary_apply, List.length_replicate]
+    hstep_bound hstep_bound (fun m i _ => by
+      have := Nat.pow_le_pow_right two_pos (Nat.min_le_right i m)
+      rw [List.take_replicate, foldl_double_replicate, one_mul, encUnary_apply,
+        List.length_replicate]
       omega)
   refine (hfold.mono 16 (fun m => ?_) (fun m => ?_)).of_enc_eq fun m => ?_
   · simp only [encUnary_apply, encBits_apply, List.length_replicate]
     have hm : m < 2 ^ m := Nat.lt_two_pow_self
-    have hmul : 2 ^ m * 2 ^ m = 2 ^ (2 * m) := by rw [← pow_add, two_mul]
     have h1 : 1 ≤ 2 ^ m := Nat.one_le_two_pow
-    rw [← hmul]
-    generalize 2 ^ m = X at hm h1 ⊢
-    nlinarith
+    rw [show 2 ^ (2 * m) = 2 ^ m * 2 ^ m by rw [← pow_add, two_mul]]
+    generalize 2 ^ m = X at hm h1 ⊢; nlinarith
   · simp only [encUnary_apply, encBits_apply, List.length_replicate]
     have hm : m < 2 ^ m := Nat.lt_two_pow_self
     have hle : 2 ^ m ≤ 2 ^ (2 * m) := Nat.pow_le_pow_right two_pos (by omega)
@@ -1959,79 +1829,48 @@ private theorem computableInPolyTime_sixMulFst :
   unfold BipartitePermutationGraph encBipartitePermutationGraph
   fun_prop
 
-private theorem exists_computableInO_ilangoReduction_of_raw
-    {encOut : (List (Option Bool) × ℕ) ↪ List Bool}
-    {encInst : Instance ↪ List Bool}
-    (hRaw : ComputableInPolyTime ilangoRawFromFuel
-      (encPair encBipartitePermutationGraph encUnary) encOut)
-    (henc : ∀ I : Instance, encInst I = encOut (List.ofFn I.table, I.threshold)) :
-    ∃ C D : ℕ, ComputableInO ilangoReduction
-      encBipartitePermutationGraph encInst
-      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D)
-      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D) := by
-  obtain ⟨d₁, _, hd₁⟩ := computableInPolyTime_sixMulFst.tidy.exists_degree
-  obtain ⟨d₂, _, hd₂⟩ := hRaw.tidy.exists_degree
-  have hId : ComputableTidilyInO (fun G : BipartitePermutationGraph => G)
-      encBipartitePermutationGraph encBipartitePermutationGraph
-      (fun G => (encBipartitePermutationGraph G).length)
-      (fun G => (encBipartitePermutationGraph G).length) :=
-    ComputableTidilyInO.of_linear
-      (.of_eq (encIn := encBipartitePermutationGraph) (encMid := encBipartitePermutationGraph)
-        fun _ => rfl)
-  have hFuel : ComputableTidilyInO (fun G : BipartitePermutationGraph => 2 ^ (6 * G.1))
-      encBipartitePermutationGraph encUnary
-      (fun G => ((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1)))
-      (fun G => ((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1))) :=
-    computableTidilyInO_twoPow.comp hd₁.inO
-  have hPair := hId.prod hFuel
-  have hComp := hd₂.inO.comp hPair
+private theorem ilangoReduction_time_bound (d₁ d₂ : ℕ) (G : BipartitePermutationGraph) :
+    (encBipartitePermutationGraph G).length +
+      (((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1))) +
+      ((encPair encBipartitePermutationGraph encUnary (G, 2 ^ (6 * G.1))).length + 1) ^ d₂ ≤
+      (3 ^ d₂ + 3) *
+        (2 ^ ((12 + 6 * d₂) * G.1) *
+          ((encBipartitePermutationGraph G).length + 1) ^ (d₁ + d₂ + 1) + 1) := by
   set C : ℕ := 12 + 6 * d₂
   set D : ℕ := d₁ + d₂ + 1
-  have hbound (G : BipartitePermutationGraph) :
-      (encBipartitePermutationGraph G).length +
-        (((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1))) +
-        ((encPair encBipartitePermutationGraph encUnary (G, 2 ^ (6 * G.1))).length + 1) ^ d₂ ≤
-        (3 ^ d₂ + 3) * (2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D + 1) := by
-    set L := (encBipartitePermutationGraph G).length
-    set M := 2 ^ (6 * G.1)
-    have hM1 : 1 ≤ M := Nat.one_le_two_pow
-    have hL1 : 1 ≤ L + 1 := Nat.succ_pos L
-    have hX1 : 1 ≤ 2 ^ (C * G.1) := Nat.one_le_two_pow
-    have hP1 : 1 ≤ (L + 1) ^ D := Nat.one_le_pow _ _ hL1
-    have hL_le : L ≤ (L + 1) ^ D :=
-      (Nat.le_succ L).trans (Nat.le_self_pow (by omega : D ≠ 0) (L + 1))
-    have hd₁_le : (L + 1) ^ d₁ ≤ (L + 1) ^ D :=
-      Nat.pow_le_pow_right hL1 (by omega)
-    have hd₂_le : (L + 1) ^ d₂ ≤ (L + 1) ^ D :=
-      Nat.pow_le_pow_right hL1 (by omega)
-    have h12_le : 2 ^ (2 * (6 * G.1)) ≤ 2 ^ (C * G.1) :=
-      Nat.pow_le_pow_right two_pos (by simp only [C]; nlinarith)
-    have hpair_len : (encPair encBipartitePermutationGraph encUnary (G, M)).length + 1 ≤
-        3 * M * (L + 1) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, L]
-      nlinarith
-    have hpow_pair : ((encPair encBipartitePermutationGraph encUnary (G, M)).length + 1) ^ d₂ ≤
-        3 ^ d₂ * (2 ^ (C * G.1) * (L + 1) ^ D) := by
-      have hMd₂ : M ^ d₂ ≤ 2 ^ (C * G.1) := by
-        rw [show M ^ d₂ = 2 ^ (6 * G.1 * d₂) by simp [M, ← pow_mul]]
-        exact Nat.pow_le_pow_right two_pos (by simp only [C]; nlinarith)
-      calc ((encPair encBipartitePermutationGraph encUnary (G, M)).length + 1) ^ d₂
-          ≤ (3 * M * (L + 1)) ^ d₂ := Nat.pow_le_pow_left hpair_len d₂
-        _ = 3 ^ d₂ * (M ^ d₂ * (L + 1) ^ d₂) := by simp only [mul_pow, mul_assoc]
-        _ ≤ 3 ^ d₂ * (2 ^ (C * G.1) * (L + 1) ^ D) :=
-            Nat.mul_le_mul_left _ (Nat.mul_le_mul hMd₂ hd₂_le)
-    have ht1 : L ≤ 2 ^ (C * G.1) * (L + 1) ^ D :=
-      hL_le.trans (Nat.le_mul_of_pos_left _ hX1)
-    have ht2 : (L + 1) ^ d₁ ≤ 2 ^ (C * G.1) * (L + 1) ^ D :=
-      hd₁_le.trans (Nat.le_mul_of_pos_left _ hX1)
-    have ht3 : 2 ^ (2 * (6 * G.1)) ≤ 2 ^ (C * G.1) * (L + 1) ^ D :=
-      h12_le.trans (Nat.le_mul_of_pos_right _ hP1)
-    generalize 2 ^ (C * G.1) * (L + 1) ^ D = W at ht1 ht2 ht3 hpow_pair ⊢
-    generalize 3 ^ d₂ = K₃ at hpow_pair ⊢
-    nlinarith
-  refine ⟨C, D, .of_tidy ((hComp.mono (3 ^ d₂ + 3) hbound hbound).of_enc_eq fun G => ?_)⟩
-  rw [henc, ← ilangoRawFromFuel_eq]
-  rfl
+  set L := (encBipartitePermutationGraph G).length
+  set M := 2 ^ (6 * G.1)
+  have hM1 : 1 ≤ M := Nat.one_le_two_pow
+  have hL1 : 1 ≤ L + 1 := Nat.succ_pos L
+  have hX1 : 1 ≤ 2 ^ (C * G.1) := Nat.one_le_two_pow
+  have hP1 : 1 ≤ (L + 1) ^ D := Nat.one_le_pow _ _ hL1
+  have hL_le : L ≤ (L + 1) ^ D :=
+    (Nat.le_succ L).trans (Nat.le_self_pow (by omega : D ≠ 0) (L + 1))
+  have hd₁_le : (L + 1) ^ d₁ ≤ (L + 1) ^ D := Nat.pow_le_pow_right hL1 (by omega)
+  have hd₂_le : (L + 1) ^ d₂ ≤ (L + 1) ^ D := Nat.pow_le_pow_right hL1 (by omega)
+  have h12_le : 2 ^ (2 * (6 * G.1)) ≤ 2 ^ (C * G.1) :=
+    Nat.pow_le_pow_right two_pos (by simp only [C]; nlinarith)
+  have hpair_len : (encPair encBipartitePermutationGraph encUnary (G, M)).length + 1 ≤
+      3 * M * (L + 1) := by
+    simp only [length_encPair, encUnary_apply, List.length_replicate, L]; nlinarith
+  have hpow_pair : ((encPair encBipartitePermutationGraph encUnary (G, M)).length + 1) ^ d₂ ≤
+      3 ^ d₂ * (2 ^ (C * G.1) * (L + 1) ^ D) := by
+    have hMd₂ : M ^ d₂ ≤ 2 ^ (C * G.1) := by
+      rw [show M ^ d₂ = 2 ^ (6 * G.1 * d₂) by simp [M, ← pow_mul]]
+      exact Nat.pow_le_pow_right two_pos (by simp only [C]; nlinarith)
+    calc ((encPair encBipartitePermutationGraph encUnary (G, M)).length + 1) ^ d₂
+        ≤ (3 * M * (L + 1)) ^ d₂ := Nat.pow_le_pow_left hpair_len d₂
+      _ = 3 ^ d₂ * (M ^ d₂ * (L + 1) ^ d₂) := by simp only [mul_pow, mul_assoc]
+      _ ≤ 3 ^ d₂ * (2 ^ (C * G.1) * (L + 1) ^ D) :=
+          Nat.mul_le_mul_left _ (Nat.mul_le_mul hMd₂ hd₂_le)
+  have ht1 : L ≤ 2 ^ (C * G.1) * (L + 1) ^ D := hL_le.trans (Nat.le_mul_of_pos_left _ hX1)
+  have ht2 : (L + 1) ^ d₁ ≤ 2 ^ (C * G.1) * (L + 1) ^ D :=
+    hd₁_le.trans (Nat.le_mul_of_pos_left _ hX1)
+  have ht3 : 2 ^ (2 * (6 * G.1)) ≤ 2 ^ (C * G.1) * (L + 1) ^ D :=
+    h12_le.trans (Nat.le_mul_of_pos_right _ hP1)
+  generalize 2 ^ (C * G.1) * (L + 1) ^ D = W at ht1 ht2 ht3 hpow_pair ⊢
+  generalize 3 ^ d₂ = K₃ at hpow_pair ⊢
+  nlinarith
 
 /-- **Plain $2^{O(n)}$-time computability of Ilango's reduction** under unary threshold encoding
 (`PartialMCSP.enc`) [Ilango2020FOCS, Section III.B, p. 428; ECCC TR20-183, Section 3, Theorem 11,
@@ -2040,26 +1879,31 @@ theorem exists_computableInO_ilangoReduction :
     ∃ C D : ℕ, ComputableInO ilangoReduction
       encBipartitePermutationGraph PartialMCSP.enc
       (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D)
-      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D) :=
-  exists_computableInO_ilangoReduction_of_raw
-    computableInPolyTime_ilangoRawFromFuel enc_apply
-
-/-- **Plain $2^{O(n)}$-time computability of Ilango's reduction** under binary threshold encoding
-(`PartialMCSP.encBinary`) [Ilango2020FOCS, Section III.B, p. 428; ECCC TR20-183, Section 3,
-Theorem 11, pp. 20–21]. -/
-theorem exists_computableInO_ilangoReduction_encBinary :
-    ∃ C D : ℕ, ComputableInO ilangoReduction
-      encBipartitePermutationGraph PartialMCSP.encBinary
-      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D)
-      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D) :=
-  exists_computableInO_ilangoReduction_of_raw
-    computableInPolyTime_ilangoRawFromFuel_binary encBinary_apply
+      (fun G => 2 ^ (C * G.1) * ((encBipartitePermutationGraph G).length + 1) ^ D) := by
+  obtain ⟨d₁, _, hd₁⟩ := computableInPolyTime_sixMulFst.exists_degree
+  obtain ⟨d₂, _, hd₂⟩ := computableInPolyTime_ilangoRawFromFuel.exists_degree
+  have hId : ComputableInO (fun G : BipartitePermutationGraph => G)
+      encBipartitePermutationGraph encBipartitePermutationGraph
+      (fun G => (encBipartitePermutationGraph G).length)
+      (fun G => (encBipartitePermutationGraph G).length) :=
+    ComputableInO.of_eq (encIn := encBipartitePermutationGraph)
+      (encMid := encBipartitePermutationGraph) fun _ => rfl
+  have hFuel : ComputableInO (fun G : BipartitePermutationGraph => 2 ^ (6 * G.1))
+      encBipartitePermutationGraph encUnary
+      (fun G => ((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1)))
+      (fun G => ((encBipartitePermutationGraph G).length + 1) ^ d₁ + 2 ^ (2 * (6 * G.1))) :=
+    computableInO_twoPow.comp hd₁.inO
+  have hComp := hd₂.inO.comp (hId.prod hFuel)
+  refine ⟨12 + 6 * d₂, d₁ + d₂ + 1, (hComp.mono (3 ^ d₂ + 3)
+    (ilangoReduction_time_bound d₁ d₂) (ilangoReduction_time_bound d₁ d₂)).of_enc_eq fun G => ?_⟩
+  rw [enc_apply, ← ilangoRawFromFuel_eq]
+  rfl
 
 /-! ## Section 7: Subexponential-Time Transfer and Ilango's ETH Lower Bounds -/
 
 /-- The truth-table size $N = 2^m$ of a `PartialMCSP.Instance` of arity $m$
 [Ilango2020FOCS, Theorem I.3, p. 424; ECCC TR20-183, Section 1.2.2, Theorem 3, p. 6]. -/
-def Instance.tableSize (x : Instance) : ℕ :=
+@[expose] def Instance.tableSize (x : Instance) : ℕ :=
   2 ^ x.arity
 
 @[simp] theorem Instance.log_tableSize (x : Instance) :
@@ -2067,19 +1911,17 @@ def Instance.tableSize (x : Instance) : ℕ :=
   Nat.log_pow Nat.one_lt_two x.arity
 
 /-- The arity measure $m \log_2 m$ on `ilangoReduction G` is at most $24 n \log_2 n + 2$. -/
-theorem arity_mul_log_ilangoReduction_le (G : BipartitePermutationGraph) :
+private theorem arity_mul_log_ilangoReduction_le (G : BipartitePermutationGraph) :
     (ilangoReduction G).arity * Nat.log 2 (ilangoReduction G).arity ≤
       24 * (G.1 * Nat.log 2 G.1) + 2 := by
   unfold ilangoReduction
   split_ifs with hG hsmall
   · simp [trivialYesInstance]
   · have : (trivialNoInstance).arity * Nat.log 2 (trivialNoInstance).arity = 2 := by decide
-    rw [this]
-    omega
+    rw [this]; omega
   · simp only [ilangoInstance]
     have hG2 : 2 ≤ G.1 := by omega
-    have hlog8 : Nat.log 2 (6 * G.1) ≤ Nat.log 2 (8 * G.1) :=
-      Nat.log_mono_right (by omega)
+    have hlog8 : Nat.log 2 (6 * G.1) ≤ Nat.log 2 (8 * G.1) := Nat.log_mono_right (by omega)
     have h8 : 8 * G.1 = G.1 * 2 * 2 * 2 := by ring
     have hlog_eq : Nat.log 2 (8 * G.1) = Nat.log 2 G.1 + 3 := by
       rw [h8, Nat.log_mul_base Nat.one_lt_two (by omega),
@@ -2095,7 +1937,7 @@ theorem arity_mul_log_ilangoReduction_le (G : BipartitePermutationGraph) :
 encoding `PartialMCSP.enc`): if a target problem `B` on `PartialMCSP.Instance` is decidable in time
 $2^{o(m \log m)}$ and `ilangoReduction` reduces `BipartitePermutationIndependentSet` to `B`, then
 `BipartitePermutationIndependentSet` is decidable in time $2^{o(n \log n)}$. -/
-theorem decidableInSubexpTime_bpis_of_ilangoReduction
+private theorem decidableInSubexpTime_bpis_of_ilangoReduction
     {B : Set Instance}
     (hiff : ∀ G, G ∈ BipartitePermutationIndependentSet ↔ ilangoReduction G ∈ B)
     (hsub : DecidableInSubexpTime B PartialMCSP.enc fun I => I.arity * Nat.log 2 I.arity) :
@@ -2104,18 +1946,14 @@ theorem decidableInSubexpTime_bpis_of_ilangoReduction
   hsub.of_expReduction exists_computableInO_ilangoReduction hiff
     (c := 24) fun G => (arity_mul_log_ilangoReduction_le G).trans (by omega)
 
-/-- **Subexponential-time transfer along Ilango's $2^{O(n)}$-time reduction** (binary threshold
-encoding `PartialMCSP.encBinary`): if a target problem `B` on `PartialMCSP.Instance` is decidable in
-time $2^{o(m \log m)}$ and `ilangoReduction` reduces `BipartitePermutationIndependentSet` to `B`,
-then `BipartitePermutationIndependentSet` is decidable in time $2^{o(n \log n)}$. -/
-theorem decidableInSubexpTime_bpis_of_ilangoReduction_encBinary
-    {B : Set Instance}
-    (hiff : ∀ G, G ∈ BipartitePermutationIndependentSet ↔ ilangoReduction G ∈ B)
-    (hsub : DecidableInSubexpTime B PartialMCSP.encBinary fun I => I.arity * Nat.log 2 I.arity) :
-    DecidableInSubexpTime BipartitePermutationIndependentSet encBipartitePermutationGraph
-      fun G => G.1 * Nat.log 2 G.1 :=
-  hsub.of_expReduction exists_computableInO_ilangoReduction_encBinary hiff
-    (c := 24) fun G => (arity_mul_log_ilangoReduction_le G).trans (by omega)
+/-- Any subexponential-time decider for a problem `B` on `PartialMCSP.Instance` under binary
+threshold encoding (`PartialMCSP.encBinary`) yields one under unary threshold encoding
+(`PartialMCSP.enc`) via `computableInPolyTime_id_enc_encBinary`. -/
+private theorem decidableInSubexpTime_of_encBinary
+    {B : Set Instance} {μ : Instance → ℕ}
+    (h : DecidableInSubexpTime B PartialMCSP.encBinary μ) :
+    DecidableInSubexpTime B PartialMCSP.enc μ :=
+  h.of_reduction computableInPolyTime_id_enc_encBinary (fun _ => Iff.rfl) (c := 1) fun _ => by simp
 
 end PartialMCSP
 
@@ -2143,9 +1981,7 @@ encoding. -/
 theorem ETH.not_decidableInSubexpTime_PartialMCSP_encBinary (h : ETH) :
     ¬DecidableInSubexpTime PartialMCSP PartialMCSP.encBinary
       fun I => I.arity * Nat.log 2 I.arity :=
-  fun hsub => h.not_decidableInSubexpTime_BipartitePermutationIndependentSet
-    (decidableInSubexpTime_bpis_of_ilangoReduction_encBinary
-      mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem hsub)
+  fun hsub => h.not_decidableInSubexpTime_PartialMCSP (decidableInSubexpTime_of_encBinary hsub)
 
 /-- **Ilango's ETH Lower Bound for `PartialMCSP.BinaryGate` (unary threshold encoding)**
 [Ilango2020FOCS, Section III.B, p. 427; ECCC TR20-183, Section 3, Theorem 11, pp. 20–21]: under
@@ -2165,15 +2001,14 @@ under binary threshold encoding. -/
 theorem ETH.not_decidableInSubexpTime_PartialMCSP_binaryGate_encBinary (h : ETH) :
     ¬DecidableInSubexpTime PartialMCSP.BinaryGate PartialMCSP.encBinary
       fun I => I.arity * Nat.log 2 I.arity :=
-  fun hsub => h.not_decidableInSubexpTime_BipartitePermutationIndependentSet
-    (decidableInSubexpTime_bpis_of_ilangoReduction_encBinary
-      mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem_binaryGate hsub)
+  fun hsub =>
+    h.not_decidableInSubexpTime_PartialMCSP_binaryGate (decidableInSubexpTime_of_encBinary hsub)
 
 /-- **Ilango's ETH Lower Bound for `PartialMCSP.MonotoneReadOnce` (unary threshold encoding)**
 [Ilango2020FOCS, Section III.B, p. 428; ECCC TR20-183, Section 3, Theorem 11, pp. 20–21]: under
 `ETH`, even deciding whether a partial Boolean function has a monotone read-once formula of size at
 most `threshold` cannot be done in time $2^{o(m \log m)} = N^{o(\log \log N)}$. -/
-theorem ETH.not_decidableInSubexpTime_PartialMonotoneReadOnceMCSP (h : ETH) :
+theorem ETH.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce (h : ETH) :
     ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.enc
       fun I => I.arity * Nat.log 2 I.arity :=
   fun hsub => h.not_decidableInSubexpTime_BipartitePermutationIndependentSet
@@ -2184,12 +2019,12 @@ theorem ETH.not_decidableInSubexpTime_PartialMonotoneReadOnceMCSP (h : ETH) :
 [Ilango2020FOCS, Section III.B, p. 428; ECCC TR20-183, Section 3, Theorem 11, pp. 20–21]: under
 `ETH`, `PartialMCSP.MonotoneReadOnce` cannot be decided in time
 $2^{o(m \log m)} = N^{o(\log \log N)}$ under binary threshold encoding. -/
-theorem ETH.not_decidableInSubexpTime_PartialMonotoneReadOnceMCSP_encBinary (h : ETH) :
+theorem ETH.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce_encBinary (h : ETH) :
     ¬DecidableInSubexpTime PartialMCSP.MonotoneReadOnce PartialMCSP.encBinary
       fun I => I.arity * Nat.log 2 I.arity :=
-  fun hsub => h.not_decidableInSubexpTime_BipartitePermutationIndependentSet
-    (decidableInSubexpTime_bpis_of_ilangoReduction_encBinary
-      mem_BipartitePermutationIndependentSet_iff_ilangoReduction_mem_monotoneReadOnce hsub)
+  fun hsub =>
+    h.not_decidableInSubexpTime_PartialMCSP_monotoneReadOnce
+      (decidableInSubexpTime_of_encBinary hsub)
 
 /-- **Truth-table-size ($N = 2^m$) formulation of Ilango's ETH Lower Bound for `PartialMCSP`**
 [Ilango2020FOCS, Theorem I.3, p. 424; ECCC TR20-183, Section 1.2.2, Theorem 3, p. 6]: under `ETH`,
@@ -2207,8 +2042,9 @@ $N = I.\text{tableSize} = 2^m$ is not decidable in time
 $N^{o(\log \log N)} = 2^{o(\log_2 N \cdot \log_2 \log_2 N)}$ under binary threshold encoding. -/
 theorem ETH.not_decidableInSubexpTime_PartialMCSP_tableSize_encBinary (h : ETH) :
     ¬DecidableInSubexpTime PartialMCSP PartialMCSP.encBinary
-      fun I => Nat.log 2 I.tableSize * Nat.log 2 (Nat.log 2 I.tableSize) := by
-  simpa only [Instance.log_tableSize] using h.not_decidableInSubexpTime_PartialMCSP_encBinary
+      fun I => Nat.log 2 I.tableSize * Nat.log 2 (Nat.log 2 I.tableSize) :=
+  fun hsub =>
+    h.not_decidableInSubexpTime_PartialMCSP_tableSize (decidableInSubexpTime_of_encBinary hsub)
 
 end Complexity
 end Cslib

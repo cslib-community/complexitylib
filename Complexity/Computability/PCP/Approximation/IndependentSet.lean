@@ -228,8 +228,8 @@ theorem polyTimeReducible_GapExactThreeSAT_GapVertexCover (hs : s < 1) :
     push_cast
     ring
   refine ⟨fun φ => IndependentSet.toVertexCover (SAT.toIndependentSet φ),
-    .of_tidy (IndependentSet.computableInPolyTime_toVertexCover.tidy.comp
-      SAT.computableInPolyTime_toIndependentSet.tidy), fun φ hφ => ?_, fun φ hφ => ?_⟩
+    IndependentSet.computableInPolyTime_toVertexCover.comp
+      SAT.computableInPolyTime_toIndependentSet, fun φ hφ => ?_, fun φ hφ => ?_⟩
   · rw [yes_GapExactThreeSAT] at hφ
     obtain ⟨h3, hsat⟩ := hφ
     have hα : (φ.length : ℝ) ≤ (SAT.toIndependentSet φ).1.indepNum := by

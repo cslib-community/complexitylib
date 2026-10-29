@@ -66,10 +66,9 @@ namespace ComputableInPolyTimeWithOracle
 /-- Polynomial-time preprocessing of the argument. -/
 theorem preprocess {f : β → γ} {g : α → β} (hf : ComputableInPolyTimeWithOracle A f middle output)
     (hg : Turing.MultiTapeTM.ComputableInPolyTime g input middle) :
-    ComputableInPolyTimeWithOracle A (fun a => f (g a)) input output := by
-  have hg := hg.tidy
-  exact let ⟨program, hprogram, heq⟩ := hf
-    ⟨fun a => program (g a), hprogram.preprocess hg, fun a => heq (g a)⟩
+    ComputableInPolyTimeWithOracle A (fun a => f (g a)) input output :=
+  let ⟨program, hprogram, heq⟩ := hf
+  ⟨fun a => program (g a), hprogram.preprocess' hg, fun a => heq (g a)⟩
 
 /-- Polynomial-time postprocessing of the result, which may also use the argument. -/
 theorem map_with {f : α → β} {g : α → β → γ}
@@ -77,10 +76,9 @@ theorem map_with {f : α → β} {g : α → β → γ}
     (hg : Turing.MultiTapeTM.ComputableInPolyTime (fun pair => g pair.1 pair.2)
       (encPair input middle) output) :
     ComputableInPolyTimeWithOracle A (fun a => g a (f a)) input output := by
-  have hg := hg.tidy
   obtain ⟨program, hprogram, heq⟩ := hf
   refine ⟨fun a => g a <$> program a, ?_, fun a => ?_⟩
-  · simpa only [OracleComp.interpret_map] using hprogram.map_with hg
+  · simpa only [OracleComp.interpret_map] using hprogram.map_with' hg
   · rw [OracleComp.interpret_map, heq]
     rfl
 
@@ -88,10 +86,9 @@ theorem map_with {f : α → β} {g : α → β → γ}
 theorem map {f : α → β} {g : β → γ} (hf : ComputableInPolyTimeWithOracle A f input middle)
     (hg : Turing.MultiTapeTM.ComputableInPolyTime g middle output) :
     ComputableInPolyTimeWithOracle A (fun a => g (f a)) input output := by
-  have hg := hg.tidy
   obtain ⟨program, hprogram, heq⟩ := hf
   refine ⟨fun a => g <$> program a, ?_, fun a => ?_⟩
-  · simpa only [OracleComp.interpret_map] using hprogram.map hg
+  · simpa only [OracleComp.interpret_map] using hprogram.map' hg
   · rw [OracleComp.interpret_map, heq]
     rfl
 
@@ -106,8 +103,9 @@ theorem prod {f : α → β} {g : α → γ}
     let b ← first a
     (fun c => (b, c)) <$> second a, ?_, fun a => ?_⟩
   · simp only [OracleComp.interpret_bind, OracleComp.interpret_map]
-    exact hfirst.bind_with ((hsecond.preprocess
-      (ComputableTidilyInPolyTime.fst input middle)).map_with (by fun_prop))
+    exact hfirst.bind_with ((hsecond.preprocess'
+      (ComputableInPolyTime.fst input middle)).map_with'
+      (((ComputableInPolyTime.snd input middle).comp (.fst _ _)).prod (.snd _ _)))
   · simp only [OracleComp.interpret_bind, OracleComp.interpret_map, hfirst_eq, hsecond_eq]
     rfl
 
@@ -124,8 +122,9 @@ theorem PolyTimeOracleProgram.of_query {req : α → List Bool} {input : α ↪ 
   refine ⟨fun a => (fun reply => decide (reply = [true])) <$>
     (List.take 1 <$> OracleComp.query ((), req a)), ?_, fun A hA => ?_⟩
   · simp only [OracleComp.interpret_map, OracleComp.interpret_query]
-    exact (IsOraclePPTOn.query_take () hreq.tidy (limit := fun _ => 1) (by fun_prop)).map
-      (by fun_prop)
+    exact (IsOraclePPTOn.query_take' () hreq (limit := fun _ => 1)
+      (ComputableInPolyTime.const 1)).map'
+      (ComputableInPolyTime.id'.decide_eq' (ComputableInPolyTime.const [true]))
   · convert hSpec A hA using 1
     funext a
     change decide (List.take 1 (languageOracle A ((), req a)) = [true]) = decide (req a ∈ A)
@@ -149,7 +148,7 @@ theorem mem_PWithOracle_self (A : Set (List Bool)) : A ∈ PWithOracle A encBits
 certificate. -/
 theorem PWithOracle_subset_NPWithOracle (A : Set (List Bool)) (enc : α ↪ List Bool) :
     PWithOracle A enc ⊆ NPWithOracle A enc := fun _ ⟨f, hf, h⟩ =>
-  ⟨0, fun aw => f aw.1, hf.preprocess (.of_tidy (ComputableTidilyInPolyTime.fst enc encBits)),
+  ⟨0, fun aw => f aw.1, hf.preprocess (ComputableInPolyTime.fst enc encBits),
     fun a => by
     simp only [Polynomial.eval_zero, List.length_eq_zero_iff, exists_eq_left, h]⟩
 
@@ -175,10 +174,9 @@ theorem PolyTimeReducible.mem_NPWithOracle {encA : α ↪ List Bool} {encB : β 
   have hpq (a : α) : p.eval (encB (g a)).length ≤ q.eval (encA a).length := by
     rw [hq, Polynomial.eval_comp]
     exact p.eval_mono (hlen a)
-  have hg := hg.tidy
   refine ⟨q, fun aw => V (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length)),
     hV.preprocess (f := V) (g := fun aw : α × List Bool =>
-      (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length))) (.of_tidy (by fun_prop)), fun a => ?_⟩
+      (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length))) (by fun_prop), fun a => ?_⟩
   rw [hL a, hL' (g a)]
   constructor
   · rintro ⟨w, hw, hV⟩

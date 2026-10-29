@@ -20,7 +20,7 @@ inputs and compositional `fun_prop` synthesis.
 
 namespace ComplexityTests.NPCompleteNumbers
 
-open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 open scoped List
 
 /-! ### Deciding small instances by enumerating sublists -/
@@ -40,45 +40,45 @@ theorem mem_Knapsack_iff_sublists {x : List (ℕ × ℕ) × ℕ × ℕ} :
 
 /-! ### Headline results -/
 
-example : SubsetSum ∈ NP (encPair (encList encNat) encNat) := SubsetSum.mem_NP
-example : NPComplete (encPair (encList encNat) encNat) SubsetSum := SubsetSum_npComplete
-example : Partition ∈ NP (encList encNat) := Partition.mem_NP
-example : NPComplete (encList encNat) Partition := Partition_npComplete
-example : Knapsack ∈ NP encKnapsack := Knapsack.mem_NP
-example : NPComplete encKnapsack Knapsack := Knapsack_npComplete
-example : ZeroOneIP ∈ NP (encList (encPair (encList encNat) encNat)) := ZeroOneIP.mem_NP
-example : NPComplete (encList (encPair (encList encNat) encNat)) ZeroOneIP :=
-  ZeroOneIP_npComplete
+example : SubsetSum ∈ NP (encPair (encList encNat) encNat) ∧
+    PolyTimeReducible encCNF (encPair (encList encNat) encNat) SAT SubsetSum :=
+  ⟨SubsetSum_npComplete.1, SubsetSum_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example : PolyTimeReducible encCNF (encList encNat) ThreeSAT Partition :=
-  polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Partition
+example : Partition ∈ NP (encList encNat) ∧
+    PolyTimeReducible encCNF (encList encNat) SAT Partition :=
+  ⟨Partition_npComplete.1, Partition_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example : PolyTimeReducible encCNF encKnapsack ThreeSAT Knapsack :=
-  polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Knapsack
+example : Knapsack ∈ NP encKnapsack ∧
+    PolyTimeReducible encCNF encKnapsack SAT Knapsack :=
+  ⟨Knapsack_npComplete.1, Knapsack_npComplete.2 encCNF SAT SAT.mem_NP⟩
+
+example : ZeroOneIP ∈ NP (encList (encPair (encList encNat) encNat)) ∧
+    PolyTimeReducible encCNF (encList (encPair (encList encNat) encNat)) SAT ZeroOneIP :=
+  ⟨ZeroOneIP_npComplete.1, ZeroOneIP_npComplete.2 encCNF SAT SAT.mem_NP⟩
+
+example :
+    PolyTimeReducible encCNF (encList encNat) ThreeSAT Partition ∧
+    PolyTimeReducible encCNF encKnapsack ThreeSAT Knapsack :=
+  ⟨polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Partition,
+   polyTimeReducible_ThreeSAT_SubsetSum.trans polyTimeReducible_SubsetSum_Knapsack⟩
 
 /-! ### Compositional `fun_prop` synthesis -/
 
-example : ComputableInPolyTime ThreeSAT.toSubsetSum encCNF
-    (encPair (encList encNat) encNat) := by
-  fun_prop
-
-example : ComputableInPolyTime (fun x => SubsetSum.toPartition x)
-    (encPair (encList encNat) encNat) (encList encNat) := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => decide (p.1 + p.2 ≤ 2 * p.1))
-    (encPair encNat encNat) encBool := by
-  fun_prop
-
-example : ComputableTidilyInPolyTime (fun l : List ℕ => decide (l.sum < 2 ^ l.length))
-    (encList encNat) encBool := by
-  fun_prop
+example :
+    ComputableInPolyTime ThreeSAT.toSubsetSum encCNF
+      (encPair (encList encNat) encNat) ∧
+    ComputableInPolyTime (fun x => SubsetSum.toPartition x)
+      (encPair (encList encNat) encNat) (encList encNat) ∧
+    ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 + p.2 ≤ 2 * p.1))
+      (encPair encNat encNat) encBool ∧
+    ComputableInPolyTime (fun l : List ℕ => decide (l.sum < 2 ^ l.length))
+      (encList encNat) encBool :=
+  ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop⟩
 
 /-! ### Binary comparison -/
 
-example : (5 : ℕ) < 6 ↔ ∃ i < (6 : ℕ).size, (5 : ℕ).testBit i = false ∧ (6 : ℕ).testBit i = true ∧
-    ∀ j < (5 : ℕ).size + (6 : ℕ).size, i < j → (5 : ℕ).testBit j = (6 : ℕ).testBit j :=
-  Nat.lt_iff_exists_testBit 5 6
+example : (5 : ℕ) < 6 :=
+  (Nat.lt_iff_exists_testBit 5 6).mpr ⟨1, by decide, by decide, by decide, by decide⟩
 
 /-! ### `SubsetSum` -/
 

@@ -13,10 +13,12 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Deterministic
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Mathlib.Data.Nat.Size
@@ -36,13 +38,13 @@ time in the encoded configuration plus one evaluation of `g` on the pending requ
 amount per instruction and every request is no longer than the clock
 (`Turing.MultiTapePTM.spaceBound_answerStep`, `Turing.MultiTapePTM.length_pendingRequest_le`).
 Iterating the instruction with a binary counter
-(`Turing.MultiTapeTM.ComputableTidilyInO.iterate`) therefore simulates a run of polynomial clock
+(`Turing.MultiTapeTM.ComputableInO.iterate`) therefore simulates a run of polynomial clock
 within polynomial space whenever `g` is computable within polynomial space
 (`Turing.MultiTapePTM.exists_computableTidilyInO_run`). The time is not bounded by a polynomial:
 it charges, for every instruction, the largest time of `g` on a word no longer than the clock
 (`Turing.MultiTapeTM.wordMax`). When `g` is polynomial-time, both the instruction and the clocked
 run are polynomial-time (`Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`,
-`Turing.MultiTapePTM.computableTidilyInPolyTime_run`).
+`Turing.MultiTapePTM.computableInPolyTime_run`).
 
 ## Main definitions
 
@@ -62,7 +64,7 @@ run are polynomial-time (`Turing.MultiTapePTM.computableTidilyInPolyTime_answerS
   within polynomial space is computable within polynomial space.
 * `Turing.MultiTapePTM.computableTidilyInPolyTime_answerStep`: an instruction against a
   polynomial-time oracle is polynomial-time.
-* `Turing.MultiTapePTM.computableTidilyInPolyTime_run`: a clocked run against a polynomial-time
+* `Turing.MultiTapePTM.computableInPolyTime_run`: a clocked run against a polynomial-time
   oracle is polynomial-time.
 
 ## References
@@ -394,7 +396,8 @@ theorem exists_computableTidilyInO_run [Finite Operation] {α : Type} {input : �
         n a :=
     (machine.length_pendingRequest_le (hspace a i)).trans hi
   -- the iteration, with every request answered within the space of `g` on a short word
-  have hit := ComputableTidilyInO.iterate hn.inO hinit.inO hstep
+  have hit := (ComputableInO.iterate hn.inO.computableInO hinit.inO.computableInO
+    hstep.computableInO
     (R := fun a => (B a + 1) ^ e + wordMax Tg (n a))
     (Q := fun a => (B a + 1) ^ e + cg * (n a + 1) ^ dg) (B := B)
     (fun a i hi => Nat.add_le_add (Nat.pow_le_pow_left (by have := hlen a hi; omega) e)
@@ -402,7 +405,7 @@ theorem exists_computableTidilyInO_run [Finite Operation] {α : Type} {input : �
     (fun a i hi => Nat.add_le_add (Nat.pow_le_pow_left (by have := hlen a hi; omega) e)
       ((hSg _).trans (Nat.mul_le_mul_left cg (Nat.pow_le_pow_left (by
         have := hreq a hi; omega) dg))))
-    (fun a i hi => hlen a hi)
+    (fun a i hi => hlen a hi)).tidy
   have h := (hout.inO.comp hit).mono_le (T' := fun a => _ + (B a + 1) ^ do')
     (S' := fun a => ((input a).length + 1) ^ dn + ((input a).length + 1) ^ di +
       ((B a + 1) ^ e + cg * (n a + 1) ^ dg) + B a + (n a + 1) + (B a + 1) ^ do')
@@ -463,11 +466,13 @@ omit [Fintype Operation] in
 /-- **A clocked run against a polynomial-time oracle is polynomial-time.** Against the oracle
 answering `[g w]` to a request `w`, where `g` is polynomial-time, the run with every coin fixed to
 `false` under the clock `c * (n + 1) ^ d` is polynomial-time in the encoded input. -/
-theorem computableTidilyInPolyTime_run [Finite Operation] {α : Type} {input : α ↪ List Bool}
-    {g : List Bool → Bool} (hg : ComputableTidilyInPolyTime g encBits encBool) (c d : ℕ) :
-    ComputableTidilyInPolyTime (fun a => OracleComp.interpret (m := Id) (fun q => [g q.2])
+theorem computableInPolyTime_run [Finite Operation] {α : Type} {input : α ↪ List Bool}
+    {g : List Bool → Bool} (hg : ComputableInPolyTime g encBits encBool) (c d : ℕ) :
+    ComputableInPolyTime (fun a => OracleComp.interpret (m := Id) (fun q => [g q.2])
       (machine.run (pure false) (fun op word => OracleComp.query (op, word))
         (c * ((input a).length + 1) ^ d) (input a))) input encBits := by
+  replace hg := hg.tidy
+  refine .of_tidy ?_
   classical
   let _ := Fintype.ofFinite Operation
   obtain ⟨cf, hcf⟩ := length_encFiniteConfig_le (k := k) (State := Control) (Oracle := Operation)

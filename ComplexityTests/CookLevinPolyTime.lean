@@ -25,12 +25,11 @@ open Turing.MultiTapeTM Cslib.Complexity Cslib.Complexity.CookLevin
 example {k : ℕ} {State : Type} [Fintype State] (tm : Turing.MultiTapeTM k Bool State) :
     ComputableInPolyTime
       (fun T => (initClauses tm T ++ sitClauses T ++ acceptClauses T).relabel Var.index)
-      encUnary encCNF :=
-  computableInPolyTime_relabel.comp <| .of_tidy <| by
-    have hinit := (computableInPolyTime_initClauses tm).tidy
-    have hsit := (computableInPolyTime_sitClauses (k := k) (State := State)).tidy
-    have haccept := (computableInPolyTime_acceptClauses (k := k) (State := State)).tidy
-    fun_prop
+      encUnary encCNF := by
+  have hinit := computableInPolyTime_initClauses tm
+  have hsit := computableInPolyTime_sitClauses (k := k) (State := State)
+  have haccept := computableInPolyTime_acceptClauses (k := k) (State := State)
+  polytime
 
 -- Fixed tape/symbol traversals combine with input-dependent windows and nested lists.
 example {k : ℕ} {State : Type} [Fintype State] :
@@ -59,60 +58,58 @@ example {k : ℕ} {State α : Type} [Fintype State]
 private def finish : Turing.MultiTapeTM 0 Bool Unit :=
   ofTr () fun _ _ _ => ⟨0, Fin.elim0, some true, none⟩
 
-example : ComputableInPolyTime
-    (fun T => (initClauses finish T).relabel Var.index) encUnary encCNF := by
-  fun_prop
+-- Concrete machine parameterizations and complete reduction witnesses.
+example :
+    ComputableInPolyTime (fun T => (initClauses finish T).relabel Var.index) encUnary encCNF ∧
+    ComputableInPolyTime
+      (fun n => (oneHotClauses (k := 0) (State := Unit) [] n n n).relabel Var.index)
+      encUnary encCNF ∧
+    ComputableInPolyTime
+      (fun j => (Var.cert (k := 0) (State := Empty) j).index) encUnary encNat ∧
+    ComputableInPolyTime (reduce finish (Polynomial.X + 1) 3 2 encBits) encBits encCNF :=
+  ⟨by fun_prop, by fun_prop [oneHotClauses], by fun_prop, by fun_prop⟩
 
-example : ComputableInPolyTime
-    (fun n => (oneHotClauses (k := 0) (State := Unit) [] n n n).relabel Var.index)
-    encUnary encCNF := by
-  fun_prop [oneHotClauses]
+-- A computed tableau and the same computation through a tuple or generic list encoding all emit
+-- binary SAT instances.
+example :
+    ComputableInPolyTime (fun word : List Bool =>
+      (tableau finish word (word.length + 1) (word.length ^ 2 + 2)).relabel Var.index)
+      encBits encCNF ∧
+    ComputableInPolyTime (fun word : List Bool =>
+      (tableau finish word (word.length + 1) (word.length ^ 2 + 2)).relabel Var.index)
+      (encList encBool) encCNF ∧
+    ComputableInPolyTime (fun q : List Bool × ℕ × ℕ =>
+      (tableau finish q.1 q.2.1 q.2.2).relabel Var.index)
+      (encPair encBits (encPair encUnary encUnary)) encCNF :=
+  ⟨by polytime, by polytime, by fun_prop⟩
 
-example : ComputableInPolyTime
-    (fun j => (Var.cert (k := 0) (State := Empty) j).index) encUnary encNat := by
-  fun_prop
-
--- The complete reduction has a concrete machine witness, not a supplied efficiency hypothesis.
-example : ComputableInPolyTime (reduce finish (Polynomial.X + 1) 3 2 encBits)
-    encBits encCNF := by fun_prop
-
--- A computed tableau and the same computation through a tuple both emit binary SAT instances.
-example : ComputableInPolyTime (fun word : List Bool =>
-    (tableau finish word (word.length + 1) (word.length ^ 2 + 2)).relabel Var.index)
-    encBits encCNF := by polytime
-
--- The same functional computation also accepts the generic list encoding of its input.
-example : ComputableInPolyTime (fun word : List Bool =>
-    (tableau finish word (word.length + 1) (word.length ^ 2 + 2)).relabel Var.index)
-    (encList encBool) encCNF := by polytime
-
-example : ComputableInPolyTime (fun q : List Bool × ℕ × ℕ =>
-    (tableau finish q.1 q.2.1 q.2.2).relabel Var.index)
-    (encPair encBits (encPair encUnary encUnary)) encCNF := by fun_prop
-
--- Fixed parameter lists need no encoding or finiteness instance for their element type.
+-- Fixed parameter lists need no encoding or finiteness instance for their element type, whether
+-- selected via `filter` or `flatMap`.
 example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
-    ComputableTidilyInPolyTime (fun n =>
+    ComputableInPolyTime (fun n =>
       (parameters.filter (fun i => decide (weight i ≤ n))).map
         (fun i => List.replicate (n + weight i) true))
-      encUnary (encList encBits) := by fun_prop
-
--- Equivalent functional selection through flatMap uses the same finite-template calculus.
-example {ι : Type} (parameters : List ι) (weight : ι → ℕ) :
-    ComputableTidilyInPolyTime (fun n => parameters.flatMap fun i =>
+      encUnary (encList encBits) ∧
+    ComputableInPolyTime (fun n => parameters.flatMap fun i =>
       if weight i ≤ n then [List.replicate (n + weight i) true] else [])
-      encUnary (encList encBits) := by fun_prop
+      encUnary (encList encBits) :=
+  ⟨.of_tidy (by fun_prop), .of_tidy (by fun_prop)⟩
 
 -- Total input-head movement clips even an out-of-range starting position.
 example : Turing.moveInputPosNat 0 9 .neg = 1 ∧
     Turing.moveInputPosNat 0 9 .zero = 1 ∧ Turing.moveInputPosNat 0 9 .pos = 1 ∧
     Turing.moveInputPosNat 3 0 .neg = 0 := by decide
 
-example : ComputableTidilyInPolyTime
-    (fun p : ℕ × ℤ => decide (|p.2 - (-1 : SignType)| ≤ (p.1 : ℤ)))
-    (encPair encUnary encInt) encBool := by fun_prop
-
-example : NPComplete encCNF SAT := SAT_npComplete
-example : coNPComplete encCNF UNSAT := UNSAT_coNPComplete
+example :
+    ComputableInPolyTime
+      (fun p : ℕ × ℤ => decide (|p.2 - (-1 : SignType)| ≤ (p.1 : ℤ)))
+      (encPair encUnary encInt) encBool ∧
+    PolyTimeReducible encBits encCNF {w : List Bool | w.headD false = true} SAT ∧
+    PolyTimeReducible encBits encCNF {w : List Bool | w.headD false = true} UNSAT :=
+  ⟨by fun_prop,
+   SAT_npComplete.2 encBits _
+     (P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩),
+   UNSAT_coNPComplete.2 encBits _
+     (P_subset_coNP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩)⟩
 
 end ComplexityTests.CookLevinPolyTime
