@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Problems.Hamiltonian.Diamond.D
 public import Complexity.Computability.Complexity.Problems.Hamiltonian.Diamond.Soundness
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Diamond graphs
@@ -549,7 +550,7 @@ theorem mem_DirHamCycle_iff {N M : ℕ} {slots : ℕ → ℕ} {D : List Detour}
 
 section PolyTime
 
-open Turing.MultiTapeTM ComputableTidilyInPolyTime
+open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Detours encoded with unary clause, row and slot indices. -/
 abbrev encDetour : Detour ↪ List Bool :=
@@ -559,23 +560,23 @@ abbrev encDetour : Detour ↪ List Bool :=
 @[fun_prop]
 theorem computableInPolyTime_topNode :
     ComputableInPolyTime (fun i => topNode i) encUnary encNat :=
-  .of_tidy (unary_to_binary.comp
-    (show ComputableTidilyInPolyTime (fun i => Nat.pair 0 i) _ _ by fun_prop))
+  unary_to_binary.comp
+    (show ComputableInPolyTime (fun i => Nat.pair 0 i) _ _ by fun_prop)
 
 /-- The row nodes are computable in polynomial time from unary indices. -/
 @[fun_prop]
 theorem computableInPolyTime_rowNode :
     ComputableInPolyTime (fun p : ℕ × ℕ => rowNode p.1 p.2) (encPair encUnary encUnary)
       encNat :=
-  .of_tidy (unary_to_binary.comp (show ComputableTidilyInPolyTime
-    (fun p : ℕ × ℕ => Nat.pair 1 (Nat.pair p.1 p.2)) _ _ by fun_prop))
+  unary_to_binary.comp (show ComputableInPolyTime
+    (fun p : ℕ × ℕ => Nat.pair 1 (Nat.pair p.1 p.2)) _ _ by fun_prop)
 
 /-- The clause nodes are computable in polynomial time from unary indices. -/
 @[fun_prop]
 theorem computableInPolyTime_clauseNode :
     ComputableInPolyTime (fun j => clauseNode j) encUnary encNat :=
-  .of_tidy (unary_to_binary.comp
-    (show ComputableTidilyInPolyTime (fun j => Nat.pair 2 j) _ _ by fun_prop))
+  unary_to_binary.comp
+    (show ComputableInPolyTime (fun j => Nat.pair 2 j) _ _ by fun_prop)
 
 /-- A diamond graph is computable in polynomial time from a layout computable in polynomial time,
 with the numbers of diamonds, slots and clauses in unary. -/
@@ -586,8 +587,22 @@ theorem computableInPolyTime_graph {α : Type} {encIn : α ↪ List Bool} {N M :
     (hM : ComputableInPolyTime M encIn encUnary)
     (hD : ComputableInPolyTime D encIn (encList encDetour)) :
     ComputableInPolyTime (fun a => graph (N a) (slots a) (M a) (D a)) encIn encGraph := by
-  unfold graph vertices arcs diamondArcs detourArcs rowLength encGraph
-  fun_prop
+  have hvert : ComputableInPolyTime (fun a => vertices (N a) (slots a) (M a)) encIn
+      (encList encNat) := by
+    unfold vertices rowLength
+    fun_prop
+  have hdiam : ComputableInPolyTime (fun p : α × ℕ => diamondArcs (slots p.1) p.2)
+      (encPair encIn encUnary) (encList (encPair encNat encNat)) := by
+    unfold diamondArcs rowLength
+    fun_prop
+  have hdet : ComputableInPolyTime detourArcs encDetour (encList (encPair encNat encNat)) := by
+    unfold detourArcs encDetour
+    fun_prop
+  have harcs : ComputableInPolyTime (fun a => arcs (N a) (slots a) (D a)) encIn
+      (encList (encPair encNat encNat)) := by
+    unfold arcs
+    fun_prop
+  exact hvert.prod harcs
 
 /-- A closed diamond graph is computable in polynomial time from a layout computable in polynomial
 time, with the numbers of diamonds, slots and clauses in unary. -/
@@ -599,8 +614,10 @@ theorem computableInPolyTime_cycleGraph {α : Type} {encIn : α ↪ List Bool} {
     (hD : ComputableInPolyTime D encIn (encList encDetour)) :
     ComputableInPolyTime (fun a => cycleGraph (N a) (slots a) (M a) (D a)) encIn
       encGraph := by
-  unfold cycleGraph vertices arcs diamondArcs detourArcs rowLength encGraph
-  fun_prop
+  have hg := computableInPolyTime_graph hN hslots hM hD
+  unfold encGraph at hg ⊢
+  exact hg.fst'.prod (cons' ((computableInPolyTime_topNode.comp hN).prod (const (topNode 0)))
+    hg.snd')
 
 end PolyTime
 

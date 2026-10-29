@@ -9,8 +9,10 @@ module
 
 public import Complexity.Computability.Complexity.Problems.Graph
 public import Complexity.Logics.Propositional.CNF.ModelCount
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Logics.Propositional.CNF.PolyTime
-import Complexity.Tactic.PolyTime
 
 /-!
 # The finite incidence graph of a CNF formula
@@ -102,22 +104,22 @@ theorem computableInPolyTime_incidenceGraph (enc : V ↪ List Bool) :
     ComputableInPolyTime (incidenceGraph (V := V))
       (encList (encList (encPair enc encBool))) encGraph := by
   let unaryGraph := encPair (encList encUnary) (encList (encPair encUnary encUnary))
-  have hd := (CNF.computableInPolyTime_distinctVars enc).tidy
-  have ho := (Cslib.Logic.PL.computableInPolyTime_occurrences enc).tidy
+  have hd := CNF.computableInPolyTime_distinctVars enc
+  have ho := Cslib.Logic.PL.computableInPolyTime_occurrences enc
   unfold Cslib.Logic.PL.encOccurrence at ho
-  have hu : ComputableTidilyInPolyTime (incidenceGraph (V := V))
+  have hu : ComputableInPolyTime (incidenceGraph (V := V))
       (encList (encList (encPair enc encBool))) unaryGraph := by
     unfold incidenceGraph unaryGraph
     fun_prop
-  have hc : ComputableTidilyInPolyTime (fun g : Graph => g) unaryGraph encGraph := by
-    open ComputableTidilyInPolyTime in
+  have hc : ComputableInPolyTime (fun g : Graph => g) unaryGraph encGraph := by
+    open ComputableInPolyTime in
     have hp := (unary_to_binary.comp (fst encUnary encUnary)).prod
       (unary_to_binary.comp (snd encUnary encUnary))
-    open ComputableTidilyInPolyTime in
+    open ComputableInPolyTime in
     have h := ((map unary_to_binary).comp
       (fst (encList encUnary) (encList (encPair encUnary encUnary)))).prod
         ((map hp).comp (snd (encList encUnary) (encList (encPair encUnary encUnary))))
     simpa [Function.comp_def, unaryGraph, encGraph] using h
-  exact .of_tidy (hc.comp hu)
+  exact hc.comp hu
 
 end Cslib.Complexity.SAT
