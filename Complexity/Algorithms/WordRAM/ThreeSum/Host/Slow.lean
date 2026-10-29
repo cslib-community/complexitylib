@@ -13,16 +13,17 @@ import Batteries.Data.Fin.Lemmas
 /-!
 # A finite exhaustive native Exact Triangle callee
 
-This slow test implementation enumerates the actual triples, loads all three encoded matrix
+This reference implementation enumerates the actual triples, loads all three encoded matrix
 weights, and compares the sums of their positive and negative magnitudes. No solver instruction,
-host execution premise or precomputed verdict occurs in its code.
+host execution premise or precomputed verdict occurs in its code. It is library code because its
+certification witnesses that `Host.Callee` can be satisfied by a concrete finite program.
 
 ## Main definitions
 
 * `program`: one fixed 24-register native triple scan.
 * `callee`: a concrete certified finite block with charged cubic time and logarithmic width.
 
-This finite test algorithm and its native implementation are original.
+This exhaustive native implementation and its certification are original.
 -/
 
 @[expose] public section

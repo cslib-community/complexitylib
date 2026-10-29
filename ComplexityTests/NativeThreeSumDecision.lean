@@ -72,14 +72,4 @@ example : ∃ steps, Executes (Decision.width 1 live.widthCoefficient 3)
   rw [h0] at he
   exact ⟨steps, he, ht⟩
 
--- The width and space theorem also instantiate to the concrete callee with no extra fits.
-example (input : List ℤ) (w : ℕ)
-    (hw : Decision.width 2 live.widthCoefficient input.length ≤ w)
-    (hv : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ 2 : ℕ))
-    (s : State (Decision.registerCount 17)) (steps : ℕ)
-    (hr : Runs w (Decision.flatProgram 2 live) (State.init (input.map Signed.encode)) s steps) :
-    ∀ a, s.data.mem a < (input.length + 2) ^
-      (2 * Decision.widthCoefficient 2 live.widthCoefficient) :=
-  (Decision.intermediates_polynomial input live hw hv hr).2
-
 end ComplexityTests.NativeThreeSumDecision

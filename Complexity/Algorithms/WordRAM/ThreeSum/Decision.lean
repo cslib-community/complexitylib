@@ -35,12 +35,16 @@ No curated headline changes here.
 
 ## Main definitions
 
+This import-only module re-exports these definitions:
+
 * `Decision.flatProgram`: one actual finite ordinary 3SUM host per exponent and callee.
 * `Host.Callee`: explicit actual finite-code protocol and certification requirements.
 * `Host.Slow.callee`: fully proved finite exhaustive native Exact Triangle instance.
 * `Decision.cost`, `Decision.width`: compositional charged time and global physical width.
 
 ## Main results
+
+It also re-exports these results:
 
 * `Decision.exec_input`, `Decision.runs_input`: exact initialized native verdict and real run.
 * `Decision.intermediates_polynomial`, `Decision.space_polynomial`: every-wide-prefix bounds.
