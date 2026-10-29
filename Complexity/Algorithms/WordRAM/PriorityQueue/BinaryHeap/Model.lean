@@ -61,8 +61,9 @@ def space (N : ℕ) : ℕ := 3 * N + 1
 theorem space_lower (N : ℕ) : N + 1 ≤ space N := by
   unfold space; omega
 
-@[deprecated (since := "2026-10-29")]
-alias EntryLT := IndexedMinPQ.RawPrioLT
+/-- Deprecated name for the shared raw priority comparison. -/
+@[deprecated IndexedMinPQ.RawPrioLT (since := "2026-10-29")]
+abbrev EntryLT (a b : ℕ × ℕ) : Prop := IndexedMinPQ.RawPrioLT a b
 
 @[deprecated (since := "2026-10-29")]
 alias instDecidableEntryLT := IndexedMinPQ.instDecidableRawPrioLT

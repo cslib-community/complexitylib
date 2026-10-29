@@ -22,6 +22,19 @@ open Cslib.Algorithms.WordRAM.PriorityQueue.BinaryHeap.Reg
 
 namespace WordRAMPriorityQueueTests
 
+-- The deprecated priority API keeps its decidability and shared strict/weak-order bridges.
+set_option linter.deprecated false in
+example :
+    BinaryHeap.EntryLT (1, 4) (2, 4) ∧
+    ¬BinaryHeap.EntryLT (2, 4) (1, 4) ∧
+    @decide (BinaryHeap.EntryLT (3, 1) (0, 2))
+      (BinaryHeap.instDecidableEntryLT _ _) = true ∧
+    IndexedMinPQ.RawPrioLE (1, 4) (2, 4) ∧
+    IndexedMinPQ.RawPrioLE (1, 4) (2, 4) := by
+  refine ⟨by decide, by decide, by decide, ?_, ?_⟩
+  · exact BinaryHeap.EntryLT.le (by decide)
+  · exact BinaryHeap.not_entryLT.mp (by decide)
+
 /-- Pure interpreter step for a single `IndexedMinPQ` operation on `BinaryHeap.pqCode`. -/
 def stepEval {n K_max : ℕ} (w fuel : ℕ) (x : Data rBin)
     (o : (IndexedMinPQ.spec n K_max).Op) :
