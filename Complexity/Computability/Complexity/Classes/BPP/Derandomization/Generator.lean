@@ -14,12 +14,12 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Foundations.Data.BitString.List.Operations
 public import Complexity.Crypto.Primitives.PRG.NisanWigderson.Derandomization
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
-import Complexity.Tactic.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 
 /-!
 # Computing the Nisan–Wigderson generator
@@ -34,7 +34,7 @@ length `ℓ`, the hard function is evaluated on words of logarithmic length `n`,
 is only computable in time `T n`, exponential in `n`. The certificates therefore take polynomial
 bounds on `2 ^ ℓ` and on `T n` as functions of the instance:
 
-* a problem in `Cslib.Complexity.DTIME encBits t` has a Boolean decider tidily computable within
+* a problem in `Cslib.Complexity.DTIME encBits t` has a Boolean decider computable within
   time and space `O(t n)` (`Cslib.Complexity.exists_computableInO_of_mem_DTIME`);
 * such a decider, applied to words cut to a computed length `n`, runs in polynomial time when
   `T n` is polynomially bounded
@@ -84,42 +84,26 @@ namespace Cslib.Complexity
 
 /-- **Deterministic time classes have deciders within time and space `O(t n)`.** A problem
 decided within time `O(t n)`, by a machine with any space bound, has a Boolean decider computable
-within time and space `O(t n)`: time bounds space, and the tidy normal form of the proof costs a
-linear overhead. -/
+within time and space `O(t n)`: time bounds space up to a linear factor. -/
 theorem exists_computableInO_of_mem_DTIME {A : Set (List Bool)} {t : ℕ → ℕ}
     (h : A ∈ DTIME encBits t) :
     ∃ g : List Bool → Bool, (∀ y, y ∈ A ↔ g y = true) ∧
       ComputableInO g encBits encBool (fun y => t y.length) fun y => t y.length := by
-  have this : ∃ g : List Bool → Bool, (∀ y, y ∈ A ↔ g y = true) ∧ ComputableTidilyInO g encBits
-      encBool (fun y => t y.length) fun y => t y.length := by
-    obtain ⟨c₁, c₂, s, hA⟩ := h
-    obtain ⟨g, hg, hgA⟩ := decidableInTimeAndSpace_iff.mp hA
-    obtain ⟨c, hg⟩ := hg.exists_space_linear
-    obtain ⟨d, hg⟩ := hg.exists_computableTidilyInTimeAndSpace
-    set K := (2 + 3 * c) * (c₁ + c₂) + 3 * c + d + d * (c * (c₁ + c₂) + c + 1) + 1 with hK
-    have hx (y : List Bool) : c₁ * t y.length + c₂ ≤ (c₁ + c₂) * (t y.length + 1) := by
-      nlinarith [Nat.zero_le (c₂ * t y.length)]
-    have htime (y : List Bool) : 2 * (c₁ * t y.length + c₂) + 3 * (c * (c₁ * t y.length + c₂) + c) +
-        d ≤ K * (t y.length + 1) := by
-      have h₁ := Nat.mul_le_mul_left c (hx y)
-      calc _ ≤ (2 + 3 * c) * ((c₁ + c₂) * (t y.length + 1)) + (3 * c + d) * (t y.length + 1) := by
-            nlinarith [hx y, Nat.zero_le ((3 * c + d) * t y.length)]
-        _ ≤ K * (t y.length + 1) := by
-            rw [hK]
-            nlinarith [Nat.zero_le ((d * (c * (c₁ + c₂) + c + 1) + 1) * (t y.length + 1))]
-    have hspace (y : List Bool) :
-        d * (c * (c₁ * t y.length + c₂) + c + 1) ≤ K * (t y.length + 1) := by
-      have h₁ := Nat.mul_le_mul_left c (hx y)
-      calc _ ≤ d * (c * ((c₁ + c₂) * (t y.length + 1)) + (c + 1) * (t y.length + 1)) := by
-            refine Nat.mul_le_mul_left d ?_
-            nlinarith [Nat.zero_le ((c + 1) * t y.length)]
-        _ = (d * (c * (c₁ + c₂) + c + 1)) * (t y.length + 1) := by ring
-        _ ≤ K * (t y.length + 1) := Nat.mul_le_mul_right _ (by omega)
-    refine ⟨g, hgA, ComputableTidilyInO.of_bounds hg K (fun y => htime y) (fun y => hspace y)
-      fun y => ?_⟩
-    simp only [encBool_apply, List.length_singleton]
+  obtain ⟨c₁, c₂, s, hA⟩ := h
+  obtain ⟨g, hg, hgA⟩ := decidableInTimeAndSpace_iff.mp hA
+  obtain ⟨c, hg⟩ := hg.exists_space_linear
+  set K := c * (c₁ + c₂) + (c₁ + c₂) + c + 1
+  refine ⟨g, hgA, ComputableInO.of_bounds hg K (fun y => ?_) (fun y => ?_) fun y => ?_⟩
+  · simp only [encBits_apply]
+    dsimp only [K]
+    ring_nf
+    omega
+  · simp only [encBits_apply]
+    dsimp only [K]
+    ring_nf
+    omega
+  · simp only [encBool_apply, List.length_singleton]
     exact Nat.one_le_iff_ne_zero.2 (Nat.mul_ne_zero (by omega) (by omega))
-  simpa only [computableInO_iff_computableTidilyInO] using this
 
 end Cslib.Complexity
 
@@ -136,25 +120,18 @@ theorem ComputableInO.computableInPolyTime_take {γ : Type} {encIn : γ ↪ List
     (hbound : PolyBounded (fun x => (encIn x).length) fun x => T (cut x)) :
     ComputableInPolyTime (fun p : γ × List Bool => g (p.2.take (cut p.1)))
       (encPair encIn encBits) encBool := by
-  have hg := hg.tidy
-  have hcut := hcut.tidy
-  refine .of_tidy ?_
-  have h₁ : ComputableTidilyInPolyTime (fun p : γ × List Bool => p.2.take (cut p.1))
+  have htake : ComputableInPolyTime (fun p : γ × List Bool => p.2.take (cut p.1))
       (encPair encIn encBits) encBits := by
-    have := hcut.comp (ComputableTidilyInPolyTime.fst encIn encBits)
+    have := hcut.comp (ComputableInPolyTime.fst encIn encBits)
     fun_prop
-  obtain ⟨t, s, ht, hs, h⟩ := h₁
-  have h₁ : ComputableTidilyInO (fun p : γ × List Bool => p.2.take (cut p.1))
-      (encPair encIn encBits) encBits (fun p => t p + s p) fun p => t p + s p :=
-    .of_bounds h 1 (fun p => by omega) (fun p => by omega)
-      fun p => (h.length_le p).trans (by omega)
+  obtain ⟨T₁, S₁, hT₁, hS₁, h₁⟩ := htake.exists_computableInO
   have hfst : PolyBounded (fun p : γ × List Bool => (encPair encIn encBits p).length)
       fun p => T (cut p.1) :=
     hbound.comp (PolyBounded.self.mono fun p => by simp [length_frame]; omega)
-  have hpoly : PolyBounded (fun p : γ × List Bool => (encPair encIn encBits p).length)
-      fun p => t p + s p + T (p.2.take (cut p.1)).length :=
-    (ht.add hs).add (hfst.mono fun p => hT (List.length_take_le _ _))
-  exact (hg.comp h₁).computableTidilyInPolyTime hpoly hpoly
+  have hTcut : PolyBounded (fun p : γ × List Bool => (encPair encIn encBits p).length)
+      fun p => T (p.2.take (cut p.1)).length :=
+    hfst.mono fun p => hT (List.length_take_le _ _)
+  exact (hg.comp h₁).computableInPolyTime (hT₁.add hTcut) (hS₁.add hTcut)
 
 namespace ComputableInPolyTime
 
