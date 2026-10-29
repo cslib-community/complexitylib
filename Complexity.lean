@@ -106,6 +106,11 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Query.Traversal
 public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
+public import Complexity.Algorithms.WordRAM.Karger.Contract
+public import Complexity.Algorithms.WordRAM.Karger.FastCut
+public import Complexity.Algorithms.WordRAM.Karger.Graph
+public import Complexity.Algorithms.WordRAM.KargerMinCut
+public import Complexity.Algorithms.WordRAM.KargerStein
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandAll
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandCatalogue
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandCollect
@@ -128,11 +133,6 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandR
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandSplit
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandTables
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandThin
-public import Complexity.Algorithms.WordRAM.Karger.Contract
-public import Complexity.Algorithms.WordRAM.Karger.FastCut
-public import Complexity.Algorithms.WordRAM.Karger.Graph
-public import Complexity.Algorithms.WordRAM.KargerMinCut
-public import Complexity.Algorithms.WordRAM.KargerStein
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Cell
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Controller
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Copy
