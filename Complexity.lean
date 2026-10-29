@@ -90,14 +90,14 @@ public import Complexity.Algorithms.WordRAM.FusionTree.Rank
 public import Complexity.Algorithms.WordRAM.FusionTree.ReadHeader
 public import Complexity.Algorithms.WordRAM.FusionTree.Static
 public import Complexity.Algorithms.WordRAM.Histogram
-public import Complexity.Algorithms.WordRAM.NatClog
-public import Complexity.Algorithms.WordRAM.NatLog
-public import Complexity.Algorithms.WordRAM.NatSqrt
 public import Complexity.Algorithms.WordRAM.Karger.Contract
 public import Complexity.Algorithms.WordRAM.Karger.FastCut
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.KargerMinCut
 public import Complexity.Algorithms.WordRAM.KargerStein
+public import Complexity.Algorithms.WordRAM.NatClog
+public import Complexity.Algorithms.WordRAM.NatLog
+public import Complexity.Algorithms.WordRAM.NatSqrt
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
