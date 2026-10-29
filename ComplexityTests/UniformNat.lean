@@ -80,20 +80,26 @@ example : IsPPTOn encUnary encNat (fun n => sampleModNat (n + 8) (2 * n + 3)) :=
 
 end ComplexityTests.UniformNat
 
--- A plain bound composes with the capped unary dyadic-size provider and public sampler rules.
-example :
+-- An arbitrary plain bound composes with the capped unary dyadic-size provider.
+example {α : Type} {encode : α ↪ List Bool} {bound : α → ℕ}
+    (hbound : Turing.MultiTapeTM.ComputableInPolyTime bound encode Turing.MultiTapeTM.encUnary) :
     Turing.MultiTapeTM.ComputableInPolyTime
-      (fun word : List Bool => Cslib.Probability.dyadicSize (word.length + 1))
-      Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encUnary ∧
-    Cslib.Probability.IsPPTOn Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encBool
-      (fun word : List Bool => Cslib.ProbComp.sampleDyadicCoin (word.length + 1) word.length) ∧
-    Cslib.Probability.IsPPTOn Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encNat
-      (fun word : List Bool => Cslib.ProbComp.sampleBinaryNat (word.length + 2)) :=
-  ⟨by fun_prop,
-    Cslib.Probability.isPPTOn_sampleDyadicCoin (by fun_prop) (by fun_prop),
-    (show Turing.MultiTapeTM.ComputableInPolyTime
-      (fun word : List Bool => word.length + 2)
-      Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encUnary by fun_prop).sampleBinaryNat⟩
+      (fun a => Cslib.Probability.dyadicSize (bound a)) encode Turing.MultiTapeTM.encUnary := by
+  fun_prop
+
+-- Public sampler rules consume plain numeric certificates on arbitrary encoded inputs.
+example {α : Type} {input : α ↪ List Bool} {bound numerator : α → ℕ}
+    (hb : Turing.MultiTapeTM.ComputableInPolyTime bound input Turing.MultiTapeTM.encUnary)
+    (hn : Turing.MultiTapeTM.ComputableInPolyTime numerator input Turing.MultiTapeTM.encUnary) :
+    Cslib.Probability.IsPPTOn input Turing.MultiTapeTM.encBool
+      (fun a => Cslib.ProbComp.sampleDyadicCoin (bound a) (numerator a)) := by
+  exact Cslib.Probability.isPPTOn_sampleDyadicCoin hb hn
+
+example {α : Type} {input : α ↪ List Bool} {width : α → ℕ}
+    (hw : Turing.MultiTapeTM.ComputableInPolyTime width input Turing.MultiTapeTM.encUnary) :
+    Cslib.Probability.IsPPTOn input Turing.MultiTapeTM.encNat
+      (fun a => Cslib.ProbComp.sampleBinaryNat (width a)) := by
+  exact hw.sampleBinaryNat
 
 -- The convenience theorem has one canonical public name, with no superseded raw alias.
 run_elab do

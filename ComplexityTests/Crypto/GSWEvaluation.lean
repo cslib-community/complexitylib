@@ -108,14 +108,16 @@ private theorem cipher_supported (message : Bool) :
   · exact (mem_support_encrypt_iff _ _ _).mpr ⟨coins, rfl⟩
   · exact (encryptWithCoinsSerialized_serialize typedKeys.1 message coins).symm
 
-example :
-    decryptSerialized 1 6 wordKeys.2 (wordCipher true) = true ∧
-      decryptSerialized 1 6 wordKeys.2 (nandSerialized 1 6 (wordCipher true) (wordCipher false)) =
-        true :=
-  ⟨keyGenSerialized_encrypt_correct (by decide) (by decide) keys_supported true
-      (cipher_supported true),
-    keyGenSerialized_nand_correct (by decide) (by decide) keys_supported true false
-      (cipher_supported true) (cipher_supported false)⟩
+-- This supported key/coin fixture checks both messages and the entire Boolean NAND table.
+example (message : Bool) : decryptSerialized 1 6 wordKeys.2 (wordCipher message) = message :=
+  keyGenSerialized_encrypt_correct (by decide) (by decide) keys_supported message
+    (cipher_supported message)
+
+example (left right : Bool) :
+    decryptSerialized 1 6 wordKeys.2 (nandSerialized 1 6 (wordCipher left) (wordCipher right)) =
+      !(left && right) :=
+  keyGenSerialized_nand_correct (by decide) (by decide) keys_supported left right
+    (cipher_supported left) (cipher_supported right)
 
 -- Both dimensions and both entire raw words vary with the input.
 example : ComputableInPolyTime

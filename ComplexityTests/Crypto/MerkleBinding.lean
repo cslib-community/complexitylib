@@ -35,11 +35,10 @@ abbrev key : List Bool := [false, true]
 /-- A hash that returns its message: no collisions, so only honest openings are accepted. -/
 def idHash (_ x : List Bool) : List Bool := x
 
--- Position `2` of the depth-two tree, opened by its path, is accepted.
-example :
-    merkleVerify idHash key 2 (merkleRoot idHash key leaves) 2 (leaves.getD 2 [])
-      (merklePath idHash key leaves 2) = true :=
-  merkleVerify_merklePath_of_clog_eq rfl (by decide)
+-- All four positions of the padded depth-two tree are accepted with their computed paths.
+example : ∀ i : Fin 4,
+    merkleVerify idHash key 2 (merkleRoot idHash key leaves) i (leaves.getD i [])
+      (merklePath idHash key leaves i) = true := by decide
 
 -- A wrong leaf at position `1` is rejected.
 example : merkleVerify idHash key 2 (merkleRoot idHash key leaves) 1 [true, true]

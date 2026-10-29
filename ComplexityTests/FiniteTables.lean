@@ -59,13 +59,16 @@ private def encEmpty : Empty ↪ List Bool := ⟨Empty.elim, fun value => value.
 example : ComputableInPolyTime (fun _ : List Bool => (Empty.elim : Empty → Empty))
     encBits (encPi encEmpty) := by fun_prop
 
--- The projection and update APIs impose no default-value hypothesis.
-example {Value : Type} (enc : Value ↪ List Bool) :
-    ComputableInPolyTime (fun values : Empty → Value => values) (encPi enc) (encPi enc) ∧
-      ComputableInPolyTime
-        (fun pair : (Fin 3 → Value) × Value => Function.update pair.1 1 pair.2 1)
-        (encPair (encPi enc) enc) enc :=
-  ⟨by fun_prop, by fun_prop⟩
+-- The projection API itself imposes no default-value hypothesis.
+example {Index Value : Type} [Fintype Index] (enc : Value ↪ List Bool) (i : Index) :
+    ComputableInPolyTime (fun values : Index → Value => values i) (encPi enc) enc := by
+  fun_prop
+
+example {Index Value : Type} [Fintype Index] [DecidableEq Index]
+    (enc : Value ↪ List Bool) (i : Index) :
+    ComputableInPolyTime
+      (fun pair : (Index → Value) × Value => Function.update pair.1 i pair.2)
+      (encPair (encPi enc) enc) (encPi enc) := by fun_prop
 
 -- Unary ranks are bounded for each fixed finite type; no efficient growing enumeration is claimed.
 example (tag : Fin 7) : (encFinEnum (Fin 7) tag).length < 7 := by

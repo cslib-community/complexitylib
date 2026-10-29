@@ -27,6 +27,11 @@ example {α Input : Type} (enc : α ↪ List Bool) (input : Input ↪ List Bool)
   fail_if_success (clear hlist; fun_prop)
   exact .of_tidy (by polytime)
 
+-- Framing supplies the length for any element encoding, without an element decoder.
+example {α : Type} (enc : α ↪ List Bool) :
+    ComputableInPolyTime (fun list : List α => list.length) (encList enc) encUnary := by
+  fun_prop
+
 -- Framing supplies the length; no element decoder or computational hypothesis is needed.
 example (empty : Empty ↪ List Bool) :
     ComputableInPolyTime (fun list : List Empty => list.zipIdx.length)
