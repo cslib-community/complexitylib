@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Circuit.Boolean.MassProduction.Uhlig
+import Complexity.Foundations.Data.BitString.Parity
 
 /-!
 # Uhlig mass-production clients
@@ -25,33 +26,25 @@ open Cslib.Circuits.Boolean.MassProduction.Uhlig Cslib.BitString.Uhlig Filter
 /-- The sequence `true, false, true` followed by zeros. -/
 private def bits (i : ℕ) : Bool := i == 0 || i == 2
 
--- Adjacent sums, including the final position that repeats the last bit.
-example : (List.range 4).map (code bits) = [true, true, true, true] := by decide
-
--- Equal requests use complementary position sets: an initial and a final segment.
-example : (List.range 4).map (first 1 1) = [true, true, false, false] := by decide
-example : (List.range 4).map (second 1 1) = [false, false, true, true] := by decide
-
--- Reversed requests swap the roles: the first request now uses the final segment.
-example : (List.range 4).map (first 2 0) = [false, false, false, true] := by decide
-example : (List.range 4).map (second 2 0) = [true, false, false, false] := by decide
-
--- Both requests recover their bits from the code.
-example : ∑ j ∈ Finset.range 4, (first 2 0 j && code bits j) = bits 2 :=
-  sum_first_code (by decide) (by decide) 0
-example : ∑ j ∈ Finset.range 4, (second 2 0 j && code bits j) = bits 0 :=
-  sum_second_code (by decide) (by decide) 2
-
--- No position serves both requests, for every pair of requests.
-example (a b j : ℕ) (h : first a b j = true) : second a b j = false :=
-  second_eq_false_of_first h
-
--- A sequence that does not vanish at `M` breaks final-segment recovery.
-example : ∑ j ∈ Finset.Ico 1 3, code (fun _ => true) j ≠ true := by decide
-
--- Restrictions vanish beyond the last prefix, the boundary used by final segments.
-example (f : BooleanFunction (2 + 3)) (z : BitString 3) : restriction f z 4 = false :=
-  restriction_two_pow f z
+-- Adjacent sums, equal and reversed requests, recovery sums, non-overlapping requests, and the
+-- vanishing boundary position.
+example :
+    (List.range 4).map (code bits) = [true, true, true, true] ∧
+    (List.range 4).map (first 1 1) = [true, true, false, false] ∧
+    (List.range 4).map (second 1 1) = [false, false, true, true] ∧
+    (List.range 4).map (first 2 0) = [false, false, false, true] ∧
+    (List.range 4).map (second 2 0) = [true, false, false, false] ∧
+    ∑ j ∈ Finset.range 4, (first 2 0 j && code bits j) = bits 2 ∧
+    ∑ j ∈ Finset.range 4, (second 2 0 j && code bits j) = bits 0 ∧
+    second 1 1 0 = false ∧
+    ∑ j ∈ Finset.Ico 1 3, code (fun _ => true) j ≠ true ∧
+    restriction (0 : BooleanFunction (2 + 3)) 0 4 = false :=
+  ⟨by decide, by decide, by decide, by decide, by decide,
+    sum_first_code (by decide) (by decide) 0,
+    sum_second_code (by decide) (by decide) 2,
+    second_eq_false_of_first (by decide : first 1 1 0 = true),
+    by decide,
+    restriction_two_pow 0 0⟩
 
 /-! ### Circuit families -/
 
@@ -60,19 +53,17 @@ private def andGate : Circuit signature 1 1 := ⟨.gate (.gate .empty
   ⟨.const true, Fin.elim0⟩) ⟨.and, fun i => if i = 0 then .input 0 else .gate 0⟩, fun _ => .gate 1⟩
 
 -- Different members keep their own costs; the constant is charged by size but not by
--- nonconstant cost.
-example : (Circuit.parallelFamily ![notGate, andGate]).size = 3 := by
-  simp [notGate, andGate, Fin.sum_univ_two]
-
-example : (Circuit.parallelFamily ![notGate, andGate]).program.cost nonconstantCost = 2 := by
-  rw [Circuit.cost_program_parallelFamily]
-  rfl
-
-example : (Circuit.parallelFamily ![notGate, andGate]).eval interpretation ![false, true] =
-    ![true, true] := by decide
-
--- The empty family has no gates.
-example (cs : Fin 0 → Circuit signature 3 2) : (Circuit.parallelFamily cs).size = 0 := by simp
+-- nonconstant cost; the empty family has no gates.
+example :
+    (Circuit.parallelFamily ![notGate, andGate]).size = 3 ∧
+    (Circuit.parallelFamily ![notGate, andGate]).program.cost nonconstantCost = 2 ∧
+    (Circuit.parallelFamily ![notGate, andGate]).eval interpretation ![false, true] =
+      ![true, true] ∧
+    (Circuit.parallelFamily (Fin.elim0 : Fin 0 → Circuit signature 3 2)).size = 0 :=
+  ⟨by simp [notGate, andGate, Fin.sum_univ_two],
+    by rw [Circuit.cost_program_parallelFamily]; rfl,
+    by decide,
+    by simp⟩
 
 /-! ### One layer -/
 
@@ -83,18 +74,16 @@ private theorem complexity_directProduct_zero_inputs (g : BooleanFunction 0) :
     (Synthesis.of_forall_eq_const (s := inputs 0) (g ![])
       fun _ => congrArg g (Subsingleton.elim _ _)).complexity_le
 
--- The layer hypothesis is satisfiable: two copies of any one-input function.
-example (f : BooleanFunction (1 + 0)) :
-    complexity interpretation (directProduct f (2 * 1)) ≤
-      (2 ^ 1 + 1) * 1 + 1 * layerOverhead 1 0 :=
-  complexity_directProduct_two_mul_le complexity_directProduct_zero_inputs f
+-- Two copies of negation on one input, and four copies of conjunction on two inputs.
+example : complexity interpretation (directProduct (fun x : BitString 1 => !x 0) (2 * 1)) ≤
+    (2 ^ 1 + 1) * 1 + 1 * layerOverhead 1 0 :=
+  complexity_directProduct_two_mul_le complexity_directProduct_zero_inputs _
 
--- Two layers from single copies on no inputs: four copies of every function on two inputs.
-example (f : BooleanFunction (2 * 1 + 0)) :
-    complexity interpretation (directProduct f (2 ^ 2)) ≤
-      (2 ^ 1 + 1) ^ 2 * (1 + 2 * 2 ^ 2 * layerOverhead 1 1) :=
-  complexity_directProduct_two_pow_le complexity_directProduct_zero_inputs 2 _ rfl
-    (fun e he => layerOverhead_mono (by omega)) f
+example : complexity interpretation (directProduct (fun x : BitString 2 => x 0 && x 1) (2 ^ 2)) ≤
+    (2 ^ 1 + 1) ^ 2 * (1 + 2 * 2 ^ 2 * layerOverhead 1 1) :=
+  complexity_directProduct_two_pow_le (p := 1) (m := 0) (L := 1) (H := layerOverhead 1 1)
+    complexity_directProduct_zero_inputs 2 _ rfl
+    (fun e he => layerOverhead_mono (by omega)) _
 
 /-! ### Copy depths -/
 
@@ -124,13 +113,14 @@ theorem not_isUhligDepth_div_log : ¬ IsUhligDepth fun n => n / Nat.log 2 n := b
   have e : 2 * (n / Nat.log 2 n) * Nat.log 2 n = 2 * (n / Nat.log 2 n * Nat.log 2 n) := by ring
   omega
 
--- The theorem applies to the superpolynomial copy budget.
-example (P : ℕ) : ∀ᶠ n in atTop, ∀ (f : BooleanFunction n) (k : ℕ),
-    k ≤ 2 ^ (n / Nat.log 2 n ^ 2) →
-      (P * n : ℕ∞) * massComplexity f k ≤ ((P + 1) * 2 ^ n : ℕ) :=
-  eventually_mul_massComplexity_le isUhligDepth_div_log_sq P
+-- A fixed parity family at the full superpolynomial copy budget, with scale factor two.
+example : ∀ᶠ (n : ℕ) in atTop,
+    ((2 * n : ℕ) : ℕ∞) * massComplexity (parity n) (2 ^ (n / Nat.log 2 n ^ 2)) ≤
+      ((2 + 1) * 2 ^ n : ℕ) := by
+  filter_upwards [eventually_mul_massComplexity_le isUhligDepth_div_log_sq 2] with n hn
+  exact hn (parity n) _ le_rfl
 
--- Zero copies are included and cost nothing.
-example (f : BooleanFunction 5) : massComplexity f 0 = 0 := massComplexity_zero
+-- Zero copies cost nothing even for the nonconstant parity function.
+example : massComplexity (parity 5) 0 = 0 := massComplexity_zero
 
 end ComplexityTests.MassProduction.Uhlig

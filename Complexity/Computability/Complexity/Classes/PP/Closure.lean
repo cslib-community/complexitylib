@@ -60,13 +60,13 @@ certificate. -/
 theorem NP_subset_PP : NP enc ⊆ PP enc := by
   rintro A ⟨p, V, hV, hA⟩
   let V' (x : α × List Bool) : Bool := !(x.2.headD false) || V (x.1, x.2.tail)
-  have hV' : ComputableTidilyInPolyTime V' (encPair enc encBits) encBool :=
-    ComputableTidilyInPolyTime.bool_or.comp
-      ((ComputableTidilyInPolyTime.bool_not.comp
-        ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp (.snd _ _))).prod
-        (hV.tidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
-          (ComputableTidilyInPolyTime.bitsTail.comp (.snd _ _)))))
-  refine ⟨p + 1, V', .of_tidy hV', fun a => ?_⟩
+  have hV' : ComputableInPolyTime V' (encPair enc encBits) encBool :=
+    ComputableInPolyTime.bool_or.comp
+      ((ComputableInPolyTime.bool_not.comp
+        ((ComputableInPolyTime.headD (encA := encBool) false).comp (.snd _ _))).prod
+        (hV.comp ((ComputableInPolyTime.fst _ _).prod
+          (ComputableInPolyTime.bitsTail.comp (.snd _ _)))))
+  refine ⟨p + 1, V', hV', fun a => ?_⟩
   have hcount (m : ℕ) : acceptCount V' a (m + 1) = 2 ^ m + acceptCount V a m := by
     rw [acceptCount, card_filter_ofFn_succ m fun l => V' (a, l) = true]
     simp [V', acceptCount]
@@ -89,23 +89,23 @@ theorem compl_mem_PP (hA : A ∈ PP enc) : Aᶜ ∈ PP enc := by
   let V' (x : α × List Bool) : Bool :=
     if x.2.headD false then !V (x.1, x.2.tail.tail)
     else !(x.2.tail.headD false) || !(x.2.tail.tail.any fun b => b)
-  have hV' : ComputableTidilyInPolyTime V' (encPair enc encBits) encBool := by
-    have hw : ComputableTidilyInPolyTime (fun x : α × List Bool => x.2.tail.tail)
+  have hV' : ComputableInPolyTime V' (encPair enc encBits) encBool := by
+    have hw : ComputableInPolyTime (fun x : α × List Bool => x.2.tail.tail)
         (encPair enc encBits) encBits :=
-      ComputableTidilyInPolyTime.bitsTail.comp
-        (ComputableTidilyInPolyTime.bitsTail.comp (.snd _ _))
-    exact ComputableTidilyInPolyTime.cond
-      ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp (.snd _ _))
-      (ComputableTidilyInPolyTime.bool_not.comp
-        (hV.comp (.of_tidy ((ComputableTidilyInPolyTime.fst _ _).prod hw))).tidy)
-      (ComputableTidilyInPolyTime.bool_or.comp
-        ((ComputableTidilyInPolyTime.bool_not.comp
-          ((ComputableTidilyInPolyTime.headD (encA := encBool) false).comp
-            (ComputableTidilyInPolyTime.bitsTail.comp (.snd _ _)))).prod
-          (ComputableTidilyInPolyTime.bool_not.comp
-            (ComputableTidilyInPolyTime.bitsAnyWithInput (test := fun _ b => b) hw
+      ComputableInPolyTime.bitsTail.comp
+        (ComputableInPolyTime.bitsTail.comp (.snd _ _))
+    exact ComputableInPolyTime.ite'
+      ((ComputableInPolyTime.headD (encA := encBool) false).comp (.snd _ _))
+      (ComputableInPolyTime.bool_not.comp
+        (hV.comp (((ComputableInPolyTime.fst _ _).prod hw))))
+      (ComputableInPolyTime.bool_or.comp
+        ((ComputableInPolyTime.bool_not.comp
+          ((ComputableInPolyTime.headD (encA := encBool) false).comp
+            (ComputableInPolyTime.bitsTail.comp (.snd _ _)))).prod
+          (ComputableInPolyTime.bool_not.comp
+            (ComputableInPolyTime.bitsAnyWithInput (test := fun _ b => b) hw
               (.snd _ _)))))
-  refine ⟨p + 2, V', (.of_tidy hV'), fun a => ?_⟩
+  refine ⟨p + 2, V', (hV'), fun a => ?_⟩
   -- exactly one word of length `m` is all zeros
   have hzero (m : ℕ) : (Finset.univ.filter fun w : Fin m → Bool =>
       ((List.ofFn w).any fun b => b) = false).card = 1 := by

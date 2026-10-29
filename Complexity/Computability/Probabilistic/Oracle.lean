@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.NormalForm
 
 /-!
 # Uniform strict PPT with external word oracles
@@ -37,8 +38,9 @@ realization with the same joint law, and `Oracle.Composition` composes certifica
 ## Main results
 
 * `Cslib.Probability.IsOraclePPTOn.length_le`: uniform bounds on supported encoded output lengths.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.isOraclePPTOn`: deterministic functional programs
-  reuse the existing tidy machine certificate.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.isOraclePPTOn`,
+  `Turing.MultiTapeTM.ComputableInPolyTime.isOraclePPTOn`: deterministic functional programs
+  are uniform oracle-PPT programs; the plain bridge first normalizes its machine.
 
 ## References
 
@@ -149,3 +151,18 @@ theorem Turing.MultiTapeTM.ComputableTidilyInPolyTime.isOraclePPTOn
     Turing.MultiTapePTM.run_interpret_runOracle_ofDeterministic]
   exact congrArg (fun word => PMF.pure (word, state))
     ((hmachine a).mono (ht a) le_rfl).runFrom_initCfg.2.symm
+
+/-- A plain deterministic certificate also works in the presence of arbitrary external oracles. -/
+@[fun_prop]
+theorem Turing.MultiTapeTM.ComputableInPolyTime.isOraclePPTOn
+    {Operation α β : Type} [DecidableEq Operation] [Finite Operation]
+    {input : α ↪ List Bool} {output : β ↪ List Bool} {f : α → β}
+    (h : ComputableInPolyTime f input output) :
+    Cslib.Probability.IsOraclePPTOn (Operation := Operation) input output
+      (fun a => pure (f a)) := by
+  obtain ⟨c, d, k, State, hfinite, machine, hmachine⟩ := Internal.NormalForm.polyTime h
+  refine ⟨inferInstance, k, State, hfinite,
+    Turing.MultiTapePTM.ofDeterministic machine, c, d, fun a OracleState oracle state => ?_⟩
+  rw [map_pure, Cslib.OracleComp.interpret_pure,
+    Turing.MultiTapePTM.run_interpret_runOracle_ofDeterministic]
+  exact congrArg (fun word => PMF.pure (word, state)) (hmachine a).runFrom_initCfg.2.symm

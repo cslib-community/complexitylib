@@ -72,7 +72,7 @@ theorem leakingDecaps_polyTime :
       (fun p : ℕ × List Bool × List Bool => leakingDecaps p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBits := by
   unfold leakingDecaps
-  exact ComputableInPolyTime.of_tidy (by fun_prop)
+  fun_prop
 
 /-- A uniform KEM distinguisher testing whether the encapsulated key equals the encapsulation
 ciphertext `ctKem`. -/
@@ -83,32 +83,28 @@ def eqKemDistinguisher : Distinguisher := fun _ challenge =>
   pure (decide (k = ctKem))
 
 theorem eqKemDistinguisher_ppt : IsPPT encBool eqKemDistinguisher := by
-  have hk : ComputableTidilyInPolyTime
+  have hk : ComputableInPolyTime
       (fun challenge : List Bool => unframe (dropFrame challenge)) encBits encBits :=
-    ComputableTidilyInPolyTime.unframe.comp ComputableTidilyInPolyTime.dropFrame
-  have hct : ComputableTidilyInPolyTime
+    ComputableInPolyTime.unframe.comp ComputableInPolyTime.dropFrame
+  have hct : ComputableInPolyTime
       (fun challenge : List Bool => dropFrame (dropFrame challenge)) encBits encBits :=
-    ComputableTidilyInPolyTime.dropFrame.comp ComputableTidilyInPolyTime.dropFrame
+    ComputableInPolyTime.dropFrame.comp ComputableInPolyTime.dropFrame
   unfold eqKemDistinguisher
-  exact ComputableTidilyInPolyTime.isPPT (hk.decide_eq' hct)
+  exact (hk.decide_eq' hct).isPPTOn.preprocess (ComputableInPolyTime.snd encUnary encBits)
 
 -- Native runtime checks for `kemRealGame`, `kemIdealGame`, `demGame`, `hybridEncrypt`,
 -- and `hybridDecrypt`.
 example : IsPPTOn encUnary encBool
     (kemRealGame toyKeyGen leakingEncaps eqKemDistinguisher) :=
-  isPPTOn_kemRealGame toyKeyGen_ppt leakingEncaps_ppt eqKemDistinguisher_ppt
-    (ComputableInPolyTime.of_tidy (by fun_prop))
+  isPPTOn_kemRealGame toyKeyGen_ppt leakingEncaps_ppt eqKemDistinguisher_ppt (by fun_prop)
 
 example : IsPPTOn encUnary encBool
     (kemIdealGame toyKeyGen leakingEncaps eqKemDistinguisher) :=
-  isPPTOn_kemIdealGame toyKeyGen_ppt leakingEncaps_ppt eqKemDistinguisher_ppt
-    (ComputableInPolyTime.of_tidy (by fun_prop))
+  isPPTOn_kemIdealGame toyKeyGen_ppt leakingEncaps_ppt eqKemDistinguisher_ppt (by fun_prop)
 
 example (adversary : Adversary) (hadversary : adversary.IsPPT) (bit : Bool) :
     IsPPTOn encUnary encBool (demGame otpEncrypt adversary bit) :=
-  isPPTOn_demGame isPPTOn_otpEncrypt hadversary
-    (ComputableInPolyTime.of_tidy (by fun_prop))
-    (ComputableInPolyTime.of_tidy (by fun_prop))
+  isPPTOn_demGame isPPTOn_otpEncrypt hadversary (by fun_prop) (by fun_prop)
 
 example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
     (fun p => hybridEncrypt leakingEncaps otpEncrypt p.1 p.2.1 p.2.2) :=
@@ -341,10 +337,10 @@ theorem idealEncaps_ppt :
   have hk : IsPPTOn (encPair encUnary encBits) encBits
       (fun p : ℕ × List Bool => BitString.sampleList p.1) :=
     ComputableInPolyTime.sampleList (by fun_prop)
-  have hret : ComputableTidilyInPolyTime
+  have hret : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool => (p.2, ([] : List Bool)))
       (encPair (encPair encUnary encBits) encBits) (encPair encBits encBits) :=
-    (ComputableTidilyInPolyTime.snd _ _).prod (ComputableTidilyInPolyTime.const [])
+    (ComputableInPolyTime.snd _ _).prod (ComputableInPolyTime.const [])
   unfold idealEncaps
   exact hk.bind_with hret.isPPTOn
 
@@ -417,12 +413,12 @@ def lengthAdversary : WordAdversary where
 
 /-- `lengthAdversary` is uniform strict PPT. -/
 theorem lengthAdversary_isPPT : lengthAdversary.IsPPT where
-  choose := ComputableTidilyInPolyTime.isPPTOn (ComputableTidilyInPolyTime.const _)
+  choose := (ComputableInPolyTime.const _).isPPTOn
   guess := by
-    have hct : ComputableTidilyInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2)
+    have hct : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => p.2.2)
         (encPair encUnary (encPair encBits encBits)) encBits := by fun_prop
-    exact (ComputableTidilyInPolyTime.decide_eq' (encB := encBits) hct
-      (ComputableTidilyInPolyTime.const [false])).isPPTOn
+    exact (ComputableInPolyTime.decide_eq' (encB := encBits) hct
+      (ComputableInPolyTime.const [false])).isPPTOn
 
 /-- Without the equal-length rule the length-only scheme is insecure: `lengthAdversary` wins the
 unrestricted game with advantage `1`, so `lengthOnlyEncrypt` does not satisfy

@@ -17,7 +17,7 @@ A nondeterministic machine within logarithmic space has polynomially many reacha
 other than its input is described by a code of length `O(log n)`
 (`Turing.MultiTapeNTM.length_coreCode_le`). It accepts exactly when a halted view with output
 `[true]` is reachable from its initial view, which breadth-first search decides in polynomial time
-(`Turing.MultiTapeNTM.exists_computableTidilyInPolyTime_searchAccepts`). So `NL ⊆ P`
+(`Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`). So `NL ⊆ P`
 [Sipser, Section 8.5][Sipser2013], and with `Cslib.Complexity.L_subset_NL` the chain
 `L ⊆ NL ⊆ P`.
 
@@ -48,8 +48,8 @@ theorem mem_P_of_recognizesInSpace {k : ℕ} {State : Type} [Finite State]
     {ntm : MultiTapeNTM k Bool State} {A : Set α} {c : ℕ}
     (h : ntm.RecognizesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1)) : A ∈ P enc := by
   obtain ⟨rounds, hrounds, hpoly⟩ :=
-    ntm.exists_computableTidilyInPolyTime_searchAccepts (enc := enc) fun a => (h a).1
-  exact ⟨_, .of_tidy hpoly, fun a =>
+    ntm.exists_computableInPolyTime_searchAccepts (enc := enc) fun a => (h a).1
+  exact ⟨_, hpoly, fun a =>
     (h a).2.trans (MultiTapeNTM.searchAccepts_iff (h a).1 (hrounds a)).symm⟩
 
 /-- **Nondeterministic logarithmic space is within polynomial time**: breadth-first search

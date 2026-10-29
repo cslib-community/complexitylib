@@ -99,17 +99,6 @@ private theorem memory_succ (mem : ℕ → ℕ) (base k : ℕ) :
     have h : (base ≤ a ∧ a < base + (k + 1)) ↔ (base ≤ a ∧ a < base + k) := by omega
     simp only [memory, h]
 
-private def primesLT (k : ℕ) : ℕ := #{p ∈ range k | p.Prime}
-
-private theorem primesLT_zero : primesLT 0 = 0 := by simp [primesLT]
-
-private theorem primesLT_succ (k : ℕ) :
-    primesLT (k + 1) = primesLT k + if k.Prime then 1 else 0 := by
-  by_cases hp : k.Prime <;> simp [primesLT, range_add_one, filter_insert, hp]
-
-private theorem primesLT_le (k : ℕ) : primesLT k ≤ k :=
-  (card_filter_le _ _).trans_eq (card_range k)
-
 private theorem exec_test {w m : ℕ} (x : Data 15) (htwo : x.regs two = 2)
     (hbound : x.regs cursor ≤ m) (hfit : Fits w (m + 3)) :
     ∃ y, ExecWithin w test x y (7 * m + 9) ∧
@@ -162,7 +151,7 @@ theorem exec {w : ℕ} (x : Data 15)
   let m := x.regs limit
   let I (y : Data 15) : Prop := y.regs limit = m ∧ y.regs base = x.regs base ∧
     y.regs stop = m + 1 ∧ y.regs one = 1 ∧ y.regs zero = 0 ∧ y.regs two = 2 ∧
-    y.regs cursor ≤ m + 1 ∧ y.regs count = primesLT (y.regs cursor) ∧
+    y.regs cursor ≤ m + 1 ∧ y.regs count = Nat.primeCounting' (y.regs cursor) ∧
     y.mem = memory x.mem (x.regs base) (y.regs cursor)
   have hbody (y : Data 15) (hy : I y) (hc : (Cond.lt cursor stop).Holds y) :
       ∃ q, ExecWithin w body y q (7 * m + 13) ∧ I q ∧
@@ -172,14 +161,16 @@ theorem exec {w : ℕ} (x : Data 15)
     obtain ⟨z, he, hzf, hzm, hzr⟩ := exec_test y ht (show y.regs cursor ≤ m by omega) hfit
     have hzb : z.regs base = x.regs base := (hzr base (by decide)).trans hb
     have hzi : z.regs cursor = y.regs cursor := hzr cursor (by decide)
-    have hzc : z.regs count = primesLT (y.regs cursor) := (hzr count (by decide)).trans hcount
+    have hzc : z.regs count = Nat.primeCounting' (y.regs cursor) :=
+      (hzr count (by decide)).trans hcount
     have hzo : z.regs one = 1 := (hzr one (by decide)).trans ho
     have hzf_le : z.regs flag ≤ 1 := by rw [hzf]; split_ifs <;> omega
     have ha : Fits w (z.regs base + z.regs cursor) := haddr.of_le (by rw [hzb, hzi]; omega)
     have hn : Fits w (z.regs cursor + 1) := hfit.of_le (by rw [hzi]; change _ ≤ m + 3; omega)
     have hct : Fits w (z.regs count + z.regs flag) := hfit.of_le (by
       rw [hzc]
-      have hle := primesLT_le (y.regs cursor)
+      have hle : Nat.primeCounting' (y.regs cursor) ≤ y.regs cursor :=
+        Nat.count_le Nat.Prime
       change _ ≤ m + 3
       omega)
     refine ⟨?q, ?run, ?inv, ?decrease⟩
@@ -197,8 +188,9 @@ theorem exec {w : ℕ} (x : Data 15)
       · simpa +decide [Function.update_apply] using (hzr zero (by decide)).trans hz
       · simpa +decide [Function.update_apply] using (hzr two (by decide)).trans ht
       · simpa +decide [Function.update_apply, hzi] using Nat.succ_le_of_lt hlt
-      · change z.regs count + z.regs flag = primesLT (z.regs cursor + 1)
-        rw [hzc, hzf, hzi, primesLT_succ]
+      · change z.regs count + z.regs flag = Nat.primeCounting' (z.regs cursor + 1)
+        rw [hzc, hzf, hzi]
+        simp only [Nat.primeCounting', Nat.count_succ]
       · change Function.update z.mem (z.regs base + z.regs cursor) (z.regs flag) =
           memory x.mem (x.regs base) (z.regs cursor + 1)
         rw [hzm, hm, hzb, hzi, hzf, ← memory_succ]
@@ -209,7 +201,7 @@ theorem exec {w : ℕ} (x : Data 15)
   let x₀ := (((((x.set one 1).set zero 0).set two 2).set cursor 0).set count 0).set stop (m + 1)
   have hx₀ : I x₀ := by
     simp +decide [I, x₀, m, limit, base, stop, one, zero, two, cursor, count,
-      primesLT_zero, memory_zero]
+      Nat.primeCounting', Nat.count_zero, memory_zero]
   obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
     (fun y => m + 1 - y.regs cursor) hbody hx₀
   obtain ⟨hl, hb, hs, ho, hz, ht, hi, hcount, hm⟩ := hy
@@ -227,7 +219,6 @@ theorem exec {w : ℕ} (x : Data 15)
   · have hi₀ : x₀.regs cursor = 0 := rfl
     have hcost : 7 * m + 13 + 2 = 7 * m + 15 := by omega
     exact (hinit.seq he).mono (by rw [hi₀, Nat.sub_zero, hcost]; dsimp only [m]; omega)
-  · rw [hcount, hend, Nat.primesLE_eq_filter_range]
-    rfl
+  · rw [hcount, hend, Nat.primesLE_card_eq_primeCounting, Nat.primeCounting]
 
 end Cslib.Algorithms.WordRAM.PrimeTable

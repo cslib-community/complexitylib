@@ -29,30 +29,27 @@ private def input : Data 64 :=
 
 -- The three complete counting calls unfold all renamed loops and their register maps.
 set_option maxRecDepth 8192 in
-set_option maxHeartbeats 2000000 in
--- Kernel reduction of the complete three-call native query exceeds the default heartbeat budget.
+-- Reduce the complete interpreter run directly in the kernel, avoiding elaborator normalization.
 /-- Arrays of lengths one, two and zero test setup/result copies and empty-array counting. -/
 example : (Code.eval 8 3 CountTriple.program input).map
     (fun yn => [yn.1.regs (CountCall.result 0), yn.1.regs (CountCall.result 1),
       yn.1.regs (CountCall.result 2), yn.1.regs (40 : Fin 64), yn.1.mem 5]) =
-        some [0, 2, 0, 71, encode (-5)] := by decide
+        some [0, 2, 0, 71, encode (-5)] := by decide +kernel
 
 -- The full query additionally reduces three scaled inequalities after the counting loops.
 set_option maxRecDepth 8192 in
-set_option maxHeartbeats 2000000 in
--- Kernel reduction of the complete three-call native query exceeds the default heartbeat budget.
+-- Reduce the complete interpreter run directly in the kernel, avoiding elaborator normalization.
 /-- Equality at the scaled threshold is accepted, and caller controls and input are framed. -/
 example : (Code.eval 8 3 Query.program input).map
     (fun yn => [yn.1.regs CollisionTest.good, yn.1.regs (40 : Fin 64), yn.1.mem 5]) =
-      some [1, 71, encode (-5)] := by decide
+      some [1, 71, encode (-5)] := by decide +kernel
 
 -- This negative case executes the same complete native query with one smaller threshold.
 set_option maxRecDepth 8192 in
-set_option maxHeartbeats 2000000 in
--- Kernel reduction of the complete three-call native query exceeds the default heartbeat budget.
+-- Reduce the complete interpreter run directly in the kernel, avoiding elaborator normalization.
 /-- A strict failure of one threshold rejects the three-set candidate. -/
 example : (Code.eval 8 3 Query.program
     (input.set (CollisionTest.threshold 1) 5)).map (fun yn => yn.1.regs CollisionTest.good) =
-      some 0 := by decide
+      some 0 := by decide +kernel
 
 end ComplexityTests.WordRAMChanHeQuery

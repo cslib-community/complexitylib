@@ -236,7 +236,7 @@ theorem PolyTimeReducible.mem_MIP₂ {encA : α ↪ List Bool} {encB : β ↪ Li
     A ∈ MIP₂ encA := by
   obtain ⟨f, hf, hAB⟩ := hred
   obtain ⟨V, hV, hproof⟩ := hB
-  exact ⟨fun a => V (f a), hV.preprocess hf.tidy, hproof.comp hAB⟩
+  exact ⟨fun a => V (f a), hV.preprocess' hf, hproof.comp hAB⟩
 
 /-- **`MIP` is closed under polynomial-time reductions.** -/
 theorem PolyTimeReducible.mem_MIP {encA : α ↪ List Bool} {encB : β ↪ List Bool}
@@ -244,7 +244,7 @@ theorem PolyTimeReducible.mem_MIP {encA : α ↪ List Bool} {encB : β ↪ List 
     A ∈ MIP encA := by
   obtain ⟨f, hf, hAB⟩ := hred
   obtain ⟨p, V, hV, hproof⟩ := hB
-  exact ⟨p, fun a => V (f a), hV.preprocess hf.tidy, hproof.comp hAB⟩
+  exact ⟨p, fun a => V (f a), hV.preprocess' hf, hproof.comp hAB⟩
 
 /-- **`IP ⊆ MIP₂`**: a single-prover interactive proof uses the first of two provers (`0 : Fin 2`)
 and ignores the second. -/

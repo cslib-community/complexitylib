@@ -13,30 +13,26 @@ import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Closure
 open Cslib.Complexity
 
 -- The generic intersection/difference bounds do not require the base class to contain ∅.
-example : (∅ : Set Bool) ∩ ∅ ∈ differenceHierarchy ∅ (0 * 0) :=
-  inter_mem_differenceHierarchy (by simp) (by simp) rfl rfl
-
-example : (∅ : Set Bool) \ ∅ ∈ differenceHierarchy ∅ (0 * (0 + 1)) :=
-  diff_mem_differenceHierarchy (by simp) (by simp) rfl rfl
+example :
+    (∅ : Set Bool) ∩ ∅ ∈ differenceHierarchy ∅ (0 * 0) ∧
+    (∅ : Set Bool) \ ∅ ∈ differenceHierarchy ∅ (0 * (0 + 1)) :=
+  ⟨inter_mem_differenceHierarchy (by simp) (by simp) rfl rfl,
+    diff_mem_differenceHierarchy (by simp) (by simp) rfl rfl⟩
 
 -- All sets form a concrete non-vacuous base lattice; its first level contains any language.
-example (A B : Set Bool) : A ∩ B ∈ differenceHierarchy Set.univ (1 * 1) :=
-  inter_mem_differenceHierarchy (by simp) (by simp)
-    (by simp) (by simp)
+example (A B : Set Bool) :
+    A ∩ B ∈ differenceHierarchy Set.univ (1 * 1) ∧
+    A \ B ∈ differenceHierarchy Set.univ (1 * (1 + 1)) ∧
+    A ∪ B ∈ differenceHierarchy Set.univ ((1 + 1) * (1 + 1) + 1) :=
+  ⟨inter_mem_differenceHierarchy (by simp) (by simp) (by simp) (by simp),
+    diff_mem_differenceHierarchy (by simp) (by simp) (by simp) (by simp),
+    union_mem_differenceHierarchy (by simp) (by simp) (by simp) (by simp) (by simp)⟩
 
-example (A B : Set Bool) : A \ B ∈ differenceHierarchy Set.univ (1 * (1 + 1)) :=
-  diff_mem_differenceHierarchy (by simp) (by simp)
-    (by simp) (by simp)
-
-example (A B : Set Bool) : A ∪ B ∈ differenceHierarchy Set.univ ((1 + 1) * (1 + 1) + 1) :=
-  union_mem_differenceHierarchy (by simp) (by simp) (by simp)
-    (by simp) (by simp)
-
--- NP languages occur at level one, so the bounds can be used without unfolding the hierarchy.
-example {α : Type} {enc : α ↪ List Bool} {A B : Set α}
-    (hA : A ∈ NP enc) (hB : B ∈ NP enc) : A ∩ B ∈ BH enc 1 :=
-  inter_mem_BH (n := 1) (m := 1) (BH_one.symm ▸ hA) (BH_one.symm ▸ hB)
-
-example {α : Type} {enc : α ↪ List Bool} {A B : Set α}
-    (hA : A ∈ NP enc) (hB : B ∈ NP enc) : A \ B ∈ BH enc 2 :=
-  diff_mem_BH (n := 1) (m := 1) (BH_one.symm ▸ hA) (BH_one.symm ▸ hB)
+-- NP languages occur at level one, so `inter_mem_BH` and `diff_mem_BH` compose without unfolding
+-- the hierarchy.
+example {α : Type} {enc : α ↪ List Bool} {A B C : Set α}
+    (hA : A ∈ NP enc) (hB : B ∈ NP enc) (hC : C ∈ NP enc) :
+    A ∩ B ∈ BH enc 1 ∧ (A ∩ B) \ C ∈ BH enc 2 :=
+  let hAB : A ∩ B ∈ BH enc 1 :=
+    inter_mem_BH (n := 1) (m := 1) (BH_one.symm ▸ hA) (BH_one.symm ▸ hB)
+  ⟨hAB, diff_mem_BH (n := 1) (m := 1) hAB (BH_one.symm ▸ hC)⟩

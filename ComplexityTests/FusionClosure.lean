@@ -26,32 +26,25 @@ private def interCover {U : Type*} (A B : Set U) : PairCover (A ∩ B) ![A, B] :
       (.input 0 hx.1) (.input 1 hx.2)).mono
       (fun y hy => (y.property hy).elim)
 
-example {U : Type*} (A B : Set U) : (interCover A B).pairs.length = 1 := rfl
-
-example {U : Type*} (A B : Set U) : (interCover A B).toCyclic.cost Monotone.andCost = 1 :=
-  (interCover A B).cost_toCyclic
-
-example (A B : Set ℕ) : (interCover A B).toCyclic.eval (Monotone.setInterpretation ℕ)
-    Monotone.setInterpretation_mono ![A, B] = fun _ => A ∩ B :=
-  (interCover A B).eval_toCyclic
+example (A B : Set ℕ) :
+    (interCover A B).pairs.length = 1 ∧
+    (interCover A B).toCyclic.cost Monotone.andCost = 1 ∧
+    (interCover A B).toCyclic.eval (Monotone.setInterpretation ℕ)
+      Monotone.setInterpretation_mono ![A, B] = (fun _ => A ∩ B) ∧
+    pairClosure (A ∩ B) ![A, B] (interCover A B).pairs ∅ = A ∩ B :=
+  ⟨rfl, (interCover A B).cost_toCyclic, (interCover A B).eval_toCyclic,
+   (interCover A B).pairClosure_empty⟩
 
 private def twiceInterCover {U : Type*} (A B : Set U) : PairCover (A ∩ B) ![A, B] where
   pairs := (interCover A B).pairs ++ (interCover A B).pairs
   isCover w h := (interCover A B).isCover w (fun p hp => h p (List.mem_append_left _ hp))
 
 -- Equal pairs remain separate charged occurrences.
-example {U : Type*} (A B : Set U) :
-    (twiceInterCover A B).toCyclic.cost Monotone.andCost = 2 :=
-  (twiceInterCover A B).cost_toCyclic
-
-example {U : Type*} (A B : Set U) :
-    (twiceInterCover A B).toCyclic.eval (Monotone.setInterpretation U)
+example (A B : Set ℕ) :
+    (twiceInterCover A B).toCyclic.cost Monotone.andCost = 2 ∧
+    (twiceInterCover A B).toCyclic.eval (Monotone.setInterpretation ℕ)
       Monotone.setInterpretation_mono ![A, B] = fun _ => A ∩ B :=
-  (twiceInterCover A B).eval_toCyclic
-
-example {U : Type*} (A B : Set U) :
-    pairClosure (A ∩ B) ![A, B] (interCover A B).pairs ∅ = A ∩ B :=
-  (interCover A B).pairClosure_empty
+  ⟨(twiceInterCover A B).cost_toCyclic, (twiceInterCover A B).eval_toCyclic⟩
 
 -- The characterization also applies directly on an infinite carrier.
 example (n : ℕ) :
@@ -64,39 +57,32 @@ private def topCover {U : Type*} : PairCover (Set.univ : Set U) Fin.elim0 :=
   PairCover.ofDerivesEmpty [] fun _ _ =>
     PairDerivation.univ.mono (fun y _ => (y.property (Set.mem_univ y.val)).elim)
 
-example {U : Type*} : (topCover (U := U)).pairs = [] := rfl
-
-example {U : Type*} : (topCover (U := U)).toCyclic.cost Monotone.andCost = 0 :=
-  topCover.cost_toCyclic
-
-example {U : Type*} : (topCover (U := U)).toCyclic.eval (Monotone.setInterpretation U)
-    Monotone.setInterpretation_mono Fin.elim0 = fun _ => Set.univ :=
-  topCover.eval_toCyclic
-
-example {U : Type*} : pairClosure Set.univ (Fin.elim0 : Fin 0 → Set U) [] ∅ = Set.univ :=
-  (topCover (U := U)).pairClosure_empty
+example :
+    (topCover (U := ℕ)).pairs = [] ∧
+    (topCover (U := ℕ)).toCyclic.cost Monotone.andCost = 0 ∧
+    (topCover (U := ℕ)).toCyclic.eval (Monotone.setInterpretation ℕ)
+      Monotone.setInterpretation_mono Fin.elim0 = (fun _ => Set.univ) ∧
+    pairClosure Set.univ (Fin.elim0 : Fin 0 → Set ℕ) [] ∅ = Set.univ :=
+  ⟨rfl, topCover.cost_toCyclic, topCover.eval_toCyclic, (topCover (U := ℕ)).pairClosure_empty⟩
 
 private def bottomCover {U : Type*} : PairCover (∅ : Set U) Fin.elim0 :=
   PairCover.ofDerivesEmpty [] fun _ h => h.elim
 
-example {U : Type*} : (bottomCover (U := U)).toCyclic.cost Monotone.andCost = 0 :=
-  bottomCover.cost_toCyclic
-
-example {U : Type*} : (bottomCover (U := U)).toCyclic.eval (Monotone.setInterpretation U)
-    Monotone.setInterpretation_mono Fin.elim0 = fun _ => ∅ :=
-  bottomCover.eval_toCyclic
-
 private def loopCover : PairCover (∅ : Set ℕ) Fin.elim0 :=
   PairCover.ofDerivesEmpty [(Set.univ, ∅)] fun _ h => h.elim
 
--- The pair value feeds itself through top intersection; it has no seed.
-example : loopCover.toCyclic.cost Monotone.andCost = 1 := loopCover.cost_toCyclic
-
-example : loopCover.toCyclic.eval (Monotone.setInterpretation ℕ)
-    Monotone.setInterpretation_mono Fin.elim0 = fun _ => ∅ := loopCover.eval_toCyclic
-
-example {U : Type*} : pairClosure ∅ (Fin.elim0 : Fin 0 → Set U) [] ∅ = ∅ :=
-  (bottomCover (U := U)).pairClosure_empty
+-- Zero-pair bottom cover and unseeded single-pair loop cover on `ℕ`.
+example :
+    (bottomCover (U := ℕ)).toCyclic.cost Monotone.andCost = 0 ∧
+    (bottomCover (U := ℕ)).toCyclic.eval (Monotone.setInterpretation ℕ)
+      Monotone.setInterpretation_mono Fin.elim0 = (fun _ => ∅) ∧
+    pairClosure ∅ (Fin.elim0 : Fin 0 → Set ℕ) [] ∅ = ∅ ∧
+    loopCover.toCyclic.cost Monotone.andCost = 1 ∧
+    loopCover.toCyclic.eval (Monotone.setInterpretation ℕ)
+      Monotone.setInterpretation_mono Fin.elim0 = (fun _ => ∅) :=
+  ⟨bottomCover.cost_toCyclic, bottomCover.eval_toCyclic,
+   (bottomCover (U := ℕ)).pairClosure_empty,
+   loopCover.cost_toCyclic, loopCover.eval_toCyclic⟩
 
 -- With no inputs or pairs, only the full complement can be derived.
 private theorem noInput_derives_iff {U : Type*} (target : Set U) (point : U)
