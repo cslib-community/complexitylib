@@ -43,9 +43,6 @@ public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Pruned
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Sparse
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.ThinProduct
 public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Tiling
-public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Full
-public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Identity
-public import Complexity.Algorithms.MatrixMultiplication.Schonhage.Pruned
 public import Complexity.Algorithms.Reachability.BreadthFirst
 public import Complexity.Algorithms.Reachability.InductiveCounting
 public import Complexity.Algorithms.Reachability.InductiveCounting.Bounds
