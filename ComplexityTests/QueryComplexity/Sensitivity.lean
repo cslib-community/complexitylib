@@ -19,6 +19,9 @@ namespace ComplexityTests.QueryComplexity.Sensitivity
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Finset
 
+-- Keep the exhaustive certificate enumeration independent of the closed-form theorem below.
+example : certificateComplexityFor (threshold 3 1) true = 1 := by decide
+
 /-- A monotone function that is not symmetric: `x₀ ∧ (x₁ ∨ x₂)`. -/
 abbrev andOr : BooleanFunction 3 := fun x => x 0 && (x 1 || x 2)
 

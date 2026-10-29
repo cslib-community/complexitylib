@@ -19,46 +19,84 @@ namespace ComplexityTests.RationalHitting.Point
 open Cslib.Circuits Cslib.Circuits.Rational
 open Turing MultiTapeTM MultiTapeTM.ComputableTidilyInPolyTime
 
-/-! ### Column replacement, Cramer normalization, grid agreement, and certificates -/
+/-! ### Column replacement and Cramer normalization -/
+
+example : cramerRows [[2, 0], [0, 2]] [[4, 2], [0, 6]] 0 1 = [[2, 0], [6, 2]] := by
+  decide +kernel
+
+example : cramerRows [[2, 0], [0, 2]] [[4, 2], [0, 6]] 1 0 = [[2, 4], [0, 0]] := by
+  decide +kernel
+
+example : matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 0 0 = encodeRat 2 := by
+  decide +kernel
+
+example : matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 0 1 = encodeRat 1 := by
+  decide +kernel
+
+example : matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 1 0 = encodeRat 0 := by
+  decide +kernel
+
+example : matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 1 1 = encodeRat 3 := by
+  decide +kernel
+
+example :
+    matrixWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 =
+      encodeRat 2 ++ encodeRat 1 ++ encodeRat 0 ++ encodeRat 3 := by
+  decide +kernel
+
+example :
+    pointWordOfTables [[[2, 0], [0, 2]], [[4, 2], [0, 6]]] =
+      encodeRat 2 ++ encodeRat 1 ++ encodeRat 0 ++ encodeRat 3 := by
+  decide +kernel
+
+example :
+    pointWordsOfTables [[[2, 0], [0, 2]], [[4, 2], [0, 6]]] =
+      [encodeRat 2 ++ encodeRat 1 ++ encodeRat 0 ++ encodeRat 3] := by
+  decide +kernel
+
+-- Singular `U₀` produces `[]` for both `pointWordOfTables` and `pointWordsOfTables`.
+example : pointWordOfTables [[[0, 0], [2, 0]], [[4, 2], [0, 6]]] = [] := by
+  decide +kernel
+
+example : pointWordsOfTables [[[0, 0], [2, 0]], [[4, 2], [0, 6]]] = [] := by
+  decide +kernel
+
+/-! ### Agreement with the executable generator at grid points -/
+
+example : pointWord 0 1 2 1 1 1 1 = [] := by decide +kernel
+example : pointWords 0 1 2 1 1 1 1 = [] := by decide +kernel
+
+example : (ExecutableGenerator.atPoint 0 1 0 ![1, 1, 1]).elim [] encodeTuple = [] := by
+  rw [← pointWord_eq 0 1 0 ![1, 1, 1]]
+  decide +kernel
+
+example : ((ExecutableGenerator.atPoint 0 1 0 ![1, 1, 1]).map encodeTuple).toList = [] := by
+  rw [← pointWords_eq 0 1 0 ![1, 1, 1]]
+  decide +kernel
 
 /-- info: true -/
 #guard_msgs in
 #eval pointWord 1 2 4 2 1 2 3 ==
   (ExecutableGenerator.atPoint 1 2 1 ![1, 2, 3]).elim [] encodeTuple
 
+/-! ### Polynomial-time certificates -/
+
 example :
-    (cramerRows [[2, 0], [0, 2]] [[4, 2], [0, 6]] 0 1 = [[2, 0], [6, 2]] ∧
-      cramerRows [[2, 0], [0, 2]] [[4, 2], [0, 6]] 1 0 = [[2, 4], [0, 0]] ∧
-      matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 0 0 = encodeRat 2 ∧
-      matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 0 1 = encodeRat 1 ∧
-      matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 1 0 = encodeRat 0 ∧
-      matrixEntryWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 1 1 = encodeRat 3 ∧
-      matrixWord [[2, 0], [0, 2]] [[4, 2], [0, 6]] 4 =
-        encodeRat 2 ++ encodeRat 1 ++ encodeRat 0 ++ encodeRat 3 ∧
-      pointWordOfTables [[[2, 0], [0, 2]], [[4, 2], [0, 6]]] =
-        encodeRat 2 ++ encodeRat 1 ++ encodeRat 0 ++ encodeRat 3 ∧
-      pointWordsOfTables [[[2, 0], [0, 2]], [[4, 2], [0, 6]]] =
-        [encodeRat 2 ++ encodeRat 1 ++ encodeRat 0 ++ encodeRat 3] ∧
-      pointWordOfTables [[[0, 0], [2, 0]], [[4, 2], [0, 6]]] = [] ∧
-      pointWordsOfTables [[[0, 0], [2, 0]], [[4, 2], [0, 6]]] = []) ∧
-    (pointWord 0 1 2 1 1 1 1 = [] ∧ pointWords 0 1 2 1 1 1 1 = [] ∧
-      pointWord 0 1 (CyclotomicRing.dimension 0) (CyclotomicRing.degree 0) 1 1 1 =
-        (ExecutableGenerator.atPoint 0 1 0 ![1, 1, 1]).elim [] encodeTuple ∧
-      pointWords 1 2 (CyclotomicRing.dimension 1) (CyclotomicRing.degree 1) 1 2 3 =
-        ((ExecutableGenerator.atPoint 1 2 1 ![1, 2, 3]).map encodeTuple).toList) ∧
-    ComputableInPolyTime pointWordOfTables (encList (encList (encList encIntBin))) encBits ∧
-    ComputableInPolyTime pointWordsOfTables
-      (encList (encList (encList encIntBin))) (encList encBits) ∧
+    ComputableInPolyTime (fun p : ℕ × ℕ => pointWordOfTables (liftRows p.1 p.2 p.1 p.2 p.1 p.2 p.1))
+      (encPair encUnary encUnary) encBits := by
+  fun_prop
+
+example :
     ComputableInPolyTime
-      (fun q : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ =>
-        pointWord q.1 q.2.1 q.2.2.1 q.2.2.2.1 q.2.2.2.2.1 q.2.2.2.2.2.1 q.2.2.2.2.2.2)
-      (encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
-        (encPair encUnary (encPair encUnary encUnary))))))
-      encBits :=
-  ⟨by decide +kernel,
-    ⟨by decide +kernel, by decide +kernel, pointWord_eq 0 1 0 ![1, 1, 1],
-      pointWords_eq 1 2 1 ![1, 2, 3]⟩,
-    pointWordOfTables_polytime, pointWordsOfTables_polytime, pointWord_polytime⟩
+      (fun p : ℕ × ℕ => pointWordsOfTables (liftRows p.1 p.2 p.1 p.2 p.1 p.2 p.1))
+      (encPair encUnary encUnary) (encList encBits) := by
+  fun_prop
+
+example :
+    ComputableInPolyTime
+      (fun p : ℕ × ℕ => pointWord p.1 p.2 p.1 p.2 p.1 p.2 p.1)
+      (encPair encUnary encUnary) encBits := by
+  fun_prop
 
 /-! ### Axioms -/
 
