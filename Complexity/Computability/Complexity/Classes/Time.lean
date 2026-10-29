@@ -57,7 +57,7 @@ verifiers reading random strings, this is the characterisation by probabilistic 
 verifier is run on sampled coins by a fair-coin machine compiled with a halting polynomial clock
 (`Cslib.Probability.IsPPTOn.exists_halting_machine`), and a fair-coin machine halting within `T`
 steps is a verifier replaying `T` coins
-(`Turing.MultiTapePTM.computableTidilyInPolyTime_runClosedCoins`).
+(`Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`).
 
 ## Timed reductions
 
@@ -445,8 +445,7 @@ theorem mem_BPP_iff_exists_mem_BPTIME {α : Type} {enc : α ↪ List Bool} {A : 
     refine ⟨Polynomial.C c₁ * Polynomial.X ^ d + Polynomial.C c₂,
       fun x => decide (machine.runClosedCoins x.2 (enc x.1) = [true]),
       ComputableInPolyTime.decide_eq'
-        ((ComputableInPolyTime.of_tidy
-          (MultiTapePTM.computableTidilyInPolyTime_runClosedCoins machine)).comp
+        ((MultiTapePTM.computableInPolyTime_runClosedCoins machine).comp
           ((ComputableInPolyTime.snd enc encBits).prod
             ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
               (ComputableInPolyTime.fst enc encBits))))

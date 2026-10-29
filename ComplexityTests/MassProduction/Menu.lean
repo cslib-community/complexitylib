@@ -26,64 +26,59 @@ open Cslib Cslib.LineCode Finset
 
 /-! ### Punctured lines -/
 
--- Over the two-element field a punctured line is the single point `u + v`.
-example : puncturedLine (![0, 0] : Fin 2 → ZMod 2) ![1, 0] = {![1, 0]} := by decide
-
--- The zero direction gives the anchor itself.
-example : puncturedLine (![1, 1] : Fin 2 → ZMod 2) 0 = {![1, 1]} := by decide
-
--- Over `ZMod 3` a punctured line has two points.
-example : puncturedLine (![0, 1] : Fin 2 → ZMod 3) ![1, 1] = {![1, 2], ![2, 0]} := by decide
-
-example (u v : Fin 5 → ZMod 3) (hv : v ≠ 0) : #(puncturedLine u v) = 2 := by
-  rw [card_puncturedLine u hv, ZMod.card]
-
--- Lines through one anchor are disjoint exactly for non-proportional directions.
-example : Disjoint (puncturedLine (0 : Fin 2 → ZMod 3) ![1, 0]) (puncturedLine 0 ![0, 1]) := by
+-- Concrete punctured lines over `ZMod 2` and `ZMod 3`, disjointness for non-proportional
+-- directions, direction blocking, and occupied points.
+example :
+    puncturedLine (![0, 0] : Fin 2 → ZMod 2) ![1, 0] = {![1, 0]} ∧
+    puncturedLine (![1, 1] : Fin 2 → ZMod 2) 0 = {![1, 1]} ∧
+    puncturedLine (![0, 1] : Fin 2 → ZMod 3) ![1, 1] = {![1, 2], ![2, 0]} ∧
+    Disjoint (puncturedLine (0 : Fin 2 → ZMod 3) ![1, 0]) (puncturedLine 0 ![0, 1]) ∧
+    ¬Disjoint (puncturedLine (0 : Fin 2 → ZMod 3) ![1, 1]) (puncturedLine 0 ![2, 2]) ∧
+    #{v ∈ univ.erase 0 | (![1, 2] : Fin 2 → ZMod 3) ∈ puncturedLine 0 v} = 2 ∧
+    occupiedPoints (fun _ : Fin 1 =>
+      some ((![1, 0], ![1, 0]) : (Fin 2 → ZMod 2) × (Fin 2 → ZMod 2))) = {0} := by
   decide
 
-example : ¬Disjoint (puncturedLine (0 : Fin 2 → ZMod 3) ![1, 1]) (puncturedLine 0 ![2, 2]) := by
-  decide
+-- The line through zero in a coordinate direction has both nonzero scalar multiples.
+example : #(puncturedLine (0 : Fin 2 → ZMod 3) ![1, 0]) = 2 := by
+  rw [card_puncturedLine _ (by decide), ZMod.card]
 
-example (u : Fin 2 → ZMod 3) : Disjoint (puncturedLine u ![1, 0]) (puncturedLine u ![0, 1]) := by
+-- Translating the anchor preserves disjointness of these independent directions.
+example : Disjoint (puncturedLine (![1, 2] : Fin 2 → ZMod 3) ![1, 0])
+    (puncturedLine ![1, 2] ![0, 1]) := by
   rw [disjoint_puncturedLine_iff]
   decide
 
--- A point other than the anchor blocks `q - 1` nonzero directions: here the two multiples of
--- `![1, 2]`.
-example : #{v ∈ univ.erase 0 | (![1, 2] : Fin 2 → ZMod 3) ∈ puncturedLine 0 v} = 2 := by decide
+-- The two nonzero multiples leading to `![2, 0]` are the only blocking directions.
+example : #{v ∈ univ.erase 0 | (![2, 0] : Fin 2 → ZMod 3) ∈ puncturedLine 0 v} = 2 := by
+  rw [card_filter_mem_puncturedLine (by decide), ZMod.card]
 
-example (u y : Fin 4 → ZMod 3) (hy : y ≠ u) :
-    #{v ∈ univ.erase 0 | y ∈ puncturedLine u v} = 2 := by
-  rw [card_filter_mem_puncturedLine hy, ZMod.card]
+-- The anchor itself lies in no punctured line with a nonzero direction.
+example : Disjoint (puncturedLine (![1, 1] : Fin 2 → ZMod 2) ![1, 0]) {![1, 1]} :=
+  disjoint_singleton_right.mpr (notMem_puncturedLine_self _ (by decide))
 
--- An occupied anchor blocks nothing.
-example (u v : Fin 3 → ZMod 2) (hv : v ≠ 0) : Disjoint (puncturedLine u v) {u} :=
-  disjoint_singleton_right.mpr (notMem_puncturedLine_self u hv)
-
-example (u : Fin 3 → ZMod 2) :
-    #{v ∈ univ.erase 0 | ¬Disjoint (puncturedLine u v) {u}} = 0 := by
-  have h := card_filter_not_disjoint_puncturedLine_le u {u}
+example : #{v ∈ univ.erase 0 |
+    ¬Disjoint (puncturedLine (![1, 1] : Fin 2 → ZMod 2) v) {![1, 1]}} = 0 := by
+  have h := card_filter_not_disjoint_puncturedLine_le (![1, 1] : Fin 2 → ZMod 2) {![1, 1]}
   rwa [erase_singleton, card_empty, zero_mul, Nat.le_zero] at h
 
--- Over `ZMod 2` the line through `a` in direction `a` is `{0}`: it occupies the point `0`.
-example : occupiedPoints (fun _ : Fin 1 =>
-    some ((![1, 0], ![1, 0]) : (Fin 2 → ZMod 2) × (Fin 2 → ZMod 2))) = {0} := by decide
+-- Seven repeated requests occupy the same two-point line, within the `7 * (3 - 1)` bound.
+private def repeatedLines : Fin 7 → Option ((Fin 2 → ZMod 3) × (Fin 2 → ZMod 3)) :=
+  fun _ => some (0, ![1, 0])
 
-example (lines : Fin 7 → Option ((Fin 3 → ZMod 3) × (Fin 3 → ZMod 3))) :
-    #(occupiedPoints lines) ≤ 14 := by
-  have h := card_occupiedPoints_le lines
+example : #(occupiedPoints repeatedLines) = 2 ∧ #(occupiedPoints repeatedLines) ≤ 14 := by
+  refine ⟨by decide, ?_⟩
+  have h := card_occupiedPoints_le repeatedLines
   rwa [ZMod.card] at h
 
 /-! ### Menu lengths -/
 
-example : menuLength 1 1 11 = 35 := by decide
-
-example : menuLength 8 3 16 = 131 := by decide
-
-example (g L : ℕ) : g * (1 + 3 * L) < 3 * menuLength g 3 L := lt_mul_menuLength g L (by decide)
-
-example (g L : ℕ) : 3 * menuLength g 3 L ≤ g * (1 + 3 * L) + 3 := mul_menuLength_le g 3 L
+example :
+    menuLength 1 1 11 = 35 ∧
+    menuLength 8 3 16 = 131 ∧
+    8 * (1 + 3 * 16) < 3 * menuLength 8 3 16 ∧
+    3 * menuLength 8 3 16 ≤ 8 * (1 + 3 * 16) + 3 :=
+  ⟨by decide, by decide, lt_mul_menuLength 8 16 (by decide), mul_menuLength_le 8 3 16⟩
 
 /-! ### Covering menus and collision cuts -/
 
@@ -139,14 +134,15 @@ theorem exists_isClean_of_isUniversalMenu {K : Type*} [Field K] [Fintype K] [Dec
 
 -- An occupied target: the line through `a` in direction `a` covers the target `0`, and a menu
 -- entry still serves the request at `0`.
-example : ∃ menu : Fin (menuLength 1 1 (11 * 1)) → Fin 1 → Fin 11 → ZMod 2, ∃ e,
-    IsClean (occupiedPoints fun _ : Fin 1 => some (Pi.single 0 1, Pi.single 0 1)) (fun _ => 0)
-      (menu e) 0 := by
+example :
+    (∃ menu : Fin (menuLength 1 1 (11 * 1)) → Fin 1 → Fin 11 → ZMod 2, ∃ e,
+      IsClean (occupiedPoints fun _ : Fin 1 => some (Pi.single 0 1, Pi.single 0 1)) (fun _ => 0)
+        (menu e) 0) ∧
+    (0 : Fin 11 → ZMod 2) ∈
+      occupiedPoints fun _ : Fin 1 => some (Pi.single 0 1, Pi.single 0 1) := by
+  refine ⟨?_, by decide⟩
   obtain ⟨menu, h⟩ := exists_menu_zmod_two
   exact ⟨menu, exists_isClean_of_isUniversalMenu h _ _⟩
-
-example : (0 : Fin 11 → ZMod 2) ∈
-    occupiedPoints fun _ : Fin 1 => some (Pi.single 0 1, Pi.single 0 1) := by decide
 
 -- Repeated targets: the clean requests at one target have pairwise non-proportional directions.
 example {K : Type*} [Field K] [Fintype K] [DecidableEq K] {ℓ g k r : ℕ}

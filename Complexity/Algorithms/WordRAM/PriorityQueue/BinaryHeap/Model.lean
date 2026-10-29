@@ -61,21 +61,6 @@ def space (N : ℕ) : ℕ := 3 * N + 1
 theorem space_lower (N : ℕ) : N + 1 ≤ space N := by
   unfold space; omega
 
-/-- Strict lexicographic priority comparison on `(handle, key) : ℕ × ℕ`. -/
-def EntryLT (a b : ℕ × ℕ) : Prop :=
-  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1 < b.1)
-
-instance instDecidableEntryLT (a b : ℕ × ℕ) : Decidable (EntryLT a b) := by
-  unfold EntryLT; infer_instance
-
-/-- Strict priority order `EntryLT` implies weak priority order `IndexedMinPQ.RawPrioLE`. -/
-theorem EntryLT.le {a b : ℕ × ℕ} (h : EntryLT a b) : IndexedMinPQ.RawPrioLE a b := by
-  dsimp only [EntryLT, IndexedMinPQ.RawPrioLE] at *; omega
-
-/-- Negation of `EntryLT` is the converse weak priority order `IndexedMinPQ.RawPrioLE`. -/
-theorem not_entryLT {a b : ℕ × ℕ} : ¬EntryLT a b ↔ IndexedMinPQ.RawPrioLE b a := by
-  dsimp only [EntryLT, IndexedMinPQ.RawPrioLE]; omega
-
 /-- Decreasing a handle's key improves its priority under `IndexedMinPQ.RawPrioLE`. -/
 theorem entryLE_of_key_le {u k₁ k₂ : ℕ} (h : k₁ ≤ k₂) :
     IndexedMinPQ.RawPrioLE (u, k₁) (u, k₂) := by

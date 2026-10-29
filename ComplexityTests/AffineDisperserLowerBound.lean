@@ -28,18 +28,14 @@ theorem isAffineDisperser_first : IsAffineDisperser (fun x : BitString 1 => x 0)
   obtain ⟨v, hv⟩ := Finite.injective_iff_surjective.1 hinj fun _ => false
   exact ⟨u, v, by simp [hu, hv]⟩
 
-/-- Affine dispersers for dimension `11` on `100` bits exist, far below `100 / 2`. -/
-example : ∃ f : BitString 100 → Bool, IsAffineDisperser f 11 :=
-  exists_isAffineDisperser (by norm_num)
-
-/-- Affine dispersers for dimension `15` on `1000` bits exist. -/
-example : ∃ f : BitString 1000 → Bool, IsAffineDisperser f 15 :=
-  exists_isAffineDisperser (by norm_num)
-
-/-- No function is an affine disperser for dimension `0`, so `d ≥ 1` whenever Theorem 4.1
-applies. -/
-example (f : BitString 3 → Bool) : ¬ IsAffineDisperser f 0 :=
-  not_isAffineDisperser_zero f
+/-- Affine dispersers exist for dimension `11` on `100` bits and dimension `15` on `1000` bits,
+while no function is an affine disperser for dimension `0`. -/
+example (f : BitString 3 → Bool) :
+    (∃ g : BitString 100 → Bool, IsAffineDisperser g 11) ∧
+      (∃ h : BitString 1000 → Bool, IsAffineDisperser h 15) ∧
+      ¬ IsAffineDisperser f 0 :=
+  ⟨exists_isAffineDisperser (by norm_num), exists_isAffineDisperser (by norm_num),
+    not_isAffineDisperser_zero f⟩
 
 /-! ### The lower bound -/
 
@@ -56,11 +52,11 @@ abbrev firstBit : Circuit (fullSignature 2 Bool) 1 1 :=
 
 /-- The circuit without gates computing the first bit starts gate elimination in a valid state
 with `a = 1`, and Theorem 4.1 for `n = d = 1` asks nothing of it. -/
-example : (initialState firstBit).Valid (fun x : BitString 1 => x 0) ∧
-    (initialState firstBit).a = 1 :=
-  ⟨initialState_valid (Circuit.wiring_computes _ _), initialState_a _⟩
-
-example : 7 * 1 ≤ 2 * firstBit.size + 14 * 1 :=
-  seven_mul_le_two_mul_size_add isAffineDisperser_first _ (Circuit.wiring_computes _ _)
+example :
+    (initialState firstBit).Valid (fun x : BitString 1 => x 0) ∧
+      (initialState firstBit).a = 1 ∧
+      7 * 1 ≤ 2 * firstBit.size + 14 * 1 :=
+  ⟨initialState_valid (Circuit.wiring_computes _ _), initialState_a _,
+    seven_mul_le_two_mul_size_add isAffineDisperser_first _ (Circuit.wiring_computes _ _)⟩
 
 end ComplexityTests.AffineDisperserLowerBound

@@ -15,10 +15,10 @@ namespace ComplexityTests.PseudoentropyExtraction
 
 open Cslib Cslib.Probability Cslib.Crypto.Pseudoentropy Cslib.BitString Turing.MultiTapeTM
 
-example : ComputableTidilyInPolyTime (List.flatten : List (List Bool) → List Bool)
+example : ComputableInPolyTime (List.flatten : List (List Bool) → List Bool)
     (encList encBits) encBits := by fun_prop
 
-example : ComputableTidilyInPolyTime
+example : ComputableInPolyTime
     (fun input : Bool × List (List Bool) =>
       let words := input.2.map (fun word => padWord word.length word)
       words.flatten)
@@ -61,7 +61,7 @@ example : IsPPTOn
 
 -- An arbitrary preparation callback is not silently certified.
 example (prepare : List Bool → List Bool)
-    (hprepare : ComputableTidilyInPolyTime prepare encBits encBits) :
+    (hprepare : ComputableInPolyTime prepare encBits encBits) :
     IsPPTOn (encList (encPair encBits encBool))
       (encPair (encList encBits) (encPair encBits encBits))
       (fun samples => extractMatrixLabels samples.length 1 prepare samples) := by
@@ -76,8 +76,9 @@ example : LinearHash.wordHash 2 [] [] = [false, false] := by decide
 -- Seed length depends on the declared width, even when the sample list is malformed.
 example {output : List (List Bool) × List Bool × List Bool}
     (h : output ∈ (ProbComp.eval (extractWordLabels 3 2 [([true], false)])).support) :
-    output.1 = [[true]] ∧ output.2.1.length = 6 ∧ output.2.2.length = 2 :=
-  extractMatrixLabels_result 3 2 id [([true], false)] h
+    output.1 = [[true]] ∧ output.2.1.length = 6 ∧ output.2.2.length = 2 := by
+  obtain ⟨h1, h2, h3⟩ := extractMatrixLabels_result 3 2 id [([true], false)] h
+  exact ⟨h1, h2, h3⟩
 
 -- Variable-length observations remain distinct after padding; the full matrix is public.
 example {output : List Bool}

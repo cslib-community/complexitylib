@@ -28,6 +28,9 @@ same output after the same number of instructions (`Presentation.halts_iff_execu
 * `decidableInTime_iff`: abstract decidability in time `T` is
   `Cslib.WordRAM.UniformDecidableInTime .exact` for the word-size-independent encoding and time
   bound, on the word sizes from the threshold on.
+* `haltsVia` and `Machine.runs_map`: multi-step non-halting runs (`Runs`) and halting steps over
+  `Basis.exact` translate step-for-step to `Presentation.programOf`, shared by algorithm and
+  data-structure bridges (`DijkstraBridge`, `FibonacciHeapBridge`).
 -/
 
 namespace ComplexityTests.Abstracts.WordRAMBridge
@@ -453,5 +456,73 @@ theorem decidableInTime_iff (S : Presentation) (h : Laws S) {α : Type*} (A : Se
     obtain ⟨v, n, hex, hn, hv⟩ := hq a w hbw hfit'
     rw [← init_eq] at hex
     exact ⟨v, n, (halts_iff_executes h).2 hex, hn, (hans a v).2 hv⟩
+
+/-! ## Multi-step run transfer (`Runs`) for algorithm and data-structure abstracts -/
+
+/-- Halting runs defined from one step by cases on its outcome, as the abstract `Halts` of
+`WordRAMAbstract` is: `cases f g a o` is `f t`, `g x` or `a` when `o` continues in state `t`,
+halts with output `x` or faults. Algorithm and data-structure abstracts phrased in terms of `Runs`
+use this definition to fill the `Halts` field of `Presentation`. -/
+def haltsVia (Instr State Outcome : ℕ → Type)
+    (step : ∀ {r : ℕ}, ℕ → List (Instr r) → State r → Outcome r)
+    (cases : ∀ {r : ℕ}, (State r → Prop) → (ℕ → Prop) → Prop → Outcome r → Prop) {r : ℕ}
+    (w : ℕ) (p : List (Instr r)) : State r → ℕ → ℕ → Prop
+  | _, _, 0 => False
+  | s, v, n + 1 =>
+    cases (fun t => haltsVia Instr State Outcome step cases w p t v n) (fun x => x = v ∧ n = 0)
+      False (step w p s)
+
+namespace Machine
+
+variable {S : Presentation} (h : Laws S) {r : ℕ}
+include h
+
+/-- The abstract state with the next instruction, registers and memory of a library state. -/
+def stateOf (S : Presentation) (t : Cslib.WordRAM.State r) : S.State r :=
+  S.state t.pc t.data.regs t.data.mem
+
+omit h in
+theorem stateOf_init (input : List ℕ) :
+    stateOf S (.init input : Cslib.WordRAM.State r) = S.init input := by
+  rw [← Presentation.init_eq]
+  rfl
+
+omit h in
+/-- A step that does not fault is not at a `rand` instruction, which faults deterministically. -/
+theorem isRandFree_of_step {w : ℕ} {q : Program .exact r} {t : Cslib.WordRAM.State r}
+    (ht : Cslib.WordRAM.step w q t ≠ .fault) : ∀ j, q[t.pc]? = some j → j.IsRandFree := by
+  rintro (_ | _ | _ | _ | _) hj <;> first | trivial | exact ht (step_rand hj)
+
+/-- A step of a library program that continues is a step of its translation. -/
+theorem step_next {w : ℕ} {q : Program .exact r} {t t' : Cslib.WordRAM.State r}
+    (ht : Cslib.WordRAM.step w q t = .next t') :
+    S.step w (S.programOf q) (stateOf S t) = S.next (stateOf S t') := by
+  have hnr := isRandFree_of_step (w := w) (q := q) (t := t) (by simp [ht])
+  obtain ⟨pc, reg, mem⟩ := t
+  rcases S.step_matches_at h w q pc reg mem hnr with ⟨_, _, _, h₁, h₂⟩ | ⟨_, _, h₂⟩ | ⟨_, h₂⟩ <;>
+    rw [ht] at h₂ <;> cases h₂
+  exact h₁
+
+/-- A step of a library program that halts is a step of its translation. -/
+theorem step_halt {w : ℕ} {q : Program .exact r} {t : Cslib.WordRAM.State r} {v : ℕ}
+    (ht : Cslib.WordRAM.step w q t = .halt v) :
+    S.step w (S.programOf q) (stateOf S t) = S.halted v := by
+  have hnr := isRandFree_of_step (w := w) (q := q) (t := t) (by simp [ht])
+  obtain ⟨pc, reg, mem⟩ := t
+  rcases S.step_matches_at h w q pc reg mem hnr with ⟨_, _, _, _, h₂⟩ | ⟨_, h₁, h₂⟩ | ⟨_, h₂⟩ <;>
+    rw [ht] at h₂ <;> cases h₂
+  exact h₁
+
+/-- **Runs agree.** A run of `k` steps of a library program is a run of `k` steps of its
+translation, between the corresponding states. -/
+theorem runs_map {w : ℕ} {q : Program .exact r} {s t : Cslib.WordRAM.State r} {k : ℕ}
+    (hr : Runs w q s t k) :
+    Relation.RelatesInSteps (fun a b => S.step w (S.programOf q) a = S.next b) (stateOf S s)
+      (stateOf S t) k := by
+  induction hr with
+  | refl => exact .refl _
+  | tail _ _ _ _ hn ih => exact .tail _ _ _ _ ih (step_next h hn)
+
+end Machine
 
 end ComplexityTests.Abstracts.WordRAMBridge

@@ -30,12 +30,15 @@ RAM can realize this exact specification.
   `insert`, `decreaseKey`, `extractMin`).
 * `Cslib.Algorithms.Lean.IndexedMinPQ.State`, `empty`, `dom`: abstract map state, empty queue, and
   present-handle set.
-* `Cslib.Algorithms.Lean.IndexedMinPQ.PrioLE`, `findMin`: lexicographic `(key, handle)` priority
-  order and deterministic minimum selection.
+* `Cslib.Algorithms.Lean.IndexedMinPQ.RawPrioLE`, `PrioLE`, `RawPrioLT`, `PrioLT`, `findMin`:
+  weak and strict lexicographic `(key, handle)` priority orders and deterministic minimum
+  selection.
 * `Cslib.Algorithms.Lean.IndexedMinPQ.spec`: the `Cslib.Stateful.Spec` with key bound `K_max`.
 
 ## Main results
 
+* `not_rawPrioLT_iff_rawPrioLE`, `not_prioLT_iff_prioLE`, `prioLT_or_prioLT_of_ne`: relationship
+  between strict and weak lexicographic priority orders.
 * `dom_empty`, `dom_insert`, `dom_decreaseKey`, `dom_extractMin`: domain evolution under each
   operation.
 * `findMin_eq_none_iff`, `findMin_eq_some_iff`, `findMin_mem_dom`, `findMin_le`,
@@ -123,6 +126,84 @@ theorem PrioLE.antisymm {n : ℕ} {a b : Fin n × ℕ} (hab : PrioLE a b) (hba :
 /-- Totality of `PrioLE`. -/
 theorem PrioLE.total {n : ℕ} (a b : Fin n × ℕ) : PrioLE a b ∨ PrioLE b a := by
   unfold PrioLE
+  omega
+
+/-- Strict lexicographic priority comparison on raw `(handle, key) : ℕ × ℕ` pairs: smaller key
+first, breaking equal-key ties by strictly smaller handle index. -/
+def RawPrioLT (a b : ℕ × ℕ) : Prop :=
+  a.2 < b.2 ∨ (a.2 = b.2 ∧ a.1 < b.1)
+
+instance instDecidableRawPrioLT (a b : ℕ × ℕ) : Decidable (RawPrioLT a b) :=
+  inferInstanceAs (Decidable (_ ∨ _))
+
+/-- Irreflexivity of `RawPrioLT`. -/
+theorem RawPrioLT.irrefl (a : ℕ × ℕ) : ¬RawPrioLT a a := by
+  unfold RawPrioLT
+  omega
+
+/-- Transitivity of `RawPrioLT`. -/
+theorem RawPrioLT.trans {a b c : ℕ × ℕ} (hab : RawPrioLT a b) (hbc : RawPrioLT b c) :
+    RawPrioLT a c := by
+  unfold RawPrioLT at hab hbc ⊢
+  omega
+
+/-- Strict priority order `RawPrioLT` implies weak priority order `RawPrioLE`. -/
+theorem RawPrioLT.le {a b : ℕ × ℕ} (h : RawPrioLT a b) : RawPrioLE a b := by
+  unfold RawPrioLT RawPrioLE at *
+  omega
+
+/-- Negation of `RawPrioLT` is the converse weak priority order `RawPrioLE`. -/
+theorem not_rawPrioLT_iff_rawPrioLE {a b : ℕ × ℕ} : ¬RawPrioLT a b ↔ RawPrioLE b a := by
+  unfold RawPrioLT RawPrioLE
+  omega
+
+/-- Strict lexicographic priority comparison on `(handle, key)` pairs: smaller key first, breaking
+equal-key ties by strictly smaller handle index. -/
+def PrioLT {n : ℕ} (a b : Fin n × ℕ) : Prop :=
+  RawPrioLT (a.1.val, a.2) (b.1.val, b.2)
+
+instance instDecidablePrioLT {n : ℕ} (a b : Fin n × ℕ) : Decidable (PrioLT a b) :=
+  inferInstanceAs (Decidable (RawPrioLT _ _))
+
+/-- Irreflexivity of `PrioLT`. -/
+theorem PrioLT.irrefl {n : ℕ} (a : Fin n × ℕ) : ¬PrioLT a a :=
+  RawPrioLT.irrefl _
+
+/-- Transitivity of `PrioLT`. -/
+theorem PrioLT.trans {n : ℕ} {a b c : Fin n × ℕ} (hab : PrioLT a b) (hbc : PrioLT b c) :
+    PrioLT a c :=
+  RawPrioLT.trans hab hbc
+
+/-- Asymmetry of `PrioLT`. -/
+theorem PrioLT.asymm {n : ℕ} {a b : Fin n × ℕ} (hab : PrioLT a b) : ¬PrioLT b a :=
+  fun hba => PrioLT.irrefl a (hab.trans hba)
+
+/-- `PrioLT` implies `PrioLE`. -/
+theorem PrioLT.le {n : ℕ} {a b : Fin n × ℕ} (h : PrioLT a b) : PrioLE a b :=
+  RawPrioLT.le h
+
+/-- `PrioLT` mixed with `PrioLE` on the left. -/
+theorem PrioLT.of_le_of_lt {n : ℕ} {a b c : Fin n × ℕ}
+    (hab : PrioLE a b) (hbc : PrioLT b c) : PrioLT a c := by
+  dsimp only [PrioLE, PrioLT, RawPrioLE, RawPrioLT] at hab hbc ⊢
+  omega
+
+/-- `PrioLT` mixed with `PrioLE` on the right. -/
+theorem PrioLT.of_lt_of_le {n : ℕ} {a b c : Fin n × ℕ}
+    (hab : PrioLT a b) (hbc : PrioLE b c) : PrioLT a c := by
+  dsimp only [PrioLE, PrioLT, RawPrioLE, RawPrioLT] at hab hbc ⊢
+  omega
+
+/-- Negation of `PrioLT` is reverse `PrioLE`. -/
+theorem not_prioLT_iff_prioLE {n : ℕ} {a b : Fin n × ℕ} :
+    ¬PrioLT a b ↔ PrioLE b a :=
+  not_rawPrioLT_iff_rawPrioLE
+
+/-- Any two pairs with distinct handles are strictly comparable under `PrioLT`. -/
+theorem prioLT_or_prioLT_of_ne {n : ℕ} {u v : Fin n} (huv : u ≠ v) (ku kv : ℕ) :
+    PrioLT (u, ku) (v, kv) ∨ PrioLT (v, kv) (u, ku) := by
+  have hval : u.val ≠ v.val := fun h => huv (Fin.ext h)
+  dsimp only [PrioLT, RawPrioLT]
   omega
 
 /-- Pick the lexicographically smaller `(handle, key)` pair. -/

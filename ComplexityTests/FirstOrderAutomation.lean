@@ -71,19 +71,16 @@ example : ¬ (∀' R.boundedFormula₂ &0 &0 : L.Sentence).IsQF := by
 
 end QF
 
-/-- Concrete interpretations are split by relation symbol and unfolded. -/
-example : complementEdges.IsQF := by fo_qf
-
-example : (complementEdges.comp complementSize).IsQF := by fo_qf
-
-example (N : Language) : (Projection.offDiagonalComplement N).toInterpretation.IsQF := by fo_qf
-
-example : ((Projection.offDiagonalComplement Language.empty).comp
-    (Projection.offDiagonalComplement Language.empty)).IsQF := by
-  fo_qf
-
-/-- Closure under isomorphism is registered in the same rule set. -/
-example : IsoClosed Clique.{0} := by fo_iso_closed
+/-- Concrete interpretations are split by relation symbol and unfolded, and closure under
+isomorphism is registered in the same rule set. -/
+example (N : Language) :
+    complementEdges.IsQF ∧
+    (complementEdges.comp complementSize).IsQF ∧
+    (Projection.offDiagonalComplement N).toInterpretation.IsQF ∧
+    ((Projection.offDiagonalComplement Language.empty).comp
+      (Projection.offDiagonalComplement Language.empty)).IsQF ∧
+    IsoClosed Clique.{0} :=
+  ⟨by fo_qf, by fo_qf, by fo_qf, by fo_qf, by fo_iso_closed⟩
 
 /-- Restrict a structure to the elements of its size relation. -/
 def restrictToSize : Interpretation sizedGraph sizedGraph Unit where
@@ -375,17 +372,17 @@ section Subformulas
 /-- `∀ x, ¬ x ~ x`: a graph has no loops. -/
 private def noLoops : Language.graph.Sentence := ∀' ∼(adj.boundedFormula₂ &0 &0)
 
-example : (subformulas noLoops).Finite := finite_subformulas _
-
-/-- The body of the quantifier, its atom and `⊥` are subformulas. -/
-example : ⟨1, ∼(adj.boundedFormula₂ &0 &0)⟩ ∈ subformulas noLoops :=
-  mem_subformulas_of_all (self_mem_subformulas _)
-
-example : ⟨1, adj.boundedFormula₂ &0 &0⟩ ∈ subformulas noLoops :=
-  mem_subformulas_of_imp_left (mem_subformulas_of_all (self_mem_subformulas _))
-
-example : ⟨1, ⊥⟩ ∈ subformulas noLoops :=
-  mem_subformulas_of_imp_right (mem_subformulas_of_all (self_mem_subformulas _))
+/-- Finiteness of `subformulas noLoops`, and membership of the body of the quantifier, its atom,
+and `⊥`. -/
+example :
+    (subformulas noLoops).Finite ∧
+    ⟨1, ∼(adj.boundedFormula₂ &0 &0)⟩ ∈ subformulas noLoops ∧
+    ⟨1, adj.boundedFormula₂ &0 &0⟩ ∈ subformulas noLoops ∧
+    ⟨1, ⊥⟩ ∈ subformulas noLoops :=
+  ⟨finite_subformulas _,
+    mem_subformulas_of_all (self_mem_subformulas _),
+    mem_subformulas_of_imp_left (mem_subformulas_of_all (self_mem_subformulas _)),
+    mem_subformulas_of_imp_right (mem_subformulas_of_all (self_mem_subformulas _))⟩
 
 end Subformulas
 

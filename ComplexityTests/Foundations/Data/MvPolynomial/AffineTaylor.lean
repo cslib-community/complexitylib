@@ -59,17 +59,15 @@ private noncomputable def restrictedJet {ι F A : Type*} [Fintype ι] [CommRing 
 /-! ### 1. Scalar Taylor corrections at nonzero node -/
 
 -- Nonconstant quadratic polynomial at nonzero node t = 2: constant term vanishes and X divides it.
-example : (Polynomial.taylor (2 : ℤ) (3 - 2 * Polynomial.X + Polynomial.X ^ 2) -
-    Polynomial.C ((3 - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ).eval 2)).coeff 0 = 0 :=
-  coeff_zero_taylor_sub_C_eval 2 _
-
-example : Polynomial.X ∣ Polynomial.taylor (2 : ℤ) (3 - 2 * Polynomial.X + Polynomial.X ^ 2) -
-    Polynomial.C ((3 - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ).eval 2) :=
-  X_dvd_taylor_sub_C_eval 2 _
-
-example : Polynomial.taylor (2 : ℤ) (3 - 2 * Polynomial.X + Polynomial.X ^ 2) -
-    Polynomial.C ((3 - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ).eval 2) =
-      2 * Polynomial.X + Polynomial.X ^ 2 := by
+example :
+    (Polynomial.taylor (2 : ℤ) (3 - 2 * Polynomial.X + Polynomial.X ^ 2) -
+      Polynomial.C ((3 - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ).eval 2)).coeff 0 = 0 ∧
+    (Polynomial.X ∣ Polynomial.taylor (2 : ℤ) (3 - 2 * Polynomial.X + Polynomial.X ^ 2) -
+      Polynomial.C ((3 - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ).eval 2)) ∧
+    Polynomial.taylor (2 : ℤ) (3 - 2 * Polynomial.X + Polynomial.X ^ 2) -
+      Polynomial.C ((3 - 2 * Polynomial.X + Polynomial.X ^ 2 : Polynomial ℤ).eval 2) =
+        2 * Polynomial.X + Polynomial.X ^ 2 := by
+  refine ⟨coeff_zero_taylor_sub_C_eval 2 _, X_dvd_taylor_sub_C_eval 2 _, ?_⟩
   simp only [map_add, map_sub, Polynomial.taylor_mul, Polynomial.taylor_X_pow, Polynomial.taylor_X]
   have h3 : Polynomial.taylor (2 : ℤ) (3 : Polynomial ℤ) = 3 := Polynomial.taylor_C 2 3
   have h2 : Polynomial.taylor (2 : ℤ) (2 : Polynomial ℤ) = 2 := Polynomial.taylor_C 2 2
@@ -120,27 +118,26 @@ private theorem taylor_two_replacedSum_twoFactors :
       3 * (Polynomial.X + 2) ^ 3 = _
   ring
 
--- Common q = 2 bound covers j = 0 < q, j = 1 < q, and j = 2 = q at nonzero node t = 2.
-example : restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 2 0 = 18 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 0 ≤ 2),
-    taylor_two_replacedSum_twoFactors]
-  simp [Polynomial.coeff_X]
-
-example : restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 2 1 = 1 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 1 ≤ 2),
-    taylor_two_replacedSum_twoFactors]
-  simp [Polynomial.coeff_X]
-
-example : restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 2 2 = -9 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 2 ≤ 2),
-    taylor_two_replacedSum_twoFactors]
-  simp [Polynomial.coeff_X]
-
--- Boundary q = 0 at j = 0 still captures full x-dependent baselines.
-example : restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 0 0 = 18 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 0 ≤ 0),
-    taylor_two_replacedSum_twoFactors]
-  simp [Polynomial.coeff_X]
+-- Common q = 2 bound covers j = 0 < q, j = 1 < q, and j = 2 = q at nonzero node t = 2,
+-- and boundary q = 0 at j = 0 still captures full x-dependent baselines.
+example :
+    restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 2 0 = 18 ∧
+    restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 2 1 = 1 ∧
+    restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 2 2 = -9 ∧
+    restrictedJet ({true, false} : Finset Bool) twoFactors twoRows 2 0 0 = 18 := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 0 ≤ 2),
+      taylor_two_replacedSum_twoFactors]
+    simp [Polynomial.coeff_X]
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 1 ≤ 2),
+      taylor_two_replacedSum_twoFactors]
+    simp [Polynomial.coeff_X]
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 2 ≤ 2),
+      taylor_two_replacedSum_twoFactors]
+    simp [Polynomial.coeff_X]
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 2 (by decide : 0 ≤ 0),
+      taylor_two_replacedSum_twoFactors]
+    simp [Polynomial.coeff_X]
 
 -- Genuine x-dependence of G_x: at X = 0, [z^0] G_x differs across assignments x (1 vs -3).
 example :
@@ -198,15 +195,16 @@ example :
 /-! ### 3. Empty factor sets and empty coordinate types -/
 
 -- Empty factor set on 2 coordinates gives constant polynomial 4, so [z^0] = 4 and [z^1] = 0.
-example : restrictedJet (∅ : Finset Bool) twoFactors twoRows 5 0 0 = 4 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 5 (by decide : 0 ≤ 0),
-    replacedSum_empty]
-  norm_num
-
-example : restrictedJet (∅ : Finset Bool) twoFactors twoRows 5 1 1 = 0 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 5 (by decide : 1 ≤ 1),
-    replacedSum_empty]
-  norm_num [Polynomial.coeff_one]
+example :
+    restrictedJet (∅ : Finset Bool) twoFactors twoRows 5 0 0 = 4 ∧
+    restrictedJet (∅ : Finset Bool) twoFactors twoRows 5 1 1 = 0 := by
+  refine ⟨?_, ?_⟩
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 5 (by decide : 0 ≤ 0),
+      replacedSum_empty]
+    norm_num
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 5 (by decide : 1 ≤ 1),
+      replacedSum_empty]
+    norm_num [Polynomial.coeff_one]
 
 -- Empty coordinate type (Fin 0) and empty factor-variable type (Fin 0) at nonzero node t = 3.
 example : restrictedJet (ι := Fin 0) ({()} : Finset Unit)
@@ -259,20 +257,18 @@ private theorem taylor_one_charTwo :
         1 + 2 * Polynomial.X + Polynomial.X ^ 2 := by ring
     _ = 1 + Polynomial.X ^ 2 := by rw [htwo, zero_mul, add_zero]
 
-example : restrictedJet ({()} : Finset Unit) charTwoFactor charTwoRow 1 2 1 = 0 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 1 (by decide : 1 ≤ 2),
-    taylor_one_charTwo]
-  simp [Polynomial.coeff_one]
-
-example : restrictedJet ({()} : Finset Unit) charTwoFactor charTwoRow 1 2 2 = 1 := by
-  rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 1 (by decide : 2 ≤ 2),
-    taylor_one_charTwo]
-  simp [Polynomial.coeff_one]
-
--- Trivial ring ZMod 1 needs no Nontrivial instance anywhere in the jet identity.
-example : restrictedJet ({()} : Finset Unit)
-    (fun _ => (MvPolynomial.X () : MvPolynomial Unit (ZMod 1)))
-    (fun _ _ (_ : Fin 1) => Polynomial.X) 0 1 1 = 0 :=
-  Subsingleton.elim _ _
+example :
+    restrictedJet ({()} : Finset Unit) charTwoFactor charTwoRow 1 2 1 = 0 ∧
+    restrictedJet ({()} : Finset Unit) charTwoFactor charTwoRow 1 2 2 = 1 ∧
+    restrictedJet ({()} : Finset Unit)
+      (fun _ => (MvPolynomial.X () : MvPolynomial Unit (ZMod 1)))
+      (fun _ _ (_ : Fin 1) => Polynomial.X) 0 1 1 = 0 := by
+  refine ⟨?_, ?_, Subsingleton.elim _ _⟩
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 1 (by decide : 1 ≤ 2),
+      taylor_one_charTwo]
+    simp [Polynomial.coeff_one]
+  · rw [restrictedJet, ← coeff_taylor_replacedSum_eq_restricted_subsets _ _ _ 1 (by decide : 2 ≤ 2),
+      taylor_one_charTwo]
+    simp [Polynomial.coeff_one]
 
 end AffineTaylorTests
