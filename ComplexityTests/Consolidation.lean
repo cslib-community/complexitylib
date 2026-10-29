@@ -12,7 +12,9 @@ import Complexity.Foundations.Control.Monad.IsMonadHom.StateT
 import Complexity.Foundations.Data.BitString.Affine
 import Complexity.Foundations.Data.BitString.Parity
 import Complexity.Foundations.Data.Fin.Order
+import Complexity.Foundations.Data.Finset.Average
 import Complexity.Foundations.Data.List.Filter
+import Complexity.Foundations.Data.List.OfFn
 import Complexity.Foundations.Data.Nat.Asymptotics
 import Complexity.Foundations.Data.Nat.Choose.Real
 import Complexity.Foundations.Data.Nat.Div
@@ -20,6 +22,8 @@ import Complexity.Foundations.Data.Nat.Log
 import Complexity.Foundations.Data.Nat.PolynomialBound.Log
 import Complexity.Foundations.LinearAlgebra.CubeSum
 import Complexity.Foundations.LinearAlgebra.Matrix.SchurComplement
+import Complexity.Foundations.LinearAlgebra.Rank
+import Complexity.Foundations.NumberTheory.PrimeCounting
 import Mathlib.Tactic.FinCases
 
 /-! General lemmas in their library homes: the costs of projections and the one-gate lower bound
@@ -196,5 +200,50 @@ example (B : Matrix (Fin 2) (Fin 2) ℚ) :
     ((3 : ℚ) • (1 : Matrix (Fin 2) (Fin 2) ℚ))⁻¹ * ((3 : ℚ) • B) =
       (1 : Matrix (Fin 2) (Fin 2) ℚ)⁻¹ * B :=
   Matrix.inv_smul_mul_smul_of_ne_zero 1 B (by simp) (by norm_num)
+
+/-! ### `Nat.lcmUpto` bounds, monotone-key collisions, `Fin` subfamilies, range tail sums,
+and vertex-choice bounds -/
+
+/-- `lcm(1, …, m + n)` divides `lcm(1, …, m) * C(m + n, m)` and `2 * lcm(1, …, n) ≤ 4 ^ n`. -/
+example :
+    Nat.lcmUpto (4 + 2) ∣ Nat.lcmUpto 4 * (4 + 2).choose 4 ∧
+      2 * Nat.lcmUpto 6 ≤ 4 ^ 6 ∧ Nat.lcmUpto 6 < 4 ^ 6 :=
+  ⟨Nat.lcmUpto_add_dvd (by decide),
+   Nat.two_mul_lcmUpto_le_four_pow 6 (by decide),
+   Nat.lcmUpto_lt_four_pow 6 (by decide)⟩
+
+/-- Distinct entries with equal keys in a monotone-key array force an adjacent collision. -/
+example :
+    let records : Fin 3 → ℕ × ℕ := ![(1, 0), (1, 1), (2, 0)]
+    ∃ (p : ℕ) (hp : p + 1 < 3),
+      records ⟨p, by omega⟩ ≠ records ⟨p + 1, hp⟩ ∧
+      (records ⟨p, by omega⟩).1 = (records ⟨p + 1, hp⟩).1 ∧
+      (records ⟨p, by omega⟩).1 = (records 0).1 :=
+  Fin.exists_adjacent_ne_of_monotone_comp ![(1, 0), (1, 1), (2, 0)] Prod.fst
+    (fun i j hij => by fin_cases i <;> fin_cases j <;> revert hij <;> decide)
+    0 1 (by decide) (by decide) rfl
+
+/-- Any `Fin`-indexed family over `ℚ` has a `Fin`-indexed linearly independent spanning
+subfamily. -/
+example (v : Fin 3 → Fin 2 → ℚ) :
+    ∃ (k : ℕ) (a : Fin k → Fin 3), Function.Injective a ∧
+      Submodule.span ℚ (Set.range (v ∘ a)) = Submodule.span ℚ (Set.range v) ∧
+      LinearIndependent ℚ (v ∘ a) :=
+  Submodule.exists_linearIndependent_fin_comp ℚ v
+
+/-- Summing a tail of `List.range 4` after index `1 : Fin 4` matches the sum over `Finset.Ioi 1`. -/
+example (f : ℕ → ℤ) :
+    (((List.range 4).drop ((1 : Fin 4).val + 1)).map f).sum =
+      ∑ k ∈ Finset.Ioi (1 : Fin 4), f k.val :=
+  List.sum_map_drop_range_fin (1 : Fin 4) f
+
+/-- Deterministic vertex-wise maximum choice beats any sub-probability weighting. -/
+example :
+    ∃ f : Fin 2 → Bool,
+      (∑ _i : Fin 2, ∑ a : Bool, (1 / 2 : ℚ) * (if a = true then 1 else 0)) ≤
+        ∑ i : Fin 2, (if f i = true then (1 : ℚ) else 0) :=
+  Finset.exists_choice_sum_le id (fun _ a => if a = true then (1 : ℚ) else 0)
+    (fun _ a => by cases a <;> norm_num) (fun _ _ => (1 / 2 : ℚ))
+    (fun _ _ => by norm_num) (fun _ => by norm_num)
 
 end ComplexityTests.Consolidation
