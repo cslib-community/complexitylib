@@ -260,11 +260,26 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   charges at most `128*(L+1)*(Q+numBands²+2^L+1)` instructions including halt. Its positive
   ceiling-logarithmic admission threshold depends only on the original numerical budget.
   Within-tile order is stable input order; no sorted or duplicate-free query premise is needed
-  by the pruned kernel. Shared-band/kernel calls, answer reconstruction, sparse-product/Exact
-  Triangle solving and full input/time/width composition, including the improved Section 4 route
-  to exponent 1.9992, remain in #1394. The band catalogue retains the same leaf ordering and
-  canonical signed words. Raw 0/1 matrix producers must
-  actually double entries before copying into signed input arrays, with that work charged.
+  by the pruned kernel.
+  Native queried-product composition ([#1581](https://github.com/cslib-community/complexitylib/issues/1581))
+  now connects those actual programs. It computes all protected buffers and tile arguments,
+  calls the shared encoders and pruned pointer/epoch kernel, and reconstructs every requested
+  `Matrix.mul` value in original order, retaining duplicates. Original signed matrices and raw
+  coordinate pairs are the entire initialized input. Raw nonnegative mode actually doubles
+  every matrix word before signed encoding, covering the raw 0/1 producer ABI. Copies,
+  header adaptation, one directory initialization, dispatch, epochs, reporting and restoration
+  are all charged. Existing `MaskTable.layout`, `wantedStrings`, `encodingL/R`, leaf numbering,
+  `Pruned.result` and stable-position meanings are reused; the existing `Wanted.tileKey_eq_iff`
+  lemma is exposed for the concrete tile-correctness proof without changing its statement.
+  The fixed 160-register program has at most 32768 flat instructions including halt and reads
+  no physical-width instruction. At `L=19m`, `D=4^m`, `D^18≤N`, `Q*2^m≤N²`, the complete charge
+  including halt is `4325376*(19m+1)*N²/D^(1/18)`. Distinct-set sparsity retains an additive
+  occurrence charge instead. The sufficient physical width is `128*clog₂(N+Q+A+2)`; its
+  magnitude/address budget and allocation have explicit polynomial envelopes in the original
+  dimensions, request count and entry bound. These are original native execution/resource
+  proofs, not a transfer of the source Light semantics or instruction constants. Exact Triangle
+  parameter/instance preparation and outer solving, full ordinary-3SUM composition, and the
+  improved Section 4 route to exponent 1.9992 remain separate work under #1394.
   Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies

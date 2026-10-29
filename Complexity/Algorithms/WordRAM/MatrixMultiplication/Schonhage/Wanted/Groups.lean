@@ -31,7 +31,8 @@ open Cslib.WordRAM
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Finset
 
-private theorem tileKey_eq_iff {L m N : ℕ} (hm : m ≤ L) (i j : Fin N) (T : ℕ × ℕ)
+/-- An in-range tile key identifies exactly the original row and column bands. -/
+theorem tileKey_eq_iff {L m N : ℕ} (hm : m ≤ L) (i j : Fin N) (T : ℕ × ℕ)
     (hT : T ∈ tiles L m N) :
     tileKey L m N (i.val, j.val) = T.1 * numBands L m N + T.2 ↔
       bandOf L m i.val = T.1 ∧ bandOf L m j.val = T.2 := by

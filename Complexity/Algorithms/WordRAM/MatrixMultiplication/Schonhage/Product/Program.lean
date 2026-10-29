@@ -14,13 +14,13 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Produ
 
 ## Main definitions
 
-* `QueriedProduct.program`: fixed native composition, with ordinary signed or raw-bit matrices.
+* `QueriedProduct.program`: fixed native composition, with signed or raw nonnegative matrices.
 * `QueriedProduct.tileStep`: actual offset loads, catalogue pointers, epoch call and update.
 * `QueriedProduct.reconstruct`: restore the original request order from actual stored indices.
 
 All three existing 96-register callees use the low bank. The caller's 64 additional
 registers retain its scalar layout and counters. Copying, initial directory clearing,
-header adaptation, bit doubling, dispatch, reporting and restoration are real instructions.
+header adaptation, raw-entry doubling, dispatch, reporting and restoration are real instructions.
 Supporting code definitions are exposed for execution proofs; they are implementation APIs.
 -/
 
@@ -227,12 +227,16 @@ The bit-input variant executes the conversion instruction at every entry. -/
 @[expose] public def restoreInput : Code .standard 160 :=
   .seq (ram[ source ← snapshot; destination ← zero; length ← inputSize ]) copyCall
 
+/-- Complete actual routing preparation and protected preservation of the original input. -/
+@[expose] public def prepareRouting : Code .standard 160 :=
+  .seq parameters (.seq layout (.seq saveInput (.seq prepareQueries
+    (.seq (Wanted.program.rename bank) saveGroups))))
+
 /-- The complete fixed producer/consumer program. `bits=false` takes canonical signed matrix
 words; `bits=true` takes raw unsigned 0/1 words and performs actual per-entry doubling. -/
 @[expose] public def program (bits : Bool) : Code .standard 160 :=
-  .seq parameters (.seq layout (.seq saveInput (.seq prepareQueries
-    (.seq (Wanted.program.rename bank) (.seq saveGroups (.seq (prepareMatrices bits)
-      (.seq (BandPreparation.program.rename bank) (.seq initializeDirectory
-        (.seq evaluateTiles (.seq reconstruct restoreInput))))))))))
+  .seq prepareRouting (.seq (prepareMatrices bits)
+    (.seq (BandPreparation.program.rename bank) (.seq initializeDirectory
+      (.seq evaluateTiles (.seq reconstruct restoreInput)))))
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

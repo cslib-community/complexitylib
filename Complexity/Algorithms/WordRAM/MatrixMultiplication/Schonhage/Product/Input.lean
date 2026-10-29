@@ -202,4 +202,32 @@ public theorem input_fits {w L m N A : ℕ} (hw : 0 < w) (hm : m ≤ L) (bits : 
         exact entryWord_fits hw bits _ (hY k j) hmag
     · exact hq.2 v (List.mem_of_mem_drop hv)
 
+/-- Original raw matrix words are bounded by the original absolute-entry bound, at every
+flat position. This supplies the actual conversion loop without an intermediate fit premise. -/
+public theorem input_raw_matrix_le {L m N A : ℕ}
+    (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
+    (qs : List (Fin N × Fin N)) (hX : ∀ i k, |X i k| ≤ (A : ℤ))
+    (hY : ∀ k j, |Y k j| ≤ (A : ℤ)) (j : ℕ) (hj : j < 2 * (N * D m)) :
+    (State.init (input true L X Y qs) : State 160).data.mem (5 + j) ≤ A := by
+  have hj' : j < (matrixInput true X Y).length := by rw [matrixInput_length]; exact hj
+  have hbound (v : ℕ) (hv : v ∈ matrixInput true X Y) : v ≤ A := by
+    simp only [matrixInput, List.mem_append] at hv
+    rcases hv with hv | hv
+    · obtain ⟨i, _, hv⟩ := List.mem_flatMap.mp hv
+      obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hv
+      exact Int.toNat_le.mpr ((le_abs_self _).trans (hX i k))
+    · obtain ⟨k, _, hv⟩ := List.mem_flatMap.mp hv
+      obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hv
+      exact Int.toNat_le.mpr ((le_abs_self _).trans (hY k i))
+  change (Data.init (input true L X Y qs) : Data 160).mem _ ≤ A
+  rw [show 5 + j = (4 + j) + 1 by omega, Data.init_mem_succ]
+  unfold input
+  rw [List.getD_append _ _ _ _ (by
+    simp only [List.length_append, List.length_cons, List.length_nil]
+    omega)]
+  rw [List.getD_append_right _ _ _ _ (by simp)]
+  simp only [List.length_cons, List.length_nil, Nat.reduceAdd, Nat.add_sub_cancel_left]
+  rw [List.getD_eq_get _ _ ⟨j, hj'⟩]
+  exact hbound _ (List.get_mem _ _)
+
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

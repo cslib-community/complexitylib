@@ -447,8 +447,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   original raw coordinates. Its initialized run preserves every original occurrence and gives
   each tile exactly its finite `wantedStrings` code set, within
   `128*(L+1)*(Q+numBands²+2^L+1)` instructions including halt. It uses fixed 96-register code and
-  an explicit positive sufficient-width threshold. Joining these groups to shared band encoders,
-  invoking the pruned kernel and reconstructing queried products remain separate native work.
+  an explicit positive sufficient-width threshold. The native queried-product composition
+  ([#1581]) joins the actual router and band producers to the pointer/epoch kernel, restores the
+  original input, and reconstructs every requested signed product in original order. It charges
+  raw-entry conversion, all copies, dispatch, one shared directory initialization, epochs and
+  reporting. At `L=19m`, `D=4^m`, `D^18≤N` and occurrence sparsity `Q*2^m≤N²`, its initialized
+  fixed 160-register program uses at most `4325376*(19m+1)*N²/D^(1/18)` instructions including
+  halt, with sufficient width `128*clog₂(N+Q+A+2)` for entry bound `A`. The distinct-set sparsity
+  theorem instead retains an explicit additive charge for all `Q` occurrences.
   Native Chan–He preprocessing and the reduction host are separate stack components.
   Native sparse-product and Exact Triangle solving, full input/time/width/asymptotic composition,
   and the improved Section 4 route to exponent 1.9992 remain under #1394;
@@ -586,3 +592,4 @@ not planned, not as proved.
 [#1523]: https://github.com/cslib-community/complexitylib/issues/1523
 [#1526]: https://github.com/cslib-community/complexitylib/issues/1526
 [#1561]: https://github.com/cslib-community/complexitylib/issues/1561
+[#1581]: https://github.com/cslib-community/complexitylib/issues/1581
