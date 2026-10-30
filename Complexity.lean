@@ -1718,6 +1718,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Kernel
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelIterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTakeDropUnary
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZipTransducer
