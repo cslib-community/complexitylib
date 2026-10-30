@@ -44,6 +44,8 @@ satisfying assignments can be found in polynomial time (`Cslib.Complexity.SAT.ex
 
 ## Main results
 
+* `Cslib.Complexity.SAT.length_encCNF_units_le`: the unit clauses fixing variables of `φ` are
+  short.
 * `Cslib.Complexity.SAT.verifier_search`: with answers correct up to `queryBound`, the
   self-reduction finds a satisfying assignment of every satisfiable formula.
 * `Cslib.Complexity.SAT.computableInPolyTime_search`: the self-reduction is polynomial-time
@@ -139,22 +141,26 @@ private theorem length_encCNF_unit_le {φ : CNF ℕ} {l : Literal ℕ} (hl : l.1
   rw [length_encCNF_unit]
   omega
 
+/-- Unit clauses fixing variables of `φ` take at most `8 L + 11` bits each, where `L` is the
+length of `φ`. -/
+theorem length_encCNF_units_le {φ : CNF ℕ} {answers : List (Literal ℕ)}
+    (hanswers : ∀ l ∈ answers, l.1 ∈ φ.vars) :
+    (encCNF (units answers)).length ≤ answers.length * (8 * (encCNF φ).length + 11) := by
+  induction answers with
+  | nil => simp [units, encCNF]
+  | cons l answers ih =>
+    have h₁ := length_encCNF_unit_le (hanswers l (List.mem_cons_self ..))
+    have h₂ := ih fun l' hl' => hanswers l' (List.mem_cons_of_mem _ hl')
+    rw [show units (l :: answers) = [[l]] ++ units answers from rfl, length_encCNF_append,
+      List.length_cons, Nat.succ_mul]
+    omega
+
 /-- The formulas that the self-reduction asks about are no longer than `queryBound`. -/
 private theorem length_query_le {φ : CNF ℕ} {answers : List (Literal ℕ)}
     (hanswers : ∀ l ∈ answers, l.1 ∈ φ.vars) (hlen : answers.length ≤ φ.vars.length) {v : ℕ}
     (hv : v ∈ φ.vars) :
     (encCNF (φ ++ units answers ++ [[(v, true)]])).length ≤ queryBound (encCNF φ).length := by
-  have hunits : (encCNF (units answers)).length ≤
-      answers.length * (8 * (encCNF φ).length + 11) := by
-    induction answers with
-    | nil => simp [units, encCNF]
-    | cons l answers ih =>
-      have h₁ := length_encCNF_unit_le (hanswers l (List.mem_cons_self ..))
-      have h₂ := ih (fun l' hl' => hanswers l' (List.mem_cons_of_mem _ hl'))
-        (Nat.le_of_succ_le hlen)
-      rw [show units (l :: answers) = [[l]] ++ units answers from rfl, length_encCNF_append,
-        List.length_cons, Nat.succ_mul]
-      omega
+  have hunits := length_encCNF_units_le hanswers
   have hvars : φ.vars.length ≤ (encCNF φ).length := length_vars_le φ
   have hv' := length_encCNF_unit_le (l := (v, true)) hv
   have hmul : answers.length * (8 * (encCNF φ).length + 11) ≤
