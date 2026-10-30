@@ -2729,6 +2729,7 @@ public import Complexity.Foundations.Probability.ColumnDetector
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
+public import Complexity.Foundations.Probability.EstimatorPrecision
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
