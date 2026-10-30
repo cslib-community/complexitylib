@@ -1847,6 +1847,10 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Resou
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.SpaceBudget
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Windowed
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedBound
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedComplexity
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedInit
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedParts
 public import Complexity.Computability.Machines.Turing.SingleTape.Partrec
 public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
