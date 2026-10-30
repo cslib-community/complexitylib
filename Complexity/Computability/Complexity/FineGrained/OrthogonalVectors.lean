@@ -49,6 +49,11 @@ The orthogonal vectors hypothesis is stated with a polynomial factor in the dime
 dimension `c log N`, which follows from the strong exponential time hypothesis with the
 sparsification lemma, is not proved here.
 
+**The hypothesis is refuted.** `Cslib.Complexity.CountingNativeEndpoint.not_SETH` proves that
+`SETH` is false, so `Cslib.Complexity.OVH_of_SETH` holds vacuously and gives no evidence for `OVH`,
+which this library neither proves nor refutes. The reduction from a fast `OV` decider to a fast
+`SAT` decider is unconditional.
+
 ## Main definitions
 
 * `Cslib.Complexity.OV.clauseVector`, `Cslib.Complexity.OV.halfVectors`: the vectors of the
