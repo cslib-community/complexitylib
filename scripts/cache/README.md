@@ -78,6 +78,10 @@ following builds while preserving the public cache's authorization boundary.
 
 ## Automatic restoration
 
+Temporary controlled measurement is specified in [MEASUREMENT.md](MEASUREMENT.md) (#1728).
+Its hooks are disabled without an explicit plan and expire on 2026-11-15. Installing them does
+not authorize study activation or complete #1197's net-benefit requirement.
+
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
 check that falls back to all six gates does not download twice. Bare `lake` commands do not

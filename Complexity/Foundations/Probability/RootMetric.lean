@@ -71,7 +71,7 @@ variable (s : ℕ) (N u : ℝ) (X Y : Ω → V → Prop) [∀ σ v, Decidable (X
 
 /-- The `s`-th power `‖Z‖^s_{u,a;s}` of the integrated row norm of a random table
 [OpenAI2026LogSpace, (5.19)]. -/
-noncomputable def rowNormPow (Z : Ω → V → V → ℝ) : ℝ :=
+@[expose] noncomputable def rowNormPow (Z : Ω → V → V → ℝ) : ℝ :=
   (N * u)⁻¹ * 𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V), ∑ y ∈ ({y | Y σ y} : Finset V), |Z σ x y| ^ s
 
 /-- The `s`-th power `d_{u,a}(H, H')^s` of the root distance of two random tables
@@ -81,7 +81,7 @@ noncomputable def rootDistPow (H H' : Ω → V → V → ℝ) : ℝ :=
 
 /-- The `s`-th power `‖v‖^s_{u;s}` of the integrated norm of a random vertex array
 [OpenAI2026LogSpace, (5.20)]. -/
-noncomputable def vertexNormPow (v : Ω → V → ℝ) : ℝ :=
+@[expose] noncomputable def vertexNormPow (v : Ω → V → ℝ) : ℝ :=
   (N * u)⁻¹ * 𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V), |v σ x| ^ s
 
 end Definitions

@@ -64,3 +64,18 @@ supportInterpreter = true
 name = "checkInitImports"
 srcDir = "scripts"
 root = "CheckInitImports"
+
+# Optional statement-comparison suites; neither is a default target.
+[[lean_lib]]
+name = "ComplexityComparator"
+srcDir = "comparator"
+roots = []
+globs = ["ComplexityComparator.+"]
+
+# Generated children are explicit comparator inputs, never default build targets or aggregates.
+[[lean_lib]]
+name = "ComplexityComparatorChallenges"
+srcDir = "comparator"
+roots = []
+globs = ["ComplexityComparatorChallenges.+"]
+defaultFacets = []
