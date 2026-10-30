@@ -88,6 +88,7 @@ endpoints on `n :: flattenMatrix W`:
 namespace Cslib.Algorithms.WordRAM.Karger
 
 open scoped ENNReal
+open Cslib.Probability.PMF
 open Cslib.WordRAM
 
 /-! ### Word-size sufficiency (`logWidth 4 n ≤ w`) and input layout -/
