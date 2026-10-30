@@ -8,6 +8,8 @@ on:
       - 'comparator/**'
       - 'scripts/check_comparator.py'
       - 'scripts/test_check_comparator.py'
+      - 'scripts/cache/get_mathlib.py'
+      - 'scripts/test_mathlib_cache.py'
       - 'lakefile.toml'
       - 'lean-toolchain'
       - 'lake-manifest.json'
@@ -20,6 +22,8 @@ on:
       - 'comparator/**'
       - 'scripts/check_comparator.py'
       - 'scripts/test_check_comparator.py'
+      - 'scripts/cache/get_mathlib.py'
+      - 'scripts/test_mathlib_cache.py'
       - 'lakefile.toml'
       - 'lean-toolchain'
       - 'lake-manifest.json'
@@ -57,6 +61,11 @@ jobs:
           test: 'false'
           lint: 'false'
           use-github-cache: 'false'
+          use-mathlib-cache: 'false'
+      - name: Restore Mathlib cache with retries
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py --lean-action
       - name: Restore remote build outputs
         continue-on-error: true
         timeout-minutes: 10
