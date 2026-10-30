@@ -28,6 +28,13 @@ Input cells are coded so that a step can be taken without the position of the in
 `some 0` is the left end at position `0`, `some (a + 1)` the input symbol `a`, and `none` a blank
 after the input.
 
+The correctness proof follows each window against its tape cell by cell: if every window agrees
+with its tape within distance `n` of the head, then `n` windowed steps take the same steps, the
+windows keep agreeing with the tapes there, and the cells beyond are untouched. Pasting a window
+back is exact because a list of a cut window either has exactly the cut length, in which case the
+run keeps it aligned with the rest of the outer list, or ends early, in which case the outer list
+has no cells beyond it either.
+
 ## Main definitions
 
 * `Turing.MultiTapeTM.Universal.Windowed.extract`, `.restore`: cutting windows and pasting them
@@ -40,6 +47,9 @@ after the input.
 
 * `Turing.MultiTapeTM.Universal.Windowed.universal_eq_sim`: the windowed simulation of `t` steps
   from the radius-`t` windows of the initial configuration computes the universal function.
+* `Turing.MultiTapeTM.Universal.Windowed.length_sim`, `.length_sim_le`, `.sim_cells`,
+  `.sim_state`, `.sim_output`: the number and lengths of the windows, their cells, the state and
+  the emitted symbols, for the cost analysis.
 -/
 
 public section
@@ -65,7 +75,8 @@ beyond distance `r` of its head put back around it. -/
   (inner.1, List.zipWith (paste r) outer.2 inner.2)
 
 /-- The input symbol of a coded input cell. -/
-@[expose] def inSym (c : Option ℕ) : Option ℕ := c.bind fun v => if v = 0 then none else some (v - 1)
+@[expose] def inSym (c : Option ℕ) : Option ℕ :=
+  c.bind fun v => if v = 0 then none else some (v - 1)
 
 /-- A stand-in for the position of the input head on a coded input cell: `0` at the left end and
 `1` elsewhere. `Turing.MultiTapeTM.Universal.moveInput` distinguishes only these cases. -/
@@ -186,7 +197,8 @@ private lemma cellAt_move (t : Tape) (m : SignType) (i : ℤ) :
 
 private lemma head_move (t : Tape) (m : SignType) : (t.move m).head = t.head + m := by
   rcases m with _ | _ | _ <;>
-    simp [Tape.move, SignType.zero_eq_zero, SignType.neg_eq_neg_one, SignType.pos_eq_one, sub_eq_add_neg]
+    simp [Tape.move, SignType.zero_eq_zero, SignType.neg_eq_neg_one, SignType.pos_eq_one,
+      sub_eq_add_neg]
 
 private lemma head_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
     (t.apply a).head = t.head + a.2 := by
@@ -362,7 +374,8 @@ private lemma moveIn_eq (i : Tape) {P p : ℕ} (hP : P = 0 ∨ P = 1) (hPp : P =
         SignType.zero_eq_zero]⟩
     · exact ⟨.neg, by simp [moveIn, moveInput], by simp [moveInput, SignType.neg_eq_neg_one]; omega⟩
     · by_cases ha : a.isSome
-      · exact ⟨.pos, by simp [moveIn, moveInput, ha], by simp [moveInput, SignType.pos_eq_one, ha, hp]⟩
+      · exact ⟨.pos, by simp [moveIn, moveInput, ha], by
+          simp [moveInput, SignType.pos_eq_one, ha, hp]⟩
       · exact ⟨.zero, by simp [moveIn, moveInput, ha, Tape.move], by
           simp [moveInput, SignType.zero_eq_zero, ha, hp]⟩
 
@@ -741,5 +754,232 @@ theorem universal_eq_sim (d : Desc) (x : List ℕ) (t : ℕ) :
     (by simp [extract, initWin, view, init]) hagr
   change ((run d x t (init d)).2, (run d x t (init d)).1.state.isNone) = _
   rw [o, q]
+
+/-! ### Sizes of the windows
+
+Facts about the shapes of the windows, the cells they hold, the state and the emitted symbols, for
+the cost analysis of the windowed simulation. -/
+
+private lemma getElem?_restore_eq_some {r k : ℕ} {o i : Win} {W' : Tape} :
+    (restore r o i).2[k]? = some W' ↔
+      ∃ W I, o.2[k]? = some W ∧ i.2[k]? = some I ∧ paste r W I = W' :=
+  List.getElem?_zipWith_eq_some
+
+private lemma act_cases (d : Desc) (q a : Option ℕ) (rs : List (Option ℕ)) :
+    act d q a rs = ⟨.zero, [], none, none⟩ ∨ ∃ e ∈ d.table, act d q a rs = e.2 := by
+  rcases q with _ | q
+  · exact Or.inl rfl
+  · simp only [act]
+    split
+    · exact Or.inl rfl
+    · rename_i h
+      exact Or.inr ⟨_, List.mem_of_find?_eq_some h, rfl⟩
+
+/-- The windowed simulation keeps the number of windows. -/
+theorem length_sim (d : Desc) (n : ℕ) (w : Win) : (sim d n w).1.2.length = w.2.length := by
+  induction n using sim_induction generalizing w with
+  | zero => rw [sim_zero]
+  | one =>
+    rw [sim_one]
+    obtain ⟨q, _ | ⟨i, ws⟩⟩ := w
+    · rfl
+    · simp [wstep_eq, length_applyTapes]
+  | step n ih =>
+    have hle : ∀ r w, (extract r w).2.length = w.2.length := by simp [extract]
+    rw [sim_add_two, length_restore, ih _ (by omega), hle, length_restore, ih _ (by
+      simp only [firstHalf]; omega), hle]
+    omega
+
+private lemma length_apply_le (t : Tape) (a : Option (Option ℕ) × SignType) :
+    (t.apply a).left.length ≤ t.left.length + 1 ∧
+      (t.apply a).right.length ≤ max t.right.length 1 + 1 := by
+  obtain ⟨_ | o, _ | _ | _⟩ := a <;> simp [Tape.apply, Tape.move, Tape.write] <;> omega
+
+/-- In `n` windowed steps, each window grows by at most `n` cells on each side, where the right
+list, which holds the cell under the head, counts as at least one cell. -/
+theorem length_sim_le (d : Desc) (n : ℕ) (w : Win) {k : ℕ} {W W' : Tape}
+    (hW : w.2[k]? = some W) (hW' : (sim d n w).1.2[k]? = some W') :
+    W'.left.length ≤ W.left.length + n ∧ W'.right.length ≤ max W.right.length 1 + n := by
+  induction n using sim_induction generalizing w k W W' with
+  | zero =>
+    rw [sim_zero, hW, Option.some.injEq] at hW'
+    subst hW'
+    omega
+  | one =>
+    rw [sim_one] at hW'
+    obtain ⟨q, _ | ⟨i, ws⟩⟩ := w
+    · simp at hW
+    rw [wstep_eq] at hW'
+    rcases k with _ | k
+    · simp only [List.getElem?_cons_zero, Option.some.injEq] at hW hW'
+      subst hW hW'
+      unfold moveIn
+      split_ifs
+      · exact length_apply_le _ (none, .pos)
+      · exact length_apply_le _ (none, .neg)
+      · omega
+    · simp only [List.getElem?_cons_succ] at hW
+      simp only [List.getElem?_cons_succ, getElem?_applyTapes, hW, Option.map_some,
+        Option.some.injEq] at hW'
+      subst hW'
+      exact length_apply_le W _
+  | step n ih =>
+    rw [sim_add_two, getElem?_restore_eq_some] at hW'
+    obtain ⟨P, J, hP, hJ, rfl⟩ := hW'
+    rw [getElem?_restore_eq_some] at hP
+    obtain ⟨W₀, I, hW₀, hI, rfl⟩ := hP
+    rw [hW, Option.some.injEq] at hW₀
+    subst hW₀
+    have h₁ := ih _ (by simp only [firstHalf]; omega) _ (getElem?_extract hW) hI
+    have h₂ := ih _ (by omega) _ (getElem?_extract (getElem?_restore hW hI)) hJ
+    simp only [cut, paste, firstHalf, List.length_append, List.length_drop,
+      List.length_take] at h₁ h₂ ⊢
+    omega
+
+/-- All cells of the window `t` satisfy `S`. -/
+private def Cells (S : Option ℕ → Prop) (t : Tape) : Prop := ∀ o ∈ t.left ++ t.right, S o
+
+private lemma cells_move {S : Option ℕ → Prop} (h0 : S none) {t : Tape} (h : Cells S t)
+    (m : SignType) : Cells S (t.move m) := by
+  have hl : ∀ o ∈ t.left, S o := fun o ho => h o (List.mem_append_left _ ho)
+  have hr : ∀ o ∈ t.right, S o := fun o ho => h o (List.mem_append_right _ ho)
+  have hd : ∀ l : List (Option ℕ), (∀ o ∈ l, S o) → S (l.headD none) := fun l hl' => by
+    cases l with
+    | nil => exact h0
+    | cons a l => exact hl' a List.mem_cons_self
+  intro o ho
+  rcases m with _ | _ | _
+  · exact h o ho
+  · simp only [Tape.move, List.mem_append, List.mem_cons] at ho
+    rcases ho with ho | rfl | ho
+    · exact hl o (List.mem_of_mem_tail ho)
+    · exact hd _ hl
+    · exact hr o ho
+  · simp only [Tape.move, List.mem_append, List.mem_cons] at ho
+    rcases ho with (rfl | ho) | ho
+    · exact hd _ hr
+    · exact hl o ho
+    · exact hr o (List.mem_of_mem_tail ho)
+
+private lemma cells_apply {S : Option ℕ → Prop} (h0 : S none) {t : Tape} (h : Cells S t)
+    {a : Option (Option ℕ) × SignType} (ha : ∀ o, a.1 = some o → S o) : Cells S (t.apply a) := by
+  obtain ⟨_ | o, m⟩ := a
+  · exact cells_move h0 h m
+  · change Cells S ((t.write o).move m)
+    refine cells_move h0 (fun o' ho' => ?_) m
+    simp only [Tape.write, List.mem_append, List.mem_cons] at ho'
+    rcases ho' with ho' | rfl | ho'
+    · exact h o' (List.mem_append_left _ ho')
+    · exact ha _ rfl
+    · exact h o' (List.mem_append_right _ (List.mem_of_mem_tail ho'))
+
+private lemma cells_applyTapes {S : Option ℕ → Prop} (h0 : S none) {ts : List Tape}
+    (h : ∀ t ∈ ts, Cells S t) {as : List (Option (Option ℕ) × SignType)}
+    (ha : ∀ a ∈ as, ∀ o, a.1 = some o → S o) : ∀ t ∈ applyTapes ts as, Cells S t := by
+  induction ts generalizing as with
+  | nil => simp [Universal.applyTapes]
+  | cons t ts ih =>
+    cases as with
+    | nil => simpa [Universal.applyTapes] using h
+    | cons a as =>
+      simp only [Universal.applyTapes, List.mem_cons, forall_eq_or_imp] at h ha ⊢
+      exact ⟨cells_apply h0 h.1 ha.1, ih h.2 ha.2⟩
+
+private lemma cells_cut {S : Option ℕ → Prop} {t : Tape} (h : Cells S t) (r : ℕ) :
+    Cells S (cut r t) := fun o ho => by
+  simp only [Windowed.cut, List.mem_append] at ho
+  rcases ho with ho | ho
+  · exact h o (List.mem_append_left _ (List.mem_of_mem_take ho))
+  · exact h o (List.mem_append_right _ (List.mem_of_mem_take ho))
+
+private lemma cells_paste {S : Option ℕ → Prop} {O I : Tape} (hO : Cells S O) (hI : Cells S I)
+    (r : ℕ) : Cells S (paste r O I) := fun o ho => by
+  simp only [Windowed.paste, List.mem_append] at ho
+  rcases ho with (ho | ho) | (ho | ho)
+  · exact hI o (List.mem_append_left _ ho)
+  · exact hO o (List.mem_append_left _ (List.mem_of_mem_drop ho))
+  · exact hI o (List.mem_append_right _ ho)
+  · exact hO o (List.mem_append_right _ (List.mem_of_mem_drop ho))
+
+/-- **The cells of the windows** after the windowed simulation come from the windows before it or
+are written by a transition: a property of cells that holds for the blank, for every symbol
+written by a transition and for all cells of the windows before, holds for all cells after. -/
+theorem sim_cells (d : Desc) (S : Option ℕ → Prop) (h0 : S none)
+    (htable : ∀ e ∈ d.table, ∀ a ∈ e.2.workTapes, ∀ o, a.1 = some o → S o) (n : ℕ) (w : Win)
+    (hw : ∀ W ∈ w.2, ∀ o ∈ W.left ++ W.right, S o) :
+    ∀ W ∈ (sim d n w).1.2, ∀ o ∈ W.left ++ W.right, S o := by
+  change ∀ W ∈ (sim d n w).1.2, Cells S W
+  change ∀ W ∈ w.2, Cells S W at hw
+  induction n using sim_induction generalizing w with
+  | zero => rwa [sim_zero]
+  | one =>
+    rw [sim_one]
+    obtain ⟨q, _ | ⟨i, ws⟩⟩ := w
+    · exact hw
+    rw [wstep_eq]
+    simp only [List.mem_cons, forall_eq_or_imp] at hw ⊢
+    refine ⟨?_, cells_applyTapes h0 hw.2 ?_⟩
+    · unfold moveIn
+      split_ifs
+      · exact cells_move h0 hw.1 _
+      · exact cells_move h0 hw.1 _
+      · exact hw.1
+    · rcases act_cases d q (inSym i.read) (ws.map Tape.read) with h | ⟨e, he, h⟩ <;> rw [h]
+      · simp
+      · exact htable e he
+  | step n ih =>
+    have hr : ∀ r w, (∀ W ∈ w.2, Cells S W) → ∀ W ∈ (extract r w).2, Cells S W :=
+      fun r w hw W hW => by
+        simp only [extract, List.mem_map] at hW
+        obtain ⟨W, hW, rfl⟩ := hW
+        exact cells_cut (hw W hW) r
+    have hp : ∀ r o i, (∀ W ∈ o.2, Cells S W) → (∀ W ∈ i.2, Cells S W) →
+        ∀ W ∈ (restore r o i).2, Cells S W := fun r o i ho hi W hW => by
+      obtain ⟨k, hk⟩ := List.mem_iff_getElem?.1 hW
+      obtain ⟨O, I, hO, hI, rfl⟩ := getElem?_restore_eq_some.1 hk
+      exact cells_paste (ho O (List.mem_of_getElem? hO)) (hi I (List.mem_of_getElem? hI)) r
+    rw [sim_add_two]
+    have h₁ := hp (firstHalf (n + 2)) w _ hw (ih (firstHalf (n + 2))
+      (by simp only [firstHalf]; omega) _ (hr (firstHalf (n + 2)) w hw))
+    exact hp _ _ _ h₁ (ih ((n + 2) / 2) (by omega) _ (hr _ _ h₁))
+
+/-- The state after the windowed simulation is the state before it, the halting state, or the next
+state of a transition. -/
+theorem sim_state (d : Desc) (T : Option ℕ → Prop) (h0 : T none)
+    (htable : ∀ e ∈ d.table, T e.2.state) (n : ℕ) (w : Win) (hw : T w.1) : T (sim d n w).1.1 := by
+  induction n using sim_induction generalizing w with
+  | zero => rwa [sim_zero]
+  | one =>
+    rw [sim_one]
+    obtain ⟨q, _ | ⟨i, ws⟩⟩ := w
+    · exact hw
+    rw [wstep_eq]
+    rcases act_cases d q (inSym i.read) (ws.map Tape.read) with h | ⟨e, he, h⟩ <;> rw [h]
+    · exact h0
+    · exact htable e he
+  | step n ih =>
+    rw [sim_add_two]
+    exact ih _ (by omega) _ (ih _ (by simp only [firstHalf]; omega) _ hw)
+
+/-- Every symbol emitted by the windowed simulation is the output of a transition. -/
+theorem sim_output (d : Desc) (n : ℕ) (w : Win) :
+    ∀ o ∈ (sim d n w).2, ∃ e ∈ d.table, e.2.output = some o := by
+  induction n using sim_induction generalizing w with
+  | zero => simp [sim_zero]
+  | one =>
+    rw [sim_one]
+    obtain ⟨q, _ | ⟨i, ws⟩⟩ := w
+    · simp [wstep]
+    rw [wstep_eq]
+    rcases act_cases d q (inSym i.read) (ws.map Tape.read) with h | ⟨e, he, h⟩ <;> rw [h]
+    · simp
+    · intro o ho
+      exact ⟨e, he, by simpa using ho⟩
+  | step n ih =>
+    rw [sim_add_two]
+    intro o ho
+    rcases List.mem_append.1 ho with ho | ho
+    · exact ih _ (by simp only [firstHalf]; omega) _ o ho
+    · exact ih _ (by omega) _ o ho
 
 end Turing.MultiTapeTM.Universal.Windowed
