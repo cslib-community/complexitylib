@@ -117,7 +117,25 @@ structure NodeResult (p k out scratch frames frame : ℕ)
 does not assert an execution or inherit the source Light machine's instruction constants. -/
 @[expose] def traceBudget (p : ℕ) : ℕ → ℕ
   | 0 => 42 * p * p + 9 * p + 28
-  | k + 1 => 7 * traceBudget p k + 616 * (4 ^ k * p) + 847
+  | k + 1 => 7 * traceBudget p k + 692 * (4 ^ k * p) + 900
+
+/-- Arithmetic bound for the proof budget. This does not establish the missing positive-depth
+native execution theorem. The strengthened potential pays the linear quarter-size work. -/
+theorem traceBudget_potential_le (p k : ℕ) :
+    traceBudget p k + 231 * p * 4 ^ k + 150 ≤ (42 * p * p + 240 * p + 178) * 7 ^ k := by
+  induction k with
+  | zero => simp only [traceBudget, pow_zero, Nat.mul_one]; omega
+  | succ k ih =>
+    have he : traceBudget p (k + 1) + 231 * p * 4 ^ (k + 1) + 150 + p * 4 ^ k =
+        7 * (traceBudget p k + 231 * p * 4 ^ k + 150) := by
+      rw [traceBudget, pow_succ]
+      ring
+    calc
+      _ ≤ traceBudget p (k + 1) + 231 * p * 4 ^ (k + 1) + 150 + p * 4 ^ k :=
+        Nat.le_add_right _ _
+      _ = _ := he
+      _ ≤ 7 * ((42 * p * p + 240 * p + 178) * 7 ^ k) := Nat.mul_le_mul_left _ ih
+      _ = _ := by rw [pow_succ]; ring
 
 /-- The actual native setup constructs root readiness, rather than taking it as a premise. -/
 theorem exec_setup_ready {w : ℕ} (x : Data 64)
