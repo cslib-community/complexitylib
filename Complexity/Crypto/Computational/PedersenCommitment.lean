@@ -321,7 +321,12 @@ noncomputable def pedersenKeyDist (setup : ℕ → PMF F.Desc) (n : ℕ) : PMF F
 ([BonehShoup2023], Section 8.12, Definition 8.8, p. 344, and Section 10.6.1, p. 414;
 [Pedersen1991], Section 3). -/
 noncomputable def pedersenScheme : CommitmentScheme F.PedersenKey where
-  encodeKey k := encPair F.encDesc encBits (k.1, F.encode k.1 k.2)
+  encodeKey := ⟨fun k => encPair F.encDesc encBits (k.1, F.encode k.1 k.2), by
+    rintro ⟨d, h⟩ ⟨d', h'⟩ heq
+    obtain ⟨hd, hh⟩ := Prod.ext_iff.mp ((encPair F.encDesc encBits).injective heq)
+    cases hd
+    cases F.encode_injective d hh
+    rfl⟩
   ValidMessage k := F.ValidPedersenMessage k.1
   commitDist k msg := F.pedersenCommitPairLaw k.1 k.2 (ofBits msg)
   verify k := F.pedersenVerify k.1 k.2
