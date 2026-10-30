@@ -805,7 +805,10 @@ and credited.
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- The full VNP-completeness reduction for the permanent ([#321]).
+- The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
+  project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
+  the conversion from VP witnesses to formulas and elimination of Boolean sums needed for
+  VNP-hardness remain open.
 - General auxiliary-input zero knowledge ([#324]); see the GMW theorem above.
 - Williams's square-root-space simulation ([#361]) and implicit Tree Evaluation ([#367]), now the
   frontier track [#888].
