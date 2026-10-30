@@ -63,11 +63,13 @@ elab (name := checkFailureScope) "check_failure_scope " outer:term ", " inner:te
   checkHint message "outerMissing" "innerMissing"
   -- A successful invocation can have failed routes; neither exit may leave a collector behind.
   withFailureHint (seedHint outer)
-  unless (failureHint.getState (← getEnv)).isNone do throwError "failure hint escaped its invocation"
+  unless (failureHint.getState (← getEnv)).isNone do
+    throwError "failure hint escaped its invocation"
   let message ← failureMessage <| withFailureHint (throwError "unseeded failure")
   unless message == "unseeded failure" do throwError "unexpected unseeded hint\n{message}"
   let raises : Array (TacticM Unit × (Exception → Bool)) := #[
-    ((do Core.throwMaxHeartbeat `polytimeFailureHint `maxHeartbeats 1000), Exception.isMaxHeartbeat),
+    ((do Core.throwMaxHeartbeat `polytimeFailureHint `maxHeartbeats 1000),
+      Exception.isMaxHeartbeat),
     (throwMaxRecDepthAt (← getRef), Exception.isMaxRecDepth),
     (throwInterruptException, Exception.isInterrupt)]
   for (raise, isExpected) in raises do
