@@ -18,9 +18,10 @@ cells within distance `n` of its head. It cuts the windows of radius `⌈n / 2�
 simulates the first `⌈n / 2⌉` steps on them recursively, pastes the result back, and does the same
 for the remaining `⌊n / 2⌋` steps. A single step is `Turing.MultiTapeTM.Universal.stepWith`.
 
-Cutting and pasting take time linear in the window, so `n` steps take time `O(n log n)` for a
-fixed machine; that cost analysis is in a separate module. This module defines the simulation and
-proves that it computes the universal function.
+Cutting and pasting take time linear in the enclosing window, so `n` steps take time
+`O(n log n)` for a fixed machine; that cost analysis is
+`Turing.MultiTapeTM.Universal.computableInO_universal_nlogn`, in a separate module. This module
+defines the simulation and proves that it computes the universal function.
 
 A windowed configuration (`Turing.MultiTapeTM.Universal.Windowed.Win`) holds the state, then the
 input window followed by the work windows. The `head` fields of the window zippers are not used.

@@ -19,9 +19,8 @@ problem and the first solution, solves the second subproblem, and combines the s
 second solution. Its evaluation with a cost is the inductive relation
 `Turing.MultiTapeTM.DivConq.Eval`: a node costs its two subproblems plus a cost of its own.
 
-If the parts are tidily computable, the solution is tidily computable within the cost of the
-evaluation, when the cost of every node covers the costs of its parts and the lengths of the words
-it touches (`Turing.MultiTapeTM.ComputableInO.divConq`). The machine runs the recursion as a
+If the parts are computable, the solution is computable within the cost of the evaluation, when
+the cost of every node covers the costs of its parts and the lengths of the words it touches (`Turing.MultiTapeTM.ComputableInO.divConq`). The machine runs the recursion as a
 `Turing.MultiTapeTM.StackLoop`, keeping the pending problems and saved data on a stack, so a node
 does not pay for the frames of its ancestors.
 
@@ -98,30 +97,30 @@ end Eval
 
 /-- The values of the stack loop: a call on a problem, a returned solution, and the final
 solution. -/
-abbrev Val (α β : Type) := α ⊕ (β ⊕ β)
+private abbrev Val (α β : Type) := α ⊕ (β ⊕ β)
 
 /-- The frames of the stack loop: a problem whose first subproblem is being solved, or the data
 saved while its second subproblem is solved. -/
-abbrev Frame (α γ : Type) := α ⊕ γ
+private abbrev Frame (α γ : Type) := α ⊕ γ
 
 variable (D : DivConq α β γ)
 
 /-- A round on a call: a base problem returns its solution; otherwise the problem is saved and its
 first subproblem called. The popped frame is pushed back. -/
-@[expose] def roundCall (p : Option (Frame α γ) × α) : List (Frame α γ) × Val α β :=
+private def roundCall (p : Option (Frame α γ) × α) : List (Frame α γ) × Val α β :=
   if D.isBase p.2 then (p.1.toList, .inr (.inl (D.base p.2)))
   else (.inl p.2 :: p.1.toList, .inl (D.left p.2))
 
 /-- A round on a returned solution: with an empty stack it is final; after a first subproblem the
 second is called, saving the data; after a second subproblem the solution is combined. -/
-@[expose] def roundRet (p : Option (Frame α γ) × β) : List (Frame α γ) × Val α β :=
+private def roundRet (p : Option (Frame α γ) × β) : List (Frame α γ) × Val α β :=
   match p.1 with
   | none => ([], .inr (.inr p.2))
   | some (.inl a) => ([.inr (D.mid (a, p.2)).2], .inl (D.mid (a, p.2)).1)
   | some (.inr g) => ([], .inr (.inl (D.join (g, p.2))))
 
 /-- The recursion as a stack loop, halting at a final solution. -/
-@[expose] def loop : StackLoop (Val α β) (Frame α γ) where
+private def loop : StackLoop (Val α β) (Frame α γ) where
   halt v := match v with
     | .inr (.inr _) => true
     | _ => false
@@ -131,14 +130,14 @@ second is called, saving the data; after a second subproblem the solution is com
     | .inr (.inr b) => (p.1.toList, .inr (.inr b))
 
 omit D in
-lemma toList_head?_append_tail (stk : List (Frame α γ)) : stk.head?.toList ++ stk.tail = stk := by
+private lemma toList_head?_append_tail (stk : List (Frame α γ)) : stk.head?.toList ++ stk.tail = stk := by
   cases stk <;> rfl
 
 /-- **The trace of an evaluation.** If every round costs at most `R` of its input, and `R` is
 bounded on the rounds of base problems and nodes as below, then from a call on `a` the loop
 returns the solution of `a`, above an untouched stack, within rounds whose total cost is at most
-`A * c` plus `B` times the size of the frame below, plus `B`. -/
-theorem eval_trace {cb : α → ℕ} {cn : α → β → β → ℕ} {R : Option (Frame α γ) × Val α β → ℕ}
+`4 * B * c` plus `B` times one more than the size of the top frame below. -/
+private theorem eval_trace {cb : α → ℕ} {cn : α → β → β → ℕ} {R : Option (Frame α γ) × Val α β → ℕ}
     {fsize : Option (Frame α γ) → ℕ} {B : ℕ}
     (hbase : ∀ o a, D.isBase a = true → R (o, .inl a) ≤ B * (fsize o + 1) + B * cb a)
     (hcall : ∀ o a b₁ b₂, D.isBase a = false →
@@ -244,15 +243,15 @@ open ComputableTidilyInO
 variable {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encG : γ ↪ List Bool}
 
 /-- The encoding of the values of the loop. -/
-abbrev encVal (encA : α ↪ List Bool) (encB : β ↪ List Bool) : Val α β ↪ List Bool :=
+private abbrev encVal (encA : α ↪ List Bool) (encB : β ↪ List Bool) : Val α β ↪ List Bool :=
   encSum encA (encSum encB encB)
 
 /-- The encoding of the frames of the loop. -/
-abbrev encFrame (encA : α ↪ List Bool) (encG : γ ↪ List Bool) : Frame α γ ↪ List Bool :=
+private abbrev encFrame (encA : α ↪ List Bool) (encG : γ ↪ List Bool) : Frame α γ ↪ List Bool :=
   encSum encA encG
 
 /-- `Option.toList`, in linear time. -/
-lemma toList_inO {δ : Type} {enc : δ ↪ List Bool} :
+private lemma toList_inO {δ : Type} {enc : δ ↪ List Bool} :
     ComputableTidilyInO (Option.toList (α := δ)) (encOption enc) (encList enc)
       (fun o => (encOption enc o).length) (fun o => (encOption enc o).length) := by
   have htail : ComputableTidilyInO List.tail encBits encBits (fun w => w.length)
@@ -277,7 +276,7 @@ lemma toList_inO {δ : Type} {enc : δ ↪ List Bool} :
 
 /-- The sums of the costs of a run of `m + 1` rounds followed by a halting test, against a bound
 on the first `m` rounds. -/
-lemma sums_le {A B R : ℕ → ℕ} {m X : ℕ} (h : ∀ i < m, A i + B i ≤ R i) :
+private lemma sums_le {A B R : ℕ → ℕ} {m X : ℕ} (h : ∀ i < m, A i + B i ≤ R i) :
     X + ∑ i ∈ Finset.range (m + 1 + 1), A i + ∑ i ∈ Finset.range (m + 1), B i ≤
       X + (∑ i ∈ Finset.range m, R i + A m + A (m + 1) + B m) := by
   rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ]
@@ -285,7 +284,7 @@ lemma sums_le {A B R : ℕ → ℕ} {m X : ℕ} (h : ∀ i < m, A i + B i ≤ R 
   rw [Finset.sum_add_distrib] at this
   omega
 
-lemma length_encList_toList_le {δ : Type} (enc : δ ↪ List Bool) (o : Option δ) :
+private lemma length_encList_toList_le {δ : Type} (enc : δ ↪ List Bool) (o : Option δ) :
     (encList enc o.toList).length ≤ 2 * (encOption enc o).length := by
   cases o <;> simp [length_frame]
 
@@ -293,13 +292,13 @@ variable (D : DivConq α β γ) {Tt St Tb Sb Tl Sl : α → ℕ} {Tm Sm : α × 
   {Tj Sj : γ × β → ℕ}
 
 /-- The swap of the components of a pair, in linear time. -/
-lemma swap_inO {σ τ : Type} {encS : σ ↪ List Bool} {encT : τ ↪ List Bool} :
+private lemma swap_inO {σ τ : Type} {encS : σ ↪ List Bool} {encT : τ ↪ List Bool} :
     ComputableTidilyInO (fun p : σ × τ => (p.2, p.1)) (encPair encS encT) (encPair encT encS)
       (fun p => (encPair encS encT p).length) (fun p => (encPair encS encT p).length) :=
   ((snd encS encT).prod (fst encS encT)).mono 2 (fun _ => by omega) (fun _ => by omega)
 
 /-- A call round, within the costs of its parts. -/
-lemma roundCall_inO (hisBase : ComputableTidilyInO D.isBase encA encBool Tt St)
+private lemma roundCall_inO (hisBase : ComputableTidilyInO D.isBase encA encBool Tt St)
     (hbase : ComputableTidilyInO D.base encA encB Tb Sb)
     (hleft : ComputableTidilyInO D.left encA encA Tl Sl) :
     ComputableTidilyInO D.roundCall (encPair (encOption (encFrame encA encG)) encA)
@@ -378,7 +377,7 @@ private lemma retSwap_inO
     nlinarith
 
 /-- A round, within the costs of the parts of the recursion it runs. -/
-lemma round_inO (hisBase : ComputableTidilyInO D.isBase encA encBool Tt St)
+private lemma round_inO (hisBase : ComputableTidilyInO D.isBase encA encBool Tt St)
     (hbase : ComputableTidilyInO D.base encA encB Tb Sb)
     (hleft : ComputableTidilyInO D.left encA encA Tl Sl)
     (hmid : ComputableTidilyInO D.mid (encPair encA encB) (encPair encA encG) Tm Sm)
@@ -426,7 +425,7 @@ lemma round_inO (hisBase : ComputableTidilyInO D.isBase encA encBool Tt St)
       omega
 
 /-- The halting test of the loop, in linear time. -/
-lemma halt_inO : ComputableTidilyInO D.loop.halt (encVal encA encB) encBool
+private lemma halt_inO : ComputableTidilyInO D.loop.halt (encVal encA encB) encBool
     (fun v => (encVal encA encB v).length) (fun v => (encVal encA encB v).length) := by
   have hw : ComputableTidilyInO (fun w : List Bool => (w.headD false, w.tail.headD false))
       encBits (encPair encBool encBool) (fun w => w.length) (fun w => w.length) :=
