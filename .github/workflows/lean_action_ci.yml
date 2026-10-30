@@ -25,6 +25,9 @@ concurrency:
 jobs:
   ci-checks:
     runs-on: ubuntu-latest
+    # Temporary #1728 hooks: absent plan is OFF. Activation needs a separately reviewed protocol.
+    env:
+      HANDOFF_MEASUREMENT_PLAN: ${{ vars.HANDOFF_MEASUREMENT_PLAN }}
     permissions:
       contents: read
       # Main may download the exact landed revision's successful merge-group build artifact.
@@ -34,6 +37,14 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare optional handoff measurement
+        id: handoff-measurement
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.HANDOFF_MEASUREMENT_PLAN != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
+        run: python3 -B scripts/cache_handoff_measurement.py prepare
       - name: Test documentation checker
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: "Source hygiene"
@@ -80,7 +91,23 @@ jobs:
       - name: Restore build outputs from the remote cache
         continue-on-error: true
         timeout-minutes: 10
-        run: scripts/cache/get-missing.sh
+        run: |
+          if [ -n "${HANDOFF_MEASUREMENT_LOG:-}" ]; then
+            set -o pipefail
+            scripts/cache/get-missing.sh | tee "$HANDOFF_MEASUREMENT_LOG"
+          else
+            scripts/cache/get-missing.sh
+          fi
+      - name: Optional controlled handoff measurement
+        id: handoff-measurement-result
+        if: steps.handoff-measurement.outputs.selected == 'true'
+        continue-on-error: true
+        timeout-minutes: 150
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
+          HANDOFF_MEASUREMENT_ACTIONS_KEY: ${{ steps.lake-cache.outputs.cache-matched-key }}
+        run: python3 -B scripts/cache_handoff_measurement.py measure
       # A merge-group build has already checked this exact commit before it lands on main.
       # Reuse its root outputs without granting merge groups access to the public-cache writer.
       # Missing, expired or mismatched handoffs leave the ordinary build below unchanged.
@@ -88,7 +115,8 @@ jobs:
       - name: Restore validated merge-group build outputs
         if: >-
           github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true' &&
+          steps.handoff-measurement-result.outputs.bypass_restore != 'true'
         continue-on-error: true
         timeout-minutes: 3
         env:
@@ -236,3 +264,11 @@ jobs:
         run: |
           set -e
           scripts/cache/upload.sh "${{ vars.LAKE_CACHE_BUCKET }}"
+      - name: Record optional handoff measurement
+        if: always() && steps.handoff-measurement.outputs.report != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoff-measurement-${{ github.run_id }}-${{ github.run_attempt }}
+          # Metadata only: the directory also holds private trial state and must never be uploaded.
+          path: ${{ steps.handoff-measurement.outputs.report }}
+          retention-days: 14
