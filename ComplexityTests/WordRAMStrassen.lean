@@ -9,6 +9,8 @@ Authors: Erik Demaine
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Leaf
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Initialize
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.LeafStep
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Exec
+import Mathlib.Tactic.IntervalCases
 
 /-!
 # Native explicit-stack Strassen execution regressions
@@ -180,5 +182,63 @@ example : ∃ y t, t + 1 ≤ 118 ∧
   · simpa only [Nat.zero_add, State.init] using hex.runs (pc := 0)
       (p := (complete 1 2 3 10 1 0).program Reg.output) (Program.Contains.self _).append_left
   · simpa only [State.init, hyout] using hex.executes Reg.output
+
+private def stackInput : List ℕ :=
+  [3, 4, 6, 9, 10, 13, 14, 16] ++ List.replicate 30 99 ++ [123]
+
+private def leftCoefficients (i : ℕ) : ℤ := ([-1, 2, 3, -4] : List ℤ).getD i 0
+private def rightCoefficients (i : ℕ) : ℤ := ([5, -6, 7, 8] : List ℤ).getD i 0
+
+-- A fully admitted positive-depth client of the general execution theorem, rather than
+-- an interpreter-only regression: all seven children execute in the same initialized run.
+-- Every premise is discharged from these original signed arrays and concrete pointers.
+example : ∃ y t, t + 1 ≤ 2188 ∧
+    Runs 18 ((complete 1 5 9 13 1 1).program Reg.output) (State.init stackInput)
+      ⟨(complete 1 5 9 13 1 1).size, y⟩ t ∧
+    Executes 18 ((complete 1 5 9 13 1 1).program Reg.output) (State.init stackInput) 9 (t + 1) ∧
+    y.Bounded 18 ∧ y.mem 9 = encode 9 ∧ y.mem 10 = encode 22 ∧
+    y.mem 11 = encode (-13) ∧ y.mem 12 = encode (-50) ∧ y.mem 39 = 123 := by
+  let x₀ := (((Data.init stackInput).set Reg.inputA 1).set Reg.inputB 5).set Reg.output 9
+  let x := ((x₀.set Reg.scratch 13).set Reg.modulus 1).set Reg.depth 1
+  have hargs : ExecWithin 18 (arguments 1 5 9 13 1 1) (.init stackInput) x 6 := by
+    ram_eval [arguments, x, x₀, Reg.inputA, Reg.inputB, Reg.output,
+      Reg.scratch, Reg.modulus, Reg.depth]
+  obtain ⟨y, hy, result⟩ := exec (w := 16) (p := 1) (k := 1) (A := 4) (B := 8)
+    (a := 1) (b := 5) (out := 9) (scratch := 13) x leftCoefficients rightCoefficients
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (Or.inl (by decide)) (Or.inl (by decide))
+    (by intro i hi; have hi' : i < 4 := hi; interval_cases i <;> decide)
+    (by intro i hi; have hi' : i < 4 := hi; interval_cases i <;> decide)
+    (by intro i hi; have hi' : i < 4 := hi; interval_cases i <;> decide)
+    (by intro i hi; have hi' : i < 4 := hi; interval_cases i <;> decide)
+    (by decide) (by decide)
+  have he : ExecWithin 18 (complete 1 5 9 13 1 1) (.init stackInput) y 2187 :=
+    (hargs.seq hy).mono (by decide)
+  have hv₀ : y.mem 9 = encode 9 := by
+    simpa only [Nat.add_zero, show Cslib.Algorithms.MatrixMultiplication.Strassen.multiply
+      1 1 leftCoefficients rightCoefficients 0 = 9 from by decide] using result.values 0 (by decide)
+  have hv₁ : y.mem 10 = encode 22 := by
+    simpa only [show 9 + 1 = 10 from rfl,
+      show Cslib.Algorithms.MatrixMultiplication.Strassen.multiply
+        1 1 leftCoefficients rightCoefficients 1 = 22 from by decide] using
+      result.values 1 (by decide)
+  have hv₂ : y.mem 11 = encode (-13) := by
+    simpa only [show 9 + 2 = 11 from rfl,
+      show Cslib.Algorithms.MatrixMultiplication.Strassen.multiply
+        1 1 leftCoefficients rightCoefficients 2 = -13 from by decide] using
+      result.values 2 (by decide)
+  have hv₃ : y.mem 12 = encode (-50) := by
+    simpa only [show 9 + 3 = 12 from rfl,
+      show Cslib.Algorithms.MatrixMultiplication.Strassen.multiply
+        1 1 leftCoefficients rightCoefficients 3 = -50 from by decide] using
+      result.values 3 (by decide)
+  have hsentinel : y.mem 39 = 123 :=
+    (result.outside 39 (by unfold NodeWrites; decide)).trans (by decide)
+  have hyb := he.bounded (Data.Bounded.init (show InputFits 18 stackInput from by decide))
+  obtain ⟨t, ht, hex⟩ := he
+  refine ⟨y, t, by omega, ?_, ?_, hyb, hv₀, hv₁, hv₂, hv₃, hsentinel⟩
+  · simpa only [Nat.zero_add, State.init] using hex.runs (pc := 0)
+      (p := (complete 1 5 9 13 1 1).program Reg.output) (Program.Contains.self _).append_left
+  · simpa only [State.init, result.output_eq] using hex.executes Reg.output
 
 end ComplexityTests.WordRAMStrassen

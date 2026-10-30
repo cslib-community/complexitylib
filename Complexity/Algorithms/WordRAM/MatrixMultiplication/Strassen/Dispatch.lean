@@ -32,6 +32,19 @@ open Cslib.WordRAM
 @[expose] def dispatchState (phase : Fin 8) (x : Data 64) : Data 64 :=
   if phase.val = 0 then x else x.set Reg.tag (min phase.val 6)
 
+/-- The dispatch prefix only writes the tag register. -/
+theorem dispatchState_regs (phase : Fin 8) (x : Data 64) (i : Fin 64) (hi : i ≠ Reg.tag) :
+    (dispatchState phase x).regs i = x.regs i := by
+  unfold dispatchState
+  split
+  · rfl
+  · exact Function.update_of_ne hi _ _
+
+/-- Comparisons and tag constants never change memory. -/
+theorem dispatchState_mem (phase : Fin 8) (x : Data 64) : (dispatchState phase x).mem = x.mem := by
+  unfold dispatchState
+  split <;> rfl
+
 /-- Follow the actual phase chain, charging every failed comparison and tag assignment.
 The stage premise is an internal composition step, discharged by the native stage lemmas. -/
 theorem exec_dispatch {w T : ℕ} (phase : Fin 8) (x y : Data 64)
