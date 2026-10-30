@@ -64,8 +64,7 @@ example {K : Type} [Field K] (encode : K ↪ List Bool)
     ComputableInPolyTime (RotationMap.affinePlaneTowerBase K).rot
       (encPair (baseEncoding encode) (planeEncoding encode))
       (encPair (baseEncoding encode) (planeEncoding encode)) := by
-  have hplane := ComputableInPolyTime.rotationMap_affinePlane hmul hsub
-  exact ((hplane.rotationMap_tensor hplane).rotationMap_zigzag hplane).rotationMap_zigzag hplane
+  fun_prop [RotationMap.affinePlaneTowerBase]
 
 -- Only the fixed field operations use the finite-domain theorem; graph products compose them.
 example (encode : ZMod 257 ↪ List Bool) :
@@ -76,8 +75,7 @@ example (encode : ZMod 257 ↪ List Bool) :
       (planeEncoding encode) encode := .of_finite _
   have hsub : ComputableInPolyTime (fun p : ZMod 257 × ZMod 257 => p.1 - p.2)
       (planeEncoding encode) encode := .of_finite _
-  have hplane := ComputableInPolyTime.rotationMap_affinePlane hmul hsub
-  exact ((hplane.rotationMap_tensor hplane).rotationMap_zigzag hplane).rotationMap_zigzag hplane
+  fun_prop [RotationMap.affinePlaneTowerBase]
 
 -- Equivalent direct and let-bound spellings, with a supplied rotation on an arbitrary type.
 example {V D E : Type} (G : RotationMap V D) (H : RotationMap D E)
@@ -88,7 +86,6 @@ example {V D E : Type} (G : RotationMap V D) (H : RotationMap D E)
       (fun p : ((V × D) × (E × E)) × Bool => ((G.zigzag H).rot p.1, !p.2))
       (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
       (encPair (encPair (encPair vertex label) (encPair small small)) encBool) := by
-  dsimp only [RotationMap.zigzag, RotationMap.zigzagRot]
   fail_if_success (clear hG; fun_prop)
   fail_if_success (clear hH; fun_prop)
   fun_prop
@@ -103,7 +100,21 @@ example {V D E : Type} (G : RotationMap V D) (H : RotationMap D E)
         (next, !p.2))
       (encPair (encPair (encPair vertex label) (encPair small small)) encBool)
       (encPair (encPair (encPair vertex label) (encPair small small)) encBool) := by
-  dsimp only [RotationMap.zigzag, RotationMap.zigzagRot]
+  fun_prop
+
+-- Tensor and zig-zag wrappers must lead search to their distinct rotation programs.
+example {V D W E : Type} (G : RotationMap V D) (H : RotationMap W E)
+    (vertex : V ↪ List Bool) (label : D ↪ List Bool)
+    (otherVertex : W ↪ List Bool) (otherLabel : E ↪ List Bool)
+    (hG : ComputableInPolyTime G.rot (encPair vertex label) (encPair vertex label))
+    (hH : ComputableInPolyTime H.rot
+      (encPair otherVertex otherLabel) (encPair otherVertex otherLabel)) :
+    ComputableInPolyTime
+      (fun p : ((V × W) × (D × E)) × Bool => ((G.tensor H).rot p.1, !p.2))
+      (encPair (encPair (encPair vertex otherVertex) (encPair label otherLabel)) encBool)
+      (encPair (encPair (encPair vertex otherVertex) (encPair label otherLabel)) encBool) := by
+  fail_if_success (clear hG; fun_prop)
+  fail_if_success (clear hH; fun_prop)
   fun_prop
 
 end ComplexityTests.ExplicitExpanders

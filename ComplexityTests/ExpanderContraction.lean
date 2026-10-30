@@ -68,7 +68,7 @@ example : ComputableInPolyTime threeVertices.rot
   have hg : ComputableInPolyTime completeFive.rot
       (encPair (encFinEnum (Fin 5)) (encFinEnum (Fin 5)))
       (encPair (encFinEnum (Fin 5)) (encFinEnum (Fin 5))) := .of_finite _
-  exact ComputableInPolyTime.rotationMap_contract he hd hg
+  fun_prop [threeVertices, RotationMap.contractFin]
 
 example {V W I D : Type} (G : RotationMap V D) (encode : V → W × I)
     (decode : W × I → Option V) (hinv : Function.IsPartialInv encode decode)
@@ -80,7 +80,6 @@ example {V W I D : Type} (G : RotationMap V D) (encode : V → W × I)
       (fun p : (W × (I × D)) × Bool => ((RotationMap.contract encode decode hinv G).rot p.1, !p.2))
       (encPair (encPair ew (encPair ei ed)) encBool)
       (encPair (encPair ew (encPair ei ed)) encBool) := by
-  dsimp only [RotationMap.contract, RotationMap.contractRot, RotationMap.contractDart]
   fail_if_success (clear he; fun_prop)
   fail_if_success (clear hd; fun_prop)
   fail_if_success (clear hg; fun_prop)

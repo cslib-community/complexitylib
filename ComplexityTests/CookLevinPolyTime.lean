@@ -46,6 +46,12 @@ example {k : ℕ} {State : Type} [Fintype State] [DecidableEq State] :
       (encPair (encPair (encPair encBits encUnary) encUnary) encUnary) encCNF := by
   fun_prop
 
+-- The full reducible tuple composes without a specialized `Prod.mk` search rule.
+example {α : Type} (enc : α ↪ List Bool) (p : Polynomial ℕ) (c d : ℕ) :
+    ComputableInPolyTime (parameters p c d enc)
+      enc (encPair encBits (encPair encUnary encUnary)) := by
+  fun_prop
+
 -- The input encoding, polynomial and machine are fixed parameters of the reduction.
 example {k : ℕ} {State α : Type} [Fintype State]
     (tm : Turing.MultiTapeTM k Bool State) (enc : α ↪ List Bool)

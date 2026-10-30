@@ -44,7 +44,7 @@ theorem ExecWithin.loop_invariant_state {B : Basis} {r w T : ℕ} {σ : Type*}
         I s' y ∧ ¬cond.Holds y := by
     intro n
     induction n using Nat.strong_induction_on with
-    | h n ih =>
+    | ind n ih =>
       intro s x hμ hI
       by_cases hc : cond.Holds x
       · obtain ⟨s₁, y, hy, hIy, hdec⟩ := hbody s x hI hc

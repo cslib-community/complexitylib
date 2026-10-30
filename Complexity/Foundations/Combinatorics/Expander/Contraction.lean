@@ -75,6 +75,7 @@ theorem contractRot_contractDart (rotate : V × D → V × D) (p : V × D) :
   simp [contractRot, contractDart, h.eq]
 
 /-- Contract the occupied slots over each vertex, completing the degree with self-loops. -/
+@[reducible]
 def contract (G : RotationMap V D) : RotationMap W (I × D) where
   rot := contractRot encode decode G.rot
   rot_involutive := by

@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
 public import Mathlib.Data.Fintype.Option
-import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
 import Mathlib.Basic.Finite.Prod
 import Mathlib.Basic.Finite.Sum
 
@@ -469,7 +468,8 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
         moveInputPosNat_zero (by omega : 2 * u.length + 2 + v.length ≤ (frame u ++ v).length + 1)]
       exact cfgAt_congr rfl (by omega)
     rw [hu, hv, run_nil_nil]
-    have hfin := Transducer.toList_head?_append (τ.length_final_le q)
+    have hfin := (List.take_add_one (l := τ.final q) (i := 1)).symm
+    rw [List.take_one, ← List.head?_tail, List.take_of_length_le (τ.length_final_le q)] at hfin
     rcases hb : (τ.final q).tail.head? with _ | b
     · rw [hb, Option.toList_none, List.append_nil] at hfin
       rw [hb, Option.map_none] at s₁
@@ -546,7 +546,8 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
       rw [τ.run_of_ne (by simpa [hxdef, hydef, and_comm] using hne), List.tail_drop,
         List.tail_drop, List.append_assoc, List.append_assoc,
         ← List.append_assoc ((τ.step q (y, x)).2.head?.toList),
-        Transducer.toList_head?_append (τ.length_step_le _ _)]
+        ← List.take_one, List.head?_tail, ← List.take_add_one,
+        List.take_of_length_le (τ.length_step_le _ _)]
     rw [hrun]
     exact ((Seg.single (cfgAt_mem_cells (by omega) (by omega)) s₁
       (cfgAt_mem_cells (by omega) (by omega))).trans

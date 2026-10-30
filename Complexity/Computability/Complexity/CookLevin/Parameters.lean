@@ -45,7 +45,8 @@ open Turing.MultiTapeTM
 
 /-- The input prefix, certificate length and verifier time bound used by the Cook–Levin
 reduction are jointly computable in polynomial time, with the bounds in unary. -/
-@[fun_prop]
+-- The reducible tuple is handled by compositional rules. Registering this certificate would
+-- index its specialized formula under `Prod.mk` and interfere with unrelated tuple clients.
 theorem computableInPolyTime_parameters {α : Type} (p : Polynomial ℕ) (c d : ℕ)
     (enc : α ↪ List Bool) :
     ComputableInPolyTime (parameters p c d enc)

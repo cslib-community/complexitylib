@@ -686,7 +686,8 @@ theorem Data.extend_extend (hf : f.Injective) (y z : Data r) (x : Data r') :
     · simp [Function.extend_apply' _ _ _ hj]
   · rfl
 
-private theorem Data.extend_comap (hf : f.Injective) (x : Data r') :
+/-- Writing a register view back into its source data changes nothing. -/
+theorem Data.extend_comap (hf : f.Injective) (x : Data r') :
     (x.comap f).extend f x = x := by
   ext j
   · change Function.extend f (x.regs ∘ f) x.regs j = x.regs j
