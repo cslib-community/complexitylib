@@ -5,6 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Logics.Propositional.Resolution.Interpolation
+import Complexity.Computability.Circuit.Monotone.Formula
+import Complexity.Computability.Circuit.Unfolding
 
 /-!
 # Tests: feasible interpolation for resolution
@@ -12,6 +14,11 @@ import Complexity.Logics.Propositional.Resolution.Interpolation
 A concrete split formula, `A(x, y) = y ∧ (y → x)` and `B(x, z) = z ∧ (z → ¬x)`, with a refutation
 of seven lines. Its only interpolant is `x`: the interpolant circuit extracted from the refutation
 has at most `28` gates and computes `x` exactly. A constant function is not an interpolant.
+
+The shared variable occurs positively in `A` and negatively in `B`, so both monotone variants
+apply and give monotone circuits with at most `14` gates computing `x`. With the polarities
+swapped, the only interpolant is `¬x`, and no monotone circuit is an interpolant, although the
+swapped formula has a refutation of the same shape.
 -/
 
 namespace ComplexityTests.ProofComplexity.Interpolation
@@ -104,5 +111,74 @@ example : ∃ C : Circuit Boolean.signature 1 1, C.size ≤ 28 ∧
 example : ∃ C : Circuit Boolean.signature 1 1, C.size ≤ 28 ∧
     A.IsInterpolant B fun a => C.eval Boolean.interpretation a 0 :=
   CNF.RefutableInSize.exists_interpolant ⟨_, isProof, by decide, le_rfl⟩
+
+/-! ### Monotone interpolants -/
+
+/-- `x` occurs only positively in `A` and only negatively in `B`. -/
+private theorem positive : ∀ d ∈ A, ∀ i b, (.inl i, b) ∈ d → b = true := by decide
+private theorem negative : ∀ d ∈ B, ∀ i b, (.inl i, b) ∈ d → b = false := by decide
+
+/-- A monotone interpolant of `A` and `B` computes `x`. -/
+private theorem eval_eq_of_isInterpolant {C : Circuit Monotone.signature 1 1}
+    (hC : A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0) (a : Fin 1 → Bool) :
+    C.eval Monotone.interpretation a 0 = a 0 := by
+  have ha : a = fun _ => a 0 := funext fun i => by rw [Subsingleton.elim i 0]
+  cases h0 : a 0 <;> rw [h0] at ha <;> subst ha
+  · exact hC.2 _ (fun _ => true) (by decide)
+  · exact hC.1 _ (fun _ => true) (by decide)
+
+/-- Both monotone variants give a monotone circuit with at most `14` gates computing `x`. -/
+example : ∃ C : Circuit Monotone.signature 1 1, C.size ≤ 14 ∧
+    ∀ a, C.eval Monotone.interpretation a 0 = a 0 := by
+  obtain ⟨C, hsize, hC⟩ := isProof.exists_monotone_interpolant_of_positive (by decide) positive
+  exact ⟨C, hsize, eval_eq_of_isInterpolant hC⟩
+
+example : ∃ C : Circuit Monotone.signature 1 1, C.size ≤ 14 ∧
+    ∀ a, C.eval Monotone.interpretation a 0 = a 0 := by
+  obtain ⟨C, hsize, hC⟩ := isProof.exists_monotone_interpolant_of_negative (by decide) negative
+  exact ⟨C, hsize, eval_eq_of_isInterpolant hC⟩
+
+example : ∃ C : Circuit Monotone.signature 1 1, C.size ≤ 14 ∧
+    A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0 :=
+  CNF.RefutableInSize.exists_monotone_interpolant_of_positive ⟨_, isProof, by decide, le_rfl⟩
+    positive
+
+/-- `A` and `B` with the polarity of `x` swapped: `y ∧ (y → ¬x)` and `z ∧ (z → x)`. -/
+private def A' : CNF (Fin 1 ⊕ Unit) := [[(.inr (), true)], [(.inr (), false), (.inl 0, false)]]
+private def B' : CNF (Fin 1 ⊕ Unit) := [[(.inr (), true)], [(.inr (), false), (.inl 0, true)]]
+
+/-- The swapped formula has a seven-line refutation, but neither polarity hypothesis holds. -/
+example : (A'.appendShared B').RefutableInSize 7 ∧
+    ¬ (∀ d ∈ A', ∀ i b, (.inl i, b) ∈ d → b = true) ∧
+    ¬ (∀ d ∈ B', ∀ i b, (.inl i, b) ∈ d → b = false) := by
+  refine ⟨⟨[[], [(x, true)], [(x, false)], [(z, false), (x, true)], [(z, true)],
+    [(y, false), (x, false)], [(y, true)]], ?_, by decide, le_rfl⟩, by decide, by decide⟩
+  have h₄ : (A'.appendShared B').IsProof
+      [[(z, false), (x, true)], [(z, true)], [(y, false), (x, false)], [(y, true)]] :=
+    (((CNF.IsProof.nil.mem (by decide)).mem (by decide)).mem (by decide)).mem (by decide)
+  have h₅ := h₄.resolvent (c₁ := [(y, true)]) (c₂ := [(y, false), (x, false)]) y (by decide)
+    (by decide) (by decide) (by decide)
+  have h₆ := h₅.resolvent (c₁ := [(z, true)]) (c₂ := [(z, false), (x, true)]) z (by decide)
+    (by decide) (by decide) (by decide)
+  exact h₆.resolvent (c₁ := [(x, true)]) (c₂ := [(x, false)]) x (by decide) (by decide)
+    (by decide) (by decide)
+
+/-- No monotone circuit is an interpolant of the swapped formula: an interpolant is `true` at
+`x = false` and `false` at `x = true`. -/
+example : ¬ ∃ C : Circuit Monotone.signature 1 1,
+    A'.IsInterpolant B' fun a => C.eval Monotone.interpretation a 0 := by
+  rintro ⟨C, hC⟩
+  have hmono : Monotone fun a => C.eval Monotone.interpretation a 0 := fun a b hab => by
+    simp only [← Circuit.eval_toFormula]
+    exact Monotone.monotone_eval _ hab
+  have h₀ : C.eval Monotone.interpretation (fun _ => false) 0 = true :=
+    hC.1 _ (fun _ => true) (by decide)
+  have h₁ : C.eval Monotone.interpretation (fun _ => true) 0 = false :=
+    hC.2 _ (fun _ => true) (by decide)
+  have : C.eval Monotone.interpretation (fun _ => false) 0 ≤
+      C.eval Monotone.interpretation (fun _ => true) 0 :=
+    hmono (show (fun _ : Fin 1 => false) ≤ fun _ => true from fun _ => Bool.false_le _)
+  rw [h₀, h₁] at this
+  exact absurd this (by decide)
 
 end ComplexityTests.ProofComplexity.Interpolation
