@@ -1027,6 +1027,9 @@ public import Complexity.Computability.Complexity.Classes.Constructible
 public import Complexity.Computability.Complexity.Classes.Constructible.Log
 public import Complexity.Computability.Complexity.Classes.Counting.OracleSpace
 public import Complexity.Computability.Complexity.Classes.Counting.Space
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Accumulate
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Assembly
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.FewP
