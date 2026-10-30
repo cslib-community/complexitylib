@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedParts
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedInit
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.DivConq
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -351,6 +352,151 @@ lemma nodeCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B)
   unfold nodeCost
   omega
 
+lemma eval_base {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B) (hn : n ≤ 1)
+    (hw : WInv (descLen d) B 0 (2 * n + 1) w) :
+    ∃ c, simDC.Eval baseCost nodeCost (d, n, w) (sim d n w) c ∧ c ≤ costA (descLen d) B := by
+  refine ⟨baseCost (d, n, w), ?_, baseCost_le hDB hn hw⟩
+  rw [← simDC_base_eq hn]
+  exact .base (by simp only [simDC, decide_eq_true_eq]; exact hn)
+
+/-- **The cost recurrence**: on `n ≤ 2 ^ k` steps, the windowed simulation costs at most
+`2 ^ (k + 1) * (k + 1) * costA D B`. -/
+lemma eval_le (d : Desc) {B : ℕ} (hDB : descLen d ≤ B) (k : ℕ) :
+    ∀ n w, n ≤ 2 ^ k → WInv (descLen d) B 0 (2 * n + 1) w →
+      ∃ c, simDC.Eval baseCost nodeCost (d, n, w) (sim d n w) c ∧
+        c ≤ 2 ^ (k + 1) * (k + 1) * costA (descLen d) B := by
+  induction k with
+  | zero =>
+    intro n w hn hw
+    obtain ⟨c, hc, hle⟩ := eval_base hDB (by simpa using hn) hw
+    exact ⟨c, hc, by simp only [zero_add, pow_one, Nat.mul_one]; omega⟩
+  | succ k ih =>
+    intro n w hn hw
+    have hA : costA (descLen d) B ≤ 2 ^ (k + 1 + 1) * (k + 1 + 1) * costA (descLen d) B :=
+      Nat.le_mul_of_pos_left _ (Nat.mul_pos (Nat.pow_pos (by omega)) (by omega))
+    by_cases hn1 : n ≤ 1
+    · obtain ⟨c, hc, hle⟩ := eval_base hDB hn1 hw
+      exact ⟨c, hc, hle.trans hA⟩
+    have hpow : 2 ^ (k + 1) = 2 * 2 ^ k := by ring
+    have iL := (hw.extract (firstHalf n)).mono (h' := 0) (L' := 2 * firstHalf n + 1) le_rfl
+      (min_le_right _ _)
+    obtain ⟨c₁, h₁, hc₁⟩ := ih (firstHalf n) _ (by unfold firstHalf; omega) iL
+    have iw₁ := hw.restore_sim hDB (firstHalf n) (firstHalf n)
+    have iM := (iw₁.extract (n / 2)).mono (h' := 0) (L' := 2 * (n / 2) + 1) le_rfl
+      (min_le_right _ _)
+    obtain ⟨c₂, h₂, hc₂⟩ := ih (n / 2) _ (by omega) iM
+    have hnode := DivConq.Eval.node (D := simDC) (a := (d, n, w))
+      (by simp only [simDC, decide_eq_false_iff_not]; omega) h₁ h₂
+    have hcost := nodeCost_le hDB hw
+    obtain ⟨m, rfl⟩ : ∃ m, n = m + 2 := ⟨n - 2, by omega⟩
+    rw [show simDC.join ((simDC.mid ((d, m + 2, w), sim d (firstHalf (m + 2))
+        (extract (firstHalf (m + 2)) w))).2, sim d ((m + 2) / 2) (extract ((m + 2) / 2)
+          (restore (firstHalf (m + 2)) w (sim d (firstHalf (m + 2))
+            (extract (firstHalf (m + 2)) w)).1))) = sim d (m + 2) w by
+      rw [sim_add_two]; rfl] at hnode
+    refine ⟨_, hnode, ?_⟩
+    · have h2 : m + 2 + 1 ≤ 2 * 2 ^ (k + 1) := by omega
+      calc c₁ + c₂ + nodeCost (d, m + 2, w) _ _
+          ≤ 2 ^ (k + 1) * (k + 1) * costA (descLen d) B +
+              2 ^ (k + 1) * (k + 1) * costA (descLen d) B +
+              costA (descLen d) B * (m + 2 + 1) := by omega
+        _ ≤ 2 ^ (k + 1) * (k + 1) * costA (descLen d) B +
+              2 ^ (k + 1) * (k + 1) * costA (descLen d) B +
+              costA (descLen d) B * (2 * 2 ^ (k + 1)) := by gcongr
+        _ = 2 ^ (k + 1 + 1) * (k + 1 + 1) * costA (descLen d) B := by ring
+
 end Cost
 
 end Turing.MultiTapeTM.Universal.Windowed
+
+namespace Turing.MultiTapeTM.Universal
+
+open Windowed ComputableTidilyInO
+
+/-- The output of the universal function from the result of the windowed simulation. -/
+lemma post_inO : ComputableTidilyInO (fun s : Sol => (s.2, s.1.1.isNone)) eSol eOut
+    (fun s => (eSol s).length) (fun s => (eSol s).length) := by
+  have hst := (fst eSym (encList eTape)).comp_linear (fst eWin (encList encUnary))
+  have hnone := (ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
+    (fun b : Bool => !b)).inO_one.comp_linear
+      ((ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear hst)
+  exact (((snd eWin (encList encUnary)).prod hnone).mono 2 (fun s => by dsimp only [eSol]; omega)
+    (fun s => by dsimp only [eSol]; omega)).of_enc_eq fun ⟨⟨st, ts⟩, o⟩ => by cases st <;> rfl
+
+lemma length_encNat_le_log (t : ℕ) : (encNat t).length ≤ Nat.log 2 (t + 1) + 1 := by
+  have h := Nat.le_log_of_pow_le (b := 2) (by norm_num)
+    (show 2 ^ (encNat t).length ≤ (t + 1) * 2 by
+      have := two_pow_length_encNat_le t; omega)
+  rwa [Nat.log_mul_base (by norm_num) (by omega)] at h
+
+lemma two_pow_log_le (t : ℕ) : 2 ^ Nat.log 2 t ≤ t + 1 := by
+  rcases Nat.eq_zero_or_pos t with rfl | ht
+  · simp
+  · exact (Nat.pow_log_le_self 2 (by omega)).trans (by omega)
+
+/-- **The universal function in time `O(t log t)`.** For a description `d` of encoded length `D`,
+an input `x` with largest symbol `M` and `t` steps given in binary, the universal function is
+computable in time and space `O(N + (D + M + 2) ^ 6 * (t + 1) * (log₂ (t + 1) + 1))`, where `N` is
+the length of the encoded input `(d, x, t)`. -/
+public theorem computableInO_universal_nlogn :
+    ComputableInO universal eIn eOut
+      (fun i => (eIn i).length +
+        (descLen i.1 + listMax id i.2.1 + 2) ^ 6 * ((i.2.2 + 1) * (Nat.log 2 (i.2.2 + 1) + 1)))
+      (fun i => (eIn i).length +
+        (descLen i.1 + listMax id i.2.1 + 2) ^ 6 * ((i.2.2 + 1) * (Nat.log 2 (i.2.2 + 1) + 1))) := by
+  have hev : ∀ i : Desc × List ℕ × ℕ, ∃ c, simDC.Eval baseCost nodeCost
+      (i.1, i.2.2, extract i.2.2 (initWin i.1 i.2.1))
+      (sim i.1 i.2.2 (extract i.2.2 (initWin i.1 i.2.1))) c ∧
+      c ≤ 2 ^ (Nat.log 2 i.2.2 + 1 + 1) * (Nat.log 2 i.2.2 + 1 + 1) *
+        costA (descLen i.1) (descLen i.1 + listMax id i.2.1 + 1) := fun i =>
+    eval_le i.1 (by omega) (Nat.log 2 i.2.2 + 1) i.2.2 _
+      (Nat.lt_pow_succ_log_self (by norm_num) _).le
+      (((winv_initWin i.1 i.2.1).extract i.2.2).mono le_rfl (min_le_right _ _))
+  choose C hC using hev
+  have hdc := ComputableInO.divConq simDC initProb_inO isBase_inO.computableInO
+    base_inO.computableInO left_inO.computableInO mid_inO.computableInO join_inO.computableInO
+    (cb := baseCost) (cn := nodeCost) (fun _ _ => le_rfl) (fun _ _ _ _ => le_rfl)
+    (fun i => (hC i).1)
+  refine (((post_inO.comp_linear hdc.tidy).of_enc_eq (g := universal) fun ⟨d, x, t⟩ => by
+    rw [universal_eq_sim]; rfl).computableInO.mono 6000000000 (fun i => ?_) (fun i => ?_))
+  all_goals
+    obtain ⟨d, x, t⟩ := i
+    have hY : descLen d + 1 ≤ descLen d + listMax id x + 2 := by omega
+    have hY6 : 1 ≤ (descLen d + listMax id x + 2) ^ 6 := Nat.one_le_pow _ _ (by omega)
+    have hD3 : (descLen d + 1) ^ 3 ≤ (descLen d + listMax id x + 2) ^ 6 :=
+      (Nat.pow_le_pow_left hY 3).trans (Nat.pow_le_pow_right (by omega) (by omega))
+    have hQ1 : 1 ≤ (t + 1) * (Nat.log 2 (t + 1) + 1) := Nat.one_le_iff_ne_zero.mpr (by positivity)
+    have hQ : (t + 1) * ((encNat t).length + 1) ≤ 2 * ((t + 1) * (Nat.log 2 (t + 1) + 1)) := by
+      have := length_encNat_le_log t
+      calc (t + 1) * ((encNat t).length + 1) ≤ (t + 1) * (2 * (Nat.log 2 (t + 1) + 1)) :=
+            Nat.mul_le_mul_left _ (by omega)
+        _ = _ := by ring
+    have hlog : Nat.log 2 t ≤ Nat.log 2 (t + 1) := Nat.log_mono_right (by omega)
+    have hC1 : 2 ^ (Nat.log 2 t + 1 + 1) * (Nat.log 2 t + 1 + 1) ≤
+        8 * ((t + 1) * (Nat.log 2 (t + 1) + 1)) :=
+      calc 2 ^ (Nat.log 2 t + 1 + 1) * (Nat.log 2 t + 1 + 1)
+          ≤ (4 * (t + 1)) * (2 * (Nat.log 2 (t + 1) + 1)) := by
+            refine Nat.mul_le_mul ?_ (by omega)
+            have := two_pow_log_le t
+            rw [pow_succ, pow_succ]; omega
+        _ = _ := by ring
+    have hC2 : costA (descLen d) (descLen d + listMax id x + 1) ≤
+        640000000 * (descLen d + listMax id x + 2) ^ 6 := by
+      unfold costA
+      calc 10000000 * (descLen d + (descLen d + listMax id x + 1) + 2) ^ 6
+          ≤ 10000000 * (2 * (descLen d + listMax id x + 2)) ^ 6 :=
+            Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) 6)
+        _ = _ := by ring
+    have hC3 := (hC (d, x, t)).2
+    have hC4 : C (d, x, t) ≤ 5120000000 * ((descLen d + listMax id x + 2) ^ 6 *
+        ((t + 1) * (Nat.log 2 (t + 1) + 1))) :=
+      calc C (d, x, t) ≤ 8 * ((t + 1) * (Nat.log 2 (t + 1) + 1)) *
+            (640000000 * (descLen d + listMax id x + 2) ^ 6) :=
+            hC3.trans (Nat.mul_le_mul hC1 hC2)
+        _ = _ := by ring
+    have hP1 := Nat.le_mul_of_pos_right ((descLen d + listMax id x + 2) ^ 6) hQ1
+    have hP2 := Nat.le_mul_of_pos_left ((t + 1) * (Nat.log 2 (t + 1) + 1)) hY6
+    dsimp only at *
+    omega
+
+end Turing.MultiTapeTM.Universal
