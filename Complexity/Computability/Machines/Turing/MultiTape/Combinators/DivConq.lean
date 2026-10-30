@@ -70,6 +70,30 @@ inductive Eval (D : DivConq α β γ) (cb : α → ℕ) (cn : α → β → β �
       Eval D cb cn (D.left a) b₁ c₁ → Eval D cb cn (D.mid (a, b₁)).1 b₂ c₂ →
       Eval D cb cn a (D.join ((D.mid (a, b₁)).2, b₂)) (c₁ + c₂ + cn a b₁ b₂)
 
+namespace Eval
+
+variable {D : DivConq α β γ} {cb : α → ℕ} {cn : α → β → β → ℕ}
+
+/-- Scaling the costs of base problems and nodes scales the cost of an evaluation. -/
+lemma scale (k : ℕ) {a : α} {b : β} {c : ℕ} (h : D.Eval cb cn a b c) :
+    D.Eval (fun a => k * cb a) (fun a b₁ b₂ => k * cn a b₁ b₂) a b (k * c) := by
+  induction h with
+  | base ha => exact .base ha
+  | node ha _ _ ih₁ ih₂ => rw [Nat.mul_add, Nat.mul_add]; exact .node ha ih₁ ih₂
+
+/-- The problem and its solution are within the cost of an evaluation, when the cost of every base
+problem and node covers them. -/
+lemma length_le {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+    (hb : ∀ a, D.isBase a = true → (encA a).length + (encB (D.base a)).length ≤ cb a)
+    (hn : ∀ a b₁ b₂, D.isBase a = false →
+      (encA a).length + (encB (D.join ((D.mid (a, b₁)).2, b₂))).length ≤ cn a b₁ b₂)
+    {a : α} {b : β} {c : ℕ} (h : D.Eval cb cn a b c) : (encA a).length + (encB b).length ≤ c := by
+  induction h with
+  | base ha => exact hb _ ha
+  | @node a b₁ b₂ c₁ c₂ ha _ _ _ _ => have := hn a b₁ b₂ ha; omega
+
+end Eval
+
 /-! ### The recursion as a stack loop -/
 
 /-- The values of the stack loop: a call on a problem, a returned solution, and the final
@@ -250,6 +274,16 @@ lemma toList_inO {δ : Type} {enc : δ ↪ List Bool} :
       2 (fun o => ?_) (fun o => ?_)
   · cases o <;> simp [encBits]
   all_goals omega
+
+/-- The sums of the costs of a run of `m + 1` rounds followed by a halting test, against a bound
+on the first `m` rounds. -/
+lemma sums_le {A B R : ℕ → ℕ} {m X : ℕ} (h : ∀ i < m, A i + B i ≤ R i) :
+    X + ∑ i ∈ Finset.range (m + 1 + 1), A i + ∑ i ∈ Finset.range (m + 1), B i ≤
+      X + (∑ i ∈ Finset.range m, R i + A m + A (m + 1) + B m) := by
+  rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ]
+  have := Finset.sum_le_sum (s := Finset.range m) fun i hi => h i (Finset.mem_range.mp hi)
+  rw [Finset.sum_add_distrib] at this
+  omega
 
 lemma length_encList_toList_le {δ : Type} (enc : δ ↪ List Bool) (o : Option δ) :
     (encList enc o.toList).length ≤ 2 * (encOption enc o).length := by
@@ -435,7 +469,116 @@ theorem ComputableInO.divConq {δ α β γ : Type} {encIn : δ ↪ List Bool}
         (encB (D.join ((D.mid (a, b₁)).2, b₂))).length + 1 ≤ cn a b₁ b₂)
     (heval : ∀ x, D.Eval cb cn (init x) (F x) (C x)) :
     ComputableInO F encIn encB (fun x => (encIn x).length + Ti x + Si x + C x)
-      (fun x => (encIn x).length + Ti x + Si x + C x) :=
-  sorry
+      (fun x => (encIn x).length + Ti x + Si x + C x) := by
+  classical
+  -- the certificates of the loop
+  have hR := D.round_inO (encG := encG) hisBase.tidy hbase.tidy hleft.tidy hmid.tidy hjoin.tidy
+  have hH := D.halt_inO (encA := encA) (encB := encB)
+  have hI := (ComputableInO.inl encA (encSum encB encB)).tidy.comp hinit.tidy
+  set encF := DivConq.encFrame encA encG with hencF
+  set encV := DivConq.encVal encA encB with hencV
+  -- the cost of a round
+  let RB : Option (DivConq.Frame α γ) × DivConq.Val α β → ℕ := fun p =>
+    (encPair (encOption encF) encV p).length + p.2.elim
+      (fun a => Tt a + St a + if D.isBase a then Tb a + Sb a + (encB (D.base a)).length
+        else Tl a + Sl a + (encA (D.left a)).length)
+      (fun s => s.elim (fun b => p.1.elim 0 (fun x => x.elim
+        (fun a => Tm (a, b) + Sm (a, b) + (encPair encA encG (D.mid (a, b))).length)
+        (fun g => Tj (g, b) + Sj (g, b) + (encB (D.join (g, b))).length))) (fun _ => 0))
+  let R : Option (DivConq.Frame α γ) × DivConq.Val α β → ℕ := fun p =>
+    (encV p.2).length + (encV p.2).length + (encV p.2).length + (RB p + RB p +
+      (encPair (encOption encF) encV p).length +
+      (encPair (encList encF) encV (D.loop.round p)).length)
+  let fsize : Option (DivConq.Frame α γ) → ℕ := fun o => (encOption encF o).length
+  -- the bounds of the rounds of base problems and nodes
+  have hb' : ∀ o a, D.isBase a = true →
+      R (o, .inl a) ≤ 64 * (fsize o + 1) + 64 * (6 * cb a) := by
+    intro o a ha
+    have h₁ := hcb a ha
+    have h₂ := DivConq.length_encList_toList_le encF o
+    simp only [R, RB, fsize, DivConq.loop, DivConq.roundCall, ha, Sum.elim_inl, ite_true,
+      length_encPair, hencV, hencF, encSum_inl, encSum_inr, List.length_cons] at h₂ ⊢
+    omega
+  have hc' : ∀ o a b₁ b₂, D.isBase a = false →
+      R (o, .inl a) ≤ 64 * (fsize o + 1) + 64 * (6 * cn a b₁ b₂) := by
+    intro o a b₁ b₂ ha
+    have h₁ := hcn a b₁ b₂ ha
+    have h₂ := DivConq.length_encList_toList_le encF o
+    simp only [R, RB, fsize, DivConq.loop, DivConq.roundCall, ha, Sum.elim_inl,
+      Bool.false_eq_true, ite_false, length_encPair, hencV, hencF, encSum_inl,
+      List.length_cons, encList_cons, List.length_append, length_frame] at h₂ ⊢
+    omega
+  have hm' : ∀ a b₁ b₂, D.isBase a = false →
+      R (some (.inl a), .inr (.inl b₁)) ≤ 64 * (6 * cn a b₁ b₂) := by
+    intro a b₁ b₂ ha
+    have h₁ := hcn a b₁ b₂ ha
+    simp only [R, RB, DivConq.loop, DivConq.roundRet, Sum.elim_inl, Sum.elim_inr,
+      Option.elim_some, length_encPair, hencV, hencF, encSum_inl, encSum_inr, List.length_cons,
+      encOption_some, encList_cons, encList_nil, List.append_nil, length_frame]
+    omega
+  have hj' : ∀ a b₁ b₂, D.isBase a = false →
+      R (some (.inr (D.mid (a, b₁)).2), .inr (.inl b₂)) ≤ 64 * (6 * cn a b₁ b₂) := by
+    intro a b₁ b₂ ha
+    have h₁ := hcn a b₁ b₂ ha
+    simp only [R, RB, DivConq.loop, DivConq.roundRet, Sum.elim_inl, Sum.elim_inr,
+      Option.elim_some, length_encPair, hencV, hencF, encSum_inl, encSum_inr, List.length_cons,
+      encOption_some, encList_nil, List.length_nil]
+    omega
+  have hf' : ∀ a b₁ b₂, D.isBase a = false →
+      fsize (some (.inl a)) + fsize (some (.inr (D.mid (a, b₁)).2)) + 2 ≤ 6 * cn a b₁ b₂ := by
+    intro a b₁ b₂ ha
+    have h₁ := hcn a b₁ b₂ ha
+    simp only [fsize, hencF, encOption_some, encSum_inl, encSum_inr, List.length_cons]
+    omega
+  -- the trace of every input
+  have htrace := fun x => D.eval_trace hb' hc' hm' hj' hf' ((heval x).scale 6) []
+  choose m hm hh hs using htrace
+  have hfinal : ∀ x, D.loop.step^[m x + 1] (.inl (init x), []) = (.inr (.inr (F x)), []) :=
+    fun x => by rw [Function.iterate_succ_apply', hm x]; rfl
+  have hlen := fun x => DivConq.Eval.length_le (encA := encA) (encB := encB)
+    (fun a ha => by have := hcb a ha; omega)
+    (fun a b₁ b₂ ha => by have := hcn a b₁ b₂ ha; omega) (heval x)
+  have hSL := ComputableInO.stackLoop D.loop (fun x => m x + 1) hI.computableInO
+    hH.computableInO hR.computableInO
+    (fun x i hi => by
+      rcases Nat.lt_or_ge i (m x) with hi' | hi'
+      · exact hh x i hi'
+      · obtain rfl : i = m x := by omega
+        simp only [Function.comp_apply, hm x]; rfl)
+    (fun x => by simp only [Function.comp_apply, hfinal x]; rfl)
+    (fun x => by simp only [Function.comp_apply, hfinal x])
+  -- the solution is the final value without its two tags
+  have hdrop : ComputableTidilyInO (fun v : DivConq.Val α β => (encV v).drop 2) encV encBits
+      (fun v => (encV v).length) (fun v => (encV v).length) := by
+    have htail : ComputableTidilyInO List.tail encBits encBits (fun w => w.length)
+        (fun w => w.length) :=
+      ComputableTidilyInO.of_linear (ComputableTidilyInLinearTimeAndSpace.of_tail
+        (f := List.tail) (encIn := encBits) (encOut := encBits) fun _ => rfl)
+    refine ((htail.comp htail).comp (ComputableTidilyInO.of_linear
+      (ComputableTidilyInLinearTimeAndSpace.of_eq (f := fun v => encV v) (encIn := encV)
+        (encMid := encBits) fun _ => rfl))).of_enc_eq (fun v => ?_) |>.mono 3 (fun v => ?_)
+        (fun v => ?_)
+    · simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply]
+      generalize encV v = w
+      rcases w with _ | ⟨_, _ | ⟨_, _⟩⟩ <;> rfl
+    all_goals simp; omega
+  refine ((hdrop.comp hSL.tidy).of_enc_eq (g := F) fun x => ?_).computableInO.mono 4000
+    (fun x => ?_) (fun x => ?_)
+  · simp only [Function.comp_apply, hfinal, hencV, encSum_inr, encBits,
+      Function.Embedding.refl_apply, List.drop_succ_cons, List.drop_zero]
+  all_goals
+    have hsx := hs x
+    have hlx := hlen x
+    simp only [Function.comp_apply]
+    refine le_trans (Nat.add_le_add_right (DivConq.sums_le (R := fun i => R
+      (StackLoop.roundInput (D.loop.step^[i] (.inl (init x), [])))) ?_) _) ?_
+    · intro i _
+      exact le_of_eq rfl
+    have hround : D.loop.round (none, .inr (.inl (F x))) = ([], .inr (.inr (F x))) := rfl
+    simp only [hm x, hfinal x, StackLoop.roundInput, List.head?_nil, hround] at hsx ⊢
+    simp only [hencV, hencF, Option.elim_none, Sum.elim_inr, Sum.elim_inl, length_encPair,
+      encSum_inr, encSum_inl, List.length_cons, encOption_none, encList_nil, List.length_nil,
+      fsize] at hsx ⊢
+    omega
 
 end Turing.MultiTapeTM
