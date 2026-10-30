@@ -213,23 +213,23 @@ lemma moveOn_eq (n p : ℕ) (d : SignType) :
 
 /-- **The head of `g` after a move**, in quadratic time and linear space. -/
 lemma moveOn_inO : ComputableInO (fun q : ℕ × ℕ × SignType => moveOn q.1 q.2.1 q.2.2)
-    (encPair encNat (encPair encNat encMove)) encNat
-    (fun q => ((encPair encNat (encPair encNat encMove) q).length + 1) ^ 2)
-    fun q => (encPair encNat (encPair encNat encMove) q).length + 1 := by
-  have hn := fst encNat (encPair encNat encMove)
-  have hp := (snd encNat (encPair encNat encMove)).fst'
-  have hd := (snd encNat (encPair encNat encMove)).snd'
-  have hdz := (ComputableInDegree.of_finite (encIn := encMove) (encMid := encBool)
+    (encPair encNat (encPair encNat encSign)) encNat
+    (fun q => ((encPair encNat (encPair encNat encSign) q).length + 1) ^ 2)
+    fun q => (encPair encNat (encPair encNat encSign) q).length + 1 := by
+  have hn := fst encNat (encPair encNat encSign)
+  have hp := (snd encNat (encPair encNat encSign)).fst'
+  have hd := (snd encNat (encPair encNat encSign)).snd'
+  have hdz := (ComputableInDegree.of_finite (encIn := encSign) (encMid := encBool)
     fun d : SignType => decide (d = 0)).inO_one.comp_linear hd
-  have hdn := (ComputableInDegree.of_finite (encIn := encMove) (encMid := encBool)
+  have hdn := (ComputableInDegree.of_finite (encIn := encSign) (encMid := encBool)
     fun d : SignType => decide (d = -1)).inO_one.comp_linear hd
   have heq := (eq encNat).comp (hp.prod (natSucc.comp hn))
   have h := hdz.ite hp (hdn.ite (natPred.comp hp) (heq.ite hp (natSucc.comp hp)))
   refine (h.of_enc_eq fun q => ?_).mono 16 (fun q => ?_) fun q => ?_
   · simp only [moveOn_eq, Function.comp_apply, decide_eq_true_eq]
   all_goals
-    have h₁ := length_encPair (enc₁ := encNat) (enc₂ := encPair encNat encMove) q
-    have h₂ := length_encPair (enc₁ := encNat) (enc₂ := encMove) q.2
+    have h₁ := length_encPair (enc₁ := encNat) (enc₂ := encPair encNat encSign) q
+    have h₂ := length_encPair (enc₁ := encNat) (enc₂ := encSign) q.2
     have h₃ := (show (encNat (q.2.1 - 1)).length ≤ (encNat q.2.1).length from by
       simpa [Nat.size_eq_bits_len] using Nat.size_le_size (Nat.sub_le q.2.1 1))
     have h₄ := ComputableTidilyInO.length_encNat_add_le q.1 1
@@ -324,7 +324,7 @@ variable {f : StepMachine σf Bool Bool} {g : StepMachine σg Bool Bool} {Tf Sf 
 local notation "encArg" => encPair (encCompState encF encG) (encOption encBool)
 
 /-- The encoding of the results of a step. -/
-local notation "encRes" => encPair (encCompState encF encG) (encPair encMove encBits)
+local notation "encRes" => encPair (encCompState encF encG) (encPair encSign encBits)
 
 lemma length_encArg_le (p : CompState σf σg × Option Bool) :
     (encArg p).length ≤ 2 * (encCompState encF encG p.1).length + 3 := by
@@ -403,8 +403,8 @@ lemma stepF_inO (hf : f.ResourceCertificate encF Tf Sf) :
   have hn : (fun p : CompState σf σg × Option Bool => (f.step p.1.f p.2).2.2.length) ≼
       fun p => Sf p.1.f + (encCompState encF encG p.1).length := .of_le_linear cf cf fun p => by
     have := hcf (p.1.f, p.2)
-    have := length_le_encPair_right encF (encPair encMove encBits) (f.step p.1.f p.2)
-    have := length_le_encPair_right encMove encBits (f.step p.1.f p.2).2
+    have := length_le_encPair_right encF (encPair encSign encBits) (f.step p.1.f p.2)
+    have := length_le_encPair_right encSign encBits (f.step p.1.f p.2).2
     simp only [encBits_apply] at *
     nlinarith
   have hA := (encArg_bigO (encF := encF) (encG := encG)).trans
@@ -431,7 +431,7 @@ lemma stepF_inO (hf : f.ResourceCertificate encF Tf Sf) :
 lemma stepG_round_inO (hg : g.ResourceCertificate encG Tg Sg) :
     ComputableInO
       (fun p : CompState σf σg × Option Bool => g.step p.1.g.1 (p.1.cd.symbol p.1.g.2))
-      encArg (encPair encG (encPair encMove encBits))
+      encArg (encPair encG (encPair encSign encBits))
       (fun p => 4 * (encArg p).length + Tg p.1.g.1)
       (fun p => 4 * (encArg p).length + Sg p.1.g.1) := by
   have hs := fst (encCompState encF encG) (encOption encBool)
@@ -456,10 +456,10 @@ lemma stepG_head_inO (hg : g.ResourceCertificate encG Tg Sg) :
         moveOn p.1.cd.len p.1.g.2 (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1)
       encArg encNat
       (fun p => 6 * (encArg p).length + Tg p.1.g.1 +
-        ((encPair encNat (encPair encNat encMove)
+        ((encPair encNat (encPair encNat encSign)
           (p.1.cd.len, p.1.g.2, (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1)).length + 1) ^ 2)
       (fun p => 6 * (encArg p).length + Sg p.1.g.1 +
-        (encPair encNat (encPair encNat encMove)
+        (encPair encNat (encPair encNat encSign)
           (p.1.cd.len, p.1.g.2, (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1)).length + 1) := by
   have hs := fst (encCompState encF encG) (encOption encBool)
   have hgp := CompState.g_inO.comp_linear hs
@@ -492,11 +492,11 @@ lemma stepG_inO (hg : g.ResourceCertificate encG Tg Sg) :
   obtain ⟨hgs, hpg, hlen, -⟩ := parts_bigO (encF := encF) (encG := encG)
   have hA := encArg_bigO (encF := encF) (encG := encG)
   have hmv : (fun p : CompState σf σg × Option Bool =>
-      (encMove (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1).length) ≼
+      (encSign (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1).length) ≼
         fun p => (encCompState encF encG p.1).length :=
     .of_le_linear 0 1 fun p => by
-      cases (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1 <;> simp [encMove]
-  have hsq : (fun p : CompState σf σg × Option Bool => ((encPair encNat (encPair encNat encMove)
+      cases (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1 <;> simp [encSign]
+  have hsq : (fun p : CompState σf σg × Option Bool => ((encPair encNat (encPair encNat encSign)
       (p.1.cd.len, p.1.g.2, (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1)).length + 1) ^ 2) ≼
         fun p => ((encCompState encF encG p.1).length + 1) ^ 3 :=
     BigOLe.pow_le (by simp only [length_encPair]; bigO)
@@ -508,11 +508,11 @@ lemma stepG_inO (hg : g.ResourceCertificate encG Tg Sg) :
     (BigOLe.of_le fun p => Nat.pow_le_pow_left (by omega) 3).trans hT
   have hAt := hA.trans hL
   have hAs := hA.trans hLs
-  have hlin : (fun p : CompState σf σg × Option Bool => (encPair encNat (encPair encNat encMove)
+  have hlin : (fun p : CompState σf σg × Option Bool => (encPair encNat (encPair encNat encSign)
       (p.1.cd.len, p.1.g.2, (g.step p.1.g.1 (p.1.cd.symbol p.1.g.2)).2.1)).length) ≼
         fun p => compSpace encF encG Sf Sg p.1 :=
     BigOLe.trans (by simp only [length_encPair]; bigO) hLs
-  refine (hst.prod ((const (0 : SignType) (encMid := encMove)).prod hr.snd'.snd')).weaken ?_ ?_ <;>
+  refine (hst.prod ((const (0 : SignType) (encMid := encSign)).prod hr.snd'.snd')).weaken ?_ ?_ <;>
   · bigO
 
 lemma le_compTime (s : CompState σf σg) :
@@ -557,7 +557,7 @@ lemma rewind_inO : ComputableInO (fun p : CompState σf σg × Option Bool =>
         (⟨p.1.g, p.1.phase, p.1.f, p.1.cd⟩ : CompState σf σg)) fun p => rfl
   have hres {st : CompState σf σg × Option Bool → CompState σf σg} {T S}
       (h : ComputableInO st encArg (encCompState encF encG) T S) (d : SignType) :=
-    h.prod ((const d (encMid := encMove)).prod (const ([] : List Bool) (encMid := encBits)))
+    h.prod ((const d (encMid := encSign)).prod (const ([] : List Bool) (encMid := encBits)))
   have hAt := (encArg_bigO (encF := encF) (encG := encG)).trans
     (time_bigO (Tf := Tf) (Sf := Sf) (Tg := Tg)).2.1
   have hAs := (encArg_bigO (encF := encF) (encG := encG)).trans (space_bigO (Sf := Sf) (Sg := Sg)).1

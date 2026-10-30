@@ -57,3 +57,18 @@ example {α β : Type} (a : α ↪ List Bool) (b : β ↪ List Bool)
     ⟨⟨fun _ => c, fun _ => 0, DegreeBounded.const c, DegreeBounded.const 0, h⟩,
       DegreeBounded.const 0⟩
   exact ⟨u, ⟨fun _ => (), fun x => Subsingleton.elim _ x, 0, 0, hd⟩, hd⟩
+
+-- Optional unary data retains linear cost and output; nested optional Booleans retain constant
+-- output even on malformed tag words, rather than inheriting the cost degree as an output bound.
+example :
+    ComputableInDegree (Decoder.option Decoder.unary).decode encBits (encOption encUnary) 1 1 ∧
+    ComputableInDegree (Decoder.option (Decoder.option Decoder.bool)).decode
+      encBits (encOption (encOption encBool)) 1 0 ∧
+    (Decoder.option (Decoder.option Decoder.bool)).decode [] = none ∧
+    (Decoder.option (Decoder.option Decoder.bool)).decode [false] = some none ∧
+    (Decoder.option (Decoder.option Decoder.bool)).decode [false, true] = some (some false) := by
+  have hbool : ComputableInDegree Decoder.bool.decode encBits encBool 1 0 :=
+    ⟨Internal.DecoderWords.bool_degree.1, ⟨1, fun _ => by simp⟩⟩
+  exact ⟨Decoder.unary.option_computableInDegree Internal.DecoderWords.unary_degree,
+    (Decoder.option Decoder.bool).option_computableInDegree
+      (Decoder.bool.option_computableInDegree hbool), rfl, rfl, rfl⟩
