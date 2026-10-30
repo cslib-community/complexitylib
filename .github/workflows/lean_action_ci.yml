@@ -40,9 +40,9 @@ jobs:
         run: python3 -B scripts/check_hygiene.py --check-simp
       # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
       # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
-      # pins. Their own workflows run only nightly or on guide changes; checking here makes a root
-      # cslib or Mathlib bump without matching lockfile updates fail at PR time. It reads only
-      # checked-in files: no Lean, network or `.lake`.
+      # pins. Checking here makes a root cslib or Mathlib bump without matching lockfile updates
+      # fail before Lean setup; the Guide workflow also compiles examples for library/pin changes.
+      # This reads only checked-in files: no Lean, network or `.lake`.
       - name: "Documentation pins"
         run: python3 -B scripts/check_docs.py --config-only
       # lean-action has no hook between installing the toolchain and building, so here it only
