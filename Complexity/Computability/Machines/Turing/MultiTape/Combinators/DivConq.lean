@@ -20,7 +20,8 @@ second solution. Its evaluation with a cost is the inductive relation
 `Turing.MultiTapeTM.DivConq.Eval`: a node costs its two subproblems plus a cost of its own.
 
 If the parts are computable, the solution is computable within the cost of the evaluation, when
-the cost of every node covers the costs of its parts and the lengths of the words it touches (`Turing.MultiTapeTM.ComputableInO.divConq`). The machine runs the recursion as a
+the cost of every node covers the costs of its parts and the lengths of the words it touches
+(`Turing.MultiTapeTM.ComputableInO.divConq`). The machine runs the recursion as a
 `Turing.MultiTapeTM.StackLoop`, keeping the pending problems and saved data on a stack, so a node
 does not pay for the frames of its ancestors.
 
@@ -130,7 +131,8 @@ private def loop : StackLoop (Val α β) (Frame α γ) where
     | .inr (.inr b) => (p.1.toList, .inr (.inr b))
 
 omit D in
-private lemma toList_head?_append_tail (stk : List (Frame α γ)) : stk.head?.toList ++ stk.tail = stk := by
+private lemma toList_head?_append_tail (stk : List (Frame α γ)) :
+    stk.head?.toList ++ stk.tail = stk := by
   cases stk <;> rfl
 
 /-- **The trace of an evaluation.** If every round costs at most `R` of its input, and `R` is
