@@ -9,8 +9,6 @@ module
 -- vendored: derive encoded prefix/filter bounds from Mathlib's `List.Sublist.flatMap`.
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
-import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
-import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTakeDropUnary
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -19,7 +17,7 @@ import Mathlib.Tactic.Linarith
 Operations on lists encoded by `Turing.MultiTapeTM.encList`, with explicit degrees
 (`Turing.MultiTapeTM.ComputableTidilyInDegree`): adding an element at either end and concatenation
 in linear time; finding the first element that passes a test and keeping the elements that pass a
-test, one degree above the test; and dropping a number of elements in linear time. The tests may
+test, one degree above the test; and dropping a number of elements in quadratic time. The tests may
 depend on a parameter.
 
 ## Main results
@@ -184,27 +182,28 @@ public theorem filterWith {t : π × α → Bool} {par : γ → π} {list : γ �
   funext x
   rw [foldl_filterStep, List.nil_append]
 
--- vendored: linear time by the native machine `TakeDropUnary.toTM` (crei folds `List.tail` over
--- the count, which has degree 2).
-/-- Dropping the first `n` elements, with `n` in unary, in linear time. -/
+/-- Dropping the first `n` elements, with `n` in unary. -/
 public theorem dropUnary (enc : α ↪ List Bool) :
     ComputableTidilyInDegree (fun p : List α × ℕ => p.1.drop p.2)
-      (encPair (encList enc) encUnary) (encList enc) 1 1 := by
-  obtain ⟨c, hc⟩ :=
-    (TakeDropUnary.computableInTimeAndSpace false enc).exists_computableTidilyInTimeAndSpace
-  refine of_bounds ⟨10 + c, fun p => ?_⟩ ⟨3 * c, fun p => ?_⟩ hc <;>
-    have h := length_le_encPair_right (encList enc) encUnary p <;>
-    rw [encUnary_apply, List.length_replicate] at h <;>
-    dsimp only <;>
-    rw [pow_one]
-  · have hc' : c ≤ c * ((encPair (encList enc) encUnary p).length + 1) :=
-      Nat.le_mul_of_pos_right c (Nat.succ_pos _)
-    rw [Nat.add_mul]
-    omega
-  · calc c * (p.2 + 2 + 1) ≤ c * (3 * ((encPair (encList enc) encUnary p).length + 1)) :=
-          Nat.mul_le_mul_left c (by omega)
-      _ = 3 * c * ((encPair (encList enc) encUnary p).length + 1) := by
-          rw [Nat.mul_left_comm, Nat.mul_assoc]
+      (encPair (encList enc) encUnary) (encList enc) 2 1 := by
+  have hrep (l : List α) (n : ℕ) : (List.replicate n true).foldl (fun acc _ => acc.tail) l =
+      l.drop n := by
+    simp [List.foldl_const, List.tail_iterate]
+  have hfold := foldl' (encA := encBool) (encL := encBits) (encB := encList enc)
+    (list := fun p : List α × ℕ => List.replicate p.2 true) (step := fun acc _ => acc.tail)
+    ((of_eq (f := fun n => List.replicate n true) (encIn := encUnary) (encMid := encBits)
+      fun _ => rfl).comp (snd (encList enc) encUnary))
+    (fst (encList enc) encUnary)
+    ((tail (enc₁ := enc)).comp (fst (encList enc) encBool))
+    (B := fun p => (encPair (encList enc) encUnary p).length) .self (fun p i hi => by
+      rw [List.take_replicate, hrep]
+      have := SizedListEncoding.length_drop_le (encA := enc) (encL := encList enc) p.1
+        (min i p.2)
+      simp only [length_encPair]
+      omega)
+  convert hfold.mono (d' := 2) (e' := 1) using 1
+  funext p
+  rw [hrep]
 
 /-- One step of mapping with the parameter `p`. -/
 @[expose] public def mapStep {β : Type} (f : π × α → β) (p : π) (acc : List β) (a : α) :
