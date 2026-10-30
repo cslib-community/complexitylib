@@ -8,6 +8,9 @@ public import Complexity.Algorithms.ExactTriangle.PieceBounds
 public import Complexity.Algorithms.ExactTriangle.Splitting
 public import Complexity.Algorithms.ExactTriangle.Weights
 public import Complexity.Algorithms.ExactTriangle.Witnesses
+public import Complexity.Algorithms.Lean.AVLTree.Basic
+public import Complexity.Algorithms.Lean.AVLTree.Erase
+public import Complexity.Algorithms.Lean.AVLTree.Stateful
 public import Complexity.Algorithms.Lean.CuckooHashing
 public import Complexity.Algorithms.Lean.Dictionary
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
