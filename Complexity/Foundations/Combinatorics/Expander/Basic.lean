@@ -49,6 +49,8 @@ below is proved from these characterizations. `λ(G) ≤ 1` always, and `G` is a
 * `Cslib.RotationMap.interedges`: the edges from one set of vertices to another, as darts.
 * `Cslib.RotationMap.edgeCount`: the number of edges from one vertex to another.
 * `Cslib.RotationMap.walk`: the walk operator.
+* `Cslib.RotationMap.orthogonalSubmodule`: the subspace of `EuclideanSpace ℝ V` orthogonal to the
+  constant functions.
 * `Cslib.RotationMap.spectralExpansion`: the spectral expansion `λ(G)`.
 
 ## Main results
@@ -315,6 +317,11 @@ section SpectralExpansion
 
 variable [Fintype V] [Fintype D]
 
+/-- The subspace of `EuclideanSpace ℝ V` orthogonal to the constant functions. -/
+noncomputable def orthogonalSubmodule (V : Type*) [Fintype V] :
+    Submodule ℝ (EuclideanSpace ℝ V) :=
+  (ℝ ∙ WithLp.toLp 2 (fun _ ↦ 1 : V → ℝ))ᗮ
+
 /-- The **spectral expansion** `λ(G)`: the operator norm, for the Euclidean norm, of the walk
 operator on the functions orthogonal to the constants (`spectralExpansion_eq_norm_orthogonalWalk`)
 [Arora and Barak, Section 21.1][AroraBarak09].
@@ -327,7 +334,7 @@ absolute value of its eigenvalues on the functions of expectation zero
 noncomputable def spectralExpansion : ℝ :=
   ‖(LinearMap.toContinuousLinearMap
       (G.walk.withLpMap 2 : EuclideanSpace ℝ V →ₗ[ℝ] EuclideanSpace ℝ V)).comp
-    (ℝ ∙ WithLp.toLp 2 (fun _ ↦ 1 : V → ℝ))ᗮ.subtypeL‖
+    (orthogonalSubmodule V).subtypeL‖
 
 /-- The spectral expansion is nonnegative. -/
 theorem spectralExpansion_nonneg : 0 ≤ G.spectralExpansion := by
@@ -337,16 +344,17 @@ theorem spectralExpansion_nonneg : 0 ≤ G.spectralExpansion := by
 variable {G}
 
 /-- The second moment is the squared Euclidean norm, scaled by the number of vertices. -/
-private theorem card_mul_expect_sq (f : V → ℝ) :
+theorem card_mul_expect_sq (f : V → ℝ) :
     Fintype.card V * 𝔼 v, f v ^ 2 = ‖(WithLp.toLp 2 f : EuclideanSpace ℝ V)‖ ^ 2 := by
   rw [EuclideanSpace.real_norm_sq_eq, ← nsmul_eq_mul, ← card_univ, card_smul_expect]
 
-/-- The functions orthogonal to the constants are those of expectation zero. -/
-private theorem mem_orthogonal_iff (f : V → ℝ) :
-    (WithLp.toLp 2 f : EuclideanSpace ℝ V) ∈ (ℝ ∙ WithLp.toLp 2 (fun _ ↦ 1 : V → ℝ))ᗮ ↔
-      𝔼 v, f v = 0 := by
-  rw [Submodule.mem_orthogonal_singleton_iff_inner_right, EuclideanSpace.inner_toLp_toLp,
-    Fintype.expect_eq_sum_div_card, div_eq_zero_iff, or_iff_left_of_imp]
+/-- A vector in `EuclideanSpace ℝ V` is orthogonal to the constants iff its coordinates have
+expectation zero. -/
+theorem mem_orthogonalSubmodule_iff (f : V → ℝ) :
+    WithLp.toLp 2 f ∈ orthogonalSubmodule V ↔ 𝔼 v, f v = 0 := by
+  rw [orthogonalSubmodule, Submodule.mem_orthogonal_singleton_iff_inner_right,
+    EuclideanSpace.inner_toLp_toLp, Fintype.expect_eq_sum_div_card, div_eq_zero_iff,
+    or_iff_left_of_imp]
   · simp [dotProduct]
   · intro h
     have : IsEmpty V := Fintype.card_eq_zero_iff.1 (Nat.cast_eq_zero.1 h)
@@ -358,8 +366,8 @@ theorem expect_walk_sq_le_spectralExpansion_sq_mul {f : V → ℝ} (hf : 𝔼 v,
     𝔼 v, G.walk f v ^ 2 ≤ G.spectralExpansion ^ 2 * 𝔼 v, f v ^ 2 := by
   have h := ContinuousLinearMap.le_opNorm ((LinearMap.toContinuousLinearMap
       (G.walk.withLpMap 2 : EuclideanSpace ℝ V →ₗ[ℝ] EuclideanSpace ℝ V)).comp
-    (ℝ ∙ WithLp.toLp 2 (fun _ ↦ 1 : V → ℝ))ᗮ.subtypeL)
-    ⟨WithLp.toLp 2 f, (mem_orthogonal_iff f).2 hf⟩
+    (orthogonalSubmodule V).subtypeL)
+    ⟨WithLp.toLp 2 f, (mem_orthogonalSubmodule_iff f).2 hf⟩
   change ‖(WithLp.toLp 2 (G.walk f) : EuclideanSpace ℝ V)‖ ≤
     G.spectralExpansion * ‖(WithLp.toLp 2 f : EuclideanSpace ℝ V)‖ at h
   have h2 := pow_le_pow_left₀ (norm_nonneg _) h 2
@@ -376,7 +384,7 @@ theorem spectralExpansion_le {c : ℝ} (hc : 0 ≤ c)
     G.spectralExpansion ≤ c := by
   refine ContinuousLinearMap.opNorm_le_bound _ hc fun x ↦ ?_
   obtain ⟨⟨f⟩, hx⟩ := x
-  have hf := h f ((mem_orthogonal_iff f).1 hx)
+  have hf := h f ((mem_orthogonalSubmodule_iff f).1 hx)
   change ‖(WithLp.toLp 2 (G.walk f) : EuclideanSpace ℝ V)‖ ≤
     c * ‖(WithLp.toLp 2 f : EuclideanSpace ℝ V)‖
   refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_

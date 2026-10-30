@@ -632,9 +632,11 @@ theorem computableInLogSpace {α β : Type} {enc : α ↪ List Bool} {encOut : �
     ComputableInLogSpace f enc encOut := by
   obtain ⟨d, hd⟩ := hbound
   exact P.toQueryMachine.computableInLogSpace (encS := Simulation.encConfig)
-    (Simulation.query_inSpace (P := P)) (Simulation.exec_inSpace (P := P))
-    (Simulation.emitted_inSpace (P := P)) (Simulation.halted_inSpace (P := P))
-    (Simulation.finish_inSpace (P := P)) time hhalt hpre hf
+    (Simulation.query_inSpace (P := P)).computableInSpace
+    (Simulation.exec_inSpace (P := P)).computableInSpace
+    (Simulation.emitted_inSpace (P := P)).computableInSpace
+    (Simulation.halted_inSpace (P := P)).computableInSpace
+    (Simulation.finish_inSpace (P := P)).computableInSpace time hhalt hpre hf
     ⟨_, fun a t ht => Simulation.length_encConfig_le P (P.run_fst_le _ t) (P.run_snd_length _ t)
       (hd a t ht)⟩
 

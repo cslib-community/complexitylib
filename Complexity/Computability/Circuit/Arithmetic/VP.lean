@@ -250,9 +250,6 @@ theorem IsProjection.trans {P : MvPolynomial υ K} {Q : MvPolynomial σ K} {R : 
   obtain ⟨ρ', rfl⟩ := hQR
   exact ⟨_, (projection_projection ρ ρ' R).symm⟩
 
-private theorem totalDegree_X_le (i : σ) : (X i : MvPolynomial σ K).totalDegree ≤ 1 :=
-  (totalDegree_monomial_le _ _).trans (by simp)
-
 /-- Substituting polynomials of degree at most one does not raise the degree. -/
 private theorem totalDegree_aeval_le {g : τ → MvPolynomial σ K}
     (hg : ∀ i, (g i).totalDegree ≤ 1) (P : MvPolynomial τ K) :
@@ -272,7 +269,7 @@ theorem totalDegree_projection_le (ρ : τ → σ ⊕ K) (P : MvPolynomial τ K)
     (projection ρ P).totalDegree ≤ P.totalDegree :=
   totalDegree_aeval_le (fun i => by
     rcases ρ i with k | a
-    · exact totalDegree_X_le k
+    · exact (totalDegree_monomial_le _ _).trans (by simp)
     · simp) P
 
 end Projection

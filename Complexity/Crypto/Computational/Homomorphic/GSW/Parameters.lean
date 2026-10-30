@@ -194,30 +194,22 @@ theorem computableInPolyTime_modulus :
   rw [hmodulus]
   fun_prop
 
-/-- Any function computable in polynomial time with unary input and unary output is polynomially
-bounded. -/
-theorem polynomiallyBounded_of_unary {f : ℕ → ℕ}
-    (hf : ComputableInPolyTime f encUnary encUnary) : PolynomiallyBounded f :=
-  (show PolyBounded (fun n : ℕ => n) f by
-    simpa only [encUnary_apply, List.length_replicate] using
-      hf.polyBounded_length).polynomiallyBounded
-
 /-- Every numerical parameter, including the modulus, is polynomially bounded. -/
 theorem polynomiallyBounded_parameters :
     PolynomiallyBounded dimension ∧ PolynomiallyBounded noise ∧ PolynomiallyBounded width ∧
       PolynomiallyBounded rows ∧ PolynomiallyBounded samples ∧ PolynomiallyBounded modulus :=
-  ⟨polynomiallyBounded_of_unary computableInPolyTime_dimension,
-    polynomiallyBounded_of_unary computableInPolyTime_noise,
-    polynomiallyBounded_of_unary computableInPolyTime_width,
-    polynomiallyBounded_of_unary computableInPolyTime_rows,
-    polynomiallyBounded_of_unary computableInPolyTime_samples,
-    polynomiallyBounded_of_unary computableInPolyTime_modulus⟩
+  ⟨computableInPolyTime_dimension.polynomiallyBounded,
+    computableInPolyTime_noise.polynomiallyBounded,
+    computableInPolyTime_width.polynomiallyBounded,
+    computableInPolyTime_rows.polynomiallyBounded,
+    computableInPolyTime_samples.polynomiallyBounded,
+    computableInPolyTime_modulus.polynomiallyBounded⟩
 
 /-- The exact shared-public-matrix error bound is negligible for this positive-noise family. -/
 theorem negligible_statistical_error :
     Negligible (fun security => (rows security : ℝ≥0) *
       NNReal.sqrt ((2 : ℝ≥0) ^ rows security / 2 ^ samples security)) :=
-  negligible_mul_sqrt_pow_two_div_pow_two (polynomiallyBounded_of_unary computableInPolyTime_rows)
+  negligible_mul_sqrt_pow_two_div_pow_two computableInPolyTime_rows.polynomiallyBounded
     (Filter.Eventually.of_forall entropy_margin)
 
 end Cslib.Crypto.Homomorphic.GSW.Parameters

@@ -187,11 +187,6 @@ private theorem bits_of_pos {q : ℕ} (hq : 0 < q) : q.bits = decide (q % 2 = 1)
     rw [Nat.bit1_bits, h]
     rfl
 
-/-- Overwriting a register with its own value changes nothing. -/
-private theorem set_getD_self {regs : List ℕ} {i : ℕ} (hi : i < regs.length) :
-    regs.set i (regs.getD i 0) = regs := by
-  rw [List.getD_eq_getElem _ _ hi, List.set_getElem_self]
-
 variable {P : CounterProgram} {w : List Bool} {B : ℕ}
 
 /-- The digit-writing loop of `literalCode`, writing the binary digits of `q` from register `5`. -/

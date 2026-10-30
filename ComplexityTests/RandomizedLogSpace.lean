@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Amplification
+import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.BPP
 import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
 
 /-!
@@ -21,6 +22,13 @@ example : USTCON ∈ BPL encUSTCON := L_subset_BPL USTCON_mem_L
 
 -- Going through `RL` recovers `USTCON ∈ NL`.
 example : USTCON ∈ NL encUSTCON := RL_subset_NL (L_subset_RL USTCON_mem_L)
+
+-- Randomized logspace runs in randomized polynomial time and in polynomial space.
+example : USTCON ∈ RP encUSTCON := RL_subset_RP (L_subset_RL USTCON_mem_L)
+
+example : USTCON ∈ BPP encUSTCON := BPL_subset_BPP (L_subset_BPL USTCON_mem_L)
+
+example : USTCON ∈ PSPACE encUSTCON := BPL_subset_PSPACE (L_subset_BPL USTCON_mem_L)
 
 section HaltingTime
 
@@ -130,6 +138,13 @@ example (enc : ℕ ↪ List Bool) : (Set.univ : Set ℕ) ∈ Cslib.Complexity.RL
 
 example (enc : ℕ ↪ List Bool) : (Set.univ : Set ℕ) ∈ Cslib.Complexity.BPL enc :=
   Cslib.Complexity.RL_subset_BPL
+    ⟨0, Unit, inferInstance, coinFlip, 0, fun a =>
+      ⟨MultiTapeNTM.runsInSpace_zero_tapes _ _ _, 1, runsInTime_coinFlip _,
+        fun _ => by rw [acceptCoins_coinFlip]; rfl, fun ha => absurd trivial ha⟩⟩
+
+-- The fair coin of `coinFlip` is a one-sided-error polynomial-time test accepting everything.
+example (enc : ℕ ↪ List Bool) : (Set.univ : Set ℕ) ∈ Cslib.Complexity.RP enc :=
+  Cslib.Complexity.RL_subset_RP
     ⟨0, Unit, inferInstance, coinFlip, 0, fun a =>
       ⟨MultiTapeNTM.runsInSpace_zero_tapes _ _ _, 1, runsInTime_coinFlip _,
         fun _ => by rw [acceptCoins_coinFlip]; rfl, fun ha => absurd trivial ha⟩⟩

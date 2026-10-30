@@ -68,14 +68,8 @@ theorem negligible_publicKeyChainHybrid {E : Scheme}
     exact (Nat.le_add_left _ _).trans h
   have hred := isPPT_linkAdversary hkeyGen hencrypt htest hdepth hcapacity
   have hpoly : PolynomiallyBounded (fun n => dyadicSize (depth n) * dyadicSize (capacity n)) := by
-    have hd : PolynomiallyBounded depth :=
-      (show PolyBounded (fun n : ℕ => n) depth by
-        simpa only [encUnary_apply, List.length_replicate] using
-          hdepth.polyBounded_length).polynomiallyBounded
-    have hc : PolynomiallyBounded capacity :=
-      (show PolyBounded (fun n : ℕ => n) capacity by
-        simpa only [encUnary_apply, List.length_replicate] using
-          hcapacity.polyBounded_length).polynomiallyBounded
+    have hd : PolynomiallyBounded depth := hdepth.polynomiallyBounded
+    have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
     fun_prop
   have hneg := (hsecure _ hred).polynomiallyBounded_mul hpoly
   refine negligible_of_le hneg (fun n => ?_)

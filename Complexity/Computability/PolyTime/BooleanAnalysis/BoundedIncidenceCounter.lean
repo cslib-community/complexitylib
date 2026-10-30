@@ -24,6 +24,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List.Size
+import Complexity.Foundations.Data.List.Fold
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -472,7 +473,7 @@ private theorem exists_computableInO_signedMeasJet :
         (evalMeasPayload (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i, pa.1)).elim pa.2
           fun y => addJet pa.1.2.1.1 pa.1.2.1.2.1 pa.2 y) := by
       funext pa i; cases evalMeasPayload _ <;> rfl
-    rw [hfn]; exact foldl_keep_fst
+    rw [hfn]; exact List.foldl_keep_fst
       (fun (m : MeasStepCtx) (acc : JetRows) (i : ℕ) =>
         (evalMeasPayload (Cslib.Radix.measurementValues dc.2.2.1.1 dc.2.2.1.2 i, m)).elim acc
           (fun y => addJet m.2.1.1 m.2.1.2.1 acc y))
@@ -683,7 +684,7 @@ private theorem exists_computableInO_nodeJet :
       (eSubAcc (SubsetPairFold.runPrefix subsetPairStepBody qs.2.1.1 qs.1 j
         (qs.2, zeroJet qs.2.2.2.1.1 qs.2.2.2.1.2.1)).2.2).length ≤ B_sub qs := by
     intro qs j hj; rw [SubsetPairFold.runPrefix_acc]; simp only [subsetPairStepBody_eq]
-    rw [foldl_keep_fst (fun (s : SubsetStepCtx) (acc : JetRows) (i : ℕ) =>
+    rw [List.foldl_keep_fst (fun (s : SubsetStepCtx) (acc : JetRows) (i : ℕ) =>
       addJet s.2.2.1.1 s.2.2.1.2.1 acc
         (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.1.1 qs.1 i, s)))]
     have hf_le := length_encJetRows_foldl_optAddJet_le (J := qs.2.2.2.1.1) (ℓ := qs.2.2.2.1.2.1)
@@ -731,7 +732,7 @@ private theorem exists_computableInO_nodeJet :
         (Nat.mul_le_mul_left co (Nat.pow_le_pow_left (Nat.add_le_add_right hinp_len 1) do_))
       have hfst_eq : inp.2.1 = qs.2 := by
         dsimp only [inp]; rw [SubsetPairFold.runPrefix_acc]; simp only [subsetPairStepBody_eq]
-        rw [foldl_keep_fst (fun (s : SubsetStepCtx) (acc : JetRows) (i : ℕ) =>
+        rw [List.foldl_keep_fst (fun (s : SubsetStepCtx) (acc : JetRows) (i : ℕ) =>
           addJet s.2.2.1.1 s.2.2.1.2.1 acc
             (evalSignedMeasJet (SubsetPairFold.unrankSubsetPair qs.2.1.1 qs.1 i, s)))]
       have hdc_len : (eDC (inp.1, inp.2.1)).length ≤ L_dc qs := by

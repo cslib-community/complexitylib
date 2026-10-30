@@ -64,7 +64,8 @@ theorem source_cell_mem_ordinary {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :
     rw [← List.getElem_dropLast hi]
     exact List.getElem_mem _
   exact (mem_ordinaryCells φ _).2
-    ⟨⟨_, occurrencePath_mem_paths ho, hret⟩, PlanarCompile.source_center_not_crossing ho⟩
+    ⟨⟨_, PlanarCompile.occurrencePath_mem_paths ho, hret⟩,
+      PlanarCompile.source_center_not_crossing ho⟩
 
 /-- Every used source representative is an occurring variable of the actual raw output. -/
 theorem sourceVariable_mem_rawFormula {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :

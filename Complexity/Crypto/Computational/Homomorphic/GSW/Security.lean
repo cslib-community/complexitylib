@@ -144,14 +144,8 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
   have hsource := hLWE (lweDistinguisher n m w adversary)
     (isPPT_lweDistinguisher hn hm hw hadversary)
   have hrows : PolynomiallyBounded (fun k => (n k + 1) * w k) := by
-    have : PolynomiallyBounded n :=
-      (show PolyBounded (fun k : ℕ => k) n by
-        simpa only [encUnary_apply, List.length_replicate] using
-          hn.polyBounded_length).polynomiallyBounded
-    have : PolynomiallyBounded w :=
-      (show PolyBounded (fun k : ℕ => k) w by
-        simpa only [encUnary_apply, List.length_replicate] using
-          hw.polyBounded_length).polynomiallyBounded
+    have : PolynomiallyBounded n := hn.polynomiallyBounded
+    have : PolynomiallyBounded w := hw.polynomiallyBounded
     fun_prop
   have herror := negligible_mul_sqrt_pow_two_div_pow_two hrows hmargin
   apply negligible_of_le

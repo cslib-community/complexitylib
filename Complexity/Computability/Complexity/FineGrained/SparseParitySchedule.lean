@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import Complexity.Logics.Propositional.CNF.SparseParityCounter
+import Complexity.Foundations.Data.Nat.Log
 
 /-!
 # Section 6.3 compiled CNF parity-row schedule feasibility and domain-examination bounds
@@ -433,19 +434,6 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule {β : ℕ} (hβ : 1 �
 
 /-! ### 4. Unconditional polylogarithmic schedule discharge for `B ≤ C_B * (Nat.clog 2 n) ^ β_B` -/
 
-/-- When `n ≤ 2 * n'` and `2 ≤ n'`, `Nat.clog 2 n ≤ 2 * Nat.clog 2 n'`. -/
-theorem clog_two_le_two_mul_of_le_two_mul {n n' : ℕ} (hn : n ≤ 2 * n') (hn' : 2 ≤ n') :
-    Nat.clog 2 n ≤ 2 * Nat.clog 2 n' := by
-  have h1 : 1 ≤ Nat.clog 2 n' :=
-    (Nat.lt_clog_iff_pow_lt one_lt_two).mpr (by omega : 2 ^ 0 < n')
-  have h2 : n ≤ 2 ^ (Nat.clog 2 n' + 1) := by
-    calc n ≤ 2 * n' := hn
-      _ ≤ 2 * 2 ^ Nat.clog 2 n' := Nat.mul_le_mul_left 2 (Nat.le_pow_clog one_lt_two n')
-      _ = 2 ^ (Nat.clog 2 n' + 1) := (pow_succ' 2 _).symm
-  have h3 : Nat.clog 2 n ≤ Nat.clog 2 n' + 1 :=
-    (Nat.clog_le_iff_le_pow one_lt_two).mpr h2
-  omega
-
 /-- Coefficient for the polynomial bound on `initialRowWeightBound B m` when
 `B ≤ C_B * (Nat.clog 2 n) ^ β_B` and `m ≤ B * n`. -/
 def CNF.initialRowWeightCoeff (C_B β_B : ℕ) : ℕ :=
@@ -546,7 +534,7 @@ private theorem parityBranchThreshold_succ_and_width_le_clog_pow {n n' m B W k C
           ring
   have hlam_pow : lam ^ (2 * β_B + 4) ≤ 2 ^ (2 * β_B + 4) * lam' ^ (2 * β_B + 4) := by
     calc lam ^ (2 * β_B + 4) ≤ (2 * lam') ^ (2 * β_B + 4) :=
-          Nat.pow_le_pow_left (clog_two_le_two_mul_of_le_two_mul hn_le hn') _
+          Nat.pow_le_pow_left (Nat.clog_two_le_two_mul_of_le_two_mul hn_le hn') _
       _ = 2 ^ (2 * β_B + 4) * lam' ^ (2 * β_B + 4) := mul_pow 2 lam' _
   have hthresh_lam' :
       CNF.parityBranchThreshold k W n + 1 ≤ Nat.clog 2 n' ^ (2 * β_B + 5) := by

@@ -230,13 +230,8 @@ theorem polynomiallyBounded_widths :
   have hview : ComputableInPolyTime
       (fun c : Σ m, Circuit Boolean.signature m 1 => (c.1, c.2.code))
       (Boolean.encCircuit 1) (encPair encUnary Boolean.encCode) := .of_eq fun _ => rfl
-  have htotal_unary : ComputableInPolyTime
-      (fun n => secretWidth n + ciphertextWidth n) encUnary encUnary :=
-    hview.fst'.comp hD
   have htotal : PolynomiallyBounded (fun n => secretWidth n + ciphertextWidth n) :=
-    (show PolyBounded (fun n : ℕ => n) (fun n => secretWidth n + ciphertextWidth n) by
-      simpa only [encUnary_apply, List.length_replicate] using
-        htotal_unary.polyBounded_length).polynomiallyBounded
+    (hview.fst'.comp hD).polynomiallyBounded
   have hsecret : PolynomiallyBounded secretWidth :=
     htotal.mono_of_le (fun n => Nat.le_add_right (secretWidth n) (ciphertextWidth n))
   have hciphertext : PolynomiallyBounded ciphertextWidth :=

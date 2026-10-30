@@ -9,6 +9,7 @@ module
 
 public import Complexity.Init
 public import Complexity.Computability.Complexity.FineGrained.SparseParitySchedule
+import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
@@ -92,7 +93,6 @@ public section
 namespace Cslib.Complexity.SubexponentialSAT.ReplacementParams
 
 open Cslib.Complexity.SubexponentialSAT
-open Cslib.Logic.PL (clog_two_le_two_mul_of_le_two_mul)
 
 /-! ### 1. Free-variable (`n / 2 ≤ n' ≤ n`) to original-variable (`n`) `rowCost` transfer -/
 
@@ -118,7 +118,7 @@ theorem Feasible.mul_rowCost_le_of_le_two_mul {β n n' b_occ w_width M' : ℕ}
   have hsqrt_le : Real.sqrt (Nat.clog 2 n) ≤ 2 * Real.sqrt (Nat.clog 2 n') := by
     have hclog_le : (Nat.clog 2 n : ℝ) ≤ (2 : ℝ) ^ 2 * (Nat.clog 2 n' : ℝ) := by
       have hnat : Nat.clog 2 n ≤ 2 * Nat.clog 2 n' :=
-        clog_two_le_two_mul_of_le_two_mul hn_le (by omega)
+        Nat.clog_two_le_two_mul_of_le_two_mul hn_le (by omega)
       have hcast : (Nat.clog 2 n : ℝ) ≤ 2 * (Nat.clog 2 n' : ℝ) := by exact_mod_cast hnat
       have hnn : (0 : ℝ) ≤ (Nat.clog 2 n' : ℝ) := Nat.cast_nonneg _
       linarith

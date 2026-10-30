@@ -159,13 +159,6 @@ theorem computableInPolyTime_subsetTest {γ : Type} {input : γ ↪ List Bool}
   unfold subsetTest
   fun_prop
 
-/-- A bit string `z` has no `true` bits in `List.ofFn z` if and only if `z = 0`. -/
-private theorem not_any_ofFn_eq_true_iff {Z : ℕ} (z : Fin Z → Bool) :
-    (!(List.ofFn z).any fun b => b) = true ↔ z = 0 := by
-  simp only [Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, List.mem_ofFn,
-    forall_exists_index, forall_apply_eq_imp_iff, Bool.not_eq_true]
-  exact ⟨fun h => funext h, fun h i => congrFun h i⟩
-
 /-- The block-level predicate corresponding to `subsetTest`: the first `k` blocks are accepted and
 strictly increasing in lexicographic order, and the remaining blocks are zero. -/
 private def SubsetBlockPred (acc : List Bool → Bool) {K Z k : ℕ} (hk : k ≤ K)
