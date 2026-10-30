@@ -1911,6 +1911,8 @@ public import Complexity.Computability.PCP.Encoded.Verifier.Soundness
 public import Complexity.Computability.PCP.GapTheorem
 public import Complexity.Computability.PCP.GenericComposition
 public import Complexity.Computability.PCP.LocalTest
+public import Complexity.Computability.PCP.LocalTest.DecisionTree
+public import Complexity.Computability.PCP.LocalTest.Repetition
 public import Complexity.Computability.PCP.ParallelRepetition.Recursion
 public import Complexity.Computability.PCP.Power
 public import Complexity.Computability.PCP.Power.Complexity
@@ -1977,6 +1979,7 @@ public import Complexity.Computability.Probabilistic.Sampling
 public import Complexity.Computability.Probabilistic.Selection
 public import Complexity.Computability.Probabilistic.Traverse
 public import Complexity.Computability.Probabilistic.UniformNat
+public import Complexity.Computability.PropertyTesting.Linearity
 public import Complexity.Computability.QueryComplexity.ApproximateDegree
 public import Complexity.Computability.QueryComplexity.ApproximateDegree.Or
 public import Complexity.Computability.QueryComplexity.Degree
