@@ -2775,6 +2775,7 @@ public import Complexity.Languages.Probabilistic.BitString
 public import Complexity.Languages.Probabilistic.BoundedUniform
 public import Complexity.Languages.Probabilistic.CenteredBinomial
 public import Complexity.Languages.Probabilistic.Concentration
+public import Complexity.Languages.Probabilistic.Event
 public import Complexity.Languages.Probabilistic.Expect
 public import Complexity.Languages.Probabilistic.Forking
 public import Complexity.Languages.Probabilistic.Iteration
