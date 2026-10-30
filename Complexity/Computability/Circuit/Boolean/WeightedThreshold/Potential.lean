@@ -519,7 +519,7 @@ private theorem one_le_priority (i : Fin g) : 1 ≤ P.priority i := by
   suffices ∀ k : ℕ, ∀ i : Fin g, g - 1 - i.val = k → 1 ≤ P.priority i from this _ i rfl
   intro k
   induction k using Nat.strong_induction_on with
-  | h k ih =>
+  | ind k ih =>
     intro i hik
     rw [P.priority_eq]
     suffices 0 ≤ ∑ j : Fin g, if i < j then P.priority j * |P.gateWeight j i| else 0 by linarith
@@ -566,7 +566,7 @@ theorem priority_le_pow {W : ℝ} (hW0 : 0 ≤ W)
   suffices ∀ m : ℕ, ∀ i : Fin g, g - 1 - i.val = m → P.priority i ≤ (W + 1) ^ m from this _ i rfl
   intro m
   induction m using Nat.strong_induction_on with
-  | h m ih =>
+  | ind m ih =>
     intro i him
     rw [P.priority_eq, ← one_add_mul_sum_geom W m]
     have hsum : (∑ j : Fin g, if i < j then P.priority j * |P.gateWeight j i| else 0) ≤
