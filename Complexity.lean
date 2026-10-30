@@ -1871,6 +1871,7 @@ public import Complexity.Computability.PCP.Approximation.Hastad
 public import Complexity.Computability.PCP.Approximation.Hastad.LinearTest
 public import Complexity.Computability.PCP.Approximation.IndependentSet
 public import Complexity.Computability.PCP.Approximation.LabelCover
+public import Complexity.Computability.PCP.Approximation.LabelCover.Incidence
 public import Complexity.Computability.PCP.Approximation.MaxCSP
 public import Complexity.Computability.PCP.Approximation.MaxExactThreeSAT
 public import Complexity.Computability.PCP.Approximation.MaxThreeSAT
@@ -1893,6 +1894,7 @@ public import Complexity.Computability.PCP.Encoded.CloudRotation
 public import Complexity.Computability.PCP.Encoded.Composition
 public import Complexity.Computability.PCP.Encoded.Composition.Enumeration
 public import Complexity.Computability.PCP.Encoded.Constraints
+public import Complexity.Computability.PCP.Encoded.Count
 public import Complexity.Computability.PCP.Encoded.DegreeReduction
 public import Complexity.Computability.PCP.Encoded.GapTheorem
 public import Complexity.Computability.PCP.Encoded.GenericComposition
