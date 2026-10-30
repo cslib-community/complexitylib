@@ -30,8 +30,8 @@ of their calls, rather than paying for the whole recursion state on every round.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInO.stackLoop`: if the initial value, the halting test and
-  the round are tidily computable, so is the value at which the loop halts with an empty stack,
+* `Turing.MultiTapeTM.ComputableInO.stackLoop`: if the initial value, the halting test and
+  the round are computable, so is the value at which the loop halts with an empty stack,
   within the sum over the rounds of their costs and the lengths of the words they touch.
 -/
 
@@ -67,24 +67,24 @@ end StackLoop
 open StackLoop
 
 /-- **Stack loops.** If the initial value, the halting test and the round of a stack loop are
-tidily computable, and from the initial value with an empty stack the loop halts after `n x`
-rounds with an empty stack, then the halting value is tidily computable. The time and space are
+computable, and from the initial value with an empty stack the loop halts after `n x`
+rounds with an empty stack, then the halting value is computable. The time and space are
 the costs of the initialization, plus, for every round and the final halting test, the costs of
 the halting test and of the round together with the lengths of the words they read and write.
 
 The frames are kept on a separate work tape: a round pays for the popped and pushed frames only,
 not for the rest of the stack. -/
-theorem ComputableTidilyInO.stackLoop {δ α γ : Type} {encIn : δ ↪ List Bool}
+theorem ComputableInO.stackLoop {δ α γ : Type} {encIn : δ ↪ List Bool}
     {encA : α ↪ List Bool} {encG : γ ↪ List Bool} (L : StackLoop α γ)
     {init : δ → α} {Ti Si : δ → ℕ} {Th Sh : α → ℕ} {Tr Sr : Option γ × α → ℕ} (n : δ → ℕ)
-    (hinit : ComputableTidilyInO init encIn encA Ti Si)
-    (hhalt : ComputableTidilyInO L.halt encA encBool Th Sh)
-    (hround : ComputableTidilyInO L.round (encPair (encOption encG) encA)
+    (hinit : ComputableInO init encIn encA Ti Si)
+    (hhalt : ComputableInO L.halt encA encBool Th Sh)
+    (hround : ComputableInO L.round (encPair (encOption encG) encA)
       (encPair (encList encG) encA) Tr Sr)
     (hrun : ∀ x, ∀ i < n x, L.halt (L.step^[i] (init x, [])).1 = false)
     (hstop : ∀ x, L.halt (L.step^[n x] (init x, [])).1 = true)
     (hempty : ∀ x, (L.step^[n x] (init x, [])).2 = []) :
-    ComputableTidilyInO (fun x => (L.step^[n x] (init x, [])).1) encIn encA
+    ComputableInO (fun x => (L.step^[n x] (init x, [])).1) encIn encA
       (fun x => (encIn x).length + Ti x + Si x +
         ∑ i ∈ Finset.range (n x + 1),
           (Th (L.step^[i] (init x, [])).1 + Sh (L.step^[i] (init x, [])).1 +
