@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Default
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Mathlib.Tactic.Linarith
@@ -214,14 +215,15 @@ lemma foldl_applyStep (ts : List Tape) (as : List TapeAct) (acc : List Tape) :
     | nil => simp [applyStep, ih, applyTapes, applyTapes_nil_right]
     | cons a as => simp [applyStep, ih, applyTapes]
 
+local instance (priority := high) : DefaultEnc (Option ℕ) := ⟨eSym⟩
+local instance (priority := high) : DefaultEnc TapeAct := ⟨eTA⟩
+local instance : DefaultEnc Tape := ⟨eTape⟩
+
 lemma applyStep_deg : ComputableTidilyInDegree
-    (fun q : (List TapeAct × List Tape) × Tape => applyStep q.1 q.2)
-    (encPair (encPair (encList eTA) (encList eTape)) eTape)
-    (encPair (encList eTA) (encList eTape)) 1 1 := by
+    (fun q : (List TapeAct × List Tape) × Tape => applyStep q.1 q.2) enc% enc% 1 1 := by
   convert (show ComputableTidilyInDegree (fun q : (List TapeAct × List Tape) × Tape =>
     (q.1.1.tail, q.1.2 ++ [if q.1.1.isEmpty then q.2 else q.2.apply (q.1.1.headD (none, 0))]))
-    (encPair (encPair (encList eTA) (encList eTape)) eTape)
-    (encPair (encList eTA) (encList eTape)) 1 1 by
+    enc% enc% 1 1 by
       fun_prop (disch := first | apply le_refl | lia)) using 1
   funext ⟨⟨as, acc⟩, t⟩
   cases as <;> rfl
