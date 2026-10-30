@@ -39,6 +39,13 @@ the root, checking that the leaf has length `depth n` and the chain `depth n - 1
 public key is `(n, root public key)` and the secret key `(n, k)` with `k` uniform of length
 `keyLen n`.
 
+The scheme differs from Fig. 14.7 in four labelled ways: the root key pair is derived from `k`
+like every other node, rather than sampled by key generation and stored in the secret key; the
+tree is binary, using only the indices `0` and `1` of the indexed scheme; the public key carries
+`n`, from which verification fixes the depth, which the source leaves to global parameters; and
+verification checks the leaf length and the certificate count explicitly. The coins of a node's
+signature depend on the node and the index only, not on what is signed.
+
 The coin function is a parameter with a polynomial-time certificate. This module provides the
 scheme, its completeness and its efficiency; its security ([BonehShoup2023], Theorem 14.6)
 instantiates the coins with a pseudorandom function and is a separate development.
