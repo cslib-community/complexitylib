@@ -1799,8 +1799,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileC
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic
-public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Blocks
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Blocks
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Clock
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
@@ -1808,6 +1808,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.C
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExtendTapes
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.InputFromTape
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalTensor
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Loop
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OrElse
