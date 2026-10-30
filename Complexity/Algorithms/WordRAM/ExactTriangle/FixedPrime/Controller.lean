@@ -55,7 +55,7 @@ theorem exec_setup {w : ℕ} (x : Data 416) (h1 : Fits w 1) :
     he.regs_eq (setup_preserves j hj)⟩
   all_goals simp +decide [y, M, Reg.index, Reg.limit, Reg.found, Reg.scans, Reg.one]
 
-/-- The native return needs six instructions in either branch, including control. Its limit
+/-- The native return needs at most six instructions, including control. Its limit
 is shortened exactly when the actual callee flag equals one. The complete callee bank survives. -/
 theorem exec_receive {w i limit S performed flag : ℕ} (x : Data 416)
     (hi : x.regs Reg.index = i) (hl : x.regs Reg.limit = limit)
