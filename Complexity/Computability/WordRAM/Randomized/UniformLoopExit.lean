@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Probability.PMF.UniformSubset
 public import Complexity.Computability.WordRAM.Randomized.Expected
+import Complexity.Foundations.Analysis.ENNRealTsum
 
 /-!
 # Uniform Rejection-Sampling Loop Exit Law on the Randomized Word RAM
@@ -196,7 +197,7 @@ theorem loopExitPMF_map_eq_uniformOfFinset {r : ℕ} {α : Type*} [Fintype α]
         (hasSum_loopExitDensity hp_pos hp_top hinv1 hp_exit hx_inv) y
     · simp [hθ]
   simp_rw [hpoint]
-  rw [tsum_iSup_of_monotone]
+  rw [ENNReal.tsum_iSup_of_monotone]
   · change (⨆ K : ℕ, exitMass cond μ_body f K x θ) = _
     simp_rw [exitMass_eq_ite_exitWeightSeq hinv hlaw _ hIx hcx θ]
     by_cases hθ : θ ∈ E <;> simp [hθ]
