@@ -81,7 +81,7 @@ noncomputable def rootDistPow (H H' : Ω → V → V → ℝ) : ℝ :=
 
 /-- The `s`-th power `‖v‖^s_{u;s}` of the integrated norm of a random vertex array
 [OpenAI2026LogSpace, (5.20)]. -/
-noncomputable def vertexNormPow (v : Ω → V → ℝ) : ℝ :=
+@[expose] noncomputable def vertexNormPow (v : Ω → V → ℝ) : ℝ :=
   (N * u)⁻¹ * 𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V), |v σ x| ^ s
 
 end Definitions
