@@ -107,7 +107,7 @@ info: 'ComplexityAbstracts.CommunicationAbstract.innerProduct_lower_bound' depen
 
 /--
 info: abstract audit passed for `ComplexityAbstracts.CommunicationAbstract`: 12 root
-declarations, 95 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.CommunicationAbstract allowing [
