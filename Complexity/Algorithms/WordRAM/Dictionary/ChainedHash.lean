@@ -17,10 +17,27 @@ import Mathlib.Data.Nat.Log
 /-!
 # Chained Hash Table on the Randomized Word RAM
 
-This file implements a textbook chained hash table ([CLRS2009], Sections 11.2 and 11.3.2) realizing
-the bounded-capacity dictionary specification `Cslib.Algorithms.Lean.Dictionary.spec U V n_max` on
-the randomized Word RAM over `Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard` via
-`SubroutineDS.toStandard`).
+This file implements a textbook chained hash table ([CLRS2009], Sections 11.2 and 11.3.3,
+Theorem 11.3 and Corollary 11.4) realizing the bounded-capacity insert-only dictionary specification
+`Cslib.Algorithms.Lean.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys,
+with deletion deferred to a follow-up) on the randomized Word RAM over `Cslib.WordRAM.Basis.exact`
+(and lifted to `Basis.standard` via `SubroutineDS.toStandard`).
+
+## Model, specialization, and cost scope
+
+* **Specialization and external word width:** For fixed universe `U` and capacity bound `n_max` and
+  an admissible external machine word width `w` (`2 * hashBits U n_max ≤ w`,
+  `Fits w (base + space n_max)`, `Fits w V`), the specialized program `subroutineCode U n_max` uses
+  precomputed configuration literals (`bucketBits`, `hashBits`, bit masks, and layout offsets baked
+  as instruction literals, with `initParams = Fin.elim0`).
+* **Charged body cost and oblivious adversary:** The expected time bounds charge initialization and
+  subroutine operation **bodies** across an operation history `ops` fixed independently of the
+  sampled hash seed (oblivious adversary), excluding caller argument delivery, caller
+  control/dispatch loops, and code/configuration construction.
+* **Insert-only node pool:** Because `Dictionary.spec U V n_max` is insert-only, both the linear
+  space bound `space n_max ≤ 5 * n_max + 8` and sequential bump allocation
+  (`allocCount ∈ [0, n_max]`) rely on the absence of deletions; a future deletion extension would
+  revisit node-pool slot recycling.
 
 ## Design and memory layout
 
@@ -53,9 +70,10 @@ All state resides in a single contiguous memory block `[base, base + space n_max
   key miss (`insert`).
 * By linearity of expectation and the `(2 / 2 ^ M)`-universality of multiply-shift hashing
   (`Cslib.Probability.isUniversalHash_multiplyShift`, [DietzfelbingerHagerupKatajainenPenttonen1997]
-  Lemma 2.4), the expected number of other keys in `dom s \ {u}` colliding with `u` is at most
+  Lemma 2.4; [CLRS2009], Section 11.3.3, Theorem 11.3 and Corollary 11.4), the expected number of
+  other keys in `dom s \ {u}` colliding with `u` is at most
   `((dom s).card : ℝ≥0∞) * (2 / 2 ^ M) ≤ n_max * (2 / 2 ^ M) ≤ 2`, giving worst-case expected
-  `O(1)` (`chargeVal = 73`) instructions per operation with zero potential (`potential = 0`).
+  `O(1)` (`chargeVal = 73`) body instructions per operation with zero potential (`potential = 0`).
 
 ## Main definitions
 
@@ -74,13 +92,13 @@ All state resides in a single contiguous memory block `[base, base + space n_max
   `space n_max ≤ 5 * n_max + 8`.
 * `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.expect_collCount_le_card_mul`,
   `expect_collCount_le_two`: universal-hashing expected collision bounds.
-* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.seq_expected_amortized`: end-to-end expected
-  step bound across any admissible sequence of `get` and `insert` operations.
+* `Cslib.Algorithms.WordRAM.Dictionary.ChainedHash.seq_expected_amortized`: expected subroutine
+  body step bound across any admissible oblivious sequence of `get` and `insert` operations.
 
 ## References
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
-  Sections 11.2 and 11.3.2][CLRS2009]
+  Sections 11.2 and 11.3.3 (Theorem 11.3 and Corollary 11.4)][CLRS2009]
 * [M. Dietzfelbinger, T. Hagerup, J. Katajainen and M. Penttonen, *A Reliable Randomized Algorithm
   for the Closest-Pair Problem*, Lemma 2.4][DietzfelbingerHagerupKatajainenPenttonen1997]
 -/
@@ -1953,10 +1971,15 @@ noncomputable def subroutineDSStandard (U V n_max w base : ℕ)
       w base Fin.elim0 (Dictionary.empty U) :=
   (subroutineDS U V n_max w base hw hS hV).toStandard
 
-/-- **End-to-end expected-time guarantee (`seq_expected_amortized`).**
-From zeroed `[base, base + space n_max)`, initializing the chained hash table via `initFresh` (`16`
-expected instructions) and executing any valid sequence `ops : List (Dictionary.Op U)` has total
-expected instruction cost `16 + T_ops ≤ 16 + 73 * ops.length`. -/
+/-- **Expected subroutine body time across an oblivious operation sequence
+(`seq_expected_amortized`).**
+For fixed `U`, `n_max` and admissible word width `w`, `subroutineCode U n_max` uses precomputed
+configuration literals (`initParams = Fin.elim0`). For a valid operation history
+`ops : List (Dictionary.Op U)` fixed independently of the sampled seed (oblivious adversary),
+running `initFresh` (`16` body instructions on zeroed `[base, base + space n_max)`) and
+`C.ExecSteps` across `ops` (which receives each operation's prepared arguments and charges
+subroutine operation bodies rather than a complete client/dispatch driver or configuration
+construction) has total expected body cost `16 + T_ops ≤ 16 + 73 * ops.length`. -/
 theorem seq_expected_amortized (U V n_max w base : ℕ)
     (hw : 2 * hashBits U n_max ≤ w)
     (hS : Fits w (base + space n_max))
