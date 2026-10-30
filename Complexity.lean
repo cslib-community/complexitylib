@@ -1512,6 +1512,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Zip
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.NatPolynomial
@@ -1719,6 +1720,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Kernel
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelStackLoop
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTakeDropUnary
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZipTransducer
@@ -1848,6 +1850,10 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Resou
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.SpaceBudget
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Windowed
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedBound
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedComplexity
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedInit
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedParts
 public import Complexity.Computability.Machines.Turing.SingleTape.Partrec
 public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
