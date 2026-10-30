@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
+import Complexity.Foundations.LinearAlgebra.Matrix.PilotCorrection
 import Mathlib.Algebra.BigOperators.Fin
 
 /-!
@@ -96,64 +97,23 @@ variable (hC0 : ∀ x y, 0 ≤ C x y) (hφ0 : ∀ y t, 0 ≤ φ y t)
   (hφθ : ∀ y t, φ y t ≤ max (t - θ * f) 0) (hθf : 0 ≤ θ * f)
 
 omit [Fintype V] in
-include hφθ hθf in
-private theorem cutoff_le_self' (y : V) {t : ℝ} (ht : 0 ≤ t) : φ y t ≤ t :=
-  (hφθ y t).trans (max_le (by linarith) ht)
-
-omit [Fintype V] in
 include hφ0 hφθ hθf in
 private theorem cutoff_zero (y : V) : φ y 0 = 0 :=
   le_antisymm ((hφθ y 0).trans (max_le (by linarith) le_rfl)) (hφ0 y 0)
 
 include hC0 hφ0 hφθ hθf in
-private theorem iter_succ_le_input (k : ℕ) (x y : V) :
-    cutoffCorrectionIter φ C (k + 1) x y ≤ (C + cutoffCorrectionIter φ C k * C) x y := by
-  rw [cutoffCorrectionIter_succ]
-  exact cutoff_le_self' hφθ hθf y <| add_nonneg (hC0 x y) <| Finset.sum_nonneg fun z _ =>
-    mul_nonneg (cutoffCorrectionIter_nonneg hφ0 k x z) (hC0 z y)
-
-include hC0 hφ0 hφθ hθf in
 /-- **Row sums of the iterates**: the `k`-th iterate of a cutoff correction of a substochastic
 `C` has row sums at most `k` [OpenAI2026LogSpace, Lemma 4.2]. -/
 theorem cutoffCorrectionIter_sum_le (hC1 : C *ᵥ 1 ≤ 1) (k : ℕ) (x : V) :
-    ∑ y, cutoffCorrectionIter φ C k x y ≤ k := by
-  have hrow : ∀ z, ∑ y, C z y ≤ 1 := fun z => by simpa [mulVec, dotProduct] using hC1 z
-  induction k with
-  | zero => simp [cutoffCorrectionIter]
-  | succ k ih =>
-    set F := cutoffCorrectionIter φ C k
-    calc ∑ y, cutoffCorrectionIter φ C (k + 1) x y ≤ ∑ y, (C + F * C) x y :=
-          Finset.sum_le_sum fun y _ => iter_succ_le_input hC0 hφ0 hφθ hθf k x y
-      _ = ∑ y, C x y + ∑ z, F x z * ∑ y, C z y := by
-          simp only [Matrix.add_apply, Matrix.mul_apply, Finset.sum_add_distrib, Finset.mul_sum]
-          rw [Finset.sum_comm]
-      _ ≤ 1 + ∑ z, F x z * 1 := add_le_add (hrow x) (Finset.sum_le_sum fun z _ =>
-          mul_le_mul_of_nonneg_left (hrow z) (cutoffCorrectionIter_nonneg hφ0 k x z))
-      _ ≤ (k + 1 : ℕ) := by simp only [mul_one]; push_cast; linarith
-
-include hC0 hφ0 hφθ hθf in
-/-- The input `(C + E_k C) x y` of the `(k + 1)`-th step is at most `(k + 1) f`. -/
-private theorem input_le (hCf : ∀ x y, C x y ≤ f) (hf : 0 ≤ f) (hC1 : C *ᵥ 1 ≤ 1) (k : ℕ)
-    (x y : V) : (C + cutoffCorrectionIter φ C k * C) x y ≤ (k + 1) * f := by
-  have hsum := cutoffCorrectionIter_sum_le hC0 hφ0 hφθ hθf hC1 k x
-  calc (C + cutoffCorrectionIter φ C k * C) x y
-      = C x y + ∑ z, cutoffCorrectionIter φ C k x z * C z y := rfl
-    _ ≤ f + ∑ z, cutoffCorrectionIter φ C k x z * f := add_le_add (hCf x y)
-        (Finset.sum_le_sum fun z _ =>
-          mul_le_mul_of_nonneg_left (hCf z y) (cutoffCorrectionIter_nonneg hφ0 k x z))
-    _ ≤ (k + 1) * f := by rw [← Finset.sum_mul]; nlinarith
+    ∑ y, cutoffCorrectionIter φ C k x y ≤ k :=
+  (isCorrectionSeq_cutoffCorrectionIter hC0 hφ0 hφθ hθf).sum_le hC1 k x
 
 include hC0 hφ0 hφθ hθf in
 /-- **Entries of the iterates**: the `k`-th iterate has entries at most `k f`
 [OpenAI2026LogSpace, Lemma 4.2]. -/
 theorem cutoffCorrectionIter_le_mul (hCf : ∀ x y, C x y ≤ f) (hf : 0 ≤ f) (hC1 : C *ᵥ 1 ≤ 1)
-    (k : ℕ) (x y : V) : cutoffCorrectionIter φ C k x y ≤ k * f := by
-  cases k with
-  | zero => simp [cutoffCorrectionIter]
-  | succ k =>
-    push_cast
-    exact (iter_succ_le_input hC0 hφ0 hφθ hθf k x y).trans
-      (input_le hC0 hφ0 hφθ hθf hCf hf hC1 k x y)
+    (k : ℕ) (x y : V) : cutoffCorrectionIter φ C k x y ≤ k * f :=
+  (isCorrectionSeq_cutoffCorrectionIter hC0 hφ0 hφθ hθf).le_mul hCf hf hC1 k x y
 
 include hC0 hφ0 hφθ hθf in
 /-- **The residual entry bound**: `C - E_k + E_k C` has entries at most `(k + 1) f`
@@ -161,7 +121,8 @@ include hC0 hφ0 hφθ hθf in
 theorem cutoffCorrection_residual_le_mul (hCf : ∀ x y, C x y ≤ f) (hf : 0 ≤ f)
     (hC1 : C *ᵥ 1 ≤ 1) (k : ℕ) (x y : V) :
     (C - cutoffCorrectionIter φ C k + cutoffCorrectionIter φ C k * C) x y ≤ (k + 1) * f := by
-  have h := input_le hC0 hφ0 hφθ hθf hCf hf hC1 k x y
+  have h := (isCorrectionSeq_cutoffCorrectionIter hC0 hφ0 hφθ hθf).input_le_mul hCf hf hC1 k
+    x y
   have h0 := cutoffCorrectionIter_nonneg (C := C) hφ0 k x y
   simp only [Matrix.add_apply, Matrix.sub_apply] at h ⊢
   linarith
@@ -180,12 +141,13 @@ theorem cutoffCorrection_residual_dominates (hCf : ∀ x y, C x y ≤ f) (hf : 0
   have ha0 : 0 ≤ (C + cutoffCorrectionIter φ C k * C) x y :=
     add_nonneg (hC0 x y) (Finset.sum_nonneg fun z _ =>
       mul_nonneg (cutoffCorrectionIter_nonneg hφ0 k x z) (hC0 z y))
-  have ha := input_le hC0 hφ0 hφθ hθf hCf hf hC1 k x y
+  have ha := (isCorrectionSeq_cutoffCorrectionIter hC0 hφ0 hφθ hθf).input_le_mul hCf hf hC1 k
+    x y
   have hEa : cutoffCorrectionIter φ C (k + 1) x y =
       φ y ((C + cutoffCorrectionIter φ C k * C) x y) := by
     rw [cutoffCorrectionIter_succ]; rfl
   have he0 := cutoffCorrectionIter_nonneg (C := C) hφ0 (k + 1) x y
-  have hea := iter_succ_le_input hC0 hφ0 hφθ hθf k x y
+  have hea := (isCorrectionSeq_cutoffCorrectionIter hC0 hφ0 hφθ hθf).le_input k x y
   have hFE : (cutoffCorrectionIter φ C k * C) x y ≤ (cutoffCorrectionIter φ C (k + 1) * C) x y :=
     Finset.sum_le_sum fun z _ =>
       mul_le_mul_of_nonneg_right (cutoffCorrectionIter_le_succ hC0 hφ0 hφm k x z) (hC0 z y)
