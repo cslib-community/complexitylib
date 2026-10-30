@@ -143,7 +143,7 @@ theorem lcmUpto_add_le {m n : ℕ} (h : n ≤ m) :
 theorem two_mul_lcmUpto_le_four_pow (n : ℕ) (hn : 1 ≤ n) :
     2 * Nat.lcmUpto n ≤ 4 ^ n := by
   induction n using Nat.strong_induction_on with
-  | h n ihn =>
+  | ind n ihn =>
     rcases le_or_gt n 2 with hn2 | hn2
     · interval_cases n <;> decide
     · rcases n.even_or_odd with ⟨m, rfl⟩ | ⟨m, rfl⟩

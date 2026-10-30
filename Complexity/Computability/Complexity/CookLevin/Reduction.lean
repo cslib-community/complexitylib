@@ -111,7 +111,9 @@ theorem Var.index_injective : Function.Injective (Var.index (k := k) (State := S
 variable [DecidableEq State] {α : Type}
 
 /-- The framed input prefix, certificate length and verifier time bound supplied to the tableau.
-The verifier is allowed `c * (n + 1) ^ d` steps on an input of encoded length `n`. -/
+The verifier is allowed `c * (n + 1) ^ d` steps on an input of encoded length `n`.
+The tuple wrapper is reducible so projection clients can compute its components directly. -/
+@[reducible]
 def parameters (p : Polynomial ℕ) (c d : ℕ) (enc : α ↪ List Bool) (a : α) :
     List Bool × ℕ × ℕ :=
   (frame (enc a), p.eval (enc a).length,

@@ -10,36 +10,45 @@ module
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Cut
 public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.Consolidate
+public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ
 
 /-!
 # Static-array Word-RAM Fibonacci heap
 
 This file assembles the standalone static-array Word-RAM Fibonacci heap
 [Fredman and Tarjan][FredmanTarjan1987] [Cormen et al., Chapter 19][CLRS2009] over
-`Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard`) for
-`Cslib.Algorithms.Lean.IndexedMinPQ.spec`.
+`Cslib.WordRAM.Basis.exact` (and lifted to `Basis.standard`) for both:
 
-Over `n` vertex handles in a contiguous memory block `[base, base + 9 * n + 1)` with concrete
-integer potential `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotential = 0`,
+* the fixed-vertex priority queue `Cslib.Algorithms.Lean.IndexedMinPQ.spec` (used by graph
+  algorithms such as Dijkstra's algorithm), in `9 * n + 1` words at `[base, base + 9 * n + 1)`; and
+* the relational key–value priority queue with handles `Cslib.Algorithms.Lean.MinPQ.spec` (where
+  `insert u v` allocates and returns a handle `h : Fin n_max`), in `11 * n_max + 1` words at
+  `[base, base + 11 * n_max + 1)` under the `FibonacciHeap.MinPQ` namespace (and top-level aliases
+  `relSubroutineDS`, `relDynamicProgram`, `relCertificate`, `relAmortized`).
+
+Over capacity `n` (`n_max`) with concrete integer potential
+`potential x = 80 * (numRoots + 2 * numMarked)` (`initPotential = 0`,
 [Fredman and Tarjan][FredmanTarjan1987], Section 2, p. 604 (the potential defined before Theorem 1);
 [Cormen et al.][CLRS2009], Section 19.1, eq. (19.1)):
 
-* `initFresh` initializes an empty heap on zeroed `[base, base + 9 * n + 1)` in `O(1)` (`≤ 26`)
+* `initFresh` initializes an empty heap on zeroed memory in `O(1)` instructions;
+* `initClear` initializes an empty heap on arbitrary dirty `w`-bit memory in `O(n + 1)`
   instructions;
-* `initClear` initializes an empty heap on arbitrary dirty `[base, base + 9 * n + 1)` in `O(n)`
-  (`≤ 36 * n + 36`) instructions;
-* `isEmpty` and `getKey` run in `O(1)` worst-case time (`≤ 12` and `≤ 16` instructions);
-* `insert` and `decreaseKey` (with cascading cuts) run in `O(1)` amortized time (`≤ 130` and
-  `≤ 340` instructions);
-* `extractMin` (with degree-table consolidation and deterministic lexicographic `(key, handle)`
-  tie-breaking) runs in `O(log n)` amortized time (`≤ 420 * (Nat.log 2 n + 1)` instructions).
+* `isEmpty` and `getKey` / `get` run in `O(1)` worst-case time;
+* `insert` and `decreaseKey` (with cascading cuts) run in `O(1)` amortized time;
+* `extractMin` (with degree-table consolidation) runs in `O(log |s| + 1)` amortized time where
+  `|s|` is the current number of stored elements (`(IndexedMinPQ.dom s).card` or `MinPQ.size s`).
 
 ## Main definitions
 
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.subroutineDS`: `SubroutineDS` certificate
-  over `Basis.exact`.
+  over `Basis.exact` for `IndexedMinPQ.spec`.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.pkg`, `pkgStd`: `PQPackage` bundles over
   `Basis.exact` and `Basis.standard` for plug-and-play graph algorithms (such as Dijkstra).
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.relSubroutineDS`,
+  `relDynamicProgram`, `relCertificate`, `MinPQ.run_ops_exact_fresh`,
+  `MinPQ.run_ops_exact_reusable`: `RelSubroutineDS` and flat-program realizations of the key–value
+  Fibonacci heap with handles (`Cslib.Algorithms.Lean.MinPQ.spec`).
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.initFreshProg`, `initClearProg`, `opProg`,
   `initRegs`, `prepareRegs`, `RunsOps`: compiled flat `Program .exact rFib` artifacts, register
   calling conventions, and sequential execution predicate for standalone multi-operation execution.
@@ -186,7 +195,7 @@ def pkg : PQPackage .exact rFib where
   charge_getKey _ _ _ _ := le_rfl
   charge_insert _ _ _ _ _ := le_rfl
   charge_decreaseKey _ _ _ _ _ := le_rfl
-  charge_extractMin _ _ _ := le_rfl
+  charge_extractMin _ _ s := charge_extractMin_le_tExt _ s
 
 /-- Parametric `PQPackage .standard rFib` bundle lifted to `Basis.standard`. -/
 abbrev pkgStd : PQPackage .standard rFib := pkg.toStandard
@@ -337,10 +346,11 @@ private theorem seq_runsOps {n K_max w base : ℕ} (hS : Fits w (base + space n)
       step_program_halt dispatchCode outFlag y
     obtain ⟨z, rest, hrest, hinv_z, hpot_rest⟩ := seq_runsOps hS hK ops hinv_y hv_ops
     refine ⟨z, (m + 1) + rest, .cons hruns ⟨_, hhalt⟩ hdec hmod hrest, hinv_z, ?_⟩
+    have hce := charge_extractMin_le_tExt n s
     cases o <;>
       simp only [charge, tEmpty, tGet, tIns, tDec, tExt,
         numQueries, numInserts, numDecreaseKeys, numExtractMins,
-        Nat.add_mul, Nat.one_mul] at hpot_m ⊢ <;>
+        Nat.add_mul, Nat.one_mul] at hce hpot_m ⊢ <;>
       omega
 
 private theorem initRegs_bounded {n base w : ℕ} (hS : Fits w (base + space n))
@@ -424,5 +434,37 @@ theorem run_ops_exact_reusable {n K_max w base : ℕ} (hS : Fits w (base + space
     omega
   · change potential x₀ ≤ 0 at hpot₀
     omega
+
+/-! ## Top-level aliases for the key–value priority-queue realization (`MinPQ`) -/
+
+/-- `RelSubroutineDS` certificate for the key–value Fibonacci heap with handles (`MinPQ.spec`). -/
+abbrev relSubroutineDS {n_max U V w base : ℕ}
+    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
+    RelSubroutineDS MinPQ.subroutineCode (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) w base
+      ![n_max] (Cslib.Algorithms.Lean.MinPQ.empty n_max) :=
+  MinPQ.relSubroutineDS hS hU hV
+
+/-- Standalone `DynamicProgram` for the key–value Fibonacci heap with handles (`MinPQ.spec`). -/
+abbrev relDynamicProgram {n_max U V w base : ℕ}
+    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
+    DynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) MinPQ.rMinPQ :=
+  MinPQ.relDynamicProgram hS hU hV
+
+/-- Standalone `RelDynamicCertificate` for the key–value Fibonacci heap with handles
+(`MinPQ.spec`). -/
+abbrev relCertificate {n_max U V w base : ℕ}
+    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
+    RelDynamicCertificate (relDynamicProgram hS hU hV) w :=
+  MinPQ.relCertificate hS hU hV
+
+/-- Standalone `Stateful.RelAmortized` theorem for the key–value Fibonacci heap with handles
+(`MinPQ.spec`). -/
+theorem relAmortized {n_max U V w base : ℕ}
+    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
+    Stateful.RelAmortized (relCertificate hS hU hV).realization
+      DynamicProgram.OperationTrace.instructions
+      (fun _ x => MinPQ.potential x)
+      (fun s o => MinPQ.charge n_max s o + 1) :=
+  MinPQ.relAmortized hS hU hV
 
 end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap

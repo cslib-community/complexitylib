@@ -187,6 +187,132 @@ class HandoffTests(unittest.TestCase):
         with self.assertRaises(handoff.Rejected):
             self.pack()
 
+    def test_pack_omits_only_module_setup_inputs_after_file_type_checks(self):
+        omitted = ("ir/Example.setup.json", "ir/Nested/Example.irsetup.json")
+        retained = ("ir/report.json", "lib/lean/Example.setup.json", "ir/Example.setup.json.hash")
+        for name in omitted + retained:
+            path = self.build / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"setup input" * 100 if name in omitted else b"retained")
+        kept = [p for p in self.build.rglob("*") if p.is_file()
+                and p.relative_to(self.build).as_posix() not in omitted]
+        total = sum(p.stat().st_size for p in kept)
+        # The quota still applies to the actual payload; the omitted inputs alone exceed it.
+        with patch.object(handoff, "MAX_BYTES", total):
+            self.pack()
+        with tarfile.open(self.output / "build.tar.gz") as bundle:
+            names = set(bundle.getnames())
+        for name in omitted:
+            self.assertNotIn(f".lake/build/{name}", names)
+            self.assertTrue((self.build / name).is_file())
+        for name in retained:
+            self.assertIn(f".lake/build/{name}", names)
+        inventory = json.loads((self.output / "metadata.json").read_text())["archive"]
+        self.assertEqual((inventory["files"], inventory["bytes"]), (len(kept), total))
+
+        for directory in (False, True):
+            link = self.build / "ir/Linked.setup.json"
+            link.symlink_to(self.base if directory else self.root / "lakefile.toml",
+                            target_is_directory=directory)
+            with self.assertRaisesRegex(handoff.Rejected, "Non-regular build output"):
+                handoff.pack(self.root, self.base / f"links-{directory}", self.env)
+            link.unlink()
+
+    def test_limit_miss_reports_actual_inventory_and_omission(self):
+        (self.build / "ir").mkdir()
+        (self.build / "ir/Example.setup.json").write_bytes(b"setup")
+        total = sum(p.stat().st_size for p in self.build.rglob("*")
+                    if p.is_file() and not handoff.module_setup_input(p.relative_to(self.build)))
+        with patch.object(handoff, "MAX_BYTES", 1), self.assertRaises(handoff.Rejected) as error:
+            self.pack()
+        self.assertIn(f"3 files / {total} bytes", str(error.exception))
+        self.assertIn("limits 100000 files / 1 bytes", str(error.exception))
+        self.assertIn("omitted 1 module setup inputs / 5 bytes", str(error.exception))
+        self.assertFalse(self.output.exists())
+
+    def test_setup_inputs_alone_do_not_make_a_nonempty_payload(self):
+        shutil.rmtree(self.build)
+        path = self.build / "ir/Example.setup.json"
+        path.parent.mkdir(parents=True)
+        path.write_text("setup")
+        with self.assertRaisesRegex(handoff.Rejected, "0 files / 0 bytes"):
+            self.pack()
+        self.assertTrue(path.is_file())
+        self.assertFalse(self.output.exists())
+
+    @unittest.skipUnless(os.environ.get("COMPLEXITYLIB_TEST_LAKE_HANDOFF") == "1",
+                         "real Lake regression runs after Lean installation")
+    def test_real_lake_reuses_module_and_native_outputs_without_setup_inputs(self):
+        # No dependencies or shared artifact cache: reuse must come from the handoff itself.
+        shutil.rmtree(self.build)
+        (self.root / "lean-toolchain").write_bytes((handoff.ROOT / "lean-toolchain").read_bytes())
+        (self.root / "lake-manifest.json").unlink()
+        (self.root / "lakefile.toml").write_text(
+            'name = "handoff_fixture"\nenableArtifactCache = false\n'
+            '[leanOptions]\ncompiler.postponeCompile = true\n'
+            '[[lean_lib]]\nname = "Fixture"\n'
+            '[[lean_exe]]\nname = "fixture"\nroot = "Main"\n')
+        (self.root / "Fixture").mkdir()
+        basic = ("module\nnamespace Fixture\n"
+                 "@[noinline] public def twice (n : Nat) : Nat := n + n\nend Fixture\n")
+        (self.root / "Fixture/Basic.lean").write_text(basic)
+        (self.root / "Fixture.lean").write_text(
+            "module\npublic import Fixture.Basic\n"
+            "namespace Fixture\npublic def answer : Nat := twice 21\nend Fixture\n")
+        (self.root / "Main.lean").write_text(
+            "import Fixture\ndef main : IO Unit := IO.println Fixture.answer\n")
+        env = {**os.environ, "LAKE_CACHE_DIR": str(self.base / "producer-lake-cache"),
+               "LEAN_NUM_THREADS": "2"}
+
+        def run(*args, cwd=None):
+            result = subprocess.run(args, cwd=cwd or self.root, env=env, text=True,
+                                    capture_output=True, timeout=120)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            return result.stdout
+
+        run("lake", "build", "fixture")
+        setup = [p.relative_to(self.build) for p in self.build.rglob("*.json")
+                 if handoff.module_setup_input(p.relative_to(self.build))]
+        self.assertTrue(any(p.name.endswith(".setup.json") for p in setup))
+        self.assertTrue(any(p.name.endswith(".irsetup.json") for p in setup))
+        for name in ("lib/lean/Fixture/Basic.olean.server", "lib/lean/Fixture/Basic.olean.private",
+                     "lib/lean/Fixture/Basic.ir", "ir/Fixture/Basic.c", "bin/fixture"):
+            self.assertTrue((self.build / name).is_file(), name)
+        run("git", "add", ".")
+        run("git", "-c", "commit.gpgsign=false", "-c", "user.name=Test",
+            "-c", "user.email=test@example.invalid", "commit", "-qm", "Real Lake fixture")
+        self.env["GITHUB_SHA"] = run("git", "rev-parse", "HEAD").strip()
+        self.api = API(self.env["GITHUB_SHA"])
+        self.pack()
+        self.assertTrue(all((self.build / p).is_file() for p in setup))
+
+        consumer = self.base / "consumer"
+        run("git", "clone", "--no-local", "-q", str(self.root), str(consumer))
+        self.root = consumer
+        self.build = consumer / ".lake/build"
+        self.build.parent.mkdir()
+        env["LAKE_CACHE_DIR"] = str(self.base / "empty-consumer-lake-cache")
+        self.restore()
+        self.assertTrue(all(not (self.build / p).exists() for p in setup))
+        outputs = {p.relative_to(self.build): (handoff.digest(p), p.stat().st_mtime_ns)
+                   for p in self.build.rglob("*") if p.is_file() and p.suffix != ".hash"}
+        # --no-build rejects any required rebuild. The ordinary build must also leave the
+        # compiled modules, IR, executable and saved traces unchanged, without setup inputs.
+        run("lake", "build", "--no-build", "fixture")
+        run("lake", "build", "fixture")
+        self.assertTrue(all(not (self.build / p).exists() for p in setup))
+        for name, expected in outputs.items():
+            path = self.build / name
+            self.assertEqual((handoff.digest(path), path.stat().st_mtime_ns), expected, str(name))
+        self.assertEqual(run(str(self.build / "bin/fixture")).strip(), "42")
+
+        # A genuine source change still compiles and recreates both kinds of setup input.
+        (consumer / "Fixture/Basic.lean").write_text(basic.replace("n + n", "n + n + 1"))
+        run("lake", "build", "fixture")
+        self.assertTrue((self.build / "ir/Fixture/Basic.setup.json").is_file())
+        self.assertTrue((self.build / "ir/Fixture/Basic.irsetup.json").is_file())
+        self.assertEqual(run(str(self.build / "bin/fixture")).strip(), "43")
+
     def test_identity_mismatch_or_unsuccessful_run_never_downloads(self):
         cases = ({"head_sha": "f" * 40}, {"event": "pull_request"},
                  {"event": "workflow_dispatch"}, {"workflow_id": 8},
