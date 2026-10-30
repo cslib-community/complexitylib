@@ -20,8 +20,8 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 With the universal machine running a fixed machine for `t` steps within time `O(t log t)`
 (`Turing.MultiTapeTM.Universal.computableInO_universal_nlogn`), the clocked diagonal on short
 descriptions `Cslib.Complexity.timeDiagonal J` of `Hierarchy.Time` is computable within time and
-space `O(n + (log (n + 1) + 1) ^ k * (J n + 1) * (log (J n + 1) + 1))` on inputs of length `n`, for a
-time-constructible clock `J` and an absolute constant `k`
+space `O(n + (log (n + 1) + 1) ^ k * (J n + 1) * (log (J n + 1) + 1))` on inputs of length `n`,
+for a time-constructible clock `J` and an absolute constant `k`
 (`Cslib.Complexity.exists_computableInO_timeDiagonal_polylog`). On a short description, of
 `L ≤ log n` bits, the decoded description has encoded length polynomial in `L`, so the overhead of
 the universal machine, polynomial in that length, is polylogarithmic in `n`; the symbols are bits.
