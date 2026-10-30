@@ -23,8 +23,8 @@ namespace Turing.MultiTapeTM.ComputableTidilyInDegree
 variable {α : Type}
 
 /-- Taking the first `n` elements, with `n` in unary, in linear time. -/
-theorem takeUnary (enc : α ↪ List Bool) :
-    ComputableTidilyInDegree (fun p : List α × ℕ => p.1.take p.2)
+theorem _root_.Turing.MultiTapeTM.ComputableInDegree.takeUnary (enc : α ↪ List Bool) :
+    ComputableInDegree (fun p : List α × ℕ => p.1.take p.2)
       (encPair (encList enc) encUnary) (encList enc) 1 1 :=
   sorry
 

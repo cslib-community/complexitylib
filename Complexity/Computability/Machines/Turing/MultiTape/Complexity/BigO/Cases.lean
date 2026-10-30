@@ -21,8 +21,8 @@ types are needed: the branches run on the inputs of their case only.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInO.sumElimSnd`: case analysis on a sum component.
-* `Turing.MultiTapeTM.ComputableTidilyInO.optionElimSnd`: case analysis on an option component.
+* `Turing.MultiTapeTM.ComputableInO.sumElimSnd`: case analysis on a sum component.
+* `Turing.MultiTapeTM.ComputableInO.optionElimSnd`: case analysis on an option component.
 -/
 
 public section
@@ -83,7 +83,7 @@ private lemma keepFrame_drop {σ : Type} {encS : σ ↪ List Bool} {h : σ → �
 /-- **Case analysis on a sum component.** If `f` is computable on the left case and `g` on the
 right case, so is the case analysis, within the bounds of the branch taken plus the length of the
 encoded input. -/
-theorem sumElimSnd {f : π × α → ε} {g : π × β → ε} {Tf Sf : π × α → ℕ} {Tg Sg : π × β → ℕ}
+private theorem sumElimSnd_tidy {f : π × α → ε} {g : π × β → ε} {Tf Sf : π × α → ℕ} {Tg Sg : π × β → ℕ}
     (hf : ComputableTidilyInO f (encPair encP encA) encE Tf Sf)
     (hg : ComputableTidilyInO g (encPair encP encB) encE Tg Sg) :
     ComputableTidilyInO
@@ -187,7 +187,7 @@ theorem sumElimSnd {f : π × α → ε} {g : π × β → ε} {Tf Sf : π × α
 /-- **Case analysis on an option component.** If `f` is computable on the first component in the
 `none` case and `g` on the pair in the `some` case, so is the case analysis, within the bounds of
 the branch taken plus the length of the encoded input. -/
-theorem optionElimSnd {f : π → ε} {g : π × α → ε} {Tf Sf : π → ℕ} {Tg Sg : π × α → ℕ}
+private theorem optionElimSnd_tidy {f : π → ε} {g : π × α → ε} {Tf Sf : π → ℕ} {Tg Sg : π × α → ℕ}
     (hf : ComputableTidilyInO f encP encE Tf Sf)
     (hg : ComputableTidilyInO g (encPair encP encA) encE Tg Sg) :
     ComputableTidilyInO (fun p : π × Option α => p.2.elim (f p.1) (fun a => g (p.1, a)))
@@ -300,3 +300,39 @@ theorem optionElimSnd {f : π → ε} {g : π × α → ε} {Tf Sf : π → ℕ}
       nlinarith [hlenS ⟨(x, some a), rfl⟩]
 
 end Turing.MultiTapeTM.ComputableTidilyInO
+
+namespace Turing.MultiTapeTM.ComputableInO
+
+variable {π α β ε : Type} {encP : π ↪ List Bool} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
+  {encE : ε ↪ List Bool}
+
+/-- **Case analysis on a sum component.** If `f` is computable on the left case and `g` on the
+right case, so is the case analysis, within the bounds of the branch taken plus the length of the
+encoded input. -/
+theorem sumElimSnd {f : π × α → ε} {g : π × β → ε} {Tf Sf : π × α → ℕ} {Tg Sg : π × β → ℕ}
+    (hf : ComputableInO f (encPair encP encA) encE Tf Sf)
+    (hg : ComputableInO g (encPair encP encB) encE Tg Sg) :
+    ComputableInO
+      (fun p : π × (α ⊕ β) => p.2.elim (fun a => f (p.1, a)) (fun b => g (p.1, b)))
+      (encPair encP (encSum encA encB)) encE
+      (fun p => (encPair encP (encSum encA encB) p).length +
+        p.2.elim (fun a => Tf (p.1, a)) (fun b => Tg (p.1, b)))
+      (fun p => (encPair encP (encSum encA encB) p).length +
+        p.2.elim (fun a => Sf (p.1, a)) (fun b => Sg (p.1, b))) :=
+  (ComputableTidilyInO.sumElimSnd_tidy hf.tidy hg.tidy).computableInO
+
+/-- **Case analysis on an option component.** If `f` is computable on the first component in the
+`none` case and `g` on the pair in the `some` case, so is the case analysis, within the bounds of
+the branch taken plus the length of the encoded input. -/
+theorem optionElimSnd {f : π → ε} {g : π × α → ε} {Tf Sf : π → ℕ} {Tg Sg : π × α → ℕ}
+    (hf : ComputableInO f encP encE Tf Sf)
+    (hg : ComputableInO g (encPair encP encA) encE Tg Sg) :
+    ComputableInO (fun p : π × Option α => p.2.elim (f p.1) (fun a => g (p.1, a)))
+      (encPair encP (encOption encA)) encE
+      (fun p => (encPair encP (encOption encA) p).length +
+        p.2.elim (Tf p.1) (fun a => Tg (p.1, a)))
+      (fun p => (encPair encP (encOption encA) p).length +
+        p.2.elim (Sf p.1) (fun a => Sg (p.1, a))) :=
+  (ComputableTidilyInO.optionElimSnd_tidy hf.tidy hg.tidy).computableInO
+
+end Turing.MultiTapeTM.ComputableInO

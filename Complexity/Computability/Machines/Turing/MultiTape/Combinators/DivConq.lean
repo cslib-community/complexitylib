@@ -20,7 +20,7 @@ second solution. Its evaluation with a cost is the inductive relation
 
 If the parts are tidily computable, the solution is tidily computable within the cost of the
 evaluation, when the cost of every node covers the costs of its parts and the lengths of the words
-it touches (`Turing.MultiTapeTM.ComputableTidilyInO.divConq`). The machine runs the recursion as a
+it touches (`Turing.MultiTapeTM.ComputableInO.divConq`). The machine runs the recursion as a
 `Turing.MultiTapeTM.StackLoop`, keeping the pending problems and saved data on a stack, so a node
 does not pay for the frames of its ancestors.
 
@@ -31,7 +31,7 @@ does not pay for the frames of its ancestors.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInO.divConq`: divide and conquer within the cost of the
+* `Turing.MultiTapeTM.ComputableInO.divConq`: divide and conquer within the cost of the
   evaluation.
 -/
 
@@ -210,22 +210,71 @@ theorem eval_trace {cb : α → ℕ} {cn : α → β → β → ℕ} {R : Option
 
 end DivConq
 
+/-! ### Certificates for the rounds -/
+
+namespace DivConq
+
+open ComputableTidilyInO
+
+variable {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encG : γ ↪ List Bool}
+
+/-- The encoding of the values of the loop. -/
+abbrev encVal (encA : α ↪ List Bool) (encB : β ↪ List Bool) : Val α β ↪ List Bool :=
+  encSum encA (encSum encB encB)
+
+/-- The encoding of the frames of the loop. -/
+abbrev encFrame (encA : α ↪ List Bool) (encG : γ ↪ List Bool) : Frame α γ ↪ List Bool :=
+  encSum encA encG
+
+/-- `Option.toList`, in linear time. -/
+lemma toList_inO {δ : Type} {enc : δ ↪ List Bool} :
+    ComputableTidilyInO (Option.toList (α := δ)) (encOption enc) (encList enc)
+      (fun o => (encOption enc o).length) (fun o => (encOption enc o).length) := by
+  have htail : ComputableTidilyInO List.tail encBits encBits (fun w => w.length)
+      (fun w => w.length) :=
+    of_linear (.of_tail (f := List.tail) (encIn := encBits) (encOut := encBits) fun _ => rfl)
+  have hframe : ComputableTidilyInO frame encBits encBits (fun w => w.length)
+      (fun w => w.length) :=
+    of_linear (.of_frame (f := frame) (encIn := encBits) (encOut := encBits) fun _ => rfl)
+  have hft : ComputableTidilyInO (fun w : List Bool => frame w.tail) encBits encBits
+      (fun w => w.length) (fun w => w.length) :=
+    (hframe.comp htail).mono 2 (fun w => by simp [encBits]; omega)
+      (fun w => by simp [encBits]; omega)
+  have hw : ComputableTidilyInO (fun w : List Bool => if w.isEmpty then [] else frame w.tail)
+      encBits encBits (fun w => w.length) (fun w => w.length) :=
+    ((of_linear (.of_isEmpty (f := List.isEmpty) (encIn := encBits) fun _ => rfl)).ite
+      (const (encMid := encBits) []) hft).mono 2 (fun w => by split_ifs <;> simp [encBits] <;>
+        omega) (fun w => by split_ifs <;> simp [encBits] <;> omega)
+  refine (hw.comp (of_linear (.of_eq (f := fun o : Option δ => encOption enc o)
+    (encIn := encOption enc) (encMid := encBits) fun _ => rfl))).of_enc_eq (fun o => ?_) |>.mono
+      2 (fun o => ?_) (fun o => ?_)
+  · cases o <;> simp [encBits]
+  all_goals simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply]; omega
+
+end DivConq
+
+end Turing.MultiTapeTM
+
+namespace Turing.MultiTapeTM
+
+namespace DivConq
+
 /-- **Divide and conquer.** If the parts of a divide-and-conquer recursion are tidily computable
 and every input `x` is solved with `F x` at cost `C x`, then `F` is tidily computable within the
 cost of the evaluation plus the initialization. The cost of a base problem must cover its test,
 its solution and the lengths of the problem and its solution; the cost of a node must cover its
 test, the first subproblem, the middle and the combination, and the lengths of all the values they
 read and write. -/
-theorem ComputableTidilyInO.divConq {δ α β γ : Type} {encIn : δ ↪ List Bool}
+theorem ComputableInO.divConq {δ α β γ : Type} {encIn : δ ↪ List Bool}
     {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encG : γ ↪ List Bool} (D : DivConq α β γ)
     {init : δ → α} {F : δ → β} {C : δ → ℕ} {cb : α → ℕ} {cn : α → β → β → ℕ}
     {Ti Si : δ → ℕ} {Tt St Tb Sb Tl Sl : α → ℕ} {Tm Sm : α × β → ℕ} {Tj Sj : γ × β → ℕ}
-    (hinit : ComputableTidilyInO init encIn encA Ti Si)
-    (hisBase : ComputableTidilyInO D.isBase encA encBool Tt St)
-    (hbase : ComputableTidilyInO D.base encA encB Tb Sb)
-    (hleft : ComputableTidilyInO D.left encA encA Tl Sl)
-    (hmid : ComputableTidilyInO D.mid (encPair encA encB) (encPair encA encG) Tm Sm)
-    (hjoin : ComputableTidilyInO D.join (encPair encG encB) encB Tj Sj)
+    (hinit : ComputableInO init encIn encA Ti Si)
+    (hisBase : ComputableInO D.isBase encA encBool Tt St)
+    (hbase : ComputableInO D.base encA encB Tb Sb)
+    (hleft : ComputableInO D.left encA encA Tl Sl)
+    (hmid : ComputableInO D.mid (encPair encA encB) (encPair encA encG) Tm Sm)
+    (hjoin : ComputableInO D.join (encPair encG encB) encB Tj Sj)
     (hcb : ∀ a, D.isBase a = true →
       Tt a + St a + Tb a + Sb a + (encA a).length + (encB (D.base a)).length + 1 ≤ cb a)
     (hcn : ∀ a b₁ b₂, D.isBase a = false →
@@ -235,7 +284,7 @@ theorem ComputableTidilyInO.divConq {δ α β γ : Type} {encIn : δ ↪ List Bo
         (encA (D.mid (a, b₁)).1).length + (encG (D.mid (a, b₁)).2).length + (encB b₂).length +
         (encB (D.join ((D.mid (a, b₁)).2, b₂))).length + 1 ≤ cn a b₁ b₂)
     (heval : ∀ x, D.Eval cb cn (init x) (F x) (C x)) :
-    ComputableTidilyInO F encIn encB (fun x => (encIn x).length + Ti x + Si x + C x)
+    ComputableInO F encIn encB (fun x => (encIn x).length + Ti x + Si x + C x)
       (fun x => (encIn x).length + Ti x + Si x + C x) :=
   sorry
 
