@@ -305,16 +305,6 @@ section Rename
 
 variable {f : Fin r → Fin r'}
 
-private theorem extend_comap_eq (hf : f.Injective) (x : Data r') :
-    (x.comap f).extend f x = x := by
-  ext j
-  · change Function.extend f (x.regs ∘ f) x.regs j = x.regs j
-    by_cases hj : ∃ i, f i = j
-    · obtain ⟨i, rfl⟩ := hj
-      exact hf.extend_apply _ _ i
-    · exact Function.extend_apply' _ _ _ hj
-  · rfl
-
 private theorem extend_set_eq (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
     (y.set i v).extend f x = (y.extend f x).set (f i) v :=
   Data.ext (hf.extend_update _ _ _ _) rfl
@@ -342,7 +332,7 @@ theorem ExecRand.rename (hf : f.Injective) {w : ℕ} {c : Code B r} {x : Data r'
         pure (x.set (f dst) k.val, 1)) := by
       rw [← bind_pure_comp, bind_assoc]
       refine congrArg (ProbComp.unifFin (x.regs (f src)) >>= ·) (funext fun k => ?_)
-      simp only [pure_bind, extend_set_eq hf, extend_comap_eq hf]
+      simp only [pure_bind, extend_set_eq hf, Data.extend_comap hf]
     simp only [Code.rename, Data.comap_regs]
     rw [heq]
     exact ExecRand.rand hfit'
@@ -386,7 +376,7 @@ theorem ExecRand.rename (hf : f.Injective) {w : ℕ} {c : Code B r} {x : Data r'
     simpa only [Code.rename, Functor.map_map] using h'
   | @loop_exit cond body _ hc =>
     subst hx
-    simpa only [Code.rename, map_pure, extend_comap_eq hf] using
+    simpa only [Code.rename, map_pure, Data.extend_comap hf] using
       ExecRand.loop_exit (body := body.rename f) (fun h => hc ((Cond.holds_rename _ _).1 h))
   | @loop_iter cond body _ mb ml hc _ hl ihb ihl =>
     subst hx

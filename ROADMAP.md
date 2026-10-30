@@ -543,6 +543,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   `34603008*(19m+1)*n²/D^(1/18)` at `D=4^m`, `L=19m`, `D^18≤n`.
   The outer instance loop, aggregate subcubic ET bound, backend/witness reconstruction and
   the full [#1394] ordinary-3SUM 1.9992 endpoint remain open.
+- **Per-record native witness recovery** ([#1639](https://github.com/cslib-community/complexitylib/issues/1639)):
+  actual initialized producer/product calls now feed real answer/query loads and original signed
+  weight verification. The fixed 400-register program returns original-coordinate witnesses and
+  decides zeros in the selected existing chunk/piece. Its actual scan counter satisfies
+  `S≤falsePositiveCount+returnedFlag`, so unsuccessful records have no successful-scan surplus.
+  Root decoding, all control and original-weight scans are charged; positive logarithmic width
+  and polynomial words/support hold at every wider admitted width. The outer instance loop,
+  aggregate subcubic ET analysis and ordinary-3SUM 1.9992 composition remain open under [#1394].
 - **Conditional Convolution-3SUM host** ([#1524]): the charged native host initializes from the
   ordinary input and runs every generated instance, conditional on a concrete solver's execution,
   correctness and frame theorem. This completes the conditional host milestone. Integrating the
