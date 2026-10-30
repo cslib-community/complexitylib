@@ -149,7 +149,9 @@ defaults to the number of logical processors and is not a hard process or memory
 observed concurrency and memory use. Keep mutable build outputs separate between worktrees
 (for example with `scripts/worktree.sh create <branch> [dir_name]`, which seeds `.lake/build` from
 the root checkout and, when `<branch>` exists only on `origin`, checks it out tracking
-`origin/<branch>`). Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
+`origin/<branch>`). Pass `--source-only` to skip the initial copy; the
+[cache guide](scripts/cache/README.md#automatic-restoration) explains bootstrap and dependency costs.
+Run `python3 scripts/check_hygiene.py` to audit `-- upstream:` markers,
 forbidden proof tokens, `set_option` justifications, the key order of `references.bib` and that
 every docstring citation key has an entry there
 (pass `--check-simp` to also run the heuristic check for non-terminal bare `simp` calls in

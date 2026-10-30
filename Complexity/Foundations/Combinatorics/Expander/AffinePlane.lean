@@ -56,6 +56,7 @@ def affinePlaneRot (p : (K × K) × K) : (K × K) × K :=
 
 /-- The affine-plane graph: `(a, b)` is adjacent to `(c, d)` when `a * c = b + d`.
 The edge to first coordinate `c` has label `c`, and its reverse has label `a`. -/
+@[reducible]
 def affinePlane : RotationMap (K × K) K where
   rot := affinePlaneRot K
   rot_involutive p := by

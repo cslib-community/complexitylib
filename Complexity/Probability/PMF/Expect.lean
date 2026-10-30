@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -29,6 +29,8 @@ into the vocabulary of `Finset.expect` (`𝔼`) and `Finset.dens`.
 
 * `Cslib.Probability.PMF.sum_le_affine`: average pointwise affine bounds.
 * `Cslib.Probability.PMF.sum_map_mul`, `.sum_bind_mul`: average deterministic and random scores.
+* `Cslib.Probability.PMF.tsum_map_mul`, `.tsum_bind_mul`: the same laws for extended
+  nonnegative scores over arbitrary types.
 
 * `Cslib.Probability.PMF.toReal_uniformOfFintype_bind_apply`: a uniform first stage averages the
   second stages.
@@ -43,6 +45,23 @@ namespace Cslib.Probability.PMF
 
 open Finset
 open scoped BigOperators ENNReal
+
+/-- Expectation of `k : β → ℝ≥0∞` under `p.map g` equals expectation of `k ∘ g` under `p`. -/
+theorem tsum_map_mul {α β : Type*} (p : PMF α) (g : α → β) (k : β → ℝ≥0∞) :
+    (∑' b, p.map g b * k b) = ∑' a, p a * k (g a) := by
+  simp only [PMF.map_apply, ← ENNReal.tsum_mul_right]
+  rw [tsum_comm]
+  refine tsum_congr fun a => ?_
+  rw [tsum_eq_single (g a)]
+  · simp
+  · intro b hb
+    simp [hb]
+
+/-- Expectation of `k : β → ℝ≥0∞` under `p.bind f` decomposes as an iterated expectation. -/
+theorem tsum_bind_mul {α β : Type*} (p : PMF α) (f : α → PMF β) (k : β → ℝ≥0∞) :
+    (∑' b, (p.bind f) b * k b) = ∑' a, p a * ∑' b, f a b * k b := by
+  simp only [PMF.bind_apply, ← ENNReal.tsum_mul_right, ← ENNReal.tsum_mul_left, mul_assoc]
+  exact tsum_comm
 
 /-- Averaging a score after a deterministic map averages its composite with that map.
 Adapted from the cslib `crypto` branch at `5ff69ca`. -/
