@@ -1246,6 +1246,8 @@ and Definition 8.8):
 * `encodeKey k`: the encoded public parameter string presented to the adversary for key `k`.
   This encoding is injective: equal public strings determine the same key and hence the same
   valid messages, commitment distributions, and verification results.
+  Injectivity is an information-theoretic condition; decoding and evaluating honest operations
+  from this string need separate efficiency certificates.
 * `ValidMessage k m`: predicate characterizing valid message words `m` in the message space for key
   `k`.
 * `commitDist k msg`: the distribution of `(c, o)` (encoded commitment string `c` and encoded
