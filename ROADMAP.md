@@ -259,7 +259,6 @@ universe size, not supplied as unverified input tables. In dependency order:
   machines and the translation to `encCircuitValue`.
 - Numeric certificates for further restricted-domain families; canonical BIT on a restricted
   domain need not be first-order definable.
-- The ordered ESO-to-NP direction of Fagin's theorem.
 - Order-free: SAT-to-3SAT, graph-property hardness, and bridges to the separately encoded
   problems.
 - **The Immerman–Vardi theorem:** on ordered finite structures, first-order logic with least

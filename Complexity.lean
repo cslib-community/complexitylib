@@ -1203,6 +1203,7 @@ public import Complexity.Computability.Complexity.CookLevin.Tableau
 public import Complexity.Computability.Complexity.Fagin.Converse
 public import Complexity.Computability.Complexity.Fagin.Layout
 public import Complexity.Computability.Complexity.Fagin.Ordered
+public import Complexity.Computability.Complexity.Fagin.Ordered.Verifier
 public import Complexity.Computability.Complexity.Fagin.Power
 public import Complexity.Computability.Complexity.Fagin.SAT
 public import Complexity.Computability.Complexity.Fagin.Small
@@ -1211,6 +1212,7 @@ public import Complexity.Computability.Complexity.Fagin.Tableau
 public import Complexity.Computability.Complexity.Fagin.Tableau.Defs
 public import Complexity.Computability.Complexity.Fagin.Tableau.Semantics
 public import Complexity.Computability.Complexity.Fagin.Verifier
+public import Complexity.Computability.Complexity.Fagin.Witness
 public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
@@ -2788,6 +2790,7 @@ public import Complexity.Languages.Probabilistic.Vector
 public import Complexity.Logics.FirstOrder.Basic
 public import Complexity.Logics.FirstOrder.Encoding
 public import Complexity.Logics.FirstOrder.Encoding.Layout
+public import Complexity.Logics.FirstOrder.Encoding.Sum
 public import Complexity.Logics.FirstOrder.Interpretation
 public import Complexity.Logics.FirstOrder.Interpretation.Constants
 public import Complexity.Logics.FirstOrder.Interpretation.Encoding
@@ -2931,6 +2934,7 @@ public import Complexity.Logics.Propositional.Resolution.TseitinExpander
 public import Complexity.Logics.Propositional.SigmaThree
 public import Complexity.Logics.Propositional.Tseitin
 public import Complexity.Logics.SecondOrder.Coloring
+public import Complexity.Logics.SecondOrder.Encoding
 public import Complexity.Logics.SecondOrder.Existential
 public import Complexity.Logics.SecondOrder.Grounding
 public import Complexity.Logics.SecondOrder.IndependentSet
