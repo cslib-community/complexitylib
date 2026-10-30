@@ -88,6 +88,12 @@ theorem index_lt {k a b : ℕ} (ha : a < 2 ^ k) (hb : b < 2 ^ k) : index a b < 4
     rw [index_eq, pow_succ]
     omega
 
+/-- Each computed spread-table entry fits in the corresponding base-four square span. -/
+theorem spread_lt {k i : ℕ} (hi : i < 2 ^ k) : spread i < 4 ^ k := by
+  have h := index_lt hi (show 0 < 2 ^ k by positivity)
+  simp only [index, spread_zero, Nat.add_zero] at h
+  omega
+
 private theorem row_column_index (a b : ℕ) : row (index a b) = a ∧ column (index a b) = b := by
   induction hm : a + b using Nat.strong_induction_on generalizing a b with
   | _ m ih =>

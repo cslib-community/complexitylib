@@ -7,6 +7,8 @@ Authors: Erik Demaine
 -- upstream: local-only (tests)
 
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Leaf
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Initialize
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.LeafStep
 
 /-!
 # Native explicit-stack Strassen execution regressions
@@ -113,5 +115,70 @@ example : InputFits 10 leafInput ∧ ∃ y t, t + 1 ≤ 71 ∧
   · simpa only [Nat.zero_add, State.init] using hex.runs (pc := 0)
       (p := leafRun.program Reg.output) (Program.Contains.self _).append_left
   · simpa only [State.init, hp] using hex.executes Reg.output
+
+-- The complete fixed controller also has a fully admitted initialized scalar execution:
+-- actual Power call, computed frame placement, all frame stores/loads, depth dispatch,
+-- coefficient computation, root return, loop exit and halt refer to the same state.
+example : ∃ y t, t + 1 ≤ 118 ∧
+    Runs 10 ((complete 1 2 3 10 1 0).program Reg.output) (State.init leafInput)
+      ⟨(complete 1 2 3 10 1 0).size, y⟩ t ∧
+    Executes 10 ((complete 1 2 3 10 1 0).program Reg.output) (State.init leafInput) 3 (t + 1) ∧
+    y.Bounded 10 ∧ y.mem 3 = encode (-6) ∧ y.mem 4 = 123 := by
+  let x₀ := (((Data.init leafInput).set Reg.inputA 1).set Reg.inputB 2).set Reg.output 3
+  let x := ((x₀.set Reg.scratch 10).set Reg.modulus 1).set Reg.depth 0
+  have hargs : ExecWithin 10 (arguments 1 2 3 10 1 0) (.init leafInput) x 6 := by
+    ram_eval [arguments, x, x₀, Reg.inputA, Reg.inputB, Reg.output,
+      Reg.scratch, Reg.modulus, Reg.depth]
+  obtain ⟨s, hs, _, hsframes, hsframe, _, hsactive, hszero, hsone, _, hswidth,
+    hsparams, hsfields, hsmem⟩ := exec_setup (w := 10) x (by decide)
+  have hsa : s.regs Reg.inputA = 1 := (hsparams Reg.inputA (by decide)).trans (by decide)
+  have hsb : s.regs Reg.inputB = 2 := (hsparams Reg.inputB (by decide)).trans (by decide)
+  have hso : s.regs Reg.output = 3 := (hsparams Reg.output (by decide)).trans (by decide)
+  have hsp : s.regs Reg.modulus = 1 := (hsparams Reg.modulus (by decide)).trans (by decide)
+  have hsd : s.regs Reg.depth = 0 := (hsparams Reg.depth (by decide)).trans (by decide)
+  have hsf : s.regs Reg.frame = 11 := by
+    rw [hsframe, hsframes]
+    decide
+  have hsm (a : ℕ) (ha : a < 11) : s.mem a = x.mem a :=
+    hsmem a (Or.inl (by simpa only [hsf] using ha))
+  obtain ⟨y, hy, values, frame, _, hyactive, hyregs⟩ := exec_step_leaf
+    (w := 8) (p := 1) (A := 3) (B := 2) s (fun _ => -3) (fun _ => 2)
+    hszero hsone hswidth hsd hsfields (by rw [hsf]; decide) hsp
+    (by decide) (by intro i hi; decide) (by intro i hi; decide)
+    (by
+      intro i hi
+      obtain rfl : i = 0 := by omega
+      rw [hsa, Nat.add_zero, hsm 1 (by decide)]
+      decide)
+    (by
+      intro i hi
+      obtain rfl : i = 0 := by omega
+      rw [hsb, Nat.add_zero, hsm 2 (by decide)]
+      decide)
+    (by decide) (by rw [hsa]; decide) (by rw [hsb]; decide) (by rw [hso]; decide)
+    (Or.inl (by omega)) (Or.inl (by omega))
+  have hy0 : y.regs Reg.zero = 0 :=
+    (hyregs Reg.zero (by decide) (by decide) (by decide) (by decide)).trans hszero
+  have hyflag : y.regs Reg.active = 0 := by
+    simpa only [hsframe, Nat.lt_irrefl, ite_false] using hyactive
+  have hloop : ExecWithin 10 (.loop (.lt Reg.zero Reg.active) step) s y 81 := by
+    have hexit : ExecWithin 10 (.loop (.lt Reg.zero Reg.active) step) y y 2 :=
+      .loop_exit (by simp only [Cond.holds_lt, hy0, hyflag, Nat.lt_irrefl, not_false_eq_true])
+    exact .loop_iter (by simp only [Cond.holds_lt, hszero, hsactive]; decide) hy hexit
+  have he : ExecWithin 10 (complete 1 2 3 10 1 0) (.init leafInput) y 117 :=
+    hargs.seq (hs.seq hloop)
+  have hyout : y.regs Reg.output = 3 :=
+    (hyregs Reg.output (by decide) (by decide) (by decide) (by decide)).trans hso
+  have hvalue : y.mem 3 = encode (-6) := by
+    simpa only [hso, Nat.add_zero, show Cslib.CyclicIntRing.convolution 1
+      (fun _ => -3) (fun _ => 2) 0 = -6 from by decide] using values 0 (by decide)
+  have hsentinel : y.mem 4 = 123 :=
+    (frame 4 (Or.inr (by omega))).trans ((hsm 4 (by decide)).trans (by decide))
+  have hyb := he.bounded (Data.Bounded.init (show InputFits 10 leafInput from by decide))
+  obtain ⟨t, ht, hex⟩ := he
+  refine ⟨y, t, by omega, ?_, ?_, hyb, hvalue, hsentinel⟩
+  · simpa only [Nat.zero_add, State.init] using hex.runs (pc := 0)
+      (p := (complete 1 2 3 10 1 0).program Reg.output) (Program.Contains.self _).append_left
+  · simpa only [State.init, hyout] using hex.executes Reg.output
 
 end ComplexityTests.WordRAMStrassen

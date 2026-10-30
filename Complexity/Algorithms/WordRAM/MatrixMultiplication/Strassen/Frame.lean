@@ -104,4 +104,33 @@ theorem exec_loadFrame {w : ℕ} (x : Data 64) (h1 : x.regs Reg.one = 1)
       Function.update_of_ne (hn 35 (by decide)), Function.update_of_ne (hn 36 (by decide)),
       Function.update_of_ne (hn 37 (by decide)), Function.update_of_ne (hn 38 (by decide))]
 
+/-- Loading a frame just stored by the controller restores the same current parameters.
+This assertion is produced by native setup/push and maintained by the node proof. -/
+theorem exec_loadCurrent {w : ℕ} (x : Data 64) (h1 : x.regs Reg.one = 1)
+    (hfit : Fits w (x.regs Reg.frame + 7))
+    (hframe : ∀ j : Fin 7, x.mem (x.regs Reg.frame + j.val) = x.regs (field j)) :
+    ∃ y, ExecWithin w loadFrame x y 14 ∧ y.mem = x.mem ∧
+      ∀ i, i ≠ Reg.address → y.regs i = x.regs i := by
+  obtain ⟨y, hy, hm, values, regs⟩ := exec_loadFrame x h1 hfit
+  have hfields (j : Fin 7) : y.regs (field j) = x.regs (field j) :=
+    (values j).trans (hframe j)
+  refine ⟨y, hy, hm, ?_⟩
+  intro i hi
+  by_cases hc : LoadLocal i
+  · have hcases : i = field 0 ∨ i = field 1 ∨ i = field 2 ∨ i = field 3 ∨
+        i = field 4 ∨ i = field 5 ∨ i = field 6 := by
+      simp only [LoadLocal, Reg.address, Fin.ext_iff] at hc hi
+      simp only [field, Reg.inputA, Reg.inputB, Reg.output, Reg.scratch,
+        Reg.depth, Reg.size, Reg.phase, Fin.ext_iff]
+      omega
+    rcases hcases with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact hfields 0
+    · exact hfields 1
+    · exact hfields 2
+    · exact hfields 3
+    · exact hfields 4
+    · exact hfields 5
+    · exact hfields 6
+  · exact regs i hc
+
 end Cslib.Algorithms.WordRAM.Strassen

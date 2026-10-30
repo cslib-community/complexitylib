@@ -10,6 +10,7 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Program
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Program
 public import Complexity.Computability.WordRAM.Copy
+public import Complexity.Computability.WordRAM.Power
 
 /-!
 # Native cyclic-coefficient Strassen stack
@@ -39,6 +40,13 @@ namespace Cslib.Algorithms.WordRAM.Strassen
 open Cslib.WordRAM
 
 namespace Reg
+
+/-- Low-bank result of the existing natural-power routine. -/
+abbrev powerValue : Fin 64 := 0
+/-- Low-bank base of the existing natural-power routine. -/
+abbrev powerBase : Fin 64 := 2
+/-- Low-bank exponent of the existing natural-power routine. -/
+abbrev powerExponent : Fin 64 := 3
 
 /-- Low-bank arguments of the native copying kernel. -/
 abbrev copySource : Fin 64 := 0
@@ -142,19 +150,19 @@ end Reg
 @[expose] def form (base dst : Fin 64) (q₁ q₂ : ℕ) (sign : ℤ) : Code .standard 64 :=
   if sign = 0 then
     .seq (quadrant base Reg.copySource q₁)
-      (ram[ Reg.copyTarget ← dst; Reg.copyLength ← Reg.quarter;
-        ⟪ArrayCopy.program.rename (Fin.castLE (by decide))⟫ ])
+      (.seq (ram[ Reg.copyTarget ← dst; Reg.copyLength ← Reg.quarter ])
+        (ArrayCopy.program.rename (Fin.castLE (by decide))))
   else
     .seq (quadrant base Reg.operandA q₁) (.seq (quadrant base Reg.operandB q₂)
-      (ram[ Reg.target ← dst; Reg.length ← Reg.quarter;
-        ⟪(Signed.ArrayArithmetic.program (sign < 0)).rename (Fin.castLE (by decide))⟫ ]))
+      (.seq (ram[ Reg.target ← dst; Reg.length ← Reg.quarter ])
+        ((Signed.ArrayArithmetic.program (sign < 0)).rename (Fin.castLE (by decide)))))
 
 /-- Add or subtract the actual child product into one output quadrant. -/
 @[expose] def accumulate (q : ℕ) (subtract : Bool) : Code .standard 64 :=
   .seq (quadrant Reg.output Reg.operandA q)
-    (ram[ Reg.operandB ← Reg.product; Reg.target ← Reg.operandA;
-      Reg.length ← Reg.quarter;
-      ⟪(Signed.ArrayArithmetic.program subtract).rename (Fin.castLE (by decide))⟫ ])
+    (.seq (ram[ Reg.operandB ← Reg.product; Reg.target ← Reg.operandA;
+      Reg.length ← Reg.quarter ])
+      ((Signed.ArrayArithmetic.program subtract).rename (Fin.castLE (by decide))))
 
 /-- Store the seven current frame fields at the computed frame address. -/
 @[expose] def storeFrame : Code .standard 64 := ram[
@@ -189,14 +197,17 @@ end Reg
   .seq (ram[ Reg.address ← Reg.output; Reg.index ← Reg.output + Reg.size ])
     (zeroFill Reg.address Reg.index Reg.zero Reg.one)
 
-/-- Save the parent's return phase, create a child frame, then let the controller enter it. -/
-@[expose] def push (phase : ℕ) : Code .standard 64 := ram[
+/-- Save the parent's return phase and prepare the real child fields in registers. -/
+@[expose] def pushArguments (phase : ℕ) : Code .standard 64 := ram[
   Reg.tag ← #6; Reg.address ← Reg.frame + Reg.tag;
   Reg.phase ← #phase; *Reg.address ← Reg.phase;
   Reg.frame ← Reg.frame + Reg.frameWidth;
   Reg.inputA ← Reg.formA; Reg.inputB ← Reg.formB; Reg.output ← Reg.product;
   Reg.scratch ← Reg.childScratch; Reg.depth ← Reg.childDepth; Reg.size ← Reg.quarter;
-  Reg.phase ← #0; ⟪storeFrame⟫ ]
+  Reg.phase ← #0 ]
+
+/-- Save the parent's return phase, create a child frame, then let the controller enter it. -/
+@[expose] def push (phase : ℕ) : Code .standard 64 := .seq (pushArguments phase) storeFrame
 
 /-- Return to a real parent frame, or finish when the root has returned. -/
 @[expose] def pop : Code .standard 64 := ram[
@@ -242,14 +253,21 @@ end Reg
   ⟪loadFrame⟫;
   if Reg.depth = Reg.zero then [ ⟪leaf⟫ ] else [ ⟪locateChild⟫; ⟪dispatch⟫ ] ]
 
-/-- Runtime powers, actual stack placement and dirty-root initialization. -/
-@[expose] def setup : Code .standard 64 := ram[
+/-- Fixed controller constants and actual runtime arguments to the existing power routine. -/
+@[expose] def powerArguments : Code .standard 64 := ram[
   Reg.zero ← #0; Reg.one ← #1; Reg.four ← #4; Reg.frameWidth ← #7;
-  Reg.index ← #0; Reg.size ← Reg.modulus;
-  while Reg.index < Reg.depth do [
-    Reg.size ← Reg.size * Reg.four; Reg.index ← Reg.index + Reg.one ];
+  Reg.powerBase ← Reg.four; Reg.powerExponent ← Reg.depth ]
+
+/-- Compute the coefficient-array length and actual root-frame address after the power call. -/
+@[expose] def locateRoot : Code .standard 64 := ram[
+  Reg.size ← Reg.powerValue * Reg.modulus;
   Reg.frames ← Reg.scratch + Reg.size; Reg.frame ← Reg.frames;
-  Reg.phase ← #0; Reg.active ← #1; ⟪storeFrame⟫ ]
+  Reg.phase ← #0; Reg.active ← #1 ]
+
+/-- Actual runtime powers, stack placement and complete dirty-root frame initialization. -/
+@[expose] def setup : Code .standard 64 :=
+  .seq powerArguments (.seq (Power.program.rename (Fin.castLE (by decide)))
+    (.seq locateRoot storeFrame))
 
 /-- Fixed finite native code independent of coefficient length, depth and word size. -/
 @[expose] def program : Code .standard 64 :=

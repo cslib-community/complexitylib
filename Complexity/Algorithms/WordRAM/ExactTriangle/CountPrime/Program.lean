@@ -43,6 +43,10 @@ namespace Reg
 abbrev low0 : Fin 128 := 0
 /-- Low helper result / argument register. -/
 abbrev low1 : Fin 128 := 1
+/-- Low helper power-base register. -/
+abbrev low2 : Fin 128 := 2
+/-- Low helper power-exponent register. -/
+abbrev low3 : Fin 128 := 3
 /-- Low residue input pointer. -/
 abbrev low9 : Fin 128 := 9
 /-- Low residue output pointer. -/
@@ -150,9 +154,8 @@ end Reg
 
 /-- Runtime powers, lengths and every actual workspace pointer. -/
 @[expose] def layout : Code .standard 128 := ram[
-  Reg.index ← #0; Reg.paddedSide ← #1;
-  while Reg.index < Reg.depth do [
-    Reg.paddedSide ← Reg.paddedSide * Reg.two; Reg.index ← Reg.index + Reg.one ];
+  Reg.low2 ← Reg.two; Reg.low3 ← Reg.depth;
+  ⟪Power.program.rename (Fin.castLE (by decide))⟫; Reg.paddedSide ← Reg.low0;
   Reg.cells ← Reg.side * Reg.side;
   Reg.paddedCells ← Reg.paddedSide * Reg.paddedSide;
   Reg.area ← Reg.paddedCells * Reg.modulus;
@@ -168,15 +171,21 @@ end Reg
     Reg.low12 ← Reg.encodedModulus ])
     (ThreeSum.ChanHe.Residues.program.rename (Fin.castLE (by decide)))
 
-/-- Compute each spread-table entry from its strictly earlier half-index entry. -/
-@[expose] def spreadTable : Code .standard 128 := ram[
-  Reg.address ← Reg.spread; *Reg.address ← Reg.zero; Reg.index ← #1;
-  while Reg.index < Reg.paddedSide do [
-    Reg.temporary ← Reg.index / Reg.two; Reg.address ← Reg.spread + Reg.temporary;
-    Reg.temporary ← *Reg.address; Reg.temporary ← Reg.temporary * Reg.four;
-    Reg.position ← Reg.index % Reg.two; Reg.temporary ← Reg.temporary + Reg.position;
-    Reg.address ← Reg.spread + Reg.index; *Reg.address ← Reg.temporary;
-    Reg.index ← Reg.index + Reg.one ] ]
+/-- Initialize the first actual spread-table word and its next unwritten index. -/
+@[expose] def spreadSetup : Code .standard 128 := ram[
+  Reg.address ← Reg.spread; *Reg.address ← Reg.zero; Reg.index ← #1 ]
+
+/-- Compute one spread-table entry from its strictly earlier half-index entry. -/
+@[expose] def spreadStep : Code .standard 128 := ram[
+  Reg.temporary ← Reg.index / Reg.two; Reg.address ← Reg.spread + Reg.temporary;
+  Reg.temporary ← *Reg.address; Reg.temporary ← Reg.temporary * Reg.four;
+  Reg.position ← Reg.index % Reg.two; Reg.temporary ← Reg.temporary + Reg.position;
+  Reg.address ← Reg.spread + Reg.index; *Reg.address ← Reg.temporary;
+  Reg.index ← Reg.index + Reg.one ]
+
+/-- Compute the whole spread table; no table is supplied by the caller. -/
+@[expose] def spreadTable : Code .standard 128 :=
+  .seq spreadSetup (.loop (.lt Reg.index Reg.paddedSide) spreadStep)
 
 /-- Load actual row/column spread words and interleave their positions. -/
 @[expose] def morton : Code .standard 128 := ram[
@@ -192,14 +201,17 @@ end Reg
       Reg.temporary ← Reg.temporary + Reg.column ])
     (ram[ Reg.address ← Reg.residueSource + Reg.temporary; Reg.residue ← *Reg.address ])
 
+/-- Store one actual canonical signed monomial coefficient and advance its index. -/
+@[expose] def writeCoefficient : Code .standard 128 := ram[
+  Reg.address ← Reg.block + Reg.coefficient;
+  if Reg.coefficient = Reg.residue then [ *Reg.address ← Reg.two ]
+  else [ *Reg.address ← Reg.zero ];
+  Reg.coefficient ← Reg.coefficient + Reg.one ]
+
 /-- Write one whole actual monomial coefficient block, including each padding zero. -/
-@[expose] def writeCoefficients : Code .standard 128 := ram[
-  Reg.coefficient ← #0;
-  while Reg.coefficient < Reg.modulus do [
-    Reg.address ← Reg.block + Reg.coefficient;
-    if Reg.coefficient = Reg.residue then [ *Reg.address ← Reg.two ]
-    else [ *Reg.address ← Reg.zero ];
-    Reg.coefficient ← Reg.coefficient + Reg.one ] ]
+@[expose] def writeCoefficients : Code .standard 128 :=
+  .seq (ram[ Reg.coefficient ← #0 ])
+    (.loop (.lt Reg.coefficient Reg.modulus) writeCoefficient)
 
 /-- Create a complete zero-padded cyclic matrix from real residue words. -/
 @[expose] def matrix (src dst : Fin 128) (transpose : Bool) : Code .standard 128 := ram[
