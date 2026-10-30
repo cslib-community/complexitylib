@@ -20,6 +20,10 @@ public import Complexity.Algorithms.Lean.FusionTree.Tree
 public import Complexity.Algorithms.Lean.FusionTree.XorCorrection
 public import Complexity.Algorithms.Lean.IndexedMinPQ
 public import Complexity.Algorithms.Lean.MinPQ
+public import Complexity.Algorithms.Lean.Online.Basic
+public import Complexity.Algorithms.Lean.Paging.Basic
+public import Complexity.Algorithms.Lean.Paging.LRU
+public import Complexity.Algorithms.Lean.Paging.LowerBound
 public import Complexity.Algorithms.Lean.Queue
 public import Complexity.Algorithms.Lean.Retroactive
 public import Complexity.Algorithms.Lean.SearchTree.Basic
