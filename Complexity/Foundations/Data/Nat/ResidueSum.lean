@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.List.Range
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
