@@ -1718,6 +1718,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Kernel
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelIterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelStackLoop
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZipTransducer
@@ -1784,6 +1785,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Prepar
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ReadInput
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.RepeatUntilBlank
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.RewindWork
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.RunsBetween
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Sequential
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Shadow
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Basic
@@ -1793,6 +1795,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Transf
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.TransformsWords
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileCond
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WordMoves
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Clock

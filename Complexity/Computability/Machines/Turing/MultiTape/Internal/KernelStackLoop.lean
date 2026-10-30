@@ -74,14 +74,6 @@ lemma tapeHeads_zero (oc os : ℤ) : tapeHeads (kk := kk) oc os 0 0 = tapeOffs o
 @[simp] lemma tapeHeads_nm (oc os hr hp : ℤ) (j : Fin 6) :
     tapeHeads (kk := kk) oc os hr hp (nm j) = ![0, oc, 0, hr, hp, os] j := Fin.append_right _ _ _
 
-/-- With every tape blank and every word at its start, a configuration of the stack-loop machine
-is a word configuration. -/
-lemma cfgS_blank (out : List Bool) :
-    cfgS (kk := kk) input [] [] [] [] [] 0 0 0 0 out = tapesCfg input (fun _ => []) 0 0 out := by
-  unfold cfgS
-  congr 1 <;> funext l <;> induction l using Fin.addCases <;> simp [tapeWords, tapeOffs,
-    tapeHeads] <;> rename_i j <;> fin_cases j <;> rfl
-
 /-- Two families on the tapes agree if they agree on the shared and the named tapes. -/
 lemma fun_ext_tapes {α : Type*} {f g : Fin (kk + 6) → α} (h₁ : ∀ i, f (Fin.castAdd 6 i) =
     g (Fin.castAdd 6 i)) (h₂ : ∀ j, f (nm j) = g (nm j)) : f = g := by
@@ -89,6 +81,24 @@ lemma fun_ext_tapes {α : Type*} {f g : Fin (kk + 6) → α} (h₁ : ∀ i, f (F
   induction l using Fin.addCases with
   | left i => exact h₁ i
   | right j => exact h₂ j
+
+/-- With every tape blank and every word at its start, a configuration of the stack-loop machine
+is a word configuration. -/
+lemma cfgS_blank (out : List Bool) :
+    cfgS (kk := kk) input [] [] [] [] [] 0 0 0 0 out = tapesCfg input (fun _ => []) 0 0 out := by
+  have hw : tapeWords (kk := kk) [] [] [] [] [] = fun _ => [] :=
+    fun_ext_tapes (fun i => tapeWords_castAdd ..) fun j => by
+      rw [tapeWords_nm]
+      fin_cases j <;> rfl
+  have ho : tapeOffs (kk := kk) 0 0 = 0 :=
+    fun_ext_tapes (fun i => tapeOffs_castAdd ..) fun j => by
+      rw [tapeOffs_nm]
+      fin_cases j <;> rfl
+  have hh : tapeHeads (kk := kk) 0 0 0 0 = 0 :=
+    fun_ext_tapes (fun i => tapeHeads_castAdd ..) fun j => by
+      rw [tapeHeads_nm]
+      fin_cases j <;> rfl
+  rw [cfgS, hw, ho, hh]
 
 /-! ### Embeddings of the phases -/
 

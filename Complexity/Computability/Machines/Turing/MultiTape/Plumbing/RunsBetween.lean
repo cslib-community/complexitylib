@@ -144,7 +144,8 @@ theorem step_shift (tm : MultiTapeTM k Symbol State) (δ : Fin k → ℤ)
 
 /-- **Translation invariance.** The run from a shifted configuration is the shifted run. -/
 theorem runFrom_shift (tm : MultiTapeTM k Symbol State) (δ : Fin k → ℤ)
-    (c : Cfg k Symbol State input) (t : ℕ) : tm.runFrom (c.shift δ) t = (tm.runFrom c t).shift δ := by
+    (c : Cfg k Symbol State input) (t : ℕ) :
+    tm.runFrom (c.shift δ) t = (tm.runFrom c t).shift δ := by
   induction t with
   | zero => rfl
   | succ t ih => rw [runFrom_succ, runFrom_succ, ih, step_shift]

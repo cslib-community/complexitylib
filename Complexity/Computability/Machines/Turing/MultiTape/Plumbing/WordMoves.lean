@@ -24,7 +24,8 @@ sit anywhere on their tapes. They implement a stack kept on a tape that grows to
 * `Turing.MultiTapeTM.seekEnd`: move the head from the first cell of a word to the cell after it.
 * `Turing.MultiTapeTM.copyBack`: move a word, read from its end, to the front of the word on a
   second tape.
-* `Turing.MultiTapeTM.eraseFrame`: erase a framed word (`Cslib.frame`) at the front of a tape.
+* `Turing.MultiTapeTM.eraseFrame`: erase a framed word (`Turing.MultiTapeTM.frame`) at the front
+  of a tape.
 * `Turing.MultiTapeTM.popFrame`: move a framed word at the front of a tape to the end of a word on
   a second tape, prefixed by `[true, true]`, or write `[false]` if the first tape is blank.
 
@@ -55,7 +56,7 @@ lemma tapeOfList_cons_of_ne (x : Symbol) (l : List Symbol) {z : ℤ} (hz : z ≠
     tapeOfList (x :: l) z = tapeOfList l (z - 1) := by
   rcases z with (_ | n) | n
   · exact absurd rfl hz
-  · show tapeOfList (x :: l) ((n + 1 : ℕ) : ℤ) = tapeOfList l (((n + 1 : ℕ) : ℤ) - 1)
+  · change tapeOfList (x :: l) ((n + 1 : ℕ) : ℤ) = tapeOfList l (((n + 1 : ℕ) : ℤ) - 1)
     have h : ((n + 1 : ℕ) : ℤ) - 1 = (n : ℤ) := by omega
     rw [h]
     rfl
@@ -138,7 +139,8 @@ lemma runFrom_succ_eq_step {k : ℕ} {State : Type*} (tm : MultiTapeTM k Symbol 
 noncomputable def seekEnd (Symbol : Type*) : MultiTapeTM 1 Symbol Unit :=
   ofTr () fun _ _ work =>
     match work 0 with
-    | some _ => { inputTape := 0, workTapes := fun _ => (none, 1), output := none, state := some () }
+    | some _ =>
+      { inputTape := 0, workTapes := fun _ => (none, 1), output := none, state := some () }
     | none => { inputTape := 0, workTapes := fun _ => (none, 0), output := none, state := none }
 
 theorem runFrom_seekEnd (w suf pre : List Symbol) (hw : w = pre ++ suf) (o : ℤ)
@@ -157,7 +159,8 @@ theorem runFrom_seekEnd (w suf pre : List Symbol) (hw : w = pre ++ suf) (o : ℤ
   | cons x suf ih =>
     rw [show (x :: suf).length + 1 = 1 + (suf.length + 1) by simp; omega, runFrom_add, runFrom_one,
       step_tapesCfg (a := ⟨0, fun _ => (none, 1), none, some ()⟩)
-        (h' := fun _ => o + (pre ++ [x]).length) ?_ rfl rfl (fun _ => rfl) (fun _ => by simp; omega)]
+        (h' := fun _ => o + (pre ++ [x]).length) ?_ rfl rfl (fun _ => rfl)
+        (fun _ => by simp; omega)]
     · exact ih (pre ++ [x]) (by simp [hw])
     · have : tapeOfList w (o + pre.length - o) = some x := by
         rw [add_sub_cancel_left, tapeOfList_natCast, hw]

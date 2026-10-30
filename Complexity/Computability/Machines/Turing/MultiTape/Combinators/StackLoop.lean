@@ -210,7 +210,8 @@ private theorem ComputableTidilyInO.stackLoop {δ α γ : Type} {encIn : δ ↪ 
         ∑ i ∈ Finset.range (n x),
           (Tr (roundInput (L.step^[i] (init x, []))) + Sr (roundInput (L.step^[i] (init x, []))) +
             (encPair (encOption encG) encA (roundInput (L.step^[i] (init x, [])))).length +
-            (encPair (encList encG) encA (L.round (roundInput (L.step^[i] (init x, []))))).length)) := by
+            (encPair (encList encG) encA
+              (L.round (roundInput (L.step^[i] (init x, []))))).length)) := by
   obtain ⟨cI, ⟨kI, SI, _, tI, hI⟩, lI⟩ := hinit
   obtain ⟨cH, ⟨kH, SH, _, tH, hH⟩, -⟩ := hhalt
   obtain ⟨cP, ⟨kP, SP, _, tP, hP⟩, -⟩ := hround.fst'
@@ -341,7 +342,9 @@ theorem ComputableInO.stackLoop {δ α γ : Type} {encIn : δ ↪ List Bool}
         ∑ i ∈ Finset.range (n x),
           (Tr (roundInput (L.step^[i] (init x, []))) + Sr (roundInput (L.step^[i] (init x, []))) +
             (encPair (encOption encG) encA (roundInput (L.step^[i] (init x, [])))).length +
-            (encPair (encList encG) encA (L.round (roundInput (L.step^[i] (init x, []))))).length)) :=
-  (ComputableTidilyInO.stackLoop L n hinit.tidy hhalt.tidy hround.tidy hrun hstop hempty).computableInO
+            (encPair (encList encG) encA
+              (L.round (roundInput (L.step^[i] (init x, []))))).length)) :=
+  (ComputableTidilyInO.stackLoop L n hinit.tidy hhalt.tidy hround.tidy hrun hstop
+    hempty).computableInO
 
 end Turing.MultiTapeTM
