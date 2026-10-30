@@ -24,10 +24,12 @@ This module realizes the shared `Cslib.OrderedSet.spec α` interface (`contains`
 
 As in `Cslib.Algorithms.Lean.SearchTree`, native operation traces count internal nodes visited along
 the downward search (and `splitMin`) path (`0` on an empty tree, at most `t.cachedHeight` on any
-height-consistent tree). At each visited ancestor during `insert` or `erase`, `balance` performs
-only non-recursive `O(1)` cached-height comparisons and at most a single or double rotation; these
-constant-factor local rotation steps, node allocations, order-comparison implementations, and pure
-client continuations are not charged as separate RAM or Turing-machine instructions.
+height-consistent tree), specified by `SearchTree`'s path-visit functions on `t.toBinaryTree`. At
+each visited ancestor during `insert` or `erase`, `balance` performs non-recursive `O(1)` reads of
+off-path sibling/nephew cached heights and at most a single or double rotation; those constant-work
+rebalancing steps, `toBinaryTree` trace-specification projection, node allocations, order-comparison
+implementations, and pure client continuations are not charged as separate RAM or Turing-machine
+instructions.
 
 ## Main definitions
 
@@ -40,8 +42,8 @@ client continuations are not charged as separate RAM or Turing-machine instructi
 
 ## Main results
 
-* `Rep.valid`, `Rep.elements_eq`, `rep_nil`: representation invariant projections and empty-set
-  initialization.
+* `Rep.valid`, `Rep.elements_eq`, `rep_empty`, `realization_rep`: representation invariant
+  projections and empty-set initialization.
 * `exec_visits_le_cachedHeight`: every native operation visits at most `t.cachedHeight` path nodes.
 * `nodeVisitBound`: logarithmic `Cslib.Stateful.Bound` certificate `2 * Nat.log 2 (s.card + 1)`.
 * `realized_client`, `run_correct`: adaptive ordered-set clients (including `extractMin`) execute
@@ -86,11 +88,11 @@ theorem Rep.valid {s : Finset α} {t : AVLTree α} (hr : Rep s t) : Valid t := h
 theorem Rep.elements_eq {s : Finset α} {t : AVLTree α} (hr : Rep s t) : elements t = s := hr.2
 
 /-- The empty AVL tree represents the empty `Finset α`. -/
-theorem rep_nil : Rep (∅ : Finset α) .nil :=
+theorem rep_empty : Rep (∅ : Finset α) .nil :=
   ⟨valid_nil, rfl⟩
 
 /-- Semantic realization of `OrderedSet.spec α` by `AVLTree α`. -/
-def realization : Realization (spec α) (Exec (α := α)) where
+@[expose] def realization : Realization (spec α) (Exec (α := α)) where
   rep := Rep
   total {_ t} o _ _ :=
     match h : step t o with
@@ -115,6 +117,10 @@ def realization : Realization (spec α) (Exec (α := α)) where
     | successor x =>
       cases he
       exact ⟨(successor_spec ht.ordered x).eq_least, ht, rfl⟩
+
+/-- `realization.rep` is definitionally `Rep`. -/
+@[simp]
+theorem realization_rep : (realization (α := α)).rep = Rep := rfl
 
 /-- Every native AVL operation visits at most `t.cachedHeight` internal path nodes. -/
 theorem exec_visits_le_cachedHeight {t t' : AVLTree α} {o : Op α}

@@ -36,7 +36,8 @@ including `Op.erase` and `extractMin`.
 * `valid_erase`: `erase` preserves full AVL validity (`Ordered`, `HeightConsistent`, `Balanced`).
 * `cachedHeight_erase_bounds`: deletion shrinks height by at most `1` and never increases height.
 * `erase_eq_of_notMem`: deleting an absent key from a valid AVL tree leaves the tree unchanged.
-* `eraseVisits_le_cachedHeight`: deletion visits at most `t.cachedHeight` path nodes.
+* `searchVisits_le_eraseVisits`, `eraseVisits_le_cachedHeight`: deletion pays at least the downward
+  search visits and visits at most `t.cachedHeight` path nodes.
 
 ## References
 
@@ -299,9 +300,15 @@ theorem erase_eq_of_notMem {t : AVLTree α} (ht : Valid t) {x : α} (hx : x ∉ 
       · exact absurd (le_antisymm (le_of_not_gt hgt) (le_of_not_gt hlt)) hxa
 
 /-- Internal-node visits of `erase`: the downward search path plus leftmost `splitMin` descent in
-the matched node's right subtree. -/
+the matched node's right subtree. Rebalancing reads of `O(1)` off-path sibling/nephew cached
+heights at visited ancestors are not counted separately. -/
 @[expose] def eraseVisits (x : α) (t : AVLTree α) : ℕ :=
   SearchTree.eraseVisits x t.toBinaryTree
+
+/-- Deletion pays for the downward search path and possibly a `splitMin` descent on top. -/
+theorem searchVisits_le_eraseVisits (x : α) (t : AVLTree α) :
+    searchVisits x t ≤ eraseVisits x t :=
+  SearchTree.searchVisits_le_eraseVisits x t.toBinaryTree
 
 /-- Deletion visits at most `t.cachedHeight` internal path nodes. -/
 theorem eraseVisits_le_cachedHeight {t : AVLTree α} (hc : HeightConsistent t) (x : α) :

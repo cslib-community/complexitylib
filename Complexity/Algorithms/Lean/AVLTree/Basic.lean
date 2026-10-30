@@ -22,8 +22,10 @@ rotations and insertion, and derives the logarithmic height bound
 Each tree projects to `BinaryTree α` via `toBinaryTree`, reusing key-set semantics, strict ordering,
 and query contracts from `Cslib.Algorithms.Lean.SearchTree`. Following
 [Cormen et al., Problem 13-3][CLRS2009], every node caches its subtree height so `balance` checks
-height differences in `O(1)` without rescanning subtrees, and the minimum node count of a balanced
-tree of height `h` satisfies the Fibonacci lower bound `Nat.fib (h + 2) ≤ t.numNodes + 1`.
+height differences in `O(1)` without rescanning subtrees. Heights use `BinaryTree.height`'s
+node-count convention (`0` for `.nil`, `1` for a singleton leaf, i.e., `h_CLRS + 1` on nonempty
+trees), under which the minimum node count of a balanced tree of cached height `h` satisfies the
+exact Fibonacci lower bound `Nat.fib (h + 2) ≤ t.numNodes + 1`.
 
 ## Main definitions
 
@@ -35,6 +37,8 @@ tree of height `h` satisfies the Fibonacci lower bound `Nat.fib (h + 2) ≤ t.nu
 * `mkNode`, `rotateRight`, `rotateLeft`, `balance`: height-maintaining constructor, single
   rotations, and single/double rebalancing for sibling heights differing by at most `2`.
 * `contains`, `minimum`, `successor`, `insert`: executable search queries and rebalancing insertion.
+* `searchVisits`, `minimumVisits`, `successorVisits`: downward search-path internal-node visit
+  counts matching `Cslib.Algorithms.Lean.SearchTree`.
 
 ## Main results
 
@@ -48,6 +52,8 @@ tree of height `h` satisfies the Fibonacci lower bound `Nat.fib (h + 2) ≤ t.nu
   semantic and structural contracts for `balance`, shared with deletion in `AVLTree.Erase`.
 * `elements_insert`, `valid_insert`, `cachedHeight_insert_le`, `insert_eq_self`: set semantics,
   AVL validity preservation, height-growth bound, and duplicate idempotence for `insert`.
+* `searchVisits_le_cachedHeight`, `minimumVisits_le_cachedHeight`,
+  `successorVisits_le_cachedHeight`: path-visit upper bounds by `t.cachedHeight`.
 
 ## References
 
@@ -89,23 +95,29 @@ variable {α : Type*}
 @[expose] def numNodes (t : AVLTree α) : ℕ :=
   t.toBinaryTree.numNodes
 
+/-- The empty tree has cached height `0`. -/
 @[simp]
 theorem cachedHeight_nil : cachedHeight (.nil : AVLTree α) = 0 := rfl
 
+/-- An internal node's `cachedHeight` returns its stored height field. -/
 @[simp]
 theorem cachedHeight_node (a : α) (h : ℕ) (l r : AVLTree α) :
     cachedHeight (.node a h l r) = h := rfl
 
+/-- Forgetting heights maps `.nil` to `BinaryTree.nil`. -/
 @[simp]
 theorem toBinaryTree_nil : toBinaryTree (.nil : AVLTree α) = .nil := rfl
 
+/-- Forgetting heights maps `.node` to `BinaryTree.node` recursively. -/
 @[simp]
 theorem toBinaryTree_node (a : α) (h : ℕ) (l r : AVLTree α) :
     toBinaryTree (.node a h l r) = .node a l.toBinaryTree r.toBinaryTree := rfl
 
+/-- The empty tree has `0` internal nodes. -/
 @[simp]
 theorem numNodes_nil : numNodes (.nil : AVLTree α) = 0 := rfl
 
+/-- An internal node has `1 + l.numNodes + r.numNodes` nodes. -/
 @[simp]
 theorem numNodes_node (a : α) (h : ℕ) (l r : AVLTree α) :
     numNodes (.node a h l r) = 1 + l.numNodes + r.numNodes := by
@@ -185,14 +197,17 @@ private theorem two_pow_half_succ_le_fib : ∀ h : ℕ, 2 ^ ((h + 1) / 2) ≤ Na
 @[expose] def mkNode (a : α) (l r : AVLTree α) : AVLTree α :=
   .node a (1 + max l.cachedHeight r.cachedHeight) l r
 
+/-- `mkNode` sets `cachedHeight` to `1 + max l.cachedHeight r.cachedHeight`. -/
 @[simp]
 theorem cachedHeight_mkNode (a : α) (l r : AVLTree α) :
     (mkNode a l r).cachedHeight = 1 + max l.cachedHeight r.cachedHeight := rfl
 
+/-- `mkNode` projects to `BinaryTree.node` under `toBinaryTree`. -/
 @[simp]
 theorem toBinaryTree_mkNode (a : α) (l r : AVLTree α) :
     (mkNode a l r).toBinaryTree = .node a l.toBinaryTree r.toBinaryTree := rfl
 
+/-- `mkNode` preserves `HeightConsistent` whenever both children are height-consistent. -/
 theorem heightConsistent_mkNode {a : α} {l r : AVLTree α}
     (hl : HeightConsistent l) (hr : HeightConsistent r) :
     HeightConsistent (mkNode a l r) :=
@@ -231,6 +246,7 @@ heights. -/
   else
     mkNode a l r
 
+/-- Single right rotation preserves `HeightConsistent`. -/
 theorem heightConsistent_rotateRight {a : α} {l r : AVLTree α}
     (hl : HeightConsistent l) (hr : HeightConsistent r) :
     HeightConsistent (rotateRight a l r) := by
@@ -239,6 +255,7 @@ theorem heightConsistent_rotateRight {a : α} {l r : AVLTree α}
   | node la lh ll lr =>
     exact ⟨rfl, hl.2.1, ⟨rfl, hl.2.2, hr⟩⟩
 
+/-- Single left rotation preserves `HeightConsistent`. -/
 theorem heightConsistent_rotateLeft {a : α} {l r : AVLTree α}
     (hl : HeightConsistent l) (hr : HeightConsistent r) :
     HeightConsistent (rotateLeft a l r) := by
@@ -369,24 +386,29 @@ sibling-height balance. -/
 @[expose] def Valid (t : AVLTree α) : Prop :=
   Ordered t ∧ HeightConsistent t ∧ Balanced t
 
+/-- Extract strict BST ordering from `Valid`. -/
 theorem Valid.ordered {t : AVLTree α} (ht : Valid t) : Ordered t := ht.1
 
+/-- Extract cached-height accuracy from `Valid`. -/
 theorem Valid.heightConsistent {t : AVLTree α} (ht : Valid t) : HeightConsistent t := ht.2.1
 
+/-- Extract `±1` sibling-height balance from `Valid`. -/
 theorem Valid.balanced {t : AVLTree α} (ht : Valid t) : Balanced t := ht.2.2
 
 /-- The empty tree is a valid AVL tree. -/
 theorem valid_nil : Valid (.nil : AVLTree α) :=
   ⟨trivial, trivial, trivial⟩
 
+/-- The empty tree stores no keys. -/
 @[simp]
 theorem elements_nil : elements (.nil : AVLTree α) = ∅ := rfl
 
+/-- An internal node's key set is its root key together with both subtrees' key sets. -/
 @[simp]
 theorem elements_node (a : α) (h : ℕ) (l r : AVLTree α) :
     elements (.node a h l r) = Insert.insert a (elements l ∪ elements r) := rfl
 
-@[simp]
+/-- Membership in an internal node's key set splits across the root key and its two subtrees. -/
 theorem mem_elements_node {x a : α} {h : ℕ} {l r : AVLTree α} :
     x ∈ elements (.node a h l r) ↔ x = a ∨ x ∈ elements l ∨ x ∈ elements r := by
   simp [elements]
@@ -423,6 +445,7 @@ theorem Valid.cachedHeight_le_two_mul_log {t : AVLTree α} (ht : Valid t) :
   | .nil => none
   | .node a _ l r => if x < a then (successor x l).or (some a) else successor x r
 
+/-- `AVLTree.contains` agrees with `SearchTree.contains` on `toBinaryTree`. -/
 theorem contains_eq_searchTree (x : α) (t : AVLTree α) :
     contains x t = SearchTree.contains x t.toBinaryTree := by
   induction t with
@@ -430,12 +453,14 @@ theorem contains_eq_searchTree (x : α) (t : AVLTree α) :
   | node a h l r ihl ihr => simp only [contains, toBinaryTree, SearchTree.contains, ihl, ihr]
 
 omit [LinearOrder α] in
+/-- `AVLTree.minimum` agrees with `SearchTree.minimum` on `toBinaryTree`. -/
 theorem minimum_eq_searchTree (t : AVLTree α) :
     minimum t = SearchTree.minimum t.toBinaryTree := by
   induction t with
   | nil => rfl
   | node a h l r ihl _ => simp only [minimum, toBinaryTree, SearchTree.minimum, ihl]
 
+/-- `AVLTree.successor` agrees with `SearchTree.successor` on `toBinaryTree`. -/
 theorem successor_eq_searchTree (x : α) (t : AVLTree α) :
     successor x t = SearchTree.successor x t.toBinaryTree := by
   induction t with
@@ -460,10 +485,12 @@ theorem successor_spec {t : AVLTree α} (ht : Ordered t) (x : α) :
   rw [successor_eq_searchTree]
   exact SearchTree.successor_spec ht x
 
+/-- `mkNode` stores `a` together with the keys of `l` and `r`. -/
 @[simp]
 theorem elements_mkNode (a : α) (l r : AVLTree α) :
     elements (mkNode a l r) = Insert.insert a (elements l ∪ elements r) := rfl
 
+/-- Single right rotation preserves the represented key set. -/
 theorem elements_rotateRight (a : α) (l r : AVLTree α) :
     elements (rotateRight a l r) = Insert.insert a (elements l ∪ elements r) := by
   cases l with
@@ -473,6 +500,7 @@ theorem elements_rotateRight (a : α) (l r : AVLTree α) :
     simp only [rotateRight, elements_mkNode, elements_node, Finset.mem_insert, Finset.mem_union]
     tauto
 
+/-- Single left rotation preserves the represented key set. -/
 theorem elements_rotateLeft (a : α) (l r : AVLTree α) :
     elements (rotateLeft a l r) = Insert.insert a (elements l ∪ elements r) := by
   cases r with
@@ -507,8 +535,9 @@ theorem elements_balance (a : α) (l r : AVLTree α) :
           rfl
     · rfl
 
-theorem ordered_rotateRight {a : α} {l r : AVLTree α}
-    (ho : Ordered (.node a 0 l r)) : Ordered (rotateRight a l r) := by
+/-- Single right rotation preserves strict BST ordering. -/
+theorem ordered_rotateRight {a : α} {h : ℕ} {l r : AVLTree α}
+    (ho : Ordered (.node a h l r)) : Ordered (rotateRight a l r) := by
   cases l with
   | nil => exact ho
   | node la lh ll lr =>
@@ -524,8 +553,9 @@ theorem ordered_rotateRight {a : α} {l r : AVLTree α}
       · exact hla_lr x hx
       · exact lt_trans hla_a (ha_r x hx)
 
-theorem ordered_rotateLeft {a : α} {l r : AVLTree α}
-    (ho : Ordered (.node a 0 l r)) : Ordered (rotateLeft a l r) := by
+/-- Single left rotation preserves strict BST ordering. -/
+theorem ordered_rotateLeft {a : α} {h : ℕ} {l r : AVLTree α}
+    (ho : Ordered (.node a h l r)) : Ordered (rotateLeft a l r) := by
   cases r with
   | nil => exact ho
   | node ra rh rl rr =>
@@ -542,8 +572,8 @@ theorem ordered_rotateLeft {a : α} {l r : AVLTree α}
       · exact hrl_ra x hx
 
 /-- `balance` preserves strict key ordering. -/
-theorem ordered_balance {a : α} {l r : AVLTree α}
-    (ho : Ordered (.node a 0 l r)) : Ordered (balance a l r) := by
+theorem ordered_balance {a : α} {h : ℕ} {l r : AVLTree α}
+    (ho : Ordered (.node a h l r)) : Ordered (balance a l r) := by
   unfold balance
   split
   · cases l with
@@ -553,7 +583,7 @@ theorem ordered_balance {a : α} {l r : AVLTree α}
       split
       · exact ordered_rotateRight ho
       · obtain ⟨hl, hr, hl_a, ha_r⟩ := ho
-        refine ordered_rotateRight ⟨ordered_rotateLeft hl, hr, ?_, ha_r⟩
+        refine ordered_rotateRight (h := 0) ⟨ordered_rotateLeft hl, hr, ?_, ha_r⟩
         intro x hx
         have hx' : x ∈ elements (rotateLeft la ll lr) := hx
         rw [elements_rotateLeft] at hx'
@@ -566,7 +596,7 @@ theorem ordered_balance {a : α} {l r : AVLTree α}
         split
         · exact ordered_rotateLeft ho
         · obtain ⟨hl, hr, hl_a, ha_r⟩ := ho
-          refine ordered_rotateLeft ⟨hl, ordered_rotateRight hr, hl_a, ?_⟩
+          refine ordered_rotateLeft (h := 0) ⟨hl, ordered_rotateRight hr, hl_a, ?_⟩
           intro x hx
           have hx' : x ∈ elements (rotateRight ra rl rr) := hx
           rw [elements_rotateRight] at hx'
@@ -715,17 +745,20 @@ theorem insert_eq_self {t : AVLTree α} (ht : Valid t) {x : α} (hx : x ∈ elem
 @[expose] def successorVisits (x : α) (t : AVLTree α) : ℕ :=
   SearchTree.successorVisits x t.toBinaryTree
 
+/-- Search and insertion visit at most `t.cachedHeight` downward-path internal nodes. -/
 theorem searchVisits_le_cachedHeight {t : AVLTree α} (hc : HeightConsistent t) (x : α) :
     searchVisits x t ≤ t.cachedHeight := by
   rw [cachedHeight_eq_height hc]
   exact SearchTree.searchVisits_le_height x t.toBinaryTree
 
 omit [LinearOrder α] in
+/-- Leftmost minimum descent visits at most `t.cachedHeight` internal nodes. -/
 theorem minimumVisits_le_cachedHeight {t : AVLTree α} (hc : HeightConsistent t) :
     minimumVisits t ≤ t.cachedHeight := by
   rw [cachedHeight_eq_height hc]
   exact SearchTree.minimumVisits_le_height t.toBinaryTree
 
+/-- Strict-successor search visits at most `t.cachedHeight` internal nodes. -/
 theorem successorVisits_le_cachedHeight {t : AVLTree α} (hc : HeightConsistent t) (x : α) :
     successorVisits x t ≤ t.cachedHeight := by
   rw [cachedHeight_eq_height hc]
