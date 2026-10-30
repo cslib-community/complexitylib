@@ -12,7 +12,7 @@ import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUni
 import Complexity.Computability.Complexity.FineGrained.CountingParameterBounds
 import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
 import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParametersPolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -71,7 +71,6 @@ namespace Cslib.Complexity.CountingNativeEndpointPrep
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification
 open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff)
 open Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM
-open Turing.MultiTapeTM.Universal (encUnit encUnit_apply)
 open CountingSparsify SubexponentialSAT SubexponentialSAT.ReplacementParams
 open SubexponentialSAT.SparseCountingScale Filter
 
@@ -426,7 +425,6 @@ namespace Cslib.Complexity.CountingNativeEndpointPrep
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.CNF.Sparsification
 open Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM Cslib.GenericRAM
-open Turing.MultiTapeTM.Universal (encUnit encUnit_apply)
 open CountingSparsify SubexponentialSAT SubexponentialSAT.SparsePolyCounter
 open BranchedSparseCNFCounter
 

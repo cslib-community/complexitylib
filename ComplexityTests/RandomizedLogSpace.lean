@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Amplification
+import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.BPP
+import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ConfigurationMatrix
 import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
 
 /-!
@@ -21,6 +23,13 @@ example : USTCON ∈ BPL encUSTCON := L_subset_BPL USTCON_mem_L
 
 -- Going through `RL` recovers `USTCON ∈ NL`.
 example : USTCON ∈ NL encUSTCON := RL_subset_NL (L_subset_RL USTCON_mem_L)
+
+-- Randomized logspace runs in randomized polynomial time and in polynomial space.
+example : USTCON ∈ RP encUSTCON := RL_subset_RP (L_subset_RL USTCON_mem_L)
+
+example : USTCON ∈ BPP encUSTCON := BPL_subset_BPP (L_subset_BPL USTCON_mem_L)
+
+example : USTCON ∈ PSPACE encUSTCON := BPL_subset_PSPACE (L_subset_BPL USTCON_mem_L)
 
 section HaltingTime
 
@@ -134,6 +143,13 @@ example (enc : ℕ ↪ List Bool) : (Set.univ : Set ℕ) ∈ Cslib.Complexity.BP
       ⟨MultiTapeNTM.runsInSpace_zero_tapes _ _ _, 1, runsInTime_coinFlip _,
         fun _ => by rw [acceptCoins_coinFlip]; rfl, fun ha => absurd trivial ha⟩⟩
 
+-- The fair coin of `coinFlip` is a one-sided-error polynomial-time test accepting everything.
+example (enc : ℕ ↪ List Bool) : (Set.univ : Set ℕ) ∈ Cslib.Complexity.RP enc :=
+  Cslib.Complexity.RL_subset_RP
+    ⟨0, Unit, inferInstance, coinFlip, 0, fun a =>
+      ⟨MultiTapeNTM.runsInSpace_zero_tapes _ _ _, 1, runsInTime_coinFlip _,
+        fun _ => by rw [acceptCoins_coinFlip]; rfl, fun ha => absurd trivial ha⟩⟩
+
 -- With error at most `1/8`, through the amplification characterization.
 example (enc : ℕ ↪ List Bool) : ∃ (k : ℕ) (State : Type) (_ : Finite State)
     (M : MultiTapePTM k Bool State) (c : ℕ), ∀ a,
@@ -150,5 +166,52 @@ example (enc : ℕ ↪ List Bool) : ∃ (k : ℕ) (State : Type) (_ : Finite Sta
   exact ⟨t, ht, by simpa using hmem trivial⟩
 
 end Amplification
+
+section ConfigurationMatrix
+
+open Cslib Turing Matrix
+
+open scoped Classical in
+-- On the reachable views of `coinFlip`, the configuration matrix counts the one accepting coin
+-- string of length one, and its stochastic power gives probability `1/2` at every later clock.
+example (input : List Bool) : ∃ (V : Finset (FiniteCfg 0 Bool Unit))
+    (hinit : coinFlip.toNTM.initView input ∈ V),
+    (coinFlip.configMatrix ℕ V ^ 1 *ᵥ FiniteCfg.acceptVec ℕ V) ⟨_, hinit⟩ = 1 ∧
+    (((2 : ℚ)⁻¹ • coinFlip.configMatrix ℚ V) ^ 5 *ᵥ FiniteCfg.acceptVec ℚ V) ⟨_, hinit⟩ =
+      1 / 2 := by
+  obtain ⟨V, hreach, hV, -⟩ :=
+    coinFlip.exists_finset_reachable (MultiTapeNTM.runsInSpace_zero_tapes _ input 0)
+  have hinit : coinFlip.toNTM.initView input ∈ V := (hreach _).mpr .refl
+  refine ⟨V, hinit, ?_, ?_⟩
+  · rw [← MultiTapePTM.acceptCoins_eq_configMatrix_pow_mulVec ℕ hV hinit, Nat.cast_id,
+      acceptCoins_coinFlip]
+  · have h5 := MultiTapePTM.acceptCoins_add coinFlip (runsInTime_coinFlip input) 4
+    rw [← MultiTapePTM.acceptCoins_div_eq_configMatrix_pow_mulVec ℚ hV hinit,
+      show 5 = 1 + 4 from rfl, h5, acceptCoins_coinFlip]
+    norm_num
+
+open scoped Classical in
+-- The same probability `1/2` as the entry of `(1 - S / 2)⁻¹ *ᵥ e`, and as the sum of the
+-- substochastic powers up to the halting time `1`.
+example (input : List Bool) : ∃ (V : Finset (FiniteCfg 0 Bool Unit))
+    (hinit : coinFlip.toNTM.initView input ∈ V),
+    ((1 - (2 : ℚ)⁻¹ • coinFlip.liveConfigMatrix ℚ V)⁻¹ *ᵥ FiniteCfg.acceptVec ℚ V)
+      ⟨_, hinit⟩ = 1 / 2 ∧
+    ∑ t ∈ Finset.range 2, (((2 : ℚ)⁻¹ • coinFlip.liveConfigMatrix ℚ V) ^ t *ᵥ
+      FiniteCfg.acceptVec ℚ V) ⟨_, hinit⟩ = 1 / 2 ∧
+    coinFlip.liveConfigMatrix ℚ V ^ 2 = 0 := by
+  obtain ⟨V, hreach, hV, -⟩ :=
+    coinFlip.exists_finset_reachable (MultiTapeNTM.runsInSpace_zero_tapes _ input 0)
+  have hinit : coinFlip.toNTM.initView input ∈ V := (hreach _).mpr .refl
+  refine ⟨V, hinit, ?_, ?_, ?_⟩
+  · rw [← MultiTapePTM.acceptCoins_div_eq_inv_mulVec ℚ (runsInTime_coinFlip input) hV
+      (fun finite hf => (hreach _).mp hf), acceptCoins_coinFlip]
+    norm_num
+  · rw [← MultiTapePTM.acceptCoins_div_eq_sum_liveConfigMatrix ℚ hV hinit 1, acceptCoins_coinFlip]
+    norm_num
+  · exact MultiTapePTM.liveConfigMatrix_pow_eq_zero ℚ (runsInTime_coinFlip input) hV
+      fun finite hf => (hreach _).mp hf
+
+end ConfigurationMatrix
 
 end ComplexityTests.RandomizedLogSpace

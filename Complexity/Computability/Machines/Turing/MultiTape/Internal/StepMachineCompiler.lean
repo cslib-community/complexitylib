@@ -15,6 +15,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Ste
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Option
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OnWords
 public import Complexity.Computability.Machines.Turing.MultiTape.StepMachine.Basic
 public import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
@@ -34,7 +35,7 @@ an unbounded output with constant workspace; no bound on the whole output is add
 
 ## Main definitions
 
-* `Turing.MultiTapeTM.encMove`, `.encPeek`: the unchanged encodings used by the compiler.
+* `Turing.MultiTapeTM.encPeek`: the unchanged encoding used by the compiler.
 * `Turing.StepMachine.ResourceCertificate`: charged plain certificates for halt and step.
 
 ## Main results
@@ -55,13 +56,7 @@ public lemma linear_stepFlagWord :
     ComputableInLinearTimeAndSpace stepFlagWord encBool encBits :=
   .of_finite stepFlagWord
 
-/-- Moves of the input head: none, to the left, to the right. -/
-@[expose] public def encMove : SignType ↪ List Bool :=
-  ⟨fun m => match m with | .zero => [] | .neg => [false] | .pos => [true], by
-    intro a b h
-    cases a <;> cases b <;> simp_all⟩
-
-@[simp] public lemma moveOfCell_encMove (m : SignType) : moveOfCell (encMove m).head? = m := by
+@[simp] public lemma moveOfCell_encSign (m : SignType) : moveOfCell (encSign m).head? = m := by
   cases m <;> rfl
 
 public lemma peekWord_injective : Function.Injective peekWord := by
@@ -164,14 +159,14 @@ variable {σ : Type} {encS : σ ↪ List Bool} {halt : σ → Bool}
   {TS SS : σ × Option Bool → ℕ}
 
 /-- The state and its pending move. -/
-public abbrev encAug (encS : σ ↪ List Bool) : σ × SignType ↪ List Bool := encPair encS encMove
+public abbrev encAug (encS : σ ↪ List Bool) : σ × SignType ↪ List Bool := encPair encS encSign
 
 /-- The step, read from the state behind the symbol under the input head. -/
 lemma step_peek_inO
     (hstep : ComputableInO (fun p : σ × Option Bool => step p.1 p.2)
-      (encPair encS (encOption encBool)) (encPair encS (encPair encMove encBits)) TS SS) :
+      (encPair encS (encOption encBool)) (encPair encS (encPair encSign encBits)) TS SS) :
     ComputableInO (fun p : Option Bool × (σ × SignType) => step p.2.1 p.1)
-      (encPeek (encAug encS)) (encPair encS (encPair encMove encBits))
+      (encPeek (encAug encS)) (encPair encS (encPair encSign encBits))
       (fun p => (encPeek (encAug encS) p).length + (encPeek (encAug encS) p).length +
         TS (p.2.1, p.1))
       fun p => (encPeek (encAug encS) p).length + (encPeek (encAug encS) p).length +
@@ -247,7 +242,7 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
     (hinit : ComputableInO init encIn encS TI SI)
     (hhalt : ComputableInO halt encS encBool TH SH)
     (hstep : ComputableInO (fun p : σ × Option Bool => step p.1 p.2)
-      (encPair encS (encOption encBool)) (encPair encS (encPair encMove encBits)) TS SS)
+      (encPair encS (encOption encBool)) (encPair encS (encPair encSign encBits)) TS SS)
     (hrounds : ∀ x, (StepMachine.mk (init x) halt step).HaltsAt (encIn x) (rounds x))
     (hg : ∀ x, encOut (g x) =
       ((StepMachine.mk (init x) halt step).run (encIn x) (rounds x)).out)
@@ -337,16 +332,16 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
   have hP (b : Option Bool) (n : ℕ) (hn : n ≤ R) (mm : SignType) :
       (encPeek (encAug encS) (b, (q n, mm))).length ≤ 2 * L + 4 := by
     have : (encS (q n)).length ≤ L := hlMax x n hn
-    cases b <;> cases mm <;> simp [peekWord, encMove] <;> omega
+    cases b <;> cases mm <;> simp [peekWord, encSign] <;> omega
   have hst (n : ℕ) (hn : n ≤ R) : TS (q n, a n) + TH (q n) ≤ Tm ∧ SS (q n, a n) + SH (q n) ≤ Sm :=
     ⟨htMax x n hn, hsMax x n hn⟩
   have hfl (n : ℕ) : (stepFlagWord (!halt (q n))).length ≤ 1 := by
     unfold stepFlagWord; split_ifs <;> simp
-  have hmv (mm : SignType) : (encMove mm).length ≤ 1 := by cases mm <;> simp [encMove]
+  have hmv (mm : SignType) : (encSign mm).length ≤ 1 := by cases mm <;> simp [encSign]
   have h := computesTidily_stepTM hVN hVF hNF hVC hVM w R (fun n => encAug encS (q n, mv n))
-    (fun n => (st n).2.2) (fun n => encMove (st n).2.1) (fun n => stepFlagWord (!halt (q n)))
+    (fun n => (st n).2.2) (fun n => encSign (st n).2.1) (fun n => stepFlagWord (!halt (q n)))
     (fun n => (m.run w n).pos) rfl
-    (fun n hn => by simp only [hrun n hn, moveOfCell_encMove])
+    (fun n hn => by simp only [hrun n hn, moveOfCell_encSign])
     (fun n hn => by simp [hnh n hn, stepFlagWord])
     (by simpa [stepFlagWord] using (hrounds x).1)
     ((hI x).imp (fun _ _ h => h) (fun _ _ _ _ _ ⟨h, he⟩ => ⟨h.trans rfl, he⟩) le_rfl le_rfl)
@@ -371,7 +366,7 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
     (fun n hn => (hN (a n, (q n, mv n))).imp (fun _ _ h => h)
       (fun _ _ _ _ _ ⟨h, he⟩ => ⟨by rw [h]; simp [hq n hn, mv, st, peekWord, slot], he⟩) (by
         have := hP (a n) n hn.le (mv n); have := (hst n hn.le).1
-        have : (encPeek (encPair encS encMove) (none, (step (q n) (a n)).1,
+        have : (encPeek (encPair encS encSign) (none, (step (q n) (a n)).1,
             (step (q n) (a n)).2.1)).length ≤ 2 * L + 4 := by
           have := hP none (n + 1) hn (step (q n) (a n)).2.1
           rw [hq n hn] at this
@@ -384,7 +379,7 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
               2 * Tm + 8 * L + 20 by omega)
         dsimp -zeta only; simp only [Function.comp_apply]; omega) (by
         have := hP (a n) n hn.le (mv n); have := (hst n hn.le).2
-        have : (encPeek (encPair encS encMove) (none, (step (q n) (a n)).1,
+        have : (encPeek (encPair encS encSign) (none, (step (q n) (a n)).1,
             (step (q n) (a n)).2.1)).length ≤ 2 * L + 4 := by
           have := hP none (n + 1) hn (step (q n) (a n)).2.1
           rw [hq n hn] at this
@@ -437,7 +432,7 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
   -- the bounds
   have hround (n : ℕ) (hn : n < R) : stepRoundTime (stepFlagWord (!halt (q n))).length
       (peekWord (a n) ++ encAug encS (q n, mv n)).length
-      (slot ++ encAug encS (q (n + 1), mv (n + 1))).length (encMove (st n).2.1).length
+      (slot ++ encAug encS (q (n + 1), mv (n + 1))).length (encSign (st n).2.1).length
       (D * (Tm + 4 * L + 10) + 4) (D * (2 * Tm + 8 * L + 20) + 2 * L + 10) (D * (2 * L + 5) + 7)
       (D * (Tm + 2 * L + 5) + 7) + 1 ≤ 100 * (D * (Tm + L + 1)) := by
     have h₁ := hP (a n) n hn.le (mv n)
@@ -457,7 +452,7 @@ private theorem Internal.compileStepMachine {σ γ ω : Type} {encS : σ ↪ Lis
     omega
   have hS : ∑ n ∈ Finset.range R, (stepRoundTime (stepFlagWord (!halt (q n))).length
       (peekWord (a n) ++ encAug encS (q n, mv n)).length
-      (slot ++ encAug encS (q (n + 1), mv (n + 1))).length (encMove (st n).2.1).length
+      (slot ++ encAug encS (q (n + 1), mv (n + 1))).length (encSign (st n).2.1).length
       (D * (Tm + 4 * L + 10) + 4) (D * (2 * Tm + 8 * L + 20) + 2 * L + 10) (D * (2 * L + 5) + 7)
       (D * (Tm + 2 * L + 5) + 7) + 1) ≤ R * (100 * (D * (Tm + L + 1))) :=
     (Finset.sum_le_sum fun n hn => hround n (Finset.mem_range.mp hn)).trans (by simp)
@@ -495,7 +490,7 @@ public structure ResourceCertificate {σ : Type} (m : StepMachine σ Bool Bool) 
     (T S : σ → ℕ) : Prop where
   computable_halt : ComputableInO m.halt encS encBool T S
   computable_step : ComputableInO (fun p : σ × Option Bool => m.step p.1 p.2)
-    (encPair encS (encOption encBool)) (encPair encS (encPair encMove encBits))
+    (encPair encS (encOption encBool)) (encPair encS (encPair encSign encBits))
     (fun p => T p.1) fun p => S p.1
 
 /-- The step machine `m` started in the state `s`. -/
@@ -535,7 +530,7 @@ public theorem ResourceCertificate.computableInBigO_of_init {σ γ ω : Type} {e
       rw [(m.withInit (init x)).run_succ_of_not_halt hh]
       have h₁ := hcS (((m.withInit (init x)).run (encIn x) i).state,
         inputSymbolAt (encIn x) ((m.withInit (init x)).run (encIn x) i).pos)
-      have h₂ := length_le_encPair_left encS (encPair encMove encBits)
+      have h₂ := length_le_encPair_left encS (encPair encSign encBits)
         (m.step ((m.withInit (init x)).run (encIn x) i).state
           (inputSymbolAt (encIn x) ((m.withInit (init x)).run (encIn x) i).pos))
       have h₃ := Nat.mul_le_mul_left cS (Nat.add_le_add_right (hmax x i (by omega)).2 1)
