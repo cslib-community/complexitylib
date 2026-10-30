@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Hashing.KWise
 public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
 public import Complexity.Computability.WordRAM.RegisterFrame
+public import Complexity.Probability.PMF.UniformSubset
 public import Complexity.Probability.Uniform
 public import Mathlib.Order.ConditionallyCompleteLattice.Basic
 
@@ -18,7 +19,7 @@ public import Mathlib.Order.ConditionallyCompleteLattice.Basic
 # Cuckoo hash family, pure replay semantics, and shared-table Word-RAM hashing
 
 This module develops the pure displacement and replay model of Pagh and Rodler's two-table cuckoo
-hashing scheme together with a self-contained Word-RAM hash pair
+hashing scheme [PaghRodler2004] together with a self-contained Word-RAM hash pair
 `h_r(u) = f_r(u) ^^^ Z_r[g_r(u)]` (`r ∈ {1, 2}`) built from `Cslib.Algorithms.WordRAM.Hashing.KWise`
 (`k = 7`, sharing a single Four-Russians carryless-multiplication table `clmulTab` across all four
 polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z₁, Z₂` from
@@ -26,8 +27,8 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
 
 ## Primary-source mapping
 
-* **Pagh and Rodler (2004):** R. Pagh and F. F. Rodler, *"Cuckoo Hashing"*, author-hosted journal
-  manuscript (8 December 2003, published in *Journal of Algorithms* 51(2):122–144, 2004),
+* **Pagh and Rodler [PaghRodler2004]:** R. Pagh and F. F. Rodler, *"Cuckoo Hashing"*, author-hosted
+  journal manuscript (8 December 2003, published in *Journal of Algorithms* 51(2):122–144, 2004),
   **Section 2.3 ("Amortized insertion time", manuscript pp. 6–10)**: **Lemma 1** (manuscript p. 7,
   distinct-subsequence structure of displacement walks when the cuckoo graph contains no component
   with more than one cycle), **Eq. (3) on manuscript p. 9** (expected displacement iterations
@@ -44,16 +45,16 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
   insertion-order key lists `ks_0, …, ks_t` independently of internal coin flips). For `n_max ≤ 2`,
   `isCuckooHashPair_le_two` and `isCuckooHashFamily_le_two` instantiate `IsCuckooHashPair` and
   `IsCuckooHashFamily` unconditionally with `C_walk = 1` and `C_reh = 0`.
-* **Dietzfelbinger and Woelfel (2003) variant note:** `Seed` and `(evalHash1, evalHash2)` form a
-  **modified variant** inspired by M. Dietzfelbinger and P. Woelfel, *"Almost Random Graphs with
-  Simple Hash Functions"*, *Proc. 35th ACM STOC*, 2003, **Definition 1 (§2.1, p. 632)**.
-  Dietzfelbinger and Woelfel's Definition 1 uses a **single shared auxiliary hash `g`** and addition
-  modulo `m` (and explicitly distinguishes that shared-`g` pair from choosing two independent
-  single-hash instances), whereas `(evalHash1, evalHash2)` here uses **independent `g₁, g₂`** and
-  bitwise XOR (`finXor`) over `Fin (2 ^ M)`. The per-function `7`-wise independence theorems
-  (`isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`) do **not** establish
-  Dietzfelbinger and Woelfel's graph/rehash guarantees for this modified pair, and correspondence /
-  `IsCuckooHashFamily` instantiation for `n_max ≥ 3` remains unproved.
+* **Dietzfelbinger and Woelfel [DietzfelbingerWoelfel2003] variant note:** `Seed` and
+  `(evalHash1, evalHash2)` form a **modified variant** inspired by M. Dietzfelbinger and P. Woelfel,
+  *"Almost Random Graphs with Simple Hash Functions"*, *Proc. 35th ACM STOC*, 2003,
+  **Definition 1 (§2.1, p. 632)**. Dietzfelbinger and Woelfel's Definition 1 uses a **single shared
+  auxiliary hash `g`** and addition modulo `m` (and explicitly distinguishes that shared-`g` pair
+  from choosing two independent single-hash instances), whereas `(evalHash1, evalHash2)` here uses
+  **independent `g₁, g₂`** and bitwise XOR (`finXor`) over `Fin (2 ^ M)`. The per-function `7`-wise
+  independence theorems (`isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`) do
+  **not** establish Dietzfelbinger and Woelfel's graph/rehash guarantees for this modified pair, and
+  correspondence / `IsCuckooHashFamily` instantiation for `n_max ≥ 3` remains unproved.
 
 ## Main definitions
 
@@ -76,9 +77,10 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
 * `pureReplay_append_singleton`, `pureReplay_lookupEntry_of_mem`: incremental eviction from the
   replayed table coincides with full replay of `ks ++ [u]`, and `lookupEntry` recovers the exact
   index of every inserted key in `O(1)` probes.
-* `unifOn_rehash_eq`, `uniformOfFinset_le_two_mul_uniformOfFintype`,
-  `card_le_two_mul_card_of_uniformOfFintype_compl_le_half`: exact conditional-uniform replay
-  identity (`Unif(E_t)`) and `seedSlack = 2` density bound.
+* `survivingSeeds_append_subset`, `mem_survivingSeeds_of_goodForSet`: monotonicity of surviving
+  replay seeds across insertions (combined with `Cslib.Probability.PMF.unifOn_rehash_eq` and
+  `Cslib.Probability.PMF.uniformOfFinset_le_two_mul_uniformOfFintype` from
+  `Complexity/Probability/PMF/UniformSubset.lean`).
 * `isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`: each individual hash
   function `evalHash1` and `evalHash2` is exact `7`-wise independent onto `Fin (2 ^ M)`.
 * `isCuckooHashPair_le_two`, `isCuckooHashFamily_le_two`, `isCuckooHashFamily_le_one`:
@@ -90,12 +92,11 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
 
 ## References
 
-* R. Pagh and F. F. Rodler, "Cuckoo hashing", author-hosted journal manuscript (8 December 2003),
-  published in *Journal of Algorithms* 51(2), 122–144, 2004 (Section 2.3, "Amortized insertion
-  time", manuscript pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash analysis on pp. 9–10).
-* M. Dietzfelbinger and P. Woelfel, "Almost random graphs with simple hash functions", in *Proc.
-  35th Annual ACM Symposium on Theory of Computing (STOC 2003)*, 629–638, 2003 (Definition 1,
-  §2.1, p. 632).
+* [R. Pagh and F. F. Rodler, "Cuckoo hashing"][PaghRodler2004] (8 December 2003 author manuscript,
+  Section 2.3, "Amortized insertion time", pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash
+  analysis on pp. 9–10).
+* [M. Dietzfelbinger and P. Woelfel, *Almost Random Graphs*][DietzfelbingerWoelfel2003]
+  (Definition 1, §2.1, p. 632).
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [J. L. Carter and M. N. Wegman, "Universal classes of hash functions"][CarterWegman1979]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*][CLRS2009]
@@ -107,6 +108,7 @@ namespace Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
 
 open Cslib.WordRAM
 open Cslib.Probability
+open Cslib.Probability.PMF
 open Cslib.Algorithms.WordRAM.Hashing
 open scoped ENNReal Finset
 
@@ -892,199 +894,6 @@ theorem mem_survivingSeeds_of_goodForSet {Θ : Type*} [Fintype Θ] {U m : ℕ}
   rw [mem_survivingSeeds]
   exact hgood ks hnodup hsub
 
-/-- **Exact conditional-uniform replay invariance (`Unif(E_t)` identity)**:
-If `E_curr ⊆ E_prev` are nonempty seed sets (where `E_prev` is the set of seeds surviving steps
-`1 .. t - 1` and `E_curr` is the set of seeds surviving steps `1 .. t` under `pureReplay`),
-then starting from a seed drawn uniformly from `E_prev`, keeping the seed when it lies in `E_curr`
-and rejection-sampling uniformly from `E_curr` when it lies in `E_prev \ E_curr` produces the
-exact uniform distribution on `E_curr` with zero drift:
-`1 / |E_prev| + ((|E_prev| - |E_curr|) / |E_prev|) * (1 / |E_curr|) = 1 / |E_curr|`. -/
-theorem unifOn_rehash_eq {Θ : Type*} [DecidableEq Θ] {E_prev E_curr : Finset Θ}
-    (hsub : E_curr ⊆ E_prev) (hprev : E_prev.Nonempty) (hcurr : E_curr.Nonempty) :
-    (PMF.uniformOfFinset E_prev hprev).bind
-      (fun θ => if θ ∈ E_curr then PMF.pure θ else PMF.uniformOfFinset E_curr hcurr) =
-      PMF.uniformOfFinset E_curr hcurr := by
-  ext θ'
-  rw [PMF.bind_apply, PMF.uniformOfFinset_apply]
-  by_cases hθ' : θ' ∈ E_curr
-  · simp only [hθ', ↓reduceIte]
-    rw [tsum_eq_sum (s := E_prev)]
-    · have hsplit :
-          ∑ x ∈ E_prev, (PMF.uniformOfFinset E_prev hprev) x *
-            (if x ∈ E_curr then PMF.pure x else PMF.uniformOfFinset E_curr hcurr) θ' =
-          ∑ x ∈ E_curr, (E_prev.card : ℝ≥0∞)⁻¹ * (if θ' = x then 1 else 0) +
-          ∑ x ∈ E_prev \ E_curr, (E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹ := by
-        rw [← Finset.sum_sdiff hsub, add_comm]
-        congr 1
-        · refine Finset.sum_congr rfl fun x hx => ?_
-          have hx_prev : x ∈ E_prev := hsub hx
-          simp only [PMF.uniformOfFinset_apply, hx_prev, hx, ↓reduceIte, PMF.pure_apply]
-          congr 1
-          split_ifs <;> rfl
-        · refine Finset.sum_congr rfl fun x hx => ?_
-          have hx_prev : x ∈ E_prev := (Finset.mem_sdiff.mp hx).1
-          have hx_not : x ∉ E_curr := (Finset.mem_sdiff.mp hx).2
-          simp only [PMF.uniformOfFinset_apply, hx_prev, hx_not, hθ', ↓reduceIte]
-      rw [hsplit]
-      have hsum1 :
-          ∑ x ∈ E_curr, (E_prev.card : ℝ≥0∞)⁻¹ * (if θ' = x then 1 else 0) =
-            (E_prev.card : ℝ≥0∞)⁻¹ := by
-        rw [← Finset.mul_sum, Finset.sum_ite_eq E_curr θ' (fun _ => (1 : ℝ≥0∞))]
-        simp only [hθ', ↓reduceIte, mul_one]
-      have hsum2 :
-          ∑ _x ∈ E_prev \ E_curr, (E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹ =
-            ((E_prev.card - E_curr.card : ℕ) : ℝ≥0∞) *
-              ((E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹) := by
-        rw [Finset.sum_const, Finset.card_sdiff_of_subset hsub, nsmul_eq_mul]
-      rw [hsum1, hsum2]
-      have hcard_le : E_curr.card ≤ E_prev.card := Finset.card_le_card hsub
-      have hprev_ne : (E_prev.card : ℝ≥0∞) ≠ 0 :=
-        Nat.cast_ne_zero.mpr (Finset.Nonempty.card_ne_zero hprev)
-      have hcurr_ne : (E_curr.card : ℝ≥0∞) ≠ 0 :=
-        Nat.cast_ne_zero.mpr (Finset.Nonempty.card_ne_zero hcurr)
-      have h1 : (E_prev.card : ℝ≥0∞)⁻¹ =
-          (E_curr.card : ℝ≥0∞) * ((E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹) := by
-        rw [← mul_assoc, mul_comm (E_curr.card : ℝ≥0∞), mul_assoc,
-          ENNReal.mul_inv_cancel hcurr_ne (ENNReal.natCast_ne_top _), mul_one]
-      calc (E_prev.card : ℝ≥0∞)⁻¹ +
-            ((E_prev.card - E_curr.card : ℕ) : ℝ≥0∞) *
-              ((E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹)
-        _ = (E_curr.card : ℝ≥0∞) * ((E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹) +
-            ((E_prev.card - E_curr.card : ℕ) : ℝ≥0∞) *
-              ((E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹) := by
-          rw [← h1]
-        _ = ((E_curr.card + (E_prev.card - E_curr.card) : ℕ) : ℝ≥0∞) *
-              ((E_prev.card : ℝ≥0∞)⁻¹ * (E_curr.card : ℝ≥0∞)⁻¹) := by
-          rw [Nat.cast_add, add_mul]
-        _ = (E_curr.card : ℝ≥0∞)⁻¹ := by
-          rw [Nat.add_sub_of_le hcard_le, ← mul_assoc,
-            ENNReal.mul_inv_cancel hprev_ne (ENNReal.natCast_ne_top _), one_mul]
-    · intro x hx
-      simp only [PMF.uniformOfFinset_apply, hx, ↓reduceIte, zero_mul]
-  · simp only [hθ', ↓reduceIte]
-    rw [tsum_eq_sum (s := ∅), Finset.sum_empty]
-    intro x _
-    by_cases hx_prev : x ∈ E_prev
-    · by_cases hx_curr : x ∈ E_curr
-      · have hne : θ' ≠ x := fun h => hθ' (h ▸ hx_curr)
-        simp only [hx_curr, ↓reduceIte, PMF.pure_apply, hne, mul_zero]
-      · simp only [hx_curr, ↓reduceIte, PMF.uniformOfFinset_apply, hθ', mul_zero]
-    · simp only [PMF.uniformOfFinset_apply, hx_prev, ↓reduceIte, zero_mul]
-
-/-- Whenever `|Θ| ≤ 2 * |E|`, the conditional uniform distribution `PMF.uniformOfFinset E`
-is pointwise bounded by `2 * PMF.uniformOfFintype Θ` (`seedSlack = 2`). -/
-theorem uniformOfFinset_le_two_mul_uniformOfFintype {Θ : Type*} [Fintype Θ] [Nonempty Θ]
-    {E : Finset Θ} (hE : E.Nonempty) (hcard : Fintype.card Θ ≤ 2 * E.card) (θ : Θ) :
-    PMF.uniformOfFinset E hE θ ≤ 2 * PMF.uniformOfFintype Θ θ := by
-  classical
-  rw [PMF.uniformOfFinset_apply, PMF.uniformOfFintype_apply]
-  split_ifs with hθ
-  · have hE_ne : (E.card : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr hE.card_ne_zero
-    have hΘ_ne : (Fintype.card Θ : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-    have hle : (Fintype.card Θ : ℝ≥0∞) ≤ 2 * (E.card : ℝ≥0∞) := by exact_mod_cast hcard
-    calc (E.card : ℝ≥0∞)⁻¹
-      _ = (E.card : ℝ≥0∞)⁻¹ * ((Fintype.card Θ : ℝ≥0∞) * (Fintype.card Θ : ℝ≥0∞)⁻¹) := by
-          rw [ENNReal.mul_inv_cancel hΘ_ne (ENNReal.natCast_ne_top _), mul_one]
-      _ ≤ (E.card : ℝ≥0∞)⁻¹ * ((2 * (E.card : ℝ≥0∞)) * (Fintype.card Θ : ℝ≥0∞)⁻¹) := by
-          gcongr
-      _ = (2 * (Fintype.card Θ : ℝ≥0∞)⁻¹) * ((E.card : ℝ≥0∞)⁻¹ * (E.card : ℝ≥0∞)) := by ring
-      _ = 2 * (Fintype.card Θ : ℝ≥0∞)⁻¹ := by
-          rw [ENNReal.inv_mul_cancel hE_ne (ENNReal.natCast_ne_top _), mul_one]
-  · exact bot_le
-
-/-- If the complement of `E : Finset Θ` has uniform probability mass at most `1 / 2` in a nonempty
-finite seed space `Θ`, then `|Θ| ≤ 2 * |E|` and `E` is nonempty. -/
-theorem card_le_two_mul_card_of_uniformOfFintype_compl_le_half {Θ : Type*} [Fintype Θ]
-    [Nonempty Θ] {E : Finset Θ}
-    (hprob : (PMF.uniformOfFintype Θ).toOuterMeasure {θ : Θ | θ ∉ E} ≤ 1 / 2) :
-    Fintype.card Θ ≤ 2 * E.card ∧ E.Nonempty := by
-  classical
-  set p := PMF.uniformOfFintype Θ
-  have hsum : p.toOuterMeasure {θ : Θ | θ ∈ E} + p.toOuterMeasure {θ : Θ | θ ∉ E} = 1 := by
-    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply, ← Summable.tsum_add
-      CompleteLattice.summable CompleteLattice.summable]
-    have hcongr : ∀ θ : Θ,
-        ({θ : Θ | θ ∈ E}.indicator p θ + {θ : Θ | θ ∉ E}.indicator p θ) = p θ := by
-      intro θ
-      by_cases hθ : θ ∈ E
-      · have hin : θ ∈ {θ' : Θ | θ' ∈ E} := hθ
-        have hnot : θ ∉ {θ' : Θ | θ' ∉ E} := fun h => h hθ
-        rw [Set.indicator_of_mem hin, Set.indicator_of_notMem hnot, add_zero]
-      · have hnot : θ ∉ {θ' : Θ | θ' ∈ E} := hθ
-        have hin : θ ∈ {θ' : Θ | θ' ∉ E} := hθ
-        rw [Set.indicator_of_notMem hnot, Set.indicator_of_mem hin, zero_add]
-    simp_rw [hcongr]
-    exact p.tsum_coe
-  have hE_ge : (1 : ℝ≥0∞) / 2 ≤ p.toOuterMeasure {θ : Θ | θ ∈ E} := by
-    have h1 : (1 : ℝ≥0∞) / 2 + 1 / 2 ≤ p.toOuterMeasure {θ : Θ | θ ∈ E} + 1 / 2 := by
-      calc (1 : ℝ≥0∞) / 2 + 1 / 2 = 1 := ENNReal.add_halves 1
-        _ = p.toOuterMeasure {θ : Θ | θ ∈ E} + p.toOuterMeasure {θ : Θ | θ ∉ E} := hsum.symm
-        _ ≤ p.toOuterMeasure {θ : Θ | θ ∈ E} + 1 / 2 := add_le_add le_rfl hprob
-    exact (ENNReal.add_le_add_iff_right (by norm_num)).mp h1
-  have hE_eq : p.toOuterMeasure {θ : Θ | θ ∈ E} =
-      (E.card : ℝ≥0∞) * (Fintype.card Θ : ℝ≥0∞)⁻¹ := by
-    rw [PMF.toOuterMeasure_apply, tsum_fintype]
-    have hsub : (∑ x : Θ, ({θ : Θ | θ ∈ E}.indicator p) x) =
-        ∑ x ∈ E, (Fintype.card Θ : ℝ≥0∞)⁻¹ := by
-      rw [← Finset.sum_subset (Finset.subset_univ E)]
-      · refine Finset.sum_congr rfl fun x hx => ?_
-        have hx' : x ∈ {θ : Θ | θ ∈ E} := hx
-        rw [Set.indicator_of_mem hx']
-        exact PMF.uniformOfFintype_apply x
-      · intro x _ hx
-        have hx' : x ∉ {θ : Θ | θ ∈ E} := hx
-        exact Set.indicator_of_notMem hx' _
-    rw [hsub, Finset.sum_const, nsmul_eq_mul]
-  rw [hE_eq] at hE_ge
-  have hΘ_pos : 0 < Fintype.card Θ := Fintype.card_pos
-  have hΘ_ne : (Fintype.card Θ : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
-  have hΘ_top : (Fintype.card Θ : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-  have hmul : (Fintype.card Θ : ℝ≥0∞) * (1 / 2) ≤ (E.card : ℝ≥0∞) := by
-    calc (Fintype.card Θ : ℝ≥0∞) * (1 / 2)
-      _ ≤ (Fintype.card Θ : ℝ≥0∞) * ((E.card : ℝ≥0∞) * (Fintype.card Θ : ℝ≥0∞)⁻¹) :=
-          mul_le_mul' le_rfl hE_ge
-      _ = (E.card : ℝ≥0∞) * ((Fintype.card Θ : ℝ≥0∞) * (Fintype.card Θ : ℝ≥0∞)⁻¹) := by ring
-      _ = (E.card : ℝ≥0∞) := by rw [ENNReal.mul_inv_cancel hΘ_ne hΘ_top, mul_one]
-  have hmul2 : (Fintype.card Θ : ℝ≥0∞) ≤ 2 * (E.card : ℝ≥0∞) := by
-    calc (Fintype.card Θ : ℝ≥0∞)
-      _ = (Fintype.card Θ : ℝ≥0∞) * ((2 : ℝ≥0∞) * (2 : ℝ≥0∞)⁻¹) := by
-          rw [ENNReal.mul_inv_cancel (by norm_num) (by norm_num), mul_one]
-      _ = 2 * ((Fintype.card Θ : ℝ≥0∞) * (1 / 2)) := by
-          rw [one_div]; ring
-      _ ≤ 2 * (E.card : ℝ≥0∞) := mul_le_mul' le_rfl hmul
-  have hcard : Fintype.card Θ ≤ 2 * E.card := by exact_mod_cast hmul2
-  have hpos : 0 < E.card := by omega
-  exact ⟨hcard, Finset.card_pos.mp hpos⟩
-
-/-- Any probability mass function `ν : PMF Θ` that takes a constant value `c` on a nonempty finset
-`E` and `0` outside `E` equals `PMF.uniformOfFinset E hE`. -/
-theorem pmf_eq_uniformOfFinset_of_ite_const {Θ : Type*} [DecidableEq Θ]
-    {ν : PMF Θ} {E : Finset Θ} (hE : E.Nonempty) {c : ℝ≥0∞}
-    (hν : ∀ θ, ν θ = if θ ∈ E then c else 0) :
-    ν = PMF.uniformOfFinset E hE := by
-  have hsum : (∑' θ, ν θ) = (E.card : ℝ≥0∞) * c := by
-    rw [tsum_eq_sum (s := E)]
-    · trans (∑ _θ ∈ E, c)
-      · refine Finset.sum_congr rfl fun θ hθ => ?_
-        rw [hν θ]
-        simp only [hθ, ↓reduceIte]
-      · rw [Finset.sum_const, nsmul_eq_mul]
-    · intro θ hθ
-      rw [hν θ]
-      simp only [hθ, ↓reduceIte]
-  have h1 : (E.card : ℝ≥0∞) * c = 1 := by
-    rw [← hsum, ν.tsum_coe]
-  have hcard_ne : (E.card : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr hE.card_ne_zero
-  have hc : c = (E.card : ℝ≥0∞)⁻¹ := by
-    calc c
-      _ = ((E.card : ℝ≥0∞)⁻¹ * (E.card : ℝ≥0∞)) * c := by
-          rw [ENNReal.inv_mul_cancel hcard_ne (ENNReal.natCast_ne_top _), one_mul]
-      _ = (E.card : ℝ≥0∞)⁻¹ * ((E.card : ℝ≥0∞) * c) := by ring
-      _ = (E.card : ℝ≥0∞)⁻¹ := by rw [h1, mul_one]
-  ext θ
-  rw [hν θ, hc, PMF.uniformOfFinset_apply]
-  split_ifs <;> rfl
-
 /-! ### Section 4: Concrete tabulated polynomial hash pair `f_r(u) ^^^ Z_r[g_r(u)]` -/
 
 /-- Degree-`< 7` trinomial polynomial seed space over `TrinomialField (trinomialStep U M)`. -/
@@ -1097,9 +906,9 @@ abbrev TabSeed (M : ℕ) : Type :=
 
 /-- Full cuckoo hash seed storing four 7-wise independent polynomial seeds `(cf₁, cg₁, cf₂, cg₂)`
 and two random tabulation arrays `(Z₁, Z₂)` of size `2 ^ M`. This is a modified variant of
-Dietzfelbinger and Woelfel (STOC 2003, Definition 1, §2.1, p. 632) using independent auxiliary
-polynomial hashes `g₁, g₂` and bitwise XOR (`finXor`) over `Fin (2 ^ M)` rather than a single
-shared `g` and addition modulo `m`. -/
+Dietzfelbinger and Woelfel [DietzfelbingerWoelfel2003, Definition 1, §2.1, p. 632] using
+independent auxiliary polynomial hashes `g₁, g₂` and bitwise XOR (`finXor`) over `Fin (2 ^ M)`
+rather than a single shared `g` and addition modulo `m`. -/
 abbrev Seed (U M : ℕ) : Type :=
   (Fin 4 → PolySeed U M) × TabSeed M × TabSeed M
 
@@ -1255,12 +1064,12 @@ theorem isPairwiseIndependentHash_evalHash2 (U M : ℕ) :
   (isKWiseIndependentHash_evalHash2 U M).isPairwiseIndependentHash (by decide)
 
 /-- **General cuckoo hash pair interface (`IsCuckooHashPair`)**:
-an original strengthened sufficient assumption bundle inspired by Pagh and Rodler (8 December 2003
-manuscript, Section 2.3 "Amortized insertion time", pp. 6–10; *Journal of Algorithms* 51(2):122–144,
-2004), asserting over a seed distribution `μ : PMF Θ` and hash pair `h₁ h₂ : Θ → Fin U → Fin m`:
+an original strengthened sufficient assumption bundle inspired by Pagh and Rodler [PaghRodler2004]
+(8 December 2003 manuscript, Section 2.3 "Amortized insertion time", pp. 6–10), asserting over a
+seed distribution `μ : PMF Θ` and hash pair `h₁ h₂ : Θ → Fin U → Fin m`:
 1. (`expected_walk_le`): for any set `S` of fewer than `n_max` keys and absent key `u ∉ S`, the
    expected number of worst-case displacement rounds `cuckooWalkRounds` (`sSup` over all
-   `ValidPlacement`s of `S`) is at most `C_walk` (cf. Pagh and Rodler §2.3, Lemma 1 on manuscript
+   `ValidPlacement`s of `S`) is at most `C_walk` (cf. [PaghRodler2004], §2.3, Lemma 1 on manuscript
    p. 7 and Eq. (3) on manuscript p. 9);
 2. (`rehash_prob_le_half`): for any set `S` of at most `n_max` keys, the probability that `θ ∼ μ`
    fails `GoodForSet` (all `Nodup` sublists in `S`) is at most `1 / 2` (so each rehash attempt
@@ -1269,7 +1078,7 @@ manuscript, Section 2.3 "Amortized insertion time", pp. 6–10; *Journal of Algo
 3. (`step_rehash_prob_le`): for any insertion-order prefix `ks` of fewer than `n_max` distinct keys
    and new key `u ∉ ks`, the one-step incremental failure probability that `θ ∼ μ` survives
    `pureReplay (h₁ θ) (h₂ θ) MaxLoop ks` yet fails `pureReplay (h₁ θ) (h₂ θ) MaxLoop (ks ++ [u])`
-   is at most `C_reh / (max n_max 1 * max MaxLoop 1)` (cf. Pagh and Rodler §2.3, manuscript
+   is at most `C_reh / (max n_max 1 * max MaxLoop 1)` (cf. [PaghRodler2004], §2.3, manuscript
    pp. 9–10). -/
 structure IsCuckooHashPair {Θ : Type*} (μ : PMF Θ) {U m : ℕ}
     (h₁ h₂ : Θ → Fin U → Fin m) (n_max MaxLoop C_walk C_reh : ℕ) : Prop where
@@ -1292,9 +1101,10 @@ structure IsCuckooHashPair {Θ : Type*} (μ : PMF Θ) {U m : ℕ}
 /-- Specialization of `IsCuckooHashPair` to the concrete modified tabulated polynomial hash pair
 `(evalHash1, evalHash2)` over `seedLaw U M` (independent `g₁, g₂` and bitwise XOR over
 `Fin (2 ^ M)`). Per-function `7`-wise independence (`isKWiseIndependentHash_evalHash1`,
-`isKWiseIndependentHash_evalHash2`) does not establish Dietzfelbinger and Woelfel's (STOC 2003,
-Definition 1, §2.1, p. 632) shared-`g` mod-`m` graph/rehash guarantees for this modified pair;
-`isCuckooHashFamily_le_two` discharges `n_max ≤ 2`, while `n_max ≥ 3` remains open. -/
+`isKWiseIndependentHash_evalHash2`) does not establish Dietzfelbinger and Woelfel's
+[DietzfelbingerWoelfel2003, Definition 1, §2.1, p. 632] shared-`g` mod-`m` graph/rehash guarantees
+for this modified pair; `isCuckooHashFamily_le_two` discharges `n_max ≤ 2`, while `n_max ≥ 3`
+remains open. -/
 abbrev IsCuckooHashFamily (U n_max M MaxLoop C_walk C_reh : ℕ) : Prop :=
   IsCuckooHashPair (seedLaw U M) evalHash1 evalHash2 n_max MaxLoop C_walk C_reh
 
