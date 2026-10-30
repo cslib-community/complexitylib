@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
 
 /-!
 # Divide and conquer
@@ -238,33 +239,30 @@ lemma toList_inO {δ : Type} {enc : δ ↪ List Bool} :
     of_linear (.of_frame (f := frame) (encIn := encBits) (encOut := encBits) fun _ => rfl)
   have hft : ComputableTidilyInO (fun w : List Bool => frame w.tail) encBits encBits
       (fun w => w.length) (fun w => w.length) :=
-    (hframe.comp htail).mono 2 (fun w => by simp [encBits]; omega)
-      (fun w => by simp [encBits]; omega)
+    (hframe.comp htail).mono 2 (fun w => by simp; omega) (fun w => by simp; omega)
   have hw : ComputableTidilyInO (fun w : List Bool => if w.isEmpty then [] else frame w.tail)
       encBits encBits (fun w => w.length) (fun w => w.length) :=
     ((of_linear (.of_isEmpty (f := List.isEmpty) (encIn := encBits) fun _ => rfl)).ite
-      (const (encMid := encBits) []) hft).mono 2 (fun w => by split_ifs <;> simp [encBits] <;>
-        omega) (fun w => by split_ifs <;> simp [encBits] <;> omega)
+      (const (encMid := encBits) []) hft).mono 2 (fun w => by split_ifs <;> simp <;>
+        omega) (fun w => by split_ifs <;> simp <;> omega)
   refine (hw.comp (of_linear (.of_eq (f := fun o : Option δ => encOption enc o)
     (encIn := encOption enc) (encMid := encBits) fun _ => rfl))).of_enc_eq (fun o => ?_) |>.mono
       2 (fun o => ?_) (fun o => ?_)
   · cases o <;> simp [encBits]
-  all_goals simp only [Function.comp_apply, encBits, Function.Embedding.refl_apply]; omega
+  all_goals omega
+
+lemma length_encList_toList_le {δ : Type} (enc : δ ↪ List Bool) (o : Option δ) :
+    (encList enc o.toList).length ≤ 2 * (encOption enc o).length := by
+  cases o <;> simp [length_frame]
 
 end DivConq
 
-end Turing.MultiTapeTM
-
-namespace Turing.MultiTapeTM
-
-namespace DivConq
-
-/-- **Divide and conquer.** If the parts of a divide-and-conquer recursion are tidily computable
-and every input `x` is solved with `F x` at cost `C x`, then `F` is tidily computable within the
-cost of the evaluation plus the initialization. The cost of a base problem must cover its test,
-its solution and the lengths of the problem and its solution; the cost of a node must cover its
-test, the first subproblem, the middle and the combination, and the lengths of all the values they
-read and write. -/
+/-- **Divide and conquer.** If the parts of a divide-and-conquer recursion are computable and every
+input `x` is solved with `F x` at cost `C x`, then `F` is computable within the cost of the
+evaluation plus the initialization. The cost of a base problem must cover its test, its solution
+and the lengths of the problem and its solution; the cost of a node must cover its test, the first
+subproblem, the middle and the combination, and the lengths of all the values they read and
+write. -/
 theorem ComputableInO.divConq {δ α β γ : Type} {encIn : δ ↪ List Bool}
     {encA : α ↪ List Bool} {encB : β ↪ List Bool} {encG : γ ↪ List Bool} (D : DivConq α β γ)
     {init : δ → α} {F : δ → β} {C : δ → ℕ} {cb : α → ℕ} {cn : α → β → β → ℕ}
