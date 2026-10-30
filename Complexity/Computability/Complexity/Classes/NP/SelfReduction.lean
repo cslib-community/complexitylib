@@ -44,6 +44,8 @@ satisfying assignments can be found in polynomial time (`Cslib.Complexity.SAT.ex
 
 ## Main results
 
+* `Cslib.Complexity.SAT.eval_units`, `Cslib.Complexity.SAT.vars_units`: unit clauses hold when
+  their literals do, and have the variables of their literals.
 * `Cslib.Complexity.SAT.length_encCNF_units_le`: the unit clauses fixing variables of `φ` are
   short.
 * `Cslib.Complexity.SAT.verifier_search`: with answers correct up to `queryBound`, the
@@ -107,10 +109,22 @@ private theorem map_fst_selfReduce (D : CNF ℕ → Bool) (φ : CNF ℕ) :
 theorem length_search (D : CNF ℕ → Bool) (φ : CNF ℕ) : (search D φ).length = φ.vars.length := by
   rw [search, List.length_map, ← map_fst_selfReduce D φ, List.length_map]
 
+/-- Unit clauses hold exactly when their literals do. -/
+theorem eval_units (σ : ℕ → Bool) (answers : List (Literal ℕ)) :
+    (units answers).eval σ = true ↔ ∀ l ∈ answers, σ l.1 = l.2 := by
+  simp only [units, CNF.eval_eq_true_iff, List.forall_mem_map, Clause.eval_cons, Clause.eval_nil,
+    Bool.or_false, Literal.eval_eq_true_iff]
+
+/-- The variables of unit clauses are those of their literals. -/
+theorem vars_units (answers : List (Literal ℕ)) : (units answers).vars = answers.map Prod.fst := by
+  induction answers with
+  | nil => rfl
+  | cons l answers ih => simpa [units, CNF.vars] using ih
+
 /-- A formula with unit clauses holds exactly when the formula holds and the literals do. -/
 private theorem eval_append_units (σ : ℕ → Bool) (φ : CNF ℕ) (answers : List (Literal ℕ)) :
     (φ ++ units answers).eval σ = true ↔ φ.eval σ = true ∧ ∀ l ∈ answers, σ l.1 = l.2 := by
-  simp [units, CNF.eval_eq_true_iff, Clause.eval_eq_true_iff, or_imp, forall_and]
+  rw [CNF.eval_append, Bool.and_eq_true, eval_units]
 
 theorem length_encCNF_append (φ ψ : CNF ℕ) :
     (encCNF (φ ++ ψ)).length = (encCNF φ).length + (encCNF ψ).length := by

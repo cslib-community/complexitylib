@@ -58,6 +58,9 @@ at most `c + 1` nodes of polynomial size, so the search runs in polynomial time
 
 ## Main results
 
+* `Cslib.Complexity.Fortune.exists_child_mem_SAT`,
+  `Cslib.Complexity.Fortune.verifier_units_append_iff`: a satisfiable node has a satisfiable
+  child, and the verifier decides the leaves.
 * `Cslib.Complexity.Fortune.accepts_iff`: the procedure decides satisfiability when the labels
   come from a reduction of `UNSAT` and few labels of bounded length are in the target.
 * `Cslib.Complexity.Fortune.computableInPolyTime_accepts`: the procedure is polynomial-time.
@@ -142,20 +145,16 @@ def accepts (key : CNF ℕ → List Bool) (c : ℕ) (φ : CNF ℕ) : Bool :=
 
 /-! ### Correctness -/
 
-/-- Unit clauses hold exactly when their literals do. -/
-private theorem eval_units (σ : ℕ → Bool) (a : List (Literal ℕ)) :
-    (units a).eval σ = true ↔ ∀ l ∈ a, σ l.1 = l.2 := by
-  simp only [units, CNF.eval_eq_true_iff, List.forall_mem_map, Clause.eval_cons, Clause.eval_nil,
-    Bool.or_false, Literal.eval_eq_true_iff]
-
-private theorem mem_SAT_of_units_append {a : List (Literal ℕ)} {φ : CNF ℕ}
+/-- A formula with unit clauses is satisfiable only if the formula is. -/
+theorem mem_SAT_of_units_append {a : List (Literal ℕ)} {φ : CNF ℕ}
     (h : units a ++ φ ∈ SAT) : φ ∈ SAT := by
   obtain ⟨σ, hσ⟩ := h
   rw [CNF.eval_append, Bool.and_eq_true] at hσ
   exact ⟨σ, hσ.2⟩
 
-/-- A satisfiable node has a satisfiable child. -/
-private theorem exists_child_mem_SAT {a : List (Literal ℕ)} {φ : CNF ℕ} (v : ℕ)
+/-- A satisfiable node has a satisfiable child: fix the next occurrence `v` to its value under a
+satisfying assignment. -/
+theorem exists_child_mem_SAT {a : List (Literal ℕ)} {φ : CNF ℕ} (v : ℕ)
     (h : units a ++ φ ∈ SAT) : ∃ b, units (a ++ [(v, b)]) ++ φ ∈ SAT := by
   obtain ⟨σ, hσ⟩ := h
   rw [CNF.eval_append, Bool.and_eq_true, eval_units] at hσ
@@ -166,10 +165,12 @@ private theorem exists_child_mem_SAT {a : List (Literal ℕ)} {φ : CNF ℕ} (v 
   · exact hσ.1 l hl
   · rw [List.mem_singleton.1 hl]
 
-private theorem vars_units (a : List (Literal ℕ)) : (units a).vars = a.map Prod.fst := by
-  induction a with
-  | nil => rfl
-  | cons l a ih => simpa [units, CNF.vars] using ih
+/-- The children of nodes fixing the occurrences `pre` fix `pre` and then `v`. -/
+theorem map_fst_of_mem_expand {v : ℕ} {pre : List ℕ} {nodes : List (List (Literal ℕ))}
+    (hfst : ∀ a ∈ nodes, a.map Prod.fst = pre) {b : List (Literal ℕ)} (hb : b ∈ expand v nodes) :
+    b.map Prod.fst = pre ++ [v] := by
+  simp only [expand, List.mem_flatMap, List.mem_cons, List.not_mem_nil, or_false] at hb
+  obtain ⟨a, ha, rfl | rfl⟩ := hb <;> simp [hfst a ha]
 
 /-- At a leaf, where every variable of `φ` is fixed, the verifier decides satisfiability with the
 values fixed by the leaf as certificate. -/
@@ -200,10 +201,8 @@ theorem verifier_units_append_iff {a : List (Literal ℕ)} {φ : CNF ℕ}
 private theorem map_fst_of_mem_prune_expand {label : List (Literal ℕ) → List Bool} {c v : ℕ}
     {pre : List ℕ} {nodes : List (List (Literal ℕ))} (hfst : ∀ a ∈ nodes, a.map Prod.fst = pre)
     {b : List (Literal ℕ)} (hb : b ∈ prune label c (expand v nodes)) :
-    b.map Prod.fst = pre ++ [v] := by
-  have hb' := (prune_sublist c _).subset hb
-  simp only [expand, List.mem_flatMap, List.mem_cons, List.not_mem_nil, or_false] at hb'
-  obtain ⟨a, ha, rfl | rfl⟩ := hb' <;> simp [hfst a ha]
+    b.map Prod.fst = pre ++ [v] :=
+  map_fst_of_mem_expand hfst ((prune_sublist c _).subset hb)
 
 /-- The invariant of the search after the occurrences `pre`: the nodes fix exactly `pre`, there
 are at most `c + 1` of them, and one of them is satisfiable if `φ` is. -/
@@ -339,7 +338,7 @@ private theorem computableInPolyTime_step {key : CNF ℕ → List Bool}
 
 /-- A node fixing a prefix of the occurrences of `φ` has an encoding of length at most
 `L (4 L + 5)`, where `L` is the length of the encoding of `φ`. -/
-private theorem length_encNode_le {φ : CNF ℕ} {pre : List ℕ} (hpre : pre.IsPrefix φ.vars)
+theorem length_encNode_le {φ : CNF ℕ} {pre : List ℕ} (hpre : pre.IsPrefix φ.vars)
     {a : List (Literal ℕ)} (ha : a.map Prod.fst = pre) :
     (encList (encPair encNat encBool) a).length ≤
       (encCNF φ).length * (4 * (encCNF φ).length + 5) := by
