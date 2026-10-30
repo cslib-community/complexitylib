@@ -2726,6 +2726,7 @@ public import Complexity.Foundations.NumberTheory.PrimeWindow
 public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
 public import Complexity.Foundations.Order.BooleanSubalgebra
 public import Complexity.Foundations.Order.Changes
+public import Complexity.Foundations.Order.FiniteFixedPoint
 public import Complexity.Foundations.Order.UpperLower
 public import Complexity.Foundations.Probability.AtomCutoffs
 public import Complexity.Foundations.Probability.ColumnDetector
@@ -2798,6 +2799,15 @@ public import Complexity.Logics.FirstOrder.Interpretation.Rank
 public import Complexity.Logics.FirstOrder.Interpretation.Tagged
 public import Complexity.Logics.FirstOrder.Interpretation.Tuple
 public import Complexity.Logics.FirstOrder.Interpretation.Unit
+public import Complexity.Logics.FirstOrder.Operator.Basic
+public import Complexity.Logics.FirstOrder.Operator.Definability
+public import Complexity.Logics.FirstOrder.Operator.Definability.Polarity
+public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint
+public import Complexity.Logics.FirstOrder.Operator.LeastFixedPoint.Definability
+public import Complexity.Logics.FirstOrder.Operator.Polarity
+public import Complexity.Logics.FirstOrder.Operator.Relabel
+public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure
+public import Complexity.Logics.FirstOrder.Operator.TransitiveClosure.Definability
 public import Complexity.Logics.FirstOrder.Ordered.Addition
 public import Complexity.Logics.FirstOrder.Ordered.Basic
 public import Complexity.Logics.FirstOrder.Ordered.BitArithmetic
@@ -3029,6 +3039,8 @@ public import Complexity.Probability.StatisticalDistance.UniformMod
 public import Complexity.Probability.Uniform
 public import Complexity.Probability.UniformNat
 public import Complexity.Probability.UniversalHash
+public import Complexity.Tactic.FOOperator
+public import Complexity.Tactic.FOOperator.Init
 public import Complexity.Tactic.FirstOrder
 public import Complexity.Tactic.FirstOrder.Init
 public import Complexity.Tactic.PPT
