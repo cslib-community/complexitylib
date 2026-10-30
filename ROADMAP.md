@@ -442,6 +442,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   kept separate; and develop general open-program composition. Use Cook–Levin and GGM as
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
+- **Native cyclic coefficient kernel** ([#1701](https://github.com/cslib-community/complexitylib/issues/1701)):
+  fixed standard native code computes signed cyclic convolution with explicit fits, frames and
+  quadratic charged cost. This prerequisite does not complete the native Strassen modular
+  counter, deterministic prime selection or the full [#1394] 1.9992 endpoint.
 - **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table,
   collision-tested minimum-search and complete two-prime modulus programs have explicit local
   fit/frame/cost contracts. The complete native distinct-position frontend ([#1482]) starts from
@@ -543,6 +547,23 @@ each statement against the numbered result. Organize modules by subject, not cha
   `34603008*(19m+1)*n²/D^(1/18)` at `D=4^m`, `L=19m`, `D^18≤n`.
   The outer instance loop, aggregate subcubic ET bound, backend/witness reconstruction and
   the full [#1394] ordinary-3SUM 1.9992 endpoint remain open.
+- **Per-record native witness recovery** ([#1639](https://github.com/cslib-community/complexitylib/issues/1639)):
+  actual initialized producer/product calls now feed real answer/query loads and original signed
+  weight verification. The fixed 400-register program returns original-coordinate witnesses and
+  decides zeros in the selected existing chunk/piece. Its actual scan counter satisfies
+  `S≤falsePositiveCount+returnedFlag`, so unsuccessful records have no successful-scan surplus.
+  Root decoding, all control and original-weight scans are charged; positive logarithmic width
+  and polynomial words/support hold at every wider admitted width. The outer instance loop,
+  aggregate subcubic ET analysis and ordinary-3SUM 1.9992 composition remain open under [#1394].
+- **Fixed-prime native catalogue decision** ([#1662](https://github.com/cslib-community/complexitylib/issues/1662)):
+  the native continuation runs real preparation once and the actual product/witness callee
+  over every computed occupied ordinal, stopping on the first original witness. Its initialized
+  same-state prefix/halt verdict is equivalent to original ET, with dirty-workspace reuse and
+  one global `S≤F(p)+returnedFlag` scan budget. All-instance product savings, all native control
+  charges, original-input logarithmic admission and polynomial wider-prefix words/support are
+  derived. Validation, independent review and integration are tracked in #1662. Global
+  parameter/prime selection, unrestricted small geometry, the complete aggregate source exponent
+  and the ordinary-3SUM 1.9992 endpoint remain open under [#1394].
 - **Conditional Convolution-3SUM host** ([#1524]): the charged native host initializes from the
   ordinary input and runs every generated instance, conditional on a concrete solver's execution,
   correctness and frame theorem. This completes the conditional host milestone. Integrating the

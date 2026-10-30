@@ -88,7 +88,7 @@ theorem choose_inWindow {input : List Bool} (Inv : (Fin k → List Bool) → Pro
       ∀ ws out, Inv ws → p.head = wordsCfg input (some .choose) ws out → p.InWindow s := by
     intro n
     induction n using Nat.strong_induction_on with
-    | h n ih =>
+    | ind n ih =>
       intro p hlen ws out hInv hhead
       by_cases hzero : p.length = 0
       · rintro _ ⟨j, rfl⟩ i

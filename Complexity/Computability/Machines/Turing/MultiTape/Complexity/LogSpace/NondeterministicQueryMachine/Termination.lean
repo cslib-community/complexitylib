@@ -75,7 +75,7 @@ theorem choose_haltsFrom {input : List Bool} (Inv : (Fin k → List Bool) → Pr
       ∃ t, HaltsFrom I P F C (wordsCfg input (some .choose) ws out) t := by
     intro n
     induction n using Nat.strong_induction_on with
-    | h n ih =>
+    | ind n ih =>
       intro ws hr hInv out
       have branches : ∀ b, ∃ t, HaltsFrom I P F C
           (wordsCfg input (some (.pass b (P b).q₀)) ws out) t := by
