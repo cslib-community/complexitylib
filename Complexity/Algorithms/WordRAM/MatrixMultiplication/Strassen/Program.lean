@@ -270,7 +270,9 @@ end Reg
     (.seq locateRoot storeFrame))
 
 /-- Fixed finite native code independent of coefficient length, depth and word size. -/
-@[expose] def program : Code .standard 64 :=
-  .seq setup (.loop (.lt Reg.zero Reg.active) step)
+@[expose] def controller : Code .standard 64 := .loop (.lt Reg.zero Reg.active) step
+
+/-- Root initialization followed by the actual explicit-stack traversal. -/
+@[expose] def program : Code .standard 64 := .seq setup controller
 
 end Cslib.Algorithms.WordRAM.Strassen
