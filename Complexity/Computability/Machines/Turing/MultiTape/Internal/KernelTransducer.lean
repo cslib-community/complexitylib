@@ -10,7 +10,6 @@ module
 public import Mathlib.Basic.Finite.Prod
 public import Mathlib.Data.Fintype.Option
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZeroSpace
-import Mathlib.Basic.Finite.Sum
 
 /-! # Finite-state transducers and their machine semantics
 
@@ -68,14 +67,6 @@ public def toTM : MultiTapeTM 0 Symbol (Q × Option Symbol × Bool) :=
       | none =>
         { inputTape := 0, workTapes := Fin.elim0, output := (τ.final q).head?,
           state := some (q, (τ.final q).tail.head?, true) }
-
-/-- A word of length at most two is its head followed by the head of its tail. -/
-lemma toList_head?_append {w : List Symbol} (h : w.length ≤ 2) :
-    w.head?.toList ++ w.tail.head?.toList = w := by
-  match w, h with
-  | [], _ => rfl
-  | [_], _ => rfl
-  | [_, _], _ => rfl
 
 variable {input : List Symbol}
 
@@ -145,7 +136,8 @@ lemma exists_runFrom_halt (q : Q) {i : ℕ} (hi : i ≤ input.length) (o : List 
       true ⟨input.length + 1, by omega⟩ (o ++ (τ.final q).head?.toList)
     refine ⟨1 + u + 1, by omega, ⟨input.length + 1, by omega⟩, ?_⟩
     rw [runFrom_add, runFrom_add, runFrom_one, runFrom_one, step_end, hflush, step_halt]
-    rw [List.drop_length, run_nil, List.append_assoc, toList_head?_append (τ.length_final_le q)]
+    rw [List.drop_length, run_nil, List.append_assoc, ← List.take_one, List.head?_tail,
+      ← List.take_add_one, List.take_of_length_le (τ.length_final_le q)]
   | succ n ih =>
     have hi' : i < input.length := by omega
     obtain ⟨u₁, hu₁, hflush⟩ := τ.exists_runFrom_flush (input := input) (τ.step q input[i]).1
@@ -155,7 +147,8 @@ lemma exists_runFrom_halt (q : Q) {i : ℕ} (hi : i ≤ input.length) (o : List 
       (o ++ (τ.step q input[i]).2) (by omega)
     refine ⟨1 + u₁ + u₂, by omega, pos, ?_⟩
     rw [runFrom_add, runFrom_add, runFrom_one, step_read _ _ hi', hflush,
-      List.append_assoc, toList_head?_append (τ.length_step_le _ _), hrest,
+      List.append_assoc, ← List.take_one, List.head?_tail, ← List.take_add_one,
+      List.take_of_length_le (τ.length_step_le _ _), hrest,
       List.drop_eq_getElem_cons hi', run_cons, List.append_assoc]
 
 /-- `τ.toTM` emits `τ.run τ.q₀ input` on `input`, in `2 * input.length + 3` steps and zero

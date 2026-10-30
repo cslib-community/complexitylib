@@ -144,7 +144,7 @@ theorem shiftReject_apply_some (hv : ∀ z ∈ S, z - v ∈ B) (z : α) :
     · intro y hy
       have hyz : y + v ≠ z := fun h => hy (eq_sub_of_add_eq h)
       split_ifs <;> simp_all [eq_comm]
-  · refine ENNReal.tsum_eq_zero.mpr fun y => ?_
+  · refine tsum_eq_zero_iff.mpr fun y => ?_
     split_ifs with h₁ h₂ <;> simp_all
 
 /-- **Rejection sampling, aborts.** Under the same hypothesis, the sampler aborts with
@@ -156,7 +156,7 @@ theorem shiftReject_apply_none (hv : ∀ z ∈ S, z - v ∈ B) :
     rw [tsum_eq_sum (s := S) fun z hz => by simp [hz], Finset.sum_ite_mem, Finset.inter_self,
       Finset.sum_const, nsmul_eq_mul, div_eq_mul_inv]
   have htotal := (shiftReject B S hB v).tsum_coe
-  rw [ENNReal.tsum_eq_add_tsum_ite none, ← (Option.some_injective α).tsum_eq] at htotal
+  rw [tsum_eq_add_tsum_ite none, ← (Option.some_injective α).tsum_eq] at htotal
   · simp only [reduceCtorEq, ite_false, hsome] at htotal
     exact ENNReal.eq_sub_of_add_eq
       (ENNReal.div_ne_top (ENNReal.natCast_ne_top _) (by simpa using hB.ne_empty)) htotal

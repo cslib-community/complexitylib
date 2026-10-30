@@ -39,14 +39,16 @@ namespace Cslib.Stateful
 
 universe u v w x y
 
-variable {D E : Spec.{u, v, w}} {C τ : Type x} {α β : Type y}
+variable {S : PFunctor.{v, w}} {D E : Spec.{u, v, w}} {C τ : Type x} {α β : Type y}
+
+instance : Coe Spec.{u, v, w} PFunctor.{v, w} := ⟨Spec.signature⟩
 
 /-- A backend chooses its own execution evidence, independently of a resource measure. -/
-abbrev Execution (D : Spec.{u, v, w}) (C Trace : Type x) :=
-  C → (o : D.Op) → D.Result o → C → Trace → Prop
+abbrev Execution (S : PFunctor.{v, w}) (C Trace : Type x) :=
+  C → (o : S.A) → S.B o → C → Trace → Prop
 
 /-- Clients collect native execution evidence in call order; no costs occur in this semantics. -/
-inductive Executes (exec : Execution D C τ) : D.Client α → C → α → C → List τ → Prop
+inductive Executes (exec : Execution S C τ) : S.FreeM α → C → α → C → List τ → Prop
   | pure (a c) : Executes exec (.pure a) c a c []
   | call {o k c a c' trace b c'' traces} :
       exec c o a c' trace → Executes exec (k a) c' b c'' traces →
@@ -97,12 +99,12 @@ end Realization
 
 
 /-- Execution of a sequential composition splits its native trace at the call boundary. -/
-theorem executes_bind_iff (exec : Execution D C τ) (p : D.Client α)
-    (k : α → D.Client β) {c c' : C} {b : β} {ts : List τ} :
+theorem executes_bind_iff (exec : Execution S C τ) (p : S.FreeM α)
+    (k : α → S.FreeM β) {c c' : C} {b : β} {ts : List τ} :
     Executes exec (p.bind k) c b c' ts ↔
       ∃ a mid front back, Executes exec p c a mid front ∧
         Executes exec (k a) mid b c' back ∧ ts = front ++ back := by
-  induction p generalizing c ts with
+  induction p using PFunctor.FreeM.recOn generalizing c ts with
   | pure a =>
     constructor
     · intro h; exact ⟨a, c, [], ts, .pure a c, h, rfl⟩

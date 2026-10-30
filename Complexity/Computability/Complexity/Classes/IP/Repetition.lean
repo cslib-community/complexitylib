@@ -64,7 +64,7 @@ private theorem acceptProb_bind_ite (P : Prover Operation)
     acceptProb (do let ok ← round; if ok then rest else pure false) P =
       ∑' s, P.run round P.init (true, s) * acceptProb rest { P with init := s } := by
   simp only [acceptProb, Prover.run_bind, PMF.map_bind]
-  rw [PMF.bind_apply, ENNReal.tsum_prod', tsum_bool]
+  rw [PMF.bind_apply, tsum_prod', tsum_bool]
   simp only [Bool.false_eq_true, Bool.true_eq_false, ↓reduceIte, Prover.run_pure, PMF.pure_map,
     PMF.pure_apply, mul_zero, tsum_zero, zero_add]
   rfl
@@ -81,7 +81,7 @@ theorem acceptProb_sequentialRepeat_le {round : WordOracleComp Operation Bool} {
     calc ∑' s, P.run round P.init (true, s) *
           acceptProb (sequentialRepeat k round) { P with init := s }
         ≤ ∑' s, P.run round P.init (true, s) * ε ^ k :=
-          ENNReal.tsum_le_tsum fun s => mul_le_mul' le_rfl (ih _)
+          tsum_le_tsum fun s => mul_le_mul' le_rfl (ih _)
       _ = (∑' s, P.run round P.init (true, s)) * ε ^ k := ENNReal.tsum_mul_right
       _ ≤ ε * ε ^ k := by
           gcongr
@@ -103,7 +103,7 @@ theorem le_acceptProb_sequentialRepeat {round : WordOracleComp Operation Bool} {
           gcongr
           exact (h s).trans_eq (acceptProb_eq_tsum round _)
       _ = ∑' s', P.run round s (true, s') * c ^ k := ENNReal.tsum_mul_right.symm
-      _ ≤ _ := ENNReal.tsum_le_tsum fun s' => mul_le_mul' le_rfl (ih s')
+      _ ≤ _ := tsum_le_tsum fun s' => mul_le_mul' le_rfl (ih s')
 
 /-- A constant number of sequential runs of a strict oracle PPT verifier is strict oracle PPT. -/
 theorem isOraclePPTOn_sequentialRepeat [DecidableEq Operation] [Finite Operation]

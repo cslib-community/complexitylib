@@ -21,6 +21,13 @@ Tensor and zig-zag rotations are straight-line programs calling their constituen
 Their certificates charge the complete vertex and edge-label encodings, including copying and
 intermediate pairs. The affine-plane rotation similarly composes multiplication and subtraction.
 
+The structure wrappers `RotationMap.tensor`, `RotationMap.zigzag`, `RotationMap.affinePlane`,
+`RotationMap.contract` and `RotationMap.reindex` are reducible. Thus `fun_prop` sees the distinct
+certified rotation programs beneath their `.rot` projections, including in larger compositions.
+Default `simp` also exposes the corresponding `tensorRot`, `zigzagRot`, `affinePlaneRot`,
+`contractRot` and `reindexRot` forms; the `rot_*` equations remain available for `rw` and
+applicable explicit `simp only` proofs.
+
 These rules certify a rotation call. They do not enumerate a graph or certify an unbounded
 recursive tower. In particular, a certificate for a fixed finite base is not a uniform efficiency
 theorem for a varying field size or tower depth.

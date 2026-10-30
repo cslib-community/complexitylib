@@ -102,4 +102,19 @@ example {V D E : Type} (G : RotationMap V D) (H : RotationMap D E)
       (encPair (encPair (encPair vertex label) (encPair small small)) encBool) := by
   fun_prop
 
+-- Tensor and zig-zag wrappers must lead search to their distinct rotation programs.
+example {V D W E : Type} (G : RotationMap V D) (H : RotationMap W E)
+    (vertex : V ↪ List Bool) (label : D ↪ List Bool)
+    (otherVertex : W ↪ List Bool) (otherLabel : E ↪ List Bool)
+    (hG : ComputableInPolyTime G.rot (encPair vertex label) (encPair vertex label))
+    (hH : ComputableInPolyTime H.rot
+      (encPair otherVertex otherLabel) (encPair otherVertex otherLabel)) :
+    ComputableInPolyTime
+      (fun p : ((V × W) × (D × E)) × Bool => ((G.tensor H).rot p.1, !p.2))
+      (encPair (encPair (encPair vertex otherVertex) (encPair label otherLabel)) encBool)
+      (encPair (encPair (encPair vertex otherVertex) (encPair label otherLabel)) encBool) := by
+  fail_if_success (clear hG; fun_prop)
+  fail_if_success (clear hH; fun_prop)
+  fun_prop
+
 end ComplexityTests.ExplicitExpanders

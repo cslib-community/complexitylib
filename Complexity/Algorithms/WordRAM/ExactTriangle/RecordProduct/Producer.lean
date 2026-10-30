@@ -46,11 +46,6 @@ open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
   (WriteMatrices.entry true (matrixArgs n (D m) g p idx.1.val idx.2.2)
     (fun q => (values (n * n + q) % (p : ℤ)).toNat) (k.val * n + a.val) : ℤ)
 
-/-- Both native writer value functions are raw zero/one words at every index. -/
-theorem entry_le_one (side : Bool) (A : WriteMatrices.Args) (R : ℕ → ℕ) (a : ℕ) :
-    WriteMatrices.entry side A R a ≤ 1 := by
-  cases side <;> dsimp only [WriteMatrices.entry] <;> split_ifs <;> omega
-
 /-- The readback matrices satisfy the raw callee's original-entry hypotheses. -/
 theorem matrices_zero_one (m n g p : ℕ) (values : ℕ → ℤ) (idx : InstanceIndex p) :
     (∀ a k, 0 ≤ leftMatrix m n g p values idx a k ∧
@@ -60,10 +55,10 @@ theorem matrices_zero_one (m n g p : ℕ) (values : ℕ → ℤ) (idx : Instance
   constructor <;> intro a k
   · exact ⟨Int.natCast_nonneg _, by
       dsimp only [leftMatrix]
-      exact_mod_cast entry_le_one false _ _ _⟩
+      exact_mod_cast WriteMatrices.entry_le_one false _ _ _⟩
   · exact ⟨Int.natCast_nonneg _, by
       dsimp only [rightMatrix]
-      exact_mod_cast entry_le_one true _ _ _⟩
+      exact_mod_cast WriteMatrices.entry_le_one true _ _ _⟩
 
 /-- The actual computed ordinal of an existing finite class/chunk/piece. This is a value
 specification for the caller's selection register, not a table supplied to the adapter. -/

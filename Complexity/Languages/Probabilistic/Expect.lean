@@ -70,7 +70,7 @@ theorem expect_zero (m : ProbComp α) : expect m (fun _ => 0) = 0 :=
 
 theorem expect_add (m : ProbComp α) (f g : α → ℝ≥0∞) :
     expect m (fun a => f a + g a) = expect m f + expect m g := by
-  simp only [expect, mul_add, ENNReal.tsum_add]
+  simp only [expect, mul_add, tsum_add]
 
 theorem expect_mul_left (m : ProbComp α) (c : ℝ≥0∞) (f : α → ℝ≥0∞) :
     expect m (fun a => c * f a) = c * expect m f := by
@@ -86,7 +86,7 @@ theorem expect_mul_right (m : ProbComp α) (f : α → ℝ≥0∞) (c : ℝ≥0�
 theorem expect_bind (m : ProbComp α) (k : α → ProbComp β) (f : β → ℝ≥0∞) :
     expect (m >>= k) f = expect m (fun a => expect (k a) f) := by
   simp only [expect, eval_bind, PMF.bind_apply, ← ENNReal.tsum_mul_right]
-  rw [ENNReal.tsum_comm]
+  rw [tsum_comm]
   congr 1
   funext a
   simp only [mul_assoc, ENNReal.tsum_mul_left]
@@ -107,7 +107,7 @@ theorem expect_congr_on_support {m : ProbComp α} {f g : α → ℝ≥0∞}
 
 theorem expect_mono_on_support {m : ProbComp α} {f g : α → ℝ≥0∞}
     (h : ∀ a ∈ m.support, f a ≤ g a) : expect m f ≤ expect m g := by
-  refine ENNReal.tsum_le_tsum fun a => ?_
+  refine tsum_le_tsum fun a => ?_
   by_cases ha : a ∈ m.support
   · exact mul_le_mul_right (h a ha) _
   · have hzero : (eval m) a = 0 := (PMF.apply_eq_zero_iff (eval m) a).mpr (by
@@ -129,7 +129,7 @@ theorem expect_eq_top_of_mem_support {m : ProbComp α} {f : α → ℝ≥0∞} {
   refine top_unique ?_
   calc
     (⊤ : ℝ≥0∞) = (eval m) a * f a := by rw [hf, ENNReal.mul_top hpos]
-    _ ≤ expect m f := ENNReal.le_tsum (f := fun b => (eval m) b * f b) a
+    _ ≤ expect m f := le_tsum (f := fun b => (eval m) b * f b) a
 
 theorem expect_unifFin (n : ℕ) (f : Fin (n + 1) → ℝ≥0∞) :
     expect (unifFin n) f = (∑ k : Fin (n + 1), f k) / (n + 1 : ℝ≥0∞) := by

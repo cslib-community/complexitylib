@@ -213,10 +213,10 @@ theorem exists_mem_support_tsum_mul_le (μ : PMF α) (ν : PMF β) (loss : α �
   calc ∑' a, μ a * ∑' b, ν b * loss a b
       = ∑' b, ν b * ∑' a, μ a * loss a b := by
         simp only [← ENNReal.tsum_mul_left]
-        rw [ENNReal.tsum_comm]
+        rw [tsum_comm]
         exact tsum_congr fun b => tsum_congr fun a => by ring
     _ ≤ ∑' b, ν b * ε := by
-        refine ENNReal.tsum_le_tsum fun b => ?_
+        refine tsum_le_tsum fun b => ?_
         by_cases hb : b ∈ ν.support
         · gcongr
           exact h b hb

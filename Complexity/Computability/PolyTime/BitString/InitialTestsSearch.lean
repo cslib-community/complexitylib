@@ -199,10 +199,6 @@ private theorem polyBounded_unary {α : Type} {ei : α ↪ List Bool} {f : α �
     (hf : ComputableInPolyTime f ei encUnary) : PolyBounded (fun a => (ei a).length) f := by
   simpa only [Function.comp_apply, encUnary_apply, List.length_replicate] using
     hf.polyBounded_length
-private theorem exists_mono_polyBound {α : Type} {size f : α → ℕ} (hf : PolyBounded size f) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧ ∀ a, f a ≤ p (size a) := by
-  obtain ⟨c, d, h⟩ := hf.exists_le; refine ⟨fun n => c * (n + 1) ^ d, by fun_prop, ?_, h⟩
-  exact fun _ _ hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hxy 1) d)
 private theorem equivFin_symm_eq_zero_iff {width : ℕ} (k : Fin (2 ^ width)) :
     (equivFin width).symm k = 0 ↔ k.val = 0 := by
   rw [Equiv.symm_apply_eq, Fin.ext_iff, show (0 : BitString width) = fun _ => false from rfl,
@@ -290,7 +286,7 @@ private theorem HasKPolyCert.indexFold {α β : Type} {encIn : α ↪ List Bool}
     HasKPolyCert (fun a => (IndexFold.run body (count a) (initial a)).2) encIn encB
       (fun a => (count a + 1) * K a) := by
   let len (a : α) : ℕ := (encIn a).length; obtain ⟨cb, pTb, pSb, hpTb, hpSb, hTb, hSb⟩ := hbody
-  obtain ⟨pM, hpM, hmM, hleM⟩ := exists_mono_polyBound ((pOf id hpTb).add (pOf id hpSb))
+  obtain ⟨pM, hpM, hmM, hleM⟩ := exists_mono_poly ((pOf id hpTb).add (pOf id hpSb))
   let cn := NativeCertificate.ofPolyTime hcount; let ci := NativeCertificate.ofPolyTime hinit
   have hcnP := NativeCertificate.ofPolyTime_isPolynomial hcount
   have hciP := NativeCertificate.ofPolyTime_isPolynomial hinit

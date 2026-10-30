@@ -13,6 +13,7 @@ public import Complexity.Logics.Propositional.CNF.UnsatVal
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
+import Complexity.Foundations.Data.List.Filter
 
 /-!
 # MAX-3SAT is NP-hard to approximate
@@ -166,20 +167,6 @@ private theorem card_unsatEdges_toGraph (g : Graph (α → α → Bool)) (σ : �
   ext i
   simp [ConstraintGraph.Satisfies, toGraph]
 
-private theorem countP_le_sum_map {β : Type*} {p : β → Bool} {f : β → ℕ} {l : List β}
-    (h : ∀ x ∈ l, p x = true → 1 ≤ f x) : l.countP p ≤ (l.map f).sum := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.countP_cons, List.map_cons, List.sum_cons]
-    have := ih fun x hx => h x (List.mem_cons_of_mem _ hx)
-    by_cases hp : p a = true
-    · have := h a List.mem_cons_self hp
-      simp only [hp, ite_true]
-      omega
-    · simp only [hp, Bool.false_eq_true, ite_false]
-      omega
-
 /-- **Every violated edge leaves a falsified clause**: an assignment falsifies at least as many
 clauses of the formula as the labelling it writes violates edges, when `pairs` lists all pairs of
 labels. -/
@@ -187,7 +174,7 @@ private theorem card_unsatEdges_le_countUnsat (hpairs : ∀ p, p ∈ pairs) (g :
     (τ : ℕ → Bool) :
     #((g.toGraph id).unsatEdges (readLabel e τ)) ≤ (toCNF e pairs g).countUnsat τ := by
   rw [card_unsatEdges_toGraph, CNF.countUnsat, toCNF, List.countP_flatMap]
-  refine countP_le_sum_map fun d _ hd => List.countP_pos_iff.2
+  refine List.countP_le_sum_map fun d _ hd => List.countP_pos_iff.2
     ⟨excludeClause e d.src d.dst (readLabel e τ d.src, readLabel e τ d.dst),
       List.mem_map.2 ⟨_, List.mem_filter.2 ⟨hpairs _, hd⟩, rfl⟩, ?_⟩
   rw [Bool.not_eq_true', Bool.eq_false_iff, ne_eq, eval_excludeClause_eq_true_iff]

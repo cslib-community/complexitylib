@@ -1118,21 +1118,6 @@ noncomputable def streamBestSlotCertificate :
     (NativeCertificate.ofPolyTime computableInPolyTime_selectSlotStep)
     (NativeCertificate.ofPolyTime computableInPolyTime_extractBestSlotWord)
 
-private theorem exists_mono_poly {α : Type} {size u : α → ℕ} (hu : PolyBounded size u) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧ ∀ a, u a ≤ p (size a) := by
-  obtain ⟨c, d, h⟩ := hu.exists_le
-  exact ⟨fun n => c * (n + 1) ^ d, by fun_prop,
-    fun _ _ hxy => Nat.mul_le_mul_left c (Nat.pow_le_pow_left (Nat.add_le_add_right hxy 1) d), h⟩
-
-private theorem exists_mono_poly_cert {α β : Type} {f : α → β}
-    {ei : α ↪ List Bool} {eo : β ↪ List Bool} (hf : ComputableInPolyTime f ei eo) :
-    ∃ p : ℕ → ℕ, Cslib.PolynomiallyBounded p ∧ Monotone p ∧
-      ∀ a, (NativeCertificate.ofPolyTime hf).time a ≤ p (ei a).length ∧
-        (NativeCertificate.ofPolyTime hf).space a ≤ p (ei a).length := by
-  have hc := NativeCertificate.ofPolyTime_isPolynomial hf
-  obtain ⟨p, hp, hmono, hle⟩ := exists_mono_poly (hc.1.add hc.2)
-  exact ⟨p, hp, hmono, fun a => ⟨by have := hle a; omega, by have := hle a; omega⟩⟩
-
 private theorem streamSlotIn_parts_le (a : StreamSlotIn) :
     a.1.1.1 ≤ (encStreamSlotIn a).length ∧ a.1.1.2 ≤ (encStreamSlotIn a).length ∧
       (encNat a.1.2.1.1).length ≤ (encStreamSlotIn a).length ∧

@@ -129,8 +129,8 @@ theorem bind_apply_le (h : IdenticalUntilBad first second bad) (program : Oracle
         ((interpret first program).run s).toOuterMeasure {x | bad x.2} := by
   classical
   simp only [PMF.bind_apply, PMF.toOuterMeasure_apply]
-  rw [← ENNReal.tsum_add]
-  refine ENNReal.tsum_le_tsum fun x => ?_
+  rw [← tsum_add]
+  refine tsum_le_tsum fun x => ?_
   by_cases hx : bad x.2
   · have hbad : x ∈ {x : α × σ | bad x.2} := hx
     rw [Set.indicator_of_mem hbad]
@@ -153,7 +153,7 @@ private theorem toOuterMeasure_bad_add_good (p : PMF (α × σ)) :
     p.toOuterMeasure {x | bad x.2} + p.toOuterMeasure {x | ¬bad x.2} = 1 := by
   classical
   simp only [PMF.toOuterMeasure_apply]
-  rw [← ENNReal.tsum_add, ← p.tsum_coe]
+  rw [← tsum_add, ← p.tsum_coe]
   refine tsum_congr fun x => ?_
   by_cases hx : bad x.2
   · rw [Set.indicator_of_mem (show x ∈ {x : α × σ | bad x.2} from hx),
@@ -244,9 +244,9 @@ theorem toOuterMeasure_bad_le {handler : (q : ι) → StateT σ PMF (spec q)} {b
     calc ∑' y, (handler q s) y * ((interpret handler (cont y.1)).run y.2).toOuterMeasure
           {x | bad x.2}
         ≤ ∑' y, (handler q s) y * ({x : spec q × σ | bad x.2}.indicator 1 y + K) :=
-          ENNReal.tsum_le_tsum hterm
+          tsum_le_tsum hterm
       _ = (handler q s).toOuterMeasure {x | bad x.2} + K := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
             PMF.toOuterMeasure_apply]
           congr 1
           refine tsum_congr fun y => ?_

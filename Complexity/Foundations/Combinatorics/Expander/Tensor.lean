@@ -69,6 +69,7 @@ def tensorRot (rotate : V × D → V × D) (other : V' × D' → V' × D')
 [Reingold, Vadhan and Wigderson, Section 2.3][ReingoldVadhanWigderson2002]: the multigraph on
 `V × V'` with labels `D × D'` whose edge `(i, i')` at `(v, v')` takes the edge `i` of `G` at `v` and
 the edge `i'` of `H` at `v'` at the same time. -/
+@[reducible]
 def tensor : RotationMap (V × V') (D × D') where
   rot := tensorRot G.rot H.rot
   rot_involutive p := by simp [tensorRot]
