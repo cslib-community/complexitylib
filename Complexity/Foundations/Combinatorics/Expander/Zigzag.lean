@@ -138,6 +138,7 @@ at `v`, grouped into the cloud `{v} × D` of `v`, and its labels are pairs of la
 `(i, j)` at `(v, k)` takes the edge `i` of `H` from `k` to `k'` inside the cloud ("zig"), crosses
 the `k'`-th edge of `G` from `v` to `(w, ℓ')`, where it is the `ℓ'`-th edge at `w`, and takes the
 edge `j` of `H` from `ℓ'` to `ℓ` inside the cloud of `w` ("zag"), ending at `(w, ℓ)`. -/
+@[reducible]
 def zigzag : RotationMap (V × D) (E × E) where
   rot := zigzagRot G.rot H.rot
   rot_involutive p := by simp [zigzagRot]

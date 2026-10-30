@@ -174,7 +174,7 @@ theorem forest_hull_partition {L : ℕ} (hL : 0 < L)
       f^[t] a ∈ forestMarks f H ∨ ∃ b d i, IsForestEdge f H b d ∧
         d ≤ 2 * L ∧ i < d ∧ f^[i] b = f^[t] a := by
     induction t using Nat.strong_induction_on with
-    | h t ih =>
+    | ind t ih =>
       intro a ha ht
       by_cases hz : t = 0
       · subst t

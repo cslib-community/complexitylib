@@ -513,7 +513,7 @@ lemma low_coefficients_force_zero {K : Type*} [Field K] {h : ℕ}
   have hi : ∀ m, ∀ j, (f j).natTrailingDegree = m → m < r → c j = 0 := by
     intro m
     induction m using Nat.strong_induction_on with
-    | h m ih =>
+    | ind m ih =>
       intro j hj hmr
       have hs : (∑ k, c k • f k).coeff m = c j * (f j).coeff m := by
         simp only [finsetSum_coeff, coeff_smul, smul_eq_mul]

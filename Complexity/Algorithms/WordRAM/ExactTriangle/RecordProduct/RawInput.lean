@@ -37,6 +37,21 @@ a total specification; actual producer coordinates are proved in range before us
 theorem decodedQueries_length {n : ℕ} (hn : 0 < n) (mem : ℕ → ℕ) (q Q : ℕ) :
     (decodedQueries hn mem q Q).length = Q := List.length_ofFn
 
+/-- In-range actual query words are exactly the original coordinate values in the decoded
+occurrence. The total specification's modulo does not change valid producer words. -/
+theorem decodedQueries_get_val {n : ℕ} (hn : 0 < n) (mem : ℕ → ℕ) (q Q : ℕ)
+    (i : Fin (decodedQueries hn mem q Q).length)
+    (ha : mem (q + 2 * i.val) < n) (hb : mem (q + 2 * i.val + 1) < n) :
+    ((decodedQueries hn mem q Q).get i).1.val = mem (q + 2 * i.val) ∧
+      ((decodedQueries hn mem q Q).get i).2.val = mem (q + 2 * i.val + 1) := by
+  constructor
+  · rw [List.get_eq_getElem]
+    simp only [decodedQueries, List.getElem_ofFn]
+    exact Nat.mod_eq_of_lt ha
+  · rw [List.get_eq_getElem]
+    simp only [decodedQueries, List.getElem_ofFn]
+    exact Nat.mod_eq_of_lt hb
+
 /-- Every actual in-range coordinate word reappears unchanged in the ordinary callee input. -/
 theorem decodedQueries_words {m n q Q : ℕ} (hn : 0 < n) (mem : ℕ → ℕ)
     (X : Matrix (Fin n) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin n) ℤ)

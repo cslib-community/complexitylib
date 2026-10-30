@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationSpec
+public import Complexity.Algorithms.ExactTriangle.PieceBounds
 
 /-!
 # Adjacency in prepared native ExactTriangle matrices
@@ -33,25 +34,6 @@ public section
 namespace Cslib.Algorithms.WordRAM.ExactTriangle.PreparationSpec
 
 open Cslib.WordRAM Cslib.Algorithms.ExactTriangle Cslib.Matrix
-
-private theorem prepared_middle_fits {D g p n k : ℕ} (hg : 1 ≤ g)
-    (hp : p ∈ Nat.sqrtPrimeWindow D) :
-    min (pieceSize D g) (n - k * pieceSize D g) * p ≤ D := by
-  have hpS : p ≤ sOf D := Nat.le_sqrt'.mpr (Nat.mem_sqrtPrimeWindow_iff_sq.mp hp).2.2.le
-  have hlen : min (pieceSize D g) (n - k * pieceSize D g) ≤ sOf D :=
-    (min_le_left _ _).trans (pieceSize_le_sOf hg)
-  exact (Nat.mul_le_mul hlen hpS).trans (Nat.sqrt_le D)
-
-private theorem piece_coordinate {n D g k : ℕ} (hD : 16 ≤ D) (hg : 1 ≤ g)
-    (c : Fin n) (hc : c ∈ piece n D g k) :
-    k * pieceSize D g + c.val % pieceSize D g = c.val ∧
-      c.val % pieceSize D g < min (pieceSize D g) (n - k * pieceSize D g) := by
-  have hB := pieceSize_pos hD hg
-  have hdiv := (mem_piece c).mp hc
-  have hsplit := Nat.div_add_mod c.val (pieceSize D g)
-  rw [hdiv, Nat.mul_comm] at hsplit
-  have hmod := Nat.mod_lt c.val hB
-  exact ⟨hsplit, lt_min hmod (by have := c.isLt; omega)⟩
 
 /-- The actual prepared matrix cells express the existing finite graph's adjacency, and the
 unused middle positions are zero. The prime-window and piece hypotheses discharge every
@@ -100,7 +82,7 @@ theorem instance_adjacency {n D g p : ℕ} (values : ℕ → ℤ)
     (fun j => WriteMatrices.entry false A (fun q => R (2 * N + q)) j) at hL
   change (Block.mk A'.dst (n * D)).Realizes y.mem
     (fun j => WriteMatrices.entry true A' (fun q => R (N + q)) j) at hR
-  have hpad : A.length * A.p ≤ A.D := prepared_middle_fits hg hp
+  have hpad : A.length * A.p ≤ A.D := pieceLength_mul_le_of_mem_sqrtPrimeWindow hg hp
   change min B (n - idx.2.2 * B) * p ≤ D at hpad
   have hloadL (a c : Fin n) :
       R (2 * N + (a.val * n + c.val)) = (wAC a c).natMod p := by

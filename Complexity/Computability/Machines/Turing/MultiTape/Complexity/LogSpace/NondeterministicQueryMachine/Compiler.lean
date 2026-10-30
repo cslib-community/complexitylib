@@ -153,7 +153,7 @@ theorem choose_output (a : α) (p : R.machine.RunPath (enc a)) (s : σ)
         p.last.output = out ++ [M.accept s'] := by
     intro n
     induction n using Nat.strong_induction_on with
-    | h n ih =>
+    | ind n ih =>
       intro p hn s hs flag out hhead hhalt
       have hpos : 0 < p.length := by
         by_contra hz

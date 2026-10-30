@@ -65,6 +65,12 @@ jobs:
           test: "false"
           lint: "false"
           use-github-cache: "false"
+      # The earlier script tests run before Lean is installed and skip this real build test.
+      # Exercise both compiler setup-input omissions with an isolated, cache-disabled project.
+      - name: Test Lake build handoff reuse
+        env:
+          COMPLEXITYLIB_TEST_LAKE_HANDOFF: "1"
+        run: python3 -B -m unittest discover -s scripts -p 'test_cache_handoff.py'
       # Download the outputs that `main` CI uploaded for the nearest uploaded ancestor of this
       # commit, skipping modules that `.lake` already has (scripts/cache/README.md). The script
       # deepens the depth-1 checkout to 100 generations to find that ancestor. Lake reuses an
