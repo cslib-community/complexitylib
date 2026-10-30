@@ -67,6 +67,8 @@ the copies (factorial truncation, detectors) are not part of this file.
   `E`.
 * `Matrix.correction_mulVec_one_le`: nonnegative corrections do not increase row sums.
 * `Matrix.copySplit_mul_copyWeight`: a copy step intertwines with its projection.
+* `Matrix.copySplit_isStrictUpperTriangular`: a copy step stays strictly upper triangular for the
+  lexicographic order on the copies.
 * `Matrix.mul_copyProjection`, `Matrix.rewardTransport_mulVec`: the reward transport identity.
 * `Matrix.rewardTransport_mulVec_nonneg`, `Matrix.rewardTransport_mulVec_le`: the stage rewards
   lie between `0` and the projected solution.
@@ -259,6 +261,18 @@ theorem copySplit_nonneg [Semiring R] [PartialOrder R] [IsOrderedRing R] {r : ι
     (hs : ∀ x y j, 0 ≤ s x y j) (hD : ∀ x y, 0 ≤ D x y) (a b : V × ι) :
     0 ≤ copySplit r s D a b :=
   mul_nonneg (mul_nonneg (hr _ _) (hD _ _)) (hs _ _ _)
+
+/-- **Copies stay strictly upper triangular** for the lexicographic order on the copies: `(x, i)`
+comes before `(y, j)` when `x < y`, or `x = y` and `i < j`. Indexed by `Lex (V × ι)`, which is
+linearly ordered when `V` and `ι` are, a copy step of a strictly upper triangular matrix can be
+corrected and copied again. Only the order of the parents matters: an entry from `(x, i)` to
+`(y, j)` vanishes unless `x < y`. -/
+theorem copySplit_isStrictUpperTriangular [LT V] [LT ι] [MulZeroClass R] {r : ι → V → R}
+    {s : V → V → ι → R} {D : Matrix V V R} (hD : D.IsStrictUpperTriangular) :
+    ((copySplit r s D).submatrix ofLex ofLex).IsStrictUpperTriangular := by
+  intro a b hab
+  simp only [submatrix_apply, copySplit, of_apply]
+  rw [hD fun h => hab (Prod.Lex.lt_iff.2 (Or.inl h)), mul_zero, zero_mul]
 
 /-- **Copies keep row sums at most one** when the weights lie in `[0, 1]`, `D` is nonnegative
 with row sums at most one, and the proportions of each entry sum to at most one. Together with
