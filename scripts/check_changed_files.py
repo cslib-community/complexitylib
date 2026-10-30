@@ -17,6 +17,8 @@ REF itself.
    `UPSTREAM_SYNTAX`. Backquoted text that is not an identifier, such as notation or a pattern
    like `foo_*`, is not checked. Declarations come from the `.ilean` files of `lake build`
    (and `lake test`); stale outputs are refused unless `--no-build-check` is given.
+   This is a post-build audit; the default freshness probe invokes Lake and may materialize
+   dependencies.
 2. Restatement-only tests. A new file under `ComplexityTests/` fails when it has examples and
    every one of them is `example … := name` (or `:= by exact name`) for a name other than `rfl`,
    `trivial` and the like (`EVALUATION`): such a line only restates a signature, which is not a

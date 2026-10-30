@@ -81,6 +81,7 @@ public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.Deduplicate.Count
 public import Complexity.Algorithms.WordRAM.Deduplicate.Model
 public import Complexity.Algorithms.WordRAM.Deduplicate.Program
+public import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
 public import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing
 public import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.FiveWise
 public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
