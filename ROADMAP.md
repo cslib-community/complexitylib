@@ -552,14 +552,14 @@ each statement against the numbered result. Organize modules by subject, not cha
   and polynomial words/support hold at every wider admitted width. The outer instance loop,
   aggregate subcubic ET analysis and ordinary-3SUM 1.9992 composition remain open under [#1394].
 - **Fixed-prime native catalogue decision** ([#1662](https://github.com/cslib-community/complexitylib/issues/1662)):
-  the source/MCP continuation runs real preparation once and the actual product/witness callee
+  the native continuation runs real preparation once and the actual product/witness callee
   over every computed occupied ordinal, stopping on the first original witness. Its initialized
   same-state prefix/halt verdict is equivalent to original ET, with dirty-workspace reuse and
   one global `S≤F(p)+returnedFlag` scan budget. All-instance product savings, all native control
   charges, original-input logarithmic admission and polynomial wider-prefix words/support are
-  derived. Final validation and independent review remain pending. Global parameter/prime
-  selection, unrestricted small geometry, the complete aggregate source exponent and the
-  ordinary-3SUM 1.9992 endpoint remain open under [#1394].
+  derived. Validation, independent review and integration are tracked in #1662. Global
+  parameter/prime selection, unrestricted small geometry, the complete aggregate source exponent
+  and the ordinary-3SUM 1.9992 endpoint remain open under [#1394].
 - **Conditional Convolution-3SUM host** ([#1524]): the charged native host initializes from the
   ordinary input and runs every generated instance, conditional on a concrete solver's execution,
   correctness and frame theorem. This completes the conditional host milestone. Integrating the

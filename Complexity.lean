@@ -1,6 +1,7 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
 public import Complexity.Algorithms.ExactTriangle.Defs
+public import Complexity.Algorithms.ExactTriangle.FailureAccounting
 public import Complexity.Algorithms.ExactTriangle.Hashing
 public import Complexity.Algorithms.ExactTriangle.Lopsided
 public import Complexity.Algorithms.ExactTriangle.PieceBounds
@@ -94,6 +95,20 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Catalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Classes
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Accounting
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Entry
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Flat
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Indexing
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Loop
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Potential
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Program
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Record
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.SourceBounds
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Step
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.TimeBound
+public import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Width
 public import Complexity.Algorithms.WordRAM.ExactTriangle.InstancePair
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Instances
 public import Complexity.Algorithms.WordRAM.ExactTriangle.MatrixSpec
@@ -101,6 +116,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.Parameters
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationAdjacency
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationBounds
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationInput
+public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationLocality
 public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationSpec
 public import Complexity.Algorithms.WordRAM.ExactTriangle.QueryScan
 public import Complexity.Algorithms.WordRAM.ExactTriangle.QuerySpec
@@ -127,6 +143,7 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Consume
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Entry
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Exec
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.FailureCount
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Failures
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Flat
 public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordWitness.Header

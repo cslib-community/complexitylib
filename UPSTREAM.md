@@ -434,9 +434,9 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `138412032*(19m+1)*n³*g/D^(1/18)` under the unchanged positive thin geometry and prime window;
   one-time `690n²Dg`, explicit query/root/controller work and one global failed-scan term remain
   separate. The actual program has original-input logarithmic admission and polynomial
-  all-prefix words/support independently of every larger physical width. This is a source/MCP
-  checkpoint pending final validation and review, not a parameter/prime-selection host or a
-  completed aggregate source exponent. The source's Light host uses piece-major rounds and
+  all-prefix words/support independently of every larger physical width. Validation and
+  integration are tracked in #1662; this is not a parameter/prime-selection host or a completed
+  aggregate source exponent. The source's Light host uses piece-major rounds and
   per-round matrix construction; the native producer prepares the chunk-major catalogue once
   and later products stop after success. No source-trace equivalence or Light simulation is
   assumed. The full ordinary-3SUM 1.9992 objective remains open under #1394; no abstract changes.
