@@ -12,8 +12,10 @@ import Complexity.Computability.Complexity.Problems.ElementDistinctness
 The finite initial memory stores the input convention of `State.init` and holds only words exactly
 when the input fits. A two-instruction program returning the input length transfers to
 Turing-machine polynomial time through the headline theorem and through an explicit width schedule,
-and a two-branch decider of emptiness transfers to `P`. Element distinctness, decided by the
-linear-time word-RAM table algorithm, is in `P` together with its complement.
+and a two-branch decider of emptiness transfers to `P`. A binary number placed in one word, with
+widths of at least twice its bit length admitted, can be squared without overflow; this is the
+pattern for arithmetic on numeric inputs, and puts evenness in `P`. Element distinctness, decided
+by the linear-time word-RAM table algorithm, is in `P` together with its complement.
 -/
 
 namespace ComplexityTests.WordRAMTuring
@@ -106,6 +108,56 @@ example : {l : List ℕ | l = []} ∈ Cslib.Complexity.P (encList encNat) :=
     (fun _ => Nat.le_add_right 1 _)
     (fun _ => inputFits_of_length_encList_le (Nat.le_add_left _ 1)) (.id' (encIn := _))
     (PolyBounded.const 4)
+
+/-! ## A binary number as one word, with a linear width schedule
+
+A number `n` is given in binary and placed in a single word. Admitting only widths of at least
+`2 · size n + 2` lets the program square it without overflow; the simulating machine computes such
+a width from the length of the binary encoding. -/
+
+/-- Register names for the evenness program. -/
+abbrev one : Fin 4 := 0
+/-- Register names for the evenness program. -/
+abbrev x : Fin 4 := 1
+/-- Register names for the evenness program. -/
+abbrev two : Fin 4 := 2
+/-- Register names for the evenness program. -/
+abbrev ans : Fin 4 := 3
+
+/-- Square the input word, reduce it modulo `2` and answer `1 - (n · n mod 2)`. -/
+def evenSquare : Code .standard 4 :=
+  ram[ one ← #1; x ← *one; x ← x * x; two ← #2; x ← x % two; ans ← one - x ]
+
+theorem evenSquare_decidesInTime :
+    (evenSquare.program ans).DecidesInTime (fun _ n => [n]) {n : ℕ | Even n} (fun _ _ => 7)
+      (fun n w => 2 * Nat.size n + 2 ≤ w) := by
+  refine evenSquare.decidesInTime_program (time := fun _ _ => 6) ans fun n w hw _ => ?_
+  have h1 : Fits w 1 := fits_iff.mpr (Nat.one_lt_two_pow (by omega))
+  have h2 : Fits w 2 := fits_iff.mpr (lt_of_lt_of_le (by norm_num : 2 < 2 ^ 2)
+    (Nat.pow_le_pow_right (by norm_num) (by omega)))
+  have hsq : Fits w (n * n) := by
+    have hn := Nat.lt_size_self n
+    refine fits_iff.mpr (lt_of_lt_of_le (Nat.mul_lt_mul'' hn hn) ?_)
+    rw [← pow_add]
+    exact Nat.pow_le_pow_right (by norm_num) (by omega)
+  have hmod : Fits w (n * n % 2) := h2.of_le (Nat.mod_lt _ (by norm_num)).le
+  have hsub : Fits w (1 - n * n % 2) := h1.of_le (Nat.sub_le _ _)
+  have hpar : n * n % 2 = n % 2 := by
+    rcases Nat.mod_two_eq_zero_or_one n with h | h <;> simp [Nat.mul_mod, h]
+  have hmem : (Data.init [n] : Data 4).mem 1 = n := rfl
+  refine ⟨?y, ⟨6, le_rfl, ?run⟩, ?out⟩
+  case run => ram_eval [evenSquare, hmem, h1, h2, hsq, hmod, hsub]
+  case out =>
+    rcases Nat.mod_two_eq_zero_or_one n with h | h <;> simp [hpar, h, Nat.even_iff]
+
+/-- Evenness of binary naturals is in `P` through the word-RAM decider, at the width
+`2 · |encNat n| + 2`. -/
+example : {n : ℕ | Even n} ∈ Cslib.Complexity.P encNat :=
+  evenSquare_decidesInTime.mem_P_of_width checkedOp_polyTime
+    (width := fun n => 2 * (encNat n).length + 2)
+    (by fun_prop) (fun n => by simp [encNat_apply, Nat.size_eq_bits_len])
+    (fun n => inputFits_of_length_encList_le (by simp)) (by fun_prop)
+    (PolyBounded.const 7)
 
 /-! ## The pilot: element distinctness -/
 
