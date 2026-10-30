@@ -7,9 +7,11 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
+public import Complexity.Algorithms.WordRAM.ExactLog
 public import Complexity.Algorithms.WordRAM.Hashing.Tabulation
 public import Complexity.Foundations.FieldTheory.Finite.Trinomial
 public import Complexity.Probability.KWiseIndependent.Trinomial
+import Complexity.Probability.PMF.Map
 
 /-!
 # Self-contained Word-RAM `k`-wise independent hashing
@@ -19,29 +21,35 @@ This file implements self-contained Word-RAM `k`-wise independent hashing over
 finite field $\mathbb{F}_{2^{2 \cdot 3^t}} = \mathbb{F}_2[X] / (X^{2 \cdot 3^t} + X^{3^t} + 1)$
 (`Cslib.TrinomialField t`, where `t = trinomialStep U M` is chosen at runtime so that
 $q = 2 \cdot 3^t \ge \max(\lceil \log_2 \max(U, 2) \rceil, \max(M, 1))$) and projecting to the low
-`M` bits (`Cslib.Probability.trinomialPolyHash`) [Carter and Wegman][CarterWegman1979];
-[Wegman and Carter][WegmanCarter1981]; [Lidl and Niederreiter][LidlNiederreiter1997].
+`M` bits (`Cslib.Probability.trinomialPolyHash`). The binary-field polynomial construction and
+bit-prefix projection follow [Vadhan, Section 3.5.5, Construction 3.32 / Proposition 3.33 and
+Corollary 3.34][Vadhan2012] and [Wegman and Carter][WegmanCarter1981], building on the universal
+hashing framework of [Carter and Wegman, pp. 144–145][CarterWegman1979] and finite-field arithmetic
+in [Lidl and Niederreiter][LidlNiederreiter1997].
 
-To achieve `O(1)` Word-RAM multiplication in $\mathbb{F}_{2^q}$ without dedicated carryless
-multiplication hardware when $U \le n_{\max}^c$, we precompute the Four-Russians carryless
-multiplication lookup table `clmulTab[0 .. 2 ^ (2 * b) - 1]` for $b$-bit chunks
-(`b = chunkBits n_max = max 1 (⌊log₂ (max n_max 2)⌋ / 3)`, so $2^{2b} \le \max(4, n_{\max}) =
-O(n_{\max}^{2/3}) \le O(n_{\max})$ words), decompose each $q$-bit field element into
-$L = \lceil q / b \rceil$ limbs of $b$ bits, accumulate the $L \times L$ chunk carryless products,
-and fold the resulting $< 2^{2q}$ polynomial mod $X^{2r} + X^r + 1$ in 8 straight-line bit
-operations (`reduceTrinomialCode`).
+Because `Basis.exact` lacks a hardware carryless-multiplication instruction, `initTableCode k`
+precomputes a Four-Russians carryless multiplication table `clmulTab[0 .. 2 ^ (2 * b) - 1]` for
+$b$-bit chunks (`b = chunkBits n_max = max 1 (⌊log₂ (max n_max 2)⌋ / 3)`). This table uses at most
+$\max(4, n_{\max})$ words for all $n_{\max}$ (`two_pow_two_mul_chunkBits_le`) and satisfies the
+sublinear cube bound $(2^{2b})^3 \le n_{\max}^2$, i.e., $2^{2b} \le n_{\max}^{2/3}$, whenever
+$n_{\max} \ge 8$ (`two_pow_two_mul_chunkBits_pow_three_le`). Each $q$-bit field multiplication
+splits its operands into $L = \lceil q / b \rceil$ limbs of $b$ bits, accumulates the $L \times L$
+chunk products from `clmulTab`, and reduces the resulting $< 2^{2q}$ polynomial modulo
+$X^{2r} + X^r + 1$ in 8 bit operations (`reduceTrinomialCode`). Under the closed-form bound
+`evalSteps n_max U M k = ((11 * L + 12) * L + 30) * k + 19`, each field multiplication takes
+$O(L^2)$ instructions, which is $O(1)$ instructions when both $U \le n_{\max}^c$ and
+$M \le c \log_2 n_{\max}$ for a fixed constant $c$.
 
 The initialization is factored into two reusable stages:
 1. **`initTableCode k`**: deterministically computes $r = 3^t$, $q = 2r$, $b$, masks, and populates
-   `clmulTab[0 .. 2 ^ (2 * b) - 1]` in $O(n_{\max})$ deterministic instructions from
-   `(base, n_max, U, M)` alone (zero external primes or lookup hints).
+   `clmulTab[0 .. 2 ^ (2 * b) - 1]` in `initTableSteps n_max U M`
+   ($= O(n_{\max} + \log U + \log M)$) deterministic instructions from `(base, n_max, U, M)` alone.
 2. **`resampleCode k`**: samples the $k$ polynomial coefficients `seed[0 .. k - 1]` uniformly and
-   independently in `Fin (2 ^ q)` using $k$ `Code.rand` calls in $O(k)$ instructions while
-   preserving `clmulTab`, so Cuckoo Hashing can rehash in $O(k) = O(1)$ instructions without
-   rebuilding `clmulTab`.
+   independently in `Fin (2 ^ q)` using $k$ `Code.rand` calls in $5k + 10 = O(k)$ instructions while
+   preserving `clmulTab`, so rehashing takes $O(k)$ instructions without rebuilding `clmulTab`.
 3. **`initCode k := .seq (initTableCode k) (resampleCode k)`**: full one-shot initialization.
-4. **`evalCode k`**: evaluates Horner's rule for `trinomialPolyHash` in $O(k \cdot L^2 + 1)$
-   deterministic instructions, preserving all memory and writing
+4. **`evalCode k`**: evaluates Horner's rule for `trinomialPolyHash` in `evalSteps n_max U M k`
+   ($= O(k \cdot L^2 + 1)$) deterministic instructions, preserving all memory and writing
    `(trinomialPolyHash (trinomialStep U M) k U M c u).val` into `regOut`.
 
 ## Main definitions
@@ -56,25 +64,33 @@ The initialization is factored into two reusable stages:
 * `Cslib.Algorithms.WordRAM.Hashing.KWise.initTableCode`,
   `Cslib.Algorithms.WordRAM.Hashing.KWise.resampleCode`,
   `Cslib.Algorithms.WordRAM.Hashing.KWise.initCode`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.evalCode`: structured Word-RAM programs over
-  `Basis.exact`.
+  `Cslib.Algorithms.WordRAM.Hashing.KWise.evalCode`,
+  `Cslib.Algorithms.WordRAM.Hashing.KWise.evalHashOut`: structured Word-RAM programs over
+  `Basis.exact` and the induced deterministic hash output map.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.initTableCode_execWithin`: deterministic $O(n_{\max})$
-  table construction establishing `TableRep`.
+* `Cslib.Algorithms.WordRAM.Hashing.KWise.two_pow_two_mul_chunkBits_le`,
+  `Cslib.Algorithms.WordRAM.Hashing.KWise.two_pow_two_mul_chunkBits_pow_three_le`: coarse
+  $\max(4, n_{\max})$ and sublinear $n_{\max}^{2/3}$ bounds on the Four-Russians table size.
+* `Cslib.Algorithms.WordRAM.Hashing.KWise.initTableCode_execWithin`: deterministic
+  `initTableSteps n_max U M` ($= O(n_{\max} + \log U + \log M)$) table construction establishing
+  `TableRep`.
 * `Cslib.Algorithms.WordRAM.Hashing.KWise.resampleCode_execRand`,
   `Cslib.Algorithms.WordRAM.Hashing.KWise.map_extractSeeds_eval_resampleComp`,
-  `Cslib.Algorithms.WordRAM.Hashing.KWise.resampleCode_execRandWithin`: $O(k)$-step, $k$-query seed
-  resampling preserving `TableRep` and inducing `PMF.uniformOfFintype (Fin k → Fin (2 ^ q))`.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.evalCode_execWithin`: deterministic $O(k \cdot L^2 + 1)$
-  Horner evaluation matching `trinomialPolyHash`.
-* `Cslib.Algorithms.WordRAM.Hashing.KWise.isKWiseIndependentHash_eval`: end-to-end Word-RAM
-  $k$-wise independence theorem combining `resampleComp`, `evalCode_execWithin`, and
-  `isKWiseIndependentHash_trinomialPolyHash`.
+  `Cslib.Algorithms.WordRAM.Hashing.KWise.resampleCode_execRandWithin`: $(5k + 10)$-step, $k$-query
+  seed resampling preserving `TableRep` and inducing `PMF.uniformOfFintype (Fin k → Fin (2 ^ q))`.
+* `Cslib.Algorithms.WordRAM.Hashing.KWise.evalCode_execWithin`,
+  `Cslib.Algorithms.WordRAM.Hashing.KWise.evalHashOut_eq_trinomialPolyHash`: deterministic
+  `evalSteps n_max U M k` ($= O(k \cdot L^2 + 1)$) Horner evaluation matching `trinomialPolyHash`.
+* `Cslib.Algorithms.WordRAM.Hashing.KWise.map_evalHashOut_eval_resampleComp`,
+  `Cslib.Algorithms.WordRAM.Hashing.KWise.isKWiseIndependentHash_eval`: composed Word-RAM $k$-wise
+  independence theorem proving that for every set $T$ of at most $k$ keys, the restricted tuple of
+  `evalCode k` outputs after `resampleCode k` is uniformly distributed on $T \to \text{Fin}(2^M)$.
 
 ## References
 
+* [S. P. Vadhan, *Pseudorandomness*, Section 3.5.5][Vadhan2012]
 * [J. L. Carter and M. N. Wegman, *Universal Classes of Hash Functions*][CarterWegman1979]
 * [M. N. Wegman and J. L. Carter, *New Hash Functions and Their Use in Authentication and Set
   Equality*][WegmanCarter1981]
@@ -87,6 +103,7 @@ public section
 namespace Cslib.Algorithms.WordRAM.Hashing.KWise
 
 open Cslib.WordRAM Cslib.Probability
+open Cslib.Algorithms.WordRAM.ExactLog
 open Cslib.Algorithms.WordRAM.Hashing.Tabulation
 open scoped ENNReal
 
@@ -106,7 +123,7 @@ theorem chunkBits_pos (n_max : ℕ) : 0 < chunkBits n_max :=
   one_le_chunkBits n_max
 
 /-- The Four-Russians carryless multiplication table size `2 ^ (2 * chunkBits n_max)` is at most
-`max 4 n_max` (`= O(n_max^(2/3)) ≤ O(n_max)` words). -/
+`max 4 n_max` for all `n_max`. -/
 theorem two_pow_two_mul_chunkBits_le (n_max : ℕ) :
     2 ^ (2 * chunkBits n_max) ≤ max 4 n_max := by
   by_cases hdiv : Nat.log 2 (max n_max 2) / 3 ≤ 1
@@ -120,6 +137,24 @@ theorem two_pow_two_mul_chunkBits_le (n_max : ℕ) :
         Nat.pow_le_pow_right (by decide) h2cb
       _ ≤ max n_max 2 := Nat.pow_log_le_self 2 (by omega)
       _ ≤ max 4 n_max := by omega
+
+/-- For `8 ≤ n_max`, the Four-Russians table size `2 ^ (2 * chunkBits n_max)` satisfies the
+sublinear cube bound `(2 ^ (2 * chunkBits n_max)) ^ 3 ≤ n_max ^ 2` (i.e.,
+`2 ^ (2 * chunkBits n_max) ≤ n_max ^ (2 / 3)`). -/
+theorem two_pow_two_mul_chunkBits_pow_three_le {n_max : ℕ} (hn : 8 ≤ n_max) :
+    (2 ^ (2 * chunkBits n_max)) ^ 3 ≤ n_max ^ 2 := by
+  have hmax : max n_max 2 = n_max := Nat.max_eq_left (by omega)
+  have hlog3 : 3 ≤ Nat.log 2 n_max :=
+    Nat.le_log_of_pow_le (by decide) (by omega)
+  have hcb : chunkBits n_max = Nat.log 2 n_max / 3 := by
+    simp only [chunkBits, hmax]
+    omega
+  have hexp : 2 * chunkBits n_max * 3 ≤ Nat.log 2 n_max * 2 := by omega
+  calc
+    (2 ^ (2 * chunkBits n_max)) ^ 3 = 2 ^ (2 * chunkBits n_max * 3) := (pow_mul 2 _ 3).symm
+    _ ≤ 2 ^ (Nat.log 2 n_max * 2) := Nat.pow_le_pow_right (by decide) hexp
+    _ = (2 ^ Nat.log 2 n_max) ^ 2 := pow_mul 2 _ 2
+    _ ≤ n_max ^ 2 := Nat.pow_le_pow_left (Nat.pow_log_le_self 2 (by omega)) 2
 
 /-- Number of `b`-bit limbs `L = ⌈q / b⌉ = (q + b - 1) / b` needed to cover a `q`-bit field
 element. -/
@@ -195,84 +230,6 @@ coefficients `(c j).val < 2 ^ (trinomialDeg U M)` at `base + 8 + j.val`. -/
   extractSlice (base + 8) (trinomialDeg U M) k mem
 
 /-! ## Section 2: Helper loops for `initTableCode` -/
-
-/-- Body of `clog2Loop` on `Data 3` (`reg 0 = rem`, `reg 1 = acc`, `reg 2 = 1`): updates
-`rem ← (rem + 1) >>> 1` (`= (rem + 1) / 2`) and `acc ← acc + 1`. -/
-@[expose] def clog2Body : Code .exact 3 :=
-  .seq (.op (.exactBin .add 0 0 2))
-  (.seq (.op (.exactBin .shiftRight 0 0 2))
-        (.op (.exactBin .add 1 1 2)))
-
-/-- Ceiling-`log₂` loop `while 1 < rem do [ rem ← (rem + 1) >>> 1; acc ← acc + 1 ]`. -/
-@[expose] def clog2Loop : Code .exact 3 :=
-  .loop (.lt 2 0) clog2Body
-
-/-- Closed-form final state of `clog2Loop`. -/
-@[expose] def clog2LoopData (rem acc : ℕ) (x : Data 3) : Data 3 :=
-  (x.set 0 (if rem = 0 then 0 else 1)).set 1 (acc + Nat.clog 2 rem)
-
-/-- `clog2Loop` executes deterministically in `5 * Nat.clog 2 rem + 2` instructions, accumulating
-`acc + Nat.clog 2 rem` into register `1` and preserving all memory. -/
-theorem clog2Loop_exec {w : ℕ} (rem : ℕ) {acc : ℕ} {x : Data 3}
-    (hrem : x.regs 0 = rem) (hacc : x.regs 1 = acc) (hone : x.regs 2 = 1)
-    (hfit_rem1 : Fits w (rem + 1)) (hfit_acc : Fits w (acc + Nat.clog 2 rem)) :
-    Exec w clog2Loop x (clog2LoopData rem acc x) (5 * Nat.clog 2 rem + 2) := by
-  induction rem using Nat.strong_induction_on generalizing acc x with
-  | h rem ih =>
-    by_cases hlt : 1 < rem
-    · have hc : (Cond.lt (2 : Fin 3) 0).Holds x := by
-        simp [Cond.Holds, hrem, hone, hlt]
-      have hshr : (rem + 1) >>> 1 = (rem + 1) / 2 := by
-        rw [Nat.shiftRight_eq_div_pow]
-      have hclog : Nat.clog 2 rem = Nat.clog 2 ((rem + 1) / 2) + 1 :=
-        Nat.clog_of_one_lt (by decide) hlt
-      have hdiv_lt : (rem + 1) / 2 < rem := by omega
-      have hfit_div1 : Fits w ((rem + 1) / 2 + 1) := hfit_rem1.of_le (by omega)
-      have hfit_div : Fits w ((rem + 1) / 2) := hfit_div1.of_le (by omega)
-      have hfit_acc1 : Fits w (acc + 1) := hfit_acc.of_le (by omega)
-      set d1 := x.set 0 (rem + 1)
-      have s1 : Exec w (.op (.exactBin .add 0 0 2) : Code .exact 3) x d1 1 :=
-        exec_exactBin (by simp [hrem, hone]) hfit_rem1
-      set d2 := d1.set 0 ((rem + 1) / 2)
-      have s2 : Exec w (.op (.exactBin .shiftRight 0 0 2) : Code .exact 3) d1 d2 1 :=
-        exec_exactBin (by simp +decide [d1, hone, hshr]) hfit_div
-      set d3 := d2.set 1 (acc + 1)
-      have s3 : Exec w (.op (.exactBin .add 1 1 2) : Code .exact 3) d2 d3 1 :=
-        exec_exactBin (by simp +decide [d2, d1, hacc, hone]) hfit_acc1
-      have hrec := ih ((rem + 1) / 2) hdiv_lt (acc := acc + 1) (x := d3)
-        (by simp +decide [d3, d2])
-        (by simp +decide [d3])
-        (by simp +decide [d3, d2, d1, hone])
-        hfit_div1
-        (by rwa [show acc + 1 + Nat.clog 2 ((rem + 1) / 2) = acc + Nat.clog 2 rem by omega])
-      have hd : clog2LoopData ((rem + 1) / 2) (acc + 1) d3 = clog2LoopData rem acc x := by
-        have hdiv_ne : (rem + 1) / 2 ≠ 0 := by omega
-        have hrem_ne : rem ≠ 0 := by omega
-        ext i : 2
-        · fin_cases i
-          · simp +decide [clog2LoopData, d3, d2, d1, hdiv_ne, hrem_ne]
-          · change acc + 1 + Nat.clog 2 ((rem + 1) / 2) = acc + Nat.clog 2 rem
-            omega
-          · simp +decide [clog2LoopData, d3, d2, d1]
-        · rfl
-      rw [hd] at hrec
-      have hiter := Exec.loop_iter hc (s1.seq (s2.seq s3)) hrec
-      simpa only [clog2Loop, clog2Body, hclog,
-        show 1 + (1 + 1) + (5 * Nat.clog 2 ((rem + 1) / 2) + 2) + 2 =
-          5 * (Nat.clog 2 ((rem + 1) / 2) + 1) + 2 by omega] using hiter
-    · have hc : ¬(Cond.lt (2 : Fin 3) 0).Holds x := by
-        simp [Cond.Holds, hrem, hone, hlt]
-      have hclog0 : Nat.clog 2 rem = 0 := Nat.clog_of_right_le_one (by omega) 2
-      have hd : clog2LoopData rem acc x = x := by
-        have hrem_eq : (if rem = 0 then 0 else 1) = rem := by split_ifs <;> omega
-        ext i : 2
-        · fin_cases i
-          · simp +decide [clog2LoopData, hrem_eq, hrem]
-          · simp +decide [clog2LoopData, hclog0, hacc]
-          · simp +decide [clog2LoopData]
-        · rfl
-      rw [hd, hclog0]
-      exact Exec.loop_exit hc
 
 /-- Final remainder reached by `trinomialStepAux` when repeatedly mapping `B ↦ (B + 2) / 3` until
 `≤ 2`. -/
@@ -1428,6 +1385,42 @@ theorem map_extractSeeds_eval_resampleComp (base U M k : ℕ) (x : Data 18) :
   rw [ProbComp.eval_map, PMF.map_comp]
   exact map_extractSlice_eval_randFillComp (trinomialDeg U M) (base + 8) k _
 
+/-- Every outcome `z ∈ (resampleComp base U M k x).support` preserves `TableRep base b U M k`,
+establishes `Rep base b U M k (extractSeeds base U M k z.1.mem) z.1.mem`, sets `z.1.regs 0 = base`,
+modifies memory only within `[base + 8, base + 8 + k)`, and takes at most `5 * k + 10` steps. -/
+theorem mem_support_resampleComp {base b U M k : ℕ} {x : Data 18}
+    (htab : TableRep base b U M k x.mem) (h0 : x.regs 0 = base)
+    {z : Data 18 × ℕ} (hz : z ∈ (resampleComp base U M k x).support) :
+    (Rep base b U M k (extractSeeds base U M k z.1.mem) z.1.mem ∧
+      z.1.regs 0 = base ∧
+      (∀ a, (a < base + 8 ∨ base + 8 + k ≤ a) → z.1.mem a = x.mem a)) ∧
+    z.2 ≤ 5 * k + 10 := by
+  dsimp only [resampleComp] at hz
+  obtain ⟨z0, hz0, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+  obtain ⟨hsteps, -, -, -, -, hextra, hlt, hout⟩ := mem_support_randFillComp hz0
+  have htab' : TableRep base b U M k z0.1.mem := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [hout base (Or.inl (by omega))]; exact htab.1
+    · rw [hout (base + 1) (Or.inl (by omega))]; exact htab.2.1
+    · rw [hout (base + 2) (Or.inl (by omega))]; exact htab.2.2.1
+    · rw [hout (base + 3) (Or.inl (by omega))]; exact htab.2.2.2.1
+    · rw [hout (base + 4) (Or.inl (by omega))]; exact htab.2.2.2.2.1
+    · rw [hout (base + 5) (Or.inl (by omega))]; exact htab.2.2.2.2.2.1
+    · rw [hout (base + 6) (Or.inl (by omega))]; exact htab.2.2.2.2.2.2.1
+    · rw [hout (base + 7) (Or.inl (by omega))]; exact htab.2.2.2.2.2.2.2.1
+    · intro idx hidx
+      rw [hout (base + 8 + k + idx) (Or.inr (by omega))]
+      exact htab.2.2.2.2.2.2.2.2 idx hidx
+  have hseed : SeedRep base U M k (extractSeeds base U M k z0.1.mem) z0.1.mem := by
+    intro j
+    simp [extractSeeds, extractSlice, hlt j.val j.isLt]
+  have hbase' : (z0.1.extend resampleMap (resampleSetupData base U M k x)).regs 0 = base := by
+    change ((z0.1.extend resampleMap (resampleSetupData base U M k x)).comap
+      resampleMap).regs regExtra = base
+    rw [Data.comap_extend injective_resampleMap, hextra]
+    simpa +decide [resampleSetupData, resampleMap, Data.comap, regExtra] using h0
+  exact ⟨⟨⟨htab', hseed⟩, hbase', hout⟩, by omega⟩
+
 /-- **`KWise.resampleCode k` Hoare-style specification**: halts in `5 * k + 10 = O(k)` steps and `k`
 `rand` queries, preserving `TableRep base b U M k`, establishing
 `Rep base b U M k (extractSeeds base U M k z.1.mem) z.1.mem`, preserving `reg 0 = base`, and
@@ -1446,31 +1439,7 @@ theorem resampleCode_execRandWithin {w base b U M k : ℕ} {x : Data 18}
     exact (OracleComp.isCostBounded_map_iff _ _ _).mpr
       (isQueryBounded_randFillComp (trinomialDeg U M) (base + 8) k _)
   · intro z hz
-    dsimp only [resampleComp] at hz
-    obtain ⟨z0, hz0, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    obtain ⟨hsteps, -, -, -, -, hextra, hlt, hout⟩ := mem_support_randFillComp hz0
-    have htab' : TableRep base b U M k z0.1.mem := by
-      refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-      · rw [hout base (Or.inl (by omega))]; exact htab.1
-      · rw [hout (base + 1) (Or.inl (by omega))]; exact htab.2.1
-      · rw [hout (base + 2) (Or.inl (by omega))]; exact htab.2.2.1
-      · rw [hout (base + 3) (Or.inl (by omega))]; exact htab.2.2.2.1
-      · rw [hout (base + 4) (Or.inl (by omega))]; exact htab.2.2.2.2.1
-      · rw [hout (base + 5) (Or.inl (by omega))]; exact htab.2.2.2.2.2.1
-      · rw [hout (base + 6) (Or.inl (by omega))]; exact htab.2.2.2.2.2.2.1
-      · rw [hout (base + 7) (Or.inl (by omega))]; exact htab.2.2.2.2.2.2.2.1
-      · intro idx hidx
-        rw [hout (base + 8 + k + idx) (Or.inr (by omega))]
-        exact htab.2.2.2.2.2.2.2.2 idx hidx
-    have hseed : SeedRep base U M k (extractSeeds base U M k z0.1.mem) z0.1.mem := by
-      intro j
-      simp [extractSeeds, extractSlice, hlt j.val j.isLt]
-    have hbase' : (z0.1.extend resampleMap (resampleSetupData base U M k x)).regs 0 = base := by
-      change ((z0.1.extend resampleMap (resampleSetupData base U M k x)).comap
-        resampleMap).regs regExtra = base
-      rw [Data.comap_extend injective_resampleMap, hextra]
-      simpa +decide [resampleSetupData, resampleMap, Data.comap, regExtra] using h0
-    exact ⟨⟨⟨htab', hseed⟩, hbase', hout⟩, by omega⟩
+    exact mem_support_resampleComp htab h0 hz
 
 /-- Full one-shot initialization program `initCode k := .seq (initTableCode k) (resampleCode k)`. -/
 @[expose] def initCode (k : ℕ) : Code .exact 18 :=
@@ -2461,7 +2430,7 @@ and sets `reg 7 = base + 8 + k`. -/
 
 /-- Deterministic evaluation program `evalCode k`: given `reg 0 = base` and `reg 1 = u.val`,
 evaluates `trinomialPolyHash (trinomialStep U M) k U M c u` into `reg 2` (`regOut`) in
-`evalSteps b U M k` instructions while preserving `reg 0 = base`, `reg 1 = u.val`, and
+`evalStepsFromB b U M k` instructions while preserving `reg 0 = base`, `reg 1 = u.val`, and
 all memory. -/
 @[expose] def evalCode (k : ℕ) : Code .exact 18 :=
   .seq (evalSetupCode k) (.seq hornerLoop evalMaskCode)
@@ -2661,70 +2630,95 @@ theorem evalCode_execWithin {w base n_max U M k : ℕ}
       y.mem = x.mem :=
   evalCode_execWithin_fromB u (chunkBits_pos n_max) hrep h0 h1 hw hfit_space
 
-/-- **End-to-end Word-RAM `k`-wise independent hash theorem (`isKWiseIndependentHash_eval`)**:
-1. The hash family `trinomialPolyHash (trinomialStep U M) k U M` evaluated by `evalCode k` is
-   `k`-wise independent onto `Fin (2 ^ M)` (`IsKWiseIndependentHash k`).
-2. From any machine state `x` satisfying `TableRep base (chunkBits n_max) U M k x.mem` and
-   `x.regs 0 = base`, `resampleCode k` runs in `5 * k + 10` instructions and `k` `Code.rand`
-   queries with distribution `resampleComp base U M k x`, whose extracted seed
-   `extractSeeds base U M k z.1.mem` is uniformly distributed over
-   `Fin k → Fin (2 ^ trinomialDeg U M)` (`PMF.uniformOfFintype`).
-3. Every resampled state `y` produced by `resampleCode k` satisfies `Rep`, so for every key
-   `u : Fin U`, running `evalCode k` from any state `x_eval` with `x_eval.mem = y.mem`,
-   `x_eval.regs 0 = base`, and `x_eval.regs 1 = u.val` halts deterministically in
-   `evalSteps n_max U M k` instructions, preserving all memory and writing
-   `(trinomialPolyHash (trinomialStep U M) k U M (extractSeeds base U M k y.mem) u).val` to
-   `reg 2`. -/
-theorem isKWiseIndependentHash_eval {w base n_max U M k : ℕ} {x : Data 18}
+/-- Output of deterministic `evalCode k` execution at word size `w` from state `y` with
+`reg 0 ← base` and `reg 1 ← u.val`, reduced modulo `2 ^ M` into `Fin (2 ^ M)`. -/
+noncomputable def evalHashOut (w base k U M : ℕ) (y : Data 18) (u : Fin U) : Fin (2 ^ M) :=
+  open Classical in
+  let x_u := (y.set 0 base).set 1 u.val
+  if h : ∃ z n, Exec w (evalCode k) x_u z n then
+    ⟨(Classical.choose h).regs 2 % 2 ^ M, Nat.mod_lt _ (Nat.two_pow_pos M)⟩
+  else
+    ⟨0, Nat.two_pow_pos M⟩
+
+/-- On any machine state `y` satisfying `Rep base (chunkBits n_max) U M k c y.mem`, the
+deterministic `evalCode k` output `evalHashOut w base k U M y u` equals
+`trinomialPolyHash (trinomialStep U M) k U M c u`. -/
+theorem evalHashOut_eq_trinomialPolyHash {w base n_max U M k : ℕ}
+    {c : Fin k → Fin (2 ^ trinomialDeg U M)} {y : Data 18}
+    (hrep : Rep base (chunkBits n_max) U M k c y.mem)
+    (hw : 2 * trinomialDeg U M ≤ w)
+    (hfit_space : Fits w (base + space n_max k))
+    (u : Fin U) :
+    evalHashOut w base k U M y u = trinomialPolyHash (trinomialStep U M) k U M c u := by
+  let x_u := (y.set 0 base).set 1 u.val
+  have hrep_u : Rep base (chunkBits n_max) U M k c x_u.mem := hrep
+  have h0_u : x_u.regs 0 = base := by simp +decide [x_u]
+  have h1_u : x_u.regs 1 = u.val := by simp +decide [x_u]
+  obtain ⟨z, ⟨n, _, hexec⟩, -, -, hz2, -⟩ :=
+    evalCode_execWithin u hrep_u h0_u h1_u hw hfit_space
+  have hex : ∃ z n, Exec w (evalCode k) x_u z n := ⟨z, n, hexec⟩
+  obtain ⟨n', hexec'⟩ := Classical.choose_spec hex
+  have huniq : Classical.choose hex = z := (hexec'.unique hexec).1
+  ext
+  simp only [evalHashOut, x_u, hex, ↓reduceDIte, huniq, hz2,
+    Nat.mod_eq_of_lt (trinomialPolyHash _ k U M c u).isLt]
+
+/-- Under `resampleComp base U M k x`, the Word-RAM hash function `evalHashOut w base k U M z.1`
+has the exact distribution of `trinomialPolyHash (trinomialStep U M) k U M c` for a uniform seed
+`c : Fin k → Fin (2 ^ trinomialDeg U M)`. -/
+theorem map_evalHashOut_eval_resampleComp {w base n_max U M k : ℕ} {x : Data 18}
     (htab : TableRep base (chunkBits n_max) U M k x.mem)
     (h0 : x.regs 0 = base)
     (hw : 2 * trinomialDeg U M ≤ w)
     (hfit_space : Fits w (base + space n_max k)) :
-    IsKWiseIndependentHash k (trinomialPolyHash (trinomialStep U M) k U M) ∧
-    ExecRand w (resampleCode k) x (resampleComp base U M k x) ∧
-    ((resampleComp base U M k x).eval).map (fun z => extractSeeds base U M k z.1.mem) =
-      PMF.uniformOfFintype (Fin k → Fin (2 ^ trinomialDeg U M)) ∧
-    ExecRandWithin w (resampleCode k) x
-      (fun y =>
-        Rep base (chunkBits n_max) U M k (extractSeeds base U M k y.mem) y.mem ∧
-        y.regs 0 = base ∧
-        (∀ a, (a < base + 8 ∨ base + 8 + k ≤ a) → y.mem a = x.mem a) ∧
-        (∀ u : Fin U, ∀ x_eval : Data 18,
-          x_eval.mem = y.mem →
-          x_eval.regs 0 = base →
-          x_eval.regs 1 = u.val →
-          ∃ y_eval : Data 18,
-            ExecWithin w (evalCode k) x_eval y_eval (evalSteps n_max U M k) ∧
-            y_eval.regs 0 = base ∧
-            y_eval.regs 1 = u.val ∧
-            y_eval.regs 2 =
-              (trinomialPolyHash (trinomialStep U M) k U M (extractSeeds base U M k y.mem) u).val ∧
-            y_eval.mem = y.mem))
-      (5 * k + 10) k := by
-  have hpow_pos : 0 < 2 ^ (2 * chunkBits n_max) := by positivity
-  have hsp : space n_max k = 8 + k + 2 ^ (2 * chunkBits n_max) := rfl
-  have hfit_end : Fits w (base + 8 + k) := hfit_space.of_le (by omega)
-  have hfit_q : Fits w (2 ^ trinomialDeg U M) := by
-    have hlt : 2 ^ trinomialDeg U M < 2 ^ (2 * trinomialDeg U M) := by
-      apply (Nat.pow_lt_pow_iff_right one_lt_two).mpr
-      have : 1 ≤ 3 ^ trinomialStep U M := Nat.one_le_pow _ 3 (by decide)
-      dsimp only [trinomialDeg]
-      omega
-    exact fits_of_lt_two_pow_two_mul hw hlt
-  obtain ⟨m, he_rand, hqb, hsupp⟩ := resampleCode_execRandWithin htab h0 hfit_end hfit_q
-  refine ⟨isKWiseIndependentHash_trinomialPolyHash
-      (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M),
-    resampleCode_execRand htab h0 hfit_end hfit_q,
-    map_extractSeeds_eval_resampleComp base U M k x,
-    ⟨m, he_rand, hqb, ?_⟩⟩
-  intro z hz
-  obtain ⟨⟨hrep, hz0, hzout⟩, hsteps⟩ := hsupp z hz
-  refine ⟨⟨hrep, hz0, hzout, ?_⟩, hsteps⟩
-  intro u x_eval hmem he0 he1
-  have hrep_eval : Rep base (chunkBits n_max) U M k (extractSeeds base U M k z.1.mem) x_eval.mem :=
-    hmem ▸ hrep
-  obtain ⟨y_eval, heval, hy0, hy1, hy2, hymem⟩ :=
-    evalCode_execWithin u hrep_eval he0 he1 hw hfit_space
-  exact ⟨y_eval, heval, hy0, hy1, hy2, hymem.trans hmem⟩
+    ((resampleComp base U M k x).eval).map (fun z => evalHashOut w base k U M z.1) =
+      (PMF.uniformOfFintype (Fin k → Fin (2 ^ trinomialDeg U M))).map
+        (trinomialPolyHash (trinomialStep U M) k U M) := by
+  rw [← map_extractSeeds_eval_resampleComp base U M k x]
+  dsimp only [trinomialDeg, extractSeeds, extractSlice]
+  rw [PMF.map_comp]
+  refine Cslib.Probability.PMF.map_congr_on_support _ _ _ fun z hz => ?_
+  rw [ProbComp.support_eval] at hz
+  have hrep := (mem_support_resampleComp htab h0 hz).1.1
+  funext u
+  exact evalHashOut_eq_trinomialPolyHash hrep hw hfit_space u
+
+/-- For any `k`-wise independent hash family `h : ι → X → Y` and any set `T : Finset X` of at most
+`k` points, restricting `h i` to `T` under a uniform seed `i ← PMF.uniformOfFintype ι` yields the
+uniform distribution `PMF.uniformOfFintype (T → Y)`. -/
+theorem uniformOfFintype_map_restrict_of_isKWiseIndependentHash
+    {ι X Y : Type*} [Fintype ι] [Nonempty ι] [DecidableEq X]
+    [Fintype Y] [DecidableEq Y] [Nonempty Y]
+    {k : ℕ} {h : ι → X → Y} (hh : IsKWiseIndependentHash k h)
+    {T : Finset X} (hT : Finset.card T ≤ k) :
+    (PMF.uniformOfFintype ι).map (fun i => T.restrict (h i)) =
+      PMF.uniformOfFintype (T → Y) := by
+  ext y
+  apply (ENNReal.toReal_eq_toReal_iff' (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)).mp
+  rw [Cslib.Probability.PMF.toReal_uniformOfFintype_map_apply, hh.dens_filter_restrict_eq hT y]
+  simp
+
+/-- **Composed Word-RAM `k`-wise independence of `resampleCode` and `evalCode`
+(`isKWiseIndependentHash_eval`)**:
+from any machine state `x` satisfying `TableRep base (chunkBits n_max) U M k x.mem` and
+`x.regs 0 = base`, under the resampling distribution `(resampleComp base U M k x).eval` of
+`resampleCode k`, for every set `T : Finset (Fin U)` of at most `k` keys (`T.card ≤ k`), the
+restricted tuple of deterministic `evalCode k` outputs `T.restrict (evalHashOut w base k U M z.1)`
+is uniformly distributed on `T → Fin (2 ^ M)` (`PMF.uniformOfFintype (T → Fin (2 ^ M))`). -/
+theorem isKWiseIndependentHash_eval {w base n_max U M k : ℕ} {x : Data 18}
+    (htab : TableRep base (chunkBits n_max) U M k x.mem)
+    (h0 : x.regs 0 = base)
+    (hw : 2 * trinomialDeg U M ≤ w)
+    (hfit_space : Fits w (base + space n_max k))
+    {T : Finset (Fin U)} (hT : Finset.card T ≤ k) :
+    ((resampleComp base U M k x).eval).map (fun z => T.restrict (evalHashOut w base k U M z.1)) =
+      PMF.uniformOfFintype (T → Fin (2 ^ M)) := by
+  have hmap := congrArg (PMF.map T.restrict)
+    (map_evalHashOut_eval_resampleComp htab h0 hw hfit_space)
+  dsimp only [trinomialDeg] at hmap
+  rw [PMF.map_comp, PMF.map_comp] at hmap
+  exact hmap.trans (uniformOfFintype_map_restrict_of_isKWiseIndependentHash
+    (isKWiseIndependentHash_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M))
+    hT)
 
 end Cslib.Algorithms.WordRAM.Hashing.KWise

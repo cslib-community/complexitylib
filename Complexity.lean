@@ -89,6 +89,7 @@ public import Complexity.Algorithms.WordRAM.Dijkstra.Statement
 public import Complexity.Algorithms.WordRAM.DynamicArray
 public import Complexity.Algorithms.WordRAM.ElementDistinctness
 public import Complexity.Algorithms.WordRAM.ElementDistinctnessRAM
+public import Complexity.Algorithms.WordRAM.ExactLog
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Catalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 public import Complexity.Algorithms.WordRAM.ExactTriangle.Chunks

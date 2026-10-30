@@ -113,29 +113,33 @@ def trinomialHornerRef5 (t M : ℕ) (c : Fin 5 → Fin (2 ^ (2 * 3 ^ t))) (u : �
   let a0 := reduceTrinomialCode t (clmulFuel 6 a1 u) ^^^ (c ⟨0, by decide⟩).val
   a0 &&& (2 ^ M - 1)
 
-/-- Write the `5` coefficients of `sampleCoeffs5` into `[base + 8, base + 13)` of `d.mem`. -/
-def writeSampleCoeffs5 (base : ℕ) (d : Data 18) : Data 18 :=
-  ((((d.write (base + 8) 3).write (base + 9) 1).write (base + 10) 2).write
-    (base + 11) 3).write (base + 12) 2
+/-- Write `5` coefficients `c : Fin 5 → Fin n` into `[base + 8, base + 13)` of `d.mem`. -/
+def writeSampleCoeffs5 {n : ℕ} (base : ℕ) (c : Fin 5 → Fin n) (d : Data 18) : Data 18 :=
+  ((((d.write (base + 8) (c ⟨0, by decide⟩).val).write (base + 9) (c ⟨1, by decide⟩).val).write
+    (base + 10) (c ⟨2, by decide⟩).val).write (base + 11) (c ⟨3, by decide⟩).val).write
+    (base + 12) (c ⟨4, by decide⟩).val
 
-/-- Run `KWise.initTableCode 5` with `(base, n_max, U, M)` in registers `0..3`, populate
-`sampleCoeffs5`, and evaluate `KWise.evalCode 5` via `Code.eval` on a list of keys `us`, returning
-the list of output hash values together with the final values at boundary sentinels `base - 1` and
-`base + KWise.space n_max 5`. -/
-def runKWiseEval5 (w fuel n_max U M base : ℕ) (us : List ℕ) :
+/-- Run `KWise.initTableCode 5` with `(base, n_max, U, M)` in registers `0..3`, populate `c` via
+`writeSampleCoeffs5`, and evaluate `KWise.evalCode 5` via `Code.eval` on a list of keys `us`,
+verifying that boundary sentinels at `base - 1` and `base + KWise.space n_max 5` are preserved both
+after `initTableCode 5` and after each `evalCode 5` invocation. -/
+def runKWiseEval5 {n : ℕ} (w fuel n_max U M base : ℕ) (c : Fin 5 → Fin n) (us : List ℕ) :
     Option (List ℕ × ℕ × ℕ) := do
   let sp := KWise.space n_max 5
   let d0 : Data 18 :=
     ((((((Data.init [] : Data 18).set 0 base).set 1 n_max).set 2 U).set 3 M).write
       (base - 1) 77).write (base + sp) 88
   let (d1, _) ← (KWise.initTableCode 5).eval w fuel d0
-  let d2 ← compactData (base + sp + 2) (writeSampleCoeffs5 base d1)
+  let d2 ← compactData (base + sp + 2) (writeSampleCoeffs5 base c d1)
+  let sLo ← forceNat (d2.mem (base - 1))
+  let sHi ← forceNat (d2.mem (base + sp))
   let outs ← us.mapM (fun u => do
     let dIn := (d2.set 0 base).set KWise.regKey u
     let (dOut, _) ← (KWise.evalCode 5).eval w fuel dIn
-    forceNat (dOut.regs KWise.regOut))
-  let sLo ← forceNat (d2.mem (base - 1))
-  let sHi ← forceNat (d2.mem (base + sp))
+    if dOut.mem (base - 1) = sLo ∧ dOut.mem (base + sp) = sHi then
+      forceNat (dOut.regs KWise.regOut)
+    else
+      none)
   pure (outs, sLo, sHi)
 
 /-- Concrete `Code.eval` test at `k = 5, b = 1, L = 2` (`n_max = 8`, `U = 4`, `M = 2`, `base = 10`):
@@ -144,7 +148,7 @@ def runKWiseEval5 (w fuel n_max U M base : ℕ) (us : List ℕ) :
 the `5` Horner steps) matches `trinomialHornerRef5 0 2 sampleCoeffs5 u` on all keys
 `u ∈ [0, 1, 2, 3]` while preserving sentinels at addresses `9` (`77`) and `27` (`88`). -/
 theorem kwise_eval5_b1_concrete :
-    runKWiseEval5 16 16 8 4 2 10 [0, 1, 2, 3] =
+    runKWiseEval5 16 16 8 4 2 10 sampleCoeffs5 [0, 1, 2, 3] =
       some ([0, 1, 2, 3].map (trinomialHornerRef5 0 2 sampleCoeffs5), 77, 88) := by
   decide +kernel
 
@@ -153,7 +157,7 @@ theorem kwise_eval5_b1_concrete :
 `KWise.evalCode 5` matches `trinomialHornerRef5 0 2 sampleCoeffs5 u` on all keys `u ∈ [0, 1, 2, 3]`
 while preserving sentinels at addresses `3` (`77`) and `33` (`88`). -/
 theorem kwise_eval5_b2_concrete :
-    runKWiseEval5 16 32 64 4 2 4 [0, 1, 2, 3] =
+    runKWiseEval5 16 32 64 4 2 4 sampleCoeffs5 [0, 1, 2, 3] =
       some ([0, 1, 2, 3].map (trinomialHornerRef5 0 2 sampleCoeffs5), 77, 88) := by
   decide +kernel
 
@@ -168,23 +172,8 @@ def sampleCoeffs5T1 : Fin 5 → Fin 64
 
 /-- Run `KWise.initTableCode 5` and `KWise.evalCode 5` at `t = 1, q = 6, b = 2, L = 3`
 (`n_max = 64, U = 16, M = 3, base = 4`). -/
-def runKWiseEval5T1 (us : List ℕ) : Option (List ℕ × ℕ × ℕ) := do
-  let base := 4
-  let sp := KWise.space 64 5
-  let d0 : Data 18 :=
-    ((((((Data.init [] : Data 18).set 0 base).set 1 64).set 2 16).set 3 3).write
-      (base - 1) 77).write (base + sp) 88
-  let (d1, _) ← (KWise.initTableCode 5).eval 16 32 d0
-  let d2 ← compactData (base + sp + 2)
-    (((((d1.write (base + 8) 13).write (base + 9) 42).write (base + 10) 7).write
-      (base + 11) 59).write (base + 12) 25)
-  let outs ← us.mapM (fun u => do
-    let dIn := (d2.set 0 base).set KWise.regKey u
-    let (dOut, _) ← (KWise.evalCode 5).eval 16 32 dIn
-    forceNat (dOut.regs KWise.regOut))
-  let sLo ← forceNat (d2.mem (base - 1))
-  let sHi ← forceNat (d2.mem (base + sp))
-  pure (outs, sLo, sHi)
+def runKWiseEval5T1 (us : List ℕ) : Option (List ℕ × ℕ × ℕ) :=
+  runKWiseEval5 16 32 64 16 3 4 sampleCoeffs5T1 us
 
 /-- Concrete `Code.eval` test at `k = 5, t = 1, q = 6, b = 2, L = 3` (`3 × 3` limb multiplication
 over `X ^ 6 + X ^ 3 + 1`): `KWise.evalCode 5` matches `trinomialHornerRef5 1 3 sampleCoeffs5T1` on
@@ -196,8 +185,8 @@ theorem kwise_eval5_t1_b2_L3_concrete :
 
 /-- Non-vacuous theorem-level instantiation of `KWise.initTableCode_execWithin`,
 `KWise.resampleCode_execRand`, `KWise.initCode_execRandWithin`, `KWise.evalCode_execWithin`, and
-`KWise.isKWiseIndependentHash_eval` at `k = 5`, `U = 1000`, `M = 10`, `n_max = 64`, `w = 64`,
-`base = 0`. -/
+the composed Word-RAM `k`-wise independence theorem `KWise.isKWiseIndependentHash_eval` at `k = 5`,
+`U = 1000`, `M = 10`, `n_max = 64`, `w = 64`, `base = 0`. -/
 theorem kwise_five_wise_wordram_nonvacuous (x : Data 18)
     (h0 : x.regs 0 = 0) (h1 : x.regs 1 = 64) (h2 : x.regs 2 = 1000) (h3 : x.regs 3 = 10) :
     (∃ y : Data 18,
@@ -213,7 +202,10 @@ theorem kwise_five_wise_wordram_nonvacuous (x : Data 18)
     (∀ y : Data 18,
       KWise.TableRep 0 (KWise.chunkBits 64) 1000 10 5 y.mem →
       y.regs 0 = 0 →
-      IsKWiseIndependentHash 5 (trinomialPolyHash (trinomialStep 1000 10) 5 1000 10) ∧
+      (∀ (T : Finset (Fin 1000)), Finset.card T ≤ 5 →
+        ((KWise.resampleComp 0 1000 10 5 y).eval).map
+            (fun z => T.restrict (KWise.evalHashOut 64 0 5 1000 10 z.1)) =
+          PMF.uniformOfFintype (T → Fin (2 ^ 10))) ∧
       ExecRand 64 (KWise.resampleCode 5) y (KWise.resampleComp 0 1000 10 5 y) ∧
       ((KWise.resampleComp 0 1000 10 5 y).eval).map
           (fun z => KWise.extractSeeds 0 1000 10 5 z.1.mem) =
@@ -223,20 +215,19 @@ theorem kwise_five_wise_wordram_nonvacuous (x : Data 18)
           KWise.Rep 0 (KWise.chunkBits 64) 1000 10 5
             (KWise.extractSeeds 0 1000 10 5 z.mem) z.mem ∧
           z.regs 0 = 0 ∧
-          (∀ a, (a < 0 + 8 ∨ 0 + 8 + 5 ≤ a) → z.mem a = y.mem a) ∧
-          (∀ u : Fin 1000, ∀ x_eval : Data 18,
-            x_eval.mem = z.mem →
-            x_eval.regs 0 = 0 →
-            x_eval.regs 1 = u.val →
-            ∃ y_eval : Data 18,
-              ExecWithin 64 (KWise.evalCode 5) x_eval y_eval (KWise.evalSteps 64 1000 10 5) ∧
-              y_eval.regs 0 = 0 ∧
-              y_eval.regs 1 = u.val ∧
-              y_eval.regs 2 =
-                (trinomialPolyHash (trinomialStep 1000 10) 5 1000 10
-                  (KWise.extractSeeds 0 1000 10 5 z.mem) u).val ∧
-              y_eval.mem = z.mem))
-        35 5) := by
+          (∀ a, (a < 0 + 8 ∨ 0 + 8 + 5 ≤ a) → z.mem a = y.mem a))
+        35 5 ∧
+      (∀ (c : Fin 5 → Fin (2 ^ trinomialDeg 1000 10)) (u : Fin 1000) (x_eval : Data 18),
+        KWise.Rep 0 (KWise.chunkBits 64) 1000 10 5 c x_eval.mem →
+        x_eval.regs 0 = 0 →
+        x_eval.regs 1 = u.val →
+        ∃ y_eval : Data 18,
+          ExecWithin 64 (KWise.evalCode 5) x_eval y_eval (KWise.evalSteps 64 1000 10 5) ∧
+          y_eval.regs 0 = 0 ∧
+          y_eval.regs 1 = u.val ∧
+          y_eval.regs 2 =
+            (trinomialPolyHash (trinomialStep 1000 10) 5 1000 10 c u).val ∧
+          y_eval.mem = x_eval.mem)) := by
   have htr : trinomialDeg 1000 10 = 18 := by
     have hclog : Nat.clog 2 (max 1000 2) ≤ 10 :=
       (Nat.clog_le_iff_le_pow one_lt_two).mpr (by decide)
@@ -250,6 +241,7 @@ theorem kwise_five_wise_wordram_nonvacuous (x : Data 18)
     rw [fits_iff]
     dsimp [KWise.space, KWise.spaceFromB, KWise.chunkBits]
     decide
+  have hfit_end : Fits 64 (0 + 8 + 5) := by rw [fits_iff]; decide
   have hfit_n : Fits 64 (max 64 2) := by rw [fits_iff]; decide
   have hfit_U : Fits 64 (max 1000 2 + 1) := by rw [fits_iff]; decide
   have hfit_q : Fits 64 (2 ^ trinomialDeg 1000 10) := by
@@ -259,7 +251,12 @@ theorem kwise_five_wise_wordram_nonvacuous (x : Data 18)
   refine ⟨⟨y, hy_exec, hy_tab⟩,
     KWise.initCode_execRandWithin h0 h1 h2 h3 hfit_sp hfit_n hfit_U hfit_q,
     fun y' htab' h0' =>
-      KWise.isKWiseIndependentHash_eval htab' h0' hw hfit_sp⟩
+      ⟨fun T hT => KWise.isKWiseIndependentHash_eval htab' h0' hw hfit_sp hT,
+       KWise.resampleCode_execRand htab' h0' hfit_end hfit_q,
+       KWise.map_extractSeeds_eval_resampleComp 0 1000 10 5 y',
+       KWise.resampleCode_execRandWithin htab' h0' hfit_end hfit_q,
+       fun c u x_eval hrep hx0 hx1 =>
+         KWise.evalCode_execWithin u hrep hx0 hx1 hw hfit_sp⟩⟩
 
 /-! ## 2. `RandomTable`: concrete `Code.eval` execution and theorem instantiations -/
 
