@@ -88,12 +88,14 @@ lemma length_eProb (a : Prob) : (eProb a).length =
   change _ = 2 * (eDesc a.1).length + 1 + _
   simp only [length_encPair, encUnary_apply, List.length_replicate]
 
+/-- The test for base problems, in linear time. -/
 lemma isBase_inO : ComputableTidilyInO simDC.isBase eProb encBool (fun a => (eProb a).length)
     (fun a => (eProb a).length) :=
   (((ComputableTidilyInDegree.unary_isZero.comp ComputableTidilyInDegree.unary_pred).mono
     (d' := 1) (e' := 1)).inO_one.comp_linear prob_n).of_enc_eq fun a =>
     congrArg encBool (decide_eq_decide.mpr (by dsimp only; omega))
 
+/-- `Option.toList` on symbols, in linear time. -/
 lemma toList_inO : ComputableTidilyInO Option.toList eSym (encList encUnary)
     (fun o => (eSym o).length) (fun o => (eSym o).length) :=
   ((((ComputableTidilyInDegree.isSome encUnary).inO_one).ite
@@ -109,6 +111,7 @@ lemma length_dw_le (a : Prob) : (encPair eDesc eWin (a.1, a.2.2)).length ≤ (eP
 /-- The time and space of a base problem. -/
 def Tb (a : Prob) : ℕ := ((eProb a).length + 1) ^ 3
 
+/-- Base problems: no step, or one windowed step. -/
 lemma base_inO : ComputableTidilyInO simDC.base eProb eSol Tb Tb := by
   have hstep := wstep_inO.tidy.comp (prob_d.prod prob_w)
   have hlive := hstep.fst'.prod (toList_inO.comp_linear hstep.snd')
@@ -129,6 +132,7 @@ lemma base_inO : ComputableTidilyInO simDC.base eProb eSol Tb Tb := by
 /-- The time and space of the first subproblem. -/
 def Tl (a : Prob) : ℕ := (a.2.2.2.length + 1) * ((eProb a).length + 1)
 
+/-- The first subproblem: the first half of the steps on the cut windows. -/
 lemma left_inO : ComputableTidilyInO simDC.left eProb eProb Tl Tl := by
   have hfh := firstHalf_inO.tidy.comp_linear prob_n
   have hex := extract_inO.tidy.comp (hfh.prod prob_w)
@@ -152,6 +156,8 @@ def Tm (p : Prob × Sol) : ℕ :=
   (p.1.2.2.2.length + 1) *
     ((encPair eProb eSol p).length + (eWin (restore (firstHalf p.1.2.1) p.1.2.2 p.2.1)).length + 1)
 
+/-- The second subproblem and the saved data: the windows after the first half are pasted
+back and cut again for the second half. -/
 lemma mid_inO :
     ComputableTidilyInO simDC.mid (encPair eProb eSol) (encPair eProb eSaved) Tm Tm := by
   have hd := prob_d.comp_linear (fst eProb eSol)
@@ -192,6 +198,8 @@ lemma mid_inO :
 /-- The time and space of the combination. -/
 def Tj (q : Saved × Sol) : ℕ := (q.1.2.1.2.length + 1) * ((encPair eSaved eSol q).length + 1)
 
+/-- The combination: the windows after the second half are pasted back and the emitted symbols
+concatenated. -/
 lemma join_inO : ComputableTidilyInO simDC.join (encPair eSaved eSol) eSol Tj Tj := by
   have hr := (fst encUnary (encPair eWin (encList encUnary))).comp_linear (fst eSaved eSol)
   have hs := (snd encUnary (encPair eWin (encList encUnary))).comp_linear (fst eSaved eSol)
@@ -258,6 +266,7 @@ lemma simDC_base_eq {d : Desc} {n : ℕ} (hn : n ≤ 1) (w : Win) :
   · simp [simDC, baseSol, sim]
   · simp [simDC, baseSol, sim]
 
+/-- The cost of a base problem, within `costA`. -/
 lemma baseCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B) (hn : n ≤ 1)
     (hw : WInv (descLen d) B 0 (2 * n + 1) w) : baseCost (d, n, w) ≤ costA (descLen d) B := by
   have hZ := winBound_base (descLen d) B
@@ -284,6 +293,7 @@ lemma baseCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B) (hn :
   have hY1 : E + 1 ≤ (E + 1) ^ 3 := Nat.le_self_pow (by omega) _
   omega
 
+/-- The cost of a node of `n` steps, within `costA * (n + 1)`. -/
 lemma nodeCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B)
     (hw : WInv (descLen d) B 0 (2 * n + 1) w) :
     nodeCost (d, n, w) (sim d (firstHalf n) (extract (firstHalf n) w))
