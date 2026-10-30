@@ -341,6 +341,72 @@ private lemma retSwap_inO
       encList_nil, List.length_nil] at * <;>
     nlinarith
 
+/-- A round, within the costs of the parts of the recursion it runs. -/
+lemma round_inO (hisBase : ComputableTidilyInO D.isBase encA encBool Tt St)
+    (hbase : ComputableTidilyInO D.base encA encB Tb Sb)
+    (hleft : ComputableTidilyInO D.left encA encA Tl Sl)
+    (hmid : ComputableTidilyInO D.mid (encPair encA encB) (encPair encA encG) Tm Sm)
+    (hjoin : ComputableTidilyInO D.join (encPair encG encB) encB Tj Sj) :
+    ComputableTidilyInO D.loop.round
+      (encPair (encOption (encFrame encA encG)) (encVal encA encB))
+      (encPair (encList (encFrame encA encG)) (encVal encA encB))
+      (fun p => (encPair (encOption (encFrame encA encG)) (encVal encA encB) p).length + p.2.elim
+        (fun a => Tt a + St a + if D.isBase a then Tb a + Sb a + (encB (D.base a)).length
+          else Tl a + Sl a + (encA (D.left a)).length)
+        (fun s => s.elim (fun b => p.1.elim 0 (fun x => x.elim
+          (fun a => Tm (a, b) + Sm (a, b) + (encPair encA encG (D.mid (a, b))).length)
+          (fun g => Tj (g, b) + Sj (g, b) + (encB (D.join (g, b))).length))) (fun _ => 0)))
+      (fun p => (encPair (encOption (encFrame encA encG)) (encVal encA encB) p).length + p.2.elim
+        (fun a => Tt a + St a + if D.isBase a then Tb a + Sb a + (encB (D.base a)).length
+          else Tl a + Sl a + (encA (D.left a)).length)
+        (fun s => s.elim (fun b => p.1.elim 0 (fun x => x.elim
+          (fun a => Tm (a, b) + Sm (a, b) + (encPair encA encG (D.mid (a, b))).length)
+          (fun g => Tj (g, b) + Sj (g, b) + (encB (D.join (g, b))).length))) (fun _ => 0))) := by
+  have hCall := D.roundCall_inO (encG := encG) hisBase hbase hleft
+  have hRet := (D.retSwap_inO hmid hjoin).comp
+    (swap_inO (encS := encOption (encFrame encA encG)) (encT := encB))
+  have hFin := ((toList_inO (enc := encFrame encA encG)).comp
+    (fst (encOption (encFrame encA encG)) encB)).prod
+    ((ComputableInO.inr encA (encSum encB encB)).tidy.comp
+      ((ComputableInO.inr encB encB).tidy.comp (snd (encOption (encFrame encA encG)) encB)))
+  have hS := ComputableInO.sumElimSnd hRet.computableInO hFin.computableInO
+  have hR := ComputableInO.sumElimSnd hCall.computableInO hS
+  refine (hR.tidy.of_enc_eq fun p => ?_).mono 8 (fun p => ?_) (fun p => ?_)
+  · obtain ⟨o, a | b | b⟩ := p
+    · rfl
+    · rcases o with _ | a | g <;> rfl
+    · rfl
+  all_goals
+    obtain ⟨o, a | b | b⟩ := p
+    · simp only [Sum.elim_inl, length_encPair, encSum_inl, List.length_cons]
+      split_ifs <;> omega
+    · rcases o with _ | a | g <;>
+      simp only [Function.comp_apply, Sum.elim_inl, Sum.elim_inr, Option.elim_none,
+        Option.elim_some, length_encPair, encSum_inl, encSum_inr, List.length_cons,
+        encOption_some] <;> omega
+    · have := length_encList_toList_le (encFrame encA encG) o
+      simp only [Function.comp_apply, Sum.elim_inr, length_encPair, encSum_inr,
+        List.length_cons] at *
+      omega
+
+/-- The halting test of the loop, in linear time. -/
+lemma halt_inO : ComputableTidilyInO D.loop.halt (encVal encA encB) encBool
+    (fun v => (encVal encA encB v).length) (fun v => (encVal encA encB v).length) := by
+  have hw : ComputableTidilyInO (fun w : List Bool => (w.headD false, w.tail.headD false))
+      encBits (encPair encBool encBool) (fun w => w.length) (fun w => w.length) :=
+    ((ComputableTidilyInDegree.headD (enc₁ := encBool) (enc := encBits) false).inO_one.prod
+      ((ComputableTidilyInDegree.headD (enc₁ := encBool) (enc := encBits) false).inO_one.comp
+        (of_linear (.of_tail (f := List.tail) (encIn := encBits) (encOut := encBits)
+          fun _ => rfl)))).mono 3 (fun w => by simp [encBits]; omega)
+      (fun w => by simp [encBits]; omega)
+  refine (((ComputableTidilyInDegree.of_finite (encIn := encPair encBool encBool)
+    (encMid := encBool) (fun p : Bool × Bool => p.1 && p.2)).inO_one.comp hw).comp
+    (of_linear (.of_eq (f := fun v : Val α β => encVal encA encB v) (encIn := encVal encA encB)
+      (encMid := encBits) fun _ => rfl))).of_enc_eq (fun v => ?_) |>.mono 4 (fun v => ?_)
+      (fun v => ?_)
+  · rcases v with a | b | b <;> rfl
+  all_goals simp; omega
+
 end DivConq
 
 /-- **Divide and conquer.** If the parts of a divide-and-conquer recursion are computable and every
