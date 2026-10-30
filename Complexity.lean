@@ -2735,6 +2735,7 @@ public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.SecondMoment
 public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.StochasticAtom
+public import Complexity.Foundations.Probability.TrueSampleMeans
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Relation.InductiveCounting
 public import Complexity.Foundations.Relation.RelatesWithinSteps
