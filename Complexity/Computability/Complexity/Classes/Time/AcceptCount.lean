@@ -53,8 +53,8 @@ theorem DecidesInTime.mem_iff_acceptCount_choiceTable_pos {ntm : MultiTapeNTM k 
     {A : Set α} {t : α → ℕ} (h : ntm.DecidesInTime enc A t) {a : α} {τ : ℕ}
     (hτ : Nat.card (Turing.Action k Bool State) * t a ≤ τ) :
     a ∈ A ↔ 0 < ntm.choiceTable.acceptCount (enc a) τ := by
-  rw [h.mem_iff_exists_checkChoices hτ, MultiTapePTM.acceptCount_pos_iff]
-  simp only [checkChoices, decide_eq_true_eq]
+  rw [h.mem_iff_exists_checkChoices hτ, Cslib.Complexity.acceptCount_pos_iff]
+  rfl
 
 end Turing.MultiTapeNTM
 
