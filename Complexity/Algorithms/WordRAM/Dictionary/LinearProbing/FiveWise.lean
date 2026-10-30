@@ -14,26 +14,53 @@ public import Complexity.Probability.PMF.Expect
 # Constant-independence cluster bounds for linear probing
 
 This file proves the probabilistic core of constant-time linear probing under $5$-wise independent
-hashing [Pagh, Pagh and Ružić, *Linear Probing with Constant Independence*][PaghPaghRuzic2009];
-see also [Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*, Section 11.4][CLRS2009]
-and [Vadhan, *Pseudorandomness*, Section 3.5][Vadhan2012].
+hashing, adapting [Pagh, Pagh and Ružić, *Linear Probing with Constant Independence*, *SIAM J.
+Comput.* 39(3):1107–1120, 2009, Section 2.3 (Lemma 2.1, pp. 1110–1111) and Section 4 (Lemma 4.1,
+Theorem 4.3, and Theorem 4.5, pp. 1114–1118)][PaghPaghRuzic2009]; see also [Cormen, Leiserson,
+Rivest and Stein, *Introduction to Algorithms*, Section 11.4][CLRS2009] and [Vadhan,
+*Pseudorandomness*, Section 3.5][Vadhan2012].
 
-For a power-of-$2$ table of size $m = 2^M \ge 8 n_{\max}$ (load factor $\alpha = n / m \le 1/8$) and
-a $5$-wise independent hash family $h : \iota \to X \to \mathrm{Fin}(2^M)$:
-1. If probing key $u$ from $b = h_i(u)$ inspects $t \ge 1$ occupied slots belonging to
+## Source statement and proof adaptation
+
+In `[PaghPaghRuzic2009]`, Lemma 2.1 (Section 2.3, pp. 1110–1111) shows that for a stored key set
+$S \subseteq U$ of size $n$, a $5$-wise independent hash family $\mathcal{H} : U \to [r]$ with
+maximum load $\bar{\alpha} < 1$, any subset $Q \subset [r]$ of size $q$, any $d > 0$, and any fixed
+$x \in U \setminus S$, conditioning on $h(x) = \rho$ leaves a $4$-wise independent family on
+$U \setminus \{x\}$ and the centered fourth-moment Markov bound gives
+$\Pr[|\{y \in S : h(y) \in h(x) + Q\}| \ge \bar{\alpha} q + d] < 4 \bar{\alpha} q^2 / d^4$.
+Combining Lemma 2.1 with the occupied-run witness in Lemma 4.1 (Section 4, p. 1114), Theorem 4.3
+(Section 4.1, pp. 1115–1116) and Theorem 4.5 (Section 4.2, p. 1118) bound the expected number of
+probes per operation by $O((1 - \bar{\alpha})^{-5/2})$ and $O((1 - \bar{\alpha})^{-13/6})$ for any
+maximum load $\bar{\alpha} < 1$.
+
+Our formalization specializes to a power-of-$2$ table of size $m = 2^M \ge 8 n_{\max}$ (exact
+uniform load factor $\bar{\alpha} = \alpha = \#S / 2^M \le 1/8$) and an exact uniform $5$-wise
+independent family $h : \iota \to X \to \mathrm{Fin}(2^M)$ (`IsKWiseIndependentHash 5 h`), using an
+original simplified dyadic-window proof adaptation in place of the interval-grid decompositions of
+Lemmas 4.2 and 4.4 in `[PaghPaghRuzic2009]`:
+1. **Left-anchored cluster witness (`HasClusterWitness`, adapting the proof of Lemma 4.1,
+   p. 1114):**
+   If probing key $u$ from $b = h_i(u)$ steps over $t \ge 1$ occupied slots belonging to
    $S = \mathrm{dom}(s) \setminus \{u\}$, walking backwards from $b$ to the nearest preceding empty
-   slot yields a contiguous cyclic interval $J(b, a, \ell)$ of length $\ell = a + t \in [t, \#S]$
-   containing $b$ into which at least $\ell$ keys of $S$ hash.
-2. For the dyadic scale $j = \lfloor \log_2 \ell \rfloor + 1 \in \{1, \dots, M\}$, we have
-   $2^{j-1} \le \ell < 2^j$, and every such interval $J(b, a, \ell)$ is contained in a single
-   centered window $W_j(b)$ of size at most $2^{j+1}$. Consequently, at least $2^{j-1}$ keys of $S$
-   hash into $W_j(b)$, whereas the expected load of $W_j(b)$ is
-   $\mu_{j,b} \le \#S \cdot 2^{j+1} / 2^M \le 2^{j-2}$.
-3. Conditioning on $h_i(u) = b$ consumes $1$ degree of independence, leaving $4$-wise independence
+   slot yields a contiguous cyclic interval $J(b, a, \ell)$ (`cyclicInterval M b a ℓ`) of length
+   $\ell = a + t \in [t, \#S]$ containing $b$ into which at least $\ell$ keys of $S$ hash.
+2. **Centered dyadic-scale window (`scaleWindow`, original proof adaptation at load $\le 1/8$):**
+   For the dyadic scale $j = \lfloor \log_2 \ell \rfloor + 1 \in \{1, \dots, M\}$, we have
+   $2^{j-1} \le \ell < 2^j$. Every cyclic interval $J(b, a, \ell)$ containing $b$ is contained in a
+   single centered window $W_j(b)$ (`scaleWindow M b j`) of size at most $2^{j+1}$
+   (`cyclicInterval_subset_scaleWindow`, `card_scaleWindow_le`). Consequently, at least $2^{j-1}$
+   keys of $S$ hash into $W_j(b)$, whereas at load $\#S \le 2^M / 8$ the expected load of $W_j(b)$
+   is $\mu_{j,b} \le \#S \cdot 2^{j+1} / 2^M \le 2^{j-2}$, leaving deviation slack
+   $2^{j-1} - \mu_{j,b} \ge 2^{j-2}$.
+3. **Conditioned fourth-moment tail bound (`expect_indicator_mul_sum_pow_four_le` and
+   `expect_scaleOverload_le`, adapting Lemma 2.1, pp. 1110–1111):**
+   Conditioning on $h_i(u) = b$ consumes $1$ degree of independence, leaving $4$-wise independence
    on $S$. Expanding the fourth central moment via `IsKWiseIndependentHash.expect_prod` on sets
-   $\mathrm{insert}\ u\ (\mathrm{image}\ t)$ of size at most $5$ bounds the overload probability at
-   scale $j$ by $18 / (2^{j-2})^2 = 288 / 4^j$, and summing $\sum_{j=1}^M 2^j \cdot (288 / 4^j)$
-   yields an expected probe count of at most $288 = O(1)$.
+   $\mathrm{insert}\ u\ (\mathrm{image}\ t)$ of size at most $5$ bounds the scale-$j$ overload
+   probability (`scaleOverload`) by $18 / (2^{j-2})^2 = 288 / 4^j$, and summing
+   $\sum_{j=1}^M 2^j \cdot (288 / 4^j)$ yields the original explicit constant upper bound
+   $288 = O(1)$ on the expected number of skipped occupied slots
+   (`expect_probe_le_of_cluster_witness`, `tsum_uniform_probe_le_of_cluster_witness`).
 
 ## Main definitions
 

@@ -18,8 +18,10 @@ public import Complexity.Computability.WordRAM.Randomized.Subroutine
 
 This file implements a self-contained open-addressed linear-probing hash table realizing
 `Cslib.Algorithms.Lean.Dictionary.spec U V n_max` on the randomized Word RAM
-(`Cslib.WordRAM.Randomized.SubroutineDS`) [Pagh, Pagh and Ružić, *Linear Probing with Constant
-Independence*][PaghPaghRuzic2009]; [Cormen, Leiserson, Rivest and Stein, *Introduction to
+(`Cslib.WordRAM.Randomized.SubroutineDS`), adapting [Pagh, Pagh and Ružić, *Linear Probing with
+Constant Independence*, *SIAM J. Comput.* 39(3):1107–1120, 2009, Section 2.3 (Lemma 2.1,
+pp. 1110–1111) and Section 4 (Lemma 4.1, Theorem 4.3, and Theorem 4.5,
+pp. 1114–1118)][PaghPaghRuzic2009]; [Cormen, Leiserson, Rivest and Stein, *Introduction to
 Algorithms*, Section 11.4][CLRS2009].
 
 ## Design
@@ -52,32 +54,68 @@ Algorithms*, Section 11.4][CLRS2009].
    $S = \mathrm{dom}(s) \setminus \{u\}$, walking backwards from $b$ to the nearest preceding empty
    slot yields a contiguous cyclic interval `cyclicInterval M b a ℓ` of length
    $\ell = a + t \in [t, \#S]$ whose $\ell$ stored keys in $S$ all hash into
-   `cyclicInterval M b a ℓ` (since no probe path can cross the preceding empty slot). Applying
+   `cyclicInterval M b a ℓ` (`TableInv.hasClusterWitness_probeLen`, adapting the occupied-run
+   argument in the proof of Lemma 4.1, p. 1114 of `[PaghPaghRuzic2009]`). Applying
    `tsum_uniform_probe_le_of_cluster_witness` from
-   `Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.FiveWise` bounds the expected probe count
-   by $288 = O(1)$.
+   `Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.FiveWise` bounds the expected number of
+   skipped occupied slots `TableInv.probeLen` by $288 = O(1)$ (`tsum_probeLen_le`).
 
-## Model, specialization, and cost scope
+## Source mapping, specialization, and cost scope
 
-- **Fixed-parameter program specialization (`initParams = Fin.elim0`):**
-  For a fixed key universe size `U`, value bound `V`, and capacity bound `n_max` on an admissible
-  external machine word width `w` (`2 * trinomialDeg U (tableLog n_max) ≤ w`,
-  `Fits w (base + space n_max)`, `Fits w V`), `subroutineCode U n_max` specializes configuration
-  constants (`tableLog n_max`, `tableSize n_max`, `KWise` trinomial-field parameters, bit masks,
-  and relative array offsets) as instruction literals rather than decoding them from runtime
-  initialization registers.
-- **Oblivious-adversary charged-body cost model:**
-  Expected instruction bounds (`subroutineDS`, `subroutineDSStandard`, and
-  `seq_expected_amortized`) charge fresh initialization (`initFresh`) and subroutine operation
-  bodies (`SubroutineDS.ExecSteps`) across an operation sequence `ops` fixed independently of the
-  sampled hash seed (oblivious adversary). Caller argument delivery, caller control/dispatch loops,
-  and host-level code/configuration construction are outside the subroutine's charged instruction
-  count.
-- **Insert-only dictionary specification and zero tombstones:**
-  `Dictionary.spec U V n_max` models an insert-only bounded dictionary (`get` and `insert` with at
-  most `n_max` distinct keys; deletion is deferred to a follow-up), which allows open-addressed
-  slots to use `{0, 1}` occupancy flags (`0` = empty, `1` = occupied) with zero tombstones;
-  supporting deletion would require tombstone states or backward-shift deletion.
+In `[PaghPaghRuzic2009]`, Section 4 (Theorems 4.3 and 4.5, pp. 1115–1118, built on Lemma 2.1,
+pp. 1110–1111, and Lemma 4.1, p. 1114) proves that for any sequence of insertions, deletions, and
+lookups in a linear-probing hash table of size $r$ using a hash function chosen uniformly at random
+from a $5$-wise independent family $\mathcal{H} : U \to [r]$ with maximum load $\bar{\alpha} < 1$,
+the expected number of probes made during an operation is $O((1 - \bar{\alpha})^{-5/2})$
+(Theorem 4.3) and $O((1 - \bar{\alpha})^{-13/6})$ (Theorem 4.5), which is $O(1)$ for bounded load
+factor. The declarations in this module and `LinearProbing.FiveWise` map to `[PaghPaghRuzic2009]` as
+follows:
+- **Hash family (`isKWiseIndependentHash_hashFn`):**
+  Uniform $5$-wise independent trinomial-field polynomial family `hashFn U n_max`
+  (`trinomialPolyHash` over $\mathbb{F}_{2^q}$ projected to $M$ bits, initialized and evaluated on
+  the Word RAM via `KWise.initCode 5` and `KWise.evalCode 5`), realizing exact uniform $5$-wise
+  independence (`IsKWiseIndependentHash 5`) with maximum load $\bar{\alpha} = \alpha = \#S / 2^M$.
+- **Operation history and oblivious adversary (`ValidHistory`, `seq_expected_amortized`):**
+  An admissible operation sequence `ops : List (Dictionary.Op U)` fixed independently of the sampled
+  hash seed $\theta \sim \mathrm{seedLaw}\ U\ n_{\max}$, matching the fixed-set / oblivious
+  operation model of `[PaghPaghRuzic2009]`, Section 4.
+- **Load-factor specialization ($\alpha \le 1/8$):**
+  While `[PaghPaghRuzic2009]` Theorems 4.3 and 4.5 apply to any maximum load $\bar{\alpha} < 1$, we
+  fix $M = \mathrm{tableLog}(n_{\max}) = \lceil \log_2 \max(8 n_{\max}, 8) \rceil$ so that
+  $\alpha = \#\mathrm{dom}(s) / 2^M \le n_{\max} / 2^M \le 1/8$ (`eight_mul_le_tableSize`) and
+  `space n_max = O(n_max)` (`space_le`).
+- **Probe count (`TableInv.probeLen`) vs. executable Word-RAM body charge (`charge`):**
+  Whereas `[PaghPaghRuzic2009]` Section 4 (p. 1114) counts
+  $1 + \max\{l \mid h(x) + [l] \subseteq P\}$ table probes, `TableInv.probeLen` counts the number of
+  skipped occupied slots before the stopping slot ($\mathbb{E}[\mathrm{probeLen}] \le 288$ via
+  `tsum_probeLen_le`). The final stopping-slot inspection, loop/branch overhead ($12 t + 27$
+  instructions for $t$ skipped slots), and embedded `KWise.evalCode 5` hash evaluation
+  (`KWise.evalSteps n_max U (tableLog n_max) 5`) are all included in the executable Word-RAM
+  operation charge
+  `charge U n_max = KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * 288 + 27 =
+  KWise.evalSteps n_max U (tableLog n_max) 5 + 3483` (`opCode_execWithin`).
+- **Original proof adaptation and explicit constants (`288` and `3483`):**
+  Rather than formalizing the interval-grid decompositions of Lemmas 4.2 and 4.4 in
+  `[PaghPaghRuzic2009]`, `LinearProbing.FiveWise` uses an original simplified proof adaptation at
+  load $\le 1/8$ that covers any length-$\ell$ cyclic interval containing $b$ ($2^{j-1} \le \ell <
+  2^j$) by a single centered dyadic-scale window `scaleWindow M b j` of size at most $2^{j+1}$
+  (`card_scaleWindow_le`), yielding the explicit scale-$j$ overload bound
+  $18 / (2^{j-2})^2 = 288 / 4^j$ (`expect_scaleOverload_le`), the probe-step bound $288$, and the
+  instruction constant $12 \cdot 288 + 27 = 3483$.
+- **Fixed-parameter program specialization and charged-body scope (`initParams = Fin.elim0`):**
+  For fixed `(U, V, n_max)` on an admissible external machine word width `w`
+  (`2 * trinomialDeg U (tableLog n_max) ≤ w`, `Fits w (base + space n_max)`, `Fits w V`),
+  `subroutineCode U n_max` specializes configuration constants as instruction literals. Expected
+  instruction bounds (`subroutineDS`, `subroutineDSStandard`, and `seq_expected_amortized`) charge
+  fresh initialization (`initFresh`) and subroutine operation bodies (`SubroutineDS.ExecSteps`),
+  excluding caller argument delivery, caller control/dispatch loops, and host-level code
+  construction.
+- **Insert-only dictionary specification vs. source deletions:**
+  Whereas `[PaghPaghRuzic2009]` Section 1 (p. 1107) and Section 4 (Theorems 4.3 and 4.5) include
+  deletions via greedy backward-shift rearrangement, `Dictionary.spec U V n_max` specifies an
+  insert-only bounded dictionary (`get` and `insert` with at most `n_max` distinct keys and no
+  deletion operation), so open-addressed slots use `{0, 1}` occupancy flags (`0` = empty, `1` =
+  occupied) with zero tombstones.
 
 ## References
 
@@ -1071,7 +1109,7 @@ into `reg 2`. -/
   | .insert _ _ => some ()
 
 /-- Expected instruction count for `initSetup U n_max`:
-`KWise.initTableSteps n_max U (tableLog n_max) + 38 = O(n_max + log log U)`. -/
+`KWise.initTableSteps n_max U (tableLog n_max) + 38 = O(n_max + log U)`. -/
 @[expose] def setupTime (U n_max : ℕ) : ℕ :=
   KWise.initTableSteps n_max U (tableLog n_max) + 38
 
@@ -2064,7 +2102,7 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
 over `Cslib.WordRAM.Basis.exact`:
 - **Space**: `space n_max = KWise.space n_max 5 + 3 * 2 ^ (tableLog n_max) = O(n_max)` words;
 - **Initialization time**: `setupTime U n_max = KWise.initTableSteps n_max U (tableLog n_max) + 38
-  = O(n_max + log log U)` expected instructions;
+  = O(n_max + log U)` expected instructions;
 - **Operation charge**: `charge U n_max = KWise.evalSteps n_max U (tableLog n_max) 5 + 3483
   = O(L ^ 2 + 1)` expected instructions per `get` or `insert`, which is `O(1)` whenever
   `U ≤ n_max ^ c` for any constant `c`;
