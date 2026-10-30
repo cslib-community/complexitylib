@@ -18,16 +18,44 @@ import Mathlib.Topology.Instances.ENNReal.Lemmas
 /-!
 # Uniform Probing in Open-Addressed Hash Tables
 
-This file formalizes the classical uniform-probing model of open-addressed hashing
-([Cormen, Leiserson, Rivest, and Stein, Section 11.4, Theorems 11.6 and 11.8][CLRS2009]),
-realizing the bounded-capacity dictionary specification `Cslib.Algorithms.Lean.Dictionary.spec`
-over `m` table slots (`2 * n_max ≤ m`).
+This file formalizes the classical uniform-probing model of open-addressed hashing from
+[Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition (MIT Press,
+2009), Section 11.4 ("Open addressing", pp. 270–277)][CLRS2009], realizing the bounded-capacity
+insert-only dictionary specification `Cslib.Algorithms.Lean.Dictionary.spec` over `m` table slots
+(`2 * n_max ≤ m`).
 
-In the textbook uniform-probing model, each key `u : Fin U` is assigned an independent uniform
-random permutation `π u : Equiv.Perm (Fin m)` (`PMF.uniformOfFintype (Fin U → Equiv.Perm (Fin m))`),
-which may equivalently be sampled lazily on demand via
-`Cslib.RandomOracle.uniform_interpret_eq_lazy`
+In the textbook uniform-probing ("uniform hashing") model, each key `u : Fin U` is assigned an
+independent uniform random permutation `π u : Equiv.Perm (Fin m)`
+(`PMF.uniformOfFintype (Fin U → Equiv.Perm (Fin m))`), which may equivalently be sampled lazily on
+demand via `Cslib.RandomOracle.uniform_interpret_eq_lazy`
 (`Complexity/Languages/Probabilistic/RandomOracle.lean`).
+
+## Source statements and notation mapping
+
+In [CLRS2009], third edition, Section 11.4:
+* An open-address table has `m` slots (`Fin m`) and holds `n` stored elements (`O.card` or
+  `(Dictionary.dom s).card`, bounded by `n_max` with `2 * n_max ≤ m`), giving load factor
+  `α = n / m < 1` (`α ≤ 1 / 2` when `2 * n ≤ m`).
+* Under uniform hashing (p. 271), each key's probe sequence `h(k, 0), h(k, 1), …, h(k, m - 1)` is
+  equally likely to be any of the `m!` permutations of `{0, 1, …, m - 1}` (`Equiv.Perm (Fin m)`).
+  Every search or insertion counts all inspected slots along the probe sequence up to and including
+  the stopping slot (`unsuccessfulProbes O σ = missedProbes O σ + 1` and
+  `probeCount T u σ = unsuccessfulProbes (otherOccupiedSlots T u) σ`).
+* **Theorem 11.6 (pp. 274–275)** states that in an open-address hash table with load factor
+  `α = n / m < 1`, the expected number of probes in an unsuccessful search is at most
+  `1 / (1 - α) = m / (m - n)` under uniform hashing; its proof establishes the exact occupancy tail
+  product `Pr{X ≥ i} = ∏_{j = 0}^{i - 2} ((n - j) / (m - j)) ≤ α ^ (i - 1)`.
+* **Corollary 11.7 (p. 276)** states that inserting an element into an open-address hash table with
+  load factor `α < 1` requires at most `1 / (1 - α) = m / (m - n)` probes on average.
+* **Theorem 11.8 (p. 276)** states that when each key in the table is equally likely to be searched
+  for, the expected number of probes in a successful search is at most `(1 / α) ln(1 / (1 - α))`.
+  Its proof first establishes for a fixed stored key `u` that searching for `u` follows the exact
+  same probe sequence as when `u` was inserted (`probeCount_runTable_eq_firstInsert`), so if `u` was
+  first inserted after a prefix `ops₁` reaching state `s₁` with `i = (Dictionary.dom s₁).card` keys,
+  the expected number of probes for `u` is at most `1 / (1 - i / m) = m / (m - i)`
+  (`expect_probeCount_of_mem_dom_le`, and `≤ 2` when `2 * n_max ≤ m` via
+  `expect_probeCount_of_mem_dom_le_two`). The uniform-key-averaged logarithmic endpoint
+  `(1 / α) ln(1 / (1 - α))` is not formalized here.
 
 ## Main definitions
 
@@ -57,18 +85,25 @@ which may equivalently be sampled lazily on demand via
   `n = O.card ≤ m` occupied slots, the probability over
   `σ ← PMF.uniformOfFintype (Equiv.Perm (Fin m))`
   that the first `k ≤ m` probes all hit `O` (`k < unsuccessfulProbes O σ`) is
-  `∏ i ∈ Finset.range k, ((n - i : ℝ≥0∞) / (m - i : ℝ≥0∞)) ≤ ((n : ℝ≥0∞) / (m : ℝ≥0∞)) ^ k`.
+  `∏ i ∈ Finset.range k, ((n - i : ℝ≥0∞) / (m - i : ℝ≥0∞)) ≤ ((n : ℝ≥0∞) / (m : ℝ≥0∞)) ^ k`
+  ([CLRS2009], third edition, proof of Theorem 11.6, pp. 274–275).
 * `Cslib.Algorithms.Lean.UniformProbing.expect_unsuccessfulProbes_le`,
   `Cslib.Algorithms.Lean.UniformProbing.expect_unsuccessfulProbes_le_two`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_eq_none_le`: Theorem 11.6 and
-  Corollary 11.7 of [CLRS2009] — an unsuccessful lookup or fresh-key insertion into a table holding
-  `n < m` keys makes at most `m / (m - n)` probes in expectation (`≤ 2` when `2 * n ≤ m`).
+  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_eq_none_le`,
+  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_eq_none_le_two`: Theorem 11.6
+  (pp. 274–275) and Corollary 11.7 (p. 276) of [CLRS2009], third edition — an unsuccessful lookup or
+  fresh-key insertion into a table holding `n < m` keys makes at most `m / (m - n)` probes in
+  expectation (`≤ 2` when `2 * n ≤ m`).
 * `Cslib.Algorithms.Lean.UniformProbing.TableRep.probeCount_tableInsert_of_isSome`,
   `Cslib.Algorithms.Lean.UniformProbing.probeCount_runTable_eq_firstInsert`,
-  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_mem_dom_le`: Theorem 11.8 of
-  [CLRS2009] — a successful lookup of a present key `u ∈ dom s` makes the exact same number of
-  probes as the operation that first inserted `u`, which is at most `m / (m - n) ≤ 2` in
-  expectation.
+  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_mem_dom_le`,
+  `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_mem_dom_le_two`: pathwise
+  insertion-cost identity and per-key intermediate bound from the proof of Theorem 11.8 (p. 276) of
+  [CLRS2009], third edition — a successful lookup of a fixed present key `u ∈ dom s` makes the
+  exact same number of probes as the operation that first inserted `u` after prefix `ops₁`
+  (reaching state `s₁`), which is at most `m / (m - (Dictionary.dom s₁).card) ≤ 2` in expectation
+  when `2 * n_max ≤ m` (the uniform-key-averaged `(1 / α) ln(1 / (1 - α))` endpoint of Theorem 11.8
+  is not formalized here).
 * `Cslib.Algorithms.Lean.UniformProbing.uniform_interpret_eq_lazy_perm`: eager sampling of the
   independent permutation family `Fin U → Equiv.Perm (Fin m)` agrees in distribution with lazy
   on-demand oracle evaluation (`RandomOracle.uniform_interpret_eq_lazy`).
@@ -80,13 +115,14 @@ Storing an explicit table of independent permutations in `(Equiv.Perm (Fin m)) ^
 `O(n_max)`-word self-contained Word-RAM dictionary,
 `Complexity/Algorithms/WordRAM/Dictionary/UniformProbing.lean` pairs a 2-universal multiply-shift
 primary hash `h₁(u) ∈ Fin (2 ^ M)` with a tabulated odd stride `h₂(u) ∈ Fin (2 ^ M)`
-([CLRS2009], Section 11.4, "Double hashing"), reusing the open-addressed table invariants proved
-here.
+([CLRS2009], third edition, Section 11.4, "Double hashing", pp. 272–274), reusing the
+open-addressed table invariants proved here.
 
 ## References
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein,
-  *Introduction to Algorithms*, Section 11.4][CLRS2009]
+  *Introduction to Algorithms*, third edition (MIT Press, 2009), Section 11.4,
+  pp. 270–277][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 -/
 
@@ -670,7 +706,7 @@ theorem expect_unsuccessfulProbes_le_two {m : ℕ} {O : Finset (Fin m)}
   (expect_unsuccessfulProbes_le (by omega)).trans (div_sub_le_two hm h2n)
 
 
-/-! ## Section 3: Open-Addressed Table Model & Theorem 11.8 ([CLRS2009], Section 11.4) -/
+/-! ## Section 3: Open-Addressed Table Model ([CLRS2009], Section 11.4, pp. 270–276) -/
 
 /-- Pure open-addressed hash table of `m` slots over key universe `Fin U`, where each slot holds
 `none` (empty) or `some (u, v)` (occupied by key `u` with value `v`). -/
@@ -1159,7 +1195,8 @@ theorem validHistory_and_runTableFrom_append {U V n_max m : ℕ} (hm : 0 < m)
         (s := ((Dictionary.spec U V n_max).step s o).1) (tableStep hm π T o).1 h.2
     exact ⟨⟨h.1, h₁⟩, h₂, hrun⟩
 
-/-- **Pathwise Theorem 11.8 of [CLRS2009] (`probeCount_runTable_eq_firstInsert`)**:
+/-- **Pathwise insertion-cost identity from the proof of Theorem 11.8 of [CLRS2009], third edition,
+p. 276 (`probeCount_runTable_eq_firstInsert`)**:
 if `ops = ops₁ ++ (.insert u v₀ :: ops₂)` is a valid operation history where `ops₁` is the prefix
 before `u` is inserted (`((Dictionary.spec U V n_max).run (Dictionary.empty U) ops₁).1 u = none`),
 then the number of probes made when searching for `u` after the entire history `ops` equals the
@@ -1250,7 +1287,8 @@ theorem not_mem_insert_of_run_eq_none {U V n_max : ℕ} {u : Fin U} :
     · exact not_mem_insert_of_run_eq_none
         (s := ((Dictionary.spec U V n_max).step s o).1) hnone v htail
 
-/-- **Theorem 11.6 & Corollary 11.7 of [CLRS2009] over `PMF.uniformOfFintype`**:
+/-- **Theorem 11.6 (pp. 274–275) & Corollary 11.7 (p. 276) of [CLRS2009], third edition, over
+`PMF.uniformOfFintype`**:
 for any valid operation history `ops` reaching state `s` with `(Dictionary.dom s).card < m` and any
 absent key `u` (`s u = none`), the expected number of probes made by an unsuccessful lookup `get u`
 or fresh-key insertion `insert u v` on `runTable hm π ops` over
@@ -1309,7 +1347,8 @@ theorem expect_probeCount_of_eq_none_le {U V n_max m : ℕ} (hm : 0 < m) (hcap :
     _ = (m : ℝ≥0∞) / ((m - (Dictionary.dom s).card : ℕ) : ℝ≥0∞) := by
           rw [ENNReal.tsum_mul_right, μ_all.tsum_coe, one_mul]
 
-/-- **Half-load corollary of Theorem 11.6 & Corollary 11.7 ([CLRS2009], Section 11.4)**:
+/-- **Half-load corollary of Theorem 11.6 & Corollary 11.7 ([CLRS2009], third edition, Section 11.4,
+pp. 274–276)**:
 when `2 * n_max ≤ m`, any unsuccessful lookup or fresh-key insertion after a valid history `ops`
 makes at most `2` probes in expectation over
 `π ← PMF.uniformOfFintype (Fin U → Equiv.Perm (Fin m))`. -/
@@ -1326,12 +1365,15 @@ theorem expect_probeCount_of_eq_none_le_two {U V n_max m : ℕ} (hm : 0 < m) (h2
   refine (expect_probeCount_of_eq_none_le hm (by omega) hvh hu (by omega)).trans ?_
   exact div_sub_le_two hm (by omega)
 
-/-- **Theorem 11.8 of [CLRS2009] over `PMF.uniformOfFintype` (Expected probes in a successful
-search)**:
+/-- **Per-key successful-search bound from the proof of Theorem 11.8 of [CLRS2009], third edition,
+p. 276**:
 if `ops = ops₁ ++ (.insert u v₀ :: ops₂)` is a valid operation history where `ops₁` is the prefix
 before `u` is first inserted (`s₁ u = none`), then the expected number of probes made when
-searching for `u` after `ops` equals the expected number of probes when `u` was first inserted
-after `ops₁`, and is at most `m / (m - (Dictionary.dom s₁).card) ≤ 2` when `2 * n_max ≤ m`. -/
+searching for the fixed key `u` after `ops` equals the expected number of probes when `u` was first
+inserted after `ops₁`, and is at most `m / (m - (Dictionary.dom s₁).card)` (this formalizes the
+per-key intermediate bound `1 / (1 - i / m) = m / (m - i)` for `i = (Dictionary.dom s₁).card` from
+the proof of Theorem 11.8; the uniform-key-averaged `(1 / α) ln(1 / (1 - α))` endpoint of Theorem
+11.8 is not formalized here). -/
 theorem expect_probeCount_of_mem_dom_le {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_max ≤ m)
     {ops₁ ops₂ : List (Dictionary.Op U)} {u : Fin U} {v₀ : ℕ}
     (hvh : (Dictionary.spec U V n_max).ValidHistory (Dictionary.empty U)
@@ -1354,8 +1396,9 @@ theorem expect_probeCount_of_mem_dom_le {U V n_max m : ℕ} (hm : 0 < m) (hcap :
   simp_rw [hcongr]
   exact expect_probeCount_of_eq_none_le hm hcap hvh₁ hu₁ hcard₁
 
-/-- **Half-load corollary of Theorem 11.8 ([CLRS2009], Section 11.4)**:
-when `2 * n_max ≤ m`, any successful lookup of a present key `u` (first inserted after prefix
+/-- **Half-load per-key successful-search bound from the proof of Theorem 11.8 ([CLRS2009], third
+edition, Section 11.4, p. 276)**:
+when `2 * n_max ≤ m`, any successful lookup of a fixed present key `u` (first inserted after prefix
 `ops₁`) makes at most `2` probes in expectation over
 `π ← PMF.uniformOfFintype (Fin U → Equiv.Perm (Fin m))`. -/
 theorem expect_probeCount_of_mem_dom_le_two {U V n_max m : ℕ} (hm : 0 < m) (h2cap : 2 * n_max ≤ m)

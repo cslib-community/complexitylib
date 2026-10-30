@@ -16,7 +16,9 @@ public import Complexity.Algorithms.WordRAM.Dictionary.UniformProbing
 This test file verifies:
 1. Concrete open-addressed probing behavior (`tableGet`, `tableInsert`, `runTable`, `probeCount`)
    under primary-slot collisions and in-place updates, together with the textbook expected-probe
-   bounds (`≤ m / (m - n) ≤ 2` for both unsuccessful and successful lookups) and lazy random-oracle
+   bounds (`≤ m / (m - n) ≤ 2` for unsuccessful lookups by [CLRS2009], third edition, Theorem 11.6
+   and Corollary 11.7, pp. 274–276, and for fixed-key successful lookups via the insertion-cost
+   identity and intermediate bound from the proof of Theorem 11.8, p. 276) and lazy random-oracle
    equivalence in `Cslib.Algorithms.Lean.UniformProbing`.
 2. Concrete parameter values, full-cycle stride permutations, pathwise Word-RAM execution
    (`opCode_execWithin`), composable `SubroutineDS` certificates over `Basis.exact` and
@@ -76,9 +78,10 @@ theorem test_pure_collision_and_overwrite :
     probeCount T₃ u₁ (testPermFamily u₁) = 2 := by
   decide
 
-/-- Concrete instantiation of the textbook expected-probe theorems (`≤ 2`) for both unsuccessful
-lookups (`[CLRS2009]`, Theorem 11.6 / Corollary 11.7) and successful lookups (`[CLRS2009]`,
-Theorem 11.8) on a table of `m = 8` slots with `U = 16` keys and capacity `n_max = 4`. -/
+/-- Concrete instantiation of the textbook expected-probe bounds (`≤ 2`) for both unsuccessful
+lookups (`[CLRS2009]`, third edition, Theorem 11.6 / Corollary 11.7, pp. 274–276) and fixed-key
+successful lookups (via the insertion-cost identity and intermediate bound from the proof of
+Theorem 11.8, p. 276) on a table of `m = 8` slots with `U = 16` keys and capacity `n_max = 4`. -/
 theorem test_expected_probes_le_two
     (ops₁ ops₂ : List (Dictionary.Op 16))
     (u u_abs : Fin 16) (v₀ : ℕ)

@@ -22,8 +22,9 @@ This file implements a self-contained open-addressed permutation-probing diction
 `Cslib.Algorithms.Lean.Dictionary.spec U V n_max` (`get` and `insert` up to `n_max` distinct keys)
 on the Word-RAM (`Cslib.WordRAM.Basis.exact` and `Cslib.WordRAM.Basis.standard`), following the
 double-hashing construction of
-[Cormen, Leiserson, Rivest, and Stein, Section 11.4, "Double hashing"][CLRS2009] with simple
-tabulation due to Zobrist (1970) and Pătraşcu and Thorup (2012).
+[Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition (MIT Press,
+2009), Section 11.4, "Double hashing", pp. 272–274][CLRS2009] with simple tabulation due to
+Zobrist (1970) and Pătraşcu and Thorup (2012).
 
 ## Design and reuse of `Cslib.Algorithms.Lean.UniformProbing`
 
@@ -53,7 +54,8 @@ bijectivity (`bijective_probeSeq`) rather than full uniform-permutation independ
 `expect_idealProbeSteps_le` connect the exact probe-path body cost
 `13 * probeCount + 8 * numChars U n_max + 49` to `≤ 8 * numChars U n_max + 75` expected
 instructions under an ideal uniform permutation law
-(`Complexity/Algorithms/Lean/UniformProbing.lean`, Theorems 11.6 and 11.8).
+(`Complexity/Algorithms/Lean/UniformProbing.lean`, Theorem 11.6, Corollary 11.7, and the per-key
+bound from the proof of Theorem 11.8 of [CLRS2009], third edition, pp. 274–276).
 
 ## Model, specialization, and cost scope
 
@@ -116,7 +118,8 @@ instructions under an ideal uniform permutation law
 ## References
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein,
-  *Introduction to Algorithms*, Section 11.4][CLRS2009]
+  *Introduction to Algorithms*, third edition (MIT Press, 2009), Section 11.4,
+  pp. 270–277][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 -/
 
