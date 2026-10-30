@@ -69,10 +69,19 @@ modulo `2 ^ P` and the streamed assignments polynomial in the input length.
   `Cslib.Circuits.Frontier.ExplicitTensorNetwork.numEdges_polyTime`,
   `Cslib.Circuits.Frontier.ExplicitTensorNetwork.initial_polyTime`: the weight, one step, the
   width and the initial state in polynomial time.
+* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.directContractionCertificate_bounds`: on every
+  input, polynomial workspace and time `2 ^ m + 1` times a polynomial in the input length, where
+  `m` is the number of edges.
+* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.exists_directContractionCertificate_le`: the same
+  with one constant, time `K (n + 1) ^ K 2 ^ m` and workspace `K (n + 1) ^ K` for input length
+  `n`.
+* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.exists_computableInO_contraction_mod`: the
+  contraction modulo `2 ^ P` is computable within time `(n + 1) ^ K 2 ^ m` and space
+  `(n + 1) ^ K`, up to constants, on every input.
 
-**Status.** `directContractionCertificate` is a native certificate, but its explicit bounds,
-`2 ^ m` times a polynomial in time and a polynomial in space on every input, are not yet extracted
-(`IndexFold.computableInO`, with `runPrefix_sumStep` bounding the live state).
+These bounds hold on every input because the live state keeps only the binary index, the input
+and an accumulator below `2 ^ P`, and `P` is unary (`runPrefix_sumStep`, with
+`Cslib.GenericRAM.BooleanFold.certificate_bounds`).
 
 ## References
 
@@ -315,14 +324,89 @@ theorem initial_polyTime :
     (ComputableInPolyTime.const 0)
 
 /-- **A native certificate for direct summation**: one finite machine streams the `2 ^ m`
-assignments with `BooleanFold`, running the polynomial-time step `sumStep` on each. Its resource
-bounds are those of `BooleanFold.certificate`; the explicit `2 ^ m · poly` time and polynomial
-space bounds are not yet extracted here. -/
+assignments with `BooleanFold`, running the polynomial-time step `sumStep` on each. Its explicit
+bounds are `directContractionCertificate_bounds` and `exists_directContractionCertificate_le`. -/
 noncomputable def directContractionCertificate :
     NativeCertificate directContraction encContractionInput encNat :=
   NativeCertificate.snd (NativeCertificate.snd (NativeCertificate.snd
     (BooleanFold.certificate (NativeCertificate.ofPolyTime numEdges_polyTime)
       (NativeCertificate.ofPolyTime initial_polyTime)
       (NativeCertificate.ofPolyTime sumStep_polyTime))))
+
+/-! ### Explicit bounds -/
+
+/-- The live state of every prefix is at most three times as long as the input: it retains the
+precision and the network, and its accumulator is below `2 ^ P`. -/
+private theorem length_runPrefix_sumStep_le (x : ℕ × ℕ × ExplicitTensorNetwork ℕ) (j : ℕ) :
+    (encSumState (BooleanFold.runPrefix sumStep x.2.2.numEdges j ((x.1, x.2.2), 0)).2.2).length ≤
+      3 * (encContractionInput x).length := by
+  obtain ⟨P, r, d⟩ := x
+  rw [runPrefix_sumStep]
+  have h := length_encNat_le
+    (Nat.mod_lt (((List.range j).map (lowBits d.numEdges)).map (weightMod P d)).sum
+      (Nat.two_pow_pos P))
+  simp only [encContractionInput, length_encPair, encUnary_apply, List.length_replicate]
+  omega
+
+/-- **The bounds of direct summation**, on every input `(P, r, d)`: polynomial workspace in the
+input length, and time `2 ^ m + 1` times a polynomial in the input length, where `m` is the number
+of edges of `d`. -/
+theorem directContractionCertificate_bounds :
+    PolyBounded (fun x => (encContractionInput x).length) directContractionCertificate.space ∧
+      ∃ T : ℕ × ℕ × ExplicitTensorNetwork ℕ → ℕ,
+        PolyBounded (fun x => (encContractionInput x).length) T ∧
+        ∀ x, directContractionCertificate.time x ≤ (2 ^ x.2.2.numEdges + 1) * T x :=
+  BooleanFold.certificate_bounds (NativeCertificate.ofPolyTime_isPolynomial numEdges_polyTime)
+    (NativeCertificate.ofPolyTime_isPolynomial initial_polyTime)
+    (NativeCertificate.ofPolyTime_isPolynomial sumStep_polyTime)
+    ((PolyBounded.const 3).mul .self) fun x j _ => length_runPrefix_sumStep_le x j
+
+/-- **The bounds of direct summation in one constant**: there is `K` such that on every input
+`x = (P, r, d)` the time is at most `K (n + 1) ^ K 2 ^ m` and the workspace at most
+`K (n + 1) ^ K`, where `n` is the input length and `m` the number of edges of `d`. Since
+`2 ^ m ≤ 2 ^ (K m)`, this gives the unconditional `K (n + 1) ^ K 2 ^ (K m)` form of the
+contraction contract. -/
+theorem exists_directContractionCertificate_le :
+    ∃ K : ℕ, ∀ x : ℕ × ℕ × ExplicitTensorNetwork ℕ,
+      directContractionCertificate.time x ≤
+          K * ((encContractionInput x).length + 1) ^ K * 2 ^ x.2.2.numEdges ∧
+        directContractionCertificate.space x ≤ K * ((encContractionInput x).length + 1) ^ K := by
+  obtain ⟨hspace, T, hT, htime⟩ := directContractionCertificate_bounds
+  obtain ⟨ct, dt, hct⟩ := hT.exists_le
+  obtain ⟨cs, ds, hcs⟩ := hspace.exists_le
+  refine ⟨2 * ct + cs + dt + ds, fun x => ⟨?_, ?_⟩⟩
+  · have h1 : 2 ^ x.2.2.numEdges + 1 ≤ 2 * 2 ^ x.2.2.numEdges := by
+      have := Nat.one_le_two_pow (n := x.2.2.numEdges)
+      omega
+    have h2 : ((encContractionInput x).length + 1) ^ dt ≤
+        ((encContractionInput x).length + 1) ^ (2 * ct + cs + dt + ds) :=
+      Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
+    calc directContractionCertificate.time x
+        ≤ (2 * 2 ^ x.2.2.numEdges) * (ct * ((encContractionInput x).length + 1) ^ dt) :=
+          (htime x).trans (Nat.mul_le_mul h1 (hct x))
+      _ = 2 * ct * ((encContractionInput x).length + 1) ^ dt * 2 ^ x.2.2.numEdges := by
+          ac_rfl
+      _ ≤ _ := Nat.mul_le_mul_right _ (Nat.mul_le_mul (by omega) h2)
+  · exact (hcs x).trans (Nat.mul_le_mul (by omega)
+      (Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)))
+
+/-- **Direct summation is computable within time `(n + 1) ^ K 2 ^ m` and space `(n + 1) ^ K`**,
+up to constants, on every input `x = (P, r, d)`, where `n` is the input length and `m` the number
+of edges of `d`. The output is the contraction of `d` modulo `2 ^ P`, in binary. -/
+theorem exists_computableInO_contraction_mod :
+    ∃ K : ℕ, ComputableInO
+      (fun x : ℕ × ℕ × ExplicitTensorNetwork ℕ => x.2.2.contraction % 2 ^ x.1)
+      encContractionInput encNat
+      (fun x => ((encContractionInput x).length + 1) ^ K * 2 ^ x.2.2.numEdges)
+      (fun x => ((encContractionInput x).length + 1) ^ K) := by
+  obtain ⟨K, hK⟩ := exists_directContractionCertificate_le
+  refine ⟨K, (directContractionCertificate.computes.mono K (fun x => ?_) (fun x => ?_)).of_enc_eq
+    fun x => ?_⟩
+  · refine (hK x).1.trans ?_
+    rw [Nat.mul_assoc]
+    exact Nat.mul_le_mul_left K (Nat.le_succ _)
+  · exact (hK x).2.trans (Nat.mul_le_mul_left K (Nat.le_succ _))
+  · obtain ⟨P, r, d⟩ := x
+    rw [directContraction_eq]
 
 end Cslib.Circuits.Frontier.ExplicitTensorNetwork

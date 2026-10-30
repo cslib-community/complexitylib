@@ -14,7 +14,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectCont
 
 Hand-checked direct summations of small explicit networks modulo `2 ^ P`, including a precision
 that reduces the result, a precision zero, a port naming no edge, a table that is too short, and
-a network without edges.
+a network without edges. The last test derives the unconditional contract form of the bounds.
 -/
 
 @[expose] public section
@@ -57,5 +57,17 @@ def noEdges : ExplicitTensorNetwork ℕ :=
   ⟨0, [([], [6]), ([], [7])]⟩
 
 example : directContraction (5, 0, noEdges) = 42 % 32 := by decide
+
+/-- The bounds give the unconditional contract form `K (n + 1) ^ K 2 ^ (K m)` on every input. -/
+example : ∃ K : ℕ, ∀ x : ℕ × ℕ × ExplicitTensorNetwork ℕ,
+    directContractionCertificate.time x ≤
+        K * ((encContractionInput x).length + 1) ^ K * 2 ^ (K * x.2.2.numEdges) ∧
+      directContractionCertificate.space x ≤ K * ((encContractionInput x).length + 1) ^ K := by
+  obtain ⟨K, hK⟩ := exists_directContractionCertificate_le
+  refine ⟨K + 1, fun x => ⟨(hK x).1.trans ?_, (hK x).2.trans ?_⟩⟩
+  · exact Nat.mul_le_mul (Nat.mul_le_mul (Nat.le_succ K)
+      (Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ K)))
+      (Nat.pow_le_pow_right two_pos (Nat.le_mul_of_pos_left _ (Nat.succ_pos K)))
+  · exact Nat.mul_le_mul (Nat.le_succ K) (Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ K))
 
 end ComplexityTests.Computability.Circuit.Frontier.DirectContraction
