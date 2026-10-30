@@ -295,16 +295,16 @@ theorem advantage_bind_le {α : Type*} (d : PMF α) (game1 game2 : α → Game) 
     rw [PMF.bind_apply, PMF.bind_apply]
     calc ∑' a, d a * game1 a true
         ≤ ∑' a, d a * (game2 a true + ENNReal.ofReal ε) :=
-          ENNReal.tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h1 a) zero_le
+          tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h1 a) zero_le
       _ = (∑' a, d a * game2 a true) + ENNReal.ofReal ε := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, d.tsum_coe, one_mul]
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, d.tsum_coe, one_mul]
   have hsum2 : (d.bind game2) true ≤ (d.bind game1) true + ENNReal.ofReal ε := by
     rw [PMF.bind_apply, PMF.bind_apply]
     calc ∑' a, d a * game2 a true
         ≤ ∑' a, d a * (game1 a true + ENNReal.ofReal ε) :=
-          ENNReal.tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h2 a) zero_le
+          tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h2 a) zero_le
       _ = (∑' a, d a * game1 a true) + ENNReal.ofReal ε := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, d.tsum_coe, one_mul]
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, d.tsum_coe, one_mul]
   have hadv := advantage_le_of_apply_le ENNReal.ofReal_ne_top hsum1 hsum2
   rwa [ENNReal.toReal_ofReal hε0] at hadv
 
@@ -324,8 +324,8 @@ theorem advantage_bind_uniformOfFintype_of_ne_le {α : Type*} [Fintype α] [None
   have hle₁ :
       ((PMF.uniformOfFintype α).bind g) true ≤ p true + (Fintype.card α : ℝ≥0∞)⁻¹ := by
     rw [← PMF.bind_const (PMF.uniformOfFintype α) p, ← hsingle, PMF.bind_apply, PMF.bind_apply,
-      PMF.bind_apply, ← ENNReal.tsum_add]
-    refine ENNReal.tsum_le_tsum fun a => ?_
+      PMF.bind_apply, ← tsum_add]
+    refine tsum_le_tsum fun a => ?_
     rw [← mul_add]
     refine mul_le_mul_of_nonneg_left ?_ zero_le
     by_cases ha : a = a₀
@@ -335,8 +335,8 @@ theorem advantage_bind_uniformOfFintype_of_ne_le {α : Type*} [Fintype α] [None
   have hle₂ :
       p true ≤ ((PMF.uniformOfFintype α).bind g) true + (Fintype.card α : ℝ≥0∞)⁻¹ := by
     nth_rw 1 [← PMF.bind_const (PMF.uniformOfFintype α) p]
-    rw [← hsingle, PMF.bind_apply, PMF.bind_apply, PMF.bind_apply, ← ENNReal.tsum_add]
-    refine ENNReal.tsum_le_tsum fun a => ?_
+    rw [← hsingle, PMF.bind_apply, PMF.bind_apply, PMF.bind_apply, ← tsum_add]
+    refine tsum_le_tsum fun a => ?_
     rw [← mul_add]
     refine mul_le_mul_of_nonneg_left ?_ zero_le
     by_cases ha : a = a₀
@@ -363,8 +363,8 @@ theorem bind_apply_le_add_bind_apply {β : Type*} (μ : PMF β)
       (μ.bind game2) b ≤ (μ.bind game1) b + (μ.bind err) b := by
   have h1 (f g : β → Game) (hle : ∀ x, f x b ≤ g x b + err x b) :
       (μ.bind f) b ≤ (μ.bind g) b + (μ.bind err) b := by
-    simp only [PMF.bind_apply, ← ENNReal.tsum_add, ← mul_add]
-    exact ENNReal.tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
+    simp only [PMF.bind_apply, ← tsum_add, ← mul_add]
+    exact tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
   exact ⟨h1 game1 game2 fun x => (h x).1, h1 game2 game1 fun x => (h x).2⟩
 
 /-- Averaging pointwise acceptance-probability bounds `game1 x true ≤ game2 x true + err x true`

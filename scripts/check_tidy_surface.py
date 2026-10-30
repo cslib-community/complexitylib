@@ -23,6 +23,8 @@ Declarations written in source come from the `.ilean` files and statements from 
 files, read by `scripts/lean_outputs.py` and `scripts/LeanOutputs.lean`. The check needs the
 build outputs of `lake build Complexity ComplexityTests ComplexityAbstracts` (`lake build` and
 `lake test`), and refuses stale ones unless `--no-build-check` is given.
+This is a post-build audit; the default freshness probe invokes Lake and may materialize
+dependencies.
 """
 
 from __future__ import annotations

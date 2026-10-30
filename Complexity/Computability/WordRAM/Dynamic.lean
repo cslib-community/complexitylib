@@ -14,6 +14,10 @@ public import Complexity.Computability.WordRAM.Trace
 /-!
 # Fixed-program implementations of dynamic data structures
 
+`DynamicProgram` depends only on the existing `PFunctor` operation signature and its instruction
+basis, which defaults to `.standard`. Deterministic and relational specifications supply their
+signatures by coercion; correctness certificates retain the actual specification separately.
+
 An implementation has one structured program, one output register, and a register-only calling
 convention. Each call replaces designated input registers with encoded words, preserving all
 other registers and the entire memory. Argument encoding, external delivery, and result decoding
@@ -74,39 +78,41 @@ universe u v z
 
 variable {r : ℕ} {D : Stateful.Spec.{u, v, z}}
 
-/-- A single program serving all operations through a fixed register calling convention. -/
-structure DynamicProgram (D : Stateful.Spec.{u, v, z}) (r : ℕ) where
+/-- A single program serving an operation signature through a fixed register calling convention.
+Deterministic and relational stateful specifications supply their signatures by coercion;
+the program itself makes no assumption about abstract states or permitted transitions. -/
+structure DynamicProgram (S : PFunctor.{v, z}) (r : ℕ) (B : Basis := .standard) where
   /-- The same code is executed for every operation. -/
-  code : Code .standard r
+  code : Code B r
   /-- Register returned by the final halt instruction. -/
   output : Fin r
   /-- Registers overwritten by externally supplied operation arguments. -/
   input : Fin r → Bool
   /-- Encoded arguments, independent of the maintained machine state. -/
-  encode : D.Op → Fin r → ℕ
+  encode : S.A → Fin r → ℕ
   /-- Interpretation of the final register tuple as the operation's typed observation. -/
-  decode : (o : D.Op) → (Fin r → ℕ) → Option (D.Result o)
+  decode : (o : S.A) → (Fin r → ℕ) → Option (S.B o)
 
 namespace DynamicProgram
 
-variable (P : DynamicProgram D r)
+variable {S : PFunctor.{v, z}} {B : Basis} (P : DynamicProgram S r B)
 
 /-- Deliver operation arguments without changing maintained memory or non-input registers. -/
-def prepare (o : D.Op) (x : Data r) : Data r where
+def prepare (o : S.A) (x : Data r) : Data r where
   regs i := if P.input i then P.encode o i else x.regs i
   mem := x.mem
 
 /-- Delivering operation arguments preserves the machine memory unchanged. -/
 @[simp]
-theorem prepare_mem (o : D.Op) (x : Data r) : (P.prepare o x).mem = x.mem := rfl
+theorem prepare_mem (o : S.A) (x : Data r) : (P.prepare o x).mem = x.mem := rfl
 
 /-- Registers outside the calling convention retain their contents. -/
-theorem prepare_regs_of_not_input {i : Fin r} (hi : P.input i = false) (o : D.Op) (x : Data r) :
+theorem prepare_regs_of_not_input {i : Fin r} (hi : P.input i = false) (o : S.A) (x : Data r) :
     (P.prepare o x).regs i = x.regs i := by
   simp [prepare, hi]
 
 /-- Argument delivery preserves bounded words when the arguments fit. -/
-theorem prepare_bounded {w : ℕ} {o : D.Op} {x : Data r} (hx : x.Bounded w)
+theorem prepare_bounded {w : ℕ} {o : S.A} {x : Data r} (hx : x.Bounded w)
     (ho : ∀ i, P.input i = true → Fits w (P.encode o i)) : (P.prepare o x).Bounded w := by
   refine ⟨fun i => ?_, hx.2⟩
   change Fits w (if P.input i then P.encode o i else x.regs i)
@@ -120,7 +126,7 @@ instructions; exhaustion, a machine fault, or decoder failure returns `none`.
 
 This interpreter does not check the initial state's global word bound or operation admissibility.
 Use `DynamicCertificate.execOp_of_eval` to connect a successful call to certified execution. -/
-def eval (w fuel : ℕ) (o : D.Op) (x : Data r) : Option (Data r × D.Result o × ℕ) :=
+def eval (w fuel : ℕ) (o : S.A) (x : Data r) : Option (Data r × S.B o × ℕ) :=
   match P.code.eval w fuel (P.prepare o x) with
   | none => none
   | some (y, n) => (P.decode o y.regs).map fun a => (y, a, n + 1)
@@ -133,13 +139,13 @@ structure OperationTrace where
   probes : List Probe
 
 /-- A bounded machine call with native execution evidence independent of any resource bound. -/
-def ExecOp (w : ℕ) : Stateful.Execution D (Data r) OperationTrace := fun x o a y trace =>
+def ExecOp (w : ℕ) : Stateful.Execution S (Data r) OperationTrace := fun x o a y trace =>
   (P.prepare o x).Bounded w ∧ ∃ n, TraceExec w P.code (P.prepare o x) y n trace.probes ∧
     P.decode o y.regs = some a ∧ trace.instructions = n + 1
 
 /-- Successful typed evaluation supplies an exact operation trace when the delivered state is
 bounded. Evaluator success alone does not imply a bound on untouched memory. -/
-theorem ExecOp.of_eval {w fuel k : ℕ} {o : D.Op} {x y : Data r} {a : D.Result o}
+theorem ExecOp.of_eval {w fuel k : ℕ} {o : S.A} {x y : Data r} {a : S.B o}
     (hb : (P.prepare o x).Bounded w) (h : P.eval w fuel o x = some (y, a, k)) :
     ∃ probes, P.ExecOp w x o a y ⟨k, probes⟩ := by
   cases he : P.code.eval w fuel (P.prepare o x) with
@@ -156,7 +162,7 @@ theorem ExecOp.of_eval {w fuel k : ℕ} {o : D.Op} {x y : Data r} {a : D.Result 
 
 /-- Every call is an execution of one fixed flat machine program. The returned register tuple
 is observed at the final state; the designated output register is also the halt value. -/
-theorem ExecOp.executes {w : ℕ} {x y : Data r} {o : D.Op} {a : D.Result o}
+theorem ExecOp.executes {w : ℕ} {x y : Data r} {o : S.A} {a : S.B o}
     {trace : OperationTrace} (h : P.ExecOp w x o a y trace) :
     Executes w (P.code.program P.output) ⟨0, P.prepare o x⟩ (y.regs P.output)
       trace.instructions := by
@@ -165,13 +171,13 @@ theorem ExecOp.executes {w : ℕ} {x y : Data r} {o : D.Op} {a : D.Result o}
   exact he.exec.executes P.output
 
 /-- A call preserves bounded words, including every word in the observed register tuple. -/
-theorem ExecOp.bounded {w : ℕ} {x y : Data r} {o : D.Op} {a : D.Result o}
+theorem ExecOp.bounded {w : ℕ} {x y : Data r} {o : S.A} {a : S.B o}
     {trace : OperationTrace} (h : P.ExecOp w x o a y trace) : y.Bounded w := by
   obtain ⟨hb, n, he, _, _⟩ := h
   exact he.exec.bounded hb
 
 /-- Calls are deterministic in their final representation, observation, and instruction count. -/
-theorem ExecOp.unique {w : ℕ} {x y y' : Data r} {o : D.Op} {a a' : D.Result o}
+theorem ExecOp.unique {w : ℕ} {x y y' : Data r} {o : S.A} {a a' : S.B o}
     {trace trace' : OperationTrace} (h : P.ExecOp w x o a y trace)
     (h' : P.ExecOp w x o a' y' trace') :
     y = y' ∧ a = a' ∧ trace.instructions = trace'.instructions := by
@@ -181,8 +187,8 @@ theorem ExecOp.unique {w : ℕ} {x y y' : Data r} {o : D.Op} {a a' : D.Result o}
   exact ⟨rfl, Option.some.inj (ha.symm.trans ha'), ht.trans ht'.symm⟩
 
 /-- A call's final state and instruction count agree with any structured execution of the code. -/
-theorem ExecOp.eq_of_exec {P : DynamicProgram D r} {w : ℕ} {x y z : Data r} {o : D.Op}
-    {a : D.Result o} {trace : OperationTrace} {m : ℕ} (he : P.ExecOp w x o a y trace)
+theorem ExecOp.eq_of_exec {P : DynamicProgram S r B} {w : ℕ} {x y z : Data r} {o : S.A}
+    {a : S.B o} {trace : OperationTrace} {m : ℕ} (he : P.ExecOp w x o a y trace)
     (h : Exec w P.code (P.prepare o x) z m) :
     y = z ∧ trace.instructions = m + 1 := by
   obtain ⟨_, n, ht, _, hn⟩ := he
@@ -190,7 +196,7 @@ theorem ExecOp.eq_of_exec {P : DynamicProgram D r} {w : ℕ} {x y z : Data r} {o
   exact ⟨rfl, hn⟩
 
 /-- The write transcript supplies a frame rule for a call, including register-only delivery. -/
-theorem ExecOp.frame {w : ℕ} {x y : Data r} {o : D.Op} {a : D.Result o}
+theorem ExecOp.frame {w : ℕ} {x y : Data r} {o : S.A} {a : S.B o}
     {trace : OperationTrace} (h : P.ExecOp w x o a y trace) {Q : HeapAssertion}
     (hQ : Q.holds x.mem) (hd : Disjoint Q.footprint (Probe.writes trace.probes)) :
     Q.holds y.mem := by

@@ -391,7 +391,7 @@ private theorem toOuterMeasure_flag_le (P : SigmaProtocol X Y T C Z) (key : X ×
               {x | x.2.2 = true}
           ≤ ∑' ts, (P.commit key.1 key.2) ts *
               {ts : T × P.State | (st.1.1.lookup (m, ts.1)).isSome}.indicator 1 ts := by
-            refine ENNReal.tsum_le_tsum fun ts => mul_le_mul_of_nonneg_left ?_ zero_le
+            refine tsum_le_tsum fun ts => mul_le_mul_of_nonneg_left ?_ zero_le
             by_cases hts : (st.1.1.lookup (m, ts.1)).isSome
             · rw [Set.indicator_of_mem (show ts ∈ {ts : T × P.State |
                 (st.1.1.lookup (m, ts.1)).isSome} from hts), Pi.one_apply]
@@ -828,12 +828,12 @@ private theorem bind_apply_le_add {α β : Type} {μ : PMF α} {f g : α → PMF
     (μ.bind f) b ≤ (μ.bind g) b + K := by
   simp only [PMF.bind_apply]
   calc ∑' a, μ a * f a b ≤ ∑' a, μ a * (g a b + K) := by
-        refine ENNReal.tsum_le_tsum fun a => ?_
+        refine tsum_le_tsum fun a => ?_
         by_cases ha : a ∈ μ.support
         · exact mul_le_mul_of_nonneg_left (h a ha) zero_le
         · rw [(PMF.apply_eq_zero_iff _ _).mpr ha, zero_mul, zero_mul]
     _ = ∑' a, μ a * g a b + K := by
-        simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 omit [DecidableEq C] in
 /-- **The game hops** for one key and one choice of the forger's coins: the experiment wins at

@@ -272,7 +272,9 @@ generic determinants has `n * n` variables, degree at most `n` and arithmetic ci
 `3 * n ^ 4 + 4` gates. -/
 theorem detFamily_mem_VP : detFamily K ∈ VP K := by
   choose c hc hsize using exists_circuit_det (K := K)
-  refine ⟨⟨by fun_prop, PolynomiallyBounded.id.mono_of_le fun n =>
+  refine ⟨⟨?_, PolynomiallyBounded.id.mono_of_le fun n =>
     totalDegree_det_genericMatrix_le n⟩, c, PolynomiallyBounded.mono_of_le (by fun_prop) hsize, hc⟩
+  change PolynomiallyBounded (fun n : ℕ => n * n)
+  fun_prop
 
 end Cslib.Circuits.Arithmetic

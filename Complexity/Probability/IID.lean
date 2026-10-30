@@ -73,7 +73,7 @@ noncomputable def iid (μ : PMF α) : (k : ℕ) → PMF (Fin k → α)
         intro h
         exact absurd (by rw [h, Fin.tail_cons]) hw
     · intro a ha
-      rw [PMF.map_apply, ENNReal.tsum_eq_zero.mpr, mul_zero]
+      rw [PMF.map_apply, tsum_eq_zero_iff.mpr, mul_zero]
       intro w
       simp only [ite_eq_right_iff]
       intro h

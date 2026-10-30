@@ -147,9 +147,11 @@ example :
       (fun (_, answer, _) => answer) = some none ∧
     ((Stack.implementation 4 2).eval 4 0 .size (Stack.initial 3)).map
       (fun (_, answer, _) => answer) = some 0 ∧
-    ({ exchangeProgram 4 with decode := fun _ _ => none }).eval 4 0 7
+    ({ exchangeProgram 4 with decode := fun _ _ => none } :
+      DynamicProgram (exchangeSpec 4) 3 .standard).eval 4 0 7
       ⟨fun _ => 0, fun _ => 0⟩ = none ∧
-    ({ exchangeProgram 4 with code := .loop (.eq 0 0) (.op (.copy 0 0)) }).eval 4 2 7
+    ({ exchangeProgram 4 with code := .loop (.eq 0 0) (.op (.copy 0 0)) } :
+      DynamicProgram (exchangeSpec 4) 3 .standard).eval 4 2 7
       ⟨fun _ => 0, fun _ => 0⟩ = none := by
   decide
 

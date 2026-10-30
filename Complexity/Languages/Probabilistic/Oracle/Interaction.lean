@@ -168,7 +168,7 @@ theorem acceptProbWith_bind_ite_le (program : ProbOracleComp spec Bool)
       acceptProbWith oracle program s := by
   conv_rhs => rw [← bind_pure program, acceptProbWith_bind]
   rw [acceptProbWith_bind]
-  refine ENNReal.tsum_le_tsum fun x => mul_le_mul_right ?_ _
+  refine tsum_le_tsum fun x => mul_le_mul_right ?_ _
   cases x.1
   · simp only [Bool.false_eq_true, ↓reduceIte, le_refl]
   · simp only [↓reduceIte, acceptProbWith_pure]

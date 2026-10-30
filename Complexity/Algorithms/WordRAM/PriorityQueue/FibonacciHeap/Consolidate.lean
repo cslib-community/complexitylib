@@ -12,13 +12,15 @@ public import Complexity.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.BasicOps
 /-!
 # Degree-indexed root consolidation and `extractMin` for a Fibonacci heap
 
-This file proves the correctness, memory-safety, and `O(log n)` amortized instruction bound of
-`scatterRootCode` and `extractMinCode` [Fredman and Tarjan][FredmanTarjan1987]
+This file proves the correctness, memory-safety, and `O(log |dom s| + 1)` amortized instruction
+bound of `scatterRootCode` and `extractMinCode` in the current number of stored elements
+`sz = (IndexedMinPQ.dom s).card` [Fredman and Tarjan][FredmanTarjan1987]
 [Cormen et al., Section 19.2][CLRS2009]:
 
 * **Degree-table invariant (`SlotInv`):** Tracks the subset `slotTrees` of consolidated root trees
-  currently stored in `cons[0..maxDeg]`, maintaining pairwise-distinct degrees, `maxDeg ≤
-  2 * Nat.log 2 n + 1`, and zeroing of all unoccupied entries `cons[d]` (`d ≤ n`).
+  currently stored in `cons[0..maxDeg]` when consolidating at most `sz` nodes, maintaining
+  pairwise-distinct degrees, `maxDeg ≤ 2 * Nat.log 2 sz + 1`, and zeroing of all unoccupied entries
+  `cons[d]` (`d ≤ n`).
 * **Root scattering (`scatterRootCode_exec`):** Repeatedly links equal-degree roots via
   `ValidRoot.link` under lexicographic `IndexedMinPQ.PrioLT` using internal potential
   `50 * slotTrees.length`,
@@ -26,9 +28,9 @@ This file proves the correctness, memory-safety, and `O(log n)` amortized instru
   other live nodes.
 * **Minimum extraction (`extractMinCode_exec`):** Removes `z = minRoot - 1` (agreeing with
   `IndexedMinPQ.findMin`), scatters `z`'s children and the `numRoots - 1` remaining roots into
-  `cons`, and scans only `0 .. maxDeg` (`≤ 2 * Nat.log 2 n + 2` slots) to rebuild the root circular
-  list and `minRootReg` while restoring `cons = 0` in `t + potential y ≤ 410 * (Nat.log 2 n + 1) +
-  potential x` instructions.
+  `cons`, and scans only `0 .. maxDeg` (`≤ 2 * Nat.log 2 (IndexedMinPQ.dom s).card + 2` slots) to
+  rebuild the root circular list and `minRootReg` while restoring `cons = 0` in
+  `t + potential y ≤ 410 * (Nat.log 2 (IndexedMinPQ.dom s).card + 1) + potential x` instructions.
 
 ## Main definitions
 
@@ -39,8 +41,9 @@ This file proves the correctness, memory-safety, and `O(log n)` amortized instru
 
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.scatterRootCode_exec`: amortized root
   scattering and equal-degree linking specification.
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.extractMinCode_exec`: `O(log n)` amortized
-  `extractMin` specification.
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.extractMinCode_exec`:
+  `O(log |dom s| + 1)` amortized `extractMin` specification in the current number of stored
+  elements.
 
 ## References
 
@@ -97,11 +100,11 @@ theorem ValidRoot.frame_nodes {n : ℕ} {st st' : RawState n} {T : FHTree n}
       let hu' := h u (T.nodes_eq ▸ List.mem_cons_of_mem T.root hu)
       hu'.2.2.2.2.2.2)
 
-/-- Every valid subtree `T` disjoint from at least one other handle `z : Fin n` satisfies both
-`T.deg ≤ 2 * Nat.log 2 n + 1` and `T.deg + 2 ≤ n`. -/
-theorem deg_bounds_of_extra {n : ℕ} {st : RawState n} {T : FHTree n} {z : Fin n}
-    (hT : ValidSubtree st none T) (hnd : (z :: T.nodes).Nodup) :
-    T.deg ≤ 2 * Nat.log 2 n + 1 ∧ T.deg + 2 ≤ n := by
+/-- Every valid subtree `T` with `T.size ≤ sz` disjoint from at least one other handle `z : Fin n`
+satisfies both `T.deg ≤ 2 * Nat.log 2 sz + 1` and `T.deg + 2 ≤ n`. -/
+theorem deg_bounds_of_extra {n sz : ℕ} {st : RawState n} {T : FHTree n} {z : Fin n}
+    (hsz : T.size ≤ sz) (hT : ValidSubtree st none T) (hnd : (z :: T.nodes).Nodup) :
+    T.deg ≤ 2 * Nat.log 2 sz + 1 ∧ T.deg + 2 ≤ n := by
   have hlen : 1 + T.size ≤ n := by
     have h : (z :: T.nodes).length ≤ n := by simpa using hnd.length_le_card
     simp only [List.length_cons] at h
@@ -109,8 +112,7 @@ theorem deg_bounds_of_extra {n : ℕ} {st : RawState n} {T : FHTree n} {z : Fin 
     omega
   have hfib : Nat.fib (T.deg + 2) ≤ T.size := hT.fib_le_size
   have hd_size : T.deg + 1 ≤ T.size := (deg_add_one_le_fib T.deg).trans hfib
-  have hd_log : T.deg ≤ 2 * Nat.log 2 n + 1 :=
-    (hT.deg_bounds (m := n) (by omega)).1
+  have hd_log : T.deg ≤ 2 * Nat.log 2 sz + 1 := (hT.deg_bounds hsz).1
   exact ⟨hd_log, by omega⟩
 
 private theorem nodup_eraseIdx {α : Type*} :
@@ -144,18 +146,18 @@ private theorem length_eraseIdx_add_one {α : Type*} :
 /-! ## Consolidation table invariant `SlotInv` -/
 
 /-- Invariant for the degree consolidation table `st.cons` holding `slotTrees` within
-`0 .. maxDeg`. -/
-def SlotInv (n : ℕ) (st : RawState n) (slotTrees : List (FHTree n)) (maxDeg : ℕ) : Prop :=
+`0 .. maxDeg`, where `sz` bounds the total number of nodes being consolidated. -/
+def SlotInv (n sz : ℕ) (st : RawState n) (slotTrees : List (FHTree n)) (maxDeg : ℕ) : Prop :=
   (slotTrees.map FHTree.deg).Nodup ∧
   (∀ T ∈ slotTrees, ValidRoot st none T ∧ T.deg ≤ maxDeg) ∧
   (∀ T ∈ slotTrees, st.cons T.deg = T.root.val + 1) ∧
   (∀ d ≤ n, (∀ T ∈ slotTrees, T.deg ≠ d) → st.cons d = 0) ∧
-  maxDeg ≤ 2 * Nat.log 2 n + 1 ∧
+  maxDeg ≤ 2 * Nat.log 2 sz + 1 ∧
   (maxDeg = 0 ∨ maxDeg + 2 ≤ n)
 
 /-- Initial empty consolidation table when `∀ d ≤ n, st.cons d = 0`. -/
-theorem SlotInv.empty {n : ℕ} {st : RawState n} (hcons : ∀ d ≤ n, st.cons d = 0) :
-    SlotInv n st [] 0 :=
+theorem SlotInv.empty {n sz : ℕ} {st : RawState n} (hcons : ∀ d ≤ n, st.cons d = 0) :
+    SlotInv n sz st [] 0 :=
   ⟨List.nodup_nil,
    fun _ h => absurd h List.not_mem_nil,
    fun _ h => absurd h List.not_mem_nil,
@@ -163,11 +165,11 @@ theorem SlotInv.empty {n : ℕ} {st : RawState n} (hcons : ∀ d ≤ n, st.cons 
    by omega, Or.inl rfl⟩
 
 /-- Framing `SlotInv` across a transition preserving `cons` and `ValidRoot` on `slotTrees`. -/
-theorem SlotInv.frame {n maxDeg : ℕ} {st st' : RawState n} {slotTrees : List (FHTree n)}
-    (hs : SlotInv n st slotTrees maxDeg)
+theorem SlotInv.frame {n sz maxDeg : ℕ} {st st' : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg)
     (hcons : st'.cons = st.cons)
     (hvalid : ∀ T ∈ slotTrees, ValidRoot st' none T) :
-    SlotInv n st' slotTrees maxDeg := by
+    SlotInv n sz st' slotTrees maxDeg := by
   obtain ⟨hnd, htr, hhit, hemp, hmd1, hmd2⟩ := hs
   exact ⟨hnd,
     fun T hT => ⟨hvalid T hT, (htr T hT).2⟩,
@@ -178,8 +180,8 @@ theorem SlotInv.frame {n maxDeg : ℕ} {st st' : RawState n} {slotTrees : List (
 /-- Lookup in `st.cons d` (`d ≤ n`): either `st.cons d = 0` and no tree in `slotTrees` has degree
 `d`, or a unique index `i < slotTrees.length` has `(slotTrees[i]).deg = d` and
 `st.cons d = (slotTrees[i]).root.val + 1`. -/
-theorem SlotInv.lookup {n maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
-    (hs : SlotInv n st slotTrees maxDeg) {d : ℕ} (hd : d ≤ n) :
+theorem SlotInv.lookup {n sz maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg) {d : ℕ} (hd : d ≤ n) :
     (st.cons d = 0 ∧ ∀ T ∈ slotTrees, T.deg ≠ d) ∨
     ∃ (i : ℕ) (hi : i < slotTrees.length),
       (slotTrees[i]).deg = d ∧
@@ -221,13 +223,13 @@ private theorem getElem_mem_eraseIdx_of_ne {α : Type*} :
         fun e => hki (congrArg Nat.succ e))
 
 /-- Clearing slot `d = (slotTrees[i]).deg` (`d ≤ n`) removes `slotTrees[i]` from `SlotInv`. -/
-theorem SlotInv.step_collision {n maxDeg : ℕ} {st st' : RawState n} {slotTrees : List (FHTree n)}
-    (hs : SlotInv n st slotTrees maxDeg) {i d : ℕ} (hi : i < slotTrees.length)
+theorem SlotInv.step_collision {n sz maxDeg : ℕ} {st st' : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg) {i d : ℕ} (hi : i < slotTrees.length)
     (hdeg_i : (slotTrees[i]).deg = d) (_hd : d ≤ n)
     (hno_other : ∀ R ∈ slotTrees.eraseIdx i, R.deg ≠ d)
     (hcons' : st'.cons = Function.update st.cons d 0)
     (hvalid' : ∀ R ∈ slotTrees.eraseIdx i, ValidRoot st' none R) :
-    SlotInv n st' (slotTrees.eraseIdx i) maxDeg := by
+    SlotInv n sz st' (slotTrees.eraseIdx i) maxDeg := by
   obtain ⟨hnd, htr, hhit, hemp, hmd1, hmd2⟩ := hs
   refine ⟨by rw [map_eraseIdx_eq]; exact nodup_eraseIdx i hnd, ?_, ?_, ?_, hmd1, hmd2⟩
   · intro R hR
@@ -250,13 +252,13 @@ theorem SlotInv.step_collision {n maxDeg : ℕ} {st st' : RawState n} {slotTrees
 
 /-- Storing a consolidated tree `T_cur` of unoccupied degree `d` into `st.cons d` and updating
 `maxDeg` to `max maxDeg d` inserts `T_cur` into `SlotInv`. -/
-theorem SlotInv.insert_empty {n maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
-    (hs : SlotInv n st slotTrees maxDeg) {T_cur : FHTree n} {d : ℕ}
-    (_hd_n : d + 2 ≤ n) (hd_log : d ≤ 2 * Nat.log 2 n + 1)
+theorem SlotInv.insert_empty {n sz maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg) {T_cur : FHTree n} {d : ℕ}
+    (_hd_n : d + 2 ≤ n) (hd_log : d ≤ 2 * Nat.log 2 sz + 1)
     (hT_deg : T_cur.deg = d)
     (hnone : ∀ R ∈ slotTrees, R.deg ≠ d)
     (hT_valid : ValidRoot st none T_cur) :
-    SlotInv n { st with cons := Function.update st.cons d (T_cur.root.val + 1) }
+    SlotInv n sz { st with cons := Function.update st.cons d (T_cur.root.val + 1) }
       (T_cur :: slotTrees) (max maxDeg d) := by
   obtain ⟨hnd, htr, hhit, hemp, hmd1, _⟩ := hs
   let st' : RawState n := { st with cons := Function.update st.cons d (T_cur.root.val + 1) }
@@ -287,8 +289,8 @@ theorem SlotInv.insert_empty {n maxDeg : ℕ} {st : RawState n} {slotTrees : Lis
 
 /-- Once every degree `< maxDeg + 1` has been cleared from `SlotInv`, `slotTrees = []` and all
 entries `st.cons d` (`d ≤ n`) are `0`. -/
-theorem SlotInv.done_of_cleared {n maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
-    (hs : SlotInv n st slotTrees maxDeg)
+theorem SlotInv.done_of_cleared {n sz maxDeg : ℕ} {st : RawState n} {slotTrees : List (FHTree n)}
+    (hs : SlotInv n sz st slotTrees maxDeg)
     (hcleared : ∀ d < maxDeg + 1, ∀ T ∈ slotTrees, T.deg ≠ d) :
     slotTrees = [] ∧ ∀ d ≤ n, st.cons d = 0 := by
   obtain ⟨_, htr, _, hemp, _, _⟩ := hs
@@ -357,12 +359,12 @@ private abbrev scatterBody : Code .exact rFib :=
 `T_slot` (`s5`) under `IndexedMinPQ.PrioLT`, links the loser as newest child of the winner via
 `ValidRoot.link`,
 advances `curD` to `curD + 1`, and decreases `slotTrees.length` by `1` in `≤ 43` steps. -/
-private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
+private theorem scatterBody_exec {n sz base w maxDeg curD : ℕ} {a : Data rFib}
     {T_cur : FHTree n} {slotTrees : List (FHTree n)} {otherNodes : List (Fin n)} {z : Fin n}
     (hb : a.Bounded w) (hbr : BaseRegs n base a)
     (hz_mem : z ∈ otherNodes)
     (hnd : (T_cur.nodes ++ (forestNodes slotTrees ++ otherNodes)).Nodup)
-    (hs : SlotInv n (RawState.ofData n base a) slotTrees maxDeg)
+    (hs : SlotInv n sz (RawState.ofData n base a) slotTrees maxDeg)
     (hT_cur : ValidRoot (RawState.ofData n base a) none T_cur)
     (hcur_deg : T_cur.deg = curD)
     (ha_s4 : a.regs s4 = T_cur.root.val)
@@ -379,7 +381,7 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
       slotTrees'.length + 1 = slotTrees.length ∧
       (T_next.nodes ++ forestNodes slotTrees').Perm (T_cur.nodes ++ forestNodes slotTrees) ∧
       (T_next.nodes ++ (forestNodes slotTrees' ++ otherNodes)).Nodup ∧
-      SlotInv n (RawState.ofData n base a') slotTrees' maxDeg ∧
+      SlotInv n sz (RawState.ofData n base a') slotTrees' maxDeg ∧
       ValidRoot (RawState.ofData n base a') none T_next ∧
       T_next.deg = curD + 1 ∧
       a'.regs s4 = T_next.root.val ∧
@@ -409,7 +411,8 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
   have hnd_cur_rest := List.nodup_append.mp hnd
   have hz_in_ro : z ∈ forestNodes slotTrees ++ otherNodes := List.mem_append_right _ hz_mem
   have hz_not_cur : z ∉ T_cur.nodes := fun hm => hnd_cur_rest.2.2 z hm z hz_in_ro rfl
-  have hdeg_bds := deg_bounds_of_extra hT_cur.1 (List.nodup_cons.mpr ⟨hz_not_cur, hnd_cur_rest.1⟩)
+  have hdeg_bds :=
+    deg_bounds_of_extra le_rfl hT_cur.1 (List.nodup_cons.mpr ⟨hz_not_cur, hnd_cur_rest.1⟩)
   rw [hcur_deg] at hdeg_bds
   have hd_le_n : curD ≤ n := by omega
   have hd1_le_n : curD + 1 ≤ n := by omega
@@ -1155,7 +1158,7 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
     exact ((hperm12.append_right (forestNodes slotTrees' ++ otherNodes)).nodup_iff).mpr hnd_assoc
   have hdisj_ro : ∀ u ∈ forestNodes slotTrees' ++ otherNodes, u ∉ T₁.nodes ++ T₂.nodes :=
     fun u hu hm => (List.nodup_append.mp (hT_next_nodes ▸ hnd_next)).2.2 u hm u hu rfl
-  have hs6 : SlotInv n (RawState.ofData n base a6) slotTrees' maxDeg := by
+  have hs6 : SlotInv n sz (RawState.ofData n base a6) slotTrees' maxDeg := by
     rw [hst6]
     refine hs.step_collision hidx hslot_deg hd_le_n hno_other hco5 fun R hR => ?_
     obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR
@@ -1196,13 +1199,13 @@ private theorem scatterBody_exec {n base w maxDeg curD : ℕ} {a : Data rFib}
 /-- Full `while zeroP < s3 do scatterBody` loop by induction on `slotTrees.length`: terminates at an
 unoccupied degree slot `curD_f` in `t + 50 * slotTrees_f.length ≤ 2 + 50 * slotTrees.length`
 instructions. -/
-private theorem scatterLoop_exec {n base w maxDeg : ℕ} {otherNodes : List (Fin n)} {z : Fin n}
+private theorem scatterLoop_exec {n sz base w maxDeg : ℕ} {otherNodes : List (Fin n)} {z : Fin n}
     (hz_mem : z ∈ otherNodes) :
     ∀ (k : ℕ) {a : Data rFib} {T_cur : FHTree n} {slotTrees : List (FHTree n)} {curD : ℕ},
       slotTrees.length = k →
       a.Bounded w → BaseRegs n base a →
       (T_cur.nodes ++ (forestNodes slotTrees ++ otherNodes)).Nodup →
-      SlotInv n (RawState.ofData n base a) slotTrees maxDeg →
+      SlotInv n sz (RawState.ofData n base a) slotTrees maxDeg →
       ValidRoot (RawState.ofData n base a) none T_cur →
       T_cur.deg = curD →
       a.regs s4 = T_cur.root.val →
@@ -1219,7 +1222,7 @@ private theorem scatterLoop_exec {n base w maxDeg : ℕ} {otherNodes : List (Fin
         z_lp.regs maxDegReg = maxDeg ∧
         (T_f.nodes ++ forestNodes slotTrees_f).Perm (T_cur.nodes ++ forestNodes slotTrees) ∧
         (T_f.nodes ++ (forestNodes slotTrees_f ++ otherNodes)).Nodup ∧
-        SlotInv n (RawState.ofData n base z_lp) slotTrees_f maxDeg ∧
+        SlotInv n sz (RawState.ofData n base z_lp) slotTrees_f maxDeg ∧
         ValidRoot (RawState.ofData n base z_lp) none T_f ∧
         T_f.deg = curD_f ∧
         z_lp.regs s4 = T_f.root.val ∧
@@ -1274,12 +1277,13 @@ private theorem scatterLoop_exec {n base w maxDeg : ℕ} {otherNodes : List (Fin
 /-- `scatterRootCode` inserts root `T₀` (`iterCur = T₀.root.val`) into `cons`, linking equal-degree
 roots and updating `maxDegReg` in `t + 50 * slotTrees'.length ≤ 63 + 50 * slotTrees₀.length`
 instructions while preserving all registers `< 33` and framing `otherNodes`. -/
-theorem scatterRootCode_exec {n base w maxDeg₀ : ℕ} {x : Data rFib}
+theorem scatterRootCode_exec {n sz base w maxDeg₀ : ℕ} {x : Data rFib}
     {T₀ : FHTree n} {slotTrees₀ : List (FHTree n)} {otherNodes : List (Fin n)} {z : Fin n}
     (hb : x.Bounded w) (hbr : BaseRegs n base x)
     (hz_mem : z ∈ otherNodes)
     (hnd : (T₀.nodes ++ (forestNodes slotTrees₀ ++ otherNodes)).Nodup)
-    (hs : SlotInv n (RawState.ofData n base x) slotTrees₀ maxDeg₀)
+    (hsz : (T₀.nodes ++ (forestNodes slotTrees₀ ++ otherNodes)).length ≤ sz)
+    (hs : SlotInv n sz (RawState.ofData n base x) slotTrees₀ maxDeg₀)
     (hT₀ : ValidRoot (RawState.ofData n base x) none T₀)
     (hx_ic : x.regs iterCur = T₀.root.val)
     (hx_md : x.regs maxDegReg = maxDeg₀) :
@@ -1292,7 +1296,7 @@ theorem scatterRootCode_exec {n base w maxDeg₀ : ℕ} {x : Data rFib}
       y.regs maxDegReg = maxDeg' ∧
       (forestNodes slotTrees').Perm (T₀.nodes ++ forestNodes slotTrees₀) ∧
       (forestNodes slotTrees' ++ otherNodes).Nodup ∧
-      SlotInv n (RawState.ofData n base y) slotTrees' maxDeg' ∧
+      SlotInv n sz (RawState.ofData n base y) slotTrees' maxDeg' ∧
       (let st := RawState.ofData n base x
        let st' := RawState.ofData n base y
        st'.key = st.key ∧ st'.mark = st.mark ∧ st'.inHeap = st.inHeap ∧
@@ -1310,7 +1314,7 @@ theorem scatterRootCode_exec {n base w maxDeg₀ : ℕ} {x : Data rFib}
   have hnd_0 := List.nodup_append.mp hnd
   have hz_not_0 : z ∉ T₀.nodes := fun hm =>
     hnd_0.2.2 z hm z (List.mem_append_right _ hz_mem) rfl
-  have hd0_bds := deg_bounds_of_extra hT₀.1 (List.nodup_cons.mpr ⟨hz_not_0, hnd_0.1⟩)
+  have hd0_bds := deg_bounds_of_extra le_rfl hT₀.1 (List.nodup_cons.mpr ⟨hz_not_0, hnd_0.1⟩)
   have hd0_le_n : d0 ≤ n := by omega
   have hdeg_u0 : st.deg u0 = d0 := by
     cases hT₀.1 with
@@ -1394,7 +1398,12 @@ theorem scatterRootCode_exec {n base w maxDeg₀ : ℕ} {x : Data rFib}
   have hnd_f := List.nodup_append.mp hnd_lp
   have hz_not_f : z ∉ T_f.nodes := fun hm =>
     hnd_f.2.2 z hm z (List.mem_append_right _ hz_mem) rfl
-  have hdf_bds := deg_bounds_of_extra hTf.1 (List.nodup_cons.mpr ⟨hz_not_f, hnd_f.1⟩)
+  have hTf_sz : T_f.size ≤ sz := by
+    have hp_len := (hperm_lp.append_right otherNodes).length_eq
+    simp only [List.length_append] at hp_len hsz
+    unfold FHTree.size
+    omega
+  have hdf_bds := deg_bounds_of_extra hTf_sz hTf.1 (List.nodup_cons.mpr ⟨hz_not_f, hnd_f.1⟩)
   rw [hdeg_f] at hdf_bds
   have hdf_le_n : curD_f ≤ n := by omega
   have hcons_f_zero : st_lp.cons curD_f = 0 := by
@@ -1565,14 +1574,15 @@ private abbrev childScatterLoop : Code .exact rFib :=
 
 /-- Phase A1 loop: detaches each child in `c_trees` along `c_order`, clears its `par` and `mark`
 (decrementing `numMarkedReg` when marked), and scatters it into `cons`. -/
-private theorem scatterChildrenLoop_exec {n base w : ℕ}
+private theorem scatterChildrenLoop_exec {n sz base w : ℕ}
     (c_order : List (Fin n)) :
     ∀ (a : Data rFib) (c_trees slotTrees : List (FHTree n)) (fixedNodes : List (Fin n))
       (z : Fin n) (maxDeg : ℕ),
       a.Bounded w → BaseRegs n base a →
       z ∈ fixedNodes →
       (forestNodes c_trees ++ (forestNodes slotTrees ++ fixedNodes)).Nodup →
-      SlotInv n (RawState.ofData n base a) slotTrees maxDeg →
+      (forestNodes c_trees ++ (forestNodes slotTrees ++ fixedNodes)).length ≤ sz →
+      SlotInv n sz (RawState.ofData n base a) slotTrees maxDeg →
       (∀ c ∈ c_trees, ValidSubtree (RawState.ofData n base a) none c) →
       c_order.Perm (c_trees.map FHTree.root) →
       RightChain (RawState.ofData n base a).right c_order →
@@ -1590,7 +1600,7 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
         b.regs maxDegReg = maxDeg' ∧
         (forestNodes slotTrees').Perm (forestNodes c_trees ++ forestNodes slotTrees) ∧
         (forestNodes slotTrees' ++ fixedNodes).Nodup ∧
-        SlotInv n (RawState.ofData n base b) slotTrees' maxDeg' ∧
+        SlotInv n sz (RawState.ofData n base b) slotTrees' maxDeg' ∧
         (let st := RawState.ofData n base a
          let st' := RawState.ofData n base b
          st'.key = st.key ∧ st'.inHeap = st.inHeap ∧
@@ -1602,7 +1612,7 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
            st'.deg v = st.deg v ∧ st'.mark v = st.mark v) := by
   induction c_order with
   | nil =>
-    intro a c_trees slotTrees fixedNodes z maxDeg hb hbr _ hnd hs _ hperm _ hrem hmd hnm _
+    intro a c_trees slotTrees fixedNodes z maxDeg hb hbr _ hnd _ hs _ hperm _ hrem hmd hnm _
     have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
     have hc : ¬(Cond.lt zeroP remReg).Holds a := by
       simp only [Cond.Holds, hz0, hrem, List.length_nil, Nat.lt_irrefl, not_false_eq_true]
@@ -1618,8 +1628,8 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
       by simpa only [forestNodes, List.nil_append] using hnd,
       hs, ⟨rfl, rfl, rfl, rfl, rfl, hnm, le_rfl, fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩⟩⟩
   | cons u c_tl ih =>
-    intro a c_trees slotTrees fixedNodes z maxDeg hb hbr hz_mem hnd hs hsub hperm hchain hrem hmd
-      hnm hic
+    intro a c_trees slotTrees fixedNodes z maxDeg hb hbr hz_mem hnd hsz hs hsub hperm hchain hrem
+      hmd hnm hic
     set st := RawState.ofData n base a with hst_def
     have hfit_stop := hbr.fits_stop hb
     have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
@@ -1864,7 +1874,7 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
         exact ⟨by rw [hin_m], hm_other x hxu, by rw [hd_m], by rw [hch_m], by rw [hk_m]⟩
       · have hxu : x ≠ u := fun e => hu_not_desc (e ▸ hx)
         exact ⟨by rw [hpar_m, Function.update_of_ne hxu], by rw [hl_m], by rw [hr_m], Iff.rfl⟩
-    have hs_mid : SlotInv n (RawState.ofData n base a_mid) slotTrees maxDeg := by
+    have hs_mid : SlotInv n sz (RawState.ofData n base a_mid) slotTrees maxDeg := by
       refine hs.frame hcons_m fun R hR => (hs.2.1 R hR).1.frame_nodes fun x hx => ?_
       have hxu : x ≠ u := fun e => hu_not_other
         (List.mem_append_right _ (List.mem_append_left _
@@ -1876,6 +1886,12 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
         (T_u.nodes ++ (forestNodes slotTrees ++ (forestNodes c_rest ++ fixedNodes))).Nodup :=
       (perm_reassoc_mid T_u.nodes (forestNodes c_rest) (forestNodes slotTrees)
         fixedNodes).nodup_iff.mpr hnd_split
+    have hsz_for_sc :
+        (T_u.nodes ++ (forestNodes slotTrees ++ (forestNodes c_rest ++ fixedNodes))).length ≤
+          sz := by
+      have hp := (perm_reassoc_mid T_u.nodes (forestNodes c_rest) (forestNodes slotTrees)
+        fixedNodes).trans (hperm_fn.append_right _)
+      exact hp.length_eq.le.trans hsz
     have hmid_ic : a_mid.regs iterCur = T_u.root.val := by
       rw [hregs_mid iterCur (by decide) (by decide)]
       simp only [a1, Data.set_regs, Data.write_regs,
@@ -1892,7 +1908,7 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
       hmd_sc, hperm_sc, hnd_sc, hs_sc,
       hk_sc, hmk_sc, hin_sc, hmin_sc, hnr_sc, hnm_sc, hsz_sc, ho_sc⟩ :=
       scatterRootCode_exec hb_mid hbr_mid (List.mem_append_right _ hz_mem)
-        hnd_for_sc hs_mid hTu_mid hmid_ic hmid_md
+        hnd_for_sc hsz_for_sc hs_mid hTu_mid hmid_ic hmid_md
     -- Step 4 (`a_sc → a_next`, 2 steps): `iterCur ← iterNxt; remReg ← remReg - oneP`
     have hsc_nxt : a_sc.regs iterNxt = nxtVal := by
       rw [hlow_sc iterNxt (by decide), hregs_mid iterNxt (by decide) (by decide)]
@@ -1932,7 +1948,14 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
     have hnd_next : (forestNodes c_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).Nodup :=
       (perm_swap_front (forestNodes slotTrees_1) (forestNodes c_rest) fixedNodes).nodup_iff.mp
         hnd_sc
-    have hs_next : SlotInv n (RawState.ofData n base a_next) slotTrees_1 maxDeg_1 := by
+    have hsz_next :
+        (forestNodes c_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).length ≤ sz := by
+      have hp1 := perm_swap_front (forestNodes slotTrees_1) (forestNodes c_rest) fixedNodes
+      have hp2 := hperm_sc.append_right (forestNodes c_rest ++ fixedNodes)
+      have hp_len := (hp1.symm.trans hp2).length_eq
+      simp only [List.length_append] at hp_len hsz_for_sc ⊢
+      omega
+    have hs_next : SlotInv n sz (RawState.ofData n base a_next) slotTrees_1 maxDeg_1 := by
       rw [hst_next]; exact hs_sc
     have hsub_next : ∀ c ∈ c_rest, ValidSubtree (RawState.ofData n base a_next) none c := by
       intro c hc_mem
@@ -1976,8 +1999,8 @@ private theorem scatterChildrenLoop_exec {n base w : ℕ}
     obtain ⟨b, slotTrees', maxDeg', t_tl, he_tl, ht_tl, hb_b, hbr_b, hmod_tl, hregs_tl,
       hmd_b, hperm_b, hnd_b, hs_b,
       hk_b, hin_b, hmin_b, hnr_b, hsz_b, hnm_b, hnm_le_b, ho_b⟩ :=
-      ih a_next c_rest slotTrees_1 fixedNodes z maxDeg_1 hb_next hbr_next hz_mem hnd_next hs_next
-        hsub_next hperm_tl hchain_next
+      ih a_next c_rest slotTrees_1 fixedNodes z maxDeg_1 hb_next hbr_next hz_mem hnd_next hsz_next
+        hs_next hsub_next hperm_tl hchain_next
         (by simp only [a_next, Data.set_regs, Function.update_self])
         (by simp only [a_next, Data.set_regs,
               Function.update_of_ne (by decide : maxDegReg ≠ remReg),
@@ -2036,14 +2059,15 @@ private abbrev rootScatterLoop : Code .exact rFib :=
   .loop (.lt zeroP remReg) rootScatterBody
 
 /-- Phase A2 loop: scatters each remaining root in `r_trees` along `r_order` into `cons`. -/
-private theorem scatterRootsLoop_exec {n base w : ℕ}
+private theorem scatterRootsLoop_exec {n sz base w : ℕ}
     (r_order : List (Fin n)) :
     ∀ (a : Data rFib) (r_trees slotTrees : List (FHTree n)) (fixedNodes : List (Fin n))
       (z : Fin n) (maxDeg : ℕ),
       a.Bounded w → BaseRegs n base a →
       z ∈ fixedNodes →
       (forestNodes r_trees ++ (forestNodes slotTrees ++ fixedNodes)).Nodup →
-      SlotInv n (RawState.ofData n base a) slotTrees maxDeg →
+      (forestNodes r_trees ++ (forestNodes slotTrees ++ fixedNodes)).length ≤ sz →
+      SlotInv n sz (RawState.ofData n base a) slotTrees maxDeg →
       (∀ R ∈ r_trees, ValidRoot (RawState.ofData n base a) none R) →
       r_order.Perm (r_trees.map FHTree.root) →
       RightChain (RawState.ofData n base a).right r_order →
@@ -2060,7 +2084,7 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
         b.regs maxDegReg = maxDeg' ∧
         (forestNodes slotTrees').Perm (forestNodes r_trees ++ forestNodes slotTrees) ∧
         (forestNodes slotTrees' ++ fixedNodes).Nodup ∧
-        SlotInv n (RawState.ofData n base b) slotTrees' maxDeg' ∧
+        SlotInv n sz (RawState.ofData n base b) slotTrees' maxDeg' ∧
         (let st := RawState.ofData n base a
          let st' := RawState.ofData n base b
          st'.key = st.key ∧ st'.mark = st.mark ∧ st'.inHeap = st.inHeap ∧
@@ -2071,7 +2095,7 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
            st'.left v = st.left v ∧ st'.right v = st.right v ∧ st'.deg v = st.deg v) := by
   induction r_order with
   | nil =>
-    intro a r_trees slotTrees fixedNodes _ maxDeg hb hbr _ hnd hs _ hperm _ hrem hmd _
+    intro a r_trees slotTrees fixedNodes _ maxDeg hb hbr _ hnd _ hs _ hperm _ hrem hmd _
     have hz0 : a.regs zeroP = 0 := hbr.2.2.2.2.2.2.2.2.2.2.2.1
     have hc : ¬(Cond.lt zeroP remReg).Holds a := by
       simp only [Cond.Holds, hz0, hrem, List.length_nil, Nat.lt_irrefl, not_false_eq_true]
@@ -2087,7 +2111,7 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
       by simpa only [forestNodes, List.nil_append] using hnd,
       hs, ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl⟩⟩⟩
   | cons u r_tl ih =>
-    intro a r_trees slotTrees fixedNodes z maxDeg hb hbr hz_mem hnd hs hroots hperm hchain hrem
+    intro a r_trees slotTrees fixedNodes z maxDeg hb hbr hz_mem hnd hsz hs hroots hperm hchain hrem
       hmd hic
     set st := RawState.ofData n base a with hst_def
     have hfit_stop := hbr.fits_stop hb
@@ -2108,6 +2132,12 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
         (T_u.nodes ++ (forestNodes slotTrees ++ (forestNodes r_rest ++ fixedNodes))).Nodup :=
       (perm_reassoc_mid T_u.nodes (forestNodes r_rest) (forestNodes slotTrees)
         fixedNodes).nodup_iff.mpr hnd_split
+    have hsz_for_sc :
+        (T_u.nodes ++ (forestNodes slotTrees ++ (forestNodes r_rest ++ fixedNodes))).length ≤
+          sz := by
+      have hp := (perm_reassoc_mid T_u.nodes (forestNodes r_rest) (forestNodes slotTrees)
+        fixedNodes).trans (hperm_fn.append_right _)
+      exact hp.length_eq.le.trans hsz
     -- Step 1 (`a → a1`, 2 steps): `s0 ← rightBase + iterCur; iterNxt ← *s0`
     let nxtVal := st.right u
     let a1 := (a.set s0 (base + 4 * n + u.val)).set iterNxt nxtVal
@@ -2135,7 +2165,7 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
       hmd_sc, hperm_sc, hnd_sc, hs_sc,
       hk_sc, hmk_sc, hin_sc, hmin_sc, hnr_sc, hnm_sc, hsz_sc, ho_sc⟩ :=
       scatterRootCode_exec hb1 hbr1 (List.mem_append_right _ hz_mem)
-        hnd_for_sc (by rw [hst1]; exact hs) (by rw [hst1]; exact hTu_valid)
+        hnd_for_sc hsz_for_sc (by rw [hst1]; exact hs) (by rw [hst1]; exact hTu_valid)
         (by simp only [a1, Data.set_regs, Function.update_of_ne (by decide : iterCur ≠ iterNxt),
               Function.update_of_ne (by decide : iterCur ≠ s0), hu_ic, hTu_r])
         (by simp only [a1, Data.set_regs, Function.update_of_ne (by decide : maxDegReg ≠ iterNxt),
@@ -2173,6 +2203,13 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
     have hnd_next : (forestNodes r_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).Nodup :=
       (perm_swap_front (forestNodes slotTrees_1) (forestNodes r_rest) fixedNodes).nodup_iff.mp
         hnd_sc
+    have hsz_next :
+        (forestNodes r_rest ++ (forestNodes slotTrees_1 ++ fixedNodes)).length ≤ sz := by
+      have hp1 := perm_swap_front (forestNodes slotTrees_1) (forestNodes r_rest) fixedNodes
+      have hp2 := hperm_sc.append_right (forestNodes r_rest ++ fixedNodes)
+      have hp_len := (hp1.symm.trans hp2).length_eq
+      simp only [List.length_append] at hp_len hsz_for_sc ⊢
+      omega
     have hroots_next : ∀ R ∈ r_rest, ValidRoot (RawState.ofData n base a_next) none R := by
       intro R hR_mem
       obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR_mem
@@ -2206,7 +2243,7 @@ private theorem scatterRootsLoop_exec {n base w : ℕ}
     obtain ⟨b, slotTrees', maxDeg', t_tl, he_tl, ht_tl, hb_b, hbr_b, hmod_tl, hregs_tl,
       hmd_b, hperm_b, hnd_b, hs_b,
       hk_b, hmk_b, hin_b, hmin_b, hnr_b, hnm_b, hsz_b, ho_b⟩ :=
-      ih a_next r_rest slotTrees_1 fixedNodes z maxDeg_1 hb_next hbr_next hz_mem hnd_next
+      ih a_next r_rest slotTrees_1 fixedNodes z maxDeg_1 hb_next hbr_next hz_mem hnd_next hsz_next
         (by rw [hst_next]; exact hs_sc) hroots_next hperm_tl hchain_next
         (by simp only [a_next, Data.set_regs, Function.update_self])
         (by simp only [a_next, Data.set_regs,
@@ -2455,14 +2492,14 @@ private abbrev gatherSlotsLoop : Code .exact rFib :=
 /-- Phase B loop: scans `curD` up to `maxDeg + 1` (`curD + rem = maxDeg + 1`), clearing every
 occupied `cons[curD]` and splicing its consolidated root into `accRoots` via
 `addRootAndUpdateMin iterCur`. -/
-private theorem gatherSlotsLoop_exec {n base w maxDeg : ℕ} (hn_pos : 1 ≤ n)
+private theorem gatherSlotsLoop_exec {n sz base w maxDeg : ℕ} (hn_pos : 1 ≤ n)
     (rem : ℕ) :
     ∀ (a : Data rFib) (curD : ℕ) (slotTrees accRoots : List (FHTree n)) (z : Fin n),
       curD + rem = maxDeg + 1 →
       a.Bounded w → BaseRegs n base a →
       a.regs curDReg = curD →
       a.regs maxDegReg = maxDeg + 1 →
-      SlotInv n (RawState.ofData n base a) slotTrees maxDeg →
+      SlotInv n sz (RawState.ofData n base a) slotTrees maxDeg →
       (∀ d < curD, ∀ T ∈ slotTrees, T.deg ≠ d) →
       (forestNodes slotTrees ++ (z :: forestNodes accRoots)).Nodup →
       (∀ T ∈ accRoots, ValidRoot (RawState.ofData n base a) none T) →
@@ -2702,7 +2739,7 @@ private theorem gatherSlotsLoop_exec {n base w maxDeg : ℕ} (hn_pos : 1 ≤ n)
         ofData_set_scratch a4 (by decide : 17 ≤ curDReg.val) (curD + 1)
       have hmod5 : Modifies (Block.mk base (space n)).footprint a.mem a5.mem :=
         modifies_block_trans (Modifies.write_of_owns ho_cons 0) hmod_add
-      have hs5 : SlotInv n (RawState.ofData n base a5) slotRest maxDeg := by
+      have hs5 : SlotInv n sz (RawState.ofData n base a5) slotRest maxDeg := by
         rw [hst5]
         refine hs.step_collision hidx hslot_deg hd_le_n hno_other
           (by rw [hcons4, hst3]) fun R hR => ?_
@@ -2795,8 +2832,9 @@ private theorem execWithin_seq₃ {B : Basis} {r w t₁ t₂ : ℕ} {a b c d : C
   rcases h₂ with ⟨_, hm₂, hd⟩
   exact ⟨_, by omega, ha.seq (hb.seq (hc.seq hd))⟩
 
-/-- `extractMinCode` implements `.extractMin` on `FibInv` within `410 * (Nat.log 2 n + 1)`
-amortized instructions (`t + potential y ≤ 410 * (Nat.log 2 n + 1) + potential x`). -/
+/-- `extractMinCode` implements `.extractMin` on `FibInv` within
+`410 * (Nat.log 2 (IndexedMinPQ.dom s).card + 1)` amortized instructions
+(`t + potential y ≤ 410 * (Nat.log 2 (IndexedMinPQ.dom s).card + 1) + potential x`). -/
 theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x : Data rFib}
     (hinv : FibInv n K_max w base s x) :
     ∃ y t, ExecWithin w extractMinCode x y t ∧
@@ -2804,7 +2842,8 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         some ((IndexedMinPQ.spec n K_max).step s .extractMin).2 ∧
       FibInv n K_max w base ((IndexedMinPQ.spec n K_max).step s .extractMin).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
-      t + potential y ≤ 410 * (Nat.log 2 n + 1) + potential x := by
+      t + potential y ≤
+        410 * (Nat.log 2 (IndexedMinPQ.dom s).card + 1) + potential x := by
   obtain ⟨hb, hbr, hraw⟩ := hinv
   set st := RawState.ofData n base x with hst_def
   have hfit_stop := hbr.fits_stop hb
@@ -2853,14 +2892,19 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
     have hrtail_len : rtail.length = r_trees.length := by
       simpa only [List.length_map] using hperm_rtail.length_eq
     have hTz_val : ValidRoot st none T_z := hroots T_z (List.getElem_mem hidx_z)
-    have hts_len_le_n : (forestNodes ts).length ≤ n := by simpa using hnd.length_le_card
-    have hTz_size_le_n : T_z.size ≤ n := by
+    have hts_len_eq : (forestNodes ts).length = (IndexedMinPQ.dom s).card := by
+      rw [← List.toFinset_card_of_nodup hnd]
+      congr 1
+      ext v
+      simp only [List.mem_toFinset, IndexedMinPQ.dom, Finset.mem_filter, Finset.mem_univ,
+        true_and, hdom v]
+    have hTz_size_le_sz : T_z.size ≤ (IndexedMinPQ.dom s).card := by
       have h1 := hperm_ts.length_eq
       simp only [List.length_append] at h1
-      change (ts[idx_z]).nodes.length ≤ n
+      change (ts[idx_z]).nodes.length ≤ (IndexedMinPQ.dom s).card
       omega
-    have hTz_deg_log : T_z.deg ≤ 2 * Nat.log 2 n + 1 :=
-      (hTz_val.1.deg_bounds hTz_size_le_n).1
+    have hTz_deg_log : T_z.deg ≤ 2 * Nat.log 2 (IndexedMinPQ.dom s).card + 1 :=
+      (hTz_val.1.deg_bounds hTz_size_le_sz).1
     rcases hTz_eq : T_z with ⟨z', c_trees⟩
     have hzz' : z' = z := by
       have hr : T_z.root = z := hTz_root
@@ -3075,6 +3119,14 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         simp only [List.singleton_append, List.append_assoc] at hp
         rw [List.cons_append] at hnd_split
         exact hp.nodup_iff.mp hnd_split
+      have hsz_crz :
+          (forestNodes c_trees ++ ([] ++ (forestNodes r_trees ++ [z]))).length ≤
+            (IndexedMinPQ.dom s).card := by
+        have hp0 : (T_z.nodes ++ forestNodes r_trees).Perm (forestNodes ts) := hperm_ts
+        have hp_len := hp0.length_eq
+        simp only [hTz_eq, FHTree.nodes, List.length_append, List.length_cons,
+          List.length_nil] at hp_len ⊢
+        omega
       -- Phase A1 (`x_pre → x_A1`)
       have hA1 : ∃ x_A1 slotTrees_1 maxDeg_1 t_A1,
           ExecWithin w
@@ -3090,7 +3142,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
           x_A1.regs maxDegReg = maxDeg_1 ∧
           (forestNodes slotTrees_1).Perm (forestNodes c_trees) ∧
           (forestNodes slotTrees_1 ++ (forestNodes r_trees ++ [z])).Nodup ∧
-          SlotInv n (RawState.ofData n base x_A1) slotTrees_1 maxDeg_1 ∧
+          SlotInv n (IndexedMinPQ.dom s).card (RawState.ofData n base x_A1) slotTrees_1 maxDeg_1 ∧
           (let st' := RawState.ofData n base x_A1
            st'.key = st.key ∧ st'.inHeap = Function.update st.inHeap z 0 ∧
            st'.minRoot = st.minRoot ∧ st'.numRoots = st.numRoots ∧ st'.sz = st.sz - 1 ∧
@@ -3203,6 +3255,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
             hk_sc1, hin_sc1, hmin_sc1, hnr_sc1, hsz_sc1, hnm_sc1, hnm_le1, ho_sc1⟩ :=
             scatterChildrenLoop_exec (h_c :: c_tail) x_c0 c_trees [] (forestNodes r_trees ++ [z])
               z 0 hb_c0 hbr_c0 (List.mem_append_right _ (List.mem_cons_self : z ∈ [z])) hnd_crz
+              hsz_crz
               (SlotInv.empty (by rw [hst_c0, hst_pre]; exact hcons)) hsub_c0 hperm_c
               (by rw [hst_c0, hst_pre]; exact hcirc_c.rightChain)
               (by simp only [x_c0, x_pre, Data.set_regs,
@@ -3276,6 +3329,14 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
       -- Phase A2 (`x_tr → x_A2`, `rootScatterLoop`)
       have hnd_tr : (forestNodes r_trees ++ (forestNodes slotTrees_1 ++ [z])).Nodup :=
         (perm_swap_front (forestNodes slotTrees_1) (forestNodes r_trees) [z]).nodup_iff.mp hnd_A1
+      have hsz_tr :
+          (forestNodes r_trees ++ (forestNodes slotTrees_1 ++ [z])).length ≤
+            (IndexedMinPQ.dom s).card := by
+        have hp1 := perm_swap_front (forestNodes slotTrees_1) (forestNodes r_trees) [z]
+        have hp2 := hperm_A1.append_right (forestNodes r_trees ++ [z])
+        have hlen := (hp1.symm.trans hp2).length_eq
+        simp only [List.nil_append] at hsz_crz
+        omega
       have hroots_tr : ∀ R ∈ r_trees, ValidRoot (RawState.ofData n base x_tr) none R := by
         intro R hR
         obtain ⟨j, hj, _, hR_eq⟩ := List.mem_eraseIdx_iff_getElem.mp hR
@@ -3307,7 +3368,8 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         hregs_A2, hmd_A2, hperm_A2, hnd_A2, hs_A2,
         hk_A2, hmk_A2, hin_A2, _, _, hnm_A2, hsz_A2, _⟩ :=
         scatterRootsLoop_exec rtail x_tr r_trees slotTrees_1 [z] z maxDeg_1 hb_tr hbr_tr
-          (List.mem_cons_self : z ∈ [z]) hnd_tr (hst_tr ▸ hs_A1) hroots_tr hperm_rtail hchain_tr
+          (List.mem_cons_self : z ∈ [z]) hnd_tr hsz_tr (hst_tr ▸ hs_A1) hroots_tr hperm_rtail
+          hchain_tr
           (by simp only [x_tr, Data.set_regs, Function.update_of_ne (by decide : remReg ≠ iterCur),
                 Function.update_self])
           (by simp only [x_tr, Data.set_regs,
@@ -3316,7 +3378,7 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
           hic_tr
       rw [hst_tr] at hk_A2 hmk_A2 hin_A2 hnm_A2 hsz_A2
       -- Phase B preamble (`x_A2 → x_B0`, 4 ops)
-      have hmd2_log : maxDeg_2 ≤ 2 * Nat.log 2 n + 1 := hs_A2.2.2.2.2.1
+      have hmd2_log : maxDeg_2 ≤ 2 * Nat.log 2 (IndexedMinPQ.dom s).card + 1 := hs_A2.2.2.2.2.1
       have hmd2_le_n : maxDeg_2 + 1 ≤ n := by
         rcases hs_A2.2.2.2.2.2 with h0 | h2 <;> omega
       let x_B0 := (((x_A2.set minRootReg 0).set numRootsReg 0).set maxDegReg
@@ -3360,7 +3422,9 @@ theorem extractMinCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x
         simp only [x_B0, ofData_set_scratch _ (by decide : 17 ≤ curDReg.val),
           ofData_set_scratch _ (by decide : 17 ≤ maxDegReg.val),
           ofData_set_numRoots, ofData_set_minRoot]
-      have hs_B0 : SlotInv n (RawState.ofData n base x_B0) slotTrees_2 maxDeg_2 := by
+      have hs_B0 :
+          SlotInv n (IndexedMinPQ.dom s).card (RawState.ofData n base x_B0)
+            slotTrees_2 maxDeg_2 := by
         rw [hst_B0]
         exact hs_A2.frame rfl fun T hT =>
           (hs_A2.2.1 T hT).1.frame_nodes fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩

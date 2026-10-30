@@ -138,8 +138,11 @@ def Unambiguous : Prop :=
 def edges (t : ℕ) : Set (M × (P.newly t → U) × M) :=
   {e | P.Edge t e.1 e.2.1 e.2.2}
 
-/-- The *size* of the program: its number of edges. -/
-noncomputable def size : ℕ :=
+/-- The *size* of a program with finitely many edges at each used step: its number of edges.
+The ambient state type need not be finite. -/
+-- Finiteness restricts the public domain; ncard itself does not require it.
+@[nolint unusedArguments]
+noncomputable def size [∀ t : Fin P.length, Finite (P.edges t.val)] : ℕ :=
   ∑ t ∈ Finset.range P.length, (P.edges t).ncard
 
 /-- A coordinate read at step `s < t` was read before layer `t`. -/
@@ -225,10 +228,11 @@ theorem mem_peers_sweep {t : ℕ} {x y : ι → U} :
 /-! ### The rectangle bound -/
 
 /-- At every layer, the inputs sharing the state of an accepted input have fewer than `K`
-distinct parts on one side of the cut. -/
+distinct parts on one side of the cut. Extended cardinality ensures that an infinite side is
+never counted as small. -/
 def SmallSides (K : ℕ) : Prop :=
   ∀ t ≤ P.length, ∀ x ∈ P.accepted,
-    (P.sweep.pastSide t x).ncard < K ∨ (P.sweep.futureSide t x).ncard < K
+    (P.sweep.pastSide t x).encard < K ∨ (P.sweep.futureSide t x).encard < K
 
 /-- A rectangle-free accepted set has small sides. -/
 private theorem smallSides_of_rectangleFree {K : ℕ} (hS : RectangleFree P.accepted K) :
@@ -242,8 +246,10 @@ theorem SmallSides.one_lt [Finite ι] [Finite U] {K : ℕ} (hS : P.SmallSides K)
     (hne : P.accepted.Nonempty) : 1 < K := by
   obtain ⟨x, hx⟩ := hne
   rcases hS 0 (Nat.zero_le _) x hx with h | h
-  · exact (P.sweep.one_le_ncard_pastSide hx 0).trans_lt h
-  · exact (P.sweep.one_le_ncard_futureSide hx 0).trans_lt h
+  · exact (P.sweep.one_le_ncard_pastSide hx 0).trans_lt
+      (encard_lt_coe_iff_finite_ncard_lt.mp h).2
+  · exact (P.sweep.one_le_ncard_futureSide hx 0).trans_lt
+      (encard_lt_coe_iff_finite_ncard_lt.mp h).2
 
 /-- A program that accepts some input and has a step has an edge. -/
 theorem one_le_size [Finite ι] [Finite U] [Finite M] (hL : 0 < P.length)
@@ -277,7 +283,10 @@ theorem ncard_accepted_le_of_smallSides [Finite ι] [Finite U] [Finite M] (hL : 
   have hK1 := hS.one_lt hne
   by_cases hK : K ≤ P.accepted.ncard
   · calc P.accepted.ncard ≤ (K - 1) * (K - 1) * P.sweep.transitionCount :=
-          P.sweep.ncard_le_mul_transitionCount hK1 hK hS
+          P.sweep.ncard_le_mul_transitionCount hK1 hK fun t ht x hx =>
+            (hS t ht x hx).imp
+              (fun h => (encard_lt_coe_iff_finite_ncard_lt.mp h).2)
+              (fun h => (encard_lt_coe_iff_finite_ncard_lt.mp h).2)
       _ ≤ (K - 1) ^ 2 * P.size := by
           rw [sq]
           exact Nat.mul_le_mul_left _ P.transitionCount_sweep_le_size
@@ -378,7 +387,7 @@ theorem abs_signedCount_accepted_le [Finite ι] [Finite U] [Finite M] (hP : P.Un
     (hS : RectangleBias S K b) :
     |signedCount S P.accepted| ≤ 2 * b * P.accepted.ncard + ((K - 1) ^ 2 * P.size : ℕ) := by
   induction hn : P.accepted.ncard using Nat.strong_induction_on generalizing P with
-  | h n ih =>
+  | ind n ih =>
     subst hn
     by_cases hthick : ∃ t ≤ P.length, ∃ x ∈ P.accepted,
         K ≤ (P.sweep.pastSide t x).ncard ∧ K ≤ (P.sweep.futureSide t x).ncard
@@ -414,8 +423,9 @@ theorem abs_signedCount_accepted_le [Finite ι] [Finite U] [Finite M] (hP : P.Un
     · push Not at hthick
       have hsmall : P.SmallSides K := fun t ht x hx => by
         by_cases hA : K ≤ (P.sweep.pastSide t x).ncard
-        · exact Or.inr (hthick t ht x hx hA)
-        · exact Or.inl (not_le.mp hA)
+        · exact Or.inr (encard_lt_coe_iff_finite_ncard_lt.mpr
+            ⟨toFinite _, hthick t ht x hx hA⟩)
+        · exact Or.inl (encard_lt_coe_iff_finite_ncard_lt.mpr ⟨toFinite _, not_le.mp hA⟩)
       have hcount : (P.accepted.ncard : ℝ) ≤ ((K - 1) ^ 2 * P.size : ℕ) := by
         exact_mod_cast P.ncard_accepted_le_of_smallSides hL hsmall
       linarith [abs_signedCount_le S P.accepted,

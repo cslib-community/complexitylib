@@ -148,7 +148,7 @@ lemma wronskian_order_of_distinct_orders {K : Type*} [Field K] [CharZero K]
       Matrix.det_mul_row (fun j => (f j).trailingCoeff)
         (Matrix.of fun i j : Fin h => ((f j).natTrailingDegree.descFactorial i.val : K))]
     exact mul_ne_zero (Finset.prod_ne_zero_iff.mpr fun j _ =>
-      trailingCoeff_nonzero_iff_nonzero.mpr (hf j)) (det_descFactorial_ne_zero _ hd)
+      trailingCoeff_ne_zero.mpr (hf j)) (det_descFactorial_ne_zero _ hd)
   have hB0 : B.det ≠ 0 := fun hz => by simp [hz] at hBc
   have hA0 : A.det ≠ 0 := hdet ▸ mul_ne_zero (pow_ne_zero _ X_ne_zero) hB0
   have hscale : A.det = X ^ (∑ i : Fin h, i.val) * wronskianFamily f := by
@@ -513,7 +513,7 @@ lemma low_coefficients_force_zero {K : Type*} [Field K] {h : ℕ}
   have hi : ∀ m, ∀ j, (f j).natTrailingDegree = m → m < r → c j = 0 := by
     intro m
     induction m using Nat.strong_induction_on with
-    | h m ih =>
+    | ind m ih =>
       intro j hj hmr
       have hs : (∑ k, c k • f k).coeff m = c j * (f j).coeff m := by
         simp only [finsetSum_coeff, coeff_smul, smul_eq_mul]

@@ -109,7 +109,7 @@ example (G : RotationMap (Bool × List Bool) Bool)
     ComputableInPolyTime (G.reindex (Equiv.prodComm Bool (List Bool))).rot
       (encPair (encPair encBits encBool) encBool)
       (encPair (encPair encBits encBool) encBool) := by
-  simp only [RotationMap.reindex, Equiv.prodComm, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]
+  simp only [Equiv.prodComm, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]
   fun_prop [Prod.swap]
 
 end ComplexityTests.ExpanderFamily

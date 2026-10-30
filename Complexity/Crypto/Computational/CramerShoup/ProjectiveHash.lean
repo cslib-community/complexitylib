@@ -555,8 +555,8 @@ theorem uniform_projHash2_fiber_any_le (d : F.Desc) [DecidableEq (F.Carrier d)]
     have hor :
         (μ.map (fun τ₂ => (q :: qs).any (fun q' => hit q' τ₂))) true ≤
           (μ.map (hit q)) true + (μ.map (fun τ₂ => qs.any (fun q' => hit q' τ₂))) true := by
-      simp only [List.any_cons, PMF.map_apply, ← ENNReal.tsum_add]
-      refine ENNReal.tsum_le_tsum fun τ₂ => ?_
+      simp only [List.any_cons, PMF.map_apply, ← tsum_add]
+      refine tsum_le_tsum fun τ₂ => ?_
       cases hit q τ₂ <;> cases qs.any (fun q' => hit q' τ₂) <;> simp
     have hsingle : (μ.map (hit q)) true = (F.order d : ℝ≥0∞)⁻¹ := by
       have heq :

@@ -158,7 +158,7 @@ example : ¬Circuit.IsOver {⟨3, Gate.toffoli⟩} [h₀] := fun h =>
 example : !![(1 : ℂ), 1; 0, 1] ∉ unitaryGroup (Fin 2) ℂ := by
   intro h
   have := congrFun (congrFun (mem_unitaryGroup_iff.mp h) 0) 0
-  simp [mul_apply, Fin.sum_univ_two, star_eq_conjTranspose] at this
+  simp [Matrix.mul_apply, Fin.sum_univ_two, star_eq_conjTranspose] at this
 
 -- A two-qubit gate cannot be placed on a one-qubit register: the wires must be distinct.
 example : IsEmpty (Fin 2 ↪ Fin 1) :=
