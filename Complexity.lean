@@ -1755,6 +1755,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Nondeterministi
 public import Complexity.Computability.Machines.Turing.MultiTape.OutView
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Branch
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ClearShadowed
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.CopyBlock
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Cursor
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapes
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
@@ -2123,6 +2124,7 @@ public import Complexity.Computability.WordRAM.Width
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment
+public import Complexity.Crypto.Computational.Commitment.Basic
 public import Complexity.Crypto.Computational.CramerShoup
 public import Complexity.Crypto.Computational.CramerShoup.ProjectiveHash
 public import Complexity.Crypto.Computational.CramerShoup.Reductions
@@ -2354,6 +2356,7 @@ public import Complexity.Foundations.Analysis.LpNormMeasure
 public import Complexity.Foundations.Analysis.MarkovBrothersInequality
 public import Complexity.Foundations.Analysis.RootError
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
+public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
 public import Complexity.Foundations.BooleanAnalysis.Bonami
