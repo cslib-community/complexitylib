@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.RepeatUntilBlank
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileCond
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Sequential
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.TransformsTapes
@@ -31,23 +31,21 @@ configuration shifted by `δ` is `tapesCfg input ws δ δ out`.
 `Turing.MultiTapeTM.RunsBetween tm c c' t s` says that `tm`, started in its initial state on the
 tapes of `c`, has halted on the tapes of `c'` after `t` steps, using at most `s` cells. Such runs
 compose sequentially, embed into machines with more tapes, follow from `TransformsTapes`
-specifications at any shift, and accumulate along the loop `Turing.MultiTapeTM.loopWhile`.
+specifications at any shift, and accumulate along the loop `Turing.MultiTapeTM.whileCond`.
 
 ## Main definitions
 
 * `Turing.Cfg.shift`, `Turing.tapesCfg`: shifted configurations.
 * `Turing.MultiTapeTM.RunsBetween`: a run between two configurations within bounds.
-* `Turing.MultiTapeTM.loopWhile`: run a machine while a condition on the scanned work-tape symbols
-  holds.
 
 ## Main results
 
 * `Turing.MultiTapeTM.runFrom_shift`, `Turing.MultiTapeTM.space_shift`: translation invariance.
 * `Turing.MultiTapeTM.RunsBetween.seq`, `.extendTapes`, `.of_transformsTapes`: composition.
-* `Turing.MultiTapeTM.runsBetween_loopWhile`: loops, with the costs of the rounds adding up.
+* `Turing.MultiTapeTM.runsBetween_whileCond`: loops, with the costs of the rounds adding up.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing
 
@@ -55,7 +53,7 @@ variable {k k' : ℕ} {Symbol State : Type*} {input : List Symbol}
 
 /-- The configuration with the contents and the head of every work tape `i` moved by `δ i` cells to
 the right. -/
-def Cfg.shift (δ : Fin k → ℤ) (c : Cfg k Symbol State input) : Cfg k Symbol State input :=
+@[expose] def Cfg.shift (δ : Fin k → ℤ) (c : Cfg k Symbol State input) : Cfg k Symbol State input :=
   ⟨c.state, c.inputPos, fun i z => c.workTapes i (z - δ i), fun i => c.workTapePos i + δ i,
     c.output⟩
 
@@ -66,7 +64,7 @@ lemma Cfg.shift_withState (δ : Fin k → ℤ) (c : Cfg k Symbol State input) {S
 /-- The configuration whose work tape `i` holds the word `ws i` from cell `o i` on, with its head at
 cell `h i`, the input head at the start of the input and the output `out`. Its state is irrelevant
 for `Turing.MultiTapeTM.RunsBetween`. -/
-def tapesCfg (input : List Symbol) (ws : Fin k → List Symbol) (o h : Fin k → ℤ)
+@[expose] def tapesCfg (input : List Symbol) (ws : Fin k → List Symbol) (o h : Fin k → ℤ)
     (out : List Symbol) : Cfg k Symbol Unit input :=
   ⟨none, 1, fun i z => tapeOfList (ws i) (z - o i), h, out⟩
 
@@ -173,7 +171,8 @@ theorem space_shift (tm : MultiTapeTM k Symbol State) (δ : Fin k → ℤ)
 /-- `RunsBetween tm c c' t s`: started in its initial state on the tapes, heads and output of `c`,
 the machine has halted after `t` steps on those of `c'`, having visited at most `s` cells. The
 states of `c` and `c'` are ignored. -/
-def RunsBetween (tm : MultiTapeTM k Symbol State) (c c' : Cfg k Symbol Unit input) (t s : ℕ) :
+@[expose] def RunsBetween (tm : MultiTapeTM k Symbol State) (c c' : Cfg k Symbol Unit input)
+    (t s : ℕ) :
     Prop :=
   tm.runFrom (c.withState (some tm.q₀)) t = c'.withState none ∧
     (MultiTapeNTM.RunPath.ofDeterministic tm (c.withState (some tm.q₀)) t).space ≤ s
@@ -313,111 +312,102 @@ theorem step_tapesCfg {tm : MultiTapeTM k Symbol State} {q : State}
 
 /-! ### Loops -/
 
-/-- `loopWhile c tm` reads the symbols under the work-tape heads and halts unless `c` holds of
-them; otherwise it runs `tm` and repeats. Reading moves no head and writes nothing. -/
-noncomputable def loopWhile (c : (Fin k → Option Symbol) → Bool)
-    (tm : MultiTapeTM k Symbol State) : MultiTapeTM k Symbol (RepeatUntilBlankState State) :=
-  ofTr .check fun q inp work =>
-    match q with
-    | .run q =>
-      let a := tm.tr q inp work
-      { a with state := some (a.state.elim .check .run) }
-    | .check =>
-      { inputTape := 0, workTapes := fun _ => (none, 0), output := none,
-        state := if c work then some (.run tm.q₀) else none }
+namespace RunsBetweenWhileCond
 
-namespace LoopWhile
+variable {c : Option Symbol → (Fin k → Option Symbol) → Bool} {tm : MultiTapeTM k Symbol State}
 
-variable {c : (Fin k → Option Symbol) → Bool} {tm : MultiTapeTM k Symbol State}
-
-/-- A configuration of `tm` as one of `loopWhile c tm`. -/
-def runCfg (cfg : Cfg k Symbol State input) : Cfg k Symbol (RepeatUntilBlankState State) input :=
+/-- A configuration of `tm` as one of `whileCond c tm`. -/
+private def runCfg (cfg : Cfg k Symbol State input) :
+    Cfg k Symbol (RepeatUntilBlankState State) input :=
   cfg.mapState (fun st => some (st.elim .check .run))
 
-lemma step_runCfg (cfg : Cfg k Symbol State input) (h : ¬ cfg.Halted) :
-    (loopWhile c tm).step (runCfg cfg) = runCfg (tm.step cfg) := by
+private lemma step_runCfg (cfg : Cfg k Symbol State input) (h : ¬ cfg.Halted) :
+    (whileCond c tm).step (runCfg cfg) = runCfg (tm.step cfg) := by
   obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp h
   have hstate : (runCfg cfg).state = some (RepeatUntilBlankState.run q) := by
     simp [runCfg, Cfg.mapState, hq]
   rw [step_of_state hstate, step_of_state hq]
-  simp only [loopWhile, tr_ofTr]
+  simp only [whileCond, tr_ofTr]
   rfl
 
-lemma runFrom_runCfg {cfg : Cfg k Symbol State input} {u n : ℕ} (hhalt : tm.HaltsAt cfg u)
+private lemma runFrom_runCfg {cfg : Cfg k Symbol State input} {u n : ℕ} (hhalt : tm.HaltsAt cfg u)
     (hn : n ≤ u) :
-    (loopWhile c tm).runFrom (runCfg cfg) n = runCfg (tm.runFrom cfg n) := by
+    (whileCond c tm).runFrom (runCfg cfg) n = runCfg (tm.runFrom cfg n) := by
   induction n with
   | zero => rfl
   | succ n ih =>
     rw [runFrom_succ, runFrom_succ, ih (by lia), step_runCfg _ (hhalt.not_halted (by lia))]
 
-lemma step_check (d : Cfg k Symbol Unit input) :
-    (loopWhile c tm).step (d.withState (some .check)) =
-      d.withState (if c d.workTapeSymbols then some (.run tm.q₀) else none) := by
+private lemma step_check (d : Cfg k Symbol Unit input) :
+    (whileCond c tm).step (d.withState (some .check)) =
+      d.withState (if c d.inputSymbol d.workTapeSymbols then some (.run tm.q₀) else none) := by
   rw [step_of_state rfl]
   have hw : (d.withState (some (RepeatUntilBlankState.check : RepeatUntilBlankState State))
     ).workTapeSymbols = d.workTapeSymbols := rfl
-  rw [hw]
+  have hi : (d.withState (some (RepeatUntilBlankState.check : RepeatUntilBlankState State))
+    ).inputSymbol = d.inputSymbol := rfl
+  rw [hw, hi]
   refine Cfg.ext ?_ ?_ ?_ ?_ ?_ <;>
-    simp [loopWhile, Action.apply, Cfg.withState]
+    simp [whileCond, Action.apply, Cfg.withState]
 
 /-- One round: from `check` with the condition holding, the loop runs `tm` and is back in
 `check`. -/
-lemma exists_round {d d' : Cfg k Symbol Unit input} {t s : ℕ} (hc : c d.workTapeSymbols = true)
+private lemma exists_round {d d' : Cfg k Symbol Unit input} {t s : ℕ}
+    (hc : c d.inputSymbol d.workTapeSymbols = true)
     (h : RunsBetween tm d d' t s) :
-    ∃ u ≤ t, (loopWhile c tm).runFrom (d.withState (some .check)) (u + 1) =
+    ∃ u ≤ t, (whileCond c tm).runFrom (d.withState (some .check)) (u + 1) =
         d'.withState (some .check) ∧
-      (MultiTapeNTM.RunPath.ofDeterministic (loopWhile c tm) (d.withState (some .check))
+      (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm) (d.withState (some .check))
         (1 + u)).space ≤ s + k := by
   obtain ⟨u, hu, hhalt⟩ := exists_haltsAt (tm := tm)
     (show (tm.runFrom (d.withState (some tm.q₀)) t).Halted by rw [h.1]; rfl)
-  have hstart : (loopWhile c tm).step (d.withState (some .check)) =
+  have hstart : (whileCond c tm).step (d.withState (some .check)) =
       runCfg (d.withState (some tm.q₀)) := by
     rw [step_check, hc]
     rfl
-  have hrun : (loopWhile c tm).runFrom (d.withState (some .check)) (1 + u) =
+  have hrun : (whileCond c tm).runFrom (d.withState (some .check)) (1 + u) =
       d'.withState (some .check) := by
     rw [runFrom_add, runFrom_one, hstart, runFrom_runCfg hhalt le_rfl, ← hhalt.runFrom_eq hu, h.1]
     rfl
   refine ⟨u, hu, by rw [Nat.add_comm]; exact hrun, ?_⟩
-  have h1 : (MultiTapeNTM.RunPath.ofDeterministic (loopWhile c tm) (d.withState (some .check))
+  have h1 : (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm) (d.withState (some .check))
       1).space ≤ k := by
     refine space_le_of_workTapePos_const _ 1 fun m hm => ?_
     rcases (by omega : m = 0 ∨ m = 1) with rfl | rfl
     · rfl
     · rw [runFrom_one, step_check]
       rfl
-  have h2 : (MultiTapeNTM.RunPath.ofDeterministic (loopWhile c tm)
-      ((loopWhile c tm).runFrom (d.withState (some .check)) 1) u).space ≤ s := by
+  have h2 : (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm)
+      ((whileCond c tm).runFrom (d.withState (some .check)) 1) u).space ≤ s := by
     rw [runFrom_one, hstart, space_eq_of_workTapePos (tm' := tm) _ (d.withState (some tm.q₀)) u
       fun m hm => by rw [runFrom_runCfg hhalt hm]; rfl]
     exact (space_mono tm _ hu).trans h.2
-  have := (space_add_le (tm := loopWhile c tm) (d.withState (some .check)) 1 u).trans
+  have := (space_add_le (tm := whileCond c tm) (d.withState (some .check)) 1 u).trans
     (Nat.add_le_add h1 h2)
   omega
 
-end LoopWhile
+end RunsBetweenWhileCond
 
-open LoopWhile in
+open RunsBetweenWhileCond in
 /-- **Loops.** If `c` holds at the configurations `cfg i` for `i < n`, from each of which `tm`
-runs to `cfg (i + 1)`, and fails at `cfg n`, then `loopWhile c tm` runs from `cfg 0` to `cfg n`.
+runs to `cfg (i + 1)`, and fails at `cfg n`, then `whileCond c tm` runs from `cfg 0` to `cfg n`.
 The times of the rounds add up, with one step per round to read the condition. -/
-theorem runsBetween_loopWhile {c : (Fin k → Option Symbol) → Bool}
+theorem runsBetween_whileCond {c : Option Symbol → (Fin k → Option Symbol) → Bool}
     {tm : MultiTapeTM k Symbol State} (cfg : ℕ → Cfg k Symbol Unit input) (n : ℕ) (t s : ℕ → ℕ)
-    (hround : ∀ i < n, c (cfg i).workTapeSymbols = true ∧
+    (hround : ∀ i < n, c (cfg i).inputSymbol (cfg i).workTapeSymbols = true ∧
       RunsBetween tm (cfg i) (cfg (i + 1)) (t i) (s i))
-    (hstop : c (cfg n).workTapeSymbols = false) :
-    RunsBetween (loopWhile c tm) (cfg 0) (cfg n) (∑ i ∈ Finset.range n, (t i + 1) + 1)
+    (hstop : c (cfg n).inputSymbol (cfg n).workTapeSymbols = false) :
+    RunsBetween (whileCond c tm) (cfg 0) (cfg n) (∑ i ∈ Finset.range n, (t i + 1) + 1)
       (∑ i ∈ Finset.range n, (s i + k) + 2 * k) := by
-  set start := (cfg 0).withState (some (loopWhile c tm).q₀) with hstart
+  set start := (cfg 0).withState (some (whileCond c tm).q₀) with hstart
   have hrec : ∀ m ≤ n, ∃ τ ≤ ∑ i ∈ Finset.range m, (t i + 1),
-      (loopWhile c tm).runFrom start τ = (cfg m).withState (some .check) ∧
-      (MultiTapeNTM.RunPath.ofDeterministic (loopWhile c tm) start τ).space ≤
+      (whileCond c tm).runFrom start τ = (cfg m).withState (some .check) ∧
+      (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm) start τ).space ≤
         ∑ i ∈ Finset.range m, (s i + k) + k := by
     intro m hm
     induction m with
     | zero => exact ⟨0, le_rfl, rfl, by
-        simpa using space_le_of_workTapePos_const (tm := loopWhile c tm) start 0
+        simpa using space_le_of_workTapePos_const (tm := whileCond c tm) start 0
           fun m hm => by rw [Nat.le_zero.mp hm]; rfl⟩
     | succ m ih =>
       obtain ⟨τ, hτ, hrun, hsp⟩ := ih (by lia)
@@ -430,20 +420,20 @@ theorem runsBetween_loopWhile {c : (Fin k → Option Symbol) → Bool}
         have := Nat.add_le_add hsp hsp'
         omega
   obtain ⟨τ, hτ, hrun, hsp⟩ := hrec n le_rfl
-  have hfinal : (loopWhile c tm).runFrom start (τ + 1) = (cfg n).withState none := by
+  have hfinal : (whileCond c tm).runFrom start (τ + 1) = (cfg n).withState none := by
     rw [runFrom_succ, hrun, step_check, hstop]
     rfl
-  have hhalt : ((loopWhile c tm).runFrom start (τ + 1)).state = none := by rw [hfinal]; rfl
+  have hhalt : ((whileCond c tm).runFrom start (τ + 1)).state = none := by rw [hfinal]; rfl
   refine ⟨by rw [runFrom_eq_of_halt _ _ (by lia) hhalt, hfinal], ?_⟩
   rw [space_eq_of_halt _ (by lia) hhalt]
-  have h1 : (MultiTapeNTM.RunPath.ofDeterministic (loopWhile c tm)
-      ((loopWhile c tm).runFrom start τ) 1).space ≤ k := by
+  have h1 : (MultiTapeNTM.RunPath.ofDeterministic (whileCond c tm)
+      ((whileCond c tm).runFrom start τ) 1).space ≤ k := by
     refine space_le_of_workTapePos_const _ 1 fun m hm => ?_
     rcases (by omega : m = 0 ∨ m = 1) with rfl | rfl
     · rfl
     · rw [hrun, runFrom_one, step_check]
       rfl
-  have := (space_add_le (tm := loopWhile c tm) start τ 1).trans (Nat.add_le_add hsp h1)
+  have := (space_add_le (tm := whileCond c tm) start τ 1).trans (Nat.add_le_add hsp h1)
   omega
 
 end MultiTapeTM

@@ -26,11 +26,26 @@ current value `C`, the halting flag `F`, the round input or output `R`, the push
 the stack `S`. The stack is kept as the framed words of its frames, top first, ending just before
 cell `0` of `S`, so that pushing writes to the left and popping erases from the left.
 
-This file describes the configurations of the machine (`StackLoopKernel.cfgS`) and the runs of its
-phases between them.
+This file describes the configurations of the machine (`StackLoopKernel.cfgS`), the runs of its
+phases between them, one round, and the whole run.
+
+## Main definitions
+
+* `Turing.MultiTapeTM.StackLoopKernel.cfgS`: the configurations of the machine.
+* `Turing.MultiTapeTM.StackLoopKernel.body`: one round.
+* `Turing.MultiTapeTM.StackLoopKernel.stackLoopTM`: the machine.
+* `Turing.MultiTapeTM.StackLoopKernel.roundTime`, `Turing.MultiTapeTM.StackLoopKernel.roundSpace`:
+  bounds on one round.
+
+## Main results
+
+* `Turing.MultiTapeTM.StackLoopKernel.transformsTapes_onWords_embed`: `onWords` on embedded tapes,
+  with every other tape arbitrary.
+* `Turing.MultiTapeTM.StackLoopKernel.runs_stackLoop`: the run of the machine on a stack loop that
+  halts with an empty stack.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.StackLoopKernel
 
@@ -43,19 +58,20 @@ frames, `5` stack. -/
 abbrev nm (j : Fin 6) : Fin (kk + 6) := Fin.natAdd kk j
 
 /-- The words on the tapes: the shared work tapes and the flag tape are blank. -/
-def tapeWords (c f r p s : List Bool) : Fin (kk + 6) → List Bool :=
+@[expose] def tapeWords (c f r p s : List Bool) : Fin (kk + 6) → List Bool :=
   Fin.append (fun _ => []) ![[], c, f, r, p, s]
 
 /-- The offsets of the words: only the current value and the stack may be shifted. -/
-def tapeOffs (oc os : ℤ) : Fin (kk + 6) → ℤ := Fin.append (fun _ => 0) ![0, oc, 0, 0, 0, os]
+@[expose] def tapeOffs (oc os : ℤ) : Fin (kk + 6) → ℤ :=
+  Fin.append (fun _ => 0) ![0, oc, 0, 0, 0, os]
 
 /-- The heads: on the first cells of the words, except possibly on the round word and the pushed
 frames. -/
-def tapeHeads (oc os hr hp : ℤ) : Fin (kk + 6) → ℤ :=
+@[expose] def tapeHeads (oc os hr hp : ℤ) : Fin (kk + 6) → ℤ :=
   Fin.append (fun _ => 0) ![0, oc, 0, hr, hp, os]
 
 /-- A configuration of the stack-loop machine. -/
-def cfgS (input : List Bool) (c f r p s : List Bool) (oc os hr hp : ℤ) (out : List Bool) :
+@[expose] def cfgS (input : List Bool) (c f r p s : List Bool) (oc os hr hp : ℤ) (out : List Bool) :
     Cfg (kk + 6) Bool Unit input :=
   tapesCfg input (tapeWords c f r p s) (tapeOffs oc os) (tapeHeads oc os hr hp) out
 
@@ -75,7 +91,7 @@ lemma tapeHeads_zero (oc os : ℤ) : tapeHeads (kk := kk) oc os 0 0 = tapeOffs o
     tapeHeads (kk := kk) oc os hr hp (nm j) = ![0, oc, 0, hr, hp, os] j := Fin.append_right _ _ _
 
 /-- Two families on the tapes agree if they agree on the shared and the named tapes. -/
-lemma fun_ext_tapes {α : Type*} {f g : Fin (kk + 6) → α} (h₁ : ∀ i, f (Fin.castAdd 6 i) =
+private lemma fun_ext_tapes {α : Type*} {f g : Fin (kk + 6) → α} (h₁ : ∀ i, f (Fin.castAdd 6 i) =
     g (Fin.castAdd 6 i)) (h₂ : ∀ j, f (nm j) = g (nm j)) : f = g := by
   funext l
   induction l using Fin.addCases with
@@ -104,7 +120,7 @@ lemma cfgS_blank (out : List Bool) :
 
 /-- The tapes of `Turing.MultiTapeTM.onWords` with `kk` work tapes: the shared tapes, the output
 tape `nm o`, the input tape `nm v` and the flag tape `nm 0`. -/
-def owEmb (v o : Fin 6) (hv : v.val ≠ 0) (ho : o.val ≠ 0) (hvo : v.val ≠ o.val) :
+@[expose] def owEmb (v o : Fin 6) (hv : v.val ≠ 0) (ho : o.val ≠ 0) (hvo : v.val ≠ o.val) :
     Fin (kk + 1 + 2) ↪ Fin (kk + 6) :=
   ⟨fun j => if h : j.val < kk then Fin.castAdd 6 ⟨j.val, h⟩
     else if j.val = kk then nm o else if j.val = kk + 1 then nm v else nm 0, by
@@ -142,7 +158,7 @@ end OwEmb
 
 /-- The tapes of `Turing.MultiTapeTM.outputToWord` with `kk` work tapes: the shared tapes and the
 current value. -/
-def initEmb : Fin (kk + 1) ↪ Fin (kk + 6) :=
+@[expose] def initEmb : Fin (kk + 1) ↪ Fin (kk + 6) :=
   ⟨fun j => if h : j.val < kk then Fin.castAdd 6 ⟨j.val, h⟩ else nm 1, by
     intro a b hab
     have ha := a.isLt
@@ -162,19 +178,19 @@ def initEmb : Fin (kk + 1) ↪ Fin (kk + 6) :=
   simp [initEmb]
 
 /-- Two named tapes, for a two-tape machine. -/
-def pairEmb (a b : Fin 6) (h : a ≠ b) : Fin 2 ↪ Fin (kk + 6) :=
+@[expose] def pairEmb (a b : Fin 6) (h : a ≠ b) : Fin 2 ↪ Fin (kk + 6) :=
   ⟨![nm a, nm b], by
     intro x y hxy
     fin_cases x <;> fin_cases y <;> simp_all [Fin.natAdd_inj]⟩
 
 /-- The tapes of `Turing.MultiTapeTM.copyWord`: from the round word to the current value. -/
-def copyEmb : Fin (0 + 1 + 2) ↪ Fin (kk + 6) :=
+@[expose] def copyEmb : Fin (0 + 1 + 2) ↪ Fin (kk + 6) :=
   ⟨![nm 1, nm 3, nm 0], by
     intro x y hxy
     fin_cases x <;> fin_cases y <;> simp_all [Fin.natAdd_inj]⟩
 
 /-- The tapes of `Turing.MultiTapeTM.emitWord`: the current value. -/
-def emitEmb : Fin (0 + 2) ↪ Fin (kk + 6) :=
+@[expose] def emitEmb : Fin (0 + 2) ↪ Fin (kk + 6) :=
   ⟨![nm 1, nm 0], by
     intro x y hxy
     fin_cases x <;> fin_cases y <;> simp_all [Fin.natAdd_inj]⟩
@@ -218,7 +234,7 @@ theorem transformsTapes_onWords_embed {k K : ℕ} {Symbol S : Type*} {tm : Multi
 
 /-- A specification on the words, read on configurations of the stack-loop machine with every head
 on the first cell of its word. -/
-lemma runs_of_spec {S : Type*} {M : MultiTapeTM (kk + 6) Bool S}
+private lemma runs_of_spec {S : Type*} {M : MultiTapeTM (kk + 6) Bool S}
     {P : (input : List Bool) → (Fin (kk + 6) → List Bool) → Prop}
     {Q : (input : List Bool) → (Fin (kk + 6) → List Bool) → (Fin (kk + 6) → List Bool) →
       List Bool → Prop} {t s : ℕ} (h : TransformsTapes M P Q t s)
@@ -234,7 +250,7 @@ lemma runs_of_spec {S : Type*} {M : MultiTapeTM (kk + 6) Bool S}
   exact hrun
 
 /-- A run of a machine on embedded tapes. -/
-lemma runs_lift {m : ℕ} {S : Type*} {tm : MultiTapeTM m Bool S} (e : Fin m ↪ Fin (kk + 6))
+private lemma runs_lift {m : ℕ} {S : Type*} {tm : MultiTapeTM m Bool S} (e : Fin m ↪ Fin (kk + 6))
     {c c' : Cfg (kk + 6) Bool Unit input} {d₀ d : Cfg m Bool Unit input} {t s : ℕ}
     (hd₀ : viewCfg e c = d₀) (h : RunsBetween tm d₀ d t s)
     (hc : embed e d c.workTapes c.workTapePos = c') :
@@ -242,7 +258,7 @@ lemma runs_lift {m : ℕ} {S : Type*} {tm : MultiTapeTM m Bool S} (e : Fin m ↪
   subst hd₀ hc
   exact h.extendTapes e
 
-lemma update_tapeWords (c f r p st : List Bool) (j : Fin 6) (x : List Bool) :
+private lemma update_tapeWords (c f r p st : List Bool) (j : Fin 6) (x : List Bool) :
     Function.update (tapeWords (kk := kk) c f r p st) (nm j) x =
       Fin.append (fun _ => []) (Function.update ![[], c, f, r, p, st] j x) :=
   (Fin.append_update_right _ _ _ _).symm
@@ -251,7 +267,7 @@ lemma update_tapeWords (c f r p st : List Bool) (j : Fin 6) (x : List Bool) :
 noncomputable def clearM (j : Fin 6) :=
   (clearWork Bool).extendTapes (tapeEmb (nm (kk := kk) j))
 
-lemma runs_clearC (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_clearC (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (clearM (kk := kk) 1) (cfgS input c f r p st oc os 0 0 out)
       (cfgS input [] f r p st oc os 0 0 out) (3 * (c.length + 1)) (c.length + 1 + (kk + 6)) := by
   refine runs_of_spec (e := []) (transformsTapes_clearWork_tapeEmb (Symbol := Bool) (nm 1) c)
@@ -264,7 +280,7 @@ lemma runs_clearC (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
       funext i
       fin_cases i <;> rfl) (List.append_nil out).symm
 
-lemma runs_clearF (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_clearF (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (clearM (kk := kk) 2) (cfgS input c f r p st oc os 0 0 out)
       (cfgS input c [] r p st oc os 0 0 out) (3 * (f.length + 1)) (f.length + 1 + (kk + 6)) := by
   refine runs_of_spec (e := []) (transformsTapes_clearWork_tapeEmb (Symbol := Bool) (nm 2) f)
@@ -277,7 +293,7 @@ lemma runs_clearF (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
       funext i
       fin_cases i <;> rfl) (List.append_nil out).symm
 
-lemma runs_clearR (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_clearR (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (clearM (kk := kk) 3) (cfgS input c f r p st oc os 0 0 out)
       (cfgS input c f [] p st oc os 0 0 out) (3 * (r.length + 1)) (r.length + 1 + (kk + 6)) := by
   refine runs_of_spec (e := []) (transformsTapes_clearWork_tapeEmb (Symbol := Bool) (nm 3) r)
@@ -293,7 +309,7 @@ lemma runs_clearR (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
 /-- Copying the round word to the blank current-value tape. -/
 noncomputable def copyM := copyWord (copyEmb (kk := kk)) true
 
-lemma runs_copy (f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_copy (f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (copyM (kk := kk)) (cfgS input [] f r p st oc os 0 0 out)
       (cfgS input r f r p st oc os 0 0 out) (3 * r.length + 10)
       (4 * r.length + (kk + 6) + 15) := by
@@ -310,7 +326,7 @@ lemma runs_copy (f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
 /-- Emitting the current value. -/
 noncomputable def emitM := emitWord (emitEmb (kk := kk)) true
 
-lemma runs_emit (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_emit (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (emitM (kk := kk)) (cfgS input c f r p st oc os 0 0 out)
       (cfgS input c f r p st oc os 0 0 (out ++ c)) (2 * c.length + 8)
       (2 * c.length + (kk + 6) + 10) :=
@@ -323,7 +339,7 @@ noncomputable def wordsM {S : Type*} (tm : MultiTapeTM kk Bool S) (v o : Fin 6) 
     (ho : o.val ≠ 0) (hvo : v.val ≠ o.val) :=
   (tm.onWords true).extendTapes (owEmb v o hv ho hvo)
 
-lemma tapeWords_owEmb_eq_nil {v o : Fin 6} {hv : v.val ≠ 0} {ho : o.val ≠ 0}
+private lemma tapeWords_owEmb_eq_nil {v o : Fin 6} {hv : v.val ≠ 0} {ho : o.val ≠ 0}
     {hvo : v.val ≠ o.val} {c f r p st : List Bool} (hnil : ![[], c, f, r, p, st] o = [])
     (j : Fin (kk + 1 + 2)) (hj : j ≠ Fin.natAdd (kk + 1) 0) :
     tapeWords c f r p st (owEmb v o hv ho hvo j) = [] := by
@@ -338,7 +354,7 @@ lemma tapeWords_owEmb_eq_nil {v o : Fin 6} {hv : v.val ≠ 0} {ho : o.val ≠ 0}
     · simp
 
 /-- The halting test: from the current value to the halting flag. -/
-lemma runs_halt {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s' : ℕ}
+private lemma runs_halt {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s' : ℕ}
     (h : TransformsTapes tm (fun inp ws => inp = c ∧ ws = fun _ => [])
       (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = y) t s') (r p st : List Bool) (oc os : ℤ)
     (out : List Bool) :
@@ -360,7 +376,7 @@ lemma runs_halt {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s'
   simpa [wordsM, show kk + 6 - (kk + 1 + 2) = 3 by omega] using this
 
 /-- A round machine, from the current value to the pushed frames. -/
-lemma runs_push {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s' : ℕ}
+private lemma runs_push {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s' : ℕ}
     (h : TransformsTapes tm (fun inp ws => inp = c ∧ ws = fun _ => [])
       (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = y) t s') (f r st : List Bool) (oc os : ℤ)
     (out : List Bool) :
@@ -382,7 +398,7 @@ lemma runs_push {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s'
   simpa [wordsM, show kk + 6 - (kk + 1 + 2) = 3 by omega] using this
 
 /-- A round machine, from the current value to the round word. -/
-lemma runs_next {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s' : ℕ}
+private lemma runs_next {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Bool} {t s' : ℕ}
     (h : TransformsTapes tm (fun inp ws => inp = c ∧ ws = fun _ => [])
       (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = y) t s') (f p st : List Bool) (oc os : ℤ)
     (out : List Bool) :
@@ -408,7 +424,7 @@ tape. -/
 noncomputable def initM {S : Type*} (tm : MultiTapeTM kk Bool S) :=
   tm.outputToWord.extendTapes (initEmb (kk := kk))
 
-lemma runs_init {S : Type*} {tm : MultiTapeTM kk Bool S} {y : List Bool} {t s' : ℕ}
+private lemma runs_init {S : Type*} {tm : MultiTapeTM kk Bool S} {y : List Bool} {t s' : ℕ}
     (h : TransformsTapes tm (fun inp ws => inp = input ∧ ws = fun _ => [])
       (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = y) t s') (out : List Bool) :
     RunsBetween (initM tm) (cfgS input [] [] [] [] [] 0 0 0 0 out)
@@ -433,7 +449,7 @@ lemma runs_init {S : Type*} {tm : MultiTapeTM kk Bool S} {y : List Bool} {t s' :
 
 /-! ### Native phases -/
 
-lemma append_apply_eq {α : Type*} {z : α} {u v : Fin 6 → α} {l : Fin (kk + 6)}
+private lemma append_apply_eq {α : Type*} {z : α} {u v : Fin 6 → α} {l : Fin (kk + 6)}
     (h : ∀ j, l = nm j → u j = v j) :
     Fin.append (fun _ : Fin kk => z) u l = Fin.append (fun _ : Fin kk => z) v l := by
   induction l using Fin.addCases with
@@ -441,7 +457,7 @@ lemma append_apply_eq {α : Type*} {z : α} {u v : Fin 6 → α} {l : Fin (kk + 
   | right j => simp only [Fin.append_right]; exact h j rfl
 
 /-- A two-tape machine on the named tapes `a` and `b`. -/
-lemma runs_pair {S : Type*} {tm : MultiTapeTM 2 Bool S} (a b : Fin 6) (hab : a ≠ b)
+private lemma runs_pair {S : Type*} {tm : MultiTapeTM 2 Bool S} (a b : Fin 6) (hab : a ≠ b)
     {w w' : Fin 6 → List Bool} {o o' h h' : Fin 6 → ℤ} {t s : ℕ} {out : List Bool}
     (hrun : RunsBetween tm (tapesCfg input ![w a, w b] ![o a, o b] ![h a, h b] out)
       (tapesCfg input ![w' a, w' b] ![o' a, o' b] ![h' a, h' b] out) t s)
@@ -463,7 +479,7 @@ lemma runs_pair {S : Type*} {tm : MultiTapeTM 2 Bool S} (a b : Fin 6) (hab : a �
       append_apply_eq fun j hj => (hw j (hne j hj).1 (hne j hj).2).2.2⟩
 
 /-- A one-tape machine on the named tape `a`. -/
-lemma runs_one {S : Type*} {tm : MultiTapeTM 1 Bool S} (a : Fin 6)
+private lemma runs_one {S : Type*} {tm : MultiTapeTM 1 Bool S} (a : Fin 6)
     {w w' : Fin 6 → List Bool} {o o' h h' : Fin 6 → ℤ} {t s : ℕ} {out : List Bool}
     (hrun : RunsBetween tm (tapesCfg input (fun _ => w a) (fun _ => o a) (fun _ => h a) out)
       (tapesCfg input (fun _ => w' a) (fun _ => o' a) (fun _ => h' a) out) t s)
@@ -487,13 +503,13 @@ lemma runs_one {S : Type*} {tm : MultiTapeTM 1 Bool S} (a : Fin 6)
 /-- Popping the stack to the round word. -/
 noncomputable def popM := popFrame.extendTapes (pairEmb (kk := kk) 5 3 (by decide))
 
-lemma runs_pop_nil (c f p : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_pop_nil (c f p : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (popM (kk := kk)) (cfgS input c f [] p [] oc os 0 0 out)
       (cfgS input c f [false] p [] oc os 1 0 out) 1 (2 * (1 + 1) + (kk + 6 - 2)) :=
   runs_pair 5 3 _ (by simpa using runsBetween_popFrame_nil (input := input) os 0 out)
     (fun j h5 h3 => by fin_cases j <;> simp_all)
 
-lemma runs_pop_frame (c f p u rest : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_pop_frame (c f p u rest : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (popM (kk := kk)) (cfgS input c f [] p (frame u ++ rest) oc os 0 0 out)
       (cfgS input c f (frame (true :: u)) p rest oc (os + (frame u).length)
         (frame (true :: u)).length 0 out) (2 * u.length + 3)
@@ -504,7 +520,7 @@ lemma runs_pop_frame (c f p u rest : List Bool) (oc os : ℤ) (out : List Bool) 
 /-- Moving the round word to the front of the current value. -/
 noncomputable def backRC := (copyBack Bool).extendTapes (pairEmb (kk := kk) 3 1 (by decide))
 
-lemma runs_backRC (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_backRC (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (backRC (kk := kk)) (cfgS input c f r p st oc os r.length 0 out)
       (cfgS input (r ++ c) f [] p st (oc - r.length) os 0 0 out) (r.length + 2)
       (2 * (r.length + 2 + 1) + (kk + 6 - 2)) :=
@@ -514,7 +530,7 @@ lemma runs_backRC (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
 /-- Moving the pushed frames to the front of the stack. -/
 noncomputable def backPS := (copyBack Bool).extendTapes (pairEmb (kk := kk) 4 5 (by decide))
 
-lemma runs_backPS (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_backPS (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (backPS (kk := kk)) (cfgS input c f r p st oc os 0 p.length out)
       (cfgS input c f r [] (p ++ st) oc (os - p.length) 0 0 out) (p.length + 2)
       (2 * (p.length + 2 + 1) + (kk + 6 - 2)) :=
@@ -524,20 +540,20 @@ lemma runs_backPS (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
 /-- Erasing the popped frame at the front of the current value. -/
 noncomputable def eraseM := eraseFrame.extendTapes (tapeEmb (nm (kk := kk) 1))
 
-lemma runs_erase (u rest f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_erase (u rest f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (eraseM (kk := kk)) (cfgS input (frame u ++ rest) f r p st oc os 0 0 out)
       (cfgS input rest f r p st (oc + (frame u).length) os 0 0 out) (2 * u.length + 1)
-      (1 * (2 * u.length + 1 + 1) + (kk + 6 - 1)) :=
+      (2 * u.length + 1 + 1 + (kk + 6 - 1)) :=
   runs_one 1 (by simpa using runsBetween_eraseFrame (input := input) u rest oc out)
     (fun j h1 => by fin_cases j <;> simp_all)
 
 /-- Moving the head of the pushed frames to their end. -/
 noncomputable def seekM := (seekEnd Bool).extendTapes (tapeEmb (nm (kk := kk) 4))
 
-lemma runs_seek (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
+private lemma runs_seek (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
     RunsBetween (seekM (kk := kk)) (cfgS input c f r p st oc os 0 0 out)
       (cfgS input c f r p st oc os 0 p.length out) (p.length + 1)
-      (1 * (p.length + 1 + 1) + (kk + 6 - 1)) :=
+      (p.length + 1 + 1 + (kk + 6 - 1)) :=
   runs_one 4 (by simpa using runsBetween_seekEnd (input := input) p 0 out)
     (fun j h4 => by fin_cases j <;> simp_all)
 
@@ -565,7 +581,7 @@ noncomputable def body {SH SP SN : Type*} (tH : MultiTapeTM kk Bool SH)
 
 /-- **One round**, from the current value `ea` and a stack whose top frame `frame u` pops to the
 round word, to the next value `ea'` and the stack with the frames `X` pushed. -/
-theorem runs_round {SH SP SN : Type*} {tH : MultiTapeTM kk Bool SH}
+private theorem runs_round {SH SP SN : Type*} {tH : MultiTapeTM kk Bool SH}
     {tP : MultiTapeTM kk Bool SP} {tN : MultiTapeTM kk Bool SN}
     {ea f st0 u rest X ea' f' : List Bool} {os os' : ℤ} {tpop spop tp sp tn sn th sh : ℕ}
     (hpop : RunsBetween (popM (kk := kk)) (cfgS input ea [] [] [] st0 0 os 0 0 [])
@@ -611,12 +627,12 @@ section Stack
 
 variable {γ : Type*} {encG : γ ↪ List Bool}
 
-lemma encList_append' (l₁ l₂ : List γ) :
+private lemma encList_append' (l₁ l₂ : List γ) :
     encList encG (l₁ ++ l₂) = encList encG l₁ ++ encList encG l₂ :=
   List.flatMap_append ..
 
 /-- Popping a stack kept as its framed frames, ending just before cell `0`. -/
-lemma runs_pop_stack (ea : List Bool) (stk : List γ) :
+private lemma runs_pop_stack (ea : List Bool) (stk : List γ) :
     RunsBetween (popM (kk := kk))
       (cfgS input ea [] [] [] (encList encG stk) 0 (-((encList encG stk).length : ℤ)) 0 0 [])
       (cfgS input ea [] (frame (encOption encG stk.head?)) [] (encList encG stk.tail) 0
@@ -642,13 +658,14 @@ lemma runs_pop_stack (ea : List Bool) (stk : List γ) :
 end Stack
 
 /-- The loop condition: the halting flag is `false`. -/
-def haltCond : (Fin (kk + 6) → Option Bool) → Bool := fun work => decide (work (nm 2) = some false)
+@[expose] def haltCond : (Fin (kk + 6) → Option Bool) → Bool :=
+  fun work => decide (work (nm 2) = some false)
 
 /-- The stack-loop machine: initialize the current value, test it, repeat rounds while the test
 fails, then emit the current value and clear the tapes. -/
 noncomputable def stackLoopTM {SI SH SP SN : Type*} (tI : MultiTapeTM kk Bool SI)
     (tH : MultiTapeTM kk Bool SH) (tP : MultiTapeTM kk Bool SP) (tN : MultiTapeTM kk Bool SN) :=
-  (initM tI).seq ((haltM tH).seq ((loopWhile haltCond (body tH tP tN)).seq
+  (initM tI).seq ((haltM tH).seq ((whileCond (fun _ => haltCond) (body tH tP tN)).seq
     ((clearM 2).seq (emitM.seq (clearM 1)))))
 
 section Main
@@ -662,20 +679,22 @@ variable {α γ : Type*} {encA : α ↪ List Bool} {encG : γ ↪ List Bool} {ha
 abbrev zIn (s : ℕ → α × List γ) (i : ℕ) : Option γ × α := ((s i).2.head?, (s i).1)
 
 /-- The configuration at the start of round `i`. -/
-def cfgL (encA : α ↪ List Bool) (encG : γ ↪ List Bool) (halt : α → Bool) (input : List Bool)
+private def cfgL (encA : α ↪ List Bool) (encG : γ ↪ List Bool) (halt : α → Bool) (input : List Bool)
     (s : ℕ → α × List γ) (i : ℕ) : Cfg (kk + 6) Bool Unit input :=
   cfgS input (encA (s i).1) [halt (s i).1] [] [] (encList encG (s i).2) 0
     (-((encList encG (s i).2).length : ℤ)) 0 0 []
 
 /-- A bound on the time of round `i`. -/
-def roundTime (encA : α ↪ List Bool) (encG : γ ↪ List Bool) (round : Option γ × α → List γ × α)
+@[expose] def roundTime (encA : α ↪ List Bool) (encG : γ ↪ List Bool)
+    (round : Option γ × α → List γ × α)
     (TH : α → ℕ) (TP TN : Option γ × α → ℕ) (s : ℕ → α × List γ) (i : ℕ) : ℕ :=
   TP (zIn s i) + TN (zIn s i) + TH (round (zIn s i)).2 +
     9 * ((frame (encOption encG (s i).2.head?)).length + (encA (s i).1).length +
       (encA (round (zIn s i)).2).length + (encList encG (round (zIn s i)).1).length + 2) + 42
 
 /-- A bound on the space of round `i`. -/
-def roundSpace (encA : α ↪ List Bool) (encG : γ ↪ List Bool) (round : Option γ × α → List γ × α)
+@[expose] def roundSpace (encA : α ↪ List Bool) (encG : γ ↪ List Bool)
+    (round : Option γ × α → List γ × α)
     (SH' : α → ℕ) (SP' SN' : Option γ × α → ℕ) (kk : ℕ) (s : ℕ → α × List γ) (i : ℕ) : ℕ :=
   SP' (zIn s i) + SN' (zIn s i) + SH' (round (zIn s i)).2 +
     12 * ((frame (encOption encG (s i).2.head?)).length + (encA (s i).1).length +
@@ -711,7 +730,8 @@ theorem runs_stackLoop
         4 * (encA (s 0).1).length + 3 * (encA (s n).1).length + 10 * kk + 100) := by
   -- the rounds
   have hround : ∀ i < n,
-      haltCond (kk := kk) (cfgL (kk := kk) encA encG halt input s i).workTapeSymbols = true ∧
+      (fun _ => haltCond (kk := kk)) (cfgL (kk := kk) encA encG halt input s i).inputSymbol
+        (cfgL (kk := kk) encA encG halt input s i).workTapeSymbols = true ∧
       RunsBetween (body tH tP tN) (cfgL encA encG halt input s i)
         (cfgL encA encG halt input s (i + 1)) (roundTime encA encG round TH TP TN s i)
         (roundSpace encA encG round SH' SP' SN' kk s i) := by
@@ -736,7 +756,7 @@ theorem runs_stackLoop
         omega
       · simp only [roundSpace, List.length_singleton]
         omega
-  have hloop := runsBetween_loopWhile (c := haltCond) (tm := body tH tP tN)
+  have hloop := runsBetween_whileCond (c := fun _ => haltCond) (tm := body tH tP tN)
     (cfgL encA encG halt input s) n _ _ hround
     (by simp [haltCond, cfgL, cfgS, tapesCfg_workTapeSymbols, hstop, tapeOfList_zero])
   -- before and after the loop

@@ -26,8 +26,8 @@ sit anywhere on their tapes. They implement a stack kept on a tape that grows to
   second tape.
 * `Turing.MultiTapeTM.eraseFrame`: erase a framed word (`Turing.MultiTapeTM.frame`) at the front
   of a tape.
-* `Turing.MultiTapeTM.popFrame`: move a framed word at the front of a tape to the end of a word on
-  a second tape, prefixed by `[true, true]`, or write `[false]` if the first tape is blank.
+* `Turing.MultiTapeTM.popFrame`: move a framed word at the front of a tape to a blank second tape,
+  prefixed by `[true, true]`, or write `[false]` there if the first tape is blank.
 
 ## Main results
 
@@ -36,7 +36,7 @@ sit anywhere on their tapes. They implement a stack kept on a tape that grows to
   `Turing.MultiTapeTM.runsBetween_popFrame_frame`: their runs, in time linear in the words moved.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing
 
@@ -49,8 +49,6 @@ lemma tapeOfList_eq_ite (w : List Symbol) (z : ℤ) :
   cases z with
   | ofNat n => simp
   | negSucc n => simp
-
-lemma tapeOfList_natCast (w : List Symbol) (n : ℕ) : tapeOfList w (n : ℤ) = w[n]? := rfl
 
 lemma tapeOfList_cons_of_ne (x : Symbol) (l : List Symbol) {z : ℤ} (hz : z ≠ 0) :
     tapeOfList (x :: l) z = tapeOfList l (z - 1) := by
@@ -129,7 +127,7 @@ lemma tapeOfList_sub_one_sub (w : List Symbol) (o : ℤ) : tapeOfList w (o - 1 -
 namespace MultiTapeTM
 
 /-- A run of one more step, split after its first step. -/
-lemma runFrom_succ_eq_step {k : ℕ} {State : Type*} (tm : MultiTapeTM k Symbol State)
+private lemma runFrom_succ_eq_step {k : ℕ} {State : Type*} (tm : MultiTapeTM k Symbol State)
     (c : Cfg k Symbol State input) (n : ℕ) : tm.runFrom c (n + 1) = tm.runFrom (tm.step c) n := by
   rw [Nat.add_comm, runFrom_add, runFrom_one]
 
@@ -163,17 +161,16 @@ theorem runFrom_seekEnd (w suf pre : List Symbol) (hw : w = pre ++ suf) (o : ℤ
         (fun _ => by simp; omega)]
     · exact ih (pre ++ [x]) (by simp [hw])
     · have : tapeOfList w (o + pre.length - o) = some x := by
-        rw [add_sub_cancel_left, tapeOfList_natCast, hw]
+        rw [add_sub_cancel_left, tapeOfList_ofNat, hw]
         simp
       simp only [seekEnd, tr_ofTr, this]
 
 theorem runsBetween_seekEnd (w : List Symbol) (o : ℤ) (out : List Symbol) :
     RunsBetween (seekEnd Symbol) (tapesCfg input (fun _ => w) (fun _ => o) (fun _ => o) out)
       (tapesCfg input (fun _ => w) (fun _ => o) (fun _ => o + w.length) out)
-      (w.length + 1) (1 * (w.length + 1 + 1)) := by
-  refine RunsBetween.of_runFrom ?_
+      (w.length + 1) (w.length + 1 + 1) := by
   have := runFrom_seekEnd (input := input) w w [] (by simp) o out
-  simpa using this
+  exact (RunsBetween.of_runFrom (by simpa using this)).mono le_rfl (by omega)
 
 /-! ### Moving a word to the front of another -/
 
@@ -223,7 +220,7 @@ theorem runFrom_copyBack_loop (w v u : List Symbol) (oA oB oB' : ℤ) (hu : u = 
     · exact ih (x :: v) (oB - 1) (by simp [hu]) (by simp [hB]; omega)
     · have hr : tapeOfList (l ++ [x]) (oA + ((l ++ [x]).length : ℤ) - 1 - oA) = some x := by
         rw [show oA + ((l ++ [x]).length : ℤ) - 1 - oA = (l.length : ℕ) by simp; omega,
-          tapeOfList_natCast]
+          tapeOfList_ofNat]
         simp
       simp only [copyBack, tr_ofTr, Matrix.cons_val_zero, hr]
     · intro i
@@ -308,8 +305,9 @@ theorem runsBetween_eraseFrame (w rest : List Bool) (o : ℤ) {input : List Bool
     RunsBetween eraseFrame (tapesCfg input (fun _ => frame w ++ rest) (fun _ => o) (fun _ => o) out)
       (tapesCfg input (fun _ => rest) (fun _ => o + (frame w).length)
         (fun _ => o + (frame w).length) out)
-      (2 * w.length + 1) (1 * (2 * w.length + 1 + 1)) :=
-  RunsBetween.of_runFrom (runFrom_eraseFrame w rest _ o _ rfl (by simp [length_frame]) out)
+      (2 * w.length + 1) (2 * w.length + 1 + 1) :=
+  (RunsBetween.of_runFrom (runFrom_eraseFrame (input := input) w rest _ o _ rfl
+    (by simp [length_frame]) out)).mono le_rfl (by omega)
 
 /-! ### Popping a framed word -/
 
@@ -329,7 +327,8 @@ instance : Fintype PopFrameState := ⟨{.start, .pre, .loop, .bit}, fun q => by 
 
 /-- If tape `0` is blank under its head, writes `false` at the head of tape `1`. Otherwise writes
 `[true, true]` and then moves the framed word at the head of tape `0` there, erasing it. Both
-heads move right as they go. -/
+heads move right as they go. The specifications below start with a blank tape `1`; the loop
+`Turing.MultiTapeTM.runFrom_popFrame_loop` appends to any word ending before the head. -/
 noncomputable def popFrame : MultiTapeTM 2 Bool PopFrameState :=
   ofTr .start fun q _ work =>
     match q, work 0 with
