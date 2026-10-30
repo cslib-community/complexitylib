@@ -198,7 +198,8 @@ example : ¬natInputs.SmallSides 1 := by
   intro h
   have hx : (fun _ => 0) ∈ natInputs.accepted := by rw [natInputs_accepted]; trivial
   rcases h 0 (Nat.zero_le _) _ hx with hpast | hfuture
-  · simpa only [natInputs_past_zero, encard_singleton, lt_self_iff_false] using hpast
+  · rw [natInputs_past_zero, encard_singleton] at hpast
+    norm_num at hpast
   · rw [encard_eq_top_iff.mpr (natInputs_future_infinite _)] at hfuture
     exact (not_lt_of_ge le_top) hfuture
 
