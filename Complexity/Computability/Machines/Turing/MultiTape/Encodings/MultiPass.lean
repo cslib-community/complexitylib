@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 module
 
-import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Basic
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.MultiPass
@@ -53,7 +53,8 @@ and then applies `passEnd`. -/
 @[expose] public def flagWord (b : Bool) : List Bool := if b then [true] else []
 
 open ComputableTidilyInLinearTimeAndSpace in
-lemma linear_flagWord : ComputableTidilyInLinearTimeAndSpace flagWord encBool encBits := by
+/-- `flagWord` is tidily computable in linear time and space. -/
+public lemma linear_flagWord : ComputableTidilyInLinearTimeAndSpace flagWord encBool encBits := by
   convert (of_eq (f := id) (encIn := encBool) (encMid := encBool) fun _ => rfl).ite
     ((const [true]).restrict _) ((const []).restrict _) using 1
   funext c

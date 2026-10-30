@@ -32,13 +32,6 @@ namespace Turing.NondeterministicQueryMachine
 
 open MultiTapeTM QueryMachine.Simulation
 
-open ComputableTidilyInLinearTimeAndSpace in
-private theorem linearFlag : ComputableTidilyInLinearTimeAndSpace flagWord encBool encBits := by
-  convert (of_eq (f := id) (encIn := encBool) (encMid := encBool) fun _ => rfl).ite
-    ((const [true]).restrict _) ((const []).restrict _) using 1
-  funext c
-  cases c <;> rfl
-
 private theorem blankBoundary {k : ℕ} {V C : Fin k} (hVC : V ≠ C) (v : List Bool) :
     passTapes V C v [] = Function.update (fun _ => []) V v := by
   funext l
@@ -119,7 +112,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
     (encIn := encPass encS) (encOut := encFramed (encPass encS)) fun _ => rfl
   obtain ⟨cuf, huf⟩ := ComputableTidilyInLinearTimeAndSpace.of_unframe (f := id)
     (encIn := encFramed (encPass encS)) (encOut := encPass encS) fun s => by simp
-  obtain ⟨cfl, hfl⟩ := linearFlag
+  obtain ⟨cfl, hfl⟩ := linear_flagWord
   obtain ⟨cI', hI'⟩ := ComputableTidilyInTimeAndSpace.comp_linear hfr
     hI.computableTidilyInTimeAndSpace
   obtain ⟨cN', hN'⟩ := ComputableTidilyInTimeAndSpace.comp_linear hfr hN

@@ -678,7 +678,8 @@ theorem evalRand_halted_mono (w : ℕ) (p : Program B r) (s : State r) (v : ℕ)
           (f := fun cfg => evalRand w p T s cfg * (stepRand w p cfg).eval (.halted v d))
           (RandCfg.halted v d)
 
-private theorem tsum_iSup_of_monotone {α : Type*} {f : ℕ → α → ℝ≥0∞}
+/-- Monotone convergence for `ℝ≥0∞`-valued sums: `tsum` commutes with a monotone `iSup`. -/
+theorem tsum_iSup_of_monotone {α : Type*} {f : ℕ → α → ℝ≥0∞}
     (hf : ∀ a, Monotone fun n => f n a) :
     (∑' a, ⨆ n, f n a) = ⨆ n, ∑' a, f n a := by
   rw [tsum_eq_iSup_sum]

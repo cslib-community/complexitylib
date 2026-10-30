@@ -163,14 +163,6 @@ private theorem exitMass_eq_ite_exitWeightSeq {r : ℕ} {α : Type*} [Fintype α
           simp [hne]
       · rw [(PMF.apply_eq_zero_iff _ _).mpr hz, zero_mul]
 
-private theorem tsum_iSup_of_monotone {α : Type*} {f : ℕ → α → ℝ≥0∞}
-    (hf : ∀ a, Monotone fun n => f n a) :
-    (∑' a, ⨆ n, f n a) = ⨆ n, ∑' a, f n a := by
-  rw [tsum_eq_iSup_sum]
-  simp_rw [ENNReal.finsetSum_iSup_of_monotone hf]
-  rw [iSup_comm]
-  simp_rw [← tsum_eq_iSup_sum]
-
 /-- If each iteration of a Word-RAM loop `Code.loop cond body` samples `f y` uniformly from a finite
 type `α` and exits iff `f y ∈ E` for a nonempty target subset `E : Finset α`, then the loop exit
 distribution `loopExitPMF cond μ_body x` mapped under `f` equals `PMF.uniformOfFinset E hE`. -/

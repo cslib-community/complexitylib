@@ -18,6 +18,7 @@ import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.UniformNat
 import Complexity.Crypto.Game.Statistical
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Crypto.Negligible.Dyadic
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.StatisticalDistance
@@ -93,16 +94,6 @@ open Probability Turing.MultiTapeTM Encryption Game
 open scoped ENNReal NNReal
 
 variable (F : PrimeOrderGroupFamily)
-
-private theorem negligible_const_div_two_pow (c : ℕ) :
-    Negligible (fun n => (c : ℝ≥0) / 2 ^ n) := by
-  have h : (fun n => (c : ℝ≥0) / 2 ^ n) =
-      fun n => (c : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n := by
-    funext n
-    rw [div_eq_mul_inv, one_div, inv_pow]
-  rw [h]
-  exact (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).polynomiallyBounded_mul
-    (by fun_prop)
 
 private theorem dropFrame_encPair_encBits {α : Type} (e : α ↪ List Bool) (a : α)
     (s : List Bool) : dropFrame (encPair e encBits (a, s)) = s := by
