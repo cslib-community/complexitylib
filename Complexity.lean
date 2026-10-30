@@ -2122,6 +2122,7 @@ public import Complexity.Computability.WordRAM.Width
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment
+public import Complexity.Crypto.Computational.Commitment.Basic
 public import Complexity.Crypto.Computational.CramerShoup
 public import Complexity.Crypto.Computational.CramerShoup.ProjectiveHash
 public import Complexity.Crypto.Computational.CramerShoup.Reductions
