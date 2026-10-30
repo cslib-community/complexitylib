@@ -1467,6 +1467,7 @@ public import Complexity.Computability.Languages.Slice
 public import Complexity.Computability.MCSP.AntiChecker
 public import Complexity.Computability.MCSP.Basic
 public import Complexity.Computability.MCSP.FormulaMagnification
+public import Complexity.Computability.MCSP.FormulaMagnification.Subexponential
 public import Complexity.Computability.MCSP.HardnessConsequences
 public import Complexity.Computability.MCSP.Magnification
 public import Complexity.Computability.MCSP.NP
@@ -2640,6 +2641,7 @@ public import Complexity.Foundations.Data.Nat.Primrec
 public import Complexity.Foundations.Data.Nat.Radix
 public import Complexity.Foundations.Data.Nat.Radix.Measurement
 public import Complexity.Foundations.Data.Nat.SqrtRatio
+public import Complexity.Foundations.Data.Nat.Subexponential
 public import Complexity.Foundations.Data.Option
 public import Complexity.Foundations.Data.OrderedSet
 public import Complexity.Foundations.Data.OrderedSet.Spec
