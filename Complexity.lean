@@ -513,6 +513,7 @@ public import Complexity.Computability.Circuit.Arithmetic.GeneralLowerBound
 public import Complexity.Computability.Circuit.Arithmetic.Hessian
 public import Complexity.Computability.Circuit.Arithmetic.Hessian.SourceComplexity
 public import Complexity.Computability.Circuit.Arithmetic.Pairing
+public import Complexity.Computability.Circuit.Arithmetic.Permanent.Formula
 public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
@@ -2619,6 +2620,7 @@ public import Complexity.Foundations.Data.Matrix.Binary
 public import Complexity.Foundations.Data.Matrix.IntegerBits
 public import Complexity.Foundations.Data.Matrix.PairChunks
 public import Complexity.Foundations.Data.Matrix.Permanent
+public import Complexity.Foundations.Data.Matrix.Permanent.Blocks
 public import Complexity.Foundations.Data.Matrix.Reindex
 public import Complexity.Foundations.Data.Matrix.TotallyRegular
 public import Complexity.Foundations.Data.MvPolynomial.AffineTaylor
