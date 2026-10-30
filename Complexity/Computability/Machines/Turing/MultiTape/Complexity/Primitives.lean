@@ -82,6 +82,14 @@ public lemma length_encInt (z : ℤ) :
     (encInt z).length = if z < 0 then (-z).toNat else z.toNat + 1 := by
   rcases z with n | n <;> simp [Int.negSucc_lt_zero]
 
+public lemma length_encInt_add_one_le (z : ℤ) :
+    (encInt (z + 1)).length ≤ (encInt z).length + 1 := by
+  rw [length_encInt, length_encInt]; split_ifs <;> omega
+
+public lemma length_encInt_sub_one_le (z : ℤ) :
+    (encInt (z - 1)).length ≤ (encInt z).length + 1 := by
+  rw [length_encInt, length_encInt]; split_ifs <;> omega
+
 namespace EncInt
 
 /-- Adds one to an encoded integer. -/
