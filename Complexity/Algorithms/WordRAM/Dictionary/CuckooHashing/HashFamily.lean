@@ -18,7 +18,7 @@ public import Mathlib.Order.ConditionallyCompleteLattice.Basic
 # Cuckoo hash family, pure replay semantics, and shared-table Word-RAM hashing
 
 This module develops the pure displacement and replay model of Pagh and Rodler's two-table cuckoo
-hashing scheme together with the self-contained Word-RAM hash pair
+hashing scheme together with a self-contained Word-RAM hash pair
 `h_r(u) = f_r(u) ^^^ Z_r[g_r(u)]` (`r ∈ {1, 2}`) built from `Cslib.Algorithms.WordRAM.Hashing.KWise`
 (`k = 7`, sharing a single Four-Russians carryless-multiplication table `clmulTab` across all four
 polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z₁, Z₂` from
@@ -26,25 +26,34 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
 
 ## Primary-source mapping
 
-In Pagh and Rodler (2004), *Journal of Algorithms* 51(2):122–144, Section 2 (pp. 124–131):
-* **Lemma 1** (p. 127) and **Lemma 2** (pp. 128–130) bound the probability of closed/path-exceeding
-  cuckoo subgraphs on a key set of size `n ≤ n_max` in two tables of size `m ≥ (1 + ε) n` (`ε ≥ 1`
-  here since `m = 2 ^ M ≥ 4 n_max`), showing that a single new-key insertion triggers a rehash with
-  probability `O(1 / n_max ^ 2 + 1 / (n_max * MaxLoop))` (`step_rehash_prob_le`) and that a full
-  rebuild on `S` (`|S| ≤ n_max`) fails with probability `< 1 / 2` (`rehash_prob_le_half`).
-* **Lemma 3** (pp. 130–131) proves that for any key `u ∉ S`, the expected displacement walk length
-  is `O(1)` (`expected_walk_le`).
-* Dietzfelbinger and Woelfel (2003), *Proc. 35th ACM STOC*, pp. 629–638, analyze the tabulated
-  polynomial construction `h_r(u) = (f_r(u) + Z_r[g_r(u)]) mod m` (instantiated over `GF(2)^M` via
-  bitwise XOR `finXor`) for cuckoo hashing.
-
-`IsCuckooHashPair` (and its specialization `IsCuckooHashFamily`) packages these three hypotheses
-(`expected_walk_le`, `rehash_prob_le_half`, `step_rehash_prob_le`) over the oblivious-adversary
-model (`Dictionary.spec U V n_max` is deterministic, so any valid operation list `ops` fixes the
-sequence of abstract states `s_0, …, s_t` and insertion-order key lists `ks_0, …, ks_t`
-independently of internal coin flips). For `n_max ≤ 2`, `isCuckooHashPair_le_two` and
-`isCuckooHashFamily_le_two` instantiate `IsCuckooHashPair` and `IsCuckooHashFamily` unconditionally
-with `C_walk = 1` and `C_reh = 0`.
+* **Pagh and Rodler (2004):** R. Pagh and F. F. Rodler, *"Cuckoo Hashing"*, author-hosted journal
+  manuscript (8 December 2003, published in *Journal of Algorithms* 51(2):122–144, 2004),
+  **Section 2.3 ("Amortized insertion time", manuscript pp. 6–10)**: **Lemma 1** (manuscript p. 7,
+  distinct-subsequence structure of displacement walks when the cuckoo graph contains no component
+  with more than one cycle), **Eq. (3) on manuscript p. 9** (expected displacement iterations
+  `O(1)`), and **manuscript pp. 9–10** (rehash probability and amortized rebuild analysis in two
+  tables of size `m ≥ (1 + ε) n`, where `ε ≥ 1` here since `m = 2 ^ M ≥ 4 n_max`).
+* **Original strengthened sufficient assumptions (`IsCuckooHashPair`):** Rather than formalizing the
+  paper's random-graph event directly, `GoodForSet`, `cuckooWalkRounds`, and `IsCuckooHashPair` are
+  **original strengthened sufficient assumptions** tailored to insertion-order replay:
+  `GoodForSet` quantifies over every duplicate-free (`Nodup`) sublist/insertion order in `S`,
+  `cuckooWalkRounds` takes the supremum (`sSup`) over all `ValidPlacement`s of `S`, and
+  `rehash_prob_le_half` / `step_rehash_prob_le` package the whole-set `≤ 1 / 2` and incremental
+  one-step `≤ C_reh / (max n_max 1 * max MaxLoop 1)` replay failure bounds over the
+  oblivious-adversary model (`Dictionary.spec U V n_max` is deterministic, fixing the sequence of
+  insertion-order key lists `ks_0, …, ks_t` independently of internal coin flips). For `n_max ≤ 2`,
+  `isCuckooHashPair_le_two` and `isCuckooHashFamily_le_two` instantiate `IsCuckooHashPair` and
+  `IsCuckooHashFamily` unconditionally with `C_walk = 1` and `C_reh = 0`.
+* **Dietzfelbinger and Woelfel (2003) variant note:** `Seed` and `(evalHash1, evalHash2)` form a
+  **modified variant** inspired by M. Dietzfelbinger and P. Woelfel, *"Almost Random Graphs with
+  Simple Hash Functions"*, *Proc. 35th ACM STOC*, 2003, **Definition 1 (§2.1, p. 632)**.
+  Dietzfelbinger and Woelfel's Definition 1 uses a **single shared auxiliary hash `g`** and addition
+  modulo `m` (and explicitly distinguishes that shared-`g` pair from choosing two independent
+  single-hash instances), whereas `(evalHash1, evalHash2)` here uses **independent `g₁, g₂`** and
+  bitwise XOR (`finXor`) over `Fin (2 ^ M)`. The per-function `7`-wise independence theorems
+  (`isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`) do **not** establish
+  Dietzfelbinger and Woelfel's graph/rehash guarantees for this modified pair, and correspondence /
+  `IsCuckooHashFamily` instantiation for `n_max ≥ 3` remains unproved.
 
 ## Main definitions
 
@@ -54,9 +63,11 @@ with `C_walk = 1` and `C_reh = 0`.
 * `SlotEntry`, `PureTable`, `WellPlaced`, `lookupEntry`, `pureEvictRound`, `pureEvict`,
   `pureReplay`: pure two-table cuckoo displacement and insertion-order replay model.
 * `GoodForSet`, `survivingSeeds`, `cuckooWalkRounds`, `IsCuckooHashPair`, `IsCuckooHashFamily`:
-  cuckoo hash family interface for expected displacement rounds and rehash probability.
-* `Seed`, `seedLaw`, `evalHash1`, `evalHash2`: concrete tabulated polynomial seed space and hash
-  pair `h_r(u) = f_r(u) ^^^ Z_r[g_r(u)]`.
+  strengthened sufficient cuckoo hash family interface for expected displacement rounds and rehash
+  probability.
+* `Seed`, `seedLaw`, `evalHash1`, `evalHash2`: modified tabulated polynomial seed space and hash
+  pair `h_r(u) = f_r(u) ^^^ Z_r[g_r(u)]` with independent `g₁, g₂` and bitwise XOR over
+  `Fin (2 ^ M)`.
 * `HashPairRep`, `initTableHashPairCode`, `resampleHashPairCode`, `evalHash1Code`, `evalHash2Code`:
   Word-RAM layout and programs sharing one `KWise` `clmulTab` across `f₁, g₁, f₂, g₂`.
 
@@ -68,8 +79,8 @@ with `C_walk = 1` and `C_reh = 0`.
 * `unifOn_rehash_eq`, `uniformOfFinset_le_two_mul_uniformOfFintype`,
   `card_le_two_mul_card_of_uniformOfFintype_compl_le_half`: exact conditional-uniform replay
   identity (`Unif(E_t)`) and `seedSlack = 2` density bound.
-* `isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`: both concrete hash
-  functions are exact `7`-wise independent onto `Fin (2 ^ M)`.
+* `isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`: each individual hash
+  function `evalHash1` and `evalHash2` is exact `7`-wise independent onto `Fin (2 ^ M)`.
 * `isCuckooHashPair_le_two`, `isCuckooHashFamily_le_two`, `isCuckooHashFamily_le_one`:
   unconditional `IsCuckooHashPair` and `IsCuckooHashFamily` instances for `n_max ≤ 2` (`C_walk = 1`,
   `C_reh = 0`).
@@ -79,10 +90,12 @@ with `C_walk = 1` and `C_reh = 0`.
 
 ## References
 
-* R. Pagh and F. F. Rodler, "Cuckoo hashing", *Journal of Algorithms* 51(2), 122–144, 2004
-  (Section 2, Lemmas 1–3, pp. 127–131).
+* R. Pagh and F. F. Rodler, "Cuckoo hashing", author-hosted journal manuscript (8 December 2003),
+  published in *Journal of Algorithms* 51(2), 122–144, 2004 (Section 2.3, "Amortized insertion
+  time", manuscript pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash analysis on pp. 9–10).
 * M. Dietzfelbinger and P. Woelfel, "Almost random graphs with simple hash functions", in *Proc.
-  35th Annual ACM Symposium on Theory of Computing (STOC 2003)*, 629–638, 2003.
+  35th Annual ACM Symposium on Theory of Computing (STOC 2003)*, 629–638, 2003 (Definition 1,
+  §2.1, p. 632).
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [J. L. Carter and M. N. Wegman, "Universal classes of hash functions"][CarterWegman1979]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*][CLRS2009]
@@ -696,9 +709,9 @@ theorem pureReplay_lookupEntry_of_notMem {U m : ℕ} {h₁ h₂ : Fin U → Fin 
 
 /-! ### Section 3: Set-monotone cuckoo goodness, walk bounds, and conditional-uniform invariance -/
 
-/-- A hash pair `(h₁, h₂)` is good for key set `S` with cap `maxLoop` if replaying every
-duplicate-free key list `ks` with `ks ⊆ S` succeeds within `maxLoop` displacement rounds per
-insertion. -/
+/-- Original strengthened sufficient goodness predicate: a hash pair `(h₁, h₂)` is good for key set
+`S` with cap `maxLoop` if replaying every duplicate-free (`Nodup`) key list `ks` with `ks ⊆ S`
+succeeds within `maxLoop` displacement rounds per insertion. -/
 @[expose]
 def GoodForSet {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (maxLoop : ℕ) (S : Finset (Fin U)) : Prop :=
   ∀ ks : List (Fin U), ks.Nodup → (∀ u ∈ ks, u ∈ S) →
@@ -732,8 +745,8 @@ theorem pureReplay_validPlacement {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {max
   refine ⟨(pureReplay_spec hnodup hrep).1, fun u hu => ?_⟩
   exact hsub u ((pureReplay_hasKey_iff hnodup hrep u).mp hu)
 
-/-- Worst-case number of displacement rounds required to insert `u` into any valid placement of `S`
-under `(h₁, h₂)` with cap `maxLoop`. -/
+/-- Original strengthened worst-case displacement round count: supremum (`sSup`) of `evictRounds`
+to insert `u` over all `ValidPlacement`s of `S` under `(h₁, h₂)` with cap `maxLoop`. -/
 @[expose]
 noncomputable def cuckooWalkRounds {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (maxLoop : ℕ)
     (S : Finset (Fin U)) (u : Fin U) : ℕ :=
@@ -1083,7 +1096,10 @@ abbrev TabSeed (M : ℕ) : Type :=
   Fin (2 ^ M) → Fin (2 ^ M)
 
 /-- Full cuckoo hash seed storing four 7-wise independent polynomial seeds `(cf₁, cg₁, cf₂, cg₂)`
-and two random tabulation arrays `(Z₁, Z₂)` of size `2 ^ M`. -/
+and two random tabulation arrays `(Z₁, Z₂)` of size `2 ^ M`. This is a modified variant of
+Dietzfelbinger and Woelfel (STOC 2003, Definition 1, §2.1, p. 632) using independent auxiliary
+polynomial hashes `g₁, g₂` and bitwise XOR (`finXor`) over `Fin (2 ^ M)` rather than a single
+shared `g` and addition modulo `m`. -/
 abbrev Seed (U M : ℕ) : Type :=
   (Fin 4 → PolySeed U M) × TabSeed M × TabSeed M
 
@@ -1239,18 +1255,22 @@ theorem isPairwiseIndependentHash_evalHash2 (U M : ℕ) :
   (isKWiseIndependentHash_evalHash2 U M).isPairwiseIndependentHash (by decide)
 
 /-- **General cuckoo hash pair interface (`IsCuckooHashPair`)**:
-asserts that over a seed distribution `μ : PMF Θ` and hash pair `h₁ h₂ : Θ → Fin U → Fin m`:
+an original strengthened sufficient assumption bundle inspired by Pagh and Rodler (8 December 2003
+manuscript, Section 2.3 "Amortized insertion time", pp. 6–10; *Journal of Algorithms* 51(2):122–144,
+2004), asserting over a seed distribution `μ : PMF Θ` and hash pair `h₁ h₂ : Θ → Fin U → Fin m`:
 1. (`expected_walk_le`): for any set `S` of fewer than `n_max` keys and absent key `u ∉ S`, the
-   expected number of displacement rounds `cuckooWalkRounds` is at most `C_walk`
-   (Pagh and Rodler 2004, Section 2, Lemma 3, pp. 130–131);
+   expected number of worst-case displacement rounds `cuckooWalkRounds` (`sSup` over all
+   `ValidPlacement`s of `S`) is at most `C_walk` (cf. Pagh and Rodler §2.3, Lemma 1 on manuscript
+   p. 7 and Eq. (3) on manuscript p. 9);
 2. (`rehash_prob_le_half`): for any set `S` of at most `n_max` keys, the probability that `θ ∼ μ`
-   fails `GoodForSet` on `S` is at most `1 / 2` (so each rehash attempt succeeds with probability
-   at least `1 / 2` and the surviving seed set has measure at least `1 / 2`); and
+   fails `GoodForSet` (all `Nodup` sublists in `S`) is at most `1 / 2` (so each rehash attempt
+   succeeds with probability at least `1 / 2` and the surviving seed set has measure at least
+   `1 / 2`); and
 3. (`step_rehash_prob_le`): for any insertion-order prefix `ks` of fewer than `n_max` distinct keys
    and new key `u ∉ ks`, the one-step incremental failure probability that `θ ∼ μ` survives
    `pureReplay (h₁ θ) (h₂ θ) MaxLoop ks` yet fails `pureReplay (h₁ θ) (h₂ θ) MaxLoop (ks ++ [u])`
-   is at most `C_reh / (max n_max 1 * max MaxLoop 1)`
-   (Pagh and Rodler 2004, Section 2, Lemmas 1–2, pp. 127–130). -/
+   is at most `C_reh / (max n_max 1 * max MaxLoop 1)` (cf. Pagh and Rodler §2.3, manuscript
+   pp. 9–10). -/
 structure IsCuckooHashPair {Θ : Type*} (μ : PMF Θ) {U m : ℕ}
     (h₁ h₂ : Θ → Fin U → Fin m) (n_max MaxLoop C_walk C_reh : ℕ) : Prop where
   /-- Expected displacement rounds per new-key insertion is at most `C_walk`. -/
@@ -1269,8 +1289,12 @@ structure IsCuckooHashPair {Θ : Type*} (μ : PMF Θ) {U m : ℕ}
         (pureReplay (h₁ θ) (h₂ θ) MaxLoop (ks ++ [u])).isNone} ≤
       (C_reh : ℝ≥0∞) / ((max n_max 1 : ℝ≥0∞) * (max MaxLoop 1 : ℝ≥0∞))
 
-/-- Specialization of `IsCuckooHashPair` to the concrete tabulated polynomial hash pair
-`(evalHash1, evalHash2)` over `seedLaw U M`. -/
+/-- Specialization of `IsCuckooHashPair` to the concrete modified tabulated polynomial hash pair
+`(evalHash1, evalHash2)` over `seedLaw U M` (independent `g₁, g₂` and bitwise XOR over
+`Fin (2 ^ M)`). Per-function `7`-wise independence (`isKWiseIndependentHash_evalHash1`,
+`isKWiseIndependentHash_evalHash2`) does not establish Dietzfelbinger and Woelfel's (STOC 2003,
+Definition 1, §2.1, p. 632) shared-`g` mod-`m` graph/rehash guarantees for this modified pair;
+`isCuckooHashFamily_le_two` discharges `n_max ≤ 2`, while `n_max ≥ 3` remains open. -/
 abbrev IsCuckooHashFamily (U n_max M MaxLoop C_walk C_reh : ℕ) : Prop :=
   IsCuckooHashPair (seedLaw U M) evalHash1 evalHash2 n_max MaxLoop C_walk C_reh
 

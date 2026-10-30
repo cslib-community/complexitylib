@@ -31,6 +31,13 @@ via a composable `Cslib.WordRAM.Randomized.SubroutineDS` certificate (`seedSlack
      `hashPairSpace n_max (tableBits n_max)` sharing a single Four-Russians carryless-multiplication
      table `clmulTab` across the four degree-`< 7` trinomial polynomial hashes `f₁, g₁, f₂, g₂` and
      storing two random tabulation tables `Z₁, Z₂` of size `m = 2 ^ M` (`M = tableBits n_max`).
+     Here `(evalHash1, evalHash2)` is a **modified variant** inspired by Dietzfelbinger and Woelfel
+     (STOC 2003, Definition 1, §2.1, p. 632): whereas their Definition 1 uses a single shared
+     auxiliary hash `g` and addition modulo `m`, `(evalHash1, evalHash2)` uses independent `g₁, g₂`
+     and bitwise XOR (`finXor`) over `Fin (2 ^ M)`. Per-function `7`-wise independence
+     (`isKWiseIndependentHash_evalHash1`, `isKWiseIndependentHash_evalHash2`) does not establish
+     Dietzfelbinger and Woelfel's graph/rehash guarantees for this modified pair, and
+     correspondence / `IsCuckooHashFamily` instantiation for `n_max ≥ 3` remains unproved.
    - Two cuckoo sub-tables `T₁` and `T₂` of size `m = 2 ^ M ≥ max(4 * n_max, 4)` each, storing
      `1`-based indices `encodeSlot (some e) = e.idx + 1` (`0` for empty slots).
    - Insertion-order key and value arrays `insKeys[0 .. n - 1]` and `insVals[0 .. n - 1]` of
@@ -58,10 +65,13 @@ via a composable `Cslib.WordRAM.Randomized.SubroutineDS` certificate (`seedSlack
      `PMF.uniformOfFinset E_t` (`unifOn_rehash_eq` and `loopExitPMF_map_eq_uniformOfFinset`),
      which is bounded by `2 * seedLaw U M` via `rehash_prob_le_half`
      (`uniformOfFinset_le_two_mul_uniformOfFintype`).
-   - Combining `IsCuckooHashPair.expected_walk_le` (Pagh and Rodler 2004, Section 2, Lemma 3,
-     pp. 130–131) and the one-step incremental failure bound `IsCuckooHashPair.step_rehash_prob_le`
-     (Pagh and Rodler 2004, Section 2, Lemmas 1–2, pp. 127–130) bounds the expected step cost of
-     every `insert` by `insertCharge n_max U C_walk C_reh = 2 * (insertBaseSteps n_max U + 3 +
+   - Using the **original strengthened sufficient assumptions** in `IsCuckooHashPair` —
+     `GoodForSet` (all `Nodup` sublists in `S`), `cuckooWalkRounds` (`sSup` over all
+     `ValidPlacement`s of `S`), `IsCuckooHashPair.expected_walk_le`, and the one-step incremental
+     replay failure bound `IsCuckooHashPair.step_rehash_prob_le` (inspired by Pagh and Rodler,
+     8 December 2003 manuscript, Section 2.3 "Amortized insertion time", pp. 6–10: Lemma 1 on
+     p. 7, Eq. (3) on p. 9, and the rehash analysis on pp. 9–10) — bounds the expected step cost
+     of every `insert` by `insertCharge n_max U C_walk C_reh = 2 * (insertBaseSteps n_max U + 3 +
      C_walk * evictIterSteps n_max U + C_reh * rehashAmortizedSteps n_max U)`. For `n_max ≤ 2`,
      `isCuckooHashFamily_le_two` supplies `IsCuckooHashFamily` unconditionally with `C_walk = 1` and
      `C_reh = 0`.
@@ -89,10 +99,12 @@ via a composable `Cslib.WordRAM.Randomized.SubroutineDS` certificate (`seedSlack
 
 ## References
 
-* R. Pagh and F. F. Rodler, "Cuckoo hashing", *Journal of Algorithms* 51(2), 122–144, 2004
-  (Section 2, Lemmas 1–3, pp. 127–131).
+* R. Pagh and F. F. Rodler, "Cuckoo hashing", author-hosted journal manuscript (8 December 2003),
+  published in *Journal of Algorithms* 51(2), 122–144, 2004 (Section 2.3, "Amortized insertion
+  time", manuscript pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash analysis on pp. 9–10).
 * M. Dietzfelbinger and P. Woelfel, "Almost random graphs with simple hash functions", in *Proc.
-  35th ACM Symposium on Theory of Computing (STOC)*, pp. 629–638, 2003.
+  35th ACM Symposium on Theory of Computing (STOC)*, pp. 629–638, 2003 (Definition 1, §2.1,
+  p. 632).
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [J. L. Carter and M. N. Wegman, "Universal classes of hash functions"][CarterWegman1979]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*][CLRS2009]
