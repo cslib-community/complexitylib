@@ -32,6 +32,8 @@ instance.
 
 The threshold `1/2` for `RL` can be raised to `1 - 2 ^ (-r)` for any fixed `r` by repetition
 (`Cslib.Complexity.mem_RL_iff_error_le`), which also gives `Cslib.Complexity.RL_subset_BPL`.
+The acceptance probability is an entry of a power or inverse of a polynomial-size configuration
+matrix (`Cslib.Complexity.exists_configMatrix_of_mem_BPL`).
 
 The model follows the decision recorded in issue #474: one-way coins, halting on every branch with
 the polynomial clock a derived lemma, acceptance by counting coin strings, and space as for `NL`

@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner and Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -9,7 +9,11 @@ module
 
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Probability.PairwiseIndependentHash.DetectorChannels
+public import Mathlib.Algebra.Order.Floor.Div
+public import Mathlib.Data.Nat.Size
+import Mathlib.Data.Nat.Log
 import Mathlib.Data.Nat.Prime.Infinite
+import Mathlib.NumberTheory.Bertrand
 
 /-!
 # Affine channels for every stage of the hierarchy
@@ -31,18 +35,27 @@ With these channels the stage bound holds without any channel hypothesis
 gives a fully concrete instance of the hierarchy and its bound
 (`Matrix.sub_hierarchyReward_le_radix`). This instantiates the reduced algebraic-stage bound;
 the preprint's full threshold ladder and later-estimation root/complement regularity for `Q`
-and all step cutoffs remain separate requirements. The prime at each stage is chosen
-noncomputably; no prime-size or machine-resource bound is supplied.
+and the cutoffs remain separate requirements. The modulus is the least prime at least
+`max (2 ^ l) (M l)`, obtained by computable natural-number search. Bertrand's postulate gives
+`P_l ≤ 2 * max (2 ^ l) (M l)`, hence explicit logarithm and binary-length bounds. The side is
+computed by natural ceiling division and proved equal to the real-ceiling formula above.
+These arithmetic definitions and value bounds do not certify a machine-space implementation.
 
 ## Main definitions
 
-* `Cslib.Probability.stageModulus`, `Cslib.Probability.stageChannel`: the affine channel of stage
-  `l` on identifiers below `M l`.
+* `Cslib.Probability.stageModulus`, `Cslib.Probability.stageSide`: the least-prime modulus and
+  natural ceiling-division side of stage `l`.
+* `Cslib.Probability.stageChannel`: the affine channel on identifiers below `M l`.
 
 ## Main results
 
 * `Cslib.Probability.retentionChannels_stageChannel`: the channel interface at rate
   `(2 ^ H)⁻¹ ^ l` with uniform constants.
+* `Cslib.Probability.le_stageModulus`, `Cslib.Probability.stageModulus_le_of_prime`: the modulus
+  meets both lower bounds and is the least prime that does so.
+* `Cslib.Probability.stageModulus_le_two_mul`, `Cslib.Probability.log2_stageModulus_le`,
+  `Cslib.Probability.size_stageModulus_le`: quantitative modulus and binary-length bounds.
+* `Cslib.Probability.stageSide_eq_ceil`: the exact real-ceiling identity for the computable side.
 * `Matrix.sub_hierarchyReward_le_affine`: the stage bound with these channels.
 * `Matrix.sub_hierarchyReward_le_radix`: the stage bound on radix identifiers.
 
@@ -58,29 +71,81 @@ open Finset
 
 namespace Cslib.Probability
 
-/-- A prime at least `n` (Euclid). -/
-private noncomputable def primeAtLeast (n : ℕ) : ℕ :=
-  Classical.choose (Nat.exists_infinite_primes n)
-
-private theorem le_primeAtLeast (n : ℕ) : n ≤ primeAtLeast n :=
-  (Classical.choose_spec (Nat.exists_infinite_primes n)).1
-
-private theorem primeAtLeast_prime (n : ℕ) : (primeAtLeast n).Prime :=
-  (Classical.choose_spec (Nat.exists_infinite_primes n)).2
-
-private instance (n : ℕ) : Fact (primeAtLeast n).Prime := ⟨primeAtLeast_prime n⟩
-
 variable (H : ℕ) (M : ℕ → ℕ)
 
-/-- The prime modulus of stage `l`: at least `2 ^ l` and at least the identifier bound `M l`. -/
-noncomputable def stageModulus (l : ℕ) : ℕ := primeAtLeast (max (2 ^ l) (M l))
+/-- The least prime modulus of stage `l`: at least `2 ^ l` and the identifier bound `M l`.
+The definition is computable natural-number search; no machine-space bound is asserted. -/
+def stageModulus (l : ℕ) : ℕ :=
+  Nat.find (Nat.exists_infinite_primes (max (2 ^ l) (M l)))
+
+theorem stageModulus_prime (l : ℕ) : (stageModulus M l).Prime :=
+  (Nat.find_spec (Nat.exists_infinite_primes (max (2 ^ l) (M l)))).2
+
+/-- The modulus meets both the stage-rate and identifier bounds. -/
+theorem le_stageModulus (l : ℕ) : max (2 ^ l) (M l) ≤ stageModulus M l :=
+  (Nat.find_spec (Nat.exists_infinite_primes (max (2 ^ l) (M l)))).1
+
+/-- No larger prime is selected when a smaller prime already meets both bounds. -/
+theorem stageModulus_le_of_prime (l : ℕ) {p : ℕ} (hp : p.Prime)
+    (hbound : max (2 ^ l) (M l) ≤ p) : stageModulus M l ≤ p :=
+  Nat.find_min' (Nat.exists_infinite_primes (max (2 ^ l) (M l))) ⟨hbound, hp⟩
+
+/-- Bertrand's postulate bounds the least admissible prime by twice the lower bound. -/
+theorem stageModulus_le_two_mul (l : ℕ) : stageModulus M l ≤ 2 * max (2 ^ l) (M l) := by
+  have hbound : 0 < max (2 ^ l) (M l) := (pow_pos (by norm_num) l).trans_le (le_max_left _ _)
+  obtain ⟨p, hp, hlt, hle⟩ := Nat.exists_prime_lt_and_le_two_mul _ hbound.ne'
+  exact (stageModulus_le_of_prime M l hp hlt.le).trans hle
+
+/-- The base-two logarithm costs at most one above the larger input logarithm. -/
+theorem log2_stageModulus_le (l : ℕ) :
+    (stageModulus M l).log2 ≤ max l (M l).log2 + 1 := by
+  have hbound : 0 < max (2 ^ l) (M l) := (pow_pos (by norm_num) l).trans_le (le_max_left _ _)
+  simp only [Nat.log2_eq_log_two]
+  calc Nat.log 2 (stageModulus M l) ≤ Nat.log 2 (2 * max (2 ^ l) (M l)) :=
+      Nat.log_monotone (stageModulus_le_two_mul M l)
+    _ = Nat.log 2 (max (2 ^ l) (M l)) + 1 := by
+      rw [Nat.mul_comm, Nat.log_mul_base (by norm_num) hbound.ne']
+    _ = max l (Nat.log 2 (M l)) + 1 := by
+      rw [(Nat.log_monotone (b := 2)).map_max, Nat.log_pow (by norm_num)]
+
+/-- The binary length is at most one more than the larger input length. -/
+theorem size_stageModulus_le (l : ℕ) :
+    (stageModulus M l).size ≤ max (l + 1) (M l).size + 1 := by
+  have hbound : 0 < max (2 ^ l) (M l) := (pow_pos (by norm_num) l).trans_le (le_max_left _ _)
+  have hsize : Monotone Nat.size := fun _ _ h => Nat.size_le_size h
+  calc (stageModulus M l).size ≤ (2 * max (2 ^ l) (M l)).size :=
+      Nat.size_le_size (stageModulus_le_two_mul M l)
+    _ = (max (2 ^ l) (M l) <<< 1).size := by rw [Nat.shiftLeft_eq]; norm_num [Nat.mul_comm]
+    _ = (max (2 ^ l) (M l)).size + 1 := Nat.size_shiftLeft hbound.ne' 1
+    _ = max (l + 1) (M l).size + 1 := by rw [hsize.map_max, Nat.size_pow]
 
 /-- The stage modulus is prime, so its finite-field and seed instances are available to
 importers. -/
-instance (l : ℕ) : Fact (stageModulus M l).Prime := ⟨primeAtLeast_prime _⟩
+instance (l : ℕ) : Fact (stageModulus M l).Prime := ⟨stageModulus_prime M l⟩
 
-/-- The side `⌈P_l 2^(-l)⌉` of the retention box of stage `l`. -/
-noncomputable abbrev stageSide (l : ℕ) : ℕ := ⌈(stageModulus M l : ℝ) * (2⁻¹ : ℝ) ^ l⌉₊
+/-- The retention-box side, computed by natural ceiling division `P_l ⌈/⌉ 2^l`. -/
+abbrev stageSide (l : ℕ) : ℕ := stageModulus M l ⌈/⌉ (2 ^ l)
+
+/-- Natural ceiling division gives exactly the original real-ceiling retention-box side. -/
+theorem stageSide_eq_ceil (l : ℕ) :
+    stageSide M l = ⌈(stageModulus M l : ℝ) * (2⁻¹ : ℝ) ^ l⌉₊ := by
+  apply eq_of_forall_ge_iff
+  intro n
+  rw [stageSide, ceilDiv_le_iff_le_mul (by positivity : 0 < (2 : ℕ) ^ l), Nat.ceil_le,
+    inv_pow, ← div_eq_mul_inv, div_le_iff₀ (by positivity : 0 < (2 : ℝ) ^ l)]
+  norm_cast
+  rw [Nat.mul_comm]
+
+theorem stageSide_le_stageModulus (l : ℕ) : stageSide M l ≤ stageModulus M l := by
+  apply (ceilDiv_le_iff_le_mul (by positivity : 0 < (2 : ℕ) ^ l)).2
+  exact Nat.le_mul_of_pos_left _ (by positivity)
+
+theorem stageSide_pos (l : ℕ) : 0 < stageSide M l := by
+  by_contra h
+  have hz : stageSide M l ≤ 0 := Nat.le_of_not_gt h
+  have hp := (ceilDiv_le_iff_le_mul (by positivity : 0 < (2 : ℕ) ^ l)).1 hz
+  have hprime := (stageModulus_prime M l).pos
+  omega
 
 /-- The seeds of the affine channel of stage `l`: affine maps `𝔽_(P_l) → 𝔽_(P_l) ^ H`. -/
 abbrev stageSeed (l : ℕ) : Type :=
@@ -104,7 +169,7 @@ theorem retentionChannels_stageChannel {V : ℕ → Type*} {ident : ∀ l, V l �
       (((2 : ℝ) ^ H)⁻¹ ^ l) ((((stageSide M l : ℕ) : ℝ) / stageModulus M l) ^ H) 1 (2 ^ H)
       (2 ^ H) 4 := by
   set P := stageModulus M l
-  have hP : max (2 ^ l) (M l) ≤ P := le_primeAtLeast _
+  have hP : max (2 ^ l) (M l) ≤ P := le_stageModulus M l
   have hinj : Function.Injective fun v => ((ident l v : ℕ) : ZMod P) := by
     intro a b hab
     have h := congrArg ZMod.val hab
@@ -121,6 +186,8 @@ theorem retentionChannels_stageChannel {V : ℕ → Type*} {ident : ∀ l, V l �
   have hrate : ((2⁻¹ : ℝ) ^ l) ^ H = ((2 : ℝ) ^ H)⁻¹ ^ l := by
     rw [← pow_mul, ← inv_pow, ← pow_mul, mul_comm]
   rw [hrate] at h
+  unfold stageChannel
+  rw [stageSide_eq_ceil]
   exact h
 
 end Cslib.Probability
