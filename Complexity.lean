@@ -1177,6 +1177,7 @@ public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Principles
 public import Complexity.Computability.Complexity.Classes.Time
+public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 public import Complexity.Computability.Complexity.Classes.Time.Polynomial
 public import Complexity.Computability.Complexity.Classes.Toda
 public import Complexity.Computability.Complexity.Classes.Toda.Counting
@@ -1795,6 +1796,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileC
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Clock
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
