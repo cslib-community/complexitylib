@@ -375,10 +375,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
-  fields of characteristic other than two; formula and branching-program models, identity testing,
-  hitting sets, and tensor and rank methods, including partial-derivative measures (Nisan–Wigderson
-  depth-3 bounds and shifted partials) and the depth-reduction chasms at depth four (Agrawal–Vinay)
-  and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform construction costs certified
+  fields of characteristic other than two (membership now has an explicit Ryser witness over
+  every commutative ring; VNP-hardness remains open); formula and branching-program models,
+  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
+  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms at
+  depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
+  construction costs certified
   separately from gate counts.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
