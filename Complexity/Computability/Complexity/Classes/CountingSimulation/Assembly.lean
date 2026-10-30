@@ -36,8 +36,8 @@ With the clock `t = c * T n` of a time-constructible `T n ≥ max n 2`, the sche
 `3 ^ O(T / log T)`, so the total time is `2 ^ O(T / √(log T))` in the natural-number scale of
 `Nat.exists_three_pow_mul_le_two_pow_div_sqrt_log_two`, and the space is polynomial in `T`
 (`Cslib.Complexity.CountingSimulation.exists_computableInO_count`). The result may be any
-polynomial-time function of the padded time and the count, such as a comparison deciding
-acceptance.
+polynomial-time function of the padded time, in unary, and the count, such as a comparison
+deciding acceptance.
 
 ## Main definitions
 
@@ -105,7 +105,7 @@ private theorem computableInPolyTime_paddedTime_succ :
   fun_prop
 
 private theorem computableInPolyTime_paddedTime :
-    ComputableInPolyTime paddedTime encUnary encNat := by
+    ComputableInPolyTime paddedTime encUnary encUnary := by
   rw [show paddedTime = _ from funext paddedTime_eq]
   fun_prop
 
@@ -311,16 +311,16 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
 
 /-- **The count within time `2 ^ O(T / √(log T))` and polynomial space** (conditional on the
 interfaces). Let `T` be time-constructible with `max n 2 ≤ T n`, let `c ≥ 1`, and let `rule` be a
-polynomial-time function of a padded time and a count. Given a network family for `count`, with
-`count x τ ≤ 2 ^ τ`, and a contraction algorithm, the function sending `x` to `rule` of the padded
-clock `τ = paddedTime (c * T |x|)` and of `count x τ` is computable within time
-`2 ^ (C * T n / √⌊log₂ (T n)⌋)` and space `T n ^ d` on inputs of length `n`, for constants `C` and
-`d`. -/
+polynomial-time function of a padded time, in unary, and a count, in binary. Given a network family
+for `count`, with `count x τ ≤ 2 ^ τ`, and a contraction algorithm, the function sending `x` to
+`rule` of the padded clock `τ = paddedTime (c * T |x|)` and of `count x τ` is computable within
+time `2 ^ (C * T n / √⌊log₂ (T n)⌋)` and space `T n ^ d` on inputs of length `n`, for constants `C`
+and `d`. -/
 theorem exists_computableInO_count (F : NetworkFamily encN value Admissible count)
     (A : ContractionAlgorithm encN value Admissible) (hcount : ∀ x τ, count x τ ≤ 2 ^ τ)
     {T : ℕ → ℕ} (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) {c : ℕ} (hc : 1 ≤ c)
     {β : Type} {encβ : β ↪ List Bool} {rule : ℕ × ℕ → β}
-    (hrule : ComputableInPolyTime rule (encPair encNat encNat) encβ) :
+    (hrule : ComputableInPolyTime rule (encPair encUnary encNat) encβ) :
     ∃ C d : ℕ, ComputableInO
       (fun x : List Bool =>
         rule (paddedTime (c * T x.length), count x (paddedTime (c * T x.length))))
@@ -331,7 +331,7 @@ theorem exists_computableInO_count (F : NetworkFamily encN value Admissible coun
   -- Preparing the context `(x, c * T |x|)`, with the clock in unary.
   have hmul : ComputableInPolyTime (fun n : ℕ => c * n) encUnary encUnary := by fun_prop
   have htau : ComputableInPolyTime (fun p : List Bool × ℕ => paddedTime p.2)
-      (encPair encBits encUnary) encNat := computableInPolyTime_paddedTime.comp (by fun_prop)
+      (encPair encBits encUnary) encUnary := computableInPolyTime_paddedTime.comp (by fun_prop)
   let cT : NativeCertificate (fun x : List Bool => T x.length) encBits encNat :=
     ⟨_, _, hT.computableInO⟩
   let cU : NativeCertificate (fun n : ℕ => n) encNat encUnary := ⟨_, _, ComputableInO.natToUnary⟩
@@ -375,10 +375,9 @@ theorem exists_computableInO_count (F : NetworkFamily encN value Admissible coun
       omega
     have hsimx : simulate F (x, t) = count x (paddedTime t) :=
       simulate_eq F hnt h2t (hcount x _)
-    have hout : (encPair encNat encNat (paddedTime t, simulate F (x, t))).length ≤ 6 * t + 3 := by
-      have h1 : (encNat (paddedTime t)).length ≤ paddedTime t := by
-        rw [length_encNat_eq_size]
-        exact Nat.size_le.mpr Nat.lt_two_pow_self
+    have hout : (encPair encUnary encNat (paddedTime t, simulate F (x, t))).length ≤ 6 * t + 3 := by
+      have h1 : (encUnary (paddedTime t)).length = paddedTime t := by
+        simp only [encUnary_apply, List.length_replicate]
       have h2 : (encNat (simulate F (x, t))).length ≤ paddedTime t + 1 := by
         rw [hsimx]
         calc _ ≤ (encNat (2 ^ paddedTime t)).length := length_encNat_mono (hcount x _)

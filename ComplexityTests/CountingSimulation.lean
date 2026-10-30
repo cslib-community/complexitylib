@@ -122,6 +122,14 @@ example : simulate toyFamily ([true, false, true], 2) = 0 := by
 
 /-! ### The conditional endpoint on the toy instances -/
 
+/-- `T n = 2 ^ 2 ^ n` meets the bound `max n 2 ≤ T n` of the endpoint. -/
+theorem max_le_two_pow_two_pow (n : ℕ) : max n 2 ≤ 2 ^ 2 ^ n :=
+  max_le (Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_right (by norm_num)
+    Nat.lt_two_pow_self.le))
+    (calc 2 = 2 ^ 2 ^ 0 := by norm_num
+      _ ≤ 2 ^ 2 ^ n :=
+        Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_right (by norm_num) (Nat.zero_le n)))
+
 /-- With the toy interfaces and the time-constructible `T n = 2 ^ 2 ^ n ≥ max n 2`, the count at
 the padded clock is computable within time `2 ^ O(T / √(log T))` and space `T ^ O(1)`. -/
 example : ∃ C d : ℕ, ComputableInO
@@ -130,11 +138,20 @@ example : ∃ C d : ℕ, ComputableInO
     (fun x => (2 ^ 2 ^ x.length) ^ d) :=
   exists_computableInO_count toyFamily toyContraction (fun _ _ => le_rfl)
     Cslib.Complexity.timeConstructible_two_pow_two_pow
-    (fun n => max_le (Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_right (by norm_num)
-      Nat.lt_two_pow_self.le)) (by
-        calc 2 = 2 ^ 2 ^ 0 := by norm_num
-          _ ≤ 2 ^ 2 ^ n := Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_right
-            (by norm_num) (Nat.zero_le n))))
+    max_le_two_pow_two_pow
     le_rfl (rule := Prod.snd) (by fun_prop)
+
+/-- The strict-majority comparison `2 ^ τ < 2 * count` used for `BPTIME` and `PPTIME` is a
+polynomial-time rule because the padded time is passed in unary. On the toy family every string
+is accepted, so the rule accepts every input. -/
+example : ∃ C d : ℕ, ComputableInO
+    (fun x : List Bool => decide (2 ^ paddedTime (1 * 2 ^ 2 ^ x.length) <
+      2 * 2 ^ paddedTime (1 * 2 ^ 2 ^ x.length))) encBits encBool
+    (fun x => 2 ^ (C * 2 ^ 2 ^ x.length / Nat.sqrt (Nat.log 2 (2 ^ 2 ^ x.length))))
+    (fun x => (2 ^ 2 ^ x.length) ^ d) :=
+  exists_computableInO_count toyFamily toyContraction (fun _ _ => le_rfl)
+    Cslib.Complexity.timeConstructible_two_pow_two_pow
+    max_le_two_pow_two_pow
+    le_rfl (rule := fun p => decide (2 ^ p.1 < 2 * p.2)) (by fun_prop)
 
 end ComplexityTests.CountingSimulation
