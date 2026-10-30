@@ -563,7 +563,8 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   `Oκ((n+1) log²(n+2))` charged cost. This frontend is composed into the complete native
   preprocessing and the conditional ordinary host described below.
 - **Efficient universal simulation** ([#800]): the clocked universal function runs in time
-  `O(N + poly(D, M) · (t + 1) log(t + 2))` by a divide-and-conquer windowed simulation
+  `O(N + poly(D, M) · (t + 1) log(t + 2))`, for encoded input length `N`, description length `D`
+  and largest input symbol `M`, by a divide-and-conquer windowed simulation
   (`computableInO_universal_nlogn`). Remaining: a source-space-sensitive storage bound (the
   space is currently bounded only by the time), and an unclocked form that runs until the
   simulated machine halts.
