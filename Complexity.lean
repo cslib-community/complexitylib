@@ -1872,6 +1872,7 @@ public import Complexity.Computability.PCP.Approximation.LabelCover
 public import Complexity.Computability.PCP.Approximation.MaxCSP
 public import Complexity.Computability.PCP.Approximation.MaxExactThreeSAT
 public import Complexity.Computability.PCP.Approximation.MaxThreeSAT
+public import Complexity.Computability.PCP.Approximation.ThreeXOR
 public import Complexity.Computability.PCP.AssignmentTester
 public import Complexity.Computability.PCP.AssignmentTester.Selection
 public import Complexity.Computability.PCP.Completeness
@@ -1932,6 +1933,7 @@ public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
+public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CommonCountingAccum
 public import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
 public import Complexity.Computability.PolyTime.GreedyLabelSchedule
@@ -2909,6 +2911,7 @@ public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
+public import Complexity.Logics.Propositional.CSP.ToCNF.Count
 public import Complexity.Logics.Propositional.ClauseSet.Basic
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds

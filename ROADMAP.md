@@ -323,8 +323,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
-  `7/8 + ε` of the clauses. This needs the reduction to MAX-E3LIN and, through the 4-clause XOR
-  gadget, to MAX-E3SAT; Raz–Holenstein parallel repetition for small-soundness Label Cover; and
+  `7/8 + ε` of the clauses. This needs the reduction to MAX-E3LIN;
+  Raz–Holenstein parallel repetition for small-soundness Label Cover; and
   the perfect-completeness reduction.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
