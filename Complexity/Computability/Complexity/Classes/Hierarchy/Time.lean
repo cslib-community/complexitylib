@@ -60,12 +60,15 @@ Hence `DTIME f ⊂ DTIME g`
   with the clock `(n + 1) * f n` (`Cslib.Complexity.DTIME_ssubset_DTIME`). As `n ≤ f n`, the gap
   `(f n + 1) ^ 11 ≤ g n` suffices.
 
-The polynomial gap is the overhead of the native universal machine, which is polynomial in the
-description and in the clock. The textbook gap `f n * log (f n) = o(g n)` needs a simulation with
-logarithmic overhead and is not claimed here. `Hierarchy.LogClock` reduces the clock inflation
-to `f n * (Nat.size (f n) + 1)`. `Hierarchy.Polynomial` uses native padding to prove strictness
-between every pair of distinct positive integer polynomial degrees, despite this
-interpreter overhead.
+The polynomial gap is the overhead of the polynomial-certificate universal interpreter, which is
+polynomial in the description and in the clock. `Hierarchy.TimePolylog` uses the `O(t log t)`
+universal simulation instead and narrows the gap to a polylogarithmic factor: `g` need only
+eventually exceed `n + (log (n + 1) + 1) ^ k * (J n + 1) * (log (J n + 1) + 1)` for an absolute
+constant `k`, or `(f n + 1) * (log (f n + 1) + 1) ^ k` for a time-constructible `f`. The textbook
+gap `f n * log (f n) = o(g n)` needs the diagonal to clock the universal machine's own steps and is
+not claimed. `Hierarchy.LogClock` reduces the clock inflation to `f n * (Nat.size (f n) + 1)`.
+`Hierarchy.Polynomial` uses native padding to prove strictness between every pair of distinct
+positive integer polynomial degrees, despite this interpreter overhead.
 
 ## Main definitions
 
@@ -396,7 +399,8 @@ theorem DTIME_ssubset_DTIME_of_clock {f g J : ℕ → ℕ} (hJ : TimeConstructib
 /-- **The time hierarchy theorem.** If `f` is time-constructible and `n ≤ f n`, then `DTIME f` is
 strictly contained in every `DTIME g` with `(n + 1) ^ 8 * (f n + 1) ^ 3 ≤ g n` eventually
 [Arora and Barak, Theorem 3.1][AroraBarak09], [Sipser, Theorem 9.10][Sipser2013]. The gap is the
-polynomial overhead of the native universal machine, not the textbook `f n * log (f n)`. -/
+polynomial overhead of the polynomial-certificate universal interpreter;
+`Cslib.Complexity.exists_DTIME_ssubset_DTIME_polylog` narrows it to a polylogarithmic factor. -/
 theorem DTIME_ssubset_DTIME {f g : ℕ → ℕ} (hf : TimeConstructible f) (hn : ∀ n, n ≤ f n)
     (hg : ∀ᶠ n in atTop, (n + 1) ^ 8 * (f n + 1) ^ 3 ≤ g n) :
     DTIME encBits f ⊂ DTIME encBits g := by
