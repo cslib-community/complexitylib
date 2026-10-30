@@ -24,8 +24,18 @@ import Complexity.Computability.Probabilistic.Sampling
 `O(t n)`, that is `c₁ * t n + c₂` for constants `c₁` and `c₂`, by a fair-coin machine with a
 binary alphabet and finitely many states (`Turing.MultiTapePTM.DecidesByMajorityInTime`): every
 run on that many coins has halted, and `a ∈ A` exactly when the run outputs `[true]` with
-probability more than `1 / 2` [Gill][Gill1977]. It is the unbounded-error counterpart of
+probability more than `1 / 2`. It is the unbounded-error counterpart of
 `Cslib.Complexity.BPTIME`, with the same machines and clocks.
+
+**Convention.** Unbounded-error probabilistic computation goes back to Gill [Gill1977]. The timed
+predicate here is this library's convention, not a transcription of a source definition: acceptance
+is strict and ties reject. A nonmember may output `[true]` with probability exactly `1 / 2`, and
+its other outputs are unconstrained, so it need not output `[false]` with probability more than
+`1 / 2`. This is the threshold of the library's verifier-based `PP`
+(`Cslib.Complexity.DecidesByMajority`), and the two agree at polynomial time
+(`Cslib.Complexity.mem_PP_iff_exists_mem_PPTIME`). That equivalence is a union over all polynomial
+clocks; for a fixed time bound, no comparison with conventions that require a strict majority of
+`[false]` on nonmembers is proved here.
 
 A fair-coin machine draws one coin per live step, so its acceptance probability within the clock
 `t` is the number of accepting coin strings of length `t` divided by `2 ^ t`. Deciding by majority
@@ -71,7 +81,9 @@ variable {k : ℕ} {State : Type} {α : Type*}
 
 /-- `machine` decides `A` by strict majority within `t`, relative to the encoding `enc`: on every
 encoded instance `enc a`, every run of `t a` steps with fair coins has halted, and `a ∈ A` exactly
-when the run outputs `[true]` with probability more than `1 / 2` [Gill][Gill1977]. -/
+when the run outputs `[true]` with probability more than `1 / 2`. Ties reject, and outputs other
+than `[true]` are unconstrained; this is the library's convention, described in the module
+docstring. -/
 def DecidesByMajorityInTime (machine : MultiTapePTM k Bool State) (enc : α ↪ List Bool)
     (A : Set α) (t : α → ℕ) : Prop :=
   ∀ a, (∀ final ∈ (ProbComp.eval
@@ -138,8 +150,8 @@ variable {α : Type*}
 /-- The problems decidable by strict majority within time `O(t n)`, that is `c₁ * t n + c₂` for
 constants `c₁` and `c₂`, on instances whose encoding under `enc` has length `n`, by a fair-coin
 machine with a binary alphabet and finitely many states: every run of that many steps has halted,
-and `a ∈ A` exactly when the run outputs `[true]` with probability more than `1 / 2`
-[Gill][Gill1977]. -/
+and `a ∈ A` exactly when the run outputs `[true]` with probability more than `1 / 2`. Ties reject
+(`Turing.MultiTapePTM.DecidesByMajorityInTime`). -/
 def PPTIME (enc : α ↪ List Bool) (t : ℕ → ℕ) : Set (Set α) :=
   {A | ∃ c₁ c₂ : ℕ, ∃ (k : ℕ) (State : Type) (_ : Finite State)
     (machine : MultiTapePTM k Bool State),
@@ -182,7 +194,7 @@ theorem BPTIME_subset_PPTIME {enc : α ↪ List Bool} {t : ℕ → ℕ} :
     rw [ENNReal.add_halves] at h1
     exact (h1.trans_le ((add_le_add le_rfl (hhalf.le.trans hprob)).trans hsum)).false
 
-/-- **`PP` is the union of the classes `PPTIME (n ^ k)`** [Gill][Gill1977]: a polynomial-time
+/-- **`PP` is the union of the classes `PPTIME (n ^ k)`**: a polynomial-time
 verifier run on uniformly sampled random strings is a fair-coin machine halting within a
 polynomial clock, and a fair-coin machine halting within the clock `T` is a verifier replaying
 random strings of length `T`. -/
