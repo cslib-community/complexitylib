@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.Resolution.Proof
 public import Cslib.Computability.Circuit.Boolean.Synthesis
+public import Complexity.Computability.Circuit.Monotone.Basic
 
 /-!
 # Feasible interpolation for resolution
@@ -39,6 +40,18 @@ selector costs four gates (one negation, two conjunctions and a disjunction) and
 one gate, so the circuit has at most four gates per line of the refutation, independently of the
 number of variables.
 
+**Monotone interpolation.** If the shared variables occur only positively in `A`, the selector
+can be replaced by the monotone gate `(x ∨ g₁) ∧ g₂` [Pudlák, Theorem 2 and its proof][Pudlak1997];
+if they occur only negatively in `B`, by the dual gate `(x ∧ g₂) ∨ g₁`. The interpolant is then
+computed by a monotone circuit with at most two gates per line
+(`Cslib.Logic.PL.CNF.IsProof.exists_monotone_interpolant_of_positive`,
+`Cslib.Logic.PL.CNF.IsProof.exists_monotone_interpolant_of_negative`). For the first polarity,
+`A` sees only the positive shared literals of a line, which loses nothing on its own clauses. The
+monotone gate differs from the selector only at `x = false`, `g₁ = true`, `g₂ = false`; there `A`
+sees `c₂` without its literal `¬x`, and so sees the resolvent. The second polarity is dual. A
+lower bound on monotone circuits separating the two sets then bounds the size of resolution
+refutations from below.
+
 Line-based refutations (`Cslib.Logic.PL.CNF.IsProof`) are propositions, so the circuit is
 obtained by induction on the refutation rather than computed from it; the existence statements
 here certify its size and correctness, not the running time of extracting it.
@@ -60,6 +73,13 @@ here certify its size and correctness, not the running time of extracting it.
   `Cslib.Logic.PL.CNF.RefutableInSize.exists_interpolant`: **feasible interpolation**, a
   refutation with `s` lines gives an interpolant computed by a De Morgan circuit with at most
   `4 s` gates.
+* `Cslib.Logic.PL.CNF.IsProof.exists_monotone_interpolant_of_positive`,
+  `Cslib.Logic.PL.CNF.IsProof.exists_monotone_interpolant_of_negative`,
+  `Cslib.Logic.PL.CNF.RefutableInSize.exists_monotone_interpolant_of_positive`,
+  `Cslib.Logic.PL.CNF.RefutableInSize.exists_monotone_interpolant_of_negative`: **monotone
+  feasible interpolation**, when the shared variables occur only positively in `A` or only
+  negatively in `B`: a refutation with `s` lines gives an interpolant computed by a monotone
+  circuit with at most `2 s` gates.
 
 ## References
 
@@ -268,6 +288,18 @@ private def leftPart (a : Fin n → Bool) (y : Y → Bool) : Fin n ⊕ (Y ⊕ Z)
 private def rightPart (a : Fin n → Bool) (z : Z → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
   Sum.elim (some ∘ a) (Sum.elim (fun _ => none) (some ∘ z))
 
+/-- The partial assignment fixing the `A`-private variables by `y` and the shared variables that
+`a` sets, leaving those that `a` clears free: it satisfies the positive shared literals true at
+`a`, and no negative shared literal. -/
+private def leftPos (a : Fin n → Bool) (y : Y → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
+  Sum.elim (fun i => if a i then some true else none) (Sum.elim (some ∘ y) fun _ => none)
+
+/-- The partial assignment fixing the `B`-private variables by `z` and the shared variables that
+`a` clears, leaving those that `a` sets free: it satisfies the negative shared literals true at
+`a`, and no positive shared literal. -/
+private def rightNeg (a : Fin n → Bool) (z : Z → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
+  Sum.elim (fun i => if a i then none else some false) (Sum.elim (fun _ => none) (some ∘ z))
+
 /-! ### The invariant -/
 
 /-- The invariant of the interpolant at a line `c` with gate `f`, relative to the partial
@@ -442,6 +474,149 @@ theorem CNF.RefutableInSize.exists_interpolant {s : ℕ} (h : (A.appendShared B)
   obtain ⟨ls, h, hnil, hlen⟩ := h
   obtain ⟨C, hsize, hC⟩ := h.exists_interpolant hnil
   exact ⟨C, hsize.trans (Nat.mul_le_mul_left 4 hlen), hC⟩
+
+/-! ### The monotone interpolant -/
+
+/-- Monotone constants cost one gate. -/
+private theorem synthesis_monotone_const {s : Set ((Fin n → Bool) → Bool)} (b : Bool) :
+    Synthesis Monotone.interpretation s {fun _ => b} 1 :=
+  Synthesis.nullary (I := Monotone.interpretation) (.const b) rfl
+
+/-- A monotone conjunction costs one gate beyond its arguments. -/
+private theorem synthesis_monotone_and {s : Set ((Fin n → Bool) → Bool)}
+    {f g : (Fin n → Bool) → Bool} {a b : ℕ} (hf : Synthesis Monotone.interpretation s {f} a)
+    (hg : Synthesis Monotone.interpretation s {g} b) :
+    Synthesis Monotone.interpretation s {fun x => f x && g x} (a + b + 1) := by
+  simpa [Monotone.interpretation] using hf.binary hg .and
+
+/-- A monotone disjunction costs one gate beyond its arguments. -/
+private theorem synthesis_monotone_or {s : Set ((Fin n → Bool) → Bool)}
+    {f g : (Fin n → Bool) → Bool} {a b : ℕ} (hf : Synthesis Monotone.interpretation s {f} a)
+    (hg : Synthesis Monotone.interpretation s {g} b) :
+    Synthesis Monotone.interpretation s {fun x => f x || g x} (a + b + 1) := by
+  simpa [Monotone.interpretation] using hf.binary hg .or
+
+/-- When the shared variables occur only positively in `A`, a resolution on a shared variable `xᵢ`
+gets the monotone gate `(xᵢ ∨ g₁) ∧ g₂`. It differs from the selector only when `a i = false`,
+`g₁ = true` and `g₂ = false`; then the premise `c₂` is seen by `A` without its literal `¬xᵢ`, so
+it serves for the resolvent as well. -/
+private theorem good_posSel {c₁ c₂ : Clause _} {f₁ f₂ : (Fin n → Bool) → Bool} (i : Fin n)
+    (h₁ : Good leftPos rightPart A B c₁ f₁) (h₂ : Good leftPos rightPart A B c₂ f₂) :
+    Good leftPos rightPart A B (c₁.resolvent c₂ (.inl i)) fun a => (a i || f₁ a) && f₂ a := by
+  refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩
+  · cases hi : a i
+    · rcases Bool.and_eq_false_iff.1 hf with hf | hf
+      · simp only [hi, Bool.false_or] at hf
+        exact (h₁.1 a y hA hf).resolvent_left (by simp [leftPos, hi])
+      · exact (h₂.1 a y hA hf).resolvent_right (by simp [leftPos, hi])
+    · simp only [hi, Bool.true_or, Bool.true_and] at hf
+      exact (h₂.1 a y hA hf).resolvent_right (by simp [leftPos, hi])
+  · rw [Bool.and_eq_true] at hf
+    cases hi : a i
+    · simp only [hi, Bool.false_or] at hf
+      exact (h₁.2 a z hB hf.1).resolvent_left (by simp [rightPart, hi])
+    · exact (h₂.2 a z hB hf.2).resolvent_right (by simp [rightPart, hi])
+
+/-- When the shared variables occur only negatively in `B`, a resolution on a shared variable `xᵢ`
+gets the monotone gate `(xᵢ ∧ g₂) ∨ g₁`. It differs from the selector only when `a i = true`,
+`g₁ = true` and `g₂ = false`; then the premise `c₁` is seen by `B` without its literal `xᵢ`, so
+it serves for the resolvent as well. -/
+private theorem good_negSel {c₁ c₂ : Clause _} {f₁ f₂ : (Fin n → Bool) → Bool} (i : Fin n)
+    (h₁ : Good leftPart rightNeg A B c₁ f₁) (h₂ : Good leftPart rightNeg A B c₂ f₂) :
+    Good leftPart rightNeg A B (c₁.resolvent c₂ (.inl i)) fun a => (a i && f₂ a) || f₁ a := by
+  refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩
+  · rw [Bool.or_eq_false_iff] at hf
+    cases hi : a i
+    · exact (h₁.1 a y hA hf.2).resolvent_left (by simp [leftPart, hi])
+    · simp only [hi, Bool.true_and] at hf
+      exact (h₂.1 a y hA hf.1).resolvent_right (by simp [leftPart, hi])
+  · cases hi : a i
+    · simp only [hi, Bool.false_and, Bool.false_or] at hf
+      exact (h₁.2 a z hB hf).resolvent_left (by simp [rightNeg, hi])
+    · rcases Bool.or_eq_true_iff.1 hf with hf | hf
+      · simp only [hi, Bool.true_and] at hf
+        exact (h₂.2 a z hB hf).resolvent_right (by simp [rightNeg, hi])
+      · exact (h₁.2 a z hB hf).resolvent_left (by simp [rightNeg, hi])
+
+/-- The monotone basis supplies constants, disjunctions and conjunctions within two gates. -/
+private theorem monotone_gates :
+    (∀ b, Synthesis Monotone.interpretation (inputs n) {fun _ => b} 2) ∧
+    (∀ f₁ f₂ : (Fin n → Bool) → Bool,
+      Synthesis Monotone.interpretation (inputs n ∪ {f₁, f₂}) {fun a => f₁ a || f₂ a} 2) ∧
+    ∀ f₁ f₂ : (Fin n → Bool) → Bool,
+      Synthesis Monotone.interpretation (inputs n ∪ {f₁, f₂}) {fun a => f₁ a && f₂ a} 2 :=
+  ⟨fun b => (synthesis_monotone_const b).mono Set.Subset.rfl Set.Subset.rfl (by omega),
+    fun f₁ f₂ => (synthesis_monotone_or (synthesis_fst f₁ f₂) (synthesis_snd f₁ f₂)).mono
+      Set.Subset.rfl Set.Subset.rfl (by omega),
+    fun f₁ f₂ => (synthesis_monotone_and (synthesis_fst f₁ f₂) (synthesis_snd f₁ f₂)).mono
+      Set.Subset.rfl Set.Subset.rfl (by omega)⟩
+
+/-- **Monotone feasible interpolation for resolution**, when the shared variables occur only
+positively in `A` [Pudlák, Theorem 2][Pudlak1997], [Krajíček, Theorem 6.1][Krajicek1997]. A
+resolution refutation of `A(x, y) ∧ B(x, z)` with `s` lines gives an interpolant of `A` and `B`
+computed by a monotone circuit with at most `2 s` gates. -/
+theorem CNF.IsProof.exists_monotone_interpolant_of_positive
+    {ls : List (Clause (Fin n ⊕ (Y ⊕ Z)))} (h : (A.appendShared B).IsProof ls) (hnil : [] ∈ ls)
+    (hpos : ∀ d ∈ A, ∀ i b, (.inl i, b) ∈ d → b = true) :
+    ∃ C : Circuit Monotone.signature n 1, C.size ≤ 2 * ls.length ∧
+      A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0 := by
+  obtain ⟨hconst, hor, hand⟩ := monotone_gates (n := n)
+  refine exists_circuit_of_good (ρA := leftPos) (ρB := rightPart) (fun _ _ _ => rfl)
+    (fun _ _ _ => rfl) (fun d hd a _ l hl he => ?_) (fun _ _ _ _ l _ he => ?_) hconst hor hand
+    (fun i _ _ f₁ f₂ h₁ h₂ => ⟨_, good_posSel i h₁ h₂,
+      (synthesis_monotone_and (synthesis_monotone_or (synthesis_input f₁ f₂ i)
+        (synthesis_fst f₁ f₂)) (synthesis_snd f₁ f₂)).mono Set.Subset.rfl Set.Subset.rfl
+        (by omega)⟩) h hnil
+  · rcases l with ⟨i | _, b⟩
+    · obtain rfl := hpos d hd i b hl
+      simp only [Sum.elim_inl] at he
+      simp [leftPos, he]
+    · simpa [leftPos] using he
+  · rcases l with ⟨_ | _, b⟩ <;> simpa [rightPart] using he
+
+/-- **Monotone feasible interpolation for resolution**, when the shared variables occur only
+negatively in `B` [Pudlák, Theorem 2][Pudlak1997], [Krajíček, Theorem 6.1][Krajicek1997]. A
+resolution refutation of `A(x, y) ∧ B(x, z)` with `s` lines gives an interpolant of `A` and `B`
+computed by a monotone circuit with at most `2 s` gates. -/
+theorem CNF.IsProof.exists_monotone_interpolant_of_negative
+    {ls : List (Clause (Fin n ⊕ (Y ⊕ Z)))} (h : (A.appendShared B).IsProof ls) (hnil : [] ∈ ls)
+    (hneg : ∀ d ∈ B, ∀ i b, (.inl i, b) ∈ d → b = false) :
+    ∃ C : Circuit Monotone.signature n 1, C.size ≤ 2 * ls.length ∧
+      A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0 := by
+  obtain ⟨hconst, hor, hand⟩ := monotone_gates (n := n)
+  refine exists_circuit_of_good (ρA := leftPart) (ρB := rightNeg) (fun _ _ _ => rfl)
+    (fun _ _ _ => rfl) (fun _ _ _ _ l _ he => ?_) (fun d hd a _ l hl he => ?_) hconst hor hand
+    (fun i _ _ f₁ f₂ h₁ h₂ => ⟨_, good_negSel i h₁ h₂,
+      (synthesis_monotone_or (synthesis_monotone_and (synthesis_input f₁ f₂ i)
+        (synthesis_snd f₁ f₂)) (synthesis_fst f₁ f₂)).mono Set.Subset.rfl Set.Subset.rfl
+        (by omega)⟩) h hnil
+  · rcases l with ⟨_ | _, b⟩ <;> simpa [leftPart] using he
+  · rcases l with ⟨i | _, b⟩
+    · obtain rfl := hneg d hd i b hl
+      simp only [Sum.elim_inl] at he
+      simp [rightNeg, he]
+    · simpa [rightNeg] using he
+
+/-- **Monotone feasible interpolation for resolution**, by refutation size, when the shared
+variables occur only positively in `A`. -/
+theorem CNF.RefutableInSize.exists_monotone_interpolant_of_positive {s : ℕ}
+    (h : (A.appendShared B).RefutableInSize s) (hpos : ∀ d ∈ A, ∀ i b, (.inl i, b) ∈ d → b = true) :
+    ∃ C : Circuit Monotone.signature n 1, C.size ≤ 2 * s ∧
+      A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0 := by
+  obtain ⟨ls, h, hnil, hlen⟩ := h
+  obtain ⟨C, hsize, hC⟩ := h.exists_monotone_interpolant_of_positive hnil hpos
+  exact ⟨C, hsize.trans (Nat.mul_le_mul_left 2 hlen), hC⟩
+
+/-- **Monotone feasible interpolation for resolution**, by refutation size, when the shared
+variables occur only negatively in `B`. -/
+theorem CNF.RefutableInSize.exists_monotone_interpolant_of_negative {s : ℕ}
+    (h : (A.appendShared B).RefutableInSize s)
+    (hneg : ∀ d ∈ B, ∀ i b, (.inl i, b) ∈ d → b = false) :
+    ∃ C : Circuit Monotone.signature n 1, C.size ≤ 2 * s ∧
+      A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0 := by
+  obtain ⟨ls, h, hnil, hlen⟩ := h
+  obtain ⟨C, hsize, hC⟩ := h.exists_monotone_interpolant_of_negative hnil hneg
+  exact ⟨C, hsize.trans (Nat.mul_le_mul_left 2 hlen), hC⟩
 
 end Interpolant
 
