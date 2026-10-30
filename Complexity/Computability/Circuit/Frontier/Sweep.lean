@@ -143,8 +143,8 @@ def futureSide (t : ℕ) (x : ι → U) : Set (↥(P.revealed t)ᶜ → U) :=
 /-- The rectangular hull of the peers of `x` lies inside `S`, so in a rectangle-free set one of
 its sides is small. -/
 theorem pastSide_lt_or_futureSide_lt {K : ℕ} (hS : RectangleFree S K) (t : ℕ) (x : ι → U) :
-    (P.pastSide t x).ncard < K ∨ (P.futureSide t x).ncard < K := by
-  refine hS.ncard_lt_or _ _ _ fun z ⟨⟨y, ⟨hy, hyx⟩, hzy⟩, ⟨y', ⟨hy', hy'x⟩, hzy'⟩⟩ => ?_
+    (P.pastSide t x).encard < K ∨ (P.futureSide t x).encard < K := by
+  refine hS _ _ _ fun z ⟨⟨y, ⟨hy, hyx⟩, hzy⟩, ⟨y', ⟨hy', hy'x⟩, hzy'⟩⟩ => ?_
   exact P.splice t y hy y' hy' (hyx.trans hy'x.symm) z
     (domRestrict_eq_domRestrict_iff.mp hzy).symm (domRestrict_eq_domRestrict_iff.mp hzy').symm
 
@@ -262,7 +262,9 @@ theorem ncard_le [Finite ι] [Finite U] {K : ℕ} (hS : RectangleFree S K) (hK :
   rcases S.eq_empty_or_nonempty with rfl | hne
   · simp
   simpa only [sq] using P.ncard_le_mul_transitionCount (hS.one_lt hne) hK
-    fun t _ x _ => P.pastSide_lt_or_futureSide_lt hS t x
+    fun t _ x _ => (P.pastSide_lt_or_futureSide_lt hS t x).imp
+      (fun h => (encard_lt_coe_iff_finite_ncard_lt.mp h).2)
+      (fun h => (encard_lt_coe_iff_finite_ncard_lt.mp h).2)
 
 end Sweep
 
