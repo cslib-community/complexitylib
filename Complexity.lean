@@ -26,6 +26,7 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Basic
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Correctness
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
+public import Complexity.Algorithms.Lean.UniformProbing
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Basic
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Elements
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Insert
@@ -78,6 +79,7 @@ public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.Deduplicate.Count
 public import Complexity.Algorithms.WordRAM.Deduplicate.Model
 public import Complexity.Algorithms.WordRAM.Deduplicate.Program
+public import Complexity.Algorithms.WordRAM.Dictionary.UniformProbing
 public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
 public import Complexity.Algorithms.WordRAM.Dijkstra.FibonacciStatement
 public import Complexity.Algorithms.WordRAM.Dijkstra.GenericPQ
