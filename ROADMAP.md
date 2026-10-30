@@ -755,15 +755,15 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
-- **Weighted multigraph cuts and `PMF` event bounds** ([#1336]): extract `IsMultigraph` (renamed
-  e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal), `IsNonTrivialCut`,
+- **Weighted multigraph cuts and two-branch probability recurrence** ([#1336]): extract
+  `IsMultigraph` (renamed e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal),
+  `IsNonTrivialCut`,
   `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
   `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
   `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
-  to `(Cslib.Multigraph.edgeCut ends C).card`, and move `toOuterMeasure_bind_ge_mul_ennreal`,
-  `toOuterMeasure_bind_le_mul_ennreal`, `toOuterMeasure_add_compl_ennreal`,
-  `toOuterMeasure_compl_le_one_sub`, and `two_branch_hit_prob_ge` into
-  `Complexity/Probability/PMF/Event.lean` (reusable by `toOuterMeasure_toReal_add_compl`).
+  to `(Cslib.Multigraph.edgeCut ends C).card`. Extract `two_branch_hit_prob_ge` from
+  `Karger/FastCut.lean` into a shared probabilistic-program module; its `ProbComp` evaluation and
+  support dependencies should stay above the `PMF` event layer.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
