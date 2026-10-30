@@ -60,7 +60,7 @@ example : (cycle neTable).contraction = 0 := by decide
 
 /-- The table `A` or `B` of `parallel` as a tensor on assignments to `Fin 2`. -/
 def table (v : Fin 2) (x : Fin 2 → Bool) : ℤ :=
-  [[1, 2, 3, 4], [5, 6, 7, 8]][v]!.getD (tableIndex [x 0, x 1]) 0
+  [[1, 2, 3, 4], [5, 6, 7, 8]][v]!.getD (Cslib.BitString.lsbValue [x 0, x 1]) 0
 
 /-- The network `parallel` on `Fin 2` vertices and `Fin 2` edges, both edges from `0` to `1`.
 Every edge is at both vertices, so the tensors are trivially local. -/

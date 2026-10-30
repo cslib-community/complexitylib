@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork
+public import Complexity.Foundations.Data.BitString.Counter
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.GetD
 
@@ -19,7 +20,8 @@ the number of edges, numbered `0, 1, …`, and a list of vertices, each given by
 
 * its ordered list of *ports*, the numbers of the edges at the vertex, and
 * its *table*: the value of its tensor when port `i` carries the bit `bs[i]` is the entry at
-  position `tableIndex bs`, the number whose binary digit `i` is `bs[i]`.
+  position `BitString.lsbValue bs`, the number whose binary digit `i` is `bs[i]`
+  (`BitString.testBit_lsbValue`).
 
 So a vertex with `k` ports has a table of `2 ^ k` entries. The contraction of an explicit network
 (`ExplicitTensorNetwork.contraction`) sums, over all assignments of bits to the edges, the product
@@ -37,7 +39,6 @@ order and tabulate its tensor on them. The contraction is unchanged
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.tableIndex`: the position of a list of bits in a table.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork`: an explicit Boolean tensor network.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.entry`,
   `Cslib.Circuits.Frontier.ExplicitTensorNetwork.portBits`: table lookup and the bits on a list
@@ -51,8 +52,6 @@ order and tabulate its tensor on them. The contraction is unchanged
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.testBit_tableIndex`, `Cslib.Circuits.Frontier.tableIndex_lt`: the
-  digits and range of a table position.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.maxDegree_le_iff`: the degree bound.
 * `Cslib.Circuits.Frontier.TensorNetwork.entry_explicitTable`: a written-out table evaluates the
   tensor.
@@ -68,24 +67,10 @@ order and tabulate its tensor on them. The contraction is unchanged
 
 namespace Cslib.Circuits.Frontier
 
-/-- The position of a list of bits in a table: the number whose binary digit `i` is `bs[i]`, so
-that the bits are read little-endian. -/
-def tableIndex (bs : List Bool) : ℕ :=
-  (BitVec.ofBoolListLE bs).toNat
-
-/-- Binary digit `i` of the position of `bs` is `bs[i]`, or `false` past the end of `bs`. -/
-@[simp] theorem testBit_tableIndex (bs : List Bool) (i : ℕ) :
-    (tableIndex bs).testBit i = bs.getD i false := by
-  rw [tableIndex, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE]
-
-/-- A list of `k` bits has a position below `2 ^ k`. -/
-theorem tableIndex_lt (bs : List Bool) : tableIndex bs < 2 ^ bs.length :=
-  BitVec.isLt _
-
 /-- An *explicit Boolean tensor network* over `R`: the number of edges, numbered from zero, and a
 list of vertices. A vertex is given by its ordered list of *ports*, the numbers of its edges, and
-its *table*, whose entry at position `tableIndex bs` is the value of its tensor when port `i`
-carries the bit `bs[i]`. -/
+its *table*, whose entry at position `BitString.lsbValue bs` is the value of its tensor when
+port `i` carries the bit `bs[i]`. -/
 structure ExplicitTensorNetwork (R : Type*) where
   /-- The number of edges; the edges are numbered `0, …, numEdges - 1`. -/
   numEdges : ℕ
@@ -96,10 +81,10 @@ namespace ExplicitTensorNetwork
 
 variable {R : Type*} (d : ExplicitTensorNetwork R)
 
-/-- The entry of a table at a list of bits. A position past the end of the table has entry
-zero. -/
+/-- The entry of a table at a list of bits, read little-endian (`BitString.lsbValue`). A position
+past the end of the table has entry zero. -/
 def entry [Zero R] (table : List R) (bs : List Bool) : R :=
-  table.getD (tableIndex bs) 0
+  table.getD (BitString.lsbValue bs) 0
 
 /-- The bits on a list of ports under an assignment of bits to the edges. A port naming no edge
 reads `false`. -/
@@ -168,14 +153,14 @@ theorem entry_explicitTable [Zero R] (v : V) (x : Fin m → Bool) :
     ExplicitTensorNetwork.entry (N.explicitTable ee v) ((N.explicitPorts ee v).map x) =
       N.tensor v (x ∘ ee) := by
   set ps := N.explicitPorts ee v
-  have hlt : tableIndex (ps.map x) < (N.explicitTable ee v).length := by
-    simpa [explicitTable, ps] using tableIndex_lt (ps.map x)
+  have hlt : BitString.lsbValue (ps.map x) < (N.explicitTable ee v).length := by
+    simpa [explicitTable, ps] using BitString.lsbValue_lt (ps.map x)
   rw [ExplicitTensorNetwork.entry, List.getD_eq_getElem _ _ hlt]
   simp only [explicitTable, List.getElem_map, List.getElem_range]
   refine N.tensor_congr v _ _ fun e he => ?_
   have hmem : ee e ∈ ps := (N.mem_explicitPorts ee).mpr (by simpa using he)
   have hidx := List.idxOf_lt_length_of_mem hmem
-  rw [testBit_tableIndex, List.getD_eq_getElem _ _ (by simpa using hidx), List.getElem_map,
+  rw [BitString.testBit_lsbValue, List.getD_eq_getElem _ _ (by simpa using hidx), List.getElem_map,
     List.getElem_idxOf hidx, Function.comp_apply]
 
 /-- A Boolean tensor network on finite types written out as an explicit network, numbering the
