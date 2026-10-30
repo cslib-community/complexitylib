@@ -594,6 +594,8 @@ public import Complexity.Computability.Circuit.Boolean.Equality
 public import Complexity.Computability.Circuit.Boolean.EvaluationTime
 public import Complexity.Computability.Circuit.Boolean.FanInTwo
 public import Complexity.Computability.Circuit.Boolean.FirstOrder
+public import Complexity.Computability.Circuit.Boolean.FirstOrder.Ordered
+public import Complexity.Computability.Circuit.Boolean.FirstOrder.Ordered.Parity
 public import Complexity.Computability.Circuit.Boolean.FirstOrder.Parity
 public import Complexity.Computability.Circuit.Boolean.Formula
 public import Complexity.Computability.Circuit.Boolean.Formula.Andreev
