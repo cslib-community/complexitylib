@@ -14,7 +14,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectCont
 
 Hand-checked direct summations of small explicit networks modulo `2 ^ P`, including a precision
 that reduces the result, a precision zero, a port naming no edge, a table that is too short, and
-a network without edges. The last test derives the unconditional contract form of the bounds.
+a network without edges. The last tests derive the unconditional contract form of the bounds
+and check the shape of the binary-precision certificate.
 -/
 
 @[expose] public section
@@ -69,5 +70,17 @@ example : ∃ K : ℕ, ∀ x : ℕ × ℕ × ExplicitTensorNetwork ℕ,
       (Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ K)))
       (Nat.pow_le_pow_right two_pos (Nat.le_mul_of_pos_left _ (Nat.succ_pos K)))
   · exact Nat.mul_le_mul (Nat.le_succ K) (Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ K))
+
+/-- With the precision in binary, the certificate has the shape the counting simulation's
+contraction interface asks for: `(P, G) ↦ value G % 2 ^ P` on `encPair encNat encN`, with `G`
+the row count and the network, `value G` its contraction and
+`encN = encPair encNat encExplicitNetwork`. -/
+noncomputable example : Cslib.GenericRAM.NativeCertificate
+    (fun p : ℕ × (ℕ × ExplicitTensorNetwork ℕ) =>
+      (fun G : ℕ × ExplicitTensorNetwork ℕ => G.2.contraction) p.2 % 2 ^ p.1)
+    (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encNat
+      (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encNat encExplicitNetwork))
+    Turing.MultiTapeTM.encNat :=
+  directContractionBinaryCertificate
 
 end ComplexityTests.Computability.Circuit.Frontier.DirectContraction
