@@ -2355,6 +2355,7 @@ public import Complexity.Foundations.Analysis.RowCompression
 public import Complexity.Foundations.Analysis.RowCompression.FalseOverflow
 public import Complexity.Foundations.Analysis.RowCompression.Floors
 public import Complexity.Foundations.Analysis.RowCompression.Iteration
+public import Complexity.Foundations.Analysis.RowCompression.NoiseDecay
 public import Complexity.Foundations.Analysis.RowCompression.OverflowBudget
 public import Complexity.Foundations.Analysis.RowCompression.OverflowNoise
 public import Complexity.Foundations.Analysis.RowCompression.Preloss
