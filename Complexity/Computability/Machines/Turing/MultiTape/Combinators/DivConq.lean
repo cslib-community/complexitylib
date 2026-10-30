@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
 
 /-!
 # Divide and conquer

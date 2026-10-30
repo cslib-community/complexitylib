@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
+public import Complexity.Computability.Complexity.Classes.Hierarchy.Time
+import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedComplexity
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
@@ -18,8 +19,7 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 
 With the universal machine running a fixed machine for `t` steps within time `O(t log t)`
 (`Turing.MultiTapeTM.Universal.computableInO_universal_nlogn`), the clocked diagonal on short
-descriptions `Cslib.Complexity.timeDiagonal J` of
-`Complexity.Computability.Complexity.Classes.Hierarchy.Time` is computable within time and space
+descriptions `Cslib.Complexity.timeDiagonal J` of `Hierarchy.Time` is computable within time and space
 `O(n + (log (n + 1) + 1) ^ k * (J n + 1) * (log (J n + 1) + 1))` on inputs of length `n`, for a
 time-constructible clock `J` and an absolute constant `k`
 (`Cslib.Complexity.exists_computableInO_timeDiagonal_polylog`). On a short description, of
@@ -44,7 +44,8 @@ in `k`, so one exponent serves any finitely many of them. The gap is a polylogar
 weaker than the textbook `f n * log (f n) = o(g n)`, which needs the diagonal to count the steps of
 the universal machine itself rather than those of the simulated machine. Here the exponent `k`
 comes from the polynomial overhead of the universal machine in the description and from the
-degree of the description decoder.
+degree of the description decoder; for time-constructible `f` it also absorbs the logarithmic
+inflation of the clock `f n * (Nat.size (f n) + 1)` and the `J log J` term.
 
 ## Main results
 

@@ -562,10 +562,11 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   compact root descriptors, with derived logarithmic width and uniform
   `Oκ((n+1) log²(n+2))` charged cost. This frontend is composed into the complete native
   preprocessing and the conditional ordinary host described below.
-- **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
-  with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
-  The current interpreter has a stronger polynomial certificate and a streaming input lookup;
-  the buffered representation, its native cleanup routines and their amortized bounds remain.
+- **Efficient universal simulation** ([#800]): the clocked universal function runs in time
+  `O(N + poly(D, M) · (t + 1) log(t + 2))` by a divide-and-conquer windowed simulation
+  (`computableInO_universal_nlogn`). Remaining: a source-space-sensitive storage bound (the
+  space is currently bounded only by the time), and an unclocked form that runs until the
+  simulated machine halts.
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.

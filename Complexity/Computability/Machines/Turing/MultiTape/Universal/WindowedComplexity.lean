@@ -7,9 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedParts
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedInit
-public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.DivConq
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Machine
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Bound
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Windowed
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedParts
+import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedInit
+import Complexity.Computability.Machines.Turing.MultiTape.Combinators.DivConq
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -36,6 +40,16 @@ the encoded input plus `O((D + 1) ^ 3 + (t + 1) * (log₂ (t + 1) + 1))`.
 
 The bound covers time and space alike; the space is not bounded separately here. It depends on the
 largest input symbol `M` because the input cells hold the symbols in unary.
+
+For a fixed machine on inputs over a fixed alphabet this is the `O(t log t)` simulation overhead of
+[Arora and Barak, Theorem 1.9][AroraBarak09], attributed there to Hennie and Stearns, with an
+additive term for reading the encoded input. It differs from that statement in several ways: the
+number of steps is an input (a clocked simulation, not a run until the simulated machine halts);
+the factor is an explicit polynomial in `D` and `M` rather than a constant depending on the
+machine's alphabet, tapes and states; the space is not bounded by the simulated machine's space;
+and the simulated model is the description format of `Turing.MultiTapeTM.Universal.Desc`, with a
+read-only input and an emitted output. The construction is an original divide-and-conquer windowed
+simulation, not the buffered tapes of Hennie and Stearns.
 
 ## Main results
 
