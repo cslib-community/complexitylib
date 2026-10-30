@@ -82,6 +82,8 @@ public import Complexity.Algorithms.WordRAM.Deduplicate.Count
 public import Complexity.Algorithms.WordRAM.Deduplicate.Model
 public import Complexity.Algorithms.WordRAM.Deduplicate.Program
 public import Complexity.Algorithms.WordRAM.Dictionary.ChainedHash
+public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing
+public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing.HashFamily
 public import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing
 public import Complexity.Algorithms.WordRAM.Dictionary.LinearProbing.FiveWise
 public import Complexity.Algorithms.WordRAM.Dijkstra.Fibonacci
@@ -2096,6 +2098,7 @@ public import Complexity.Computability.WordRAM.Randomized.Expected
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Computability.WordRAM.Randomized.Subroutine
+public import Complexity.Computability.WordRAM.Randomized.UniformLoopExit
 public import Complexity.Computability.WordRAM.RegisterFrame
 public import Complexity.Computability.WordRAM.RelSubroutine
 public import Complexity.Computability.WordRAM.Sequence
@@ -2680,6 +2683,7 @@ public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
+public import Complexity.Foundations.LinearAlgebra.Matrix.CopyStage
 public import Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
 public import Complexity.Foundations.LinearAlgebra.Matrix.FactorialTruncation
@@ -2972,9 +2976,12 @@ public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.Uniform
+public import Complexity.Probability.PMF.UniformSubset
 public import Complexity.Probability.PairwiseIndependent
 public import Complexity.Probability.PairwiseIndependentHash
 public import Complexity.Probability.PairwiseIndependentHash.Affine
+public import Complexity.Probability.PairwiseIndependentHash.Retention
+public import Complexity.Probability.PairwiseIndependentHash.RetentionChannel
 public import Complexity.Probability.PairwiseIndependentHash.Shift
 public import Complexity.Probability.PairwiseIndependentHash.Toeplitz
 public import Complexity.Probability.PairwiseIndependentHash.Universal
