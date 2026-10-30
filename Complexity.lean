@@ -2246,6 +2246,7 @@ public import Complexity.Crypto.Computational.Homomorphic.Refresh
 public import Complexity.Crypto.Computational.Hybrid.SavedPrediction
 public import Complexity.Crypto.Computational.Hybrid.Sequence
 public import Complexity.Crypto.Computational.IndexedSignature
+public import Complexity.Crypto.Computational.IndexedSignature.Counter
 public import Complexity.Crypto.Computational.LWE.Basic
 public import Complexity.Crypto.Computational.MAC
 public import Complexity.Crypto.Computational.MerkleDamgard
