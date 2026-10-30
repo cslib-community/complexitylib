@@ -1478,6 +1478,7 @@ public import Complexity.Computability.Languages.Slice
 public import Complexity.Computability.MCSP.AntiChecker
 public import Complexity.Computability.MCSP.Basic
 public import Complexity.Computability.MCSP.FormulaMagnification
+public import Complexity.Computability.MCSP.FormulaMagnification.AverageCase
 public import Complexity.Computability.MCSP.FormulaMagnification.StretchedExponential
 public import Complexity.Computability.MCSP.FormulaMagnification.Subexponential
 public import Complexity.Computability.MCSP.HardnessConsequences

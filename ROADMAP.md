@@ -450,7 +450,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   multi-tape steps for a constant `c < 1`; prefix-free complexity,
   resource-bounded MCSP variants and connections to learning, cryptography and lower bounds; the
   circuitized anti-checker with an efficient generator; the asymptotic parameter instantiation of
-  Theorem 5 in `MCSP/FormulaMagnification.lean`; and hardness results for `MINKT` and `MINcKT` (whose
+  Theorem 5 (the general subexponential one-sided average-case wrapper is tracked in #1871);
+  and hardness results for `MINKT` and `MINcKT` (whose
   definitions, conditional `K^t` measure, and `NP` memberships are in `Kolmogorov/MINKT.lean`,
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
