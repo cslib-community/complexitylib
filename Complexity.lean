@@ -1106,6 +1106,7 @@ public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Complexity.Classes.P.Closure
 public import Complexity.Computability.Complexity.Classes.P.Complement
 public import Complexity.Computability.Complexity.Classes.P.Slices
+public import Complexity.Computability.Complexity.Classes.P.WordRAM
 public import Complexity.Computability.Complexity.Classes.PCP
 public import Complexity.Computability.Complexity.Classes.PCP.NP
 public import Complexity.Computability.Complexity.Classes.PCP.ZeroRandomness
@@ -1276,6 +1277,7 @@ public import Complexity.Computability.Complexity.Problems.CircuitValue.Writer
 public import Complexity.Computability.Complexity.Problems.Clique
 public import Complexity.Computability.Complexity.Problems.Coloring
 public import Complexity.Computability.Complexity.Problems.CountingSAT
+public import Complexity.Computability.Complexity.Problems.ElementDistinctness
 public import Complexity.Computability.Complexity.Problems.ExactThreeSAT
 public import Complexity.Computability.Complexity.Problems.GeneralizedGeography
 public import Complexity.Computability.Complexity.Problems.Graph
@@ -2134,6 +2136,7 @@ public import Complexity.Computability.WordRAM.Structured
 public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
+public import Complexity.Computability.WordRAM.Turing
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
