@@ -17,7 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreePrimiti
 import Mathlib.Tactic.Linarith
 
 /-!
-# Quadratic schoolbook binary addition
+# Schoolbook binary addition and multiplication
 
 The existing `NatAdd.addStep` fold consumes the first input's bits and the remaining bits of the
 second input, emitting one sum digit per round. A second consuming fold adds the carry to the
@@ -25,9 +25,15 @@ remaining second input. Both folds have linear-sized states and linear-cost roun
 takes quadratic time and independent linear output-charged workspace in the encoded input length.
 No iteration by the numeric operands or normalization of the result is needed.
 
+Multiplication folds the shift-and-add round `NatMul.mulStep` over the digits of the first factor.
+Its states have linear length and each round is one addition, so it takes cubic time and linear
+charged workspace. This is the only machine certificate for binary multiplication; the degree,
+space and polynomial-time forms are weakenings of it.
+
 ## Main results
 
 * `ComputableInO.natAdd`: binary addition in quadratic time and linear charged workspace.
+* `ComputableInO.natMul`: binary multiplication in cubic time and linear charged workspace.
 -/
 
 public section
@@ -149,5 +155,66 @@ theorem natAdd :
   · simp only [Function.comp_apply, encBits_apply, encNat_apply]
     rw [NatSucc.succFinish_foldl, ← NatAdd.foldl_addStep, List.nil_append, NatAdd.addBits_bits]
     rfl
+
+private abbrev encMul := encPair encNat encNat
+
+private theorem mulStep_inO :
+    ComputableInO (fun p : (ℕ × ℕ) × Bool => NatMul.mulStep p.1 p.2) (encPair encMul encBool)
+      encMul (fun p => ((encPair encMul encBool p).length + 1) ^ 2)
+      (fun p => (encPair encMul encBool p).length + 1) := by
+  have hs := fst encMul encBool
+  have hr := (snd encNat encNat).comp_linear hs
+  have h := ((snd encMul encBool).ite (natAdd.comp hs) ((fst encNat encNat).comp_linear hs)).prod
+    (natAdd.comp (hr.prod hr))
+  refine (h.mono 8 (fun p => ?_) (fun p => ?_)).of_enc_eq fun p => ?_
+  · simp only [Function.comp_apply, length_encPair, encBool_apply, List.length_singleton]
+    split_ifs <;> nlinarith
+  · simp only [Function.comp_apply, length_encPair, encBool_apply, List.length_singleton]
+    split_ifs <;> omega
+  · rfl
+
+/-- **Binary multiplication** by the shift-and-add fold `NatMul.mulStep` over the digits of the
+first factor. Each of the linearly many rounds adds numbers of linear length, so time is cubic and
+charged workspace linear in the framed input length, independently of the numeric operands. -/
+theorem natMul :
+    ComputableInO (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat
+      (fun p => ((encPair encNat encNat p).length + 1) ^ 3)
+      (fun p => (encPair encNat encNat p).length + 1) := by
+  have hbits : ComputableInO Nat.bits encNat encBits (fun n => (encNat n).length)
+      (fun n => (encNat n).length) := of_eq fun _ => rfl
+  have hstate (p : ℕ × ℕ) (i : ℕ) :
+      (encMul ((p.1.bits.take i).foldl NatMul.mulStep (0, p.2))).length ≤
+        3 * (encPair encNat encNat p).length + 1 := by
+    obtain ⟨h₁, h₂⟩ := NatMul.foldl_mulStep_le (p.1.bits.take i) 0 p.2
+    have hi : (p.1.bits.take i).length ≤ p.1.size := by simp [← Nat.size_eq_bits_len]
+    have hacc := NatMul.size_le_of_le _ (by omega :
+      (List.foldl NatMul.mulStep (0, p.2) (p.1.bits.take i)).1 ≤
+        2 ^ (p.1.bits.take i).length * p.2)
+    have hsh := NatMul.size_le_of_le _ h₂.le
+    simp only [encMul, length_encPair, encNat_apply, Nat.size_eq_bits_len] at hacc hsh hi ⊢
+    omega
+  have hround (p : ℕ × ℕ) (i : ℕ) (hi : i < p.1.bits.length) :
+      (encPair encMul encBool
+        ((p.1.bits.take i).foldl NatMul.mulStep (0, p.2), p.1.bits[i])).length + 1 ≤
+        6 * (encPair encNat encNat p).length + 6 := by
+    have := hstate p i
+    rw [length_encPair]
+    simp only [encBool_apply, List.length_singleton]
+    omega
+  have hfold := foldl (hbits.comp_linear (fst encNat encNat))
+    ((const (encMid := encNat) 0).prod (snd encNat encNat)) mulStep_inO
+    (R := fun p => (6 * (encPair encNat encNat p).length + 6) ^ 2)
+    (Q := fun p => 6 * (encPair encNat encNat p).length + 6)
+    (B := fun p => 3 * (encPair encNat encNat p).length + 1)
+    (fun p i hi => Nat.pow_le_pow_left (hround p i hi) 2)
+    (fun p i hi => hround p i hi)
+    (fun p i _ => hstate p i)
+  refine ((fst encNat encNat).comp_linear hfold |>.mono 100 (fun p => ?_) (fun p => ?_))
+    |>.of_enc_eq fun p => ?_
+  · simp only [Function.comp_apply, encBits_apply, length_encPair, encNat_apply]
+    nlinarith
+  · simp only [Function.comp_apply, encBits_apply, length_encPair, encNat_apply]
+    omega
+  · simp only [Function.comp_apply, NatMul.foldl_mulStep, zero_add]
 
 end Turing.MultiTapeTM.ComputableInO

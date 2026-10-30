@@ -88,6 +88,7 @@ minimum-cut-value part of Theorem 4.4; paraphrase) on the randomized word RAM.
 namespace Cslib.Algorithms.WordRAM.Karger
 
 open scoped ENNReal
+open Cslib.Probability.PMF
 
 /-! ### Pure-integer threshold `fastCutThreshold` and quadratic potential `Φ(k) = (k - 4) ^ 2` -/
 
