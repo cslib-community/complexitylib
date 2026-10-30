@@ -45,8 +45,23 @@ structure NodeLayout (p k a b out scratch frames frame : ℕ) : Prop where
   /-- The output is disjoint from the second input. -/
   right_disjoint : b + 4 ^ k * p ≤ out ∨ out + 4 ^ k * p ≤ b
 
-/-- Actual current fields and frame words at a newly entered root or pushed child. -/
-structure NodeReady (p k a b out scratch frames frame : ℕ) (x : Data 64) : Prop where
+/-- The actual three-buffer advancement gives the child all separation properties. -/
+theorem NodeLayout.child {p k a b out scratch frames frame : ℕ}
+    (h : NodeLayout p (k + 1) a b out scratch frames frame) :
+    NodeLayout p k scratch (scratch + 4 ^ k * p) (scratch + 2 * (4 ^ k * p))
+      (scratch + 3 * (4 ^ k * p)) frames (frame + 7) := by
+  refine ⟨h.modulus_pos, ?_, ?_, ?_, ?_, ?_, Or.inl ?_, Or.inl ?_⟩
+  · omega
+  · omega
+  · omega
+  · simpa only [child_scratch_end] using h.scratch_before
+  · have hf := h.frames_before
+    omega
+  · omega
+  · omega
+
+/-- Current matrix parameters and fixed controller constants, before phase-specific work. -/
+structure NodeHeader (p k a b out scratch frames frame : ℕ) (x : Data 64) : Prop where
   /-- First input pointer. -/
   inputA_eq : x.regs Reg.inputA = a
   /-- Second input pointer. -/
@@ -65,8 +80,6 @@ structure NodeReady (p k a b out scratch frames frame : ℕ) (x : Data 64) : Pro
   frames_eq : x.regs Reg.frames = frames
   /-- Current real frame address. -/
   frame_eq : x.regs Reg.frame = frame
-  /-- Entry dispatch phase. -/
-  phase_eq : x.regs Reg.phase = 0
   /-- Current traversal is active. -/
   active_eq : x.regs Reg.active = 1
   /-- Raw/canonical zero constant. -/
@@ -77,6 +90,53 @@ structure NodeReady (p k a b out scratch frames frame : ℕ) (x : Data 64) : Pro
   four_eq : x.regs Reg.four = 4
   /-- Real frame width. -/
   frameWidth_eq : x.regs Reg.frameWidth = 7
+
+/-- Reuse the common header after a real helper call preserving its high register bank. -/
+theorem NodeHeader.of_regs_eq {p k a b out scratch frames frame : ℕ} {x y : Data 64}
+    (h : NodeHeader p k a b out scratch frames frame x)
+    (hr : ∀ i, 32 ≤ i.val → i.val < 50 → y.regs i = x.regs i) :
+    NodeHeader p k a b out scratch frames frame y :=
+  ⟨(hr _ (by decide) (by decide)).trans h.inputA_eq,
+    (hr _ (by decide) (by decide)).trans h.inputB_eq,
+    (hr _ (by decide) (by decide)).trans h.output_eq,
+    (hr _ (by decide) (by decide)).trans h.scratch_eq,
+    (hr _ (by decide) (by decide)).trans h.modulus_eq,
+    (hr _ (by decide) (by decide)).trans h.depth_eq,
+    (hr _ (by decide) (by decide)).trans h.size_eq,
+    (hr _ (by decide) (by decide)).trans h.frames_eq,
+    (hr _ (by decide) (by decide)).trans h.frame_eq,
+    (hr _ (by decide) (by decide)).trans h.active_eq,
+    (hr _ (by decide) (by decide)).trans h.zero_eq,
+    (hr _ (by decide) (by decide)).trans h.one_eq,
+    (hr _ (by decide) (by decide)).trans h.four_eq,
+    (hr _ (by decide) (by decide)).trans h.frameWidth_eq⟩
+
+/-- Frame loads and output clearing may change the two cursors, which are not parameters
+of the current node. All actual header fields are preserved. -/
+theorem NodeHeader.of_regs_eq_cursors {p k a b out scratch frames frame : ℕ} {x y : Data 64}
+    (h : NodeHeader p k a b out scratch frames frame x)
+    (hr : ∀ i, i ≠ Reg.address → i ≠ Reg.index → y.regs i = x.regs i) :
+    NodeHeader p k a b out scratch frames frame y :=
+  ⟨(hr _ (by decide) (by decide)).trans h.inputA_eq,
+    (hr _ (by decide) (by decide)).trans h.inputB_eq,
+    (hr _ (by decide) (by decide)).trans h.output_eq,
+    (hr _ (by decide) (by decide)).trans h.scratch_eq,
+    (hr _ (by decide) (by decide)).trans h.modulus_eq,
+    (hr _ (by decide) (by decide)).trans h.depth_eq,
+    (hr _ (by decide) (by decide)).trans h.size_eq,
+    (hr _ (by decide) (by decide)).trans h.frames_eq,
+    (hr _ (by decide) (by decide)).trans h.frame_eq,
+    (hr _ (by decide) (by decide)).trans h.active_eq,
+    (hr _ (by decide) (by decide)).trans h.zero_eq,
+    (hr _ (by decide) (by decide)).trans h.one_eq,
+    (hr _ (by decide) (by decide)).trans h.four_eq,
+    (hr _ (by decide) (by decide)).trans h.frameWidth_eq⟩
+
+/-- Actual current fields and frame words at a newly entered root or pushed child. -/
+structure NodeReady (p k a b out scratch frames frame : ℕ) (x : Data 64) : Prop
+    extends NodeHeader p k a b out scratch frames frame x where
+  /-- Entry dispatch phase. -/
+  phase_eq : x.regs Reg.phase = 0
   /-- Words actually written by native root setup or child push. -/
   frame_words : ∀ j : Fin 7, x.mem (frame + j.val) = x.regs (field j)
 
@@ -152,9 +212,23 @@ theorem exec_setup_ready {w : ℕ} (x : Data 64)
   have hf : y.regs Reg.frame =
       x.regs Reg.scratch + 4 ^ x.regs Reg.depth * x.regs Reg.modulus := by
     simpa only [Nat.mul_comm] using hframe.trans hframes
-  refine ⟨y, hy, ⟨hparams _ (by decide), hparams _ (by decide), hparams _ (by decide),
-    hparams _ (by decide), hparams _ (by decide), hparams _ (by decide), ?_, ?_, hf,
-    hphase, hactive, hzero, hone, hfour, hwidth, ?_⟩, hmem⟩
+  refine ⟨y, hy, {
+    inputA_eq := hparams _ (by decide)
+    inputB_eq := hparams _ (by decide)
+    output_eq := hparams _ (by decide)
+    scratch_eq := hparams _ (by decide)
+    modulus_eq := hparams _ (by decide)
+    depth_eq := hparams _ (by decide)
+    size_eq := ?_
+    frames_eq := ?_
+    frame_eq := hf
+    phase_eq := hphase
+    active_eq := hactive
+    zero_eq := hzero
+    one_eq := hone
+    four_eq := hfour
+    frameWidth_eq := hwidth
+    frame_words := ?_ }, hmem⟩
   · simpa only [Nat.mul_comm] using hsize
   · simpa only [Nat.mul_comm] using hframes
   · simpa only [hf] using hfields

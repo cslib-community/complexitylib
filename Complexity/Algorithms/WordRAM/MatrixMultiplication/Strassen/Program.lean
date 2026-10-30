@@ -220,15 +220,25 @@ end Reg
   .seq (form Reg.inputA Reg.formA a₁ a₂ asign)
     (.seq (form Reg.inputB Reg.formB b₁ b₂ bsign) (push phase))
 
+/-- The seven actual child calls, in the same order as the mathematical product recurrence. -/
+@[expose] def prepareChild : Fin 7 → Code .standard 64
+  | 0 => prepare 1 0 3 1 0 3 1
+  | 1 => prepare 2 2 3 1 0 0 0
+  | 2 => prepare 3 0 0 0 1 3 (-1)
+  | 3 => prepare 4 3 3 0 2 0 (-1)
+  | 4 => prepare 5 0 1 1 3 3 0
+  | 5 => prepare 6 2 0 (-1) 0 1 1
+  | 6 => prepare 7 1 3 (-1) 2 3 1
+
 /-- Execute the corresponding returned-child accumulation and prepare the next product. -/
 @[expose] def stage : Fin 8 → Code .standard 64
-  | 0 => .seq clear (prepare 1 0 3 1 0 3 1)
-  | 1 => .seq (accumulate 0 false) (.seq (accumulate 3 false) (prepare 2 2 3 1 0 0 0))
-  | 2 => .seq (accumulate 2 false) (.seq (accumulate 3 true) (prepare 3 0 0 0 1 3 (-1)))
-  | 3 => .seq (accumulate 1 false) (.seq (accumulate 3 false) (prepare 4 3 3 0 2 0 (-1)))
-  | 4 => .seq (accumulate 0 false) (.seq (accumulate 2 false) (prepare 5 0 1 1 3 3 0))
-  | 5 => .seq (accumulate 0 true) (.seq (accumulate 1 false) (prepare 6 2 0 (-1) 0 1 1))
-  | 6 => .seq (accumulate 3 false) (prepare 7 1 3 (-1) 2 3 1)
+  | 0 => .seq clear (prepareChild 0)
+  | 1 => .seq (accumulate 0 false) (.seq (accumulate 3 false) (prepareChild 1))
+  | 2 => .seq (accumulate 2 false) (.seq (accumulate 3 true) (prepareChild 2))
+  | 3 => .seq (accumulate 1 false) (.seq (accumulate 3 false) (prepareChild 3))
+  | 4 => .seq (accumulate 0 false) (.seq (accumulate 2 false) (prepareChild 4))
+  | 5 => .seq (accumulate 0 true) (.seq (accumulate 1 false) (prepareChild 5))
+  | 6 => .seq (accumulate 3 false) (prepareChild 6)
   | 7 => .seq (accumulate 0 false) pop
 
 /-- Static seven-way branch chain reads the phase stored by the actual push. -/
