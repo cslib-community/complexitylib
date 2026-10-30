@@ -81,6 +81,7 @@ public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.AKS.PerfectPower
+public import Complexity.Algorithms.WordRAM.AKS.PolyArray
 public import Complexity.Algorithms.WordRAM.AKS.PolyMul
 public import Complexity.Algorithms.WordRAM.Deduplicate.Count
 public import Complexity.Algorithms.WordRAM.Deduplicate.Model

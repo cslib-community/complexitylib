@@ -7,12 +7,14 @@ Authors: Samuel Schlesinger
 import Complexity.Algorithms.WordRAM.NatGcd
 import Complexity.Algorithms.WordRAM.AKS.PerfectPower
 import Complexity.Algorithms.WordRAM.AKS.PolyMul
+import Complexity.Algorithms.WordRAM.AKS.PolyArray
 
 /-!
 # Word-RAM subroutines of the AKS primality test
 
-Concrete runs of Euclid's algorithm, the integer `k`-th root, the perfect-power test and
-multiplication modulo `X^r - 1` and `n`, and instances of their correctness theorems.
+Concrete runs of Euclid's algorithm, the integer `k`-th root, the perfect-power test,
+multiplication modulo `X^r - 1` and `n`, and writing and comparing coefficient arrays, and
+instances of their correctness theorems.
 -/
 
 namespace ComplexityTests.WordRAMAKS
@@ -104,6 +106,40 @@ example : ∃ y, ExecWithin 16 AKS.PolyMul.program (mulInput 10 10) y 224 ∧ y.
     (by decide) (by decide) (by decide)
   refine ⟨y, hy, ?_, hout 23 (by decide)⟩
   rw [show (21 : ℕ) = 20 + 1 from rfl, hcoeff 1 (by decide)]
+  decide
+
+/-! ## Writing and comparing coefficient arrays -/
+
+private def fillInput (e a : ℕ) : Data 10 :=
+  ⟨fun j => if j = AKS.Fill.base then 20 else if j = AKS.Fill.rr then 3 else
+      if j = AKS.Fill.nn then 5 else if j = AKS.Fill.er then e % 3 else
+      if j = AKS.Fill.aa then a else 0,
+    fun a => if a = 23 then 99 else 7⟩
+
+/-- `X^4 + 7 ≡ X + 2` and `X^3 + 4 ≡ 0` modulo `X³ - 1` and `5`, over dirty memory. -/
+example : (Code.eval 16 4 AKS.Fill.program (fillInput 4 7)).map
+      (fun yn => [yn.1.mem 20, yn.1.mem 21, yn.1.mem 22, yn.1.mem 23]) = some [2, 1, 0, 99] ∧
+    (Code.eval 16 4 AKS.Fill.program (fillInput 3 4)).map
+      (fun yn => [yn.1.mem 20, yn.1.mem 21, yn.1.mem 22]) = some [0, 0, 0] := by
+  decide +kernel
+
+/-- The correctness theorem agrees with `Cslib.AKS.powAddCoeff`. -/
+example : ∃ y, ExecWithin 16 AKS.Fill.program (fillInput 4 7) y 28 ∧ y.mem 20 = 2 := by
+  obtain ⟨y, hy, hc, -⟩ := AKS.Fill.exec (w := 16) (fillInput 4 7) (b := 20) (r := 3) (n := 5)
+    (e := 4) (a := 7) rfl rfl rfl rfl rfl (by decide) (by decide) (by decide) (by decide)
+    (by decide)
+  exact ⟨y, hy, (hc 0 (by decide)).trans (by decide)⟩
+
+private def cmpInput : Data 9 :=
+  ⟨fun j => if j = AKS.Compare.p then 10 else if j = AKS.Compare.q then 20 else
+      if j = AKS.Compare.rr then 3 else 0,
+    fun a => if a = 12 then 5 else if a = 22 then 6 else 1⟩
+
+/-- Blocks agreeing on two cells but not the third compare unequal; shorter prefixes agree. -/
+example : (Code.eval 16 4 AKS.Compare.program cmpInput).map (·.1.regs AKS.Compare.flag) =
+      some 0 ∧
+    (Code.eval 16 4 AKS.Compare.program (cmpInput.set AKS.Compare.rr 2)).map
+      (·.1.regs AKS.Compare.flag) = some 1 := by
   decide
 
 end ComplexityTests.WordRAMAKS
