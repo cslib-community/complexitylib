@@ -115,6 +115,9 @@ def check_outputs(build_dir: Path, skip: bool, current=lake_outputs_current,
     same outputs as the checked default ones."""
     if skip:
         return "not checked against the sources"
+    if not reference.is_dir():
+        sys.exit(f"build outputs are missing in {reference}; run `lake build "
+                 + " ".join(ROOTS) + "` first")
     if not current():
         sys.exit("build outputs are missing or stale; run `lake build " + " ".join(ROOTS)
                  + "` (or pass --no-build-check)")
