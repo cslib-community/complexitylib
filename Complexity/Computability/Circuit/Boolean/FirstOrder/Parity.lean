@@ -44,6 +44,8 @@ The language is relational, as in `ModelChecking.toUnbounded`, and has finitely 
 symbols, so that a structure on `Fin n` has finitely many atomic facts. Constant symbols, such as
 `min` and `max` in [Immerman1999], are not covered; a numerical constant can be expressed by a
 unary numerical relation holding of one element.
+The separation with genuine canonical `0`, `1`, and `max` constants, stated directly through
+`FO.Ordered.Definable`, is in `Complexity.Computability.Circuit.Boolean.FirstOrder.Ordered.Parity`.
 
 ## Main definitions
 
