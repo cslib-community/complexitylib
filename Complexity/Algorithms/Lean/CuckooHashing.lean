@@ -16,23 +16,23 @@ public import Complexity.Probability.PMF.Uniform
 
 This module formalizes the cuckoo graph walk dichotomy and tail-bound analysis of Rasmus Pagh and
 Flemming Friche Rodler, *"Cuckoo hashing"* (author-hosted journal manuscript dated 8 December 2003,
-published in *Journal of Algorithms* 51(2):122–144, 2004) [PaghRodler2004], Section 2.3
-("Amortized insertion time", manuscript pp. 6–10; Lemma 1 on manuscript p. 7, Eq. (3) on manuscript
-p. 9, and the rehash analysis on manuscript pp. 9–10). For every capacity `n_max : ℕ`, it proves
-that any independent pair of `(2 * MaxLoop + 2)`-wise independent hash functions into sub-tables of
-size `32 * max n_max 4 ≤ m` with eviction cap `maxEvictions n_max ≤ MaxLoop ≤ m` satisfies
-`IsCuckooHashPair` with constants `C_walk = 2` and `C_reh = 3`.
+<https://www.rasmuspagh.net/papers/cuckoo-jour.pdf>, published in *Journal of Algorithms*
+51(2):122–144, 2004) [PaghRodler2004], Section 2.3 ("Analysis", manuscript pp. 6–10; Lemma 1 on
+manuscript p. 7, Eqs. (1)–(3) on manuscript p. 9, and the rehash analysis on manuscript p. 10). For
+every capacity `n_max : ℕ`, it proves that any independent pair of `(2 * MaxLoop + 2)`-wise
+independent hash functions into sub-tables of size `32 * max n_max 4 ≤ m` with eviction cap
+`maxEvictions n_max ≤ MaxLoop ≤ m` satisfies `IsCuckooHashPair` with constants `C_walk = 2` and
+`C_reh = 3`.
 
-## Scope and remaining gap (`#1634` / `#1715`)
+## Scope and relationship to `IsCuckooHashFamily`
 
-This module is a bounded milestone of `#1634`'s cuckoo-hashing objective rather than its
-completion. It establishes `IsCuckooHashPair` for uniform random hash pairs
+This module establishes `IsCuckooHashPair` for uniform random hash pairs
 (`isCuckooHashPair_uniform`, connected to lazy random-oracle evaluation via
 `uniform_interpret_eq_lazy_hashPair`) and for explicit `(2 * MaxLoop + 2)`-wise independent
-polynomial hash pairs (`isCuckooHashPair_trinomialPolyHash`). It does **not** discharge
+polynomial hash pairs (`isCuckooHashPair_trinomialPolyHash`). It does **not** instantiate
 `IsCuckooHashFamily` for the concrete Word-RAM hash pair `evalHash1`/`evalHash2` in
-`Complexity/Algorithms/WordRAM/Dictionary/CuckooHashing/HashFamily.lean` (`#1715`) when
-`n_max ≥ 3`, for two reasons:
+`Complexity/Algorithms/WordRAM/Dictionary/CuckooHashing/HashFamily.lean` when `n_max ≥ 3`, for two
+reasons:
 1. The theorems here assume sub-table size `32 * max n_max 4 ≤ m`, whereas the Word-RAM dictionary
    allocates sub-tables of `tableSize n_max` slots (between `4 * n_max` and `8 * n_max`).
 2. The theorems here assume `(2 * MaxLoop + 2)`-wise independence (`Θ(log n_max)`-wise), whereas
@@ -44,27 +44,30 @@ dictionary remains conditional on `IsCuckooHashFamily` for `n_max ≥ 3`.
 
 ## Source statements, assumptions, and notation mapping
 
-In Pagh and Rodler [PaghRodler2004]:
-* **Table size assumption (Section 2, manuscript pp. 3–4)**: Two hash tables `T₁, T₂` each consist
-  of `r` words holding a set `S` of `n = S.card` keys, *"assuming `r ≥ (1 + ε) n` for some
-  constant `ε > 0`"*. The Lean theorems below assume the stronger linear-space condition
-  `32 * max n_max 4 ≤ m` (`S.card ≤ n_max`).
+In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
+<https://www.rasmuspagh.net/papers/cuckoo-jour.pdf>):
+* **Table size and eviction limit (Section 2, manuscript pp. 3–4; Section 2.3, manuscript p. 10)**:
+  Two hash tables `T₁, T₂` each consist of `r` words holding a set `S` of `n = |S|` keys (p. 3),
+  *"assuming `r ≥ (1 + ε) n` for some constant `ε > 0`"* (pp. 3–4), with
+  `MaxLoop = ⌈3 log_{1+ε} r⌉` (p. 10). The Lean theorems below assume the stronger linear-space
+  condition `32 * max n_max 4 ≤ m` (`S.card ≤ n_max`) and eviction cap
+  `maxEvictions n_max = 6 * (Nat.clog 2 (max n_max 2) + 2) ≤ MaxLoop ≤ m`.
 * **Hash-function assumption (Section 1.1, Definition 1, manuscript p. 3; Section 2.1, manuscript
-  p. 5; Section 2.3, manuscript p. 7)**: Definition 1 defines a family `{h_i}_{i ∈ I}`,
+  p. 5; Section 2.3, manuscript p. 7)**: Definition 1 (p. 3) defines a family `{h_i}_{i ∈ I}`,
   `h_i : U → R`, as `(c, k)`-universal if *"for any `k` distinct elements `x₁, …, x_k ∈ U`, any
   `y₁, …, y_k ∈ R`, and uniformly random `i ∈ I`,
   `Pr[h_i(x₁) = y₁, …, h_i(x_k) = y_k] ≤ c / |R|^k`"*.
-  Section 2.1 invokes Siegel's construction for *"a hash function family that, when restricted to
-  any set of `r²` keys, is `(1, n^δ)`-universal, for some constant `δ > 0`, with probability
-  `1 - O(1/n²)`"*, so for `MaxLoop < n^δ` *"with high probability the family will be
+  Section 2.1 (p. 5) invokes Siegel's construction for *"a hash function family that, when
+  restricted to any set of `r²` keys, is `(1, n^δ)`-universal, for some constant `δ > 0`, with
+  probability `1 - O(1/n²)`"*, so for `MaxLoop < n^δ` *"with high probability the family will be
   `(1, MaxLoop)`-universal. This means that `h₁` and `h₂` will act like truly random functions on
   any set of keys processed during the insertion loop"* (and Section 2.3, situation (1) on
   manuscript p. 7 separately bounds the event that *"The hash function family used is not
   `(1, MaxLoop)`-universal when restricted to the set of keys in the dictionary (including the key
   being inserted)"* by `O(1/n²)`). The Lean theorems below assume the stronger hypothesis that `h₁`
   and `h₂` are independent families each satisfying `IsKWiseIndependentHash (2 * MaxLoop + 2)` on
-  the full universe `Fin U → Fin m` (i.e., exact `(1, 2 * MaxLoop + 2)`-universality with zero
-  failure probability).
+  the full universe `Fin U → Fin m` (exact `(1, 2 * MaxLoop + 2)`-universality with zero failure
+  probability).
 * **Lemma 1 (Section 2.3, manuscript p. 7)**: *"Suppose that the insertion procedure does not enter
   a closed loop. Then for any prefix `x₁, x₂, …, x_p` of the sequence of nestless keys, there must
   be a subsequence of at least `p / 3` consecutive keys without repetitions, starting with an
@@ -75,11 +78,17 @@ In Pagh and Rodler [PaghRodler2004]:
   of `L + 1` distinct keys (`2 ≤ L < 2 * r`) satisfying `L + 2` hash-collision equations
   (`HasBicyclicPrefix` and `HasExcessSubset`, Case A).
 * **Closed-loop and path tail bounds, expected rounds, and rehash bounds (Section 2.3, manuscript
-  pp. 7–10; Eq. (3) on p. 9)**: Case A occurs with probability `O(1 / m²)` (manuscript pp. 7–8) and
-  Case B occurs with probability at most `2 * (n / m) ^ ℓ` (manuscript pp. 8–9). Summing over rounds
-  gives expected walk length `O(1)` (Eq. (3), manuscript p. 9; `expected_walk_le` with `C_walk = 2`)
-  and bounds the per-insertion and full-set rehash probabilities (manuscript pp. 9–10;
-  `step_rehash_prob_le` with `C_reh = 3` and `rehash_prob_le_half`).
+  pp. 7–10; Eqs. (1)–(3) on p. 9)**: For closed loops (situation (2), introduced on p. 7 and
+  bounded on p. 9 following Sanders and Vöcking), the manuscript counts configurations of `v ≤ l`
+  distinct nestless keys by `v³ r^{v-1} n^{v-1}` (*"`v²` possible values for `i` and `j`, `v`
+  possible positions for `x_l`, `r^{v-1}` possible choices of cells, and `n^{v-1}` possible choices
+  of keys other than `x₁`"*), each occurring with probability at most `r^{-2v}`, summing to
+  `O(1 / n²)` (p. 9). For simple alternating paths (situation (3), introduced on pp. 7–8 and
+  bounded in Eqs. (1)–(2) on p. 9), a sequence of `v = ⌈(2t - 1) / 3⌉` distinct keys (`ℓ = v - 1`
+  steps) occurs with probability at most `2 * (n / r)^{v - 1}` (p. 9). Summing over rounds gives
+  expected walk length `O(1)` (Eq. (3), p. 9; `expected_walk_le` with `C_walk = 2`) and bounds the
+  per-insertion and full-set rehash probabilities (p. 10; `step_rehash_prob_le` with `C_reh = 3`
+  and `rehash_prob_le_half`).
 * **Original adaptations**:
   - `GoodForSet` (requiring `pureReplay` to succeed for *all* duplicate-free insertion orders
     `ks ⊆ S` simultaneously) and `cuckooWalkRounds` (taking the supremum of `evictRounds` over
@@ -87,10 +96,13 @@ In Pagh and Rodler [PaghRodler2004]:
     `HashFamily.lean`; because neither `HasBicyclicPrefix` / `HasExcessSubset` nor `HasAltPath`
     depends on `tbl` or the insertion order `ks`, the walk dichotomy bounds both uniformly over all
     valid placements and insertion orders.
-  - Both Case A and Case B are proved via an original elementary fresh-key equation-chain counting
-    argument, together with an original excess-`≥ 1` subset-image reduction
-    (`hasBicyclicPrefix_imp_hasExcessSubset`), avoiding graph-isomorphism classification and real
-    transcendental functions.
+  - In place of enumerating `r^{v-1}` cell tuples as in `v³ r^{v-1} n^{v-1}` on p. 9, both Case A
+    (`HasBicyclicPrefix`) and Case B (`HasAltPath`) are bounded via an original elementary fresh-key
+    equation-chain seed-counting argument (`ValidEqChain`), which counts index triples `(p, s, j)`
+    (`≤ (L + 1)³` for `v = L + 1`) and key tuples (`≤ S.card^L`) and uses `(2 * MaxLoop + 2)`-wise
+    independence directly on `L + 2` fresh-key collision equations (probability `m^{-(L+2)}`). The
+    set-level excess-`≥ 1` subgraph predicate `HasExcessSubset` and reduction
+    `hasBicyclicPrefix_imp_hasExcessSubset` are likewise original adaptations.
 
 ## Main definitions
 
@@ -105,6 +117,10 @@ In Pagh and Rodler [PaghRodler2004]:
 
 ## Main results
 
+* `Cslib.Algorithms.Lean.CuckooHashing.hasAltPath_iff`,
+  `Cslib.Algorithms.Lean.CuckooHashing.hasBicyclicPrefix_iff`: plain characterizations of
+  `HasAltPath` and `HasBicyclicPrefix` directly in terms of injective key sequences and alternating
+  / cycle-closing hash collisions, without internal equation-chain helpers.
 * `Cslib.Algorithms.Lean.CuckooHashing.hasBicyclicPrefix_imp_hasExcessSubset`: any bicyclic prefix
   of length `L ∈ [2, 2 * r)` yields an excess-`≥ 1` subset `K ⊆ insert u S` of size
   `3 ≤ K.card ≤ 2 * r`.
@@ -116,7 +132,7 @@ In Pagh and Rodler [PaghRodler2004]:
   of length `2 ≤ L < 2 * r` (and `HasExcessSubset` of size `≤ 2 * r`).
 * `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_of_kWiseIndependent`: Pagh and Rodler
   [PaghRodler2004], Section 2.3 (Lemma 1, manuscript p. 7; Eq. (3), manuscript p. 9; rehash
-  analysis, manuscript pp. 9–10) — any independent pair of `(2 * MaxLoop + 2)`-wise independent
+  analysis, manuscript p. 10) — any independent pair of `(2 * MaxLoop + 2)`-wise independent
   hash families satisfies `IsCuckooHashPair` (`C_walk = 2`, `C_reh = 3`) under
   `32 * max n_max 4 ≤ m` and `maxEvictions n_max ≤ MaxLoop ≤ m`.
 * `Cslib.Algorithms.Lean.CuckooHashing.isCuckooHashPair_trinomialPolyHash`,
@@ -127,8 +143,9 @@ In Pagh and Rodler [PaghRodler2004]:
 
 ## References
 
-* [R. Pagh and F. F. Rodler, "Cuckoo hashing"][PaghRodler2004] (Section 2.3, manuscript pp. 6–10:
-  Lemma 1, p. 7; Eq. (3), p. 9; rehash analysis, pp. 9–10).
+* [R. Pagh and F. F. Rodler, "Cuckoo hashing"][PaghRodler2004] (8 December 2003 author manuscript,
+  <https://www.rasmuspagh.net/papers/cuckoo-jour.pdf>, Section 2.3, "Analysis", pp. 6–10: Lemma 1,
+  p. 7; Eqs. (1)–(3), p. 9; rehash analysis, p. 10).
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*, 2nd ed.][MitzenmacherUpfal2017]
 * [M. N. Wegman and J. L. Carter, *New hash functions and their use in authentication and set
   equality*][WegmanCarter1981]
@@ -578,6 +595,48 @@ private theorem length_altPathChains (ℓ : ℕ) (b : Bool) :
     (altPathChains ℓ b).1.length + (altPathChains ℓ b).2.length = ℓ :=
   length_buildFreshChains ℓ b (ℓ + 1) ℓ le_rfl
 
+private theorem equationChain_buildFreshChains_iff {U m : ℕ} (h₁ h₂ : Fin U → Fin m)
+    (L : ℕ) (b : Bool) (p : ℕ) (y : Fin (L + 1) → Fin U) :
+    ∀ (k : ℕ) (hk : k ≤ L),
+      (EquationChain h₁ (mapIdxChain y (buildFreshChains L b p k hk).1) ∧
+        EquationChain h₂ (mapIdxChain y (buildFreshChains L b p k hk).2)) ↔
+      ∀ i < k, ∀ (hi : i < L),
+        if stepTable b p i then
+          h₂ (y ⟨i + 1, by omega⟩) =
+            h₂ (y ⟨stepPred p i, by unfold stepPred; split_ifs <;> omega⟩)
+        else
+          h₁ (y ⟨i + 1, by omega⟩) =
+            h₁ (y ⟨stepPred p i, by unfold stepPred; split_ifs <;> omega⟩)
+  | 0, _ => by
+    simp [buildFreshChains, mapIdxChain, EquationChain]
+  | i + 1, hi => by
+    have ih := equationChain_buildFreshChains_iff h₁ h₂ L b p y i (by omega)
+    constructor
+    · rintro ⟨hc1, hc2⟩ j hj hjL
+      unfold buildFreshChains at hc1 hc2
+      dsimp only at hc1 hc2
+      split_ifs at hc1 hc2 with htab
+      · dsimp only [mapIdxChain, List.map, EquationChain] at hc2
+        rcases Nat.lt_succ_iff_lt_or_eq.mp hj with hjlt | rfl
+        · exact ih.mp ⟨hc1, hc2.2⟩ j hjlt hjL
+        · rw [ite_eq_left htab]
+          exact hc2.1
+      · dsimp only [mapIdxChain, List.map, EquationChain] at hc1
+        rcases Nat.lt_succ_iff_lt_or_eq.mp hj with hjlt | rfl
+        · exact ih.mp ⟨hc1.2, hc2⟩ j hjlt hjL
+        · rw [ite_eq_right htab]
+          exact hc1.1
+    · intro hsteps
+      obtain ⟨ih1, ih2⟩ := ih.mpr fun j hj hjL => hsteps j (by omega) hjL
+      have hcur := hsteps i (by omega) (by omega)
+      unfold buildFreshChains
+      dsimp only
+      split_ifs with htab
+      · rw [ite_eq_left htab] at hcur
+        exact ⟨ih1, ⟨hcur, ih2⟩⟩
+      · rw [ite_eq_right htab] at hcur
+        exact ⟨⟨hcur, ih1⟩, ih2⟩
+
 /-- **Case B (`HasAltPath`)**: there exists a simple alternating path of length `ℓ` starting at `u`
 with all subsequent keys in `S`. -/
 def HasAltPath {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u : Fin U) (ℓ : ℕ) :
@@ -587,10 +646,52 @@ def HasAltPath {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u
     EquationChain h₁ (mapIdxChain y (altPathChains ℓ b).1) ∧
     EquationChain h₂ (mapIdxChain y (altPathChains ℓ b).2)
 
-private instance {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u : Fin U) (ℓ : ℕ) :
-    Decidable (HasAltPath h₁ h₂ S u ℓ) := by
-  unfold HasAltPath
-  infer_instance
+/-- Plain characterization of `HasAltPath` without internal equation-chain helpers: `HasAltPath`
+holds iff there exist an initial table polarity `b : Bool` and an injective sequence
+`y : Fin (ℓ + 1) → Fin U` starting at `y 0 = u` with `y i.succ ∈ S` whose consecutive keys collide
+alternately under `h₁` (`false`) and `h₂` (`true`). -/
+theorem hasAltPath_iff {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u : Fin U)
+    (ℓ : ℕ) :
+    HasAltPath h₁ h₂ S u ℓ ↔
+      ∃ (b : Bool) (y : Fin (ℓ + 1) → Fin U),
+        Function.Injective y ∧ y 0 = u ∧ (∀ i : Fin ℓ, y i.succ ∈ S) ∧
+        ∀ i : Fin ℓ,
+          if (i.val % 2 == 1) != b then h₂ (y i.succ) = h₂ (y i.castSucc)
+          else h₁ (y i.succ) = h₁ (y i.castSucc) := by
+  unfold HasAltPath altPathChains
+  refine exists_congr fun b => exists_congr fun y => and_congr_right fun _ =>
+    and_congr_right fun _ => and_congr_right fun _ => ?_
+  rw [equationChain_buildFreshChains_iff h₁ h₂ ℓ b (ℓ + 1) y ℓ le_rfl]
+  constructor
+  · intro h i
+    have hi := h i.val i.isLt i.isLt
+    have htab : stepTable b (ℓ + 1) i.val = ((i.val % 2 == 1) != b) := by
+      unfold stepTable
+      exact ite_eq_left (Nat.lt_succ_of_lt i.isLt)
+    have hpred :
+        (⟨stepPred (ℓ + 1) i.val, by unfold stepPred; split_ifs <;> omega⟩ : Fin (ℓ + 1)) =
+        i.castSucc := by
+      ext
+      dsimp only [stepPred, Fin.val_castSucc]
+      exact ite_eq_right (Nat.ne_of_lt (Nat.lt_succ_of_lt i.isLt))
+    rw [htab, hpred] at hi
+    exact hi
+  · intro h i hi _
+    have hi' := h ⟨i, hi⟩
+    have htab : stepTable b (ℓ + 1) i = ((i % 2 == 1) != b) := by
+      unfold stepTable
+      exact ite_eq_left (by omega)
+    have hpred : (⟨stepPred (ℓ + 1) i, by unfold stepPred; split_ifs <;> omega⟩ : Fin (ℓ + 1)) =
+        (⟨i, hi⟩ : Fin ℓ).castSucc := by
+      ext
+      dsimp only [stepPred, Fin.val_castSucc]
+      exact ite_eq_right (by omega)
+    rw [htab, hpred]
+    exact hi'
+
+instance {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u : Fin U) (ℓ : ℕ) :
+    Decidable (HasAltPath h₁ h₂ S u ℓ) :=
+  decidable_of_iff' _ (hasAltPath_iff h₁ h₂ S u ℓ)
 
 /-- Validity condition on index triple `(p, s, j)` for a bicyclic walk prefix of `L` keys in `S`. -/
 private def ValidBicyclicIdx (L : ℕ) (p s j : Fin (L + 1)) : Prop :=
@@ -737,6 +838,17 @@ private theorem validIdxChain_bicyclicChains {L : ℕ} {p s j : Fin (L + 1)}
           dsimp only [stepPred] at hq3
           split_ifs at hval hq3 <;> omega
 
+private theorem equationChain_prependToTable_iff {U m L : ℕ} (h₁ h₂ : Fin U → Fin m) (tab : Bool)
+    (q : Fin (L + 1) × Fin (L + 1)) (y : Fin (L + 1) → Fin U)
+    (chains : List (Fin (L + 1) × Fin (L + 1)) × List (Fin (L + 1) × Fin (L + 1))) :
+    (EquationChain h₁ (mapIdxChain y (prependToTable tab q chains).1) ∧
+      EquationChain h₂ (mapIdxChain y (prependToTable tab q chains).2)) ↔
+      (if tab then h₂ (y q.1) = h₂ (y q.2) else h₁ (y q.1) = h₁ (y q.2)) ∧
+        (EquationChain h₁ (mapIdxChain y chains.1) ∧
+          EquationChain h₂ (mapIdxChain y chains.2)) := by
+  unfold prependToTable mapIdxChain
+  cases tab <;> simp [EquationChain, and_assoc, and_left_comm]
+
 /-- **Case A (`HasBicyclicPrefix`)**: there exists a walk prefix of `L + 1` pairwise distinct keys
 starting at `u` (`y 0 = u`, `y 1, ..., y L ∈ S`) that closes two distinct cycles, forming an
 independent system of `L + 2` hash-collision equations across `(h₁, h₂)`. -/
@@ -748,10 +860,44 @@ def HasBicyclicPrefix {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin
     EquationChain h₁ (mapIdxChain y (bicyclicChains L p s j).1) ∧
     EquationChain h₂ (mapIdxChain y (bicyclicChains L p s j).2)
 
-private instance {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u : Fin U) (L : ℕ) :
-    Decidable (HasBicyclicPrefix h₁ h₂ S u L) := by
-  unfold HasBicyclicPrefix
-  infer_instance
+/-- Plain characterization of `HasBicyclicPrefix` without internal equation-chain helpers:
+`HasBicyclicPrefix h₁ h₂ S u L` holds iff there exist cycle indices `p, s, j : Fin (L + 1)` and an
+injective sequence `y : Fin (L + 1) → Fin U` (`y 0 = u`, `y i.succ ∈ S`) satisfying the two
+cycle-closing collision equations together with the `L` fresh-step collision equations. -/
+theorem hasBicyclicPrefix_iff {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u : Fin U)
+    (L : ℕ) :
+    HasBicyclicPrefix h₁ h₂ S u L ↔
+      ∃ (p s j : Fin (L + 1)) (y : Fin (L + 1) → Fin U),
+        (2 ≤ p.val ∧ s.val < p.val ∧ s.val % 2 = p.val % 2 ∧
+          (if p.val = L then 1 ≤ j.val ∧ j.val < L else j.val < L)) ∧
+        Function.Injective y ∧ y 0 = u ∧ (∀ i : Fin L, y i.succ ∈ S) ∧
+        (let endIdx : Fin (L + 1) := ⟨if p.val = L then 0 else L, by split_ifs <;> omega⟩
+         if (L - p.val + 1) % 2 == 1 then h₂ (y endIdx) = h₂ (y j)
+         else h₁ (y endIdx) = h₁ (y j)) ∧
+        (if p.val % 2 == 1 then h₂ (y p) = h₂ (y s) else h₁ (y p) = h₁ (y s)) ∧
+        ∀ i : Fin L,
+          let pred : Fin (L + 1) := ⟨if i.val = p.val then 0 else i.val, by split_ifs <;> omega⟩
+          if (if i.val < p.val then i.val % 2 == 1 else (i.val - p.val + 1) % 2 == 1) then
+            h₂ (y i.succ) = h₂ (y pred)
+          else
+            h₁ (y i.succ) = h₁ (y pred) := by
+  unfold HasBicyclicPrefix ValidBicyclicIdx bicyclicChains
+  refine exists_congr fun p => exists_congr fun s => exists_congr fun j => exists_congr fun y =>
+    and_congr_right fun _ => and_congr_right fun _ => and_congr_right fun _ =>
+    and_congr_right fun _ => ?_
+  dsimp only
+  rw [equationChain_prependToTable_iff, equationChain_prependToTable_iff,
+    equationChain_buildFreshChains_iff h₁ h₂ L false p.val y L le_rfl]
+  refine and_congr_right fun _ => and_congr_right fun _ => ?_
+  constructor
+  · intro h i
+    simpa [stepTable, stepPred, Fin.succ] using h i.val i.isLt i.isLt
+  · intro h i hi _
+    simpa [stepTable, stepPred, Fin.succ] using h ⟨i, hi⟩
+
+instance {U m : ℕ} (h₁ h₂ : Fin U → Fin m) (S : Finset (Fin U)) (u : Fin U) (L : ℕ) :
+    Decidable (HasBicyclicPrefix h₁ h₂ S u L) :=
+  decidable_of_iff' _ (hasBicyclicPrefix_iff h₁ h₂ S u L)
 
 /-- **Set-level excess-`≥ 1` subgraph (`HasExcessSubset`)**: there exists a subset
 `K ⊆ insert u S` containing `u` of size `3 ≤ K.card ≤ maxCard` whose images under `h₁` and `h₂`
@@ -1169,8 +1315,9 @@ private theorem IsRawWalkTrace.revisit_slot_spec {U m N : ℕ} {h₁ h₂ : Fin 
   exact Option.some.inj (h3.symm.trans (h1.trans h2))
 
 /-- **Backtracking at the first revisit**: if `t₁ < N` is the first step that revisits an earlier
-slot (`b s = b t₁` with `s < t₁`, and all steps `< t₁` are fresh), then for every `0 ≤ d ≤ s` with
-`t₁ + d < N`, step `t₁ + d` probes `b (s - d)` and evicts key `(es (s - d)).key`. -/
+slot (`stepSlot h₁ h₂ s (es s).key = stepSlot h₁ h₂ t₁ (es t₁).key` with `s < t₁`, and all steps
+`< t₁` are fresh), then for every `0 ≤ d ≤ s` with `t₁ + d < N`, step `t₁ + d` probes
+`stepSlot h₁ h₂ (s - d) (es (s - d)).key` and evicts key `(es (s - d)).key`. -/
 private theorem IsRawWalkTrace.backtrack_at_first_revisit {U m N : ℕ} {h₁ h₂ : Fin U → Fin m}
     {f : ℕ → Fin m ⊕ Fin m → Option (SlotEntry U)} {es : ℕ → SlotEntry U}
     (htr : IsRawWalkTrace h₁ h₂ N f es) {s t₁ : ℕ} (hst : s < t₁)
@@ -1857,7 +2004,8 @@ private theorem add_three_pow_three_le : ∀ d : ℕ, (d + 3) ^ 3 ≤ 27 * 4 ^ d
       _ = 27 * 4 ^ (d + 1) := by rw [pow_succ']; ring
 
 /-- Under `32 * max n_max 4 ≤ m` and `S.card ≤ max n_max 4`, the number of seeds satisfying
-`HasAltPath` of length `ℓ` (`ℓ + 1 ≤ k`) satisfies `32 ^ ℓ * #{θ | HasAltPath ... ℓ} ≤ 2 * M`. -/
+`HasAltPath` of length `ℓ` (`ℓ + 1 ≤ k`) satisfies
+`32 ^ ℓ * #{θ | HasAltPath ... ℓ} ≤ 2 * Fintype.card (Θ₁ × Θ₂)`. -/
 private theorem thirty_two_pow_mul_card_hasAltPath_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [Fintype Θ₂]
     {U m k n_max ℓ : ℕ}
     {h₁ : Θ₁ → Fin U → Fin m} {h₂ : Θ₂ → Fin U → Fin m}
@@ -1885,7 +2033,7 @@ private theorem thirty_two_pow_mul_card_hasAltPath_le {Θ₁ Θ₂ : Type*} [Fin
 
 /-- Under `32 * max n_max 4 ≤ m` and `S.card ≤ max n_max 4`, the number of seeds satisfying
 `HasBicyclicPrefix` of length `L = d + 2` (`d + 3 ≤ k`) satisfies
-`32 * m ^ 2 * 8 ^ d * #{θ | HasBicyclicPrefix ... (d + 2)} ≤ M`. -/
+`32 * m ^ 2 * 8 ^ d * #{θ | HasBicyclicPrefix ... (d + 2)} ≤ Fintype.card (Θ₁ × Θ₂)`. -/
 private theorem card_hasBicyclicPrefix_add_two_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [Fintype Θ₂]
     {U m k n_max d : ℕ}
     {h₁ : Θ₁ → Fin U → Fin m} {h₂ : Θ₂ → Fin U → Fin m}
@@ -1931,7 +2079,7 @@ private theorem card_hasBicyclicPrefix_add_two_le {Θ₁ Θ₂ : Type*} [Fintype
   exact Nat.le_of_mul_le_mul_right h2 hfactor_pos
 
 /-- Union-bounding `HasBicyclicPrefix` over all `L ∈ Finset.Ico 2 (2 * r)` (`2 * r + 1 ≤ k`) yields
-`4 * m ^ 2 * #{θ | HasSomeBicyclicPrefix ... r} ≤ M`. -/
+`4 * m ^ 2 * #{θ | HasSomeBicyclicPrefix ... r} ≤ Fintype.card (Θ₁ × Θ₂)`. -/
 private theorem four_mul_m_sq_card_hasSomeBicyclicPrefix_le {Θ₁ Θ₂ : Type*}
     [Fintype Θ₁] [Fintype Θ₂] {U m k n_max r : ℕ}
     {h₁ : Θ₁ → Fin U → Fin m} {h₂ : Θ₂ → Fin U → Fin m}
@@ -2115,7 +2263,7 @@ private theorem sum_cuckooWalkRounds_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [F
     _ = 2 * Fintype.card (Θ₁ × Θ₂) := by ring
 
 /-- At `r = MaxLoop ≥ maxEvictions n_max`, the number of seeds satisfying `WalkBadAt` is bounded by
-`2 * (max n_max 1 * max MaxLoop 1) * #{θ | WalkBadAt ... MaxLoop} ≤ M`. -/
+`2 * (max n_max 1 * max MaxLoop 1) * #{θ | WalkBadAt ... MaxLoop} ≤ Fintype.card (Θ₁ × Θ₂)`. -/
 private theorem two_mul_walkBadAt_maxLoop_le {Θ₁ Θ₂ : Type*} [Fintype Θ₁] [Fintype Θ₂]
     {U m n_max MaxLoop : ℕ}
     {h₁ : Θ₁ → Fin U → Fin m} {h₂ : Θ₂ → Fin U → Fin m}

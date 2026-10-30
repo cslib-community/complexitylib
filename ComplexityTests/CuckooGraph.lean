@@ -13,15 +13,19 @@ public import Complexity.Algorithms.Lean.CuckooHashing
 /-!
 # Pagh–Rodler Cuckoo Graph & Walk Tail Bounds — Test Suite
 
-Verifies the API surface and non-vacuity of `Cslib.Algorithms.Lean.CuckooHashing`, including:
-* `cuckooWalk_dichotomy` and `cuckooWalk_dichotomy_bicyclic` (Pagh & Rodler 2004, Section 2.3,
-  Lemma 1);
-* `isCuckooHashPair_of_kWiseIndependent` for all `n_max : ℕ`;
-* concrete `IsCuckooHashPair` instances at `n_max = 4` and `n_max = 16` for both explicit
-  trinomial-field polynomial hashing (`isCuckooHashPair_trinomialPolyHash`) and uniform random hash
-  pairs (`isCuckooHashPair_uniform`);
-* `uniform_interpret_eq_lazy_hashPair` connecting the eager uniform hash pair to lazy random-oracle
-  evaluation.
+Verifies concrete decidable instances of the cuckoo walk dichotomy (`HasAltPath`,
+`HasBicyclicPrefix`, `HasExcessSubset`, `cuckooWalk_dichotomy`) and non-vacuity of
+`IsCuckooHashPair` in `Cslib.Algorithms.Lean.CuckooHashing`:
+* a 3-key colliding configuration (`constH : Fin 3 → Fin 2 := fun _ => 0`) where two keys place
+  validly (`pureReplay ... [0, 1]`), inserting the third key fails (`pureEvict ... = none`), and
+  both `HasBicyclicPrefix` and `HasExcessSubset ... 3` hold by `decide`;
+* a contrasting 3-key alternating-path configuration where 1 eviction round does not halt,
+  `HasAltPath ... 2` holds by `decide`, and `HasExcessSubset ... 3` fails by `decide`;
+* a contrasting injective hash pair (`id : Fin 3 → Fin 3`) where `HasExcessSubset` and `HasAltPath`
+  both fail and `pureReplay` succeeds in 1 round;
+* concrete `IsCuckooHashPair` instances at `n_max = 4` and `n_max = 16` for both uniform random
+  hash pairs (`isCuckooHashPair_uniform`) and explicit trinomial-field polynomial hashing
+  (`isCuckooHashPair_trinomialPolyHash`).
 -/
 
 @[expose] public section
@@ -32,19 +36,66 @@ open Cslib Cslib.Probability
 open Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing
 open Cslib.Algorithms.Lean.CuckooHashing
 
-/-! ## 1. Walk dichotomy and `k`-wise independent `IsCuckooHashPair` API checks -/
+/-! ## 1. Concrete decidable checks of the walk dichotomy (Case A, Case B, injective contrast) -/
 
-example := @cuckooWalk_dichotomy
-example := @cuckooWalk_dichotomy_bicyclic
-example := @isCuckooHashPair_of_kWiseIndependent
-example := @isCuckooHashPair_trinomialPolyHash
-example := @isCuckooHashPair_uniform
-example := @uniform_interpret_eq_lazy_hashPair
+/-- Constant hash function on `Fin 3 → Fin 2` mapping all 3 keys to bucket `0`. -/
+def constH : Fin 3 → Fin 2 := fun _ => 0
 
-example : maxEvictions 4 = 24 := by decide
-example : maxEvictions 16 = 36 := by decide
+/-- Valid placement of `{0, 1}` under `(constH, constH)`: key `1` in `T₁[0]` and key `0` in
+`T₂[0]`. -/
+def twoKeyCollidingTable : PureTable 3 2 :=
+  ⟨fun b => if b = 0 then some ⟨1, 1⟩ else none,
+   fun b => if b = 0 then some ⟨0, 0⟩ else none⟩
 
-/-! ## 2. Concrete non-vacuity instances at `n_max = 4` and `n_max = 16` -/
+theorem pureReplay_constH_two_keys :
+    pureReplay constH constH 2 [0, 1] = some twoKeyCollidingTable := by
+  change (some ⟨_, _⟩ : Option (PureTable 3 2)) = some ⟨_, _⟩
+  congr 2 <;> (ext b : 1; fin_cases b <;> rfl)
+
+theorem pureEvict_constH_third_key_eq_none :
+    pureEvict constH constH 2 twoKeyCollidingTable ⟨2, 2⟩ = none := by decide
+
+theorem hasBicyclicPrefix_constH :
+    HasBicyclicPrefix constH constH ({0, 1} : Finset (Fin 3)) 2 2 := by decide
+
+theorem hasExcessSubset_constH :
+    HasExcessSubset constH constH ({0, 1} : Finset (Fin 3)) 2 3 := by decide
+
+/-- Contrasting injective hash pair `id : Fin 3 → Fin 3`, for which `HasExcessSubset` and
+`HasAltPath` both fail and 3-key replay succeeds in 1 round. -/
+theorem not_hasExcessSubset_id :
+    ¬ HasExcessSubset (id : Fin 3 → Fin 3) id ({0, 1} : Finset (Fin 3)) 2 3 := by decide
+
+theorem not_hasAltPath_id :
+    ¬ HasAltPath (id : Fin 3 → Fin 3) id ({0, 1} : Finset (Fin 3)) 2 1 := by decide
+
+theorem pureReplay_id_three_keys_isSome :
+    (pureReplay (id : Fin 3 → Fin 3) id 1 [0, 1, 2]).isSome = true := by decide
+
+/-- Hash pair on `Fin 3 → Fin 2` creating a length-2 alternating path `0 → 1 → 2` without any
+excess-`≥ 1` subset: `h₁ 0 = h₁ 1 = 0`, `h₁ 2 = 1` and `h₂ 1 = h₂ 2 = 1`, `h₂ 0 = 0`. -/
+def altH₁ : Fin 3 → Fin 2 := fun k => if k = 2 then 1 else 0
+def altH₂ : Fin 3 → Fin 2 := fun k => if k = 0 then 0 else 1
+
+/-- Valid placement of `{1, 2}` under `(altH₁, altH₂)`: key `1` in `T₁[0]` and key `2` in
+`T₂[1]`. -/
+def twoKeyAltTable : PureTable 3 2 :=
+  ⟨fun b => if b = 0 then some ⟨1, 0⟩ else none,
+   fun b => if b = 1 then some ⟨2, 1⟩ else none⟩
+
+theorem pureEvict_altH_one_round_eq_none :
+    pureEvict altH₁ altH₂ 1 twoKeyAltTable ⟨0, 2⟩ = none := by decide
+
+theorem pureEvict_altH_two_rounds_isSome :
+    (pureEvict altH₁ altH₂ 2 twoKeyAltTable ⟨0, 2⟩).isSome = true := by decide
+
+theorem hasAltPath_altH :
+    HasAltPath altH₁ altH₂ ({1, 2} : Finset (Fin 3)) 0 2 := by decide
+
+theorem not_hasExcessSubset_altH :
+    ¬ HasExcessSubset altH₁ altH₂ ({1, 2} : Finset (Fin 3)) 0 3 := by decide
+
+/-! ## 2. Concrete non-vacuity instances of `IsCuckooHashPair` at `n_max = 4` and `n_max = 16` -/
 
 /-- Concrete `IsCuckooHashPair` instance for uniform random hash pairs at `n_max = 4`, `U = 256`,
 `m = 128`, `MaxLoop = maxEvictions 4 = 24` (`C_walk = 2`, `C_reh = 3`). -/
@@ -87,18 +138,5 @@ theorem instTrinomial_16 :
       16 (maxEvictions 16) 2 3 :=
   isCuckooHashPair_trinomialPolyHash (by decide) (by decide) 16 (maxEvictions 16)
     (by decide) (by decide) (le_refl _) (by decide)
-
-/-! ## 3. Lazy random-oracle equivalence check -/
-
-/-- Concrete check of `uniform_interpret_eq_lazy_hashPair` for a two-table cuckoo query program on
-`U = 256`, `m = 128`. -/
-example (prog : OracleComp (fun _ : Bool × Fin 256 => Fin 128) Bool) :
-    (do
-      let p ← PMF.uniformOfFintype ((Fin 256 → Fin 128) × (Fin 256 → Fin 128))
-      OracleComp.interpret (fun q : Bool × Fin 256 => PMF.pure (if q.1 then p.2 q.2 else p.1 q.2))
-        prog) =
-      ((OracleComp.interpret (RandomOracle.answer (fun _ => PMF.uniformOfFintype (Fin 128)))
-        prog).run (fun _ => none)).map Prod.fst :=
-  uniform_interpret_eq_lazy_hashPair prog
 
 end ComplexityTests.CuckooGraph

@@ -71,7 +71,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
      `GoodForSet` (all `Nodup` sublists in `S`), `cuckooWalkRounds` (`sSup` over all
      `ValidPlacement`s of `S`), `IsCuckooHashPair.expected_walk_le`, and the one-step incremental
      replay failure bound `IsCuckooHashPair.step_rehash_prob_le` (inspired by Pagh and Rodler
-     [PaghRodler2004], 8 December 2003 manuscript, Section 2.3 "Amortized insertion time",
+     [PaghRodler2004], 8 December 2003 manuscript, Section 2.3 "Analysis",
      pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and the rehash analysis on pp. 9–10) — bounds the
      expected step cost of every `insert` by `insertCharge n_max U C_walk C_reh =
      2 * (insertBaseSteps n_max U + 3 + C_walk * evictIterSteps n_max U +
@@ -102,7 +102,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
 ## References
 
 * [R. Pagh and F. F. Rodler, "Cuckoo hashing"][PaghRodler2004] (8 December 2003 author manuscript,
-  Section 2.3, "Amortized insertion time", pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash
+  Section 2.3, "Analysis", pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash
   analysis on pp. 9–10).
 * [M. Dietzfelbinger and P. Woelfel, *Almost Random Graphs*][DietzfelbingerWoelfel2003]
   (Definition 1, §2.1, p. 632).

@@ -29,7 +29,7 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
 
 * **Pagh and Rodler [PaghRodler2004]:** R. Pagh and F. F. Rodler, *"Cuckoo Hashing"*, author-hosted
   journal manuscript (8 December 2003, published in *Journal of Algorithms* 51(2):122–144, 2004),
-  **Section 2.3 ("Amortized insertion time", manuscript pp. 6–10)**: **Lemma 1** (manuscript p. 7,
+  **Section 2.3 ("Analysis", manuscript pp. 6–10)**: **Lemma 1** (manuscript p. 7,
   distinct-subsequence structure of displacement walks when the cuckoo graph contains no component
   with more than one cycle), **Eq. (3) on manuscript p. 9** (expected displacement iterations
   `O(1)`), and **manuscript pp. 9–10** (rehash probability and amortized rebuild analysis in two
@@ -93,7 +93,7 @@ polynomial hashes `f₁, g₁, f₂, g₂`) and two random tabulation arrays `Z�
 ## References
 
 * [R. Pagh and F. F. Rodler, "Cuckoo hashing"][PaghRodler2004] (8 December 2003 author manuscript,
-  Section 2.3, "Amortized insertion time", pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash
+  Section 2.3, "Analysis", pp. 6–10: Lemma 1 on p. 7, Eq. (3) on p. 9, and rehash
   analysis on pp. 9–10).
 * [M. Dietzfelbinger and P. Woelfel, *Almost Random Graphs*][DietzfelbingerWoelfel2003]
   (Definition 1, §2.1, p. 632).
@@ -1065,7 +1065,7 @@ theorem isPairwiseIndependentHash_evalHash2 (U M : ℕ) :
 
 /-- **General cuckoo hash pair interface (`IsCuckooHashPair`)**:
 an original strengthened sufficient assumption bundle inspired by Pagh and Rodler [PaghRodler2004]
-(8 December 2003 manuscript, Section 2.3 "Amortized insertion time", pp. 6–10), asserting over a
+(8 December 2003 manuscript, Section 2.3 "Analysis", pp. 6–10), asserting over a
 seed distribution `μ : PMF Θ` and hash pair `h₁ h₂ : Θ → Fin U → Fin m`:
 1. (`expected_walk_le`): for any set `S` of fewer than `n_max` keys and absent key `u ∉ S`, the
    expected number of worst-case displacement rounds `cuckooWalkRounds` (`sSup` over all
