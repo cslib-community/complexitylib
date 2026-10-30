@@ -206,6 +206,11 @@ public import Complexity.Algorithms.WordRAM.Karger.FastCut
 public import Complexity.Algorithms.WordRAM.Karger.Graph
 public import Complexity.Algorithms.WordRAM.KargerMinCut
 public import Complexity.Algorithms.WordRAM.KargerStein
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Coefficient
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Exec
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Flat
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Program
+public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Term
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandAll
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandCatalogue
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BandCollect
@@ -2711,6 +2716,7 @@ public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Relation.InductiveCounting
 public import Complexity.Foundations.Relation.RelatesWithinSteps
 public import Complexity.Foundations.RingTheory.CyclicIntRing
+public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
 public import Complexity.Foundations.Semantics.Stateful.Amortized
 public import Complexity.Foundations.Semantics.Stateful.Basic
 public import Complexity.Foundations.Semantics.Stateful.Composition

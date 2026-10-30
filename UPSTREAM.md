@@ -279,6 +279,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
   statements, not native instructions or an assumed solver. See
   [#1442](https://github.com/cslib-community/complexitylib/issues/1442).
+  The native cyclic-convolution prerequisite under
+  [#1701](https://github.com/cslib-community/complexitylib/issues/1701) reuses that quotient in
+  `Foundations/RingTheory/CyclicIntRing/Coefficients.lean` and supplies actual standard signed
+  array multiplication in `Algorithms/WordRAM/MatrixMultiplication/CyclicConvolution/`.
+  Source indexing/quotient mathematics adapt pinned Anthropic `RingOps.lean`/`Cyclic.lean`;
+  the native execution, frame and `42p² + 9p + 4` pre-halt instruction bound are proved directly.
+  Full Strassen/modular-counter composition, fast prime selection and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters

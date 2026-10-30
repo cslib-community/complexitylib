@@ -442,6 +442,10 @@ each statement against the numbered result. Organize modules by subject, not cha
   kept separate; and develop general open-program composition. Use Cook–Levin and GGM as
   regression clients. Improve configuration views, tape partitions and handoff identities only
   where several clients benefit, keeping machine transitions out of global simp.
+- **Native cyclic coefficient kernel** ([#1701](https://github.com/cslib-community/complexitylib/issues/1701)):
+  fixed standard native code computes signed cyclic convolution with explicit fits, frames and
+  quadratic charged cost. This prerequisite does not complete the native Strassen modular
+  counter, deterministic prime selection or the full [#1394] 1.9992 endpoint.
 - **Native Chan–He components** ([#1446]): native parameter, collision-counting, prime-table,
   collision-tested minimum-search and complete two-prime modulus programs have explicit local
   fit/frame/cost contracts. The complete native distinct-position frontend ([#1482]) starts from
