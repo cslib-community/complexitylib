@@ -2685,6 +2685,7 @@ public import Complexity.Foundations.Data.Polynomial.ParityAmplifier
 public import Complexity.Foundations.Data.Polynomial.ParityAmplifierDegree
 public import Complexity.Foundations.Data.Polynomial.SignQueries
 public import Complexity.Foundations.Data.Polynomial.StagedJetArithmetic
+public import Complexity.Foundations.Data.Polynomial.TaperedHermite
 public import Complexity.Foundations.Data.Rat.Basic
 public import Complexity.Foundations.Data.Seq.Computation
 public import Complexity.Foundations.Data.Set.Card
