@@ -35,6 +35,8 @@ facts to grow with `n`.
 
 Sentences are those of Mathlib's model theory (`FirstOrder.Language.Sentence`), and the statements
 are about structures rather than an encoding of structures as bit strings.
+The canonical ordered extension, including genuine `0`, `1`, and `max` constants and hardwired
+`≤` and `BIT`, is in `Complexity.Computability.Circuit.Boolean.FirstOrder.Ordered`.
 
 ## Main definitions
 
