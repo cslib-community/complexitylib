@@ -23,7 +23,7 @@ import Complexity.Tactic.PPT
 An indexed signature scheme becomes an ordinary many-time signature scheme once the signer
 chooses the indices itself: it keeps a counter `j`, signs its `j`-th message at index `j`, and
 publishes `j` with the signature. This is [BonehShoup2023], Section 14.6.4, with the counter as
-the nonce, and it is how Merkle's tree signature is used ([Merkle1989], Section 6). The signer is
+the nonce, and it is how Merkle's tree signature is used ([Merkle1989], Sections 6–7). The signer is
 stateful, so the construction is not a `SignatureScheme`, whose signer is a function of the secret
 key alone. Instead, the state lives in the signing oracle of a dedicated security game.
 
@@ -69,7 +69,7 @@ that the reduction is strict oracle PPT for every external oracle (`isOraclePPT_
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
   Section 14.6.4.
-* [R. C. Merkle, *A Certified Digital Signature*][Merkle1989], Section 6.
+* [R. C. Merkle, *A Certified Digital Signature*][Merkle1989], Sections 6–7.
 -/
 
 @[expose] public section
@@ -208,7 +208,6 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
     subst hresult
     exact ⟨trivial, by simp, by lia⟩
 
-attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- The whole counter EUF-CMA experiment is uniformly strict PPT in its unary security parameter
 for every oracle-PPT forger. -/
 @[program_certificate]
@@ -218,7 +217,7 @@ theorem isPPTOn_counterEufCmaGame {adversary : Forger}
   have hrun := S.isPPTOn_run_counterSigningOracle hadversary
   have hverify := S.verify_polyTime
   have hdecode := requestDecoder.computableInPolyTime
-  have hpost : ComputableTidilyInPolyTime
+  have hpost : ComputableInPolyTime
       (fun pair : (ℕ × (List Bool × List Bool)) ×
           ((List Bool × List Bool) × (ℕ × List (List Bool))) =>
         !pair.2.2.2.contains pair.2.1.1 && S.counterVerify pair.1.2.1 pair.2.1.1 pair.2.1.2)

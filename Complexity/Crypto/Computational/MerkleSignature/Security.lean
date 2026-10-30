@@ -1090,9 +1090,9 @@ theorem _root_.Cslib.Crypto.OneWay.exists_indexedEUFCMA {f : List Bool → List 
     hS.indexedEUFCMA_merkle hH.collisionResistant hH.polyTime hH.length_eq hcap⟩
 
 /-- **Counter-stateful many-time signatures from one-way functions and collision-resistant
-hashing** ([Merkle1989], Section 6): Merkle's tree signature over Lamport's one-time scheme, with
-the signer choosing the leaves by a counter, is counter EUF-CMA secure at every polynomial capacity
-`2 ^ depth n`. -/
+hashing** ([Merkle1989], Sections 6–7): a one-way function and a hash family give a counter
+EUF-CMA secure indexed scheme of every polynomial capacity `2 ^ depth n`; the witness is Merkle's
+tree signature over Lamport's one-time scheme, with the signer choosing the leaves by a counter. -/
 theorem _root_.Cslib.Crypto.OneWay.exists_counterEUFCMA {f : List Bool → List Bool}
     (hf : OneWay f) {H : List Bool → List Bool → List Bool} (hH : HashFamily H)
     {depth : ℕ → ℕ} (hcap : ComputableInPolyTime (fun n => 2 ^ depth n) encUnary encUnary) :
