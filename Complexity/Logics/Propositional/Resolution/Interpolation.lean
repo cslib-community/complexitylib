@@ -203,9 +203,9 @@ private theorem IsProof.exists_circuit {φ : CNF V} {ls : List (Clause V)}
 
 end Synthesis
 
-/-! ### The invariant -/
+/-! ### Partial assignments satisfying clauses -/
 
-section Invariant
+section Satisfies
 
 variable {V : Type*}
 
@@ -250,11 +250,13 @@ private theorem Satisfies.resolvent {ρ : V → Option Bool} {c₁ c₂ : Clause
   · exact h₂.resolvent_right (by simp [hv])
   · exact h₁.resolvent_left hv
 
-end Invariant
+end Satisfies
 
 section Interpolant
 
 variable {n : ℕ}
+
+/-! ### Partial assignments seen from each side -/
 
 /-- The partial assignment fixing the shared variables by `a` and the `A`-private variables by
 `y`. -/
@@ -266,109 +268,175 @@ private def leftPart (a : Fin n → Bool) (y : Y → Bool) : Fin n ⊕ (Y ⊕ Z)
 private def rightPart (a : Fin n → Bool) (z : Z → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
   Sum.elim (some ∘ a) (Sum.elim (fun _ => none) (some ∘ z))
 
-/-- The invariant of the interpolant at a line `c` with gate `f`: if `f a = false`, every model
-`y` of `A(a, ·)` satisfies a literal of `c` on a shared or `A`-private variable; if `f a = true`,
-every model `z` of `B(a, ·)` satisfies a literal of `c` on a shared or `B`-private variable. -/
-private def Good (A : CNF (Fin n ⊕ Y)) (B : CNF (Fin n ⊕ Z)) (c : Clause (Fin n ⊕ (Y ⊕ Z)))
+/-! ### The invariant -/
+
+/-- The invariant of the interpolant at a line `c` with gate `f`, relative to the partial
+assignments `ρA` and `ρB` through which each side sees the line: if `f a = false`, every model
+`y` of `A(a, ·)` makes `ρA a y` satisfy `c`; if `f a = true`, every model `z` of `B(a, ·)` makes
+`ρB a z` satisfy `c`. -/
+private def Good (ρA : (Fin n → Bool) → (Y → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool)
+    (ρB : (Fin n → Bool) → (Z → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool)
+    (A : CNF (Fin n ⊕ Y)) (B : CNF (Fin n ⊕ Z)) (c : Clause (Fin n ⊕ (Y ⊕ Z)))
     (f : (Fin n → Bool) → Bool) : Prop :=
-  (∀ a y, A.eval (Sum.elim a y) = true → f a = false → Satisfies (leftPart (Z := Z) a y) c) ∧
-    ∀ a z, B.eval (Sum.elim a z) = true → f a = true → Satisfies (rightPart (Y := Y) a z) c
+  (∀ a y, A.eval (Sum.elim a y) = true → f a = false → Satisfies (ρA a y) c) ∧
+    ∀ a z, B.eval (Sum.elim a z) = true → f a = true → Satisfies (ρB a z) c
+
+variable {ρA : (Fin n → Bool) → (Y → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool}
+  {ρB : (Fin n → Bool) → (Z → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool}
+  {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
 
 /-- At the empty clause the invariant is the interpolation property. -/
-private theorem isInterpolant_of_good {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
-    {f : (Fin n → Bool) → Bool} (h : Good A B [] f) : A.IsInterpolant B f := by
+private theorem isInterpolant_of_good {f : (Fin n → Bool) → Bool} (h : Good ρA ρB A B [] f) :
+    A.IsInterpolant B f := by
   refine ⟨fun a y hA => ?_, fun a z hB => ?_⟩
   · by_contra hf
     exact not_satisfies_nil _ (h.1 a y hA (Bool.eq_false_iff.2 hf))
   · by_contra hf
     exact not_satisfies_nil _ (h.2 a z hB (Bool.eq_true_of_not_eq_false hf))
 
-/-- The clauses of `A` get the constant `false` and those of `B` the constant `true`. -/
-private theorem good_of_mem {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
-    {c : Clause (Fin n ⊕ (Y ⊕ Z))} (hc : c ∈ A.appendShared B) :
-    ∃ f, Good A B c f ∧ Synthesis Boolean.interpretation (inputs n) {f} 1 := by
-  rcases List.mem_append.1 hc with hc | hc
-  · obtain ⟨d, hd, rfl⟩ := List.mem_map.1 hc
-    refine ⟨fun _ => false, ⟨fun a y hA _ => ?_, fun _ _ _ hf => Bool.noConfusion hf⟩,
-      Synthesis.const false⟩
-    obtain ⟨l, hl, he⟩ := (Clause.eval_eq_true_iff _ _).1 ((CNF.eval_eq_true_iff _ _).1 hA d hd)
-    refine satisfies_relabel hl ?_
-    rcases l with ⟨_ | _, b⟩ <;> simpa [leftPart] using he
-  · obtain ⟨d, hd, rfl⟩ := List.mem_map.1 hc
-    refine ⟨fun _ => true, ⟨fun _ _ _ hf => Bool.noConfusion hf, fun a z hB _ => ?_⟩,
-      Synthesis.const true⟩
-    obtain ⟨l, hl, he⟩ := (Clause.eval_eq_true_iff _ _).1 ((CNF.eval_eq_true_iff _ _).1 hB d hd)
-    refine satisfies_relabel hl ?_
-    rcases l with ⟨_ | _, b⟩ <;> simpa [rightPart] using he
+/-- A clause of `A` gets the constant `false`, if `ρA a y` satisfies every literal of it true at
+`(a, y)`. -/
+private theorem good_false {d : Clause (Fin n ⊕ Y)} (hd : d ∈ A)
+    (hρ : ∀ a y, ∀ l ∈ d, Sum.elim a y l.1 = l.2 → ρA a y (Sum.map id Sum.inl l.1) = some l.2) :
+    Good ρA ρB A B (d.relabel (Sum.map id Sum.inl)) fun _ => false := by
+  refine ⟨fun a y hA _ => ?_, fun _ _ _ hf => Bool.noConfusion hf⟩
+  obtain ⟨l, hl, he⟩ := (Clause.eval_eq_true_iff _ _).1 ((CNF.eval_eq_true_iff _ _).1 hA d hd)
+  exact satisfies_relabel hl (hρ a y l hl he)
+
+/-- A clause of `B` gets the constant `true`, if `ρB a z` satisfies every literal of it true at
+`(a, z)`. -/
+private theorem good_true {d : Clause (Fin n ⊕ Z)} (hd : d ∈ B)
+    (hρ : ∀ a z, ∀ l ∈ d, Sum.elim a z l.1 = l.2 → ρB a z (Sum.map id Sum.inr l.1) = some l.2) :
+    Good ρA ρB A B (d.relabel (Sum.map id Sum.inr)) fun _ => true := by
+  refine ⟨fun _ _ _ hf => Bool.noConfusion hf, fun a z hB _ => ?_⟩
+  obtain ⟨l, hl, he⟩ := (Clause.eval_eq_true_iff _ _).1 ((CNF.eval_eq_true_iff _ _).1 hB d hd)
+  exact satisfies_relabel hl (hρ a z l hl he)
 
 variable [DecidableEq Y] [DecidableEq Z]
 
-/-- The gate of a resolvent: the selector on a shared variable, a disjunction on an `A`-private
-variable and a conjunction on a `B`-private variable. The selector costs four gates. -/
-private theorem good_resolvent {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
-    {c₁ c₂ : Clause (Fin n ⊕ (Y ⊕ Z))} (v : Fin n ⊕ (Y ⊕ Z)) {f₁ f₂ : (Fin n → Bool) → Bool}
-    (h₁ : Good A B c₁ f₁) (h₂ : Good A B c₂ f₂) :
-    ∃ f, Good A B (c₁.resolvent c₂ v) f ∧
-      Synthesis Boolean.interpretation (inputs n ∪ {f₁, f₂}) {f} 4 := by
-  have hf₁ : Synthesis Boolean.interpretation (inputs n ∪ {f₁, f₂}) {f₁} 0 :=
-    Synthesis.of_mem (Or.inr (Or.inl rfl))
-  have hf₂ : Synthesis Boolean.interpretation (inputs n ∪ {f₁, f₂}) {f₂} 0 :=
-    Synthesis.of_mem (Or.inr (Or.inr rfl))
-  rcases v with i | j | k
-  · -- a shared variable `xᵢ`: if `a i = false`, the literal `xᵢ` of `c₁` is false and the gate
-    -- of `c₁` is selected; otherwise the literal `¬xᵢ` of `c₂` is false and the gate of `c₂` is
-    have hx : Synthesis Boolean.interpretation (inputs n ∪ {f₁, f₂}) {fun a => a i} 0 :=
-      Synthesis.of_mem (Or.inl ⟨i, rfl⟩)
-    refine ⟨fun a => (!a i && f₁ a) || (a i && f₂ a), ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩,
-      ((hx.not.and hf₁).or (hx.and hf₂)).mono Set.Subset.rfl Set.Subset.rfl (by omega)⟩
-    · cases hi : a i <;> simp only [hi, Bool.not_false, Bool.not_true, Bool.true_and,
-        Bool.false_and, Bool.or_false, Bool.false_or] at hf
-      · exact (h₁.1 a y hA hf).resolvent_left (by simp [leftPart, hi])
-      · exact (h₂.1 a y hA hf).resolvent_right (by simp [leftPart, hi])
-    · cases hi : a i <;> simp only [hi, Bool.not_false, Bool.not_true, Bool.true_and,
-        Bool.false_and, Bool.or_false, Bool.false_or] at hf
-      · exact (h₁.2 a z hB hf).resolvent_left (by simp [rightPart, hi])
-      · exact (h₂.2 a z hB hf).resolvent_right (by simp [rightPart, hi])
-  · -- an `A`-private variable: a disjunction
-    refine ⟨fun a => f₁ a || f₂ a, ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩,
-      (hf₁.or hf₂).mono Set.Subset.rfl Set.Subset.rfl (by omega)⟩
-    · rw [Bool.or_eq_false_iff] at hf
-      exact (h₁.1 a y hA hf.1).resolvent (h₂.1 a y hA hf.2)
-    · rcases Bool.or_eq_true_iff.1 hf with hf | hf
-      · exact (h₁.2 a z hB hf).resolvent_left (by simp [rightPart])
-      · exact (h₂.2 a z hB hf).resolvent_right (by simp [rightPart])
-  · -- a `B`-private variable: a conjunction
-    refine ⟨fun a => f₁ a && f₂ a, ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩,
-      (hf₁.and hf₂).mono Set.Subset.rfl Set.Subset.rfl (by omega)⟩
-    · rcases Bool.and_eq_false_iff.1 hf with hf | hf
-      · exact (h₁.1 a y hA hf).resolvent_left (by simp [leftPart])
-      · exact (h₂.1 a y hA hf).resolvent_right (by simp [leftPart])
-    · rw [Bool.and_eq_true] at hf
-      exact (h₁.2 a z hB hf.1).resolvent (h₂.2 a z hB hf.2)
+/-- A resolution on an `A`-private variable gets the disjunction of the premises' gates. -/
+private theorem good_or (hρB : ∀ a z j, ρB a z (.inr (.inl j)) = none) {c₁ c₂ : Clause _}
+    {f₁ f₂ : (Fin n → Bool) → Bool} (j : Y) (h₁ : Good ρA ρB A B c₁ f₁)
+    (h₂ : Good ρA ρB A B c₂ f₂) :
+    Good ρA ρB A B (c₁.resolvent c₂ (.inr (.inl j))) fun a => f₁ a || f₂ a := by
+  refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩
+  · rw [Bool.or_eq_false_iff] at hf
+    exact (h₁.1 a y hA hf.1).resolvent (h₂.1 a y hA hf.2)
+  · rcases Bool.or_eq_true_iff.1 hf with hf | hf
+    · exact (h₁.2 a z hB hf).resolvent_left (by simp [hρB])
+    · exact (h₂.2 a z hB hf).resolvent_right (by simp [hρB])
+
+/-- A resolution on a `B`-private variable gets the conjunction of the premises' gates. -/
+private theorem good_and (hρA : ∀ a y k, ρA a y (.inr (.inr k)) = none) {c₁ c₂ : Clause _}
+    {f₁ f₂ : (Fin n → Bool) → Bool} (k : Z) (h₁ : Good ρA ρB A B c₁ f₁)
+    (h₂ : Good ρA ρB A B c₂ f₂) :
+    Good ρA ρB A B (c₁.resolvent c₂ (.inr (.inr k))) fun a => f₁ a && f₂ a := by
+  refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩
+  · rcases Bool.and_eq_false_iff.1 hf with hf | hf
+    · exact (h₁.1 a y hA hf).resolvent_left (by simp [hρA])
+    · exact (h₂.1 a y hA hf).resolvent_right (by simp [hρA])
+  · rw [Bool.and_eq_true] at hf
+    exact (h₁.2 a z hB hf.1).resolvent (h₂.2 a z hB hf.2)
+
+/-- **Assembling the interpolant.** Fix how each side sees the lines (`ρA`, `ρB`), so that clauses
+of `A` and of `B` satisfy the invariant with the constants `false` and `true`. If constants,
+disjunctions and conjunctions cost at most `cost` gates, and a resolution on a shared variable has
+a gate satisfying the invariant within `cost` gates, then a refutation with `s` lines gives an
+interpolant computed with at most `cost * s` gates. -/
+private theorem exists_circuit_of_good {σ : Signature} {I : Interpretation σ Bool} {cost : ℕ}
+    (hρA : ∀ a y k, ρA a y (.inr (.inr k)) = none) (hρB : ∀ a z j, ρB a z (.inr (.inl j)) = none)
+    (hA : ∀ d ∈ A, ∀ a y, ∀ l ∈ d, Sum.elim a y l.1 = l.2 →
+      ρA a y (Sum.map id Sum.inl l.1) = some l.2)
+    (hB : ∀ d ∈ B, ∀ a z, ∀ l ∈ d, Sum.elim a z l.1 = l.2 →
+      ρB a z (Sum.map id Sum.inr l.1) = some l.2)
+    (hconst : ∀ b, Synthesis I (inputs n) {fun _ => b} cost)
+    (hor : ∀ f₁ f₂ : (Fin n → Bool) → Bool,
+      Synthesis I (inputs n ∪ {f₁, f₂}) {fun a => f₁ a || f₂ a} cost)
+    (hand : ∀ f₁ f₂ : (Fin n → Bool) → Bool,
+      Synthesis I (inputs n ∪ {f₁, f₂}) {fun a => f₁ a && f₂ a} cost)
+    (hshared : ∀ (i : Fin n) (c₁ c₂ : Clause (Fin n ⊕ (Y ⊕ Z))) (f₁ f₂ : (Fin n → Bool) → Bool),
+      Good ρA ρB A B c₁ f₁ → Good ρA ρB A B c₂ f₂ →
+        ∃ f, Good ρA ρB A B (c₁.resolvent c₂ (.inl i)) f ∧
+          Synthesis I (inputs n ∪ {f₁, f₂}) {f} cost)
+    {ls : List (Clause (Fin n ⊕ (Y ⊕ Z)))} (h : (A.appendShared B).IsProof ls) (hnil : [] ∈ ls) :
+    ∃ C : Circuit σ n 1, C.size ≤ cost * ls.length ∧
+      A.IsInterpolant B fun a => C.eval I a 0 := by
+  have hmem (c : Clause (Fin n ⊕ (Y ⊕ Z))) (hc : c ∈ A.appendShared B) :
+      ∃ f, Good ρA ρB A B c f ∧ Synthesis I (inputs n) {f} cost := by
+    rcases List.mem_append.1 hc with hc | hc <;> obtain ⟨d, hd, rfl⟩ := List.mem_map.1 hc
+    exacts [⟨_, good_false hd (hA d hd), hconst false⟩, ⟨_, good_true hd (hB d hd), hconst true⟩]
+  have hres (c₁ c₂ : Clause (Fin n ⊕ (Y ⊕ Z))) (v : Fin n ⊕ (Y ⊕ Z))
+      (f₁ f₂ : (Fin n → Bool) → Bool) (_ : (v, true) ∈ c₁) (_ : (v, false) ∈ c₂)
+      (h₁ : Good ρA ρB A B c₁ f₁) (h₂ : Good ρA ρB A B c₂ f₂) :
+      ∃ f, Good ρA ρB A B (c₁.resolvent c₂ v) f ∧
+        Synthesis I (inputs n ∪ {f₁, f₂}) {f} cost := by
+    rcases v with i | j | k
+    exacts [hshared i c₁ c₂ f₁ f₂ h₁ h₂, ⟨_, good_or hρB j h₁ h₂, hor f₁ f₂⟩,
+      ⟨_, good_and hρA k h₁ h₂, hand f₁ f₂⟩]
+  obtain ⟨f, hf, C, hC, hsize⟩ := IsProof.exists_circuit (Good ρA ρB A B) hmem hres h hnil
+  refine ⟨C, hsize, ?_⟩
+  have hCf : (fun a => C.eval I a 0) = f := funext fun a => by rw [hC a, single_apply]
+  exact hCf ▸ isInterpolant_of_good hf
+
+/-- The two premises' gates are available to the gate of their resolvent. -/
+private theorem synthesis_fst {σ : Signature} {I : Interpretation σ Bool}
+    (f₁ f₂ : (Fin n → Bool) → Bool) : Synthesis I (inputs n ∪ {f₁, f₂}) {f₁} 0 :=
+  Synthesis.of_mem (Or.inr (Or.inl rfl))
+
+/-- The two premises' gates are available to the gate of their resolvent. -/
+private theorem synthesis_snd {σ : Signature} {I : Interpretation σ Bool}
+    (f₁ f₂ : (Fin n → Bool) → Bool) : Synthesis I (inputs n ∪ {f₁, f₂}) {f₂} 0 :=
+  Synthesis.of_mem (Or.inr (Or.inr rfl))
+
+/-- The shared variables are available to the gate of every resolvent. -/
+private theorem synthesis_input {σ : Signature} {I : Interpretation σ Bool}
+    (f₁ f₂ : (Fin n → Bool) → Bool) (i : Fin n) :
+    Synthesis I (inputs n ∪ {f₁, f₂}) {fun a => a i} 0 :=
+  Synthesis.of_mem (Or.inl ⟨i, rfl⟩)
+
+/-! ### The general interpolant -/
+
+/-- A resolution on a shared variable `xᵢ` gets the selector `if xᵢ then g₂ else g₁` of the
+premises' gates: if `a i = false`, the literal `xᵢ` of `c₁` is false and the gate of `c₁` is
+selected; otherwise the literal `¬xᵢ` of `c₂` is false and the gate of `c₂` is. -/
+private theorem good_sel {c₁ c₂ : Clause _} {f₁ f₂ : (Fin n → Bool) → Bool} (i : Fin n)
+    (h₁ : Good leftPart rightPart A B c₁ f₁) (h₂ : Good leftPart rightPart A B c₂ f₂) :
+    Good leftPart rightPart A B (c₁.resolvent c₂ (.inl i))
+      fun a => (!a i && f₁ a) || (a i && f₂ a) := by
+  refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩ <;>
+    cases hi : a i <;> simp only [hi, Bool.not_false, Bool.not_true, Bool.true_and,
+      Bool.false_and, Bool.or_false, Bool.false_or] at hf
+  · exact (h₁.1 a y hA hf).resolvent_left (by simp [leftPart, hi])
+  · exact (h₂.1 a y hA hf).resolvent_right (by simp [leftPart, hi])
+  · exact (h₁.2 a z hB hf).resolvent_left (by simp [rightPart, hi])
+  · exact (h₂.2 a z hB hf).resolvent_right (by simp [rightPart, hi])
 
 /-- **Feasible interpolation for resolution** [Pudlák, Theorem 1][Pudlak1997],
 [Krajíček, Theorem 6.1][Krajicek1997]. A resolution refutation of `A(x, y) ∧ B(x, z)` with `s`
 lines gives an interpolant of `A` and `B` computed by a De Morgan circuit with at most `4 s`
 gates. -/
-theorem CNF.IsProof.exists_interpolant {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
-    {ls : List (Clause (Fin n ⊕ (Y ⊕ Z)))} (h : (A.appendShared B).IsProof ls) (hnil : [] ∈ ls) :
+theorem CNF.IsProof.exists_interpolant {ls : List (Clause (Fin n ⊕ (Y ⊕ Z)))}
+    (h : (A.appendShared B).IsProof ls) (hnil : [] ∈ ls) :
     ∃ C : Circuit Boolean.signature n 1, C.size ≤ 4 * ls.length ∧
       A.IsInterpolant B fun a => C.eval Boolean.interpretation a 0 := by
-  obtain ⟨f, hf, C, hC, hsize⟩ := IsProof.exists_circuit (I := Boolean.interpretation)
-    (Good A B) (cost := 4)
-    (fun c hc => let ⟨f, hf, hs⟩ := good_of_mem hc
-      ⟨f, hf, hs.mono Set.Subset.rfl Set.Subset.rfl (by omega)⟩)
-    (fun _ _ v _ _ _ _ h₁ h₂ => good_resolvent v h₁ h₂) h hnil
-  refine ⟨C, hsize, ?_⟩
-  have hCf : (fun a => C.eval Boolean.interpretation a 0) = f := funext fun a => by
-    rw [hC a, single_apply]
-  exact hCf ▸ isInterpolant_of_good hf
+  refine exists_circuit_of_good (ρA := leftPart) (ρB := rightPart) (fun _ _ _ => rfl)
+    (fun _ _ _ => rfl) (fun _ _ _ _ l _ he => ?_) (fun _ _ _ _ l _ he => ?_)
+    (fun b => (Synthesis.const b).mono Set.Subset.rfl Set.Subset.rfl (by omega))
+    (fun f₁ f₂ => ((synthesis_fst f₁ f₂).or (synthesis_snd f₁ f₂)).mono Set.Subset.rfl
+      Set.Subset.rfl (by omega))
+    (fun f₁ f₂ => ((synthesis_fst f₁ f₂).and (synthesis_snd f₁ f₂)).mono Set.Subset.rfl
+      Set.Subset.rfl (by omega))
+    (fun i _ _ f₁ f₂ h₁ h₂ => ⟨_, good_sel i h₁ h₂,
+      (((synthesis_input f₁ f₂ i).not.and (synthesis_fst f₁ f₂)).or
+        ((synthesis_input f₁ f₂ i).and (synthesis_snd f₁ f₂))).mono Set.Subset.rfl
+        Set.Subset.rfl (by omega)⟩) h hnil
+  · rcases l with ⟨_ | _, b⟩ <;> simpa [leftPart] using he
+  · rcases l with ⟨_ | _, b⟩ <;> simpa [rightPart] using he
 
 /-- **Feasible interpolation for resolution**, by refutation size: if `A(x, y) ∧ B(x, z)` has a
 resolution refutation with at most `s` lines, then `A` and `B` have an interpolant computed by a
 De Morgan circuit with at most `4 s` gates. -/
-theorem CNF.RefutableInSize.exists_interpolant {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
-    {s : ℕ} (h : (A.appendShared B).RefutableInSize s) :
+theorem CNF.RefutableInSize.exists_interpolant {s : ℕ} (h : (A.appendShared B).RefutableInSize s) :
     ∃ C : Circuit Boolean.signature n 1, C.size ≤ 4 * s ∧
       A.IsInterpolant B fun a => C.eval Boolean.interpretation a 0 := by
   obtain ⟨ls, h, hnil, hlen⟩ := h
