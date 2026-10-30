@@ -1067,6 +1067,7 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Amplification
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.BPP
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ClockedTable
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.CompactMatrix
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.CompactTimeLayer
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ConfigurationMatrix
@@ -1534,9 +1535,12 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Expr
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.Clocked
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.ClockedTable
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.ReadInput
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.Table
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Injective
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.InputTable
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Radix
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.ReadSymbol
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Routines
@@ -2607,6 +2611,7 @@ public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.RowMajor
 public import Complexity.Foundations.Data.List.SelectDistinct
+public import Complexity.Foundations.Data.List.TwoBitTable
 public import Complexity.Foundations.Data.Matrix.Binary
 public import Complexity.Foundations.Data.Matrix.IntegerBits
 public import Complexity.Foundations.Data.Matrix.PairChunks
