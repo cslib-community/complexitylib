@@ -348,10 +348,12 @@ private lemma retSwap_inO
       (encPair encB (encOption (encFrame encA encG)))
       (encPair (encList (encFrame encA encG)) (encVal encA encB))
       (fun q => (encPair encB (encOption (encFrame encA encG)) q).length + q.2.elim 0
-        (fun x => x.elim (fun a => Tm (a, q.1) + Sm (a, q.1) + (encPair encA encG (D.mid (a, q.1))).length)
+        (fun x => x.elim
+          (fun a => Tm (a, q.1) + Sm (a, q.1) + (encPair encA encG (D.mid (a, q.1))).length)
           (fun g => Tj (g, q.1) + Sj (g, q.1) + (encB (D.join (g, q.1))).length)))
       (fun q => (encPair encB (encOption (encFrame encA encG)) q).length + q.2.elim 0
-        (fun x => x.elim (fun a => Tm (a, q.1) + Sm (a, q.1) + (encPair encA encG (D.mid (a, q.1))).length)
+        (fun x => x.elim
+          (fun a => Tm (a, q.1) + Sm (a, q.1) + (encPair encA encG (D.mid (a, q.1))).length)
           (fun g => Tj (g, q.1) + Sj (g, q.1) + (encB (D.join (g, q.1))).length))) := by
   -- the middle: the second subproblem is called, the saved data pushed
   have hm := hmid.comp (swap_inO (encS := encB) (encT := encA))

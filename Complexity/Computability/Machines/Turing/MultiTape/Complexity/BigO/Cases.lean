@@ -15,9 +15,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Ite
 # Case analysis on a component, within given bounds
 
 Case analysis on the second component of a pair, when that component is a tagged sum
-(`Turing.MultiTapeTM.encSum`) or an option (`Turing.MultiTapeTM.encOption`). Each branch need only be computable on its own case, and only the
-branch taken is charged, plus the length of the encoded input. No default values of the component
-types are needed: the branches run on the inputs of their case only.
+(`Turing.MultiTapeTM.encSum`) or an option (`Turing.MultiTapeTM.encOption`). Each branch need
+only be computable on its own case, and only the branch taken is charged, plus the length of the
+encoded input. No default values of the component types are needed: the branches run on the
+inputs of their case only.
 
 ## Main results
 
@@ -83,7 +84,8 @@ private lemma keepFrame_drop {σ : Type} {encS : σ ↪ List Bool} {h : σ → �
 /-- **Case analysis on a sum component.** If `f` is computable on the left case and `g` on the
 right case, so is the case analysis, within the bounds of the branch taken plus the length of the
 encoded input. -/
-private theorem sumElimSnd_tidy {f : π × α → ε} {g : π × β → ε} {Tf Sf : π × α → ℕ} {Tg Sg : π × β → ℕ}
+private theorem sumElimSnd_tidy {f : π × α → ε} {g : π × β → ε} {Tf Sf : π × α → ℕ}
+    {Tg Sg : π × β → ℕ}
     (hf : ComputableTidilyInO f (encPair encP encA) encE Tf Sf)
     (hg : ComputableTidilyInO g (encPair encP encB) encE Tg Sg) :
     ComputableTidilyInO
@@ -107,12 +109,14 @@ private theorem sumElimSnd_tidy {f : π × α → ε} {g : π × β → ε} {Tf 
     fun p => (p.1.1, p.1.2.getLeft (by simpa using p.2))
   let R : {p : π × (α ⊕ β) // p.2.isLeft = false} → π × β :=
     fun p => (p.1.1, p.1.2.getRight (by simpa using p.2))
-  have hL := keepFrame_drop (encP := encP) (encA := encA) (encS := (Function.Embedding.subtype _).trans enc) (h := L) 1
+  have hL := keepFrame_drop (encP := encP) (encA := encA)
+    (encS := (Function.Embedding.subtype _).trans enc) (h := L) 1
     fun ⟨⟨x, s⟩, hs⟩ => by
       cases s with
       | inl a => exact ⟨false :: encA a, by simp [enc, L], rfl⟩
       | inr b => simp at hs
-  have hR := keepFrame_drop (encP := encP) (encA := encB) (encS := (Function.Embedding.subtype _).trans enc) (h := R) 1
+  have hR := keepFrame_drop (encP := encP) (encA := encB)
+    (encS := (Function.Embedding.subtype _).trans enc) (h := R) 1
     fun ⟨⟨x, s⟩, hs⟩ => by
       cases s with
       | inl a => simp at hs

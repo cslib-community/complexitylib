@@ -100,7 +100,8 @@ theorem ComputableInO.stackLoop {δ α γ : Type} {encIn : δ ↪ List Bool}
         ∑ i ∈ Finset.range (n x),
           (Tr (roundInput (L.step^[i] (init x, []))) + Sr (roundInput (L.step^[i] (init x, []))) +
             (encPair (encOption encG) encA (roundInput (L.step^[i] (init x, [])))).length +
-            (encPair (encList encG) encA (L.round (roundInput (L.step^[i] (init x, []))))).length)) :=
+            (encPair (encList encG) encA
+              (L.round (roundInput (L.step^[i] (init x, []))))).length)) :=
   sorry
 
 end Turing.MultiTapeTM
