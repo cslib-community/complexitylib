@@ -246,6 +246,43 @@ class Fixture(unittest.TestCase):
         self.assertFalse((self.state / "next-0").exists())
         self.assertFalse((self.state / "next-1").exists())
 
+    def test_reset_deadline_preserves_live_state_and_allows_recovery(self):
+        snap = self.snapshot()
+        self.addCleanup(snap.close)
+        snap.reset()
+        self.dep.write_text("unfinished arm")
+        before = [study.tree(p, plan()["max_bytes"]) for p in snap.live]
+        original = study.shutil.copy2
+        with patch.object(study.time, "monotonic", return_value=0) as clock:
+            def expire_after_copy(src, dst):
+                result = original(src, dst)
+                clock.return_value = 2
+                return result
+            with patch.object(study.shutil, "copy2", side_effect=expire_after_copy), self.assertRaises(study.handoff.Rejected):
+                snap.reset(deadline=1)
+        self.assertEqual([study.tree(p, plan()["max_bytes"]) for p in snap.live], before)
+        self.assertFalse((self.state / "next-0").exists())
+        self.assertFalse((self.state / "next-1").exists())
+        snap.reset()
+        self.assertEqual(self.dep.read_text(), "ancestor")
+
+    def test_expired_arm_reset_excludes_trial_before_commands_and_recovers(self):
+        self.prepared()
+        resets = []
+        original = study.Snapshot.reset
+        def expired(snapshot, deadline=None):
+            resets.append(deadline)
+            return original(snapshot, 0 if deadline is not None else None)
+        with patch.object(study, "published"), patch.object(study, "observe_producer", return_value={}), patch.object(study.Snapshot, "reset", expired), patch.object(study, "command", side_effect=AssertionError("validation started after expiry")):
+            study.measure(self.root, self.env, now=NOW)
+        self.assertEqual(self.report()["status"], "excluded")
+        self.assertIn("time budget exceeded", self.report()["reason"])
+        self.assertEqual(len(resets), 2)
+        self.assertIsNotNone(resets[0])
+        self.assertIsNone(resets[1])
+        self.assertNotIn("recovery_error", self.report())
+        self.assertEqual(self.dep.read_text(), "ancestor")
+
     def test_both_orders_start_each_arm_from_identical_initial_state(self):
         for order in ("BT", "TB"):
             with self.subTest(order=order):

@@ -217,7 +217,15 @@ def tree(path, max_bytes, deadline=None, links=True):
             else:
                 require(stat.S_ISDIR(info.st_mode), "Non-regular cache entry")
             digest.update(json.dumps(record).encode())
+    require(deadline is None or time.monotonic() < deadline, "Measurement time budget exceeded")
     return {"bytes": total, "sha256": digest.hexdigest()}
+
+
+def copy_file(src, dst, deadline=None):
+    require(deadline is None or time.monotonic() < deadline, "Measurement time budget exceeded")
+    result = shutil.copy2(src, dst)
+    require(deadline is None or time.monotonic() < deadline, "Measurement time budget exceeded")
+    return result
 
 
 def cache_path(env):
@@ -245,14 +253,10 @@ class Snapshot:
         free = shutil.disk_usage(state).free
         require(free >= reserve, f"Insufficient measurement/rollback disk budget: need {reserve}, free {free}")
         try:
-            def copy(src, dst):
-                require(time.monotonic() < deadline, "Measurement time budget exceeded")
-                result = shutil.copy2(src, dst)
-                require(time.monotonic() < deadline, "Measurement time budget exceeded")
-                return result
             for src, dst in zip(sources, self.saved):
                 if src.exists():
-                    shutil.copytree(src, dst, symlinks=True, copy_function=copy)
+                    shutil.copytree(src, dst, symlinks=True,
+                                    copy_function=lambda src, dst: copy_file(src, dst, deadline))
                 else:
                     dst.mkdir()
             self.expected = [tree(p, plan["max_bytes"], deadline, links=(i == 0)) for i, p in enumerate(self.saved)]
@@ -261,13 +265,14 @@ class Snapshot:
             raise
         self.max_bytes = plan["max_bytes"]
 
-    def reset(self):
+    def reset(self, deadline=None):
         staged, backups, installed = [], [], []
         try:
             for i, saved in enumerate(self.saved):
                 dest = saved.parent / f"next-{i}"
                 staged.append(dest)
-                shutil.copytree(saved, dest, symlinks=True)
+                shutil.copytree(saved, dest, symlinks=True,
+                                copy_function=lambda src, dst: copy_file(src, dst, deadline))
             for i, (live, new) in enumerate(zip(self.live, staged)):
                 backup = new.parent / f"previous-{i}"
                 if live.exists():
@@ -275,7 +280,7 @@ class Snapshot:
                     backups.append((live, backup))
                 new.rename(live)
                 installed.append(live)
-            require([tree(p, self.max_bytes) for p in self.live] == self.expected, "Initial cache reset mismatch")
+            require([tree(p, self.max_bytes, deadline) for p in self.live] == self.expected, "Initial cache reset mismatch")
         except BaseException:
             for live in reversed(installed):
                 if live.exists():
@@ -376,7 +381,7 @@ def measure(root, env, api=handoff.gh_get, now=None):
                           for arm in report["selection"]["order"]]
         for result in report["arms"]:
             arm = result["arm"]
-            snapshot.reset()
+            snapshot.reset(deadline)
             require(context(root, env) == report["context"], "Tracked source changed")
             result["status"] = "running"
             save(state / "report.json", report)

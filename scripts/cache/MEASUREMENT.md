@@ -26,9 +26,9 @@ these fields (this example is a schema illustration, not an instruction to activ
 }
 ```
 
-`mode` is `paired` or `randomized`. The window is at most seven days; hard caps are 16 intended
-samples, 32 GiB of initial cache contents and 7,200 seconds per paired case. Smaller explicit
-budgets should be registered. The driver hashes `seed:sample:run_id` modulo `sample_denominator`
+`mode` is `paired` or `randomized`. The window is at most seven days; limits are 16 intended
+samples, 32 GiB of initial cache contents and a work deadline of at most 7,200 seconds per paired
+case. Smaller explicit budgets should be registered. The driver hashes `seed:sample:run_id` modulo `sample_denominator`
 over **all main-push runs created in the window**, then takes the earliest `max_samples` selected
 runs. Failed, cancelled and unallocated runs consume slots; they are never replaced with successful
 or slow cases. Hashes with separate `order` and `assignment` tags select BT/TB order and
@@ -77,6 +77,11 @@ handoff. Large real caches can exceed the disk budget; record the exclusion and 
 a root-only snapshot. Only tiny unit fixtures are exercised in this milestone. The optional
 workflow timeout is a final guard; interrupted cases remain censored, never successful samples.
 Timeout cleanup targets only the process group the driver created.
+
+The work deadline covers snapshot creation, resets between arms and validation commands. File
+operations check the deadline between files, so one filesystem operation can overrun it. Recovery
+and cleanup may continue after the deadline to restore the initial state before production;
+`max_seconds` is not a hard limit on the hook's total wall time.
 
 Filesystem reset does not reset OS page cache, CPU frequency, background load or network state.
 Counterbalance BT/TB order, repeat reversed-order cases on a small prespecified subset, and report
