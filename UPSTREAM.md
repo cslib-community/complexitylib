@@ -47,6 +47,11 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   without repeatedly copying list tails. Retain these local improvements when synchronizing
   `Universal/Complexity`, `Bound` and their resource consumers with `crei/tidy-universal`.
   This is an extension of the existing interpreter, not a buffered Hennie–Stearns backend.
+  `Universal/Windowed*` adds a divide-and-conquer windowed simulation on top of the vendored
+  description format and `stepWith`; with the native `Combinators/StackLoop` and
+  `Combinators/DivConq` combinators it proves the `O(t log t)` bound
+  `computableInO_universal_nlogn`. It is a new local construction layered beside the vendored
+  files, not a revision of them; keep it out of the copied modules when synchronizing.
 * **Polynomial bounds.** The tidy calculus's size-parameterized `PolyBounded` adapts CSLib's
   `PolynomiallyBounded` and shares its closure API. Coordinate this adaptation with the tidy
   branch; preserve it when resynchronizing the vendored files.
