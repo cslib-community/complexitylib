@@ -1512,6 +1512,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Zip
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.NatPolynomial
