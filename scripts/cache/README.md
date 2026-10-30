@@ -53,6 +53,12 @@ existing hard-linked cache objects. Merge groups do not publish to GCS: the norm
 `main` run remains the only public-cache writer. This makes its outputs available sooner to
 following builds while preserving the public cache's authorization boundary.
 
+- **Payload.** The archive keeps compiled outputs (including private/server OLeans, IR and native
+  code), hashes and traces. It omits only `ir/**/*.setup.json` and `ir/**/*.irsetup.json`: Lake's
+  transient compiler setup inputs. Lake writes these inside a compilation action and does not
+  require them to reuse completed modules. Other JSON files are retained. File-type/link checks
+  still cover omitted entries; the 100,000-file, 4 GiB unpacked and 1 GiB compressed payload limits
+  are unchanged. Packing reports retained and omitted counts/sizes, including on a limit miss.
 - **Kill switch.** Setting the repository variable `DISABLE_BUILD_HANDOFF` to `1` or `true`
   (`gh variable set DISABLE_BUILD_HANDOFF --body 1`) disables both merge-group staging and `main`
   restoration without a commit; `scripts/cache_handoff.py` also honors `DISABLE_BUILD_HANDOFF` in
