@@ -90,16 +90,15 @@ theorem DecidesByMajorityInTime.mono {machine : MultiTapePTM k Bool State}
     exact hhalt
   · rwa [machine.eval_runClosed_eq_of_halted _ (ht a) hhalt]
 
-/-- A probability `c / 2 ^ n` exceeds one half exactly when `2 ^ n < 2 * c`. -/
-private theorem half_lt_div_iff {c n : ℕ} :
-    (1 / 2 : ℝ≥0∞) < c / 2 ^ n ↔ 2 ^ n < 2 * c := by
-  have h2n : (2 : ℝ≥0∞) ^ n ≠ 0 := pow_ne_zero _ two_ne_zero
-  have h2n' : (2 : ℝ≥0∞) ^ n ≠ ⊤ := ENNReal.pow_ne_top ENNReal.ofNat_ne_top
-  rw [ENNReal.lt_div_iff_mul_lt (Or.inl h2n) (Or.inl h2n'), one_div, mul_comm,
-    ← div_eq_mul_inv, ENNReal.div_lt_iff (Or.inl two_ne_zero) (Or.inl ENNReal.ofNat_ne_top),
-    show ((c : ℝ≥0∞) * 2) = ((2 * c : ℕ) : ℝ≥0∞) by push_cast; ring,
-    show ((2 : ℝ≥0∞) ^ n) = ((2 ^ n : ℕ) : ℝ≥0∞) by push_cast; rfl]
-  exact Nat.cast_lt
+/-- More than half of the random words are accepted exactly when they are accepted with
+probability more than one half. -/
+private theorem half_lt_uniformList_map_iff {β : Type} (V : β × List Bool → Bool) (b : β)
+    (n : ℕ) : 1 / 2 < ((BitString.uniformList n).map fun w => V (b, w)) true ↔
+      2 ^ n < 2 * Complexity.acceptCount V b n := by
+  have hne : ((BitString.uniformList n).map fun w => V (b, w)) true ≠ ⊤ := PMF.apply_ne_top _ _
+  rw [← not_iff_not, not_lt, not_lt, Complexity.acceptCount_le_half_iff,
+    ← ENNReal.toReal_le_toReal hne (by simp)]
+  simp
 
 /-- **Deciding by majority is a count comparison.** A fair-coin machine decides `A` by strict
 majority within `t` exactly when, on every instance, every run has halted by the clock and
@@ -115,8 +114,16 @@ theorem decidesByMajorityInTime_iff {machine : MultiTapePTM k Bool State}
         (fun x : List Bool × List Bool => decide (machine.runClosedCoins x.2 x.1 = [true]))
         (enc a) (t a)) := by
   refine forall_congr' fun a => and_congr_right' (iff_congr Iff.rfl ?_)
-  rw [eval_runClosed_eq_map_coins, BitString.uniformList_map_apply, ← half_lt_div_iff]
-  simp only [Complexity.acceptCount, decide_eq_true_eq]
+  -- the probability of `[true]` is the accepted fraction of the coin strings
+  have hprob : ProbComp.eval (machine.runClosed (t a) (enc a)) [true] =
+      ((BitString.uniformList (t a)).map fun w =>
+        decide (machine.runClosedCoins w (enc a) = [true])) true := by
+    rw [eval_runClosed_eq_map_coins, BitString.uniformList_map_apply,
+      BitString.uniformList_map_apply]
+    simp only [decide_eq_true_eq]
+  rw [hprob]
+  exact half_lt_uniformList_map_iff
+    (fun x : List Bool × List Bool => decide (machine.runClosedCoins x.2 x.1 = [true])) _ _
 
 end Turing.MultiTapePTM
 
@@ -200,7 +207,7 @@ theorem mem_PP_iff_exists_mem_PPTIME {α : Type} {enc : α ↪ List Bool} {A : S
       simp [PMF.map_apply, encBool_apply]
     rw [← heval a, htrue]
     simp only [program, ProbComp.eval_map, BitString.eval_sampleList]
-    rw [BitString.uniformList_map_apply, ← acceptCount, MultiTapePTM.half_lt_div_iff]
+    rw [MultiTapePTM.half_lt_uniformList_map_iff]
     exact hA a
   · rintro ⟨d, c₁, c₂, k, State, hfinite, machine, hA⟩
     -- replay the coins
