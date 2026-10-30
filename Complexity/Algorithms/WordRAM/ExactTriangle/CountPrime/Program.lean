@@ -213,6 +213,13 @@ end Reg
   .seq (ram[ Reg.coefficient ← #0 ])
     (.loop (.lt Reg.coefficient Reg.modulus) writeCoefficient)
 
+/-- Guard the real residue read and use the out-of-range key p for every padded cell. -/
+@[expose] def matrixResidue (transpose : Bool) : Code .standard 128 := ram[
+  if Reg.row < Reg.side then [
+    if Reg.column < Reg.side then [ ⟪readResidue transpose⟫ ]
+    else [ Reg.residue ← Reg.modulus ] ]
+  else [ Reg.residue ← Reg.modulus ] ]
+
 /-- Create a complete zero-padded cyclic matrix from real residue words. -/
 @[expose] def matrix (src dst : Fin 128) (transpose : Bool) : Code .standard 128 := ram[
   Reg.residueSource ← src; Reg.destination ← dst; Reg.index ← #0;
@@ -220,10 +227,7 @@ end Reg
     Reg.row ← Reg.index / Reg.paddedSide; Reg.column ← Reg.index % Reg.paddedSide;
     ⟪morton⟫; Reg.block ← Reg.position * Reg.modulus;
     Reg.block ← Reg.destination + Reg.block;
-    if Reg.row < Reg.side then [
-      if Reg.column < Reg.side then [ ⟪readResidue transpose⟫ ]
-      else [ Reg.residue ← Reg.modulus ] ]
-    else [ Reg.residue ← Reg.modulus ];
+    ⟪matrixResidue transpose⟫;
     ⟪writeCoefficients⟫; Reg.index ← Reg.index + Reg.one ] ]
 
 /-- Invoke the actual fixed Strassen controller in the low 64-register bank. -/

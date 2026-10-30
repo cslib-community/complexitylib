@@ -17,8 +17,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Dispat
 
 The first parent stage clears only its current output and materializes the first child.
 Original coefficient arrays and older frames are protected by the derived native footprint.
-Together with the scalar case, this is an internal stage of the traversal induction; it
-does not assert the still-uncomposed whole-controller or modular triangle counter theorem.
+Together with the scalar case, this is an internal stage composed by `Strassen.Traversal`.
+The modular triangle counter still requires its own complete pipeline composition.
 -/
 
 public section

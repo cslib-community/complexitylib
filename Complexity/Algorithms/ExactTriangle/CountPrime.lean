@@ -43,6 +43,18 @@ open Cslib.CyclicIntRing Cslib.Algorithms.MatrixMultiplication.Strassen
     if i % p = (wBC ⟨_, h.2⟩ ⟨_, h.1⟩ % (p : ℤ)).toNat then 1 else 0
   else 0
 
+/-- Every actual monomial coefficient, including padding, has magnitude at most one. -/
+theorem pCoefficients_natAbs_le_one {n : ℕ} (p : ℕ) (wAC : Fin n → Fin n → ℤ) (i : ℕ) :
+    (pCoefficients p wAC i).natAbs ≤ 1 := by
+  unfold pCoefficients
+  split_ifs <;> decide
+
+/-- The transposed monomial matrix has the same unit coefficient bound. -/
+theorem qCoefficients_natAbs_le_one {n : ℕ} (p : ℕ) (wBC : Fin n → Fin n → ℤ) (i : ℕ) :
+    (qCoefficients p wBC i).natAbs ≤ 1 := by
+  unfold qCoefficients
+  split_ifs <;> decide
+
 private noncomputable def pad {n p : ℕ} (M : Matrix (Fin n) (Fin n) (CyclicIntRing p))
     (a b : ℕ) : CyclicIntRing p := if h : a < n ∧ b < n then M ⟨a, h.1⟩ ⟨b, h.2⟩ else 0
 
@@ -75,6 +87,41 @@ private theorem sum_pad {n p N : ℕ} (hN : n ≤ N)
   rw [Finset.sum_range_add, ht, add_zero, Matrix.mul_apply, Finset.sum_range]
   exact Finset.sum_congr rfl fun c _ => by simp [pad]
 
+/-- Every original pair and residue in the executable finite Strassen coefficient array
+has exactly the existing cyclic matrix-product meaning, including power-of-two padding. -/
+theorem multiply_entry_eq_coeff {n p k : ℕ} (hp : p ≠ 0) (hn : n ≤ 2 ^ k)
+    (wBC wAC : Fin n → Fin n → ℤ) (a b : Fin n) (r : ℕ) (hr : r < p) :
+    multiply p k (pCoefficients p wAC) (qCoefficients p wBC)
+      (Nat.Morton.index a b * p + r) =
+      CyclicIntRing.coeff hp r ((matP wAC p * matQ wBC p) a b) := by
+  have hi := Nat.Morton.index_lt (a.isLt.trans_le hn) (b.isLt.trans_le hn)
+  have hmul := Nat.mul_le_mul_right p (Nat.succ_le_of_lt hi)
+  rw [Nat.succ_mul] at hmul
+  have hidx : Nat.Morton.index a b * p + r < 4 ^ k * p := by omega
+  rw [multiply_eq_coefficients hp k (pad (matP wAC p)) (pad (matQ wBC p))
+    (pCoefficients p wAC) (qCoefficients p wBC)
+    (fun i _ => congrFun (pCoefficients_eq hp wAC) i)
+    (fun i _ => congrFun (qCoefficients_eq hp wBC) i) hidx,
+    coefficients_at hp _ a b hr, sum_pad hn]
+
+/-- The selected real product coefficient is a nonnegative count of at most n middle
+vertices. Native signed-to-unsigned extraction uses this bound before every sum. -/
+theorem multiply_entry_bounds {n p k : ℕ} (hp : p ≠ 0) (hn : n ≤ 2 ^ k)
+    (wBC wAC : Fin n → Fin n → ℤ) (a b : Fin n) (r : ℕ) (hr : r < p) :
+    0 ≤ multiply p k (pCoefficients p wAC) (qCoefficients p wBC)
+        (Nat.Morton.index a b * p + r) ∧
+      multiply p k (pCoefficients p wAC) (qCoefficients p wBC)
+        (Nat.Morton.index a b * p + r) ≤ (n : ℤ) := by
+  classical
+  rw [multiply_entry_eq_coeff hp hn wBC wAC a b r hr,
+    coeff_matP_mul_matQ wBC wAC hp a b r hr]
+  have hc := Finset.card_le_card (Finset.filter_subset (s := Finset.univ)
+    (p := fun c : Fin n => wAC a c + wBC b c ≡ (r : ℤ) [ZMOD (p : ℤ)]))
+  simp only [Finset.card_univ, Fintype.card_fin] at hc
+  constructor
+  · positivity
+  · exact_mod_cast hc
+
 /-- Select the (-AB)-residue coefficient for each original pair after the real seven-product
 finite recursion. The depth controls zero padding; it is not a supplied multiplication. -/
 @[expose] def count {n : ℕ} (p k : ℕ) (wAB wBC wAC : Fin n → Fin n → ℤ) : ℤ :=
@@ -95,14 +142,6 @@ theorem count_eq {n p k : ℕ} (hp : p ≠ 0) (hn : n ≤ 2 ^ k)
   apply Finset.sum_congr rfl
   intro b _
   have hr : ((-wAB a b) % (p : ℤ)).toNat < p := Int.natMod_lt hp
-  have hi := Nat.Morton.index_lt (a.isLt.trans_le hn) (b.isLt.trans_le hn)
-  have hmul := Nat.mul_le_mul_right p (Nat.succ_le_of_lt hi)
-  rw [Nat.succ_mul] at hmul
-  have hidx : Nat.Morton.index a b * p + ((-wAB a b) % (p : ℤ)).toNat < 4 ^ k * p := by omega
-  rw [multiply_eq_coefficients hp k (pad (matP wAC p)) (pad (matQ wBC p))
-    (pCoefficients p wAC) (qCoefficients p wBC)
-    (fun i _ => congrFun (pCoefficients_eq hp wAC) i)
-    (fun i _ => congrFun (qCoefficients_eq hp wBC) i) hidx,
-    coefficients_at hp _ a b hr, sum_pad hn]
+  exact multiply_entry_eq_coeff hp hn wBC wAC a b _ hr
 
 end Cslib.Algorithms.ExactTriangle.CountPrime

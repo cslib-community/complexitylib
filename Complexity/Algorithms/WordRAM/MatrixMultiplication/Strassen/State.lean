@@ -15,7 +15,7 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Strassen.Bounds
 
 The program takes ordinary pointers, depth and coefficient length. These structures describe
 its actual intermediate state for the execution induction. They contain no run, result or
-time oracle. Root readiness follows from the native setup theorem; child readiness will be
+time oracle. Root readiness follows from the native setup theorem; child readiness is
 derived from the actual operand writes and frame push. The final caller interface must
 compose those derivations from original input data, rather than require these invariants.
 -/
@@ -173,14 +173,14 @@ structure NodeResult (p k out scratch frames frame : ℕ)
   /-- Frame width survives. -/
   frameWidth_eq : y.regs Reg.frameWidth = 7
 
-/-- Native proof budget, to be established by controller composition. Defining this function
-does not assert an execution or inherit the source Light machine's instruction constants. -/
+/-- Native instruction budget established by the subsequent controller composition proof.
+Its definition alone supplies no execution or source Light instruction-count theorem. -/
 @[expose] def traceBudget (p : ℕ) : ℕ → ℕ
   | 0 => 42 * p * p + 9 * p + 28
   | k + 1 => 7 * traceBudget p k + 692 * (4 ^ k * p) + 900
 
-/-- Arithmetic bound for the proof budget. This does not establish the missing positive-depth
-native execution theorem. The strengthened potential pays the linear quarter-size work. -/
+/-- Arithmetic bound for the native budget. The strengthened potential pays the linear
+quarter-size work; the actual execution theorem is proved separately in `Strassen.Exec`. -/
 theorem traceBudget_potential_le (p k : ℕ) :
     traceBudget p k + 231 * p * 4 ^ k + 150 ≤ (42 * p * p + 240 * p + 178) * 7 ^ k := by
   induction k with
