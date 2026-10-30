@@ -375,10 +375,12 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   Corollary 4); the full range of `d`; and the `0/1`-substitution remark. Also the
   Kabanets–Impagliazzo theorem (a deterministic PIT algorithm implies NEXP ⊄ P/poly or the permanent
   has no polynomial-size arithmetic circuits); Valiant's VNP-completeness of the permanent over
-  fields of characteristic other than two; formula and branching-program models, identity testing,
-  hitting sets, and tensor and rank methods, including partial-derivative measures (Nisan–Wigderson
-  depth-3 bounds and shifted partials) and the depth-reduction chasms at depth four (Agrawal–Vinay)
-  and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform construction costs certified
+  fields of characteristic other than two (membership now has an explicit Ryser witness over
+  every commutative ring; VNP-hardness remains open); formula and branching-program models,
+  identity testing, hitting sets, and tensor and rank methods, including partial-derivative
+  measures (Nisan–Wigderson depth-3 bounds and shifted partials) and the depth-reduction chasms at
+  depth four (Agrawal–Vinay) and depth three (Gupta–Kamath–Kayal–Saptharishi), with uniform
+  construction costs certified
   separately from gate counts.
 - **Real-algebraic decision procedures:** port the Sturm–Tarski query evaluator, recursive
   evaluator, implicit arithmetic, native space certificates and the ETR upper bound from
@@ -754,15 +756,15 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
-- **Weighted multigraph cuts and `PMF` event bounds** ([#1336]): extract `IsMultigraph` (renamed
-  e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal), `IsNonTrivialCut`,
+- **Weighted multigraph cuts and two-branch probability recurrence** ([#1336]): extract
+  `IsMultigraph` (renamed e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal),
+  `IsNonTrivialCut`,
   `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
   `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
   `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
-  to `(Cslib.Multigraph.edgeCut ends C).card`, and move `toOuterMeasure_bind_ge_mul_ennreal`,
-  `toOuterMeasure_bind_le_mul_ennreal`, `toOuterMeasure_add_compl_ennreal`,
-  `toOuterMeasure_compl_le_one_sub`, and `two_branch_hit_prob_ge` into
-  `Complexity/Probability/PMF/Event.lean` (reusable by `toOuterMeasure_toReal_add_compl`).
+  to `(Cslib.Multigraph.edgeCut ends C).card`. Extract `two_branch_hit_prob_ge` from
+  `Karger/FastCut.lean` into a shared probabilistic-program module; its `ProbComp` evaluation and
+  support dependencies should stay above the `PMF` event layer.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
