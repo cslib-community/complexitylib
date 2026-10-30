@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: local-only (test driver)
 
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Stateful
 public import ComplexityTests.OrderedSet
@@ -49,22 +49,31 @@ theorem valid_empty_inserted_and_erased :
     exact Tree.valid_empty 2
   exact ⟨Tree.valid_empty 2, hv, Tree.valid_erase (Tree.valid_erase hv 0) 15⟩
 
-/-- Deleting absent keys inside or outside `[m, M]` leaves a valid tree structurally unchanged. -/
+/-- Deleting absent keys (empty cluster, singleton-cluster miss, multi-key cluster miss, and
+out-of-range) leaves a valid tree structurally unchanged. -/
 theorem erase_absent_keys_eq :
     let t := ofList 2 [0, 4, 5, 12, 15]
-    t.erase 6 = t ∧ t.erase 13 = t ∧ t.erase 99 = t := by
+    let ts := ofList 2 [0, 4, 12, 15]
+    t.erase 2 = t ∧ ts.erase 6 = ts ∧ t.erase 6 = t ∧ t.erase 13 = t ∧ t.erase 99 = t := by
   have hv : (ofList 2 [0, 4, 5, 12, 15]).Valid := by
     unfold ofList
     simp only [List.foldl_cons, List.foldl_nil]
     iterate 5 apply Tree.valid_insert (hx := by decide)
     exact Tree.valid_empty 2
-  have hnot (x : ℕ) (hm : (ofList 2 [0, 4, 5, 12, 15]).member x = false) :
-      ¬(ofList 2 [0, 4, 5, 12, 15]).Contains x := by
-    rw [← Tree.member_iff_contains hv]
+  have hvs : (ofList 2 [0, 4, 12, 15]).Valid := by
+    unfold ofList
+    simp only [List.foldl_cons, List.foldl_nil]
+    iterate 4 apply Tree.valid_insert (hx := by decide)
+    exact Tree.valid_empty 2
+  have hnot {u : Tree 2} (hu : u.Valid) (x : ℕ) (hm : u.member x = false) :
+      ¬u.Contains x := by
+    rw [← Tree.member_iff_contains hu]
     simp only [hm, Bool.false_eq_true, not_false_eq_true]
-  exact ⟨Tree.erase_eq_of_not_contains hv (hnot 6 (by decide)),
-    Tree.erase_eq_of_not_contains hv (hnot 13 (by decide)),
-    Tree.erase_eq_of_not_contains hv (hnot 99 (by decide))⟩
+  exact ⟨Tree.erase_eq_of_not_contains hv (hnot hv 2 (by decide)),
+    Tree.erase_eq_of_not_contains hvs (hnot hvs 6 (by decide)),
+    Tree.erase_eq_of_not_contains hv (hnot hv 6 (by decide)),
+    Tree.erase_eq_of_not_contains hv (hnot hv 13 (by decide)),
+    Tree.erase_eq_of_not_contains hv (hnot hv 99 (by decide))⟩
 
 -- Base-case (`d = 0`), descending-minima (`d = 2`), and duplicate-insertion membership,
 -- successor, and predecessor evaluations (including minimum-exclusion fallback `predecessor 4 = 0`

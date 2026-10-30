@@ -14,7 +14,7 @@ import Mathlib.Tactic.Linarith
 # Single-recursion van Emde Boas deletion
 
 This module defines and verifies key deletion on recursive minimum-excluded van Emde Boas trees
-(`[Demaine2015VanEmdeBoas]`, pp. 5–6; `[CLRS2009]`, Section 20.3, p. 554).
+([Demaine2015VanEmdeBoas], pp. 5–6; [CLRS2009], Section 20.3, p. 554).
 
 At each internal depth `d + 1`:
 * If the tree is empty or the query lies outside `[m, M]`, deletion returns immediately with no
@@ -75,7 +75,7 @@ structure EraseTarget (d : ℕ) where
   low : ℕ
 
 /-- Non-recursive `O(1)` header helper selecting `(newMin, clusterIdx, low)` when `m < M` and
-`m ≤ x ≤ M` (`[Demaine2015VanEmdeBoas]`, p. 6; `[CLRS2009]`, Section 20.3, p. 554). -/
+`m ≤ x ≤ M` ([Demaine2015VanEmdeBoas], p. 6; [CLRS2009], Section 20.3, p. 554). -/
 @[expose] def eraseTarget {d : ℕ} (m x : ℕ) (s : Tree d)
     (c : Fin (universeSize d) → Tree d) : Option (EraseTarget d) :=
   if x = m then
@@ -91,7 +91,7 @@ structure EraseTarget (d : ℕ) where
   else none
 
 /-- Reconstruct a node's maximum in `O(1)` header reads from `newMin`, `s.maximum`, and the
-maximal occupied cluster's cached `maximum` (`[Demaine2015VanEmdeBoas]`, p. 6; `[CLRS2009]`,
+maximal occupied cluster's cached `maximum` ([Demaine2015VanEmdeBoas], p. 6; [CLRS2009],
 Section 20.3, p. 554). -/
 @[expose] def clusterMax {d : ℕ} (newMin : ℕ) (s : Tree d)
     (c : Fin (universeSize d) → Tree d) : ℕ :=
@@ -105,7 +105,7 @@ Section 20.3, p. 554). -/
     else newMin
 
 /-- Delete a key from a van Emde Boas tree, performing at most one recursive call per depth level
-(`[Demaine2015VanEmdeBoas]`, pp. 5–6; `[CLRS2009]`, Section 20.3, p. 554). -/
+([Demaine2015VanEmdeBoas], pp. 5–6; [CLRS2009], Section 20.3, p. 554). -/
 @[expose] def erase : {d : ℕ} → Tree d → ℕ → Tree d
   | 0, .leaf b, x => match b with
     | none => .leaf none
@@ -198,12 +198,6 @@ private theorem empty_of_bounds_eq {t : Tree d} (ht : t.Valid) {m : ℕ}
     simp only [Extrema, hbnone]
     exact not_contains_of_bounds_none hbnone
 
-private theorem bounds_isSome_of_contains {t : Tree d} {x : ℕ}
-    (hx : t.Contains x) : t.bounds.isSome = true := by
-  cases hb : t.bounds with
-  | none => exact False.elim (not_contains_of_bounds_none hb x hx)
-  | some _ => rfl
-
 /-- Any valid summary/cluster pair whose keys strictly exceed `newMin < universeSize (d + 1)` forms
 a valid node when paired with `clusterMax newMin s' c'`. -/
 private theorem valid_node_of_clusterMax {newMin : ℕ} {s' : Tree d}
@@ -218,7 +212,7 @@ private theorem valid_node_of_clusterMax {newMin : ℕ} {s' : Tree d}
   | none =>
     have hcnone : ∀ k y, ¬(c' k).Contains y := by
       intro k y hy
-      have hsk : s'.Contains k.val := (ho' k).mpr (bounds_isSome_of_contains hy)
+      have hsk : s'.Contains k.val := (ho' k).mpr ((hc' k).bounds_isSome_iff.mpr ⟨y, hy⟩)
       exact not_contains_of_bounds_none hbs k.val hsk
     have hmax : clusterMax newMin s' c' = newMin := by
       simp [clusterMax, maximum, hbs]
@@ -258,7 +252,7 @@ private theorem valid_node_of_clusterMax {newMin : ℕ} {s' : Tree d}
       rcases hz with rfl | ⟨k, y, hy, rfl⟩
       · exact ⟨le_rfl, hgt.le⟩
       · refine ⟨(hexcl k y hy).le, ?_⟩
-        have hsk : s'.Contains k.val := (ho' k).mpr (bounds_isSome_of_contains hy)
+        have hsk : s'.Contains k.val := (ho' k).mpr ((hc' k).bounds_isSome_iff.mpr ⟨y, hy⟩)
         have hk_le : k.val ≤ sM := (hse.2.2.2.2 k.val hsk).2
         by_cases hkj : k = j
         · subst k
@@ -438,7 +432,8 @@ private theorem erase_spec {t : Tree d} (ht : t.Valid) (x : ℕ) :
               simp only [contains_node_some] at hM_mem
               rcases hM_mem with hMm | ⟨kM, yM, hyM, _⟩
               · exact False.elim (heq hMm.symm)
-              · have hs_kM : s.Contains kM.val := (ho kM).mpr (bounds_isSome_of_contains hyM)
+              · have hs_kM : s.Contains kM.val :=
+                  (ho kM).mpr ((hc kM).bounds_isSome_iff.mpr ⟨yM, hyM⟩)
                 cases hbs : s.bounds with
                 | none => exact False.elim (not_contains_of_bounds_none hbs kM.val hs_kM)
                 | some sb =>
@@ -463,7 +458,8 @@ private theorem erase_spec {t : Tree d} (ht : t.Valid) (x : ℕ) :
                     have hexcl' : ∀ k y, ¬(k = i ∧ y = cm) → (c k).Contains y →
                         newMin < k.val * universeSize d + y := by
                       intro k y hne hy
-                      have hsk : s.Contains k.val := (ho k).mpr (bounds_isSome_of_contains hy)
+                      have hsk : s.Contains k.val :=
+                        (ho k).mpr ((hc k).bounds_isSome_iff.mpr ⟨y, hy⟩)
                       have hik : sm ≤ k.val := (hse.2.2.2.2 k.val hsk).1
                       by_cases hki : k = i
                       · subst k

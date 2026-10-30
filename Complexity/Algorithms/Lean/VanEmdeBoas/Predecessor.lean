@@ -14,7 +14,7 @@ import Mathlib.Tactic.Linarith
 # Strict van Emde Boas predecessor
 
 This module defines and verifies strict predecessor lookup on recursive minimum-excluded
-van Emde Boas trees (`[Demaine2015VanEmdeBoas]`, p. 5; `[CLRS2009]`, Section 20.3, p. 552).
+van Emde Boas trees ([Demaine2015VanEmdeBoas], p. 5; [CLRS2009], Section 20.3, p. 552).
 The algorithm returns the greatest represented key strictly less than its query, or `none` when
 every represented key is at least the query. Queries need not lie inside `[0, universeSize d)`.
 
@@ -50,7 +50,7 @@ namespace Cslib.Algorithms.Lean.VanEmdeBoas.Tree
 /-- The greatest stored key strictly less than the query, or `none` if it does not exist.
 The cached cluster minimum chooses between one cluster recursion and one summary recursion;
 when no cluster entry precedes `x > m`, the excluded node minimum `m` is returned
-(`[Demaine2015VanEmdeBoas]`, p. 5; `[CLRS2009]`, Section 20.3, p. 552). -/
+([Demaine2015VanEmdeBoas], p. 5; [CLRS2009], Section 20.3, p. 552). -/
 @[expose] def predecessor : {d : ℕ} → Tree d → ℕ → Option ℕ
   | 0, .leaf b, x => match b with
     | none => none

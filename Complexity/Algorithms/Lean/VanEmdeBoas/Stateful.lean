@@ -20,13 +20,12 @@ This module realizes the shared `Cslib.OrderedSet.spec (Fin (universeSize d))` i
 (`contains`, `insert`, `erase`, `minimum`, `successor`) using recursive minimum-excluded
 van Emde Boas trees `Tree d` over the bounded universe `Fin (universeSize d)` of size
 `universeSize d = 2 ^ (2 ^ d)`, and supplies an active-recursive-call depth certificate
-`callDepthBound` of `d + 1` per operation (`[Demaine2015VanEmdeBoas]`, pp. 4–6; `[CLRS2009]`,
+`callDepthBound` of `d + 1` per operation ([Demaine2015VanEmdeBoas], pp. 4–6; [CLRS2009],
 Section 20.3).
 
-Alongside `Cslib.Algorithms.Lean.SearchTree` (linear bound `s.card`) and
-`Cslib.Algorithms.Lean.AVLTree` (comparison-based logarithmic bound `2 * Nat.log 2 (s.card + 1)`),
-this provides a third realization of `Cslib.OrderedSet.spec` with doubly-logarithmic recursion
-depth `d + 1` on bounded integer keys.
+Alongside `Cslib.Algorithms.Lean.SearchTree` (linear worst-case bound `s.card`), this provides a
+bounded-universe realization of `Cslib.OrderedSet.spec` with doubly-logarithmic recursion depth
+`d + 1` on bounded integer keys.
 
 ## Cost model and limitations
 
@@ -39,8 +38,9 @@ operation). In particular:
   `withBounds`, `eraseTarget`, `clusterMax`), immutable `Function.update` cluster-array updates,
   initial tree allocation (`Tree.empty d`, whose span is `O(universeSize d)`), division/modulo
   coordinate arithmetic, `Fin` bounds wrapping, and pure client continuations are **not** charged
-  here. See `Complexity.Algorithms.WordRAM.VanEmdeBoas` for explicit Word-RAM memory and
-  instruction accounting.
+  here. See `Complexity.Algorithms.WordRAM.VanEmdeBoas.Model` (and its companion initialization,
+  membership, insertion, and successor modules; Word-RAM deletion and predecessor remain separate)
+  for explicit Word-RAM memory and instruction accounting.
 
 ## Main definitions
 
