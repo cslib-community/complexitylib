@@ -31,8 +31,9 @@ not assume that every operator is monotone or that every structure is finite or 
 ## References
 
 * [N. Immerman, *Descriptive Complexity*][Immerman1999]
-* [Z. Ésik and K. G. Larsen, *Regular Languages Definable by Lindström Quantifiers*][EsikLarsen2003],
-  Section 2, for multiple scoped bodies in regular-language quantifiers.
+* [Z. Ésik and K. G. Larsen, *Regular Languages Definable by Lindström
+  Quantifiers*][EsikLarsen2003], Section 2, for multiple scoped bodies
+  in regular-language quantifiers.
 -/
 
 public section
