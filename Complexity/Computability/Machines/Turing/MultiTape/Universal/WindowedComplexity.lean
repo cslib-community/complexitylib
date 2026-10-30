@@ -17,7 +17,35 @@ import Mathlib.Tactic.Ring
 /-!
 # The universal function in time `O(t log t)`
 
-TODO docstring
+The universal function (`Turing.MultiTapeTM.Universal.universal`), on a description `d`, an input
+`x` and a number `t` of steps in binary, is computed by the windowed simulation
+(`Turing.MultiTapeTM.Universal.Windowed.sim`, see
+`Turing.MultiTapeTM.Universal.Windowed.universal_eq_sim`) run as a divide-and-conquer recursion
+(`Turing.MultiTapeTM.ComputableInO.divConq`). A problem is the description, a number of steps in
+unary and the windows. A problem of at most one step is solved by a windowed step; a larger one by
+its first half on the cut windows, pasted back, and then its second half likewise.
+
+Let `D` be the length of the encoded description and `M` the largest input symbol. The windows of a
+problem of `n` steps, and those it computes, hold `O(n)` cells, each at most `D + M + 1`, and there
+are at most `D + 1` of them (`Turing.MultiTapeTM.Universal.Windowed.WInv`). Cutting and pasting are
+linear in the encoded windows for each window, so a problem of `n ≥ 2` steps costs
+`O((D + M + 2) ^ 3 * (n + 1))` besides its halves, and a problem of at most one step
+`O((D + M + 2) ^ 6)`. The recursion on `t` steps then costs
+`O((D + M + 2) ^ 6 * (t + 1) * (log₂ (t + 1) + 1))`. The first problem is computed in time linear in
+the encoded input plus `O((D + 1) ^ 3 + (t + 1) * (log₂ (t + 1) + 1))`.
+
+The bound covers time and space alike; the space is not bounded separately here. It depends on the
+largest input symbol `M` because the input cells hold the symbols in unary.
+
+## Main results
+
+* `Turing.MultiTapeTM.Universal.computableInO_universal_nlogn`: the universal function in time and
+  space `O(N + (D + M + 2) ^ 6 * (t + 1) * (log₂ (t + 1) + 1))`, for the length `N` of the encoded
+  input.
+
+## References
+
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
 namespace Turing.MultiTapeTM.Universal.Windowed
@@ -57,7 +85,7 @@ lemma prob_w : ComputableTidilyInO (fun a : Prob => a.2.2) eProb eWin
 
 lemma length_eProb (a : Prob) : (eProb a).length =
     2 * descLen a.1 + 1 + (2 * a.2.1 + 1 + (eWin a.2.2).length) := by
-  show _ = 2 * (eDesc a.1).length + 1 + _
+  change _ = 2 * (eDesc a.1).length + 1 + _
   simp only [length_encPair, encUnary_apply, List.length_replicate]
 
 lemma isBase_inO : ComputableTidilyInO simDC.isBase eProb encBool (fun a => (eProb a).length)
@@ -124,7 +152,8 @@ def Tm (p : Prob × Sol) : ℕ :=
   (p.1.2.2.2.length + 1) *
     ((encPair eProb eSol p).length + (eWin (restore (firstHalf p.1.2.1) p.1.2.2 p.2.1)).length + 1)
 
-lemma mid_inO : ComputableTidilyInO simDC.mid (encPair eProb eSol) (encPair eProb eSaved) Tm Tm := by
+lemma mid_inO :
+    ComputableTidilyInO simDC.mid (encPair eProb eSol) (encPair eProb eSaved) Tm Tm := by
   have hd := prob_d.comp_linear (fst eProb eSol)
   have hn := prob_n.comp_linear (fst eProb eSol)
   have hw := prob_w.comp_linear (fst eProb eSol)
@@ -298,15 +327,15 @@ lemma nodeCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B)
   -- the sizes of the values
   have hA : (eProb (d, n, w)).length ≤ 5 * Z + 2 := by rw [length_eProb]; dsimp only; omega
   have hLp : (eProb (simDC.left (d, n, w))).length ≤ 5 * Z + 2 := by
-    show (eProb (d, firstHalf n, extract (firstHalf n) w)).length ≤ _
+    change (eProb (d, firstHalf n, extract (firstHalf n) w)).length ≤ _
     rw [length_eProb]; dsimp only; unfold firstHalf at sL ⊢; omega
   have hB₁ : (eSol b₁).length ≤ 3 * Z + 1 := by
     rw [length_encPair (enc₁ := eWin) (enc₂ := encList encUnary)]; omega
   have hMp : (eProb (simDC.mid ((d, n, w), b₁)).1).length ≤ 5 * Z + 2 := by
-    show (eProb (d, n / 2, extract (n / 2) w₁)).length ≤ _
+    change (eProb (d, n / 2, extract (n / 2) w₁)).length ≤ _
     rw [length_eProb]; dsimp only; omega
   have hS : (eSaved (simDC.mid ((d, n, w), b₁)).2).length ≤ 4 * Z + 2 := by
-    show (eSaved (n / 2, w₁, b₁.2)).length ≤ _
+    change (eSaved (n / 2, w₁, b₁.2)).length ≤ _
     rw [length_encPair (enc₁ := encUnary) (enc₂ := encPair eWin (encList encUnary)),
       length_encPair (enc₁ := eWin) (enc₂ := encList encUnary)]
     simp only [encUnary_apply, List.length_replicate]
@@ -314,7 +343,7 @@ lemma nodeCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B)
   have hB₂ : (eSol b₂).length ≤ 3 * Z + 1 := by
     rw [length_encPair (enc₁ := eWin) (enc₂ := encList encUnary)]; omega
   have hJs : (eSol (simDC.join ((simDC.mid ((d, n, w), b₁)).2, b₂))).length ≤ 3 * Z + 1 := by
-    show (eSol (restore (n / 2) w₁ b₂.1, b₁.2 ++ b₂.2)).length ≤ _
+    change (eSol (restore (n / 2) w₁ b₂.1, b₁.2 ++ b₂.2)).length ≤ _
     rw [length_encPair (enc₁ := eWin) (enc₂ := encList encUnary)]
     simp only [encList_append, List.length_append]
     omega
@@ -443,7 +472,8 @@ public theorem computableInO_universal_nlogn :
       (fun i => (eIn i).length +
         (descLen i.1 + listMax id i.2.1 + 2) ^ 6 * ((i.2.2 + 1) * (Nat.log 2 (i.2.2 + 1) + 1)))
       (fun i => (eIn i).length +
-        (descLen i.1 + listMax id i.2.1 + 2) ^ 6 * ((i.2.2 + 1) * (Nat.log 2 (i.2.2 + 1) + 1))) := by
+        (descLen i.1 + listMax id i.2.1 + 2) ^ 6 *
+          ((i.2.2 + 1) * (Nat.log 2 (i.2.2 + 1) + 1))) := by
   have hev : ∀ i : Desc × List ℕ × ℕ, ∃ c, simDC.Eval baseCost nodeCost
       (i.1, i.2.2, extract i.2.2 (initWin i.1 i.2.1))
       (sim i.1 i.2.2 (extract i.2.2 (initWin i.1 i.2.1))) c ∧

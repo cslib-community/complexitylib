@@ -444,10 +444,6 @@ private lemma forall₂_sim (d : Desc) (n : ℕ) (w : Win) :
     have hs := firstHalf_add_half (n + 2)
     exact forall₂_trans (fun _ _ _ ha hb => ⟨by omega, by omega⟩) h₁ h₂
 
-/-- The windowed simulation keeps the number of windows. -/
-theorem length_sim (d : Desc) (n : ℕ) (w : Win) : (sim d n w).1.2.length = w.2.length :=
-  (forall₂_sim d n w).length_eq.symm
-
 /-- The windowed simulation keeps a bound on the state above the length of the description. -/
 private lemma state_sim {d : Desc} {D : ℕ} (hD : descLen d ≤ D) (n : ℕ) {w : Win}
     (hw : w.1.getD 0 ≤ D) : (sim d n w).1.1.getD 0 ≤ D := by

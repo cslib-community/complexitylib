@@ -60,7 +60,7 @@ private lemma dropU (enc : α ↪ List Bool) :
     ComputableTidilyInO (fun p : List α × ℕ => p.1.drop p.2) (encPair (encList enc) encUnary)
       (encList enc) (fun p => (encPair (encList enc) encUnary p).length)
       fun p => (encPair (encList enc) encUnary p).length :=
-  (ComputableTidilyInDegree.dropUnaryLin enc).inO_one
+  (ComputableInDegree.dropUnary enc).inO_one.tidy
 
 end Primitives
 
