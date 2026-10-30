@@ -1754,6 +1754,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Nondeterministi
 public import Complexity.Computability.Machines.Turing.MultiTape.OutView
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Branch
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ClearShadowed
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.CopyBlock
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Cursor
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapes
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
