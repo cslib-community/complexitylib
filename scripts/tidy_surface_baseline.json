@@ -19,7 +19,6 @@
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/NondeterministicQueryMachine/Compiler.lean": 1,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/NondeterministicQueryMachine/Routines.lean": 1,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/QueryMachine.lean": 7,
- "Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/Reachability.lean": 3,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolySpace.lean": 12,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolySpace/Plain.lean": 4,
  "Complexity/Computability/Machines/Turing/MultiTape/Complexity/PolyTime.lean": 19,

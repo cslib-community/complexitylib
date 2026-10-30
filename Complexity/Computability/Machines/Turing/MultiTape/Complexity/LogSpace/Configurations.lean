@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Machine.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import Complexity.Foundations.Data.BitString.Enumeration
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
+import Complexity.Foundations.Data.Nat.Log
 import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 
@@ -39,6 +40,8 @@ views are reachable (`Turing.MultiTapeNTM.length_le_of_nodup_reachable`), polyno
 * `Turing.MultiTapeNTM.coreCode_injective`: the code identifies views with the same input.
 * `Turing.MultiTapeNTM.length_coreCode_le`: reachable views have short codes.
 * `Turing.MultiTapeNTM.length_le_of_nodup_reachable`: few distinct views are reachable.
+* `Turing.MultiTapeNTM.two_pow_coreLengthBound_log_le`: under a logarithmic space bound,
+  polynomially many.
 
 ## References
 
@@ -144,5 +147,26 @@ theorem length_le_of_nodup_reachable (hs : ntm.RunsInSpace input s)
     exact Cslib.BitString.mem_enumList.mpr
       (Cslib.BitString.length_padWord (length_coreCode_le hs (hreach finite hf)))
   simpa using hcodes.length_le_of_subset hsub
+
+omit [Finite State] in
+/-- **Logarithmic space has polynomially many views**: under the space bound `c * (log₂ n + 1)`,
+the bound `2 ^ (2 * coreLengthBound k State n s + 1)` of
+`Turing.MultiTapeNTM.length_le_of_nodup_reachable` is at most `2 * (2 * (n + 1)) ^ d`, with an
+exponent `d` depending only on `k`, `State` and `c`. -/
+theorem two_pow_coreLengthBound_log_le (k : ℕ) (State : Type) (c n : ℕ) :
+    2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1) ≤
+      2 * (2 * (n + 1)) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) := by
+  set K := 8 + 2 * Nat.card (Option State) + 200 * k
+  have hcore :
+      coreLengthBound k State n (c * (Nat.log2 n + 1)) = K * (c + 1) * (Nat.log2 n + 1) := by
+    simp only [coreLengthBound, K]
+    ring
+  calc 2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1)
+      = 2 * (2 ^ (Nat.log2 n + 1)) ^ (2 * K * (c + 1)) := by
+        rw [hcore, ← pow_mul, pow_succ]
+        ring_nf
+    _ ≤ 2 * (2 * (n + 1)) ^ (2 * K * (c + 1)) := by
+        gcongr
+        exact Nat.two_pow_log2_succ_le n
 
 end Turing.MultiTapeNTM

@@ -1066,6 +1066,8 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Tr
 public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Amplification
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.BPP
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ConfigurationMatrix
 public import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
 public import Complexity.Computability.Complexity.Classes.MIP
 public import Complexity.Computability.Complexity.Classes.MIP.Defs
@@ -2697,6 +2699,7 @@ public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
+public import Complexity.Foundations.LinearAlgebra.Matrix.CoinStep
 public import Complexity.Foundations.LinearAlgebra.Matrix.CopyStage
 public import Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
@@ -2730,13 +2733,14 @@ public import Complexity.Foundations.Order.Changes
 public import Complexity.Foundations.Order.UpperLower
 public import Complexity.Foundations.Probability.AtomCutoffs
 public import Complexity.Foundations.Probability.ColumnDetector
-public import Complexity.Foundations.Probability.CompressionHeavyCount
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
+public import Complexity.Foundations.Probability.HeavyCount
+public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.SecondMoment
@@ -3006,6 +3010,7 @@ public import Complexity.Probability.PairwiseIndependentHash
 public import Complexity.Probability.PairwiseIndependentHash.Affine
 public import Complexity.Probability.PairwiseIndependentHash.AtomChannels
 public import Complexity.Probability.PairwiseIndependentHash.DetectorChannels
+public import Complexity.Probability.PairwiseIndependentHash.HeavyCount
 public import Complexity.Probability.PairwiseIndependentHash.HierarchyChannels
 public import Complexity.Probability.PairwiseIndependentHash.Retention
 public import Complexity.Probability.PairwiseIndependentHash.RetentionChannel
