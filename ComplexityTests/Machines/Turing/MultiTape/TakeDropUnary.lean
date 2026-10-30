@@ -3,6 +3,7 @@ Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
+
 module
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTakeDropUnary
@@ -18,14 +19,6 @@ example :
     ComputableInDegree (fun p : List ℕ × ℕ => p.1.drop p.2)
       (encPair (encList encUnary) encUnary) (encList encUnary) 1 1 :=
   ⟨ComputableInDegree.takeUnary encUnary, ComputableInDegree.dropUnary encUnary⟩
-
-/-- The tidy `dropUnary` is linear, and still serves clients of the former quadratic degree. -/
-example (enc : Bool ↪ List Bool) :
-    ComputableTidilyInDegree (fun p : List Bool × ℕ => p.1.drop p.2)
-      (encPair (encList enc) encUnary) (encList enc) 1 1 ∧
-    ComputableTidilyInDegree (fun p : List Bool × ℕ => p.1.drop p.2)
-      (encPair (encList enc) encUnary) (encList enc) 2 1 :=
-  ⟨ComputableTidilyInDegree.dropUnary enc, (ComputableTidilyInDegree.dropUnary enc).mono⟩
 
 /-! The machine's streaming semantics on a small encoded list, including an empty element. -/
 

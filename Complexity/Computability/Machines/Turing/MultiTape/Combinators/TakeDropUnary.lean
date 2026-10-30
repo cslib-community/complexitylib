@@ -18,8 +18,7 @@ Taking or dropping the first `n` elements of a list encoded by `Turing.MultiTape
 `n` in unary, has cost and output degree one. Both are computed by the one-tape machine
 `Turing.MultiTapeTM.TakeDropUnary.toTM`, which copies the count to its work tape and then streams
 the encoded list once, moving the work head at every element boundary. Folding over the count or
-over the list would cost quadratic time. The tidy form of dropping is
-`Turing.MultiTapeTM.ComputableTidilyInDegree.dropUnary`.
+over the list would cost quadratic time.
 
 ## Main results
 

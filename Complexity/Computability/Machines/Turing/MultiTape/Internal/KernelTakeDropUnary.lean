@@ -14,7 +14,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 import Mathlib.Basic.Finite.Sum
 
-/-! # A one-tape machine cutting a framed word at a unary count
+/-!
+# A one-tape machine cutting a framed word at a unary count
 
 The machine `Turing.MultiTapeTM.TakeDropUnary.toTM keep` reads `frame u ++ List.replicate n true`.
 It skips the frame, copies the count `n` to its work tape (leaving the head on the last `true`),
@@ -25,10 +26,9 @@ head position counts the inner frames still to be taken or dropped. Inner symbol
 the count is positive (`keep = true`) or once it is zero (`keep = false`).
 
 On `u = encList enc l` this emits the encoded `l.take n` or `l.drop n`. The machine runs in time
-linear in its input and uses `n + 2` work-tape cells. This is the realization behind the plain
-`Turing.MultiTapeTM.ComputableInDegree.takeUnary` and `.dropUnary` and the tidy
-`Turing.MultiTapeTM.ComputableTidilyInDegree.dropUnary`; folding over the count or over the list
-would cost quadratic time.
+linear in its input and uses `n + 2` work-tape cells. This is the realization behind
+`Turing.MultiTapeTM.ComputableInDegree.takeUnary` and `.dropUnary`; folding over the count or over
+the list would cost quadratic time.
 
 ## Main definitions
 
