@@ -225,13 +225,8 @@ local instance (priority := high) : DefaultEnc (Option ℕ) := ⟨eSym⟩
 local instance (priority := high) : DefaultEnc TapeAct := ⟨eTA⟩
 local instance : DefaultEnc Tape := ⟨eTape⟩
 
-lemma applyStep_deg : ComputableTidilyInDegree
-    (fun q : (List TapeAct × List Tape) × Tape => applyStep q.1 q.2) enc% enc% 1 1 := by
-  convert (show ComputableTidilyInDegree (fun q : (List TapeAct × List Tape) × Tape =>
 lemma applyStep_deg : ComputableInDegree
-    (fun q : (List TapeAct × List Tape) × Tape => applyStep q.1 q.2)
-    (encPair (encPair (encList eTA) (encList eTape)) eTape)
-    (encPair (encList eTA) (encList eTape)) 1 1 := by
+    (fun q : (List TapeAct × List Tape) × Tape => applyStep q.1 q.2) enc% enc% 1 1 := by
   convert (show ComputableInDegree (fun q : (List TapeAct × List Tape) × Tape =>
     (q.1.1.tail, q.1.2 ++ [if q.1.1.isEmpty then q.2 else q.2.apply (q.1.1.headD (none, 0))]))
     enc% enc% 1 1 by
