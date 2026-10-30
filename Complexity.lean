@@ -1804,6 +1804,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileI
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.BlockNetwork
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Blocks
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Clock
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
