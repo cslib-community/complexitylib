@@ -11,6 +11,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Basic
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 import Complexity.Computability.Machines.Turing.MultiTape.Universal.Input
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Mathlib.Tactic.Linarith
@@ -52,12 +53,6 @@ namespace Turing.MultiTapeTM.Universal
 
 /-! ### Encodings -/
 
-/-- Moves, by their sign. -/
-@[expose] public def encSign : SignType ↪ List Bool :=
-  ⟨fun m => match m with | .zero => [] | .neg => [false] | .pos => [true], by
-    intro a b h
-    cases a <;> cases b <;> simp_all⟩
-
 /-- Symbols and blanks. -/
 public abbrev eSym : Option ℕ ↪ List Bool := encOption encUnary
 
@@ -68,12 +63,6 @@ public abbrev eSym : Option ℕ ↪ List Bool := encOption encUnary
 
 /-- An action on a work tape. -/
 public abbrev TapeAct := Option (Option ℕ) × SignType
-
-/-- The unit type, encoded by the empty word. -/
-@[expose] public def encUnit : Unit ↪ List Bool := ⟨fun _ => [], fun _ _ _ => rfl⟩
-
-@[simp]
-public lemma encUnit_apply (u : Unit) : encUnit u = [] := rfl
 
 /-- Actions on a work tape. -/
 public abbrev eTA : Option (Option ℕ) × SignType ↪ List Bool := encPair (encOption eSym) encSign
@@ -250,12 +239,6 @@ lemma length_encList_eq_le (l : List (Option ℕ)) :
       (encList eSym l).length := by
   cases l <;> simp
 
-lemma length_encInt_add_one (z : ℤ) : (encInt (z + 1)).length ≤ (encInt z).length + 1 := by
-  rw [length_encInt, length_encInt]; split_ifs <;> omega
-
-lemma length_encInt_sub_one (z : ℤ) : (encInt (z - 1)).length ≤ (encInt z).length + 1 := by
-  rw [length_encInt, length_encInt]; split_ifs <;> omega
-
 /-- Applying an action at most doubles a work tape, up to the length of the action. -/
 lemma length_eTape_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
     (eTape (t.apply a)).length ≤ 2 * (eTape t).length + 2 * (eTA a).length + 8 := by
@@ -263,8 +246,8 @@ lemma length_eTape_apply (t : Tape) (a : Option (Option ℕ) × SignType) :
   obtain ⟨w, m⟩ := a
   have := length_encList_eq_le l
   have := length_encList_eq_le r
-  have := length_encInt_add_one h
-  have := length_encInt_sub_one h
+  have := length_encInt_add_one_le h
+  have := length_encInt_sub_one_le h
   rcases w with _ | o <;> rcases m with _ | _ | _ <;>
     simp only [Tape.apply, Tape.move, Tape.write, Tape.read, Option.elim, eTape_apply,
       length_encPair, encList_cons, List.length_append, length_frame, encOption_some,
@@ -295,6 +278,16 @@ lemma length_read_le (t : Tape) : (eSym t.read).length ≤ (eTape t).length := b
   have := length_eSym_headD_le t.right
   simp only [Tape.read, eTape_apply, length_encPair] at *
   omega
+
+/-- The symbols under the heads are no longer than the work tapes. -/
+lemma length_encList_map_read_le (ts : List Tape) :
+    (encList eSym (ts.map Tape.read)).length ≤ (encList eTape ts).length := by
+  induction ts with
+  | nil => simp
+  | cons t ts ih =>
+    have := length_read_le t
+    simp only [List.map_cons, encList_cons, List.length_append, length_frame] at *
+    omega
 
 /-! ### All work tapes -/
 
@@ -350,19 +343,11 @@ public theorem reads_inO :
     ComputableTidilyInO (fun ts : List Tape => ts.map Tape.read) (encList eTape) (encList eSym)
       (fun ts => (ts.length + 1) * ((encList eTape ts).length + 1))
       fun ts => (encList eTape ts).length := by
-  have hmap (ts : List Tape) : (encList eSym (ts.map fun t => t.read)).length ≤
-      (encList eTape ts).length := by
-    induction ts with
-    | nil => simp
-    | cons t ts ih =>
-      have := length_read_le t
-      simp only [List.map_cons, encList_cons, List.length_append, length_frame] at *
-      omega
   refine ((mapWith (encP := encUnit) (f := fun p : Unit × Tape => p.2.read)
     (read_deg.inO_one.comp_linear (snd encUnit eTape)) (const ())
     (of_linear (.of_eq fun _ => rfl))).mono 8 (fun ts => ?_) fun ts => ?_)
   all_goals
-    have h₁ := hmap ts
+    have h₁ : (encList eSym (ts.map fun t => t.read)).length ≤ _ := length_encList_map_read_le ts
     have h₂ : listMax (fun t => (encPair encUnit eTape ((), t)).length) ts ≤
         (encList eTape ts).length + 1 :=
       listMax_le fun t ht => by
@@ -464,29 +449,26 @@ lemma length_wTable_le :
     (encList (encPair eKey eAct) c.1.1.table).length ≤ (eWCtx c).length := by
   rw [length_eWCtx]; simp only [eDesc_apply, length_encPair]; omega
 
-lemma length_le_wTime {A B : ℕ}
+lemma length_le_wTime {A B k : ℕ}
     (hA : A ≤ c.1.2.workTapes.length + c.1.1.table.length)
-    (hB : B ≤ (eWCtx c).length) :
-    (A + 1) * ((eDesc c.1.1).length + 1) * (B + 1) ≤ wTime c :=
-  (Nat.mul_le_mul (Nat.mul_le_mul_right _ (by omega)) (by omega)).trans
-    (Nat.le_add_right _ _)
+    (hB : B ≤ (eWCtx c).length) (hk : k ≤ (eDesc c.1.1).length + 1) :
+    (A + 1) * k * (B + 1) ≤ wTime c :=
+  (Nat.mul_le_mul (Nat.mul_le_mul (by omega) hk) (by omega)).trans (Nat.le_add_right _ _)
 
-lemma length_le_wTime' {A B : ℕ}
-    (hA : A ≤ c.1.2.workTapes.length + c.1.1.table.length)
-    (hB : B ≤ (eWCtx c).length) : (A + 1) * (B + 1) ≤ wTime c :=
-  (Nat.mul_le_mul_right (B + 1)
-    (Nat.le_mul_of_pos_right (A + 1) (Nat.succ_pos _))).trans
-      (length_le_wTime c hA hB)
+/-- An entry of the table is no longer than the context. -/
+lemma length_le_of_mem_table {e : Key × Act} (he : e ∈ c.1.1.table) :
+    (encPair eKey eAct e).length ≤ (eWCtx c).length :=
+  (length_le_encList_of_mem (encPair eKey eAct) he).trans (length_wTable_le c)
+
+/-- An entry of the table is no longer than the description. -/
+lemma length_le_eDesc_of_mem_table {e : Key × Act} (he : e ∈ c.1.1.table) :
+    (encPair eKey eAct e).length ≤ (eDesc c.1.1).length := by
+  have := length_le_encList_of_mem (encPair eKey eAct) he
+  simp only [eDesc_apply, length_encPair] at *
+  omega
 
 lemma length_wKey_le : (eKey (wKey c)).length ≤ 4 * (eWCtx c).length + 4 := by
-  have h₂ : (encList eSym (c.1.2.workTapes.map Tape.read)).length ≤
-      (encList eTape c.1.2.workTapes).length := by
-    induction c.1.2.workTapes with
-    | nil => simp
-    | cons t ts ih =>
-      have := length_read_le t
-      simp only [List.map_cons, encList_cons, List.length_append, length_frame] at *
-      omega
+  have h₂ := length_encList_map_read_le c.1.2.workTapes
   have h₃ : (c.1.2.state.getD 0) ≤ (eSym c.1.2.state).length := by cases c.1.2.state <;> simp
   rw [length_eWCtx]
   simp only [wKey, eKey_apply, length_encPair, encUnary_apply, List.length_replicate]
@@ -513,7 +495,7 @@ abbrev WPart {β : Type} (f : WCtx → β) (enc : β ↪ List Bool) : Prop :=
   ComputableTidilyInO f eWCtx enc wTime fun c => (eWCtx c).length
 
 lemma le_wTime (c : WCtx) : (eWCtx c).length + 1 ≤ wTime c :=
-  by simpa using length_le_wTime' c (A := 0) (Nat.zero_le _) le_rfl
+  by simpa using length_le_wTime c (A := 0) (Nat.zero_le _) le_rfl (k := 1) (by omega)
 
 /-- One step of the simulation without the input, within the time `wTime` and linear space. -/
 public theorem stepWith_inO :
@@ -533,9 +515,9 @@ public theorem stepWith_inO :
     all_goals
       have h₁ := length_eWCtx c
       have h₂ := le_wTime c
-      have h₃ := length_le_wTime' c (A := c.1.2.workTapes.length) (by omega)
-        (B := (encList eTape c.1.2.workTapes).length) (by omega)
-      dsimp only [eWCtx, Function.comp_apply] at *
+      have h₃ := length_le_wTime c (A := c.1.2.workTapes.length) (by omega)
+        (B := (encList eTape c.1.2.workTapes).length) (by omega) (k := 1) (by omega)
+      simp only [eWCtx, Nat.mul_one] at *
       omega
   have hsym : WPart (fun c => c.2) eSym :=
     (snd (encPair eDesc eCfg) eSym).mono 1 (fun c => by
@@ -557,14 +539,6 @@ public theorem stepWith_inO :
       have hk := length_wKey_le c
       have ht := length_wTable_le c
       have hst := le_wTime c
-      have hentry (e : Key × Act) (he : e ∈ c.1.1.table) :
-          (encPair eKey eAct e).length ≤ (eWCtx c).length :=
-        (length_le_encList_of_mem (encPair eKey eAct) he).trans ht
-      have hentryD (e : Key × Act) (he : e ∈ c.1.1.table) :
-          (encPair eKey eAct e).length ≤ (eDesc c.1.1).length := by
-        have := length_le_encList_of_mem (encPair eKey eAct) he
-        simp only [eDesc_apply, length_encPair] at *
-        omega
       have hlinear : (eWCtx c).length + 1 ≤
           ((eDesc c.1.1).length + 1) * ((eWCtx c).length + 1) := by nlinarith
       have hlen := length_le_length_encList (encPair eKey eAct) c.1.1.table
@@ -574,16 +548,16 @@ public theorem stepWith_inO :
             ((eKey (e.1, wKey c).1).length + (eKey (e.1, wKey c).2).length + 1))
           c.1.1.table ≤ 32 * ((eDesc c.1.1).length + 1) * ((eWCtx c).length + 1) :=
         listMax_le fun e he => by
-          have h₁ := hentry e he
+          have h₁ := length_le_of_mem_table c he
           have h₂ := length_le_encPair_left eKey eAct e
-          have hD := hentryD e he
+          have hD := length_le_eDesc_of_mem_table c he
           have h₃ : ((eKey e.1).length + 1) * ((eKey e.1).length + (eKey (wKey c)).length + 1)
               ≤ ((eDesc c.1.1).length + 1) * (5 * ((eWCtx c).length + 1)) :=
             Nat.mul_le_mul (by omega) (by omega)
           simp only [length_encPair] at *
           nlinarith
       have h₂ := length_le_wTime c (A := c.1.1.table.length) (by omega)
-        (B := (eWCtx c).length) le_rfl
+        (B := (eWCtx c).length) le_rfl le_rfl
       have h₃ := Nat.mul_le_mul_left (c.1.1.table.length + 1) (Nat.add_le_add
         (Nat.add_le_add (hk.trans (show 4 * (eWCtx c).length + 4 ≤
           4 * ((eDesc c.1.1).length + 1) * ((eWCtx c).length + 1) by nlinarith))
@@ -597,7 +571,7 @@ public theorem stepWith_inO :
           (encPair eKey eKey (e.1, wKey c)).length) c.1.1.table ≤
           32 * ((eWCtx c).length + 1) :=
         listMax_le fun e he => by
-          have h₁ := hentry e he
+          have h₁ := length_le_of_mem_table c he
           have h₂ := length_le_encPair_left eKey eAct e
           simp only [length_encPair] at *
           omega
@@ -643,8 +617,9 @@ public theorem stepWith_inO :
         have := length_eWCtx c
         simp only [eAct_apply, length_encPair] at *
         omega
-      have h₂ := length_le_wTime' c (A := c.1.2.workTapes.length) (by omega)
-        (B := (eWCtx c).length) le_rfl
+      have h₂ := length_le_wTime c (A := c.1.2.workTapes.length) (by omega)
+        (B := (eWCtx c).length) le_rfl (k := 1) (by omega)
+      rw [Nat.mul_one] at h₂
     · have h₁ := Nat.mul_le_mul_left (c.1.2.workTapes.length + 1) (Nat.add_le_add_right hp 1)
       dsimp only [eWCtx, Function.comp_apply] at *
       nlinarith

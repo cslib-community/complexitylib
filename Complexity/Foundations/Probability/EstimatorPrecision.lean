@@ -17,8 +17,8 @@ import Mathlib.Tactic.Ring
 /-!
 # Precision pays for scale and source changes
 
-This module proves the precision calculation in [OpenAI2026LogSpace, Section 7.3]. A task with
-budget `M`, rank `i`, endpoint rate `a`, and source rate `u` has precision
+This module proves the precision calculation in [OpenAI2026LogSpace, Section 7.4, p. 38].
+A task with budget `M`, rank `i`, endpoint rate `a`, and source rate `u` has precision
 `M / K + (log₂ a + log₂ u) / 2 - A * i`. This is the source's formula with the two logarithms of
 inverse rates rewritten. Subtracting two task precisions gives the exact budget, rate, and rank
 contributions; budget-zero tasks with rates in `(0, 1]` are inactive when `A ≥ 0`.
@@ -51,7 +51,8 @@ its recursive error bound.
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 7.3, equations labelled `est-precision`, `est-child-precision`, and `est-scale-slack`
+  Section 7.4, p. 38, equations (7.8)–(7.10), labelled `est-precision`, `est-child-precision`,
+  and `est-scale-slack`
   (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 

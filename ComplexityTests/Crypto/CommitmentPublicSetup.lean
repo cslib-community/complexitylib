@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Crypto.Computational.Commitment
+import Complexity.Crypto.Computational.Commitment.Basic
 import Complexity.Crypto.Negligible.Basic
 
 /-!
