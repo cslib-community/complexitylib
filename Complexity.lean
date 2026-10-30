@@ -1463,6 +1463,7 @@ public import Complexity.Computability.Kolmogorov.TimeBounded
 public import Complexity.Computability.Kolmogorov.Uncomputability
 public import Complexity.Computability.Languages.Slice
 public import Complexity.Computability.MCSP.AntiChecker
+public import Complexity.Computability.MCSP.AntiChecker.Certificate
 public import Complexity.Computability.MCSP.Basic
 public import Complexity.Computability.MCSP.FormulaMagnification
 public import Complexity.Computability.MCSP.HardnessConsequences
