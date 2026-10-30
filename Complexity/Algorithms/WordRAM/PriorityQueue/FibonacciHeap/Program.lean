@@ -672,20 +672,33 @@ def tGet (_n : ℕ) : ℕ := 16
 def tIns (_n : ℕ) : ℕ := 130
 /-- Amortized instruction bound for `decreaseKey` (including dispatch and cascading cuts). -/
 def tDec (_n : ℕ) : ℕ := 340
-/-- Amortized instruction bound for `extractMin` (`O(log n)`). -/
+/-- Amortized instruction bound for `extractMin` (`O(log n + 1)`). -/
 def tExt (n : ℕ) : ℕ := 420 * (Nat.log 2 n + 1)
 
-/-- Per-operation amortized instruction charge for `FibonacciHeap`. -/
-def charge (n : ℕ) (_s : IndexedMinPQ.State n) : IndexedMinPQ.Op n → ℕ
+/-- Per-operation amortized instruction charge for `FibonacciHeap`, charging
+`tExt (IndexedMinPQ.dom s).card` on `.extractMin` in terms of the current number of stored
+elements `(IndexedMinPQ.dom s).card`. -/
+def charge (n : ℕ) (s : IndexedMinPQ.State n) : IndexedMinPQ.Op n → ℕ
   | .isEmpty => tEmpty n
   | .getKey _ => tGet n
   | .insert _ _ => tIns n
   | .decreaseKey _ _ => tDec n
-  | .extractMin => tExt n
+  | .extractMin => tExt (IndexedMinPQ.dom s).card
+
+/-- The current number of stored elements `(IndexedMinPQ.dom s).card` is at most `n`, so
+`charge n s .extractMin ≤ tExt n`. -/
+theorem charge_extractMin_le_tExt (n : ℕ) (s : IndexedMinPQ.State n) :
+    charge n s .extractMin ≤ tExt n := by
+  simp only [charge, tExt]
+  have hcard : (IndexedMinPQ.dom s).card ≤ n := by
+    simpa using (IndexedMinPQ.dom s).card_le_univ
+  have hlog : Nat.log 2 (IndexedMinPQ.dom s).card ≤ Nat.log 2 n :=
+    Nat.log_mono_right hcard
+  omega
 
 /-! ## Exact-ALU step rules, footprint framing, and `RawState.ofData` update lemmas -/
 
-theorem execWithin_exactAdd {w : ℕ} {x : Data rFib} {d i j : Fin rFib}
+theorem execWithin_exactAdd {w r : ℕ} {x : Data r} {d i j : Fin r}
     (hfit : Fits w (x.regs i + x.regs j)) :
     ExecWithin (B := .exact) w (.op (.exactBin .add d i j)) x
       (x.set d (x.regs i + x.regs j)) 1 :=
@@ -694,7 +707,7 @@ theorem execWithin_exactAdd {w : ℕ} {x : Data rFib} {d i j : Fin rFib}
     simp only [BinOp.evalExact, Option.bind_some]
     exact Data.put_of_fits hfit)
 
-theorem execWithin_exactSub {w : ℕ} {x : Data rFib} {d i j : Fin rFib}
+theorem execWithin_exactSub {w r : ℕ} {x : Data r} {d i j : Fin r}
     (hle : x.regs j ≤ x.regs i) (hfit : Fits w (x.regs i - x.regs j)) :
     ExecWithin (B := .exact) w (.op (.exactBin .sub d i j)) x
       (x.set d (x.regs i - x.regs j)) 1 :=

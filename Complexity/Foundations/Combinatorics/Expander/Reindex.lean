@@ -48,6 +48,7 @@ def reindexRot (forward : V → W) (backward : W → V) (rotate : V × D → V �
   (forward next.1, next.2)
 
 /-- Rename the vertices of a graph, retaining every outgoing and return edge label. -/
+@[reducible]
 def reindex (G : RotationMap V D) (e : V ≃ W) : RotationMap W D where
   rot := reindexRot e e.symm G.rot
   rot_involutive p := by simp [reindexRot]

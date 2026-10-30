@@ -3,8 +3,9 @@
 
 This optional cache never replaces validation. Only the latest current attempt of the
 authoritative Lean workflow may supply an artifact; misses leave the normal build to run.
-The complete root build directory is validated and swapped as a unit, preserving Lake's
+Reusable root build outputs are validated and swapped as a unit, preserving Lake's
 shared hardlinked artifacts and avoiding partially restored module/trace bundles.
+Lake's transient module setup inputs are omitted; compilation recreates them when needed.
 """
 
 from __future__ import annotations
@@ -72,6 +73,18 @@ def artifact_name(sha: str, run_id: int, attempt: int) -> str:
     return f"lean-build-{sha}-{run_id}-{attempt}"
 
 
+def module_setup_input(path: Path) -> bool:
+    """Recognize only Lake's module/IR compiler setup inputs, relative to the build directory.
+
+    Lake 4.36's Module.setupFile/irSetupFile use these suffixes under ir/. They are
+    written inside the compile actions, absent from checkArtifactsExist/getMTime and
+    ModuleOutputArtifacts, and unnecessary for reusing a completed module build.
+    Other JSON outputs and every artifact, hash and trace remain in the handoff.
+    """
+    return (len(path.parts) > 1 and path.parts[0] == "ir"
+            and path.name.endswith((".setup.json", ".irsetup.json")))
+
+
 def pack(root: Path, output: Path, env: dict) -> str:
     context = source_context(root, env, "merge_group")
     run_id, attempt = (int(env.get(key, "0")) for key in ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT"))
@@ -83,15 +96,24 @@ def pack(root: Path, output: Path, env: dict) -> str:
     build = root / ".lake/build"
     directory(build)
     files = []
+    omitted_files = omitted_bytes = 0
     for path in sorted(build.rglob("*")):
         info = path.lstat()
         if stat.S_ISDIR(info.st_mode):
             continue
         require(stat.S_ISREG(info.st_mode), f"Non-regular build output: {path}")
+        # Validate the file type before omitting anything: setup-named links are
+        # rejected by the same boundary checks as every other build entry.
+        if module_setup_input(path.relative_to(build)):
+            omitted_files += 1
+            omitted_bytes += info.st_size
+            continue
         files.append((path, info))
     total = sum(info.st_size for _, info in files)
     require(0 < len(files) <= MAX_FILES and 0 < total <= MAX_BYTES,
-            "Build output count or size is outside handoff limits")
+            f"Build output count or size is outside handoff limits: {len(files)} files / "
+            f"{total} bytes (limits {MAX_FILES} files / {MAX_BYTES} bytes; omitted "
+            f"{omitted_files} module setup inputs / {omitted_bytes} bytes)")
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="lean-handoff-pack-", dir=output.parent) as temp:
         stage = Path(temp)
@@ -107,7 +129,8 @@ def pack(root: Path, output: Path, env: dict) -> str:
                 with path.open("rb") as source:
                     bundle.addfile(member, source)
         compressed = archive.stat().st_size
-        require(compressed <= MAX_ARCHIVE_BYTES, "Handoff archive is too large")
+        require(compressed <= MAX_ARCHIVE_BYTES,
+                f"Handoff archive is too large: {compressed} bytes (limit {MAX_ARCHIVE_BYTES})")
         require(source_context(root, env, "merge_group") == context,
                 "Sources changed while packing the build")
         metadata = {**context, "producer": {"event": "merge_group", "run_id": run_id,
@@ -120,7 +143,9 @@ def pack(root: Path, output: Path, env: dict) -> str:
     if env.get("GITHUB_OUTPUT"):
         with Path(env["GITHUB_OUTPUT"]).open("a") as handle:
             handle.write(f"artifact-name={name}\n")
-    print(f"Build handoff packed: {len(files)} files, {compressed} bytes ({name})")
+    print(f"Build handoff packed: {len(files)} files / {total} bytes, "
+          f"{compressed} compressed bytes; omitted {omitted_files} module setup inputs / "
+          f"{omitted_bytes} bytes ({name})")
     return name
 
 

@@ -240,7 +240,7 @@ decreasing_by omega
 /-- `trinomialStepRem B` is always at most `2`. -/
 theorem trinomialStepRem_le_two (B : ℕ) : trinomialStepRem B ≤ 2 := by
   induction B using Nat.strong_induction_on with
-  | h B ih =>
+  | _ B ih =>
     rw [trinomialStepRem]
     split_ifs with hB
     · exact hB
@@ -249,7 +249,7 @@ theorem trinomialStepRem_le_two (B : ℕ) : trinomialStepRem B ≤ 2 := by
 /-- `trinomialStepAux B` is at most `B`. -/
 theorem trinomialStepAux_le (B : ℕ) : trinomialStepAux B ≤ B := by
   induction B using Nat.strong_induction_on with
-  | h B ih =>
+  | _ B ih =>
     rw [trinomialStepAux]
     split_ifs with hB
     · exact Nat.zero_le B
@@ -280,7 +280,7 @@ theorem trinomialStepLoop_exec {w : ℕ} (B : ℕ) {acc : ℕ} {x : Data 4}
     Exec w trinomialStepLoop x (trinomialStepLoopData B acc x)
       (5 * trinomialStepAux B + 2) := by
   induction B using Nat.strong_induction_on generalizing acc x with
-  | h B ih =>
+  | _ B ih =>
     by_cases hlt : 2 < B
     · have hc : (Cond.lt (2 : Fin 4) 0).Holds x := by
         simp [Cond.Holds, hrem, htwo, hlt]

@@ -106,7 +106,7 @@ theorem log2Loop_exec {w : ℕ} (rem : ℕ) {acc : ℕ} {x : Data 3}
     (hfit_rem : Fits w rem) (hfit_acc : Fits w (acc + Nat.log 2 rem)) :
     Exec w log2Loop x (log2LoopData rem acc x) (4 * Nat.log 2 rem + 2) := by
   induction rem using Nat.strong_induction_on generalizing acc x with
-  | h rem ih =>
+  | _ rem ih =>
     by_cases hlt : 1 < rem
     · have hc : (Cond.lt (2 : Fin 3) 0).Holds x := by
         simp [Cond.Holds, hrem, hone, hlt]
@@ -180,7 +180,7 @@ theorem clog2Loop_exec {w : ℕ} (rem : ℕ) {acc : ℕ} {x : Data 3}
     (hfit_rem1 : Fits w (rem + 1)) (hfit_acc : Fits w (acc + Nat.clog 2 rem)) :
     Exec w clog2Loop x (clog2LoopData rem acc x) (5 * Nat.clog 2 rem + 2) := by
   induction rem using Nat.strong_induction_on generalizing acc x with
-  | h rem ih =>
+  | _ rem ih =>
     by_cases hlt : 1 < rem
     · have hc : (Cond.lt (2 : Fin 3) 0).Holds x := by
         simp [Cond.Holds, hrem, hone, hlt]

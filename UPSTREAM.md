@@ -279,6 +279,13 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   the source credit to Mathlib, Patrick Stevens and Bolton Bailey. These are mathematical
   statements, not native instructions or an assumed solver. See
   [#1442](https://github.com/cslib-community/complexitylib/issues/1442).
+  The native cyclic-convolution prerequisite under
+  [#1701](https://github.com/cslib-community/complexitylib/issues/1701) reuses that quotient in
+  `Foundations/RingTheory/CyclicIntRing/Coefficients.lean` and supplies actual standard signed
+  array multiplication in `Algorithms/WordRAM/MatrixMultiplication/CyclicConvolution/`.
+  Source indexing/quotient mathematics adapt pinned Anthropic `RingOps.lean`/`Cyclic.lean`;
+  the native execution, frame and `42p² + 9p + 4` pre-halt instruction bound are proved directly.
+  Full Strassen/modular-counter composition, fast prime selection and #1394 remain open.
   `Algorithms/ExactTriangle/{Splitting,Witnesses}.lean` adapts the complete finite splitting and
   witness recovery component ([#1447](https://github.com/cslib-community/complexitylib/issues/1447)),
   using the existing matrices, lopsided graph and `Set.EqOn` answer API. Computable integer parameters
@@ -404,6 +411,42 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   initialized prefixes have a positive logarithmic width threshold and polynomial words/support
   independent of the physical width. Outer parameter/prime selection and instance iteration,
   aggregate solving/witness reconstruction and the whole #1394 endpoint remain separate.
+  The original-weight consumer in
+  [#1639](https://github.com/cslib-community/complexitylib/issues/1639) composes actual producer,
+  product and verification code in 400 registers. It reads original interleaved pairs, computes
+  the piece interval with the native square-root kernel, and invokes the entire renamed
+  32-register signed verifier only while searching and on nonzero actual answers. The native
+  scan counter is at most existing finite false positives plus the returned 0/1 flag. Thus a
+  failed record has no additive successful-scan charge. Caller memory outside the original
+  product window and the complete producer bank are framed; widths and all-prefix words/support
+  are derived from original headers/weights at every sufficiently wide physical word size.
+  Source Light semantics and costs are not imported or simulated by assumption. The native
+  verifier returns its last zero, while finite `scanPiece` returns its first; failure and
+  original-weight soundness agree. The existing decoded queries now expose chunk membership,
+  nonrepetition and rank order, with an actual initialized client. The general raw writer bound
+  is placed at `WriteMatrices.entry_le_one`, and shared finite piece coordinates are in the
+  narrow `ExactTriangle.PieceBounds` module, reused by preparation and recovery. Parameter/prime
+  choice, the outer ET loop, aggregate savings and the full #1394 endpoint remain open; no curated
+  abstract changes.
+  The bounded fixed-prime continuation
+  [#1662](https://github.com/cslib-community/complexitylib/issues/1662) runs the producer once
+  and traverses every actual occupied ordinal using the full 400-register callee in a fixed
+  416-register program. Its initialized verdict decides original ET across all records;
+  protected readback survives dirty scratch via `Instances.Output.reframe`, which reframes
+  against the current state without asserting preservation of the old external frame.
+  Distinct record/query occurrences inject into the existing global `failedScans`; actual
+  total scans satisfy `S≤F(p)+returnedFlag`, with only one possible successful-return flag.
+  Native preparation, products, root/query/controller/loop/halt and original verification
+  costs are charged. Aggregate product work is bounded by
+  `138412032*(19m+1)*n³*g/D^(1/18)` under the unchanged positive thin geometry and prime window;
+  one-time `690n²Dg`, explicit query/root/controller work and one global failed-scan term remain
+  separate. The actual program has original-input logarithmic admission and polynomial
+  all-prefix words/support independently of every larger physical width. Validation and
+  integration are tracked in #1662; this is not a parameter/prime-selection host or a completed
+  aggregate source exponent. The source's Light host uses piece-major rounds and
+  per-round matrix construction; the native producer prepares the chunk-major catalogue once
+  and later products stop after success. No source-trace equivalence or Light simulation is
+  assumed. The full ordinary-3SUM 1.9992 objective remains open under #1394; no abstract changes.
   Stage `exec_*` lemmas are internal implementation APIs exported across proof modules;
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies

@@ -153,6 +153,20 @@ Open `http://localhost:8000` to browse and search. The **API documentation** wor
 A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
 the directory argument above with the extracted artifact directory.
 
+If removing a source module leaves `check_docs.py` reporting obsolete modules, rebuild the
+generated documentation after any documentation build has stopped:
+
+```bash
+lake -d docbuild clean docbuild
+lake -d docbuild build Complexity:docs
+python3 scripts/check_docs.py
+```
+
+The named clean removes only `docbuild/.lake/build`, including HTML, per-module data and the
+SQLite database; deleting HTML alone leaves stale data behind. Library and dependency build
+outputs, package checkouts and Lake's artifact cache are retained. Documentation for all imported
+modules is regenerated, which can take substantial time even with warm library build outputs.
+
 #### Checked guide
 
 The [guide](guide/ComplexityGuide.lean) introduces the library area by area, with Lean examples

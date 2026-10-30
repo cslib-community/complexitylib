@@ -378,7 +378,7 @@ theorem abs_signedCount_accepted_le [Finite ι] [Finite U] [Finite M] (hP : P.Un
     (hS : RectangleBias S K b) :
     |signedCount S P.accepted| ≤ 2 * b * P.accepted.ncard + ((K - 1) ^ 2 * P.size : ℕ) := by
   induction hn : P.accepted.ncard using Nat.strong_induction_on generalizing P with
-  | h n ih =>
+  | ind n ih =>
     subst hn
     by_cases hthick : ∃ t ≤ P.length, ∃ x ∈ P.accepted,
         K ≤ (P.sweep.pastSide t x).ncard ∧ K ≤ (P.sweep.futureSide t x).ncard
