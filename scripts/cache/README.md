@@ -26,6 +26,20 @@ CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, L
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
 complete set on every run, although `.lake` usually has most of it.
 
+Mathlib downloads are retried in the same checkout by `scripts/cache/get_mathlib.py`: at most
+three ordinary `lake exe cache get` attempts, each limited to three minutes, with two-second
+pauses. Completed archives remain in place, so the pinned Mathlib client retries only missing
+downloads. Exhausted attempts warn and leave the strict build/check commands to compile what is
+missing. Only the attempt's own process group is stopped on timeout on POSIX systems.
+
+Lean CI and API docs disable only lean-action's built-in Mathlib fetch and call this helper with
+`--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
+`https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
+explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
+their existing client-default/environment behavior. API docs also use the existing missing-only
+Complexitylib restore before generation. Cache failures remain optional; installation and
+validation failures remain strict.
+
 The Lean workflows also restore elan and the toolchain named in `lean-toolchain` (`~/.elan`,
 about 600 MB) from the Actions cache before `leanprover/lean-action` runs, so that the action does
 not download the toolchain. On a miss, `.github/actions/install-lean` installs them with bounded
