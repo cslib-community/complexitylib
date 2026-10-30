@@ -52,7 +52,6 @@
  "Complexity/Computability/Machines/Turing/MultiTape/Halting/Computable.lean": 5,
  "Complexity/Computability/Machines/Turing/MultiTape/Halting/Rice.lean": 2,
  "Complexity/Computability/Machines/Turing/MultiTape/Probabilistic/QueryTake.lean": 2,
- "Complexity/Computability/Machines/Turing/MultiTape/Universal/Complexity.lean": 6,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/Compose.lean": 7,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/Decode.lean": 1,
  "Complexity/Computability/Machines/Turing/MultiTape/Universal/InPlace.lean": 9,
