@@ -32,8 +32,8 @@ pauses. Completed archives remain in place, so the pinned Mathlib client retries
 downloads. Exhausted attempts warn and leave the strict build/check commands to compile what is
 missing. Only the attempt's own process group is stopped on timeout on POSIX systems.
 
-Lean CI and API docs disable only lean-action's built-in Mathlib fetch and call this helper with
-`--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
+Lean CI, API docs and Comparator disable only lean-action's built-in Mathlib fetch and call this helper
+with `--lean-action`, preserving that action's URL handling: unset `MATHLIB_CACHE_GET_URL` selects
 `https://cache.mathlib.org/mathlib4`, an empty value selects the Mathlib client's default, and an
 explicit URL is retained. Local `get.sh` and the Guide workflow use the same retries while retaining
 their existing client-default/environment behavior. API docs also use the existing missing-only
