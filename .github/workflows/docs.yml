@@ -34,6 +34,9 @@ jobs:
           test: "false"
           lint: "false"
       - name: Generate API documentation
+        # Limit Lake/doc-gen4 worker pools to reduce hosted-runner memory pressure.
+        env:
+          LEAN_NUM_THREADS: "2"
         run: DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs
       # Also catches library changes that break one of the guide's examples.
       - name: Build the guide
