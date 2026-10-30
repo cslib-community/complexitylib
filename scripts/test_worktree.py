@@ -98,6 +98,36 @@ class WorktreeCreateTests(unittest.TestCase):
         )
         return proc.stdout.strip() if proc.returncode == 0 else None
 
+    def bootstrap_probe(self) -> dict[str, str]:
+        ensure = self.work / "scripts/cache/ensure.sh"
+        ensure.parent.mkdir(parents=True, exist_ok=True)
+        ensure.write_text(
+            '#!/usr/bin/env bash\nset -eu\n'
+            'printf "%s\\n" "$PWD" >> "$BOOTSTRAP_LOG"\n'
+            'printf "%s\\n" "$0" > .bootstrap-script\n'
+            'if [ -e .lake ]; then printf seeded; else printf empty; fi > .bootstrap-entry\n'
+            'mkdir -p .lake/build\n'
+            'printf fetched > .lake/build/bootstrap-artifact\n',
+            encoding="utf-8",
+        )
+        ensure.chmod(0o755)
+        return {**GIT_ENV, "COMPLEXITYLIB_WORKTREE_SKIP_CACHE_BOOTSTRAP": "0",
+                "BOOTSTRAP_LOG": str(self.tmp / "bootstrap.log")}
+
+    def primary_caches(self) -> pathlib.Path:
+        package = self.work / ".lake/packages/cslib"
+        package.mkdir(parents=True)
+        git(package, "init", "--quiet", "-b", "main")
+        (package / "Source.lean").write_text("package source\n", encoding="utf-8")
+        git(package, "add", "Source.lean")
+        git(package, "commit", "--quiet", "-m", "dependency")
+        for path in (".lake/build/root-output", ".lake/config/lakefile.olean",
+                     ".lake/packages/cslib/.lake/build/dependency-output"):
+            target = self.work / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("primary output\n", encoding="utf-8")
+        return package
+
     def test_remote_only_branch_tracks_origin(self) -> None:
         proc = self.create("feature/takeover", "takeover")
         self.assertEqual(proc.returncode, 0, proc.stderr)
@@ -132,6 +162,155 @@ class WorktreeCreateTests(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("mutually exclusive", proc.stderr)
         self.assertFalse((self.work / ".worktrees/fresh").exists())
+
+    def test_source_only_conflicts_with_copy_flags_in_either_order(self) -> None:
+        for flag in ("--copy-cslib", "--copy-packages"):
+            for flags in (("--source-only", flag), (flag, "--source-only")):
+                with self.subTest(flags=flags):
+                    proc = self.create("feature/fresh", "fresh", *flags)
+                    self.assertNotEqual(proc.returncode, 0)
+                    self.assertIn("cannot be combined", proc.stderr)
+                    self.assertFalse((self.work / ".worktrees/fresh").exists())
+                    self.assertEqual(git(self.work, "branch", "--list", "feature/fresh"), "")
+
+    def test_source_only_bootstraps_without_copying_sources_outputs_or_controls(self) -> None:
+        package = self.primary_caches()
+        before_head = (package / ".git/HEAD").read_bytes()
+        env = self.bootstrap_probe()
+        git(self.work, "add", "scripts/cache/ensure.sh")
+        git(self.work, "commit", "--quiet", "-m", "fixture bootstrap")
+        result = self.create("feature/source-only", "--source-only", "source-only", "HEAD", env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        wt = self.work / ".worktrees/source-only"
+        self.assertEqual((wt / ".bootstrap-entry").read_text(), "empty")
+        self.assertEqual((wt / ".lake/build/bootstrap-artifact").read_text(), "fetched")
+        self.assertFalse((wt / ".lake/packages").exists())
+        self.assertFalse((wt / ".lake/config").exists())
+        self.assertFalse((wt / ".lake/build/root-output").exists())
+        script = pathlib.Path((wt / ".bootstrap-script").read_text().strip())
+        if not script.is_absolute():
+            script = wt / script
+        self.assertEqual(script.resolve(), wt / "scripts/cache/ensure.sh")
+        self.assertEqual((package / ".git/HEAD").read_bytes(), before_head)
+        for path in (".lake/build/root-output", ".lake/config/lakefile.olean",
+                     ".lake/packages/cslib/.lake/build/dependency-output"):
+            self.assertEqual((self.work / path).read_text(), "primary output\n")
+        self.assertFalse((self.work / ".lake/build/bootstrap-artifact").exists())
+        self.assertEqual(pathlib.Path(self.tmp / "bootstrap.log").read_text().strip(), str(wt))
+
+    def test_default_create_still_seeds_before_bootstrap(self) -> None:
+        package = self.primary_caches()
+        env = self.bootstrap_probe()
+        result = self.create("feature/seeded", "seeded", env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        wt = self.work / ".worktrees/seeded"
+        self.assertEqual((wt / ".bootstrap-entry").read_text(), "seeded")
+        for path in (".lake/build/root-output", ".lake/config/lakefile.olean",
+                     ".lake/packages/cslib/.lake/build/dependency-output"):
+            primary, copied = self.work / path, wt / path
+            self.assertEqual(copied.read_bytes(), primary.read_bytes())
+            self.assertFalse(os.path.samefile(primary, copied))
+        copied_package = wt / ".lake/packages/cslib"
+        self.assertTrue(os.path.samefile(package / "Source.lean", copied_package / "Source.lean"))
+        self.assertNotEqual(git(package, "rev-parse", "--absolute-git-dir"),
+                            git(copied_package, "rev-parse", "--absolute-git-dir"))
+        self.assertFalse((self.work / ".lake/build/bootstrap-artifact").exists())
+
+    def test_source_only_respects_explicit_bootstrap_opt_out(self) -> None:
+        self.primary_caches()
+        env = {**self.bootstrap_probe(), "COMPLEXITYLIB_WORKTREE_SKIP_CACHE_BOOTSTRAP": "1"}
+        result = self.create("feature/no-bootstrap", "no-bootstrap", "--source-only", env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        wt = self.work / ".worktrees/no-bootstrap"
+        self.assertFalse((wt / ".lake").exists())
+        self.assertFalse((self.tmp / "bootstrap.log").exists())
+
+    def test_source_only_takeover_tracks_origin_without_initial_copies(self) -> None:
+        self.primary_caches()
+        result = self.create("feature/takeover", "takeover", "--source-only")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        wt = self.work / ".worktrees/takeover"
+        self.assertEqual(git(wt, "rev-parse", "HEAD"), self.feature_sha)
+        self.assertEqual(self.upstream(wt), "origin/feature/takeover")
+        self.assertFalse((wt / ".lake").exists())
+
+    def test_both_create_modes_refuse_existing_target_and_cache_symlinks_before_bootstrap(self) -> None:
+        env = self.bootstrap_probe()
+        protected = self.work / "protected"
+        protected.mkdir()
+        sentinel = protected / "sentinel"
+        sentinel.write_text("primary content\n", encoding="utf-8")
+        for mode in ((), ("--source-only",)):
+            for path in (".", ".lake", ".lake/packages", ".lake/build", ".lake/config",
+                         ".lake/packages/cslib", ".lake/packages/cslib/.lake",
+                         ".lake/packages/cslib/.lake/build", ".lake/packages/cslib/.lake/config",
+                         ".lake/build/lib/lean", ".lake/packages/cslib/.lake/build/lib/lean"):
+                with self.subTest(mode=mode, path=path):
+                    name = f"existing-{len(mode)}-{path.replace('/', '-')}"
+                    wt = self.work / ".worktrees" / name
+                    link = wt if path == "." else wt / path
+                    link.parent.mkdir(parents=True, exist_ok=True)
+                    link.symlink_to(protected, target_is_directory=True)
+                    before = git(self.work, "worktree", "list", "--porcelain")
+                    result = self.create(f"feature/{name}", name, *mode, env=env)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("primary checkout" if path == "." else "symlink", result.stderr)
+                    self.assertEqual(git(self.work, "worktree", "list", "--porcelain"), before)
+                    self.assertFalse((self.tmp / "bootstrap.log").exists())
+                    self.assertEqual(sentinel.read_text(), "primary content\n")
+
+    def test_both_create_modes_refuse_checked_out_cache_symlinks_before_bootstrap(self) -> None:
+        env = self.bootstrap_probe()
+        protected = self.work / "protected"
+        protected.mkdir()
+        sentinel = protected / "sentinel"
+        sentinel.write_text("primary content\n", encoding="utf-8")
+        for index, path in enumerate((".lake/build", ".lake/packages/cslib/.lake/build")):
+            link = self.work / path
+            link.parent.mkdir(parents=True, exist_ok=True)
+            link.symlink_to(protected, target_is_directory=True)
+            git(self.work, "add", path)
+            git(self.work, "commit", "--quiet", "-m", "fixture with unsafe cache link")
+            for mode in ((), ("--source-only",)):
+                with self.subTest(path=path, mode=mode):
+                    name = f"checked-out-{index}-{len(mode)}"
+                    result = self.create(f"feature/{name}", name, "HEAD", *mode, env=env)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("destination cache symlink", result.stderr)
+                    self.assertTrue((self.work / ".worktrees" / name / path).is_symlink())
+                    self.assertFalse((self.tmp / "bootstrap.log").exists())
+                    self.assertEqual(sentinel.read_text(), "primary content\n")
+            git(self.work, "rm", "--quiet", path)
+            git(self.work, "commit", "--quiet", "-m", "remove unsafe fixture cache link")
+
+    def test_nested_cache_links_cannot_redirect_bootstrap_writes_to_primary(self) -> None:
+        env = self.bootstrap_probe()
+        ensure = self.work / "scripts/cache/ensure.sh"
+        with ensure.open("a", encoding="utf-8") as stream:
+            stream.write('printf altered > "$BOOTSTRAP_WRITE_PATH/sentinel"\n')
+        protected = self.work / "protected"
+        protected.mkdir()
+        sentinel = protected / "sentinel"
+        for index, path in enumerate((".lake/build/lib/lean",
+                                      ".lake/packages/cslib/.lake/build/lib/lean")):
+            link = self.work / path
+            link.parent.mkdir(parents=True, exist_ok=True)
+            link.symlink_to(protected, target_is_directory=True)
+            git(self.work, "add", path)
+            git(self.work, "commit", "--quiet", "-m", "fixture with nested cache link")
+            for mode in ((), ("--source-only",)):
+                with self.subTest(path=path, mode=mode):
+                    sentinel.write_text("primary content\n", encoding="utf-8")
+                    log = self.tmp / "bootstrap.log"
+                    log.unlink(missing_ok=True)
+                    name = f"nested-{index}-{len(mode)}"
+                    result = self.create(f"feature/{name}", name, "HEAD", *mode,
+                                         env={**env, "BOOTSTRAP_WRITE_PATH": path})
+                    self.assertEqual((result.returncode != 0, log.exists(), sentinel.read_text()),
+                                     (True, False, "primary content\n"), result.stderr)
+                    self.assertIn("destination cache symlink", result.stderr)
+            git(self.work, "rm", "--quiet", path)
+            git(self.work, "commit", "--quiet", "-m", "remove nested fixture cache link")
 
     def test_create_isolates_seeded_dependency_caches(self) -> None:
         paths = [pathlib.Path(".lake/packages/cslib/.lake") / part
@@ -291,7 +470,8 @@ class WorktreeSeedTests(unittest.TestCase):
 
     def test_destination_cache_symlinks_are_refused_before_writing(self) -> None:
         for path in (".lake", ".lake/packages", ".lake/build", ".lake/config",
-                     ".lake/packages/cslib"):
+                     ".lake/packages/cslib", ".lake/packages/cslib/.lake",
+                     ".lake/packages/cslib/.lake/build", ".lake/packages/cslib/.lake/config"):
             with self.subTest(path=path):
                 target = self.tmp / path.replace("/", "-")
                 external = self.tmp / (target.name + "-external")
