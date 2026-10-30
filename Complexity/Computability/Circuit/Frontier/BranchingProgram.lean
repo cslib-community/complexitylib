@@ -140,6 +140,8 @@ def edges (t : ℕ) : Set (M × (P.newly t → U) × M) :=
 
 /-- The *size* of a program with finitely many edges at each used step: its number of edges.
 The ambient state type need not be finite. -/
+-- Finiteness restricts the public domain; ncard itself does not require it.
+@[nolint unusedArguments]
 noncomputable def size [∀ t : Fin P.length, Finite (P.edges t.val)] : ℕ :=
   ∑ t ∈ Finset.range P.length, (P.edges t).ncard
 
