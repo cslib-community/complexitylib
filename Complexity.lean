@@ -1066,6 +1066,9 @@ public import Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder.Tr
 public import Complexity.Computability.Complexity.Classes.LogSpace.PolyTime
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized
 public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Amplification
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.BPP
+public import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ConfigurationMatrix
+public import Complexity.Computability.Complexity.Classes.LogSpace.Savitch
 public import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
 public import Complexity.Computability.Complexity.Classes.MIP
 public import Complexity.Computability.Complexity.Classes.MIP.Defs
@@ -1552,6 +1555,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine.Termination
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Reachability
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Savitch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Nondeterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
@@ -1753,6 +1757,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Nondeterministi
 public import Complexity.Computability.Machines.Turing.MultiTape.OutView
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Branch
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ClearShadowed
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.CopyBlock
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Cursor
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapes
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
@@ -2121,6 +2126,7 @@ public import Complexity.Computability.WordRAM.Width
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
 public import Complexity.Crypto.Computational.Commitment
+public import Complexity.Crypto.Computational.Commitment.Basic
 public import Complexity.Crypto.Computational.CramerShoup
 public import Complexity.Crypto.Computational.CramerShoup.ProjectiveHash
 public import Complexity.Crypto.Computational.CramerShoup.Reductions
@@ -2354,6 +2360,7 @@ public import Complexity.Foundations.Analysis.RootError
 public import Complexity.Foundations.Analysis.RowCompression
 public import Complexity.Foundations.Analysis.RowCompression.Iteration
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
+public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
 public import Complexity.Foundations.BooleanAnalysis.Bonami
@@ -2692,6 +2699,7 @@ public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
 public import Complexity.Foundations.LinearAlgebra.ImageSparsification
 public import Complexity.Foundations.LinearAlgebra.Interpolation
 public import Complexity.Foundations.LinearAlgebra.KernelVector
+public import Complexity.Foundations.LinearAlgebra.Matrix.CoinStep
 public import Complexity.Foundations.LinearAlgebra.Matrix.CopyStage
 public import Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
 public import Complexity.Foundations.LinearAlgebra.Matrix.CutRank
@@ -2734,6 +2742,7 @@ public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.SecondMoment
+public import Complexity.Foundations.Probability.SourceRelease
 public import Complexity.Foundations.Probability.StochasticAtom
 public import Complexity.Foundations.Quantum.Measurement
 public import Complexity.Foundations.Relation.InductiveCounting
