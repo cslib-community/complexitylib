@@ -2361,6 +2361,8 @@ public import Complexity.Foundations.Analysis.RowCompression.Preloss
 public import Complexity.Foundations.Analysis.RowCompression.Reference
 public import Complexity.Foundations.Analysis.RowCompression.Stationary
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
+public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
+public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import Complexity.Foundations.Analysis.SpecialFunctions.SmoothSwitch
 public import Complexity.Foundations.BooleanAnalysis.Bernoulli
 public import Complexity.Foundations.BooleanAnalysis.Bonami
@@ -2736,12 +2738,16 @@ public import Complexity.Foundations.Probability.ColumnDetector
 public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
+public import Complexity.Foundations.Probability.FourthRootHierarchyParams
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Real
 public import Complexity.Foundations.Probability.Gaussian.Sheppard
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.HeavyCountRarity
 public import Complexity.Foundations.Probability.HierarchyParams
+public import Complexity.Foundations.Probability.PolynomialAtomCutoffs
+public import Complexity.Foundations.Probability.PolynomialAtomFalseOverflow
+public import Complexity.Foundations.Probability.PolynomialAtomRows
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.SecondMoment
 public import Complexity.Foundations.Probability.StochasticAtom
