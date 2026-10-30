@@ -11,7 +11,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformatio
 public import Mathlib.Algebra.Polynomial.Lifts
 public import Mathlib.NumberTheory.Padics.PadicNumbers
 public import Mathlib.RingTheory.Valuation.Integers
-import Mathlib.NumberTheory.Padics.PadicVal.Basic
+import Complexity.Foundations.NumberTheory.Padics.RatValuation
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.LinearCombination
 
@@ -41,8 +41,10 @@ a subring `B` of a `ℚ`-algebra `R` that contains `ℤ_(2)`, the deformed contr
 Cauchy matrix satisfies `F(t + α z) ∈ B[z]`
 (`Cslib.Circuits.Frontier.TensorNetwork.deformedContraction_cauchyMatrix_comp_mem_liftsRing`): the
 manuscript's `F(t + α z) ∈ A[z]` with `B = O`. Coefficients in `ℤ_(2)` reduce modulo `2 ^ p`
-through `Rat.padicIntegerToZModPow`. The algorithmic half of the lemma, evaluating
-`W_xy(t + α ζ) mod 2 ^ p` in polynomial time, belongs to the runtime development.
+through `Rat.padicIntegerToZModPow`; the valuations of integers that the proof uses are
+`Rat.padicValuation_pow_le_of_abs_lt` and `Rat.padicValuation_add_pow_of_abs_lt`. The algorithmic
+half of the lemma, evaluating `W_xy(t + α ζ) mod 2 ^ p` in polynomial time, belongs to the
+runtime development.
 
 ## Main results
 
@@ -72,36 +74,20 @@ open scoped WithZero
 
 /-! ### Two-adic valuations on the grid -/
 
-/-- The `2`-adic valuation of a nonzero integer. -/
-private theorem padicValuation_intCast {x : ℤ} (hx : x ≠ 0) :
-    Rat.padicValuation 2 (x : ℚ) = WithZero.exp (-(padicValInt 2 x : ℤ)) := by
-  simp [Rat.padicValuation, hx, padicValRat.of_int]
-
 /-- The `2`-adic valuation of a power of two. -/
-theorem padicValuation_two_pow (k : ℕ) :
+private theorem padicValuation_two_pow (k : ℕ) :
     Rat.padicValuation 2 ((2 : ℚ) ^ k) = WithZero.exp (-(k : ℤ)) := by
-  have h2 : Rat.padicValuation 2 (2 : ℚ) = WithZero.exp (-1) := by
-    exact_mod_cast Rat.padicValuation_self 2
-  rw [map_pow, h2, ← WithZero.exp_nsmul, nsmul_eq_mul, mul_neg, mul_one]
+  exact_mod_cast Rat.padicValuation_pow_self 2 k
 
-/-- **A nonzero integer below `2 ^ (a + 1)` in absolute value has at most `a` factors of two.** -/
-theorem padicValuation_two_pow_le {a : ℕ} {x : ℤ} (hx : x ≠ 0) (hlt : |x| < 2 ^ (a + 1)) :
+private theorem padicValuation_two_pow_le {a : ℕ} {x : ℤ} (hx : x ≠ 0)
+    (hlt : |x| < 2 ^ (a + 1)) :
     Rat.padicValuation 2 ((2 : ℚ) ^ a) ≤ Rat.padicValuation 2 (x : ℚ) := by
-  rw [padicValuation_two_pow, padicValuation_intCast hx, WithZero.exp_le_exp, neg_le_neg_iff]
-  by_contra h
-  have hdvd : (2 : ℤ) ^ (a + 1) ∣ x := by
-    have := (padicValInt_dvd_iff (p := 2) (a + 1) x).mpr (Or.inr (by omega))
-    exact_mod_cast this
-  exact absurd (Int.le_of_dvd (abs_pos.mpr hx) ((dvd_abs _ _).mpr hdvd)) (not_le.mpr hlt)
+  exact_mod_cast Rat.padicValuation_pow_le_of_abs_lt (p := 2) hx (by exact_mod_cast hlt)
 
-/-- Adding `2 ^ (a + 1)` to a nonzero integer below it in absolute value keeps its `2`-adic
-valuation. -/
-theorem padicValuation_add_two_pow {a : ℕ} {x : ℤ} (hx : x ≠ 0) (hlt : |x| < 2 ^ (a + 1)) :
+private theorem padicValuation_add_two_pow {a : ℕ} {x : ℤ} (hx : x ≠ 0)
+    (hlt : |x| < 2 ^ (a + 1)) :
     Rat.padicValuation 2 ((x : ℚ) + 2 ^ (a + 1)) = Rat.padicValuation 2 (x : ℚ) := by
-  refine (Rat.padicValuation 2).map_add_eq_of_lt_left (lt_of_lt_of_le ?_
-    (padicValuation_two_pow_le hx hlt))
-  rw [padicValuation_two_pow, padicValuation_two_pow, WithZero.exp_lt_exp]
-  omega
+  exact_mod_cast Rat.padicValuation_add_pow_of_abs_lt (p := 2) hx (by exact_mod_cast hlt)
 
 /-- **The grid is a complete residue system.** For `t` on the grid of `L = 2 ^ a` slots, the
 nonzero differences `t - q`, `q ∈ S`, have the valuations of `1, …, 2 L - 1`: send `q` to the

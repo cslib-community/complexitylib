@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
-import Complexity.Foundations.NumberTheory.Padics.RatIntegerReduction
+import Complexity.Foundations.NumberTheory.Padics.RatValuation
 
 /-!
 # Tests for the integral local coordinates of the Cauchy kernel
