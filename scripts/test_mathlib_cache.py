@@ -147,11 +147,11 @@ class MathlibCacheTests(unittest.TestCase):
 
 class WorkflowWiringTests(unittest.TestCase):
     def test_only_optional_cache_step_is_relaxed_and_validation_remains(self):
-        for name in ("lean_action_ci.yml", "docs.yml"):
+        for name in ("lean_action_ci.yml", "docs.yml", "comparator.yml"):
             with self.subTest(workflow=name):
                 text = (REPO / ".github/workflows" / name).read_text()
                 action = text.split("      - uses: leanprover/lean-action@v1\n", 1)[1].split("      - ", 1)[0]
-                self.assertIn('use-mathlib-cache: "false"', action)
+                self.assertRegex(action, r"use-mathlib-cache: [\"']false[\"']")
                 self.assertNotIn("continue-on-error", action)
                 step = text.split("      - name: Restore Mathlib cache with retries\n", 1)[1].split("      - ", 1)[0]
                 self.assertIn("continue-on-error: true", step)
@@ -165,6 +165,24 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertLess(docs.index("run: scripts/cache/get-missing.sh"),
                         docs.index("      - name: Generate API documentation"))
         self.assertIn("DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs", docs)
+
+    def test_comparator_restores_before_strict_contracts_and_tracks_its_helper(self):
+        text = (REPO / ".github/workflows/comparator.yml").read_text()
+        self.assertLess(text.index("      - uses: leanprover/lean-action@v1"),
+                        text.index("      - name: Restore Mathlib cache with retries"))
+        self.assertLess(text.index("      - name: Restore Mathlib cache with retries"),
+                        text.index("run: scripts/cache/get-missing.sh"))
+        self.assertLess(text.index("run: scripts/cache/get-missing.sh"),
+                        text.index("      - name: Compare all reviewed contracts"))
+        contract_step = text.split("      - name: Compare all reviewed contracts", 1)[1]
+        self.assertIn("run: python3 scripts/check_comparator.py basic automation sat --negative-control",
+                      contract_step)
+        self.assertNotIn("continue-on-error", contract_step)
+        for event, following in (("pull_request", "push"), ("push", "workflow_dispatch")):
+            with self.subTest(event=event):
+                trigger = text.split(f"  {event}:\n", 1)[1].split(f"  {following}:", 1)[0]
+                for dependency in ("scripts/cache/get_mathlib.py", "scripts/test_mathlib_cache.py"):
+                    self.assertIn(f"      - '{dependency}'", trigger)
 
 
 if __name__ == "__main__":
