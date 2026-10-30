@@ -220,15 +220,20 @@ end Reg
     else [ Reg.residue ← Reg.modulus ] ]
   else [ Reg.residue ← Reg.modulus ] ]
 
+/-- One real padded matrix cell: compute coordinates/Morton address, select the admitted
+residue or padding sentinel, write every coefficient, and advance the original cell index. -/
+@[expose] def matrixStep (transpose : Bool) : Code .standard 128 :=
+  .seq (ram[ Reg.row ← Reg.index / Reg.paddedSide;
+    Reg.column ← Reg.index % Reg.paddedSide ])
+    (.seq morton (.seq (ram[ Reg.block ← Reg.position * Reg.modulus;
+      Reg.block ← Reg.destination + Reg.block ])
+      (.seq (matrixResidue transpose) (.seq writeCoefficients
+        (ram[ Reg.index ← Reg.index + Reg.one ])))))
+
 /-- Create a complete zero-padded cyclic matrix from real residue words. -/
 @[expose] def matrix (src dst : Fin 128) (transpose : Bool) : Code .standard 128 := ram[
   Reg.residueSource ← src; Reg.destination ← dst; Reg.index ← #0;
-  while Reg.index < Reg.paddedCells do [
-    Reg.row ← Reg.index / Reg.paddedSide; Reg.column ← Reg.index % Reg.paddedSide;
-    ⟪morton⟫; Reg.block ← Reg.position * Reg.modulus;
-    Reg.block ← Reg.destination + Reg.block;
-    ⟪matrixResidue transpose⟫;
-    ⟪writeCoefficients⟫; Reg.index ← Reg.index + Reg.one ] ]
+  while Reg.index < Reg.paddedCells do [ ⟪matrixStep transpose⟫ ] ]
 
 /-- Invoke the actual fixed Strassen controller in the low 64-register bank. -/
 @[expose] def product : Code .standard 128 := ram[
