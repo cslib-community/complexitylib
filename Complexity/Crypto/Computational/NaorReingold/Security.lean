@@ -2997,7 +2997,7 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
       refine ne_of_lt (lt_of_le_of_lt ?_ ENNReal.one_lt_top)
       calc (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹)
           ≤ ∑' d, setup n d * 1 := by
-            refine ENNReal.tsum_le_tsum fun d => mul_le_mul_of_nonneg_left ?_ (by positivity)
+            refine tsum_le_tsum fun d => mul_le_mul_of_nonneg_left ?_ (by positivity)
             exact ENNReal.inv_le_one.mpr (by exact_mod_cast (F.prime_order d).pos)
         _ = 1 := by simp [(setup n).tsum_coe]
     have hε_pos : 0 < ε n := by
@@ -3009,7 +3009,7 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
         ENNReal.mul_pos hd₀_ne hord_ne
       exact ENNReal.toNNReal_pos
         (ne_of_gt (lt_of_lt_of_le hterm_pos
-          (ENNReal.le_tsum (f := fun d => setup n d * (F.order d : ℝ≥0∞)⁻¹) d₀)))
+          (le_tsum (f := fun d => setup n d * (F.order d : ℝ≥0∞)⁻¹) d₀)))
         hexp_top
     let τ : ℝ≥0 := NNReal.sqrt (ε n)
     have hτ_pos : 0 < τ := NNReal.sqrt_pos.mpr hε_pos
@@ -3081,7 +3081,7 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
     have hsum_err :
         (∑' d, setup n d * errTerm d) = ((lhlBound n : ℝ≥0) : ℝ≥0∞) := by
       dsimp only [errTerm, lhlBound]
-      simp_rw [mul_add, ENNReal.tsum_add, ← mul_assoc]
+      simp_rw [mul_add, tsum_add, ← mul_assoc]
       rw [ENNReal.tsum_mul_right, ENNReal.tsum_mul_right, (setup n).tsum_coe, one_mul,
         ENNReal.coe_add]
       congr 1
@@ -3097,8 +3097,8 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
         (hfg : ∀ d ∈ (setup n).support,
           f d true ≤ g d true + ((Game.advantage (g1 d) (g2 d) : ℝ≥0) : ℝ≥0∞)) :
         ((setup n).bind f) true ≤ ((setup n).bind g) true + ((lhlBound n : ℝ≥0) : ℝ≥0∞) := by
-      rw [← hsum_err, PMF.bind_apply, PMF.bind_apply, ← ENNReal.tsum_add]
-      refine ENNReal.tsum_le_tsum fun d => ?_
+      rw [← hsum_err, PMF.bind_apply, PMF.bind_apply, ← tsum_add]
+      refine tsum_le_tsum fun d => ?_
       by_cases hd : d ∈ (setup n).support
       · rw [← mul_add]
         exact mul_le_mul_of_nonneg_left ((hfg d hd).trans (add_le_add le_rfl (hpoint d hd)))

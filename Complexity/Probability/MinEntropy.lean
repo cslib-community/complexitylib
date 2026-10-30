@@ -183,7 +183,7 @@ theorem le_minEntropy_bind (μ : PMF β) (f : β → PMF α) {k : ℝ}
   apply ENNReal.toReal_le_of_le_ofReal hk
   calc
     μ.bind f a = ∑' b, μ b * f b a := PMF.bind_apply μ f a
-    _ ≤ ∑' b, μ b * ENNReal.ofReal (2 ^ (-k)) := ENNReal.tsum_le_tsum hcomponent
+    _ ≤ ∑' b, μ b * ENNReal.ofReal (2 ^ (-k)) := tsum_le_tsum hcomponent
     _ = ENNReal.ofReal (2 ^ (-k)) := by rw [ENNReal.tsum_mul_right, μ.tsum_coe, one_mul]
 
 /-! ### Weak random sources -/

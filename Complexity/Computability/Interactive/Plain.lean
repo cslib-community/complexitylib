@@ -202,9 +202,9 @@ private theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
           st'
     calc ∑' c, ProbComp.eval smp.1 c * _ ≤
           ∑' c, ProbComp.eval smp.1 c * (A.indicator 1 c + PerChallenge.sum s ε.2) :=
-          ENNReal.tsum_le_tsum fun c => by gcongr; exact hinner c
+          tsum_le_tsum fun c => by gcongr; exact hinner c
       _ = (ProbComp.eval smp.1).toOuterMeasure A + PerChallenge.sum s ε.2 := by
-          simp only [mul_add, ENNReal.tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
+          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
             PMF.toOuterMeasure_apply]
           congr 1
           refine tsum_congr fun c => ?_

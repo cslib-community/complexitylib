@@ -797,7 +797,7 @@ private theorem pmf_bind_pure_bool_le {α : Type} (p : PMF α) (f g : α → Boo
     (p.bind (fun a => PMF.pure (f a))) true ≤
       (p.bind (fun a => PMF.pure (g a))) true := by
   rw [PMF.bind_apply, PMF.bind_apply]
-  refine ENNReal.tsum_le_tsum fun a => ?_
+  refine tsum_le_tsum fun a => ?_
   by_cases ha : a ∈ p.support
   · refine mul_le_mul_of_nonneg_left ?_ zero_le
     cases hf : f a
@@ -816,7 +816,7 @@ theorem succProbability_eufCmaGame_le_sufCmaGame (M : MACScheme)
   simp only [Game.succProbability, sufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ true) ?_
   rw [PMF.bind_apply, PMF.bind_apply]
-  refine ENNReal.tsum_le_tsum fun sk => ?_
+  refine tsum_le_tsum fun sk => ?_
   refine mul_le_mul_of_nonneg_left (pmf_bind_pure_bool_le _ _ _ fun out _ hout => ?_) zero_le
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at hout ⊢
   refine ⟨⟨hout.1.1, ?_⟩, hout.2⟩
@@ -1450,7 +1450,7 @@ theorem succProbability_prfIdealGame_macToPrfDistinguisher_le (adversary : Forge
         zero_le]
   have htotal : (phase1.bind phase2) true ≤ (1 : ℝ≥0∞) / 2 ^ n := by
     rw [PMF.bind_apply]
-    refine (ENNReal.tsum_le_tsum fun a => ?_).trans
+    refine (tsum_le_tsum fun a => ?_).trans
       (PMF.tsum_mul_le_of_forall_le phase1 fun _ => le_rfl)
     by_cases ha : a ∈ phase1.support
     · exact mul_le_mul_right (hstep_bound a ha) _
@@ -2012,7 +2012,7 @@ theorem succProbability_eufCmaGame_le_sufCmaGame (M : NonceMACScheme)
   simp only [Game.succProbability, eufCmaGame, sufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ true) ?_
   rw [PMF.bind_apply, PMF.bind_apply]
-  refine ENNReal.tsum_le_tsum fun sk => ?_
+  refine tsum_le_tsum fun sk => ?_
   refine mul_le_mul_of_nonneg_left
     (MACScheme.pmf_bind_pure_bool_le _ _ _ fun out _ hout => ?_) zero_le
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at hout ⊢

@@ -96,6 +96,7 @@ example {V W D : Type} (G : RotationMap V D) (e : V ≃ W)
         let next := (G.reindex e).rot p.1
         (next, !p.2))
       (encPair (encPair ew ed) encBool) (encPair (encPair ew ed) encBool) := by
+  dsimp only [RotationMap.reindex, RotationMap.reindexRot]
   fail_if_success (clear hf; fun_prop)
   fail_if_success (clear hb; fun_prop)
   fail_if_success (clear hg; fun_prop)

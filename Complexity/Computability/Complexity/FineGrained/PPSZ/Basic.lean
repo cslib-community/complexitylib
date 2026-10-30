@@ -276,7 +276,7 @@ theorem ppz_round_apply_le {φ : CNF (Fin n)} {w : ℕ} (hw : 1 ≤ w) {σ : Fin
     (hσ : φ.eval σ = true) :
     PPZ.round φ (fun x => some (σ x)) ≤ round φ w (fun x => some (σ x)) := by
   rw [PPZ.round, round, PPZ.roundWith, PPZ.roundWith, PMF.bind_apply, PMF.bind_apply]
-  refine ENNReal.tsum_le_tsum fun π => mul_le_mul_right ?_ _
+  refine tsum_le_tsum fun π => mul_le_mul_right ?_ _
   rw [← PPZ.restrict_prefixSet_self σ π]
   rw [PPZ.runWith_apply_restrict (O := PPZ.forced φ) (fun _ hτ _ _ h => PPZ.forced_eq hσ hτ h) π
     le_rfl, PPZ.runWith_apply_restrict (O := implied φ w) (fun _ hτ _ _ h => implied_eq hσ hτ h) π

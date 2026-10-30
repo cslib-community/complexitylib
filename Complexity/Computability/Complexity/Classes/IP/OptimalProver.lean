@@ -304,7 +304,7 @@ private theorem sum_acceptFrom_after_le (hF : IsBounded F D L) (P : Prover Unit)
       lia
     rw [Finset.sum_eq_zero fun m _ => ?_, add_zero]
     · split_ifs <;> simp
-    · refine ENNReal.tsum_eq_zero.mpr fun ys => ?_
+    · refine tsum_eq_zero_iff.mpr fun ys => ?_
       rw [after_append]
       unfold outcome at hnil
       rcases hah : after (F r) h with _ | ⟨b⟩ | ⟨q, next⟩
@@ -320,12 +320,12 @@ private theorem sum_acceptFrom_after_le (hF : IsBounded F D L) (P : Prover Unit)
       exact (Finset.sum_congr rfl fun r _ => by split_ifs <;> simp).le
     rw [Finset.sum_comm]
     refine Finset.sum_le_sum fun m _ => ?_
-    rw [← Summable.tsum_finsetSum fun r _ => ENNReal.summable]
+    rw [← Summable.tsum_finsetSum fun r _ => CompleteLattice.summable]
     calc ∑' ys : List Bool × P.State, ∑ r, (P.respond ((), m)).run s ys *
           acceptFrom P ys.2 (after (F r) (h ++ [(m, ys.1)]))
         ≤ ∑' ys : List Bool × P.State, (P.respond ((), m)).run s ys *
           ((BitString.shortWords L).sup fun y => value F L n (h ++ [(m, y)]) : ℕ) := by
-          refine ENNReal.tsum_le_tsum fun ys => ?_
+          refine tsum_le_tsum fun ys => ?_
           rw [← Finset.mul_sum]
           refine mul_le_mul_right ?_ _
           refine (ih (h ++ [(m, ys.1)]) (by
@@ -395,7 +395,7 @@ private theorem sum_acceptFrom_optimalProver_after (hF : IsBounded F D L) (n : �
       lia
     rw [Finset.sum_eq_zero fun m _ => ?_, add_zero]
     · split_ifs <;> simp
-    · refine ENNReal.tsum_eq_zero.mpr fun ys => ?_
+    · refine tsum_eq_zero_iff.mpr fun ys => ?_
       rw [after_append]
       unfold outcome at hnil
       rcases hah : after (F r) h with _ | ⟨b⟩ | ⟨q, next⟩

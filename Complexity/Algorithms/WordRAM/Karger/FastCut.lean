@@ -658,7 +658,7 @@ theorem two_branch_hit_prob_ge {α β γ : Type} (m₁ : ProbComp α) (m₂ : α
       have ha : a ∈ m₁.support := (ProbComp.support_eval m₁) ▸ ha_eval
       have ha_hit : a ∈ hit₁ := not_not.mp ha_not_miss
       rw [PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply]
-      refine ENNReal.tsum_eq_zero.mpr fun b => ?_
+      refine tsum_eq_zero_iff.mpr fun b => ?_
       by_cases hb_eval : b ∈ (m₂ a).eval.support
       · have hb : b ∈ (m₂ a).support := (ProbComp.support_eval (m₂ a)) ▸ hb_eval
         have hmem : f a b ∈ hit := hprop₁ a ha ha_hit b hb

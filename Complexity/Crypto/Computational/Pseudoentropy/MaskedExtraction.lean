@@ -109,7 +109,7 @@ theorem maskedSample_mass_ge {α β : Type} (source : ProbComp α)
     rw [← ENNReal.toReal_mul]
     apply ENNReal.toReal_mono (PMF.apply_ne_top _ _)
     rw [PMF.bind_apply]
-    exact ENNReal.le_tsum (f := fun x => ProbComp.eval source x *
+    exact le_tsum (f := fun x => ProbComp.eval source x *
       ((ProbComp.eval (maskBit (mask x) (truth x))).map (observe x, ·))
         (observe value, bit)) value
   exact (mul_le_mul (hsource value hvalue) (hbitMass.trans hmap)

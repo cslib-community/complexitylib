@@ -53,7 +53,7 @@ theorem bind_sigma_apply {β : α → Type*} (p : PMF α) (f : (a : α) → PMF 
     (p.bind (fun a => (f a).map (Sigma.mk a))) ⟨a, b⟩ = p a * f a b := by
   classical
   simp only [PMF.bind_apply, PMF.map_apply, ← ENNReal.tsum_mul_left, mul_ite, mul_zero]
-  rw [← ENNReal.tsum_sigma]
+  rw [← tsum_sigma]
   simp
 
 /-- A continuation only needs to agree on outcomes the preceding distribution can produce. -/
@@ -76,7 +76,7 @@ theorem le_bind_apply_on_support (μ : PMF α) {f : α → PMF β} {b : β} {c :
     (h : ∀ a ∈ μ.support, c ≤ f a b) : c ≤ μ.bind f b := by
   rw [PMF.bind_apply]
   calc c = ∑' a, μ a * c := by rw [ENNReal.tsum_mul_right, μ.tsum_coe, one_mul]
-    _ ≤ ∑' a, μ a * f a b := ENNReal.tsum_le_tsum fun a => by
+    _ ≤ ∑' a, μ a * f a b := tsum_le_tsum fun a => by
         by_cases ha : a ∈ μ.support
         · exact mul_le_mul_right (h a ha) _
         · simp [(PMF.apply_eq_zero_iff μ a).2 ha]
@@ -87,7 +87,7 @@ theorem bind_apply_le_on_support (μ : PMF α) {f : α → PMF β} {b : β} {c :
     (h : ∀ a ∈ μ.support, f a b ≤ c) : μ.bind f b ≤ c := by
   rw [PMF.bind_apply]
   calc ∑' a, μ a * f a b
-    _ ≤ ∑' a, μ a * c := ENNReal.tsum_le_tsum fun a => by
+    _ ≤ ∑' a, μ a * c := tsum_le_tsum fun a => by
         by_cases ha : a ∈ μ.support
         · exact mul_le_mul_right (h a ha) _
         · simp [(PMF.apply_eq_zero_iff μ a).2 ha]
@@ -98,7 +98,7 @@ probability in the whole experiment. The sample spaces may be infinite. -/
 theorem bind_apply_mono_on_support (μ : PMF α) {f g : α → PMF β} (b : β)
     (h : ∀ a ∈ μ.support, f a b ≤ g a b) : μ.bind f b ≤ μ.bind g b := by
   simp only [PMF.bind_apply]
-  apply ENNReal.tsum_le_tsum
+  apply tsum_le_tsum
   intro a
   by_cases ha : a ∈ μ.support
   · exact mul_le_mul_right (h a ha) _
@@ -117,7 +117,7 @@ theorem exists_bind_apply_le [Finite α] (μ : PMF α) (f : α → PMF β) (b : 
 /-- An average of values at most `B` is at most `B`. -/
 theorem tsum_mul_le_of_forall_le (μ : PMF α) {f : α → ℝ≥0∞} {B : ℝ≥0∞} (h : ∀ a, f a ≤ B) :
     ∑' a, μ a * f a ≤ B :=
-  calc ∑' a, μ a * f a ≤ ∑' a, μ a * B := ENNReal.tsum_le_tsum fun a => mul_le_mul_right (h a) _
+  calc ∑' a, μ a * f a ≤ ∑' a, μ a * B := tsum_le_tsum fun a => mul_le_mul_right (h a) _
     _ = B := by rw [ENNReal.tsum_mul_right, μ.tsum_coe, one_mul]
 
 /-- Values at most `1` on a finite set `T` and at most `B` elsewhere average to at most
@@ -126,9 +126,9 @@ theorem tsum_mul_le_card_mul_add [DecidableEq α] (μ : PMF α) {ε : ℝ≥0∞
     (T : Finset α) {f : α → ℝ≥0∞} {B : ℝ≥0∞} (h : ∀ a, f a ≤ (if a ∈ T then 1 else 0) + B) :
     ∑' a, μ a * f a ≤ T.card * ε + B := by
   calc ∑' a, μ a * f a ≤ ∑' a, (μ a * (if a ∈ T then 1 else 0) + μ a * B) :=
-        ENNReal.tsum_le_tsum fun a => (mul_le_mul_right (h a) _).trans_eq (mul_add _ _ _)
+        tsum_le_tsum fun a => (mul_le_mul_right (h a) _).trans_eq (mul_add _ _ _)
     _ = ∑ a ∈ T, μ a + B := by
-        rw [ENNReal.tsum_add, ENNReal.tsum_mul_right, μ.tsum_coe, one_mul,
+        rw [tsum_add, ENNReal.tsum_mul_right, μ.tsum_coe, one_mul,
           tsum_eq_sum (s := T) fun a ha => by simp only [ha, ↓reduceIte, mul_zero]]
         congr 1
         exact Finset.sum_congr rfl fun a ha => by simp only [ha, ↓reduceIte, mul_one]

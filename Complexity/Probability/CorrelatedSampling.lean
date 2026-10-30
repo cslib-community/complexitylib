@@ -171,7 +171,7 @@ theorem map_firstIn_weightedOrderAux (w : Ω → ℝ≥0) :
     rcases o with _ | c
     · rw [PMF.bind_apply, PMF.map_apply]
       simp only [reduceCtorEq, ite_false, tsum_zero]
-      refine ENNReal.tsum_eq_zero.mpr fun a => ?_
+      refine tsum_eq_zero_iff.mpr fun a => ?_
       split_ifs <;> simp [PMF.map_apply]
     rw [PMF.bind_apply, tsum_fintype, hrhs]
     set du := weightedDraw w U hU0
