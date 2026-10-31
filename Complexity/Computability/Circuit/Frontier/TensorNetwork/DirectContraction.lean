@@ -136,17 +136,11 @@ def directContraction (x : ℕ × ℕ × ExplicitTensorNetwork ℕ) : ℕ :=
 
 /-! ### Input encoding -/
 
-/-- An explicit network over `ℕ` is its number of edges and its list of vertices. -/
-def equivProd : ExplicitTensorNetwork ℕ ≃ ℕ × List (List ℕ × List ℕ) where
-  toFun d := (d.numEdges, d.vertices)
-  invFun p := ⟨p.1, p.2⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-
 /-- **The encoding of an explicit network**: its number of edges in unary, then its list of
 vertices, each the pair of its list of ports and its table, as lists of binary numbers. -/
 def encExplicitNetwork : ExplicitTensorNetwork ℕ ↪ List Bool :=
-  encOfEquiv equivProd (encPair encUnary (encList (encPair (encList encNat) (encList encNat))))
+  encOfEquiv DescribedNetwork.equivProd
+    (encPair encUnary (encList (encPair (encList encNat) (encList encNat))))
 
 /-- **The encoding of a contraction input `(P, r, d)`**: the precision `P` in unary, then the
 number `r` of row vertices in binary and the network (`encExplicitNetwork`). -/
@@ -216,7 +210,7 @@ private theorem vertices_polyTime :
     ComputableInPolyTime (fun d : ExplicitTensorNetwork ℕ => d.vertices) encExplicitNetwork
       encVertices :=
   (ComputableInPolyTime.snd encUnary encVertices).comp
-    (ComputableInPolyTime.of_eq (f := equivProd) fun _ => rfl)
+    (ComputableInPolyTime.of_eq (f := DescribedNetwork.equivProd) fun _ => rfl)
 
 /-- `2 ^ P` in binary from `P` in unary. -/
 private theorem twoPow_polyTime :
@@ -331,7 +325,7 @@ theorem numEdges_polyTime :
     ComputableInPolyTime (fun x : ℕ × ℕ × ExplicitTensorNetwork ℕ => x.2.2.numEdges)
       encContractionInput encUnary :=
   (ComputableInPolyTime.fst encUnary encVertices).comp
-    ((ComputableInPolyTime.of_eq (f := equivProd) fun _ => rfl).comp
+    ((ComputableInPolyTime.of_eq (f := DescribedNetwork.equivProd) fun _ => rfl).comp
       ((ComputableInPolyTime.snd encNat encExplicitNetwork).comp
         (ComputableInPolyTime.snd encUnary (encPair encNat encExplicitNetwork))))
 

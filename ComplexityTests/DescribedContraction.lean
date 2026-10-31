@@ -67,8 +67,8 @@ example {T : Type} (eval : T → List Bool → List ℕ) (q : (ℕ × List ℕ) 
 
 -- Explicit networks are described networks with their tables.
 example (d : ExplicitTensorNetwork ℕ) :
-    (ofExplicit d).contraction ExplicitTensorNetwork.entry = d.contraction :=
-  contraction_ofExplicit d
+    DescribedNetwork.contraction ExplicitTensorNetwork.entry d = d.contraction :=
+  contraction_entry d
 
 /-- Table lookup is polynomial-time. -/
 theorem entry_polyTime : ComputableInPolyTime (fun q : List ℕ × List Bool =>
