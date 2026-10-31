@@ -182,7 +182,7 @@ variable {R V E : Type*} [CommRing R] [Fintype E] {a r : ℕ}
 a packing `Q` of its edges, and a nonzero grid point `t` of valuation `i < a`, the mode splitting
 of the Cauchy matrix at `T = t + α ζ` with the vertices grouped by their symbol in coordinate `i`
 of `Q` (`cauchyModeSplitting`, oriented by `packingGroup_src_tgt`). -/
-noncomputable def nodeSplitting (N : TensorNetwork R Bool V E) (side : V → Bool)
+@[expose] noncomputable def nodeSplitting (N : TensorNetwork R Bool V E) (side : V → Bool)
     (hsrc : ∀ e, side (N.src e) = true) (htgt : ∀ e, side (N.tgt e) = false)
     (Q : PacketPacking.Packing N.src N.tgt a r) (κ : ℤ₍₂₎ →+* R) (ζ : R) {p : ℕ}
     (hp : (2 : R) ^ p = 0) {t : ℤ} (ht : t ∈ recoveryNodes a) (hia : padicValInt 2 t < a) :
@@ -225,7 +225,7 @@ variable {K : Type*} [CommRing K] [Algebra ℚ K] (B : Subring K)
 
 /-- The mode splitting at the active node `t` and the point `z` of a call with input precision
 `p`: `nodeSplitting` for the network reduced modulo `2 ^ p_t`, at the reduction of `z`. -/
-noncomputable def callSplitting (N : TensorNetwork B Bool V E) (side : V → Bool)
+@[expose] noncomputable def callSplitting (N : TensorNetwork B Bool V E) (side : V → Bool)
     (hsrc : ∀ e, side (N.src e) = true) (htgt : ∀ e, side (N.tgt e) = false) {a r : ℕ}
     (Q : PacketPacking.Packing N.src N.tgt a r) (p u h : ℕ) (hua : u ≤ a) {t : ℤ}
     (ht : t ∈ recoveryNodes a) (hq : 0 < taperMult u h t) (z : B) :
