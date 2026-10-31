@@ -70,6 +70,9 @@ So `NTIME`, `BPTIME` and `PPTIME` at time `T * ⌊√⌊√⌊log₂ T⌋⌋⌋`
 * `Cslib.Complexity.CountingSimulation.ssubset_DTIME_two_pow_of_forall_mem_SharpTIME`: the strict
   containment in `DTIME[2 ^ T]` of every class of such tests at a time `t` with
   `t / √⌊log₂ t⌋ = o(T)`.
+* `Cslib.Complexity.CountingSimulation.ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_self`,
+  `Cslib.Complexity.CountingSimulation.ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_mul`: its
+  specializations to tests at time `T` and at time `T * h` for a factor `h = o(√⌊log₂ T⌋)`.
 * `ParityTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
   `ModTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
   `CeqTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`: the containments.
@@ -152,8 +155,11 @@ theorem ssubset_DTIME_two_pow_of_forall_mem_SharpTIME {𝒞 : Set (Set (List Boo
     rw [show A = {x | rule (f x, g x) = true} from Set.ext hA]
     exact setOf_mem_iUnion_DTIME_of_mem_SharpTIME ht htn hf hg hrule
 
-/-- `ssubset_DTIME_two_pow_of_forall_mem_SharpTIME` at `t = T`. -/
-private theorem ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_self {𝒞 : Set (Set (List Bool))}
+/-- **Strict containment in `DTIME[2 ^ T]` of every class decided by tests of counts at time
+`T`**: `ssubset_DTIME_two_pow_of_forall_mem_SharpTIME` at `t = T`. For time-constructible `T` with
+`max n 2 ≤ T n`, every class of problems on bit strings, each decided by a polynomial-time test of
+two counts in `SharpTIME encBits T`, is strictly contained in `DTIME[2 ^ T]`. -/
+theorem ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_self {𝒞 : Set (Set (List Bool))}
     (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n)
     (h : ∀ A ∈ 𝒞, ∃ f ∈ SharpTIME encBits T, ∃ g ∈ SharpTIME encBits T, ∃ rule : ℕ × ℕ → Bool,
       ComputableInPolyTime rule (encPair encNat encNat) encBool ∧
@@ -164,9 +170,12 @@ private theorem ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_self {𝒞 : Set (
     (fun C => (tendsto_atTop_mono hTn' tendsto_id).eventually
       (Nat.eventually_mul_le_mul_sqrt_log_two C)) h
 
-/-- `ssubset_DTIME_two_pow_of_forall_mem_SharpTIME` at `t = T * h` for a factor `h ≥ 1` with
-`h = o(√⌊log₂ T⌋)`. -/
-private theorem ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_mul {𝒞 : Set (Set (List Bool))}
+/-- **Strict containment in `DTIME[2 ^ T]` of every class decided by tests of counts at time
+`T * h`**: `ssubset_DTIME_two_pow_of_forall_mem_SharpTIME` at `t = T * h`. For time-constructible
+`T` with `max n 2 ≤ T n` and a factor `h ≥ 1` with `h = o(√⌊log₂ T⌋)` and `T * h`
+time-constructible, every class of problems on bit strings, each decided by a polynomial-time test
+of two counts in `SharpTIME encBits (T * h)`, is strictly contained in `DTIME[2 ^ T]`. -/
+theorem ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_mul {𝒞 : Set (Set (List Bool))}
     {h : ℕ → ℕ} (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n)
     (hTh : TimeConstructible fun n => T n * h n) (hh₁ : ∀ n, 1 ≤ h n)
     (hh : ∀ C, ∀ᶠ n in atTop, C * h n ≤ Nat.sqrt (Nat.log 2 (T n)))

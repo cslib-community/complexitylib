@@ -163,6 +163,29 @@ example : CeqTIME encBits (fun n => ((n + 1) ^ 2 + 1) *
     timeConstructible_succ_sq_add_one_mul_sqrt_sqrt_log_two
     one_le_sqrt_sqrt_log_two_succ_sq_add_one eventually_mul_sqrt_sqrt_log_two_succ_sq_add_one_le
 
+/-- The count-test separation at time `T * h`, applied to the class of problems defined by equal
+counts (the definition of `C₌TIME`, unfolded). -/
+example : {A : Set (List Bool) | ∃ f ∈ SharpTIME encBits (fun n => ((n + 1) ^ 2 + 1) *
+    Nat.sqrt (Nat.sqrt (Nat.log 2 ((n + 1) ^ 2 + 1)))), ∃ g ∈ SharpTIME encBits (fun n =>
+      ((n + 1) ^ 2 + 1) * Nat.sqrt (Nat.sqrt (Nat.log 2 ((n + 1) ^ 2 + 1)))),
+        ∀ x, x ∈ A ↔ f x = g x} ⊂
+      DTIME encBits fun n => 2 ^ ((n + 1) ^ 2 + 1) :=
+  ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_mul timeConstructible_succ_sq_add_one
+    max_le_succ_sq_add_one timeConstructible_succ_sq_add_one_mul_sqrt_sqrt_log_two
+    one_le_sqrt_sqrt_log_two_succ_sq_add_one eventually_mul_sqrt_sqrt_log_two_succ_sq_add_one_le
+    fun _ ⟨f, hf, g, hg, hA⟩ => ⟨f, hf, g, hg, fun p => decide (p.1 = p.2),
+      ComputableInPolyTime.decide_eq' (ComputableInPolyTime.fst encNat encNat)
+        (ComputableInPolyTime.snd encNat encNat), fun x => by simp [hA x]⟩
+
+/-- The same count-test separation at time `T`. -/
+example : {A : Set (List Bool) | ∃ f ∈ SharpTIME encBits (fun n => (n + 1) ^ 2 + 1),
+    ∃ g ∈ SharpTIME encBits (fun n => (n + 1) ^ 2 + 1), ∀ x, x ∈ A ↔ f x = g x} ⊂
+      DTIME encBits fun n => 2 ^ ((n + 1) ^ 2 + 1) :=
+  ssubset_DTIME_two_pow_of_forall_mem_SharpTIME_self timeConstructible_succ_sq_add_one
+    max_le_succ_sq_add_one fun _ ⟨f, hf, g, hg, hA⟩ => ⟨f, hf, g, hg, fun p => decide (p.1 = p.2),
+      ComputableInPolyTime.decide_eq' (ComputableInPolyTime.fst encNat encNat)
+        (ComputableInPolyTime.snd encNat encNat), fun x => by simp [hA x]⟩
+
 /-- A factor `g (T n)` with `g = o(√log)` on `ℕ` satisfies the hypothesis `h = o(√⌊log₂ T⌋)`,
 since `T` tends to infinity. -/
 example {g : ℕ → ℕ} (hg : ∀ C, ∀ᶠ m in atTop, C * g m ≤ Nat.sqrt (Nat.log 2 m)) (C : ℕ) :
