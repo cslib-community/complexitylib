@@ -8,6 +8,7 @@ module
 
 public import Complexity.Init
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Order.Floor.Div
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.List.Chain
 import Mathlib.Algebra.BigOperators.Group.List.Basic
@@ -45,7 +46,6 @@ along `budgetTuples` (`sum_filter_weight_lt_eq`).
 ## Main definitions
 
 * `Cslib.BudgetTuples.weight`: the weight of a tuple.
-* `Cslib.BudgetTuples.headCount`: the number of feasible values of a coordinate.
 * `Cslib.BudgetTuples.budgetTuples`: the tuples of weight below a budget, in lexicographic order.
 * `Cslib.BudgetTuples.budgetNext`: the successor of a tuple.
 * `Cslib.BudgetTuples.scanStep`, `Cslib.BudgetTuples.budgetNextScan`: the successor as a left scan.
@@ -75,22 +75,17 @@ namespace Cslib.BudgetTuples
   | w :: ws, b :: β => w * b + weight ws β
   | _, _ => 0
 
-/-- The number of values `b` of a coordinate of weight `w` with `w * b < p`, that is
-`⌈p / w⌉` for `w > 0`. -/
-@[expose] def headCount (w p : ℕ) : ℕ := (p + w - 1) / w
-
-/-- A value fits the budget exactly when it is below `headCount`. -/
-theorem lt_headCount_iff {w p b : ℕ} (hw : 0 < w) : b < headCount w p ↔ w * b < p := by
-  rw [headCount, Nat.lt_iff_add_one_le, Nat.le_div_iff_mul_le hw, Nat.add_mul, Nat.one_mul,
-    Nat.mul_comm b w]
-  omega
+/-- A value of a coordinate of weight `w` fits the budget `p` exactly when it is below the ceiling
+division `p ⌈/⌉ w`. -/
+theorem lt_ceilDiv_iff {w p b : ℕ} (hw : 0 < w) : b < p ⌈/⌉ w ↔ w * b < p := by
+  rw [← not_le, ceilDiv_le_iff_le_mul hw, not_le]
 
 /-- **The tuples of weight below `p`**, in lexicographic order: the first coordinate takes each
-value `b` with `w * b < p` in increasing order, and the rest is a tuple of weight below
-`p - w * b`. -/
+value `b` with `w * b < p` (`lt_ceilDiv_iff`) in increasing order, and the rest is a tuple of
+weight below `p - w * b`. -/
 @[expose] def budgetTuples : List ℕ → ℕ → List (List ℕ)
   | [], p => if 0 < p then [[]] else []
-  | w :: ws, p => (List.range (headCount w p)).flatMap fun b =>
+  | w :: ws, p => (List.range (p ⌈/⌉ w)).flatMap fun b =>
       (budgetTuples ws (p - w * b)).map (b :: ·)
 
 /-- **The successor of a tuple**: advance the tail within its remaining budget if possible, and
@@ -107,7 +102,7 @@ otherwise increment the first coordinate and reset the tail to zero. -/
 @[simp] theorem budgetTuples_nil (p : ℕ) : budgetTuples [] p = if 0 < p then [[]] else [] := rfl
 
 theorem budgetTuples_cons (w : ℕ) (ws : List ℕ) (p : ℕ) :
-    budgetTuples (w :: ws) p = (List.range (headCount w p)).flatMap fun b =>
+    budgetTuples (w :: ws) p = (List.range (p ⌈/⌉ w)).flatMap fun b =>
       (budgetTuples ws (p - w * b)).map (b :: ·) := rfl
 
 @[simp] theorem weight_nil (β : List ℕ) : weight [] β = 0 := rfl
@@ -126,7 +121,7 @@ theorem mem_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ} {�
     have hw0 : 0 < w := hw w List.mem_cons_self
     have ih' := @ih (fun w' hw' => hw w' (List.mem_cons_of_mem _ hw'))
     rw [budgetTuples_cons]
-    simp only [List.mem_flatMap, List.mem_range, lt_headCount_iff hw0, List.mem_map]
+    simp only [List.mem_flatMap, List.mem_range, lt_ceilDiv_iff hw0, List.mem_map]
     constructor
     · rintro ⟨b, hb, γ, hγ, rfl⟩
       rw [ih'] at hγ
@@ -187,8 +182,8 @@ theorem head?_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ} 
   | cons w ws ih =>
     have hw0 : 0 < w := hw w List.mem_cons_self
     have ih' := @ih (fun w' hw' => hw w' (List.mem_cons_of_mem _ hw'))
-    obtain ⟨k, hk⟩ : ∃ k, headCount w p = k + 1 :=
-      Nat.exists_eq_succ_of_ne_zero (Nat.pos_iff_ne_zero.mp ((lt_headCount_iff hw0).mpr
+    obtain ⟨k, hk⟩ : ∃ k, p ⌈/⌉ w = k + 1 :=
+      Nat.exists_eq_succ_of_ne_zero (Nat.pos_iff_ne_zero.mp ((lt_ceilDiv_iff hw0).mpr
         (by simpa using hp)))
     rw [budgetTuples_cons, hk, List.range_succ_eq_map, List.flatMap_cons, List.head?_append,
       List.head?_map, Nat.mul_zero, Nat.sub_zero, ih' hp]
@@ -204,9 +199,9 @@ theorem budgetNext_getLast? {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ}
     have ih' := @ih (fun w' hw' => hw w' (List.mem_cons_of_mem _ hw'))
     intro x hx
     rw [budgetTuples_cons] at hx
-    rcases hn : headCount w p with _ | k
+    rcases hn : p ⌈/⌉ w with _ | k
     · rw [hn] at hx; simp at hx
-    · have hk : w * k < p := (lt_headCount_iff hw0).mp (by omega)
+    · have hk : w * k < p := (lt_ceilDiv_iff hw0).mp (by omega)
       have hne : (budgetTuples ws (p - w * k)).map (k :: ·) ≠ [] := by
         rw [Ne, List.map_eq_nil_iff, ← List.head?_eq_none_iff,
           head?_budgetTuples (fun w' hw' => hw w' (List.mem_cons_of_mem _ hw')) (by omega)]
@@ -214,7 +209,7 @@ theorem budgetNext_getLast? {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ}
       rw [hn, getLast?_flatMap_range_succ _ k hne, List.getLast?_map] at hx
       obtain ⟨x', hx', rfl⟩ := Option.map_eq_some_iff.mp hx
       have hnot : ¬ w * (k + 1) < p := fun h => by
-        have := (lt_headCount_iff hw0).mpr h; omega
+        have := (lt_ceilDiv_iff hw0).mpr h; omega
       simp only [budgetNext, ih' x' hx', hnot, ↓reduceIte]
 
 /-- **Each tuple is followed by its successor.** -/
@@ -229,13 +224,13 @@ theorem isChain_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) (p : ℕ
     have hws : ∀ w' ∈ ws, 0 < w' := fun w' hw' => hw w' (List.mem_cons_of_mem _ hw')
     rw [budgetTuples_cons]
     refine isChain_flatMap_range _ _ (fun b hb => ?_) (fun b _ => ?_) (fun b hb x hx y hy => ?_)
-    · have hb' := (lt_headCount_iff hw0).mp hb
+    · have hb' := (lt_ceilDiv_iff hw0).mp hb
       rw [Ne, List.map_eq_nil_iff, ← List.head?_eq_none_iff, head?_budgetTuples hws (by omega)]
       simp
     · rw [List.isChain_map]
       refine (ih hws (p - w * b)).imp fun x y hxy => ?_
       simp only [budgetNext, hxy]
-    · have hb1 := (lt_headCount_iff hw0).mp hb
+    · have hb1 := (lt_ceilDiv_iff hw0).mp hb
       rw [List.getLast?_map] at hx
       obtain ⟨x', hx', rfl⟩ := Option.map_eq_some_iff.mp hx
       rw [List.head?_map, head?_budgetTuples hws (by omega)] at hy
