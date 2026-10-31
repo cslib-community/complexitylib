@@ -147,6 +147,14 @@ theorem le_ceilNineTenths_iff {s x : ℕ} (hs : 1 ≤ s) :
     have h2 := (pow_nine_le_ceilNineTenths_pow_ten s).trans (Nat.pow_le_pow_left h1 10)
     omega
 
+/-- `x ≤ ⌈s ^ (9/10)⌉` whenever `x ^ 10 ≤ s ^ 9` and `s ≥ 1`. -/
+theorem le_ceilNineTenths_of_pow_le {x s : ℕ} (hs : 1 ≤ s) (h : x ^ 10 ≤ s ^ 9) :
+    x ≤ ceilNineTenths s := by
+  rw [le_ceilNineTenths_iff hs]
+  rcases Nat.eq_zero_or_pos x with rfl | hx
+  · simpa using Nat.pow_pos (n := 9) hs
+  · exact (Nat.pow_lt_pow_left (by omega) (by norm_num)).trans_le h
+
 /-- `⌈s ^ (9/10)⌉ ≤ s`. -/
 theorem ceilNineTenths_le_self (s : ℕ) : ceilNineTenths s ≤ s :=
   ceilNineTenths_le (pow_nine_le_pow_ten_self s)
