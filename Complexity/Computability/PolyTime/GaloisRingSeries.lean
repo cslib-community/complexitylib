@@ -92,7 +92,8 @@ theorem coeff_modByMonicHom_val (c : List ℕ) (i : ℕ) :
   · have : Subsingleton (ZMod (2 ^ 0)) := by rw [pow_zero]; infer_instance
     exact Subsingleton.elim _ _
   have := nontrivial_zmod hp
-  rw [val_eq_mk, AdjoinRoot.modByMonicHom_mk, (modByMonic_eq_self_iff ((monic_monicOf fl).map _)).mpr]
+  rw [val_eq_mk, AdjoinRoot.modByMonicHom_mk,
+    (modByMonic_eq_self_iff ((monic_monicOf fl).map _)).mpr]
   · simp only [finsetSum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero,
       sum_ite_eq, mem_range]
   · rw [(monic_monicOf fl).degree_map, degree_eq_natDegree (monic_monicOf fl).ne_zero,
@@ -194,8 +195,8 @@ theorem val_shiftDown {n Δ : ℕ} {s : List ℕ} {y : Ring (n + Δ) fl}
 /-- The coefficient of `z ^ j` in the product of two polynomials over `A_p`, by the Cauchy
 formula `∑ i ≤ j, P_i R_(j - i)`. -/
 def cauchyCoeff (p : ℕ) (fl : List ℕ) (P R : List (List ℕ)) (j : ℕ) : List ℕ :=
-  (List.range (j + 1)).foldl (fun acc i => add p fl acc (mul p fl (P.getD i []) (R.getD (j - i) [])))
-    (zero fl)
+  (List.range (j + 1)).foldl
+    (fun acc i => add p fl acc (mul p fl (P.getD i []) (R.getD (j - i) []))) (zero fl)
 
 /-- The **truncated product**: the first `J` coefficients of the product of two polynomials over
 `A_p`. -/

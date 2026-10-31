@@ -44,16 +44,34 @@ The sum over the nodes is `2 ^ Δ` times the recovered value. Dividing its coord
 ((D.10) and the evaluation loss), so the error is killed in `A_N`. This is the precision estimate
 of Lemma D.5 (`Cslib.Circuits.Frontier.exists_taperedRecovery_eq_add`), carried out natively.
 
+**Status.** This file proves the components: the constants, the reciprocal, the multipliers and
+the precision estimate, each against an arbitrary ring homomorphism `ρ : ℤ_(2) → A_N`. The
+assembly into `recover = recoverFromValues mod 2 ^ p` (through a reduction `B → A_N` and the
+interpolation of `GaloisRingArith.interp`) and the polynomial-time certificate are not yet done.
+
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.NativeRecovery.slopeConst`: the constant `α / (t - q)`.
 * `Cslib.Circuits.Frontier.NativeRecovery.recip`: the truncated reciprocal of `E_t(t + α z)`.
 * `Cslib.Circuits.Frontier.NativeRecovery.coeffMult`: the multipliers.
 * `Cslib.Circuits.Frontier.NativeRecovery.recover`: native tapered recovery.
+* `Cslib.Circuits.Frontier.NativeRecovery.recipSeries`,
+  `Cslib.Circuits.Frontier.NativeRecovery.gamma`: the reciprocal and the multipliers over
+  `ℤ_(2)`.
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.NativeRecovery.val_slopeConst`: the constant is correct.
+* `Cslib.Circuits.Frontier.NativeRecovery.val_slopeConst`: the constant `α / (t - q)` is correct.
+* `Cslib.Circuits.Frontier.NativeRecovery.val_recip`: the native reciprocal is correct below
+  `z ^ J`.
+* `Cslib.Circuits.Frontier.NativeRecovery.val_coeffMult`,
+  `Cslib.Circuits.Frontier.NativeRecovery.coe_gamma`: the native multiplier is the image of
+  `2 ^ Δ E_t(0) (-t / α) ^ j`.
+* `Cslib.Circuits.Frontier.NativeRecovery.gamma_mul_two_pow_eq_zero`: under the precision
+  hypothesis of Lemma D.5, the multipliers annihilate `2 ^ p_t` in `A_(p + Δ)`.
+* `Cslib.Circuits.Frontier.NativeRecovery.sum_recoveryNodes`,
+  `Cslib.Circuits.Frontier.NativeRecovery.prod_others`: sums and products over the nodes as
+  iterations over node indices.
 
 ## References
 
@@ -75,14 +93,36 @@ local notation "ℤ₍₂₎" => Valuation.integer (Rat.padicValuation 2)
 /-- The node `t = k - 2 ^ a` of index `k`. -/
 def node (a k : ℕ) : ℤ := (k : ℤ) - 2 ^ a
 
-/-- The multiplicity `q_t = h (u - v₂ t)` of the node of index `k`. -/
-def mult (a u h k : ℕ) : ℕ := h * (u - padicValNat 2 (k - 2 ^ a + (2 ^ a - k)))
+/-- The `2`-adic valuation of `d`, by at most `b` halvings: `v₂ d` when `d < 2 ^ b`
+(`NativeRecovery.twoVal_eq`), and `0` for `d = 0`. -/
+def twoVal : ℕ → ℕ → ℕ
+  | 0, _ => 0
+  | b + 1, d => if d ≠ 0 ∧ d % 2 = 0 then twoVal b (d / 2) + 1 else 0
 
-theorem mult_eq (a u h k : ℕ) : mult a u h k = taperMult u h (node a k) := by
+theorem twoVal_eq : ∀ {b d : ℕ}, d < 2 ^ b → twoVal b d = padicValNat 2 d
+  | 0, d, hd => by rw [pow_zero] at hd; obtain rfl : d = 0 := by omega
+                   simp [twoVal]
+  | b + 1, d, hd => by
+    rw [twoVal]
+    split_ifs with h
+    · obtain ⟨hd0, h2⟩ := h
+      have hd' : d = 2 * (d / 2) := by omega
+      rw [twoVal_eq (by rw [pow_succ] at hd; omega)]
+      conv_rhs => rw [hd']
+      rw [padicValNat.mul (by norm_num) (by omega), padicValNat_self, add_comm]
+    · rcases Nat.eq_zero_or_pos d with rfl | hpos
+      · simp
+      · exact (padicValNat.eq_zero_of_not_dvd (by omega)).symm
+
+/-- The multiplicity `q_t = h (u - v₂ t)` of the node of index `k`. -/
+def mult (a u h k : ℕ) : ℕ := h * (u - twoVal (a + 1) (k - 2 ^ a + (2 ^ a - k)))
+
+theorem mult_eq {a k : ℕ} (u h : ℕ) (hk : k < 2 ^ (a + 1)) :
+    mult a u h k = taperMult u h (node a k) := by
   have : ((k : ℤ) - 2 ^ a).natAbs = k - 2 ^ a + (2 ^ a - k) := by
     rw [show (2 : ℤ) ^ a = ((2 ^ a : ℕ) : ℤ) by push_cast; rfl]
     omega
-  rw [mult, taperMult, node, padicValInt, this]
+  rw [mult, taperMult, node, padicValInt, this, twoVal_eq (by rw [pow_succ] at hk ⊢; omega)]
 
 /-- The indices of the nodes other than the node of index `k`. -/
 def others (a k : ℕ) : List ℕ :=
@@ -102,7 +142,7 @@ def diffConst (N : ℕ) (fl : List ℕ) (x y : ℕ) : List ℕ :=
 `± 2 ^ (a + 1 - v) o⁻¹`. -/
 def slopeConst (N : ℕ) (fl : List ℕ) (a x y : ℕ) : List ℕ :=
   let d := x - y + (y - x)
-  let v := padicValNat 2 d
+  let v := twoVal (a + 1) d
   let w := mul N fl [2 ^ (a + 1 - v)] (inv N fl [d / 2 ^ v])
   if x < y then neg N fl w else w
 
@@ -256,7 +296,8 @@ theorem val_slopeConst (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (Z
   have hw : val N fl (mul N fl [2 ^ (a + 1 - v)] (inv N fl [o])) =
       ((2 ^ (a + 1 - v) : ℕ) : Ring N fl) * _root_.Ring.inverse (o : Ring N fl) := by
     rw [val_mul, val_singleton, val_inv_of_isUnit hirr (by rwa [val_singleton]), val_singleton]
-  unfold slopeConst
+  simp only [slopeConst]
+  rw [show twoVal (a + 1) (k - k' + (k' - k)) = v from twoVal_eq hdlt]
   split_ifs with h
   · rw [val_neg, hw, map_neg, map_natCast, neg_mul]
   · rw [hw, map_natCast]
@@ -319,7 +360,8 @@ theorem val_geom {ρ : ℤ₍₂₎ →+* Ring N fl} {J : ℕ} {c : List ℕ} {�
 of `NativeRecovery.recipSeries`. -/
 theorem val_recip (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
     (ρ : ℤ₍₂₎ →+* Ring N fl) {a u h k J : ℕ} (hk : k < 2 ^ (a + 1)) {i : ℕ} (hi : i < J) :
-    val N fl ((recip N fl a u h k J).getD i []) = ρ (PowerSeries.coeff i (recipSeries a u h k)) := by
+    val N fl ((recip N fl a u h k J).getD i []) =
+      ρ (PowerSeries.coeff i (recipSeries a u h k)) := by
   -- The invariant of the fold over the other nodes.
   suffices H : ∀ (l : List ℕ), (∀ k' ∈ l, k' < 2 ^ (a + 1) ∧ k' ≠ k) →
       ∀ (R : List (List ℕ)) (ψ : PowerSeries ℤ₍₂₎),
@@ -332,7 +374,8 @@ theorem val_recip (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2
     intro i _
     rcases i with _ | i
     · simp [PowerSeries.coeff_one]
-    · rw [List.getD_cons_succ, List.getD_nil, val_nil, PowerSeries.coeff_one, if_neg (by omega), map_zero]
+    · rw [List.getD_cons_succ, List.getD_nil, val_nil, PowerSeries.coeff_one,
+        ite_eq_right_of_eq_false _ _ (eq_false (Nat.succ_ne_zero i)), map_zero]
   intro l
   induction l with
   | nil => intro _ R ψ hR; simpa using hR
@@ -437,7 +480,8 @@ theorem eval_zero_hermiteBasis_eq_prod (a u h k : ℕ) :
         (_root_.Ring.inverse ((node a k : ℚ) - node a k') * (0 - node a k')) ^
           mult a u h k').prod := by
   rw [eval_hermiteBasis, ← prod_others]
-  simp only [mult_eq]
+  refine congrArg List.prod (List.map_congr_left fun k' hk' => ?_)
+  rw [mult_eq u h (mem_others.mp hk').1]
 
 /-- **The multiplier is `2 ^ Δ E_t(0) (-t / α) ^ j`.** -/
 theorem coe_gamma {a u h Δ k j : ℕ} (hk : k < 2 ^ (a + 1))
@@ -467,7 +511,8 @@ theorem coe_gamma {a u h Δ k j : ℕ} (hk : k < 2 ^ (a + 1))
     field_simp
   have hprod : ∀ l : List ℕ, (l.map fun k' => X k' ^ mult a u h k' /
       (2 ^ (a + 1) : ℚ) ^ mult a u h k').prod =
-        (l.map fun k' => X k' ^ mult a u h k').prod / (2 ^ (a + 1) : ℚ) ^ (l.map (mult a u h)).sum := by
+        (l.map fun k' => X k' ^ mult a u h k').prod /
+          (2 ^ (a + 1) : ℚ) ^ (l.map (mult a u h)).sum := by
     intro l
     induction l with
     | nil => simp
@@ -490,5 +535,79 @@ theorem coe_gamma {a u h Δ k j : ℕ} (hk : k < 2 ^ (a + 1))
   field_simp
   push_cast
   ring
+
+/-! ### Precision -/
+
+theorem node_mem_recoveryNodes {a k : ℕ} (hk : k < 2 ^ (a + 1)) (hkL : k ≠ 2 ^ a) :
+    node a k ∈ recoveryNodes a := by
+  rw [recoveryNodes_eq_image]
+  exact mem_image_of_mem _ (mem_filter.mpr ⟨mem_range.mpr hk, hkL⟩)
+
+/-- **The multipliers kill the input error.** If `p + 6 h D_t + q_t (a + 1) ≤ p_t`, the
+multiplier of every coefficient below `z ^ q_t` is divisible by `2 ^ (N - p_t)` in `ℤ_(2)`,
+`N = p + Δ`, so it annihilates `2 ^ p_t` in `A_N`. -/
+theorem gamma_mul_two_pow_eq_zero (ρ : ℤ₍₂₎ →+* Ring N fl) {a u h Δ p pt k j : ℕ}
+    (hk : k < 2 ^ (a + 1)) (hkL : k ≠ 2 ^ a) (hj : j < mult a u h k)
+    (hΔ : (a + 1) * (multSum a u h k + j) ≤ Δ)
+    (hpt : p + 6 * h * 2 ^ (a - padicValInt 2 (node a k)) + mult a u h k * (a + 1) ≤ pt)
+    (hN : N = p + Δ) : ρ (gamma a u h Δ k j) * 2 ^ pt = 0 := by
+  rcases le_or_gt N pt with hle | hlt
+  · rw [show (2 : Ring N fl) ^ pt = ((2 ^ pt : ℕ) : Ring N fl) by push_cast; rfl,
+      ← Nat.sub_add_cancel hle, pow_add, Nat.cast_mul, natCast_two_pow, mul_zero, mul_zero]
+  set e := N - pt
+  have ht := node_mem_recoveryNodes hk hkL
+  set E0 := (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h)
+    (node a k)).eval 0
+  have hE0 : E0 ≠ 0 := eval_zero_hermiteBasis_ne_zero a u h
+  have ht0 : (node a k : ℚ) ≠ 0 := by exact_mod_cast ne_of_mem_erase ht
+  have hx0 : (-(node a k : ℚ) / 2 ^ (a + 1)) ≠ 0 :=
+    div_ne_zero (neg_ne_zero.mpr ht0) (by positivity)
+  have hγ := coe_gamma (u := u) (h := h) hk hΔ
+  have hγ0 : ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) ≠ 0 := by
+    rw [hγ]; exact mul_ne_zero (mul_ne_zero (by positivity) hE0) (pow_ne_zero _ hx0)
+  -- The valuation of the multiplier is at least `e`.
+  have h2 : padicValRat 2 (2 : ℚ) = 1 := by exact_mod_cast padicValRat.self (p := 2) one_lt_two
+  have hvE : -(6 * (h : ℤ) * 2 ^ (a - padicValInt 2 (node a k))) ≤ padicValRat 2 E0 := by
+    have := neg_le_padicValRat_eval_zero_hermiteBasis_taper (a := a) u h
+      (mem_of_mem_erase (by rw [← recoveryNodes_eq]; exact ht)) (ne_of_mem_erase ht)
+    rw [← recoveryNodes_eq] at this
+    exact this
+  have hvx : -((a : ℤ) + 1) ≤ padicValRat 2 (-(node a k : ℚ) / 2 ^ (a + 1)) := by
+    rw [padicValRat.div (neg_ne_zero.mpr ht0) (by positivity), padicValRat.neg,
+      padicValRat.of_int, padicValRat.pow, h2]
+    push_cast
+    omega
+  have hv : (e : ℤ) ≤ padicValRat 2 ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) := by
+    rw [hγ, padicValRat.mul (mul_ne_zero (by positivity) hE0) (pow_ne_zero _ hx0),
+      padicValRat.mul (by positivity) hE0, padicValRat.pow, padicValRat.pow, h2]
+    have hjv : (j : ℤ) * padicValRat 2 (-(node a k : ℚ) / 2 ^ (a + 1)) ≥
+        -((mult a u h k : ℤ) * ((a : ℤ) + 1)) := by
+      have : (j : ℤ) ≤ mult a u h k := by exact_mod_cast hj.le
+      nlinarith
+    have hpt' : (p : ℤ) + 6 * h * 2 ^ (a - padicValInt 2 (node a k)) +
+        (mult a u h k : ℤ) * (a + 1) ≤ pt := by exact_mod_cast hpt
+    have he : (e : ℤ) = N - pt := by omega
+    rw [he, hN]
+    push_cast
+    linarith
+  -- So `γ = 2 ^ e γ'` with `γ' ∈ ℤ_(2)`.
+  have hmem : ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) / 2 ^ e ∈ ℤ₍₂₎ := by
+    have hne : ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) / 2 ^ e ≠ 0 := div_ne_zero hγ0 (by positivity)
+    have hval : 0 ≤ padicValRat 2 (((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) / 2 ^ e) := by
+      rw [padicValRat.div hγ0 (by positivity), padicValRat.pow, h2]
+      omega
+    change Rat.padicValuation 2 _ ≤ 1
+    simp only [Rat.padicValuation, Valuation.coe_mk, MonoidWithZeroHom.coe_mk, ZeroHom.coe_mk,
+      hne, ↓reduceIte]
+    rw [← WithZero.exp_zero, WithZero.exp_le_exp]
+    omega
+  have hsplit : gamma a u h Δ k j = ((2 ^ e : ℕ) : ℤ₍₂₎) * ⟨_, hmem⟩ := by
+    apply Subtype.val_injective
+    simp only [Subring.coe_mul, Subring.coe_natCast]
+    push_cast
+    field_simp
+  rw [hsplit, map_mul, map_natCast, mul_comm, ← mul_assoc,
+    show (2 : Ring N fl) ^ pt = ((2 ^ pt : ℕ) : Ring N fl) by push_cast; rfl, ← Nat.cast_mul,
+    ← pow_add, show pt + e = N by omega, natCast_two_pow, zero_mul]
 
 end Cslib.Circuits.Frontier.NativeRecovery
