@@ -90,35 +90,13 @@ structure Shape (x₀ x : Call) : Prop where
     ∃ d, v.2 = .inr d ∧
       PacketBound x₀.fl x₀.edges (x₀.prec + x.depth * (40 * x₀.edges ^ 2)) v.1.length d
 
-/-- The entries of a tuple of weight below `p` for positive weights are below `p`. -/
-theorem lt_of_mem_budgetTuples {ws β : List ℕ} {p : ℕ} (hw : ∀ w ∈ ws, 0 < w)
-    (hβ : β ∈ BudgetTuples.budgetTuples ws p) : ∀ b ∈ β, b < p := by
-  have key : ∀ (ws β : List ℕ), (∀ w ∈ ws, 0 < w) → β.length = ws.length →
-      ∀ b ∈ β, b ≤ BudgetTuples.weight ws β := by
-    intro ws
-    induction ws with
-    | nil => intro β _ hl b hb; simp_all
-    | cons w ws ih =>
-      intro β hw hl b hb
-      rcases β with _ | ⟨b', β⟩
-      · simp at hb
-      · simp only [BudgetTuples.weight_cons_cons]
-        simp only [List.length_cons, Nat.add_right_cancel_iff] at hl
-        rcases List.mem_cons.mp hb with rfl | hb
-        · have := hw w List.mem_cons_self
-          nlinarith
-        · have := ih β (fun w' hw' => hw w' (List.mem_cons_of_mem _ hw')) hl b hb
-          omega
-  obtain ⟨hl, hwt⟩ := (BudgetTuples.mem_budgetTuples hw).mp hβ
-  exact fun b hb => (key ws β hw hl b hb).trans_lt hwt
-
 /-- The exponent tuple of a child of an active call has entries below the node's precision. -/
 theorem lt_nodePrec_of_mem_children {x : Call} {c : State} (hc : c ∈ children x) :
     ∀ b ∈ c.2.2.1, b < nodePrec x c.1 := by
   simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
     List.mem_range, List.mem_map] at hc
   obtain ⟨j, -, i, -, β, hβ, g, -, rfl⟩ := hc
-  exact lt_of_mem_budgetTuples (weights_pos j) hβ
+  exact fun b hb => BudgetTuples.lt_of_mem_budgetTuples (weights_pos j) hβ hb
 
 /-- The ports of a vertex of a well-formed call are at most its edges. -/
 theorem length_le_edges_of_wf {x : Call} (hx : WF x) {v : List ℕ × VertexDesc}
@@ -251,7 +229,7 @@ theorem Shape.child (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound + x₀
   have hprec : nodePrec x c.1 ≤ x.prec + 40 * m ^ 2 := by
     have := nodePrec_le_add ha (hsc ▸ hM) c.1
     rwa [hsc] at this
-  have hmk := nativeMk_apply_of_active h.wf ha hc
+  have hmk := nativeMk_eq h.wf ha hc
   set pk := nativeParentPacking x.rows (slots x) x.net
   have hpk : pk.2.1 ≤ m ^ 2 := by
     have := numPackets_nativeParentPacking_le x.rows (slots x) x.net
