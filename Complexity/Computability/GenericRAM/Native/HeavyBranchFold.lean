@@ -869,13 +869,29 @@ theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
         (length_encList_map_le _ _ fun eq₀ _ => length_enc_substituteEquation_le S vals eq₀))
   simp only [encBranchInput, length_encPair, encUnary_apply, List.length_replicate]; omega
 
+/-- Callback input tuple `((|S|, vals), (inp, accSum))` for `branchBody`. -/
+abbrev PrepareStepInput : Type := (ℕ × List Bool) × (BranchInput × ℕ)
+
+/-- Width and bit-vector pair `(|S|, vals)` of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.header (p : PrepareStepInput) : ℕ × List Bool := p.1
+
+/-- Assignment bit-vector `vals` of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.vals (p : PrepareStepInput) : List Bool := p.header.2
+
+/-- Retained `(inp, accSum)` accumulator pair of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.accPair (p : PrepareStepInput) : BranchInput × ℕ := p.2
+
+/-- Retained `BranchInput` of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.inp (p : PrepareStepInput) : BranchInput := p.accPair.1
+
+/-- Running common-zero accumulator `accSum` of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.accSum (p : PrepareStepInput) : ℕ := p.accPair.2
+
 /-- Single streaming step of heavy-variable branching. -/
 def branchBody (solver : ℕ → List (List (List ℕ)) → ℕ)
-    (p : (ℕ × List Bool) × (BranchInput × ℕ)) : BranchInput × ℕ :=
-  let vals := p.1.2
-  let inp := p.2.1
-  let acc := p.2.2
-  (inp, acc + branchCountOracle solver (prepareBranch inp.numVars inp.vars vals inp.system))
+    (p : PrepareStepInput) : BranchInput × ℕ :=
+  (p.inp, p.accSum +
+    branchCountOracle solver (prepareBranch p.inp.numVars p.inp.vars p.vals p.inp.system))
 /-- Stream all `2 ^ |S|` heavy-variable assignments via `BooleanFold.run` without materializing the
 assignment list, returning `(finalIdx, (|S|, (inp, totalCount)))`. -/
 def streamBranches (solver : ℕ → List (List (List ℕ)) → ℕ) (inp : BranchInput) :
@@ -960,8 +976,8 @@ noncomputable def branchCountCertificate {solver : ℕ → List (List (List ℕ)
   let encInner := encPair encUnary (encOption encSys)
   let cpair : NativeCertificate
       (fun r : (ℕ × Option (List (List (List ℕ)))) × List (List (List ℕ)) =>
-        let n' := r.1.1
-        (n', r.2))
+        let q := r.1
+        (q.1, r.2))
       (encPair encInner encSys) (encPair encUnary encSys) :=
     ((NativeCertificate.linear (ComputableInO.fst encInner encSys)).fst).prod
       (NativeCertificate.payload encInner encSys)
@@ -1007,21 +1023,6 @@ private theorem branchCountCertificate_bounds {solver : ℕ → List (List (List
       BranchOutcome.toOption, Option.elim, reducedCost]
     simp only [encBranchOutcome_eq, BranchOutcome.toOption, encOption_some, length_encPair,
       List.length_cons, encUnary_apply, List.length_replicate]; omega
-
-/-- Callback input tuple `((|S|, vals), (inp, accSum))` for `branchBody`. -/
-abbrev PrepareStepInput : Type := (ℕ × List Bool) × (BranchInput × ℕ)
-
-/-- Width and bit-vector pair `(|S|, vals)` of a `PrepareStepInput`. -/
-abbrev PrepareStepInput.header (p : PrepareStepInput) : ℕ × List Bool := p.1
-
-/-- Assignment bit-vector `vals` of a `PrepareStepInput`. -/
-abbrev PrepareStepInput.vals (p : PrepareStepInput) : List Bool := p.header.2
-
-/-- Retained `(inp, accSum)` accumulator pair of a `PrepareStepInput`. -/
-abbrev PrepareStepInput.accPair (p : PrepareStepInput) : BranchInput × ℕ := p.2
-
-/-- Retained `BranchInput` of a `PrepareStepInput`. -/
-abbrev PrepareStepInput.inp (p : PrepareStepInput) : BranchInput := p.accPair.1
 
 theorem computableInPolyTime_prepareStep :
     ComputableInPolyTime (fun p : PrepareStepInput =>

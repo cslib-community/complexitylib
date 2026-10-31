@@ -101,13 +101,27 @@ def bucketStep (rowN : List ℕ) (state : ℕ × Option (ℕ × ℕ)) (s : ℕ) 
 def findBucket (n q j : ℕ) (table : List (List ℕ)) : Option (ℕ × ℕ) :=
   ((List.range (min q n + 1)).foldl (bucketStep (table.getD n [])) (j, none)).2
 
+/-- State `((k, r), bits)` of combinatorial unranking `unrankCombStep`. -/
+abbrev UnrankCombState : Type := (ℕ × ℕ) × List Bool
+
+/-- Remaining weight and rank pair `(k, r)` of `UnrankCombState`. -/
+abbrev UnrankCombState.kr (state : UnrankCombState) : ℕ × ℕ := state.1
+
+/-- Remaining weight `k` of `UnrankCombState`. -/
+abbrev UnrankCombState.k (state : UnrankCombState) : ℕ := state.kr.1
+
+/-- Remaining rank `r` of `UnrankCombState`. -/
+abbrev UnrankCombState.r (state : UnrankCombState) : ℕ := state.kr.2
+
+/-- Accumulated indicator bit list `bits` of `UnrankCombState`. -/
+abbrev UnrankCombState.bits (state : UnrankCombState) : List Bool := state.2
+
 /-- One step of combinatorial unranking of rank `r < C(n, k)` into an `n`-bit indicator. -/
-def unrankCombStep (table : List (List ℕ)) (state : (ℕ × ℕ) × List Bool) (m : ℕ) :
-    (ℕ × ℕ) × List Bool :=
-  let kr := state.1
-  let c := (table.getD m []).getD kr.1 0
-  if kr.2 < c then ((kr.1, kr.2), state.2 ++ [false])
-  else ((kr.1 - 1, kr.2 - c), state.2 ++ [true])
+def unrankCombStep (table : List (List ℕ)) (state : UnrankCombState) (m : ℕ) :
+    UnrankCombState :=
+  let c := (table.getD m []).getD state.k 0
+  if state.r < c then ((state.k, state.r), state.bits ++ [false])
+  else ((state.k - 1, state.r - c), state.bits ++ [true])
 
 /-- Unrank `r < C(n, k)` using `table = pascalTable n` into a length-`n` weight-`k` bit list. -/
 def unrankComb (n k r : ℕ) (table : List (List ℕ)) : List Bool :=
@@ -848,7 +862,9 @@ private theorem computableInPolyTime_unrankComb :
     (step := Internal.unrankCombStep) (snd (encPair encParams encNat) encTab)
     (listReverseWithInput (range.comp hp1.fst'.fst')) hinit hstep
     (growth := fun _ => 1) (.const 1) fun p state m _ => ?_).snd'
-  simp only [encSt, Internal.unrankCombStep]; split_ifs
+  simp only [encSt, Internal.unrankCombStep, Internal.UnrankCombState.k,
+    Internal.UnrankCombState.r, Internal.UnrankCombState.kr,
+    Internal.UnrankCombState.bits]; split_ifs
   · simp only [length_encPair, encBits_apply, List.length_append, List.length_singleton]; omega
   · have : (encNat (state.1.2 - (p.2.getD m []).getD state.1.1 0)).length ≤
         (encNat state.1.2).length := by
