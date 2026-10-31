@@ -180,12 +180,16 @@ index links to canonical definitions rather than keeping a second set.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
   universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
-  `(f + 1) * polylog f ≤ g`, with an absolute exponent (`Hierarchy/TimePolylog`). For
-  nondeterministic time, padding amplifies the coarse lazy-diagonal hierarchy, which separates
-  degree `d` from degree `6 * d + 14`. Remaining targets include the textbook `f log f = o(g)`
-  hierarchy, which needs the diagonal to clock the universal machine's own steps, noninteger
-  polynomial degrees, and sharp nondeterministic and alternating time hierarchies with certified
-  simulators.
+  `(f + 1) * polylog f ≤ g`, with an absolute exponent (`Hierarchy/TimePolylog`). Composing it
+  with the word-RAM simulations gives `RAMTIME T ⊂ RAMTIME T⁵` over `Basis.additive` for
+  polynomial `T` (`Hierarchy/WordRAM`). For nondeterministic time, padding amplifies the coarse
+  lazy-diagonal hierarchy, which separates degree `d` from degree `6 * d + 14`; lazy
+  diagonalization also separates `NTIME (2 ^ (k * n))` from `NTIME (2 ^ ((8 * k + 16) * n))`, so
+  `NE ⊄ NTIME (2 ^ (k * n))`. Remaining targets
+  include the textbook `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal
+  machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
+  diagonalization with a smaller gap, and sharp nondeterministic and alternating time
+  hierarchies with certified simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -363,9 +367,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   NEXP.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
-  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined;
-  still open are an exponential nondeterministic time separation, a succinct tableau reduction
-  with a linear-size decoder, the lexicographically first witness in `E^NP`, and the core theorem.
+  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
+  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`; still open are an
+  exponential nondeterministic time separation, a succinct tableau reduction with a linear-size
+  decoder, and the core theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
