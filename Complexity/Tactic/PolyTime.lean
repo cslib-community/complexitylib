@@ -28,6 +28,9 @@ are unfolded. `fun_prop` handles composition; Aesop chooses loop rules and uses 
 contracts. Plain and internal tidy goals use separate rules, with fixed machines and polynomial
 bounds across all encoded inputs. Plain search applies plain statements directly; it does not
 lower a goal or restate its hypotheses tidily. Unknown algorithms still require certificates.
+On ordinary failure, `polytime` includes one failed compositional attempt when the backend has
+reported one. This is a search hint, not a claim that the subterm is uncomputable. Resource-limit
+and interrupt exceptions are unchanged.
 
 ## Main definitions
 
@@ -610,6 +613,28 @@ private meta def polytimeConditionalFast : TacticM Unit := withMainContext do
     catch _ => before.restore
   throwError "no supplied-guard conditional proof closed all premises"
 
+open Lean in
+/-- The current invocation's rendered hint. The reference survives search backtracking, but the
+local environment containing it is discarded when the invocation finishes. -/
+private meta initialize failureHint : EnvExtension (Option (IO.Ref (Option String))) ←
+  registerEnvExtension (pure none) (asyncMode := .local)
+
+open Lean Elab Tactic in
+/-- Collect one backend hint without rerunning search. Each invocation, including a nested one,
+has its own reference; `withEnv` restores the caller's environment even on resource exceptions.
+The ordinary `catch` does not intercept Lean's resource-limit or interrupt exceptions. -/
+private meta def withFailureHint (action : TacticM Unit) : TacticM Unit := do
+  let hint ← IO.mkRef (none : Option String)
+  try
+    withEnv (failureHint.setState (← getEnv) (some hint)) action
+  catch ex =>
+    let some message ← hint.get | throw ex
+    match ex with
+    | .error ref messageData =>
+      throw <| .error ref (messageData ++ .note m!"polytime could not certify a subterm in one \
+        attempted route:\n{message}")
+    | .internal .. => throw ex
+
 open Lean Meta Elab Tactic Mathlib.Meta.FunProp in
 /-- Shared compositional backend with a fresh alias-aware raw-premise boundary. The standard
 assumption discharger and ordinary transition depth are retained; callers keep their step limit.
@@ -634,7 +659,13 @@ meta def Internal.funPropWithPlainBoundary (maxSteps : Nat) : TacticM Unit := do
       transitionTheorems := ← plainGeneralTheorems (transitionTheoremsExt.getState env) }
     let ruleEnv ← plainRuleEnvironment env
     let (result, state) ← withEnv ruleEnv <| (funProp target ctx).run state
-    let some result := result | throwError "no compositional plain certificate: {state.msgLog}"
+    let some result := result | do
+      if let some hint := failureHint.getState (← getEnv) then
+        if (← hint.get).isNone then
+          -- FunProp rendered these strings while its telescope variables were in scope.
+          -- Keep its first report, without retaining expressions from its failure cache.
+          hint.set state.msgLog.getLast?
+      throwError "no compositional plain certificate: {state.msgLog}"
     goal.assign result.proof
     replaceMainGoal []
 open Lean Elab Tactic in
@@ -893,7 +924,7 @@ private meta def polytimeIterateAlternative : Lean.Elab.Tactic.TacticM Unit :=
 /-- Prove a polynomial-time certificate from known routines and controlled loop rules. -/
 -- Unfold only reducible aliases when comparing assumptions. Ordinary program definitions may
 -- contain large fixed enumerations; their named certificates should be tried before unfolding.
-elab "polytime" : tactic => Internal.withPlainRuleCache do
+elab "polytime" : tactic => withFailureHint <| Internal.withPlainRuleCache do
   Lean.Elab.Tactic.evalTactic (← `(tactic| solve |
     aesop (config := { terminal := true, assumptionTransparency := .reducible })
       (rule_sets := [PolyTime])))
