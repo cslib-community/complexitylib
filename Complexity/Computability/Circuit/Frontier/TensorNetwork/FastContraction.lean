@@ -162,9 +162,26 @@ theorem edges_lt_bound_of_active {x : Call} (h : active x = true) : x.edges < x.
 @[expose] def nodePrec (i : ℕ) : ℕ :=
   nodePrecision x.prec (step x) (slots x) x.edges (level x ((nodes x).getD i 0))
 
-/-- **The packing of Lemma D.3**, natively (`nativeParentPacking`, `r = 64`). -/
+/-- The number of rows capped at the number of vertices. The packing and the child builder use it
+in place of the number of rows: it changes nothing for a rows-first network with an edge
+(`FastContraction.rowCap_eq`), and it keeps them polynomial-time on every call, since the number
+of rows is stored in binary and the packing lists one word per row. -/
+@[expose] def rowCap : ℕ := min x.rows x.net.vertices.length
+
+/-- The cap on the rows is inactive when there are at most as many rows as vertices. -/
+theorem rowCap_eq {x : Call} (h : x.rows ≤ x.net.vertices.length) : rowCap x = x.rows :=
+  min_eq_left h
+
+/-- **The packing of Lemma D.3**, natively (`nativeParentPacking`, `r = 64`), with the rows
+capped (`FastContraction.rowCap`). -/
 @[expose] def packing : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ) :=
-  nativeParentPacking x.rows (slots x) x.net
+  nativeParentPacking (rowCap x) (slots x) x.net
+
+/-- The packing is the native packing of the rows when there are at most as many rows as
+vertices. -/
+theorem packing_eq {x : Call} (h : x.rows ≤ x.net.vertices.length) :
+    packing x = nativeParentPacking x.rows (slots x) x.net := by
+  rw [packing, rowCap_eq h]
 
 /-- **The weights of the modes of the `i`-th node**, packet-major over `(q, y₀, b)` with
 `y₀ < 2 ^ (v₂ t + 1)` and `b < p_t`: mode `(q, y₀, b)` has weight `b + 1`. -/

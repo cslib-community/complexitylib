@@ -904,6 +904,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSchedule
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionShape
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSize
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct

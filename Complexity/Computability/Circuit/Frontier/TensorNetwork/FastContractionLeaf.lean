@@ -497,7 +497,8 @@ theorem packetShape_child {x : Call} (hx : WF x) (ha : active x = true) (hs : Pa
   -- The builder at a cursor state of a well-formed active call: the uncapped native child.
   have hmk : (nativeMk x c).2 = nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0))
       (nodePrec x c.1) (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) x.rows
-      x.net (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 c.2.2.2 := rfl
+      x.net (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 c.2.2.2 := by
+    rw [nativeMk_eq hx ha hc]
   obtain ⟨-, hD⟩ := hx
   obtain ⟨hj, -, hg⟩ := lt_of_mem_children hc
   have ha' := ha
