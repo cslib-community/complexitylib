@@ -97,7 +97,8 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
   Vegas termination, expected step bound, and exact conditional-uniform exit law for full-table
   rehashing.
 * `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckoo_seq_expected_amortized`: end-to-end
-  expected-time bound across arbitrary valid `get`/`insert` histories.
+  expected-time bound across arbitrary valid `get`/`insert` histories, conditional on
+  `IsCuckooHashFamily` (proved for `n_max ≤ 2`, open for `n_max ≥ 3`).
 
 ## References
 
@@ -6805,12 +6806,17 @@ private theorem cuckoo_steps_expected_amortized (w base n_max U V C_walk C_reh :
             ℝ≥0∞) :=
           (Nat.cast_add _ _).symm
 
-/-- **End-to-end expected-amortized theorem for Pagh–Rodler cuckoo hashing.**
-Starting from zeroed memory in `[base, base + space n_max)`, initializing `cuckooCode` and
-executing any valid sequence `ops : List (Dictionary.Op U)` of `get` and `insert` operations takes
-expected instruction cost at most
+/-- **End-to-end expected-amortized theorem for Pagh–Rodler cuckoo hashing, conditional on the
+hash pair.** Assuming `hfam : IsCuckooHashFamily …` for the Word-RAM hash pair, starting from
+zeroed memory in `[base, base + space n_max)`, initializing `cuckooCode` and executing any valid
+sequence `ops : List (Dictionary.Op U)` of `get` and `insert` operations takes expected
+instruction cost at most
 `spanSteps n_max + setupSteps n_max U +
-  (Dictionary.spec U V n_max).totalCost (charge n_max U C_walk C_reh) (Dictionary.empty U) ops`. -/
+  (Dictionary.spec U V n_max).totalCost (charge n_max U C_walk C_reh) (Dictionary.empty U) ops`.
+
+`hfam` carries the walk-length and rehash bounds of Pagh and Rodler's analysis. It is proved only
+for `n_max ≤ 2` (`isCuckooHashFamily_le_two`) and is open for `n_max ≥ 3`, so this is not yet an
+unconditional expected-time bound for cuckoo hashing. -/
 theorem cuckoo_seq_expected_amortized (w base n_max U V C_walk C_reh : ℕ)
     (hfam : IsCuckooHashFamily U n_max (tableBits n_max) (maxEvictions n_max) C_walk C_reh)
     (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w)
