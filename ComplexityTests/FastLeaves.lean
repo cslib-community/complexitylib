@@ -8,7 +8,8 @@ import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 
 /-! # The leaf bounds of the native recursion: checked instances
 
-A guarded input whose root is reached, well-formed and has the packet shape. -/
+A guarded input whose root is reached, well-formed and has the packet shape; the edge bound on
+reached calls; and the resource analysis. -/
 
 namespace ComplexityTests.FastLeaves
 
@@ -25,5 +26,14 @@ example : fastGuard pair = true := by decide
 example : WF (root (ExplicitTensorNetwork.capPrecision (1, pair))) ∧
     PacketShape (root (ExplicitTensorNetwork.capPrecision (1, pair))) :=
   (Reach.root (mk := nativeMk)).wf_packetShape (wf_root 1 (by decide)) (packetShape_root _)
+
+-- Reached calls have at most twice the scale in edges, on every input.
+example (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) (x : Call)
+    (hx : Reach nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G))) x) :
+    x.edges ≤ 2 * x.scale :=
+  hx.edges_le_two_mul_scale rfl rfl
+
+-- The resource analysis of the native recursion holds, with no remaining hypothesis.
+example : FastAnalysis nativeMk := fastAnalysis_nativeMk_holds
 
 end ComplexityTests.FastLeaves
