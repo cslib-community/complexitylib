@@ -1222,7 +1222,7 @@ theorem computableInPolyTime_varDegree :
 binary, result in `encOption encNat`) is polynomial-time. -/
 theorem computableInPolyTime_findHeavyVar :
     ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × List (List (List ℕ)) => findHeavyVar p.1.1 p.1.2 p.2)
+      (fun (((n, b), sys) : (ℕ × ℕ) × List (List (List ℕ))) => findHeavyVar n b sys)
       (encPair (encPair encUnary encNat) encSys) (encOption encNat) := by
   have hdeg := computableInPolyTime_varDegree
   have hrange : ComputableInPolyTime
@@ -1235,7 +1235,7 @@ theorem computableInPolyTime_findHeavyVar :
     binary_lt' ((fst _ _).fst'.snd')
       (unary_to_binary.comp (hdeg.comp ((snd _ _).prod ((fst _ _).snd'))))
   have hfind := findWithInput (test := fun x v => decide (x.1.2 < varDegree v x.2)) hrange hpred
-  refine hfind.of_enc_eq fun p => congrArg (encOption encNat) ?_
+  refine hfind.of_enc_eq fun ⟨⟨_, _⟩, _⟩ => congrArg (encOption encNat) ?_
   rw [List.map_id']; rfl
 
 @[fun_prop]
@@ -1250,9 +1250,11 @@ theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List
 /-- Substituting `x_v = val` into a sparse `𝔽₂` equation (`restrictEquation`) is polynomial-time. -/
 theorem computableInPolyTime_restrictEquation :
     ComputableInPolyTime
-      (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
-      (encPair (encPair encNat encBool) encEq) encEq := by
-  unfold restrictEquation; fun_prop
+      (fun (((v, val), eq) : (ℕ × Bool) × List (List ℕ)) => restrictEquation v val eq)
+      (encPair (encPair encNat encBool) encEq) encEq :=
+  (by unfold restrictEquation; fun_prop :
+    ComputableInPolyTime (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
+      (encPair (encPair encNat encBool) encEq) encEq).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
 
 @[fun_prop]
 theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ List Bool}
@@ -1267,10 +1269,14 @@ theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ 
 /-- Substituting `x_v = val` across a sparse `𝔽₂` system (`restrictSystem`) is polynomial-time. -/
 theorem computableInPolyTime_restrictSystem :
     ComputableInPolyTime
-      (fun p : (ℕ × Bool) × List (List (List ℕ)) => restrictSystem p.1.1 p.1.2 p.2)
+      (fun (((v, val), sys) : (ℕ × Bool) × List (List (List ℕ))) => restrictSystem v val sys)
       (encPair (encPair encNat encBool) encSys) encSys :=
-  mapWithInput (snd (encPair encNat encBool) encSys)
-    (computableInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))
+  (mapWithInput
+    (f := fun x a =>
+      (fun (((v, val), eq) : (ℕ × Bool) × List (List ℕ)) => restrictEquation v val eq) (x.1, a))
+    (snd (encPair encNat encBool) encSys)
+    (computableInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))).of_enc_eq
+    fun ⟨⟨_, _⟩, _⟩ => rfl
 
 @[fun_prop]
 theorem computableInPolyTime_restrictSystem_apply {α : Type} {encIn : α ↪ List Bool}
