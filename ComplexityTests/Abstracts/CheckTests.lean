@@ -234,11 +234,24 @@ end AllowlistAccepted
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.CheckTests.AllowlistAccepted`: 1 root
-declarations, 9 dependencies checked
+declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.CheckTests.AllowlistAccepted allowing [
   Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 ]
+
+/- 15. The guarded message pins only the root-declaration count, not the transitive dependency
+count. -/
+namespace DependencyCountUnpinned
+def usesArithmetic : ℕ := (1 + 2) * (3 + 4)
+end DependencyCountUnpinned
+
+/--
+info: abstract audit passed for `ComplexityTests.Abstracts.CheckTests.DependencyCountUnpinned`: 1
+root declarations
+-/
+#guard_msgs (whitespace := lax) in
+#check_abstract ComplexityTests.Abstracts.CheckTests.DependencyCountUnpinned
 
 end ComplexityTests.Abstracts.CheckTests
