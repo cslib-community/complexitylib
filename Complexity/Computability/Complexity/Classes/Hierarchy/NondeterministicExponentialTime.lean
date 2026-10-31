@@ -15,6 +15,7 @@ import Complexity.Computability.Complexity.Classes.Time.Verifier
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
@@ -425,36 +426,6 @@ private theorem exists_computableInO_accepts : ∃ D, ComputableInO
     simp only [hb] at h ⊢
     omega
 
-/-- A polynomially bounded resource function is within a constant multiple of `2 ^ size`. -/
-private theorem PolyBounded.exists_le_mul_two_pow' {α : Type*} {size u : α → ℕ}
-    (h : PolyBounded size u) : ∃ C, ∀ a, u a ≤ C * 2 ^ size a := by
-  obtain ⟨c, d, hcd⟩ := h.exists_le
-  obtain ⟨C, hC⟩ := PolynomiallyBounded.exists_le_mul_two_pow
-    (p := fun n => c * (n + 1) ^ d) (by fun_prop)
-  exact ⟨C, fun a => (hcd a).trans (hC _)⟩
-
-/-- **`2 ^ L x` in unary**, for an exponent `L x` computable in unary in polynomial time, within
-time `O(2 ^ |x| + 4 ^ L x)` and space `O(2 ^ |x| + 2 ^ L x)`. -/
-private theorem exists_computableInO_unary_two_pow {α : Type} {enc : α ↪ List Bool} {L : α → ℕ}
-    (hL : ComputableInPolyTime L enc encUnary) :
-    ∃ C, ComputableInO (fun x => 2 ^ L x) enc encUnary
-      (fun x => C * 2 ^ (enc x).length + 4 ^ L x) (fun x => C * 2 ^ (enc x).length + 2 ^ L x) := by
-  obtain ⟨T, S, hT, hS, h⟩ := hL.exists_computableInO
-  obtain ⟨C₁, hC₁⟩ := PolyBounded.exists_le_mul_two_pow' hT
-  obtain ⟨C₂, hC₂⟩ := PolyBounded.exists_le_mul_two_pow' hS
-  refine ⟨C₁ + C₂, (ComputableInO.unary_two_pow.comp h).mono_le (fun x => ?_) fun x => ?_⟩
-  · have h₁ := hC₁ x
-    have h₂ : (L x + 1) * 2 ^ L x ≤ 4 ^ L x := by
-      rw [show (4 : ℕ) = 2 * 2 by rfl, mul_pow]
-      exact Nat.mul_le_mul_right _ Nat.lt_two_pow_self
-    have h₃ : C₁ * 2 ^ (enc x).length ≤ (C₁ + C₂) * 2 ^ (enc x).length :=
-      Nat.mul_le_mul_right _ (by omega)
-    omega
-  · have h₁ := hC₂ x
-    have h₃ : C₂ * 2 ^ (enc x).length ≤ (C₁ + C₂) * 2 ^ (enc x).length :=
-      Nat.mul_le_mul_right _ (by omega)
-    omega
-
 /-- The numeric facts behind the bound of the brute force: the encoded pair of length `N`, the
 certificate length `c`, the unary certificate length and the search. -/
 private theorem brute_bound_aux (C K₀ N c : ℕ) (hc : 1 ≤ c) :
@@ -524,7 +495,7 @@ private theorem exists_computableInO_brute (k : ℕ) : ∃ K, ComputableInO
   have hL : ComputableInPolyTime (fun q : List Bool × List Bool => (k + 1) * (q.2.length + 1))
       encQ encUnary := by
     fun_prop
-  obtain ⟨C, hcl⟩ := exists_computableInO_unary_two_pow hL
+  obtain ⟨C, hcl⟩ := hL.exists_computableInO_unary_two_pow
   have hpair := (ComputableInO.of_eq (f := fun q : List Bool × List Bool => q) (encIn := encQ)
     (encMid := encQ) fun _ => rfl).prod hcl
   have h := hsearch.comp hpair
@@ -629,7 +600,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
   have hL : ComputableInPolyTime (fun z : List Bool => (k + 2) * (z.length + 1)) encBits
       encUnary := by
     fun_prop
-  obtain ⟨CE, hE₀⟩ := exists_computableInO_unary_two_pow hL
+  obtain ⟨CE, hE₀⟩ := hL.exists_computableInO_unary_two_pow
   have hE := hE₀.comp hbase
   -- the numeric facts about the tests
   have hfacts (p : List Bool × List Bool) : (unframe p.1).length ≤ p.1.length ∧
@@ -764,7 +735,7 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
   have hL : ComputableInPolyTime (fun x : List Bool => (k + 1) * (x.length + 2)) encBits
       encUnary := by
     fun_prop
-  obtain ⟨Cℓ, hℓ₀⟩ := exists_computableInO_unary_two_pow hL
+  obtain ⟨Cℓ, hℓ₀⟩ := hL.exists_computableInO_unary_two_pow
   have hℓ := hℓ₀.of_enc_eq (encC := encUnary)
     (g := fun x : List Bool => certLen k (x.length + 1)) fun x => rfl
   obtain ⟨CD, hCD⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun m => (m + 1) ^ D)
