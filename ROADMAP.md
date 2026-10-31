@@ -183,7 +183,9 @@ index links to canonical definitions rather than keeping a second set.
   `(f + 1) * polylog f ≤ g`, with an absolute exponent (`Hierarchy/TimePolylog`). Composing it
   with the word-RAM simulations gives `RAMTIME T ⊂ RAMTIME T⁵` over `Basis.additive` for
   polynomial `T` (`Hierarchy/WordRAM`). For nondeterministic time, padding amplifies the coarse
-  lazy-diagonal hierarchy, which separates degree `d` from degree `6 * d + 14`. Remaining targets
+  lazy-diagonal hierarchy, which separates degree `d` from degree `6 * d + 14`; lazy
+  diagonalization also separates `NTIME (2 ^ (k * n))` from `NTIME (2 ^ ((8 * k + 16) * n))`, so
+  `NE ⊄ NTIME (2 ^ (k * n))`. Remaining targets
   include the textbook `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal
   machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by direct
   diagonalization with a smaller gap, and sharp nondeterministic and alternating time

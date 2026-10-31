@@ -1208,6 +1208,7 @@ public import Complexity.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import Complexity.Computability.Complexity.Classes.Hierarchy
 public import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Nondeterministic
+public import Complexity.Computability.Complexity.Classes.Hierarchy.NondeterministicExponentialTime
 public import Complexity.Computability.Complexity.Classes.Hierarchy.NondeterministicPolynomial
 public import Complexity.Computability.Complexity.Classes.Hierarchy.NondeterministicTime
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Polynomial
@@ -1754,6 +1755,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolynomialPadding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigOLe
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
@@ -2089,6 +2091,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.T
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy.Redirect
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Degree
+public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Exponential
 public import Complexity.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial
 public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.SingleTape
