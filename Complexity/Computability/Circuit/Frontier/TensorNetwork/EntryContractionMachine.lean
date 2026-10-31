@@ -41,7 +41,8 @@ admissible input at the modulus passes it (`EntryContraction.guard_of_entryAdmis
 **The root and the clock.** The root call (`EntryContraction.rootCall`) has scale `m`, depth `0`,
 edge bound `m + 1`, precision `P`, modulus `fl`, `r` rows and the network
 `FastContraction.rootNet G`. The clock (`EntryContraction.clock`) is
-`2 ^ (K₀ (m + P) / √⌊log₂ (m + P)⌋)`, as for explicit networks. On guarded inputs the root is well-formed (`EntryContraction.wf_rootCall`).
+`2 ^ (K₀ (m + P) / √⌊log₂ (m + P)⌋)`, as for explicit networks. On guarded inputs the root is
+well-formed (`EntryContraction.wf_rootCall`).
 
 **The result** (`EntryContraction.coreValue`): on guarded inputs, the coefficient list of a value
 tagged `0` returned by the clocked run, and direct summation otherwise. It is correct at the modulus

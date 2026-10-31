@@ -469,12 +469,19 @@ def PacketShape (x : Call T) : Prop :=
     d.1.i < d.1.a ∧ d.1.a ≤ Nat.log 2 x.scale / 32768 ∧ d.1.tiles = 2 ^ (d.1.i + 1) ∧
       d.1.nb ≤ x.prec ∧ (∀ y ∈ d.2.1, y.2 < 2 ^ d.1.a) ∧ ((d.2.1.filter (·.1)).map (·.2)).Nodup
 
-/-- **The root has no packets.** -/
-theorem packetShape_root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : PacketShape (root q) := by
+/-- **A call on a root network has no packets**: its descriptors are those of a network
+`G`, by `rootNet G`. -/
+theorem packetShape_of_net_eq_rootNet {x : Call T} {G : DescribedNetwork T}
+    (h : x.net = rootNet G) : PacketShape x := by
   intro v hv d hd
-  simp only [root, rootNet, Call.net, List.mem_map] at hv
+  rw [h] at hv
+  simp only [rootNet, List.mem_map] at hv
   obtain ⟨w, -, rfl⟩ := hv
   cases hd
+
+/-- **The root has no packets.** -/
+theorem packetShape_root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : PacketShape (root q) :=
+  packetShape_of_net_eq_rootNet rfl
 
 /-- **The packet shape passes to the native children** of a well-formed active call: a retained
 vertex keeps its descriptor, at a precision that only grows, and a new packet has `a` slot bits
