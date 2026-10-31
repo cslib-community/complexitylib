@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedBound
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
@@ -164,8 +165,9 @@ theorem extract_inO :
       (fun p => (p.2.2.length + 1) * ((encPair encUnary eWin p).length + 1))
       (fun p => (p.2.2.length + 1) * ((encPair encUnary eWin p).length + 1)) := by
   have hw := snd encUnary eWin
-  have hmap := mapWith (encP := encUnary) (enc := eTape) (encB := eTape) cut_inO
-    (fst encUnary eWin) hw.snd'
+  -- bridge for #862: tidy client of the plain `ComputableInO.mapWith`
+  have hmap := (ComputableInO.mapWith (encP := encUnary) (enc := eTape) (encB := eTape)
+    cut_inO.computableInO (fst encUnary eWin).computableInO hw.snd'.computableInO).tidy
   refine (((hw.fst'.prod hmap).of_enc_eq (encOut := eWin)
     (g := fun p : ℕ × Win => extract p.1 p.2) fun _ => rfl).mono 8 (fun p => ?_)
     fun p => ?_).computableInO
@@ -558,7 +560,8 @@ private lemma wArgs_inO : ComputableTidilyInO
   have hcfg := (hw.fst'.prod (hpos.prod htail)).of_enc_eq (encOut := eCfg)
     (g := fun x : Desc × Win => (⟨x.2.1, inPos (wHead x).read, x.2.2.tail⟩ : SCfg)) fun _ => rfl
   have hctx := ((hd.prod hcfg).prod hsym).of_enc_eq (encOut := eWCtx) (g := wCtx) fun _ => rfl
-  have hstep := stepWith_inO.comp hctx
+  -- bridge for #862: tidy client of the plain `stepWith_inO`
+  have hstep := stepWith_inO.tidy.comp hctx
   refine (((hhead.prod hpos).prod hstep).of_enc_eq (g := fun x : Desc × Win =>
     ((wHead x, inPos (wHead x).read), stepWith (wCtx x).1.1 (wCtx x).1.2 (wCtx x).2))
     fun _ => rfl).mono 128 (fun x => ?_) fun x => ?_

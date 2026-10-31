@@ -150,7 +150,7 @@ theorem exists_computableInO_timeDiagonal_polylog : ∃ k, ∀ {J : ℕ → ℕ}
         ((J x.length + 1) * (Nat.log 2 (J x.length + 1) + 1)))
       fun x => x.length + (Nat.log 2 (x.length + 1) + 1) ^ k *
         ((J x.length + 1) * (Nat.log 2 (J x.length + 1) + 1)) := by
-  obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
+  obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
   obtain ⟨ce, hce⟩ := hdec.2
   obtain ⟨cA, hcA⟩ := PolynomiallyBounded.exists_le_mul_two_pow (p := fun u => (u + 1) ^ dd)
     (by fun_prop)
@@ -158,7 +158,7 @@ theorem exists_computableInO_timeDiagonal_polylog : ∃ k, ∀ {J : ℕ → ℕ}
   refine ⟨ed * 6, fun {J} hJ => ?_⟩
   have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
     ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
-  have hdesc := hdec.inO.comp hu
+  have hdesc := hdec.inO.tidy.comp hu
   have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
   have hclock := hJ.computableInO.tidy
   have hU := computableInO_universal_nlogn.tidy.comp (hdesc.prod (hsym.prod hclock))
