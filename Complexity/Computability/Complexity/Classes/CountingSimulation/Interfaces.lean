@@ -49,9 +49,12 @@ number of edges itself.
 
 Both interfaces are generic in the representation of networks: their type `N`, its encoding, the
 contracted `value : N → ℕ` and the admissibility predicate `Admissible C s G` are parameters. The
-intended instance takes `N` to be an explicit Boolean tensor network with its bipartition,
-`value` its contraction, and `Admissible C s G` to say that `G` is bipartite with at most `C * s`
-edges and maximum degree at most `C * log₂ s`.
+intended instance takes `N` to be an explicit Boolean tensor network with its number of row
+vertices, `value` its contraction, and `Admissible C s G` to say that `G` is bipartite with at
+most `C * s` edges and maximum degree at most `C * log₂ s`. This is
+`Cslib.Complexity.CountingSimulation.ExplicitAdmissible`, which also bounds the vertices and asks
+for full tables and at least `s` edges; the block-counting networks discharge the network
+interface with it (`Cslib.Complexity.CountingSimulation.networkFamilies_explicitAdmissible`).
 
 ## Main definitions
 

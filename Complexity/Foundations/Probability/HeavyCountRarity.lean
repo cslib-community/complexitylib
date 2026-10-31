@@ -159,23 +159,23 @@ only the explicit conditional bound is used. This is the mean-error portion of
 [OpenAI2026LogSpace, Lemma 8.4], with an explicit constant and arbitrary positive exponent. -/
 theorem vertexNormPow_heavyCountEvent_le (hs : s ≠ 0) (hNu : 0 ≤ N * u)
     (X Y Yt : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Yt σ y)]
-    {a ρ c M : ℝ} {n : ℕ} (ha : 0 < a) (hρ : 0 < ρ) (hρ1 : ρ ≤ 1)
+    {a ρ c M : ℝ} {n : ℕ} (ha : 0 ≤ a) (hρ : 0 < ρ) (hρ1 : ρ ≤ 1)
     (hc : 0 ≤ c) (hn : 0 < n) (d : V → V → ℝ) (hd : ∀ x y, 0 ≤ d x y)
     (hmass : ∀ x, a * ∑ y, d x y ≤ M)
-    (hpair : ∀ x y w, w ≠ y →
+    (hpair : ∀ x y w, ρ / 4 < d x w → w ≠ y →
       (#{σ | X σ x ∧ Yt σ y ∧ Y σ w} : ℝ) ≤
         c * a * #{σ | X σ x ∧ Yt σ y}) (b : V → V → ℝ) :
     vertexNormPow s N u X (fun σ x =>
-      if Probability.heavyCountEvent Y (d x) ρ n σ then
+      if Probability.heavyCountEvent Y univ (d x) ρ n σ then
         kthLargest 1 {y | Yt σ y} (fun y => |b x y|) else 0) ≤
       (2 * (1 + 4 * c * M) / ((n : ℝ) * ρ)) *
         rowNormPow s N u X Yt (fun _ x y => b x y) := by
   classical
   refine vertexNormPow_kthLargest_event_le hs hNu (fun x y => ?_) b
   have h := Probability.card_filter_heavyCountEvent_le Y
-    ({σ | X σ x ∧ Yt σ y} : Finset Ω) y ha hρ hρ1 hc (hd x) (hmass x)
-    (fun w hwy => ?_) hn
+    ({σ | X σ x ∧ Yt σ y} : Finset Ω) univ y ha hρ hρ1 hc (fun w _ => hd x w) (hmass x)
+    (fun w _ hdw hwy => ?_) hn
   · simpa only [filter_filter, and_assoc] using h
-  · simpa only [filter_filter, and_assoc] using hpair x y w hwy
+  · simpa only [filter_filter, and_assoc] using hpair x y w hdw hwy
 
 end Cslib
