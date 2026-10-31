@@ -935,6 +935,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformatio
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
