@@ -9,6 +9,7 @@ module
 
 public import Cslib.Foundations.Data.BitString
 public import Mathlib.Combinatorics.SimpleGraph.Clique
+public import Mathlib.Combinatorics.SimpleGraph.Coloring.Vertex
 public import Mathlib.Data.Sym.Card
 
 /-!
@@ -22,7 +23,11 @@ vertices.
 Two families of inputs are used to prove lower bounds for it: the complete graph on a set of `k`
 vertices (`Cslib.Circuits.Clique.ofFinset`), which has a `k`-clique, and the complete multipartite
 graph of a colouring with fewer than `k` colours (`Cslib.Circuits.Clique.ofColoring`), which has
-none.
+none. A Boolean function *separates* the graphs with a `k`-clique from the `r`-colourable graphs
+(`Cslib.Circuits.Clique.Separates`) when it is `true` on the former and `false` on the latter, as
+`k`-clique does for `r < k`. The test inputs lie in these two classes, so the method of
+approximations, which reads a circuit only on the test inputs, bounds the size of every monotone
+circuit computing a separating function, not only of those computing `k`-clique.
 
 ## Main definitions
 
@@ -35,12 +40,20 @@ none.
   vertex colourings.
 * `Cslib.Circuits.clique`: the `k`-clique function.
 * `Cslib.Circuits.Clique.ofFinset`, `Cslib.Circuits.Clique.ofColoring`: test inputs.
+* `Cslib.Circuits.Clique.Separates`: a Boolean function separating the graphs with a `k`-clique
+  from the `r`-colourable graphs.
 
 ## Main results
 
 * `Cslib.Circuits.Clique.edgeCount_eq_choose`: there are `n.choose 2` possible edges.
 * `Cslib.Circuits.clique_eq_true_iff`: the clique function in terms of `SimpleGraph.IsNClique`.
-* `Cslib.Circuits.clique_ofFinset`, `Cslib.Circuits.clique_ofColoring`: the test inputs.
+* `Cslib.Circuits.Clique.graph_adj`: adjacency in the graph of an input.
+* `Cslib.Circuits.clique_ofFinset`, `Cslib.Circuits.clique_ofColoring`,
+  `Cslib.Circuits.Clique.colorable_graph_ofColoring`: the test inputs.
+* `Cslib.Circuits.Clique.separates_clique`: `k`-clique separates the graphs with a `k`-clique from
+  the `r`-colourable graphs for `r < k`.
+* `Cslib.Circuits.Clique.Separates.ofFinset_eq_true`,
+  `Cslib.Circuits.Clique.Separates.ofColoring_eq_false`: a separating function on the test inputs.
 -/
 
 @[expose] public section
@@ -83,6 +96,17 @@ def edge {u v : Fin n} (h : u ≠ v) : Edge n := ⟨s(u, v), by simpa using h⟩
 /-- The endpoints of `edge h` are `{u, v}`. -/
 @[simp] theorem toFinset_edge {u v : Fin n} (h : u ≠ v) : (edge h).1.toFinset = {u, v} :=
   Sym2.toFinset_mk_eq
+
+/-- The edge between `u` and `v` is the edge between `v` and `u`. -/
+theorem edge_comm {u v : Fin n} (h : u ≠ v) : edge h = edge (Ne.symm h) :=
+  Subtype.ext Sym2.eq_swap
+
+/-- Two distinct vertices are adjacent in the graph of an input exactly when the input sets the
+edge between them. -/
+theorem graph_adj {x : Fin (edgeCount n) → Bool} {u v : Fin n} (h : u ≠ v) :
+    (graph x).Adj u v ↔ x (edgeEquiv n (edge h)) = true := by
+  rw [graph, SimpleGraph.fromEdgeSet_adj]
+  exact ⟨fun ⟨⟨_, hx⟩, _⟩ => hx, fun hx => ⟨⟨_, hx⟩, h⟩⟩
 
 /-- Containing all edges inside a vertex set is antitone in the vertex set. -/
 theorem Contains.mono {x : Fin (edgeCount n) → Bool} {s t : Finset (Fin n)} (hst : s ⊆ t)
@@ -150,6 +174,13 @@ theorem contains_ofColoring_iff {c : Fin n → Fin r} {s : Finset (Fin n)} :
     simp only [ofColoring, Equiv.symm_apply_apply, decide_eq_true_iff]
     exact fun u hu v hv => h (he hu) (he hv)
 
+/-- The graph of a colouring with `r` colours is `r`-colourable. -/
+theorem colorable_graph_ofColoring (c : Fin n → Fin r) : (graph (ofColoring c)).Colorable r := by
+  refine ⟨SimpleGraph.Coloring.mk c fun {u v} huv hc => ?_⟩
+  have h := (graph_adj huv.ne).1 huv
+  simp only [ofColoring, Equiv.symm_apply_apply, toFinset_edge, decide_eq_true_iff] at h
+  exact huv.ne (h u (by simp) v (by simp) hc)
+
 /-- A set with all edges inside in the graph of a colouring with `r` colours has at most `r`
 vertices. -/
 theorem card_le_of_contains_ofColoring {c : Fin n → Fin r} {s : Finset (Fin n)}
@@ -188,6 +219,29 @@ theorem clique_ofFinset {s : Finset (Fin n)} (hs : s.card = k) : clique n k (ofF
 `k`-clique. -/
 theorem clique_ofColoring (hr : r < k) (c : Fin n → Fin r) : clique n k (ofColoring c) = false :=
   decide_eq_false fun ⟨_, hs, h⟩ => absurd (card_le_of_contains_ofColoring h) (by omega)
+
+/-- A Boolean function of the possible edges **separates** the graphs with a `k`-clique from the
+`r`-colourable graphs when it is `true` on the former and `false` on the latter. -/
+def Clique.Separates (k r : ℕ) (f : BooleanFunction (edgeCount n)) : Prop :=
+  (∀ x, clique n k x = true → f x = true) ∧ ∀ x, (graph x).Colorable r → f x = false
+
+/-- A function separating the graphs with a `k`-clique from the `r`-colourable graphs is `true` on
+the complete graph on a `k`-set. -/
+theorem Clique.Separates.ofFinset_eq_true {f : BooleanFunction (edgeCount n)}
+    (h : Separates k r f) {s : Finset (Fin n)} (hs : s.card = k) : f (ofFinset s) = true :=
+  h.1 _ (clique_ofFinset hs)
+
+/-- A function separating the graphs with a `k`-clique from the `r`-colourable graphs is `false`
+on the complete multipartite graph of a colouring with `r` colours. -/
+theorem Clique.Separates.ofColoring_eq_false {f : BooleanFunction (edgeCount n)}
+    (h : Separates k r f) (c : Fin n → Fin r) : f (ofColoring c) = false :=
+  h.2 _ (colorable_graph_ofColoring c)
+
+/-- For `r < k`, `k`-clique separates the graphs with a `k`-clique from the `r`-colourable graphs:
+an `r`-colouring is injective on every clique. -/
+theorem Clique.separates_clique (hr : r < k) : Separates k r (clique n k) :=
+  ⟨fun _ h => h, fun _ hx => decide_eq_false fun ⟨_, hs, h⟩ =>
+    absurd ((contains_iff_isClique.1 h).card_le_of_colorable hx) (by omega)⟩
 
 /-- The clique function is monotone. -/
 theorem clique_le_clique {x y : Fin (edgeCount n) → Bool} (h : ∀ i, x i ≤ y i) :
