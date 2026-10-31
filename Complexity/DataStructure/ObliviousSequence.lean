@@ -8,9 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Semantics.Stateful.Basic
-public import Complexity.Probability.KWiseIndependent
-public import Complexity.Probability.StatisticalDistance.Coupling
-public import Mathlib.Data.Fintype.Pi
+public import Complexity.Probability.KWiseIndependent.Coupling
 import Complexity.Probability.PMF.Bind
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
@@ -72,6 +70,12 @@ operations `HashOp.resample` and `HashOp.eval u`:
 * `Cslib.Stateful.Spec.toObliviousSequenceSpec_contract_iff_of_hasStepFn`: on a deterministic
   specification, `(D.toObliviousSequenceSpec s₀).Contract ops μ` holds under `D.ValidHistory s₀ ops`
   if and only if every `out ∈ μ.support` equals `(D.run s₀ ops).2`.
+* `Cslib.DataStructure.evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_none`,
+  `Cslib.DataStructure.evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_some`,
+  `Cslib.DataStructure.evalHashOps_eq_of_afterCurrentEpoch_eq_none`,
+  `Cslib.DataStructure.evalHashOps_eq_of_afterCurrentEpoch_eq_some`,
+  `Cslib.DataStructure.evalHashOpsFromSeed_map_equiv`: epoch decomposition and seed-equivalence
+  transport equations for `evalHashOpsFromSeed` and `evalHashOps`.
 * `Cslib.DataStructure.kWiseHashSpec_contract_evalHashOps`: any finite-seed `k`-wise independent
   hash family satisfies `kWiseHashSpec` under uniform resampling.
 * `Cslib.DataStructure.whpKWiseHashSpec_contract_evalHashOps_prod`: any two-level hash family with a
@@ -234,12 +238,6 @@ theorem toObliviousSequenceSpec_contract (D : Spec.{u, v, w}) (s₀ : D.State)
       ∀ out ∈ μ.support, ∃ (tr : D.Transcript) (s_fin : D.State),
         tr.ops = ops ∧ tr.labels = out ∧ D.ValidTranscript s₀ tr s_fin := Iff.rfl
 
-private theorem transcript_labels_map_fst {D : Spec.{u, v, w}} (tr : D.Transcript) :
-    tr.labels.map Sigma.fst = tr.ops := by
-  induction tr with
-  | nil => rfl
-  | cons st tr ih => exact congrArg (st.op :: ·) ih
-
 /-- Every transcript in the support of a distribution satisfying
 `(D.toObliviousSequenceSpec s₀).Contract ops μ` matches `ops`. -/
 theorem toObliviousSequenceSpec_contract_matches {D : Spec.{u, v, w}} {s₀ : D.State}
@@ -248,7 +246,7 @@ theorem toObliviousSequenceSpec_contract_matches {D : Spec.{u, v, w}} {s₀ : D.
     ∀ out ∈ μ.support, DataStructure.TranscriptMatches ops out := by
   intro out hout
   obtain ⟨tr, _, hops, rfl, _⟩ := h out hout
-  simpa [DataStructure.TranscriptMatches, transcript_labels_map_fst] using hops
+  simpa [DataStructure.TranscriptMatches, Transcript.labels_map_fst] using hops
 
 /-- On a deterministic specification (`[D.HasStepFn f]`) and an admissible operation sequence
 `D.ValidHistory s₀ ops`, `(D.toObliviousSequenceSpec s₀).Contract ops μ` holds if and only if
@@ -539,7 +537,10 @@ private theorem restrict_comp_inclusion {U m : ℕ} (f : Fin U → Fin m) (u : F
     (fun x : s => (insert u s).restrict f ⟨x.1, Finset.mem_insert_of_mem x.2⟩) =
       s.restrict f := rfl
 
-private theorem evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_none {Seed : Type u} {U m : ℕ}
+/-- On a single-epoch sequence (`afterCurrentEpoch ops = none`), `evalHashOpsFromSeed` reduces to a
+point mass on `currentEpochPrefixTranscript` applied to the restricted hash function
+`(currentEpochKeys ops).restrict (eval θ)`. -/
+theorem evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_none {Seed : Type u} {U m : ℕ}
     (seedLaw : PMF Seed) (eval : Seed → Fin U → Fin m) (θ : Seed)
     {ops : List (HashOp U)} (hafter : afterCurrentEpoch ops = none) :
     evalHashOpsFromSeed seedLaw eval θ ops =
@@ -555,7 +556,10 @@ private theorem evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_none {Seed : Type
         currentEpochKeys_eval, restrict_comp_inclusion]
       rfl
 
-private theorem evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_some {Seed : Type u} {U m : ℕ}
+/-- When `afterCurrentEpoch ops = some rest`, `evalHashOpsFromSeed` decomposes into the
+deterministic current-epoch prefix `currentEpochPrefixTranscript` followed by `.resample` and an
+independent draw from `evalHashOps seedLaw eval rest`. -/
+theorem evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_some {Seed : Type u} {U m : ℕ}
     (seedLaw : PMF Seed) (eval : Seed → Fin U → Fin m) (θ : Seed)
     {ops rest : List (HashOp U)} (hafter : afterCurrentEpoch ops = some rest) :
     evalHashOpsFromSeed seedLaw eval θ ops =
@@ -577,7 +581,10 @@ private theorem evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_some {Seed : Type
         List.cons_append]
       rfl
 
-private theorem evalHashOps_eq_of_afterCurrentEpoch_eq_none {Seed : Type u} {U m : ℕ}
+/-- On a single-epoch sequence (`afterCurrentEpoch ops = none`), `evalHashOps` is the pushforward of
+the restricted seed distribution `seedLaw.map (fun θ => (currentEpochKeys ops).restrict (eval θ))`
+under `currentEpochPrefixTranscript m ops`. -/
+theorem evalHashOps_eq_of_afterCurrentEpoch_eq_none {Seed : Type u} {U m : ℕ}
     (seedLaw : PMF Seed) (eval : Seed → Fin U → Fin m)
     {ops : List (HashOp U)} (hafter : afterCurrentEpoch ops = none) :
     evalHashOps seedLaw eval ops =
@@ -587,7 +594,9 @@ private theorem evalHashOps_eq_of_afterCurrentEpoch_eq_none {Seed : Type u} {U m
   simp only [evalHashOps, evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_none seedLaw eval _ hafter,
     Function.comp_def, _root_.PMF.map]
 
-private theorem evalHashOps_eq_of_afterCurrentEpoch_eq_some {Seed : Type u} {U m : ℕ}
+/-- When `afterCurrentEpoch ops = some rest`, `evalHashOps` decomposes into the current-epoch prefix
+distribution bound to an independent tail draw `evalHashOps seedLaw eval rest`. -/
+theorem evalHashOps_eq_of_afterCurrentEpoch_eq_some {Seed : Type u} {U m : ℕ}
     (seedLaw : PMF Seed) (eval : Seed → Fin U → Fin m)
     {ops rest : List (HashOp U)} (hafter : afterCurrentEpoch ops = some rest) :
     evalHashOps seedLaw eval ops =
@@ -597,21 +606,6 @@ private theorem evalHashOps_eq_of_afterCurrentEpoch_eq_some {Seed : Type u} {U m
             pref ++ (⟨.resample, PUnit.unit⟩ :: tailOut))) := by
   simp only [evalHashOps, evalHashOpsFromSeed_eq_of_afterCurrentEpoch_eq_some seedLaw eval _ hafter,
     PMF.bind_map, Function.comp_def]
-
-/-- If `eval : Seed → Fin U → Fin m` is `k`-wise independent, then restricting `eval θ` under
-`θ ← PMF.uniformOfFintype Seed` to any subset `T : Finset (Fin U)` of size `#T ≤ k` produces the
-exact uniform distribution `PMF.uniformOfFintype (T → Fin m)`. -/
-theorem uniformOfFintype_map_restrict_eq {Seed : Type u} {U m : ℕ}
-    [Fintype Seed] [Nonempty Seed] [NeZero m] {k : ℕ} {eval : Seed → Fin U → Fin m}
-    (hk : Probability.IsKWiseIndependentHash k eval)
-    {T : Finset (Fin U)} (hT : T.card ≤ k) :
-    (PMF.uniformOfFintype Seed).map (fun θ => T.restrict (eval θ)) =
-      PMF.uniformOfFintype (T → Fin m) := by
-  classical
-  ext y
-  apply (ENNReal.toReal_eq_toReal_iff' (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)).mp
-  rw [Cslib.Probability.PMF.toReal_uniformOfFintype_map_apply, hk.dens_filter_restrict_eq hT y]
-  simp [Fintype.card_pi]
 
 /-- **Fundamental bridge theorem for exact `k`-wise independent hash families**:
 if `eval : Seed → Fin U → Fin m` satisfies `IsKWiseIndependentHash k eval`, then on any oblivious
@@ -653,44 +647,6 @@ theorem whpKWiseHashSpec_contract_of_kWiseHashSpec {k U m : ℕ} [NeZero m] (δ 
   change μ = idealHashTranscriptPMF m ops at hk
   rw [hk]
   exact (CoupledWithin.refl _).mono (by simp)
-
-private theorem uniformOfFintype_prod_map {α : Type u} {β : Type v} {γ : Type w}
-    [Fintype α] [Nonempty α] [Fintype β] [Nonempty β] (f : α → β → γ) :
-    (PMF.uniformOfFintype (α × β)).map (fun p => f p.1 p.2) =
-      (PMF.uniformOfFintype α).bind (fun a => (PMF.uniformOfFintype β).map (f a)) := by
-  rw [← PMF.uniformOfFintype_prod, PMF.map_bind]
-  refine congrArg ((PMF.uniformOfFintype α).bind ·) (funext fun a => ?_)
-  simp [PMF.map_comp, Function.comp_def]
-
-private theorem toOuterMeasure_uniformOfFintype_compl_finset {α : Type u}
-    [Fintype α] [Nonempty α] [DecidableEq α] (s : Finset α) :
-    (PMF.uniformOfFintype α).toOuterMeasure (s : Set α)ᶜ =
-      ((Finset.univ \ s).card : ℝ≥0∞) / Fintype.card α := by
-  have hcompl : ((s : Set α)ᶜ : Set α) = ((Finset.univ \ s : Finset α) : Set α) := by
-    ext a
-    simp
-  rw [hcompl, PMF.toOuterMeasure_apply_finset]
-  simp [PMF.uniformOfFintype_apply, div_eq_mul_inv]
-
-/-- Single-epoch coupling for a two-level hash family: if every `α ∈ GoodTop` induces a `k`-wise
-independent family `eval α : BotSeed → Fin U → Fin m`, then restricting `eval p.1 p.2` under
-`p ← PMF.uniformOfFintype (TopSeed × BotSeed)` to a set `T` of size `#T ≤ k` is coupled within
-`(#(Finset.univ \ GoodTop) : ℝ≥0∞) / Fintype.card TopSeed` of `PMF.uniformOfFintype (T → Fin m)`. -/
-theorem coupledWithin_uniformOfFintype_prod_restrict {TopSeed : Type u} {BotSeed : Type v}
-    {U m : ℕ} [Fintype TopSeed] [Nonempty TopSeed] [DecidableEq TopSeed]
-    [Fintype BotSeed] [Nonempty BotSeed]
-    [NeZero m] {k : ℕ} (eval : TopSeed → BotSeed → Fin U → Fin m)
-    (GoodTop : Finset TopSeed)
-    (hgood : ∀ α ∈ GoodTop, Probability.IsKWiseIndependentHash k (eval α))
-    {T : Finset (Fin U)} (hT : T.card ≤ k) :
-    CoupledWithin
-      ((PMF.uniformOfFintype (TopSeed × BotSeed)).map (fun p => T.restrict (eval p.1 p.2)))
-      (PMF.uniformOfFintype (T → Fin m))
-      (((Finset.univ \ GoodTop).card : ℝ≥0∞) / Fintype.card TopSeed) := by
-  rw [uniformOfFintype_prod_map (fun α β => T.restrict (eval α β)),
-    ← toOuterMeasure_uniformOfFintype_compl_finset GoodTop]
-  refine CoupledWithin.bind_of_eq_on (GoodTop : Set TopSeed) fun α _ hα => ?_
-  exact uniformOfFintype_map_restrict_eq (hgood α hα) hT
 
 private theorem coupledWithin_evalHashOps_prod {TopSeed : Type u} {BotSeed : Type v}
     {k U m : ℕ} [Fintype TopSeed] [Nonempty TopSeed] [DecidableEq TopSeed]
@@ -757,7 +713,10 @@ theorem whpKWiseHashSpec_contract_evalHashOps_prod {TopSeed : Type u} {BotSeed :
   ⟨transcriptMatches_of_mem_support_evalHashOps _ _ ops,
     coupledWithin_evalHashOps_prod eval GoodTop hgood hv⟩
 
-private theorem evalHashOpsFromSeed_map_equiv {Seed₁ : Type u} {Seed₂ : Type v} {U m : ℕ}
+/-- Relabelling the seed type along an equivalence `e : Seed₁ ≃ Seed₂` transports
+`evalHashOpsFromSeed` by pushing forward `seedLaw` along `e` and pulling back `eval` along
+`e.symm`. -/
+theorem evalHashOpsFromSeed_map_equiv {Seed₁ : Type u} {Seed₂ : Type v} {U m : ℕ}
     (seedLaw : PMF Seed₁) (eval : Seed₁ → Fin U → Fin m)
     (e : Seed₁ ≃ Seed₂) (θ : Seed₁) (ops : List (HashOp U)) :
     evalHashOpsFromSeed seedLaw eval θ ops =

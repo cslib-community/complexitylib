@@ -73,15 +73,20 @@ argument delivery and dispatch, with the word width `w` treated as an external a
 
 ## Main results
 
-* `Cslib.WordRAM.Randomized.ObliviousSequenceDS.initFresh_exec`,
+* `Cslib.WordRAM.Randomized.ExecSteps.bounded`,
+  `Cslib.WordRAM.Randomized.ExecSteps.arguments_fit`: preservation of `Data.Bounded w` and
+  word-admissibility of encoded operation arguments across `ExecSteps`.
+* `Cslib.WordRAM.Randomized.ObliviousSequenceDS.prepare_bounded`,
+  `Cslib.WordRAM.Randomized.ObliviousSequenceDS.initFresh_exec`,
   `Cslib.WordRAM.Randomized.ObliviousSequenceDS.initClear_exec`,
   `Cslib.WordRAM.Randomized.ObliviousSequenceDS.seq_expected`,
-  `Cslib.WordRAM.Randomized.ObliviousSequenceDS.seq_expected_clear`: initialization and end-to-end
-  expected-time + distributional-contract theorems.
-* `Cslib.WordRAM.Randomized.HashFamilyDS.toKWiseObliviousSequenceDS`,
-  `Cslib.WordRAM.Randomized.HashFamilyDS.toWhpKWiseObliviousSequenceDS`: canonical
-  `ObliviousSequenceDS` realizations of `DataStructure.kWiseHashSpec` and
-  `DataStructure.whpKWiseHashSpec` from a Word-RAM `HashFamilyDS`.
+  `Cslib.WordRAM.Randomized.ObliviousSequenceDS.seq_expected_clear`: word-bounded preparation,
+  initialization, and end-to-end expected-time + distributional-contract theorems.
+* `Cslib.WordRAM.Randomized.HashFamilyDS.arguments_fit`,
+  `Cslib.WordRAM.Randomized.HashFamilyDS.toKWiseObliviousSequenceDS`,
+  `Cslib.WordRAM.Randomized.HashFamilyDS.toWhpKWiseObliviousSequenceDS`: word-admissibility of
+  hash operation encodings and canonical `ObliviousSequenceDS` realizations of
+  `DataStructure.kWiseHashSpec` and `DataStructure.whpKWiseHashSpec`.
 
 ## References
 
@@ -148,10 +153,11 @@ structure SeqOutcome (Latent : Type z) {Op : Type u} (Result : Op → Type v) (r
 
 /-- Multi-operation distributional execution relation across an oblivious sequence
 `ops : List S.Op`.
-At each operation `o`, arguments are delivered via `(P.toDynamicProgram encode decode).prepare o`,
-`P.code` executes under `ExecCodeDist`, the observation `q.result` is decoded from `q.data.regs`,
-memory outside `[base, base + space)` is preserved, and `⟨o, q.result⟩` is appended to the
-accumulated transcript. -/
+At each operation `o`, `t.data` and the encoded arguments are word-bounded (`Fits w`), arguments
+are delivered via `(P.toDynamicProgram encode decode).prepare o`, `P.code` executes under
+`ExecCodeDist` preserving `Data.Bounded w`, the observation `q.result` is decoded from
+`q.data.regs`, memory outside `[base, base + space)` is preserved, and `⟨o, q.result⟩` is appended
+to the accumulated transcript. -/
 inductive ExecSteps {B : Basis} {r_ds k_init : ℕ}
     (P : SubroutineCode B r_ds k_init)
     (S : DataStructure.ObliviousSequenceSpec.{u, v})
@@ -168,9 +174,13 @@ inductive ExecSteps {B : Basis} {r_ds k_init : ℕ}
         SeqOutcome Latent S.Result r_ds → PMF (StepOutcome Latent (S.Result o) r_ds)}
       {T_step : SeqOutcome Latent S.Result r_ds → ℝ≥0∞} {T_rest : ℝ≥0∞} :
       (∀ t ∈ ν.support,
+        t.data.Bounded w ∧
+        (∀ i, P.input i = true → Fits w (encode o i)) ∧
+        ((P.toDynamicProgram encode decode).prepare o t.data).Bounded w ∧
         ExecCodeDist w P.code ((P.toDynamicProgram encode decode).prepare o t.data)
           ((μ_step t).map StepOutcome.data) (T_step t) ∧
         ∀ q ∈ (μ_step t).support,
+          q.data.Bounded w ∧
           decode o q.data.regs = some q.result ∧
           Modifies (Block.mk base space).footprint t.data.mem q.data.mem) →
       ExecSteps P S Latent w base space encode decode ops
@@ -178,6 +188,50 @@ inductive ExecSteps {B : Basis} {r_ds k_init : ℕ}
         ν_final T_rest →
       ExecSteps P S Latent w base space encode decode (o :: ops) ν ν_final
         ((∑' t, ν t * T_step t) + T_rest)
+
+/-- `ExecSteps` preserves `Data.Bounded w` on every state in the support of `ν_final` whenever
+every state in the support of `ν` is word-bounded. -/
+theorem ExecSteps.bounded {B : Basis} {r_ds k_init : ℕ}
+    {P : SubroutineCode B r_ds k_init}
+    {S : DataStructure.ObliviousSequenceSpec.{u, v}}
+    {Latent : Type z} {w base space : ℕ}
+    {encode : S.Op → Fin r_ds → ℕ}
+    {decode : (o : S.Op) → (Fin r_ds → ℕ) → Option (S.Result o)}
+    {ops : List S.Op}
+    {ν ν_final : PMF (SeqOutcome Latent S.Result r_ds)} {T_ops : ℝ≥0∞}
+    (h : ExecSteps P S Latent w base space encode decode ops ν ν_final T_ops)
+    (hbdd : ∀ t ∈ ν.support, t.data.Bounded w) :
+    ∀ t ∈ ν_final.support, t.data.Bounded w := by
+  induction h with
+  | nil _ => exact hbdd
+  | cons hstep _ ih =>
+    refine ih fun q_seq hq_seq => ?_
+    rw [PMF.mem_support_bind_iff] at hq_seq
+    obtain ⟨t, ht, hq_map⟩ := hq_seq
+    rw [PMF.mem_support_map_iff] at hq_map
+    obtain ⟨q, hq, rfl⟩ := hq_map
+    exact ((hstep t ht).2.2.2.2 q hq).1
+
+/-- Every operation `o ∈ ops` in an `ExecSteps` derivation has word-bounded encoded arguments on
+all input registers of `P`. -/
+theorem ExecSteps.arguments_fit {B : Basis} {r_ds k_init : ℕ}
+    {P : SubroutineCode B r_ds k_init}
+    {S : DataStructure.ObliviousSequenceSpec.{u, v}}
+    {Latent : Type z} {w base space : ℕ}
+    {encode : S.Op → Fin r_ds → ℕ}
+    {decode : (o : S.Op) → (Fin r_ds → ℕ) → Option (S.Result o)}
+    {ops : List S.Op}
+    {ν ν_final : PMF (SeqOutcome Latent S.Result r_ds)} {T_ops : ℝ≥0∞}
+    (h : ExecSteps P S Latent w base space encode decode ops ν ν_final T_ops) :
+    ∀ o ∈ ops, ∀ i, P.input i = true → Fits w (encode o i) := by
+  induction h with
+  | nil _ => intro _ ho; cases ho
+  | @cons o' _ ν' _ _ _ _ hstep _ ih =>
+    intro o ho
+    rcases List.mem_cons.mp ho with rfl | ho'
+    · obtain ⟨t₀, ht₀⟩ := ν'.support_nonempty
+      exact (hstep t₀ ht₀).2.1
+    · exact ih o ho'
 
 /-- Lift an `ExecSteps` derivation along a basis simulation `φ : B.Simulates B'`. -/
 theorem ExecSteps.mapSimulates {B B' : Basis} {r_ds k_init : ℕ}
@@ -195,8 +249,8 @@ theorem ExecSteps.mapSimulates {B B' : Basis} {r_ds k_init : ℕ}
   | nil ν => exact .nil ν
   | cons hstep _ ih =>
     refine .cons (fun t ht => ?_) ih
-    obtain ⟨he, hq⟩ := hstep t ht
-    exact ⟨he.mapSimulates φ, hq⟩
+    obtain ⟨hbdd, hfit, hprep, he, hq⟩ := hstep t ht
+    exact ⟨hbdd, hfit, hprep, he.mapSimulates φ, hq⟩
 
 end Cslib.WordRAM.Randomized
 
@@ -227,10 +281,18 @@ structure ObliviousSequenceDS {B : Basis} {r_ds k_init : ℕ}
   /-- Distributional invariant on the initial coupled state distribution produced by `P.initSetup`.
   -/
   initInv : PMF (LatentState Latent r_ds) → Prop
+  /-- Predicate identifying operations admissible from a latent state (`fun _ _ => True` when
+  operation encoding is unconditionally word-bounded). -/
+  validOp : Latent → S.Op → Prop := fun _ _ => True
   /-- Standalone register encoding for argument delivery. -/
   encode : S.Op → Fin r_ds → ℕ
   /-- Output decoder reading typed operation observations from final registers. -/
   decode : (o : S.Op) → (Fin r_ds → ℕ) → Option (S.Result o)
+  /-- Initial distributions satisfying `initInv` are supported on word-bounded states. -/
+  bounded : ∀ {ν : PMF (LatentState Latent r_ds)}, initInv ν → ∀ t ∈ ν.support, t.data.Bounded w
+  /-- Standalone encoded arguments fit in `w`-bit words on admissible calls. -/
+  arguments_fit : ∀ {z : Latent} (o : S.Op),
+    validOp z o → ∀ i, P.input i = true → Fits w (encode o i)
   /-- Distinctness of registers used by `zeroFillCode` relative to `baseReg` and `frontierReg`. -/
   clear_nodup : [P.curReg, P.zeroReg, P.oneReg, P.baseReg, P.frontierReg].Nodup
   /-- Initialization parameter registers are not overwritten by `zeroFillCode`. -/
@@ -254,6 +316,7 @@ structure ObliviousSequenceDS {B : Basis} {r_ds k_init : ℕ}
       ExecCodeDist w P.initSetup x₁ (ν₀.map LatentState.data) setupTime ∧
       initInv ν₀ ∧
       ∀ t ∈ ν₀.support,
+        t.data.Bounded w ∧
         t.data.regs P.frontierReg = base + space ∧
         Modifies (Block.mk base space).footprint x₁.mem t.data.mem
   /-- Multi-operation execution across any admissible oblivious sequence `ops : List S.Op` from any
@@ -273,6 +336,13 @@ variable {B B' : Basis} {r_ds k_init w base : ℕ}
   {P : SubroutineCode B r_ds k_init}
   {S : DataStructure.ObliviousSequenceSpec.{u, v}}
   {params : Fin k_init → ℕ}
+
+/-- Argument preparation preserves `Data.Bounded w` on operations satisfying `C.validOp`. -/
+theorem prepare_bounded (C : ObliviousSequenceDS.{u, v, z} P S w base params)
+    {z : C.Latent} {o : S.Op} {x : Data r_ds}
+    (hx : x.Bounded w) (hv : C.validOp z o) :
+    ((P.toDynamicProgram C.encode C.decode).prepare o x).Bounded w :=
+  (P.toDynamicProgram C.encode C.decode).prepare_bounded hx (C.arguments_fit o hv)
 
 /-- Total expected instruction bound for `P.initFresh` (`spanTime + setupTime`). -/
 @[expose] def initTime (C : ObliviousSequenceDS.{u, v, z} P S w base params) : ℝ≥0∞ :=
@@ -315,8 +385,11 @@ def mapSimulates (φ : B.Simulates B')
   initPotential := C.initPotential
   charge := C.charge
   initInv := C.initInv
+  validOp := C.validOp
   encode := C.encode
   decode := C.decode
+  bounded := C.bounded
+  arguments_fit := C.arguments_fit
   clear_nodup := C.clear_nodup
   params_not_clear := C.params_not_clear
   incCur_eval h1 hfit := Op.eval_mapSimulates_of_some φ (C.incCur_eval h1 hfit)
@@ -345,6 +418,7 @@ theorem initFresh_exec (C : ObliviousSequenceDS.{u, v, z} P S w base params)
       ExecCodeDist w P.initFresh x (ν₀.map LatentState.data) C.initTime ∧
       C.initInv ν₀ ∧
       ∀ t ∈ ν₀.support,
+        t.data.Bounded w ∧
         t.data.regs P.frontierReg = base + C.space ∧
         Modifies (Block.mk base C.space).footprint x.mem t.data.mem := by
   obtain ⟨x₁, he_span, hmem₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
@@ -365,6 +439,7 @@ theorem initClear_exec (C : ObliviousSequenceDS.{u, v, z} P S w base params)
       ExecCodeDist w P.initClear x (ν₀.map LatentState.data) C.initClearTime ∧
       C.initInv ν₀ ∧
       ∀ t ∈ ν₀.support,
+        t.data.Bounded w ∧
         t.data.regs P.frontierReg = base + C.space ∧
         Modifies (Block.mk base C.space).footprint x.mem t.data.mem := by
   obtain ⟨x₁, he_span, hmem₁, hb₁, hfr₁, hpar₁⟩ := C.span_exec hx hfr hpar
@@ -379,17 +454,18 @@ theorem initClear_exec (C : ObliviousSequenceDS.{u, v, z} P S w base params)
     exact (ExecCodeDist.of_execWithin he_span).seq_pure
       ((ExecCodeDist.of_execWithin he_zero).seq_pure he_setup)
   refine ⟨ν₀, he_clear, hinv, fun t ht => ?_⟩
-  obtain ⟨hfr_t, hmod_t⟩ := hsupp t ht
+  obtain ⟨hbdd_t, hfr_t, hmod_t⟩ := hsupp t ht
   have hmod : Modifies (Block.mk base C.space).footprint x.mem t.data.mem := by
     simpa only [Finset.union_idempotent] using hmod₂.trans hmod_t
-  exact ⟨hfr_t, hmod⟩
+  exact ⟨hbdd_t, hfr_t, hmod⟩
 
 /-- **End-to-end expected-time and distributional correctness theorem from fresh initialization
 (`seq_expected`).**
 Starting from zeroed `[base, base + C.space)`, `P.initFresh` followed by any admissible oblivious
 operation sequence `ops : List S.Op` (`S.ValidOpSeq ops`) executes in expected time at most
-`C.initTime + C.initPotential + C.totalCharge ops` and induces an output transcript distribution
-`ν_final.map SeqOutcome.transcript` satisfying `S.Contract ops`. -/
+`C.initTime + C.initPotential + C.totalCharge ops`, preserves `Data.Bounded w` on `ν_final.support`,
+and induces an output transcript distribution `ν_final.map SeqOutcome.transcript` satisfying
+`S.Contract ops`. -/
 theorem seq_expected (C : ObliviousSequenceDS.{u, v, z} P S w base params)
     {x : Data r_ds} (ops : List S.Op)
     (hx : x.Bounded w) (hfr : x.regs P.frontierReg = base)
@@ -400,12 +476,19 @@ theorem seq_expected (C : ObliviousSequenceDS.{u, v, z} P S w base params)
       (ν_final : PMF (SeqOutcome C.Latent S.Result r_ds)) (T_ops : ℝ≥0∞),
       ExecCodeDist w P.initFresh x (ν₀.map LatentState.data) C.initTime ∧
       C.Steps ops (ν₀.map SeqOutcome.ofLatentState) ν_final T_ops ∧
+      (∀ t ∈ ν_final.support, t.data.Bounded w) ∧
       S.Contract ops (ν_final.map SeqOutcome.transcript) ∧
       C.initTime + T_ops ≤
         C.initTime + (C.initPotential : ℝ≥0∞) + (C.totalCharge ops : ℝ≥0∞) := by
   obtain ⟨ν₀, he_init, hinv, _⟩ := C.initFresh_exec hx hfr hpar hz
   obtain ⟨ν_final, T_ops, hex, hcontract, hcost⟩ := C.steps_exec ops ν₀ hv hinv
-  refine ⟨ν₀, ν_final, T_ops, he_init, hex, hcontract, ?_⟩
+  have hbdd₀ : ∀ t ∈ (ν₀.map (SeqOutcome.ofLatentState (Result := S.Result))).support,
+      t.data.Bounded w := by
+    intro t ht
+    rw [PMF.mem_support_map_iff] at ht
+    obtain ⟨u, hu, rfl⟩ := ht
+    exact C.bounded hinv u hu
+  refine ⟨ν₀, ν_final, T_ops, he_init, hex, hex.bounded hbdd₀, hcontract, ?_⟩
   rw [add_assoc]
   exact add_le_add le_rfl hcost
 
@@ -420,12 +503,19 @@ theorem seq_expected_clear (C : ObliviousSequenceDS.{u, v, z} P S w base params)
       (ν_final : PMF (SeqOutcome C.Latent S.Result r_ds)) (T_ops : ℝ≥0∞),
       ExecCodeDist w P.initClear x (ν₀.map LatentState.data) C.initClearTime ∧
       C.Steps ops (ν₀.map SeqOutcome.ofLatentState) ν_final T_ops ∧
+      (∀ t ∈ ν_final.support, t.data.Bounded w) ∧
       S.Contract ops (ν_final.map SeqOutcome.transcript) ∧
       C.initClearTime + T_ops ≤
         C.initClearTime + (C.initPotential : ℝ≥0∞) + (C.totalCharge ops : ℝ≥0∞) := by
   obtain ⟨ν₀, he_init, hinv, _⟩ := C.initClear_exec hx hfr hpar
   obtain ⟨ν_final, T_ops, hex, hcontract, hcost⟩ := C.steps_exec ops ν₀ hv hinv
-  refine ⟨ν₀, ν_final, T_ops, he_init, hex, hcontract, ?_⟩
+  have hbdd₀ : ∀ t ∈ (ν₀.map (SeqOutcome.ofLatentState (Result := S.Result))).support,
+      t.data.Bounded w := by
+    intro t ht
+    rw [PMF.mem_support_map_iff] at ht
+    obtain ⟨u, hu, rfl⟩ := ht
+    exact C.bounded hinv u hu
+  refine ⟨ν₀, ν_final, T_ops, he_init, hex, hex.bounded hbdd₀, hcontract, ?_⟩
   rw [add_assoc]
   exact add_le_add le_rfl hcost
 
@@ -582,10 +672,15 @@ private theorem steps_toObliviousSequenceDS (C : SubroutineDS P D w base params 
         w base C.space C.encode C.decode (o :: os) ν ν_final (T₁ + T_rest) := by
       refine Randomized.ExecSteps.cons (S := D.toObliviousSequenceSpec s₀)
         (μ_step := μ_step) (T_step := T_step) (fun t ht => ?_) hex_rest
+      obtain ⟨_, _, _, hv_t, hrep_t⟩ := hsupp t ht
+      have hbdd_t : t.data.Bounded w := C.bounded hrep_t
+      have hfit_t : ∀ i, P.input i = true → Fits w (C.encode o i) := C.arguments_fit o hv_t.1
+      have hprep_t : ((P.toDynamicProgram C.encode C.decode).prepare o t.data).Bounded w :=
+        C.toDynamicProgram.prepare_bounded hbdd_t hfit_t
       have ht' : prepCoupled t ∈ ν_prep.support :=
         (PMF.mem_support_map_iff _ _ _).mpr ⟨t, ht, rfl⟩
       obtain ⟨he_rel, hq_rel⟩ := hstep_rel (prepCoupled t) ht'
-      refine ⟨?_, ?_⟩
+      refine ⟨hbdd_t, hfit_t, hprep_t, ?_, ?_⟩
       · refine he_rel.congr_dist ?_ le_rfl
         dsimp only [μ_step]
         rw [PMF.map_comp]
@@ -594,9 +689,9 @@ private theorem steps_toObliviousSequenceDS (C : SubroutineDS P D w base params 
         dsimp only [μ_step] at hu
         rw [PMF.mem_support_map_iff] at hu
         obtain ⟨q, hq, rfl⟩ := hu
-        obtain ⟨a, _, hdec_a, _, hmod_q⟩ := hq_rel q hq
+        obtain ⟨a, _, hdec_a, hrep_q, hmod_q⟩ := hq_rel q hq
         have hout_eq : outOf q = a := by simp [outOf, hdec_a]
-        exact ⟨by simp [liftStep, hout_eq, hdec_a], hmod_q⟩
+        exact ⟨C.bounded hrep_q, by simp [liftStep, hout_eq, hdec_a], hmod_q⟩
     have hT₁_eq : T₁ = ∑' t', ν_prep t' * T_rel t' :=
       (Cslib.Probability.PMF.tsum_map_mul ν prepCoupled T_rel).symm
     have hpot_ν₁ :
@@ -678,8 +773,11 @@ bound `opCharge : D.Op → ℕ` such that `∀ s o, D.valid s o → C.charge s o
       t.latent.trace = [] ∧
       C.rep t.latent.seed s₀ t.data ∧
       C.potential t.latent.seed t.data ≤ C.initPotential)
+  validOp z o := D.valid z.state o
   encode := C.encode
   decode := C.decode
+  bounded hinv t ht := C.bounded (hinv.2.2 t ht).2.2.1
+  arguments_fit o hv := C.arguments_fit o hv
   clear_nodup := C.clear_nodup
   params_not_clear := C.params_not_clear
   incCur_eval := C.incCur_eval
@@ -710,8 +808,8 @@ bound `opCharge : D.Op → ℕ` such that `∀ s o, D.valid s o → C.charge s o
     · intro t ht
       rw [PMF.mem_support_map_iff] at ht
       obtain ⟨p, hp, rfl⟩ := ht
-      obtain ⟨hfr', _, _, hmod⟩ := hsupp p hp
-      exact ⟨hfr', hmod⟩
+      obtain ⟨hfr', hrep, _, hmod⟩ := hsupp p hp
+      exact ⟨C.bounded hrep, hfr', hmod⟩
   steps_exec ops ν₀ hv hinv := by
     obtain ⟨hseed₀, hsingle₀, hsupp₀⟩ := hinv
     let ν_seq : PMF (SeqOutcome (TraceLatent D C.Seed) D.Result r_ds) :=
@@ -872,6 +970,10 @@ structure HashFamilyDS (B : Basis) (r_core k_init w base U m : ℕ)
   params_ne_base : ∀ j, initParams j ≠ baseReg
   /-- The end of the allocated footprint `base + space` fits in a `w`-bit word. -/
   fits_space : Fits w (base + space)
+  /-- The evaluation dispatch tag `1` fits in a `w`-bit word. -/
+  fits_tag : Fits w 1
+  /-- Every universe key `u : Fin U` fits in a `w`-bit word. -/
+  fits_key : ∀ u : Fin U, Fits w u.val
   /-- Single-instruction register addition `d ← a + b` over `B` on `Data (r_core + 5)`. -/
   addReg : Fin (r_core + 5) → Fin (r_core + 5) → Fin (r_core + 5) → Op B (r_core + 5)
   /-- `addReg d a b` sets register `d` to `x.regs a + x.regs b` when the sum fits in `w` bits. -/
@@ -900,12 +1002,13 @@ structure HashFamilyDS (B : Basis) (r_core k_init w base U m : ℕ)
       x₁.regs baseReg = base ∧
       tableRep x₁.mem ∧
       Modifies (Block.mk base space).footprint x.mem x₁.mem
-  /-- Correctness and complexity of `resampleCode`: from any state with `x.regs baseReg = base` and
-  `tableRep x.mem`, produces a coupled distribution `ν : PMF (LatentState Seed r_core)` whose seed
-  marginal is `PMF.uniformOfFintype Seed`, preserving `baseReg` and `tableRep`, establishing
-  `seedRep`, and modifying only `[base, base + space)`. -/
+  /-- Correctness and complexity of `resampleCode`: from any word-bounded state with
+  `x.regs baseReg = base` and `tableRep x.mem`, produces a coupled distribution
+  `ν : PMF (LatentState Seed r_core)` whose seed marginal is `PMF.uniformOfFintype Seed`,
+  preserving `baseReg` and `tableRep`, establishing `seedRep`, and modifying only
+  `[base, base + space)`. -/
   resample_exec : ∀ {x : Data r_core},
-    x.regs baseReg = base → tableRep x.mem →
+    x.Bounded w → x.regs baseReg = base → tableRep x.mem →
     ∃ ν : PMF (LatentState Seed r_core),
       ExecCodeDist w resampleCode x (ν.map LatentState.data) resampleSteps ∧
       ν.map LatentState.latent = PMF.uniformOfFintype Seed ∧
@@ -914,12 +1017,12 @@ structure HashFamilyDS (B : Basis) (r_core k_init w base U m : ℕ)
         tableRep p.data.mem ∧
         seedRep p.latent p.data.mem ∧
         Modifies (Block.mk base space).footprint x.mem p.data.mem
-  /-- Correctness and complexity of `evalCode`: from any state with `x.regs baseReg = base`,
-  `x.regs keyReg = u.val`, `tableRep x.mem`, and `seedRep θ x.mem`, halts within `evalSteps`
-  instructions with `y.mem = x.mem`, `y.regs baseReg = base`, and `y.regs outReg = (eval θ u).val`.
-  -/
+  /-- Correctness and complexity of `evalCode`: from any word-bounded state with
+  `x.regs baseReg = base`, `x.regs keyReg = u.val`, `tableRep x.mem`, and `seedRep θ x.mem`, halts
+  within `evalSteps` instructions with `y.mem = x.mem`, `y.regs baseReg = base`, and
+  `y.regs outReg = (eval θ u).val`. -/
   eval_exec : ∀ (θ : Seed) (u : Fin U) {x : Data r_core},
-    x.regs baseReg = base → x.regs keyReg = u.val →
+    x.Bounded w → x.regs baseReg = base → x.regs keyReg = u.val →
     tableRep x.mem → seedRep θ x.mem →
     ∃ y, ExecWithin w evalCode x y evalSteps ∧
       y.mem = x.mem ∧
@@ -992,6 +1095,8 @@ def mapSimulates (φ : B.Simulates B')
   key_ne_base := H.key_ne_base
   params_ne_base := H.params_ne_base
   fits_space := H.fits_space
+  fits_tag := H.fits_tag
+  fits_key := H.fits_key
   addReg d a b := (H.addReg d a b).mapSimulates φ
   addReg_eval d a b hfit := Op.eval_mapSimulates_of_some φ (H.addReg_eval d a b hfit)
   initTableCode := H.initTableCode.mapSimulates φ
@@ -1003,11 +1108,11 @@ def mapSimulates (φ : B.Simulates B')
   initTable_exec hx hb hpar hz := by
     obtain ⟨x₁, he, hb₁, htab₁, hmod₁⟩ := H.initTable_exec hx hb hpar hz
     exact ⟨x₁, he.mapSimulates φ, hb₁, htab₁, hmod₁⟩
-  resample_exec hb htab := by
-    obtain ⟨ν, he, hunif, hsupp⟩ := H.resample_exec hb htab
+  resample_exec hx hb htab := by
+    obtain ⟨ν, he, hunif, hsupp⟩ := H.resample_exec hx hb htab
     exact ⟨ν, he.mapSimulates φ, hunif, hsupp⟩
-  eval_exec θ u {x} hb hk htab hseed := by
-    obtain ⟨y, he, hmem, hb', hout⟩ := H.eval_exec θ u hb hk htab hseed
+  eval_exec θ u {x} hx hb hk htab hseed := by
+    obtain ⟨y, he, hmem, hb', hout⟩ := H.eval_exec θ u hx hb hk htab hseed
     exact ⟨y, he.mapSimulates φ, hmem, hb', hout⟩
 
 /-- Lift a `HashFamilyDS` certificate from `Basis.exact` to `Basis.standard`. -/
@@ -1055,6 +1160,19 @@ def toStandard (H : HashFamilyDS .exact r_core k_init w base U m params) :
     else if r = hashCoreReg H.keyReg then u.val
     else 0
 
+/-- Every encoded `HashOp U` argument fits in a `w`-bit word on all input registers of
+`H.subroutineCode`. -/
+theorem arguments_fit (H : HashFamilyDS B r_core k_init w base U m params)
+    (o : DataStructure.HashOp U) (i : Fin (r_core + 5))
+    (hi : H.subroutineCode.input i = true) :
+    Fits w (H.encode o i) := by
+  have hfit0 : Fits w 0 := H.fits_space.of_le (Nat.zero_le _)
+  rcases of_decide_eq_true hi with rfl | rfl <;> cases o with
+  | resample => exact hfit0
+  | eval u =>
+    dsimp only [encode]
+    split_ifs <;> first | exact H.fits_tag | exact H.fits_key u | exact hfit0
+
 /-- Output decoder for `HashOp U` on `H.subroutineCode`: returns `some PUnit.unit` on `.resample`
 and reads `regs (hashCoreReg H.outReg) < m` on `.eval u`. -/
 @[expose] def decode (H : HashFamilyDS B r_core k_init w base U m params) :
@@ -1079,6 +1197,7 @@ and `H.evalSteps + 3` for `.eval u`. -/
     (ν₀ : PMF (LatentState H.Seed (r_core + 5))) : Prop :=
   ν₀.map LatentState.latent = PMF.uniformOfFintype H.Seed ∧
   ∀ t ∈ ν₀.support,
+    t.data.Bounded w ∧
     t.data.regs (hashCoreReg H.baseReg) = base ∧
     H.tableRep t.data.mem ∧
     H.seedRep t.latent t.data.mem
@@ -1169,11 +1288,14 @@ private theorem setup_exec_subroutineCode
         ((H.initTableSteps + H.resampleSteps : ℕ) : ℝ≥0∞) ∧
       H.initInv ν₀ ∧
       ∀ t ∈ ν₀.support,
+        t.data.Bounded w ∧
         t.data.regs H.subroutineCode.frontierReg = base + H.space ∧
         Modifies (Block.mk base H.space).footprint x₁.mem t.data.mem := by
   obtain ⟨y_tab, he_tab, hy_base, hy_tab, hy_mod⟩ :=
     H.initTable_exec (hx₁.comap hashCoreReg) hb hpar hz
+  have hy_bdd : y_tab.Bounded w := he_tab.bounded (hx₁.comap hashCoreReg)
   let x₂ : Data (r_core + 5) := y_tab.extend hashCoreReg x₁
+  have hx₂_bdd : x₂.Bounded w := hy_bdd.extend hashCoreReg_injective hx₁
   have he_tab_ren : ExecCodeDist w (H.initTableCode.rename hashCoreReg) x₁ (PMF.pure x₂)
       (H.initTableSteps : ℝ≥0∞) := by
     simpa [x₂] using (ExecCodeDist.of_execWithin he_tab).rename hashCoreReg_injective
@@ -1181,6 +1303,7 @@ private theorem setup_exec_subroutineCode
     Data.comap_extend hashCoreReg_injective y_tab x₁
   obtain ⟨ν_core, he_res, hunif, hsupp_res⟩ :=
     H.resample_exec (x := x₂.comap hashCoreReg)
+      (hx₂_bdd.comap hashCoreReg)
       (by rw [hx₂_comap]; exact hy_base)
       (by rw [hx₂_comap]; exact hy_tab)
   have he_res_ren := he_res.rename hashCoreReg_injective
@@ -1202,26 +1325,33 @@ private theorem setup_exec_subroutineCode
     rw [PMF.mem_support_map_iff] at ht
     obtain ⟨p, hp, rfl⟩ := ht
     obtain ⟨hp_base, hp_tab, hp_seed, _⟩ := hsupp_res p hp
+    have hp_bdd : p.data.Bounded w :=
+      he_res.bounded (hx₂_bdd.comap hashCoreReg) p.data
+        ((PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩)
     have hreg : (p.data.extend hashCoreReg x₂).regs (hashCoreReg H.baseReg) = base := by
       change ((p.data.extend hashCoreReg x₂).comap hashCoreReg).regs H.baseReg = base
       rw [Data.comap_extend hashCoreReg_injective]
       exact hp_base
-    exact ⟨hreg, hp_tab, hp_seed⟩
+    exact ⟨hp_bdd.extend hashCoreReg_injective hx₂_bdd, hreg, hp_tab, hp_seed⟩
   · intro t ht
     rw [PMF.mem_support_map_iff] at ht
     obtain ⟨p, hp, rfl⟩ := ht
     obtain ⟨_, _, _, hp_mod⟩ := hsupp_res p hp
+    have hp_bdd : p.data.Bounded w :=
+      he_res.bounded (hx₂_bdd.comap hashCoreReg) p.data
+        ((PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩)
     have hfr_t : (p.data.extend hashCoreReg x₂).regs (hashFrontierReg r_core) = base + H.space := by
       rw [Data.extend_regs_of_notMem _ _ hashFrontierReg_notMem_range_hashCoreReg,
         Data.extend_regs_of_notMem _ _ hashFrontierReg_notMem_range_hashCoreReg]
       exact hfr
     have hmod_t : Modifies (Block.mk base H.space).footprint x₁.mem p.data.mem := by
       simpa only [Data.comap, Finset.union_idempotent] using hy_mod.trans hp_mod
-    exact ⟨hfr_t, hmod_t⟩
+    exact ⟨hp_bdd.extend hashCoreReg_injective hx₂_bdd, hfr_t, hmod_t⟩
 
 private theorem step_resample_subroutineCode
     (H : HashFamilyDS B r_core k_init w base U m params)
     (t : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5))
+    (hbdd : t.data.Bounded w)
     (hb : t.data.regs (hashCoreReg H.baseReg) = base)
     (htab : H.tableRep t.data.mem) :
     ∃ μ_t : PMF (StepOutcome H.Seed PUnit (r_core + 5)),
@@ -1230,16 +1360,21 @@ private theorem step_resample_subroutineCode
         (μ_t.map StepOutcome.data) ((H.charge .resample : ℕ) : ℝ≥0∞) ∧
       μ_t.map StepOutcome.latent = PMF.uniformOfFintype H.Seed ∧
       ∀ q ∈ μ_t.support,
+        q.data.Bounded w ∧
         H.decode .resample q.data.regs = some q.result ∧
         Modifies (Block.mk base H.space).footprint t.data.mem q.data.mem ∧
         q.data.regs (hashCoreReg H.baseReg) = base ∧
         H.tableRep q.data.mem ∧
         H.seedRep q.latent q.data.mem := by
   let x_prep := (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare .resample t.data
+  have hx_prep : x_prep.Bounded w :=
+    (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded hbdd
+      (H.arguments_fit .resample)
   let x_z := x_prep.set (hashZeroReg r_core) 0
   have he_z : ExecCodeDist (B := B) w (.op (.const (hashZeroReg r_core) 0))
       x_prep (PMF.pure x_z) 1 := by
     simpa [x_z] using ExecCodeDist.of_exec (Exec.const (H.fits_space.of_le (Nat.zero_le _)))
+  have hx_z : x_z.Bounded w := he_z.bounded hx_prep x_z (by simp)
   have hc_pos : (Cond.eq (hashOpReg r_core) (hashZeroReg r_core)).Holds x_z := by
     have hne : hashOpReg r_core ≠ hashZeroReg r_core := by
       simp [hashOpReg, hashZeroReg, Fin.ext_iff]
@@ -1257,7 +1392,7 @@ private theorem step_resample_subroutineCode
       hne_op, hne_key, hb]
   have hxz_mem : (x_z.comap hashCoreReg).mem = t.data.mem := rfl
   obtain ⟨ν_core, he_res, hunif, hsupp⟩ :=
-    H.resample_exec hxz_base (by rw [hxz_mem]; exact htab)
+    H.resample_exec (hx_z.comap hashCoreReg) hxz_base (by rw [hxz_mem]; exact htab)
   have he_res_ren := he_res.rename hashCoreReg_injective
   let liftStep : LatentState H.Seed r_core → StepOutcome H.Seed PUnit (r_core + 5) :=
     fun p => ⟨p.latent, p.data.extend hashCoreReg x_z, PUnit.unit⟩
@@ -1283,15 +1418,19 @@ private theorem step_resample_subroutineCode
     rw [PMF.mem_support_map_iff] at hq
     obtain ⟨p, hp, rfl⟩ := hq
     obtain ⟨hp_base, hp_tab, hp_seed, hp_mod⟩ := hsupp p hp
+    have hp_bdd : p.data.Bounded w :=
+      he_res.bounded (hx_z.comap hashCoreReg) p.data
+        ((PMF.mem_support_map_iff _ _ _).mpr ⟨p, hp, rfl⟩)
     have hreg : (p.data.extend hashCoreReg x_z).regs (hashCoreReg H.baseReg) = base := by
       change ((p.data.extend hashCoreReg x_z).comap hashCoreReg).regs H.baseReg = base
       rw [Data.comap_extend hashCoreReg_injective]
       exact hp_base
-    exact ⟨rfl, hp_mod, hreg, hp_tab, hp_seed⟩
+    exact ⟨hp_bdd.extend hashCoreReg_injective hx_z, rfl, hp_mod, hreg, hp_tab, hp_seed⟩
 
 private theorem step_eval_subroutineCode
     (H : HashFamilyDS B r_core k_init w base U m params) (u : Fin U)
     (t : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5))
+    (hbdd : t.data.Bounded w)
     (hb : t.data.regs (hashCoreReg H.baseReg) = base)
     (htab : H.tableRep t.data.mem)
     (hseed : H.seedRep t.latent t.data.mem) :
@@ -1299,14 +1438,19 @@ private theorem step_eval_subroutineCode
       ExecCodeDist w H.subroutineCode.code
         ((H.subroutineCode.toDynamicProgram H.encode H.decode).prepare (.eval u) t.data)
         (PMF.pure y_ext) ((H.charge (.eval u) : ℕ) : ℝ≥0∞) ∧
+      y_ext.Bounded w ∧
       H.decode (.eval u) y_ext.regs = some (H.eval t.latent u) ∧
       y_ext.mem = t.data.mem ∧
       y_ext.regs (hashCoreReg H.baseReg) = base := by
   let x_prep := (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare (.eval u) t.data
+  have hx_prep : x_prep.Bounded w :=
+    (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded hbdd
+      (H.arguments_fit (.eval u))
   let x_z := x_prep.set (hashZeroReg r_core) 0
   have he_z : ExecCodeDist (B := B) w (.op (.const (hashZeroReg r_core) 0))
       x_prep (PMF.pure x_z) 1 := by
     simpa [x_z] using ExecCodeDist.of_exec (Exec.const (H.fits_space.of_le (Nat.zero_le _)))
+  have hx_z : x_z.Bounded w := he_z.bounded hx_prep x_z (by simp)
   have hc_neg : ¬(Cond.eq (hashOpReg r_core) (hashZeroReg r_core)).Holds x_z := by
     have hne : hashOpReg r_core ≠ hashZeroReg r_core := by
       simp [hashOpReg, hashZeroReg, Fin.ext_iff]
@@ -1331,8 +1475,10 @@ private theorem step_eval_subroutineCode
       SubroutineCode.toDynamicProgram, DynamicProgram.prepare, subroutineCode,
       encode, hne_op]
   obtain ⟨y_core, he_eval, hy_mem, hy_base, hy_out⟩ :=
-    H.eval_exec t.latent u hxz_base hxz_key htab hseed
+    H.eval_exec t.latent u (hx_z.comap hashCoreReg) hxz_base hxz_key htab hseed
+  have hy_bdd : y_core.Bounded w := he_eval.bounded (hx_z.comap hashCoreReg)
   let y_ext : Data (r_core + 5) := y_core.extend hashCoreReg x_z
+  have hy_ext_bdd : y_ext.Bounded w := hy_bdd.extend hashCoreReg_injective hx_z
   have he_eval_ren : ExecCodeDist w (H.evalCode.rename hashCoreReg) x_z
       (PMF.pure y_ext) (H.evalSteps : ℝ≥0∞) := by
     simpa [y_ext] using (ExecCodeDist.of_execWithin he_eval).rename hashCoreReg_injective
@@ -1350,7 +1496,7 @@ private theorem step_eval_subroutineCode
     change (y_ext.comap hashCoreReg).regs H.baseReg = base
     rw [Data.comap_extend hashCoreReg_injective]
     exact hy_base
-  refine ⟨y_ext, ?_, ?_, hy_mem, hy_base_ext⟩
+  refine ⟨y_ext, ?_, hy_ext_bdd, ?_, hy_mem, hy_base_ext⟩
   · refine (he_z.seq_pure he_branch).congr_dist rfl (le_of_eq ?_)
     simp only [charge, Nat.cast_add, Nat.cast_ofNat]
     ring
@@ -1363,6 +1509,7 @@ private theorem steps_subroutineCode
     (remOps : List (DataStructure.HashOp U))
     (ν : PMF (SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5)))
     (hsupp : ∀ t ∈ ν.support,
+      t.data.Bounded w ∧
       t.data.regs (hashCoreReg H.baseReg) = base ∧
       H.tableRep t.data.mem ∧
       H.seedRep t.latent t.data.mem) :
@@ -1388,18 +1535,19 @@ private theorem steps_subroutineCode
     | resample =>
       classical
       let hasInv (t : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5)) : Prop :=
-        t.data.regs (hashCoreReg H.baseReg) = base ∧ H.tableRep t.data.mem
+        t.data.Bounded w ∧ t.data.regs (hashCoreReg H.baseReg) = base ∧ H.tableRep t.data.mem
       let θ₀ : H.Seed := Classical.arbitrary H.Seed
       let μ_step (t : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5)) :
           PMF (StepOutcome H.Seed PUnit (r_core + 5)) :=
         if ht : hasInv t then
-          Classical.choose (H.step_resample_subroutineCode t ht.1 ht.2)
+          Classical.choose (H.step_resample_subroutineCode t ht.1 ht.2.1 ht.2.2)
         else
           PMF.pure ⟨θ₀, t.data, PUnit.unit⟩
       let T_step : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5) → ℝ≥0∞ :=
         fun _ => ((H.charge .resample : ℕ) : ℝ≥0∞)
       let ν₁ := ν.bind fun t => (μ_step t).map (t.appendStep .resample)
       have hsupp₁ : ∀ q_seq ∈ ν₁.support,
+          q_seq.data.Bounded w ∧
           q_seq.data.regs (hashCoreReg H.baseReg) = base ∧
           H.tableRep q_seq.data.mem ∧
           H.seedRep q_seq.latent q_seq.data.mem := by
@@ -1408,27 +1556,32 @@ private theorem steps_subroutineCode
         obtain ⟨t, ht, hq_map⟩ := hq_seq
         rw [PMF.mem_support_map_iff] at hq_map
         obtain ⟨q, hq, rfl⟩ := hq_map
-        have ht_inv : hasInv t := ⟨(hsupp t ht).1, (hsupp t ht).2.1⟩
+        have ht_inv : hasInv t := ⟨(hsupp t ht).1, (hsupp t ht).2.1, (hsupp t ht).2.2.1⟩
         have hμ_eq : μ_step t =
-            Classical.choose (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2) := by
+            Classical.choose (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2.1 ht_inv.2.2) := by
           simp [μ_step, ht_inv]
         rw [hμ_eq] at hq
         have hspec := (Classical.choose_spec
-          (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2)).2.2 q hq
-        exact ⟨hspec.2.2.1, hspec.2.2.2.1, hspec.2.2.2.2⟩
+          (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2.1 ht_inv.2.2)).2.2 q hq
+        exact ⟨hspec.1, hspec.2.2.2.1, hspec.2.2.2.2.1, hspec.2.2.2.2.2⟩
       obtain ⟨ν_final, T_rest, hex_rest, htr_rest, hcost_rest⟩ := ih ν₁ hsupp₁
       have hex_cons : Randomized.ExecSteps H.subroutineCode S H.Seed w base H.space
           H.encode H.decode (.resample :: os) ν ν_final
           ((∑' t, ν t * T_step t) + T_rest) := by
         refine Randomized.ExecSteps.cons (S := S) (μ_step := μ_step) (T_step := T_step)
           (fun t ht => ?_) hex_rest
-        have ht_inv : hasInv t := ⟨(hsupp t ht).1, (hsupp t ht).2.1⟩
+        have ht_inv : hasInv t := ⟨(hsupp t ht).1, (hsupp t ht).2.1, (hsupp t ht).2.2.1⟩
         have hμ_eq : μ_step t =
-            Classical.choose (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2) := by
+            Classical.choose (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2.1 ht_inv.2.2) := by
           simp [μ_step, ht_inv]
-        have hspec := Classical.choose_spec (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2)
+        have hspec := Classical.choose_spec
+          (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2.1 ht_inv.2.2)
         rw [hμ_eq]
-        exact ⟨hspec.1, fun q hq => ⟨(hspec.2.2 q hq).1, (hspec.2.2 q hq).2.1⟩⟩
+        exact ⟨ht_inv.1, H.arguments_fit .resample,
+          (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded ht_inv.1
+            (H.arguments_fit .resample),
+          hspec.1,
+          fun q hq => ⟨(hspec.2.2 q hq).1, (hspec.2.2 q hq).2.1, (hspec.2.2 q hq).2.2.1⟩⟩
       have hT₁ : (∑' t, ν t * T_step t) = ((H.charge .resample : ℕ) : ℝ≥0∞) := by
         dsimp only [T_step]
         rw [ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
@@ -1437,13 +1590,14 @@ private theorem steps_subroutineCode
         dsimp only [ν₁]
         rw [PMF.bind_bind]
         refine PMF.bind_congr_on_support _ _ _ fun t ht => ?_
-        have ht_inv : hasInv t := ⟨(hsupp t ht).1, (hsupp t ht).2.1⟩
+        have ht_inv : hasInv t := ⟨(hsupp t ht).1, (hsupp t ht).2.1, (hsupp t ht).2.2.1⟩
         have hμ_eq : μ_step t =
-            Classical.choose (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2) := by
+            Classical.choose (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2.1 ht_inv.2.2) := by
           simp [μ_step, ht_inv]
         have hunif_t : (μ_step t).map StepOutcome.latent = PMF.uniformOfFintype H.Seed := by
           rw [hμ_eq]
-          exact (Classical.choose_spec (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2)).2.1
+          exact (Classical.choose_spec
+            (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2.1 ht_inv.2.2)).2.1
         rw [PMF.bind_map, DataStructure.evalHashOpsFromSeed, PMF.map_bind, ← hunif_t, PMF.bind_map]
         refine congrArg ((μ_step t).bind ·) (funext fun q => ?_)
         rcases q with ⟨θ', x_q, ⟨⟩⟩
@@ -1456,13 +1610,14 @@ private theorem steps_subroutineCode
     | eval u =>
       classical
       let hasInv (t : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5)) : Prop :=
+        t.data.Bounded w ∧
         t.data.regs (hashCoreReg H.baseReg) = base ∧
         H.tableRep t.data.mem ∧
         H.seedRep t.latent t.data.mem
       let yOf (t : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5)) :
           Data (r_core + 5) :=
         if ht : hasInv t then
-          Classical.choose (H.step_eval_subroutineCode u t ht.1 ht.2.1 ht.2.2)
+          Classical.choose (H.step_eval_subroutineCode u t ht.1 ht.2.1 ht.2.2.1 ht.2.2.2)
         else
           t.data
       let μ_step (t : SeqOutcome H.Seed (@DataStructure.HashResult U m) (r_core + 5)) :
@@ -1472,6 +1627,7 @@ private theorem steps_subroutineCode
         fun _ => ((H.charge (.eval u) : ℕ) : ℝ≥0∞)
       let ν₁ := ν.bind fun t => (μ_step t).map (t.appendStep (.eval u))
       have hsupp₁ : ∀ q_seq ∈ ν₁.support,
+          q_seq.data.Bounded w ∧
           q_seq.data.regs (hashCoreReg H.baseReg) = base ∧
           H.tableRep q_seq.data.mem ∧
           H.seedRep q_seq.latent q_seq.data.mem := by
@@ -1484,14 +1640,14 @@ private theorem steps_subroutineCode
         rw [PMF.support_pure, Set.mem_singleton_iff] at hq
         subst hq
         have ht_inv : hasInv t := hsupp t ht
-        have hy_eq : yOf t =
-            Classical.choose (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2) := by
+        have hy_eq : yOf t = Classical.choose
+            (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2.1 ht_inv.2.2.2) := by
           simp [yOf, ht_inv]
         have hspec := Classical.choose_spec
-          (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2)
+          (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2.1 ht_inv.2.2.2)
         dsimp only [SeqOutcome.appendStep]
-        rw [hy_eq, hspec.2.2.1]
-        exact ⟨hspec.2.2.2, ht_inv.2.1, ht_inv.2.2⟩
+        rw [hy_eq, hspec.2.2.2.1]
+        exact ⟨hspec.2.1, hspec.2.2.2.2, ht_inv.2.2.1, ht_inv.2.2.2⟩
       obtain ⟨ν_final, T_rest, hex_rest, htr_rest, hcost_rest⟩ := ih ν₁ hsupp₁
       have hex_cons : Randomized.ExecSteps H.subroutineCode S H.Seed w base H.space
           H.encode H.decode (.eval u :: os) ν ν_final
@@ -1499,19 +1655,21 @@ private theorem steps_subroutineCode
         refine Randomized.ExecSteps.cons (S := S) (μ_step := μ_step) (T_step := T_step)
           (fun t ht => ?_) hex_rest
         have ht_inv : hasInv t := hsupp t ht
-        have hy_eq : yOf t =
-            Classical.choose (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2) := by
+        have hy_eq : yOf t = Classical.choose
+            (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2.1 ht_inv.2.2.2) := by
           simp [yOf, ht_inv]
         have hspec := Classical.choose_spec
-          (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2)
-        refine ⟨?_, ?_⟩
+          (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2.1 ht_inv.2.2.2)
+        refine ⟨ht_inv.1, H.arguments_fit (.eval u),
+          (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded ht_inv.1
+            (H.arguments_fit (.eval u)), ?_, ?_⟩
         · simpa [μ_step, hy_eq] using hspec.1
         · intro q hq
           dsimp only [μ_step] at hq
           rw [PMF.support_pure, Set.mem_singleton_iff] at hq
           subst hq
-          refine ⟨by simpa [hy_eq] using hspec.2.1, ?_⟩
-          rw [hy_eq, hspec.2.2.1]
+          refine ⟨by simpa [hy_eq] using hspec.2.1, by simpa [hy_eq] using hspec.2.2.1, ?_⟩
+          rw [hy_eq, hspec.2.2.2.1]
           exact Modifies.refl _ _
       have hT₁ : (∑' t, ν t * T_step t) = ((H.charge (.eval u) : ℕ) : ℝ≥0∞) := by
         dsimp only [T_step]
@@ -1549,6 +1707,7 @@ theorem evalHashOps_execSteps
   intro S
   have hsupp_seq : ∀ t ∈ (ν₀.map (SeqOutcome.ofLatentState
       (Result := @DataStructure.HashResult U m))).support,
+      t.data.Bounded w ∧
       t.data.regs (hashCoreReg H.baseReg) = base ∧
       H.tableRep t.data.mem ∧
       H.seedRep t.latent t.data.mem := by
@@ -1597,6 +1756,8 @@ specification `⟨HashOp U, HashResult m, ValidOpSeq, Contract⟩` satisfied by
   initInv := H.initInv
   encode := H.encode
   decode := H.decode
+  bounded hinv t ht := (hinv.2 t ht).1
+  arguments_fit o _ := H.arguments_fit o
   clear_nodup := by exact H.clear_nodup_subroutineCode
   params_not_clear := by exact H.params_not_clear_subroutineCode
   incCur_eval {x} hone hfit := by

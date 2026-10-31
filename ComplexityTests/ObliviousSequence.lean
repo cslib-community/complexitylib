@@ -24,10 +24,14 @@ and the randomized Word-RAM interfaces `Cslib.WordRAM.Randomized.ObliviousSequen
   `Cslib.Algorithms.WordRAM.Hashing.KWise` instantiates `HashFamilyDS` and induces an
   `ObliviousSequenceDS` realizing `Cslib.DataStructure.kWiseHashSpec k U (2 ^ M)` (over both
   `Basis.exact` and `Basis.standard`), with a concrete numerical multi-epoch non-vacuity check;
-* a pure two-level hash family (`twoLevelTrinomialEval`) exercises
-  `whpKWiseHashSpec_contract_evalHashOps_prod` with non-zero failure probability, and
-  `kWiseHashFamilyDS` instantiates `HashFamilyDS.toWhpKWiseObliviousSequenceDS` to realize
-  `Cslib.DataStructure.whpKWiseHashSpec`.
+* a pure two-level hash family (`twoLevelTrinomialEval`) and a concrete single-epoch repeated-key
+  model (`toyTwoLevelEval`) exercise `whpKWiseHashSpec_contract_evalHashOps_prod` with non-zero
+  failure probability (`0 < E * δ = 1 / 2 < 1`), within-epoch repeated-key coherence, and a concrete
+  transcript distribution that satisfies `whpKWiseHashSpec` while refuting `kWiseHashSpec`;
+* oversized-key regressions (`U = 3, w = 1, u = 2`) and ordinary-import client checks for
+  `Stateful.Spec.Transcript.labels_map_fst`, `Cslib.Probability.uniformOfFintype_map_restrict_eq`,
+  `Cslib.Probability.coupledWithin_uniformOfFintype_prod_restrict`,
+  `evalHashOps_eq_of_afterCurrentEpoch_eq_some`, and `evalHashOpsFromSeed_map_equiv`.
 -/
 
 @[expose] public section
@@ -203,6 +207,7 @@ theorem relCoinObliviousDS_seq_expected (w base : ℕ) (hw : 1 ≤ w)
       (ν_final : PMF (SeqOutcome O.Latent relCoinSpec.Result 5)) (T_ops : ℝ≥0∞),
       ExecCodeDist w relCoinCode.initFresh x₀ (ν₀.map LatentState.data) O.initTime ∧
       O.Steps ops (ν₀.map SeqOutcome.ofLatentState) ν_final T_ops ∧
+      (∀ t ∈ ν_final.support, t.data.Bounded w) ∧
       (relCoinSpec.toObliviousSequenceSpec 0).Contract ops
         (ν_final.map SeqOutcome.transcript) ∧
       O.initTime + T_ops ≤
@@ -239,6 +244,8 @@ noncomputable abbrev kWiseHashFamilyDS {w base n_max U M k : ℕ}
   key_ne_base := by decide
   params_ne_base j := by fin_cases j <;> decide
   fits_space := hfit_space
+  fits_tag := hfit_n.of_le (by omega)
+  fits_key u := hfit_U.of_le (by omega)
   addReg := Op.exactBin .add
   addReg_eval _ _ _ hfit := Data.put_of_fits hfit
   initTableCode := KWise.initTableCode k
@@ -262,7 +269,7 @@ noncomputable abbrev kWiseHashFamilyDS {w base n_max U M k : ℕ}
     intro a ha
     rw [Block.mem_footprint, Block.Owns, not_and_or, not_le, not_lt] at ha
     exact hmod a ha
-  resample_exec {x} hbase htab := by
+  resample_exec {x} _ hbase htab := by
     have hq_pos : 0 < trinomialDeg U M := by
       dsimp only [trinomialDeg]
       positivity
@@ -285,7 +292,7 @@ noncomputable abbrev kWiseHashFamilyDS {w base n_max U M k : ℕ}
     rw [Block.mem_footprint, Block.Owns, not_and_or, not_le, not_lt] at ha
     dsimp only [KWise.space, KWise.spaceFromB] at ha
     exact hout a (by omega)
-  eval_exec θ u {x} hbase hkey htab hseed := by
+  eval_exec θ u {x} _ hbase hkey htab hseed := by
     obtain ⟨y, hex, hy0, _, hy2, hymem⟩ :=
       KWise.evalCode_execWithin u ⟨htab, hseed⟩ hbase hkey hw hfit_space
     exact ⟨y, hex, hymem, hy0, hy2⟩
@@ -348,21 +355,22 @@ theorem kWiseObliviousSequenceDS_seq_expected {w base n_max U M k : ℕ}
       ExecCodeDist w (kWiseHashFamilyDS hw hfit_space hfit_n hfit_U).subroutineCode.initFresh
         x₀ (ν₀.map LatentState.data) O.initTime ∧
       O.Steps ops (ν₀.map SeqOutcome.ofLatentState) ν_final T_ops ∧
+      (∀ t ∈ ν_final.support, t.data.Bounded w) ∧
       ν_final.map SeqOutcome.transcript = idealHashTranscriptPMF (2 ^ M) ops ∧
       O.initTime + T_ops ≤ O.initTime + (O.totalCharge ops : ℝ≥0∞) := by
   intro O
-  obtain ⟨ν₀, ν_final, T_ops, hinit, hsteps, hcontract, hcost⟩ :=
+  obtain ⟨ν₀, ν_final, T_ops, hinit, hsteps, hbd, hcontract, hcost⟩ :=
     O.seq_expected ops hx₀ hfr hpar hz hv
   have hpot : O.initPotential = 0 := rfl
   rw [hpot] at hcost
-  refine ⟨ν₀, ν_final, T_ops, hinit, hsteps, hcontract, ?_⟩
+  refine ⟨ν₀, ν_final, T_ops, hinit, hsteps, hbd, hcontract, ?_⟩
   simpa using hcost
 
 /-- Concrete numerical non-vacuity check for `kWiseObliviousSequenceDS`: at `w = 64`, `base = 0`,
 `n_max = 8`, `U = 16`, `M = 4`, `k = 3`, a two-epoch oblivious sequence
 `[.eval 1, .eval 2, .resample, .eval 3]` satisfies all word-size and `BoundedEpochKeys`
-preconditions simultaneously and executes with exact `idealHashTranscriptPMF 16` output
-distribution. -/
+preconditions simultaneously, preserves `Data.Bounded 64` across all final machine states, and
+executes with exact `idealHashTranscriptPMF 16` output distribution. -/
 theorem kWiseObliviousSequenceDS_nonvacuous :
     let ops : List (HashOp 16) := [.eval 1, .eval 2, .resample, .eval 3]
     let x₀ : Data 23 :=
@@ -378,6 +386,7 @@ theorem kWiseObliviousSequenceDS_nonvacuous :
         ExecCodeDist 64 (kWiseHashFamilyDS hw hfit_space hfit_n hfit_U).subroutineCode.initFresh
           x₀ (ν₀.map LatentState.data) O.initTime ∧
         O.Steps ops (ν₀.map SeqOutcome.ofLatentState) ν_final T_ops ∧
+        (∀ t ∈ ν_final.support, t.data.Bounded 64) ∧
         ν_final.map SeqOutcome.transcript = idealHashTranscriptPMF (2 ^ 4) ops ∧
         O.initTime + T_ops ≤ O.initTime + (O.totalCharge ops : ℝ≥0∞) := by
   intro ops x₀
@@ -407,7 +416,38 @@ theorem kWiseObliviousSequenceDS_nonvacuous :
     exact ⟨by decide, trivial⟩
   exact kWiseObliviousSequenceDS_seq_expected hw hfit_space hfit_n hfit_U ops hx₀ hfr hpar hz hv
 
-/-! ## 3. Two-level high-probability hash family (`whpKWiseHashSpec`) non-vacuity -/
+/-! ## 3. Word-admissibility regression: oversized-key rejection and `ExecSteps` preservation -/
+
+/-- At universe size `U = 3` and word width `w = 1`, key `u = ⟨2, by decide⟩` has value
+`2 = 2 ^ 1`, so no `HashFamilyDS` instance can exist because `fits_key` requires `Fits 1 2`. -/
+theorem isEmpty_hashFamilyDS_oversized_key {B : Basis} {r_core k_init base m : ℕ}
+    {params : Fin k_init → ℕ} :
+    IsEmpty (HashFamilyDS B r_core k_init 1 base 3 m params) := by
+  refine ⟨fun H => ?_⟩
+  have hfit : Fits 1 2 := H.fits_key ⟨2, by decide⟩
+  revert hfit
+  decide
+
+/-- At universe size `U = 3` and word width `w = 1`, `ExecSteps` rejects any sequence containing
+`HashOp.eval ⟨2, by decide⟩` whenever `encode` places the key value `2` into an input register
+`keyReg`. -/
+theorem not_execSteps_oversized_eval_key {B : Basis} {r k_init base space k m : ℕ} [NeZero m]
+    (P : SubroutineCode B (r + 1) k_init) (Latent : Type*)
+    (encode : HashOp 3 → Fin (r + 1) → ℕ)
+    (decode : (o : HashOp 3) → (Fin (r + 1) → ℕ) → Option (HashResult m o))
+    (keyReg : Fin (r + 1)) (hin : P.input keyReg = true)
+    (henc : encode (.eval (⟨2, by decide⟩ : Fin 3)) keyReg = 2)
+    (ν ν_final : PMF (SeqOutcome Latent (@HashResult 3 m) (r + 1))) (T_ops : ℝ≥0∞) :
+    ¬ ExecSteps P (kWiseHashSpec k 3 m) Latent 1 base space encode decode
+        [HashOp.eval (⟨2, by decide⟩ : Fin 3)] ν ν_final T_ops := by
+  intro hsteps
+  have hfit : Fits 1 (encode (.eval (⟨2, by decide⟩ : Fin 3)) keyReg) :=
+    hsteps.arguments_fit (.eval (⟨2, by decide⟩ : Fin 3)) (List.Mem.head _) keyReg hin
+  rw [henc] at hfit
+  revert hfit
+  decide
+
+/-! ## 4. Two-level high-probability hash family (`whpKWiseHashSpec`) non-vacuity -/
 
 /-- Two-level hash evaluation `twoLevelTrinomialEval`:
 * when the top seed is `true`, evaluates `trinomialPolyHash (trinomialStep U M) k U M` (which is
@@ -458,5 +498,178 @@ noncomputable def kWiseWhpObliviousSequenceDS {w base n_max U M k : ℕ}
     (fun _ _ =>
       isKWiseIndependentHash_trinomialPolyHash
         (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M))
+
+/-! ## 5. Single-epoch repeated-key approximate-contract separation (`P2c`) -/
+
+/-- Concrete two-level hash family on `U = 1, m = 2` with `TopSeed = Bool` and `BotSeed = Fin 2`:
+* when `α = true`, returns the uniform bottom seed `b : Fin 2`;
+* when `α = false`, returns the constant `0 : Fin 2`. -/
+def toyTwoLevelEval : Bool → Fin 2 → Fin 1 → Fin 2
+  | true, b, _ => b
+  | false, _, _ => 0
+
+/-- On the good top seed `true`, `toyTwoLevelEval true` is `1`-wise independent. -/
+theorem isKWiseIndependentHash_toyTwoLevelEval_true :
+    IsKWiseIndependentHash 1 (toyTwoLevelEval true) where
+  dens_filter_restrict_eq {T} hT y := by
+    interval_cases hc : T.card
+    · obtain rfl := Finset.card_eq_zero.1 hc
+      have hfilter :
+          ({i | (∅ : Finset (Fin 1)).restrict (toyTwoLevelEval true i) = y} : Finset (Fin 2)) =
+            Finset.univ :=
+        Finset.filter_true_of_mem fun i _ => funext fun x => (Finset.notMem_empty _ x.2).elim
+      rw [hfilter, Finset.dens_univ]
+      simp
+    · obtain ⟨x, rfl⟩ := Finset.card_eq_one.1 hc
+      have hfilter :
+          ({i | ({x} : Finset (Fin 1)).restrict (toyTwoLevelEval true i) = y} : Finset (Fin 2)) =
+            {y ⟨x, Finset.mem_singleton_self x⟩} := by
+        ext i
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, funext_iff, Subtype.forall,
+          Finset.mem_singleton, Finset.restrict, toyTwoLevelEval]
+        exact ⟨fun hi => hi x rfl, by rintro rfl a rfl; rfl⟩
+      rw [hfilter, Finset.dens_eq_card_div_card]
+      simp
+
+/-- Single-epoch operation sequence querying key `0 : Fin 1` twice without resampling. -/
+def toyRepeatedEvalOps : List (HashOp 1) :=
+  [.eval 0, .eval 0]
+
+/-- Transcript distribution of `toyTwoLevelEval` on `toyRepeatedEvalOps` under uniform seed
+`Bool × Fin 2`. -/
+noncomputable def toyRepeatedEvalDist : PMF (List (HashLabel 1 2)) :=
+  evalHashOps (uniformOfFintype (Bool × Fin 2))
+    (fun p => toyTwoLevelEval p.1 p.2) toyRepeatedEvalOps
+
+/-- Within-epoch coherence: every transcript in `toyRepeatedEvalDist.support` returns the *same*
+hash value `v : Fin 2` on both evaluations of key `0`. -/
+theorem toyRepeatedEvalDist_coherent {out : List (HashLabel 1 2)}
+    (hout : out ∈ toyRepeatedEvalDist.support) :
+    ∃ v : Fin 2, out = [⟨.eval 0, v⟩, ⟨.eval 0, v⟩] := by
+  dsimp only [toyRepeatedEvalDist, toyRepeatedEvalOps, evalHashOps, evalHashOpsFromSeed] at hout
+  simp only [PMF.pure_map, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hout
+  obtain ⟨p, _, rfl⟩ := hout
+  exact ⟨toyTwoLevelEval p.1 p.2 0, rfl⟩
+
+private theorem evalHashOps_toyRepeatedEvalOps {Seed : Type*} (seedLaw : PMF Seed)
+    (eval : Seed → Fin 1 → Fin 2) :
+    evalHashOps seedLaw eval toyRepeatedEvalOps =
+      seedLaw.map (fun s => [⟨HashOp.eval 0, eval s 0⟩, ⟨HashOp.eval 0, eval s 0⟩]) := by
+  dsimp only [toyRepeatedEvalOps, evalHashOps, evalHashOpsFromSeed]
+  simp only [PMF.pure_map]
+  rfl
+
+/-- The all-zero repeated-evaluation transcript `[⟨.eval 0, 0⟩, ⟨.eval 0, 0⟩]` has probability
+`3 / 4` under `toyRepeatedEvalDist`, whereas `idealHashTranscriptPMF 2 toyRepeatedEvalOps` assigns
+probability `1 / 2`. -/
+theorem toyRepeatedEvalDist_apply_zero_ne_ideal :
+    let out₀ : List (HashLabel 1 2) := [⟨.eval 0, 0⟩, ⟨.eval 0, 0⟩]
+    toyRepeatedEvalDist out₀ = 3 / 4 ∧
+      idealHashTranscriptPMF 2 toyRepeatedEvalOps out₀ = 1 / 2 := by
+  intro out₀
+  have hv : BoundedEpochKeys 1 toyRepeatedEvalOps := by
+    dsimp only [toyRepeatedEvalOps]
+    rw [BoundedEpochKeys]
+    exact ⟨by decide, trivial⟩
+  have hideal_eq :
+      idealHashTranscriptPMF 2 toyRepeatedEvalOps =
+        evalHashOps (uniformOfFintype (Fin 2)) (toyTwoLevelEval true) toyRepeatedEvalOps :=
+    (kWiseHashSpec_contract_evalHashOps isKWiseIndependentHash_toyTwoLevelEval_true hv).symm
+  have hne01 : ([⟨HashOp.eval (0 : Fin 1), (0 : Fin 2)⟩, ⟨HashOp.eval 0, 0⟩] :
+      List (HashLabel 1 2)) ≠ [⟨HashOp.eval 0, 1⟩, ⟨HashOp.eval 0, 1⟩] := by
+    intro h
+    injection h with hhead _
+    injection hhead with _ hval
+    exact Fin.zero_ne_one hval
+  constructor
+  · dsimp only [toyRepeatedEvalDist]
+    rw [evalHashOps_toyRepeatedEvalOps, PMF.map_apply, tsum_fintype,
+      Fintype.sum_prod_type, Fintype.sum_bool, Fin.sum_univ_two, Fin.sum_univ_two]
+    simp only [uniformOfFintype_apply, Fintype.card_prod, Fintype.card_bool, Fintype.card_fin,
+      out₀, toyTwoLevelEval, hne01, ↓reduceIte, add_zero, div_eq_mul_inv]
+    norm_num
+    ring
+  · rw [hideal_eq, evalHashOps_toyRepeatedEvalOps, PMF.map_apply, tsum_fintype, Fin.sum_univ_two]
+    simp only [uniformOfFintype_apply, Fintype.card_fin, out₀, toyTwoLevelEval, hne01, ↓reduceIte,
+      add_zero, one_div]
+    norm_num
+
+/-- `toyRepeatedEvalDist` satisfies `(whpKWiseHashSpec 1 1 2 (1 / 2)).Contract toyRepeatedEvalOps`
+with non-trivial error budget `0 < (epochCount toyRepeatedEvalOps : ℝ≥0∞) * (1 / 2) = 1 / 2 < 1`,
+while refuting the exact contract `(kWiseHashSpec 1 1 2).Contract toyRepeatedEvalOps`. -/
+theorem toyRepeatedEvalDist_whp_and_not_exact :
+    (epochCount toyRepeatedEvalOps : ℝ≥0∞) * (1 / 2) = 1 / 2 ∧
+    (0 : ℝ≥0∞) < (epochCount toyRepeatedEvalOps : ℝ≥0∞) * (1 / 2) ∧
+    (epochCount toyRepeatedEvalOps : ℝ≥0∞) * (1 / 2) < 1 ∧
+    (whpKWiseHashSpec 1 1 2 (1 / 2)).Contract toyRepeatedEvalOps toyRepeatedEvalDist ∧
+    ¬ (kWiseHashSpec 1 1 2).Contract toyRepeatedEvalOps toyRepeatedEvalDist := by
+  have hepoch : (epochCount toyRepeatedEvalOps : ℝ≥0∞) * (1 / 2) = 1 / 2 := by
+    change ((1 : ℕ) : ℝ≥0∞) * (1 / 2) = 1 / 2
+    simp
+  refine ⟨hepoch, ?_, ?_, ?_, ?_⟩
+  · rw [hepoch]
+    exact ENNReal.div_pos one_ne_zero ENNReal.ofNat_ne_top
+  · rw [hepoch]
+    exact ENNReal.half_lt_self one_ne_zero ENNReal.one_ne_top
+  · have hv : BoundedEpochKeys 1 toyRepeatedEvalOps := by
+      dsimp only [toyRepeatedEvalOps]
+      rw [BoundedEpochKeys]
+      exact ⟨by decide, trivial⟩
+    have hwhp :=
+      whpKWiseHashSpec_contract_evalHashOps_prod toyTwoLevelEval {true}
+        (fun α hα => by
+          rw [Finset.mem_singleton.mp hα]
+          exact isKWiseIndependentHash_toyTwoLevelEval_true) hv
+    have hδ :
+        (((Finset.univ \ ({true} : Finset Bool)).card : ℝ≥0∞) / Fintype.card Bool) = 1 / 2 := by
+      have hc : (Finset.univ \ ({true} : Finset Bool)).card = 1 := by decide
+      rw [hc, Fintype.card_bool]
+      simp
+    rwa [hδ] at hwhp
+  · intro hexact
+    change toyRepeatedEvalDist = idealHashTranscriptPMF 2 toyRepeatedEvalOps at hexact
+    obtain ⟨h1, h2⟩ := toyRepeatedEvalDist_apply_zero_ne_ideal
+    rw [hexact, h2] at h1
+    have h1_real := congrArg ENNReal.toReal h1
+    norm_num at h1_real
+
+/-! ## 6. Exported decomposition, seed-transport, and coupling helper API checks (`P2a`, `P2b`) -/
+
+/-- Ordinary-import client check for `Stateful.Spec.Transcript.labels_map_fst`. -/
+theorem transcript_labels_map_fst_client (D : Stateful.Spec) (tr : D.Transcript) :
+    tr.labels.map Sigma.fst = tr.ops :=
+  tr.labels_map_fst
+
+/-- Ordinary-import client check for `Cslib.Probability.uniformOfFintype_map_restrict_eq` and
+`Cslib.Probability.coupledWithin_uniformOfFintype_prod_restrict`. -/
+theorem probability_restrict_and_coupling_client
+    {T : Finset (Fin 1)} (hT : T.card ≤ 1) :
+    (uniformOfFintype (Fin 2)).map (fun θ => T.restrict (toyTwoLevelEval true θ)) =
+      uniformOfFintype (T → Fin 2) ∧
+    PMF.CoupledWithin
+      ((uniformOfFintype (Bool × Fin 2)).map (fun p => T.restrict (toyTwoLevelEval p.1 p.2)))
+      (uniformOfFintype (T → Fin 2))
+      (((Finset.univ \ ({true} : Finset Bool)).card : ℝ≥0∞) / Fintype.card Bool) :=
+  ⟨Cslib.Probability.uniformOfFintype_map_restrict_eq
+      isKWiseIndependentHash_toyTwoLevelEval_true hT,
+    Cslib.Probability.coupledWithin_uniformOfFintype_prod_restrict toyTwoLevelEval {true}
+      (fun α hα => by
+        rw [Finset.mem_singleton.mp hα]
+        exact isKWiseIndependentHash_toyTwoLevelEval_true) hT⟩
+
+/-- Ordinary-import client check for `evalHashOps_eq_of_afterCurrentEpoch_eq_some` and
+`evalHashOpsFromSeed_map_equiv`. -/
+theorem evalHashOps_decomposition_and_map_equiv_client
+    (seedLaw : PMF (Fin 2)) (eval : Fin 2 → Fin 1 → Fin 2) (e : Fin 2 ≃ Bool) (θ : Fin 2) :
+    let ops : List (HashOp 1) := [.eval 0, .resample, .eval 0]
+    evalHashOps seedLaw eval ops =
+      ((seedLaw.map (fun s => (currentEpochKeys ops).restrict (eval s))).map
+        (currentEpochPrefixTranscript 2 ops)).bind (fun pref =>
+          (evalHashOps seedLaw eval [.eval 0]).map (fun tailOut =>
+            pref ++ (⟨.resample, PUnit.unit⟩ :: tailOut))) ∧
+    evalHashOpsFromSeed seedLaw eval θ ops =
+      evalHashOpsFromSeed (seedLaw.map e) (fun b => eval (e.symm b)) (e θ) ops :=
+  ⟨evalHashOps_eq_of_afterCurrentEpoch_eq_some seedLaw eval rfl,
+    evalHashOpsFromSeed_map_equiv seedLaw eval e θ [.eval 0, .resample, .eval 0]⟩
 
 end ComplexityTests.ObliviousSequence

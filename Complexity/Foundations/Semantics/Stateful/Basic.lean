@@ -49,7 +49,8 @@ The relational semantics is **demonic** for callers and **angelic** for implemen
 
 ## Main results
 
-* `Spec.ValidTranscript.append`, `Spec.totalCostTranscript_append`: transcript composition laws.
+* `Spec.Transcript.labels_map_fst`, `Spec.ValidTranscript.append`,
+  `Spec.totalCostTranscript_append`: transcript projection and composition laws.
 * `Spec.exists_validTranscript_of_validOpSeq`, `Spec.DemonicValid.exists_clientRun`: existence of
   valid runs under `[Spec.Total]`.
 * `Spec.ClientRun.bind`, `Spec.clientRun_bind_iff`, `Spec.DemonicValid.bind`: sequential
@@ -207,6 +208,14 @@ theorem Transcript.labels_append {D : Spec.{u, v, w}} (tr₁ tr₂ : D.Transcrip
 theorem Transcript.length_labels {D : Spec.{u, v, w}} (tr : D.Transcript) :
     (Transcript.labels tr).length = tr.length :=
   List.length_map _
+
+/-- Projecting the first component of `Transcript.labels` recovers `Transcript.ops`. -/
+@[simp]
+theorem Transcript.labels_map_fst {D : Spec.{u, v, w}} (tr : D.Transcript) :
+    tr.labels.map Sigma.fst = tr.ops := by
+  induction tr with
+  | nil => rfl
+  | cons st tr ih => exact congrArg (st.op :: ·) ih
 
 /-- `D.ValidTranscript s tr s'` holds when `tr` is a valid step-by-step execution starting at `s`
 and ending at `s'`, where each step is admissible (`D.valid`) and permitted by `D.step`. -/
