@@ -69,6 +69,17 @@ namespace Cslib.Circuits.Frontier.FastContraction
 
 open ContractionSchedule ChildCursor NativeRecovery NativeChild
 
+/-- **The native children of a well-formed active call**, unfolded: the rows and the native child
+of the parent with its native packing, at the cursor state. Every unfolding of `nativeMk` in the
+analysis goes through this lemma. -/
+theorem nativeMk_apply_of_active {x : Call} {c : State} (_hx : WF x) (_ha : active x = true)
+    (_hc : c ∈ children x) :
+    nativeMk x c = (childRows x.rows (level x ((nodes x).getD c.1 0)) x.net
+        (nativeParentPacking x.rows (slots x) x.net) c.2.2.2,
+      nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0)) (nodePrec x c.1)
+        (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) x.rows x.net
+        (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 c.2.2.2) := rfl
+
 /-- **A call on the schedule** of a root with `m` edges, for the constant `C`: it keeps the root's
 scale and modulus, is well-formed, has maximum degree at most `degreeBound m` and fewer edges than
 its bound, and has at most `leafSize m` edges or is an active call of the schedule. -/
@@ -178,13 +189,13 @@ theorem child (hB : ∀ d M p, Active C m d M p → ActiveBounds C m d M p) (h :
       (Δ := degreeBound m) (by rw [hslots]; exact hb.degree_mul_pairs_sq_le) x.fl
       (nodePrec x c.1) (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 [])
       c.2.2.1 ⟨c.2.2.2, hg⟩
-    simpa only [FastContraction.child, nativeMk, packing, Call.edges] using this
+    simpa only [FastContraction.child, nativeMk_apply_of_active h.wf ha hc, Call.edges] using this
   have hM := one_le_edges_of_active ha
   refine ⟨h.scale_eq, h.fl_eq, wfChildren_nativeMk x h.wf ha c hc, fun v hv => ?_, ?_, ?_⟩
   · refine length_le_of_mem_vertices_nativeChild h.wf.2 hK hia h.degree_le
       (by rw [hslots]; exact hb.two_mul_slots_le) x.fl (nodePrec x c.1)
       (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) c.2.2.1 ⟨c.2.2.2, hg⟩ ?_
-    simpa only [FastContraction.child, nativeMk, packing] using hv
+    simpa only [FastContraction.child, nativeMk_apply_of_active h.wf ha hc] using hv
   · change _ < x.edges
     omega
   · by_cases hs : (FastContraction.child x nativeMk c).edges ≤ leafSize m
