@@ -11,8 +11,10 @@ public import Complexity.Computability.Complexity.Classes.CeqP.Time
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Separation
 public import Complexity.Computability.Complexity.Classes.ModP.Time
 import Complexity.Computability.Complexity.Classes.FunctionTime.Decide
+import Complexity.Computability.Complexity.Classes.SharpP.PaddedCount
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 
 /-!
@@ -37,9 +39,14 @@ the containments and strict containments of `Cslib.Complexity.ParityTIME`,
 `Cslib.Complexity.ModTIME` (for every fixed `k`) and `Cslib.Complexity.CeqTIME`. The bounds are on
 time only; no polynomial workspace bound is claimed for these classes.
 
-`NTIME`, `BPTIME` and `PPTIME` reduce in this library to counts of padded fair-coin strings
-(`Cslib.Complexity.exists_acceptCount_of_mem_NTIME`), not to terminal-path counts, so they are not
-derived here. Their strict containments in `DTIME[2 ^ T]` are in `CountingSimulation.Separation`.
+`NTIME`, `BPTIME` and `PPTIME` are such classes too. The library reduces them to padded fair-coin
+counts (`Cslib.Complexity.exists_acceptCount_of_mem_NTIME`), and padded counts at a linear clock
+are `SharpTIME enc T` functions (`Cslib.Complexity.exists_clock_acceptCount_mem_SharpTIME`).
+So `NTIME[T]` is a positivity test of one count, and `PPTIME[T]` and `BPTIME[T]` compare a count
+`f` with the count `g = 2 ^ τ` of all coin strings by `g < 2 * f`
+(`Cslib.Complexity.exists_mem_SharpTIME_of_mem_NTIME`,
+`Cslib.Complexity.exists_mem_SharpTIME_of_mem_PPTIME`). Their strict containments in
+`DTIME[2 ^ T]` are instances of the same separation.
 
 ## Main results
 
@@ -52,6 +59,8 @@ derived here. Their strict containments in `DTIME[2 ^ T]` are in `CountingSimula
   `CeqTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`: the containments.
 * `ParityTIME_ssubset_DTIME_two_pow`, `ModTIME_ssubset_DTIME_two_pow`,
   `CeqTIME_ssubset_DTIME_two_pow`: the strict containments in `DTIME[2 ^ T]`.
+* `NTIME_ssubset_DTIME_two_pow`, `BPTIME_ssubset_DTIME_two_pow`, `PPTIME_ssubset_DTIME_two_pow`:
+  the strict containments of nondeterministic, bounded-error and majority time.
 
 ## References
 
@@ -193,5 +202,53 @@ theorem ParityTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n
 theorem CeqTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
     CeqTIME encBits T ⊂ DTIME encBits fun n => 2 ^ T n :=
   ssubset_DTIME_two_pow_of_forall_mem_SharpTIME hT hTn fun _ => CeqTIME_forall_mem_SharpTIME
+
+/-! ### Nondeterministic, bounded-error and majority time -/
+
+private theorem computableInPolyTime_pos :
+    ComputableInPolyTime (fun p : ℕ × ℕ => decide (0 < p.1)) (encPair encNat encNat) encBool :=
+  ComputableInPolyTime.binary_lt' (ComputableInPolyTime.const 0)
+    (ComputableInPolyTime.fst encNat encNat)
+
+private theorem computableInPolyTime_lt_two_mul :
+    ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.2 < 2 * p.1)) (encPair encNat encNat)
+      encBool :=
+  ComputableInPolyTime.binary_lt' (ComputableInPolyTime.snd encNat encNat)
+    (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 2)
+      (ComputableInPolyTime.fst encNat encNat))
+
+/-- `NTIME[T]` problems are decided by tests of counts in `SharpTIME enc T`. -/
+private theorem NTIME_forall_mem_SharpTIME (hT : TimeConstructible T) {A : Set α}
+    (hA : A ∈ NTIME enc T) :
+    ∃ f ∈ SharpTIME enc T, ∃ g ∈ SharpTIME enc T, ∃ rule : ℕ × ℕ → Bool,
+      ComputableInPolyTime rule (encPair encNat encNat) encBool ∧
+        ∀ x, x ∈ A ↔ rule (f x, g x) = true := by
+  obtain ⟨f, hf, hA⟩ := exists_mem_SharpTIME_of_mem_NTIME hT hA
+  exact ⟨f, hf, f, hf, _, computableInPolyTime_pos, fun x => by simp [hA x]⟩
+
+/-- `PPTIME[T]` problems are decided by tests of counts in `SharpTIME enc T`. -/
+private theorem PPTIME_forall_mem_SharpTIME (hT : TimeConstructible T) {A : Set α}
+    (hA : A ∈ PPTIME enc T) :
+    ∃ f ∈ SharpTIME enc T, ∃ g ∈ SharpTIME enc T, ∃ rule : ℕ × ℕ → Bool,
+      ComputableInPolyTime rule (encPair encNat encNat) encBool ∧
+        ∀ x, x ∈ A ↔ rule (f x, g x) = true := by
+  obtain ⟨f, hf, g, hg, hA⟩ := exists_mem_SharpTIME_of_mem_PPTIME hT hA
+  exact ⟨f, hf, g, hg, _, computableInPolyTime_lt_two_mul, fun x => by simp [hA x]⟩
+
+/-- **`NTIME[T] ⊊ DTIME[2 ^ T]`** for time-constructible `T` with `max n 2 ≤ T n`. -/
+theorem NTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
+    NTIME encBits T ⊂ DTIME encBits fun n => 2 ^ T n :=
+  ssubset_DTIME_two_pow_of_forall_mem_SharpTIME hT hTn fun _ => NTIME_forall_mem_SharpTIME hT
+
+/-- **`BPTIME[T] ⊊ DTIME[2 ^ T]`** for time-constructible `T` with `max n 2 ≤ T n`. -/
+theorem BPTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
+    BPTIME encBits T ⊂ DTIME encBits fun n => 2 ^ T n :=
+  ssubset_DTIME_two_pow_of_forall_mem_SharpTIME hT hTn fun _ hA =>
+    PPTIME_forall_mem_SharpTIME hT (BPTIME_subset_PPTIME hA)
+
+/-- **`PPTIME[T] ⊊ DTIME[2 ^ T]`** for time-constructible `T` with `max n 2 ≤ T n`. -/
+theorem PPTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
+    PPTIME encBits T ⊂ DTIME encBits fun n => 2 ^ T n :=
+  ssubset_DTIME_two_pow_of_forall_mem_SharpTIME hT hTn fun _ => PPTIME_forall_mem_SharpTIME hT
 
 end Cslib.Complexity.CountingSimulation

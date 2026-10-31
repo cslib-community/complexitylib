@@ -15,11 +15,10 @@ import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
 /-!
 # Strict containments in `DTIME[2 ^ T]` from the counting simulation
 
-For time-constructible `T` with `max n 2 ≤ T n`, the counting simulation of #1833 places
-`NTIME[T]`, `BPTIME[T]` and `PPTIME[T]` in `⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`
-(`Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two` and its
-siblings). That union lies in `DTIME[2 ^ T]` but does not exhaust it. Hence each of these classes
-is strictly contained in `DTIME[2 ^ T]` on bit strings.
+For time-constructible `T` with `max n 2 ≤ T n`, the counting simulation of #1833 places counting
+classes such as `NTIME[T]`, `BPTIME[T]` and `PPTIME[T]` in
+`⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`. That union lies in `DTIME[2 ^ T]` but does not exhaust it.
+Hence every class inside it is strictly contained in `DTIME[2 ^ T]` on bit strings.
 
 **The separating language** is the clocked diagonal `Cslib.Complexity.timeDiagonal J` of
 `Complexity.Computability.Complexity.Classes.Hierarchy.Time`, with the clock
@@ -36,9 +35,10 @@ is strictly contained in `DTIME[2 ^ T]` on bit strings.
 The polynomial overhead of the native universal machine is absorbed by the gap between
 `2 ^ (T / 4)` and `2 ^ T`. No faster universal simulation is assumed.
 
-The same separation applies to every class decided by polynomial-time tests of exact counts in
-`Cslib.Complexity.SharpTIME`, such as `⊕TIME[T]`, `Mod_kTIME[T]` and `C₌TIME[T]`
-(`Complexity.Computability.Complexity.Classes.CountingSimulation.CountingClasses`).
+The separation is applied in
+`Complexity.Computability.Complexity.Classes.CountingSimulation.CountingClasses` to every class
+decided by polynomial-time tests of exact counts in `Cslib.Complexity.SharpTIME`: `⊕TIME[T]`,
+`Mod_kTIME[T]`, `C₌TIME[T]`, and also `NTIME[T]`, `BPTIME[T]` and `PPTIME[T]`.
 
 ## Main results
 
@@ -48,8 +48,6 @@ The same separation applies to every class decided by polynomial-time tests of e
   `DTIME[2 ^ T]` lies outside every `DTIME[2 ^ (C T / √⌊log₂ T⌋)]`.
 * `Cslib.Complexity.CountingSimulation.ssubset_DTIME_two_pow_of_subset_iUnion`: every class inside
   the union is strictly contained in `DTIME[2 ^ T]`.
-* `Cslib.Complexity.CountingSimulation.NTIME_ssubset_DTIME_two_pow`,
-  `BPTIME_ssubset_DTIME_two_pow`, `PPTIME_ssubset_DTIME_two_pow`: the strict containments.
 
 ## References
 
@@ -155,26 +153,5 @@ theorem ssubset_DTIME_two_pow_of_subset_iUnion {𝒞 : Set (Set (List Bool))}
     𝒞 ⊂ DTIME encBits fun n => 2 ^ T n :=
   ⟨h.trans (iUnion_DTIME_two_pow_div_sqrt_log_two_subset hTn), fun hsub =>
     DTIME_two_pow_not_subset_iUnion_DTIME_two_pow_div_sqrt_log_two hT hTn (hsub.trans h)⟩
-
-private theorem le_of_max_le (hTn : ∀ n, max n 2 ≤ T n) (n : ℕ) : n ≤ T n :=
-  (le_max_left _ _).trans (hTn n)
-
-/-- **`NTIME[T] ⊊ DTIME[2 ^ T]`** for time-constructible `T` with `max n 2 ≤ T n`. -/
-theorem NTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
-    NTIME encBits T ⊂ DTIME encBits fun n => 2 ^ T n :=
-  ssubset_DTIME_two_pow_of_subset_iUnion hT (le_of_max_le hTn)
-    (NTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two hT hTn)
-
-/-- **`BPTIME[T] ⊊ DTIME[2 ^ T]`** for time-constructible `T` with `max n 2 ≤ T n`. -/
-theorem BPTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
-    BPTIME encBits T ⊂ DTIME encBits fun n => 2 ^ T n :=
-  ssubset_DTIME_two_pow_of_subset_iUnion hT (le_of_max_le hTn)
-    (BPTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two hT hTn)
-
-/-- **`PPTIME[T] ⊊ DTIME[2 ^ T]`** for time-constructible `T` with `max n 2 ≤ T n`. -/
-theorem PPTIME_ssubset_DTIME_two_pow (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
-    PPTIME encBits T ⊂ DTIME encBits fun n => 2 ^ T n :=
-  ssubset_DTIME_two_pow_of_subset_iUnion hT (le_of_max_le hTn)
-    (PPTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two hT hTn)
 
 end Cslib.Complexity.CountingSimulation
