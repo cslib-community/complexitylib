@@ -204,10 +204,9 @@ index links to canonical definitions rather than keeping a second set.
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets:** SPARSE and TALLY; `P/poly = P^SPARSE` (Meyer), extending
-  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse set that is NP-hard under many-one
-  reductions gives `P = NP` (Mahaney), as does a sparse coNP-hard set (Fortune) and a sparse NP-hard
-  set under bounded truth-table reductions (Ogihara and Watanabe).
+- **Sparse and tally sets** ([#1819]): TALLY; `P/poly = P^SPARSE` (Meyer), extending
+  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse NP-hard set under bounded
+  truth-table reductions gives `P = NP` (Ogihara and Watanabe).
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
@@ -872,4 +871,5 @@ not planned, not as proved.
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
+[#1819]: https://github.com/cslib-community/complexitylib/issues/1819
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
