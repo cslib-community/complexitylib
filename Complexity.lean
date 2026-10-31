@@ -15,6 +15,7 @@ public import Complexity.Algorithms.Lean.CuckooHashing
 public import Complexity.Algorithms.Lean.Dictionary
 public import Complexity.Algorithms.Lean.DisjointSet
 public import Complexity.Algorithms.Lean.DisjointSet.UnionFind
+public import Complexity.Algorithms.Lean.DoubleHashing
 public import Complexity.Algorithms.Lean.FenwickTree.Basic
 public import Complexity.Algorithms.Lean.FenwickTree.Lowbit
 public import Complexity.Algorithms.Lean.FenwickTree.Stateful
@@ -3024,6 +3025,7 @@ public import Complexity.Foundations.Data.Nat.Factorial
 public import Complexity.Foundations.Data.Nat.Fields
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
+public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
 public import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 public import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
@@ -3451,6 +3453,7 @@ public import Complexity.Probability.Isolation
 public import Complexity.Probability.KWiseIndependent
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.KWiseIndependent.Polynomial
+public import Complexity.Probability.KWiseIndependent.Restriction
 public import Complexity.Probability.KWiseIndependent.Trinomial
 public import Complexity.Probability.LocalLemma
 public import Complexity.Probability.LoomisWhitney
@@ -3464,6 +3467,7 @@ public import Complexity.Probability.PMF.Event
 public import Complexity.Probability.PMF.Expect
 public import Complexity.Probability.PMF.Map
 public import Complexity.Probability.PMF.Uniform
+public import Complexity.Probability.PMF.UniformBound
 public import Complexity.Probability.PMF.UniformSubset
 public import Complexity.Probability.PairwiseIndependent
 public import Complexity.Probability.PairwiseIndependentHash
