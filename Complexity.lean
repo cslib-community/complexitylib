@@ -903,8 +903,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeReco
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEvaluator
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketTerms
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ReductionLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Recursion
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ReductionLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Reindex
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Schedule
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion
