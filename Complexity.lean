@@ -2141,6 +2141,7 @@ public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
 public import Complexity.Computability.PolyTime.CSP.ToCNF
+public import Complexity.Computability.PolyTime.CSP.Vars
 public import Complexity.Computability.PolyTime.CommonCountingAccum
 public import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
 public import Complexity.Computability.PolyTime.GaloisRingArithmetic
@@ -2869,6 +2870,7 @@ public import Complexity.Foundations.Data.Int.Residue
 public import Complexity.Foundations.Data.List.Append
 public import Complexity.Foundations.Data.List.BalancedFold
 public import Complexity.Foundations.Data.List.Basic
+public import Complexity.Foundations.Data.List.Boole
 public import Complexity.Foundations.Data.List.Counting
 public import Complexity.Foundations.Data.List.Equiv
 public import Complexity.Foundations.Data.List.EraseDups
@@ -3236,6 +3238,7 @@ public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.CSP.ToCNF.Count
+public import Complexity.Logics.Propositional.CSP.Vars
 public import Complexity.Logics.Propositional.ClauseSet.Basic
 public import Complexity.Logics.Propositional.ClauseSet.Satisfiable
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification

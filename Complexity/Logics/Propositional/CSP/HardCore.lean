@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Mathlib.Data.Finset.Powerset
+import Complexity.Foundations.Data.List.Boole
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
@@ -87,14 +88,6 @@ theorem count_vars_hardCore (n : ℕ) (E : List (ℕ × ℕ)) (v : ℕ) :
   rw [vars_hardCore, List.count_append]
   exact Nat.add_le_add_right (List.nodup_iff_count_le_one.mp List.nodup_range v) _
 
-private theorem prod_map_boole {α : Type*} (l : List α) (p : α → Prop) [DecidablePred p] :
-    (l.map fun a => if p a then (1 : ℕ) else 0).prod = if ∀ a ∈ l, p a then 1 else 0 := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.map_cons, List.prod_cons, ih]
-    by_cases ha : p a <;> simp [ha]
-
 /-- The weight of an assignment: `t` to the number of `true` vertices, if no edge has two `true`
 ends, and zero otherwise. -/
 theorem weight_hardCore (t : ℕ) (σ : ℕ → Bool) :
@@ -111,7 +104,7 @@ theorem weight_hardCore (t : ℕ) (σ : ℕ → Bool) :
   have he : (E.map fun e => hardCoreWeight t true [σ e.1, σ e.2]).prod =
       if ∀ e ∈ E, ¬(σ e.1 = true ∧ σ e.2 = true) then 1 else 0 := by
     rw [List.map_congr_left (g := fun e => if ¬(σ e.1 = true ∧ σ e.2 = true) then 1 else 0)
-      fun e _ => by cases σ e.1 <;> cases σ e.2 <;> rfl, prod_map_boole]
+      fun e _ => by cases σ e.1 <;> cases σ e.2 <;> rfl, List.prod_map_boole]
   rw [weight, hardCore, List.map_append, List.map_map, List.map_map, List.prod_append, ← hv, ← he]
   rfl
 

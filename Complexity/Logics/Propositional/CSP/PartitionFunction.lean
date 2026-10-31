@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.CSP
 public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
+import Complexity.Foundations.Data.List.Boole
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.List
@@ -60,22 +61,14 @@ assignments `σ` of the variables occurring in `F` (extended by `default` elsewh
   ∑ σ : F.vars.toFinset → D,
     F.weight wt fun v => if h : v ∈ F.vars.toFinset then σ ⟨v, h⟩ else default
 
-private theorem prod_map_boole {α : Type*} (l : List α) (p : α → Bool) :
-    (l.map fun a => if p a then (1 : ℕ) else 0).prod = if l.all p then 1 else 0 := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.map_cons, List.prod_cons, ih]
-    cases h : p a <;> simp [List.all_cons, h]
-
 /-- **With `0/1` weights the partition function is the model count** of the relation
 semantics. -/
 theorem partitionFunction_boole (sem : Rel → List D → Bool) (F : CSP Rel V) :
     F.partitionFunction (fun R w => if sem R w then 1 else 0) = F.modelCount sem := by
   rw [partitionFunction, modelCount, modelCountOn, Finset.card_filter]
   refine Finset.sum_congr rfl fun σ _ => ?_
-  rw [weight, prod_map_boole]
-  rfl
+  rw [weight, List.prod_map_boole]
+  exact if_congr List.all_eq_true.symm rfl rfl
 
 /-- **The partition function is at most `|D| ^ n * W ^ m`** when every weight at a local
 assignment of the right length is at most `W`. -/

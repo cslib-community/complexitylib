@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Logics.Propositional.CNF.ModelCount
+import Complexity.Foundations.Data.List.Boole
 import Mathlib.Data.List.GetD
 
 /-!
@@ -131,6 +132,9 @@ end. -/
 
 /-- The polarity of occurrence `u`. -/
 @[expose] def pol (u : ℕ) : Bool := let (_, _, (_, b)) := occ os u; b
+
+/-- The literal of occurrence `u`. -/
+@[expose] def lit (u : ℕ) : Literal ℕ := let (_, _, l) := occ os u; l
 
 /-- The clause of occurrence `u`. -/
 @[expose] def clauseOf (u : ℕ) : ℕ := (occ os u).1
@@ -393,16 +397,18 @@ private theorem filter_flatMap_zipIdx (φ : CNF ℕ) (s i : ℕ) :
 /-- **The ports of a clause carry its literals in order**: reading the literal of the occurrence
 of each port of clause `i` gives back the clause. -/
 theorem map_clausePorts_occurrences (φ : CNF ℕ) (i : ℕ) :
-    (clausePorts (occurrences φ) i).map (fun j => (occ (occurrences φ) (j / 3)).2.2) =
+    (clausePorts (occurrences φ) i).map (fun j => lit (occurrences φ) (j / 3)) =
       φ.getD i [] := by
   have h := filter_flatMap_zipIdx φ 0 i
   simp only [Nat.zero_le, ↓reduceIte, Nat.sub_zero] at h
   change (((occurrences φ).filter fun o => decide (o.1 = i)).map fun o => o.2.2) = _ at h
   rw [← h, clausePorts, List.map_map]
-  have hf : ((fun j => (occ (occurrences φ) (j / 3)).2.2) ∘ fun u => 3 * u) =
+  have hf : ((fun j => lit (occurrences φ) (j / 3)) ∘ fun u => 3 * u) =
       fun u => (occ (occurrences φ) u).2.2 := by
     funext u
-    simp only [Function.comp_apply, show 3 * u / 3 = u by omega]
+    change lit (occurrences φ) (3 * u / 3) = _
+    rw [show 3 * u / 3 = u by omega]
+    rfl
   rw [hf]
   conv_rhs => rw [← map_occ_range (occurrences φ)]
   rw [List.filter_map, List.map_map]
@@ -594,14 +600,6 @@ theorem length_table_network (B m : ℕ) (hB : ∀ i, (os.map Prod.fst).count i 
 
 /-! ### The contraction -/
 
-private theorem prod_map_boole {α : Type*} (l : List α) (p : α → Prop) [DecidablePred p] :
-    (l.map fun a => if p a then (1 : ℕ) else 0).prod = if ∀ a ∈ l, p a then 1 else 0 := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.map_cons, List.prod_cons, ih]
-    by_cases ha : p a <;> simp [ha]
-
 /-- The bits on the edges, read as a function of the edge numbers. -/
 private def bitAt {E : ℕ} (x : Fin E → Bool) (j : ℕ) : Bool := if h : j < E then x ⟨j, h⟩ else false
 
@@ -671,7 +669,7 @@ private theorem contraction_network_eq (B m : ℕ) (row : ℕ → ℕ → ℕ)
         if ∀ a ∈ qPorts os w, ∀ b ∈ qPorts os w, bitAt x a = bitAt x b then 1 else 0 :=
     List.map_congr_left fun w _ => entry_qVertex os (bitAt x)
       ((length_qPorts_le w).trans (le_max_right _ _))
-  rw [h1, h2, h3, prod_map_boole, prod_map_boole]
+  rw [h1, h2, h3, List.prod_map_boole, List.prod_map_boole]
   clear h1 h2 h3 hpb
   simp only [List.mem_range, Consistent]
   by_cases hl : ∀ u < os.length, bitAt x (3 * u + 1) = bitAt x (3 * u + 2) <;>
@@ -724,10 +722,10 @@ private theorem eq_of_var_eq {X : ℕ → Bool} (h : Consistent os X) {u w : ℕ
   · exact key w hw u h' huw
   · exact (key u hu w h' huw.symm).symm
 
-private theorem var_mem {u : ℕ} (hu : u < os.length) : var os u ∈ os.map fun o => o.2.2.1 :=
+private theorem var_mem {u : ℕ} (hu : u < os.length) : var os u ∈ os.map fun (_, _, (v, _)) => v :=
   List.mem_map.mpr ⟨_, occ_mem os hu, rfl⟩
 
-private theorem exists_var_eq {v : ℕ} (hv : v ∈ os.map fun o => o.2.2.1) :
+private theorem exists_var_eq {v : ℕ} (hv : v ∈ os.map fun (_, _, (y, _)) => y) :
     ∃ u < os.length, var os u = v := by
   obtain ⟨o, ho, rfl⟩ := List.mem_map.mp hv
   obtain ⟨u, hu, rfl⟩ := List.mem_iff_getElem.mp ho
@@ -744,7 +742,7 @@ private theorem consistent_iff (x : Fin (3 * os.length) → Bool) :
   constructor
   · intro h
     have hrep : ∀ u < os.length,
-        bitAt x (3 * (os.map fun o => o.2.2.1).idxOf (var os u)) = bitAt x (3 * u) := by
+        bitAt x (3 * (os.map fun (_, _, (y, _)) => y).idxOf (var os u)) = bitAt x (3 * u) := by
       intro u hu
       have hm := var_mem os hu
       have hlt := List.idxOf_lt_length_of_mem hm
@@ -754,11 +752,11 @@ private theorem consistent_iff (x : Fin (3 * os.length) → Bool) :
       rw [List.getElem_map] at h1
       rw [var, occ_eq_getElem os hlt]
       exact h1
-    refine ⟨fun v => bitAt x (3 * (os.map fun o => o.2.2.1).idxOf v), ?_⟩
+    refine ⟨fun v => bitAt x (3 * (os.map fun (_, _, (y, _)) => y).idxOf v), ?_⟩
     funext j
     have hj := j.isLt
     have hu : j.val / 3 < os.length := by omega
-    change bitAt x (3 * (os.map fun o => o.2.2.1).idxOf (var os (j.val / 3))) = x j
+    change bitAt x (3 * (os.map fun (_, _, (y, _)) => y).idxOf (var os (j.val / 3))) = x j
     rw [hrep _ hu, ← bitAt_eq x hj]
     obtain ⟨h1, h2, -⟩ := consistent_edges os h hu
     have hcases : j.val = 3 * (j.val / 3) ∨ j.val = 3 * (j.val / 3) + 1 ∨
@@ -786,13 +784,13 @@ variables of the occurrences, the contraction is the sum, over the assignments `
 product of the row entries at the values of the words that `τ` puts on the ports of the rows. -/
 theorem contraction_network (B m : ℕ) (row : ℕ → ℕ → ℕ)
     (hB : ∀ i, (os.map Prod.fst).count i ≤ B) {S : Finset ℕ}
-    (hS : (os.map fun o => o.2.2.1).toFinset = S) :
+    (hS : (os.map fun (_, _, (v, _)) => v).toFinset = S) :
     (network os (max B 4) m row).2.contraction =
       ∑ τ : S → Bool, ((List.range m).map fun i => row i (BitString.lsbValue
         ((clausePorts os i).map fun j =>
           if h : var os (j / 3) ∈ S then τ ⟨var os (j / 3), h⟩ else false))).prod := by
   subst hS
-  set S := (os.map fun o => o.2.2.1).toFinset
+  set S := (os.map fun (_, _, (v, _)) => v).toFinset
   let ext : (S → Bool) → ℕ → Bool := fun τ v => if h : v ∈ S then τ ⟨v, h⟩ else false
   have hmemS : ∀ u < os.length, var os u ∈ S := fun u hu => List.mem_toFinset.mpr (var_mem os hu)
   have hports : ∀ i, ∀ j ∈ clausePorts os i, j < 3 * os.length := by
@@ -891,12 +889,12 @@ private theorem count_le_of_width {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) 
 at most `k` literals. -/
 theorem contraction_clauseNetwork {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) :
     (clauseNetwork k φ).2.contraction = φ.modelCount := by
-  rw [clauseNetwork, contraction_network _ k _ _ (count_le_of_width hk) (by rw [map_occurrences]),
-    CNF.modelCount, Finset.card_filter]
+  rw [clauseNetwork, contraction_network _ k _ _ (count_le_of_width hk)
+    (congrArg List.toFinset (map_occurrences φ)), CNF.modelCount, Finset.card_filter]
   refine Finset.sum_congr rfl fun τ _ => ?_
   refine (congrArg List.prod (List.map_congr_left fun i hi =>
     clauseRow_eq (φ.extendAssignment τ) (List.mem_range.mp hi))).trans ?_
-  rw [prod_map_boole]
+  rw [List.prod_map_boole]
   refine if_congr ?_ rfl rfl
   rw [CNF.eval_eq_true_iff]
   constructor

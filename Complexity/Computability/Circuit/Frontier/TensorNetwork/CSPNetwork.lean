@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetw
 public import Complexity.Foundations.Data.BitString.List.Binary
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 import Complexity.Foundations.Data.BitString.Binary
+import Complexity.Logics.Propositional.CSP.Vars
 import Mathlib.Data.List.GetD
 
 /-!
@@ -75,8 +76,6 @@ most `k`, with its number of rows. -/
 
 variable {k : ℕ} {wt : Rel → List Bool → ℕ} {F : CSP Rel ℕ}
 
-private theorem length_varCNF : F.varCNF.length = F.length := List.length_map _
-
 private theorem count_le (hk : ∀ c ∈ F, c.2.length ≤ k) (i : ℕ) :
     ((occurrences F.varCNF).map Prod.fst).count i ≤ k := by
   rw [count_map_fst_occurrences]
@@ -84,7 +83,7 @@ private theorem count_le (hk : ∀ c ∈ F, c.2.length ≤ k) (i : ℕ) :
   · rw [CSP.varCNF, List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map,
       List.length_map]
     exact hk _ (List.getElem_mem hi)
-  · rw [List.getD_eq_default _ _ (by rw [length_varCNF]; omega)]
+  · rw [List.getD_eq_default _ _ (by rw [CSP.length_varCNF]; omega)]
     exact Nat.zero_le _
 
 /-- The table of constraint `i` at the word an assignment puts on its ports is the weight of the
@@ -110,7 +109,8 @@ constraints have arity at most `k`. -/
 theorem contraction_cspNetwork (hk : ∀ c ∈ F, c.2.length ≤ k) :
     (cspNetwork k wt F).2.contraction = F.partitionFunction wt := by
   rw [cspNetwork, contraction_network _ k _ _ (count_le hk)
-    (by rw [map_occurrences, CSP.vars_varCNF]), CSP.partitionFunction]
+    (congrArg List.toFinset ((map_occurrences F.varCNF).trans (CSP.vars_varCNF F))),
+    CSP.partitionFunction]
   refine Finset.sum_congr rfl fun τ _ => ?_
   rw [CSP.weight]
   congr 1
@@ -123,7 +123,7 @@ theorem contraction_cspNetwork (hk : ∀ c ∈ F, c.2.length ≤ k) :
 theorem isRowsFirstBipartite_cspNetwork (k : ℕ) (wt : Rel → List Bool → ℕ) (F : CSP Rel ℕ) :
     (cspNetwork k wt F).2.IsRowsFirstBipartite (cspNetwork k wt F).1 :=
   isRowsFirstBipartite_network _ _ _ _ fun _ ho => by
-    simpa [length_varCNF] using (mem_occurrences.mp ho).1
+    simpa [CSP.length_varCNF] using (mem_occurrences.mp ho).1
 
 /-- **The degree bound**: for constraints of arity at most `k`, every vertex has at most
 `max k 4` ports. -/
