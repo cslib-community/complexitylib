@@ -1815,6 +1815,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.DPi
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Nat
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Default
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Finite
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
