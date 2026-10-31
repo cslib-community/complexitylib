@@ -14,6 +14,7 @@ public import Complexity.Algorithms.WordRAM.Karger.FastCut
 public import Complexity.Computability.WordRAM.Copy
 public import Complexity.Computability.WordRAM.Randomized.LoopSegment
 public import Complexity.Computability.WordRAM.Time
+import Complexity.Languages.Probabilistic.Event
 
 /-!
 # Karger–Stein's recursive `FastCut` algorithm on the word RAM
@@ -2725,7 +2726,7 @@ theorem fastCutNode_spec {n w : ℕ} {W₀ : Fin n → Fin n → ℕ}
         dsimp only [t] at ht₁ ht₂
         omega
       · intro B hmin_pos hB_nt hB_min
-        have hrec := two_branch_hit_prob_ge m_b1 (fun z₁ => m₂_fn z₁.1)
+        have hrec := ProbComp.two_branch_hit_prob_ge m_b1 (fun z₁ => m₂_fn z₁.1)
           (fun z₁ z₂ => (z₂.1, z₁.2 + z₂.2))
           {z₁ | z₁.1.regs retVal = minCut W₀}
           {z | z.1.regs retVal = minCut W₀}

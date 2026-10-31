@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner
 import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.Amplification
 import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.BPP
 import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.ConfigurationMatrix
+import Complexity.Computability.Complexity.Classes.LogSpace.Randomized.PolyTime
 import Complexity.Computability.Complexity.Classes.LogSpace.USTCON
 
 /-!
@@ -30,6 +31,9 @@ example : USTCON ∈ RP encUSTCON := RL_subset_RP (L_subset_RL USTCON_mem_L)
 example : USTCON ∈ BPP encUSTCON := BPL_subset_BPP (L_subset_BPL USTCON_mem_L)
 
 example : USTCON ∈ PSPACE encUSTCON := BPL_subset_PSPACE (L_subset_BPL USTCON_mem_L)
+
+-- Going through `BPL` places `USTCON` in `P`.
+example : USTCON ∈ P encUSTCON := BPL_subset_P (L_subset_BPL USTCON_mem_L)
 
 section HaltingTime
 
@@ -211,6 +215,26 @@ example (input : List Bool) : ∃ (V : Finset (FiniteCfg 0 Bool Unit))
     norm_num
   · exact MultiTapePTM.liveConfigMatrix_pow_eq_zero ℚ (runsInTime_coinFlip input) hV
       fun finite hf => (hreach _).mp hf
+
+-- The count recursion evaluated by the `BPL ⊆ P` algorithm gives the one accepting coin string
+-- of `coinFlip`, and four times as many at clock three.
+example (input : List Bool) :
+    coinFlip.viewAcceptCount 1 (coinFlip.toNTM.initView input) = 1 ∧
+      coinFlip.viewAcceptCount 3 (coinFlip.toNTM.initView input) = 4 := by
+  obtain ⟨V, hreach, hV, -⟩ :=
+    coinFlip.exists_finset_reachable (MultiTapeNTM.runsInSpace_zero_tapes _ input 0)
+  have hinit : coinFlip.toNTM.initView input ∈ V := (hreach _).mpr .refl
+  rw [← MultiTapePTM.acceptCoins_eq_viewAcceptCount hV hinit,
+    ← MultiTapePTM.acceptCoins_eq_viewAcceptCount hV hinit,
+    MultiTapePTM.acceptCoins_add coinFlip (runsInTime_coinFlip input) 2, acceptCoins_coinFlip]
+  exact ⟨rfl, rfl⟩
+
+-- Every language accepted by the fair coin is decided in polynomial time.
+example (enc : ℕ ↪ List Bool) : (Set.univ : Set ℕ) ∈ Cslib.Complexity.P enc :=
+  Cslib.Complexity.RL_subset_P
+    ⟨0, Unit, inferInstance, coinFlip, 0, fun a =>
+      ⟨MultiTapeNTM.runsInSpace_zero_tapes _ _ _, 1, runsInTime_coinFlip _,
+        fun _ => by rw [acceptCoins_coinFlip]; rfl, fun ha => absurd trivial ha⟩⟩
 
 end ConfigurationMatrix
 

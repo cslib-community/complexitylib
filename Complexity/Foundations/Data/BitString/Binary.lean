@@ -29,6 +29,8 @@ significant bit first), as well as `Nat.ofBits` and `Nat.testBit`, without addin
 * `Cslib.BitString.val_equivFin_eq_ofBits`: `equivFin` agrees with `Nat.ofBits`.
 * `Cslib.BitString.equivFin_symm_apply`: the `i`-th bit of `(equivFin n).symm k` is
   `(k : ℕ).testBit i`.
+* `Cslib.BitString.lsbValue_eq_binaryValue_reverse`: little-endian digits are the reversed
+  big-endian ones.
 * `Cslib.BitString.lsbValue_ofFn`: reading the bits of an `n`-bit word in order gives its number in
   `equivFin n`.
 * `Cslib.BitString.binaryValue_reverse_ofFn`: reading the reversed list of bits of an `n`-bit word
@@ -83,6 +85,15 @@ theorem binaryValue_reverse_ofFn {n : ℕ} (y : BitString n) :
     rw [Fin.cons_self_tail] at h
     rw [h, Nat.add_comm]
     rfl
+
+/-- Reading little-endian digits (`lsbValue`) is reading the reversed digits most significant
+first (`binaryValue`). -/
+theorem lsbValue_eq_binaryValue_reverse (w : List Bool) : lsbValue w = binaryValue w.reverse := by
+  induction w with
+  | nil => rfl
+  | cons b w ih =>
+    rw [lsbValue, List.reverse_cons, binaryValue_snoc, ih]
+    omega
 
 /-- The fixed-width word `lowBits n k` equals the bits of `(equivFin n).symm k`. -/
 theorem lowBits_eq_ofFn_equivFin_symm (n : ℕ) (k : Fin (2 ^ n)) :
