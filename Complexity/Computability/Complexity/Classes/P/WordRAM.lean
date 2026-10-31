@@ -141,7 +141,7 @@ theorem uniformPolynomialTime_of_mem_P {A : Set α} (h : A ∈ Cslib.Complexity.
     have hw2 : 2 ≤ w := le_trans (by unfold logWidth; nlinarith) hw
     obtain ⟨n, hn, hex⟩ := executes_simProgram (fun _ _ _ => rfl) (Fintype.equivFin Q) hhalt hb
       (by rw [hout]; simp only [encBool_apply, List.length_singleton]; omega)
-    rw [hout, encBool_apply, outValue_singleton] at hex
+    rw [hout, encBool_apply, Cslib.BitString.lsbValue_singleton] at hex
     refine ⟨(f a).toNat, n, hex, hn, Bool.toNat_le _, ?_⟩
     rw [hA a]
     cases f a <;> simp
