@@ -271,8 +271,7 @@ theorem exec {w : ℕ} (x : Data 13) {N L₀ r₀ : ℕ} (hn : x.regs n = N) (hL
       · have hf : z.regs found = 0 := by
           simp +decide only [z, Data.set_regs, Function.update_apply, ↓reduceIte]
           rw [hy₃ found (by simp), hy₁ found (by simp), hf0]
-        rw [hf, hf0, hR]
-        simp [z]
+        rw [hf, hf0, hR, show z.regs r = R + 1 by simp [z]]
         omega
   let x₀ := ((x.set one 1).set r 2).set found 0
   have hrun₀ : ExecWithin (B := .standard) w (ram[ one ← #1; r ← #2; found ← #0 ]) x x₀ 3 := by
