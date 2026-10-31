@@ -1,0 +1,323 @@
+/-
+Copyright (c) 2026 András Z. Salamon. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: András Z. Salamon
+-/
+
+module
+-- upstream: candidate
+
+public import Complexity.Computability.Communication.FoolingSet
+public import Complexity.Computability.Communication.Rectangle
+public import Complexity.Foundations.Data.BitString.Basic
+
+/-!
+# Nondeterministic communication complexity
+
+Nondeterministic communication complexity for the answer `z : Bool` is defined by covers
+[Kushilevitz and Nisan, Chapter 2][KushilevitzNisan1997]. For a relation `R : X → Y → Bool → Prop`,
+a *`z`-cover* of `R` on `A × B` by `2 ^ k` rectangles is a family of rectangles indexed by the
+`k`-bit guesses such that `z` is an acceptable answer on the part of each rectangle inside `A × B`,
+and every pair of `A × B` on which `!z` is not acceptable lies in some rectangle
+(`Nondeterministic.IsCover`). The complexity `Nondeterministic.ecomplexity z R A B` is the least
+such `k`, or `⊤` if there is none; in particular it is `⊤` if no answer is acceptable on some pair
+of `A × B`, as for `Protocol.ecomplexity`. For a function `f : X → Y → Bool`,
+`Nondeterministic.ecomplexityFun z f A B` is the complexity of the relation `f x y = b`; its
+`z`-covers are families of rectangles on which `f` is `z` inside `A × B` that contain every pair of
+`A × B` on which `f` is `z`
+(`Nondeterministic.isCover_fun_iff`). Thus `ecomplexityFun true f` and `ecomplexityFun false f` are
+`⌈log₂ C^z(f)⌉`, where `C^z(f)` is the least number of rectangles in a `z`-cover (and `0` when `f`
+never takes the value `z` on `A × B`): `N¹` and `N⁰` in the cover (certificate) definition, rounded
+up to an integer.
+
+A partial function is a function together with the sets `A` and `B`: its value outside `A × B` does
+not matter, and rectangles are not required to lie inside `A × B`. A partial function whose domain
+is not a rectangle is a relation that accepts every answer outside its domain.
+
+## Covers and protocols
+
+A nondeterministic protocol of cost `c` gives a cover by at most `2 ^ c` rectangles, so lower bounds
+on `ecomplexity` hold for every protocol convention. Protocol definitions differ from this one by
+at most an additive constant, so an upper bound here is slightly weaker than an upper bound for
+protocols. Conversely, a cover by `2 ^ k` rectangles gives a protocol: guess `k` bits naming a
+rectangle, Alice sends one bit saying whether her input is in its first side, and Bob accepts when
+both inputs are in it, for cost `k + 1`, or `k + 2` if Bob's answer is counted as a sent bit. So a
+nondeterministic protocol of cost `c` proves `ecomplexity z R A B ≤ c` once it is converted to a
+cover by `2 ^ c` rectangles (`Nondeterministic.ecomplexity_le_iff`). Deterministic protocols give
+such covers directly: `Nondeterministic.ecomplexity_le_protocol`.
+
+## Main definitions
+
+* `Cslib.Communication.Nondeterministic.IsCover`, `Cslib.Communication.Nondeterministic.HasCover`:
+  covers of a relation by rectangles.
+* `Cslib.Communication.Nondeterministic.ecomplexity`: nondeterministic communication complexity of a
+  relation on `A × B` for the answer `z`.
+* `Cslib.Communication.Nondeterministic.ecomplexityFun`: the same for a function, as the relation
+  `f x y = b`.
+
+## Main results
+
+* `Cslib.Communication.Nondeterministic.ecomplexity_le_iff`,
+  `Cslib.Communication.Nondeterministic.le_ecomplexity_iff`,
+  `Cslib.Communication.Nondeterministic.HasCover.ecomplexity_le`: upper and lower bounds through
+  covers; `Cslib.Communication.Nondeterministic.ecomplexityFun_le_iff` and
+  `Cslib.Communication.Nondeterministic.le_ecomplexityFun_iff` for functions.
+* `Cslib.Communication.Nondeterministic.isCover_fun_iff`: covers of a function.
+* `Cslib.Communication.Nondeterministic.HasCover.mono_bits`: more guessed bits do no harm.
+* `Cslib.Communication.Nondeterministic.HasCover.mono`,
+  `Cslib.Communication.Nondeterministic.ecomplexity_mono`,
+  `Cslib.Communication.Nondeterministic.ecomplexityFun_mono`: monotonicity in the domain.
+* `Cslib.Communication.Nondeterministic.HasCover.of_imp`,
+  `Cslib.Communication.Nondeterministic.ecomplexity_le_of_imp`: a weaker relation is no harder.
+* `Cslib.Communication.Nondeterministic.ecomplexity_not`,
+  `Cslib.Communication.Nondeterministic.ecomplexityFun_not`: `N⁰` is `N¹` of the negation.
+* `Cslib.Communication.Nondeterministic.HasCover.card_le`,
+  `Cslib.Communication.Nondeterministic.le_ecomplexityFun_of_isFoolingSet`: a fooling set of
+  `2 ^ n` pairs with value `z` forces `n`.
+* `Cslib.Communication.Nondeterministic.HasCover.card_le_two_pow_mul`: if every `z`-rectangle has
+  at most `K` pairs, then a `z`-cover by `2 ^ k` rectangles covers at most `2 ^ k * K` pairs.
+* `Cslib.Communication.Nondeterministic.hasCover_of_solves`,
+  `Cslib.Communication.Nondeterministic.ecomplexity_le_protocol`,
+  `Cslib.Communication.Nondeterministic.ecomplexityFun_le_protocol`: nondeterministic complexity is
+  at most deterministic complexity.
+
+## References
+
+* [E. Kushilevitz, N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
+-/
+
+@[expose] public section
+
+namespace Cslib.Communication
+
+namespace Nondeterministic
+
+open Finset
+
+variable {X Y : Type*}
+
+/-- `C` is a `z`-cover of the relation `R` on `A × B` by `2 ^ k` rectangles: `z` is an acceptable
+answer on the part of each rectangle inside `A × B`, and every pair of `A × B` on which `!z` is not
+acceptable lies in some rectangle. -/
+def IsCover (R : X → Y → Bool → Prop) (z : Bool) (A : Set X) (B : Set Y) {k : ℕ}
+    (C : BitString k → Set X × Set Y) : Prop :=
+  (∀ w, ∀ x ∈ A, x ∈ (C w).1 → ∀ y ∈ B, y ∈ (C w).2 → R x y z) ∧
+    ∀ x ∈ A, ∀ y ∈ B, ¬R x y (!z) → ∃ w, x ∈ (C w).1 ∧ y ∈ (C w).2
+
+/-- The relation `R` has a `z`-cover on `A × B` by `2 ^ k` rectangles. -/
+def HasCover (R : X → Y → Bool → Prop) (z : Bool) (A : Set X) (B : Set Y) (k : ℕ) : Prop :=
+  ∃ C : BitString k → Set X × Set Y, IsCover R z A B C
+
+/-- The nondeterministic communication complexity of the relation `R` on `A × B` for the answer
+`z`: the least `k` such that `R` has a `z`-cover on `A × B` by `2 ^ k` rectangles, or `⊤` if there
+is none. -/
+noncomputable def ecomplexity (z : Bool) (R : X → Y → Bool → Prop) (A : Set X) (B : Set Y) : ℕ∞ :=
+  ⨅ k : {k : ℕ // HasCover R z A B k}, (k.1 : ℕ∞)
+
+/-- The nondeterministic communication complexity of `f` on `A × B` for the value `z`:
+`ecomplexity` of the relation `f x y = b`. `N¹` is `z = true`, and `N⁰` is `z = false`. -/
+noncomputable def ecomplexityFun (z : Bool) (f : X → Y → Bool) (A : Set X) (B : Set Y) : ℕ∞ :=
+  ecomplexity z (fun x y b => f x y = b) A B
+
+variable {R R' : X → Y → Bool → Prop} {f : X → Y → Bool} {z : Bool} {A A' : Set X} {B B' : Set Y}
+  {j k : ℕ}
+
+/-- A `z`-cover of a function: `f` is `z` on the part of each rectangle inside `A × B`, and every
+pair of `A × B` on which `f` is `z` lies in some rectangle. -/
+theorem isCover_fun_iff {C : BitString k → Set X × Set Y} :
+    IsCover (fun x y b => f x y = b) z A B C ↔
+      (∀ w, ∀ x ∈ A, x ∈ (C w).1 → ∀ y ∈ B, y ∈ (C w).2 → f x y = z) ∧
+        ∀ x ∈ A, ∀ y ∈ B, f x y = z → ∃ w, x ∈ (C w).1 ∧ y ∈ (C w).2 := by
+  simp only [IsCover, Bool.eq_not, not_not]
+
+/-! ### Upper and lower bounds -/
+
+/-- A cover by `2 ^ k` rectangles bounds the complexity by `k`. -/
+theorem HasCover.ecomplexity_le (h : HasCover R z A B k) : ecomplexity z R A B ≤ k :=
+  iInf_le (fun k : {k : ℕ // HasCover R z A B k} => (k.1 : ℕ∞)) ⟨k, h⟩
+
+/-- A cover by `2 ^ j` rectangles gives one by `2 ^ k` rectangles for `j ≤ k`: ignore the extra
+guessed bits. -/
+theorem HasCover.mono_bits (hjk : j ≤ k) (h : HasCover R z A B j) : HasCover R z A B k := by
+  obtain ⟨C, hmem, hcov⟩ := h
+  refine ⟨fun w => C fun i => w (Fin.castLE hjk i), fun w => hmem _, fun x hx y hy hR => ?_⟩
+  obtain ⟨w, hw⟩ := hcov x hx y hy hR
+  refine ⟨fun i => if hi : (i : ℕ) < j then w ⟨i, hi⟩ else false, ?_⟩
+  simpa using hw
+
+/-- Lower bounds on nondeterministic complexity are lower bounds on the number of guessed bits of
+every cover. -/
+theorem le_ecomplexity_iff {c : ℕ∞} :
+    c ≤ ecomplexity z R A B ↔ ∀ k, HasCover R z A B k → c ≤ k := by
+  simp [ecomplexity, le_iInf_iff, Subtype.forall]
+
+/-- `R` has nondeterministic complexity at most `k` exactly when it has a `z`-cover by `2 ^ k`
+rectangles. -/
+theorem ecomplexity_le_iff : ecomplexity z R A B ≤ k ↔ HasCover R z A B k := by
+  refine ⟨fun h => ?_, HasCover.ecomplexity_le⟩
+  have : Nonempty {k : ℕ // HasCover R z A B k} := by
+    rw [← ENat.iInf_natCast_ne_top]
+    exact ne_top_of_le_ne_top (ENat.natCast_ne_top k) h
+  obtain ⟨⟨j, hj⟩, hmin⟩ := ENat.exists_eq_iInf
+    (fun k : {k : ℕ // HasCover R z A B k} => (k.1 : ℕ∞))
+  exact hj.mono_bits (by exact_mod_cast (hmin.trans_le h : (j : ℕ∞) ≤ k))
+
+/-- `ecomplexity_le_iff` for functions. -/
+theorem ecomplexityFun_le_iff :
+    ecomplexityFun z f A B ≤ k ↔ HasCover (fun x y b => f x y = b) z A B k :=
+  ecomplexity_le_iff
+
+/-- `le_ecomplexity_iff` for functions. -/
+theorem le_ecomplexityFun_iff {c : ℕ∞} :
+    c ≤ ecomplexityFun z f A B ↔ ∀ k, HasCover (fun x y b => f x y = b) z A B k → c ≤ k :=
+  le_ecomplexity_iff
+
+/-! ### Monotonicity -/
+
+/-- A cover on `A × B` is a cover on any smaller domain. -/
+theorem HasCover.mono (hA : A' ⊆ A) (hB : B' ⊆ B) (h : HasCover R z A B k) :
+    HasCover R z A' B' k := by
+  obtain ⟨C, hmem, hcov⟩ := h
+  exact ⟨C, fun w x hx hxC y hy hyC => hmem w x (hA hx) hxC y (hB hy) hyC,
+    fun x hx y hy hR => hcov x (hA hx) y (hB hy) hR⟩
+
+/-- A cover of `R` is a cover of every weaker relation. -/
+theorem HasCover.of_imp (hR : ∀ x y b, R x y b → R' x y b) (h : HasCover R z A B k) :
+    HasCover R' z A B k := by
+  obtain ⟨C, hmem, hcov⟩ := h
+  exact ⟨C, fun w x hx hxC y hy hyC => hR x y z (hmem w x hx hxC y hy hyC),
+    fun x hx y hy hR' => hcov x hx y hy fun h => hR' (hR x y _ h)⟩
+
+/-- Nondeterministic complexity is monotone in the domain. -/
+theorem ecomplexity_mono (hA : A' ⊆ A) (hB : B' ⊆ B) :
+    ecomplexity z R A' B' ≤ ecomplexity z R A B :=
+  le_ecomplexity_iff.mpr fun _ hk => (hk.mono hA hB).ecomplexity_le
+
+/-- `ecomplexity_mono` for functions. -/
+theorem ecomplexityFun_mono (hA : A' ⊆ A) (hB : B' ⊆ B) :
+    ecomplexityFun z f A' B' ≤ ecomplexityFun z f A B :=
+  ecomplexity_mono hA hB
+
+/-- A weaker relation is no harder. -/
+theorem ecomplexity_le_of_imp (hR : ∀ x y b, R x y b → R' x y b) :
+    ecomplexity z R' A B ≤ ecomplexity z R A B :=
+  le_ecomplexity_iff.mpr fun _ hk => (hk.of_imp hR).ecomplexity_le
+
+/-! ### Negation -/
+
+/-- Exchanging the answers exchanges `N⁰` and `N¹`. -/
+theorem ecomplexity_not :
+    ecomplexity z (fun x y b => R x y (!b)) A B = ecomplexity (!z) R A B := by
+  have hiff : ∀ k, HasCover (fun x y b => R x y (!b)) z A B k ↔ HasCover R (!z) A B k := fun k => by
+    simp only [HasCover, IsCover, Bool.not_not]
+  exact le_antisymm (le_ecomplexity_iff.mpr fun k hk => ((hiff k).mpr hk).ecomplexity_le)
+    (le_ecomplexity_iff.mpr fun k hk => ((hiff k).mp hk).ecomplexity_le)
+
+/-- `N⁰` of `f` is `N¹` of its negation, and conversely. -/
+@[simp] theorem ecomplexityFun_not :
+    ecomplexityFun z (fun x y => !f x y) A B = ecomplexityFun (!z) f A B := by
+  rw [ecomplexityFun, ecomplexityFun, ← ecomplexity_not]
+  simp only [Bool.not_eq_eq_eq_not]
+
+/-! ### Lower bounds -/
+
+/-- **The fooling-set bound, for covers.** A fooling set for `f` with value `z` inside `A × B`
+has at most `2 ^ k` pairs if `f` has a `z`-cover on `A × B` by `2 ^ k` rectangles: no rectangle
+contains two of its pairs. -/
+theorem HasCover.card_le {S : Finset (X × Y)} (hS : IsFoolingSet f z S)
+    (hSAB : ∀ q ∈ S, q.1 ∈ A ∧ q.2 ∈ B) (h : HasCover (fun x y b => f x y = b) z A B k) :
+    #S ≤ 2 ^ k := by
+  classical
+  obtain ⟨C, hC⟩ := h
+  obtain ⟨hmem, hcov⟩ := isCover_fun_iff.mp hC
+  have hw : ∀ q ∈ S, ∃ w, q.1 ∈ (C w).1 ∧ q.2 ∈ (C w).2 := fun q hq =>
+    hcov _ (hSAB q hq).1 _ (hSAB q hq).2 (hS.1 q hq)
+  choose! g hg using hw
+  calc #S ≤ #(univ : Finset (BitString k)) := by
+        refine card_le_card_of_injOn g (by intro _ _; exact mem_univ _) ?_
+        intro q hq q' hq' hqq
+        refine hS.2 q hq q' hq' ?_ ?_
+        · exact hmem (g q) _ (hSAB q hq).1 (hg q hq).1 _ (hSAB q' hq').2
+            (by rw [hqq]; exact (hg q' hq').2)
+        · exact hmem (g q) _ (hSAB q' hq').1 (by rw [hqq]; exact (hg q' hq').1) _
+            (hSAB q hq).2 (hg q hq).2
+    _ = 2 ^ k := by rw [card_univ, BitString.card]
+
+/-- **The fooling-set bound on nondeterministic complexity.** A fooling set of at least `2 ^ n`
+pairs for `f` with value `z` inside `A × B` forces `n`. -/
+theorem le_ecomplexityFun_of_isFoolingSet {S : Finset (X × Y)} (hS : IsFoolingSet f z S)
+    (hSAB : ∀ q ∈ S, q.1 ∈ A ∧ q.2 ∈ B) {n : ℕ} (hn : 2 ^ n ≤ #S) :
+    (n : ℕ∞) ≤ ecomplexityFun z f A B :=
+  le_ecomplexityFun_iff.mpr fun _ hk => by
+    have := hn.trans (hk.card_le hS hSAB)
+    exact_mod_cast (Nat.pow_le_pow_iff_right (by norm_num)).mp this
+
+/-- **The rectangle-size bound.** If `f` is `z` on at most `K` pairs of every rectangle on which it
+is constantly `z`, then a `z`-cover by `2 ^ k` rectangles covers at most `2 ^ k * K` pairs. -/
+theorem HasCover.card_le_two_pow_mul [Fintype X] [Fintype Y] {K : ℕ}
+    (hK : ∀ (S : Finset X) (T : Finset Y), (∀ x ∈ S, ∀ y ∈ T, f x y = z) → #S * #T ≤ K)
+    (h : HasCover (fun x y b => f x y = b) z Set.univ Set.univ k) :
+    #{q : X × Y | f q.1 q.2 = z} ≤ 2 ^ k * K := by
+  classical
+  obtain ⟨C, hC⟩ := h
+  obtain ⟨hmem, hcov⟩ := isCover_fun_iff.mp hC
+  let S : BitString k → Finset X := fun w => {x | x ∈ (C w).1}
+  let T : BitString k → Finset Y := fun w => {y | y ∈ (C w).2}
+  have hsub : ({q : X × Y | f q.1 q.2 = z} : Finset (X × Y)) ⊆
+      univ.biUnion fun w => S w ×ˢ T w := by
+    intro q hq
+    simp only [mem_filter, mem_univ, true_and] at hq
+    obtain ⟨w, hx, hy⟩ := hcov q.1 trivial q.2 trivial hq
+    simp only [mem_biUnion, mem_univ, true_and, mem_product]
+    exact ⟨w, by simpa [S] using hx, by simpa [T] using hy⟩
+  calc #{q : X × Y | f q.1 q.2 = z} ≤ #(univ.biUnion fun w => S w ×ˢ T w) := card_le_card hsub
+    _ ≤ ∑ w, #(S w ×ˢ T w) := card_biUnion_le
+    _ ≤ ∑ _w : BitString k, K := by
+        refine sum_le_sum fun w _ => ?_
+        rw [card_product]
+        refine hK _ _ fun x hx y hy => hmem w x trivial ?_ y trivial ?_
+        · simpa [S] using hx
+        · simpa [T] using hy
+    _ = 2 ^ k * K := by rw [sum_const, card_univ, BitString.card, smul_eq_mul]
+
+/-! ### Comparison with deterministic complexity -/
+
+/-- The leaves with output `z` of a deterministic protocol solving `R` on `A × B` form a `z`-cover
+of `R` by `2 ^ depth` rectangles. -/
+theorem hasCover_of_solves {p : Protocol X Y Bool} (hp : p.Solves R A B) (z : Bool) :
+    HasCover R z A B p.depth := by
+  classical
+  let e := BitString.equivFin p.depth
+  refine ⟨fun w => if h : (e w : ℕ) < p.leafCount then
+      if p.leafOutput ⟨e w, h⟩ = z then (p.leafAlice ⟨e w, h⟩, p.leafBob ⟨e w, h⟩) else (∅, ∅)
+    else (∅, ∅), fun w x hxA hx y hyB hy => ?_, fun x hxA y hyB hR => ?_⟩
+  · by_cases h : (e w : ℕ) < p.leafCount
+    · by_cases hz : p.leafOutput ⟨e w, h⟩ = z
+      · simp only [h, hz, dite_true, ite_true] at hx hy
+        have := hp x hxA y hyB
+        rwa [Protocol.run_eq_leafOutput hx hy, hz] at this
+      · simp [h, hz] at hx
+    · simp [h] at hx
+  · have hlt : (p.leaf x y : ℕ) < 2 ^ p.depth :=
+      (p.leaf x y).2.trans_le p.leafCount_le_two_pow_depth
+    refine ⟨e.symm ⟨p.leaf x y, hlt⟩, ?_⟩
+    have hrun : p.run x y = z := by
+      have := hp x hxA y hyB
+      cases hb : p.run x y <;> cases z <;> simp_all
+    have hz : p.leafOutput (p.leaf x y) = z := by rw [← Protocol.run_eq_leafOutput_leaf, hrun]
+    simp only [Equiv.apply_symm_apply, (p.leaf x y).2, dite_true, Fin.eta, hz, ite_true]
+    exact ⟨Protocol.mem_leafAlice_leaf, Protocol.mem_leafBob_leaf⟩
+
+/-- **Nondeterministic complexity is at most deterministic complexity.** -/
+theorem ecomplexity_le_protocol (z : Bool) :
+    ecomplexity z R A B ≤ Protocol.ecomplexity R A B :=
+  le_iInf fun p => (hasCover_of_solves p.2 z).ecomplexity_le
+
+/-- `ecomplexity_le_protocol` for functions on all inputs. -/
+theorem ecomplexityFun_le_protocol (z : Bool) :
+    ecomplexityFun z f Set.univ Set.univ ≤ Protocol.ecomplexityFun f :=
+  ecomplexity_le_protocol z
+
+end Nondeterministic
+
+end Cslib.Communication
