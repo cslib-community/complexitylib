@@ -8,7 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
@@ -33,18 +35,81 @@ modes and `L` row ports (§D.4.6–§D.4.7, pp. 63–64).
 
 public section
 
-namespace Cslib.Circuits.Frontier.FastContraction
+namespace Cslib.Circuits.Frontier
 
-open GaloisRingArith NativePacket ChildCursor Cslib.GenericRAM Cslib.GenericRAM.StackRecursion
-  Turing.MultiTapeTM
+/-! ### The descriptors of the native children -/
+
+namespace NativeChild
+
+open ChildNumbering
+
+variable {D : DescribedNetwork VertexDesc} {r : ℕ}
+
+/-- **The descriptors of the native child.** A vertex of the native child of a rows-first parent
+with at least `64 ^ a` edges keeps the descriptor of a parent vertex, or is the packet `q`, with
+the packet context of `q`, the slice of `β` at `q`, and tags whose slots are below `2 ^ a` and
+distinct among its row ports. -/
+theorem desc_of_mem_nativeChild (hD : D.IsRowsFirstBipartite r) {fl : List ℕ} {a i : ℕ}
+    (hK : 64 ^ a ≤ D.numEdges) (hia : i < a) (pt : ℕ) (t : ℤ) (ζ β : List ℕ) (g : Fin 64)
+    {v : List ℕ × VertexDesc}
+    (hv : v ∈ (nativeChild fl a i pt t ζ r D (nativeParentPacking r a D) β g).vertices) :
+    (∃ w ∈ D.vertices, v.2 = w.2) ∨
+      ∃ q tags, v.2 = .inr (packetCtx fl a i pt t ζ g q, tags, betaSlice i pt β q) ∧
+        (∀ y ∈ tags, y.2 < 2 ^ a) ∧ ((tags.filter (·.1)).map (·.2)).Nodup := by
+  have hgroups := groupsOf_eq hD hK hia
+  have hpk1 : (nativeParentPacking r a D).2.1 = (parentPacking hD a).numPackets := by
+    rw [nativeParentPacking_eq hD hK]
+  have hpk2 : (nativeParentPacking r a D).2.2 = List.ofFn fun e =>
+      (((parentPacking hD a).packet e : ℕ), ((parentPacking hD a).slot e : ℕ)) := by
+    rw [nativeParentPacking_eq hD hK]
+  rw [nativeChild_eq hD _ (parentPacking hD a).packet (fun e => ((parentPacking hD a).slot e : ℕ))
+    g fl a i pt t ζ β _ hgroups hpk1 hpk2] at hv
+  simp only [List.mem_ofFn] at hv
+  obtain ⟨c, rfl⟩ := hv
+  rcases hc : (childVertexEquiv (P := (parentPacking hD a).numPackets)
+      (packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩) g).symm c with w | q
+  · left
+    refine ⟨D.vertices[(w.1 : ℕ)], List.getElem_mem _, ?_⟩
+    simp only [numberedDesc, Sum.elim_inl]
+  · right
+    simp only [numberedDesc, Sum.elim_inr]
+    refine ⟨q, _, rfl, ?_, ?_⟩
+    · intro y hy
+      simp only [List.mem_map] at hy
+      obtain ⟨e, -, rfl⟩ := hy
+      exact Fin.isLt _
+    · rw [List.filter_map, List.map_map]
+      refine List.Nodup.map_on ?_ ((nodup_packetPorts hD _ _ g q).filter _)
+      intro c₁ hc₁ c₂ hc₂ heq
+      simp only [List.mem_filter, Function.comp_apply] at hc₁ hc₂
+      obtain ⟨hm₁, hl₁⟩ := hc₁
+      obtain ⟨hm₂, hl₂⟩ := hc₂
+      rw [mem_packetPorts] at hm₁ hm₂
+      rcases c₁ with e₁ | e₁
+      · rcases c₂ with e₂ | e₂
+        · simp only [Function.comp_apply, Sum.elim_inl] at heq hm₁ hm₂
+          have hinj := (parentPacking hD a).injective (a₁ := e₁.1) (a₂ := e₂.1)
+            (Prod.ext (hm₁.trans hm₂.symm) (Fin.ext heq))
+          rw [Subtype.ext hinj]
+        · simp at hl₂
+      · simp at hl₁
+
+end NativeChild
+
+namespace FastContraction
+
+open GaloisRingArith NativePacket ChildCursor NativeRecovery ContractionSchedule NativeChild
+  Cslib.GenericRAM Cslib.GenericRAM.StackRecursion Turing.MultiTapeTM
 
 /-! ### Encoded lengths -/
 
-/-- The precision and the coefficients of the modulus are at most the encoded length of a call. -/
-theorem prec_add_length_fl_le (x : Call) : x.prec + x.fl.length ≤ (encCall x).length := by
+/-- The scale, the precision and the coefficients of the modulus are at most the encoded length
+of a call. -/
+theorem scale_add_prec_add_length_fl_le (x : Call) :
+    x.scale + x.prec + x.fl.length ≤ (encCall x).length := by
   have h := length_le_length_encList encNat x.fl
   obtain ⟨⟨s, d, b, p, fl, r⟩, D⟩ := x
-  simp only [Call.prec, Call.fl, encCall, encParams, length_encPair, encUnary_apply,
+  simp only [Call.scale, Call.prec, Call.fl, encCall, encParams, length_encPair, encUnary_apply,
     List.length_replicate] at h ⊢
   omega
 
@@ -261,7 +326,7 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
   have hW1 : 1 ≤ W := by omega
   have hnW : n + 1 ≤ W := by omega
   -- The precision and the modulus of the call.
-  have hpfl := prec_add_length_fl_le x
+  have hpfl := scale_add_prec_add_length_fl_le x
   rw [← hn] at hpfl
   -- Every vertex and bit list on its ports is at most `3 n + 1` long.
   have hq (v : List ℕ × VertexDesc) (hv : v ∈ x.net.vertices) (bs : List Bool)
@@ -370,4 +435,140 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
     refine (space_assemble hW1 hds' his' hsS hA1 rfl hZW).trans ?_
     exact Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hW1 (by omega))
 
-end Cslib.Circuits.Frontier.FastContraction
+/-! ### The shape of the packets -/
+
+/-- **The shape of the packets of a call**: every packet vertex has `i < a ≤ ⌊log₂ s⌋ / 32768`,
+`2 ^ (i + 1)` tiles and at most `p` exponents per tile, and the slots of its ports are below
+`2 ^ a` and distinct among its row ports. So it has at most `2 ^ (⌊log₂ s⌋ / 32768) p` target modes
+and at most `2 ^ (⌊log₂ s⌋ / 32768)` row ports (`modes_le_of_packetShape`,
+`rowPorts_le_of_packetShape`). -/
+def PacketShape (x : Call) : Prop :=
+  ∀ v ∈ x.net.vertices, ∀ d : PacketDesc, v.2 = .inr d →
+    d.1.i < d.1.a ∧ d.1.a ≤ Nat.log 2 x.scale / 32768 ∧ d.1.tiles = 2 ^ (d.1.i + 1) ∧
+      d.1.nb ≤ x.prec ∧ (∀ y ∈ d.2.1, y.2 < 2 ^ d.1.a) ∧ ((d.2.1.filter (·.1)).map (·.2)).Nodup
+
+/-- **The root has no packets.** -/
+theorem packetShape_root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : PacketShape (root q) := by
+  intro v hv d hd
+  simp only [root, rootNet, Call.net, List.mem_map] at hv
+  obtain ⟨w, -, rfl⟩ := hv
+  cases hd
+
+/-- **The packet shape passes to the native children** of a well-formed active call: a retained
+vertex keeps its descriptor, at a precision that only grows, and a new packet has `a` slot bits
+(`slotBits_le`), `i < a` (the valuation of its node), `2 ^ (i + 1)` tiles, the child's precision
+as its number of exponents per tile, and the slots of the packing, distinct within a packet. -/
+theorem packetShape_child {x : Call} (hx : WF x) (ha : active x = true) (hs : PacketShape x)
+    {c : State} (hc : c ∈ children x) : PacketShape (child x nativeMk c) := by
+  obtain ⟨-, hD⟩ := hx
+  obtain ⟨hj, -, hg⟩ := lt_of_mem_children hc
+  have ha' := ha
+  simp only [active, decide_eq_true_eq] at ha'
+  obtain ⟨-, -, -, hua, -, -, -⟩ := ha'
+  have hkmem : (nodes x).getD c.1 0 ∈ nodes x := by
+    rw [List.getD_eq_getElem _ _ hj]; exact List.getElem_mem hj
+  obtain ⟨hk, -, hq⟩ := mem_nodes.mp hkmem
+  have hia : level x ((nodes x).getD c.1 0) < slots x := by
+    rw [level_eq hk]
+    exact padicValInt_lt_of_taperMult_pos (by rwa [← mult_eq _ _ hk]) hua
+  have hp : x.prec ≤ nodePrec x c.1 := by unfold nodePrec nodePrecision; omega
+  intro v hv d hd
+  have hv' : v ∈ (nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0)) (nodePrec x c.1)
+      (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) x.rows x.net
+      (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 (⟨c.2.2.2, hg⟩ : Fin 64)).vertices := hv
+  rcases NativeChild.desc_of_mem_nativeChild hD (pow_slots_le_edges_of_active ha) hia _ _ _ _ _
+      hv' with ⟨w, hw, hvw⟩ | ⟨q, tags, hvq, hslot, hnodup⟩
+  · obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hs w hw d (hvw ▸ hd)
+    exact ⟨h1, h2, h3, h4.trans hp, h5, h6⟩
+  · rw [hvq] at hd
+    cases hd
+    exact ⟨hia, slotBits_le _ _, rfl, le_rfl, hslot, hnodup⟩
+
+/-- The positions of a list satisfying a test are as many as its elements satisfying it. -/
+private theorem length_filter_range_getD {α : Type} (l : List α) (d : α) (p : α → Bool) :
+    ((List.range l.length).filter fun j => p (l.getD j d)).length = (l.filter p).length := by
+  have hl : (List.range l.length).map (fun j => l.getD j d) = l := by
+    refine List.ext_getElem (by simp) fun j h₁ h₂ => ?_
+    simp only [List.getElem_map, List.getElem_range, List.getD_eq_getElem _ _ h₂]
+  conv_rhs => rw [← hl]
+  rw [List.filter_map, List.length_map]
+  rfl
+
+/-- `2 ^ (⌊log₂ s⌋ / 32768)` is at most `s + 1`. -/
+theorem two_pow_log_div_le (s : ℕ) : 2 ^ (Nat.log 2 s / 32768) ≤ s + 1 := by
+  rcases Nat.eq_zero_or_pos s with rfl | hs
+  · simp
+  · calc 2 ^ (Nat.log 2 s / 32768) ≤ 2 ^ Nat.log 2 s :=
+          Nat.pow_le_pow_right (by norm_num) (Nat.div_le_self _ _)
+      _ ≤ s := Nat.pow_log_le_self 2 hs.ne'
+      _ ≤ s + 1 := Nat.le_succ s
+
+/-- **The target modes of a call with the packet shape**: at most `2 ^ (⌊log₂ s⌋ / 32768) p`. -/
+theorem modes_le_of_packetShape {x : Call} (hs : PacketShape x) {v : List ℕ × VertexDesc}
+    (hv : v ∈ x.net.vertices) : v.2.modes ≤ 2 ^ (Nat.log 2 x.scale / 32768) * x.prec := by
+  rcases hd : v.2 with t | d
+  · simp [VertexDesc.modes]
+  · obtain ⟨h1, h2, h3, h4, -, -⟩ := hs v hv d hd
+    simp only [VertexDesc.modes, targetModes]
+    calc ((List.range (d.1.tiles * d.1.nb)).filter _).length
+        ≤ (List.range (d.1.tiles * d.1.nb)).length := List.length_filter_le _ _
+      _ = d.1.tiles * d.1.nb := List.length_range
+      _ ≤ 2 ^ (Nat.log 2 x.scale / 32768) * x.prec := by
+          rw [h3]
+          exact Nat.mul_le_mul (Nat.pow_le_pow_right (by norm_num) (by omega)) h4
+
+/-- **The row ports of a call with the packet shape**: at most `2 ^ (⌊log₂ s⌋ / 32768)`, since
+the slots of the row ports of a packet are distinct and below `2 ^ a`. -/
+theorem rowPorts_le_of_packetShape {x : Call} (hs : PacketShape x) {v : List ℕ × VertexDesc}
+    (hv : v ∈ x.net.vertices) (bs : List Bool) :
+    v.2.rowPorts bs ≤ 2 ^ (Nat.log 2 x.scale / 32768) := by
+  rcases hd : v.2 with t | d
+  · simp [VertexDesc.rowPorts]
+  · obtain ⟨-, h2, -, -, h5, h6⟩ := hs v hv d hd
+    simp only [VertexDesc.rowPorts, sidePorts, List.length_map]
+    have hlen := length_filter_range_getD d.2.1 (false, 0) (fun y => y.1 == true)
+    rw [hlen]
+    have hsub : ((d.2.1.filter (·.1)).map (·.2)).toFinset ⊆ Finset.range (2 ^ d.1.a) := by
+      intro y hy
+      simp only [List.mem_toFinset, List.mem_map, List.mem_filter] at hy
+      obtain ⟨z, ⟨hz, -⟩, rfl⟩ := hy
+      exact Finset.mem_range.mpr (h5 z hz)
+    have hcard := Finset.card_le_card hsub
+    rw [List.toFinset_card_of_nodup h6, Finset.card_range, List.length_map] at hcard
+    have hbeq : (d.2.1.filter fun y => y.1 == true) = d.2.1.filter (·.1) := by
+      congr 1
+    rw [hbeq]
+    exact hcard.trans (Nat.pow_le_pow_right (by norm_num) h2)
+
+/-- **The cost of a leaf with the packet shape.** There is `K` such that, on a call of encoded
+length `n` with `M` edges, scale `s` and precision `p` with the packet shape, writing
+`A = 2 ^ (⌊log₂ s⌋ / 32768)`, direct summation takes time at most
+`K (n + 1) ^ K 2 ^ M (A p + 2) ^ A` and space at most `K (n + 1) ^ K`. -/
+theorem leafCertificate_le_of_packetShape : ∃ K : ℕ,
+    ∀ (mk : Call → State → ℕ × DescribedNetwork VertexDesc) (x : Call), PacketShape x →
+      (leafCertificate mk).time x ≤ K * ((encCall x).length + 1) ^ K * 2 ^ x.edges *
+          (2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 2) ^ 2 ^ (Nat.log 2 x.scale / 32768) ∧
+        (leafCertificate mk).space x ≤ K * ((encCall x).length + 1) ^ K := by
+  obtain ⟨K, hK⟩ := leafCertificate_le
+  refine ⟨2 * K, fun mk x hs => ?_⟩
+  obtain ⟨hT, hS⟩ := hK mk x (2 ^ (Nat.log 2 x.scale / 32768) * x.prec)
+    (2 ^ (Nat.log 2 x.scale / 32768)) fun v hv =>
+      ⟨modes_le_of_packetShape hs hv, fun bs _ => rowPorts_le_of_packetShape hs hv bs⟩
+  have hn := scale_add_prec_add_length_fl_le x
+  have hA := two_pow_log_div_le x.scale
+  have hR : (encCall x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1 ≤
+      ((encCall x).length + 1) ^ 2 := by
+    have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤ ((encCall x).length + 1) * (encCall x).length :=
+      Nat.mul_le_mul (by omega) (by omega)
+    nlinarith
+  have hpow : K * ((encCall x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1) ^ K ≤
+      2 * K * ((encCall x).length + 1) ^ (2 * K) :=
+    calc _ ≤ K * (((encCall x).length + 1) ^ 2) ^ K := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hR _)
+      _ = K * ((encCall x).length + 1) ^ (2 * K) := by rw [← pow_mul]
+      _ ≤ 2 * K * ((encCall x).length + 1) ^ (2 * K) :=
+          Nat.mul_le_mul_right _ (by omega)
+  exact ⟨hT.trans (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hpow)), hS.trans hpow⟩
+
+end FastContraction
+
+end Cslib.Circuits.Frontier
