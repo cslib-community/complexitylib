@@ -34,7 +34,7 @@ modulo `m + 1` (`Cslib.Complexity.Tally.fingerprint`); members of the sparse pro
 test. For a word `u` outside it, let `Y` be the at most `s` members of length `n`. If every
 modulus `m + 1 ≤ M` were matched by some `y ∈ Y`, it would divide `|u - y|`, read as binary
 numbers, so the least common multiple of `1, …, M` would divide the nonzero product of the
-`|u - y|`, which is less than `2 ^ (n s)`. Since that least common multiple is at least `2 ^ M`
+`|u - y|`, which is at most `2 ^ (n s)`. Since that least common multiple is at least `2 ^ M`
 for `M ≥ 7` (`Chebyshev.two_pow_le_lcmUpto`), `M = n s + 7` moduli suffice
 (`Cslib.Complexity.Tally.exists_fingerprint_notMem`). This route through `Nat.lcmUpto` is the
 library's own; it needs no bound on the number of primes.
@@ -139,36 +139,6 @@ private theorem foldl_residue (m : ℕ) (u : List Bool) (r v : ℕ) (hrv : r = v
 theorem residue_eq (m : ℕ) (u : List Bool) : residue m u = binaryValue u % (m + 1) :=
   foldl_residue m u 0 0 (by simp)
 
-private theorem foldl_binary (u : List Bool) (a : ℕ) :
-    u.foldl (fun v b => 2 * v + b.toNat) a = a * 2 ^ u.length + binaryValue u := by
-  induction u generalizing a with
-  | nil => simp [binaryValue]
-  | cons b u ih =>
-    simp only [List.foldl_cons, binaryValue, List.length_cons] at ih ⊢
-    rw [ih, ih (0 * 2 + b.toNat)]
-    ring
-
-/-- Words of the same length with the same binary value are equal. -/
-theorem eq_of_binaryValue_eq : ∀ {u v : List Bool}, u.length = v.length →
-    binaryValue u = binaryValue v → u = v
-  | [], [], _, _ => rfl
-  | b :: u, c :: v, hlen, hval => by
-    have hlen' : u.length = v.length := by simpa using hlen
-    have hu : binaryValue (b :: u) = b.toNat * 2 ^ u.length + binaryValue u := by
-      simpa [binaryValue] using foldl_binary u (0 * 2 + b.toNat)
-    have hv : binaryValue (c :: v) = c.toNat * 2 ^ v.length + binaryValue v := by
-      simpa [binaryValue] using foldl_binary v (0 * 2 + c.toNat)
-    have hu' := binaryValue_lt_two_pow u
-    have hv' := binaryValue_lt_two_pow v
-    rw [hu, hv, hlen'] at hval
-    rw [hlen'] at hu'
-    obtain ⟨rfl, hbin⟩ : b = c ∧ binaryValue u = binaryValue v := by
-      cases b <;> cases c <;> simp only [Bool.toNat_false, Bool.toNat_true] at hval <;>
-        first | exact ⟨rfl, by omega⟩ | (exfalso; omega)
-    rw [eq_of_binaryValue_eq hlen' hbin]
-  | [], _ :: _, hlen, _ => by simp at hlen
-  | _ :: _, [], hlen, _ => by simp at hlen
-
 /-- **Few moduli separate a word from the members of a sparse problem.** If at most `s` members
 of `S` have the length of `u`, `u` is not in `S` and `M ≥ |u| s + 7`, then some fingerprint
 `fingerprint u m` with `m < M` is not a fingerprint of a member of `S`. -/
@@ -199,7 +169,7 @@ theorem exists_fingerprint_notMem {S : Set (List Bool)} {u : List Bool} {s M : �
   have hDpos : 0 < D := by
     refine Finset.prod_pos fun y hy => Int.natAbs_pos.2 (sub_ne_zero.2 fun h => hu ?_)
     obtain ⟨hyS, hylen⟩ := (hmemY y).1 hy
-    rwa [← eq_of_binaryValue_eq hylen (by exact_mod_cast h)]
+    rwa [← binaryValue_injective_of_length_eq hylen (by exact_mod_cast h)]
   have hDle : D ≤ 2 ^ (n * s) := by
     calc D ≤ ∏ _y ∈ Y, 2 ^ n := by
           refine Finset.prod_le_prod fun y hy => ?_
