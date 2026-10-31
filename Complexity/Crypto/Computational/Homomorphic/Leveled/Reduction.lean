@@ -53,8 +53,9 @@ challenge ciphertext to the guessing stage together with its unchanged saved sta
 def publicKeyGame (E : Scheme) (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ)
     (artifact : List (List Bool) × List (List (List Bool))) : ProbComp Bool := do
   let choice ← adversary.choose n (encPublicKey artifact)
+  let msgs := choice.1
   let ciphertext ← E.encrypt n (artifact.1.getD 0 [])
-    (if bit then choice.1.2 else choice.1.1)
+    (if bit then msgs.2 else msgs.1)
   adversary.guess n choice.2 (false :: ciphertext)
 
 /-- Simulate the all-zero chain using the challenge key as its initial public key. The unknown
@@ -76,7 +77,8 @@ def tagLeveledChoice (first second : Bool) (choice : (Bool × Bool) × List Bool
 /-- Swap the two challenge messages of a chosen-message choice while keeping its saved state. -/
 def swapLeveledChoice (choice : (Bool × Bool) × List Bool) :
     (Bool × Bool) × List Bool :=
-  ((choice.1.2, choice.1.1), choice.2)
+  let msgs := choice.1
+  ((msgs.2, msgs.1), choice.2)
 
 /-- Fixed inactive choice for rejected dyadic coordinates or the unused selector branch. -/
 def rejectLeveledChoice : (Bool × Bool) × List Bool :=

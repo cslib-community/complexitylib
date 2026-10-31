@@ -232,7 +232,9 @@ theorem exists_leveled_of_decisionLWE
               (sk ++ ciphertext)) 0 =
           Leveled.decrypt decryptionCircuits k sk ciphertext) ∧
       ComputableInPolyTime
-        (fun p : ℕ × List Bool × List Bool => Leveled.decrypt decryptionCircuits p.1 p.2.1 p.2.2)
+        (fun p : ℕ × List Bool × List Bool =>
+          let sc := p.2
+          Leveled.decrypt decryptionCircuits p.1 sc.1 sc.2)
         (encPair encUnary (encPair encBits encBits)) encBool ∧
       PolynomiallyBounded (fun k => 3 * secretWidth k + 1) ∧
       PolynomiallyBounded (fun k => ciphertextWidth k + 1) ∧
@@ -249,13 +251,17 @@ theorem exists_leveled_of_decisionLWE
           IsPPTOn encUnary (encPair encBits encBits)
             (Leveled.scheme decryptionCircuits budget).keyGen ∧
           IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-            (fun p => (Leveled.scheme decryptionCircuits budget).encrypt p.1 p.2.1 p.2.2) ∧
+            (fun p =>
+              let pb := p.2
+              (Leveled.scheme decryptionCircuits budget).encrypt p.1 pb.1 pb.2) ∧
           IsPPTOn
             (encPair encUnary (encPair encBits
               (encPair (Boolean.encCircuit 1) (encList encBits))))
             encBits
             (fun p =>
-              (Leveled.scheme decryptionCircuits budget).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
+              let rest := p.2
+              let ci := rest.2
+              (Leveled.scheme decryptionCircuits budget).evaluate p.1 rest.1 ci.1 ci.2) ∧
           Encryption.INDCPA (Leveled.scheme decryptionCircuits budget).keyGen
             (Leveled.scheme decryptionCircuits budget).encrypt := by
   have hD := computableInPolyTime_decryptionCircuits
@@ -289,16 +295,22 @@ theorem fullyHomomorphic_of_decisionLWE_of_circularSecure
         (fun k => ((FixedKey.decryptionCircuits decryptionCircuits).circuit k).size) ∧
       IsPPTOn encUnary (encPair encBits encBits) (FixedKey.scheme decryptionCircuits).keyGen ∧
       IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-        (fun p => (FixedKey.scheme decryptionCircuits).encrypt p.1 p.2.1 p.2.2) ∧
+        (fun p =>
+          let pb := p.2
+          (FixedKey.scheme decryptionCircuits).encrypt p.1 pb.1 pb.2) ∧
       ComputableInPolyTime
         (fun p : ℕ × List Bool × List Bool =>
-          (FixedKey.scheme decryptionCircuits).decrypt p.1 p.2.1 p.2.2)
+          let sc := p.2
+          (FixedKey.scheme decryptionCircuits).decrypt p.1 sc.1 sc.2)
         (encPair encUnary (encPair encBits encBits)) encBool ∧
       IsPPTOn
         (encPair encUnary (encPair encBits
           (encPair (Boolean.encCircuit 1) (encList encBits))))
         encBits
-        (fun p => (FixedKey.scheme decryptionCircuits).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
+        (fun p =>
+          let rest := p.2
+          let ci := rest.2
+          (FixedKey.scheme decryptionCircuits).evaluate p.1 rest.1 ci.1 ci.2) ∧
       Encryption.INDCPA (FixedKey.scheme decryptionCircuits).keyGen
         (FixedKey.scheme decryptionCircuits).encrypt := by
   obtain ⟨hcorrect, hpermitted, hwidth, hsecret, hciphertext, hsize, hkeyGen, hencrypt,
