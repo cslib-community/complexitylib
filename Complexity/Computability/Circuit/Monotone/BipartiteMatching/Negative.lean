@@ -28,8 +28,9 @@ most `C(2n, n) ≤ 4 ^ n / √(2n + 1)` of them have one
 The events that edges lie in the graph are not independent, but they are along *fresh* edges.
 Flipping the colour of a vertex outside the vertices `U ∪ V` on which an event depends toggles
 every edge at that vertex and keeps the event, so an edge with an endpoint outside `U ∪ V` lies in
-the graph for exactly half of the colourings in the event. Along a matching whose every edge has
-such an endpoint, a matching of `d` edges lies in the graph for exactly a `2 ^ (-d)` fraction
+the graph for exactly half of the colourings in the event. So a matching of `d` edges, each with
+an endpoint outside `U ∪ V`, lies in the graph for exactly a `2 ^ (-d)` fraction of them; with no
+event, for `4 ^ n / 2 ^ d` colourings
 (`Cslib.Circuits.BipartiteMatching.card_filter_contains_ofColoring_mul_two_pow`). This replaces
 the linear algebra over `GF(2)` of [Jukna, Lemma 9.35][Jukna2012].
 
@@ -37,8 +38,9 @@ Intersecting families makes no negative errors; only closing does. One closure s
 `W` implied by `r` members `V i` of the family, and errs on `c` only when the graph contains `W` but
 none of the `V i`. The petals `V i \ W` are then nonempty and pairwise disjoint. If `(q s) ^ 2 < r`,
 we choose `q` of them greedily, each with no edge between the left and the right vertices touched
-by those chosen before [Jukna, Lemma 9.36][Jukna2012]: those touched vertices are at most `k s` on
-each side, and their at most `(k s) ^ 2` edges lie in at most as many petals. So the chosen petals
+by those chosen before [Jukna, Lemma 9.36][Jukna2012]: after `k` choices at most `k s` vertices
+are touched on each side, and the at most `(k s) ^ 2` edges between them lie in at most as many
+petals. So the chosen petals
 are fresh in turn, and a step errs on at most `(1 - 2 ^ (-s)) ^ q 4 ^ n` colourings
 (`Cslib.Circuits.BipartiteMatching.card_filter_forall_not_contains_mul_le`)
 [Jukna, Lemma 9.37][Jukna2012]. The closure takes at most as many steps as there are matchings
