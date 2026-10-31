@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.QueryComplexity.Midrijanis
 public import Complexity.Computability.QueryComplexity.Quantum.Polynomial
 public import Complexity.Computability.QueryComplexity.SpectralSensitivity
+import Complexity.Foundations.Quantum.Measurement.Overlap
 
 /-!
 # Spectral sensitivity bounds quantum queries, and `D(f) = O(Q(f)⁴)`
@@ -59,7 +60,6 @@ complexity.
 
 * `Cslib.Quantum.inner_phaseOracle_update_not`: one query changes the overlap of the states on
   neighboring inputs by `2 ⟨Π_i ψ, Π_i φ⟩`.
-* `Cslib.Quantum.norm_inner_sq_add_sq_measureProb_sub_le_one`: `|⟨ψ, φ⟩|² + (p - q)² ≤ 1`.
 * `Cslib.Quantum.one_sub_mul_sum_sensitiveCoords_le`: the adversary bound for the sensitivity graph.
 * `Cslib.Quantum.one_sub_mul_spectralSensitivity_le`: `(1 - 2√(ε(1-ε))) λ(f) ≤ 2T`.
 * `Cslib.Quantum.spectralSensitivity_le_thirty_six_mul`: `λ(f) ≤ 36 T` at error `1/3`.
@@ -103,65 +103,6 @@ theorem inner_phaseOracle_update_not (x : Fin N → Bool) (i : Fin N) (ψ φ : S
   · have hji : update x i (!x i) j = x j := update_of_ne hj _ _
     simp only [hji, hj, false_and, ↓reduceIte, map_zero, mul_zero, sub_zero]
     split_ifs <;> simp
-
-/-- **Overlap and distinguishability**: for unit states `ψ` and `φ` and a set `S` of outcomes,
-`|⟨ψ, φ⟩|² + (P_ψ(S) - P_φ(S))² ≤ 1`. Splitting the overlap along `S` and its complement and
-applying Cauchy–Schwarz to each part bounds it by `√(pq) + √((1-p)(1-q))`, where `p` and `q` are
-the probabilities of `S`. -/
-theorem norm_inner_sq_add_sq_measureProb_sub_le_one {ι : Type*} [Fintype ι]
-    {ψ φ : EuclideanSpace ℂ ι} (hψ : ‖ψ‖ = 1) (hφ : ‖φ‖ = 1) (S : Finset ι) :
-    ‖inner ℂ ψ φ‖ ^ 2 + (measureProb ψ S - measureProb φ S) ^ 2 ≤ 1 := by
-  classical
-  set p := measureProb ψ S
-  set q := measureProb φ S
-  have hp1 : measureProb ψ Sᶜ = 1 - p := by
-    have := measureProb_univ ψ
-    rw [← union_compl S, measureProb, sum_union disjoint_compl_right, hψ] at this
-    change p + measureProb ψ Sᶜ = 1 ^ 2 at this
-    linarith
-  have hq1 : measureProb φ Sᶜ = 1 - q := by
-    have := measureProb_univ φ
-    rw [← union_compl S, measureProb, sum_union disjoint_compl_right, hφ] at this
-    change q + measureProb φ Sᶜ = 1 ^ 2 at this
-    linarith
-  -- Cauchy–Schwarz on `S` and on its complement
-  have hcs (T : Finset ι) : ‖∑ k ∈ T, (starRingEnd ℂ) (ψ.ofLp k) * φ.ofLp k‖ ≤
-      √(measureProb ψ T) * √(measureProb φ T) := by
-    refine (norm_sum_le _ _).trans ?_
-    simp only [norm_mul, RCLike.norm_conj]
-    exact Real.sum_mul_le_sqrt_mul_sqrt _ _ _
-  have hsplit : inner ℂ ψ φ = ∑ k ∈ S, (starRingEnd ℂ) (ψ.ofLp k) * φ.ofLp k +
-      ∑ k ∈ Sᶜ, (starRingEnd ℂ) (ψ.ofLp k) * φ.ofLp k := by
-    rw [sum_add_sum_compl, PiLp.inner_apply]
-    simp only [RCLike.inner_apply']
-  have hinner : ‖inner ℂ ψ φ‖ ≤ √p * √q + √(1 - p) * √(1 - q) := by
-    rw [hsplit, ← hp1, ← hq1]
-    exact (norm_add_le _ _).trans (add_le_add (hcs S) (hcs Sᶜ))
-  -- the algebra of two unit vectors in the plane
-  have hp0 : 0 ≤ p := measureProb_nonneg _ _
-  have hq0 : 0 ≤ q := measureProb_nonneg _ _
-  have hp1' : 0 ≤ 1 - p := hp1 ▸ measureProb_nonneg _ _
-  have hq1' : 0 ≤ 1 - q := hq1 ▸ measureProb_nonneg _ _
-  set a := √p
-  set a' := √(1 - p)
-  set b := √q
-  set b' := √(1 - q)
-  have ha : a ^ 2 = p := Real.sq_sqrt hp0
-  have ha' : a' ^ 2 = 1 - p := Real.sq_sqrt hp1'
-  have hb : b ^ 2 = q := Real.sq_sqrt hq0
-  have hb' : b' ^ 2 = 1 - q := Real.sq_sqrt hq1'
-  have hsum : (a * b + a' * b') ^ 2 + (a * b' - a' * b) ^ 2 = 1 := by
-    nlinarith
-  have hcross : (a * b' + a' * b) ^ 2 ≤ 1 := by
-    nlinarith [sq_nonneg (a * b - a' * b')]
-  have hdiff : p - q = (a * b' - a' * b) * (a * b' + a' * b) := by
-    nlinarith
-  have h₁ : ‖inner ℂ ψ φ‖ ^ 2 ≤ (a * b + a' * b') ^ 2 :=
-    pow_le_pow_left₀ (norm_nonneg _) hinner 2
-  have h₂ : (p - q) ^ 2 ≤ (a * b' - a' * b) ^ 2 := by
-    rw [hdiff, mul_pow]
-    nlinarith [sq_nonneg (a * b' - a' * b)]
-  linarith
 
 /-- A query algorithm with a unit initial state and error `ε ≤ 1/2` leaves the states on inputs
 with different values of `f` with overlap at most `2√(ε(1-ε))`. -/

@@ -52,6 +52,8 @@ along the directions of `S` (`BitString.signedAdjacency`) avoids the restriction
 
 * `Cslib.BitString.adjMatrix_sensitivityGraph_mulVec_apply`: `(A_f v)(x)` sums `v` over the
   neighbors of `x` across sensitive coordinates.
+* `Cslib.BitString.inner_toEuclideanCLM_adjMatrix_sensitivityGraph`: the bilinear form
+  `⟨u, A_f v⟩ = ∑_x ∑_{i sensitive at x} u(x) v(x ⊕ eᵢ)`.
 * `Cslib.BitString.le_spectralSensitivity_of_le_sum`,
   `Cslib.BitString.spectralSensitivity_le_of_forall_sum_le`: lower and upper criteria for `λ(f)`.
 * `Cslib.BitString.spectralSensitivity_le_sensitivity`: `λ(f) ≤ s(f)`.
@@ -82,14 +84,6 @@ theorem isSensitiveCoord_update_not_iff {f : BooleanFunction n} {x : BitString n
     IsSensitiveCoord f (update x i (!x i)) i ↔ IsSensitiveCoord f x i := by
   simp only [IsSensitiveCoord, update_self, Bool.not_not, update_idem, update_eq_self]
   exact ne_comm
-
-/-- Distinct coordinates give distinct neighbors. -/
-theorem update_not_injective (x : BitString n) : Injective fun i => update x i (!x i) := by
-  intro i j h
-  by_contra hij
-  have := congrFun h i
-  simp only [update_self, update_of_ne hij] at this
-  cases x i <;> simp at this
 
 /-- **Summing over the sensitive edges from either end**: each edge of the sensitivity graph in
 direction `i` is counted once from each of its ends. -/
@@ -157,8 +151,9 @@ theorem spectralSensitivity_nonneg (f : BooleanFunction n) : 0 ≤ spectralSensi
   norm_nonneg _
 
 open scoped RealInnerProductSpace in
-/-- The bilinear form of `A_f`: `⟨u, A_f v⟩ = ∑_x ∑_{i sensitive at x} u(x) v(x ⊕ eᵢ)`. -/
-private theorem inner_toEuclideanCLM_adjMatrix (f : BooleanFunction n) (u v : BitString n → ℝ) :
+/-- **The bilinear form of `A_f`**: `⟨u, A_f v⟩ = ∑_x ∑_{i sensitive at x} u(x) v(x ⊕ eᵢ)`. -/
+theorem inner_toEuclideanCLM_adjMatrix_sensitivityGraph (f : BooleanFunction n)
+    (u v : BitString n → ℝ) :
     ⟪WithLp.toLp 2 u, Matrix.toEuclideanCLM (𝕜 := ℝ) ((sensitivityGraph f).adjMatrix ℝ)
       (WithLp.toLp 2 v)⟫ =
       ∑ x, ∑ i ∈ sensitiveCoords f x, u x * v (update x i (!x i)) := by
@@ -179,7 +174,7 @@ theorem le_spectralSensitivity_of_le_sum {f : BooleanFunction n} {v : BitString 
   set w : EuclideanSpace ℝ (BitString n) := WithLp.toLp 2 v
   have hw : 0 < ‖w‖ := norm_pos_iff.2 fun h0 => hv0 (congrArg WithLp.ofLp h0)
   have h₁ : c * ‖w‖ ^ 2 ≤ inner ℝ w (A w) := by
-    rw [norm_toLp_sq, inner_toEuclideanCLM_adjMatrix, mul_sum]
+    rw [norm_toLp_sq, inner_toEuclideanCLM_adjMatrix_sensitivityGraph, mul_sum]
     refine sum_le_sum fun x _ => ?_
     rw [← mul_sum]
     have hx : 0 ≤ v x := hv x
@@ -216,7 +211,7 @@ theorem spectralSensitivity_le_of_forall_sum_le {f : BooleanFunction n} {K : ℝ
       |y.ofLp x| * |z.ofLp (update x i (!x i))| := by
     rw [← real_inner_self_eq_norm_sq]
     change inner ℝ y (A z) ≤ _
-    rw [hy, hz, inner_toEuclideanCLM_adjMatrix]
+    rw [hy, hz, inner_toEuclideanCLM_adjMatrix_sensitivityGraph]
     refine sum_le_sum fun x _ => sum_le_sum fun i _ => ?_
     rw [← abs_mul]
     exact le_abs_self _
