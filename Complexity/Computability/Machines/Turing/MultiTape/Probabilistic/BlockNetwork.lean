@@ -67,6 +67,8 @@ bipartite Boolean network with `O(q b)` edges and degree `O(b)`, as in the note.
 ## Main definitions
 
 * `Turing.MultiTapePTM.scheduleBlock`: block indices prescribed by a schedule.
+* `Turing.MultiTapePTM.firstAfter`, `Turing.MultiTapePTM.lastBefore`: the next and the previous
+  appearance of a block in windows.
 * `Turing.MultiTapePTM.InWindow`, `Turing.MultiTapePTM.portBlock`, `Turing.MultiTapePTM.portOf`:
   windows and window entries under a schedule.
 * `Turing.MultiTapePTM.BlockEdge`, `Turing.MultiTapePTM.BlockLetter`: edges and letters.
@@ -146,18 +148,18 @@ theorem blockIndex_intervalStart_eq_scheduleBlock (machine : MultiTapePTM k Bool
 /-! ### Appearances of a block in windows -/
 
 /-- The first index after `i` satisfying `p`, if any. -/
-private def firstAfter (p : Fin q → Prop) [DecidablePred p] (i : Fin q) : Option (Fin q) :=
+def firstAfter (p : Fin q → Prop) [DecidablePred p] (i : Fin q) : Option (Fin q) :=
   if h : (Finset.univ.filter fun i' => i < i' ∧ p i').Nonempty then
     some ((Finset.univ.filter fun i' => i < i' ∧ p i').min' h)
   else none
 
 /-- The last index before `i` satisfying `p`, if any. -/
-private def lastBefore (p : Fin q → Prop) [DecidablePred p] (i : Fin q) : Option (Fin q) :=
+def lastBefore (p : Fin q → Prop) [DecidablePred p] (i : Fin q) : Option (Fin q) :=
   if h : (Finset.univ.filter fun i' => i' < i ∧ p i').Nonempty then
     some ((Finset.univ.filter fun i' => i' < i ∧ p i').max' h)
   else none
 
-private theorem firstAfter_eq_some_iff {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q} :
+theorem firstAfter_eq_some_iff {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q} :
     firstAfter p i = some i' ↔ i < i' ∧ p i' ∧ ∀ j, i < j → j < i' → ¬ p j := by
   unfold firstAfter
   split_ifs with h
@@ -176,7 +178,7 @@ private theorem firstAfter_eq_some_iff {p : Fin q → Prop} [DecidablePred p] {i
     rintro ⟨hlt, hp, -⟩
     exact h ⟨i', by simp [hlt, hp]⟩
 
-private theorem lastBefore_eq_some_iff {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q} :
+theorem lastBefore_eq_some_iff {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q} :
     lastBefore p i = some i' ↔ i' < i ∧ p i' ∧ ∀ j, i' < j → j < i → ¬ p j := by
   unfold lastBefore
   split_ifs with h
@@ -195,7 +197,7 @@ private theorem lastBefore_eq_some_iff {p : Fin q → Prop} [DecidablePred p] {i
     rintro ⟨hlt, hp, -⟩
     exact h ⟨i', by simp [hlt, hp]⟩
 
-private theorem lastBefore_eq_none_iff {p : Fin q → Prop} [DecidablePred p] {i : Fin q} :
+theorem lastBefore_eq_none_iff {p : Fin q → Prop} [DecidablePred p] {i : Fin q} :
     lastBefore p i = none ↔ ∀ j, j < i → ¬ p j := by
   unfold lastBefore
   split_ifs with h
@@ -206,13 +208,24 @@ private theorem lastBefore_eq_none_iff {p : Fin q → Prop} [DecidablePred p] {i
     intro j hj hp
     exact h ⟨j, by simp [hj, hp]⟩
 
+theorem firstAfter_eq_none_iff {p : Fin q → Prop} [DecidablePred p] {i : Fin q} :
+    firstAfter p i = none ↔ ∀ j, i < j → ¬ p j := by
+  unfold firstAfter
+  split_ifs with h
+  · simp only [false_iff, not_forall, not_not]
+    obtain ⟨j, hj⟩ := h
+    exact ⟨j, (Finset.mem_filter.mp hj).2.1, (Finset.mem_filter.mp hj).2.2⟩
+  · simp only [true_iff]
+    intro j hj hp
+    exact h ⟨j, by simp [hj, hp]⟩
+
 /-- Consecutive appearances: the last appearance before `i` has `i` as its next appearance. -/
-private theorem firstAfter_of_lastBefore {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q}
+theorem firstAfter_of_lastBefore {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q}
     (hi : p i) (h : lastBefore p i = some i') : firstAfter p i' = some i := by
   obtain ⟨hlt, -, hbetween⟩ := lastBefore_eq_some_iff.mp h
   exact firstAfter_eq_some_iff.mpr ⟨hlt, hi, hbetween⟩
 
-private theorem lastBefore_of_firstAfter {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q}
+theorem lastBefore_of_firstAfter {p : Fin q → Prop} [DecidablePred p] {i i' : Fin q}
     (hi' : p i') (h : firstAfter p i' = some i) : lastBefore p i = some i' := by
   obtain ⟨hlt, -, hbetween⟩ := firstAfter_eq_some_iff.mp h
   exact lastBefore_eq_some_iff.mpr ⟨hlt, hi', hbetween⟩
@@ -282,7 +295,7 @@ letter on the control edge leaving interval `i - 1`. -/
 variable {b} in
 /-- The window contents entering interval `i`: each block is read from the edge leaving the
 previous interval whose window contains it, and is blank if there is none. -/
-def inWindow (i : Fin q) (x : BlockEdge k q → BlockLetter k State b) :
+@[expose] def inWindow (i : Fin q) (x : BlockEdge k q → BlockLetter k State b) :
     Fin k → Fin 3 → ZMod b → Option Bool := fun h d =>
   (lastBefore (InWindow σ h (portBlock σ i h d)) i).elim (fun _ => none) fun i' =>
     (x (.inr (i', h, portOf σ i' h (portBlock σ i h d)))).contents
@@ -290,14 +303,14 @@ def inWindow (i : Fin q) (x : BlockEdge k q → BlockLetter k State b) :
 /-- The edge condition at interval `i` for the bits `u`: an interval step from the entering
 record and window to the letters on the edges leaving `i`, which must be of the right kinds,
 moving the blocks as `σ i` prescribes. -/
-def IntervalHolds (i : Fin q) (x : BlockEdge k q → BlockLetter k State b) (u : Fin b → Bool) :
-    Prop :=
+@[expose] def IntervalHolds (i : Fin q) (x : BlockEdge k q → BlockLetter k State b)
+    (u : Fin b → Bool) : Prop :=
   ∃ cOut wOut, machine.IntervalStep b input (scheduleBlock σ i) (σ i)
       (machine.inControl b i x) (inWindow σ i x) (List.ofFn u) cOut wOut ∧
     x (.inl i) = .inl cOut ∧ ∀ h d, x (.inr (i, h, d)) = .inr (wOut h d)
 
 /-- The target of an edge: the interval reading it next, or its sink. -/
-def edgeTarget : BlockEdge k q → Fin q ⊕ BlockEdge k q
+@[expose] def edgeTarget : BlockEdge k q → Fin q ⊕ BlockEdge k q
   | .inl i => if hi : i.val + 1 < q then .inl ⟨i + 1, hi⟩ else .inr (.inl i)
   | .inr (i, h, d) =>
     (firstAfter (InWindow σ h (portBlock σ i h d)) i).elim (.inr (.inr (i, h, d))) .inl
@@ -699,12 +712,37 @@ theorem tensor_blockNetwork_le (v : Fin q ⊕ BlockEdge k q)
 
 omit [NeZero b] in
 /-- The source of an edge is its interval. -/
-private theorem blockNetwork_src (e : BlockEdge k q) :
-    (machine.blockNetwork input b σ).src e = .inl (e.elim id Prod.fst) := rfl
+theorem blockNetwork_src (e : BlockEdge k q) :
+    (machine.blockNetwork input b σ).src e = .inl (e.elim id Prod.fst) := by
+  unfold blockNetwork; rfl
 
 omit [NeZero b] in
-private theorem blockNetwork_tgt (e : BlockEdge k q) :
-    (machine.blockNetwork input b σ).tgt e = edgeTarget σ e := rfl
+/-- The target of an edge is the interval reading it next, or its sink. -/
+theorem blockNetwork_tgt (e : BlockEdge k q) :
+    (machine.blockNetwork input b σ).tgt e = edgeTarget σ e := by
+  unfold blockNetwork; rfl
+
+open scoped Classical in
+omit [NeZero b] in
+/-- The tensor of an interval counts the bit strings satisfying its condition. -/
+theorem blockNetwork_tensor_interval (i : Fin q) (x : BlockEdge k q → BlockLetter k State b) :
+    (machine.blockNetwork input b σ).tensor (.inl i) x =
+      (Finset.univ.filter fun u => machine.IntervalHolds input b σ i x u).card := by
+  unfold blockNetwork; rfl
+
+omit [NeZero b] in
+/-- The sink of a control edge accepts the last control record, and is `1` otherwise. -/
+theorem blockNetwork_tensor_controlSink (i : Fin q) (x : BlockEdge k q → BlockLetter k State b) :
+    (machine.blockNetwork input b σ).tensor (.inr (.inl i)) x =
+      if i.val + 1 = q then acceptWeight (x (.inl i)) else 1 := by
+  unfold blockNetwork; rfl
+
+omit [NeZero b] in
+/-- The sink of a block edge is the constant `1`. -/
+theorem blockNetwork_tensor_blockSink (e : Fin q × Fin k × Fin 3)
+    (x : BlockEdge k q → BlockLetter k State b) :
+    (machine.blockNetwork input b σ).tensor (.inr (.inr e)) x = 1 := by
+  unfold blockNetwork; rfl
 
 omit [NeZero b] in
 /-- Every edge goes forward in time, from its interval to a later interval or to a sink. -/
