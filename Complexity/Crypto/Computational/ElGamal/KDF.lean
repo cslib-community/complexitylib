@@ -114,6 +114,18 @@ variable (F : PrimeOrderGroupFamily)
 
 /-! ### Prime-order group family with a public seed in the description -/
 
+/-- Seeded group descriptor `(d, s)` pairing a group descriptor `d : F.Desc` with a hash seed
+`s : List Bool`. -/
+abbrev SeededDesc (F : PrimeOrderGroupFamily) := F.Desc × List Bool
+
+/-- Underlying group descriptor `d` of a seeded descriptor `(d, s)`. -/
+abbrev SeededDesc.desc {F : PrimeOrderGroupFamily} (ds : F.SeededDesc) : F.Desc :=
+  ds.1
+
+/-- Hash seed `s` of a seeded descriptor `(d, s)`. -/
+abbrev SeededDesc.seed {F : PrimeOrderGroupFamily} (ds : F.SeededDesc) : List Bool :=
+  ds.2
+
 /-- Augment a `PrimeOrderGroupFamily` with a public bit-string seed in the group description
 (`Desc := F.Desc × List Bool`), as in [BonehShoup2023], Section 8.10.4 (p. 334), where the
 universal-hash key is part of the public system parameter. All group operations act on the
@@ -131,13 +143,9 @@ abbrev withSeed : PrimeOrderGroupFamily where
   generator_ne_zero d := F.generator_ne_zero d.1
   encode d := F.encode d.1
   encode_injective d := F.encode_injective d.1
-  add input :=
-    let ds := input.1
-    F.add (ds.1, input.2)
+  add input := F.add (SeededDesc.desc input.1, input.2)
   add_encode d x y := F.add_encode d.1 x y
-  smul input :=
-    let ds := input.1
-    F.smul (ds.1, input.2)
+  smul input := F.smul (SeededDesc.desc input.1, input.2)
   smul_encode d a x := F.smul_encode d.1 a x
   computableInPolyTime_order :=
     F.computableInPolyTime_order.comp (by fun_prop)
@@ -283,15 +291,15 @@ and an encoded group element `w : List Bool`, pad `w` to the self-delimiting wid
 via `Cslib.BitString.LinearHash.wordHash (keyLen d) s`. -/
 def linearHashKDF (keyLen bound : F.Desc → ℕ)
     (input : F.withSeed.Desc × List Bool) : List Bool :=
-  let ds := input.1
-  Cslib.BitString.LinearHash.wordHash (keyLen ds.1) ds.2
-    (Cslib.BitString.padWord (bound ds.1) input.2)
+  let desc := input.1
+  Cslib.BitString.LinearHash.wordHash (keyLen desc.1) desc.2
+    (Cslib.BitString.padWord (bound desc.1) input.2)
 
-/-- `linearHashKDF` always outputs a word of length `keyLen ds.1` for `ds = input.1`. -/
+/-- `linearHashKDF` always outputs a word of length `keyLen input.1.1`. -/
 @[simp] theorem length_linearHashKDF (keyLen bound : F.Desc → ℕ)
     (input : F.withSeed.Desc × List Bool) :
-    let ds := input.1
-    (F.linearHashKDF keyLen bound input).length = keyLen ds.1 := by
+    let desc := input.1
+    (F.linearHashKDF keyLen bound input).length = keyLen desc.1 := by
   simp [linearHashKDF]
 
 /-- `linearHashKDF` is computable in polynomial time whenever `keyLen` and `bound` are computable
@@ -435,7 +443,8 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
           List.ofFn (Cslib.BitString.LinearHash.hash
             (Cslib.BitString.blocksEquiv (m := m) (k := W) seed)
             (F.paddedGeneratorMultiple bound d γ)) := by
-      simp only [linearHashKDF, hkey d hd, ← hpad, Cslib.BitString.LinearHash.wordHash_eq_ofFn,
+      simp only [linearHashKDF, hkey d hd, ← hpad,
+        Cslib.BitString.LinearHash.wordHash_eq_ofFn,
         Cslib.BitString.ofList_ofFn, Cslib.BitString.blocksEquiv_apply]
     rw [hhash]
   have hideal :
