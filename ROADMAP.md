@@ -235,6 +235,11 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
+- Complete the unconditional `SharpTIME(T)` to binary-output `FTIME(2^{O(T/√log T)})`
+  endpoint in [#1833](https://github.com/cslib-community/complexitylib/issues/1833). The native
+  terminal-path class agrees with `SharpP` at polynomial clocks; the count-first simulation
+  supplies joint time and polynomial workspace conditional on the explicit-network contraction
+  algorithm. Integration of the concrete contraction removes that remaining premise.
 - The Another Solution Problem (ASP) framework: certify polynomial-time forward and inverse
   witness maps. The parsimonious reductions to positive exact-one SAT and its planar
   three-occurrence variants already preserve counts over occurring variables; the new local

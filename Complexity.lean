@@ -1127,12 +1127,14 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Adm
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Assembly
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.BlockNetworks
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Containments
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Count
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Guarded
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
+public import Complexity.Computability.Complexity.Classes.FunctionTime
 public import Complexity.Computability.Complexity.Classes.Hierarchy
 public import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Nondeterministic
@@ -1263,6 +1265,7 @@ public import Complexity.Computability.Complexity.Classes.SharpP.Power
 public import Complexity.Computability.Complexity.Classes.SharpP.Probability
 public import Complexity.Computability.Complexity.Classes.SharpP.Products
 public import Complexity.Computability.Complexity.Classes.SharpP.Space
+public import Complexity.Computability.Complexity.Classes.SharpP.Time
 public import Complexity.Computability.Complexity.Classes.SharpP.WeightedReplay
 public import Complexity.Computability.Complexity.Classes.Space
 public import Complexity.Computability.Complexity.Classes.Space.Basic
@@ -1769,6 +1772,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Altern
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Binary
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Certificate
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Checker
+public import Complexity.Computability.Machines.Turing.MultiTape.Counting.ChoiceTable
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Composition
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Execution
