@@ -40,12 +40,11 @@ theorem le_ceilQuarter_pow (n : ℕ) : n ≤ ceilQuarter n ^ 4 :=
   Nat.find_spec (⟨n, Nat.le_self_pow (by norm_num) n⟩ : ∃ J, n ≤ J ^ 4)
 
 theorem ceilQuarter_pos {n : ℕ} (hn : 1 ≤ n) : 0 < ceilQuarter n := by
-  by_contra h
-  have h0 : ceilQuarter n = 0 := by omega
-  have := le_ceilQuarter_pow n
-  rw [h0] at this
-  simp at this
-  omega
+  rcases Nat.eq_zero_or_pos (ceilQuarter n) with h0 | h
+  · have := le_ceilQuarter_pow n
+    rw [h0, zero_pow (by norm_num)] at this
+    omega
+  · exact h
 
 theorem ceilQuarter_le_self (n : ℕ) : ceilQuarter n ≤ n :=
   Nat.find_min' _ (Nat.le_self_pow (by norm_num) n)
