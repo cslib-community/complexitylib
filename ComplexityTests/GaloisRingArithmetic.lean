@@ -34,6 +34,16 @@ example : mul 3 [1, 1] [9] [3, 1, 4] = [3, 1] := by decide
 -- Degree three, `f = U ^ 3 + U + 1`, modulo `16`: `U ^ 2 * U = U ^ 3 = -1 - U`.
 example : mulX 4 [1, 1, 0] [0, 0, 1] = [15, 15, 0] := by decide
 
+-- The unit, and `U ^ 3 = 1` as a power.
+example : one [1, 1] = [1, 0] ∧ pow 3 [1, 1] [0, 1] 3 = [1, 0] := by decide
+
+-- `(1 + U) ^ 2 = 1 + 2 U + U ^ 2 = U`.
+example : pow 3 [1, 1] [1, 1] 2 = [0, 1] := by decide
+
+/-- Powers are correct. -/
+example (c : List ℕ) (k : ℕ) : val 3 [1, 1] (pow 3 [1, 1] c k) = val 3 [1, 1] c ^ k :=
+  val_pow c k
+
 /-- The defining polynomial is monic. -/
 example : (monicOf [1, 1]).Monic := monic_monicOf _
 
@@ -53,6 +63,13 @@ example : ComputableInPolyTime
 example : ComputableInPolyTime
     (fun q : (ℕ × List ℕ) × (List ℕ × List ℕ) => add q.1.1 q.1.2 q.2.1 q.2.2)
     (encPair (encPair encUnary (encList encNat)) (encPair (encList encNat) (encList encNat)))
+    (encList encNat) := by
+  fun_prop
+
+/-- **Powers in polynomial time**, with the exponent in unary. -/
+example : ComputableInPolyTime
+    (fun q : (ℕ × List ℕ) × (List ℕ × ℕ) => pow q.1.1 q.1.2 q.2.1 q.2.2)
+    (encPair (encPair encUnary (encList encNat)) (encPair (encList encNat) encUnary))
     (encList encNat) := by
   fun_prop
 

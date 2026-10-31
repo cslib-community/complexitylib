@@ -47,6 +47,9 @@ The value of a coefficient list `c` is `∑ i < e, c i U ^ i` in `A_p` (`GaloisR
   coordinate times `f`, reducing `U ^ e = -∑ i < e, fl i U ^ i`.
 * **Multiplication** (`GaloisRingArith.mul`) is shift-and-add: `c d = ∑ i < e, c i (U ^ i d)`,
   accumulating `c i` times the current `U ^ i d` and multiplying it by `U`, `e` times.
+* **Powers** (`GaloisRingArith.pow`) `c ^ k` take `k` multiplications from `GaloisRingArith.one`,
+  with `k` in unary. In the source the exponents of the mode substitutions are below the
+  precision (Appendix D.4.6, p. 63), so they are polynomial.
 
 Each operation is correct (`GaloisRingArith.val_add`, `GaloisRingArith.val_mulX`,
 `GaloisRingArith.val_mul`) and polynomial-time, with the precision `p` in unary and the
@@ -61,16 +64,19 @@ does by Newton lifting, is not covered here.
 
 * `Cslib.GaloisRingArith.monicOf`: the monic polynomial with given lower coefficients.
 * `Cslib.GaloisRingArith.val`: the value of a coefficient list.
-* `Cslib.GaloisRingArith.add`, `Cslib.GaloisRingArith.mulX`, `Cslib.GaloisRingArith.mul`: addition,
-  multiplication by `U` and multiplication.
+* `Cslib.GaloisRingArith.add`, `Cslib.GaloisRingArith.mulX`, `Cslib.GaloisRingArith.mul`,
+  `Cslib.GaloisRingArith.one`, `Cslib.GaloisRingArith.pow`: addition, multiplication by `U`,
+  multiplication, the unit and powers.
 
 ## Main results
 
 * `Cslib.GaloisRingArith.val_add`, `Cslib.GaloisRingArith.val_mulX`,
-  `Cslib.GaloisRingArith.val_mul`: correctness.
+  `Cslib.GaloisRingArith.val_mul`, `Cslib.GaloisRingArith.val_one`,
+  `Cslib.GaloisRingArith.val_pow`: correctness.
 * `Cslib.GaloisRingArith.computableInPolyTime_add`,
   `Cslib.GaloisRingArith.computableInPolyTime_mulX`,
-  `Cslib.GaloisRingArith.computableInPolyTime_mul`: polynomial time.
+  `Cslib.GaloisRingArith.computableInPolyTime_mul`,
+  `Cslib.GaloisRingArith.computableInPolyTime_pow`: polynomial time.
 
 ## References
 
@@ -130,6 +136,13 @@ def mulStep (p : ℕ) (fl c : List ℕ) (s : List ℕ × List ℕ) (i : ℕ) : L
 /-- **Multiplication** by shift-and-add. -/
 def mul (p : ℕ) (fl c d : List ℕ) : List ℕ :=
   ((List.range fl.length).foldl (mulStep p fl c) (d, zero fl)).2
+
+/-- The unit element `1`, with `e` coordinates. -/
+def one (fl : List ℕ) : List ℕ := (List.range fl.length).map fun i => if i = 0 then 1 else 0
+
+/-- **Powers** `c ^ k`, by `k` multiplications; the exponent is read in unary. -/
+def pow (p : ℕ) (fl c : List ℕ) (k : ℕ) : List ℕ :=
+  (List.range k).foldl (fun acc _ => mul p fl acc c) (one fl)
 
 /-! ### Correctness -/
 
@@ -234,6 +247,34 @@ theorem val_mul (c d : List ℕ) : val p fl (mul p fl c d) = val p fl c * val p 
       · rw [val_addSmul, ih.1, ih.2, sum_range_succ]; ring
   rw [mul, (hinv fl.length).2]
   rfl
+
+/-- **The unit is correct.** -/
+@[simp] theorem val_one : val p fl (one fl) = 1 := by
+  rcases Nat.eq_zero_or_pos fl.length with he | he
+  · -- The defining polynomial is `1`, so the ring is trivial.
+    have h1 : (monicOf fl).map (Int.castRingHom (ZMod (2 ^ p))) = 1 := by
+      simp [monicOf, he]
+    have h : (1 : Ring p fl) = 0 := by
+      rw [← map_one (AdjoinRoot.mk ((monicOf fl).map (Int.castRingHom (ZMod (2 ^ p))))),
+        AdjoinRoot.mk_eq_zero, h1]
+    simp [val, he, h]
+  · obtain ⟨e, he'⟩ := Nat.exists_eq_add_of_lt he
+    rw [Nat.zero_add] at he'
+    rw [val, he', sum_range_succ']
+    simp only [one, he']
+    rw [sum_eq_zero fun i hi => by
+      rw [List.getD_eq_getElem _ _ (by simp at hi ⊢; omega)]
+      simp]
+    rw [List.getD_eq_getElem _ _ (by simp)]
+    simp
+
+/-- **Powers are correct.** -/
+theorem val_pow (c : List ℕ) (k : ℕ) : val p fl (pow p fl c k) = val p fl c ^ k := by
+  rw [pow]
+  induction k with
+  | zero => simp
+  | succ k ih => rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+      val_mul, ih, pow_succ]
 
 end Correctness
 
@@ -439,6 +480,50 @@ theorem computableInPolyTime_mul {p : α → ℕ} {fl c d : α → List ℕ}
     have hacc := length_encList_le (length_addSmul (p x) (fl x) s.2 ((c x).getD i 0) s.1)
       fun _ h => lt_of_mem_addSmul h
     simp only [mulStep, encS, length_encPair]
+    omega
+
+/-- **Powers are polynomial-time**, with the precision and the exponent in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_pow {p k : α → ℕ} {fl c : α → List ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (hc : ComputableInPolyTime c encIn (encList encNat))
+    (hk : ComputableInPolyTime k encIn encUnary) :
+    ComputableInPolyTime (fun x => pow (p x) (fl x) (c x) (k x)) encIn (encList encNat) := by
+  have hone : ComputableInPolyTime (fun x => one (fl x)) encIn (encList encNat) := by
+    have h2 := ComputableInPolyTime.snd encIn encUnary
+    refine computableInPolyTime_tabulate (g := fun _ i => if i = 0 then 1 else 0)
+      (length_polyTime hfl) ?_
+    refine (ComputableInPolyTime.ite (encMid := encNat) (c := fun q : α × ℕ => q.2 == 0)
+      ((ComputableInPolyTime.beq (h2) (ComputableInPolyTime.const 0)))
+      (ComputableInPolyTime.const 1) (ComputableInPolyTime.const 0)).of_enc_eq fun q => ?_
+    by_cases h : q.2 = 0 <;> simp [h]
+  have hstep : ComputableInPolyTime (fun q : (α × List ℕ) × ℕ => mul (p q.1.1) (fl q.1.1) q.1.2
+      (c q.1.1)) (encPair (encPair encIn (encList encNat)) encUnary) (encList encNat) := by
+    have hq := ComputableInPolyTime.fst (encPair encIn (encList encNat)) encUnary
+    have hx := (ComputableInPolyTime.fst encIn (encList encNat)).comp hq
+    have hacc := (ComputableInPolyTime.snd encIn (encList encNat)).comp hq
+    exact computableInPolyTime_mul (hp.comp hx) (hfl.comp hx) hacc (hc.comp hx)
+  have hgrowth : PolyBounded (fun x => (encIn x).length)
+      (fun x => (fl x).length * (2 * p x + 1)) := by
+    have hpl := (ComputableInPolyTime.polyBounded_length hp)
+    have hfll := (ComputableInPolyTime.polyBounded_length hfl)
+    refine (hfll.mul (((PolyBounded.const 2).mul hpl).add (PolyBounded.const 1))).mono
+      fun x => ?_
+    have h1 : p x ≤ (encUnary (p x)).length := by simp
+    have h2 : (fl x).length ≤ (encList encNat (fl x)).length := by
+      rw [length_encList]
+      calc (fl x).length = ((fl x).map fun _ => 1).sum := by simp
+        _ ≤ ((fl x).map fun a => 2 * (encNat a).length + 1).sum :=
+          List.sum_le_sum fun a _ => by omega
+    exact Nat.mul_le_mul h2 (Nat.add_le_add_right (Nat.mul_le_mul_left 2 h1) 1)
+  have hfold := ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x acc _ => mul (p x) (fl x) acc (c x)) hone
+    ⟨ComputableInPolyTime.range.comp hk, hstep, inferInstance, inferInstance⟩
+    ⟨hgrowth, fun x acc _ _ => ?_⟩
+  · exact hfold
+  · have := length_encList_le (length_mul (p x) (fl x) acc (c x)) fun _ h => lt_of_mem_mul h
     omega
 
 end PolyTime
