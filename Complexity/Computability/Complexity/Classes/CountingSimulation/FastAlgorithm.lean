@@ -12,6 +12,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Adm
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionPolyTime
+import Complexity.Computability.Circuit.Frontier.TensorNetwork.RowsFirstPolyTime
 import Mathlib.Analysis.SpecificLimits.Normed
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -50,7 +51,8 @@ interface's bounds (`CountingSimulation.fastCertificate_le`), through
 `Cslib.GenericRAM.StackRecursion.Scheme.certificate_le`. Below the size threshold the run may not
 finish, and the machine falls back to direct summation, at a constant factor.
 
-The guard is polynomial-time (`CountingSimulation.fastGuard_polyTime`).
+The guard is polynomial-time (`CountingSimulation.fastGuard_polyTime`), with the rows-first test
+`DescribedNetwork.rowsFirst_polyTime`.
 
 For the native child builder (`FastContraction.nativeMk`), the components of the scheme are
 polynomial-time (`FastContraction.scheme_nativeMk_polyTime`), and the step, the passage of
@@ -151,87 +153,21 @@ open Turing.MultiTapeTM
 /-- The encoding of an explicit network with its number of rows. -/
 local notation "encG" => encPair encNat ExplicitTensorNetwork.encExplicitNetwork
 
-/-- The guard as a conjunction of list tests. -/
-private def guardTest (G : ℕ × ExplicitTensorNetwork ℕ) : Bool :=
-  G.2.vertices.all (fun v => v.1.all fun i => decide (i < G.2.numEdges)) &&
-    (List.range G.2.numEdges).all (fun i =>
-      decide (((G.2.vertices.take G.1).flatMap Prod.fst).count i = 1) &&
-        decide (((G.2.vertices.drop G.1).flatMap Prod.fst).count i = 1)) &&
-    G.2.vertices.all (fun v => decide (v.2.length = 2 ^ v.1.length)) &&
-    G.2.vertices.all (fun v => decide (v.1.length ≤ degreeBound G.2.numEdges))
-
-private theorem fastGuard_eq_guardTest (G : ℕ × ExplicitTensorNetwork ℕ) :
-    fastGuard G = guardTest G := by
-  refine Bool.eq_iff_iff.mpr ?_
-  simp only [fastGuard, guardTest, DescribedNetwork.IsRowsFirstBipartite,
-    ExplicitTensorNetwork.maxDegree_le_iff, decide_eq_true_eq, Bool.and_eq_true,
-    List.all_eq_true, List.mem_range, List.count_flatMap, Function.comp_def]
-  constructor
-  · rintro ⟨⟨h1, h2⟩, h3, h4⟩
-    exact ⟨⟨⟨fun v hv i hi => h1 v hv i hi, fun i hi => h2 i hi⟩, h3⟩, h4⟩
-  · rintro ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩
-    exact ⟨⟨fun v hv i hi => h1 v hv i hi, fun i hi => h2 i hi⟩, h3, h4⟩
-
-/-- **The guard is polynomial-time.** -/
+/-- **The guard is polynomial-time**: the rows-first test (`DescribedNetwork.rowsFirst_polyTime`),
+the lengths of the tables and the degrees of the vertices. -/
 theorem fastGuard_polyTime : ComputableInPolyTime fastGuard encG encBool := by
-  have hpair : ComputableInPolyTime (DescribedNetwork.equivProd (T := List ℕ))
-      ExplicitTensorNetwork.encExplicitNetwork
-      (encPair encUnary (encList (encPair (encList encNat) (encList encNat)))) :=
-    ComputableInPolyTime.of_eq fun _ => rfl
   have hd := ComputableInPolyTime.snd encNat ExplicitTensorNetwork.encExplicitNetwork
-  have hr := ComputableInPolyTime.fst encNat ExplicitTensorNetwork.encExplicitNetwork
   have hm : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ => G.2.numEdges) encG
-      encUnary := (ComputableInPolyTime.fst _ _).comp (hpair.comp hd)
+      encUnary := DescribedNetwork.numEdges_polyTime.comp hd
   have hvs : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ => G.2.vertices) encG
       (encList (encPair (encList encNat) (encList encNat))) :=
-    (ComputableInPolyTime.snd _ _).comp (hpair.comp hd)
-  -- Ports in range.
-  have h1 : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
-      G.2.vertices.all (fun v => v.1.all fun i => decide (i < G.2.numEdges))) encG encBool := by
-    refine ComputableInPolyTime.allWithInput hvs ?_
-    refine ComputableInPolyTime.allWithInput
-      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)) ?_
-    exact ComputableInPolyTime.binary_lt.comp ((ComputableInPolyTime.snd _ _).prod
-      (ComputableInPolyTime.unary_to_binary.comp (hm.comp ((ComputableInPolyTime.fst _ _).comp
-        (ComputableInPolyTime.fst _ _)))))
-  -- Each edge has one row port and one column port.
-  have hlen := (ComputableInPolyTime.length_list _).comp hvs
-  have hcap := ComputableInPolyTime.binary_min_unary' hlen hr
-  have htake : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
-      G.2.vertices.take (min G.2.vertices.length G.1)) encG
-      (encList (encPair (encList encNat) (encList encNat))) :=
-    .of_tidy (ComputableTidilyInPolyTime.listTakeWithInput hvs.tidy hcap.tidy)
-  have hdrop : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
-      G.2.vertices.drop (min G.2.vertices.length G.1)) encG
-      (encList (encPair (encList encNat) (encList encNat))) :=
-    .of_tidy (ComputableTidilyInPolyTime.listDropWithInput hvs.tidy hcap.tidy)
-  have hflat {l : ℕ × ExplicitTensorNetwork ℕ → List (List ℕ × List ℕ)}
-      (hl : ComputableInPolyTime l encG (encList (encPair (encList encNat) (encList encNat)))) :
-      ComputableInPolyTime (fun G => (l G).flatMap Prod.fst) encG (encList encNat) :=
-    ComputableInPolyTime.flatMapWithInput (f := fun _ v => v.1) hl
-      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))
-  have hcount {l : ℕ × ExplicitTensorNetwork ℕ → List ℕ}
-      (hl : ComputableInPolyTime l encG (encList encNat)) :
-      ComputableInPolyTime (fun p : (ℕ × ExplicitTensorNetwork ℕ) × ℕ =>
-        decide ((l p.1).count p.2 = 1)) (encPair encG encUnary) encBool := by
-    have hc := ComputableInPolyTime.countPWithInput (test := fun p a => decide (a = p.2))
-      (hl.comp (ComputableInPolyTime.fst encG encUnary))
-      (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.snd _ _)
-        (ComputableInPolyTime.unary_to_binary.comp ((ComputableInPolyTime.snd _ _).comp
-          (ComputableInPolyTime.fst _ _))))
-    refine (ComputableInPolyTime.decide_eq' hc (ComputableInPolyTime.const 1)).of_enc_eq
-      fun p => ?_
-    simp only [Function.comp_apply, List.count_eq_countP]
-    congr 3
-  have h2 : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
-      (List.range G.2.numEdges).all (fun i =>
-        decide (((G.2.vertices.take (min G.2.vertices.length G.1)).flatMap Prod.fst).count i = 1) &&
-          decide (((G.2.vertices.drop (min G.2.vertices.length G.1)).flatMap Prod.fst).count i =
-            1))) encG encBool :=
-    ComputableInPolyTime.allWithInput (ComputableInPolyTime.range.comp hm)
-      (ComputableInPolyTime.bool_and.comp ((hcount (hflat htake)).prod (hcount (hflat hdrop))))
+    DescribedNetwork.vertices_polyTime.comp hd
+  -- Rows first.
+  have hrows : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
+      decide (G.2.IsRowsFirstBipartite G.1)) encG encBool :=
+    DescribedNetwork.rowsFirst_polyTime
   -- Full tables.
-  have h3 : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
+  have htab : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
       G.2.vertices.all (fun v => decide (v.2.length = 2 ^ v.1.length))) encG encBool := by
     refine ComputableInPolyTime.allWithInput hvs ?_
     have hv := ComputableInPolyTime.snd encG (encPair (encList encNat) (encList encNat))
@@ -241,7 +177,7 @@ theorem fastGuard_polyTime : ComputableInPolyTime fastGuard encG encBool := by
       (ComputableInPolyTime.binary_two_pow.comp ((ComputableInPolyTime.length_list _).comp
         ((ComputableInPolyTime.fst _ _).comp hv)))
   -- The degree bound.
-  have h4 : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
+  have hdeg : ComputableInPolyTime (fun G : ℕ × ExplicitTensorNetwork ℕ =>
       G.2.vertices.all (fun v => decide (v.1.length ≤ degreeBound G.2.numEdges))) encG
       encBool := by
     refine ComputableInPolyTime.allWithInput hvs ?_
@@ -249,18 +185,10 @@ theorem fastGuard_polyTime : ComputableInPolyTime fastGuard encG encBool := by
       (ComputableInPolyTime.unary_to_binary.comp ((ComputableInPolyTime.length_list _).comp
         ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))))
       (degreeBound_polyTime.comp (hm.comp (ComputableInPolyTime.fst _ _)))
-  refine (ComputableInPolyTime.bool_and.comp ((ComputableInPolyTime.bool_and.comp
-    ((ComputableInPolyTime.bool_and.comp (h1.prod h2)).prod h3)).prod h4)).of_enc_eq fun G => ?_
-  have ht : G.2.vertices.take (min G.2.vertices.length G.1) = G.2.vertices.take G.1 := by
-    rcases le_total G.2.vertices.length G.1 with hle | hle
-    · rw [min_eq_left hle, List.take_length, List.take_of_length_le hle]
-    · rw [min_eq_right hle]
-  have hdr : G.2.vertices.drop (min G.2.vertices.length G.1) = G.2.vertices.drop G.1 := by
-    rcases le_total G.2.vertices.length G.1 with hle | hle
-    · rw [min_eq_left hle, List.drop_length, List.drop_of_length_le hle]
-    · rw [min_eq_right hle]
-  rw [fastGuard_eq_guardTest, guardTest]
-  simp only [Function.comp_apply, ht, hdr]
+  refine (ComputableInPolyTime.bool_and.comp (hrows.prod (ComputableInPolyTime.bool_and.comp
+    (htab.prod hdeg)))).of_enc_eq fun G => ?_
+  simp only [fastGuard, ExplicitTensorNetwork.maxDegree_le_iff, Function.comp_apply,
+    Bool.decide_and, List.all_eq, decide_eq_true_eq]
 
 end GuardPolyTime
 

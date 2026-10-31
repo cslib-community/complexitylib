@@ -10,7 +10,6 @@ module
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContractionMachine
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
-import Mathlib.Data.List.GetD
 
 /-!
 # Theorem D.1 for entry procedures: the resource analysis
@@ -41,10 +40,6 @@ entries at a leaf (§D.4.7, p. 64):
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.FastContraction.Reach.exists_root_of_inl`: root descriptors keep their
-  number of ports along the recursion.
-* `Cslib.Circuits.Frontier.FastContraction.exists_leafCertificate_le_of_entry`: the leaf bound
-  with the costs of the root entries.
 * `Cslib.Complexity.CountingSimulation.entry_length_le_of_reach`: polynomial sizes along the
   recursion from a guarded input.
 * `Cslib.Complexity.CountingSimulation.exists_entryLeaves_le`: the leaf bounds on admissible
@@ -64,138 +59,6 @@ entries at a leaf (§D.4.7, p. 64):
 
 public section
 
-namespace Cslib.Circuits.Frontier
-
-open Turing.MultiTapeTM Cslib.GenericRAM ChildCursor ContractionSchedule
-
-variable {T : Type}
-
-/-! ### Root descriptors along the recursion -/
-
-/-- **A kept vertex of the native child keeps its descriptor and its number of ports**: every root
-descriptor of the native child is the descriptor of a parent vertex with as many ports. -/
-theorem NativeChild.exists_mem_of_mem_nativeChild_inl {fl : List ℕ} {a i pt : ℕ} {τ : ℤ}
-    {ζ : List ℕ} {r : ℕ} {D : DescribedNetwork (VertexDesc T)}
-    {pk : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)} {β : List ℕ} {g : ℕ}
-    {v : List ℕ × VertexDesc T}
-    (hv : v ∈ (NativeChild.nativeChild fl a i pt τ ζ r D pk β g).vertices) {t : T}
-    (ht : v.2 = .inl t) :
-    ∃ u ∈ D.vertices, u.2 = .inl t ∧ u.1.length = v.1.length := by
-  simp only [NativeChild.nativeChild, List.mem_append, List.mem_map, List.mem_filter,
-    List.mem_range] at hv
-  rcases hv with ⟨k, ⟨hk, -⟩, rfl⟩ | ⟨q, -, rfl⟩
-  · refine ⟨D.vertices[k], List.getElem_mem hk, ?_, ?_⟩
-    · simpa only [List.getD_eq_getElem _ _ hk] using ht
-    · simp only [List.length_map, List.getD_eq_getElem _ _ hk]
-  · cases ht
-
-namespace FastContraction
-
-/-- **Root descriptors keep their number of ports along the recursion**: every root descriptor of a
-call reached by the native child builder is the descriptor of a vertex of the root with as many
-ports. -/
-theorem Reach.exists_root_of_inl {x₀ x : Call T} (h : Reach nativeMk x₀ x)
-    {v : List ℕ × VertexDesc T} (hv : v ∈ x.net.vertices) {t : T} (ht : v.2 = .inl t) :
-    ∃ w ∈ x₀.net.vertices, w.2 = .inl t ∧ w.1.length = v.1.length := by
-  induction h generalizing v with
-  | root => exact ⟨v, hv, ht, rfl⟩
-  | step c _ _ _ ih =>
-    obtain ⟨u, hu, hut, hlen⟩ := NativeChild.exists_mem_of_mem_nativeChild_inl hv ht
-    obtain ⟨w, hw, hwt, hwlen⟩ := ih hu hut
-    exact ⟨w, hw, hwt, hwlen.trans hlen⟩
-
-variable {encT : T ↪ List Bool} {ev : T → List Bool → List ℕ}
-
-/-- **The leaf bound with the costs of the root entries.** For a native certificate `ce` of the
-entry procedure and all constants `C`, `c` and `s₀` there is `K` such that a call with the packet
-shape, scale `m` with `s ≤ m ≤ C s` and at most `2 m` edges, whose root entries take time at most
-`E` and space at most `ES`, takes time at most `K (n + ES + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋) (E + 1)`
-and space at most `K (n + ES + 1) ^ K` at a leaf, provided that from `s₀` on it has at most
-`leafSize m` edges and precision at most `m ^ c`. The packet factor and `2 ^ M` are bounded as for
-tables (`exists_leafCertificate_le`). -/
-theorem exists_leafCertificate_le_of_entry
-    (ce : NativeCertificate (fun q : T × List Bool => ev q.1 q.2) (encPair encT encBits)
-      (encList encNat)) (C c s₀ : ℕ) : ∃ K : ℕ,
-    ∀ (mk : Call T → State → ℕ × DescribedNetwork (VertexDesc T)) (s : ℕ) (x : Call T)
-      (E ES : ℕ), 2 ≤ s → s ≤ x.scale → x.scale ≤ C * s → PacketShape x →
-      x.edges ≤ 2 * x.scale → (s₀ ≤ s → x.edges ≤ leafSize x.scale ∧ x.prec ≤ x.scale ^ c) →
-      (∀ v ∈ x.net.vertices, ∀ t, v.2 = .inl t → ∀ bs : List Bool, bs.length = v.1.length →
-        ce.time (t, bs) ≤ E ∧ ce.space (t, bs) ≤ ES) →
-      (leafCertificate ce mk).time x ≤ K * ((encCall encT x).length + ES + 1) ^ K *
-          2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) * (E + 1) ∧
-        (leafCertificate ce mk).space x ≤ K * ((encCall encT x).length + ES + 1) ^ K := by
-  obtain ⟨K₀, hK₀⟩ := leafCertificate_le_of_packetShape ce
-  obtain ⟨K₁, hK₁⟩ := exists_packetFactor_le C c
-  obtain ⟨Ks, hKs⟩ : ∃ Ks, Ks = K₀ * 2 ^ (2 * (C * s₀)) * (C * s₀ + 2) ^ (C * s₀) := ⟨_, rfl⟩
-  refine ⟨Ks + K₀ + C * s₀ + C + K₁, fun mk s x E ES hs hsm hmC hshape hM hbig hroot => ?_⟩
-  obtain ⟨hT, hS⟩ := hK₀ mk x E ES hshape hroot
-  set W := (encCall encT x).length + ES + 1 with hW
-  set K := Ks + K₀ + C * s₀ + C + K₁ with hK
-  set S := Nat.sqrt (Nat.log 2 s) with hSdef
-  have hS1 : 1 ≤ S := Nat.one_le_sqrt_log_two hs
-  have hB1 : 1 ≤ W := by omega
-  have hX1 : 1 ≤ 2 ^ (K * s / S) := Nat.one_le_two_pow
-  have hnK : W ^ K₀ ≤ W ^ K := Nat.pow_le_pow_right hB1 (by omega)
-  refine ⟨?_, hS.trans (Nat.mul_le_mul (by omega) hnK)⟩
-  set A := 2 ^ (Nat.log 2 x.scale / 32768) with hA
-  have hAm : A ≤ x.scale := (Nat.pow_le_pow_right (by norm_num) (Nat.div_le_self _ _)).trans
-    (Nat.pow_log_le_self 2 (by omega))
-  set Pk := (A * x.prec + 2) ^ A with hPk
-  have hPk1 : 1 ≤ Pk := Nat.one_le_pow _ _ (by omega)
-  have hT' : (leafCertificate ce mk).time x ≤ K₀ * W ^ K₀ * (2 ^ x.edges * Pk) * (E + 1) := by
-    have hPE : Pk + E ≤ Pk * (E + 1) := by nlinarith
-    calc _ ≤ K₀ * W ^ K₀ * 2 ^ x.edges * (Pk + E) := hT
-      _ ≤ K₀ * W ^ K₀ * 2 ^ x.edges * (Pk * (E + 1)) := Nat.mul_le_mul_left _ hPE
-      _ = _ := by ring
-  suffices hMP : K₀ * W ^ K₀ * (2 ^ x.edges * Pk) ≤ K * W ^ K * 2 ^ (K * s / S) from
-    hT'.trans (Nat.mul_le_mul_right _ hMP)
-  rcases lt_or_ge s s₀ with hsmall | hlarge
-  · -- Below `s₀`: constants and a polynomial.
-    have hmC' : x.scale ≤ C * s₀ := hmC.trans (Nat.mul_le_mul_left _ hsmall.le)
-    have hp : x.prec ≤ W := by have := scale_add_prec_add_length_fl_le encT x; omega
-    have h2M : 2 ^ x.edges ≤ 2 ^ (2 * (C * s₀)) :=
-      Nat.pow_le_pow_right (by norm_num) (by omega)
-    have hbase : A * x.prec + 2 ≤ (C * s₀ + 2) * W := by
-      have : A * x.prec ≤ C * s₀ * W := Nat.mul_le_mul (hAm.trans hmC') hp
-      nlinarith
-    have hfac : Pk ≤ (C * s₀ + 2) ^ (C * s₀) * W ^ (C * s₀) := by
-      calc Pk ≤ ((C * s₀ + 2) * W) ^ A := Nat.pow_le_pow_left hbase _
-        _ ≤ ((C * s₀ + 2) * W) ^ (C * s₀) :=
-            Nat.pow_le_pow_right (Nat.one_le_iff_ne_zero.mpr (by positivity)) (hAm.trans hmC')
-        _ = (C * s₀ + 2) ^ (C * s₀) * W ^ (C * s₀) := mul_pow _ _ _
-    calc K₀ * W ^ K₀ * (2 ^ x.edges * Pk)
-        ≤ K₀ * W ^ K₀ * (2 ^ (2 * (C * s₀)) * ((C * s₀ + 2) ^ (C * s₀) * W ^ (C * s₀))) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul h2M hfac)
-      _ = Ks * W ^ (K₀ + C * s₀) := by rw [hKs, pow_add]; ring
-      _ ≤ K * W ^ K := Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hB1 (by omega))
-      _ ≤ K * W ^ K * 2 ^ (K * s / S) := Nat.le_mul_of_pos_right _ hX1
-  · -- From `s₀` on: the leaf size and the packet factor.
-    obtain ⟨hleaf, hp⟩ := hbig hlarge
-    have hlog : S ≤ Nat.sqrt (Nat.log 2 x.scale) := Nat.sqrt_log_two_mono hsm
-    have hMs : x.edges ≤ C * s / S :=
-      calc x.edges ≤ x.scale / Nat.sqrt (Nat.log 2 x.scale) := hleaf
-        _ ≤ x.scale / S := Nat.div_le_div_left hlog hS1
-        _ ≤ C * s / S := Nat.div_le_div_right hmC
-    have hfac : Pk ≤ 2 ^ (K₁ * s / S) := hK₁ s x.scale x.prec hs hsm hmC hp
-    have hCK : (C + K₁) * s ≤ K * s := Nat.mul_le_mul_right _ (by omega)
-    have hexp : C * s / S + K₁ * s / S ≤ K * s / S :=
-      Nat.div_add_div_le_add_div.trans (Nat.div_le_div_right (by rw [← add_mul]; exact hCK))
-    calc K₀ * W ^ K₀ * (2 ^ x.edges * Pk)
-        ≤ K₀ * W ^ K₀ * (2 ^ (C * s / S) * 2 ^ (K₁ * s / S)) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul (Nat.pow_le_pow_right (by norm_num) hMs) hfac)
-      _ = K₀ * W ^ K₀ * 2 ^ (C * s / S + K₁ * s / S) := by rw [pow_add]
-      _ ≤ K * W ^ K * 2 ^ (K * s / S) :=
-          Nat.mul_le_mul (Nat.mul_le_mul (by omega) hnK) (Nat.pow_le_pow_right (by norm_num) hexp)
-
-end FastContraction
-
-/-- **The root call has no packets.** -/
-theorem EntryContraction.packetShape_rootCall (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
-    FastContraction.PacketShape (EntryContraction.rootCall x) :=
-  FastContraction.packetShape_of_net_eq_rootNet rfl
-
-end Cslib.Circuits.Frontier
-
 namespace Cslib.Complexity.CountingSimulation
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.ContractionSchedule
@@ -209,10 +72,9 @@ variable {T : Type} {encT : T ↪ List Bool} {entry : T → List Bool → List �
 /-! ### The root -/
 
 /-- The parts of an encoded input `(P, fl, r, G)` against its length. -/
-theorem length_parts_le_encInput (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
-    x.1 + x.2.1.length + (encNat x.2.2.1).length +
-      (DescribedNetwork.encDescribed encT x.2.2.2).length ≤ (encInput encT x).length := by
-  obtain ⟨P, fl, r, G⟩ := x
+theorem length_parts_le_encInput (P : ℕ) (fl : List ℕ) (r : ℕ) (G : DescribedNetwork T) :
+    P + fl.length + (encNat r).length + (DescribedNetwork.encDescribed encT G).length ≤
+      (encInput encT (P, fl, r, G)).length := by
   have h := length_le_length_encList encNat fl
   simp only [encInput, length_encPair, encUnary_apply, List.length_replicate] at h ⊢
   omega
@@ -268,9 +130,8 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
   set m := G.numEdges with hm
   set n := (encInput encT (P, fl, r, G)).length with hn
   set Y := n + 1 with hY
-  have hparts := length_parts_le_encInput (encT := encT) (P, fl, r, G)
+  have hparts := length_parts_le_encInput (encT := encT) P fl r G
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
-  simp only at hparts
   rw [← hn] at hparts
   have hfl : fl = modulus m := by
     simp only [EntryContraction.guard, decide_eq_true_eq] at hg
@@ -440,9 +301,8 @@ theorem exists_entryLeaves_le
   set Y := n + 1 with hY
   set S := Nat.sqrt (Nat.log 2 s) with hS
   set L := (DescribedNetwork.encDescribed encT G).length with hL
-  have hparts := length_parts_le_encInput (encT := encT) (P, modulus G.numEdges, r, G)
+  have hparts := length_parts_le_encInput (encT := encT) P (modulus G.numEdges) r G
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
-  simp only at hparts
   rw [← hn] at hparts
   obtain ⟨hsc, hE2, hbig⟩ := hs₀ s P r G hs hPD hsm hmC hg y hy
   obtain ⟨-, hshape⟩ := hy.wf_packetShape (wf_rootCall hg) (packetShape_rootCall _)
@@ -556,9 +416,8 @@ theorem exists_entryAnalysis
   set x₀ := rootCall x with hx₀
   set m := G.numEdges with hm
   set n := (encInput encT x).length with hn
-  have hparts := length_parts_le_encInput (encT := encT) x
+  have hparts := length_parts_le_encInput (encT := encT) P (modulus G.numEdges) r G
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
-  simp only [hx] at hparts
   rw [← hx, ← hn] at hparts
   have hmn : m ≤ n := by omega
   have hp₀ : P ≤ D * m := hPD.trans (Nat.mul_le_mul_left _ hsm)
@@ -825,18 +684,20 @@ theorem exists_fastCore_le
   · rw [fastCore_time]
     simp only [hg, ↓reduceIte]
     have hrest : ((scheme entry nativeMk).run clock rootCall x).elim
-        ((directCore entry ce).time x) (fun v =>
-          (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).time (x, v) +
-            if decide (v.1 = 0) = true then
-              (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).time (x, v)
+        ((directCore entry ce).time x) (fun (tag, coeffs) =>
+          (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).time
+              (x, (tag, coeffs)) +
+            if decide (tag = 0) = true then
+              (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).time
+                (x, (tag, coeffs))
             else (NativeCertificate.ofPolyTime
-                (ComputableInPolyTime.fst (encInput encT) encValue)).time (x, v) +
+                (ComputableInPolyTime.fst (encInput encT) encValue)).time (x, (tag, coeffs)) +
               (directCore entry ce).time x) ≤ R₁ + R₂ := by
-      rcases hr : (scheme entry nativeMk).run clock rootCall x with _ | v
+      rcases hr : (scheme entry nativeMk).run clock rootCall x with _ | ⟨tag, coeffs⟩
       · by_cases hs₀ : s₀ ≤ s
         · rw [hbig hs₀] at hr; cases hr
         · simp only [Option.elim_none]; have := hdir (by omega); omega
-      · have hd := hdec v (Scheme.value_of_run_eq_some he hr)
+      · have hd := hdec (tag, coeffs) (Scheme.value_of_run_eq_some he hr)
         simp only [Option.elim_some]
         split_ifs with h0
         · omega
@@ -853,16 +714,18 @@ theorem exists_fastCore_le
   · rw [fastCore_space]
     simp only [hg, ↓reduceIte]
     have hrest : ((scheme entry nativeMk).run clock rootCall x).elim
-        ((directCore entry ce).space x) (fun v =>
-          (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).space (x, v) +
-            if decide (v.1 = 0) = true then
-              (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).space (x, v)
+        ((directCore entry ce).space x) (fun (tag, coeffs) =>
+          (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).space
+              (x, (tag, coeffs)) +
+            if decide (tag = 0) = true then
+              (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).space
+                (x, (tag, coeffs))
             else (NativeCertificate.ofPolyTime
-                (ComputableInPolyTime.fst (encInput encT) encValue)).space (x, v) +
+                (ComputableInPolyTime.fst (encInput encT) encValue)).space (x, (tag, coeffs)) +
               (directCore entry ce).space x) ≤ R₁ + R₂ := by
-      rcases hr : (scheme entry nativeMk).run clock rootCall x with _ | v
+      rcases hr : (scheme entry nativeMk).run clock rootCall x with _ | ⟨tag, coeffs⟩
       · simp only [Option.elim_none]; omega
-      · have hd := hdec v (Scheme.value_of_run_eq_some he hr)
+      · have hd := hdec (tag, coeffs) (Scheme.value_of_run_eq_some he hr)
         simp only [Option.elim_some]
         split_ifs <;> omega
     have htot := space_assemble (gS := (NativeCertificate.ofPolyTime

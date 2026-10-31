@@ -28,6 +28,10 @@ fields are bounded (`FastContraction.PacketBound`). It passes to the native chil
 at most `p + 40 m²` since `2 ^ a ≤ m`, and it adds at most `M (2 ^ a) ^ 12 ≤ m²` packet vertices
 (`NativeChild.numPackets_nativeParentPacking_le`).
 
+**Root descriptors** keep their number of ports along the recursion
+(`FastContraction.Reach.exists_root_of_inl`), since the native child renumbers the ports of the
+vertices it keeps (`NativeChild.exists_mem_of_mem_nativeChild_inl`).
+
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.FastContraction.PacketBound`: the bounded packet descriptors.
@@ -38,6 +42,8 @@ at most `p + 40 m²` since `2 ^ a ≤ m`, and it adds at most `M (2 ^ a) ^ 12 �
 * `Cslib.Circuits.Frontier.FastContraction.Shape.child`: the invariant passes to the native
   children.
 * `Cslib.Circuits.Frontier.FastContraction.Reach.shape`: every reached call satisfies it.
+* `Cslib.Circuits.Frontier.FastContraction.Reach.exists_root_of_inl`: root descriptors keep their
+  number of ports.
 
 ## References
 
@@ -314,5 +320,18 @@ theorem Reach.shape (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound + x₀
   | step c _ ha hc ih => exact ih.child h₀s h₀b ha hc
 
 end Child
+
+/-- **Root descriptors keep their number of ports along the recursion**: every root descriptor of a
+call reached by the native child builder is the descriptor of a vertex of the root with as many
+ports. -/
+theorem Reach.exists_root_of_inl {x₀ x : Call T} (h : Reach nativeMk x₀ x)
+    {v : List ℕ × VertexDesc T} (hv : v ∈ x.net.vertices) {t : T} (ht : v.2 = .inl t) :
+    ∃ w ∈ x₀.net.vertices, w.2 = .inl t ∧ w.1.length = v.1.length := by
+  induction h generalizing v with
+  | root => exact ⟨v, hv, ht, rfl⟩
+  | step c _ _ _ ih =>
+    obtain ⟨u, hu, hut, hlen⟩ := NativeChild.exists_mem_of_mem_nativeChild_inl hv ht
+    obtain ⟨w, hw, hwt, hwlen⟩ := ih hu hut
+    exact ⟨w, hw, hwt, hwlen.trans hlen⟩
 
 end Cslib.Circuits.Frontier.FastContraction

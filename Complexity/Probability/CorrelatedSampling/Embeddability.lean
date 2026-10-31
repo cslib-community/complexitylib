@@ -18,24 +18,24 @@ import Complexity.Probability.StatisticalDistance
 # Local embeddings
 
 A distribution `P₀` of pairs `(x, y)` is `ε`-*embeddable* in a distribution `P₁` of
-`((x, y), (s, t))` [Holenstein, Definition 7][Holenstein2009] if Alice, who holds `x`, and Bob, who
-holds `y`, can use shared randomness, but no communication, to produce `s` and `t` so that
+`((x, y), (s, t))` [Holenstein, Definition 5.1][Holenstein2009] if Alice, who holds `x`, and Bob,
+who holds `y`, can use shared randomness, but no communication, to produce `s` and `t` so that
 `((x, y), (s, t))` is within statistical distance `ε` of `P₁`
 (`Cslib.Probability.CorrelatedSampling.IsEmbeddable`).
 
-* **Lemma 8** (`isEmbeddable_diag`): a joint distribution `J` of `((x, y), s)` embeds its marginal
+* **Lemma 5.2** (`isEmbeddable_diag`): a joint distribution `J` of `((x, y), s)` embeds its marginal
   in `((x, y), (s, s))` with error `2 ε₁ + 2 ε₂`, where `ε₁` and `ε₂` are the distances of `J`
   from `P_{XY} P_{S | X}` and `P_{XY} P_{S | Y}`. This is the local embedding lemma of
   `Complexity/Probability/CorrelatedSampling/Embedding.lean` with the conditional distributions of
   `J` as kernels.
-* **Corollary 9** (`isEmbeddable_diag_of_dist_le`): the same holds for another input distribution
+* **Corollary 5.3** (`isEmbeddable_diag_of_dist_le`): the same holds for another input distribution
   `P₀`, measured by the distances of `J` from `P₀ P_{S | X}` and `P₀ P_{S | Y}`, with error
   `7 ε₁ + 2 ε₂`. Holenstein states the constant `3 ε₁ + 2 ε₂`; the proof here goes through the
   triangle inequality and the constant is this file's own.
-* **Lemma 10** (`isEmbeddable_bind_prod`): if `s` depends only on `x` and `t` only on `y`, the
+* **Lemma 5.4** (`isEmbeddable_bind_prod`): if `s` depends only on `x` and `t` only on `y`, the
   embedding is exact, by private randomness simulated with shared randomness.
-* **Fact 11** (`dist_filter_le_two_mul`): conditioning two distributions on an event of probability
-  `1 / 2` under both at most doubles their distance.
+* **Claim 6.1** (`dist_filter_le_two_mul`): conditioning two distributions on an event of
+  probability `1 / 2` under both at most doubles their distance.
 
 ## Main definitions
 
@@ -43,10 +43,10 @@ holds `y`, can use shared randomness, but no communication, to produce `s` and `
 
 ## Main results
 
-* `Cslib.Probability.CorrelatedSampling.isEmbeddable_diag`: Lemma 8.
-* `Cslib.Probability.CorrelatedSampling.isEmbeddable_diag_of_dist_le`: Corollary 9.
-* `Cslib.Probability.CorrelatedSampling.isEmbeddable_bind_prod`: Lemma 10.
-* `Cslib.Probability.CorrelatedSampling.dist_filter_le_two_mul`: Fact 11.
+* `Cslib.Probability.CorrelatedSampling.isEmbeddable_diag`: Lemma 5.2.
+* `Cslib.Probability.CorrelatedSampling.isEmbeddable_diag_of_dist_le`: Corollary 5.3.
+* `Cslib.Probability.CorrelatedSampling.isEmbeddable_bind_prod`: Lemma 5.4.
+* `Cslib.Probability.CorrelatedSampling.dist_filter_le_two_mul`: Claim 6.1.
 
 ## References
 
@@ -63,7 +63,7 @@ open scoped Cslib.Probability.PMF
 
 variable {X Y S T : Type} [Fintype X] [Fintype Y] [Fintype S] [Fintype T]
 
-/-- **Local embeddability** [Holenstein, Definition 7][Holenstein2009]: from `(x, y)` drawn from
+/-- **Local embeddability** [Holenstein, Definition 5.1][Holenstein2009]: from `(x, y)` drawn from
 `P₀`, Alice and Bob produce `s = fA x r` and `t = fB y r` from shared randomness `r ~ ρ` so that
 `((x, y), (s, t))` is within statistical distance `ε` of `P₁`. -/
 def IsEmbeddable (P₀ : PMF (X × Y)) (P₁ : PMF ((X × Y) × (S × T))) (ε : ℝ) : Prop :=
@@ -111,7 +111,7 @@ theorem isEmbeddable_withKernel (P₀ : PMF (X × Y)) (KX : X → PMF S) (KY : Y
   rw [← localSample_eq]
   exact dist_embed_le P₀ KX KY K
 
-/-- **Holenstein's Lemma 8** [Holenstein, Lemma 8][Holenstein2009]: a joint law `J` of
+/-- **Holenstein's Lemma 5.2** [Holenstein, Lemma 5.2][Holenstein2009]: a joint law `J` of
 `((x, y), s)` embeds its marginal in `((x, y), (s, s))` with error `2 ε₁ + 2 ε₂`, where `ε₁` and
 `ε₂` are the distances of `J` from `P_{XY} P_{S | X}` and `P_{XY} P_{S | Y}`. -/
 theorem isEmbeddable_diag (J : PMF ((X × Y) × S)) :
@@ -123,7 +123,7 @@ theorem isEmbeddable_diag (J : PMF ((X × Y) × S)) :
   rw [hJ, ← diag_eq, dist_comm (withKernel _ _) J, dist_comm (withKernel _ _) J] at h
   exact h
 
-/-- **Holenstein's Corollary 9** [Holenstein, Corollary 9][Holenstein2009], with the constant
+/-- **Holenstein's Corollary 5.3** [Holenstein, Corollary 5.3][Holenstein2009], with the constant
 `7 ε₁ + 2 ε₂` of this proof: if `J` is within `ε₁` of `P₀ P_{S | X}` and within `ε₂` of
 `P₀ P_{S | Y}`, then `P₀` embeds in `((x, y), (s, s))` under `J` with error `7 ε₁ + 2 ε₂`. -/
 theorem isEmbeddable_diag_of_dist_le (J : PMF ((X × Y) × S)) (P₀ : PMF (X × Y)) {ε₁ ε₂ : ℝ}
@@ -159,7 +159,7 @@ theorem isEmbeddable_diag_of_dist_le (J : PMF ((X × Y) × S)) (P₀ : PMF (X ×
   have hemb' : dist Out E ≤ 2 * dist A C + 2 * dist B C := hemb
   linarith
 
-/-- **Holenstein's Lemma 10** [Holenstein, Lemma 10][Holenstein2009], for the factorized law it
+/-- **Holenstein's Lemma 5.4** [Holenstein, Lemma 5.4][Holenstein2009], for the factorized law it
 characterizes: if `s` is drawn from `KS x` and `t` from `KT y`, independently, then `P₀` embeds
 exactly. Shared randomness simulates the private coins: it draws a random function for each party.
 -/
@@ -177,8 +177,9 @@ theorem isEmbeddable_bind_prod (P₀ : PMF (X × Y)) (KS : X → PMF S) (KT : Y 
     ← Cslib.Probability.PMF.pi_map_eval KT xy.2]
   simp only [PMF.map_comp, Function.comp_def]
 
-/-- **Holenstein's Fact 11** [Holenstein, Fact 11][Holenstein2009]: conditioning two distributions
-on an event of probability `1 / 2` under both at most doubles their statistical distance. -/
+/-- **Holenstein's Claim 6.1** [Holenstein, Claim 6.1][Holenstein2009]: conditioning two
+distributions on an event of probability `1 / 2` under both at most doubles their statistical
+distance. -/
 theorem dist_filter_le_two_mul {Z : Type*} [Fintype Z] (p q : PMF Z) (E : Set Z)
     (hp : (p.toOuterMeasure E).toReal = 1 / 2) (hq : (q.toOuterMeasure E).toReal = 1 / 2)
     (hpE : ∃ a ∈ E, a ∈ p.support) (hqE : ∃ a ∈ E, a ∈ q.support) :

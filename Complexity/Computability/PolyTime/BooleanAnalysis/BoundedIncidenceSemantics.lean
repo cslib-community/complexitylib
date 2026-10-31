@@ -83,7 +83,7 @@ Given `inp = ((n', k'), (b, w, M', β), (r, Q, R, A₀), eqs') : BranchEvalInput
 ## Main results
 
 * `Cslib.Complexity.SubexponentialSAT.SparsePolyCounter.evalBoundedIncidenceBranch_le_two_pow`:
-  unconditional upper bound `evalBoundedIncidenceBranch inp ≤ 2 ^ inp.1.1`.
+  unconditional upper bound `evalBoundedIncidenceBranch inp ≤ 2 ^ n'`.
 * `Cslib.Complexity.SubexponentialSAT.SparsePolyCounter.validBranchEvalParams_prepare_of_feasible`:
   passing `checkBranchFeasible` implies `validBranchEvalParams` on `prepareBranchEvalInput`.
 * `Cslib.Complexity.SubexponentialSAT.SparsePolyCounter.exists_refines_prepare_of_feasible`:
@@ -108,13 +108,7 @@ open Finset Cslib Cslib.BitString Cslib.Complexity Cslib.GenericRAM Cslib.Linear
 verifying structural nondegeneracy, unary parameter bounds against `n'`, auxiliary dimension bound
 `r_u ^ (2 * Q_u) ≤ n'`, variable range `< n'`, canonicality, and degree bound `≤ k'`. -/
 def validBranchEvalParams (inp : BranchEvalInput) : Bool :=
-  let n' := inp.1.1
-  let k' := inp.1.2
-  let r := inp.2.2.1.1
-  let Q := inp.2.2.1.2.1
-  let R := inp.2.2.1.2.2.1
-  let A₀ := inp.2.2.1.2.2.2
-  let eqs' := inp.2.2.2
+  let ((n', k'), _, (r, Q, R, A₀), eqs') := inp
   let Q_u := min n' Q
   let r_u := min n' r
   decide (1 ≤ n') && decide (2 ≤ r) && decide (1 ≤ R) && decide (R < Q) &&
@@ -165,21 +159,7 @@ abbrev GroupEvalCtx : Type :=
 belongs to the `indE`-restricted local cube and matches measurement slice `yg`, in which case it
 evaluates the product of cleared parity-factor jets over equations assigned to group `g` at `t`. -/
 def evalGroupFactorJet (p : GroupEvalCtx × (ℕ × List Bool)) : JetRows :=
-  let ctx := p.1
-  let ug := p.2.2
-  let n' := ctx.1.1
-  let J := ctx.1.2.1
-  let ℓ := ctx.1.2.2.1
-  let k' := ctx.1.2.2.2
-  let node := ctx.2.1.1
-  let dDen := ctx.2.1.2
-  let Vg := ctx.2.2.1.1
-  let Ctg := ctx.2.2.1.2.1
-  let yg := ctx.2.2.1.2.2
-  let indE := ctx.2.2.2.1.1
-  let indU := ctx.2.2.2.1.2.1
-  let xStar := ctx.2.2.2.1.2.2
-  let grpEqs := ctx.2.2.2.2
+  let (((n', J, ℓ, k'), (node, dDen), (Vg, Ctg, yg), (indE, indU, xStar), grpEqs), (_, ug)) := p
   if checkRestrictedGroup n' indE Vg ug &&
       decide (BooleanMeasurements.evalBoolMatrix Ctg ug = yg) then
     let x := applyGroupBits n' Vg ug xStar
@@ -209,22 +189,9 @@ Pass 1 (`BooleanMeasurements.search`) across all `g < r_u`, and when all fibers 
 Pass 2 (`CommonCountingAccum.streamGroupJetSum`) across all `g < r_u` and adds their `prodJet`. -/
 def measurementStepBody (inp : ((ℕ × ℕ) × List ℤ) × (MeasStepCtx × JetRows)) :
     MeasStepCtx × JetRows :=
-  let word := inp.1.2
-  let ctx := inp.2.1
-  let acc := inp.2.2
-  let n' := ctx.1.1
-  let r_u := ctx.1.2.1
-  let m_rows := ctx.1.2.2
-  let J := ctx.2.1.1
-  let ℓ := ctx.2.1.2.1
-  let k' := ctx.2.1.2.2
-  let node := ctx.2.2.1.1
-  let dDen := ctx.2.2.1.2
-  let vGroups_t := ctx.2.2.2.1.1
-  let grpMeas_t := ctx.2.2.2.1.2
-  let indE := ctx.2.2.2.2.1.1
-  let indU := ctx.2.2.2.2.1.2
-  let grpEqLists := ctx.2.2.2.2.2
+  let ((_, word), (ctx, acc)) := inp
+  let ((n', r_u, m_rows), (J, ℓ, k'), (node, dDen), (vGroups_t, grpMeas_t),
+    (indE, indU), grpEqLists) := ctx
   let repOpts : List (Option (List Bool)) := (List.range r_u).map fun g =>
     let Vg := vGroups_t.getD g []
     let dg := min (2 * n') Vg.length
@@ -256,28 +223,13 @@ abbrev SubsetStepCtx : Type :=
 `(indE, indU, oddSign)` via `MeasurementFold.run`. -/
 def subsetPairStepBody (inp : SubsetPairFold.DecodedPair × (SubsetStepCtx × JetRows)) :
     SubsetStepCtx × JetRows :=
-  let indE := inp.1.1
-  let indU := inp.1.2.1
-  let oddSign := inp.1.2.2
-  let ctx := inp.2.1
-  let acc := inp.2.2
-  let n' := ctx.1.1
-  let r_u := ctx.1.2.1
-  let m_rows := ctx.1.2.2
-  let c_meas := ctx.2.1.1
-  let D_cap := ctx.2.1.2
-  let J := ctx.2.2.1.1
-  let ℓ := ctx.2.2.1.2.1
-  let k' := ctx.2.2.1.2.2
-  let node := ctx.2.2.2.1.1
-  let dDen := ctx.2.2.2.1.2
-  let vGroups_t := ctx.2.2.2.2.1.1
-  let grpMeas_t := ctx.2.2.2.2.1.2
-  let grpEqLists := ctx.2.2.2.2.2
+  let ((indE, indU, oddSign), (ctx, acc)) := inp
+  let ((n', r_u, m_rows), (c_meas, D_cap), (J, ℓ, k'), (node, dDen),
+    (vGroups_t, grpMeas_t), grpEqLists) := ctx
   let measCtx : MeasStepCtx :=
     ((n', r_u, m_rows), (J, ℓ, k'), (node, dDen), (vGroups_t, grpMeas_t), (indE, indU), grpEqLists)
-  let measJet :=
-    (MeasurementFold.run measurementStepBody (c_meas, D_cap) (measCtx, zeroJet J ℓ)).2.2.2
+  let (_, _, _, measJet) :=
+    MeasurementFold.run measurementStepBody (c_meas, D_cap) (measCtx, zeroJet J ℓ)
   let signedJet := if oddSign then smulJet J ℓ (-1) measJet else measJet
   (ctx, addJet J ℓ acc signedJet)
 
@@ -293,15 +245,7 @@ than certifying arbitrary designs) and return `0`. -/
 def evalBoundedIncidenceBranch (inp : BranchEvalInput) : ℕ :=
   if !validBranchEvalParams inp then 0
   else
-    let n' := inp.1.1
-    let k' := inp.1.2
-    let b := inp.2.1.1
-    let w := inp.2.1.2.1
-    let r := inp.2.2.1.1
-    let Q := inp.2.2.1.2.1
-    let R := inp.2.2.1.2.2.1
-    let A₀ := inp.2.2.1.2.2.2
-    let eqs' := inp.2.2.2
+    let ((n', k'), (b, w, _, _), (r, Q, R, A₀), eqs') := inp
     let Q_u := min n' Q
     let R_u := min n' R
     let r_u := min n' r
@@ -341,7 +285,8 @@ def evalBoundedIncidenceBranch (inp : BranchEvalInput) : ℕ :=
 
 /-- `evalBoundedIncidenceBranch inp` never exceeds the ambient Boolean cube size `2 ^ n'`. -/
 theorem evalBoundedIncidenceBranch_le_two_pow (inp : BranchEvalInput) :
-    evalBoundedIncidenceBranch inp ≤ 2 ^ inp.1.1 := by
+    let ((n', _), _) := inp
+    evalBoundedIncidenceBranch inp ≤ 2 ^ n' := by
   unfold evalBoundedIncidenceBranch
   dsimp only
   split_ifs
@@ -657,12 +602,7 @@ parameters, `buildReplacementDesignData` refines a concrete `ReplacementDesign` 
 theorem exists_refines_prepare_of_feasible {N₀_branch n' : ℕ} {eqs' : List (List (List ℕ))}
     (hfeas : checkBranchFeasible N₀_branch (n', eqs') = true) :
     let inp := prepareBranchEvalInput (n', eqs')
-    let b := inp.2.1.1
-    let w := inp.2.1.2.1
-    let r := inp.2.2.1.1
-    let Q := inp.2.2.1.2.1
-    let R := inp.2.2.1.2.2.1
-    let A₀ := inp.2.2.1.2.2.2
+    let (_, (b, w, _, _), (r, Q, R, A₀), _) := inp
     let augScopes := withNeutralScopesList (eqs'.map equationVars) n'
     let edges := scopeIncidencesList n' augScopes
     let scheds := BalancedSchedules.constructBalancedSchedules

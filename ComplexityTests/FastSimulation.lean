@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Complexity.Classes.CountingSimulation.FastSimulation
 import Complexity.Computability.Complexity.Classes.Constructible.Log
 
-/-! # Nondeterministic and probabilistic time in time `2 ^ O(T / √log T)`: checked instances
+/-! # Counting, nondeterministic and probabilistic time in time `2 ^ O(T / √log T)`: checked
+instances
 
 The class containments at the clock `T n = (n + 1) ^ 2 + 1`, which is time-constructible and at
 least `max n 2`. -/
@@ -26,6 +27,22 @@ theorem timeConstructible_succ_sq_add_one : TimeConstructible fun n => (n + 1) ^
 /-- The clock `(n + 1) ^ 2 + 1` is at least `max n 2`. -/
 theorem max_le_succ_sq_add_one (n : ℕ) : max n 2 ≤ (n + 1) ^ 2 + 1 :=
   max_le (by nlinarith) (by have := Nat.one_le_pow 2 (n + 1) (Nat.succ_pos n); omega)
+
+example {α : Type} {enc : α ↪ List Bool} :
+    SharpTIME enc (fun n => (n + 1) ^ 2 + 1) ⊆ ⋃ C : ℕ, FTIME enc encNat fun n =>
+      2 ^ (C * ((n + 1) ^ 2 + 1) / Nat.sqrt (Nat.log 2 ((n + 1) ^ 2 + 1))) :=
+  SharpTIME_subset_iUnion_FTIME_two_pow_div_sqrt_log_two timeConstructible_succ_sq_add_one
+    max_le_succ_sq_add_one
+
+-- One machine within both bounds, writing the exact count in binary.
+example {α : Type} {enc : α ↪ List Bool} {f : α → ℕ}
+    (hf : f ∈ SharpTIME enc fun n => (n + 1) ^ 2 + 1) :
+    ∃ C d : ℕ, ComputableInTimeAndSpace f enc encNat
+      (fun a => 2 ^ (C * (((enc a).length + 1) ^ 2 + 1) /
+        Nat.sqrt (Nat.log 2 (((enc a).length + 1) ^ 2 + 1))))
+      (fun a => (((enc a).length + 1) ^ 2 + 1) ^ d) :=
+  exists_computableInTimeAndSpace_two_pow_div_sqrt_log_two_of_mem_SharpTIME
+    timeConstructible_succ_sq_add_one max_le_succ_sq_add_one hf
 
 example {α : Type} {enc : α ↪ List Bool} :
     NTIME enc (fun n => (n + 1) ^ 2 + 1) ⊆ ⋃ C, DTIME enc fun n =>
