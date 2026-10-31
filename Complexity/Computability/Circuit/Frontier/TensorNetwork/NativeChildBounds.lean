@@ -37,6 +37,8 @@ Both need `64 ^ a ≤ M`, under which the native packing is the packing of Lemma
 * `Cslib.Circuits.Frontier.NativeChild.sixteen_mul_numEdges_nativeChild_le`: at most `M / 16`
   edges.
 * `Cslib.Circuits.Frontier.NativeChild.length_le_of_mem_vertices_nativeChild`: the degree bound.
+* `Cslib.Circuits.Frontier.NativeChild.numPackets_nativeParentPacking_mul_le`: at most `3 M / L`
+  packets.
 
 ## References
 
@@ -174,6 +176,28 @@ theorem sixteen_mul_numEdges_nativeChild_le (hK : 64 ^ a ≤ D.numEdges) (hia : 
     rfl
   rw [e1, e2]
   omega
+
+include hD in
+/-- **At most `3 M / L` packets** (Lemma D.3 (1)) in the native packing of a rows-first parent with
+`M ≥ 64 ^ a` edges and maximum degree `Δ`, under (D.6): `2 Δ D² ≤ M` and `L D ≤ M`,
+`D = 64 ^ (2 a)`, `L = 2 ^ a`. -/
+theorem numPackets_nativeParentPacking_mul_le (hK : 64 ^ a ≤ D.numEdges) {Δ : ℕ}
+    (hdeg : ∀ v ∈ D.vertices, v.1.length ≤ Δ) (hM : 2 * Δ * (64 ^ (2 * a)) ^ 2 ≤ D.numEdges)
+    (hL : 2 ^ a * 64 ^ (2 * a) ≤ D.numEdges) :
+    (nativeParentPacking r a D).2.1 * 2 ^ a ≤ 3 * D.numEdges := by
+  have hdeg' (v : ℕ) : (D.vertices.getD v ([], .inl [])).1.length ≤ Δ := by
+    by_cases hv : v < D.vertices.length
+    · rw [List.getD_eq_getElem _ _ hv]
+      exact hdeg _ (List.getElem_mem hv)
+    · rw [List.getD_eq_default _ _ (by omega)]
+      exact Nat.zero_le _
+  have h := PacketPacking.numPackets_packing_mul_le (rowOfP hD) (colOfP hD) a 64
+    (fun v => (card_rowOfP_le hD v).trans (hdeg' _))
+    (fun w => (card_colOfP_le hD w).trans (hdeg' _))
+    (by rwa [Fintype.card_fin]) (by rwa [Fintype.card_fin])
+  rw [Fintype.card_fin] at h
+  rw [nativeParentPacking_eq hD hK]
+  exact h
 
 /-- At most `2 ^ a` edges lie in a packet of a packing. -/
 theorem card_packet_le {E R C : Type*} [Fintype E] {rowOf : E → R} {colOf : E → C} {r : ℕ}
