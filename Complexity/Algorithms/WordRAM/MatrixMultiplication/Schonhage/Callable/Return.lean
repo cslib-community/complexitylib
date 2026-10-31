@@ -56,7 +56,7 @@ theorem exec_restoreInput {W b n M : ℕ} (x : Data 163) (hb : x.regs Reg.base =
       (ram[ Reg.result ← Reg.base; Reg.second ← Reg.inputSize;
         Reg.third ← Reg.modulus ]) x z 3 := by
     ram_eval [z, hb, hn, hm, Reg.result, Reg.second, Reg.third, Reg.base, Reg.inputSize,
-      Reg.modulus, QueriedProduct.inputSize, Fin.mk.injEq]
+      Reg.modulus, QueriedProduct.Reg.inputSize, Fin.mk.injEq]
   obtain ⟨y, hy, ym, yr, yh⟩ := exec_normalizeBank (W := W) (b := b) (n := n) (M := M) z
     (by simp [z, Reg.result, Reg.second, Reg.third])
     (by simp [z, Reg.second, Reg.third]) (by simp [z]) hM hfit
@@ -83,8 +83,8 @@ theorem exec_returnOutput {W b o n M : ℕ} (x : Data 163) (hb : x.regs Reg.base
       (ram[ Reg.result ← Reg.base + Reg.output;
         Reg.second ← Reg.queryCount; Reg.third ← Reg.modulus ]) x z 3 := by
     ram_eval [z, hb, ho, hn, hm, haddr, Reg.result, Reg.second, Reg.third, Reg.base,
-      Reg.output, Reg.queryCount, Reg.modulus, QueriedProduct.output,
-      QueriedProduct.queryCount, Fin.mk.injEq]
+      Reg.output, Reg.queryCount, Reg.modulus, QueriedProduct.Reg.output,
+      QueriedProduct.Reg.queryCount, Fin.mk.injEq]
   obtain ⟨y, hy, ym, yr, yh⟩ :=
     exec_normalizeBank (W := W) (b := b + o) (n := n) (M := M) z
     (by simp [z, Reg.result, Reg.second, Reg.third])

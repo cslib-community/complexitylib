@@ -574,25 +574,6 @@ section PolyTime
 open ComputableInPolyTime
 variable {Input : Type} {encIn : Input ↪ List Bool}
 
-private theorem rdb_listAppend {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × List α => p.1 ++ p.2)
-      (encPair (encList enc) (encList enc)) (encList enc) := by fun_prop
-
-private theorem rdb_cons {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : α × List α => p.1 :: p.2)
-      (encPair enc (encList enc)) (encList enc) := by fun_prop
-
-private theorem rdb_listIsEmpty {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (List.isEmpty (α := α)) (encList enc) encBool := by fun_prop
-
-private theorem rdb_listZip {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × List β => p.1.zip p.2)
-      (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) := by fun_prop
-
-private theorem rdb_idxOf {α : Type} [DecidableEq α] (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × α => p.1.idxOf p.2)
-      (encPair (encList enc) enc) encUnary := by fun_prop
-
 private theorem rdb_two_mul_unary :
     ComputableInPolyTime (fun n : ℕ => 2 * n) encUnary encUnary := by fun_prop
 
@@ -604,8 +585,8 @@ private theorem rdb_two_mul_unary :
     ComputableInPolyTime (fun x => withNeutralScopesList (scopes x) (n_free x))
       encIn (encList (encList encNat)) := by
   unfold withNeutralScopesList
-  refine (rdb_listAppend (encList encNat)).comp (hscopes.prod (mapWithInput (range.comp hn) ?_))
-  exact (rdb_cons encNat).comp ((unary_to_binary.comp (snd encIn encUnary)).prod (const []))
+  refine listAppend' hscopes (mapWithInput (range.comp hn) ?_)
+  exact cons' (unary_to_binary.comp (snd encIn encUnary)) (const [])
 
 /-- `withNeutralScopesList` is computable in polynomial time with `n_free` in `encUnary`. -/
 @[fun_prop] theorem computableInPolyTime_withNeutralScopesList :
@@ -673,7 +654,7 @@ private theorem rdb_two_mul_unary :
     ComputableInPolyTime
       (fun x => normalizeScopeSchedules (n_free x) (Q x) (r x) (scopes x) (schedScope x))
       encIn (encList (encList encNat)) := by
-  have hempty := (rdb_listIsEmpty encNat).comp
+  have hempty := (listIsEmpty (encA := encNat)).comp
     (rdb_canonicalScopeVars (hn.comp (fst encIn encUnary))
       ((listGetD []).comp ((hscopes.comp (fst encIn encUnary)).prod (snd encIn encUnary))))
   have hrep : ComputableInPolyTime (fun p : Input × ℕ => List.replicate (Q p.1) (0 : ℕ))
@@ -813,7 +794,7 @@ private theorem proj_poly {Out : Type} {encOut : Out ↪ List Bool}
     rwa [heq] at hmin
   have hh_bin : ComputableInPolyTime hFn encIn encNat := unary_to_binary.comp hh_unary
   have hpls : ComputableInPolyTime plsFn encIn (encList (encPair encNat encNat)) :=
-    (rdb_listZip encNat encNat).comp
+    (zip encNat encNat).comp
       ((computableInPolyTime_fiberRanksWithInput hlabels).prod hlabels)
   have hbMeas := computableInPolyTime_auxMeasurementRowsBounded hD hQ hr hA₀ hR
   have hbRepl := computableInPolyTime_auxReplacementTableBounded hD hQ hr hA₀ hR
@@ -864,7 +845,7 @@ private theorem proj_poly {Out : Type} {encOut : Out ↪ List Bool}
   have hrows := computableInPolyTime_replacementRows hdata
   unfold ReplacementDesignData.lookupReplacementRow
   exact (listGetD []).comp (hrows.prod
-    ((rdb_idxOf (encPair encNat encNat)).comp (hincs.prod (hf.prod hv))))
+    ((idxOf (encPair encNat encNat)).comp (hincs.prod (hf.prod hv))))
 
 end PolyTime
 

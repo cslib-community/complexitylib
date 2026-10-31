@@ -29,7 +29,7 @@ into the tidy normal form
 (`Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_computableTidilyInTimeAndSpace`), whose
 machines compose. Functions computable within bounds in the senses of
 `Turing.MultiTapeTM.ComputableInTimeAndSpace`, `Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace`,
-`Turing.MultiTapeTM.ComputableTidilyInO`, `Turing.MultiTapeTM.ComputableTidilyInDegree` and
+`Turing.MultiTapeTM.ComputableTidilyInDegree` and
 `Turing.MultiTapeTM.ComputableTidilyInPolyTime` are computable (their `.isComputable` lemmas), and
 decidable sets are closed under complement.
 
@@ -73,12 +73,6 @@ variable {α β γ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Boo
 theorem ComputableTidilyInTimeAndSpace.isComputable {f : α → β} {t s : α → ℕ}
     (h : ComputableTidilyInTimeAndSpace f encIn encMid t s) : IsComputable f encIn encMid :=
   h.computableInTimeAndSpace.isComputable
-
-/-- Functions tidily computable up to constants are computable. -/
-theorem ComputableTidilyInO.isComputable {f : α → β} {T S : α → ℕ}
-    (h : ComputableTidilyInO f encIn encMid T S) : IsComputable f encIn encMid :=
-  let ⟨_, h, _⟩ := h
-  h.isComputable
 
 /-- Functions tidily computable within bounds of given degrees are computable. -/
 theorem ComputableTidilyInDegree.isComputable {f : α → β} {d e : ℕ}
