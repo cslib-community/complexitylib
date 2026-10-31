@@ -278,20 +278,20 @@ section Exec
 
 variable {w : ℕ} {x : Data (regs k)}
 
-theorem execWithin_skip : ExecWithin w (skip (k := k)) x x 1 := by
+private theorem execWithin_skip : ExecWithin w (skip (k := k)) x x 1 := by
   have h := ExecWithin.copy (B := .additive) (w := w) (x := x) (d := rZero) (s := rZero)
   have hx : x.set rZero (x.regs rZero) = x := by ext <;> simp [Data.set]
   rwa [hx] at h
 
-theorem execWithin_add {d i j : Fin (regs k)} (h : Fits w (x.regs i + x.regs j)) :
+private theorem execWithin_add {d i j : Fin (regs k)} (h : Fits w (x.regs i + x.regs j)) :
     ExecWithin w (addC d i j) x (x.set d (x.regs i + x.regs j)) 1 :=
   ExecWithin.alu rfl h
 
-theorem execWithin_sub {d i j : Fin (regs k)} (h : Fits w (x.regs i - x.regs j)) :
+private theorem execWithin_sub {d i j : Fin (regs k)} (h : Fits w (x.regs i - x.regs j)) :
     ExecWithin w (subC d i j) x (x.set d (x.regs i - x.regs j)) 1 :=
   ExecWithin.alu rfl h
 
-theorem execWithin_const {d : Fin (regs k)} {v : ℕ} (h : Fits w v) :
+private theorem execWithin_const {d : Fin (regs k)} {v : ℕ} (h : Fits w v) :
     ExecWithin w (constC d v) x (x.set d v) 1 :=
   ExecWithin.const h
 
@@ -489,7 +489,7 @@ section Pieces
 
 variable {n w : ℕ} {e : Q ≃ Fin m}
 
-theorem Consts.of_eq {x y : Data (regs k)} (h : Consts n m x)
+private theorem Consts.of_eq {x y : Data (regs k)} (h : Consts n m x)
     (hy : ∀ d : Fin (regs k), d.val < 12 → d ≠ rState → d ≠ rHead → d ≠ rTmp → d ≠ rCur →
       d ≠ rVal → d ≠ rPow → y.regs d = x.regs d) : Consts n m y where
   zero := (hy rZero (by simp) (by reg_ne) (by reg_ne) (by reg_ne) (by reg_ne) (by reg_ne)
@@ -505,7 +505,7 @@ theorem Consts.of_eq {x y : Data (regs k)} (h : Consts n m x)
   lim := (hy rLim (by simp) (by reg_ne) (by reg_ne) (by reg_ne) (by reg_ne) (by reg_ne)
     (by reg_ne)).trans h.lim
 
-theorem TapesRel.set {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
+private theorem TapesRel.set {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
     (h : TapesRel n x T P) {d : Fin (regs k)} (hd : d.val < 12) (v : ℕ) :
     TapesRel n (x.set d v) T P where
   sgn i := by rw [Data.set_regs, Function.update_of_ne (by reg_ne)]; exact h.sgn i
@@ -513,7 +513,7 @@ theorem TapesRel.set {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P 
   tape := h.tape
 
 /-- Setting a scratch register preserves the invariant. -/
-theorem Sim.set_scratch {inp : List Bool} {x : Data (regs k)} {c : Cfg k Bool Q inp}
+private theorem Sim.set_scratch {inp : List Bool} {x : Data (regs k)} {c : Cfg k Bool Q inp}
     (h : Sim e x c) {d : Fin (regs k)} (hd : d = rTmp ∨ d = rCur) (v : ℕ) :
     Sim e (x.set d v) c := by
   rcases hd with rfl | rfl <;>
@@ -526,7 +526,8 @@ theorem Sim.set_scratch {inp : List Bool} {x : Data (regs k)} {c : Cfg k Bool Q 
           input := h.input }
 
 /-- Dispatch selects the body of the value held in the register. -/
-theorem dispatch_spec {reg : Fin (regs k)} (hreg : reg ≠ rTmp) {body : ℕ → Code .additive (regs k)}
+private theorem dispatch_spec {reg : Fin (regs k)} (hreg : reg ≠ rTmp)
+    {body : ℕ → Code .additive (regs k)}
     {v T : ℕ} {y : Data (regs k)} :
     ∀ {N : ℕ} {x : Data (regs k)}, x.regs reg = v → v < N → N ≤ 2 ^ w →
       ExecWithin w (body v) (x.set rTmp v) y T →
@@ -545,13 +546,13 @@ theorem dispatch_spec {reg : Fin (regs k)} (hreg : reg ≠ rTmp) {body : ℕ →
       refine ((execWithin_const hfit).seq (ExecWithin.branch_neg ?_ hrest)).mono (by omega)
       simp only [Cond.holds_eq]; reg_simp; exact fun he => h (hv ▸ he)
 
-theorem symCode_le (s : Option Bool) : symCode s ≤ 2 := by
+private theorem symCode_le (s : Option Bool) : symCode s ≤ 2 := by
   rcases s with _ | _ | _ <;> simp [symCode]
 
-theorem newTape_none (t : ℤ → Option Bool) (p : ℤ) : newTape t p none = t := rfl
+private theorem newTape_none (t : ℤ → Option Bool) (p : ℤ) : newTape t p none = t := rfl
 
 /-- Writing on tape `i`. -/
-theorem writeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
+private theorem writeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
     (hT : TapesRel n x T P) (i : Fin k) (wr : Option (Option Bool)) (h2 : Fits w 2) :
     ∃ y, ExecWithin w (writeCode i wr) x y 2 ∧
       TapesRel n y (Function.update T i (newTape (T i) (P i) wr)) P ∧
@@ -590,7 +591,7 @@ theorem writeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {
       rw [Function.update_of_ne (by have := lt_tapeAddr k n i (P i); omega)]
 
 /-- Changing only the registers of tape `i` moves its head. -/
-theorem TapesRel.update {x y : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
+private theorem TapesRel.update {x y : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
     (h : TapesRel n x T P) (i : Fin k) (p : ℤ)
     (hs : y.regs (rSgn i) = sgnOf p) (ha : y.regs (rAdr i) = tapeAddr k n i p)
     (hy : ∀ d, d ≠ rSgn i → d ≠ rAdr i → y.regs d = x.regs d) (hm : y.mem = x.mem) :
@@ -606,7 +607,7 @@ theorem TapesRel.update {x y : Data (regs k)} {T : Fin k → ℤ → Option Bool
   tape := hm ▸ h.tape
 
 /-- Moving the head of tape `i`. -/
-theorem moveCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
+private theorem moveCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
     (hT : TapesRel n x T P) (hc : Consts n m x) (i : Fin k) (d : SignType)
     (hfit : Fits w (tapeAddr k n i (P i + d))) (h1 : Fits w 1) :
     ∃ y, ExecWithin w (moveCode i d) x y 6 ∧ TapesRel n y T (Function.update P i (P i + d)) ∧
@@ -694,7 +695,7 @@ theorem moveCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P
       all_goals intro d hd₁ hd₂; reg_simp
 
 /-- The action on tape `i`: write, then move. -/
-theorem tapeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
+private theorem tapeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
     (hT : TapesRel n x T P) (hc : Consts n m x) (i : Fin k) (a : Option (Option Bool) × SignType)
     (hfit : Fits w (tapeAddr k n i (P i + a.2))) (h2 : Fits w 2) :
     ∃ y, ExecWithin w (tapeCode i a) x y 8 ∧
@@ -709,7 +710,7 @@ theorem tapeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P
     fun b hb => by rw [hm₂, hm₁ b hb]⟩
 
 /-- The actions on the work tapes in a list without repetitions. -/
-theorem tapesCode_spec (act : Action k Bool Q) :
+private theorem tapesCode_spec (act : Action k Bool Q) :
     ∀ (L : List (Fin k)), L.Nodup → ∀ {x : Data (regs k)} {T : Fin k → ℤ → Option Bool}
       {P : Fin k → ℤ}, TapesRel n x T P → Consts n m x → Fits w 2 →
       (∀ i ∈ L, Fits w (tapeAddr k n i (P i + (act.workTapes i).2))) →
@@ -749,7 +750,7 @@ theorem tapesCode_spec (act : Action k Bool Q) :
     · intro d hd ht; rw [hr₂ d hd ht, hr₁ d (by reg_ne) (by reg_ne) ht]
     · intro b hb; rw [hm₂ b hb, hm₁ b hb]
 
-theorem TapesRel.of_eq {x y : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
+private theorem TapesRel.of_eq {x y : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
     (h : TapesRel n x T P) (hr : ∀ d : Fin (regs k), 12 ≤ d.val → y.regs d = x.regs d)
     (hm : y.mem = x.mem) : TapesRel n y T P where
   sgn i := (hr _ (by simp)).trans (h.sgn i)
@@ -757,7 +758,7 @@ theorem TapesRel.of_eq {x y : Data (regs k)} {T : Fin k → ℤ → Option Bool}
   tape := hm ▸ h.tape
 
 /-- Moving the input head. -/
-theorem headCode_spec {x : Data (regs k)} (hc : Consts n m x) {p : Fin (n + 2)}
+private theorem headCode_spec {x : Data (regs k)} (hc : Consts n m x) {p : Fin (n + 2)}
     (hp : x.regs rHead = p) (d : SignType) (hfit : Fits w (n + 1)) :
     ∃ y, ExecWithin w (headCode d) x y 3 ∧ y.regs rHead = moveInputPos p d ∧
       (∀ r, r ≠ rHead → y.regs r = x.regs r) ∧ y.mem = x.mem := by
@@ -788,7 +789,7 @@ theorem headCode_spec {x : Data (regs k)} (hc : Consts n m x) {p : Fin (n + 2)}
       · intro r hr; reg_simp
 
 /-- Appending a symbol to the output tape. -/
-theorem outCode_spec {x : Data (regs k)} {l : List Bool} (hv : x.regs rVal = outValue l)
+private theorem outCode_spec {x : Data (regs k)} {l : List Bool} (hv : x.regs rVal = outValue l)
     (hp : x.regs rPow = 2 ^ l.length) (o : Option Bool) (hfit : (l ++ o.toList).length < w) :
     ∃ y, ExecWithin w (outCode o) x y 2 ∧ y.regs rVal = outValue (l ++ o.toList) ∧
       y.regs rPow = 2 ^ (l ++ o.toList).length ∧
@@ -817,10 +818,10 @@ theorem outCode_spec {x : Data (regs k)} {l : List Bool} (hv : x.regs rVal = out
       · reg_simp; exact hpp
       · intro r h₁ h₂; reg_simp
 
-theorem stateCode_le (e : Q ≃ Fin m) (q : Option Q) : stateCode e q ≤ m := by
+private theorem stateCode_le (e : Q ≃ Fin m) (q : Option Q) : stateCode e q ≤ m := by
   cases q <;> simp [stateCode, Nat.le_of_lt]
 
-theorem apply_workTapes_eq (act : Action k Bool Q) {inp : List Bool}
+private theorem apply_workTapes_eq (act : Action k Bool Q) {inp : List Bool}
     (c : Cfg k Bool Q inp) :
     (act.apply c).workTapes =
       fun i => newTape (c.workTapes i) (c.workTapePos i) (act.workTapes i).1 := by
@@ -829,7 +830,7 @@ theorem apply_workTapes_eq (act : Action k Bool Q) {inp : List Bool}
   cases (act.workTapes i).1 <;> rfl
 
 /-- Applying an action. -/
-theorem actionCode_spec (act : Action k Bool Q) {inp : List Bool} {c : Cfg k Bool Q inp}
+private theorem actionCode_spec (act : Action k Bool Q) {inp : List Bool} {c : Cfg k Bool Q inp}
     {x : Data (regs k)} (hx : Sim e x c)
     (hfit : ∀ i, Fits w (tapeAddr k inp.length i ((act.apply c).workTapePos i)))
     (hbound : inp.length + 2 * k + m + 2 < 2 ^ w) (hout : (act.apply c).output.length < w) :
@@ -866,7 +867,7 @@ theorem actionCode_spec (act : Action k Bool Q) {inp : List Bool} {c : Cfg k Boo
     exact hx.input j hj
 
 /-- Reading the symbols under the work heads. -/
-theorem tapesTree_spec {inp : List Bool} {c : Cfg k Bool Q inp}
+private theorem tapesTree_spec {inp : List Bool} {c : Cfg k Bool Q inp}
     (next : (Fin k → Option Bool) → Code .additive (regs k)) {T : ℕ} {post : Data (regs k) → Prop}
     (hnext : ∀ x, Sim e x c → ∃ y, ExecWithin w (next c.workTapeSymbols) x y T ∧ post y) :
     ∀ rem, rem ≤ k → ∀ acc : Fin k → Option Bool,
@@ -917,7 +918,7 @@ theorem tapesTree_spec {inp : List Bool} {c : Cfg k Bool Q inp}
         · simp only [Cond.holds_eq, hc1, ho, hs, symCode]; decide
 
 /-- Reading the input symbol. -/
-theorem inputTree_spec {inp : List Bool} {c : Cfg k Bool Q inp}
+private theorem inputTree_spec {inp : List Bool} {c : Cfg k Bool Q inp}
     (next : Option Bool → Code .additive (regs k)) {T : ℕ} {post : Data (regs k) → Prop}
     (hnext : ∀ x, Sim e x c → ∃ y, ExecWithin w (next c.inputSymbol) x y T ∧ post y)
     {x : Data (regs k)} (hx : Sim e x c) :
@@ -991,7 +992,7 @@ theorem stepCode_spec (δ : Q → Option Bool → (Fin k → Option Bool) → Ac
   · unfold stepCost; omega
 
 /-- Placing the heads of the work tapes in a list without repetitions. -/
-theorem setupTapes_spec : ∀ (L : List (Fin k)), L.Nodup → ∀ {x : Data (regs k)},
+private theorem setupTapes_spec : ∀ (L : List (Fin k)), L.Nodup → ∀ {x : Data (regs k)},
     x.regs rEnd = n + 1 → n + 1 + 2 * k < 2 ^ w →
     ∃ y, ExecWithin w (setupTapes L) x y (2 * L.length + 1) ∧
       (∀ i, y.regs (rAdr i) = if i ∈ L then n + 1 + 2 * i else x.regs (rAdr i)) ∧
