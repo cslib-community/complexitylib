@@ -15,7 +15,8 @@ public import Complexity.Crypto.Computational.Encryption.Basic
 A `CommitmentScheme` specifies the exact commitment distribution and verification rule under
 public parameters. Its injective public encoding makes every honest operation depend on the
 parameters shown to the adversary. Efficient evaluation and realization of the ideal distributions
-are separate properties.
+are separate properties. `Commitment/PublicOperations` supplies certificates for deterministic
+evaluation on supplied randomness and verification, using exactly this public encoding.
 
 Chosen-message hiding reuses `Encryption.WordAdversary`, with its explicit saved state and uniform
 strict-PPT certificates. Binding asks an adversary for two distinct messages and openings of the

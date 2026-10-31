@@ -13,6 +13,9 @@ Provides concrete instantiations of `MACScheme` (both a trivial scheme and `prfM
 identity-keyed evaluator `fun _ m => m`), verifies that `OneTimeEUFCMA` and `EUFCMA` reject the
 trivial scheme via an explicit zero-query PPT forger, and checks `prfMAC` tagging/verification
 and `macToPrfDistinguisher` on concrete inputs.
+
+`OneTimeSUFCMA` rejects the trivial scheme, and rejects the randomized-tag scheme through one
+signing query and a flipped tag bit; the same forger always loses the fresh-message one-time game.
 -/
 
 namespace ComplexityTests.Crypto.MAC
@@ -199,6 +202,72 @@ theorem succProbability_eufCma_lt_sufCma_sameMessageNewTagForger (n : ℕ) :
   rw [eval_eufCmaGame_randomizedTagMACScheme_sameMessageNewTagForger,
     eval_sufCmaGame_randomizedTagMACScheme_sameMessageNewTagForger]
   simp [Game.succProbability]
+
+/-! ### Strong one-time unforgeability (`OneTimeSUFCMA`) -/
+
+/-- The trivial MAC scheme is not strongly one-time unforgeable. -/
+theorem not_oneTimeSUFCMA_trivialMACScheme :
+    ¬ trivialMACScheme.OneTimeSUFCMA :=
+  fun h => not_oneTimeEUFCMA_trivialMACScheme h.oneTimeEUFCMA
+
+/-- The one-time oracle answers the first query of `sameMessageNewTagForger`, so in the strong
+one-time game the forger always wins: its pair `(0^n, [!b])` is valid and differs from the recorded
+pair `(0^n, [b])`. -/
+theorem eval_sufOneTimeGame_randomizedTagMACScheme_sameMessageNewTagForger (n : ℕ) :
+    ProbComp.eval (randomizedTagMACScheme.sufOneTimeGame sameMessageNewTagForger n) =
+      PMF.pure true := by
+  simp only [MACScheme.sufOneTimeGame, randomizedTagMACScheme, sameMessageNewTagForger,
+    Functor.map_map, OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, PMF.pure_bind, PMF.bind_map,
+    Function.comp_def]
+  dsimp only [StateT.run, MACScheme.oneTimeSigningPairOracle]
+  simp only [List.isEmpty_nil, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind,
+    PMF.pure_bind]
+  have hcongr : PMF.bind (ProbComp.eval (BitString.sampleList 1))
+      (fun tag : List Bool =>
+        PMF.pure (((List.replicate n false).length == n) &&
+          !([(List.replicate n false, tag)].contains
+            (List.replicate n false, [!(tag.take 1).headD false])) &&
+          ([!(tag.take 1).headD false].length == 1))) =
+      PMF.bind (ProbComp.eval (BitString.sampleList 1)) (fun _ => PMF.pure true) := by
+    refine PMF.bind_congr_on_support _ _ _ fun tag htag => ?_
+    rw [BitString.eval_sampleList] at htag
+    have hlen : tag.length = 1 := BitString.length_of_mem_support_uniformList htag
+    obtain ⟨b, rfl⟩ := List.length_eq_one_iff.mp hlen
+    cases b <;> simp
+  rw [hcongr, PMF.bind_const]
+
+/-- In the fresh-message one-time game the same forger always loses, because it forges on the
+message it queried. -/
+theorem eval_eufOneTimeGame_randomizedTagMACScheme_sameMessageNewTagForger (n : ℕ) :
+    ProbComp.eval (randomizedTagMACScheme.eufOneTimeGame sameMessageNewTagForger n) =
+      PMF.pure false := by
+  simp only [MACScheme.eufOneTimeGame, randomizedTagMACScheme, sameMessageNewTagForger,
+    Functor.map_map, OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
+    ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, PMF.pure_bind, PMF.bind_map,
+    Function.comp_def]
+  dsimp only [StateT.run, MACScheme.oneTimeSigningOracle]
+  simp only [List.isEmpty_nil, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind,
+    PMF.pure_bind]
+  have hcongr : PMF.bind (ProbComp.eval (BitString.sampleList 1))
+      (fun tag : List Bool =>
+        PMF.pure (((List.replicate n false).length == n) &&
+          !([List.replicate n false].contains (List.replicate n false)) &&
+          ([!(tag.take 1).headD false].length == 1))) =
+      PMF.bind (ProbComp.eval (BitString.sampleList 1)) (fun _ => PMF.pure false) := by
+    refine PMF.bind_congr_on_support _ _ _ fun tag _ => ?_
+    simp
+  rw [hcongr, PMF.bind_const]
+
+/-- **The randomized-tag scheme is not strongly one-time unforgeable**: one signing query and a
+flipped tag bit forge with probability `1`. -/
+theorem not_oneTimeSUFCMA_randomizedTagMACScheme :
+    ¬ randomizedTagMACScheme.OneTimeSUFCMA := by
+  intro hsec
+  have hneg := hsec.negligible sameMessageNewTagForger isOraclePPT_sameMessageNewTagForger
+  simp only [eval_sufOneTimeGame_randomizedTagMACScheme_sameMessageNewTagForger,
+    Game.succProbability, PMF.pure_apply, ite_true, ENNReal.toNNReal_one] at hneg
+  exact not_negligible_const one_ne_zero hneg
 
 /-! ### Schedule reindexing (`MACScheme.reindex`) -/
 

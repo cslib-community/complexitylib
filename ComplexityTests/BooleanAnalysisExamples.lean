@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.PropertyTesting.Linearity
 import Complexity.Foundations.BooleanAnalysis.HadamardTester
 import Complexity.Foundations.BooleanAnalysis.Hypercontractivity.Derivative
 import Complexity.Foundations.BooleanAnalysis.MirrorSets
@@ -79,6 +80,44 @@ example (S : Finset (Fin 2)) :
       rw [Fintype.card_fin] at hT
       linarith
     exact Nat.lt_succ_iff.mp (by exact_mod_cast h)
+
+-- The repeated tester reuses the same BLR local test and its checked acceptance probability.
+example : ((PCP.HadamardTester.blrTest (Fin 2)).repeatAll 2).acceptProb and₂ = 25 / 64 := by
+  rw [PCP.LocalTest.acceptProb_repeatAll, PCP.HadamardTester.acceptProb_blrTest,
+    blrAcceptance_and₂]
+  norm_num
+
+-- Every parity is at distance at least 1/4, so the generic soundness bound gives (3/4)^2.
+example : ((PCP.HadamardTester.blrTest (Fin 2)).repeatAll 2).acceptProb and₂ ≤ 9 / 16 := by
+  have hdist : ∀ S : Finset (Fin 2), 1 ≤ hammingDist and₂ (parityOn S) := by decide
+  have hfar (S : Finset (Fin 2)) :
+      (1 / 4 : ℝ) ≤ (hammingDist and₂ (parityOn S) : ℝ) / 2 ^ Fintype.card (Fin 2) := by
+    have h : (1 : ℝ) ≤ hammingDist and₂ (parityOn S) := by exact_mod_cast hdist S
+    norm_num only [Fintype.card_fin]
+    linarith
+  have h := acceptProb_repeatAll_blrTest_le hfar 2
+  norm_num at h ⊢
+  exact h
+
+-- This seed queries the two singletons and their sum: conjunction fails the BLR equation.
+example :
+    ((PCP.HadamardTester.blrTest (Fin 2)).decisionTree
+      (![true, false], ![false, true])).eval and₂ = false := by decide
+
+example :
+    ((PCP.HadamardTester.blrTest (Fin 2)).decisionTree
+      (![true, false], ![false, true])).eval (parityOn {0, 1}) = true := by decide
+
+example :
+    (((PCP.HadamardTester.blrTest (Fin 2)).repeatAll 2).decisionTree
+      (fun _ => (![true, false], ![false, true]))).depth = 6 := by decide
+
+-- On the empty cube the only table entry is still queried: constant true is nonlinear.
+example :
+    ((PCP.HadamardTester.blrTest (Fin 0)).decisionTree
+      ((fun i => i.elim0), (fun i => i.elim0))).eval (fun _ => true) = false := by
+  rw [PCP.LocalTest.eval_decisionTree]
+  decide
 
 /-! ### Noise sensitivity and influence -/
 
