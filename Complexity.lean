@@ -1731,6 +1731,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degr
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Fold
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
@@ -1777,6 +1778,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine.Routines
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine.Termination
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.Call
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Reachability
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Savitch
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
