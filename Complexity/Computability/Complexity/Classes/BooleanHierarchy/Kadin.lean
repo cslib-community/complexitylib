@@ -24,10 +24,17 @@ equivalently `BH (k + 1) = BH k`), then the polynomial hierarchy collapses to it
 `Σ₃ᴾ ∩ Π₃ᴾ` (`PH = Σ₃ᴾ`) [Kadin][Kadin1988]. In particular, if `DP = coDP` (or `SATUNSAT ∈ coDP`),
 then `PH = Σ₃ᴾ`.
 
-This is a weaker form of Kadin's result. Kadin shows that a Boolean-hierarchy collapse gives a
-sparse set `S` with `coNP ⊆ NP^S`, and hence `PH ⊆ P^{NP^{NP}[O(log n)]}`, a subclass of `Δ₃ᴾ`
-([Kadin][Kadin1988], abstract). Neither the sparse-set statement nor the `Δ₃ᴾ` collapse is
-formalized here; the library has no class of bounded-query `Σ₂ᴾ`-oracle machines.
+Kadin's argument shows that a Boolean-hierarchy collapse gives a sparse set `S` with
+`coNP ⊆ NP^S`, from which Yap's theorem [Yap][Yap1983] gives `PH ⊆ Σ₃ᴾ` [Kadin][Kadin1988]. The
+1988 abstract also claims the stronger collapse `PH ⊆ P^{NP^{NP}[O(log n)]}`, a subclass of
+`Δ₃ᴾ`, but that derivation rests on a proof that `S ∈ NP^{NP}` which contains an error, as
+recorded in Kadin's erratum [Kadin][Kadin1991] and by [Chang and Kadin][ChangKadin1996]. The
+stronger collapse holds by other arguments (survey: [Hemaspaandra, Hemaspaandra and
+Hempel][HemaspaandraHemaspaandraHempel1999], Section 3). Wagner showed that `PH` then collapses
+to the Boolean closure of `Σ₂ᴾ`, and Chang and Kadin to level `k` of the Boolean hierarchy over
+`Σ₂ᴾ` [ChangKadin1996]; both classes lie in `P^{NP^{NP}[O(log n)]}`. Neither the sparse-set
+statement nor these deeper collapses are formalized here; the library has no class of
+bounded-query `Σ₂ᴾ`-oracle machines.
 
 ## Proof overview
 
@@ -79,6 +86,13 @@ these `k` hard-prefix branches places `A` in `Σ₃ᴾ`.
 
 * [J. Kadin, *The Polynomial Time Hierarchy Collapses if the Boolean Hierarchy
   Collapses*][Kadin1988]
+* [J. Kadin, *Erratum: The Polynomial Time Hierarchy Collapses if the Boolean Hierarchy
+  Collapses*][Kadin1991]
+* [R. Chang and J. Kadin, *The Boolean Hierarchy and the Polynomial Hierarchy: A Closer
+  Connection*][ChangKadin1996]
+* [E. Hemaspaandra, L. A. Hemaspaandra and H. Hempel, *What's Up with Downward Collapse: Using
+  the Easy-Hard Technique to Link Boolean and Polynomial Hierarchy
+  Collapses*][HemaspaandraHemaspaandraHempel1999]
 * [J.-Y. Cai et al., *The Boolean Hierarchy I: Structural Properties*][CaiEtAl1988]
 -/
 
@@ -858,9 +872,9 @@ theorem SigmaP_three_eq_PiP_three_of_coBH_subset_BH {k : ℕ}
   refine Set.Subset.antisymm (fun A hA => ?_) hsub
   simpa using compl_mem_PiP_of_mem_SigmaP (hsub (compl_mem_PiP_of_mem_SigmaP hA))
 
-/-- **Kadin's theorem, `Σ₃ᴾ` form** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`, the
-polynomial hierarchy collapses to `Σ₃ᴾ`. Kadin proves the stronger collapse to
-`P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`; see the module documentation. -/
+/-- **Kadin's theorem** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`, the polynomial
+hierarchy collapses to `Σ₃ᴾ`. The deeper collapse into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, due to later
+work, is not formalized; see the module documentation. -/
 theorem PH_eq_SigmaP_three_of_coBH_subset_BH {k : ℕ}
     (h : coBH encBits k ⊆ BH encBits k) :
     PH enc = SigmaP 3 enc :=
@@ -868,9 +882,9 @@ theorem PH_eq_SigmaP_three_of_coBH_subset_BH {k : ℕ}
     PiP_three_subset_SigmaP_three_of_coBH_subset_BH
       (coBH_subset_BH_of_coBH_encBits_subset_BH_encBits h)
 
-/-- **Kadin's theorem, `Σ₃ᴾ ∩ Π₃ᴾ` form** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`,
-the polynomial hierarchy collapses to `Σ₃ᴾ ∩ Π₃ᴾ`. Kadin proves the stronger collapse to
-`P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`; see the module documentation. -/
+/-- **Kadin's theorem** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`, the polynomial
+hierarchy collapses to `Σ₃ᴾ ∩ Π₃ᴾ`. The deeper collapse into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, due to
+later work, is not formalized; see the module documentation. -/
 theorem PH_eq_SigmaP_three_inter_PiP_three_of_coBH_subset_BH {k : ℕ}
     (h : coBH encBits k ⊆ BH encBits k) :
     PH enc = SigmaP 3 enc ∩ PiP 3 enc := by
