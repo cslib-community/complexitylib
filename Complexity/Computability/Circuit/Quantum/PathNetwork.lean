@@ -725,7 +725,7 @@ private theorem map_pairFun_right {N : ℕ} (a b : Fin N → Bool) :
 /-- **The contraction of the network is the projected gap.** With `-1` as the Hadamard sign, over
 any commutative ring, the contraction of the network of well-formed gate codes with the measured
 qubits `S` on the input register `X` is `onesGap S gs X`; for `S = [0]` it is the acceptance gap
-(`Cslib.Quantum.acceptGap_eq_onesGap`). -/
+`Cslib.Quantum.acceptGap`. -/
 theorem contraction_network {R : Type*} [CommRing R] (S : List ℕ) (X : List Bool)
     (gs : List GateCode) (hgs : ∀ g ∈ gs, g.WellFormed X.length) :
     (network (-1 : R) S X gs).2.contraction = (onesGap S gs X : R) := by
