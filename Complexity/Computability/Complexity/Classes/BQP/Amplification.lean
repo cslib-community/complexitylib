@@ -34,7 +34,7 @@ input, `2 r` blocks of the original width `w`, and the ancillas of a threshold c
    (`Cslib.Quantum.Amplify.copiesCodes`);
 3. a reversible counter computes whether more than `r` of the blocks' first qubits are one
    (`Cslib.Quantum.Counter.codes`);
-4. three CNOT gates swap that answer into qubit `0` (`Cslib.Quantum.Amplify.swapCodes`).
+4. three CNOT gates swap that answer into qubit `0` (`Cslib.Quantum.GateCode.swapCodes`).
 
 The copies act on disjoint blocks, so their measurement outcomes are independent
 (`Cslib.Quantum.Circuit.matrix_flatMap_mapWires`), and the classical steps permute the outcomes. The
@@ -80,9 +80,6 @@ def copyCodes (n w k : ℕ) : List GateCode :=
 /-- The circuit `gs` on each of the blocks `1, …, k` of width `w`. -/
 def copiesCodes (w k : ℕ) (gs : List GateCode) : List GateCode :=
   (List.range k).flatMap fun j => gs.map (shift ((j + 1) * w))
-
-/-- Three CNOT gates swapping qubit `a` into qubit `0`. -/
-def swapCodes (a : ℕ) : List GateCode := [(false, 0, [a]), (false, a, [0]), (false, 0, [a])]
 
 /-- The first ancilla of the counter, after the input block and `2 r` copies of width `w`. -/
 def base (w r : ℕ) : ℕ := (2 * r + 1) * w
@@ -221,27 +218,6 @@ theorem readBit_classicalRun_copyCodes (hn : n ≤ w) (hw : 0 < w) (X : Fin (wid
     · simp
     · simp only [Bool.and_eq_false_iff, decide_eq_false_iff_not]
       exact Or.inl fun ⟨i, hi, h⟩ => hp ⟨j, hj, i, by omega, h⟩
-
-theorem isClassical_swapCodes {N a : ℕ} (ha : 0 < a) (hN : a < N) :
-    IsClassical N (swapCodes a) := by
-  have h₀ : WellFormed N ((false, 0, [a]) : GateCode) :=
-    ⟨by simp, by simp; omega, by simp; omega⟩
-  have h₁ : WellFormed N ((false, a, [0]) : GateCode) :=
-    ⟨by simp, by simp; omega, by simp; omega⟩
-  intro g hg
-  simp only [swapCodes, List.mem_cons, List.not_mem_nil, or_false] at hg
-  rcases hg with rfl | rfl | rfl
-  · exact ⟨rfl, h₀⟩
-  · exact ⟨rfl, h₁⟩
-  · exact ⟨rfl, h₀⟩
-
-/-- **The swap moves qubit `a` into qubit `0`.** -/
-theorem readBit_classicalRun_swapCodes {N a : ℕ} (ha : 0 < a) (hN : a < N) (X : Fin N → Bool) :
-    readBit (classicalRun (swapCodes a) X) 0 = readBit X a := by
-  simp only [swapCodes, classicalRun_cons, classicalRun_nil, readBit_classicalStep,
-    List.all_cons, List.all_nil, Bool.and_true]
-  have h0 : (0 : ℕ) < N := by omega
-  simp [h0, hN, show a ≠ 0 by omega, show (0 : ℕ) ≠ a by omega]
 
 theorem isClassical_counter_swap (hw : 0 < w) :
     IsClassical (width w r) (Counter.codes (base w r) (r + 1) (fun s => (s + 1) * w) (2 * r) ++

@@ -31,6 +31,7 @@ Bits of a basis string are read by their number (`Cslib.Quantum.readBit`), as in
 * `Cslib.Quantum.GateCode.IsClassical`: a list of well-formed classical gate codes.
 * `Cslib.Quantum.GateCode.classicalRun`, `Cslib.Quantum.GateCode.classicalUnrun`: the composed
   permutation of a list of classical codes and its inverse.
+* `Cslib.Quantum.GateCode.swapCodes`: three CNOT gates moving a qubit into qubit `0`.
 
 ## Main results
 
@@ -243,6 +244,33 @@ theorem exists_toPlacedGate?_eval_apply {g : GateCode} (h₁ : g.1 = false) (h�
     · rw [h, hinv]
   simp only [PlacedGate.eval, unitaryEquiv_apply, Matrix.mulVec, dotProduct, hrow, ite_mul,
     one_mul, zero_mul, sum_ite_eq', mem_univ, ite_true]
+
+
+/-! ### Swapping a qubit into qubit `0` -/
+
+/-- Three CNOT gates swapping qubit `a` into qubit `0`. -/
+def swapCodes (a : ℕ) : List GateCode := [(false, 0, [a]), (false, a, [0]), (false, 0, [a])]
+
+theorem isClassical_swapCodes {N a : ℕ} (ha : 0 < a) (hN : a < N) :
+    IsClassical N (swapCodes a) := by
+  have h₀ : WellFormed N ((false, 0, [a]) : GateCode) :=
+    ⟨by simp, by simp; omega, by simp; omega⟩
+  have h₁ : WellFormed N ((false, a, [0]) : GateCode) :=
+    ⟨by simp, by simp; omega, by simp; omega⟩
+  intro g hg
+  simp only [swapCodes, List.mem_cons, List.not_mem_nil, or_false] at hg
+  rcases hg with rfl | rfl | rfl
+  · exact ⟨rfl, h₀⟩
+  · exact ⟨rfl, h₁⟩
+  · exact ⟨rfl, h₀⟩
+
+/-- **The swap moves qubit `a` into qubit `0`.** -/
+theorem readBit_classicalRun_swapCodes {N a : ℕ} (ha : 0 < a) (hN : a < N) (X : Fin N → Bool) :
+    readBit (classicalRun (swapCodes a) X) 0 = readBit X a := by
+  simp only [swapCodes, classicalRun_cons, classicalRun_nil, readBit_classicalStep,
+    List.all_cons, List.all_nil, Bool.and_true]
+  have h0 : (0 : ℕ) < N := by omega
+  simp [h0, hN, show a ≠ 0 by omega, show (0 : ℕ) ≠ a by omega]
 
 end GateCode
 
