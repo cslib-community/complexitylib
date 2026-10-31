@@ -126,12 +126,6 @@ theorem guard_eq_true_iff {k : ℕ} {φ : CNF ℕ} :
     guard k φ = true ↔ φ ≠ [] ∧ ∀ c ∈ φ, 1 ≤ c.length ∧ c.length ≤ k := by
   simp [guard]
 
-/-- A formula has at most `2 ^ n` satisfying assignments of its `n` variables. -/
-theorem modelCount_le_two_pow (φ : CNF ℕ) : φ.modelCount ≤ 2 ^ φ.numVars := by
-  unfold CNF.modelCount CNF.numVars
-  refine (Finset.card_filter_le _ _).trans ?_
-  simp only [Finset.card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_coe, le_refl]
-
 /-- A formula whose clauses are nonempty has at least as many literals as clauses. -/
 theorem length_le_length_vars {φ : CNF ℕ} (h : ∀ c ∈ φ, 1 ≤ c.length) :
     φ.length ≤ φ.vars.length := by
@@ -152,7 +146,7 @@ theorem count_eq {k : ℕ} {φ : CNF ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) :
   · next hg =>
     obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
     rw [contraction_clauseNetwork hk]
-    refine Nat.mod_eq_of_lt ((modelCount_le_two_pow φ).trans_lt ?_)
+    refine Nat.mod_eq_of_lt (φ.modelCount_le_two_pow_numVars.trans_lt ?_)
     have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
     have h2 := length_le_length_vars fun c hc => (hcl c hc).1
     have h3 := CNF.numVars_le_length_vars φ
