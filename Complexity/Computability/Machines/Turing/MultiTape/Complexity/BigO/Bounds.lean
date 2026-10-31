@@ -44,6 +44,12 @@ theorem mono {T' S' : α → ℕ} (h : ComputableInO f encIn encOut T S) (k : �
   of_bounds hc (c * (k + 1)) (fun a => by nlinarith [hT a])
     (fun a => by nlinarith [hS a]) (fun a => by nlinarith [hS a, hl a])
 
+/-- Weaken only the time bound up to a constant, keeping the space bound. -/
+theorem mono_time {T' : α → ℕ} (h : ComputableInO f encIn encOut T S) (k : ℕ)
+    (hT : ∀ a, T a ≤ k * (T' a + 1)) : ComputableInO f encIn encOut T' S :=
+  h.mono (k + 1) (fun a => (hT a).trans (Nat.mul_le_mul_right _ (Nat.le_succ k)))
+    fun _ => (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (Nat.succ_pos k))
+
 /-- Pointwise larger bounds retain the same encoded-output charge. -/
 theorem mono_le {T' S' : α → ℕ} (h : ComputableInO f encIn encOut T S)
     (hT : ∀ a, T a ≤ T' a) (hS : ∀ a, S a ≤ S' a) :
