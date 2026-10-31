@@ -22,7 +22,7 @@ explicit Boolean tensor networks with a number of row vertices,
 networks are built (milestone H3) and the contraction theorem consumes them (milestone T2).
 
 A network `(r, G)` is admissible at size `s` with constant `C` when `G` is bipartite with its
-first `r` vertices as rows (`Cslib.Circuits.Frontier.ExplicitTensorNetwork.IsRowsFirstBipartite`),
+first `r` vertices as rows (`Cslib.Circuits.Frontier.DescribedNetwork.IsRowsFirstBipartite`),
 it has at most `C s` edges and at most `C s` vertices, its maximum degree is at most `C ⌊log₂ s⌋`,
 every table lists the values at all bit strings on its ports, and it has at least `s` edges. The
 last two conditions spare the contraction algorithm short tables and networks much smaller than
