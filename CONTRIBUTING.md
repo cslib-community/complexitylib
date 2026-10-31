@@ -64,6 +64,23 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
+**Named components instead of positional projections**
+([#1764](https://github.com/cslib-community/complexitylib/issues/1764)). Public statements and
+the bodies of public definitions do not reach into nested tuples with projection chains such as
+`c.1.2` or `s.1.1.2`. A reader should not have to reconstruct the tuple layout. In order of
+preference:
+
+1. Bind the components by name: `fun ((d, x), c) => step d x c`, not
+   `fun c => step c.1.1 c.1.2 c.2`.
+2. Use `Function.uncurry`, `Prod.map` or composed projections, as the plain calculus rules
+   already do.
+3. Turn a recurring tuple context into a small `structure` with named fields.
+4. If restructuring is too invasive, add named `abbrev` accessors such as `Ctx.desc`.
+
+The rewritten form should stay definitionally equal to the old one, so that clients and automation
+(`fun_prop`, `@[program_certificate]`) keep working. Single projections (`p.1`) and
+destructuring inside proofs (`obtain ⟨⟨d, x⟩, c⟩ := s`) are fine.
+
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.
 
