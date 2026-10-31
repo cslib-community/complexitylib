@@ -26,7 +26,10 @@ The assignment list in the correctness specification is not constructed by the s
 
 This is the local Boolean-vector component of the enumeration in [OpenAI2026ETH], Lemma 3.2 and
 Proposition 3.4, pp. 22–26. It is not a mixed-radix or subset-pair enumerator, and gives no
-polynomial-time bound for a whole loop with exponentially many rounds.
+polynomial-time bound for a whole loop with exponentially many rounds. `certificate_bounds` gives
+the loop's explicit bounds instead: when the components are polynomial and every prefix keeps its
+accumulator polynomially bounded, the workspace is polynomial and the time is `2 ^ n + 1` times a
+polynomial.
 -/
 
 @[expose] public section
@@ -255,5 +258,101 @@ noncomputable def certificate {α : Type} {encIn : α ↪ List Bool}
     NativeCertificate (fun a => run body (dimension a) (initial a))
       encIn (encPair encNat (encPair encUnary encB)) :=
   IndexFold.certificate (clock.comp cn) (cn.prod ci) (visitCertificate cb)
+
+/-- The clock is linear in the unary dimension. -/
+theorem clock_isPolynomial : clock.IsPolynomial := ⟨.self, .self⟩
+
+private theorem add_mul_le_mul_add {N X Y Y' : ℕ} (h : Y ≤ Y') :
+    X + (N + 1) * Y ≤ (N + 1) * (X + Y') := by
+  rw [Nat.mul_add]
+  exact Nat.add_le_add (Nat.le_mul_of_pos_left X (Nat.succ_pos N)) (Nat.mul_le_mul_left _ h)
+
+/-- **Explicit bounds of a streaming traversal.** Suppose the dimension, the initial state and
+the body have polynomial certificates, and every prefix keeps its accumulator within a polynomial
+bound `B` in the encoded input length. Then the traversal of all `2 ^ n` words, for `n` the
+dimension, uses polynomial workspace, and its time is `2 ^ n + 1` times a polynomial. The
+traversal count enters only the time. -/
+theorem certificate_bounds {α : Type} {encIn : α ↪ List Bool}
+    {dimension : α → ℕ} {initial : α → β} {body : (ℕ × List Bool) × β → β}
+    {cn : NativeCertificate dimension encIn encUnary}
+    {ci : NativeCertificate initial encIn encB}
+    {cb : NativeCertificate body (encPair (encPair encUnary encBits) encB) encB}
+    (hcn : cn.IsPolynomial) (hci : ci.IsPolynomial) (hcb : cb.IsPolynomial)
+    {B : α → ℕ} (hB : PolyBounded (fun a => (encIn a).length) B)
+    (hstate : ∀ a j, j ≤ 2 ^ dimension a →
+      (encB (runPrefix body (dimension a) j (initial a)).2.2).length ≤ B a) :
+    PolyBounded (fun a => (encIn a).length) (certificate cn ci cb).space ∧
+      ∃ T : α → ℕ, PolyBounded (fun a => (encIn a).length) T ∧
+        ∀ a, (certificate cn ci cb).time a ≤ (2 ^ dimension a + 1) * T a := by
+  let cstep := IndexFold.roundCertificate (visitCertificate cb)
+  have hcstep : cstep.IsPolynomial :=
+    IndexFold.roundCertificate_isPolynomial _ (visitCertificate_isPolynomial cb hcb)
+  obtain ⟨ct, dt, hct⟩ := hcstep.1.exists_le
+  obtain ⟨cs, ds, hcs⟩ := hcstep.2.exists_le
+  have hdim : PolyBounded (fun a => (encIn a).length) dimension := by
+    simpa only [encUnary_apply, List.length_replicate] using
+      (cn.polyTime hcn).polyBounded_length
+  -- Every live state: the binary index, the unary width and the accumulator.
+  let S := fun a => 4 * dimension a + 4 + B a
+  have hS : PolyBounded (fun a => (encIn a).length) S :=
+    (((PolyBounded.const 4).mul hdim).add (.const 4)).add hB
+  have hstateS (a : α) (j : ℕ) (hj : j ≤ 2 ^ dimension a) :
+      (encPair encNat (encPair encUnary encB)
+        ((IndexFold.step (visit body))^[j] (0, (dimension a, initial a)))).length ≤ S a :=
+    length_prefix_le body _ j _ _ hj (hstate a j hj)
+  have hmaxS (a : α) :
+      NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+        (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) ≤ S a :=
+    NativeCertificate.maxStateLength_le _ _ _ _ (hstateS a)
+  have hmaxRT (a : α) :
+      NativeCertificate.maxRoundTime cstep (2 ^ dimension a) (0, (dimension a, initial a)) ≤
+        ct * (S a + 1) ^ dt :=
+    NativeCertificate.maxRoundTime_le cstep _ _ fun j hj => (hct _).trans
+      (Nat.mul_le_mul_left ct (Nat.pow_le_pow_left (by have := hstateS a j hj; omega) dt))
+  have hmaxRS (a : α) :
+      NativeCertificate.maxRoundSpace cstep (2 ^ dimension a) (0, (dimension a, initial a)) ≤
+        cs * (S a + 1) ^ ds :=
+    NativeCertificate.maxRoundSpace_le cstep _ _ fun j hj => (hcs _).trans
+      (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by have := hstateS a j hj; omega) ds))
+  have htime (a : α) : (certificate cn ci cb).time a =
+      (cn.time a + (encUnary (dimension a)).length) +
+        ((encIn a).length + (cn.time a + ci.time a)) +
+        (2 ^ dimension a + 1) *
+          (NativeCertificate.maxRoundTime cstep (2 ^ dimension a) (0, (dimension a, initial a)) +
+            NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+              (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
+            ((encNat (2 ^ dimension a)).length + 1) ^ 2) := rfl
+  have hspace (a : α) : (certificate cn ci cb).space a =
+      (cn.space a + (encUnary (dimension a)).length) +
+        ((encIn a).length + (cn.space a + ci.space a)) +
+        NativeCertificate.maxRoundSpace cstep (2 ^ dimension a) (0, (dimension a, initial a)) +
+        NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+          (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
+        (encNat (2 ^ dimension a)).length := rfl
+  refine ⟨?_, fun a => 2 * cn.time a + dimension a + (encIn a).length + ci.time a +
+      (ct * (S a + 1) ^ dt + S a + (dimension a + 1 + 1) ^ 2), ?_, fun a => ?_⟩
+  · refine (((((((PolyBounded.const 2).mul hcn.2).add hdim).add .self).add hci.2).add
+      (NativeCertificate.polyBounded_pow_of_polyBounded hS cs ds)).add
+        (hS.add (hdim.add (.const 1)))).mono fun a => ?_
+    rw [hspace a]
+    simp only [encUnary_apply, List.length_replicate, length_clock]
+    have := hmaxRS a
+    have := hmaxS a
+    omega
+  · exact ((((((PolyBounded.const 2).mul hcn.1).add hdim).add .self).add hci.1).add
+      (((NativeCertificate.polyBounded_pow_of_polyBounded hS ct dt).add hS).add
+        (((hdim.add (.const 1)).add (.const 1)).pow 2)))
+  · have hY : NativeCertificate.maxRoundTime cstep (2 ^ dimension a)
+            (0, (dimension a, initial a)) +
+          NativeCertificate.maxStateLength (encPair encNat (encPair encUnary encB))
+            (IndexFold.step (visit body)) (2 ^ dimension a) (0, (dimension a, initial a)) +
+          ((encNat (2 ^ dimension a)).length + 1) ^ 2 ≤
+        ct * (S a + 1) ^ dt + S a + (dimension a + 1 + 1) ^ 2 := by
+      rw [length_clock]
+      exact Nat.add_le_add (Nat.add_le_add (hmaxRT a) (hmaxS a)) le_rfl
+    refine le_trans (le_of_eq ?_) (add_mul_le_mul_add (N := 2 ^ dimension a)
+      (X := 2 * cn.time a + dimension a + (encIn a).length + ci.time a) hY)
+    rw [htime a, encUnary_apply, List.length_replicate]
+    omega
 
 end Cslib.GenericRAM.BooleanFold
