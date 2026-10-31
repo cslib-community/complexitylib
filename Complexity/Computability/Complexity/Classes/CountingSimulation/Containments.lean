@@ -34,6 +34,9 @@ The network hypothesis is discharged for explicit networks by
 `Cslib.Complexity.CountingSimulation.networkFamilies_explicitAdmissible`, so the containments hold
 assuming only a contraction algorithm
 (`Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_of_contractionAlgorithm` and its
+siblings). The contraction algorithm of Theorem D.1 discharges that hypothesis too, which gives the
+containments unconditionally
+(`Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two` and its
 siblings).
 
 ## Main results

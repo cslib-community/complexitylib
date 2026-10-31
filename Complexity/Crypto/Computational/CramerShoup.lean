@@ -51,8 +51,10 @@ We then bridge these ideal games to the library's **native strict-PPT PKE 1CCA n
 `Encryption.INDCCA2On`) via `advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le` and
 `advantage_cca2GameOn_cramerShoupGroupCCA2Game_le` (which account for the additional `8 / 2 ^ n`
 per-bit `sampleModNat` approximation loss of `cramerShoupKeyGenProb`, `cramerShoupADEncryptProb`,
-and `cramerShoupEncryptProb`), yielding `DDH.indcca2ADOn_cramerShoup` and
-`DDH.indcca2On_cramerShoup`.
+and `cramerShoupEncryptProb`), yielding `DDH.indcca2ADOn_cramerShoup`,
+`DDH.indcca2On_cramerShoup`, and (via the Theorem 12.1 batch-challenge hybrid reduction
+`INDCCA2On.indcca2MultiOn`) batch-challenge multi-challenge CCA security
+`DDH.indcca2MultiOn_cramerShoup`.
 
 ## Source Statements ([BonehShoup2023], Section 12.5.3 & Exercise 12.27)
 
@@ -1731,5 +1733,37 @@ theorem DDH.indcca2On_cramerShoup
         (F.cramerShoupEncryptProb H d) (F.cramerShoupDecryptOpt H isElem d) adversary true n))
   exact (htri1.trans (add_le_add le_rfl htri2)).trans
     (by rw [add_assoc]; exact add_le_add h0 (add_le_add le_rfl h1))
+
+/-- **Batch-challenge multi-challenge CCA security of Multiplicative Cramer–Shoup
+(`Encryption.INDCCA2MultiOn`)** (batch-challenge specialization of [BonehShoup2023], Theorem 12.1,
+together with Theorem 12.9 and Exercise 12.27, printed pp. 468, 490–491, 521–522): for any
+polynomial-time group description family `d : ℕ → F.Desc`, the probabilistic polynomial-time
+Cramer–Shoup encryption scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d,
+cramerShoupDecryptOpt H isElem d)` satisfies the two-phase batch-challenge multi-challenge
+`Encryption.INDCCA2MultiOn` notion with respect to `cramerShoupValid isElem d` under DDH, collision
+resistance of `cramerShoupHashMod H`, and a positive group-order lower bound `m n > 0` with
+`1 / m n` negligible. -/
+theorem DDH.indcca2MultiOn_cramerShoup
+    {F : PrimeOrderGroupFamily}
+    {H : F.Desc × List Bool → List Bool}
+    {isElem : F.Desc × List Bool → Bool}
+    {d : ℕ → F.Desc}
+    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
+    (hd : ComputableInPolyTime d encUnary F.encDesc)
+    (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
+    (hDDH : F.DDH (fun n => PMF.pure (d n)))
+    (hCR : CollisionResistantFor F.encDesc (fun n => PMF.pure (d n)) (F.cramerShoupHashMod H))
+    {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n)
+    (hm : ∀ n, m n ≤ F.order (d n))
+    (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
+    INDCCA2MultiOn (F.cramerShoupValid isElem d) encBits encBits
+      (F.cramerShoupKeyGenProb d) (F.cramerShoupEncryptProb H d)
+      (F.cramerShoupDecryptOpt H isElem d) :=
+  (hDDH.indcca2On_cramerShoup hH hisElem hd hmem hCR hm0 hm hinv).indcca2MultiOn
+    (F.computableInPolyTime_cramerShoupValid hisElem hd)
+    (F.isPPTOn_cramerShoupKeyGenProb hd)
+    (F.isPPTOn_cramerShoupEncryptProb hH hd)
+    (F.computableInPolyTime_cramerShoupDecryptOpt hH hisElem hd)
 
 end Cslib.Crypto.PrimeOrderGroupFamily

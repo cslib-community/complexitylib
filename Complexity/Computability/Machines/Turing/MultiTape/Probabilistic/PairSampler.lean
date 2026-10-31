@@ -81,7 +81,7 @@ def pairSampler : MultiTapePTM 0 Bool Phase where
 namespace PairSampler
 
 /-- The sampler at an input position, with the output written so far. -/
-def config (input : List Bool) (state : Option Phase) (index : ℕ) (output : List Bool)
+private def config (input : List Bool) (state : Option Phase) (index : ℕ) (output : List Bool)
     (h : index ≤ input.length) : Config 0 Bool Phase Empty input where
   tapes :=
     { state := state
@@ -91,7 +91,7 @@ def config (input : List Bool) (state : Option Phase) (index : ℕ) (output : Li
       output := output }
 
 /-- Reading a remaining symbol writes the emitted symbol and advances once. -/
-theorem step {input output : List Bool} {index : ℕ} (h : index < input.length)
+private theorem step {input output : List Bool} {index : ℕ} (h : index < input.length)
     (q : Phase) (o : Option Bool) (s : Option Phase) :
     (config input (some q) index output (by lia)).step
       { inputTape := 1, workTapes := Fin.elim0, output := o, state := s }
@@ -105,7 +105,7 @@ theorem step {input output : List Bool} {index : ℕ} (h : index < input.length)
   rfl
 
 /-- One live transition at a remaining symbol: draw a coin and take the selected step. -/
-theorem eval_run_succ {input output : List Bool} {index : ℕ} (h : index < input.length)
+private theorem eval_run_succ {input output : List Bool} {index : ℕ} (h : index < input.length)
     (q : Phase) (fuel : ℕ) :
     ProbComp.eval (pairSampler.runClosedConfigFrom (fuel + 1)
       (config input (some q) index output (by lia))) =
@@ -121,7 +121,7 @@ theorem eval_run_succ {input output : List Bool} {index : ℕ} (h : index < inpu
   rfl
 
 /-- At the right boundary the sampler halts, drawing and discarding one coin. -/
-theorem eval_run_boundary (input output : List Bool) (q : Phase) (fuel : ℕ) :
+private theorem eval_run_boundary (input output : List Bool) (q : Phase) (fuel : ℕ) :
     ProbComp.eval (pairSampler.runClosedConfigFrom (fuel + 1)
       (config input (some q) input.length output le_rfl)) =
       PMF.pure (config input none input.length output le_rfl) := by
@@ -160,7 +160,7 @@ theorem eval_run_boundary (input output : List Bool) (q : Phase) (fuel : ℕ) :
     rw [hhalt, PMF.bind_const]
 
 /-- The tail phase: one fresh fair bit per remaining symbol, then halting at the boundary. -/
-theorem eval_run_tail (input : List Bool) (remaining : ℕ) :
+private theorem eval_run_tail (input : List Bool) (remaining : ℕ) :
     ∀ (index : ℕ) (output : List Bool) (h : index + remaining = input.length),
       ProbComp.eval (pairSampler.runClosedConfigFrom (remaining + 1)
         (config input (some .tail) index output (by lia))) =
@@ -183,7 +183,7 @@ theorem eval_run_tail (input : List Bool) (remaining : ℕ) :
       List.append_assoc, List.singleton_append]
 
 /-- The copying phase: a framed word is copied verbatim, ignoring the coins drawn meanwhile. -/
-theorem eval_run_frame (input rest : List Bool) (fuel : ℕ) (y : List Bool) :
+private theorem eval_run_frame (input rest : List Bool) (fuel : ℕ) (y : List Bool) :
     ∀ (pre output : List Bool) (hin : input = pre ++ frame y ++ rest),
       ProbComp.eval (pairSampler.runClosedConfigFrom ((frame y).length + fuel)
         (config input (some .tag) pre.length output (by subst hin; simp))) =
@@ -234,7 +234,7 @@ open PairSampler
 
 /-- The final configuration retains the framed word and a uniform certificate, and has halted at
 the right boundary. -/
-theorem eval_runClosedConfig_pairSampler (y r : List Bool) :
+private theorem eval_runClosedConfig_pairSampler (y r : List Bool) :
     ProbComp.eval (pairSampler.runClosedConfigFrom ((frame y ++ r).length + 1)
       (pairSampler.initialConfig (frame y ++ r))) =
       (BitString.uniformList r.length).map (fun w =>
