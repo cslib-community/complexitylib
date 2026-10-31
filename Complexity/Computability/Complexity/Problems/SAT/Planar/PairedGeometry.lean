@@ -13,6 +13,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawi
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
 public import Complexity.Foundations.Geometry.Orthogonal.PairedBoundary
 import Complexity.Computability.Complexity.Problems.SAT.Incidence.Compact
+import Complexity.Foundations.Data.List.Range
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Nodup
 import Mathlib.Data.List.Flatten
@@ -699,12 +700,6 @@ theorem boundary_occurrence_step_unique {φ : CNF ℕ}
   subst j
   rfl
 
-private theorem idxOf_range_eq {i n : ℕ} (hi : i < n) : (List.range n).idxOf i = i := by
-  have h := (List.nodup_range : (List.range n).Nodup).idxOf_getElem i
-    (by simpa only [List.length_range] using hi)
-  rw [List.getElem_range] at h
-  exact h
-
 private theorem positions_getD_raw_variable (φ : CNF ℕ) {v : Variable}
     (hv : v ∈ (rawFormula φ).vars) :
     (positions φ).getD ((rawFormula φ).distinctVars.idxOf v) (0, 0) = variablePosition v := by
@@ -722,7 +717,7 @@ theorem drawingPosition_raw_variable (φ : CNF ℕ) {v : Variable}
   have hi := List.idxOf_lt_length_of_mem (CNF.mem_distinctVars.mpr hv)
   change (positions φ).getD ((List.range _).idxOf ((rawFormula φ).distinctVars.idxOf v))
     (0, 0) = _
-  rw [idxOf_range_eq (by omega)]
+  rw [List.idxOf_range_of_lt (by omega)]
   exact positions_getD_raw_variable φ hv
 
 /-- A raw clause's incidence-graph index resolves to its actual placed clause position. -/
@@ -733,7 +728,7 @@ theorem drawingPosition_raw_clause (φ : CNF ℕ) {i : ℕ} (hi : i < (placedCla
     (0, 0) = _
   have hlen : (rawFormula φ).length = (placedClauses φ).length := by
     simp only [rawFormula, List.length_map]
-  rw [idxOf_range_eq (by omega), positions,
+  rw [List.idxOf_range_of_lt (by omega), positions,
     List.getD_append_right _ _ _ _ (by simp only [List.length_map]; omega)]
   simp only [List.length_map, Nat.add_sub_cancel_left]
   rw [List.getD_eq_getElem _ _ (by simpa only [List.length_map] using hi), List.getElem_map]
@@ -2053,7 +2048,7 @@ private theorem drawingPosition_eq_getD {φ : CNF ℕ} {v : ℕ}
   have hi : v < (formula φ).distinctVars.length + (formula φ).length := by
     simpa only [SAT.incidenceGraph, List.mem_range] using hv
   simp only [Graph.drawingPosition, SAT.incidenceGraph]
-  rw [idxOf_range_eq hi]
+  rw [List.idxOf_range_of_lt hi]
 
 private theorem declared_position_index_lt {φ : CNF ℕ} {v : ℕ}
     (hv : v ∈ (SAT.incidenceGraph (formula φ)).1) : v < (positions φ).length := by

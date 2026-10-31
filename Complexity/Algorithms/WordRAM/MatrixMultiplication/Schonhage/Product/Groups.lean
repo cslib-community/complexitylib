@@ -53,7 +53,8 @@ public theorem exec_saveOffsets {w L m N Q : ℕ} (x : Data 160)
     ∃ y, ExecWithin w saveOffsets x y (7 * numBands L m N ^ 2 + 17) ∧ Parameters L m N Q y ∧
       y.mem = ArrayCopy.copyPrefix x.mem (Wanted.offsetAddress L m N Q)
         (offsetBase L m N Q) (numBands L m N ^ 2 + 1) ∧
-      (∀ i, 7 ≤ i.val → i ≠ source → i ≠ destination → i ≠ length → y.regs i = x.regs i) := by
+      (∀ i, 7 ≤ i.val → i ≠ Reg.source → i ≠ Reg.destination → i ≠ Reg.length →
+        y.regs i = x.regs i) := by
   have hb := group_copy_bounds L m N Q
   have hdest : offsetBase L m N Q + (numBands L m N ^ 2 + 1) ≤ memoryEnd L m N Q := by
     exact hb.2.2.2.2.1
@@ -68,24 +69,25 @@ public theorem exec_saveOffsets {w L m N Q : ℕ} (x : Data 160)
   have hs : Fits w (Wanted.offsetAddress L m N Q + (numBands L m N ^ 2 + 1)) := allocated_fits
       hfit (by omega)
   have hd : Fits w (offsetBase L m N Q + (numBands L m N ^ 2 + 1)) := allocated_fits hfit (by omega)
-  let z := ((x.set source (Wanted.offsetAddress L m N Q)).set destination
-    (offsetBase L m N Q)).set length (numBands L m N ^ 2 + 1)
-  have hz : ExecWithin (B := .standard) w (.seq (.op (.copy source (bank Wanted.offsets))) (ram[
-      destination ← offsets; length ← tiles + one ])) x z 3 := by
-    ram_eval [z, hsrc, hp.offsets, hp.tiles, hp.one, hn, tiles, one, source, destination, length,
-      offsets]
+  let z := ((x.set Reg.source (Wanted.offsetAddress L m N Q)).set Reg.destination
+    (offsetBase L m N Q)).set Reg.length (numBands L m N ^ 2 + 1)
+  have hz :
+      ExecWithin (B := .standard) w (.seq (.op (.copy Reg.source (bank Wanted.offsets))) (ram[
+        Reg.destination ← Reg.offsets; Reg.length ← Reg.tiles + Reg.one ])) x z 3 := by
+    ram_eval [z, hsrc, hp.offsets, hp.tiles, hp.one, hn, Reg.tiles, Reg.one, Reg.source,
+      Reg.destination, Reg.length, Reg.offsets]
   have zp : Parameters L m N Q z :=
-    ((hp.set_work source (by decide) _).set_work destination (by decide) _).set_work
-      length (by decide) _
+    ((hp.set_work Reg.source (by decide) _).set_work Reg.destination (by decide) _).set_work
+      Reg.length (by decide) _
   obtain ⟨y, he, hm, hf⟩ := exec_copyCall z (allocated_fits hfit (by omega))
-    (by simpa [z, source, destination, length] using hs)
-    (by simpa [z, source, destination, length] using hd)
-    (Or.inl (by simpa [z, source, destination, length] using hsep))
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hs)
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hd)
+    (Or.inl (by simpa [z, Reg.source, Reg.destination, Reg.length] using hsep))
   refine ⟨y, ?_, zp.reframe (fun i hi => hf i (by omega)), ?_, ?_⟩
-  · have hlen : z.regs length = (numBands L m N ^ 2 + 1) := by simp [z]
+  · have hlen : z.regs Reg.length = (numBands L m N ^ 2 + 1) := by simp [z]
     rw [hlen] at he
     exact (hz.seq he).mono (by omega)
-  · simpa [z, source, destination, length] using hm
+  · simpa [z, Reg.source, Reg.destination, Reg.length] using hm
   · intro i hi hs hd hl
     rw [hf i hi]
     simp only [z, Data.set_regs, Function.update_of_ne hl, Function.update_of_ne hd,
@@ -100,7 +102,8 @@ public theorem exec_saveCodes {w L m N Q : ℕ} (x : Data 160)
     ∃ y, ExecWithin w saveCodes x y (7 * Q + 10) ∧ Parameters L m N Q y ∧
       y.mem = ArrayCopy.copyPrefix x.mem (Wanted.codeAddress L m N Q)
         (codeBase L m N Q) (Q) ∧
-      (∀ i, 7 ≤ i.val → i ≠ source → i ≠ destination → i ≠ length → y.regs i = x.regs i) := by
+      (∀ i, 7 ≤ i.val → i ≠ Reg.source → i ≠ Reg.destination → i ≠ Reg.length →
+        y.regs i = x.regs i) := by
   have hb := group_copy_bounds L m N Q
   have hdest : codeBase L m N Q + (Q) ≤ memoryEnd L m N Q := by
     exact hb.2.2.2.2.2.1
@@ -114,23 +117,24 @@ public theorem exec_saveCodes {w L m N Q : ℕ} (x : Data 160)
   have hn : Fits w (Q) := allocated_fits hfit (by omega)
   have hs : Fits w (Wanted.codeAddress L m N Q + (Q)) := allocated_fits hfit (by omega)
   have hd : Fits w (codeBase L m N Q + (Q)) := allocated_fits hfit (by omega)
-  let z := ((x.set source (Wanted.codeAddress L m N Q)).set destination
-    (codeBase L m N Q)).set length (Q)
-  have hz : ExecWithin (B := .standard) w (.seq (.op (.copy source (bank Wanted.codes))) (ram[
-      destination ← codes; length ← queryCount ])) x z 3 := by
-    ram_eval [z, hsrc, hp.codes, hp.queryCount, queryCount, source, destination, length, codes]
+  let z := ((x.set Reg.source (Wanted.codeAddress L m N Q)).set Reg.destination
+    (codeBase L m N Q)).set Reg.length (Q)
+  have hz : ExecWithin (B := .standard) w (.seq (.op (.copy Reg.source (bank Wanted.codes))) (ram[
+      Reg.destination ← Reg.codes; Reg.length ← Reg.queryCount ])) x z 3 := by
+    ram_eval [z, hsrc, hp.codes, hp.queryCount, Reg.queryCount, Reg.source, Reg.destination,
+      Reg.length, Reg.codes]
   have zp : Parameters L m N Q z :=
-    ((hp.set_work source (by decide) _).set_work destination (by decide) _).set_work
-      length (by decide) _
+    ((hp.set_work Reg.source (by decide) _).set_work Reg.destination (by decide) _).set_work
+      Reg.length (by decide) _
   obtain ⟨y, he, hm, hf⟩ := exec_copyCall z (allocated_fits hfit (by omega))
-    (by simpa [z, source, destination, length] using hs)
-    (by simpa [z, source, destination, length] using hd)
-    (Or.inl (by simpa [z, source, destination, length] using hsep))
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hs)
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hd)
+    (Or.inl (by simpa [z, Reg.source, Reg.destination, Reg.length] using hsep))
   refine ⟨y, ?_, zp.reframe (fun i hi => hf i (by omega)), ?_, ?_⟩
-  · have hlen : z.regs length = (Q) := by simp [z]
+  · have hlen : z.regs Reg.length = (Q) := by simp [z]
     rw [hlen] at he
     exact (hz.seq he).mono (by omega)
-  · simpa [z, source, destination, length] using hm
+  · simpa [z, Reg.source, Reg.destination, Reg.length] using hm
   · intro i hi hs hd hl
     rw [hf i hi]
     simp only [z, Data.set_regs, Function.update_of_ne hl, Function.update_of_ne hd,
@@ -145,7 +149,8 @@ public theorem exec_saveOriginals {w L m N Q : ℕ} (x : Data 160)
     ∃ y, ExecWithin w saveOriginals x y (7 * Q + 10) ∧ Parameters L m N Q y ∧
       y.mem = ArrayCopy.copyPrefix x.mem (Wanted.originalAddress L m N Q)
         (originalBase L m N Q) (Q) ∧
-      (∀ i, 7 ≤ i.val → i ≠ source → i ≠ destination → i ≠ length → y.regs i = x.regs i) := by
+      (∀ i, 7 ≤ i.val → i ≠ Reg.source → i ≠ Reg.destination → i ≠ Reg.length →
+        y.regs i = x.regs i) := by
   have hb := group_copy_bounds L m N Q
   have hdest : originalBase L m N Q + (Q) ≤ memoryEnd L m N Q := by
     exact hb.2.2.2.2.2.2
@@ -159,24 +164,25 @@ public theorem exec_saveOriginals {w L m N Q : ℕ} (x : Data 160)
   have hn : Fits w (Q) := allocated_fits hfit (by omega)
   have hs : Fits w (Wanted.originalAddress L m N Q + (Q)) := allocated_fits hfit (by omega)
   have hd : Fits w (originalBase L m N Q + (Q)) := allocated_fits hfit (by omega)
-  let z := ((x.set source (Wanted.originalAddress L m N Q)).set destination
-    (originalBase L m N Q)).set length (Q)
-  have hz : ExecWithin (B := .standard) w (.seq (.op (.copy source (bank Wanted.originals))) (ram[
-      destination ← originals; length ← queryCount ])) x z 3 := by
-    ram_eval [z, hsrc, hp.originals, hp.queryCount, queryCount, source, destination, length,
-      originals]
+  let z := ((x.set Reg.source (Wanted.originalAddress L m N Q)).set Reg.destination
+    (originalBase L m N Q)).set Reg.length (Q)
+  have hz :
+      ExecWithin (B := .standard) w (.seq (.op (.copy Reg.source (bank Wanted.originals))) (ram[
+        Reg.destination ← Reg.originals; Reg.length ← Reg.queryCount ])) x z 3 := by
+    ram_eval [z, hsrc, hp.originals, hp.queryCount, Reg.queryCount, Reg.source, Reg.destination,
+      Reg.length, Reg.originals]
   have zp : Parameters L m N Q z :=
-    ((hp.set_work source (by decide) _).set_work destination (by decide) _).set_work
-      length (by decide) _
+    ((hp.set_work Reg.source (by decide) _).set_work Reg.destination (by decide) _).set_work
+      Reg.length (by decide) _
   obtain ⟨y, he, hm, hf⟩ := exec_copyCall z (allocated_fits hfit (by omega))
-    (by simpa [z, source, destination, length] using hs)
-    (by simpa [z, source, destination, length] using hd)
-    (Or.inl (by simpa [z, source, destination, length] using hsep))
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hs)
+    (by simpa [z, Reg.source, Reg.destination, Reg.length] using hd)
+    (Or.inl (by simpa [z, Reg.source, Reg.destination, Reg.length] using hsep))
   refine ⟨y, ?_, zp.reframe (fun i hi => hf i (by omega)), ?_, ?_⟩
-  · have hlen : z.regs length = (Q) := by simp [z]
+  · have hlen : z.regs Reg.length = (Q) := by simp [z]
     rw [hlen] at he
     exact (hz.seq he).mono (by omega)
-  · simpa [z, source, destination, length] using hm
+  · simpa [z, Reg.source, Reg.destination, Reg.length] using hm
   · intro i hi hs hd hl
     rw [hf i hi]
     simp only [z, Data.set_regs, Function.update_of_ne hl, Function.update_of_ne hd,
