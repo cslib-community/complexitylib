@@ -31,6 +31,12 @@ class Fixture(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="handoff-measurement-test-")
         self.addCleanup(self.temp.cleanup)
+        # Tiny fixtures do not allocate the production handoff reserve. Simulate capacity;
+        # the insufficient-space test overrides this default explicitly.
+        disk = patch.object(study.shutil, "disk_usage",
+                            return_value=shutil._ntuple_diskusage(64 << 30, 0, 64 << 30))
+        disk.start()
+        self.addCleanup(disk.stop)
         self.base = Path(self.temp.name)
         self.root, self.cache, self.runner = [self.base / name for name in ("checkout", "cache", "runner")]
         for path in (self.root, self.cache, self.runner):

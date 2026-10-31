@@ -285,44 +285,11 @@ theorem natMod :
       fun p => 16 * ((encPair encNat encNat p).length + 1) :=
   snd' natDivMod
 
-/-- Adding the first component to the second. -/
-def addStep (q : ℕ × ℕ) : ℕ × ℕ := (q.1, q.2 + q.1)
-
-theorem iterate_addStep (k x a : ℕ) : addStep^[k] (x, a) = (x, a + k * x) := by
-  induction k generalizing a with
-  | zero => simp
-  | succ k ih => rw [Function.iterate_succ_apply, addStep, ih]; congr 1; ring
-
 /-- **Multiplication in binary.** -/
 theorem natMul :
     ComputableInSpace (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat
-      fun p => 32 * ((encPair encNat encNat p).length + 1) := by
-  have hstep : ComputableInSpace addStep (encPair encNat encNat) (encPair encNat encNat)
-      fun q => 4 * ((encPair encNat encNat q).length + 1) := by
-    have hl : (fun q => (encPair encNat encNat q).length) ≼
-        fun q => 4 * ((encPair encNat encNat q).length + 1) := .of_le fun _ => by omega
-    have h := budget_prod ((fst encNat encNat).weaken hl)
-      (budget_binop natAdd linear_succ ((snd encNat encNat).weaken hl)
-        ((fst encNat encNat).weaken hl))
-    exact h.of_enc_eq fun _ => rfl
-  have hinit : ComputableInSpace (fun p : ℕ × ℕ => (p.1, 0)) (encPair encNat encNat)
-      (encPair encNat encNat) fun p => 2 * ((encPair encNat encNat p).length + 1) :=
-    (budget_prod (fst _ _) (budget_const 0 (.refl _))).weaken (.of_le fun p => by omega)
-  have hlen (p : ℕ × ℕ) (k : ℕ) (hk : k ≤ p.2) :
-      (encPair encNat encNat (addStep^[k] (p.1, 0))).length ≤
-        3 * ((encPair encNat encNat p).length + 1) := by
-    rw [iterate_addStep, zero_add]
-    have := (Turing.MultiTapeTM.length_encNat_mono (Nat.mul_le_mul_right p.1 hk)).trans
-      (length_encNat_mul_le p.2 p.1)
-    simp only [length_encPair] at this ⊢
-    omega
-  have h := iterate (n := fun p : ℕ × ℕ => p.2) (snd _ _) hinit hstep
-    (Q := fun p => 4 * (3 * ((encPair encNat encNat p).length + 1) + 1))
-    (B := fun p => 3 * ((encPair encNat encNat p).length + 1))
-    (fun p k hk => by have := hlen p k hk; omega) hlen
-  refine (snd' h).mono_le (fun p => ?_) |>.of_enc_eq fun p => ?_
-  · simp only [length_encPair]; omega
-  · rw [iterate_addStep, zero_add, Nat.mul_comm]
+      fun p => 32 * ((encPair encNat encNat p).length + 1) :=
+  (of_inO ComputableInO.natMul).weaken (.of_le fun _ => by omega)
 
 /-! ### Lists of naturals -/
 
@@ -843,12 +810,6 @@ theorem natMod :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1 % p.2) (encPair encNat encNat) encNat
       fun p => 16 * ((encPair encNat encNat p).length + 1) :=
   snd' natDivMod
-
-/-- Adding the first component to the second, retained in the tidy namespace. -/
-abbrev addStep : ℕ × ℕ → ℕ × ℕ := ComputableInSpace.addStep
-
-theorem iterate_addStep (k x a : ℕ) : addStep^[k] (x, a) = (x, a + k * x) :=
-  ComputableInSpace.iterate_addStep k x a
 
 theorem natMul :
     ComputableTidilyInSpace (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat) encNat

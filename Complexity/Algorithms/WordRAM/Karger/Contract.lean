@@ -97,6 +97,7 @@ minimum cut of a connected multigraph.
 namespace Cslib.Algorithms.WordRAM.Karger
 
 open scoped ENNReal
+open Cslib.Probability.PMF
 open Cslib.WordRAM
 
 /-! ### Register layout (`r = 16`) -/

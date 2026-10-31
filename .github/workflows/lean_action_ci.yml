@@ -57,7 +57,7 @@ jobs:
       - name: "Documentation pins"
         run: python3 -B scripts/check_docs.py --config-only
       # lean-action has no hook between installing the toolchain and building, so here it only
-      # installs elan and fetches Mathlib's cache. The steps around it do the rest of what it did:
+      # installs elan. The steps around it do the rest of what it did, with bounded cache retries:
       # restore and save `.lake` under the same Actions cache key, then build, test and lint.
       - name: Restore .lake from the Actions cache
         id: lake-cache
@@ -76,6 +76,11 @@ jobs:
           test: "false"
           lint: "false"
           use-github-cache: "false"
+          use-mathlib-cache: "false"
+      - name: Restore Mathlib cache with retries
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py --lean-action
       # The earlier script tests run before Lean is installed and skip this real build test.
       # Exercise both compiler setup-input omissions with an isolated, cache-disabled project.
       - name: Test Lake build handoff reuse
