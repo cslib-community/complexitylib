@@ -388,7 +388,7 @@ theorem vertices_network (B m : ℕ) : (network os B m).2.vertices =
 
 @[simp] theorem length_vertices_network (B m : ℕ) :
     (network os B m).2.vertices.length = m + 2 * os.length := by
-  simp [vertices_network]
+  simp only [vertices_network, List.length_append, List.length_map, List.length_range]
   omega
 
 private theorem sum_range_ite (m a : ℕ) (c : Prop) [Decidable c] :
