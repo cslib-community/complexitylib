@@ -669,9 +669,13 @@ variable [DecidableEq M] [DecidableEq Y]
 `m' ≠ m_idx`, and `verify hash k r_idx m' t' = true`. -/
 def checkCounterSlot (hash : K → M → Y) (k : K) (pads : List (M × Y))
     (out : ℕ × M × Y) : Bool :=
-  match pads[out.1]? with
+  let idx := out.1
+  let cand := out.2
+  let m' := cand.1
+  let t' := cand.2
+  match pads[idx]? with
   | none => false
-  | some (m_idx, r_idx) => decide (out.2.1 ≠ m_idx) && verify hash k r_idx out.2.1 out.2.2
+  | some (m_idx, r_idx) => decide (m' ≠ m_idx) && verify hash k r_idx m' t'
 
 /-- Issued-counter global-message-freshness EUF-CMA verification predicate on a pad log `pads`:
 the target counter `idx` was issued (`pads[idx]? = some (_, r_idx)`, returning `false` on unissued
@@ -679,10 +683,14 @@ indices), `m'` was never queried in any issued slot (`!(pads.map Prod.fst).conta
 `verify hash k r_idx m' t' = true`. -/
 def checkCounterEUF (hash : K → M → Y) (k : K) (pads : List (M × Y))
     (out : ℕ × M × Y) : Bool :=
-  match pads[out.1]? with
+  let idx := out.1
+  let cand := out.2
+  let m' := cand.1
+  let t' := cand.2
+  match pads[idx]? with
   | none => false
   | some (_, r_idx) =>
-    !(pads.map Prod.fst).contains out.2.1 && verify hash k r_idx out.2.1 out.2.2
+    !(pads.map Prod.fst).contains m' && verify hash k r_idx m' t'
 
 /-- Issued-slot strong SUF-CMA verification predicate on a pad log `pads`: the target counter `idx`
 was issued (`pads[idx]? = some (m_idx, r_idx)`, returning `false` on unissued indices), the pair
@@ -690,11 +698,15 @@ was issued (`pads[idx]? = some (m_idx, r_idx)`, returning `false` on unissued in
 `verify hash k r_idx m' t' = true`. -/
 def checkCounterSUF (hash : K → M → Y) (k : K) (pads : List (M × Y))
     (out : ℕ × M × Y) : Bool :=
-  match pads[out.1]? with
+  let idx := out.1
+  let cand := out.2
+  let m' := cand.1
+  let t' := cand.2
+  match pads[idx]? with
   | none => false
   | some (m_idx, r_idx) =>
-    decide ((out.2.1, out.2.2) ≠ (m_idx, sign hash k r_idx m_idx)) &&
-      verify hash k r_idx out.2.1 out.2.2
+    decide ((m', t') ≠ (m_idx, sign hash k r_idx m_idx)) &&
+      verify hash k r_idx m' t'
 
 /-- Issued-slot SUF-CMA and issued-slot EUF-CMA checks are identical on every pad log and
 output. -/
@@ -1201,11 +1213,11 @@ theorem isPPTOn_wordProbPadTest
     {forge : ℕ → List Bool → List Bool → ProbComp (List Bool × List Bool)}
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hquery : IsPPTOn encUnary encBits query)
     (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun p => forge p.1 p.2.1 p.2.2)) :
+      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     IsPPTOn (encPair encUnary encBits) encBool
       (fun p : ℕ × List Bool =>
         wordProbPadTest seed hash query forge p.1 (BitString.ofList p.1 p.2)) := by
@@ -1235,11 +1247,11 @@ theorem isOraclePPT_prfPadDistinguisher_wordProbPadTest
     {forge : ℕ → List Bool → List Bool → ProbComp (List Bool × List Bool)}
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hquery : IsPPTOn encUnary encBits query)
     (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun p => forge p.1 p.2.1 p.2.2)) :
+      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     IsOraclePPT encBool (prfPadDistinguisher (wordProbPadTest seed hash query forge)) :=
   isOraclePPT_prfPadDistinguisher (isPPTOn_wordProbPadTest hseed hhash hquery hforge)
 
@@ -1302,11 +1314,11 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfOneTimeGame_wordP
     (hε : Negligible ε)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hquery : IsPPTOn encUnary encBits query)
     (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun p => forge p.1 p.2.1 p.2.2)) :
+      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     Negligible (fun n =>
       Game.succProbability
         (prfOneTimeGame (ProbComp.eval (seed n)) family n
@@ -1332,11 +1344,11 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.negligible_prfOneTimeStrongGame
     (hε : Negligible ε)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hquery : IsPPTOn encUnary encBits query)
     (hforge : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair encBits encBits) (fun p => forge p.1 p.2.1 p.2.2)) :
+      (encPair encBits encBits) (fun (n, m, t) => forge n m t)) :
     Negligible (fun n =>
       Game.succProbability
         (prfOneTimeStrongGame (ProbComp.eval (seed n)) family n
@@ -1970,7 +1982,7 @@ background table `table : N → Y`, setting the pad at each queried nonce `x_i` 
 `-hash k m_i + t_i` while retaining `table x` at all unqueried nonces `x`. -/
 def reconstructPadFn [DecidableEq N] (hash : K → M → Y) (k : K)
     (tr : List ((M × N) × Y)) (table : N → Y) : N → Y :=
-  tr.foldl (fun fn e => Function.update fn e.1.2 (-hash k e.1.1 + e.2)) table
+  tr.foldl (fun fn ((m, x), t) => Function.update fn x (-hash k m + t)) table
 
 @[simp]
 theorem reconstructPadFn_nil [DecidableEq N] (hash : K → M → Y) (k : K) (table : N → Y) :
@@ -1978,25 +1990,26 @@ theorem reconstructPadFn_nil [DecidableEq N] (hash : K → M → Y) (k : K) (tab
 
 @[simp]
 theorem reconstructPadFn_cons [DecidableEq N] (hash : K → M → Y) (k : K)
-    (e : (M × N) × Y) (tr : List ((M × N) × Y)) (table : N → Y) :
-    reconstructPadFn hash k (e :: tr) table =
-      reconstructPadFn hash k tr (Function.update table e.1.2 (-hash k e.1.1 + e.2)) := rfl
+    (m : M) (x : N) (t : Y) (tr : List ((M × N) × Y)) (table : N → Y) :
+    reconstructPadFn hash k (((m, x), t) :: tr) table =
+      reconstructPadFn hash k tr (Function.update table x (-hash k m + t)) := rfl
 
 @[simp]
 theorem reconstructPadFn_append_singleton [DecidableEq N] (hash : K → M → Y) (k : K)
-    (tr : List ((M × N) × Y)) (e : (M × N) × Y) (table : N → Y) :
-    reconstructPadFn hash k (tr ++ [e]) table =
-      Function.update (reconstructPadFn hash k tr table) e.1.2 (-hash k e.1.1 + e.2) := by
+    (tr : List ((M × N) × Y)) (m : M) (x : N) (t : Y) (table : N → Y) :
+    reconstructPadFn hash k (tr ++ [((m, x), t)]) table =
+      Function.update (reconstructPadFn hash k tr table) x (-hash k m + t) := by
   simp [reconstructPadFn]
 
 /-- At any nonce `x` not appearing in `tr`, `reconstructPadFn hash k tr table x = table x`. -/
 theorem reconstructPadFn_apply_of_not_mem [DecidableEq N] (hash : K → M → Y) (k : K)
-    {tr : List ((M × N) × Y)} {x : N} (hx : x ∉ tr.map (fun e => e.1.2))
+    {tr : List ((M × N) × Y)} {x : N} (hx : x ∉ tr.map (fun ((_, x'), _) => x'))
     (table : N → Y) :
     reconstructPadFn hash k tr table x = table x := by
   induction tr generalizing table with
   | nil => rfl
   | cons e tr ih =>
+    rcases e with ⟨⟨m', x'⟩, t'⟩
     simp only [List.map_cons, List.mem_cons, not_or] at hx
     rw [reconstructPadFn_cons, ih hx.2, Function.update_of_ne hx.1]
 
@@ -2009,9 +2022,10 @@ theorem reconstructPadFn_congr_of_forall_ne [DecidableEq N] (hash : K → M → 
   induction tr generalizing table₁ table₂ with
   | nil => exact h
   | cons e tr ih =>
+    rcases e with ⟨⟨m', x'⟩, t'⟩
     simp only [reconstructPadFn_cons]
     refine ih fun z hz => ?_
-    by_cases he : z = e.1.2
+    by_cases he : z = x'
     · subst he; simp
     · simp [Function.update_of_ne he, h z hz]
 
@@ -2029,41 +2043,43 @@ theorem reconstructPadFn_append_update_self [DecidableEq N] (hash : K → M → 
     exact reconstructPadFn_congr_of_forall_ne hash k
       (fun w hw => Function.update_of_ne hw r table) z hz
 
-/-- When `x ∉ tr.map (fun e => e.1.2)`, appending `((m, x), sign hash k (table x) m)` leaves
+/-- When `x ∉ tr.map (fun ((_, x'), _) => x')`, appending `((m, x), sign hash k (table x) m)` leaves
 `reconstructPadFn hash k tr table` unchanged. -/
 theorem reconstructPadFn_append_sign_of_not_mem [DecidableEq N] (hash : K → M → Y) (k : K)
-    {tr : List ((M × N) × Y)} (m : M) {x : N} (hx : x ∉ tr.map (fun e => e.1.2))
+    {tr : List ((M × N) × Y)} (m : M) {x : N} (hx : x ∉ tr.map (fun ((_, x'), _) => x'))
     (table : N → Y) :
     reconstructPadFn hash k (tr ++ [((m, x), sign hash k (table x) m)]) table =
       reconstructPadFn hash k tr table := by
   rw [reconstructPadFn_append_singleton]
-  dsimp only
   rw [sign, neg_add_cancel_left, ← reconstructPadFn_apply_of_not_mem hash k hx table,
     Function.update_eq_self]
 
-/-- For any entry `e ∈ tr` in a transcript with distinct nonces `(tr.map (fun e => e.1.2)).Nodup`,
-`reconstructPadFn` evaluates at `e.1.2` to `-hash k e.1.1 + e.2`. -/
+/-- For any entry `((m, x), t) ∈ tr` in a transcript with distinct nonces
+`(tr.map (fun ((_, x), _) => x)).Nodup`, `reconstructPadFn` evaluates at `x` to
+`-hash k m + t`. -/
 theorem reconstructPadFn_apply_of_mem_of_nodup [DecidableEq N] (hash : K → M → Y) (k : K)
-    {tr : List ((M × N) × Y)} {e : (M × N) × Y} (he : e ∈ tr)
-    (hnodup : (tr.map (fun e => e.1.2)).Nodup) (table : N → Y) :
-    reconstructPadFn hash k tr table e.1.2 = -hash k e.1.1 + e.2 := by
+    {tr : List ((M × N) × Y)} {m : M} {x : N} {t : Y} (he : ((m, x), t) ∈ tr)
+    (hnodup : (tr.map (fun ((_, x), _) => x)).Nodup) (table : N → Y) :
+    reconstructPadFn hash k tr table x = -hash k m + t := by
   induction tr generalizing table with
   | nil => contradiction
   | cons hd tl ih =>
+    rcases hd with ⟨⟨m', x'⟩, t'⟩
     simp only [List.map_cons, List.nodup_cons] at hnodup
     rw [reconstructPadFn_cons]
-    rcases List.mem_cons.mp he with rfl | htl
-    · rw [reconstructPadFn_apply_of_not_mem hash k hnodup.1, Function.update_self]
+    rcases List.mem_cons.mp he with hhd | htl
+    · cases hhd
+      rw [reconstructPadFn_apply_of_not_mem hash k hnodup.1, Function.update_self]
     · exact ih htl hnodup.2 _
 
-/-- Single-step pad-to-tag resampling identity for a fresh nonce `x ∉ tr.map (fun e => e.1.2)`:
-sampling `table ← PMF.uniformOfFintype (N → Y)` and signing `m` at `x` under
-`reconstructPadFn hash k tr table` is identical to sampling a uniform tag
+/-- Single-step pad-to-tag resampling identity for a fresh nonce
+`x ∉ tr.map (fun ((_, x'), _) => x')`: sampling `table ← PMF.uniformOfFintype (N → Y)` and signing
+`m` at `x` under `reconstructPadFn hash k tr table` is identical to sampling a uniform tag
 `t ← PMF.uniformOfFintype Y` and reconstructing
 `reconstructPadFn hash k (tr ++ [((m, x), t)]) table`. -/
 theorem uniform_reconstructPadFn_step {β : Type} [Fintype N] [DecidableEq N]
     [Fintype Y] [Nonempty Y] (hash : K → M → Y) (k : K)
-    {tr : List ((M × N) × Y)} (m : M) {x : N} (hx : x ∉ tr.map (fun e => e.1.2))
+    {tr : List ((M × N) × Y)} (m : M) {x : N} (hx : x ∉ tr.map (fun ((_, x'), _) => x'))
     (F : Y → List ((M × N) × Y) → (N → Y) → PMF β) :
     ((PMF.uniformOfFintype (N → Y)).bind fun table =>
       let t := sign hash k (reconstructPadFn hash k tr table x) m
@@ -2123,7 +2139,7 @@ private theorem run_interpret_bind_of_not_nodup {ι : Type} {spec : OracleSpec �
 
 /-- **Multi-query simulation equivalence for `nonceFnHandler` under a random function**:
 for any post-processing `post` that collapses to a constant distribution `c` whenever the transcript
-has a repeated nonce (`¬ (tr'.map (fun e => e.1.2)).Nodup`), running `prog` against
+has a repeated nonce (`¬ (tr'.map (fun ((_, x), _) => x)).Nodup`), running `prog` against
 `nonceFnHandler hash k (reconstructPadFn hash k tr table)` over
 `table ← PMF.uniformOfFintype (N → Y)` has the exact same distribution as running `prog` against the
 key-independent `nonceSimHandler` and reconstructing `reconstructPadFn hash k res.2 table` at the
@@ -2132,7 +2148,7 @@ theorem uniform_bind_run_interpret_nonceFnHandler {α β : Type} [Fintype N] [De
     [Fintype Y] [Nonempty Y] (hash : K → M → Y) (k : K)
     (prog : OracleComp (fun _ : M × N => Y) α) (tr : List ((M × N) × Y))
     (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
-    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun ((_, x), _) => x)).Nodup → post a tr' padFn = c) :
     ((PMF.uniformOfFintype (N → Y)).bind fun table =>
       ((OracleComp.interpret
         (nonceFnHandler hash k (reconstructPadFn hash k tr table)) prog).run tr).bind
@@ -2211,7 +2227,7 @@ theorem probOracleComp_uniform_bind_run_interpret_nonceFnHandler {α β : Type}
     [Fintype N] [DecidableEq N] [Fintype Y] [Nonempty Y] (hash : K → M → Y) (k : K)
     (prog : ProbOracleComp (fun _ : M × N => Y) α) (tr : List ((M × N) × Y))
     (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
-    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun ((_, x), _) => x)).Nodup → post a tr' padFn = c) :
     ((PMF.uniformOfFintype (N → Y)).bind fun table =>
       ((OracleComp.interpret
         (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
@@ -2326,23 +2342,32 @@ variable [DecidableEq M] [DecidableEq N] [DecidableEq Y]
 
 /-- Nonce-based SUF-CMA verification predicate on a query–tag transcript `tr` and pad function
 `padFn` ([BonehShoup2023], Section 7.5.1, Attack Game 7.4, p. 274): all signing queries in `tr` used
-distinct nonces (`(tr.map (fun e => e.1.2)).Nodup`), the candidate `out = ((m', x'), t')` was not
-returned by any signing query (`!tr.contains out`), and `verify hash k (padFn x') m' t' = true`. -/
+distinct nonces (`(tr.map (fun ((_, x), _) => x)).Nodup`), the candidate `out = ((m', x'), t')` was
+not returned by any signing query (`!tr.contains out`), and
+`verify hash k (padFn x') m' t' = true`. -/
 def checkNonceSUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
     (out : (M × N) × Y) : Bool :=
-  decide (tr.map (fun e => e.1.2)).Nodup &&
+  let cand := out.1
+  let m' := cand.1
+  let x' := cand.2
+  let t' := out.2
+  decide (tr.map (fun ((_, x), _) => x)).Nodup &&
     !tr.contains out &&
-    verify hash k (padFn out.1.2) out.1.1 out.2
+    verify hash k (padFn x') m' t'
 
 /-- Nonce-based EUF-CMA (message-freshness) verification predicate on a query–tag transcript `tr`
 and pad function `padFn`: all signing queries in `tr` used distinct nonces, the message
-`m' = out.1.1` was never queried (`!(tr.map (fun e => e.1.1)).contains out.1.1`), and
+`m'` was never queried (`!(tr.map (fun ((m, _), _) => m)).contains m'`), and
 `verify hash k (padFn x') m' t' = true`. -/
 def checkNonceEUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
     (out : (M × N) × Y) : Bool :=
-  decide (tr.map (fun e => e.1.2)).Nodup &&
-    !(tr.map (fun e => e.1.1)).contains out.1.1 &&
-    verify hash k (padFn out.1.2) out.1.1 out.2
+  let cand := out.1
+  let m' := cand.1
+  let x' := cand.2
+  let t' := out.2
+  decide (tr.map (fun ((_, x), _) => x)).Nodup &&
+    !(tr.map (fun ((m, _), _) => m)).contains m' &&
+    verify hash k (padFn x') m' t'
 
 /-- Global message freshness (`checkNonceEUF`) implies pair freshness (`checkNonceSUF`). -/
 theorem checkNonceEUF_imp_checkNonceSUF (hash : K → M → Y) (k : K) (padFn : N → Y)
@@ -2421,32 +2446,32 @@ theorem seed_uniform_checkNonceSUF_le {seed : PMF K} {hash : K → M → Y} {ε 
   by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
   · by_cases hx : out.1.2 ∈ tr.map (fun e => e.1.2)
     · rw [List.mem_map] at hx
-      rcases hx with ⟨e, he, hex⟩
+      rcases hx with ⟨⟨⟨m, x⟩, t⟩, he, hex⟩
       have hpad (k : K) (table : N → Y) :
-          reconstructPadFn hash k tr table out.1.2 = -hash k e.1.1 + e.2 := by
+          reconstructPadFn hash k tr table out.1.2 = -hash k m + t := by
         rw [← hex]
         exact reconstructPadFn_apply_of_mem_of_nodup hash k he hnodup table
       have hbind (k : K) :
           ((PMF.uniformOfFintype (N → Y)).bind fun table =>
             PMF.pure (checkNonceSUF hash k (reconstructPadFn hash k tr table) tr out)) =
-          PMF.pure (checkNonceSUF hash k (fun _ => -hash k e.1.1 + e.2) tr out) := by
+          PMF.pure (checkNonceSUF hash k (fun _ => -hash k m + t) tr out) := by
         simp only [checkNonceSUF, hpad, PMF.bind_const]
       simp only [hbind]
       refine ( (bind_apply_mono_on_support seed true fun k _ => ?_).trans
-        (seed_bind_verify_neg_add_le hh e.1.1 out.1.1 e.2 out.2) ).trans (le_max_left _ _)
-      by_cases hcheck : checkNonceSUF hash k (fun _ => -hash k e.1.1 + e.2) tr out = true
+        (seed_bind_verify_neg_add_le hh m out.1.1 t out.2) ).trans (le_max_left _ _)
+      by_cases hcheck : checkNonceSUF hash k (fun _ => -hash k m + t) tr out = true
       · rw [hcheck]
         simp only [checkNonceSUF, Bool.and_eq_true, Bool.not_eq_true', List.contains_eq_mem,
           decide_eq_false_iff_not, decide_eq_true_iff] at hcheck
         rcases hcheck with ⟨⟨-, hnotmem⟩, hv⟩
-        have hne : out.1.1 ≠ e.1.1 := by
+        have hne : out.1.1 ≠ m := by
           intro hmeq
           apply hnotmem
-          have hteq : out.2 = e.2 := by
-            have hv' := (verify_neg_add_eq_true_iff hash k e.1.1 out.1.1 e.2 out.2).mp hv
+          have hteq : out.2 = t := by
+            have hv' := (verify_neg_add_eq_true_iff hash k m out.1.1 t out.2).mp hv
             rw [hmeq, sub_self] at hv'
             exact sub_eq_zero.mp hv'.symm
-          have hout : out = e := Prod.ext (Prod.ext hmeq hex.symm) hteq
+          have hout : out = ((m, x), t) := Prod.ext (Prod.ext hmeq hex.symm) hteq
           rwa [hout]
         simp [hne, hv]
       · simp [Bool.eq_false_iff.mpr hcheck]
@@ -2826,7 +2851,7 @@ noncomputable def carterWegmanNonceMAC (msgLen : ℕ → ℕ)
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
@@ -2965,7 +2990,7 @@ def cwNonceLogHandler (msgLen : ℕ → ℕ) (hash : ℕ → List Bool → List 
 for the PRF security game ([BonehShoup2023], Section 7.5.1, Theorem 7.10, p. 274):
 1. Sample `k ← seed n`.
 2. Run `adversary n []`, answering each signing query via `cwNonceLogHandler msgLen hash n k`.
-3. Query the external oracle on the candidate nonce `out.1.1.2` (reading `n` bits `pad`), and
+3. Query the external oracle on the candidate nonce `nonce` (reading `n` bits `pad`), and
    accept iff `msg.length == msgLen n`, `nonce.length == n`, all queried nonces were pairwise
    distinct, the candidate `((msg, nonce), tag)` triple was not returned by the signing oracle, and
    `BitString.listXor n [hash n k msg, pad] == tag`. -/
@@ -2979,10 +3004,16 @@ def prfNonceToPrfDistinguisher (msgLen : ℕ → ℕ) (seed : ℕ → ProbComp (
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (cwNonceLogHandler msgLen hash n k))
       (adversary n [])).run []
-  (fun pad => (out.1.1.1.length == msgLen n) && (out.1.1.2.length == n) &&
-    decide (out.2.map (fun e => e.1.2)).Nodup && !out.2.contains out.1 &&
-    (BitString.listXor n [hash n k out.1.1.1, pad] == out.1.2)) <$>
-    (List.take n <$> ProbOracleComp.query ((), out.1.1.2))
+  let cand := out.1
+  let tr := out.2
+  let q := cand.1
+  let tag := cand.2
+  let msg := q.1
+  let nonce := q.2
+  (fun pad => (msg.length == msgLen n) && (nonce.length == n) &&
+    decide (tr.map (fun ((_, x), _) => x)).Nodup && !tr.contains cand &&
+    (BitString.listXor n [hash n k msg, pad] == tag)) <$>
+    (List.take n <$> ProbOracleComp.query ((), nonce))
 
 /-- `prfNonceToPrfDistinguisher` is uniformly strict oracle-PPT (`IsOraclePPT encBool`) whenever
 `msgLen`, `seed`, `hash`, and `adversary` are uniformly polynomial-time / strict PPT. -/
@@ -2992,7 +3023,7 @@ theorem isOraclePPT_prfNonceToPrfDistinguisher
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hadversary : IsOraclePPT (encPair (encPair encBits encBits) encBits) adversary) :
     IsOraclePPT encBool (prfNonceToPrfDistinguisher msgLen seed hash adversary) := by
@@ -3124,7 +3155,7 @@ theorem eval_prfRealGame_prfNonceToPrfDistinguisher
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
@@ -3496,7 +3527,7 @@ theorem sufCmaGame_carterWegmanNonceMAC_toReal_le
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
@@ -3544,7 +3575,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanNonceMAC
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
@@ -3573,7 +3604,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanNonceMAC
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
@@ -3625,7 +3656,7 @@ noncomputable def randomNonceSimHandler [Fintype N] [Nonempty N] [Fintype Y] [No
 
 /-- **Multi-query simulation equivalence for `randomNonceFnHandler` under a random function**:
 for any post-processing `post` that collapses to a constant distribution `c` whenever the transcript
-has a repeated nonce (`¬ (tr'.map (fun e => e.1.2)).Nodup`), running `prog` against
+has a repeated nonce (`¬ (tr'.map (fun ((_, x), _) => x)).Nodup`), running `prog` against
 `randomNonceFnHandler hash k (reconstructPadFn hash k tr table)` over
 `table ← PMF.uniformOfFintype (N → Y)` has the exact same distribution as running `prog` against
 `randomNonceSimHandler` and reconstructing `reconstructPadFn hash k res.2 table` at the end. -/
@@ -3634,7 +3665,7 @@ theorem uniform_bind_run_interpret_randomNonceFnHandler {α β : Type}
     (hash : K → M → Y) (k : K)
     (prog : OracleComp (fun _ : M => N × Y) α) (tr : List ((M × N) × Y))
     (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
-    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun ((_, x), _) => x)).Nodup → post a tr' padFn = c) :
     ((PMF.uniformOfFintype (N → Y)).bind fun table =>
       ((OracleComp.interpret
         (randomNonceFnHandler hash k (reconstructPadFn hash k tr table)) prog).run tr).bind
@@ -3715,14 +3746,14 @@ omit [AddGroup Y] in
 /-- Birthday-collision bound for `randomNonceSimHandler`: starting from `tr`, any `Q`-query-bounded
 program produces a transcript with a repeated nonce with probability at most
 `((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N` when
-`(tr.map (fun e => e.1.2)).Nodup`, and at most `1` otherwise. -/
+`(tr.map (fun ((_, x), _) => x)).Nodup`, and at most `1` otherwise. -/
 theorem randomNonceSimHandler_not_nodup_le {α : Type} [Fintype N] [Nonempty N] [DecidableEq N]
     [Fintype Y] [Nonempty Y]
     {prog : OracleComp (fun _ : M => N × Y) α} {Q : ℕ}
     (hprog : prog.IsQueryBounded Q) (tr : List ((M × N) × Y)) :
     (((OracleComp.interpret randomNonceSimHandler prog).run tr).bind fun res =>
-      PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
-      if (tr.map (fun e => e.1.2)).Nodup then
+      PMF.pure (!decide (res.2.map (fun ((_, x), _) => x)).Nodup)) true ≤
+      if (tr.map (fun ((_, x), _) => x)).Nodup then
         ((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N
       else 1 := by
   induction hprog generalizing tr with
@@ -3816,17 +3847,25 @@ Theorem 7.9, p. 270): the candidate `out = ((m', x'), t')` was not returned by a
 (`!tr.contains out`) and `verify hash k (padFn x') m' t' = true`. -/
 def checkRandomNonceSUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
     (out : (M × N) × Y) : Bool :=
-  !tr.contains out && verify hash k (padFn out.1.2) out.1.1 out.2
+  let cand := out.1
+  let m' := cand.1
+  let x' := cand.2
+  let t' := out.2
+  !tr.contains out && verify hash k (padFn x') m' t'
 
 /-- Randomized Carter–Wegman EUF-CMA (message-freshness) verification predicate: the message
-`m' = out.1.1` was never queried (`!(tr.map (fun e => e.1.1)).contains out.1.1`) and
+`m'` was never queried (`!(tr.map (fun ((m, _), _) => m)).contains m'`) and
 `verify hash k (padFn x') m' t' = true`. -/
 def checkRandomNonceEUF (hash : K → M → Y) (k : K) (padFn : N → Y) (tr : List ((M × N) × Y))
     (out : (M × N) × Y) : Bool :=
-  !(tr.map (fun e => e.1.1)).contains out.1.1 && verify hash k (padFn out.1.2) out.1.1 out.2
+  let cand := out.1
+  let m' := cand.1
+  let x' := cand.2
+  let t' := out.2
+  !(tr.map (fun ((m, _), _) => m)).contains m' && verify hash k (padFn x') m' t'
 
 /-- Auxiliary predicate that accepts whenever either a nonce collision occurred in `tr`
-(`!decide (tr.map (fun e => e.1.2)).Nodup`) or `checkNonceSUF hash k padFn tr out = true`. -/
+(`!decide (tr.map (fun ((_, x), _) => x)).Nodup`) or `checkNonceSUF hash k padFn tr out = true`. -/
 private def checkRandomNonceOrCollision (hash : K → M → Y) (k : K) (padFn : N → Y)
     (tr : List ((M × N) × Y)) (out : (M × N) × Y) : Bool :=
   !decide (tr.map (fun e => e.1.2)).Nodup || checkNonceSUF hash k padFn tr out
@@ -4246,7 +4285,7 @@ theorem probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler {α β : 
     (hash : K → M → Y) (k : K)
     (prog : ProbOracleComp (fun _ : M => N × Y) α) (tr : List ((M × N) × Y))
     (post : α → List ((M × N) × Y) → (N → Y) → PMF β) (c : PMF β)
-    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun e => e.1.2)).Nodup → post a tr' padFn = c) :
+    (hpost : ∀ a tr' padFn, ¬ (tr'.map (fun ((_, x), _) => x)).Nodup → post a tr' padFn = c) :
     ((PMF.uniformOfFintype (N → Y)).bind fun table =>
       ((OracleComp.interpret
         (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
@@ -4371,15 +4410,15 @@ omit [AddGroup Y] [DecidableEq M] [DecidableEq Y] in
 from `tr`, any `Q`-query-bounded `ProbOracleComp` program produces a transcript with a repeated
 nonce with probability at most
 `((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N` when
-`(tr.map (fun e => e.1.2)).Nodup`, and at most `1` otherwise. -/
+`(tr.map (fun ((_, x), _) => x)).Nodup`, and at most `1` otherwise. -/
 theorem probOracleComp_randomNonceSimHandler_not_nodup_le {α : Type}
     {prog : ProbOracleComp (fun _ : M => N × Y) α} {Q : ℕ}
     (hprog : prog.IsQueryBounded Q) (tr : List ((M × N) × Y)) :
     (((OracleComp.interpret
       (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifOracle m))
         randomNonceSimHandler) prog).run tr).bind fun res =>
-      PMF.pure (!decide (res.2.map (fun e => e.1.2)).Nodup)) true ≤
-      if (tr.map (fun e => e.1.2)).Nodup then
+      PMF.pure (!decide (res.2.map (fun ((_, x), _) => x)).Nodup)) true ≤
+      if (tr.map (fun ((_, x), _) => x)).Nodup then
         ((∑ i ∈ Finset.range Q, (tr.length + i) : ℕ) : ℝ≥0∞) / Fintype.card N
       else 1 := by
   induction hprog generalizing tr with
@@ -4641,7 +4680,7 @@ noncomputable def carterWegmanRandomMAC (msgLen : ℕ → ℕ)
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
@@ -4762,7 +4801,7 @@ noncomputable def cwRandomNonceLogHandler (msgLen : ℕ → ℕ)
 for the PRF security game ([BonehShoup2023], Section 7.4, Theorem 7.9, p. 270):
 1. Sample `k ← seed n`.
 2. Run `adversary n []`, answering each signing query via `cwRandomNonceLogHandler msgLen hash n k`.
-3. Query the external oracle on the candidate nonce `unframe out.1.2` (reading `n` bits `pad`), and
+3. Query the external oracle on the candidate nonce `unframe fullTag` (reading `n` bits `pad`), and
    accept iff `msg.length == msgLen n`, `(unframe fullTag).length == n`, the candidate
    `(msg, fullTag)` pair was not returned by the signing oracle, and
    `encPair encBits encBits (unframe fullTag, BitString.listXor n [hash n k msg, pad]) == fullTag`.
@@ -4778,14 +4817,15 @@ noncomputable def prfRandomNonceToPrfDistinguisher (msgLen : ℕ → ℕ)
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (cwRandomNonceLogHandler msgLen hash n k))
       (adversary n [])).run []
+  let cand := out.1
+  let msg := cand.1
+  let fullTag := cand.2
   (fun pad =>
-    let msg := out.1.1
-    let fullTag := out.1.2
     let nonce := unframe fullTag
     let tag := BitString.listXor n [hash n k msg, pad]
-    (msg.length == msgLen n) && (nonce.length == n) && !out.2.contains out.1 &&
+    (msg.length == msgLen n) && (nonce.length == n) && !out.2.contains cand &&
       (encPair encBits encBits (nonce, tag) == fullTag)) <$>
-    (List.take n <$> ProbOracleComp.query ((), unframe out.1.2))
+    (List.take n <$> ProbOracleComp.query ((), unframe fullTag))
 
 private theorem isOraclePPTOn_cwRandomNonceLogHandler
     {msgLen : ℕ → ℕ} {hash : ℕ → List Bool → List Bool → List Bool}
@@ -4992,7 +5032,7 @@ theorem isOraclePPT_prfRandomNonceToPrfDistinguisher
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT encBool (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) := by
@@ -5056,7 +5096,7 @@ theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
@@ -5446,7 +5486,7 @@ theorem sufCmaGame_carterWegmanRandomMAC_toReal_le
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     (hfamily : ComputableInPolyTime
       (fun p : List Bool × List Bool => family p.1 p.2)
@@ -5504,7 +5544,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.sufCma_carterWegmanRandomMAC
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
@@ -5549,7 +5589,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.eufCma_carterWegmanRandomMAC
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
@@ -5568,7 +5608,7 @@ theorem _root_.Cslib.Crypto.PseudorandomFunction.oneTimeEUFCMA_carterWegmanRando
     (hmsgLen : ComputableInPolyTime msgLen encUnary encUnary)
     (hseed : IsPPTOn encUnary encBits seed)
     (hhash : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => hash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => hash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits)
     {ε : ℕ → ℝ≥0}
     (hh : ∀ n, IsDeltaUniversalHash (ProbComp.eval (seed n))
@@ -5803,7 +5843,7 @@ theorem isPPTOn_linearHashSeed {msgLen : ℕ → ℕ}
 /-- Uncurried `BitString.LinearHash.wordHash` is computable in plain polynomial time. -/
 theorem computableInPolyTime_linearHashWordHash :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => BitString.LinearHash.wordHash p.1 p.2.1 p.2.2)
+      (fun ((n, k, m) : ℕ × List Bool × List Bool) => BitString.LinearHash.wordHash n k m)
       (encPair encUnary (encPair encBits encBits)) encBits := by
   polytime
 
