@@ -34,6 +34,8 @@ is distinct from a count of freely padded fair-coin strings.
 
 * `Cslib.Complexity.mem_SharpTIME`: the fixed-machine and exact terminal-count contract.
 * `Cslib.Complexity.SharpTIME_mono`: larger sufficient clocks preserve membership and counts.
+* `Cslib.Complexity.SharpTIME_mono_of_le_mul_add`: constant factors of the clock are absorbed.
+* `Cslib.Complexity.SharpTIME_pow_mono`: polynomial slices are monotone in the degree.
 * `Cslib.Complexity.SharpTIME.subset_SharpP`: every polynomial-time slice belongs to `SharpP`.
 * `Cslib.Complexity.mem_SharpP_iff_exists_mem_SharpTIME`: their union is exactly `SharpP`.
 
@@ -86,6 +88,33 @@ theorem SharpTIME_mono {t₁ t₂ : ℕ → ℕ} (h : ∀ n, t₁ n ≤ t₂ n) 
   change machine.branchCount (· == [true]) _ _ = f a
   rw [hhalt.branchCount_eq hle]
   exact hcount
+
+/-- Constant factors and additive constants of the time bound are absorbed by the constants of
+`SharpTIME`. -/
+theorem SharpTIME_mono_of_le_mul_add {t₁ t₂ : ℕ → ℕ} {C : ℕ} (h : ∀ n, t₁ n ≤ C * t₂ n + C) :
+    SharpTIME enc t₁ ⊆ SharpTIME enc t₂ := by
+  rintro f ⟨c₁, c₂, k, State, hfinite, machine, hnon, hm⟩
+  refine ⟨c₁ * C, c₁ * C + c₂, k, State, hfinite, machine, hnon, fun a => ?_⟩
+  obtain ⟨hhalt, hcount⟩ := hm a
+  have hle : c₁ * t₁ (enc a).length + c₂ ≤ c₁ * C * t₂ (enc a).length + (c₁ * C + c₂) := by
+    have := Nat.mul_le_mul_left c₁ (h (enc a).length)
+    rw [Nat.mul_add, ← Nat.mul_assoc] at this
+    omega
+  refine ⟨hhalt.mono hle, ?_⟩
+  change machine.branchCount (· == [true]) _ _ = f a
+  rw [hhalt.branchCount_eq hle]
+  exact hcount
+
+/-- Polynomial slices are monotone in the degree: a smaller degree gives a smaller class. At
+input length `0` the clocks are `0 ^ d ≤ 0 ^ D + 1`, which the additive constant absorbs. -/
+theorem SharpTIME_pow_mono {d D : ℕ} (h : d ≤ D) :
+    SharpTIME enc (· ^ d) ⊆ SharpTIME enc (· ^ D) :=
+  SharpTIME_mono_of_le_mul_add (C := 1) fun n => by
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · rcases Nat.eq_zero_or_pos d with rfl | hd
+      · simp
+      · simp [Nat.zero_pow hd]
+    · simpa only [one_mul] using (Nat.pow_le_pow_right hn h).trans (Nat.le_succ _)
 
 /-- A polynomial-time accepting-path counter belongs to the existing verifier-defined `#P`.
 This is the forward native-machine correspondence, with its affine polynomial clock. -/

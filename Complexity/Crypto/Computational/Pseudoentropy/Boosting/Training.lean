@@ -34,8 +34,8 @@ compose the programming rules, independently of these probabilistic guarantees.
 
 ## References
 
-[Holenstein2005], Section 2.2, Lemma 2.4 and Claims 2.15–2.16. As in `Selection`, the final
-predictor uses empirical selection over a finite slope grid.
+[Holenstein2005], Lemma 2.4 (Section 2.1.3) and Claims 2.15–2.16 (Section 2.2.4). As in
+`Selection`, the final predictor uses empirical selection over a finite slope grid.
 Adapted from the cslib `crypto` branch at `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
