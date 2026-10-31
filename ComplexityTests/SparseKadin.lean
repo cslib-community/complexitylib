@@ -64,8 +64,9 @@ example : OracleComp.interpret (m := Id) (languageOracle {w : List Bool | w.leng
   exact decide_eq_true_iff
 
 example (answer : Unit × List Bool → List Bool) :
-    (OracleComp.queriesWith answer (KadinCensus.program (fun x : Unit × ℕ => List.replicate x.2 true)
-      (fun x => List.replicate x.2 true) (fun _ => 10) (fun _ => 4) ())).length ≤ 5 :=
+    (OracleComp.queriesWith answer
+      (KadinCensus.program (fun x : Unit × ℕ => List.replicate x.2 true)
+        (fun x => List.replicate x.2 true) (fun _ => 10) (fun _ => 4) ())).length ≤ 5 :=
   KadinCensus.length_queriesWith_program_le answer _ _ _ _ ()
 
 -- With the empty sparse set, the census is `0`: the request `(a, 0, false)` holds and
