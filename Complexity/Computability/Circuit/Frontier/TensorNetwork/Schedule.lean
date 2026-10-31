@@ -78,7 +78,8 @@ precision bound `p ≤ s λ^{O(1)} 2 ^ (a_{d-1})` is `precisionBound_le`.
 ## Main results
 
 * `exists_activeBounds`: the parameter certificate.
-* `card_modeBudget_le`: the mode count (D.15) at an active call.
+* `card_modeBudget_le`, `ActiveBounds.card_modeBudget_le`: the mode count (D.15) at an active
+  call.
 * `sum_branchExponent_le`: the excess exponents sum to `O(s / √⌊log₂ s⌋)`.
 * `precisionBound_le`: the precision bound `p ≤ C s 2 ^ (a_{d-1}) (1 + d (8 λ + 40))`.
 
@@ -685,6 +686,28 @@ theorem card_modeBudget_le {C s d M p : ℕ} (hA : Active C s d M p) (hs : 2 ≤
       _ = 15360 * C * s := by ring
   change 4 * x + 4 ≤ 4 * (15360 * C * s / (σ * 8 ^ d)) + 4
   omega
+
+/-- At an active call satisfying the certificate, `s ≥ 2`. -/
+theorem ActiveBounds.two_le {C s d M p : ℕ} (hB : ActiveBounds C s d M p) : 2 ≤ s := by
+  have h := hB.depth_add_two_le
+  rcases Nat.lt_or_ge s 2 with hs | hs
+  · rw [Nat.log_of_lt hs] at h
+    omega
+  · exact hs
+
+/-- **The mode count (D.15) at a certified active call**: for a node of valuation `i < u` and
+`h = ⌈3 M / u⌉`, and a packing with `#P 2 ^ a ≤ 3 M` (Lemma D.3 (1)), there are at most `2 ^ e_d`
+mode tuples. This is `card_modeBudget_le` with its hypotheses supplied by `ActiveBounds`. -/
+theorem ActiveBounds.card_modeBudget_le {C s d M p : ℕ} (hB : ActiveBounds C s d M p)
+    (hA : Active C s d M p) {i h : ℕ} (hi : i < taper s d)
+    (hh : h * taper s d ≤ 3 * M + taper s d) {P : Type*} [Fintype P] [DecidableEq P]
+    (hP : Fintype.card P * 2 ^ slotBits s d ≤ 3 * M) :
+    #(TensorNetwork.modeBudget
+        (fun Z : P × Fin (2 ^ (i + 1)) × Fin (nodePrecision p h (slotBits s d) M i) =>
+          (Z.2.2 : ℕ) + 1)
+        (nodePrecision p h (slotBits s d) M i)) ≤ 2 ^ branchExponent C s d :=
+  ContractionSchedule.card_modeBudget_le hA hB.two_le hB.one_le_taper
+    (by have := slotBits_eq s d; omega) (hB.nodePrecision_mul_taper_le i h hi hh) hP
 
 /-- **The excess exponents sum to `O(s / √⌊log₂ s⌋)`**: over at most `⌊log₂ s⌋` levels,
 `∑_d e_d ≤ (245760 C + 4) ⌊s / ⌊√⌊log₂ s⌋⌋⌋`. The terms decrease geometrically, as in the
