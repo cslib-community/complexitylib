@@ -108,15 +108,16 @@ def clock (d m : ℕ) : ℕ := (m + 1) ^ (d + 3)
 def accepts (d : ℕ) (c y v : List Bool) : Bool :=
   !Diagonal.verdict (universal (decodeDesc c, (frame y ++ v).map eBit, clock d y.length))
 
-/-- **The verifier of the lazy diagonal**, on an input `x` and a certificate `v`. The input carries
-a word `w` framed at its start, and `w` carries the description `unframe w` framed at its start.
-When the description is short (`Cslib.Complexity.Diagonal.shortDesc`), the lengths from
-`P = 2 * w.length + 1` to `2 ^ clock d P - 1` form an interval:
+/-- **The verifier of the lazy diagonal**, on an input `x` of length `n` and a certificate `v`.
+The input carries a word `w` framed at its start, and `w` carries the description `unframe w`
+framed at its start. When the description is short (`Cslib.Complexity.Diagonal.shortDesc w`),
+let `P = 2 * w.length + 1`; the lengths from `P` to `2 ^ clock d P - 1` form the interval of `w`.
 
-* below its end, accept when the described verifier accepts `v` on the input one bit longer;
-* at its end, accept when the described verifier accepts no certificate on `frame w`, the input of
-  length `P`, by trying them all;
-* elsewhere, reject. -/
+* If `n + 1 < 2 ^ clock d P`, below the end of the interval, accept when the described verifier
+  accepts `v` on the input one bit longer.
+* If `n + 1 = 2 ^ clock d P`, at the end of the interval, accept when the described verifier
+  accepts no certificate on `frame w`, the input of length `P`, by trying them all.
+* Otherwise, and when the description is not short, reject. -/
 def verifier (d : ℕ) (p : List Bool × List Bool) : Bool :=
   if Diagonal.shortDesc (unframe p.1) then
     if Nat.size (p.1.length + 1) ≤ clock d (2 * (unframe p.1).length + 1) then
