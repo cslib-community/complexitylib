@@ -1007,6 +1007,11 @@ public import Complexity.Computability.Circuit.MapOp
 public import Complexity.Computability.Circuit.Metric
 public import Complexity.Computability.Circuit.Monotone.Basic
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Approximator
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Asymptotic
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.LowerBound
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Negative
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Positive
 public import Complexity.Computability.Circuit.Monotone.Clique.Approximator
 public import Complexity.Computability.Circuit.Monotone.Clique.Asymptotic
 public import Complexity.Computability.Circuit.Monotone.Clique.Closure.Approximator
@@ -2786,6 +2791,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
 public import Complexity.Foundations.Combinatorics.Sunflower
+public import Complexity.Foundations.Combinatorics.Sunflower.Closure
 public import Complexity.Foundations.Combinatorics.Sunflower.Implication
 public import Complexity.Foundations.Combinatorics.Sunflower.LowerBound
 public import Complexity.Foundations.Combinatorics.Sunflower.Pluck
