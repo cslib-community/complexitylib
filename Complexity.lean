@@ -1290,6 +1290,7 @@ public import Complexity.Computability.Complexity.Classes.Oracle.QueryBit
 public import Complexity.Computability.Complexity.Classes.Oracle.SelfReduction
 public import Complexity.Computability.Complexity.Classes.Oracle.Space
 public import Complexity.Computability.Complexity.Classes.Oracle.TQBF
+public import Complexity.Computability.Complexity.Classes.Oracle.WitnessBit
 public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Complexity.Classes.P.Closure
 public import Complexity.Computability.Complexity.Classes.P.Complement

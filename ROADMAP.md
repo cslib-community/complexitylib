@@ -363,9 +363,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   NEXP.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
-  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined;
-  still open are an exponential nondeterministic time separation, a succinct tableau reduction
-  with a linear-size decoder, the lexicographically first witness in `E^NP`, and the core theorem.
+  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
+  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`; still open are an
+  exponential nondeterministic time separation, a succinct tableau reduction with a linear-size
+  decoder, and the core theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
