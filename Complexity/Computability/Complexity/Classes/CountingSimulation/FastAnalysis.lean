@@ -138,7 +138,8 @@ theorem exists_activeBounds_le (D : ℕ) :
 /-- **Guarded roots are on the schedule**, for every constant `C ≥ 1` with precision at most
 `C m`. -/
 theorem onSchedule_root_capPrecision {P C : ℕ} {G : ℕ × ExplicitTensorNetwork ℕ}
-    (hg : fastGuard G = true) (hC : 1 ≤ C) (hp : (ExplicitTensorNetwork.capPrecision (P, G)).1 ≤ C * G.2.numEdges) :
+    (hg : fastGuard G = true) (hC : 1 ≤ C)
+    (hp : (ExplicitTensorNetwork.capPrecision (P, G)).1 ≤ C * G.2.numEdges) :
     OnSchedule C G.2.numEdges (root (ExplicitTensorNetwork.capPrecision (P, G))) := by
   have hdeg : G.2.maxDegree ≤ degreeBound G.2.numEdges := by
     simp only [fastGuard, decide_eq_true_eq] at hg
