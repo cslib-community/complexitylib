@@ -67,6 +67,7 @@ Its native certificate is `EntryContraction.fastCore`; its resources are analyze
 * `Cslib.Circuits.Frontier.DescribedNetwork.rowsFirst_polyTime`: rows-first bipartiteness is
   decidable in polynomial time.
 * `Cslib.Circuits.Frontier.EntryContraction.guard_polyTime`: the guard is polynomial-time.
+* `Cslib.Circuits.Frontier.ContractionSchedule.degreeBound_mono`: the degree bound is monotone.
 * `Cslib.Circuits.Frontier.EntryContraction.guard_of_entryAdmissible`: admissible inputs pass it.
 * `Cslib.Circuits.Frontier.EntryContraction.wf_rootCall`: guarded roots are well-formed.
 * `Cslib.Circuits.Frontier.EntryContraction.val_coreValue`: the machine is correct.
@@ -261,7 +262,8 @@ theorem guard_polyTime : ComputableInPolyTime (guard (T := T)) (encInput encT) e
   simp only [guard, Function.comp_apply, Bool.decide_and, List.all_eq, decide_eq_true_eq]
 
 /-- `degreeBound` is monotone. -/
-theorem degreeBound_mono {a b : ℕ} (h : a ≤ b) : degreeBound a ≤ degreeBound b :=
+theorem _root_.Cslib.Circuits.Frontier.ContractionSchedule.degreeBound_mono {a b : ℕ} (h : a ≤ b) :
+    degreeBound a ≤ degreeBound b :=
   Nat.pow_le_pow_right (by norm_num) (by have := Nat.log_mono_right (b := 2) h; omega)
 
 /-- **Admissible inputs pass the guard** at the modulus of the number of edges: their degree is at
@@ -331,7 +333,7 @@ variable (entry) in
 /-- **The result of the machine** on an input `(P, fl, r, G)`: on guarded inputs, the coefficient
 list of a value tagged `0` returned by the clocked run from the root call, and direct summation
 otherwise. -/
-@[expose] noncomputable def coreValue (x : ℕ × List ℕ × ℕ × DescribedNetwork T) : List ℕ :=
+noncomputable def coreValue (x : ℕ × List ℕ × ℕ × DescribedNetwork T) : List ℕ :=
   if guard x then
     ((scheme entry nativeMk).run clock rootCall x).elim
       (DescribedNetwork.sumValue SumOps.galois entry (x.1, x.2.1) x.2.2.2)

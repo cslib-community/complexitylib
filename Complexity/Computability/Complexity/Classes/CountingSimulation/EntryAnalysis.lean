@@ -209,7 +209,7 @@ variable {T : Type} {encT : T ↪ List Bool} {entry : T → List Bool → List �
 /-! ### The root -/
 
 /-- The parts of an encoded input `(P, fl, r, G)` against its length. -/
-theorem length_parts_le (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
+theorem length_parts_le_encInput (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
     x.1 + x.2.1.length + (encNat x.2.2.1).length +
       (DescribedNetwork.encDescribed encT x.2.2.2).length ≤ (encInput encT x).length := by
   obtain ⟨P, fl, r, G⟩ := x
@@ -268,7 +268,7 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
   set m := G.numEdges with hm
   set n := (encInput encT (P, fl, r, G)).length with hn
   set Y := n + 1 with hY
-  have hparts := length_parts_le (encT := encT) (P, fl, r, G)
+  have hparts := length_parts_le_encInput (encT := encT) (P, fl, r, G)
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
   simp only at hparts
   rw [← hn] at hparts
@@ -440,7 +440,7 @@ theorem exists_entryLeaves_le
   set Y := n + 1 with hY
   set S := Nat.sqrt (Nat.log 2 s) with hS
   set L := (DescribedNetwork.encDescribed encT G).length with hL
-  have hparts := length_parts_le (encT := encT) (P, modulus G.numEdges, r, G)
+  have hparts := length_parts_le_encInput (encT := encT) (P, modulus G.numEdges, r, G)
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
   simp only at hparts
   rw [← hn] at hparts
@@ -556,7 +556,7 @@ theorem exists_entryAnalysis
   set x₀ := rootCall x with hx₀
   set m := G.numEdges with hm
   set n := (encInput encT x).length with hn
-  have hparts := length_parts_le (encT := encT) x
+  have hparts := length_parts_le_encInput (encT := encT) x
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
   simp only [hx] at hparts
   rw [← hx, ← hn] at hparts
