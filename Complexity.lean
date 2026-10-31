@@ -1247,6 +1247,7 @@ public import Complexity.Computability.Complexity.Classes.Oracle.Counting
 public import Complexity.Computability.Complexity.Classes.Oracle.CountingEquivalence
 public import Complexity.Computability.Complexity.Classes.Oracle.Deterministic
 public import Complexity.Computability.Complexity.Classes.Oracle.Diagonal
+public import Complexity.Computability.Complexity.Classes.Oracle.ListOracle
 public import Complexity.Computability.Complexity.Classes.Oracle.Lowness
 public import Complexity.Computability.Complexity.Classes.Oracle.Monotone
 public import Complexity.Computability.Complexity.Classes.Oracle.PP
@@ -1333,6 +1334,7 @@ public import Complexity.Computability.Complexity.Classes.Sparse.Hausdorff
 public import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
 public import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
 public import Complexity.Computability.Complexity.Classes.Sparse.Prune
+public import Complexity.Computability.Complexity.Classes.Sparse.Turing
 public import Complexity.Computability.Complexity.Classes.TFNP
 public import Complexity.Computability.Complexity.Classes.TFNP.SearchToDecision
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
