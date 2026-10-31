@@ -24,6 +24,11 @@ equivalently `BH (k + 1) = BH k`), then the polynomial hierarchy collapses to it
 `Σ₃ᴾ ∩ Π₃ᴾ` (`PH = Σ₃ᴾ`) [Kadin][Kadin1988]. In particular, if `DP = coDP` (or `SATUNSAT ∈ coDP`),
 then `PH = Σ₃ᴾ`.
 
+This is a weaker form of Kadin's result. Kadin shows that a Boolean-hierarchy collapse gives a
+sparse set `S` with `coNP ⊆ NP^S`, and hence `PH ⊆ P^{NP^{NP}[O(log n)]}`, a subclass of `Δ₃ᴾ`
+([Kadin][Kadin1988], abstract). Neither the sparse-set statement nor the `Δ₃ᴾ` collapse is
+formalized here; the library has no class of bounded-query `Σ₂ᴾ`-oracle machines.
+
 ## Proof overview
 
 To place a language `A ∈ Π₃ᴾ` in `Σ₃ᴾ`, peel off its first two quantifier blocks of lengths `p₁`
@@ -853,8 +858,9 @@ theorem SigmaP_three_eq_PiP_three_of_coBH_subset_BH {k : ℕ}
   refine Set.Subset.antisymm (fun A hA => ?_) hsub
   simpa using compl_mem_PiP_of_mem_SigmaP (hsub (compl_mem_PiP_of_mem_SigmaP hA))
 
-/-- **Kadin's theorem** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`, the polynomial
-hierarchy collapses to `Σ₃ᴾ`. -/
+/-- **Kadin's theorem, `Σ₃ᴾ` form** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`, the
+polynomial hierarchy collapses to `Σ₃ᴾ`. Kadin proves the stronger collapse to
+`P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`; see the module documentation. -/
 theorem PH_eq_SigmaP_three_of_coBH_subset_BH {k : ℕ}
     (h : coBH encBits k ⊆ BH encBits k) :
     PH enc = SigmaP 3 enc :=
@@ -862,8 +868,9 @@ theorem PH_eq_SigmaP_three_of_coBH_subset_BH {k : ℕ}
     PiP_three_subset_SigmaP_three_of_coBH_subset_BH
       (coBH_subset_BH_of_coBH_encBits_subset_BH_encBits h)
 
-/-- **Kadin's theorem** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`, the polynomial
-hierarchy collapses to `Σ₃ᴾ ∩ Π₃ᴾ`. -/
+/-- **Kadin's theorem, `Σ₃ᴾ ∩ Π₃ᴾ` form** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`,
+the polynomial hierarchy collapses to `Σ₃ᴾ ∩ Π₃ᴾ`. Kadin proves the stronger collapse to
+`P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`; see the module documentation. -/
 theorem PH_eq_SigmaP_three_inter_PiP_three_of_coBH_subset_BH {k : ℕ}
     (h : coBH encBits k ⊆ BH encBits k) :
     PH enc = SigmaP 3 enc ∩ PiP 3 enc := by

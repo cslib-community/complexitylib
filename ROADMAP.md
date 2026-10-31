@@ -196,6 +196,9 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Kadin's full collapse:** a Boolean-hierarchy collapse gives a sparse `S` with `coNP ⊆ NP^S`
+  and `PH ⊆ P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`. `BooleanHierarchy/Kadin.lean` proves only
+  `PH = Σ₃ᴾ ∩ Π₃ᴾ`.
 
 ### Reducibilities and the structure of complete sets
 
