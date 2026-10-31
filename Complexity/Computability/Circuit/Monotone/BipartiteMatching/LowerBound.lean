@@ -42,6 +42,9 @@ when they have no perfect matching
 
 ## Main results
 
+* `Cslib.Circuits.BipartiteMatching.Razborov.nonempty_outputApproximator`,
+  `Cslib.Circuits.BipartiteMatching.Razborov.card_filter_accepts_le`: the output approximator of a
+  small circuit is nonempty, and accepts few graphs of colourings without a perfect matching.
 * `Cslib.Circuits.BipartiteMatching.Razborov.factorial_le_or_four_pow_le_mul_size`: the dichotomy.
 * `Cslib.Circuits.Monotone.lt_size_of_separates_ofPerm_ofColoring`,
   `Cslib.Circuits.Monotone.lt_size_of_computes_bipartitePerfectMatching`: the lower bound with
@@ -66,14 +69,6 @@ variable {n r s q : ℕ}
 namespace BipartiteMatching.Razborov
 
 open Approximator
-
-private theorem Positive.errorCost_le (op : Op) :
-    Positive.errorCost n r s op ≤ Positive.errorCap n r s := by
-  cases op <;> simp [Positive.errorCost]
-
-private theorem Negative.errorCost_le (op : Op) :
-    Negative.errorCost n s q op ≤ Negative.errorCap n s q := by
-  cases op <;> simp [Negative.errorCost]
 
 /-- If `2 ^ (s + 1) #(matchings n s) (2 ^ s - 1) ^ q t < 2 ^ (s q)`, a circuit with `t` gates stays
 below the negative budget. -/
@@ -122,7 +117,7 @@ theorem nonempty_outputApproximator (hs : 1 ≤ s) {C : Circuit signature (n * n
 
 /-- The approximator of the output of a circuit rejecting the graphs of colourings without a perfect
 matching accepts the graphs of at most `errorCap n s q * C.size` of these colourings. -/
-private theorem card_filter_accepts_le (hs : 1 ≤ s) (hq : (q * s) ^ 2 < r)
+theorem card_filter_accepts_le (hs : 1 ≤ s) (hq : (q * s) ^ 2 < r)
     {C : Circuit signature (n * n) 1}
     (hC : ∀ c : Coloring n, bipartitePerfectMatching n (ofColoring c) = false →
       C.eval Monotone.interpretation (ofColoring c) 0 = false) :

@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.LowerB
 public import Cslib.Computability.Circuit.Complexity
 public import Mathlib.Data.Nat.Log
 import Complexity.Foundations.Combinatorics.SmallSubsets
+import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Tactic.Linarith
@@ -80,28 +81,16 @@ namespace Monotone
 
 open BipartiteMatching.Razborov
 
-/-- `b ^ m (b + m) ≤ (b + 1) ^ m b`. -/
-private theorem pow_mul_add_le (b : ℕ) : ∀ m, b ^ m * (b + m) ≤ (b + 1) ^ m * b
-  | 0 => by simp
-  | m + 1 => by
-    have ih := pow_mul_add_le b m
-    calc b ^ (m + 1) * (b + (m + 1)) = b ^ m * (b * (b + m + 1)) := by ring
-      _ ≤ b ^ m * ((b + 1) * (b + m)) := Nat.mul_le_mul_left _ (by nlinarith)
-      _ = (b + 1) * (b ^ m * (b + m)) := by ring
-      _ ≤ (b + 1) * ((b + 1) ^ m * b) := Nat.mul_le_mul_left _ ih
-      _ = (b + 1) ^ (m + 1) * b := by ring
-
-/-- `2 (a - 1) ^ a ≤ a ^ a` for `a ≥ 1`, that is `(1 - 1 / a) ^ a ≤ 1 / 2`. -/
+/-- `2 (a - 1) ^ a ≤ a ^ a` for `a ≥ 1`, that is `(1 - 1 / a) ^ a ≤ 1 / 2`. With `a = x + 1`,
+Bernoulli's inequality (`pow_add_mul_le_add_pow`) gives
+`x ^ (x + 1) + (x + 1) x ^ x ≤ (x + 1) ^ (x + 1)`. -/
 private theorem two_mul_sub_one_pow_le {a : ℕ} (ha : 1 ≤ a) : 2 * (a - 1) ^ a ≤ a ^ a := by
-  rcases a with _ | _ | b
-  · omega
-  · simp
-  · simp only [Nat.add_sub_cancel]
-    have h := pow_mul_add_le (b + 1) (b + 1 + 1)
-    refine Nat.le_of_mul_le_mul_right (c := b + 1) ?_ (by omega)
-    calc 2 * (b + 1) ^ (b + 1 + 1) * (b + 1) = (b + 1) ^ (b + 1 + 1) * (2 * b + 2) := by ring
-      _ ≤ (b + 1) ^ (b + 1 + 1) * (b + 1 + (b + 1 + 1)) := Nat.mul_le_mul_left _ (by omega)
-      _ ≤ (b + 1 + 1) ^ (b + 1 + 1) * (b + 1) := h
+  obtain ⟨x, rfl⟩ : ∃ x, a = x + 1 := ⟨a - 1, by omega⟩
+  have h := pow_add_mul_le_add_pow (a := x) (b := 1) (Nat.zero_le x) (Nat.zero_le _) (x + 1)
+  simp only [Nat.add_sub_cancel, Nat.cast_id, mul_one] at h ⊢
+  calc 2 * x ^ (x + 1) = x ^ (x + 1) + x * x ^ x := by ring
+    _ ≤ x ^ (x + 1) + (x + 1) * x ^ x := by gcongr; omega
+    _ ≤ (x + 1) ^ (x + 1) := h
 
 /-- `64 s ^ 3 ≤ 2 ^ s` for `s ≥ 20`. -/
 private theorem sixtyFour_mul_pow_three_le_two_pow {s : ℕ} (hs : 20 ≤ s) : 64 * s ^ 3 ≤ 2 ^ s := by

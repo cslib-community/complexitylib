@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Approximator
 public import Mathlib.Data.Nat.Choose.Central
+import Complexity.Foundations.Data.BitString.Flip
+import Complexity.Foundations.Data.Nat.Choose.Central
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Finset.Sum
 import Mathlib.Data.Fintype.Sum
@@ -23,7 +25,7 @@ whose edges join vertices of the same colour (`Cslib.Circuits.BipartiteMatching.
 graph has a perfect matching only if both sides have equally many vertices of colour `true`, so at
 most `C(2n, n) ≤ 4 ^ n / √(2n + 1)` of them have one
 (`Cslib.Circuits.BipartiteMatching.card_filter_bipartitePerfectMatching_ofColoring_le`,
-`Cslib.Circuits.BipartiteMatching.centralBinom_sq_mul_le`) [Jukna, Lemma 9.33][Jukna2012].
+`Nat.centralBinom_sq_mul_le`) [Jukna, Lemma 9.33][Jukna2012].
 
 The events that edges lie in the graph are not independent, but they are along *fresh* edges.
 Flipping the colour of a vertex outside the vertices `U ∪ V` on which an event depends toggles
@@ -60,7 +62,6 @@ with at most `s` edges (`Cslib.ImplicationClosure.relatesInSteps_closure`).
 
 * `Cslib.Circuits.BipartiteMatching.card_filter_bipartitePerfectMatching_ofColoring_le`: at most
   `C(2n, n)` graphs of colourings have a perfect matching.
-* `Cslib.Circuits.BipartiteMatching.centralBinom_sq_mul_le`: `C(2n, n) ^ 2 (2n + 1) ≤ 16 ^ n`.
 * `Cslib.Circuits.BipartiteMatching.card_filter_contains_ofColoring_mul_two_pow`: a matching of `d`
   edges lies in the graphs of exactly `4 ^ n / 2 ^ d` colourings.
 * `Cslib.Circuits.BipartiteMatching.card_filter_forall_not_contains_mul_le`: the graphs of at most
@@ -141,23 +142,6 @@ theorem card_filter_bipartitePerfectMatching_ofColoring_le :
         rw [card_powersetCard, card_univ, Fintype.card_sum, Fintype.card_fin, ← two_mul,
           Nat.centralBinom_eq_two_mul_choose]
 
-/-- `C(2n, n) ^ 2 (2n + 1) ≤ 16 ^ n`: the product of the ratios `(2k - 1) / (2k)` is at most
-`1 / √(2n + 1)`. -/
-theorem centralBinom_sq_mul_le (n : ℕ) : n.centralBinom ^ 2 * (2 * n + 1) ≤ 16 ^ n := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    have h := Nat.succ_mul_centralBinom_succ n
-    refine Nat.le_of_mul_le_mul_left (c := (n + 1) ^ 2) ?_ (by positivity)
-    calc (n + 1) ^ 2 * ((n + 1).centralBinom ^ 2 * (2 * (n + 1) + 1))
-        = ((n + 1) * (n + 1).centralBinom) ^ 2 * (2 * n + 3) := by ring
-      _ = 4 * (2 * n + 1) * n.centralBinom ^ 2 * ((2 * n + 1) * (2 * n + 3)) := by rw [h]; ring
-      _ ≤ 4 * (2 * n + 1) * n.centralBinom ^ 2 * (4 * (n + 1) ^ 2) :=
-          Nat.mul_le_mul_left _ (by nlinarith)
-      _ = 16 * (n + 1) ^ 2 * (n.centralBinom ^ 2 * (2 * n + 1)) := by ring
-      _ ≤ 16 * (n + 1) ^ 2 * 16 ^ n := Nat.mul_le_mul_left _ ih
-      _ = (n + 1) ^ 2 * 16 ^ (n + 1) := by ring
-
 /-- If `4 ^ (s + 1) ≤ 2n + 1`, at most a `2 ^ (-(s + 1))` fraction of the graphs of colourings has a
 perfect matching. -/
 theorem card_filter_bipartitePerfectMatching_ofColoring_mul_le (hs : 4 ^ (s + 1) ≤ 2 * n + 1) :
@@ -168,7 +152,7 @@ theorem card_filter_bipartitePerfectMatching_ofColoring_mul_le (hs : 4 ^ (s + 1)
         rw [mul_pow, ← pow_mul, mul_comm (s + 1), pow_mul]
         norm_num
     _ ≤ n.centralBinom ^ 2 * (2 * n + 1) := Nat.mul_le_mul_left _ hs
-    _ ≤ 16 ^ n := centralBinom_sq_mul_le n
+    _ ≤ 16 ^ n := Nat.centralBinom_sq_mul_le n
     _ = (4 ^ n) ^ 2 := by rw [← pow_mul, mul_comm, pow_mul]; norm_num
 
 /-! ### Fresh edges -/
@@ -179,47 +163,35 @@ private def Determined (U V : Finset (Fin n)) (S : Finset (Coloring n)) : Prop :
   ∀ c c', (∀ u ∈ U, c (.inl u) = c' (.inl u)) → (∀ v ∈ V, c (.inr v) = c' (.inr v)) → c ∈ S →
     c' ∈ S
 
-/-- Flip the colour of the vertex `w`. -/
-private def flip (w : Fin n ⊕ Fin n) (c : Coloring n) : Coloring n :=
-  Function.update c w (!c w)
-
-private theorem flip_flip (w : Fin n ⊕ Fin n) (c : Coloring n) : flip w (flip w c) = c := by
-  funext v
-  by_cases hv : v = w
-  · subst hv
-    simp [flip]
-  · simp [flip, Function.update_of_ne hv]
+open Cslib.BitString (flipOn flipOn_flipOn flipOn_singleton_self flipOn_singleton_of_ne)
 
 /-- An edge with an endpoint outside the vertices determining `S` lies in the graphs of exactly
 half of the colourings in `S`: flipping that endpoint toggles the edge and keeps `S`. -/
 private theorem two_mul_card_filter_edge {U V : Finset (Fin n)} {S : Finset (Coloring n)}
     (hS : Determined U V S) {e : Fin n × Fin n} (he : e.1 ∉ U ∨ e.2 ∉ V) :
     2 * #{c ∈ S | c (.inl e.1) = c (.inr e.2)} = #S := by
-  obtain ⟨w, hwS, hw⟩ : ∃ w : Fin n ⊕ Fin n, (∀ c ∈ S, flip w c ∈ S) ∧
-      ∀ c, (flip w c (.inl e.1) = flip w c (.inr e.2) ↔ ¬c (.inl e.1) = c (.inr e.2)) := by
+  obtain ⟨w, hwS, hw⟩ : ∃ w : Fin n ⊕ Fin n, (∀ c ∈ S, flipOn {w} c ∈ S) ∧
+      ∀ c, (flipOn {w} c (.inl e.1) = flipOn {w} c (.inr e.2) ↔
+        ¬c (.inl e.1) = c (.inr e.2)) := by
     rcases he with he | he
     · refine ⟨.inl e.1, fun c hc => hS c _ (fun u hu => ?_) (fun v _ => ?_) hc, fun c => ?_⟩
-      · have : u ≠ e.1 := fun h => he (h ▸ hu)
-        simp [flip, this]
-      · simp [flip]
-      · have h1 : flip (.inl e.1) c (.inl e.1) = !c (.inl e.1) := by simp [flip]
-        have h2 : flip (.inl e.1) c (.inr e.2) = c (.inr e.2) := by simp [flip]
-        rw [h1, h2]
+      · have hu' : u ≠ e.1 := fun h => he (h ▸ hu)
+        exact (flipOn_singleton_of_ne (Sum.inl_injective.ne hu') c).symm
+      · exact (flipOn_singleton_of_ne Sum.inr_ne_inl c).symm
+      · rw [flipOn_singleton_self, flipOn_singleton_of_ne Sum.inr_ne_inl]
         cases c (.inl e.1) <;> cases c (.inr e.2) <;> decide
     · refine ⟨.inr e.2, fun c hc => hS c _ (fun u _ => ?_) (fun v hv => ?_) hc, fun c => ?_⟩
-      · simp [flip]
-      · have : v ≠ e.2 := fun h => he (h ▸ hv)
-        simp [flip, this]
-      · have h1 : flip (.inr e.2) c (.inl e.1) = c (.inl e.1) := by simp [flip]
-        have h2 : flip (.inr e.2) c (.inr e.2) = !c (.inr e.2) := by simp [flip]
-        rw [h1, h2]
+      · exact (flipOn_singleton_of_ne Sum.inl_ne_inr c).symm
+      · have hv' : v ≠ e.2 := fun h => he (h ▸ hv)
+        exact (flipOn_singleton_of_ne (Sum.inr_injective.ne hv') c).symm
+      · rw [flipOn_singleton_self, flipOn_singleton_of_ne Sum.inl_ne_inr]
         cases c (.inl e.1) <;> cases c (.inr e.2) <;> decide
   have hbij : #{c ∈ S | c (.inl e.1) = c (.inr e.2)} = #{c ∈ S | ¬c (.inl e.1) = c (.inr e.2)} :=
-    card_nbij' (flip w) (flip w)
+    card_nbij' (flipOn {w}) (flipOn {w})
       (fun c hc => mem_filter.2 ⟨hwS c (mem_filter.1 hc).1, by
         rw [hw, not_not]; exact (mem_filter.1 hc).2⟩)
       (fun c hc => mem_filter.2 ⟨hwS c (mem_filter.1 hc).1, (hw c).2 (mem_filter.1 hc).2⟩)
-      (fun c _ => flip_flip w c) fun c _ => flip_flip w c
+      (fun c _ => flipOn_flipOn _ c) fun c _ => flipOn_flipOn _ c
   rw [two_mul]
   nth_rw 2 [hbij]
   exact card_filter_add_card_filter_not _
@@ -503,6 +475,10 @@ theorem card_stepExceptions_closure_le {F : Finset (Finset (Fin n × Fin n))}
 def errorCost (n s q : ℕ) : Op → ℕ
   | .or => errorCap n s q
   | _ => 0
+
+/-- The negative error cost of any gate is at most `errorCap n s q`. -/
+theorem errorCost_le (op : Op) : errorCost n s q op ≤ errorCap n s q := by
+  cases op <;> simp [errorCost]
 
 /-- The negative errors of a gate: for a disjunction, those of closing the union of the families of
 its arguments. -/

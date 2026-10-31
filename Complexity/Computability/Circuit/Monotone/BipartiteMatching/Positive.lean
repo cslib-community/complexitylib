@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Approximator
+import Complexity.Foundations.GroupTheory.Perm.Fixing
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.Perm
 
@@ -91,18 +92,6 @@ theorem isMatching_of_contains_ofPerm {σ : Equiv.Perm (Fin n)} {E : Finset (Fin
   have hfst : e.1 = e'.1 := h'.elim id fun h' => σ.injective (h1.trans (h'.trans h2.symm))
   exact Prod.ext hfst (by rw [← h1, ← h2, hfst])
 
-/-- The permutations fixing every vertex of `U` number `(n - #U)!`. -/
-private theorem card_filter_forall_eq_self (U : Finset (Fin n)) :
-    #{τ : Equiv.Perm (Fin n) | ∀ u ∈ U, τ u = u} = (n - U.card)! := by
-  rw [← Fintype.card_subtype]
-  calc Fintype.card {τ : Equiv.Perm (Fin n) // ∀ u ∈ U, τ u = u}
-      = Fintype.card (Equiv.Perm {a : Fin n // a ∉ U}) :=
-        Fintype.card_congr ((Equiv.subtypeEquivRight fun τ => by
-          simp only [not_not]).trans (Equiv.Perm.subtypeEquivSubtypePerm (· ∉ U)).symm)
-    _ = (n - U.card)! := by
-        rw [Fintype.card_perm, Fintype.card_subtype, filter_not, card_sdiff_of_subset
-          (subset_univ _), filter_mem_eq_inter, univ_inter, card_univ, Fintype.card_fin]
-
 /-- **Permutations through a set of edges.** At most `(n - #E)!` permutations `σ` have
 `σ e.1 = e.2` for every edge `e` of `E`: if `σ₀` is one, the others are `σ₀ τ` for the permutations
 `τ` fixing the left endpoints of `E`. -/
@@ -115,7 +104,9 @@ theorem card_filter_contains_ofPerm_le (E : Finset (Fin n × Fin n)) :
   have h₀ := (mem_filter.1 hσ₀).2
   have hU : (E.image Prod.fst).card = E.card := card_image_of_injOn fun e he e' he' h =>
     isMatching_of_contains_ofPerm h₀ e he e' he' (Or.inl h)
-  rw [← hU, ← card_filter_forall_eq_self]
+  have hfix := Equiv.Perm.card_filter_forall_eq_self (E.image Prod.fst)
+  rw [Fintype.card_fin] at hfix
+  rw [← hU, ← hfix]
   refine card_le_card_of_injOn (fun σ => σ₀⁻¹ * σ) (fun σ hσ => ?_)
     fun σ _ σ' _ h => mul_left_cancel h
   simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq, mem_image] at hσ ⊢
@@ -161,6 +152,10 @@ theorem card_largeUnions_le (hr : 2 ≤ r) (A B : Approximator n r s) :
 def errorCost (n r s : ℕ) : Op → ℕ
   | .and => errorCap n r s
   | _ => 0
+
+/-- The positive error cost of any gate is at most `errorCap n r s`. -/
+theorem errorCost_le (op : Op) : errorCost n r s op ≤ errorCap n r s := by
+  cases op <;> simp [errorCost]
 
 /-- The positive errors of a gate: for a conjunction, the perfect matchings containing a union of
 more than `s` edges of minimal matchings of its arguments. -/

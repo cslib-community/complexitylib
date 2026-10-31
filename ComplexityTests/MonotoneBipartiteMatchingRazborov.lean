@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Circuit.Formula
 import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Asymptotic
 import Complexity.Computability.Circuit.Monotone.Formula
+import Complexity.Foundations.Data.Nat.Choose.Central
 
 /-!
 # Tests: Razborov's lower bound for monotone circuits computing perfect matchings
@@ -44,7 +45,7 @@ example : (Finset.univ.filter fun c : Coloring 2 => Contains (ofColoring c) {(0,
   omega
 
 /-- `C(8, 4) ^ 2 · 9 = 44100 ≤ 16 ^ 4`. -/
-example : Nat.centralBinom 4 ^ 2 * (2 * 4 + 1) ≤ 16 ^ 4 := centralBinom_sq_mul_le 4
+example : Nat.centralBinom 4 ^ 2 * (2 * 4 + 1) ≤ 16 ^ 4 := Nat.centralBinom_sq_mul_le 4
 
 /-- The hypotheses of the explicit bound hold at `s = q = 1`, `r = 2` and `n = 8`. -/
 example : (1 * 1) ^ 2 < 2 ∧ 4 ^ (1 + 1) ≤ 2 * 8 + 1 := by norm_num
