@@ -34,25 +34,23 @@ without rounding. So for such `f`, `ecomplexityFun z f Set.univ Set.univ` is the
 up to an integer, and for `n ≥ 1` a lower bound `n ≤ ecomplexityFun z f Set.univ Set.univ` says
 `C^z(f) > 2 ^ (n - 1)`, that is, `N^z(f) > n - 1` in their convention.
 
-The domain sets `A` and `B` and the relations go beyond their Definition 2.1, in the usual way for
-partial functions (promise problems). A partial function is a function together with the sets `A`
-and `B`: its value outside `A × B` does not matter, and rectangles are not required to lie inside
-`A × B`. A relation with Boolean answers is a partial function with an arbitrary domain, accepting
-both answers outside it, except that it may accept no answer on some pairs.
+The model here lies between the total Boolean functions of their Definition 2.1 and the relations
+with arbitrary answers of [Kushilevitz and Nisan, Chapter 5][KushilevitzNisan1997]: it covers
+partial Boolean functions, which are relations with Boolean answers. A partial function is a
+function together with the sets `A` and `B`, or, when its domain is not a rectangle, a relation that
+accepts both answers outside its domain; its values there do not matter, and rectangles are not
+required to lie inside the domain. Kushilevitz and Nisan remark after Definition 5.2 that for
+relations, measures such as `N¹(R)` are less interesting, since the answer `1` has no special role;
+with Boolean answers, `N⁰` and `N¹` keep their meaning.
 
-Relations with arbitrary answers are the subject of
-[Kushilevitz and Nisan, Chapter 5][KushilevitzNisan1997], and `Protocol.ecomplexity` is stated for
-them. Kushilevitz and Nisan require a protocol to be correct only on legal inputs, those with some
-acceptable answer, and define the other measures for relations "in a similar manner"
+Kushilevitz and Nisan require a protocol for a relation to be correct only on legal inputs, those
+with some acceptable answer, and define the other measures for relations "in a similar manner"
 [Kushilevitz and Nisan, Definition 5.2, p. 71][KushilevitzNisan1997]. Here, as for
-`Protocol.ecomplexity`, every pair of `A × B` must get an acceptable answer, so a pair of `A × B`
-with no acceptable answer makes the complexity `⊤`. Just before Definition 5.2 they note the
-alternative of extending a relation to allow every answer on its illegal pairs; their convention
-for `R` is this one for that extension, which is no harder than `R`
-(`Nondeterministic.ecomplexity_le_of_imp`). After Definition 5.2 they remark that for relations,
-measures such as `N¹(R)` are less interesting, since the answer `1` has no special role. That is
-why the relations here have Boolean answers: such a relation is a partial Boolean function, and
-`N⁰` and `N¹` keep their meaning.
+`Protocol.ecomplexity`, which is stated for relations, every pair of `A × B` must get an acceptable
+answer, so a pair of `A × B` with no acceptable answer makes the complexity `⊤`. Just before
+Definition 5.2 they note the alternative of extending a relation to allow every answer on its
+illegal pairs; their convention for `R` is this one for that extension, which is no harder than
+`R` (`Nondeterministic.ecomplexity_le_of_imp`).
 
 ## Covers and protocols
 
