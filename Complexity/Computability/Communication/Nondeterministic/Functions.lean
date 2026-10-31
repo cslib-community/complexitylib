@@ -27,7 +27,9 @@ Bounds on `Nondeterministic.ecomplexityFun` for the standard functions on `v`-bi
 * inner product modulo two: `N¹(IP_v) ≥ v - 1` and `N⁰(IP_v) ≥ v`. By Lindsey's
   lemma a rectangle on which the inner product is constant has at most `2^v` pairs
   (`BitString.card_mul_le_two_pow_of_dotProduct_eq`), while the inner product is `1` on
-  `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs.
+  `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So `C¹(IP_v) ≥ (2^v - 1)/2` and
+  `C⁰(IP_v) ≥ (2^v + 1)/2`, which in the unrounded convention of Kushilevitz and Nisan give
+  `N¹(IP_v) ≥ log₂ (2^v - 1) - 1` and `N⁰(IP_v) > v - 1`.
 
 ## Main results
 
