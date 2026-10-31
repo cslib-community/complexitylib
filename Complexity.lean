@@ -1178,6 +1178,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Fas
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Guarded
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.TruncatedSum
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.FewP
