@@ -44,7 +44,9 @@ open Probability Turing.MultiTapeTM
 
 variable {E : Scheme}
   (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-    (fun p => E.encrypt p.1 p.2.1 p.2.2))
+    (fun p =>
+      let pb := p.2
+      E.encrypt p.1 pb.1 pb.2))
   {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
 
 include hencrypt hadversary

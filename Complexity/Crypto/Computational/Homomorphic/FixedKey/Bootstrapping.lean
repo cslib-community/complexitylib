@@ -58,10 +58,15 @@ theorem fullyHomomorphic {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ
     (hcircular : Encryption.CircularSecure E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => E.encrypt p.1 p.2.1 p.2.2))
+      (fun p =>
+        let pb := p.2
+        E.encrypt p.1 pb.1 pb.2))
     (hevaluate : IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
+      encBits (fun p =>
+        let rest := p.2
+        let ci := rest.2
+        E.evaluate p.1 rest.1 ci.1 ci.2))
     (hD : ComputableInPolyTime
       (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1)) :
@@ -73,13 +78,20 @@ theorem fullyHomomorphic {E : Scheme} {secretWidth ciphertextWidth : ℕ → ℕ
       PolynomiallyBounded (fun n => ((decryptionCircuits D).circuit n).size) ∧
       IsPPTOn encUnary (encPair encBits encBits) F.keyGen ∧
       IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-        (fun p => F.encrypt p.1 p.2.1 p.2.2) ∧
+        (fun p =>
+          let pb := p.2
+          F.encrypt p.1 pb.1 pb.2) ∧
       ComputableInPolyTime
-        (fun p : ℕ × List Bool × List Bool => F.decrypt p.1 p.2.1 p.2.2)
+        (fun p : ℕ × List Bool × List Bool =>
+          let sc := p.2
+          F.decrypt p.1 sc.1 sc.2)
         (encPair encUnary (encPair encBits encBits)) encBool ∧
       IsPPTOn
         (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-        encBits (fun p => F.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
+        encBits (fun p =>
+          let rest := p.2
+          let ci := rest.2
+          F.evaluate p.1 rest.1 ci.1 ci.2) ∧
       Encryption.INDCPA F.keyGen F.encrypt :=
   ⟨correct D hE hwidth hboot, fun _ _ => trivial, fixedWidth D hE hwidth hboot,
     (polynomiallyBounded_widths D hD).1, (polynomiallyBounded_widths D hD).2,

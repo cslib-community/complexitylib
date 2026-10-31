@@ -46,10 +46,15 @@ open Circuits Probability Turing.MultiTapeTM
 
 variable {E : Scheme}
   (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-    (fun p => E.encrypt p.1 p.2.1 p.2.2))
+    (fun p =>
+      let pb := p.2
+      E.encrypt p.1 pb.1 pb.2))
   (hevaluate : IsPPTOn
     (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-    encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
+    encBits (fun p =>
+      let rest := p.2
+      let ci := rest.2
+      E.evaluate p.1 rest.1 ci.1 ci.2))
   {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {pk bits : α → List Bool}
 
 include hencrypt

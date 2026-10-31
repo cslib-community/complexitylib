@@ -102,16 +102,18 @@ def decodeCiphertext (n w : ℕ) (word : List Bool) : Ciphertext n w :=
 
 /-- Compute the leading entry `B * secret + error` of a public row in binary arithmetic. -/
 def publicRowHead (n w : ℕ) (inputs : SerializedKeyInputs) (i : ℕ) : ℕ :=
+  let pe := inputs.2
   (((((List.range n).map fun j =>
-    (inputs.2.1.getD i []).getD j 0 * inputs.1.getD j 0).sum : ℕ) +
-      inputs.2.2.getD i 0 : ℤ) % (2 ^ w : ℤ)).toNat
+    (pe.1.getD i []).getD j 0 * inputs.1.getD j 0).sum : ℕ) +
+      pe.2.getD i 0 : ℤ) % (2 ^ w : ℤ)).toNat
 
 /-- Compute the public word from arbitrary serialized sampled inputs. -/
 def publicMatrixSerialized (n m w : ℕ) (inputs : SerializedKeyInputs) : List Bool :=
+  let pe := inputs.2
   (List.range m).flatMap fun i =>
     lowBits w (publicRowHead n w inputs i) ++
       (List.range n).flatMap fun j =>
-        lowBits w ((inputs.2.1.getD i []).getD j 0 % 2 ^ w)
+        lowBits w ((pe.1.getD i []).getD j 0 % 2 ^ w)
 
 /-- Normalize and serialize an arbitrary secret list to the declared dimensions. -/
 def secretSerialized (n w : ℕ) (secret : List ℕ) : List Bool :=

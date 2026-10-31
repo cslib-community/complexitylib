@@ -63,7 +63,9 @@ theorem correct_fixedWidth_indCPA {E : Scheme} {secretWidth ciphertextWidth budg
     (hsecure : Encryption.INDCPA E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => E.encrypt p.1 p.2.1 p.2.2))
+      (fun p =>
+        let pb := p.2
+        E.encrypt p.1 pb.1 pb.2))
     (hD : ComputableInPolyTime
       (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1))
@@ -90,10 +92,15 @@ theorem exists_scheme_of_polynomiallyBounded {E : Scheme}
     (hsecure : Encryption.INDCPA E.keyGen E.encrypt)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => E.encrypt p.1 p.2.1 p.2.2))
+      (fun p =>
+        let pb := p.2
+        E.encrypt p.1 pb.1 pb.2))
     (hevaluate : IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
+      encBits (fun p =>
+        let rest := p.2
+        let ci := rest.2
+        E.evaluate p.1 rest.1 ci.1 ci.2))
     (hD : ComputableInPolyTime
       (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1)) (hdepth : PolynomiallyBounded depth) :
@@ -108,13 +115,20 @@ theorem exists_scheme_of_polynomiallyBounded {E : Scheme}
       PolynomiallyBounded (fun n => ciphertextWidth n + 1) ∧
       IsPPTOn encUnary (encPair encBits encBits) (scheme D budget).keyGen ∧
       IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-        (fun p => (scheme D budget).encrypt p.1 p.2.1 p.2.2) ∧
+        (fun p =>
+          let pb := p.2
+          (scheme D budget).encrypt p.1 pb.1 pb.2) ∧
       ComputableInPolyTime
-        (fun p : ℕ × List Bool × List Bool => (scheme D budget).decrypt p.1 p.2.1 p.2.2)
+        (fun p : ℕ × List Bool × List Bool =>
+          let sc := p.2
+          (scheme D budget).decrypt p.1 sc.1 sc.2)
         (encPair encUnary (encPair encBits encBits)) encBool ∧
       IsPPTOn
         (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-        encBits (fun p => (scheme D budget).evaluate p.1 p.2.1 p.2.2.1 p.2.2.2) ∧
+        encBits (fun p =>
+          let rest := p.2
+          let ci := rest.2
+          (scheme D budget).evaluate p.1 rest.1 ci.1 ci.2) ∧
       Encryption.INDCPA (scheme D budget).keyGen (scheme D budget).encrypt := by
   obtain ⟨coefficient, degree, hmajorant⟩ := polynomiallyBounded_iff_le.mp hdepth
   let budget := fun n => coefficient * (n + 1) ^ degree
@@ -139,10 +153,15 @@ theorem schemeFamily_spec {E : Scheme} {secretWidth ciphertextWidth : ℕ → �
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun p => E.encrypt p.1 p.2.1 p.2.2))
+      (fun p =>
+        let pb := p.2
+        E.encrypt p.1 pb.1 pb.2))
     (hevaluate : IsPPTOn
       (encPair encUnary (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits))))
-      encBits (fun p => E.evaluate p.1 p.2.1 p.2.2.1 p.2.2.2))
+      encBits (fun p =>
+        let rest := p.2
+        let ci := rest.2
+        E.evaluate p.1 rest.1 ci.1 ci.2))
     (hD : ComputableInPolyTime
       (fun n => (⟨_, D.circuit n⟩ : Σ m, Circuit Boolean.signature m 1))
       encUnary (Boolean.encCircuit 1)) :
@@ -153,16 +172,25 @@ theorem schemeFamily_spec {E : Scheme} {secretWidth ciphertextWidth : ℕ → �
       IsPPTOn
         (encPair encUnary (encPair encUnary (encPair encBits encBool)))
         encBits
-        (fun p => (scheme D (fun _ => p.2.1)).encrypt p.1 p.2.2.1 p.2.2.2) ∧
+        (fun p =>
+          let dp := p.2
+          let pb := dp.2
+          (scheme D (fun _ => dp.1)).encrypt p.1 pb.1 pb.2) ∧
       ComputableInPolyTime
         (fun p : ℕ × ℕ × List Bool × List Bool =>
-          (scheme D (fun _ => p.2.1)).decrypt p.1 p.2.2.1 p.2.2.2)
+          let dp := p.2
+          let sc := dp.2
+          (scheme D (fun _ => dp.1)).decrypt p.1 sc.1 sc.2)
         (encPair encUnary (encPair encUnary (encPair encBits encBits))) encBool ∧
       IsPPTOn
         (encPair encUnary (encPair encUnary
           (encPair encBits (encPair (Boolean.encCircuit 1) (encList encBits)))))
         encBits
-        (fun p => (scheme D (fun _ => p.2.1)).evaluate p.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2) := by
+        (fun p =>
+          let dp := p.2
+          let rest := dp.2
+          let ci := rest.2
+          (scheme D (fun _ => dp.1)).evaluate p.1 rest.1 ci.1 ci.2) := by
   refine ⟨(polynomiallyBounded_widths D hD).1, (polynomiallyBounded_widths D hD).2,
     isPPTOn_keyGen hkeyGen hencrypt (by fun_prop) (by fun_prop),
     isPPTOn_encrypt hencrypt (by fun_prop) (by fun_prop) (by fun_prop),
