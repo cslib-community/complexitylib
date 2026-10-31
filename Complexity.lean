@@ -938,6 +938,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedC
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionLeaf
@@ -2886,6 +2887,7 @@ public import Complexity.Foundations.Data.Int.Residue
 public import Complexity.Foundations.Data.List.Append
 public import Complexity.Foundations.Data.List.BalancedFold
 public import Complexity.Foundations.Data.List.Basic
+public import Complexity.Foundations.Data.List.Boole
 public import Complexity.Foundations.Data.List.Counting
 public import Complexity.Foundations.Data.List.Equiv
 public import Complexity.Foundations.Data.List.EraseDups

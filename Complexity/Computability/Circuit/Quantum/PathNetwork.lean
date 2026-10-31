@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Quantum.PathSum
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
+import Complexity.Foundations.Data.List.Boole
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
 import Mathlib.Logic.Equiv.Fin.Basic
@@ -46,7 +47,9 @@ occurrences from `base gs i` on. The last occurrence of qubit `j` before positio
   tensor.
 
 So every edge joins a row to a column, every vertex has at most six ports, and untouched qubits
-cost nothing. With `neg = -1`, an assignment of nonzero weight is a pair of paths of the path sum
+cost nothing. The gate tables are bounded tables for the degree bound six
+(`Cslib.Circuits.Frontier.ExplicitTensorNetwork.boundedTable`). With `neg = -1`, an assignment of
+nonzero weight is a pair of paths of the path sum
 (`Cslib.Quantum.pathRun`) ending in the same register with qubit `0` equal to one, and its weight
 is the product of their signs, so the contraction is `acceptGap`
 (`Cslib.Quantum.PathNetwork.contraction_network`). The network is defined for any value `neg` of
@@ -55,13 +58,9 @@ the Hadamard sign, so that over `ℕ` it can carry `2 ^ P - 1`, which is `-1` mo
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.eqTable`,
-  `Cslib.Circuits.Frontier.ExplicitTensorNetwork.mapTables`: the equality table on two ports and
-  maps of the table entries.
 * `Cslib.Quantum.PathNetwork.qubits`, `Cslib.Quantum.PathNetwork.occurrences`,
   `Cslib.Quantum.PathNetwork.base`, `Cslib.Quantum.PathNetwork.lastOcc`: occurrences of qubits.
-* `Cslib.Quantum.PathNetwork.gateEntry`, `Cslib.Quantum.PathNetwork.table`: the tensor of a gate
-  and the tables of the vertices.
+* `Cslib.Quantum.PathNetwork.gateEntry`: the tensor of a gate.
 * `Cslib.Quantum.PathNetwork.inPort`, `Cslib.Quantum.PathNetwork.gatePorts`,
   `Cslib.Quantum.PathNetwork.inBit`, `Cslib.Quantum.PathNetwork.gateVertex`,
   `Cslib.Quantum.PathNetwork.acceptTable`, `Cslib.Quantum.PathNetwork.glueVertex`,
@@ -70,10 +69,6 @@ the Hadamard sign, so that over `ℕ` it can carry `2 ^ P - 1`, which is `-1` mo
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.contraction_append_pairs`: equality vertices on
-  consecutive pairs of edges reduce the contraction to a sum over one bit per pair.
-* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.map_contraction`: the contraction commutes with
-  maps of semirings applied to the tables.
 * `Cslib.Quantum.PathNetwork.lastOcc_succ`, `Cslib.Quantum.PathNetwork.lastOcc_eq_some`,
   `Cslib.Quantum.PathNetwork.lastOcc_eq_none`: last occurrences.
 * `Cslib.Quantum.PathNetwork.contraction_network`: with the Hadamard sign `-1`, the contraction
@@ -100,125 +95,6 @@ the Hadamard sign, so that over `ℕ` it can carry `2 ^ P - 1`, which is `-1` mo
 
 public section
 
-namespace Cslib.Circuits.Frontier.ExplicitTensorNetwork
-
-/-- A product of indicators is the indicator of the conjunction. -/
-theorem prod_map_boole {R : Type*} [CommSemiring R] {α : Type*} (l : List α) (p : α → Prop)
-    [DecidablePred p] :
-    (l.map fun a => if p a then (1 : R) else 0).prod = if ∀ a ∈ l, p a then 1 else 0 := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.map_cons, List.prod_cons, ih]
-    by_cases ha : p a <;> simp [ha]
-
-/-- The equality table on two ports. -/
-@[expose] def eqTable {R : Type*} [Zero R] [One R] : List R := [1, 0, 0, 1]
-
-theorem entry_eqTable {R : Type*} [Zero R] [One R] (a b : Bool) :
-    entry (eqTable : List R) [a, b] = if a = b then 1 else 0 := by
-  cases a <;> cases b <;> rfl
-
-/-- **Equality vertices on pairs of edges.** If the last vertices of a network with `2 W` edges are
-`W` equality vertices, vertex `w` joining the edges `2 w` and `2 w + 1`, then the contraction is the
-sum over one bit `y w` per pair of the product of the other entries, where edge `e` carries
-`y (e / 2)`. -/
-theorem contraction_append_pairs {R : Type*} [CommSemiring R] (W : ℕ)
-    (rows : List (List ℕ × List R)) :
-    contraction (⟨2 * W, rows ++ (List.range W).map fun w => ([2 * w, 2 * w + 1], eqTable)⟩ :
-        ExplicitTensorNetwork R) =
-      ∑ y : Fin W → Bool, (rows.map fun v => entry v.2
-        (v.1.map fun e => if h : e / 2 < W then y ⟨e / 2, h⟩ else false)).prod := by
-  classical
-  set G : ExplicitTensorNetwork R :=
-    ⟨2 * W, rows ++ (List.range W).map fun w => ([2 * w, 2 * w + 1], eqTable)⟩
-  -- an assignment that repeats each bit of `y` on the two edges of its pair
-  let dup : (Fin W → Bool) → Fin (2 * W) → Bool := fun y e => y ⟨e / 2, by omega⟩
-  have hdup : Function.Injective dup := by
-    intro y y' h
-    funext w
-    have := congrFun h ⟨2 * w, by omega⟩
-    simpa [dup, show 2 * (w : ℕ) / 2 = w by omega] using this
-  have hpb (x : Fin (2 * W) → Bool) (ps : List ℕ) :
-      G.portBits x ps = ps.map fun i => if h : i < 2 * W then x ⟨i, h⟩ else false := rfl
-  -- the weight of an assignment
-  let F : (Fin (2 * W) → Bool) → R := fun x =>
-    (G.vertices.map fun v => entry v.2 (G.portBits x v.1)).prod
-  have hcol (x : Fin (2 * W) → Bool) :
-      (((List.range W).map fun w => (([2 * w, 2 * w + 1], eqTable) : List ℕ × List R)).map
-          fun v => entry v.2 (G.portBits x v.1)).prod =
-        if ∀ w : Fin W, x ⟨2 * w, by omega⟩ = x ⟨2 * w + 1, by omega⟩ then 1 else 0 := by
-    rw [List.map_map]
-    have h1 : ∀ w ∈ List.range W, ((fun v => entry v.2 (G.portBits x v.1)) ∘
-        fun w => (([2 * w, 2 * w + 1], eqTable) : List ℕ × List R)) w =
-          if (∀ h : w < W, x ⟨2 * w, by omega⟩ = x ⟨2 * w + 1, by omega⟩) then 1 else 0 := by
-      intro w hw
-      have hw' : w < W := List.mem_range.mp hw
-      simp only [Function.comp_apply, hpb, List.map_cons, List.map_nil,
-        show 2 * w < 2 * W by omega, show 2 * w + 1 < 2 * W by omega, dite_true, entry_eqTable]
-      simp [hw']
-    rw [List.map_congr_left h1]
-    have key := prod_map_boole (R := R) (List.range W)
-      (fun w => ∀ h : w < W, x ⟨2 * w, by omega⟩ = x ⟨2 * w + 1, by omega⟩)
-    rw [key]
-    congr 1
-    exact propext ⟨fun h w => h w (List.mem_range.mpr w.2) w.2,
-      fun h w _ hw => h ⟨w, hw⟩⟩
-  have hF (x : Fin (2 * W) → Bool) : F x =
-      (rows.map fun v => entry v.2 (G.portBits x v.1)).prod *
-        if ∀ w : Fin W, x ⟨2 * w, by omega⟩ = x ⟨2 * w + 1, by omega⟩ then 1 else 0 := by
-    simp only [F, G, List.map_append, List.prod_append]
-    rw [← hcol]
-  -- assignments off the image of `dup` have weight zero
-  have hzero (x : Fin (2 * W) → Bool) (hx : x ∉ Finset.univ.image dup) : F x = 0 := by
-    rw [hF]
-    have : ¬ ∀ w : Fin W, x ⟨2 * w, by omega⟩ = x ⟨2 * w + 1, by omega⟩ := by
-      intro h
-      refine hx (Finset.mem_image.mpr ⟨fun w => x ⟨2 * w, by omega⟩, Finset.mem_univ _, ?_⟩)
-      funext e
-      obtain ⟨e, he⟩ := e
-      simp only [dup]
-      rcases Nat.even_or_odd' e with ⟨w, rfl | rfl⟩
-      · exact congrArg x (Fin.ext (by change 2 * (2 * w / 2) = 2 * w; omega))
-      · refine (congrArg x (Fin.ext ?_)).trans (h ⟨w, by omega⟩)
-        change 2 * ((2 * w + 1) / 2) = 2 * w
-        omega
-    rw [ite_eq_right this, mul_zero]
-  change ∑ x, F x = _
-  rw [← Finset.sum_subset (Finset.subset_univ (Finset.univ.image dup)) fun x _ hx => hzero x hx,
-    Finset.sum_image fun y _ y' _ h => hdup h]
-  refine Finset.sum_congr rfl fun y _ => ?_
-  rw [hF, ite_eq_left fun w => by simp [dup, show 2 * (w : ℕ) / 2 = w by omega,
-    show (2 * (w : ℕ) + 1) / 2 = w by omega], mul_one]
-  congr 1
-  refine List.map_congr_left fun v _ => ?_
-  rw [hpb]
-  congr 1
-  refine List.map_congr_left fun e _ => ?_
-  by_cases he : e < 2 * W
-  · simp [he, dup, show e / 2 < W by omega]
-  · simp [he, show ¬ e / 2 < W by omega]
-
-/-- The network with every table entry mapped by `ψ`. -/
-@[expose] def mapTables {R S : Type*} (ψ : R → S) (d : ExplicitTensorNetwork R) :
-    ExplicitTensorNetwork S :=
-  ⟨d.numEdges, d.vertices.map fun v => (v.1, v.2.map ψ)⟩
-
-/-- **The contraction commutes with maps of semirings** applied to the tables. -/
-theorem map_contraction {R S : Type*} [CommSemiring R] [CommSemiring S] (ψ : R →+* S)
-    (d : ExplicitTensorNetwork R) : ψ d.contraction = (d.mapTables ψ).contraction := by
-  rw [contraction, map_sum]
-  refine Finset.sum_congr rfl fun x _ => ?_
-  rw [map_list_prod, List.map_map]
-  simp only [mapTables, List.map_map]
-  congr 1
-  refine List.map_congr_left fun v _ => ?_
-  simp only [Function.comp_apply, entry]
-  rw [← map_zero ψ, List.getD_map]
-  rfl
-
-end Cslib.Circuits.Frontier.ExplicitTensorNetwork
-
 namespace Cslib.Quantum.PathNetwork
 
 open Cslib.Circuits.Frontier ExplicitTensorNetwork
@@ -226,7 +102,8 @@ open Cslib.Circuits.Frontier ExplicitTensorNetwork
 /-! ### Occurrences -/
 
 /-- The qubits of a gate code: its target, then its controls. -/
-@[expose] def qubits (g : GateCode) : List ℕ := g.2.1 :: g.2.2
+@[expose] def qubits : GateCode → List ℕ
+  | (_, target, controls) => target :: controls
 
 /-- The occurrences of qubits in a list of gate codes, gate by gate. -/
 @[expose] def occurrences (gs : List GateCode) : List ℕ := gs.flatMap qubits
@@ -251,11 +128,6 @@ classical gate it is `1` when the outputs are the gate applied to the inputs, an
   if g.1 then (if ins.headD false && outs.headD false then neg else 1)
   else if outs = (ins.headD false ^^ ins.tail.all id) :: ins.tail then 1 else 0
 
-/-- The table of the values `f 0, …, f (2 ^ w - 1)` for `w ≤ 6`, listed by keeping the positions
-below `2 ^ w` among the first `2 ^ 6`. -/
-@[expose] def table (w : ℕ) (f : ℕ → R) : List R :=
-  ((List.range (2 ^ 6)).filter fun idx => idx < 2 ^ w).map f
-
 /-- The port at which a gate with first occurrence `b` reads the qubit `j` in copy `c`: the link
 edge of the last earlier occurrence of `j`, or none when the gate reads `j` from the input. -/
 @[expose] def inPort (gs : List GateCode) (c b j : ℕ) : Option ℕ :=
@@ -277,7 +149,7 @@ of `j`, or the bit of its input port. -/
 /-- The vertex of gate `i` in copy `c`, for the input register `X`. -/
 @[expose] def gateVertex (neg : R) (X : List Bool) (gs : List GateCode) (c i : ℕ) :
     List ℕ × List R :=
-  (gatePorts gs c i, table (gatePorts gs c i).length fun idx =>
+  (gatePorts gs c i, boundedTable 6 (gatePorts gs c i).length fun idx =>
     gateEntry neg (gs.getD i default) ((qubits (gs.getD i default)).map (inBit X gs c i idx))
       ((List.range (qubits (gs.getD i default)).length).map idx.testBit))
 
@@ -642,26 +514,6 @@ section Entries
 
 variable {R : Type*} [Zero R] [One R]
 
-omit [Zero R] [One R] in
-/-- For `w ≤ 6`, the table lists `f` at the first `2 ^ w` positions. -/
-theorem table_eq {w : ℕ} (f : ℕ → R) (hw : w ≤ 6) : table w f = (List.range (2 ^ w)).map f := by
-  have hle : 2 ^ w ≤ 2 ^ 6 := Nat.pow_le_pow_right (by norm_num) hw
-  unfold table
-  congr 1
-  obtain ⟨c, hc⟩ := Nat.exists_eq_add_of_le hle
-  rw [hc, List.range_add, List.filter_append, List.filter_eq_self.mpr (by simp),
-    List.filter_eq_nil_iff.mpr (by simp), List.append_nil]
-
-omit [One R] in
-/-- Looking up a table at a word of length `w ≤ 6` evaluates its function at the value of the
-word. -/
-theorem entry_table {w : ℕ} (f : ℕ → R) (hw : w ≤ 6) {bs : List Bool} (h : bs.length = w) :
-    entry (table w f) bs = f (BitString.lsbValue bs) := by
-  subst h
-  rw [entry, table_eq f hw,
-    List.getD_eq_getElem _ _ (by simpa using BitString.lsbValue_lt bs)]
-  simp
-
 /-- A gate vertex has at most twice as many ports as its gate has qubits. -/
 theorem length_gatePorts_le (gs : List GateCode) (c i : ℕ) :
     (gatePorts gs c i).length ≤ 2 * (qubits (gs.getD i default)).length := by
@@ -682,7 +534,8 @@ private theorem entry_gateVertex (neg : R) (X : List Bool) (gs : List GateCode) 
           fun k => Z (c * (occurrences gs).length + (base gs i + k))) := by
   have hps : (gatePorts gs c i).length ≤ 6 := (length_gatePorts_le gs c i).trans (by omega)
   simp only [gateVertex]
-  rw [entry_table _ hps (List.length_map _)]
+  rw [show (gatePorts gs c i).length = ((gatePorts gs c i).map fun e => Z (e / 2)).length by simp,
+    entry_boundedTable _ (by simpa using hps)]
   congr 1
   · refine List.map_congr_left fun j hj => ?_
     simp only [inBit, reg, inPort]
@@ -924,7 +777,7 @@ theorem contraction_network {R : Type*} [CommRing R] (X : List Bool) (gs : List 
       P (fun u => Z (0 * N + u)) * (P (fun u => Z (1 * N + u)) *
         if FinalOK X gs (reg qs Xf (fun u => Z (0 * N + u)) N)
           (reg qs Xf (fun u => Z (1 * N + u)) N) then 1 else 0) := by
-    simp only [List.map_append, List.prod_append, hP, hG, prod_map_boole, List.map_cons,
+    simp only [List.map_append, List.prod_append, hP, hG, List.prod_map_boole, List.map_cons,
       List.map_nil, List.prod_cons, List.prod_nil, mul_one]
     rw [show entry (scalarVertex X gs : List ℕ × List R).2 ((scalarVertex X gs).1.map
       fun e => Z (e / 2)) = if 0 ∈ qs ∨ X.getD 0 false = true then 1 else 0 from rfl]
@@ -1001,7 +854,7 @@ theorem network_mapTables {R S : Type*} [CommSemiring R] [CommSemiring S] (ψ : 
     (network neg X gs).2.mapTables ψ = (network (ψ neg) X gs).2 := by
   have hgate (c i : ℕ) : (fun v : List ℕ × List R => (v.1, v.2.map ψ)) (gateVertex neg X gs c i) =
       gateVertex (ψ neg) X gs c i := by
-    simp only [gateVertex, table, List.map_map]
+    simp only [gateVertex, boundedTable, List.map_map]
     congr 2
     funext idx
     simp only [Function.comp_apply, gateEntry]
@@ -1120,7 +973,7 @@ theorem length_table_network (neg : R) (X : List Bool) {gs : List GateCode}
       (gateVertex neg X gs c i).2.length = 2 ^ (gateVertex neg X gs c i).1.length := by
     have := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
     simp only [gateVertex]
-    rw [table_eq _ ((length_gatePorts_le gs c i).trans (by omega)), List.length_map,
+    rw [boundedTable_eq _ ((length_gatePorts_le gs c i).trans (by omega)), List.length_map,
       List.length_range]
   rcases hv with (((⟨i, hi, rfl⟩ | ⟨i, hi, rfl⟩) | ⟨w, -, rfl⟩) | rfl) | ⟨w, -, rfl⟩
   · exact hgate 0 i hi
