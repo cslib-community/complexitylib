@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Foundations.Data.OrderedSet.Spec
+public import Complexity.Foundations.Data.OrderedSet.ExtractMin
 
 /-!
 # Representation-independent ordered-set clients
@@ -72,6 +72,27 @@ example (s : Finset (Fin 3)) : (least s : WithTop (Fin 3)) = s.min := least_eq_m
 example : (spec (Fin 3)).step {0, 2} (.successor 1) = ({0, 2}, some 2) := by decide
 example : (spec (Fin 3)).step {0, 2} (.successor 2) = ({0, 2}, none) := by decide
 
+-- Deletion is total: present, absent, and empty-set cases have the same typed interface.
+example : (spec (Fin 3)).step {0, 2} (.erase 0) = ({2}, ()) := by decide
+example : (spec (Fin 3)).step {0, 2} (.erase 1) = ({0, 2}, ()) := by decide
+example : (spec (Fin 3)).step ∅ (.erase 0) = (∅, ()) := by decide
+
+-- The erased key comes from the minimum answer; an empty query performs no deletion.
+example : (spec (Fin 3)).runClient {0, 2} extractMin =
+    (some 0, {2}, [.minimum, .erase 0]) := by decide
+example : (spec (Fin 3)).runClient ∅ extractMin = (none, ∅, [.minimum]) := by decide
+
+private def extractThree :
+    (spec (Fin 3)).Client (Option (Fin 3) × Option (Fin 3) × Option (Fin 3)) := do
+  let first ← extractMin
+  let second ← extractMin
+  let third ← extractMin
+  pure (first, second, third)
+
+-- Sequential composition sees the updated set, including exhaustion after the last key.
+example : (spec (Fin 3)).runClient {0, 2} extractThree =
+    ((some 0, some 2, none), ∅, [.minimum, .erase 0, .minimum, .erase 2, .minimum]) := by decide
+
 -- The same adaptive client can be interpreted without choosing a data structure.
 example : (spec (Fin 3)).runClient ∅ firstTwo = ((none, none), ∅, [.minimum]) := by decide
 example : (spec (Fin 3)).runClient {0, 2} firstTwo =
@@ -99,6 +120,7 @@ abbrev bounded (bound : Nat) : Spec :=
 example : ¬ (bounded 4).valid ∅ (.insert 4) := by decide
 example : (bounded 4).valid ∅ (.contains 99) := trivial
 example : (bounded 4).valid ∅ (.successor 99) := trivial
+example : (bounded 4).valid ∅ (.erase 99) := trivial
 example : (spec Nat).valid ∅ (.insert 99) := trivial
 
 end ComplexityTests.OrderedSet
