@@ -2010,6 +2010,7 @@ public import Complexity.Computability.PolyTime.LinearAlgebra.BooleanMeasurement
 public import Complexity.Computability.PolyTime.LinearAlgebra.CopyPlacement
 public import Complexity.Computability.PolyTime.LinearAlgebra.ExchangeReplacement
 public import Complexity.Computability.PolyTime.LinearAlgebra.ReplacementDesignBuilder
+public import Complexity.Computability.PolyTime.PacketPacking
 public import Complexity.Computability.PolyTime.ParityFactorEval
 public import Complexity.Computability.PolyTime.SparseMonomialJet
 public import Complexity.Computability.Probabilistic.Adaptive
