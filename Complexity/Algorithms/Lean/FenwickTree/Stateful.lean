@@ -25,9 +25,12 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
 
 * **Charged (`1` unit per visited Fenwick node):** each step along a downward query chain in
   `prefixSumM` or upward update chain in `addM`.
-* **Uncharged (`0` units):** index arithmetic (`lowbit`, `min`, addition/subtraction), bounds
-  checks, initial `zeros` or $O(n)$ `ofList` construction (whose `TimeM` cost `s.length` is proved
-  separately in `Basic.lean`), and pure client continuations.
+* **Uncharged (`0` units) and model boundaries:** `Exec` projects `TimeM` node-visit counts rather
+  than Word-RAM instructions. Index arithmetic (including recursive `lowbit` on `ℕ`), bounds
+  checks, monoid `+`, initial `zeros` or `s.length`-tick `ofListM` construction (proved separately
+  in `Basic.lean`), pure client continuations, and functional `Array.modify` copying if a tree
+  value is shared non-linearly rather than uniquely owned (for example, `step` binds
+  `let m := addM t pos δ` on `t`) are uncharged.
 * **Universe level:** `Cslib.Stateful.Realization` places the concrete state `FenwickTree α` and
   cost trace `ℕ : Type` in the same universe (`Type`), whereas `Basic.lean` is universe-polymorphic
   over `{α : Type*}`.
@@ -53,7 +56,7 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
 
 ## References
 
-* [P. M. Fenwick, *A New Data Structure for Cumulative Frequency Tables*, Sections 2–4][Fenwick1994]
+* [P. M. Fenwick, *A New Data Structure for Cumulative Frequency Tables*, pp. 328–332][Fenwick1994]
 -/
 
 public section
@@ -64,7 +67,9 @@ open Cslib.Stateful
 
 /-- Dynamic prefix-sum operations over `α`, independent of storage representation. -/
 inductive Op (α : Type) where
+  /-- Increment the entry at `0`-based index `pos` by `delta` (no-op when out of bounds). -/
   | add (pos : ℕ) (delta : α)
+  /-- Query the sum `(s.take len).sum` of the first `len` elements. -/
   | prefixSum (len : ℕ)
   deriving DecidableEq, Repr
 

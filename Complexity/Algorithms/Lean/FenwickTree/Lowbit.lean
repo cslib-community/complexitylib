@@ -16,7 +16,8 @@ import Mathlib.Tactic.Ring
 # Lowest-Set-Bit Combinatorics for Fenwick Trees
 
 This module develops the binary arithmetic and interval combinatorics underlying Fenwick trees
-(binary indexed trees, `[Fenwick1994]`, Sections 2–4).
+(binary indexed trees, `[Fenwick1994]`, "PRINCIPLES" and "OPERATIONS AND CODE TO HANDLE THE
+STRUCTURE", pp. 328–332).
 
 For a `1`-based index `m ≥ 1`, `lowbit m` is the value `2 ^ k` of the least significant `1`-bit of
 `m` (conventionally written `m & -m` in two's-complement arithmetic), and node `m` aggregates the
@@ -32,7 +33,8 @@ half-open `0`-based index interval `[m - lowbit m, m)`:
 * **Immediate-children partition (`fenwickChildren`):** for every `idx ≥ 1`, the singleton
   `{idx - 1}` together with the intervals `[c - lowbit c, c)` of immediate children
   `c + lowbit c = idx` pairwise-disjointly partition `[idx - lowbit idx, idx)`
-  (`insert_biUnion_fenwickChildren`), justifying $O(n)$ in-place Fenwick tree construction.
+  (`insert_biUnion_fenwickChildren`), justifying the standard BIT folklore immediate-parent
+  construction (`n` parent-propagation steps).
 
 ## Main definitions
 
@@ -58,7 +60,7 @@ half-open `0`-based index interval `[m - lowbit m, m)`:
 
 ## References
 
-* [P. M. Fenwick, *A New Data Structure for Cumulative Frequency Tables*, Sections 2–4][Fenwick1994]
+* [P. M. Fenwick, *A New Data Structure for Cumulative Frequency Tables*, pp. 328–332][Fenwick1994]
 -/
 
 public section
@@ -67,7 +69,8 @@ namespace Cslib.Algorithms.Lean.FenwickTree
 
 /-! ## Binary lowest set bit (`lowbit`) -/
 
-/-- Value `2 ^ k` of the least significant `1`-bit of `n` (`0` when `n = 0`). -/
+/-- Value `2 ^ k` of the least significant `1`-bit of `n` (`0` when `n = 0`), defined by binary
+recursion on `ℕ` (modeling two's-complement `n & -n` on fixed-width words). -/
 @[expose] def lowbit (n : ℕ) : ℕ :=
   if n = 0 then 0
   else if n % 2 = 1 then 1

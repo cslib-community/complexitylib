@@ -10,17 +10,18 @@ module
 public import Complexity.Init
 public import Complexity.Algorithms.Lean.FenwickTree.Lowbit
 public import Cslib.Algorithms.Lean.TimeM
-public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.BigOperators.Group.List.Basic
 
 /-!
 # Fenwick Trees (Binary Indexed Trees)
 
 This module implements universe-polymorphic Fenwick trees (binary indexed trees, `[Fenwick1994]`,
-Sections 2–4) in `Cslib.Algorithms.Lean.TimeM`:
+"PRINCIPLES" and "OPERATIONS AND CODE TO HANDLE THE STRUCTURE", pp. 328–332) in
+`Cslib.Algorithms.Lean.TimeM`:
 
 * Over any `[AddCommMonoid α]`: zero-initialized trees `zeros`, point increments `addM`/`add`,
-  prefix queries `prefixSumM`/`prefixSum`, and linear-time in-place parent-propagation construction
+  prefix queries `prefixSumM`/`prefixSum`, and `a.size`-tick immediate-parent construction
   `ofArrayM`/`ofArray` and `ofListM`/`ofList`.
 * Over any `[AddCommGroup α]`: half-open range queries `rangeSumM`/`rangeSum`, point reads
   `getM`/`get`, and point assignments `setM`/`set`.
@@ -32,24 +33,35 @@ without word-width side conditions.
 ## Source Conventions
 
 * **Indexing:** `[Fenwick1994]` indexes both logical frequencies and internal tree nodes `1 .. n`.
-  Here logical sequence positions are `0`-indexed (`pos < s.length`, `s.take len`), while the `1`-th
-  Fenwick node `m ∈ [1, n]` (`[Fenwick1994]`, Section 3) is stored at `0`-based array slot
-  `t.tree[m - 1]` and aggregates `((s.take m).drop (m - lowbit m)).sum`.
+  Here logical sequence positions are `0`-indexed (`pos < s.length`, `s.take len`), while the
+  `1`-based Fenwick node `m ∈ [1, n]` (`[Fenwick1994]`, "PRINCIPLES", pp. 328–330, Figures 1–3) is
+  stored at `0`-based array slot `t.tree[m - 1]` and aggregates
+  `((s.take m).drop (m - lowbit m)).sum`.
 * **Out-of-bounds totality:** `prefixSum t len` clamps `len` to `t.size` (matching
   `(s.take len).sum` for all `len : ℕ`), and `add t pos δ` / `set t pos v` leave `t` unchanged
   when `pos ≥ t.size` (matching `addAt s pos δ` and `s.set pos v`).
-* **Algebraic generality:** `[Fenwick1994]` works over integer cumulative frequencies; here
-  `zeros`, `prefixSumM`, `addM`, and `ofArrayM` require only `[AddCommMonoid α]`, while
-  subtraction-based `rangeSumM`, `getM`, and `setM` use `[AddCommGroup α]`.
+* **Algebraic generality and standard extensions:** `[Fenwick1994]` presents cumulative prefix
+  queries (`GetCumul`, Figure 4, p. 331) and upward point increments (Figures 5–6, pp. 331–332)
+  over integer frequencies (plus specialized single-frequency extraction in Figure 7, p. 333).
+  Here `zeros`, `prefixSumM`, `addM`, and `ofArrayM` require only `[AddCommMonoid α]`;
+  immediate-parent propagation `ofArrayM`/`ofListM` (`m ↦ m + lowbit m`) is standard BIT folklore,
+  and `rangeSumM`, `getM`, and `setM` are standard `[AddCommGroup α]` subtraction corollaries of
+  `prefixSumM` and `addM`.
 
 ## Cost Model
 
 * **Charged (`1` `TimeM` tick):** each visited Fenwick tree node along a downward query chain in
   `prefixSumM` (`m ↦ m - lowbit m`), each updated ancestor node along an upward update chain in
-  `addM` (`m ↦ m + lowbit m`), and each of the `n` parent-propagation steps in `ofArrayM`.
-* **Uncharged (`0` `TimeM` ticks):** index arithmetic (`lowbit`, `min`, subtraction/addition),
-  bounds checks, final subtraction `sr - sl` in `rangeSumM` and `v - cur` in `setM`, `zeros`
-  allocation, and `List.toArray` conversion in `ofListM`.
+  `addM` (`m ↦ m + lowbit m`), and each of the `a.size` immediate-parent propagation steps in
+  `ofArrayM`.
+* **Uncharged (`0` `TimeM` ticks) and model boundaries:** `TimeM ℕ` is an abstract step-counting
+  monad, not a Word-RAM instruction model. Index arithmetic (including `O(log n)` binary recursion
+  in `lowbit` on `ℕ`, modeling hardware `m & -m`), bounds checks, monoid/group `+` and `-`
+  operations (`sr - sl` in `rangeSumM`, `v - cur` in `setM`), `zeros` allocation, and
+  `List.toArray` conversion in `ofListM` carry `0` ticks. Moreover, `FenwickTree α` wraps a pure
+  functional `Array α`: `Array.modify` mutates in-place in `O(1)` at runtime only under unique
+  reference ownership (reference count `1`) and copies the underlying `n`-element array if shared
+  non-linearly (for example, `setM` reads `t` via `getM` before calling `addM t`).
 
 ## Main definitions
 
@@ -57,7 +69,7 @@ without word-width side conditions.
 * `Cslib.Algorithms.Lean.FenwickTree.Valid`: invariant coupling `t` to `s : List α`.
 * `Cslib.Algorithms.Lean.FenwickTree.addAt`: point increment on `List α` (`no-op` out of bounds).
 * `Cslib.Algorithms.Lean.FenwickTree.zeros`, `ofArrayM`, `ofArray`, `ofListM`, `ofList`:
-  zero initialization and $O(n)$ parent-propagation construction.
+  zero initialization and `a.size`-tick immediate-parent construction.
 * `Cslib.Algorithms.Lean.FenwickTree.prefixSumM`, `prefixSum`, `addM`, `add`: logarithmic prefix
   queries and point increments over `[AddCommMonoid α]`.
 * `Cslib.Algorithms.Lean.FenwickTree.rangeSumM`, `rangeSum`, `getM`, `get`, `setM`, `set`:
@@ -66,8 +78,8 @@ without word-width side conditions.
 ## Main results
 
 * `Cslib.Algorithms.Lean.FenwickTree.Valid.unique`: `Valid t s` uniquely determines `t` (so any
-  valid construction, including $O(n)$ `ofList s` and incremental `add` from `zeros`, produces the
-  exact same tree).
+  valid construction, including `ofList s` and incremental `add` from `zeros`, produces the exact
+  same tree).
 * `Cslib.Algorithms.Lean.FenwickTree.ret_prefixSumM_eq` and `prefixSumM_time_le_clog` /
   `prefixSumM_time_le_log`: `prefixSum` computes `(s.take len).sum` in at most
   `⌈log₂ (t.size + 1)⌉` (`≤ ⌊log₂ t.size⌋ + 1`) ticks.
@@ -75,13 +87,13 @@ without word-width side conditions.
   `addM_time_le_clog` / `addM_time_le_log`: `add` preserves `Valid` for `addAt s pos δ` in at most
   `⌈log₂ (t.size + 1)⌉` ticks.
 * `Cslib.Algorithms.Lean.FenwickTree.valid_ofArray` and `ofArrayM_time_eq`: `ofArray` builds a
-  valid Fenwick tree for `a.toList` in `a.size` ticks.
+  valid Fenwick tree for `a.toList` in `a.size` parent-propagation ticks.
 * `Cslib.Algorithms.Lean.FenwickTree.ret_rangeSumM_eq`, `ret_getM_eq`, `valid_set`, and their
   logarithmic `TimeM` bounds.
 
 ## References
 
-* [P. M. Fenwick, *A New Data Structure for Cumulative Frequency Tables*, Sections 2–4][Fenwick1994]
+* [P. M. Fenwick, *A New Data Structure for Cumulative Frequency Tables*, pp. 328–332][Fenwick1994]
 -/
 
 public section
@@ -238,7 +250,8 @@ termination_by m
 decreasing_by exact Nat.sub_lt hm.1 (lowbit_pos hm.1)
 
 /-- Prefix sum of the first `len` elements in `TimeM ℕ`, charging `1` tick per visited Fenwick
-node (`[Fenwick1994]`, Section 3.1). Clamps `len` to `t.size`. -/
+node (`[Fenwick1994]`, "OPERATIONS AND CODE TO HANDLE THE STRUCTURE", Figure 4, p. 331). Clamps
+`len` to `t.size`. -/
 def prefixSumM {α : Type*} [AddCommMonoid α] (t : FenwickTree α) (len : ℕ) : TimeM ℕ α :=
   prefixSumLoopM t.tree (min len t.tree.size) 0
 
@@ -246,6 +259,7 @@ def prefixSumM {α : Type*} [AddCommMonoid α] (t : FenwickTree α) (len : ℕ) 
 @[expose] def prefixSum {α : Type*} [AddCommMonoid α] (t : FenwickTree α) (len : ℕ) : α :=
   (prefixSumM t len).ret
 
+@[simp]
 theorem ret_prefixSumM {α : Type*} [AddCommMonoid α] (t : FenwickTree α) (len : ℕ) :
     (prefixSumM t len).ret = prefixSum t len := rfl
 
@@ -314,8 +328,8 @@ private theorem prefixSumLoopM_ret {α : Type*} [AddCommMonoid α]
       conv_rhs => rw [hsplit, List.sum_append]
       rw [add_assoc, add_comm ((s.take m).drop (m - lowbit m)).sum]
 
-/-- Functional correctness of `prefixSum` (`[Fenwick1994]`, Section 3.1): on any valid tree for
-`s`, `prefixSum t len` equals `(s.take len).sum` for all `len : ℕ`. -/
+/-- Functional correctness of `prefixSum` (`[Fenwick1994]`, Figure 4, p. 331): on any valid tree
+for `s`, `prefixSum t len` equals `(s.take len).sum` for all `len : ℕ`. -/
 theorem prefixSum_eq {α : Type*} [AddCommMonoid α]
     {t : FenwickTree α} {s : List α} (hv : Valid t s) (len : ℕ) :
     prefixSum t len = (s.take len).sum := by
@@ -345,7 +359,8 @@ decreasing_by
   omega
 
 /-- Add `δ` at `0`-based index `pos` in `TimeM ℕ`, charging `1` tick per updated Fenwick node
-(`[Fenwick1994]`, Section 3.2). Leaves `t` unchanged with `0` ticks when `t.size ≤ pos`. -/
+(`[Fenwick1994]`, "OPERATIONS AND CODE TO HANDLE THE STRUCTURE", Figures 5–6, pp. 331–332). Leaves
+`t` unchanged with `0` ticks when `t.size ≤ pos`. -/
 def addM {α : Type*} [AddCommMonoid α]
     (t : FenwickTree α) (pos : ℕ) (δ : α) : TimeM ℕ (FenwickTree α) :=
   if pos < t.tree.size then do
@@ -359,6 +374,7 @@ def addM {α : Type*} [AddCommMonoid α]
     (t : FenwickTree α) (pos : ℕ) (δ : α) : FenwickTree α :=
   (addM t pos δ).ret
 
+@[simp]
 theorem ret_addM {α : Type*} [AddCommMonoid α]
     (t : FenwickTree α) (pos : ℕ) (δ : α) :
     (addM t pos δ).ret = add t pos δ := rfl
@@ -462,8 +478,8 @@ private theorem addLoopM_getElem {α : Type*} [AddCommMonoid α]
       rw [upChain]
       simp only [hm, ↓reduceDIte, List.not_mem_nil, ↓reduceIte]
 
-/-- `add t pos δ` preserves `Valid` with respect to `addAt s pos δ` (`[Fenwick1994]`,
-Section 3.2). -/
+/-- `add t pos δ` preserves `Valid` with respect to `addAt s pos δ` (`[Fenwick1994]`, Figures 5–6,
+pp. 331–332). -/
 theorem valid_add {α : Type*} [AddCommMonoid α]
     {t : FenwickTree α} {s : List α} (hv : Valid t s) (pos : ℕ) (δ : α) :
     Valid (add t pos δ) (addAt s pos δ) := by
@@ -521,7 +537,7 @@ theorem add_of_size_le {α : Type*} [AddCommMonoid α]
   have hnot : ¬ pos < t.tree.size := by unfold size at h; omega
   simp only [hnot, ↓reduceIte, TimeM.ret_pure]
 
-/-! ## Linear-time $O(n)$ parent-propagation construction (`ofArrayM`, `ofArray`, `ofList`) -/
+/-! ## Immediate-parent propagation construction (`ofArrayM`, `ofArray`, `ofList`) -/
 
 private def buildLoopM {α : Type*} [AddCommMonoid α]
     (n : ℕ) (m : ℕ) (tree : Array α) : TimeM ℕ (Array α) :=
@@ -538,13 +554,14 @@ private def buildLoopM {α : Type*} [AddCommMonoid α]
     return tree
 termination_by n + 1 - m
 
-/-- Construct a Fenwick tree from `a : Array α` in $O(a.\mathrm{size})$ time by propagating each
-node `m` once into its immediate Fenwick parent `m + lowbit m`. -/
+/-- Construct a Fenwick tree from `a : Array α` in `a.size` parent-propagation `TimeM` ticks by
+adding each node `m` once into its immediate Fenwick parent `m + lowbit m` (corresponding to
+linear-time in-place construction when the array is uniquely owned). -/
 def ofArrayM {α : Type*} [AddCommMonoid α] (a : Array α) : TimeM ℕ (FenwickTree α) := do
   let tree ← buildLoopM a.size 1 a
   return ⟨tree⟩
 
-/-- Pure $O(n)$-constructed Fenwick tree `(ofArrayM a).ret`. -/
+/-- Pure immediate-parent-constructed Fenwick tree `(ofArrayM a).ret`. -/
 @[expose] def ofArray {α : Type*} [AddCommMonoid α] (a : Array α) : FenwickTree α :=
   (ofArrayM a).ret
 
@@ -719,8 +736,7 @@ private theorem buildLoopM_spec {α : Type*} [AddCommMonoid α]
     simp only [hm1, hms, hinv.size_eq, and_self, ↓reduceDIte, TimeM.ret_bind]
     exact ih (m + 1) (by omega) (by omega) hinv' (by omega)
 
-/-- `ofArray a` constructs a valid Fenwick tree representing `a.toList` in $O(a.\mathrm{size})$
-time. -/
+/-- `ofArray a` constructs a valid Fenwick tree representing `a.toList`. -/
 theorem valid_ofArray {α : Type*} [AddCommMonoid α] (a : Array α) :
     Valid (ofArray a) a.toList := by
   unfold ofArray ofArrayM
@@ -766,8 +782,8 @@ theorem ofList_nil {α : Type*} [AddCommMonoid α] :
 
 /-! ## Group operations (`rangeSumM`, `getM`, `setM`) -/
 
-/-- Half-open range sum `((s.take r).drop l).sum` in `TimeM ℕ` over `[AddCommGroup α]`
-(`[Fenwick1994]`, Section 3.1). -/
+/-- Half-open range sum `((s.take r).drop l).sum` in `TimeM ℕ` over `[AddCommGroup α]`, computed as
+the difference `prefixSumM t r - prefixSumM t l` when `l < r`. -/
 def rangeSumM {α : Type*} [AddCommGroup α] (t : FenwickTree α) (l r : ℕ) : TimeM ℕ α :=
   if l < r then do
     let sr ← prefixSumM t r
@@ -872,6 +888,15 @@ theorem valid_set {α : Type*} [AddCommGroup α]
   · simp only [TimeM.ret_pure]
     have hge : s.length ≤ pos := by have := hv.1; omega
     rwa [List.set_eq_of_length_le hge]
+
+@[simp]
+theorem size_set {α : Type*} [AddCommGroup α]
+    (t : FenwickTree α) (pos : ℕ) (v : α) :
+    (set t pos v).size = t.size := by
+  unfold set setM
+  split_ifs with hpos
+  · simp only [TimeM.ret_bind, ret_addM, size_add]
+  · simp only [TimeM.ret_pure]
 
 theorem setM_time_le_clog {α : Type*} [AddCommGroup α]
     (t : FenwickTree α) (pos : ℕ) (v : α) :

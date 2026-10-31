@@ -17,12 +17,12 @@ import Mathlib.Algebra.Group.ULift
 Kernel-checked examples and theorems (without `native_decide`) exercising:
 
 1. `lowbit`, `downChain`, `upChain`, and `fenwickChildren` combinatorics.
-2. Exact agreement between $O(n)$ `ofList` / `ofArray` construction and incremental `add` from
-   `zeros` (`ofList_eq_buildByAdds`), across empty (`n = 0`), singleton (`n = 1`), power-of-two
-   (`n = 16`), and non-power-of-two (`n = 6, 7, 13`) lengths, plus out-of-bounds totality and
-   exact `TimeM` tick counts.
-3. `[AddCommGroup ℤ]` operations (`rangeSum`, `get`, `set`) with negative updates, and universe
-   polymorphism of `FenwickTree` in `Type 1` (`ULift.{1} ℤ`).
+2. Exact agreement between `ofList` / `ofArray` immediate-parent construction and incremental `add`
+   from `zeros` (`ofList_eq_buildByAdds`), across empty (`n = 0`), singleton (`n = 1`), power-of-two
+   (`n = 16`), and non-power-of-two (`n = 6, 13`) lengths, plus out-of-bounds totality and exact
+   `TimeM` tick counts.
+3. `[AddCommGroup ℤ]` operations (`rangeSum`, `get`, `set`) at length `n = 7` with negative updates,
+   and universe polymorphism of `FenwickTree` in `Type 1` (`ULift.{1} ℤ`).
 4. Adaptive `Cslib.Stateful` clients running on `FenwickTree` with checked answers, node-visit
    traces, and `Nat.clog 2 (s.length + 1)` bounds.
 5. Positive and negative `Valid` witnesses showing both conjuncts of `Valid` are non-vacuous and
@@ -119,11 +119,16 @@ def sample16 : List ℕ := [1, 0, 2, 1, 1, 3, 0, 4, 2, 5, 2, 2, 3, 1, 0, 2]
 -- Empty (`n = 0`), singleton (`n = 1`), non-power-of-two (`n = 6, 13`), and `n = 16` checks
 example :
     ofList ([] : List ℕ) = zeros 0 ∧
+      ofList [42] = buildByAdds [42] ∧
+      prefixSum (ofList [42]) 1 = 42 ∧
+      (ofListM [42]).time = 1 ∧
       prefixSum (ofList ([] : List ℕ)) 5 = 0 ∧
       (ofListM ([] : List ℕ)).time = 0 ∧
       (prefixSumM (zeros (α := ℕ) 0) 3).time = 0 ∧
       (addM (zeros (α := ℕ) 0) 0 9).time = 0 := by
-  refine ⟨ofList_nil, ?_, ?_, ?_, ?_⟩
+  refine ⟨ofList_nil, ofList_eq_buildByAdds _, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [prefixSum_eq (valid_ofList [42]) 1]; rfl
+  · rw [ofListM_time_eq]; rfl
   · rw [prefixSum_eq (valid_ofList []) 5]; rfl
   · rw [ofListM_time_eq]; rfl
   · rw [prefixSumM_time_eq_downChain, size_zeros]; simp
@@ -180,7 +185,7 @@ example :
   · rw [get_eq hv1]; decide
   · rw [get_eq hv1]; decide
   · rw [rangeSum_eq hv1]; decide
-  · exact set_of_size_le _ 99 (by rw [hv1.size_eq]; decide)
+  · exact set_of_size_le _ 99 (by simp [signedSample])
 
 -- Universe polymorphism check: `FenwickTree` at `Type 1` (`ULift.{1} ℤ`)
 example :
