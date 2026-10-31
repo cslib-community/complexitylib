@@ -58,6 +58,7 @@ the selection is not an exhaustive API reference.
 ## Selected results
 
 * [Cook–Levin: SAT is NP-complete](abstracts/ComplexityAbstracts/CookLevinAbstract.lean): Every efficiently checkable bit-string problem reduces in polynomial time to satisfiability.
+* [Agrawal–Kayal–Saxena: PRIMES is in P](abstracts/ComplexityAbstracts/PrimesAbstract.lean): Primality of a natural number given in binary is decidable in deterministic polynomial time.
 * [The PCP theorem](abstracts/ComplexityAbstracts/PCPAbstract.lean): NP proofs can be checked with logarithmic randomness and constantly many nonadaptive queries.
 * [Fagin: logic captures NP](abstracts/ComplexityAbstracts/FaginAbstract.lean): Existential second-order logic captures precisely the isomorphism-invariant NP properties of finite relational structures.
 * [Savitch: NPSPACE equals PSPACE](abstracts/ComplexityAbstracts/SavitchAbstract.lean): Nondeterminism does not enlarge polynomial space.
