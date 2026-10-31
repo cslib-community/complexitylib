@@ -33,7 +33,8 @@ of the entries in `B_{P,ℓ}`, their coefficients below `ℓ` modulo `2 ^ P`
 (`DescribedNetwork.truncContraction_congr`). So `truncContraction` is the `B_{P,ℓ}` contraction of
 the canonical lifts of the entries, as in §D.4.1 (p. 58).
 
-**Evaluation.** Cutting the entries to `ℓ` coefficients (`DescribedNetwork.truncContraction_take`)
+**Evaluation.** Cutting the entries to `ℓ` coefficients (`cutCoeffs`,
+`DescribedNetwork.truncContraction_cutCoeffs`)
 bounds the degree of the contraction over `ℕ[V]` by `(ℓ - 1) k` for `k` vertices
 (`DescribedNetwork.natDegree_polyContraction_le`). The network specialized at a point `ζ` of
 `A_P` (`DescribedNetwork.specNet`) has the same ports, and its entry at a vertex is the value at
@@ -62,6 +63,7 @@ space bounds of Theorem D.1, is not formalized here (#1538).
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.coeffPoly`: the polynomial of a list of coefficients.
+* `Cslib.Circuits.Frontier.cutCoeffs`: the first `ℓ` coefficients.
 * `Cslib.Circuits.Frontier.DescribedNetwork.polyContraction`: the contraction over `ℕ[V]`.
 * `Cslib.Circuits.Frontier.DescribedNetwork.truncContraction`: the contraction in `B_{P,ℓ}`.
 * `Cslib.Circuits.Frontier.specEntry`, `Cslib.Circuits.Frontier.DescribedNetwork.specNet`: the
@@ -114,6 +116,18 @@ theorem natDegree_coeffPoly_le (c : List ℕ) : (coeffPoly c).natDegree ≤ c.le
     rw [coeff_coeffPoly, List.getD_eq_default _ _ (by
       have : c.length - 1 < N := by exact_mod_cast hN
       omega)]
+
+/-- The first `ℓ` coefficients of a list, padded with zeros to length `ℓ`. -/
+@[expose] def cutCoeffs (ℓ : ℕ) (c : List ℕ) : List ℕ := (List.range ℓ).map fun i => c.getD i 0
+
+@[simp] theorem length_cutCoeffs (ℓ : ℕ) (c : List ℕ) : (cutCoeffs ℓ c).length = ℓ := by
+  simp [cutCoeffs]
+
+/-- Below `ℓ`, the cut list has the coefficients of the list. -/
+theorem getD_cutCoeffs (c : List ℕ) {ℓ i : ℕ} (hi : i < ℓ) :
+    (cutCoeffs ℓ c).getD i 0 = c.getD i 0 := by
+  rw [cutCoeffs, List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map,
+    List.getElem_range]
 
 /-! ### The contraction in `B_{P,ℓ}` -/
 
@@ -170,11 +184,10 @@ theorem truncContraction_congr {entry entry' : T → List Bool → List ℕ} {P 
 
 /-- Cutting the entries to their first `ℓ` coefficients does not change the truncated
 contraction. -/
-theorem truncContraction_take (entry : T → List Bool → List ℕ) (P ℓ : ℕ)
+theorem truncContraction_cutCoeffs (entry : T → List Bool → List ℕ) (P ℓ : ℕ)
     (G : DescribedNetwork T) :
-    G.truncContraction (fun t bs => (entry t bs).take ℓ) P ℓ = G.truncContraction entry P ℓ :=
-  truncContraction_congr G fun t bs i hi => by
-    rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD, List.getElem?_take_of_lt hi]
+    G.truncContraction (fun t bs => cutCoeffs ℓ (entry t bs)) P ℓ = G.truncContraction entry P ℓ :=
+  truncContraction_congr G fun t bs i hi => by rw [getD_cutCoeffs _ hi]
 
 /-- **The degree bound**: if every entry has at most `ℓ` coefficients, the contraction over
 `ℕ[V]` has degree at most `(ℓ - 1) k` for `k` vertices. -/
@@ -197,7 +210,8 @@ the precision `P`, the truncation order `ℓ`, the coefficients `fl` of the modu
 abbrev SpecDesc (T : Type*) : Type _ := T × ℕ × ℕ × List ℕ × List ℕ
 
 /-- The first `ℓ` coefficients of a list, each as a constant coefficient list of `A_P`. -/
-@[expose] def constCoeffs (ℓ : ℕ) (c : List ℕ) : List (List ℕ) := (c.take ℓ).map fun a => [a]
+@[expose] def constCoeffs (ℓ : ℕ) (c : List ℕ) : List (List ℕ) :=
+  (List.range ℓ).map fun i => [c.getD i 0]
 
 variable {T : Type*}
 
@@ -209,11 +223,13 @@ Horner's rule, of the first `ℓ` coefficients of the entry of `t`. -/
 
 /-- Constant coefficient lists represent the polynomial of the coefficients in `A_p`. -/
 theorem pval_constCoeffs (p ℓ : ℕ) (fl c : List ℕ) :
-    pval p fl (constCoeffs ℓ c) = (coeffPoly (c.take ℓ)).map (Nat.castRingHom (Ring p fl)) := by
-  rw [pval, coeffPoly, Polynomial.map_sum, constCoeffs, List.length_map]
+    pval p fl (constCoeffs ℓ c) =
+      (coeffPoly (cutCoeffs ℓ c)).map (Nat.castRingHom (Ring p fl)) := by
+  rw [pval, coeffPoly, Polynomial.map_sum, constCoeffs, List.length_map, length_cutCoeffs,
+    List.length_range]
   refine sum_congr rfl fun k hk => ?_
-  rw [List.getD_eq_getElem _ _ (by simpa using hk), List.getElem_map, val_singleton,
-    List.getD_eq_getElem _ _ (by simpa using hk)]
+  rw [List.getD_eq_getElem _ _ (by simpa using hk), List.getElem_map, List.getElem_range,
+    val_singleton, getD_cutCoeffs _ (mem_range.mp hk)]
   simp
 
 /-- **A specialized entry is the evaluation at the point** of the polynomial of the first `ℓ`
@@ -221,7 +237,8 @@ coefficients. -/
 theorem val_specEntry (entry : T → List Bool → List ℕ) (t : T) (P ℓ : ℕ) (fl ζ : List ℕ)
     (bs : List Bool) :
     val P fl (specEntry entry (t, P, ℓ, fl, ζ) bs) =
-      ((coeffPoly ((entry t bs).take ℓ)).map (Nat.castRingHom (Ring P fl))).eval (val P fl ζ) := by
+      ((coeffPoly (cutCoeffs ℓ (entry t bs))).map (Nat.castRingHom (Ring P fl))).eval
+        (val P fl ζ) := by
   rw [specEntry, peval_eq, pval_constCoeffs]
 
 namespace DescribedNetwork
@@ -251,11 +268,12 @@ is the contraction over `ℕ[V]` of the entries cut to `ℓ` coefficients, evalu
 theorem val_contraction_specNet (entry : T → List Bool → List ℕ) (P ℓ : ℕ) (fl ζ : List ℕ)
     (G : DescribedNetwork T) :
     (specNet P ℓ fl ζ G).contraction (fun d bs => val P fl (specEntry entry d bs)) =
-      ((G.polyContraction fun t bs => (entry t bs).take ℓ).map
+      ((G.polyContraction fun t bs => cutCoeffs ℓ (entry t bs)).map
         (Nat.castRingHom (Ring P fl))).eval (val P fl ζ) := by
   rw [contraction_specNet]
   have h := map_contraction ((evalRingHom (val P fl ζ)).comp
-    (mapRingHom (Nat.castRingHom (Ring P fl)))) (fun t bs => coeffPoly ((entry t bs).take ℓ)) G
+    (mapRingHom (Nat.castRingHom (Ring P fl)))) (fun t bs => coeffPoly (cutCoeffs ℓ (entry t bs)))
+    G
   simp only [RingHom.comp_apply, coe_evalRingHom, coe_mapRingHom] at h
   rw [polyContraction, h]
   simp only [val_specEntry]
@@ -339,9 +357,9 @@ theorem interpRecover_eq_truncContraction {entry : T → List Bool → List ℕ}
     (hys : ∀ i < pts.length, val P fl (ys.getD i []) =
       (specNet P ℓ fl (pts.getD i []) G).contraction fun d bs => val P fl (specEntry entry d bs)) :
     interpRecover P ℓ fl pts ys = G.truncContraction entry P ℓ := by
-  rw [← truncContraction_take]
+  rw [← truncContraction_cutCoeffs]
   exact interpRecover_eq hirr hunit
-    ((natDegree_polyContraction_le G fun _ _ => List.length_take_le _ _).trans_lt hlen)
+    ((natDegree_polyContraction_le G fun _ _ => (length_cutCoeffs _ _).le).trans_lt hlen)
     fun i hi => (hys i hi).trans (val_contraction_specNet entry P ℓ fl _ G)
 
 /-- **The reduction to `ℓ = 1` over `A_P`**: contract, with `core`, the network specialized at
