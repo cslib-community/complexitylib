@@ -867,6 +867,7 @@ public import Complexity.Computability.Circuit.Frontier.Reduction
 public import Complexity.Computability.Circuit.Frontier.Sweep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TwoSidedWitness
@@ -2502,6 +2503,7 @@ public import Complexity.Foundations.Combinatorics.Expander.Cayley
 public import Complexity.Foundations.Combinatorics.Expander.Cheeger
 public import Complexity.Foundations.Combinatorics.Expander.Connected
 public import Complexity.Foundations.Combinatorics.Expander.Contraction
+public import Complexity.Foundations.Combinatorics.Expander.ElementaryMove
 public import Complexity.Foundations.Combinatorics.Expander.Existence
 public import Complexity.Foundations.Combinatorics.Expander.Family
 public import Complexity.Foundations.Combinatorics.Expander.FourthMoment
