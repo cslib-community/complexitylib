@@ -43,6 +43,8 @@ False*][OpenAI2026ETH] over `SparsePolyCompile`, bridged to `SparseEquations` an
 * `BranchInput`, `encBranchInput`, `branchBody`, `streamBranches`, `countByBranching`,
   `branchCountCertificate`, `branchBodyCertificate`, `certificate`, `countCertificate`,
   `stepOverhead`: streaming `BooleanFold` combinator and native time/space certificates.
+* `reducedCost`, `maxReducedCost`: the cost of a solver on a reduced branch, and its maximum over
+  the branches.
 
 ## Main results
 
@@ -53,6 +55,7 @@ False*][OpenAI2026ETH] over `SparsePolyCompile`, bridged to `SparseEquations` an
 * `branchRootCount_prepareBranch`, `sum_branch_count_eq_rootCount`, `streamBranches_correct`,
   `countByBranching_eq_rootCount`, `runPrefix_sum_le_two_pow`, `computableInPolyTime_prepareBranch`,
   `streamBranches_computableInO`, `countByBranching_computableInO`, `polyBounded_branchWorkspace`.
+* `le_maxReducedCost`, `maxReducedCost_le`: bounds on the maximum branch cost.
 
 ## References
 
@@ -920,9 +923,44 @@ public section
 namespace Cslib.GenericRAM.HeavyBranchFold
 open Cslib Cslib.BitString Cslib.Complexity Turing.MultiTapeTM
 
-private def reducedCost (f : ℕ × List (List (List ℕ)) → ℕ) : BranchOutcome → ℕ
+/-- The cost `f (n', sys')` of a reduced branch outcome `.reduced n' sys'`, and `0` on the other
+outcomes, on which no solver runs. -/
+def reducedCost (f : ℕ × List (List (List ℕ)) → ℕ) : BranchOutcome → ℕ
   | .reduced n' sys' => f (n', sys')
   | _ => 0
+
+/-- The largest cost `cost (n', sys')` over the reduced branches `.reduced n' sys'` of the
+streaming input `(n, S, eqs)`, over all `2 ^ |S|` assignments to `S`. -/
+noncomputable def maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ) (inp : BranchInput) : ℕ :=
+  let (n, S, eqs) := inp
+  ((List.range (2 ^ S.length)).map fun idx =>
+    reducedCost cost (prepareBranch n S (lowBits S.length idx) eqs)).foldl max 0
+
+/-- The cost of every reduced branch is at most `maxReducedCost`. -/
+theorem le_maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ) {n : ℕ} {S : List ℕ}
+    {eqs : List (List (List ℕ))} {idx : ℕ} (hidx : idx < 2 ^ S.length) {n' : ℕ}
+    {sys' : List (List (List ℕ))}
+    (hred : prepareBranch n S (lowBits S.length idx) eqs = .reduced n' sys') :
+    cost (n', sys') ≤ maxReducedCost cost (n, S, eqs) := by
+  unfold maxReducedCost
+  refine List.le_max_of_mem
+    (List.mem_cons_of_mem _ (List.mem_map.mpr ⟨idx, List.mem_range.mpr hidx, ?_⟩))
+  rw [hred, reducedCost]
+
+/-- `maxReducedCost` is at most any bound on the costs of the reduced branches. -/
+theorem maxReducedCost_le {cost : ℕ × List (List (List ℕ)) → ℕ} {n : ℕ} {S : List ℕ}
+    {eqs : List (List (List ℕ))} {B : ℕ}
+    (hB : ∀ idx < 2 ^ S.length, ∀ n' sys',
+      prepareBranch n S (lowBits S.length idx) eqs = .reduced n' sys' → cost (n', sys') ≤ B) :
+    maxReducedCost cost (n, S, eqs) ≤ B := by
+  unfold maxReducedCost
+  refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
+  simp only [List.mem_cons, forall_eq_or_imp]
+  refine ⟨Nat.zero_le B, fun x hx => ?_⟩
+  obtain ⟨idx, hidx, rfl⟩ := List.mem_map.mp hx
+  cases hout : prepareBranch n S (lowBits S.length idx) eqs with
+  | contradiction | tautology _ => exact Nat.zero_le B
+  | reduced n' sys' => exact hB idx (List.mem_range.mp hidx) n' sys' hout
 
 /-- Selected-branch native certificate for `branchCountOracle solver`: a fixed `csolver` runs ONLY
 on `.reduced n' sys'` outcomes, while `.contradiction` emits `0` and `.tautology n'` emits `2 ^ n'`

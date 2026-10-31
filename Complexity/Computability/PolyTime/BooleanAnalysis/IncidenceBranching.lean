@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Foundations.Data.Nat.CeilDiv
 import Complexity.Foundations.Data.Nat.Log
+import Complexity.Foundations.Data.Nat.SqrtLog
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -70,8 +71,10 @@ The source normalizes the system before branching. Here the system is assumed no
 ## Main results
 
 * `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.threshold_eq_ceil`,
+  `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.IsSparseSystem.incidences_le`,
   `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.threshold_le`,
-  `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.threshold_le_pow`: the threshold.
+  `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.threshold_le_pow`: the threshold and the
+  number of scope incidences.
 * `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.length_branchVars_le`,
   `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.length_branchVars_le_div_sqrt_log`,
   `Cslib.Complexity.SubexponentialSAT.IncidenceBranching.IsReducedBranch.le_two_mul`,
@@ -210,23 +213,6 @@ theorem length_branchVars_le {n : ℕ} {sys : List (List (List ℕ))}
     _ ≤ (q * n) / (q * s) := by rw [hD]; exact Nat.div_le_div_right hN
     _ = n / s := Nat.mul_div_mul_left n s hq_pos
 
-/-- `⌊√⌊log₂ n⌋⌋ ≤ ⌈√⌈log₂ n⌉⌉`, the latter written `⌊√(⌈log₂ n⌉ - 1)⌋ + 1`. -/
-private theorem sqrt_log_le_ceil_sqrt_clog (n : ℕ) :
-    Nat.sqrt (Nat.log 2 n) ≤ (Nat.clog 2 n - 1).sqrt + 1 := by
-  refine (Nat.sqrt_le_sqrt (Nat.log_le_clog 2 n)).trans ?_
-  refine Nat.le_of_lt_succ (Nat.sqrt_lt'.mpr ?_)
-  rcases Nat.eq_zero_or_pos (Nat.clog 2 n) with h | h
-  · rw [h]; positivity
-  · obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_lt h
-    rw [hm, show 0 + m + 1 - 1 = m by omega]
-    have h1 := Nat.lt_succ_sqrt' m
-    have h2 : (m.sqrt + 1) ^ 2 < (m.sqrt + 1 + 1) ^ 2 :=
-      Nat.pow_lt_pow_left (by omega) (by norm_num)
-    simp only [Nat.succ_eq_add_one] at h1 ⊢
-    generalize (m.sqrt + 1) ^ 2 = a at h1 h2
-    generalize (m.sqrt + 1 + 1) ^ 2 = b at h2 ⊢
-    omega
-
 /-- **Few branching variables**, against `⌊√⌊log₂ n⌋⌋`: for `n ≥ 2`, at most
 `n / ⌊√⌊log₂ n⌋⌋` variables lie in more than `D*` scopes. -/
 theorem length_branchVars_le_div_sqrt_log {n : ℕ} {sys : List (List (List ℕ))} (hn : 2 ≤ n)
@@ -235,19 +221,11 @@ theorem length_branchVars_le_div_sqrt_log {n : ℕ} {sys : List (List (List ℕ)
   have hlog : 1 ≤ Nat.log 2 n := Nat.le_log_of_pow_le Nat.one_lt_two (by simpa using hn)
   have hsqrt : 0 < Nat.sqrt (Nat.log 2 n) := Nat.sqrt_pos.mpr hlog
   exact (length_branchVars_le hvars).trans
-    (Nat.div_le_div_left (sqrt_log_le_ceil_sqrt_clog n) hsqrt)
+    (Nat.div_le_div_left (Nat.sqrt_log_two_le_sqrt_clog_two_sub_one_add_one n) hsqrt)
 
-/-- A scope has at most as many variables as its monomials have entries. -/
-private theorem length_equationVars_le {k : ℕ} {eq : List (List ℕ)}
-    (hk : ∀ m ∈ eq, m.length ≤ k) : (equationVars eq).length ≤ k * eq.length := by
-  refine (length_sortDedup_le _).trans ?_
-  rw [List.length_flatten, mul_comm]
-  exact (List.sum_le_length_nsmul _ k fun x hx => by
-    obtain ⟨m, hm, rfl⟩ := List.mem_map.mp hx; exact hk m hm).trans_eq (by
-      rw [List.length_map, smul_eq_mul])
-
-/-- Under the hypotheses of Lemma D.2, `N₀ ≤ a k λ^c ≤ c k λ^c n` (p. 54). -/
-private theorem incidences_le {k c n : ℕ} {sys : List (List (List ℕ))}
+/-- **The number of scope incidences** under the hypotheses of Lemma D.2:
+`N₀ = ∑_i |I_i| ≤ c k λ^c n` (p. 54). -/
+theorem IsSparseSystem.incidences_le {k c n : ℕ} {sys : List (List (List ℕ))}
     (h : IsSparseSystem k c n sys) :
     (sys.map fun eq => (equationVars eq).length).sum ≤ c * k * Nat.clog 2 n ^ c * n := by
   have hsum := List.sum_le_length_nsmul (sys.map fun eq => (equationVars eq).length)
@@ -271,7 +249,7 @@ theorem threshold_le {k c n : ℕ} {sys : List (List (List ℕ))} (h : IsSparseS
   rw [threshold_eq_mul hn]
   refine Nat.mul_le_mul_right _ ((Nat.div_lt_iff_lt_mul (by omega)).mpr ?_ |> Nat.le_of_lt_succ)
   set B := c * k * Nat.clog 2 n ^ c
-  have hN := incidences_le h
+  have hN := h.incidences_le
   have hmax : max 1 (sys.map fun eq => (equationVars eq).length).sum ≤ max 1 B * n := by
     refine max_le (Nat.one_le_iff_ne_zero.mpr (by positivity)) (hN.trans ?_)
     exact Nat.mul_le_mul_right n (le_max_right 1 B)
@@ -449,39 +427,14 @@ end
 
 end PolyTime
 
-/-- The cost of `cost` on a reduced branch outcome, and `0` on the others. -/
-private def reducedCost (cost : ℕ × List (List (List ℕ)) → ℕ) :
-    HeavyBranchFold.BranchOutcome → ℕ
-  | .reduced n' sys' => cost (n', sys')
-  | _ => 0
-
-/-- The largest cost of `cost` over the reduced branches of a streaming input. -/
-private noncomputable def maxCost (cost : ℕ × List (List (List ℕ)) → ℕ)
-    (inp : HeavyBranchFold.BranchInput) : ℕ :=
-  (Finset.range (2 ^ inp.2.1.length)).sup fun idx =>
-    reducedCost cost (HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx)
-      inp.2.2)
-
-private theorem le_maxCost (cost : ℕ × List (List (List ℕ)) → ℕ)
-    (inp : HeavyBranchFold.BranchInput) {idx : ℕ} (hidx : idx < 2 ^ inp.2.1.length) {n' : ℕ}
-    {sys' : List (List (List ℕ))}
-    (hred : HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 =
-      .reduced n' sys') : cost (n', sys') ≤ maxCost cost inp := by
-  have h := Finset.le_sup (f := fun idx => reducedCost cost (HeavyBranchFold.prepareBranch inp.1
-    inp.2.1 (lowBits inp.2.1.length idx) inp.2.2)) (Finset.mem_range.mpr hidx)
-  simp only [hred, reducedCost] at h
-  exact h
-
-private theorem maxCost_branchInput_le {cost : ℕ × List (List (List ℕ)) → ℕ} {n : ℕ}
+/-- The largest cost of a solver over the reduced branches of `branchInput n sys` is at most any
+bound on its cost on the reduced branches of `(n, sys)`. -/
+public theorem maxReducedCost_branchInput_le {cost : ℕ × List (List (List ℕ)) → ℕ} {n : ℕ}
     {sys : List (List (List ℕ))} {B : ℕ}
     (hB : ∀ n' sys', IsReducedBranch n sys n' sys' → cost (n', sys') ≤ B) :
-    maxCost cost (branchInput n sys) ≤ B := by
-  refine Finset.sup_le fun idx _ => ?_
-  dsimp only [branchInput]
-  cases hout : HeavyBranchFold.prepareBranch n (branchVars n sys)
-      (lowBits (branchVars n sys).length idx) sys with
-  | contradiction | tautology _ => exact Nat.zero_le B
-  | reduced n' sys' => exact hB n' sys' ⟨_, length_lowBits _ _, hout⟩
+    HeavyBranchFold.maxReducedCost cost (branchInput n sys) ≤ B :=
+  HeavyBranchFold.maxReducedCost_le fun _ _ n' sys' hout =>
+    hB n' sys' ⟨_, length_lowBits _ _, hout⟩
 
 public section
 
@@ -513,16 +466,18 @@ theorem exists_count_certificate :
   obtain ⟨C, d, hCd⟩ := ((hPrep.1.add hPrep.2).add (hstep.add hstep)).exists_le
   refine ⟨C + d, fun solver csolver hbound => ?_⟩
   have hc := HeavyBranchFold.countByBranching_computableInO csolver
-    (maxCost csolver.time) (maxCost csolver.space)
+    (HeavyBranchFold.maxReducedCost csolver.time) (HeavyBranchFold.maxReducedCost csolver.space)
     (fun _ _ _ n' sys' _ => hbound n' sys')
-    (fun inp _ hidx _ _ hred => le_maxCost csolver.time inp hidx hred)
-    (fun inp _ hidx _ _ hred => le_maxCost csolver.space inp hidx hred)
+    (fun _ _ hidx _ _ hred => HeavyBranchFold.le_maxReducedCost csolver.time hidx hred)
+    (fun _ _ hidx _ _ hred => HeavyBranchFold.le_maxReducedCost csolver.space hidx hred)
   let cBr : NativeCertificate (HeavyBranchFold.countByBranching solver)
       HeavyBranchFold.encBranchInput encNat := ⟨_, _, hc⟩
   refine ⟨(cBr.comp (NativeCertificate.ofPolyTime computableInPolyTime_branchInput)).congr
     fun _ => rfl, fun n sys R Q hRQ => ?_⟩
-  have hR := maxCost_branchInput_le (cost := csolver.time) fun n' sys' h => (hRQ n' sys' h).1
-  have hQ := maxCost_branchInput_le (cost := csolver.space) fun n' sys' h => (hRQ n' sys' h).2
+  have hR := maxReducedCost_branchInput_le (cost := csolver.time) fun n' sys' h =>
+    (hRQ n' sys' h).1
+  have hQ := maxReducedCost_branchInput_le (cost := csolver.space) fun n' sys' h =>
+    (hRQ n' sys' h).2
   have hbase := hCd (n, sys)
   have hpow : C * ((encPair encUnary encSys (n, sys)).length + 1) ^ d ≤
       (C + d) * ((encPair encUnary encSys (n, sys)).length + 1) ^ (C + d) :=
@@ -533,9 +488,11 @@ theorem exists_count_certificate :
   let L := (HeavyBranchFold.encBranchInput (branchInput n sys)).length
   change (NativeCertificate.ofPolyTime computableInPolyTime_branchInput).time (n, sys) +
       (HeavyBranchFold.stepOverhead L + (2 ^ (branchVars n sys).length + 1) *
-        (HeavyBranchFold.stepOverhead L + maxCost csolver.time (branchInput n sys))) ≤ _ ∧
+        (HeavyBranchFold.stepOverhead L +
+          HeavyBranchFold.maxReducedCost csolver.time (branchInput n sys))) ≤ _ ∧
     (NativeCertificate.ofPolyTime computableInPolyTime_branchInput).space (n, sys) +
-      (HeavyBranchFold.stepOverhead L + maxCost csolver.space (branchInput n sys)) ≤ _
+      (HeavyBranchFold.stepOverhead L +
+        HeavyBranchFold.maxReducedCost csolver.space (branchInput n sys)) ≤ _
   generalize (NativeCertificate.ofPolyTime computableInPolyTime_branchInput).time (n, sys) = A
     at hbase ⊢
   generalize (NativeCertificate.ofPolyTime computableInPolyTime_branchInput).space (n, sys) = B
