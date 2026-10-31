@@ -697,7 +697,8 @@ theorem Data.extend_comap (hf : f.Injective) (x : Data r') :
     · exact Function.extend_apply' _ _ _ hj
   · rfl
 
-private theorem Data.extend_set (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
+/-- Extending after a register write agrees with writing the renamed register afterwards. -/
+theorem Data.extend_set (hf : f.Injective) (y : Data r) (x : Data r') (i : Fin r) (v : ℕ) :
     (y.set i v).extend f x = (y.extend f x).set (f i) v :=
   Data.ext (hf.extend_update _ _ _ _) rfl
 

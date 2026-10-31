@@ -52,6 +52,8 @@ is not proved here.
 
 * `Cslib.Logic.ESO.Sentence.Layout.eval_eq_true_iff`: the evaluator decides truth in the expansion
   of the decoded structure by the certificate relations.
+* `Cslib.Logic.ESO.Sentence.Layout.exists_certificate`: every family of witness relations is
+  represented by a certificate of the prescribed polynomial length.
 * `Cslib.Logic.ESO.Sentence.Layout.realize_iff_exists_certificate`: a decoded structure satisfies
   the sentence exactly when some certificate is accepted.
 * `Cslib.Logic.ESO.Sentence.Layout.computableInPolyTime_verifier`: the verifier is
@@ -178,6 +180,15 @@ private theorem certRel_certificate {n N : ℕ} (hn : n ≤ N) (hN : 0 < N)
     obtain ⟨rfl, hxy⟩ := ℓ.position_injective N hx hy' he
     rwa [tupleIndex_injective hxy]
   · exact fun hx => ⟨i, x, rfl, hx⟩
+
+/-- Every family of witness relations has a certificate of the prescribed polynomial length,
+provided the input-length parameter bounds the universe size. This is independent of the base
+language, so it also applies when the base has canonical numeric constants. -/
+theorem exists_certificate {n N : ℕ} (hn : n ≤ N) (hN : 0 < N)
+    (R : ∀ i, Set (Fin (Φ.arity i) → Fin n)) :
+    ∃ w : List Bool, w.length = ℓ.polynomial.eval N ∧ ℓ.certRel n N w = R :=
+  ⟨ℓ.certificate n N R, (ℓ.length_certificate n N R).trans (ℓ.eval_polynomial N).symm,
+    ℓ.certRel_certificate hn hN R⟩
 
 /-! ### The evaluator -/
 

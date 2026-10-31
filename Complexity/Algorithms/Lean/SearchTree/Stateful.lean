@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.Lean.SearchTree.Cost
+public import Complexity.Algorithms.Lean.SearchTree.Erase
 public import Complexity.Foundations.Data.OrderedSet.Spec
 public import Complexity.Foundations.Semantics.Stateful.Resource
 
@@ -16,7 +16,8 @@ public import Complexity.Foundations.Semantics.Stateful.Resource
 
 Clients see finite-set semantics and operation-dependent result types. The representation relation
 hides the tree's shape. Correctness transfers to every adaptive client through the common stateful
-calculus; node-visit costs are supplied afterwards as a separate resource certificate.
+calculus; node-visit costs are supplied afterwards as a separate resource certificate. Deletion
+uses the existing successor-splicing operation, including unsuccessful and repeated deletions.
 
 ## Main definitions
 
@@ -54,6 +55,7 @@ def step (t : BinaryTree α) (o : Op α) : BinaryTree α × (spec α).Result o �
   match o with
   | .contains x => (t, contains x t, searchVisits x t)
   | .insert x => (insert x t, (), searchVisits x t)
+  | .erase x => (erase x t, (), eraseVisits x t)
   | .minimum => (t, minimum t, minimumVisits t)
   | .successor x => (t, successor x t, successorVisits x t)
 
@@ -82,6 +84,9 @@ def realization : Realization (spec α) Exec where
     | insert x =>
       cases he
       exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
+    | erase x =>
+      cases he
+      exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
     | minimum =>
       cases he
       exact ⟨(minimum_spec ht).eq_least, ht, rfl⟩
@@ -95,6 +100,7 @@ theorem exec_visits_le_height {t t' : BinaryTree α} {o : Op α}
   cases o with
   | contains x => cases he; exact searchVisits_le_height x t
   | insert x => cases he; exact searchVisits_le_height x t
+  | erase x => cases he; exact eraseVisits_le_height x t
   | minimum => cases he; exact minimumVisits_le_height t
   | successor x => cases he; exact successorVisits_le_height x t
 
