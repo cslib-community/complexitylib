@@ -1017,6 +1017,11 @@ public import Complexity.Computability.Circuit.MapOp
 public import Complexity.Computability.Circuit.Metric
 public import Complexity.Computability.Circuit.Monotone.Basic
 public import Complexity.Computability.Circuit.Monotone.BipartiteMatching
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Approximator
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Asymptotic
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.LowerBound
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Negative
+public import Complexity.Computability.Circuit.Monotone.BipartiteMatching.Positive
 public import Complexity.Computability.Circuit.Monotone.Clique.Approximator
 public import Complexity.Computability.Circuit.Monotone.Clique.Asymptotic
 public import Complexity.Computability.Circuit.Monotone.Clique.Closure.Approximator
@@ -2841,6 +2846,7 @@ public import Complexity.Foundations.Combinatorics.SimpleGraph.Metric
 public import Complexity.Foundations.Combinatorics.SmallSubsets
 public import Complexity.Foundations.Combinatorics.SubsetPairCount
 public import Complexity.Foundations.Combinatorics.Sunflower
+public import Complexity.Foundations.Combinatorics.Sunflower.Closure
 public import Complexity.Foundations.Combinatorics.Sunflower.Implication
 public import Complexity.Foundations.Combinatorics.Sunflower.LowerBound
 public import Complexity.Foundations.Combinatorics.Sunflower.Pluck
@@ -2983,6 +2989,7 @@ public import Complexity.Foundations.Data.Nat.Bitwise.SumTree
 public import Complexity.Foundations.Data.Nat.Card
 public import Complexity.Foundations.Data.Nat.CeilDiv
 public import Complexity.Foundations.Data.Nat.Choose
+public import Complexity.Foundations.Data.Nat.Choose.Central
 public import Complexity.Foundations.Data.Nat.Choose.Real
 public import Complexity.Foundations.Data.Nat.Div
 public import Complexity.Foundations.Data.Nat.Doubling
@@ -3055,6 +3062,7 @@ public import Complexity.Foundations.Geometry.Orthogonal.Subdivision
 public import Complexity.Foundations.Geometry.Orthogonal.Trim
 public import Complexity.Foundations.GroupTheory.Perm.Fin
 public import Complexity.Foundations.GroupTheory.Perm.FiveCycle
+public import Complexity.Foundations.GroupTheory.Perm.Fixing
 public import Complexity.Foundations.GroupTheory.Perm.Last
 public import Complexity.Foundations.LinearAlgebra.CubeSum
 public import Complexity.Foundations.LinearAlgebra.ExchangeReplacement
