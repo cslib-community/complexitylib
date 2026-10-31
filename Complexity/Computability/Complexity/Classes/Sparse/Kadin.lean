@@ -11,7 +11,13 @@ public import Complexity.Computability.Complexity.Classes.Oracle.BoundedQuery
 public import Complexity.Computability.Complexity.Classes.PH
 public import Complexity.Computability.Complexity.Classes.Sparse.Turing
 public import Complexity.Languages.Probabilistic.Iteration
+import Complexity.Computability.Complexity.Classes.NP.Image
 import Complexity.Computability.Complexity.Classes.NP.Witness
+import Complexity.Computability.Complexity.Classes.Oracle.Closure
+import Complexity.Computability.Complexity.Classes.Oracle.ListOracle
+import Complexity.Computability.Complexity.Classes.PH.Projection
+import Complexity.Computability.Complexity.CookLevin.Completeness
+import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -19,6 +25,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Cslib.Foundations.Data.Polynomial.Monotone
 
@@ -498,5 +505,104 @@ theorem isOraclePPTOn_program {enc : α ↪ List Bool} {req fin : α × ℕ → 
   simpa only [program, OracleComp.interpret_bind, OracleComp.interpret_iterate] using hbind
 
 end KadinCensus
+
+
+/-! ### Kadin's theorem -/
+
+/-- A polynomially bounded quantity has a logarithmic number of bits: `⌈log₂ N n⌉ ≤ K log₂ n + K`.
+-/
+theorem exists_clog_le_of_polynomiallyBounded {N : ℕ → ℕ} (hN : PolynomiallyBounded N) :
+    ∃ K : ℕ, ∀ n, Nat.clog 2 (N n) ≤ K * Nat.log 2 n + K := by
+  obtain ⟨e, f, h⟩ := polynomiallyBounded_iff_le.mp hN
+  refine ⟨f + e, fun n => Nat.clog_le_of_le_pow ?_⟩
+  have hn : n + 1 ≤ 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by norm_num) n
+  have he : e ≤ 2 ^ e := (Nat.lt_two_pow_self).le
+  calc N n ≤ e * (n + 1) ^ f := h n
+    _ ≤ 2 ^ e * (2 ^ (Nat.log 2 n + 1)) ^ f :=
+        Nat.mul_le_mul he (Nat.pow_le_pow_left hn f)
+    _ = 2 ^ (f * Nat.log 2 n + f + e) := by rw [← pow_mul, ← pow_add]; ring_nf
+    _ ≤ 2 ^ ((f + e) * Nat.log 2 n + (f + e)) :=
+        Nat.pow_le_pow_right (by norm_num) (by nlinarith [Nat.zero_le (Nat.log 2 n)])
+
+open Classical in
+/-- **`Σ₂ ⊆ P^{NP[O(log n)]}` under a sparse Turing-complete set for `NP`.** Binary search with
+requests to `SAT` finds the census of `S` up to the length of the oracle words, and one more
+request, at the exact census, guesses the short members of `S` together with the first certificate
+of the `Σ₂` problem [Hemaspaandra and Ogihara, Theorem 1.14][HemaspaandraOgihara2002]. -/
+theorem SigmaP_two_subset_PNPLog_of_sparse (hsparse : S ∈ SPARSE encBits) (hS : S ∈ NP encBits)
+    (hSAT : SAT ∈ PWithOracle S encCNF) (enc : α ↪ List Bool) :
+    SigmaP 2 enc ⊆ PNPLog enc := by
+  intro L hL
+  -- `a ∈ L ↔ ∃ w, (a, w) ∈ B` with `B ∈ coNP`, and `Bᶜ ∈ NP ⊆ P^S`
+  obtain ⟨p, B, hB, hLB⟩ := exists_mem_PiP_of_mem_SigmaP_succ (k := 1) hL
+  rw [PiP_one_eq_coNP] at hB
+  obtain ⟨g, hg, hgB⟩ := (CookLevin.SAT_npHard _ _ hB).mem_PWithOracle hSAT
+  obtain ⟨G, q, hG, hGg⟩ := hg.exists_listOracle_bool
+  -- the oracle words asked on `(a, w)` with `|w| = p |enc a|` have length at most `m |enc a|`
+  let m : Polynomial ℕ := q.comp (2 * Polynomial.X + 1 + p)
+  have hD := KadinCensus.language_mem_NP (m := m) (p := p) hS hsparse hG
+  obtain ⟨red, hred, hDred⟩ := CookLevin.SAT_npHard _ _ hD
+  have henc : ComputableInPolyTime (fun φ : Cslib.Logic.PL.CNF ℕ => encCNF φ) encCNF encBits :=
+    .of_eq fun _ => rfl
+  have hreqb (b : Bool) : ComputableInPolyTime (fun x : α × ℕ => encCNF (red (x.1, x.2, b)))
+      (encPair enc encUnary) encBits :=
+    henc.comp (hred.comp (g := fun x : α × ℕ => (x.1, x.2, b))
+      ((ComputableInPolyTime.fst _ _).prod ((ComputableInPolyTime.snd _ _).prod
+        (ComputableInPolyTime.const b))))
+  have hmemA (x : α × ℕ × Bool) :
+      encCNF (red x) ∈ encCNF '' SAT ↔ x ∈ KadinCensus.language S enc m p G := by
+    rw [hDred x]
+    exact ⟨fun ⟨_, h, he⟩ => encCNF.injective he ▸ h, fun h => ⟨_, h, rfl⟩⟩
+  -- the census bound and the number of rounds
+  obtain ⟨c, d, hcensus⟩ := exists_length_shortMembers_le hsparse
+  let N : α → ℕ := fun a => c * (m.eval (enc a).length + 1) ^ d
+  let count : α → ℕ := fun a => Nat.clog 2 (N a + 1)
+  have hN : ComputableInPolyTime N enc encUnary :=
+    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (m + 1) ^ d)).comp
+      (ComputableInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [N]
+  have hcount : ComputableInPolyTime count enc encUnary :=
+    (ComputableInPolyTime.unary_clog_const 2).comp
+      (ComputableInPolyTime.unary_add' hN (ComputableInPolyTime.const 1))
+  obtain ⟨K, hK⟩ := exists_clog_le_of_polynomiallyBounded
+    (N := fun n => c * (m.eval n + 1) ^ d + 1) (by fun_prop)
+  let prog := KadinCensus.program (fun x => encCNF (red (x.1, x.2, false)))
+    (fun x => encCNF (red (x.1, x.2, true))) N count
+  refine mem_PNPLog_of_mem_PWithOracleQueries (c := K + 1) image_SAT_mem_NP
+    ⟨fun a => OracleComp.interpret (m := Id) (languageOracle (encCNF '' SAT)) (prog a),
+      ⟨prog, KadinCensus.isOraclePPTOn_program (hreqb false) (hreqb true) hN hcount,
+        fun a => ⟨rfl, ?_⟩⟩, fun a => ?_⟩
+  · refine (KadinCensus.length_queriesWith_program_le _ _ _ _ _ a).trans ?_
+    have := hK (enc a).length
+    simp only [N, count] at this ⊢
+    nlinarith [Nat.zero_le (Nat.log 2 (enc a).length)]
+  -- correctness: binary search finds the census, and the last request decides `L`
+  have hP : (fun k => decide (encCNF (red (a, k, false)) ∈ encCNF '' SAT)) =
+      fun k => decide (k ≤ KadinCensus.census S enc m a) := by
+    funext k
+    rw [Bool.eq_iff_iff, decide_eq_true_iff, decide_eq_true_iff, hmemA,
+      KadinCensus.mem_language_false_iff]
+  have hcen : KadinCensus.census S enc m a ≤ N a := hcensus _
+  have hlt : N a < 2 ^ count a := Nat.lt_of_succ_le (Nat.le_pow_clog (by norm_num) _)
+  have hlast := KadinCensus.mem_language_census_true_iff (S := S) (enc := enc) (m := m) (p := p)
+    (G := G) (a := a) (g := g) fun w ℓ hw hℓ => hGg (a, w) ℓ fun s hs =>
+      hℓ s (by simpa [m, length_encPair, hw] using hs)
+  change a ∈ L ↔ OracleComp.interpret (m := Id) (languageOracle (encCNF '' SAT))
+    (KadinCensus.program (fun x => encCNF (red (x.1, x.2, false)))
+      (fun x => encCNF (red (x.1, x.2, true))) N count a) = true
+  rw [KadinCensus.interpret_program, decide_eq_true_iff]
+  dsimp only
+  rw [hmemA, hP, KadinCensus.fst_iterate_searchStep hcen hlt, hlast, hLB a]
+  refine exists_congr fun w => and_congr_right fun _ => ?_
+  rw [← Bool.not_eq_true, ← hgB, Set.mem_compl_iff, not_not]
+
+/-- **Kadin's theorem** [Kadin][Kadin1989] [Hemaspaandra and Ogihara, Theorem 1.14]
+[HemaspaandraOgihara2002]: if `NP` has a sparse polynomial-time Turing-complete set, that is a
+sparse `S ∈ NP` with `SAT` decided in polynomial time relative to `S`, then the polynomial
+hierarchy is contained in `P^{NP[O(log n)]}`. -/
+theorem PH_subset_PNPLog_of_sparse (hsparse : S ∈ SPARSE encBits) (hS : S ∈ NP encBits)
+    (hSAT : SAT ∈ PWithOracle S encCNF) (enc : α ↪ List Bool) :
+    PH enc ⊆ PNPLog enc := by
+  rw [PH_eq_SigmaP_two_of_SAT_mem_PWithOracle hsparse hSAT enc]
+  exact SigmaP_two_subset_PNPLog_of_sparse hsparse hS hSAT enc
 
 end Cslib.Complexity
