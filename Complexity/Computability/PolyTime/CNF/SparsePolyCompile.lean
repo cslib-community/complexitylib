@@ -85,6 +85,8 @@ restriction algorithms from §5.5 (pp. 38–39) and §6 / §6.2–6.3 (pp. 39–
 * `Cslib.Complexity.computableInPolyTime_compileClauseBounded`,
   `Cslib.Complexity.computableInPolyTime_compileParityRowBounded`,
   `Cslib.Complexity.computableInPolyTime_compileParitySystemBounded`: polynomial-time compilation.
+* `Cslib.Complexity.length_sortDedup_le`, `Cslib.Complexity.computableInPolyTime_equationVars`:
+  `sortDedup` never lengthens a list, and the scope `equationVars` is polynomial-time.
 * `Cslib.Complexity.findHeavyVar_eq_some_iff`, `Cslib.Complexity.findHeavyVar_eq_none_iff`,
   `Cslib.Complexity.evalMonomialList_restrictEquation`,
   `Cslib.Complexity.length_restrictEquation_le`, `Cslib.Complexity.length_mem_restrictEquation_le`,
@@ -408,7 +410,8 @@ theorem nodup_sortDedup (vs : List ℕ) : (sortDedup vs).Nodup :=
 @[simp] theorem toFinset_sortDedup (vs : List ℕ) : (sortDedup vs).toFinset = vs.toFinset := by
   ext u; simp only [List.mem_toFinset, mem_sortDedup]
 
-private theorem length_sortDedup_le (vs : List ℕ) : (sortDedup vs).length ≤ vs.length := by
+/-- Sorting and deduplicating never lengthens a list. -/
+theorem length_sortDedup_le (vs : List ℕ) : (sortDedup vs).length ≤ vs.length := by
   rw [← List.toFinset_card_of_nodup (nodup_sortDedup vs), toFinset_sortDedup]
   exact List.toFinset_card_le vs
 
@@ -1206,8 +1209,9 @@ theorem computableInPolyTime_compileParitySystemBounded (k : ℕ)
     ((computableInPolyTime_compileParityRowBounded k (encRow := encRow)).comp
       (((fst _ _).fst').prod (snd _ _)))
 
-@[local fun_prop]
-private theorem computableInPolyTime_equationVars :
+/-- The variable scope `equationVars` of an equation is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_equationVars :
     ComputableInPolyTime equationVars encEq encM := by
   unfold equationVars; fun_prop
 

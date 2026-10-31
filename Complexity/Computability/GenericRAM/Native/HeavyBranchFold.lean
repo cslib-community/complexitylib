@@ -49,7 +49,7 @@ False*][OpenAI2026ETH] over `SparsePolyCompile`, bridged to `SparseEquations` an
 * `rootCount_eq_commonZeroCount`, `toFinset_heavyVarList_eq_heavyVars`,
   `length_heavyVarList_le_div`, `prepareBranch_reduced_canonical`,
   `prepareBranch_reduced_degree_le`, `prepareBranch_reduced_length_le`,
-  `prepareBranch_reduced_varDegree_le`, `length_enc_reduced_le`.
+  `prepareBranch_reduced_varDegree_le`, `length_enc_reduced_le_parent`, `length_enc_reduced_le`.
 * `branchRootCount_prepareBranch`, `sum_branch_count_eq_rootCount`, `streamBranches_correct`,
   `countByBranching_eq_rootCount`, `runPrefix_sum_le_two_pow`, `computableInPolyTime_prepareBranch`,
   `streamBranches_computableInO`, `countByBranching_computableInO`, `polyBounded_branchWorkspace`.
@@ -822,12 +822,12 @@ instance : DecidableEq BranchInput := inferInstance
 def encBranchInput : BranchInput ↪ List Bool :=
   encPair encUnary (encPair (encList encNat) (encList (encList (encList encNat))))
 
-/-- Encoded-size non-expansion: every `.reduced n' sys'` branch produced by `prepareBranch` has
-encoded solver input `(n', sys')` no longer than the parent `encBranchInput (n, S, sys)`. -/
-theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
+/-- Encoded-size non-expansion against the parent system: every `.reduced n' sys'` branch produced
+by `prepareBranch` has encoded solver input `(n', sys')` no longer than the parent `(n, sys)`. -/
+theorem length_enc_reduced_le_parent {n n' : ℕ} {S : List ℕ} {vals : List Bool}
     {sys sys' : List (List (List ℕ))} (hred : prepareBranch n S vals sys = .reduced n' sys') :
     (encPair encUnary (encList (encList (encList encNat))) (n', sys')).length ≤
-      (encBranchInput (n, S, sys)).length := by
+      (encPair encUnary (encList (encList (encList encNat))) (n, sys)).length := by
   obtain ⟨_, _, rfl, rfl⟩ := prepareBranch_eq_reduced_iff.mp hred
   have hrel : ∀ eq₁ : List (List ℕ), (encList (encList encNat) (relabelEquation S eq₁)).length ≤
       (encList (encList encNat) eq₁).length := fun eq₁ =>
@@ -840,7 +840,16 @@ theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
     (length_encList_map_le _ _ fun eq₁ _ => hrel eq₁).trans
       ((length_encList_sublist _ List.filter_sublist).trans
         (length_encList_map_le _ _ fun eq₀ _ => length_enc_substituteEquation_le S vals eq₀))
-  simp only [encBranchInput, length_encPair, encUnary_apply, List.length_replicate]; omega
+  simp only [length_encPair, encUnary_apply, List.length_replicate]; omega
+
+/-- Encoded-size non-expansion: every `.reduced n' sys'` branch produced by `prepareBranch` has
+encoded solver input `(n', sys')` no longer than the parent `encBranchInput (n, S, sys)`. -/
+theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
+    {sys sys' : List (List (List ℕ))} (hred : prepareBranch n S vals sys = .reduced n' sys') :
+    (encPair encUnary (encList (encList (encList encNat))) (n', sys')).length ≤
+      (encBranchInput (n, S, sys)).length := by
+  refine (length_enc_reduced_le_parent hred).trans ?_
+  simp only [encBranchInput, length_encPair]; omega
 
 /-- Single streaming step of heavy-variable branching. -/
 def branchBody (solver : ℕ → List (List (List ℕ)) → ℕ)
