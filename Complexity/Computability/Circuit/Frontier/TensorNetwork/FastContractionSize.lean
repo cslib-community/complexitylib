@@ -18,7 +18,11 @@ Bounds on the encoded lengths of the calls (`FastContraction.encCall`) of the na
 from bounds on their numbers: the length of an encoded call is at most `64 (B + 1) ^ 3 + 2 B R` when
 its numbers, lists and ports are at most `B` and its descriptors at most `R` long
 (`FastContraction.length_encCall_le`), and a bounded packet descriptor is at most
-`200 (B + 1) ^ 2` long (`FastContraction.length_enc_inr_le`).
+`200 (B + 1) ^ 2` long (`FastContraction.length_enc_inr_le`). The values are reduced at their
+precision (`FastContraction.reducedAt_value`), and the frames of an active call with at most `m`
+edges at scale `m` and precision `p` are at most `64 (B + 1) ^ 3` long for
+`B = 256 (m + 1) ^ 5 (p + 1) + e` (`FastContraction.length_encFrame_frameAt_le`): the accumulator
+stays reduced at the common precision and stores at most one value per node and point.
 
 ## Main results
 
@@ -26,6 +30,10 @@ its numbers, lists and ports are at most `B` and its descriptors at most `R` lon
 * `Cslib.Circuits.Frontier.FastContraction.length_enc_packetCtx_le`: packet contexts.
 * `Cslib.Circuits.Frontier.FastContraction.length_enc_inr_le`: bounded packet descriptors.
 * `Cslib.Circuits.Frontier.FastContraction.length_encCall_le`: calls.
+* `Cslib.Circuits.Frontier.FastContraction.reducedAt_value`,
+  `Cslib.Circuits.Frontier.FastContraction.length_encValue_le`: values.
+* `Cslib.Circuits.Frontier.FastContraction.length_encFrame_frameAt_le`: the frames of an active
+  call.
 -/
 
 public section
@@ -276,5 +284,144 @@ theorem length_encFrame_le {o : Option ChildCursor.State} {acc : ChildCursor.Acc
   nlinarith
 
 end Frames
+
+/-! ### The frames of an active call -/
+
+section ActiveFrames
+
+variable {x : Call}
+
+/-- The bound `256 (m + 1) ^ 5 (p + 1) + e` on the numbers of the frames of an active call at scale
+`m` with precision `p`. -/
+@[expose] def frameBound (x : Call) : ℕ := 256 * (x.scale + 1) ^ 5 * (x.prec + 1) + x.fl.length
+
+/-- The numbers of an active call with at most `m` edges at scale `m`. -/
+theorem active_numbers (ha : active x = true) (hM : x.edges ≤ x.scale) :
+    (nodes x).length ≤ 2 * x.scale ∧ numPoints x ≤ 2 * x.scale ^ 2 + 1 ∧
+      (packing x).2.1 ≤ x.scale ^ 2 ∧ shift x ≤ 48 * (x.scale + 1) ^ 4 ∧
+      ∀ j, nodePrec x j ≤ x.prec + 40 * x.scale ^ 2 ∧
+        2 ^ (level x ((nodes x).getD j 0) + 1) ≤ 4 * x.scale := by
+  obtain ⟨haL, h12, hL, huL, hLs, hh⟩ := slots_facts ha
+  have ha1 : slots x + 1 ≤ x.scale := by omega
+  have hu : levels x ≤ x.scale := by omega
+  have hstep : step x ≤ 4 * x.scale := by omega
+  have h2a : 2 ^ (slots x + 1) ≤ 2 * x.scale := by rw [pow_succ]; omega
+  refine ⟨(length_nodes_le x).trans h2a, ?_, ?_, ?_, fun j => ⟨nodePrec_le_add ha hM j, ?_⟩⟩
+  · unfold numPoints
+    have : x.edges * (2 * 2 ^ slots x - 1) ≤ x.scale * (2 * x.scale) :=
+      Nat.mul_le_mul hM (by omega)
+    nlinarith
+  · calc (packing x).2.1 ≤ x.edges * (2 ^ slots x) ^ 12 :=
+          NativeChild.numPackets_nativeParentPacking_le _ _ _
+      _ ≤ x.scale * x.scale := Nat.mul_le_mul hM h12
+      _ = x.scale ^ 2 := by ring
+  · unfold shift
+    have e1 : (slots x + 1) * 2 ^ (slots x + 1) * step x * levels x ≤
+        x.scale * (2 * x.scale) * (4 * x.scale) * x.scale :=
+      Nat.mul_le_mul (Nat.mul_le_mul (Nat.mul_le_mul ha1 h2a) hstep) hu
+    have e2 : 8 * step x * 2 ^ slots x ≤ 8 * (4 * x.scale) * x.scale :=
+      Nat.mul_le_mul (Nat.mul_le_mul_left _ hstep) hL
+    have e3 : 8 * x.edges * (slots x + 1) ≤ 8 * x.scale * x.scale :=
+      Nat.mul_le_mul (Nat.mul_le_mul_left _ hM) ha1
+    have h4 : x.scale ^ 4 ≤ (x.scale + 1) ^ 4 := Nat.pow_le_pow_left (Nat.le_succ _) 4
+    have h2 : x.scale ^ 2 ≤ (x.scale + 1) ^ 4 :=
+      (Nat.pow_le_pow_left (Nat.le_succ _) 2).trans (Nat.pow_le_pow_right (by omega) (by omega))
+    have e4 : x.scale * (2 * x.scale) * (4 * x.scale) * x.scale + 8 * (4 * x.scale) * x.scale +
+        8 * x.scale * x.scale = 8 * x.scale ^ 4 + 40 * x.scale ^ 2 := by ring
+    omega
+  · have : level x ((nodes x).getD j 0) ≤ slots x + 1 := by
+      unfold level NativeRecovery.twoVal
+      split_ifs
+      · omega
+      · exact (List.length_filter_le _ _).trans List.length_range.le
+    calc 2 ^ (level x ((nodes x).getD j 0) + 1) ≤ 2 ^ (slots x + 1 + 1) :=
+          Nat.pow_le_pow_right (by norm_num) (by omega)
+      _ ≤ 4 * x.scale := by rw [pow_succ]; omega
+
+/-- The exponent tuple of a child of an active call is a tuple of weight below its node's
+precision. -/
+theorem mem_budgetTuples_of_mem_children {c : ChildCursor.State} (hc : c ∈ children x) :
+    c.2.2.1 ∈ BudgetTuples.budgetTuples (weights x c.1) (nodePrec x c.1) := by
+  simp only [children, ChildCursor.cursorList, ChildCursor.nodeBlock, ChildCursor.pointBlock,
+    ChildCursor.groupBlock, List.mem_flatMap, List.mem_range, List.mem_map] at hc
+  obtain ⟨j, -, i, -, β, hβ, g, -, rfl⟩ := hc
+  exact hβ
+
+/-- **The frames of an active call** with at most `m` edges at scale `m` have encoded length at
+most `64 (B + 1) ^ 3` for `B = frameBound x`. -/
+theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.scale)
+    (vals : ChildCursor.State → List ℕ) (c : ℕ) :
+    (encFrame (frameAt x vals c)).length ≤ 64 * (frameBound x + 1) ^ 3 := by
+  obtain ⟨hT, hn, hP, hsh, hj⟩ := active_numbers ha hM
+  have hM1 := one_le_edges_of_active ha
+  set m := x.scale with hm
+  set p := x.prec with hp
+  have hBf : 256 * ((m + 1) ^ 5 * (p + 1)) ≤ frameBound x := by
+    rw [← Nat.mul_assoc]; exact Nat.le_add_right _ _
+  have hm5 : 1 ≤ (m + 1) ^ 5 := Nat.one_le_pow _ _ (by omega)
+  have hm1 : m + 1 ≤ (m + 1) ^ 5 := Nat.le_self_pow (by norm_num) _
+  have hm2 : (m + 1) ^ 2 ≤ (m + 1) ^ 5 := Nat.pow_le_pow_right (by omega) (by norm_num)
+  have hm3 : (m + 1) ^ 3 ≤ (m + 1) ^ 5 := Nat.pow_le_pow_right (by omega) (by norm_num)
+  have hm4 : (m + 1) ^ 4 ≤ (m + 1) ^ 5 := Nat.pow_le_pow_right (by omega) (by norm_num)
+  have hsq : m ^ 2 ≤ (m + 1) ^ 2 := Nat.pow_le_pow_left (Nat.le_succ _) 2
+  have hcu : m ^ 3 ≤ (m + 1) ^ 3 := Nat.pow_le_pow_left (Nat.le_succ _) 3
+  have hP5 : (m + 1) ^ 5 ≤ (m + 1) ^ 5 * (p + 1) := Nat.le_mul_of_pos_right _ (by omega)
+  have hpq : p + 1 ≤ (m + 1) ^ 5 * (p + 1) := Nat.le_mul_of_pos_left _ (by omega)
+  -- The stored values.
+  obtain ⟨qs, hqs, hrun⟩ := ChildCursor.runAcc_cursorList (ws := weights x) (ps := nodePrec x)
+    (T := (nodes x).length) (n := numPoints x) (r := 64) (GaloisRingArith.mul (wide x) x.fl)
+    (GaloisRingArith.add (wide x) x.fl) (GaloisRingArith.one x.fl) (GaloisRingArith.zero x.fl)
+    (GaloisRingArith.val (wide x) x.fl) (fun a b => GaloisRingArith.val_mul a b)
+    (fun a b => GaloisRingArith.val_add a b) GaloisRingArith.val_one GaloisRingArith.val_zero
+    (by norm_num) (nodePrec_pos hM1) weights_pos vals
+  have hqlen : qs.length = (nodes x).length * numPoints x := by
+    have := congrArg List.length hqs
+    simpa [List.length_flatMap, List.sum_replicate] using this
+  have hinit : AccReduced (wide x) x.fl (GaloisRingArith.one x.fl, GaloisRingArith.zero x.fl, []) :=
+    ⟨reducedAt_one _ _, reducedAt_zero _ _, by simp⟩
+  have hpre := accReduced_runAcc (ws := weights x) (ps := nodePrec x) vals
+    ((children x).take c) hinit
+  have hsuf := accReduced_runAcc (ws := weights x) (ps := nodePrec x) vals
+    ((children x).drop c) hpre.1
+  have hfull : ChildCursor.runAcc (weights x) (nodePrec x) 64
+      (GaloisRingArith.mul (wide x) x.fl) (GaloisRingArith.add (wide x) x.fl)
+      (GaloisRingArith.one x.fl) (GaloisRingArith.zero x.fl) vals (children x)
+      (GaloisRingArith.one x.fl, GaloisRingArith.zero x.fl, []) =
+      (GaloisRingArith.one x.fl, GaloisRingArith.zero x.fl, qs) := by
+    rw [children]; exact hrun
+  rw [← ChildCursor.runAcc_append, List.take_append_drop, hfull] at hsuf
+  have hstored : (ChildCursor.runAcc (weights x) (nodePrec x) 64
+      (GaloisRingArith.mul (wide x) x.fl) (GaloisRingArith.add (wide x) x.fl)
+      (GaloisRingArith.one x.fl) (GaloisRingArith.zero x.fl) vals ((children x).take c)
+      (GaloisRingArith.one x.fl, GaloisRingArith.zero x.fl, [])).2.2.length ≤ frameBound x := by
+    refine hsuf.2.trans ?_
+    rw [hqlen]
+    have : (nodes x).length * numPoints x ≤ 2 * m * (2 * m ^ 2 + 1) := Nat.mul_le_mul hT hn
+    have : 2 * m * (2 * m ^ 2 + 1) = 4 * m ^ 3 + 2 * m := by ring
+    omega
+  refine length_encFrame_le (N := wide x) (fl := x.fl) (fun s hs => ?_) hpre.1 hstored ?_
+    (Nat.le_add_left _ _)
+  · have hsm : s ∈ children x := List.mem_of_getElem? hs
+    obtain ⟨hj1, hi1, hg1⟩ := lt_of_mem_children hsm
+    have hβ := mem_budgetTuples_of_mem_children hsm
+    have hlen := ((BudgetTuples.mem_budgetTuples (weights_pos _)).mp hβ).1
+    obtain ⟨hpj, hlj⟩ := hj s.1
+    refine ⟨by omega, by omega, ?_, fun b hb => ?_, by omega⟩
+    · rw [hlen, weights, NativeChild.modeWeights, List.length_map, List.length_range]
+      have h1 : (packing x).2.1 * (2 ^ (level x ((nodes x).getD s.1 0) + 1) * nodePrec x s.1) ≤
+          m ^ 2 * (4 * m * (p + 40 * m ^ 2)) :=
+        Nat.mul_le_mul hP (Nat.mul_le_mul hlj hpj)
+      have h2 : m ^ 2 * (4 * m * (p + 40 * m ^ 2)) = 4 * (m ^ 3 * p) + 160 * m ^ 5 := by ring
+      have h3 : m ^ 5 ≤ (m + 1) ^ 5 := Nat.pow_le_pow_left (Nat.le_succ _) 5
+      have h4 : m ^ 3 * p ≤ (m + 1) ^ 5 * (p + 1) :=
+        Nat.mul_le_mul (hcu.trans hm3) (Nat.le_succ _)
+      omega
+    · have := lt_of_mem_budgetTuples (weights_pos _) hβ b hb
+      have : m ^ 2 ≤ (m + 1) ^ 5 := hsq.trans hm2
+      omega
+  · unfold wide
+    omega
+
+end ActiveFrames
 
 end Cslib.Circuits.Frontier.FastContraction
