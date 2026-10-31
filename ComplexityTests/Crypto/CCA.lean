@@ -250,6 +250,34 @@ theorem eval_cca2MultiGame_phase2Mallory_toMulti (bit : Bool) (n : ℕ) :
   rw [eval_cca2MultiGame_toMulti]
   exact eval_cca2Game_phase2Mallory bit n
 
+/-- A two-challenge-pair `MultiCCA2Adversary` that submits two opposite challenge pairs
+`[(false, true), (true, false)]` in Phase 1, then in Phase 2 queries both challenge ciphertexts
+`cts[0]` and `cts[1]` directly (both rejected with `[]` by `cca2MultiPhase2Oracle`) before
+querying the malleable modification `cts[0] ++ [true]` to recover `bit`. -/
+def twoChallengeMallory : MultiCCA2Adversary where
+  choose _ _ := pure ([(false, true), (true, false)], [])
+  guess _ _ cts := do
+    let r₀ ← ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+      ((), cts.headD [])
+    let r₁ ← ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+      ((), cts.getD 1 [])
+    let resp ← ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+      ((), cts.headD [] ++ [true])
+    return (r₀.isEmpty && r₁.isEmpty && List.getD resp 1 false)
+
+/-- In `cca2MultiGame`, `twoChallengeMallory` exercises `mapM` encryption across two challenge
+pairs (`cts = [[bit], [!bit]]`), verifies that both challenge ciphertexts are rejected with `[]`
+in Phase 2, and recovers `bit` with probability `1` via `cts[0] ++ [true] ∉ cts`. -/
+theorem eval_cca2MultiGame_twoChallengeMallory (bit : Bool) (n : ℕ) :
+    ProbComp.eval
+      (cca2MultiGame encBool constKeyGen malleableEncrypt headDecrypt
+        twoChallengeMallory bit n) =
+      PMF.pure bit := by
+  cases bit <;>
+    · simp [cca2MultiGame, cca2MultiGameOn, constKeyGen, malleableEncrypt, twoChallengeMallory,
+        StateT.run_pure, StateT.run_bind, StateT.run_map]
+      simp [StateT.run, cca2MultiPhase2Oracle, headDecrypt, encOption, encBool_apply]
+
 /-! ### 4. Refutable `CollisionResistantFor` instance over `ZMod 11` -/
 
 /-- Concrete check of `isCollisionFor` and `collisionGameFor_sampleList_eq`. -/

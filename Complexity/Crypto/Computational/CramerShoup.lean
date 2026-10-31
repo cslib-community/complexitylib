@@ -1734,12 +1734,13 @@ theorem DDH.indcca2On_cramerShoup
   exact (htri1.trans (add_le_add le_rfl htri2)).trans
     (by rw [add_assoc]; exact add_le_add h0 (add_le_add le_rfl h1))
 
-/-- **Multi-challenge CCA security of Multiplicative Cramer–Shoup (`Encryption.INDCCA2MultiOn`)**
-([BonehShoup2023], Theorem 12.1, Theorem 12.9, and Exercise 12.27, printed pp. 468, 490–491,
-521–522): for any polynomial-time group description family `d : ℕ → F.Desc`, the probabilistic
-polynomial-time Cramer–Shoup encryption scheme `(cramerShoupKeyGenProb d,
-cramerShoupEncryptProb H d, cramerShoupDecryptOpt H isElem d)` satisfies multi-challenge
-`Encryption.INDCCA2MultiOn` with respect to `cramerShoupValid isElem d` under DDH, collision
+/-- **Batch-challenge multi-challenge CCA security of Multiplicative Cramer–Shoup
+(`Encryption.INDCCA2MultiOn`)** (batch-challenge specialization of [BonehShoup2023], Theorem 12.1,
+together with Theorem 12.9 and Exercise 12.27, printed pp. 468, 490–491, 521–522): for any
+polynomial-time group description family `d : ℕ → F.Desc`, the probabilistic polynomial-time
+Cramer–Shoup encryption scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d,
+cramerShoupDecryptOpt H isElem d)` satisfies the two-phase batch-challenge multi-challenge
+`Encryption.INDCCA2MultiOn` notion with respect to `cramerShoupValid isElem d` under DDH, collision
 resistance of `cramerShoupHashMod H`, and a positive group-order lower bound `m n > 0` with
 `1 / m n` negligible. -/
 theorem DDH.indcca2MultiOn_cramerShoup
