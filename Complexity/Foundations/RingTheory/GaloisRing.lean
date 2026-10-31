@@ -9,8 +9,8 @@ module
 
 public import Complexity.Init
 public import Complexity.Foundations.Data.Polynomial.RingLagrange
+public import Complexity.Foundations.RingTheory.AdjoinRoot
 public import Mathlib.FieldTheory.Finite.GaloisField
-public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
 import Mathlib.RingTheory.LocalRing.ResidueField.Basic
 import Mathlib.RingTheory.Polynomial.Nilpotent
@@ -48,8 +48,6 @@ statement over `ℤ_(p)` is `AdjoinRoot.isUnit_of_padicValuation_eq_one`.
 
 * `RingHom.isLocalHom_of_isNilpotent`: a surjection with nilpotent kernel is a local
   homomorphism.
-* `AdjoinRoot.map_eq_zero_iff`: an element of `R[X] / (g)` vanishes in `S[X] / (g)` exactly when
-  the coefficients of its reduced representative do.
 * `GaloisRing.ker_residue`: the kernel of reduction modulo `p` is `(p)`.
 * `GaloisRing.isUnit_iff`: an element is a unit exactly when it is nonzero modulo `p`.
 * `GaloisRing.instIsLocalRing`, `GaloisRing.maximalIdeal_eq`: the ring is local with maximal ideal
@@ -96,59 +94,6 @@ theorem isUnit_iff_ne_zero_of_isNilpotent {F : Type*} [Field F] (ψ : R →+* F)
   exact ⟨fun h => (h.map ψ).ne_zero, fun h => isUnit_of_map_unit ψ x (Ne.isUnit h)⟩
 
 end RingHom
-
-/-! ### Reducing the coefficients of `R[X] / (g)` -/
-
-namespace AdjoinRoot
-
-variable {R S : Type*} [CommRing R] [CommRing S] (φ : R →+* S) {g : R[X]}
-
-/-- Reducing the coefficients maps the class of `P` to the class of `P.map φ`. -/
-theorem map_mk (q : S[X]) (h : q ∣ g.map φ) (P : R[X]) :
-    map φ g q h (mk g P) = mk q (P.map φ) := by
-  have : (map φ g q h).comp (mk g) = (mk q).comp (mapRingHom φ) := by
-    refine Polynomial.ringHom_ext (fun a => ?_) ?_
-    · simp only [RingHom.comp_apply, mk_C, map_of, coe_mapRingHom, Polynomial.map_C]
-    · simp only [RingHom.comp_apply, mk_X, map_root, coe_mapRingHom, Polynomial.map_X]
-  exact congrArg (fun F : R[X] →+* AdjoinRoot q => F P) this
-
-/-- Reducing the coefficients is surjective when `φ` is. -/
-theorem map_surjective_of_surjective (q : S[X]) (h : q ∣ g.map φ)
-    (hφ : Function.Surjective φ) : Function.Surjective (map φ g q h) := by
-  intro y
-  obtain ⟨Q, rfl⟩ := mk_surjective y
-  obtain ⟨P, rfl⟩ := Polynomial.map_surjective φ hφ Q
-  exact ⟨mk g P, map_mk φ q h P⟩
-
-/-- **An element vanishes after reducing the coefficients** of a monic `g` exactly when the
-coefficients of its representative of degree below `deg g` do: that representative reduces to a
-polynomial of degree below `deg (g.map φ)`, which `g.map φ` divides only when it is zero. -/
-theorem map_eq_zero_iff [Nontrivial S] (hg : g.Monic) {q : S[X]} (h : q ∣ g.map φ)
-    (hq : q = g.map φ) (x : AdjoinRoot g) :
-    map φ g q h x = 0 ↔ ∀ i, φ ((modByMonicHom hg x).coeff i) = 0 := by
-  subst hq
-  have := φ.domain_nontrivial
-  obtain ⟨Q, rfl⟩ := mk_surjective x
-  rw [modByMonicHom_mk]
-  set P := Q %ₘ g
-  have hx : mk g P = mk g Q := by
-    have := mk_leftInverse hg (mk g Q)
-    rwa [modByMonicHom_mk] at this
-  have hdeg : (P.map φ).degree < (g.map φ).degree := by
-    rw [hg.degree_map]
-    exact degree_map_le.trans_lt (degree_modByMonic_lt _ hg)
-  rw [← hx, map_mk, mk_eq_zero]
-  constructor
-  · intro hdvd i
-    by_contra hne
-    have h0 : P.map φ ≠ 0 := fun h0 => hne (by rw [← coeff_map, h0, coeff_zero])
-    exact (hg.map φ).not_dvd_of_degree_lt h0 hdeg hdvd
-  · intro h
-    have : P.map φ = 0 := Polynomial.ext fun i => by rw [coeff_map, h, coeff_zero]
-    rw [this]
-    exact dvd_zero _
-
-end AdjoinRoot
 
 /-! ### Galois rings -/
 
