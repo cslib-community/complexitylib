@@ -115,10 +115,10 @@ end. -/
 @[expose] def occ (u : ℕ) : Occurrence ℕ := os.getD u (0, 0, (0, false))
 
 /-- The variable of occurrence `u`. -/
-@[expose] def var (u : ℕ) : ℕ := (occ os u).2.2.1
+@[expose] def var (u : ℕ) : ℕ := let (_, _, (v, _)) := occ os u; v
 
 /-- The polarity of occurrence `u`. -/
-@[expose] def pol (u : ℕ) : Bool := (occ os u).2.2.2
+@[expose] def pol (u : ℕ) : Bool := let (_, _, (_, b)) := occ os u; b
 
 /-- The clause of occurrence `u`. -/
 @[expose] def clauseOf (u : ℕ) : ℕ := (occ os u).1
@@ -742,8 +742,8 @@ private theorem good_iff
       have h3u : 3 * u ∈ clausePorts os i := mem_clausePorts.mpr ⟨u, hu, hci, rfl⟩
       have := hall _ h3u
       rw [hX _ (by omega), show 3 * u / 3 = u by omega] at this
-      have hv : var os u = l.1 := by rw [var, hocc]
-      have hp : pol os u = l.2 := by rw [pol, hocc]
+      have hv : var os u = l.1 := congrArg Prod.fst hocc
+      have hp : pol os u = l.2 := congrArg Prod.snd hocc
       rw [hv, hp, hsl] at this
       cases l.2 <;> simp at this
     · rw [hX _ (by omega), hX _ (by omega), show (3 * u + 1) / 3 = u by omega,
