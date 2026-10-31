@@ -68,6 +68,8 @@ normalizers `numEdges * C` or `Q * n` by `1`.
   `clearedJointScore_lt_iff_normalizedPartialScore_lt`,
   `clearedJointScore_le_iff_normalizedPartialScore_le`, `computableInPolyTime_clearedJointScore`:
   logarithmic bit bound, exact rational score equivalence, and poly-time score evaluation.
+* `clearedIncidencePotential_eq_mul`: the incidence part alone, used by the packing of
+  `Cslib.PacketPacking`.
 * `exists_min_index_streamBestSlotLabel`, `streamBestSlotLabel_false_eq_bestVariableLabel`,
   `streamBestSlotLabel_true_eq_bestFactorLabel`: first-minimizer and `bestVariableLabel` /
   `bestFactorLabel` bridges.
@@ -445,7 +447,9 @@ private theorem clearedCoordCollision_eq_mul {n Q r : ℕ} (hr : 1 ≤ r)
         by_cases hxy : (x t).val = (y t).val <;>
           simp only [hxy, ↓reduceIte, mul_one, Nat.cast_zero, mul_zero]
 
-private theorem clearedIncidencePotential_eq_mul {E m n Q r : ℕ} (hr : 1 ≤ r)
+/-- **Exact cleared incidence potential**: `clearedIncidencePotential` is
+`partialIncidencePotential` times the common denominator `(r ^ Q) ^ 2`. -/
+theorem clearedIncidencePotential_eq_mul {E m n Q r : ℕ} (hr : 1 ≤ r)
     (edge : Fin E → Fin m × Fin n) (varLabels : Fin n → Option (Fin Q → Fin r))
     (factorLabels : Fin m → Option (Fin Q → Fin r)) :
     (clearedIncidencePotential (r ^ Q) (edgesOfFin edge)

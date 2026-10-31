@@ -585,6 +585,33 @@ noncomputable def cauchyModeSplitting (side : V → Bool) (hsrc : ∀ e, side (N
       simp
     rw [group_tgt_eq horient e, hb, hq]
 
+section Fields
+
+variable (side : V → Bool) (hsrc : ∀ e, side (N.src e) = true)
+  (htgt : ∀ e, side (N.tgt e) = false)
+  (horient : ∀ e, (group (N.src e), group (N.tgt e)) =
+    if (slot e).testBit i then (sym (packet e)).swap else sym (packet e))
+  {a : ℕ} (hslot : ∀ e, slot e < 2 ^ a) (hia : i < a) (κ : ℤ₍₂₎ →+* R) (ζ : R) {p : ℕ}
+  (hp : (2 : R) ^ p = 0) {t : ℤ} (ht : t ∈ cauchyGrid (2 ^ a)) (hti : (2 : ℤ) ^ i ∣ t)
+  (hti' : ¬ (2 : ℤ) ^ (i + 1) ∣ t)
+
+omit [Fintype E] in
+@[simp] theorem cauchyModeSplitting_side :
+    (cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti hti').side = side := by
+  unfold cauchyModeSplitting; rfl
+
+omit [Fintype E] in
+@[simp] theorem cauchyModeSplitting_group :
+    (cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti hti').group = group := by
+  unfold cauchyModeSplitting; rfl
+
+omit [Fintype E] in
+@[simp] theorem cauchyModeSplitting_packet :
+    (cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti hti').packet = packet := by
+  unfold cauchyModeSplitting; rfl
+
+end Fields
+
 omit [Fintype E] [Fintype P] in
 /-- **The modes have weight `b + 1`:** the coefficient of the mode `(q, y₀, b)` is divisible by
 `2 ^ (b + 1)`, so the child identity (D.16) applies with these weights. -/
