@@ -366,9 +366,13 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
   `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
   Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined,
-  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`; still open are an
-  exponential nondeterministic time separation, a succinct tableau reduction with a linear-size
-  decoder, and the core theorem.
+  and the witness bits of formulas prepared in time `2^O(n)` are in `E^NP`.
+  `FineGrained.CircuitLowerBoundBudget` proves the counter's quantitative budget for three
+  circuits of size `n √⌊log₂(n+2)⌋ / (12(A+1))` plus linear overhead; the integer arithmetic,
+  polynomial-time computation of this size cap, and rescaling to coefficient
+  `1 / (24(A+1)d)` at framed lengths `d n` are checked. Still open are the exponential
+  nondeterministic time separation, uniform construction of the linear-size decoder and checker,
+  and their composition with the witness language into the full separation theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
