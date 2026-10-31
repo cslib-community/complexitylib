@@ -108,7 +108,7 @@ verifier's output and the final prover state for every initial state and respons
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.ShamirAbstract`:
-10 root declarations, 215 dependencies checked
+10 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.ShamirAbstract allowing [
