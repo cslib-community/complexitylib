@@ -342,8 +342,7 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
   certified DPLL solver runtimes.
 - **Feasible interpolation** ([#1817]): a sharper monotone separator bound (Alon–Boppana) for a
   stronger clique–coloring size lower bound, and the transfer of communication lower bounds to
-  proof-size lower bounds. Polynomial-time builders for the De Morgan and the monotone
-  interpolants are done.
+  proof-size lower bounds.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
