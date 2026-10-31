@@ -936,6 +936,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedC
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContraction
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
@@ -1161,6 +1162,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Ass
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.BlockNetworks
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Containments
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Count
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.EntryAnalysis
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAlgorithm
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAnalysis
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
