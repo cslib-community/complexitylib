@@ -193,10 +193,10 @@ structure SymmetricCipher where
   keyGen_ppt : IsPPTOn encUnary encBits keyGen
   /-- Encryption is uniformly strict PPT in `(n, k, msg)`. -/
   encrypt_ppt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-    (fun p => encrypt p.1 (Prod.fst p.2) (Prod.snd p.2))
+    (fun ⟨n, k, msg⟩ => encrypt n k msg)
   /-- Decryption is computable in plain polynomial time on `(n, k, ct)`. -/
   decrypt_polyTime : ComputableInPolyTime
-    (fun p : ℕ × List Bool × List Bool => decrypt p.1 (Prod.fst p.2) (Prod.snd p.2))
+    (fun ⟨n, k, ct⟩ => decrypt n k ct)
     (encPair encUnary (encPair encBits encBits)) (encOption encBits)
   /-- Every ciphertext produced by `encrypt` on an `n`-bit message under a supported secret key at
   security parameter `n` decrypts to `some msg`. -/

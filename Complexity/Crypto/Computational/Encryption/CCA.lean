@@ -361,11 +361,11 @@ theorem isPPTOn_run_cca2Phase1Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits encBits))
       (encPair (encPair (encPair encMsg encMsg) encBits) (encFinEnum Unit))
-      (fun caller : ℕ × List Bool × List Bool =>
+      (fun ⟨n, pk, sk⟩ =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
-            (cca2Phase1Oracle encOut decrypt caller.1 (Prod.snd caller.2)))
-          (adversary.choose caller.1 (Prod.fst caller.2))).run ()) := by
+            (cca2Phase1Oracle encOut decrypt n sk))
+          (adversary.choose n pk)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits encBits)
   let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hdecArg : ComputableTidilyInPolyTime
@@ -419,13 +419,11 @@ theorem isPPTOn_run_cca2Phase2Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
     (hA : adversary.IsPPT encMsg) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encBits)))
       (encPair encBool (encFinEnum Unit))
-      (fun caller : ℕ × List Bool × List Bool × List Bool =>
+      (fun ⟨n, sk, state, ct⟩ =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
-            (cca2Phase2Oracle encOut decrypt caller.1 (Prod.fst caller.2)
-              (Prod.snd (Prod.snd caller.2))))
-          (adversary.guess caller.1 (Prod.fst (Prod.snd caller.2))
-            (Prod.snd (Prod.snd caller.2)))).run ()) := by
+            (cca2Phase2Oracle encOut decrypt n sk ct))
+          (adversary.guess n state ct)).run ()) := by
   let ECaller := encPair encUnary (encPair encBits (encPair encBits encBits))
   let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hdecArg : ComputableTidilyInPolyTime
