@@ -1081,6 +1081,13 @@ theorem allWithEncoding {α γ π : Type} {encA : α ↪ List Bool} {encIn : γ 
     ComputableInPolyTime (fun x => (list x).all fun a => test (par x, a)) encIn encBool :=
   .of_tidy (ComputableTidilyInPolyTime.allWithEncoding htest.tidy hpar.tidy hlist.tidy)
 
+/-- Zip framed lists, charging both inputs and every pair in the output. -/
+@[fun_prop]
+theorem zip {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
+    ComputableInPolyTime (fun p : List α × List β => p.1.zip p.2)
+      (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) :=
+  .of_tidy (ComputableTidilyInPolyTime.zip encA encB)
+
 end Turing.MultiTapeTM.ComputableInPolyTime
 
 namespace Turing.MultiTapeTM
