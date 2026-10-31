@@ -121,15 +121,7 @@ namespace CountingSparsify
 
 open ClauseSet.Sparsification (CountingBranchingRule)
 
-/-! ### Auxiliary model-count and binary-encoding bounds -/
-
-/-- The number of satisfying assignments of `ψ` on its occurring variables is at most
-`2 ^ ψ.numVars`. -/
-theorem modelCount_le_two_pow_numVars {V : Type*} [DecidableEq V] (ψ : CNF V) :
-    ψ.modelCount ≤ 2 ^ ψ.numVars := by
-  rw [CNF.modelCount, CNF.numVars]
-  refine (Finset.card_filter_le _ _).trans ?_
-  simp only [Finset.card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_coe, le_rfl]
+/-! ### Auxiliary binary-encoding bound -/
 
 theorem length_encNat_le_of_le_two_pow {acc n : ℕ} (h : acc ≤ 2 ^ n) :
     (encNat acc).length ≤ n + 1 := by
@@ -473,7 +465,7 @@ theorem search_eq_ite_modelCount_of_normalized (hM2 : 2 ≤ M) {k B L_coeff : �
   unfold root
   split_ifs with hφ
   · rw [modelCountOn_countingNormalize, CNF.modelCountOn_vars]
-    exact Nat.min_eq_right (modelCount_le_two_pow_numVars φ)
+    exact Nat.min_eq_right φ.modelCount_le_two_pow_numVars
   · rw [CNF.modelCountOn_eq_zero_of_nil_mem (List.mem_singleton_self [])]
     exact Nat.min_eq_right (Nat.zero_le _)
 

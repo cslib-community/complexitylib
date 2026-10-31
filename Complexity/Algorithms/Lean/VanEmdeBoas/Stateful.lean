@@ -20,7 +20,7 @@ This module realizes the shared `Cslib.OrderedSet.spec (Fin (universeSize d))` i
 (`contains`, `insert`, `erase`, `minimum`, `successor`) using recursive minimum-excluded
 van Emde Boas trees `Tree d` over the bounded universe `Fin (universeSize d)` of size
 `universeSize d = 2 ^ (2 ^ d)`, and supplies an active-recursive-call depth certificate
-`callDepthBound` of `d + 1` per operation ([Demaine2015VanEmdeBoas], pp. 4–6; [CLRS2009],
+`callDepthBound` of `d + 1` per operation ([Demaine2015VanEmdeBoas], pp. 4–5; [CLRS2009],
 Section 20.3).
 
 Alongside `Cslib.Algorithms.Lean.SearchTree` (linear worst-case bound `s.card`), this provides a
