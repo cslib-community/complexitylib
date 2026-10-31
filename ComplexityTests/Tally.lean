@@ -12,7 +12,8 @@ import Complexity.Computability.Complexity.Classes.Tally
 Tally and non-tally languages; residues and fingerprints on concrete words; a separating
 fingerprint for a word outside a one-word problem, from
 `Cslib.Complexity.Tally.exists_fingerprint_notMem`; and conjunctive reductions of a finite
-problem to a tally problem and of unions and intersections of problems in `P`.
+problem to a tally problem, of unions and intersections of problems in `P`, of a finite union of
+problems in `P`, and of asking a computed list of queries.
 -/
 
 namespace ComplexityTests.Tally
@@ -62,5 +63,17 @@ example {L₁ L₂ : Set (List Bool)} (h₁ : L₁ ∈ P encBits) (h₂ : L₂ �
   obtain ⟨A₁, hA₁⟩ := exists_polyTimeCTTReducible_encUnary_of_mem_P h₁
   obtain ⟨A₂, hA₂⟩ := exists_polyTimeCTTReducible_encUnary_of_mem_P h₂
   exact ⟨hA₁.exists_encUnary_union hA₂, hA₁.exists_encUnary_inter hA₂⟩
+
+/-- A union of problems in `P` indexed by a list reduces conjunctively to a tally problem. -/
+example {L : ℕ → Set (List Bool)} (h : ∀ i, L i ∈ P encBits) :
+    ∃ A : Set ℕ, PolyTimeCTTReducible encBits encUnary (⋃ i ∈ [0, 1, 2], L i) A :=
+  PolyTimeCTTReducible.exists_encUnary_biUnion _ fun i _ =>
+    exists_polyTimeCTTReducible_encUnary_of_mem_P (h i)
+
+/-- Asking whether all positions of a word lie in a set `A` of natural numbers reduces it
+conjunctively to `A`. -/
+example (A : Set ℕ) :
+    PolyTimeCTTReducible encBits encUnary {w : List Bool | ∀ n ∈ List.range w.length, n ∈ A} A :=
+  (PolyTimeCTTReducible.refl encUnary A).forall_mem (by fun_prop)
 
 end ComplexityTests.Tally

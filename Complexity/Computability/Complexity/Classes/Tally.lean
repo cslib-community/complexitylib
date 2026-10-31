@@ -350,6 +350,46 @@ theorem PolyTimeCTTReducible.exists_encUnary_union (h₁ : PolyTimeCTTReducible 
       · exact hi' (hdiv ▸ h)
       · exact hj' (hmod ▸ h)
 
+/-- **Conjunctive reductions to tally problems are closed under finite unions**, by induction on
+the list of indices from `Cslib.Complexity.PolyTimeCTTReducible.exists_encUnary_union`; the empty
+union asks one query of the empty target. -/
+theorem PolyTimeCTTReducible.exists_encUnary_biUnion {ι : Type*} {L : ι → Set α} (l : List ι)
+    (h : ∀ i ∈ l, ∃ A : Set ℕ, PolyTimeCTTReducible encA encUnary (L i) A) :
+    ∃ A : Set ℕ, PolyTimeCTTReducible encA encUnary (⋃ i ∈ l, L i) A := by
+  induction l with
+  | nil => exact ⟨∅, fun _ => 1, fun _ => 0, const 1, const 0, fun a => by simp⟩
+  | cons i l ih =>
+    obtain ⟨A₁, h₁⟩ := h i List.mem_cons_self
+    obtain ⟨A₂, h₂⟩ := ih fun i' hi' => h i' (List.mem_cons_of_mem i hi')
+    have hunion : (⋃ i' ∈ i :: l, L i') = L i ∪ ⋃ i' ∈ l, L i' := by
+      ext a
+      simp only [Set.mem_iUnion, List.mem_cons, Set.mem_union, exists_prop, or_and_right,
+        exists_or, exists_eq_left]
+    rw [hunion]
+    exact h₁.exists_encUnary_union h₂
+
+/-- **Asking a computed list of queries of a problem with a conjunctive reduction to a tally
+problem**: if `B` reduces conjunctively to a set `A` of natural numbers written in unary, so do the
+instances `a` whose queries `Qs a` all lie in `B`, to the same set. The reduction asks the queries
+of all of them. -/
+theorem PolyTimeCTTReducible.forall_mem {β : Type} {encB : β ↪ List Bool} {B : Set β}
+    {A : Set ℕ} (h : PolyTimeCTTReducible encB encUnary B A) {Qs : α → List β}
+    (hQs : ComputableInPolyTime Qs encA (encList encB)) :
+    PolyTimeCTTReducible encA encUnary {a | ∀ b ∈ Qs a, b ∈ B} A := by
+  obtain ⟨r, q, hr, hq, hB⟩ := h
+  let W : α → List ℕ := fun a => (Qs a).flatMap fun b => (List.range (r b)).map fun i => q (b, i)
+  have hW : ComputableInPolyTime W encA (encList encUnary) := by fun_prop
+  refine ⟨fun a => (W a).length, fun p => (W p.1)[p.2]?.getD 0, by fun_prop, by fun_prop,
+    fun a => ?_⟩
+  have hmem : (∀ b ∈ Qs a, b ∈ B) ↔ ∀ w ∈ W a, w ∈ A := by
+    simp only [W, hB, List.mem_flatMap, List.mem_map, List.mem_range, forall_exists_index,
+      and_imp]
+    exact ⟨fun h w b hb i hi hw => hw ▸ h b hb i hi, fun h b hb i hi => h _ b hb i hi rfl⟩
+  rw [Set.mem_ofPred_eq, hmem, List.forall_mem_iff_getElem]
+  refine forall_congr' fun i => ⟨fun h hi => ?_, fun h hi => ?_⟩
+  · simpa [List.getElem?_eq_getElem hi] using h hi
+  · simpa [List.getElem?_eq_getElem hi] using h hi
+
 end Closure
 
 end Cslib.Complexity
