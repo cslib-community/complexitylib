@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Boolean.Tseitin
 public import Mathlib.Data.Nat.Bits
 import Complexity.Foundations.Data.List.Lookup
 import Complexity.Foundations.Data.Nat.Div
+import Complexity.Foundations.Data.Nat.Fields
 import Mathlib.Data.Nat.Size
 
 /-!
@@ -139,24 +140,14 @@ private theorem fields {a b x y z : ℕ} (hx : x < 2 ^ a) (hy : y < 2 ^ b) :
     (x + 2 ^ a * (y + 2 ^ b * z)) % 2 ^ a = x ∧
       (x + 2 ^ a * (y + 2 ^ b * z)) / 2 ^ a % 2 ^ b = y ∧
       (x + 2 ^ a * (y + 2 ^ b * z)) / 2 ^ a / 2 ^ b = z := by
-  have ha : 0 < 2 ^ a := Nat.two_pow_pos a
-  have hb : 0 < 2 ^ b := Nat.two_pow_pos b
-  have h₁ : (x + 2 ^ a * (y + 2 ^ b * z)) / 2 ^ a = y + 2 ^ b * z := by
-    rw [Nat.add_mul_div_left _ _ ha, Nat.div_eq_of_lt hx, Nat.zero_add]
-  refine ⟨by rw [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hx], ?_, ?_⟩
-  · rw [h₁, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hy]
-  · rw [h₁, Nat.add_mul_div_left _ _ hb, Nat.div_eq_of_lt hy, Nat.zero_add]
+  rw [Nat.add_mul_div_left_of_lt _ hx]
+  exact ⟨Nat.add_mul_mod_of_lt _ hx, Nat.add_mul_mod_of_lt _ hy, Nat.add_mul_div_left_of_lt _ hy⟩
 
 /-- Three fields of widths `a`, `b` and `d` fit in `a + b + d` bits. -/
 private theorem fields_lt {a b d x y z : ℕ} (hx : x < 2 ^ a) (hy : y < 2 ^ b) (hz : z < 2 ^ d) :
     x + 2 ^ a * (y + 2 ^ b * z) < 2 ^ (a + b + d) := by
-  have h₁ : y + 2 ^ b * z < 2 ^ (b + d) := by
-    rw [Nat.pow_add]
-    calc y + 2 ^ b * z < 2 ^ b * (z + 1) := by rw [Nat.mul_succ]; omega
-      _ ≤ 2 ^ b * 2 ^ d := Nat.mul_le_mul_left _ hz
-  rw [Nat.add_assoc, Nat.pow_add]
-  calc x + 2 ^ a * (y + 2 ^ b * z) < 2 ^ a * (y + 2 ^ b * z + 1) := by rw [Nat.mul_succ]; omega
-    _ ≤ 2 ^ a * 2 ^ (b + d) := Nat.mul_le_mul_left _ h₁
+  rw [Nat.add_assoc]
+  exact Nat.add_two_pow_mul_lt hx (Nat.add_two_pow_mul_lt hy hz)
 
 /-- A tag below `4` and a payload decode into their values. -/
 private theorem tag_fields {tag p : ℕ} (htag : tag < 4) :
@@ -249,61 +240,6 @@ theorem wireOf_posLabel {n T t c : ℕ} (l : Loc k State) (hc : c < 2 ^ colBits 
 
 /-! ### From wires to labels -/
 
-/-- The column and the position at an offset of a block: inverts `Loc.offset`. -/
-noncomputable def posOf (T r : ℕ) : ℕ × Loc k State :=
-  if r < globStart k T then (r / scanWidth k, .scan (ScanLoc.ofIdx (r % scanWidth k)))
-  else if r < gfStart k State T then (0, .glob (GlobLoc.ofIdx (r - globStart k T)))
-  else if r < colStart k State T then
-    (0, .gf (GFeat.ofIdx ((r - gfStart k State T) / 16)) (gadgetB (r - gfStart k State T))
-      (gadgetJ (r - gfStart k State T)))
-  else ((r - colStart k State T) / colWidth k,
-    .col (ColFeat.ofIdx ((r - colStart k State T) % colWidth k / 16))
-      (gadgetB ((r - colStart k State T) % colWidth k))
-      (gadgetJ ((r - colStart k State T) % colWidth k)))
-
-omit [DecidableEq State] in
-/-- **Decoding the offset of a position** gives the position and its column. -/
-theorem posOf_offset {T c : ℕ} {l : Loc k State} (hl : l.ColOK T c) :
-    posOf T (l.offset T c) = (c, l) := by
-  have hgs : globStart k T ≤ gfStart k State T := Nat.le_add_right _ _
-  have hgc : gfStart k State T ≤ colStart k State T := Nat.le_add_right _ _
-  rcases l with l | l | ⟨f, b, j⟩ | ⟨f, b, j⟩ <;> simp only [Loc.ColOK] at hl <;>
-    simp only [Loc.offset, posOf]
-  · have hi := l.idx_lt
-    have h₁ : c * scanWidth k + l.idx < globStart k T := scan_offset_lt_globStart hl l
-    have h₂ : (c * scanWidth k + l.idx) / scanWidth k = c := Nat.mul_add_div_of_lt c hi
-    have h₃ : (c * scanWidth k + l.idx) % scanWidth k = l.idx := by
-      rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi]
-    simp only [h₁, ↓reduceIte, h₂, h₃, ScanLoc.ofIdx_idx]
-  · have hi := l.idx_lt
-    subst hl
-    have h₁ : ¬ globStart k T + l.idx < globStart k T := by omega
-    have h₂ : globStart k T + l.idx < gfStart k State T := by simp only [gfStart]; omega
-    simp only [h₁, h₂, ↓reduceIte, Nat.add_sub_cancel_left, GlobLoc.ofIdx_idx]
-  · subst hl
-    have := gfStart_add_gadgetIdx_lt (k := k) (T := T) f b j
-    have h₁ : ¬ gfStart k State T + gadgetIdx f.idx b j < globStart k T := by omega
-    have h₂ : ¬ gfStart k State T + gadgetIdx f.idx b j < gfStart k State T := by omega
-    simp only [h₁, h₂, this, ↓reduceIte, Nat.add_sub_cancel_left, gadgetIdx_div,
-      GFeat.ofIdx_idx, gadgetB_gadgetIdx, gadgetJ_gadgetIdx]
-  · have h₁ := gadgetIdx_lt f.idx b j
-    have h₂ := f.idx_lt
-    have hw : gadgetIdx f.idx b j < colWidth k := by simp only [colWidth]; omega
-    have h₃ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j < globStart k T := by
-      omega
-    have h₄ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j < gfStart k State T := by
-      omega
-    have h₅ : ¬ colStart k State T + c * colWidth k + gadgetIdx f.idx b j <
-        colStart k State T := by omega
-    have h₆ : colStart k State T + c * colWidth k + gadgetIdx f.idx b j - colStart k State T =
-        gadgetIdx f.idx b j + c * colWidth k := by omega
-    have h₇ : (gadgetIdx f.idx b j + c * colWidth k) / colWidth k = c :=
-      Nat.add_mul_div_of_lt c hw
-    have h₈ : (gadgetIdx f.idx b j + c * colWidth k) % colWidth k = gadgetIdx f.idx b j := by
-      rw [Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hw]
-    simp only [h₃, h₄, h₅, ↓reduceIte, h₆, h₇, h₈, gadgetIdx_div, ColFeat.ofIdx_idx,
-      gadgetB_gadgetIdx, gadgetJ_gadgetIdx]
-
 variable (k State) in
 /-- **The label of a wire** of the tableau on `n` inputs: an input, a constant, or the position of
 a gate decoded from its number. -/
@@ -311,9 +247,8 @@ noncomputable def wireLabel (n T w : ℕ) : ℕ :=
   if w < n then inputLabel w
   else if w < n + 2 then constLabel (decide (w = n + 1))
   else
-    posLabel k State T ((w - n - 2) / blockSize k State T)
-      (posOf (k := k) (State := State) T ((w - n - 2) % blockSize k State T)).1
-      (posOf T ((w - n - 2) % blockSize k State T)).2
+    let (c, l) := posOf (k := k) (State := State) T ((w - n - 2) % blockSize k State T)
+    posLabel k State T ((w - n - 2) / blockSize k State T) c l
 
 omit [DecidableEq State] in
 /-- The label of an input wire. -/
@@ -396,7 +331,9 @@ private theorem inWindow_of_cs {n T c : ℕ} (hc : c < numCols T) {p : Bool} {l 
 /-- **The references of the gates of the tableau read the window.** -/
 theorem table_inWindow {n T c : ℕ} (hc : c < numCols T) (tm : MultiTapeTM k Bool State)
     (l : Loc k State) :
-    (table tm l).2.1.InWindow n T c ∧ (table tm l).2.2.InWindow n T c := by
+    let (_, left, right) := table tm l
+    left.InWindow n T c ∧ right.InWindow n T c := by
+  change (table tm l).2.1.InWindow n T c ∧ (table tm l).2.2.InWindow n T c
   have hw {r : Ref k State} (h : ∀ p l g, r = .node p l .next g → g = .ltLast) :
       r.InWindow n T c := by
     rcases r with _ | _ | _ | ⟨p, l, cs, g⟩
@@ -465,8 +402,9 @@ variable (tm : MultiTapeTM k Bool State)
 constant in block `0`, and otherwise the gate of `table` on the labels of its references. -/
 noncomputable def posClause (n T t c : ℕ) (l : Loc k State) (j : Fin 3) : Clause ℕ :=
   if t = 0 then tseitinClause (.const (initBit tm T c l)) (posLabel k State T t c l) 0 0 j
-  else tseitinClause (table tm l).1 (posLabel k State T t c l) ((table tm l).2.1.label n T t c)
-    ((table tm l).2.2.label n T t c) j
+  else
+    let (op, left, right) := table tm l
+    tseitinClause op (posLabel k State T t c l) (left.label n T t c) (right.label n T t c) j
 
 variable (k State) in
 /-- The label of the output wire: the output view `[true]` at time `T`. -/
@@ -547,10 +485,15 @@ theorem clauseOf_pos (x : List Bool) {n T t c : ℕ} {l : Loc k State} (j : Fin 
 theorem forall_eval_posClause_iff (σ : ℕ → Bool) (n T t c : ℕ) (l : Loc k State) :
     (∀ j, (posClause tm n T t c l j).eval σ = true) ↔
       σ (posLabel k State T t c l) = if t = 0 then initBit tm T c l
-        else (table tm l).1.value (σ ((table tm l).2.1.label n T t c))
-          (σ ((table tm l).2.2.label n T t c)) := by
+        else
+          let (op, left, right) := table tm l
+          op.value (σ (left.label n T t c)) (σ (right.label n T t c)) := by
   unfold posClause
-  split_ifs <;> exact forall_eval_tseitinClause_iff _ _ _ _ _
+  split_ifs
+  · exact forall_eval_tseitinClause_iff _ _ _ _ _
+  · generalize table tm l = e
+    obtain ⟨op, left, right⟩ := e
+    exact forall_eval_tseitinClause_iff _ _ _ _ _
 
 /-- **Every clause holds** under an assignment of labels that gives the constants their values,
 the fixed inputs the bits of `x` and the output `true`, and every position the value of its gate on
@@ -560,8 +503,9 @@ theorem eval_clauseOf {x : List Bool} {n T : ℕ} {σ : ℕ → Bool}
     (hout : σ (outLabel k State T) = true)
     (hpos : ∀ t ≤ T, ∀ c (l : Loc k State), l.ColOK T c →
       σ (posLabel k State T t c l) = if t = 0 then initBit tm T c l
-        else (table tm l).1.value (σ ((table tm l).2.1.label n T t c))
-          (σ ((table tm l).2.2.label n T t c)))
+        else
+          let (op, left, right) := table tm l
+          op.value (σ (left.label n T t c)) (σ (right.label n T t c)))
     (j tag p : ℕ) : (clauseOf tm x n T j tag p).eval σ = true := by
   unfold clauseOf
   split_ifs with hj h₀ hp h₁ hp' h₂ h₃
@@ -661,10 +605,14 @@ theorem satisfiable_succinctCNF_iff_tseitin {n T : ℕ} (hn : n < 2 * T) {x : Li
         have hpos := (forall_eval_posClause_iff tm σ n T t c l).1 fun j => by
           rw [← clauseOf_pos tm x j ht hl]
           exact hfield (by omega) (by omega) hp
-        obtain ⟨hra, hrb⟩ := table_inWindow (n := n) hl.lt tm l
+        have hwin := table_inWindow (n := n) hl.lt tm l
         have hv := value_gateAt tm (fun w => σ (wireLabel k State n T w)) n T t c l
-        rw [← hw, gateCode_wire tm hl, hv, hwn, wireLabel_wire hl, hpos,
-          wireLabel_resolve hra, wireLabel_resolve hrb]
+        rw [← hw, gateCode_wire tm hl, hv, hwn, wireLabel_wire hl, hpos]
+        generalize table tm l = e at hwin ⊢
+        obtain ⟨op, left, right⟩ := e
+        obtain ⟨hra, hrb⟩ := hwin
+        dsimp only
+        rw [wireLabel_resolve hra, wireLabel_resolve hrb]
   · rintro ⟨τ, hτ⟩
     obtain ⟨hτo, hτx, hτφ⟩ := (eval_tseitinSatCNF_eq_true_iff _ _ _ _ _).1 hτ
     rw [eval_tseitinCNF_eq_true_iff] at hτφ
@@ -691,9 +639,13 @@ theorem satisfiable_succinctCNF_iff_tseitin {n T : ℕ} (hn : n < 2 * T) {x : Li
     · simpa using hτx i hi
     · simpa [outLabel, outWire, wireOf_posLabel _ (show 0 < 2 ^ colBits T from Nat.two_pow_pos _)]
         using hτo
-    · obtain ⟨hra, hrb⟩ := table_inWindow (n := n) hl.lt tm l
-      rw [wireOf_posLabel _ (lt_of_lt_of_le hl.lt (numCols_le_two_pow T)), hwire hl ht,
-        wireOf_label hra, wireOf_label hrb]
+    · have hwin := table_inWindow (n := n) hl.lt tm l
+      rw [wireOf_posLabel _ (lt_of_lt_of_le hl.lt (numCols_le_two_pow T)), hwire hl ht]
+      generalize table tm l = e at hwin ⊢
+      obtain ⟨op, left, right⟩ := e
+      obtain ⟨hra, hrb⟩ := hwin
+      dsimp only
+      rw [wireOf_label hra, wireOf_label hrb]
 
 /-- **The tableau formula on labels is satisfiable** exactly when some input of length `n`
 extending `x` makes `tm` write exactly `[true]` within `T` steps, for `n < 2 T`. -/
@@ -723,7 +675,10 @@ theorem length_of_mem_succinctCNF {x : List Bool} {n T : ℕ} {C : Clause ℕ}
   · split
     · split_ifs
       · unfold posClause
-        split_ifs <;> exact length_tseitinClause _ _ _ _ _
+        split_ifs
+        · exact length_tseitinClause _ _ _ _ _
+        · split
+          exact length_tseitinClause _ _ _ _ _
       · rfl
     · rfl
   · rfl
@@ -814,8 +769,11 @@ theorem lt_two_pow_labelBits_of_mem_vars {n T : ℕ} (hn : n < 2 * T) {x : List 
     · rename_i l _
       split_ifs at hvC with h
       · have hc := lt_of_lt_of_le h.2.lt (numCols_le_two_pow T)
-        obtain ⟨hra, hrb⟩ := table_inWindow (n := n) h.2.lt tm l
+        have hwin := table_inWindow (n := n) h.2.lt tm l
         unfold posClause at hvC
+        generalize table tm l = e at hwin hvC
+        obtain ⟨op, left, right⟩ := e
+        obtain ⟨hra, hrb⟩ := hwin
         split_ifs at hvC <;> rcases mem_tseitinClause hvC with rfl | rfl | rfl <;>
           first
           | exact posLabel_lt _ hc h.1
