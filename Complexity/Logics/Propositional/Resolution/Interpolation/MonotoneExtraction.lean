@@ -118,10 +118,10 @@ def lineGates (pos : Bool) (n : ℕ) (A : CNF (ℕ ⊕ Y)) (B : CNF (ℕ ⊕ Z))
     List (Monotone.Op × List ℕ) :=
   if c ∈ A.relabel (Sum.map id Sum.inl) then constGates false
   else if c ∈ B.relabel (Sum.map id Sum.inr) then constGates true
-  else ((Interpolant.candidates earlier).find? fun t => decide ((t.2.2, true) ∈ t.1.1 ∧
-      (t.2.2, false) ∈ t.2.1.1 ∧ t.1.1.resolvent t.2.1.1 t.2.2 = c)).elim (constGates false)
-    fun t => resolventGates pos (n + 2 * earlier.length) (n + 2 * t.1.2 + 1) (n + 2 * t.2.1.2 + 1)
-      t.2.2
+  else ((Interpolant.candidates earlier).find? fun ((c₁, _), (c₂, _), v) =>
+      decide ((v, true) ∈ c₁ ∧ (v, false) ∈ c₂ ∧ c₁.resolvent c₂ v = c)).elim (constGates false)
+    fun ((_, k₁), (_, k₂), v) =>
+      resolventGates pos (n + 2 * earlier.length) (n + 2 * k₁ + 1) (n + 2 * k₂ + 1) v
 
 /-- The gates of all the lines `lines`, listed from first to last, in program order. -/
 def gates (pos : Bool) (n : ℕ) (A : CNF (ℕ ⊕ Y)) (B : CNF (ℕ ⊕ Z))
@@ -213,11 +213,10 @@ theorem gates_append_singleton :
 /-- The gates of the step found for a line, if any. -/
 private theorem lineGates_eq_find (hA : c ∉ A.relabel (Sum.map id Sum.inl))
     (hB : c ∉ B.relabel (Sum.map id Sum.inr)) :
-    lineGates pos n A B lines c = ((Interpolant.candidates lines).find? fun t =>
-      decide ((t.2.2, true) ∈ t.1.1 ∧ (t.2.2, false) ∈ t.2.1.1 ∧
-        t.1.1.resolvent t.2.1.1 t.2.2 = c)).elim (constGates false)
-    fun t => resolventGates pos (n + 2 * lines.length) (n + 2 * t.1.2 + 1)
-      (n + 2 * t.2.1.2 + 1) t.2.2 := by
+    lineGates pos n A B lines c = ((Interpolant.candidates lines).find? fun ((c₁, _), (c₂, _), v) =>
+      decide ((v, true) ∈ c₁ ∧ (v, false) ∈ c₂ ∧ c₁.resolvent c₂ v = c)).elim (constGates false)
+    fun ((_, k₁), (_, k₂), v) =>
+      resolventGates pos (n + 2 * lines.length) (n + 2 * k₁ + 1) (n + 2 * k₂ + 1) v := by
   simp only [lineGates, hA, hB, ↓reduceIte]
 
 /-- Constant gates read no wires. -/
@@ -342,8 +341,8 @@ private theorem isMonotoneInterpolantAt_lineGates
     funext a
     rw [hbase, wireValue_block hcode (j := 1) (g := (.const true, [])) rfl]
     rfl
-  rcases hfind : List.find? (fun t => decide ((t.2.2, true) ∈ t.1.1 ∧
-      (t.2.2, false) ∈ t.2.1.1 ∧ t.1.1.resolvent t.2.1.1 t.2.2 = c))
+  rcases hfind : List.find? (fun ((c₁, _), (c₂, _), v) =>
+      decide ((v, true) ∈ c₁ ∧ (v, false) ∈ c₂ ∧ c₁.resolvent c₂ v = c))
       (Interpolant.candidates lines) with _ | t
   · exfalso
     rcases hc with hc | ⟨c₁, hc₁, c₂, hc₂, v, hv₁, hv₂, rfl⟩

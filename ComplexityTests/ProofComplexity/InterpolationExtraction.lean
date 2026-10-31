@@ -238,8 +238,8 @@ example : (Circuit.ofCode 1 1 (CNF.monotoneInterpolantCode 1 A B lines.tail) :
 /-- Extracting the monotone interpolant circuit of a refutation is polynomial-time, with
 natural-number private variables in binary. -/
 example : ComputableInPolyTime
-    (fun p : ℕ × (CNF (ℕ ⊕ ℕ) × CNF (ℕ ⊕ ℕ)) × List (Clause (ℕ ⊕ (ℕ ⊕ ℕ))) =>
-      CNF.monotoneInterpolantCode p.1 p.2.1.1 p.2.1.2 p.2.2)
+    (fun ((n, (A, B), ls) : ℕ × (CNF (ℕ ⊕ ℕ) × CNF (ℕ ⊕ ℕ)) × List (Clause (ℕ ⊕ (ℕ ⊕ ℕ)))) =>
+      CNF.monotoneInterpolantCode n A B ls)
     (encPair encUnary (encPair (encPair
       (encList (encList (encPair (encSum encNat encNat) encBool)))
       (encList (encList (encPair (encSum encNat encNat) encBool))))

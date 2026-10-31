@@ -457,8 +457,8 @@ monotone circuit computing an interpolant
 (`Cslib.Logic.PL.CNF.IsProof.ofCode_monotoneInterpolantCode`). -/
 theorem CNF.computableInPolyTime_monotoneInterpolantCode (encY : Y ↪ List Bool)
     (encZ : Z ↪ List Bool) :
-    ComputableInPolyTime (fun p : ℕ × (CNF (ℕ ⊕ Y) × CNF (ℕ ⊕ Z)) ×
-        List (Clause (ℕ ⊕ (Y ⊕ Z))) => CNF.monotoneInterpolantCode p.1 p.2.1.1 p.2.1.2 p.2.2)
+    ComputableInPolyTime (fun ((n, (A, B), ls) : ℕ × (CNF (ℕ ⊕ Y) × CNF (ℕ ⊕ Z)) ×
+        List (Clause (ℕ ⊕ (Y ⊕ Z)))) => CNF.monotoneInterpolantCode n A B ls)
       (encPair encUnary (encPair (encPair (encList (encList (encPair (encSum encNat encY) encBool)))
         (encList (encList (encPair (encSum encNat encZ) encBool))))
         (encList (encList (encPair (encSum encNat (encSum encY encZ)) encBool)))))
