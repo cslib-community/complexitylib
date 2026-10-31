@@ -13,7 +13,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Deterministic
 public import Complexity.Computability.Machines.Turing.MultiTape.Run
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
-public import Mathlib.Data.Nat.Digits.Lemmas
+public import Complexity.Foundations.Data.BitString.Counter
 
 /-!
 # Word RAMs simulate multi-tape Turing machines
@@ -43,15 +43,14 @@ from a source.
   leaves apply fixed actions. The tree is built from the transition function, so the program
   depends only on the machine.
 * **Output.** The program returns the output tape read as a little-endian binary number,
-  `outValue`. A decision `b`, written as `[b]`, gives `b.toNat`; a binary number `v`, written as
-  `Nat.bits v`, gives `v`. The output must be shorter than the word size.
+  `Cslib.BitString.lsbValue`. A decision `b`, written as `[b]`, gives `b.toNat`; a binary number
+  `v`, written as `Nat.bits v`, gives `v`. The output must be shorter than the word size.
 * **Cost.** Unit cost per instruction, the final `halt` included. A step costs at most
   `stepCost k m = 3m + 13k + 14` instructions and the whole run at most
   `simTime k m t = 2k + 13 + t (3m + 13k + 16)`.
 
 ## Main definitions
 
-* `Cslib.WordRAM.OfTuring.outValue`: the output tape read as a little-endian binary number.
 * `Cslib.WordRAM.OfTuring.tapeAddr`: the memory address of a work-tape cell.
 * `Cslib.WordRAM.OfTuring.simCode`, `Cslib.WordRAM.OfTuring.simProgram`: the simulator of the
   machine with a given transition function, initial state and numbering of its states.
@@ -63,7 +62,7 @@ from a source.
   `Cslib.WordRAM.OfTuring.loop_spec`: the setup represents the initial configuration, one step of
   the simulator follows one step of the machine, and the loop follows the run to its halt.
 * `Cslib.WordRAM.OfTuring.executes_simProgram`: a halting run of `t` steps is simulated within
-  `simTime k m t` instructions, returning `outValue` of the output tape.
+  `simTime k m t` instructions, returning the value `Cslib.BitString.lsbValue` of the output tape.
 * `Turing.MultiTapeTM.ComputableInPolyTime.exists_wordRAM`,
   `Turing.MultiTapeTM.ComputableInPolyTime.exists_wordRAM_nat`: a function computable in polynomial
   time by a Turing machine is computed by a uniform word-RAM program in polynomially many
@@ -79,33 +78,6 @@ open Turing
 variable {k m : ℕ} {Q : Type}
 
 /-! ## Encodings -/
-
-/-- The output tape read as a little-endian binary number. -/
-def outValue (l : List Bool) : ℕ := Nat.ofDigits 2 (l.map Bool.toNat)
-
-@[simp] theorem outValue_nil : outValue [] = 0 := rfl
-
-theorem outValue_append_singleton (l : List Bool) (b : Bool) :
-    outValue (l ++ [b]) = outValue l + 2 ^ l.length * b.toNat := by
-  simp [outValue, Nat.ofDigits_append, Nat.ofDigits_singleton]
-
-theorem outValue_lt (l : List Bool) : outValue l < 2 ^ l.length := by
-  have := Nat.ofDigits_lt_base_pow_length (b := 2) (l := l.map Bool.toNat) (by norm_num)
-    (fun x hx => by
-      obtain ⟨b, -, rfl⟩ := List.mem_map.1 hx
-      cases b <;> simp)
-  simpa [outValue] using this
-
-/-- A one-bit output tape is read as its bit. -/
-@[simp] theorem outValue_singleton (b : Bool) : outValue [b] = b.toNat := by
-  simp [outValue, Nat.ofDigits_singleton]
-
-/-- The binary digits of a number are read as the number. -/
-@[simp] theorem outValue_bits (v : ℕ) : outValue v.bits = v := by
-  have h : v.bits.map Bool.toNat = Nat.digits 2 v := by
-    rw [Nat.digits_two_eq_bits]
-    exact List.map_congr_left fun b _ => by cases b <;> rfl
-  rw [outValue, h, Nat.ofDigits_digits]
 
 /-- The code of a tape symbol in a memory cell: `0` for a blank and `b.toNat + 1` for a bit. -/
 def symCode : Option Bool → ℕ
@@ -467,7 +439,7 @@ structure Sim (e : Q ≃ Fin m) {inp : List Bool} (x : Data (regs k))
   /-- `rHead` holds the input head, which is the address of the input symbol it reads. -/
   head : x.regs rHead = c.inputPos
   /-- `rVal` holds the output tape read as a binary number. -/
-  val : x.regs rVal = outValue c.output
+  val : x.regs rVal = BitString.lsbValue c.output
   /-- `rPow` holds `2 ^ ℓ` for the length `ℓ` of the output tape. -/
   pow : x.regs rPow = 2 ^ c.output.length
   /-- The work tapes are represented. -/
@@ -789,12 +761,13 @@ private theorem headCode_spec {x : Data (regs k)} (hc : Consts n m x) {p : Fin (
       · intro r hr; reg_simp
 
 /-- Appending a symbol to the output tape. -/
-private theorem outCode_spec {x : Data (regs k)} {l : List Bool} (hv : x.regs rVal = outValue l)
+private theorem outCode_spec {x : Data (regs k)} {l : List Bool}
+    (hv : x.regs rVal = BitString.lsbValue l)
     (hp : x.regs rPow = 2 ^ l.length) (o : Option Bool) (hfit : (l ++ o.toList).length < w) :
-    ∃ y, ExecWithin w (outCode o) x y 2 ∧ y.regs rVal = outValue (l ++ o.toList) ∧
+    ∃ y, ExecWithin w (outCode o) x y 2 ∧ y.regs rVal = BitString.lsbValue (l ++ o.toList) ∧
       y.regs rPow = 2 ^ (l ++ o.toList).length ∧
       (∀ r, r ≠ rVal → r ≠ rPow → y.regs r = x.regs r) ∧ y.mem = x.mem := by
-  have hlt := outValue_lt l
+  have hlt := BitString.lsbValue_lt l
   rcases o with _ | b
   · exact ⟨x, execWithin_skip.mono (by omega), by simpa using hv, by simpa using hp,
       fun _ _ _ => rfl, rfl⟩
@@ -804,12 +777,12 @@ private theorem outCode_spec {x : Data (regs k)} {l : List Bool} (hv : x.regs rV
     cases b with
     | false =>
       refine ⟨_, (execWithin_add (hpp ▸ hpow : Fits w _)).mono (by omega), ?_, ?_, ?_, rfl⟩
-      · reg_simp; rw [hv, outValue_append_singleton]; simp
+      · reg_simp; rw [hv, BitString.lsbValue_append]; simp
       · reg_simp; exact hpp
       · intro r h₁ h₂; reg_simp
     | true =>
-      have hvp : x.regs rVal + x.regs rPow = outValue (l ++ [true]) := by
-        rw [hv, hp, outValue_append_singleton]; simp
+      have hvp : x.regs rVal + x.regs rPow = BitString.lsbValue (l ++ [true]) := by
+        rw [hv, hp, BitString.lsbValue_append]; simp
       have hvf : Fits w (x.regs rVal + x.regs rPow) := by
         unfold Fits; rw [hv, hp]; rw [pow_succ] at hpow; omega
       refine ⟨_, (execWithin_add hvf).seq (execWithin_add ?_), ?_, ?_, ?_, rfl⟩
@@ -1171,7 +1144,7 @@ theorem executes_simProgram (hδ : ∀ q a s, tm.tr q a s = δ q a s) (e : Q ≃
     (hw : simBound k m inp.length t < 2 ^ w)
     (hout : (tm.runFrom (tm.initCfg inp) t).output.length < w) :
     ∃ n ≤ simTime k m t, Executes w (simProgram δ tm.q₀ e) (State.init (inp.map Bool.toNat))
-      (outValue (tm.runFrom (tm.initCfg inp) t).output) n := by
+      (BitString.lsbValue (tm.runFrom (tm.initCfg inp) t).output) n := by
   obtain ⟨t₀, ht₀, hhalts⟩ := MultiTapeTM.exists_haltsAt ht
   have hhalt : (tm.runFrom (tm.initCfg inp) t₀).state = none := hhalts.halted
   have hrun : ∀ j < t₀, (tm.runFrom (tm.initCfg inp) j).state ≠ none :=
@@ -1232,7 +1205,7 @@ theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.exists_wordRAM {f : α �
     ∃ (r : ℕ) (p : Program .additive r) (T W : ℕ → ℕ), PolynomiallyBounded T ∧
       PolynomiallyBounded W ∧ p.ComputesInTime (fun _ a => (encIn a).map Bool.toNat)
         (fun a _ => T (encIn a).length) (fun a w => W (encIn a).length ≤ w)
-        (fun a => outValue (encOut (f a))) := by
+        (fun a => BitString.lsbValue (encOut (f a))) := by
   obtain ⟨t, s, ht, -, K, Q, hfin, tm, htm⟩ := h
   have := Fintype.ofFinite Q
   refine ⟨regs K, simProgram tm.tr tm.q₀ (Fintype.equivFin Q),
@@ -1270,8 +1243,8 @@ theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.exists_wordRAM_nat {f : �
       PolynomiallyBounded W ∧ p.ComputesInTime (fun _ a => (encIn a).map Bool.toNat)
         (fun a _ => T (encIn a).length) (fun a w => W (encIn a).length ≤ w) f := by
   obtain ⟨r, p, T, W, hT, hW, hp⟩ := h.exists_wordRAM
-  have hf : (fun a => outValue (Turing.MultiTapeTM.encNat (f a))) = f :=
-    funext fun a => by rw [Turing.MultiTapeTM.encNat_apply, outValue_bits]
+  have hf : (fun a => BitString.lsbValue (Turing.MultiTapeTM.encNat (f a))) = f :=
+    funext fun a => by rw [Turing.MultiTapeTM.encNat_apply, BitString.lsbValue_bits]
   exact ⟨r, p, T, W, hT, hW, hf ▸ hp⟩
 
 end PolyTime

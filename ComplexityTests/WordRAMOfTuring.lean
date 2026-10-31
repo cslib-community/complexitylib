@@ -26,10 +26,10 @@ open Cslib Cslib.WordRAM Cslib.WordRAM.OfTuring Turing
 
 /-! ## The output convention -/
 
-example : outValue [true, false, true] = 5 := by decide
-example : outValue [] = 0 := rfl
-example (b : Bool) : outValue [b] = b.toNat := outValue_singleton b
-example : outValue (Nat.bits 6) = 6 := outValue_bits 6
+example : BitString.lsbValue [true, false, true] = 5 := by decide
+example : BitString.lsbValue [] = 0 := rfl
+example (b : Bool) : BitString.lsbValue [b] = b.toNat := BitString.lsbValue_singleton b
+example : BitString.lsbValue (Nat.bits 6) = 6 := BitString.lsbValue_bits 6
 
 /-! ## A concrete machine -/
 
@@ -109,7 +109,7 @@ example {inp : List Bool} {t w : ℕ}
     (hw : simBound 1 2 inp.length t < 2 ^ w)
     (hout : (revFlipTM.runFrom (revFlipTM.initCfg inp) t).output.length < w) :
     ∃ n ≤ simTime 1 2 t, Executes w revFlipProgram (State.init (inp.map Bool.toNat))
-      (outValue (revFlipTM.runFrom (revFlipTM.initCfg inp) t).output) n :=
+      (BitString.lsbValue (revFlipTM.runFrom (revFlipTM.initCfg inp) t).output) n :=
   executes_simProgram (fun q a s => MultiTapeTM.tr_ofTr 0 revFlip q a s) (Equiv.refl _) ht hw hout
 
 /-- The identity on binary numbers, computable in polynomial time by a machine, is computed by a
