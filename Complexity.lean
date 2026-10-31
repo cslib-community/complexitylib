@@ -829,6 +829,7 @@ public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
 public import Complexity.Computability.Circuit.Boolean.Tableau.Correct
 public import Complexity.Computability.Circuit.Boolean.Tableau.Layout
 public import Complexity.Computability.Circuit.Boolean.Tableau.Space
+public import Complexity.Computability.Circuit.Boolean.Tableau.Succinct
 public import Complexity.Computability.Circuit.Boolean.Threshold
 public import Complexity.Computability.Circuit.Boolean.Threshold.Parity
 public import Complexity.Computability.Circuit.Boolean.ThresholdNC1
