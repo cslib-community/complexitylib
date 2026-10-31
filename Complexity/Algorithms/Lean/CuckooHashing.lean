@@ -12,6 +12,8 @@ public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.PMF.Uniform
 import Complexity.Foundations.Data.Nat.Power
+import Complexity.Probability.KWiseIndependent.Restriction
+import Complexity.Probability.PMF.UniformBound
 
 /-!
 # Pagh–Rodler Cuckoo Graph Dichotomy and Walk Tail Bounds for Highly Independent Hash Pairs
@@ -225,23 +227,6 @@ private theorem equationChain_congr_of_eqOn {U m : ℕ} {f₁ f₂ : Fin U → F
     rcases hsub with ⟨hw, hv, hrest⟩
     simp only [EquationChain, heq w hw, heq v hv, ih hrest]
 
-/-- Exact `ℕ` fiber cardinality of `T.restrict (h θ) = y` under a `k`-wise independent hash family
-`h : Θ → Fin U → Fin m`. -/
-private theorem card_filter_restrict_eq {Θ : Type*} [Fintype Θ] {U m k : ℕ} (hm : 0 < m)
-    {h : Θ → Fin U → Fin m} (hh : IsKWiseIndependentHash k h)
-    {T : Finset (Fin U)} (hT : #T ≤ k) (y : T → Fin m) :
-    m ^ #T * #{θ : Θ | T.restrict (h θ) = y} = Fintype.card Θ := by
-  have : Nonempty Θ := hh.nonempty
-  have hdens := hh.dens_filter_restrict_eq hT y
-  rw [Finset.dens_eq_card_div_card, Fintype.card_fin] at hdens
-  have hΘ_ne : (Fintype.card Θ : ℚ≥0) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-  have hm_ne : ((m : ℚ≥0) ^ #T) ≠ 0 := pow_ne_zero _ (Nat.cast_ne_zero.mpr (by omega))
-  have hq : ((m ^ #T * #{θ : Θ | T.restrict (h θ) = y} : ℕ) : ℚ≥0) = (Fintype.card Θ : ℚ≥0) := by
-    push_cast
-    rw [div_eq_iff hΘ_ne] at hdens
-    rw [hdens, ← mul_assoc, mul_inv_cancel₀ hm_ne, one_mul]
-  exact Nat.cast_inj.mp hq
-
 /-- Extending `y : T → Fin m` to `insert w T` by assigning `w` the value `y ⟨v, hv⟩`. -/
 private def extendRestrict {U m : ℕ} {T : Finset (Fin U)} (w : Fin U) {v : Fin U} (hv : v ∈ T)
     (y : T → Fin m) (x : ↥(insert w T)) : Fin m :=
@@ -280,9 +265,11 @@ private theorem card_filter_eq_and_restrict_eq {Θ : Type*} [Fintype Θ] {U m k 
     (hcard : #T + 1 ≤ k) (y : T → Fin m) :
     m * #{θ : Θ | h θ w = h θ v ∧ T.restrict (h θ) = y} =
       #{θ : Θ | T.restrict (h θ) = y} := by
+  have : Nonempty (Fin m) := ⟨⟨0, hm⟩⟩
   have hcard_ins : #(insert w T) = #T + 1 := Finset.card_insert_of_notMem hw
-  have h1 := card_filter_restrict_eq hm hh (hcard_ins.le.trans hcard) (extendRestrict w hv y)
-  have h2 := card_filter_restrict_eq hm hh (by omega : #T ≤ k) y
+  have h1 := hh.card_filter_restrict_eq (hcard_ins.le.trans hcard) (extendRestrict w hv y)
+  have h2 := hh.card_filter_restrict_eq (by omega : #T ≤ k) y
+  simp only [Fintype.card_fin] at h1 h2
   have hfilter : Finset.filter (fun θ : Θ => (insert w T).restrict (h θ) = extendRestrict w hv y)
         Finset.univ =
       Finset.filter (fun θ : Θ => h θ w = h θ v ∧ T.restrict (h θ) = y) Finset.univ := by
@@ -2415,50 +2402,6 @@ private theorem two_mul_card_not_goodForSet_le {Θ₁ Θ₂ : Type*} [Fintype Θ
         _ = Fintype.card (Θ₁ × Θ₂) * S.card := Nat.mul_comm _ _
     exact Nat.le_of_mul_le_mul_right hmul hcard_pos
 
-/-- Convert a natural-number sum bound over a finite type `α` into an `ℝ≥0∞` expectation bound
-under `PMF.uniformOfFintype α`. -/
-private theorem tsum_uniformOfFintype_le_nat {α : Type*} [Fintype α] [Nonempty α]
-    {f : α → ℕ} {C : ℕ} (hle : ∑ x : α, f x ≤ C * Fintype.card α) :
-    (∑' x : α, (PMF.uniformOfFintype α) x * (f x : ℝ≥0∞)) ≤ (C : ℝ≥0∞) := by
-  rw [tsum_fintype]
-  have hsum :
-      (∑ x : α, (PMF.uniformOfFintype α) x * (f x : ℝ≥0∞)) =
-        (Fintype.card α : ℝ≥0∞)⁻¹ * ((∑ x : α, f x : ℕ) : ℝ≥0∞) := by
-    simp only [PMF.uniformOfFintype_apply, ← Finset.mul_sum, Nat.cast_sum]
-  rw [hsum]
-  have hcast : ((∑ x : α, f x : ℕ) : ℝ≥0∞) ≤ (C : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞) := by
-    exact_mod_cast hle
-  have hne_zero : (Fintype.card α : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-  have hne_top : (Fintype.card α : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-  calc (Fintype.card α : ℝ≥0∞)⁻¹ * ((∑ x : α, f x : ℕ) : ℝ≥0∞)
-      ≤ (Fintype.card α : ℝ≥0∞)⁻¹ * ((C : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)) := by gcongr
-    _ = (C : ℝ≥0∞) * ((Fintype.card α : ℝ≥0∞)⁻¹ * (Fintype.card α : ℝ≥0∞)) := by ring
-    _ = (C : ℝ≥0∞) := by rw [ENNReal.inv_mul_cancel hne_zero hne_top, mul_one]
-
-/-- Convert a natural-number filter-cardinality bound `B * #{x | P x} ≤ A * Fintype.card α` into an
-`ℝ≥0∞` outer-measure bound `(PMF.uniformOfFintype α).toOuterMeasure {x | P x} ≤ A / B`. -/
-private theorem toOuterMeasure_uniformOfFintype_le_div {α : Type*} [Fintype α] [Nonempty α]
-    {P : α → Prop} [DecidablePred P] {A B : ℕ} (hB : 0 < B)
-    (hle : B * (Finset.univ.filter P).card ≤ A * Fintype.card α) :
-    (PMF.uniformOfFintype α).toOuterMeasure {x : α | P x} ≤ (A : ℝ≥0∞) / (B : ℝ≥0∞) := by
-  have h1 := PMF.toOuterMeasure_uniformOfFintype (α := α) {x : α | P x}
-  simp only [Set.mem_ofPred_eq] at h1
-  rw [h1]
-  have hcast :
-      (B : ℝ≥0∞) * ((Finset.univ.filter P).card : ℝ≥0∞) ≤
-        (A : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞) := by
-    exact_mod_cast hle
-  have hcard_ne_zero : (Fintype.card α : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-  have hcard_ne_top : (Fintype.card α : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-  have hB_ne_zero : (B : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
-  have hB_ne_top : (B : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top _
-  rw [ENNReal.le_div_iff_mul_le (Or.inl hB_ne_zero) (Or.inl hB_ne_top)]
-  calc ((Finset.univ.filter P).card : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹ * (B : ℝ≥0∞)
-      = ((B : ℝ≥0∞) * ((Finset.univ.filter P).card : ℝ≥0∞)) * (Fintype.card α : ℝ≥0∞)⁻¹ := by ring
-    _ ≤ ((A : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)) * (Fintype.card α : ℝ≥0∞)⁻¹ := by gcongr
-    _ = (A : ℝ≥0∞) * ((Fintype.card α : ℝ≥0∞) * (Fintype.card α : ℝ≥0∞)⁻¹) := by ring
-    _ = (A : ℝ≥0∞) := by rw [ENNReal.mul_inv_cancel hcard_ne_zero hcard_ne_top, mul_one]
-
 /-! ## Section 4: `IsCuckooHashPair` instances and lazy random-oracle equivalence -/
 
 /-- **Pagh & Rodler (2004), Section 2.3 (`IsCuckooHashPair` for `(2 * MaxLoop + 2)`-wise
@@ -2482,7 +2425,7 @@ theorem isCuckooHashPair_of_kWiseIndependent {Θ₁ Θ₂ : Type*}
       n_max MaxLoop 2 3 where
   expected_walk_le S u hS hu := by
     have hsum := sum_cuckooWalkRounds_le hk₁ hk₂ hm hloop_le hS hu
-    exact mod_cast tsum_uniformOfFintype_le_nat hsum
+    exact mod_cast PMF.tsum_uniformOfFintype_le_of_sum_le hsum
   rehash_prob_le_half S hS := by
     classical
     have hcard := two_mul_card_not_goodForSet_le hk₁ hk₂ hm hloop_ge hloop_le hS
@@ -2491,7 +2434,7 @@ theorem isCuckooHashPair_of_kWiseIndependent {Θ₁ Θ₂ : Type*}
           ¬ GoodForSet (h₁ θ.1) (h₂ θ.2) MaxLoop S)).card ≤
         1 * Fintype.card (Θ₁ × Θ₂) := by
       simpa only [one_mul] using hcard
-    have hmeas := toOuterMeasure_uniformOfFintype_le_div (by decide : 0 < 2) hcard'
+    have hmeas := PMF.toOuterMeasure_uniformOfFintype_le_div (by decide : 0 < 2) hcard'
     exact mod_cast hmeas
   step_rehash_prob_le ks u hnodup hlen hu := by
     classical
@@ -2529,7 +2472,7 @@ theorem isCuckooHashPair_of_kWiseIndependent {Θ₁ Θ₂ : Type*}
           _ ≤ 2 * B * #{θ : Θ₁ × Θ₂ | WalkBadAt (h₁ θ.1) (h₂ θ.2) ks.toFinset u MaxLoop} := by
               nlinarith
       exact le_trans h1 (le_trans hwalk (by omega))
-    have hmeas := toOuterMeasure_uniformOfFintype_le_div hB_pos hbound
+    have hmeas := PMF.toOuterMeasure_uniformOfFintype_le_div hB_pos hbound
     have hmax (a : ℕ) : ((max a 1 : ℕ) : ℝ≥0∞) = max (a : ℝ≥0∞) 1 := by
       rcases le_total a 1 with h | h
       · rw [max_eq_right h, max_eq_right (by exact_mod_cast h), Nat.cast_one]
@@ -2828,7 +2771,7 @@ theorem isCuckooHashPair_of_whp_kWiseIndependent {Θ_top Θ_bot : Type*}
         _ = 3 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
           rw [← hcard_all]
           ring
-    exact mod_cast tsum_uniformOfFintype_le_nat hsum3
+    exact mod_cast PMF.tsum_uniformOfFintype_le_of_sum_le hsum3
   · have h4_le_B : 4 ≤ B :=
       calc 4 ≤ 1 * 18 := by decide
         _ ≤ max n_max 1 * max MaxLoop 1 := Nat.mul_le_mul (by omega) (by omega)
@@ -2858,7 +2801,7 @@ theorem isCuckooHashPair_of_whp_kWiseIndependent {Θ_top Θ_bot : Type*}
             rw [← hcard_all]
             ring
       exact Nat.le_of_mul_le_mul_left hfilt4 (by decide)
-    exact mod_cast toOuterMeasure_uniformOfFintype_le_div (by decide : 0 < 2) hfilt2
+    exact mod_cast PMF.toOuterMeasure_uniformOfFintype_le_div (by decide : 0 < 2) hfilt2
   · have hB_pos : 0 < B := Nat.mul_pos (by omega) (by omega)
     have hks_card : ks.toFinset.card ≤ max n_max 4 := by
       have := List.toFinset_card_le ks
@@ -2898,7 +2841,7 @@ theorem isCuckooHashPair_of_whp_kWiseIndependent {Θ_top Θ_bot : Type*}
         _ = 4 * Fintype.card ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)) := by
           rw [← hcard_all]
           ring
-    have hmeas := toOuterMeasure_uniformOfFintype_le_div hB_pos hfilt4
+    have hmeas := PMF.toOuterMeasure_uniformOfFintype_le_div hB_pos hfilt4
     have hmax (a : ℕ) : ((max a 1 : ℕ) : ℝ≥0∞) = max (a : ℝ≥0∞) 1 := by
       rcases le_total a 1 with h | h
       · rw [max_eq_right h, max_eq_right (by exact_mod_cast h), Nat.cast_one]

@@ -11,9 +11,13 @@ public import Complexity.Algorithms.Lean.UniformProbing
 public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 import Complexity.Foundations.Data.Nat.Power
+import Complexity.Probability.KWiseIndependent.Restriction
+import Complexity.Probability.PMF.UniformBound
 import Mathlib.Data.Finset.Max
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Fintype.Pi
+import Mathlib.Data.List.GetD
+import Mathlib.Order.Interval.Finset.Nat
 
 /-!
 # Odd-Stride Double Hashing under Limited Independence and Double Tabulation
@@ -90,9 +94,6 @@ Tabulation (`[Thorup2013]`, Theorem 1(a) and Lemma 2) with `c` characters of `b`
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.DoubleHashing.probeCount_le_card_otherOccupied_add_one`,
-  `Cslib.Algorithms.Lean.DoubleHashing.probeCount_le_add_one`: deterministic pigeonhole
-  bound `probeCount T u (π u) ≤ n_max + 1`.
 * `Cslib.Algorithms.Lean.DoubleHashing.OrderedTableRep.empty`,
   `Cslib.Algorithms.Lean.DoubleHashing.OrderedTableRep.tableInsert`,
   `Cslib.Algorithms.Lean.DoubleHashing.orderedTableRep_runTable`: preservation of `OrderedTableRep`.
@@ -128,48 +129,7 @@ open Cslib.Algorithms.Lean.UniformProbing
 open Cslib.Probability
 open scoped BigOperators ENNReal
 
-/-! ## Section 1: Deterministic Pigeonhole Bound and Acyclic Insertion-Order Invariant -/
-
-/-- For any occupied slot set `O : Finset (Fin m)` and permutation `σ : Equiv.Perm (Fin m)`, the
-number of consecutive missed probes `missedProbes O σ` is at most `O.card` by injectivity of `σ`. -/
-theorem missedProbes_le_card {m : ℕ} (O : Finset (Fin m)) (σ : Equiv.Perm (Fin m)) :
-    missedProbes O σ ≤ O.card := by
-  have hle_m : missedProbes O σ ≤ m := missedProbes_le O σ
-  have hall : allOccupied O (missedProbes O σ) σ :=
-    (le_missedProbes_iff_allOccupied hle_m σ).mp le_rfl
-  let f : Fin (missedProbes O σ) → Fin m := fun i => σ ⟨i.val, lt_of_lt_of_le i.isLt hle_m⟩
-  have hmaps : ∀ i ∈ (Finset.univ : Finset (Fin (missedProbes O σ))), f i ∈ O :=
-    fun i _ => hall ⟨i.val, lt_of_lt_of_le i.isLt hle_m⟩ i.isLt
-  have hinj : Set.InjOn f (Finset.univ : Finset (Fin (missedProbes O σ))) := by
-    intro i _ j _ hij
-    have hfin := σ.injective hij
-    exact Fin.ext (Fin.mk.inj hfin)
-  simpa using Finset.card_le_card_of_injOn f hmaps hinj
-
-/-- **Deterministic Pigeonhole Probe Bound**: for any table `T : Table U m`, key `u : Fin U`, and
-probe permutation `σ : Equiv.Perm (Fin m)`, `probeCount T u σ ≤ (otherOccupiedSlots T u).card + 1`.
--/
-theorem probeCount_le_card_otherOccupied_add_one {U m : ℕ} (T : Table U m) (u : Fin U)
-    (σ : Equiv.Perm (Fin m)) :
-    probeCount T u σ ≤ (otherOccupiedSlots T u).card + 1 := by
-  rw [probeCount, unsuccessfulProbes, Nat.add_comm]
-  exact Nat.add_le_add_right (missedProbes_le_card (otherOccupiedSlots T u) σ) 1
-
-/-- Under `TableRep π s T`, `probeCount T u (π u) ≤ (Dictionary.dom s).card + 1` holds
-deterministically for every key `u : Fin U`. -/
-theorem probeCount_le_dom_card_add_one {U m : ℕ} {π : Fin U → Equiv.Perm (Fin m)}
-    {s : Dictionary.State U} {T : Table U m} (hrep : TableRep π s T) (u : Fin U) :
-    probeCount T u (π u) ≤ (Dictionary.dom s).card + 1 :=
-  (probeCount_le_card_otherOccupied_add_one T u (π u)).trans
-    (Nat.add_le_add_right (hrep.card_otherOccupiedSlots_le u) 1)
-
-/-- Under `TableRep π s T` and `(Dictionary.dom s).card ≤ n_max`,
-`probeCount T u (π u) ≤ n_max + 1` holds deterministically for every key `u : Fin U`. -/
-theorem probeCount_le_add_one {U m n_max : ℕ} {π : Fin U → Equiv.Perm (Fin m)}
-    {s : Dictionary.State U} {T : Table U m} (hrep : TableRep π s T)
-    (hdom : (Dictionary.dom s).card ≤ n_max) (u : Fin U) :
-    probeCount T u (π u) ≤ n_max + 1 :=
-  (probeCount_le_dom_card_add_one hrep u).trans (Nat.add_le_add_right hdom 1)
+/-! ## Section 1: Acyclic Insertion-Order Invariant (`OrderedTableRep`) -/
 
 /-- Open-addressed table representation invariant extending `TableRep π s T` with an acyclic
 insertion-order witness `rank : Fin U → ℕ`: for every stored key `w ∈ Dictionary.dom s` and every
@@ -1012,10 +972,6 @@ private theorem mem_rawQueue_of_le {U m : ℕ} (hm : 0 < m) (T : Table U m)
     dsimp only [rawQueue]
     exact List.mem_append_left _ ih
 
-private theorem getD_eq_getElem_of_lt {α : Type*} (l : List α) (d : α) {i : ℕ}
-    (hi : i < l.length) : l.getD i d = l[i] := by
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some]
-
 private theorem getD_rawQueue_eq_of_le {U m : ℕ} (hm : 0 < m) (T : Table U m)
     (π : Fin U → Equiv.Perm (Fin m)) (x₀ : Fin U) (r₀ : ℕ) {a b i : ℕ}
     (hab : a ≤ b) (hi : i < (rawQueue hm T π x₀ r₀ a).length) :
@@ -1090,7 +1046,7 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
       set x_c := keyAt T x₀ slot_c
       have hslot_c_mem : slot_c ∈ q_c.toFinset := by
         rw [List.mem_toFinset]
-        have hget : slot_c = q_c[c] := getD_eq_getElem_of_lt q_c ⟨0, hm⟩ hc_len
+        have hget : slot_c = q_c[c] := List.getD_eq_getElem q_c ⟨0, hm⟩ hc_len
         rw [hget]
         exact List.getElem_mem hc_len
       obtain ⟨y_c, hy_c_W, hland_yc⟩ := Finset.mem_image.mp (hsub_c hslot_c_mem)
@@ -1159,7 +1115,7 @@ private theorem rawQueue_spec {U m : ℕ} (hm : 0 < m)
         have ha_len : a < (rawQueue hm T π x₀ r₀ a).length := by omega
         have hget_a : (rawQueue hm T π x₀ r₀ a).getD a ⟨0, hm⟩ = landingSlot hm T π z := by
           rw [← getD_rawQueue_eq_of_le hm T π x₀ r₀ (Nat.le_succ_of_le ha_le_c) ha_len,
-            getD_eq_getElem_of_lt q' ⟨0, hm⟩ ha_lt, hqa]
+            List.getD_eq_getElem q' ⟨0, hm⟩ ha_lt, hqa]
         have hkey_a : keyAt T x₀ ((rawQueue hm T π x₀ r₀ a).getD a ⟨0, hm⟩) = z := by
           rw [hget_a, keyAt_landingSlot_of_mem_dom hm hrep x₀ (hW_dom hzW)]
         have hy_pref : landingSlot hm T π y ∈
@@ -1237,7 +1193,7 @@ private theorem hasBFSWitness_of_partialDepSet {U m : ℕ} (hm : 0 < m)
       omega
     have hslot_mem : (rawQueue hm T π x₀ r₀ b.val).getD b.val ⟨0, hm⟩ ∈
         (rawQueue hm T π x₀ r₀ b.val).toFinset := by
-      rw [List.mem_toFinset, getD_eq_getElem_of_lt _ _ hb_len]
+      rw [List.mem_toFinset, List.getD_eq_getElem _ _ hb_len]
       exact List.getElem_mem hb_len
     obtain ⟨y, hyW, hland_y⟩ := Finset.mem_image.mp (hsub_b hslot_mem)
     have hxb_eq : x b = y := by
@@ -1303,7 +1259,7 @@ private theorem hasBFSWitness_of_partialDepSet {U m : ℕ} (hm : 0 < m)
       ← getD_rawQueue_eq_of_le hm T π x₀ r₀ (le_of_lt b₂.isLt) hb2_len] at hland
     have hb1_w : b₁.val < (rawQueue hm T π x₀ r₀ w).length := hlen_w.symm ▸ b₁.isLt
     have hb2_w : b₂.val < (rawQueue hm T π x₀ r₀ w).length := hlen_w.symm ▸ b₂.isLt
-    rw [getD_eq_getElem_of_lt _ _ hb1_w, getD_eq_getElem_of_lt _ _ hb2_w] at hland
+    rw [List.getD_eq_getElem _ _ hb1_w, List.getD_eq_getElem _ _ hb2_w] at hland
     have hr₀_m : r₀ ≤ m := hr₀_mp.trans (missedProbes_le _ _)
     have hnodup_w := nodup_rawQueue hm T π x₀ hr₀_m w
     exact Fin.ext (hnodup_w.getElem_inj_iff.mp hland)
@@ -1739,41 +1695,6 @@ private theorem injective_fin_cases {α : Type*} {w : ℕ} {x₀ : α} {x : Fin 
   · exact False.elim (hne i' hij)
   · exact congrArg Fin.succ (hx hij)
 
-private theorem card_filter_eq_mul_pow_of_isKWiseIndependentHash
-    {Θ Y : Type*} [Fintype Θ] [Fintype Y] [DecidableEq Y] [Nonempty Y]
-    {k w : ℕ} {h : Θ → Fin (w + 1) → Y}
-    (hh : Cslib.Probability.IsKWiseIndependentHash k h) (hw : w + 1 ≤ k)
-    (y : Fin (w + 1) → Y) :
-    (Finset.univ.filter fun θ : Θ => h θ = y).card * Fintype.card Y ^ (w + 1) =
-      Fintype.card Θ := by
-  have : Nonempty Θ := hh.nonempty
-  have hY_pos : 0 < Fintype.card Y := Fintype.card_pos
-  have hΘ_pos : 0 < Fintype.card Θ := Fintype.card_pos
-  let T : Finset (Fin (w + 1)) := Finset.univ
-  have hT : T.card ≤ k := by simpa [T] using hw
-  have hdens := hh.dens_filter_restrict_eq hT (fun a => y a.1)
-  have hset : (Finset.univ.filter fun θ : Θ => T.restrict (h θ) = fun a => y a.1) =
-      Finset.univ.filter fun θ : Θ => h θ = y := by
-    ext θ
-    simp [T, funext_iff, Finset.restrict]
-  rw [hset, Finset.dens_eq_card_div_card] at hdens
-  have hT_card : T.card = w + 1 := by simp [T]
-  rw [hT_card] at hdens
-  have hY_ne : ((Fintype.card Y : ℚ≥0) ^ (w + 1)) ≠ 0 := by positivity
-  have hΘ_ne : (Fintype.card Θ : ℚ≥0) ≠ 0 := by positivity
-  have hq : ((Finset.univ.filter fun θ : Θ => h θ = y).card : ℚ≥0) *
-      (Fintype.card Y : ℚ≥0) ^ (w + 1) = (Fintype.card Θ : ℚ≥0) := by
-    rw [div_eq_iff hΘ_ne] at hdens
-    calc
-      ((Finset.univ.filter fun θ : Θ => h θ = y).card : ℚ≥0) *
-          (Fintype.card Y : ℚ≥0) ^ (w + 1)
-        = (((Fintype.card Y : ℚ≥0) ^ (w + 1))⁻¹ * (Fintype.card Θ : ℚ≥0)) *
-            (Fintype.card Y : ℚ≥0) ^ (w + 1) := by rw [hdens]
-      _ = (Fintype.card Θ : ℚ≥0) *
-            (((Fintype.card Y : ℚ≥0) ^ (w + 1))⁻¹ * (Fintype.card Y : ℚ≥0) ^ (w + 1)) := by ring
-      _ = (Fintype.card Θ : ℚ≥0) := by rw [inv_mul_cancel₀ hY_ne, mul_one]
-  exact_mod_cast hq
-
 open scoped Classical in
 /-- **Fixed-Tuple BFS Event Bound under `k`-Wise Independence**:
 for any `(w + 1)`-wise independent hash pair `(h₁, h₂)`, injective vertex sequence `x₀, x`,
@@ -1822,8 +1743,8 @@ private theorem card_filter_bfsStepEvent_le
     have hprod : F ps = F₁ ×ˢ F₂ := by
       ext ⟨θ₁, θ₂⟩
       simp [F, F₁, F₂, evalSeed, funext_iff, Prod.ext_iff, forall_and]
-    have h1 := card_filter_eq_mul_pow_of_isKWiseIndependentHash hh₁' hwk (fun a => (ps a).1)
-    have h2 := card_filter_eq_mul_pow_of_isKWiseIndependentHash hh₂' hwk (fun a => (ps a).2)
+    have h1 := hh₁'.card_filter_eq_of_card_le (by simpa using hwk) (fun a => (ps a).1)
+    have h2 := hh₂'.card_filter_eq_of_card_le (by simpa using hwk) (fun a => (ps a).2)
     simp only [Fintype.card_fin] at h1 h2
     calc
       (F ps).card * (2 ^ M * 2 ^ (M - 1)) ^ (w + 1)
@@ -1874,27 +1795,6 @@ private theorem card_filter_bfsStepEvent_le
       _ = (2 ^ M * 2 ^ (M - 1)) * ((2 ^ (M - 1) + w ^ 4) ^ w * Fintype.card (Θ₁ × Θ₂)) := by ring
   exact Nat.le_of_mul_le_mul_left hmul' hpos
 
-private theorem strictMono_eq_of_image_eq {w N : ℕ} {g₁ g₂ : Fin w → Fin N}
-    (hg₁ : StrictMono g₁) (hg₂ : StrictMono g₂)
-    (himg : Finset.univ.image g₁ = Finset.univ.image g₂) : g₁ = g₂ := by
-  funext b
-  induction b using WellFoundedLT.induction with
-  | ind b ih =>
-    rcases lt_trichotomy (g₁ b) (g₂ b) with hlt | heq | hgt
-    · have hmem : g₁ b ∈ Finset.univ.image g₂ :=
-        himg ▸ Finset.mem_image_of_mem g₁ (Finset.mem_univ b)
-      rcases Finset.mem_image.mp hmem with ⟨c, _, hc⟩
-      have hcb : c < b := hg₂.lt_iff_lt.mp (hc.symm ▸ hlt)
-      have h1 : g₁ c = g₁ b := (ih c hcb).trans hc
-      exact False.elim (ne_of_lt hcb (hg₁.injective h1))
-    · exact heq
-    · have hmem : g₂ b ∈ Finset.univ.image g₁ :=
-        himg.symm ▸ Finset.mem_image_of_mem g₂ (Finset.mem_univ b)
-      rcases Finset.mem_image.mp hmem with ⟨c, _, hc⟩
-      have hcb : c < b := hg₁.lt_iff_lt.mp (hc.symm ▸ hgt)
-      have h1 : g₂ c = g₂ b := (ih c hcb).symm.trans hc
-      exact False.elim (ne_of_lt hcb (hg₂.injective h1))
-
 private def degSeqFinset (w : ℕ) : Finset (Fin (w + 1) → Fin (w + 1)) :=
   Finset.univ.filter fun f => ∑ a : Fin (w + 1), (f a).val = w
 
@@ -1943,7 +1843,9 @@ private theorem card_degSeqFinset_le_four_pow (w : ℕ) :
         refine Finset.image_congr fun b _ => ?_
         simp [hlt f₂ hsum₂ b]
       rwa [← h1, ← h2]
-    have hg_eq : g₁ = g₂ := strictMono_eq_of_image_eq (hg_mono f₁ hsum₁) (hg_mono f₂ hsum₂) himg'
+    have hg_eq : g₁ = g₂ :=
+      (hg_mono f₁ hsum₁).eq_of_range_eq (hg_mono f₂ hsum₂)
+        (by simpa using congrArg (↑· : Finset (Fin (2 * w)) → Set (Fin (2 * w))) himg')
     have hpref_eq (b : ℕ) (hb : b ≤ w) :
         ∑ a ∈ Finset.univ.filter (fun a : Fin (w + 1) => a.val ≤ b), (f₁ a).val =
           ∑ a ∈ Finset.univ.filter (fun a : Fin (w + 1) => a.val ≤ b), (f₂ a).val := by
@@ -2383,22 +2285,6 @@ theorem sum_probeCount_oddStride_le_of_kWiseIndependent
             exact Finset.sum_congr rfl fun w _ => hC_sum_eq x₀ w
   omega
 
-private theorem tsum_uniformOfFintype_le_of_sum_le
-    {Θ : Type*} [Fintype Θ] [Nonempty Θ] {f : Θ → ℕ} {C : ℕ}
-    (hsum : (∑ θ : Θ, f θ) ≤ C * Fintype.card Θ) :
-    (∑' θ : Θ, PMF.uniformOfFintype Θ θ * (f θ : ℝ≥0∞)) ≤ C := by
-  rw [tsum_fintype]
-  simp only [PMF.uniformOfFintype_apply, ← Finset.mul_sum, ← Nat.cast_sum]
-  have hcard_pos : 0 < Fintype.card Θ := Fintype.card_pos
-  have hcard_ne : (Fintype.card Θ : ℝ≥0∞) ≠ 0 := by positivity
-  have hsum_cast : ((∑ θ : Θ, f θ : ℕ) : ℝ≥0∞) ≤ (C : ℝ≥0∞) * (Fintype.card Θ : ℝ≥0∞) := by
-    exact_mod_cast hsum
-  calc
-    (Fintype.card Θ : ℝ≥0∞)⁻¹ * ((∑ θ : Θ, f θ : ℕ) : ℝ≥0∞)
-      ≤ (Fintype.card Θ : ℝ≥0∞)⁻¹ * ((C : ℝ≥0∞) * (Fintype.card Θ : ℝ≥0∞)) := by gcongr
-    _ = (C : ℝ≥0∞) * ((Fintype.card Θ : ℝ≥0∞)⁻¹ * (Fintype.card Θ : ℝ≥0∞)) := by ring
-    _ = C := by rw [ENNReal.inv_mul_cancel hcard_ne (ENNReal.natCast_ne_top _), mul_one]
-
 /-- **Expected Probe-Count Bound under `(2 * L + 1)`-Wise Independence**:
 under the hypotheses of `sum_probeCount_oddStride_le_of_kWiseIndependent`, the expected probe count
 of `u` under `PMF.uniformOfFintype (Θ₁ × Θ₂)` is at most `2` ([SchmidtSiegel1990], Theorem 1). -/
@@ -2415,7 +2301,7 @@ theorem expect_probeCount_oddStride_of_kWiseIndependent
     (∑' θ : Θ₁ × Θ₂,
       PMF.uniformOfFintype (Θ₁ × Θ₂) θ *
         (probeCount (T θ) u (oddStridePerm (h₁ θ.1) (h₂ θ.2) u) : ℝ≥0∞)) ≤ 2 :=
-  tsum_uniformOfFintype_le_of_sum_le
+  PMF.tsum_uniformOfFintype_le_of_sum_le
     (sum_probeCount_oddStride_le_of_kWiseIndependent hh₁ hh₂ hM hload hw4 hrep hdom u)
 
 /-! ## Section 5: High-Probability Conditioning Bridge & Double Tabulation Instantiation -/
@@ -2585,7 +2471,7 @@ theorem expect_probeCount_oddStride_of_whp_kWiseIndependent
     (∑' θ : (Θ_top₁ × Θ_bot₁) × (Θ_top₂ × Θ_bot₂),
       PMF.uniformOfFintype ((Θ_top₁ × Θ_bot₁) × (Θ_top₂ × Θ_bot₂)) θ *
         (probeCount (T θ) u (twoStageOddStridePerm H₁ H₂ θ u) : ℝ≥0∞)) ≤ 3 :=
-  tsum_uniformOfFintype_le_of_sum_le
+  PMF.tsum_uniformOfFintype_le_of_sum_le
     (sum_probeCount_oddStride_of_whp_kWiseIndependent
       Good₁ Good₂ hk₁ hk₂ hbad₁ hbad₂ hM hload hw4 hrep hdom u)
 
@@ -2675,7 +2561,7 @@ theorem expect_probeCount_oddStride_doubleTab_of_codeBound_le
     (∑' θ : DoubleTabOddStrideSeed c b M,
       PMF.uniformOfFintype (DoubleTabOddStrideSeed c b M) θ *
         (probeCount (T θ) u (doubleTabOddStridePerm c b U M θ u) : ℝ≥0∞)) ≤ 3 :=
-  tsum_uniformOfFintype_le_of_sum_le
+  PMF.tsum_uniformOfFintype_le_of_sum_le
     (sum_probeCount_oddStride_doubleTab_of_codeBound_le hc hU hM hload hw4 hbound hrep hdom u)
 
 /-- Canonical Double Tabulation seed space for odd-stride double hashing at polynomial universe
@@ -2813,29 +2699,8 @@ theorem expect_probeCount_oddStride_doubleTab_le
     (∑' θ : DoubleHashSeed c_exp n_max M,
       PMF.uniformOfFintype (DoubleHashSeed c_exp n_max M) θ *
         (probeCount (T θ) u (doubleHashOddStridePerm c_exp n_max U M θ u) : ℝ≥0∞)) ≤ 3 :=
-  tsum_uniformOfFintype_le_of_sum_le
+  PMF.tsum_uniformOfFintype_le_of_sum_le
     (sum_probeCount_oddStride_doubleTab_le hge hU hm hrep hdom u)
-
-/-- **Deterministic Expected Probe-Count Bound (`≤ n_max + 1`) for Any Full-Cycle Permutation
-Family**: for any nonempty finite seed space `Θ` and any permutation family
-`π : Θ → Fin U → Equiv.Perm (Fin m)` representing `s` in `T θ` with
-`(Dictionary.dom s).card ≤ n_max`, the expected probe count of `u` under `PMF.uniformOfFintype Θ`
-is at most `n_max + 1`. -/
-theorem expect_probeCount_le_add_one
-    {Θ : Type*} [Fintype Θ] [Nonempty Θ] {U m n_max : ℕ}
-    {π : Θ → Fin U → Equiv.Perm (Fin m)}
-    {s : Dictionary.State U} {T : Θ → Table U m}
-    (hrep : ∀ θ, TableRep (π θ) s (T θ))
-    (hdom : (Dictionary.dom s).card ≤ n_max) (u : Fin U) :
-    (∑' θ : Θ, PMF.uniformOfFintype Θ θ * (probeCount (T θ) u (π θ u) : ℝ≥0∞)) ≤
-      (n_max + 1 : ℝ≥0∞) := by
-  have hsum : (∑ θ : Θ, probeCount (T θ) u (π θ u)) ≤ (n_max + 1) * Fintype.card Θ := by
-    calc
-      (∑ θ : Θ, probeCount (T θ) u (π θ u))
-        ≤ ∑ _θ : Θ, (n_max + 1) :=
-          Finset.sum_le_sum fun θ _ => probeCount_le_add_one (hrep θ) hdom u
-      _ = (n_max + 1) * Fintype.card Θ := by simp [Nat.mul_comm]
-  exact mod_cast tsum_uniformOfFintype_le_of_sum_le hsum
 
 /-- **Unconditional `O_{c_exp}(1)` Expected Probe-Count Bound for All Capacities `n_max : ℕ`**:
 combining the deterministic full-cycle pigeonhole bound
