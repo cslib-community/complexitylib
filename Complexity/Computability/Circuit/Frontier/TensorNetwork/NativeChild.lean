@@ -732,7 +732,171 @@ theorem nativeChild_eq (fl : List ℕ) (a i pt : ℕ) (t : ℤ) (ζ β : List �
       rw [parentEdge_childEdgeEquiv]
       rcases c with c | c <;> simp
 
+/-- **The ports of a retained vertex are its child edges.** -/
+theorem mem_filterMap_retainedPort (x : {v // group v = g})
+    (c : ChildEdge (D.srcFin hD) (D.tgtFin hD) group g) :
+    c ∈ (D.vertices[(x.1 : ℕ)]'x.1.2).1.filterMap (retainedPort hD group g x) ↔
+      childSrc (P := P) (D.srcFin hD) (D.tgtFin hD) group g c = .inl x := by
+  have hsrcr := DescribedNetwork.srcFin_lt hD
+  have htgtr := DescribedNetwork.le_tgtFin hD
+  rw [List.mem_filterMap]
+  rcases c with ⟨e, he⟩ | ⟨e, he⟩
+  · simp only [childSrc, Sum.elim_inl, Sum.inl.injEq, Subtype.ext_iff]
+    constructor
+    · rintro ⟨j, hj, hc⟩
+      simp only [retainedPort] at hc
+      split_ifs at hc with hjm hxr hg hg <;> simp at hc
+      subst hc
+      rcases (DescribedNetwork.mem_ports_iff hD x.1 ⟨j, hjm⟩).mp hj with h | h
+      · exact h
+      · have := htgtr ⟨j, hjm⟩
+        rw [h] at this
+        omega
+    · intro hs
+      refine ⟨e.val, (DescribedNetwork.mem_ports_iff hD x.1 e).mpr (Or.inl hs), ?_⟩
+      have hxr : (x.1 : ℕ) < r := hs ▸ hsrcr e
+      simp only [retainedPort, dite_eq_left e.2, ite_eq_left hxr, Fin.eta]
+      rw [dite_eq_left he]
+  · simp only [childSrc, Sum.elim_inr, Sum.inl.injEq, Subtype.ext_iff]
+    constructor
+    · rintro ⟨j, hj, hc⟩
+      simp only [retainedPort] at hc
+      split_ifs at hc with hjm hxr hg hg <;> simp at hc
+      subst hc
+      rcases (DescribedNetwork.mem_ports_iff hD x.1 ⟨j, hjm⟩).mp hj with h | h
+      · have := hsrcr ⟨j, hjm⟩
+        rw [h] at this
+        exact absurd this hxr
+      · exact h
+    · intro ht
+      refine ⟨e.val, (DescribedNetwork.mem_ports_iff hD x.1 e).mpr (Or.inr ht), ?_⟩
+      have hxr : ¬ (x.1 : ℕ) < r := by have := htgtr e; rw [ht] at this; omega
+      simp only [retainedPort, dite_eq_left e.2, ite_eq_right hxr, Fin.eta]
+      rw [dite_eq_left he]
+
+/-- A retained port names its parent edge. -/
+theorem val_of_retainedPort_eq_some {x : {v // group v = g}} {j : ℕ}
+    {c : ChildEdge (D.srcFin hD) (D.tgtFin hD) group g} (h : retainedPort hD group g x j = some c) :
+    (Sum.elim (fun e => (e.1 : ℕ)) (fun e => (e.1 : ℕ)) c) = j := by
+  simp only [retainedPort] at h
+  split_ifs at h <;> simp at h <;> subst h <;> rfl
+
+include hD in
+/-- The ports of a vertex of a rows-first network are distinct. -/
+
+theorem nodup_ports (v : Fin D.vertices.length) : (D.vertices[v]).1.Nodup := by
+  refine List.nodup_iff_count_le_one.mpr fun j => ?_
+  by_cases hj : j ∈ (D.vertices[v]).1
+  · have hjm : j < D.numEdges := hD.1 _ (List.getElem_mem _) j hj
+    obtain ⟨s, t, hs, ht, -, -, hsc, htc, hinc⟩ := DescribedNetwork.incident_eq hD hjm
+    rcases (DescribedNetwork.mem_ports_iff hD v ⟨j, hjm⟩).mp hj with h | h
+    · have hv : (v : ℕ) = s := by
+        rw [← h]
+        simp [DescribedNetwork.srcFin, hinc]
+      have : (D.vertices[v]).1 = (D.vertices[s]).1 := by simp only [Fin.getElem_fin, hv]
+      rw [this, hsc]
+    · have hv : (v : ℕ) = t := by
+        rw [← h]
+        simp [DescribedNetwork.tgtFin, hinc]
+      have : (D.vertices[v]).1 = (D.vertices[t]).1 := by simp only [Fin.getElem_fin, hv]
+      rw [this, htc]
+  · rw [List.count_eq_zero.mpr hj]
+    exact Nat.zero_le _
+
+/-- **The numbered ports of a child vertex are its child edges**, without repetition. -/
+theorem mem_numberedPorts (v : ChildVertex group g P)
+    (c : ChildEdge (D.srcFin hD) (D.tgtFin hD) group g) :
+    c ∈ numberedPorts hD group packet g v ↔
+      childSrc (D.srcFin hD) (D.tgtFin hD) group g c = v ∨
+        childTgt (D.srcFin hD) (D.tgtFin hD) group packet g c = v := by
+  rcases v with x | q
+  · rw [numberedPorts, Sum.elim_inl, mem_filterMap_retainedPort]
+    refine ⟨Or.inl, fun h => h.resolve_right ?_⟩
+    rcases c with c | c <;> simp [childTgt]
+  · rw [numberedPorts, Sum.elim_inr, mem_packetPorts]
+    rcases c with c | c <;> simp [childSrc, childTgt]
+
+theorem nodup_numberedPorts (v : ChildVertex group g P) :
+    (numberedPorts hD group packet g v).Nodup := by
+  rcases v with x | q
+  · exact (nodup_ports hD x.1).filterMap fun j j' c hc hc' => by
+      rw [← val_of_retainedPort_eq_some hD group g hc, ← val_of_retainedPort_eq_some hD group g hc']
+  · exact nodup_packetPorts hD group packet g q
+
 end Numbered
+
+/-- **Being rows-first depends only on the multisets of ports.** -/
+theorem isRowsFirstBipartite_ofFn_iff {T T' : Type} {k l r : ℕ} (F : Fin k → List ℕ × T)
+    (F' : Fin k → List ℕ × T') (h : ∀ x, (F x).1.Perm (F' x).1) :
+    (⟨l, List.ofFn F⟩ : DescribedNetwork T).IsRowsFirstBipartite r ↔
+      (⟨l, List.ofFn F'⟩ : DescribedNetwork T').IsRowsFirstBipartite r := by
+  have hc (i : ℕ) : (List.ofFn F).map (fun v => v.1.count i) =
+      (List.ofFn F').map (fun v => v.1.count i) := by
+    simp only [List.map_ofFn]
+    congr 1
+    funext x
+    exact (h x).count_eq i
+  have hm : (∀ v ∈ List.ofFn F, ∀ i ∈ v.1, i < l) ↔ (∀ v ∈ List.ofFn F', ∀ i ∈ v.1, i < l) := by
+    simp only [List.mem_ofFn, forall_exists_index, forall_apply_eq_imp_iff]
+    exact forall_congr' fun x => forall_congr' fun i => imp_congr_left (h x).mem_iff
+  simp only [DescribedNetwork.IsRowsFirstBipartite, List.map_take, List.map_drop, hc, hm]
+
+section Rows
+
+variable {a i : ℕ} (hK : 64 ^ a ≤ D.numEdges) (hia : i < a)
+
+include hD hK hia in
+/-- **The native child is rows-first**, with its retained vertices as its rows. -/
+theorem isRowsFirstBipartite_nativeChild (pt : ℕ) (t : ℤ) (ζ β : List ℕ) (g : Fin 64) :
+    (nativeChild fl a i pt t ζ r D (nativeParentPacking r a D) β g).IsRowsFirstBipartite
+      (childRows r i D (nativeParentPacking r a D) g) := by
+  have hgroups := groupsOf_eq hD hK hia
+  have hpk1 : (nativeParentPacking r a D).2.1 = (parentPacking hD a).numPackets := by
+    rw [nativeParentPacking_eq hD hK]
+  have hpk2 : (nativeParentPacking r a D).2.2 = List.ofFn fun e =>
+      (((parentPacking hD a).packet e : ℕ), ((parentPacking hD a).slot e : ℕ)) := by
+    rw [nativeParentPacking_eq hD hK]
+  rw [childRows, hgroups, count_ofFn_group,
+    nativeChild_eq hD _ (parentPacking hD a).packet (fun e => ((parentPacking hD a).slot e : ℕ)) g
+      fl a i pt t ζ β _ hgroups hpk1 hpk2]
+  -- The incidence of the numbered child, with zero tensors.
+  let N : TensorNetwork ℕ Bool
+      (ChildVertex (packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩) g
+        (parentPacking hD a).numPackets)
+      (ChildEdge (D.srcFin hD) (D.tgtFin hD)
+        (packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩) g) :=
+    { src := childSrc (D.srcFin hD) (D.tgtFin hD) _ g
+      tgt := childTgt (D.srcFin hD) (D.tgtFin hD) _ (parentPacking hD a).packet g
+      tensor := fun _ _ => 0
+      tensor_congr := fun _ _ _ _ => rfl }
+  have hside : ∀ e, ((childVertexEquiv (P := (parentPacking hD a).numPackets) _ g (N.src e) :
+      Fin _) : ℕ) < (members fun v =>
+        packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩ v = g).length ↔
+      ¬ ((childVertexEquiv (P := (parentPacking hD a).numPackets) _ g (N.tgt e) : Fin _) : ℕ) <
+        (members fun v => packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩ v = g).length := by
+    rintro (e | e) <;> simp only [N, childSrc, childTgt, childVertexEquiv, Sum.elim_inl,
+      Sum.elim_inr, Equiv.trans_apply, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply,
+      finSumFinEquiv_apply_left, finSumFinEquiv_apply_right, Fin.val_castAdd, Fin.val_natAdd,
+      rankEquiv_apply_val, Sum.map_inr]
+    · exact ⟨fun _ => by omega, fun _ => rank_lt _ _ e.2⟩
+    · exact ⟨fun _ => by omega, fun _ => rank_lt _ _ e.2⟩
+  have hexp := TensorNetwork.isRowsFirstBipartite_toExplicit N
+    (childVertexEquiv (P := (parentPacking hD a).numPackets) _ g)
+    (childEdgeEquiv (D.srcFin hD) (D.tgtFin hD) _ g) _ hside
+  refine (isRowsFirstBipartite_ofFn_iff _ _ fun c => ?_).mpr hexp
+  set v := (childVertexEquiv (P := (parentPacking hD a).numPackets) _ g).symm c
+  refine (List.perm_ext_iff_of_nodup ((nodup_numberedPorts hD _ _ g v).map
+    (Fin.val_injective.comp (Equiv.injective _)))
+    ((N.nodup_explicitPorts _ v).map Fin.val_injective)).mpr fun n => ?_
+  simp only [List.mem_map, TensorNetwork.mem_explicitPorts, mem_numberedPorts]
+  constructor
+  · rintro ⟨e, he, rfl⟩
+    exact ⟨_, by simpa [N] using he, rfl⟩
+  · rintro ⟨j, hj, rfl⟩
+    exact ⟨_, by simpa [N] using hj, by simp⟩
+
+end Rows
+
 
 section Child
 
