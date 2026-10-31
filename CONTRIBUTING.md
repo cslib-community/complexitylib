@@ -239,6 +239,9 @@ models, encodings, hypotheses, bounds and limitations. The library contains many
 selection is an editorial decision, not an automatic consequence of adding a theorem. A headline
 must establish a substantial full endpoint with conventional semantics and nonvacuous premises.
 Keep incomplete endpoints in `ROADMAP.md` and credit mathematical and formalization sources.
+List every selected entry in the top-level README's selected results and in the table of
+[abstracts/README.md](abstracts/README.md); `scripts/check_hygiene.py` checks both lists against
+the catalogue.
 
 Follow [the abstract requirements](AGENTS.md#curated-formal-abstracts) for impact assessment,
 source layout, independent review and `#check_abstract` audits. These apply to affected claims
