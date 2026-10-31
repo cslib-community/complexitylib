@@ -1108,6 +1108,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Ass
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.BlockNetworks
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Containments
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAlgorithm
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAnalysis
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Guarded
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import Complexity.Computability.Complexity.Classes.DP

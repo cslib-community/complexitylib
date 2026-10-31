@@ -276,7 +276,8 @@ theorem length_children_le (hB : ∀ d M p, Active C m d M p → ActiveBounds C 
   have hlevels : levels x = taper m x.depth := by rw [levels, h.scale_eq]
   have hP : (packing x).2.1 * 2 ^ slots x ≤ 3 * x.edges :=
     numPackets_nativeParentPacking_mul_le h.wf.2 hK h.degree_le
-      (by rw [hslots]; exact hb.degree_mul_pairs_sq_le) (by rw [hslots]; exact hb.slots_mul_pairs_le)
+      (by rw [hslots]; exact hb.degree_mul_pairs_sq_le)
+      (by rw [hslots]; exact hb.slots_mul_pairs_le)
   have hT : ∀ j < (nodes x).length, (BudgetTuples.budgetTuples (weights x j)
       (nodePrec x j)).length ≤ 2 ^ branchExponent C m x.depth := fun j hj => by
     have hu := level_lt_levels_of_lt hj

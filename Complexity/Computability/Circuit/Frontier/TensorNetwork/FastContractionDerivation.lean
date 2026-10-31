@@ -20,8 +20,8 @@ Theorem D.1 of [OpenAI2026ETH] (Appendix D.4.7, p. 64), for any child builder.
 
 **The invariant** (`FastContraction.reachInv`). The nodes of a derivation from a root `x₀` are the
 calls reached from `x₀`, its frames are the frames `FastContraction.frameAt` of a reached active
-call along its children, and its values are the tagged values of reached calls. Every bound on reached
-calls is a bound on the derivation.
+call along its children, and its values are the tagged values of reached calls. Every bound on
+reached calls is a bound on the derivation.
 
 **The height.** The children of a call receive its number of edges as their bound, and an active
 call has fewer edges than its bound, so the bound plus the depth never increases along the
