@@ -118,6 +118,12 @@ example (xs : List ℕ) (k : ℕ) {f : Finset ℕ → ℝ}
       f ((submodularGreedyQuery xs k).eval (ValueQuery.oracleOf f)) :=
   one_sub_exp_neg_one_mul_le_eval_submodularGreedyQuery hf hmono hf0 xs k hOPT_sub hOPT_card
 
+-- Exact multi-round query count formula `∑ t ∈ Finset.range k, (xs.toFinset.card - t)`.
+example (oracle : {ι : Type} → ValueQuery ℕ ℝ ι → ι) (xs : List ℕ) (k : ℕ) :
+    (submodularGreedyQuery xs k).countQueries oracle =
+      ∑ t ∈ Finset.range k, (xs.toFinset.card - t) :=
+  countQueries_submodularGreedyQuery_eq oracle xs k
+
 -- Non-vacuity of `IsSubmodularCardMaxAlg` on `ℕ` at ratio `1 - Real.exp (-1)`.
 example : IsSubmodularCardMaxAlg (submodularGreedyQuery (α := ℕ) (β := ℝ)) (1 - Real.exp (-1)) :=
   submodularGreedyQuery_isSubmodularCardMaxAlg

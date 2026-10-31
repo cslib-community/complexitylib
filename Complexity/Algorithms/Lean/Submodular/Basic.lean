@@ -261,15 +261,15 @@ private theorem sub_union_disjoint_le_sum_marginalGain
 
 /-- For any submodular function `f` (not necessarily monotone) and finite sets `S, T`,
 `f (S ∪ T) - f S ≤ ∑ x ∈ T \ S, marginalGain f S x` ([NemhauserWolseyFisher1978],
-Proposition 2.1(iii)). -/
+Proposition 2.1(v)). -/
 theorem IsSubmodular.sub_le_sum_marginalGain_sdiff
     {f : Finset α → β} (hf : IsSubmodular f) (S T : Finset α) :
     f (S ∪ T) - f S ≤ ∑ x ∈ T \ S, marginalGain f S x := by
   have h := sub_union_disjoint_le_sum_marginalGain hf S (D := T \ S) Finset.disjoint_sdiff
   rwa [Finset.union_sdiff_self_eq_union] at h
 
-/-- **Monotone Submodular Marginal-Gain Bound** ([NemhauserWolseyFisher1978], Section 2): for
-monotone submodular `f` and any `S, T : Finset α`,
+/-- **Monotone Submodular Marginal-Gain Bound** ([NemhauserWolseyFisher1978], Section 2,
+Proposition 2.2(iv')): for monotone submodular `f` and any `S, T : Finset α`,
 `f T - f S ≤ ∑ x ∈ T \ S, marginalGain f S x`. -/
 theorem IsSubmodular.sub_le_sum_marginalGain_of_monotone
     {f : Finset α → β} (hf : IsSubmodular f) (hmono : Monotone f) (S T : Finset α) :

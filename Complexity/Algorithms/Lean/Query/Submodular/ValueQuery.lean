@@ -35,7 +35,8 @@ execution path, and proves the path-indistinguishability lemma
 
 * `ValueQuery.card_queriedSets_le_countQueries`:
   `(queriedSets oracle p).card ≤ p.countQueries oracle`.
-* `ValueQuery.eval_eq_of_agree_on_queriedSets`: two oracles agreeing on all sets in
+* `ValueQuery.eval_and_countQueries_eq_of_agree_on_queriedSets`,
+  `ValueQuery.eval_eq_of_agree_on_queriedSets`: two oracles agreeing on all sets in
   `queriedSets o₁ p` induce identical `eval` outputs and `countQueries` counts.
 
 ## References

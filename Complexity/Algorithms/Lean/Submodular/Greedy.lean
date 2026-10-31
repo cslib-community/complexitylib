@@ -21,7 +21,8 @@ This module formalizes the Nemhauser–Wolsey–Fisher greedy algorithm for maxi
 submodular set function `f : Finset α → β` over a finite ground list `xs : List α` subject to a
 cardinality constraint `|S| ≤ k` ([NemhauserWolseyFisher1978], Section 4, Theorem 4.2), together
 with its exact `1 - (1 - 1/k)^k` tightness family for every budget `k ≥ 1`
-([NemhauserWolsey1978], Section 3; [NemhauserWolseyFisher1978], p. 279).
+([NemhauserWolsey1978], Section 3; [NemhauserWolseyFisher1978], Section 4, Theorem 4.1(c) and
+Theorem 4.2, pp. 280–283).
 
 ## Algorithm design
 
@@ -76,7 +77,8 @@ namespace Cslib.Algorithms.Lean.Submodular
 
 /-! ## First-occurrence deduplication -/
 
-/-- Keep the first occurrence of each distinct element in `xs`, preserving left-to-right order. -/
+/-- Keep the first occurrence of each distinct element in `xs`, preserving left-to-right order
+(structurally recursive `[DecidableEq α]` counterpart of `List.eraseDups`). -/
 @[expose] def dedupFirst {α : Type*} [DecidableEq α] : List α → List α
   | [] => []
   | x :: xs => x :: (dedupFirst xs).filter (· ≠ x)
@@ -676,7 +678,7 @@ end RealApproximation
 section Tightness
 
 /-- Number of left-half elements `Sum.inl i` belonging to `S`. -/
-@[expose] def leftCount (k : ℕ) (S : Finset (Fin k ⊕ Fin k)) : ℕ :=
+def leftCount (k : ℕ) (S : Finset (Fin k ⊕ Fin k)) : ℕ :=
   (Finset.univ.filter fun i : Fin k => Sum.inl i ∈ S).card
 
 private theorem leftCount_empty (k : ℕ) : leftCount k ∅ = 0 := by
@@ -706,7 +708,7 @@ private theorem leftCount_insert_inl_of_notMem (k : ℕ) (i : Fin k)
 
 /-- Component `j` of the Nemhauser–Wolsey tight instance on `Fin k ⊕ Fin k`: saturates at `1/k`
 once `Sum.inr j ∈ S`, and otherwise grows geometrically with `leftCount k S`. -/
-@[expose] def tightComponent {β : Type*} [Field β] (k : ℕ) (j : Fin k)
+def tightComponent {β : Type*} [Field β] (k : ℕ) (j : Fin k)
     (S : Finset (Fin k ⊕ Fin k)) : β :=
   if Sum.inr j ∈ S then
     1 / (k : β)
@@ -714,17 +716,23 @@ once `Sum.inr j ∈ S`, and otherwise grows geometrically with `leftCount k S`. 
     (1 / (k : β)) * (1 - (1 - 1 / (k : β)) ^ leftCount k S)
 
 /-- Tight monotone submodular objective `∑ j : Fin k, tightComponent k j S` on `Fin k ⊕ Fin k`
-([NemhauserWolsey1978], Section 3; [NemhauserWolseyFisher1978], p. 279). -/
-@[expose] def tightObjective {β : Type*} [Field β] (k : ℕ)
+([NemhauserWolsey1978], Section 3; [NemhauserWolseyFisher1978], Section 4, Theorem 4.1(c) and
+Theorem 4.2, pp. 280–283).
+
+At each step `t < k` from `{Sum.inl 0, …, Sum.inl (t - 1)}`, every remaining `Sum.inl i` and
+`Sum.inr j` has the exact same marginal gain `(1 / k) * (1 - 1 / k) ^ t`; ordering `Sum.inl`
+before `Sum.inr` in `tightCandidates k` lets `submodularGreedy`'s deterministic left-to-right
+tie-breaking attain `1 - (1 - 1 / k) ^ k` exactly without an `ε > 0` perturbation. -/
+def tightObjective {β : Type*} [Field β] (k : ℕ)
     (S : Finset (Fin k ⊕ Fin k)) : β :=
   ∑ j : Fin k, tightComponent k j S
 
 /-- Ordered ground list of `2k` candidates: all `Sum.inl i` followed by all `Sum.inr j`. -/
-@[expose] def tightCandidates (k : ℕ) : List (Fin k ⊕ Fin k) :=
+def tightCandidates (k : ℕ) : List (Fin k ⊕ Fin k) :=
   (List.finRange k).map Sum.inl ++ (List.finRange k).map Sum.inr
 
 /-- Optimal cardinality-`k` subset `{Sum.inr 0, …, Sum.inr (k - 1)}`. -/
-@[expose] def tightOpt (k : ℕ) : Finset (Fin k ⊕ Fin k) :=
+def tightOpt (k : ℕ) : Finset (Fin k ⊕ Fin k) :=
   Finset.univ.map ⟨Sum.inr, Sum.inr_injective⟩
 
 @[simp] theorem tightComponent_empty {β : Type*} [Field β] (k : ℕ) (j : Fin k) :
@@ -1050,9 +1058,11 @@ private theorem submodularGreedy_tightObjective_steps {k : ℕ} (hk : 0 < k) :
         exact Fin.ext heq
 
 /-- **Exact Tightness of `1 - (1 - 1/k)^k`** ([NemhauserWolsey1978], Section 3;
-[NemhauserWolseyFisher1978], p. 279): for every budget `k ≥ 1`, running `submodularGreedy` on
-`tightObjective k` and `tightCandidates k` returns a set of exact value
-`1 - (1 - 1 / (k : β)) ^ k`, whereas `tightOpt k` has cardinality `k` and value `1`. -/
+[NemhauserWolseyFisher1978], Section 4, Theorem 4.1(c) and Theorem 4.2, pp. 280–283): for every
+budget `k ≥ 1`, running `submodularGreedy` on `tightObjective k` and `tightCandidates k` (under
+left-to-right tie-breaking across tied marginal gains `(1 / k) * (1 - 1 / k) ^ t`) returns a set
+of exact value `1 - (1 - 1 / (k : β)) ^ k`, whereas `tightOpt k` has cardinality `k` and value
+`1`. -/
 theorem submodularGreedy_tightObjective_eq {k : ℕ} (hk : 0 < k) :
     tightObjective (β := β) k (submodularGreedy (tightObjective (β := β) k) (tightCandidates k) k) =
       1 - (1 - 1 / (k : β)) ^ k := by

@@ -19,10 +19,12 @@ This module lifts `submodularGreedyM` into `FreeM (ValueQuery α β)` as `submod
 proves that `FreeM.eval` recovers the pure `submodularGreedy` algorithm against any value oracle,
 and establishes sharp query-complexity bounds ([NemhauserWolseyFisher1978], Section 4):
 
-1. At most `k * xs.toFinset.card ≤ k * xs.length` value queries across `k` greedy rounds against
+1. Exact multi-round query count `(submodularGreedyQuery xs k).countQueries oracle =
+   ∑ t ∈ Finset.range k, (xs.toFinset.card - t)` (`countQueries_submodularGreedyQuery_eq`), yielding
+   at most `k * xs.toFinset.card ≤ k * xs.length` value queries across `k` greedy rounds against
    any oracle (`countQueries_submodularGreedyQuery_le_mul_card`,
    `countQueries_submodularGreedyQuery_le_mul_length`, `submodularGreedyQuery_upperBound`).
-2. Exact single-round query count `(submodularGreedyQuery xs 1).countQueries oracle =
+2. Exact single-round specialization `(submodularGreedyQuery xs 1).countQueries oracle =
    xs.toFinset.card` (`countQueries_submodularGreedyQuery_one`), which matches the adversarial
    lower bound for `k = 1` and `xs.toFinset.card ≥ 2` in
    `Complexity.Algorithms.Lean.Query.Submodular.LowerBound`.
@@ -36,6 +38,8 @@ and establishes sharp query-complexity bounds ([NemhauserWolseyFisher1978], Sect
 
 * `eval_submodularGreedyQuery`, `eval_submodularGreedyQuery_oracleOf`: agreement with
   `submodularGreedy`.
+* `countQueries_submodularGreedyQuery_eq`: exact `∑ t ∈ Finset.range k, (xs.toFinset.card - t)`
+  query count across `k` greedy rounds.
 * `countQueries_submodularGreedyQuery_le_mul_card`,
   `countQueries_submodularGreedyQuery_le_mul_length`, `submodularGreedyQuery_upperBound`:
   `k * n` value-query upper bounds.
@@ -102,54 +106,96 @@ private theorem countQueries_submodularGreedyStepM_eq
   | cons c₀ cs =>
     simp [countQueries_scanCandidatesM, Nat.add_comm]
 
-private theorem countQueries_submodularGreedyStepM_le
+private theorem eval_submodularGreedyStepM
     (oracle : {ι : Type} → ValueQuery α β ι → ι)
     (u : List α) (S : Finset α) :
-    (submodularGreedyStepM ValueQuery.ask u S).countQueries oracle ≤ u.length := by
-  rw [countQueries_submodularGreedyStepM_eq]
-  exact List.length_filter_le _ u
+    (submodularGreedyStepM ValueQuery.ask u S).eval oracle =
+      submodularGreedyStep (fun T => oracle (.value T)) u S :=
+  Id.pure_injective <| by
+    simp [FreeM.isMonadHom_pure_eval oracle |>.map_submodularGreedyStepM _ u S]
 
-private theorem countQueries_submodularGreedyLoopM_le
+private theorem length_filter_notMem_eq_sub
+    {u : List α} (hu : u.Nodup) {S : Finset α} (hS : S ⊆ u.toFinset) :
+    (u.filter (· ∉ S)).length = u.length - S.card := by
+  have hnodup : (u.filter (· ∉ S)).Nodup := hu.filter _
+  have htoFinset : (u.filter (· ∉ S)).toFinset = u.toFinset \ S := by
+    ext x
+    simp
+  rw [← List.toFinset_card_of_nodup hnodup, htoFinset, Finset.card_sdiff_of_subset hS,
+    List.toFinset_card_of_nodup hu]
+
+private theorem length_sub_card_submodularGreedyStep
+    (f : Finset α → β) {u : List α} (hu : u.Nodup) {S : Finset α} (hS : S ⊆ u.toFinset) :
+    u.length - (submodularGreedyStep f u S).card = u.length - S.card - 1 := by
+  unfold submodularGreedyStep
+  cases hfilt : u.filter (· ∉ S) with
+  | nil =>
+    dsimp only
+    have hzero := length_filter_notMem_eq_sub hu hS
+    rw [hfilt, List.length_nil] at hzero
+    omega
+  | cons c₀ cs =>
+    dsimp only
+    have hmem : (scanCandidates f S c₀ (f (insert c₀ S)) cs).1 ∈ c₀ :: cs :=
+      scanCandidates_fst_mem f S c₀ (f (insert c₀ S)) cs
+    rw [← hfilt] at hmem
+    have hnotMem : (scanCandidates f S c₀ (f (insert c₀ S)) cs).1 ∉ S :=
+      of_decide_eq_true (List.mem_filter.mp hmem).2
+    rw [Finset.card_insert_of_notMem hnotMem]
+    omega
+
+private theorem countQueries_submodularGreedyLoopM_eq
     (oracle : {ι : Type} → ValueQuery α β ι → ι)
-    (u : List α) (k : ℕ) (S : Finset α) :
-    (submodularGreedyLoopM ValueQuery.ask u k S).countQueries oracle ≤ k * u.length := by
+    {u : List α} (hu : u.Nodup) (k : ℕ) {S : Finset α} (hS : S ⊆ u.toFinset) :
+    (submodularGreedyLoopM ValueQuery.ask u k S).countQueries oracle =
+      ∑ t ∈ Finset.range k, (u.length - S.card - t) := by
   induction k generalizing S with
   | zero => simp [submodularGreedyLoopM]
   | succ k ih =>
-    simp only [submodularGreedyLoopM, FreeM.countQueries_bind]
-    have hstep := countQueries_submodularGreedyStepM_le oracle u S
-    have hrec := ih ((submodularGreedyStepM ValueQuery.ask u S).eval oracle)
-    calc
-      (submodularGreedyStepM ValueQuery.ask u S).countQueries oracle +
-          (submodularGreedyLoopM ValueQuery.ask u k
-            ((submodularGreedyStepM ValueQuery.ask u S).eval oracle)).countQueries oracle
-          ≤ u.length + k * u.length := Nat.add_le_add hstep hrec
-      _ = (k + 1) * u.length := by rw [Nat.succ_mul, Nat.add_comm]
+    simp only [submodularGreedyLoopM, FreeM.countQueries_bind,
+      countQueries_submodularGreedyStepM_eq, length_filter_notMem_eq_sub hu hS,
+      eval_submodularGreedyStepM]
+    let f : Finset α → β := fun T => oracle (.value T)
+    have hS' : submodularGreedyStep f u S ⊆ u.toFinset :=
+      submodularGreedyStep_subset_toFinset f hS
+    rw [ih hS', Finset.sum_range_succ']
+    simp only [Nat.sub_zero, Nat.add_comm (∑ x ∈ Finset.range k, _)]
+    congr 1
+    refine Finset.sum_congr rfl fun t _ => ?_
+    rw [length_sub_card_submodularGreedyStep f hu hS]
+    omega
+
+/-- Exact multi-round query count: across `k` greedy rounds, `submodularGreedyQuery xs k` evaluates
+`xs.toFinset.card - t` remaining candidates in round `t` (`0` once all distinct candidates are
+selected), making `∑ t ∈ Finset.range k, (xs.toFinset.card - t)` value queries in total. -/
+theorem countQueries_submodularGreedyQuery_eq
+    (oracle : {ι : Type} → ValueQuery α β ι → ι) (xs : List α) (k : ℕ) :
+    (submodularGreedyQuery xs k).countQueries oracle =
+      ∑ t ∈ Finset.range k, (xs.toFinset.card - t) := by
+  have h := countQueries_submodularGreedyLoopM_eq oracle (nodup_dedupFirst xs) k
+    (Finset.empty_subset (dedupFirst xs).toFinset)
+  simpa [submodularGreedyQuery, submodularGreedyM, length_dedupFirst] using h
 
 @[simp] theorem countQueries_submodularGreedyQuery_zero
     (oracle : {ι : Type} → ValueQuery α β ι → ι) (xs : List α) :
     (submodularGreedyQuery xs 0).countQueries oracle = 0 := by
-  simp [submodularGreedyQuery, submodularGreedyM, submodularGreedyLoopM]
+  simp [countQueries_submodularGreedyQuery_eq]
 
 /-- At budget `k = 1`, `submodularGreedyQuery` evaluates every distinct ground singleton once,
 making **exact** query count `xs.toFinset.card`. -/
 theorem countQueries_submodularGreedyQuery_one
     (oracle : {ι : Type} → ValueQuery α β ι → ι) (xs : List α) :
     (submodularGreedyQuery xs 1).countQueries oracle = xs.toFinset.card := by
-  simp only [submodularGreedyQuery, submodularGreedyM, submodularGreedyLoopM,
-    FreeM.countQueries_bind, FreeM.countQueries_pure, Nat.add_zero,
-    countQueries_submodularGreedyStepM_eq]
-  have hfilt : (dedupFirst xs).filter (· ∉ (∅ : Finset α)) = dedupFirst xs := by
-    refine List.filter_eq_self.mpr fun a _ => by simp
-  rw [hfilt, length_dedupFirst]
+  simp [countQueries_submodularGreedyQuery_eq]
 
 /-- Pointwise query bound in terms of distinct ground elements: `submodularGreedyQuery xs k` makes
 at most `k * xs.toFinset.card` value queries against any oracle. -/
 theorem countQueries_submodularGreedyQuery_le_mul_card
     (oracle : {ι : Type} → ValueQuery α β ι → ι) (xs : List α) (k : ℕ) :
     (submodularGreedyQuery xs k).countQueries oracle ≤ k * xs.toFinset.card := by
-  rw [← length_dedupFirst xs]
-  exact countQueries_submodularGreedyLoopM_le oracle (dedupFirst xs) k ∅
+  rw [countQueries_submodularGreedyQuery_eq]
+  simpa using Finset.sum_le_card_nsmul (Finset.range k)
+    (fun t => xs.toFinset.card - t) xs.toFinset.card (fun t _ => Nat.sub_le _ _)
 
 /-- Pointwise query bound in terms of input list length: `submodularGreedyQuery xs k` makes at most
 `k * xs.length` value queries against any oracle. -/

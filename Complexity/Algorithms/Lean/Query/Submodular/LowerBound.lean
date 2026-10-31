@@ -16,8 +16,8 @@ import Mathlib.Tactic.Linarith
 /-!
 # Adversarial Value-Oracle Lower Bounds for Submodular Maximization
 
-This module proves worst-case deterministic value-oracle query lower bounds for
-cardinality-constrained monotone submodular maximization ([NemhauserWolsey1978], Section 4):
+This module proves worst-case deterministic value-oracle query lower bounds at budget `k = 1` for
+cardinality-constrained normalized (`f ∅ = 0`) monotone submodular maximization:
 
 1. For any approximation factor `c > 1 / 2` and any ground list `xs`, every deterministic
    `c`-approximate algorithm at budget `k = 1` must make at least `xs.toFinset.card - 1` value
@@ -37,6 +37,13 @@ cardinality-constrained monotone submodular maximization ([NemhauserWolsey1978],
    `LowerBound (fun xs => alg xs 1) List.length (fun n => if n ≤ 1 then 0 else n)`, matching
    `submodularGreedyQuery_upperBound 1` (`1 * n = n`) with exact constant factor `1` for all
    `n ≥ 2`.
+
+**Scope and relation to [NemhauserWolsey1978].** [NemhauserWolsey1978] (Section 4) proves an
+asymptotic super-polynomial value-oracle query lower bound for beating `1 - 1 / e` across growing
+cardinality budgets `K`; that general-`K` super-polynomial lower bound is out of scope here.
+Instead, this module proves only the bounded `k = 1` linear (`n`-query) lower bound via an
+original elementary `(59, 100, 159)` capped-modular adversary (and `(1, 2)` for `c > 1 / 2`),
+using that any uniform `c`-approximate algorithm must achieve ratio `c` at `k = 1`.
 
 ## Proof technique
 
@@ -88,19 +95,19 @@ open Cslib.Algorithms.Lean.Submodular
 namespace Cslib.Query
 
 /-- Specification of a deterministic `c`-approximate value-oracle algorithm for
-cardinality-constrained monotone submodular maximization over `ℝ`. -/
+cardinality-constrained normalized (`f ∅ = 0`) monotone submodular maximization over `ℝ`. -/
 structure IsSubmodularCardMaxAlg {α : Type} [DecidableEq α]
     (alg : List α → ℕ → FreeM (ValueQuery α ℝ) (Finset α)) (c : ℝ) : Prop where
   subset_toFinset : ∀ (f : Finset α → ℝ),
-    IsSubmodular f → Monotone f → 0 ≤ f ∅ →
+    IsSubmodular f → Monotone f → f ∅ = 0 →
     ∀ (xs : List α) (k : ℕ),
       (alg xs k).eval (ValueQuery.oracleOf f) ⊆ xs.toFinset
   card_le : ∀ (f : Finset α → ℝ),
-    IsSubmodular f → Monotone f → 0 ≤ f ∅ →
+    IsSubmodular f → Monotone f → f ∅ = 0 →
     ∀ (xs : List α) (k : ℕ),
       ((alg xs k).eval (ValueQuery.oracleOf f)).card ≤ k
   approx : ∀ (f : Finset α → ℝ),
-    IsSubmodular f → Monotone f → 0 ≤ f ∅ →
+    IsSubmodular f → Monotone f → f ∅ = 0 →
     ∀ (xs : List α) (k : ℕ) (OPT : Finset α),
       OPT ⊆ xs.toFinset → OPT.card ≤ k →
       c * f OPT ≤ f ((alg xs k).eval (ValueQuery.oracleOf f))
@@ -116,7 +123,7 @@ theorem submodularGreedyQuery_isSubmodularCardMaxAlg {α : Type} [DecidableEq α
     rw [eval_submodularGreedyQuery_oracleOf]
     exact card_submodularGreedy_le f xs k
   approx _ hf hmono hf0 xs k _ hOPT_sub hOPT_card :=
-    one_sub_exp_neg_one_mul_le_eval_submodularGreedyQuery hf hmono hf0 xs k hOPT_sub hOPT_card
+    one_sub_exp_neg_one_mul_le_eval_submodularGreedyQuery hf hmono hf0.ge xs k hOPT_sub hOPT_card
 
 /-! ## Capped modular adversary family -/
 
@@ -125,7 +132,7 @@ section Adversary
 variable {α : Type} [DecidableEq α]
 
 /-- Capped modular function `min (∑ x ∈ S ∩ E, w x) cap`, extended by zero outside `E`. -/
-@[expose] def cappedModular (E : Finset α) (w : α → ℝ) (cap : ℝ) (S : Finset α) : ℝ :=
+def cappedModular (E : Finset α) (w : α → ℝ) (cap : ℝ) (S : Finset α) : ℝ :=
   min (modularSum (fun x => if x ∈ E then w x else 0) S) cap
 
 theorem cappedModular_eq_min_sum_inter (E : Finset α) (w : α → ℝ) (cap : ℝ) (S : Finset α) :
@@ -158,14 +165,14 @@ theorem isSubmodular_cappedModular {E : Finset α} {w : α → ℝ}
   · simp [hx]
 
 /-- Baseline `(1, 2)` capped-modular instance for the `c > 1 / 2` bound. -/
-@[expose] def halfBaseAdv (E : Finset α) : Finset α → ℝ :=
+def halfBaseAdv (E : Finset α) : Finset α → ℝ :=
   cappedModular E (fun _ => 1) 2
 
 private def halfHighAdv (E : Finset α) (e : α) : Finset α → ℝ :=
   cappedModular E (fun x => if x = e then 2 else 1) 2
 
 /-- Baseline `(59, 100, 159)` capped-modular instance for the `c > 100 / 159` bound. -/
-@[expose] def baseAdv (E : Finset α) : Finset α → ℝ :=
+def baseAdv (E : Finset α) : Finset α → ℝ :=
   cappedModular E (fun _ => 100) 159
 
 private def highAdv (E : Finset α) (e : α) : Finset α → ℝ :=
@@ -276,8 +283,8 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_sub_one_le_countQueries
     isSubmodular_cappedModular (fun _ _ => by norm_num) 2
   have hf₀_mono : Monotone (halfBaseAdv E) :=
     monotone_cappedModular (fun _ _ => by norm_num) 2
-  have hf₀_empty : 0 ≤ halfBaseAdv E ∅ := by
-    rw [halfBaseAdv, cappedModular_empty (by norm_num)]
+  have hf₀_empty : halfBaseAdv E ∅ = 0 :=
+    cappedModular_empty (by norm_num)
   set out := (alg xs 1).eval o₀
   have hout_sub : out ⊆ E := halg.subset_toFinset _ hf₀_sub hf₀_mono hf₀_empty xs 1
   have hout_card : out.card ≤ 1 := halg.card_le _ hf₀_sub hf₀_mono hf₀_empty xs 1
@@ -290,8 +297,8 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_sub_one_le_countQueries
       isSubmodular_cappedModular (fun x _ => by split_ifs <;> norm_num) 2
     have hfe_mono : Monotone (halfHighAdv E e) :=
       monotone_cappedModular (fun x _ => by split_ifs <;> norm_num) 2
-    have hfe_empty : 0 ≤ halfHighAdv E e ∅ := by
-      rw [halfHighAdv, cappedModular_empty (by norm_num)]
+    have hfe_empty : halfHighAdv E e ∅ = 0 :=
+      cappedModular_empty (by norm_num)
     have hagree : ∀ S ∈ Q, o₀ (.value S) = ValueQuery.oracleOf (halfHighAdv E e) (.value S) :=
       fun S hS => halfBaseAdv_eq_halfHighAdv_of_inter_ne (hno S hS)
     have hout_eq : (alg xs 1).eval (ValueQuery.oracleOf (halfHighAdv E e)) = out :=
@@ -336,10 +343,12 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_sub_one_le_countQueries
     _ ≤ Q.card := Finset.card_image_le
     _ ≤ (alg xs 1).countQueries o₀ := ValueQuery.card_queriedSets_le_countQueries o₀ (alg xs 1)
 
-/-- **Exact `n`-Query Adversarial Lower Bound** ([NemhauserWolsey1978], Section 4): for any
-`c > 100 / 159` and any ground list `xs` with `2 ≤ xs.toFinset.card`, every deterministic
-`c`-approximate algorithm at budget `k = 1` must make at least `xs.toFinset.card` value queries on
-`baseAdv xs.toFinset`. -/
+/-- **Exact `n`-Query Adversarial Lower Bound at `k = 1`**: for any `c > 100 / 159` and any ground
+list `xs` with `2 ≤ xs.toFinset.card`, every deterministic `c`-approximate algorithm at budget
+`k = 1` must make at least `xs.toFinset.card` value queries on the original `(59, 100, 159)`
+capped-modular adversary `baseAdv xs.toFinset`. (Unlike [NemhauserWolsey1978], Section 4, which
+proves a general-budget super-polynomial lower bound, this theorem establishes the tight linear
+single-step bound matching `countQueries_submodularGreedyQuery_one`.) -/
 theorem IsSubmodularCardMaxAlg.card_toFinset_le_countQueries
     {alg : List α → ℕ → FreeM (ValueQuery α ℝ) (Finset α)} {c : ℝ}
     (halg : IsSubmodularCardMaxAlg alg c) (hc : (100 : ℝ) / 159 < c)
@@ -353,8 +362,8 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_le_countQueries
     isSubmodular_cappedModular (fun _ _ => by norm_num) 159
   have hf₀_mono : Monotone (baseAdv E) :=
     monotone_cappedModular (fun _ _ => by norm_num) 159
-  have hf₀_empty : 0 ≤ baseAdv E ∅ := by
-    rw [baseAdv, cappedModular_empty (by norm_num)]
+  have hf₀_empty : baseAdv E ∅ = 0 :=
+    cappedModular_empty (by norm_num)
   set out := (alg xs 1).eval o₀
   have hout_sub : out ⊆ E := halg.subset_toFinset _ hf₀_sub hf₀_mono hf₀_empty xs 1
   have hout_card : out.card ≤ 1 := halg.card_le _ hf₀_sub hf₀_mono hf₀_empty xs 1
@@ -377,8 +386,8 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_le_countQueries
         isSubmodular_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
       have hlow_mono : Monotone (lowAdv E e) :=
         monotone_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
-      have hlow_empty : 0 ≤ lowAdv E e ∅ := by
-        rw [lowAdv, cappedModular_empty (by norm_num)]
+      have hlow_empty : lowAdv E e ∅ = 0 :=
+        cappedModular_empty (by norm_num)
       have hagree : ∀ S ∈ Q, o₀ (.value S) = ValueQuery.oracleOf (lowAdv E e) (.value S) :=
         fun S hS => baseAdv_eq_lowAdv_of_inter_ne (hno S hS)
       have hout_eq : (alg xs 1).eval (ValueQuery.oracleOf (lowAdv E e)) = out :=
@@ -403,8 +412,8 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_le_countQueries
         isSubmodular_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
       have hhigh_mono : Monotone (highAdv E e) :=
         monotone_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
-      have hhigh_empty : 0 ≤ highAdv E e ∅ := by
-        rw [highAdv, cappedModular_empty (by norm_num)]
+      have hhigh_empty : highAdv E e ∅ = 0 :=
+        cappedModular_empty (by norm_num)
       have hagree : ∀ S ∈ Q, o₀ (.value S) = ValueQuery.oracleOf (highAdv E e) (.value S) :=
         fun S hS => baseAdv_eq_highAdv_of_inter_ne (hno S hS)
       have hout_eq : (alg xs 1).eval (ValueQuery.oracleOf (highAdv E e)) = out :=
