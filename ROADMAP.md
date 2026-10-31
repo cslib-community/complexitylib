@@ -180,10 +180,12 @@ index links to canonical definitions rather than keeping a second set.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, and the `O(t log t)` universal simulation ([#800]) gives
   `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once `(f + 1) * polylog f ≤ g`, with an
-  absolute exponent (`Hierarchy/TimePolylog`). Remaining targets include the textbook
+  absolute exponent (`Hierarchy/TimePolylog`). For nondeterministic time, lazy diagonalization
+  separates degree `d` from degree `6 * d + 14`. Remaining targets include the textbook
   `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal machine's own
-  steps, noninteger polynomial degrees, and sharp nondeterministic and alternating time
-  hierarchies with certified simulators.
+  steps, noninteger polynomial degrees, the nondeterministic hierarchy at every pair of integer
+  degrees by padding, and sharp nondeterministic and alternating time hierarchies with certified
+  simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -207,8 +209,9 @@ index links to canonical definitions rather than keeping a second set.
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets:** `P/poly = P^SPARSE` (Meyer), extending
-  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`.
+- **Sparse and tally sets:** `P/poly ⊆ P^SPARSE` (Meyer), the converse of
+  `PWithOracle_subset_PPolyOn` in `Classes/Sparse/Turing.lean`; Kadin's collapse of `PH` to
+  `P^{NP[O(log n)]}` under a sparse Turing-complete set for `NP` ([#2062]).
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
@@ -736,3 +739,4 @@ not planned, not as proved.
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1885]: https://github.com/cslib-community/complexitylib/pull/1885
 [#2019]: https://github.com/cslib-community/complexitylib/issues/2019
+[#2062]: https://github.com/cslib-community/complexitylib/issues/2062
