@@ -7,16 +7,18 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Circuit.Boolean.Sparse
 import Complexity.Computability.Complexity.Classes.Sparse.Fortune
 import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
+import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
 
 /-!
 # Sparse problems and the procedures of Fortune and Mahaney
 
 Sparse and non-sparse problems; the pruning rules and the searches of the self-reduction tree on
-concrete inputs, including a bound too small for Fortune's procedure to be correct; and both
+concrete inputs, including a bound too small for Fortune's procedure to be correct; and the
 procedures as exponential-time deciders for `SAT`, which satisfy the hypotheses of
-`Cslib.Complexity.Fortune.accepts_iff` and `Cslib.Complexity.Mahaney.accepts_iff` with the
-identity reductions of `UNSAT` and `SAT` to the encodings of their members and an exponential
-bound.
+`Cslib.Complexity.Fortune.accepts_iff`, `Cslib.Complexity.Mahaney.accepts_iff` and
+`Cslib.Complexity.OneQuery.accepts_iff` with the identity reductions of `UNSAT` and `SAT` to the
+encodings of their members, or the negated one-query reduction of `SAT` to `UNSAT`, and an
+exponential bound.
 -/
 
 namespace ComplexityTests.SparseHardSets
@@ -142,5 +144,83 @@ example (φ : CNF ℕ) :
     refine (Mahaney.length_encCNF_disj_le ha hb).trans ?_
     dsimp only [M]
     gcongr
+
+/-! ### Sparse sets hard under one-query reductions -/
+
+/-- A stage drops the first node when more than `t` of the other nodes with distinct labels have
+the sign `true`, and otherwise keeps it with the first `2 t + 1` of them. -/
+example : OneQuery.stage (fun _ b : ℕ => (b, decide (5 ≤ b))) 1 [0, 1, 2, 3, 4, 5, 6] =
+      [1, 2, 3, 4, 5, 6] ∧
+    OneQuery.stage (fun _ b : ℕ => (b, decide (5 ≤ b))) 2 [0, 1, 2, 3, 4, 5, 6] =
+      [0, 1, 2, 3, 4, 5] ∧
+    OneQuery.stage (fun _ b : ℕ => (b, false)) 1 [0, 1, 2, 3, 4, 5, 6] = [0, 1, 2, 3] := by
+  decide
+
+/-- Pruning repeats the stage: with the labels `((a + b) % 4, true)`, the first node is dropped
+while more than one other label remains, and only duplicates are removed otherwise. -/
+example : OneQuery.prune (fun a b : ℕ => ((a + b) % 4, true)) 1 [0, 1, 2, 3, 4, 5, 6] = [3, 4] ∧
+    OneQuery.prune (fun _ b : ℕ => (b, false)) 1 [0, 1, 2, 3, 4, 5, 6] = [0, 1, 2, 3] := by
+  decide
+
+/-- The negated one-query reduction of `SAT` to `UNSAT` of Grochow's Question 3.2: query the
+formula itself and negate the answer. -/
+private def negQuery : CNF ℕ × List Bool → Bool := fun p => !p.2.headD false
+
+private theorem mem_SAT_iff_negQuery (ψ : CNF ℕ) : ψ ∈ SAT ↔
+    negQuery (ψ, truthTableAnswers ((fun p : CNF ℕ × ℕ => p.1) ⁻¹' UNSAT) (fun _ => 1) ψ) =
+      true := by
+  classical
+  simp only [negQuery, truthTableAnswers, List.ofFn_succ, List.ofFn_zero, List.headD_cons,
+    Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not, Set.mem_preimage, UNSAT,
+    Set.mem_ofPred_eq, not_not]
+  rfl
+
+/-- One-query reductions may negate the answer: `SAT` reduces to `UNSAT` with one query. -/
+example : PolyTimeKTruthTableReducible 1 encCNF encCNF SAT UNSAT := by
+  refine ⟨fun _ => 1, fun p => p.1, negQuery, by fun_prop, by fun_prop,
+    by unfold negQuery; fun_prop, fun _ => le_rfl, mem_SAT_iff_negQuery⟩
+
+/-- The signed label of a formula under the negated reduction is its marked encoding with the
+sign `false`, and the labels decide satisfiability. -/
+example (ψ : CNF ℕ) :
+    OneQuery.signedKey encCNF (fun _ => 1) (fun p => p.1) negQuery ψ = (true :: encCNF ψ, false) ∧
+      (ψ ∈ SAT ↔ (true :: encCNF ψ ∈ List.cons true '' (encCNF '' UNSAT) ↔ false = true)) := by
+  have hkey : OneQuery.signedKey encCNF (fun _ => 1) (fun p => p.1) negQuery ψ =
+      (true :: encCNF ψ, false) := rfl
+  have h := OneQuery.mem_SAT_iff_signedKey (encB := encCNF) (S := UNSAT) (r := fun _ => 1)
+    (q := fun p => p.1) (d := negQuery) (fun _ => le_rfl) mem_SAT_iff_negQuery ψ
+  rw [hkey] at h
+  exact ⟨rfl, h⟩
+
+/-- With the marked encodings of the formulas as words, no two pairs of nodes share a label, so a
+bound larger than the tree keeps every node. -/
+example : OneQuery.accepts (fun ψ => (true :: encCNF ψ, false)) 8
+      [[(0, true), (1, false)], [(1, true)]] = true ∧
+    OneQuery.accepts (fun ψ => (true :: encCNF ψ, false)) 8
+      [[(0, true)], [(0, false)]] = false := by
+  decide
+
+/-- The hypotheses of `OneQuery.accepts_iff` are satisfiable with signed labels of the sign
+`false`: the marked encoding of a formula lies in the marked encodings of unsatisfiable formulas
+exactly when the formula is unsatisfiable. -/
+example (φ : CNF ℕ) :
+    let L := (encCNF φ).length
+    let M := L * L * (16 * L + 21) + L + 1
+    OneQuery.accepts (fun ψ => (true :: encCNF ψ, false)) ((M + 1) * 2 ^ M) φ = true ↔
+      φ ∈ SAT := by
+  intro L M
+  refine OneQuery.accepts_iff (K := List.cons true '' (encCNF '' UNSAT)) (M := M) (fun ψ => ?_)
+    (fun a b ha hb hla hlb => ?_) (fun s hs => card_le_of_length_le s fun w hw => (hs w hw).2)
+  · rw [List.cons_injective.mem_set_image, encCNF.injective.mem_set_image]
+    simp [UNSAT, SAT]
+  · have hvars := SAT.length_vars_le φ
+    have hla' : a.length ≤ L := hla.trans hvars
+    have hlb' : b.length ≤ L := hlb.trans hvars
+    have := Mahaney.length_encCNF_disj_le ha hb
+    simp only [List.length_cons]
+    dsimp only [M]
+    have : a.length * b.length * (16 * (encCNF φ).length + 21) ≤ L * L * (16 * L + 21) := by
+      gcongr
+    omega
 
 end ComplexityTests.SparseHardSets

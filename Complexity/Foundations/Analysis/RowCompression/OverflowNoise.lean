@@ -21,7 +21,7 @@ tail is bounded by the full weighted noise sum, pointwise in the environment. Th
 integrated moment comparison permits arbitrary dependence between noise and overflow.
 
 This is the pointwise aggregation step in [OpenAI2026LogSpace, Section 8.4], the paragraph
-leading to equation `buf-noise-sum`. The event is `IsFirstOverflow` of the actual compression
+leading to equation (8.18). The event is `IsFirstOverflow` of the actual compression
 run. No conditional rarity discount is claimed for noise. Prefix-noise budgets, Minkowski,
 propagation weights and convergence of their final series remain separate.
 
@@ -34,7 +34,8 @@ propagation weights and convergence of their final series remain separate.
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 8.4, proof paragraph leading to equation labelled `buf-noise-sum`
+  Section 8.4, proof paragraph leading to equation (8.18) on p. 49 (source label
+  `buf-noise-sum`)
   (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 
