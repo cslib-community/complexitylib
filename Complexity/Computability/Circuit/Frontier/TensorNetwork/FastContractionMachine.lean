@@ -118,11 +118,27 @@ variable (mk : Call → State → ℕ × DescribedNetwork VertexDesc)
 
 /-- **The leaf certificate**: direct summation over the coefficient lists of `A_p`, with the native
 evaluator of the vertex descriptors, tagged with the depth. -/
-noncomputable def leafCertificate : NativeCertificate (scheme mk).leaf encCall encValue :=
+@[expose] noncomputable def leafCertificate : NativeCertificate (scheme mk).leaf encCall encValue :=
   ((NativeCertificate.ofPolyTime depth_polyTime).prod
     ((DescribedNetwork.contractionCertificate VertexDesc.entry SumOps.galois_polyTime
       VertexDesc.entryCertificate).comp (NativeCertificate.ofPolyTime leafInput_polyTime))).congr
     fun _ => rfl
+
+/-- The time of a leaf: the depth, the input of direct summation, and direct summation. -/
+theorem leafCertificate_time (x : Call) :
+    (leafCertificate mk).time x =
+      (NativeCertificate.ofPolyTime depth_polyTime).time x +
+        ((NativeCertificate.ofPolyTime leafInput_polyTime).time x +
+          (DescribedNetwork.contractionCertificate VertexDesc.entry SumOps.galois_polyTime
+            VertexDesc.entryCertificate).time ((x.prec, x.fl), x.net)) := rfl
+
+/-- The space of a leaf. -/
+theorem leafCertificate_space (x : Call) :
+    (leafCertificate mk).space x =
+      (NativeCertificate.ofPolyTime depth_polyTime).space x +
+        ((NativeCertificate.ofPolyTime leafInput_polyTime).space x +
+          (DescribedNetwork.contractionCertificate VertexDesc.entry SumOps.galois_polyTime
+            VertexDesc.entryCertificate).space ((x.prec, x.fl), x.net)) := rfl
 
 /-! ### The root -/
 
