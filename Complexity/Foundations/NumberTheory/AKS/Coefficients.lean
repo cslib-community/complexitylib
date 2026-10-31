@@ -92,6 +92,11 @@ theorem toQuot_eq_sum (n r : ℕ) (c : ℕ → ℕ) :
   simp only [toQuot, coeffPoly, map_sum, map_mul, map_pow, AdjoinRoot.mk_X, AdjoinRoot.mk_C]
   rfl
 
+/-- The class of `∑_{i < r} c i X^i` depends only on the coefficients below `r`. -/
+theorem toQuot_congr {c d : ℕ → ℕ} (h : ∀ i < r, c i = d i) : toQuot n r c = toQuot n r d := by
+  rw [toQuot_eq_sum, toQuot_eq_sum]
+  exact sum_congr rfl fun i hi => by rw [h i (mem_range.mp hi)]
+
 /-- **Coefficients of products.** -/
 theorem toQuot_mulCoeff (n r : ℕ) (p q : ℕ → ℕ) :
     toQuot n r (mulCoeff n r p q) = toQuot n r p * toQuot n r q := by
