@@ -11,7 +11,7 @@ import Complexity.Computability.Complexity.Classes.Sparse.Turing
 
 namespace ComplexityTests.SparseTuring
 
-open Cslib Cslib.Complexity Cslib.Circuits.Boolean Cslib.Logic.PL Turing.MultiTapeTM
+open Cslib Cslib.BitString Cslib.Complexity Cslib.Circuits.Boolean Cslib.Logic.PL Turing.MultiTapeTM
 
 /-- The words consisting only of `true`s, a sparse language. -/
 private def unary : Set (List Bool) := {w | ∀ b ∈ w, b = true}
