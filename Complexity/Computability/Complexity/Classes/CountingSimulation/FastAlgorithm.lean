@@ -298,7 +298,7 @@ section Resources
 
 open FastContraction Cslib.GenericRAM Cslib.GenericRAM.StackRecursion Turing.MultiTapeTM
 
-variable (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc)
+variable (mk : Call (List ℕ) → ChildCursor.State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
 
 /-- **The resource analysis of the fast machine**, the remaining obligation of the running time.
 For all constants `C` and `D` there are `K` and `s₀` such that on every input `(P, r, G)` with
@@ -310,13 +310,14 @@ whose leaves take time at most `TL` and space at most `SL`, with `H` open calls,
 @[expose] def FastAnalysis : Prop :=
   ∀ C D : ℕ, ∃ K s₀ : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P →
     P ≤ D * s → ExplicitAdmissible C s G → fastGuard G = true →
-    ∃ (I : Invariant Call Frame (ℕ × List ℕ)) (N H F TL SL : ℕ),
-      (scheme mk).Eval I (root (ExplicitTensorNetwork.capPrecision (P, G)))
-        (0, value mk (root (ExplicitTensorNetwork.capPrecision (P, G)))) N H ∧
+    ∃ (I : Invariant (Call (List ℕ)) Frame (ℕ × List ℕ)) (N H F TL SL : ℕ),
+      (scheme tableEntry mk).Eval I (root (ExplicitTensorNetwork.capPrecision (P, G)))
+        (0, value tableEntry mk (root (ExplicitTensorNetwork.capPrecision (P, G)))) N H ∧
       (s₀ ≤ s → 2 * N - 1 ≤ fuel (ExplicitTensorNetwork.capPrecision (P, G))) ∧
-      (∀ x, I.node x → (encCall x).length ≤ F ∧ ((scheme mk).isLeaf x = true →
+      (∀ x, I.node x → (encCall (encList encNat) x).length ≤ F ∧
+        ((scheme tableEntry mk).isLeaf x = true →
         (leafCertificate mk).time x ≤ TL ∧ (leafCertificate mk).space x ≤ SL)) ∧
-      (∀ x a, I.frame x a → (encPair encCall encFrame (x, a)).length ≤ F) ∧
+      (∀ x a, I.frame x a → (encPair (encCall (encList encNat)) encFrame (x, a)).length ≤ F) ∧
       (∀ v, I.value v → (encValue v).length ≤ F) ∧
       H + F + SL ≤ K * ((FastContraction.encInput (P, G)).length + 1) ^ K ∧
       TL ≤ K * ((FastContraction.encInput (P, G)).length + 1) ^ K *
@@ -362,7 +363,8 @@ scheme and the resource analysis, for all constants `C` and `D` there is `K` suc
 guarded input admissible at size `s ≥ 2` with constant `C` and with precision `1 ≤ P ≤ D s`, the
 fast machine takes time at most `K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` and space at most
 `K (n + 1) ^ K`. -/
-theorem fastCertificate_le (hpoly : (scheme mk).PolyTime encCall encFrame encValue)
+theorem fastCertificate_le
+    (hpoly : (scheme tableEntry mk).PolyTime (encCall (encList encNat)) encFrame encValue)
     (hana : FastAnalysis mk) (C D : ℕ) :
     ∃ K : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P → P ≤ D * s →
       ExplicitAdmissible C s G → fastGuard G = true →
@@ -496,8 +498,8 @@ theorem fastCertificate_le (hpoly : (scheme mk).PolyTime encCall encFrame encVal
           K₂ * ((encInput q).length + 1) ^ K₂ * 2 ^ (C * s₀) :=
             Nat.le_mul_of_pos_right _ Nat.one_le_two_pow
         _ = K₂ * 2 ^ (C * s₀) * B ^ K₂ := by ring)
-  have hbig : s₀ ≤ s → (scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q) =
-      some (0, value mk (root (ExplicitTensorNetwork.capPrecision q))) :=
+  have hbig : s₀ ≤ s → (scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q) =
+      some (0, value tableEntry mk (root (ExplicitTensorNetwork.capPrecision q))) :=
     fun h => Scheme.run_eq_some he (hN h)
   clear hKa hK₁ hK₂ h₁ h₂
   -- Everything against `W = B ^ E X`.
@@ -548,7 +550,7 @@ theorem fastCertificate_le (hpoly : (scheme mk).PolyTime encCall encFrame encVal
     Nat.pow_le_pow_right (by norm_num) (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega)))
   refine ⟨?_, ?_⟩
   · rw [fastCertificate_time]
-    have hrest : ((scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+    have hrest : ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
         (ExplicitTensorNetwork.directContractionBinaryCertificate.time q) (fun v =>
           (NativeCertificate.ofPolyTime tag_polyTime).time (q, v) +
             if decide (v.1 = 0) = true then
@@ -556,7 +558,8 @@ theorem fastCertificate_le (hpoly : (scheme mk).PolyTime encCall encFrame encVal
             else (NativeCertificate.ofPolyTime
                 (ComputableInPolyTime.fst FastContraction.encInput encValue)).time (q, v) +
               ExplicitTensorNetwork.directContractionBinaryCertificate.time q) ≤ R₁ + R₂ := by
-      rcases hr : (scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q) with _ | v
+      rcases hr : (scheme tableEntry mk).run fuel root
+        (ExplicitTensorNetwork.capPrecision q) with _ | v
       · by_cases hs₀ : s₀ ≤ s
         · rw [hbig hs₀] at hr; cases hr
         · simp only [Option.elim_none]; have := hdir (by omega); omega
@@ -579,7 +582,7 @@ theorem fastCertificate_le (hpoly : (scheme mk).PolyTime encCall encFrame encVal
         rw [hWdef, ← Nat.mul_assoc]
         exact Nat.mul_le_mul (Nat.mul_le_mul hKK hBE) hXK
   · rw [fastCertificate_space]
-    have hrest : ((scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+    have hrest : ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
         (ExplicitTensorNetwork.directContractionBinaryCertificate.space q) (fun v =>
           (NativeCertificate.ofPolyTime tag_polyTime).space (q, v) +
             if decide (v.1 = 0) = true then
@@ -587,7 +590,8 @@ theorem fastCertificate_le (hpoly : (scheme mk).PolyTime encCall encFrame encVal
             else (NativeCertificate.ofPolyTime
                 (ComputableInPolyTime.fst FastContraction.encInput encValue)).space (q, v) +
               ExplicitTensorNetwork.directContractionBinaryCertificate.space q) ≤ R₁ + R₂ := by
-      rcases hr : (scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q) with _ | v
+      rcases hr : (scheme tableEntry mk).run fuel root
+        (ExplicitTensorNetwork.capPrecision q) with _ | v
       · simp only [Option.elim_none]; omega
       · have hd := hdec v (Scheme.value_of_run_eq_some he hr)
         simp only [Option.elim_some]
@@ -609,8 +613,9 @@ call and the passage of well-formedness to the children (`FastContraction.StepCo
 (`FastAnalysis`). It branches on the guard (`ContractionAlgorithm.ofGuarded`) to the fast machine
 or to direct summation. -/
 noncomputable def contractionAlgorithmOfFast
-    (hpoly : (scheme mk).PolyTime encCall encFrame encValue) {WF : Call → Prop}
-    (hstep : StepCorrect mk WF) (hwf : WFChildren mk WF)
+    (hpoly : (scheme tableEntry mk).PolyTime (encCall (encList encNat)) encFrame encValue)
+    {WF : Call (List ℕ) → Prop}
+    (hstep : StepCorrect tableEntry mk WF) (hwf : WFChildren mk WF)
     (hroot : ∀ P G, fastGuard G = true → WF (root (ExplicitTensorNetwork.capPrecision (P, G))))
     (hana : FastAnalysis mk) :
     ContractionAlgorithm (encPair encNat ExplicitTensorNetwork.encExplicitNetwork)
@@ -645,7 +650,8 @@ children and the well-formed roots are proved (`FastContraction.stepCorrect_nati
 noncomputable def contractionAlgorithmOfNative (hana : FastAnalysis nativeMk) :
     ContractionAlgorithm (encPair encNat ExplicitTensorNetwork.encExplicitNetwork)
       (fun G => G.2.contraction) ExplicitAdmissible :=
-  contractionAlgorithmOfFast scheme_nativeMk_polyTime stepCorrect_nativeMk wfChildren_nativeMk
+  contractionAlgorithmOfFast (scheme_nativeMk_polyTime tableEntry)
+    (stepCorrect_nativeMk tableEntry) wfChildren_nativeMk
     (fun P _ hg => wf_root P hg) hana
 
 end Resources
