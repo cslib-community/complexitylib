@@ -1182,6 +1182,7 @@ public import Complexity.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Space
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Time
 public import Complexity.Computability.Complexity.Classes.Hierarchy.TimePolylog
+public import Complexity.Computability.Complexity.Classes.Hierarchy.WordRAM
 public import Complexity.Computability.Complexity.Classes.IP
 public import Complexity.Computability.Complexity.Classes.IP.CoinFixing
 public import Complexity.Computability.Complexity.Classes.IP.GameTree
@@ -1341,6 +1342,7 @@ public import Complexity.Computability.Complexity.Classes.Tally
 public import Complexity.Computability.Complexity.Classes.Time
 public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 public import Complexity.Computability.Complexity.Classes.Time.Polynomial
+public import Complexity.Computability.Complexity.Classes.Time.WordRAM
 public import Complexity.Computability.Complexity.Classes.Toda
 public import Complexity.Computability.Complexity.Classes.Toda.Counting
 public import Complexity.Computability.Complexity.Classes.Toda.Hierarchy

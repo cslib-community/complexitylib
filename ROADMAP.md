@@ -182,9 +182,11 @@ index links to canonical definitions rather than keeping a second set.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
   degrees `1 ≤ a < b`, and the `O(t log t)` universal simulation ([#800]) gives
   `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once `(f + 1) * polylog f ≤ g`, with an
-  absolute exponent (`Hierarchy/TimePolylog`). Remaining targets include the textbook
-  `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal machine's own
-  steps, noninteger polynomial degrees, and sharp nondeterministic and alternating time
+  absolute exponent (`Hierarchy/TimePolylog`). Composing it with the word-RAM simulations gives
+  `RAMTIME T ⊂ RAMTIME T⁵` over `Basis.additive` for polynomial `T` (`Hierarchy/WordRAM`).
+  Remaining targets include the textbook `f log f = o(g)` hierarchy, which needs the diagonal to
+  clock the universal machine's own steps, noninteger polynomial degrees, a word-RAM hierarchy by
+  direct diagonalization with a smaller gap, and sharp nondeterministic and alternating time
   hierarchies with certified simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
