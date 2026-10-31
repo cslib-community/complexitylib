@@ -210,8 +210,10 @@ index links to canonical definitions rather than keeping a second set.
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
 - **Sparse and tally sets:** `P/poly ⊆ P^SPARSE` (Meyer), the converse of
-  `PWithOracle_subset_PPolyOn` in `Classes/Sparse/Turing.lean`; Kadin's collapse of `PH` to
-  `P^{NP[O(log n)]}` under a sparse Turing-complete set for `NP` ([#2062]).
+  `PWithOracle_subset_PPolyOn` in `Classes/Sparse/Turing.lean`. After Kadin's
+  `PH ⊆ P^{NP[O(log n)]}` (`Classes/Sparse/Kadin.lean`, [#2062]): `P^{NP[O(log n)]} ⊆ Σ₂ᴾ ∩ Π₂ᴾ`,
+  hence `PH = Θ₂ᴾ` under his hypothesis; his stronger form with a sparse `S ∈ NP` and
+  `coNP ⊆ NP^S`; and `P^{NP[O(log n)]} = P^NP_tt` (Hemachandra).
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing

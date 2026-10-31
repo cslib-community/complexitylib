@@ -18,15 +18,15 @@ import Complexity.Computability.Complexity.Classes.Oracle.ListOracle
 import Complexity.Computability.Complexity.Classes.PH.Projection
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
-import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
-import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
+import Complexity.Computability.Probabilistic.Oracle.Composition
 import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
@@ -34,7 +34,8 @@ import Cslib.Foundations.Data.Polynomial.Monotone
 
 If `NP` has a sparse polynomial-time Turing-complete set, that is a sparse `S ∈ NP` to which
 `SAT` is polynomial-time Turing reducible, then the polynomial hierarchy collapses to
-`P^{NP[O(log n)]}` [Kadin][Kadin1989] [Hemaspaandra and Ogihara, Theorem 1.14][HemaspaandraOgihara2002].
+`P^{NP[O(log n)]}` (`Cslib.Complexity.PH_subset_PNPLog_of_sparse`) [Kadin][Kadin1989]
+[Hemaspaandra and Ogihara, Theorem 1.14][HemaspaandraOgihara2002].
 
 The proof follows the census argument of [Hemaspaandra and Ogihara, Theorem 1.14]
 [HemaspaandraOgihara2002]. The census of `S` up to length `m` is the number of members of `S` of
@@ -47,15 +48,31 @@ length at most `m`; it is polynomial in `m` because `S` is sparse.
   (`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_listOracle_bool`). Hence one more
   request in `NP`, which guesses the list and a first certificate, decides a problem in `Σ₂`.
 
-So `Σ₂ ⊆ P^{NP[O(log n)]}`. The Companion completes the proof by `Θ₂ ⊆ Σ₂ ∩ Π₂` and closure of
-`Θ₂` under complement; here `PH = Σ₂` comes instead from the sparse form of the Karp–Lipton
-theorem (`Cslib.Complexity.PH_eq_SigmaP_two_of_SAT_mem_PWithOracle`).
+So `Σ₂ ⊆ P^{NP[O(log n)]}`. The Companion completes the proof with `Θ₂ ⊆ Σ₂` and closure of `Θ₂`
+under complement, which give `Σ₂ = Π₂`; here `PH = Σ₂` comes instead from the sparse form of the
+Karp–Lipton theorem (`Cslib.Complexity.PH_eq_SigmaP_two_of_SAT_mem_PWithOracle`). The reverse
+inclusion `P^{NP[O(log n)]} ⊆ PH`, which with this gives the Companion's `PH = Θ₂`, is not proved
+here.
+
+The hypothesis is the Turing-complete case. Kadin's abstract states the result for a sparse
+`S ∈ NP` with `coNP ⊆ NP^S`, of which the Turing-complete case is a consequence; that form is not
+formalized here.
+
+The algorithm (`Cslib.Complexity.KadinCensus.program`) runs `⌈log₂ (N + 1)⌉` rounds of binary
+search (`Cslib.Complexity.KadinCensus.searchStepProgram`) on an interval containing the census,
+where `N` is the polynomial census bound, each round making one request to the encodings of the
+satisfiable formulas through the Cook–Levin reduction, and then makes one last request. The loop
+is certified by `Cslib.Probability.IsOraclePPTOn.iterateWith_spec'`; every reachable interval lies
+in `[0, N]`.
 
 ## Main definitions
 
 * `Cslib.Complexity.KadinCensus.language`: the `NP` problem asked by the algorithm, on triples
   `(a, k, b)`: `k` distinct short members of `S` exist, and if `b`, they also witness the first
   quantifier of a `Σ₂` problem.
+* `Cslib.Complexity.KadinCensus.searchStep`: one round of binary search for a threshold.
+* `Cslib.Complexity.KadinCensus.searchStepProgram`, `Cslib.Complexity.KadinCensus.program`: the
+  oracle programs.
 
 ## Main results
 
@@ -65,6 +82,12 @@ theorem (`Cslib.Complexity.PH_eq_SigmaP_two_of_SAT_mem_PWithOracle`).
 * `Cslib.Complexity.KadinCensus.mem_language_false_iff`,
   `Cslib.Complexity.KadinCensus.mem_language_census_true_iff`: the meaning of the requests.
 * `Cslib.Complexity.KadinCensus.language_mem_NP`: the requests form a problem in `NP`.
+* `Cslib.Complexity.KadinCensus.fst_iterate_searchStep`: binary search finds the threshold.
+* `Cslib.Complexity.KadinCensus.length_queriesWith_program_le`,
+  `Cslib.Complexity.KadinCensus.isOraclePPTOn_program`: the algorithm makes one request per round
+  plus one, and is strict oracle PPT.
+* `Cslib.Complexity.SigmaP_two_subset_PNPLog_of_sparse`: `Σ₂ ⊆ P^{NP[O(log n)]}`.
+* `Cslib.Complexity.PH_subset_PNPLog_of_sparse`: **Kadin's theorem**, `PH ⊆ P^{NP[O(log n)]}`.
 
 ## References
 
@@ -298,7 +321,8 @@ theorem language_mem_NP (hS : S ∈ NP encBits) (hsparse : S ∈ SPARSE encBits)
   have hlist : (encList (encPair encBits encBits) y.1).length ≤
       c * (m.eval n + 1) ^ d * (4 * m.eval n + 2 * pS.eval (m.eval n) + 3) := by
     rw [length_encList]
-    have h := List.sum_le_length_nsmul (y.1.map fun sc => 2 * (encPair encBits encBits sc).length + 1)
+    have h := List.sum_le_length_nsmul
+      (y.1.map fun sc => 2 * (encPair encBits encBits sc).length + 1)
       (4 * m.eval n + 2 * pS.eval (m.eval n) + 3) fun z hz => by
         obtain ⟨sc, hsc, rfl⟩ := List.mem_map.mp hz
         exact hpair sc hsc
@@ -327,7 +351,8 @@ def searchStep (P : ℕ → Bool) (st : ℕ × ℕ) : ℕ × ℕ :=
 
 /-- A round keeps the threshold `C` of `P k = (k ≤ C)` inside the interval and halves it. -/
 theorem searchStep_spec {C : ℕ} {st : ℕ × ℕ} (h₁ : st.1 ≤ C) (h₂ : C ≤ st.2) :
-    (searchStep (fun k => decide (k ≤ C)) st).1 ≤ C ∧ C ≤ (searchStep (fun k => decide (k ≤ C)) st).2 ∧
+    (searchStep (fun k => decide (k ≤ C)) st).1 ≤ C ∧
+      C ≤ (searchStep (fun k => decide (k ≤ C)) st).2 ∧
       (searchStep (fun k => decide (k ≤ C)) st).2 - (searchStep (fun k => decide (k ≤ C)) st).1 ≤
         (st.2 - st.1) / 2 := by
   unfold searchStep
@@ -411,7 +436,8 @@ open Classical in
 theorem interpret_program (A : Set (List Bool)) (req fin : α × ℕ → List Bool) (N count : α → ℕ)
     (a : α) :
     OracleComp.interpret (m := Id) (languageOracle A) (program req fin N count a) =
-      decide (fin (a, ((searchStep fun k => decide (req (a, k) ∈ A))^[count a] (0, N a)).1) ∈ A) := by
+      decide (fin (a, ((searchStep fun k => decide (req (a, k) ∈ A))^[count a] (0, N a)).1) ∈
+        A) := by
   rw [program, OracleComp.interpret_bind, OracleComp.interpret_id_iterate]
   simp only [interpret_searchStepProgram]
   exact interpret_queryBit A _
@@ -422,8 +448,8 @@ theorem length_queriesWith_program_le (answer : Unit × List Bool → List Bool)
     (OracleComp.queriesWith answer (program req fin N count a)).length ≤ count a + 1 := by
   rw [program, OracleComp.queriesWith_bind, List.length_append, queriesWith_queryBit,
     List.length_singleton]
-  exact Nat.add_le_add_right
-    (length_queriesWith_iterate_le answer (length_queriesWith_searchStepProgram_le answer req a) _ _) 1
+  exact Nat.add_le_add_right (length_queriesWith_iterate_le answer
+    (length_queriesWith_searchStepProgram_le answer req a) _ _) 1
 
 open Probability in
 /-- **The algorithm is strict oracle PPT** when the requests, the bound `N` and the count are
@@ -484,10 +510,10 @@ theorem isOraclePPTOn_program {enc : α ↪ List Bool} {req fin : α × ℕ → 
     (fun a => ⟨Nat.zero_le _, le_rfl⟩) (fun a i st _ hinv next hnext => by
       unfold searchStepProgram at hnext
       by_cases h : st.1 < st.2
-      · rw [ite_eq_left_iff.mpr (fun h' => absurd h h'), OracleComp.interpret_map] at hnext
+      · simp only [h, ↓reduceIte, OracleComp.interpret_map] at hnext
         obtain ⟨b, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
         cases b <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> omega
-      · rw [ite_eq_right_iff.mpr (fun h' => absurd h' h), OracleComp.interpret_pure] at hnext
+      · simp only [h, ↓reduceIte, OracleComp.interpret_pure] at hnext
         rw [OracleComp.eq_of_mem_supportWith_pure hnext]
         exact hinv)
     hsize (fun a i st _ hinv => by
