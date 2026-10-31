@@ -26,7 +26,8 @@ pair of `A × B`, as for `Protocol.ecomplexity`. For a function `f : X → Y →
 `z`-covers are families of rectangles on which `f` is `z` inside `A × B` that contain every pair of
 `A × B` on which `f` is `z` (`Nondeterministic.isCover_fun_iff`). Thus `ecomplexityFun true f` and
 `ecomplexityFun false f` are `⌈log₂ C^z(f)⌉`, where `C^z(f)` is the least number of rectangles in a
-`z`-cover (and `0` when `f` never takes the value `z` on `A × B`).
+`z`-cover [Kushilevitz and Nisan, Definition 2.1(4), p. 17][KushilevitzNisan1997] (and `0` when `f`
+never takes the value `z` on `A × B`).
 
 Kushilevitz and Nisan define `N^z(f) = log₂ C^z(f)` for a Boolean function `f` on all of `X × Y`,
 without rounding. So for such `f`, `ecomplexityFun z f Set.univ Set.univ` is their `N^z(f)` rounded
