@@ -37,7 +37,7 @@ ring that `A_p` maps to.
 * **Local forms, mode coefficients, mode values and row terms** follow
   `TensorNetwork.packetLocalForm`, `TensorNetwork.packetModeCoeff`,
   `TensorNetwork.packetModeValue` and `TensorNetwork.packetRowTerm`, with a mode `(y₀, b)` given
-  by its dense index `y₀ nb + b` (`NativePacket.modeIndex`).
+  by its dense index `b + nb y₀`, its number under `finProdFinEquiv`.
 * **Coefficient extraction** (`NativePacket.listCoeffList`) is the recursion
   `TensorNetwork.listCoeff` on coefficient lists, along a duplicate-free list of modes.
 
@@ -491,28 +491,15 @@ theorem val_modeValueList (i : ℕ) (differ : Bool) (cols : List (ℕ × Bool)) 
   · rw [val_pow, val_intConst, Int.cast_natCast]
   · exact val_zero
 
-/-- The tile of a dense mode index `y₀ nb + b`. -/
-theorem modeIndex_div {nb y b : ℕ} (hb : b < nb) : (y * nb + b) / nb = y := by
-  rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hb, Nat.zero_add]
+/-- The tile of the dense index `b + nb y₀` of a mode `(y₀, b)`. -/
+private theorem finProdFinEquiv_div {m n : ℕ} (Z : Fin m × Fin n) :
+    (finProdFinEquiv Z : ℕ) / n = Z.1 :=
+  congrArg (fun W => (W.1 : ℕ)) (finProdFinEquiv.symm_apply_apply Z)
 
-/-- The exponent of a dense mode index `y₀ nb + b`. -/
-theorem modeIndex_mod {nb y b : ℕ} (hb : b < nb) : (y * nb + b) % nb = b := by
-  rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hb]
-
-/-- The dense index `y₀ nb + b` of the mode `(y₀, b)` of a packet with `nb` exponents per
-tile. -/
-def modeIndex (i nb : ℕ) : Fin (2 ^ (i + 1)) × Fin nb ↪ ℕ :=
-  ⟨fun Z => Z.1 * nb + Z.2, fun Z Z' h => by
-    have h1 := modeIndex_div (y := Z.1) Z.2.isLt
-    have h2 := modeIndex_mod (y := Z.1) Z.2.isLt
-    simp only at h
-    rw [h, modeIndex_div Z'.2.isLt] at h1
-    rw [h, modeIndex_mod Z'.2.isLt] at h2
-    exact Prod.ext (Fin.ext h1.symm) (Fin.ext h2.symm)⟩
-
-@[simp] theorem modeIndex_apply (i nb : ℕ) (Z : Fin (2 ^ (i + 1)) × Fin nb) :
-    modeIndex i nb Z = (Z.1 : ℕ) * nb + Z.2 :=
-  rfl
+/-- The exponent of the dense index `b + nb y₀` of a mode `(y₀, b)`. -/
+private theorem finProdFinEquiv_mod {m n : ℕ} (Z : Fin m × Fin n) :
+    (finProdFinEquiv Z : ℕ) % n = Z.2 :=
+  congrArg (fun W => (W.2 : ℕ)) (finProdFinEquiv.symm_apply_apply Z)
 
 /-- The terms of the affine factor of a row port `r = (x, Y_x)`: its local term at `none`, and
 the coefficient of the mode `(k / nb, k % nb)` at `some k` (zero when there are no exponents,
@@ -532,7 +519,7 @@ theorem val_rowTermList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : ℤ}
     {cols : List (ℕ × Bool)} (hcols : ∀ c ∈ cols, c.1 < 2 ^ a) {r : ℕ × Bool} (hr : r.1 < 2 ^ a)
     (ζ : List ℕ) :
     (fun o => val p fl (rowTermList p fl a L i t nb differ cols ζ r o)) ∘
-        Option.map (modeIndex i nb) =
+        Option.map (finProdFinEquiv.toEmbedding.trans Fin.valEmbedding) =
       packetRowTerm (p := nb) (scalarHom p fl) (val p fl ζ) a i t differ cols r := by
   funext o
   cases o with
@@ -543,7 +530,8 @@ theorem val_rowTermList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : ℤ}
     · rw [val_sub, val_one, val_localFormList hL ht hcols hr ζ]
   | some Z =>
     simp only [Function.comp_apply, Option.map_some, rowTermList, packetRowTerm, affineSign,
-      modeIndex_apply, modeIndex_div Z.2.isLt, modeIndex_mod Z.2.isLt,
+      Function.Embedding.trans_apply, Equiv.coe_toEmbedding, Fin.valEmbedding_apply,
+      finProdFinEquiv_div, finProdFinEquiv_mod,
       Nat.pos_iff_ne_zero.mp (Nat.zero_lt_of_lt Z.2.isLt), ↓reduceIte]
     have h := val_modeCoeffList (p := p) (fl := fl) hL hia ht hti hti' differ hr Z ζ
     split_ifs
@@ -588,24 +576,22 @@ theorem val_listCoeffList {M : Type} [DecidableEq M] {modes : List M} (hm : mode
 modes of the packet. -/
 private theorem toFinset_filter_range (i nb : ℕ) (P : ℕ → Bool) :
     ((List.range (2 ^ (i + 1) * nb)).filter fun k => P (k / nb)).toFinset =
-      ({Z | P Z.1 = true} : Finset (Fin (2 ^ (i + 1)) × Fin nb)).map (modeIndex i nb) := by
+      ({Z | P Z.1 = true} : Finset (Fin (2 ^ (i + 1)) × Fin nb)).map
+        (finProdFinEquiv.toEmbedding.trans Fin.valEmbedding) := by
   ext k
   simp only [List.mem_toFinset, List.mem_filter, List.mem_range, mem_map, mem_filter, mem_univ,
-    true_and, modeIndex_apply]
+    true_and, Function.Embedding.trans_apply, Equiv.coe_toEmbedding, Fin.valEmbedding_apply]
   constructor
   · rintro ⟨hk, h⟩
-    have hnb : 0 < nb := Nat.pos_of_ne_zero fun h0 => by simp [h0] at hk
-    exact ⟨(⟨k / nb, (Nat.div_lt_iff_lt_mul hnb).mpr hk⟩, ⟨k % nb, Nat.mod_lt _ hnb⟩), h,
-      Nat.div_add_mod' k nb⟩
+    exact ⟨finProdFinEquiv.symm ⟨k, hk⟩, h, congrArg Fin.val (finProdFinEquiv.apply_symm_apply _)⟩
   · rintro ⟨Z, h, rfl⟩
-    refine ⟨?_, by rw [modeIndex_div Z.2.isLt]; exact h⟩
-    calc (Z.1 : ℕ) * nb + Z.2 < (Z.1 + 1) * nb := by rw [Nat.add_mul, Nat.one_mul]; omega
-      _ ≤ 2 ^ (i + 1) * nb := Nat.mul_le_mul_right _ Z.1.isLt
+    exact ⟨(finProdFinEquiv Z).isLt, by rw [finProdFinEquiv_div]; exact h⟩
 
 /-- **The entry of a packet vertex on coefficient lists** (§D.4.6, p. 63): coefficient extraction
 along the row terms, at the exponents `β` of the modes targeting the group, times the powers of
 the values of the modes with the group as source. A mode `(y₀, b)` is its dense index
-`y₀ nb + b`, so `β` is read at dense indices, as from a dense list of exponents. -/
+`b + nb y₀` (`finProdFinEquiv`), so `β` is read at dense indices, as from a dense list of
+exponents. -/
 def packetEntryList (p : ℕ) (fl : List ℕ) (a L i : ℕ) (t : ℤ) (nb : ℕ) (e₁ e₂ differ : Bool)
     (β : ℕ → ℕ) (rows cols : List (ℕ × Bool)) (ζ : List ℕ) : List ℕ :=
   mul p fl
@@ -626,7 +612,7 @@ theorem val_packetEntryList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : �
     (hcols : ∀ c ∈ cols, c.1 < 2 ^ a) (ζ : List ℕ) :
     val p fl (packetEntryList p fl a L i t nb e₁ e₂ differ β rows cols ζ) =
       packetEntry (p := nb) (scalarHom p fl) (val p fl ζ) a i t e₁ e₂ differ
-        (fun Z => β (Z.1 * nb + Z.2)) rows cols := by
+        (fun Z => β (finProdFinEquiv Z)) rows cols := by
   rw [packetEntryList, packetEntry, val_mul]
   congr 1
   · rw [val_listCoeffList (List.nodup_range.filter _), toFinset_filter_range,
@@ -636,8 +622,8 @@ theorem val_packetEntryList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : �
   · rw [val_prodList, List.map_map, ← List.prod_toFinset _ (List.nodup_range.filter _),
       toFinset_filter_range, prod_map]
     refine prod_congr rfl fun Z _ => ?_
-    simp only [Function.comp_apply, modeIndex_apply, modeIndex_div Z.2.isLt,
-      modeIndex_mod Z.2.isLt]
+    simp only [Function.comp_apply, Function.Embedding.trans_apply, Equiv.coe_toEmbedding,
+      Fin.valEmbedding_apply, finProdFinEquiv_div, finProdFinEquiv_mod]
     rw [val_pow, val_modeValueList]
 
 /-- **Packet entries in every ring receiving `A_p`.** Along a ring map `ψ : A_p → S` with `2`
@@ -649,7 +635,7 @@ theorem map_val_packetEntryList {S : Type*} [CommRing S] (ψ : Ring p fl →+* S
     (nb : ℕ) (e₁ e₂ differ : Bool) (β : ℕ → ℕ) {rows cols : List (ℕ × Bool)}
     (hrows : ∀ r ∈ rows, r.1 < 2 ^ a) (hcols : ∀ c ∈ cols, c.1 < 2 ^ a) (ζ : List ℕ) :
     ψ (val p fl (packetEntryList p fl a L i t nb e₁ e₂ differ β rows cols ζ)) =
-      packetEntry (p := nb) κ (ψ (val p fl ζ)) a i t e₁ e₂ differ (fun Z => β (Z.1 * nb + Z.2))
+      packetEntry (p := nb) κ (ψ (val p fl ζ)) a i t e₁ e₂ differ (fun Z => β (finProdFinEquiv Z))
         rows cols := by
   rw [val_packetEntryList hL hia ht hti hti' nb e₁ e₂ differ β hrows hcols ζ,
     map_packetEntry ψ two_pow_eq_zero _ _ hia.le hti hti',

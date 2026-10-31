@@ -913,7 +913,7 @@ theorem val_packetEntryNative_eq (c : PacketCtx) (hL : c.L = 2 ^ c.a) (hia : c.i
     (hcols : ∀ r ∈ c.cols, r.1 < 2 ^ c.a) (β : List ℕ) :
     val c.p c.fl (packetEntryNative c rows β) =
       packetEntry (p := c.nb) (scalarHom c.p c.fl) (val c.p c.fl c.ζ) c.a c.i c.t c.e₁ c.e₂
-        c.differ (fun Z => β.getD (Z.1 * c.nb + Z.2) 0) rows c.cols := by
+        c.differ (fun Z => β.getD (finProdFinEquiv Z) 0) rows c.cols := by
   rw [val_packetEntryNative c htiles, val_packetEntryList hL hia ht hti hti' c.nb c.e₁ c.e₂
     c.differ _ hrows hcols]
 
@@ -929,7 +929,7 @@ theorem map_val_packetEntryNative {S : Type*} [CommRing S] (c : PacketCtx)
     (hrows : ∀ r ∈ rows, r.1 < 2 ^ c.a) (hcols : ∀ r ∈ c.cols, r.1 < 2 ^ c.a) (β : List ℕ) :
     ψ (val c.p c.fl (packetEntryNative c rows β)) =
       packetEntry (p := c.nb) κ (ψ (val c.p c.fl c.ζ)) c.a c.i c.t c.e₁ c.e₂ c.differ
-        (fun Z => β.getD (Z.1 * c.nb + Z.2) 0) rows c.cols := by
+        (fun Z => β.getD (finProdFinEquiv Z) 0) rows c.cols := by
   rw [val_packetEntryNative c htiles, map_val_packetEntryList ψ hn κ hL hia ht hti hti' c.nb
     c.e₁ c.e₂ c.differ _ hrows hcols]
 
@@ -1374,7 +1374,7 @@ theorem val_packetVertexEntry (d : PacketDesc) (bs : List Bool) (hL : d.1.L = 2 
     (hti' : ¬ (2 : ℤ) ^ (d.1.i + 1) ∣ d.1.t) (hports : ∀ x ∈ d.2.1, x.2 < 2 ^ d.1.a) :
     val d.1.p d.1.fl (packetVertexEntry d bs) =
       packetEntry (p := d.1.nb) (scalarHom d.1.p d.1.fl) (val d.1.p d.1.fl d.1.ζ) d.1.a d.1.i
-        d.1.t d.1.e₁ d.1.e₂ d.1.differ (fun Z => d.2.2.getD (Z.1 * d.1.nb + Z.2) 0)
+        d.1.t d.1.e₁ d.1.e₂ d.1.differ (fun Z => d.2.2.getD (finProdFinEquiv Z) 0)
         (sidePorts d.2.1 bs true) (sidePorts d.2.1 bs false) := by
   have hside (side : Bool) : ∀ r ∈ sidePorts d.2.1 bs side, r.1 < 2 ^ d.1.a := by
     intro r hr

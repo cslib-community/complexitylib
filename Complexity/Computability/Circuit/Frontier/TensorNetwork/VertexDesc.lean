@@ -131,7 +131,7 @@ theorem map_val_entry_inr {S : Type*} [CommRing S] (d : PacketDesc) (bs : List B
     (hti' : ¬ (2 : ℤ) ^ (d.1.i + 1) ∣ d.1.t) (hports : ∀ x ∈ d.2.1, x.2 < 2 ^ d.1.a) :
     ψ (val d.1.p d.1.fl (entry (.inr d) bs)) =
       packetEntry (p := d.1.nb) κ (ψ (val d.1.p d.1.fl d.1.ζ)) d.1.a d.1.i d.1.t d.1.e₁ d.1.e₂
-        d.1.differ (fun Z => d.2.2.getD (Z.1 * d.1.nb + Z.2) 0) (sidePorts d.2.1 bs true)
+        d.1.differ (fun Z => d.2.2.getD (finProdFinEquiv Z) 0) (sidePorts d.2.1 bs true)
         (sidePorts d.2.1 bs false) := by
   have hside (side : Bool) : ∀ r ∈ sidePorts d.2.1 bs side, r.1 < 2 ^ d.1.a := by
     intro r hr

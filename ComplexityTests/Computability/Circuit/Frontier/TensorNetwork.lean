@@ -103,8 +103,8 @@ example : ¬ parallel.IsRowsFirstBipartite 2 := by decide
 example : ¬ (cycle eqTable).IsRowsFirstBipartite 2 := by decide
 
 /-- A port naming no edge is excluded. -/
-example : ¬ (⟨1, [([0], [1, 1]), ([0, 5], [1, 1, 1, 1])]⟩ :
-    ExplicitTensorNetwork ℕ).IsRowsFirstBipartite 1 := by decide
+example : ¬ ExplicitTensorNetwork.IsRowsFirstBipartite
+    (⟨1, [([0], [1, 1]), ([0, 5], [1, 1, 1, 1])]⟩ : ExplicitTensorNetwork ℕ) 1 := by decide
 
 /-- Written out with the old vertices first, the subdivision of `parallelNetwork` is rows-first
 bipartite with degree `2`, both by the general lemmas and by evaluation. -/
