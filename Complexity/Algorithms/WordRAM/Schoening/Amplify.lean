@@ -44,9 +44,12 @@ formula with clauses of at most `k ≥ 3` literals with probability at most `e ^
 (`Cslib.Algorithms.WordRAM.Schoening.ampProgram_failure_le_exp`). For `k = 3` there are
 `⌈(3 n + 1) (4 / 3) ^ n⌉ c` trials, so the time is `O(n ^ 2 L (4 / 3) ^ n c)` plus the
 polynomial setup: Schöning's `O*((2 - 2 / k) ^ n)` running time, with the polynomial factor
-explicit. The word size needs only `O(log (L + c))` bits: the trial count, of about `0.415 n` bits
-for `k = 3`, is kept in memory, one binary digit per word. A decrement reads the digits up to the
-lowest nonzero one, which costs a constant amortized number of instructions per trial.
+explicit. The word size needs only `O(log (n + k + L + c))` bits, which is `O(log (L + c))` when
+`k` is fixed and `n = O(L)`; `n` and `k` count separately because the input length `L` does not
+bound them (a formula without clauses has `L = 3` for every `n`). The trial count, of about
+`0.415 n` bits for `k = 3`, is kept in memory, one binary digit per word. A decrement reads the
+digits up to the lowest nonzero one, which costs a constant amortized number of instructions per
+trial.
 
 ## Main definitions
 
