@@ -35,8 +35,8 @@ The entry procedure of the incidence network of Lemma D.2 of [OpenAI2026ETH] (p.
 row over the `2 ^ |sel|` words on its selected incidences. This file proves the polynomial-time
 steps, with precisions, truncation orders and selected numbers in unary: reading the indices
 (`blockIndices_polyTime`), unranking and selecting (`selected_polyTime`), the validity test
-(`validIndices_polyTime`), the context of a row (`rowContext_polyTime`), one term of the sum of a row
-(`rowBody_polyTime`), and the entries of columns (`colEntry_polyTime`). The source states these
+(`validIndices_polyTime`), the context of a row (`rowContext_polyTime`), one term of the sum of a
+row (`rowBody_polyTime`), and the entries of columns (`colEntry_polyTime`). The source states these
 costs: "Each term costs polynomially many bit operations" and "The variable-side entries and checks
 for invalid wire indices take polynomial time" (p. 56).
 
@@ -394,7 +394,8 @@ theorem colEntry_polyTime :
   have hsel := selected_polyTime.comp (hblocks.prod (blockIndices_polyTime.comp (hblocks.prod hbs)))
   have hsnd := (map (snd encNat encNat)).comp
     (hsel.comp (fst (encPair encColDesc encBits) encNat))
-  have hmem := decide_not (decide_mem (encA := encNat) hsnd (snd (encPair encColDesc encBits) encNat))
+  have hmem := decide_not (decide_mem (encA := encNat) hsnd
+    (snd (encPair encColDesc encBits) encNat))
   have hu := countPWithInput (test := fun (q : ColDesc × List Bool) (v : ℕ) =>
     decide (v ∉ (selected q.1.2.2 (blockIndices q.1.2.2 q.2)).map Prod.snd)) hvars hmem
   have hval := computableInPolyTime_mod_two_pow (binary_two_pow.comp hu) hP
