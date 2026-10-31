@@ -1351,8 +1351,7 @@ theorem evalParityFactorJet_polytime :
   (by fun_prop :
     ComputableInPolyTime
       (fun p : (ℕ × ℕ) × (ℤ × List ℤ) => evalParityFactorJet p.1.1 p.1.2 p.2.1 p.2.2)
-      (encPair (encPair encUnary encUnary) (encPair encIntBin (encList encIntBin)))
-      (encList (encList encIntBin))).of_enc_eq fun ⟨⟨_, _⟩, _, _⟩ => rfl
+      _ _).of_enc_eq fun ⟨⟨_, _⟩, _, _⟩ => rfl
 
 end PolyTime
 

@@ -178,13 +178,14 @@ theorem computableInPolyTime_rowEntry {rows : α → List (List ℤ)} {i j : α 
 index `i`, and column index `j`. -/
 abbrev TableIndex (α : Type) : Type := (α × ℕ) × ℕ
 
+/-- Context-and-row pair `(x, i)` of a `TableIndex`. -/
+abbrev TableIndex.rowCtx (p : TableIndex α) : α × ℕ := p.1
+
 /-- Outer context `x` of a `TableIndex`. -/
-abbrev TableIndex.ctx (p : TableIndex α) : α :=
-  let xi := p.1; xi.1
+abbrev TableIndex.ctx (p : TableIndex α) : α := p.rowCtx.1
 
 /-- Row index `i` of a `TableIndex`. -/
-abbrev TableIndex.row (p : TableIndex α) : ℕ :=
-  let xi := p.1; xi.2
+abbrev TableIndex.row (p : TableIndex α) : ℕ := p.rowCtx.2
 
 /-- Column index `j` of a `TableIndex`. -/
 abbrev TableIndex.col (p : TableIndex α) : ℕ := p.2

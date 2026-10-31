@@ -922,8 +922,7 @@ theorem constJet_polytime :
       (fun (((J, ℓ), c) : (ℕ × ℕ) × ℤ) => constJet J ℓ c)
       (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)) :=
   (by fun_prop :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℤ => constJet p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin))).of_enc_eq
+    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℤ => constJet p.1.1 p.1.2 p.2) _ _).of_enc_eq
     fun ⟨⟨_, _⟩, _⟩ => rfl
 
 /-- Direct polynomial-time certificate for `addJet`. -/
@@ -935,8 +934,7 @@ theorem addJet_polytime :
   (by fun_prop :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => addJet p.1.1.1 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin))).of_enc_eq
+      _ _).of_enc_eq
     fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl
 
 /-- Direct polynomial-time certificate for `negJet`. -/
@@ -947,8 +945,7 @@ theorem negJet_polytime :
       (encList (encList encIntBin)) :=
   (by fun_prop :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => negJet p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin))).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
+      _ _).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
 
 /-- Direct polynomial-time certificate for `subJet`. -/
 theorem subJet_polytime :
@@ -959,8 +956,7 @@ theorem subJet_polytime :
   (by fun_prop :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => subJet p.1.1.1 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin))).of_enc_eq
+      _ _).of_enc_eq
     fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl
 
 /-- Direct polynomial-time certificate for `smulJet`. -/
@@ -972,8 +968,7 @@ theorem smulJet_polytime :
   (by fun_prop :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℤ) × List (List ℤ) => smulJet p.1.1.1 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair encUnary encUnary) encIntBin) (encList (encList encIntBin)))
-      (encList (encList encIntBin))).of_enc_eq fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl
+      _ _).of_enc_eq fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl
 
 /-- Direct polynomial-time certificate for `shiftZJet`. -/
 theorem shiftZJet_polytime :
@@ -983,8 +978,7 @@ theorem shiftZJet_polytime :
       (encList (encList encIntBin)) :=
   (by fun_prop :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftZJet p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin))).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
+      _ _).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
 
 /-- Direct polynomial-time certificate for `shiftVJet`. -/
 theorem shiftVJet_polytime :
@@ -994,8 +988,7 @@ theorem shiftVJet_polytime :
       (encList (encList encIntBin)) :=
   (by fun_prop :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List ℤ) => shiftVJet p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-      (encList (encList encIntBin))).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
+      _ _).of_enc_eq fun ⟨⟨_, _⟩, _⟩ => rfl
 
 /-- Direct polynomial-time certificate for `convJet`. -/
 theorem convJet_polytime :
@@ -1006,8 +999,7 @@ theorem convJet_polytime :
   (by fun_prop :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × List (List ℤ)) × List (List ℤ) => convJet p.1.1.1 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair (encPair encUnary encUnary) (encList (encList encIntBin)))
-        (encList (encList encIntBin))) (encList (encList encIntBin))).of_enc_eq
+      _ _).of_enc_eq
     fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl
 
 end PolyTime

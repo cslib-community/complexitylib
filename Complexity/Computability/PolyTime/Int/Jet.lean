@@ -323,10 +323,7 @@ theorem computableInPolyTime_foldl_mulZJet {γ α : Type} {encIn : γ ↪ List B
     (hJ : ComputableInPolyTime J encIn encUnary) (hδ : ComputableInPolyTime δ encIn encIntBin)
     (hxs : ComputableInPolyTime xs encIn (encList encA))
     (hfac : ComputableInPolyTime
-      (fun q : ((ℕ × ℤ) × List ℤ) × α =>
-        let step := q.1
-        let par := step.1
-        factor par.1 par.2 q.2)
+      (fun (((J, δ), _), a) => factor J δ a)
       (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encJet)
     {K : γ → ℕ} (hK : PolyBounded (fun x => (encIn x).length) K)
     (hsz : ∀ x, ∀ a ∈ xs x,
@@ -340,7 +337,8 @@ theorem computableInPolyTime_foldl_mulZJet {γ α : Type} {encIn : γ ↪ List B
       (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encUnary := by fun_prop
   have hqAcc : ComputableInPolyTime (fun q : ((ℕ × ℤ) × List ℤ) × α => q.1.2)
       (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encJet := by fun_prop
-  have hstep := Cslib.computableInPolyTime_mulZJet hqJ hqAcc hfac
+  have hstep := Cslib.computableInPolyTime_mulZJet hqJ hqAcc
+    (hfac.of_enc_eq (g := fun q => factor q.1.1.1 q.1.1.2 q.2) fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl)
   refine ComputableInPolyTime.foldlWith (encA := encA)
     (par := fun x => (J x, δ x)) (list := xs) (init := fun x => Cslib.truncZJet (J x) [1])
     (step := fun par acc a => Cslib.mulZJet par.1 acc (factor par.1 par.2 a))
