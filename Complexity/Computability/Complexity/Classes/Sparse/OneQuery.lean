@@ -49,9 +49,9 @@ and labels every other node `b` with the signed label of `a ∨ b` (`Cslib.Compl
   satisfiable node is dropped, then at least `t + 1` of the kept nodes have the sign `false`;
   their labels would all lie in `K` if they were all unsatisfiable, so one of them is satisfiable.
 
-Here `t` bounds the members of `K` of the length of the labels. A stage removes a node or leaves
-at most `2 t + 2` of them, so as many stages as there are nodes leave at most `2 t + 2` nodes, the
-source's bound of `2 (t + 1)`, one of them satisfiable if one was before
+Here `t` bounds the number of members of `K` no longer than the labels. A stage removes a node or
+leaves at most `2 t + 2` of them, so as many stages as there are nodes leave at most `2 t + 2`
+nodes, the source's bound of `2 (t + 1)`, one of them satisfiable if one was before
 (`Cslib.Complexity.OneQuery.accepts_iff`). The source stops and accepts in two cases where a
 satisfiable node is certain to exist: more than `t` distinct labels with the sign `false`, or one
 word with both signs. Here a stage keeps the first node and the first `2 t + 1` others instead, so
