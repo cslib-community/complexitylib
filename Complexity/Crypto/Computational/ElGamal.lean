@@ -211,62 +211,80 @@ theorem computableInPolyTime_encodeElGamalPublicKey :
   have hg := F.computableInPolyTime_generator.comp hd
   exact F.computableInPolyTime_smul.comp (hd.prod (ha.prod hg))
 
+/-- Payload `(u, m, b)` of a 4-tuple encryption input `(d, u, m, b)`. -/
+abbrev encPayload {Msg : Type} (input : F.Desc × List Bool × Msg × ℕ) : List Bool × Msg × ℕ :=
+  input.2
+
 /-- Encoded public-key component `u` of a 4-tuple encryption input `(d, u, m, b)`. -/
 abbrev encPk {Msg : Type} (input : F.Desc × List Bool × Msg × ℕ) : List Bool :=
-  input.2.1
+  (F.encPayload input).1
+
+/-- Message and randomness pair `(m, b)` of a 4-tuple encryption input `(d, u, m, b)`. -/
+abbrev encMsgRand {Msg : Type} (input : F.Desc × List Bool × Msg × ℕ) : Msg × ℕ :=
+  (F.encPayload input).2
 
 /-- Message component `m` of a 4-tuple encryption input `(d, u, m, b)`. -/
 abbrev encMsg {Msg : Type} (input : F.Desc × List Bool × Msg × ℕ) : Msg :=
-  let rest := input.2
-  let mb := rest.2
-  mb.1
+  (F.encMsgRand input).1
 
 /-- Randomness component `b` of a 4-tuple encryption input `(d, u, m, b)`. -/
 abbrev encRand {Msg : Type} (input : F.Desc × List Bool × Msg × ℕ) : ℕ :=
-  let rest := input.2
-  let mb := rest.2
-  mb.2
+  (F.encMsgRand input).2
+
+/-- Payload `(a, v, c)` of a 4-tuple decryption input `(d, a, v, c)`. -/
+abbrev decPayload (input : F.Desc × ℕ × List Bool × List Bool) : ℕ × List Bool × List Bool :=
+  input.2
 
 /-- Secret-key exponent `a` of a 4-tuple decryption input `(d, a, v, c)`. -/
 abbrev decSk (input : F.Desc × ℕ × List Bool × List Bool) : ℕ :=
-  input.2.1
+  (F.decPayload input).1
+
+/-- Ciphertext components `(v, c)` of a 4-tuple decryption input `(d, a, v, c)`. -/
+abbrev decCt (input : F.Desc × ℕ × List Bool × List Bool) : List Bool × List Bool :=
+  (F.decPayload input).2
 
 /-- Encoded ephemeral element `v` of a 4-tuple decryption input `(d, a, v, c)`. -/
 abbrev decEph (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
-  let rest := input.2
-  let vc := rest.2
-  vc.1
+  (F.decCt input).1
 
 /-- Encoded body `c` of a 4-tuple decryption input `(d, a, v, c)`. -/
 abbrev decBody (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
-  let rest := input.2
-  let vc := rest.2
-  vc.2
+  (F.decCt input).2
+
+/-- Group-element payload `(u, v, w)` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
+abbrev ddhPayload (input : F.Desc × List Bool × List Bool × List Bool) :
+    List Bool × List Bool × List Bool :=
+  input.2
 
 /-- Public-key component `u` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
 abbrev ddhPk (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  input.2.1
+  (F.ddhPayload input).1
+
+/-- Challenge pair `(v, w)` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
+abbrev ddhChallenge (input : F.Desc × List Bool × List Bool × List Bool) :
+    List Bool × List Bool :=
+  (F.ddhPayload input).2
 
 /-- Ephemeral component `v` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
 abbrev ddhEph (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  let rest := input.2
-  let vw := rest.2
-  vw.1
+  (F.ddhChallenge input).1
 
 /-- Challenge shared component `w` (or `pad`/`k`) of a 4-tuple DDH/KDF distinguisher input
 `(d, u, v, w)`. -/
 abbrev ddhShared (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  let rest := input.2
-  let vw := rest.2
-  vw.2
+  (F.ddhChallenge input).2
+
+/-- Challenge message pair `(m₀, m₁)` of an adversary's `choose` output `((m₀, m₁), state)`. -/
+abbrev choiceMsgs {Msg : Type} (choice : (Msg × Msg) × List Bool) : Msg × Msg :=
+  choice.1
 
 /-- First challenge message `m₀` of an adversary's `choose` output `((m₀, m₁), state)`. -/
 abbrev choiceMsg₀ {Msg : Type} (choice : (Msg × Msg) × List Bool) : Msg :=
-  choice.1.1
+  (choiceMsgs choice).1
 
 /-- Second challenge message `m₁` of an adversary's `choose` output `((m₀, m₁), state)`. -/
 abbrev choiceMsg₁ {Msg : Type} (choice : (Msg × Msg) × List Bool) : Msg :=
-  choice.1.2
+  (choiceMsgs choice).2
 
 @[simp] theorem choiceMsg₀_mk {Msg : Type} (m₀ m₁ : Msg) (st : List Bool) :
     choiceMsg₀ ((m₀, m₁), st) = m₀ := rfl
@@ -452,7 +470,8 @@ theorem ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
     F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n =
       F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n := by
   simp only [ddhIdealGame, elGamalMsgToDDHDistinguisher,
-    ddhPk, ddhEph, ddhShared, choiceMsg₀, choiceMsg₁, ProbComp.eval_bind,
+    ddhPk, ddhEph, ddhShared, choiceMsg₀, choiceMsg₁, choiceMsgs,
+    ProbComp.eval_bind,
     PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte, apply_ite ProbComp.eval,
     ProbComp.eval_pure]
   congr 1; funext d
