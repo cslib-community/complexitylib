@@ -25,8 +25,17 @@ finite-control machines with strict polynomial bounds and independent fair coins
 conventions, `Randomized.StrictPPT`, `Randomized.Negligible` and `Randomized.Indistinguishable`,
 are the shared foundations displayed in the appendix.
 The definitions and theorem statements below specify the claim; Lean checks their proofs through
-`CryptographyBridge`. The audit allows only the listed foundational program, interpretation and
-machine modules across the implementation boundary, without importing a security definition.
+`CryptographyBridge`. Besides the shared foundations, the audit allows only the following eight
+foundational program, interpretation and machine modules across the implementation boundary,
+without importing a security definition:
+* under `Computability.Machines.Turing.MultiTape`: `Machine` (machines whose oracle channels
+  have a write-only query buffer and a read-only reply tape), `Machine.Program` (a clocked run as
+  a typed program), `Probabilistic` (one fresh fair coin per live instruction) and
+  `Probabilistic.Oracle` (fair-coin runs with external oracle calls);
+* under `Languages.Probabilistic`: `Basic` (terminating programs with typed calls, whose only
+  randomness is uniform choice from a finite range), `Oracle` (private coins beside external
+  calls), `Sum` (sums of oracle interfaces) and `Oracle.Interaction` (runs against a stateful
+  randomized oracle).
 
 ## References
 

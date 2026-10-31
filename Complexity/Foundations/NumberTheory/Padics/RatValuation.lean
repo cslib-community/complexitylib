@@ -40,6 +40,7 @@ second reduces its `ℤ_(2)` coefficients modulo the working precision `2 ^ p`.
 * `Rat.padicValuation_pow_le_of_abs_lt`: a nonzero integer below `p ^ (a + 1)` in absolute value
   has valuation at least `v (p ^ a)`.
 * `Rat.padicValuation_add_pow_of_abs_lt`: adding `p ^ (a + 1)` to it keeps its valuation.
+* `Rat.castHom_comp_padicIntegerToZModPow`: the reductions are compatible.
 * `Rat.padicIntegerToZModPow_mul_den`: the reduction of `x` times the denominator of `x` is the
   numerator of `x`.
 
@@ -110,6 +111,14 @@ theorem coe_padicIntegerToPadicInt (x : (Rat.padicValuation p).integer) :
 /-- Reduction of the `p`-integral rationals modulo `p ^ n`. -/
 noncomputable def padicIntegerToZModPow (n : ℕ) : (Rat.padicValuation p).integer →+* ZMod (p ^ n) :=
   (PadicInt.toZModPow n).comp (padicIntegerToPadicInt p)
+
+/-- **The reductions are compatible**: reducing modulo `p ^ n` and then modulo `p ^ m`, `m ≤ n`,
+is reducing modulo `p ^ m`. -/
+theorem castHom_comp_padicIntegerToZModPow {m n : ℕ} (h : m ≤ n) :
+    (ZMod.castHom (pow_dvd_pow p h) (ZMod (p ^ m))).comp (padicIntegerToZModPow p n) =
+      padicIntegerToZModPow p m := by
+  rw [padicIntegerToZModPow, padicIntegerToZModPow, ← RingHom.comp_assoc,
+    PadicInt.zmod_cast_comp_toZModPow m n h]
 
 /-- **The reduction of `a / b` is `a * b⁻¹`**: multiplied by the denominator it gives the
 numerator. -/
