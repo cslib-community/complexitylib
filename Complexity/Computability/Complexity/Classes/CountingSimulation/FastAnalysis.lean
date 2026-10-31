@@ -195,10 +195,10 @@ summation at every reached call that the machine treats as a leaf takes time at 
   ∀ C D : ℕ, ∃ K : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P →
     P ≤ D * s → ExplicitAdmissible C s G → fastGuard G = true →
     ∀ x, Reach nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G))) x → active x = false →
-      (leafCertificate nativeMk).time x ≤
+      (leafCertificate tableEntryCertificate nativeMk).time x ≤
           K * ((FastContraction.encInput (P, G)).length + 1) ^ K *
             2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
-        (leafCertificate nativeMk).space x ≤
+        (leafCertificate tableEntryCertificate nativeMk).space x ≤
           K * ((FastContraction.encInput (P, G)).length + 1) ^ K
 
 /-- `a B ^ a ≤ a B ^ K` for `1 ≤ B` and `a ≤ K`. -/

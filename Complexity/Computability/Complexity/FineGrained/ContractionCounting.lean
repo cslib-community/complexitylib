@@ -28,7 +28,11 @@ time `2 ^ (A (m + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encod
 polynomial space, where `m` is the number of clauses and `n` the number of variables
 (`ContractionCounting.exists_modelCounter`). For formulas with at most `D n` clauses this is
 time `2 ^ O_{k,D}(n / √log n)` times a polynomial, the fixed-density bound of Theorem 1.1 of
-[OpenAI2026ETH] (`ContractionCounting.exists_modelCounter_fixedDensity`).
+[OpenAI2026ETH] (`ContractionCounting.exists_modelCounter_fixedDensity`). Measured by the number
+`N` of literal occurrences instead, the time is `2 ^ (A (N + 1) / √⌊log₂ (N + 2)⌋)` times a
+polynomial (`ContractionCounting.exists_modelCounter_occurrences`), with no logarithm of the number
+of variables in the exponent; this form extends to formulas of unbounded clause width
+(`Cslib.Complexity.ContractionCounting.exists_modelCounter_unboundedWidth`).
 
 The machine is the proof of Appendix D.2: it writes out the clause network of the formula
 (`Cslib.Circuits.Frontier.ClauseNetwork.clauseNetwork`), whose contraction is the model count,
@@ -49,6 +53,8 @@ them.
 
 * `Cslib.Complexity.ContractionCounting.exists_modelCounter`: the counter, with exponent
   `A (m + 1) / √⌊log₂ (n + 2)⌋`.
+* `Cslib.Complexity.ContractionCounting.exists_modelCounter_occurrences`: the counter, with exponent
+  `A (N + 1) / √⌊log₂ (N + 2)⌋` for `N` literal occurrences.
 * `Cslib.Complexity.ContractionCounting.exists_modelCounter_fixedDensity`: for each density
   bound `D`, exponent `A (n + 1) / √⌊log₂ (n + 2)⌋` on formulas with at most `D n` clauses.
 
@@ -199,16 +205,24 @@ theorem exponent_le {k K N m n : ℕ} (hN : 1 ≤ N) (hNm : N ≤ k * m) (hnN : 
     nlinarith
   · exact Nat.sqrt_eq_zero.not.mpr (Nat.log_pos (by norm_num) (by omega)).ne'
 
-/-- **Model counting by tensor contraction.** For each clause width `k`, one machine computes
-`φ.modelCount` on every formula `φ` whose clauses have at most `k` literals, in time
-`2 ^ (A (m + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding length and in polynomial
-space, where `m` is the number of clauses and `n` the number of variables. -/
-theorem exists_modelCounter (k : ℕ) :
-    ∃ (count : CNF ℕ → ℕ) (A e b : ℕ),
-      (∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ k) → count φ = φ.modelCount) ∧
-      ComputableInO count encCNF encNat
-        (fun φ => 2 ^ (A * (φ.length + 1) / Nat.sqrt (Nat.log 2 (φ.numVars + 2))) *
-          ((encCNF φ).length + 1) ^ e)
+/-- The exponent of the contraction is at most `3 K (N + 1) / √⌊log₂ (N + 2)⌋` for `N ≥ 1` literal
+occurrences. -/
+theorem exponent_le_occurrences {K N : ℕ} (hN : 1 ≤ N) :
+    K * (3 * N) / Nat.sqrt (Nat.log 2 (3 * N)) ≤
+      3 * K * (N + 1) / Nat.sqrt (Nat.log 2 (N + 2)) := by
+  refine Nat.div_le_div ?_ (Nat.sqrt_le_sqrt (Nat.log_mono_right (by omega))) ?_
+  · nlinarith
+  · exact Nat.sqrt_eq_zero.not.mpr (Nat.log_pos (by norm_num) (by omega)).ne'
+
+/-- The machine runs in polynomial space, and in time `2 ^ F φ` times a polynomial for every
+exponent `F` that bounds the contraction's exponent `K s / √⌊log₂ s⌋` at the network size
+`s = 3 N` on the formulas handed to the contraction algorithm. -/
+private theorem computableInO_count (k : ℕ) :
+    ∃ K e b : ℕ, ∀ F : CNF ℕ → ℕ,
+      (∀ φ, guard k φ = true →
+        K * (3 * φ.vars.length) / Nat.sqrt (Nat.log 2 (3 * φ.vars.length)) ≤ F φ) →
+      ComputableInO (count k) encCNF encNat
+        (fun φ => 2 ^ F φ * ((encCNF φ).length + 1) ^ e)
         (fun φ => ((encCNF φ).length + 1) ^ b) := by
   obtain ⟨K, hK⟩ := fastContractionAlgorithm.bound (k + 4) 1
   have hg := NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_guard k)
@@ -223,7 +237,7 @@ theorem exists_modelCounter (k : ℕ) :
   obtain ⟨p, q, hlen⟩ := (computableInPolyTime_contractionInput k).polyBounded_length.exists_le
   set e := dg + dp + df + q * K
   set b := dg' + dp' + df' + q * K
-  refine ⟨count k, 3 * k * K, e, b, fun φ hk => count_eq hk,
+  refine ⟨K, e, b, fun F hF =>
     (certificate k).computes.mono (cg + cp + cf + K * (p + 1) ^ K + cg' + cp' + cf' + 1)
       (fun φ => ?_) (fun φ => ?_)⟩
   all_goals
@@ -241,7 +255,7 @@ theorem exists_modelCounter (k : ℕ) :
       calc _ ≤ ((p + 1) * Y ^ q) ^ K := Nat.pow_le_pow_left hn' K
         _ = _ := by rw [mul_pow, pow_mul]
   · -- time
-    set E := 3 * k * K * (φ.length + 1) / Nat.sqrt (Nat.log 2 (φ.numVars + 2))
+    set E := F φ
     have h2E : 1 ≤ 2 ^ E := Nat.one_le_two_pow
     set Z := 2 ^ E * Y ^ e
     have hZ {d : ℕ} (h : d ≤ e) : Y ^ d ≤ Z :=
@@ -256,14 +270,11 @@ theorem exists_modelCounter (k : ℕ) :
         ≤ K * (p + 1) ^ K * Z := by
       intro hgφ
       obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hgφ
-      have hk : ∀ c ∈ φ, c.length ≤ k := fun c hc => (hcl c hc).2
       have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
       have hm := length_le_length_vars fun c hc => (hcl c hc).1
-      have hNm := CNF.length_vars_le_mul_length hk
-      have hnN := CNF.numVars_le_length_vars φ
       have hb := (hK (3 * φ.vars.length) (3 * φ.vars.length) (clauseNetwork k φ) (by omega)
         (by omega) (by omega) (explicitAdmissible_clauseNetwork hgφ)).1
-      have hexp := exponent_le (K := K) (by omega) hNm hnN
+      have hexp := hF φ hgφ
       calc fastContractionAlgorithm.certificate.time (contractionInput k φ)
           ≤ K * ((p + 1) ^ K * Y ^ (q * K)) * 2 ^ E := by
             refine hb.trans ?_
@@ -322,6 +333,45 @@ theorem exists_modelCounter (k : ℕ) :
     · calc _ ≤ cg' * Y ^ b + cf' * Y ^ b := Nat.add_le_add hsg' hsf'
         _ = (cg' + cf') * Y ^ b := by ring
         _ ≤ _ := hC _ (by omega)
+
+/-- **Model counting by tensor contraction.** For each clause width `k`, one machine computes
+`φ.modelCount` on every formula `φ` whose clauses have at most `k` literals, in time
+`2 ^ (A (m + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding length and in polynomial
+space, where `m` is the number of clauses and `n` the number of variables. -/
+theorem exists_modelCounter (k : ℕ) :
+    ∃ (count : CNF ℕ → ℕ) (A e b : ℕ),
+      (∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ k) → count φ = φ.modelCount) ∧
+      ComputableInO count encCNF encNat
+        (fun φ => 2 ^ (A * (φ.length + 1) / Nat.sqrt (Nat.log 2 (φ.numVars + 2))) *
+          ((encCNF φ).length + 1) ^ e)
+        (fun φ => ((encCNF φ).length + 1) ^ b) := by
+  obtain ⟨K, e, b, h⟩ := computableInO_count k
+  refine ⟨count k, 3 * k * K, e, b, fun φ hk => count_eq hk, h _ fun φ hg => ?_⟩
+  obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
+  have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
+  have hm := length_le_length_vars fun c hc => (hcl c hc).1
+  exact exponent_le (by omega) (CNF.length_vars_le_mul_length fun c hc => (hcl c hc).2)
+    (CNF.numVars_le_length_vars φ)
+
+/-- **Model counting by tensor contraction, measured by literal occurrences.** For each clause
+width `k`, one machine computes `φ.modelCount` on every formula `φ` whose clauses have at most `k`
+literals, in time `2 ^ (A (N + 1) / √⌊log₂ (N + 2)⌋)` times a polynomial in the encoding length
+and in polynomial space, where `N` is the number of literal occurrences. Unlike
+`exists_modelCounter`, the exponent does not divide by the logarithm of the number of variables,
+so it stays `O(N / √log N)` for formulas with many clauses on few variables. -/
+theorem exists_modelCounter_occurrences (k : ℕ) :
+    ∃ (count : CNF ℕ → ℕ) (A e b : ℕ),
+      (∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ k) → count φ = φ.modelCount) ∧
+      ComputableInO count encCNF encNat
+        (fun φ => 2 ^ (A * (φ.vars.length + 1) / Nat.sqrt (Nat.log 2 (φ.vars.length + 2))) *
+          ((encCNF φ).length + 1) ^ e)
+        (fun φ => ((encCNF φ).length + 1) ^ b) := by
+  obtain ⟨K, e, b, h⟩ := computableInO_count k
+  refine ⟨count k, 3 * K, e, b, fun φ hk => count_eq hk, h _ fun φ hg => ?_⟩
+  obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
+  have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
+  have hm := length_le_length_vars fun c hc => (hcl c hc).1
+  exact exponent_le_occurrences (by omega)
 
 /-- **The fixed-density bound of Theorem 1.1.** For each clause width `k`, one machine computes
 `φ.modelCount` on every formula `φ` whose clauses have at most `k` literals, in polynomial space,
