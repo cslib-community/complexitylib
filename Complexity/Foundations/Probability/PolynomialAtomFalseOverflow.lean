@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Probability.PolynomialAtomRows
+public import Complexity.Foundations.Probability.PolynomialAtomRows.RootError
 public import Complexity.Foundations.Probability.HeavyCount
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Analysis.RowCompression.FalseOverflow
@@ -33,14 +33,8 @@ This is the bounded-output integration of `buf-false-charge` in the proof of
 It does not supply prefix mean/noise budgets, sum their geometric costs, prove post-overflow
 relative stability, or assert the complete integrated compression estimate.
 
-## Main definitions
-
-* `Cslib.PolynomialAtomRow.stateRootError`: the actual fourth-root output discrepancy, using
-  both states' padded ranks and defaults.
-
 ## Main results
 
-* `Cslib.PolynomialAtomRow.sum_stateRootError_pow_four_le`: a width-independent support bound.
 * `Cslib.PolynomialAtomRow.rowNormPow_falseFirstOverflow_le`: the normalized false-overflow
   output charge at a specified group.
 * `Cslib.PolynomialAtomRow.rowNormPow_falseFirstOverflowBefore_le`: the finite union over
@@ -61,61 +55,6 @@ open Finset RowCompression Probability
 open scoped BigOperators
 
 variable {ι : Type*} (kind : PolynomialAtomRow)
-
-/-- The actual fourth-root discrepancy of two row states, with their own padded ranks. -/
-@[expose] noncomputable def stateRootError (θ : ℝ) (S : Finset ι) (K : ℕ)
-    (a b : State ι) (y : ι) : ℝ :=
-  kind.eval θ (a.row y 0) (firstRank S K a.defaultValue a.row) ^ (4⁻¹ : ℝ) -
-    kind.eval θ (b.row y 0) (firstRank S K b.defaultValue b.row) ^ (4⁻¹ : ℝ)
-
-/-- Both actual output roots lie in `[0,1]`, for every input row and default. -/
-theorem abs_stateRootError_le_one (θ : ℝ) (S : Finset ι) (K : ℕ)
-    (a b : State ι) (y : ι) : |kind.stateRootError θ S K a b y| ≤ 1 := by
-  have ha0 := Real.rpow_nonneg (kind.eval_nonneg θ (a.row y 0)
-    (firstRank S K a.defaultValue a.row)) (4⁻¹ : ℝ)
-  have hb0 := Real.rpow_nonneg (kind.eval_nonneg θ (b.row y 0)
-    (firstRank S K b.defaultValue b.row)) (4⁻¹ : ℝ)
-  have ha1 := Real.rpow_le_one (kind.eval_nonneg θ (a.row y 0) _)
-    (kind.eval_le_one θ (a.row y 0) (firstRank S K a.defaultValue a.row))
-    (by norm_num : (0 : ℝ) ≤ 4⁻¹)
-  have hb1 := Real.rpow_le_one (kind.eval_nonneg θ (b.row y 0) _)
-    (kind.eval_le_one θ (b.row y 0) (firstRank S K b.defaultValue b.row))
-    (by norm_num : (0 : ℝ) ≤ 4⁻¹)
-  unfold stateRootError
-  apply abs_sub_le_iff.mpr
-  constructor <;> linarith
-
-/-- The discrepancy is supported on the union of the two actual supports. Neither the
-ambient cardinality nor a bound on the row entries occurs in its fourth-power sum. -/
-theorem sum_stateRootError_pow_four_le {θ : ℝ} (hθ : 0 < θ) (S : Finset ι) {K : ℕ}
-    (hK : 0 < K) (a b : State ι) :
-    ∑ y ∈ S, |kind.stateRootError θ S K a b y| ^ 4 ≤ 2 * (K : ℝ) := by
-  classical
-  let A := {y ∈ S | kind.eval θ (a.row y 0) (firstRank S K a.defaultValue a.row) ≠ 0}
-  let B := {y ∈ S | kind.eval θ (b.row y 0) (firstRank S K b.defaultValue b.row) ≠ 0}
-  let D := {y ∈ S | kind.stateRootError θ S K a b y ≠ 0}
-  have hsub : D ⊆ A ∪ B := by
-    intro y hy
-    obtain ⟨hyS, hy⟩ := mem_filter.mp hy
-    by_cases ha : kind.eval θ (a.row y 0) (firstRank S K a.defaultValue a.row) = 0
-    · apply mem_union_right
-      refine mem_filter.mpr ⟨hyS, fun hb => hy ?_⟩
-      simp [stateRootError, ha, hb]
-    · exact mem_union_left _ (mem_filter.mpr ⟨hyS, ha⟩)
-  have hcard : #D ≤ 2 * K := by
-    have hA : #A < K := kind.card_filter_eval_ne_zero_lt hθ hK
-    have hB : #B < K := kind.card_filter_eval_ne_zero_lt hθ hK
-    have h := (card_le_card hsub).trans (card_union_le A B)
-    omega
-  rw [← sum_filter_of_ne (p := fun y => kind.stateRootError θ S K a b y ≠ 0)
-    fun y _ h hy => h (by rw [hy, abs_zero, zero_pow (by decide)])]
-  calc
-    _ ≤ ∑ _y ∈ D, (1 : ℝ) := by
-      refine sum_le_sum fun y _ => ?_
-      simpa using pow_le_pow_left₀ (abs_nonneg (kind.stateRootError θ S K a b y))
-        (kind.abs_stateRootError_le_one θ S K a b y) 4
-    _ = (#D : ℝ) := by simp
-    _ ≤ 2 * (K : ℝ) := by exact_mod_cast hcard
 
 private theorem sum_stateRootError_pow_four_le_of_false {θ η : ℝ} (hθ : 0 < θ)
     {S : Finset ι} {n : ℕ → ℕ} {K : ℕ} (hK : 0 < K)
