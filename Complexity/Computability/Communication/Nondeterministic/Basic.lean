@@ -38,10 +38,18 @@ The domain sets `A` and `B` and the relations go beyond their Definition 2.1, in
 partial functions (promise problems). A partial function is a function together with the sets `A`
 and `B`: its value outside `A × B` does not matter, and rectangles are not required to lie inside
 `A × B`. A relation with Boolean answers is a partial function with an arbitrary domain, accepting
-both answers outside it, except that it may accept no answer on some pairs, which makes the
-complexity `⊤`. Relations with arbitrary answers are the subject of
+both answers outside it, except that it may accept no answer on some pairs.
+
+Relations with arbitrary answers are the subject of
 [Kushilevitz and Nisan, Chapter 5][KushilevitzNisan1997], and `Protocol.ecomplexity` is stated for
-them.
+them. Kushilevitz and Nisan require a protocol to be correct only on legal inputs, those with some
+acceptable answer, and define the other measures for relations "in a similar manner"
+[Kushilevitz and Nisan, Definition 5.2, p. 71][KushilevitzNisan1997]. Here, as for
+`Protocol.ecomplexity`, every pair of `A × B` must get an acceptable answer, so a pair of `A × B`
+with no acceptable answer makes the complexity `⊤`. Just before Definition 5.2 they note the
+alternative of extending a relation to allow every answer on its illegal pairs; their convention
+for `R` is this one for that extension, which is no harder than `R`
+(`Nondeterministic.ecomplexity_le_of_imp`).
 
 ## Covers and protocols
 
