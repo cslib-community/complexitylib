@@ -8,11 +8,12 @@ import Complexity.Crypto.Protocols.SigmaProtocol.Basic
 import Complexity.Crypto.Computational.LWE.Basic
 import Complexity.Crypto.Computational.Encryption.Authenticated
 import Complexity.Crypto.Computational.OneWay
+import Complexity.Crypto.Primitives.PRG.NextBit
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Tactic.PPT
 
 /-!
-# Σ-protocol, decision-LWE, symmetric IND-CCA and one-way-permutation definitions are not vacuous
+# Σ-protocol, LWE, IND-CCA, one-way-permutation and next-bit definitions are not vacuous
 
 Each definition below fails for an obviously insecure instance, so none of them holds for every
 candidate.
@@ -33,6 +34,9 @@ candidate.
   `SymmetricCipher.not_indcpa_of_ciphertext_length_eq`.
 * **One-way permutations.** Flipping every bit preserves lengths and is a bijection, but flipping
   again inverts it, so it is not a `OneWayPermutation`.
+* **Next-bit unpredictability.** The one-bit generator that always outputs `false` is predicted
+  with probability `1` by guessing `false`, so it is not `Generator.Unpredictable` at any error
+  below `1 / 2`.
 -/
 
 namespace ComplexityTests.Crypto.SigmaLWECCANonvacuity
@@ -348,5 +352,27 @@ theorem flip_bijective : Function.Bijective (List.map not) :=
 and flipping again inverts it. -/
 theorem not_oneWayPermutation_flip : ¬ OneWayPermutation (List.map not) := fun h =>
   not_oneWay_of_inverse _ (fun _ y => y.map not) (by ppt) (fun x => by simp) h.oneWay
+
+/-! ### Next-bit unpredictability -/
+
+/-- The one-bit generator that always outputs `false`. -/
+def constFalse : PRG.Generator Unit (Fin 1 → Bool) := ⟨fun _ _ => false⟩
+
+/-- Guessing `false` predicts the bit of `constFalse` with probability `1`. -/
+theorem predictionExperiment_constFalse :
+    constFalse.predictionExperiment 0 (fun _ => PMF.pure false) = PMF.pure true := by
+  simp [PRG.Generator.predictionExperiment, PRG.Generator.outputDist, constFalse,
+    PMF.monad_bind_eq_bind, PMF.pure_map, Function.comp_def, PMF.bind_const]
+
+/-- **A constant generator is not next-bit unpredictable** at any error below `1 / 2`. -/
+theorem not_unpredictable_constFalse {δ : ℝ≥0} (hδ : δ < 1 / 2) :
+    ¬ constFalse.Unpredictable (fun _ _ => True) δ := by
+  intro h
+  have hle := h 0 (fun _ => PMF.pure false) trivial
+  rw [PRG.Generator.predictionAdvantage, predictionExperiment_constFalse, PMF.pure_apply_self,
+    ENNReal.toReal_one] at hle
+  have : (1 / 2 : ℝ) ≤ δ := by norm_num at hle ⊢; linarith [hle]
+  have hδ' : (δ : ℝ) < 1 / 2 := by exact_mod_cast hδ
+  linarith
 
 end ComplexityTests.Crypto.SigmaLWECCANonvacuity
