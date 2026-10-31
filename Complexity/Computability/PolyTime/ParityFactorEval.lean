@@ -1345,12 +1345,14 @@ private theorem parityFactorCols_polytime {J ℓ : α → ℕ} {Δ : α → ℤ}
 and binary $(\Delta, \text{yJet})$. -/
 theorem evalParityFactorJet_polytime :
     ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × (ℤ × List ℤ) =>
-        let dims := p.1; let dy := p.2
-        evalParityFactorJet dims.1 dims.2 dy.1 dy.2)
+      (fun (((J, ℓ), (Δ, yJet)) : (ℕ × ℕ) × (ℤ × List ℤ)) => evalParityFactorJet J ℓ Δ yJet)
       (encPair (encPair encUnary encUnary) (encPair encIntBin (encList encIntBin)))
-      (encList (encList encIntBin)) := by
-  dsimp only; fun_prop
+      (encList (encList encIntBin)) :=
+  (by fun_prop :
+    ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × (ℤ × List ℤ) => evalParityFactorJet p.1.1 p.1.2 p.2.1 p.2.2)
+      (encPair (encPair encUnary encUnary) (encPair encIntBin (encList encIntBin)))
+      (encList (encList encIntBin))).of_enc_eq fun ⟨⟨_, _⟩, _, _⟩ => rfl
 
 end PolyTime
 

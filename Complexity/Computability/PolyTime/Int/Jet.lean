@@ -275,10 +275,11 @@ local notation "encJet" => encList encIntBin
 
 theorem computableInPolyTime_add :
     ComputableInPolyTime
-      (fun p : (ℕ × List ℤ) × List ℤ =>
-        let ja := p.1
-        add ja.1 ja.2 p.2)
-      (encPair (encPair encUnary encJet) encJet) encJet := by dsimp only; fun_prop
+      (fun (((J, a), b) : (ℕ × List ℤ) × List ℤ) => add J a b)
+      (encPair (encPair encUnary encJet) encJet) encJet :=
+  (by fun_prop :
+    ComputableInPolyTime (fun p : (ℕ × List ℤ) × List ℤ => add p.1.1 p.1.2 p.2) _ _).of_enc_eq
+    fun ⟨⟨_, _⟩, _⟩ => rfl
 
 @[fun_prop] theorem computableInPolyTime_sub' {γ : Type} {encIn : γ ↪ List Bool}
     {J : γ → ℕ} {a b : γ → List ℤ} (hJ : ComputableInPolyTime J encIn encUnary)
@@ -292,10 +293,11 @@ theorem computableInPolyTime_add :
 
 theorem computableInPolyTime_sub :
     ComputableInPolyTime
-      (fun p : (ℕ × List ℤ) × List ℤ =>
-        let ja := p.1
-        sub ja.1 ja.2 p.2)
-      (encPair (encPair encUnary encJet) encJet) encJet := by dsimp only; fun_prop
+      (fun (((J, a), b) : (ℕ × List ℤ) × List ℤ) => sub J a b)
+      (encPair (encPair encUnary encJet) encJet) encJet :=
+  (by fun_prop :
+    ComputableInPolyTime (fun p : (ℕ × List ℤ) × List ℤ => sub p.1.1 p.1.2 p.2) _ _).of_enc_eq
+    fun ⟨⟨_, _⟩, _⟩ => rfl
 
 @[fun_prop] theorem computableInPolyTime_subConst' {γ : Type} {encIn : γ ↪ List Bool}
     {J : γ → ℕ} {c : γ → ℤ} {a : γ → List ℤ} (hJ : ComputableInPolyTime J encIn encUnary)
@@ -306,10 +308,11 @@ theorem computableInPolyTime_sub :
 
 theorem computableInPolyTime_subConst :
     ComputableInPolyTime
-      (fun p : (ℕ × ℤ) × List ℤ =>
-        let jc := p.1
-        subConst jc.1 jc.2 p.2)
-      (encPair (encPair encUnary encIntBin) encJet) encJet := by dsimp only; fun_prop
+      (fun (((J, c), a) : (ℕ × ℤ) × List ℤ) => subConst J c a)
+      (encPair (encPair encUnary encIntBin) encJet) encJet :=
+  (by fun_prop :
+    ComputableInPolyTime (fun p : (ℕ × ℤ) × List ℤ => subConst p.1.1 p.1.2 p.2) _ _).of_enc_eq
+    fun ⟨⟨_, _⟩, _⟩ => rfl
 
 /-- Plain polynomial-time combinator for folding `Cslib.mulZJet` over `xs` from
 `Cslib.truncZJet J [1]`, given a polynomial bound `K` on the bit-sizes of the step factors' `ℓ₁`
@@ -321,7 +324,8 @@ theorem computableInPolyTime_foldl_mulZJet {γ α : Type} {encIn : γ ↪ List B
     (hxs : ComputableInPolyTime xs encIn (encList encA))
     (hfac : ComputableInPolyTime
       (fun q : ((ℕ × ℤ) × List ℤ) × α =>
-        let pacc := q.1; let par := pacc.1
+        let step := q.1
+        let par := step.1
         factor par.1 par.2 q.2)
       (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encJet)
     {K : γ → ℕ} (hK : PolyBounded (fun x => (encIn x).length) K)

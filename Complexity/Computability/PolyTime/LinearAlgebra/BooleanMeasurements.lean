@@ -284,10 +284,9 @@ noncomputable def searchCertificate {encC : C ↪ List Bool}
     (ht : ComputableInPolyTime targetOf encC (encList encIntBin)) :
     NativeCertificate (search matOf targetOf) (encPair encC encUnary) (encOption encBits) :=
   let h := exists_computableInO_search hM ht
-  let hspec := h.choose_spec.choose_spec.2
   { time := fun p => (2 ^ p.2 + 1) * h.choose p
     space := h.choose_spec.choose
-    computes := hspec.2 }
+    computes := h.choose_spec.choose_spec.2.2 }
 
 /-- The exported certificate's actual charged workspace is polynomial in the full input. -/
 theorem polyBounded_searchCertificate_space {encC : C ↪ List Bool}

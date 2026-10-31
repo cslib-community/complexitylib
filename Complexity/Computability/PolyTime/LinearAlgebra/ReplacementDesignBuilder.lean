@@ -220,11 +220,10 @@ def finToScopeIncidence (n_free : ℕ) (scopes : List (List ℕ))
     (i : Fin (scopeIncidencesList n_free scopes).length) :
     ScopeIncidence (listScopeFamily n_free scopes) :=
   have hm := mem_scopeIncidencesList.mp (List.getElem_mem i.2)
-  have hmv := hm.2
   ⟨⟨(scopeIncidencesList n_free scopes)[i.1].1, hm.1⟩,
-   ⟨⟨(scopeIncidencesList n_free scopes)[i.1].2, hmv.1⟩, by
+   ⟨⟨(scopeIncidencesList n_free scopes)[i.1].2, hm.2.1⟩, by
     rw [mem_listScopeFamily]
-    simpa only [Fin.getElem_fin, List.getD_eq_getElem _ _ hm.1] using hmv.2⟩⟩
+    simpa only [Fin.getElem_fin, List.getD_eq_getElem _ _ hm.1] using hm.2.2⟩⟩
 
 theorem bijective_finToScopeIncidence (n_free : ℕ) (scopes : List (List ℕ)) :
     Function.Bijective (finToScopeIncidence n_free scopes) := by
@@ -524,13 +523,12 @@ def ReplacementDesignData.equivTuple : ReplacementDesignData ≃ ReplacementDesi
   toFun d := ((d.varGroups, d.factorGroups, d.incidences),
     (d.copyCount, d.placements, d.measurementMatrix),
     (d.groupMeasurementMatrices, d.denom, d.replacementRows))
-  invFun t :=
-    let g1 := t.1; let g12 := g1.2
-    let g2 := t.2; let g21 := g2.1; let g212 := g21.2
-    let g22 := g2.2; let g222 := g22.2
-    { varGroups := g1.1, factorGroups := g12.1, incidences := g12.2,
-      copyCount := g21.1, placements := g212.1, measurementMatrix := g212.2,
-      groupMeasurementMatrices := g22.1, denom := g222.1, replacementRows := g222.2 }
+  invFun := fun ((varGroups, factorGroups, incidences),
+      (copyCount, placements, measurementMatrix),
+      (groupMeasurementMatrices, denom, replacementRows)) =>
+    { varGroups, factorGroups, incidences,
+      copyCount, placements, measurementMatrix,
+      groupMeasurementMatrices, denom, replacementRows }
   left_inv d := by cases d; rfl
   right_inv _ := rfl
 
