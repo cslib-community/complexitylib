@@ -28,8 +28,11 @@ decides it at depth `1` (`Cslib.Reachability.computableInO_savitch`). Every poly
 cost is absorbed by the exponential, so the exponent is linear in `|x| + ℓ x`, with a constant
 that depends on the test.
 
-This brute force is the last step of lazy diagonalization for nondeterministic time, which
-must decide deterministically whether some certificate is accepted.
+The same edges give the closure of `PSPACE` under bounded existential quantification
+(`Cslib.Complexity.setOf_exists_mem_PSPACE`), where the point is the space of the run. Here the
+time is the point: this brute force is the last step of lazy diagonalization for
+nondeterministic time, which must decide deterministically whether some certificate is
+accepted.
 
 ## Main definitions
 
@@ -52,7 +55,8 @@ open _root_.Turing _root_.Turing.MultiTapeTM
 /-- The edges of the graph on words of width `n + 1` whose reachability within two steps from the
 all-zero word to the all-one word is a bounded existential over `f`: an edge from the all-zero word
 to `true :: w` when `f (x, w)`, and from every word starting with `true` to the all-one word. -/
-def boundedExistsEdge {β : Type} (f : β × List Bool → Bool) (x : β) (u v : List Bool) : Bool :=
+@[expose] def boundedExistsEdge {β : Type} (f : β × List Bool → Bool) (x : β) (u v : List Bool) :
+    Bool :=
   if !(u.any fun b => b) && v.headD false then f (x, v.tail)
   else u.headD false && !(v.any fun b => !b)
 
