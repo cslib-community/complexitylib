@@ -397,15 +397,11 @@ on `(δ₁, δ₂, ξ)` and are independent of `τ₂`. -/
 def projHash2FiberChangeEquiv (d : F.Desc) (α ρ : ZMod (F.order d)) :
     (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) ≃
       (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) where
-  toFun p :=
-    let dPair := p.1
-    let xPair := p.2
-    let τ₁ := xPair.1 - ρ * xPair.2
-    ((dPair.1 - α * τ₁, τ₁), (dPair.2 - α * xPair.2, xPair.2))
-  invFun q :=
-    let q₁ := q.1
-    let q₂ := q.2
-    ((q₁.1 + α * q₁.2, q₂.1 + α * q₂.2), (q₁.2 + ρ * q₂.2, q₂.2))
+  toFun := fun ((δ₁, δ₂), (ξ, τ₂)) =>
+    let τ₁ := ξ - ρ * τ₂
+    ((δ₁ - α * τ₁, τ₁), (δ₂ - α * τ₂, τ₂))
+  invFun := fun ((σ₁, τ₁), (σ₂, τ₂)) =>
+    ((σ₁ + α * τ₁, σ₂ + α * τ₂), (τ₁ + ρ * τ₂, τ₂))
   left_inv p := by
     ext
     · dsimp only; ring

@@ -676,9 +676,8 @@ private theorem length_enc_substituteEquation_le (S : List ℕ) (vals : List Boo
 
 /-- Computing `heavyVarList n b₀ sys` (`n` in unary, `b₀` in binary) is polynomial-time. -/
 theorem computableInPolyTime_heavyVarList :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × List (List (List ℕ)) =>
-      let params := p.1
-      heavyVarList params.1 params.2 p.2)
+    ComputableInPolyTime
+      (fun (((n, b₀), sys) : (ℕ × ℕ) × List (List (List ℕ))) => heavyVarList n b₀ sys)
       (encPair (encPair encUnary encNat) (encList (encList (encList encNat))))
       (encList encNat) := by
   let encSys := encList (encList (encList encNat))
@@ -738,9 +737,8 @@ theorem computableInPolyTime_relabelEquation :
 /-- `substituteEquation` is computable in polynomial time. -/
 theorem computableInPolyTime_substituteEquation :
     ComputableInPolyTime
-      (fun p : List ℕ × (List Bool × List (List ℕ)) =>
-        let rest := p.2
-        substituteEquation p.1 rest.1 rest.2)
+      (fun ((S, vals, eq) : List ℕ × (List Bool × List (List ℕ))) =>
+        substituteEquation S vals eq)
       (encPair (encList encNat) (encPair encBits (encList (encList encNat))))
       (encList (encList encNat)) := by
   let encEq := encList (encList encNat)
@@ -764,10 +762,8 @@ theorem computableInPolyTime_substituteEquation :
 /-- `prepareBranch` is computable in polynomial time. -/
 theorem computableInPolyTime_prepareBranch :
     ComputableInPolyTime
-      (fun p : ℕ × List ℕ × List Bool × List (List (List ℕ)) =>
-        let r1 := p.2
-        let r2 := r1.2
-        prepareBranch p.1 r1.1 r2.1 r2.2)
+      (fun ((n, S, vals, sys) : ℕ × List ℕ × List Bool × List (List (List ℕ))) =>
+        prepareBranch n S vals sys)
       (encPair encUnary (encPair (encList encNat)
         (encPair encBits (encList (encList (encList encNat)))))) encBranchOutcome := by
   let P := ℕ × List ℕ × List Bool × List (List (List ℕ))
@@ -824,6 +820,31 @@ theorem computableInPolyTime_prepareBranch :
 /-- Input tuple `(n, S, sys)` for streaming heavy-variable branching. -/
 abbrev BranchInput : Type := ℕ × List ℕ × List (List (List ℕ))
 instance : DecidableEq BranchInput := inferInstance
+
+/-- Total variable count `n` of a `BranchInput`. -/
+abbrev BranchInput.numVars (inp : BranchInput) : ℕ := inp.1
+
+/-- Heavy-variable list and equation-system pair `(S, sys)` of a `BranchInput`. -/
+abbrev BranchInput.varSystem (inp : BranchInput) : List ℕ × List (List (List ℕ)) := inp.2
+
+/-- Heavy-variable list `S` of a `BranchInput`. -/
+abbrev BranchInput.vars (inp : BranchInput) : List ℕ := inp.varSystem.1
+
+/-- Equation system `sys` of a `BranchInput`. -/
+abbrev BranchInput.system (inp : BranchInput) : List (List (List ℕ)) := inp.varSystem.2
+
+/-- Streaming state `(finalIdx, (|S|, (inp, totalCount)))` returned by `streamBranches`. -/
+abbrev BranchStreamState : Type := ℕ × (ℕ × (BranchInput × ℕ))
+
+/-- Retained `(|S|, (inp, totalCount))` step state of a `BranchStreamState`. -/
+abbrev BranchStreamState.stepState (st : BranchStreamState) : ℕ × (BranchInput × ℕ) := st.2
+
+/-- Retained `(inp, totalCount)` accumulator pair of a `BranchStreamState`. -/
+abbrev BranchStreamState.finalAcc (st : BranchStreamState) : BranchInput × ℕ := st.stepState.2
+
+/-- Running or final common-zero count of a `BranchStreamState`. -/
+abbrev BranchStreamState.totalCount (st : BranchStreamState) : ℕ := st.finalAcc.2
+
 /-- Native encoding of `BranchInput` (`n` in unary, `S` and `sys` as framed lists). -/
 def encBranchInput : BranchInput ↪ List Bool :=
   encPair encUnary (encPair (encList encNat) (encList (encList (encList encNat))))
@@ -851,22 +872,18 @@ theorem length_enc_reduced_le {n n' : ℕ} {S : List ℕ} {vals : List Bool}
 /-- Single streaming step of heavy-variable branching. -/
 def branchBody (solver : ℕ → List (List (List ℕ)) → ℕ)
     (p : (ℕ × List Bool) × (BranchInput × ℕ)) : BranchInput × ℕ :=
-  let kw := p.1
-  let st := p.2
-  let inp := st.1
-  let rest := inp.2
-  (inp, st.2 + branchCountOracle solver (prepareBranch inp.1 rest.1 kw.2 rest.2))
+  let vals := p.1.2
+  let inp := p.2.1
+  let acc := p.2.2
+  (inp, acc + branchCountOracle solver (prepareBranch inp.numVars inp.vars vals inp.system))
 /-- Stream all `2 ^ |S|` heavy-variable assignments via `BooleanFold.run` without materializing the
 assignment list, returning `(finalIdx, (|S|, (inp, totalCount)))`. -/
 def streamBranches (solver : ℕ → List (List (List ℕ)) → ℕ) (inp : BranchInput) :
-    ℕ × (ℕ × (BranchInput × ℕ)) :=
-  let rest := inp.2
-  BooleanFold.run (branchBody solver) rest.1.length (inp, 0)
+    BranchStreamState :=
+  BooleanFold.run (branchBody solver) inp.vars.length (inp, 0)
 /-- Total common-zero count computed by streaming `2 ^ |S|` heavy-variable branches. -/
 def countByBranching (solver : ℕ → List (List (List ℕ)) → ℕ) (inp : BranchInput) : ℕ :=
-  let st1 := (streamBranches solver inp).2
-  let st2 := st1.2
-  st2.2
+  (streamBranches solver inp).totalCount
 
 private theorem foldl_branchBody_eq (solver : ℕ → List (List (List ℕ)) → ℕ)
     (k : ℕ) (inp : BranchInput) (l : List (List Bool)) (acc₀ : ℕ) :
@@ -885,13 +902,13 @@ private theorem foldl_branchBody_eq (solver : ℕ → List (List (List ℕ)) →
 sum of the first `j` decoded branch counts. -/
 theorem runPrefix_branchBody_accumulator (solver : ℕ → List (List (List ℕ)) → ℕ)
     (inp : BranchInput) (j : ℕ) :
-    let rest := inp.2
-    let st := (BooleanFold.runPrefix (branchBody solver) rest.1.length j (inp, 0)).2
-    st.2 =
+    BranchStreamState.finalAcc
+      (BooleanFold.runPrefix (branchBody solver) inp.vars.length j (inp, 0)) =
       (inp, ((List.range j).map fun idx =>
         branchCountOracle solver
-          (prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2)).sum) := by
-  dsimp only
+          (prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system)).sum) := by
+  dsimp only [BranchStreamState.finalAcc, BranchStreamState.stepState,
+    BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
   rw [BooleanFold.prefix_accumulator,
     ← List.foldl_map (f := lowBits inp.2.1.length)
       (g := fun acc vals => branchBody solver ((inp.2.1.length, vals), acc)),
@@ -905,9 +922,8 @@ theorem streamBranches_correct {n : ℕ} {S : List ℕ} {sys : List (List (List 
     (hS : S.Nodup) (hSn : ∀ s ∈ S, s < n) (hvars : ∀ eq ∈ sys, ∀ m ∈ eq, ∀ v ∈ m, v < n)
     (hsolver : ∀ vals, vals.length = S.length → ∀ n' sys',
       prepareBranch n S vals sys = .reduced n' sys' → solver n' sys' = rootCount n' sys') :
-    let st := (streamBranches solver (n, S, sys)).2
-    st.2 = ((n, S, sys), rootCount n sys) := by
-  dsimp only
+    (streamBranches solver (n, S, sys)).finalAcc = ((n, S, sys), rootCount n sys) := by
+  dsimp only [BranchStreamState.finalAcc, BranchStreamState.stepState]
   rw [streamBranches, BooleanFold.run_accumulator, foldl_branchBody_eq, Nat.zero_add,
     ← BooleanFold.decoded_range_eq_enumList, List.map_map]
   exact congrArg (Prod.mk (n, S, sys)) (sum_branch_count_eq_rootCount hS hSn hvars hsolver)
@@ -944,8 +960,8 @@ noncomputable def branchCountCertificate {solver : ℕ → List (List (List ℕ)
   let encInner := encPair encUnary (encOption encSys)
   let cpair : NativeCertificate
       (fun r : (ℕ × Option (List (List (List ℕ)))) × List (List (List ℕ)) =>
-        let r1 := r.1
-        (r1.1, r.2))
+        let n' := r.1.1
+        (n', r.2))
       (encPair encInner encSys) (encPair encUnary encSys) :=
     ((NativeCertificate.linear (ComputableInO.fst encInner encSys)).fst).prod
       (NativeCertificate.payload encInner encSys)
@@ -992,15 +1008,26 @@ private theorem branchCountCertificate_bounds {solver : ℕ → List (List (List
     simp only [encBranchOutcome_eq, BranchOutcome.toOption, encOption_some, length_encPair,
       List.length_cons, encUnary_apply, List.length_replicate]; omega
 
+/-- Callback input tuple `((|S|, vals), (inp, accSum))` for `branchBody`. -/
+abbrev PrepareStepInput : Type := (ℕ × List Bool) × (BranchInput × ℕ)
+
+/-- Width and bit-vector pair `(|S|, vals)` of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.header (p : PrepareStepInput) : ℕ × List Bool := p.1
+
+/-- Assignment bit-vector `vals` of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.vals (p : PrepareStepInput) : List Bool := p.header.2
+
+/-- Retained `(inp, accSum)` accumulator pair of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.accPair (p : PrepareStepInput) : BranchInput × ℕ := p.2
+
+/-- Retained `BranchInput` of a `PrepareStepInput`. -/
+abbrev PrepareStepInput.inp (p : PrepareStepInput) : BranchInput := p.accPair.1
+
 theorem computableInPolyTime_prepareStep :
-    ComputableInPolyTime (fun p : (ℕ × List Bool) × (BranchInput × ℕ) =>
-      let kw := p.1
-      let st := p.2
-      let inp := st.1
-      let rest := inp.2
-      prepareBranch inp.1 rest.1 kw.2 rest.2)
+    ComputableInPolyTime (fun p : PrepareStepInput =>
+      prepareBranch p.inp.numVars p.inp.vars p.vals p.inp.system)
       (encPair (encPair encUnary encBits) (encPair encBranchInput encNat)) encBranchOutcome := by
-  unfold encBranchInput; dsimp only; fun_prop
+  unfold encBranchInput; fun_prop
 private theorem computableInPolyTime_binaryAdd :
     ComputableInPolyTime (fun x : ℕ × ℕ => x.1 + x.2) (encPair encNat encNat) encNat :=
   ComputableInPolyTime.binary_add
@@ -1050,20 +1077,19 @@ private theorem length_le_encBranchInput (inp : BranchInput) :
 /-- Prefix sum bound: when `solver n' sys' ≤ 2 ^ n'` on reduced branches of `inp`, every streaming
 prefix `j ≤ 2 ^ |S|` keeps the running sum at most `j * 2 ^ (n - |S|)`. -/
 theorem runPrefix_sum_le {solver : ℕ → List (List (List ℕ)) → ℕ} {inp : BranchInput}
-    (hbound : ∀ idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+    (hbound : ∀ idx, idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       solver n' sys' ≤ 2 ^ n')
-    {j : ℕ} (hj :
-      let rest := inp.2
-      j ≤ 2 ^ rest.1.length) :
-    let rest := inp.2
-    let st1 := (BooleanFold.runPrefix (branchBody solver) rest.1.length j (inp, 0)).2
-    let st2 := st1.2
-    st2.2 ≤ j * 2 ^ (inp.1 - rest.1.length) := by
-  dsimp only at hbound hj ⊢
-  rw [runPrefix_branchBody_accumulator]; dsimp only
+    {j : ℕ} (hj : j ≤ 2 ^ inp.vars.length) :
+    BranchStreamState.totalCount
+      (BooleanFold.runPrefix (branchBody solver) inp.vars.length j (inp, 0)) ≤
+      j * 2 ^ (inp.numVars - inp.vars.length) := by
+  change (BranchStreamState.finalAcc
+    (BooleanFold.runPrefix (branchBody solver) inp.vars.length j (inp, 0))).2 ≤ _
+  rw [runPrefix_branchBody_accumulator]
+  dsimp only [BranchInput.numVars, BranchInput.vars, BranchInput.system,
+    BranchInput.varSystem] at hbound hj ⊢
   have hterm : ∀ x ∈ (List.range j).map (fun idx =>
       branchCountOracle solver (prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2)),
       x ≤ 2 ^ (inp.1 - inp.2.1.length) := by
@@ -1079,21 +1105,15 @@ theorem runPrefix_sum_le {solver : ℕ → List (List (List ℕ)) → ℕ} {inp 
 /-- When `|S| ≤ n` and `solver n' sys' ≤ 2 ^ n'` on reduced branches, the running sum satisfies
 `Z ≤ 2 ^ n` throughout the entire streaming traversal (§5.5 p. 39 of [OpenAI2026ETH]). -/
 theorem runPrefix_sum_le_two_pow {solver : ℕ → List (List (List ℕ)) → ℕ} {inp : BranchInput}
-    (hSn :
-      let rest := inp.2
-      rest.1.length ≤ inp.1)
-    (hbound : ∀ idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+    (hSn : inp.vars.length ≤ inp.numVars)
+    (hbound : ∀ idx, idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       solver n' sys' ≤ 2 ^ n')
-    {j : ℕ} (hj :
-      let rest := inp.2
-      j ≤ 2 ^ rest.1.length) :
-    let rest := inp.2
-    let st1 := (BooleanFold.runPrefix (branchBody solver) rest.1.length j (inp, 0)).2
-    let st2 := st1.2
-    st2.2 ≤ 2 ^ inp.1 :=
+    {j : ℕ} (hj : j ≤ 2 ^ inp.vars.length) :
+    BranchStreamState.totalCount
+      (BooleanFold.runPrefix (branchBody solver) inp.vars.length j (inp, 0)) ≤
+      2 ^ inp.numVars :=
   (runPrefix_sum_le hbound hj).trans <| (Nat.mul_le_mul_right _ hj).trans_eq <|
     (Nat.pow_add 2 _ _).symm.trans (by rw [Nat.add_sub_of_le hSn])
 
@@ -1147,7 +1167,10 @@ private theorem branchBodyCertificate_eq {solver : ℕ → List (List (List ℕ)
           binaryAddCert.space (q.2.2, branchCountOracle solver o) := by
   dsimp only [branchBodyCertificate, NativeCertificate.prod, NativeCertificate.comp,
     NativeCertificate.fst, NativeCertificate.snd, NativeCertificate.payload,
-    NativeCertificate.linear, NativeCertificate.post, Function.comp_def]; omega
+    NativeCertificate.linear, NativeCertificate.post, Function.comp_def,
+    PrepareStepInput.inp, PrepareStepInput.vals,
+    PrepareStepInput.accPair, PrepareStepInput.header,
+    BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
 
 private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
@@ -1172,7 +1195,9 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
   intro L st vcert
   have hL : 2 * inp.1 + 2 * inp.2.1.length + 2 ≤ L := length_le_encBranchInput inp
   have hst_pair : st.2.2 = (inp, st.2.2.2) :=
-    Prod.ext (by rw [runPrefix_branchBody_accumulator]) rfl
+    Prod.ext (by
+      dsimp only [st]
+      exact congrArg Prod.fst (runPrefix_branchBody_accumulator solver inp j)) rfl
   have hsum_le : st.2.2.2 ≤ 2 ^ (inp.2.1.length + inp.1) :=
     (runPrefix_sum_le (hbound inp) hj).trans <|
       (Nat.mul_le_mul hj (Nat.pow_le_pow_right (by omega) (Nat.sub_le _ _))).trans_eq
@@ -1245,11 +1270,22 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
   let bcert := branchBodyCertificate csolver
   have hvT : vcert.time st = sL + (prepVisitCert.time st + bcert.time q) := rfl
   have hvS : vcert.space st = sL + (prepVisitCert.space st + bcert.space q) := rfl
-  dsimp only [sL, bcert, o, prepVisitCert, prepareStepCert, binaryAddCert]
+  dsimp only [sL, bcert, o, prepVisitCert, prepareStepCert, binaryAddCert,
+    PrepareStepInput.inp, PrepareStepInput.vals,
+    PrepareStepInput.accPair, PrepareStepInput.header,
+    BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
     at hbcT hbcS houtL hlen_add haddT haddS hsolT hsolS hvT hvS hbodyT hbodyS
   refine ⟨hlen_inner, ?_, ?_⟩
-  · rw [hvT, hbodyT]; dsimp only [visitOverhead, prepareStepCert, binaryAddCert]; omega
-  · rw [hvS, hbodyS]; dsimp only [visitOverhead, prepareStepCert, binaryAddCert]; omega
+  · rw [hvT, hbodyT]
+    dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
+      PrepareStepInput.inp, PrepareStepInput.vals,
+      PrepareStepInput.accPair, PrepareStepInput.header,
+      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
+  · rw [hvS, hbodyS]
+    dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
+      PrepareStepInput.inp, PrepareStepInput.vals,
+      PrepareStepInput.accPair, PrepareStepInput.header,
+      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
 
 /-- **Space-efficient streaming `ComputableInO` bound for `streamBranches`** (§5.5 of
 [OpenAI2026ETH]): for fixed `solver` bounded by `2 ^ n'` with time `≤ R_solver` and space
@@ -1260,26 +1296,25 @@ theorem streamBranches_computableInO {solver : ℕ → List (List (List ℕ)) �
       (encPair encUnary (encList (encList (encList encNat)))) encNat)
     (R_solver Q_solver : BranchInput → ℕ)
     (hbound : ∀ (inp : BranchInput) idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+      idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       solver n' sys' ≤ 2 ^ n')
     (hR : ∀ (inp : BranchInput) idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+      idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       csolver.time (n', sys') ≤ R_solver inp)
     (hQ : ∀ (inp : BranchInput) idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+      idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       csolver.space (n', sys') ≤ Q_solver inp) :
     ComputableInO (streamBranches solver)
       encBranchInput (encPair encNat (encPair encUnary (encPair encBranchInput encNat)))
       (fun inp =>
-        let rest := inp.2
         stepOverhead (encBranchInput inp).length +
-          (2 ^ rest.1.length + 1) * (stepOverhead (encBranchInput inp).length + R_solver inp))
+          (2 ^ inp.vars.length + 1) * (stepOverhead (encBranchInput inp).length + R_solver inp))
       (fun inp => stepOverhead (encBranchInput inp).length + Q_solver inp) := by
   have hfold := IndexFold.computableInO
     (BooleanFold.clock.comp dimCert) (dimCert.prod initAccCert)
@@ -1308,7 +1343,7 @@ theorem streamBranches_computableInO {solver : ℕ → List (List (List ℕ)) �
           (inp.2.1.length + 1 + 1) ^ 2 ≤ stepOverhead L + R_solver inp := by
       dsimp only [stepOverhead, L] at hsq ⊢; omega
     have hprod := Nat.mul_le_mul_left (2 ^ inp.2.1.length + 1) hmul
-    dsimp only [stepOverhead, L] at hdT hprod ⊢; omega
+    dsimp only [stepOverhead, L, BranchInput.vars, BranchInput.varSystem] at hdT hprod ⊢; omega
   · let L := (encBranchInput inp).length
     have hL : 2 * inp.1 + 2 * inp.2.1.length + 2 ≤ L := length_le_encBranchInput inp
     have hdS : dimCert.space inp ≤ monoPolyBound hd.2 L := le_monoPolyBound hd.2 inp le_rfl
@@ -1329,25 +1364,24 @@ theorem countByBranching_computableInO {solver : ℕ → List (List (List ℕ)) 
       (encPair encUnary (encList (encList (encList encNat)))) encNat)
     (R_solver Q_solver : BranchInput → ℕ)
     (hbound : ∀ (inp : BranchInput) idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+      idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       solver n' sys' ≤ 2 ^ n')
     (hR : ∀ (inp : BranchInput) idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+      idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       csolver.time (n', sys') ≤ R_solver inp)
     (hQ : ∀ (inp : BranchInput) idx,
-      let rest := inp.2
-      idx < 2 ^ rest.1.length → ∀ n' sys',
-      prepareBranch inp.1 rest.1 (lowBits rest.1.length idx) rest.2 = .reduced n' sys' →
+      idx < 2 ^ inp.vars.length → ∀ n' sys',
+      prepareBranch inp.numVars inp.vars (lowBits inp.vars.length idx) inp.system =
+        .reduced n' sys' →
       csolver.space (n', sys') ≤ Q_solver inp) :
     ComputableInO (countByBranching solver) encBranchInput encNat
       (fun inp =>
-        let rest := inp.2
         stepOverhead (encBranchInput inp).length +
-          (2 ^ rest.1.length + 1) * (stepOverhead (encBranchInput inp).length + R_solver inp))
+          (2 ^ inp.vars.length + 1) * (stepOverhead (encBranchInput inp).length + R_solver inp))
       (fun inp => stepOverhead (encBranchInput inp).length + Q_solver inp) :=
   (ComputableInO.snd encBranchInput encNat).comp_linear <|
     (ComputableInO.snd encUnary (encPair encBranchInput encNat)).comp_linear <|
