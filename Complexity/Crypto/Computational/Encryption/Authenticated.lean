@@ -193,10 +193,10 @@ structure SymmetricCipher where
   keyGen_ppt : IsPPTOn encUnary encBits keyGen
   /-- Encryption is uniformly strict PPT in `(n, k, msg)`. -/
   encrypt_ppt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-    (fun ⟨n, k, msg⟩ => encrypt n k msg)
+    (fun p => encrypt p.1 (Prod.fst p.2) (Prod.snd p.2))
   /-- Decryption is computable in plain polynomial time on `(n, k, ct)`. -/
   decrypt_polyTime : ComputableInPolyTime
-    (fun ⟨n, k, ct⟩ => decrypt n k ct)
+    (fun p : ℕ × List Bool × List Bool => decrypt p.1 (Prod.fst p.2) (Prod.snd p.2))
     (encPair encUnary (encPair encBits encBits)) (encOption encBits)
   /-- Every ciphertext produced by `encrypt` on an `n`-bit message under a supported secret key at
   security parameter `n` decrypts to `some msg`. -/
@@ -2302,34 +2302,56 @@ maintains `(rem, (hasCaptured, capturedCt)) : ℕ × (Bool × List Bool)`.
     encryption query `(false, req)` with `(unframe req).length == n && (dropFrame req).length == n`
     queries the external CI encryption oracle on `if bit then dropFrame req else unframe req`
     (truncating the reply to `ctBound`) and transitions to `(rem - 1, (false, []))`. -/
+abbrev CCAToCIState : Type := ℕ × (Bool × List Bool)
+
+/-- Flag and captured-ciphertext pair `(hasCaptured, capturedCt)` of a `CCAToCIState`. -/
+abbrev CCAToCIState.cap (s : CCAToCIState) : Bool × List Bool := s.2
+
+/-- Remaining query countdown `rem` of a `CCAToCIState`. -/
+abbrev CCAToCIState.rem (s : CCAToCIState) : ℕ := s.1
+
+/-- Flag indicating whether a candidate ciphertext has already been captured. -/
+abbrev CCAToCIState.hasCaptured (s : CCAToCIState) : Bool :=
+  (CCAToCIState.cap s).1
+
+/-- Captured candidate ciphertext in a `CCAToCIState`. -/
+abbrev CCAToCIState.capturedCt (s : CCAToCIState) : List Bool :=
+  (CCAToCIState.cap s).2
+
+/-- Run outcome `(result, state)` of `ccaToCIAtIndexAdversary`. -/
+abbrev CCAToCIRunOut (α : Type) : Type := α × CCAToCIState
+
+/-- Captured candidate ciphertext from a `CCAToCIRunOut`. -/
+abbrev CCAToCIRunOut.capturedCt {α : Type} (out : CCAToCIRunOut α) : List Bool :=
+  CCAToCIState.capturedCt out.2
+
+/-- Execute one CCA-to-CI query against the external CI encryption oracle. -/
 noncomputable def ccaToCIHandler (n ctBound : ℕ) (bit : Bool) (request : Bool × List Bool) :
     StateT (ℕ × (Bool × List Bool)) (WordOracleComp Unit) (List Bool) :=
   fun state =>
-    let rem := state.1
-    let cap := state.2
-    if cap.1 then
-      pure ([], (rem, (true, cap.2)))
+    if CCAToCIState.hasCaptured state then
+      pure ([], (CCAToCIState.rem state, (true, CCAToCIState.capturedCt state)))
     else
-      if rem == 0 then
+      if CCAToCIState.rem state == 0 then
         if request.1 then
           pure ([], (0, (true, request.2)))
         else
           pure ([], (0, (true, [])))
       else
         if request.1 then
-          pure ([], (rem - 1, (false, [])))
+          pure ([], (CCAToCIState.rem state - 1, (false, [])))
         else
           if ((unframe request.2).length == n) && ((dropFrame request.2).length == n) then
-            (fun ct => (ct, (rem - 1, (false, [])))) <$>
+            (fun ct => (ct, (CCAToCIState.rem state - 1, (false, [])))) <$>
               (List.take ctBound <$>
                 ProbOracleComp.query ((), if bit then dropFrame request.2 else unframe request.2))
           else
-            pure ([], (rem - 1, (false, [])))
+            pure ([], (CCAToCIState.rem state - 1, (false, [])))
 
 /-- Deterministic-index ciphertext-integrity reduction at query countdown `j`
 ([BonehShoup2023], Section 9.2.3, Theorem 9.1): run `adversary n []` against
 `ccaToCIHandler n (ctBound n) bit` starting from `(j, (false, []))` and output the captured
-ciphertext candidate `cap.2`. -/
+ciphertext candidate `CCAToCIRunOut.capturedCt out`. -/
 noncomputable def ccaToCIAtIndexAdversary (ctBound : ℕ → ℕ) (j : ℕ) (bit : Bool)
     (adversary : CCAAdversary) : CIAdversary :=
   fun n _ => do
@@ -2338,9 +2360,7 @@ noncomputable def ccaToCIAtIndexAdversary (ctBound : ℕ → ℕ) (j : ℕ) (bit
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (ccaToCIHandler n (ctBound n) bit))
       (adversary n [])).run (j, (false, []))
-    let finalState := out.2
-    let cap := finalState.2
-    return cap.2
+    return CCAToCIRunOut.capturedCt out
 
 /-- Reduction from decryption-oracle forgery in `ccaRejectGame` to the ciphertext-integrity game
 `ciGame` for fixed challenge bit `bit` ([BonehShoup2023], Section 9.2.3, adversary $B_{\mathrm{ci}}$
@@ -2496,7 +2516,8 @@ theorem isOraclePPT_ccaToCIAdversary {ctBound Q : ℕ → ℕ}
       (by dsimp only [ECaller]; fun_prop) hhandler hinit
       (fun _ _ => True) (fun _ => trivial) hres
     intro caller request state _ result hresult
-    unfold ccaToCIHandler at hresult
+    unfold ccaToCIHandler CCAToCIState.rem CCAToCIState.hasCaptured
+      CCAToCIState.capturedCt CCAToCIState.cap at hresult
     by_cases hcap : state.2.1 = true
     · simp only [hcap, ↓reduceIte] at hresult
       cases ProbOracleComp.eq_of_mem_support_pure hresult
@@ -3027,7 +3048,8 @@ private theorem eval_ciGame_ccaToCIAtIndexAdversary_key (E : SymmetricCipher) (c
       (ccaToCIHandler n (ctBound n) bit request state.1)).run state.2).map
       (fun result => (result.1.1, result.1.2, result.2)) =
       ProbComp.eval (E.ccaToCICombinedOracle n k bit request state)
-    unfold ccaToCIHandler ccaToCICombinedOracle
+    unfold ccaToCIHandler ccaToCICombinedOracle CCAToCIState.rem CCAToCIState.hasCaptured
+      CCAToCIState.capturedCt CCAToCIState.cap
     by_cases hcap : state.1.2.1 = true
     · simp only [hcap, ↓reduceIte, OracleComp.interpret_pure, StateT.run_pure,
         Probability.PMF.monad_pure_eq_pure, ProbComp.eval_pure, PMF.pure_map]
@@ -3474,7 +3496,8 @@ theorem isQueryBounded_ccaToCPAAdversary
 private theorem isQueryBounded_ccaToCIHandler (n ctBound : ℕ) (bit : Bool)
     (request : Bool × List Bool) (state : ℕ × (Bool × List Bool)) :
     (ccaToCIHandler n ctBound bit request state).IsQueryBounded (if request.1 then 0 else 1) := by
-  unfold ccaToCIHandler
+  unfold ccaToCIHandler CCAToCIState.rem CCAToCIState.hasCaptured
+    CCAToCIState.capturedCt CCAToCIState.cap
   by_cases hcap : state.2.1 = true
   · simp only [hcap, ↓reduceIte]
     exact OracleComp.IsCostBounded.pure _ _
@@ -4124,7 +4147,8 @@ private theorem eval_ciOneTimeGame_ccaToCIAtIndexAdversary_key (E : SymmetricCip
       (ccaToCIHandler n (ctBound n) bit request state.1)).run state.2).map
       (fun result => (result.1.1, result.1.2, result.2)) =
       ProbComp.eval (E.oneTimeCCAToCICombinedOracle n k bit request state)
-    unfold ccaToCIHandler oneTimeCCAToCICombinedOracle
+    unfold ccaToCIHandler oneTimeCCAToCICombinedOracle CCAToCIState.rem CCAToCIState.hasCaptured
+      CCAToCIState.capturedCt CCAToCIState.cap
     by_cases hcap : state.1.2.1 = true
     · simp only [hcap, ↓reduceIte, OracleComp.interpret_pure, StateT.run_pure,
         Probability.PMF.monad_pure_eq_pure, ProbComp.eval_pure, PMF.pure_map]

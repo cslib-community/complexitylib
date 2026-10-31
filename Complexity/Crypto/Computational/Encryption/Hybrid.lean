@@ -254,9 +254,9 @@ noncomputable def demGameOn {Msg : Type} (valid : ℕ → List Bool → Msg → 
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← BitString.sampleList n
   let choice ← adversary.choose n []
-  let msgs := choice.1
-  if valid n [] msgs.1 msgs.2 then
-    let ciphertext ← encryptSym n k (if bit then msgs.2 else msgs.1)
+  if valid n [] (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
+    let ciphertext ← encryptSym n k
+      (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
     adversary.guess n choice.2 ciphertext
   else
     return false
@@ -491,10 +491,10 @@ noncomputable def hybridIdealGame {Msg : Type} (keyGen : ℕ → ProbComp (List 
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choice ← adversary.choose n keys.1
-  let msgs := choice.1
   let encapsulated ← encaps n keys.1
   let kIdeal ← BitString.sampleList n
-  let ctDem ← encryptSym n kIdeal (if bit then msgs.2 else msgs.1)
+  let ctDem ← encryptSym n kIdeal
+    (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
   adversary.guess n choice.2 (encPair encBits encBits (encapsulated.2, ctDem))
 
 /-- Direct per-bit KEM distinguisher $D_{\mathrm{kem}, b}$ constructed from an
@@ -510,8 +510,8 @@ def hybridToKEMDistinguisher {Msg : Type}
   let k := unframe rest
   let ctKem := dropFrame rest
   let choice ← adversary.choose n pk
-  let msgs := choice.1
-  let ctDem ← encryptSym n k (if bit then msgs.2 else msgs.1)
+  let ctDem ← encryptSym n k
+    (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
   adversary.guess n choice.2 (encPair encBits encBits (ctKem, ctDem))
 
 /-- Single hidden-bit KEM distinguisher $\mathcal{B}_{\mathrm{kem}}$ for
@@ -526,9 +526,9 @@ noncomputable def hybridToKEMHiddenBitDistinguisher {Msg : Type}
   let k := unframe rest
   let ctKem := dropFrame rest
   let choice ← adversary.choose n pk
-  let msgs := choice.1
   let bit ← ProbComp.uniform Bool
-  let ctDem ← encryptSym n k (if bit then msgs.2 else msgs.1)
+  let ctDem ← encryptSym n k
+    (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
   let guess ← adversary.guess n choice.2 (encPair encBits encBits (ctKem, ctDem))
   return guess ^^ bit
 
@@ -762,7 +762,8 @@ game `hybridIdealGame`. -/
     ProbComp.eval
       (demGame encryptSym (hybridToDEMAdversary keyGen encaps adversary) bit n) =
       ProbComp.eval (hybridIdealGame keyGen encaps encryptSym adversary bit n) := by
-  simp only [demGame, demGameOn, ↓reduceIte, hybridToDEMAdversary, hybridIdealGame, encPair_apply,
+  simp only [demGame, demGameOn, ↓reduceIte, hybridToDEMAdversary, hybridIdealGame,
+    ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁, encPair_apply,
     encBits_apply, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     unframe_frame_append, dropFrame_frame_append]
   rw [PMF.bind_comm]
@@ -989,7 +990,8 @@ theorem eval_demGame_hybridToDEMAdversary_restrict {Msg : Type}
       (demGame encryptSym (hybridToDEMAdversary keyGen encaps (adversary.restrict valid)) bit n) =
       ProbComp.eval (demGameOn valid encryptSym
         (hybridToDEMAdversary keyGen encaps (adversary.restrict valid)) bit n) := by
-  simp only [demGame, demGameOn, hybridToDEMAdversary, AdversaryOf.restrict, ↓reduceIte,
+  simp only [demGame, demGameOn, hybridToDEMAdversary, AdversaryOf.restrict,
+    ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁, ↓reduceIte,
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     apply_ite ProbComp.eval, encPair_apply, encBits_apply, unframe_frame_append,
     dropFrame_frame_append]
@@ -1077,7 +1079,9 @@ theorem eval_demGame_otpEncrypt_false_eq_true {n : ℕ} (hn : 1 ≤ n) (adversar
     ProbComp.eval (demGame otpEncrypt adversary false n) =
       ProbComp.eval (demGame otpEncrypt adversary true n) := by
   obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le' hn
-  simp only [demGame, demGameOn, otpEncrypt, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [demGame, demGameOn, otpEncrypt,
+    ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁,
+    ProbComp.eval_bind, ProbComp.eval_pure,
     BitString.eval_sampleList, BitString.uniformList_succ, PMF.bind_bind, PMF.bind_map,
     Function.comp_def, PMF.pure_bind, List.headD_cons, Bool.false_eq_true, ↓reduceIte]
   rw [PMF.bind_comm]

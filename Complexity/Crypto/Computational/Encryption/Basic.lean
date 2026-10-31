@@ -90,6 +90,32 @@ structure AdversaryOf.IsPPT {Msg : Type} (encMsg : Msg ↪ List Bool)
 /-- A chosen-message adversary for single-bit messages (`Bool`). -/
 abbrev Adversary : Type := AdversaryOf Bool
 
+/-- Phase 1 choice `((msg₀, msg₁), state)` returned by an `AdversaryOf Msg`. -/
+abbrev ChoiceOut (Msg : Type) : Type := (Msg × Msg) × List Bool
+
+/-- Challenge message pair `(msg₀, msg₁)` of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.msgs {Msg : Type} (c : ChoiceOut Msg) : Msg × Msg := c.1
+
+/-- First challenge message `msg₀` of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.msg₀ {Msg : Type} (c : ChoiceOut Msg) : Msg :=
+  (ChoiceOut.msgs c).1
+
+/-- Second challenge message `msg₁` of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.msg₁ {Msg : Type} (c : ChoiceOut Msg) : Msg :=
+  (ChoiceOut.msgs c).2
+
+/-- Saved adversary state of a Phase 1 `ChoiceOut`. -/
+abbrev ChoiceOut.state {Msg : Type} (c : ChoiceOut Msg) : List Bool := c.2
+
+@[simp] theorem ChoiceOut.msg₀_mk {Msg : Type} (msgs : Msg × Msg) (st : List Bool) :
+    ChoiceOut.msg₀ (msgs, st) = msgs.1 := rfl
+
+@[simp] theorem ChoiceOut.msg₁_mk {Msg : Type} (msgs : Msg × Msg) (st : List Bool) :
+    ChoiceOut.msg₁ (msgs, st) = msgs.2 := rfl
+
+@[simp] theorem ChoiceOut.state_mk {Msg : Type} (msgs : Msg × Msg) (st : List Bool) :
+    ChoiceOut.state (msgs, st) = st := rfl
+
 /-- Native uniform strict PPT admissibility for a bit chosen-message adversary. -/
 abbrev Adversary.IsPPT (adversary : Adversary) : Prop := AdversaryOf.IsPPT encBool adversary
 
@@ -110,9 +136,9 @@ def gameOn {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let keys ← keyGen n
   let choice ← adversary.choose n keys.1
-  let msgs := choice.1
-  if valid n keys.1 msgs.1 msgs.2 then
-    let ciphertext ← encrypt n keys.1 (if bit then msgs.2 else msgs.1)
+  if valid n keys.1 (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
+    let ciphertext ← encrypt n keys.1
+      (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
     adversary.guess n choice.2 ciphertext
   else
     return false
@@ -163,10 +189,10 @@ theorem eval_gameOn {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → 
       (do
         let pk ← (ProbComp.eval (keyGen n)).map Prod.fst
         let choice ← ProbComp.eval (adversary.choose n pk)
-        let msgs := choice.1
-        if valid n pk msgs.1 msgs.2 then
-          let ciphertext ← ProbComp.eval (encrypt n pk (if bit then msgs.2 else msgs.1))
-          ProbComp.eval (adversary.guess n choice.2 ciphertext)
+        if valid n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
+          let ciphertext ← ProbComp.eval
+            (encrypt n pk (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice))
+          ProbComp.eval (adversary.guess n (ChoiceOut.state choice) ciphertext)
         else
           pure false) := by
   simp only [gameOn, ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
@@ -180,9 +206,9 @@ theorem eval_game {Msg : Type} (keyGen : ℕ → ProbComp (List Bool × List Boo
       (do
         let pk ← (ProbComp.eval (keyGen n)).map Prod.fst
         let choice ← ProbComp.eval (adversary.choose n pk)
-        let msgs := choice.1
-        let ciphertext ← ProbComp.eval (encrypt n pk (if bit then msgs.2 else msgs.1))
-        ProbComp.eval (adversary.guess n choice.2 ciphertext)) := by
+        let ciphertext ← ProbComp.eval
+          (encrypt n pk (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice))
+        ProbComp.eval (adversary.guess n (ChoiceOut.state choice) ciphertext)) := by
   simp only [game, eval_gameOn, ↓reduceIte]
 
 /-- Equal public-key marginals and equal encryption laws preserve `INDCPAOn`. -/
@@ -229,8 +255,8 @@ def AdversaryOf.restrict {Msg : Type} (valid : ℕ → List Bool → Msg → Msg
     (adversary : AdversaryOf Msg) : AdversaryOf Msg where
   choose n pk := do
     let choice ← adversary.choose n pk
-    let msgs := choice.1
-    return (msgs, valid n pk msgs.1 msgs.2 :: choice.2)
+    return (choice.1,
+      valid n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) :: choice.2)
   guess n state ciphertext :=
     if state.headD false then adversary.guess n state.tail ciphertext else pure false
 
@@ -242,7 +268,8 @@ theorem eval_game_restrict {Msg : Type} (valid : ℕ → List Bool → Msg → M
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     ProbComp.eval (game keyGen encrypt (adversary.restrict valid) bit n) =
       ProbComp.eval (gameOn valid keyGen encrypt adversary bit n) := by
-  simp only [game, gameOn, AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind,
+  simp only [game, gameOn, AdversaryOf.restrict, ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁,
+    ↓reduceIte, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval]
   congr 1; funext keys
   congr 1; funext choice

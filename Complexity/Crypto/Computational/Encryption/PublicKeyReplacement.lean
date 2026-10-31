@@ -52,10 +52,9 @@ noncomputable def publicKeyGame (keys : PMF (List Bool))
     (adversary : Adversary) (bit : Bool) (security : ℕ) : Game := do
   let pk ← keys
   let choice ← ProbComp.eval (adversary.choose security pk)
-  let msgs := choice.1
   let ciphertext ← ProbComp.eval
-    (encrypt security pk (if bit then msgs.2 else msgs.1))
-  ProbComp.eval (adversary.guess security choice.2 ciphertext)
+    (encrypt security pk (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice))
+  ProbComp.eval (adversary.guess security (ChoiceOut.state choice) ciphertext)
 
 /-- An honest key generator contributes precisely its public-key marginal. -/
 theorem eval_game_eq_publicKeyGame (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -71,10 +70,10 @@ noncomputable def keyDistinguisher
     (encrypt : ℕ → List Bool → Bool → ProbComp (List Bool))
     (adversary : Adversary) : Distinguisher := fun security pk => do
   let choice ← adversary.choose security pk
-  let msgs := choice.1
   let bit ← ProbComp.uniform Bool
-  let ciphertext ← encrypt security pk (if bit then msgs.2 else msgs.1)
-  let guess ← adversary.guess security choice.2 ciphertext
+  let ciphertext ← encrypt security pk
+    (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
+  let guess ← adversary.guess security (ChoiceOut.state choice) ciphertext
   return guess ^^ bit
 
 /-- The reduction is one uniform strict PPT program when encryption and both adversary stages
