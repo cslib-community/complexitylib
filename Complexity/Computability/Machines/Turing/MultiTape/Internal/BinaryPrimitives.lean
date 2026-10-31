@@ -16,12 +16,10 @@ import Mathlib.Tactic.Linarith
 
 The successor, predecessor and zero test certificates here are weakenings of the streaming
 transducer certificates `computableInTimeAndSpace_succ`, `computableInTimeAndSpace_pred` and
-`computableInTimeAndSpace_isZero`. The carry rounds remain as the shared step of binary addition.
+`computableInTimeAndSpace_isZero`.
 
 ## Main results
 
-* `ComputableInO.succStep`, `ComputableInO.succFinish`: shared linear carry-round certificates
-  for binary addition.
 * `ComputableInO.natSucc`, `ComputableInO.natPred`: binary counters within the quadratic clock
   and linear charged workspace used by their clients.
 * `ComputableInO.natIsZero`: linear zero testing.
@@ -31,37 +29,6 @@ transducer certificates `computableInTimeAndSpace_succ`, `computableInTimeAndSpa
 namespace Turing.MultiTapeTM
 
 namespace ComputableInO
-
-/-- One consuming carry round has linear time and charged workspace. -/
-theorem succStep :
-    ComputableInO (fun p : (Bool × List Bool) × Bool => NatSucc.succStep p.1 p.2)
-      (encPair (encPair encBool encBits) encBool) (encPair encBool encBits)
-      (fun p => (encPair (encPair encBool encBits) encBool p).length)
-      (fun p => (encPair (encPair encBool encBits) encBool p).length) := by
-  have hacc := fst (encPair encBool encBits) encBool
-  have hb := snd (encPair encBool encBits) encBool
-  have hc := hacc.fst'
-  have hflag := (of_linear (.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
-    fun q : Bool × Bool => q.1 && q.2)).comp_linear (hc.prod hb)
-  have hdig := (of_linear (.of_finite (encIn := encPair encBool encBool) (encMid := encBool)
-    fun q : Bool × Bool => q.1 ^^ q.2)).comp_linear (hc.prod hb)
-  exact (hflag.prod (hacc.snd'.append hdig (encOut := encBits) fun _ => rfl)).mono 5
-    (fun _ => by omega) (fun _ => by omega)
-
-/-- Appending the final carry has linear time and charged workspace. -/
-theorem succFinish :
-    ComputableInO NatSucc.succFinish (encPair encBool encBits) encBits
-      (fun p => (encPair encBool encBits p).length)
-      (fun p => (encPair encBool encBits p).length) := by
-  have hc := fst encBool encBits
-  have hds := snd encBool encBits
-  have happ := hds.append (of_linear (.const (encMid := encBool) true)) (encOut := encBits)
-    (g := fun p : Bool × List Bool => p.2 ++ [true]) fun _ => rfl
-  unfold NatSucc.succFinish
-  exact
-    (hc.ite happ hds).mono (T' := fun p => (encPair encBool encBits p).length)
-      (S' := fun p => (encPair encBool encBits p).length) 3
-      (fun _ => by split_ifs <;> omega) (fun _ => by split_ifs <;> omega)
 
 /-- Binary successor within the quadratic clock and linear charged workspace used by its
 clients, weakened from the linear-time, zero-work-space transducer certificate
