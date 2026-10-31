@@ -25,7 +25,7 @@ encoding under `enc` has length `n`, by a fair-coin machine with a binary alphab
 many states (`Turing.MultiTapePTM.SolvesWithBoundedErrorInTime`). As for `BPTIME`, every run of
 that many steps halts, on every instance. The output must be `[true]` with probability at least
 `2 / 3` on the yes-instances and `[false]` with probability at least `2 / 3` on the no-instances;
-nothing is required on instances outside the promise [Goldreich, Definition 1.2][Goldreich2006].
+nothing is required on instances outside the promise [Goldreich][Goldreich2006].
 A decision problem is in the class exactly when it is in `BPTIME`
 (`Cslib.Complexity.ofSet_mem_PromiseBPTIME_iff`).
 
@@ -140,7 +140,7 @@ variable {α : Type*}
 for constants `c₁` and `c₂`, on instances whose encoding under `enc` has length `n`, by a fair-coin
 machine with a binary alphabet and finitely many states: every run of that many steps has halted,
 on every instance, and the output is `[true]` on the yes-instances and `[false]` on the
-no-instances with probability at least `2 / 3` [Goldreich, Definition 1.2][Goldreich2006]. -/
+no-instances with probability at least `2 / 3` [Goldreich][Goldreich2006]. -/
 @[expose] def PromiseBPTIME (enc : α ↪ List Bool) (t : ℕ → ℕ) : Set (PromiseProblem α) :=
   {Q | ∃ c₁ c₂ : ℕ, ∃ (k : ℕ) (State : Type) (_ : Finite State)
     (machine : MultiTapePTM k Bool State),

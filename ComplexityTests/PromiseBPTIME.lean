@@ -64,6 +64,19 @@ example {A : Set (List Bool)} (hA : A ∈ DTIME encBits fun n => n) :
   ofSet_mem_PromiseBPTIME_iff.mp
     (mem_PromiseBPTIME_of_mem_DTIME hA le_rfl fun _ h => h)
 
+/-- The promise problem with every word a yes-instance, solved by sampling no coins and
+accepting: a concrete member of `PromiseBPTIME n`. -/
+example : (⟨Set.univ, ∅, Set.disjoint_empty _⟩ : PromiseProblem (List Bool)) ∈
+    PromiseBPTIME encBits fun n => n := by
+  refine mem_PromiseBPTIME_of_verifier (V := fun _ => true) (ℓ := fun _ => 0) (t := fun n => n)
+    (C := 4) (ComputableInO.const (encIn := encBits) (encMid := encUnary) 0)
+    (ComputableInO.const (encIn := encPair encBits encBits) (encMid := encBool) true)
+    (fun x w hw => ?_) (fun x _ => by simp) fun x hx => absurd hx (Set.notMem_empty x)
+  simp only [List.length_eq_zero_iff] at hw
+  subst hw
+  simp only [encBits_apply, encPair_apply, List.length_append, length_frame, List.length_nil]
+  omega
+
 /-- **Round trip at linear time.** A promise problem in linear time has a linear-time coin-replay
 verifier, and sampling strings of length `c * n + c` for it solves the problem in linear time
 again. Both explicit-time hypotheses are satisfiable together. -/
