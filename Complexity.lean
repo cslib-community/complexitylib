@@ -2750,6 +2750,7 @@ public import Complexity.Foundations.Data.Polynomial.CoeffNorm1
 public import Complexity.Foundations.Data.Polynomial.HermiteInterpolation
 public import Complexity.Foundations.Data.Polynomial.ParityAmplifier
 public import Complexity.Foundations.Data.Polynomial.ParityAmplifierDegree
+public import Complexity.Foundations.Data.Polynomial.RingLagrange
 public import Complexity.Foundations.Data.Polynomial.SignQueries
 public import Complexity.Foundations.Data.Polynomial.StagedJetArithmetic
 public import Complexity.Foundations.Data.Polynomial.TaperedHermite
@@ -2822,6 +2823,7 @@ public import Complexity.Foundations.NumberTheory.AKS.Introspective
 public import Complexity.Foundations.NumberTheory.AKS.SmallR
 public import Complexity.Foundations.NumberTheory.Harmonic
 public import Complexity.Foundations.NumberTheory.Padics.RatValuation
+public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import Complexity.Foundations.NumberTheory.PrimeCounting
 public import Complexity.Foundations.NumberTheory.PrimeWindow
 public import Complexity.Foundations.NumberTheory.SqrtPrimeWindow
@@ -2857,6 +2859,7 @@ public import Complexity.Foundations.Relation.InductiveCounting
 public import Complexity.Foundations.Relation.RelatesWithinSteps
 public import Complexity.Foundations.RingTheory.CyclicIntRing
 public import Complexity.Foundations.RingTheory.CyclicIntRing.Coefficients
+public import Complexity.Foundations.RingTheory.GaloisRing
 public import Complexity.Foundations.Semantics.Stateful.Amortized
 public import Complexity.Foundations.Semantics.Stateful.Basic
 public import Complexity.Foundations.Semantics.Stateful.Composition
