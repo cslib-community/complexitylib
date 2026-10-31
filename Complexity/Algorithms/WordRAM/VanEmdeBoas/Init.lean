@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.VanEmdeBoas.Init.Table
-public import Complexity.Computability.WordRAM.Generic
+public import Complexity.Computability.WordRAM.Defs
 import Mathlib.Tactic.Ring
 
 /-!
