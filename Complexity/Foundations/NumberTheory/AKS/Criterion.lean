@@ -29,8 +29,10 @@ Checking the identity directly takes `n` coefficients. The AKS algorithm checks 
 `X^r - 1`, for a small `r`, and for a few values of `a`. Given `r`, the algorithm outputs PRIME
 exactly when `n` is not a perfect power, no `a ≤ r` has `1 < gcd(a, n) < n`, and either `n ≤ r` or
 `(X + a)^n ≡ X^n + a (mod X^r - 1, n)` for every `1 ≤ a ≤ ⌊√φ(r) log₂ n⌋`
-(`Cslib.AKS.Passes`). Every prime passes, for every `r` (`Cslib.AKS.passes_of_prime`): this is
-the easy direction of [Agrawal, Kayal, Saxena, Theorem 4.1][AKS2004]. The converse, for `r` with
+(`Cslib.AKS.Passes`). `Cslib.AKS.PassesUpTo n r A` states the same tests with the congruence
+checked for `1 ≤ a ≤ A`, and `Passes n r` is its case `A = ⌊√φ(r) log₂ n⌋`. Every prime passes,
+for every `r` and `A` (`Cslib.AKS.passesUpTo_of_prime`, `Cslib.AKS.passes_of_prime`): this is the
+easy direction of [Agrawal, Kayal, Saxena, Theorem 4.1][AKS2004]. The converse, for `r` with
 multiplicative order of `n` modulo `r` above `log₂² n`, is the substance of their theorem.
 
 ## Main definitions
@@ -38,6 +40,7 @@ multiplicative order of `n` modulo `r` above `log₂² n`, is the substance of t
 * `Cslib.AKS.IsPerfectPower`: `n = a ^ b` for some `b > 1`.
 * `Cslib.AKS.numTests`: the number `⌊√φ(r) log₂ n⌋` of tested values of `a`.
 * `Cslib.AKS.Congruence`: `(X + a)^n ≡ X^n + a (mod X^r - 1, n)`.
+* `Cslib.AKS.PassesUpTo`: the AKS tests, with the congruence checked for `1 ≤ a ≤ A`.
 * `Cslib.AKS.Passes`: the conditions under which the AKS algorithm, given `r`, outputs PRIME.
 
 ## Main results
@@ -45,7 +48,7 @@ multiplicative order of `n` modulo `r` above `log₂² n`, is the substance of t
 * `Cslib.AKS.not_dvd_choose_of_prime_dvd`: a composite `n` does not divide `C(n, q)` for a prime
   factor `q < n`.
 * `Cslib.AKS.prime_iff_add_pow_eq`: the AKS identity characterizes primes.
-* `Cslib.AKS.passes_of_prime`: every prime passes the AKS tests.
+* `Cslib.AKS.passesUpTo_of_prime`, `Cslib.AKS.passes_of_prime`: every prime passes the AKS tests.
 
 ## References
 
@@ -141,14 +144,19 @@ def Congruence (n r a : ℕ) : Prop :=
   AdjoinRoot.mk (X ^ r - 1 : (ZMod n)[X]) ((X + C (a : ZMod n)) ^ n) =
     AdjoinRoot.mk (X ^ r - 1 : (ZMod n)[X]) (X ^ n + C (a : ZMod n))
 
-/-- **The conditions under which the AKS algorithm outputs PRIME**, given `r`
-[Agrawal, Kayal, Saxena, Section 4][AKS2004]: `n` is not a perfect power (step 1), no `a ≤ r` has
-`1 < gcd(a, n) < n` (step 3), and either `n ≤ r` (step 4) or the congruence holds for every
-`1 ≤ a ≤ ⌊√φ(r) log₂ n⌋` (step 5). The algorithm chooses `r` as the least number for which the
-multiplicative order of `n` modulo `r` exceeds `log₂² n` (step 2). -/
-def Passes (n r : ℕ) : Prop :=
+/-- **The AKS tests with the congruence checked up to `A`**: `n` is not a perfect power (step 1),
+every `1 ≤ a ≤ r` has `gcd(a, n) = 1` or `gcd(a, n) = n` (step 3; for `n ≥ 1`, no `a ≤ r` has
+`1 < gcd(a, n) < n`), and either `n ≤ r` (step 4) or the congruence holds for every `1 ≤ a ≤ A`
+(step 5). -/
+def PassesUpTo (n r A : ℕ) : Prop :=
   ¬ IsPerfectPower n ∧ (∀ a, 1 ≤ a → a ≤ r → a.gcd n = 1 ∨ a.gcd n = n) ∧
-    (n ≤ r ∨ ∀ a, 1 ≤ a → a ≤ numTests n r → Congruence n r a)
+    (n ≤ r ∨ ∀ a, 1 ≤ a → a ≤ A → Congruence n r a)
+
+/-- **The conditions under which the AKS algorithm outputs PRIME**, given `r`
+[Agrawal, Kayal, Saxena, Section 4][AKS2004]: the tests of `PassesUpTo`, with the congruence
+checked for every `1 ≤ a ≤ ⌊√φ(r) log₂ n⌋` in step 5. The algorithm chooses `r` as the least
+number for which the multiplicative order of `n` modulo `r` exceeds `log₂² n` (step 2). -/
+def Passes (n r : ℕ) : Prop := PassesUpTo n r (numTests n r)
 
 /-- A prime is not a perfect power. -/
 theorem not_isPerfectPower_of_prime {p : ℕ} (hp : p.Prime) : ¬ IsPerfectPower p := by
@@ -159,13 +167,18 @@ theorem not_isPerfectPower_of_prime {p : ℕ} (hp : p.Prime) : ¬ IsPerfectPower
 theorem congruence_of_prime {p : ℕ} (hp : p.Prime) (r a : ℕ) : Congruence p r a := by
   rw [Congruence, add_pow_eq_of_prime hp]
 
-/-- **Every prime passes the AKS tests**, for every `r`: the easy direction of
-[Agrawal, Kayal, Saxena, Theorem 4.1][AKS2004]. -/
-theorem passes_of_prime {p : ℕ} (hp : p.Prime) (r : ℕ) : Passes p r := by
+/-- **Every prime passes the AKS tests**, for every `r` and every bound `A` on the tested `a`:
+the easy direction of [Agrawal, Kayal, Saxena, Theorem 4.1][AKS2004]. -/
+theorem passesUpTo_of_prime {p : ℕ} (hp : p.Prime) (r A : ℕ) : PassesUpTo p r A := by
   refine ⟨not_isPerfectPower_of_prime hp, fun a _ _ => ?_, Or.inr fun a _ _ =>
     congruence_of_prime hp r a⟩
   rcases (Nat.coprime_or_dvd_of_prime hp a) with h | h
   · exact Or.inl (Nat.Coprime.symm h)
   · exact Or.inr (Nat.gcd_eq_right h)
+
+/-- **Every prime passes the AKS tests**, for every `r`: the easy direction of
+[Agrawal, Kayal, Saxena, Theorem 4.1][AKS2004]. -/
+theorem passes_of_prime {p : ℕ} (hp : p.Prime) (r : ℕ) : Passes p r :=
+  passesUpTo_of_prime hp r (numTests p r)
 
 end Cslib.AKS
