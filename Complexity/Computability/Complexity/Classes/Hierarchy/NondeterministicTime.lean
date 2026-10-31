@@ -461,14 +461,6 @@ private theorem exists_computableInO_brute (d : ℕ) : ∃ K, ComputableInO
     fun_prop
   exact exists_computableInO_any_enumList hf hpoly hpoly hℓ
 
-/-- Weaken only the time bound, keeping the space bound. -/
-private theorem _root_.Turing.MultiTapeTM.ComputableInO.mono_time {α β : Type*} {f : α → β}
-    {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {T S T' : α → ℕ}
-    (h : ComputableInO f encIn encOut T S) (k : ℕ) (hT : ∀ a, T a ≤ k * (T' a + 1)) :
-    ComputableInO f encIn encOut T' S :=
-  h.mono (k + 1) (fun a => (hT a).trans (Nat.mul_le_mul_right _ (Nat.le_succ k)))
-    fun _ => (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (Nat.succ_pos k))
-
 /-- The cost of the tests of the verifier: quadratic in the encoded input, times a power of the
 length of the input that pays for the clock in unary. -/
 private def cheap (d : ℕ) (p : List Bool × List Bool) : ℕ :=
