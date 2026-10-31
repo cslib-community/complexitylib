@@ -254,13 +254,9 @@ arithmetic both the Lemma 4.8 regime conditions (`20 ≤ n`, `32 ≤ R`, `6 * R 
 `checkReplacementFeasible`, deciding whether to run the subexponential replacement branch or the
 small-`n` direct-evaluation fallback of Theorem 2.2 / §5.5 (`[OpenAI2026ETH]`, p. 39). -/
 def checkScheduleFeasible (n M b wmax β : ℕ) : Bool :=
-  let s := computeScheduleParams β n
-  let sNu := s.2
-  let sGroups := sNu.2
-  let sNodes := sGroups.2
-  let sRow := sNodes.2
-  decide (20 ≤ n) && decide (32 ≤ sRow.1) && decide (6 * sRow.1 ≤ sNodes.1) &&
-    checkReplacementFeasible n M b wmax s.1 sNodes.1 sGroups.1 sRow.2 sRow.1
+  let (lam, _, r, Q, R, A₀) := computeScheduleParams β n
+  decide (20 ≤ n) && decide (32 ≤ R) && decide (6 * R ≤ Q) &&
+    checkReplacementFeasible n M b wmax lam Q r A₀ R
 
 /-! #### Bridges to `Finset` sums, real probabilities, and `ReplacementParams` -/
 
@@ -905,12 +901,9 @@ theorem computableInPolyTime_scheduleAndCheck_unary :
     ComputableInPolyTime
       (fun (((((n, M), b), wmax), β) : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) =>
         let s := computeScheduleParams β n
-        let sNu := s.2
-        let sGroups := sNu.2
-        let sNodes := sGroups.2
-        let sRow := sNodes.2
+        let (lam, _, r, Q, R, A₀) := s
         (s,
-          checkReplacementFeasible n M b wmax s.1 sNodes.1 sGroups.1 sRow.2 sRow.1,
+          checkReplacementFeasible n M b wmax lam Q r A₀ R,
           checkScheduleFeasible n M b wmax β))
       (encPair (encPair (encPair (encPair encUnary encNat) encNat) encNat) encNat)
       (encPair

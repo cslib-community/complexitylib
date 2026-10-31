@@ -434,20 +434,18 @@ theorem computableInO_select {count : C × List (List Bool) → ℕ}
     (hSpace : PolyBounded (fun r => (encPair encC (encList encBits) r).length) cCount.space)
     (R : C × ℕ × ℕ × List (List Bool) → ℕ)
     (hR : ∀ a,
-      let mr := a.2
-      let pr := mr.2
-      ∀ j ≤ candidateTupleCount mr.1 pr.1,
+      let (c, m, P, rows) := a
+      ∀ j ≤ candidateTupleCount m P,
         cCount.time
-          (a.1, pr.2 ++ [materializeTestRow mr.1 (decodeTestTuple mr.1 pr.1 j)]) ≤ R a) :
+          (c, rows ++ [materializeTestRow m (decodeTestTuple m P j)]) ≤ R a) :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
         (fun ((c, m, P, rows) : C × ℕ × ℕ × List (List Bool)) =>
           selectBestTestRow (fun r => count (c, r)) m P rows)
         (encInput encC) encBits
         (fun a =>
-          let mr := a.2
-          let pr := mr.2
-          (candidateTupleCount mr.1 pr.1 + 1) * (poly (encInput encC a).length + R a))
+          let (_, m, P, _) := a
+          (candidateTupleCount m P + 1) * (poly (encInput encC a).length + R a))
         (fun a => poly (encInput encC a).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := select_bounds cCount hSpace
   exact ⟨poly, hpoly, (selectCertificate cCount).computes.mono_le
@@ -478,23 +476,19 @@ theorem computableInO_greedy {count : C × List (List Bool) → ℕ}
     (hSpace : PolyBounded (fun r => (encPair encC (encList encBits) r).length) cCount.space)
     (R : C × ℕ × ℕ × ℕ × List (List Bool) → ℕ)
     (hR : ∀ a,
-      let nmr := a.2
-      let mr := nmr.2
-      let pr := mr.2
-      ∀ i ≤ 3 * nmr.1, ∀ j ≤ candidateTupleCount mr.1 pr.1,
-        cCount.time (a.1,
-          greedyParityRowsAt (fun r => count (a.1, r)) mr.1 pr.1 pr.2 i ++
-            [materializeTestRow mr.1 (decodeTestTuple mr.1 pr.1 j)]) ≤ R a) :
+      let (c, n, m, P, rows) := a
+      ∀ i ≤ 3 * n, ∀ j ≤ candidateTupleCount m P,
+        cCount.time (c,
+          greedyParityRowsAt (fun r => count (c, r)) m P rows i ++
+            [materializeTestRow m (decodeTestTuple m P j)]) ≤ R a) :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
         (fun ((c, n, m, P, rows) : C × ℕ × ℕ × ℕ × List (List Bool)) =>
           greedyParityRows (fun r => count (c, r)) n m P rows)
         (encGreedyInput encC) (encList encBits)
         (fun a =>
-          let nmr := a.2
-          let mr := nmr.2
-          let pr := mr.2
-          (3 * nmr.1 + 1) * (candidateTupleCount mr.1 pr.1 + 1) *
+          let (_, n, m, P, _) := a
+          (3 * n + 1) * (candidateTupleCount m P + 1) *
             (poly (encGreedyInput encC a).length + R a))
         (fun a => poly (encGreedyInput encC a).length) := by
   obtain ⟨polySel, hpolySel, hmpolySel, hSelB⟩ := select_bounds cCount hSpace

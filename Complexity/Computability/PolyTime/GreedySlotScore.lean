@@ -163,14 +163,11 @@ def labelWordEquiv {r : ℕ} (hr : 1 ≤ r) (Q : ℕ) :
   toFun j := ⟨decodeLabelWord r Q j.val, length_decodeLabelWord r Q j.val,
     fun _ hx => mem_decodeLabelWord_lt hr hx⟩
   invFun w := ⟨Nat.ofDigits r w.1,
-    by
-      have hprop := w.2
-      simpa only [hprop.1] using Nat.ofDigits_lt_base_pow_length_of_pos hr w.1 hprop.2⟩
+    by simpa only [w.2.1] using Nat.ofDigits_lt_base_pow_length_of_pos hr w.1 w.2.2⟩
   left_inv j := Fin.ext (ofDigits_decodeLabelWord j.isLt)
   right_inv w := Subtype.ext (by
-    have hprop := w.2
-    have h := decodeLabelWord_ofDigits hr hprop.2
-    rwa [hprop.1] at h)
+    have h := decodeLabelWord_ofDigits hr w.2.2
+    rwa [w.2.1] at h)
 
 /-- Convert a concrete digit list `w : List ℕ` into a typed schedule `Fin Q → Fin r`, clamping
 out-of-range digits to `0`. -/
@@ -732,20 +729,12 @@ abbrev SlotSelectAcc : Type :=
 /-- Inner `IndexFold.run` callback evaluating candidate `decodeLabelWord r Q j` under
 `clearedJointScore` and retaining the first strict minimizer (`candScore < best.2`). -/
 def selectSlotStep (state : ℕ × SlotSelectAcc) : SlotSelectAcc :=
-  let acc := state.2
-  let sparams := acc.1
-  let nQ := sparams.1
-  let rCE := sparams.2
-  let rC := rCE.1
-  let slotRest := acc.2
-  let slot := slotRest.1
-  let schedBest := slotRest.2
-  let scheds := schedBest.1
-  let candWord := decodeLabelWord rC.1 nQ.2 state.1
+  let (j, (sparams, (slot, (scheds, bestOpt)))) := state
+  let ((n, Q), (r, C), edges) := sparams
+  let candWord := decodeLabelWord r Q j
   let candScheds := updateSlotSchedules slot (some candWord) scheds
-  let candScore := clearedJointScore nQ.1 nQ.2 rC.1 rC.2
-    rCE.2 candScheds.1 candScheds.2
-  let nextBest := schedBest.2.elim (some (candWord, candScore)) fun best =>
+  let candScore := clearedJointScore n Q r C edges candScheds.1 candScheds.2
+  let nextBest := bestOpt.elim (some (candWord, candScore)) fun best =>
     if decide (candScore < best.2) then some (candWord, candScore) else some best
   (sparams, (slot, (scheds, nextBest)))
 
@@ -755,10 +744,8 @@ word minimizing `clearedJointScore` for `slot`, falling back to `List.replicate 
 def streamBestSlotLabel (n Q r C : ℕ) (edges : List (ℕ × ℕ))
     (scheds : List (Option (List ℕ)) × List (Option (List ℕ))) (slot : Bool × ℕ) : List ℕ :=
   let init : SlotSelectAcc := (((n, Q), (r, C), edges), (slot, (scheds, none)))
-  let outAcc := (IndexFold.run selectSlotStep (r ^ Q) init).2
-  let outSlot := outAcc.2
-  let outSched := outSlot.2
-  outSched.2.elim (List.replicate Q 0) Prod.fst
+  let (_, (_, (_, (_, bestOpt)))) := IndexFold.run selectSlotStep (r ^ Q) init
+  bestOpt.elim (List.replicate Q 0) Prod.fst
 
 private theorem run_selectSlotStep_params (sparams : (ℕ × ℕ) × (ℕ × ℕ) × List (ℕ × ℕ))
     (slot : Bool × ℕ) (scheds : List (Option (List ℕ)) × List (Option (List ℕ))) (k : ℕ) :
@@ -1263,12 +1250,9 @@ private theorem mkSlotCert_bounds
 theorem streamBestSlotCertificate_bounds :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧ Monotone poly ∧
       ∀ a : StreamSlotIn,
-        let sparams := a.1
-        let nQ := sparams.1
-        let rCE := sparams.2
-        let rC := rCE.1
+        let (((_, Q), (r, _), _), _) := a
         streamBestSlotCertificate.time a ≤
-            (rC.1 ^ nQ.2 + 1) * poly (encStreamSlotIn a).length ∧
+            (r ^ Q + 1) * poly (encStreamSlotIn a).length ∧
           streamBestSlotCertificate.space a ≤ poly (encStreamSlotIn a).length := by
   obtain ⟨pCn, hpCn, _, hCn⟩ := exists_mono_poly_cert computableInPolyTime_streamSlotCount
   obtain ⟨pCi, hpCi, _, hCi⟩ := exists_mono_poly_cert computableInPolyTime_streamSlotInit
@@ -1285,11 +1269,8 @@ theorem computableInO_streamBestSlotLabel :
           streamBestSlotLabel n Q r C edges scheds slot)
         encStreamSlotIn (encList encNat)
         (fun a =>
-          let sparams := a.1
-          let nQ := sparams.1
-          let rCE := sparams.2
-          let rC := rCE.1
-          (rC.1 ^ nQ.2 + 1) * poly (encStreamSlotIn a).length)
+          let (((_, Q), (r, _), _), _) := a
+          (r ^ Q + 1) * poly (encStreamSlotIn a).length)
         (fun a => poly (encStreamSlotIn a).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := streamBestSlotCertificate_bounds
   exact ⟨poly, hpoly, streamBestSlotCertificate.computes.mono_le
