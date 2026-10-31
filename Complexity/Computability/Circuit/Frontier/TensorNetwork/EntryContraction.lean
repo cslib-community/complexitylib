@@ -64,7 +64,7 @@ admissible inputs that is `K (n + 1) ^ K 2 ^ (K s)` and polynomial space
 
 **Instances.** A polynomial-time entry procedure meets the entry bounds from some constant on
 (`EntryContraction.exists_entryAdmissible_of_isPolynomial`), so admissibility reduces to the
-shape of the network. Tables are the entry procedure `EntryContraction.tableEntry`, and direct
+shape of the network. Tables are the entry procedure `tableEntry` (`VertexDesc.lean`), and direct
 summation with it is the contraction of the explicit network
 (`EntryContraction.val_directCore_tableEntry`).
 
@@ -75,8 +75,6 @@ summation with it is the contraction of the explicit network
 * `Cslib.Circuits.Frontier.EntryAdmissible`: Theorem D.1's hypotheses.
 * `Cslib.Circuits.Frontier.EntryContractionAlgorithm`: the interface.
 * `Cslib.Circuits.Frontier.EntryContraction.directCore`: direct summation with an entry procedure.
-* `Cslib.Circuits.Frontier.EntryContraction.tableEntry`,
-  `Cslib.Circuits.Frontier.EntryContraction.tableEntryCertificate`: the entry procedure of tables.
 
 ## Main results
 
@@ -553,33 +551,6 @@ theorem exists_entryAdmissible_of_isPolynomial
   refine ⟨(ht _).trans (hpow.trans ((hBC (by omega) (by omega)).trans
     (Nat.le_mul_of_pos_right _ Nat.one_le_two_pow))), (hs _).trans (hpow.trans
       (hBC (by omega) (by omega)))⟩
-
-/-- **The entry procedure of tables**: the table entry at the bits on the ports, as a constant
-coefficient list. -/
-@[expose] def tableEntry (table : List ℕ) (bs : List Bool) : List ℕ :=
-  [ExplicitTensorNetwork.entry table bs]
-
-/-- The entry procedure of tables is polynomial-time. -/
-theorem tableEntry_polyTime :
-    ComputableInPolyTime (fun q : List ℕ × List Bool => tableEntry q.1 q.2)
-      (encPair (encList encNat) encBits) (encList encNat) := by
-  have hindex := ComputableInPolyTime.bitsBinaryValue.comp
-    (ComputableInPolyTime.bitsReverse.comp (ComputableInPolyTime.snd (encList encNat) encBits))
-  have hentry := ComputableInPolyTime.listGetD_binary (encA := encNat) (encL := encList encNat) 0
-    (ComputableInPolyTime.fst _ _) hindex
-  exact (ComputableInPolyTime.cons' hentry (ComputableInPolyTime.const [])).of_enc_eq fun q => by
-    simp only [tableEntry, ExplicitTensorNetwork.entry,
-      BitString.lsbValue_eq_binaryValue_reverse, Function.comp_apply]
-
-/-- **The native certificate of the entry procedure of tables.** -/
-noncomputable def tableEntryCertificate :
-    NativeCertificate (fun q : List ℕ × List Bool => tableEntry q.1 q.2)
-      (encPair (encList encNat) encBits) (encList encNat) :=
-  NativeCertificate.ofPolyTime tableEntry_polyTime
-
-/-- The certificate of the entry procedure of tables is polynomial. -/
-theorem tableEntryCertificate_isPolynomial : tableEntryCertificate.IsPolynomial :=
-  NativeCertificate.ofPolyTime_isPolynomial tableEntry_polyTime
 
 /-- **Direct summation of a table network is its contraction**, in `A_P` at every modulus. -/
 theorem val_directCore_tableEntry (P : ℕ) (fl : List ℕ) (G : ExplicitTensorNetwork ℕ) :
