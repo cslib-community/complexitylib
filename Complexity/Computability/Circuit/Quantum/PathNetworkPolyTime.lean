@@ -84,7 +84,8 @@ private theorem inBit_eq (X : List Bool) (gs : List GateCode) (c i idx : ℕ) :
 
 private theorem scalarVertex_eq (X : List Bool) (gs : List GateCode) :
     (scalarVertex X gs : List ℕ × List ℕ) =
-      ([], [if ((occurrences gs).any fun q => decide (q = 0)) || X.getD 0 false then 1 else 0]) := by
+      ([], [if ((occurrences gs).any fun q => decide (q = 0)) || X.getD 0 false then 1
+        else 0]) := by
   simp only [scalarVertex, List.any_eq_true, decide_eq_true_eq, exists_eq_right, Bool.or_eq_true]
 
 /-- The encoding of networks is the encoding of their number of edges and vertices. -/
@@ -203,8 +204,9 @@ theorem computableInPolyTime_gateVertex {neg : α → ℕ} {X : α → List Bool
   refine ite_decide (decide_eq' ((fst _ _).comp hg) (const true)) ?_ ?_
   · exact ite_decide (decide_eq' (bool_and' ((headD false).comp hins) ((headD false).comp houts))
       (const true)) hneg (const 1)
-  · exact ite_decide (decide_eq' houts (cons' (bool_xor.comp (((headD false).comp hins).prod
-      (allWithInput ((tail (encA := encBool)).comp hins) (snd _ _)))) ((tail (encA := encBool)).comp hins))) (const 1) (const 0)
+  · have htl := (tail (encA := encBool)).comp hins
+    exact ite_decide (decide_eq' houts (cons' (bool_xor.comp (((headD false).comp hins).prod
+      (allWithInput htl (snd _ _)))) htl)) (const 1) (const 0)
 
 /-- **Glue vertices are polynomial-time.** -/
 theorem computableInPolyTime_glueVertex {w : α → ℕ} (hw : ComputableInPolyTime w inp encUnary) :
