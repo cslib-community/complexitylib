@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
 public import Complexity.Computability.PolyTime.GaloisRingSeries
+import Mathlib.Data.List.GetD
 
 /-!
 # Native tapered recovery (Lemma D.5) on coefficient lists
@@ -259,5 +260,235 @@ theorem val_slopeConst (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (Z
   split_ifs with h
   · rw [val_neg, hw, map_neg, map_natCast, neg_mul]
   · rw [hw, map_natCast]
+
+/-- The slope `2 ^ (a + 1) / (t - q)` for node indices `k, k'`, and `0` off the grid. -/
+noncomputable def slope' (a k k' : ℕ) : ℤ₍₂₎ :=
+  if h : k < 2 ^ (a + 1) ∧ k' < 2 ^ (a + 1) ∧ k' ≠ k then
+    slope a (node_mem_cauchyGrid h.1) (node_mem_cauchyGrid h.2.1)
+      (fun e => h.2.2 (node_injective a e))
+  else 0
+
+theorem val_slopeConst' (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+    (ρ : ℤ₍₂₎ →+* Ring N fl) {a k k' : ℕ} (hk : k < 2 ^ (a + 1)) (hk' : k' < 2 ^ (a + 1))
+    (hne : k' ≠ k) : val N fl (slopeConst N fl a k k') = ρ (slope' a k k') := by
+  rw [val_slopeConst hirr ρ hk hk' hne, slope', dite_eq_left_of_eq_true (eq_true ⟨hk, hk', hne⟩)]
+
+/-! ### Correctness of the reciprocal -/
+
+/-- The geometric series `∑ (-c) ^ i z ^ i`, the inverse of `1 + c z`. -/
+noncomputable def geomSeries {R : Type*} [CommRing R] (c : R) : PowerSeries R :=
+  PowerSeries.mk fun i => (-c) ^ i
+
+theorem one_add_mul_geomSeries {R : Type*} [CommRing R] (c : R) :
+    (1 + PowerSeries.C c * PowerSeries.X) * geomSeries c = 1 := by
+  ext n
+  rw [add_mul, one_mul, map_add, PowerSeries.coeff_one, mul_assoc]
+  rcases n with _ | n
+  · simp [geomSeries]
+  · rw [PowerSeries.coeff_C_mul, PowerSeries.coeff_succ_X_mul]
+    simp only [geomSeries, PowerSeries.coeff_mk, pow_succ]
+    simp only [Nat.succ_ne_zero, ↓reduceIte, mul_neg]
+    ring
+
+/-- The reciprocal of `E_t(t + α z)` over `ℤ_(2)` for the node of index `k`, in the order of
+`NativeRecovery.recip`. -/
+noncomputable def recipSeries (a u h k : ℕ) : PowerSeries ℤ₍₂₎ :=
+  (others a k).foldl (fun ψ k' => ψ * geomSeries (slope' a k k') ^ mult a u h k') 1
+
+theorem mem_others {a k k' : ℕ} : k' ∈ others a k ↔ k' < 2 ^ (a + 1) ∧ k' ≠ 2 ^ a ∧ k' ≠ k := by
+  simp [others]
+
+/-- A truncated product computes the coefficients of the product of power series. -/
+theorem val_tmul_eq {ρ : ℤ₍₂₎ →+* Ring N fl} {J : ℕ} {P G : List (List ℕ)}
+    {φ χ : PowerSeries ℤ₍₂₎} (hP : ∀ i < J, val N fl (P.getD i []) = ρ (PowerSeries.coeff i φ))
+    (hG : ∀ i < J, val N fl (G.getD i []) = ρ (PowerSeries.coeff i χ)) {i : ℕ} (hi : i < J) :
+    val N fl ((tmul N fl J P G).getD i []) = ρ (PowerSeries.coeff i (φ * χ)) := by
+  rw [val_tmul _ _ hi, PowerSeries.coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ
+    (fun l m => PowerSeries.coeff l φ * PowerSeries.coeff m χ), map_sum]
+  refine sum_congr rfl fun l hl => ?_
+  have hl' := mem_range.mp hl
+  rw [hP l (by omega), hG (i - l) (by omega), map_mul]
+
+theorem val_geom {ρ : ℤ₍₂₎ →+* Ring N fl} {J : ℕ} {c : List ℕ} {γ : ℤ₍₂₎}
+    (hc : val N fl c = ρ γ) {i : ℕ} (hi : i < J) :
+    val N fl ((geom N fl J c).getD i []) = ρ (PowerSeries.coeff i (geomSeries γ)) := by
+  rw [geom, List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map, List.getElem_range,
+    val_pow, val_neg, hc, geomSeries, PowerSeries.coeff_mk, map_pow, map_neg]
+
+/-- **The native reciprocal is correct**: its coefficients below `z ^ J` are the images of those
+of `NativeRecovery.recipSeries`. -/
+theorem val_recip (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+    (ρ : ℤ₍₂₎ →+* Ring N fl) {a u h k J : ℕ} (hk : k < 2 ^ (a + 1)) {i : ℕ} (hi : i < J) :
+    val N fl ((recip N fl a u h k J).getD i []) = ρ (PowerSeries.coeff i (recipSeries a u h k)) := by
+  -- The invariant of the fold over the other nodes.
+  suffices H : ∀ (l : List ℕ), (∀ k' ∈ l, k' < 2 ^ (a + 1) ∧ k' ≠ k) →
+      ∀ (R : List (List ℕ)) (ψ : PowerSeries ℤ₍₂₎),
+      (∀ i < J, val N fl (R.getD i []) = ρ (PowerSeries.coeff i ψ)) →
+      ∀ i < J, val N fl ((l.foldl (fun R k' =>
+        mulGeomPow N fl J (slopeConst N fl a k k') (mult a u h k') R) R).getD i []) =
+        ρ (PowerSeries.coeff i (l.foldl (fun ψ k' => ψ * geomSeries (slope' a k k') ^
+          mult a u h k') ψ)) by
+    refine H _ (fun k' hk' => ⟨(mem_others.mp hk').1, (mem_others.mp hk').2.2⟩) _ _ ?_ i hi
+    intro i _
+    rcases i with _ | i
+    · simp [PowerSeries.coeff_one]
+    · rw [List.getD_cons_succ, List.getD_nil, val_nil, PowerSeries.coeff_one, if_neg (by omega), map_zero]
+  intro l
+  induction l with
+  | nil => intro _ R ψ hR; simpa using hR
+  | cons k' l ih =>
+    intro hl R ψ hR
+    rw [List.foldl_cons, List.foldl_cons]
+    refine ih (fun k'' hk'' => hl k'' (List.mem_cons_of_mem _ hk'')) _ _ ?_
+    obtain ⟨hk', hne⟩ := hl k' List.mem_cons_self
+    have hc := val_slopeConst' hirr ρ hk hk' hne
+    -- `m` multiplications by the geometric series.
+    have hm (m : ℕ) : ∀ i < J, val N fl ((mulGeomPow N fl J (slopeConst N fl a k k') m R).getD
+        i []) = ρ (PowerSeries.coeff i (ψ * geomSeries (slope' a k k') ^ m)) := by
+      induction m with
+      | zero => simpa [mulGeomPow] using hR
+      | succ m ihm =>
+        intro i hi
+        rw [mulGeomPow, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+          ← mulGeomPow, pow_succ, ← mul_assoc]
+        exact val_tmul_eq ihm (fun i hi => val_geom hc hi) hi
+    exact hm _
+
+/-! ### Products over the nodes -/
+
+/-- The other nodes, as integers, are the nonzero grid points other than `t`. -/
+theorem prod_others {M : Type*} [CommMonoid M] (f : ℤ → M) {a k : ℕ} :
+    ((others a k).map fun k' => f (node a k')).prod =
+      ∏ q ∈ (recoveryNodes a).erase (node a k), f q := by
+  have hnd : ((others a k).map (node a)).Nodup :=
+    (List.nodup_range.filter _).map (node_injective a)
+  have hset : ((others a k).map (node a)).toFinset = (recoveryNodes a).erase (node a k) := by
+    ext q
+    simp only [List.mem_toFinset, List.mem_map, mem_others, recoveryNodes_eq, mem_erase, mem_Ico]
+    obtain ⟨L, hL⟩ : ∃ L : ℕ, 2 ^ a = L := ⟨_, rfl⟩
+    have hLz : (2 : ℤ) ^ a = (L : ℤ) := by rw [← hL]; push_cast; rfl
+    have hL2 : (2 : ℕ) ^ (a + 1) = 2 * L := by rw [← hL]; ring
+    simp only [node, hLz, hL, hL2]
+    constructor
+    · rintro ⟨k', ⟨hk'1, hk'2, hk'3⟩, rfl⟩
+      omega
+    · rintro ⟨hqk, hq0, hq1, hq2⟩
+      exact ⟨(q + L).toNat, ⟨by omega, by omega, by omega⟩, by omega⟩
+  rw [← hset, List.prod_toFinset _ hnd, List.map_map]
+  rfl
+
+/-- The nodes are the images of the indices `k < 2 ^ (a + 1)`, `k ≠ 2 ^ a`. -/
+theorem recoveryNodes_eq_image (a : ℕ) :
+    recoveryNodes a = ((range (2 ^ (a + 1))).filter (· ≠ 2 ^ a)).image (node a) := by
+  ext q
+  simp only [recoveryNodes_eq, mem_erase, mem_Ico, mem_image, mem_filter, mem_range]
+  obtain ⟨L, hL⟩ : ∃ L : ℕ, 2 ^ a = L := ⟨_, rfl⟩
+  have hLz : (2 : ℤ) ^ a = (L : ℤ) := by rw [← hL]; push_cast; rfl
+  have hL2 : (2 : ℕ) ^ (a + 1) = 2 * L := by rw [← hL]; ring
+  simp only [node, hLz, hL, hL2]
+  constructor
+  · rintro ⟨hq0, hq1, hq2⟩
+    exact ⟨(q + L).toNat, ⟨by omega, by omega⟩, by omega⟩
+  · rintro ⟨k', ⟨hk'1, hk'2⟩, rfl⟩
+    omega
+
+/-- A sum over the nodes is a sum over the node indices. -/
+theorem sum_recoveryNodes {M : Type*} [AddCommMonoid M] (f : ℤ → M) (a : ℕ) :
+    ∑ t ∈ recoveryNodes a, f t =
+      ∑ k ∈ range (2 ^ (a + 1)), if k = 2 ^ a then 0 else f (node a k) := by
+  rw [recoveryNodes_eq_image, sum_image fun _ _ _ _ e => node_injective a e, sum_ite,
+    sum_const_zero, zero_add]
+
+/-! ### Correctness of the multipliers -/
+
+/-- A fold of multiplications is a product. -/
+theorem val_foldl_mul {ι : Type*} (g : ι → List ℕ) (l : List ι) (c : List ℕ) :
+    val N fl (l.foldl (fun acc x => mul N fl acc (g x)) c) =
+      val N fl c * (l.map fun x => val N fl (g x)).prod := by
+  induction l generalizing c with
+  | nil => simp
+  | cons x l ih => rw [List.foldl_cons, ih, val_mul, List.map_cons, List.prod_cons, mul_assoc]
+
+/-- The multiplier `2 ^ Δ E_t(0) (-t / α) ^ j` as a `2`-adic integer:
+`2 ^ (Δ - (a + 1)(M_t + j)) ∏_{q ≠ t} (-q c_q) ^ (q_q) (-t) ^ j`. -/
+noncomputable def gamma (a u h Δ k j : ℕ) : ℤ₍₂₎ :=
+  ((2 ^ (Δ - (a + 1) * (multSum a u h k + j)) : ℕ) : ℤ₍₂₎) *
+    ((others a k).map fun k' : ℕ =>
+      (((((2 ^ a : ℕ) : ℤ) - (k' : ℤ) : ℤ) : ℤ₍₂₎) * slope' a k k') ^ mult a u h k').prod *
+    ((((2 ^ a : ℕ) : ℤ) - k : ℤ) : ℤ₍₂₎) ^ j
+
+/-- **The native multiplier is correct.** -/
+theorem val_coeffMult (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+    (ρ : ℤ₍₂₎ →+* Ring N fl) {a u h Δ k : ℕ} (hk : k < 2 ^ (a + 1)) (j : ℕ) :
+    val N fl (coeffMult N fl a u h Δ k j) = ρ (gamma a u h Δ k j) := by
+  rw [coeffMult, val_mul, val_mul, val_singleton, val_pow, val_diffConst, basisNum,
+    val_foldl_mul, val_one, one_mul, gamma, map_mul, map_mul, map_natCast, map_pow, map_intCast,
+    map_list_prod, List.map_map]
+  congr 2
+  refine congrArg List.prod (List.map_congr_left fun k' hk' => ?_)
+  obtain ⟨hk'1, -, hk'3⟩ := mem_others.mp hk'
+  simp only [Function.comp_apply, val_pow, val_mul, val_diffConst, val_slopeConst' hirr ρ hk hk'1
+    hk'3, map_pow, map_mul, map_intCast]
+
+/-- The value `E_t(0)` over `ℚ` as a product over the other node indices. -/
+theorem eval_zero_hermiteBasis_eq_prod (a u h k : ℕ) :
+    (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h) (node a k)).eval 0 =
+      ((others a k).map fun k' =>
+        (_root_.Ring.inverse ((node a k : ℚ) - node a k') * (0 - node a k')) ^
+          mult a u h k').prod := by
+  rw [eval_hermiteBasis, ← prod_others]
+  simp only [mult_eq]
+
+/-- **The multiplier is `2 ^ Δ E_t(0) (-t / α) ^ j`.** -/
+theorem coe_gamma {a u h Δ k j : ℕ} (hk : k < 2 ^ (a + 1))
+    (hΔ : (a + 1) * (multSum a u h k + j) ≤ Δ) :
+    ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) = 2 ^ Δ *
+      (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h) (node a k)).eval 0 *
+        (-(node a k : ℚ) / 2 ^ (a + 1)) ^ j := by
+  rw [eval_zero_hermiteBasis_eq_prod]
+  -- Each factor is `(-q c_q / α) ^ (q_q)`.
+  set X : ℕ → ℚ := fun k' => ((((((2 ^ a : ℕ) : ℤ) - (k' : ℤ) : ℤ) : ℤ₍₂₎) * slope' a k k' :
+    ℤ₍₂₎) : ℚ)
+  have hfac : ∀ k' ∈ others a k,
+      (_root_.Ring.inverse ((node a k : ℚ) - node a k') * (0 - node a k')) ^ mult a u h k' =
+        X k' ^ mult a u h k' / (2 ^ (a + 1)) ^ mult a u h k' := by
+    intro k' hk'
+    obtain ⟨hk'1, -, hk'3⟩ := mem_others.mp hk'
+    have hne : (node a k : ℚ) - node a k' ≠ 0 := by
+      rw [sub_ne_zero]; exact_mod_cast fun e => hk'3 (node_injective a e).symm
+    have hs : ((slope' a k k' : ℤ₍₂₎) : ℚ) = 2 ^ (a + 1) / ((node a k : ℚ) - node a k') := by
+      rw [slope', dite_eq_left_of_eq_true (eq_true ⟨hk, hk'1, hk'3⟩)]; rfl
+    rw [← div_pow]
+    congr 1
+    simp only [X, Subring.coe_mul, hs, Subring.coe_intCast, _root_.Ring.inverse_eq_inv']
+    have hq : ((Int.cast (((2 ^ a : ℕ) : ℤ) - (k' : ℤ))) : ℚ) = -(node a k' : ℚ) := by
+      simp only [node]; push_cast; ring
+    rw [hq, zero_sub]
+    field_simp
+  have hprod : ∀ l : List ℕ, (l.map fun k' => X k' ^ mult a u h k' /
+      (2 ^ (a + 1) : ℚ) ^ mult a u h k').prod =
+        (l.map fun k' => X k' ^ mult a u h k').prod / (2 ^ (a + 1) : ℚ) ^ (l.map (mult a u h)).sum := by
+    intro l
+    induction l with
+    | nil => simp
+    | cons x l ih => rw [List.map_cons, List.prod_cons, ih, List.map_cons, List.prod_cons,
+        List.map_cons, List.sum_cons, div_mul_div_comm, ← pow_add]
+  rw [List.map_congr_left hfac, hprod, gamma, Subring.coe_mul, Subring.coe_mul, Subring.coe_pow,
+    Subring.coe_natCast, Subring.coe_intCast]
+  have hlist : ((((others a k).map fun k' : ℕ =>
+      (((((2 ^ a : ℕ) : ℤ) - (k' : ℤ) : ℤ) : ℤ₍₂₎) * slope' a k k') ^ mult a u h k').prod :
+        ℤ₍₂₎) : ℚ) = ((others a k).map fun k' => X k' ^ mult a u h k').prod := by
+    refine (map_list_prod (ℤ₍₂₎).subtype _).trans ?_
+    rw [List.map_map]
+    rfl
+  rw [hlist, ← multSum]
+  have h2 : (2 : ℚ) ^ Δ = 2 ^ (Δ - (a + 1) * (multSum a u h k + j)) *
+      ((2 : ℚ) ^ (a + 1)) ^ (multSum a u h k + j) := by
+    rw [← pow_mul, ← pow_add, Nat.sub_add_cancel hΔ]
+  rw [h2, show (-(node a k : ℚ)) = ((Int.cast (((2 ^ a : ℕ) : ℤ) - (k : ℤ))) : ℚ) by
+    simp only [node]; push_cast; ring, div_pow, pow_add]
+  field_simp
+  push_cast
+  ring
 
 end Cslib.Circuits.Frontier.NativeRecovery
