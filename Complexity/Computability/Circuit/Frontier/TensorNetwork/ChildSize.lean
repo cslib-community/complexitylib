@@ -23,7 +23,8 @@ The child networks of a mode splitting (`TensorNetwork.ModeSplitting.child`, §D
   "a new packet vertex has at most `2L ⩽ Δ` ports";
 * the child has one edge per port of its group (`ModeSplitting.card_edges_child`), so with at most
   `c M / r` ports per group on each side (Lemma D.3 (3)) it has at most `2 c M / r` edges
-  (`ModeSplitting.mul_card_edges_child_le`): the manuscript's "at most `6M / r < M / 8` edges".
+  (`ModeSplitting.mul_card_edges_child_le`): the manuscript's "at most `6M/r = 3M/32 < M/8`
+  edges" (§D.4.6, p. 63).
 
 ## Main results
 

@@ -22,7 +22,7 @@ finite geometric-series bound. In particular, the absolute stability factor `C =
 paid for by `q = 1/64`, with total factor at most `7/9`.
 
 Composing this numerical bound with the actual first-overflow moment theorem removes the
-finite weighted-sum obligation in [OpenAI2026LogSpace, Section 8.4, `buf-noise-sum`]. Noise
+finite weighted-sum obligation in [OpenAI2026LogSpace, Section 8.4, (8.18)]. Noise
 with individual `p`-th moment budgets `(ε * q ^ d_i) ^ p` has actual overflow-tail budget
 `(ε * C * q / (1 - C * q)) ^ p`. All quantities may share an environment.
 
@@ -39,7 +39,8 @@ it does not assert that the absolute constant 28 also proves that relative stabi
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 8.4, equation labelled `buf-noise-sum` and the following choice of noise decay
+  Section 8.4, equation (8.18) on p. 49 (source label `buf-noise-sum`) and the following
+  choice of noise decay
   (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 
