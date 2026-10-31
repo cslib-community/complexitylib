@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Probability.PolynomialAtomRows.RootError
+public import Complexity.Foundations.Probability.PolynomialAtomRows.Saturation
 public import Complexity.Foundations.Analysis.RowCompression.GateClosure
 public import Complexity.Foundations.Analysis.RowCompression.SentinelRelative
 import Mathlib.Algebra.Order.Group.MinMax
@@ -31,7 +32,6 @@ ceiling, or scalar regularity assumption is passed to the public comparison theo
 
 ## Main results
 
-* `Cslib.PolynomialAtomRow.eval_eq_of_entry_ge`: upper entry saturation for all three functions.
 * `Cslib.PolynomialAtomRow.exists_iterate_root_bound`: uniform relative fourth-root stability
   for the actual calculation and its stationary reference, for every error budget.
 
@@ -49,25 +49,6 @@ namespace Cslib.PolynomialAtomRow
 open Finset RowCompression
 
 variable (kind : PolynomialAtomRow) {θ η : ℝ}
-
-/-- All three entry factors have saturated by the common sufficient bound `θ`. -/
-theorem eval_eq_of_entry_ge {v v' r : ℝ} (hθ : 0 < θ) (hv : θ ≤ v) (hv' : θ ≤ v') :
-    kind.eval θ v r = kind.eval θ v' r := by
-  cases kind
-  · simp only [eval, polynomialPrepRow4,
-      polynomialPrepCutoff4_eq_one hθ (by linarith : 3 * θ / 4 ≤ v),
-      polynomialPrepCutoff4_eq_one hθ (by linarith : 3 * θ / 4 ≤ v')]
-  · simp only [eval, polynomialAuxCutoff4,
-      polynomialSwitch4_of_ge (by linarith : θ / 8 < θ / 4) (by linarith : θ / 4 ≤ v),
-      polynomialSwitch4_of_ge (by linarith : θ / 8 < θ / 4) (by linarith : θ / 4 ≤ v')]
-  · simp only [eval, polynomialWitnessCutoff4,
-      polynomialSwitch4_of_ge (by linarith : 82 * θ / 1000 < 90 * θ / 1000)
-        (by linarith : 90 * θ / 1000 ≤ v),
-      polynomialSwitch4_of_ge (by linarith : 82 * θ / 1000 < 90 * θ / 1000)
-        (by linarith : 90 * θ / 1000 ≤ v')]
-
-private theorem gateThreshold_le_scale (hθ : 0 < θ) : kind.gateThreshold θ ≤ θ := by
-  cases kind <;> dsimp only [gateThreshold] <;> linarith
 
 private theorem three_mul_scale_le_of_small_error {d e raw loss : ℝ}
     (hθ : 0 < θ) (hmargin : η ≤ θ / 10000) (hd : 16 * (θ + 1) < d)

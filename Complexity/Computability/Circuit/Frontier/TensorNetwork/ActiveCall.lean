@@ -44,17 +44,16 @@ of the products of the contractions of the children. So the values may be comput
 children's contractions modulo `2 ^ p_t` (`TensorNetwork.exists_recoverFromValues_eq_add_of_mk`).
 
 **The packing bridge.** The orientation that the child identity needs is property (2) of
-Lemma D.3 for `Cslib.PacketPacking.Packing` (`TensorNetwork.packingGroup_src_tgt`), and the port
+Lemma D.3 for `Cslib.PacketPacking.Packing` (`packingGroup_src_tgt`), and the port
 counts of Lemma D.3 (3) are the group sizes that bound the children
-(`TensorNetwork.card_packingGroup_src`, `TensorNetwork.card_packingGroup_tgt`, with
+(`card_packingGroup_src`, `card_packingGroup_tgt`, with
 `TensorNetwork.ModeSplitting.mul_card_edges_child_le`).
 
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.integerHom`: the inclusion of `ℤ_(2)` into `B`.
 * `Cslib.Circuits.Frontier.recoverFromValues`: interpolation followed by tapered recovery.
-* `Cslib.Circuits.Frontier.TensorNetwork.packingGroup`: the group of a vertex in coordinate `i`
-  of a packing.
+* `Cslib.Circuits.Frontier.packingGroup`: the group of a vertex in coordinate `i` of a packing.
 
 ## Main results
 
@@ -66,7 +65,7 @@ counts of Lemma D.3 (3) are the group sizes that bound the children
   deformation modulo `2 ^ p_t` are deformed contractions along `cauchyValueMatrix`.
 * `Cslib.Circuits.Frontier.TensorNetwork.exists_recoverFromValues_eq_add_of_mk`: correctness of
   one active call.
-* `Cslib.Circuits.Frontier.TensorNetwork.packingGroup_src_tgt`: the packing bridge, with
+* `Cslib.Circuits.Frontier.packingGroup_src_tgt`: the packing bridge, with
   `packing_slot_lt`, `packing_slot_injective`, `card_packingGroup_src` and
   `card_packingGroup_tgt`.
 * `Cslib.Circuits.Frontier.two_pow_padicValInt_dvd_and_not_dvd`: a node of valuation `i` meets
@@ -187,55 +186,63 @@ theorem exists_recoverFromValues_eq_add (B : Subring K)
     hslot htS, coeff_map, coeff_map, hg, coeff_add, coeff_C_mul, map_add, map_mul, map_pow]
   rfl
 
+end TensorNetwork
+
 /-! ### The packing bridge -/
 
-/-- The group of a vertex in coordinate `i` of a packing: its row label if it is a row and its
-column label if it is a column. -/
-@[expose] def packingGroup {R : Type*} {a r : ℕ} (N : TensorNetwork R Bool V E) (side : V → Bool)
-    (Q : PacketPacking.Packing N.src N.tgt a r) (i : Fin a) (v : V) : Fin r :=
+section PackingBridge
+
+variable {V E : Type*} {src tgt : E → V} {a r : ℕ}
+
+/-- The group of a vertex in coordinate `i` of a packing of the edges `src e → tgt e`: its row
+label if it is a row and its column label if it is a column. -/
+@[expose] def packingGroup (side : V → Bool) (Q : PacketPacking.Packing src tgt a r) (i : Fin a)
+    (v : V) : Fin r :=
   if side v then Q.rowLabel v i else Q.colLabel v i
 
-omit [Fintype V] [Fintype E] [DecidableEq E] [DecidableEq P] in
-/-- **The packing bridge.** For a packing of the edges of a network whose edges run from rows to
-columns (Lemma D.3 of [OpenAI2026ETH]), the groups in coordinate `i` are oriented by digit `i` of
-the slots (Lemma D.3 (2)): the hypothesis of `TensorNetwork.cauchyModeSplitting`. -/
-theorem packingGroup_src_tgt {R : Type*} {a r : ℕ} (N : TensorNetwork R Bool V E)
-    (side : V → Bool) (hsrc : ∀ e, side (N.src e) = true) (htgt : ∀ e, side (N.tgt e) = false)
-    (Q : PacketPacking.Packing N.src N.tgt a r) (i : Fin a) (e : E) :
-    (packingGroup N side Q i (N.src e), packingGroup N side Q i (N.tgt e)) =
+/-- **The packing bridge.** For a packing of edges that run from rows to columns (Lemma D.3 of
+[OpenAI2026ETH]), the groups in coordinate `i` are oriented by digit `i` of the slots
+(Lemma D.3 (2)): the hypothesis of `TensorNetwork.cauchyModeSplitting`. The edge ends `src` and
+`tgt` are arbitrary functions, so the bridge applies to `N.src` and `N.tgt` of any network with
+these ends, such as `N.map f`. -/
+theorem packingGroup_src_tgt (side : V → Bool) (hsrc : ∀ e, side (src e) = true)
+    (htgt : ∀ e, side (tgt e) = false) (Q : PacketPacking.Packing src tgt a r) (i : Fin a)
+    (e : E) :
+    (packingGroup side Q i (src e), packingGroup side Q i (tgt e)) =
       if (Q.slot e : ℕ).testBit i then (Q.symbols (Q.packet e) i).swap
       else Q.symbols (Q.packet e) i := by
   simp only [packingGroup, hsrc, htgt, ↓reduceIte, Bool.false_eq_true]
   exact Q.labels_eq e i
 
-omit [Fintype V] [Fintype E] [DecidableEq E] [DecidableEq P] in
 /-- The slots of a packing lie below `2 ^ a`. -/
-theorem packing_slot_lt {R : Type*} {a r : ℕ} {N : TensorNetwork R Bool V E}
-    (Q : PacketPacking.Packing N.src N.tgt a r) (e : E) : (Q.slot e : ℕ) < 2 ^ a :=
+theorem packing_slot_lt (Q : PacketPacking.Packing src tgt a r) (e : E) :
+    (Q.slot e : ℕ) < 2 ^ a :=
   (Q.slot e).isLt
 
-omit [Fintype V] [Fintype E] [DecidableEq E] [DecidableEq P] in
 /-- No two edges share a slot of a packet. -/
-theorem packing_slot_injective {R : Type*} {a r : ℕ} {N : TensorNetwork R Bool V E}
-    (Q : PacketPacking.Packing N.src N.tgt a r) (e e' : E) (hp : Q.packet e = Q.packet e')
-    (hs : (Q.slot e : ℕ) = Q.slot e') : e = e' :=
+theorem packing_slot_injective (Q : PacketPacking.Packing src tgt a r) (e e' : E)
+    (hp : Q.packet e = Q.packet e') (hs : (Q.slot e : ℕ) = Q.slot e') : e = e' :=
   Q.injective (Prod.ext hp (Fin.ext hs))
 
-omit [Fintype V] [DecidableEq E] [DecidableEq P] in
+variable [Fintype E]
+
 /-- The rows of group `σ` in coordinate `i` of a packing are the rows with symbol `σ`. -/
-theorem card_packingGroup_src {R : Type*} {a r : ℕ} (N : TensorNetwork R Bool V E)
-    (side : V → Bool) (hsrc : ∀ e, side (N.src e) = true)
-    (Q : PacketPacking.Packing N.src N.tgt a r) (i : Fin a) (σ : Fin r) :
-    #{e | packingGroup N side Q i (N.src e) = σ} = #{e | Q.rowLabel (N.src e) i = σ} := by
+theorem card_packingGroup_src (side : V → Bool) (hsrc : ∀ e, side (src e) = true)
+    (Q : PacketPacking.Packing src tgt a r) (i : Fin a) (σ : Fin r) :
+    #{e | packingGroup side Q i (src e) = σ} = #{e | Q.rowLabel (src e) i = σ} := by
   simp only [packingGroup, hsrc, ↓reduceIte]
 
-omit [Fintype V] [DecidableEq E] [DecidableEq P] in
 /-- The columns of group `σ` in coordinate `i` of a packing are the columns with symbol `σ`. -/
-theorem card_packingGroup_tgt {R : Type*} {a r : ℕ} (N : TensorNetwork R Bool V E)
-    (side : V → Bool) (htgt : ∀ e, side (N.tgt e) = false)
-    (Q : PacketPacking.Packing N.src N.tgt a r) (i : Fin a) (σ : Fin r) :
-    #{e | packingGroup N side Q i (N.tgt e) = σ} = #{e | Q.colLabel (N.tgt e) i = σ} := by
+theorem card_packingGroup_tgt (side : V → Bool) (htgt : ∀ e, side (tgt e) = false)
+    (Q : PacketPacking.Packing src tgt a r) (i : Fin a) (σ : Fin r) :
+    #{e | packingGroup side Q i (tgt e) = σ} = #{e | Q.colLabel (tgt e) i = σ} := by
   simp only [packingGroup, htgt, Bool.false_eq_true, ↓reduceIte]
+
+end PackingBridge
+
+namespace TensorNetwork
+
+variable {V E P : Type*} [Fintype V] [Fintype E] [DecidableEq E] [DecidableEq P]
 
 /-- **The values of the local deformation modulo `2 ^ p_t`** are deformed contractions of the
 reduced network along the Cauchy matrix at `T = t + α ζ` (which the child identity (D.16),

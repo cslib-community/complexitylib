@@ -5,9 +5,11 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Foundations.Probability.PolynomialAtomRows.FirstOverflow
+import Complexity.Foundations.Probability.PolynomialAtomRows.NoOverflow
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -20,6 +22,8 @@ The remaining group raises the default and erases a second-coordinate value of `
 preserves that nonzero witness. Its fourth-root error satisfies the weighted bound.
 Completing the second actual raw input to truth then gives a real first overflow at group one,
 zero tail error, and a strictly positive actual-to-truth error paid entirely by weighted preloss.
+Increasing the size capacity to three gives a second completion with no overflow at all. Its
+final raw error is zero and the same positive witness error is paid entirely by weighted preloss.
 -/
 
 namespace ComplexityTests.PolynomialAtomRows
@@ -358,5 +362,144 @@ example : ∃ C : ℝ, 0 ≤ C ∧
         rw [completing_raw_two, clippedError_self _ _ _ rfl rfl]) 0 (mem_univ 0)
     norm_num [sum_range_succ, sum_Ico_eq_sum_range, floor_zero] at h
     simpa only [div_eq_mul_inv, one_mul, completedRun] using h
+
+private theorem third_rank_zero (v : Fin 2 → ℝ) : kthLargest 3 univ v = 0 := by
+  apply le_antisymm _ kthLargest_nonneg
+  refine not_lt.mp fun hlt => ?_
+  have hc := (lt_kthLargest_iff (by norm_num) (le_refl (0 : ℝ))).mp hlt
+  have hb := card_filter_le (s := (univ : Finset (Fin 2))) (p := fun y => 0 < v y)
+  norm_num at hb
+  omega
+
+private noncomputable def spaciousRun : ℕ → State (Fin 2) :=
+  iterate univ (fun _ => 3) (fun _ => 2) (dyadicFloor 1 2) completingIncrements initial
+
+private theorem spacious_one : spaciousRun 1 =
+    ⟨1 / 1048576, ![![900, 0], ![1 / 1048576, 0]]⟩ := by
+  have ht : threshold univ 3 (1 / 1048576) 0 rawRow = 1 / 1048576 := by
+    rw [threshold, third_rank_zero]
+    norm_num
+  have hd : newDefault univ 3 2 (1 / 1048576) 0 rawRow = 1 / 1048576 := by
+    unfold newDefault
+    rw [ht]
+    exact max_eq_left ((min_le_left _ _).trans (max_le (by norm_num) raw_rank_le))
+  have hin : initial.row + completingIncrements 0 = rawRow := by
+    funext y ν
+    fin_cases y <;> fin_cases ν <;> norm_num [initial, completingIncrements, increments, rawRow]
+  change advance univ 3 2 (dyadicFloor 1 2 0) (completingIncrements 0) initial = _
+  unfold advance
+  rw [hin, floor_zero]
+  change State.mk (newDefault univ 3 2 (1 / 1048576) 0 rawRow)
+    (update univ 3 2 (1 / 1048576) 0 rawRow) = _
+  rw [hd]
+  congr 1
+  unfold update
+  rw [ht, hd]
+  funext y ν
+  fin_cases y <;> fin_cases ν <;> norm_num [rawRow, updateEntry, radius, entrySize, defaultEntry]
+
+private theorem spacious_input_one :
+    inputRow univ (fun _ => 3) (fun _ => 2) (dyadicFloor 1 2)
+      completingIncrements initial 1 = reference.row := by
+  change (spaciousRun 1).row + completingIncrements 1 = reference.row
+  rw [spacious_one, reference_eq]
+  funext y ν
+  fin_cases y <;> fin_cases ν <;> norm_num [completingIncrements, truth, rawRow]
+
+private theorem spacious_no_overflow : ∀ i < 2,
+    stepThreshold univ (fun _ => 3) (fun _ => 2) (dyadicFloor 1 2)
+      completingIncrements initial i ≤ dyadicFloor 1 2 i := by
+  intro i hi
+  interval_cases i
+  · simp only [stepThreshold, iterate_zero, initial, threshold, third_rank_zero]
+    norm_num [dyadicFloor, dyadicSlack]
+  · unfold stepThreshold
+    rw [spacious_input_one]
+    change threshold univ 3 (dyadicFloor 1 2 1) (spaciousRun 1).defaultValue reference.row ≤ _
+    rw [spacious_one]
+    simp only [threshold, third_rank_zero]
+    norm_num [dyadicFloor, dyadicSlack]
+
+private theorem reference_kth : kthLargest 2 univ (fun y => reference.row y 0) =
+    260 + 1 / 2097152 := by
+  have hz : reference.defaultValue < 260 + 1 / 2097152 := by rw [reference_eq]; norm_num
+  have hle : 260 + 1 / 2097152 ≤
+      max reference.defaultValue (kthLargest 2 univ fun y => reference.row y 0) := reference_rank.ge
+  exact le_antisymm (kthLargest_le_firstRank.trans reference_rank.le)
+    ((le_max_iff.mp hle).resolve_left (not_le.mpr hz))
+
+private theorem spacious_two : spaciousRun 2 = ⟨3 / 1024, reference.row⟩ := by
+  have ht : threshold univ 3 (1 / 1024) (1 / 1048576) reference.row = 1 / 1024 := by
+    rw [threshold, third_rank_zero]
+    norm_num
+  have hd : newDefault univ 3 2 (1 / 1024) (1 / 1048576) reference.row = 3 / 1024 := by
+    unfold newDefault
+    rw [ht, reference_kth]
+    norm_num
+  change advance univ 3 2 (dyadicFloor 1 2 1) (completingIncrements 1) (spaciousRun 1) = _
+  have hrow : (spaciousRun 1).row + completingIncrements 1 = reference.row := spacious_input_one
+  unfold advance
+  rw [hrow, spacious_one, show dyadicFloor (1 : ℝ) 2 1 = 1 / 1024 by
+    norm_num [dyadicFloor, dyadicSlack], hd]
+  congr 1
+  unfold update
+  rw [ht, hd, reference_eq]
+  funext y ν
+  fin_cases y <;> fin_cases ν <;> norm_num [updateEntry, radius, entrySize, defaultEntry]
+
+private theorem spacious_output : PolynomialAtomRow.witness.eval 10000
+    ((spaciousRun 2).row 0 0) (firstRank univ 2 (spaciousRun 2).defaultValue (spaciousRun 2).row) =
+      output reference := by
+  have hq : firstRank univ 2 (3 / 1024) reference.row = 260 + 1 / 2097152 := by
+    unfold firstRank
+    rw [reference_kth]
+    norm_num
+  rw [spacious_two]
+  change PolynomialAtomRow.witness.eval 10000 (reference.row 0 0)
+    (firstRank univ 2 (3 / 1024) reference.row) = output reference
+  rw [hq]
+  unfold output
+  rw [reference_rank]
+
+-- Two actual compression groups avoid overflow, but the first group's nonzero preloss shifts
+-- the final witness rank. The final raw prefix is exactly truth, so the final-error term is zero.
+example : (∀ i < 2, stepThreshold univ (fun _ => 3) (fun _ => 2) (dyadicFloor 1 2)
+      completingIncrements initial i ≤ dyadicFloor 1 2 i) ∧
+    uncompressedRow completingIncrements initial.row 2 = truth ∧
+    (spaciousRun 1).row 1 0 - rawRow 1 0 = 1 / 2097152 ∧
+    0 < |PolynomialAtomRow.witness.stateRootError 10000 univ 2 (spaciousRun 2) ⟨0, truth⟩ 0| := by
+  refine ⟨spacious_no_overflow, completing_raw_two, ?_, ?_⟩
+  · rw [spacious_one]
+    norm_num [rawRow]
+  · unfold PolynomialAtomRow.stateRootError
+    rw [spacious_output, true_output, Real.one_rpow]
+    exact abs_pos.mpr (sub_ne_zero.mpr (ne_of_lt (Real.rpow_lt_one
+      output_between.1.le output_between.2 (by norm_num))))
+
+example : ∃ C : ℝ, 0 ≤ C ∧
+    |PolynomialAtomRow.witness.stateRootError 10000 univ 2 (spaciousRun 2) ⟨0, truth⟩ 0| ≤
+      C / 1048576 := by
+  obtain ⟨Cfinal, _, hscales⟩ := PolynomialAtomRow.witness.exists_noOverflow_root_bound
+    (θ := 10000) (by norm_num)
+  obtain ⟨Cpre, hCpre, hbound⟩ := hscales 1 (by norm_num) (by norm_num)
+  refine ⟨Cpre, hCpre, ?_⟩
+  have h := hbound univ (fun _ => 3) completingIncrements initial truth 2 (by norm_num) rfl
+    2 spacious_no_overflow
+    (fun y _ => by fin_cases y <;> norm_num [truth])
+    (fun y _ => by fin_cases y <;> norm_num [truth])
+    (fun i => if i = 0 then 1 else 0) (by intro i _; split_ifs <;> norm_num)
+    (by
+      intro i hi y _ _
+      interval_cases i
+      · simpa only [↓reduceIte] using clippedError_le_one (truth y 0) (truth y 1)
+          (uncompressedRow completingIncrements initial.row 1 y)
+      · change clippedError (truth y 0) (truth y 1)
+          (uncompressedRow completingIncrements initial.row 2 y) ≤ 0
+        rw [completing_raw_two, clippedError_self _ _ _ rfl rfl])
+    0 (le_refl 0) (by
+      intro y _
+      rw [completing_raw_two, clippedError_self _ _ _ rfl rfl]) 0 (mem_univ 0)
+  norm_num [sum_range_succ, floor_zero] at h
+  simpa only [div_eq_mul_inv, one_mul, spaciousRun] using h
 
 end ComplexityTests.PolynomialAtomRows
