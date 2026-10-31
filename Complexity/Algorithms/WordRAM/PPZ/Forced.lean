@@ -40,7 +40,7 @@ if needed, for `false`, and stores the word of `Cslib.Complexity.PPZ.forced Ï† Ï
 * `Cslib.Algorithms.WordRAM.PPZ.isUnitOn_iff`: a unit clause through its literal tests.
 * `Cslib.Algorithms.WordRAM.PPZ.unitScan_spec`: the scan finds a unit clause exactly when there is
   one.
-* `Cslib.Algorithms.WordRAM.PPZ.forcedCode_spec`: the forced value, within `30 E + 15`
+* `Cslib.Algorithms.WordRAM.PPZ.forcedCode_spec`: the forced value, within `28 E + 15`
   instructions.
 
 ## References
