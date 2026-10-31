@@ -13,6 +13,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledR
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
 public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
 public import Complexity.Computability.PolyTime.PacketPacking
+import Complexity.Computability.PolyTime.GaloisRingSeries
 import Mathlib.Data.List.GetD
 
 /-!
@@ -41,7 +42,7 @@ The child at a cursor state is given by a child builder `mk`, which computes the
 network (the native child of §D.4.6). The call absorbs the children's values with the operations of
 `A_N` at the common precision `N = p + Δ'` (`FastContraction.wide`), where
 `Δ' = (a + 1) 2 ^ (a + 1) h u + 8 h 2 ^ a + 8 M (a + 1)` bounds both the shift of Lemma D.5 and
-every node precision `p_t - p`; it then stores the sums at the rows `ts[i]` of the table of native
+every node precision `p_t - p`; it then places the sums at the rows `ts[i]` of the table of native
 recovery (`FastContraction.table`) and recovers its value with
 `Cslib.Circuits.Frontier.NativeRecovery.recover`.
 
@@ -67,6 +68,9 @@ call computes the contraction of its network in `A_p`.
 * `Cslib.Circuits.Frontier.FastContraction.exists_eval`: derivations of the values.
 * `Cslib.Circuits.Frontier.FastContraction.eq_value_of_run`: a tagged value returned by the run is
   the root's value.
+* `Cslib.Circuits.Frontier.FastContraction.val_table_runLoop`: the table of an active call holds,
+  at each node's precision, the sums over the mode tuples of the products of the children's
+  values.
 * `Cslib.Circuits.Frontier.FastContraction.val_value`: correctness from the step.
 
 ## References
@@ -192,11 +196,11 @@ residue. -/
 /-- **The interpolation points**: the lifts of the residues `0, …, n - 1`. -/
 @[expose] def points : List (List ℕ) := (List.range (numPoints x)).map (digits x.fl.length)
 
-/-- **The table of native recovery** from the stored values, node-major and point-minor: the
-`c`-th value goes to row `ts[c / n]`. -/
+/-- **The table of native recovery** from the stored values, node-major and point-minor: row
+`ts[j]` holds the `j`-th block of `n` values, and the other rows are empty. -/
 @[expose] def table (V : List (List ℕ)) : List (List (List ℕ)) :=
-  (List.range V.length).foldl
-    (fun W c => storeValue W ((nodes x).getD (c / numPoints x) 0) (V.getD c [])) []
+  (List.range (2 ^ (slots x + 1))).map fun k =>
+    if k ∈ nodes x then (V.drop ((nodes x).idxOf k * numPoints x)).take (numPoints x) else []
 
 /-- The cursor's list of children. -/
 @[expose] def children : List State :=
@@ -384,6 +388,91 @@ theorem eq_value_of_run {J : Type} {fuel : J → ℕ} {root : J → Call} {a : J
   obtain ⟨n, h, he⟩ := exists_eval mk (root a) (root a) fun _ => rfl
   rw [hroot] at he
   exact Scheme.value_of_run_eq_some he hrun rfl
+
+/-! ### The stored values -/
+
+/-- An entry of a concatenation of blocks of `n` values. -/
+theorem getElem_flatMap_range {α : Type*} (f : ℕ → ℕ → α) {T n t k : ℕ} (ht : t < T)
+    (hk : k < n) :
+    ((List.range T).flatMap fun t => (List.range n).map (f t))[t * n + k]'(by
+      simp only [List.length_flatMap, List.length_map, List.length_range, List.map_const',
+        List.sum_replicate, smul_eq_mul]
+      nlinarith) = f t k := by
+  induction T with
+  | zero => omega
+  | succ T ih =>
+    simp only [List.range_succ, List.flatMap_append, List.flatMap_singleton]
+    have hlen : ((List.range T).flatMap fun t => (List.range n).map (f t)).length = T * n := by
+      simp
+    rcases Nat.lt_or_ge t T with htT | htT
+    · rw [List.getElem_append_left (by rw [hlen]; nlinarith)]
+      exact ih htT
+    · have htT' : t = T := by omega
+      subst htT'
+      rw [List.getElem_append_right (by rw [hlen]; omega)]
+      simp [hlen]
+
+variable {x}
+
+/-- Every node precision is at most the common precision `N = p + Δ'`. -/
+theorem nodePrec_le_wide (i : ℕ) : nodePrec x i ≤ wide x := by
+  unfold nodePrec nodePrecision wide shift
+  have : 2 ^ (slots x - level x ((nodes x).getD i 0)) ≤ 2 ^ slots x :=
+    Nat.pow_le_pow_right (by norm_num) (Nat.sub_le _ _)
+  have : 8 * step x * 2 ^ (slots x - level x ((nodes x).getD i 0)) ≤ 8 * step x * 2 ^ slots x :=
+    Nat.mul_le_mul_left _ this
+  omega
+
+/-- **The values stored by an active call.** At the `j`-th node of positive multiplicity and the
+`i`-th point, the table of native recovery holds, at the node's precision `p_j`, the sum over the
+mode tuples of weight below `p_j` of the products over the `64` groups of the children's values:
+the hypothesis of the one-call correctness of Lemma D.5 at that node. -/
+theorem val_table_runLoop (h : active x = true) (vals : State → List ℕ) {j : ℕ}
+    (hj : j < (nodes x).length) {i : ℕ} (hi : i < numPoints x) :
+    val (nodePrec x j) x.fl
+        (((table x (runLoop x vals).2.2).getD ((nodes x)[j]) []).getD i []) =
+      ((Cslib.BudgetTuples.budgetTuples (weights x j) (nodePrec x j)).map fun β =>
+        ((List.range 64).map fun g => val (nodePrec x j) x.fl (vals (j, i, β, g))).prod).sum := by
+  have hM := one_le_edges_of_active h
+  obtain ⟨qs, hqs, hrun⟩ := runAcc_cursorList (ws := weights x) (ps := nodePrec x)
+    (T := (nodes x).length) (n := numPoints x) (r := 64) (mul (wide x) x.fl) (add (wide x) x.fl)
+    (one x.fl) (zero x.fl) (val (wide x) x.fl) (fun a b => val_mul a b) (fun a b => val_add a b)
+    val_one val_zero (by norm_num) (nodePrec_pos hM) weights_pos vals
+  have hloop : (runLoop x vals).2.2 = qs := by rw [runLoop, children, hrun]
+  rw [hloop]
+  -- The row of the `j`-th node is its block.
+  have hnodup : (nodes x).Nodup := (List.nodup_range).filter _
+  have hmem : (nodes x)[j] ∈ nodes x := List.getElem_mem hj
+  have hlt : (nodes x)[j] < 2 ^ (slots x + 1) := by
+    have := hmem
+    simp only [nodes, List.mem_filter, List.mem_range] at this
+    exact this.1
+  have hidx : (nodes x).idxOf (nodes x)[j] = j := hnodup.idxOf_getElem j hj
+  have hqlen : qs.length = (nodes x).length * numPoints x := by
+    have := congrArg List.length hqs
+    simpa [List.length_flatMap, List.sum_replicate] using this
+  have hpos : j * numPoints x + i < qs.length := by rw [hqlen]; nlinarith
+  have hrow : ((table x qs).getD ((nodes x)[j]) []).getD i [] = qs[j * numPoints x + i] := by
+    have htab : (table x qs).getD ((nodes x)[j]) [] =
+        (qs.drop (j * numPoints x)).take (numPoints x) := by
+      rw [table, List.getD_eq_getElem _ _ (by simp [hlt])]
+      simp [hmem, hidx]
+    rw [htab, List.getD_eq_getElem _ _ (by simp; omega), List.getElem_take, List.getElem_drop]
+  rw [hrow]
+  -- Its value at the common precision is the sum, which reduces to the node's precision.
+  have hφ : val (wide x) x.fl qs[j * numPoints x + i] =
+      sumAt (weights x) (nodePrec x) 64 (val (wide x) x.fl) vals j i := by
+    have h1 := congrArg (fun l => l[j * numPoints x + i]?) hqs
+    simp only [List.getElem?_map, List.getElem?_eq_getElem hpos, Option.map_some] at h1
+    rw [List.getElem?_eq_getElem (by simpa [hqlen] using hpos),
+      getElem_flatMap_range (fun t k => sumAt (weights x) (nodePrec x) 64 (val (wide x) x.fl)
+        vals t k) hj hi] at h1
+    exact Option.some.inj h1
+  have hle := nodePrec_le_wide (x := x) j
+  rw [← reduce_val hle, hφ, sumAt, map_list_sum, List.map_map]
+  congr 1
+  refine List.map_congr_left fun β _ => ?_
+  simp only [Function.comp_def, map_list_prod, List.map_map, reduce_val]
 
 /-! ### Correctness -/
 
