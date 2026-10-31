@@ -878,6 +878,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Binarize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
