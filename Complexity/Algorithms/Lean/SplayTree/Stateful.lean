@@ -8,16 +8,16 @@ module
 -- upstream: candidate
 
 public import Complexity.Init
+public import Complexity.Algorithms.Lean.SearchTree.Stateful
 public import Complexity.Algorithms.Lean.SplayTree.AccessLemma
-public import Complexity.Foundations.Data.OrderedSet.Spec
-public import Complexity.Foundations.Semantics.Stateful.Resource
 
 /-!
 # Self-Adjusting Stateful Ordered-Set Realization by Splay Trees
 
 This module realizes the shared `Cslib.OrderedSet.spec α` interface (`contains`, `insert`, `erase`,
 `minimum`, `successor`) using annotation-free bottom-up splay trees ([SleatorTarjan1985b],
-Section 3, pp. 660–665).
+Section 3, pp. 660–665), reusing the shared `Cslib.Algorithms.Lean.SearchTree.Rep` representation
+relation (`Ordered t ∧ elements t = s`) and `SearchTree.rep_empty` directly on `BinaryTree α`.
 
 ## Self-adjustment and amortized vs. worst-case guarantees
 
@@ -25,7 +25,7 @@ Unlike `Cslib.Algorithms.Lean.AVLTree.realization`, splay trees store no balance
 restructure the concrete `BinaryTree α` even during read queries (`contains`, `minimum`,
 `successor`). The `Cslib.Stateful.Realization` framework accommodates this directly: read queries
 leave the abstract `Finset α` state unchanged while transitioning `t` to a newly splayed tree `t'`
-satisfying `Rep s t'`.
+satisfying `SearchTree.Rep s t'`.
 
 Because a single operation on an unbalanced initial tree can perform up to `s.card - 1` rotations,
 no logarithmic per-operation worst-case `Cslib.Stateful.Bound` holds on arbitrary trees. Instead,
@@ -35,11 +35,12 @@ proves a single-tree `OrderedSet.spec α` dictionary specialization/analogue of 
 Theorem 6 treats multi-tree sequences of `access`, `insert`, `delete`, `join`, and `split`, here we
 instantiate single-tree `contains`, `insert`, `erase`, `minimum`, and `successor` and count exact
 edge rotations, with unit-weight `split`/`join` bounds proved in `AccessLemma.lean`):
-* In `ℝ` (`executes_amortized_real_le`), any adaptive client execution from `Rep s t` satisfies
-  `(total id ns : ℝ) + unitPotential t' - unitPotential t ≤ realHistoryCost s history`, where each
-  step charges `7 log₂(|s_j| + 1) + 3`.
-* In `ℕ` (`executes_total_le_of_empty`, `run_correct_empty`), starting from `.nil` (`Rep ∅ .nil`),
-  total rotations satisfy `total id ns ≤ (spec α).totalCost amortizedCharge ∅ history` with
+* In `ℝ` (`executes_amortized_real_le`), any adaptive client execution from `SearchTree.Rep s t`
+  satisfies `(total id ns : ℝ) + unitPotential t' - unitPotential t ≤ realHistoryCost s history`,
+  where each step charges `7 log₂(|s_j| + 1) + 3`.
+* In `ℕ` (`executes_total_le_of_empty`, `run_correct_empty`), starting from `.nil`
+  (`SearchTree.rep_empty`), total rotations satisfy
+  `total id ns ≤ (spec α).totalCost amortizedCharge ∅ history` with
   `amortizedCharge s _ = 7 * Nat.log 2 (s.card + 1) + 10`, matching the discrete `Spec.totalCost`
   idiom of `SearchTree` and `AVLTree`.
 
@@ -53,8 +54,8 @@ charged as RAM or Turing-machine instructions.
 ## Main definitions
 
 * `StepResult`, `step`, `Exec`: self-adjusting single-operation execution and native trace relation.
-* `Rep`, `realization`: representation relation (`Ordered t ∧ elements t = s`) and
-  `Cslib.Stateful.Realization` of `Cslib.OrderedSet.spec α`.
+* `realization`: `Cslib.Stateful.Realization` of `Cslib.OrderedSet.spec α` reusing
+  `Cslib.Algorithms.Lean.SearchTree.Rep`.
 * `realOpCharge`, `realHistoryCost`, `amortizedCharge`: continuous (`Real.logb 2`) and discrete
   (`Nat.log 2`) per-operation amortized rotation budgets.
 * `ClientRun`, `run`: executable adaptive client runner with named output fields.
@@ -63,8 +64,8 @@ charged as RAM or Turing-machine instructions.
 
 * `exec_unitPotential_amortized_le`: uniform unit-weight single-step rotation bound across all five
   `OrderedSet.Op α` operations (combining the unit-weight specialization of [SleatorTarjan1985b],
-  Section 3, Lemma 2, p. 664 for `contains`, `insert`, and `erase` with the Access-Lemma companion
-  bounds for `minimum` and `successor`).
+  Section 3, Lemma 2, pp. 663–664 for `contains`, `insert`, and `erase` with the Access-Lemma
+  companion bounds for `minimum` and `successor`).
 * `executes_amortized_real_le`, `executes_rotations_le_realHistoryCost_of_empty`: real-valued
   telescoping amortized bounds across arbitrary adaptive `OrderedSet.spec` clients (single-tree
   dictionary analogue of [SleatorTarjan1985b], Section 3, Theorem 6, p. 665).
@@ -82,7 +83,7 @@ public section
 namespace Cslib.Algorithms.Lean.SplayTree
 
 open Cslib.Stateful Cslib.OrderedSet
-open Cslib.Algorithms.Lean.SearchTree (elements Ordered)
+open Cslib.Algorithms.Lean.SearchTree (elements Ordered Rep rep_empty)
 
 variable {α : Type} [LinearOrder α]
 
@@ -119,15 +120,8 @@ recording exact rotation counts. -/
 @[expose] def Exec : Execution (spec α) (BinaryTree α) ℕ :=
   fun t o a t' n => step t o = ⟨t', a, n⟩
 
-/-- Representation relation coupling a mathematical `Finset α` with an `Ordered` search tree `t`. -/
-abbrev Rep (s : Finset α) (t : BinaryTree α) : Prop :=
-  Ordered t ∧ elements t = s
-
-/-- The empty tree represents `∅` with zero initial potential. -/
-theorem rep_empty : Rep (∅ : Finset α) .nil :=
-  ⟨trivial, rfl⟩
-
-/-- Self-adjusting semantic realization of `OrderedSet.spec α` by `BinaryTree α`. -/
+/-- Self-adjusting semantic realization of `OrderedSet.spec α` by `BinaryTree α`, reusing
+`Cslib.Algorithms.Lean.SearchTree.Rep`. -/
 @[expose] def realization : Realization (spec α) (Exec (α := α)) where
   rep := Rep
   total {_ t} o _ _ :=
@@ -207,8 +201,8 @@ theorem realHistoryCost_le_totalCost (s : Finset α) (os : List (Op α)) :
     linarith [realOpCharge_le_amortizedCharge s o, ih ((spec α).step s o).1]
 
 /-- Uniform unit-weight amortized rotation bound across all five `OrderedSet.Op α` operations,
-combining the unit-weight specialization of [SleatorTarjan1985b], Section 3, Lemma 2, p. 664 for
-`contains`, `insert`, and `erase` with the companion Access-Lemma bounds for `minimum` and
+combining the unit-weight specialization of [SleatorTarjan1985b], Section 3, Lemma 2, pp. 663–664
+for `contains`, `insert`, and `erase` with the companion Access-Lemma bounds for `minimum` and
 `successor`. -/
 theorem exec_unitPotential_amortized_le {s : Finset α} {t t' : BinaryTree α} {o : Op α}
     {a : (spec α).Result o} {n : ℕ} (hr : Rep s t) (he : Exec t o a t' n) :
@@ -237,13 +231,14 @@ theorem exec_unitPotential_amortized_le {s : Finset α} {t t' : BinaryTree α} {
 
 /-- Single-tree `OrderedSet.spec α` dictionary analogue of the **Balance Theorem with Updates**
 ([SleatorTarjan1985b], Section 3, Theorem 6, p. 665; real-valued telescoping form): for any
-adaptive client `p` executed from `Rep s t`, the total rotation count plus potential change is
-bounded by `realHistoryCost` along the induced abstract history. -/
+adaptive client `p` executed from `SearchTree.Rep s t`, the total rotation count plus potential
+change is bounded by `realHistoryCost` along the induced abstract history. -/
 theorem executes_amortized_real_le {β : Type} {p : (spec α).Client β}
     {s : Finset α} {t t' : BinaryTree α} {a : β} {ns : List ℕ}
     (hr : Rep s t) (he : Executes Exec p t a t' ns) :
+    let (_, _, history) := (spec α).runClient s p
     (total id ns : ℝ) + unitPotential t' - unitPotential t ≤
-      realHistoryCost s ((spec α).runClient s p).2.2 := by
+      realHistoryCost s history := by
   induction he generalizing s with
   | pure a t =>
     simp
@@ -253,53 +248,57 @@ theorem executes_amortized_real_le {β : Type} {p : (spec α).Client β}
     subst ha
     have htail := ih hr'
     simp only [total_cons, id_eq, Spec.runClient_liftBind, realHistoryCost_cons, Nat.cast_add]
+      at htail ⊢
     linarith
 
-/-- Starting from `.nil` (`Rep ∅ .nil`), the real-valued total rotation count of any adaptive
-`OrderedSet.spec α` client `p` is bounded by `realHistoryCost ∅ ((spec α).runClient ∅ p).2.2`
+/-- Starting from `.nil` (`SearchTree.rep_empty`), the real-valued total rotation count of any
+adaptive `OrderedSet.spec α` client `p` is bounded by `realHistoryCost` along its abstract history
 (single-tree dictionary analogue of [SleatorTarjan1985b], Section 3, Theorem 6, p. 665). -/
 theorem executes_rotations_le_realHistoryCost_of_empty {β : Type} {p : (spec α).Client β}
     {t' : BinaryTree α} {a : β} {ns : List ℕ}
     (he : Executes Exec p .nil a t' ns) :
-    (total id ns : ℝ) ≤ realHistoryCost ∅ ((spec α).runClient ∅ p).2.2 := by
+    let (_, _, history) := (spec α).runClient ∅ p
+    (total id ns : ℝ) ≤ realHistoryCost ∅ history := by
   have htel := executes_amortized_real_le rep_empty he
   have hpot := unitPotential_nonneg t'
   simp only [unitPotential_nil] at htel
   linarith
 
-/-- Discrete `ℕ`-valued total rotation bound from an arbitrary initial tree `Rep s t`, charging
-`amortizedCharge` per operation plus the initial potential allowance
+/-- Discrete `ℕ`-valued total rotation bound from an arbitrary initial tree `SearchTree.Rep s t`,
+charging `amortizedCharge` per operation plus the initial potential allowance
 `s.card * (Nat.log 2 (s.card + 1) + 1)`. -/
 theorem executes_total_le {β : Type} {p : (spec α).Client β}
     {s : Finset α} {t t' : BinaryTree α} {a : β} {ns : List ℕ}
     (hr : Rep s t) (he : Executes Exec p t a t' ns) :
+    let (_, _, history) := (spec α).runClient s p
     total id ns ≤
-      (spec α).totalCost amortizedCharge s ((spec α).runClient s p).2.2 +
+      (spec α).totalCost amortizedCharge s history +
         s.card * (Nat.log 2 (s.card + 1) + 1) := by
   have htel := executes_amortized_real_le hr he
-  have hhist := realHistoryCost_le_totalCost s ((spec α).runClient s p).2.2
+  have hhist :=
+    realHistoryCost_le_totalCost s (let (_, _, history) := (spec α).runClient s p; history)
+  dsimp only at htel hhist ⊢
   have hpot_end := unitPotential_nonneg t'
   have hpot_init : unitPotential t ≤ (s.card : ℝ) * ((Nat.log 2 (s.card + 1) : ℝ) + 1) := by
-    have h1 := unitPotential_le_card_mul_logb hr.1
-    rw [hr.2] at h1
+    obtain ⟨ht, helem⟩ := hr
+    have h1 := unitPotential_le_card_mul_logb ht
+    rw [helem] at h1
     have h2 := logb_two_add_one_le_nat_log s.card
     have hcard_nn : (0 : ℝ) ≤ s.card := Nat.cast_nonneg _
     nlinarith
-  have hreal : (total id ns : ℝ) ≤
-      (((spec α).totalCost amortizedCharge s ((spec α).runClient s p).2.2 +
-        s.card * (Nat.log 2 (s.card + 1) + 1) : ℕ) : ℝ) := by
-    push_cast
-    linarith
-  exact_mod_cast hreal
+  refine Nat.cast_le (α := ℝ).mp ?_
+  push_cast
+  linarith
 
 /-- Single-tree `OrderedSet.spec α` dictionary analogue of the **Balance Theorem with Updates**
 ([SleatorTarjan1985b], Section 3, Theorem 6, p. 665; `ℕ`-valued `Spec.totalCost` form): starting
 from `.nil`, any adaptive client `p` executes at most
-`(spec α).totalCost amortizedCharge ∅ ((spec α).runClient ∅ p).2.2` total rotations. -/
+`(spec α).totalCost amortizedCharge ∅ history` total rotations. -/
 theorem executes_total_le_of_empty {β : Type} {p : (spec α).Client β}
     {t' : BinaryTree α} {a : β} {ns : List ℕ}
     (he : Executes Exec p .nil a t' ns) :
-    total id ns ≤ (spec α).totalCost amortizedCharge ∅ ((spec α).runClient ∅ p).2.2 := by
+    let (_, _, history) := (spec α).runClient ∅ p
+    total id ns ≤ (spec α).totalCost amortizedCharge ∅ history := by
   simpa using executes_total_le rep_empty he
 
 /-! ### Executable Adaptive Client Runner -/
@@ -332,29 +331,34 @@ theorem run_exec {β : Type} (p : (spec α).Client β) (t : BinaryTree α) :
     simp only [run]
     exact .call rfl (ih (step t o).answer (step t o).tree)
 
-/-- Running the concrete splay-tree interpreter from `Rep s t` agrees with abstract `Finset α`
-semantics, preserves `Rep`, and satisfies the amortized logarithmic rotation bound. -/
+/-- Running the concrete splay-tree interpreter from `SearchTree.Rep s t` agrees with abstract
+`Finset α` semantics, preserves `SearchTree.Rep`, and satisfies the amortized logarithmic rotation
+bound. -/
 theorem run_correct {β : Type} (p : (spec α).Client β)
     {s : Finset α} {t : BinaryTree α} (hr : Rep s t) :
-    (run t p).value = ((spec α).runClient s p).1 ∧
-      Rep ((spec α).runClient s p).2.1 (run t p).tree ∧
+    let (value, finalState, history) := (spec α).runClient s p
+    (run t p).value = value ∧
+      Rep finalState (run t p).tree ∧
       total id (run t p).rotations ≤
-        (spec α).totalCost amortizedCharge s ((spec α).runClient s p).2.2 +
+        (spec α).totalCost amortizedCharge s history +
           s.card * (Nat.log 2 (s.card + 1) + 1) := by
-  have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
-    s ((spec α).runClient s p).2.2
   have hexec := run_exec p t
-  have hc := realization.correct_client hr hv hexec
-  exact ⟨hc.1, hc.2, executes_total_le hr hexec⟩
+  have htot := executes_total_le hr hexec
+  dsimp only at htot ⊢
+  have hc :=
+    realization.correct_client hr ((spec α).validHistory_of_forall_valid (fun _ _ => trivial) s _)
+      hexec
+  exact ⟨hc.1, hc.2, htot⟩
 
 /-- Running an adaptive `OrderedSet` client starting from `.nil` agrees with `Finset α` semantics,
-preserves `Rep`, and satisfies `total id (run .nil p).rotations ≤ totalCost amortizedCharge` with
-zero initial potential overhead. -/
+preserves `SearchTree.Rep`, and satisfies `total id (run .nil p).rotations ≤ totalCost
+amortizedCharge` with zero initial potential overhead. -/
 theorem run_correct_empty {β : Type} (p : (spec α).Client β) :
-    (run .nil p).value = ((spec α).runClient ∅ p).1 ∧
-      Rep ((spec α).runClient ∅ p).2.1 (run .nil p).tree ∧
+    let (value, finalState, history) := (spec α).runClient ∅ p
+    (run .nil p).value = value ∧
+      Rep finalState (run .nil p).tree ∧
       total id (run .nil p).rotations ≤
-        (spec α).totalCost amortizedCharge ∅ ((spec α).runClient ∅ p).2.2 := by
+        (spec α).totalCost amortizedCharge ∅ history := by
   have h := run_correct p rep_empty
   simpa using h
 

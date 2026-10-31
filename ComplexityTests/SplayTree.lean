@@ -36,7 +36,7 @@ public section
 namespace ComplexityTests.SplayTree
 
 open Cslib.Algorithms.Lean.SplayTree Cslib.OrderedSet Cslib.Stateful
-open Cslib.Algorithms.Lean.SearchTree (elements Ordered searchVisits minimumVisits)
+open Cslib.Algorithms.Lean.SearchTree (elements Ordered Rep searchVisits minimumVisits)
 
 /-- Degenerate 7-node right spine `1 → 2 → 3 → 4 → 5 → 6 → 7` of height `7`. -/
 private def rightSpine7 : BinaryTree ℕ :=
@@ -99,12 +99,13 @@ example :
 def build (xs : List ℕ) : BinaryTree ℕ :=
   (run .nil (insertAll xs)).tree
 
-theorem ordered_build (xs : List ℕ) : Ordered (build xs) :=
-  (run_correct_empty (insertAll xs)).2.1.1
+theorem ordered_build (xs : List ℕ) : Ordered (build xs) := by
+  obtain ⟨_, ⟨hord, _⟩, _⟩ := run_correct_empty (insertAll xs)
+  exact hord
 
 theorem elements_build (xs : List ℕ) : elements (build xs) = xs.toFinset := by
-  have h := (run_correct_empty (insertAll xs)).2.1.2
-  simpa only [build, insertAll_run, Finset.empty_union] using h
+  obtain ⟨_, ⟨_, helt⟩, _⟩ := run_correct_empty (insertAll xs)
+  simpa only [build, insertAll_run, Finset.empty_union] using helt
 
 example :
     let t := build [4, 1, 7, 3, 6, 2, 5]
@@ -191,11 +192,9 @@ example :
       rootKey r.tree = some 7 ∧
       Rep (elements rightSpine7) r.tree := by
   intro r
-  have hc := run_correct repeatContains7 (s := elements rightSpine7) ⟨ordered_rightSpine7, rfl⟩
-  have hstate : ((spec ℕ).runClient (elements rightSpine7) repeatContains7).2.1 =
-      elements rightSpine7 := rfl
-  rw [hstate] at hc
-  exact ⟨rfl, rfl, rfl, hc.2.1⟩
+  obtain ⟨_, hrep, _⟩ :=
+    run_correct repeatContains7 (s := elements rightSpine7) ⟨ordered_rightSpine7, rfl⟩
+  exact ⟨rfl, rfl, rfl, hrep⟩
 
 -- Shared adaptive `OrderedSet` clients (`insertAll`, `firstTwo`, `extractMin`) execute unchanged
 -- on `SplayTree` with both real-valued (`realHistoryCost`) and discrete (`amortizedCharge`)
@@ -208,17 +207,20 @@ private def buildAndQueryClient : (spec ℕ).Client (Option ℕ × Option ℕ ×
 
 example :
     let r := run .nil buildAndQueryClient
+    let (_, _, history) := (spec ℕ).runClient ∅ buildAndQueryClient
     r.value = (some 1, some 2, some 1) ∧
       elements r.tree = ({2, 3, 4, 5, 6, 7} : Finset ℕ) ∧
-      (total id r.rotations : ℝ) ≤
-        realHistoryCost ∅ ((spec ℕ).runClient ∅ buildAndQueryClient).2.2 ∧
-      total id r.rotations ≤
-        (spec ℕ).totalCost amortizedCharge ∅ ((spec ℕ).runClient ∅ buildAndQueryClient).2.2 := by
+      (total id r.rotations : ℝ) ≤ realHistoryCost ∅ history ∧
+      total id r.rotations ≤ (spec ℕ).totalCost amortizedCharge ∅ history := by
   intro r
   have hc := run_correct_empty buildAndQueryClient
+  dsimp only at hc
+  obtain ⟨_, ⟨_, helt_rep⟩, hcost⟩ := hc
   have hreal := executes_rotations_le_realHistoryCost_of_empty (run_exec buildAndQueryClient .nil)
-  have helt : ((spec ℕ).runClient ∅ buildAndQueryClient).2.1 =
-      ({2, 3, 4, 5, 6, 7} : Finset ℕ) := by decide
-  exact ⟨rfl, hc.2.1.2.trans helt, hreal, hc.2.2⟩
+  have helt :
+      (let (_, finalState, _) := (spec ℕ).runClient ∅ buildAndQueryClient
+       finalState) = ({2, 3, 4, 5, 6, 7} : Finset ℕ) := by decide
+  dsimp only at helt
+  exact ⟨rfl, helt_rep.trans helt, hreal, hcost⟩
 
 end ComplexityTests.SplayTree

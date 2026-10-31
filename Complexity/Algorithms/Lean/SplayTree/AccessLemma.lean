@@ -37,9 +37,6 @@ charges one unit when no rotations occur and the exact rotation count otherwise.
 
 ## Main results
 
-* `two_add_logb_two_add_le`: elementary AM-GM logarithmic inequality
-  `2 + log₂ a + log₂ b ≤ 2 log₂ s` for `0 < a`, `0 < b`, `a + b ≤ s`, eliminating calculus from
-  the `zig-zig` and `zig-zag` steps.
 * `splayUp_amortized_le`, `splay_splayTime_amortized_le`, `exists_mem_splay_splayTime_amortized_le`,
   `splay_splayTime_amortized_le_of_mem`: Sleator and Tarjan's **Access Lemma**
   ([SleatorTarjan1985b], Section 2, Lemma 1, p. 658).
@@ -271,7 +268,7 @@ theorem one_le_splayTime (res : SplayResult α) : 1 ≤ splayTime res :=
 
 /-- Elementary AM-GM inequality in base-2 logarithms: for `0 < a`, `0 < b`, and `a + b ≤ s`,
 `2 + log₂ a + log₂ b ≤ 2 log₂ s` ([SleatorTarjan1985b], Section 2, proof of Lemma 1, p. 658). -/
-theorem two_add_logb_two_add_le {a b s : ℝ} (ha : 0 < a) (hb : 0 < b) (hab : a + b ≤ s) :
+private theorem two_add_logb_two_add_le {a b s : ℝ} (ha : 0 < a) (hb : 0 < b) (hab : a + b ≤ s) :
     2 + Real.logb 2 a + Real.logb 2 b ≤ 2 * Real.logb 2 s := by
   have h1 : 0 ≤ (s - (a + b)) * (s + a + b) := mul_nonneg (by linarith) (by linarith)
   have h2 : 0 ≤ (a - b) ^ 2 := sq_nonneg (a - b)
@@ -1044,7 +1041,7 @@ private theorem logb_two_card_add_one_nonneg (n : ℕ) : 0 ≤ Real.logb 2 ((n :
   exact Real.logb_nonneg (by norm_num) (by linarith)
 
 /-- Unit-weight (`w = 1`) specialization of the `access` bound in [SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664, for `contains`. -/
+Lemma 2, pp. 663–664, for `contains`. -/
 theorem contains_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((contains x t).rotations : ℝ) + unitPotential (contains x t).tree - unitPotential t ≤
       3 * Real.logb 2 ((elements t).card + 1) + 1 := by
@@ -1118,7 +1115,7 @@ theorem minimum_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) 
       linarith
 
 /-- Unit-weight (`w = 1`) specialization of the `split` bound in [SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664. -/
+Lemma 2, pp. 663–664. -/
 theorem split_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((split x t).rotations : ℝ) +
         unitPotential (split x t).left + unitPotential (split x t).right - unitPotential t ≤
@@ -1169,12 +1166,12 @@ theorem split_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x
         linarith
 
 /-- Unit-weight (`w = 1`) specialization of the `join` bound in [SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664. -/
+Lemma 2, pp. 663–664. -/
 theorem join_unitPotential_amortized_le {t₁ t₂ : BinaryTree α}
     (ht₁ : Ordered t₁) (ht₂ : Ordered t₂) :
     ((join t₁ t₂).rotations : ℝ) +
         unitPotential (join t₁ t₂).tree - (unitPotential t₁ + unitPotential t₂) ≤
-      4 * Real.logb 2 ((elements t₁).card + (elements t₂).card + 1) + 1 := by
+      3 * Real.logb 2 ((elements t₁).card + (elements t₂).card + 1) + 1 := by
   have hn₁_nn : (0 : ℝ) ≤ (elements t₁).card := Nat.cast_nonneg _
   have hn₂_nn : (0 : ℝ) ≤ (elements t₂).card := Nat.cast_nonneg _
   have hL : 0 ≤ Real.logb 2 (((elements t₁).card : ℝ) + (elements t₂).card + 1) :=
@@ -1199,10 +1196,9 @@ theorem join_unitPotential_amortized_le {t₁ t₂ : BinaryTree α}
         (elements (.node a l r)).card := by
       rw [← subtreeWeight_unitWeight_eq_card ht₁,
         ← subtreeWeight_splayMax unitWeight (.node a l r), hm]
-    have hrk_m_nonneg : 0 ≤ nodeRank (unitWeight (α := α)) (.node m lm .nil) := by
-      apply Real.logb_nonneg (by norm_num)
-      have hlm := subtreeWeight_unitWeight_nonneg lm
-      simp only [subtreeWeight_node, subtreeWeight_nil, unitWeight]; linarith
+    have hrk_m : nodeRank (unitWeight (α := α)) (.node m lm .nil) =
+        Real.logb 2 (elements (.node a l r)).card := by
+      rw [nodeRank, hsw_m]
     have hrk_join : nodeRank (unitWeight (α := α)) (.node m lm t₂) ≤
         Real.logb 2 (((elements (.node a l r)).card : ℝ) + (elements t₂).card + 1) := by
       apply Real.logb_le_logb_of_le (by norm_num)
@@ -1210,11 +1206,11 @@ theorem join_unitPotential_amortized_le {t₁ t₂ : BinaryTree α}
       have hsw₂ := subtreeWeight_unitWeight_eq_card ht₂
       simp only [subtreeWeight_node, subtreeWeight_nil] at hsw_m ⊢
       linarith
-    simp only [join, hm, unitPotential, potential_node, potential_nil] at hacc ⊢
+    simp only [join, hm, unitPotential, potential_node, potential_nil, hrk_m] at hacc ⊢
     linarith
 
 /-- Unit-weight (`w = 1`) specialization of the `insert` bound in [SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664, extended from `x ∉ elements t` to total set-idempotent `insert`. -/
+Lemma 2, pp. 663–664, extended from `x ∉ elements t` to total set-idempotent `insert`. -/
 theorem insert_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((insert x t).rotations : ℝ) + unitPotential (insert x t).tree - unitPotential t ≤
       4 * Real.logb 2 ((elements t).card + 1) + 1 := by
@@ -1280,7 +1276,7 @@ theorem insert_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (
           linarith
 
 /-- Unit-weight (`w = 1`) specialization of the `delete` bound in [SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664, extended from `x ∈ elements t` to total set-idempotent `erase`. -/
+Lemma 2, pp. 663–664, extended from `x ∈ elements t` to total set-idempotent `erase`. -/
 theorem erase_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((erase x t).rotations : ℝ) + unitPotential (erase x t).tree - unitPotential t ≤
       6 * Real.logb 2 ((elements t).card + 1) + 2 := by
