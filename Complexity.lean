@@ -1170,6 +1170,7 @@ public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
 public import Complexity.Computability.Complexity.Classes.FunctionTime
+public import Complexity.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import Complexity.Computability.Complexity.Classes.Hierarchy
 public import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Nondeterministic
@@ -1592,6 +1593,7 @@ public import Complexity.Computability.GenericRAM.Native.BooleanFold
 public import Complexity.Computability.GenericRAM.Native.BooleanSearch
 public import Complexity.Computability.GenericRAM.Native.Certificate
 public import Complexity.Computability.GenericRAM.Native.Combinators
+public import Complexity.Computability.GenericRAM.Native.Degree
 public import Complexity.Computability.GenericRAM.Native.ExhaustiveCountFallback
 public import Complexity.Computability.GenericRAM.Native.HeavyBranchFold
 public import Complexity.Computability.GenericRAM.Native.IndexFold
@@ -1602,6 +1604,7 @@ public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
 public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
 public import Complexity.Computability.GenericRAM.Signed.Fits
+public import Complexity.Computability.GenericRAM.Simulation.Degree
 public import Complexity.Computability.GenericRAM.Simulation.Finite
 public import Complexity.Computability.GenericRAM.Simulation.Run
 public import Complexity.Computability.GenericRAM.Simulation.Turing
@@ -2318,6 +2321,7 @@ public import Complexity.Computability.WordRAM.Multiword.Sub
 public import Complexity.Computability.WordRAM.Multiword.Transfer
 public import Complexity.Computability.WordRAM.Multiword.Workspace
 public import Complexity.Computability.WordRAM.Native
+public import Complexity.Computability.WordRAM.NativeDegree
 public import Complexity.Computability.WordRAM.Notation
 public import Complexity.Computability.WordRAM.OfTuring
 public import Complexity.Computability.WordRAM.PackedCount
@@ -2347,6 +2351,7 @@ public import Complexity.Computability.WordRAM.Subroutine
 public import Complexity.Computability.WordRAM.Time
 public import Complexity.Computability.WordRAM.Trace
 public import Complexity.Computability.WordRAM.Turing
+public import Complexity.Computability.WordRAM.Turing.Overhead
 public import Complexity.Computability.WordRAM.Width
 public import Complexity.Crypto.Computational.Basic
 public import Complexity.Crypto.Computational.CollisionResistant
