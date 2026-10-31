@@ -60,6 +60,7 @@ for.
 * `Cslib.GaloisRingArith.reduction_liftO`, `Cslib.GaloisRingArith.mk_liftO`: reducing a lift.
 * `Cslib.GaloisRingArith.isUnit_liftO_sub`,
   `Cslib.GaloisRingArith.pairwise_isUnit_liftO_sub_digits`: binary lists as interpolation points.
+* `Cslib.Circuits.Frontier.DescribedNetwork.rows_le_of_isRowsFirstBipartite`: row count bound.
 * `Cslib.Circuits.Frontier.DescribedNetwork.incident_eq`: the vertices at an edge.
 * `Cslib.Circuits.Frontier.DescribedNetwork.contraction_toNetwork`,
   `Cslib.Circuits.Frontier.DescribedNetwork.reduction_contraction_toNetwork`: the contraction.
@@ -249,6 +250,14 @@ theorem isRowsFirstBipartite_map {T' : Type} (f : T → T') (r : ℕ) :
   (List.range D.numEdges).map fun j => ((D.incident j).getD 0 0, (D.incident j).getD 1 0)
 
 variable {D}
+
+/-- A rows-first network with an edge has at most as many rows as vertices. -/
+theorem rows_le_of_isRowsFirstBipartite {D : DescribedNetwork T} {r : ℕ}
+    (hD : D.IsRowsFirstBipartite r) (hM : 1 ≤ D.numEdges) : r ≤ D.vertices.length := by
+  by_contra h
+  have h1 := (hD.2 0 hM).2
+  rw [List.drop_of_length_le (by omega)] at h1
+  simp at h1
 
 theorem getD_map_fst (v : ℕ) (hv : v < D.vertices.length) :
     (D.vertices.map Prod.fst).getD v [] = D.vertices[v].1 := by

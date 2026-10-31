@@ -71,14 +71,6 @@ row and stores the exponents in unary. -/
 
 variable {x : Call}
 
-/-- A rows-first network with an edge has at most as many rows as vertices. -/
-theorem rows_le_of_isRowsFirstBipartite {D : DescribedNetwork VertexDesc} {r : ℕ}
-    (hD : D.IsRowsFirstBipartite r) (hM : 1 ≤ D.numEdges) : r ≤ D.vertices.length := by
-  by_contra h
-  have h1 := (hD.2 0 hM).2
-  rw [List.drop_of_length_le (by omega)] at h1
-  simp at h1
-
 /-- The cap of `nativeMk` leaves a tuple of weight below `p` unchanged, for positive weights. -/
 theorem map_min_of_mem_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ} {β : List ℕ}
     (hβ : β ∈ BudgetTuples.budgetTuples ws p) : β.map (min · p) = β := by
@@ -97,7 +89,7 @@ theorem nativeMk_eq (hx : WF x) (ha : active x = true) {c : State} (hc : c ∈ c
       nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0)) (nodePrec x c.1)
         (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) x.rows x.net
         (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 c.2.2.2) := by
-  have hr := rows_le_of_isRowsFirstBipartite hx.2 (one_le_edges_of_active ha)
+  have hr := DescribedNetwork.rows_le_of_isRowsFirstBipartite hx.2 (one_le_edges_of_active ha)
   have hβ : c.2.2.1 ∈ BudgetTuples.budgetTuples (weights x c.1) (nodePrec x c.1) := by
     simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
       List.mem_range, List.mem_map] at hc
@@ -154,7 +146,7 @@ theorem stepCorrect_nativeMk : StepCorrect nativeMk WF := by
   simp only [active, decide_eq_true_eq] at ha'
   obtain ⟨-, hu, huM, hua, -, -, -⟩ := ha'
   have hlen : (points x).length = numPoints x := by simp [points]
-  have hr := rows_le_of_isRowsFirstBipartite hD (one_le_edges_of_active ha)
+  have hr := DescribedNetwork.rows_le_of_isRowsFirstBipartite hD (one_le_edges_of_active ha)
   refine NativeCall.val_recover_eq_contraction hirr hD hu huM hua (le_taperStep_mul hu)
     (taperStep_mul_le _ _ _) (pow_slots_le_edges_of_active ha) ?_ (points x)
     (pairwise_isUnit_points hirr ha)
