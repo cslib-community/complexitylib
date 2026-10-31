@@ -12,6 +12,7 @@ public import Complexity.Computability.Circuit.Quantum.PathNetworkPolyTime
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 public import Complexity.Computability.Complexity.Classes.Time
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import Complexity.Computability.GenericRAM.Native.ExpTimePolySpace
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -23,13 +24,14 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFr
 import Complexity.Foundations.Data.Nat.SqrtLog.Linear
 
 /-!
-# Quantum circuits by tensor contraction: `BQTIME[T] ⊆ DTIME[2 ^ O(T / √log T)]`
+# Quantum circuits by tensor contraction: quantum time `T` in `DTIME[2 ^ O(T / √log T)]`
 
-The acceptance probability of a circuit of `L` gates over the Hadamard, NOT, CNOT and Toffoli gates
-is `acceptGap / 2 ^ h`, where `h` is the number of Hadamard gates
-(`Cslib.Quantum.acceptProb_eq_acceptGap`). The acceptance gap is the contraction of the network of
-the circuit and its mirror copy (`Cslib.Quantum.PathNetwork.contraction_network`), and over `ℕ`,
-with the Hadamard sign `2 ^ (h + 1) - 1`, its residue modulo `2 ^ (h + 1)`
+The probability that the final measurement of a circuit of `L` gates over the Hadamard, NOT, CNOT
+and Toffoli gates finds every qubit of a list `S` in state `1` is `onesGap S / 2 ^ h`, where `h` is
+the number of Hadamard gates (`Cslib.Quantum.onesProb_eq_onesGap`); acceptance is the case
+`S = [0]`. The projected gap is the contraction of the network of the circuit and its mirror copy
+(`Cslib.Quantum.PathNetwork.contraction_network`), and over `ℕ`, with the Hadamard sign
+`2 ^ (h + 1) - 1`, its residue modulo `2 ^ (h + 1)`
 (`Cslib.Quantum.PathNetwork.contraction_network_mod`). The network has `s = 4 N` edges for
 `N ≤ 3 L` occurrences of qubits in gates, degree at most six and a bipartition, so it is admissible
 for the contraction algorithm of Theorem D.1 of [OpenAI2026ETH]
@@ -37,35 +39,52 @@ for the contraction algorithm of Theorem D.1 of [OpenAI2026ETH]
 `2 ^ O(s / √⌊log₂ s⌋)` times a polynomial and in polynomial space. The width of the circuit does
 not enter the exponent: qubits that no gate touches cost nothing.
 
-So the acceptance gap of polynomial-time computed circuits is computed by one machine in time
+So the projected gaps of polynomial-time computed circuits are computed by one machine in time
 `2 ^ (A (L + 1) / √⌊log₂ (L + 2)⌋)` times a polynomial in the input length, and in polynomial space
-(`QuantumContraction.exists_computableInO_gapValue`). For a uniform family with `O(T)` gates this
-decides the problem of the family: `BQTIME[T] ⊆ ⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]` for
-`max n 2 ≤ T n`, with a joint polynomial space bound `T ^ d`
-(`QuantumContraction.BQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
-`QuantumContraction.exists_decidableInTimeAndSpace_of_mem_BQTIME`). No time-constructibility of
-`T` is needed, since the machine never computes `T`. The novelty of this bound has not been
-checked against the literature.
+(`QuantumContraction.exists_computableInO_gapValue`), and so is any polynomial-time rule applied to
+two of them (`QuantumContraction.exists_computableInO_rule`). The gaps are exact, so a rule can
+test a probability for zero or compare two probabilities. For a uniform family with `O(T)` gates
+and `max n 2 ≤ T n`, a problem decided by such a rule lies in `⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`,
+with a joint polynomial space bound `T ^ d`
+(`QuantumContraction.exists_decidableInTimeAndSpace_of_onesProb`):
+
+* `BQTIME[T]`: the acceptance gap `g` against the gap `2 ^ h` of no condition, `2 ^ h < 2 g`;
+* `NQTIME[T]`: the acceptance gap is positive;
+* `EQTIME[T]`, which lies in `NQTIME[T]`;
+* `PostBQTIME[T]`: the gap `g` of qubits `0` and `1` against the gap `g'` of qubit `1`, `g' < 2 g`.
+
+No time-constructibility of `T` is needed, since the machine never computes `T`. The textbook
+characterizations `NQP = coC₌P` [FennerGreenHomerPruim1999] and `PostBQP = PP`
+[Aaronson2005Postselection] would lose a polynomial in `T`. The novelty of these bounds has not
+been established; a limited search found no direct simulation of these classes in this time.
 
 ## Main definitions
 
-* `Cslib.Complexity.QuantumContraction.gapValue`: the acceptance gap as the simulator computes
-  it.
+* `Cslib.Complexity.QuantumContraction.gapValue`: the projected gap as the simulator computes it.
 
 ## Main results
 
 * `Cslib.Quantum.PathNetwork.explicitAdmissible_network`: the network is admissible.
-* `Cslib.Complexity.QuantumContraction.gapValue_eq`: the simulator computes the acceptance gap.
-* `Cslib.Complexity.QuantumContraction.exists_computableInO_rule`,
-  `Cslib.Complexity.QuantumContraction.exists_computableInO_gapValue`: the simulator and its
+* `Cslib.Complexity.QuantumContraction.gapValue_eq`: the simulator computes the projected gap.
+* `Cslib.Complexity.QuantumContraction.exists_computableInO_gapValue`,
+  `Cslib.Complexity.QuantumContraction.exists_computableInO_rule`: the simulator and its
   resources.
-* `Cslib.Complexity.QuantumContraction.exists_decidableInTimeAndSpace_of_mem_BQTIME`,
-  `Cslib.Complexity.QuantumContraction.BQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`: the
-  class containments.
+* `Cslib.Complexity.QuantumContraction.exists_decidableInTimeAndSpace_of_onesProb`: deciding by two
+  projected gaps.
+* `Cslib.Complexity.QuantumContraction.BQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
+  `Cslib.Complexity.QuantumContraction.NQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
+  `Cslib.Complexity.QuantumContraction.EQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
+  `Cslib.Complexity.QuantumContraction.PostBQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
+  with the joint forms `exists_decidableInTimeAndSpace_of_mem_BQTIME`, `…_NQTIME` and
+  `…_PostBQTIME`: the class containments.
 
 ## References
 
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Theorem D.1 (p. 53).
+* [S. Fenner, F. Green, S. Homer, R. Pruim, *Determining acceptance possibility for a quantum
+  computation is hard for the polynomial hierarchy*][FennerGreenHomerPruim1999]
+* [S. Aaronson, *Quantum computing, postselection, and probabilistic
+  polynomial-time*][Aaronson2005Postselection]
 -/
 
 public section
@@ -81,19 +100,19 @@ theorem nodup_qubits {m : ℕ} {g : GateCode} (h : g.WellFormed m) : (qubits g).
   · simp [qubits, h.2]
 
 /-- **The network is admissible** at size `4 N`, its number of edges, with constant `6`, for a
-nonempty list of well-formed gate codes. -/
-theorem explicitAdmissible_network (neg : ℕ) (X : List Bool) {gs : List GateCode}
+nonempty list of well-formed gate codes and any measured qubits. -/
+theorem explicitAdmissible_network (neg : ℕ) (S : List ℕ) (X : List Bool) {gs : List GateCode}
     (hgs : ∀ g ∈ gs, g.WellFormed X.length) (hne : gs ≠ []) :
-    ExplicitAdmissible 6 (4 * (occurrences gs).length) (network neg X gs) := by
+    ExplicitAdmissible 6 (4 * (occurrences gs).length) (network neg S X gs) := by
   have h3 : ∀ g ∈ gs, (qubits g).length ≤ 3 := fun g hg => length_qubits_le_three (hgs g hg)
   have hL : 1 ≤ gs.length := List.length_pos_iff.mpr hne
   have hLN := length_le_length_occurrences gs
   have hlog : 1 ≤ Nat.log 2 (4 * (occurrences gs).length) := Nat.log_pos (by norm_num) (by omega)
-  refine ⟨isRowsFirstBipartite_network neg X fun g hg => nodup_qubits (hgs g hg), ?_, ?_, ?_,
-    length_table_network neg X h3, ?_⟩
+  refine ⟨isRowsFirstBipartite_network neg S X fun g hg => nodup_qubits (hgs g hg), ?_, ?_, ?_,
+    length_table_network neg S X h3, ?_⟩
   · rw [numEdges_network]
     omega
-  · exact (maxDegree_network_le neg X h3).trans (by omega)
+  · exact (maxDegree_network_le neg S X h3).trans (by omega)
   · rw [length_vertices_network]
     omega
   · rw [numEdges_network]
@@ -112,35 +131,35 @@ open Quantum Quantum.PathNetwork Cslib.Circuits.Frontier Turing.MultiTapeTM Csli
 @[expose] def guard (gs : List GateCode) : Bool := !gs.isEmpty
 
 /-- The input of the contraction algorithm: the precision `h + 1`, for `h` Hadamard gates, and the
-network with Hadamard sign `2 ^ (h + 1) - 1` on the input register `X`. -/
-@[expose] def contractionInput (gs : List GateCode) (X : List Bool) :
+network with the measured qubits `S` and Hadamard sign `2 ^ (h + 1) - 1` on the input register
+`X`. -/
+@[expose] def contractionInput (S : List ℕ) (gs : List GateCode) (X : List Bool) :
     ℕ × ℕ × ExplicitTensorNetwork ℕ :=
-  (hadamardCount gs + 1, network (2 ^ (hadamardCount gs + 1) - 1 : ℕ) X gs)
+  (hadamardCount gs + 1, network (2 ^ (hadamardCount gs + 1) - 1 : ℕ) S X gs)
 
-/-- The answer for a circuit without gates: the bit of qubit `0`. -/
-@[expose] def fallback (X : List Bool) : ℕ := if X.getD 0 false then 1 else 0
+/-- The answer for a circuit without gates: whether every qubit of `S` reads one in `X`. -/
+@[expose] def fallback (S : List ℕ) (X : List Bool) : ℕ :=
+  if S.all fun j => X.getD j false then 1 else 0
 
-/-- **The acceptance gap as the simulator computes it**: the residue of the contraction of the
-network modulo `2 ^ (h + 1)`, or the bit of qubit `0` for a circuit without gates. -/
-@[expose] def gapValue (gs : List GateCode) (X : List Bool) : ℕ :=
+/-- **The projected gap as the simulator computes it**: the residue of the contraction of the
+network modulo `2 ^ (h + 1)`, or the bits of the qubits of `S` for a circuit without gates. -/
+@[expose] def gapValue (S : List ℕ) (gs : List GateCode) (X : List Bool) : ℕ :=
   if guard gs then
-    let (precision, _, network) := contractionInput gs X
+    let (precision, _, network) := contractionInput S gs X
     network.contraction % 2 ^ precision
-  else fallback X
+  else fallback S X
 
-/-- **The simulator computes the acceptance gap** of well-formed gate codes on a nonempty input
-register. -/
-theorem gapValue_eq {X : List Bool} (hX : 0 < X.length) {gs : List GateCode}
-    (hgs : ∀ g ∈ gs, g.WellFormed X.length) : gapValue gs X = (acceptGap gs X).toNat := by
+/-- **The simulator computes the projected gap** of well-formed gate codes on the register `X`. -/
+theorem gapValue_eq (S : List ℕ) {X : List Bool} {gs : List GateCode}
+    (hgs : ∀ g ∈ gs, g.WellFormed X.length) : gapValue S gs X = (onesGap S gs X).toNat := by
   unfold gapValue
   split
-  · exact contraction_network_mod X hX gs hgs (Nat.lt_succ_self _)
+  · exact contraction_network_mod S X gs hgs (Nat.lt_succ_self _)
   · next hg =>
     obtain rfl : gs = [] := by simpa [guard] using hg
-    rw [acceptGap_nil, fallback]
-    cases X with
-    | nil => rfl
-    | cons b X => cases b <;> rfl
+    simp only [fallback, onesGap, hadamardCount_nil, onesTerm, pathRun, List.ofFn_zero,
+      List.foldl_nil, true_and, Bool.xor_self, Bool.false_eq_true, ↓reduceIte]
+    split <;> rfl
 
 /-! ### Resources -/
 
@@ -162,20 +181,17 @@ section Machine
 
 variable {α : Type} {enc : α ↪ List Bool} {gs : α → List GateCode} {X : α → List Bool}
 
-/-- **The simulator with polynomial-time postprocessing.** For polynomial-time computed gate codes
-`gs a`, well formed on the polynomial-time computed register `X a`, one machine computes
-`rule (h, gapValue (gs a) (X a))`, for `h` the number of Hadamard gates and a polynomial-time
-`rule`, in time `2 ^ (A (L + 1) / √⌊log₂ (L + 2)⌋)` times a polynomial in the input length and in
-polynomial space, where `L` is the number of gates. -/
-theorem exists_computableInO_rule (hgs : ComputableInPolyTime gs enc (encList encGateCode))
-    (hX : ComputableInPolyTime X enc encBits) (hwf : ∀ a, ∀ g ∈ gs a, g.WellFormed (X a).length)
-    {β : Type} {encβ : β ↪ List Bool} {rule : ℕ × ℕ → β}
-    (hrule : ComputableInPolyTime rule (encPair encUnary encNat) encβ) :
-    ∃ A e : ℕ, ComputableInO (fun a => rule (hadamardCount (gs a), gapValue (gs a) (X a))) enc
-      encβ
-      (fun a => 2 ^ (A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
-        ((enc a).length + 1) ^ e)
-      (fun a => ((enc a).length + 1) ^ e) := by
+/-- **The simulator as a certificate**: for polynomial-time computed measured qubits `S a` and
+gate codes `gs a`, well formed on the polynomial-time computed register `X a`, the projected gap
+is computed in time `2 ^ (A (L + 1) / √⌊log₂ (L + 2)⌋)` times a polynomial and in polynomial
+space. -/
+private theorem exists_expTimePolySpace_gapValue {S : α → List ℕ}
+    (hS : ComputableInPolyTime S enc (encList encUnary))
+    (hgs : ComputableInPolyTime gs enc (encList encGateCode))
+    (hX : ComputableInPolyTime X enc encBits) (hwf : ∀ a, ∀ g ∈ gs a, g.WellFormed (X a).length) :
+    ∃ (A : ℕ) (c : NativeCertificate (fun a => gapValue (S a) (gs a) (X a)) enc encNat),
+      c.ExpTimePolySpace fun a =>
+        A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2)) := by
   obtain ⟨K, hK⟩ := fastContractionAlgorithm.bound 6 1
   -- the polynomial-time parts
   have hh : ComputableInPolyTime (fun a => hadamardCount (gs a)) enc encUnary := by
@@ -184,46 +200,45 @@ theorem exists_computableInO_rule (hgs : ComputableInPolyTime gs enc (encList en
   have hguard : ComputableInPolyTime (fun a => guard (gs a)) enc encBool := by
     unfold guard
     fun_prop
-  have hinput : ComputableInPolyTime (fun a => contractionInput (gs a) (X a)) enc
+  have hinput : ComputableInPolyTime (fun a => contractionInput (S a) (gs a) (X a)) enc
       (encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork)) :=
     (unary_to_binary.comp (unary_add' hh (const 1))).prod (computableInPolyTime_network
-      (binary_sub' (binary_pow' (const 2) (unary_add' hh (const 1)))
-        (const 1)) hX hgs)
-  have hfb : ComputableInPolyTime (fun a => fallback (X a)) enc encNat :=
-    ite_decide (decide_eq' (bitsGetDWithInput hX (const 0) false) (const true)) (const 1) (const 0)
+      (binary_sub' (binary_pow' (const 2) (unary_add' hh (const 1))) (const 1)) hS hX hgs)
+  have hfb : ComputableInPolyTime (fun a => fallback (S a) (X a)) enc encNat :=
+    ite_decide (decide_eq' (allWithInput hS (bitsGetDWithInput (hX.comp (fst _ _)) (snd _ _)
+      false)) (const true)) (const 1) (const 0)
   -- the machine
-  let cv : NativeCertificate (fun a => gapValue (gs a) (X a)) enc encNat :=
+  let cv : NativeCertificate (fun a => gapValue (S a) (gs a) (X a)) enc encNat :=
     (NativeCertificate.branch (NativeCertificate.ofPolyTime hguard)
       (fastContractionAlgorithm.certificate.comp (NativeCertificate.ofPolyTime hinput))
       (NativeCertificate.ofPolyTime hfb)).congr fun _ => rfl
-  let cpair := (NativeCertificate.ofPolyTime hh).prod cv
-  let ctotal := (NativeCertificate.ofPolyTime hrule).comp cpair
+  refine ⟨12 * K, cv, ?_⟩
   -- polynomial bounds
   have hpg := NativeCertificate.ofPolyTime_isPolynomial hguard
   have hpi := NativeCertificate.ofPolyTime_isPolynomial hinput
   have hpf := NativeCertificate.ofPolyTime_isPolynomial hfb
-  have hph := NativeCertificate.ofPolyTime_isPolynomial hh
-  have hpr := NativeCertificate.ofPolyTime_isPolynomial hrule
   obtain ⟨cg, dg, htg⟩ := hpg.1.exists_le
   obtain ⟨cg', dg', hsg⟩ := hpg.2.exists_le
   obtain ⟨ci, di, hti⟩ := hpi.1.exists_le
   obtain ⟨ci', di', hsi⟩ := hpi.2.exists_le
   obtain ⟨cf, df, htf⟩ := hpf.1.exists_le
   obtain ⟨cf', df', hsf⟩ := hpf.2.exists_le
-  obtain ⟨ch, dh, hth⟩ := hph.1.exists_le
-  obtain ⟨ch', dh', hsh⟩ := hph.2.exists_le
-  obtain ⟨cr, dr, htr⟩ := hpr.1.exists_le
-  obtain ⟨cr', dr', hsr⟩ := hpr.2.exists_le
   obtain ⟨p, q, hlen⟩ := hinput.polyBounded_length.exists_le
   -- the contraction on guarded inputs
+  have hinlen (a : α) : (((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
+      (contractionInput (S a) (gs a) (X a))).length + 1) ^ K ≤
+        (p + 1) ^ K * ((enc a).length + 1) ^ (q * K) := by
+    have h1 := hlen a
+    have h2 : 1 ≤ ((enc a).length + 1) ^ q := Nat.one_le_pow _ _ (Nat.le_add_left 1 _)
+    calc _ ≤ ((p + 1) * ((enc a).length + 1) ^ q) ^ K := Nat.pow_le_pow_left (by nlinarith) K
+      _ = _ := by rw [mul_pow, pow_mul]
   have hfast (a : α) (hga : guard (gs a) = true) :
-      fastContractionAlgorithm.certificate.time (contractionInput (gs a) (X a)) ≤
-          K * (((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-            (contractionInput (gs a) (X a))).length + 1) ^ K *
-            2 ^ (12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) ∧
-        fastContractionAlgorithm.certificate.space (contractionInput (gs a) (X a)) ≤
-          K * (((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-            (contractionInput (gs a) (X a))).length + 1) ^ K := by
+      fastContractionAlgorithm.certificate.time (contractionInput (S a) (gs a) (X a)) ≤
+          K * (p + 1) ^ K *
+            (2 ^ (12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
+              ((enc a).length + 1) ^ (q * K)) ∧
+        fastContractionAlgorithm.certificate.space (contractionInput (S a) (gs a) (X a)) ≤
+          K * (p + 1) ^ K * ((enc a).length + 1) ^ (q * K) := by
     have hne : gs a ≠ [] := by simpa [guard] using hga
     have hL : 1 ≤ (gs a).length := List.length_pos_iff.mpr hne
     have hLN := length_le_length_occurrences (gs a)
@@ -231,177 +246,148 @@ theorem exists_computableInO_rule (hgs : ComputableInPolyTime gs enc (encList en
       rw [hadamardCount_eq_countP]
       exact List.countP_le_length
     have hb := hK (4 * (occurrences (gs a)).length) (hadamardCount (gs a) + 1)
-      (network (2 ^ (hadamardCount (gs a) + 1) - 1 : ℕ) (X a) (gs a)) (by omega) (by omega)
-      (by omega) (explicitAdmissible_network _ (X a) (hwf a) hne)
-    exact ⟨hb.1.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num)
-      (exponent_le K (hwf a) hne))), hb.2⟩
-  -- the space of the pair, and so the length of its output
-  set ds := dg' + di' + df' + dh' + q * K
-  set CS := cg' + ci' + cf' + ch' + K * (p + 1) ^ K
-  have hY {a : α} {d d' : ℕ} (h : d ≤ d') :
-      ((enc a).length + 1) ^ d ≤ ((enc a).length + 1) ^ d' :=
-    Nat.pow_le_pow_right (Nat.le_add_left 1 _) h
-  have hinlen (a : α) : (((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-      (contractionInput (gs a) (X a))).length + 1) ^ K ≤
-        (p + 1) ^ K * ((enc a).length + 1) ^ (q * K) := by
-    have h1 := hlen a
-    have h2 : 1 ≤ ((enc a).length + 1) ^ q := Nat.one_le_pow _ _ (Nat.le_add_left 1 _)
-    calc _ ≤ ((p + 1) * ((enc a).length + 1) ^ q) ^ K := Nat.pow_le_pow_left (by nlinarith) K
-      _ = _ := by rw [mul_pow, pow_mul]
-  have hspace_pair (a : α) : cpair.space a ≤ CS * ((enc a).length + 1) ^ ds := by
-    have e1 := (hsh a).trans (Nat.mul_le_mul_left ch' (hY (a := a) (show dh' ≤ ds by omega)))
-    have e2 := (hsg a).trans (Nat.mul_le_mul_left cg' (hY (a := a) (show dg' ≤ ds by omega)))
-    have e3 := (hsi a).trans (Nat.mul_le_mul_left ci' (hY (a := a) (show di' ≤ ds by omega)))
-    have e4 := (hsf a).trans (Nat.mul_le_mul_left cf' (hY (a := a) (show df' ≤ ds by omega)))
-    change (NativeCertificate.ofPolyTime hh).space a +
-        ((NativeCertificate.ofPolyTime hguard).space a + if guard (gs a) then
-          (NativeCertificate.ofPolyTime hinput).space a +
-            fastContractionAlgorithm.certificate.space (contractionInput (gs a) (X a))
-          else (NativeCertificate.ofPolyTime hfb).space a) ≤ _
-    split
-    · next hga =>
-      have e5 := ((hfast a hga).2.trans (Nat.mul_le_mul_left K (hinlen a))).trans
-        (show K * ((p + 1) ^ K * ((enc a).length + 1) ^ (q * K)) ≤
-          K * (p + 1) ^ K * ((enc a).length + 1) ^ ds by
-            rw [← Nat.mul_assoc]; exact Nat.mul_le_mul_left _ (hY (by omega)))
-      calc _ ≤ ch' * ((enc a).length + 1) ^ ds + (cg' * ((enc a).length + 1) ^ ds +
-            (ci' * ((enc a).length + 1) ^ ds + K * (p + 1) ^ K * ((enc a).length + 1) ^ ds)) :=
-            Nat.add_le_add e1 (Nat.add_le_add e2 (Nat.add_le_add e3 e5))
-        _ = (ch' + cg' + ci' + K * (p + 1) ^ K) * ((enc a).length + 1) ^ ds := by ring
-        _ ≤ _ := Nat.mul_le_mul_right _ (by simp only [CS]; omega)
-    · calc _ ≤ ch' * ((enc a).length + 1) ^ ds + (cg' * ((enc a).length + 1) ^ ds +
-            cf' * ((enc a).length + 1) ^ ds) := Nat.add_le_add e1 (Nat.add_le_add e2 e4)
-        _ = (ch' + cg' + cf') * ((enc a).length + 1) ^ ds := by ring
-        _ ≤ _ := Nat.mul_le_mul_right _ (by simp only [CS]; omega)
-  obtain ⟨K₀, -, hK₀⟩ := cpair.computes
-  -- the postprocessing
-  set CR := K₀ * CS + K₀ + 1
-  have hpairlen (a : α) : (encPair encUnary encNat
-      (hadamardCount (gs a), gapValue (gs a) (X a))).length + 1 ≤
-        CR * ((enc a).length + 1) ^ ds := by
-    have h1 := hK₀ a
-    have h2 := hspace_pair a
-    have h3 : 1 ≤ ((enc a).length + 1) ^ ds := Nat.one_le_pow _ _ (Nat.le_add_left 1 _)
-    change _ ≤ K₀ * (cpair.space a + 1) at h1
-    simp only [CR]
-    nlinarith
-  have hrule_time (a : α) : (NativeCertificate.ofPolyTime hrule).time
-      (hadamardCount (gs a), gapValue (gs a) (X a)) ≤
-        cr * CR ^ dr * ((enc a).length + 1) ^ (ds * dr) := by
-    refine (htr _).trans ?_
-    calc _ ≤ cr * (CR * ((enc a).length + 1) ^ ds) ^ dr :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (hpairlen a) dr)
-      _ = _ := by rw [mul_pow, ← pow_mul]; ring
-  have hrule_space (a : α) : (NativeCertificate.ofPolyTime hrule).space
-      (hadamardCount (gs a), gapValue (gs a) (X a)) ≤
-        cr' * CR ^ dr' * ((enc a).length + 1) ^ (ds * dr') := by
-    refine (hsr _).trans ?_
-    calc _ ≤ cr' * (CR * ((enc a).length + 1) ^ ds) ^ dr' :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (hpairlen a) dr')
-      _ = _ := by rw [mul_pow, ← pow_mul]; ring
+      (network (2 ^ (hadamardCount (gs a) + 1) - 1 : ℕ) (S a) (X a) (gs a)) (by omega) (by omega)
+      (by omega) (explicitAdmissible_network _ (S a) (X a) (hwf a) hne)
+    constructor
+    · refine hb.1.trans ?_
+      calc _ ≤ K * ((p + 1) ^ K * ((enc a).length + 1) ^ (q * K)) *
+            2 ^ (12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) :=
+            Nat.mul_le_mul (Nat.mul_le_mul_left _ (hinlen a))
+              (Nat.pow_le_pow_right (by norm_num) (exponent_le K (hwf a) hne))
+        _ = _ := by ring
+    · exact hb.2.trans ((Nat.mul_le_mul_left K (hinlen a)).trans (Nat.mul_assoc _ _ _).ge)
   -- the totals
-  set e := dg + di + df + dh + q * K + ds * dr + ds * dr' + ds
-  set k := cg + ci + cf + ch + K * (p + 1) ^ K + cr * CR ^ dr + CS + cr' * CR ^ dr' + 1
-  refine ⟨12 * K, e, ctotal.computes.mono k (fun a => ?_) (fun a => ?_)⟩
-  · -- time
-    set E := 12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))
-    set Z := 2 ^ E * ((enc a).length + 1) ^ e
-    have hZ {d : ℕ} (h : d ≤ e) : ((enc a).length + 1) ^ d ≤ Z :=
-      (hY h).trans (Nat.le_mul_of_pos_left _ Nat.one_le_two_pow)
-    have e1 := (hth a).trans (Nat.mul_le_mul_left ch (hZ (show dh ≤ e by omega)))
-    have e2 := (htg a).trans (Nat.mul_le_mul_left cg (hZ (show dg ≤ e by omega)))
-    have e3 := (hti a).trans (Nat.mul_le_mul_left ci (hZ (show di ≤ e by omega)))
-    have e4 := (htf a).trans (Nat.mul_le_mul_left cf (hZ (show df ≤ e by omega)))
-    have e6 := (hrule_time a).trans (Nat.mul_le_mul_left _ (hZ (show ds * dr ≤ e by omega)))
-    change (NativeCertificate.ofPolyTime hh).time a +
-        ((NativeCertificate.ofPolyTime hguard).time a + if guard (gs a) then
-          (NativeCertificate.ofPolyTime hinput).time a +
-            fastContractionAlgorithm.certificate.time (contractionInput (gs a) (X a))
-          else (NativeCertificate.ofPolyTime hfb).time a) +
-        (NativeCertificate.ofPolyTime hrule).time
-          (hadamardCount (gs a), gapValue (gs a) (X a)) ≤ k * (Z + 1)
-    have hk : ∀ c, c ≤ k → c * Z ≤ k * (Z + 1) := fun c hc =>
-      (Nat.mul_le_mul_right _ hc).trans (Nat.mul_le_mul_left _ (Nat.le_succ _))
-    split
-    · next hga =>
-      have e5 : fastContractionAlgorithm.certificate.time (contractionInput (gs a) (X a)) ≤
-          K * (p + 1) ^ K * Z := by
-        refine (hfast a hga).1.trans ?_
-        calc _ ≤ K * ((p + 1) ^ K * ((enc a).length + 1) ^ (q * K)) * 2 ^ E :=
-              Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (hinlen a))
-          _ = K * (p + 1) ^ K * (2 ^ E * ((enc a).length + 1) ^ (q * K)) := by ring
-          _ ≤ K * (p + 1) ^ K * Z :=
-              Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (hY (by omega)))
-      calc _ ≤ ch * Z + (cg * Z + (ci * Z + K * (p + 1) ^ K * Z)) + cr * CR ^ dr * Z :=
-            Nat.add_le_add (Nat.add_le_add e1 (Nat.add_le_add e2 (Nat.add_le_add e3 e5))) e6
-        _ = (ch + cg + ci + K * (p + 1) ^ K + cr * CR ^ dr) * Z := by ring
-        _ ≤ _ := hk _ (by simp only [k]; omega)
-    · calc _ ≤ ch * Z + (cg * Z + cf * Z) + cr * CR ^ dr * Z :=
-            Nat.add_le_add (Nat.add_le_add e1 (Nat.add_le_add e2 e4)) e6
-        _ = (ch + cg + cf + cr * CR ^ dr) * Z := by ring
-        _ ≤ _ := hk _ (by simp only [k]; omega)
-  · -- space
-    have e1 := (hspace_pair a).trans (Nat.mul_le_mul_left CS (hY (a := a) (show ds ≤ e by omega)))
-    have e2 := (hrule_space a).trans
-      (Nat.mul_le_mul_left _ (hY (a := a) (show ds * dr' ≤ e by omega)))
-    change cpair.space a + (NativeCertificate.ofPolyTime hrule).space
-      (hadamardCount (gs a), gapValue (gs a) (X a)) ≤ k * (((enc a).length + 1) ^ e + 1)
-    calc _ ≤ CS * ((enc a).length + 1) ^ e + cr' * CR ^ dr' * ((enc a).length + 1) ^ e :=
-          Nat.add_le_add e1 e2
-      _ = (CS + cr' * CR ^ dr') * ((enc a).length + 1) ^ e := by ring
-      _ ≤ k * ((enc a).length + 1) ^ e :=
-          Nat.mul_le_mul_right _ (by simp only [k]; omega)
-      _ ≤ _ := Nat.mul_le_mul_left _ (Nat.le_succ _)
+  set d := dg + di + df + dg' + di' + df' + q * K
+  refine ⟨cg + ci + cf + cg' + ci' + cf' + K * (p + 1) ^ K, d, fun a => ?_⟩
+  set Y := ((enc a).length + 1) ^ d
+  set Z := 2 ^ (12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2)))
+  have hY {e : ℕ} (he : e ≤ d) : ((enc a).length + 1) ^ e ≤ Y :=
+    Nat.pow_le_pow_right (Nat.le_add_left 1 _) he
+  have hZ : Y ≤ Z * Y := Nat.le_mul_of_pos_left Y (Nat.two_pow_pos _)
+  change (NativeCertificate.ofPolyTime hguard).time a + (if guard (gs a) then
+        (NativeCertificate.ofPolyTime hinput).time a +
+          fastContractionAlgorithm.certificate.time (contractionInput (S a) (gs a) (X a))
+        else (NativeCertificate.ofPolyTime hfb).time a) ≤ _ ∧
+      (NativeCertificate.ofPolyTime hguard).space a + (if guard (gs a) then
+        (NativeCertificate.ofPolyTime hinput).space a +
+          fastContractionAlgorithm.certificate.space (contractionInput (S a) (gs a) (X a))
+        else (NativeCertificate.ofPolyTime hfb).space a) ≤ _
+  have e1 := (htg a).trans (Nat.mul_le_mul_left cg ((hY (e := dg) (by omega)).trans hZ))
+  have e2 := (hti a).trans (Nat.mul_le_mul_left ci ((hY (e := di) (by omega)).trans hZ))
+  have e3 := (htf a).trans (Nat.mul_le_mul_left cf ((hY (e := df) (by omega)).trans hZ))
+  have e1' := (hsg a).trans (Nat.mul_le_mul_left cg' (hY (e := dg') (by omega)))
+  have e2' := (hsi a).trans (Nat.mul_le_mul_left ci' (hY (e := di') (by omega)))
+  have e3' := (hsf a).trans (Nat.mul_le_mul_left cf' (hY (e := df') (by omega)))
+  have hqK : ((enc a).length + 1) ^ (q * K) ≤ Y := hY (by omega)
+  split
+  · next hga =>
+    have e4 := (hfast a hga).1.trans (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left Z hqK))
+    have e4' := (hfast a hga).2.trans (Nat.mul_le_mul_left _ hqK)
+    constructor
+    · calc _ ≤ cg * (Z * Y) + (ci * (Z * Y) + K * (p + 1) ^ K * (Z * Y)) :=
+            Nat.add_le_add e1 (Nat.add_le_add e2 e4)
+        _ ≤ _ := by
+          rw [show cg * (Z * Y) + (ci * (Z * Y) + K * (p + 1) ^ K * (Z * Y)) =
+            (cg + ci + K * (p + 1) ^ K) * Z * Y by ring]
+          exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by omega))
+    · calc _ ≤ cg' * Y + (ci' * Y + K * (p + 1) ^ K * Y) :=
+            Nat.add_le_add e1' (Nat.add_le_add e2' e4')
+        _ ≤ _ := by
+          rw [show cg' * Y + (ci' * Y + K * (p + 1) ^ K * Y) =
+            (cg' + ci' + K * (p + 1) ^ K) * Y by ring]
+          exact Nat.mul_le_mul_right _ (by omega)
+  · constructor
+    · calc _ ≤ cg * (Z * Y) + cf * (Z * Y) := Nat.add_le_add e1 e3
+        _ ≤ _ := by
+          rw [show cg * (Z * Y) + cf * (Z * Y) = (cg + cf) * Z * Y by ring]
+          exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by omega))
+    · calc _ ≤ cg' * Y + cf' * Y := Nat.add_le_add e1' e3'
+        _ ≤ _ := by
+          rw [show cg' * Y + cf' * Y = (cg' + cf') * Y by ring]
+          exact Nat.mul_le_mul_right _ (by omega)
 
-/-- **The simulator.** For polynomial-time computed gate codes `gs a`, well formed on the
-polynomial-time computed register `X a`, one machine computes `gapValue (gs a) (X a)`, the
-acceptance gap when `X a` is nonempty (`QuantumContraction.gapValue_eq`), in time
+/-- **The simulator.** For polynomial-time computed measured qubits `S a` and gate codes `gs a`,
+well formed on the polynomial-time computed register `X a`, one machine computes
+`gapValue (S a) (gs a) (X a)`, the projected gap (`QuantumContraction.gapValue_eq`), in time
 `2 ^ (A (L + 1) / √⌊log₂ (L + 2)⌋)` times a polynomial in the input length and in polynomial
 space, where `L` is the number of gates. -/
-theorem exists_computableInO_gapValue (hgs : ComputableInPolyTime gs enc (encList encGateCode))
+theorem exists_computableInO_gapValue {S : α → List ℕ}
+    (hS : ComputableInPolyTime S enc (encList encUnary))
+    (hgs : ComputableInPolyTime gs enc (encList encGateCode))
     (hX : ComputableInPolyTime X enc encBits)
     (hwf : ∀ a, ∀ g ∈ gs a, g.WellFormed (X a).length) :
-    ∃ A e : ℕ, ComputableInO (fun a => gapValue (gs a) (X a)) enc encNat
+    ∃ A e : ℕ, ComputableInO (fun a => gapValue (S a) (gs a) (X a)) enc encNat
       (fun a => 2 ^ (A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
         ((enc a).length + 1) ^ e)
-      (fun a => ((enc a).length + 1) ^ e) :=
-  exists_computableInO_rule hgs hX hwf (rule := Prod.snd) (snd _ _)
+      (fun a => ((enc a).length + 1) ^ e) := by
+  obtain ⟨A, c, hc⟩ := exists_expTimePolySpace_gapValue hS hgs hX hwf
+  obtain ⟨e, he⟩ := hc.computableInO
+  exact ⟨A, e, he⟩
+
+/-- **Two projected gaps with polynomial-time postprocessing.** For polynomial-time computed lists
+`S a` and `P a` of measured qubits and gate codes `gs a`, well formed on the polynomial-time
+computed register `X a`, one machine computes `rule (gapValue (S a) …, gapValue (P a) …)`, for a
+polynomial-time `rule`, in time `2 ^ (A (L + 1) / √⌊log₂ (L + 2)⌋)` times a polynomial in the
+input length and in polynomial space, where `L` is the number of gates. With `P a = []`, whose
+projected gap is `2 ^ h` (`Cslib.Quantum.onesGap_nil_eq_two_pow`), the rule sees a probability
+and its denominator; with `P a` a postselected event, a conditional probability. -/
+theorem exists_computableInO_rule {S P : α → List ℕ}
+    (hS : ComputableInPolyTime S enc (encList encUnary))
+    (hP : ComputableInPolyTime P enc (encList encUnary))
+    (hgs : ComputableInPolyTime gs enc (encList encGateCode))
+    (hX : ComputableInPolyTime X enc encBits) (hwf : ∀ a, ∀ g ∈ gs a, g.WellFormed (X a).length)
+    {β : Type} {encβ : β ↪ List Bool} {rule : ℕ × ℕ → β}
+    (hrule : ComputableInPolyTime rule (encPair encNat encNat) encβ) :
+    ∃ A e : ℕ, ComputableInO
+      (fun a => rule (gapValue (S a) (gs a) (X a), gapValue (P a) (gs a) (X a))) enc encβ
+      (fun a => 2 ^ (A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
+        ((enc a).length + 1) ^ e)
+      (fun a => ((enc a).length + 1) ^ e) := by
+  obtain ⟨A, c, hc⟩ := exists_expTimePolySpace_gapValue hS hgs hX hwf
+  obtain ⟨A', c', hc'⟩ := exists_expTimePolySpace_gapValue hP hgs hX hwf
+  have hcc := ((hc.prod hc').mono (E' := fun a =>
+    (A + A') * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) fun a =>
+      Nat.div_add_div_le_add_div.trans (Nat.div_le_div_right (by rw [Nat.add_mul]))).comp_ofPolyTime
+    hrule
+  obtain ⟨e, he⟩ := hcc.computableInO
+  exact ⟨A + A', e, he⟩
 
 end Machine
 
-/-- **The acceptance probability from the simulator**: for well-formed codes on `m > 0` qubits and
-an input `x` of length at most `m`, the acceptance probability is `gapValue / 2 ^ h` on the padded
-register. -/
-theorem acceptProb_eq_gapValue {m : ℕ} (hm : 0 < m) {gs : List GateCode}
-    (hgs : ∀ g ∈ gs, g.WellFormed m) {x : List Bool} (hx : x.length ≤ m) :
-    acceptProb m gs x =
-      (gapValue gs (x ++ List.replicate (m - x.length) false) : ℝ) / 2 ^ hadamardCount gs := by
+/-- **Probabilities from the simulator**: for well-formed codes on `m` qubits and an input `x` of
+length at most `m`, the probability that every qubit of `S` reads `1` is `gapValue S / 2 ^ h` on the
+padded register. -/
+theorem onesProb_eq_gapValue {m : ℕ} {gs : List GateCode} (hgs : ∀ g ∈ gs, g.WellFormed m)
+    (S : List ℕ) {x : List Bool} (hx : x.length ≤ m) :
+    onesProb m gs S x =
+      (gapValue S gs (x ++ List.replicate (m - x.length) false) : ℝ) / 2 ^ hadamardCount gs := by
   have hlen : (x ++ List.replicate (m - x.length) false).length = m := by simp; omega
   have hgs' : ∀ g ∈ gs, g.WellFormed (x ++ List.replicate (m - x.length) false).length := by
     rw [hlen]
     exact hgs
-  have hm' : 0 < (x ++ List.replicate (m - x.length) false).length := by
-    rw [hlen]
-    exact hm
-  rw [acceptProb_eq_acceptGap hm gs hgs x, ofFn_inputState hx, gapValue_eq hm' hgs']
+  rw [onesProb_eq_onesGap gs hgs, ofFn_inputState hx, gapValue_eq S hgs']
   congr 1
-  have := Int.toNat_of_nonneg (acceptGap_nonneg_and_le hm' gs hgs').1
+  have := Int.toNat_of_nonneg (onesGap_nonneg_and_le S gs hgs').1
   exact_mod_cast this.symm
 
 /-! ### The class containments -/
 
 variable {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
 
-/-- **Bounded-error quantum time `T` in time `2 ^ O(T / √log T)` and space `T ^ O(1)`.** For `T`
-with `max n 2 ≤ T n`, every problem in `BQTIME[T]` is decided by one deterministic machine within
-time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`: the machine computes the acceptance gap
-of the circuit by tensor contraction and compares it with half of `2 ^ h`. -/
-theorem exists_decidableInTimeAndSpace_of_mem_BQTIME (hTn : ∀ n, max n 2 ≤ T n) {L : Set α}
-    (hL : L ∈ BQTIME enc T) :
+/-- **Deciding by two projected gaps in time `2 ^ O(T / √log T)` and space `T ^ O(1)`.** For `T`
+with `max n 2 ≤ T n`, a uniform family with `O(T)` gates and lists `S` and `P` of measured qubits,
+a problem is decided by one deterministic machine within time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and
+workspace `T n ^ d` when a polynomial-time `rule` decides it from any two numerators `g` and `g'`
+over a common power of two of the probabilities that the qubits of `S` and of `P` read `1`. -/
+theorem exists_decidableInTimeAndSpace_of_onesProb (hTn : ∀ n, max n 2 ≤ T n)
+    {F : UniformCircuitFamily} {c₁ c₂ : ℕ} (hgates : ∀ n, (F.gates n).length ≤ c₁ * T n + c₂)
+    (S P : List ℕ) {rule : ℕ × ℕ → Bool}
+    (hrule : ComputableInPolyTime rule (encPair encNat encNat) encBool) {L : Set α}
+    (hL : ∀ a (g g' r : ℕ), F.onesProb S (enc a) = g / 2 ^ r →
+      F.onesProb P (enc a) = g' / 2 ^ r → (a ∈ L ↔ rule (g, g') = true)) :
     ∃ C d : ℕ, DecidableInTimeAndSpace L enc
       (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
       (fun a => T (enc a).length ^ d) := by
-  obtain ⟨F, c₁, c₂, hgates, hF⟩ := hL
   have hgates' := F.computableInPolyTime_gates
   have hwidth := F.computableInPolyTime_width
   let gs : α → List GateCode := fun a => F.gates (enc a).length
@@ -417,33 +403,13 @@ theorem exists_decidableInTimeAndSpace_of_mem_BQTIME (hTn : ∀ n, max n 2 ≤ T
       omega
     rw [this]
     exact F.wellFormed _
-  have hrule : ComputableInPolyTime (fun p : ℕ × ℕ => decide (2 ^ p.1 < 2 * p.2))
-      (encPair encUnary encNat) encBool := by fun_prop
-  obtain ⟨A, e, hc⟩ := exists_computableInO_rule hgs hX hwf hrule
+  obtain ⟨A, e, hc⟩ := exists_computableInO_rule (const S) (const P) hgs hX hwf hrule
   obtain ⟨K, hK, -⟩ := hc
   -- correctness
-  have hcorrect (a : α) : a ∈ L ↔
-      decide (2 ^ hadamardCount (gs a) < 2 * gapValue (gs a) (X a)) = true := by
-    have hp := acceptProb_eq_gapValue (F.width_pos (enc a).length)
-      (F.wellFormed (enc a).length) (F.le_width (enc a).length)
-    change F.acceptProb (enc a) = _ at hp
-    set g := gapValue (gs a) (X a)
-    set r := hadamardCount (gs a)
-    have hpos : (0 : ℝ) < 2 ^ r := by positivity
-    rw [decide_eq_true_iff]
-    by_cases ha : a ∈ L
-    · have := (hF a).1 ha
-      rw [hp, le_div_iff₀ hpos] at this
-      have h1 : (2 : ℝ) * 2 ^ r ≤ 3 * g := by linarith
-      have h2 : 2 * 2 ^ r ≤ 3 * g := by exact_mod_cast h1
-      have h3 : 1 ≤ 2 ^ r := Nat.one_le_two_pow
-      exact ⟨fun _ => by omega, fun _ => ha⟩
-    · have := (hF a).2 ha
-      rw [hp, div_le_iff₀ hpos] at this
-      have h1 : (3 : ℝ) * g ≤ 2 ^ r := by linarith
-      have h2 : 3 * g ≤ 2 ^ r := by exact_mod_cast h1
-      have h3 : 1 ≤ 2 ^ r := Nat.one_le_two_pow
-      exact ⟨fun h => absurd h ha, fun h => by omega⟩
+  have hcorrect (a : α) :
+      a ∈ L ↔ rule (gapValue S (gs a) (X a), gapValue P (gs a) (X a)) = true :=
+    hL a _ _ _ (onesProb_eq_gapValue (F.wellFormed _) S (F.le_width _))
+      (onesProb_eq_gapValue (F.wellFormed _) P (F.le_width _))
   -- the bounds
   set C₀ := 2 * A * (c₁ + c₂ + 2) + 2 * e
   set D₀ := 2 * A * (c₁ + c₂ + 2) + 3 * A
@@ -453,19 +419,19 @@ theorem exists_decidableInTimeAndSpace_of_mem_BQTIME (hTn : ∀ n, max n 2 ≤ T
     have hT2 : 2 ≤ T (enc a).length := (le_max_right _ _).trans (hTn _)
     have hnT : (enc a).length ≤ T (enc a).length := (le_max_left _ _).trans (hTn _)
   · -- time
-    set S := T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))
+    set Q := T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))
     have hE := Nat.mul_succ_div_sqrt_log_two_le_of_le A c₁ c₂ hT2 (hgates (enc a).length)
     have hY := Nat.add_one_pow_le_two_pow_div_sqrt_log_two e hT2 hnT
     have hZ : 2 ^ (A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
-        ((enc a).length + 1) ^ e ≤ 2 ^ D₀ * 2 ^ (C₀ * S) := by
-      calc _ ≤ 2 ^ (2 * A * (c₁ + c₂ + 2) * S + D₀) * 2 ^ (2 * e * S) :=
+        ((enc a).length + 1) ^ e ≤ 2 ^ D₀ * 2 ^ (C₀ * Q) := by
+      calc _ ≤ 2 ^ (2 * A * (c₁ + c₂ + 2) * Q + D₀) * 2 ^ (2 * e * Q) :=
             Nat.mul_le_mul (Nat.pow_le_pow_right (by norm_num) hE) hY
-        _ = 2 ^ D₀ * 2 ^ (C₀ * S) := by
+        _ = 2 ^ D₀ * 2 ^ (C₀ * Q) := by
             rw [← pow_add, ← pow_add]
             congr 1
             simp only [C₀]
             ring
-    have hCS : C₀ * S ≤ C₀ * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length)) :=
+    have hCQ : C₀ * Q ≤ C₀ * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length)) :=
       Nat.mul_div_le_mul_div_assoc _ _ _
     have hfinal := Nat.mul_two_pow_div_sqrt_log_two_add_le (a := K * 2 ^ D₀) (b := K) (C := C₀)
       hT2
@@ -474,7 +440,7 @@ theorem exists_decidableInTimeAndSpace_of_mem_BQTIME (hTn : ∀ n, max n 2 ≤ T
         ≤ K * (2 ^ D₀ * 2 ^ (C₀ * T (enc a).length /
             Nat.sqrt (Nat.log 2 (T (enc a).length))) + 1) :=
           Nat.mul_le_mul_left _ (Nat.add_le_add_right (hZ.trans (Nat.mul_le_mul_left _
-            (Nat.pow_le_pow_right (by norm_num) hCS))) _)
+            (Nat.pow_le_pow_right (by norm_num) hCQ))) _)
       _ = K * 2 ^ D₀ * 2 ^ (C₀ * T (enc a).length /
             Nat.sqrt (Nat.log 2 (T (enc a).length))) + K := by ring
       _ ≤ _ := hfinal
@@ -487,12 +453,115 @@ theorem exists_decidableInTimeAndSpace_of_mem_BQTIME (hTn : ∀ n, max n 2 ≤ T
           exact Nat.add_le_add_right (Nat.mul_le_mul_left _ hpow) _
       _ ≤ _ := this
 
-/-- **`BQTIME[T] ⊆ ⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`** for `T` with `max n 2 ≤ T n`. -/
-theorem BQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two (hTn : ∀ n, max n 2 ≤ T n) :
-    BQTIME enc T ⊆ ⋃ C, DTIME enc fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n))) := by
-  intro L hL
-  obtain ⟨C, d, h⟩ := exists_decidableInTimeAndSpace_of_mem_BQTIME hTn hL
+/-- A problem decided within time `2 ^ (C T / √⌊log₂ T⌋)` lies in the union of these classes. -/
+private theorem mem_iUnion_DTIME {L : Set α}
+    (h : ∃ C d : ℕ, DecidableInTimeAndSpace L enc
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d)) :
+    L ∈ ⋃ C, DTIME enc fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n))) := by
+  obtain ⟨C, d, h⟩ := h
   exact Set.mem_iUnion.mpr ⟨C, 1, 0, fun n => T n ^ d,
     ComputableInTimeAndSpace.mono h (fun a => by rw [Nat.one_mul, Nat.add_zero]) fun _ => le_rfl⟩
+
+/-- **The bounded-error rule**: when `g / g'` is at least `2 / 3` on members and at most `1 / 3`
+otherwise, for `g' > 0`, membership is `g' < 2 g`. -/
+private theorem iff_lt_two_mul {L : Set α} {a : α} {g g' : ℕ} (hg' : 0 < g')
+    (h₁ : a ∈ L → (2 : ℝ) / 3 ≤ g / g') (h₂ : a ∉ L → (g : ℝ) / g' ≤ 1 / 3) :
+    a ∈ L ↔ decide (g' < 2 * g) = true := by
+  have hpos : (0 : ℝ) < g' := by exact_mod_cast hg'
+  rw [decide_eq_true_iff]
+  by_cases ha : a ∈ L
+  · have := h₁ ha
+    rw [le_div_iff₀ hpos] at this
+    have : 2 * g' ≤ 3 * g := by exact_mod_cast (by linarith : (2 : ℝ) * g' ≤ 3 * g)
+    exact ⟨fun _ => by omega, fun _ => ha⟩
+  · have := h₂ ha
+    rw [div_le_iff₀ hpos] at this
+    have : 3 * g ≤ g' := by exact_mod_cast (by linarith : (3 : ℝ) * g ≤ g')
+    exact ⟨fun h => absurd h ha, fun h => by omega⟩
+
+/-- **Bounded-error quantum time `T` in time `2 ^ O(T / √log T)` and space `T ^ O(1)`.** For `T`
+with `max n 2 ≤ T n`, every problem in `BQTIME[T]` is decided by one deterministic machine within
+time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`: the machine computes the acceptance gap
+`g` of the circuit and the projected gap `2 ^ h` of no condition by tensor contraction and accepts
+when `2 ^ h < 2 g`. -/
+theorem exists_decidableInTimeAndSpace_of_mem_BQTIME (hTn : ∀ n, max n 2 ≤ T n) {L : Set α}
+    (hL : L ∈ BQTIME enc T) :
+    ∃ C d : ℕ, DecidableInTimeAndSpace L enc
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) := by
+  obtain ⟨F, c₁, c₂, hgates, hF⟩ := hL
+  refine exists_decidableInTimeAndSpace_of_onesProb hTn hgates [0] []
+    (rule := fun p => decide (p.2 < 2 * p.1)) (by fun_prop) fun a g g' r h h' => ?_
+  rw [UniformCircuitFamily.onesProb, onesProb_nil] at h'
+  have hg' : (g' : ℝ) = 2 ^ r := by
+    rw [eq_div_iff (by positivity), one_mul] at h'
+    exact h'.symm
+  have hp : F.acceptProb (enc a) = g / g' := by rw [hg']; exact h
+  exact iff_lt_two_mul (by exact_mod_cast hg' ▸ (by positivity : (0 : ℝ) < 2 ^ r))
+    (fun ha => hp ▸ (hF a).1 ha) fun ha => hp ▸ (hF a).2 ha
+
+/-- **`BQTIME[T] ⊆ ⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`** for `T` with `max n 2 ≤ T n`. -/
+theorem BQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two (hTn : ∀ n, max n 2 ≤ T n) :
+    BQTIME enc T ⊆ ⋃ C, DTIME enc fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n))) :=
+  fun _ hL => mem_iUnion_DTIME (exists_decidableInTimeAndSpace_of_mem_BQTIME hTn hL)
+
+/-- **Nondeterministic quantum time `T` in time `2 ^ O(T / √log T)` and space `T ^ O(1)`.** For
+`T` with `max n 2 ≤ T n`, every problem in `NQTIME[T]` is decided by one deterministic machine
+within time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`: the machine computes the
+acceptance gap of the circuit by tensor contraction and accepts when it is positive. -/
+theorem exists_decidableInTimeAndSpace_of_mem_NQTIME (hTn : ∀ n, max n 2 ≤ T n) {L : Set α}
+    (hL : L ∈ NQTIME enc T) :
+    ∃ C d : ℕ, DecidableInTimeAndSpace L enc
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) := by
+  obtain ⟨F, c₁, c₂, hgates, hF⟩ := hL
+  refine exists_decidableInTimeAndSpace_of_onesProb hTn hgates [0] []
+    (rule := fun p => decide (0 < p.1)) (by fun_prop) fun a g g' r h _ => ?_
+  rw [hF a, decide_eq_true_iff, UniformCircuitFamily.acceptProb_eq_onesProb, h]
+  constructor
+  · intro hpos
+    exact_mod_cast (div_pos_iff_of_pos_right (by positivity : (0 : ℝ) < 2 ^ r)).mp hpos
+  · intro hg
+    exact div_pos (by exact_mod_cast hg) (by positivity)
+
+/-- **`NQTIME[T] ⊆ ⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`** for `T` with `max n 2 ≤ T n`. -/
+theorem NQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two (hTn : ∀ n, max n 2 ≤ T n) :
+    NQTIME enc T ⊆ ⋃ C, DTIME enc fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n))) :=
+  fun _ hL => mem_iUnion_DTIME (exists_decidableInTimeAndSpace_of_mem_NQTIME hTn hL)
+
+/-- **Exact quantum time `T` in time `2 ^ O(T / √log T)`**: exact quantum time lies in
+nondeterministic quantum time (`Cslib.Complexity.EQTIME_subset_NQTIME`). -/
+theorem EQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two (hTn : ∀ n, max n 2 ≤ T n) :
+    EQTIME enc T ⊆ ⋃ C, DTIME enc fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n))) :=
+  (EQTIME_subset_NQTIME T).trans (NQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two hTn)
+
+/-- **Postselected bounded-error quantum time `T` in time `2 ^ O(T / √log T)` and space
+`T ^ O(1)`.** For `T` with `max n 2 ≤ T n`, every problem in `PostBQTIME[T]` is decided by one
+deterministic machine within time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`: the
+machine computes the projected gaps `g` of qubits `0` and `1` and `g'` of qubit `1` by tensor
+contraction and accepts when `g' < 2 g`, that is, when the postselected acceptance probability
+exceeds `1 / 2`. -/
+theorem exists_decidableInTimeAndSpace_of_mem_PostBQTIME (hTn : ∀ n, max n 2 ≤ T n) {L : Set α}
+    (hL : L ∈ PostBQTIME enc T) :
+    ∃ C d : ℕ, DecidableInTimeAndSpace L enc
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) := by
+  obtain ⟨F, c₁, c₂, hgates, hF⟩ := hL
+  refine exists_decidableInTimeAndSpace_of_onesProb hTn hgates [0, 1] [1]
+    (rule := fun p => decide (p.2 < 2 * p.1)) (by fun_prop) fun a g g' r h h' => ?_
+  obtain ⟨hpost, h₁, h₂⟩ := hF a
+  have hr : (0 : ℝ) < 2 ^ r := by positivity
+  have hg' : 0 < g' := by
+    rw [h'] at hpost
+    exact_mod_cast (div_pos_iff_of_pos_right hr).mp hpost
+  have hp : F.postselectedAcceptProb (enc a) = g / g' := by
+    rw [UniformCircuitFamily.postselectedAcceptProb, h, h', div_div_div_cancel_right₀ hr.ne']
+  exact iff_lt_two_mul hg' (fun ha => hp ▸ h₁ ha) fun ha => hp ▸ h₂ ha
+
+/-- **`PostBQTIME[T] ⊆ ⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`** for `T` with `max n 2 ≤ T n`. -/
+theorem PostBQTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two (hTn : ∀ n, max n 2 ≤ T n) :
+    PostBQTIME enc T ⊆ ⋃ C, DTIME enc fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n))) :=
+  fun _ hL => mem_iUnion_DTIME (exists_decidableInTimeAndSpace_of_mem_PostBQTIME hTn hL)
 
 end Cslib.Complexity.QuantumContraction

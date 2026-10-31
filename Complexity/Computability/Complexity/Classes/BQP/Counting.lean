@@ -154,8 +154,7 @@ theorem BQP_subset_AWPP : BQP enc ⊆ AWPP enc := by
       have := F.computableInPolyTime_gates
       simp only [hadamardCount_eq_countP]
       fun_prop) (fun a => ?_)
-  have hp := acceptProb_eq_acceptGap (F.width_pos (enc a).length) _
-    (F.wellFormed (enc a).length) (enc a)
+  have hp := acceptProb_eq_acceptGap _ (F.wellFormed (enc a).length) (enc a)
   set g := acceptGap (F.gates (enc a).length)
     (List.ofFn (inputState (F.width (enc a).length) (enc a)))
   set r := hadamardCount (F.gates (enc a).length)
