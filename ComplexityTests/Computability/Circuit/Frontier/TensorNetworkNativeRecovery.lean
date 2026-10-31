@@ -39,6 +39,11 @@ example : (mult 1 1 1 1, mult 1 1 1 3, mult 1 1 1 0) = (1, 1, 0) := by decide
 `E_{-1}(0) F(-1) + E_1(0) F(1) = (4 + 6) / 2 = 5` modulo `8`, computing modulo `2 ^ (3 + 2)`. -/
 example : recover 3 2 [1, 1] 1 1 1 [[0, 0]] [[], [[4, 0]], [], [[6, 0]]] = [5, 0] := by decide
 
+/-- The value table of that recovery, built by storing `F(-1)` at node index `1` and `F(1)` at
+node index `3`. -/
+example : storeValue (storeValue [] 1 [4, 0]) 3 [6, 0] = [[], [[4, 0]], [], [[6, 0]]] := by
+  decide
+
 /-- The same recovery with `Δ = (a + 1) ∑_t q_t = 4`, the shift that `val_recover` assumes. -/
 example : recover 3 4 [1, 1] 1 1 1 [[0, 0]] [[], [[4, 0]], [], [[6, 0]]] = [5, 0] := by decide
 
