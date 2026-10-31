@@ -15,20 +15,21 @@ public import Complexity.Foundations.Data.BitString.Basic
 # Nondeterministic communication complexity
 
 Nondeterministic communication complexity for the answer `z : Bool` is defined by covers
-[Kushilevitz and Nisan, Chapter 2][KushilevitzNisan1997]. For a relation `R : X → Y → Bool → Prop`,
-a *`z`-cover* of `R` on `A × B` by `2 ^ k` rectangles is a family of rectangles indexed by the
-`k`-bit guesses such that `z` is an acceptable answer on the part of each rectangle inside `A × B`,
-and every pair of `A × B` on which `!z` is not acceptable lies in some rectangle
-(`Nondeterministic.IsCover`). The complexity `Nondeterministic.ecomplexity z R A B` is the least
-such `k`, or `⊤` if there is none; in particular it is `⊤` if no answer is acceptable on some pair
-of `A × B`, as for `Protocol.ecomplexity`. For a function `f : X → Y → Bool`,
+[Kushilevitz and Nisan, Definition 2.3][KushilevitzNisan1997]. For a relation
+`R : X → Y → Bool → Prop`, a *`z`-cover* of `R` on `A × B` by `2 ^ k` rectangles is a family of
+rectangles indexed by the `k`-bit guesses such that `z` is an acceptable answer on the part of each
+rectangle inside `A × B`, and every pair of `A × B` on which `!z` is not acceptable lies in some
+rectangle (`Nondeterministic.IsCover`). The complexity `Nondeterministic.ecomplexity z R A B` is the
+least such `k`, or `⊤` if there is none; in particular it is `⊤` if no answer is acceptable on some
+pair of `A × B`, as for `Protocol.ecomplexity`. For a function `f : X → Y → Bool`,
 `Nondeterministic.ecomplexityFun z f A B` is the complexity of the relation `f x y = b`; its
 `z`-covers are families of rectangles on which `f` is `z` inside `A × B` that contain every pair of
-`A × B` on which `f` is `z`
-(`Nondeterministic.isCover_fun_iff`). Thus `ecomplexityFun true f` and `ecomplexityFun false f` are
-`⌈log₂ C^z(f)⌉`, where `C^z(f)` is the least number of rectangles in a `z`-cover (and `0` when `f`
-never takes the value `z` on `A × B`): `N¹` and `N⁰` in the cover (certificate) definition, rounded
-up to an integer.
+`A × B` on which `f` is `z` (`Nondeterministic.isCover_fun_iff`). Thus `ecomplexityFun true f` and
+`ecomplexityFun false f` are `⌈log₂ C^z(f)⌉`, where `C^z(f)` is the least number of rectangles in a
+`z`-cover (and `0` when `f` never takes the value `z` on `A × B`). Kushilevitz and Nisan define
+`N^z(f) = log₂ C^z(f)` without rounding, so `ecomplexityFun z f A B` is their `N^z(f)` rounded up to
+an integer, and for `n ≥ 1` a lower bound `n ≤ ecomplexityFun z f A B` says
+`C^z(f) > 2 ^ (n - 1)`, that is, `N^z(f) > n - 1` in their convention.
 
 A partial function is a function together with the sets `A` and `B`: its value outside `A × B` does
 not matter, and rectangles are not required to lie inside `A × B`. A partial function whose domain
