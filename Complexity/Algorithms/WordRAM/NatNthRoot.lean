@@ -195,7 +195,8 @@ private theorem clog_halve {d : ℕ} (hd : 2 ≤ d) {d' : ℕ} (hd' : d' ≤ (d 
   exact Nat.lt_succ_of_le (Nat.clog_mono_right 2 (by omega))
 
 /-- Compute `Nat.nthRoot k n` for `k ≥ 1` within `⌈log₂ (n + 1)⌉ (6 k + 13) + 7` instructions,
-preserving `n`, `k` and memory. Every intermediate value is at most `n² + 2 n + 1`. -/
+preserving `n`, `k` and memory. Products and search bounds are at most `n² + 2 n + 1`, but the
+probe counters run up to `k` whatever `n` is, hence the separate hypothesis `hkfit`. -/
 theorem exec {w : ℕ} (x : Data 10) (hk : 1 ≤ x.regs k) (hkfit : Fits w (x.regs k))
     (hfit : Fits w (x.regs n * x.regs n + 2 * x.regs n + 2)) :
     ∃ y, ExecWithin w program x y (Nat.clog 2 (x.regs n + 1) * (6 * x.regs k + 13) + 7) ∧

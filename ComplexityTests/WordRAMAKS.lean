@@ -45,7 +45,8 @@ private def rootInput (n k : ℕ) : Data 10 :=
 example : (Code.eval 16 16 NatNthRoot.program (rootInput 30 2)).map (·.1.regs NatNthRoot.lo) =
       some 5 ∧
     (Code.eval 16 16 NatNthRoot.program (rootInput 64 3)).map (·.1.regs NatNthRoot.lo) = some 4 ∧
-    (Code.eval 16 16 NatNthRoot.program (rootInput 63 3)).map (·.1.regs NatNthRoot.lo) = some 3 := by
+    (Code.eval 16 16 NatNthRoot.program (rootInput 63 3)).map (·.1.regs NatNthRoot.lo) =
+      some 3 := by
   decide
 
 /-- The correctness theorem: the search returns `Nat.nthRoot 3 63`. -/

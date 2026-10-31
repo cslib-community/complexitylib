@@ -28,7 +28,7 @@ equality.
 * `Cslib.Algorithms.WordRAM.AKS.Fill.exec`: the block receives `Cslib.AKS.powAddCoeff` within
   `5 r + 13` instructions, and no other cell changes.
 * `Cslib.Algorithms.WordRAM.AKS.Compare.exec`: the flag is `1` exactly when the blocks agree,
-  within `10 r + 5` instructions, and memory is unchanged.
+  within `11 r + 5` instructions, and memory is unchanged.
 -/
 
 @[expose] public section
