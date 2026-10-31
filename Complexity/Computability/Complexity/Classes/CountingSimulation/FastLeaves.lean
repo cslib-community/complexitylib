@@ -36,6 +36,8 @@ by `FastContraction.wfChildren_nativeMk` and `FastContraction.packetShape_child`
 * `Cslib.Complexity.CountingSimulation.fastLeaves`: the leaf bounds.
 * `Cslib.Complexity.CountingSimulation.fastAnalysis_nativeMk_holds`: the resource analysis of the
   native recursion.
+* `Cslib.Complexity.CountingSimulation.fastContractionAlgorithm`: the contraction algorithm of
+  Theorem D.1 for admissible explicit networks.
 
 ## References
 
@@ -142,5 +144,14 @@ reached calls has polynomial height, sizes and leaf space, leaf time `poly(n) 2 
 and, from some size on, its nodes fit in the clock. -/
 theorem fastAnalysis_nativeMk_holds : FastAnalysis nativeMk :=
   fastAnalysis_nativeMk fastLeaves
+
+/-- **The contraction algorithm of Theorem D.1** for admissible explicit networks: the native
+recursion behind a guard, with direct summation for the networks the guard rejects, in time
+`poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and polynomial space. -/
+noncomputable def fastContractionAlgorithm :
+    ContractionAlgorithm (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encNat
+      ExplicitTensorNetwork.encExplicitNetwork)
+      (fun G => G.2.contraction) ExplicitAdmissible :=
+  contractionAlgorithmOfNative fastAnalysis_nativeMk_holds
 
 end Cslib.Complexity.CountingSimulation

@@ -43,6 +43,7 @@ namespace ComplexityAbstracts.KargerMinCutBridge
 open scoped ENNReal
 open Cslib
 open Cslib.WordRAM
+open Cslib.WeightedCut
 open Cslib.Algorithms.WordRAM.Karger
 open ComplexityAbstracts.RandomizedWordRAMBridge
 

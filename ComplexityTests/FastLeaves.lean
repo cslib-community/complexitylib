@@ -36,4 +36,9 @@ example (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) (x : Call)
 -- The resource analysis of the native recursion holds, with no remaining hypothesis.
 example : FastAnalysis nativeMk := fastAnalysis_nativeMk_holds
 
+-- The contraction algorithm of Theorem D.1, with no remaining hypothesis.
+noncomputable example : ContractionAlgorithm (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encNat
+    ExplicitTensorNetwork.encExplicitNetwork) (fun G => G.2.contraction) ExplicitAdmissible :=
+  fastContractionAlgorithm
+
 end ComplexityTests.FastLeaves
