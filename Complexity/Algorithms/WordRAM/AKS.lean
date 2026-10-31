@@ -27,7 +27,7 @@ program runs it on the word RAM, with the input `n` in memory cell `1` and the i
 
 0. if `n < 2`, answer `0`;
 1. if `n` is a perfect power, answer `0`;
-2. find the least `r` with `ord_r(n) > L`;
+2. find the least `r ≥ 2` with `ord_r(n) > L`;
 3. if `1 < gcd(a, n) < n` for some `a ≤ r`, answer `0`;
 4. if `n ≤ r`, answer `1`;
 5. answer `1` exactly when `(X + a)^n ≡ X^n + a (mod X^r - 1, n)` for every
@@ -38,10 +38,11 @@ Each step is a subroutine run on the low registers. The search in step 2 stops b
 paper with integer thresholds (`Cslib.AKS.prime_iff_passesUpTo_numTestsNat`).
 
 The word size must hold the numbers the steps compute; for an input of `s` bits, the width
-`8 (s + 1)` suffices. The program then answers within `time s` instructions, a polynomial in `s`.
-Its dominant term is step 5: `⌊√(φ(r) L)⌋ ≤ 2 s⁴` tests, each of `s` rounds of schoolbook
-multiplication of polynomials of degree `r ≤ 4 s⁵`, so `time s = O(s¹⁵)`. The paper's bound
-`Õ(log^{21/2} n)` uses fast multiplication instead.
+`8 (s + 1)` suffices. The program then answers within `time s` instructions, an explicit
+polynomial in `s` of degree `15`. Its dominant term is step 5: at most `2 s⁴` values of `a`, each
+tested by `s` rounds of schoolbook multiplication of polynomials with `r ≤ 4 s⁵` coefficients.
+Theorem 5.1 of the paper bounds the bit complexity of the algorithm by `Õ(log^{21/2} n)`, using
+fast multiplication of integers and polynomials.
 
 ## Main definitions
 

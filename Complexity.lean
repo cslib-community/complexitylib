@@ -1349,6 +1349,7 @@ public import Complexity.Computability.Complexity.Problems.OneInThreeSAT.Reducti
 public import Complexity.Computability.Complexity.Problems.Partition
 public import Complexity.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 public import Complexity.Computability.Complexity.Problems.PlanarThreeSATThree
+public import Complexity.Computability.Complexity.Problems.Primes
 public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.Drawing
 public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.DrawingAssembly
