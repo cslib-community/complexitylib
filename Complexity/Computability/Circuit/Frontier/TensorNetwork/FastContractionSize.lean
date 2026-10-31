@@ -419,7 +419,7 @@ theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.sc
       have h4 : m ^ 3 * p ≤ (m + 1) ^ 5 * (p + 1) :=
         Nat.mul_le_mul (hcu.trans hm3) (Nat.le_succ _)
       omega
-    · have := lt_of_mem_budgetTuples (weights_pos _) hβ b hb
+    · have := BudgetTuples.lt_of_mem_budgetTuples (weights_pos _) hβ hb
       have : m ^ 2 ≤ (m + 1) ^ 5 := hsq.trans hm2
       omega
   · unfold wide
