@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.Classes.FunctionTime
 public import Complexity.Computability.Complexity.Classes.Time
+import Complexity.Computability.Complexity.Classes.FunctionTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -21,10 +22,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 # Deciding by a polynomial-time test of function-time outputs
 
 A function in `Cslib.Complexity.FTIME enc encOut t` writes its encoded output within time
-`O(t n)`, so the output has length `O(t n)`. A polynomial-time test of the outputs of two such
-functions therefore runs within time polynomial in `t n`: the problem it decides lies in
-`DTIME[(t + 1) ^ e]` for some `e`. This is how decision classes defined by counts, such as
-parity or equality of counts, follow from computing the counts.
+`O(t n)`, so the output has length `O(t n)` (`Cslib.Complexity.FTIME.exists_computableInO`).
+A polynomial-time test of the outputs of two such functions therefore runs within time polynomial
+in `t n`: the problem it decides lies in `DTIME[(t + 1) ^ e]` for some `e`. This is how decision
+classes defined by counts, such as parity or equality of counts, follow from computing the counts.
 
 ## Main results
 
@@ -39,19 +40,6 @@ namespace Cslib.Complexity
 open Turing.MultiTapeTM
 
 variable {α β β₁ β₂ : Type} {enc : α ↪ List Bool} {t : ℕ → ℕ}
-
-/-- A function in `FTIME[t]` is computable within time `O(t n)`, and its encoded output has length
-`O(t n)`. -/
-private theorem FTIME.exists_computableInO {encOut : β ↪ List Bool} {f : α → β}
-    (hf : f ∈ FTIME enc encOut t) :
-    ∃ (c : ℕ) (s : ℕ → ℕ), ComputableInO f enc encOut (fun a => t (enc a).length)
-        (fun a => t (enc a).length + s (enc a).length) ∧
-      ∀ a, (encOut (f a)).length ≤ c * (t (enc a).length + 1) := by
-  obtain ⟨c₁, c₂, s, h⟩ := hf
-  have hl (a : α) : (encOut (f a)).length ≤ (c₁ + c₂ + 1) * (t (enc a).length + 1) :=
-    (h.length_le a).trans (by nlinarith)
-  exact ⟨c₁ + c₂ + 1, s, ⟨c₁ + c₂ + 1, h.mono (fun _ => by dsimp only; nlinarith)
-    (fun _ => by dsimp only; nlinarith), fun a => (hl a).trans (by nlinarith)⟩, hl⟩
 
 /-- **A polynomial-time test of two function-time outputs.** If `f` and `g` are in `FTIME[t]`
 and `rule` is a polynomial-time test of their encoded pair, then the instances where

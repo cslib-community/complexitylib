@@ -22,8 +22,8 @@ follows the two-count characterization of `C=P`
 
 At polynomial clocks this is `CeqP`: `Cslib.Complexity.mem_CeqP_iff_exists_mem_CeqTIME`, by the
 equality of `Cslib.Complexity.SharpP` with the union of the classes `SharpTIME (n ^ d)`. The two
-counts may first need different polynomial clocks; constant factors are absorbed, so the larger
-clock serves both (`Cslib.Complexity.SharpTIME_mono_of_le_mul_add`).
+counts may first need different polynomial clocks; the larger clock serves both
+(`Cslib.Complexity.SharpTIME_pow_mono`).
 
 ## Main definitions
 
@@ -57,16 +57,6 @@ theorem CeqTIME_mono {t₁ t₂ : ℕ → ℕ} (h : ∀ n, t₁ n ≤ t₂ n) :
     CeqTIME enc t₁ ⊆ CeqTIME enc t₂ := fun _ ⟨f, hf, g, hg, hA⟩ =>
   ⟨f, SharpTIME_mono h hf, g, SharpTIME_mono h hg, hA⟩
 
-/-- A smaller polynomial degree gives a smaller `SharpTIME` class: `n ^ d ≤ n ^ D + 1`. -/
-private theorem SharpTIME_pow_subset {d D : ℕ} (h : d ≤ D) :
-    SharpTIME enc (· ^ d) ⊆ SharpTIME enc (· ^ D) :=
-  SharpTIME_mono_of_le_mul_add (C := 1) fun n => by
-    rcases Nat.eq_zero_or_pos n with rfl | hn
-    · rcases Nat.eq_zero_or_pos d with rfl | hd
-      · simp
-      · simp [Nat.zero_pow hd]
-    · simpa only [one_mul] using (Nat.pow_le_pow_right hn h).trans (Nat.le_succ _)
-
 /-- **`C=P` is the union of the classes `CeqTIME (n ^ d)`.** -/
 theorem mem_CeqP_iff_exists_mem_CeqTIME : A ∈ CeqP enc ↔ ∃ d, A ∈ CeqTIME enc (· ^ d) := by
   rw [mem_CeqP_iff_exists_SharpP]
@@ -74,8 +64,8 @@ theorem mem_CeqP_iff_exists_mem_CeqTIME : A ∈ CeqP enc ↔ ∃ d, A ∈ CeqTIM
   · rintro ⟨f, hf, g, hg, hA⟩
     obtain ⟨d₁, hd₁⟩ := mem_SharpP_iff_exists_mem_SharpTIME.mp hf
     obtain ⟨d₂, hd₂⟩ := mem_SharpP_iff_exists_mem_SharpTIME.mp hg
-    exact ⟨max d₁ d₂, f, SharpTIME_pow_subset (le_max_left _ _) hd₁,
-      g, SharpTIME_pow_subset (le_max_right _ _) hd₂, hA⟩
+    exact ⟨max d₁ d₂, f, SharpTIME_pow_mono (le_max_left _ _) hd₁,
+      g, SharpTIME_pow_mono (le_max_right _ _) hd₂, hA⟩
   · rintro ⟨d, f, hf, g, hg, hA⟩
     exact ⟨f, SharpTIME.subset_SharpP d hf, g, SharpTIME.subset_SharpP d hg, hA⟩
 
