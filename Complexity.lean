@@ -2292,6 +2292,7 @@ public import Complexity.Computability.WordRAM.Generic
 public import Complexity.Computability.WordRAM.GhostLoop
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.InputArray
+public import Complexity.Computability.WordRAM.Invariance
 public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.MemoryWindow
