@@ -62,11 +62,14 @@ initialize entries : SimplePersistentEnvExtension Entry (Array Entry) ←
 
 /-- Optional source information must be explicit, rather than omitted or guessed. -/
 declare_syntax_cat resultSourceInfo
+/-- A recorded source theorem identifier or locator. -/
 syntax str : resultSourceInfo
+/-- Source information that has not yet been collected. -/
 syntax "unverified" : resultSourceInfo
 
 /-- A bibliography key, source theorem name/number, and additional locator. -/
 declare_syntax_cat resultSource
+/-- A structured source citation with independently recorded identifier and locator. -/
 syntax "{" "paper" ":=" ident "," "theorem" ":=" resultSourceInfo
   "," "locator" ":=" resultSourceInfo "}" : resultSource
 
