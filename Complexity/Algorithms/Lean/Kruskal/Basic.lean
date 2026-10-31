@@ -13,8 +13,6 @@ public import Cslib.Algorithms.Lean.MergeSort.MergeSort
 public import Mathlib.Algebra.BigOperators.Group.List.Defs
 public import Mathlib.Algebra.Order.Monoid.Defs
 import all Cslib.Algorithms.Lean.Sort.Merge
-import Mathlib.Algebra.BigOperators.Group.List.Basic
-import Mathlib.Data.List.Perm.Subperm
 
 /-!
 # Kruskal's Minimum Spanning Forest and Tree Algorithm
@@ -45,20 +43,22 @@ self-loops, disconnected graphs, and negative or duplicate weights). Connectivit
 
 Primary-source correspondence:
 
-* **[Cormen et al., Chapter 23, Section 23.1 (Theorem 23.1, p. 626) and Section 23.2
-  (`MST-KRUSKAL`, pp. 631–633)][CLRS2009]**: `kruskalEdges` sorts `es` in nondecreasing weight order
-  via `List.mergeSort` and scans the sorted list, accepting each edge whose endpoints lie in
-  distinct components. `kruskalEdges_isMinSpanningForest` proves global weight optimality over any
-  ordered commutative monoid `[AddCommMonoid W] [LinearOrder W] [IsOrderedAddMonoid W]` (covering
-  disconnected graphs, multigraphs, and negative or equal edge weights), and
+* **[Cormen et al., Chapter 23, Section 23.1 (Theorem 23.1, pp. 626–628, and Corollary 23.2,
+  p. 628) and Section 23.2 (`MST-KRUSKAL`, pp. 631–633)][CLRS2009]**: `[CLRS2009]` formulates
+  Theorem 23.1 and `MST-KRUSKAL` for connected, simple undirected graphs with real-valued edge
+  weights. Here `kruskalEdges` sorts `es` in nondecreasing weight order via `List.mergeSort` and
+  scans the sorted list, accepting each edge whose endpoints lie in distinct components;
+  `kruskalEdges_isMinSpanningForest` generalizes global weight optimality to arbitrary finite
+  multigraphs (connected or disconnected, with parallel edges, self-loops, and negative or equal
+  weights) over any `[AddCommMonoid W] [LinearOrder W] [IsOrderedAddMonoid W]`, and
   `kruskalEdges_isMinSpanningTree` specializes to connected inputs
   (`(edgePartition es).numComponents = 1`).
-* **[Kruskal, Opening paragraph and Construction A, pp. 48–49][Kruskal1956]**: Kruskal's original
-  paper assumes a finite connected graph with distinct positive real edge lengths and proves that
-  Construction A yields the unique shortest spanning subtree. Here
-  `perm_kruskalEdges_of_isMinSpanningForest_of_nodup_weights` generalizes uniqueness (up to list
-  permutation, hence exact edge-multiset equality) to arbitrary finite multigraphs (connected or
-  disconnected) with distinct weights in any `[AddCancelCommMonoid W] [LinearOrder W]
+* **[Kruskal, Opening paragraph, Construction A, and uniqueness proof, pp. 48–50][Kruskal1956]**:
+  Kruskal's original paper assumes a finite connected graph with distinct positive real edge lengths
+  and proves (`T = A_{n-1}`, p. 50) that Construction A yields the unique shortest spanning subtree.
+  Here `perm_kruskalEdges_of_isMinSpanningForest_of_nodup_weights` generalizes uniqueness (up to
+  list permutation, hence exact edge-multiset equality) to arbitrary finite multigraphs (connected
+  or disconnected) with distinct weights in any `[AddCancelCommMonoid W] [LinearOrder W]
   [IsOrderedCancelAddMonoid W]`.
 
 ## Cost model and limitations
@@ -77,10 +77,12 @@ Primary-source correspondence:
   any `Cslib.Stateful.Realization` and `Cslib.Stateful.Bound` for `DisjointSet.spec n` immediately
   transfers its cost certificate to `kruskalClient (sortEdges es)`.
 
-List splitting/allocation in `List.mergeSortM` and pure Lean array updates inside
-`Batteries.UnionFind` are not charged as word-RAM instructions (if a `Batteries.UnionFind` value
-were shared non-linearly, array updates could copy; `DisjointSet.UnionFind.run` threads its state
-single-threadedly).
+`DisjointSet.UnionFind.init n` (`O(n)` `MAKE-SET` initialization in `[CLRS2009]`, `MST-KRUSKAL`
+lines 2–3, pp. 631, 633), list splitting/allocation in `List.mergeSortM` and `kruskalClient`, and
+pure Lean array updates inside `Batteries.UnionFind` carry `0` `TimeM Cost` charge (so `Cost`
+records only sorting weight comparisons and post-initialization `UnionFind` `find`/`union` steps,
+not Word-RAM instructions; if a `Batteries.UnionFind` value were shared non-linearly, array updates
+could copy, whereas `DisjointSet.UnionFind.run` threads its state single-threadedly).
 
 ## Main definitions
 
@@ -639,11 +641,6 @@ private theorem exists_sublist_of_subperm {α : Type} {l₁ l₂ : List α} (h :
   obtain ⟨l, hp, hs⟩ := h
   exact ⟨l, hp.symm, hs⟩
 
-private theorem eq_nil_of_subperm_nil {α : Type} {l : List α} (h : l.Subperm []) : l = [] := by
-  obtain ⟨l', hp, hs⟩ := exists_sublist_of_subperm h
-  cases hs
-  exact hp.eq_nil
-
 /-- Core exchange-inductive optimality of `kruskalScan` on weight-sorted inputs: for any initial
 partition `p` and any relative spanning forest `H` of `sorted` over `p`, `kruskalScan p sorted` has
 total weight at most `totalWeight H`. -/
@@ -656,7 +653,7 @@ theorem totalWeight_kruskalScan_le {n : ℕ} {W : Type}
   induction sorted generalizing p H with
   | nil =>
     simp only [kruskalScan_nil, totalWeight_nil]
-    rw [eq_nil_of_subperm_nil hH.1, totalWeight_nil]
+    rw [List.subperm_nil.mp hH.1, totalWeight_nil]
   | cons e es ih =>
     obtain ⟨he_le, hes_sorted⟩ := List.pairwise_cons.mp hsorted
     obtain ⟨hsub, hacyc, hpart⟩ := hH
@@ -735,7 +732,7 @@ theorem perm_kruskalScan_of_totalWeight_le_of_nodup_weights {n : ℕ} {W : Type}
   induction sorted generalizing p H with
   | nil =>
     simp only [kruskalScan_nil]
-    rw [eq_nil_of_subperm_nil hH.1]
+    rw [List.subperm_nil.mp hH.1]
   | cons e es ih =>
     obtain ⟨he_le, hes_sorted⟩ := List.pairwise_cons.mp hsorted
     obtain ⟨he_not_mem, hes_nodup⟩ := List.nodup_cons.mp hnodup
@@ -901,9 +898,10 @@ theorem kruskalEdges_isSpanningForest {n : ℕ} {W : Type} [LE W] [DecidableLE W
     IsSpanningForest es (kruskalEdges es) :=
   ⟨kruskalEdges_subperm es, kruskalEdges_isAcyclic es, edgePartition_kruskalEdges es⟩
 
-/-- **Kruskal's minimum spanning forest theorem** ([Cormen et al., Section 23.2, `MST-KRUSKAL`,
-p. 631][CLRS2009]): for any finite weighted multigraph `es` on `Fin n` with weights in an ordered
-additive commutative monoid, `kruskalEdges es` is a minimum-weight spanning forest of `es`. -/
+/-- **Kruskal's minimum spanning forest theorem** (generalizing [Cormen et al., Section 23.2,
+`MST-KRUSKAL`, p. 631][CLRS2009] from connected simple real-weighted graphs to arbitrary finite
+multigraphs): for any weighted multigraph `es` on `Fin n` with weights in an ordered additive
+commutative monoid, `kruskalEdges es` is a minimum-weight spanning forest of `es`. -/
 theorem kruskalEdges_isMinSpanningForest {n : ℕ} {W : Type}
     [AddCommMonoid W] [LinearOrder W] [IsOrderedAddMonoid W]
     (es : List (WeightedEdge n W)) :
@@ -927,10 +925,10 @@ theorem kruskalEdges_isMinSpanningTree {n : ℕ} {W : Type}
   refine ⟨(isSpanningTree_iff_isSpanningForest_of_connected hconn).mpr hsf, fun T hT => ?_⟩
   exact hmin T ((isSpanningTree_iff_isSpanningForest_of_connected hconn).mp hT)
 
-/-- **Distinct-weight uniqueness of Kruskal's forest** ([Kruskal, Opening paragraph and
-Construction A, pp. 48–49][Kruskal1956]): when all edges in `es` have pairwise distinct weights,
-every minimum-weight spanning forest of `es` is a permutation of `kruskalEdges es` (i.e., selects
-the exact same multiset of edges). -/
+/-- **Distinct-weight uniqueness of Kruskal's forest** (generalizing [Kruskal, Opening paragraph,
+Construction A, and uniqueness proof, pp. 48–50][Kruskal1956]): when all edges in `es` have pairwise
+distinct weights, every minimum-weight spanning forest of `es` is a permutation of `kruskalEdges es`
+(i.e., selects the exact same multiset of edges). -/
 theorem perm_kruskalEdges_of_isMinSpanningForest_of_nodup_weights {n : ℕ} {W : Type}
     [AddCancelCommMonoid W] [LinearOrder W] [IsOrderedCancelAddMonoid W]
     {es F : List (WeightedEdge n W)}
@@ -1225,8 +1223,9 @@ theorem kruskalScanM_ufSteps_le_union_charge {n : ℕ} {W : Type}
 
 /-- Kruskal's minimum-spanning-forest algorithm in `TimeM Cost` ([Cormen et al., Section 23.2,
 `MST-KRUSKAL`, pp. 631–633][CLRS2009]): merge-sort `es` by weight (charging comparisons to
-`Cost.comparisons`) and scan the sorted edges using `DisjointSet.UnionFind` (charging parent-pointer
-inspections and root links to `Cost.ufSteps`). -/
+`Cost.comparisons`) and scan the sorted edges from `DisjointSet.UnionFind.init n` (charging
+post-initialization parent-pointer inspections and root links to `Cost.ufSteps`, with
+`DisjointSet.UnionFind.init n` uncharged). -/
 @[expose] def kruskalM {n : ℕ} {W : Type} [LE W] [DecidableLE W]
     (es : List (WeightedEdge n W)) : TimeM Cost (Output n W) := do
   let sorted ← liftComparisons (sortEdgesM es)

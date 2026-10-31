@@ -10,7 +10,6 @@ module
 public import Complexity.Init
 public import Complexity.Algorithms.Lean.Kruskal.Basic
 public import Mathlib.Combinatorics.SimpleGraph.Acyclic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 /-!
 # SimpleGraph Bridge for Kruskal's Algorithm
@@ -45,11 +44,22 @@ maximal acyclic subgraphs (`Maximal (fun H => H ≤ G ∧ H.IsAcyclic)`), and `S
 * `kruskalGraph_isTree`, `sum_edgeFinset_kruskalGraph_le_of_isTree`: when `G.Connected`,
   `toSimpleGraph (kruskalGraph G w)` is a minimum-weight Mathlib spanning tree of `G`.
 * `eq_toSimpleGraph_kruskalGraph_of_injOn`, `eq_toSimpleGraph_kruskalGraph_of_isTree_of_injOn`:
-  when `w` is injective on `G.edgeSet` ([Kruskal, Opening paragraph and Construction A,
-  pp. 48–49][Kruskal1956]), the minimum spanning forest (and minimum spanning tree when connected)
-  is **unique as a `SimpleGraph (Fin n)`**.
-* `kruskalGraphM_comparisons_le`, `kruskalGraphM_ufSteps_le`: explicit sorting comparison and
-  disjoint-set step bounds in terms of `m = G.edgeFinset.card` and `n`.
+  when `w` is injective on `G.edgeSet` (generalizing [Kruskal, Opening paragraph, Construction A,
+  and uniqueness proof, pp. 48–50][Kruskal1956] to disconnected simple graphs and ordered
+  cancellative monoids), the minimum spanning forest (and minimum spanning tree when connected) is
+  **unique as a `SimpleGraph (Fin n)`**.
+* `kruskalGraphM_comparisons_le`, `kruskalGraphM_ufSteps_le`, `kruskalGraphM_total_le`: explicit
+  sorting comparison and disjoint-set step bounds in terms of `m = G.edgeFinset.card` and `n`.
+
+## Cost model and limitations
+
+`kruskalGraphM G w := kruskalM (graphEdges G w)` charges only the `List.mergeSortM` weight
+comparisons (`Cost.comparisons`) and post-initialization `DisjointSet.UnionFind` forest steps
+(`Cost.ufSteps`) performed on the extracted `m`-edge list. The pure `graphEdges G w` enumeration
+pass (which inspects all `n²` ordered pairs in `List.finRange n`, evaluating `decide (G.Adj u v)`
+and `w s(u, v)` on matching edges) and `DisjointSet.UnionFind.init n` (`O(n)` initialization) carry
+`0` `TimeM Cost` charge; callers that already hold an explicit edge list should invoke `kruskalM`
+directly.
 
 ## References
 
@@ -464,38 +474,12 @@ theorem length_graphEdges {n : ℕ} {W : Type} (G : SimpleGraph (Fin n))
   rw [edgeFinset_eq_toFinset_graphEdges G w,
     List.toFinset_card_of_nodup (nodup_map_sym2_graphEdges G w), List.length_map]
 
-private theorem subperm_of_nodup_subset {α : Type} {l₁ l₂ : List α}
-    (h₁ : l₁.Nodup) (hsub : ∀ x ∈ l₁, x ∈ l₂) : l₁.Subperm l₂ := by
-  induction l₁ generalizing l₂ with
-  | nil => simp
-  | cons a as ih =>
-    obtain ⟨ha_not_mem, has_nodup⟩ := List.nodup_cons.mp h₁
-    obtain ⟨l₂', hp₂⟩ := exists_perm_cons_of_mem_aux (hsub a List.mem_cons_self)
-    have hsub' : ∀ x ∈ as, x ∈ l₂' := by
-      intro x hx
-      have hx₂ : x ∈ a :: l₂' := hp₂.mem_iff.mp (hsub x (List.mem_cons_of_mem a hx))
-      rcases List.mem_cons.mp hx₂ with rfl | hmem
-      · exact absurd hx ha_not_mem
-      · exact hmem
-    obtain ⟨m, hm_perm, hm_sub⟩ := ih has_nodup hsub'
-    have hcons : (a :: as).Subperm (a :: l₂') := ⟨a :: m, hm_perm.cons a, hm_sub.cons_cons a⟩
-    exact hcons.trans hp₂.symm.subperm
-where
-  exists_perm_cons_of_mem_aux {x : α} {l : List α} (h : x ∈ l) : ∃ l', l.Perm (x :: l') := by
-    induction l with
-    | nil => cases h
-    | cons y ys ih' =>
-      rcases List.mem_cons.mp h with rfl | hm
-      · exact ⟨ys, .refl _⟩
-      · obtain ⟨l', hp⟩ := ih' hm
-        exact ⟨y :: l', (hp.cons y).trans (List.Perm.swap x y l')⟩
-
 /-- If `F ≤ G`, `graphEdges F w` is a sub-multiset of `graphEdges G w`. -/
 theorem graphEdges_subperm_of_le {n : ℕ} {W : Type}
     {F G : SimpleGraph (Fin n)} [DecidableRel F.Adj] [DecidableRel G.Adj]
     (hle : F ≤ G) (w : Sym2 (Fin n) → W) :
     (graphEdges F w).Subperm (graphEdges G w) := by
-  refine subperm_of_nodup_subset (nodup_graphEdges F w) fun e he => ?_
+  refine List.subperm_of_subset (nodup_graphEdges F w) fun e he => ?_
   obtain ⟨hlt, hadj, hw⟩ := (mem_graphEdges F w e).mp he
   exact (mem_graphEdges G w e).mpr ⟨hlt, hle hadj, hw⟩
 
@@ -554,10 +538,11 @@ theorem sum_edgeFinset_toSimpleGraph_kruskalGraph {n : ℕ} {W : Type}
   have he_mem : e ∈ graphEdges G w := (kruskalEdges_subperm (graphEdges G w)).subset he
   exact ((mem_graphEdges G w e).mp he_mem).2.2
 
-/-- **Simple-graph Kruskal spanning-forest optimality** ([Cormen et al., Section 23.2,
-`MST-KRUSKAL`, p. 631][CLRS2009]): `toSimpleGraph (kruskalGraph G w)` minimizes
-`∑ e ∈ F.edgeFinset, w e` over all Mathlib spanning forests `F` of `G` (without requiring
-`DecidableRel F.Adj` on competing subgraphs `F`). -/
+/-- **Simple-graph Kruskal spanning-forest optimality** (generalizing [Cormen et al., Section 23.2,
+`MST-KRUSKAL`, p. 631][CLRS2009] from connected real-weighted graphs to arbitrary finite simple
+graphs over `[AddCommMonoid W] [LinearOrder W] [IsOrderedAddMonoid W]`):
+`toSimpleGraph (kruskalGraph G w)` minimizes `∑ e ∈ F.edgeFinset, w e` over all Mathlib spanning
+forests `F` of `G` (without requiring `DecidableRel F.Adj` on competing subgraphs `F`). -/
 theorem sum_edgeFinset_kruskalGraph_le_of_maximal_isAcyclic {n : ℕ} {W : Type}
     [AddCommMonoid W] [LinearOrder W] [IsOrderedAddMonoid W]
     (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (w : Sym2 (Fin n) → W)
@@ -594,9 +579,10 @@ theorem sum_edgeFinset_kruskalGraph_le_of_isTree {n : ℕ} {W : Type}
   sum_edgeFinset_kruskalGraph_le_of_maximal_isAcyclic G w T
     ((hconn.maximal_le_isAcyclic_iff_isTree hle).mpr hT)
 
-/-- **Distinct-weight uniqueness on simple graphs** ([Kruskal, Opening paragraph and Construction A,
-pp. 48–49][Kruskal1956]): when `w` is injective on `G.edgeSet`, any minimum-weight spanning forest
-`F` of `G` is equal as a `SimpleGraph (Fin n)` to `toSimpleGraph (kruskalGraph G w)`. -/
+/-- **Distinct-weight uniqueness on simple graphs** (generalizing [Kruskal, Opening paragraph,
+Construction A, and uniqueness proof, pp. 48–50][Kruskal1956]): when `w` is injective on
+`G.edgeSet`, any minimum-weight spanning forest `F` of `G` is equal as a `SimpleGraph (Fin n)` to
+`toSimpleGraph (kruskalGraph G w)`. -/
 theorem eq_toSimpleGraph_kruskalGraph_of_injOn {n : ℕ} {W : Type}
     [AddCancelCommMonoid W] [LinearOrder W] [IsOrderedCancelAddMonoid W]
     (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (w : Sym2 (Fin n) → W)
@@ -652,7 +638,10 @@ theorem eq_toSimpleGraph_kruskalGraph_of_isTree_of_injOn {n : ℕ} {W : Type}
 
 /-! ### `TimeM Cost` Kruskal runner on `SimpleGraph (Fin n)` -/
 
-/-- Execute Kruskal's algorithm in `TimeM Cost` on the canonical edge list `graphEdges G w`. -/
+/-- Execute Kruskal's algorithm in `TimeM Cost` on the canonical edge list `graphEdges G w`.
+Note that `Cost` charges sorting comparisons and post-initialization `UnionFind` forest steps on the
+extracted `m`-edge list; the pure `graphEdges G w` enumeration (`Θ(n²)` adjacency/weight checks) and
+`DisjointSet.UnionFind.init n` carry `0` `TimeM Cost` charge. -/
 @[expose] def kruskalGraphM {n : ℕ} {W : Type} [LE W] [DecidableLE W]
     (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (w : Sym2 (Fin n) → W) :
     TimeM Cost (Output n W) :=
@@ -680,5 +669,14 @@ theorem kruskalGraphM_ufSteps_le {n : ℕ} {W : Type} [LE W] [DecidableLE W]
     (kruskalGraphM G w).time.ufSteps ≤ G.edgeFinset.card * (2 * Nat.log 2 n + 3) := by
   simpa only [kruskalGraphM, length_graphEdges] using
     kruskalM_ufSteps_le (graphEdges G w)
+
+/-- Combined bound on `(kruskalGraphM G w).time.total` in terms of `m = G.edgeFinset.card` and
+`n`. -/
+theorem kruskalGraphM_total_le {n : ℕ} {W : Type} [LE W] [DecidableLE W]
+    (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (w : Sym2 (Fin n) → W) :
+    (kruskalGraphM G w).time.total ≤
+      G.edgeFinset.card * Nat.clog 2 G.edgeFinset.card +
+        G.edgeFinset.card * (2 * Nat.log 2 n + 3) :=
+  Nat.add_le_add (kruskalGraphM_comparisons_le G w) (kruskalGraphM_ufSteps_le G w)
 
 end Cslib.Algorithms.Lean.Kruskal
