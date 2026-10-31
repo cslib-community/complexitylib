@@ -25,7 +25,8 @@ most `k + 1` times the product of the branching factors (`Nat.recursionBound_le`
 **Recursion trees of size `2 ^ O(n / √(log n))`.** If a call at depth `j` has at most
 `2 ^ (c ⌊log₂ n⌋ + e j)` children, there are at most `⌊log₂ n⌋` levels, and the excess exponents
 sum to `O(n / √⌊log₂ n⌋)`, then the tree has `2 ^ O(n / √⌊log₂ n⌋)` nodes
-(`Nat.exists_recursionBound_le_two_pow_div_sqrt_log_two`), in the natural-number scale of
+(`Nat.mul_prod_le_two_pow_div_sqrt_log_two`, with the explicit constant `1 + 16 c + E`), in the
+natural-number scale of
 `Nat.exists_three_pow_mul_le_two_pow_div_sqrt_log_two`. The polynomial factors `2 ^ (c ⌊log₂ n⌋)`
 contribute `2 ^ O(log² n)`, which the scale absorbs. Excess exponents halving with the depth sum to
 at most twice the first one (`Nat.sum_div_two_pow_le`).
@@ -42,8 +43,8 @@ a call at depth `d` has `s ^ O(1) exp(O(s / √λ · (√2 / 8) ^ d))` children 
 
 * `Nat.recursionBound_le`: at most `k + 1` times the product of the branching factors.
 * `Nat.sum_div_two_pow_le`: `∑ j < D, x / 2 ^ j ≤ 2 x`.
-* `Nat.exists_recursionBound_le_two_pow_div_sqrt_log_two`: recursion trees of size
-  `2 ^ O(n / √⌊log₂ n⌋)`.
+* `Nat.mul_prod_le_two_pow_div_sqrt_log_two`: recursion trees of size `2 ^ O(n / √⌊log₂ n⌋)`,
+  with an explicit constant.
 
 ## References
 
@@ -132,17 +133,16 @@ theorem log_two_sq_le_div_sqrt_log_two {n : ℕ} (hn : 2 ≤ n) :
   have h2 := mul_div_le_mul_div_add 8 n (sqrt L)
   omega
 
-/-- **Recursion trees of size `2 ^ O(n / √⌊log₂ n⌋)`.** For constants `c` and `E` there is `K`
-such that, from `n = 2` on: if a call at depth `j < D` has at most `2 ^ (c ⌊log₂ n⌋ + e j)`
-children, `D ≤ ⌊log₂ n⌋`, and `∑ j < D, e j ≤ E (n / √⌊log₂ n⌋)`, then
-`(D + 1) ∏ j < D, max 1 (b j) ≤ 2 ^ (K n / √⌊log₂ n⌋)`, which bounds the nodes of the recursion
-tree by `recursionBound_le`. -/
-theorem exists_recursionBound_le_two_pow_div_sqrt_log_two (c E : ℕ) :
-    ∃ K, ∀ (n D : ℕ) (b e : ℕ → ℕ), 2 ≤ n → D ≤ log 2 n →
-      (∀ j < D, b j ≤ 2 ^ (c * log 2 n + e j)) →
-      ∑ j ∈ range D, e j ≤ E * (n / sqrt (log 2 n)) →
-      (D + 1) * ∏ j ∈ range D, max 1 (b j) ≤ 2 ^ (K * n / sqrt (log 2 n)) := by
-  refine ⟨1 + 16 * c + E, fun n D b e hn hD hb he => ?_⟩
+/-- **Recursion trees of size `2 ^ O(n / √⌊log₂ n⌋)`**, with the constant `1 + 16 c + E`. From
+`n = 2` on: if a call at depth `j < D` has at most `2 ^ (c ⌊log₂ n⌋ + e j)` children,
+`D ≤ ⌊log₂ n⌋`, and `∑ j < D, e j ≤ E (n / √⌊log₂ n⌋)`, then
+`(D + 1) ∏ j < D, max 1 (b j) ≤ 2 ^ ((1 + 16 c + E) n / √⌊log₂ n⌋)`, which bounds the nodes of the
+recursion tree by `recursionBound_le`. The constant is linear in `E`, so a single clock serves a
+family of excess budgets growing linearly in a parameter. -/
+theorem mul_prod_le_two_pow_div_sqrt_log_two (c E : ℕ) {n D : ℕ} {b e : ℕ → ℕ} (hn : 2 ≤ n)
+    (hD : D ≤ log 2 n) (hb : ∀ j < D, b j ≤ 2 ^ (c * log 2 n + e j))
+    (he : ∑ j ∈ range D, e j ≤ E * (n / sqrt (log 2 n))) :
+    (D + 1) * ∏ j ∈ range D, max 1 (b j) ≤ 2 ^ ((1 + 16 * c + E) * n / sqrt (log 2 n)) := by
   set L := log 2 n
   set S := n / sqrt L
   have hL : L ≤ S := log_two_le_div_sqrt_log_two n
