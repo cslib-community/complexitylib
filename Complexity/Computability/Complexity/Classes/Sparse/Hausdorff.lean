@@ -124,7 +124,7 @@ private theorem count_lt_of_forall₂ {v w : List Bool} (h : List.Forall₂ (· 
     cases a <;> cases b
     · have : l₁ ≠ l₂ := fun h => hne (h ▸ rfl)
       simpa using ih this
-    · simp
+    · change List.count true l₁ + 0 < List.count true l₂ + 1
       omega
     · exact absurd hab (by decide)
     · have : l₁ ≠ l₂ := fun h => hne (h ▸ rfl)
