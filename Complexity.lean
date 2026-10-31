@@ -901,6 +901,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSchedule
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionShape
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct

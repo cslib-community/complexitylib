@@ -215,6 +215,123 @@ theorem getD_points_facts (x : Call) (i : ℕ) :
   · rw [List.getD_eq_default _ _ (by omega)]
     simp
 
+/-- The rows of a native child are at most the parent's vertices. -/
+theorem childRows_le (r i : ℕ) (D : DescribedNetwork VertexDesc)
+    (pk : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)) (g : ℕ) :
+    childRows r i D pk g ≤ D.vertices.length := by
+  unfold childRows
+  refine (List.count_le_length).trans ?_
+  simp [groupsOf]
+
+/-- A packet descriptor built from a packet context with bounded fields is bounded. -/
+theorem packetBound_packetCtx {fl ζ β : List ℕ} {m P k a i pt g q : ℕ} {t : ℤ}
+    {tags : List (Bool × ℕ)} (hpt : pt ≤ P) (ha : a ≤ Nat.log 2 m) (hi : i ≤ a)
+    (ht : t.natAbs ≤ 2 ^ a) (hζ : ζ.length ≤ fl.length) (hζ1 : ∀ z ∈ ζ, z ≤ 1)
+    (htags : tags.length = k) (hslots : ∀ b ∈ tags, b.2 < 2 ^ a)
+    (hβ : β.length ≤ 2 ^ (i + 1) * pt) (hβ' : ∀ b ∈ β, b ≤ pt) :
+    PacketBound fl m P k (packetCtx fl a i pt t ζ g q, tags, β) :=
+  ⟨hpt, rfl, rfl, ha, rfl, hi, rfl, ht, rfl, hζ, hζ1, htags, hslots, hβ, hβ'⟩
+
+/-- **The shape passes to the native children** of an active call, from a root `x₀` at scale `m`
+equal to its number of edges, with bound plus depth `m + 1`. -/
+theorem Shape.child (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound + x₀.depth = x₀.edges + 1)
+    (h : Shape x₀ x) (ha : active x = true) {c : State} (hc : c ∈ children x) :
+    Shape x₀ (FastContraction.child x nativeMk c) := by
+  set m := x₀.edges
+  have hsc : x.scale = m := h.scale_eq.trans h₀s
+  have hM : x.edges ≤ m := by
+    have := edges_lt_bound_of_active ha
+    have := h.bound_add_depth_le
+    omega
+  obtain ⟨haL, h12, hL, -, -, -⟩ := slots_facts ha
+  rw [hsc] at haL h12 hL
+  have hK := pow_slots_le_edges_of_active ha
+  obtain ⟨hlev, hnode⟩ := level_le_slots_of_mem_children ha hc
+  have hprec : nodePrec x c.1 ≤ x.prec + 40 * m ^ 2 := by
+    have := nodePrec_le_add ha (hsc ▸ hM) c.1
+    rwa [hsc] at this
+  have hmk := nativeMk_apply_of_active h.wf ha hc
+  set pk := nativeParentPacking x.rows (slots x) x.net
+  have hpk : pk.2.1 ≤ m ^ 2 := by
+    have := numPackets_nativeParentPacking_le x.rows (slots x) x.net
+    calc pk.2.1 ≤ x.edges * (2 ^ slots x) ^ 12 := this
+      _ ≤ m * m := Nat.mul_le_mul hM h12
+      _ = m ^ 2 := by ring
+  have hslot : ∀ y ∈ pk.2.2, y.2 < 2 ^ slots x := by
+    intro y hy
+    rw [show pk = nativeParentPacking x.rows (slots x) x.net from rfl,
+      nativeParentPacking_eq h.wf.2 hK] at hy
+    obtain ⟨e, rfl⟩ := List.mem_ofFn.mp hy
+    exact ((parentPacking h.wf.2 (slots x)).slot e).2
+  have hvert : (FastContraction.child x nativeMk c).net.vertices.length ≤
+      x.net.vertices.length + m ^ 2 := by
+    change (nativeMk x c).2.vertices.length ≤ _
+    rw [hmk, length_vertices_nativeChild]
+    have := childRows_le x.rows (level x ((nodes x).getD c.1 0)) x.net pk c.2.2.2
+    omega
+  refine ⟨h.scale_eq, h.fl_eq, wfChildren_nativeMk x h.wf ha c hc, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · have := edges_lt_bound_of_active ha
+    have := h.bound_add_depth_le
+    change x.edges + (x.depth + 1) ≤ _
+    omega
+  · change (nativeMk x c).2.numEdges ≤ 2 * m
+    rw [hmk]
+    exact (numEdges_nativeChild_le _ _ _ _ _ _ _ _ _ _ _).trans (Nat.mul_le_mul_left 2 hM)
+  · change nodePrec x c.1 ≤ x₀.prec + (x.depth + 1) * (40 * m ^ 2)
+    have : x.prec ≤ x₀.prec + x.depth * (40 * m ^ 2) := h.prec_le
+    rw [add_one_mul]
+    omega
+  · change _ ≤ x₀.net.vertices.length + (x.depth + 1) * m ^ 2
+    have : x.net.vertices.length ≤ x₀.net.vertices.length + x.depth * m ^ 2 :=
+      h.vertices_le
+    rw [add_one_mul]
+    omega
+  · refine Or.inr ?_
+    change (nativeMk x c).1 ≤ x₀.net.vertices.length + (x.depth + 1) * m ^ 2
+    rw [hmk]
+    have := childRows_le x.rows (level x ((nodes x).getD c.1 0)) x.net pk c.2.2.2
+    have : x.net.vertices.length ≤ x₀.net.vertices.length + x.depth * m ^ 2 :=
+      h.vertices_le
+    rw [add_one_mul]
+    omega
+  · intro v hv
+    change v ∈ (nativeMk x c).2.vertices at hv
+    rw [hmk] at hv
+    rcases mem_vertices_nativeChild _ _ _ _ _ _ _ _ _ _ _ hv with ⟨w, hw, hd, hl⟩ |
+      ⟨q, -, tags, hd, htl, hts⟩
+    · rcases h.desc w hw with ⟨u, hu, hu'⟩ | ⟨d, hwd, hb⟩
+      · exact Or.inl ⟨u, hu, hd.trans hu'⟩
+      · refine Or.inr ⟨d, hd.trans hwd, ?_⟩
+        rw [hl]
+        refine hb.mono ?_
+        change x₀.prec + x.depth * (40 * m ^ 2) ≤ x₀.prec + (x.depth + 1) * (40 * m ^ 2)
+        rw [add_one_mul]
+        omega
+    · refine Or.inr ⟨_, hd, ?_⟩
+      have hζ := getD_points_facts x c.2.1
+      have hβ := lt_nodePrec_of_mem_children hc
+      have hp : nodePrec x c.1 ≤ x₀.prec + (x.depth + 1) * (40 * m ^ 2) := by
+        have : x.prec ≤ x₀.prec + x.depth * (40 * m ^ 2) := h.prec_le
+        rw [add_one_mul]
+        omega
+      have hfl : x.fl.length = x₀.fl.length := by rw [h.fl_eq]
+      rw [h.fl_eq] at hζ ⊢
+      refine packetBound_packetCtx hp haL hlev.le hnode (hfl ▸ hζ.1) hζ.2 htl (fun b hb => ?_)
+        (length_betaSlice_le _ _ _ _) fun b hb => (hβ b (mem_of_mem_betaSlice _ _ _ hb)).le
+      rcases hts b hb with h0 | ⟨y, hy, hy'⟩
+      · rw [h0]; exact Nat.two_pow_pos _
+      · rw [hy']; exact hslot y hy
+
+/-- **Every reached call has the shape** of a root `x₀` that is well-formed, at scale its number of
+edges, with bound plus depth `m + 1`. -/
+theorem Reach.shape (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound + x₀.depth = x₀.edges + 1)
+    (h₀ : WF x₀) (h : Reach nativeMk x₀ x) : Shape x₀ x := by
+  induction h with
+  | root =>
+    exact ⟨rfl, rfl, h₀, le_rfl, by omega, Nat.le_add_right _ _, Nat.le_add_right _ _,
+      Or.inl rfl, fun v hv => Or.inl ⟨v, hv, rfl⟩⟩
+  | step c _ ha hc ih => exact ih.child h₀s h₀b ha hc
+
 end Child
 
 end Cslib.Circuits.Frontier.FastContraction
