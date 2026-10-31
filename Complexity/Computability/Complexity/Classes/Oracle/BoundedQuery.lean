@@ -27,7 +27,7 @@ clock bounds the requests against every oracle in any case
 
 `P^{NP[O(log n)]}` (`Cslib.Complexity.PNPLog`) is the class of problems decided in polynomial time
 with at most `c log₂ n + c` requests to some oracle language in `NP`, for a constant `c`
-[Hemaspaandra and Ogihara, Section 1.2][HemaspaandraOgihara2002] [Kadin][Kadin1989]. It contains
+[Hemaspaandra and Ogihara, p. 1][HemaspaandraOgihara2002] [Kadin][Kadin1989]. It contains
 `NP` and `coNP` with one request to the encodings of the satisfiable formulas
 (`Cslib.Complexity.NP_subset_PWithOracleQueries_image_SAT`), through the Cook–Levin reduction, and
 is closed under complement.
@@ -151,7 +151,7 @@ theorem mem_PWithOracleQueries {A : Set (List Bool)} {r : ℕ → ℕ} {enc : α
 
 /-- **`P^{NP[O(log n)]}`**: the problems decided in polynomial time with at most `c log₂ n + c`
 requests, on instances of encoded length `n`, to some oracle language in `NP`
-[Hemaspaandra and Ogihara, Section 1.2][HemaspaandraOgihara2002] [Kadin][Kadin1989]. -/
+[Hemaspaandra and Ogihara, p. 1][HemaspaandraOgihara2002] [Kadin][Kadin1989]. -/
 def PNPLog (enc : α ↪ List Bool) : Set (Set α) :=
   ⋃ A ∈ NP encBits, ⋃ c : ℕ, PWithOracleQueries A (fun n => c * Nat.log 2 n + c) enc
 
