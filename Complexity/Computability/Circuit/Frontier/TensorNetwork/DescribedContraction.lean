@@ -43,7 +43,7 @@ packet vertex has up to `2 L` ports, so its table would be superpolynomial, and 
 computed from a description instead (Appendix D.4.6, p. 63). A *described network*
 (`DescribedNetwork T`) has, for each vertex, its ports and a descriptor `t : T` of its tensor,
 whose entry at the bits `bs` on the ports is `eval t bs` for an evaluator `eval`. Explicit
-networks are the case of tables (`DescribedNetwork.ofExplicit`).
+networks are the case of tables (`ExplicitTensorNetwork`, `DescribedNetwork.contraction_entry`).
 
 **Values and their operations** (`SumOps`). The entries are values `Y` combined by ring
 operations that depend on a precision `q : Q`: a zero, a one, a sum and a product, whose results
@@ -73,8 +73,6 @@ contraction algorithm, with implicit packet tensors as descriptors.
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.DescribedNetwork`: a network with described tensors.
-* `Cslib.Circuits.Frontier.DescribedNetwork.contraction`: its contraction.
 * `Cslib.Circuits.Frontier.SumOps`: ring operations on values, with `SumOps.IsHom` and
   `SumOps.PolyTime`; the instances `SumOps.mod` and `SumOps.galois`.
 * `Cslib.Circuits.Frontier.DescribedNetwork.sumScheme`: direct summation as a recursion scheme.
@@ -91,7 +89,6 @@ contraction algorithm, with implicit packet tensors as descriptors.
   `sumValue`, with `2 ^ m (k + 1) + 1` nodes and two open calls.
 * `Cslib.Circuits.Frontier.SumOps.IsHom.map_sumValue`: under a homomorphism, the value is the
   contraction; `DescribedNetwork.sumValue_mod` and `DescribedNetwork.val_sumValue_galois`.
-* `Cslib.Circuits.Frontier.DescribedNetwork.contraction_ofExplicit`: explicit networks.
 * `Cslib.Circuits.Frontier.DescribedNetwork.run_sumScheme`: the machine computes `sumValue`.
 * `Cslib.Circuits.Frontier.DescribedNetwork.contractionCertificate_le`: its time and space.
 
@@ -217,60 +214,9 @@ theorem IsHom.map_foldl_add {q : Q} {R : Type*} [CommSemiring R] {φ : Y → R} 
 
 end SumOps
 
-/-- A Boolean tensor network with *described* tensors: the number of edges, numbered from zero,
-and for each vertex its ordered list of ports and a descriptor of its tensor. -/
-structure DescribedNetwork (T : Type) where
-  /-- The number of edges; the edges are numbered `0, …, numEdges - 1`. -/
-  numEdges : ℕ
-  /-- The vertices, each given by its ports and the descriptor of its tensor. -/
-  vertices : List (List ℕ × T)
-
 namespace DescribedNetwork
 
 variable {T : Type}
-
-/-- The bits that a word, read as an assignment of bits to the edges, puts on a list of ports;
-a port past the end of the word reads `false`. -/
-def wordBits (word : List Bool) (ports : List ℕ) : List Bool :=
-  ports.map fun i => word.getD i false
-
-/-- The *contraction*: the sum over all assignments of bits to the edges of the product of the
-entries of the vertices at the bits on their ports, for entries in a commutative semiring. -/
-def contraction {R : Type*} [CommSemiring R] (eval : T → List Bool → R)
-    (d : DescribedNetwork T) : R :=
-  ∑ x : Fin d.numEdges → Bool,
-    (d.vertices.map fun v => eval v.2 (wordBits (List.ofFn x) v.1)).prod
-
-/-- An explicit network, with its tables as descriptors. -/
-def ofExplicit (d : ExplicitTensorNetwork ℕ) : DescribedNetwork (List ℕ) :=
-  ⟨d.numEdges, d.vertices⟩
-
-private theorem getD_ofFn {n : ℕ} (x : Fin n → Bool) (i : ℕ) :
-    (List.ofFn x).getD i false = if h : i < n then x ⟨i, h⟩ else false := by
-  by_cases h : i < n
-  · rw [dite_eq_left h, List.getD_eq_getElem _ _ (by simpa using h), List.getElem_ofFn]
-  · rw [dite_eq_right h, List.getD_eq_default _ _ (by simp only [List.length_ofFn]; omega)]
-
-/-- **Explicit networks**: with table lookup as the evaluator, the contraction is that of the
-explicit network. -/
-theorem contraction_ofExplicit (d : ExplicitTensorNetwork ℕ) :
-    (ofExplicit d).contraction ExplicitTensorNetwork.entry = d.contraction := by
-  refine sum_congr rfl fun x _ => ?_
-  simp only [wordBits, ExplicitTensorNetwork.portBits]
-  congr 1
-  refine List.map_congr_left fun v _ => ?_
-  congr 2
-  funext i
-  exact getD_ofFn x i
-
-/-- The contraction commutes with maps of semirings. -/
-theorem map_contraction {R S : Type*} [CommSemiring R] [CommSemiring S] (ψ : R →+* S)
-    (eval : T → List Bool → R) (d : DescribedNetwork T) :
-    ψ (d.contraction eval) = d.contraction fun t bs => ψ (eval t bs) := by
-  rw [contraction, contraction, map_sum]
-  refine sum_congr rfl fun x _ => ?_
-  rw [map_list_prod, List.map_map]
-  rfl
 
 /-! ### Direct summation as a recursion scheme -/
 
@@ -537,13 +483,6 @@ theorem _root_.Cslib.Circuits.Frontier.SumOps.length_encList_le_of_galois_reduce
 section Native
 
 variable (encQ : Q ↪ List Bool) (encY : Y ↪ List Bool) (encT : T ↪ List Bool)
-
-/-- A described network is its number of edges and its list of vertices. -/
-def equivProd : DescribedNetwork T ≃ ℕ × List (List ℕ × T) where
-  toFun d := (d.numEdges, d.vertices)
-  invFun p := ⟨p.1, p.2⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
 
 /-- **The encoding of a described network**: its number of edges in unary, then its vertices,
 each the pair of its list of ports in binary and its descriptor. -/

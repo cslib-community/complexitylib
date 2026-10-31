@@ -48,7 +48,7 @@ example : packetEntryNative ctx [(0, true)] [0, 1, 0, 0] =
 theorem val_ctx (β : List ℕ) :
     GaloisRingArith.val 3 [1, 1] (packetEntryNative ctx [(0, true)] β) =
       packetEntry (p := 2) (scalarHom 3 [1, 1]) (GaloisRingArith.val 3 [1, 1] [0, 1]) 1 0 1 true
-        false true (fun Z => β.getD (Z.1 * 2 + Z.2) 0) [(0, true)] [(1, true)] :=
+        false true (fun Z => β.getD (finProdFinEquiv Z) 0) [(0, true)] [(1, true)] :=
   val_packetEntryNative_eq ctx (by decide) (by decide) (by decide)
     (by simp [ctx, mem_cauchyGrid]) (by norm_num [ctx]) (by norm_num [ctx]) (by simp)
     (by simp [ctx]) β
@@ -73,7 +73,7 @@ example : packetVertexEntry desc [true, false] = [0, 0] := by decide
 theorem val_desc (bs : List Bool) :
     GaloisRingArith.val 3 [1, 1] (packetVertexEntry desc bs) =
       packetEntry (p := 2) (scalarHom 3 [1, 1]) (GaloisRingArith.val 3 [1, 1] [0, 1]) 1 0 1 true
-        false true (fun Z => [0, 0, 0, 0].getD (Z.1 * 2 + Z.2) 0) (sidePorts desc.2.1 bs true)
+        false true (fun Z => [0, 0, 0, 0].getD (finProdFinEquiv Z) 0) (sidePorts desc.2.1 bs true)
         (sidePorts desc.2.1 bs false) :=
   val_packetVertexEntry desc bs (by decide) (by decide) (by decide)
     (by simp [desc, ctx, mem_cauchyGrid]) (by norm_num [desc, ctx]) (by norm_num [desc, ctx])
