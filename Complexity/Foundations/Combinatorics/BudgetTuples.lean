@@ -34,8 +34,13 @@ enumeration explicit:
 The list holds exactly the tuples of weight below `p` (`mem_budgetTuples`), each once
 (`nodup_budgetTuples`). It starts at the zero tuple (`head?_budgetTuples`), each entry is followed
 by its successor (`isChain_budgetTuples`), and the last one has none (`budgetNext_getLast?`). So
-iterating `budgetNext` from zero visits every tuple once, with one successor computation, linear
-in the number of coordinates, between consecutive tuples.
+iterating `budgetNext` from zero visits every tuple once. The successor is also a left scan
+(`budgetNextScan_eq`), one pass over the coordinates; its polynomial-time certificate is in
+`Complexity/Computability/PolyTime/BudgetTuples.lean`.
+
+For tuples indexed by a finite type `M`, listed by a duplicate-free list of all coordinates, a sum
+over the tuples of weight below `p`, the mode budget of the contraction recursion, is the sum
+along `budgetTuples` (`sum_filter_weight_lt_eq`).
 
 ## Main definitions
 
@@ -43,6 +48,8 @@ in the number of coordinates, between consecutive tuples.
 * `Cslib.BudgetTuples.headCount`: the number of feasible values of a coordinate.
 * `Cslib.BudgetTuples.budgetTuples`: the tuples of weight below a budget, in lexicographic order.
 * `Cslib.BudgetTuples.budgetNext`: the successor of a tuple.
+* `Cslib.BudgetTuples.scanStep`, `Cslib.BudgetTuples.budgetNextScan`: the successor as a left scan.
+* `Cslib.BudgetTuples.ofList`: a listed tuple as a function of its coordinates.
 
 ## Main results
 
@@ -50,6 +57,8 @@ in the number of coordinates, between consecutive tuples.
   each tuple of weight below the budget once.
 * `Cslib.BudgetTuples.head?_budgetTuples`, `Cslib.BudgetTuples.isChain_budgetTuples`,
   `Cslib.BudgetTuples.budgetNext_getLast?`: the successor walks the list from the zero tuple.
+* `Cslib.BudgetTuples.budgetNextScan_eq`: the scan computes the successor.
+* `Cslib.BudgetTuples.sum_filter_weight_lt_eq`: a sum over the budget is a sum along the list.
 
 ## References
 
@@ -316,5 +325,49 @@ theorem sum_filter_weight_lt_eq [Fintype M] (hms : ms.Nodup) (hcover : ∀ Z, Z 
   rfl
 
 end Indexed
+
+/-! ### The successor as a left scan -/
+
+/-- One step of the left scan behind `budgetNext`, reading a weight and a coordinate `(w, b)`. The
+state holds the remaining budget, the number of remaining weights, the coordinates read so far,
+and the successor obtained by incrementing the deepest position read so far that has room. -/
+@[expose] def scanStep (s : ℕ × ℕ × List ℕ × Option (List ℕ)) (q : ℕ × ℕ) :
+    ℕ × ℕ × List ℕ × Option (List ℕ) :=
+  (s.1 - q.1 * q.2, s.2.1 - 1, s.2.2.1 ++ [q.2],
+    if q.1 * (q.2 + 1) < s.1 then some (s.2.2.1 ++ (q.2 + 1) :: List.replicate (s.2.1 - 1) 0)
+    else s.2.2.2)
+
+/-- **The successor by a left scan**: the deepest position with room is incremented and the
+positions after it reset to zero. -/
+@[expose] def budgetNextScan (ws : List ℕ) (p : ℕ) (β : List ℕ) : Option (List ℕ) :=
+  ((ws.zip β).foldl scanStep (p, ws.length, [], none)).2.2.2
+
+private theorem foldl_scanStep (ws β : List ℕ) (r : ℕ) (pre : List ℕ) (best : Option (List ℕ)) :
+    ((ws.zip β).foldl scanStep (r, ws.length, pre, best)).2.2.2 =
+      match budgetNext ws r β with
+      | some t => some (pre ++ t)
+      | none => best := by
+  induction ws generalizing β r pre best with
+  | nil => rfl
+  | cons w ws ih =>
+    rcases β with _ | ⟨b, β⟩
+    · rfl
+    · rw [List.zip_cons_cons, List.foldl_cons]
+      have hstep : scanStep (r, (w :: ws).length, pre, best) (w, b) =
+          (r - w * b, ws.length, pre ++ [b],
+            if w * (b + 1) < r then some (pre ++ (b + 1) :: List.replicate ws.length 0)
+            else best) := by
+        simp [scanStep]
+      rw [hstep, ih]
+      simp only [budgetNext]
+      cases budgetNext ws (r - w * b) β with
+      | some t => simp
+      | none => split_ifs <;> rfl
+
+/-- The left scan computes the successor. -/
+theorem budgetNextScan_eq (ws : List ℕ) (p : ℕ) (β : List ℕ) :
+    budgetNextScan ws p β = budgetNext ws p β := by
+  rw [budgetNextScan, foldl_scanStep]
+  cases budgetNext ws p β <;> rfl
 
 end Cslib.BudgetTuples

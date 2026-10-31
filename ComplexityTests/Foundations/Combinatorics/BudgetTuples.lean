@@ -27,6 +27,10 @@ example : budgetNext [1, 2] 4 [0, 0] = some [0, 1] ∧ budgetNext [1, 2] 4 [0, 1
     budgetNext [1, 2] 4 [3, 0] = none := by
   decide +kernel
 
+/-- The left scan agrees. -/
+example : budgetNextScan [1, 2] 4 [1, 1] = some [2, 0] ∧ budgetNextScan [1, 2] 4 [3, 0] = none := by
+  decide +kernel
+
 /-- An empty budget has no tuples, and a positive one has the empty tuple for no coordinates. -/
 example : budgetTuples [3] 0 = [] ∧ budgetTuples [] 1 = [[]] := by decide +kernel
 
