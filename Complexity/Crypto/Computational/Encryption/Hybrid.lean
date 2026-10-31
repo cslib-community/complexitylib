@@ -296,7 +296,7 @@ noncomputable abbrev demGame {Msg : Type}
   demGameOn (fun _ _ _ _ => true) encryptSym adversary bit n
 
 /-- At the normalized key length `keyLen n = n`, `demKeyGameOn` is definitionally `demGameOn`. -/
-@[simp] theorem demKeyGameOn_id {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
+theorem demKeyGameOn_id {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     demKeyGameOn valid (fun m => m) encryptSym adversary bit n =
@@ -342,13 +342,12 @@ adversary stages have native certificates. -/
 theorem isPPTOn_demKeyGameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool} {keyLen : ℕ → ℕ}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg =>
-        valid p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 (Prod.fst p.2) (Prod.snd p.2)))
+      (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -370,7 +369,7 @@ theorem isPPTOn_demKeyGame {Msg : Type} {encMsg : Msg ↪ List Bool}
     {keyLen : ℕ → ℕ} (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 (Prod.fst p.2) (Prod.snd p.2)))
+      (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -385,12 +384,11 @@ adversary stages have native certificates. -/
 theorem isPPTOn_demGameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg =>
-        valid p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 (Prod.fst p.2) (Prod.snd p.2)))
+      (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -404,7 +402,7 @@ symmetric encryption and both adversary stages have native certificates. -/
 theorem isPPTOn_demGame {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
-      (fun p => encryptSym p.1 (Prod.fst p.2) (Prod.snd p.2)))
+      (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
     (hn : ComputableInPolyTime n input encUnary)
@@ -439,8 +437,7 @@ theorem DEMOneTimeKeyINDCPAOf.demOneTimeKeyINDCPAOn {Msg : Type} {encMsg : Msg �
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (h : DEMOneTimeKeyINDCPAOf encMsg keyLen encryptSym)
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg =>
-        valid p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
     DEMOneTimeKeyINDCPAOn valid encMsg keyLen encryptSym := by
   intro adversary hadversary
@@ -480,8 +477,7 @@ theorem DEMOneTimeINDCPAOf.demOneTimeINDCPAOn {Msg : Type} {encMsg : Msg ↪ Lis
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (h : DEMOneTimeINDCPAOf encMsg encryptSym)
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg =>
-        valid p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
+      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
     DEMOneTimeINDCPAOn valid encMsg encryptSym :=
   DEMOneTimeKeyINDCPAOf.demOneTimeKeyINDCPAOn h hvalid
@@ -500,7 +496,7 @@ abbrev DEMOneTimeWordINDCPA
 
 /-- At the normalized key length `keyLen n = n`, `DEMOneTimeKeyINDCPAOn` is definitionally
 `DEMOneTimeINDCPAOn`. -/
-@[simp] theorem demOneTimeKeyINDCPAOn_id {Msg : Type}
+theorem demOneTimeKeyINDCPAOn_id {Msg : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool) (encMsg : Msg ↪ List Bool)
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)) :
     DEMOneTimeKeyINDCPAOn valid encMsg (fun n => n) encryptSym ↔
