@@ -13,6 +13,7 @@ public import Complexity.Computability.Complexity.Reduction
 import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -294,46 +295,14 @@ open ComputableInPolyTime
 local notation "encNodes" => encList (encList (encPair encNat encBool))
 
 /-- One level of the search is polynomial-time, uniformly in the formula, the bound, the nodes
-and the occurrence. Erasing duplicate labels is a fold that appends at most one node of the
-expanded level at a time. -/
+and the occurrence. -/
 private theorem computableInPolyTime_step {key : CNF ℕ → List Bool}
     (hkey : ComputableInPolyTime key encCNF encBits) :
     ComputableInPolyTime
       (fun p : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ =>
         prune (fun a => key (units a ++ p.1.1.1)) p.1.1.2 (expand p.2 p.1.2))
       (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes := by
-  have hexpand : ComputableInPolyTime
-      (fun p : ((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ => expand p.2 p.1.2)
-      (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes := by
-    unfold expand
-    fun_prop
-  have hstep : ComputableInPolyTime
-      (fun q : ((((CNF ℕ × ℕ) × List (List (Literal ℕ))) × ℕ) × List (List (Literal ℕ))) ×
-          List (Literal ℕ) =>
-        if q.1.2.any (fun b => decide (key (units q.2 ++ q.1.1.1.1.1) =
-            key (units b ++ q.1.1.1.1.1))) then q.1.2 else q.1.2 ++ [q.2])
-      (encPair (encPair (encPair (encPair (encPair encCNF encUnary) encNodes) encNat) encNodes)
-        (encList (encPair encNat encBool))) encNodes := by
-    unfold units
-    fun_prop
-  have hdedup := foldlWithInput_of_bounded_growth (encIn := encPair (encPair (encPair encCNF
-      encUnary) encNodes) encNat) (encA := encList (encPair encNat encBool)) (encB := encNodes)
-    (list := fun p => expand p.2 p.1.2) (init := fun _ => [])
-    (step := fun p kept a => if kept.any (fun b => decide (key (units a ++ p.1.1.1) =
-      key (units b ++ p.1.1.1))) then kept else kept ++ [a])
-    (const _) ⟨hexpand, hstep, inferInstance, inferInstance⟩
-    (growth := fun p => 2 * (encNodes (expand p.2 p.1.2)).length + 1)
-    ⟨((PolyBounded.const 2).mul hexpand.polyBounded_length).add (.const 1),
-      fun p kept a ha => by
-        have := SizedListEncoding.length_elem_le (encA := encList (encPair encNat encBool))
-          (encL := encNodes) _ a ha
-        split
-        · omega
-        · simp only [encList_append, encList_cons, encList_nil, List.append_nil,
-            List.length_append, length_frame]
-          omega⟩
-  simp only [← List.eraseDupsBy_eq_foldl] at hdedup
-  unfold prune
+  unfold prune expand units
   fun_prop
 
 /-- A node fixing a prefix of the occurrences of `φ` has an encoding of length at most
@@ -359,6 +328,18 @@ theorem length_encNode_le {φ : CNF ℕ} {pre : List ℕ} (hpre : pre.IsPrefix �
       rw [show 2 * (2 * (encCNF φ).length + 2) + 1 = 4 * (encCNF φ).length + 5 by ring]
       exact Nat.mul_le_mul_right _ hlen
 
+/-- Checking a leaf with the verifier is polynomial-time. -/
+theorem computableInPolyTime_verifier_units_append :
+    ComputableInPolyTime
+      (fun p : CNF ℕ × List (Literal ℕ) => verifier (units p.2 ++ p.1, p.2.map Prod.snd))
+      (encPair encCNF (encList (encPair encNat encBool))) encBool := by
+  have hformula : ComputableInPolyTime (fun p : CNF ℕ × List (Literal ℕ) => units p.2 ++ p.1)
+      (encPair encCNF (encList (encPair encNat encBool))) encCNF := by
+    unfold units encCNF
+    fun_prop
+  exact computableInPolyTime_verifier.comp
+    (hformula.prod (listToBits.comp ((map (snd encNat encBool)).comp (snd _ _))))
+
 /-- **Fortune's procedure is polynomial-time**, for a polynomial-time `key` and a bound `c`
 computed in unary. Each level keeps at most `c + 1` nodes, each fixing at most as many
 occurrences as `φ` has. -/
@@ -382,16 +363,7 @@ theorem computableInPolyTime_accepts {key : CNF ℕ → List Bool}
       (fun φ pre nodes _ h => (length_encList_le _ _
         fun a ha => length_encNode_le h.1 (h.2.1 a ha)).trans
           (Nat.mul_le_mul_right _ h.2.2))).1
-  have hleaf : ComputableInPolyTime
-      (fun p : CNF ℕ × List (Literal ℕ) => verifier (units p.2 ++ p.1, p.2.map Prod.snd))
-      (encPair encCNF (encList (encPair encNat encBool))) encBool := by
-    have hformula : ComputableInPolyTime (fun p : CNF ℕ × List (Literal ℕ) => units p.2 ++ p.1)
-        (encPair encCNF (encList (encPair encNat encBool))) encCNF := by
-      unfold units encCNF
-      fun_prop
-    exact computableInPolyTime_verifier.comp
-      (hformula.prod (listToBits.comp ((map (snd encNat encBool)).comp (snd _ _))))
-  exact anyWithInput hsearch hleaf
+  exact anyWithInput hsearch computableInPolyTime_verifier_units_append
 
 /-! ### Fortune's theorem -/
 

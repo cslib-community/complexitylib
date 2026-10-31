@@ -64,9 +64,9 @@ public theorem runs_wide {W L m N A : ℕ} (hm : m ≤ L) (bits : Bool)
     (hW : admissionWidth L m N qs.length A ≤ W) :
     InputFits W (input bits L X Y qs) ∧
     ∃ y n, n ≤ timeBound hm qs ∧
-      Runs W ((program bits).program output) (State.init (input bits L X Y qs))
+      Runs W ((program bits).program Reg.output) (State.init (input bits L X Y qs))
         ⟨(program bits).size, y⟩ n ∧
-      Executes W ((program bits).program output) (State.init (input bits L X Y qs))
+      Executes W ((program bits).program Reg.output) (State.init (input bits L X Y qs))
         (outputBase L m N qs.length) (n + 1) ∧ y.Bounded W ∧
       (∀ i : Fin qs.length, y.mem (outputBase L m N qs.length + i.val) =
         Signed.encode ((X * Y) (qs.get i).1 (qs.get i).2)) ∧

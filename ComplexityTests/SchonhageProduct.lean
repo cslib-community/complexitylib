@@ -22,7 +22,7 @@ private def observe {m N : ℕ} (bits : Bool) (L : ℕ)
   let sentinel := memoryEnd L m N qs.length + 17
   let start := data.write sentinel 91
   ((program bits).eval 32 4096 start).map fun (y, _) =>
-    ((List.range qs.length).map (fun i => decode (y.mem (y.regs output + i))),
+    ((List.range qs.length).map (fun i => decode (y.mem (y.regs Reg.output + i))),
       decide ((∀ a < inputEnd m N qs.length, y.mem a = data.mem a) ∧ y.mem sentinel = 91))
 
 -- The actual complete pipeline handles an empty original input without a tile division.
@@ -59,9 +59,9 @@ private def repeated : List (Fin 1 × Fin 1) := [(0, 0), (0, 0), (0, 0)]
 example :
     InputFits (admissionWidth 0 0 1 3 3) (input false 0 signedX signedY repeated) ∧
     ∃ y n, n ≤ timeBound (by decide : 0 ≤ 0) repeated ∧
-      Runs (admissionWidth 0 0 1 3 3) ((program false).program output)
+      Runs (admissionWidth 0 0 1 3 3) ((program false).program Reg.output)
         (State.init (input false 0 signedX signedY repeated)) ⟨(program false).size, y⟩ n ∧
-      Executes (admissionWidth 0 0 1 3 3) ((program false).program output)
+      Executes (admissionWidth 0 0 1 3 3) ((program false).program Reg.output)
         (State.init (input false 0 signedX signedY repeated)) (outputBase 0 0 1 3) (n + 1) ∧
       (∀ i : Fin 3, y.mem (outputBase 0 0 1 3 + i.val) = encode (-6)) := by
   obtain ⟨hi, y, n, hn, hr, he, _, hv, _⟩ := runs_wide (A := 3) (by decide : 0 ≤ 0)
@@ -85,10 +85,10 @@ example (m : ℕ) :
     InputFits (128 * Nat.clog 2 (thinN m + 3))
       (input (m := m) true (19 * m) (fun _ _ => (0 : ℤ)) (fun _ _ => (0 : ℤ)) (thinQuery m)) ∧
     ∃ y n,
-      Runs (128 * Nat.clog 2 (thinN m + 3)) ((program true).program output)
+      Runs (128 * Nat.clog 2 (thinN m + 3)) ((program true).program Reg.output)
         (State.init (input (m := m) true (19 * m) (fun _ _ => (0 : ℤ)) (fun _ _ => (0 : ℤ))
           (thinQuery m))) ⟨(program true).size, y⟩ n ∧
-      Executes (128 * Nat.clog 2 (thinN m + 3)) ((program true).program output)
+      Executes (128 * Nat.clog 2 (thinN m + 3)) ((program true).program Reg.output)
         (State.init (input (m := m) true (19 * m) (fun _ _ => (0 : ℤ)) (fun _ _ => (0 : ℤ))
           (thinQuery m))) (outputBase (19 * m) m (thinN m) 1) (n + 1) ∧
       ((n + 1 : ℕ) : ℝ) ≤ 4325376 * ((19 * m + 1 : ℕ) : ℝ) * (thinN m : ℝ) ^ 2 /
@@ -131,9 +131,9 @@ private def framedSigned : Data 160 :=
 -- A real call accepts an unrelated length/header word and preserves a sentinel exactly at
 -- the allocation boundary, while computing the signed products and restoring the whole input.
 example : ∃ y : Data 160, ∃ n, n ≤ timeBound (by decide : 0 ≤ 0) repeated ∧
-    Runs 34 ((program false).program output) ⟨0, framedSigned⟩
+    Runs 34 ((program false).program Reg.output) ⟨0, framedSigned⟩
       ⟨(program false).size, y⟩ n ∧
-    Executes 34 ((program false).program output) ⟨0, framedSigned⟩
+    Executes 34 ((program false).program Reg.output) ⟨0, framedSigned⟩
       (outputBase 0 0 1 3) (n + 1) ∧
     y.mem 0 = 77 ∧ y.mem (memoryEnd 0 0 1 3) = 91 ∧
     y.mem (outputBase 0 0 1 3) = encode (-6) := by
@@ -150,8 +150,8 @@ example : ∃ y : Data 160, ∃ n, n ≤ timeBound (by decide : 0 ≤ 0) repeate
     y.mem a = framedSigned.mem a at hf
   refine ⟨y, n, hn, ?_, ?_, ?_, ?_, ?_⟩
   · simpa only [Nat.zero_add] using he.runs (pc := 0)
-      (p := (program false).program output) (Program.Contains.self _).append_left
-  · simpa only [hp.output] using he.executes output
+      (p := (program false).program Reg.output) (Program.Contains.self _).append_left
+  · simpa only [hp.output] using he.executes Reg.output
   · rw [hf 0 (by decide +kernel)]
     decide +kernel
   · rw [hf (memoryEnd 0 0 1 3) (by omega)]
@@ -159,5 +159,17 @@ example : ∃ y : Data 160, ∃ n, n ≤ timeBound (by decide : 0 ≤ 0) repeate
   · have h := hv ⟨0, by decide⟩
     norm_num [signedX, signedY, repeated, Matrix.mul_apply, D, Fin.sum_univ_succ] at h ⊢
     exact h
+
+-- Finite `Schonhage.{tiles, leaves}` and native `QueriedProduct.Reg.*` aliases coexist
+-- without full namespace qualification when both `Schonhage` and `QueriedProduct` are open.
+example {L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × Fin N)) :
+    (tiles L m N).card = numBands L m N ^ 2 ∧
+      timeBound hm qs + 1 ≤ 65536 * (L + 1) *
+        (1 + N * D m + qs.length + 2 ^ L + (numBands L m N + 1) * 10 ^ L +
+          numBands L m N ^ 2 +
+          ∑ T ∈ tiles L m N,
+            (leaves (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card) ∧
+      (Reg.leaves.val, Reg.bands.val, Reg.tiles.val, Reg.output.val) = (103, 104, 105, 112) :=
+  ⟨by simp [tiles, pow_two], timeBound_le hm qs, rfl⟩
 
 end ComplexityTests.SchonhageProduct

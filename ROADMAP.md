@@ -287,7 +287,10 @@ universe size, not supplied as unverified input tables. In dependency order:
   problems.
 - **The Immerman–Vardi theorem:** on ordered finite structures, first-order logic with least
   fixed points defines exactly the polynomial-time properties, with the machine side proved for
-  actual native algorithms in both directions.
+  actual native algorithms in both directions. Build on the scoped FO(LFP) syntax and finite-stage
+  semantics: certify a fixed-formula evaluator with explicitly charged relation tables, then prove
+  the native-machine-to-positive-LFP converse. Extend the synthesis rules to nested operator bodies
+  and give regular-language quantifiers their ordered characteristic-word semantics.
 - Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
@@ -323,9 +326,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - **Håstad's optimal MAX-E3SAT hardness** ([#886]): for `0 < ε < 1/8`, NP-hardness of
   distinguishing satisfiable E3-CNF formulas from those where every assignment satisfies at most
-  `7/8 + ε` of the clauses. This needs the reduction to MAX-E3LIN;
-  Raz–Holenstein parallel repetition for small-soundness Label Cover; and
-  the perfect-completeness reduction.
+  `7/8 + ε` of the clauses. This needs Raz–Holenstein parallel repetition for small-soundness
+  Label Cover and Håstad's separate perfect-completeness construction for MAX-E3SAT.
 - The FGLSS clique-hardness reduction and its amplification, retaining the exact gap and
   reduction runtime.
 - Gap and approximation-preserving reductions, APX/PTAS/FPTAS, inapproximability consequences of
@@ -450,7 +452,8 @@ each statement against the numbered result. Organize modules by subject, not cha
   multi-tape steps for a constant `c < 1`; prefix-free complexity,
   resource-bounded MCSP variants and connections to learning, cryptography and lower bounds; the
   circuitized anti-checker with an efficient generator; the asymptotic parameter instantiation of
-  Theorem 5 in `MCSP/FormulaMagnification.lean`; and hardness results for `MINKT` and `MINcKT` (whose
+  Theorem 5 (the general subexponential one-sided average-case wrapper is tracked in #1871);
+  and hardness results for `MINKT` and `MINcKT` (whose
   definitions, conditional `K^t` measure, and `NP` memberships are in `Kolmogorov/MINKT.lean`,
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
@@ -757,15 +760,13 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
-- **Weighted multigraph cuts and two-branch probability recurrence** ([#1336]): extract
+- **Weighted multigraph cuts** ([#1336]): extract
   `IsMultigraph` (renamed e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal),
   `IsNonTrivialCut`,
   `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
   `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
   `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
-  to `(Cslib.Multigraph.edgeCut ends C).card`. Extract `two_branch_hit_prob_ge` from
-  `Karger/FastCut.lean` into a shared probabilistic-program module; its `ProbComp` evaluation and
-  support dependencies should stay above the `PMF` event layer.
+  to `(Cslib.Multigraph.edgeCut ends C).card`.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -808,7 +809,11 @@ and credited.
 These remain coverage targets but are deferred from the active queue; their issues were closed as
 not planned, not as proved.
 
-- The full VNP-completeness reduction for the permanent ([#321]).
+- The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
+  project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
+  a selector occurring in one permanent entry can be eliminated with one extra dimension when
+  `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
+  general Boolean-sum elimination needed for VNP-hardness remain open.
 - General auxiliary-input zero knowledge ([#324]); see the GMW theorem above.
 - Williams's square-root-space simulation ([#361]) and implicit Tree Evaluation ([#367]), now the
   frontier track [#888].
