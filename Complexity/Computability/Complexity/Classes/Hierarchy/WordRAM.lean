@@ -35,16 +35,21 @@ polynomially bounded.
 
 The exponent `5` is an artifact of the composition. The exponent `4` of the Turing-machine
 simulation of the word RAM comes from the simulator's association-list memory, and the fifth
-factor absorbs the logarithms and the polylogarithmic gap of the universal machine. A direct
-diagonalization over word-RAM programs would give a smaller gap; this file does not attempt it.
-The lower class is over `Basis.additive`, the basis for which an explicit simulation overhead is
-proved.
+factor absorbs the logarithms and the polylogarithmic gap of the universal machine. For their RAM
+model, with instruction costs `l(n)`, Cook and Reckhow diagonalize over RAMs directly and need only
+`liminf T₁ n / T₂ n = 0` [Cook and Reckhow, abstract][CookReckhow1973]; that sharper route is not
+attempted here. The lower class is over `Basis.additive`, the basis for which an explicit
+simulation overhead is proved.
 
 ## Main results
 
 * `Cslib.WordRAM.exists_mem_RAMTIME_pow_five_notMem_RAMTIME`: a problem in word-RAM time
   `O(T ^ 5)` and not in word-RAM time `O(T)`.
 * `Cslib.WordRAM.RAMTIME_ssubset_RAMTIME_pow_five`: the hierarchy as a strict inclusion.
+
+## References
+
+* [S. A. Cook and R. A. Reckhow, *Time bounded random access machines*][CookReckhow1973]
 -/
 
 public section
