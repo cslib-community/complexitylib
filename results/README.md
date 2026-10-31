@@ -1,6 +1,6 @@
 # Results and reference inventory
 
-The canonical collection is [Entries.lean](ComplexityResults/Entries.lean): readable Lean
+The canonical collection is [Entries.lean](../ComplexityResults/Entries.lean): readable Lean
 commands with real theorem identifiers. This is the initial collection for
 [#2012](https://github.com/cslib-community/complexitylib/issues/2012), not a complete inventory
 or a claim that every cited paper is fully formalized.

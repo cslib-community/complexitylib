@@ -46,7 +46,6 @@ allowNonModules = true
 
 [[lean_lib]]
 name = "ComplexityResults"
-srcDir = "results"
 leanOptions = {weak.linter.style.header = false}
 allowNonModules = true
 
