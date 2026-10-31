@@ -37,16 +37,16 @@ noncomputable def constCert :
 input `(P, ℓ, r, G)` with `P` and `ℓ` in unary. -/
 noncomputable def truncConstCert :
     NativeCertificate
-      (fun x : ℕ × ℕ × ℕ × DescribedNetwork (List ℕ) =>
-        x.2.2.2.truncContraction constEntry x.1 x.2.1)
+      (fun ((P, ℓ, _, G) : ℕ × ℕ × ℕ × DescribedNetwork (List ℕ)) =>
+        G.truncContraction constEntry P ℓ)
       (encTrunc (encList encNat)) (encList encNat) :=
   truncDirectCertificate constEntry constCert
 
 -- The loop's values are the contractions at the digit points, in order.
 example (core : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc (List ℕ)) → List ℕ)
     (y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork (List ℕ)) :
-    (IndexFold.run (engineStep core) 2 (y, [])).2.2 =
-      [core (coreInput y 0), core (coreInput y 1)] := by
+    IndexFold.run (engineStep core) 2 (y, []) =
+      (2, (y, [core (coreInput y 0), core (coreInput y 1)])) := by
   rw [run_engineStep]
   rfl
 
