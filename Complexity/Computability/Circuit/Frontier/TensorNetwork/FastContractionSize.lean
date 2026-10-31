@@ -427,4 +427,103 @@ theorem length_encFrame_frameAt_le (ha : active x = true) (hM : x.edges ≤ x.sc
 
 end ActiveFrames
 
+/-! ### The sizes along the recursion -/
+
+section Sizes
+
+variable {x₀ x : Call}
+
+/-- **The sizes of a call of a given shape**: from a root `x₀` at depth `0`, at scale its number
+`m` of edges, with bound `m + 1`, a 0/1 modulus and descriptors at most `200 (Z + 1) ^ 2` long, a
+call of its shape, its tagged value and, if it is active, its frames are at most
+`1000 (Z + 1) ^ 3` long, once `Z` dominates `256 (m + 1) ^ 5 (P + 1) + e` for the precision bound
+`P = p₀ + 40 m² (m + 1)` and the vertices, rows and their growth. -/
+theorem Shape.length_le (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound = x₀.edges + 1)
+    (h₀d : x₀.depth = 0) (h : Shape x₀ x) {Z : ℕ}
+    (hZ1 : 256 * (x₀.edges + 1) ^ 5 * (x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1) +
+      x₀.fl.length ≤ Z)
+    (hZ2 : x₀.net.vertices.length + (x₀.edges + 1) * x₀.edges ^ 2 + (encNat x₀.rows).length ≤ Z)
+    (hfl1 : ∀ z ∈ x₀.fl, z ≤ 1)
+    (hR₀ : ∀ w ∈ x₀.net.vertices, (VertexDesc.enc w.2).length ≤ 200 * (Z + 1) ^ 2) :
+    (encCall x).length ≤ 1000 * (Z + 1) ^ 3 ∧
+      (encValue (x.depth, value nativeMk x)).length ≤ 1000 * (Z + 1) ^ 3 ∧
+      (active x = true → ∀ vals c,
+        (encPair encCall encFrame (x, frameAt x vals c)).length ≤ 1000 * (Z + 1) ^ 3) := by
+  set m := x₀.edges with hm
+  set P := x₀.prec + (m + 1) * (40 * m ^ 2) with hP
+  -- The numbers of `x`.
+  have hbd := h.bound_add_depth_le
+  rw [h₀b, h₀d] at hbd
+  have hd : x.depth ≤ m + 1 := by omega
+  have hprec : x.prec ≤ P := h.prec_le.trans (Nat.add_le_add_left
+    (Nat.mul_le_mul_right _ hd) _)
+  have hV : x.net.vertices.length ≤ x₀.net.vertices.length + (m + 1) * m ^ 2 :=
+    h.vertices_le.trans (Nat.add_le_add_left (Nat.mul_le_mul_right _ hd) _)
+  have hm5 : m + 1 ≤ (m + 1) ^ 5 := Nat.le_self_pow (by norm_num) _
+  have hP1 : P + 1 ≤ (m + 1) ^ 5 * (P + 1) := Nat.le_mul_of_pos_left _ (by positivity)
+  have hmP : 2 * (m + 1) * (P + 1) ≤ 256 * (m + 1) ^ 5 * (P + 1) := by
+    have : (m + 1) * (P + 1) ≤ (m + 1) ^ 5 * (P + 1) := Nat.mul_le_mul_right _ hm5
+    nlinarith
+  have hmZ : 2 * (m + 1) ≤ Z := by
+    have : 2 * (m + 1) ≤ 2 * (m + 1) * (P + 1) := Nat.le_mul_of_pos_right _ (by omega)
+    omega
+  have hPZ : P + 1 ≤ Z := by
+    have : P + 1 ≤ 2 * (m + 1) * (P + 1) := Nat.le_mul_of_pos_left _ (by omega)
+    omega
+  have hflZ : x₀.fl.length ≤ Z := by omega
+  have hsc : x.scale = m := h.scale_eq.trans h₀s
+  have hE : x.edges ≤ 2 * m := h.edges_le
+  have hports : ∀ v ∈ x.net.vertices, v.1.length ≤ Z ∧ ∀ i ∈ v.1, i ≤ Z := fun v hv =>
+    ⟨(length_le_edges_of_wf h.wf hv).trans (hE.trans (by omega)),
+      fun i hi => (h.wf.2.1 v hv i hi).le.trans (hE.trans (by omega))⟩
+  have hR : ∀ v ∈ x.net.vertices, (VertexDesc.enc v.2).length ≤ 200 * (Z + 1) ^ 2 := by
+    intro v hv
+    rcases h.desc v hv with ⟨w, hw, hvw⟩ | ⟨d, hvd, hb⟩
+    · rw [hvw]; exact hR₀ w hw
+    · rw [hvd]
+      refine length_enc_inr_le (hb.mono (Nat.add_le_add_left (Nat.mul_le_mul_right _ hd) _))
+        (show 2 * (m + 1) * (P + 1) ≤ Z by omega) hflZ hfl1 (hports v hv).1
+  have hrows : (encNat x.rows).length ≤ Z := by
+    rcases h.rows_le with rfl | hr
+    · omega
+    · exact (length_encNat_le (hr.trans (Nat.add_le_add_left
+        (Nat.mul_le_mul_right _ hd) _))).trans
+        (show x₀.net.vertices.length + (m + 1) * m ^ 2 ≤ Z by omega)
+  have hcall := length_encCall_le (B := Z) (R := 200 * (Z + 1) ^ 2) (x := x)
+    (by rw [hsc]; omega) (hd.trans (by omega)) (by omega) (hprec.trans (by omega))
+    (h.fl_eq ▸ hflZ) (h.fl_eq ▸ hfl1) hrows (hE.trans (by omega)) (hV.trans (by omega)) hports hR
+  have hcall' : (encCall x).length ≤ 464 * (Z + 1) ^ 3 := by
+    have : 2 * Z * (200 * (Z + 1) ^ 2) ≤ 400 * (Z + 1) ^ 3 := by
+      have : Z ≤ Z + 1 := Nat.le_succ _
+      calc 2 * Z * (200 * (Z + 1) ^ 2) = 400 * (Z * (Z + 1) ^ 2) := by ring
+        _ ≤ 400 * ((Z + 1) * (Z + 1) ^ 2) := Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ this)
+        _ = 400 * (Z + 1) ^ 3 := by ring
+    omega
+  have hZ3 : (Z + 1) ^ 2 ≤ (Z + 1) ^ 3 := Nat.pow_le_pow_right (by omega) (by norm_num)
+  have hZ1' : Z + 1 ≤ (Z + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
+  refine ⟨hcall'.trans (by omega), ?_, fun ha vals c => ?_⟩
+  · have hv := length_encValue_le nativeMk x
+    rw [h.fl_eq] at hv
+    have : x₀.fl.length * (2 * (x.prec + 1) + 1) ≤ Z * (2 * Z + 1) :=
+      Nat.mul_le_mul hflZ (by omega)
+    have : Z * (2 * Z + 1) ≤ 3 * (Z + 1) ^ 2 := by nlinarith
+    omega
+  · have hM : x.edges ≤ x.scale := by
+      have := edges_lt_bound_of_active ha
+      omega
+    have hf := length_encFrame_frameAt_le ha hM vals c
+    have hfb : frameBound x ≤ Z := by
+      unfold frameBound
+      rw [hsc, h.fl_eq]
+      have : 256 * (m + 1) ^ 5 * (x.prec + 1) ≤ 256 * (m + 1) ^ 5 * (P + 1) :=
+        Nat.mul_le_mul_left _ (by omega)
+      omega
+    have hfZ : (frameBound x + 1) ^ 3 ≤ (Z + 1) ^ 3 := Nat.pow_le_pow_left (by omega) 3
+    have hl := length_encPair (enc₁ := encCall) (enc₂ := encFrame) (x, frameAt x vals c)
+    simp only at hl
+    rw [hl]
+    omega
+
+end Sizes
+
 end Cslib.Circuits.Frontier.FastContraction
