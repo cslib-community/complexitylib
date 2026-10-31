@@ -8,6 +8,9 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.Lean.CuckooHashing
+public import Complexity.Foundations.Data.BitString.Sum
+public import Complexity.Foundations.Data.Nat.Power
+public import Complexity.Foundations.Data.Nat.SummationByParts
 public import Complexity.Init
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 
@@ -56,8 +59,8 @@ example :
       (PMF.uniformOfFintype
         ((DoubleTabTopSeed 1 8 30 × DoubleTabBotSeed 8 30 7) ×
          (DoubleTabTopSeed 1 8 30 × DoubleTabBotSeed 8 30 7)))
-      (fun θ => doubleTabHash 1 8 30 256 7 θ.1.1 θ.1.2)
-      (fun θ => doubleTabHash 1 8 30 256 7 θ.2.1 θ.2.2)
+      (fun ((top₁, bottom₁), _) => doubleTabHash 1 8 30 256 7 top₁ bottom₁)
+      (fun (_, (top₂, bottom₂)) => doubleTabHash 1 8 30 256 7 top₂ bottom₂)
       0 18 3 4 :=
   isCuckooHashPair_doubleTabHash (c := 1) (b := 30) (U := 256) (M := 7)
     (by decide) (by decide) 0 18 (by decide) (by decide) (by decide) (by decide)
@@ -103,5 +106,43 @@ example (c_exp : ℕ) :
     dsimp only [N, M]
     rw [doubleTabThreshold_eq, Nat.pow_add, Nat.mul_comm]
   exact isCuckooHashPair_provableFamily hU hm
+
+/-- Concrete check of `BitString.val_equivFin_add` on `3`-bit strings (`5 + 3 = 6`). -/
+example :
+    let a := (Cslib.BitString.equivFin 3).symm ⟨5, by decide⟩
+    let b := (Cslib.BitString.equivFin 3).symm ⟨3, by decide⟩
+    (Cslib.BitString.equivFin 3 (a + b)).val = 6 := by
+  intro a b
+  rw [Cslib.BitString.val_equivFin_add, Equiv.apply_symm_apply, Equiv.apply_symm_apply]
+  decide
+
+/-- Concrete check of `BitString.sum_bitString_eq_iff_sum_symmDiff_eq_zero` on `{0, 1}` and
+`{1, 2}` in `Fin 3`. -/
+example (g : Fin 3 → Cslib.BitString 4) (h : g 0 + g 2 = 0) :
+    ∑ i ∈ ({0, 1} : Finset (Fin 3)), g i = ∑ i ∈ ({1, 2} : Finset (Fin 3)), g i := by
+  rw [Cslib.BitString.sum_bitString_eq_iff_sum_symmDiff_eq_zero]
+  have hsymm : symmDiff ({0, 1} : Finset (Fin 3)) ({1, 2} : Finset (Fin 3)) = {0, 2} := by decide
+  rw [hsymm, Finset.sum_pair (by decide), h]
+
+/-- Concrete check of `Nat.sq_le_two_pow` and `Nat.pow_le_two_pow` (`16 ^ 2 ≤ 2 ^ 16`). -/
+example : 16 ^ 2 ≤ 2 ^ 16 ∧ 5 ^ 2 ≤ 2 ^ 5 :=
+  ⟨Nat.pow_le_two_pow (by decide) (by decide), Nat.sq_le_two_pow (by decide)⟩
+
+/-- Concrete check of `Nat.sum_mul_eq_sum_prefix_sub` for `m = 2`. -/
+example (a : ℕ → ℕ) :
+    ∑ i ∈ Finset.range 3, a i * (3 - i) =
+      (∑ i ∈ Finset.range 2, (∑ j ∈ Finset.range (i + 1), a j) * ((3 - i) - (3 - (i + 1)))) +
+        (∑ j ∈ Finset.range 3, a j) * (3 - 2) :=
+  Nat.sum_mul_eq_sum_prefix_sub a (fun i => 3 - i) 2 (by omega)
+
+/-- Concrete check of `IsCuckooHashPair.mono_consts` widening `(3, 4)` to `(5, 6)`. -/
+example :
+    IsCuckooHashPair
+      (PMF.uniformOfFintype (ProvableHashSeed 4 0 256 7))
+      (provableHash1 4 0 256 7)
+      (provableHash2 4 0 256 7)
+      0 (maxEvictions 0) 5 6 :=
+  (isCuckooHashPair_provableFamily (c_exp := 4) (n_max := 0) (U := 256) (M := 7)
+    (by decide) (by decide)).mono_consts (by decide) (by decide)
 
 end ComplexityTests.DoubleTabulation

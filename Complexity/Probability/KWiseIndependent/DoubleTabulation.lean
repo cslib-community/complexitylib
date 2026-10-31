@@ -10,6 +10,8 @@ module
 public import Complexity.Foundations.Data.BitString.Binary
 public import Complexity.Init
 public import Complexity.Probability.KWiseIndependent
+import Complexity.Foundations.Data.BitString.Sum
+import Complexity.Foundations.Data.Nat.SummationByParts
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Finset.Powerset
 import Mathlib.Data.Fintype.Pi
@@ -84,8 +86,6 @@ In Thorup [Thorup2013] (`arXiv:1311.3121v2`):
 
 ## Main results
 
-* `Cslib.Probability.val_equivFin_add`: addition in `BitString M` corresponds to bitwise XOR
-  (`^^^`) under `BitString.equivFin M`.
 * `Cslib.Probability.isKWiseIndependentHash_of_isKUnique`: Siegel's peeling lemma ([Thorup2013],
   Lemma 2, p. 5 & Appendix A, p. 19).
 * `Cslib.Probability.charDigits_injective`: `charDigits c b` is injective when `U ≤ 2 ^ (c * b)`.
@@ -110,23 +110,6 @@ open BitString Finset
 open scoped BigOperators
 
 /-! ## Section 1: `k`-uniqueness and Siegel's peeling lemma -/
-
-/-- **Addition in `BitString M` is bitwise XOR (`^^^`) on `BitString.equivFin M` coordinates.** -/
-theorem val_equivFin_add {M : ℕ} (a b : BitString M) :
-    (BitString.equivFin M (a + b)).val =
-      (BitString.equivFin M a).val ^^^ (BitString.equivFin M b).val := by
-  let ka := BitString.equivFin M a
-  let kb := BitString.equivFin M b
-  let k : Fin (2 ^ M) := ⟨ka.val ^^^ kb.val, Nat.xor_lt_two_pow ka.isLt kb.isLt⟩
-  have hsymm : (BitString.equivFin M).symm k = a + b := by
-    ext i
-    rw [BitString.equivFin_symm_apply, show (k : ℕ) = ka.val ^^^ kb.val from rfl,
-      Nat.testBit_xor, ← BitString.equivFin_symm_apply ka i,
-      ← BitString.equivFin_symm_apply kb i, Equiv.symm_apply_apply, Equiv.symm_apply_apply]
-    rfl
-  have hk : BitString.equivFin M (a + b) = k := by
-    rw [← hsymm, Equiv.apply_symm_apply]
-  exact congrArg Fin.val hk
 
 /-- **`k`-uniqueness** ([Thorup2013], Section 1.1, p. 4): a tuple map `f : α → Fin d → β` is
 `k`-unique if every non-empty subset `X ⊆ α` of size `#X ≤ k` contains a key `x₀ ∈ X` and output
@@ -379,37 +362,6 @@ private theorem posSymmDiff_subset_union {c b : ℕ} (x y z : Fin c → Fin (2 ^
   intro α hα
   simp only [posSymmDiff, Finset.mem_union, Finset.mem_symmDiff] at hα ⊢
   by_cases hx : α ∈ posSet x <;> tauto
-
-/-- In `BitString b` (where every element has order dividing 2), two finset sums are equal iff the
-sum over their symmetric difference is `0`. -/
-private theorem sum_bitString_eq_iff_sum_symmDiff_eq_zero {ι : Type*} [DecidableEq ι] {b : ℕ}
-    (S₁ S₂ : Finset ι) (g : ι → BitString b) :
-    ∑ α ∈ S₁, g α = ∑ α ∈ S₂, g α ↔ ∑ α ∈ symmDiff S₁ S₂, g α = 0 := by
-  have hdisj₁ : Disjoint (S₁ \ S₂) (S₁ ∩ S₂) := Finset.disjoint_sdiff_inter S₁ S₂
-  have hdisj₂ : Disjoint (S₂ \ S₁) (S₁ ∩ S₂) := by
-    rw [Finset.inter_comm]
-    exact Finset.disjoint_sdiff_inter S₂ S₁
-  have hdisj_symm : Disjoint (S₁ \ S₂) (S₂ \ S₁) := disjoint_sdiff_sdiff
-  have hunion₁ : S₁ \ S₂ ∪ S₁ ∩ S₂ = S₁ := Finset.sdiff_union_inter S₁ S₂
-  have hunion₂ : S₂ \ S₁ ∪ S₁ ∩ S₂ = S₂ := by
-    rw [Finset.inter_comm]
-    exact Finset.sdiff_union_inter S₂ S₁
-  have hsum₁ : ∑ α ∈ S₁, g α = ∑ α ∈ S₁ \ S₂, g α + ∑ α ∈ S₁ ∩ S₂, g α := by
-    conv_lhs => rw [← hunion₁, Finset.sum_union hdisj₁]
-  have hsum₂ : ∑ α ∈ S₂, g α = ∑ α ∈ S₂ \ S₁, g α + ∑ α ∈ S₁ ∩ S₂, g α := by
-    conv_lhs => rw [← hunion₂, Finset.sum_union hdisj₂]
-  have hsymm : ∑ α ∈ symmDiff S₁ S₂, g α = ∑ α ∈ S₁ \ S₂, g α + ∑ α ∈ S₂ \ S₁, g α := by
-    change ∑ α ∈ S₁ \ S₂ ∪ S₂ \ S₁, g α = _
-    exact Finset.sum_union hdisj_symm
-  rw [hsum₁, hsum₂, hsymm, add_right_cancel_iff]
-  constructor
-  · intro h
-    rw [h, BitString.add_self]
-  · intro h
-    calc ∑ α ∈ S₁ \ S₂, g α
-        = ∑ α ∈ S₁ \ S₂, g α + (∑ α ∈ S₁ \ S₂, g α + ∑ α ∈ S₂ \ S₁, g α) := by
-          rw [h, add_zero]
-      _ = ∑ α ∈ S₂ \ S₁, g α := BitString.add_cancel_left _ _
 
 /-- Two keys `x, y` collide in coordinate `j` under `simpleTabTuple T₁` iff the `BitString b` sum of
 `T₁` over `posSymmDiff x y` is `0` ([Thorup2013], Definition 6, p. 10). -/
@@ -807,29 +759,6 @@ private theorem gamma_succ_sub_le {c d b : ℕ} (T₁ : DoubleTabTopSeed c d b)
   rw [hcard_D]
   omega
 
-/-- Pure-`ℕ` summation by parts (Abel summation) for a non-increasing sequence `b`. -/
-private theorem sum_mul_eq_sum_prefix_sub (a b : ℕ → ℕ) :
-    ∀ m : ℕ, (∀ i < m, b (i + 1) ≤ b i) →
-      ∑ i ∈ Finset.range (m + 1), a i * b i =
-        (∑ i ∈ Finset.range m, (∑ j ∈ Finset.range (i + 1), a j) * (b i - b (i + 1))) +
-          (∑ j ∈ Finset.range (m + 1), a j) * b m
-  | 0, _ => by simp
-  | m + 1, hmono => by
-    have ih := sum_mul_eq_sum_prefix_sub a b m (fun i hi => hmono i (Nat.lt_succ_of_lt hi))
-    have hbm : b (m + 1) ≤ b m := hmono m (Nat.lt_succ_self m)
-    let S := ∑ j ∈ Finset.range (m + 1), a j
-    have hstep : S * (b m - b (m + 1)) + (S + a (m + 1)) * b (m + 1) =
-        S * b m + a (m + 1) * b (m + 1) := by
-      rw [Nat.mul_sub_left_distrib, Nat.add_mul, ← Nat.add_assoc,
-        Nat.sub_add_cancel (Nat.mul_le_mul_left S hbm)]
-    conv_lhs => rw [Finset.sum_range_succ, ih]
-    conv_rhs => rw [Finset.sum_range_succ _ m, Finset.sum_range_succ a (m + 1)]
-    change (∑ i ∈ Finset.range m, (∑ j ∈ Finset.range (i + 1), a j) * (b i - b (i + 1))) +
-        S * b m + a (m + 1) * b (m + 1) =
-      (∑ i ∈ Finset.range m, (∑ j ∈ Finset.range (i + 1), a j) * (b i - b (i + 1))) +
-        S * (b m - b (m + 1)) + (S + a (m + 1)) * b (m + 1)
-    rw [Nat.add_assoc, ← hstep, Nat.add_assoc]
-
 /-- If every prefix `1 ≤ ℓ ≤ ℓ*` has `< q * ℓ` derivable outputs, summation by parts yields
 `∑_{i < ℓ*} ϕ_i * n_i < q * ∑_{i < ℓ*} n_i` ([Thorup2013], Section 3, Eqs. (9)–(11),
 pp. 12–13). -/
@@ -843,8 +772,8 @@ private theorem sum_phi_mul_sortedFreq_lt {c d b q : ℕ} (T₁ : DoubleTabTopSe
   rw [hm]
   have hmono : ∀ i < m, sortedFreq X (i + 1) ≤ sortedFreq X i := fun i hi =>
     sortedFreq_antitone X (by omega) (Nat.le_succ i)
-  have hab₁ := sum_mul_eq_sum_prefix_sub (phi T₁ X) (sortedFreq X) m hmono
-  have hab₂ := sum_mul_eq_sum_prefix_sub (fun _ => q) (sortedFreq X) m hmono
+  have hab₁ := Nat.sum_mul_eq_sum_prefix_sub (phi T₁ X) (sortedFreq X) m hmono
+  have hab₂ := Nat.sum_mul_eq_sum_prefix_sub (fun _ => q) (sortedFreq X) m hmono
   rw [← Finset.mul_sum] at hab₂
   rw [hab₁, hab₂]
   have hsum_le :

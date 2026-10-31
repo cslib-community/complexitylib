@@ -11,6 +11,7 @@ public import Complexity.Algorithms.WordRAM.Dictionary.CuckooHashing.HashFamily
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Probability.KWiseIndependent.DoubleTabulation
 public import Complexity.Probability.PMF.Uniform
+import Complexity.Foundations.Data.Nat.Power
 
 /-!
 # Pagh–Rodler Cuckoo Graph Dichotomy and Walk Tail Bounds for Highly Independent Hash Pairs
@@ -2788,7 +2789,8 @@ theorem isCuckooHashPair_of_whp_kWiseIndependent {Θ_top Θ_bot : Type*}
     (hloop_ge : maxEvictions n_max ≤ MaxLoop) (hloop_le : MaxLoop ≤ m) :
     IsCuckooHashPair
       (PMF.uniformOfFintype ((Θ_top × Θ_bot) × (Θ_top × Θ_bot)))
-      (fun θ => H θ.1.1 θ.1.2) (fun θ => H θ.2.1 θ.2.2)
+      (fun ((top₁, bottom₁), _) => H top₁ bottom₁)
+      (fun (_, (top₂, bottom₂)) => H top₂ bottom₂)
       n_max MaxLoop 3 4 := by
   classical
   let B := max n_max 1 * max MaxLoop 1
@@ -2909,20 +2911,6 @@ theorem isCuckooHashPair_of_whp_kWiseIndependent {Θ_top Θ_bot : Type*}
     rw [hB_cast] at hmeas
     exact mod_cast hmeas
 
-/-- Monotonicity of `IsCuckooHashPair` in the constants `C_walk` and `C_reh`. -/
-private theorem isCuckooHashPair_mono_consts {Θ : Type} {U m : ℕ}
-    {μ : PMF Θ} {h₁ h₂ : Θ → Fin U → Fin m}
-    {n_max MaxLoop C_walk C_walk' C_reh C_reh' : ℕ}
-    (hp : IsCuckooHashPair μ h₁ h₂ n_max MaxLoop C_walk C_reh)
-    (hw : C_walk ≤ C_walk') (hr : C_reh ≤ C_reh') :
-    IsCuckooHashPair μ h₁ h₂ n_max MaxLoop C_walk' C_reh' where
-  expected_walk_le S u hS hu :=
-    (hp.expected_walk_le S u hS hu).trans (by exact_mod_cast hw)
-  rehash_prob_le_half := hp.rehash_prob_le_half
-  step_rehash_prob_le ks u hnodup hlen hu :=
-    (hp.step_rehash_prob_le ks u hnodup hlen hu).trans
-      (ENNReal.div_le_div_right (by exact_mod_cast hr) _)
-
 /-- **`IsCuckooHashPair` for Mikkel Thorup's Double Tabulation (`[Thorup2013]`, Theorem 1(a),
 p. 4)**:
 When `1 ≤ c`, `U ≤ 2 ^ (c * b)`, `32 * max n_max 4 ≤ 2 ^ M`,
@@ -2942,8 +2930,8 @@ theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
       (PMF.uniformOfFintype
         ((DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M) ×
          (DoubleTabTopSeed c (8 * c) b × DoubleTabBotSeed (8 * c) b M)))
-      (fun θ => doubleTabHash c (8 * c) b U M θ.1.1 θ.1.2)
-      (fun θ => doubleTabHash c (8 * c) b U M θ.2.1 θ.2.2)
+      (fun ((top₁, bottom₁), _) => doubleTabHash c (8 * c) b U M top₁ bottom₁)
+      (fun (_, (top₂, bottom₂)) => doubleTabHash c (8 * c) b U M top₂ bottom₂)
       n_max MaxLoop 3 4 := by
   classical
   let k := 2 * MaxLoop + 2
@@ -2993,40 +2981,6 @@ theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
     (fun T₁ hT₁ => isKWiseIndependentHash_doubleTabHash_of_isKUnique hU
       (Finset.mem_filter.mp hT₁).2)
     hwhp hm hloop_ge hloop_le
-
-private theorem sq_le_two_pow : ∀ s ≥ 4, s ^ 2 ≤ 2 ^ s
-  | s, hs => by
-    obtain ⟨n, rfl⟩ : ∃ n, s = n + 4 := ⟨s - 4, by omega⟩
-    clear hs
-    induction n with
-    | zero => decide
-    | succ n ih =>
-      have hnn : 0 ≤ n * n := Nat.zero_le _
-      have hlin : (n + 1 + 4) ^ 2 ≤ 2 * (n + 4) ^ 2 := by nlinarith
-      calc (n + 1 + 4) ^ 2 ≤ 2 * (n + 4) ^ 2 := hlin
-        _ ≤ 2 * 2 ^ (n + 4) := Nat.mul_le_mul_left 2 ih
-        _ = 2 ^ (n + 1 + 4) := by rw [← pow_succ']
-
-private theorem pow_le_two_pow {D b : ℕ} (hD : 1 ≤ D) (hb : 4 * D ^ 2 ≤ b) :
-    b ^ D ≤ 2 ^ b := by
-  let s := b / D
-  have hs_ge : 4 * D ≤ s := by
-    refine (Nat.le_div_iff_mul_le hD).mpr ?_
-    calc 4 * D * D = 4 * D ^ 2 := by ring
-      _ ≤ b := hb
-  have hs4 : 4 ≤ s := by nlinarith
-  have hb_le_sq : b ≤ s ^ 2 := by
-    have hdiv : b < (s + 1) * D := by
-      have hmod := Nat.div_add_mod b D
-      have hlt := Nat.mod_lt b hD
-      calc b = D * s + b % D := hmod.symm
-        _ < D * s + D := Nat.add_lt_add_left hlt _
-        _ = (s + 1) * D := by ring
-    nlinarith
-  calc b ^ D ≤ (s ^ 2) ^ D := Nat.pow_le_pow_left hb_le_sq D
-    _ ≤ (2 ^ s) ^ D := Nat.pow_le_pow_left (sq_le_two_pow s hs4) D
-    _ = 2 ^ (s * D) := (Nat.pow_mul 2 s D).symm
-    _ ≤ 2 ^ b := Nat.pow_le_pow_right (by decide) (Nat.div_mul_le_self b D)
 
 /-- Minimum character bit-width `doubleTabMinB c_exp` for polynomial universe exponent `c_exp : ℕ`,
 bounding the character bit-width `b = (1 + Nat.clog 2 (max n_max 4)) / 2` from below when
@@ -3084,23 +3038,23 @@ instance (reg : Bool) (c_exp n_max U M : ℕ) :
 @[expose] noncomputable def provableHash1Aux (reg : Bool) (c_exp n_max U M : ℕ) :
     ProvableHashSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
   match reg with
-  | true => fun θ =>
-    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M θ.1
-  | false => fun θ =>
+  | true => fun (seed₁, _) =>
+    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₁
+  | false => fun ((top₁, bottom₁), _) =>
     let c := 2 * max c_exp 1
     let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    doubleTabHash c (8 * c) b U M θ.1.1 θ.1.2
+    doubleTabHash c (8 * c) b U M top₁ bottom₁
 
 /-- Regime-indexed second hash function for `provableHash2`. -/
 @[expose] noncomputable def provableHash2Aux (reg : Bool) (c_exp n_max U M : ℕ) :
     ProvableHashSeedAux reg c_exp n_max U M → Fin U → Fin (2 ^ M) :=
   match reg with
-  | true => fun θ =>
-    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M θ.2
-  | false => fun θ =>
+  | true => fun (_, seed₂) =>
+    trinomialPolyHash (trinomialStep U M) (2 * maxEvictions n_max + 2) U M seed₂
+  | false => fun (_, (top₂, bottom₂)) =>
     let c := 2 * max c_exp 1
     let b := (1 + Nat.clog 2 (max n_max 4)) / 2
-    doubleTabHash c (8 * c) b U M θ.2.1 θ.2.2
+    doubleTabHash c (8 * c) b U M top₂ bottom₂
 
 /-- Seed space for the unconditional regime-switched cuckoo hash family (`trinomialPolyHash` below
 `doubleTabThreshold c_exp`, `doubleTabHash` at or above `doubleTabThreshold c_exp`). -/
@@ -3215,7 +3169,7 @@ theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
         _ ≤ 2 ^ (2 * b) * b ^ (24 * c + 8) :=
             Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by omega) (by omega))
         _ ≤ 2 ^ (2 * b) * 2 ^ b :=
-            Nat.mul_le_mul_left _ (pow_le_two_pow (by omega) (hb_min_def ▸ hb_ge))
+            Nat.mul_le_mul_left _ (Nat.pow_le_two_pow (by omega) (hb_min_def ▸ hb_ge))
         _ = 2 ^ (3 * b) := by
             rw [← Nat.pow_add]
             congr 1
@@ -3223,9 +3177,7 @@ theorem isCuckooHashPair_provableFamily {c_exp n_max U M : ℕ}
     exact isCuckooHashPair_doubleTabHash (by omega) hU_cb n_max (maxEvictions n_max)
       hm le_rfl hloop_le hprod_le
   · dsimp only [ProvableHashSeedAux, provableHash1Aux, provableHash2Aux]
-    exact isCuckooHashPair_mono_consts
-      (isCuckooHashPair_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M)
-        n_max (maxEvictions n_max) le_rfl hm le_rfl hloop_le)
-      (by decide) (by decide)
+    exact (isCuckooHashPair_trinomialPolyHash (le_two_pow_trinomialDeg U M) (le_trinomialDeg U M)
+      n_max (maxEvictions n_max) le_rfl hm le_rfl hloop_le).mono_consts (by decide) (by decide)
 
 end Cslib.Algorithms.Lean.CuckooHashing
