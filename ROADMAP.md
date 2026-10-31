@@ -202,9 +202,8 @@ index links to canonical definitions rather than keeping a second set.
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets** ([#1819]): TALLY; `P/poly = P^SPARSE` (Meyer), extending
-  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse NP-hard set under bounded
-  truth-table reductions gives `P = NP` (Ogihara and Watanabe).
+- **Sparse and tally sets:** `P/poly = P^SPARSE` (Meyer), extending
+  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`.
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
@@ -316,8 +315,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
-- **Exponential-time SAT** ([#894]): amplify Schöning's random walk, with a time bound, then
-  PPSZ. Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
+- **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
+  exact laws, amplification and time bounds (PPSZ's round count takes an input bound
+  `a / b ≥ 1 - qbar k h`). Remaining: curated abstracts, and the uniform `o(n)` forms of the PPSZ
+  bounds with `w` growing in `n`.
+  Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 
 ### Approximation and PCP
 
@@ -504,17 +506,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Spanning trees and matroids:** minimum spanning trees with sorting and disjoint-set costs;
   weighted matroid greedy optimality with an independence-oracle interface; then matroid
   intersection with explicit oracle and implementation costs.
-- **Submodular optimization:** the `1 - 1/e` approximation for nonnegative monotone submodular
-  maximization under a cardinality constraint, charging value-oracle calls separately from their
-  concrete realizations; then further constraints and approximation bounds.
+- **Submodular optimization:** further constraints and approximation bounds beyond the
+  cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
+  concrete realizations.
 
 ### Online algorithms and competitive analysis
 
 - Request sequences, online strategies, offline optima and competitive ratios with additive
   constants; distinguish deterministic and randomized strategies and oblivious and adaptive
   adversaries. Compare algorithms in the same action and cost model, including initialization.
-- **Paging:** an LRU competitive bound and a matching deterministic lower bound as the first
-  clients. Reuse native amortized certificates and make adversarial request generation explicit.
 - **Adaptive search trees:** a BST access-and-rotation model, the splay access lemma, static
   optimality, working-set and dynamic-finger bounds, and Wilber-style lower bounds. State dynamic
   optimality as a conjectural research target with explicit strategy and sequence quantifiers.
@@ -869,5 +869,4 @@ not planned, not as proved.
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
-[#1819]: https://github.com/cslib-community/complexitylib/issues/1819
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824

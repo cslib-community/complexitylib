@@ -12,8 +12,7 @@ public import Cslib.Algorithms.Lean.TimeM
 public import Cslib.Algorithms.Lean.Sort.Merge
 public import Mathlib.Data.Nat.Log
 
-import all Cslib.Algorithms.Lean.Sort.Merge
-import Cslib.Algorithms.Lean.MergeSort.MergeSort
+import Complexity.Algorithms.Lean.MergeSort.Comparator
 
 /-!
 # Linear-Time Two-Queue Huffman Construction
@@ -459,48 +458,6 @@ theorem huffmanFromSortedM_time_le_two_mul_pred {α β : Type u} [Add β] [LE β
   have h := huffmanFromSortedM_time_le w syms
   omega
 
-private theorem mergeM_cmp_time {γ : Type} (xs ys : List γ) (cmp : γ → γ → Bool) :
-    (List.mergeM xs ys fun x y => (do ✓ return cmp x y : TimeM ℕ Bool)).time ≤
-      xs.length + ys.length := by
-  fun_induction List.mergeM with grind
-
-private theorem mergeSortM_cmp_time {γ : Type} (xs : List γ) (cmp : γ → γ → Bool) :
-    (List.mergeSortM xs fun x y => (do ✓ return cmp x y : TimeM ℕ Bool)).time ≤
-      xs.length * Nat.clog 2 xs.length := by
-  fun_induction List.mergeSortM with
-  | case1 | case2 => simp
-  | case3 a b xs lr ih2 ih1 =>
-    have hN : 2 ≤ (a :: b :: xs).length := by simp
-    have h1lt : 1 < (a :: b :: xs).length := by omega
-    have hm :
-        (List.mergeM
-          ⟪List.mergeSortM lr.1 (fun x y => (do ✓ return cmp x y : TimeM ℕ Bool))⟫
-          ⟪List.mergeSortM lr.2 (fun x y => (do ✓ return cmp x y : TimeM ℕ Bool))⟫
-          fun x y => (do ✓ return cmp x y : TimeM ℕ Bool)).time ≤
-        (a :: b :: xs).length := by
-      refine le_trans (mergeM_cmp_time _ _ cmp) ?_
-      simp only [Cslib.Algorithms.Lean.TimeM.ret_mergeSortM, TimeM.ret_bind,
-        TimeM.ret_pure, List.length_mergeSort, lr.1.2, lr.2.2]
-      omega
-    rw [lr.1.2] at ih2
-    rw [lr.2.2] at ih1
-    have hc1 := Nat.mul_le_mul_left (((a :: b :: xs).length + 1) / 2)
-      (Cslib.Algorithms.Lean.TimeM.clog2_half_le (a :: b :: xs).length h1lt)
-    have hc2 := Nat.mul_le_mul_left ((a :: b :: xs).length / 2)
-      (Cslib.Algorithms.Lean.TimeM.clog2_floor_half_le (a :: b :: xs).length h1lt)
-    have hc22 : Nat.clog 2 2 = 1 := by decide
-    have hpos : 1 ≤ Nat.clog 2 (a :: b :: xs).length :=
-      hc22 ▸ Nat.clog_monotone 2 hN
-    have hsplit : ((a :: b :: xs).length + 1) / 2 + (a :: b :: xs).length / 2 =
-        (a :: b :: xs).length := by omega
-    have halg : (((a :: b :: xs).length + 1) / 2) * (Nat.clog 2 (a :: b :: xs).length - 1) +
-        ((a :: b :: xs).length / 2) * (Nat.clog 2 (a :: b :: xs).length - 1) +
-        (a :: b :: xs).length =
-        (a :: b :: xs).length * Nat.clog 2 (a :: b :: xs).length := by
-      rw [← Nat.add_mul, hsplit, ← Nat.mul_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel hpos]
-    simp only [TimeM.time_bind]
-    omega
-
 /-- **End-to-End Comparison Bound for `huffmanM` (`O(n log n)`)**: merge-sorting `syms` followed by
 the linear-time two-queue phase uses at most `n * Nat.clog 2 n + (2 * n - 5)` weight comparisons. -/
 theorem huffmanM_time_le {α β : Type} [Add β] [LE β] [DecidableRel (· ≤ · : β → β → Prop)]
@@ -508,7 +465,8 @@ theorem huffmanM_time_le {α β : Type} [Add β] [LE β] [DecidableRel (· ≤ �
     (huffmanM w syms).time ≤ syms.length * Nat.clog 2 syms.length + (2 * syms.length - 5) := by
   unfold huffmanM
   simp only [TimeM.time_bind]
-  have hsort := mergeSortM_cmp_time syms (fun a b => decide (w a ≤ w b))
+  have hsort := TimeM.mergeSortM_time syms
+    (fun a b => (do ✓ return decide (w a ≤ w b) : TimeM ℕ Bool)) fun _ _ => le_rfl
   have hlen :
       ⟪List.mergeSortM syms fun a b =>
         (do ✓ return decide (w a ≤ w b) : TimeM ℕ Bool)⟫.length = syms.length := by

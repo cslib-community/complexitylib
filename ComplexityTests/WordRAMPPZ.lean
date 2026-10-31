@@ -4,13 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Algorithms.WordRAM.PPZ.Amplify
 import Complexity.Algorithms.WordRAM.PPZ.Forced
 import Complexity.Algorithms.WordRAM.PPZ.Round
 import Complexity.Computability.Complexity.FineGrained.PPZ.LazyOrder
 
 /-! PPZ on the word RAM: concrete runs of the forced-value scan and of the satisfaction check on a
 small 3-CNF, checked against `Cslib.Complexity.PPZ.forced` and `CNF.eval`, the lazy form of a round
-on no variables, and the round program's specification at word size `8`. -/
+on no variables, the round program's specification at word size `8`, and the amplified algorithm:
+its count of rounds computed on the machine, and its specification and failure bound on the same
+formula. -/
 
 namespace ComplexityTests.WordRAMPPZ
 
@@ -77,5 +80,30 @@ example : partialAssignmentAt (fun a => if a = 9 then 0 else if a = 10 then 2 el
 
 -- The round program's specification applies at word size `8` to `φ`, whose input has length `8`.
 example := roundProgram_spec φ (w := 8) (by decide)
+
+/-! ### The amplified algorithm -/
+
+-- With `k = 3` and `n = 3` there are `2 ^ ⌈2 · 3 / 3⌉ = 4` rounds per unit of confidence.
+example : ppzExp 3 3 = 2 := by decide
+example : ppzRounds 3 3 5 = 20 := by decide
+example : ppzDigits 3 3 5 = [0, 0, 1, 0, 1] := by decide
+
+/-- The input `k :: c :: encode φ` with `k = 3` and `c = 5`; its length is `10`. -/
+def ampInput : List ℕ := 3 :: 5 :: Cslib.Algorithms.WordRAM.Schoening.encode φ
+
+-- The setup computes the counter `20 = 0b10100` at address `10 + 1 + 2 · 3 = 17`, low digit first.
+example : ((ram[ ⟪ampSetup⟫; ⟪countSetup⟫ ].eval 16 8 (Data.init ampInput : Data 32)).map
+    fun z => (z.1.regs Reg.bBase, z.1.regs Reg.bLen, (List.range 5).map fun i => z.1.mem (17 + i)))
+    = some (17, 5, [0, 0, 1, 0, 1]) := by
+  decide
+
+-- The specification applies at word size `8`, and on the satisfiable `φ` the failure probability
+-- is at most `e ^ (-5)`.
+example := ampProgram_spec 3 5 (by decide) φ (w := 8) (by decide)
+
+example : ((evalRand 8 ampProgram (ampTime 3 3 5 ampInput.length) (.init ampInput)).map
+    Cslib.Algorithms.WordRAM.Schoening.cfgSuccess false).toReal ≤ Real.exp (-5) := by
+  exact_mod_cast ampProgram_failure_le_exp (k := 3) (c := 5) (by decide)
+    ⟨![false, true, false], by decide⟩ (by decide) (by decide)
 
 end ComplexityTests.WordRAMPPZ

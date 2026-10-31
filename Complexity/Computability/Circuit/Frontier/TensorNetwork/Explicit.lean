@@ -37,9 +37,9 @@ entry zero.
 
 Its size measures are the number of edges, the number of vertices, the maximum number of ports of
 a vertex (`ExplicitTensorNetwork.maxDegree`) and the total length of the tables
-(`ExplicitTensorNetwork.tableLength`). A network is *rows-first bipartite* with `r` rows
-(`ExplicitTensorNetwork.IsRowsFirstBipartite`) when every edge is a port of exactly one of its
-first `r` vertices and of exactly one of the others.
+(`ExplicitTensorNetwork.tableLength`). A described network is *rows-first bipartite* with `r`
+rows (`DescribedNetwork.IsRowsFirstBipartite`) when every port names an edge and every edge is a
+port of exactly one of its first `r` vertices and of exactly one of the others.
 
 **Writing a network out** (`TensorNetwork.toExplicit`). Given numberings of the vertices and the
 edges of a Boolean tensor network on finite types, list the edges at each vertex in increasing
@@ -55,6 +55,8 @@ one end of every edge below `r` and the other at or above it gives a rows-first 
   the descriptors of its vertices.
 * `Cslib.Circuits.Frontier.DescribedNetwork.contraction`: its contraction, for an evaluator of
   the descriptors.
+* `Cslib.Circuits.Frontier.DescribedNetwork.IsRowsFirstBipartite`: the bipartition with the first
+  `r` vertices as rows.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork`: an explicit Boolean tensor network, with
   tables as descriptors.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.entry`,
@@ -63,8 +65,6 @@ one end of every edge below `r` and the other at or above it gives a rows-first 
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.contraction`: the contraction.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.maxDegree`,
   `Cslib.Circuits.Frontier.ExplicitTensorNetwork.tableLength`: size measures.
-* `Cslib.Circuits.Frontier.ExplicitTensorNetwork.IsRowsFirstBipartite`: the bipartition with the
-  first `r` vertices as rows.
 * `Cslib.Circuits.Frontier.TensorNetwork.explicitPorts`,
   `Cslib.Circuits.Frontier.TensorNetwork.explicitTable`,
   `Cslib.Circuits.Frontier.TensorNetwork.toExplicit`: writing a Boolean tensor network out.
@@ -137,6 +137,18 @@ theorem map_contraction {R S : Type*} [CommSemiring R] [CommSemiring S] (ψ : R 
   rw [map_list_prod, List.map_map]
   rfl
 
+/-- **Rows-first bipartite**: the first `r` vertices are the *rows* and the others the *columns*,
+every port names an edge, and every edge is a port of the rows exactly once and of the columns
+exactly once. So every edge joins a row to a column. -/
+def IsRowsFirstBipartite (d : DescribedNetwork T) (r : ℕ) : Prop :=
+  (∀ v ∈ d.vertices, ∀ i ∈ v.1, i < d.numEdges) ∧
+    ∀ i < d.numEdges, ((d.vertices.take r).map fun v => v.1.count i).sum = 1 ∧
+      ((d.vertices.drop r).map fun v => v.1.count i).sum = 1
+
+instance (d : DescribedNetwork T) (r : ℕ) : Decidable (d.IsRowsFirstBipartite r) := by
+  unfold IsRowsFirstBipartite
+  infer_instance
+
 end DescribedNetwork
 
 /-- An *explicit Boolean tensor network* over `R`: a network whose descriptors are *tables*. The
@@ -189,18 +201,6 @@ theorem maxDegree_le_iff {k : ℕ} : d.maxDegree ≤ k ↔ ∀ v ∈ d.vertices,
 theorem length_le_maxDegree {v : List ℕ × List R} (hv : v ∈ d.vertices) :
     v.1.length ≤ d.maxDegree :=
   d.maxDegree_le_iff.mp le_rfl v hv
-
-/-- **Rows-first bipartite**: the first `r` vertices are the *rows* and the others the *columns*,
-every port names an edge, and every edge is a port of the rows exactly once and of the columns
-exactly once. So every edge joins a row to a column. -/
-def IsRowsFirstBipartite (r : ℕ) : Prop :=
-  (∀ v ∈ d.vertices, ∀ i ∈ v.1, i < d.numEdges) ∧
-    ∀ i < d.numEdges, ((d.vertices.take r).map fun v => v.1.count i).sum = 1 ∧
-      ((d.vertices.drop r).map fun v => v.1.count i).sum = 1
-
-instance (r : ℕ) : Decidable (d.IsRowsFirstBipartite r) := by
-  unfold IsRowsFirstBipartite
-  infer_instance
 
 end ExplicitTensorNetwork
 

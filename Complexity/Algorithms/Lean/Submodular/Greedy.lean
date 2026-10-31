@@ -11,6 +11,7 @@ public import Complexity.Init
 public import Complexity.Algorithms.Lean.Submodular.Basic
 public import Cslib.Foundations.Control.Monad.IsMonadHom
 public import Mathlib.Analysis.Complex.Exponential
+import Complexity.Foundations.Data.List.EraseDups
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -26,8 +27,8 @@ Theorem 4.2, pp. 280–283).
 
 ## Algorithm design
 
-1. First-occurrence deduplication `dedupFirst xs` produces the ordered list `u` of distinct ground
-   elements once upfront (`u.length = xs.toFinset.card`).
+1. First-occurrence deduplication `xs.eraseDups` (core `List.eraseDups`) produces the ordered list
+   `u` of distinct ground elements once upfront (`u.length = xs.toFinset.card`).
 2. Each greedy round filters `u` to candidates `c ∉ S`. If none remain, `S` is returned unchanged
    with zero oracle evaluations. Otherwise, maximizing `marginalGain f S c = f (insert c S) - f S`
    for fixed `S` is equivalent to maximizing `f (insert c S)`, so the algorithm needs only
@@ -40,7 +41,6 @@ Theorem 4.2, pp. 280–283).
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.Submodular.dedupFirst`: order-preserving first-occurrence deduplication.
 * `Cslib.Algorithms.Lean.Submodular.submodularGreedyM`,
   `Cslib.Algorithms.Lean.Submodular.submodularGreedy`: monadic and pure `k`-step greedy algorithms.
 * `Cslib.Algorithms.Lean.Submodular.tightCandidates`,
@@ -74,62 +74,6 @@ public section
 open Cslib (IsMonadHom)
 
 namespace Cslib.Algorithms.Lean.Submodular
-
-/-! ## First-occurrence deduplication -/
-
-/-- Keep the first occurrence of each distinct element in `xs`, preserving left-to-right order
-(structurally recursive `[DecidableEq α]` counterpart of `List.eraseDups`). -/
-@[expose] def dedupFirst {α : Type*} [DecidableEq α] : List α → List α
-  | [] => []
-  | x :: xs => x :: (dedupFirst xs).filter (· ≠ x)
-
-@[simp] theorem dedupFirst_nil {α : Type*} [DecidableEq α] :
-    dedupFirst ([] : List α) = [] := rfl
-
-@[simp] theorem dedupFirst_cons {α : Type*} [DecidableEq α] (x : α) (xs : List α) :
-    dedupFirst (x :: xs) = x :: (dedupFirst xs).filter (· ≠ x) := rfl
-
-@[simp] theorem mem_dedupFirst {α : Type*} [DecidableEq α] {xs : List α} {a : α} :
-    a ∈ dedupFirst xs ↔ a ∈ xs := by
-  induction xs with
-  | nil => simp
-  | cons x xs ih =>
-    simp only [dedupFirst_cons, List.mem_cons, List.mem_filter, ne_eq, ih]
-    by_cases hax : a = x <;> simp [hax]
-
-theorem nodup_dedupFirst {α : Type*} [DecidableEq α] (xs : List α) :
-    (dedupFirst xs).Nodup := by
-  induction xs with
-  | nil => exact List.nodup_nil
-  | cons x xs ih =>
-    rw [dedupFirst_cons, List.nodup_cons]
-    exact ⟨by simp, ih.filter _⟩
-
-theorem dedupFirst_eq_self {α : Type*} [DecidableEq α] {xs : List α} (h : xs.Nodup) :
-    dedupFirst xs = xs := by
-  induction xs with
-  | nil => rfl
-  | cons x xs ih =>
-    rcases List.nodup_cons.mp h with ⟨hx, hxs⟩
-    rw [dedupFirst_cons, ih hxs]
-    congr 1
-    refine List.filter_eq_self.mpr fun y hy => decide_eq_true ?_
-    rintro rfl
-    exact hx hy
-
-@[simp] theorem toFinset_dedupFirst {α : Type*} [DecidableEq α] (xs : List α) :
-    (dedupFirst xs).toFinset = xs.toFinset := by
-  ext a
-  simp
-
-theorem length_dedupFirst {α : Type*} [DecidableEq α] (xs : List α) :
-    (dedupFirst xs).length = xs.toFinset.card := by
-  rw [← toFinset_dedupFirst xs, List.toFinset_card_of_nodup (nodup_dedupFirst xs)]
-
-theorem length_dedupFirst_le {α : Type*} [DecidableEq α] (xs : List α) :
-    (dedupFirst xs).length ≤ xs.length := by
-  rw [length_dedupFirst]
-  exact List.toFinset_card_le xs
 
 /-! ## Monadic and pure greedy algorithm -/
 
@@ -165,7 +109,7 @@ candidate remains. -/
 /-- Pure `k`-step Nemhauser–Wolsey–Fisher greedy algorithm on ground list `xs`. -/
 @[expose] def submodularGreedy {α : Type*} {β : Type*} [DecidableEq α] [LinearOrder β]
     (f : Finset α → β) (xs : List α) (k : ℕ) : Finset α :=
-  submodularGreedyLoop f (dedupFirst xs) k ∅
+  submodularGreedyLoop f xs.eraseDups k ∅
 
 /-- Monadic left-to-right scan evaluating `evalSet (insert c S)` once per candidate in `cs`. -/
 @[expose] def scanCandidatesM {α : Type} {β : Type} {m : Type → Type*} [Monad m]
@@ -204,7 +148,7 @@ candidate remains. -/
 @[expose] def submodularGreedyM {α : Type} {β : Type} {m : Type → Type*} [Monad m]
     [DecidableEq α] [LinearOrder β]
     (evalSet : Finset α → m β) (xs : List α) (k : ℕ) : m (Finset α) :=
-  submodularGreedyLoopM evalSet (dedupFirst xs) k ∅
+  submodularGreedyLoopM evalSet xs.eraseDups k ∅
 
 /-! ### Monad homomorphism and `pure`/`Id.run` bridges -/
 
@@ -245,7 +189,7 @@ variable {α : Type} {β : Type} [DecidableEq α] [LinearOrder β]
     (f : Finset α → β) (xs : List α) (k : ℕ) :
     submodularGreedyM (fun T => (pure (f T) : m β)) xs k =
       pure (submodularGreedy f xs k) :=
-  submodularGreedyLoopM_pure f (dedupFirst xs) k ∅
+  submodularGreedyLoopM_pure f xs.eraseDups k ∅
 
 @[simp] theorem idRun_submodularGreedyM
     (evalSet : Finset α → Id β) (xs : List α) (k : ℕ) :
@@ -305,7 +249,7 @@ theorem _root_.Cslib.IsMonadHom.map_submodularGreedyM
     (evalSet : Finset α → m β) (xs : List α) (k : ℕ) :
     φ (submodularGreedyM evalSet xs k) =
       submodularGreedyM (fun T => φ (evalSet T)) xs k :=
-  hφ.map_submodularGreedyLoopM evalSet (dedupFirst xs) k ∅
+  hφ.map_submodularGreedyLoopM evalSet xs.eraseDups k ∅
 
 end Bridges
 
@@ -397,8 +341,8 @@ theorem submodularGreedyLoop_succ_right (f : Finset α → β) (u : List α) (m 
 
 theorem submodularGreedy_succ (f : Finset α → β) (xs : List α) (m : ℕ) :
     submodularGreedy f xs (m + 1) =
-      submodularGreedyStep f (dedupFirst xs) (submodularGreedy f xs m) :=
-  submodularGreedyLoop_succ_right f (dedupFirst xs) m ∅
+      submodularGreedyStep f xs.eraseDups (submodularGreedy f xs m) :=
+  submodularGreedyLoop_succ_right f xs.eraseDups m ∅
 
 theorem subset_submodularGreedyStep (f : Finset α → β) (u : List α) (S : Finset α) :
     S ⊆ submodularGreedyStep f u S := by
@@ -443,7 +387,7 @@ theorem submodularGreedyStep_max (f : Finset α → β) (u : List α) (S : Finse
 
 theorem submodularGreedy_subset_toFinset (f : Finset α → β) (xs : List α) (k : ℕ) :
     submodularGreedy f xs k ⊆ xs.toFinset := by
-  rw [← toFinset_dedupFirst xs]
+  rw [← List.toFinset_eraseDups xs]
   induction k with
   | zero => simp
   | succ m ih =>
@@ -456,15 +400,15 @@ theorem mem_of_mem_submodularGreedy {f : Finset α → β} {xs : List α} {k : �
 
 theorem card_submodularGreedy_eq_min (f : Finset α → β) (xs : List α) (k : ℕ) :
     (submodularGreedy f xs k).card = min k xs.toFinset.card := by
-  rw [← toFinset_dedupFirst xs]
-  set u := dedupFirst xs
+  rw [← List.toFinset_eraseDups xs]
+  set u := xs.eraseDups
   induction k with
   | zero => simp
   | succ m ih =>
     rw [submodularGreedy_succ]
     set S := submodularGreedy f xs m
     have hS_sub : S ⊆ u.toFinset := by
-      simpa [u, S, toFinset_dedupFirst] using submodularGreedy_subset_toFinset f xs m
+      simpa [u, S, List.toFinset_eraseDups] using submodularGreedy_subset_toFinset f xs m
     by_cases hm : m < u.toFinset.card
     · have hScard : S.card = m := by omega
       cases hfilt : u.filter (· ∉ S) with
@@ -578,8 +522,8 @@ theorem sub_submodularGreedy_le_pow_mul
   have hfactor_nonneg : (0 : β) ≤ 1 - 1 / (k : β) := by
     have hdiv_le : 1 / (k : β) ≤ 1 := div_le_one_of_le₀ hk_one hk_pos.le
     linarith
-  have hOPT_u : OPT ⊆ (dedupFirst xs).toFinset := by
-    rwa [toFinset_dedupFirst]
+  have hOPT_u : OPT ⊆ xs.eraseDups.toFinset := by
+    rwa [List.toFinset_eraseDups]
   induction m with
   | zero => simp
   | succ m ih =>
@@ -1022,7 +966,9 @@ private theorem submodularGreedy_tightObjective_steps {k : ℕ} (hk : 0 < k) :
   | zero => simp [leftPrefix_zero]
   | succ t ih =>
     have ht_lt : t < k := Nat.lt_of_succ_le ht
-    rw [submodularGreedy_succ, ih ht_lt.le, dedupFirst_eq_self (nodup_tightCandidates k)]
+    -- `submodularGreedy` erases duplicates with the `BEq` of `DecidableEq`, not `instBEqSum`.
+    rw [submodularGreedy_succ, ih ht_lt.le,
+      (@List.eraseDups_eq_self _ instBEqOfDecidableEq _ _).2 (nodup_tightCandidates k)]
     rcases filter_tightCandidates_leftPrefix ht_lt with ⟨cs, hfilt⟩
     unfold submodularGreedyStep
     rw [hfilt]
