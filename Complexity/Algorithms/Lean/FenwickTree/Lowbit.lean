@@ -16,8 +16,8 @@ import Mathlib.Tactic.Ring
 # Lowest-Set-Bit Combinatorics for Fenwick Trees
 
 This module develops the binary arithmetic and interval combinatorics underlying Fenwick trees
-(binary indexed trees, `[Fenwick1994]`, "PRINCIPLES" and "OPERATIONS AND CODE TO HANDLE THE
-STRUCTURE", pp. 328–332).
+(binary indexed trees, `[Fenwick1994]`, "PRINCIPLES", pp. 328–329, and "OPERATIONS AND CODE TO
+HANDLE THE STRUCTURE", pp. 329–330).
 
 For a `1`-based index `m ≥ 1`, `lowbit m` is the value `2 ^ k` of the least significant `1`-bit of
 `m` (conventionally written `m & -m` in two's-complement arithmetic), and node `m` aggregates the

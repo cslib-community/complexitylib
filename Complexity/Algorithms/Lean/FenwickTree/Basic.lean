@@ -17,8 +17,7 @@ public import Mathlib.Algebra.BigOperators.Group.List.Basic
 # Fenwick Trees (Binary Indexed Trees)
 
 This module implements universe-polymorphic Fenwick trees (binary indexed trees, `[Fenwick1994]`,
-"PRINCIPLES" and "OPERATIONS AND CODE TO HANDLE THE STRUCTURE", pp. 328–332) in
-`Cslib.Algorithms.Lean.TimeM`:
+pp. 328–332) in `Cslib.Algorithms.Lean.TimeM`:
 
 * Over any `[AddCommMonoid α]`: zero-initialized trees `zeros`, point increments `addM`/`add`,
   prefix queries `prefixSumM`/`prefixSum`, and `a.size`-tick immediate-parent construction
@@ -32,17 +31,19 @@ without word-width side conditions.
 
 ## Source Conventions
 
-* **Indexing:** `[Fenwick1994]` indexes both logical frequencies and internal tree nodes `1 .. n`.
-  Here logical sequence positions are `0`-indexed (`pos < s.length`, `s.take len`), while the
-  `1`-based Fenwick node `m ∈ [1, n]` (`[Fenwick1994]`, "PRINCIPLES", pp. 328–330, Figures 1–3) is
-  stored at `0`-based array slot `t.tree[m - 1]` and aggregates
+* **Indexing:** `[Fenwick1994]` indexes frequencies from `0`, using nodes `1 .. n` (where `V[m]`
+  holds `F[m - lowbit m + 1 .. m]`) with element `0` held separately (`V[0] = F[0]`, p. 328). Here
+  a length-`n` sequence `s : List α` (`0`-indexed positions `0 .. n - 1`) is shifted by `1` into
+  nodes `m ∈ [1, n]` (`[Fenwick1994]`, "PRINCIPLES", pp. 328–329, Figure 1 on p. 328 and
+  Figures 2–3 on p. 329), stored at `0`-based array slot `t.tree[m - 1]` and aggregating
   `((s.take m).drop (m - lowbit m)).sum`.
 * **Out-of-bounds totality:** `prefixSum t len` clamps `len` to `t.size` (matching
   `(s.take len).sum` for all `len : ℕ`), and `add t pos δ` / `set t pos v` leave `t` unchanged
   when `pos ≥ t.size` (matching `addAt s pos δ` and `s.set pos v`).
 * **Algebraic generality and standard extensions:** `[Fenwick1994]` presents cumulative prefix
-  queries (`GetCumul`, Figure 4, p. 331) and upward point increments (Figures 5–6, pp. 331–332)
-  over integer frequencies (plus specialized single-frequency extraction in Figure 7, p. 333).
+  queries (`GetCumul`, "THE CUMULATIVE FREQUENCY", Figure 4, p. 330) and upward point increments
+  ("UPDATING THE TABLE", pp. 331–332, Figures 5–6 on p. 331) over integer frequencies (plus
+  specialized single-frequency extraction in "READING A SINGLE FREQUENCY", Figure 7, p. 332).
   Here `zeros`, `prefixSumM`, `addM`, and `ofArrayM` require only `[AddCommMonoid α]`;
   immediate-parent propagation `ofArrayM`/`ofListM` (`m ↦ m + lowbit m`) is standard BIT folklore,
   and `rangeSumM`, `getM`, and `setM` are standard `[AddCommGroup α]` subtraction corollaries of
@@ -250,8 +251,7 @@ termination_by m
 decreasing_by exact Nat.sub_lt hm.1 (lowbit_pos hm.1)
 
 /-- Prefix sum of the first `len` elements in `TimeM ℕ`, charging `1` tick per visited Fenwick
-node (`[Fenwick1994]`, "OPERATIONS AND CODE TO HANDLE THE STRUCTURE", Figure 4, p. 331). Clamps
-`len` to `t.size`. -/
+node (`[Fenwick1994]`, "THE CUMULATIVE FREQUENCY", Figure 4, p. 330). Clamps `len` to `t.size`. -/
 def prefixSumM {α : Type*} [AddCommMonoid α] (t : FenwickTree α) (len : ℕ) : TimeM ℕ α :=
   prefixSumLoopM t.tree (min len t.tree.size) 0
 
@@ -328,8 +328,9 @@ private theorem prefixSumLoopM_ret {α : Type*} [AddCommMonoid α]
       conv_rhs => rw [hsplit, List.sum_append]
       rw [add_assoc, add_comm ((s.take m).drop (m - lowbit m)).sum]
 
-/-- Functional correctness of `prefixSum` (`[Fenwick1994]`, Figure 4, p. 331): on any valid tree
-for `s`, `prefixSum t len` equals `(s.take len).sum` for all `len : ℕ`. -/
+/-- Functional correctness of `prefixSum` (`[Fenwick1994]`, "THE CUMULATIVE FREQUENCY", Figure 4,
+p. 330): on any valid tree for `s`, `prefixSum t len` equals `(s.take len).sum` for all
+`len : ℕ`. -/
 theorem prefixSum_eq {α : Type*} [AddCommMonoid α]
     {t : FenwickTree α} {s : List α} (hv : Valid t s) (len : ℕ) :
     prefixSum t len = (s.take len).sum := by
@@ -359,8 +360,8 @@ decreasing_by
   omega
 
 /-- Add `δ` at `0`-based index `pos` in `TimeM ℕ`, charging `1` tick per updated Fenwick node
-(`[Fenwick1994]`, "OPERATIONS AND CODE TO HANDLE THE STRUCTURE", Figures 5–6, pp. 331–332). Leaves
-`t` unchanged with `0` ticks when `t.size ≤ pos`. -/
+(`[Fenwick1994]`, "UPDATING THE TABLE", pp. 331–332, Figures 5–6 on p. 331). Leaves `t` unchanged
+with `0` ticks when `t.size ≤ pos`. -/
 def addM {α : Type*} [AddCommMonoid α]
     (t : FenwickTree α) (pos : ℕ) (δ : α) : TimeM ℕ (FenwickTree α) :=
   if pos < t.tree.size then do
@@ -478,8 +479,8 @@ private theorem addLoopM_getElem {α : Type*} [AddCommMonoid α]
       rw [upChain]
       simp only [hm, ↓reduceDIte, List.not_mem_nil, ↓reduceIte]
 
-/-- `add t pos δ` preserves `Valid` with respect to `addAt s pos δ` (`[Fenwick1994]`, Figures 5–6,
-pp. 331–332). -/
+/-- `add t pos δ` preserves `Valid` with respect to `addAt s pos δ` (`[Fenwick1994]`,
+"UPDATING THE TABLE", pp. 331–332, Figures 5–6 on p. 331). -/
 theorem valid_add {α : Type*} [AddCommMonoid α]
     {t : FenwickTree α} {s : List α} (hv : Valid t s) (pos : ℕ) (δ : α) :
     Valid (add t pos δ) (addAt s pos δ) := by
