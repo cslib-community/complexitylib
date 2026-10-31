@@ -1168,6 +1168,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Fas
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastSimulation
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Guarded
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Promise
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.FewP
@@ -1279,9 +1280,11 @@ public import Complexity.Computability.Complexity.Classes.ParityP
 public import Complexity.Computability.Complexity.Classes.ParityP.Closure
 public import Complexity.Computability.Complexity.Classes.Promise.Basic
 public import Complexity.Computability.Complexity.Classes.Promise.Circuit
+public import Complexity.Computability.Complexity.Classes.Promise.PP
 public import Complexity.Computability.Complexity.Classes.Promise.Probabilistic
 public import Complexity.Computability.Complexity.Classes.Promise.Randomized
 public import Complexity.Computability.Complexity.Classes.Promise.Reduction
+public import Complexity.Computability.Complexity.Classes.Promise.Time
 public import Complexity.Computability.Complexity.Classes.RP
 public import Complexity.Computability.Complexity.Classes.RP.Closure
 public import Complexity.Computability.Complexity.Classes.RepeatedTrials
