@@ -442,8 +442,9 @@ end Interpolant
 
 variable {Y Z : Type*} [DecidableEq Y] [DecidableEq Z]
 
-/-- The lines of a refutation mention only shared variables of the formula. -/
-private theorem shared_lt_of_isProof {n : ℕ} {A : CNF (ℕ ⊕ Y)} {B : CNF (ℕ ⊕ Z)}
+/-- If the shared variables of `A` and `B` are below `n`, so are those of every line of a
+refutation of `A.appendShared B`. -/
+theorem CNF.IsProof.shared_lt {n : ℕ} {A : CNF (ℕ ⊕ Y)} {B : CNF (ℕ ⊕ Z)}
     {ls : List (Clause (ℕ ⊕ (Y ⊕ Z)))} (h : (A.appendShared B).IsProof ls)
     (hA : ∀ d ∈ A, ∀ i b, (.inl i, b) ∈ d → i < n) (hB : ∀ d ∈ B, ∀ i b, (.inl i, b) ∈ d → i < n) :
     ∀ d ∈ ls, ∀ i b, (.inl i, b) ∈ d → i < n := by
@@ -467,7 +468,7 @@ theorem CNF.IsProof.ofCode_interpolantCode {n : ℕ} {A : CNF (ℕ ⊕ Y)} {B : 
     ∃ C : Circuit signature n 1, Circuit.ofCode n 1 (CNF.interpolantCode n A B ls) = some C ∧
       C.size = 4 * ls.length ∧
       A.IsInterpolant B fun a => C.eval interpretation (fun i => a i) 0 := by
-  have hvars := shared_lt_of_isProof h hA hB
+  have hvars := h.shared_lt hA hB
   have hvars' : ∀ d ∈ ls.reverse, ∀ i b, (.inl i, b) ∈ d → i < n :=
     fun d hd => hvars d (List.mem_reverse.1 hd)
   set k := (ls.reverse.map List.isEmpty).idxOf true with hk_def
