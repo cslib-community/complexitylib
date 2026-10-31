@@ -137,8 +137,8 @@ theorem exists_activeBounds_le (D : ℕ) :
 
 /-- **Guarded roots are on the schedule**, for every constant `C ≥ 1` with precision at most
 `C m`. -/
-theorem onSchedule_root_capPrecision {P C : ℕ} {G : ℕ × ExplicitTensorNetwork ℕ} (hg : fastGuard G = true)
-    (hC : 1 ≤ C) (hp : (ExplicitTensorNetwork.capPrecision (P, G)).1 ≤ C * G.2.numEdges) :
+theorem onSchedule_root_capPrecision {P C : ℕ} {G : ℕ × ExplicitTensorNetwork ℕ}
+    (hg : fastGuard G = true) (hC : 1 ≤ C) (hp : (ExplicitTensorNetwork.capPrecision (P, G)).1 ≤ C * G.2.numEdges) :
     OnSchedule C G.2.numEdges (root (ExplicitTensorNetwork.capPrecision (P, G))) := by
   have hdeg : G.2.maxDegree ≤ degreeBound G.2.numEdges := by
     simp only [fastGuard, decide_eq_true_eq] at hg
@@ -220,8 +220,8 @@ theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalys
         rw [Nat.mul_div_cancel _ (by omega)] at this
         omega
       have hB := hsA m (by omega) (q.1 / m + 1) hC1
-      have hpC : q.1 ≤ (q.1 / m + 1) * m := (Nat.lt_div_mul_add (a := q.1) (b := m) (by omega)).le.trans
-        (by rw [add_mul, one_mul])
+      have hpC : q.1 ≤ (q.1 / m + 1) * m :=
+        (Nat.lt_div_mul_add (a := q.1) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
       obtain ⟨N, H, he, hN, hH⟩ := exists_eval_onSchedule hB
         (onSchedule_root_capPrecision hg (Nat.le_add_left 1 _) hpC) rfl (by omega)
       refine ⟨N, H, he, fun _ => ?_, hH.trans ((Nat.log_lt_self 2 (by omega)).le.trans
