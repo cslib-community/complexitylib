@@ -80,9 +80,11 @@ In Thorup [Thorup2013] (`arXiv:1311.3121v2`):
 * `Cslib.Probability.simpleTabTuple`: first-level simple tabulation
   `(Fin c → Fin d → Fin (2 ^ b) → Fin (2 ^ b)) → (Fin c → Fin (2 ^ b)) → (Fin d → Fin (2 ^ b))`.
 * `Cslib.Probability.DoubleTabTopSeed`, `Cslib.Probability.DoubleTabBotSeed`,
-  `Cslib.Probability.doubleTabHash`, `Cslib.Probability.doubleTabCodeBound`: seed types, composed
-  double tabulation hash `Fin U → Fin (2 ^ M)`, and the per-step code-counting factor
-  `c * ((c * k) ^ (2 * c) * d) ^ q`.
+  `Cslib.Probability.doubleTabHash`, `Cslib.Probability.doubleTabCodeBound`,
+  `Cslib.Probability.doubleTabMinB`, `Cslib.Probability.doubleTabThreshold`: seed types, composed
+  double tabulation hash `Fin U → Fin (2 ^ M)`, per-step code-counting factor
+  `c * ((c * k) ^ (2 * c) * d) ^ q`, minimum character bit-width `doubleTabMinB c_exp`, and
+  capacity threshold `doubleTabThreshold c_exp = 2 ^ (2 * doubleTabMinB c_exp)`.
 
 ## Main results
 
@@ -92,9 +94,10 @@ In Thorup [Thorup2013] (`arXiv:1311.3121v2`):
 * `Cslib.Probability.isKWiseIndependentHash_doubleTabHash_of_isKUnique`: when `T₁` is `k`-unique and
   `U ≤ 2 ^ (c * b)`, `T₂ ↦ doubleTabHash c d b U M T₁ T₂` is `k`-wise independent.
 * `Cslib.Probability.card_not_isKUnique_le`,
-  `Cslib.Probability.card_not_isKUnique_eight_mul_le`: explicit universal `k`-uniqueness bounds for
+  `Cslib.Probability.card_not_isKUnique_eight_mul_le`,
+  `Cslib.Probability.four_le_doubleTabThreshold`: explicit universal `k`-uniqueness bounds for
   `simpleTabTuple T₁` ([Thorup2013], Theorem 1(a), Section 2 Eqs. (6)–(7), Section 3 Theorem 7(a)
-  and Lemmas 8–9).
+  and Lemmas 8–9) and threshold lower bound `4 ≤ doubleTabThreshold c_exp`.
 
 ## References
 
@@ -1362,5 +1365,38 @@ theorem card_not_isKUnique_eight_mul_le {c b k : ℕ} (hc : 1 ≤ c)
     congr 1
     ring
   rwa [hpow] at h
+
+/-- Minimum character bit-width `doubleTabMinB c_exp` for polynomial universe exponent `c_exp : ℕ`,
+bounding the character bit-width `b = (1 + Nat.clog 2 (max n_max 4)) / 2` from below when
+`doubleTabThreshold c_exp ≤ n_max` (`n_max` = capacity bound) so `doubleTabHash` satisfies the
+high-probability logarithmic `k`-uniqueness bound via `Nat.pow_le_two_pow`. -/
+@[expose] def doubleTabMinB (c_exp : ℕ) : ℕ :=
+  let z := 8 + 48 * max c_exp 1
+  4 * (z * z)
+
+theorem doubleTabMinB_eq (c_exp : ℕ) :
+    doubleTabMinB c_exp = 4 * (24 * (2 * max c_exp 1) + 8) ^ 2 := by
+  unfold doubleTabMinB
+  ring
+
+/-- Capacity threshold `2 ^ (2 * doubleTabMinB c_exp)` for polynomial universe exponent `c_exp : ℕ`
+above which Double Tabulation with `c = 2 * max c_exp 1` characters of bit-width
+`b = (1 + Nat.clog 2 (max n_max 4)) / 2` achieves logarithmic `k`-wise independence with
+inverse-polynomial failure probability. -/
+@[expose] def doubleTabThreshold (c_exp : ℕ) : ℕ :=
+  2 ^ (2 * doubleTabMinB c_exp)
+
+theorem doubleTabThreshold_eq (c_exp : ℕ) :
+    doubleTabThreshold c_exp = 2 ^ (2 * doubleTabMinB c_exp) :=
+  rfl
+
+theorem four_le_doubleTabThreshold (c_exp : ℕ) :
+    4 ≤ doubleTabThreshold c_exp := by
+  rw [doubleTabThreshold_eq]
+  have hmin : 0 < doubleTabMinB c_exp := by
+    dsimp [doubleTabMinB]
+    positivity
+  calc 4 = 2 ^ 2 := by decide
+    _ ≤ 2 ^ (2 * doubleTabMinB c_exp) := Nat.pow_le_pow_right (by decide) (by omega)
 
 end Cslib.Probability

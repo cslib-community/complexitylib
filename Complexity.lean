@@ -15,6 +15,7 @@ public import Complexity.Algorithms.Lean.CuckooHashing
 public import Complexity.Algorithms.Lean.Dictionary
 public import Complexity.Algorithms.Lean.DisjointSet
 public import Complexity.Algorithms.Lean.DisjointSet.UnionFind
+public import Complexity.Algorithms.Lean.DoubleHashing
 public import Complexity.Algorithms.Lean.FenwickTree.Basic
 public import Complexity.Algorithms.Lean.FenwickTree.Lowbit
 public import Complexity.Algorithms.Lean.FenwickTree.Stateful
@@ -3018,6 +3019,7 @@ public import Complexity.Foundations.Data.Nat.Factorial
 public import Complexity.Foundations.Data.Nat.Fields
 public import Complexity.Foundations.Data.Nat.IntermediateValue
 public import Complexity.Foundations.Data.Nat.Log
+public import Complexity.Foundations.Data.Nat.OddMulMod
 public import Complexity.Foundations.Data.Nat.OfDigits
 public import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 public import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential

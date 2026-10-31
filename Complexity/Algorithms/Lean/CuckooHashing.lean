@@ -117,14 +117,12 @@ In Pagh and Rodler [PaghRodler2004] (8 December 2003 manuscript,
   a subset `K ⊆ insert u S` containing `u` with `3 ≤ K.card ≤ maxCard` and
   `|(K.image h₁)| + |(K.image h₂)| + 1 ≤ K.card`.
 
-* `Cslib.Algorithms.Lean.CuckooHashing.doubleTabMinB`,
-  `Cslib.Algorithms.Lean.CuckooHashing.doubleTabThreshold`,
-  `Cslib.Algorithms.Lean.CuckooHashing.ProvableHashSeed`,
+* `Cslib.Algorithms.Lean.CuckooHashing.ProvableHashSeed`,
   `Cslib.Algorithms.Lean.CuckooHashing.provableHash1`,
   `Cslib.Algorithms.Lean.CuckooHashing.provableHash2`: regime-switched hash family parameterized by
   the polynomial universe exponent `c_exp : ℕ` (`U ≤ max n_max 4 ^ c_exp`), using
-  `trinomialPolyHash` below `doubleTabThreshold c_exp` and Thorup's `doubleTabHash` [Thorup2013] at
-  or above `doubleTabThreshold c_exp`.
+  `trinomialPolyHash` below `Cslib.Probability.doubleTabThreshold c_exp` and Thorup's
+  `doubleTabHash` [Thorup2013] at or above `Cslib.Probability.doubleTabThreshold c_exp`.
 
 ## Main results
 
@@ -2981,37 +2979,6 @@ theorem isCuckooHashPair_doubleTabHash {c b U M : ℕ}
     (fun T₁ hT₁ => isKWiseIndependentHash_doubleTabHash_of_isKUnique hU
       (Finset.mem_filter.mp hT₁).2)
     hwhp hm hloop_ge hloop_le
-
-/-- Minimum character bit-width `doubleTabMinB c_exp` for polynomial universe exponent `c_exp : ℕ`,
-bounding the character bit-width `b = (1 + Nat.clog 2 (max n_max 4)) / 2` from below when
-`n_max ≥ doubleTabThreshold c_exp` so `doubleTabHash` satisfies the high-probability
-`(2 * maxEvictions n_max + 2)`-uniqueness bound. -/
-@[expose] def doubleTabMinB (c_exp : ℕ) : ℕ :=
-  let z := 8 + 48 * max c_exp 1
-  4 * (z * z)
-
-theorem doubleTabMinB_eq (c_exp : ℕ) :
-    doubleTabMinB c_exp = 4 * (24 * (2 * max c_exp 1) + 8) ^ 2 := by
-  unfold doubleTabMinB
-  ring
-
-/-- Regime-switch capacity threshold `2 ^ (2 * doubleTabMinB c_exp)` between `trinomialPolyHash`
-and `doubleTabHash`. -/
-@[expose] def doubleTabThreshold (c_exp : ℕ) : ℕ :=
-  2 ^ (2 * doubleTabMinB c_exp)
-
-theorem doubleTabThreshold_eq (c_exp : ℕ) :
-    doubleTabThreshold c_exp = 2 ^ (2 * doubleTabMinB c_exp) :=
-  rfl
-
-theorem four_le_doubleTabThreshold (c_exp : ℕ) :
-    4 ≤ doubleTabThreshold c_exp := by
-  rw [doubleTabThreshold_eq]
-  have hmin : 0 < doubleTabMinB c_exp := by
-    dsimp [doubleTabMinB]
-    positivity
-  calc 4 = 2 ^ 2 := by decide
-    _ ≤ 2 ^ (2 * doubleTabMinB c_exp) := Nat.pow_le_pow_right (by decide) (by omega)
 
 /-- Regime-indexed seed space for `ProvableHashSeed`. -/
 @[expose] def ProvableHashSeedAux (reg : Bool) (c_exp n_max U M : ℕ) : Type :=
