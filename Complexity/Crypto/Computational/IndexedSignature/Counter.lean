@@ -111,7 +111,9 @@ def counterEufCmaGame (adversary : Forger) (n : ℕ) : ProbComp Bool := do
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.counterSigningOracle n keys.2)) (adversary n keys.1)).run (0, [])
-  return !out.2.2.contains out.1.1 && S.counterVerify keys.1 out.1.1 out.1.2
+  let msig := out.1
+  let state := out.2
+  return !state.2.contains msig.1 && S.counterVerify keys.1 msig.1 msig.2
 
 variable {S}
 
@@ -150,7 +152,8 @@ theorem isPPTOn_run_counterSigningOracle {adversary : Forger}
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
-            (S.counterSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
+            (S.counterSigningOracle caller.1 (Prod.snd caller.2)))
+          (adversary caller.1 (Prod.fst caller.2))).run
           (0, [])) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hcap := S.capacity_polyTime
@@ -280,7 +283,8 @@ def counterForger (bound : ℕ → ℕ → ℕ) (adversary : Forger) : IndexedFo
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
       (S.counterHandler n bound)) (adversary n pk)).run 0
-  return ((requestDecoder.decode out.1.2).1, out.1.1, (requestDecoder.decode out.1.2).2)
+  let msig := out.1
+  return ((requestDecoder.decode msig.2).1, msig.1, (requestDecoder.decode msig.2).2)
 
 /-! ### Exact simulation -/
 

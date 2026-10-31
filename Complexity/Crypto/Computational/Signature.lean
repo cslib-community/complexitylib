@@ -97,7 +97,7 @@ structure SignatureScheme where
   sign_ppt : IsPPTOn (encPair encBits encBits) encBits (fun p => sign p.1 p.2)
   /-- Verification is computable in plain polynomial time on `(pk, msg, sig)`. -/
   verify_polyTime : ComputableInPolyTime
-    (fun p : List Bool × List Bool × List Bool => verify p.1 p.2.1 p.2.2)
+    (fun p : List Bool × List Bool × List Bool => verify p.1 (Prod.fst p.2) (Prod.snd p.2))
     (encPair encBits (encPair encBits encBits)) encBool
   /-- Every signature produced by `sign` on an `n`-bit message under a supported key pair at
   security parameter `n` is accepted by `verify`. -/
@@ -173,8 +173,9 @@ def eufCmaGame (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.signingOracle keys.2)) (adversary n keys.1)).run []
-  return (out.1.1.length == n) && !out.2.contains out.1.1 &&
-    S.verify keys.1 out.1.1 out.1.2
+  let msig := out.1
+  return (msig.1.length == n) && !out.2.contains msig.1 &&
+    S.verify keys.1 msig.1 msig.2
 
 attribute [local fun_prop] ComputableInPolyTime.tidy in
 /-- Run the complete EUF-CMA experiment on its unary security parameter for any oracle-PPT
@@ -275,8 +276,9 @@ def eufOneTimeGame (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
-  return (out.1.1.length == n) && !out.2.contains out.1.1 &&
-    S.verify keys.1 out.1.1 out.1.2
+  let msig := out.1
+  return (msig.1.length == n) && !out.2.contains msig.1 &&
+    S.verify keys.1 msig.1 msig.2
 
 /-- Running an oracle-PPT forger against `oneTimeSigningOracle` is uniformly strict PPT in the
 unary security parameter, public key, and secret key. -/
@@ -288,7 +290,8 @@ theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forg
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
-            (S.oneTimeSigningOracle caller.2.2)) (adversary caller.1 caller.2.1)).run []) := by
+            (S.oneTimeSigningOracle (Prod.snd caller.2)))
+          (adversary caller.1 (Prod.fst caller.2))).run []) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hhandler : IsPPTOn
       (encPair (encPair encUnary (encPair encBits encBits))

@@ -356,7 +356,8 @@ theorem isPPTOn_lamportSign :
 theorem computableInPolyTime_lamportVerify {f : List Bool → List Bool}
     (hf : ComputableInPolyTime f encBits encBits) :
     ComputableInPolyTime
-      (fun p : List Bool × List Bool × List Bool => lamportVerify f p.1 p.2.1 p.2.2)
+      (fun p : List Bool × List Bool × List Bool =>
+        lamportVerify f p.1 (Prod.fst p.2) (Prod.snd p.2))
       (encPair encBits (encPair encBits encBits)) encBool := by
   have hf := hf.tidy
   refine .of_tidy ?_
@@ -512,7 +513,7 @@ noncomputable def lamportSimKeys (f : List Bool → List Bool) (n j : ℕ) (y : 
 theorem isPPTOn_lamportSimKeys {f : List Bool → List Bool}
     (hf : ComputableInPolyTime f encBits encBits) :
     IsPPTOn (encPair (encPair encUnary encBits) encUnary) (encPair encBits encBits)
-      (fun q : (ℕ × List Bool) × ℕ => lamportSimKeys f q.1.1 q.2 q.1.2) := by
+      (fun q : (ℕ × List Bool) × ℕ => lamportSimKeys f (Prod.fst q.1) q.2 (Prod.snd q.1)) := by
   have hf := hf.tidy
   unfold lamportSimKeys
   have hfront : IsPPTOn (encPair (encPair encUnary encBits) encUnary) (encList encBits)
@@ -583,7 +584,8 @@ noncomputable def lamportInverter (f : List Bool → List Bool)
     let out ← (OracleComp.interpret
       (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
         ((lamportScheme f hf).oneTimeSigningOracle keys.2)) (adversary n keys.1)).run []
-    return (frames out.1.2).getD (j / 2) []
+    let msig := out.1
+    return (frames msig.2).getD (j / 2) []
   else
     return []
 

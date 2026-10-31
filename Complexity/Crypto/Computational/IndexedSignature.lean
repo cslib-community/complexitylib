@@ -101,10 +101,11 @@ structure IndexedSignatureScheme where
   keyGen_ppt : IsPPTOn encUnary (encPair encBits encBits) keyGen
   /-- Signing is uniformly strict PPT in the secret key, the unary index and the message. -/
   sign_ppt : IsPPTOn (encPair encBits (encPair encUnary encBits)) encBits
-    (fun p => sign p.1 p.2.1 p.2.2)
+    (fun p => sign p.1 (Prod.fst p.2) (Prod.snd p.2))
   /-- Verification is computable in plain polynomial time on `(pk, u, msg, sig)`. -/
   verify_polyTime : ComputableInPolyTime
-    (fun p : List Bool × ℕ × List Bool × List Bool => verify p.1 p.2.1 p.2.2.1 p.2.2.2)
+    (fun p : List Bool × ℕ × List Bool × List Bool =>
+      verify p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
     (encPair encBits (encPair encUnary (encPair encBits encBits))) encBool
   /-- Every signature produced at an index below the capacity, under a supported key pair, is
   accepted. -/
@@ -142,8 +143,10 @@ def indexedEufCmaGame (S : IndexedSignatureScheme) (adversary : IndexedForger) (
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (S.indexedSigningOracle n keys.2)) (adversary n keys.1)).run []
-  return !out.2.contains (out.1.1, out.1.2.1) &&
-    S.verify keys.1 out.1.1 out.1.2.1 out.1.2.2
+  let u_msig := out.1
+  let msig := u_msig.2
+  return !out.2.contains (u_msig.1, msig.1) &&
+    S.verify keys.1 u_msig.1 msig.1 msig.2
 
 /-- Running an oracle-PPT indexed forger against `indexedSigningOracle` is uniformly strict PPT in
 the unary security parameter, the public key and the secret key. -/
@@ -155,7 +158,8 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
-            (S.indexedSigningOracle caller.1 caller.2.2)) (adversary caller.1 caller.2.1)).run
+            (S.indexedSigningOracle caller.1 (Prod.snd caller.2)))
+          (adversary caller.1 (Prod.fst caller.2))).run
           []) := by
   obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
   have hcap := S.capacity_polyTime

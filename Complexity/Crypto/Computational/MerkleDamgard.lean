@@ -296,7 +296,7 @@ theorem computableInPolyTime_chainTrace
     (hlen : ∀ k x, x.length = 2 * k.length → (h k x).length = k.length) :
     ComputableInPolyTime
       (fun p : List Bool × List Bool × List (List Bool) =>
-        chainTrace h p.1 p.2.1 p.2.2)
+        chainTrace h p.1 (Prod.fst p.2) (Prod.snd p.2))
       (encPair encBits (encPair encBits (encList encBits)))
       (encPair encBits (encList encBits)) :=
   .of_tidy (computableTidilyInPolyTime_chainTrace hh.tidy hlen
@@ -348,7 +348,8 @@ theorem computableInPolyTime_extractChainCollision
     (hlen : ∀ k x, x.length = 2 * k.length → (h k x).length = k.length) :
     ComputableInPolyTime
       (fun p : List Bool × List Bool × List (List Bool) × List (List Bool) =>
-        extractChainCollision h p.1 p.2.1 p.2.2.1 p.2.2.2)
+        extractChainCollision h p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2))
+          (Prod.snd (Prod.snd p.2)))
       (encPair encBits (encPair encBits (encPair (encList encBits) (encList encBits))))
       (encPair encBits encBits) :=
   .of_tidy (computableTidilyInPolyTime_extractChainCollision hh.tidy hlen
@@ -732,7 +733,7 @@ theorem computableInPolyTime_extractMerkleDamgardCollision
     (hlen : ∀ k x, x.length = 2 * k.length → (h k x).length = k.length) :
     ComputableInPolyTime
       (fun p : List Bool × List Bool × List Bool =>
-        extractMerkleDamgardCollision h p.1 p.2.1 p.2.2)
+        extractMerkleDamgardCollision h p.1 (Prod.fst p.2) (Prod.snd p.2))
       (encPair encBits (encPair encBits encBits))
       (encPair encBits encBits) := by
   apply ComputableInPolyTime.of_tidy
