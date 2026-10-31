@@ -19,8 +19,9 @@ public import Complexity.Computability.Communication.Nondeterministic.Basic
 
 Bounds on `Nondeterministic.ecomplexityFun` for the standard functions on `v`-bit strings:
 
-* equality: `N¹(EQ_v) = v`, from the fooling set of diagonal pairs and the cover by diagonal
-  singletons [Kushilevitz and Nisan, Examples 1.21 and 2.5][KushilevitzNisan1997];
+* equality: `N¹(EQ_v) = v`, from the fooling set of diagonal pairs
+  [Kushilevitz and Nisan, Examples 1.21 and 2.5][KushilevitzNisan1997] and, for the upper bound,
+  the cover by the `2^v` diagonal singletons;
 * disjointness: `N¹(DISJ_v) = v`, from the fooling set of complementary pairs
   [Kushilevitz and Nisan, Example 1.23][KushilevitzNisan1997] and the cover by the rectangles
   `{x ⊆ w} × {y ⊆ wᶜ}`, so `N⁰(NDISJ_v) = v` for its negation;
