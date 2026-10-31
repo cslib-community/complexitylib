@@ -400,8 +400,10 @@ public import Complexity.Algorithms.WordRAM.RadixSort.Model
 public import Complexity.Algorithms.WordRAM.RadixSort.Program
 public import Complexity.Algorithms.WordRAM.RadixSort.Scan
 public import Complexity.Algorithms.WordRAM.Schoening.Amplify
+public import Complexity.Algorithms.WordRAM.Schoening.Counter
 public import Complexity.Algorithms.WordRAM.Schoening.Scan
 public import Complexity.Algorithms.WordRAM.Schoening.Trial
+public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
