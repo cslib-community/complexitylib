@@ -89,6 +89,9 @@ public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.AKS.Congruence
+public import Complexity.Algorithms.WordRAM.AKS.CongruenceLoop
+public import Complexity.Algorithms.WordRAM.AKS.GcdTotient
+public import Complexity.Algorithms.WordRAM.AKS.OrderSearch
 public import Complexity.Algorithms.WordRAM.AKS.PerfectPower
 public import Complexity.Algorithms.WordRAM.AKS.PolyArray
 public import Complexity.Algorithms.WordRAM.AKS.PolyMul
@@ -950,6 +953,8 @@ public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
 public import Complexity.Computability.Circuit.Program
 public import Complexity.Computability.Circuit.Quantum.Basic
+public import Complexity.Computability.Circuit.Quantum.Code
+public import Complexity.Computability.Circuit.Quantum.Uniform
 public import Complexity.Computability.Circuit.Rational
 public import Complexity.Computability.Circuit.Rational.Affine
 public import Complexity.Computability.Circuit.Rational.BlockDivision
@@ -1055,6 +1060,7 @@ public import Complexity.Computability.Complexity.Classes.BPP.KarpLipton
 public import Complexity.Computability.Complexity.Classes.BPP.Reduction
 public import Complexity.Computability.Complexity.Classes.BPP.WorstCaseHardness
 public import Complexity.Computability.Complexity.Classes.BPPpath
+public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Closure
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Kadin
@@ -1876,6 +1882,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.D
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork.Graph
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork.GraphPolyTime
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork.Table
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExplicitBlockNetwork.TablePolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExtendTapes
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.InputFromTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalCount
@@ -2477,11 +2485,13 @@ public import Complexity.Foundations.Analysis.RootError
 public import Complexity.Foundations.Analysis.RowCompression
 public import Complexity.Foundations.Analysis.RowCompression.FalseOverflow
 public import Complexity.Foundations.Analysis.RowCompression.Floors
+public import Complexity.Foundations.Analysis.RowCompression.GateClosure
 public import Complexity.Foundations.Analysis.RowCompression.Iteration
 public import Complexity.Foundations.Analysis.RowCompression.NoiseDecay
 public import Complexity.Foundations.Analysis.RowCompression.OverflowBudget
 public import Complexity.Foundations.Analysis.RowCompression.OverflowNoise
 public import Complexity.Foundations.Analysis.RowCompression.Perturbation
+public import Complexity.Foundations.Analysis.RowCompression.PreloadedIteration
 public import Complexity.Foundations.Analysis.RowCompression.Preloss
 public import Complexity.Foundations.Analysis.RowCompression.Reference
 public import Complexity.Foundations.Analysis.RowCompression.Sentinel
@@ -2881,11 +2891,13 @@ public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Orde
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
 public import Complexity.Foundations.NumberTheory.AKS.Correctness
 public import Complexity.Foundations.NumberTheory.AKS.Criterion
+public import Complexity.Foundations.NumberTheory.AKS.IntegerVariant
 public import Complexity.Foundations.NumberTheory.AKS.Introspective
 public import Complexity.Foundations.NumberTheory.AKS.PerfectPower
 public import Complexity.Foundations.NumberTheory.AKS.SmallR
 public import Complexity.Foundations.NumberTheory.Harmonic
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootDigitLift
+public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootReduction
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import Complexity.Foundations.NumberTheory.Padics.RatValuation
 public import Complexity.Foundations.NumberTheory.PrimeCounting
@@ -2914,6 +2926,9 @@ public import Complexity.Foundations.Probability.HierarchyParams
 public import Complexity.Foundations.Probability.PolynomialAtomCutoffs
 public import Complexity.Foundations.Probability.PolynomialAtomFalseOverflow
 public import Complexity.Foundations.Probability.PolynomialAtomRows
+public import Complexity.Foundations.Probability.PolynomialAtomRows.FirstOverflow
+public import Complexity.Foundations.Probability.PolynomialAtomRows.Relative
+public import Complexity.Foundations.Probability.PolynomialAtomRows.RootError
 public import Complexity.Foundations.Probability.ProductError
 public import Complexity.Foundations.Probability.RootMetric
 public import Complexity.Foundations.Probability.RootMetric.Minkowski
