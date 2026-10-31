@@ -929,6 +929,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildCurso
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildEntries
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildNumbering
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildSize
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetwork
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetworkPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffScheme
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
@@ -1381,6 +1383,7 @@ public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
 public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
+public import Complexity.Computability.Complexity.FineGrained.ContractionCounting
 public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingFiniteCSP
