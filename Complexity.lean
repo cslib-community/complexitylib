@@ -924,6 +924,8 @@ public import Complexity.Computability.Circuit.Frontier.Sweep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Binarize
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CSPNetwork
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CSPNetworkPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildCursor
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildEntries
@@ -1384,6 +1386,7 @@ public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
 public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.ContractionCounting
+public import Complexity.Computability.Complexity.FineGrained.ContractionPartitionFunction
 public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingFiniteCSP
@@ -3228,6 +3231,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
+public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.CSP.ToCNF.Count
