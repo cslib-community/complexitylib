@@ -19,7 +19,11 @@ public import Complexity.Algorithms.Lean.FusionTree.Sketch
 public import Complexity.Algorithms.Lean.FusionTree.Tree
 public import Complexity.Algorithms.Lean.FusionTree.XorCorrection
 public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.Algorithms.Lean.Matroid.Greedy
 public import Complexity.Algorithms.Lean.MinPQ
+public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
+public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
+public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Queue
 public import Complexity.Algorithms.Lean.Retroactive
 public import Complexity.Algorithms.Lean.SearchTree.Basic
