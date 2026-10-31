@@ -103,6 +103,7 @@ and `d` variables, and `zeroInstance` otherwise. -/
 @[expose] def guarded (d : ℕ) (F : CSP Unit ℕ) : CSP Unit ℕ :=
   if F.all fun c => decide (1 ≤ c.2.length ∧ c.2.length ≤ d) then F else zeroInstance
 
+/-- No assignment makes exactly one of the two copies of the variable `0` true. -/
 theorem partitionFunction_zeroInstance :
     zeroInstance.partitionFunction CSP.exactlyOneWeight = 0 := by
   decide
