@@ -894,6 +894,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffSchem
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
@@ -902,6 +903,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCo
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeCall
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeChild
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeRecovery
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEvaluator
