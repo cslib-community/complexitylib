@@ -5,10 +5,12 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Circuit.Boolean.Sparse
+import Complexity.Computability.Complexity.Classes.Sparse.BoundedTruthTable
 import Complexity.Computability.Complexity.Classes.Sparse.Conjunctive
 import Complexity.Computability.Complexity.Classes.Sparse.Fortune
 import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
 import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
+import Complexity.Computability.Complexity.Classes.Sparse.Prune
 
 /-!
 # Sparse problems and the procedures of Fortune and Mahaney
@@ -21,7 +23,18 @@ procedures as exponential-time deciders for `SAT`, which satisfy the hypotheses 
 encodings of their members, or the negated one-query reduction of `SAT` to `UNSAT`, and an
 exponential bound. The left set of `SAT` on concrete formulas, `SEARCH-RIGHT` on concrete levels,
 and the conjunctive procedure with queries that decide satisfiability, which satisfy the hypotheses
-of `Cslib.Complexity.Conjunctive.accepts_iff` with the bound `0`.
+of `Cslib.Complexity.Conjunctive.accepts_iff` with the bound `0`. `SEARCH-RIGHT`, `SEARCH-LEFT`
+and `PRUNE` on a concrete level with a two-depth Hausdorff decomposition, which satisfies the
+hypotheses of `Cslib.Complexity.BTT.getElem_mem_prune`. The Hausdorff sets of the parity truth
+table on concrete answers; conjunctive reductions of the Hausdorff sets of the identity one-query
+reduction to tally problems; the bounded truth-table procedure on concrete formulas, including
+queries that do not come from a reduction, which break it; and queries that decide satisfiability,
+which satisfy the hypotheses of `Cslib.Complexity.BTT.accepts_iff`.
+
+The main hypotheses of `Cslib.Complexity.Fortune.SAT_mem_P`, `Cslib.Complexity.Mahaney.SAT_mem_P`,
+`Cslib.Complexity.OneQuery.SAT_mem_P`, `Cslib.Complexity.Conjunctive.SAT_mem_P` and
+`Cslib.Complexity.BTT.SAT_mem_P`, a reduction of `SAT` or `UNSAT` to a sparse problem, cannot be
+instantiated unless `P = NP`; the tests check the procedures and the other hypotheses instead.
 -/
 
 namespace ComplexityTests.SparseHardSets
@@ -299,5 +312,87 @@ example (φ : CNF ℕ) :
   · split <;> simp_all
   · split at hw <;> simp_all
   · exact (Finset.card_eq_zero.2 (Finset.eq_empty_of_forall_notMem fun w hw => (hT w hw).1)).le
+
+/-! ### Pruning along a Hausdorff decomposition -/
+
+/-- The sets `C 0 = {0, …, 6}`, `C 1 = {2, …, 6}`, `C 2 = {2, 3}` and `C 3 = ∅`, a Hausdorff
+decomposition `(C 0 \ C 1) ∪ (C 2 \ C 3) = {0, 1, 2, 3}`. -/
+private def hausdorff : ℕ → ℕ → Bool
+  | 0, y => y ≤ 6
+  | 1, y => 2 ≤ y && y ≤ 6
+  | 2, y => 2 ≤ y && y ≤ 3
+  | _, _ => false
+
+/-- One query per node and set: `0` for the members of `C j`, and a query naming the node
+otherwise, so that each `C j` reduces conjunctively to `{0}`. -/
+private def hausdorffQueries (j y : ℕ) : List ℕ := [if hausdorff j y then 0 else y + 1]
+
+/-- On the level `0, …, 7`: `SEARCH-RIGHT` from `0` keeps `6`, the end of the run in `C 0`, and the
+last node; `SEARCH-LEFT` from `6` keeps `2`, the start of the run in `C 1`, and the first node;
+`PRUNE` keeps `3`, the last node of `{0, 1, 2, 3}`. -/
+example : BTT.searchRightFrom (hausdorffQueries 0) 1 (List.range 8) 0 = [6, 7] ∧
+    BTT.searchLeftFrom (hausdorffQueries 1) 1 (List.range 8) 6 = [2, 0] ∧
+    BTT.prune hausdorffQueries 1 2 (List.range 8) = [0, 1, 2, 3, 6, 7] := by
+  decide
+
+/-- The hypotheses of `BTT.getElem_mem_prune` hold for this decomposition, with the target `{0}`
+and the bound `1`. -/
+example : (List.range 8)[3] ∈ BTT.prune hausdorffQueries 1 2 (List.range 8) :=
+  BTT.getElem_mem_prune (C := fun j y => hausdorff j y = true) (K := fun _ => {w | w = 0})
+    (by decide) (fun j y _ h => by rcases j with _ | _ | _ | j <;> simp_all [hausdorff]; omega)
+    (by decide) (by decide)
+    fun _ _ T hT => Finset.card_le_one.2 fun a ha b hb => (hT a ha).trans (hT b hb).symm
+
+/-! ### Sparse sets hard under bounded truth-table reductions -/
+
+/-- The parity of the number of `true` answers. -/
+private def parityTable (v : List Bool) : Bool := v.count true % 2 == 1
+
+/-- Below the answers `11`, the chain `11 > 10` alternates from `false` to `true`, so `11` is in the
+first Hausdorff set of the parity table; `10` is in the zeroth, where the parity is `true`. -/
+example : BTT.Hausdorff parityTable [true, true] 1 ∧ BTT.Hausdorff parityTable [true, false] 0 :=
+  ⟨⟨[true, true], [[true, false]], by unfold BTT.StepBelow; decide, rfl, by decide, by decide⟩,
+    ⟨[true, false], [], by simp, rfl, by decide, by decide⟩⟩
+
+/-- The Hausdorff decomposition of the parity table: the answers `10` lie in the zeroth set and
+not the first one, and the answers `11` in no difference `C (2 d) \ C (2 d + 1)`. -/
+example : (∃ d < 2, BTT.Hausdorff parityTable [true, false] (2 * d) ∧
+      ¬BTT.Hausdorff parityTable [true, false] (2 * d + 1)) ∧
+    ¬∃ d < 2, BTT.Hausdorff parityTable [true, true] (2 * d) ∧
+      ¬BTT.Hausdorff parityTable [true, true] (2 * d + 1) :=
+  ⟨(BTT.eq_true_iff_exists_hausdorff (by decide)).1 (by decide),
+    fun h => absurd ((BTT.eq_true_iff_exists_hausdorff (by decide)).2 h) (by decide)⟩
+
+/-- The Hausdorff sets of the identity one-query reduction of any set of natural numbers to itself
+reduce conjunctively to tally problems. -/
+example (B : Set ℕ) (j : ℕ) : ∃ A : Set ℕ, PolyTimeCTTReducible encUnary encUnary
+    {n | BTT.Hausdorff (fun v => v.headD false)
+      (truthTableAnswers ((fun p : ℕ × ℕ => p.1) ⁻¹' B) (fun _ => 1) n) j} A :=
+  BTT.exists_polyTimeCTTReducible_hausdorff (k := 1) (d := fun p => p.2.headD false)
+    ⟨B, .refl _ _⟩ (by fun_prop) (by fun_prop) (by fun_prop) (fun _ => le_rfl) j
+
+/-- Queries that do not come from a reduction break the procedure: with the queries
+`[|ψ| + j]` and the bound `0`, the satisfiable `x₀ ∧ x₁` is accepted but the satisfiable
+`x₀ ∧ ¬x₁` is rejected, while the unsatisfiable `x₀ ∧ ¬x₀` is always rejected. -/
+example : BTT.accepts (fun j ψ => [ψ.length + j]) 1 0 [[(0, true)], [(1, true)]] = true ∧
+    BTT.accepts (fun j ψ => [ψ.length + j]) 1 0 [[(0, true)], [(1, false)]] = false ∧
+    BTT.accepts (fun j ψ => [ψ.length + j]) 1 0 [[(0, true)], [(0, false)]] = false := by
+  decide
+
+open Classical in
+/-- The hypotheses of `BTT.accepts_iff` are satisfiable: `SAT` is `C 0 \ C 1` for the sets
+`C 0 = SAT` and `C j = ∅` otherwise, which reduce conjunctively to the empty set with no query for
+members and the query `0` otherwise. -/
+example (φ : CNF ℕ) :
+    BTT.accepts (fun j ψ => if j = 0 ∧ ψ ∈ SAT then [] else [0]) 1 1 φ = true ↔ φ ∈ SAT := by
+  refine BTT.accepts_iff (C := fun j ψ => j = 0 ∧ ψ ∈ SAT) (A := fun _ => ∅) (M := 0)
+    (fun j ψ h => absurd h.1 (by omega)) (fun ψ => ?_) (fun j _ ψ => ?_)
+    (fun j _ a _ _ w hw => ?_) le_rfl
+  · constructor
+    · exact fun h => ⟨0, by omega, ⟨rfl, h⟩, fun h' => absurd h'.1 (by omega)⟩
+    · rintro ⟨d, -, ⟨-, h⟩, -⟩
+      exact h
+  · split <;> simp_all
+  · split at hw <;> simp_all
 
 end ComplexityTests.SparseHardSets
