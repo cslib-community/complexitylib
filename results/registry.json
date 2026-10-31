@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "abstract_catalogue": "abstracts/catalogue.json",
+  "results": [
+    {
+      "id": "sharp-p-lowness",
+      "title": "Exact characterization of #P oracle lowness",
+      "topic": "counting classes",
+      "module": "Complexity.Computability.Complexity.Classes.SharpP.Lowness",
+      "theorems": [
+        "Cslib.Complexity.SharpPWithOracle_eq_SharpP_iff"
+      ],
+      "sources": [
+        {
+          "bib_key": "KoeblerSchoeningTodaToran1992",
+          "locator": null
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "Equality of #P^A and #P on binary words iff A is in UP ∩ coUP. Uses strict polynomial-time adaptive word-oracle verifiers, with resource bounds for arbitrary replies; does not assert an oracle-machine counting characterization."
+    },
+    {
+      "id": "gap-p-spp-lowness",
+      "title": "GapP and SPP lowness characterize SPP",
+      "topic": "counting classes",
+      "module": "Complexity.Computability.Complexity.Classes.SharpP.Lowness",
+      "theorems": [
+        "Cslib.Complexity.GapPWithOracle_eq_GapP_iff",
+        "Cslib.Complexity.SPPWithOracle_eq_SPP_iff"
+      ],
+      "sources": [
+        {
+          "bib_key": "FennerFortnowKurtz1994",
+          "locator": "Section 5"
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "Binary-word instances; strict adaptive oracle-verifier model. GapP is a difference of two unsigned witness counts."
+    },
+    {
+      "id": "first-order-logspace",
+      "title": "Fixed first-order queries are decidable in logarithmic space",
+      "topic": "descriptive complexity",
+      "module": "Complexity.Computability.Complexity.Classes.LogSpace.FirstOrder",
+      "theorems": [
+        "Cslib.Logic.Vocabulary.queryLanguage_mem_L",
+        "Cslib.Logic.FO.Definable.queryLanguage_mem_L"
+      ],
+      "sources": [
+        {
+          "bib_key": "Immerman1999",
+          "locator": "Theorem 3.1"
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "Fixed first-order sentences over finite relational vocabularies, with explicit structure encoding and malformed-input rejection. Includes empty structures and nullary relations; excludes constants and built-in order/BIT from the cited FO convention."
+    },
+    {
+      "id": "nl-in-p",
+      "title": "NL is contained in P",
+      "topic": "space complexity",
+      "module": "Complexity.Computability.Complexity.Classes.LogSpace.PolyTime",
+      "theorems": [
+        "Cslib.Complexity.NL_subset_P",
+        "Cslib.Complexity.mem_P_of_recognizesInSpace"
+      ],
+      "sources": [
+        {
+          "bib_key": "Sipser2013",
+          "locator": "Section 8.5"
+        },
+        {
+          "bib_key": "AroraBarak09",
+          "locator": "Section 4.1"
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "Finite-control native nondeterministic multi-tape machines and arbitrary injective encodings. The stronger recognizer result permits nonterminating branches with logarithmic workspace; deterministic polynomial-time configuration reachability decides acceptance."
+    },
+    {
+      "id": "ppz-success",
+      "title": "PPZ success probability for k-SAT",
+      "topic": "SAT algorithms",
+      "module": "Complexity.Computability.Complexity.FineGrained.PPZ",
+      "theorems": [
+        "Cslib.Complexity.PPZ.round_success_of_satisfiable",
+        "Cslib.Complexity.PPZ.round_success"
+      ],
+      "sources": [
+        {
+          "bib_key": "PPZ1997",
+          "locator": null
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "CNF over Fin n, clauses of length at most k ≥ 1. One-round success probability at least 2^(-(1 - 1/k)n); also a unique-solution theorem. Probabilistic semantics only: these declarations do not certify native runtime."
+    },
+    {
+      "id": "schoening-success",
+      "title": "Schöning randomized k-SAT success bound",
+      "topic": "SAT algorithms",
+      "module": "Complexity.Computability.Complexity.FineGrained.Schoening",
+      "theorems": [
+        "Cslib.Complexity.Schoening.trial_success_of_length_le",
+        "Cslib.Complexity.Schoening.trial_success"
+      ],
+      "sources": [
+        {
+          "bib_key": "Schoening1999",
+          "locator": null
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "Satisfiable CNF over a finite variable type, width at most k ≥ 3, uniform start and 3n local-search steps. Lower bound ((k-1)/k)^(k-3) · (k/(2(k-1)))^n / (3n+1). Explicit factors are this formalization’s constants; no native runtime assertion."
+    },
+    {
+      "id": "ov-sat-transfer",
+      "title": "Williams split-and-list transfer from OV to SAT",
+      "topic": "fine-grained complexity",
+      "module": "Complexity.Computability.Complexity.FineGrained.OrthogonalVectors",
+      "theorems": [
+        "Cslib.Complexity.DecidableInTimeO.decidableInExpTime_SAT"
+      ],
+      "sources": [
+        {
+          "bib_key": "Williams2005",
+          "locator": null
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "An OV decider of time N^(2-ε) times a polynomial in dimension yields native SAT time of exponent 1 - min(ε,1)/2 in occurring variables, with polynomial encoded-input overhead. This records the transfer, not the separate conditional OVH result or logarithmic-dimension OVH."
+    },
+    {
+      "id": "native-sparsification",
+      "title": "Native algorithmic consequence of sparsification",
+      "topic": "fine-grained complexity",
+      "module": "Complexity.Computability.Complexity.FineGrained.Sparsification",
+      "theorems": [
+        "Cslib.Complexity.exists_decidableInExpTime_numVars_of_length"
+      ],
+      "sources": [
+        {
+          "bib_key": "ImpagliazzoPaturiZane2001",
+          "locator": null
+        }
+      ],
+      "source_review": "recorded",
+      "scope": "For fixed width k and ε > 0, some natural c transfers a k-SAT decider of clause-count exponent δ ≥ 0 to variable-count exponent ε + cδ. Native machines, encCNF and polynomial encoded-length overhead; no new sharp sparsification constant."
+    }
+  ],
+  "collection_authors": [
+    "Christian Reitwiessner"
+  ]
+}

@@ -45,6 +45,10 @@ uses graph complementation; the [reduction index](Complexity/Computability/Compl
 points to the other proved problems and their reduction maps. The checked examples state these
 claims with plain `ComputableInPolyTime`.
 
+The [results and reference inventory](results/README.md) collects named results, exact Lean
+declarations and cited sources, including results without formal abstracts. It is an initial,
+incomplete collection with CI-checked declaration references.
+
 The [selected formal abstracts](abstracts/README.md) present a small set of major results with
 inspectable definitions and checked Lean statements. The [combined PDF](https://www.cslib.io/complexitylib/abstracts/catalogue.pdf)
 and individual PDFs are generated from those sources. Each states its model and limitations;
