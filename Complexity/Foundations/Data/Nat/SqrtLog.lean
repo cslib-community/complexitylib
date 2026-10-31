@@ -39,6 +39,7 @@ The floors cost only constant factors: the natural scale is between the real sca
 ## Main results
 
 * `Nat.log_two_le_div_sqrt_log_two`: `⌊log₂ n⌋ ≤ n / √⌊log₂ n⌋`.
+* `Nat.sqrt_log_two_le_sqrt_clog_two_sub_one_add_one`: `⌊√⌊log₂ n⌋⌋ ≤ ⌈√⌈log₂ n⌉⌉`.
 * `Nat.ceilDiv_clog_two_le`: `⌈n / ⌈log₂ (n + 2)⌉⌉ ≤ n / √⌊log₂ n⌋ + 1`.
 * `Nat.mul_div_sqrt_log_two_le`: the scale of `c * n` is at most `c` times that of `n`, plus `c`.
 * `Nat.div_sqrt_log_two_le_of_le`: the scale is monotone up to constants.
@@ -58,6 +59,24 @@ theorem one_le_sqrt_log_two {n : ℕ} (hn : 2 ≤ n) : 1 ≤ sqrt (log 2 n) :=
 /-- The divisor `√⌊log₂ n⌋` is monotone. -/
 theorem sqrt_log_two_mono : Monotone fun n => sqrt (log 2 n) :=
   fun _ _ h => sqrt_le_sqrt (log_mono_right h)
+
+/-- `⌊√⌊log₂ n⌋⌋ ≤ ⌈√⌈log₂ n⌉⌉`, the latter written `⌊√(⌈log₂ n⌉ - 1)⌋ + 1`: the divisor of the
+scale is at most the ceiling convention for the square root of the ceiling logarithm. -/
+theorem sqrt_log_two_le_sqrt_clog_two_sub_one_add_one (n : ℕ) :
+    sqrt (log 2 n) ≤ sqrt (clog 2 n - 1) + 1 := by
+  refine (sqrt_le_sqrt (log_le_clog 2 n)).trans ?_
+  refine le_of_lt_succ (sqrt_lt'.mpr ?_)
+  rcases eq_zero_or_pos (clog 2 n) with h | h
+  · rw [h]; exact Nat.pow_pos (succ_pos _)
+  · obtain ⟨m, hm⟩ : ∃ m, clog 2 n = m + 1 := ⟨clog 2 n - 1, by omega⟩
+    rw [hm, Nat.add_sub_cancel]
+    have h1 := lt_succ_sqrt' m
+    have h2 : (m.sqrt + 1) ^ 2 < (m.sqrt + 1 + 1) ^ 2 :=
+      Nat.pow_lt_pow_left (by omega) (by norm_num)
+    simp only [succ_eq_add_one] at h1 ⊢
+    generalize (m.sqrt + 1) ^ 2 = a at h1 h2
+    generalize (m.sqrt + 1 + 1) ^ 2 = b at h2 ⊢
+    omega
 
 /-- `m ^ 3 ≤ 4 ^ m`. -/
 private theorem cube_le_four_pow : ∀ m : ℕ, m ^ 3 ≤ 4 ^ m

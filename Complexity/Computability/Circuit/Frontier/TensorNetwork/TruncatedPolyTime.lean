@@ -15,8 +15,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 /-!
 # The reduction of truncation order `ℓ` as a native machine
@@ -44,9 +44,10 @@ specialized network (`directCoreCertificate`). Through the reduction at the modu
 (`le_two_pow_length_modulus`), this computes the truncated contraction on every input
 (`truncDirectCertificate`). Its cost is that of direct summation.
 
-No time or space bound of the loop is proved here. With the contraction of Theorem D.1 at `ℓ = 1`
-over `A_P` in place of direct summation, a bound of the loop gives Theorem D.1 at truncation order
-`ℓ` (#1538).
+The time and space of the loop are bounded in
+`Complexity/Computability/Circuit/Frontier/TensorNetwork/TruncatedResources.lean`. With the
+contraction of Theorem D.1 at `ℓ = 1` over `A_P` in place of direct summation, that bound gives
+Theorem D.1 at truncation order `ℓ` (#1538).
 
 ## Main definitions
 
@@ -123,7 +124,7 @@ variable (entry : T → List Bool → List ℕ)
 
 /-- **The native evaluator of specialized entries**, from a native certificate of the entries:
 evaluate the original entry, then apply Horner's rule in `A_P`. -/
-noncomputable def specEntryCertificate
+@[expose] noncomputable def specEntryCertificate
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) :
     NativeCertificate (fun q : SpecDesc T × List Bool => specEntry entry q.1 q.2)
@@ -322,7 +323,7 @@ theorem coreInput_polyTime :
     ((hP.prod (hℓ.prod (hfl.prod hζ))).prod hG))))
 
 /-- The certificate of one round, from a certificate of the contraction over `A_P`. -/
-noncomputable def engineStepCertificate
+@[expose] noncomputable def engineStepCertificate
     (cc : NativeCertificate core (encCore encT) (encList encNat)) :
     NativeCertificate (engineStep core)
       (encPair encNat (encPair (encEngine encT) (encList (encList encNat))))
@@ -373,7 +374,7 @@ theorem engineRecover_polyTime :
 `A_P` of specialized networks: the streaming loop over the digit points, keeping only the binary
 index, the input and the values so far, then recovery. On input `(fl, (P, ℓ, r, G))` it computes
 `interpContract core fl P ℓ r G`. -/
-noncomputable def engineCertificate
+@[expose] noncomputable def engineCertificate
     (cc : NativeCertificate core (encCore encT) (encList encNat)) :
     NativeCertificate (fun ((fl, P, ℓ, r, G) : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) =>
         DescribedNetwork.interpContract core fl P ℓ r G)
@@ -391,7 +392,7 @@ noncomputable def engineCertificate
 
 /-- **Direct summation over a specialized network**, as a contraction over `A_P` with the input
 `(P, fl, r, G')`, from a native certificate of the entries. -/
-noncomputable def directCoreCertificate
+@[expose] noncomputable def directCoreCertificate
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) :
     NativeCertificate
@@ -455,7 +456,7 @@ theorem interpContract_direct_eq (P ℓ r : ℕ) (G : DescribedNetwork T) :
 `(P, ℓ, r, G)`: the reduction with direct summation over `A_P` at the modulus
 `FastContraction.modulus n`, for `n = (ℓ - 1) k + 1` points. It is correct everywhere; its cost is
 that of direct summation, exponential in the number of edges. -/
-noncomputable def truncDirectCertificate
+@[expose] noncomputable def truncDirectCertificate
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) :
     NativeCertificate

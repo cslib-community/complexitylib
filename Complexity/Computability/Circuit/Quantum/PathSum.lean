@@ -43,6 +43,8 @@ simulations, which places `BQP` in the counting classes
 * `Cslib.Quantum.ofFn_inputState`: the input basis state is the input word padded with zeros.
 * `Cslib.Quantum.run_ofCodes_apply`: amplitudes are path sums.
 * `Cslib.Quantum.acceptProb_eq_acceptGap`: the acceptance probability is `acceptGap / 2^h`.
+* `Cslib.Quantum.acceptGap_nonneg_and_le`: so the acceptance gap lies between `0` and `2^h`.
+* `Cslib.Quantum.acceptGap_nil`: the acceptance gap of the empty circuit is the bit of qubit `0`.
 
 ## References
 
@@ -126,6 +128,13 @@ def acceptTerm (gs : List GateCode) (x π π' : List Bool) : ℤ :=
 def acceptGap (gs : List GateCode) (x : List Bool) : ℤ :=
   ∑ π : Fin (hadamardCount gs) → Bool, ∑ π' : Fin (hadamardCount gs) → Bool,
     acceptTerm gs x (List.ofFn π) (List.ofFn π')
+
+/-- The acceptance gap of the empty circuit is the bit of qubit `0`. -/
+theorem acceptGap_nil (x : List Bool) : acceptGap [] x = if x.headD false then 1 else 0 := by
+  simp only [acceptGap, hadamardCount_nil, acceptTerm,
+    pathRun, List.ofFn_zero, List.foldl_nil, true_and, Bool.xor_self, Bool.false_eq_true,
+    ↓reduceIte]
+  cases x.headD false <;> rfl
 
 /-- The sign `±1` of a Boolean, in `ℂ`. -/
 private abbrev sgn (σ : Bool) : ℂ := if σ then -1 else 1
@@ -223,7 +232,7 @@ theorem run_ofCodes_apply (gs : List GateCode) (hgs : ∀ g ∈ gs, g.WellFormed
   rfl
 
 /-- The simulation keeps the register length. -/
-private theorem length_foldl_pathStep (gs : List GateCode) (s π : List Bool) (σ : Bool) :
+theorem length_foldl_pathStep (gs : List GateCode) (s π : List Bool) (σ : Bool) :
     (gs.foldl pathStep (s, π, σ)).1.length = s.length := by
   induction gs generalizing s π σ with
   | nil => rfl
@@ -305,5 +314,21 @@ theorem acceptProb_eq_acceptGap (hm : 0 < m) (gs : List GateCode)
   simp only [run_ofCodes_apply gs hgs, hnorm, ← Finset.sum_div]
   congr 1
   exact_mod_cast sum_accepting_pathGap_sq hm gs _ (by simp)
+
+/-- **The acceptance gap is a count between `0` and `2 ^ h`** for well-formed codes on a nonempty
+register `X`, since it is `2 ^ h` times a probability. -/
+theorem acceptGap_nonneg_and_le {X : List Bool} (hX : 0 < X.length) (gs : List GateCode)
+    (hgs : ∀ g ∈ gs, g.WellFormed X.length) :
+    0 ≤ acceptGap gs X ∧ acceptGap gs X ≤ 2 ^ hadamardCount gs := by
+  have h := acceptProb_eq_acceptGap hX gs hgs X
+  rw [ofFn_inputState le_rfl, Nat.sub_self, List.replicate_zero, List.append_nil] at h
+  have h0 := acceptProb_nonneg X.length gs X
+  have h1 := acceptProb_le_one X.length gs X
+  have hpos : (0 : ℝ) < 2 ^ hadamardCount gs := by positivity
+  rw [h] at h0 h1
+  constructor
+  · exact_mod_cast (div_nonneg_iff.mp h0).elim (fun h => h.1) fun h => absurd h.2 (not_le.mpr hpos)
+  · rw [div_le_one hpos] at h1
+    exact_mod_cast h1
 
 end Cslib.Quantum
