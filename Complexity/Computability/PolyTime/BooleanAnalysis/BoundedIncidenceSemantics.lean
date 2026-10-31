@@ -108,11 +108,7 @@ open Finset Cslib Cslib.BitString Cslib.Complexity Cslib.GenericRAM Cslib.Linear
 verifying structural nondegeneracy, unary parameter bounds against `n'`, auxiliary dimension bound
 `r_u ^ (2 * Q_u) ≤ n'`, variable range `< n'`, canonicality, and degree bound `≤ k'`. -/
 def validBranchEvalParams (inp : BranchEvalInput) : Bool :=
-  let nk := inp.1; let rest := inp.2; let sRest := rest.2
-  let sched := sRest.1; let eqs' := sRest.2
-  let sTail := sched.2; let rTail := sTail.2
-  let n' := nk.1; let k' := nk.2
-  let r := sched.1; let Q := sTail.1; let R := rTail.1; let A₀ := rTail.2
+  let ((n', k'), _, (r, Q, R, A₀), eqs') := inp
   let Q_u := min n' Q
   let r_u := min n' r
   decide (1 ≤ n') && decide (2 ≤ r) && decide (1 ≤ R) && decide (R < Q) &&
@@ -163,15 +159,7 @@ abbrev GroupEvalCtx : Type :=
 belongs to the `indE`-restricted local cube and matches measurement slice `yg`, in which case it
 evaluates the product of cleared parity-factor jets over equations assigned to group `g` at `t`. -/
 def evalGroupFactorJet (p : GroupEvalCtx × (ℕ × List Bool)) : JetRows :=
-  let ctx := p.1; let idxUg := p.2; let ug := idxUg.2
-  let dims := ctx.1; let dRest := dims.2; let lRest := dRest.2
-  let n' := dims.1; let J := dRest.1; let ℓ := lRest.1; let k' := lRest.2
-  let cRest1 := ctx.2; let nd := cRest1.1; let node := nd.1; let dDen := nd.2
-  let cRest2 := cRest1.2; let grp := cRest2.1; let gRest := grp.2
-  let Vg := grp.1; let Ctg := gRest.1; let yg := gRest.2
-  let cRest3 := cRest2.2; let inds := cRest3.1; let iRest := inds.2
-  let indE := inds.1; let indU := iRest.1; let xStar := iRest.2
-  let grpEqs := cRest3.2
+  let (((n', J, ℓ, k'), (node, dDen), (Vg, Ctg, yg), (indE, indU, xStar), grpEqs), (_, ug)) := p
   if checkRestrictedGroup n' indE Vg ug &&
       decide (BooleanMeasurements.evalBoolMatrix Ctg ug = yg) then
     let x := applyGroupBits n' Vg ug xStar
@@ -201,16 +189,9 @@ Pass 1 (`BooleanMeasurements.search`) across all `g < r_u`, and when all fibers 
 Pass 2 (`CommonCountingAccum.streamGroupJetSum`) across all `g < r_u` and adds their `prodJet`. -/
 def measurementStepBody (inp : ((ℕ × ℕ) × List ℤ) × (MeasStepCtx × JetRows)) :
     MeasStepCtx × JetRows :=
-  let iw := inp.1; let word := iw.2
-  let ca := inp.2; let ctx := ca.1; let acc := ca.2
-  let dims := ctx.1; let dRest := dims.2
-  let n' := dims.1; let r_u := dRest.1; let m_rows := dRest.2
-  let cRest1 := ctx.2; let jetDims := cRest1.1; let jRest := jetDims.2
-  let J := jetDims.1; let ℓ := jRest.1; let k' := jRest.2
-  let cRest2 := cRest1.2; let nd := cRest2.1; let node := nd.1; let dDen := nd.2
-  let cRest3 := cRest2.2; let gm := cRest3.1; let vGroups_t := gm.1; let grpMeas_t := gm.2
-  let cRest4 := cRest3.2; let inds := cRest4.1; let indE := inds.1; let indU := inds.2
-  let grpEqLists := cRest4.2
+  let ((_, word), (ctx, acc)) := inp
+  let ((n', r_u, m_rows), (J, ℓ, k'), (node, dDen), (vGroups_t, grpMeas_t),
+    (indE, indU), grpEqLists) := ctx
   let repOpts : List (Option (List Bool)) := (List.range r_u).map fun g =>
     let Vg := vGroups_t.getD g []
     let dg := min (2 * n') Vg.length
@@ -242,22 +223,13 @@ abbrev SubsetStepCtx : Type :=
 `(indE, indU, oddSign)` via `MeasurementFold.run`. -/
 def subsetPairStepBody (inp : SubsetPairFold.DecodedPair × (SubsetStepCtx × JetRows)) :
     SubsetStepCtx × JetRows :=
-  let dec := inp.1; let decRest := dec.2
-  let indE := dec.1; let indU := decRest.1; let oddSign := decRest.2
-  let ca := inp.2; let ctx := ca.1; let acc := ca.2
-  let dims := ctx.1; let dRest := dims.2
-  let n' := dims.1; let r_u := dRest.1; let m_rows := dRest.2
-  let cRest1 := ctx.2; let caps := cRest1.1; let c_meas := caps.1; let D_cap := caps.2
-  let cRest2 := cRest1.2; let jetDims := cRest2.1; let jRest := jetDims.2
-  let J := jetDims.1; let ℓ := jRest.1; let k' := jRest.2
-  let cRest3 := cRest2.2; let nd := cRest3.1; let node := nd.1; let dDen := nd.2
-  let cRest4 := cRest3.2; let gm := cRest4.1; let vGroups_t := gm.1; let grpMeas_t := gm.2
-  let grpEqLists := cRest4.2
+  let ((indE, indU, oddSign), (ctx, acc)) := inp
+  let ((n', r_u, m_rows), (c_meas, D_cap), (J, ℓ, k'), (node, dDen),
+    (vGroups_t, grpMeas_t), grpEqLists) := ctx
   let measCtx : MeasStepCtx :=
     ((n', r_u, m_rows), (J, ℓ, k'), (node, dDen), (vGroups_t, grpMeas_t), (indE, indU), grpEqLists)
-  let measOut :=
+  let (_, _, _, measJet) :=
     MeasurementFold.run measurementStepBody (c_meas, D_cap) (measCtx, zeroJet J ℓ)
-  let measState := measOut.2; let measPair := measState.2; let measJet := measPair.2
   let signedJet := if oddSign then smulJet J ℓ (-1) measJet else measJet
   (ctx, addJet J ℓ acc signedJet)
 
@@ -273,13 +245,7 @@ than certifying arbitrary designs) and return `0`. -/
 def evalBoundedIncidenceBranch (inp : BranchEvalInput) : ℕ :=
   if !validBranchEvalParams inp then 0
   else
-    let nk := inp.1; let rest := inp.2
-    let bw := rest.1; let bwRest := bw.2
-    let sRest := rest.2; let sched := sRest.1; let eqs' := sRest.2
-    let sTail := sched.2; let rTail := sTail.2
-    let n' := nk.1; let k' := nk.2
-    let b := bw.1; let w := bwRest.1
-    let r := sched.1; let Q := sTail.1; let R := rTail.1; let A₀ := rTail.2
+    let ((n', k'), (b, w, _, _), (r, Q, R, A₀), eqs') := inp
     let Q_u := min n' Q
     let R_u := min n' R
     let r_u := min n' r
@@ -319,8 +285,8 @@ def evalBoundedIncidenceBranch (inp : BranchEvalInput) : ℕ :=
 
 /-- `evalBoundedIncidenceBranch inp` never exceeds the ambient Boolean cube size `2 ^ n'`. -/
 theorem evalBoundedIncidenceBranch_le_two_pow (inp : BranchEvalInput) :
-    let nk := inp.1
-    evalBoundedIncidenceBranch inp ≤ 2 ^ nk.1 := by
+    let ((n', _), _) := inp
+    evalBoundedIncidenceBranch inp ≤ 2 ^ n' := by
   unfold evalBoundedIncidenceBranch
   dsimp only
   split_ifs
@@ -636,14 +602,7 @@ parameters, `buildReplacementDesignData` refines a concrete `ReplacementDesign` 
 theorem exists_refines_prepare_of_feasible {N₀_branch n' : ℕ} {eqs' : List (List (List ℕ))}
     (hfeas : checkBranchFeasible N₀_branch (n', eqs') = true) :
     let inp := prepareBranchEvalInput (n', eqs')
-    let rest := inp.2; let bw := rest.1; let bwRest := bw.2
-    let sRest := rest.2; let sched := sRest.1; let sTail := sched.2; let rTail := sTail.2
-    let b := bw.1
-    let w := bwRest.1
-    let r := sched.1
-    let Q := sTail.1
-    let R := rTail.1
-    let A₀ := rTail.2
+    let (_, (b, w, _, _), (r, Q, R, A₀), _) := inp
     let augScopes := withNeutralScopesList (eqs'.map equationVars) n'
     let edges := scopeIncidencesList n' augScopes
     let scheds := BalancedSchedules.constructBalancedSchedules
