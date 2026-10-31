@@ -35,6 +35,10 @@ gives stronger finite parameter bounds by choosing
 `4 * w * t` petals for dyadic `w = 2 ^ t`: the lower bound becomes `w ^ w` when `k ^ 4 ≤ n`,
 or remains `64 ^ w` with only `1024 * t ^ 2 * w ^ 4 * k ≤ n` vertices.
 
+The closed approximators of Alon and Boppana give a `2 ^ l` bound under the much weaker
+hypothesis `8 l (⌊log₂ n⌋ + 3) k ≤ n` (`Cslib.Circuits.Monotone.two_pow_lt_size_of_separates`), so
+for cliques of size about `√n` as well.
+
 Both the method of approximations and the essential-edge bound read a circuit only on graphs with a
 `k`-clique and on `(k - 1)`-colourable graphs. So all of these bounds hold for every monotone
 circuit separating the two classes (`pow_lt_size_of_separates`,
