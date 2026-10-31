@@ -144,9 +144,11 @@ noncomputable def eufCmaGame [DecidableEq M] (scheme : Scheme PK SK M Sig Query 
   let keys ← scheme.keyGen
   let s ← forger.coins
   let forged ← (interpret (handler scheme keys.2) (forger.forge keys.1 s)).run ([], [])
-  let verified ← (interpret (oracle Digest) (scheme.verify keys.1 forged.1.1 forged.1.2)).run
-    forged.2.1
-  return (verified.1 && !(forged.2.2.contains forged.1.1))
+  let msig := forged.1
+  let state := forged.2
+  let verified ← (interpret (oracle Digest) (scheme.verify keys.1 msig.1 msig.2)).run
+    state.1
+  return (verified.1 && !(state.2.contains msig.1))
 
 /-- A scheme is correct when every honest signature verifies under the same oracle, from every
 state of the oracle. -/

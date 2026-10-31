@@ -113,8 +113,10 @@ abbrev CertState := List Bool × (List Bool × List Bool) × List (List Bool × 
 to it. -/
 def certifyStep (n : ℕ) (k : List Bool) (state : CertState) (a : Bool) : CertState :=
   let child := nodeKey S T coins n k (state.1 ++ [a])
+  let keyCerts := state.2
+  let nodeKeys := keyCerts.1
   (state.1 ++ [a], child,
-    state.2.2 ++ [(child.1, signAt S T coins k state.1 state.2.1.2 a.toNat child.1)])
+    keyCerts.2 ++ [(child.1, signAt S T coins k state.1 nodeKeys.2 a.toNat child.1)])
 
 /-- Certify the path `bits` from the root. -/
 def certify (n : ℕ) (k bits : List Bool) : CertState :=
@@ -139,7 +141,10 @@ def keyDecoder : Decoder (encPair encUnary encBits) := Decoder.unary.pair Decode
 leaf's last bit. -/
 def signWithLeaf (n : ℕ) (k leaf msg : List Bool) : List Bool :=
   let c := certify S T coins n k leaf.dropLast
-  encodeSignature leaf c.2.2 (signAt S T coins k c.1 c.2.1.2 (leaf.getLastD false).toNat msg)
+  let keyCerts := c.2
+  let nodeKeys := keyCerts.1
+  encodeSignature leaf keyCerts.2
+    (signAt S T coins k c.1 nodeKeys.2 (leaf.getLastD false).toNat msg)
 
 /-! ### The algorithms -/
 
@@ -161,7 +166,8 @@ noncomputable def sign (sk msg : List Bool) : ProbComp (List Bool) := do
 public key, and move to the child. -/
 def verifyStep (state : Bool × List Bool) (e : Bool × (List Bool × List Bool)) :
     Bool × List Bool :=
-  (state.1 && S.verify state.2 e.1.toNat e.2.1 e.2.2, e.2.1)
+  let cert := e.2
+  (state.1 && S.verify state.2 e.1.toNat cert.1 cert.2, cert.1)
 
 /-- Verification: the leaf has length `depth n` with `depth n - 1` certificates, the certificates
 chain from the root along the leaf's prefix, and the last certified key signs `msg` at the leaf's
@@ -169,9 +175,10 @@ last bit. -/
 def verify (pk msg sig : List Bool) : Bool :=
   let p := keyDecoder.decode pk
   let s := signatureDecoder.decode sig
-  let r := (s.1.dropLast.zip s.2.1).foldl (verifyStep S) (true, p.2)
-  (s.1.length == depth p.1) && (s.2.1.length + 1 == depth p.1) && r.1 &&
-    S.verify r.2 (s.1.getLastD false).toNat msg s.2.2
+  let certsLast := s.2
+  let r := (s.1.dropLast.zip certsLast.1).foldl (verifyStep S) (true, p.2)
+  (s.1.length == depth p.1) && (certsLast.1.length + 1 == depth p.1) && r.1 &&
+    S.verify r.2 (s.1.getLastD false).toNat msg certsLast.2
 
 /-! ### Completeness -/
 
@@ -185,10 +192,12 @@ theorem certify_append (n : ℕ) (k bits : List Bool) (a : Bool) :
 /-- The chain reaches the node `bits` with its key, issues one certificate per bit, and its
 certificates verify from the root when both indices are below the capacity. -/
 theorem certify_spec (n : ℕ) (hcap : 2 ≤ S.capacity n) (k bits : List Bool) :
-    (certify S T coins n k bits).1 = bits ∧
-      (certify S T coins n k bits).2.1 = nodeKey S T coins n k bits ∧
-      (certify S T coins n k bits).2.2.length = bits.length ∧
-      (bits.zip (certify S T coins n k bits).2.2).foldl (verifyStep S)
+    let c := certify S T coins n k bits
+    let keyCerts := c.2
+    c.1 = bits ∧
+      keyCerts.1 = nodeKey S T coins n k bits ∧
+      keyCerts.2.length = bits.length ∧
+      (bits.zip keyCerts.2).foldl (verifyStep S)
         (true, (nodeKey S T coins n k []).1) = (true, (nodeKey S T coins n k bits).1) := by
   induction bits using List.reverseRecOn with
   | nil => simp [certify]
@@ -260,13 +269,14 @@ local notation "encCertState" =>
   encPair encBits (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))
 
 variable (hcoins : ComputableInPolyTime
-    (fun p : List Bool × List Bool × ℕ => coins p.1 p.2.1 p.2.2)
+    (fun p : List Bool × List Bool × ℕ => coins p.1 (Prod.fst p.2) (Prod.snd p.2))
     (encPair encBits (encPair encBits encUnary)) encBits)
 
 include hcoins in
 /-- Node keys are computable in polynomial time from the parameter, the secret and the path. -/
 theorem computableInPolyTime_nodeKey :
-    ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => nodeKey S T coins p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × List Bool => nodeKey S T coins (Prod.fst p.1) (Prod.snd p.1) p.2)
       (encPair (encPair encUnary encBits) encBits) (encPair encBits encBits) := by
   have hkg := T.keyGenWith_polyTime
   have hbudget := T.keyGenBudget_polyTime
@@ -278,7 +288,8 @@ include hcoins in
 theorem computableInPolyTime_signAt :
     ComputableInPolyTime
       (fun p : (List Bool × List Bool × List Bool) × ℕ × List Bool =>
-        signAt S T coins p.1.1 p.1.2.1 p.1.2.2 p.2.1 p.2.2)
+        signAt S T coins (Prod.fst p.1) (Prod.fst (Prod.snd p.1)) (Prod.snd (Prod.snd p.1))
+          (Prod.fst p.2) (Prod.snd p.2))
       (encPair (encPair encBits (encPair encBits encBits)) (encPair encUnary encBits)) encBits := by
   have hsg := T.signWith_polyTime
   have hbudget := T.signBudget_polyTime
@@ -290,7 +301,8 @@ include hcoins in
 theorem computableInPolyTime_certifyStep :
     ComputableInPolyTime
       (fun p : ((ℕ × List Bool) × CertState) × Bool =>
-        certifyStep S T coins p.1.1.1 p.1.1.2 p.1.2 p.2)
+        certifyStep S T coins (Prod.fst (Prod.fst p.1)) (Prod.snd (Prod.fst p.1))
+          (Prod.snd p.1) p.2)
       (encPair (encPair (encPair encUnary encBits) encCertState) encBool) encCertState := by
   have hnode := computableInPolyTime_nodeKey (T := T) hcoins
   have hsign := computableInPolyTime_signAt (T := T) hcoins
@@ -312,7 +324,8 @@ include hcoins in
 /-- The chain is computable in polynomial time: every node key and signature on the path is
 polynomially bounded, and the chain has one certificate per bit. -/
 theorem computableInPolyTime_certify :
-    ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => certify S T coins p.1.1 p.1.2 p.2)
+    ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × List Bool => certify S T coins (Prod.fst p.1) (Prod.snd p.1) p.2)
       (encPair (encPair encUnary encBits) encBits) encCertState := by
   have hnode := computableInPolyTime_nodeKey (T := T) hcoins
   have hsign := computableInPolyTime_signAt (T := T) hcoins
@@ -406,7 +419,7 @@ include hcoins in
 theorem computableInPolyTime_signWithLeaf :
     ComputableInPolyTime
       (fun p : (ℕ × List Bool) × List Bool × List Bool =>
-        signWithLeaf S T coins p.1.1 p.1.2 p.2.1 p.2.2)
+        signWithLeaf S T coins (Prod.fst p.1) (Prod.snd p.1) (Prod.fst p.2) (Prod.snd p.2))
       (encPair (encPair encUnary encBits) (encPair encBits encBits)) encBits := by
   have hcert := computableInPolyTime_certify (T := T) hcoins
   have hsign := computableInPolyTime_signAt (T := T) hcoins
@@ -545,7 +558,8 @@ include hdepth in
 /-- Verification is computable in polynomial time. -/
 theorem computableInPolyTime_verify :
     ComputableInPolyTime
-      (fun p : List Bool × List Bool × List Bool => verify S depth p.1 p.2.1 p.2.2)
+      (fun p : List Bool × List Bool × List Bool =>
+        verify S depth p.1 (Prod.fst p.2) (Prod.snd p.2))
       (encPair encBits (encPair encBits encBits)) encBool := by
   have hverify := S.verify_polyTime
   have hkey := keyDecoder.computableInPolyTime
@@ -576,7 +590,8 @@ variable (S T coins keyLen depth) in
 indexed scheme `S` with at least two indices, seeded by `T`, with node coins from `coins`, secrets
 of length `keyLen n` and trees of depth `depth n ≥ 1`. -/
 noncomputable def scheme
-    (hcoins : ComputableInPolyTime (fun p : List Bool × List Bool × ℕ => coins p.1 p.2.1 p.2.2)
+    (hcoins : ComputableInPolyTime
+      (fun p : List Bool × List Bool × ℕ => coins p.1 (Prod.fst p.2) (Prod.snd p.2))
       (encPair encBits (encPair encBits encUnary)) encBits)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
