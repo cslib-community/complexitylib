@@ -27,7 +27,9 @@ functions and distributions, with no efficiency or finiteness assumption; the pr
 exact statements about a single protocol. The same holds for extractors and simulators: Boneh and
 Shoup require them to be efficient algorithms (Definitions 19.4 and 19.5), but `SpecialSoundness`
 and `SpecialHVZK` accept arbitrary functions and distributions, so neither makes an efficiency
-claim.
+claim. The efficient variants, `EfficientSpecialSoundness` and `EfficientSpecialHVZK` in
+`Complexity.Crypto.Protocols.SigmaProtocol.Efficient`, add a polynomial-time extractor and a strict
+PPT simulator over an indexed family of protocols.
 
 Each property carries its algorithm explicitly. `SpecialSoundness R extract` says that the
 deterministic `extract` computes a witness from any two accepting conversations that share a
@@ -114,7 +116,7 @@ statement from two accepting conversations with a common commitment and distinct
 The extracted witness has a type `W` and a relation `R` of its own. Usually these are the
 prover's witness type and relation; lattice-based protocols extract a witness of a relaxed
 relation instead. The book requires an efficient deterministic extractor; `extract` here is an
-arbitrary function. -/
+arbitrary function, and `EfficientSpecialSoundness` adds the efficiency requirement. -/
 def SpecialSoundness {W : Type*} (R : W → Y → Prop) (extract : Y → T → C → Z → C → Z → W) :
     Prop :=
   ∀ y t c z c' z', c ≠ c' → P.Accepts y t c z → P.Accepts y t c' z' →
@@ -123,7 +125,8 @@ def SpecialSoundness {W : Type*} (R : W → Y → Prop) (extract : Y → T → C
 /-- Special honest-verifier zero knowledge ([BonehShoup2023], Definition 19.5) with the explicit
 simulator `simulate`. The simulator gets a statement and a challenge and returns a commitment
 and a response. The book requires an efficient probabilistic simulator; `simulate` here is an
-arbitrary distribution-valued function. -/
+arbitrary distribution-valued function, and `EfficientSpecialHVZK` adds the efficiency
+requirement. -/
 structure SpecialHVZK (R : X → Y → Prop) (simulate : Y → C → PMF (T × Z)) : Prop where
   /-- Simulated conversations are accepting, for every statement and challenge. -/
   accepts : ∀ y c, ∀ tz ∈ (simulate y c).support, P.Accepts y tz.1 c tz.2

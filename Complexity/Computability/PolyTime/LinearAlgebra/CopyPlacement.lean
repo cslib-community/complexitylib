@@ -1126,10 +1126,6 @@ private theorem cp_take : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.t
 private theorem cp_count : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.count p.2)
     (encPair (encList encNat) encNat) encUnary := by fun_prop
 
-private theorem cp_zip {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × List β => p.1.zip p.2)
-      (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) := by fun_prop
-
 private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin) encIntBin := by
   fun_prop
 
@@ -1156,7 +1152,7 @@ private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin
     ComputableInPolyTime (fun x => flatPlacement (D x) (labels x)) encIn (encList encNat) := by
   have hfib := computableInPolyTime_fiberRanksWithInput hlabels
   unfold flatPlacement
-  apply mapWithInput ((cp_zip encNat encNat).comp (hfib.prod hlabels))
+  apply mapWithInput ((zip encNat encNat).comp (hfib.prod hlabels))
   have hp1 := fst encIn (encPair encNat encNat)
   have hp2 := snd encIn (encPair encNat encNat)
   exact binary_add.comp ((binary_mul' hp2.fst' (hD.comp hp1)).prod hp2.snd')
@@ -1215,7 +1211,7 @@ private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂
       (fun x => pullbackMeasurementRow (n x) (placements x) (incVars x) (copyIdx x) (auxRow x))
       encIn (encList encIntBin) := by
   unfold pullbackMeasurementRow; apply mapWithInput (range.comp hn); apply cp_intBin_sum.comp
-  apply mapWithInput ((cp_zip (encPair encNat encNat) encNat).comp
+  apply mapWithInput ((zip (encPair encNat encNat) encNat).comp
     ((hpl.comp (fst encIn encUnary)).prod (hinc.comp (fst encIn encUnary))))
   have hxin : ComputableInPolyTime (fun q : (Input × ℕ) × ((ℕ × ℕ) × ℕ) => q.1.1)
       (encPair (encPair encIn encUnary) (encPair (encPair encNat encNat) encNat)) encIn :=
@@ -1302,7 +1298,7 @@ unary). -/
   have hce := (fst encNat encNat).comp hpe
   have huRow : ComputableInPolyTime _ encIn (encList (encList encIntBin)) :=
     listGetD_binary [] hrepl ((snd encNat encNat).comp hpe)
-  have hzip0 := (cp_zip (encPair encNat encNat) encNat).comp (hpl.prod hinc)
+  have hzip0 := (zip (encPair encNat encNat) encNat).comp (hpl.prod hinc)
   have hxin_vk : ComputableInPolyTime (fun vk : (Input × ℕ) × ℕ => vk.1.1)
       (encPair (encPair encIn encUnary) encUnary) encIn := (fst encIn encUnary).comp (fst _ _)
   apply cp_intBin_sum.comp; apply mapWithInput (hzip0.comp hxin_vk)
