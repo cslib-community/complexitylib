@@ -38,12 +38,13 @@ We formalize four aspects of the Even–Mansour construction:
    swaps `k₀` and `k₁` over any group of exponent two such as `BitString n`), acts as a bijection
    on `Equiv.Perm G` for every fixed key pair (`evenMansourPermEquiv`), and achieves perfect
    one-query secrecy for any fixed `π` (`map_prod_evenMansourEncrypt_uniformOfFintype`).
-2. **Necessity of both whitening keys ([BonehShoup2023], Section 4.7)**: omitting post-whitening
-   (`preWhitenEquiv π k₀ x = π (x + k₀)`) or pre-whitening (`postWhitenEquiv π k₁ x = π x + k₁`)
-   allows an explicit 2-query adversary (making `1` cipher query and `1` primitive permutation
-   query, `IsCallBounded _ 1 1`) to recover the secret key with probability `1` and achieve
-   key-recovery game advantage `1 - |G|⁻¹` against an independent uniform permutation and uniform
-   target key (`advantage_preWhitenKeyRecoveryGame_eq`, `advantage_postWhitenKeyRecoveryGame_eq`).
+2. **Necessity of both whitening keys ([BonehShoup2023], Section 4.7.3 and Exercise 4.20)**:
+   omitting post-whitening (`preWhitenEquiv π k₀ x = π (x + k₀)`) or pre-whitening
+   (`postWhitenEquiv π k₁ x = π x + k₁`) allows an explicit 2-query adversary (making `1` cipher
+   query and `1` primitive permutation query, `IsCallBounded _ 1 1`) to recover the secret key with
+   probability `1` and achieve key-recovery game advantage `1 - |G|⁻¹` against an independent
+   uniform permutation and uniform target key (`advantage_preWhitenKeyRecoveryGame_eq`,
+   `advantage_postWhitenKeyRecoveryGame_eq`).
 3. **One-sided query security and lazy ideal-permutation equivalence**: because
    `evenMansourPermEquiv k₀ k₁` is a bijection on `Equiv.Perm G`, any adversary that queries only
    the cipher oracle (`liftLeft`) or only the primitive permutation oracle (`liftRight`) has zero
@@ -52,7 +53,7 @@ We formalize four aspects of the Even–Mansour construction:
    `advantage_evenMansourRealGame_liftRight_eq_zero`). Moreover, `evenMansourIdealGame` is
    identically distributed to running two independent lazy bidirectional permutation samplers
    (`idealLazyHandler`) from empty caches (`evenMansourIdealGame_eq_lazy`).
-4. **Bad-key transcript intersection bound ([BonehShoup2023], Theorem 4.10)**: given a cipher
+4. **Bad-key transcript intersection bound ([BonehShoup2023], Theorem 4.14)**: given a cipher
    transcript `T_e : List (G × G)` and a primitive permutation transcript `T_π : List (G × G)`, a
    key `(k₀, k₁)` is bad (`isBadEvenMansourKey T_e T_π k`) when some `(x, y) ∈ T_e` and
    `(u, v) ∈ T_π` collide on the internal permutation input (`x + k₀ = u`) or output
@@ -104,7 +105,7 @@ We formalize four aspects of the Even–Mansour construction:
   `Cslib.Crypto.EvenMansour.toOuterMeasure_isBadSingleKeyEvenMansour_toReal_le`,
   `Cslib.Crypto.EvenMansour.IsCallBounded.badEvenMansourKey_toReal_le`,
   `Cslib.Crypto.EvenMansour.IsCallBounded.badSingleKeyEvenMansour_toReal_le`:
-  Boneh–Shoup Theorem 4.10 bad-key probability bound `2 * Q_e * Q_π / |G|`.
+  Boneh–Shoup Theorem 4.14 bad-key probability bound `2 * Q_e * Q_π / |G|`.
 * `Cslib.Crypto.EvenMansour.advantage_evenMansourRealGame_evenMansourIdealGame_le`,
   `Cslib.Crypto.EvenMansour.advantage_singleKeyEvenMansourRealGame_evenMansourIdealGame_le`:
   end-to-end PRP security bound `2 * Q_e * Q_π / |G|` in the ideal-permutation model.
@@ -112,7 +113,8 @@ We formalize four aspects of the Even–Mansour construction:
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Section 4.7 (Theorem 4.10).
+  Version 0.6][BonehShoup2023], Section 4.7 (Theorem 4.14 in Section 4.7.4, p. 159; Even–Mansour
+  is its single-key case `|K| = 1`, and Exercise 4.20 covers the single-whitening variants).
 * [S. Even, Y. Mansour, *A Construction of a Cipher from a Single Pseudorandom
   Permutation*][EvenMansour1997].
 * [O. Dunkelman, N. Keller, A. Shamir, *Minimalism in Cryptography: The Even–Mansour Scheme
@@ -816,7 +818,7 @@ theorem advantage_postWhitenKeyRecoveryGame_eq (x : G) :
 
 end Games
 
-/-! ### Bad-key transcript intersection analysis (Boneh–Shoup Theorem 4.10) -/
+/-! ### Bad-key transcript intersection analysis (Boneh–Shoup Theorem 4.14) -/
 
 section BadKeys
 
@@ -825,13 +827,13 @@ variable {G : Type} [AddGroup G] [DecidableEq G]
 /-- A key pair `k = (k₀, k₁)` is bad for a cipher input-output pair `e = (x, y)` and a primitive
 permutation input-output pair `p = (u, v)` if the internal permutation input `x + k₀` collides with
 `u` or the internal permutation output `y - k₁` collides with `v`
-([BonehShoup2023], Section 4.7, Theorem 4.10). -/
+([BonehShoup2023], Section 4.7, Theorem 4.14). -/
 def isBadKeyPair (e p : G × G) (k : G × G) : Bool :=
   decide (e.1 + k.1 = p.1) || decide (e.2 - k.2 = p.2)
 
 /-- A key pair `k = (k₀, k₁)` is bad for a cipher transcript `T_e : List (G × G)` and a primitive
 permutation transcript `T_π : List (G × G)` if some `e ∈ T_e` and `p ∈ T_π` collide on the
-internal permutation input or output ([BonehShoup2023], Section 4.7, Theorem 4.10). -/
+internal permutation input or output ([BonehShoup2023], Section 4.7, Theorem 4.14). -/
 def isBadEvenMansourKey (T_e T_π : List (G × G)) (k : G × G) : Bool :=
   T_e.any fun e => T_π.any fun p => isBadKeyPair e p k
 
@@ -982,7 +984,7 @@ theorem toOuterMeasure_isBadKeyPair_singleKey_le (e p : G × G) :
   exact (MeasureTheory.measure_union_le _ _).trans_eq (by
     rw [toOuterMeasure_input_collision, toOuterMeasure_output_collision, two_mul])
 
-/-- **Boneh–Shoup Theorem 4.10 bad-key union bound (`ℝ≥0∞`)**: for any cipher transcript `T_e` and
+/-- **Boneh–Shoup Theorem 4.14 bad-key union bound (`ℝ≥0∞`)**: for any cipher transcript `T_e` and
 primitive permutation transcript `T_π`, a uniform key pair `(k₀, k₁) ← G × G` is bad with
 probability at most `2 * |T_e| * |T_π| * |G|⁻¹`. -/
 theorem toOuterMeasure_isBadEvenMansourKey_le (T_e T_π : List (G × G)) :
@@ -1010,7 +1012,7 @@ theorem toOuterMeasure_isBadEvenMansourKey_le (T_e T_π : List (G × G)) :
           (Nat.cast_le.mpr (List.toFinset_card_le T_π))) le_rfl
     _ = 2 * T_e.length * T_π.length * (Fintype.card G : ℝ≥0∞)⁻¹ := by ring
 
-/-- **Boneh–Shoup Theorem 4.10 bad-key union bound (`ℝ`)**: for any cipher transcript `T_e` and
+/-- **Boneh–Shoup Theorem 4.14 bad-key union bound (`ℝ`)**: for any cipher transcript `T_e` and
 primitive permutation transcript `T_π`, a uniform key pair `(k₀, k₁) ← G × G` is bad with real
 probability at most `2 * |T_e| * |T_π| / |G|`. -/
 theorem toOuterMeasure_isBadEvenMansourKey_toReal_le (T_e T_π : List (G × G)) :
@@ -1188,7 +1190,7 @@ theorem IsCallBounded.length_transcriptPerm_le {G State γ : Type}
 
 variable {G : Type} [AddGroup G] [DecidableEq G] [Fintype G] [Nonempty G]
 
-/-- **Boneh–Shoup Theorem 4.10 for adaptive call-bounded distinguishers (two-key)**: on any
+/-- **Boneh–Shoup Theorem 4.14 for adaptive call-bounded distinguishers (two-key)**: on any
 supported transcript `T` of a distinguisher satisfying `IsCallBounded program Q_e Q_π`, a uniform
 key pair `(k₀, k₁) ← G × G` is bad with real probability at most `2 * Q_e * Q_π / |G|`. -/
 theorem IsCallBounded.badEvenMansourKey_toReal_le {State γ : Type}
@@ -1209,7 +1211,7 @@ theorem IsCallBounded.badEvenMansourKey_toReal_le {State γ : Type}
     (transcriptPerm T)).trans ?_
   gcongr
 
-/-- **Boneh–Shoup Theorem 4.10 for adaptive call-bounded distinguishers (single-key)**: on any
+/-- **Boneh–Shoup Theorem 4.14 for adaptive call-bounded distinguishers (single-key)**: on any
 supported transcript `T` of a distinguisher satisfying `IsCallBounded program Q_e Q_π`, a single
 uniform key `k ← G` is bad with real probability at most `2 * Q_e * Q_π / |G|`. -/
 theorem IsCallBounded.badSingleKeyEvenMansour_toReal_le {State γ : Type}
@@ -1993,7 +1995,7 @@ private theorem advantage_le_of_forall_bool_le {g₁ g₂ : Game} {ε : ℝ≥0�
   exact abs_sub_le_iff.mpr ⟨by linarith, by linarith⟩
 
 /-- **Even–Mansour PRP security in the ideal-permutation model** ([BonehShoup2023], Section 4.7,
-Theorem 4.10; [EvenMansour1997]): for any adaptive distinguisher `program` making at most `Q_e`
+Theorem 4.14; [EvenMansour1997]): for any adaptive distinguisher `program` making at most `Q_e`
 cipher queries and at most `Q_π` primitive permutation queries (`IsCallBounded program Q_e Q_π`),
 the distinguishing advantage between `evenMansourRealGame program` and
 `evenMansourIdealGame program` is at most `2 * Q_e * Q_π / |G|`. -/
