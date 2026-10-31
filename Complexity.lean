@@ -1734,6 +1734,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSp
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Bit
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPow
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatPrime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
@@ -2318,6 +2319,7 @@ public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
 public import Complexity.Computability.TreeEval.Ary.Packed.Interpolation
 public import Complexity.Computability.TreeEval.Ary.Packed.InterpolationSpace
+public import Complexity.Computability.TreeEval.Ary.Packed.ParametersSpace
 public import Complexity.Computability.TreeEval.Ary.Packed.QueryGate
 public import Complexity.Computability.TreeEval.Ary.Packed.QueryGateInit
 public import Complexity.Computability.TreeEval.Ary.Packed.QueryGateSpace
