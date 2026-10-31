@@ -9,10 +9,13 @@ module
 
 public import Complexity.Computability.Complexity.FineGrained.ContractionPartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
+public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Preprocess
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Foundations.Data.List.OfFn
 import Complexity.Foundations.Data.Nat.SqrtLog.Shifted
 import Mathlib.Data.List.GetD
@@ -218,5 +221,45 @@ theorem exists_permanentCounter (d : ℕ) :
   refine ⟨count, A, e, b, fun rows hrow hcol => ?_, hc⟩
   rw [hcount rows fun c hc => length_le_of_mem_permanentInstance hrow hcol hc,
     CSP.partitionFunction_permanentInstance, rowsMatrix_eq]
+
+/-! ### Perfect matchings -/
+
+/-- Listing the edges of `G.induced` is polynomial-time. -/
+theorem computableInPolyTime_edgeList :
+    ComputableInPolyTime Graph.edgeList encGraph (encList (encPair encNat encNat)) := by
+  unfold Graph.edgeList encGraph
+  fun_prop
+
+/-- Building the perfect-matching instance of a graph is polynomial-time. -/
+theorem computableInPolyTime_perfectMatchingInstance :
+    ComputableInPolyTime Graph.perfectMatchingInstance encGraph (encCSP encUnit encNat) := by
+  have hE := computableInPolyTime_edgeList
+  refine computableInPolyTime_unary_to_binary.comp
+    (?_ : ComputableInPolyTime (fun G : Graph => G.perfectMatchingInstance) _ _)
+  unfold Graph.perfectMatchingInstance Graph.incident
+  fun_prop
+
+/-- **Perfect matchings of graphs of maximum degree `d` in time `2 ^ O(n / √log n)`.** For each
+`d`, one machine reads a graph `G` (encoded by `encGraph`) and, when every vertex of `G.induced`
+has at most `d` neighbours, outputs the number of perfect matchings of `G.induced`. On every
+input it runs in time `2 ^ (A (n + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding
+length, and in polynomial space, for `n` distinct declared vertices. The constants `A`, `e` and
+`b` depend only on `d`. -/
+theorem exists_perfectMatchingCounter (d : ℕ) :
+    ∃ (count : Graph → ℕ) (A e b : ℕ),
+      (∀ G : Graph, (∀ v, Nat.card (G.induced.neighborSet v) ≤ d) →
+        count G = Nat.card {M : G.induced.Subgraph // M.IsPerfectMatching}) ∧
+      ComputableInO count encGraph encNat
+        (fun G => 2 ^ (A * (G.1.toFinset.card + 1) / Nat.sqrt (Nat.log 2 (G.1.toFinset.card + 2))) *
+          ((encGraph G).length + 1) ^ e)
+        (fun G => ((encGraph G).length + 1) ^ b) := by
+  obtain ⟨count, A, e, b, hcount, hc⟩ := exists_exactlyOneCounter d 1
+    (size := fun G : Graph => G.1.toFinset.card) computableInPolyTime_perfectMatchingInstance
+    (fun G => Graph.count_vars_perfectMatchingInstance G) fun G => by
+      rw [Graph.length_perfectMatchingInstance]
+      omega
+  refine ⟨count, A, e, b, fun G hdeg => ?_, hc⟩
+  rw [hcount G fun c hc => Graph.length_le_of_mem_perfectMatchingInstance hdeg hc,
+    Graph.partitionFunction_perfectMatchingInstance]
 
 end Cslib.Complexity.ContractionMatching

@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Mathlib.LinearAlgebra.Matrix.Permanent
+import Complexity.Foundations.Data.List.Range
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.Perm
@@ -102,23 +103,6 @@ theorem count_vars_permanentInstance (n : ℕ) (r : ℕ → ℕ → Bool) (x : �
   have h2 := List.nodup_iff_count_le_one.mp (nodup_cols n r) x
   omega
 
-private theorem length_filter_range_eq_one_iff {p : ℕ → Bool} :
-    ((List.range n).filter p).length = 1 ↔ ∃! j, j < n ∧ p j = true := by
-  have hmem : ∀ j, j ∈ (List.range n).filter p ↔ j < n ∧ p j = true := fun j => by
-    simp only [List.mem_filter, List.mem_range]
-  constructor
-  · intro h
-    obtain ⟨a, ha⟩ := List.length_eq_one_iff.mp h
-    refine ⟨a, (hmem a).mp (by simp [ha]), fun j hj => ?_⟩
-    simpa [ha] using (hmem j).mpr hj
-  · rintro ⟨a, ha, huniq⟩
-    have hperm : ((List.range n).filter p).Perm [a] :=
-      (List.perm_ext_iff_of_nodup (List.nodup_range.filter _) (List.nodup_singleton a)).mpr
-        fun j => by
-          rw [hmem, List.mem_singleton]
-          exact ⟨fun hj => huniq j hj, fun h => h ▸ ha⟩
-    simpa using hperm.length_eq
-
 /-- The exactly-one conditions of the permanent instance on a set `S` of `true` variables: every
 row and every column has exactly one nonzero entry whose variable is in `S`. -/
 private theorem forall_mem_permanentInstance_iff {S : Finset ℕ} :
@@ -126,7 +110,7 @@ private theorem forall_mem_permanentInstance_iff {S : Finset ℕ} :
       (∀ i < n, ∃! j, j < n ∧ r i j = true ∧ i * n + j ∈ S) ∧
         ∀ j < n, ∃! i, i < n ∧ r i j = true ∧ i * n + j ∈ S := by
   simp only [permanentInstance, List.forall_mem_append, List.forall_mem_map, List.mem_range,
-    List.filter_map, List.length_map, List.filter_filter, length_filter_range_eq_one_iff,
+    List.filter_map, List.length_map, List.filter_filter, List.length_filter_range_eq_one_iff,
     Function.comp_apply, Bool.and_eq_true, decide_eq_true_eq]
   refine and_congr (forall₂_congr fun i _ => ?_) (forall₂_congr fun j _ => ?_) <;>
     exact existsUnique_congr fun _ => by tauto
