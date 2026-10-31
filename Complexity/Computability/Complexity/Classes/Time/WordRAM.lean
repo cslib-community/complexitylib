@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.Constructible
 public import Complexity.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.OfTuring
+import Complexity.Computability.Complexity.Classes.Constructible.FunctionTime
 import Complexity.Computability.Complexity.Classes.Constructible.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
@@ -87,12 +88,6 @@ theorem RAMTIME_subset_of_hom {B B' : Basis} (φ : B.Hom B') {T : ℕ → ℕ} :
 
 /-! ## Word-RAM time in deterministic time -/
 
-/-- A time-constructible bound is computed from any encoded instance within its own time. -/
-private theorem TimeConstructible.mem_FTIME {T : ℕ → ℕ} (hT : TimeConstructible T) :
-    (fun a => T (enc a).length) ∈ FTIME enc encNat T := by
-  obtain ⟨c, s, K, Q, hQ, tm, htm⟩ := hT
-  exact ⟨c, c, s, K, Q, hQ, tm, fun a => htm (enc a)⟩
-
 /-- **Word-RAM time in deterministic time.** For a time-constructible `T`, a problem decided by a
 fixed program over `Basis.additive` in time `O(T n)` at logarithmic word sizes is in
 `DTIME ((n + T n + 1) ^ 4 * (Nat.size n + 1) ^ 3)`. For `n ≤ T n` this is
@@ -112,7 +107,7 @@ theorem RAMTIME_additive_subset_DTIME {T : ℕ → ℕ} (hT : TimeConstructible 
   have hp' := hp.mono (time' := fun a _ => (c + 1) * (T (enc a).length + 1))
     (fun a _ => by nlinarith) fun _ _ hw => hw
   have hA := Program.DecidesInTime.mem_DTIME (T := fun n => (c + 1) * (T n + 1)) hk hp'
-    (TimeConstructible.mem_FTIME hclock)
+    hclock.mem_FTIME
   refine DTIME_mono_of_le_mul_add (C := (c + 1) + (c + 2) ^ 4 * (k + 1) ^ 3) (fun n => ?_) hA
   have hz : 1 ≤ (Nat.size n + 1) ^ 3 := Nat.one_le_pow _ _ (by omega)
   have h₁ : (c + 1) * (T n + 1) ≤ (c + 1) * ((n + T n + 1) ^ 4 * (Nat.size n + 1) ^ 3) := by

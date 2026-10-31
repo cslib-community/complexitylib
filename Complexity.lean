@@ -1154,6 +1154,7 @@ public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.PH
 public import Complexity.Computability.Complexity.Classes.CeqP
 public import Complexity.Computability.Complexity.Classes.CeqP.Time
 public import Complexity.Computability.Complexity.Classes.Constructible
+public import Complexity.Computability.Complexity.Classes.Constructible.FunctionTime
 public import Complexity.Computability.Complexity.Classes.Constructible.Log
 public import Complexity.Computability.Complexity.Classes.Constructible.TwoPow
 public import Complexity.Computability.Complexity.Classes.Counting.OracleSpace
