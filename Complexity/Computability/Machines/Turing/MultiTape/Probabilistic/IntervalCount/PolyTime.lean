@@ -386,4 +386,168 @@ theorem computableInPolyTime_localRun {α : Type} {enc : α ↪ List Bool}
     ⟨.const _, fun a l bit _ => length_encLocalCfg_localCoinStep_le machine (input a) l bit⟩
   exact h
 
+/-! ### Tapes of windows, reads and head coordinates -/
+
+section Window
+
+variable {α : Type} {input : α ↪ List Bool}
+
+private theorem ofList_eq_foldl (l : List (Option Bool)) :
+    StackTape.ofList l = l.reverse.foldl (fun t a => StackTape.cons a t) StackTape.nil := by
+  rw [StackTape.ofList, List.foldl_reverse]
+
+/-- Loading a computed list of cells onto a stack tape. -/
+private theorem stackTape_ofList {cells : α → List (Option Bool)}
+    (hcells : ComputableInPolyTime cells input (encList (encOption encBool))) :
+    ComputableInPolyTime (fun a => StackTape.ofList (cells a)) input (encStackTape encBool) := by
+  have hstep : ComputableInPolyTime
+      (fun p : (α × StackTape Bool) × Option Bool => StackTape.cons p.2 p.1.2)
+      (encPair (encPair input (encStackTape encBool)) (encOption encBool))
+      (encStackTape encBool) :=
+    stackTape_cons (snd _ _) (fst _ _).snd'
+  have h := foldlWithInput_of_bounded_growth (encA := encOption encBool)
+    (encL := encList (encOption encBool)) (list := fun a => (cells a).reverse)
+    (init := fun _ => StackTape.nil) (step := fun _ t a => StackTape.cons a t)
+    (const _) ⟨listReverseWithInput hcells, hstep, inferInstance, inferInstance⟩
+    (growth := fun _ => 5) ⟨.const _, fun _ t a _ => length_encStackTape_cons_le a t⟩
+  simpa only [ofList_eq_foldl] using h
+
+private theorem drop_eq_map_range (cells : List (Option Bool)) (n : ℕ) :
+    cells.drop n = (List.range (cells.length - n)).map fun i => cells.getD (n + i) none := by
+  refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
+  simp only [List.getElem_drop, List.getElem_map, List.getElem_range]
+  rw [List.getD_eq_getElem]
+
+/-- The tape holding computed cells with its head on a computed cell. -/
+private theorem biTape_ofCells {cells : α → List (Option Bool)} {pos : α → ℕ}
+    (hcells : ComputableInPolyTime cells input (encList (encOption encBool)))
+    (hpos : ComputableInPolyTime pos input encUnary) :
+    ComputableInPolyTime (fun a => BiTape.ofCells (cells a) (pos a)) input (encBiTape encBool) := by
+  have hcells' := hcells.comp (fst input encUnary)
+  have hleft : ComputableInPolyTime
+      (fun a => (List.range (pos a)).map fun i => (cells a).getD (pos a - 1 - i) none) input
+      (encList (encOption encBool)) :=
+    mapWithInput (unary_range' hpos) (listGetDWithInput hcells'
+      (unary_sub' (unary_sub' (hpos.comp (fst input encUnary)) (const 1)) (snd _ _)) none)
+  have hright : ComputableInPolyTime
+      (fun a => (List.range ((cells a).length - (pos a + 1))).map fun i =>
+        (cells a).getD (pos a + 1 + i) none) input (encList (encOption encBool)) :=
+    mapWithInput (unary_range' (unary_sub' ((length_list _).comp hcells)
+      (unary_add' hpos (const 1))))
+      (listGetDWithInput hcells' (unary_add' (unary_add' (hpos.comp (fst input encUnary))
+        (const 1)) (snd _ _)) none)
+  have h := biTape_mk (listGetDWithInput hcells hpos none) (stackTape_ofList hleft)
+    (stackTape_ofList hright)
+  simpa only [BiTape.ofCells, drop_eq_map_range] using h
+
+/-- The sign of a binary integer is its first bit. -/
+private theorem intBin_isNeg' {z : α → ℤ} (hz : ComputableInPolyTime z input encIntBin) :
+    ComputableInPolyTime (fun a => decide (z a < 0)) input encBool := by
+  have hbits : ComputableInPolyTime (fun z : ℤ => encIntBin z) encIntBin encBits :=
+    of_eq fun _ => rfl
+  exact ((headD false).comp hbits).comp hz
+
+private theorem getD_none_eq_join (l : List (Option Bool)) (n : ℕ) :
+    l.getD n none = l[n]?.join := by
+  rw [List.getD_eq_getElem?_getD]
+  cases l[n]? <;> rfl
+
+/-- A read at an integer displacement, by the sign of the displacement. -/
+private theorem read_eq (t : BiTape Bool) (z : ℤ) :
+    t.read z = if z = 0 then t.head else if z < 0 then t.left.toList.getD ((-z).toNat - 1) none
+      else t.right.toList.getD (z.toNat - 1) none := by
+  rcases z with (_ | n) | n
+  · rfl
+  · have h1 : ¬ (Int.ofNat (n + 1) = 0) := by rw [Int.ofNat_eq_natCast]; omega
+    have h2 : ¬ (Int.ofNat (n + 1) < 0) := by rw [Int.ofNat_eq_natCast]; omega
+    rw [ite_eq_right h1, ite_eq_right h2, getD_none_eq_join]
+    simp [BiTape.read, StackTape.read_eq_getElem?]
+  · have h1 : ¬ (Int.negSucc n = 0) := by omega
+    have h2 : Int.negSucc n < 0 := Int.negSucc_lt_zero n
+    rw [ite_eq_right h1, ite_eq_left h2, getD_none_eq_join]
+    simp [BiTape.read, StackTape.read_eq_getElem?]
+
+/-- **Reading a computed tape at a computed displacement.** -/
+private theorem biTape_read {tape : α → BiTape Bool} {z : α → ℤ}
+    (htape : ComputableInPolyTime tape input (encBiTape encBool))
+    (hz : ComputableInPolyTime z input encIntBin) :
+    ComputableInPolyTime (fun a => (tape a).read (z a)) input (encOption encBool) := by
+  simp only [read_eq]
+  refine ite_decide (decide_eq' hz (const 0)) ((biTape_head _).comp htape)
+    (ite_decide (intBin_isNeg' hz) ?_ ?_)
+  · have hneg : ComputableInPolyTime (fun a => -z a) input encIntBin := by
+      simpa only [Function.comp_def, zero_sub] using intBin_sub.comp ((const 0).prod hz)
+    exact listGetD_binary none ((stackTape_toList _).comp ((biTape_left _).comp htape))
+      (binary_sub' (intBin_toNat.comp hneg) (const 1))
+  · exact listGetD_binary none ((stackTape_toList _).comp ((biTape_right _).comp htape))
+      (binary_sub' (intBin_toNat.comp hz) (const 1))
+
+/-- The coordinate of a head of computed storage. -/
+private theorem localCfg_headCoord {l : α → LocalCfg k State}
+    (hl : ComputableInPolyTime l input encLocalCfg) (head : Option (Fin k)) :
+    ComputableInPolyTime (fun a => (l a).headCoord head) input encIntBin := by
+  cases head with
+  | none =>
+    exact intBin_sub.comp
+      ((intBin_natCast.comp (unary_to_binary.comp (localCfg_inputPos.comp hl))).prod (const 1))
+  | some h => exact (pi_apply _ h).comp (localCfg_workTapePos.comp hl)
+
+/-- The window cells of computed storage. -/
+private theorem localCfg_windowCellsAt {b : α → ℕ} {j : α → ℤ} {l : α → LocalCfg k State}
+    (hb : ComputableInPolyTime b input encUnary) (hj : ComputableInPolyTime j input encIntBin)
+    (hl : ComputableInPolyTime l input encLocalCfg) (h : Fin k) :
+    ComputableInPolyTime (fun a => (l a).windowCellsAt (b a) (j a) h) input
+      (encList (encOption encBool)) := by
+  have hfst := fst input encUnary
+  have hbZ : ComputableInPolyTime (fun p : α × ℕ => (b p.1 : ℤ)) (encPair input encUnary)
+      encIntBin := intBin_natCast.comp (unary_to_binary.comp (hb.comp hfst))
+  have hcZ : ComputableInPolyTime (fun p : α × ℕ => (p.2 : ℤ)) (encPair input encUnary)
+      encIntBin := intBin_natCast.comp (unary_to_binary.comp (snd _ _))
+  have hoff : ComputableInPolyTime
+      (fun p : α × ℕ => (b p.1 : ℤ) * (j p.1 - 1) + (p.2 : ℤ) - (l p.1).workTapePos h)
+      (encPair input encUnary) encIntBin :=
+    intBin_sub.comp ((intBin_add' (intBin_mul' hbZ (intBin_sub.comp ((hj.comp hfst).prod
+      (const 1)))) hcZ).prod ((pi_apply _ h).comp (localCfg_workTapePos.comp (hl.comp hfst))))
+  exact mapWithInput (unary_range' (unary_mul' (const 3) hb))
+    (biTape_read ((pi_apply _ h).comp (localCfg_workTapes.comp (hl.comp hfst))) hoff)
+
+/-- The stored input position of a coordinate. -/
+private theorem val_inputPosOfCoord (x : List Bool) (p : ℤ) :
+    (inputPosOfCoord x p).val = if !decide (p + 1 < 0) && decide (p + 1 - (x.length + 2) < 0)
+      then min (x.length + 1) (p + 1).toNat else 0 := by
+  unfold inputPosOfCoord
+  by_cases h : 0 ≤ p + 1 ∧ p + 1 < x.length + 2
+  · rw [dite_eq_left h]
+    have : (!decide (p + 1 < 0) && decide (p + 1 - (x.length + 2) < 0)) = true := by
+      simp only [Bool.and_eq_true, Bool.not_eq_true', decide_eq_false_iff_not, not_lt,
+        decide_eq_true_eq]
+      omega
+    rw [ite_eq_left this]
+    simp only
+    omega
+  · rw [dite_eq_right h]
+    have : ¬ (!decide (p + 1 < 0) && decide (p + 1 - (x.length + 2) < 0)) = true := by
+      simp only [Bool.and_eq_true, Bool.not_eq_true', decide_eq_false_iff_not, not_lt,
+        decide_eq_true_eq]
+      omega
+    rw [ite_eq_right this]
+    rfl
+
+/-- The stored input position of a computed coordinate. -/
+private theorem inputPosOfCoord' {word : α → List Bool} {p : α → ℤ}
+    (hword : ComputableInPolyTime word input encBits)
+    (hp : ComputableInPolyTime p input encIntBin) :
+    ComputableInPolyTime (fun a => (inputPosOfCoord (word a) (p a)).val) input encUnary := by
+  simp only [val_inputPosOfCoord]
+  have hp1 := intBin_add' hp (const 1)
+  have hlen : ComputableInPolyTime (fun a => (word a).length) input encUnary :=
+    length_bits.comp hword
+  have hlenZ : ComputableInPolyTime (fun a => ((word a).length : ℤ) + 2) input encIntBin :=
+    intBin_add' (intBin_natCast.comp (unary_to_binary.comp hlen)) (const 2)
+  refine ite (bool_and' (bool_not.comp (intBin_isNeg' hp1))
+    (intBin_isNeg' (intBin_sub.comp (hp1.prod hlenZ)))) ?_ (const 0)
+  exact binary_min_unary.comp ((unary_add' hlen (const 1)).prod (intBin_toNat.comp hp1))
+
+end Window
+
 end Turing.MultiTapePTM
