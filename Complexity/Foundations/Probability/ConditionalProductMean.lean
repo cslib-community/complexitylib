@@ -139,7 +139,9 @@ theorem conditionalTableMean_eq_expect_product {ι κ υ : Type*}
 variable {s : ℕ} {N u : ℝ} {X Y : Ω → V → Prop}
   [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
 
-private theorem expect_filtered_sum_eq (H : Ω → V → V → ℝ) :
+/-- Exchange the finite expectation with the source and endpoint sums, preserving their
+actual joint mask. The two masks and the table may depend on the same draw. -/
+theorem expect_filtered_sum_eq (H : Ω → V → V → ℝ) :
     (𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V), ∑ y ∈ ({y | Y σ y} : Finset V), H σ x y) =
       ∑ x, ∑ y, 𝔼 σ, if X σ x ∧ Y σ y then H σ x y else 0 := by
   have hpoint : ∀ σ,
@@ -155,7 +157,9 @@ private theorem expect_filtered_sum_eq (H : Ω → V → V → ℝ) :
   rw [expect_sum_comm]
   exact sum_congr rfl fun x _ => expect_sum_comm _ _ _
 
-private theorem expect_mask_const [DecidableEq Ω] (S : Finset Ω) (c : ℝ) :
+/-- A constant restricted to a finite event has expectation equal to its actual density
+times that constant, including empty events and empty ambient types. -/
+theorem expect_mask_const [DecidableEq Ω] (S : Finset Ω) (c : ℝ) :
     (𝔼 σ, if σ ∈ S then c else 0) = (dens S : ℝ) * c := by
   classical
   rcases S.eq_empty_or_nonempty with rfl | hS

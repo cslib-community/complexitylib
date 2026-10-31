@@ -1553,8 +1553,10 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Correctness
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Expr
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.ReadInput
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Injective
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Radix
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.ReadSymbol
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Routines
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Tape
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Configurations
@@ -2404,6 +2406,7 @@ public import Complexity.Foundations.Analysis.RowCompression.Floors
 public import Complexity.Foundations.Analysis.RowCompression.Iteration
 public import Complexity.Foundations.Analysis.RowCompression.Preloss
 public import Complexity.Foundations.Analysis.RowCompression.Reference
+public import Complexity.Foundations.Analysis.RowCompression.Stationary
 public import Complexity.Foundations.Analysis.SpecialFunctions.Arccos
 public import Complexity.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import Complexity.Foundations.Analysis.SpecialFunctions.RationalRamp
@@ -2475,6 +2478,7 @@ public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
 public import Complexity.Foundations.Combinatorics.Expander.AffinePlane
 public import Complexity.Foundations.Combinatorics.Expander.AffineTower
 public import Complexity.Foundations.Combinatorics.Expander.Basic
+public import Complexity.Foundations.Combinatorics.Expander.BoxProduct
 public import Complexity.Foundations.Combinatorics.Expander.Cayley
 public import Complexity.Foundations.Combinatorics.Expander.Cheeger
 public import Complexity.Foundations.Combinatorics.Expander.Connected
@@ -2496,6 +2500,7 @@ public import Complexity.Foundations.Combinatorics.Expander.Power
 public import Complexity.Foundations.Combinatorics.Expander.Random
 public import Complexity.Foundations.Combinatorics.Expander.Reindex
 public import Complexity.Foundations.Combinatorics.Expander.Reingold
+public import Complexity.Foundations.Combinatorics.Expander.RelativeShearTranslation
 public import Complexity.Foundations.Combinatorics.Expander.Replacement
 public import Complexity.Foundations.Combinatorics.Expander.ShearTranslation
 public import Complexity.Foundations.Combinatorics.Expander.SimpleGraph
@@ -2796,6 +2801,7 @@ public import Complexity.Foundations.Probability.CorrectionAtom
 public import Complexity.Foundations.Probability.DetectedHierarchy
 public import Complexity.Foundations.Probability.DetectedStage
 public import Complexity.Foundations.Probability.EstimatorPrecision
+public import Complexity.Foundations.Probability.FineProductMean
 public import Complexity.Foundations.Probability.FourthRootHierarchyParams
 public import Complexity.Foundations.Probability.Gaussian.Multivariate
 public import Complexity.Foundations.Probability.Gaussian.Real
