@@ -10,8 +10,9 @@ import Complexity.Computability.Communication.Nondeterministic.Basic
 /-! Tests for nondeterministic communication complexity by covers: exact values for equality on
 three values (`N¹ = 2 = ⌈log₂ 3⌉`, by an explicit cover and the rectangle-size bound) and on `Bool`
 (`N⁰ = 1`, by an explicit cover and a fooling set, and `N¹` of inequality by negation); smaller
-domains that make equality trivial; a relation with several acceptable answers, which is easier
-than the function it relaxes, and one with none, which has no cover; and bounds by deterministic
+domains that make equality trivial, and the fooling-set and rectangle-size bounds on a proper
+subdomain; a relation with several acceptable answers, which is easier than the function it relaxes,
+with its answers exchanged, and one with none, which has no cover; and bounds by deterministic
 protocols, for a function and for a relation. -/
 
 namespace ComplexityTests.NondeterministicCommunication
@@ -38,8 +39,10 @@ example : ecomplexityFun true (equality : Fin 3 → Fin 3 → Bool) Set.univ Set
     · intro x _ y _ h
       simp only [equality, decide_eq_true_eq] at h
       exact ⟨e.symm ⟨x, by omega⟩, by simp, by simp [h]⟩
-  · have := hk.card_le_two_pow_mul card_mul_le_one_of_equality
-    have h3 : #{q : Fin 3 × Fin 3 | equality q.1 q.2 = true} = 3 := by decide
+  · have : #{q ∈ (univ : Finset (Fin 3)) ×ˢ univ | equality q.1 q.2 = true} ≤ 2 ^ k * 1 :=
+      HasCover.card_le_two_pow_mul (fun S _ T _ h => card_mul_le_one_of_equality S T h)
+        (by simpa only [coe_univ] using hk)
+    have h3 : #{q ∈ (univ : Finset (Fin 3)) ×ˢ univ | equality q.1 q.2 = true} = 3 := by decide
     rw [h3, mul_one] at this
     have : 2 ≤ k := by
       by_contra! hk
@@ -57,6 +60,25 @@ private theorem ecomplexityFun_equality_zero_univ :
 example : ecomplexityFun true (equality : Fin 3 → Fin 3 → Bool) {0} {0, 1} = 0 :=
   nonpos_iff_eq_zero.mp <| (ecomplexityFun_mono le_rfl (Set.subset_univ _)).trans
     ecomplexityFun_equality_zero_univ.le
+
+-- On `{0, 1} × {0, 1}` the fooling set `{(0, 0), (1, 1)}` lies inside the domain, so `N¹ ≥ 1`.
+example : (1 : ℕ∞) ≤ ecomplexityFun true (equality : Fin 3 → Fin 3 → Bool) {0, 1} {0, 1} :=
+  le_ecomplexityFun_of_isFoolingSet (isFoolingSet_equality {0, 1}) (by decide) (by decide)
+
+-- The rectangle-size bound on the finite domain `{0, 1} × {0, 1}`: two diagonal pairs and one pair
+-- per rectangle need two rectangles.
+example : (1 : ℕ∞) ≤ ecomplexityFun true (equality : Fin 3 → Fin 3 → Bool) {0, 1} {0, 1} := by
+  refine le_ecomplexityFun_iff.mpr fun k hk => ?_
+  have : #{q ∈ ({0, 1} : Finset (Fin 3)) ×ˢ {0, 1} | equality q.1 q.2 = true} ≤ 2 ^ k * 1 :=
+    HasCover.card_le_two_pow_mul (fun S _ T _ h => card_mul_le_one_of_equality S T h)
+      (by simpa only [coe_insert, coe_singleton] using hk)
+  have h2 : #{q ∈ ({0, 1} : Finset (Fin 3)) ×ˢ {0, 1} | equality q.1 q.2 = true} = 2 := by decide
+  rw [h2, mul_one] at this
+  have : 1 ≤ k := by
+    by_contra! hk
+    interval_cases k
+    simp at this
+  exact_mod_cast this
 
 /-! ### Equality on `Bool` -/
 
@@ -88,11 +110,15 @@ example : ecomplexityFun true (fun x y : Bool => !equality x y) Set.univ Set.uni
 /-- Equality under the promise `x = y`: off the diagonal every answer is acceptable. -/
 private def promiseEq (x y : Bool) (b : Bool) : Prop := x = y → b = true
 
--- No pair must be covered with `false`, since `true` is acceptable everywhere: one empty
--- rectangle is a `0`-cover, although `N⁰` of equality itself is `1`.
-example : ecomplexity false promiseEq Set.univ Set.univ = 0 :=
+/-- No pair must be covered with `false`, since `true` is acceptable everywhere: one empty
+rectangle is a `0`-cover, although `N⁰` of equality itself is `1`. -/
+private theorem ecomplexity_false_promiseEq : ecomplexity false promiseEq Set.univ Set.univ = 0 :=
   nonpos_iff_eq_zero.mp <| ecomplexity_le_iff.mpr
     ⟨fun _ => (∅, ∅), fun _ _ _ hx => hx.elim, fun _ _ _ _ h => (h fun _ => rfl).elim⟩
+
+-- Exchanging the answers of the relation exchanges `N⁰` and `N¹`.
+example : ecomplexity true (fun x y b => promiseEq x y (!b)) Set.univ Set.univ = 0 := by
+  rw [ecomplexity_not, Bool.not_true, ecomplexity_false_promiseEq]
 
 -- The relation is weaker than equality, so it is no harder.
 example : ecomplexity false promiseEq Set.univ Set.univ ≤
