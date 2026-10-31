@@ -2974,6 +2974,7 @@ public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.CSP.ToCNF.Count
 public import Complexity.Logics.Propositional.ClauseSet.Basic
+public import Complexity.Logics.Propositional.ClauseSet.Satisfiable
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Counting
