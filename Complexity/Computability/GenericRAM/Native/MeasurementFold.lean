@@ -79,7 +79,8 @@ theorem length_count_le (c D : ℕ) :
 No fitting-index hypothesis is needed for this total polynomial-time decoder. -/
 theorem decoder_polyTime :
     ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ =>
-      Cslib.Radix.measurementValues p.1.1 p.1.2 p.2)
+      let params := p.1
+      Cslib.Radix.measurementValues params.1 params.2 p.2)
       (encPair (encPair encUnary encNat) encNat) (encList encIntBin) := by
   let ei := encPair (encPair encUnary encNat) encNat
   have hp := ComputableInPolyTime.fst (encPair encUnary encNat) encNat
@@ -101,7 +102,9 @@ theorem decoder_polyTime :
 
 /-- The fixed signed-tuple decoder has an actual polynomial native implementation. -/
 noncomputable def decoder :
-    NativeCertificate (fun p : (ℕ × ℕ) × ℕ => Cslib.Radix.measurementValues p.1.1 p.1.2 p.2)
+    NativeCertificate (fun p : (ℕ × ℕ) × ℕ =>
+      let params := p.1
+      Cslib.Radix.measurementValues params.1 params.2 p.2)
       (encPair (encPair encUnary encNat) encNat) (encList encIntBin) :=
   NativeCertificate.ofPolyTime decoder_polyTime
 
@@ -129,7 +132,9 @@ variable {β : Type}
 
 /-- Decode the current index while retaining the full runtime parameters outside the user body. -/
 def visit (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ((ℕ × ℕ) × β)) : (ℕ × ℕ) × β :=
-  (p.2.1, body ((p.2.1, Cslib.Radix.measurementValues p.2.1.1 p.2.1.2 p.1), p.2.2))
+  let st := p.2
+  let params := st.1
+  (params, body ((params, Cslib.Radix.measurementValues params.1 params.2 p.1), st.2))
 
 /-- A streaming prefix stores only the binary index, complete parameters and captured state. -/
 def runPrefix (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (j : ℕ) (initial : β) :
@@ -141,7 +146,9 @@ def run (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (initi
 
 /-- Neither dimension nor radius can be overwritten by the callback. -/
 @[simp] theorem prefix_parameters (body : ((ℕ × ℕ) × List ℤ) × β → β)
-    (p : ℕ × ℕ) (j : ℕ) (initial : β) : (runPrefix body p j initial).2.1 = p := by
+    (p : ℕ × ℕ) (j : ℕ) (initial : β) :
+    let st := (runPrefix body p j initial).2
+    st.1 = p := by
   induction j with
   | zero => rfl
   | succ j ih =>
@@ -152,7 +159,8 @@ def run (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (initi
 /-- All prefixes follow the increasing-index order, with full parameters and captured state. -/
 theorem prefix_accumulator (body : ((ℕ × ℕ) × List ℤ) × β → β)
     (p : ℕ × ℕ) (j : ℕ) (initial : β) :
-    (runPrefix body p j initial).2.2 = (List.range j).foldl
+    let st := (runPrefix body p j initial).2
+    st.2 = (List.range j).foldl
       (fun acc i => body ((p, Cslib.Radix.measurementValues p.1 p.2 i), acc)) initial := by
   induction j with
   | zero => rfl
@@ -170,9 +178,11 @@ theorem prefix_accumulator (body : ((ℕ × ℕ) × List ℤ) × β → β)
 /-- Exact ordered-fold specification. With `measurementValues_coverage`, every fitting signed
 word is visited once. The materialized index/word lists occur only in this specification. -/
 theorem run_accumulator (body : ((ℕ × ℕ) × List ℤ) × β → β) (p : ℕ × ℕ) (initial : β) :
-    (run body p initial).2.2 =
+    let st := (run body p initial).2
+    st.2 =
       ((List.range (count p)).map (Cslib.Radix.measurementValues p.1 p.2)).foldl
         (fun acc word => body ((p, word), acc)) initial := by
+  dsimp only
   rw [run, prefix_accumulator]
   exact (List.foldl_map (f := Cslib.Radix.measurementValues p.1 p.2)
     (g := fun acc word => body ((p, word), acc))
@@ -184,7 +194,9 @@ variable {encB : β ↪ List Bool}
 both retained parameters and the final binary counter, including at base one/dimension zero. -/
 theorem length_prefix_le (body : ((ℕ × ℕ) × List ℤ) × β → β)
     (c D j B : ℕ) (initial : β) (hj : j ≤ count (c, D))
-    (hB : (encB (runPrefix body (c, D) j initial).2.2).length ≤ B) :
+    (hB :
+      let st := (runPrefix body (c, D) j initial).2
+      (encB st.2).length ≤ B) :
     (encPair encNat (encPair (encPair encUnary encNat) encB)
       (runPrefix body (c, D) j initial)).length ≤
       2 * (c * (D.size + 1) + 1) + 4 * c + 2 * D.size + 4 + B := by
@@ -192,6 +204,7 @@ theorem length_prefix_le (body : ((ℕ × ℕ) × List ℤ) × β → β)
       (runPrefix body (c, D) j initial).2).length ≤
       2 * (encPair encUnary encNat (c, D)).length + 1 + B := by
     rw [length_encPair, prefix_parameters]
+    dsimp only at hB
     omega
   have hi := IndexFold.length_run_le (visit body) ((c, D), initial) hj hs
   have hp : (encPair encUnary encNat (c, D)).length = 2 * c + 1 + D.size := by
@@ -216,7 +229,9 @@ theorem length_callback_input_le (c D j : ℕ) (acc : β) :
 /-- Prepare the complete runtime parameter/tuple/captured-state input to the callback. -/
 theorem prepare_polyTime :
     ComputableInPolyTime (fun p : ℕ × ((ℕ × ℕ) × β) =>
-      ((p.2.1, Cslib.Radix.measurementValues p.2.1.1 p.2.1.2 p.1), p.2.2))
+      let st := p.2
+      let params := st.1
+      ((params, Cslib.Radix.measurementValues params.1 params.2 p.1), st.2))
       (encPair encNat (encPair (encPair encUnary encNat) encB))
       (encPair (encPair (encPair encUnary encNat) (encList encIntBin)) encB) := by
   have hs := ComputableInPolyTime.snd encNat (encPair (encPair encUnary encNat) encB)
