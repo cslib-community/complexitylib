@@ -20,7 +20,6 @@ open Cslib.Complexity Cslib.Complexity.BranchedSparseCNFCounter Cslib.GenericRAM
 open Cslib.Complexity.SparseCNFLeafCounter Cslib.Complexity.SubexponentialSAT
 open Cslib.Complexity.SubexponentialSAT.SparsePolyCounter Cslib.GenericRAM.ExhaustiveCountFallback
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.ClauseSet.Sparsification Turing.MultiTapeTM
-open Turing.MultiTapeTM.Universal (encUnit)
 
 local notation "encLeafIn" => encPair (encPair encUnit encUnary) encCNF
 

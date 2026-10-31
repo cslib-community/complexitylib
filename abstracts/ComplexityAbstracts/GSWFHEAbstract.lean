@@ -546,8 +546,7 @@ theorem fullyHomomorphic (hLWE : DecisionLWE) (hcircular : CircularSecure) :
 end ComplexityTests.Abstracts.GSWFHEAbstract
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.GSWFHEAbstract`: 46 root declarations,
-316 dependencies checked
+info: abstract audit passed for `ComplexityTests.Abstracts.GSWFHEAbstract`: 46 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.GSWFHEAbstract allowing [
