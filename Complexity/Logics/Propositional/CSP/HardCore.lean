@@ -113,41 +113,14 @@ the graph, when its edges join vertices `0, …, n - 1`. -/
 theorem partitionFunction_hardCore (t : ℕ) (hE : ∀ e ∈ E, e.1 < n ∧ e.2 < n) :
     (hardCore n E).partitionFunction (hardCoreWeight t) =
       ∑ S ∈ (Finset.range n).powerset with ∀ e ∈ E, ¬(e.1 ∈ S ∧ e.2 ∈ S), t ^ S.card := by
-  have hmem : ∀ v, v ∈ (hardCore n E).vars.toFinset ↔ v < n := fun v => by
-    rw [List.mem_toFinset, mem_vars_hardCore hE]
-  have hext : ∀ (τ : (hardCore n E).vars.toFinset → Bool) (v : ℕ) (hv : v < n),
-      (if h : v ∈ (hardCore n E).vars.toFinset then τ ⟨v, h⟩ else default) =
-        τ ⟨v, (hmem v).mpr hv⟩ :=
-    fun τ v hv => by simp only [(hmem v).mpr hv, ↓reduceDIte]
-  rw [Finset.sum_filter, partitionFunction]
-  refine Finset.sum_nbij' (fun τ => (Finset.range n).filter fun v =>
-      (if h : v ∈ (hardCore n E).vars.toFinset then τ ⟨v, h⟩ else default) = true)
-    (fun S x => decide (x.1 ∈ S)) (fun τ _ => ?_)
-    (fun S _ => Finset.mem_coe.mpr (Finset.mem_univ _)) (fun τ _ => ?_) (fun S hS => ?_)
-    (fun τ _ => ?_)
-  · exact Finset.mem_powerset.mpr (Finset.filter_subset _ _)
-  · funext x
-    have hx : x.1 < n := (hmem x.1).mp x.2
-    simp only [Finset.mem_filter, Finset.mem_range, hx, true_and, hext τ x.1 hx, Subtype.coe_eta,
-      Bool.decide_eq_true]
-  · have hS' := Finset.mem_powerset.mp (Finset.mem_coe.mp hS)
+  have hX : (hardCore n E).vars.toFinset = Finset.range n := by
     ext v
-    simp only [Finset.mem_filter, Finset.mem_range]
-    constructor
-    · rintro ⟨hv, h⟩
-      simpa only [(hmem v).mpr hv, ↓reduceDIte, decide_eq_true_eq] using h
-    · intro hv
-      have hvn := Finset.mem_range.mp (hS' hv)
-      exact ⟨hvn, by simpa only [(hmem v).mpr hvn, ↓reduceDIte, decide_eq_true_eq] using hv⟩
-  · rw [weight_hardCore]
-    split_ifs with h₁ h₂ h₂
-    · exact Nat.mul_one _
-    · refine absurd (fun e he hS => h₁ e he ?_) h₂
-      simpa only [Finset.mem_filter, Finset.mem_range, (hE e he).1, (hE e he).2, true_and]
-        using hS
-    · refine absurd (fun e he hσ => h₂ e he ?_) h₁
-      simpa only [Finset.mem_filter, Finset.mem_range, (hE e he).1, (hE e he).2, true_and]
-        using hσ
-    · exact Nat.mul_zero _
+    rw [List.mem_toFinset, mem_vars_hardCore hE, Finset.mem_range]
+  rw [partitionFunction_eq_sum_powerset, hX, Finset.sum_filter]
+  refine Finset.sum_congr rfl fun S hS => ?_
+  have hS' : (Finset.range n).filter (fun v => v ∈ S) = S :=
+    Finset.filter_mem_eq_inter.trans (Finset.inter_eq_right.mpr (Finset.mem_powerset.mp hS))
+  simp only [weight_hardCore, decide_eq_true_eq, hS']
+  split_ifs <;> simp
 
 end Cslib.Logic.PL.CSP
