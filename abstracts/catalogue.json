@@ -70,6 +70,20 @@
       "namespace": "ComplexityTests.Abstracts.USTCONAbstract"
     },
     {
+      "id": "primes",
+      "title": "Agrawal–Kayal–Saxena: PRIMES is in P",
+      "module": "ComplexityAbstracts.PrimesAbstract",
+      "headline_theorems": [
+        "ComplexityAbstracts.PrimesAbstract.primes_mem_P"
+      ],
+      "summary": "Primality of a natural number given in binary is decidable in deterministic polynomial time.",
+      "scope": "Binary digits least significant first, and native multi-tape P with polynomial time and space; the library decider is the AKS algorithm with integer thresholds on the word RAM, simulated by a Turing machine; no exponent is stated.",
+      "foundations": [
+        "ComplexityAbstracts.Encoding",
+        "ComplexityAbstracts.Computation"
+      ]
+    },
+    {
       "id": "immerman-szelepcsenyi",
       "title": "Immerman–Szelepcsényi: nondeterministic space is closed under complement",
       "module": "ComplexityAbstracts.ImmermanSzelepcsenyiAbstract",
