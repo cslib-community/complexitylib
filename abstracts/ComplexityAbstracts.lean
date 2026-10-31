@@ -40,6 +40,8 @@ import ComplexityAbstracts.PCPAbstract
 import ComplexityAbstracts.PCPBridge
 import ComplexityAbstracts.PartialMCSPAbstract
 import ComplexityAbstracts.PartialMCSPBridge
+import ComplexityAbstracts.PrimesAbstract
+import ComplexityAbstracts.PrimesBridge
 import ComplexityAbstracts.Randomized
 import ComplexityAbstracts.RandomizedWordRAMAbstract
 import ComplexityAbstracts.RandomizedWordRAMBridge
