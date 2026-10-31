@@ -14,7 +14,7 @@ import Mathlib.Tactic.Linarith
 # Single-recursion van Emde Boas deletion
 
 This module defines and verifies key deletion on recursive minimum-excluded van Emde Boas trees
-([Demaine2015VanEmdeBoas], pp. 5–6; [CLRS2009], Section 20.3, p. 554).
+([Demaine2015VanEmdeBoas], p. 5; [CLRS2009], Section 20.3, p. 554).
 
 At each internal depth `d + 1`:
 * If the tree is empty or the query lies outside `[m, M]`, deletion returns immediately with no
@@ -75,7 +75,7 @@ structure EraseTarget (d : ℕ) where
   low : ℕ
 
 /-- Non-recursive `O(1)` header helper selecting `(newMin, clusterIdx, low)` when `m < M` and
-`m ≤ x ≤ M` ([Demaine2015VanEmdeBoas], p. 6; [CLRS2009], Section 20.3, p. 554). -/
+`m ≤ x ≤ M` ([Demaine2015VanEmdeBoas], p. 5; [CLRS2009], Section 20.3, p. 554). -/
 @[expose] def eraseTarget {d : ℕ} (m x : ℕ) (s : Tree d)
     (c : Fin (universeSize d) → Tree d) : Option (EraseTarget d) :=
   if x = m then
@@ -91,7 +91,7 @@ structure EraseTarget (d : ℕ) where
   else none
 
 /-- Reconstruct a node's maximum in `O(1)` header reads from `newMin`, `s.maximum`, and the
-maximal occupied cluster's cached `maximum` ([Demaine2015VanEmdeBoas], p. 6; [CLRS2009],
+maximal occupied cluster's cached `maximum` ([Demaine2015VanEmdeBoas], p. 5; [CLRS2009],
 Section 20.3, p. 554). -/
 @[expose] def clusterMax {d : ℕ} (newMin : ℕ) (s : Tree d)
     (c : Fin (universeSize d) → Tree d) : ℕ :=
@@ -105,7 +105,7 @@ Section 20.3, p. 554). -/
     else newMin
 
 /-- Delete a key from a van Emde Boas tree, performing at most one recursive call per depth level
-([Demaine2015VanEmdeBoas], pp. 5–6; [CLRS2009], Section 20.3, p. 554). -/
+([Demaine2015VanEmdeBoas], p. 5; [CLRS2009], Section 20.3, p. 554). -/
 @[expose] def erase : {d : ℕ} → Tree d → ℕ → Tree d
   | 0, .leaf b, x => match b with
     | none => .leaf none
