@@ -947,6 +947,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionShape
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetwork
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
@@ -2920,6 +2922,7 @@ public import Complexity.Foundations.Data.Nat.Card
 public import Complexity.Foundations.Data.Nat.CeilDiv
 public import Complexity.Foundations.Data.Nat.Choose
 public import Complexity.Foundations.Data.Nat.Choose.Real
+public import Complexity.Foundations.Data.Nat.Choose.Vandermonde
 public import Complexity.Foundations.Data.Nat.Div
 public import Complexity.Foundations.Data.Nat.Factorial
 public import Complexity.Foundations.Data.Nat.IntermediateValue
