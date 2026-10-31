@@ -184,7 +184,7 @@ theorem tqbf_pspaceComplete : PSPACEComplete encQBF TQBF :=
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.TQBFAbstract`:
-81 root declarations, 130 dependencies checked
+81 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.TQBFAbstract allowing [

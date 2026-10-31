@@ -186,7 +186,7 @@ abbrev OracleResponse : Sum ℕ (Unit × List Bool) → Type :=
   Cslib.probOracleSpec (fun _ : Unit × List Bool => List Bool)
 
 /--
-info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`: 15 root declarations, 254 dependencies checked
+info: abstract audit passed for `ComplexityTests.Abstracts.CryptographyAbstract`: 15 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.CryptographyAbstract allowing [
