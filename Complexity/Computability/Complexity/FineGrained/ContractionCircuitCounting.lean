@@ -9,7 +9,8 @@ module
 
 public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.ContractionCounting
-import Complexity.Computability.Circuit.Program
+import Complexity.Computability.Circuit.FanIn
+import Complexity.Foundations.Data.Nat.SqrtLog.Shifted
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -57,8 +58,6 @@ finite signatures, with the exponent in the number of gates, is a library extens
 * `ContractionCounting.exists_linearSizeCircuitSatCounter`,
   `ContractionCounting.exists_linearSizeBooleanCircuitSatCounter`: for each size constant `C`,
   exponent `A (n + 1) / √⌊log₂ (n + 2)⌋` on circuits with at most `C n + C` gates.
-* `Nat.mul_succ_div_sqrt_log_two_le`: the scale `A (y + 1) / √⌊log₂ (y + 2)⌋` is monotone up to
-  constants, which transfers a bound in the number of variables or gates to `s` or `n`.
 
 ## References
 
@@ -67,37 +66,6 @@ finite signatures, with the exponent in the number of gates, is a library extens
 -/
 
 public section
-
-namespace Nat
-
-/-- **The shifted scale is monotone up to constants.** If `y ≤ C x + C`, then
-`A (y + 1) / √⌊log₂ (y + 2)⌋ ≤ A (8 C + 14) (x + 1) / √⌊log₂ (x + 2)⌋`. -/
-theorem mul_succ_div_sqrt_log_two_le {A C x y : ℕ} (h : y ≤ C * x + C) :
-    A * (y + 1) / sqrt (log 2 (y + 2)) ≤
-      A * (8 * C + 14) * (x + 1) / sqrt (log 2 (x + 2)) := by
-  set G := (x + 2) / sqrt (log 2 (x + 2))
-  have hG : 1 ≤ G := one_le_div_sqrt_log_two (by omega)
-  have h3 : y + 2 ≤ (C + 1) * (x + 2) := by nlinarith
-  have h4 := div_sqrt_log_two_le_of_le h3
-  have h5 : (C + 1) * (x + 2) / sqrt (log 2 ((C + 1) * (x + 2))) ≤ (C + 1) * G + (C + 1) :=
-    mul_div_sqrt_log_two_le (C + 1) (x + 2)
-  have h2 := mul_div_le_mul_div_add A (y + 2) (sqrt (log 2 (y + 2)))
-  have h1 : A * (y + 1) / sqrt (log 2 (y + 2)) ≤ A * (y + 2) / sqrt (log 2 (y + 2)) :=
-    Nat.div_le_div_right (Nat.mul_le_mul_left _ (by omega))
-  have hscale : (y + 2) / sqrt (log 2 (y + 2)) ≤ 2 * ((C + 1) * G) + 2 * C + 4 := by
-    omega
-  calc A * (y + 1) / sqrt (log 2 (y + 2))
-      ≤ A * (2 * ((C + 1) * G) + 2 * C + 4) + A := by
-        nlinarith [Nat.mul_le_mul_left A hscale]
-    _ ≤ A * (4 * C + 7) * G := by nlinarith [Nat.mul_le_mul_left (A * (2 * C + 5)) hG]
-    _ ≤ A * (4 * C + 7) * (x + 2) / sqrt (log 2 (x + 2)) := mul_div_le_mul_div_assoc _ _ _
-    _ ≤ A * (8 * C + 14) * (x + 1) / sqrt (log 2 (x + 2)) :=
-        Nat.div_le_div_right (by
-          calc A * (4 * C + 7) * (x + 2) ≤ A * (4 * C + 7) * (2 * (x + 1)) :=
-                Nat.mul_le_mul_left _ (by omega)
-            _ = A * (8 * C + 14) * (x + 1) := by ring)
-
-end Nat
 
 namespace Cslib.Complexity.ContractionCounting
 
@@ -244,12 +212,6 @@ theorem exists_shiftedCounter_of_polyTime_toCNF {α : Type} {encA : α ↪ List 
 
 /-! ### Circuits -/
 
-/-- Over a finite signature every circuit has fan-in at most the largest arity. -/
-private theorem exists_fanInAtMost (σ : Signature) [Finite σ.Op] :
-    ∃ k, ∀ {n m : ℕ} (c : Circuit σ n m), c.FanInAtMost k := by
-  obtain ⟨k, hk⟩ := (Set.finite_range σ.Arity).bddAbove
-  exact ⟨k, fun c => Program.fanInAtMost_iff.mpr fun j => hk ⟨_, rfl⟩⟩
-
 /-- **Acceptance counting for circuits by tensor contraction.** For every finite Boolean
 signature `σ` and output predicate `acc`, one machine computes `c.2.acceptCount I acc` on every
 circuit `c`, in time `2 ^ (A (s + 1) / √⌊log₂ (s + 2)⌋)` times a polynomial in the encoding
@@ -263,7 +225,7 @@ theorem exists_circuitAcceptCounter {σ : Signature} [Finite σ.Op]
         (fun c => 2 ^ (A * (c.2.size + 1) / Nat.sqrt (Nat.log 2 (c.2.size + 2))) *
           ((Circuit.encCircuit encOp m c).length + 1) ^ e)
         (fun c => ((Circuit.encCircuit encOp m c).length + 1) ^ b) := by
-  obtain ⟨k, hk⟩ := exists_fanInAtMost σ
+  obtain ⟨k, hk⟩ := Circuit.exists_fanInAtMost σ
   obtain ⟨count, A, e, b, hspec, hinO⟩ :=
     exists_shiftedCounter_of_polyTime_toCNF (k + 1) (2 ^ (k + 1) * (m + 1)) (k + m)
       (CircuitCounting.computableInPolyTime_toCNF encOp I acc)
