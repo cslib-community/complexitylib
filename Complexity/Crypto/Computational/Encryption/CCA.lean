@@ -74,16 +74,17 @@ Verbatim from [BonehShoup2023], Section 12.1 (printed pp. 467–468):
 > for all efficient adversaries $\mathcal{A}$, the value $\text{1CCAadv}[\mathcal{A}, \mathcal{E}]$
 > is negligible.
 >
-> Using a standard hybrid argument, we can easily see that a public-key encryption scheme is CCA
-> secure if and only if it is 1CCA secure:
+> A similar result holds with respect to chosen ciphertext security, namely, that 1CCA security
+> implies CCA security.
 >
-> **Theorem 12.1.** *A public-key encryption scheme $\mathcal{E}$ is 1CCA secure if and only if it
-> is CCA secure. More specifically, for every CCA adversary $\mathcal{A}$ that makes at most $Q_e$
-> encryption queries, there exists a 1CCA adversary $\mathcal{B}$ (whose running time is about the
-> same as that of $\mathcal{A}$), such that*
-> $$\text{CCAadv}[\mathcal{A}, \mathcal{E}] = Q_e \cdot \text{1CCAadv}[\mathcal{B}, \mathcal{E}],$$
-> *and moreover, the number of decryption queries made by $\mathcal{B}$ is equal to the number of
-> decryption queries made by $\mathcal{A}$.*
+> **Theorem 12.1.** If a public-key encryption scheme $\mathcal{E}$ is 1CCA secure, then it is
+> also CCA secure.
+>
+> In particular, for every CCA adversary $\mathcal{A}$ that plays Attack Game 12.1 with respect
+> to $\mathcal{E}$, and which makes at most $Q_e$ encryption queries to its challenger, there
+> exists a 1CCA adversary $\mathcal{B}$ as in Definition 12.2, where $\mathcal{B}$ is an
+> elementary wrapper around $\mathcal{A}$, such that
+> $$\text{CCAadv}[\mathcal{A}, \mathcal{E}] = Q_e \cdot \text{1CCAadv}[\mathcal{B}, \mathcal{E}].$$
 
 And the two-phase decomposition of the 1CCA experiment (printed pp. 468–469):
 
