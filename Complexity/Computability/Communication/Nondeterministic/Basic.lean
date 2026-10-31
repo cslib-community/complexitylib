@@ -43,14 +43,18 @@ required to lie inside the domain. Kushilevitz and Nisan remark after Definition
 relations, measures such as `N¹(R)` are less interesting, since the answer `1` has no special role;
 with Boolean answers, `N⁰` and `N¹` keep their meaning.
 
-Kushilevitz and Nisan require a protocol for a relation to be correct only on legal inputs, those
-with some acceptable answer, and define the other measures for relations "in a similar manner"
+A relation `R : X → Y → Bool → Prop` is their relation `R ⊆ X × Y × Z` with `Z = Bool`
+[Kushilevitz and Nisan, Definition 5.1, p. 71][KushilevitzNisan1997]: `R x y b` holds exactly when
+`(x, y, b) ∈ R`. A partial Boolean function `f` with domain `D` is the relation
+`fun x y b => (x, y) ∈ D → f x y = b`. Kushilevitz and Nisan require a protocol for a relation to be
+correct only on legal inputs, those with some acceptable answer, and define the other measures for
+relations "in a similar manner"
 [Kushilevitz and Nisan, Definition 5.2, p. 71][KushilevitzNisan1997]. Here, as for
 `Protocol.ecomplexity`, which is stated for relations, every pair of `A × B` must get an acceptable
 answer, so a pair of `A × B` with no acceptable answer makes the complexity `⊤`. Just before
 Definition 5.2 they note the alternative of extending a relation to allow every answer on its
-illegal pairs; their convention for `R` is this one for that extension, which is no harder than
-`R` (`Nondeterministic.ecomplexity_le_of_imp`).
+illegal pairs; their convention for `R` is this one for that extension, which is no harder than `R`
+(`Nondeterministic.ecomplexity_le_of_imp`).
 
 ## Covers and protocols
 
