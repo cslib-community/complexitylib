@@ -20,7 +20,7 @@ import Mathlib.Topology.Instances.ENNReal.Lemmas
 
 This file formalizes the classical uniform-probing model of open-addressed hashing from
 [Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition (MIT Press,
-2009), Section 11.4 ("Open addressing", pp. 270–277)][CLRS2009], realizing the bounded-capacity
+2009), Section 11.4 ("Open addressing", pp. 269–277)][CLRS2009], realizing the bounded-capacity
 insert-only dictionary specification `Cslib.Algorithms.Lean.Dictionary.spec` over `m` table slots
 (`2 * n_max ≤ m`).
 
@@ -45,7 +45,7 @@ In [CLRS2009], third edition, Section 11.4:
   `α = n / m < 1`, the expected number of probes in an unsuccessful search is at most
   `1 / (1 - α) = m / (m - n)` under uniform hashing; its proof establishes the exact occupancy tail
   product `Pr{X ≥ i} = ∏_{j = 0}^{i - 2} ((n - j) / (m - j)) ≤ α ^ (i - 1)`.
-* **Corollary 11.7 (p. 276)** states that inserting an element into an open-address hash table with
+* **Corollary 11.7 (p. 275)** states that inserting an element into an open-address hash table with
   load factor `α < 1` requires at most `1 / (1 - α) = m / (m - n)` probes on average.
 * **Theorem 11.8 (p. 276)** states that when each key in the table is equally likely to be searched
   for, the expected number of probes in a successful search is at most `(1 / α) ln(1 / (1 - α))`.
@@ -91,7 +91,7 @@ In [CLRS2009], third edition, Section 11.4:
   `Cslib.Algorithms.Lean.UniformProbing.expect_unsuccessfulProbes_le_two`,
   `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_eq_none_le`,
   `Cslib.Algorithms.Lean.UniformProbing.expect_probeCount_of_eq_none_le_two`: Theorem 11.6
-  (pp. 274–275) and Corollary 11.7 (p. 276) of [CLRS2009], third edition — an unsuccessful lookup or
+  (pp. 274–275) and Corollary 11.7 (p. 275) of [CLRS2009], third edition — an unsuccessful lookup or
   fresh-key insertion into a table holding `n < m` keys makes at most `m / (m - n)` probes in
   expectation (`≤ 2` when `2 * n ≤ m`).
 * `Cslib.Algorithms.Lean.UniformProbing.TableRep.probeCount_tableInsert_of_isSome`,
@@ -122,7 +122,7 @@ open-addressed table invariants proved here.
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein,
   *Introduction to Algorithms*, third edition (MIT Press, 2009), Section 11.4,
-  pp. 270–277][CLRS2009]
+  pp. 269–277][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 -/
 
@@ -706,7 +706,7 @@ theorem expect_unsuccessfulProbes_le_two {m : ℕ} {O : Finset (Fin m)}
   (expect_unsuccessfulProbes_le (by omega)).trans (div_sub_le_two hm h2n)
 
 
-/-! ## Section 3: Open-Addressed Table Model ([CLRS2009], Section 11.4, pp. 270–276) -/
+/-! ## Section 3: Open-Addressed Table Model ([CLRS2009], Section 11.4, pp. 269–276) -/
 
 /-- Pure open-addressed hash table of `m` slots over key universe `Fin U`, where each slot holds
 `none` (empty) or `some (u, v)` (occupied by key `u` with value `v`). -/
@@ -1082,7 +1082,7 @@ theorem TableRep.probeCount_tableInsert_self {U m : ℕ} (hm : 0 < m)
     probeCount (UniformProbing.tableInsert hm π T u v) u (π u) = probeCount T u (π u) := by
   simp [probeCount, unsuccessfulProbes, otherOccupiedSlots_tableInsert_self hm hrep u v hO]
 
-/-- **Probe invariance for present keys ([CLRS2009], Section 11.4, p. 275)**:
+/-- **Probe invariance for present keys ([CLRS2009], proof of Theorem 11.8, p. 276)**:
 once a key `w` is present in `s` (`(s w).isSome`), inserting or updating any key `(u, v)` leaves
 the number of probes `probeCount · w (π w)` made when searching for `w` unchanged. -/
 theorem TableRep.probeCount_tableInsert_of_isSome {U m : ℕ} (hm : 0 < m)
@@ -1287,7 +1287,7 @@ theorem not_mem_insert_of_run_eq_none {U V n_max : ℕ} {u : Fin U} :
     · exact not_mem_insert_of_run_eq_none
         (s := ((Dictionary.spec U V n_max).step s o).1) hnone v htail
 
-/-- **Theorem 11.6 (pp. 274–275) & Corollary 11.7 (p. 276) of [CLRS2009], third edition, over
+/-- **Theorem 11.6 (pp. 274–275) & Corollary 11.7 (p. 275) of [CLRS2009], third edition, over
 `PMF.uniformOfFintype`**:
 for any valid operation history `ops` reaching state `s` with `(Dictionary.dom s).card < m` and any
 absent key `u` (`s u = none`), the expected number of probes made by an unsuccessful lookup `get u`
