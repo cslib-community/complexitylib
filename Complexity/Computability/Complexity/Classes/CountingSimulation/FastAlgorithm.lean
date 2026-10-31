@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Gua
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Admissible
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionPolyTime
 import Mathlib.Analysis.SpecificLimits.Normed
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -51,11 +52,10 @@ finish, and the machine falls back to direct summation, at a constant factor.
 
 The guard is polynomial-time (`CountingSimulation.fastGuard_polyTime`).
 
-For the native child builder (`FastContraction.nativeMk`), the step, the passage of
-well-formedness to the children and the well-formed roots are proved
-(`CountingSimulation.contractionAlgorithmOfNative`); there the remaining obligations are the
-components of the scheme in polynomial time, the unit differences of the interpolation points and
-the resource analysis.
+For the native child builder (`FastContraction.nativeMk`), the components of the scheme are
+polynomial-time (`FastContraction.scheme_nativeMk_polyTime`), and the step, the passage of
+well-formedness to the children and the well-formed roots are proved; there the one remaining
+obligation is the resource analysis (`CountingSimulation.contractionAlgorithmOfNative`).
 
 **Remaining obligations** (the hypotheses of `CountingSimulation.contractionAlgorithmOfFast`): the
 components of the scheme in polynomial time, the correctness of one active call
@@ -69,7 +69,7 @@ components of the scheme in polynomial time, the correctness of one active call
 * `Cslib.Complexity.CountingSimulation.contractionAlgorithmOfFast`: the contraction algorithm from
   the remaining obligations.
 * `Cslib.Complexity.CountingSimulation.contractionAlgorithmOfNative`: the same for the native child
-  builder, with fewer obligations.
+  builder, from the resource analysis alone.
 
 ## Main results
 
@@ -171,19 +171,6 @@ private theorem fastGuard_eq_guardTest (G : ℕ × ExplicitTensorNetwork ℕ) :
     exact ⟨⟨⟨fun v hv i hi => h1 v hv i hi, fun i hi => h2 i hi⟩, h3⟩, h4⟩
   · rintro ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩
     exact ⟨⟨fun v hv i hi => h1 v hv i hi, fun i hi => h2 i hi⟩, h3, h4⟩
-
-/-- The degree bound `2 ^ (9 ⌊log₂ m⌋ / 10 + 2)`, in binary from `m` in unary. -/
-private theorem degreeBound_polyTime : ComputableInPolyTime degreeBound encUnary encNat := by
-  have hb := ComputableInPolyTime.unary_to_binary
-  have hlog := ComputableInPolyTime.binary_log_two.comp hb
-  have he : ComputableInPolyTime (fun m => 9 * Nat.log 2 m / 10 + 2) encUnary encUnary :=
-    ComputableInPolyTime.binary_to_unary_bounded
-      (ComputableInPolyTime.binary_add.comp ((ComputableInPolyTime.binary_div.comp
-        ((ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 9) (hb.comp hlog)).prod
-          (ComputableInPolyTime.const 10))).prod (ComputableInPolyTime.const 2)))
-      (ComputableInPolyTime.unary_add' hlog (ComputableInPolyTime.const 2)) fun m => by
-        simp only [Function.comp_apply]; omega
-  exact ComputableInPolyTime.binary_two_pow.comp he
 
 /-- **The guard is polynomial-time.** -/
 theorem fastGuard_polyTime : ComputableInPolyTime fastGuard encG encBool := by
@@ -650,21 +637,15 @@ theorem wf_root (P : ℕ) {G : ℕ × ExplicitTensorNetwork ℕ} (hg : fastGuard
       ← List.map_drop, List.map_map, Function.comp_def] at hi ⊢
     exact h2 i hi
 
-/-- **The contraction algorithm from the native recursion**, given its remaining obligations: the
-components of the scheme in polynomial time, the unit differences of the interpolation points, and
-the resource analysis. The step, the passage of well-formedness to the children and the
-well-formed roots are proved (`FastContraction.stepCorrect_nativeMk`,
+/-- **The contraction algorithm from the native recursion**, given its one remaining obligation,
+the resource analysis. The components of the scheme are polynomial-time
+(`FastContraction.scheme_nativeMk_polyTime`), and the step, the passage of well-formedness to the
+children and the well-formed roots are proved (`FastContraction.stepCorrect_nativeMk`,
 `FastContraction.wfChildren_nativeMk`, `CountingSimulation.wf_root`). -/
-noncomputable def contractionAlgorithmOfNative
-    (hpoly : (scheme nativeMk).PolyTime encCall encFrame encValue)
-    (hζ : ∀ x (hirr : Irreducible ((GaloisRingArith.monicOf x.fl).map
-        (Int.castRingHom (ZMod 2)))), active x = true →
-      Pairwise fun i j : Fin (points x).length => IsUnit (GaloisRingArith.liftO hirr
-        ((points x).getD i []) - GaloisRingArith.liftO hirr ((points x).getD j [])))
-    (hana : FastAnalysis nativeMk) :
+noncomputable def contractionAlgorithmOfNative (hana : FastAnalysis nativeMk) :
     ContractionAlgorithm (encPair encNat ExplicitTensorNetwork.encExplicitNetwork)
       (fun G => G.2.contraction) ExplicitAdmissible :=
-  contractionAlgorithmOfFast hpoly (stepCorrect_nativeMk hζ) wfChildren_nativeMk
+  contractionAlgorithmOfFast scheme_nativeMk_polyTime stepCorrect_nativeMk wfChildren_nativeMk
     (fun P _ hg => wf_root P hg) hana
 
 end Resources
