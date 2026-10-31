@@ -44,6 +44,7 @@ simulations, which places `BQP` in the counting classes
 * `Cslib.Quantum.run_ofCodes_apply`: amplitudes are path sums.
 * `Cslib.Quantum.acceptProb_eq_acceptGap`: the acceptance probability is `acceptGap / 2^h`.
 * `Cslib.Quantum.acceptGap_nonneg_and_le`: so the acceptance gap lies between `0` and `2^h`.
+* `Cslib.Quantum.acceptGap_nil`: the acceptance gap of the empty circuit is the bit of qubit `0`.
 
 ## References
 
@@ -127,6 +128,13 @@ def acceptTerm (gs : List GateCode) (x π π' : List Bool) : ℤ :=
 def acceptGap (gs : List GateCode) (x : List Bool) : ℤ :=
   ∑ π : Fin (hadamardCount gs) → Bool, ∑ π' : Fin (hadamardCount gs) → Bool,
     acceptTerm gs x (List.ofFn π) (List.ofFn π')
+
+/-- The acceptance gap of the empty circuit is the bit of qubit `0`. -/
+theorem acceptGap_nil (x : List Bool) : acceptGap [] x = if x.headD false then 1 else 0 := by
+  simp only [acceptGap, hadamardCount_nil, acceptTerm,
+    pathRun, List.ofFn_zero, List.foldl_nil, true_and, Bool.xor_self, Bool.false_eq_true,
+    ↓reduceIte]
+  cases x.headD false <;> rfl
 
 /-- The sign `±1` of a Boolean, in `ℂ`. -/
 private abbrev sgn (σ : Bool) : ℂ := if σ then -1 else 1

@@ -947,6 +947,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContr
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTablesPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionLeaf
@@ -1054,6 +1055,7 @@ public import Complexity.Computability.Circuit.Quantum.Code
 public import Complexity.Computability.Circuit.Quantum.Counter
 public import Complexity.Computability.Circuit.Quantum.Parallel
 public import Complexity.Computability.Circuit.Quantum.PathNetwork
+public import Complexity.Computability.Circuit.Quantum.PathNetworkPolyTime
 public import Complexity.Computability.Circuit.Quantum.PathSum
 public import Complexity.Computability.Circuit.Quantum.Reversible
 public import Complexity.Computability.Circuit.Quantum.Uniform
@@ -1169,6 +1171,8 @@ public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
 public import Complexity.Computability.Complexity.Classes.BQP.Classical
 public import Complexity.Computability.Complexity.Classes.BQP.Counting
+public import Complexity.Computability.Complexity.Classes.BQP.TensorContraction
+public import Complexity.Computability.Complexity.Classes.BQP.Time
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Closure
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Kadin
@@ -2963,6 +2967,7 @@ public import Complexity.Foundations.Data.List.Equiv
 public import Complexity.Foundations.Data.List.EraseDups
 public import Complexity.Foundations.Data.List.EraseDupsBy
 public import Complexity.Foundations.Data.List.Filter
+public import Complexity.Foundations.Data.List.FilterMap
 public import Complexity.Foundations.Data.List.Fold
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
@@ -2971,6 +2976,7 @@ public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.RowMajor
 public import Complexity.Foundations.Data.List.SelectDistinct
+public import Complexity.Foundations.Data.List.SumIndicator
 public import Complexity.Foundations.Data.List.TwoBitTable
 public import Complexity.Foundations.Data.Matrix.Binary
 public import Complexity.Foundations.Data.Matrix.IntegerBits
@@ -3025,6 +3031,7 @@ public import Complexity.Foundations.Data.Nat.Radix.Measurement
 public import Complexity.Foundations.Data.Nat.RecursionTree
 public import Complexity.Foundations.Data.Nat.ResidueSum
 public import Complexity.Foundations.Data.Nat.SqrtLog
+public import Complexity.Foundations.Data.Nat.SqrtLog.Linear
 public import Complexity.Foundations.Data.Nat.SqrtLog.Shifted
 public import Complexity.Foundations.Data.Nat.SqrtRatio
 public import Complexity.Foundations.Data.Nat.Subexponential
