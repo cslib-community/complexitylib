@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
 public import ComplexityTests.Computability.Circuit.Frontier.TensorNetworkCauchyModes
 
@@ -71,5 +72,18 @@ example (ζ : ZMod (2 ^ 2)) (β : Fin (2 ^ (0 + 1)) × Fin 2 → ℕ) (rows cols
       packetEntry ((ZMod.castHom (by decide : 2 ∣ 2 ^ 2) (ZMod 2)).comp κ)
         (ZMod.castHom (by decide : 2 ∣ 2 ^ 2) (ZMod 2) ζ) 1 0 1 true false true β rows cols :=
   map_packetEntry _ (n := 2) (by decide) κ ζ (by decide) (by decide) (by decide) _ _ _ β rows cols
+
+/-- **Kernel values as products of units**, on the grid `{-2, -1, 0, 1}` of two slots: the value
+`W_0(1 + 4 ζ)` is `κ(kernelUnit 1)` times `2 ^ (2 - v₂(1)) ζ` times the factors at `q = -2, -1`. -/
+example (ζ : ZMod (2 ^ 2)) :
+    kernelValue κ ζ 1 1 0 = κ (kernelUnit 1) * (2 ^ (1 + 1 - padicValInt 2 (1 - 0)) * ζ) *
+      ∏ q ∈ ((cauchyGrid (2 ^ 1)).erase 0).erase 1,
+        (((1 - q) / 2 ^ padicValInt 2 (1 - q) : ℤ) + 2 ^ (1 + 1 - padicValInt 2 (1 - q)) * ζ) := by
+  rw [kernelValue_eq_prod κ ζ (by decide) (by decide), ite_eq_right (by decide)]
+
+/-- The valuations of `1 - q`, `q ∈ {-2, -1, 0}`, sum to those of `0 - q`, `q ∈ {-2, -1, 1}`. -/
+example : ∑ q ∈ (cauchyGrid (2 ^ 1)).erase 1, padicValInt 2 (1 - q) =
+    ∑ q ∈ (cauchyGrid (2 ^ 1)).erase 0, padicValInt 2 (0 - q) :=
+  sum_padicValInt_sub_eq (by decide)
 
 end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
