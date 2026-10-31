@@ -163,7 +163,7 @@ private def guardTest (G : ℕ × ExplicitTensorNetwork ℕ) : Bool :=
 private theorem fastGuard_eq_guardTest (G : ℕ × ExplicitTensorNetwork ℕ) :
     fastGuard G = guardTest G := by
   refine Bool.eq_iff_iff.mpr ?_
-  simp only [fastGuard, guardTest, ExplicitTensorNetwork.IsRowsFirstBipartite,
+  simp only [fastGuard, guardTest, DescribedNetwork.IsRowsFirstBipartite,
     ExplicitTensorNetwork.maxDegree_le_iff, decide_eq_true_eq, Bool.and_eq_true,
     List.all_eq_true, List.mem_range, List.count_flatMap, Function.comp_def]
   constructor
