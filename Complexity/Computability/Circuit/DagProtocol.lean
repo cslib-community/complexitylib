@@ -73,14 +73,6 @@ private theorem Sep.mono {f : BitString n → Bool} {A B A' B' : Set (BitString 
     (h : Sep f A B) (hA : A' ⊆ A) (hB : B' ⊆ B) : Sep f A' B' :=
   ⟨fun x hx => h.1 x (hA hx), fun y hy => h.2 y (hB hy)⟩
 
-/-- A protocol has a leaf. -/
-private theorem leafCount_pos {X Y Z : Type*} (p : Protocol X Y Z) : 0 < p.leafCount := by
-  induction p with
-  | output => simp
-  | alice _ _ _ ih₀ _ | bob _ _ _ ih₀ _ =>
-    simp only [Protocol.leafCount_alice, Protocol.leafCount_bob]
-    omega
-
 section Core
 
 variable {σ : Signature} {I : Interpretation σ Bool}
@@ -131,8 +123,8 @@ private theorem exists_sep_of_leaves
       · simp [hf₀.1 x ⟨hx, h⟩]
       · simp [hf₁.1 x ⟨hx, h⟩]
     · simp [hf₀.2 y hy, hf₁.2 y hy]
-    · have := leafCount_pos p₀
-      have := leafCount_pos p₁
+    · have := p₀.leafCount_pos
+      have := p₁.leafCount_pos
       simp only [Protocol.leafCount_alice]
       omega
   | bob send p₀ p₁ ih₀ ih₁ =>
@@ -154,8 +146,8 @@ private theorem exists_sep_of_leaves
     · cases h : send y
       · simp [hf₀.2 y ⟨hy, h⟩]
       · simp [hf₁.2 y ⟨hy, h⟩]
-    · have := leafCount_pos p₀
-      have := leafCount_pos p₁
+    · have := p₀.leafCount_pos
+      have := p₁.leafCount_pos
       simp only [Protocol.leafCount_bob]
       omega
 
