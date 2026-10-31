@@ -241,18 +241,22 @@ residue or padding sentinel, write every coefficient, and advance the original c
   Reg.low35 ← Reg.productScratch; Reg.low36 ← Reg.depth; Reg.low46 ← Reg.modulus;
   ⟪Strassen.program.rename (Fin.castLE (by decide))⟫ ]
 
+/-- One actual selected-coefficient read and unsigned count accumulation. -/
+@[expose] def countStep : Code .standard 128 :=
+  .seq (ram[ Reg.row ← Reg.index / Reg.side; Reg.column ← Reg.index % Reg.side ])
+    (.seq morton (.seq (ram[
+      Reg.address ← Reg.residueAB + Reg.index; Reg.residue ← *Reg.address;
+      if Reg.residue = Reg.zero then [ Reg.residue ← #0 ]
+      else [ Reg.residue ← Reg.modulus - Reg.residue ] ])
+      (ram[ Reg.block ← Reg.position * Reg.modulus;
+        Reg.address ← Reg.matrixR + Reg.block; Reg.address ← Reg.address + Reg.residue;
+        Reg.temporary ← *Reg.address; Reg.temporary ← Reg.temporary / Reg.two;
+        Reg.result ← Reg.result + Reg.temporary; Reg.index ← Reg.index + Reg.one ])))
+
 /-- Read and add exactly one coefficient for each original AB pair. -/
 @[expose] def count : Code .standard 128 := ram[
   Reg.result ← #0; Reg.index ← #0;
-  while Reg.index < Reg.cells do [
-    Reg.row ← Reg.index / Reg.side; Reg.column ← Reg.index % Reg.side; ⟪morton⟫;
-    Reg.address ← Reg.residueAB + Reg.index; Reg.residue ← *Reg.address;
-    if Reg.residue = Reg.zero then [ Reg.residue ← #0 ]
-    else [ Reg.residue ← Reg.modulus - Reg.residue ];
-    Reg.block ← Reg.position * Reg.modulus; Reg.address ← Reg.matrixR + Reg.block;
-    Reg.address ← Reg.address + Reg.residue; Reg.temporary ← *Reg.address;
-    Reg.temporary ← Reg.temporary / Reg.two;
-    Reg.result ← Reg.result + Reg.temporary; Reg.index ← Reg.index + Reg.one ] ]
+  while Reg.index < Reg.cells do [ ⟪countStep⟫ ] ]
 
 /-- Concrete runtime-parameter counter; every multiplication is actual native code. -/
 @[expose] def program : Code .standard 128 := ram[
