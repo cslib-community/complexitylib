@@ -368,7 +368,8 @@ theorem exists_eval (x₀ : Call) (x : Call) (hx : (inv mk x₀).node x) :
   · have hl' : active x = true := by simpa [scheme] using hl
     obtain ⟨h0, hnext, hdone, habs, hfin⟩ := walk mk hl' fun c => value mk (child x mk c)
     refine ⟨(children x).length, frameAt x fun c => value mk (child x mk c),
-      fun c => child x mk ((children x).getD c (0, 0, [], 0)), h0, hnext, hdone, fun c hc => habs c hc,
+      fun c => child x mk ((children x).getD c (0, 0, [], 0)), h0, hnext, hdone,
+      fun c hc => habs c hc,
       fun c _ => ⟨trivial, fun h => absurd h (by simp [child]), edges_lt_bound_of_active hl'⟩, ?_⟩
     simp only [scheme, Prod.mk.injEq, true_and]
     rw [value_of_active mk hl', hfin]
