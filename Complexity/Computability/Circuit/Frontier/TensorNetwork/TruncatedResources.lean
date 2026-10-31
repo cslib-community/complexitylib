@@ -37,11 +37,19 @@ precision, the truncation order, the modulus and the point into every vertex.
 specialized entry costs the original entry plus a polynomial in the lengths of the input and of the
 original entry.
 
+**Direct summation** (`Cslib.Circuits.Frontier.directCoreCertificate_le`,
+`Cslib.Circuits.Frontier.truncDirectCertificate_le`). If the entry certificate takes time at most
+`E` and space at most `ES` on the vertices of a network with `m` edges, direct summation over a
+specialized network, and the truncated contraction by direct summation, take time
+`K (n + ES + 1) ^ K 2 ^ m (E + 1)` and space `K (n + ES + 1) ^ K`.
+
 ## Main results
 
 * `Cslib.Circuits.Frontier.engineCertificate_le`: time and space of the reduction.
 * `Cslib.Circuits.Frontier.length_encCore_coreInput_le`: the size of a call.
 * `Cslib.Circuits.Frontier.specEntryCertificate_le`: time and space of specialized entries.
+* `Cslib.Circuits.Frontier.directCoreCertificate_le`,
+  `Cslib.Circuits.Frontier.truncDirectCertificate_le`: time and space of direct summation.
 
 ## References
 
@@ -429,6 +437,295 @@ theorem specEntryCertificate_le :
     omega
   · simp only [specEntryCertificate, NativeCertificate.congr, NativeCertificate.comp_space,
       NativeCertificate.prod_space, Function.comp_apply]
+    omega
+
+/-! ### Direct summation -/
+
+/-- A vertex is no longer than its network. -/
+private theorem length_vertex_le {T' : Type} (encT' : T' ↪ List Bool) (G : DescribedNetwork T')
+    {v : List ℕ × T'} (hv : v ∈ G.vertices) :
+    (encPair (encList encNat) encT' v).length ≤ (DescribedNetwork.encDescribed encT' G).length := by
+  have h1 := List.le_sum_of_mem
+    (List.mem_map_of_mem (f := fun a => (encPair (encList encNat) encT' a).length) hv)
+  have h2 := sum_length_le_length_encList (encPair (encList encNat) encT') G.vertices
+  rw [length_encDescribed]
+  omega
+
+/-- **Time and space of direct summation over a specialized network.** There is `K` such that,
+at the input `x = (P, fl, r, G')` for the network `G'` specialized at a point, of length `n`, if
+the entry certificate takes time at most `E` and space at most `ES` at every vertex of the original
+network `G` with `m` edges and every list of bits on its ports, then direct summation takes time
+at most `K (n + ES + 1) ^ K 2 ^ m (E + 1)` and space at most `K (n + ES + 1) ^ K`. -/
+theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
+    (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
+      (encList encNat)) :
+    ∃ K : ℕ, ∀ (P ℓ r : ℕ) (fl ζ : List ℕ) (G : DescribedNetwork T) (E ES : ℕ),
+      (∀ v ∈ G.vertices, ∀ bs : List Bool, bs.length = v.1.length →
+        ce.time (v.2, bs) ≤ E ∧ ce.space (v.2, bs) ≤ ES) →
+      (directCoreCertificate entry ce).time (P, fl, r, DescribedNetwork.specNet P ℓ fl ζ G) ≤
+          K * ((encCore encT (P, fl, r, DescribedNetwork.specNet P ℓ fl ζ G)).length + ES + 1) ^ K *
+            2 ^ G.numEdges * (E + 1) ∧
+        (directCoreCertificate entry ce).space (P, fl, r, DescribedNetwork.specNet P ℓ fl ζ G) ≤
+          K * ((encCore encT (P, fl, r, DescribedNetwork.specNet P ℓ fl ζ G)).length + ES + 1) ^
+            K := by
+  obtain ⟨cE, -, hcE⟩ := ce.computes
+  obtain ⟨K₃, hK₃⟩ := specEntryCertificate_le (encT := encT)
+  obtain ⟨cS, -, hcS⟩ := (specEntryCertificate entry ce).computes
+  obtain ⟨K₂, hK₂⟩ := DescribedNetwork.contractionCertificate_le (eval := specEntry entry)
+    SumOps.galois_polyTime (specEntryCertificate entry ce)
+  have hcR : ComputableInPolyTime
+      (fun x : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) => ((x.1, x.2.1), x.2.2.2))
+      (encCore encT)
+      (DescribedNetwork.encInput (encPair encUnary (encList encNat)) (encSpecDesc encT)) :=
+    ((ComputableInPolyTime.fst _ _).prod
+      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))).prod
+      ((ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
+        (ComputableInPolyTime.snd _ _)))
+  obtain ⟨pS, hpS, mS, bS⟩ := exists_mono_poly_cert hcR
+  -- The overheads, as polynomials in `Z = n + ES`.
+  let Af : ℕ → ℕ := fun Z => 3 * Z + 1 + cE * (Z + 1) + 1
+  let Uf : ℕ → ℕ := fun Z => K₃ * Af Z ^ K₃
+  let Bf : ℕ → ℕ := fun Z =>
+    K₂ * (2 * Z + 1 + cS * (Z + Uf Z + 1) + Z * (2 * Z + 3) + 1) ^ K₂
+  let Tf : ℕ → ℕ := fun Z => pS Z + (Z + 2) * (Bf Z + 2 * Uf Z) + (Z + 2) * 2
+  let Sf : ℕ → ℕ := fun Z => pS Z + Bf Z + (Z + Uf Z)
+  have hAp : PolyBounded id Af :=
+    ((((PolyBounded.const 3).mul PolyBounded.self).add (PolyBounded.const 1)).add
+      ((PolyBounded.const cE).mul (PolyBounded.self.add (PolyBounded.const 1)))).add
+      (PolyBounded.const 1)
+  have hUp : PolyBounded id Uf := (PolyBounded.const K₃).mul (hAp.pow K₃)
+  have hBp : PolyBounded id Bf :=
+    (PolyBounded.const K₂).mul ((((((PolyBounded.const 2).mul PolyBounded.self).add
+      (PolyBounded.const 1)).add ((PolyBounded.const cS).mul ((PolyBounded.self.add hUp).add
+        (PolyBounded.const 1)))).add (PolyBounded.self.mul (((PolyBounded.const 2).mul
+          PolyBounded.self).add (PolyBounded.const 3)))).add (PolyBounded.const 1) |>.pow K₂)
+  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z :=
+    ((((polyBounded_comp_poly hpS PolyBounded.self).add
+      ((PolyBounded.self.add (PolyBounded.const 2)).mul
+        (hBp.add ((PolyBounded.const 2).mul hUp)))).add
+      ((PolyBounded.self.add (PolyBounded.const 2)).mul (PolyBounded.const 2)))).add
+      (((polyBounded_comp_poly hpS PolyBounded.self).add hBp).add (PolyBounded.self.add hUp))
+  obtain ⟨a, d, had⟩ := hTSp.exists_le
+  refine ⟨a + d, fun P ℓ r fl ζ G E ES hE => ?_⟩
+  set G' := DescribedNetwork.specNet P ℓ fl ζ G with hG'
+  set n := (encCore encT (P, fl, r, G')).length with hn
+  set Z := n + ES with hZ
+  set X := 2 ^ G.numEdges with hX
+  have hX1 : 1 ≤ X := Nat.one_le_two_pow
+  have hG'n : (DescribedNetwork.encDescribed (encSpecDesc encT) G').length ≤ n := by
+    simp only [hn, encCore, length_encPair]
+    omega
+  -- The specialized entries.
+  have hv : ∀ v' ∈ G'.vertices, ∀ bs : List Bool, bs.length = v'.1.length →
+      (specEntryCertificate entry ce).time (v'.2, bs) ≤ E + Uf Z ∧
+        (specEntryCertificate entry ce).space (v'.2, bs) ≤ ES + Uf Z ∧
+          (encList encNat (specEntry entry v'.2 bs)).length ≤ cS * (Z + Uf Z + 1) := by
+    intro v' hv' bs hbs
+    have hvl := length_vertex_le (encSpecDesc encT) G' hv'
+    rw [hG', DescribedNetwork.vertices_specNet, List.mem_map] at hv'
+    obtain ⟨v, hvG, rfl⟩ := hv'
+    simp only at hbs ⊢
+    obtain ⟨hEt, hEs⟩ := hE v hvG bs hbs
+    have hent : (encList encNat (entry v.2 bs)).length ≤ cE * (ES + 1) :=
+      (hcE (v.2, bs)).trans (Nat.mul_le_mul_left _ (by omega))
+    obtain ⟨h1, h2⟩ := hK₃ entry ce ((v.2, P, ℓ, fl, ζ), bs)
+    simp only at h1 h2
+    have hq : (encPair (encSpecDesc encT) encBits ((v.2, P, ℓ, fl, ζ), bs)).length +
+        (encList encNat (entry v.2 bs)).length + 1 ≤ Af Z := by
+      have hports := length_le_length_encList encNat v.1
+      have hcE' : cE * (ES + 1) ≤ cE * (Z + 1) := Nat.mul_le_mul_left _ (by omega)
+      simp only [length_encPair, encBits_apply] at hvl ⊢
+      simp only [Af]
+      omega
+    have hpow : K₃ * ((encPair (encSpecDesc encT) encBits ((v.2, P, ℓ, fl, ζ), bs)).length +
+        (encList encNat (entry v.2 bs)).length + 1) ^ K₃ ≤ Uf Z :=
+      Nat.mul_le_mul_left K₃ (Nat.pow_le_pow_left hq K₃)
+    have ht : (specEntryCertificate entry ce).time ((v.2, P, ℓ, fl, ζ), bs) ≤ E + Uf Z :=
+      h1.trans (Nat.add_le_add hEt hpow)
+    have hs : (specEntryCertificate entry ce).space ((v.2, P, ℓ, fl, ζ), bs) ≤ ES + Uf Z :=
+      h2.trans (Nat.add_le_add hEs hpow)
+    have hout := hcS ((v.2, P, ℓ, fl, ζ), bs)
+    have hZ' : ES ≤ Z := by omega
+    refine ⟨ht, hs, hout.trans (Nat.mul_le_mul_left _ ?_)⟩
+    exact Nat.add_le_add_right (hs.trans (Nat.add_le_add_right hZ' _)) 1
+  have hr : ∀ z, SumOps.galois.Reduced (P, fl) z → (encList encNat z).length ≤ Z * (2 * Z + 3) :=
+    fun z hz => (SumOps.length_encList_le_of_galois_reduced hz).trans (by
+      have hfl := length_le_length_encList encNat fl
+      have hlen : (encList encNat fl).length + P ≤ n := by
+        simp only [hn, encCore, length_encPair, encUnary_apply, List.length_replicate]
+        omega
+      dsimp only
+      exact Nat.mul_le_mul (by omega) (by omega))
+  obtain ⟨hT, hS⟩ := hK₂ ((P, fl), G') (E + Uf Z) (ES + Uf Z) (cS * (Z + Uf Z + 1))
+    (Z * (2 * Z + 3)) hv hr
+  have hin : (DescribedNetwork.encInput (encPair encUnary (encList encNat)) (encSpecDesc encT)
+      ((P, fl), G')).length ≤ 2 * Z + 1 := by
+    have : (DescribedNetwork.encInput (encPair encUnary (encList encNat)) (encSpecDesc encT)
+        ((P, fl), G')).length ≤ 2 * n + 1 := by
+      simp only [hn, DescribedNetwork.encInput, encCore, length_encPair]
+      omega
+    omega
+  have hB : K₂ * ((DescribedNetwork.encInput (encPair encUnary (encList encNat))
+      (encSpecDesc encT) ((P, fl), G')).length + cS * (Z + Uf Z + 1) + Z * (2 * Z + 3) + 1) ^ K₂ ≤
+      Bf Z := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
+  have hk : G'.vertices.length ≤ Z := by
+    have := DescribedNetwork.length_numEdges_vertices_le (encT := encSpecDesc encT) G'
+    omega
+  have hedges : G'.numEdges = G.numEdges := rfl
+  rw [hedges] at hT
+  have hfac : X * (G'.vertices.length + 1) + 1 ≤ X * (Z + 2) := by
+    have := Nat.mul_le_mul_left X (show G'.vertices.length + 1 ≤ Z + 1 by omega)
+    have e : X * (Z + 2) = X * (Z + 1) + X := by ring
+    omega
+  have hT' := hT.trans (Nat.mul_le_mul hfac (Nat.add_le_add_right hB _))
+  have hRt := (bS (P, fl, r, G')).1.trans (mS (show n ≤ Z by omega))
+  have hRs := (bS (P, fl, r, G')).2.trans (mS (show n ≤ Z by omega))
+  have h1 := had Z
+  simp only [id] at h1
+  have hK : a * (Z + 1) ^ d ≤ (a + d) * (Z + 1) ^ (a + d) :=
+    Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+  refine ⟨?_, ?_⟩
+  · simp only [directCoreCertificate, NativeCertificate.congr, NativeCertificate.comp_time,
+      Function.comp_apply]
+    -- `pS Z + X (Z + 2) (B + 2 (E + U)) ≤ X (E + 1) T`.
+    have hsplit : pS Z + X * (Z + 2) * (Bf Z + 2 * (E + Uf Z)) ≤ X * (Tf Z * (E + 1)) := by
+      have e : X * (Z + 2) * (Bf Z + 2 * (E + Uf Z)) =
+          X * ((Z + 2) * (Bf Z + 2 * Uf Z)) + X * ((Z + 2) * 2 * E) := by ring
+      have e2 : X * (Tf Z * (E + 1)) = X * (Tf Z * E) + X * Tf Z := by ring
+      have h3 : pS Z + X * ((Z + 2) * (Bf Z + 2 * Uf Z)) ≤ X * Tf Z := by
+        have := Nat.le_mul_of_pos_left (pS Z) hX1
+        have e3 : X * Tf Z = X * pS Z + X * ((Z + 2) * (Bf Z + 2 * Uf Z)) + X * ((Z + 2) * 2) :=
+          by simp only [Tf]; ring
+        omega
+      have hT2 : (Z + 2) * 2 ≤ Tf Z := by simp only [Tf]; omega
+      have h4 : X * ((Z + 2) * 2 * E) ≤ X * (Tf Z * E) :=
+        Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hT2)
+      omega
+    have hfin : X * (Tf Z * (E + 1)) ≤ (a + d) * (Z + 1) ^ (a + d) * X * (E + 1) := by
+      calc X * (Tf Z * (E + 1)) ≤ X * (a * (Z + 1) ^ d * (E + 1)) :=
+            Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (by omega))
+        _ = a * (Z + 1) ^ d * X * (E + 1) := by ring
+        _ ≤ _ := Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hK)
+    have hpS : (NativeCertificate.ofPolyTime hcR).time (P, fl, r, G') ≤ pS Z := hRt
+    omega
+  · simp only [directCoreCertificate, NativeCertificate.congr, NativeCertificate.comp_space,
+      Function.comp_apply]
+    have : Sf Z ≤ a * (Z + 1) ^ d := by omega
+    simp only [Sf] at this
+    omega
+
+/-- **Time and space of the truncated contraction by direct summation.** There is `K` such that,
+on an input `x = (P, ℓ, r, G)` of length `n` with `m` edges, if the entry certificate takes time at
+most `E` and space at most `ES` at every vertex and every list of bits on its ports, then
+`truncDirectCertificate` takes time at most `K (n + ES + 1) ^ K 2 ^ m (E + 1)` and space at most
+`K (n + ES + 1) ^ K`. -/
+theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
+    (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
+      (encList encNat)) :
+    ∃ K : ℕ, ∀ (x : ℕ × ℕ × ℕ × DescribedNetwork T) (E ES : ℕ),
+      (∀ v ∈ x.2.2.2.vertices, ∀ bs : List Bool, bs.length = v.1.length →
+        ce.time (v.2, bs) ≤ E ∧ ce.space (v.2, bs) ≤ ES) →
+      (truncDirectCertificate entry ce).time x ≤
+          K * ((encTrunc encT x).length + ES + 1) ^ K * 2 ^ x.2.2.2.numEdges * (E + 1) ∧
+        (truncDirectCertificate entry ce).space x ≤
+          K * ((encTrunc encT x).length + ES + 1) ^ K := by
+  obtain ⟨KA, hKA⟩ := directCoreCertificate_le entry ce
+  obtain ⟨cD, -, hcD⟩ := (directCoreCertificate entry ce).computes
+  obtain ⟨K₁, hK₁⟩ := engineCertificate_le (encT := encT) _ (directCoreCertificate entry ce)
+  obtain ⟨pM, hpM, mM, bM⟩ := exists_mono_poly_cert (modulusChoice_polyTime (encT := encT))
+  obtain ⟨cY, dY, hY⟩ := (modulusChoice_polyTime (encT := encT)).polyBounded_length.exists_le
+  -- The overheads, as polynomials in `W = n + ES`.
+  let Yf : ℕ → ℕ := fun W => cY * (W + 1) ^ dY
+  let Rf : ℕ → ℕ := fun W => KA * (9 * (Yf W + 1) ^ 2 + W + 1) ^ KA
+  let Engf : ℕ → ℕ := fun W => K₁ * (Yf W + cD * (Rf W + 1) + 1) ^ K₁
+  let Tf : ℕ → ℕ := fun W => pM W + (Yf W * Yf W + 2) * (Engf W + Rf W)
+  let Sf : ℕ → ℕ := fun W => pM W + (Engf W + Rf W)
+  have hYp : PolyBounded id Yf :=
+    (PolyBounded.const cY).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow dY)
+  have hRp : PolyBounded id Rf :=
+    (PolyBounded.const KA).mul (((((PolyBounded.const 9).mul ((hYp.add
+      (PolyBounded.const 1)).pow 2)).add PolyBounded.self).add (PolyBounded.const 1)).pow KA)
+  have hEngp : PolyBounded id Engf :=
+    (PolyBounded.const K₁).mul (((hYp.add ((PolyBounded.const cD).mul
+      (hRp.add (PolyBounded.const 1)))).add (PolyBounded.const 1)).pow K₁)
+  have hTSp : PolyBounded id fun W => Tf W + Sf W :=
+    ((polyBounded_comp_poly hpM PolyBounded.self).add
+      (((hYp.mul hYp).add (PolyBounded.const 2)).mul (hEngp.add hRp))).add
+      ((polyBounded_comp_poly hpM PolyBounded.self).add (hEngp.add hRp))
+  obtain ⟨a, d, had⟩ := hTSp.exists_le
+  refine ⟨a + d, fun x E ES hE => ?_⟩
+  obtain ⟨P, ℓ, r, G⟩ := x
+  set n := (encTrunc encT (P, ℓ, r, G)).length with hn
+  set W := n + ES with hW
+  set X := 2 ^ G.numEdges with hX
+  have hX1 : 1 ≤ X := Nat.one_le_two_pow
+  set fl := FastContraction.modulus (DescribedNetwork.pointCount ℓ G) with hfl
+  have hLy : (encEngine encT (fl, P, ℓ, r, G)).length ≤ Yf W := (hY (P, ℓ, r, G)).trans
+    (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _))
+  have hNy : DescribedNetwork.pointCount ℓ G + 1 ≤ Yf W * Yf W + 2 := by
+    have h1 := pointCount_le (encT := encT) (fl, P, ℓ, r, G)
+    have h2 := Nat.mul_le_mul hLy hLy
+    dsimp only at h1
+    omega
+  -- The calls of the loop.
+  have hcall (k : ℕ) :
+      (directCoreCertificate entry ce).time (coreInput (fl, P, ℓ, r, G) k) ≤ Rf W * X * (E + 1) ∧
+        (directCoreCertificate entry ce).space (coreInput (fl, P, ℓ, r, G) k) ≤ Rf W ∧
+          (encList encNat (DescribedNetwork.sumValue SumOps.galois (specEntry entry)
+            ((coreInput (fl, P, ℓ, r, G) k).1, (coreInput (fl, P, ℓ, r, G) k).2.1)
+            (coreInput (fl, P, ℓ, r, G) k).2.2.2)).length ≤ cD * (Rf W + 1) := by
+    have hc := length_encCore_coreInput_le (encT := encT) (fl, P, ℓ, r, G) k
+    have hci : coreInput (fl, P, ℓ, r, G) k =
+        (P, fl, r, DescribedNetwork.specNet P ℓ fl (FastContraction.digits fl.length k) G) := rfl
+    rw [hci] at hc ⊢
+    obtain ⟨hT, hS⟩ := hKA P ℓ r fl (FastContraction.digits fl.length k) G E ES hE
+    have hR : KA * ((encCore encT (P, fl, r, DescribedNetwork.specNet P ℓ fl
+        (FastContraction.digits fl.length k) G)).length + ES + 1) ^ KA ≤ Rf W := by
+      refine Nat.mul_le_mul_left _ (Nat.pow_le_pow_left ?_ _)
+      have : 9 * ((encEngine encT (fl, P, ℓ, r, G)).length + 1) ^ 2 ≤ 9 * (Yf W + 1) ^ 2 :=
+        Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
+      omega
+    have hS' := hS.trans hR
+    refine ⟨hT.trans (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hR)), hS', ?_⟩
+    have hout := hcD
+      (P, fl, r, DescribedNetwork.specNet P ℓ fl (FastContraction.digits fl.length k) G)
+    exact hout.trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right hS' 1))
+  obtain ⟨hTe, hSe⟩ := hK₁ (fl, P, ℓ, r, G) _ _ _ fun k _ => hcall k
+  dsimp only at hTe hSe
+  have hEng : K₁ * ((encEngine encT (fl, P, ℓ, r, G)).length + cD * (Rf W + 1) + 1) ^ K₁ ≤
+      Engf W := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
+  have hMt := (bM (P, ℓ, r, G)).1.trans (mM (show n ≤ W by omega))
+  have hMs := (bM (P, ℓ, r, G)).2.trans (mM (show n ≤ W by omega))
+  have h1 := had W
+  simp only [id] at h1
+  have hK : a * (W + 1) ^ d ≤ (a + d) * (W + 1) ^ (a + d) :=
+    Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+  refine ⟨?_, ?_⟩
+  · simp only [truncDirectCertificate, NativeCertificate.congr, NativeCertificate.comp_time]
+    have hTe' := hTe.trans (Nat.mul_le_mul hNy (Nat.add_le_add_right hEng _))
+    have hsum : pM W + (Yf W * Yf W + 2) * (Engf W + Rf W * X * (E + 1)) ≤
+        X * (E + 1) * Tf W := by
+      have hXE : 1 ≤ X * (E + 1) := Nat.one_le_iff_ne_zero.mpr (by positivity)
+      have h2 : pM W + (Yf W * Yf W + 2) * Engf W ≤
+          X * (E + 1) * (pM W + (Yf W * Yf W + 2) * Engf W) := Nat.le_mul_of_pos_left _ hXE
+      have e1 : (Yf W * Yf W + 2) * (Engf W + Rf W * X * (E + 1)) =
+          (Yf W * Yf W + 2) * Engf W + X * (E + 1) * ((Yf W * Yf W + 2) * Rf W) := by ring
+      have e2 : X * (E + 1) * Tf W = X * (E + 1) * (pM W + (Yf W * Yf W + 2) * Engf W) +
+          X * (E + 1) * ((Yf W * Yf W + 2) * Rf W) := by simp only [Tf]; ring
+      omega
+    have hfin : X * (E + 1) * Tf W ≤ (a + d) * (W + 1) ^ (a + d) * X * (E + 1) := by
+      calc X * (E + 1) * Tf W ≤ X * (E + 1) * (a * (W + 1) ^ d) :=
+            Nat.mul_le_mul_left _ (by omega)
+        _ ≤ X * (E + 1) * ((a + d) * (W + 1) ^ (a + d)) := Nat.mul_le_mul_left _ hK
+        _ = (a + d) * (W + 1) ^ (a + d) * X * (E + 1) := by ring
+    change (NativeCertificate.ofPolyTime modulusChoice_polyTime).time (P, ℓ, r, G) +
+      (engineCertificate _ (directCoreCertificate entry ce)).time (fl, P, ℓ, r, G) ≤ _
+    omega
+  · simp only [truncDirectCertificate, NativeCertificate.congr, NativeCertificate.comp_space]
+    change (NativeCertificate.ofPolyTime modulusChoice_polyTime).space (P, ℓ, r, G) +
+      (engineCertificate _ (directCoreCertificate entry ce)).space (fl, P, ℓ, r, G) ≤ _
+    have : Sf W ≤ a * (W + 1) ^ d := by omega
+    simp only [Sf] at this
     omega
 
 end Cslib.Circuits.Frontier
