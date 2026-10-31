@@ -139,7 +139,7 @@ theorem le_ceilNineTenths_iff {s x : ℕ} (hs : 1 ≤ s) :
     have h1 := ceilNineTenths_le h
     rcases Nat.eq_zero_or_pos x with rfl | hx0
     · have : 1 ≤ s ^ 9 := Nat.one_le_pow _ _ hs
-      simp at h
+      rw [Nat.zero_sub, zero_pow (by norm_num)] at h
       omega
     · omega
   · intro h
