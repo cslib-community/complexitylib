@@ -51,11 +51,16 @@ charges one unit when no rotations occur and the exact rotation count otherwise.
 * `splaySeqTime_le_static_optimality`: **Static Optimality Theorem** ([SleatorTarjan1985b],
   Section 2, Theorem 2, p. 659), bounding `m` accesses to present items (each accessed at least
   once) by `m + 4 ∑_{y ∈ t} q(y) log₂(m / q(y))`.
-* `contains_unitPotential_amortized_le`, `minimum_unitPotential_amortized_le`,
-  `split_unitPotential_amortized_le`, `join_unitPotential_amortized_le`,
-  `insert_unitPotential_amortized_le`, `erase_unitPotential_amortized_le`,
-  `successor_unitPotential_amortized_le`: unit-weight **Update Lemma** bounds
-  ([SleatorTarjan1985b], Section 3, Lemma 2, pp. 663–664).
+* `contains_unitPotential_amortized_le`, `split_unitPotential_amortized_le`,
+  `join_unitPotential_amortized_le`, `insert_unitPotential_amortized_le`,
+  `erase_unitPotential_amortized_le`: unit-weight (`w = 1`) specialization of Sleator and Tarjan's
+  **Update Lemma** ([SleatorTarjan1985b], Section 3, Lemma 2, pp. 663–664, where `log₂ 1 = 0`
+  eliminates Lemma 2's external-item potential term), extended to total set-idempotent `insert`
+  and `erase`.
+* `minimum_unitPotential_amortized_le`, `successor_unitPotential_amortized_le`: companion
+  unit-weight rotation bounds derived from the Access Lemma ([SleatorTarjan1985b], Section 2,
+  Lemma 1, p. 658) for `Cslib.OrderedSet.spec` (`minimum` and `successor` are not part of
+  Lemma 2).
 
 ## References
 
@@ -936,7 +941,9 @@ private theorem list_sum_map_eq_sum_count {s : Finset α} (xs : List α)
       intro y _
       rw [List.count_cons]
       by_cases hyx : y = x
-      · subst hyx; simp; ring
+      · subst hyx
+        simp only [beq_self_eq_true, ↓reduceIte, Nat.cast_add, Nat.cast_one]
+        ring
       · have hxy : (x == y) = false := beq_false_of_ne (Ne.symm hyx)
         simp [hyx, hxy]
     rw [Finset.sum_congr rfl hsplit, Finset.sum_add_distrib, Finset.sum_ite_eq' s x f]
@@ -1015,7 +1022,15 @@ theorem splaySeqTime_le_static_optimality (xs : List α) {t : BinaryTree α} (ht
       nlinarith
     linarith
 
-/-! ### Unit-Weight Update Lemma Bounds -/
+/-! ### Unit-Weight Update Lemma Specialization and `OrderedSet` Companion Bounds
+
+Sleator and Tarjan's Update Lemma ([SleatorTarjan1985b], Section 3, Lemma 2, pp. 663–664) states
+general positive-weight bounds for `access`, `join`, `split`, `insert` (assuming `x ∉ t`), and
+`delete` (assuming `x ∈ t`) under a multi-tree potential incorporating `∑_{i ∉ trees} log₂ w(i)`.
+At unit weights (`unitWeight`, where `log₂ 1 = 0`), that external-item potential term vanishes.
+Below we prove this unit-weight specialization for `contains`, `split`, `join`, and total
+set-idempotent `insert` and `erase`, together with companion unit-weight bounds for `minimum` and
+`successor` derived directly from the Access Lemma (`Lemma 1`, p. 658). -/
 
 theorem unitPotential_le_card_mul_logb {t : BinaryTree α} (ht : Ordered t) :
     unitPotential t ≤ (elements t).card * Real.logb 2 ((elements t).card + 1) := by
@@ -1028,8 +1043,8 @@ private theorem logb_two_card_add_one_nonneg (n : ℕ) : 0 ≤ Real.logb 2 ((n :
   have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
   exact Real.logb_nonneg (by norm_num) (by linarith)
 
-/-- Unit-weight amortized rotation bound for `contains` ([SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664). -/
+/-- Unit-weight (`w = 1`) specialization of the `access` bound in [SleatorTarjan1985b], Section 3,
+Lemma 2, p. 664, for `contains`. -/
 theorem contains_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((contains x t).rotations : ℝ) + unitPotential (contains x t).tree - unitPotential t ≤
       3 * Real.logb 2 ((elements t).card + 1) + 1 := by
@@ -1066,8 +1081,9 @@ theorem contains_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t)
           unitPotential (.node r' l' R') - unitPotential (.node a l r) ≤ _ at hacc
       linarith
 
-/-- Unit-weight amortized rotation bound for `minimum` ([SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664). -/
+/-- Companion unit-weight amortized rotation bound for `minimum`, derived from the Access Lemma
+([SleatorTarjan1985b], Section 2, Lemma 1, p. 658) via `splayMin_rotations_amortized_le` (`minimum`
+is not part of Section 3, Lemma 2). -/
 theorem minimum_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) :
     ((minimum t).rotations : ℝ) + unitPotential (minimum t).tree - unitPotential t ≤
       3 * Real.logb 2 ((elements t).card + 1) + 1 := by
@@ -1101,8 +1117,8 @@ theorem minimum_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) 
           unitPotential (.node m' l' R') - unitPotential (.node a l r) ≤ _ at hacc
       linarith
 
-/-- Unit-weight amortized rotation bound for `split` ([SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664). -/
+/-- Unit-weight (`w = 1`) specialization of the `split` bound in [SleatorTarjan1985b], Section 3,
+Lemma 2, p. 664. -/
 theorem split_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((split x t).rotations : ℝ) +
         unitPotential (split x t).left + unitPotential (split x t).right - unitPotential t ≤
@@ -1152,8 +1168,8 @@ theorem split_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x
         simp only [unitPotential, potential_node, potential_nil] at hacc ⊢
         linarith
 
-/-- Unit-weight amortized rotation bound for `join` ([SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664). -/
+/-- Unit-weight (`w = 1`) specialization of the `join` bound in [SleatorTarjan1985b], Section 3,
+Lemma 2, p. 664. -/
 theorem join_unitPotential_amortized_le {t₁ t₂ : BinaryTree α}
     (ht₁ : Ordered t₁) (ht₂ : Ordered t₂) :
     ((join t₁ t₂).rotations : ℝ) +
@@ -1197,8 +1213,8 @@ theorem join_unitPotential_amortized_le {t₁ t₂ : BinaryTree α}
     simp only [join, hm, unitPotential, potential_node, potential_nil] at hacc ⊢
     linarith
 
-/-- Unit-weight amortized rotation bound for `insert` ([SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664). -/
+/-- Unit-weight (`w = 1`) specialization of the `insert` bound in [SleatorTarjan1985b], Section 3,
+Lemma 2, p. 664, extended from `x ∉ elements t` to total set-idempotent `insert`. -/
 theorem insert_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((insert x t).rotations : ℝ) + unitPotential (insert x t).tree - unitPotential t ≤
       4 * Real.logb 2 ((elements t).card + 1) + 1 := by
@@ -1263,8 +1279,8 @@ theorem insert_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (
         · simp only [unitPotential] at hacc ⊢
           linarith
 
-/-- Unit-weight amortized rotation bound for `erase` ([SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664). -/
+/-- Unit-weight (`w = 1`) specialization of the `delete` bound in [SleatorTarjan1985b], Section 3,
+Lemma 2, p. 664, extended from `x ∈ elements t` to total set-idempotent `erase`. -/
 theorem erase_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((erase x t).rotations : ℝ) + unitPotential (erase x t).tree - unitPotential t ≤
       6 * Real.logb 2 ((elements t).card + 1) + 2 := by
@@ -1345,8 +1361,10 @@ theorem erase_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x
       · simp only [unitPotential] at hacc ⊢
         linarith
 
-/-- Unit-weight amortized rotation bound for `successor` ([SleatorTarjan1985b], Section 3,
-Lemma 2, p. 664). -/
+/-- Companion unit-weight amortized rotation bound for `successor` (splaying `x`, followed by
+`splayMin` on the right subtree when `root ≤ x`), derived from the Access Lemma
+([SleatorTarjan1985b], Section 2, Lemma 1, p. 658; `successor` is not part of Section 3,
+Lemma 2). -/
 theorem successor_unitPotential_amortized_le {t : BinaryTree α} (ht : Ordered t) (x : α) :
     ((successor x t).rotations : ℝ) + unitPotential (successor x t).tree - unitPotential t ≤
       7 * Real.logb 2 ((elements t).card + 1) + 3 := by

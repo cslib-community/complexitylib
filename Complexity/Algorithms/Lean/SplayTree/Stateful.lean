@@ -30,8 +30,11 @@ satisfying `Rep s t'`.
 Because a single operation on an unbalanced initial tree can perform up to `s.card - 1` rotations,
 no logarithmic per-operation worst-case `Cslib.Stateful.Bound` holds on arbitrary trees. Instead,
 by telescoping `unitPotential` across any adaptive client execution (`Executes Exec`), this module
-proves Sleator and Tarjan's **Balance Theorem with Updates** ([SleatorTarjan1985b], Section 3,
-Theorem 6, p. 665):
+proves a single-tree `OrderedSet.spec α` dictionary specialization/analogue of Sleator and Tarjan's
+**Balance Theorem with Updates** ([SleatorTarjan1985b], Section 3, Theorem 6, p. 665; whereas
+Theorem 6 treats multi-tree sequences of `access`, `insert`, `delete`, `join`, and `split`, here we
+instantiate single-tree `contains`, `insert`, `erase`, `minimum`, and `successor` and count exact
+edge rotations, with unit-weight `split`/`join` bounds proved in `AccessLemma.lean`):
 * In `ℝ` (`executes_amortized_real_le`), any adaptive client execution from `Rep s t` satisfies
   `(total id ns : ℝ) + unitPotential t' - unitPotential t ≤ realHistoryCost s history`, where each
   step charges `7 log₂(|s_j| + 1) + 3`.
@@ -58,11 +61,13 @@ charged as RAM or Turing-machine instructions.
 
 ## Main results
 
-* `exec_unitPotential_amortized_le`: uniform unit-weight Update Lemma bound across all five
-  `OrderedSet.Op α` operations.
+* `exec_unitPotential_amortized_le`: uniform unit-weight single-step rotation bound across all five
+  `OrderedSet.Op α` operations (combining the unit-weight specialization of [SleatorTarjan1985b],
+  Section 3, Lemma 2, p. 664 for `contains`, `insert`, and `erase` with the Access-Lemma companion
+  bounds for `minimum` and `successor`).
 * `executes_amortized_real_le`, `executes_rotations_le_realHistoryCost_of_empty`: real-valued
-  telescoping amortized bounds across arbitrary adaptive clients ([SleatorTarjan1985b], Section 3,
-  Theorem 6, p. 665).
+  telescoping amortized bounds across arbitrary adaptive `OrderedSet.spec` clients (single-tree
+  dictionary analogue of [SleatorTarjan1985b], Section 3, Theorem 6, p. 665).
 * `executes_total_le`, `executes_total_le_of_empty`, `run_correct`, `run_correct_empty`: discrete
   `Spec.totalCost` rotation bounds and full semantic + amortized correctness for `run`.
 
@@ -201,8 +206,10 @@ theorem realHistoryCost_le_totalCost (s : Finset α) (os : List (Op α)) :
     simp only [realHistoryCost_cons, Spec.totalCost_cons, Nat.cast_add]
     linarith [realOpCharge_le_amortizedCharge s o, ih ((spec α).step s o).1]
 
-/-- Uniform unit-weight Update Lemma bound across all five `OrderedSet.Op α` operations
-([SleatorTarjan1985b], Section 3, Lemma 2, p. 664). -/
+/-- Uniform unit-weight amortized rotation bound across all five `OrderedSet.Op α` operations,
+combining the unit-weight specialization of [SleatorTarjan1985b], Section 3, Lemma 2, p. 664 for
+`contains`, `insert`, and `erase` with the companion Access-Lemma bounds for `minimum` and
+`successor`. -/
 theorem exec_unitPotential_amortized_le {s : Finset α} {t t' : BinaryTree α} {o : Op α}
     {a : (spec α).Result o} {n : ℕ} (hr : Rep s t) (he : Exec t o a t' n) :
     (n : ℝ) + unitPotential t' - unitPotential t ≤ realOpCharge s o := by
@@ -228,10 +235,10 @@ theorem exec_unitPotential_amortized_le {s : Finset α} {t t' : BinaryTree α} {
     cases he
     linarith [successor_unitPotential_amortized_le ht x]
 
-/-- **Balance Theorem with Updates (real-valued telescoping form)** ([SleatorTarjan1985b],
-Section 3, Theorem 6, p. 665): for any adaptive client `p` executed from `Rep s t`, the total
-rotation count plus potential change is bounded by `realHistoryCost` along the induced abstract
-history. -/
+/-- Single-tree `OrderedSet.spec α` dictionary analogue of the **Balance Theorem with Updates**
+([SleatorTarjan1985b], Section 3, Theorem 6, p. 665; real-valued telescoping form): for any
+adaptive client `p` executed from `Rep s t`, the total rotation count plus potential change is
+bounded by `realHistoryCost` along the induced abstract history. -/
 theorem executes_amortized_real_le {β : Type} {p : (spec α).Client β}
     {s : Finset α} {t t' : BinaryTree α} {a : β} {ns : List ℕ}
     (hr : Rep s t) (he : Executes Exec p t a t' ns) :
@@ -249,8 +256,8 @@ theorem executes_amortized_real_le {β : Type} {p : (spec α).Client β}
     linarith
 
 /-- Starting from `.nil` (`Rep ∅ .nil`), the real-valued total rotation count of any adaptive
-client `p` is bounded by `realHistoryCost ∅ ((spec α).runClient ∅ p).2.2`
-([SleatorTarjan1985b], Section 3, Theorem 6, p. 665). -/
+`OrderedSet.spec α` client `p` is bounded by `realHistoryCost ∅ ((spec α).runClient ∅ p).2.2`
+(single-tree dictionary analogue of [SleatorTarjan1985b], Section 3, Theorem 6, p. 665). -/
 theorem executes_rotations_le_realHistoryCost_of_empty {β : Type} {p : (spec α).Client β}
     {t' : BinaryTree α} {a : β} {ns : List ℕ}
     (he : Executes Exec p .nil a t' ns) :
@@ -285,8 +292,9 @@ theorem executes_total_le {β : Type} {p : (spec α).Client β}
     linarith
   exact_mod_cast hreal
 
-/-- **Balance Theorem with Updates (`ℕ`-valued `Spec.totalCost` form)** ([SleatorTarjan1985b],
-Section 3, Theorem 6, p. 665): starting from `.nil`, any adaptive client `p` executes at most
+/-- Single-tree `OrderedSet.spec α` dictionary analogue of the **Balance Theorem with Updates**
+([SleatorTarjan1985b], Section 3, Theorem 6, p. 665; `ℕ`-valued `Spec.totalCost` form): starting
+from `.nil`, any adaptive client `p` executes at most
 `(spec α).totalCost amortizedCharge ∅ ((spec α).runClient ∅ p).2.2` total rotations. -/
 theorem executes_total_le_of_empty {β : Type} {p : (spec α).Client β}
     {t' : BinaryTree α} {a : β} {ns : List ℕ}
