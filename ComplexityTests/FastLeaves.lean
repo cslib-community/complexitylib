@@ -28,7 +28,7 @@ example : WF (root (ExplicitTensorNetwork.capPrecision (1, pair))) ∧
   (Reach.root (mk := nativeMk)).wf_packetShape (wf_root 1 (by decide)) (packetShape_root _)
 
 -- Reached calls have at most twice the scale in edges, on every input.
-example (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) (x : Call)
+example (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) (x : Call (List ℕ))
     (hx : Reach nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G))) x) :
     x.edges ≤ 2 * x.scale :=
   hx.edges_le_two_mul_scale rfl rfl

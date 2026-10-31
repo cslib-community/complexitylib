@@ -51,6 +51,8 @@ namespace Cslib.Circuits.Frontier.FastContraction
 
 open Finset GaloisRingArith ChildCursor NativeRecovery ContractionSchedule NativeChild
 
+variable {T : Type}
+
 /-- **The native child builder**: at the cursor state `(j, i, β, g)`, the rows and the native
 child of group `g` at the `j`-th node, the `i`-th point and the exponents `β`. The rows are capped
 at the number of vertices (`FastContraction.rowCap`) and the exponents at the node's precision
@@ -58,18 +60,18 @@ at the number of vertices (`FastContraction.rowCap`) and the exponents at the no
 (`FastContraction.nativeMk_eq`); on every call and state they keep the builder polynomial-time,
 since the number of rows and the exponents are stored in binary but the child lists one word per
 row and stores the exponents in unary. -/
-@[expose] def nativeMk (x : Call) (c : State) : ℕ × DescribedNetwork VertexDesc :=
+@[expose] def nativeMk (x : Call T) (c : State) : ℕ × DescribedNetwork (VertexDesc T) :=
   (childRows (rowCap x) (level x ((nodes x).getD c.1 0)) x.net (packing x) c.2.2.2,
     nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0)) (nodePrec x c.1)
       (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) (rowCap x) x.net
       (packing x) (c.2.2.1.map (min · (nodePrec x c.1))) c.2.2.2)
 
 /-- **A well-formed call**: its modulus is irreducible modulo `2` and its network is rows-first. -/
-@[expose] def WF (x : Call) : Prop :=
+@[expose] def WF (x : Call T) : Prop :=
   Irreducible ((monicOf x.fl).map (Int.castRingHom (ZMod 2))) ∧
     x.net.IsRowsFirstBipartite x.rows
 
-variable {x : Call}
+variable {x : Call T}
 
 /-- The cap of `nativeMk` leaves a tuple of weight below `p` unchanged, for positive weights. -/
 theorem map_min_of_mem_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ} {β : List ℕ}
@@ -139,7 +141,8 @@ theorem pairwise_isUnit_points (hirr : Irreducible ((monicOf x.fl).map (Int.cast
 
 /-- **The step of an active call is correct**, for the native child builder and well-formed
 calls. -/
-theorem stepCorrect_nativeMk : StepCorrect nativeMk WF := by
+theorem stepCorrect_nativeMk (ev : T → List Bool → List ℕ) :
+    StepCorrect ev (nativeMk (T := T)) WF := by
   intro x hx ha vals hvals
   obtain ⟨hirr, hD⟩ := hx
   have ha' := ha
@@ -147,7 +150,7 @@ theorem stepCorrect_nativeMk : StepCorrect nativeMk WF := by
   obtain ⟨-, hu, huM, hua, -, -, -⟩ := ha'
   have hlen : (points x).length = numPoints x := by simp [points]
   have hr := DescribedNetwork.rows_le_of_isRowsFirstBipartite hD (one_le_edges_of_active ha)
-  refine NativeCall.val_recover_eq_contraction hirr hD hu huM hua (le_taperStep_mul hu)
+  refine NativeCall.val_recover_eq_contraction hirr hD ev hu huM hua (le_taperStep_mul hu)
     (taperStep_mul_le _ _ _) (pow_slots_le_edges_of_active ha) ?_ (points x)
     (pairwise_isUnit_points hirr ha)
     (by rw [hlen]; exact Nat.lt_succ_self _) _ ?_
@@ -185,7 +188,7 @@ theorem stepCorrect_nativeMk : StepCorrect nativeMk WF := by
         val P x.fl (vals (j, i, β, g)) =
           (nativeChild x.fl (slots x) v P (node (slots x) k) ((points x).getD i []) x.rows x.net
             (nativeParentPacking x.rows (slots x) x.net) β g).contraction
-            fun d bs => val P x.fl (d.entry bs) := by
+            fun d bs => val P x.fl (d.entry ev bs) := by
       rintro v P rfl rfl
       have h := hvals _ hmem
       rw [nativeMk_eq ⟨hirr, hD⟩ ha hmem] at h
@@ -209,7 +212,7 @@ theorem lt_of_mem_children {c : State} (hc : c ∈ children x) :
 
 /-- **Well-formedness passes to the native children**: they keep the modulus, and they are
 rows-first (`NativeChild.isRowsFirstBipartite_nativeChild`). -/
-theorem wfChildren_nativeMk : WFChildren nativeMk WF := by
+theorem wfChildren_nativeMk : WFChildren (nativeMk (T := T)) WF := by
   intro x hx ha c hc
   obtain ⟨hirr, hD⟩ := hx
   refine ⟨hirr, ?_⟩
