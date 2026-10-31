@@ -338,10 +338,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
   certified DPLL solver runtimes.
-- **Feasible interpolation** ([#1817]): a polynomial-time builder for the monotone interpolant
-  (the De Morgan builder is done); a sharper monotone separator bound (Alon–Boppana) for a
-  stronger clique–coloring size lower bound; and the transfer of communication lower bounds to
-  proof-size lower bounds.
+- **Feasible interpolation** ([#1817]): a sharper monotone separator bound (Alon–Boppana) for a
+  stronger clique–coloring size lower bound, and the transfer of communication lower bounds to
+  proof-size lower bounds. Polynomial-time builders for the De Morgan and the monotone
+  interpolants are done.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
