@@ -316,7 +316,8 @@ whose leaves take time at most `TL` and space at most `SL`, with `H` open calls,
       (s₀ ≤ s → 2 * N - 1 ≤ fuel (ExplicitTensorNetwork.capPrecision (P, G))) ∧
       (∀ x, I.node x → (encCall (encList encNat) x).length ≤ F ∧
         ((scheme tableEntry mk).isLeaf x = true →
-        (leafCertificate mk).time x ≤ TL ∧ (leafCertificate mk).space x ≤ SL)) ∧
+          (leafCertificate tableEntryCertificate mk).time x ≤ TL ∧
+            (leafCertificate tableEntryCertificate mk).space x ≤ SL)) ∧
       (∀ x a, I.frame x a → (encPair (encCall (encList encNat)) encFrame (x, a)).length ≤ F) ∧
       (∀ v, I.value v → (encValue v).length ≤ F) ∧
       H + F + SL ≤ K * ((FastContraction.encInput (P, G)).length + 1) ^ K ∧
@@ -374,7 +375,7 @@ theorem fastCertificate_le
         (fastCertificate hpoly).space (P, G) ≤
           K * ((FastContraction.encInput (P, G)).length + 1) ^ K := by
   obtain ⟨Ka, s₀, hKa⟩ := hana C D
-  obtain ⟨K₁, hK₁⟩ := Scheme.certificate_le hpoly (leafCertificate mk)
+  obtain ⟨K₁, hK₁⟩ := Scheme.certificate_le hpoly (leafCertificate tableEntryCertificate mk)
   obtain ⟨K₂, hK₂⟩ := ExplicitTensorNetwork.exists_directContractionBinaryCertificate_le
   have hcapP := NativeCertificate.ofPolyTime_isPolynomial
     ExplicitTensorNetwork.capPrecision_polyTime

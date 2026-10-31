@@ -17,17 +17,22 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 # The leaves of the fast contraction algorithm
 
 The cost of the leaves of the native recursion of Theorem D.1 of [OpenAI2026ETH]
-(`Cslib.Circuits.Frontier.FastContraction.leafCertificate`, over tables), the leaf clause of the
-resource analysis `Cslib.Complexity.CountingSimulation.FastAnalysis`. A leaf sums directly over the
-`2 ^ M` edge assignments of a call with `M` edges (§D.4.7, p. 64), and the entry of a packet vertex
-costs `(m + 2) ^ L` for `m` target modes and `L` row ports, the source's `exp(O(L log s))`
-(§D.4.6, p. 63).
+(`Cslib.Circuits.Frontier.FastContraction.leafCertificate ce`, for a native certificate `ce` of the
+entry procedure of the roots), the leaf clause of the resource analysis
+`Cslib.Complexity.CountingSimulation.FastAnalysis`. A leaf sums directly over the `2 ^ M` edge
+assignments of a call with `M` edges, with polynomially many entry evaluations each (§D.4.7,
+p. 64). The entry of a packet vertex costs `(m + 2) ^ L` for `m` target modes and `L` row ports,
+the source's `exp(O(L log s))` (§D.4.6, p. 63), and the entry of a root costs what `ce` costs.
 
 **The cost of a leaf** (`FastContraction.leafCertificate_le`): with at most `R` target modes and
-`Λ` row ports per vertex, time `K (n + R + 1) ^ K 2 ^ M (R + 2) ^ Λ` and space `K (n + R + 1) ^ K`
-on a call of encoded length `n`, from the bounds of direct summation
+`Λ` row ports per vertex, and roots costing time at most `E` and space at most `ES` in `ce`, time
+`K (n + R + ES + 1) ^ K 2 ^ M ((R + 2) ^ Λ + E)` and space `K (n + R + ES + 1) ^ K` on a call of
+encoded length `n`, from the bounds of direct summation
 (`DescribedNetwork.contractionCertificate_le`) and of the evaluator of descriptors
-(`VertexDesc.entryCertificate_le`).
+(`VertexDesc.entryCertificate_le`). A root's output is at most a constant times `ES + 1` long,
+since a native certificate charges its output to its space bound. For tables the root costs are
+polynomial, which gives time `K (n + 1) ^ K 2 ^ M (A p + 2) ^ A` with the packet shape
+(`FastContraction.leafCertificate_tableEntry_le_of_packetShape`).
 
 **The packet shape** (`FastContraction.PacketShape`). Every packet vertex of a call of the
 recursion has `i < a ≤ ⌊log₂ s⌋ / 32768`, `2 ^ (i + 1)` tiles, at most `p` exponents per tile, and
@@ -54,8 +59,9 @@ but a polynomial in `n` is a constant.
 * `Cslib.Circuits.Frontier.FastContraction.packetShape_root`,
   `Cslib.Circuits.Frontier.FastContraction.packetShape_child`: the packet shape on the reached
   calls.
-* `Cslib.Circuits.Frontier.FastContraction.leafCertificate_le_of_packetShape`: the cost of a leaf
-  with the packet shape.
+* `Cslib.Circuits.Frontier.FastContraction.leafCertificate_le_of_packetShape`,
+  `Cslib.Circuits.Frontier.FastContraction.leafCertificate_tableEntry_le_of_packetShape`: the cost
+  of a leaf with the packet shape, and over tables.
 * `Cslib.Circuits.Frontier.FastContraction.exists_leafCertificate_le`: the leaf bound of the
   resource analysis.
 
@@ -136,10 +142,9 @@ private theorem mul_pow_le_mul_pow {c W d E : ℕ} (hW : 1 ≤ W) (hd : d ≤ E)
   Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hW hd)
 
 /-- The reduced coefficient lists against `W`. -/
-private theorem rv_le {n W cf df cp dp ct dt : ℕ} (hnW : n + 1 ≤ W) :
-    n * (2 * n + 3) + cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) +
-        ct * (3 * n + 2) ^ dt ≤
-      (5 + cf * (2 * cp + 3) + ct * 3 ^ dt) * W ^ (2 + df + dp + dt) := by
+private theorem rv_le {n W cf df cp dp : ℕ} (hnW : n + 1 ≤ W) :
+    n * (2 * n + 3) + cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) ≤
+      (5 + cf * (2 * cp + 3)) * W ^ (2 + df + dp) := by
   have hW1 : 1 ≤ W := by omega
   have h1 : n * (2 * n + 3) ≤ 5 * W ^ 2 :=
     calc n * (2 * n + 3) ≤ W * (5 * W) := Nat.mul_le_mul (by omega) (by omega)
@@ -155,16 +160,10 @@ private theorem rv_le {n W cf df cp dp ct dt : ℕ} (hnW : n + 1 ≤ W) :
         ≤ cf * W ^ df * ((2 * cp + 3) * W ^ dp) :=
           Nat.mul_le_mul (Nat.mul_le_mul_left _ hb1) this
       _ = cf * (2 * cp + 3) * W ^ (df + dp) := by rw [pow_add]; ring
-  have h3 : ct * (3 * n + 2) ^ dt ≤ ct * 3 ^ dt * W ^ dt :=
-    calc ct * (3 * n + 2) ^ dt ≤ ct * (3 * W) ^ dt :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
-      _ = ct * 3 ^ dt * W ^ dt := by rw [mul_pow]; ring
-  have l1 : 5 * W ^ 2 ≤ 5 * W ^ (2 + df + dp + dt) := mul_pow_le_mul_pow hW1 (by omega)
-  have l2 : cf * (2 * cp + 3) * W ^ (df + dp) ≤ cf * (2 * cp + 3) * W ^ (2 + df + dp + dt) :=
+  have l1 : 5 * W ^ 2 ≤ 5 * W ^ (2 + df + dp) := mul_pow_le_mul_pow hW1 (by omega)
+  have l2 : cf * (2 * cp + 3) * W ^ (df + dp) ≤ cf * (2 * cp + 3) * W ^ (2 + df + dp) :=
     mul_pow_le_mul_pow hW1 (by omega)
-  have l3 : ct * 3 ^ dt * W ^ dt ≤ ct * 3 ^ dt * W ^ (2 + df + dp + dt) :=
-    mul_pow_le_mul_pow hW1 (by omega)
-  rw [add_mul, add_mul]
+  rw [add_mul]
   omega
 
 /-- The input of direct summation against `W`. -/
@@ -185,18 +184,21 @@ private theorem zb_le {W n R Rv cR E₀ : ℕ} (hW : 1 ≤ W) (hE : 1 ≤ E₀) 
   omega
 
 /-- The arithmetic of the time of a leaf. -/
-private theorem time_assemble {Td Ti Ts cd dd ci di P X k W A Zb c₁ c₂ E₀ K₁ K₂ : ℕ}
+private theorem time_assemble {Td Ti Ts cd dd ci di P X E k W A Zb c₁ c₂ E₀ K₁ K₂ : ℕ}
     (hW : 1 ≤ W) (hP : 1 ≤ P) (hX : 1 ≤ X) (hd : Td ≤ cd * W ^ dd) (hi : Ti ≤ ci * W ^ di)
-    (hs : Ts ≤ (P * (k + 1) + 1) * (K₁ * (A + 1) ^ K₁ + 2 * (K₂ * X * Zb ^ K₂)))
+    (hs : Ts ≤ (P * (k + 1) + 1) * (K₁ * (A + 1) ^ K₁ + 2 * (K₂ * X * Zb ^ K₂ + E)))
     (hk : k + 1 ≤ W) (hA : A + 1 ≤ c₁ * W ^ E₀) (hZ : Zb ≤ c₂ * W ^ E₀) :
-    Td + (Ti + Ts) ≤ (2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) + cd + ci) *
-      W ^ (1 + E₀ * (K₁ + K₂) + dd + di) * P * X := by
+    Td + (Ti + Ts) ≤ (2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) + cd + ci) *
+      W ^ (1 + E₀ * (K₁ + K₂) + dd + di) * P * (X + E) := by
   have hWF1 : W ^ (E₀ * K₁) ≤ W ^ (E₀ * (K₁ + K₂)) :=
     Nat.pow_le_pow_right hW (by rw [Nat.mul_add]; omega)
   have hWF2 : W ^ (E₀ * K₂) ≤ W ^ (E₀ * (K₁ + K₂)) :=
     Nat.pow_le_pow_right hW (by rw [Nat.mul_add]; omega)
   set F := E₀ * (K₁ + K₂)
   set S := W ^ (1 + F + dd + di)
+  set Y := X + E with hY
+  have hY1 : 1 ≤ Y := by omega
+  have hF1 : 1 ≤ W ^ F := Nat.one_le_pow _ _ (by omega)
   have hA' : K₁ * (A + 1) ^ K₁ ≤ K₁ * c₁ ^ K₁ * W ^ F :=
     calc K₁ * (A + 1) ^ K₁ ≤ K₁ * (c₁ * W ^ E₀) ^ K₁ :=
           Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hA _)
@@ -207,124 +209,138 @@ private theorem time_assemble {Td Ti Ts cd dd ci di P X k W A Zb c₁ c₂ E₀ 
           Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hZ _)
       _ = K₂ * c₂ ^ K₂ * X * W ^ (E₀ * K₂) := by rw [mul_pow, ← pow_mul]; ring
       _ ≤ K₂ * c₂ ^ K₂ * X * W ^ F := Nat.mul_le_mul_left _ hWF2
-  have hin : K₁ * (A + 1) ^ K₁ + 2 * (K₂ * X * Zb ^ K₂) ≤
-      (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) * X * W ^ F := by
-    have : K₁ * c₁ ^ K₁ * W ^ F ≤ K₁ * c₁ ^ K₁ * W ^ F * X := Nat.le_mul_of_pos_right _ hX
-    have e : (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) * X * W ^ F =
-        K₁ * c₁ ^ K₁ * W ^ F * X + 2 * (K₂ * c₂ ^ K₂ * X * W ^ F) := by ring
+  have hin : K₁ * (A + 1) ^ K₁ + 2 * (K₂ * X * Zb ^ K₂ + E) ≤
+      (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) * Y * W ^ F := by
+    have h1 : K₁ * c₁ ^ K₁ * W ^ F ≤ K₁ * c₁ ^ K₁ * W ^ F * Y := Nat.le_mul_of_pos_right _ hY1
+    have h2 : K₂ * c₂ ^ K₂ * X * W ^ F ≤ K₂ * c₂ ^ K₂ * Y * W ^ F :=
+      Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (by omega))
+    have h3 : E ≤ Y * W ^ F := (show E ≤ Y by omega).trans (Nat.le_mul_of_pos_right _ hF1)
+    have e : (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) * Y * W ^ F =
+        K₁ * c₁ ^ K₁ * W ^ F * Y + 2 * (K₂ * c₂ ^ K₂ * Y * W ^ F) + 2 * (Y * W ^ F) := by ring
     omega
   have hPk : P * (k + 1) + 1 ≤ 2 * P * W := by
     have : P * (k + 1) ≤ P * W := Nat.mul_le_mul_left _ hk
     have : 1 ≤ P * W := Nat.one_le_iff_ne_zero.mpr (by positivity)
     rw [Nat.mul_assoc]; omega
-  have hs' : Ts ≤ 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) * S * P * X :=
-    calc Ts ≤ (2 * P * W) * ((K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) * X * W ^ F) :=
+  have hs' : Ts ≤ 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) * S * P * Y :=
+    calc Ts ≤ (2 * P * W) * ((K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) * Y * W ^ F) :=
           hs.trans (Nat.mul_le_mul hPk hin)
-      _ = 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) * W ^ (1 + F) * P * X := by
+      _ = 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) * W ^ (1 + F) * P * Y := by
           rw [pow_add, pow_one]; ring
-      _ ≤ 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) * S * P * X :=
+      _ ≤ 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) * S * P * Y :=
           Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _
             (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hW (by omega))))
-  have hPX : 1 ≤ P * X := Nat.one_le_iff_ne_zero.mpr (by positivity)
-  have hd' : Td ≤ cd * S * P * X :=
+  have hPY : 1 ≤ P * Y := Nat.one_le_iff_ne_zero.mpr (by positivity)
+  have hd' : Td ≤ cd * S * P * Y :=
     calc Td ≤ cd * S := hd.trans (mul_pow_le_mul_pow hW (by omega))
-      _ ≤ cd * S * (P * X) := Nat.le_mul_of_pos_right _ hPX
-      _ = cd * S * P * X := by ring
-  have hi' : Ti ≤ ci * S * P * X :=
+      _ ≤ cd * S * (P * Y) := Nat.le_mul_of_pos_right _ hPY
+      _ = cd * S * P * Y := by ring
+  have hi' : Ti ≤ ci * S * P * Y :=
     calc Ti ≤ ci * S := hi.trans (mul_pow_le_mul_pow hW (by omega))
-      _ ≤ ci * S * (P * X) := Nat.le_mul_of_pos_right _ hPX
-      _ = ci * S * P * X := by ring
-  have e : (2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) + cd + ci) * S * P * X =
-      2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) * S * P * X + cd * S * P * X + ci * S * P * X := by
+      _ ≤ ci * S * (P * Y) := Nat.le_mul_of_pos_right _ hPY
+      _ = ci * S * P * Y := by ring
+  have e : (2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) + cd + ci) * S * P * Y =
+      2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) * S * P * Y + cd * S * P * Y +
+        ci * S * P * Y := by
     ring
   omega
 
 /-- The arithmetic of the space of a leaf. -/
-private theorem space_assemble {Sd Si Ss cd dd ci di W A Zb c₁ c₂ E₀ K₁ K₂ ES : ℕ}
+private theorem space_assemble {Sd Si Ss cd dd ci di W A Zb c₁ c₂ E₀ K₁ K₂ ES ES' : ℕ}
     (hW : 1 ≤ W) (hd : Sd ≤ cd * W ^ dd) (hi : Si ≤ ci * W ^ di)
-    (hs : Ss ≤ K₁ * (A + 1) ^ K₁ + ES) (hA : A + 1 ≤ c₁ * W ^ E₀) (hES : ES = K₂ * Zb ^ K₂)
-    (hZ : Zb ≤ c₂ * W ^ E₀) :
-    Sd + (Si + Ss) ≤ (K₁ * c₁ ^ K₁ + K₂ * c₂ ^ K₂ + cd + ci) *
-      W ^ (E₀ * (K₁ + K₂) + dd + di) := by
-  have hWF1 : W ^ (E₀ * K₁) ≤ W ^ (E₀ * (K₁ + K₂) + dd + di) :=
+    (hs : Ss ≤ K₁ * (A + 1) ^ K₁ + ES') (hA : A + 1 ≤ c₁ * W ^ E₀)
+    (hES : ES' = K₂ * Zb ^ K₂ + ES) (hESW : ES ≤ W) (hZ : Zb ≤ c₂ * W ^ E₀) :
+    Sd + (Si + Ss) ≤ (K₁ * c₁ ^ K₁ + K₂ * c₂ ^ K₂ + cd + ci + 1) *
+      W ^ (1 + E₀ * (K₁ + K₂) + dd + di) := by
+  have hWF1 : W ^ (E₀ * K₁) ≤ W ^ (1 + E₀ * (K₁ + K₂) + dd + di) :=
     Nat.pow_le_pow_right hW (by rw [Nat.mul_add]; omega)
-  have hWF2 : W ^ (E₀ * K₂) ≤ W ^ (E₀ * (K₁ + K₂) + dd + di) :=
+  have hWF2 : W ^ (E₀ * K₂) ≤ W ^ (1 + E₀ * (K₁ + K₂) + dd + di) :=
     Nat.pow_le_pow_right hW (by rw [Nat.mul_add]; omega)
   set F := E₀ * (K₁ + K₂)
-  set S := W ^ (F + dd + di)
+  set S := W ^ (1 + F + dd + di)
   have hA' : K₁ * (A + 1) ^ K₁ ≤ K₁ * c₁ ^ K₁ * S :=
     calc K₁ * (A + 1) ^ K₁ ≤ K₁ * (c₁ * W ^ E₀) ^ K₁ :=
           Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hA _)
       _ = K₁ * c₁ ^ K₁ * W ^ (E₀ * K₁) := by rw [mul_pow, ← pow_mul, Nat.mul_assoc]
       _ ≤ K₁ * c₁ ^ K₁ * S := Nat.mul_le_mul_left _ hWF1
-  have hZ' : ES ≤ K₂ * c₂ ^ K₂ * S :=
-    calc ES = K₂ * Zb ^ K₂ := hES
-      _ ≤ K₂ * (c₂ * W ^ E₀) ^ K₂ := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hZ _)
+  have hZ' : K₂ * Zb ^ K₂ ≤ K₂ * c₂ ^ K₂ * S :=
+    calc K₂ * Zb ^ K₂ ≤ K₂ * (c₂ * W ^ E₀) ^ K₂ := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hZ _)
       _ = K₂ * c₂ ^ K₂ * W ^ (E₀ * K₂) := by rw [mul_pow, ← pow_mul, Nat.mul_assoc]
       _ ≤ K₂ * c₂ ^ K₂ * S := Nat.mul_le_mul_left _ hWF2
+  have hWS : ES ≤ S :=
+    hESW.trans ((pow_one W).symm.le.trans (Nat.pow_le_pow_right hW (by omega)))
   have hd' : Sd ≤ cd * S := hd.trans (mul_pow_le_mul_pow hW (by omega))
   have hi' : Si ≤ ci * S := hi.trans (mul_pow_le_mul_pow hW (by omega))
-  have e : (K₁ * c₁ ^ K₁ + K₂ * c₂ ^ K₂ + cd + ci) * S =
-      K₁ * c₁ ^ K₁ * S + K₂ * c₂ ^ K₂ * S + cd * S + ci * S := by ring
+  have e : (K₁ * c₁ ^ K₁ + K₂ * c₂ ^ K₂ + cd + ci + 1) * S =
+      K₁ * c₁ ^ K₁ * S + K₂ * c₂ ^ K₂ * S + cd * S + ci * S + S := by ring
   omega
 
-/-- **The cost of a leaf.** There is `K` such that, on a call of encoded length `n` with `M` edges
-whose vertices have at most `R` target modes and at most `Λ` row ports on every bit list on their
-ports, direct summation takes time at most `K (n + R + 1) ^ K 2 ^ M (R + 2) ^ Λ` and space at most
-`K (n + R + 1) ^ K`, whatever the child builder. -/
-theorem leafCertificate_le : ∃ K : ℕ,
-    ∀ (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
-    (x : Call (List ℕ)) (R Λ : ℕ),
-    (∀ v ∈ x.net.vertices, v.2.modes ≤ R ∧
-      ∀ bs : List Bool, bs.length = v.1.length → v.2.rowPorts bs ≤ Λ) →
-    (leafCertificate mk).time x ≤
-        K * ((encCall (encList encNat) x).length + R + 1) ^ K * 2 ^ x.edges * (R + 2) ^ Λ ∧
-      (leafCertificate mk).space x ≤ K * ((encCall (encList encNat) x).length + R + 1) ^ K := by
+variable {encT : T ↪ List Bool} {ev : T → List Bool → List ℕ}
+
+/-- **The cost of a leaf.** For a native certificate `ce` of the entry procedure of the roots, there
+is `K` such that, on a call of encoded length `n` with `M` edges whose vertices have at most `R`
+target modes and at most `Λ` row ports on every bit list on their ports, and whose roots take time
+at most `E` and space at most `ES` in `ce` on every bit list on their ports, direct summation takes
+time at most `K (n + R + ES + 1) ^ K 2 ^ M ((R + 2) ^ Λ + E)` and space at most
+`K (n + R + ES + 1) ^ K`, whatever the child builder. -/
+theorem leafCertificate_le
+    (ce : NativeCertificate (fun q : T × List Bool => ev q.1 q.2) (encPair encT encBits)
+      (encList encNat)) :
+    ∃ K : ℕ, ∀ (mk : Call T → State → ℕ × DescribedNetwork (VertexDesc T)) (x : Call T)
+      (R Λ E ES : ℕ),
+      (∀ v ∈ x.net.vertices, v.2.modes ≤ R ∧
+        ∀ bs : List Bool, bs.length = v.1.length → v.2.rowPorts bs ≤ Λ) →
+      (∀ v ∈ x.net.vertices, ∀ t, v.2 = .inl t → ∀ bs : List Bool, bs.length = v.1.length →
+        ce.time (t, bs) ≤ E ∧ ce.space (t, bs) ≤ ES) →
+      (leafCertificate ce mk).time x ≤
+          K * ((encCall encT x).length + R + ES + 1) ^ K * 2 ^ x.edges * ((R + 2) ^ Λ + E) ∧
+        (leafCertificate ce mk).space x ≤ K * ((encCall encT x).length + R + ES + 1) ^ K := by
   obtain ⟨K₁, hK₁⟩ := DescribedNetwork.contractionCertificate_le (ops := SumOps.galois)
-    (eval := VertexDesc.entry tableEntry) (encQ := encPair encUnary (encList encNat))
-    (encY := encList encNat) (encT := VertexDesc.enc (encList encNat)) SumOps.galois_polyTime
-    VertexDesc.entryCertificate
-  obtain ⟨K₂, hK₂⟩ := VertexDesc.entryCertificate_le
-  have hD := NativeCertificate.ofPolyTime_isPolynomial (depth_polyTime (encList encNat))
-  have hI := NativeCertificate.ofPolyTime_isPolynomial (leafInput_polyTime (encList encNat))
+    (eval := VertexDesc.entry ev) (encQ := encPair encUnary (encList encNat))
+    (encY := encList encNat) (encT := VertexDesc.enc encT) SumOps.galois_polyTime
+    (VertexDesc.entryCertificate ce)
+  obtain ⟨K₂, hK₂⟩ := VertexDesc.entryCertificate_le ce
+  obtain ⟨cE, -, hcE⟩ := ce.computes
+  have hD := NativeCertificate.ofPolyTime_isPolynomial (depth_polyTime encT)
+  have hI := NativeCertificate.ofPolyTime_isPolynomial (leafInput_polyTime encT)
   obtain ⟨cd, dd, hdt⟩ := hD.1.exists_le
   obtain ⟨cd', dd', hds⟩ := hD.2.exists_le
   obtain ⟨ci, di, hit⟩ := hI.1.exists_le
   obtain ⟨ci', di', his⟩ := hI.2.exists_le
-  obtain ⟨cl, dl, hl⟩ := (leafInput_polyTime (encList encNat)).polyBounded_length.exists_le
+  obtain ⟨cl, dl, hl⟩ := (leafInput_polyTime encT).polyBounded_length.exists_le
   obtain ⟨cp, dp, hp⟩ := PacketCtx.p_polyTime.polyBounded_length.exists_le
   obtain ⟨cf, df, hf⟩ := PacketCtx.fl_polyTime.polyBounded_length.exists_le
-  obtain ⟨ct, dt, ht⟩ := VertexDesc.tableEntry_polyTime.polyBounded_length.exists_le
   -- The constants.
-  obtain ⟨e, he⟩ : ∃ e, e = 2 + df + dp + dt := ⟨_, rfl⟩
-  obtain ⟨cR, hcR⟩ : ∃ cR, cR = 5 + cf * (2 * cp + 3) + ct * 3 ^ dt := ⟨_, rfl⟩
+  obtain ⟨e, he⟩ : ∃ e, e = 2 + df + dp := ⟨_, rfl⟩
+  obtain ⟨cR, hcR⟩ : ∃ cR, cR = 5 + cf * (2 * cp + 3) + cE := ⟨_, rfl⟩
   obtain ⟨E₀, hE₀⟩ : ∃ E₀, E₀ = dl + e := ⟨_, rfl⟩
   obtain ⟨c₁, hc₁⟩ : ∃ c₁, c₁ = cl + 2 * cR + 1 := ⟨_, rfl⟩
   obtain ⟨c₂, hc₂⟩ : ∃ c₂, c₂ = 3 + cR := ⟨_, rfl⟩
-  obtain ⟨G, hG⟩ : ∃ G, G = 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂)) + cd + ci +
-      (K₁ * c₁ ^ K₁ + K₂ * c₂ ^ K₂) + cd' + ci' := ⟨_, rfl⟩
+  obtain ⟨G, hG⟩ : ∃ G, G = 2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) + cd + ci +
+      (K₁ * c₁ ^ K₁ + K₂ * c₂ ^ K₂ + cd' + ci' + 1) := ⟨_, rfl⟩
   obtain ⟨Dg, hDg⟩ : ∃ Dg, Dg = 1 + E₀ * (K₁ + K₂) + dd + di + dd' + di' := ⟨_, rfl⟩
-  refine ⟨G + Dg, fun mk x R Λ hRΛ => ?_⟩
-  obtain ⟨n, hn⟩ : ∃ n, n = (encCall (encList encNat) x).length := ⟨_, rfl⟩
-  obtain ⟨W, hW⟩ : ∃ W, W = n + R + 1 := ⟨_, rfl⟩
-  rw [← hn, show n + R + 1 = W from hW.symm]
+  refine ⟨G + Dg, fun mk x R Λ E ES hRΛ hroot => ?_⟩
+  obtain ⟨n, hn⟩ : ∃ n, n = (encCall encT x).length := ⟨_, rfl⟩
+  obtain ⟨W, hW⟩ : ∃ W, W = n + R + ES + 1 := ⟨_, rfl⟩
+  rw [← hn, show n + R + ES + 1 = W from hW.symm]
   have hW1 : 1 ≤ W := by omega
   have hnW : n + 1 ≤ W := by omega
   -- The precision and the modulus of the call.
-  have hpfl := scale_add_prec_add_length_fl_le (encList encNat) x
+  have hpfl := scale_add_prec_add_length_fl_le encT x
   rw [← hn] at hpfl
   -- Every vertex and bit list on its ports is at most `3 n + 1` long.
-  have hq (v : List ℕ × VertexDesc (List ℕ)) (hv : v ∈ x.net.vertices) (bs : List Bool)
+  have hq (v : List ℕ × VertexDesc T) (hv : v ∈ x.net.vertices) (bs : List Bool)
       (hbs : bs.length = v.1.length) :
-      (encPair (VertexDesc.enc (encList encNat)) encBits (v.2, bs)).length ≤ 3 * n + 1 := by
-    have h1 := length_vertex_le (encList encNat) hv
+      (encPair (VertexDesc.enc encT) encBits (v.2, bs)).length ≤ 3 * n + 1 := by
+    have h1 := length_vertex_le encT hv
     have h2 := length_le_length_encList encNat v.1
     rw [length_encPair] at h1 ⊢
-    change 2 * (VertexDesc.enc (encList encNat) v.2).length + 1 + bs.length ≤ 3 * n + 1
+    change 2 * (VertexDesc.enc encT v.2).length + 1 + bs.length ≤ 3 * n + 1
     omega
-  -- The reduced coefficient lists.
+  -- The reduced coefficient lists, and the outputs of the roots.
   obtain ⟨Rv, hRv⟩ : ∃ Rv, Rv = n * (2 * n + 3) +
-      cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) + ct * (3 * n + 2) ^ dt := ⟨_, rfl⟩
+      cf * (n + 1) ^ df * (2 * (cp * (n + 1) ^ dp) + 3) := ⟨_, rfl⟩
+  obtain ⟨Ev, hEv⟩ : ∃ Ev, Ev = Rv + cE * (ES + 1) := ⟨_, rfl⟩
   have hred : ∀ y, SumOps.galois.Reduced (x.prec, x.fl) y → (encList encNat y).length ≤ Rv := by
     intro y hy
     have h := SumOps.length_encList_le_of_galois_reduced hy
@@ -332,13 +348,13 @@ theorem leafCertificate_le : ∃ K : ℕ,
     have : x.fl.length * (2 * x.prec + 3) ≤ n * (2 * n + 3) :=
       Nat.mul_le_mul (by omega) (by omega)
     omega
-  have hpacket (v : List ℕ × VertexDesc (List ℕ)) (hv : v ∈ x.net.vertices) (d : PacketDesc)
+  have hpacket (v : List ℕ × VertexDesc T) (hv : v ∈ x.net.vertices) (d : PacketDesc)
       (hd : v.2 = .inr d) :
       ∀ y, SumOps.galois.Reduced (d.1.p, d.1.fl) y → (encList encNat y).length ≤ Rv := by
     intro y hy
     have h := SumOps.length_encList_le_of_galois_reduced hy
     simp only at h
-    have h1 := length_vertex_le (encList encNat) hv
+    have h1 := length_vertex_le encT hv
     rw [length_encPair, hd, length_encSum] at h1
     simp only [Sum.elim_inr] at h1
     have h2 : (PacketCtx.enc d.1).length ≤ n := by
@@ -359,9 +375,9 @@ theorem leafCertificate_le : ∃ K : ℕ,
   obtain ⟨Zb, hZb⟩ : ∃ Zb, Zb = 3 * n + R + Rv + 3 := ⟨_, rfl⟩
   have hentry : ∀ v ∈ ((x.prec, x.fl), x.net).2.vertices, ∀ bs : List Bool,
       bs.length = v.1.length →
-      VertexDesc.entryCertificate.time (v.2, bs) ≤ K₂ * (R + 2) ^ Λ * Zb ^ K₂ ∧
-        VertexDesc.entryCertificate.space (v.2, bs) ≤ K₂ * Zb ^ K₂ ∧
-        (encList encNat (VertexDesc.entry tableEntry v.2 bs)).length ≤ Rv := by
+      (VertexDesc.entryCertificate ce).time (v.2, bs) ≤ K₂ * (R + 2) ^ Λ * Zb ^ K₂ + E ∧
+        (VertexDesc.entryCertificate ce).space (v.2, bs) ≤ K₂ * Zb ^ K₂ + ES ∧
+        (encList encNat (VertexDesc.entry ev v.2 bs)).length ≤ Ev := by
     intro v hv bs hbs
     have hlen := hq v hv bs hbs
     obtain ⟨hmodes, hrows⟩ := hRΛ v hv
@@ -370,45 +386,57 @@ theorem leafCertificate_le : ∃ K : ℕ,
       rcases hd : v.2 with t | d
       · trivial
       · exact hpacket v hv d hd
-    obtain ⟨hT, hS⟩ := hK₂ (v.2, bs) Rv hRLE
+    obtain ⟨hT, hS⟩ := hK₂ (v.2, bs) Rv E ES hRLE fun t ht => hroot v hv t ht bs hbs
     dsimp only at hT hS
-    have hZ : (encPair (VertexDesc.enc (encList encNat)) encBits (v.2, bs)).length + v.2.modes +
-        Rv + 2 ≤ Zb := by
+    have hZ : (encPair (VertexDesc.enc encT) encBits (v.2, bs)).length + v.2.modes + Rv + 2 ≤
+        Zb := by
       omega
-    refine ⟨hT.trans ?_, hS.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hZ _)), ?_⟩
+    refine ⟨hT.trans (Nat.add_le_add_right ?_ _),
+      hS.trans (Nat.add_le_add_right (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hZ _)) _), ?_⟩
     · refine Nat.mul_le_mul (Nat.mul_le_mul_left _ ?_) (Nat.pow_le_pow_left hZ _)
       exact (Nat.pow_le_pow_left (by omega) _).trans (Nat.pow_le_pow_right (by omega) hrows)
     · rcases hd : v.2 with t | d
-      · have := ht (v.2, bs)
-        rw [hd] at this
-        refine this.trans ?_
-        have h3 : (encPair (VertexDesc.enc (encList encNat)) encBits (Sum.inl t, bs)).length + 1 ≤
-            3 * n + 2 := by
-          rw [← hd]; omega
-        calc ct * ((encPair (VertexDesc.enc (encList encNat)) encBits (Sum.inl t, bs)).length
-              + 1) ^ dt
-            ≤ ct * (3 * n + 2) ^ dt := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left h3 _)
-          _ ≤ Rv := by omega
-      · exact hpacket v hv d hd _ (VertexDesc.reduced_entry_inr tableEntry d bs)
-  obtain ⟨hsT, hsS⟩ := hK₁ ((x.prec, x.fl), x.net) (K₂ * (R + 2) ^ Λ * Zb ^ K₂) (K₂ * Zb ^ K₂) Rv
-    Rv hentry hred
+      · have h1 : (encList encNat (ev t bs)).length ≤ cE * (ce.space (t, bs) + 1) := hcE (t, bs)
+        have h2 : cE * (ce.space (t, bs) + 1) ≤ cE * (ES + 1) :=
+          Nat.mul_le_mul_left _ (by have := (hroot v hv t hd bs hbs).2; omega)
+        simp only [VertexDesc.entry_inl]
+        omega
+      · have := hpacket v hv d hd _ (VertexDesc.reduced_entry_inr ev d bs)
+        omega
+  obtain ⟨hsT, hsS⟩ := hK₁ ((x.prec, x.fl), x.net) (K₂ * (R + 2) ^ Λ * Zb ^ K₂ + E)
+    (K₂ * Zb ^ K₂ + ES) Ev Rv hentry hred
   -- Polynomial pieces against `W`.
-  have hk : x.net.vertices.length + 1 ≤ W := by have := length_vertices_le (encList encNat) x; omega
-  have hRvW : Rv ≤ cR * W ^ e := by
-    rw [hRv, hcR, he]; exact rv_le hnW
+  have hk : x.net.vertices.length + 1 ≤ W := by have := length_vertices_le encT x; omega
+  have hRvW : Rv ≤ (cR - cE) * W ^ e := by
+    have h := rv_le (cf := cf) (df := df) (cp := cp) (dp := dp) hnW
+    rw [hRv, he]
+    refine h.trans (Nat.mul_le_mul_right _ ?_)
+    omega
   have hWE : W ^ e ≤ W ^ E₀ := Nat.pow_le_pow_right hW1 (by omega)
+  have hW1E : W ≤ W ^ E₀ :=
+    (pow_one W).symm.le.trans (Nat.pow_le_pow_right hW1 (by omega))
+  have hEvW : Ev ≤ cR * W ^ E₀ := by
+    have h1 : Rv ≤ (cR - cE) * W ^ E₀ := hRvW.trans (Nat.mul_le_mul_left _ hWE)
+    have h2 : cE * (ES + 1) ≤ cE * W ^ E₀ := Nat.mul_le_mul_left _ (by omega)
+    have e : cR * W ^ E₀ = (cR - cE) * W ^ E₀ + cE * W ^ E₀ := by
+      rw [← Nat.add_mul, Nat.sub_add_cancel (by omega)]
+    omega
   have hA1 : (DescribedNetwork.encInput (encPair encUnary (encList encNat))
-      (VertexDesc.enc (encList encNat)) ((x.prec, x.fl), x.net)).length + Rv + Rv + 1 ≤
-        c₁ * W ^ E₀ := by
+      (VertexDesc.enc encT) ((x.prec, x.fl), x.net)).length + Ev + Rv + 1 ≤ c₁ * W ^ E₀ := by
     have h1 : (DescribedNetwork.encInput (encPair encUnary (encList encNat))
-        (VertexDesc.enc (encList encNat)) ((x.prec, x.fl), x.net)).length ≤ cl * W ^ dl :=
+        (VertexDesc.enc encT) ((x.prec, x.fl), x.net)).length ≤ cl * W ^ dl :=
       (hl x).trans (by rw [← hn]; exact mul_pow_le_of_le hnW)
+    have h2 : Rv ≤ Ev := by omega
+    have h3 := sum_le_of_le hW1 h1 (by omega) hEvW
     rw [hc₁]
-    exact sum_le_of_le hW1 h1 (by omega) (hRvW.trans (Nat.mul_le_mul_left _ hWE))
+    omega
   have hZW : Zb ≤ c₂ * W ^ E₀ := by
     rw [hc₂, hZb]
-    exact zb_le hW1 (by omega) (hRvW.trans (Nat.mul_le_mul_left _ hWE)) (by omega)
-  have hnW' : (encCall (encList encNat) x).length + 1 ≤ W := by omega
+    have h1 : Rv ≤ cR * W ^ E₀ := by
+      have := hRvW.trans (Nat.mul_le_mul_left _ hWE)
+      exact this.trans (Nat.mul_le_mul_right _ (Nat.sub_le _ _))
+    exact zb_le hW1 (by omega) h1 (by omega)
+  have hnW' : (encCall encT x).length + 1 ≤ W := by omega
   have hdt' := (hdt x).trans (mul_pow_le_of_le (c := cd) (d := dd) hnW')
   have hit' := (hit x).trans (mul_pow_le_of_le (c := ci) (d := di) hnW')
   have hds' := (hds x).trans (mul_pow_le_of_le (c := cd') (d := dd') hnW')
@@ -417,11 +445,16 @@ theorem leafCertificate_le : ∃ K : ℕ,
   have hX : 1 ≤ (R + 2) ^ Λ := Nat.one_le_pow _ _ (by omega)
   refine ⟨?_, ?_⟩
   · rw [leafCertificate_time]
-    refine (time_assemble hW1 hP hX hdt' hit' hsT hk hA1 hZW).trans ?_
-    refine Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (Nat.mul_le_mul (by omega)
-      (Nat.pow_le_pow_right hW1 (by omega))))
+    refine (time_assemble hW1 hP hX hdt' hit' hsT hk (by omega) hZW).trans ?_
+    have hpow : W ^ (1 + E₀ * (K₁ + K₂) + dd + di) ≤ W ^ (G + Dg) :=
+      Nat.pow_le_pow_right hW1 (by omega)
+    calc _ = (2 * (K₁ * c₁ ^ K₁ + 2 * (K₂ * c₂ ^ K₂) + 2) + cd + ci) *
+          W ^ (1 + E₀ * (K₁ + K₂) + dd + di) * (2 ^ x.edges * ((R + 2) ^ Λ + E)) := by ring
+      _ ≤ (G + Dg) * W ^ (G + Dg) * (2 ^ x.edges * ((R + 2) ^ Λ + E)) :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul (by omega) hpow)
+      _ = _ := by ring
   · rw [leafCertificate_space]
-    refine (space_assemble hW1 hds' his' hsS hA1 rfl hZW).trans ?_
+    refine (space_assemble hW1 hds' his' hsS (by omega) rfl (by omega) hZW).trans ?_
     exact Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hW1 (by omega))
 
 /-! ### The shape of the packets -/
@@ -536,39 +569,117 @@ theorem rowPorts_le_of_packetShape {x : Call T} (hs : PacketShape x) {v : List �
     rw [hbeq]
     exact hcard.trans (Nat.pow_le_pow_right (by norm_num) h2)
 
-/-- **The cost of a leaf with the packet shape.** There is `K` such that, on a call of encoded
-length `n` with `M` edges, scale `s` and precision `p` with the packet shape, writing
-`A = 2 ^ (⌊log₂ s⌋ / 32768)`, direct summation takes time at most
-`K (n + 1) ^ K 2 ^ M (A p + 2) ^ A` and space at most `K (n + 1) ^ K`. -/
-theorem leafCertificate_le_of_packetShape : ∃ K : ℕ,
-    ∀ (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
-      (x : Call (List ℕ)), PacketShape x →
-      (leafCertificate mk).time x ≤ K * ((encCall (encList encNat) x).length + 1) ^ K *
-          2 ^ x.edges *
-          (2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 2) ^ 2 ^ (Nat.log 2 x.scale / 32768) ∧
-        (leafCertificate mk).space x ≤ K * ((encCall (encList encNat) x).length + 1) ^ K := by
-  obtain ⟨K, hK⟩ := leafCertificate_le
-  refine ⟨2 * K, fun mk x hs => ?_⟩
+/-- **The cost of a leaf with the packet shape.** For a native certificate `ce` of the entry
+procedure of the roots, there is `K` such that, on a call of encoded length `n` with `M` edges,
+scale `s` and precision `p` with the packet shape, whose roots take time at most `E` and space at
+most `ES` in `ce` on every bit list on their ports, writing `A = 2 ^ (⌊log₂ s⌋ / 32768)`, direct
+summation takes time at most `K (n + ES + 1) ^ K 2 ^ M ((A p + 2) ^ A + E)` and space at most
+`K (n + ES + 1) ^ K`. -/
+theorem leafCertificate_le_of_packetShape
+    (ce : NativeCertificate (fun q : T × List Bool => ev q.1 q.2) (encPair encT encBits)
+      (encList encNat)) :
+    ∃ K : ℕ, ∀ (mk : Call T → State → ℕ × DescribedNetwork (VertexDesc T)) (x : Call T)
+      (E ES : ℕ), PacketShape x →
+      (∀ v ∈ x.net.vertices, ∀ t, v.2 = .inl t → ∀ bs : List Bool, bs.length = v.1.length →
+        ce.time (t, bs) ≤ E ∧ ce.space (t, bs) ≤ ES) →
+      (leafCertificate ce mk).time x ≤ K * ((encCall encT x).length + ES + 1) ^ K * 2 ^ x.edges *
+          ((2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 2) ^ 2 ^ (Nat.log 2 x.scale / 32768) + E) ∧
+        (leafCertificate ce mk).space x ≤ K * ((encCall encT x).length + ES + 1) ^ K := by
+  obtain ⟨K, hK⟩ := leafCertificate_le ce
+  refine ⟨2 * K, fun mk x E ES hs hroot => ?_⟩
   obtain ⟨hT, hS⟩ := hK mk x (2 ^ (Nat.log 2 x.scale / 32768) * x.prec)
-    (2 ^ (Nat.log 2 x.scale / 32768)) fun v hv =>
-      ⟨modes_le_of_packetShape hs hv, fun bs _ => rowPorts_le_of_packetShape hs hv bs⟩
-  have hn := scale_add_prec_add_length_fl_le (encList encNat) x
+    (2 ^ (Nat.log 2 x.scale / 32768)) E ES (fun v hv =>
+      ⟨modes_le_of_packetShape hs hv, fun bs _ => rowPorts_le_of_packetShape hs hv bs⟩) hroot
+  have hn := scale_add_prec_add_length_fl_le encT x
   have hA := two_pow_log_div_le x.scale
-  have hR : (encCall (encList encNat) x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1 ≤
-      ((encCall (encList encNat) x).length + 1) ^ 2 := by
-    have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤
-        ((encCall (encList encNat) x).length + 1) * (encCall (encList encNat) x).length :=
+  set N := (encCall encT x).length + ES with hN
+  have hR : (encCall encT x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + ES + 1 ≤
+      (N + 1) ^ 2 := by
+    have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤ (N + 1) * N :=
       Nat.mul_le_mul (by omega) (by omega)
     nlinarith
-  have hpow :
-      K * ((encCall (encList encNat) x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1) ^ K ≤
-        2 * K * ((encCall (encList encNat) x).length + 1) ^ (2 * K) :=
-    calc _ ≤ K * (((encCall (encList encNat) x).length + 1) ^ 2) ^ K :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hR _)
-      _ = K * ((encCall (encList encNat) x).length + 1) ^ (2 * K) := by rw [← pow_mul]
-      _ ≤ 2 * K * ((encCall (encList encNat) x).length + 1) ^ (2 * K) :=
-          Nat.mul_le_mul_right _ (by omega)
+  have hpow : K * ((encCall encT x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + ES +
+      1) ^ K ≤ 2 * K * (N + 1) ^ (2 * K) :=
+    calc _ ≤ K * ((N + 1) ^ 2) ^ K := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hR _)
+      _ = K * (N + 1) ^ (2 * K) := by rw [← pow_mul]
+      _ ≤ 2 * K * (N + 1) ^ (2 * K) := Nat.mul_le_mul_right _ (by omega)
   exact ⟨hT.trans (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hpow)), hS.trans hpow⟩
+
+/-- **The cost of a leaf over tables with the packet shape.** The entry procedure of tables is
+polynomial, so there is `K` such that, on a call over tables of encoded length `n` with `M` edges,
+scale `s` and precision `p` with the packet shape, writing `A = 2 ^ (⌊log₂ s⌋ / 32768)`, direct
+summation takes time at most `K (n + 1) ^ K 2 ^ M (A p + 2) ^ A` and space at most
+`K (n + 1) ^ K`. -/
+theorem leafCertificate_tableEntry_le_of_packetShape : ∃ K : ℕ,
+    ∀ (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
+      (x : Call (List ℕ)), PacketShape x →
+      (leafCertificate tableEntryCertificate mk).time x ≤
+          K * ((encCall (encList encNat) x).length + 1) ^ K * 2 ^ x.edges *
+            (2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 2) ^ 2 ^ (Nat.log 2 x.scale / 32768) ∧
+        (leafCertificate tableEntryCertificate mk).space x ≤
+          K * ((encCall (encList encNat) x).length + 1) ^ K := by
+  obtain ⟨K, hK⟩ := leafCertificate_le_of_packetShape tableEntryCertificate
+  obtain ⟨ct, dt, ht⟩ := tableEntryCertificate_isPolynomial.1.exists_le
+  obtain ⟨cs, ds, hs⟩ := tableEntryCertificate_isPolynomial.2.exists_le
+  obtain ⟨c₁, hc₁⟩ : ∃ c₁, c₁ = 1 + cs * 3 ^ ds := ⟨_, rfl⟩
+  obtain ⟨c₂, hc₂⟩ : ∃ c₂, c₂ = 1 + ct * 3 ^ dt := ⟨_, rfl⟩
+  refine ⟨K * c₁ ^ K * c₂ + (ds + 1) * K + dt, fun mk x hshape => ?_⟩
+  obtain ⟨n, hn⟩ : ∃ n, n = (encCall (encList encNat) x).length := ⟨_, rfl⟩
+  rw [← hn]
+  -- A root and the bits on its ports are at most `3 n` long.
+  have hlen : ∀ v ∈ x.net.vertices, ∀ t, v.2 = .inl t → ∀ bs : List Bool,
+      bs.length = v.1.length →
+        (encPair (encList encNat) encBits (t, bs)).length + 1 ≤ 3 * (n + 1) := by
+    intro v hv t hvt bs hbs
+    have h1 := length_vertex_le (encList encNat) hv
+    have h2 := length_le_length_encList encNat v.1
+    rw [← hn, length_encPair, hvt, length_encSum] at h1
+    rw [length_encPair]
+    change 2 * (encList encNat t).length + 1 + bs.length + 1 ≤ 3 * (n + 1)
+    simp only [Sum.elim_inl] at h1
+    omega
+  have hpow3 {c d : ℕ} : c * (3 * (n + 1)) ^ d = c * 3 ^ d * (n + 1) ^ d := by
+    rw [mul_pow]; ring
+  obtain ⟨hT, hS⟩ := hK mk x (ct * 3 ^ dt * (n + 1) ^ dt) (cs * 3 ^ ds * (n + 1) ^ ds) hshape
+    fun v hv t hvt bs hbs => ⟨(ht (t, bs)).trans (by
+      rw [← hpow3]; exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (hlen v hv t hvt bs hbs) _)),
+      (hs (t, bs)).trans (by
+      rw [← hpow3]; exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (hlen v hv t hvt bs hbs) _))⟩
+  rw [← hn] at hT hS
+  set A := 2 ^ (Nat.log 2 x.scale / 32768)
+  set X := (A * x.prec + 2) ^ A
+  set B := n + 1 with hB
+  have hB1 : 1 ≤ B := by omega
+  have hX1 : 1 ≤ X := Nat.one_le_pow _ _ (by omega)
+  -- `n + ES + 1 ≤ c₁ B ^ (ds + 1)` and `X + E ≤ c₂ B ^ dt X`.
+  have hW : n + cs * 3 ^ ds * B ^ ds + 1 ≤ c₁ * B ^ (ds + 1) := by
+    have h1 : B ≤ B ^ (ds + 1) := (pow_one B).symm.le.trans (Nat.pow_le_pow_right hB1 (by omega))
+    have h2 : cs * 3 ^ ds * B ^ ds ≤ cs * 3 ^ ds * B ^ (ds + 1) :=
+      Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hB1 (by omega))
+    rw [hc₁, add_mul, one_mul]
+    omega
+  have hXE : X + ct * 3 ^ dt * B ^ dt ≤ c₂ * B ^ dt * X := by
+    have h1 : 1 ≤ B ^ dt := Nat.one_le_pow _ _ (by omega)
+    have h2 : ct * 3 ^ dt * B ^ dt ≤ ct * 3 ^ dt * B ^ dt * X := Nat.le_mul_of_pos_right _ hX1
+    have h3 : X ≤ B ^ dt * X := Nat.le_mul_of_pos_left _ h1
+    have e : c₂ * B ^ dt * X = B ^ dt * X + ct * 3 ^ dt * B ^ dt * X := by rw [hc₂]; ring
+    omega
+  have hWK : K * (n + cs * 3 ^ ds * B ^ ds + 1) ^ K ≤ K * c₁ ^ K * B ^ ((ds + 1) * K) := by
+    calc _ ≤ K * (c₁ * B ^ (ds + 1)) ^ K := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hW _)
+      _ = K * c₁ ^ K * B ^ ((ds + 1) * K) := by rw [mul_pow, ← pow_mul]; ring
+  set K' := K * c₁ ^ K * c₂ + (ds + 1) * K + dt
+  have hc₂1 : 1 ≤ c₂ := by omega
+  refine ⟨hT.trans ?_, hS.trans ?_⟩
+  · calc _ ≤ K * c₁ ^ K * B ^ ((ds + 1) * K) * 2 ^ x.edges * (c₂ * B ^ dt * X) :=
+          Nat.mul_le_mul (Nat.mul_le_mul_right _ hWK) hXE
+      _ = K * c₁ ^ K * c₂ * B ^ ((ds + 1) * K + dt) * 2 ^ x.edges * X := by rw [pow_add]; ring
+      _ ≤ K' * B ^ K' * 2 ^ x.edges * X :=
+          Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _
+            (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hB1 (by omega))))
+  · calc _ ≤ K * c₁ ^ K * B ^ ((ds + 1) * K) := hWK
+      _ ≤ K' * B ^ K' := Nat.mul_le_mul
+          ((Nat.le_mul_of_pos_right _ hc₂1).trans (by omega))
+          (Nat.pow_le_pow_right hB1 (by omega))
 
 /-! ### The leaf bound of the analysis -/
 
@@ -658,10 +769,11 @@ theorem exists_leafCertificate_le (C c s₀ : ℕ) : ∃ K : ℕ,
       (x : Call (List ℕ)), 2 ≤ s →
       s ≤ x.scale → x.scale ≤ C * s → PacketShape x → x.edges ≤ 2 * x.scale →
       (s₀ ≤ s → x.edges ≤ leafSize x.scale ∧ x.prec ≤ x.scale ^ c) →
-      (leafCertificate mk).time x ≤
+      (leafCertificate tableEntryCertificate mk).time x ≤
           K * ((encCall (encList encNat) x).length + 1) ^ K * 2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
-        (leafCertificate mk).space x ≤ K * ((encCall (encList encNat) x).length + 1) ^ K := by
-  obtain ⟨K₀, hK₀⟩ := leafCertificate_le_of_packetShape
+        (leafCertificate tableEntryCertificate mk).space x ≤
+          K * ((encCall (encList encNat) x).length + 1) ^ K := by
+  obtain ⟨K₀, hK₀⟩ := leafCertificate_tableEntry_le_of_packetShape
   obtain ⟨K₁, hK₁⟩ := exists_packetFactor_le C c
   obtain ⟨Ks, hKs⟩ : ∃ Ks, Ks = K₀ * 2 ^ (2 * (C * s₀)) * (C * s₀ + 2) ^ (C * s₀) := ⟨_, rfl⟩
   refine ⟨Ks + K₀ + C * s₀ + C + K₁, fun mk s x hs hsm hmC hshape hM hbig => ?_⟩
@@ -691,7 +803,8 @@ theorem exists_leafCertificate_le (C c s₀ : ℕ) : ∃ K : ℕ,
         _ ≤ ((C * s₀ + 2) * (n + 1)) ^ (C * s₀) :=
             Nat.pow_le_pow_right (Nat.one_le_iff_ne_zero.mpr (by positivity)) (hAm.trans hmC')
         _ = (C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀) := mul_pow _ _ _
-    calc (leafCertificate mk).time x ≤ K₀ * (n + 1) ^ K₀ * 2 ^ x.edges * (A * x.prec + 2) ^ A := hT
+    calc (leafCertificate tableEntryCertificate mk).time x
+        ≤ K₀ * (n + 1) ^ K₀ * 2 ^ x.edges * (A * x.prec + 2) ^ A := hT
       _ ≤ K₀ * (n + 1) ^ K₀ * 2 ^ (2 * (C * s₀)) *
             ((C * s₀ + 2) ^ (C * s₀) * (n + 1) ^ (C * s₀)) :=
           Nat.mul_le_mul (Nat.mul_le_mul_left _ h2M) hfac
@@ -709,7 +822,8 @@ theorem exists_leafCertificate_le (C c s₀ : ℕ) : ∃ K : ℕ,
     have hCK : (C + K₁) * s ≤ K * s := Nat.mul_le_mul_right _ (by omega)
     have hexp : C * s / S + K₁ * s / S ≤ K * s / S :=
       Nat.div_add_div_le_add_div.trans (Nat.div_le_div_right (by rw [← add_mul]; exact hCK))
-    calc (leafCertificate mk).time x ≤ K₀ * (n + 1) ^ K₀ * 2 ^ x.edges * (A * x.prec + 2) ^ A := hT
+    calc (leafCertificate tableEntryCertificate mk).time x
+        ≤ K₀ * (n + 1) ^ K₀ * 2 ^ x.edges * (A * x.prec + 2) ^ A := hT
       _ ≤ K₀ * (n + 1) ^ K₀ * 2 ^ (C * s / S) * 2 ^ (K₁ * s / S) :=
           Nat.mul_le_mul (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) hMs)) hfac
       _ = K₀ * (n + 1) ^ K₀ * 2 ^ (C * s / S + K₁ * s / S) := by rw [pow_add]; ring

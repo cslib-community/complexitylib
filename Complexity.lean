@@ -1152,8 +1152,10 @@ public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Closu
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Kadin
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.PH
 public import Complexity.Computability.Complexity.Classes.CeqP
+public import Complexity.Computability.Complexity.Classes.CeqP.Time
 public import Complexity.Computability.Complexity.Classes.Constructible
 public import Complexity.Computability.Complexity.Classes.Constructible.Log
+public import Complexity.Computability.Complexity.Classes.Constructible.TwoPow
 public import Complexity.Computability.Complexity.Classes.Counting.OracleSpace
 public import Complexity.Computability.Complexity.Classes.Counting.Space
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Accumulate
@@ -1162,17 +1164,21 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Ass
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.BlockNetworks
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Containments
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Count
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.CountingClasses
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAlgorithm
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAnalysis
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastSimulation
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Guarded
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Interfaces
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Separation
 public import Complexity.Computability.Complexity.Classes.DP
 public import Complexity.Computability.Complexity.Classes.EXP
 public import Complexity.Computability.Complexity.Classes.FewP
 public import Complexity.Computability.Complexity.Classes.FewP.Machine
 public import Complexity.Computability.Complexity.Classes.FunctionTime
+public import Complexity.Computability.Complexity.Classes.FunctionTime.Bounds
+public import Complexity.Computability.Complexity.Classes.FunctionTime.Decide
 public import Complexity.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import Complexity.Computability.Complexity.Classes.Hierarchy
 public import Complexity.Computability.Complexity.Classes.Hierarchy.LogClock
@@ -1231,6 +1237,7 @@ public import Complexity.Computability.Complexity.Classes.MIP.NEXP
 public import Complexity.Computability.Complexity.Classes.MIP.OptimalProver
 public import Complexity.Computability.Complexity.Classes.ModP
 public import Complexity.Computability.Complexity.Classes.ModP.GapP
+public import Complexity.Computability.Complexity.Classes.ModP.Time
 public import Complexity.Computability.Complexity.Classes.NP
 public import Complexity.Computability.Complexity.Classes.NP.Closure
 public import Complexity.Computability.Complexity.Classes.NP.GuessVerify
@@ -1247,6 +1254,7 @@ public import Complexity.Computability.Complexity.Classes.Oracle.Counting
 public import Complexity.Computability.Complexity.Classes.Oracle.CountingEquivalence
 public import Complexity.Computability.Complexity.Classes.Oracle.Deterministic
 public import Complexity.Computability.Complexity.Classes.Oracle.Diagonal
+public import Complexity.Computability.Complexity.Classes.Oracle.Exponential
 public import Complexity.Computability.Complexity.Classes.Oracle.Lowness
 public import Complexity.Computability.Complexity.Classes.Oracle.Monotone
 public import Complexity.Computability.Complexity.Classes.Oracle.PP
@@ -1342,6 +1350,7 @@ public import Complexity.Computability.Complexity.Classes.Tally
 public import Complexity.Computability.Complexity.Classes.Time
 public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 public import Complexity.Computability.Complexity.Classes.Time.Polynomial
+public import Complexity.Computability.Complexity.Classes.Time.Verifier
 public import Complexity.Computability.Complexity.Classes.Time.WordRAM
 public import Complexity.Computability.Complexity.Classes.Toda
 public import Complexity.Computability.Complexity.Classes.Toda.Counting
@@ -2019,6 +2028,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.O
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OutputPrefix
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.OutputToTape
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PolynomialClock
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryBounds
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.QueryTake
