@@ -1815,6 +1815,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.E
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ExtendTapes
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.InputFromTape
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalCount
+public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalCount.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalSimulation
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalTensor
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile
