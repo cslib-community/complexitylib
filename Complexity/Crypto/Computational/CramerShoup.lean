@@ -183,20 +183,21 @@ noncomputable def cramerShoupMsgCCA2Game
   let τ₂ ← PMF.uniformOfFintype (ZMod (F.order d))
   let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
   let pkVal := F.cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂
+  let pkRest := pkVal.2; let h₁₂ := pkRest.2
   let pk := F.encodeCramerShoupPublicKeyValues d pkVal
   let choiceOut ← ProbComp.eval ((OracleComp.interpret
     (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
-  let choice := choiceOut.1
-  let m₀ := encodeMsg (d, choice.1.1.1)
-  let m₁ := encodeMsg (d, choice.1.1.2)
-  let ad := encodeAD (d, choice.1.2)
+  let choice := choiceOut.1; let ch := choice.1; let msgs := ch.1
+  let m₀ := encodeMsg (d, msgs.1)
+  let m₁ := encodeMsg (d, msgs.2)
+  let ad := encodeAD (d, ch.2)
   if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
     let β ← PMF.uniformOfFintype (ZMod (F.order d))
     let ct := F.encodeCramerShoupEncrypt H d
-      (F.encode d pkVal.1, F.encode d pkVal.2.1, F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2)
+      (F.encode d pkVal.1, F.encode d pkRest.1, F.encode d h₁₂.1, F.encode d h₁₂.2)
       m ad β.val
     let guessOut ← ProbComp.eval ((OracleComp.interpret
       (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -315,10 +316,10 @@ noncomputable def cramerShoupGame1
     (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
-  let choice := choiceOut.1
-  let m₀ := encodeMsg (d, choice.1.1.1)
-  let m₁ := encodeMsg (d, choice.1.1.2)
-  let ad := encodeAD (d, choice.1.2)
+  let choice := choiceOut.1; let ch := choice.1; let msgs := ch.1
+  let m₀ := encodeMsg (d, msgs.1)
+  let m₁ := encodeMsg (d, msgs.2)
+  let ad := encodeAD (d, ch.2)
   if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
@@ -391,10 +392,10 @@ noncomputable def cramerShoupGame2
     (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
       (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ())
-  let choice := choiceOut.1
-  let m₀ := encodeMsg (d, choice.1.1.1)
-  let m₁ := encodeMsg (d, choice.1.1.2)
-  let ad := encodeAD (d, choice.1.2)
+  let choice := choiceOut.1; let ch := choice.1; let msgs := ch.1
+  let m₀ := encodeMsg (d, msgs.1)
+  let m₁ := encodeMsg (d, msgs.2)
+  let ad := encodeAD (d, ch.2)
   if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad

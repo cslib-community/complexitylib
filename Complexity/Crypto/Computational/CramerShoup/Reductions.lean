@@ -239,7 +239,8 @@ theorem advantage_bind_sampleCramerShoupTripleExponents_le (n : ℕ) (d : F.Desc
     (k : ZMod (F.order d) → ZMod (F.order d) → ZMod (F.order d) → Game) :
     Game.advantage
       ((ProbComp.eval (F.sampleCramerShoupTripleExponents n d)).bind fun p =>
-        k (p.1 : ZMod (F.order d)) (p.2.1 : ZMod (F.order d)) (p.2.2 : ZMod (F.order d)))
+        let bc := p.2
+        k (p.1 : ZMod (F.order d)) (bc.1 : ZMod (F.order d)) (bc.2 : ZMod (F.order d)))
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
           (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ => k α β γ) ≤
@@ -691,19 +692,20 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool)
     (n : ℕ) (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
+  let uvw := input.2; let vw := uvw.2
   F.sampleCramerShoupSK n input.1 >>= fun sk =>
-    let pk := F.encodeCramerShoupPublicKey input.1 input.2.1 sk
+    let pk := F.encodeCramerShoupPublicKey input.1 uvw.1 sk
     ((OracleComp.interpret
       (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
         (F.cramerShoupPhase1Oracle hasAD H isElem input.1 sk))
       (adversary.choose n pk)).run ()) >>= fun choiceOut =>
-      let choice := choiceOut.1
-      let m₀ := encodeMsg (input.1, choice.1.1.1)
-      let m₁ := encodeMsg (input.1, choice.1.1.2)
-      let ad := encodeAD (input.1, choice.1.2)
+      let choice := choiceOut.1; let ch := choice.1; let msgs := ch.1
+      let m₀ := encodeMsg (input.1, msgs.1)
+      let m₁ := encodeMsg (input.1, msgs.2)
+      let ad := encodeAD (input.1, ch.2)
       if isElem (input.1, m₀) && isElem (input.1, m₁) then
         let m := if bit then m₁ else m₀
-        let ct := F.encodeCramerShoupChallenge H input.1 sk input.2.2.1 input.2.2.2 m ad
+        let ct := F.encodeCramerShoupChallenge H input.1 sk vw.1 vw.2 m ad
         ((OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase2Oracle hasAD H isElem input.1 sk ct ad))
@@ -830,19 +832,20 @@ noncomputable def cramerShoupMsgToCollisionFinder
   fun n d =>
     F.sampleCramerShoupTripleExponents n d >>= fun abc =>
       F.sampleCramerShoupSK n d >>= fun sk =>
+        let bc := abc.2
         let gen := F.encode d (F.generator d)
         let u := F.smul (d, abc.1, gen)
-        let v := F.smul (d, abc.2.1, gen)
-        let w := F.smul (d, abc.2.2, gen)
+        let v := F.smul (d, bc.1, gen)
+        let w := F.smul (d, bc.2, gen)
         let pk := F.encodeCramerShoupPublicKey d u sk
         ((OracleComp.interpret
           (ProbOracleComp.handler (fun m => StateT.lift (ProbComp.unifFin m))
             (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
           (adversary.choose n pk)).run ()) >>= fun choiceOut =>
-          let choice := choiceOut.1
-          let m₀ := encodeMsg (d, choice.1.1.1)
-          let m₁ := encodeMsg (d, choice.1.1.2)
-          let ad := encodeAD (d, choice.1.2)
+          let choice := choiceOut.1; let ch := choice.1; let msgs := ch.1
+          let m₀ := encodeMsg (d, msgs.1)
+          let m₁ := encodeMsg (d, msgs.2)
+          let ad := encodeAD (d, ch.2)
           if isElem (d, m₀) && isElem (d, m₁) then
             let m := if bit then m₁ else m₀
             let ct := F.encodeCramerShoupChallenge H d sk v w m ad
@@ -978,22 +981,24 @@ theorem isPPTOn_cramerShoupToCollisionFinder
 /-- `encodeCramerShoupPublicKey` depends on `sk` only through its residues modulo `F.order d`. -/
 theorem encodeCramerShoupPublicKey_eq_skNatOfZMod (d : F.Desc)
     (α : ZMod (F.order d)) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     F.encodeCramerShoupPublicKey d (F.encode d (α • F.generator d)) sk =
       F.encodeCramerShoupPublicKey d (F.encode d (α • F.generator d))
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) := by
+        (F.skNatOfZMod d (st.1 : ZMod (F.order d)) (st.2 : ZMod (F.order d))
+          (st₁.1 : ZMod (F.order d)) (st₁.2 : ZMod (F.order d))
+          (st₂.1 : ZMod (F.order d)) (st₂.2 : ZMod (F.order d))) := by
   simp only [encodeCramerShoupPublicKey_encode, skNatOfZMod, ZMod.natCast_zmod_val]
 
 /-- `encodeCramerShoupChallenge` depends on `sk` only through its residues modulo `F.order d`. -/
 theorem encodeCramerShoupChallenge_eq_skNatOfZMod
     (H : F.Desc × List Bool → List Bool) (d : F.Desc)
     (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (v w : F.Carrier d) (m ad : List Bool) :
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     F.encodeCramerShoupChallenge H d sk (F.encode d v) (F.encode d w) m ad =
       F.encodeCramerShoupChallenge H d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d)))
+        (F.skNatOfZMod d (st.1 : ZMod (F.order d)) (st.2 : ZMod (F.order d))
+          (st₁.1 : ZMod (F.order d)) (st₁.2 : ZMod (F.order d))
+          (st₂.1 : ZMod (F.order d)) (st₂.2 : ZMod (F.order d)))
         (F.encode d v) (F.encode d w) m ad := by
   simp only [encodeCramerShoupChallenge, skNatOfZMod, encodeProjHash_encode,
     encodeProjHash2_encode, ZMod.natCast_zmod_val]
@@ -1003,11 +1008,13 @@ theorem decodeCramerShoup_eq_skNatOfZMod
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct ad : List Bool) :
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     F.decodeCramerShoup H isElem d sk ct ad =
       F.decodeCramerShoup H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) ct ad := by
+        (F.skNatOfZMod d (st.1 : ZMod (F.order d)) (st.2 : ZMod (F.order d))
+          (st₁.1 : ZMod (F.order d)) (st₁.2 : ZMod (F.order d))
+          (st₂.1 : ZMod (F.order d)) (st₂.2 : ZMod (F.order d))) ct ad := by
+  dsimp only
   unfold decodeCramerShoup
   by_cases hvw :
       isElem (d, (decodeBits4 ct).1) = true ∧ isElem (d, (decodeBits4 ct).2.1) = true
@@ -1026,11 +1033,12 @@ theorem cramerShoupPhase1Oracle_eq_skNatOfZMod
     (hasAD : Bool) (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     F.cramerShoupPhase1Oracle hasAD H isElem d sk =
       F.cramerShoupPhase1Oracle hasAD H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) := by
+        (F.skNatOfZMod d (st.1 : ZMod (F.order d)) (st.2 : ZMod (F.order d))
+          (st₁.1 : ZMod (F.order d)) (st₁.2 : ZMod (F.order d))
+          (st₂.1 : ZMod (F.order d)) (st₂.2 : ZMod (F.order d))) := by
   funext req s
   simp only [cramerShoupPhase1Oracle, cramerShoupPhase1Reply,
     F.decodeCramerShoup_eq_skNatOfZMod H isElem hmem d sk]
@@ -1040,11 +1048,12 @@ theorem cramerShoupPhase2Oracle_eq_skNatOfZMod
     (hasAD : Bool) (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct ad : List Bool) :
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad =
       F.cramerShoupPhase2Oracle hasAD H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) ct ad := by
+        (F.skNatOfZMod d (st.1 : ZMod (F.order d)) (st.2 : ZMod (F.order d))
+          (st₁.1 : ZMod (F.order d)) (st₁.2 : ZMod (F.order d))
+          (st₂.1 : ZMod (F.order d)) (st₂.2 : ZMod (F.order d))) ct ad := by
   funext req s
   simp only [cramerShoupPhase2Oracle, cramerShoupPhase2Reply,
     F.decodeCramerShoup_eq_skNatOfZMod H isElem hmem d sk]
@@ -1055,11 +1064,12 @@ theorem cramerShoupCollisionPhase2Oracle_eq_skNatOfZMod
     (hasAD : Bool) (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct ad : List Bool) :
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     F.cramerShoupCollisionPhase2Oracle hasAD H isElem d sk ct ad =
       F.cramerShoupCollisionPhase2Oracle hasAD H isElem d
-        (F.skNatOfZMod d (sk.1.1 : ZMod (F.order d)) (sk.1.2 : ZMod (F.order d))
-          (sk.2.1.1 : ZMod (F.order d)) (sk.2.1.2 : ZMod (F.order d))
-          (sk.2.2.1 : ZMod (F.order d)) (sk.2.2.2 : ZMod (F.order d))) ct ad := by
+        (F.skNatOfZMod d (st.1 : ZMod (F.order d)) (st.2 : ZMod (F.order d))
+          (st₁.1 : ZMod (F.order d)) (st₁.2 : ZMod (F.order d))
+          (st₂.1 : ZMod (F.order d)) (st₂.2 : ZMod (F.order d))) ct ad := by
   funext req s
   simp only [cramerShoupCollisionPhase2Oracle, finderPhase2Oracle, cramerShoupCollisionPhase2Reply,
     F.decodeCramerShoup_eq_skNatOfZMod H isElem hmem d sk]
@@ -1072,11 +1082,13 @@ theorem encodeCramerShoupEncrypt_publicKey_eq_challenge
     (H : F.Desc × List Bool → List Bool) (d : F.Desc)
     (α β σ τ σ₁ τ₁ σ₂ τ₂ : ZMod (F.order d)) (m ad : List Bool) :
     let pkVal := F.cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂
+    let pkRest := pkVal.2; let h₁₂ := pkRest.2
     F.encodeCramerShoupEncrypt H d
-      (F.encode d pkVal.1, F.encode d pkVal.2.1, F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2)
+      (F.encode d pkVal.1, F.encode d pkRest.1, F.encode d h₁₂.1, F.encode d h₁₂.2)
       m ad β.val =
       F.encodeCramerShoupChallenge H d (F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂)
         (F.encode d (β • F.generator d)) (F.encode d ((α * β) • F.generator d)) m ad := by
+  dsimp only
   have hαβ : (α * β) • F.generator d = β • (α • F.generator d) := by rw [smul_smul, mul_comm]
   rw [hαβ]
   simp only [encodeCramerShoupEncrypt, encodeCramerShoupChallenge, cramerShoupPublicKey,
@@ -1174,7 +1186,8 @@ theorem computableInPolyTime_cramerShoupValid
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool × List Bool =>
-        F.cramerShoupValid isElem d p.1 p.2.1 p.2.2.1 p.2.2.2)
+        let r1 := p.2; let r2 := r1.2
+        F.cramerShoupValid isElem d p.1 r1.1 r2.1 r2.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool := by
   let EIn := encPair encUnary (encPair encBits (encPair encBits encBits))
   have hd_in : ComputableTidilyInPolyTime
@@ -1225,7 +1238,9 @@ theorem isPPTOn_cramerShoupADEncryptProb
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encAD))) encBits
-      (fun p => F.cramerShoupADEncryptProb encAD H d p.1 p.2.1 p.2.2.1 p.2.2.2) := by
+      (fun p =>
+        let r1 := p.2; let r2 := r1.2
+        F.cramerShoupADEncryptProb encAD H d p.1 r1.1 r2.1 r2.2) := by
   let E0 := encPair encUnary (encPair encBits (encPair encBits encAD))
   let E1 := encPair E0 encNat
   have hct : ComputableTidilyInPolyTime
@@ -1247,7 +1262,9 @@ theorem isPPTOn_cramerShoupEncryptProb
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => F.cramerShoupEncryptProb H d p.1 p.2.1 p.2.2) := by
+      (fun p =>
+        let r1 := p.2
+        F.cramerShoupEncryptProb H d p.1 r1.1 r1.2) := by
   let E0 := encPair encUnary (encPair encBits encBits)
   let E1 := encPair E0 encNat
   have hct : ComputableTidilyInPolyTime
@@ -1271,7 +1288,8 @@ theorem computableInPolyTime_cramerShoupADDecryptOpt
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool × List Bool =>
-        F.cramerShoupADDecryptOpt H isElem d p.1 p.2.1 p.2.2.1 p.2.2.2)
+        let r1 := p.2; let r2 := r1.2
+        F.cramerShoupADDecryptOpt H isElem d p.1 r1.1 r2.1 r2.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) (encOption encBits) := by
   exact .of_tidy (F.computableTidilyInPolyTime_decodeCramerShoup hH.tidy hisElem.tidy
     (hd.tidy.comp (by fun_prop))
@@ -1287,7 +1305,9 @@ theorem computableInPolyTime_cramerShoupDecryptOpt
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => F.cramerShoupDecryptOpt H isElem d p.1 p.2.1 p.2.2)
+      (fun p : ℕ × List Bool × List Bool =>
+        let r1 := p.2
+        F.cramerShoupDecryptOpt H isElem d p.1 r1.1 r1.2)
       (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
   exact .of_tidy (F.computableTidilyInPolyTime_decodeCramerShoup hH.tidy hisElem.tidy
     (hd.tidy.comp (by fun_prop))
@@ -1345,10 +1365,11 @@ theorem cca2Phase2Oracle_cramerShoupDecryptOpt
 @[simp]
 theorem decodeBits4_dropFrame_encodeCramerShoupPublicKey
     (d : F.Desc) (u : List Bool) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     decodeBits4 (dropFrame (F.encodeCramerShoupPublicKey d u sk)) =
-      (u, F.encodeProjHashAux d sk.1.1 sk.1.2 u,
-        F.encodeProjHashAux d sk.2.1.1 sk.2.1.2 u,
-        F.encodeProjHashAux d sk.2.2.1 sk.2.2.2 u) := by
+      (u, F.encodeProjHashAux d st.1 st.2 u,
+        F.encodeProjHashAux d st₁.1 st₁.2 u,
+        F.encodeProjHashAux d st₂.1 st₂.2 u) := by
   simp [encodeCramerShoupPublicKey, encPair_apply, dropFrame_frame_append]
 
 /-- `encodeCramerShoupEncrypt` on the public-key words generated by `skNatOfZMod` agrees with
@@ -1358,14 +1379,16 @@ theorem encodeCramerShoupEncrypt_skNatOfZMod
     (α σ τ σ₁ τ₁ σ₂ τ₂ : ZMod (F.order d)) (m ad : List Bool) (b : ℕ) :
     let u := F.encode d (α • F.generator d)
     let sk := F.skNatOfZMod d σ τ σ₁ τ₁ σ₂ τ₂
+    let st := sk.1; let sk₂ := sk.2; let st₁ := sk₂.1; let st₂ := sk₂.2
     let pkVal := F.cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂
+    let pkRest := pkVal.2; let h₁₂ := pkRest.2
     F.encodeCramerShoupEncrypt H d
-      (u, F.encodeProjHashAux d sk.1.1 sk.1.2 u,
-        F.encodeProjHashAux d sk.2.1.1 sk.2.1.2 u,
-        F.encodeProjHashAux d sk.2.2.1 sk.2.2.2 u) m ad b =
+      (u, F.encodeProjHashAux d st.1 st.2 u,
+        F.encodeProjHashAux d st₁.1 st₁.2 u,
+        F.encodeProjHashAux d st₂.1 st₂.2 u) m ad b =
       F.encodeCramerShoupEncrypt H d
-        (F.encode d pkVal.1, F.encode d pkVal.2.1,
-          F.encode d pkVal.2.2.1, F.encode d pkVal.2.2.2)
+        (F.encode d pkVal.1, F.encode d pkRest.1,
+          F.encode d h₁₂.1, F.encode d h₁₂.2)
         m ad (b : ZMod (F.order d)).val := by
   simp only [skNatOfZMod, encodeProjHashAux_encode, ZMod.natCast_zmod_val,
     cramerShoupPublicKey, projHash2Aux, encodeCramerShoupEncrypt, F.smul_encode, F.add_encode]
