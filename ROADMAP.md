@@ -178,9 +178,12 @@ index links to canonical definitions rather than keeping a second set.
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
-  degrees `1 ≤ a < b`. Remaining targets include the general deterministic `f log f` hierarchy
-  with its simulation bound ([#800]), noninteger polynomial degrees and finer logarithmic
-  gaps, and sharp nondeterministic and alternating time hierarchies with certified simulators.
+  degrees `1 ≤ a < b`, and the `O(t log t)` universal simulation ([#800]) gives
+  `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once `(f + 1) * polylog f ≤ g`, with an
+  absolute exponent (`Hierarchy/TimePolylog`). Remaining targets include the textbook
+  `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal machine's own
+  steps, noninteger polynomial degrees, and sharp nondeterministic and alternating time
+  hierarchies with certified simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -194,6 +197,10 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
+  `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
+  results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
+  `BooleanHierarchy/Kadin.lean` proves only `PH = Σ₃ᴾ ∩ Π₃ᴾ`.
 
 ### Reducibilities and the structure of complete sets
 
@@ -233,11 +240,6 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
-- Complete the unconditional `SharpTIME(T)` to binary-output `FTIME(2^{O(T/√log T)})`
-  endpoint in [#1833](https://github.com/cslib-community/complexitylib/issues/1833). The native
-  terminal-path class agrees with `SharpP` at polynomial clocks; the count-first simulation
-  supplies joint time and polynomial workspace conditional on the explicit-network contraction
-  algorithm. Integration of the concrete contraction removes that remaining premise.
 - The Another Solution Problem (ASP) framework: certify polynomial-time forward and inverse
   witness maps. The parsimonious reductions to positive exact-one SAT and its planar
   three-occurrence variants already preserve counts over occurring variables; the new local
@@ -343,9 +345,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
   certified DPLL solver runtimes.
-- **Feasible interpolation:** a polynomial-time builder for the monotone interpolant ([#1817];
-  the De Morgan builder is done), and the transfer of communication lower bounds to proof-size
-  lower bounds, as for cutting planes ([#2019]).
+- **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
+  lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
@@ -553,10 +554,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 
 ## Machines, RAM and data structures
 
-- **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
-  with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
-  The current interpreter has a stronger polynomial certificate and a streaming input lookup;
-  the buffered representation, its native cleanup routines and their amortized bounds remain.
+- **Efficient universal simulation** ([#800]): the clocked universal function runs in time
+  `O(N + poly(D, M) · (t + 1) log(t + 2))`, for encoded input length `N`, description length `D`
+  and largest input symbol `M`, by a divide-and-conquer windowed simulation
+  (`computableInO_universal_nlogn`). Remaining: a source-space-sensitive storage bound (the
+  space is currently bounded only by the time), and an unclocked form that runs until the
+  simulated machine halts.
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.
@@ -630,13 +633,6 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
-- **Weighted multigraph cuts** ([#1336]): extract
-  `IsMultigraph` (renamed e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal),
-  `IsNonTrivialCut`,
-  `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
-  `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
-  `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
-  to `(Cslib.Multigraph.edgeCut ends C).card`.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -656,11 +652,12 @@ still to read them for the mathematics and write proofs against Complexitylib's 
 adapted code keeps its Apache 2.0 attribution. The rewrites state no license and are only read
 and credited.
 
-- **The sharper Appendix D bound for `#k`-SAT** ([#1538]): the native declared-variable counter
-  (`CountingNativeEndpoint.exists_declaredCounter`, formal abstract `subexponential-sat`) has the
-  Sections 3–6 and Appendices A–B interpolation-scale runtime. Remaining: Theorem 1.1's sharper
-  runtime for that counter, from the Appendix D tensor-contraction recursion, and restating the
-  abstract and `satExponent`, `¬ETH` and `¬SETH` with the stronger counter.
+- **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/complexitylib/issues/1538)):
+  `ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
+  `2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
+  `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
+  one machine. The arbitrary-density bound `2^{O_k(n log log n / √log n)}` still needs Theorem D.1
+  with truncation order `ℓ = n + 1` and Lemma D.2.
 
 ## Documentation and repository
 
@@ -726,10 +723,8 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
-[#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
-[#1538]: https://github.com/cslib-community/complexitylib/issues/1538
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1701]: https://github.com/cslib-community/complexitylib/issues/1701
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
