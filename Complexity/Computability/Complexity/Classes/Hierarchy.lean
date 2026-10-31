@@ -269,10 +269,9 @@ theorem computableInO_diagonal :
       fun x => 2 ^ (2 * x.length) := by
   have this : ComputableTidilyInO diagonal encBits encBool (fun x => 2 ^ (4 * x.length))
       fun x => 2 ^ (2 * x.length) := by
-    obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
-    have hu : ComputableTidilyInDegree unframe encBits encBits 1 1 :=
-      .of_linear (.of_unframe fun _ => rfl)
-    have hdesc := (hdec.comp hu).inO
+    obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
+    have hu := Internal.DecoderWords.unframe_degree
+    have hdesc := (hdec.comp hu).inO.tidy
     have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
     have hclock := (ComputableTidilyInDegree.two_pow_length encBits).inO_one
     have hpre := hdesc.prod (hsym.prod hclock)

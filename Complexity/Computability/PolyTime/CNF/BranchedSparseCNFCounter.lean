@@ -12,7 +12,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingSparsifica
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
 public import Complexity.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import Complexity.Computability.Complexity.FineGrained.SparseCountingScale
-public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Complexity
+public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
 public import Complexity.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.CountingParametersPolyTime
@@ -79,7 +79,6 @@ open Cslib.Complexity.SubexponentialSAT Cslib.Complexity.SubexponentialSAT.Spars
 open Cslib.GenericRAM Cslib.GenericRAM.ExhaustiveCountFallback
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Cslib.Logic.PL.ClauseSet.Sparsification
 open Turing.MultiTapeTM
-open Turing.MultiTapeTM.Universal (encUnit)
 
 local notation "encSys" => encList (encList (encList encNat))
 local notation "encLeafCtx" => encPair encUnit encUnary

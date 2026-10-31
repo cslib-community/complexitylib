@@ -7,6 +7,7 @@ module
 -- upstream: local-only (test driver)
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 import Lean.Elab.Command
 
 /-! Direct binary arithmetic has no higher tidy calculus in its import environment. -/
@@ -79,6 +80,21 @@ example {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
     congr 1
     have : 0 < 2 ^ n := by positivity
     omega
+
+-- The single multiplication certificate, evaluated at `(2, 3)`: the framed input has length 7,
+-- so one machine computes `encNat 6 = [false, true, true]` within time `513 c` and charged
+-- workspace `9 c`, and its output length is charged to that workspace.
+example : ∃ c, ComputableInTimeAndSpace (fun p : ℕ × ℕ => p.1 * p.2) (encPair encNat encNat)
+      encNat (fun p => c * (((encPair encNat encNat p).length + 1) ^ 3 + 1))
+      (fun p => c * ((encPair encNat encNat p).length + 1 + 1)) ∧
+    c * (((encPair encNat encNat (2, 3)).length + 1) ^ 3 + 1) = 513 * c ∧
+    c * ((encPair encNat encNat (2, 3)).length + 1 + 1) = 9 * c ∧
+    encPair encNat encNat (2, 3) = [true, false, true, true, false, true, true] ∧
+    encNat (2 * 3) = [false, true, true] ∧
+    (encNat (2 * 3)).length ≤ c * ((encPair encNat encNat (2, 3)).length + 1 + 1) := by
+  obtain ⟨c, h, hl⟩ := ComputableInO.natMul
+  have h7 : (encPair encNat encNat (2, 3)).length = 7 := rfl
+  exact ⟨c, h, by rw [h7]; ring, by rw [h7]; ring, rfl, rfl, hl (2, 3)⟩
 
 open Lean Elab Command in
 run_cmd do
