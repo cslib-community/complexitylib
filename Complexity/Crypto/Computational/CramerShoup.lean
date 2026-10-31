@@ -889,16 +889,6 @@ private theorem length_encodeCramerShoupPublicKey_le {d : F.Desc} {B : ℕ}
   simp only [length_encPair]
   lia
 
-private theorem negligible_const_div_two_pow (c : ℕ) :
-    Negligible (fun n => (c : ℝ≥0) / 2 ^ n) := by
-  have h : (fun n => (c : ℝ≥0) / 2 ^ n) =
-      fun n => (c : ℝ≥0) * (1 / 2 : ℝ≥0) ^ n := by
-    funext n
-    rw [div_eq_mul_inv, one_div, inv_pow]
-  rw [h]
-  exact (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).polynomiallyBounded_mul
-    (by fun_prop)
-
 /-- **Asymptotic ideal-game 1CCA security of Multiplicative Cramer–Shoup for a general message
 encoding** ([BonehShoup2023], Theorem 12.9 & Exercise 12.27, printed pp. 488–493, 521–522): if DDH
 holds for `setup`, `cramerShoupHashMod H` is collision-resistant for `setup`, every supported group

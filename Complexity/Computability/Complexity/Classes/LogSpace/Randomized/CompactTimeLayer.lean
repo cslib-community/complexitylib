@@ -23,7 +23,8 @@ acceptance gap at the encoded initial configuration.
 The endpoint preserves the original logarithmic-space constant and derives the fitting radix
 from it. It does not choose an arbitrary ordering of reachable views. The ordinary entries are
 the counts written by the native initialized table, via `compactCoinMatrix_eq_coinTable`.
-Native clocked serialization, paired ports and the native recursive estimator remain open.
+The initialized clocked payload is supplied by `Randomized.ClockedTable`. Complete instance
+packaging, paired ports and the native recursive estimator remain open.
 
 ## Main results
 
@@ -75,8 +76,8 @@ clock/base IDs, gives a real strict-forward substochastic matrix and a terminal 
 bounded inverse potential has the original acceptance gap. The dimension is explicitly polynomial.
 
 The space witness is produced by this theorem, and all radix, start and representation bounds
-are derived from it. This is a semantic bridge for the existing initialized ordinary table;
-it does not assert native clocked serialization or incoming paired-port computation. -/
+are derived from it. `Randomized.ClockedTable` supplies the initialized native matrix payload;
+complete instance packaging and incoming paired-port computation remain separate. -/
 theorem exists_compactTimeLayer_of_mem_BPL (h : A ∈ BPL enc) :
     ∃ (k : ℕ) (State : Type) (_ : Fintype State) (M : MultiTapePTM k Bool State) (c d : ℕ),
       ∀ a, ∃ hs : M.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1)),
