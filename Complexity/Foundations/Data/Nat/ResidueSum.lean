@@ -18,8 +18,8 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
 A count `N` that is known to lie below a modulus `m` is recovered exactly from residues modulo
 `m`: an accumulator that adds one term at a time and reduces modulo `m` ends at the sum of the terms
 modulo `m` (`Nat.foldl_range_add_mod`), and if the terms are congruent to numbers summing to
-`N < m`, it ends at `N` itself (`Nat.foldl_range_add_mod_eq_of_lt`). The workspace is one residue,
-however many terms are added.
+`N < m`, it ends at `N` itself (`Nat.foldl_range_add_mod_eq_of_lt`). The accumulator is one
+residue, however many terms are added.
 
 This is how the deterministic counting simulations of #1833 obtain the exact number of accepting
 choice strings, at most `2 ^ τ`, from contractions computed modulo `2 ^ (τ + 1)` and summed over
