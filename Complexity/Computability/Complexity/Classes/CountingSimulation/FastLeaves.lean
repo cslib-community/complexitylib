@@ -51,7 +51,7 @@ namespace Cslib.Circuits.Frontier.FastContraction
 
 /-- **The reached calls are well-formed and have the packet shape**, from a well-formed root with
 the packet shape. -/
-theorem Reach.wf_packetShape {x₀ x : Call} (h : Reach nativeMk x₀ x) (hw : WF x₀)
+theorem Reach.wf_packetShape {x₀ x : Call (List ℕ)} (h : Reach nativeMk x₀ x) (hw : WF x₀)
     (hs : PacketShape x₀) : WF x ∧ PacketShape x := by
   induction h with
   | root => exact ⟨hw, hs⟩
@@ -61,7 +61,7 @@ theorem Reach.wf_packetShape {x₀ x : Call} (h : Reach nativeMk x₀ x) (hw : W
 /-- **Reached calls have at most twice the scale in edges**, from a root at scale its number of
 edges with bound plus depth one more, for every input: a child has at most twice its parent's
 edges (`NativeChild.numEdges_nativeChild_le`), and an active parent has at most the root's. -/
-theorem Reach.edges_le_two_mul_scale {x₀ x : Call} (h₀s : x₀.scale = x₀.edges)
+theorem Reach.edges_le_two_mul_scale {x₀ x : Call (List ℕ)} (h₀s : x₀.scale = x₀.edges)
     (h₀b : x₀.bound + x₀.depth = x₀.edges + 1) (h : Reach nativeMk x₀ x) :
     x.edges ≤ 2 * x.scale := by
   have key : x.edges ≤ 2 * x₀.edges := by
@@ -84,13 +84,14 @@ namespace Cslib.Complexity.CountingSimulation
 
 open Cslib.Circuits.Frontier Cslib.Circuits.Frontier.ContractionSchedule
   Cslib.Circuits.Frontier.FastContraction
+open Turing.MultiTapeTM (encList encNat)
 
 /-- **The leaf bounds of the native recursion**, from the sizes of the reached calls and three
 facts about them on admissible guarded inputs: every reached call has at most twice its scale in
 edges, and for each `C` and `D`, from some size on, every reached leaf has at most the leaf size in
 edges and precision at most the fourth power of its scale. -/
 theorem fastLeaves_of (hS : FastSizes)
-    (hE : ∀ (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) (x : Call),
+    (hE : ∀ (P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ) (x : Call (List ℕ)),
       Reach nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G))) x →
         x.edges ≤ 2 * x.scale)
     (hbig : ∀ C D : ℕ, ∃ s₀ : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P →
@@ -113,15 +114,16 @@ theorem fastLeaves_of (hS : FastSizes)
     fun h => hs₀ s P G hs hP hPD hA hg h x hx hl
   have hlen' := (hKS s P G hs hP hPD hA hg x hx).1
   rw [← hn] at hlen'
-  have hlen : (encCall x).length ≤ KS * (n + 1) ^ KS :=
+  have hlen : (encCall (encList encNat) x).length ≤ KS * (n + 1) ^ KS :=
     hlen'.trans (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega)))
   -- `n_x + 1 ≤ (KS + 1) (n + 1) ^ KS`.
   have hB1 : 1 ≤ (n + 1) ^ KS := Nat.one_le_pow _ _ (by omega)
-  have hx1 : (encCall x).length + 1 ≤ (KS + 1) * (n + 1) ^ KS := by
+  have hx1 : (encCall (encList encNat) x).length + 1 ≤ (KS + 1) * (n + 1) ^ KS := by
     rw [add_mul, one_mul]; omega
   set K := KB * (KS + 1) ^ KB + KS * KB + KB
-  have hpoly : KB * ((encCall x).length + 1) ^ KB ≤ K * (n + 1) ^ K :=
-    calc KB * ((encCall x).length + 1) ^ KB ≤ KB * ((KS + 1) * (n + 1) ^ KS) ^ KB :=
+  have hpoly : KB * ((encCall (encList encNat) x).length + 1) ^ KB ≤ K * (n + 1) ^ K :=
+    calc KB * ((encCall (encList encNat) x).length + 1) ^ KB
+        ≤ KB * ((KS + 1) * (n + 1) ^ KS) ^ KB :=
           Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hx1 _)
       _ = KB * (KS + 1) ^ KB * (n + 1) ^ (KS * KB) := by rw [mul_pow, ← pow_mul]; ring
       _ ≤ K * (n + 1) ^ K :=

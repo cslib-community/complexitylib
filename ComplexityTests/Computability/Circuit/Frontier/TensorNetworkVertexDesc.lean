@@ -27,13 +27,14 @@ list come out in order. Reducing an element of `O` to `A_n` and mapping back alo
 namespace ComplexityTests.TensorNetworkVertexDesc
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.NativePacket
+open Turing.MultiTapeTM (encList encNat)
 
 /-! ### Tables -/
 
 -- The bits `[true, false]` index the table at `1`.
-example : VertexDesc.entry (.inl [3, 5, 7, 9]) [true, false] = [5] := by decide
+example : VertexDesc.entry tableEntry (.inl [3, 5, 7, 9]) [true, false] = [5] := by decide
 
-example : VertexDesc.entry (.inl [3, 5, 7, 9]) [false, true] = [7] := by decide
+example : VertexDesc.entry tableEntry (.inl [3, 5, 7, 9]) [false, true] = [7] := by decide
 
 -- A table has no modes and no row ports.
 example : VertexDesc.modes (.inl [3, 5]) = 0 := rfl
@@ -41,7 +42,7 @@ example : VertexDesc.modes (.inl [3, 5]) = 0 := rfl
 example : VertexDesc.rowPorts (.inl [3, 5]) [true] = 0 := rfl
 
 -- A table entry is a constant in `A_p`.
-example : GaloisRingArith.val 3 [1, 1] (VertexDesc.entry (.inl [3, 5]) [true]) =
+example : GaloisRingArith.val 3 [1, 1] (VertexDesc.entry tableEntry (.inl [3, 5]) [true]) =
     ((5 : ℕ) : GaloisRingArith.Ring 3 [1, 1]) :=
   VertexDesc.val_entry_inl 3 [1, 1] [3, 5] [true]
 
@@ -52,12 +53,22 @@ def ctx : PacketCtx :=
   ⟨3, [1, 1], 1, 2, 0, 2, 1, 2, true, false, true, [], [0, 1]⟩
 
 /-- The descriptor: a row port in slot `0` and a column port in slot `1`, zero exponents. -/
-def desc : VertexDesc := .inr (ctx, [(true, 0), (false, 1)], [0, 0, 0, 0])
+def desc : VertexDesc (List ℕ) := .inr (ctx, [(true, 0), (false, 1)], [0, 0, 0, 0])
 
 -- The column ports are read from the tags and the bits: the entry is `W_1(T) = 5 + 2 U`.
-example : VertexDesc.entry desc [true, true] = [5, 2] := by decide
+example : VertexDesc.entry tableEntry desc [true, true] = [5, 2] := by decide
 
 example : VertexDesc.rowPorts desc [true, true] = 1 := by decide
+
+/-! ### Other root descriptors -/
+
+-- A root descriptor of any type is read by its entry procedure, here a number read as the
+-- coefficient list `[n, 1]`.
+example : VertexDesc.entry (fun (n : ℕ) _ => [n, 1]) (.inl 7) [true] = [7, 1] := rfl
+
+-- A packet descriptor reads the same entry whatever the type of the root descriptors.
+example : VertexDesc.entry (fun (n : ℕ) _ => [n])
+    (.inr (ctx, [(true, 0), (false, 1)], [0, 0, 0, 0])) [true, true] = [5, 2] := by decide
 
 /-! ### Tagged ports -/
 
@@ -75,12 +86,14 @@ example : sidePorts ([4, 1, 2].map fun c => (decide (c % 2 = 0), c)) ([4, 1, 2].
 
 /-! ### Resources -/
 
-example : ∃ K : ℕ, ∀ (q : VertexDesc × List Bool) (Rv : ℕ), q.1.ReducedLE Rv →
+example : ∃ K : ℕ, ∀ (q : VertexDesc (List ℕ) × List Bool) (Rv : ℕ), q.1.ReducedLE Rv →
     VertexDesc.entryCertificate.time q ≤ K * (q.1.modes + 2) ^ q.1.rowPorts q.2 *
-        ((Turing.MultiTapeTM.encPair VertexDesc.enc Turing.MultiTapeTM.encBits q).length +
+        ((Turing.MultiTapeTM.encPair (VertexDesc.enc (encList encNat)) Turing.MultiTapeTM.encBits
+          q).length +
           q.1.modes + Rv + 2) ^ K ∧
       VertexDesc.entryCertificate.space q ≤
-        K * ((Turing.MultiTapeTM.encPair VertexDesc.enc Turing.MultiTapeTM.encBits q).length +
+        K * ((Turing.MultiTapeTM.encPair (VertexDesc.enc (encList encNat))
+          Turing.MultiTapeTM.encBits q).length +
           q.1.modes + Rv + 2) ^ K :=
   VertexDesc.entryCertificate_le
 

@@ -320,7 +320,7 @@ theorem guardOccurrenceCounter_le_two_pow_numVars {k : ℕ} (hk : 2 ≤ k) {f : 
     guardOccurrenceCounter k f ψ ≤ 2 ^ ψ.numVars := by
   rw [guardOccurrenceCounter_eq_ite_modelCount hk hf ψ]
   split_ifs
-  · exact CountingSparsify.modelCount_le_two_pow_numVars ψ
+  · exact ψ.modelCount_le_two_pow_numVars
   · exact Nat.zero_le _
 
 /-- When `f` counts dense width-`≤ k`, occurrence-`≤ 3` formulas (`2 ≤ k`),
