@@ -12,6 +12,7 @@ public import Complexity.Computability.WordRAM.Randomized.Structured
 public import Complexity.Languages.Probabilistic.Expect
 public import Complexity.Probability.PMF.Bind
 public import Complexity.Probability.PMF.Event
+import Complexity.Foundations.Analysis.ENNRealTsum
 import Complexity.Probability.PMF.Expect
 
 /-!
@@ -678,14 +679,6 @@ theorem evalRand_halted_mono (w : ℕ) (p : Program B r) (s : State r) (v : ℕ)
           (f := fun cfg => evalRand w p T s cfg * (stepRand w p cfg).eval (.halted v d))
           (RandCfg.halted v d)
 
-private theorem tsum_iSup_of_monotone {α : Type*} {f : ℕ → α → ℝ≥0∞}
-    (hf : ∀ a, Monotone fun n => f n a) :
-    (∑' a, ⨆ n, f n a) = ⨆ n, ∑' a, f n a := by
-  rw [tsum_eq_iSup_sum]
-  simp_rw [ENNReal.finsetSum_iSup_of_monotone hf]
-  rw [iSup_comm]
-  simp_rw [← tsum_eq_iSup_sum]
-
 /-- Finite-horizon approximation of `expectedStepsFrom`: expected number of active (`.running`)
 steps within the first `N` steps starting from configuration `cfg`. -/
 noncomputable def expectedStepsWithin (w : ℕ) (p : Program B r) (N : ℕ) (cfg : RandCfg r) :
@@ -1004,7 +997,7 @@ theorem ExecRand.le_iSup_evalRand_halted {w : ℕ} {c : Code B r} {x : Data r}
           ⨆ T : ℕ, evalRand w p T ⟨pc + 1, x.set dst sample.val⟩ (.halted v d)) ≤
       ⨆ T : ℕ, evalRand w p T ⟨pc, x⟩ (.halted v d)
     simp_rw [ENNReal.mul_iSup]
-    rw [tsum_iSup_of_monotone fun sample T₁ T₂ hT =>
+    rw [ENNReal.tsum_iSup_of_monotone fun sample T₁ T₂ hT =>
       mul_le_mul_right (evalRand_halted_mono w p ⟨pc + 1, x.set dst sample.val⟩ v d hT) _]
     refine iSup_le fun T => le_iSup_of_le (T + 1) ?_
     rw [evalRand, runRand_succ, stepRand_rand_of_fits (s := ⟨pc, x⟩) hp.head hfit, bind_assoc,
@@ -1263,7 +1256,7 @@ theorem hasSum_loopExitDensity {cond : Cond r} {I Q : Data r → Prop}
     HasSum (fun y => ⨆ K : ℕ,
       Set.indicator {z | ¬cond.Holds z} (loopIterPMF cond μ_body K x) y) 1 := by
   rw [CompleteLattice.summable.hasSum_iff,
-    tsum_iSup_of_monotone (loopIterPMF_indicator_mono cond μ_body x)]
+    ENNReal.tsum_iSup_of_monotone (loopIterPMF_indicator_mono cond μ_body x)]
   simp_rw [← PMF.toOuterMeasure_apply]
   set b := ⨆ K : ℕ, (loopIterPMF cond μ_body K x).toOuterMeasure {z | ¬cond.Holds z}
   have hb_le : b ≤ 1 := iSup_le fun K => Cslib.Probability.PMF.toOuterMeasure_le_one _ _
@@ -1372,7 +1365,7 @@ theorem loopExitPMF_of_holds {cond : Cond r} {I Q : Data r → Prop}
     · simp [Set.indicator_of_mem, hy, PMF.bind_apply]
     · simp [Set.indicator_of_notMem, hy]
   simp_rw [hstep]
-  rw [← tsum_iSup_of_monotone
+  rw [← ENNReal.tsum_iSup_of_monotone
     (f := fun K z => μ_body x z *
       Set.indicator {w' | ¬cond.Holds w'} (loopIterPMF cond μ_body K z) y)
     (fun z _ _ hK => mul_le_mul_right (loopIterPMF_indicator_mono cond μ_body z y hK) _)]
@@ -2232,7 +2225,7 @@ theorem le_iSup_evalRand_halted (h : ExecCodeDist w c x μ T) {p : Program B r} 
             Set.indicator {w' | ¬cond.Holds w'} (loopIterPMF cond μ_body K x) y * H_exit y := by
       simp_rw [loopExitPMF_apply_of_hasSum
         (hasSum_loopExitDensity hp_pos hp_top hinv hp_exit hx_inv), ENNReal.iSup_mul]
-      exact tsum_iSup_of_monotone fun y K₁ K₂ hK =>
+      exact ENNReal.tsum_iSup_of_monotone fun y K₁ K₂ hK =>
         mul_le_mul_left (loopIterPMF_indicator_mono cond μ_body x y hK) (H_exit y)
     rw [hrewrite_sum]
     refine iSup_le fun K => (tsum_le_tsum fun y => ?_).trans (hiter_le K x hx_inv)
