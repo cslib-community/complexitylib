@@ -494,6 +494,10 @@ vertex keeps its descriptor, at a precision that only grows, and a new packet ha
 as its number of exponents per tile, and the slots of the packing, distinct within a packet. -/
 theorem packetShape_child {x : Call} (hx : WF x) (ha : active x = true) (hs : PacketShape x)
     {c : State} (hc : c ∈ children x) : PacketShape (child x nativeMk c) := by
+  -- The builder at a cursor state of a well-formed active call: the uncapped native child.
+  have hmk : (nativeMk x c).2 = nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0))
+      (nodePrec x c.1) (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) x.rows
+      x.net (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 c.2.2.2 := rfl
   obtain ⟨-, hD⟩ := hx
   obtain ⟨hj, -, hg⟩ := lt_of_mem_children hc
   have ha' := ha
@@ -509,7 +513,9 @@ theorem packetShape_child {x : Call} (hx : WF x) (ha : active x = true) (hs : Pa
   intro v hv d hd
   have hv' : v ∈ (nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0)) (nodePrec x c.1)
       (node (slots x) ((nodes x).getD c.1 0)) ((points x).getD c.2.1 []) x.rows x.net
-      (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 (⟨c.2.2.2, hg⟩ : Fin 64)).vertices := hv
+      (nativeParentPacking x.rows (slots x) x.net) c.2.2.1 (⟨c.2.2.2, hg⟩ : Fin 64)).vertices := by
+    change v ∈ (nativeMk x c).2.vertices at hv
+    rwa [hmk] at hv
   rcases NativeChild.desc_of_mem_nativeChild hD (pow_slots_le_edges_of_active ha) hia _ _ _ _ _
       hv' with ⟨w, hw, hvw⟩ | ⟨q, tags, hvq, hslot, hnodup⟩
   · obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hs w hw d (hvw ▸ hd)
