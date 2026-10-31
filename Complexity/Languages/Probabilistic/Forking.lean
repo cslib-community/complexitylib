@@ -147,8 +147,12 @@ theorem IsQueryBounded.length_runWithAnswers_le (default : H)
     rw [runWithAnswers_query_bind, List.length_cons]
     exact Nat.succ_le_succ (ih _ _)
 
+/-- The result component of a `runWithAnswers` output pair `(result, queries)`. -/
+abbrev runWithAnswersOutput {α γ : Type} (out : α × γ) : α := out.1
+
 /-- The final handler state produced by `runWithAnswers` on a stateful handler execution. -/
-abbrev runWithAnswersState {σ β : Type} (out : (β × σ) × List Query) : σ := out.1.2
+abbrev runWithAnswersState {σ β : Type} (out : (β × σ) × List Query) : σ :=
+  (runWithAnswersOutput out).2
 
 /-- **An invariant of a handler's run on a list of answers.** A program runs through a stateful
 handler whose calls are oracle programs, and the resulting program runs on a list of answers. A
@@ -334,7 +338,8 @@ theorem validIndex_eq_some {q count : ℕ} {position : Option ℕ} {j : Fin q}
     exact ⟨rfl, hp.2⟩
 
 /-- The named query position returned by a forking-lemma program execution. -/
-abbrev forkNamedPosition {β γ : Type} (out : (Option ℕ × β) × γ) : Option ℕ := out.1.1
+abbrev forkNamedPosition {β γ : Type} (out : (Option ℕ × β) × γ) : Option ℕ :=
+  (runWithAnswersOutput out).1
 
 /-- A program with explicit coins as an algorithm on coins and `q` answers, for the general
 forking lemma: the validly named position, and the result with the queries. -/
