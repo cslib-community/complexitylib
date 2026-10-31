@@ -61,17 +61,15 @@ inductive StackOp (α : Type) where
   deriving DecidableEq
 
 /-- A total stack specification; popping an empty stack returns `none`. -/
-abbrev stack (α : Type) : Spec where
-  State := List α
-  Op := StackOp α
-  Result
+abbrev stack (α : Type) : Spec :=
+  Spec.ofFn (State := List α) (Op := StackOp α) (Result := fun
     | .push _ => Unit
     | .pop => Option α
-    | .size => Nat
-  step s
-    | .push n => (n :: s, ())
-    | .pop => (s.tail, s.head?)
-    | .size => (s, s.length)
+    | .size => Nat)
+    fun s o => match o with
+      | .push n => (n :: s, ())
+      | .pop => (s.tail, s.head?)
+      | .size => (s, s.length)
 
 /-- Two independently addressable stacks. -/
 abbrev stackPair (α : Type) : Spec := product (stack α) (stack α)
@@ -83,15 +81,13 @@ inductive QueueOp (α : Type) where
   deriving DecidableEq
 
 /-- A total FIFO queue specification. -/
-abbrev queue (α : Type) : Spec where
-  State := List α
-  Op := QueueOp α
-  Result
+abbrev queue (α : Type) : Spec :=
+  Spec.ofFn (State := List α) (Op := QueueOp α) (Result := fun
     | .enqueue _ => Unit
-    | .dequeue => Option α
-  step s
-    | .enqueue n => (s ++ [n], ())
-    | .dequeue => (s.tail, s.head?)
+    | .dequeue => Option α)
+    fun s o => match o with
+      | .enqueue n => (s ++ [n], ())
+      | .dequeue => (s.tail, s.head?)
 
 /-- Move at most `n` items from the rear stack to the front stack.
 The fuel is obtained through an explicit `size` call, rather than inspecting hidden state. -/
@@ -128,28 +124,30 @@ theorem transfer_run (front back : List α) :
           (r.1, r.2.1, .inr .pop :: .inl (.push a) :: r.2.2)) (ih (a :: front))
 
 /-- Representation and behavior are proved once, before selecting a backend or cost model. -/
-def implementation : Module (queue α) (stackPair α) where
-  methods := methods
-  rep q s := q = s.1 ++ s.2.reverse
-  valid _ _ _ :=
-    (stackPair α).validHistory_of_forall_valid (by intro s o; cases o <;> trivial) _ _
-  correct {q s} o hr _ := by
-    subst q
-    obtain ⟨front, back⟩ := s
-    cases o with
-    | enqueue n =>
-      constructor
-      · rfl
-      · change (front ++ back.reverse) ++ [n] = front ++ (n :: back).reverse
-        simp [List.reverse_cons, List.append_assoc]
-    | dequeue =>
-      cases front with
-      | cons a front => exact ⟨rfl, rfl⟩
-      | nil =>
-        simp only [methods, bind, Spec.runClient_liftBind, stackPair,
-          stack, List.tail_nil, List.head?_nil]
-        rw [Spec.runClient_bind, transfer_run]
-        simp
+def implementation : Module (queue α) (stackPair α) :=
+  Module.ofFn
+    (methods := methods)
+    (rep := fun q s => q = s.1 ++ s.2.reverse)
+    (valid := fun _ _ _ =>
+      (stackPair α).validHistory_of_forall_valid (by intro s o; cases o <;> trivial) _ _)
+    (correct := by
+      intro q s o hr _
+      subst q
+      obtain ⟨front, back⟩ := s
+      cases o with
+      | enqueue n =>
+        constructor
+        · rfl
+        · change (front ++ back.reverse) ++ [n] = front ++ (n :: back).reverse
+          simp [List.reverse_cons, List.append_assoc]
+      | dequeue =>
+        cases front with
+        | cons a front => exact ⟨rfl, rfl⟩
+        | nil =>
+          simp only [methods, bind, Spec.runClient_liftBind, stackPair,
+            stack, List.tail_nil, List.head?_nil]
+          rw [Spec.runClient_bind, transfer_run]
+          simp)
 
 /-- Each transferred element incurs one pop and one push. -/
 theorem transferTrace_length (back : List α) : (transferTrace back).length = 2 * back.length := by

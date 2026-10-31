@@ -92,15 +92,15 @@ end TimelineEdit
 
 namespace Retroactive
 
-variable (D : Spec.{0, 0, 0}) (initial : D.State)
+variable (D : Spec.{0, 0, 0})
+  {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn stepFn]
+  (initial : D.State)
 
 /-- A dynamic specification of admissible timeline edits. -/
-abbrev spec : Spec where
-  State := List D.Op
-  Op := TimelineEdit D.Op
-  Result := fun _ => Unit
-  step os e := (e.apply os, ())
-  valid os e := e.Valid os ∧ D.ValidHistory initial (e.apply os)
+abbrev spec : Spec :=
+  Spec.ofFn (State := List D.Op) (Op := TimelineEdit D.Op) (Result := fun _ => Unit)
+    (fun os e => (e.apply os, ()))
+    (fun os e => e.Valid os ∧ D.ValidHistory initial (e.apply os))
 
 /-- Primitive operations required by rebuilding; editing returns the entire new timeline. -/
 inductive BackendOp (Op : Type) where
@@ -108,22 +108,29 @@ inductive BackendOp (Op : Type) where
   | reset
   | execute (operation : Op)
 
+/-- Return types for `BackendOp D.Op`. -/
+abbrev BackendOp.Result : BackendOp D.Op → Type
+  | .edit _ => List D.Op
+  | .reset => Unit
+  | .execute o => D.Result o
+
+/-- Pure transition function of the rebuilding backend. -/
+abbrev backendStep (s : List D.Op × D.State) :
+    (o : BackendOp D.Op) → (List D.Op × D.State) × BackendOp.Result D o
+  | .edit e => ((e.apply s.1, s.2), e.apply s.1)
+  | .reset => ((s.1, initial), ())
+  | .execute o => let r := D.stepFn s.2 o; ((s.1, r.1), r.2)
+
+/-- Admissibility predicate for `BackendOp D.Op`. -/
+abbrev backendValid (s : List D.Op × D.State) : BackendOp D.Op → Prop
+  | .edit e => e.Valid s.1 ∧ D.ValidHistory initial (e.apply s.1)
+  | .reset => True
+  | .execute o => D.valid s.2 o
+
 /-- The rebuilding backend tracks the stored timeline and current ordinary state separately. -/
-abbrev backend : Spec where
-  State := List D.Op × D.State
-  Op := BackendOp D.Op
-  Result
-    | .edit _ => List D.Op
-    | .reset => Unit
-    | .execute o => D.Result o
-  step s
-    | .edit e => ((e.apply s.1, s.2), e.apply s.1)
-    | .reset => ((s.1, initial), ())
-    | .execute o => let r := D.step s.2 o; ((s.1, r.1), r.2)
-  valid s
-    | .edit e => e.Valid s.1 ∧ D.ValidHistory initial (e.apply s.1)
-    | .reset => True
-    | .execute o => D.valid s.2 o
+abbrev backend : Spec :=
+  Spec.ofFn (State := List D.Op × D.State) (Op := BackendOp D.Op) (Result := BackendOp.Result D)
+    (backendStep D initial) (backendValid D initial)
 
 /-- Replay ordinary operations through explicitly charged backend calls. -/
 def replay : List D.Op → (backend D initial).Client Unit
@@ -152,27 +159,30 @@ theorem replay_valid (timeline os : List D.Op) (s : D.State)
   | cons o os ih => exact ⟨h.1, ih _ h.2⟩
 
 /-- Rebuilding correctness is independent of the implementation of reset, edit, and execution. -/
-def implementation : Module (spec D initial) (backend D initial) where
-  methods := methods D initial
-  rep os s := s.1 = os ∧ s.2 = (D.run initial os).1
-  valid {s e} o hr hv := by
-    obtain ⟨timeline, state⟩ := e
-    obtain ⟨ht, hs⟩ := hr
-    dsimp only at ht hs
-    subst timeline
-    change (backend D initial).ValidHistory (s, state)
-      (.edit o :: .reset ::
-        ((backend D initial).runClient (o.apply s, initial) (replay D initial (o.apply s))).2.2)
-    rw [replay_run]
-    exact ⟨hv, trivial, replay_valid D initial _ _ _ hv.2⟩
-  correct {s e} o hr _ := by
-    obtain ⟨timeline, state⟩ := e
-    obtain ⟨ht, hs⟩ := hr
-    dsimp only at ht hs
-    subst timeline
-    simp only [methods, Spec.runClient_liftBind, backend]
-    rw [replay_run]
-    exact ⟨trivial, rfl, rfl⟩
+def implementation : Module (spec D initial) (backend D initial) :=
+  Module.ofFn
+    (methods := methods D initial)
+    (rep := fun os s => s.1 = os ∧ s.2 = (D.run initial os).1)
+    (valid := by
+      intro s e o hr hv
+      obtain ⟨timeline, state⟩ := e
+      obtain ⟨ht, hs⟩ := hr
+      dsimp only at ht hs
+      subst timeline
+      change (backend D initial).ValidHistory (s, state)
+        (.edit o :: .reset ::
+          ((backend D initial).runClient (o.apply s, initial) (replay D initial (o.apply s))).2.2)
+      rw [replay_run]
+      exact ⟨hv, trivial, replay_valid D initial _ _ _ hv.2⟩)
+    (correct := by
+      intro s e o hr _
+      obtain ⟨timeline, state⟩ := e
+      obtain ⟨ht, hs⟩ := hr
+      dsimp only at ht hs
+      subst timeline
+      simp only [methods, Spec.runClient_liftBind, backend]
+      rw [replay_run]
+      exact ⟨trivial, rfl, rfl⟩)
 
 /-- Separate charges for timeline editing, resetting, and ordinary operations. -/
 def primitiveCharge (editCharge : List D.Op → TimelineEdit D.Op → Nat)

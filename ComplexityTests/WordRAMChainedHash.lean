@@ -176,13 +176,13 @@ theorem concrete_collision_update_and_miss_exec {x : Data rHash}
 /-! ## 3. `SubroutineDS`, `toStandard`, `initClear_exec`, `call_rename`, `seq_expected_amortized` -/
 
 /-- Concrete `SubroutineDS` instance over `Basis.exact`. -/
-noncomputable def testDS :
+noncomputable abbrev testDS :
     Randomized.SubroutineDS (subroutineCode 16 2) (Dictionary.spec 16 100 2)
       16 10 Fin.elim0 (Dictionary.empty 16) :=
   subroutineDS 16 100 2 16 10 hw_test hS_test hV_test
 
 /-- Concrete `SubroutineDS` instance over `Basis.standard`. -/
-noncomputable def testDSStandard :
+noncomputable abbrev testDSStandard :
     Randomized.SubroutineDS (subroutineCode 16 2).toStandard (Dictionary.spec 16 100 2)
       16 10 Fin.elim0 (Dictionary.empty 16) :=
   subroutineDSStandard 16 100 2 16 10 hw_test hS_test hV_test
@@ -195,7 +195,7 @@ theorem test_seq_expected_amortized {x : Data rHash}
     (hz : ∀ a ∈ (Block.mk 10 (space 2)).footprint, x.mem a = 0) :
     ∃ (ν₀ ν_final : PMF (testDS.Seed × Data rHash)) (T_ops : ℝ≥0∞),
       ExecCodeDist 16 (subroutineCode 16 2).initFresh x (ν₀.map Prod.snd) testDS.initTime ∧
-      testDS.ExecSteps (Dictionary.empty 16) ops6 ν₀ ν_final T_ops ∧
+      testDS.ExecStepsOfFn (Dictionary.empty 16) ops6 ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ testDS.seedSlack * testDS.seedLaw θ) ∧
       (∀ p ∈ ν_final.support,
         testDS.rep p.1 ((Dictionary.spec 16 100 2).run (Dictionary.empty 16) ops6).1 p.2) ∧
@@ -239,8 +239,8 @@ theorem test_call_rename
           p.2 ((μ_call p).map Prod.snd) (T_call p) ∧
         ∀ q ∈ (μ_call p).support,
           testDS.decode (.get u₁) (q.2.comap Fin.castSucc).regs =
-            some ((Dictionary.spec 16 100 2).step (Dictionary.empty 16) (.get u₁)).2 ∧
-          testDS.rep q.1 ((Dictionary.spec 16 100 2).step (Dictionary.empty 16) (.get u₁)).1
+            some ((Dictionary.spec 16 100 2).stepFn (Dictionary.empty 16) (.get u₁)).2 ∧
+          testDS.rep q.1 ((Dictionary.spec 16 100 2).stepFn (Dictionary.empty 16) (.get u₁)).1
             (q.2.comap Fin.castSucc) ∧
           ∃ x' ∈ (PMF.pure (p.2.set (Fin.last rHash) 0) : PMF (Data (rHash + 1))).support,
             Modifies (Block.mk 10 testDS.space).footprint x'.mem q.2.mem ∧
@@ -251,7 +251,7 @@ theorem test_call_rename
         1 + (testDS.charge (Dictionary.empty 16) (.get u₁) : ℝ≥0∞) +
           ∑' p, ν p * (testDS.potential p.1 (p.2.comap Fin.castSucc) : ℝ≥0∞) := by
   intro prep
-  refine testDS.call_rename (Fin.castSucc_injective rHash) (.get u₁) ν
+  refine testDS.call_rename_ofFn (Fin.castSucc_injective rHash) (.get u₁) ν
     (prep := prep) (B_prep := 1)
     (μ_prep := fun p => PMF.pure (p.2.set (Fin.last rHash) 0)) (T_prep := fun _ => 1)
     trivial hseed hrep ?_

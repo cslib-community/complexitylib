@@ -71,7 +71,7 @@ example :
     ¬(spec 2 8).valid [255, 0, 0, 0] (.add 0 1) ∧
     (((zeroData 2 10).write 10 255) |> fun x =>
       (program 2 8).eval 8 4 (.add 0 1) x).isNone = true :=
-  ⟨by simp [spec], by simp [spec, fits_iff], by decide⟩
+  ⟨by simp, by simp [fits_iff], by decide⟩
 
 /--
 info: 'Cslib.Algorithms.WordRAM.PrefixSums.Tree.prefixSum_eq_sum_take' depends on axioms:

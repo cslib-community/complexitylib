@@ -23,8 +23,8 @@ This file assembles the standalone static-array Word-RAM Fibonacci heap
   algorithms such as Dijkstra's algorithm), in `9 * n + 1` words at `[base, base + 9 * n + 1)`; and
 * the relational key–value priority queue with handles `Cslib.Algorithms.Lean.MinPQ.spec` (where
   `insert u v` allocates and returns a handle `h : Fin n_max`), in `11 * n_max + 1` words at
-  `[base, base + 11 * n_max + 1)` under the `FibonacciHeap.MinPQ` namespace (and top-level aliases
-  `relSubroutineDS`, `relDynamicProgram`, `relCertificate`, `relAmortized`).
+  `[base, base + 11 * n_max + 1)` under the `FibonacciHeap.MinPQ` namespace (`MinPQ.subroutineDS`,
+  `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.amortized`).
 
 Over capacity `n` (`n_max`) with concrete integer potential
 `potential x = 80 * (numRoots + 2 * numMarked)` (`initPotential = 0`,
@@ -45,9 +45,9 @@ Over capacity `n` (`n_max`) with concrete integer potential
   over `Basis.exact` for `IndexedMinPQ.spec`.
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.pkg`, `pkgStd`: `PQPackage` bundles over
   `Basis.exact` and `Basis.standard` for plug-and-play graph algorithms (such as Dijkstra).
-* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.relSubroutineDS`,
-  `relDynamicProgram`, `relCertificate`, `MinPQ.run_ops_exact_fresh`,
-  `MinPQ.run_ops_exact_reusable`: `RelSubroutineDS` and flat-program realizations of the key–value
+* `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.MinPQ.subroutineDS`,
+  `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.run_ops_exact_fresh`,
+  `MinPQ.run_ops_exact_reusable`: `SubroutineDS` and flat-program realizations of the key–value
   Fibonacci heap with handles (`Cslib.Algorithms.Lean.MinPQ.spec`).
 * `Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap.initFreshProg`, `initClearProg`, `opProg`,
   `initRegs`, `prepareRegs`, `RunsOps`: compiled flat `Program .exact rFib` artifacts, register
@@ -88,8 +88,8 @@ theorem dispatchCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x :
     (hval : (IndexedMinPQ.spec n K_max).valid s o) (harg : code.argMatch o x.regs) :
     ∃ y m, Exec w dispatchCode x y m ∧
       code.decode (n := n) (K_max := K_max) o y.regs =
-        some ((IndexedMinPQ.spec n K_max).step s o).2 ∧
-      FibInv n K_max w base ((IndexedMinPQ.spec n K_max).step s o).1 y ∧
+        some ((IndexedMinPQ.spec n K_max).stepFn s o).2 ∧
+      FibInv n K_max w base ((IndexedMinPQ.spec n K_max).stepFn s o).1 y ∧
       Modifies (Block.mk base (space n)).footprint x.mem y.mem ∧
       m + potential y ≤ charge n s o + potential x := by
   have hz0 : x.regs zeroP = 0 := hinv.2.1.2.2.2.2.2.2.2.2.2.2.2.1
@@ -147,31 +147,31 @@ theorem dispatchCode_exec {n K_max w base : ℕ} {s : IndexedMinPQ.State n} {x :
 
 /-- Unified standalone and inline-subroutine specification/resource certificate for `FibonacciHeap`
 over `Basis.exact`. -/
-def subroutineDS {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
+abbrev subroutineDS {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
     SubroutineDS code.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
-      (IndexedMinPQ.empty n) where
-  space := space n
-  spanTime := 12
-  setupTime := 14
-  initPotential := 0
-  charge := charge n
-  rep := FibInv n K_max w base
-  potential := potential
-  encode := code.encode
-  argMatch := code.argMatch
-  decode := code.decode
-  bounded h := h.1
-  rep_unique h₁ h₂ := h₁.2.2.unique h₂.2.2
-  arguments_fit o hv i _ := code.arguments_fit (space_lower n) hS hK o hv i
-  encode_matches := code.encode_matches
-  rep_supported := FibInv.supported
-  potential_supported hreg _ _ := potential_supported hreg
-  clear_nodup := by decide
-  params_not_clear := by decide
-  incCur_eval := incCur_eval
-  span_exec := allocSpan_exec hS
-  setup_exec := initSetup_exec
-  step_exec := dispatchCode_exec
+      (IndexedMinPQ.empty n) :=
+  SubroutineDS.ofFn
+    (space := space n)
+    (spanTime := 12)
+    (setupTime := 14)
+    (initPotential := 0)
+    (charge := charge n)
+    (rep := FibInv n K_max w base)
+    (potential := potential)
+    (encode := code.encode)
+    (argMatch := code.argMatch)
+    (decode := code.decode)
+    (bounded := fun h => h.1)
+    (arguments_fit := fun o hv i _ => code.arguments_fit (space_lower n) hS hK o hv i)
+    (encode_matches := code.encode_matches)
+    (rep_supported := FibInv.supported)
+    (potential_supported := fun hreg _ _ => potential_supported hreg)
+    (clear_nodup := by decide)
+    (params_not_clear := by decide)
+    (incCur_eval := incCur_eval)
+    (span_exec := allocSpan_exec hS)
+    (setup_exec := initSetup_exec)
+    (step_exec := dispatchCode_exec)
 
 /-- Parametric `PQPackage .exact rFib` bundle for plug-and-play graph algorithms over
 `Basis.exact`. -/
@@ -186,6 +186,7 @@ def pkg : PQPackage .exact rFib where
   decreaseTime := tDec
   extractTime := tExt
   cert hS hK := subroutineDS hS hK
+  rep_unique _ _ := fun h₁ h₂ => h₁.2.2.unique h₂.2.2
   cert_space _ _ := rfl
   cert_initTime _ _ := le_rfl
   cert_initPotential _ _ := rfl
@@ -294,9 +295,9 @@ inductive RunsOps {n K_max : ℕ} (w base : ℕ) :
       Runs w opProg ⟨0, ⟨prepareRegs o x.regs, x.mem⟩⟩ ⟨pc, y⟩ steps →
       (∃ out, step w opProg ⟨pc, y⟩ = .halt out) →
       code.decode (n := n) (K_max := K_max) o y.regs =
-        some ((IndexedMinPQ.spec n K_max).step s o).2 →
+        some ((IndexedMinPQ.spec n K_max).stepFn s o).2 →
       Modifies (Block.mk base (space n)).footprint x.mem y.mem →
-      RunsOps w base ((IndexedMinPQ.spec n K_max).step s o).1 y ops z rest →
+      RunsOps w base ((IndexedMinPQ.spec n K_max).stepFn s o).1 y ops z rest →
       RunsOps w base s x (o :: ops) z ((steps + 1) + rest)
 
 private theorem step_program_halt {w : ℕ} (c : Code .exact rFib) (out : Fin rFib)
@@ -312,7 +313,7 @@ private theorem seq_runsOps {n K_max w base : ℕ} (hS : Fits w (base + space n)
       FibInv n K_max w base s x → (IndexedMinPQ.spec n K_max).ValidHistory s ops →
       ∃ z total, RunsOps (K_max := K_max) w base s x ops z total ∧
         FibInv n K_max w base
-          (ops.foldl (fun st o => ((IndexedMinPQ.spec n K_max).step st o).1) s) z ∧
+          (ops.foldl (fun st o => ((IndexedMinPQ.spec n K_max).stepFn st o).1) s) z ∧
         total + potential z ≤
           421 * (numQueries ops + numInserts ops + numDecreaseKeys ops +
             numExtractMins ops * (Nat.log 2 n + 1)) + potential x
@@ -434,37 +435,5 @@ theorem run_ops_exact_reusable {n K_max w base : ℕ} (hS : Fits w (base + space
     omega
   · change potential x₀ ≤ 0 at hpot₀
     omega
-
-/-! ## Top-level aliases for the key–value priority-queue realization (`MinPQ`) -/
-
-/-- `RelSubroutineDS` certificate for the key–value Fibonacci heap with handles (`MinPQ.spec`). -/
-abbrev relSubroutineDS {n_max U V w base : ℕ}
-    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    RelSubroutineDS MinPQ.subroutineCode (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) w base
-      ![n_max] (Cslib.Algorithms.Lean.MinPQ.empty n_max) :=
-  MinPQ.relSubroutineDS hS hU hV
-
-/-- Standalone `DynamicProgram` for the key–value Fibonacci heap with handles (`MinPQ.spec`). -/
-abbrev relDynamicProgram {n_max U V w base : ℕ}
-    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    DynamicProgram (Cslib.Algorithms.Lean.MinPQ.spec n_max U V) MinPQ.rMinPQ :=
-  MinPQ.relDynamicProgram hS hU hV
-
-/-- Standalone `RelDynamicCertificate` for the key–value Fibonacci heap with handles
-(`MinPQ.spec`). -/
-abbrev relCertificate {n_max U V w base : ℕ}
-    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    RelDynamicCertificate (relDynamicProgram hS hU hV) w :=
-  MinPQ.relCertificate hS hU hV
-
-/-- Standalone `Stateful.RelAmortized` theorem for the key–value Fibonacci heap with handles
-(`MinPQ.spec`). -/
-theorem relAmortized {n_max U V w base : ℕ}
-    (hS : Fits w (base + MinPQ.space n_max)) (hU : Fits w U) (hV : Fits w V) :
-    Stateful.RelAmortized (relCertificate hS hU hV).realization
-      DynamicProgram.OperationTrace.instructions
-      (fun _ x => MinPQ.potential x)
-      (fun s o => MinPQ.charge n_max s o + 1) :=
-  MinPQ.relAmortized hS hU hV
 
 end Cslib.Algorithms.WordRAM.PriorityQueue.FibonacciHeap

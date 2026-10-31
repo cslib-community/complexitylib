@@ -54,7 +54,7 @@ private theorem size_refines {w : ℕ} (h4 : Fits w 4) :
       exact le_rfl)
   have hs : (spec w 2).Hoare (fun s => s.length < 2)
       (.liftBind .size fun a => .pure a) (fun a s => a = s.length ∧ s.length < 2) :=
-    Stateful.Spec.Hoare.call _ _ _ (fun _ h => ⟨trivial, rfl, h⟩)
+    Stateful.Spec.Hoare.call_ofFn _ _ _ (fun _ h => ⟨trivial, rfl, h⟩)
   exact (hcall.hoare hs (fun _ _ h => h.2)).consequence
     (fun _ _ h => h)
     (fun a s x h => ⟨⟨h.1.1, h.2.2⟩, Option.some.inj h.1.2, h.2.1⟩)
@@ -113,7 +113,7 @@ private theorem initialized_adaptive :
       (d := ptr) (show Fits 3 2 by decide)).within
   have h := Refines.prepend (budget' := fun _ _ => 19) hinit (adaptive_refines h4)
     (fun _ _ _ _ _ => le_rfl)
-  obtain ⟨_, y, he, hr⟩ := h [] (Data.init []) ⟨rfl, rfl⟩
+  obtain ⟨_, y, he, hr⟩ := h.toOfFn ⟨rfl, rfl⟩
   exact ⟨y, he, hr⟩
 
 /-- A different observation drives the same continuation code to push one rather than zero. -/
@@ -131,7 +131,7 @@ private theorem populated_adaptive :
     · intro i
       fin_cases i
       simp [x, Data.set, Data.write]
-  obtain ⟨_, y, he, hy⟩ := adaptive_refines h4 [5] x ⟨hr, by decide⟩
+  obtain ⟨_, y, he, hy⟩ := (adaptive_refines h4).toOfFn ⟨hr, by decide⟩
   exact ⟨x, y, hr, he, hy⟩
 
 private theorem branch_refines {w n : ℕ} (h2 : Fits w 2) :
@@ -160,10 +160,10 @@ example :
       ((Data.init []).set out 1) y 3 ∧ y.regs out = 2) ∧
     Executes 2 (Stack.Controller.code.program out) (State.init [0]) 1 49 ∧
     Executes 2 (Stack.Controller.code.program out) (State.init [3]) 3 29 := by
-  obtain ⟨_, y₀, he₀, hr₀⟩ := branch_refines (n := 0) (show Fits 2 2 by decide)
-    [] (Data.init []) ⟨rfl, rfl, rfl⟩
-  obtain ⟨_, y₁, he₁, hr₁⟩ := branch_refines (n := 1) (show Fits 2 2 by decide)
-    [] ((Data.init []).set out 1) ⟨rfl, by simp [Data.set], by decide⟩
+  obtain ⟨_, y₀, he₀, hr₀⟩ := (branch_refines (n := 0) (show Fits 2 2 by decide)).toOfFn
+    (x := Data.init []) ⟨rfl, rfl, rfl⟩
+  obtain ⟨_, y₁, he₁, hr₁⟩ := (branch_refines (n := 1) (show Fits 2 2 by decide)).toOfFn
+    (x := (Data.init []).set out 1) ⟨rfl, by simp [Data.set], by decide⟩
   exact ⟨⟨y₀, he₀, hr₀⟩, ⟨y₁, he₁, hr₁⟩,
     Stack.Controller.executes (by decide) (by decide),
     Stack.Controller.executes (by decide) (by decide)⟩

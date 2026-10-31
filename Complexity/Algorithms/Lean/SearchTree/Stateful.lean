@@ -70,29 +70,31 @@ def Rep (s : Finset α) (t : BinaryTree α) : Prop := Ordered t ∧ elements t =
 theorem rep_empty : Rep (∅ : Finset α) .nil := ⟨trivial, rfl⟩
 
 /-- Semantic correctness is independent of the later resource certificate. -/
-def realization : Realization (spec α) Exec where
-  rep := Rep
-  total o _ _ := ⟨(step _ o).2.1, (step _ o).1, (step _ o).2.2, rfl⟩
-  correct {s t o a t' n} hr _ he := by
-    obtain ⟨ht, rfl⟩ := hr
-    cases o with
-    | contains x =>
-      cases he
-      refine ⟨?_, ht, rfl⟩
-      have h := contains_eq_true ht x
-      by_cases hx : x ∈ elements t <;> simp_all
-    | insert x =>
-      cases he
-      exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
-    | erase x =>
-      cases he
-      exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
-    | minimum =>
-      cases he
-      exact ⟨(minimum_spec ht).eq_least, ht, rfl⟩
-    | successor x =>
-      cases he
-      exact ⟨(successor_spec ht x).eq_least, ht, rfl⟩
+def realization : Realization (spec α) Exec :=
+  Realization.ofFn
+    (rep := Rep)
+    (total := fun o _ _ => ⟨(step _ o).2.1, (step _ o).1, (step _ o).2.2, rfl⟩)
+    (correct := by
+      intro s t o a t' n hr _ he
+      obtain ⟨ht, rfl⟩ := hr
+      cases o with
+      | contains x =>
+        cases he
+        refine ⟨?_, ht, rfl⟩
+        have h := contains_eq_true ht x
+        by_cases hx : x ∈ elements t <;> simp_all
+      | insert x =>
+        cases he
+        exact ⟨rfl, ordered_insert ht x, elements_insert x t⟩
+      | erase x =>
+        cases he
+        exact ⟨rfl, ordered_erase ht x, elements_erase ht x⟩
+      | minimum =>
+        cases he
+        exact ⟨(minimum_spec ht).eq_least, ht, rfl⟩
+      | successor x =>
+        cases he
+        exact ⟨(successor_spec ht x).eq_least, ht, rfl⟩)
 
 /-- Costs depend on the actual initial tree height, even for an unsuccessful query. -/
 theorem exec_visits_le_height {t t' : BinaryTree α} {o : Op α}
