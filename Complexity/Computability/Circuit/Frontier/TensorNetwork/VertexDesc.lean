@@ -186,7 +186,7 @@ theorem packetInput_polyTime :
 
 /-- The input of the root's entry procedure from a descriptor's bits and its root descriptor. -/
 theorem rootInput_polyTime :
-    ComputableInPolyTime (fun p : (VertexDesc T × List Bool) × T => (p.2, p.1.2))
+    ComputableInPolyTime (fun (((_, bs), t) : (VertexDesc T × List Bool) × T) => (t, bs))
       (encPair (encPair (enc encT) encBits) encT) (encPair encT encBits) :=
   (ComputableInPolyTime.snd _ _).prod
     ((ComputableInPolyTime.snd (enc encT) encBits).comp (ComputableInPolyTime.fst _ _))
@@ -203,7 +203,7 @@ noncomputable def entryCertificate
       (encPair (enc encT) encBits) (encList encNat) :=
   (NativeCertificate.option (value := fun q : VertexDesc T × List Bool => q.1.getLeft?)
     (fallback := fun q => packetVertexEntry (q.1.getRight?.getD default) q.2)
-    (body := fun p => ev p.2 p.1.2)
+    (body := fun ((_, bs), t) => ev t bs)
     (NativeCertificate.ofPolyTime getLeft_polyTime)
     ((vertexCertificate.comp (NativeCertificate.ofPolyTime packetInput_polyTime)).congr
       fun _ => rfl)
