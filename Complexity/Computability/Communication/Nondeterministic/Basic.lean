@@ -32,11 +32,16 @@ never takes the value `z` on `A × B`).
 Kushilevitz and Nisan define `N^z(f) = log₂ C^z(f)` for a Boolean function `f` on all of `X × Y`,
 without rounding. So for such `f`, `ecomplexityFun z f Set.univ Set.univ` is their `N^z(f)` rounded
 up to an integer, and for `n ≥ 1` a lower bound `n ≤ ecomplexityFun z f Set.univ Set.univ` says
-`C^z(f) > 2 ^ (n - 1)`, that is, `N^z(f) > n - 1` in their convention. The domain sets `A` and `B`
-and the relations are an extension made here. A partial function is a function together with the
-sets `A` and `B`: its value outside `A × B` does not matter, and rectangles are not required to lie
-inside `A × B`. A partial function whose domain is not a rectangle is a relation that accepts every
-answer outside its domain.
+`C^z(f) > 2 ^ (n - 1)`, that is, `N^z(f) > n - 1` in their convention.
+
+The domain sets `A` and `B` and the relations go beyond their Definition 2.1, in the usual way for
+partial functions (promise problems). A partial function is a function together with the sets `A`
+and `B`: its value outside `A × B` does not matter, and rectangles are not required to lie inside
+`A × B`. A relation with Boolean answers is a partial function with an arbitrary domain, accepting
+both answers outside it, except that it may accept no answer on some pairs, which makes the
+complexity `⊤`. Relations with arbitrary answers are the subject of
+[Kushilevitz and Nisan, Chapter 5][KushilevitzNisan1997], and `Protocol.ecomplexity` is stated for
+them.
 
 ## Covers and protocols
 
