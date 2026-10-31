@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Boolean.EvaluationTime
+public import Complexity.Computability.Circuit.Boolean.OpValue
 public import Complexity.Logics.Propositional.CNF
 import Mathlib.Data.List.GetD
 
@@ -17,10 +18,10 @@ import Mathlib.Data.List.GetD
 Tseitin's encoding turns a circuit into a formula in conjunctive normal form with one variable
 per wire [Tseitin][Tseitin1983], [Arora and Barak, Section 6.1][AroraBarak09]. A gate
 `w = op(a, b)` contributes the clauses `tseitinClause op w a b`, which hold together exactly when
-`w` carries the value of the gate (`forall_eval_tseitinClause_iff`). The clauses of the gates of a
-De Morgan gate list (`Cslib.Circuits.Program.code`) form `tseitinCNF n gates`, with gate `g` at
-wire `n + g`; an assignment satisfies it exactly when it is the evaluation of the list on its own
-values at the inputs (`eval_tseitinCNF_eq_true_iff_evalCode`).
+`w` carries the value `Op.value op a b` of the gate (`forall_eval_tseitinClause_iff`). The clauses
+of the gates of a De Morgan gate list (`Cslib.Circuits.Program.code`) form `tseitinCNF n gates`,
+with gate `g` at wire `n + g`; an assignment satisfies it exactly when it is the evaluation of the
+list on its own values at the inputs (`eval_tseitinCNF_eq_true_iff_evalCode`).
 
 `tseitinSatCNF x n gates o` adds unit clauses that fix the first inputs to the bits of `x` and
 the wire `o` to `true`. It is satisfiable exactly when some input extending `x` makes wire `o`
@@ -37,7 +38,6 @@ uniform.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Op.value`: the value of a De Morgan gate on its first two arguments.
 * `Cslib.Circuits.Boolean.tseitinClause`: the three clauses of a gate.
 * `Cslib.Circuits.Boolean.tseitinCNF`: the clauses of a gate list.
 * `Cslib.Circuits.Boolean.tseitinSatCNF`: the clauses of a gate list, with unit clauses fixing an
@@ -70,23 +70,6 @@ open Cslib.Logic.PL
 variable {V : Type*}
 
 /-! ### The clauses of a gate -/
-
-/-- The value of a De Morgan operation whose first two arguments carry `a` and `b`; arguments
-beyond its arity are ignored. -/
-def Op.value : Op → Bool → Bool → Bool
-  | .const v, _, _ => v
-  | .not, a, _ => !a
-  | .and, a, b => a && b
-  | .or, a, b => a || b
-
-/-- The value of a gate does not depend on the arguments beyond its arity. -/
-theorem Op.value_congr (op : Op) {a a' b b' : Bool} (ha : 1 ≤ signature.Arity op → a = a')
-    (hb : 2 ≤ signature.Arity op → b = b') : op.value a b = op.value a' b' := by
-  cases op with
-  | const v => rfl
-  | not => simp only [Op.value, ha (by decide)]
-  | and => simp only [Op.value, ha (by decide), hb (by decide)]
-  | or => simp only [Op.value, ha (by decide), hb (by decide)]
 
 /-- A gate code with as many arguments as its arity computes its operation on the values of its
 first two listed arguments. -/
