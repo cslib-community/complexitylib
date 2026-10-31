@@ -400,6 +400,7 @@ public import Complexity.Algorithms.WordRAM.NatSqrt
 public import Complexity.Algorithms.WordRAM.PPSZ.Clauses
 public import Complexity.Algorithms.WordRAM.PPSZ.Implied
 public import Complexity.Algorithms.WordRAM.PPSZ.Odometer
+public import Complexity.Algorithms.WordRAM.PPSZ.Round
 public import Complexity.Algorithms.WordRAM.PPZ.Amplify
 public import Complexity.Algorithms.WordRAM.PPZ.Forced
 public import Complexity.Algorithms.WordRAM.PPZ.Round

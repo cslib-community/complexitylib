@@ -5,12 +5,16 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Algorithms.WordRAM.PPSZ.Implied
+import Complexity.Algorithms.WordRAM.PPSZ.Round
+import Complexity.Computability.Complexity.FineGrained.PPSZ.General
 
-/-! PPSZ's oracle on the word RAM: on a formula where `x₁ = true` is implied by two clauses but not
-by one, the finite search `Cslib.Complexity.PPSZ.impliedTest` and the implied value
+/-! PPSZ on the word RAM. Its oracle: on a formula where `x₁ = true` is implied by two clauses but
+not by one, the finite search `Cslib.Complexity.PPSZ.impliedTest` and the implied value
 `Cslib.Complexity.PPSZ.implied`, concrete runs of `Cslib.Algorithms.WordRAM.PPSZ.impliedCode`
 checked against them, the odometer on a small list of lists, and the specification of
-`impliedCode` at word size `8`. -/
+`impliedCode` at word size `8`. Its round: concrete runs of the setup and of the oracle in the
+frame the setup builds, the round program's specification at word size `8`, and the PPSZ success
+bound for the program's output. -/
 
 namespace ComplexityTests.WordRAMPPSZ
 
@@ -75,5 +79,50 @@ example := impliedCode_spec (w := 8) φ τ 1 2 (C := 2) (Tb := 7) (input 2 1) (b
   (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
   (fun i => by fin_cases i <;> rfl) (fun i => by fin_cases i <;> rfl) (by decide) (by decide)
   (by decide) (by decide)
+
+/-! ### The round -/
+
+section Round
+
+open Cslib.Algorithms.WordRAM.PPZ.Reg
+
+-- The input `s :: encode φ` with `s = 2` has length `7`.
+example : Cslib.Algorithms.WordRAM.Schoening.encode φ = [2, 1, 1, 2, 0, 3] := rfl
+
+-- The setup: the clauses at `[3, 8)`, the partial assignment at `8`, the order array at `10`, and
+-- `s = 2` copied to `8 + 2 · 2 = 12`, in `12` instructions.
+example : ((roundSetup.eval 16 8
+      (Data.init (2 :: Cslib.Algorithms.WordRAM.Schoening.encode φ) : Data 32)).map fun z =>
+    ([z.1.regs cBeg, z.1.regs cEnd, z.1.regs tBase, z.1.regs nReg, z.1.regs pBase, z.1.mem 12],
+      z.2)) = some ([3, 8, 8, 2, 10, 2], 12) := by
+  decide
+
+-- In the frame built by the setup and the initial arrays, the oracle code finds `x₁ = true`
+-- implied by two clauses, as `implied φ 2 τ 1` says, and leaves the scratch memory zero.
+example : ((ram[ ⟪roundSetup⟫; iReg ← zero; ⟪Cslib.Algorithms.WordRAM.PPZ.initLoop⟫; xReg ← one;
+      ⟪impliedCode⟫ ].eval 16 20
+      (Data.init (2 :: Cslib.Algorithms.WordRAM.Schoening.encode φ) : Data 32)).map fun z =>
+    (z.1.regs res, (List.range 4).map fun i => z.1.mem (13 + i))) =
+    some (optCode (implied φ 2 τ 1), [0, 0, 0, 0]) := by
+  rw [implied_eq_test]; decide +kernel
+
+-- The round program's specification applies at word size `8` with `s = 3`.
+example := roundProgram_spec 3 φ (w := 8) (by decide)
+
+-- So the law of the assignment the program leaves is a round of PPSZ, and the PPSZ bound for
+-- satisfiable 3-CNF applies: the program finds the satisfying assignment `x₀ = x₁ = true` with
+-- probability at least `2 ^ (-(39 / 70) · 2)`.
+example : (2 : ℝ) ^ (-(39 / 70 * 2 : ℝ)) ≤
+    ∑ σ ∈ Finset.univ.filter (fun σ : Fin 2 → Bool => φ.eval σ = true),
+      (((evalRand 8 roundProgram
+        (roundTime 3 2 (3 :: Cslib.Algorithms.WordRAM.Schoening.encode φ).length)
+        (.init (3 :: Cslib.Algorithms.WordRAM.Schoening.encode φ))).map
+          (Cslib.Algorithms.WordRAM.PPZ.cfgPartial
+            ((3 :: Cslib.Algorithms.WordRAM.Schoening.encode φ).length + 1) 2))
+        fun x => some (σ x)).toReal := by
+  rw [(roundProgram_spec 3 φ (w := 8) (by decide)).2.2.2]
+  exact_mod_cast round_success_of_satisfiable_three le_rfl ⟨fun _ => true, by decide⟩ (by decide)
+
+end Round
 
 end ComplexityTests.WordRAMPPSZ
