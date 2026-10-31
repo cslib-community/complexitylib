@@ -27,6 +27,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
 import Complexity.Computability.Probabilistic.Oracle.Composition
+import Complexity.Foundations.Data.List.Counting
+import Complexity.Foundations.Data.Nat.PolynomialBound.Log
 import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
@@ -44,7 +46,7 @@ length at most `m`; it is polynomial in `m` because `S` is sparse.
 * With `S ∈ NP`, "the census is at least `k`" is a problem in `NP`: guess `k` distinct members,
   each with its certificate. Binary search finds the exact census with `O(log n)` such requests.
 * Given the exact census `k`, a list of `k` distinct short members of `S` lists them all
-  (`Cslib.Complexity.mem_iff_of_length_eq_length_shortMembers`), so it can replace the oracle `S`
+  (`Cslib.BitString.mem_iff_of_length_eq_length_shortMembers`), so it can replace the oracle `S`
   (`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_listOracle_bool`). Hence one more
   request in `NP`, which guesses the list and a first certificate, decides a problem in `Σ₂`.
 
@@ -68,17 +70,14 @@ in `[0, N]`.
 ## Main definitions
 
 * `Cslib.Complexity.KadinCensus.language`: the `NP` problem asked by the algorithm, on triples
-  `(a, k, b)`: `k` distinct short members of `S` exist, and if `b`, they also witness the first
-  quantifier of a `Σ₂` problem.
+  `(a, k, finalQuery)`: `k` distinct short members of `S` exist, and if `finalQuery`, they also
+  witness the first quantifier of a `Σ₂` problem.
 * `Cslib.Complexity.KadinCensus.searchStep`: one round of binary search for a threshold.
 * `Cslib.Complexity.KadinCensus.searchStepProgram`, `Cslib.Complexity.KadinCensus.program`: the
   oracle programs.
 
 ## Main results
 
-* `Cslib.Complexity.length_le_length_shortMembers`,
-  `Cslib.Complexity.mem_iff_of_length_eq_length_shortMembers`: the census bounds the duplicate-free
-  lists of short members, and a list attaining it lists them all.
 * `Cslib.Complexity.KadinCensus.mem_language_false_iff`,
   `Cslib.Complexity.KadinCensus.mem_language_census_true_iff`: the meaning of the requests.
 * `Cslib.Complexity.KadinCensus.language_mem_NP`: the requests form a problem in `NP`.
@@ -99,48 +98,9 @@ in `[0, N]`.
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM
+open Turing.MultiTapeTM BitString
 
 variable {α : Type} {S : Set (List Bool)}
-
-/-! ### The census -/
-
-theorem nodup_shortMembers (S : Set (List Bool)) (n : ℕ) : (shortMembers S n).Nodup :=
-  Finset.nodup_toList _
-
-/-- **The census bounds the lists of distinct short members.** -/
-theorem length_le_length_shortMembers {ℓ : List (List Bool)} {n : ℕ} (hnd : ℓ.Nodup)
-    (h : ∀ s ∈ ℓ, s ∈ S ∧ s.length ≤ n) : ℓ.length ≤ (shortMembers S n).length := by
-  rw [← List.toFinset_card_of_nodup hnd, ← List.toFinset_card_of_nodup (nodup_shortMembers S n)]
-  exact Finset.card_le_card fun s hs => by
-    rw [List.mem_toFinset] at hs ⊢
-    exact mem_shortMembers.mpr (h s hs)
-
-/-- **A list attaining the census lists all short members.** A duplicate-free list of short
-members of `S` with as many entries as there are short members agrees with `S` on every short
-word. -/
-theorem mem_iff_of_length_eq_length_shortMembers {ℓ : List (List Bool)} {n : ℕ} (hnd : ℓ.Nodup)
-    (h : ∀ s ∈ ℓ, s ∈ S ∧ s.length ≤ n) (hlen : ℓ.length = (shortMembers S n).length)
-    {s : List Bool} (hs : s.length ≤ n) : s ∈ ℓ ↔ s ∈ S := by
-  have hsub : ℓ.toFinset ⊆ (shortMembers S n).toFinset := fun t ht => by
-    rw [List.mem_toFinset] at ht ⊢
-    exact mem_shortMembers.mpr (h t ht)
-  have heq := Finset.eq_of_subset_of_card_le hsub (by
-    rw [List.toFinset_card_of_nodup hnd, List.toFinset_card_of_nodup (nodup_shortMembers S n),
-      hlen])
-  refine ⟨fun hsℓ => (h s hsℓ).1, fun hsS => ?_⟩
-  have hmem : s ∈ (shortMembers S n).toFinset :=
-    List.mem_toFinset.mpr (mem_shortMembers.mpr ⟨hsS, hs⟩)
-  rwa [← heq, List.mem_toFinset] at hmem
-
-/-- The census of a sparse language is polynomially bounded. -/
-theorem exists_length_shortMembers_le (hS : S ∈ SPARSE encBits) :
-    ∃ c d : ℕ, ∀ n, (shortMembers S n).length ≤ c * (n + 1) ^ d := by
-  obtain ⟨c, d, hcard⟩ := exists_card_le_of_mem_SPARSE hS
-  refine ⟨c, d, fun n => ?_⟩
-  unfold shortMembers
-  rw [Finset.length_toList]
-  exact hcard n _ fun w hw => by simpa using hw
 
 /-! ### The requests -/
 
@@ -149,11 +109,14 @@ namespace KadinCensus
 variable (S) (enc : α ↪ List Bool) (m p : Polynomial ℕ)
   (G : (α × List Bool) × List (List Bool) → Bool)
 
-/-- A guess for the request `(a, k, b)`: `ℓ` lists `k` distinct members of `S` of length at most
-`m |enc a|`, and if `b`, some word `w` of length `p |enc a|` has `G ((a, w), ℓ) = false`. -/
-def Guess (x : α × ℕ × Bool) (ℓ : List (List Bool)) : Prop :=
-  ℓ.Nodup ∧ ℓ.length = x.2.1 ∧ (∀ s ∈ ℓ, s ∈ S ∧ s.length ≤ m.eval (enc x.1).length) ∧
-    (x.2.2 = true → ∃ w : List Bool, w.length = p.eval (enc x.1).length ∧ G ((x.1, w), ℓ) = false)
+/-- A guess for the request `(a, k, finalQuery)`: `ℓ` lists `k` distinct members of `S` of length
+at most `m |enc a|`, and if `finalQuery`, some word `w` of length `p |enc a|` has
+`G ((a, w), ℓ) = false`. -/
+def Guess : α × ℕ × Bool → List (List Bool) → Prop
+  | (a, k, finalQuery), ℓ =>
+    ℓ.Nodup ∧ ℓ.length = k ∧ (∀ s ∈ ℓ, s ∈ S ∧ s.length ≤ m.eval (enc a).length) ∧
+      (finalQuery = true →
+        ∃ w : List Bool, w.length = p.eval (enc a).length ∧ G ((a, w), ℓ) = false)
 
 /-- The requests that have a guess. -/
 def language : Set (α × ℕ × Bool) := {x | ∃ ℓ, Guess S enc m p G x ℓ}
@@ -163,7 +126,7 @@ noncomputable def census (a : α) : ℕ := (shortMembers S (m.eval (enc a).lengt
 
 variable {S enc m p G}
 
-/-- **A request with `b = false` asks whether the census is at least `k`.** -/
+/-- **A request with `finalQuery = false` asks whether the census is at least `k`.** -/
 theorem mem_language_false_iff {a : α} {k : ℕ} :
     (a, k, false) ∈ language S enc m p G ↔ k ≤ census S enc m a := by
   constructor
@@ -178,9 +141,10 @@ theorem mem_language_false_iff {a : α} {k : ℕ} :
       fun h => absurd h Bool.false_ne_true⟩
     exact mem_shortMembers.mp (List.mem_of_mem_take hs)
 
-/-- **At the exact census, a request with `b = true` asks for the first quantifier.** If `G`
-computes `g` whenever its list agrees with `S` on the words of length at most `m |enc a|`, the
-request `(a, census, true)` asks whether some `w` of length `p |enc a|` has `g (a, w) = false`. -/
+/-- **At the exact census, a request with `finalQuery = true` asks for the first quantifier.**
+If `G` computes `g` whenever its list agrees with `S` on the words of length at most `m |enc a|`,
+the request `(a, census, true)` asks whether some `w` of length `p |enc a|` has
+`g (a, w) = false`. -/
 theorem mem_language_census_true_iff {a : α} {g : α × List Bool → Bool}
     (hG : ∀ w ℓ, w.length = p.eval (enc a).length →
       (∀ s : List Bool, s.length ≤ m.eval (enc a).length → (s ∈ ℓ ↔ s ∈ S)) →
@@ -200,59 +164,43 @@ theorem mem_language_census_true_iff {a : α} {g : α × List Bool → Bool}
 
 /-! ### The requests are in `NP` -/
 
-/-- A duplicate-free list is one in which no entry occurs twice, tested by counting. -/
-theorem not_any_one_lt_countP_iff_nodup (l : List (List Bool)) :
-    (!(l.any fun s => decide (1 < l.countP fun t => decide (t = s)))) = true ↔ l.Nodup := by
-  have hc (s : List Bool) : (l.countP fun t => decide (t = s)) = l.count s := by
-    rw [List.count_eq_countP]
-    congr 1
-    funext t
-    rw [Bool.eq_iff_iff]
-    simp
-  simp only [Bool.not_eq_true', List.any_eq_false, decide_eq_true_eq, not_lt, hc]
-  rw [List.nodup_iff_count_le_one]
-  refine ⟨fun h a => ?_, fun h a _ => h a⟩
-  by_cases ha : a ∈ l
-  · exact h a ha
-  · rw [List.count_eq_zero_of_not_mem ha]
-    omega
-
 variable (enc m p G) in
-/-- The check of a witness `(pairs, w)` for the request `(a, k, b)`: the first components of
-`pairs` are `k` distinct words of length at most `m |enc a|`, each with an accepted certificate of
-the verifier `VS` of `S`, and if `b`, `w` has length `p |enc a|` and `G ((a, w), ℓ) = false`. -/
-def check (VS : List Bool × List Bool → Bool) (pS : Polynomial ℕ)
-    (z : (α × ℕ × Bool) × (List (List Bool × List Bool) × List Bool)) : Bool :=
-  !((z.2.1.map Prod.fst).any fun s =>
-      decide (1 < (z.2.1.map Prod.fst).countP fun t => decide (t = s))) &&
-    decide ((z.2.1.map Prod.fst).length = z.1.2.1) &&
-    !(z.2.1.any fun sc => !(decide (sc.1.length ≤ m.eval (enc z.1.1).length) &&
-      decide (sc.2.length = pS.eval sc.1.length) && VS sc)) &&
-    (!z.1.2.2 || (decide (z.2.2.length = p.eval (enc z.1.1).length) &&
-      !G ((z.1.1, z.2.2), z.2.1.map Prod.fst)))
+/-- The check of a witness `(pairs, witness)` for the request `(a, k, finalQuery)`: the first
+components of `pairs` are `k` distinct words of length at most `m |enc a|`, each with an accepted
+certificate of the verifier `VS` of `S`, and if `finalQuery`, `witness` has length `p |enc a|` and
+`G ((a, witness), ℓ) = false` for the list `ℓ` of the guessed words. -/
+def check (VS : List Bool × List Bool → Bool) (pS : Polynomial ℕ) :
+    (α × ℕ × Bool) × (List (List Bool × List Bool) × List Bool) → Bool
+  | ((a, k, finalQuery), (pairs, witness)) =>
+    !((pairs.map Prod.fst).any fun s =>
+        decide (1 < (pairs.map Prod.fst).countP fun t => decide (t = s))) &&
+      decide ((pairs.map Prod.fst).length = k) &&
+      !(pairs.any fun sc => !(decide (sc.1.length ≤ m.eval (enc a).length) &&
+        decide (sc.2.length = pS.eval sc.1.length) && VS sc)) &&
+      (!finalQuery || (decide (witness.length = p.eval (enc a).length) &&
+        !G ((a, witness), pairs.map Prod.fst)))
 
-theorem check_eq_true_iff {VS : List Bool × List Bool → Bool} {pS : Polynomial ℕ}
-    {x : α × ℕ × Bool} {y : List (List Bool × List Bool) × List Bool} :
-    check enc m p G VS pS (x, y) = true ↔
-      (y.1.map Prod.fst).Nodup ∧ (y.1.map Prod.fst).length = x.2.1 ∧
-        (∀ sc ∈ y.1, sc.1.length ≤ m.eval (enc x.1).length ∧
+theorem check_eq_true_iff {VS : List Bool × List Bool → Bool} {pS : Polynomial ℕ} {a : α}
+    {k : ℕ} {finalQuery : Bool} {pairs : List (List Bool × List Bool)} {witness : List Bool} :
+    check enc m p G VS pS ((a, k, finalQuery), (pairs, witness)) = true ↔
+      (pairs.map Prod.fst).Nodup ∧ (pairs.map Prod.fst).length = k ∧
+        (∀ sc ∈ pairs, sc.1.length ≤ m.eval (enc a).length ∧
           sc.2.length = pS.eval sc.1.length ∧ VS sc = true) ∧
-        (x.2.2 = true → y.2.length = p.eval (enc x.1).length ∧
-          G ((x.1, y.2), y.1.map Prod.fst) = false) := by
-  unfold check
-  rw [Bool.and_eq_true, Bool.and_eq_true, Bool.and_eq_true, not_any_one_lt_countP_iff_nodup,
-    and_assoc, and_assoc]
+        (finalQuery = true → witness.length = p.eval (enc a).length ∧
+          G ((a, witness), pairs.map Prod.fst) = false) := by
+  rw [check, Bool.and_eq_true, Bool.and_eq_true, Bool.and_eq_true,
+    List.not_any_one_lt_countP_iff_nodup, and_assoc, and_assoc]
   refine and_congr Iff.rfl (and_congr decide_eq_true_iff (and_congr ?_ ?_))
   · simp [List.any_eq_false, and_assoc]
-  · cases x.2.2 <;> simp
+  · cases finalQuery <;> simp
 
 /-- The witnesses: the certificates of `S` are read by its verifier `VS`. -/
 theorem language_eq_setOf_check {VS : List Bool × List Bool → Bool} {pS : Polynomial ℕ}
     (hSV : IsVerifier encBits pS VS S) :
     language S enc m p G = {x | ∃ y, check enc m p G VS pS (x, y) = true} := by
   classical
-  ext x
-  simp only [Set.mem_ofPred_eq, check_eq_true_iff]
+  ext ⟨a, k, finalQuery⟩
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨ℓ, hnd, hlen, hmem, hw⟩
     have hcert (s : List Bool) (hs : s ∈ S) :
@@ -262,15 +210,16 @@ theorem language_eq_setOf_check {VS : List Bool × List Bool → Bool} {pS : Pol
       rw [List.map_map]
       exact List.map_id' ℓ
     refine ⟨(ℓ.map fun s => (s, cert s),
-      if h : x.2.2 = true then (hw h).choose else []), by rw [hmap]; exact hnd,
-      by rw [hmap]; exact hlen, fun sc hsc => ?_, fun h => ?_⟩
+      if h : finalQuery = true then (hw h).choose else []), check_eq_true_iff.mpr
+      ⟨by rw [hmap]; exact hnd, by rw [hmap]; exact hlen, fun sc hsc => ?_, fun h => ?_⟩⟩
     · obtain ⟨s, hs, rfl⟩ := List.mem_map.mp hsc
       have hsS := (hmem s hs).1
       simp only [cert, hsS, ↓reduceDIte]
       exact ⟨(hmem s hs).2, (hcert s hsS).choose_spec.1, (hcert s hsS).choose_spec.2⟩
     · simp only [h, ↓reduceDIte, hmap]
       exact (hw h).choose_spec
-  · rintro ⟨⟨pairs, w⟩, hnd, hlen, hpairs, hw⟩
+  · rintro ⟨⟨pairs, w⟩, hy⟩
+    obtain ⟨hnd, hlen, hpairs, hw⟩ := check_eq_true_iff.mp hy
     refine ⟨pairs.map Prod.fst, hnd, hlen, fun s hs => ?_, fun h => ⟨w, hw h⟩⟩
     obtain ⟨sc, hsc, rfl⟩ := List.mem_map.mp hs
     obtain ⟨hlenS, hc, hV⟩ := hpairs sc hsc
@@ -283,8 +232,20 @@ theorem computableInPolyTime_check {VS : List Bool × List Bool → Bool} {pS : 
     ComputableInPolyTime (check enc m p G VS pS)
       (encPair (encPair enc (encPair encUnary encBool))
         (encPair (encList (encPair encBits encBits)) encBits)) encBool := by
-  unfold check
-  fun_prop
+  -- the same function, with its components read by projections
+  have h : ComputableInPolyTime
+      (fun z : (α × ℕ × Bool) × (List (List Bool × List Bool) × List Bool) =>
+        !((z.2.1.map Prod.fst).any fun s =>
+            decide (1 < (z.2.1.map Prod.fst).countP fun t => decide (t = s))) &&
+          decide ((z.2.1.map Prod.fst).length = z.1.2.1) &&
+          !(z.2.1.any fun sc => !(decide (sc.1.length ≤ m.eval (enc z.1.1).length) &&
+            decide (sc.2.length = pS.eval sc.1.length) && VS sc)) &&
+          (!z.1.2.2 || (decide (z.2.2.length = p.eval (enc z.1.1).length) &&
+            !G ((z.1.1, z.2.2), z.2.1.map Prod.fst))))
+      (encPair (encPair enc (encPair encUnary encBool))
+        (encPair (encList (encPair encBits encBits)) encBits)) encBool := by
+    fun_prop
+  exact h
 
 /-- **The requests form a problem in `NP`** when `S` is a sparse problem in `NP` and `G` is
 polynomial-time: a witness lists the guessed members with their certificates, and the word `w`.
@@ -299,40 +260,43 @@ theorem language_mem_NP (hS : S ∈ NP encBits) (hsparse : S ∈ SPARSE encBits)
     (p := 2 * (Polynomial.C c * (m + 1) ^ d * (4 * m + 2 * pS.comp m + 3)) + 1 + p)
     (Decoder.pair (Decoder.list (Decoder.pair .bits .bits)) .bits)
     (computableInPolyTime_check hVS hG) (fun _ _ => Iff.rfl) fun x y hy => ?_
+  obtain ⟨a, k, finalQuery⟩ := x
+  obtain ⟨pairs, w⟩ := y
   obtain ⟨hnd, hlen, hpairs, hw⟩ := check_eq_true_iff.mp hy
-  set n := (enc x.1).length
-  refine ⟨(y.1, if x.2.2 = true then y.2 else []), check_eq_true_iff.mpr
+  set n := (enc a).length
+  refine ⟨(pairs, if finalQuery = true then w else []), check_eq_true_iff.mpr
     ⟨hnd, hlen, hpairs, fun h => by simpa only [h, ↓reduceIte] using hw h⟩, ?_⟩
   -- the guessed words are distinct short members of `S`, so there are at most census many
-  have hcount : y.1.length ≤ c * (m.eval n + 1) ^ d := by
+  have hcount : pairs.length ≤ c * (m.eval n + 1) ^ d := by
     have hle := length_le_length_shortMembers (S := S) (n := m.eval n) hnd fun s hs => by
       obtain ⟨sc, hsc, rfl⟩ := List.mem_map.mp hs
       obtain ⟨hlenS, hc, hV⟩ := hpairs sc hsc
       exact ⟨(hSV sc.1).2 ⟨sc.2, by rw [encBits_apply]; exact hc, hV⟩, hlenS⟩
     rw [List.length_map] at hle
     exact hle.trans (hcensus _)
-  have hpair (sc : List Bool × List Bool) (hsc : sc ∈ y.1) :
+  have hpair (sc : List Bool × List Bool) (hsc : sc ∈ pairs) :
       2 * (encPair encBits encBits sc).length + 1 ≤
         4 * m.eval n + 2 * pS.eval (m.eval n) + 3 := by
     obtain ⟨hlenS, hc, -⟩ := hpairs sc hsc
     have hpS : pS.eval sc.1.length ≤ pS.eval (m.eval n) := pS.eval_mono hlenS
     rw [length_encPair, encBits_apply, encBits_apply, hc]
     omega
-  have hlist : (encList (encPair encBits encBits) y.1).length ≤
+  have hlist : (encList (encPair encBits encBits) pairs).length ≤
       c * (m.eval n + 1) ^ d * (4 * m.eval n + 2 * pS.eval (m.eval n) + 3) := by
     rw [length_encList]
     have h := List.sum_le_length_nsmul
-      (y.1.map fun sc => 2 * (encPair encBits encBits sc).length + 1)
+      (pairs.map fun sc => 2 * (encPair encBits encBits sc).length + 1)
       (4 * m.eval n + 2 * pS.eval (m.eval n) + 3) fun z hz => by
         obtain ⟨sc, hsc, rfl⟩ := List.mem_map.mp hz
         exact hpair sc hsc
     rw [List.length_map, smul_eq_mul] at h
     exact h.trans (Nat.mul_le_mul_right _ hcount)
-  have hword : (if x.2.2 = true then y.2 else []).length ≤ p.eval n := by
+  have hword : (if finalQuery = true then w else []).length ≤ p.eval n := by
     split_ifs with h
     · exact (hw h).1.le
     · exact Nat.zero_le _
-  have hn : n ≤ (encPair enc (encPair encUnary encBool) x).length := length_le_encPair_left _ _ _
+  have hn : n ≤ (encPair enc (encPair encUnary encBool) (a, k, finalQuery)).length :=
+    length_le_encPair_left enc (encPair encUnary encBool) (a, k, finalQuery)
   refine le_trans ?_ (Polynomial.eval_mono _ hn)
   rw [length_encPair, encBits_apply]
   simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C,
@@ -415,17 +379,6 @@ theorem length_queriesWith_searchStepProgram_le (answer : Unit × List Bool → 
   unfold searchStepProgram
   split_ifs <;> simp
 
-/-- A loop whose rounds make at most one request each makes at most one request per round. -/
-theorem length_queriesWith_iterate_le {State : Type} (answer : Unit × List Bool → List Bool)
-    {step : State → WordQueryComp Unit State}
-    (h : ∀ st, (OracleComp.queriesWith answer (step st)).length ≤ 1) (n : ℕ) (st : State) :
-    (OracleComp.queriesWith answer (OracleComp.iterate n step st)).length ≤ n := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [OracleComp.iterate_succ, OracleComp.queriesWith_bind, List.length_append]
-    exact Nat.add_le_add ih (h _)
-
 /-- The algorithm: `count a` rounds of binary search from `(0, N a)` with the requests `req`,
 then one request `fin (a, lo)` at the threshold found. -/
 def program (req fin : α × ℕ → List Bool) (N count : α → ℕ) (a : α) : WordQueryComp Unit Bool :=
@@ -448,8 +401,8 @@ theorem length_queriesWith_program_le (answer : Unit × List Bool → List Bool)
     (OracleComp.queriesWith answer (program req fin N count a)).length ≤ count a + 1 := by
   rw [program, OracleComp.queriesWith_bind, List.length_append, queriesWith_queryBit,
     List.length_singleton]
-  exact Nat.add_le_add_right (length_queriesWith_iterate_le answer
-    (length_queriesWith_searchStepProgram_le answer req a) _ _) 1
+  exact Nat.add_le_add_right ((OracleComp.length_queriesWith_iterate_le answer
+    (length_queriesWith_searchStepProgram_le answer req a) _ _).trans (Nat.mul_one _).le) 1
 
 open Probability in
 /-- **The algorithm is strict oracle PPT** when the requests, the bound `N` and the count are
@@ -535,21 +488,6 @@ end KadinCensus
 
 /-! ### Kadin's theorem -/
 
-/-- A polynomially bounded quantity has a logarithmic number of bits: `⌈log₂ N n⌉ ≤ K log₂ n + K`.
--/
-theorem exists_clog_le_of_polynomiallyBounded {N : ℕ → ℕ} (hN : PolynomiallyBounded N) :
-    ∃ K : ℕ, ∀ n, Nat.clog 2 (N n) ≤ K * Nat.log 2 n + K := by
-  obtain ⟨e, f, h⟩ := polynomiallyBounded_iff_le.mp hN
-  refine ⟨f + e, fun n => Nat.clog_le_of_le_pow ?_⟩
-  have hn : n + 1 ≤ 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by norm_num) n
-  have he : e ≤ 2 ^ e := (Nat.lt_two_pow_self).le
-  calc N n ≤ e * (n + 1) ^ f := h n
-    _ ≤ 2 ^ e * (2 ^ (Nat.log 2 n + 1)) ^ f :=
-        Nat.mul_le_mul he (Nat.pow_le_pow_left hn f)
-    _ = 2 ^ (f * Nat.log 2 n + f + e) := by rw [← pow_mul, ← pow_add]; ring_nf
-    _ ≤ 2 ^ ((f + e) * Nat.log 2 n + (f + e)) :=
-        Nat.pow_le_pow_right (by norm_num) (by nlinarith [Nat.zero_le (Nat.log 2 n)])
-
 open Classical in
 /-- **`Σ₂ ⊆ P^{NP[O(log n)]}` under a sparse Turing-complete set for `NP`.** Binary search with
 requests to `SAT` finds the census of `S` up to the length of the oracle words, and one more
@@ -589,8 +527,8 @@ theorem SigmaP_two_subset_PNPLog_of_sparse (hsparse : S ∈ SPARSE encBits) (hS 
   have hcount : ComputableInPolyTime count enc encUnary :=
     (ComputableInPolyTime.unary_clog_const 2).comp
       (ComputableInPolyTime.unary_add' hN (ComputableInPolyTime.const 1))
-  obtain ⟨K, hK⟩ := exists_clog_le_of_polynomiallyBounded
-    (N := fun n => c * (m.eval n + 1) ^ d + 1) (by fun_prop)
+  obtain ⟨K, hK⟩ := PolynomiallyBounded.exists_clog_le_mul_log
+    (s := fun n => c * (m.eval n + 1) ^ d + 1) (by fun_prop)
   let prog := KadinCensus.program (fun x => encCNF (red (x.1, x.2, false)))
     (fun x => encCNF (red (x.1, x.2, true))) N count
   refine mem_PNPLog_of_mem_PWithOracleQueries (c := K + 1) image_SAT_mem_NP

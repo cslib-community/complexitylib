@@ -10,7 +10,7 @@ import Complexity.Computability.Complexity.Classes.Sparse.Kadin
 
 namespace ComplexityTests.SparseKadin
 
-open Cslib Cslib.Complexity Turing.MultiTapeTM
+open Cslib Cslib.BitString Cslib.Complexity Turing.MultiTapeTM
 
 /-- The words consisting only of `true`s, a sparse language. -/
 private def unary : Set (List Bool) := {w | ∀ b ∈ w, b = true}
