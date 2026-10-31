@@ -15,21 +15,47 @@ import Mathlib.Analysis.SpecificLimits.Normed
 /-!
 # The fast contraction algorithm, assembled
 
-The guard of the fast contraction algorithm (`CountingSimulation.fastGuard`) tests what
-`ExplicitAdmissible` already implies (rows first, full tables) and the degree bound
-`degreeBound m` of the schedule (§D.4.2 of [OpenAI2026ETH], (D.6), p. 58). An admissible network of
-degree at most `C ⌊log₂ s⌋` fails it only for `s` below a threshold depending on `C`
-(`CountingSimulation.exists_le_of_fastGuard_eq_false`), since `degreeBound m ≥ m ^ (9 / 10)` and
-`m ≥ s`.
+The contraction interface (`CountingSimulation.ContractionAlgorithm`) for admissible explicit
+networks, from the native machine of the recursion of Theorem D.1 of [OpenAI2026ETH]
+(`FastContraction.fastCertificate`), reduced to its remaining obligations
+(`CountingSimulation.contractionAlgorithmOfFast`).
+
+**The guard** (`CountingSimulation.fastGuard`) tests what `ExplicitAdmissible` already implies
+(rows first, full tables) and the degree bound `degreeBound m` of the schedule (§D.4.2, (D.6),
+p. 58). An admissible network of degree at most `C ⌊log₂ s⌋` fails it only for `s` below a
+threshold depending on `C` (`CountingSimulation.exists_le_of_fastGuard_eq_false`), since
+`degreeBound m ≥ m ^ (9 / 10)` and `m ≥ s`.
+
+**The clock** is subexponential on admissible inputs: with `m ≤ C s` edges and precision
+`P ≤ D s` it is at most `2 ^ (K₀ (C + D) s / √⌊log₂ s⌋)` (`CountingSimulation.fuel_le`).
+
+**The resources.** `CountingSimulation.FastAnalysis` is the resource analysis of the recursion on
+admissible guarded inputs: a derivation of the root with polynomial depth, node sizes and leaf
+space, leaf time `poly(n) 2 ^ O(s / √⌊log₂ s⌋)`, and, from some size on, a node count within the
+clock. From it and polynomial-time components of the scheme, the fast machine meets the
+interface's bounds (`CountingSimulation.fastCertificate_le`), through
+`Cslib.GenericRAM.StackRecursion.Scheme.certificate_le`. Below the size threshold the run may not
+finish, and the machine falls back to direct summation, at a constant factor.
+
+**Remaining obligations** (the hypotheses of `CountingSimulation.contractionAlgorithmOfFast`): the
+guard and the components of the scheme in polynomial time, the correctness of one active call
+(`FastContraction.StepCorrect`), the passage of well-formedness to the children
+(`FastContraction.WFChildren`) and to the root, and the resource analysis.
 
 ## Main definitions
 
 * `Cslib.Complexity.CountingSimulation.fastGuard`: the guard.
+* `Cslib.Complexity.CountingSimulation.FastAnalysis`: the resource analysis.
+* `Cslib.Complexity.CountingSimulation.contractionAlgorithmOfFast`: the contraction algorithm from
+  the remaining obligations.
 
 ## Main results
 
 * `Cslib.Complexity.CountingSimulation.exists_le_of_fastGuard_eq_false`: admissible networks
   failing the guard are small.
+* `Cslib.Complexity.CountingSimulation.fuel_le`: the clock on admissible inputs.
+* `Cslib.Complexity.CountingSimulation.fastCertificate_le`: the fast machine within the
+  interface's bounds.
 
 ## References
 
@@ -429,6 +455,27 @@ theorem fastCertificate_le (hpoly : (scheme mk).PolyTime encCall encFrame encVal
     calc _ ≤ _ := Nat.add_le_add_left hrest _
       _ ≤ Kc * B ^ E := htot
       _ ≤ _ := Nat.mul_le_mul hKK hBE
+
+/-- **The contraction algorithm from the fast machine**, given its remaining obligations: a
+polynomial-time guard, polynomial-time components of the scheme, the correctness of one active
+call and the passage of well-formedness to the children (`FastContraction.StepCorrect`,
+`FastContraction.WFChildren`), well-formed roots on guarded inputs, and the resource analysis
+(`FastAnalysis`). It branches on the guard (`ContractionAlgorithm.ofGuarded`) to the fast machine
+or to direct summation. -/
+noncomputable def contractionAlgorithmOfFast
+    (hguard : ComputableInPolyTime fastGuard
+      (encPair encNat ExplicitTensorNetwork.encExplicitNetwork)
+      encBool)
+    (hpoly : (scheme mk).PolyTime encCall encFrame encValue) {WF : Call → Prop}
+    (hstep : StepCorrect mk WF) (hwf : WFChildren mk WF)
+    (hroot : ∀ P G, fastGuard G = true → WF (root (ExplicitTensorNetwork.capPrecision (P, G))))
+    (hana : FastAnalysis mk) :
+    ContractionAlgorithm (encPair encNat ExplicitTensorNetwork.encExplicitNetwork)
+      (fun G => G.2.contraction) ExplicitAdmissible :=
+  ContractionAlgorithm.ofGuarded hguard (fastCertificate hpoly)
+    (fun P G hg => fastValue_eq mk hstep hwf (P, G) (hroot P G hg))
+    (fun C D => fastCertificate_le hpoly hana C D) (fun _ _ _ hA => hA.2.1)
+    exists_le_of_fastGuard_eq_false
 
 end Resources
 
