@@ -14,8 +14,8 @@ public import Complexity.Foundations.BooleanAnalysis.SparseIncidence
 # Tests for the subset Möbius transform, the incidence expansion and the congruence (D.2)
 
 Kernel-checked values of the subset Möbius transform, the incidence weight and the incidence sum,
-and instances of the expansion, the degree bound (D.1) and the exact recovery of (D.2) on a
-two-equation system with one common zero.
+and instances of the expansion, the per-factor degree bound preceding (D.1) and the exact recovery
+of (D.2) on a two-equation system with one common zero.
 -/
 
 @[expose] public section
@@ -90,8 +90,8 @@ def testSys : Fin 2 → Finset (Finset (Fin 2))
 example : commonZeroCount (univ : Finset (Fin 2)) testSys = 1 := by
   decide
 
-/-- The degree bound (D.1) for `testEq1` (`k = 1`): the constant coefficient of its incidence
-coefficient vanishes at the two-element set. -/
+/-- The per-factor degree bound for `testEq1` (`k = 1`): the constant coefficient of its
+incidence coefficient vanishes at the two-element set. -/
 example (ℓ : ℕ) : (parityCoeff ℓ testEq1 univ).coeff 0 = 0 :=
   coeff_parityCoeff_eq_zero (k := 1) (by decide) (by decide)
 

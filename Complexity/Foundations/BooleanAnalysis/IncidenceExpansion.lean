@@ -10,8 +10,8 @@ module
 public import Complexity.Foundations.BooleanAnalysis.Mobius
 public import Mathlib.Algebra.Polynomial.Coeff
 public import Mathlib.Data.Fintype.Pi
+import Complexity.Foundations.Data.Polynomial.CoeffProd
 import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Tactic.Ring
 
 /-!
 # Expanding a product of local functions on the cube by incidences
@@ -36,7 +36,7 @@ the monomial `z_{i,S}` in the multilinear factor `B̄_i` is the subset inversion
 
 When the coefficients are polynomials whose `V ^ j` coefficient vanishes on sets of more than
 `k (1 + 2 j)` elements, a product of `a` of them has a nonzero `V ^ t` coefficient only on choices
-with at most `k (a + 2 t)` incidences (`Cslib.BitString.coeff_prod_eq_zero_of_lt`). So below
+with at most `k (a + 2 t)` incidences (`Polynomial.coeff_prod_eq_zero_of_lt`). So below
 `V ^ ℓ` the incidence sum does not change once `K ≥ k (a + 2 (ℓ - 1))`
 (`Cslib.BitString.coeff_incidenceSum_eq_of_le`). This is the degree bound (D.1) on p. 55.
 
@@ -50,8 +50,8 @@ with at most `k (a + 2 t)` incidences (`Cslib.BitString.coeff_prod_eq_zero_of_lt
 * `Cslib.BitString.sum_prod_eq_incidenceSum`: the cube sum of a product of local functions is
   the incidence sum of their subset Möbius transforms.
 * `Cslib.BitString.map_incidenceSum`: ring homomorphisms commute with the incidence sum.
-* `Cslib.BitString.coeff_prod_eq_zero_of_lt`: the graded vanishing of the coefficients of a
-  product.
+* `Cslib.BitString.coeff_incidenceTerm_eq_zero`: a choice with too many incidences has no low
+  coefficient.
 * `Cslib.BitString.coeff_incidenceSum_eq_of_le`: below `V ^ ℓ`, enough incidences are counted
   once `K ≥ k (a + 2 (ℓ - 1))`.
 
@@ -208,30 +208,6 @@ end Expansion
 section Truncation
 
 variable {A : Type*} [CommRing A]
-
-/-- **Graded vanishing of the coefficients of a product.** Suppose the `V ^ j` coefficient of
-`Q i` vanishes whenever `k (1 + 2 j) < d i`. Then the `V ^ t` coefficient of `∏ i ∈ s, Q i`
-vanishes whenever `k (#s + 2 t) < ∑ i ∈ s, d i`. -/
-theorem coeff_prod_eq_zero_of_lt (s : Finset κ) (Q : κ → A[X]) (d : κ → ℕ) (k : ℕ)
-    (hQ : ∀ i ∈ s, ∀ j, k * (1 + 2 * j) < d i → (Q i).coeff j = 0) {t : ℕ}
-    (ht : k * (#s + 2 * t) < ∑ i ∈ s, d i) : (∏ i ∈ s, Q i).coeff t = 0 := by
-  classical
-  induction s using Finset.induction_on generalizing t with
-  | empty => simp only [card_empty, zero_add, sum_empty, Nat.not_lt_zero] at ht
-  | insert a s ha ih =>
-    rw [prod_insert ha, coeff_mul]
-    rw [sum_insert ha, card_insert_of_notMem ha] at ht
-    refine sum_eq_zero fun uw huw => ?_
-    rw [mem_antidiagonal] at huw
-    by_cases hu : k * (1 + 2 * uw.1) < d a
-    · rw [hQ a (mem_insert_self a s) uw.1 hu, zero_mul]
-    · refine mul_eq_zero_of_right _ (ih (fun i hi => hQ i (mem_insert_of_mem hi)) ?_)
-      have e₁ : k * (#s + 1 + 2 * t) = k * #s + k + 2 * (k * uw.1) + 2 * (k * uw.2) := by
-        rw [← huw]
-        ring
-      have e₂ : k * (1 + 2 * uw.1) = k + 2 * (k * uw.1) := by ring
-      have e₃ : k * (#s + 2 * uw.2) = k * #s + 2 * (k * uw.2) := by ring
-      omega
 
 variable [Fintype ι] [DecidableEq ι] [Fintype κ] [DecidableEq κ]
 

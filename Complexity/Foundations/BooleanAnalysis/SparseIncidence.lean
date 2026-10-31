@@ -9,6 +9,7 @@ module
 
 public import Complexity.Foundations.BooleanAnalysis.IncidenceExpansion
 public import Complexity.Foundations.BooleanAnalysis.SparseEquations
+import Complexity.Foundations.BooleanAnalysis.SparseEquations.Degree
 import Mathlib.Algebra.BigOperators.ModEq
 
 /-!
@@ -25,10 +26,12 @@ from Lemma 5.1 (`Polynomial.parityFactor`). Its **incidence coefficient** at `S`
 (`Cslib.BitString.parityCoeff`) is the subset inversion `∑_{T ⊆ S} (-1) ^ (|S| - |T|) B_i(1_T, V)`
 in `ℤ[V]`. This is the coefficient `[z_{i,S}] B̄_i` of the multilinear factor on p. 56.
 
-* **(D.1)**: if every monomial has at most `k` variables, the `V ^ j` coefficient of
-  `parityCoeff ℓ (P i) S` vanishes once `#S > k (1 + 2 j)`
+* **The per-factor degree bound** (p. 55, just before (D.1)): if every monomial has at most `k`
+  variables, the `V ^ j` coefficient of `parityCoeff ℓ (P i) S` vanishes once `#S > k (1 + 2 j)`
   (`Cslib.BitString.coeff_parityCoeff_eq_zero`). The reason is that `e_j(y) h(y) ^ j` has degree at
-  most `k (1 + 2 j)` on the cube.
+  most `k (1 + 2 j)` on the cube (`Cslib.BitString.coeff_parityFactor_mem_lowDegree`). Over the
+  `a` equations this gives the bound (D.1): below `V ^ ℓ`, every term of the product has at most
+  `K = k (a + 2 (ℓ - 1))` incidences (`Cslib.BitString.coeff_incidenceSum_eq_of_le`).
 * **(D.2)**: for `a` equations, scopes `I i` containing the variables of `P i`, `ℓ ≥ 1` and
   `K ≥ k (a + 2 (ℓ - 1))`, the number of common zeros is congruent modulo `2 ^ ℓ` to the sum of the
   coefficients below `V ^ ℓ` of the incidence sum of these coefficients
@@ -56,7 +59,7 @@ one network per degree array.
 
 * `Cslib.BitString.monomialSum_indicator`: the integer lift at an indicator counts the monomials
   inside the set.
-* `Cslib.BitString.coeff_parityCoeff_eq_zero`: the degree bound (D.1).
+* `Cslib.BitString.coeff_parityCoeff_eq_zero`: the per-factor degree bound preceding (D.1).
 * `Cslib.BitString.commonZeroCount_modEq_sumCoeffsBelow_incidenceSum`: the congruence (D.2).
 * `Cslib.BitString.emod_sum_eq_commonZeroCount_of_modEq`: exact recovery of the count.
 
@@ -96,57 +99,9 @@ theorem coeff_parityCoeff (ℓ : ℕ) (P : Finset (Finset ι)) (S : Finset ι) (
       subsetMobius (fun T => (parityFactor ℓ (#{M ∈ P | M ⊆ T} : ℤ)).coeff j) S :=
   map_subsetMobius (lcoeff ℤ j).toAddMonoidHom _ S
 
-omit [DecidableEq ι] in
-/-- The integer lift of an equation with monomials of at most `k` variables has degree at most
-`k` on the cube. -/
-private theorem monomialSum_mem_lowDegree {P : Finset (Finset ι)} {k : ℕ}
-    (hk : ∀ M ∈ P, #M ≤ k) : (fun x => monomialSum ℤ P x) ∈ lowDegree ℤ ι k := by
-  have h : (fun x => monomialSum ℤ P x) = ∑ M ∈ P, monomial ℤ M := by
-    funext x
-    simp only [monomialSum, Finset.sum_apply]
-  rw [h]
-  exact sum_mem_lowDegree P fun M hM => monomial_mem_lowDegree (hk M hM)
-
-omit [DecidableEq ι] in
-/-- The `V ^ j` coefficient of the parity factor of an equation with monomials of at most `k`
-variables has degree at most `k (1 + 2 j)` on the cube. -/
-private theorem coeff_parityFactor_mem_lowDegree (ℓ : ℕ) {P : Finset (Finset ι)} {k : ℕ}
-    (hk : ∀ M ∈ P, #M ≤ k) (j : ℕ) :
-    (fun x => (parityFactor ℓ (monomialSum ℤ P x)).coeff j) ∈ lowDegree ℤ ι (k * (1 + 2 * j)) := by
-  set y : (ι → Bool) → ℤ := fun x => monomialSum ℤ P x
-  have hy : y ∈ lowDegree ℤ ι k := monomialSum_mem_lowDegree hk
-  by_cases hj : j < ℓ
-  · have he : (fun x => evalInt (y x) (parityBaseDigit ℓ j)) ∈ lowDegree ℤ ι k := by
-      have hfun : (fun x => evalInt (y x) (parityBaseDigit ℓ j)) =
-          (fun _ => (parityBaseDigit ℓ j).coeff 0) + (parityBaseDigit ℓ j).coeff 1 • y := by
-        funext x
-        have h := congrArg (eval (y x)) (parityBaseDigit_eq_C_add_C_mul_X ℓ j)
-        simp only [eval_add, eval_mul, eval_C, eval_X] at h
-        rw [evalInt_int, h]
-        rfl
-      rw [hfun]
-      exact Submodule.add_mem _ (const_mem_lowDegree k _) (Submodule.smul_mem _ _ hy)
-    have hh : (fun x => evalInt (y x) hPoly) ∈ lowDegree ℤ ι (2 * k) := by
-      have hfun : (fun x => evalInt (y x) hPoly) = y ^ 2 - y := by
-        funext x
-        simp only [evalInt_hPoly, Pi.sub_apply, Pi.pow_apply]
-      rw [hfun]
-      exact Submodule.sub_mem _ (pow_mem_lowDegree hy 2) (lowDegree_mono (by omega) hy)
-    have hfun : (fun x => (parityFactor ℓ (y x)).coeff j) =
-        (fun x => evalInt (y x) (parityBaseDigit ℓ j)) * (fun x => evalInt (y x) hPoly) ^ j := by
-      funext x
-      simp only [coeff_parityFactor, hj, ↓reduceIte, Pi.mul_apply, Pi.pow_apply]
-    rw [hfun]
-    refine lowDegree_mono (le_of_eq ?_) (mul_mem_lowDegree he (pow_mem_lowDegree hh j))
-    ring
-  · have hfun : (fun x => (parityFactor ℓ (y x)).coeff j) = 0 := by
-      funext x
-      simp only [coeff_parityFactor, hj, ↓reduceIte, Pi.zero_apply]
-    rw [hfun]
-    exact Submodule.zero_mem _
-
-/-- **The degree bound (D.1)**: if every monomial of `P` has at most `k` variables, the `V ^ j`
-coefficient of the incidence coefficient at `S` vanishes once `#S > k (1 + 2 j)`. -/
+/-- **The per-factor degree bound**: if every monomial of `P` has at most `k` variables, the
+`V ^ j` coefficient of the incidence coefficient at `S` vanishes once `#S > k (1 + 2 j)`. This is
+the bound on `B̄_i` stated just before (D.1) on p. 55. -/
 theorem coeff_parityCoeff_eq_zero {ℓ k : ℕ} {P : Finset (Finset ι)} (hk : ∀ M ∈ P, #M ≤ k)
     {S : Finset ι} {j : ℕ} (hS : k * (1 + 2 * j) < #S) : (parityCoeff ℓ P S).coeff j = 0 := by
   rw [coeff_parityCoeff]
