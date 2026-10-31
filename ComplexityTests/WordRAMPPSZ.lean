@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Algorithms.WordRAM.PPSZ.Amplify
 import Complexity.Algorithms.WordRAM.PPSZ.Implied
 import Complexity.Algorithms.WordRAM.PPSZ.Round
 import Complexity.Computability.Complexity.FineGrained.PPSZ.General
@@ -14,7 +15,8 @@ not by one, the finite search `Cslib.Complexity.PPSZ.impliedTest` and the implie
 checked against them, the odometer on a small list of lists, and the specification of
 `impliedCode` at word size `8`. Its round: concrete runs of the setup and of the oracle in the
 frame the setup builds, the round program's specification at word size `8`, and the PPSZ success
-bound for the program's output. -/
+bound for the program's output. The amplified algorithm: its count of rounds computed on the
+machine, and its specification and failure bound on the same formula. -/
 
 namespace ComplexityTests.WordRAMPPSZ
 
@@ -124,5 +126,41 @@ example : (2 : ℝ) ^ (-(39 / 70 * 2 : ℝ)) ≤
   exact_mod_cast round_success_of_satisfiable_three le_rfl ⟨fun _ => true, by decide⟩ (by decide)
 
 end Round
+
+/-! ### The amplified algorithm -/
+
+section Amplify
+
+open Cslib.Algorithms.WordRAM.PPZ.Reg
+
+-- With the bound `39 / 70` on the exponent and `n = 2` there are `2 ^ ⌈78 / 70⌉ = 4` rounds per
+-- unit of confidence. With `(a, b) = (k - 1, k)` the exponent is that of PPZ.
+example : ppszExp 39 70 2 = 2 := by decide
+example : ppszRounds 39 70 2 5 = 20 := by decide
+example : ppszDigits 39 70 2 5 = [0, 0, 1, 0, 1] := by decide
+example : ppszExp 2 3 5 = Cslib.Algorithms.WordRAM.PPZ.ppzExp 3 5 := rfl
+
+/-- The input `s :: a :: b :: c :: encode φ` with `(s, a, b, c) = (3, 39, 70, 5)`; its length is
+`10`. -/
+def ampInput : List ℕ := 3 :: 39 :: 70 :: 5 :: Cslib.Algorithms.WordRAM.Schoening.encode φ
+
+-- The setup copies `s = 3` to `10 + 1 + 2 · 2 = 15`, and computes the counter `20 = 0b10100` at
+-- `15 + 1 + 2 · 3 = 22`, after the oracle's six scratch words, low digit first.
+example : ((ram[ ⟪ampSetup⟫; ⟪Cslib.Algorithms.WordRAM.PPZ.countSetup⟫ ].eval 16 8
+      (Data.init ampInput : Data 32)).map fun z =>
+    (z.1.mem 15, z.1.regs bBase, z.1.regs bLen, (List.range 5).map fun i => z.1.mem (22 + i))) =
+    some (3, 22, 5, [0, 0, 1, 0, 1]) := by
+  decide
+
+-- The specification applies at word size `8`, and on the satisfiable `φ` the failure probability
+-- is at most `e ^ (-5)`.
+example := ampProgram_spec 3 39 70 5 φ (w := 8) (by decide)
+
+example : ((evalRand 8 ampProgram (ampTime 3 39 70 5 2 ampInput.length) (.init ampInput)).map
+    Cslib.Algorithms.WordRAM.Schoening.cfgSuccess false).toReal ≤ Real.exp (-5) := by
+  exact_mod_cast ampProgram_failure_le_exp_three (c := 5) ⟨fun _ => true, by decide⟩ (by decide)
+    (by decide)
+
+end Amplify
 
 end ComplexityTests.WordRAMPPSZ

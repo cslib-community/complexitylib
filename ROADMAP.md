@@ -319,9 +319,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
-- **Exponential-time SAT** ([#894]): the amplification of PPSZ on the randomized word RAM. One
-  PPSZ round already runs there with its exact law (`PPSZ.roundProgram`), and Schöning and PPZ run
-  there with exact laws, amplification and time bounds.
+- **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
+  exact laws, amplification and time bounds (PPSZ's round count takes an input bound
+  `a / b ≥ 1 - qbar k h`). Remaining: curated abstracts, and the uniform `o(n)` forms of the PPSZ
+  bounds with `w` growing in `n`.
   Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 
 ### Approximation and PCP

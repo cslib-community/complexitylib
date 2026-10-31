@@ -369,6 +369,7 @@ public import Complexity.Algorithms.WordRAM.NatGcd
 public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatNthRoot
 public import Complexity.Algorithms.WordRAM.NatSqrt
+public import Complexity.Algorithms.WordRAM.PPSZ.Amplify
 public import Complexity.Algorithms.WordRAM.PPSZ.Clauses
 public import Complexity.Algorithms.WordRAM.PPSZ.Implied
 public import Complexity.Algorithms.WordRAM.PPSZ.Odometer
