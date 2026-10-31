@@ -88,6 +88,10 @@ the Hadamard sign, so that over `ℕ` it can carry `2 ^ P - 1`, which is `-1` mo
   `Cslib.Quantum.PathNetwork.length_table_network`,
   `Cslib.Quantum.PathNetwork.length_occurrences_le`: `4 N` edges for `N ≤ 3 L` occurrences of the
   `L` gates, degree at most six and full tables.
+* `Cslib.Quantum.PathNetwork.exists_base_le_lt`, `Cslib.Quantum.PathNetwork.sum_readers`,
+  `Cslib.Quantum.PathNetwork.isRowsFirstBipartite_network`: every occurrence lies in one gate and
+  every link edge is read by one gate or its glue vertex, so the network is rows-first bipartite
+  when the qubits of every gate are distinct.
 
 ## References
 
