@@ -11,6 +11,7 @@ public import Complexity.Computability.WordRAM.Turing
 public import Complexity.Computability.WordRAM.ListOutput
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 /-!
@@ -25,13 +26,14 @@ list outputs.
 ## Construction
 
 The simulating machine runs the parked program `p.parkHalts` for its full step budget with the
-clocked finite-state simulator `FiniteState.run`. Since the parked program never halts, the run
-ends in a continuing state holding the memory just before `p` halted, and its control label
-`p.length + i` records the output register `i` (`ExecutesList.runs_parkHalts`). The machine then
-selects that register by comparing labels (`parkedRegister`), reads the array length `L` at the
-returned address and iterates `L` single-cell reads (`readRound`), each a scan of the sparse
-memory. Everything is charged: the step budget, word size, input words and initial memory as in
-the word-output simulation, then the run, the selection and the `L` reads.
+clocked finite-state simulator `FiniteState.run`, whose native certificate is polynomial by
+`Cslib.GenericRAM.FiniteState.runCertificateOf_isPolynomial`. Since the parked program never
+halts, the run ends in a continuing state holding the memory just before `p` halted, and its
+control label `p.length + i` records the output register `i` (`ExecutesList.runs_parkHalts`). The
+machine then selects that register by comparing labels (`parkedRegister`), reads the array length
+`L` at the returned address and iterates `L` single-cell reads (`readRound`), each a scan of the
+sparse memory. Everything is charged: the step budget, word size, input words and initial memory
+as in the word-output simulation, then the run, the selection and the `L` reads.
 
 ## Conventions and limits
 
@@ -51,8 +53,6 @@ bounded only by `2 ^ w`.
 
 ## Main results
 
-* `Cslib.WordRAM.runCertificateOf_isPolynomial`: a clocked run is polynomial when its step
-  budget and visited states are.
 * `Cslib.WordRAM.Program.ComputesListInTime.turingComputableInPolyTime_of_width`: the simulation at
   a supplied polynomial-time width schedule.
 * `Cslib.WordRAM.Program.ComputesListInTime.turingComputableInPolyTime`,
@@ -70,70 +70,6 @@ bounded only by `2 ^ w`.
 namespace Cslib.WordRAM
 
 open Turing.MultiTapeTM Cslib.GenericRAM NativeCertificate
-
-/-! ## Polynomiality of a clocked run -/
-
-section Run
-
-open GenericRAM.FiniteState
-
-variable {M : GenericRAM.Model.{0, 0, 0, 0}} {r : ℕ} {α : Type} {ei : α ↪ List Bool}
-
-/-- The clocked run of `p` for `steps a` steps from `initState a` at `cfg a`, as a native
-certificate on the original input. -/
-noncomputable def runCertificateOf (enc : M.Encoding) (N : M.NativePrimitives enc)
-    (p : GenericRAM.Program M r) {cfg : α → M.Config} {initState : α → FiniteState M r}
-    {steps : α → ℕ} (cSteps : NativeCertificate steps ei encNat)
-    (cCfg : NativeCertificate cfg ei enc.config)
-    (cInit : NativeCertificate initState ei (FiniteState.encoding enc)) :
-    NativeCertificate (fun a => FiniteState.run (cfg a) p (steps a) (initState a)) ei
-      (FiniteState.resultEncoding enc) :=
-  (FiniteState.runCertificate enc N p).comp (prod cSteps (prod cCfg cInit))
-
-/-- A clocked run is polynomial when the scalar primitives, the step budget, the configuration
-and the initial state are, the budget is polynomially bounded, and so are the encoded outcomes
-along the run. This is the run part of `FiniteState.transportCertificate_isPolynomial`, without
-a halting hypothesis. -/
-theorem runCertificateOf_isPolynomial (enc : M.Encoding) (N : M.NativePrimitives enc)
-    (p : GenericRAM.Program M r) {cfg : α → M.Config} {initState : α → FiniteState M r}
-    {steps : α → ℕ} (cSteps : NativeCertificate steps ei encNat)
-    (cCfg : NativeCertificate cfg ei enc.config)
-    (cInit : NativeCertificate initState ei (FiniteState.encoding enc))
-    (hN : N.IsPolynomial) (hSteps : cSteps.IsPolynomial) (hCfg : cCfg.IsPolynomial)
-    (hInit : cInit.IsPolynomial) (hStepsBound : PolyBounded (fun a => (ei a).length) steps)
-    {bound : α → ℕ} (hB : PolyBounded (fun a => (ei a).length) bound)
-    (hOutLen : ∀ a, ∀ j ≤ steps a,
-      (FiniteState.resultEncoding enc
-        (FiniteState.run (cfg a) p j (initState a))).length ≤ bound a) :
-    (runCertificateOf enc N p cSteps cCfg cInit).IsPolynomial := by
-  have hIter : (iterate cSteps (prod cCfg (some (inl cInit enc.value)))
-      (roundCertificate enc N p)).IsPolynomial :=
-    iterate_isPolynomial cSteps _ (roundCertificate enc N p)
-      hSteps (prod_isPolynomial _ _ hCfg (some_isPolynomial _ (inl_isPolynomial _ _ hInit)))
-      (roundCertificate_isPolynomial enc N p hN) hStepsBound
-      ((((PolyBounded.const 2).mul (cCfg.polyTime hCfg).polyBounded_length).add
-        (.const 1)).add hB)
-      fun a j hj => by
-        rw [iterate_round_inl]
-        have := hOutLen a j hj
-        simp only [loopEncoding, length_encPair]
-        omega
-  have hInLen : PolyBounded (fun a => (ei a).length)
-      (fun a => (runInputEncoding enc (steps a, (cfg a, initState a))).length) :=
-    ((prod cSteps (prod cCfg cInit)).polyTime
-      (prod_isPolynomial _ _ hSteps (prod_isPolynomial _ _ hCfg hInit))).polyBounded_length
-  refine ⟨(hIter.1.add ((PolyBounded.const 3).mul hInLen)).mono fun a => ?_,
-    (hIter.2.add ((PolyBounded.const 3).mul hInLen)).mono fun a => ?_⟩
-  · simp only [runCertificateOf, comp_time, runCertificate, congr_time, snd_time,
-      iterate_time, initLoopCertificate, prod_time, fst_time, some_time, inl_time,
-      linear_time, resultEncoding]
-    omega
-  · simp only [runCertificateOf, comp_space, runCertificate, congr_space, snd_space,
-      iterate_space, initLoopCertificate, prod_space, fst_space, some_space, inl_space,
-      linear_space, resultEncoding]
-    omega
-
-end Run
 
 /-! ## Reading the output of a parked state -/
 
@@ -182,15 +118,19 @@ theorem parkedOutput_eq {L : ℕ} {s : FiniteState B.genericModel r} {i : Fin r}
     parkedOutput L s = outputList (fun a => SparseMemory.read s.default a s.memory) (s.regs i) := by
   rw [parkedOutput, parkedRegister_eq hpc (List.mem_finRange i)]
 
-/-- One round of reading consecutive memory cells, on `((default, memory), (address, read))`. -/
-def readRound (q : (ℕ × SparseMemory ℕ ℕ) × (ℕ × List ℕ)) :
-    (ℕ × SparseMemory ℕ ℕ) × (ℕ × List ℕ) :=
-  (q.1, (q.2.1 + 1, q.2.2 ++ [SparseMemory.read q.1.1 q.2.1 q.1.2]))
+/-- One round of reading consecutive memory cells: on `((fill, memory), (address, values))`, where
+`fill` is the value of unwritten cells, append the cell at `address` to `values` and advance
+`address`. -/
+def readRound : (ℕ × SparseMemory ℕ ℕ) × (ℕ × List ℕ) → (ℕ × SparseMemory ℕ ℕ) × (ℕ × List ℕ)
+  | ((fill, memory), (address, values)) =>
+    ((fill, memory), (address + 1, values ++ [SparseMemory.read fill address memory]))
 
-theorem iterate_readRound (j : ℕ) (q : (ℕ × SparseMemory ℕ ℕ) × (ℕ × List ℕ)) :
-    readRound^[j] q =
-      (q.1, (q.2.1 + j, q.2.2 ++ (List.range j).map fun i => SparseMemory.read q.1.1 (q.2.1 + i)
-        q.1.2)) := by
+/-- `j` reading rounds append the `j` cells from `address` on. -/
+theorem iterate_readRound (j fill : ℕ) (memory : SparseMemory ℕ ℕ) (address : ℕ)
+    (values : List ℕ) :
+    readRound^[j] ((fill, memory), (address, values)) =
+      ((fill, memory), (address + j,
+        values ++ (List.range j).map fun i => SparseMemory.read fill (address + i) memory)) := by
   induction j with
   | zero => simp
   | succ j ih =>
@@ -277,10 +217,6 @@ noncomputable def parkedOutputCertificate (L : ℕ)
       rw [iterate_readRound]
       simp [parkedOutput, outputList]
 
-private theorem length_encNat_le_of_lt' {w v : ℕ} (hv : v < 2 ^ w) : (encNat v).length ≤ w := by
-  rw [encNat_apply, Nat.size_eq_bits_len]
-  exact Nat.size_le.mpr hv
-
 /-- The reader is polynomial when its input state is, its states hold `W`-bit words with `W`
 polynomially bounded, and the output length is polynomially bounded. -/
 theorem parkedOutputCertificate_isPolynomial (L : ℕ)
@@ -316,8 +252,8 @@ theorem parkedOutputCertificate_isPolynomial (L : ℕ)
       simp [parkedOutput, ← hv_def]
     have hjlt : j < 2 ^ W a := lt_of_le_of_lt (hj.trans_eq rfl) (hsa.read_lt v)
     have haddr : (encNat (v + 1 + j)).length ≤ W a + 1 :=
-      length_encNat_le_of_lt' (by rw [Nat.pow_succ]; omega)
-    have hd : (encNat (s a).default).length ≤ W a := length_encNat_le_of_lt' hsa.default_lt
+      length_encNat_le_of_lt_two_pow (by rw [Nat.pow_succ]; omega)
+    have hd : (encNat (s a).default).length ≤ W a := length_encNat_le_of_lt_two_pow hsa.default_lt
     have hacc : (encList encNat ((List.range j).map fun i =>
         SparseMemory.read (s a).default (v + 1 + i) (s a).memory)).length ≤ j * (2 * W a + 1) := by
       rw [length_encList]
@@ -329,7 +265,7 @@ theorem parkedOutputCertificate_isPolynomial (L : ℕ)
               fun _ => 2 * W a + 1).sum :=
             List.sum_le_sum fun x hx => by
               obtain ⟨i, -, rfl⟩ := List.mem_map.mp hx
-              have := length_encNat_le_of_lt' (hsa.read_lt (v + 1 + i))
+              have := length_encNat_le_of_lt_two_pow (hsa.read_lt (v + 1 + i))
               omega
         _ = j * (2 * W a + 1) := by simp [Function.comp_def]
     have hmem : 2 * (encNat (s a).default).length +
