@@ -28,9 +28,13 @@ The *digit lifts* `∑ i, c i * X ^ i` with digits `c i ∈ {0, …, p - 1}` red
 distinct residue-field elements, so any two of them differ by a unit, and Lagrange interpolation
 over the ring holds at any set of them (`GaloisRing.eq_ringInterpolate_digitLift`).
 
-This is the coefficient ring of the Boolean tensor contraction of [OpenAI2026ETH] (§D.4.1,
-pp. 57–58), which takes `p = 2`, a degree `e = 4 ⌈log₂ s⌉` and the precision `n`; the manuscript's
-binary-coordinate lifts are the digit lifts for `p = 2`.
+This is the base coefficient ring of the Boolean tensor contraction of [OpenAI2026ETH] (§D.4.1,
+pp. 57–58), with `p = 2`, a degree `e = 4 ⌈log₂ s⌉` and the precision `n`. The manuscript puts
+`O = ℤ_(2)[U] / (f)` and `A = O[V] / (V ^ ℓ)`, and computes in `A / (2 ^ n)` (written `A_p` there,
+with `p` the precision). `GaloisRing 2 n f` corresponds to `O / (2 ^ n)`, since
+`ℤ_(2) / (2 ^ n) ≅ ℤ / 2 ^ n` (that identification is not formalized here). It is therefore the
+manuscript's `A / (2 ^ n)` only when `ℓ = 1`; the truncated `V`-extension for general `ℓ` is not
+formalized here. The manuscript's binary-coordinate lifts are the digit lifts for `p = 2`.
 
 The argument is that of a surjection onto a field with nilpotent kernel
 (`RingHom.isUnit_iff_ne_zero_of_isNilpotent`): reduction modulo `p` has kernel `(p)`, and
