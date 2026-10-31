@@ -97,6 +97,7 @@ minimum cut of a connected multigraph.
 namespace Cslib.Algorithms.WordRAM.Karger
 
 open scoped ENNReal
+open Cslib.WeightedCut
 open Cslib.Probability.PMF
 open Cslib.WordRAM
 
@@ -2633,8 +2634,10 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
       · -- Vacuous when `0 < minCut W₀` since `0 < minCut W₀ ≤ minCut W` forces `0 < totS`.
         intro B hmin_pos _ _
         have hminW : 0 < minCut W :=
-          lt_of_lt_of_le hmin_pos (minCut_le_of_isContractionOf (by omega) hC)
-        have hS_pos := totalDoubledWeight_pos_of_minCut_pos (by omega) hC.multigraph hminW
+          lt_of_lt_of_le hmin_pos
+            (minCut_le_of_isContractionOf (by rw [Fintype.card_fin]; omega) hC)
+        have hS_pos := totalDoubledWeight_pos_of_minCut_pos (by rw [Fintype.card_fin]; omega)
+          hC.multigraph hminW
         omega
     · -- Positive-weight branch: `0 < totalDoubledWeight W`.
       have hS_pos : 0 < totalDoubledWeight W := Nat.pos_of_ne_zero hS0
@@ -2837,9 +2840,11 @@ private theorem contractLoop_spec {n w wb db str t steps : ℕ} {W₀ : Fin n �
           have hcw_eq : cutWeight W B = minCut W₀ := by
             rw [← cutWeight_pullbackCut hC B, hB_min]
           rw [hcw_eq]
+          have hmul := mul_minCut_le_totalDoubledWeight (by rw [Fintype.card_fin]; omega)
+            hC.multigraph
+          rw [Fintype.card_fin] at hmul
           exact (Nat.mul_le_mul_left (m_cur + 1)
-            (minCut_le_of_isContractionOf (by omega) hC)).trans
-            (mul_minCut_le_totalDoubledWeight (by omega) hC.multigraph)
+            (minCut_le_of_isContractionOf (by rw [Fintype.card_fin]; omega) hC)).trans hmul
         have hstep_prob : (((m_cur - 1 : ℕ) : ℝ≥0∞) / (m_cur + 1 : ℕ)) ≤
             (ProbComp.unifFin (x_sub.regs val1)).eval.toOuterMeasure survSet := by
           rw [ProbComp.eval_unifFin]
@@ -2980,7 +2985,7 @@ theorem survivalPost_two_mem_eq {n : ℕ} {W₀ : Fin n → Fin n → ℕ} {wb d
   rcases hsurv with ⟨W', part', B', hC', hws', _, hpb'⟩
   have hB'_nt : IsNonTrivialCut B' :=
     isNonTrivialCut_of_pullbackCut part' (hpb' ▸ hnt)
-  rw [isNonTrivialCut_iff_card] at hB'_nt
+  rw [isNonTrivialCut_iff_card, Fintype.card_fin] at hB'_nt
   have hcard1 : B'.card = 1 := by omega
   rcases Finset.card_eq_one.mp hcard1 with ⟨b, rfl⟩
   have hcell : y.mem (wb + 1) = W' 0 1 := by

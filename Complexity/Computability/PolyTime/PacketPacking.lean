@@ -103,7 +103,8 @@ abbrev LabelParams : Type := (ℕ × ℕ) × List (ℕ × ℕ)
 `streamBestSlotLabel` with no group term (zero variables) and unit weight, over the capped label
 length. -/
 @[expose] def bestLabel (p : LabelParams) (words : PartialWords) (slot : Bool × ℕ) : List ℕ :=
-  streamBestSlotLabel 0 (cappedLength p.1.1 p.1.2 p.2.length) p.1.2 1 p.2 words slot
+  let ((a, r), edges) := p
+  streamBestSlotLabel 0 (cappedLength a r edges.length) r 1 edges words slot
 
 /-- One step of the pass: a slot without a word gets `bestLabel`. -/
 @[expose] def labelStep (p : LabelParams) (words : PartialWords) (slot : Bool × ℕ) :
@@ -388,8 +389,10 @@ private theorem computableInPolyTime_bestLabelIn :
 
 /-- **`bestLabel` is polynomial-time**: the capped selector streams at most `m + 1` candidates. -/
 theorem computableInPolyTime_bestLabel :
-    ComputableInPolyTime (fun q : (LabelParams × PartialWords) × (Bool × ℕ) =>
-      bestLabel q.1.1 q.1.2 q.2) encStepIn (encList encNat) := by
+    ComputableInPolyTime
+      (fun (((p, words), slot) : (LabelParams × PartialWords) × (Bool × ℕ)) =>
+        bestLabel p words slot)
+      encStepIn (encList encNat) := by
   obtain ⟨poly, hpoly, -, hB⟩ := streamBestSlotCertificate_bounds
   let cIn := NativeCertificate.ofPolyTime computableInPolyTime_bestLabelIn
   have hIn := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_bestLabelIn
@@ -415,12 +418,14 @@ theorem computableInPolyTime_bestLabel :
       (hIn.2.add hsize).mono fun q => ?_⟩
     · exact Nat.add_le_add_left ((hB _).1.trans (Nat.mul_le_mul_right _ (hcount q))) _
     · exact Nat.add_le_add_left (hB _).2 _
-  exact c.polyTime hc
+  exact (c.polyTime hc).of_enc_eq fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl
 
 /-- One step of the pass is polynomial-time. -/
 theorem computableInPolyTime_labelStep :
-    ComputableInPolyTime (fun q : (LabelParams × PartialWords) × (Bool × ℕ) =>
-      labelStep q.1.1 q.1.2 q.2) encStepIn encPartialSchedules := by
+    ComputableInPolyTime
+      (fun (((p, words), slot) : (LabelParams × PartialWords) × (Bool × ℕ)) =>
+        labelStep p words slot)
+      encStepIn encPartialSchedules := by
   have hread : ComputableInPolyTime
       (fun q : (LabelParams × PartialWords) × (Bool × ℕ) => (readSlotSchedule q.2 q.1.2).isSome)
       encStepIn encBool :=
@@ -475,7 +480,8 @@ private theorem wordsInvariant_labelStep {nR nC a r : ℕ} {incidences : List (�
 
 /-- **The label pass is polynomial-time.** -/
 theorem computableInPolyTime_labelPass :
-    ComputableInPolyTime (fun x : PackingInput => labelPass x.1.1 x.1.2.1 x.1.2.2 x.2.1 x.2.2)
+    ComputableInPolyTime
+      (fun (((nR, nC, a), r, edges) : PackingInput) => labelPass nR nC a r edges)
       encPackingInput encPartialSchedules := by
   have hpar : ComputableInPolyTime (fun x : PackingInput => ((x.1.2.2, x.2.1), x.2.2.map Prod.swap))
       encPackingInput encLabelParams := by
@@ -529,7 +535,8 @@ theorem computableInPolyTime_labelPass :
 
 /-- **The row and column words are polynomial-time.** -/
 theorem computableInPolyTime_labelWords :
-    ComputableInPolyTime (fun x : PackingInput => labelWords x.1.1 x.1.2.1 x.1.2.2 x.2.1 x.2.2)
+    ComputableInPolyTime
+      (fun (((nR, nC, a), r, edges) : PackingInput) => labelWords nR nC a r edges)
       encPackingInput (encPair (encList (encList encNat)) (encList (encList encNat))) := by
   have hpass := computableInPolyTime_labelPass
   unfold encPartialSchedules at hpass
@@ -585,8 +592,8 @@ digit `i` of `c`. -/
     (edges : List (ℕ × ℕ)) : ℕ × List (ℕ × ℕ) :=
   (numPacketsOf a r (classIndices (edgeWordPairs rowWords colWords edges)),
     ((edgeWordPairs rowWords colWords edges).zip
-      (classIndices (edgeWordPairs rowWords colWords edges))).map fun q =>
-        (packetOf a r q.1.1 q.1.2 q.2, slotOf a q.1.1 q.1.2 q.2))
+      (classIndices (edgeWordPairs rowWords colWords edges))).map fun ((ρ, κ), c) =>
+        (packetOf a r ρ κ c, slotOf a ρ κ c))
 
 /-- **The packing of Lemma D.3**, natively: the row and column words, the number of packets, and
 the packet and slot of each `(row, column)` edge. -/
@@ -737,7 +744,9 @@ theorem numPackets_nativePacking_mul_le {m nR nC a r Δ : ℕ} [NeZero r] (rowOf
     (colOf : Fin m → Fin nC) (hrow : ∀ v, #{e | rowOf e = v} ≤ Δ)
     (hcol : ∀ w, #{e | colOf e = w} ≤ Δ) (hM : 2 * Δ * (r ^ (2 * a)) ^ 2 ≤ m)
     (hL : 2 ^ a * r ^ (2 * a) ≤ m) :
-    (nativePacking nR nC a r (edgeList rowOf colOf)).2.1 * 2 ^ a ≤ 3 * m := by
+    let (_, numPackets, _) := nativePacking nR nC a r (edgeList rowOf colOf)
+    numPackets * 2 ^ a ≤ 3 * m := by
+  dsimp only
   have hr : 1 ≤ r := Nat.one_le_iff_ne_zero.mpr (NeZero.ne r)
   rw [nativePacking_eq rowOf colOf (pow_le_card_of_packing hr hL)]
   simpa using numPackets_packing_mul_le rowOf colOf a r hrow hcol (by simpa using hM)
@@ -953,7 +962,9 @@ private theorem computableInPolyTime_numPacketsOf :
 
 /-- **The packing for given words is polynomial-time.** -/
 theorem computableInPolyTime_packingOfWords :
-    ComputableInPolyTime (fun y : WordsInput => packingOfWords y.1.1.1 y.1.1.2 y.1.2.1 y.1.2.2 y.2)
+    ComputableInPolyTime
+      (fun ((((a, r), (rowWords, colWords)), edges) : WordsInput) =>
+        packingOfWords a r rowWords colWords edges)
       encWordsInput encPlacements := by
   have hpairs := computableInPolyTime_edgeWordPairs
   have hcs := computableInPolyTime_classIndices.comp hpairs
@@ -974,7 +985,7 @@ theorem computableInPolyTime_packingOfWords :
   have hmap := ComputableInPolyTime.mapWithInput
     (f := fun (y : WordsInput) (q : (List ℕ × List ℕ) × ℕ) =>
       (packetOf y.1.1.1 y.1.1.2 q.1.1 q.1.2 q.2, slotOf y.1.1.1 q.1.1 q.1.2 q.2)) hzip hstep
-  exact computableInPolyTime_numPacketsOf.prod hmap
+  exact (computableInPolyTime_numPacketsOf.prod hmap).of_enc_eq fun _ => by congr 1
 
 /-- The output encoding of `nativePacking`. -/
 @[expose] def encNativePacking :
@@ -984,7 +995,8 @@ theorem computableInPolyTime_packingOfWords :
 /-- **The native packing is polynomial-time.** With `nativePacking_eq`, Lemma D.3's packing is
 computable in polynomial time whenever `r ^ a` is at most the number of edges. -/
 theorem computableInPolyTime_nativePacking :
-    ComputableInPolyTime (fun x : PackingInput => nativePacking x.1.1 x.1.2.1 x.1.2.2 x.2.1 x.2.2)
+    ComputableInPolyTime
+      (fun (((nR, nC, a), r, edges) : PackingInput) => nativePacking nR nC a r edges)
       encPackingInput encNativePacking := by
   have hW := computableInPolyTime_labelWords
   have har : ComputableInPolyTime (fun x : PackingInput => (x.1.2.2, x.2.1)) encPackingInput
