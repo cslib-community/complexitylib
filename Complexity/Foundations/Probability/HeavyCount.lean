@@ -49,7 +49,7 @@ integrated compression bound are separate steps.
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 8.4, Lemma 8.4, equation labelled `buf-rarity`
+  Section 8.4, Lemma 8.4, equation (8.13) on p. 48 (source label `buf-rarity`)
   (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 

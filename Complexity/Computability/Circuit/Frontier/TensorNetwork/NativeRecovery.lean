@@ -74,6 +74,8 @@ recovery is polynomial-time with the precision, the shift, the parameters and `2
 * `Cslib.Circuits.Frontier.NativeRecovery.recip`: the truncated reciprocal of `E_t(t + α z)`.
 * `Cslib.Circuits.Frontier.NativeRecovery.coeffMult`: the multipliers.
 * `Cslib.Circuits.Frontier.NativeRecovery.recover`: native tapered recovery.
+* `Cslib.Circuits.Frontier.NativeRecovery.storeValue`: storing a value in the table that `recover`
+  reads, the accumulator update of a recursive call.
 * `Cslib.Circuits.Frontier.NativeRecovery.recipSeries`,
   `Cslib.Circuits.Frontier.NativeRecovery.gamma`: the reciprocal and the multipliers over
   `ℤ_(2)`.
@@ -103,6 +105,9 @@ recovery is polynomial-time with the precision, the shift, the parameters and `2
   mathematical recovery modulo `2 ^ p`.
 * `Cslib.Circuits.Frontier.NativeRecovery.computableInPolyTime_recover`: native recovery is
   polynomial-time.
+* `Cslib.Circuits.Frontier.NativeRecovery.getD_foldl_storeValue`,
+  `Cslib.Circuits.Frontier.NativeRecovery.computableInPolyTime_storeValue`: storing a sequence of
+  values gives each node index its values in order, in polynomial time.
 
 ## References
 
@@ -237,6 +242,39 @@ def recover (p Δ : ℕ) (fl : List ℕ) (a u h : ℕ) (ζ : List (List ℕ)) (W
   shiftDown Δ ((List.range (2 ^ (a + 1))).foldl (fun S k =>
     if k = 2 ^ a then S else add (p + Δ) fl S (nodeTerm (p + Δ) fl a u h Δ ζ k (W.getD k [])))
     (zero fl))
+
+/-! ### Storing the values -/
+
+/-- Store the value `y` at node index `k`, after the values already stored there. This is the
+accumulator update of a recursive call once the value at an interpolation point is complete;
+`NativeRecovery.recover` reads the table. -/
+def storeValue (W : List (List (List ℕ))) (k : ℕ) (y : List ℕ) : List (List (List ℕ)) :=
+  (List.range (max W.length (k + 1))).map fun k' =>
+    if k' = k then W.getD k' [] ++ [y] else W.getD k' []
+
+theorem getD_storeValue (W : List (List (List ℕ))) (k : ℕ) (y : List ℕ) (k' : ℕ) :
+    (storeValue W k y).getD k' [] = if k' = k then W.getD k [] ++ [y] else W.getD k' [] := by
+  unfold storeValue
+  by_cases hk' : k' < max W.length (k + 1)
+  · rw [List.getD_eq_getElem _ _ (by simpa using hk'), List.getElem_map, List.getElem_range]
+    split_ifs with h
+    · rw [h]
+    · rfl
+  · have hne : k' ≠ k := by omega
+    rw [List.getD_eq_default _ _ (by rw [List.length_map, List.length_range]; omega),
+      ite_eq_right_of_eq_false _ _ (eq_false hne), List.getD_eq_default _ _ (by omega)]
+
+/-- **Storing a sequence of values**: each node index receives its values in order. -/
+theorem getD_foldl_storeValue (W : List (List (List ℕ))) (l : List (ℕ × List ℕ)) (k : ℕ) :
+    (l.foldl (fun W e => storeValue W e.1 e.2) W).getD k [] =
+      W.getD k [] ++ (l.filter fun e => e.1 = k).map Prod.snd := by
+  induction l generalizing W with
+  | nil => simp
+  | cons e l ih =>
+    rw [List.foldl_cons, ih, getD_storeValue, List.filter_cons]
+    by_cases h : e.1 = k
+    · simp [h]
+    · simp [h, Ne.symm h]
 
 /-! ### Correctness of the constants -/
 
@@ -1008,6 +1046,12 @@ private theorem singletonPolyTime {n : α → ℕ} (hn : ComputableInPolyTime n 
     ComputableInPolyTime (fun x => [n x]) encIn (encList encNat) :=
   ComputableInPolyTime.cons' hn (ComputableInPolyTime.const [])
 
+/-- A coefficient list as a one-element list. -/
+private theorem singletonPolyTime' {c : α → List ℕ}
+    (hc : ComputableInPolyTime c encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => [c x]) encIn (encList (encList encNat)) :=
+  ComputableInPolyTime.cons' hc (ComputableInPolyTime.const [])
+
 private theorem polyBounded_unary {n : α → ℕ} (hn : ComputableInPolyTime n encIn encUnary) :
     PolyBounded (fun x => (encIn x).length) n := by
   simpa using ComputableInPolyTime.polyBounded_length hn
@@ -1379,6 +1423,32 @@ theorem computableInPolyTime_recover {p Δ a u h : α → ℕ} {fl : α → List
       · exact (length_encList_add_le _ _ _ _).trans (Nat.le_add_left _ _)⟩
   refine (computableInPolyTime_shiftDown hΔ hfold).of_enc_eq fun x => ?_
   simp only [recover, beq_iff_eq, Function.comp_apply]
+
+/-- **Storing a value is polynomial-time**, with the node index in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_storeValue {W : α → List (List (List ℕ))} {k : α → ℕ}
+    {y : α → List ℕ}
+    (hW : ComputableInPolyTime W encIn (encList (encList (encList encNat))))
+    (hk : ComputableInPolyTime k encIn encUnary)
+    (hy : ComputableInPolyTime y encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => storeValue (W x) (k x) (y x)) encIn
+      (encList (encList (encList encNat))) := by
+  have h1 := ComputableInPolyTime.fst encIn encUnary
+  have h2 := ComputableInPolyTime.snd encIn encUnary
+  have hrow := (ComputableInPolyTime.listGetD (encA := encList (encList encNat)) []).comp
+    ((hW.comp h1).prod h2)
+  have hlen := lengthPolyTime hW
+  have hmax : ComputableInPolyTime (fun x => max (W x).length (k x + 1)) encIn encUnary :=
+    (ComputableInPolyTime.unary_add' hlen (ComputableInPolyTime.unary_sub'
+      (ComputableInPolyTime.unary_add' hk (ComputableInPolyTime.const 1)) hlen)).of_enc_eq
+      fun x => by congr 1; omega
+  refine (ComputableInPolyTime.mapWithInput
+    (f := fun x k' => if (k' == k x) = true then (W x).getD k' [] ++ [y x] else (W x).getD k' [])
+    (ComputableInPolyTime.range.comp hmax)
+    (ComputableInPolyTime.ite (ComputableInPolyTime.beq h2 (hk.comp h1))
+      (ComputableInPolyTime.listAppend' hrow (singletonPolyTime' (hy.comp h1))) hrow)).of_enc_eq
+    fun x => ?_
+  simp only [storeValue, beq_iff_eq, Function.comp_apply]
 
 end PolyTime
 
