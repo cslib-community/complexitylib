@@ -241,7 +241,7 @@ theorem map_val_entry_child_inr [DecidableEq V] (β : P × Fin (2 ^ (i + 1)) × 
     (ha : c.a = a) (hL : c.L = 2 ^ a) (hi : c.i = i) (htiles : c.tiles = 2 ^ (i + 1))
     (ht' : c.t = t) (hnb : c.nb = p) (he₁ : c.e₁ = decide ((sym q).1 = g))
     (he₂ : c.e₂ = decide ((sym q).2 = g)) (hdiffer : c.differ = decide ((sym q).1 ≠ (sym q).2))
-    (hβ : ∀ Z : Fin (2 ^ (i + 1)) × Fin p, βd.getD (Z.1 * p + Z.2) 0 = β (q, Z))
+    (hβ : ∀ Z : Fin (2 ^ (i + 1)) × Fin p, βd.getD (finProdFinEquiv Z) 0 = β (q, Z))
     (y : {e // (cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti hti').group
         (N.src e) = g} ⊕
       {e // (cauchyModeSplitting side hsrc htgt horient hslot hia κ ζ hp ht hti hti').group
