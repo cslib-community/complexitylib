@@ -73,6 +73,8 @@ The running time is `O((s + 1)² (n + L) ^ (2 s + 1) 2 ^ ((a / b) n) (c + 1))`
   fails with probability at most `e ^ (-c)`.
 * `Cslib.Algorithms.WordRAM.PPSZ.ampProgram_failure_le_exp_three`: the same for 3-CNF with
   `(s, a, b) = (3, 39, 70)`.
+* `Cslib.Algorithms.WordRAM.PPSZ.ampProgram_failure_le_exp_limit`: the `ε`-form, for every
+  `a / b ≥ 1 - μ_k / (k - 1) + ε` with a bound `s` depending on `k` and `ε`.
 * `Cslib.Algorithms.WordRAM.PPSZ.ampTime_le`: the time bound.
 
 ## References
@@ -375,6 +377,30 @@ theorem roundSuccessProb_ge {k h s : ℕ} (hk : 3 ≤ k) {φ : CNF (Fin n)} (hsa
     (2 : ℝ) ^ (-((1 - qbar k h) * n)) ≤ roundSuccessProbWith (implied φ s) φ :=
   (round_success_of_satisfiable hk hsat hlen hs).trans (PPZ.sum_le_roundSuccessProbWith _ φ)
 
+/-- With `R = ppszRounds a b n c` rounds, `R 2 ^ (-(a / b) n)` is at least `c`. -/
+theorem le_ppszRounds_mul {a b : ℕ} (hb : 0 < b) (n c : ℕ) :
+    (c : ℝ) ≤ ppszRounds a b n c * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
+  have h2 : (1 : ℝ) ≤ (2 : ℝ) ^ ppszExp a b n * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
+    rw [← Real.rpow_natCast, ← Real.rpow_add two_pos]
+    exact Real.one_le_rpow one_le_two (by linarith [le_ppszExp (a := a) hb n])
+  calc (c : ℝ) ≤ c * ((2 : ℝ) ^ ppszExp a b n * (2 : ℝ) ^ (-((a : ℝ) / b * n))) :=
+        le_mul_of_one_le_right (Nat.cast_nonneg c) h2
+    _ = (ppszRounds a b n c : ℝ) * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
+        simp only [ppszRounds]; push_cast; ring
+
+/-- **Amplification from a bound on one round**: if one round of PPSZ with the bound `s` succeeds
+with probability at least `2 ^ (-(a / b) n)`, the program fails with probability at most
+`e ^ (-c)`. -/
+theorem ampProgram_failure_le_exp_of_le {s a b c : ℕ} (hb : 0 < b) {φ : CNF (Fin n)}
+    (hq : (2 : ℝ) ^ (-((a : ℝ) / b * n)) ≤ roundSuccessProbWith (implied φ s) φ) {w : ℕ}
+    (hw : Fits w ((s :: a :: b :: c :: encode φ).length + 2 * n + 2 * s + a * n + b + 2 * c +
+      ppszCounterLen a b n c + 3)) :
+    ((evalRand w ampProgram (ampTime s a b c n (s :: a :: b :: c :: encode φ).length)
+      (.init (s :: a :: b :: c :: encode φ))).map Schoening.cfgSuccess false).toReal ≤
+      Real.exp (-c) := by
+  rw [(ampProgram_spec s a b c φ hw).2.2.2]
+  exact PPZ.repeatRoundWith_false_le_exp hq (le_ppszRounds_mul hb n c)
+
 /-- **The PPSZ algorithm succeeds with high probability**
 [Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005], [Hertli][Hertli2011]. On a satisfiable
 formula whose clauses have at most `k ≥ 3` literals, with `s ≥ ∑ i < h, (k - 1) ^ i` and
@@ -386,20 +412,31 @@ theorem ampProgram_failure_le_exp {k h s a b c : ℕ} (hk : 3 ≤ k) (hb : 0 < b
       ppszCounterLen a b n c + 3)) :
     ((evalRand w ampProgram (ampTime s a b c n (s :: a :: b :: c :: encode φ).length)
       (.init (s :: a :: b :: c :: encode φ))).map Schoening.cfgSuccess false).toReal ≤
-      Real.exp (-c) := by
-  rw [(ampProgram_spec s a b c φ hw).2.2.2]
-  have hq : (2 : ℝ) ^ (-((a : ℝ) / b * n)) ≤ roundSuccessProbWith (implied φ s) φ :=
-    le_trans (Real.rpow_le_rpow_of_exponent_le one_le_two (neg_le_neg
-      (mul_le_mul_of_nonneg_right hab (Nat.cast_nonneg n)))) (roundSuccessProb_ge hk hφ hlen hs)
-  refine PPZ.repeatRoundWith_false_le_exp hq ?_
-  have h2 : (1 : ℝ) ≤ (2 : ℝ) ^ ppszExp a b n * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
-    rw [← Real.rpow_natCast, ← Real.rpow_add two_pos]
-    exact Real.one_le_rpow one_le_two (by linarith [le_ppszExp (a := a) hb n])
-  have hc0 : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  calc (c : ℝ) ≤ c * ((2 : ℝ) ^ ppszExp a b n * (2 : ℝ) ^ (-((a : ℝ) / b * n))) :=
-        le_mul_of_one_le_right hc0 h2
-    _ = (ppszRounds a b n c : ℝ) * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
-        simp only [ppszRounds]; push_cast; ring
+      Real.exp (-c) :=
+  ampProgram_failure_le_exp_of_le hb (le_trans (Real.rpow_le_rpow_of_exponent_le one_le_two
+    (neg_le_neg (mul_le_mul_of_nonneg_right hab (Nat.cast_nonneg n))))
+    (roundSuccessProb_ge hk hφ hlen hs)) hw
+
+/-- **PPSZ for k-SAT on the randomized word RAM, `ε`-form**
+[Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005], [Hertli][Hertli2011]. Let `k ≥ 3` and
+`ε > 0`. There is a bound `s` such that for every rational `a / b ≥ 1 - μ_k / (k - 1) + ε`, the
+program with the bound `s` fails on any satisfiable formula whose clauses have at most `k` literals
+with probability at most `e ^ (-c)`, in time `O((n + L) ^ (2 s + 1) 2 ^ ((a / b) n) (c + 1))`
+(`ampTime_le`). This uses `Cslib.Complexity.PPSZ.round_success_limit`, the `ε`-form of the bound
+`2 ^ (-(1 - μ_k / (k - 1)) n - o(n))` of the sources. -/
+theorem ampProgram_failure_le_exp_limit {k : ℕ} (hk : 3 ≤ k) {ε : ℝ} (hε : 0 < ε) :
+    ∃ s : ℕ, ∀ {a b c : ℕ}, 0 < b → 1 - mu k / ((k : ℝ) - 1) + ε ≤ (a : ℝ) / b →
+      ∀ {n : ℕ} {φ : CNF (Fin n)}, φ.Satisfiable → (∀ cl ∈ φ, cl.length ≤ k) → ∀ {w : ℕ},
+        Fits w ((s :: a :: b :: c :: encode φ).length + 2 * n + 2 * s + a * n + b + 2 * c +
+          ppszCounterLen a b n c + 3) →
+        ((evalRand w ampProgram (ampTime s a b c n (s :: a :: b :: c :: encode φ).length)
+          (.init (s :: a :: b :: c :: encode φ))).map Schoening.cfgSuccess false).toReal ≤
+          Real.exp (-c) := by
+  obtain ⟨s, hs⟩ := round_success_limit hk ε hε
+  refine ⟨s, fun hb hab n φ hφ hlen w hw => ampProgram_failure_le_exp_of_le hb ?_ hw⟩
+  exact le_trans (Real.rpow_le_rpow_of_exponent_le one_le_two
+    (neg_le_neg (mul_le_mul_of_nonneg_right hab (Nat.cast_nonneg n))))
+    ((hs n φ hφ hlen).trans (PPZ.sum_le_roundSuccessProbWith _ φ))
 
 /-- **PPSZ for 3-SAT on the randomized word RAM.** With `s = 3` and the bound `39 / 70` on the
 exponent, which is `1 - qbar 3 2`, the program fails on a satisfiable 3-CNF with probability at
