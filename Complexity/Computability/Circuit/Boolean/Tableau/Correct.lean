@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.Tableau.Basic
 public import Complexity.Computability.Circuit.Boolean.EvaluationTime
+import Complexity.Computability.Circuit.Boolean.OpValue
 import Complexity.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -60,15 +61,8 @@ variable {k : ℕ} {State : Type} [Fintype State] [DecidableEq State]
 
 /-! ### Values of wires -/
 
-/-- The value of a De Morgan gate from its operation and its first two arguments. -/
-private def opVal : Op → Bool → Bool → Bool
-  | .const b, _, _ => b
-  | .not, a, _ => !a
-  | .and, a, b => a && b
-  | .or, a, b => a || b
-
 private theorem interpretation_argsOf (op : Op) (a b : ℕ) (f : ℕ → Bool) :
-    (interpretation op fun i => (argsOf op a b)[i.val]?.elim false f) = opVal op (f a) (f b) := by
+    (interpretation op fun i => (argsOf op a b)[i.val]?.elim false f) = op.value (f a) (f b) := by
   cases op <;> rfl
 
 /-- The value of wire `w` of the tableau of `tm` for `T` steps, on the input `x`. -/
@@ -113,7 +107,7 @@ the operation of the gate applied to the values of its references. -/
 private theorem val_wire {t c : ℕ} {l : Loc k State} (hl : l.ColOK T c) (ht : t ≤ T) :
     val tm T x (wire x.length T t l c) =
       if t = 0 then initBit tm T c l
-      else opVal (table tm l).1 (val tm T x ((table tm l).2.1.resolve x.length T t c))
+      else (table tm l).1.value (val tm T x ((table tm l).2.1.resolve x.length T t c))
         (val tm T x ((table tm l).2.2.resolve x.length T t c)) := by
   have hg : wire x.length T t l c - x.length < numGates k State T := by
     rw [wire_sub]
@@ -283,7 +277,7 @@ private theorem val_nh (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T) (i : F
     val tm T x (wire (State := State) x.length T (t + 1) (.scan (.nh i)) c) =
       !colSem T (tm.runFrom (tm.initCfg x) t) c (.head i) := by
   rw [val_wire tm (l := .scan (.nh i)) hc htT]
-  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal]
+  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value]
   rw [val_colF_same tm hinv hc]
   simp [Guard.test]
 
@@ -293,7 +287,7 @@ private theorem val_nx (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T) :
     val tm T x (wire (State := State) x.length T (t + 1) (.scan (.nx : ScanLoc k)) c) =
       !(inputAt x c).getD false := by
   rw [val_wire tm (l := .scan .nx) hc htT]
-  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal]
+  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value]
   rw [val_resolve_inp]
 
 /-- The contribution of a column to a scanned quantity. -/
@@ -301,7 +295,7 @@ private theorem val_term (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T) (q :
     val tm T x (wire (State := State) x.length T (t + 1) (.scan (.term q)) c) = true ↔
       termSem T x (tm.runFrom (tm.initCfg x) t) c q := by
   rw [val_wire tm (l := .scan (.term q)) hc htT]
-  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal]
+  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value]
   rcases q with (_ | (_ | _)) | ⟨i, s⟩
   · simp only [scanTerm]
     rw [val_colF_same tm hinv hc, val_resolve_tru]
@@ -335,7 +329,7 @@ private theorem val_acc (htT : t + 1 ≤ T) (q : ScanQ k) :
   induction c with
   | zero =>
     rw [val_wire tm (l := .scan (.acc q)) hc htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, scanAt]
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, scanAt]
     rw [val_resolve_node, val_resolve_node]
     simp only [Guard.test, Bool.true_and, ↓reduceIte, ColSel.apply, Bool.false_eq_true]
     simp only [show decide (1 ≤ 0) = false from rfl, Bool.false_and, Bool.false_or]
@@ -345,7 +339,7 @@ private theorem val_acc (htT : t + 1 ≤ T) (q : ScanQ k) :
       exact h⟩
   | succ c ih =>
     rw [val_wire tm (l := .scan (.acc q)) hc htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, scanAt]
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, scanAt]
     rw [val_resolve_node, val_resolve_node]
     simp only [Guard.test, Bool.false_eq_true, ↓reduceIte, Bool.true_and, ColSel.apply,
       Nat.add_sub_cancel, show 1 ≤ c + 1 by omega, decide_true, Bool.or_eq_true]
@@ -400,7 +394,7 @@ private theorem val_sit (hn : x.length < 2 * T) (htT : t + 1 ≤ T) (j : Fin (nu
   induction i using Fin.induction with
   | zero =>
     rw [val_wire tm (l := .glob (.sit j 0)) rfl htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_zero]
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_zero]
     rw [val_gfF tm hinv, scanAt, val_resolve_node, Bool.and_eq_true]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
     rw [val_acc_last tm hinv hn htT]
@@ -408,7 +402,7 @@ private theorem val_sit (hn : x.length < 2 * T) (htT : t + 1 ≤ T) (j : Fin (nu
     simp [gfSem, readSem]
   | succ i ih =>
     rw [val_wire tm (l := .glob (.sit j i.succ)) rfl htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_succ]
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_succ]
     rw [val_resolve_node, scanAt, val_resolve_node]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply,
       Bool.and_eq_true]
@@ -440,11 +434,11 @@ private theorem val_attr (hn : x.length < 2 * T) (htT : t + 1 ≤ T) (v : Attr k
   induction j using Fin.induction with
   | zero =>
     rw [val_wire tm (l := .glob (.attr v 0)) rfl htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_zero, val_resolve_fls,
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_zero, val_resolve_fls,
       Bool.or_false, Bool.false_eq_true, Fin.val_zero, Nat.not_lt_zero, false_and, exists_false]
   | succ j ih =>
     rw [val_wire tm (l := .glob (.attr v j.succ)) rfl htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_succ]
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_succ]
     rw [val_resolve_node, Bool.or_eq_true]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
     rw [ih]
@@ -499,7 +493,7 @@ private theorem val_gf_and (htT : t + 1 ≤ T) (f : GFeat State) (j : Fin 8) :
     val tm T x (wire (k := k) x.length T (t + 1) (.gf f false j) 0) =
       termVal tm T x (t + 1) 0 ((gfTerms f).getD j (.fls, .fls)) := by
   rw [val_wire tm (l := .gf f false j) rfl htT]
-  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, termVal]
+  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, termVal]
 
 omit hinv in
 private theorem val_gf_or (htT : t + 1 ≤ T) (f : GFeat State) (j : Fin 8) :
@@ -509,7 +503,7 @@ private theorem val_gf_or (htT : t + 1 ≤ T) (f : GFeat State) (j : Fin 8) :
   induction j using Fin.induction with
   | zero =>
     rw [val_wire tm (l := .gf f true 0) rfl htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_zero, val_resolve_fls,
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_zero, val_resolve_fls,
       Bool.false_or]
     rw [val_resolve_node]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
@@ -517,7 +511,7 @@ private theorem val_gf_or (htT : t + 1 ≤ T) (f : GFeat State) (j : Fin 8) :
     exact ⟨fun h => ⟨0, le_rfl, h⟩, fun ⟨j', hj', h⟩ => by rwa [Fin.le_zero_iff.1 hj'] at h⟩
   | succ j ih =>
     rw [val_wire tm (l := .gf f true j.succ) rfl htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_succ]
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_succ]
     rw [val_resolve_node, val_resolve_node, Bool.or_eq_true]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
     rw [ih, val_gf_and tm htT]
@@ -538,7 +532,7 @@ private theorem val_col_and (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T)
     val tm T x (wire (State := State) x.length T (t + 1) (.col f false j) c) =
       termVal tm T x (t + 1) c ((colTerms f).getD j (.fls, .fls)) := by
   rw [val_wire tm (l := .col f false j) hc htT]
-  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, termVal]
+  simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, termVal]
 
 omit hinv in
 private theorem val_col_or (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T)
@@ -549,7 +543,7 @@ private theorem val_col_or (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T)
   induction j using Fin.induction with
   | zero =>
     rw [val_wire tm (l := .col f true 0) hc htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_zero, val_resolve_fls,
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_zero, val_resolve_fls,
       Bool.false_or]
     rw [val_resolve_node]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
@@ -557,7 +551,7 @@ private theorem val_col_or (htT : t + 1 ≤ T) {c : ℕ} (hc : c < numCols T)
     exact ⟨fun h => ⟨0, le_rfl, h⟩, fun ⟨j', hj', h⟩ => by rwa [Fin.le_zero_iff.1 hj'] at h⟩
   | succ j ih =>
     rw [val_wire tm (l := .col f true j.succ) hc htT]
-    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, opVal, Fin.cases_succ]
+    simp only [Nat.add_one_ne_zero, ↓reduceIte, table, Op.value, Fin.cases_succ]
     rw [val_resolve_node, val_resolve_node, Bool.or_eq_true]
     simp only [Guard.test, Bool.true_and, Bool.false_eq_true, ↓reduceIte, ColSel.apply]
     rw [ih, val_col_and tm htT hc]

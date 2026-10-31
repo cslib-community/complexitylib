@@ -69,6 +69,8 @@ vertices as rows (`NativeChild.isRowsFirstBipartite_nativeChild`).
 * `Cslib.Circuits.Frontier.NativeChild.isRowsFirstBipartite_nativeChild`: it is rows-first.
 * `Cslib.Circuits.Frontier.NativeChild.desc_of_mem_nativeChild`: its retained and packet
   descriptors.
+* `Cslib.Circuits.Frontier.NativeChild.exists_mem_of_mem_nativeChild_inl`: a retained vertex keeps
+  its number of ports.
 
 ## References
 
@@ -1080,6 +1082,20 @@ theorem desc_of_mem_nativeChild (hD : D.IsRowsFirstBipartite r) {fl : List ℕ} 
           rw [Subtype.ext hinj]
         · simp at hl₂
       · simp at hl₁
+
+/-- **A kept vertex of the native child keeps its descriptor and its number of ports**: every root
+descriptor of the native child is the descriptor of a parent vertex with as many ports. -/
+theorem exists_mem_of_mem_nativeChild_inl {fl : List ℕ} {a i pt : ℕ} {τ : ℤ} {ζ : List ℕ}
+    {pk : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)} {β : List ℕ} {g : ℕ}
+    {v : List ℕ × VertexDesc T} (hv : v ∈ (nativeChild fl a i pt τ ζ r D pk β g).vertices)
+    {t : T} (ht : v.2 = .inl t) :
+    ∃ u ∈ D.vertices, u.2 = .inl t ∧ u.1.length = v.1.length := by
+  simp only [nativeChild, List.mem_append, List.mem_map, List.mem_filter, List.mem_range] at hv
+  rcases hv with ⟨k, ⟨hk, -⟩, rfl⟩ | ⟨q, -, rfl⟩
+  · refine ⟨D.vertices[k], List.getElem_mem hk, ?_, ?_⟩
+    · simpa only [List.getD_eq_getElem _ _ hk] using ht
+    · simp only [List.length_map, List.getD_eq_getElem _ _ hk]
+  · cases ht
 
 end NativeChild
 
