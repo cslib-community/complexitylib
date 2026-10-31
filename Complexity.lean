@@ -1215,6 +1215,7 @@ public import Complexity.Computability.Complexity.Classes.Space.Time
 public import Complexity.Computability.Complexity.Classes.Sparse
 public import Complexity.Computability.Complexity.Classes.Sparse.Fortune
 public import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
+public import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
 public import Complexity.Computability.Complexity.Classes.TFNP
 public import Complexity.Computability.Complexity.Classes.TFNP.SearchToDecision
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
