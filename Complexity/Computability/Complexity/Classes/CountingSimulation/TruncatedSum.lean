@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Accumulate
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgorithm
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
+import Complexity.Foundations.Data.List.OfFn
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Mathlib.Algebra.BigOperators.ModEq
@@ -70,24 +71,17 @@ variable {C T : Type} {encC : C ↪ List Bool} {encT : T ↪ List Bool}
 
 /-- **The coefficient sum `S_ℓ` of a truncated contraction**: the sum of the `ℓ` coefficients of
 the contraction of `G` in `(ℤ / 2 ^ P)[V] / (V ^ ℓ)`, for the input `(P, ℓ, r, G)`. -/
-@[expose] noncomputable def truncCoeffSum (entry : T → List Bool → List ℕ)
-    (x : ℕ × ℕ × ℕ × DescribedNetwork T) : ℕ :=
-  (x.2.2.2.truncContraction entry x.1 x.2.1).sum
-
-private theorem sum_map_range {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → M) :
-    ((List.range n).map f).sum = ∑ i ∈ range n, f i := by
-  induction n with
-  | zero => simp only [List.range_zero, List.map_nil, List.sum_nil, range_zero, sum_empty]
-  | succ n ih =>
-    rw [List.range_succ, List.map_append, List.sum_append, ih, sum_range_succ]
-    simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_zero]
+@[expose] noncomputable def truncCoeffSum (entry : T → List Bool → List ℕ) :
+    ℕ × ℕ × ℕ × DescribedNetwork T → ℕ
+  | (P, ℓ, _, G) => (G.truncContraction entry P ℓ).sum
 
 /-- `S_ℓ` of a truncated contraction is the sum of the coefficients below `V ^ ℓ` of the
 contraction over `ℕ[V]`, each reduced modulo `2 ^ P`. -/
 theorem truncCoeffSum_eq (entry : T → List Bool → List ℕ) (P ℓ r : ℕ) (G : DescribedNetwork T) :
     truncCoeffSum entry (P, ℓ, r, G) =
       ∑ j ∈ range ℓ, (G.polyContraction entry).coeff j % 2 ^ P := by
-  rw [truncCoeffSum, DescribedNetwork.truncContraction, sum_map_range]
+  rw [truncCoeffSum, DescribedNetwork.truncContraction, List.sum_map_range]
+  exact Fin.sum_univ_eq_sum_range (fun j => (G.polyContraction entry).coeff j % 2 ^ P) ℓ
 
 /-- **The loop of Lemma D.2 on one branch**: the sum, modulo `modulus c`, of the coefficient sums
 of the truncated contractions of the networks `build (c, i)` for `i < count c`, streamed one
@@ -106,20 +100,20 @@ theorem truncSum_eq (c : C) :
   change (∑ i ∈ range (count c), truncCoeffSum entry (build (c, i)) % modulus c) % modulus c = _
   exact (Finset.sum_nat_mod _ _ _).symm
 
-/-- **The congruence of the loop.** Suppose the networks of context `c` have precision `P` and
-truncation order `ℓ`, the modulus is `2 ^ P`, and for every `j < ℓ` the `V ^ j` coefficients of
-their contractions over `ℕ[V]` sum to `q j` modulo `2 ^ P`. Then the loop is the sum of the
+/-- **The congruence of the loop.** Suppose the networks `G i` of context `c` have precision `P`
+and truncation order `ℓ`, the modulus is `2 ^ P`, and for every `j < ℓ` the `V ^ j` coefficients
+of their contractions over `ℕ[V]` sum to `q j` modulo `2 ^ P`. Then the loop is the sum of the
 `q j` modulo `2 ^ P`. -/
-theorem truncSum_modEq {c : C} {P ℓ : ℕ} (hmod : modulus c = 2 ^ P)
-    (hbuild : ∀ i < count c, (build (c, i)).1 = P ∧ (build (c, i)).2.1 = ℓ) (q : ℕ → ℤ)
-    (hq : ∀ j < ℓ, ((∑ i ∈ range (count c),
-      ((build (c, i)).2.2.2.polyContraction entry).coeff j : ℕ) : ℤ) ≡ q j [ZMOD 2 ^ P]) :
+theorem truncSum_modEq {c : C} {P ℓ : ℕ} (hmod : modulus c = 2 ^ P) (G : ℕ → DescribedNetwork T)
+    (hbuild : ∀ i < count c, ∃ r, build (c, i) = (P, ℓ, r, G i)) (q : ℕ → ℤ)
+    (hq : ∀ j < ℓ, ((∑ i ∈ range (count c), ((G i).polyContraction entry).coeff j : ℕ) : ℤ) ≡
+      q j [ZMOD 2 ^ P]) :
     (truncSum entry build modulus count c : ℤ) ≡ ∑ j ∈ range ℓ, q j [ZMOD 2 ^ P] := by
   have hterm : ∀ i ∈ range (count c), truncCoeffSum entry (build (c, i)) =
-      ∑ j ∈ range ℓ, ((build (c, i)).2.2.2.polyContraction entry).coeff j % 2 ^ P := by
+      ∑ j ∈ range ℓ, ((G i).polyContraction entry).coeff j % 2 ^ P := by
     intro i hi
-    obtain ⟨h1, h2⟩ := hbuild i (mem_range.mp hi)
-    rw [← truncCoeffSum_eq entry P ℓ (build (c, i)).2.2.1, ← h1, ← h2]
+    obtain ⟨r, hr⟩ := hbuild i (mem_range.mp hi)
+    rw [hr, truncCoeffSum_eq]
   rw [truncSum_eq, hmod, sum_congr rfl hterm, sum_comm]
   push_cast
   refine (Int.mod_modEq _ _).trans ((Int.ModEq.sum fun j _ =>
@@ -130,12 +124,6 @@ theorem truncSum_modEq {c : C} {P ℓ : ℕ} (hmod : modulus c = 2 ^ P)
   exact h
 
 /-! ### Resources -/
-
-/-- A polynomial bound composed with a polynomially bounded size. -/
-private theorem polyBounded_comp_poly {size u : C → ℕ} {p : ℕ → ℕ}
-    (hp : Cslib.PolynomiallyBounded p) (hu : PolyBounded size u) :
-    PolyBounded size fun c => p (u c) :=
-  (PolyBounded.of_polynomiallyBounded id hp).comp hu
 
 private theorem sum_polyTime : ComputableInPolyTime List.sum (encList encNat) encNat := by
   fun_prop
@@ -207,9 +195,9 @@ theorem exists_truncSum_certificate {Adm : ℕ → ℕ → ℕ × DescribedNetwo
     (Cadm D : ℕ) (s : C → ℕ) :
     ∃ (cs : NativeCertificate (truncSum entry build modulus count) encC encNat) (K : ℕ),
       ∀ c, 2 ≤ s c →
-        (∀ i < count c, 1 ≤ (build (c, i)).1 ∧ (build (c, i)).1 ≤ D * s c ∧
-          1 ≤ (build (c, i)).2.1 ∧ (build (c, i)).2.1 ≤ D * s c ∧
-          Adm Cadm (s c) ((build (c, i)).2.2.1, (build (c, i)).2.2.2)) →
+        (∀ i < count c,
+          let (P, ℓ, r, G) := build (c, i)
+          1 ≤ P ∧ P ≤ D * s c ∧ 1 ≤ ℓ ∧ ℓ ≤ D * s c ∧ Adm Cadm (s c) (r, G)) →
         cs.time c ≤ (count c + 1) * (K * ((encC c).length + 1) ^ K *
             2 ^ (K * s c / Nat.sqrt (Nat.log 2 (s c)))) ∧
           cs.space c ≤ K * ((encC c).length + 1) ^ K := by
@@ -245,16 +233,18 @@ theorem exists_truncSum_certificate {Adm : ℕ → ℕ → ℕ × DescribedNetwo
   let U : C → ℕ := fun c => pB (Lq c) + pS (Lo c) + pF (Lq c) + pM (Lp c) + Sp c
   have hLq : PolyBounded L Lq :=
     (((PolyBounded.const 2).mul PolyBounded.self).add (PolyBounded.const 1)).add hlkp
-  have hLb : PolyBounded L Lb := polyBounded_comp_poly hpBL hLq
+  have hLb : PolyBounded L Lb := (PolyBounded.of_polynomiallyBounded id hpBL).comp hLq
   have hSp : PolyBounded L Sp :=
     (PolyBounded.const K₀).mul ((hLb.add (PolyBounded.const 1)).pow K₀)
   have hLo : PolyBounded L Lo := (PolyBounded.const cO).mul (hSp.add (PolyBounded.const 1))
   have hLp : PolyBounded L Lp :=
-    (((PolyBounded.const 2).mul (polyBounded_comp_poly hpSL hLo)).add
+    (((PolyBounded.const 2).mul ((PolyBounded.of_polynomiallyBounded id hpSL).comp hLo)).add
       (PolyBounded.const 1)).add hlmp
   have hU : PolyBounded L U :=
-    ((((polyBounded_comp_poly hpB hLq).add (polyBounded_comp_poly hpS hLo)).add
-      (polyBounded_comp_poly hpF hLq)).add (polyBounded_comp_poly hpM hLp)).add hSp
+    (((((PolyBounded.of_polynomiallyBounded id hpB).comp hLq).add
+      ((PolyBounded.of_polynomiallyBounded id hpS).comp hLo)).add
+      ((PolyBounded.of_polynomiallyBounded id hpF).comp hLq)).add
+      ((PolyBounded.of_polynomiallyBounded id hpM).comp hLp)).add hSp
   let W : C → ℕ := fun c => a * (L c + 1) ^ d + U c
   have hW : PolyBounded L W :=
     ((PolyBounded.const a).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow d)).add hU
