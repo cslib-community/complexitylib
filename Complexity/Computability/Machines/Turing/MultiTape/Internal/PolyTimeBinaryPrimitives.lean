@@ -16,9 +16,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryCompari
 /-!
 # Direct polynomial-time binary arithmetic
 
-The existing carry folds are certified using plain machine closure.
-Reachable word states are bounded by the encoded input length, not the numeric operands.
-Strict comparison is the linear zip-transducer certificate of `BinaryComparison`.
+Addition and comparison are the linear zip-transducer certificates of `BinaryAddition` and
+`BinaryComparison`.
 Multiplication weakens the cubic-time schoolbook certificate `ComputableInO.natMul`.
 -/
 
@@ -28,7 +27,8 @@ open Cslib
 
 namespace ComputableInPolyTime
 
-/-- Addition of binary naturals, using the carry and remaining-word folds.
+/-- Addition of binary naturals, from the linear zip-transducer certificate
+`Turing.MultiTapeTM.computableInTimeAndSpace_natAdd`.
 Compose this certificate with the producers' `.prod` certificate. Global automatic addition
 remains separate from this named rule, since an unconstrained intermediate encoding can select
 a binary branch where a surrounding computation needs a unary size. -/
@@ -55,12 +55,14 @@ theorem binary_mul' {α : Type} {input : α ↪ List Bool} {left right : α → 
   (ComputableInO.natMul.computableInPolyTime (PolyBounded.of_forall_le 1 3 fun _ => by simp)
     (PolyBounded.of_forall_le 1 1 fun _ => by simp)).comp (hleft.prod hright)
 
-/-- Non-strict binary comparison, composed from the existing strict comparison certificate.
-Automatic composition uses the computed-operand rule `binary_le'`. -/
+/-- Non-strict binary comparison, from the linear zip-transducer certificate
+`Turing.MultiTapeTM.computableInTimeAndSpace_natLe`. Automatic composition uses the
+computed-operand rule `binary_le'`. -/
 theorem binary_le : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 ≤ p.2))
-    (encPair encNat encNat) encBool := by
-  simpa only [Function.comp_def, ← decide_not, Nat.not_lt] using
-    bool_not.comp (binary_lt.comp ((snd encNat encNat).prod (fst encNat encNat)))
+    (encPair encNat encNat) encBool :=
+  (ComputableInO.of_linear ComputableInLinearTimeAndSpace.natLe).computableInPolyTime
+    (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
+    (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
 
 /-- Compare two binary naturals computed uniformly from the same encoded input. -/
 @[fun_prop]
