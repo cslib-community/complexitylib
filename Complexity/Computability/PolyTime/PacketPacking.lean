@@ -103,8 +103,8 @@ abbrev LabelParams : Type := (ℕ × ℕ) × List (ℕ × ℕ)
 `streamBestSlotLabel` with no group term (zero variables) and unit weight, over the capped label
 length. -/
 @[expose] def bestLabel (p : LabelParams) (words : PartialWords) (slot : Bool × ℕ) : List ℕ :=
-  let ar := p.1
-  streamBestSlotLabel 0 (cappedLength ar.1 ar.2 p.2.length) ar.2 1 p.2 words slot
+  let ((a, r), edges) := p
+  streamBestSlotLabel 0 (cappedLength a r edges.length) r 1 edges words slot
 
 /-- One step of the pass: a slot without a word gets `bestLabel`. -/
 @[expose] def labelStep (p : LabelParams) (words : PartialWords) (slot : Bool × ℕ) :
@@ -418,7 +418,7 @@ theorem computableInPolyTime_bestLabel :
       (hIn.2.add hsize).mono fun q => ?_⟩
     · exact Nat.add_le_add_left ((hB _).1.trans (Nat.mul_le_mul_right _ (hcount q))) _
     · exact Nat.add_le_add_left (hB _).2 _
-  exact c.polyTime hc
+  exact (c.polyTime hc).of_enc_eq fun ⟨⟨⟨_, _⟩, _⟩, _⟩ => rfl
 
 /-- One step of the pass is polynomial-time. -/
 theorem computableInPolyTime_labelStep :
@@ -592,9 +592,8 @@ digit `i` of `c`. -/
     (edges : List (ℕ × ℕ)) : ℕ × List (ℕ × ℕ) :=
   (numPacketsOf a r (classIndices (edgeWordPairs rowWords colWords edges)),
     ((edgeWordPairs rowWords colWords edges).zip
-      (classIndices (edgeWordPairs rowWords colWords edges))).map fun q =>
-        let ρκ := q.1
-        (packetOf a r ρκ.1 ρκ.2 q.2, slotOf a ρκ.1 ρκ.2 q.2))
+      (classIndices (edgeWordPairs rowWords colWords edges))).map fun ((ρ, κ), c) =>
+        (packetOf a r ρ κ c, slotOf a ρ κ c))
 
 /-- **The packing of Lemma D.3**, natively: the row and column words, the number of packets, and
 the packet and slot of each `(row, column)` edge. -/
@@ -745,8 +744,8 @@ theorem numPackets_nativePacking_mul_le {m nR nC a r Δ : ℕ} [NeZero r] (rowOf
     (colOf : Fin m → Fin nC) (hrow : ∀ v, #{e | rowOf e = v} ≤ Δ)
     (hcol : ∀ w, #{e | colOf e = w} ≤ Δ) (hM : 2 * Δ * (r ^ (2 * a)) ^ 2 ≤ m)
     (hL : 2 ^ a * r ^ (2 * a) ≤ m) :
-    let pack := (nativePacking nR nC a r (edgeList rowOf colOf)).2
-    pack.1 * 2 ^ a ≤ 3 * m := by
+    let (_, numPackets, _) := nativePacking nR nC a r (edgeList rowOf colOf)
+    numPackets * 2 ^ a ≤ 3 * m := by
   dsimp only
   have hr : 1 ≤ r := Nat.one_le_iff_ne_zero.mpr (NeZero.ne r)
   rw [nativePacking_eq rowOf colOf (pow_le_card_of_packing hr hL)]
@@ -986,7 +985,7 @@ theorem computableInPolyTime_packingOfWords :
   have hmap := ComputableInPolyTime.mapWithInput
     (f := fun (y : WordsInput) (q : (List ℕ × List ℕ) × ℕ) =>
       (packetOf y.1.1.1 y.1.1.2 q.1.1 q.1.2 q.2, slotOf y.1.1.1 q.1.1 q.1.2 q.2)) hzip hstep
-  exact computableInPolyTime_numPacketsOf.prod hmap
+  exact (computableInPolyTime_numPacketsOf.prod hmap).of_enc_eq fun _ => by congr 1
 
 /-- The output encoding of `nativePacking`. -/
 @[expose] def encNativePacking :
