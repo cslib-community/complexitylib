@@ -887,6 +887,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProd
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEvaluator
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketTerms
 public import Complexity.Computability.Circuit.Frontier.TwoSidedWitness
 public import Complexity.Computability.Circuit.Frontier.Unconditional
 public import Complexity.Computability.Circuit.Frontier.Witness
