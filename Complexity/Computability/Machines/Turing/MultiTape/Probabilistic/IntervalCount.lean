@@ -63,7 +63,7 @@ the output track. -/
 abbrev ControlData (k : ℕ) (State : Type) := Option State × (Option (Fin k) → ℕ) × OutputTrack
 
 /-- A control record as plain data: its offsets by their values. -/
-@[expose] def controlData {b : ℕ} [NeZero b] (c : BlockControl k State b) : ControlData k State :=
+@[expose] def controlData {b : ℕ} (c : BlockControl k State b) : ControlData k State :=
   (c.1, fun head => (c.2.1 head).val, c.2.2)
 
 /-- The finite storage of the configuration embedded at block indices `J` with the control
@@ -78,7 +78,7 @@ work tape holds the cells of its window with its head on cell `b + offset`. -/
   track := cIn.2.2
 
 /-- On the data of a control record and window contents, `localStartData` is `localStart`. -/
-theorem localStartData_controlData (b : ℕ) [NeZero b] (input : List Bool)
+theorem localStartData_controlData (b : ℕ) (input : List Bool)
     (J : Option (Fin k) → ℤ) (cIn : BlockControl k State b)
     (wIn : Fin k → Fin 3 → ZMod b → Option Bool) :
     localStartData b input J (controlData cIn) (fun h => windowCells b (wIn h)) =
