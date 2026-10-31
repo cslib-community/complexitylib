@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogS
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Expr
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.ReadSymbol
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Correctness
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.CounterBounds
 
 /-!
 # The configuration graph as an instance of directed connectivity
@@ -388,26 +389,6 @@ private theorem reachesOut_matrix (hL : w.length ≤ B)
   exact ⟨_, hreach, bounded_regs hL (by omega) (by omega) (by omega)⟩
 
 
-/-- The polynomial bound `((frame w).length + 1) ^ (D * Fintype.card (Register k) + 1)` dominates
-`vertexBound + 1`, `w.length`, and `2`. -/
-private theorem configurationInstance_bounds :
-    vertexBound (k := k) (radix D w.length) + 1 ≤
-      ((frame w).length + 1) ^ (D * Fintype.card (Register k) + 1) ∧
-    w.length ≤ ((frame w).length + 1) ^ (D * Fintype.card (Register k) + 1) ∧
-    2 ≤ ((frame w).length + 1) ^ (D * Fintype.card (Register k) + 1) := by
-  set L := w.length
-  set E := D * Fintype.card (Register k)
-  have hVB : vertexBound (k := k) (radix D L) = (L + 2) ^ E := vertexBound_eq_pow D L
-  have hpow : (L + 2) ^ E ≤ (2 * L + 2) ^ E := Nat.pow_le_pow_left (by omega) E
-  have hone : 1 ≤ (2 * L + 2) ^ E := Nat.one_le_pow _ _ (by omega)
-  have hB : ((frame w).length + 1) ^ (E + 1) = (2 * L + 2) ^ E * (2 * L + 2) := by
-    rw [length_frame, show 2 * L + 1 + 1 = 2 * L + 2 by omega, pow_succ]
-  have hmul : (2 * L + 2) ^ E * 2 ≤ (2 * L + 2) ^ E * (2 * L + 2) :=
-    Nat.mul_le_mul_left _ (by omega)
-  have hmul' : 2 * L + 2 ≤ (2 * L + 2) ^ E * (2 * L + 2) := Nat.le_mul_of_pos_left _ hone
-  rw [hB]
-  exact ⟨by omega, by omega, by omega⟩
-
 /-- A `forCode` block in `writer` is at `b` when instructions `b`, `b + 1`, `b + 2` match. -/
 private theorem codeAt_forCode {b u body exit : ℕ} {bound : Expr}
     (h₀ : (writer ntm D).instr b = .assign u (const 0) (b + 1))
@@ -429,7 +410,7 @@ theorem computableInLogSpace_configurationInstance :
   set S := startID ntm (radix D w.length)
   set B := ((frame w).length + 1) ^ (D * Fintype.card (Register k) + 1)
   have hS : S < VB := startID_lt_vertexBound ntm c w.length
-  obtain ⟨hN, hL, h2⟩ := configurationInstance_bounds (k := k) (D := D) w
+  obtain ⟨hN, hL, h2⟩ := configurationCounter_bounds (k := k) D w
   have hreg (i : ℕ) (hi : i ≤ B) : ∀ r ∈ [w.length, i, 0, 0], r ≤ B :=
     bounded_regs hL hi (by omega) (by omega)
   have hones₁ := reachesOut_ones (ntm := ntm) (D := D) w

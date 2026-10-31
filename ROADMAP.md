@@ -176,8 +176,6 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Structure, time and space
 
-- **PRIMES ∈ P** ([#893]): the polynomial-time AKS algorithm on binary inputs, on top of the
-  proved criterion and small-`r` bound.
 - Time, space and exponential hierarchies; oracle, advice, unambiguous and promise classes;
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
@@ -204,10 +202,9 @@ index links to canonical definitions rather than keeping a second set.
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets:** SPARSE and TALLY; `P/poly = P^SPARSE` (Meyer), extending
-  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse set that is NP-hard under many-one
-  reductions gives `P = NP` (Mahaney), as does a sparse coNP-hard set (Fortune) and a sparse NP-hard
-  set under bounded truth-table reductions (Ogihara and Watanabe).
+- **Sparse and tally sets** ([#1819]): TALLY; `P/poly = P^SPARSE` (Meyer), extending
+  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse NP-hard set under bounded
+  truth-table reductions gives `P = NP` (Ogihara and Watanabe).
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
@@ -287,7 +284,10 @@ universe size, not supplied as unverified input tables. In dependency order:
   problems.
 - **The Immerman–Vardi theorem:** on ordered finite structures, first-order logic with least
   fixed points defines exactly the polynomial-time properties, with the machine side proved for
-  actual native algorithms in both directions.
+  actual native algorithms in both directions. Build on the scoped FO(LFP) syntax and finite-stage
+  semantics: certify a fixed-formula evaluator with explicitly charged relation tables, then prove
+  the native-machine-to-positive-LFP converse. Extend the synthesis rules to nested operator bodies
+  and give regular-language quantifiers their ordered characteristic-word semantics.
 - Further logical characterizations on ordered structures: FO(TC) = NL and FO(DTC) = L,
   SO-Horn = P (Grädel), and DLOGTIME-uniform AC⁰ = FO(≤, BIT) (Barrington–Immerman–Straubing);
   then order-invariant and fixed-point queries and uniform translations between syntax,
@@ -808,8 +808,9 @@ not planned, not as proved.
 
 - The full VNP-completeness reduction for the permanent ([#321]). Arithmetic formulas now
   project to the permanent with dimension `Formula.size + 1` over every commutative semiring;
-  the conversion from VP witnesses to formulas and elimination of Boolean sums needed for
-  VNP-hardness remain open.
+  a selector occurring in one permanent entry can be eliminated with one extra dimension when
+  `2` is invertible. The conversion from VP witnesses to formulas, the two-entry gadget and
+  general Boolean-sum elimination needed for VNP-hardness remain open.
 - General auxiliary-input zero knowledge ([#324]); see the GMW theorem above.
 - Williams's square-root-space simulation ([#361]) and implicit Tree Evaluation ([#367]), now the
   frontier track [#888].
@@ -842,7 +843,6 @@ not planned, not as proved.
 [#890]: https://github.com/cslib-community/complexitylib/issues/890
 [#891]: https://github.com/cslib-community/complexitylib/issues/891
 [#892]: https://github.com/cslib-community/complexitylib/issues/892
-[#893]: https://github.com/cslib-community/complexitylib/issues/893
 [#894]: https://github.com/cslib-community/complexitylib/issues/894
 [#895]: https://github.com/cslib-community/complexitylib/issues/895
 [#896]: https://github.com/cslib-community/complexitylib/issues/896
@@ -868,4 +868,5 @@ not planned, not as proved.
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
+[#1819]: https://github.com/cslib-community/complexitylib/issues/1819
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824

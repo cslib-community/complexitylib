@@ -6,15 +6,17 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Circuit.Boolean.Sparse
 import Complexity.Computability.Complexity.Classes.Sparse.Fortune
+import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
 
 /-!
-# Sparse problems and Fortune's procedure
+# Sparse problems and the procedures of Fortune and Mahaney
 
-Sparse and non-sparse problems; the pruning rule and the search of the self-reduction tree on
-concrete inputs, including a bound too small for the procedure to be correct; and Fortune's
-procedure as an exponential-time decider for `SAT`, which satisfies the hypotheses of
-`Cslib.Complexity.Fortune.accepts_iff` with the identity reduction of `UNSAT` to the encodings of
-unsatisfiable formulas and an exponential bound.
+Sparse and non-sparse problems; the pruning rules and the searches of the self-reduction tree on
+concrete inputs, including a bound too small for Fortune's procedure to be correct; and both
+procedures as exponential-time deciders for `SAT`, which satisfy the hypotheses of
+`Cslib.Complexity.Fortune.accepts_iff` and `Cslib.Complexity.Mahaney.accepts_iff` with the
+identity reductions of `UNSAT` and `SAT` to the encodings of their members and an exponential
+bound.
 -/
 
 namespace ComplexityTests.SparseHardSets
@@ -101,5 +103,44 @@ example (φ : CNF ℕ) :
     dsimp only [M, L]
     rw [SAT.length_encCNF_append]
     nlinarith
+
+/-! ### Mahaney's theorem -/
+
+/-- A stage keeps the first node and the first node with each label `(a + b) % 3` after it, and
+drops the first node when more than `t` others remain; pruning repeats it. -/
+example : Mahaney.stage (fun a b : ℕ => (a + b) % 3) 1 [0, 1, 4, 2] = [1, 2] ∧
+    Mahaney.stage (fun a b : ℕ => (a + b) % 3) 2 [0, 1, 4, 2] = [0, 1, 2] ∧
+    Mahaney.prune (fun a b : ℕ => (a + b) % 3) 1 [0, 1, 4, 2] = [1, 2] ∧
+    Mahaney.prune (fun a b : ℕ => (a + b) % 3) 0 [0, 1, 4, 2] = [2] := by
+  decide
+
+/-- The disjunction of the nodes fixing `x₀` to `true` and to `false` in `x₀ ∧ ¬x₀` is
+unsatisfiable, while in `x₁` it is satisfiable. -/
+example : Mahaney.disj [[(0, true)], [(0, false)]] [(0, true)] [(0, false)] ∉ SAT ∧
+    Mahaney.disj [[(1, true)]] [(0, true)] [(0, false)] ∈ SAT := by
+  rw [Mahaney.disj_mem_SAT_iff, Mahaney.disj_mem_SAT_iff]
+  refine ⟨fun h => ?_, .inl ⟨fun _ => true, rfl⟩⟩
+  rcases h with ⟨σ, hσ⟩ | ⟨σ, hσ⟩ <;> cases h0 : σ 0 <;> simp [SAT.units, CNF.eval, h0] at hσ
+
+example : Mahaney.accepts encCNF 8 [[(0, true), (1, false)], [(1, true)]] = true ∧
+    Mahaney.accepts encCNF 8 [[(0, true)], [(0, false)]] = false := by
+  decide
+
+/-- The hypotheses of `Mahaney.accepts_iff` are satisfiable: the encoding reduces `SAT` to the
+encodings of satisfiable formulas, and the number of words of bounded length bounds the census. -/
+example (φ : CNF ℕ) :
+    let L := (encCNF φ).length
+    let M := L * L * (16 * L + 21) + L
+    Mahaney.accepts encCNF ((M + 1) * 2 ^ M) φ = true ↔ φ ∈ SAT := by
+  intro L M
+  refine Mahaney.accepts_iff (K := encCNF '' SAT) (M := M) (fun ψ => ?_)
+    (fun a b ha hb hla hlb => ?_) (fun s hs => card_le_of_length_le s fun w hw => (hs w hw).2)
+  · rw [encCNF.injective.mem_set_image]
+  · have hvars := SAT.length_vars_le φ
+    have hla' : a.length ≤ L := hla.trans hvars
+    have hlb' : b.length ≤ L := hlb.trans hvars
+    refine (Mahaney.length_encCNF_disj_le ha hb).trans ?_
+    dsimp only [M]
+    gcongr
 
 end ComplexityTests.SparseHardSets
