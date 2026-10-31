@@ -47,7 +47,9 @@ first occurrences of `φ`, and `SAT.atLeast a ++ φ` is satisfiable exactly when
 node `a`, padded with `false`, form a member of the left set
 (`Cslib.Complexity.SAT.atLeast_append_mem_SAT_iff_mem_LeftSAT`). For a fixed formula the members
 form an initial segment of the words of the right length (`Cslib.Complexity.LeftSAT.mem_of_le`):
-the words at most the largest witness.
+the words at most the largest witness. Its largest member is a witness
+(`Cslib.Complexity.LeftSAT.exists_eq_map_of_maximal`), so membership queries find a satisfying
+assignment, which is the search-to-decision property behind the left-set technique.
 
 ## Main definitions
 
@@ -62,7 +64,8 @@ the words at most the largest witness.
 * `Cslib.Complexity.mem_LeftSAT_iff_atLeast`,
   `Cslib.Complexity.SAT.atLeast_append_mem_SAT_iff_mem_LeftSAT`: membership in the left set, of
   words and of prefixes, as satisfiability.
-* `Cslib.Complexity.LeftSAT.mem_of_le`: the left set of a formula is an initial segment.
+* `Cslib.Complexity.LeftSAT.mem_of_le`, `Cslib.Complexity.LeftSAT.exists_eq_map_of_maximal`: the
+  left set of a formula is an initial segment, and its largest member is a witness.
 * `Cslib.Complexity.LeftSAT_polyTimeReducible_SAT`, `Cslib.Complexity.LeftSAT_mem_NP`,
   `Cslib.Complexity.SAT_polyTimeReducible_LeftSAT`: the left set and `SAT` reduce to each other,
   and the left set is in `NP`.
@@ -159,6 +162,15 @@ theorem LeftSAT.mem_of_le {φ : CNF ℕ} {w w' : List Bool} (h : (φ, w) ∈ Lef
     (hlen : w'.length = w.length) (hle : w' ≤ w) : (φ, w') ∈ LeftSAT := by
   obtain ⟨hw, σ, hσ, hwσ⟩ := h
   exact ⟨hlen.trans hw, σ, hσ, hle.trans hwσ⟩
+
+/-- **The largest member of the left set of a formula is a witness**, so searching for it with
+membership queries, for example bit by bit, finds a satisfying assignment. -/
+theorem LeftSAT.exists_eq_map_of_maximal {φ : CNF ℕ} {w : List Bool} (h : (φ, w) ∈ LeftSAT)
+    (hmax : ∀ w' : List Bool, w'.length = w.length → w < w' → (φ, w') ∉ LeftSAT) :
+    ∃ σ, φ.eval σ = true ∧ w = φ.vars.map σ := by
+  obtain ⟨hw, σ, hσ, hwσ⟩ := h
+  refine ⟨σ, hσ, (lt_or_eq_of_le hwσ).resolve_left fun hlt => hmax _ ?_ hlt ⟨?_, σ, hσ, le_rfl⟩⟩
+  all_goals simp [hw]
 
 /-- **Membership in the left set as satisfiability:** pair the occurrences of `φ` with the bits of
 `w`, and require the assignment to be lexicographically at least them. -/
