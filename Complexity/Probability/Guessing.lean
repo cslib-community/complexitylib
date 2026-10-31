@@ -50,7 +50,7 @@ theorem score_le_uniform_guess (real : PMF (Seed × (Prefix × Suffix))) (seed :
     (score : Seed → Prefix × Suffix → ℝ)
     (hscore : ∀ s z, 0 ≤ score s z ∧ score s z ≤ 1) :
     (∑ pair, (real pair).toReal * score pair.1 pair.2) ≤
-      2 * dist (real.map (fun pair => (pair.1, pair.2.1)))
+      2 * dist (real.map (fun pair => (pair.1, Prod.fst pair.2)))
         (seed.bind (fun s => (PMF.uniformOfFintype Prefix).map (s, ·))) +
       Fintype.card Suffix *
         ∑ s, (seed s).toReal * ∑ z,

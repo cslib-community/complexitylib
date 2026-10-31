@@ -250,7 +250,7 @@ def applyCertificates (predicate : Name) : Aesop.RuleTac := fun input => input.g
         successProbability? := none }
     catch _ => pure ()
     finally initial.restore
-  if applications.isEmpty then throwError "no certificate for `{key.2.1}` applies"
+  if applications.isEmpty then throwError "no certificate for `{Prod.fst key.2}` applies"
   return ⟨applications⟩
 
 /-- Apply a rule with known arguments, leaving all remaining hypotheses as goals. -/

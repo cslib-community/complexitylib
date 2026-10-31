@@ -68,7 +68,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open
     (hprepare : ComputableTidilyInPolyTime prepare input source)
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun pair => handler pair.1 (Prod.fst pair.2) (Prod.snd pair.2)))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
@@ -138,7 +139,8 @@ theorem IsOraclePPTOn.run_interpret_preprocess_open'
     (hprepare : ComputableInPolyTime prepare input source)
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
-      (encPair encBits stateEncoding) (fun pair => handler pair.1 pair.2.1 pair.2.2))
+      (encPair encBits stateEncoding)
+      (fun pair => handler pair.1 (Prod.fst pair.2) (Prod.snd pair.2)))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableInPolyTime (fun pair => resources pair.1 pair.2)

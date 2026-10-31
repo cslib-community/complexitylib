@@ -237,8 +237,9 @@ samples `ω j = (x, y, z)`: the average of `g (x, z) χ_S(x) g (y, z) χ_S(y)`, 
 the coordinates in `J` from `x` and the others from `z`. -/
 noncomputable def bucketEstimate (g : (ι → Bool) → Bool)
     (ω : Fin m → (ι → Bool) × (ι → Bool) × (ι → Bool)) (J S : Finset ι) : ℝ :=
-  (∑ j, signVal (g (J.piecewise (ω j).1 (ω j).2.2)) * chi ℝ S (ω j).1 *
-    (signVal (g (J.piecewise (ω j).2.1 (ω j).2.2)) * chi ℝ S (ω j).2.1)) / m
+  (∑ j, signVal (g (J.piecewise (ω j).1 (Prod.snd (ω j).2))) * chi ℝ S (ω j).1 *
+    (signVal (g (J.piecewise (Prod.fst (ω j).2) (Prod.snd (ω j).2))) *
+      chi ℝ S (Prod.fst (ω j).2))) / m
 
 /-- The empirical Fourier coefficient of `g` on `S` from the first points of the samples. -/
 noncomputable def sampleCoeff (g : (ι → Bool) → Bool)
@@ -265,7 +266,8 @@ noncomputable def kmQueries (ω : Fin m → (ι → Bool) × (ι → Bool) × (�
   (List.finRange m).map (fun j => (ω j).1) ++
     (searchLevels (univ : Finset ι).toList).flatMap fun J =>
       (List.finRange m).flatMap fun j =>
-        [J.piecewise (ω j).1 (ω j).2.2, J.piecewise (ω j).2.1 (ω j).2.2]
+        [J.piecewise (ω j).1 (Prod.snd (ω j).2),
+          J.piecewise (Prod.fst (ω j).2) (Prod.snd (ω j).2)]
 
 /-- The algorithm queries `m (2 n + 3)` points for `n` coordinates. -/
 theorem length_kmQueries (ω : Fin m → (ι → Bool) × (ι → Bool) × (ι → Bool)) :

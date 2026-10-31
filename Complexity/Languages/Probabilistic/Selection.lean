@@ -54,7 +54,7 @@ variable {Query : Type u} {spec : OracleSpec.{u, 0} Query}
 
 /-- Update the next index, best index, and best success count, preferring later indices on ties. -/
 def selectUpdate (state : ℕ × ℕ × ℕ) (successes : ℕ) : ℕ × ℕ × ℕ :=
-  (state.1 + 1, if state.2.2 ≤ successes then (state.1, successes) else state.2)
+  (state.1 + 1, if Prod.snd state.2 ≤ successes then (state.1, successes) else state.2)
 
 /-- Estimate one candidate and update the running empirical maximum. -/
 def selectStep (trials : ℕ) (test : ℕ → OracleComp spec Bool)
@@ -65,7 +65,7 @@ def selectStep (trials : ℕ) (test : ℕ → OracleComp spec Bool)
 When there are no candidates, return zero. -/
 def selectBest (count trials : ℕ) (test : ℕ → OracleComp spec Bool) :
     OracleComp spec ℕ :=
-  (fun state => state.2.1) <$> iterate count (selectStep trials test) (0, 0, 0)
+  (fun state => Prod.fst state.2) <$> iterate count (selectStep trials test) (0, 0, 0)
 
 /-- Select an empirically best value from a list, returning the fallback for an empty list. -/
 def selectFrom {α : Type} (values : List α) (trials : ℕ)
@@ -112,9 +112,9 @@ theorem sampleBest_support {α : Type} (count trials : ℕ) (source : ProbComp �
 /-- Candidate selection keeps both indices within the elapsed count and the success count within
 the trial budget on every execution, regardless of statistical estimation errors. -/
 theorem selectStep_bounded (trials : ℕ) (test : ℕ → ProbComp Bool) (i : ℕ)
-    (state : ℕ × ℕ × ℕ) (hstate : state.1 = i ∧ state.2.1 ≤ i ∧ state.2.2 ≤ trials)
+    (state : ℕ × ℕ × ℕ) (hstate : state.1 = i ∧ Prod.fst state.2 ≤ i ∧ Prod.snd state.2 ≤ trials)
     (next : ℕ × ℕ × ℕ) (hnext : next ∈ (eval (OracleComp.selectStep trials test state)).support) :
-    next.1 = i + 1 ∧ next.2.1 ≤ i + 1 ∧ next.2.2 ≤ trials := by
+    next.1 = i + 1 ∧ Prod.fst next.2 ≤ i + 1 ∧ Prod.snd next.2 ≤ trials := by
   rw [OracleComp.selectStep, eval_map, PMF.mem_support_map_iff] at hnext
   obtain ⟨successes, hsuccesses, rfl⟩ := hnext
   have hbound := countTrue_le trials (test state.1) hsuccesses

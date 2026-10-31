@@ -194,8 +194,9 @@ theorem run_interpret_run_interpret {Query' : Type} {spec' : Query' → Type}
       (fun q state => ((OracleComp.interpret
         (handler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
           ((inner q).run state.1)).run state.2).map
-            (fun result => (result.1.1, result.1.2, result.2)))) program).run
-        (hidden, external)).map (fun result => ((result.1, result.2.1), result.2.2)) := by
+            (fun result => (Prod.fst result.1, Prod.snd result.1, result.2)))) program).run
+        (hidden, external)).map
+          (fun result => ((result.1, Prod.fst result.2), Prod.snd result.2)) := by
   rw [OracleComp.run_interpret_run_interpret, _root_.PMF.monad_map_eq_map]
   congr 3
   funext q state

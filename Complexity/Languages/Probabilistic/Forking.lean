@@ -155,12 +155,13 @@ theorem runWithAnswers_run_interpret_invariant {ι σ β : Type} {spec : ι → 
     (handler : (q : ι) → StateT σ (OracleComp (fun _ : Query => H)) (spec q))
     (answers : List H) (invariant : σ → List Query → Prop)
     (step : ∀ q s queries, invariant s queries →
-      invariant (runWithAnswers default ((handler q).run s) (answers.drop queries.length)).1.2
+      invariant
+        (Prod.snd (runWithAnswers default ((handler q).run s) (answers.drop queries.length)).1)
         (queries ++ (runWithAnswers default ((handler q).run s)
           (answers.drop queries.length)).2))
     (program : OracleComp spec β) (s : σ) (queries : List Query) (hs : invariant s queries) :
-    invariant (runWithAnswers default ((interpret handler program).run s)
-        (answers.drop queries.length)).1.2
+    invariant (Prod.snd (runWithAnswers default ((interpret handler program).run s)
+        (answers.drop queries.length)).1)
       (queries ++ (runWithAnswers default ((interpret handler program).run s)
         (answers.drop queries.length)).2) := by
   induction program using OracleComp.induction generalizing s queries with
@@ -334,7 +335,7 @@ def forkingAlgorithm {S β : Type} (default : H) (q : ℕ)
     (program : S → OracleComp (fun _ : Query => H) (Option ℕ × β)) (s : S) (h : Fin q → H) :
     Option (Fin q) × ((Option ℕ × β) × List Query) :=
   (validIndex q (runWithAnswers default (program s) (List.ofFn h)).2.length
-      (runWithAnswers default (program s) (List.ofFn h)).1.1,
+      (Prod.fst (runWithAnswers default (program s) (List.ofFn h)).1),
     runWithAnswers default (program s) (List.ofFn h))
 
 variable {S β : Type} [Fintype H] [Nonempty H] [DecidableEq H]
@@ -349,7 +350,7 @@ theorem le_add_sqrt_fork (first : PMF S)
     ((do
       let s ← first
       let run ← (interpret countingUniform (program s)).run 0
-      return (validIndex q run.2 run.1.1).isSome : PMF Bool) true).toReal ≤
+      return (validIndex q run.2 (Prod.fst run.1)).isSome : PMF Bool) true).toReal ≤
       q / Fintype.card H + √(q * ((Forking.fork first (forkingAlgorithm default q program)).map
         Option.isSome true).toReal) := by
   have hacc : (do
@@ -377,7 +378,7 @@ theorem mem_support_fork {first : PMF S}
     ∃ s ∈ first.support, ∃ h h' : Fin q → H, (∀ i < j, h i = h' i) ∧ h j ≠ h' j ∧
       out = runWithAnswers default (program s) (List.ofFn h) ∧
       out' = runWithAnswers default (program s) (List.ofFn h') ∧
-      out.1.1 = some j.val ∧ out'.1.1 = some j.val ∧
+      Prod.fst out.1 = some j.val ∧ Prod.fst out'.1 = some j.val ∧
       out.2.take (j + 1) = out'.2.take (j + 1) ∧
       ∃ query, out.2[j.val]? = some query ∧ out'.2[j.val]? = some query := by
   obtain ⟨s, hs, h, h', hagree, hne, hrun, hrun'⟩ := Forking.mem_support_fork hfork
