@@ -23,6 +23,15 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection
 
 open Cslib.WordRAM
 
+/-- The ineligible branch executes one actual copy and leaves the complete state unchanged. -/
+theorem exec_nop {w : ℕ} (x : Data 160) : ExecWithin w nop x x 1 := by
+  have hself : x.set Reg.best (x.regs Reg.best) = x := by
+    apply Data.ext
+    · exact Function.update_eq_self _ _
+    · rfl
+  simpa only [nop, hself] using
+    (ExecWithin.copy (w := w) (x := x) (d := Reg.best) (s := Reg.best))
+
 /-- Update a first strict minimum in at most five actual instructions, without touching memory
 or any register outside the three result registers. The `found` input is a Boolean word. -/
 theorem exec_keep {w : ℕ} (x : Data 160) (hz : x.regs Reg.zero = 0)
@@ -63,15 +72,8 @@ theorem exec_keep {w : ℕ} (x : Data 160) (hz : x.regs Reg.zero = 0)
       · intro i hb hc _
         simp only [y, Data.set_regs, Function.update_of_ne hc, Function.update_of_ne hb]
     · have he : ExecWithin w keep x x 5 := by
-        have hself : x.set Reg.best (x.regs Reg.best) = x := by
-          apply Data.ext
-          · exact Function.update_eq_self _ _
-          · rfl
-        have hcopy : ExecWithin (B := .standard) w (ram[ Reg.best ← Reg.best ]) x x 1 := by
-          simpa only [hself] using
-            (ExecWithin.copy (w := w) (x := x) (d := Reg.best) (s := Reg.best))
         exact ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hz] using h0)
-          (ExecWithin.branch_neg hlt hcopy)
+          (ExecWithin.branch_neg hlt (exec_nop x))
       exact ⟨x, he, by simp [h0, hlt], by simp [h0, hlt], h1, rfl,
         fun _ _ _ _ => rfl⟩
 

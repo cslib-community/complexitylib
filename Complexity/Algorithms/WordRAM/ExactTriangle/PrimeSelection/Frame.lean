@@ -25,6 +25,21 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection
 
 open Cslib.WordRAM
 
+/-- Argument delivery and the entire counting call preserve every selector metadata register. -/
+theorem count_preserves (counter : Code .standard 128) (i : Fin 160) (hi : 128 ≤ i.val) :
+    (count counter).Preserves i := by
+  have hc : (counter.rename counterRegisters).Preserves i :=
+    counter.preserves_rename_of_forall_ne counterRegisters i (by
+      intro j hj
+      have hv := congrArg (fun i : Fin 160 => i.val) hj
+      dsimp only [counterRegisters] at hv
+      omega)
+  simp only [count, Code.Preserves, hc, Op.dest, ne_eq, Option.some.injEq,
+    Reg.countSide, Reg.countPrime, Reg.countAB, Reg.countBC, Reg.countAC, Reg.countScratch,
+    Fin.ext_iff]
+  norm_num
+  omega
+
 /-- The actual selector preserves the original parameters/pointers and the upper caller bank. -/
 theorem preserves_input (counter : Code .standard 128) (i : Fin 160)
     (hi : (131 ≤ i.val ∧ i.val ≤ 136) ∨ 143 ≤ i.val) :
@@ -41,7 +56,8 @@ theorem preserves_input (counter : Code .standard 128) (i : Fin 160)
       have hv := congrArg (fun i : Fin 160 => i.val) hj
       dsimp only [trialRegisters] at hv
       omega)
-  simp only [program, body, candidate, trial, count, keep, nop, Code.Preserves, hc, ht,
+  simp only [program, setup, body, advance, candidate, trial, count, keep, nop,
+    Code.Preserves, hc, ht,
     Op.dest, Op.bin, ne_eq, Option.some.injEq, Reg.best, Reg.bestCount, Reg.found, Reg.cursor,
     Reg.square, Reg.fourSquare, Reg.one, Reg.zero, Reg.four, Reg.trialArg, Reg.countSide,
     Reg.countPrime, Reg.countAB, Reg.countBC, Reg.countAC, Reg.countScratch, Fin.ext_iff]

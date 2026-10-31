@@ -128,23 +128,30 @@ end Reg
     (.seq trial (.branch (.eq Reg.trialFlag Reg.one) (.seq (count counter) keep) nop))
 
 /-- One actual candidate test/count and advance, including both square computations. -/
+@[expose] def advance : Code .standard 160 :=
+  ram[ Reg.cursor ← Reg.cursor + Reg.one; Reg.square ← Reg.cursor * Reg.cursor ]
+
+/-- Compute the lower-endpoint test, process this candidate and advance to its successor. -/
 @[expose] def body (counter : Code .standard 128) : Code .standard 160 :=
   .seq (ram[ Reg.fourSquare ← Reg.four * Reg.square ])
-    (.seq (candidate counter)
-      (ram[ Reg.cursor ← Reg.cursor + Reg.one; Reg.square ← Reg.cursor * Reg.cursor ]))
+    (.seq (candidate counter) advance)
+
+/-- Initialize constants, the first candidate and the explicit empty minimum. -/
+@[expose] def setup : Code .standard 160 :=
+  ram[ Reg.one ← #1; Reg.zero ← #0; Reg.four ← #4;
+    Reg.cursor ← #2; Reg.square ← #4;
+    Reg.best ← #0; Reg.bestCount ← #0; Reg.found ← #0 ]
 
 /-- Enumerate exactly the integer square window and retain the first minimum modular count.
 The finite counting program is a code argument, not a runtime result or counting oracle. -/
 @[expose] def program (counter : Code .standard 128) : Code .standard 160 :=
-  .seq (ram[ Reg.one ← #1; Reg.zero ← #0; Reg.four ← #4;
-    Reg.cursor ← #2; Reg.square ← #4;
-    Reg.best ← #0; Reg.bestCount ← #0; Reg.found ← #0 ])
+  .seq setup
     (.loop (.lt Reg.square Reg.window) (body counter))
 
 /-- The selector adds fifty flat slots to the single embedded counter body. -/
 theorem program_size (counter : Code .standard 128) :
     (program counter).size = counter.size + 50 := by
-  simp only [program, body, candidate, trial, count, keep, nop, PrimeTrial.program,
+  simp only [program, setup, body, advance, candidate, trial, count, keep, nop, PrimeTrial.program,
     PrimeTrial.body, Code.size, Code.size_rename]
   omega
 
@@ -154,7 +161,7 @@ theorem not_readsWidth {counter : Code .standard 128} (hc : ¬counter.ReadsWidth
   have ht : ¬trial.ReadsWidth := by decide
   have hk : ¬keep.ReadsWidth := by decide
   have hn : ¬nop.ReadsWidth := by decide
-  simpa [program, body, candidate, count, Code.ReadsWidth, Code.readsWidth_rename,
+  simpa [program, setup, body, advance, candidate, count, Code.ReadsWidth, Code.readsWidth_rename,
     ht, hk, hn, Op.ReadsWidth, Op.bin] using hc
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.PrimeSelection
