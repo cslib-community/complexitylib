@@ -41,6 +41,8 @@ small to vouch for the run.
   recursion.
 * `Cslib.GenericRAM.StackRecursion.Scheme.exists_eval_of_counted`: derivations with the node count
   of the recursion tree.
+* `Cslib.GenericRAM.StackRecursion.Scheme.exists_eval_of_height`: derivations with their height
+  alone.
 * `Cslib.GenericRAM.StackRecursion.Scheme.value_of_run_eq_some`: a returned value satisfies the
   invariant.
 
@@ -176,6 +178,43 @@ theorem exists_eval_of_counted (μ depth : X → ℕ) (value : X → Y) (b : ℕ
     have := Nat.mul_le_mul_right (Nat.recursionBound b k' (depth x + 1)) hcnt
     omega
   · refine ⟨1, 0, ?_, one_le_recursionBound _ _ _, Nat.zero_le _⟩
+    rw [hleaf x hx hl]
+    exact Eval.leaf hx hl (hleaf x hx hl ▸ hvalue x hx)
+
+/-- **Derivations with their height.** Let `value` assign values to the nodes satisfying `I.node`,
+all satisfying `I.value`, such that a leaf has its leaf value, and a call at depth `d` has
+`d < D` and counted children, as in `exists_eval_of_counted`, at depth `d + 1`. Then every node at
+depth `d ≤ D` has a derivation of its value with at most `D - d` stack levels. This is
+`exists_eval_of_counted` without a bound on the number of children. -/
+theorem exists_eval_of_height (μ depth : X → ℕ) (value : X → Y) (D : ℕ)
+    (hleaf : ∀ x, I.node x → R.isLeaf x = true → value x = R.leaf x)
+    (hcall : ∀ x, I.node x → R.isLeaf x = false → depth x < D ∧
+      ∃ (cnt : ℕ) (acc : ℕ → A) (child : ℕ → X), acc 0 = R.start x ∧
+        (∀ c < cnt, R.next x (acc c) = some (child c)) ∧ R.next x (acc cnt) = none ∧
+        (∀ c < cnt, R.absorb x (acc c) (value (child c)) = acc (c + 1)) ∧
+        (∀ c < cnt, I.frame x (acc c) ∧ I.node (child c) ∧ μ (child c) < μ x ∧
+          depth (child c) = depth x + 1) ∧
+        value x = R.finish x (acc cnt))
+    (hvalue : ∀ x, I.node x → I.value (value x)) (x : X) (hx : I.node x) (hxD : depth x ≤ D) :
+    ∃ n h, R.Eval I x (value x) n h ∧ h ≤ D - depth x := by
+  induction hμ : μ x using Nat.strong_induction_on generalizing x with
+  | _ k ih =>
+  cases hl : R.isLeaf x
+  · obtain ⟨hd, cnt, acc, child, h0, hnext, hdone, habs, hkids, hfin⟩ := hcall x hx hl
+    have hev : ∀ c < cnt, ∃ n h, R.Eval I (child c) (value (child c)) n h ∧
+        h ≤ D - (depth x + 1) := fun c hc => by
+      obtain ⟨-, hn, hμc, hdc⟩ := hkids c hc
+      obtain ⟨n, h, he, hhb⟩ := ih (μ (child c)) (hμ ▸ hμc) (child c) hn (by omega) rfl
+      rw [hdc] at hhb
+      exact ⟨n, h, he, hhb⟩
+    choose! nodes height hev using hev
+    obtain ⟨h, hh, hloop⟩ := Loop.counted (I := I) (val := fun c => value (child c)) cnt
+      (D - (depth x + 1)) hnext hdone habs (fun c hc => (hev c hc).1)
+      (fun c hc => (hkids c hc).1) (fun c hc => (hev c hc).2)
+    rw [h0] at hloop
+    have hv : I.value (R.finish x (acc cnt)) := hfin ▸ hvalue x hx
+    exact ⟨(∑ c ∈ range cnt, nodes c) + 1, h + 1, hfin ▸ Eval.call hx hl hloop hv, by omega⟩
+  · refine ⟨1, 0, ?_, Nat.zero_le _⟩
     rw [hleaf x hx hl]
     exact Eval.leaf hx hl (hleaf x hx hl ▸ hvalue x hx)
 

@@ -898,6 +898,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedL
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
@@ -906,6 +907,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDefor
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeCall
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeChild
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeChildBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeChildPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeRecovery
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
