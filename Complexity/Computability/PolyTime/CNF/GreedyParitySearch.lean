@@ -246,7 +246,7 @@ theorem exists_fin_of_lt_candidateTupleCount {m P j : ℕ} (hj : j < candidateTu
 
 /-- `decodeTestTuple m P j` is computable in polynomial time from unary `(m, P)` and binary `j`. -/
 @[fun_prop] theorem computableInPolyTime_decodeTestTuple :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => decodeTestTuple p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun (((m, P), j) : (ℕ × ℕ) × ℕ) => decodeTestTuple m P j)
       (encPair (encPair encUnary encUnary) encNat) (encList (encPair encUnary encBool)) := by
   let encElem := encPair encUnary encBool
   let encState := encPair encNat (encList encElem)
@@ -450,10 +450,11 @@ abbrev SelectBestAcc : Type := (ℕ × ℕ) × (List (List Bool) × Option (List
 strict improvement `candVal < best.2` ([OpenAI2026ETH], Lemma 6.2, p. 42). -/
 def selectBestStep (countSys : List (List Bool) → ℕ)
     (state : ℕ × SelectBestAcc) : SelectBestAcc :=
-  let m := state.2.1.1; let P := state.2.1.2; let rows := state.2.2.1
+  let acc := state.2; let mP := acc.1; let rest := acc.2
+  let m := mP.1; let P := mP.2; let rows := rest.1; let bestOpt := rest.2
   let candRow := materializeTestRow m (decodeTestTuple m P state.1)
   let candVal := countSys (rows ++ [candRow])
-  let nextBest := state.2.2.2.elim (some (candRow, candVal)) fun best =>
+  let nextBest := bestOpt.elim (some (candRow, candVal)) fun best =>
     if decide (candVal < best.2) then some (candRow, candVal) else some best
   ((m, P), (rows, nextBest))
 
@@ -464,8 +465,10 @@ enumeration order attaining the minimum of `countSys (rows ++ [h_γ])`; if
 `List.replicate m false`. -/
 def selectBestTestRow (countSys : List (List Bool) → ℕ)
     (m P : ℕ) (rows : List (List Bool)) : List Bool :=
-  ((IndexFold.run (selectBestStep countSys) (candidateTupleCount m P)
-      ((m, P), (rows, none))).2.2.2).elim (List.replicate m false) Prod.fst
+  let out := IndexFold.run (selectBestStep countSys) (candidateTupleCount m P)
+    ((m, P), (rows, none))
+  let acc := out.2; let rest := acc.2
+  rest.2.elim (List.replicate m false) Prod.fst
 
 /-- Prefix sequence of rows after `i` greedy rounds from `initRows`. -/
 def greedyParityRowsAt (countSys : List (List Bool) → ℕ)
@@ -797,7 +800,8 @@ open Finset Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM
 
 /-- Candidate test row decoded and materialized from an `IndexFold` state `(j, acc)`. -/
 @[expose] def candRowOfState (s : ℕ × SelectBestAcc) : List Bool :=
-  materializeTestRow s.2.1.1 (decodeTestTuple s.2.1.1 s.2.1.2 s.1)
+  let acc := s.2; let mP := acc.1
+  materializeTestRow mP.1 (decodeTestTuple mP.1 mP.2 s.1)
 
 theorem computableInPolyTime_candRowOfState :
     ComputableInPolyTime candRowOfState (encPair encNat encSelectBestAcc) encBits := by
@@ -813,7 +817,8 @@ theorem computableInPolyTime_candRowOfState :
 
 /-- Existing parity-test rows extended with the candidate row at `IndexFold` state `s`. -/
 @[expose] def augCandidateRows (s : ℕ × SelectBestAcc) : List (List Bool) :=
-  s.2.2.1 ++ [candRowOfState s]
+  let acc := s.2; let rest := acc.2
+  rest.1 ++ [candRowOfState s]
 
 theorem computableInPolyTime_augCandidateRows :
     ComputableInPolyTime augCandidateRows (encPair encNat encSelectBestAcc) (encList encBits) := by
@@ -828,10 +833,13 @@ theorem computableInPolyTime_augCandidateRows :
 
 /-- Update `SelectBestAcc` after evaluating the candidate score `p.2` at `IndexFold` state `p.1`. -/
 @[expose] def finishSelectBestStep (p : (ℕ × SelectBestAcc) × ℕ) : SelectBestAcc :=
-  let candRow := candRowOfState p.1
-  let nextBest := p.1.2.2.2.elim (some (candRow, p.2)) fun best =>
-    if decide (p.2 < best.2) then some (candRow, p.2) else some best
-  (p.1.2.1, (p.1.2.2.1, nextBest))
+  let s := p.1; let candVal := p.2
+  let acc := s.2; let mP := acc.1; let rest := acc.2
+  let rows := rest.1; let bestOpt := rest.2
+  let candRow := candRowOfState s
+  let nextBest := bestOpt.elim (some (candRow, candVal)) fun best =>
+    if decide (candVal < best.2) then some (candRow, candVal) else some best
+  (mP, (rows, nextBest))
 
 theorem computableInPolyTime_finishSelectBestStep :
     ComputableInPolyTime finishSelectBestStep
@@ -907,18 +915,18 @@ fixed counter `(countSys, cCount)` supplied before runtime inputs `(m, P, rows)`
 noncomputable def selectBestTestRowCertificate {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat) :
     NativeCertificate (fun a : ℕ × ℕ × List (List Bool) =>
-        selectBestTestRow countSys a.1 a.2.1 a.2.2) encSelectBestIn encBits :=
+        let pr := a.2
+        selectBestTestRow countSys a.1 pr.1 pr.2) encSelectBestIn encBits :=
   let cLoop := IndexFold.certificate
     (NativeCertificate.ofPolyTime computableInPolyTime_selectBestCountIn)
     (NativeCertificate.ofPolyTime computableInPolyTime_selectBestInitIn)
     (selectBestStepCertificate cCount)
   ((NativeCertificate.ofPolyTime computableInPolyTime_extractSelectBestRow).comp cLoop).congr
-    fun a => by
-      have hp := (run_selectBestStep_params countSys a.1 a.2.1
-        (candidateTupleCount a.1 a.2.1) a.2.2).1
+    fun (m, P, rows) => by
+      have hp := (run_selectBestStep_params countSys m P
+        (candidateTupleCount m P) rows).1
       simp only [Function.comp_apply, extractSelectBestRow, selectBestCountIn, selectBestInitIn,
-        selectBestTestRow, show (IndexFold.run (selectBestStep countSys)
-          (candidateTupleCount a.1 a.2.1) ((a.1, a.2.1), (a.2.2, none))).2.1.1 = a.1 by rw [hp]]
+        selectBestTestRow, hp]
 
 private def appendSelectedRow (p : (ℕ × ℕ × List (List Bool)) × List Bool) :
     ℕ × ℕ × List (List Bool) := (p.1.1, p.1.2.1, p.1.2.2 ++ [p.2])
@@ -975,7 +983,8 @@ throughout the loop). -/
 noncomputable def greedyParityRowsCertificate {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat) :
     NativeCertificate (fun a : ℕ × ℕ × ℕ × List (List Bool) =>
-        greedyParityRows countSys a.1 a.2.1 a.2.2.1 a.2.2.2) encGreedyIn (encList encBits) :=
+        let mr := a.2; let pr := mr.2
+        greedyParityRows countSys a.1 mr.1 pr.1 pr.2) encGreedyIn (encList encBits) :=
   (NativeCertificate.snd (NativeCertificate.snd (NativeCertificate.iterate
     (NativeCertificate.ofPolyTime computableInPolyTime_greedyRoundCountIn)
     (NativeCertificate.payload encUnary encSelectBestIn)
@@ -1160,13 +1169,19 @@ theorem computableInO_selectBestTestRow {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat)
     (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space)
     (R : ℕ × ℕ × List (List Bool) → ℕ)
-    (hR : ∀ a, ∀ j ≤ candidateTupleCount a.1 a.2.1,
-      cCount.time (a.2.2 ++ [materializeTestRow a.1 (decodeTestTuple a.1 a.2.1 j)]) ≤ R a) :
+    (hR : ∀ a : ℕ × ℕ × List (List Bool),
+      let m := a.1; let pr := a.2; let P := pr.1; let rows := pr.2
+      ∀ j ≤ candidateTupleCount m P,
+        cCount.time (rows ++ [materializeTestRow m (decodeTestTuple m P j)]) ≤ R a) :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
-        (fun a : ℕ × ℕ × List (List Bool) => selectBestTestRow countSys a.1 a.2.1 a.2.2)
+        (fun a : ℕ × ℕ × List (List Bool) =>
+          let pr := a.2
+          selectBestTestRow countSys a.1 pr.1 pr.2)
         encSelectBestIn encBits
-        (fun a => (candidateTupleCount a.1 a.2.1 + 1) * (poly (encSelectBestIn a).length + R a))
+        (fun a =>
+          let pr := a.2
+          (candidateTupleCount a.1 pr.1 + 1) * (poly (encSelectBestIn a).length + R a))
         (fun a => poly (encSelectBestIn a).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := selectBestTestRowCertificate_bounds cCount hSpace
   exact ⟨poly, hpoly, (selectBestTestRowCertificate cCount).computes.mono_le
@@ -1188,16 +1203,21 @@ theorem computableInO_greedyParityRows {countSys : List (List Bool) → ℕ}
     (cCount : NativeCertificate countSys (encList encBits) encNat)
     (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space)
     (R : ℕ × ℕ × ℕ × List (List Bool) → ℕ)
-    (hR : ∀ a, ∀ i ≤ 3 * a.1, ∀ j ≤ candidateTupleCount a.2.1 a.2.2.1,
-      cCount.time (greedyParityRowsAt countSys a.2.1 a.2.2.1 a.2.2.2 i ++
-        [materializeTestRow a.2.1 (decodeTestTuple a.2.1 a.2.2.1 j)]) ≤ R a) :
+    (hR : ∀ a : ℕ × ℕ × ℕ × List (List Bool),
+      let n := a.1; let mr := a.2; let m := mr.1; let pr := mr.2; let P := pr.1; let rows := pr.2
+      ∀ i ≤ 3 * n, ∀ j ≤ candidateTupleCount m P,
+        cCount.time (greedyParityRowsAt countSys m P rows i ++
+          [materializeTestRow m (decodeTestTuple m P j)]) ≤ R a) :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
         (fun a : ℕ × ℕ × ℕ × List (List Bool) =>
-          greedyParityRows countSys a.1 a.2.1 a.2.2.1 a.2.2.2)
+          let mr := a.2; let pr := mr.2
+          greedyParityRows countSys a.1 mr.1 pr.1 pr.2)
         encGreedyIn (encList encBits)
-        (fun a => (3 * a.1 + 1) * (candidateTupleCount a.2.1 a.2.2.1 + 1) *
-          (poly (encGreedyIn a).length + R a))
+        (fun a =>
+          let mr := a.2; let pr := mr.2
+          (3 * a.1 + 1) * (candidateTupleCount mr.1 pr.1 + 1) *
+            (poly (encGreedyIn a).length + R a))
         (fun a => poly (encGreedyIn a).length) := by
   obtain ⟨polySel, hpolySel, hmpolySel, hSelB⟩ := selectBestTestRowCertificate_bounds cCount hSpace
   obtain ⟨pCn, hpCn, _, hCn⟩ := exists_mono_poly_cert computableInPolyTime_greedyRoundCountIn
@@ -1305,7 +1325,8 @@ theorem computableInPolySpace_greedyParityRows {countSys : List (List Bool) → 
     (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space) :
     ComputableInPolySpace
       (fun a : ℕ × ℕ × ℕ × List (List Bool) =>
-        greedyParityRows countSys a.1 a.2.1 a.2.2.1 a.2.2.2)
+        let mr := a.2; let pr := mr.2
+        greedyParityRows countSys a.1 mr.1 pr.1 pr.2)
       encGreedyIn (encList encBits) := by
   let cell (a : ℕ × ℕ × ℕ × List (List Bool)) (i j : ℕ) : ℕ :=
     cCount.time (greedyParityRowsAt countSys a.2.1 a.2.2.1 a.2.2.2 i ++
