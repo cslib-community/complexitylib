@@ -1289,4 +1289,199 @@ theorem sum_readers {gs : List GateCode} (hnd : ∀ g ∈ gs, (qubits g).Nodup) 
     rw [List.map_congr_left fun i hi => if_congr (hiff i (List.mem_range.mp hi)) rfl rfl,
       sum_range_ite_eq, ite_eq_left hi₀]
 
+/-- A gate whose qubits are distinct has distinct ports: the out edges are distinct and even, and
+the input ports are distinct and odd, since distinct qubits have distinct last occurrences. -/
+theorem nodup_gatePorts (gs : List GateCode) (c i : ℕ) (hnd : (qubits (gs.getD i default)).Nodup) :
+    (gatePorts gs c i).Nodup := by
+  unfold gatePorts
+  rw [List.nodup_append]
+  refine ⟨List.nodup_range.map fun a b h => by omega, hnd.filterMap ?_, ?_⟩
+  · intro j j' e hj hj'
+    simp only [inPort, Option.mem_def, Option.map_eq_some_iff] at hj hj'
+    obtain ⟨w, hw, rfl⟩ := hj
+    obtain ⟨w', hw', he⟩ := hj'
+    obtain rfl : w' = w := by omega
+    exact (lastOcc_eq_some hw).2.1.symm.trans (lastOcc_eq_some hw').2.1
+  · intro a ha b hb
+    simp only [List.mem_map, List.mem_range, List.mem_filterMap, inPort,
+      Option.map_eq_some_iff] at ha hb
+    obtain ⟨k, -, rfl⟩ := ha
+    obtain ⟨j, -, w, -, rfl⟩ := hb
+    omega
+
+private theorem mem_gatePorts {gs : List GateCode} {c i e : ℕ} :
+    e ∈ gatePorts gs c i ↔
+      (∃ k < (qubits (gs.getD i default)).length,
+        2 * (c * (occurrences gs).length + base gs i + k) = e) ∨
+      ∃ j ∈ qubits (gs.getD i default), ∃ w, lastOcc (occurrences gs) j (base gs i) = some w ∧
+        2 * (c * (occurrences gs).length + w) + 1 = e := by
+  simp only [gatePorts, List.mem_append, List.mem_map, List.mem_range, List.mem_filterMap, inPort,
+    Option.map_eq_some_iff]
+
+/-- The out edge of occurrence `u` in copy `c` is a port of gate `i` in copy `c'` exactly when
+`c' = c` and `u` is an occurrence of gate `i`. -/
+private theorem count_gatePorts_out {gs : List GateCode} {i : ℕ} (hi : i < gs.length)
+    (hnd : (qubits (gs.getD i default)).Nodup) {c c' u : ℕ} (hc : c < 2) (hc' : c' < 2)
+    (hu : u < (occurrences gs).length) :
+    (gatePorts gs c' i).count (2 * (c * (occurrences gs).length + u)) =
+      if c' = c ∧ base gs i ≤ u ∧ u < base gs (i + 1) then 1 else 0 := by
+  rw [List.Nodup.count (nodup_gatePorts gs c' i hnd)]
+  refine if_congr ?_ rfl rfl
+  have hk := base_add_le hi
+  rw [mem_gatePorts, base_succ hi]
+  constructor
+  · rintro (⟨k, hk', he⟩ | ⟨j, -, w, -, he⟩)
+    · interval_cases c <;> interval_cases c' <;>
+        simp only [Nat.zero_mul, Nat.one_mul, true_and] at he ⊢ <;> omega
+    · omega
+  · rintro ⟨rfl, h1, h2⟩
+    exact Or.inl ⟨u - base gs i, by omega, by omega⟩
+
+/-- The link edge of occurrence `u` in copy `c` is a port of gate `i` in copy `c'` exactly when
+`c' = c` and gate `i` reads the qubit of `u` from `u`. -/
+private theorem count_gatePorts_link {gs : List GateCode} (i : ℕ)
+    (hnd : (qubits (gs.getD i default)).Nodup) {c c' u : ℕ} (hc : c < 2) (hc' : c' < 2)
+    (hu : u < (occurrences gs).length) :
+    (gatePorts gs c' i).count (2 * (c * (occurrences gs).length + u) + 1) =
+      if c' = c ∧ ((occurrences gs).getD u 0 ∈ qubits (gs.getD i default) ∧
+          lastOcc (occurrences gs) ((occurrences gs).getD u 0) (base gs i) = some u)
+        then 1 else 0 := by
+  rw [List.Nodup.count (nodup_gatePorts gs c' i hnd)]
+  refine if_congr ?_ rfl rfl
+  have hb := base_le gs i
+  rw [mem_gatePorts]
+  constructor
+  · rintro (⟨k, -, he⟩ | ⟨j, hj, w, hw, he⟩)
+    · omega
+    · have hw' := lastOcc_eq_some hw
+      obtain ⟨rfl, rfl⟩ : c' = c ∧ w = u := by
+        interval_cases c <;> interval_cases c' <;>
+          simp only [Nat.zero_mul, Nat.one_mul, true_and] at he ⊢ <;> omega
+      rw [hw'.2.1]
+      exact ⟨rfl, hj, hw⟩
+  · rintro ⟨rfl, hj, hw⟩
+    exact Or.inr ⟨_, hj, u, hw, rfl⟩
+
+/-- The glue vertices have only link edges among their ports. -/
+private theorem count_glueVertex_out (gs : List GateCode) (w v : ℕ) :
+    (glueVertex gs w : List ℕ × List R).1.count (2 * v) = 0 := by
+  unfold glueVertex
+  split_ifs <;> simp only [List.count_cons, List.count_nil, beq_iff_eq] <;> split_ifs <;> omega
+
+/-- The link edge of occurrence `u` in copy `c` is a port of the glue vertex of `w` exactly when
+`w = u` is the last occurrence of its qubit. -/
+private theorem count_glueVertex_link (gs : List GateCode) {w c u : ℕ}
+    (hw : w < (occurrences gs).length) (hc : c < 2) (hu : u < (occurrences gs).length) :
+    (glueVertex gs w : List ℕ × List R).1.count (2 * (c * (occurrences gs).length + u) + 1) =
+      if lastOcc (occurrences gs) ((occurrences gs).getD w 0) (occurrences gs).length = some w ∧
+        w = u then 1 else 0 := by
+  unfold glueVertex
+  by_cases hl : lastOcc (occurrences gs) ((occurrences gs).getD w 0) (occurrences gs).length =
+    some w
+  · simp only [hl, true_and, ↓reduceIte, List.count_cons, List.count_nil, beq_iff_eq]
+    interval_cases c <;> simp only [Nat.zero_mul, Nat.one_mul, Nat.zero_add] <;> split_ifs <;>
+      omega
+  · simp only [hl, ↓reduceIte, false_and, List.count_nil]
+
+private theorem sum_range_ite_and (L : ℕ) (P : Prop) [Decidable P] (Q : ℕ → Prop)
+    [DecidablePred Q] :
+    ((List.range L).map fun i => if P ∧ Q i then (1 : ℕ) else 0).sum =
+      if P then ((List.range L).map fun i => if Q i then (1 : ℕ) else 0).sum else 0 := by
+  by_cases hP : P <;> simp [hP]
+
+/-- Every occurrence lies in exactly one gate. -/
+private theorem sum_range_base (gs : List GateCode) {u : ℕ} (hu : u < (occurrences gs).length) :
+    ((List.range gs.length).map fun i =>
+      if base gs i ≤ u ∧ u < base gs (i + 1) then (1 : ℕ) else 0).sum = 1 := by
+  obtain ⟨i₀, hi₀, h1, h2⟩ := exists_base_le_lt hu
+  rw [List.map_congr_left fun i _ => if_congr (show base gs i ≤ u ∧ u < base gs (i + 1) ↔
+    i = i₀ from ⟨fun h => eq_of_base_le_lt h.1 h.2 h1 h2, fun h => h ▸ ⟨h1, h2⟩⟩) rfl rfl,
+    sum_range_ite_eq, ite_eq_left hi₀]
+
+/-- **The network is rows-first bipartite** with the gate, glue and scalar vertices as rows, when
+the qubits of every gate are distinct. -/
+theorem isRowsFirstBipartite_network (neg : R) (X : List Bool) {gs : List GateCode}
+    (hnd : ∀ g ∈ gs, (qubits g).Nodup) :
+    (network neg X gs).2.IsRowsFirstBipartite (network neg X gs).1 := by
+  have hnd' (i : ℕ) (hi : i ∈ List.range gs.length) : (qubits (gs.getD i default)).Nodup :=
+    hnd _ (List.getD_eq_getElem _ default (List.mem_range.mp hi) ▸
+      List.getElem_mem (List.mem_range.mp hi))
+  refine ⟨?_, fun e he => ⟨?_, ?_⟩⟩
+  · -- every port names an edge
+    intro v hv p hp
+    simp only [vertices_network, List.mem_append, List.mem_map, List.mem_range,
+      List.mem_singleton] at hv
+    simp only [numEdges_network]
+    rcases hv with (((⟨i, hi, rfl⟩ | ⟨i, hi, rfl⟩) | ⟨w, hw, rfl⟩) | rfl) | ⟨w, hw, rfl⟩
+    · rcases mem_gatePorts.mp hp with ⟨k, hk, rfl⟩ | ⟨j, -, w, hw, rfl⟩
+      · have := base_add_le hi
+        omega
+      · have := (lastOcc_eq_some hw).1
+        have := base_le gs i
+        omega
+    · rcases mem_gatePorts.mp hp with ⟨k, hk, rfl⟩ | ⟨j, -, w, hw, rfl⟩
+      · have := base_add_le hi
+        omega
+      · have := (lastOcc_eq_some hw).1
+        have := base_le gs i
+        omega
+    · unfold glueVertex at hp
+      split_ifs at hp <;> simp only [List.mem_cons, List.not_mem_nil, or_false] at hp <;> omega
+    · simp [scalarVertex] at hp
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hp
+      omega
+  · -- the rows: write `e = 2 (c N + u) + r`
+    simp only [numEdges_network] at he
+    obtain ⟨c, u, r, hc, hu, hr, rfl⟩ : ∃ c u r, c < 2 ∧ u < (occurrences gs).length ∧ r < 2 ∧
+        e = 2 * (c * (occurrences gs).length + u) + r := by
+      by_cases h : e / 2 < (occurrences gs).length
+      · exact ⟨0, e / 2, e % 2, by omega, h, by omega, by omega⟩
+      · exact ⟨1, e / 2 - (occurrences gs).length, e % 2, by omega, by omega, by omega, by omega⟩
+    rw [fst_network, vertices_network, List.take_left' (by simp; omega)]
+    simp only [List.map_append, List.sum_append, List.map_map, List.map_cons, List.map_nil,
+      List.sum_cons, List.sum_nil, Function.comp_def, gateVertex, scalarVertex, List.count_nil,
+      Nat.add_zero]
+    interval_cases r
+    · -- an out edge belongs to the gate of its occurrence in its copy
+      simp only [Nat.add_zero, count_glueVertex_out, List.map_const', List.sum_replicate,
+        smul_eq_mul, Nat.mul_zero]
+      rw [List.map_congr_left fun i hi => count_gatePorts_out (List.mem_range.mp hi) (hnd' i hi)
+          hc (show 0 < 2 by omega) hu,
+        List.map_congr_left fun i hi => count_gatePorts_out (List.mem_range.mp hi) (hnd' i hi)
+          hc (show 1 < 2 by omega) hu,
+        sum_range_ite_and, sum_range_ite_and, sum_range_base gs hu]
+      interval_cases c <;> simp
+    · -- a link edge belongs to its reader or its glue vertex
+      rw [List.map_congr_left fun i hi => count_gatePorts_link i (hnd' i hi) hc
+          (show 0 < 2 by omega) hu,
+        List.map_congr_left fun i hi => count_gatePorts_link i (hnd' i hi) hc
+          (show 1 < 2 by omega) hu,
+        List.map_congr_left fun w hw => count_glueVertex_link gs (List.mem_range.mp hw) hc hu,
+        sum_range_ite_and, sum_range_ite_and]
+      have hglue : ((List.range (occurrences gs).length).map fun w =>
+          if lastOcc (occurrences gs) ((occurrences gs).getD w 0) (occurrences gs).length =
+            some w ∧ w = u then (1 : ℕ) else 0).sum =
+          if lastOcc (occurrences gs) ((occurrences gs).getD u 0) (occurrences gs).length =
+            some u then 1 else 0 := by
+        rw [List.map_congr_left fun w _ => if_congr (show (lastOcc (occurrences gs)
+            ((occurrences gs).getD w 0) (occurrences gs).length = some w ∧ w = u) ↔
+              (lastOcc (occurrences gs) ((occurrences gs).getD u 0) (occurrences gs).length =
+                some u ∧ w = u) from
+            ⟨fun ⟨h1, h2⟩ => ⟨h2 ▸ h1, h2⟩, fun ⟨h1, h2⟩ => ⟨h2 ▸ h1, h2⟩⟩) rfl rfl,
+          sum_range_ite_and]
+        split_ifs
+        · rw [sum_range_ite_eq, ite_eq_left hu]
+        · rfl
+      rw [hglue]
+      have := sum_readers hnd hu
+      interval_cases c <;> simpa using this
+  · -- the columns: the segment vertex `e / 2`
+    simp only [numEdges_network] at he
+    rw [fst_network, vertices_network, List.drop_left' (by simp; omega)]
+    have hcount (w : ℕ) : ([2 * w, 2 * w + 1] : List ℕ).count e = if w = e / 2 then 1 else 0 := by
+      simp only [List.count_cons, List.count_nil, beq_iff_eq]
+      split_ifs <;> omega
+    simp only [List.map_map, Function.comp_def]
+    rw [List.map_congr_left fun w _ => hcount w, sum_range_ite_eq, ite_eq_left (by omega)]
+
 end Cslib.Quantum.PathNetwork
