@@ -11,16 +11,21 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Blo
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 
 /-!
-# Nondeterministic and probabilistic time in time `2 ^ O(T / √log T)` and polynomial space
+# Counting, nondeterministic and probabilistic time in time `2 ^ O(T / √log T)` and polynomial space
 
 The class containments of `Cslib.Complexity.CountingSimulation.BlockNetworks`, with the contraction
 algorithm of Theorem D.1 of [OpenAI2026ETH] (`CountingSimulation.fastContractionAlgorithm`) in place
 of their hypothesis. These are the containments of #1833: for time-constructible `T` with
-`max n 2 ≤ T n`, every problem in `NTIME[T]`, `BPTIME[T]` or `PPTIME[T]` is decided by one
+`max n 2 ≤ T n`, every counting function in `SharpTIME[T]` is computed, with its exact value in
+binary, and every problem in `NTIME[T]`, `BPTIME[T]` or `PPTIME[T]` is decided, by one
 deterministic machine in time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`.
 
 ## Main results
 
+* `Cslib.Complexity.CountingSimulation.SharpTIME_subset_iUnion_FTIME_two_pow_div_sqrt_log_two`:
+  exact terminal counting with binary output.
+* `exists_computableInTimeAndSpace_two_pow_div_sqrt_log_two_of_mem_SharpTIME`: its joint time and
+  space bound.
 * `Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
   `BPTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`,
   `PPTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two`: the class containments.
@@ -41,6 +46,17 @@ namespace Cslib.Complexity.CountingSimulation
 open Turing.MultiTapeTM
 
 variable {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
+
+/-- **Exact terminal counting in time `2 ^ O(T / √log T)` and space `T ^ O(1)`.** One deterministic
+machine computes each function in `SharpTIME[T]`, writing the exact count in binary. -/
+theorem exists_computableInTimeAndSpace_two_pow_div_sqrt_log_two_of_mem_SharpTIME
+    (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) {f : α → ℕ}
+    (hf : f ∈ SharpTIME enc T) :
+    ∃ C d : ℕ, ComputableInTimeAndSpace f enc encNat
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) :=
+  exists_computableInTimeAndSpace_of_mem_SharpTIME_of_contractionAlgorithm fastContractionAlgorithm
+    hT hTn hf
 
 /-- **Nondeterministic time `T` in time `2 ^ O(T / √log T)` and space `T ^ O(1)`.** -/
 theorem exists_decidableInTimeAndSpace_two_pow_div_sqrt_log_two_of_mem_NTIME
@@ -69,6 +85,14 @@ theorem exists_decidableInTimeAndSpace_two_pow_div_sqrt_log_two_of_mem_PPTIME
       (fun a => T (enc a).length ^ d) :=
   exists_decidableInTimeAndSpace_of_mem_PPTIME_of_contractionAlgorithm fastContractionAlgorithm hT
     hTn hL
+
+/-- **`SharpTIME[T] ⊆ ⋃ C, FTIME[2 ^ (C T / √⌊log₂ T⌋)]`**, with the exact count in binary, for
+time-constructible `T` with `max n 2 ≤ T n`. -/
+theorem SharpTIME_subset_iUnion_FTIME_two_pow_div_sqrt_log_two (hT : TimeConstructible T)
+    (hTn : ∀ n, max n 2 ≤ T n) :
+    SharpTIME enc T ⊆ ⋃ C : ℕ,
+      FTIME enc encNat (fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n)))) :=
+  SharpTIME_subset_iUnion_FTIME_of_contractionAlgorithm fastContractionAlgorithm hT hTn
 
 /-- **`NTIME[T] ⊆ ⋃ C, DTIME[2 ^ (C T / √⌊log₂ T⌋)]`** for time-constructible `T` with
 `max n 2 ≤ T n`. -/

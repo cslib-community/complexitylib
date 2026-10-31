@@ -15,7 +15,9 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContr
 `⌈s ^ (9/10)⌉` at a few sizes. Direct summation with the entry procedure of tables, on a network
 of two parallel edges between a row vertex and a column vertex, computes `1 + 2 + 3 + 4 = 10`,
 which is `2` in `A_3 = (ℤ / 8)[U] / (U ^ 2 + U + 1)`. That network is admissible at size `2` with
-the entry procedure of tables, for some constant (`EntryAdmissible` is not vacuous).
+the entry procedure of tables, for some constant (`EntryAdmissible` is not vacuous). An instance of
+`EntryContractionAlgorithm` whose bound applies to that input is
+`ComplexityTests.TensorNetworkEntryAnalysis.tableAlgorithm` (`TensorNetworkEntryAnalysis.lean`).
 -/
 
 @[expose] public section

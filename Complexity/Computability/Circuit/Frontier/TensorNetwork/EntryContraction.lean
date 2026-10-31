@@ -252,8 +252,8 @@ namespace EntryContraction
 
 /-- The input of direct summation, `((P, fl), G)`, from `(P, fl, r, G)`. -/
 theorem sumInput_polyTime :
-    ComputableInPolyTime (fun x : ℕ × List ℕ × ℕ × DescribedNetwork T => ((x.1, x.2.1), x.2.2.2))
-      (encInput encT)
+    ComputableInPolyTime
+      (fun ((P, fl, _, G) : ℕ × List ℕ × ℕ × DescribedNetwork T) => ((P, fl), G)) (encInput encT)
       (DescribedNetwork.encInput (encPair encUnary (encList encNat)) encT) :=
   ((ComputableInPolyTime.fst _ _).prod
     ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))).prod
@@ -267,8 +267,8 @@ assignments of the products of the entries, with the operations of `A_P` at the 
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) :
     NativeCertificate
-      (fun x : ℕ × List ℕ × ℕ × DescribedNetwork T =>
-        DescribedNetwork.sumValue SumOps.galois entry (x.1, x.2.1) x.2.2.2)
+      (fun ((P, fl, _, G) : ℕ × List ℕ × ℕ × DescribedNetwork T) =>
+        DescribedNetwork.sumValue SumOps.galois entry (P, fl) G)
       (encInput encT) (encList encNat) :=
   ((DescribedNetwork.contractionCertificate entry SumOps.galois_polyTime ce).comp
     (NativeCertificate.ofPolyTime sumInput_polyTime)).congr fun _ => rfl
@@ -279,31 +279,29 @@ theorem val_directCore (P : ℕ) (fl : List ℕ) (G : DescribedNetwork T) :
       G.contraction fun t bs => val P fl (entry t bs) :=
   DescribedNetwork.val_sumValue_galois entry (P, fl) G
 
-
 /-- The time of direct summation: the input of the sum, then the sum. -/
 theorem directCore_time
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
-      (encList encNat)) (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
-    (directCore entry ce).time x =
-      (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).time x +
+      (encList encNat)) (P : ℕ) (fl : List ℕ) (r : ℕ) (G : DescribedNetwork T) :
+    (directCore entry ce).time (P, fl, r, G) =
+      (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).time (P, fl, r, G) +
         (DescribedNetwork.contractionCertificate entry SumOps.galois_polyTime ce).time
-          ((x.1, x.2.1), x.2.2.2) := rfl
+          ((P, fl), G) := rfl
 
 /-- The space of direct summation. -/
 theorem directCore_space
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
-      (encList encNat)) (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
-    (directCore entry ce).space x =
-      (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).space x +
+      (encList encNat)) (P : ℕ) (fl : List ℕ) (r : ℕ) (G : DescribedNetwork T) :
+    (directCore entry ce).space (P, fl, r, G) =
+      (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).space (P, fl, r, G) +
         (DescribedNetwork.contractionCertificate entry SumOps.galois_polyTime ce).space
-          ((x.1, x.2.1), x.2.2.2) := rfl
+          ((P, fl), G) := rfl
 
 /-- The precision, the modulus and the input of the sum against the encoded input. -/
-private theorem lengths_le (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
-    x.1 + x.2.1.length ≤ (encInput encT x).length ∧
+private theorem lengths_le (P : ℕ) (fl : List ℕ) (r : ℕ) (G : DescribedNetwork T) :
+    P + fl.length ≤ (encInput encT (P, fl, r, G)).length ∧
       (DescribedNetwork.encInput (encPair encUnary (encList encNat)) encT
-        ((x.1, x.2.1), x.2.2.2)).length ≤ 2 * (encInput encT x).length := by
-  obtain ⟨P, fl, r, G⟩ := x
+        ((P, fl), G)).length ≤ 2 * (encInput encT (P, fl, r, G)).length := by
   have h := length_le_length_encList encNat fl
   simp only [encInput, DescribedNetwork.encInput, length_encPair, encUnary_apply,
     List.length_replicate] at h ⊢
@@ -313,20 +311,21 @@ private theorem mul_pow_le {c W d E : ℕ} (hW : 1 ≤ W) (hd : d ≤ E) : c * W
   Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hW hd)
 
 /-- **The resources of direct summation with an entry procedure.** There is `K` such that on an
-input `x = (P, fl, r, G)` of encoded length `n`, with `m` edges and `k` vertices, if the entry
+input `(P, fl, r, G)` of encoded length `n`, with `m` edges and `k` vertices in `G`, if the entry
 procedure takes time at most `E` and space at most `ES` on every vertex and bits on its ports,
 then direct summation takes time at most `(2 ^ m (k + 1) + 1) (K (n + ES + 1) ^ K + 2 E)` and
 space at most `K (n + ES + 1) ^ K + ES`. -/
 theorem directCore_le
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) :
-    ∃ K : ℕ, ∀ (x : ℕ × List ℕ × ℕ × DescribedNetwork T) (E ES : ℕ),
-      (∀ v ∈ x.2.2.2.vertices, ∀ bs : List Bool, bs.length = v.1.length →
+    ∃ K : ℕ, ∀ (P : ℕ) (fl : List ℕ) (r : ℕ) (G : DescribedNetwork T) (E ES : ℕ),
+      (∀ v ∈ G.vertices, ∀ bs : List Bool, bs.length = v.1.length →
         ce.time (v.2, bs) ≤ E ∧ ce.space (v.2, bs) ≤ ES) →
-      (directCore entry ce).time x ≤
-          (2 ^ x.2.2.2.numEdges * (x.2.2.2.vertices.length + 1) + 1) *
-            (K * ((encInput encT x).length + ES + 1) ^ K + 2 * E) ∧
-        (directCore entry ce).space x ≤ K * ((encInput encT x).length + ES + 1) ^ K + ES := by
+      (directCore entry ce).time (P, fl, r, G) ≤
+          (2 ^ G.numEdges * (G.vertices.length + 1) + 1) *
+            (K * ((encInput encT (P, fl, r, G)).length + ES + 1) ^ K + 2 * E) ∧
+        (directCore entry ce).space (P, fl, r, G) ≤
+          K * ((encInput encT (P, fl, r, G)).length + ES + 1) ^ K + ES := by
   obtain ⟨K₁, hK₁⟩ := DescribedNetwork.contractionCertificate_le (ops := SumOps.galois)
     (eval := entry) (encQ := encPair encUnary (encList encNat)) (encY := encList encNat)
     (encT := encT) SumOps.galois_polyTime ce
@@ -335,44 +334,44 @@ theorem directCore_le
   obtain ⟨ct, dt, hit⟩ := hI.1.exists_le
   obtain ⟨cs, ds, his⟩ := hI.2.exists_le
   obtain ⟨c₁, hc₁⟩ : ∃ c₁, c₁ = K₁ * (c + 6) ^ K₁ := ⟨_, rfl⟩
-  refine ⟨ct + cs + c₁ + dt + ds + 2 * K₁, fun x E ES hE => ?_⟩
-  obtain ⟨n, hn⟩ : ∃ n, n = (encInput encT x).length := ⟨_, rfl⟩
+  refine ⟨ct + cs + c₁ + dt + ds + 2 * K₁, fun P fl r G E ES hE => ?_⟩
+  obtain ⟨n, hn⟩ : ∃ n, n = (encInput encT (P, fl, r, G)).length := ⟨_, rfl⟩
   obtain ⟨W, hW⟩ : ∃ W, W = n + ES + 1 := ⟨_, rfl⟩
   rw [← hn, show n + ES + 1 = W from hW.symm]
   have hW1 : 1 ≤ W := by omega
-  obtain ⟨hPfl, hproj⟩ := lengths_le x
+  obtain ⟨hPfl, hproj⟩ := lengths_le P fl r G
   rw [← hn] at hPfl hproj
-  have hRv : ∀ y, SumOps.galois.Reduced (x.1, x.2.1) y →
+  have hRv : ∀ y, SumOps.galois.Reduced (P, fl) y →
       (encList encNat y).length ≤ n * (2 * n + 3) := fun y hy =>
     (SumOps.length_encList_le_of_galois_reduced hy).trans (Nat.mul_le_mul (by simp only; omega)
       (by simp only; omega))
-  have hEv : ∀ v ∈ ((x.1, x.2.1), x.2.2.2).2.vertices, ∀ bs : List Bool,
+  have hEv : ∀ v ∈ G.vertices, ∀ bs : List Bool,
       bs.length = v.1.length → ce.time (v.2, bs) ≤ E ∧ ce.space (v.2, bs) ≤ ES ∧
         (encList encNat (entry v.2 bs)).length ≤ c * (ES + 1) := fun v hv bs hbs =>
     ⟨(hE v hv bs hbs).1, (hE v hv bs hbs).2,
       (hout (v.2, bs)).trans (Nat.mul_le_mul_left _ (by have := (hE v hv bs hbs).2; omega))⟩
-  obtain ⟨hT, hS⟩ := hK₁ ((x.1, x.2.1), x.2.2.2) E ES (c * (ES + 1)) (n * (2 * n + 3)) hEv hRv
+  obtain ⟨hT, hS⟩ := hK₁ ((P, fl), G) E ES (c * (ES + 1)) (n * (2 * n + 3)) hEv hRv
   -- The argument of direct summation's polynomial against `W ^ 2`.
   have hA : (DescribedNetwork.encInput (encPair encUnary (encList encNat)) encT
-      ((x.1, x.2.1), x.2.2.2)).length + c * (ES + 1) + n * (2 * n + 3) + 1 ≤ (c + 6) * W ^ 2 := by
+      ((P, fl), G)).length + c * (ES + 1) + n * (2 * n + 3) + 1 ≤ (c + 6) * W ^ 2 := by
     have h1 : c * (ES + 1) ≤ c * W := Nat.mul_le_mul_left _ (by omega)
     have h2 : c * W ≤ c * W ^ 2 := Nat.mul_le_mul_left _ (by nlinarith)
     have h3 : n * (2 * n + 3) + 2 * n + 1 ≤ 6 * W ^ 2 := by nlinarith
     nlinarith
   have hpoly : K₁ * ((DescribedNetwork.encInput (encPair encUnary (encList encNat)) encT
-      ((x.1, x.2.1), x.2.2.2)).length + c * (ES + 1) + n * (2 * n + 3) + 1) ^ K₁ ≤
+      ((P, fl), G)).length + c * (ES + 1) + n * (2 * n + 3) + 1) ^ K₁ ≤
       c₁ * W ^ (2 * K₁) := by
     rw [hc₁, pow_mul, Nat.mul_assoc, ← Nat.mul_pow]
     exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hA _)
   have hnW : n + 1 ≤ W := by omega
-  have hit' : (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).time x ≤
-      ct * W ^ dt := by
-    have h := hit x
+  have hit' : (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).time
+      (P, fl, r, G) ≤ ct * W ^ dt := by
+    have h := hit (P, fl, r, G)
     rw [← hn] at h
     exact h.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hnW _))
-  have his' : (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).space x ≤
-      cs * W ^ ds := by
-    have h := his x
+  have his' : (NativeCertificate.ofPolyTime (sumInput_polyTime (encT := encT))).space
+      (P, fl, r, G) ≤ cs * W ^ ds := by
+    have h := his (P, fl, r, G)
     rw [← hn] at h
     exact h.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hnW _))
   obtain ⟨K, hK⟩ : ∃ K, K = ct + cs + c₁ + dt + ds + 2 * K₁ := ⟨_, rfl⟩
@@ -382,13 +381,13 @@ theorem directCore_le
   have hc1 : c₁ * W ^ (2 * K₁) ≤ c₁ * W ^ K := mul_pow_le hW1 (by omega)
   have hsum : ct * W ^ K + cs * W ^ K + c₁ * W ^ K ≤ K * W ^ K := by
     rw [← Nat.add_mul, ← Nat.add_mul]; exact Nat.mul_le_mul_right _ (by omega)
-  have hP1 : 1 ≤ 2 ^ x.2.2.2.numEdges * (x.2.2.2.vertices.length + 1) + 1 := by omega
+  have hP1 : 1 ≤ 2 ^ G.numEdges * (G.vertices.length + 1) + 1 := by omega
   constructor
   · rw [directCore_time]
-    calc _ ≤ ct * W ^ dt + (2 ^ x.2.2.2.numEdges * (x.2.2.2.vertices.length + 1) + 1) *
+    calc _ ≤ ct * W ^ dt + (2 ^ G.numEdges * (G.vertices.length + 1) + 1) *
           (c₁ * W ^ (2 * K₁) + 2 * E) :=
           Nat.add_le_add hit' (hT.trans (Nat.mul_le_mul_left _ (Nat.add_le_add_right hpoly _)))
-      _ ≤ (2 ^ x.2.2.2.numEdges * (x.2.2.2.vertices.length + 1) + 1) *
+      _ ≤ (2 ^ G.numEdges * (G.vertices.length + 1) + 1) *
           (ct * W ^ K + (c₁ * W ^ K + 2 * E)) := by
           rw [Nat.mul_add _ (ct * W ^ K)]
           refine Nat.add_le_add ((hct.trans (Nat.le_mul_of_pos_left _ hP1))) ?_
@@ -418,12 +417,12 @@ theorem exists_directCore_le
   refine ⟨K, fun s P r G hA => ?_⟩
   obtain ⟨-, hsm, hmC, -, hent⟩ := hA
   simp only at hsm hmC hent
-  set x := (P, FastContraction.modulus G.numEdges, r, G)
-  obtain ⟨n, hn⟩ : ∃ n, n = (encInput encT x).length := ⟨_, rfl⟩
+  obtain ⟨n, hn⟩ : ∃ n, n = (encInput encT (P, FastContraction.modulus G.numEdges, r, G)).length :=
+    ⟨_, rfl⟩
   rw [← hn]
   -- The size, the network and the vertices against `n`.
   have hG : (DescribedNetwork.encDescribed encT G).length ≤ n := by
-    rw [hn]; simp only [x, encInput, length_encPair]; omega
+    rw [hn]; simp only [encInput, length_encPair]; omega
   have hmk := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
   have hsn : s ≤ n := by omega
   have hB : s + (DescribedNetwork.encDescribed encT G).length + 1 ≤ 3 * (n + 1) := by omega
@@ -436,7 +435,7 @@ theorem exists_directCore_le
         ≤ C * (3 * (n + 1)) ^ C := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hB _)
       _ = C * 3 ^ C * (n + 1) ^ C := by rw [Nat.mul_pow, Nat.mul_assoc]
       _ ≤ c₀ * (n + 1) ^ C := Nat.mul_le_mul_right _ (by omega)
-  have hbnd : ∀ v ∈ x.2.2.2.vertices, ∀ bs : List Bool, bs.length = v.1.length →
+  have hbnd : ∀ v ∈ G.vertices, ∀ bs : List Bool, bs.length = v.1.length →
       ce.time (v.2, bs) ≤ E ∧ ce.space (v.2, bs) ≤ ES := by
     intro v hv bs hbs
     obtain ⟨ht, hs⟩ := hent v hv bs hbs
@@ -444,9 +443,8 @@ theorem exists_directCore_le
     rw [hE, show c₀ * (n + 1) ^ C * 2 ^ (C * s) = (c₀ * (n + 1) ^ C) * 2 ^ (C * s) from rfl]
     exact Nat.mul_le_mul (hES ▸ hpowB) (Nat.pow_le_pow_right (by norm_num)
       (Nat.mul_le_mul_left _ (ceilNineTenths_le_self s)))
-  obtain ⟨hT, hS⟩ := hK₀ x E ES hbnd
+  obtain ⟨hT, hS⟩ := hK₀ P (FastContraction.modulus G.numEdges) r G E ES hbnd
   rw [← hn] at hT hS
-  simp only [x] at hT hS
   -- Arithmetic.
   have hn1 : 1 ≤ n + 1 := by omega
   have hWES : n + ES + 1 ≤ (c₀ + 1) * (n + 1) ^ (C + 1) := by
@@ -470,9 +468,9 @@ theorem exists_directCore_le
   have hXe1 : X ^ ((C + 1) * K₀) ≤ X ^ e := Nat.pow_le_pow_right hX1 (by omega)
   have hXe2 : X ^ C ≤ X ^ e := Nat.pow_le_pow_right hX1 (by omega)
   -- The number of assignments and vertices.
-  have hk : x.2.2.2.vertices.length + 1 ≤ X := by simp only [x]; omega
-  have hm : 2 ^ x.2.2.2.numEdges ≤ Y := hY ▸ Nat.pow_le_pow_right (by norm_num) (by simpa [x])
-  have hcount : 2 ^ x.2.2.2.numEdges * (x.2.2.2.vertices.length + 1) + 1 ≤ 2 * (Y * X) := by
+  have hk : G.vertices.length + 1 ≤ X := by omega
+  have hm : 2 ^ G.numEdges ≤ Y := hY ▸ Nat.pow_le_pow_right (by norm_num) hmC
+  have hcount : 2 ^ G.numEdges * (G.vertices.length + 1) + 1 ≤ 2 * (Y * X) := by
     have := Nat.mul_le_mul hm hk
     have : 1 ≤ Y * X := Nat.one_le_iff_ne_zero.mpr (by positivity)
     omega
