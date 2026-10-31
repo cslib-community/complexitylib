@@ -73,6 +73,9 @@ binary-coordinate lifts are such points (`AdjoinRoot.isUnit_integerDigitLift_sub
 
 * `Cslib.Circuits.Frontier.TensorNetwork.exists_recoverFromValues_eq_add_of_children`: one call is
   correct when its values are the sums of the products of the children's contractions.
+* `Cslib.Circuits.Frontier.TensorNetwork.callSplitting_side`,
+  `Cslib.Circuits.Frontier.TensorNetwork.callSplitting_group`,
+  `Cslib.Circuits.Frontier.TensorNetwork.callSplitting_packet`: the fields of the splitting.
 * `Cslib.Circuits.Frontier.TensorNetwork.exists_callValue_eq_add`: one call is correct for a
   correct oracle.
 * `Cslib.Circuits.Frontier.TensorNetwork.mul_card_edges_child_callSplitting_le`: under (D.6), the
@@ -199,6 +202,34 @@ noncomputable def callSplitting (N : TensorNetwork B Bool V E) (side : V → Boo
     side hsrc htgt Q _ _ (two_pow_eq_zero_twoPowIdeal _ _) ht
     (padicValInt_lt_of_taperMult_pos hq hua)
 
+section Fields
+
+variable (N : TensorNetwork B Bool V E) (side : V → Bool) (hsrc : ∀ e, side (N.src e) = true)
+  (htgt : ∀ e, side (N.tgt e) = false) {a r : ℕ} (Q : PacketPacking.Packing N.src N.tgt a r)
+  (p u h : ℕ) (hua : u ≤ a) {t : ℤ} (ht : t ∈ recoveryNodes a) (hq : 0 < taperMult u h t) (z : B)
+
+omit [Fintype V] [DecidableEq V] [DecidableEq E] in
+/-- The rows of the splitting at an active node are the rows of the call. -/
+@[simp] theorem callSplitting_side :
+    (callSplitting B hB N side hsrc htgt Q p u h hua ht hq z).side = side :=
+  cauchyModeSplitting_side ..
+
+omit [Fintype V] [DecidableEq V] [DecidableEq E] in
+/-- The groups at an active node of valuation `i` are the symbols in coordinate `i` of the
+packing. -/
+@[simp] theorem callSplitting_group :
+    (callSplitting B hB N side hsrc htgt Q p u h hua ht hq z).group =
+      packingGroup side Q ⟨_, padicValInt_lt_of_taperMult_pos hq hua⟩ :=
+  cauchyModeSplitting_group ..
+
+omit [Fintype V] [DecidableEq V] [DecidableEq E] in
+/-- The packets of the splitting at an active node are the packets of the packing. -/
+@[simp] theorem callSplitting_packet :
+    (callSplitting B hB N side hsrc htgt Q p u h hua ht hq z).packet = Q.packet :=
+  cauchyModeSplitting_packet ..
+
+end Fields
+
 /-- **Correctness of one active call from its children** ([OpenAI2026ETH], §D.4.4–§D.4.7). Let
 `N` have entries in `B`, edges from rows to columns, and a packing `Q` into packets of `2 ^ a`
 slots. Let `1 ≤ u ≤ M`, `u ≤ a` and `3 M ≤ h u ≤ 3 M + u` for `M` edges, and let the
@@ -245,7 +276,7 @@ variable {B : Type*} [CommRing B]
 
 /-- An oracle is *correct* when each of its values agrees with the contraction modulo the
 precision `2 ^ p` it is given. -/
-def Correct (rec : ContractionOracle B) : Prop :=
+@[expose] def Correct (rec : ContractionOracle B) : Prop :=
   ∀ n m (N : TensorNetwork B Bool (Fin n) (Fin m)) side p,
     ∃ c, rec n m N side p = N.contraction + 2 ^ p * c
 
@@ -382,18 +413,13 @@ theorem mul_card_edges_child_callSplitting_le (N : TensorNetwork B Bool V E) (si
           {e // (callSplitting B hB N side hsrc htgt (PacketPacking.packing N.src N.tgt a 64) p u h
             hua ht hq z).group (N.tgt e) = g}) ≤
       4 * Fintype.card E := by
-  have hg : (callSplitting B hB N side hsrc htgt (PacketPacking.packing N.src N.tgt a 64) p u h
-      hua ht hq z).group =
-        packingGroup side (PacketPacking.packing N.src N.tgt a 64)
-          ⟨_, padicValInt_lt_of_taperMult_pos hq hua⟩ := by
-    exact cauchyModeSplitting_group ..
   have := ModeSplitting.mul_card_edges_child_le (c := 2) (r := 64)
     (callSplitting B hB N side hsrc htgt (PacketPacking.packing N.src N.tgt a 64) p u h hua ht hq z)
     g (by
-      rw [hg]
+      rw [callSplitting_group]
       exact (congrArg (64 * ·) (card_packingGroup_src side hsrc _ _ g)).trans_le
         (PacketPacking.row_ports_packing_le N.src N.tgt a 64 hrow hcol hM _ g)) (by
-      rw [hg]
+      rw [callSplitting_group]
       exact (congrArg (64 * ·) (card_packingGroup_tgt side htgt _ _ g)).trans_le
         (PacketPacking.col_ports_packing_le N.src N.tgt a 64 hrow hcol hM _ g))
   exact this.trans_eq (by ring)

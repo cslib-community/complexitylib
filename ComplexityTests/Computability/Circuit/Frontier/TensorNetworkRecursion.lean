@@ -100,6 +100,10 @@ theorem pts_pairwise : Pairwise fun k l => IsUnit (pts k - pts l) := fun _ _ hkl
 
 /-! ### The recursion over `O` -/
 
+/-- Direct contraction is a correct oracle. -/
+example : ContractionOracle.Correct (B := O) fun _ _ N _ _ => N.contraction :=
+  fun _ _ _ _ _ => ⟨0, by simp⟩
+
 /-- The constant schedule `a = u = 1`, `h = 3`. -/
 def sched (_ _ : ℕ) : Option TensorNetwork.CallParams := some ⟨1, 1, 3⟩
 
