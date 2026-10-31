@@ -22,9 +22,10 @@ of at most `s` gates, `S` is an anti-checker for `f` exactly when `f` needs more
 `S` (`isAntiChecker_computableFunctions_iff`), that is, when the Succinct MCSP instance of the
 values of `f` on `S` with threshold `s` is a no-instance.
 
-Functions without small circuits have small anti-checkers. The combinatorial core is the
-good-string lemma of Oliveira, Pich and Santhanam [OliveiraPichSanthanam2019, Lemma 4.7]. Suppose
-the inputs number at most `2 ^ m`, and no `m` members of `F`, repetitions allowed, have `f` as
+Functions without small circuits have small anti-checkers. The combinatorial core is an
+ordered-tuple variant of the good-string lemma of Oliveira, Pich and Santhanam
+[OliveiraPichSanthanam2019, Section 4.2, Lemma 23, pp. 27:17–18]. Suppose there are at most
+`2 ^ m` inputs, and no `m` members of `F`, repetitions allowed, have `f` as
 their pointwise strict majority. Then every tuple of `m` members of a subfamily `G` is refuted by
 at least half of its entries (at least `m - m / 2` of them) at some input; averaging over the
 inputs, one input refutes a `2 ^ -m` share of all tuples, and counting the tuples with at least
@@ -33,15 +34,20 @@ half of their entries in the set of members refuted there shows that this set ho
 refute every member of a family of fewer than `2 ^ b` (`exists_isAntiChecker`). Counting ordered
 tuples gives the constant share `1 / 16` where the original counts sets and gets `1 / (2 m)`.
 
+The indexed versions allow distinct descriptions to evaluate to the same Boolean function:
+`exists_card_le_sixteen_mul_eval` counts descriptions, and `exists_card_filter_le_eval` bounds
+the number of descriptions still consistent after sampling. Thus the counting statements apply
+to circuit encodings without assuming their evaluation map is injective.
+
 For circuits (`exists_lt_complexityOn`): the strict majority of `m` circuits with `s` gates each
 has a circuit with `m s` gates plus those of a circuit for strict majority, so if `f` needs more
 than that, then `f` needs more than `s` gates on some set of `16 b` inputs, for any `b` with
 fewer than `2 ^ b` functions computable with `s` gates.
 
 This is the existence of anti-checkers: the worst-case form of the theorem of Lipton and Young,
-with the combinatorial proof of Oliveira, Pich and Santhanam. Their Anti-Checker Lemma, which
-computes an anti-checker from the truth table by a small circuit if `NP ⊆ P/poly`, is not
-formalized here.
+with an adaptation of the combinatorial proof of Oliveira, Pich and Santhanam. Their
+Anti-Checker Lemma [OliveiraPichSanthanam2019, Section 4.1, Lemma 17], which computes an
+anti-checker from the truth table by a small circuit if `NP ⊆ P/poly`, is not formalized here.
 
 ## Main definitions
 
@@ -50,9 +56,13 @@ formalized here.
 ## Main results
 
 * `Cslib.MCSP.exists_card_le_sixteen_mul`: the good-string lemma.
+* `Cslib.MCSP.exists_card_le_sixteen_mul_eval`: the good-string lemma counting descriptions.
+* `Cslib.MCSP.exists_card_filter_le_eval`: geometric decay of the consistent description count.
 * `Cslib.MCSP.exists_isAntiChecker`: small anti-checkers, combinatorially.
+* `Cslib.MCSP.exists_isAntiChecker_image`: small anti-checkers against an indexed family.
 * `Cslib.MCSP.isAntiChecker_computableFunctions_iff`,
   `Cslib.MCSP.isAntiChecker_computableFunctions_iff_notMem`: anti-checkers against circuits.
+* `Cslib.MCSP.complexity_strictMajority_le`: circuit complexity of a pointwise majority.
 * `Cslib.MCSP.exists_lt_complexityOn`, `Cslib.MCSP.exists_ofFunction_notMem`: small
   anti-checkers against circuits.
 
@@ -110,14 +120,18 @@ private theorem card_filter_le_card_mem_le {β : Type*} [DecidableEq β] {h : �
         rw [sum_const, card_powersetCard, card_univ, Fintype.card_fin, smul_eq_mul, mul_assoc]
         exact Nat.mul_le_mul_right _ (Nat.choose_le_two_pow m h)
 
-/-- **The good-string lemma** [OliveiraPichSanthanam2019, Lemma 4.7]. Suppose there are at most
-`2 ^ m` inputs and no `m` members of the nonempty family `G` have `f` as their pointwise strict
-majority. Then at some input `x`, at least a sixteenth of the members of `G` differ from `f`. -/
-theorem exists_card_le_sixteen_mul (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
-    {G : Finset (α → Bool)} (hG : G.Nonempty) {f : α → Bool}
-    (hmaj : ∀ g : Fin m → α → Bool, (∀ i, g i ∈ G) →
-      (fun x => strictMajority m fun i => g i x) ≠ f) :
-    ∃ x, #G ≤ 16 * #{g ∈ G | g x ≠ f x} := by
+/-- **The good-string lemma for an indexed family**, using the tuple-counting variant of
+[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Suppose there are at most `2 ^ m` inputs and
+no `m` members of the nonempty description family `G` evaluate to functions with pointwise strict
+majority `f`. Then some input refutes at least a sixteenth of the descriptions in `G`.
+The evaluation map need not be injective: distinct descriptions are counted separately. -/
+theorem exists_card_le_sixteen_mul_eval {β : Type*} (eval : β → α → Bool)
+    (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
+    {G : Finset β} (hG : G.Nonempty) {f : α → Bool}
+    (hmaj : ∀ g : Fin m → β, (∀ i, g i ∈ G) →
+      (fun x => strictMajority m fun i => eval (g i) x) ≠ f) :
+    ∃ x, #G ≤ 16 * #{g ∈ G | eval g x ≠ f x} := by
+  classical
   by_contra! hx
   obtain ⟨g₀, hg₀⟩ := hG
   obtain ⟨x₀, -⟩ := Function.ne_iff.mp (hmaj (fun _ => g₀) fun _ => hg₀)
@@ -127,7 +141,8 @@ theorem exists_card_le_sixteen_mul (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m
   have hh : 0 < h := by omega
   set T := Fintype.piFinset fun _ : Fin m => G
   -- Every tuple is refuted by at least half of its entries at some input.
-  have hcover : T ⊆ univ.biUnion fun x => {t ∈ T | h ≤ #{i | t i ∈ {g ∈ G | g x ≠ f x}}} := by
+  have hcover : T ⊆ univ.biUnion fun x =>
+      {t ∈ T | h ≤ #{i | t i ∈ {g ∈ G | eval g x ≠ f x}}} := by
     intro t ht
     have htG := Fintype.mem_piFinset.mp ht
     obtain ⟨x, hx⟩ := Function.ne_iff.mp (hmaj t htG)
@@ -136,17 +151,17 @@ theorem exists_card_le_sixteen_mul (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m
     ext i
     simp [htG i]
   have hcount : r ^ m * 16 ^ h ≤
-      ∑ x : α, 2 ^ m * (16 ^ h * #{g ∈ G | g x ≠ f x} ^ h) * r ^ (m - h) := by
+      ∑ x : α, 2 ^ m * (16 ^ h * #{g ∈ G | eval g x ≠ f x} ^ h) * r ^ (m - h) := by
     calc r ^ m * 16 ^ h = #T * 16 ^ h := by simp [T, r]
-      _ ≤ (∑ x : α, #{t ∈ T | h ≤ #{i | t i ∈ {g ∈ G | g x ≠ f x}}}) * 16 ^ h :=
+      _ ≤ (∑ x : α, #{t ∈ T | h ≤ #{i | t i ∈ {g ∈ G | eval g x ≠ f x}}}) * 16 ^ h :=
           Nat.mul_le_mul_right _ ((card_le_card hcover).trans card_biUnion_le)
-      _ ≤ (∑ x : α, 2 ^ m * #{g ∈ G | g x ≠ f x} ^ h * r ^ (m - h)) * 16 ^ h :=
+      _ ≤ (∑ x : α, 2 ^ m * #{g ∈ G | eval g x ≠ f x} ^ h * r ^ (m - h)) * 16 ^ h :=
           Nat.mul_le_mul_right _ (sum_le_sum fun x _ =>
             card_filter_le_card_mem_le (by omega) _ _)
-      _ = ∑ x : α, 2 ^ m * (16 ^ h * #{g ∈ G | g x ≠ f x} ^ h) * r ^ (m - h) := by
+      _ = ∑ x : α, 2 ^ m * (16 ^ h * #{g ∈ G | eval g x ≠ f x} ^ h) * r ^ (m - h) := by
           rw [sum_mul]; exact sum_congr rfl fun x _ => by ring
   -- But at each input fewer than a sixteenth of `G` is refuted.
-  have hlt : ∑ x : α, 2 ^ m * (16 ^ h * #{g ∈ G | g x ≠ f x} ^ h) * r ^ (m - h) <
+  have hlt : ∑ x : α, 2 ^ m * (16 ^ h * #{g ∈ G | eval g x ≠ f x} ^ h) * r ^ (m - h) <
       ∑ _x : α, 2 ^ m * r ^ h * r ^ (m - h) := by
     refine sum_lt_sum_of_nonempty ⟨x₀, mem_univ _⟩ fun x _ => ?_
     have := Nat.pow_lt_pow_left (hx x) hh.ne'
@@ -163,32 +178,47 @@ theorem exists_card_le_sixteen_mul (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m
     exact Nat.mul_le_mul_right _ hfour
   omega
 
+/-- **The good-string lemma**, in the ordered-tuple variant of
+[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Suppose there are at most `2 ^ m` inputs and
+no `m` members of the nonempty family `G` have `f` as their pointwise strict majority. Then at
+some input `x`, at least a sixteenth of the members of `G` differ from `f`. -/
+theorem exists_card_le_sixteen_mul (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
+    {G : Finset (α → Bool)} (hG : G.Nonempty) {f : α → Bool}
+    (hmaj : ∀ g : Fin m → α → Bool, (∀ i, g i ∈ G) →
+      (fun x => strictMajority m fun i => g i x) ≠ f) :
+    ∃ x, #G ≤ 16 * #{g ∈ G | g x ≠ f x} :=
+  exists_card_le_sixteen_mul_eval id hm hα hG hmaj
+
 /-! ### Small anti-checkers -/
 
-/-- Greedily choosing inputs by the good-string lemma, `k` inputs leave at most a `(15 / 16) ^ k`
-share of `F` agreeing with `f` on all of them. -/
-private theorem exists_card_filter_le (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
-    (F : Finset (α → Bool)) {f : α → Bool}
-    (hmaj : ∀ g : Fin m → α → Bool, (∀ i, g i ∈ F) →
-      (fun x => strictMajority m fun i => g i x) ≠ f) (k : ℕ) :
-    ∃ S : Finset α, #S ≤ k ∧ 16 ^ k * #{g ∈ F | ∀ x ∈ S, g x = f x} ≤ 15 ^ k * #F := by
+/-- Greedily choosing inputs by the indexed good-string lemma, at most `k` inputs leave at most
+a `(15 / 16) ^ k` share of the descriptions in `F` agreeing with `f` on all of them. Distinct
+descriptions are counted separately even when they evaluate to the same function. -/
+theorem exists_card_filter_le_eval {β : Type*} (eval : β → α → Bool)
+    (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
+    (F : Finset β) {f : α → Bool}
+    (hmaj : ∀ g : Fin m → β, (∀ i, g i ∈ F) →
+      (fun x => strictMajority m fun i => eval (g i) x) ≠ f) (k : ℕ) :
+    ∃ S : Finset α, #S ≤ k ∧
+      16 ^ k * #{g ∈ F | ∀ x ∈ S, eval g x = f x} ≤ 15 ^ k * #F := by
   induction k with
   | zero => exact ⟨∅, by simp, by simp⟩
   | succ k ih =>
     obtain ⟨S, hS, hcard⟩ := ih
-    set G := {g ∈ F | ∀ x ∈ S, g x = f x}
+    set G := {g ∈ F | ∀ x ∈ S, eval g x = f x}
     rcases G.eq_empty_or_nonempty with hG | hG
     · refine ⟨S, by omega, ?_⟩
-      rw [show {g ∈ F | ∀ x ∈ S, g x = f x} = G from rfl, hG, card_empty, mul_zero]
+      rw [show {g ∈ F | ∀ x ∈ S, eval g x = f x} = G from rfl, hG, card_empty, mul_zero]
       exact Nat.zero_le _
-    obtain ⟨x, hx⟩ := exists_card_le_sixteen_mul hm hα hG fun g hg =>
+    obtain ⟨x, hx⟩ := exists_card_le_sixteen_mul_eval eval hm hα hG fun g hg =>
       hmaj g fun i => (mem_filter.mp (hg i)).1
-    have hsplit := card_filter_add_card_filter_not (s := G) (fun g => g x = f x)
-    have hstep : 16 * #{g ∈ G | g x = f x} ≤ 15 * #G := by
+    have hsplit := card_filter_add_card_filter_not (s := G) (fun g => eval g x = f x)
+    have hstep : 16 * #{g ∈ G | eval g x = f x} ≤ 15 * #G := by
       simp only [← ne_eq] at hsplit
       omega
-    have key : 16 ^ (k + 1) * #{g ∈ G | g x = f x} ≤ 15 ^ (k + 1) * #F :=
-      calc 16 ^ (k + 1) * #{g ∈ G | g x = f x} = 16 ^ k * (16 * #{g ∈ G | g x = f x}) := by ring
+    have key : 16 ^ (k + 1) * #{g ∈ G | eval g x = f x} ≤ 15 ^ (k + 1) * #F :=
+      calc 16 ^ (k + 1) * #{g ∈ G | eval g x = f x} =
+          16 ^ k * (16 * #{g ∈ G | eval g x = f x}) := by ring
         _ ≤ 16 ^ k * (15 * #G) := Nat.mul_le_mul_left _ hstep
         _ = 15 * (16 ^ k * #G) := by ring
         _ ≤ 15 * (15 ^ k * #F) := Nat.mul_le_mul_left _ hcard
@@ -197,28 +227,44 @@ private theorem exists_card_filter_le (hm : 0 < m) (hα : Fintype.card α ≤ 2 
     refine ⟨insert x S, (card_insert_le x S).trans (by omega), ?_⟩
     convert key using 3
     ext g
-    simp [G, and_assoc, and_comm (a := g x = f x)]
+    simp [G, and_assoc, and_comm (a := eval g x = f x)]
 
-/-- **Small anti-checkers**, combinatorially [OliveiraPichSanthanam2019, Lemma 4.7]. Suppose
-there are at most `2 ^ m` inputs, with `m > 0`, and no `m` members of `F`, repetitions allowed,
-have `f` as their pointwise strict majority. If `F` has fewer than `2 ^ b` members, some set of
-at most `16 b` inputs is an anti-checker for `f` against `F`. -/
-theorem exists_isAntiChecker {b : ℕ} (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
-    (F : Finset (α → Bool)) {f : α → Bool}
-    (hmaj : ∀ g : Fin m → α → Bool, (∀ i, g i ∈ F) →
-      (fun x => strictMajority m fun i => g i x) ≠ f)
+/-- **Small anti-checkers against an indexed family**, using the tuple-counting variant of
+[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. If no `m` descriptions in `F` have evaluations
+with pointwise strict majority `f`, and `F` has fewer than `2 ^ b` descriptions, then at most `16 b`
+inputs refute every evaluated function. No injectivity of `eval` is assumed. -/
+theorem exists_isAntiChecker_image {β : Type*} (eval : β → α → Bool) {b : ℕ}
+    (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
+    (F : Finset β) {f : α → Bool}
+    (hmaj : ∀ g : Fin m → β, (∀ i, g i ∈ F) →
+      (fun x => strictMajority m fun i => eval (g i) x) ≠ f)
     (hb : #F < 2 ^ b) :
-    ∃ S : Finset α, #S ≤ 16 * b ∧ IsAntiChecker F f S := by
-  obtain ⟨S, hS, hcard⟩ := exists_card_filter_le hm hα F hmaj (16 * b)
-  refine ⟨S, hS, fun g hg => ?_⟩
+    ∃ S : Finset α, #S ≤ 16 * b ∧ IsAntiChecker (eval '' (F : Set β)) f S := by
+  obtain ⟨S, hS, hcard⟩ := exists_card_filter_le_eval eval hm hα F hmaj (16 * b)
+  refine ⟨S, hS, ?_⟩
+  rintro _ ⟨g, hg, rfl⟩
   by_contra! hgS
-  have hpos : 0 < #{g ∈ F | ∀ x ∈ S, g x = f x} := card_pos.mpr ⟨g, mem_filter.mpr ⟨hg, hgS⟩⟩
+  have hpos : 0 < #{g ∈ F | ∀ x ∈ S, eval g x = f x} :=
+    card_pos.mpr ⟨g, mem_filter.mpr ⟨hg, hgS⟩⟩
   have hpow : 15 ^ (16 * b) * 2 ^ b ≤ 16 ^ (16 * b) := by
     rw [pow_mul, pow_mul, ← mul_pow]
     exact Nat.pow_le_pow_left (by norm_num) b
   have := Nat.mul_lt_mul_of_pos_left hb (pow_pos (by norm_num : 0 < 15) (16 * b))
   have := Nat.mul_le_mul_left (16 ^ (16 * b)) hpos
   omega
+
+/-- **Small anti-checkers**, by the ordered-tuple variant of
+[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Suppose there are at most `2 ^ m` inputs,
+with `m > 0`, and no `m` members of `F`, repetitions allowed, have `f` as their pointwise strict
+majority. If `F` has fewer than `2 ^ b` members, some set of at most `16 b` inputs is an
+anti-checker for `f` against `F`. -/
+theorem exists_isAntiChecker {b : ℕ} (hm : 0 < m) (hα : Fintype.card α ≤ 2 ^ m)
+    (F : Finset (α → Bool)) {f : α → Bool}
+    (hmaj : ∀ g : Fin m → α → Bool, (∀ i, g i ∈ F) →
+      (fun x => strictMajority m fun i => g i x) ≠ f)
+    (hb : #F < 2 ^ b) :
+    ∃ S : Finset α, #S ≤ 16 * b ∧ IsAntiChecker F f S := by
+  simpa only [Set.image_id] using exists_isAntiChecker_image id hm hα F hmaj hb
 
 /-! ### Anti-checkers against circuits -/
 
@@ -252,17 +298,18 @@ theorem isAntiChecker_computableFunctions_iff_notMem {f : BooleanFunction n}
 
 /-- The strict majority of `m` functions costs at most their complexities and that of strict
 majority. -/
-private theorem complexity_strictMajority_le (g : Fin m → BooleanFunction n) :
+theorem complexity_strictMajority_le (g : Fin m → BooleanFunction n) :
     complexity interpretation (single fun x => strictMajority m fun i => g i x) ≤
       ∑ i, complexity interpretation (single (g i)) +
         complexity interpretation (single (strictMajority m)) :=
   (complexity_comp_le (fun x i => g i x) (single (strictMajority m))).trans
     (Nat.add_le_add_right (complexity_pi_le g) _)
 
-/-- **Small anti-checkers against circuits** [OliveiraPichSanthanam2019, Lemma 4.7]. Let
-`n ≤ m` with `m > 0`. If `f` needs more than `m s` gates plus the complexity of strict majority
-on `m` bits, and fewer than `2 ^ b` functions on `n` inputs have circuits with at most `s` gates,
-then on some set of at most `16 b` inputs `f` needs more than `s` gates. -/
+/-- **Small anti-checkers against circuits**, by the ordered-tuple variant of
+[OliveiraPichSanthanam2019, Section 4.2, Lemma 23]. Let `n ≤ m` with `m > 0`. If `f` needs more
+than `m s` gates plus the complexity of strict majority on `m` bits, and fewer than `2 ^ b`
+functions on `n` inputs have circuits with at most `s` gates, then on some set of at most
+`16 b` inputs `f` needs more than `s` gates. -/
 theorem exists_lt_complexityOn {m b : ℕ} (hm : 0 < m) (hnm : n ≤ m) {f : BooleanFunction n}
     (hf : m * s + complexity interpretation (single (strictMajority m)) <
       complexity interpretation (single f))
