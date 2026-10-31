@@ -167,14 +167,18 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   `w+2`. The two extra bits and actual arithmetic-block costs come from the existing native
   signed kernels, without a copied source machine or a whole-program simulation hypothesis.
   The existing array-copy interface is retained, with a narrow generalization for disjoint
-  blocks in either address order or identical blocks.
+  blocks in either address order or identical blocks. `Encoding.setup` and `Encoding.powerBody`
+  retain their simultaneous `7^L`/`10^L` loop sharing the `stage` counter (`5*L+18` setup
+  instructions) rather than running two sequential `WordRAM.Power.program` loops.
   This is the encoder component only; band/tile preparation and full native composition remain
   in [#1394](https://github.com/cslib-community/complexitylib/issues/1394).
 * **Native shared-band preparation.** The native shared-band preparation component
   ([#1523](https://github.com/cslib-community/complexitylib/issues/1523)) computes a deterministic
   `Layout` and both subset tables by native mask/popcount scans, computes the square-root block
-  count by a charged loop, and decodes each band-array index into the original row/column and
-  thin-dimension coordinates. Real matrix bounds are checked before row-major multiplication.
+  count and its square by renaming `NatSqrt.program` (`BandPreparation.rootRegisters`) followed by
+  one multiplication (`5*sqrt(k)+8` steps), and decodes each band-array index into the original
+  row/column and thin-dimension coordinates. Real matrix bounds are checked before row-major
+  multiplication.
   Each shared row/column band calls the unchanged encoder once; tiles refer to its catalogue
   block in the existing leaf order. The fixed 96-register standard code starts from actual
   `State.init` scalar/matrix input, charges snapshot and restoration of the complete original
@@ -451,11 +455,14 @@ Do not add a ledger row for an ordinary candidate or repeat its source marker he
   callers use the flat initialized runs, width theorem or pointer/epoch kernel. The narrow
   `WordRAM.ArrayAppend` and `WordRAM.InputArray` topic modules keep append/input dependencies
   and interface changes away from the widely imported `Allocation` core.
-  Post-integration [#1553](https://github.com/cslib-community/complexitylib/issues/1553) includes
-  replacing pruned `powers` with sibling #1536's generic `Power.program`, preserving the
-  `4L+10` budget via five retained constant initializations plus its `4L+5` run. Its exact
-  register map, affected execution/width/cost clients and sibling integration order are
-  recorded there. This documentation/test repair does not change either sibling's program.
+  Post-integration [#1553](https://github.com/cslib-community/complexitylib/issues/1553) replaces
+  pruned `powers` with five retained constant initializations (`powerSetup`) followed by
+  `Power.program.rename powerRegisters`, preserving the `4L+10` step bound and `PowersLocal`
+  frame, and replaces `BandPreparation.rootCode` with `NatSqrt.program.rename rootRegisters`
+  followed by `square ← root * root` (`5*sqrt(k)+8` steps). `ChanHe.Parameters.power` retains
+  its compile-time fixed-exponent unrolling (`κ+1` straight-line instructions over `magnitude`
+  and `base` without a runtime exponent/counter register or `Fits w (κ+1)` premise at `n=0`),
+  and `Encoding.setup`/`powerBody` retains its simultaneous `7^L`/`10^L` loop sharing `stage`.
 * **Typed RAM upstream core.** [CSLib #1158](https://github.com/leanprover/cslib/pull/1158) at
   `beea60a15eddc91d93e92fa5af9fb965c351d0d5` proposes
   `Cslib/Computability/Machines/RAM/Basic.lean`, in namespace `Cslib.RAM.Typed`.
