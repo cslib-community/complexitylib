@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Boolean.PPoly
 public import Complexity.Computability.Circuit.Boolean.Substitution
+public import Complexity.Computability.Complexity.Classes.NP.Image
 public import Complexity.Computability.Complexity.Classes.PH
 public import Complexity.Computability.Complexity.Problems.SAT
 public import Complexity.Computability.MCSP.NP
@@ -62,10 +63,6 @@ not say which of the two languages witnesses the theorem.
 
 ## Main results
 
-* `Cslib.Complexity.mem_NP_image`: the encodings of the members of a problem in `NP` form a
-  problem in `NP` on words, when the encoding has a decoder.
-* `Cslib.Complexity.image_SAT_mem_NP`: the encodings of the satisfiable formulas form a problem in
-  `NP` on words.
 * `Cslib.Complexity.Kannan.language_notMem_SIZE`: Kannan's language has no circuits of size
   `O(n ^ k)`.
 * `Cslib.Complexity.Kannan.language_mem_SigmaP_three`: Kannan's language is in `Σ₃`.
@@ -86,32 +83,6 @@ not say which of the two languages witnesses the theorem.
 namespace Cslib.Complexity
 
 open Circuits Circuits.Boolean Turing.MultiTapeTM Filter
-
-/-! ### Images of problems in `NP` -/
-
-/-- **Images of problems in `NP`.** The encodings of the members of a problem in `NP` form a
-problem in `NP` on words, when the encoding has a decoder: the verifier decodes the word, checks
-that it encodes what was decoded, and runs the verifier of the problem. -/
-theorem mem_NP_image {β : Type} {encB : β ↪ List Bool} (D : Decoder encB) {B : Set β}
-    (hB : B ∈ NP encB) : encB '' B ∈ NP encBits := by
-  obtain ⟨p, V, hV, hBV⟩ := mem_NP.mp hB
-  have hdec : ComputableInPolyTime (fun x : List Bool × List Bool => D.decode x.1)
-      (encPair encBits encBits) encB := D.computableInPolyTime.comp (.fst _ _)
-  have henc : ComputableInPolyTime (fun b => encB b) encB encBits := .of_eq fun _ => rfl
-  refine mem_NP.mpr
-    ⟨p, fun x => decide (encB (D.decode x.1) = x.1) && V (D.decode x.1, x.2), by fun_prop,
-      fun w => ?_⟩
-  simp only [encBits_apply, Bool.and_eq_true, decide_eq_true_eq]
-  constructor
-  · rintro ⟨b, hb, rfl⟩
-    obtain ⟨c, hc, hVc⟩ := (hBV b).1 hb
-    exact ⟨c, hc, by rw [D.decode_enc], by rw [D.decode_enc]; exact hVc⟩
-  · rintro ⟨c, hc, hw, hVc⟩
-    exact ⟨D.decode w, (hBV _).2 ⟨c, by rw [hw]; exact hc, hVc⟩, hw⟩
-
-/-- The encodings of the satisfiable formulas form a problem in `NP` on words. -/
-theorem image_SAT_mem_NP : encCNF '' SAT ∈ NP encBits :=
-  mem_NP_image (.list (.list (.pair .nat .bool))) SAT.mem_NP
 
 namespace Kannan
 
