@@ -17,11 +17,11 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 # The leaves of the fast contraction algorithm
 
 The cost of the leaves of the native recursion of Theorem D.1 of [OpenAI2026ETH]
-(`Cslib.Circuits.Frontier.FastContraction.leafCertificate`), the leaf clause of the resource
-analysis `Cslib.Complexity.CountingSimulation.FastAnalysis`. A leaf sums directly over the `2 ^ M`
-edge assignments of a call with `M` edges (§D.4.7, p. 64), and the entry of a packet vertex costs
-`(m + 2) ^ L` for `m` target modes and `L` row ports, the source's `exp(O(L log s))` (§D.4.6,
-p. 63).
+(`Cslib.Circuits.Frontier.FastContraction.leafCertificate`, over tables), the leaf clause of the
+resource analysis `Cslib.Complexity.CountingSimulation.FastAnalysis`. A leaf sums directly over the
+`2 ^ M` edge assignments of a call with `M` edges (§D.4.7, p. 64), and the entry of a packet vertex
+costs `(m + 2) ^ L` for `m` target modes and `L` row ports, the source's `exp(O(L log s))`
+(§D.4.6, p. 63).
 
 **The cost of a leaf** (`FastContraction.leafCertificate_le`): with at most `R` target modes and
 `Λ` row ports per vertex, time `K (n + R + 1) ^ K 2 ^ M (R + 2) ^ Λ` and space `K (n + R + 1) ^ K`
@@ -74,12 +74,18 @@ namespace FastContraction
 open GaloisRingArith NativePacket ChildCursor NativeRecovery ContractionSchedule NativeChild
   Cslib.GenericRAM Cslib.GenericRAM.StackRecursion Turing.MultiTapeTM
 
+variable {T : Type}
+
 /-! ### Encoded lengths -/
+
+section Lengths
+
+variable (encT : T ↪ List Bool)
 
 /-- The scale, the precision and the coefficients of the modulus are at most the encoded length
 of a call. -/
-theorem scale_add_prec_add_length_fl_le (x : Call) :
-    x.scale + x.prec + x.fl.length ≤ (encCall x).length := by
+theorem scale_add_prec_add_length_fl_le (x : Call T) :
+    x.scale + x.prec + x.fl.length ≤ (encCall encT x).length := by
   have h := length_le_length_encList encNat x.fl
   obtain ⟨⟨s, d, b, p, fl, r⟩, D⟩ := x
   simp only [Call.scale, Call.prec, Call.fl, encCall, encParams, length_encPair, encUnary_apply,
@@ -87,31 +93,36 @@ theorem scale_add_prec_add_length_fl_le (x : Call) :
   omega
 
 /-- The network of a call is at most its encoded length. -/
-theorem length_net_le (x : Call) :
-    (DescribedNetwork.encDescribed VertexDesc.enc x.net).length ≤ (encCall x).length := by
+theorem length_net_le (x : Call T) :
+    (DescribedNetwork.encDescribed (VertexDesc.enc encT) x.net).length ≤
+      (encCall encT x).length := by
   obtain ⟨p, D⟩ := x
   simp only [Call.net, encCall, length_encPair]
   omega
 
 /-- A vertex of a call is at most its encoded length. -/
-theorem length_vertex_le {x : Call} {v : List ℕ × VertexDesc} (hv : v ∈ x.net.vertices) :
-    (encPair (encList encNat) VertexDesc.enc v).length ≤ (encCall x).length := by
-  have h := length_le_encList_of_mem (encPair (encList encNat) VertexDesc.enc) hv
-  have h2 : (encList (encPair (encList encNat) VertexDesc.enc) x.net.vertices).length ≤
-      (DescribedNetwork.encDescribed VertexDesc.enc x.net).length := by
-    change _ ≤ (encPair encUnary (encList (encPair (encList encNat) VertexDesc.enc))
+theorem length_vertex_le {x : Call T} {v : List ℕ × VertexDesc T}
+    (hv : v ∈ x.net.vertices) :
+    (encPair (encList encNat) (VertexDesc.enc encT) v).length ≤ (encCall encT x).length := by
+  have h := length_le_encList_of_mem (encPair (encList encNat) (VertexDesc.enc encT)) hv
+  have h2 : (encList (encPair (encList encNat) (VertexDesc.enc encT)) x.net.vertices).length ≤
+      (DescribedNetwork.encDescribed (VertexDesc.enc encT) x.net).length := by
+    change _ ≤ (encPair encUnary (encList (encPair (encList encNat) (VertexDesc.enc encT)))
       (x.net.numEdges, x.net.vertices)).length
     rw [length_encPair]
     dsimp only
     omega
-  have h3 := length_net_le x
+  have h3 := length_net_le encT x
   omega
 
 /-- The number of vertices of a call is at most its encoded length. -/
-theorem length_vertices_le (x : Call) : x.net.vertices.length ≤ (encCall x).length := by
-  have h := DescribedNetwork.length_numEdges_vertices_le (encT := VertexDesc.enc) x.net
-  have h3 := length_net_le x
+theorem length_vertices_le (x : Call T) :
+    x.net.vertices.length ≤ (encCall encT x).length := by
+  have h := DescribedNetwork.length_numEdges_vertices_le (encT := VertexDesc.enc encT) x.net
+  have h3 := length_net_le encT x
   omega
+
+end Lengths
 
 /-! ### The cost of a leaf -/
 
@@ -261,25 +272,26 @@ private theorem space_assemble {Sd Si Ss cd dd ci di W A Zb c₁ c₂ E₀ K₁ 
 whose vertices have at most `R` target modes and at most `Λ` row ports on every bit list on their
 ports, direct summation takes time at most `K (n + R + 1) ^ K 2 ^ M (R + 2) ^ Λ` and space at most
 `K (n + R + 1) ^ K`, whatever the child builder. -/
-theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × DescribedNetwork VertexDesc)
-    (x : Call) (R Λ : ℕ),
+theorem leafCertificate_le : ∃ K : ℕ,
+    ∀ (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
+    (x : Call (List ℕ)) (R Λ : ℕ),
     (∀ v ∈ x.net.vertices, v.2.modes ≤ R ∧
       ∀ bs : List Bool, bs.length = v.1.length → v.2.rowPorts bs ≤ Λ) →
     (leafCertificate mk).time x ≤
-        K * ((encCall x).length + R + 1) ^ K * 2 ^ x.edges * (R + 2) ^ Λ ∧
-      (leafCertificate mk).space x ≤ K * ((encCall x).length + R + 1) ^ K := by
+        K * ((encCall (encList encNat) x).length + R + 1) ^ K * 2 ^ x.edges * (R + 2) ^ Λ ∧
+      (leafCertificate mk).space x ≤ K * ((encCall (encList encNat) x).length + R + 1) ^ K := by
   obtain ⟨K₁, hK₁⟩ := DescribedNetwork.contractionCertificate_le (ops := SumOps.galois)
-    (eval := VertexDesc.entry) (encQ := encPair encUnary (encList encNat))
-    (encY := encList encNat) (encT := VertexDesc.enc) SumOps.galois_polyTime
+    (eval := VertexDesc.entry tableEntry) (encQ := encPair encUnary (encList encNat))
+    (encY := encList encNat) (encT := VertexDesc.enc (encList encNat)) SumOps.galois_polyTime
     VertexDesc.entryCertificate
   obtain ⟨K₂, hK₂⟩ := VertexDesc.entryCertificate_le
-  have hD := NativeCertificate.ofPolyTime_isPolynomial depth_polyTime
-  have hI := NativeCertificate.ofPolyTime_isPolynomial leafInput_polyTime
+  have hD := NativeCertificate.ofPolyTime_isPolynomial (depth_polyTime (encList encNat))
+  have hI := NativeCertificate.ofPolyTime_isPolynomial (leafInput_polyTime (encList encNat))
   obtain ⟨cd, dd, hdt⟩ := hD.1.exists_le
   obtain ⟨cd', dd', hds⟩ := hD.2.exists_le
   obtain ⟨ci, di, hit⟩ := hI.1.exists_le
   obtain ⟨ci', di', his⟩ := hI.2.exists_le
-  obtain ⟨cl, dl, hl⟩ := leafInput_polyTime.polyBounded_length.exists_le
+  obtain ⟨cl, dl, hl⟩ := (leafInput_polyTime (encList encNat)).polyBounded_length.exists_le
   obtain ⟨cp, dp, hp⟩ := PacketCtx.p_polyTime.polyBounded_length.exists_le
   obtain ⟨cf, df, hf⟩ := PacketCtx.fl_polyTime.polyBounded_length.exists_le
   obtain ⟨ct, dt, ht⟩ := VertexDesc.tableEntry_polyTime.polyBounded_length.exists_le
@@ -293,22 +305,22 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
       (K₁ * c₁ ^ K₁ + K₂ * c₂ ^ K₂) + cd' + ci' := ⟨_, rfl⟩
   obtain ⟨Dg, hDg⟩ : ∃ Dg, Dg = 1 + E₀ * (K₁ + K₂) + dd + di + dd' + di' := ⟨_, rfl⟩
   refine ⟨G + Dg, fun mk x R Λ hRΛ => ?_⟩
-  obtain ⟨n, hn⟩ : ∃ n, n = (encCall x).length := ⟨_, rfl⟩
+  obtain ⟨n, hn⟩ : ∃ n, n = (encCall (encList encNat) x).length := ⟨_, rfl⟩
   obtain ⟨W, hW⟩ : ∃ W, W = n + R + 1 := ⟨_, rfl⟩
   rw [← hn, show n + R + 1 = W from hW.symm]
   have hW1 : 1 ≤ W := by omega
   have hnW : n + 1 ≤ W := by omega
   -- The precision and the modulus of the call.
-  have hpfl := scale_add_prec_add_length_fl_le x
+  have hpfl := scale_add_prec_add_length_fl_le (encList encNat) x
   rw [← hn] at hpfl
   -- Every vertex and bit list on its ports is at most `3 n + 1` long.
-  have hq (v : List ℕ × VertexDesc) (hv : v ∈ x.net.vertices) (bs : List Bool)
+  have hq (v : List ℕ × VertexDesc (List ℕ)) (hv : v ∈ x.net.vertices) (bs : List Bool)
       (hbs : bs.length = v.1.length) :
-      (encPair VertexDesc.enc encBits (v.2, bs)).length ≤ 3 * n + 1 := by
-    have h1 := length_vertex_le hv
+      (encPair (VertexDesc.enc (encList encNat)) encBits (v.2, bs)).length ≤ 3 * n + 1 := by
+    have h1 := length_vertex_le (encList encNat) hv
     have h2 := length_le_length_encList encNat v.1
     rw [length_encPair] at h1 ⊢
-    change 2 * (VertexDesc.enc v.2).length + 1 + bs.length ≤ 3 * n + 1
+    change 2 * (VertexDesc.enc (encList encNat) v.2).length + 1 + bs.length ≤ 3 * n + 1
     omega
   -- The reduced coefficient lists.
   obtain ⟨Rv, hRv⟩ : ∃ Rv, Rv = n * (2 * n + 3) +
@@ -320,13 +332,13 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
     have : x.fl.length * (2 * x.prec + 3) ≤ n * (2 * n + 3) :=
       Nat.mul_le_mul (by omega) (by omega)
     omega
-  have hpacket (v : List ℕ × VertexDesc) (hv : v ∈ x.net.vertices) (d : PacketDesc)
+  have hpacket (v : List ℕ × VertexDesc (List ℕ)) (hv : v ∈ x.net.vertices) (d : PacketDesc)
       (hd : v.2 = .inr d) :
       ∀ y, SumOps.galois.Reduced (d.1.p, d.1.fl) y → (encList encNat y).length ≤ Rv := by
     intro y hy
     have h := SumOps.length_encList_le_of_galois_reduced hy
     simp only at h
-    have h1 := length_vertex_le hv
+    have h1 := length_vertex_le (encList encNat) hv
     rw [length_encPair, hd, length_encSum] at h1
     simp only [Sum.elim_inr] at h1
     have h2 : (PacketCtx.enc d.1).length ≤ n := by
@@ -349,7 +361,7 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
       bs.length = v.1.length →
       VertexDesc.entryCertificate.time (v.2, bs) ≤ K₂ * (R + 2) ^ Λ * Zb ^ K₂ ∧
         VertexDesc.entryCertificate.space (v.2, bs) ≤ K₂ * Zb ^ K₂ ∧
-        (encList encNat (VertexDesc.entry v.2 bs)).length ≤ Rv := by
+        (encList encNat (VertexDesc.entry tableEntry v.2 bs)).length ≤ Rv := by
     intro v hv bs hbs
     have hlen := hq v hv bs hbs
     obtain ⟨hmodes, hrows⟩ := hRΛ v hv
@@ -360,7 +372,8 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
       · exact hpacket v hv d hd
     obtain ⟨hT, hS⟩ := hK₂ (v.2, bs) Rv hRLE
     dsimp only at hT hS
-    have hZ : (encPair VertexDesc.enc encBits (v.2, bs)).length + v.2.modes + Rv + 2 ≤ Zb := by
+    have hZ : (encPair (VertexDesc.enc (encList encNat)) encBits (v.2, bs)).length + v.2.modes +
+        Rv + 2 ≤ Zb := by
       omega
     refine ⟨hT.trans ?_, hS.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hZ _)), ?_⟩
     · refine Nat.mul_le_mul (Nat.mul_le_mul_left _ ?_) (Nat.pow_le_pow_left hZ _)
@@ -369,30 +382,33 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
       · have := ht (v.2, bs)
         rw [hd] at this
         refine this.trans ?_
-        have h3 : (encPair VertexDesc.enc encBits (Sum.inl t, bs)).length + 1 ≤ 3 * n + 2 := by
+        have h3 : (encPair (VertexDesc.enc (encList encNat)) encBits (Sum.inl t, bs)).length + 1 ≤
+            3 * n + 2 := by
           rw [← hd]; omega
-        calc ct * ((encPair VertexDesc.enc encBits (Sum.inl t, bs)).length + 1) ^ dt
+        calc ct * ((encPair (VertexDesc.enc (encList encNat)) encBits (Sum.inl t, bs)).length
+              + 1) ^ dt
             ≤ ct * (3 * n + 2) ^ dt := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left h3 _)
           _ ≤ Rv := by omega
-      · exact hpacket v hv d hd _ (VertexDesc.reduced_entry_inr d bs)
+      · exact hpacket v hv d hd _ (VertexDesc.reduced_entry_inr tableEntry d bs)
   obtain ⟨hsT, hsS⟩ := hK₁ ((x.prec, x.fl), x.net) (K₂ * (R + 2) ^ Λ * Zb ^ K₂) (K₂ * Zb ^ K₂) Rv
     Rv hentry hred
   -- Polynomial pieces against `W`.
-  have hk : x.net.vertices.length + 1 ≤ W := by have := length_vertices_le x; omega
+  have hk : x.net.vertices.length + 1 ≤ W := by have := length_vertices_le (encList encNat) x; omega
   have hRvW : Rv ≤ cR * W ^ e := by
     rw [hRv, hcR, he]; exact rv_le hnW
   have hWE : W ^ e ≤ W ^ E₀ := Nat.pow_le_pow_right hW1 (by omega)
-  have hA1 : (DescribedNetwork.encInput (encPair encUnary (encList encNat)) VertexDesc.enc
-      ((x.prec, x.fl), x.net)).length + Rv + Rv + 1 ≤ c₁ * W ^ E₀ := by
-    have h1 : (DescribedNetwork.encInput (encPair encUnary (encList encNat)) VertexDesc.enc
-        ((x.prec, x.fl), x.net)).length ≤ cl * W ^ dl :=
+  have hA1 : (DescribedNetwork.encInput (encPair encUnary (encList encNat))
+      (VertexDesc.enc (encList encNat)) ((x.prec, x.fl), x.net)).length + Rv + Rv + 1 ≤
+        c₁ * W ^ E₀ := by
+    have h1 : (DescribedNetwork.encInput (encPair encUnary (encList encNat))
+        (VertexDesc.enc (encList encNat)) ((x.prec, x.fl), x.net)).length ≤ cl * W ^ dl :=
       (hl x).trans (by rw [← hn]; exact mul_pow_le_of_le hnW)
     rw [hc₁]
     exact sum_le_of_le hW1 h1 (by omega) (hRvW.trans (Nat.mul_le_mul_left _ hWE))
   have hZW : Zb ≤ c₂ * W ^ E₀ := by
     rw [hc₂, hZb]
     exact zb_le hW1 (by omega) (hRvW.trans (Nat.mul_le_mul_left _ hWE)) (by omega)
-  have hnW' : (encCall x).length + 1 ≤ W := by omega
+  have hnW' : (encCall (encList encNat) x).length + 1 ≤ W := by omega
   have hdt' := (hdt x).trans (mul_pow_le_of_le (c := cd) (d := dd) hnW')
   have hit' := (hit x).trans (mul_pow_le_of_le (c := ci) (d := di) hnW')
   have hds' := (hds x).trans (mul_pow_le_of_le (c := cd') (d := dd') hnW')
@@ -415,7 +431,7 @@ theorem leafCertificate_le : ∃ K : ℕ, ∀ (mk : Call → State → ℕ × De
 `2 ^ a` and distinct among its row ports. So it has at most `2 ^ (⌊log₂ s⌋ / 32768) p` target modes
 and at most `2 ^ (⌊log₂ s⌋ / 32768)` row ports (`modes_le_of_packetShape`,
 `rowPorts_le_of_packetShape`). -/
-def PacketShape (x : Call) : Prop :=
+def PacketShape (x : Call T) : Prop :=
   ∀ v ∈ x.net.vertices, ∀ d : PacketDesc, v.2 = .inr d →
     d.1.i < d.1.a ∧ d.1.a ≤ Nat.log 2 x.scale / 32768 ∧ d.1.tiles = 2 ^ (d.1.i + 1) ∧
       d.1.nb ≤ x.prec ∧ (∀ y ∈ d.2.1, y.2 < 2 ^ d.1.a) ∧ ((d.2.1.filter (·.1)).map (·.2)).Nodup
@@ -431,7 +447,7 @@ theorem packetShape_root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : PacketS
 vertex keeps its descriptor, at a precision that only grows, and a new packet has `a` slot bits
 (`slotBits_le`), `i < a` (the valuation of its node), `2 ^ (i + 1)` tiles, the child's precision
 as its number of exponents per tile, and the slots of the packing, distinct within a packet. -/
-theorem packetShape_child {x : Call} (hx : WF x) (ha : active x = true) (hs : PacketShape x)
+theorem packetShape_child {x : Call T} (hx : WF x) (ha : active x = true) (hs : PacketShape x)
     {c : State} (hc : c ∈ children x) : PacketShape (child x nativeMk c) := by
   -- The builder at a cursor state of a well-formed active call: the uncapped native child.
   have hmk : (nativeMk x c).2 = nativeChild x.fl (slots x) (level x ((nodes x).getD c.1 0))
@@ -484,7 +500,7 @@ theorem two_pow_log_div_le (s : ℕ) : 2 ^ (Nat.log 2 s / 32768) ≤ s + 1 := by
       _ ≤ s + 1 := Nat.le_succ s
 
 /-- **The target modes of a call with the packet shape**: at most `2 ^ (⌊log₂ s⌋ / 32768) p`. -/
-theorem modes_le_of_packetShape {x : Call} (hs : PacketShape x) {v : List ℕ × VertexDesc}
+theorem modes_le_of_packetShape {x : Call T} (hs : PacketShape x) {v : List ℕ × VertexDesc T}
     (hv : v ∈ x.net.vertices) : v.2.modes ≤ 2 ^ (Nat.log 2 x.scale / 32768) * x.prec := by
   rcases hd : v.2 with t | d
   · simp [VertexDesc.modes]
@@ -499,7 +515,7 @@ theorem modes_le_of_packetShape {x : Call} (hs : PacketShape x) {v : List ℕ ×
 
 /-- **The row ports of a call with the packet shape**: at most `2 ^ (⌊log₂ s⌋ / 32768)`, since
 the slots of the row ports of a packet are distinct and below `2 ^ a`. -/
-theorem rowPorts_le_of_packetShape {x : Call} (hs : PacketShape x) {v : List ℕ × VertexDesc}
+theorem rowPorts_le_of_packetShape {x : Call T} (hs : PacketShape x) {v : List ℕ × VertexDesc T}
     (hv : v ∈ x.net.vertices) (bs : List Bool) :
     v.2.rowPorts bs ≤ 2 ^ (Nat.log 2 x.scale / 32768) := by
   rcases hd : v.2 with t | d
@@ -525,28 +541,32 @@ length `n` with `M` edges, scale `s` and precision `p` with the packet shape, wr
 `A = 2 ^ (⌊log₂ s⌋ / 32768)`, direct summation takes time at most
 `K (n + 1) ^ K 2 ^ M (A p + 2) ^ A` and space at most `K (n + 1) ^ K`. -/
 theorem leafCertificate_le_of_packetShape : ∃ K : ℕ,
-    ∀ (mk : Call → State → ℕ × DescribedNetwork VertexDesc) (x : Call), PacketShape x →
-      (leafCertificate mk).time x ≤ K * ((encCall x).length + 1) ^ K * 2 ^ x.edges *
+    ∀ (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
+      (x : Call (List ℕ)), PacketShape x →
+      (leafCertificate mk).time x ≤ K * ((encCall (encList encNat) x).length + 1) ^ K *
+          2 ^ x.edges *
           (2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 2) ^ 2 ^ (Nat.log 2 x.scale / 32768) ∧
-        (leafCertificate mk).space x ≤ K * ((encCall x).length + 1) ^ K := by
+        (leafCertificate mk).space x ≤ K * ((encCall (encList encNat) x).length + 1) ^ K := by
   obtain ⟨K, hK⟩ := leafCertificate_le
   refine ⟨2 * K, fun mk x hs => ?_⟩
   obtain ⟨hT, hS⟩ := hK mk x (2 ^ (Nat.log 2 x.scale / 32768) * x.prec)
     (2 ^ (Nat.log 2 x.scale / 32768)) fun v hv =>
       ⟨modes_le_of_packetShape hs hv, fun bs _ => rowPorts_le_of_packetShape hs hv bs⟩
-  have hn := scale_add_prec_add_length_fl_le x
+  have hn := scale_add_prec_add_length_fl_le (encList encNat) x
   have hA := two_pow_log_div_le x.scale
-  have hR : (encCall x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1 ≤
-      ((encCall x).length + 1) ^ 2 := by
+  have hR : (encCall (encList encNat) x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1 ≤
+      ((encCall (encList encNat) x).length + 1) ^ 2 := by
     have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤
-        ((encCall x).length + 1) * (encCall x).length := Nat.mul_le_mul (by omega) (by omega)
+        ((encCall (encList encNat) x).length + 1) * (encCall (encList encNat) x).length :=
+      Nat.mul_le_mul (by omega) (by omega)
     nlinarith
-  have hpow : K * ((encCall x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1) ^ K ≤
-      2 * K * ((encCall x).length + 1) ^ (2 * K) :=
-    calc _ ≤ K * (((encCall x).length + 1) ^ 2) ^ K :=
+  have hpow :
+      K * ((encCall (encList encNat) x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + 1) ^ K ≤
+        2 * K * ((encCall (encList encNat) x).length + 1) ^ (2 * K) :=
+    calc _ ≤ K * (((encCall (encList encNat) x).length + 1) ^ 2) ^ K :=
           Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hR _)
-      _ = K * ((encCall x).length + 1) ^ (2 * K) := by rw [← pow_mul]
-      _ ≤ 2 * K * ((encCall x).length + 1) ^ (2 * K) :=
+      _ = K * ((encCall (encList encNat) x).length + 1) ^ (2 * K) := by rw [← pow_mul]
+      _ ≤ 2 * K * ((encCall (encList encNat) x).length + 1) ^ (2 * K) :=
           Nat.mul_le_mul_right _ (by omega)
   exact ⟨hT.trans (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hpow)), hS.trans hpow⟩
 
@@ -634,18 +654,19 @@ provided that from `s₀` on it has at most `leafSize m` edges and precision at 
 `s₀` on, `2 ^ M ≤ 2 ^ (C s / √⌊log₂ s⌋)` and the packet factor is subexponential
 (`exists_packetFactor_le`). -/
 theorem exists_leafCertificate_le (C c s₀ : ℕ) : ∃ K : ℕ,
-    ∀ (mk : Call → State → ℕ × DescribedNetwork VertexDesc) (s : ℕ) (x : Call), 2 ≤ s →
+    ∀ (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ))) (s : ℕ)
+      (x : Call (List ℕ)), 2 ≤ s →
       s ≤ x.scale → x.scale ≤ C * s → PacketShape x → x.edges ≤ 2 * x.scale →
       (s₀ ≤ s → x.edges ≤ leafSize x.scale ∧ x.prec ≤ x.scale ^ c) →
       (leafCertificate mk).time x ≤
-          K * ((encCall x).length + 1) ^ K * 2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
-        (leafCertificate mk).space x ≤ K * ((encCall x).length + 1) ^ K := by
+          K * ((encCall (encList encNat) x).length + 1) ^ K * 2 ^ (K * s / Nat.sqrt (Nat.log 2 s)) ∧
+        (leafCertificate mk).space x ≤ K * ((encCall (encList encNat) x).length + 1) ^ K := by
   obtain ⟨K₀, hK₀⟩ := leafCertificate_le_of_packetShape
   obtain ⟨K₁, hK₁⟩ := exists_packetFactor_le C c
   obtain ⟨Ks, hKs⟩ : ∃ Ks, Ks = K₀ * 2 ^ (2 * (C * s₀)) * (C * s₀ + 2) ^ (C * s₀) := ⟨_, rfl⟩
   refine ⟨Ks + K₀ + C * s₀ + C + K₁, fun mk s x hs hsm hmC hshape hM hbig => ?_⟩
   obtain ⟨hT, hS⟩ := hK₀ mk x hshape
-  set n := (encCall x).length with hn
+  set n := (encCall (encList encNat) x).length with hn
   set K := Ks + K₀ + C * s₀ + C + K₁ with hK
   set S := Nat.sqrt (Nat.log 2 s) with hSdef
   have hS1 : 1 ≤ S := Nat.one_le_sqrt_log_two hs
@@ -659,7 +680,7 @@ theorem exists_leafCertificate_le (C c s₀ : ℕ) : ∃ K : ℕ,
   rcases lt_or_ge s s₀ with hsmall | hlarge
   · -- Below `s₀`: constants and a polynomial.
     have hmC' : x.scale ≤ C * s₀ := hmC.trans (Nat.mul_le_mul_left _ hsmall.le)
-    have hp : x.prec ≤ n := by have := scale_add_prec_add_length_fl_le x; omega
+    have hp : x.prec ≤ n := by have := scale_add_prec_add_length_fl_le (encList encNat) x; omega
     have h2M : 2 ^ x.edges ≤ 2 ^ (2 * (C * s₀)) :=
       Nat.pow_le_pow_right (by norm_num) (by omega)
     have hbase : A * x.prec + 2 ≤ (C * s₀ + 2) * (n + 1) := by

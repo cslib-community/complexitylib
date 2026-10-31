@@ -243,11 +243,6 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
-- Complete the unconditional `SharpTIME(T)` to binary-output `FTIME(2^{O(T/√log T)})`
-  endpoint in [#1833](https://github.com/cslib-community/complexitylib/issues/1833). The native
-  terminal-path class agrees with `SharpP` at polynomial clocks; the count-first simulation
-  supplies joint time and polynomial workspace conditional on the explicit-network contraction
-  algorithm. Integration of the concrete contraction removes that remaining premise.
 - The Another Solution Problem (ASP) framework: certify polynomial-time forward and inverse
   witness maps. The parsimonious reductions to positive exact-one SAT and its planar
   three-occurrence variants already preserve counts over occurring variables; the new local
@@ -364,6 +359,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
   NEXP.
+- **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
+  `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
+  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined;
+  still open are an exponential nondeterministic time separation, a succinct tableau reduction
+  with a linear-size decoder, the lexicographically first witness in `E^NP`, and the core theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
@@ -797,6 +797,12 @@ and credited.
   subexponential-time `k`-SAT, zero SAT exponents, `¬ETH`, and `¬SETH`. This is the Sections 3–6 and
   Appendices A–B interpolation-scale bound, not the sharper Appendix D runtime. Integration,
   validation, and the curated formal abstract are tracked in #1226.
+- **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/complexitylib/issues/1538)):
+  `ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
+  `2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
+  `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
+  one machine. The arbitrary-density bound `2^{O_k(n log log n / √log n)}` still needs Theorem D.1
+  with truncation order `ℓ = n + 1` and Lemma D.2.
 
 ## Documentation and repository
 
@@ -872,6 +878,7 @@ not planned, not as proved.
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
+[#1539]: https://github.com/cslib-community/complexitylib/issues/1539
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824

@@ -1247,6 +1247,7 @@ public import Complexity.Computability.Complexity.Classes.Oracle.Counting
 public import Complexity.Computability.Complexity.Classes.Oracle.CountingEquivalence
 public import Complexity.Computability.Complexity.Classes.Oracle.Deterministic
 public import Complexity.Computability.Complexity.Classes.Oracle.Diagonal
+public import Complexity.Computability.Complexity.Classes.Oracle.Exponential
 public import Complexity.Computability.Complexity.Classes.Oracle.ListOracle
 public import Complexity.Computability.Complexity.Classes.Oracle.Lowness
 public import Complexity.Computability.Complexity.Classes.Oracle.Monotone
@@ -1401,6 +1402,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingSparsifica
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUniform
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
+public import Complexity.Computability.Complexity.FineGrained.DensityBranchCounting
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule

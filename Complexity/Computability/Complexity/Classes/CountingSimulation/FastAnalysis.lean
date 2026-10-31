@@ -179,11 +179,12 @@ such that on every guarded input admissible at size `s ≥ 2` with constant `C` 
   ∀ C D : ℕ, ∃ c d : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P →
     P ≤ D * s → ExplicitAdmissible C s G → fastGuard G = true →
     ∀ x, Reach nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G))) x →
-      (encCall x).length ≤ c * ((FastContraction.encInput (P, G)).length + 1) ^ d ∧
-      (∀ a, (reachInv nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G)))).frame x a →
-        (encPair encCall encFrame (x, a)).length ≤
+      (encCall (encList encNat) x).length ≤ c * ((FastContraction.encInput (P, G)).length + 1) ^ d ∧
+      (∀ a, (reachInv tableEntry nativeMk
+          (root (ExplicitTensorNetwork.capPrecision (P, G)))).frame x a →
+        (encPair (encCall (encList encNat)) encFrame (x, a)).length ≤
           c * ((FastContraction.encInput (P, G)).length + 1) ^ d) ∧
-      (encValue (x.depth, value nativeMk x)).length ≤
+      (encValue (x.depth, value tableEntry nativeMk x)).length ≤
         c * ((FastContraction.encInput (P, G)).length + 1) ^ d
 
 /-- **The leaf bounds**: for all constants `C` and `D` there is `K` such that on every guarded
@@ -223,8 +224,9 @@ theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalys
   have hp₀ : q.1 ≤ D * m :=
     (min_le_right _ _).trans (hPD.trans (Nat.mul_le_mul_left _ hsm))
   -- The derivation.
-  obtain ⟨N, H, he, hN, hH⟩ : ∃ N H, (scheme nativeMk).Eval (reachInv nativeMk x₀) x₀
-      (0, value nativeMk x₀) N H ∧ (max sA (D + 2) ≤ s → 2 * N - 1 ≤ fuel q) ∧ H ≤ m + 1 := by
+  obtain ⟨N, H, he, hN, hH⟩ : ∃ N H, (scheme tableEntry nativeMk).Eval
+      (reachInv tableEntry nativeMk x₀) x₀ (0, value tableEntry nativeMk x₀) N H ∧
+        (max sA (D + 2) ≤ s → 2 * N - 1 ≤ fuel q) ∧ H ≤ m + 1 := by
     by_cases hs₀ : max sA (D + 2) ≤ s
     · have hm2 : D + 2 ≤ m := by omega
       have hC1 : q.1 / m + 1 ≤ D + 1 := by
@@ -234,7 +236,7 @@ theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalys
       have hB := hsA m (by omega) (q.1 / m + 1) hC1
       have hpC : q.1 ≤ (q.1 / m + 1) * m :=
         (Nat.lt_div_mul_add (a := q.1) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
-      obtain ⟨N, H, he, hN, hH⟩ := exists_eval_onSchedule hB
+      obtain ⟨N, H, he, hN, hH⟩ := exists_eval_onSchedule tableEntry hB
         (onSchedule_root_capPrecision hg (Nat.le_add_left 1 _) hpC) rfl (by omega)
       refine ⟨N, H, he, fun _ => ?_, hH.trans ((Nat.log_lt_self 2 (by omega)).le.trans
         (Nat.le_succ _))⟩
@@ -246,8 +248,9 @@ theorem fastAnalysis_nativeMk_of (hS : FastSizes) (hL : FastLeaves) : FastAnalys
   obtain hKL' := hKL s P G hs hP hPD hA hg
   set K := cS + dS + KL + 1
   have hB1 : 1 ≤ n + 1 := by omega
-  refine ⟨reachInv nativeMk x₀, N, H, cS * (n + 1) ^ dS, KL * (n + 1) ^ KL * 2 ^ (KL * s /
-    Nat.sqrt (Nat.log 2 s)), KL * (n + 1) ^ KL, he, hN, fun x hx => ⟨(hKS' x hx).1, fun hl => ?_⟩,
+  refine ⟨reachInv tableEntry nativeMk x₀, N, H, cS * (n + 1) ^ dS,
+    KL * (n + 1) ^ KL * 2 ^ (KL * s / Nat.sqrt (Nat.log 2 s)), KL * (n + 1) ^ KL, he, hN,
+    fun x hx => ⟨(hKS' x hx).1, fun hl => ?_⟩,
     fun x a ha => (hKS' x ha.1).2.1 a ha, fun v ⟨x, hx, hv⟩ => hv ▸ (hKS' x hx).2.2, ?_, ?_⟩
   · have hl' : active x = false := by simpa [scheme] using hl
     exact hKL' x hx hl'
@@ -371,7 +374,8 @@ theorem fastSizes : FastSizes := by
     have : (x₀.edges + 1) * x₀.edges ^ 2 ≤ Y * Y ^ 2 := Nat.mul_le_mul hmY hm2
     have : Y * Y ^ 2 = Y ^ 3 := by ring
     omega
-  have hR₀ : ∀ w ∈ x₀.net.vertices, (VertexDesc.enc w.2).length ≤ 200 * (Z + 1) ^ 2 := by
+  have hR₀ : ∀ w ∈ x₀.net.vertices,
+      (VertexDesc.enc (encList encNat) w.2).length ≤ 200 * (Z + 1) ^ 2 := by
     intro w hw
     change w ∈ List.map _ G.2.vertices at hw
     obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hw
@@ -380,7 +384,7 @@ theorem fastSizes : FastSizes := by
     have := hdesc v hv
     have : Z ≤ (Z + 1) ^ 2 := (Nat.le_succ Z).trans (Nat.le_self_pow (by norm_num) _)
     omega
-  obtain ⟨hc, hv, hf⟩ := hsh.length_le rfl rfl rfl hZ1 hZ2
+  obtain ⟨hc, hv, hf⟩ := hsh.length_le tableEntry rfl rfl rfl hZ1 hZ2
     (fun z hz => le_one_of_mem_modulus hz) hR₀
   -- `1000 (Z + 1) ^ 3 ≤ 2 ^ 55 (n + 1) ^ 24`.
   have hfin : 1000 * (Z + 1) ^ 3 ≤ 2 ^ 55 * Y ^ 24 := by
