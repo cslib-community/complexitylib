@@ -17,7 +17,7 @@ import Mathlib.Data.List.GetD
 This file gives the native procedure behind the recovery step of the contraction algorithm of
 [OpenAI2026ETH] (§D.4.4, Lemma D.5, pp. 60–61), and proves that it computes the mathematical
 recovery `Cslib.Circuits.Frontier.recoverFromValues` of
-`Complexity/Computability/Circuit/Frontier/TensorNetwork/ActiveCall.lean`.
+`Complexity/Computability/Circuit/Frontier/TensorNetwork/ActiveCall.lean` modulo `2 ^ p`.
 
 **Input.** A precision `p`, a shift `Δ`, the monic polynomial `fl` of
 `Complexity/Computability/PolyTime/GaloisRingArithmetic.lean`, the parameters `a, u, h`, the
@@ -44,10 +44,14 @@ The sum over the nodes is `2 ^ Δ` times the recovered value. Dividing its coord
 ((D.10) and the evaluation loss), so the error is killed in `A_N`. This is the precision estimate
 of Lemma D.5 (`Cslib.Circuits.Frontier.exists_taperedRecovery_eq_add`), carried out natively.
 
-**Status.** This file proves the components: the constants, the reciprocal, the multipliers and
-the precision estimate, each against an arbitrary ring homomorphism `ρ : ℤ_(2) → A_N`. The
-assembly into `recover = recoverFromValues mod 2 ^ p` (through a reduction `B → A_N` and the
-interpolation of `GaloisRingArith.interp`) and the polynomial-time certificate are not yet done.
+**Correctness.** Let `π : B → A_N` be a ring homomorphism from a subring `B ⊇ ℤ_(2)` of a
+`ℚ`-algebra `K` (in the manuscript, `B = O`). The native interpolant is the image of the
+interpolant over `B` modulo `2 ^ p_t` (`NativeRecovery.exists_pval_interp_eq_add`), the Hermite
+quotient over `K` of a polynomial over `B` is the image of its product with the reciprocal series
+(`NativeRecovery.hermiteQuotient_map_subtype`), and `2 ^ Δ` times the recovered value is the sum
+of the node contributions over `B` (`NativeRecovery.two_pow_mul_recoverFromValues`). So when the
+recovered value `recoverFromValues B a u h ζ v` lies in `B`, native recovery computes its image
+modulo `2 ^ p` (`NativeRecovery.val_recover`).
 
 ## Main definitions
 
@@ -58,6 +62,7 @@ interpolation of `GaloisRingArith.interp`) and the polynomial-time certificate a
 * `Cslib.Circuits.Frontier.NativeRecovery.recipSeries`,
   `Cslib.Circuits.Frontier.NativeRecovery.gamma`: the reciprocal and the multipliers over
   `ℤ_(2)`.
+* `Cslib.Circuits.Frontier.NativeRecovery.nodeSum`: the contribution of a node over `B`.
 
 ## Main results
 
@@ -72,6 +77,15 @@ interpolation of `GaloisRingArith.interp`) and the polynomial-time certificate a
 * `Cslib.Circuits.Frontier.NativeRecovery.sum_recoveryNodes`,
   `Cslib.Circuits.Frontier.NativeRecovery.prod_others`: sums and products over the nodes as
   iterations over node indices.
+* `Cslib.Circuits.Frontier.NativeRecovery.exists_pval_interp_eq_add`: the interpolation bridge.
+* `Cslib.Circuits.Frontier.NativeRecovery.invOfUnit_hermiteBasis_comp`,
+  `Cslib.Circuits.Frontier.NativeRecovery.hermiteQuotient_map_subtype`: the reciprocal series
+  inverts `E_t(t + α z)`, so the Hermite quotient of a polynomial over `B` is integral.
+* `Cslib.Circuits.Frontier.NativeRecovery.two_pow_mul_recoverFromValues`: `2 ^ Δ` times the
+  recovered value as a sum over `B`.
+* `Cslib.Circuits.Frontier.NativeRecovery.val_recover`,
+  `Cslib.Circuits.Frontier.NativeRecovery.val_recover_of_eq_add`: native recovery computes the
+  mathematical recovery modulo `2 ^ p`.
 
 ## References
 
@@ -400,6 +414,7 @@ theorem val_recip (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2
 /-! ### Products over the nodes -/
 
 /-- The other nodes, as integers, are the nonzero grid points other than `t`. -/
+@[to_additive /-- The other nodes, as integers, are the nonzero grid points other than `t`. -/]
 theorem prod_others {M : Type*} [CommMonoid M] (f : ℤ → M) {a k : ℕ} :
     ((others a k).map fun k' => f (node a k')).prod =
       ∏ q ∈ (recoveryNodes a).erase (node a k), f q := by
@@ -609,5 +624,338 @@ theorem gamma_mul_two_pow_eq_zero (ρ : ℤ₍₂₎ →+* Ring N fl) {a u h Δ 
   rw [hsplit, map_mul, map_natCast, mul_comm, ← mul_assoc,
     show (2 : Ring N fl) ^ pt = ((2 ^ pt : ℕ) : Ring N fl) by push_cast; rfl, ← Nat.cast_mul,
     ← pow_add, show pt + e = N by omega, natCast_two_pow, zero_mul]
+
+/-! ### The interpolation bridge -/
+
+/-- The coefficients of a polynomial over `A_N` given by a list of coefficient lists. -/
+theorem coeff_pval (P : List (List ℕ)) (l : ℕ) :
+    (pval N fl P).coeff l = val N fl (P.getD l []) := by
+  rw [pval, finsetSum_coeff]
+  simp only [coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero, sum_ite_eq, mem_range]
+  split_ifs with h
+  · rfl
+  · rw [List.getD_eq_default _ _ (by omega), val_nil]
+
+/-- Interpolation at `n` nodes has degree below `n`. -/
+theorem degree_pval_interp_lt (ζl w : List (List ℕ)) :
+    (pval N fl (interp N fl ζl w)).degree < ζl.length := by
+  rw [← mem_degreeLT, pval_interp]
+  refine Submodule.sum_mem _ fun i hi => ?_
+  rw [← smul_eq_C_mul]
+  refine Submodule.smul_mem _ _ (mem_degreeLT.mpr ((degree_le_natDegree).trans_lt ?_))
+  have hle : (∏ j ∈ (range ζl.length).erase i, (X - C (val N fl (ζl.getD j [])))).natDegree ≤
+      #((range ζl.length).erase i) :=
+    (natDegree_prod_le _ _).trans ((sum_le_sum fun j _ => natDegree_X_sub_C_le _).trans_eq
+      (card_eq_sum_ones _).symm)
+  rw [card_erase_of_mem hi, card_range] at hle
+  have := mem_range.mp hi
+  exact_mod_cast (show _ < ζl.length by omega)
+
+/-- **The interpolation bridge.** Let `π : B → A_N` be a ring homomorphism, and let the native
+nodes `ζl` represent the images of nodes `ζ i ∈ B` with unit differences. If the native values
+`w` agree with the images of `r i ∈ B` modulo `2 ^ e`, then the native interpolant agrees with the
+image of the interpolant of `r` over `B` modulo `2 ^ e`. -/
+theorem exists_pval_interp_eq_add (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+    {B : Type*} [CommRing B] (π : B →+* Ring N fl) {n : ℕ} (ζ : Fin n → B)
+    (hζ : Pairwise fun k l => IsUnit (ζ k - ζ l)) (ζl : List (List ℕ)) (hlen : ζl.length = n)
+    (hζl : ∀ i : Fin n, val N fl (ζl.getD i []) = π (ζ i)) (r : Fin n → B)
+    (w : List (List ℕ)) (e : ℕ)
+    (hw : ∀ i : Fin n, ∃ c, val N fl (w.getD i []) = π (r i) + 2 ^ e * c) :
+    ∃ g : (Ring N fl)[X],
+      pval N fl (interp N fl ζl w) = (Lagrange.ringInterpolate univ ζ r).map π + C (2 ^ e) * g := by
+  subst hlen
+  have hvs : ((univ : Finset (Fin ζl.length)) : Set (Fin ζl.length)).Pairwise
+      fun i j => IsUnit (π (ζ i) - π (ζ j)) := fun i _ j _ hij => by
+    simp only
+    rw [← map_sub]; exact (hζ hij).map π
+  -- The native interpolant is the interpolant of the native values at the images of the nodes.
+  have hinv : ∀ i < ζl.length, val N fl (basisDen N fl ζl i) *
+      val N fl (inv N fl (basisDen N fl ζl i)) = 1 := fun i hi => by
+    refine val_mul_inv_of_isUnit hirr ?_
+    rw [val_basisDen, IsUnit.prod_iff]
+    intro j hj
+    have hj' := mem_range.mp (mem_of_mem_erase hj)
+    rw [show i = ((⟨i, hi⟩ : Fin ζl.length) : ℕ) from rfl, hζl,
+      show j = ((⟨j, hj'⟩ : Fin ζl.length) : ℕ) from rfl, hζl]
+    exact hvs (mem_univ _) (mem_univ _) fun h => ne_of_mem_erase hj (congrArg Fin.val h).symm
+  have hnat : pval N fl (interp N fl ζl w) =
+      Lagrange.ringInterpolate univ (fun i => π (ζ i)) fun i => val N fl (w.getD i []) := by
+    conv_lhs => rw [Lagrange.eq_ringInterpolate (f := pval N fl (interp N fl ζl w)) hvs (by
+      rw [card_univ, Fintype.card_fin]; exact degree_pval_interp_lt ζl w)]
+    congr 1
+    funext i
+    rw [← hζl, eval_pval_interp ζl w hinv i.2]
+  -- The image of the interpolant over `B` takes the values `π (r i)`.
+  have hdeg : ((Lagrange.ringInterpolate univ ζ r).map π).degree <
+      #(univ : Finset (Fin ζl.length)) :=
+    (degree_map_le).trans_lt (Lagrange.degree_ringInterpolate_lt r)
+  obtain ⟨g, hg⟩ := Lagrange.exists_ringInterpolate_eq_add hvs hdeg (π := 2 ^ e)
+    (r := fun i => val N fl (w.getD i [])) fun i _ => by
+      obtain ⟨c, hc⟩ := hw i
+      refine ⟨c, ?_⟩
+      rw [hc, eval_map, eval₂_at_apply,
+        Lagrange.eval_ringInterpolate_at_node (fun i _ j _ hij => hζ hij) r (mem_univ i)]
+  exact ⟨g, hnat.trans hg⟩
+
+/-! ### The Hermite quotient over `B` -/
+
+/-- A fold of multiplications is a list product. -/
+theorem foldl_mul_eq {M ι : Type*} [CommMonoid M] (g : ι → M) (l : List ι) (c : M) :
+    l.foldl (fun x y => x * g y) c = c * (l.map g).prod := by
+  induction l generalizing c with
+  | nil => simp
+  | cons x l ih => rw [List.foldl_cons, ih, List.map_cons, List.prod_cons, mul_assoc]
+
+theorem map_geomSeries {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S) (c : R) :
+    PowerSeries.map f (geomSeries c) = geomSeries (f c) := by
+  ext n
+  simp [geomSeries, PowerSeries.coeff_map]
+
+theorem coe_slope' {a k k' : ℕ} (hk : k < 2 ^ (a + 1)) (hk' : k' < 2 ^ (a + 1)) (hne : k' ≠ k) :
+    ((slope' a k k' : ℤ₍₂₎) : ℚ) = 2 ^ (a + 1) / ((node a k : ℚ) - node a k') := by
+  rw [slope', dite_eq_left_of_eq_true (eq_true ⟨hk, hk', hne⟩)]
+  rfl
+
+/-- Over `ℚ`, `E_t(t + α z)` times the reciprocal series is one. -/
+theorem coe_hermiteBasis_comp_mul_recipSeries {a k : ℕ} (u h : ℕ) (hk : k < 2 ^ (a + 1)) :
+    ((hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h) (node a k)).comp
+        (C (node a k : ℚ) + C (2 ^ (a + 1)) * X) : PowerSeries ℚ) *
+      PowerSeries.map (ℤ₍₂₎).subtype (recipSeries a u h k) = 1 := by
+  rw [hermiteBasis_comp_rat, ← prod_others (fun q : ℤ =>
+      (1 + C ((2 : ℚ) ^ (a + 1) / ((node a k : ℚ) - q)) * X) ^ taperMult u h q),
+    recipSeries, foldl_mul_eq, one_mul, ← Polynomial.coeToPowerSeries.ringHom_apply, map_list_prod,
+    map_list_prod, List.map_map, List.map_map, ← List.prod_map_mul]
+  refine List.prod_eq_one fun x hx => ?_
+  obtain ⟨k', hk', rfl⟩ := List.mem_map.mp hx
+  obtain ⟨hk'1, -, hk'3⟩ := mem_others.mp hk'
+  simp only [Function.comp_apply, map_pow, Polynomial.coeToPowerSeries.ringHom_apply,
+    Polynomial.coe_add, Polynomial.coe_one, Polynomial.coe_mul,
+    Polynomial.coe_C, Polynomial.coe_X, map_geomSeries, Subring.coe_subtype,
+    coe_slope' hk hk'1 hk'3, ← mult_eq u h hk'1]
+  rw [← mul_pow, one_add_mul_geomSeries, one_pow]
+
+section Hermite
+
+variable {K : Type*} [CommRing K] [Algebra ℚ K]
+
+/-- **The reciprocal series is the inverse of `E_t(t + α z)`** over every `ℚ`-algebra. -/
+theorem invOfUnit_hermiteBasis_comp {a k : ℕ} (u h : ℕ) (hk : k < 2 ^ (a + 1))
+    (hkL : k ≠ 2 ^ a) :
+    PowerSeries.invOfUnit (((hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : K))
+        (taperMult u h) (node a k)).comp (C (node a k : K) + C (2 ^ (a + 1)) * X) : K[X]) :
+          PowerSeries K) 1 =
+      PowerSeries.map ((algebraMap ℚ K).comp (ℤ₍₂₎).subtype) (recipSeries a u h k) := by
+  have ht := node_mem_recoveryNodes hk hkL
+  set φ : PowerSeries K := (((hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : K))
+    (taperMult u h) (node a k)).comp (C (node a k : K) + C (2 ^ (a + 1)) * X) : K[X]) :
+      PowerSeries K)
+  have hv : (fun q : ℤ => algebraMap ℚ K (q : ℚ)) = fun q : ℤ => (q : K) :=
+    funext fun q => map_intCast _ q
+  have hlin : (C (node a k : ℚ) + C ((2 : ℚ) ^ (a + 1)) * X).map (algebraMap ℚ K) =
+      C (node a k : K) + C (2 ^ (a + 1)) * X := by
+    rw [Polynomial.map_add, Polynomial.map_mul, Polynomial.map_C, Polynomial.map_C,
+      Polynomial.map_X, map_intCast, map_pow, map_ofNat]
+  have hφ : φ = PowerSeries.map (algebraMap ℚ K)
+      (((hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : ℚ)) (taperMult u h) (node a k)).comp
+        (C (node a k : ℚ) + C (2 ^ (a + 1)) * X) : ℚ[X]) : PowerSeries ℚ) := by
+    rw [← Polynomial.polynomial_map_coe, Polynomial.map_comp,
+      map_hermiteBasis _ (pairwise_isUnit_sub _) ht, hv, hlin]
+  have h1 : φ * PowerSeries.invOfUnit φ 1 = 1 :=
+    PowerSeries.mul_invOfUnit _ _ (by
+      rw [Polynomial.constantCoeff_coe, coeff_zero_eq_eval_zero, eval_comp, eval_add, eval_C,
+        eval_mul, eval_C, eval_X, mul_zero, add_zero,
+        eval_hermiteBasis_self (pairwise_isUnit_sub _) ht, Units.val_one])
+  have h2 : φ * PowerSeries.map ((algebraMap ℚ K).comp (ℤ₍₂₎).subtype) (recipSeries a u h k) =
+      1 := by
+    rw [hφ, PowerSeries.map_comp, RingHom.comp_apply, ← map_mul,
+      coe_hermiteBasis_comp_mul_recipSeries u h hk, map_one]
+  calc PowerSeries.invOfUnit φ 1
+      = PowerSeries.invOfUnit φ 1 * (φ * PowerSeries.map ((algebraMap ℚ K).comp (ℤ₍₂₎).subtype)
+          (recipSeries a u h k)) := by rw [h2, mul_one]
+    _ = _ := by rw [← mul_assoc, mul_comm _ φ, h1, one_mul]
+
+/-- **The Hermite quotient over `B`.** For a polynomial `P` over `B`, the Hermite quotient over
+`K` at the node of index `k` is the image of the truncation below `z ^ q_t` of the product of `P`
+with the reciprocal series. -/
+theorem hermiteQuotient_map_subtype (B : Subring K) (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B)
+    {a k : ℕ} (u h : ℕ) (hk : k < 2 ^ (a + 1)) (hkL : k ≠ 2 ^ a) (P : B[X]) :
+    hermiteQuotient (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) (2 ^ (a + 1))
+        (node a k) ((P.map B.subtype : K[X]) : PowerSeries K) =
+      (PowerSeries.trunc (mult a u h k) ((P : PowerSeries B) *
+        PowerSeries.map (integerHom B hB) (recipSeries a u h k))).map B.subtype := by
+  rw [hermiteQuotient, invOfUnit_hermiteBasis_comp u h hk hkL, ← subtype_comp_integerHom B hB,
+    PowerSeries.map_comp, RingHom.comp_apply, Polynomial.polynomial_map_coe, ← map_mul,
+    PowerSeries.trunc_map, mult_eq u h hk]
+
+/-! ### Assembly -/
+
+/-- The contribution of the node of index `k` to `2 ^ Δ` times the recovered value, over `B`:
+`∑_{j < q_t} γ_{t,j} c_j`, where `c_j` is the coefficient of `z ^ j` in the product of `P` with
+the reciprocal series and `γ_{t,j} = 2 ^ Δ E_t(0) (-t / α) ^ j` (`NativeRecovery.gamma`). -/
+noncomputable def nodeSum (B : Subring K) (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B)
+    (a u h Δ k : ℕ) (P : B[X]) : B :=
+  ∑ j ∈ range (mult a u h k), integerHom B hB (gamma a u h Δ k j) *
+    PowerSeries.coeff j ((P : PowerSeries B) *
+      PowerSeries.map (integerHom B hB) (recipSeries a u h k))
+
+theorem multSum_add_mult {a k : ℕ} (u h : ℕ) (hk : k < 2 ^ (a + 1)) (hkL : k ≠ 2 ^ a) :
+    multSum a u h k + mult a u h k = ∑ t ∈ recoveryNodes a, taperMult u h t := by
+  rw [multSum, List.map_congr_left (g := fun k' => taperMult u h (node a k'))
+      fun k' hk' => mult_eq u h (mem_others.mp hk').1,
+    sum_others (fun q => taperMult u h q), mult_eq u h hk,
+    sum_erase_add _ _ (node_mem_recoveryNodes hk hkL)]
+
+theorem le_of_lt_mult {a u h Δ k j : ℕ} (hk : k < 2 ^ (a + 1)) (hkL : k ≠ 2 ^ a)
+    (hj : j < mult a u h k) (hΔ : (a + 1) * ∑ t ∈ recoveryNodes a, taperMult u h t ≤ Δ) :
+    (a + 1) * (multSum a u h k + j) ≤ Δ :=
+  (Nat.mul_le_mul_left _ (by rw [← multSum_add_mult u h hk hkL]; omega)).trans hΔ
+
+/-- **`2 ^ Δ` times the recovered value lies in `B`**, as the sum of the node contributions
+`NativeRecovery.nodeSum`, once `Δ ≥ (a + 1) ∑_t q_t`. -/
+theorem two_pow_mul_recoverFromValues (B : Subring K) (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B)
+    {a u h Δ : ℕ} (hΔ : (a + 1) * ∑ t ∈ recoveryNodes a, taperMult u h t ≤ Δ) {n : ℕ}
+    (ζ : Fin n → B) (v : ℤ → Fin n → B) :
+    2 ^ Δ * recoverFromValues B a u h ζ v =
+      ((∑ k ∈ range (2 ^ (a + 1)), if k = 2 ^ a then 0 else
+        nodeSum B hB a u h Δ k (Lagrange.ringInterpolate univ ζ (v (node a k))) : B) : K) := by
+  rw [recoverFromValues_def, taperedRecovery_def, sum_recoveryNodes, mul_sum,
+    AddSubmonoidClass.coe_finsetSum]
+  refine sum_congr rfl fun k hk => ?_
+  have hk' := mem_range.mp hk
+  split_ifs with hkL
+  · simp
+  rw [hermiteQuotient_map_subtype B hB u h hk' hkL, eval_map,
+    PowerSeries.eval₂_trunc_eq_sum_range, eval_zero_hermiteBasis_eq a u h
+      (node_mem_recoveryNodes hk' hkL), nodeSum, AddSubmonoidClass.coe_finsetSum, mul_sum,
+    mul_sum]
+  refine sum_congr rfl fun j hj => ?_
+  have hγ := coe_gamma (u := u) (h := h) hk' (le_of_lt_mult hk' hkL (mem_range.mp hj) hΔ)
+  have hint : ((integerHom B hB (gamma a u h Δ k j) : B) : K) =
+      algebraMap ℚ K ((gamma a u h Δ k j : ℤ₍₂₎) : ℚ) := rfl
+  rw [Subring.coe_mul, hint, hγ, Subring.coe_subtype]
+  simp only [map_mul, map_pow, map_ofNat]
+  ring
+
+/-- A fold that adds a term at each index of a range sums the terms. -/
+theorem val_foldl_range (F : List ℕ → ℕ → List ℕ) (g : ℕ → Ring N fl)
+    (hF : ∀ S k, val N fl (F S k) = val N fl S + g k) (c : List ℕ) (m : ℕ) :
+    val N fl ((List.range m).foldl F c) = val N fl c + ∑ k ∈ range m, g k := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil, hF, ih,
+      sum_range_succ, add_assoc]
+
+/-- **The native contribution of a node is correct**: if the native values agree with the
+images of `r i` modulo `2 ^ p_t`, where `p + 6 h D_t + q_t (a + 1) ≤ p_t`, then the native
+contribution of the node of index `k` is the image of `NativeRecovery.nodeSum`. -/
+theorem val_nodeTerm (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+    (B : Subring K) (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B) (π : B →+* Ring N fl)
+    {p a u h Δ pt k : ℕ} (hk : k < 2 ^ (a + 1)) (hkL : k ≠ 2 ^ a)
+    (hΔ : (a + 1) * ∑ t ∈ recoveryNodes a, taperMult u h t ≤ Δ) (hN : N = p + Δ)
+    (hpt : 0 < mult a u h k →
+      p + 6 * h * 2 ^ (a - padicValInt 2 (node a k)) + mult a u h k * (a + 1) ≤ pt)
+    {n : ℕ} (ζ : Fin n → B) (hζ : Pairwise fun k l => IsUnit (ζ k - ζ l))
+    (ζl : List (List ℕ)) (hlen : ζl.length = n)
+    (hζl : ∀ i : Fin n, val N fl (ζl.getD i []) = π (ζ i)) (r : Fin n → B) (w : List (List ℕ))
+    (hw : 0 < mult a u h k → ∀ i : Fin n, ∃ c, val N fl (w.getD i []) = π (r i) + 2 ^ pt * c) :
+    val N fl (nodeTerm N fl a u h Δ ζl k w) =
+      π (nodeSum B hB a u h Δ k (Lagrange.ringInterpolate univ ζ r)) := by
+  rcases Nat.eq_zero_or_pos (mult a u h k) with h0 | hpos
+  · simp [nodeTerm, nodeSum, h0]
+  obtain ⟨g, hg⟩ := exists_pval_interp_eq_add hirr π ζ hζ ζl hlen hζl r w pt (hw hpos)
+  set ρ := π.comp (integerHom B hB)
+  set P := Lagrange.ringInterpolate univ ζ r
+  rw [nodeTerm, val_foldl_range _ (fun j => val N fl (coeffMult N fl a u h Δ k j) *
+      val N fl ((tmul N fl (mult a u h k) (interp N fl ζl w)
+        (recip N fl a u h k (mult a u h k))).getD j []))
+      (fun S j => by rw [val_add, val_mul]), val_zero, zero_add, nodeSum, map_sum]
+  refine sum_congr rfl fun j hj => ?_
+  have hj' := mem_range.mp hj
+  have hcoef : ∀ l, val N fl ((interp N fl ζl w).getD l []) = π (P.coeff l) + 2 ^ pt * g.coeff l :=
+    fun l => by rw [← coeff_pval, hg, coeff_add, coeff_map, coeff_C_mul]
+  have hconv : π (PowerSeries.coeff j ((P : PowerSeries B) *
+      PowerSeries.map (integerHom B hB) (recipSeries a u h k))) =
+        ∑ l ∈ range (j + 1),
+          π (P.coeff l) * ρ (PowerSeries.coeff (j - l) (recipSeries a u h k)) := by
+    rw [PowerSeries.coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ (fun l m =>
+      PowerSeries.coeff l (P : PowerSeries B) *
+        PowerSeries.coeff m (PowerSeries.map (integerHom B hB) (recipSeries a u h k))), map_sum]
+    refine sum_congr rfl fun l _ => ?_
+    rw [Polynomial.coeff_coe, PowerSeries.coeff_map, map_mul]
+    rfl
+  have hkill : ρ (gamma a u h Δ k j) * 2 ^ pt = 0 :=
+    gamma_mul_two_pow_eq_zero ρ hk hkL hj' (le_of_lt_mult hk hkL hj' hΔ) (hpt hpos) hN
+  rw [val_coeffMult hirr ρ hk j, val_tmul _ _ hj', map_mul, hconv,
+    sum_congr rfl fun l hl => by
+      rw [hcoef l, val_recip hirr ρ hk (show j - l < mult a u h k by omega)]]
+  simp only [add_mul, sum_add_distrib, mul_add, mul_assoc]
+  rw [← mul_sum, ← mul_assoc, hkill, zero_mul, add_zero]
+  rfl
+
+
+/-- **Native recovery computes the mathematical recovery modulo `2 ^ p`.** Let `π : B → A_N`,
+`N = p + Δ`, be a ring homomorphism, with `Δ ≥ (a + 1) ∑_t q_t`. Let the native points `ζl`
+represent the images of points `ζ i ∈ B` with unit differences, and at every node index `k` of
+positive multiplicity let the native values `W.getD k []` agree with the images of the values
+`v t i` at `t = node a k` modulo `2 ^ p_t`, where `p + 6 h D_t + q_t (a + 1) ≤ p_t`. If the
+recovered value `recoverFromValues B a u h ζ v` is an element `R` of `B`, then native recovery
+computes the reduction of `π R` modulo `2 ^ p`. -/
+theorem val_recover (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+    (B : Subring K) (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B) {p Δ : ℕ}
+    (π : B →+* Ring (p + Δ) fl) {a u h : ℕ}
+    (hΔ : (a + 1) * ∑ t ∈ recoveryNodes a, taperMult u h t ≤ Δ) (pt : ℤ → ℕ)
+    (hpt : ∀ t ∈ recoveryNodes a, 0 < taperMult u h t →
+      p + 6 * h * 2 ^ (a - padicValInt 2 t) + taperMult u h t * (a + 1) ≤ pt t)
+    {n : ℕ} (ζ : Fin n → B) (hζ : Pairwise fun k l => IsUnit (ζ k - ζ l))
+    (ζl : List (List ℕ)) (hlen : ζl.length = n)
+    (hζl : ∀ i : Fin n, val (p + Δ) fl (ζl.getD i []) = π (ζ i)) (v : ℤ → Fin n → B)
+    (W : List (List (List ℕ)))
+    (hW : ∀ k < 2 ^ (a + 1), k ≠ 2 ^ a → 0 < mult a u h k → ∀ i : Fin n, ∃ c,
+      val (p + Δ) fl ((W.getD k []).getD i []) = π (v (node a k) i) + 2 ^ pt (node a k) * c)
+    {R : B} (hR : recoverFromValues B a u h ζ v = R) :
+    val p fl (recover p Δ fl a u h ζl W) = reduce (Nat.le_add_right p Δ) fl (π R) := by
+  refine val_shiftDown ?_
+  have hsum := two_pow_mul_recoverFromValues B hB hΔ ζ v
+  rw [hR] at hsum
+  have hsum' : (2 : B) ^ Δ * R = _ := Subtype.val_injective (by push_cast; exact hsum)
+  rw [← map_ofNat π, ← map_pow, ← map_mul, hsum',
+    val_foldl_range _ (fun k => if k = 2 ^ a then 0 else
+      val (p + Δ) fl (nodeTerm (p + Δ) fl a u h Δ ζl k (W.getD k []))) (fun S k => by
+        split_ifs <;> simp [val_add]), val_zero, zero_add, map_sum]
+  refine sum_congr rfl fun k hk => ?_
+  have hk' := mem_range.mp hk
+  split_ifs with hkL
+  · rw [map_zero]
+  have ht := node_mem_recoveryNodes hk' hkL
+  exact val_nodeTerm hirr B hB π hk' hkL hΔ rfl
+    (fun hq => by rw [mult_eq u h hk'] at hq ⊢; exact hpt _ ht hq) ζ hζ ζl hlen hζl _ _
+    (hW k hk' hkL)
+
+/-- **Native recovery is correct modulo `2 ^ p`.** Under the hypotheses of
+`NativeRecovery.val_recover`, if the recovered value agrees with an element `x` of `B` modulo
+`2 ^ p` (as `TensorNetwork.exists_recoverFromValues_eq_add_of_children` gives for the
+contraction), then native recovery computes the reduction of `π x` modulo `2 ^ p`. -/
+theorem val_recover_of_eq_add
+    (hirr : Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2))))
+    (B : Subring K) (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B) {p Δ : ℕ}
+    (π : B →+* Ring (p + Δ) fl) {a u h : ℕ}
+    (hΔ : (a + 1) * ∑ t ∈ recoveryNodes a, taperMult u h t ≤ Δ) (pt : ℤ → ℕ)
+    (hpt : ∀ t ∈ recoveryNodes a, 0 < taperMult u h t →
+      p + 6 * h * 2 ^ (a - padicValInt 2 t) + taperMult u h t * (a + 1) ≤ pt t)
+    {n : ℕ} (ζ : Fin n → B) (hζ : Pairwise fun k l => IsUnit (ζ k - ζ l))
+    (ζl : List (List ℕ)) (hlen : ζl.length = n)
+    (hζl : ∀ i : Fin n, val (p + Δ) fl (ζl.getD i []) = π (ζ i)) (v : ℤ → Fin n → B)
+    (W : List (List (List ℕ)))
+    (hW : ∀ k < 2 ^ (a + 1), k ≠ 2 ^ a → 0 < mult a u h k → ∀ i : Fin n, ∃ c,
+      val (p + Δ) fl ((W.getD k []).getD i []) = π (v (node a k) i) + 2 ^ pt (node a k) * c)
+    (x : B) {b : K} (hb : b ∈ B) (hx : recoverFromValues B a u h ζ v = (x : K) + 2 ^ p * b) :
+    val p fl (recover p Δ fl a u h ζl W) = reduce (Nat.le_add_right p Δ) fl (π x) := by
+  rw [val_recover hirr B hB π hΔ pt hpt ζ hζ ζl hlen hζl v W hW (R := x + 2 ^ p * ⟨b, hb⟩)
+    (by rw [hx]; rfl), map_add, map_add, map_mul, map_mul, map_pow, map_pow, map_ofNat,
+    map_ofNat, show (2 : Ring p fl) ^ p = ((2 ^ p : ℕ) : Ring p fl) by push_cast; rfl,
+    natCast_two_pow, zero_mul, add_zero]
+
+end Hermite
 
 end Cslib.Circuits.Frontier.NativeRecovery

@@ -135,6 +135,13 @@ noncomputable def taperedRecovery (a u h : ℕ) (G : ℤ → K[X]) : K :=
       (hermiteQuotient (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) (2 ^ (a + 1)) t
         (G t)).eval (algebraMap ℚ K (-(t : ℚ) / 2 ^ (a + 1)))
 
+theorem taperedRecovery_def (a u h : ℕ) (G : ℤ → K[X]) :
+    taperedRecovery a u h G = ∑ t ∈ recoveryNodes a,
+      (hermiteBasis (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) t).eval 0 *
+        (hermiteQuotient (recoveryNodes a) (fun q : ℤ => (q : K)) (taperMult u h) (2 ^ (a + 1)) t
+          (G t)).eval (algebraMap ℚ K (-(t : ℚ) / 2 ^ (a + 1))) := by
+  rw [taperedRecovery]
+
 /-- `2 ^ n` as a unit of a `ℚ`-algebra. -/
 private noncomputable def twoPowUnit (K : Type*) [CommRing K] [Algebra ℚ K] (n : ℕ) : Kˣ :=
   Units.map (algebraMap ℚ K : ℚ →* K) (Units.mk0 ((2 : ℚ) ^ n) (by positivity))
