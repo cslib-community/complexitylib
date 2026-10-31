@@ -348,8 +348,8 @@ end Example
             "/-! # Title\n\nIntro.\n-/\n\n"
             "namespace Foo\n\n"
             "/-- A definition. -/\ndef x : Nat := 0\n\n"
-            "/--\ninfo: abstract audit passed for `Foo`: 1 root\ndeclarations, 0 dependencies"
-            " checked\n-/\n#guard_msgs (whitespace := lax) in\n#check_abstract Foo\n\n"
+            "/--\ninfo: abstract audit passed for `Foo`: 1 root\ndeclarations\n-/\n"
+            "#guard_msgs (whitespace := lax) in\n#check_abstract Foo\n\n"
             "end Foo\n"
         )
         _, _, sections = abstract_to_tex.parse_abstract(sample)

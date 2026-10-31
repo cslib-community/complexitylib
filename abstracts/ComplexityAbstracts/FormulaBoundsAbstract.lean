@@ -152,7 +152,7 @@ theorem andreev_lower_bound :
   FormulaBoundsBridge.andreev_lower_bound
 
 /-- info: abstract audit passed for `ComplexityTests.Abstracts.FormulaBoundsAbstract`: 21 root
-declarations, 119 dependencies checked -/
+declarations -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.FormulaBoundsAbstract allowing [
   Complexity.Computability.Circuit.Formula

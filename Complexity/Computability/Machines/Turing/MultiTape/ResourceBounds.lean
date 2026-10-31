@@ -57,7 +57,7 @@ which ask for a machine that also clears its work tapes and rewinds its heads be
 The plain notions are the ones for definitions and public statements; the tidy notions are proof
 devices. Each plain notion agrees with its tidy counterpart with the same bounds
 (`Turing.MultiTapeTM.computableInO_iff_computableTidilyInO`,
-`Turing.MultiTapeTM.computableInSpace_iff_computableTidilyInSpace`,
+`Turing.MultiTapeTM.ComputableInSpace.tidy` and `Turing.MultiTapeTM.ComputableInSpace.of_tidy`,
 `Turing.MultiTapeTM.computableInPolySpace_iff_computableTidilyInPolySpace`).
 
 ## Main definitions
