@@ -863,6 +863,7 @@ public import Complexity.Computability.Circuit.Continuity
 public import Complexity.Computability.Circuit.Counting
 public import Complexity.Computability.Circuit.Cyclic
 public import Complexity.Computability.Circuit.Cyclic.Feedback
+public import Complexity.Computability.Circuit.DagProtocol
 public import Complexity.Computability.Circuit.Decomposable
 public import Complexity.Computability.Circuit.Depth
 public import Complexity.Computability.Circuit.Encoding.MapOp
@@ -1022,6 +1023,7 @@ public import Complexity.Computability.Circuit.Monotone.Encoding
 public import Complexity.Computability.Circuit.Monotone.Formula
 public import Complexity.Computability.Circuit.Monotone.KarchmerWigderson
 public import Complexity.Computability.Circuit.Monotone.Set
+public import Complexity.Computability.Circuit.Monotone.Synthesis
 public import Complexity.Computability.Circuit.Parallel
 public import Complexity.Computability.Circuit.Pi
 public import Complexity.Computability.Circuit.Pointwise
@@ -1081,6 +1083,7 @@ public import Complexity.Computability.Circuit.Unfolding
 public import Complexity.Computability.Circuit.Wiring
 public import Complexity.Computability.Communication.Amplification
 public import Complexity.Computability.Communication.Corruption
+public import Complexity.Computability.Communication.DagProtocol
 public import Complexity.Computability.Communication.Discrepancy
 public import Complexity.Computability.Communication.Disjointness
 public import Complexity.Computability.Communication.Distributional
