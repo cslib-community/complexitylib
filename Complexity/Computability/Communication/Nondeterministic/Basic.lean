@@ -37,7 +37,8 @@ up to an integer, and for `n ≥ 1` a lower bound `n ≤ ecomplexityFun z f Set.
 The model here lies between the total Boolean functions of their Definition 2.1 and the relations
 with arbitrary answers of [Kushilevitz and Nisan, Chapter 5][KushilevitzNisan1997]: it covers
 partial Boolean functions, which are relations with Boolean answers. For these it is the model NP of
-[Göös, Pitassi and Watson, Definition B.1, p. 288][GoosPitassiWatson2018Landscape]: a collection of
+[Göös, Pitassi and Watson, Definition B.1][GoosPitassiWatson2018Landscape]
+([author copy](https://par.nsf.gov/servlets/purl/10090758), p. 44): a collection of
 `2 ^ k` rectangles indexed by `k`-bit witnesses, whose output is `1` exactly on their union, correct
 on the domain of the function, of cost `k`; co-classes are defined by negating the function. A
 partial function is a function together with the sets `A` and `B`, or, when its domain is not a
