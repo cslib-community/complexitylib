@@ -119,13 +119,16 @@ def merkleSibling (p : ℕ) : ℕ :=
 level and position. -/
 def merklePathStep (state : List (List Bool) × ℕ × List (List Bool)) :
     List (List Bool) × ℕ × List (List Bool) :=
-  (merkleParents H k state.1, state.2.1 / 2,
-    state.2.2 ++ [state.1.getD (merkleSibling state.2.1) []])
+  let (level, pos, path) := state
+  (merkleParents H k level, pos / 2,
+    path ++ [level.getD (merkleSibling pos) []])
 
 /-- The authentication path of position `i`: the sibling of each node on the way from leaf `i` up
 to the root, starting at the leaves ([BonehShoup2023], Figure 8.12). -/
 def merklePath (leaves : List (List Bool)) (i : ℕ) : List (List Bool) :=
-  ((merklePathStep H k)^[Nat.clog 2 leaves.length] (merkleLeafLevel H k leaves, i, [])).2.2
+  let (_, _, path) :=
+    (merklePathStep H k)^[Nat.clog 2 leaves.length] (merkleLeafLevel H k leaves, i, [])
+  path
 
 /-! ### Recomputing a root from an opening -/
 
@@ -624,7 +627,7 @@ theorem computableInPolyTime_merklePath
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
-      (fun p : List Bool × List (List Bool) × ℕ => merklePath H p.1 p.2.1 p.2.2)
+      (fun p : List Bool × List (List Bool) × ℕ => merklePath H p.1 (Prod.fst p.2) (Prod.snd p.2))
       (encPair encBits (encPair (encList encBits) encUnary)) (encList encBits) :=
   .of_tidy (computableTidilyInPolyTime_merklePath hH.tidy hlen)
 
@@ -707,7 +710,7 @@ theorem computableInPolyTime_merkleRootOfPath
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
       (fun p : List Bool × List Bool × ℕ × List (List Bool) =>
-        merkleRootOfPath H p.1 p.2.1 p.2.2.1 p.2.2.2)
+        merkleRootOfPath H p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
       (encPair encBits (encPair encBits (encPair encUnary (encList encBits)))) encBits := by
   apply ComputableInPolyTime.of_tidy
   have hk := ComputableTidilyInPolyTime.fst encBits
@@ -730,8 +733,11 @@ theorem computableInPolyTime_extractMerkleCollision
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
-      (fun p : List Bool × (List Bool × List Bool) × ℕ × List (List Bool) × List (List Bool) =>
-        extractMerkleCollision H p.1 p.2.1.1 p.2.1.2 p.2.2.1 p.2.2.2.1 p.2.2.2.2)
+      (fun p : List Bool × (List Bool × List Bool) × ℕ ×
+          (List (List Bool) × List (List Bool)) =>
+        extractMerkleCollision H p.1 (Prod.fst (Prod.fst p.2)) (Prod.snd (Prod.fst p.2))
+          (Prod.fst (Prod.snd p.2)) (Prod.fst (Prod.snd (Prod.snd p.2)))
+          (Prod.snd (Prod.snd (Prod.snd p.2))))
       (encPair encBits (encPair (encPair encBits encBits)
         (encPair encUnary (encPair (encList encBits) (encList encBits)))))
       (encPair encBits encBits) := by

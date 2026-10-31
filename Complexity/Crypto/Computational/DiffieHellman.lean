@@ -160,8 +160,9 @@ def CDH (setup : ℕ → PMF F.Desc) : Prop :=
 to obtain a candidate exponent `a` and multiplying `encode (β • g)` by `a`. -/
 def dlToCDHAdversary (adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool))
     (n : ℕ) (input : F.Desc × List Bool × List Bool) : ProbComp (List Bool) := do
-  let guess ← adversary n (input.1, input.2.1)
-  return F.smul (input.1, ofBits guess, input.2.2)
+  let (d, u, v) := input
+  let guess ← adversary n (d, u)
+  return F.smul (d, ofBits guess, v)
 
 /-- Whenever the discrete-logarithm adversary recovers `α`, `dlToCDHAdversary` outputs the valid
 Diffie–Hellman shared element `encode ((α * β) • g)`. -/
@@ -248,8 +249,9 @@ equals the challenge third element. -/
 def cdhToDDHDistinguisher
     (adversary : ℕ → F.Desc × List Bool × List Bool → ProbComp (List Bool))
     (n : ℕ) (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let guess ← adversary n (input.1, input.2.1, input.2.2.1)
-  return decide (guess = input.2.2.2)
+  let (d, u, v, w) := input
+  let guess ← adversary n (d, u, v)
+  return decide (guess = w)
 
 /-- In the real DDH game, `cdhToDDHDistinguisher` simulates the CDH game exactly. -/
 @[simp] theorem ddhRealGame_cdhToDDHDistinguisher (setup : ℕ → PMF F.Desc)
@@ -529,13 +531,7 @@ natural-number exponents `r, s₁, s₂ : ℕ`, evaluate the encoded tuple corre
 def encodeDDHRerandomize
     (input : F.Desc × (List Bool × List Bool × List Bool) × ℕ × ℕ × ℕ) :
     List Bool × List Bool × List Bool :=
-  let d := input.1
-  let u := input.2.1.1
-  let v := input.2.1.2.1
-  let w := input.2.1.2.2
-  let r := input.2.2.1
-  let s₁ := input.2.2.2.1
-  let s₂ := input.2.2.2.2
+  let (d, (u, v, w), r, s₁, s₂) := input
   let g := F.encode d (F.generator d)
   (F.add (d, F.smul (d, r, u), F.smul (d, s₁, g)),
     F.add (d, v, F.smul (d, s₂, g)),
@@ -550,7 +546,8 @@ def encodeDDHRerandomize
     F.encodeDDHRerandomize (d, (F.encode d u, F.encode d v, F.encode d w), r, s₁, s₂) =
       let t := F.ddhRerandomize d u v w
         (r : ZMod (F.order d)) (s₁ : ZMod (F.order d)) (s₂ : ZMod (F.order d))
-      (F.encode d t.1, F.encode d t.2.1, F.encode d t.2.2) := by
+      let vw := t.2
+      (F.encode d t.1, F.encode d vw.1, F.encode d vw.2) := by
   simp only [encodeDDHRerandomize, ddhRerandomize, F.smul_encode, F.add_encode, Nat.cast_mul]
 
 /-- Evaluating `encodeDDHRerandomize` at `.val` of exponents in `ZMod (F.order d)` agrees with
@@ -559,7 +556,8 @@ theorem encodeDDHRerandomize_val (d : F.Desc) (u v w : F.Carrier d)
     (r s₁ s₂ : ZMod (F.order d)) :
     F.encodeDDHRerandomize (d, (F.encode d u, F.encode d v, F.encode d w), r.val, s₁.val, s₂.val) =
       let t := F.ddhRerandomize d u v w r s₁ s₂
-      (F.encode d t.1, F.encode d t.2.1, F.encode d t.2.2) := by
+      let vw := t.2
+      (F.encode d t.1, F.encode d vw.1, F.encode d vw.2) := by
   simp only [encodeDDHRerandomize_encode, ZMod.natCast_zmod_val]
 
 /-- Word-level DDH tuple re-randomization is computable in polynomial time. -/
@@ -765,9 +763,10 @@ noncomputable def ddhRerandomizeGame (setup : ℕ → PMF F.Desc)
   let r ← PMF.uniformOfFintype (ZMod (F.order d))
   let s₁ ← PMF.uniformOfFintype (ZMod (F.order d))
   let s₂ ← PMF.uniformOfFintype (ZMod (F.order d))
+  let (u, v, w) := tuple d
   ProbComp.eval (distinguisher n
     (d, F.encodeDDHRerandomize
-      (d, (F.encode d (tuple d).1, F.encode d (tuple d).2.1, F.encode d (tuple d).2.2),
+      (d, (F.encode d u, F.encode d v, F.encode d w),
         r.val, s₁.val, s₂.val)))
 
 /-- Re-randomizing any family of real DDH tuples `(α d • g, β d • g, (α d * β d) • g)` with
@@ -855,15 +854,15 @@ theorem DDH.ddhRerandomizeGame {F : PrimeOrderGroupFamily} {setup : ℕ → PMF 
   exact (F.advantage_ddhRerandomizeGame_eq setup α β α' β' γ' distinguisher n hn).le
 
 /-- The worst-case DDH experiment on a fixed tuple family `tuple` (original): draw `d ← setup n`
-and give the encoded tuple `(d, encode (tuple d).1, encode (tuple d).2.1, encode (tuple d).2.2)`
-directly to `distinguisher`. -/
+and give the encoded tuple `(d, encode u, encode v, encode w)` directly to `distinguisher`. -/
 noncomputable def ddhWorstCaseGame (setup : ℕ → PMF F.Desc)
     (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
     (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
     (n : ℕ) : Game := do
   let d ← setup n
+  let (u, v, w) := tuple d
   ProbComp.eval (distinguisher n
-    (d, F.encode d (tuple d).1, F.encode d (tuple d).2.1, F.encode d (tuple d).2.2))
+    (d, F.encode d u, F.encode d v, F.encode d w))
 
 private noncomputable def ddhRerandomizeStep
     (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
@@ -1110,8 +1109,9 @@ theorem computableInPolyTime_ddhIdealRefTuple :
     (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
     (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool) (n : ℕ) :
     F.ddhWorstCaseGame (fun _ => PMF.pure d) tuple distinguisher n =
+      let (u, v, w) := tuple d
       ProbComp.eval (distinguisher n
-        (d, F.encode d (tuple d).1, F.encode d (tuple d).2.1, F.encode d (tuple d).2.2)) := by
+        (d, F.encode d u, F.encode d v, F.encode d w)) := by
   simp [ddhWorstCaseGame]
 
 /-- **Single-trial real DDH proximity**: on any fixed group `d` and any real DDH triple

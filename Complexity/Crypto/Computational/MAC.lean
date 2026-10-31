@@ -191,7 +191,7 @@ structure MACScheme where
   sign_ppt : IsPPTOn (encPair encBits encBits) encBits (fun p => sign p.1 p.2)
   /-- Verification is computable in plain polynomial time on `(sk, msg, tag)`. -/
   verify_polyTime : ComputableInPolyTime
-    (fun p : List Bool × List Bool × List Bool => verify p.1 p.2.1 p.2.2)
+    (fun p : List Bool × List Bool × List Bool => verify p.1 (Prod.fst p.2) (Prod.snd p.2))
     (encPair encBits (encPair encBits encBits)) encBool
   /-- Every tag produced by `sign` on a `msgLen n`-bit message under a supported secret key at
   security parameter `n` is accepted by `verify`. -/
@@ -311,7 +311,7 @@ noncomputable def signingOracle (M : MACScheme) (sk : List Bool)
 
 Unlike [Boneh and Shoup, Attack Game 6.1 / Definition 6.2][BonehShoup2023], which logs `(msg, tag)`
 pairs and rejects only previously returned pairs, this experiment logs queried messages and rejects
-any previously queried message (`!out.2.contains out.1.1`). The two notions differ for randomized
+any previously queried message (`!out.2.contains msg`). The two notions differ for randomized
 `sign` algorithms, and coincide for deterministic canonical MACs such as `prfMAC`. -/
 noncomputable def eufCmaGame (M : MACScheme) (adversary : Forger) (n : ℕ) :
     ProbComp Bool := do
@@ -319,8 +319,9 @@ noncomputable def eufCmaGame (M : MACScheme) (adversary : Forger) (n : ℕ) :
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingOracle sk)) (adversary n [])).run []
-  return (out.1.1.length == M.msgLen n) && !out.2.contains out.1.1 &&
-    M.verify sk out.1.1 out.1.2
+  let (msg, tag) := out.1
+  return (msg.length == M.msgLen n) && !out.2.contains msg &&
+    M.verify sk msg tag
 
 /-- Run the complete MAC EUF-CMA experiment on its unary security parameter for any oracle-PPT
 forger. -/
@@ -423,8 +424,9 @@ noncomputable def eufOneTimeGame (M : MACScheme) (adversary : Forger) (n : ℕ) 
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.oneTimeSigningOracle sk)) (adversary n [])).run []
-  return (out.1.1.length == M.msgLen n) && !out.2.contains out.1.1 &&
-    M.verify sk out.1.1 out.1.2
+  let (msg, tag) := out.1
+  return (msg.length == M.msgLen n) && !out.2.contains msg &&
+    M.verify sk msg tag
 
 /-- Running an oracle-PPT forger against `oneTimeSigningOracle` is uniformly strict PPT in the
 unary security parameter and secret key. -/
@@ -640,8 +642,9 @@ noncomputable def sufCmaGame (M : MACScheme) (adversary : Forger) (n : ℕ) :
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingPairOracle sk)) (adversary n [])).run []
-  return (out.1.1.length == M.msgLen n) && !out.2.contains out.1 &&
-    M.verify sk out.1.1 out.1.2
+  let (msg, tag) := out.1
+  return (msg.length == M.msgLen n) && !out.2.contains out.1 &&
+    M.verify sk msg tag
 
 /-- Running an oracle-PPT forger against `signingPairOracle` is uniformly strict PPT in the unary
 security parameter and secret key. -/
@@ -802,7 +805,7 @@ theorem eval_run_signingOracle_eq_map_fst_signingPairOracle (M : MACScheme)
     prog []).symm
 
 /-- `eufCmaGame` evaluates the same pair-logging execution `signingPairOracle` as `sufCmaGame`,
-checking message freshness `!(out.2.map Prod.fst).contains out.1.1` on the projected message log. -/
+checking message freshness `!(out.2.map Prod.fst).contains msg` on the projected message log. -/
 theorem eval_eufCmaGame_eq_signingPairOracle (M : MACScheme)
     (adversary : Forger) (n : ℕ) :
     ProbComp.eval (M.eufCmaGame adversary n) =
@@ -811,8 +814,9 @@ theorem eval_eufCmaGame_eq_signingPairOracle (M : MACScheme)
         let out ← (OracleComp.interpret
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.signingPairOracle sk)) (adversary n [])).run []
-        return (out.1.1.length == M.msgLen n) && !(out.2.map Prod.fst).contains out.1.1 &&
-          M.verify sk out.1.1 out.1.2) := by
+        let (msg, tag) := out.1
+        return (msg.length == M.msgLen n) && !(out.2.map Prod.fst).contains msg &&
+          M.verify sk msg tag) := by
   simp only [eufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun sk _ => ?_
   rw [M.eval_run_signingOracle_eq_map_fst_signingPairOracle sk (adversary n []), PMF.bind_map]
@@ -976,8 +980,9 @@ noncomputable def sufOneTimeGame (M : MACScheme) (adversary : Forger) (n : ℕ) 
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.oneTimeSigningPairOracle sk)) (adversary n [])).run []
-  return (out.1.1.length == M.msgLen n) && !out.2.contains out.1 &&
-    M.verify sk out.1.1 out.1.2
+  let (msg, tag) := out.1
+  return (msg.length == M.msgLen n) && !out.2.contains out.1 &&
+    M.verify sk msg tag
 
 /-- Running an oracle-PPT forger against `oneTimeSigningPairOracle` is uniformly strict PPT in the
 unary security parameter and secret key. -/
@@ -1249,7 +1254,7 @@ theorem eval_run_oneTimeSigningOracle_eq_map_fst_oneTimeSigningPairOracle (M : M
     prog []).symm
 
 /-- `eufOneTimeGame` evaluates the same pair-logging execution `oneTimeSigningPairOracle` as
-`sufOneTimeGame`, checking message freshness `!(out.2.map Prod.fst).contains out.1.1` on the
+`sufOneTimeGame`, checking message freshness `!(out.2.map Prod.fst).contains msg` on the
 projected message log. -/
 theorem eval_eufOneTimeGame_eq_oneTimeSigningPairOracle (M : MACScheme)
     (adversary : Forger) (n : ℕ) :
@@ -1259,8 +1264,9 @@ theorem eval_eufOneTimeGame_eq_oneTimeSigningPairOracle (M : MACScheme)
         let out ← (OracleComp.interpret
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.oneTimeSigningPairOracle sk)) (adversary n [])).run []
-        return (out.1.1.length == M.msgLen n) && !(out.2.map Prod.fst).contains out.1.1 &&
-          M.verify sk out.1.1 out.1.2) := by
+        let (msg, tag) := out.1
+        return (msg.length == M.msgLen n) && !(out.2.map Prod.fst).contains msg &&
+          M.verify sk msg tag) := by
   simp only [eufOneTimeGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun sk _ => ?_
   rw [M.eval_run_oneTimeSigningOracle_eq_map_fst_oneTimeSigningPairOracle sk (adversary n []),
@@ -1589,7 +1595,9 @@ noncomputable def prfMAC (family : List Bool → List Bool → List Bool)
   verify_polyTime := by
     have htidy := hpoly.tidy
     have hcall : ComputableTidilyInPolyTime
-        (fun p : List Bool × List Bool × List Bool => family p.1 p.2.1)
+        (fun p : List Bool × List Bool × List Bool =>
+          let rest := p.2
+          family p.1 rest.1)
         (encPair encBits (encPair encBits encBits)) encBits :=
       htidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
         ((ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.snd _ _)))
@@ -1624,8 +1632,9 @@ def macToPrfDistinguisher (adversary : Forger) : OracleDistinguisher :=
         (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
         (macLogHandler n))
       (adversary n [])).run []
-    if (out.1.1.length == n) && !out.2.contains out.1.1 then
-      (· == out.1.2) <$> (List.take n <$> ProbOracleComp.query ((), out.1.1))
+    let (msg, tag) := out.1
+    if (msg.length == n) && !out.2.contains msg then
+      (· == tag) <$> (List.take n <$> ProbOracleComp.query ((), msg))
     else
       pure false
 
@@ -2144,10 +2153,11 @@ structure NonceMACScheme where
   keyGen_ppt : IsPPTOn encUnary encBits keyGen
   /-- Tag generation is uniformly strict PPT in the encoded `(sk, msg, nonce)`. -/
   sign_ppt : IsPPTOn (encPair encBits (encPair encBits encBits)) encBits
-    (fun p => sign p.1 p.2.1 p.2.2)
+    (fun p => sign p.1 (Prod.fst p.2) (Prod.snd p.2))
   /-- Verification is computable in plain polynomial time on `(sk, msg, nonce, tag)`. -/
   verify_polyTime : ComputableInPolyTime
-    (fun p : List Bool × List Bool × List Bool × List Bool => verify p.1 p.2.1 p.2.2.1 p.2.2.2)
+    (fun p : List Bool × List Bool × List Bool × List Bool =>
+      verify p.1 (Prod.fst p.2) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
     (encPair encBits (encPair encBits (encPair encBits encBits))) encBool
   /-- Every tag produced by `sign` on a `msgLen n`-bit message and `nonceLen n`-bit nonce under a
   supported secret key at security parameter `n` is accepted by `verify`. -/
@@ -2289,7 +2299,7 @@ noncomputable def signingPairOracle (M : NonceMACScheme) (sk : List Bool)
 the adaptive forger on `(n, [])` with oracle access to `M.signingPairOracle sk`, and accept when:
 1. the candidate message has length `M.msgLen n` and the candidate nonce has length `M.nonceLen n`,
 2. all nonces queried during the signing phase are pairwise distinct
-   (`decide (out.2.map (fun e => e.1.2)).Nodup`),
+   (`decide (out.2.map (fun ⟨⟨_, qnonce⟩, _⟩ => qnonce)).Nodup`),
 3. the candidate `((msg, nonce), tag)` triple was never returned by the tagging oracle
    (`!out.2.contains out.1`), and
 4. `M.verify sk msg nonce tag = true`. -/
@@ -2299,23 +2309,25 @@ noncomputable def sufCmaGame (M : NonceMACScheme) (adversary : NonceMACForger) (
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingPairOracle sk)) (adversary n [])).run []
-  return (out.1.1.1.length == M.msgLen n) && (out.1.1.2.length == M.nonceLen n) &&
-    decide (out.2.map (fun e => e.1.2)).Nodup && !out.2.contains out.1 &&
-    M.verify sk out.1.1.1 out.1.1.2 out.1.2
+  let ((msg, nonce), tag) := out.1
+  return (msg.length == M.msgLen n) && (nonce.length == M.nonceLen n) &&
+    decide (out.2.map (fun ⟨⟨_, qnonce⟩, _⟩ => qnonce)).Nodup && !out.2.contains out.1 &&
+    M.verify sk msg nonce tag
 
 /-- The fresh-message nonce-based MAC EUF-CMA experiment: identical to `sufCmaGame` except that the
-candidate message `out.1.1.1` must never have been queried during the signing phase
-(`!(out.2.map (fun e => e.1.1)).contains out.1.1.1`). -/
+candidate message `msg` must never have been queried during the signing phase
+(`!(out.2.map (fun ⟨⟨qmsg, _⟩, _⟩ => qmsg)).contains msg`). -/
 noncomputable def eufCmaGame (M : NonceMACScheme) (adversary : NonceMACForger) (n : ℕ) :
     ProbComp Bool := do
   let sk ← M.keyGen n
   let out ← (OracleComp.interpret
     (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
       (M.signingPairOracle sk)) (adversary n [])).run []
-  return (out.1.1.1.length == M.msgLen n) && (out.1.1.2.length == M.nonceLen n) &&
-    decide (out.2.map (fun e => e.1.2)).Nodup &&
-    !(out.2.map (fun e => e.1.1)).contains out.1.1.1 &&
-    M.verify sk out.1.1.1 out.1.1.2 out.1.2
+  let ((msg, nonce), tag) := out.1
+  return (msg.length == M.msgLen n) && (nonce.length == M.nonceLen n) &&
+    decide (out.2.map (fun ⟨⟨_, qnonce⟩, _⟩ => qnonce)).Nodup &&
+    !(out.2.map (fun ⟨⟨qmsg, _⟩, _⟩ => qmsg)).contains msg &&
+    M.verify sk msg nonce tag
 
 /-- Running an oracle-PPT nonce-MAC forger against `signingPairOracle` is uniformly strict PPT in
 the unary security parameter and secret key. -/
@@ -2572,7 +2584,7 @@ private theorem mem_support_signingPairOracle (M : NonceMACScheme) (sk : List Bo
 /-- For any `NonceMACScheme` whose valid tags on `M.msgLen n`-bit messages and `M.nonceLen n`-bit
 nonces under supported secret keys agree with every tag in the support of `M.sign`, strong
 triple-freshness (`!out.2.contains out.1`) in `sufCmaGame` is identical to `(msg, nonce)`-pair
-freshness (`!(out.2.map Prod.fst).contains out.1.1`). -/
+freshness (`!(out.2.map Prod.fst).contains pair`). -/
 theorem eval_sufCmaGame_eq_freshPair_of_unique_tag (M : NonceMACScheme)
     (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
       ∀ msg, msg.length = M.msgLen n →
@@ -2586,10 +2598,12 @@ theorem eval_sufCmaGame_eq_freshPair_of_unique_tag (M : NonceMACScheme)
         let out ← (OracleComp.interpret
           (ProbOracleComp.handler (fun k => StateT.lift (ProbComp.unifFin k))
             (M.signingPairOracle sk)) (adversary n [])).run []
-        return (out.1.1.1.length == M.msgLen n) && (out.1.1.2.length == M.nonceLen n) &&
-          decide (out.2.map (fun e => e.1.2)).Nodup &&
-          !(out.2.map Prod.fst).contains out.1.1 &&
-          M.verify sk out.1.1.1 out.1.1.2 out.1.2) := by
+        let (pair, tag) := out.1
+        let (msg, nonce) := pair
+        return (msg.length == M.msgLen n) && (nonce.length == M.nonceLen n) &&
+          decide (out.2.map (fun ⟨⟨_, qnonce⟩, _⟩ => qnonce)).Nodup &&
+          !(out.2.map Prod.fst).contains pair &&
+          M.verify sk msg nonce tag) := by
   simp only [sufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun sk hsk => ?_
   refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨⟨msg, nonce⟩, tag⟩, queriedTriples⟩ hout => ?_
