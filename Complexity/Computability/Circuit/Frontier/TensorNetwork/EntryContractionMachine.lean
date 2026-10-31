@@ -9,6 +9,8 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionPolyTime
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionLeaf
+import Complexity.Computability.Circuit.Frontier.TensorNetwork.RowsFirstPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -34,15 +36,17 @@ uses (`ExplicitTensorNetwork.capPrecision`) keeps the residue only for tables of
 
 **The guard** (`EntryContraction.guard`) checks that `fl` is the modulus `FastContraction.modulus m`
 of the number `m` of edges, that the network is rows-first bipartite, and that every vertex has at
-most `degreeBound m` ports. It is polynomial-time (`EntryContraction.guard_polyTime`), and every
-admissible input at the modulus passes it (`EntryContraction.guard_of_entryAdmissible`), since
-`⌈s ^ (9/10)⌉ ≤ degreeBound s ≤ degreeBound m`.
+most `degreeBound m` ports. It is polynomial-time (`EntryContraction.guard_polyTime`), with the
+rows-first test `DescribedNetwork.rowsFirst_polyTime`, and every admissible input at the modulus
+passes it (`EntryContraction.guard_of_entryAdmissible`), since
+`⌈s ^ (9/10)⌉ ≤ degreeBound s ≤ degreeBound m` (`ContractionSchedule.degreeBound_mono`).
 
 **The root and the clock.** The root call (`EntryContraction.rootCall`) has scale `m`, depth `0`,
 edge bound `m + 1`, precision `P`, modulus `fl`, `r` rows and the network
 `FastContraction.rootNet G`. The clock (`EntryContraction.clock`) is
 `2 ^ (K₀ (m + P) / √⌊log₂ (m + P)⌋)`, as for explicit networks. On guarded inputs the root is
-well-formed (`EntryContraction.wf_rootCall`).
+well-formed (`EntryContraction.wf_rootCall`), and it has no packets
+(`EntryContraction.packetShape_rootCall`).
 
 **The result** (`EntryContraction.coreValue`): on guarded inputs, the coefficient list of a value
 tagged `0` returned by the clocked run, and direct summation otherwise. It is correct at the modulus
@@ -64,12 +68,10 @@ Its native certificate is `EntryContraction.fastCore`; its resources are analyze
 
 * `Cslib.Circuits.Frontier.FastContraction.contraction_rootNet`: the root network computes the
   contraction of the network, for every entry procedure.
-* `Cslib.Circuits.Frontier.DescribedNetwork.rowsFirst_polyTime`: rows-first bipartiteness is
-  decidable in polynomial time.
 * `Cslib.Circuits.Frontier.EntryContraction.guard_polyTime`: the guard is polynomial-time.
-* `Cslib.Circuits.Frontier.ContractionSchedule.degreeBound_mono`: the degree bound is monotone.
 * `Cslib.Circuits.Frontier.EntryContraction.guard_of_entryAdmissible`: admissible inputs pass it.
 * `Cslib.Circuits.Frontier.EntryContraction.wf_rootCall`: guarded roots are well-formed.
+* `Cslib.Circuits.Frontier.EntryContraction.packetShape_rootCall`: the root has no packets.
 * `Cslib.Circuits.Frontier.EntryContraction.val_coreValue`: the machine is correct.
 
 ## References
@@ -99,108 +101,6 @@ theorem FastContraction.contraction_rootNet {R : Type*} [CommSemiring R] (f : Li
   simp only [DescribedNetwork.contraction, FastContraction.rootNet, List.map_map]
   rfl
 
-/-! ### Rows-first bipartiteness in polynomial time -/
-
-namespace DescribedNetwork
-
-section RowsFirst
-
-variable {encT : T ↪ List Bool}
-
-/-- Rows-first bipartiteness as a conjunction of list tests. -/
-private def rowsTest (G : ℕ × DescribedNetwork T) : Bool :=
-  G.2.vertices.all (fun v => v.1.all fun i => decide (i < G.2.numEdges)) &&
-    (List.range G.2.numEdges).all (fun i =>
-      decide (((G.2.vertices.take G.1).flatMap Prod.fst).count i = 1) &&
-        decide (((G.2.vertices.drop G.1).flatMap Prod.fst).count i = 1))
-
-private theorem decide_eq_rowsTest (G : ℕ × DescribedNetwork T) :
-    decide (G.2.IsRowsFirstBipartite G.1) = rowsTest G := by
-  refine Bool.eq_iff_iff.mpr ?_
-  simp only [rowsTest, DescribedNetwork.IsRowsFirstBipartite, decide_eq_true_eq, Bool.and_eq_true,
-    List.all_eq_true, List.mem_range, List.count_flatMap, Function.comp_def]
-
-/-- **Rows-first bipartiteness is polynomial-time**, from a network with its number of rows. -/
-theorem rowsFirst_polyTime :
-    ComputableInPolyTime (fun G : ℕ × DescribedNetwork T => decide (G.2.IsRowsFirstBipartite G.1))
-      (encPair encNat (encDescribed encT)) encBool := by
-  have hpair : ComputableInPolyTime (DescribedNetwork.equivProd (T := T)) (encDescribed encT)
-      (encPair encUnary (encList (encPair (encList encNat) encT))) :=
-    ComputableInPolyTime.of_eq fun _ => rfl
-  have hd := ComputableInPolyTime.snd encNat (encDescribed encT)
-  have hr := ComputableInPolyTime.fst encNat (encDescribed encT)
-  have hm : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T => G.2.numEdges)
-      (encPair encNat (encDescribed encT)) encUnary :=
-    (ComputableInPolyTime.fst _ _).comp (hpair.comp hd)
-  have hvs : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T => G.2.vertices)
-      (encPair encNat (encDescribed encT)) (encList (encPair (encList encNat) encT)) :=
-    (ComputableInPolyTime.snd _ _).comp (hpair.comp hd)
-  -- Ports in range.
-  have h1 : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T =>
-      G.2.vertices.all (fun v => v.1.all fun i => decide (i < G.2.numEdges)))
-      (encPair encNat (encDescribed encT)) encBool := by
-    refine ComputableInPolyTime.allWithInput hvs ?_
-    refine ComputableInPolyTime.allWithInput
-      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)) ?_
-    exact ComputableInPolyTime.binary_lt.comp ((ComputableInPolyTime.snd _ _).prod
-      (ComputableInPolyTime.unary_to_binary.comp (hm.comp ((ComputableInPolyTime.fst _ _).comp
-        (ComputableInPolyTime.fst _ _)))))
-  -- Each edge has one row port and one column port.
-  have hlen := (ComputableInPolyTime.length_list _).comp hvs
-  have hcap := ComputableInPolyTime.binary_min_unary' hlen hr
-  have htake : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T =>
-      G.2.vertices.take (min G.2.vertices.length G.1)) (encPair encNat (encDescribed encT))
-      (encList (encPair (encList encNat) encT)) :=
-    .of_tidy (ComputableTidilyInPolyTime.listTakeWithInput hvs.tidy hcap.tidy)
-  have hdrop : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T =>
-      G.2.vertices.drop (min G.2.vertices.length G.1)) (encPair encNat (encDescribed encT))
-      (encList (encPair (encList encNat) encT)) :=
-    .of_tidy (ComputableTidilyInPolyTime.listDropWithInput hvs.tidy hcap.tidy)
-  have hflat {l : ℕ × DescribedNetwork T → List (List ℕ × T)}
-      (hl : ComputableInPolyTime l (encPair encNat (encDescribed encT))
-        (encList (encPair (encList encNat) encT))) :
-      ComputableInPolyTime (fun G => (l G).flatMap Prod.fst) (encPair encNat (encDescribed encT))
-        (encList encNat) :=
-    ComputableInPolyTime.flatMapWithInput (f := fun _ v => v.1) hl
-      ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))
-  have hcount {l : ℕ × DescribedNetwork T → List ℕ}
-      (hl : ComputableInPolyTime l (encPair encNat (encDescribed encT)) (encList encNat)) :
-      ComputableInPolyTime (fun p : (ℕ × DescribedNetwork T) × ℕ =>
-        decide ((l p.1).count p.2 = 1))
-        (encPair (encPair encNat (encDescribed encT)) encUnary) encBool := by
-    have hc := ComputableInPolyTime.countPWithInput (test := fun p a => decide (a = p.2))
-      (hl.comp (ComputableInPolyTime.fst (encPair encNat (encDescribed encT)) encUnary))
-      (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.snd _ _)
-        (ComputableInPolyTime.unary_to_binary.comp ((ComputableInPolyTime.snd _ _).comp
-          (ComputableInPolyTime.fst _ _))))
-    refine (ComputableInPolyTime.decide_eq' hc (ComputableInPolyTime.const 1)).of_enc_eq
-      fun p => ?_
-    simp only [Function.comp_apply, List.count_eq_countP]
-    congr 3
-  have h2 : ComputableInPolyTime (fun G : ℕ × DescribedNetwork T =>
-      (List.range G.2.numEdges).all (fun i =>
-        decide (((G.2.vertices.take (min G.2.vertices.length G.1)).flatMap Prod.fst).count i =
-          1) &&
-          decide (((G.2.vertices.drop (min G.2.vertices.length G.1)).flatMap Prod.fst).count i =
-            1))) (encPair encNat (encDescribed encT)) encBool :=
-    ComputableInPolyTime.allWithInput (ComputableInPolyTime.range.comp hm)
-      (ComputableInPolyTime.bool_and.comp ((hcount (hflat htake)).prod (hcount (hflat hdrop))))
-  refine (ComputableInPolyTime.bool_and.comp (h1.prod h2)).of_enc_eq fun G => ?_
-  have ht : G.2.vertices.take (min G.2.vertices.length G.1) = G.2.vertices.take G.1 := by
-    rcases le_total G.2.vertices.length G.1 with hle | hle
-    · rw [min_eq_left hle, List.take_length, List.take_of_length_le hle]
-    · rw [min_eq_right hle]
-  have hdr : G.2.vertices.drop (min G.2.vertices.length G.1) = G.2.vertices.drop G.1 := by
-    rcases le_total G.2.vertices.length G.1 with hle | hle
-    · rw [min_eq_left hle, List.drop_length, List.drop_of_length_le hle]
-    · rw [min_eq_right hle]
-  rw [decide_eq_rowsTest, rowsTest]
-  simp only [Function.comp_apply, ht, hdr]
-
-end RowsFirst
-
-end DescribedNetwork
-
 namespace EntryContraction
 
 open FastContraction (Call scheme nativeMk value rootNet modulus fuelConst encCall encValue
@@ -210,47 +110,43 @@ variable {encT : T ↪ List Bool} {entry : T → List Bool → List ℕ}
 
 /-! ### The guard -/
 
-/-- **The guard**: `fl` is the modulus of the number `m` of edges, the network is rows-first
-bipartite at its number of rows, and every vertex has at most `degreeBound m` ports. -/
-@[expose] def guard (x : ℕ × List ℕ × ℕ × DescribedNetwork T) : Bool :=
-  decide (x.2.1 = modulus x.2.2.2.numEdges ∧ x.2.2.2.IsRowsFirstBipartite x.2.2.1 ∧
-    ∀ v ∈ x.2.2.2.vertices, v.1.length ≤ degreeBound x.2.2.2.numEdges)
+/-- **The guard** on an input `(P, fl, r, G)`: `fl` is the modulus of the number `m` of edges of
+`G`, `G` is rows-first bipartite at `r` rows, and every vertex has at most `degreeBound m`
+ports. -/
+@[expose] def guard : ℕ × List ℕ × ℕ × DescribedNetwork T → Bool
+  | (_, fl, r, G) => decide (fl = modulus G.numEdges ∧ G.IsRowsFirstBipartite r ∧
+      ∀ v ∈ G.vertices, v.1.length ≤ degreeBound G.numEdges)
+
+/-- The network of an input, from `(P, fl, r, G)`. -/
+private theorem network_polyTime :
+    ComputableInPolyTime (fun ((_, _, _, G) : ℕ × List ℕ × ℕ × DescribedNetwork T) => G)
+      (encInput encT) (DescribedNetwork.encDescribed encT) :=
+  (ComputableInPolyTime.snd _ _).comp
+    ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _))
 
 /-- The number of edges of an input, in unary. -/
 private theorem numEdges_polyTime :
-    ComputableInPolyTime (fun x : ℕ × List ℕ × ℕ × DescribedNetwork T => x.2.2.2.numEdges)
-      (encInput encT) encUnary := by
-  have hpair : ComputableInPolyTime (DescribedNetwork.equivProd (T := T))
-      (DescribedNetwork.encDescribed encT)
-      (encPair encUnary (encList (encPair (encList encNat) encT))) :=
-    ComputableInPolyTime.of_eq fun _ => rfl
-  exact (ComputableInPolyTime.fst _ _).comp (hpair.comp ((ComputableInPolyTime.snd _ _).comp
-    ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _))))
+    ComputableInPolyTime (fun ((_, _, _, G) : ℕ × List ℕ × ℕ × DescribedNetwork T) => G.numEdges)
+      (encInput encT) encUnary :=
+  DescribedNetwork.numEdges_polyTime.comp network_polyTime
 
-/-- The network of an input with its number of rows. -/
+/-- The network of an input with its number of rows, from `(P, fl, r, G)`. -/
 private theorem rowsNet_polyTime :
-    ComputableInPolyTime (fun x : ℕ × List ℕ × ℕ × DescribedNetwork T => x.2.2) (encInput encT)
-      (encPair encNat (DescribedNetwork.encDescribed encT)) :=
+    ComputableInPolyTime (fun ((_, _, r, G) : ℕ × List ℕ × ℕ × DescribedNetwork T) => (r, G))
+      (encInput encT) (encPair encNat (DescribedNetwork.encDescribed encT)) :=
   (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)
 
 /-- **The guard is polynomial-time.** -/
 theorem guard_polyTime : ComputableInPolyTime (guard (T := T)) (encInput encT) encBool := by
   have hm := numEdges_polyTime (encT := encT)
-  have hfl : ComputableInPolyTime (fun x : ℕ × List ℕ × ℕ × DescribedNetwork T =>
-      decide (x.2.1 = modulus x.2.2.2.numEdges)) (encInput encT) encBool :=
+  have hfl : ComputableInPolyTime (fun ((_, fl, _, G) : ℕ × List ℕ × ℕ × DescribedNetwork T) =>
+      decide (fl = modulus G.numEdges)) (encInput encT) encBool :=
     ComputableInPolyTime.decide_eq' ((ComputableInPolyTime.fst _ _).comp
       (ComputableInPolyTime.snd _ _)) (FastContraction.modulus_polyTime.comp hm)
   have hrows := (DescribedNetwork.rowsFirst_polyTime (encT := encT)).comp rowsNet_polyTime
-  have hvs : ComputableInPolyTime (fun x : ℕ × List ℕ × ℕ × DescribedNetwork T => x.2.2.2.vertices)
-      (encInput encT) (encList (encPair (encList encNat) encT)) := by
-    have hpair : ComputableInPolyTime (DescribedNetwork.equivProd (T := T))
-        (DescribedNetwork.encDescribed encT)
-        (encPair encUnary (encList (encPair (encList encNat) encT))) :=
-      ComputableInPolyTime.of_eq fun _ => rfl
-    exact (ComputableInPolyTime.snd _ _).comp (hpair.comp ((ComputableInPolyTime.snd _ _).comp
-      ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _))))
-  have hdeg : ComputableInPolyTime (fun x : ℕ × List ℕ × ℕ × DescribedNetwork T =>
-      x.2.2.2.vertices.all (fun v => decide (v.1.length ≤ degreeBound x.2.2.2.numEdges)))
+  have hvs := (DescribedNetwork.vertices_polyTime (encT := encT)).comp network_polyTime
+  have hdeg : ComputableInPolyTime (fun ((_, _, _, G) : ℕ × List ℕ × ℕ × DescribedNetwork T) =>
+      G.vertices.all (fun v => decide (v.1.length ≤ degreeBound G.numEdges)))
       (encInput encT) encBool := by
     refine ComputableInPolyTime.allWithInput hvs ?_
     exact ComputableInPolyTime.binary_le'
@@ -258,13 +154,8 @@ theorem guard_polyTime : ComputableInPolyTime (guard (T := T)) (encInput encT) e
         ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))))
       (degreeBound_polyTime.comp (hm.comp (ComputableInPolyTime.fst _ _)))
   refine (ComputableInPolyTime.bool_and.comp (hfl.prod (ComputableInPolyTime.bool_and.comp
-    (hrows.prod hdeg)))).of_enc_eq fun x => ?_
+    (hrows.prod hdeg)))).of_enc_eq fun ⟨P, fl, r, G⟩ => ?_
   simp only [guard, Function.comp_apply, Bool.decide_and, List.all_eq, decide_eq_true_eq]
-
-/-- `degreeBound` is monotone. -/
-theorem _root_.Cslib.Circuits.Frontier.ContractionSchedule.degreeBound_mono {a b : ℕ} (h : a ≤ b) :
-    degreeBound a ≤ degreeBound b :=
-  Nat.pow_le_pow_right (by norm_num) (by have := Nat.log_mono_right (b := 2) h; omega)
 
 /-- **Admissible inputs pass the guard** at the modulus of the number of edges: their degree is at
 most `⌈s ^ (9/10)⌉ ≤ degreeBound s ≤ degreeBound m`, for `s ≤ m`. -/
@@ -281,12 +172,12 @@ theorem guard_of_entryAdmissible
 
 /-- **The root call** of an input `(P, fl, r, G)`: scale `m`, depth `0`, edge bound `m + 1`,
 precision `P`, modulus `fl`, `r` rows and the descriptors of `G`. -/
-@[expose] def rootCall (x : ℕ × List ℕ × ℕ × DescribedNetwork T) : Call T :=
-  ((x.2.2.2.numEdges, 0, x.2.2.2.numEdges + 1, x.1, x.2.1, x.2.2.1), rootNet x.2.2.2)
+@[expose] def rootCall : ℕ × List ℕ × ℕ × DescribedNetwork T → Call T
+  | (P, fl, r, G) => ((G.numEdges, 0, G.numEdges + 1, P, fl, r), rootNet G)
 
 /-- **The clock** of an input `(P, fl, r, G)`: `2 ^ (K₀ (m + P) / √⌊log₂ (m + P)⌋)`. -/
-@[expose] def clock (x : ℕ × List ℕ × ℕ × DescribedNetwork T) : ℕ :=
-  2 ^ (fuelConst * (x.2.2.2.numEdges + x.1) / Nat.sqrt (Nat.log 2 (x.2.2.2.numEdges + x.1)))
+@[expose] def clock : ℕ × List ℕ × ℕ × DescribedNetwork T → ℕ
+  | (P, _, _, G) => 2 ^ (fuelConst * (G.numEdges + P) / Nat.sqrt (Nat.log 2 (G.numEdges + P)))
 
 /-- **The root call is polynomial-time.** -/
 theorem rootCall_polyTime :
@@ -299,11 +190,10 @@ theorem rootCall_polyTime :
     (ComputableInPolyTime.snd encUnary _)
   have hr := (ComputableInPolyTime.fst encNat (DescribedNetwork.encDescribed encT)).comp
     rowsNet_polyTime
-  have hG := (ComputableInPolyTime.snd encNat (DescribedNetwork.encDescribed encT)).comp
-    rowsNet_polyTime
   exact (hm.prod ((ComputableInPolyTime.const 0).prod
     ((ComputableInPolyTime.unary_add' hm (ComputableInPolyTime.const 1)).prod
-      (hP.prod (hfl.prod hr))))).prod ((FastContraction.rootNet_polyTime encT).comp hG)
+      (hP.prod (hfl.prod hr))))).prod
+    ((FastContraction.rootNet_polyTime encT).comp network_polyTime)
 
 /-- **The clock is polynomial-time.** -/
 theorem clock_polyTime : ComputableInPolyTime (clock (T := T)) (encInput encT) encNat :=
@@ -314,10 +204,11 @@ theorem clock_polyTime : ComputableInPolyTime (clock (T := T)) (encInput encT) e
 of `G` keep its rows-first ports. -/
 theorem wf_rootCall {x : ℕ × List ℕ × ℕ × DescribedNetwork T} (hg : guard x = true) :
     FastContraction.WF (rootCall x) := by
+  obtain ⟨P, fl, r, G⟩ := x
   simp only [guard, decide_eq_true_eq] at hg
   obtain ⟨hfl, ⟨h1, h2⟩, -⟩ := hg
   refine ⟨?_, fun v hv i hi => ?_, fun i hi => ?_⟩
-  · change Irreducible ((monicOf x.2.1).map (Int.castRingHom (ZMod 2)))
+  · change Irreducible ((monicOf fl).map (Int.castRingHom (ZMod 2)))
     rw [hfl]
     exact irreducible_modulus _
   · simp only [rootCall, rootNet, List.mem_map] at hv
@@ -327,19 +218,26 @@ theorem wf_rootCall {x : ℕ × List ℕ × ℕ × DescribedNetwork T} (hg : gua
       Function.comp_def] at hi ⊢
     exact h2 i hi
 
+/-- **The root call has no packets**: its descriptors are those of the input network. -/
+theorem packetShape_rootCall (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
+    FastContraction.PacketShape (rootCall x) := by
+  obtain ⟨P, fl, r, G⟩ := x
+  exact FastContraction.packetShape_of_net_eq_rootNet rfl
+
 /-! ### The result -/
 
 variable (entry) in
 /-- **The result of the machine** on an input `(P, fl, r, G)`: on guarded inputs, the coefficient
 list of a value tagged `0` returned by the clocked run from the root call, and direct summation
 otherwise. -/
-noncomputable def coreValue (x : ℕ × List ℕ × ℕ × DescribedNetwork T) : List ℕ :=
-  if guard x then
-    ((scheme entry nativeMk).run clock rootCall x).elim
-      (DescribedNetwork.sumValue SumOps.galois entry (x.1, x.2.1) x.2.2.2)
-      fun v => if v.1 = 0 then v.2
-        else DescribedNetwork.sumValue SumOps.galois entry (x.1, x.2.1) x.2.2.2
-  else DescribedNetwork.sumValue SumOps.galois entry (x.1, x.2.1) x.2.2.2
+noncomputable def coreValue : ℕ × List ℕ × ℕ × DescribedNetwork T → List ℕ
+  | x@(P, fl, _, G) =>
+    if guard x then
+      ((scheme entry nativeMk).run clock rootCall x).elim
+        (DescribedNetwork.sumValue SumOps.galois entry (P, fl) G)
+        fun (tag, coeffs) => if tag = 0 then coeffs
+          else DescribedNetwork.sumValue SumOps.galois entry (P, fl) G
+    else DescribedNetwork.sumValue SumOps.galois entry (P, fl) G
 
 /-- **The machine is correct**: at the modulus of the number of edges, the value of the result is
 the contraction of the values of the entries, on every input and for every fuel. A value tagged
@@ -348,7 +246,7 @@ contraction on well-formed roots (`FastContraction.val_value`). -/
 theorem val_coreValue (P r : ℕ) (G : DescribedNetwork T) :
     val P (modulus G.numEdges) (coreValue entry (P, modulus G.numEdges, r, G)) =
       G.contraction fun t bs => val P (modulus G.numEdges) (entry t bs) := by
-  unfold coreValue
+  rw [coreValue]
   split_ifs with hg
   · rcases hrun : (scheme entry nativeMk).run clock rootCall (P, modulus G.numEdges, r, G) with
       _ | ⟨d, y⟩
@@ -369,14 +267,16 @@ theorem val_coreValue (P r : ℕ) (G : DescribedNetwork T) :
 
 /-- Whether a returned value is tagged `0`. -/
 theorem valueTag_polyTime :
-    ComputableInPolyTime (fun q : (ℕ × List ℕ × ℕ × DescribedNetwork T) × (ℕ × List ℕ) =>
-      decide (q.2.1 = 0)) (encPair (encInput encT) encValue) encBool :=
+    ComputableInPolyTime
+      (fun ((_, (tag, _)) : (ℕ × List ℕ × ℕ × DescribedNetwork T) × (ℕ × List ℕ)) =>
+        decide (tag = 0)) (encPair (encInput encT) encValue) encBool :=
   ComputableInPolyTime.decide_eq' ((ComputableInPolyTime.fst encUnary (encList encNat)).comp
     (ComputableInPolyTime.snd (encInput encT) encValue)) (ComputableInPolyTime.const 0)
 
 /-- The coefficient list of a returned value. -/
 theorem valueList_polyTime :
-    ComputableInPolyTime (fun q : (ℕ × List ℕ × ℕ × DescribedNetwork T) × (ℕ × List ℕ) => q.2.2)
+    ComputableInPolyTime
+      (fun ((_, (_, coeffs)) : (ℕ × List ℕ × ℕ × DescribedNetwork T) × (ℕ × List ℕ)) => coeffs)
       (encPair (encInput encT) encValue) (encList encNat) :=
   (ComputableInPolyTime.snd encUnary (encList encNat)).comp
     (ComputableInPolyTime.snd (encInput encT) encValue)
@@ -403,12 +303,14 @@ computes `coreValue`. -/
         (NativeCertificate.ofPolyTime valueList_polyTime)
         ((directCore entry ce).comp
           (NativeCertificate.ofPolyTime (ComputableInPolyTime.fst (encInput encT) encValue)))))
-    (directCore entry ce)).congr fun x => by
+    (directCore entry ce)).congr fun ⟨P, fl, r, G⟩ => by
       simp only [coreValue, Function.comp_apply]
       split
-      · cases (scheme entry nativeMk).run clock rootCall x with
+      · cases (scheme entry nativeMk).run clock rootCall (P, fl, r, G) with
         | none => rfl
-        | some v => simp only [Option.elim_some, decide_eq_true_eq]
+        | some v =>
+          obtain ⟨tag, coeffs⟩ := v
+          simp only [Option.elim_some, decide_eq_true_eq]
       · rfl
 
 /-- The time of the machine, unfolded: the guard, and on guarded inputs the run twice, the input,
@@ -419,12 +321,14 @@ theorem fastCore_time (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
         if guard x = true then
           2 * (runCore ce).time x + (encInput encT x).length +
             ((scheme entry nativeMk).run clock rootCall x).elim ((directCore entry ce).time x)
-              fun v => (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).time
-                  (x, v) +
-                if decide (v.1 = 0) = true then
-                  (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).time (x, v)
+              fun (tag, coeffs) =>
+                (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).time
+                  (x, (tag, coeffs)) +
+                if decide (tag = 0) = true then
+                  (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).time
+                    (x, (tag, coeffs))
                 else (NativeCertificate.ofPolyTime
-                    (ComputableInPolyTime.fst (encInput encT) encValue)).time (x, v) +
+                    (ComputableInPolyTime.fst (encInput encT) encValue)).time (x, (tag, coeffs)) +
                   (directCore entry ce).time x
         else (directCore entry ce).time x := rfl
 
@@ -435,12 +339,14 @@ theorem fastCore_space (x : ℕ × List ℕ × ℕ × DescribedNetwork T) :
         if guard x = true then
           2 * (runCore ce).space x + (encInput encT x).length +
             ((scheme entry nativeMk).run clock rootCall x).elim ((directCore entry ce).space x)
-              fun v => (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).space
-                  (x, v) +
-                if decide (v.1 = 0) = true then
-                  (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).space (x, v)
+              fun (tag, coeffs) =>
+                (NativeCertificate.ofPolyTime (valueTag_polyTime (encT := encT))).space
+                  (x, (tag, coeffs)) +
+                if decide (tag = 0) = true then
+                  (NativeCertificate.ofPolyTime (valueList_polyTime (encT := encT))).space
+                    (x, (tag, coeffs))
                 else (NativeCertificate.ofPolyTime
-                    (ComputableInPolyTime.fst (encInput encT) encValue)).space (x, v) +
+                    (ComputableInPolyTime.fst (encInput encT) encValue)).space (x, (tag, coeffs)) +
                   (directCore entry ce).space x
         else (directCore entry ce).space x := rfl
 
