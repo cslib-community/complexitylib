@@ -20,9 +20,11 @@ public import Mathlib.Data.Nat.Digits.Lemmas
 
 A multi-tape Turing machine with a binary alphabet and finitely many states that halts within `t`
 steps is simulated by one fixed word-RAM program over `Basis.additive` in `O(t)` instructions,
-at every word size whose words hold addresses linear in `t` and the input length. This is the
-linear-time simulation of Turing machines by random access machines under unit cost
-[Cook and Reckhow][CookReckhow1973], for the word RAM of `Cslib.WordRAM`.
+at every word size whose words hold addresses linear in `t` and the input length. Together with
+`Cslib.WordRAM.Program.ComputesInTime.turingComputableInPolyTime_of_width`, this links polynomial
+time on the two models. The construction is the usual one, tape cells as memory words and the
+finite control as branches, written for the word RAM of `Cslib.WordRAM`; it is not transcribed
+from a source.
 
 ## Conventions
 
@@ -57,13 +59,15 @@ linear-time simulation of Turing machines by random access machines under unit c
 
 ## Main results
 
-* `Cslib.WordRAM.OfTuring.Sim.step`: one step of the simulator follows one step of the machine.
+* `Cslib.WordRAM.OfTuring.setupCode_spec`, `Cslib.WordRAM.OfTuring.stepCode_spec`,
+  `Cslib.WordRAM.OfTuring.loop_spec`: the setup represents the initial configuration, one step of
+  the simulator follows one step of the machine, and the loop follows the run to its halt.
 * `Cslib.WordRAM.OfTuring.executes_simProgram`: a halting run of `t` steps is simulated within
   `simTime k m t` instructions, returning `outValue` of the output tape.
-
-## References
-
-* [S. A. Cook and R. A. Reckhow, *Time bounded random access machines*][CookReckhow1973]
+* `Turing.MultiTapeTM.ComputableInPolyTime.exists_wordRAM`,
+  `Turing.MultiTapeTM.ComputableInPolyTime.exists_wordRAM_nat`: a function computable in polynomial
+  time by a Turing machine is computed by a uniform word-RAM program in polynomially many
+  instructions, at every word size above a polynomial threshold.
 -/
 
 @[expose] public section
@@ -431,28 +435,44 @@ def newTape (t : ℤ → Option Bool) (p : ℤ) : Option (Option Bool) → ℤ �
 on an input of length `n`. -/
 structure TapesRel (n : ℕ) (x : Data (regs k)) (T : Fin k → ℤ → Option Bool) (P : Fin k → ℤ) :
     Prop where
+  /-- The half-tape registers hold the half-tapes of the heads. -/
   sgn : ∀ i, x.regs (rSgn i) = sgnOf (P i)
+  /-- The address registers hold the addresses of the head cells. -/
   adr : ∀ i, x.regs (rAdr i) = tapeAddr k n i (P i)
+  /-- Every cell of every tape holds the code of its symbol. -/
   tape : ∀ i z, x.mem (tapeAddr k n i z) = symCode (T i z)
 
 /-- The constant registers hold their values, on an input of length `n`. -/
 structure Consts (n m : ℕ) (x : Data (regs k)) : Prop where
+  /-- `rZero` holds `0`. -/
   zero : x.regs rZero = 0
+  /-- `rOne` holds `1`. -/
   one : x.regs rOne = 1
+  /-- `rEnd` holds `n + 1`. -/
   fin : x.regs rEnd = n + 1
+  /-- `rStates` holds `m`. -/
   states : x.regs rStates = m
+  /-- `rStride` holds `2k`. -/
   stride : x.regs rStride = 2 * k
+  /-- `rLim` holds `n + 1 + 2k`. -/
   lim : x.regs rLim = n + 1 + 2 * k
 
 /-- The data `x` of the simulator represents the configuration `c`. -/
 structure Sim (e : Q ≃ Fin m) {inp : List Bool} (x : Data (regs k))
     (c : Cfg k Bool Q inp) : Prop where
+  /-- The constant registers hold their values. -/
   consts : Consts inp.length m x
+  /-- `rState` holds the code of the state. -/
   state : x.regs rState = stateCode e c.state
+  /-- `rHead` holds the input head, which is the address of the input symbol it reads. -/
   head : x.regs rHead = c.inputPos
+  /-- `rVal` holds the output tape read as a binary number. -/
   val : x.regs rVal = outValue c.output
+  /-- `rPow` holds `2 ^ ℓ` for the length `ℓ` of the output tape. -/
   pow : x.regs rPow = 2 ^ c.output.length
+  /-- The work tapes are represented. -/
   tapes : TapesRel inp.length x c.workTapes c.workTapePos
+  /-- The input bits stay at addresses `1, …, n`. -/
   input : ∀ j (h : j < inp.length), x.mem (j + 1) = inp[j].toNat
 
 /-! ## Correctness of the pieces -/
