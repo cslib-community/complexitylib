@@ -848,7 +848,7 @@ private theorem sum_pair {M : Type*} [AddCommMonoid M] (N : ℕ) (G : (ℕ → B
       have := Fin.append_right a b ⟨i - N, by omega⟩
       convert this using 2
       ext
-      simp
+      simp only [Fin.cast_mk, Fin.natAdd_eq_addNat, Fin.addNat_mk]
       omega
     · simp only [h2, dite_false, h1]
 
@@ -857,14 +857,14 @@ private theorem map_pairFun_left {N : ℕ} (a b : Fin N → Bool) :
   refine List.ext_getElem (by simp) fun u h₁ h₂ => ?_
   simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, Nat.zero_mul,
     Nat.zero_add, pairFun]
-  simp at h₁
+  simp only [List.length_map, List.length_range] at h₁
   simp [h₁]
 
 private theorem map_pairFun_right {N : ℕ} (a b : Fin N → Bool) :
     (List.range N).map (fun u => pairFun a b (1 * N + u)) = List.ofFn b := by
   refine List.ext_getElem (by simp) fun u h₁ h₂ => ?_
   simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, Nat.one_mul, pairFun]
-  simp at h₁
+  simp only [List.length_map, List.length_range] at h₁
   simp [show N + u < 2 * N by omega]
 
 /-- **The contraction of the network is the acceptance gap.** With `-1` as the Hadamard sign, over
