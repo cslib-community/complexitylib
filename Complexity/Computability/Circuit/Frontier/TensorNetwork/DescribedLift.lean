@@ -14,6 +14,8 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
+import Complexity.Computability.PolyTime.GaloisRingUnits
+import Complexity.Foundations.NumberTheory.Padics.AdjoinRootDigitLift
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Sort
 
@@ -30,6 +32,9 @@ for.
   and reducing the lift modulo `2 ^ p` gives the value of `c` in `A_p`
   (`GaloisRingArith.reduction_liftO`). This is the canonical lifting of representatives of §D.4.1
   (p. 58): a retained vertex is read through the lift of its entry at every later precision.
+  Lifts of distinct lists with binary coordinates differ by a unit
+  (`GaloisRingArith.isUnit_liftO_sub`); in particular the binary digits of `0, …, n - 1` are
+  interpolation points when `n ≤ 2 ^ e` (`GaloisRingArith.pairwise_isUnit_liftO_sub_digits`).
 * **Rows first.** A described network is *rows-first bipartite* at `r`
   (`DescribedNetwork.IsRowsFirstBipartite`, the condition of
   `ExplicitTensorNetwork.IsRowsFirstBipartite`) when every port names an edge and every edge is a
@@ -55,6 +60,8 @@ for.
 ## Main results
 
 * `Cslib.GaloisRingArith.reduction_liftO`, `Cslib.GaloisRingArith.mk_liftO`: reducing a lift.
+* `Cslib.GaloisRingArith.isUnit_liftO_sub`,
+  `Cslib.GaloisRingArith.pairwise_isUnit_liftO_sub_digits`: binary lists as interpolation points.
 * `Cslib.Circuits.Frontier.DescribedNetwork.incident_eq`: the vertices at an edge.
 * `Cslib.Circuits.Frontier.DescribedNetwork.contraction_toNetwork`,
   `Cslib.Circuits.Frontier.DescribedNetwork.reduction_contraction_toNetwork`: the contraction.
@@ -114,6 +121,73 @@ theorem mk_liftO (p : ℕ) (c : List ℕ) :
     Ideal.Quotient.mk _ (liftO hirr c) =
       Cslib.Circuits.Frontier.reductionLift (monic_monicOf fl) hirr p (val p fl c) := by
   rw [← reduction_liftO hirr p, Cslib.Circuits.Frontier.reductionLift_reduction]
+
+/-! ### Binary lists as interpolation points -/
+
+/-- A lift of a list with binary coordinates is a digit lift. -/
+private theorem liftO_eq_integerDigitLift {c : List ℕ} (hc : ∀ i < fl.length, c.getD i 0 < 2) :
+    liftO hirr c = AdjoinRoot.integerDigitLift (monic_monicOf fl) hirr
+      fun i => ((c.getD i 0 : ℕ) : ZMod 2) := by
+  apply Subtype.ext
+  rw [AdjoinRoot.coe_integerDigitLift, Fin.sum_univ_eq_sum_range
+    (fun i => ((((c.getD i 0 : ℕ) : ZMod 2)).val : AdjoinRoot ((monicOf fl).map
+      (Int.castRingHom ℚ))) * AdjoinRoot.root _ ^ i), natDegree_monicOf, liftO]
+  push_cast
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [ZMod.val_natCast, Nat.mod_eq_of_lt (hc i (mem_range.mp hi))]
+  exact congrArg (_ * · ^ i) (AdjoinRoot.map_root _ _ _ _)
+
+/-- **Lifts of distinct binary lists differ by a unit.** If two lists have binary coordinates
+below `e = fl.length` and differ at one of them, their lifts to `O` differ by a unit: they are
+digit lifts (`AdjoinRoot.isUnit_integerDigitLift_sub`). -/
+theorem isUnit_liftO_sub {c c' : List ℕ} (hc : ∀ i < fl.length, c.getD i 0 < 2)
+    (hc' : ∀ i < fl.length, c'.getD i 0 < 2)
+    (hne : ∃ i < fl.length, c.getD i 0 ≠ c'.getD i 0) :
+    IsUnit (liftO hirr c - liftO hirr c') := by
+  rw [liftO_eq_integerDigitLift hirr hc, liftO_eq_integerDigitLift hirr hc']
+  refine AdjoinRoot.isUnit_integerDigitLift_sub _ hirr fun h => ?_
+  obtain ⟨i, hi, hne⟩ := hne
+  have h2 := congrArg ZMod.val (congrFun h ⟨i, by rwa [natDegree_monicOf]⟩)
+  rw [ZMod.val_natCast, ZMod.val_natCast, Nat.mod_eq_of_lt (hc i hi),
+    Nat.mod_eq_of_lt (hc' i hi)] at h2
+  exact hne h2
+
+/-- Coordinate `i < e` of the binary digits of `k` below `e`. -/
+theorem getD_map_testBit (e k i : ℕ) (hi : i < e) :
+    ((List.range e).map fun j => if k.testBit j then 1 else 0).getD i 0 =
+      if k.testBit i then 1 else 0 := by
+  rw [List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map, List.getElem_range]
+
+/-- **Binary-digit points are interpolation points.** The lists of the binary digits below
+`e = fl.length` of `0, …, n - 1`, for `n ≤ 2 ^ e`, have lifts to `O` with unit differences. -/
+theorem pairwise_isUnit_liftO_sub_digits {n : ℕ} (hn : n ≤ 2 ^ fl.length) :
+    Pairwise fun i j : Fin ((List.range n).map fun k =>
+        (List.range fl.length).map fun j => if k.testBit j then 1 else 0).length =>
+      IsUnit (liftO hirr (((List.range n).map fun k =>
+          (List.range fl.length).map fun j => if k.testBit j then 1 else 0).getD i []) -
+        liftO hirr (((List.range n).map fun k =>
+          (List.range fl.length).map fun j => if k.testBit j then 1 else 0).getD j [])) := by
+  intro i j hij
+  have hi : (i : ℕ) < n := by simpa using i.2
+  have hj : (j : ℕ) < n := by simpa using j.2
+  rw [List.getD_eq_getElem _ _ i.2, List.getD_eq_getElem _ _ j.2, List.getElem_map,
+    List.getElem_map, List.getElem_range, List.getElem_range]
+  have hbin (k : ℕ) : ∀ b < fl.length,
+      ((List.range fl.length).map fun j => if k.testBit j then 1 else 0).getD b 0 < 2 := by
+    intro b hb
+    rw [getD_map_testBit _ _ _ hb]
+    split <;> omega
+  refine isUnit_liftO_sub hirr (hbin _) (hbin _) ?_
+  by_contra hall
+  simp only [not_exists, not_and, not_not] at hall
+  refine hij (Fin.ext (Nat.eq_of_testBit_eq fun b => ?_))
+  rcases lt_or_ge b fl.length with hb | hb
+  · have := hall b hb
+    rw [getD_map_testBit _ _ _ hb, getD_map_testBit _ _ _ hb] at this
+    revert this
+    cases (i : ℕ).testBit b <;> cases (j : ℕ).testBit b <;> simp
+  · have h2 : 2 ^ fl.length ≤ 2 ^ b := Nat.pow_le_pow_right (by norm_num) hb
+    rw [Nat.testBit_lt_two_pow (by omega), Nat.testBit_lt_two_pow (by omega)]
 
 end Cslib.GaloisRingArith
 
