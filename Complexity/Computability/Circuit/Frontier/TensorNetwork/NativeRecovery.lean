@@ -9,6 +9,17 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
 public import Complexity.Computability.PolyTime.GaloisRingSeries
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Mathlib.Data.List.GetD
 
 /-!
@@ -53,6 +64,10 @@ of the node contributions over `B` (`NativeRecovery.two_pow_mul_recoverFromValue
 recovered value `recoverFromValues B a u h ζ v` lies in `B`, native recovery computes its image
 modulo `2 ^ p` (`NativeRecovery.val_recover`).
 
+**Polynomial time.** Every loop is a fold over a range or over the other node indices, so native
+recovery is polynomial-time with the precision, the shift, the parameters and `2 ^ a` in unary
+(`NativeRecovery.computableInPolyTime_recover`).
+
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.NativeRecovery.slopeConst`: the constant `α / (t - q)`.
@@ -86,6 +101,8 @@ modulo `2 ^ p` (`NativeRecovery.val_recover`).
 * `Cslib.Circuits.Frontier.NativeRecovery.val_recover`,
   `Cslib.Circuits.Frontier.NativeRecovery.val_recover_of_eq_add`: native recovery computes the
   mathematical recovery modulo `2 ^ p`.
+* `Cslib.Circuits.Frontier.NativeRecovery.computableInPolyTime_recover`: native recovery is
+  polynomial-time.
 
 ## References
 
@@ -107,26 +124,33 @@ local notation "ℤ₍₂₎" => Valuation.integer (Rat.padicValuation 2)
 /-- The node `t = k - 2 ^ a` of index `k`. -/
 def node (a k : ℕ) : ℤ := (k : ℤ) - 2 ^ a
 
-/-- The `2`-adic valuation of `d`, by at most `b` halvings: `v₂ d` when `d < 2 ^ b`
-(`NativeRecovery.twoVal_eq`), and `0` for `d = 0`. -/
-def twoVal : ℕ → ℕ → ℕ
-  | 0, _ => 0
-  | b + 1, d => if d ≠ 0 ∧ d % 2 = 0 then twoVal b (d / 2) + 1 else 0
+/-- The `2`-adic valuation of `d`, capped at `b`: the number of `i < b` with `2 ^ (i + 1) ∣ d`,
+and `0` for `d = 0`. It is `v₂ d` when `d < 2 ^ b` (`NativeRecovery.twoVal_eq`). -/
+def twoVal (b d : ℕ) : ℕ :=
+  if d = 0 then 0 else ((List.range b).filter fun i => d % 2 ^ (i + 1) = 0).length
 
-theorem twoVal_eq : ∀ {b d : ℕ}, d < 2 ^ b → twoVal b d = padicValNat 2 d
-  | 0, d, hd => by rw [pow_zero] at hd; obtain rfl : d = 0 := by omega
-                   simp [twoVal]
-  | b + 1, d, hd => by
-    rw [twoVal]
-    split_ifs with h
-    · obtain ⟨hd0, h2⟩ := h
-      have hd' : d = 2 * (d / 2) := by omega
-      rw [twoVal_eq (by rw [pow_succ] at hd; omega)]
-      conv_rhs => rw [hd']
-      rw [padicValNat.mul (by norm_num) (by omega), padicValNat_self, add_comm]
-    · rcases Nat.eq_zero_or_pos d with rfl | hpos
-      · simp
-      · exact (padicValNat.eq_zero_of_not_dvd (by omega)).symm
+theorem twoVal_eq {b d : ℕ} (hd : d < 2 ^ b) : twoVal b d = padicValNat 2 d := by
+  rw [twoVal]
+  split_ifs with h0
+  · simp [h0]
+  set v := padicValNat 2 d
+  have hvb : v < b := by
+    have : 2 ^ v ≤ d := Nat.le_of_dvd (Nat.pos_of_ne_zero h0) pow_padicValNat_dvd
+    exact (Nat.pow_lt_pow_iff_right (by norm_num)).mp (this.trans_lt hd)
+  have key (m : ℕ) : ((List.range m).filter fun i => d % 2 ^ (i + 1) = 0).length = min m v := by
+    induction m with
+    | zero => simp
+    | succ m ih =>
+      rw [List.range_succ, List.filter_append, List.length_append, ih]
+      have hiff : d % 2 ^ (m + 1) = 0 ↔ m + 1 ≤ v := by
+        rw [← Nat.dvd_iff_mod_eq_zero]
+        exact padicValNat_dvd_iff_le h0
+      by_cases hm : m + 1 ≤ v
+      · simp [hiff.mpr hm]
+        omega
+      · simp [mt hiff.mp hm]
+        omega
+  rw [key, min_eq_right hvb.le]
 
 /-- The multiplicity `q_t = h (u - v₂ t)` of the node of index `k`. -/
 def mult (a u h k : ℕ) : ℕ := h * (u - twoVal (a + 1) (k - 2 ^ a + (2 ^ a - k)))
@@ -700,6 +724,7 @@ theorem exists_pval_interp_eq_add (hirr : Irreducible ((monicOf fl).map (Int.cas
 /-! ### The Hermite quotient over `B` -/
 
 /-- A fold of multiplications is a list product. -/
+@[to_additive /-- A fold of additions is a list sum. -/]
 theorem foldl_mul_eq {M ι : Type*} [CommMonoid M] (g : ι → M) (l : List ι) (c : M) :
     l.foldl (fun x y => x * g y) c = c * (l.map g).prod := by
   induction l generalizing c with
@@ -957,5 +982,403 @@ theorem val_recover_of_eq_add
     natCast_two_pow, zero_mul, add_zero]
 
 end Hermite
+
+/-! ### Polynomial time -/
+
+section PolyTime
+
+open Turing.MultiTapeTM
+
+variable {α : Type} {encIn : α ↪ List Bool}
+
+private theorem lengthPolyTime {β : Type} {encB : β ↪ List Bool} {l : α → List β}
+    (hl : ComputableInPolyTime l encIn (encList encB)) :
+    ComputableInPolyTime (fun x => (l x).length) encIn encUnary :=
+  (ComputableInPolyTime.length_list encB).comp hl
+
+private theorem getDPolyTime {P : α → List (List ℕ)} {k : α → ℕ}
+    (hP : ComputableInPolyTime P encIn (encList (encList encNat)))
+    (hk : ComputableInPolyTime k encIn encUnary) :
+    ComputableInPolyTime (fun x => (P x).getD (k x) []) encIn (encList encNat) :=
+  (ComputableInPolyTime.listGetD (encA := encList encNat) []).comp (hP.prod hk)
+
+/-- A unary natural as a one-coordinate list. -/
+private theorem singletonPolyTime {n : α → ℕ} (hn : ComputableInPolyTime n encIn encNat) :
+    ComputableInPolyTime (fun x => [n x]) encIn (encList encNat) :=
+  ComputableInPolyTime.cons' hn (ComputableInPolyTime.const [])
+
+private theorem polyBounded_unary {n : α → ℕ} (hn : ComputableInPolyTime n encIn encUnary) :
+    PolyBounded (fun x => (encIn x).length) n := by
+  simpa using ComputableInPolyTime.polyBounded_length hn
+
+/-- The length of a polynomial with `J` small coefficients is polynomially bounded. -/
+private theorem polyBounded_polyLength {p J : α → ℕ} {fl : α → List ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (hJ : ComputableInPolyTime J encIn encUnary) :
+    PolyBounded (fun x => (encIn x).length)
+      (fun x => J x * (2 * ((fl x).length * (2 * (p x + 1) + 1)) + 1)) := by
+  have hpl := polyBounded_unary hp
+  have hfll : PolyBounded (fun x => (encIn x).length) fun x => (fl x).length :=
+    (lengthPolyTime hfl).polyBounded_length.mono fun x => by simp
+  exact (polyBounded_unary hJ).mul (((PolyBounded.const 2).mul (hfll.mul (((PolyBounded.const 2).mul
+    (hpl.add (PolyBounded.const 1))).add (PolyBounded.const 1)))).add (PolyBounded.const 1))
+
+private theorem length_encList_mul_le (N : ℕ) (fl c d : List ℕ) :
+    (encList encNat (mul N fl c d)).length ≤ fl.length * (2 * N + 1) :=
+  length_encList_le (length_mul N fl c d) fun _ h => lt_of_mem_mul h
+
+private theorem length_encList_add_le (N : ℕ) (fl c d : List ℕ) :
+    (encList encNat (add N fl c d)).length ≤ fl.length * (2 * N + 1) :=
+  length_encList_le (length_add N fl c d) fun _ h => lt_of_mem_add h
+
+/-- **The capped `2`-adic valuation is polynomial-time**, in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_twoVal {b d : α → ℕ} (hb : ComputableInPolyTime b encIn encUnary)
+    (hd : ComputableInPolyTime d encIn encUnary) :
+    ComputableInPolyTime (fun x => twoVal (b x) (d x)) encIn encUnary := by
+  have h1 := ComputableInPolyTime.fst encIn encUnary
+  have h2 := ComputableInPolyTime.snd encIn encUnary
+  have htest : ComputableInPolyTime (fun q : α × ℕ => d q.1 % 2 ^ (q.2 + 1) == 0)
+      (encPair encIn encUnary) encBool :=
+    ComputableInPolyTime.beq (ComputableInPolyTime.binary_mod.comp
+      ((ComputableInPolyTime.unary_to_binary.comp (hd.comp h1)).prod
+        (ComputableInPolyTime.binary_two_pow.comp
+          (ComputableInPolyTime.unary_add' h2 (ComputableInPolyTime.const 1)))))
+      (ComputableInPolyTime.const 0)
+  refine (ComputableInPolyTime.ite (ComputableInPolyTime.beq hd (ComputableInPolyTime.const 0))
+    (ComputableInPolyTime.const 0) (lengthPolyTime (ComputableInPolyTime.filterWithInput
+      (test := fun x i => d x % 2 ^ (i + 1) == 0) (ComputableInPolyTime.range.comp hb)
+      htest))).of_enc_eq fun x => ?_
+  by_cases h : d x = 0 <;> simp [twoVal, h, beq_eq_decide]
+
+/-- `2 ^ (a + 1)` in unary, from `2 ^ a` in unary. -/
+private theorem twoPowSuccPolyTime {a : α → ℕ}
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary) :
+    ComputableInPolyTime (fun x => 2 ^ (a x + 1)) encIn encUnary :=
+  (ComputableInPolyTime.unary_add' hL hL).of_enc_eq fun x => by rw [pow_succ, mul_two]
+
+/-- **The multiplicities are polynomial-time**, in unary, given `2 ^ a` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_mult {a u h k : α → ℕ}
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
+    (hk : ComputableInPolyTime k encIn encUnary) :
+    ComputableInPolyTime (fun x => mult (a x) (u x) (h x) (k x)) encIn encUnary :=
+  ComputableInPolyTime.unary_mul' hh (ComputableInPolyTime.unary_sub' hu
+    (computableInPolyTime_twoVal (ComputableInPolyTime.unary_add' ha (ComputableInPolyTime.const 1))
+      (ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_sub' hk hL)
+        (ComputableInPolyTime.unary_sub' hL hk))))
+
+/-- **The other node indices are polynomial-time**, given `2 ^ a` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_others {a k : α → ℕ}
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hk : ComputableInPolyTime k encIn encUnary) :
+    ComputableInPolyTime (fun x => others (a x) (k x)) encIn (encList encUnary) := by
+  have h1 := ComputableInPolyTime.fst encIn encUnary
+  have h2 := ComputableInPolyTime.snd encIn encUnary
+  refine (ComputableInPolyTime.filterWithInput
+    (test := fun x k' => !(k' == 2 ^ a x) && !(k' == k x))
+    (ComputableInPolyTime.range.comp (twoPowSuccPolyTime hL))
+    (ComputableInPolyTime.bool_and'
+      (ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.beq h2 (hL.comp h1)))
+      (ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.beq h2 (hk.comp h1))))).of_enc_eq
+    fun x => ?_
+  congr 1
+
+/-- **The total multiplicity of the other nodes is polynomial-time**, in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_multSum {a u h k : α → ℕ}
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
+    (hk : ComputableInPolyTime k encIn encUnary) :
+    ComputableInPolyTime (fun x => multSum (a x) (u x) (h x) (k x)) encIn encUnary := by
+  have hq := ComputableInPolyTime.fst (encPair encIn encUnary) encUnary
+  have hx := (ComputableInPolyTime.fst encIn encUnary).comp hq
+  have hs := (ComputableInPolyTime.snd encIn encUnary).comp hq
+  have hk' := ComputableInPolyTime.snd (encPair encIn encUnary) encUnary
+  have hfold := ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x s k' => s + mult (a x) (u x) (h x) k') (ComputableInPolyTime.const 0)
+    ⟨computableInPolyTime_others hL hk, ComputableInPolyTime.unary_add' hs
+      (computableInPolyTime_mult (ha.comp hx) (hL.comp hx) (hu.comp hx) (hh.comp hx) hk'),
+      inferInstance, inferInstance⟩
+    ⟨(polyBounded_unary hh).mul (polyBounded_unary hu), fun x s k' _ => by
+      have : mult (a x) (u x) (h x) k' ≤ h x * u x :=
+        Nat.mul_le_mul_left _ (Nat.sub_le _ _)
+      simp only [encUnary_apply, List.length_replicate]
+      omega⟩
+  refine hfold.of_enc_eq fun x => ?_
+  rw [multSum, foldl_add_eq, zero_add]
+
+/-- **Integer differences as constants are polynomial-time**, with `x, y` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_diffConst {N x y : α → ℕ} {fl : α → List ℕ}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (hx : ComputableInPolyTime x encIn encUnary) (hy : ComputableInPolyTime y encIn encUnary) :
+    ComputableInPolyTime (fun z => diffConst (N z) (fl z) (x z) (y z)) encIn (encList encNat) :=
+  ComputableInPolyTime.ite (ComputableInPolyTime.unary_lt' hx hy)
+    (computableInPolyTime_neg hN hfl (singletonPolyTime
+      (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.unary_sub' hy hx))))
+    (singletonPolyTime (ComputableInPolyTime.unary_to_binary.comp
+      (ComputableInPolyTime.unary_sub' hx hy))) |>.of_enc_eq fun z => by simp [diffConst]
+
+/-- **The slope constants are polynomial-time**, with `a, x, y` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_slopeConst {N a x y : α → ℕ} {fl : α → List ℕ}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hx : ComputableInPolyTime x encIn encUnary) (hy : ComputableInPolyTime y encIn encUnary) :
+    ComputableInPolyTime (fun z => slopeConst (N z) (fl z) (a z) (x z) (y z)) encIn
+      (encList encNat) := by
+  have hd := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_sub' hx hy)
+    (ComputableInPolyTime.unary_sub' hy hx)
+  have ha1 := ComputableInPolyTime.unary_add' ha (ComputableInPolyTime.const 1)
+  have hv := computableInPolyTime_twoVal ha1 hd
+  have hw := computableInPolyTime_mul hN hfl
+    (singletonPolyTime (ComputableInPolyTime.binary_two_pow.comp
+      (ComputableInPolyTime.unary_sub' ha1 hv)))
+    (computableInPolyTime_inv hN hfl (singletonPolyTime (ComputableInPolyTime.binary_div.comp
+      ((ComputableInPolyTime.unary_to_binary.comp hd).prod
+        (ComputableInPolyTime.binary_two_pow.comp hv)))))
+  exact (ComputableInPolyTime.ite (ComputableInPolyTime.unary_lt' hx hy)
+    (computableInPolyTime_neg hN hfl hw) hw).of_enc_eq fun z => by simp [slopeConst]
+
+/-- **Truncated geometric series are polynomial-time**, with `J` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_geom {N J : α → ℕ} {fl c : α → List ℕ}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (hJ : ComputableInPolyTime J encIn encUnary)
+    (hc : ComputableInPolyTime c encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => geom (N x) (fl x) (J x) (c x)) encIn
+      (encList (encList encNat)) := by
+  have h1 := ComputableInPolyTime.fst encIn encUnary
+  have h2 := ComputableInPolyTime.snd encIn encUnary
+  exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hJ)
+    (computableInPolyTime_pow (hN.comp h1) (hfl.comp h1)
+      (computableInPolyTime_neg (hN.comp h1) (hfl.comp h1) (hc.comp h1)) h2)
+
+theorem mulGeomPow_succ (N : ℕ) (fl : List ℕ) (J : ℕ) (c : List ℕ) (m : ℕ)
+    (R : List (List ℕ)) :
+    mulGeomPow N fl J c (m + 1) R = tmul N fl J (mulGeomPow N fl J c m R) (geom N fl J c) := by
+  rw [mulGeomPow, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+    ← mulGeomPow]
+
+/-- A multiplication by a power of a geometric series is the input or a truncated product. -/
+theorem mulGeomPow_eq_or (N : ℕ) (fl : List ℕ) (J : ℕ) (c : List ℕ) (m : ℕ)
+    (R : List (List ℕ)) : mulGeomPow N fl J c m R = R ∨
+      ∃ R', mulGeomPow N fl J c m R = tmul N fl J R' (geom N fl J c) := by
+  rcases m with _ | m
+  · exact Or.inl (by simp [mulGeomPow])
+  · exact Or.inr ⟨_, mulGeomPow_succ N fl J c m R⟩
+
+/-- The encoded length of a truncated product is bounded. -/
+private theorem length_encPoly_tmul_le (N : ℕ) (fl : List ℕ) (J : ℕ) (P R : List (List ℕ)) :
+    (encList (encList encNat) (tmul N fl J P R)).length ≤
+      J * (2 * (fl.length * (2 * (N + 1) + 1)) + 1) :=
+  length_encPoly_le (length_tmul J P R).le fun _ hc => small_of_mem_tmul hc
+
+/-- **Multiplication by a power of a geometric series is polynomial-time**, with `J, m` in
+unary. -/
+@[fun_prop]
+theorem computableInPolyTime_mulGeomPow {N J m : α → ℕ} {fl c : α → List ℕ}
+    {R : α → List (List ℕ)}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (hJ : ComputableInPolyTime J encIn encUnary)
+    (hc : ComputableInPolyTime c encIn (encList encNat))
+    (hm : ComputableInPolyTime m encIn encUnary)
+    (hR : ComputableInPolyTime R encIn (encList (encList encNat))) :
+    ComputableInPolyTime (fun x => mulGeomPow (N x) (fl x) (J x) (c x) (m x) (R x)) encIn
+      (encList (encList encNat)) := by
+  let encS := encList (encList encNat)
+  have hq := ComputableInPolyTime.fst (encPair encIn encS) encUnary
+  have hx := (ComputableInPolyTime.fst encIn encS).comp hq
+  have hP := (ComputableInPolyTime.snd encIn encS).comp hq
+  exact ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x R _ => tmul (N x) (fl x) (J x) R (geom (N x) (fl x) (J x) (c x))) hR
+    ⟨ComputableInPolyTime.range.comp hm, computableInPolyTime_tmul (hN.comp hx) (hfl.comp hx)
+      (hJ.comp hx) hP (computableInPolyTime_geom (hN.comp hx) (hfl.comp hx) (hJ.comp hx)
+        (hc.comp hx)), inferInstance, inferInstance⟩
+    ⟨polyBounded_polyLength hN hfl hJ, fun x R _ _ => by
+      have := length_encPoly_tmul_le (N x) (fl x) (J x) R (geom (N x) (fl x) (J x) (c x))
+      omega⟩
+
+/-- **The truncated reciprocal of `E_t(t + α z)` is polynomial-time**, given `2 ^ a` in
+unary. -/
+@[fun_prop]
+theorem computableInPolyTime_recip {N a u h k J : α → ℕ} {fl : α → List ℕ}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
+    (hk : ComputableInPolyTime k encIn encUnary) (hJ : ComputableInPolyTime J encIn encUnary) :
+    ComputableInPolyTime (fun x => recip (N x) (fl x) (a x) (u x) (h x) (k x) (J x)) encIn
+      (encList (encList encNat)) := by
+  let encS := encList (encList encNat)
+  have hq := ComputableInPolyTime.fst (encPair encIn encS) encUnary
+  have hx := (ComputableInPolyTime.fst encIn encS).comp hq
+  have hP := (ComputableInPolyTime.snd encIn encS).comp hq
+  have hk' := ComputableInPolyTime.snd (encPair encIn encS) encUnary
+  exact ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x R k' => mulGeomPow (N x) (fl x) (J x) (slopeConst (N x) (fl x) (a x) (k x) k')
+      (mult (a x) (u x) (h x) k') R)
+    (ComputableInPolyTime.cons' (computableInPolyTime_one hfl) (ComputableInPolyTime.const []))
+    ⟨computableInPolyTime_others hL hk, computableInPolyTime_mulGeomPow (hN.comp hx)
+      (hfl.comp hx) (hJ.comp hx) (computableInPolyTime_slopeConst (hN.comp hx) (hfl.comp hx)
+        (ha.comp hx) (hk.comp hx) hk')
+      (computableInPolyTime_mult (ha.comp hx) (hL.comp hx) (hu.comp hx) (hh.comp hx) hk') hP,
+      inferInstance, inferInstance⟩
+    ⟨polyBounded_polyLength hN hfl hJ, fun x R k' _ => by
+      rcases mulGeomPow_eq_or (N x) (fl x) (J x) (slopeConst (N x) (fl x) (a x) (k x) k')
+        (mult (a x) (u x) (h x) k') R with h0 | ⟨R', h1⟩
+      · rw [h0]; omega
+      · have := length_encPoly_tmul_le (N x) (fl x) (J x) R'
+          (geom (N x) (fl x) (J x) (slopeConst (N x) (fl x) (a x) (k x) k'))
+        rw [h1]; omega⟩
+
+/-- **The products `∏_q (-q c_q) ^ (q_q)` are polynomial-time**, given `2 ^ a` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_basisNum {N a u h k : α → ℕ} {fl : α → List ℕ}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
+    (hk : ComputableInPolyTime k encIn encUnary) :
+    ComputableInPolyTime (fun x => basisNum (N x) (fl x) (a x) (u x) (h x) (k x)) encIn
+      (encList encNat) := by
+  have hq := ComputableInPolyTime.fst (encPair encIn (encList encNat)) encUnary
+  have hx := (ComputableInPolyTime.fst encIn (encList encNat)).comp hq
+  have hacc := (ComputableInPolyTime.snd encIn (encList encNat)).comp hq
+  have hk' := ComputableInPolyTime.snd (encPair encIn (encList encNat)) encUnary
+  have hN' := hN.comp hx
+  have hfl' := hfl.comp hx
+  exact ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x acc k' => mul (N x) (fl x) acc (pow (N x) (fl x)
+      (mul (N x) (fl x) (diffConst (N x) (fl x) (2 ^ a x) k')
+        (slopeConst (N x) (fl x) (a x) (k x) k')) (mult (a x) (u x) (h x) k')))
+    (computableInPolyTime_one hfl)
+    ⟨computableInPolyTime_others hL hk, computableInPolyTime_mul hN' hfl' hacc
+      (computableInPolyTime_pow hN' hfl' (computableInPolyTime_mul hN' hfl'
+        (computableInPolyTime_diffConst hN' hfl' (hL.comp hx) hk')
+        (computableInPolyTime_slopeConst hN' hfl' (ha.comp hx) (hk.comp hx) hk'))
+        (computableInPolyTime_mult (ha.comp hx) (hL.comp hx) (hu.comp hx) (hh.comp hx) hk')),
+      inferInstance, inferInstance⟩
+    ⟨polyBounded_reducedLength hN hfl, fun x acc k' _ =>
+      (length_encList_mul_le _ _ _ _).trans (Nat.le_add_left _ _)⟩
+
+/-- **The multipliers are polynomial-time**, given `2 ^ a` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_coeffMult {N a u h Δ k j : α → ℕ} {fl : α → List ℕ}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
+    (hΔ : ComputableInPolyTime Δ encIn encUnary) (hk : ComputableInPolyTime k encIn encUnary)
+    (hj : ComputableInPolyTime j encIn encUnary) :
+    ComputableInPolyTime (fun x => coeffMult (N x) (fl x) (a x) (u x) (h x) (Δ x) (k x) (j x))
+      encIn (encList encNat) :=
+  computableInPolyTime_mul hN hfl (computableInPolyTime_mul hN hfl
+    (singletonPolyTime (ComputableInPolyTime.binary_two_pow.comp
+      (ComputableInPolyTime.unary_sub' hΔ (ComputableInPolyTime.unary_mul'
+        (ComputableInPolyTime.unary_add' ha (ComputableInPolyTime.const 1))
+        (ComputableInPolyTime.unary_add' (computableInPolyTime_multSum ha hL hu hh hk) hj)))))
+    (computableInPolyTime_basisNum hN hfl ha hL hu hh hk))
+    (computableInPolyTime_pow hN hfl (computableInPolyTime_diffConst hN hfl hL hk) hj)
+
+/-- **The contribution of a node is polynomial-time**, given `2 ^ a` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_nodeTerm {N a u h Δ k : α → ℕ} {fl : α → List ℕ}
+    {ζ w : α → List (List ℕ)}
+    (hN : ComputableInPolyTime N encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
+    (hΔ : ComputableInPolyTime Δ encIn encUnary)
+    (hζ : ComputableInPolyTime ζ encIn (encList (encList encNat)))
+    (hk : ComputableInPolyTime k encIn encUnary)
+    (hw : ComputableInPolyTime w encIn (encList (encList encNat))) :
+    ComputableInPolyTime (fun x => nodeTerm (N x) (fl x) (a x) (u x) (h x) (Δ x) (ζ x) (k x) (w x))
+      encIn (encList encNat) := by
+  have hJ := computableInPolyTime_mult ha hL hu hh hk
+  have hQ := computableInPolyTime_tmul hN hfl hJ (computableInPolyTime_interp hN hfl hζ hw)
+    (computableInPolyTime_recip hN hfl ha hL hu hh hk hJ)
+  have hq := ComputableInPolyTime.fst (encPair encIn (encList encNat)) encUnary
+  have hx := (ComputableInPolyTime.fst encIn (encList encNat)).comp hq
+  have hS := (ComputableInPolyTime.snd encIn (encList encNat)).comp hq
+  have hj := ComputableInPolyTime.snd (encPair encIn (encList encNat)) encUnary
+  exact ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x S j => add (N x) (fl x) S (mul (N x) (fl x)
+      (coeffMult (N x) (fl x) (a x) (u x) (h x) (Δ x) (k x) j)
+      ((tmul (N x) (fl x) (mult (a x) (u x) (h x) (k x)) (interp (N x) (fl x) (ζ x) (w x))
+        (recip (N x) (fl x) (a x) (u x) (h x) (k x) (mult (a x) (u x) (h x) (k x)))).getD j [])))
+    (computableInPolyTime_zero hfl)
+    ⟨ComputableInPolyTime.range.comp hJ, computableInPolyTime_add (hN.comp hx) (hfl.comp hx) hS
+      (computableInPolyTime_mul (hN.comp hx) (hfl.comp hx)
+        (computableInPolyTime_coeffMult (hN.comp hx) (hfl.comp hx) (ha.comp hx) (hL.comp hx)
+          (hu.comp hx) (hh.comp hx) (hΔ.comp hx) (hk.comp hx) hj)
+        (getDPolyTime (hQ.comp hx) hj)), inferInstance, inferInstance⟩
+    ⟨polyBounded_reducedLength hN hfl, fun x S j _ =>
+      (length_encList_add_le _ _ _ _).trans (Nat.le_add_left _ _)⟩
+
+/-- **Native tapered recovery is polynomial-time**, with the precision `p`, the shift `Δ`, the
+parameters `a, u, h` and `2 ^ a` in unary, and the points and values as coefficient lists. -/
+@[fun_prop]
+theorem computableInPolyTime_recover {p Δ a u h : α → ℕ} {fl : α → List ℕ}
+    {ζ : α → List (List ℕ)} {W : α → List (List (List ℕ))}
+    (hp : ComputableInPolyTime p encIn encUnary) (hΔ : ComputableInPolyTime Δ encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (ha : ComputableInPolyTime a encIn encUnary)
+    (hL : ComputableInPolyTime (fun x => 2 ^ a x) encIn encUnary)
+    (hu : ComputableInPolyTime u encIn encUnary) (hh : ComputableInPolyTime h encIn encUnary)
+    (hζ : ComputableInPolyTime ζ encIn (encList (encList encNat)))
+    (hW : ComputableInPolyTime W encIn (encList (encList (encList encNat)))) :
+    ComputableInPolyTime (fun x => recover (p x) (Δ x) (fl x) (a x) (u x) (h x) (ζ x) (W x))
+      encIn (encList encNat) := by
+  have hN := ComputableInPolyTime.unary_add' hp hΔ
+  have hq := ComputableInPolyTime.fst (encPair encIn (encList encNat)) encUnary
+  have hx := (ComputableInPolyTime.fst encIn (encList encNat)).comp hq
+  have hS := (ComputableInPolyTime.snd encIn (encList encNat)).comp hq
+  have hk := ComputableInPolyTime.snd (encPair encIn (encList encNat)) encUnary
+  have hstep : ComputableInPolyTime (fun q : (α × List ℕ) × ℕ =>
+      if (q.2 == 2 ^ a q.1.1) = true then q.1.2 else add (p q.1.1 + Δ q.1.1) (fl q.1.1) q.1.2
+        (nodeTerm (p q.1.1 + Δ q.1.1) (fl q.1.1) (a q.1.1) (u q.1.1) (h q.1.1) (Δ q.1.1)
+          (ζ q.1.1) q.2 ((W q.1.1).getD q.2 [])))
+      (encPair (encPair encIn (encList encNat)) encUnary) (encList encNat) :=
+    ComputableInPolyTime.ite (ComputableInPolyTime.beq hk (hL.comp hx)) hS
+      (computableInPolyTime_add (hN.comp hx) (hfl.comp hx) hS
+        (computableInPolyTime_nodeTerm (hN.comp hx) (hfl.comp hx) (ha.comp hx) (hL.comp hx)
+          (hu.comp hx) (hh.comp hx) (hΔ.comp hx) (hζ.comp hx) hk
+          ((ComputableInPolyTime.listGetD (encA := encList (encList encNat)) []).comp
+            ((hW.comp hx).prod hk))))
+  have hfold := ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x S k => if (k == 2 ^ a x) = true then S else add (p x + Δ x) (fl x) S
+      (nodeTerm (p x + Δ x) (fl x) (a x) (u x) (h x) (Δ x) (ζ x) k ((W x).getD k [])))
+    (computableInPolyTime_zero hfl)
+    ⟨ComputableInPolyTime.range.comp (twoPowSuccPolyTime hL), hstep, inferInstance,
+      inferInstance⟩
+    ⟨polyBounded_reducedLength hN hfl, fun x S k _ => by
+      split
+      · omega
+      · exact (length_encList_add_le _ _ _ _).trans (Nat.le_add_left _ _)⟩
+  refine (computableInPolyTime_shiftDown hΔ hfold).of_enc_eq fun x => ?_
+  simp only [recover, beq_iff_eq, Function.comp_apply]
+
+end PolyTime
 
 end Cslib.Circuits.Frontier.NativeRecovery

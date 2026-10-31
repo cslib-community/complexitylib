@@ -28,6 +28,9 @@ example : tmul 3 [1, 1] 2 [[1, 0], [1, 0]] [[1, 0], [1, 0]] = [[1, 0], [2, 0]] :
 -- Cancelling `2`: `6 + 2 U = 2 (3 + U)`.
 example : shiftDown 1 [6, 2] = [3, 1] := by decide
 
+-- The capped `2`-adic valuation: `v₂ 12 = 2`, `v₂ 5 = 0`, and `0` at `0`.
+example : (twoVal 4 12, twoVal 4 5, twoVal 4 0) = (2, 0, 0) := by decide
+
 -- With `u = h = 1`, the odd nodes `t = ±1` have multiplicity `1` and `t = -2` has `0`.
 example : (mult 1 1 1 1, mult 1 1 1 3, mult 1 1 1 0) = (1, 1, 0) := by decide
 
@@ -51,5 +54,11 @@ example : ((gamma 1 1 1 2 1 0 : Valuation.integer (Rat.padicValuation 2)) : ℚ)
     (Polynomial.hermiteBasis (recoveryNodes 1) (fun q : ℤ => (q : ℚ)) (taperMult 1 1)
       (node 1 1)).eval 0 * (-(node 1 1 : ℚ) / 2 ^ (1 + 1)) ^ 0 :=
   coe_gamma (by norm_num) (by decide)
+
+/-- The capped `2`-adic valuation is polynomial-time in unary. -/
+example : Turing.MultiTapeTM.ComputableInPolyTime (fun n : ℕ => twoVal n n)
+    Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary :=
+  computableInPolyTime_twoVal Turing.MultiTapeTM.ComputableInPolyTime.id'
+    Turing.MultiTapeTM.ComputableInPolyTime.id'
 
 end ComplexityTests.TensorNetworkNativeRecovery

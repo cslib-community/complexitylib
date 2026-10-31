@@ -9,6 +9,15 @@ module
 
 public import Complexity.Computability.PolyTime.GaloisRingInterpolation
 public import Complexity.Computability.PolyTime.GaloisRingUnits
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
+import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import Mathlib.Data.List.GetD
 
 /-!
@@ -28,6 +37,10 @@ the contraction algorithm of [OpenAI2026ETH] (Appendix D.4.4, pp. 60–61).
 * **Truncated products** (`GaloisRingArith.tmul`) of polynomials in `z` over `A_p`: the first
   `J` coefficients of a product, by the Cauchy formula (`GaloisRingArith.val_tmul`).
 
+Truncated products and `GaloisRingArith.shiftDown` are polynomial-time, with the precision, the
+length and the shift in unary (`GaloisRingArith.computableInPolyTime_tmul`,
+`GaloisRingArith.computableInPolyTime_shiftDown`).
+
 ## Main definitions
 
 * `Cslib.GaloisRingArith.reduce`: reduction to a lower precision.
@@ -39,6 +52,8 @@ the contraction algorithm of [OpenAI2026ETH] (Appendix D.4.4, pp. 60–61).
 * `Cslib.GaloisRingArith.mod_eq_of_val_eq`, `Cslib.GaloisRingArith.exists_val_eq`: coordinates.
 * `Cslib.GaloisRingArith.val_shiftDown`: cancelling a common power of two.
 * `Cslib.GaloisRingArith.val_tmul`: truncated products are correct.
+* `Cslib.GaloisRingArith.computableInPolyTime_tmul`,
+  `Cslib.GaloisRingArith.computableInPolyTime_shiftDown`: polynomial time.
 
 ## References
 
@@ -233,5 +248,120 @@ theorem isUnit_natCast_of_odd {o : ℕ} (ho : Odd o) : IsUnit (o : Ring p fl) :=
   have hcop : Nat.Coprime o (2 ^ p) := (Nat.coprime_two_right.mpr ho).pow_right p
   have := (ZMod.unitOfCoprime o hcop).isUnit.map (algebraMap (ZMod (2 ^ p)) (Ring p fl))
   simpa using this
+
+/-! ### Polynomial time -/
+
+section PolyTime
+
+open Turing.MultiTapeTM
+
+variable {α : Type} {encIn : α ↪ List Bool}
+
+private theorem lengthPolyTime {β : Type} {encB : β ↪ List Bool} {l : α → List β}
+    (hl : ComputableInPolyTime l encIn (encList encB)) :
+    ComputableInPolyTime (fun x => (l x).length) encIn encUnary :=
+  (ComputableInPolyTime.length_list encB).comp hl
+
+private theorem getDPolyTime {P : α → List (List ℕ)} {k : α → ℕ}
+    (hP : ComputableInPolyTime P encIn (encList (encList encNat)))
+    (hk : ComputableInPolyTime k encIn encUnary) :
+    ComputableInPolyTime (fun x => (P x).getD (k x) []) encIn (encList encNat) :=
+  (ComputableInPolyTime.listGetD (encA := encList encNat) []).comp (hP.prod hk)
+
+/-- The zero element is polynomial-time. -/
+theorem computableInPolyTime_zero {fl : α → List ℕ}
+    (hfl : ComputableInPolyTime fl encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => zero (fl x)) encIn (encList encNat) :=
+  computableInPolyTime_tabulate (g := fun _ _ => 0) (lengthPolyTime hfl)
+    (ComputableInPolyTime.const 0)
+
+/-- The length `e (2 p + 1)` of a reduced coefficient list is polynomially bounded. -/
+theorem polyBounded_reducedLength {p : α → ℕ} {fl : α → List ℕ}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat)) :
+    PolyBounded (fun x => (encIn x).length) (fun x => (fl x).length * (2 * p x + 1)) := by
+  have hpl : PolyBounded (fun x => (encIn x).length) p := by
+    simpa using (ComputableInPolyTime.polyBounded_length hp)
+  have hfll : PolyBounded (fun x => (encIn x).length) fun x => (fl x).length :=
+    (lengthPolyTime hfl).polyBounded_length.mono fun x => by simp
+  exact hfll.mul (((PolyBounded.const 2).mul hpl).add (PolyBounded.const 1))
+
+/-- **Division of the coordinates by `2 ^ Δ` is polynomial-time**, with `Δ` in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_shiftDown {Δ : α → ℕ} {c : α → List ℕ}
+    (hΔ : ComputableInPolyTime Δ encIn encUnary)
+    (hc : ComputableInPolyTime c encIn (encList encNat)) :
+    ComputableInPolyTime (fun x => shiftDown (Δ x) (c x)) encIn (encList encNat) :=
+  ComputableInPolyTime.mapWithInput hc (ComputableInPolyTime.binary_div.comp
+    ((ComputableInPolyTime.snd encIn encNat).prod (ComputableInPolyTime.binary_two_pow.comp
+      (hΔ.comp (ComputableInPolyTime.fst encIn encNat)))))
+
+theorem lt_of_mem_cauchyCoeff {P R : List (List ℕ)} {j x : ℕ} (hx : x ∈ cauchyCoeff p fl P R j) :
+    x < 2 ^ p := by
+  rw [cauchyCoeff, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil] at hx
+  exact lt_of_mem_add hx
+
+theorem length_cauchyCoeff (P R : List (List ℕ)) (j : ℕ) :
+    (cauchyCoeff p fl P R j).length = fl.length := by
+  rw [cauchyCoeff, List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+    length_add]
+
+/-- **Cauchy coefficients are polynomial-time**, with the precision and the index in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_cauchyCoeff {p j : α → ℕ} {fl : α → List ℕ}
+    {P R : α → List (List ℕ)}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (hP : ComputableInPolyTime P encIn (encList (encList encNat)))
+    (hR : ComputableInPolyTime R encIn (encList (encList encNat)))
+    (hj : ComputableInPolyTime j encIn encUnary) :
+    ComputableInPolyTime (fun x => cauchyCoeff (p x) (fl x) (P x) (R x) (j x)) encIn
+      (encList encNat) := by
+  have hstep : ComputableInPolyTime (fun q : (α × List ℕ) × ℕ =>
+      add (p q.1.1) (fl q.1.1) q.1.2 (mul (p q.1.1) (fl q.1.1) ((P q.1.1).getD q.2 [])
+        ((R q.1.1).getD (j q.1.1 - q.2) [])))
+      (encPair (encPair encIn (encList encNat)) encUnary) (encList encNat) := by
+    have hq := ComputableInPolyTime.fst (encPair encIn (encList encNat)) encUnary
+    have hx := (ComputableInPolyTime.fst encIn (encList encNat)).comp hq
+    have hacc := (ComputableInPolyTime.snd encIn (encList encNat)).comp hq
+    have hi := ComputableInPolyTime.snd (encPair encIn (encList encNat)) encUnary
+    exact computableInPolyTime_add (hp.comp hx) (hfl.comp hx) hacc
+      (computableInPolyTime_mul (hp.comp hx) (hfl.comp hx) (getDPolyTime (hP.comp hx) hi)
+        (getDPolyTime (hR.comp hx) (ComputableInPolyTime.unary_sub' (hj.comp hx) hi)))
+  exact ComputableInPolyTime.foldlWithInput_of_bounded_growth
+    (encA := encUnary) (encL := encList encUnary)
+    (step := fun x acc i => add (p x) (fl x) acc (mul (p x) (fl x) ((P x).getD i [])
+      ((R x).getD (j x - i) [])))
+    (computableInPolyTime_zero hfl)
+    ⟨ComputableInPolyTime.range.comp
+      (ComputableInPolyTime.unary_add' hj (ComputableInPolyTime.const 1)),
+      hstep, inferInstance, inferInstance⟩
+    ⟨polyBounded_reducedLength hp hfl, fun x acc i _ => by
+      have := length_encList_le (length_add (p x) (fl x) acc (mul (p x) (fl x) ((P x).getD i [])
+        ((R x).getD (j x - i) []))) fun _ h => lt_of_mem_add h
+      omega⟩
+
+/-- **Truncated products are polynomial-time**, with the precision and the length in unary. -/
+@[fun_prop]
+theorem computableInPolyTime_tmul {p J : α → ℕ} {fl : α → List ℕ} {P R : α → List (List ℕ)}
+    (hp : ComputableInPolyTime p encIn encUnary)
+    (hfl : ComputableInPolyTime fl encIn (encList encNat))
+    (hJ : ComputableInPolyTime J encIn encUnary)
+    (hP : ComputableInPolyTime P encIn (encList (encList encNat)))
+    (hR : ComputableInPolyTime R encIn (encList (encList encNat))) :
+    ComputableInPolyTime (fun x => tmul (p x) (fl x) (J x) (P x) (R x)) encIn
+      (encList (encList encNat)) := by
+  have h1 := ComputableInPolyTime.fst encIn encUnary
+  have h2 := ComputableInPolyTime.snd encIn encUnary
+  exact ComputableInPolyTime.mapWithInput (ComputableInPolyTime.range.comp hJ)
+    (computableInPolyTime_cauchyCoeff (hp.comp h1) (hfl.comp h1) (hP.comp h1) (hR.comp h1) h2)
+
+/-- Every coefficient of a truncated product is small. -/
+theorem small_of_mem_tmul {J : ℕ} {P R : List (List ℕ)} {c : List ℕ}
+    (hc : c ∈ tmul p fl J P R) : Small p fl c := by
+  obtain ⟨j, -, rfl⟩ := List.mem_map.mp hc
+  exact small_of_lt (length_cauchyCoeff P R j) fun _ h => lt_of_mem_cauchyCoeff h
+
+end PolyTime
 
 end Cslib.GaloisRingArith
