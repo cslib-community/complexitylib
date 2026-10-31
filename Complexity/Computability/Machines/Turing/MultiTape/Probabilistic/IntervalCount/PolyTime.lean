@@ -60,7 +60,8 @@ their stored cells (`Turing.MultiTapeTM.encBiTape`), and the head positions in b
 ## Main results
 
 * `Turing.MultiTapePTM.computableInPolyTime_localRun`: replays are polynomial-time.
-* `Turing.MultiTapePTM.IntervalData.computableInPolyTime_mk`: assembling the arguments.
+* `Turing.MultiTapePTM.IntervalData.computableInPolyTime_mk`,
+  `Turing.MultiTapePTM.ControlData.computableInPolyTime_mk`: assembling the arguments.
 * `Turing.MultiTapePTM.computableInPolyTime_localIntervalCount`: interval counts are
   polynomial-time when the `2 ^ b` coin strings are polynomially many in the input.
 -/
@@ -604,6 +605,16 @@ noncomputable def encIntervalData : IntervalData k State ↪ List Bool :=
   machine.localIntervalCount d.b d.input d.J d.δ d.cIn d.wIn d.cOut d.wOut
 
 variable {α : Type} {input : α ↪ List Bool}
+
+/-- Assemble a control record on plain data from its certified components. -/
+theorem ControlData.computableInPolyTime_mk {state : α → Option State}
+    {off : α → Option (Fin k) → ℕ} {track : α → OutputTrack}
+    (hstate : ComputableInPolyTime state input (encFinite (Option State)))
+    (hoff : ComputableInPolyTime off input (encPi encUnary))
+    (htrack : ComputableInPolyTime track input (encFinite OutputTrack)) :
+    ComputableInPolyTime (fun a => ((state a, off a, track a) : ControlData k State)) input
+      encControlData :=
+  (hstate.prod (hoff.prod htrack)).of_enc_eq fun _ => rfl
 
 /-- Assemble the arguments of an interval count from their certified components. -/
 theorem IntervalData.computableInPolyTime_mk {word : α → List Bool} {b : α → ℕ}
