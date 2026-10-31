@@ -81,6 +81,8 @@ public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.AKS.Congruence
+public import Complexity.Algorithms.WordRAM.AKS.GcdTotient
+public import Complexity.Algorithms.WordRAM.AKS.OrderSearch
 public import Complexity.Algorithms.WordRAM.AKS.PerfectPower
 public import Complexity.Algorithms.WordRAM.AKS.PolyArray
 public import Complexity.Algorithms.WordRAM.AKS.PolyMul
@@ -2768,6 +2770,7 @@ public import Complexity.Foundations.MeasureTheory.Constructions.BorelSpace.Orde
 public import Complexity.Foundations.NumberTheory.AKS.Coefficients
 public import Complexity.Foundations.NumberTheory.AKS.Correctness
 public import Complexity.Foundations.NumberTheory.AKS.Criterion
+public import Complexity.Foundations.NumberTheory.AKS.IntegerVariant
 public import Complexity.Foundations.NumberTheory.AKS.Introspective
 public import Complexity.Foundations.NumberTheory.AKS.PerfectPower
 public import Complexity.Foundations.NumberTheory.AKS.SmallR
