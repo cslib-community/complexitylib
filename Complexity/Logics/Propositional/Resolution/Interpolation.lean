@@ -9,7 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.Resolution.Proof
 public import Cslib.Computability.Circuit.Boolean.Synthesis
-public import Complexity.Computability.Circuit.Monotone.Basic
+public import Complexity.Computability.Circuit.Monotone.Synthesis
 
 /-!
 # Feasible interpolation for resolution
@@ -689,25 +689,6 @@ theorem CNF.RefutableInSize.exists_interpolant {s : ℕ} (h : (A.appendShared B)
 
 /-! ### The monotone interpolant -/
 
-/-- Monotone constants cost one gate. -/
-private theorem synthesis_monotone_const {s : Set ((Fin n → Bool) → Bool)} (b : Bool) :
-    Synthesis Monotone.interpretation s {fun _ => b} 1 :=
-  Synthesis.nullary (I := Monotone.interpretation) (.const b) rfl
-
-/-- A monotone conjunction costs one gate beyond its arguments. -/
-private theorem synthesis_monotone_and {s : Set ((Fin n → Bool) → Bool)}
-    {f g : (Fin n → Bool) → Bool} {a b : ℕ} (hf : Synthesis Monotone.interpretation s {f} a)
-    (hg : Synthesis Monotone.interpretation s {g} b) :
-    Synthesis Monotone.interpretation s {fun x => f x && g x} (a + b + 1) := by
-  simpa [Monotone.interpretation] using hf.binary hg .and
-
-/-- A monotone disjunction costs one gate beyond its arguments. -/
-private theorem synthesis_monotone_or {s : Set ((Fin n → Bool) → Bool)}
-    {f g : (Fin n → Bool) → Bool} {a b : ℕ} (hf : Synthesis Monotone.interpretation s {f} a)
-    (hg : Synthesis Monotone.interpretation s {g} b) :
-    Synthesis Monotone.interpretation s {fun x => f x || g x} (a + b + 1) := by
-  simpa [Monotone.interpretation] using hf.binary hg .or
-
 /-- The monotone basis supplies constants, disjunctions and conjunctions within two gates. -/
 private theorem monotone_gates :
     (∀ b, Synthesis Monotone.interpretation (inputs n) {fun _ => b} 2) ∧
@@ -715,10 +696,10 @@ private theorem monotone_gates :
       Synthesis Monotone.interpretation (inputs n ∪ {f₁, f₂}) {fun a => f₁ a || f₂ a} 2) ∧
     ∀ f₁ f₂ : (Fin n → Bool) → Bool,
       Synthesis Monotone.interpretation (inputs n ∪ {f₁, f₂}) {fun a => f₁ a && f₂ a} 2 :=
-  ⟨fun b => (synthesis_monotone_const b).mono Set.Subset.rfl Set.Subset.rfl (by omega),
-    fun f₁ f₂ => (synthesis_monotone_or (synthesis_fst f₁ f₂) (synthesis_snd f₁ f₂)).mono
+  ⟨fun b => (Synthesis.monotone_const b).mono Set.Subset.rfl Set.Subset.rfl (by omega),
+    fun f₁ f₂ => (Synthesis.monotone_or (synthesis_fst f₁ f₂) (synthesis_snd f₁ f₂)).mono
       Set.Subset.rfl Set.Subset.rfl (by omega),
-    fun f₁ f₂ => (synthesis_monotone_and (synthesis_fst f₁ f₂) (synthesis_snd f₁ f₂)).mono
+    fun f₁ f₂ => (Synthesis.monotone_and (synthesis_fst f₁ f₂) (synthesis_snd f₁ f₂)).mono
       Set.Subset.rfl Set.Subset.rfl (by omega)⟩
 
 /-- **Monotone feasible interpolation for resolution**, when the shared variables occur only
@@ -734,7 +715,7 @@ theorem CNF.IsProof.exists_monotone_interpolant_of_positive
   refine exists_circuit_of_good (ρA := leftPos) (ρB := rightPart) (fun _ _ _ => rfl)
     (fun _ _ _ => rfl) (fun d hd a _ l hl he => ?_) (fun _ _ _ _ l _ he => ?_) hconst hor hand
     (fun i _ _ f₁ f₂ h₁ h₂ => ⟨_, good_posSel i h₁ h₂,
-      (synthesis_monotone_and (synthesis_monotone_or (synthesis_input f₁ f₂ i)
+      (Synthesis.monotone_and (Synthesis.monotone_or (synthesis_input f₁ f₂ i)
         (synthesis_fst f₁ f₂)) (synthesis_snd f₁ f₂)).mono Set.Subset.rfl Set.Subset.rfl
         (by omega)⟩) h hnil
   · rcases l with ⟨i | _, b⟩
@@ -757,7 +738,7 @@ theorem CNF.IsProof.exists_monotone_interpolant_of_negative
   refine exists_circuit_of_good (ρA := leftPart) (ρB := rightNeg) (fun _ _ _ => rfl)
     (fun _ _ _ => rfl) (fun _ _ _ _ l _ he => ?_) (fun d hd a _ l hl he => ?_) hconst hor hand
     (fun i _ _ f₁ f₂ h₁ h₂ => ⟨_, good_negSel i h₁ h₂,
-      (synthesis_monotone_or (synthesis_monotone_and (synthesis_input f₁ f₂ i)
+      (Synthesis.monotone_or (Synthesis.monotone_and (synthesis_input f₁ f₂ i)
         (synthesis_snd f₁ f₂)) (synthesis_fst f₁ f₂)).mono Set.Subset.rfl Set.Subset.rfl
         (by omega)⟩) h hnil
   · rcases l with ⟨_ | _, b⟩ <;> simpa [leftPart] using he
