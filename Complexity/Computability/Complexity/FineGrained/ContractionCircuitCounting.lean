@@ -57,6 +57,8 @@ finite signatures, with the exponent in the number of gates, is a library extens
 * `ContractionCounting.exists_linearSizeCircuitSatCounter`,
   `ContractionCounting.exists_linearSizeBooleanCircuitSatCounter`: for each size constant `C`,
   exponent `A (n + 1) / √⌊log₂ (n + 2)⌋` on circuits with at most `C n + C` gates.
+* `Nat.mul_succ_div_sqrt_log_two_le`: the scale `A (y + 1) / √⌊log₂ (y + 2)⌋` is monotone up to
+  constants, which transfers a bound in the number of variables or gates to `s` or `n`.
 
 ## References
 
