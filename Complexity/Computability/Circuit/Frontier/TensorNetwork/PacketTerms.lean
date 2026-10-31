@@ -52,6 +52,12 @@ bounds: time `exp(O(L log s))` and polynomial space.
   target modes, `L` row ports and `Z` polynomial in the input and the reduced coefficient lists
   (`NativePacket.entryCertificate_le`). The exponents are read in unary, since the source's are
   below the precision.
+* **Descriptors** (`NativePacket.PacketDesc`): a packet context, the ports `(isRow, slot)` of the
+  vertex in its port order and the dense exponents, "its packet data, the tuple `β`, the
+  interpolation value, and the creation precision" (p. 63). `NativePacket.vertexCertificate`
+  computes the entry at the bits on the ports, the evaluator of
+  `Cslib.Circuits.Frontier.DescribedNetwork` direct summation at coefficient lists, with the same
+  bounds (`NativePacket.vertexCertificate_le`).
 
 ## Main definitions
 
@@ -59,6 +65,10 @@ bounds: time `exp(O(L log s))` and polynomial space.
 * `Cslib.Circuits.Frontier.NativePacket.packetTerms`: coefficient extraction for a packet.
 * `Cslib.Circuits.Frontier.NativePacket.packetEntryNative`: the native packet entry.
 * `Cslib.Circuits.Frontier.NativePacket.entryCertificate`: its native machine.
+* `Cslib.Circuits.Frontier.NativePacket.PacketDesc`,
+  `Cslib.Circuits.Frontier.NativePacket.packetVertexEntry`,
+  `Cslib.Circuits.Frontier.NativePacket.vertexCertificate`: descriptors of packet vertices, their
+  entries at the bits on their ports, and the native machine for them.
 
 ## Main results
 
@@ -69,7 +79,10 @@ bounds: time `exp(O(L log s))` and polynomial space.
 * `Cslib.Circuits.Frontier.NativePacket.val_packetEntryNative_eq`,
   `Cslib.Circuits.Frontier.NativePacket.map_val_packetEntryNative`: the native entry is the
   packet entry, in `A_p` and in every ring receiving it.
-* `Cslib.Circuits.Frontier.NativePacket.entryCertificate_le`: its time and space.
+* `Cslib.Circuits.Frontier.NativePacket.entryCertificate_le`,
+  `Cslib.Circuits.Frontier.NativePacket.vertexCertificate_le`: their time and space.
+* `Cslib.Circuits.Frontier.NativePacket.val_packetVertexEntry`: the entry of a packet vertex is
+  the packet entry at the ports read from its bits.
 
 ## References
 
@@ -1177,6 +1190,200 @@ theorem entryCertificate_le :
       _ ≤ (G + D) * Z ^ (G + D) := Nat.mul_le_mul (by omega) hWK
 
 end Certificate
+
+/-! ### Descriptors of packet vertices -/
+
+/-- **The descriptor of a packet vertex**: a packet context, whose column ports are read from
+the bits instead, the ports of the vertex in its port order, each `(isRow, slot)`, and the dense
+exponents of the modes of the packet. -/
+abbrev PacketDesc := PacketCtx × (List (Bool × ℕ) × List ℕ)
+
+/-- The ports of one side, with the bits on them: the slots of the ports with `isRow = side`,
+paired with their bits, in port order. -/
+def sidePorts (ports : List (Bool × ℕ)) (bs : List Bool) (side : Bool) : List (ℕ × Bool) :=
+  ((List.range ports.length).filter fun j => (ports.getD j (false, 0)).1 == side).map fun j =>
+    ((ports.getD j (false, 0)).2, bs.getD j false)
+
+/-- **The entry of a packet vertex at the bits on its ports**: the native packet entry, with the
+row ports and the column ports read from the bits. -/
+def packetVertexEntry (d : PacketDesc) (bs : List Bool) : List ℕ :=
+  packetEntryNative { d.1 with cols := sidePorts d.2.1 bs false } (sidePorts d.2.1 bs true) d.2.2
+
+/-- The encoding of a packet descriptor: the context, the ports in binary, and the exponents in
+unary. -/
+abbrev encPacketDesc : PacketDesc ↪ List Bool :=
+  encPair PacketCtx.enc (encPair (encList (encPair encBool encNat)) (encList encUnary))
+
+/-- The ports of one side are polynomial-time. -/
+theorem sidePorts_polyTime {α : Type} {encIn : α ↪ List Bool} {ports : α → List (Bool × ℕ)}
+    {bs : α → List Bool} {side : α → Bool}
+    (hports : ComputableInPolyTime ports encIn (encList (encPair encBool encNat)))
+    (hbs : ComputableInPolyTime bs encIn encBits)
+    (hside : ComputableInPolyTime side encIn encBool) :
+    ComputableInPolyTime (fun x => sidePorts (ports x) (bs x) (side x)) encIn
+      (encList (encPair encNat encBool)) := by
+  have h1 := ComputableInPolyTime.fst encIn encUnary
+  have h2 := ComputableInPolyTime.snd encIn encUnary
+  have hport := (ComputableInPolyTime.listGetD (encA := encPair encBool encNat)
+    (encL := encList (encPair encBool encNat)) (false, 0)).comp ((hports.comp h1).prod h2)
+  have htest := ComputableInPolyTime.beq ((ComputableInPolyTime.fst _ _).comp hport)
+    (hside.comp h1)
+  have hfilt := ComputableInPolyTime.filterWithInput
+    (test := fun x j => ((ports x).getD j (false, 0)).1 == side x)
+    (ComputableInPolyTime.range.comp ((ComputableInPolyTime.length_list _).comp hports)) htest
+  have hbit := (ComputableInPolyTime.listGetD (encA := encBool) (encL := encBits) false).comp
+    ((hbs.comp h1).prod h2)
+  exact ComputableInPolyTime.mapWithInput
+    (f := fun x j => (((ports x).getD j (false, 0)).2, (bs x).getD j false)) hfilt
+    (((ComputableInPolyTime.snd _ _).comp hport).prod hbit)
+
+/-- The input of the native packet evaluator from a descriptor and the bits on its ports. -/
+theorem entryInput_polyTime :
+    ComputableInPolyTime (fun q : PacketDesc × List Bool =>
+      (({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
+        (sidePorts q.1.2.1 q.2 true, q.1.2.2)))
+      (encPair encPacketDesc encBits) encEntryInput := by
+  have hd := ComputableInPolyTime.fst encPacketDesc encBits
+  have hbs := ComputableInPolyTime.snd encPacketDesc encBits
+  have hc := (ComputableInPolyTime.fst _ _).comp hd
+  have hports := (ComputableInPolyTime.fst (encList (encPair encBool encNat))
+    (encList encUnary)).comp ((ComputableInPolyTime.snd _ _).comp hd)
+  have hβ := (ComputableInPolyTime.snd (encList (encPair encBool encNat))
+    (encList encUnary)).comp ((ComputableInPolyTime.snd _ _).comp hd)
+  have hcols := sidePorts_polyTime hports hbs (ComputableInPolyTime.const false)
+  have hrows := sidePorts_polyTime hports hbs (ComputableInPolyTime.const true)
+  have h01 := (PacketCtx.p_polyTime.comp hc).prod (PacketCtx.fl_polyTime.comp hc)
+  have h23 := (PacketCtx.a_polyTime.comp hc).prod (PacketCtx.L_polyTime.comp hc)
+  have h45 := (PacketCtx.i_polyTime.comp hc).prod (PacketCtx.tiles_polyTime.comp hc)
+  have hsyms := (PacketCtx.e₁_polyTime.comp hc).prod ((PacketCtx.e₂_polyTime.comp hc).prod
+    (PacketCtx.differ_polyTime.comp hc))
+  have hlast := hcols.prod (PacketCtx.ζ_polyTime.comp hc)
+  have htuple := h01.prod (h23.prod (h45.prod ((PacketCtx.t_polyTime.comp hc).prod
+    ((PacketCtx.nb_polyTime.comp hc).prod (hsyms.prod hlast)))))
+  have hctx : ComputableInPolyTime (fun q : PacketDesc × List Bool =>
+      ({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx))
+      (encPair encPacketDesc encBits) PacketCtx.enc :=
+    htuple.of_enc_eq fun _ => rfl
+  exact hctx.prod (hrows.prod hβ)
+
+/-- **The native packet evaluator on descriptors**: one native machine for the entry of a packet
+vertex at the bits on its ports, the `ev` of the direct summation of
+`Cslib.Circuits.Frontier.DescribedNetwork` at coefficient lists (`SumOps.galois`). -/
+noncomputable def vertexCertificate :
+    NativeCertificate (fun q : PacketDesc × List Bool => packetVertexEntry q.1 q.2)
+      (encPair encPacketDesc encBits) (encList encNat) :=
+  (entryCertificate.comp (NativeCertificate.ofPolyTime entryInput_polyTime)).congr fun _ => rfl
+
+/-- **The resources of the native packet evaluator on descriptors.** There is `K` such that on a
+descriptor and bits of total length `n`, with `m` target modes and `L` row ports, if the reduced
+coefficient lists of its precision are at most `Rv` bits long, then with `Z = n + m + Rv + 2` the
+time is at most `K (m + 2) ^ L Z ^ K` and the space at most `K Z ^ K`. -/
+theorem vertexCertificate_le :
+    ∃ K : ℕ, ∀ (q : PacketDesc × List Bool) (Rv : ℕ),
+      (∀ y, SumOps.galois.Reduced (q.1.1.p, q.1.1.fl) y → (encList encNat y).length ≤ Rv) →
+      vertexCertificate.time q ≤ K * ((targetModes q.1.1).length + 2) ^
+          (sidePorts q.1.2.1 q.2 true).length *
+          ((encPair encPacketDesc encBits q).length + (targetModes q.1.1).length + Rv + 2) ^ K ∧
+        vertexCertificate.space q ≤ K * ((encPair encPacketDesc encBits q).length +
+          (targetModes q.1.1).length + Rv + 2) ^ K := by
+  obtain ⟨K₀, hK₀⟩ := entryCertificate_le
+  have hI := NativeCertificate.ofPolyTime_isPolynomial entryInput_polyTime
+  obtain ⟨ci, di, hit⟩ := hI.1.exists_le
+  obtain ⟨ci', di', his⟩ := hI.2.exists_le
+  obtain ⟨cl, dl, hlen⟩ := (ComputableInPolyTime.polyBounded_length entryInput_polyTime).exists_le
+  obtain ⟨D, hD⟩ : ∃ D, D = (dl + 1) * K₀ + di + di' := ⟨_, rfl⟩
+  obtain ⟨G, hG⟩ : ∃ G, G = K₀ * (cl + 1) ^ K₀ + ci + ci' := ⟨_, rfl⟩
+  refine ⟨G + D, fun q Rv hRv => ?_⟩
+  obtain ⟨n, hn⟩ : ∃ n, n = (encPair encPacketDesc encBits q).length := ⟨_, rfl⟩
+  obtain ⟨m, hm⟩ : ∃ m, m = (targetModes q.1.1).length := ⟨_, rfl⟩
+  obtain ⟨Z, hZ⟩ : ∃ Z, Z = n + m + Rv + 2 := ⟨_, rfl⟩
+  rw [← hn, ← hm, ← hZ]
+  have hZ1 : 1 ≤ Z := by omega
+  have hpowZ {a b : ℕ} (hab : a ≤ b) : Z ^ a ≤ Z ^ b := Nat.pow_le_pow_right hZ1 hab
+  obtain ⟨P, hPdef⟩ : ∃ P, P = (m + 2) ^ (sidePorts q.1.2.1 q.2 true).length := ⟨_, rfl⟩
+  rw [← hPdef]
+  have hP1 : 1 ≤ P := hPdef ▸ Nat.one_le_pow _ _ (by omega)
+  have hentry := hK₀ ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
+    (sidePorts q.1.2.1 q.2 true, q.1.2.2))) Rv hRv
+  -- The input of the entry is polynomially long.
+  have hin := hlen q
+  rw [← hn] at hin
+  obtain ⟨n', hn'⟩ : ∃ n', n' = (encEntryInput ((({ q.1.1 with
+    cols := sidePorts q.1.2.1 q.2 false } : PacketCtx), (sidePorts q.1.2.1 q.2 true,
+      q.1.2.2)))).length := ⟨_, rfl⟩
+  rw [← hn'] at hin hentry
+  have hZ' : n' + m + Rv + 2 ≤ (cl + 1) * Z ^ (dl + 1) := by
+    have h1 : cl * (n + 1) ^ dl ≤ cl * Z ^ (dl + 1) :=
+      Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans (hpowZ (by omega)))
+    have h2 : Z ≤ Z ^ (dl + 1) := by
+      calc Z = Z ^ 1 := (pow_one Z).symm
+        _ ≤ Z ^ (dl + 1) := hpowZ (by omega)
+    have e : (cl + 1) * Z ^ (dl + 1) = cl * Z ^ (dl + 1) + Z ^ (dl + 1) := by ring
+    omega
+  have hZK : (n' + m + Rv + 2) ^ K₀ ≤ (cl + 1) ^ K₀ * Z ^ D := by
+    calc (n' + m + Rv + 2) ^ K₀ ≤ ((cl + 1) * Z ^ (dl + 1)) ^ K₀ := Nat.pow_le_pow_left hZ' _
+      _ = (cl + 1) ^ K₀ * Z ^ ((dl + 1) * K₀) := by rw [Nat.mul_pow, ← pow_mul]
+      _ ≤ (cl + 1) ^ K₀ * Z ^ D := Nat.mul_le_mul_left _ (hpowZ (by omega))
+  have het : entryCertificate.time ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } :
+      PacketCtx), (sidePorts q.1.2.1 q.2 true, q.1.2.2))) ≤
+      K₀ * P * (n' + m + Rv + 2) ^ K₀ := by
+    rw [hPdef, hm]; exact hentry.1
+  have hes : entryCertificate.space ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } :
+      PacketCtx), (sidePorts q.1.2.1 q.2 true, q.1.2.2))) ≤ K₀ * (n' + m + Rv + 2) ^ K₀ := by
+    rw [hm]; exact hentry.2
+  have hit' : (NativeCertificate.ofPolyTime entryInput_polyTime).time q ≤ ci * Z ^ D :=
+    (hit q).trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans
+      (hpowZ (by omega))))
+  have his' : (NativeCertificate.ofPolyTime entryInput_polyTime).space q ≤ ci' * Z ^ D :=
+    (his q).trans (Nat.mul_le_mul_left _ ((Nat.pow_le_pow_left (by omega) _).trans
+      (hpowZ (by omega))))
+  have hWK : Z ^ D ≤ Z ^ (G + D) := hpowZ (by omega)
+  have htime : vertexCertificate.time q =
+      (NativeCertificate.ofPolyTime entryInput_polyTime).time q +
+      entryCertificate.time ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
+        (sidePorts q.1.2.1 q.2 true, q.1.2.2))) := rfl
+  have hspace : vertexCertificate.space q =
+      (NativeCertificate.ofPolyTime entryInput_polyTime).space q +
+      entryCertificate.space ((({ q.1.1 with cols := sidePorts q.1.2.1 q.2 false } : PacketCtx),
+        (sidePorts q.1.2.1 q.2 true, q.1.2.2))) := rfl
+  constructor
+  · rw [htime]
+    have h1 : K₀ * P * (n' + m + Rv + 2) ^ K₀ ≤ P * (K₀ * (cl + 1) ^ K₀ * Z ^ D) := by
+      calc K₀ * P * (n' + m + Rv + 2) ^ K₀ ≤ K₀ * P * ((cl + 1) ^ K₀ * Z ^ D) :=
+            Nat.mul_le_mul_left _ hZK
+        _ = P * (K₀ * (cl + 1) ^ K₀ * Z ^ D) := by ring
+    have h2 : ci * Z ^ D ≤ P * (ci * Z ^ D) := Nat.le_mul_of_pos_left _ hP1
+    have e : P * (K₀ * (cl + 1) ^ K₀ * Z ^ D) + P * (ci * Z ^ D) ≤ P * (G * Z ^ D) := by
+      rw [← Nat.mul_add, ← Nat.add_mul]
+      exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (by omega))
+    calc _ ≤ P * (G * Z ^ D) := by omega
+      _ ≤ (G + D) * P * Z ^ (G + D) := by
+          rw [show (G + D) * P * Z ^ (G + D) = P * ((G + D) * Z ^ (G + D)) by ring]
+          exact Nat.mul_le_mul_left _ (Nat.mul_le_mul (by omega) hWK)
+  · rw [hspace]
+    have h1 : K₀ * (n' + m + Rv + 2) ^ K₀ ≤ K₀ * (cl + 1) ^ K₀ * Z ^ D := by
+      rw [Nat.mul_assoc]; exact Nat.mul_le_mul_left _ hZK
+    calc _ ≤ (K₀ * (cl + 1) ^ K₀ + ci') * Z ^ D := by rw [Nat.add_mul]; omega
+      _ ≤ (G + D) * Z ^ (G + D) := Nat.mul_le_mul (by omega) hWK
+
+/-- **The entry of a packet vertex is the packet entry** at the row and column ports read from
+its bits. -/
+theorem val_packetVertexEntry (d : PacketDesc) (bs : List Bool) (hL : d.1.L = 2 ^ d.1.a)
+    (hia : d.1.i < d.1.a) (htiles : d.1.tiles = 2 ^ (d.1.i + 1))
+    (ht : d.1.t ∈ cauchyGrid (2 ^ d.1.a)) (hti : (2 : ℤ) ^ d.1.i ∣ d.1.t)
+    (hti' : ¬ (2 : ℤ) ^ (d.1.i + 1) ∣ d.1.t) (hports : ∀ x ∈ d.2.1, x.2 < 2 ^ d.1.a) :
+    val d.1.p d.1.fl (packetVertexEntry d bs) =
+      packetEntry (p := d.1.nb) (scalarHom d.1.p d.1.fl) (val d.1.p d.1.fl d.1.ζ) d.1.a d.1.i
+        d.1.t d.1.e₁ d.1.e₂ d.1.differ (fun Z => d.2.2.getD (Z.1 * d.1.nb + Z.2) 0)
+        (sidePorts d.2.1 bs true) (sidePorts d.2.1 bs false) := by
+  have hside (side : Bool) : ∀ r ∈ sidePorts d.2.1 bs side, r.1 < 2 ^ d.1.a := by
+    intro r hr
+    obtain ⟨j, hj, rfl⟩ := List.mem_map.mp hr
+    have hj' := List.mem_range.mp (List.mem_filter.mp hj).1
+    exact hports _ (by rw [List.getD_eq_getElem _ _ hj']; exact List.getElem_mem _)
+  exact val_packetEntryNative_eq { d.1 with cols := sidePorts d.2.1 bs false } hL hia htiles ht
+    hti hti' (hside true) (hside false) d.2.2
+
 
 end NativePacket
 

@@ -59,4 +59,24 @@ noncomputable example : Cslib.GenericRAM.NativeCertificate
     encEntryInput (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encNat) :=
   entryCertificate
 
+/-- The descriptor of the tiny packet vertex: a row port in slot `0`, then a column port in slot
+`1`, and zero exponents. Its column ports are read from the bits. -/
+def desc : PacketDesc := (ctx, ([(true, 0), (false, 1)], [0, 0, 0, 0]))
+
+-- At the bits `1, 1` on its ports, the entry is the kernel value `5 + 2 U`.
+example : packetVertexEntry desc [true, true] = [5, 2] := by decide
+
+-- With the column bit `0`, the local form vanishes, and the row factor at bit `1` is `0`.
+example : packetVertexEntry desc [true, false] = [0, 0] := by decide
+
+/-- The correctness theorem applies to the descriptor. -/
+theorem val_desc (bs : List Bool) :
+    GaloisRingArith.val 3 [1, 1] (packetVertexEntry desc bs) =
+      packetEntry (p := 2) (scalarHom 3 [1, 1]) (GaloisRingArith.val 3 [1, 1] [0, 1]) 1 0 1 true
+        false true (fun Z => [0, 0, 0, 0].getD (Z.1 * 2 + Z.2) 0) (sidePorts desc.2.1 bs true)
+        (sidePorts desc.2.1 bs false) :=
+  val_packetVertexEntry desc bs (by decide) (by decide) (by decide)
+    (by simp [desc, ctx, mem_cauchyGrid]) (by norm_num [desc, ctx]) (by norm_num [desc, ctx])
+    (by decide)
+
 end ComplexityTests.TensorNetworkPacketTerms
