@@ -14,16 +14,16 @@ import Mathlib.Data.List.FinRange
 # Deterministic `k`-competitive lower bound for online paging
 
 This file formalizes Theorem 5 of
-[Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, p. 205]
-[SleatorTarjan1985] at equal online and offline fast-memory capacity (`n_A = n_MIN = k`, `0 < k`):
-no deterministic online paging strategy can achieve a competitive ratio strictly smaller than `k`
-(neither any rational ratio `p / q < k` via `exists_ratio_violation_of_lt`, nor any integer factor
-`c < k` via `not_isCompetitiveFrom_of_lt`), regardless of the additive constant `b : Nat` and even
-when restricted to starting from the empty cache `∅`.
+[Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, Section 4 ("Paging"),
+p. 207][SleatorTarjan1985] at equal online and offline fast-memory capacity (`n_A = n_MIN = k`,
+`0 < k`): no deterministic online paging strategy can achieve a competitive ratio strictly smaller
+than `k` (neither any rational ratio `p / q < k` via `exists_ratio_violation_of_lt`, nor any
+integer factor `c < k` via `not_isCompetitiveFrom_of_lt`), regardless of the additive constant
+`b : Nat` and even when restricted to starting from the empty cache `∅`.
 
 ## Source statement and proof structure
 
-In [SleatorTarjan1985], Section "Paging Rules" (p. 205), Theorem 5 shows for fast-memory capacities
+In [SleatorTarjan1985], Section 4 ("Paging"), p. 207, Theorem 5 shows for fast-memory capacities
 `n_MIN ≤ n_A` that against a universe of `n_A + 1` pages, for any deterministic online paging
 algorithm `A` there exist arbitrarily long request sequences on which `A` incurs at least
 `n_A / (n_A - n_MIN + 1)` times as many faults (up to initial-cache warmup) as an offline algorithm

@@ -15,9 +15,9 @@ public import Mathlib.Data.Finset.Card
 
 This file instantiates `Cslib.Algorithms.Lean.Online.Problem` for the classical unweighted
 demand-paging (cache replacement) problem of
-[Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, Section "Paging
-Rules", pp. 205–206][SleatorTarjan1985] and [Cormen, Leiserson, Rivest, and Stein, *Introduction
-to Algorithms*, Problem 16-5][CLRS2009].
+[Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, Section 4 ("Paging"),
+pp. 207–208][SleatorTarjan1985] and [Cormen, Leiserson, Rivest, and Stein, *Introduction to
+Algorithms*, third edition, Problem 16-5 ("Off-line caching")][CLRS2009].
 
 Over a page universe `α` (`[DecidableEq α]`) and cache capacity `k : Nat`:
 

@@ -16,16 +16,16 @@ import Mathlib.Data.List.TakeDrop
 
 This file implements the least-recently-used (LRU) online paging rule and proves its
 `k`-competitiveness via a `Cslib.Stateful.Amortized` potential certificate, formalizing Theorem 6
-of [Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, p. 206]
-[SleatorTarjan1985] in the equal-capacity (`n_LRU = n_MIN = k`) demand-paging model of
-`Complexity.Algorithms.Lean.Paging.Basic`.
+of [Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*, Section 4
+("Paging"), p. 207 (proof pp. 207–208)][SleatorTarjan1985] in the equal-capacity
+(`n_LRU = n_MIN = k`) demand-paging model of `Complexity.Algorithms.Lean.Paging.Basic`.
 
 ## Source statement and mapping
 
-In [SleatorTarjan1985], Section "Paging Rules" (pp. 205–206), Theorem 6 bounds the page faults of
-LRU with fast-memory capacity `n_LRU` against any offline paging algorithm with fast-memory
-capacity `n_MIN ≤ n_LRU` by `(n_LRU / (n_LRU - n_MIN + 1)) · F_MIN + n_MIN`. Specializing to equal
-online and offline fast-memory capacity (`n_LRU = n_MIN = k`, `0 < k`):
+In [SleatorTarjan1985], Section 4 ("Paging"), pp. 207–208, Theorem 6 (p. 207) bounds the page
+faults of LRU with fast-memory capacity `n_LRU` against any offline paging algorithm with
+fast-memory capacity `n_MIN ≤ n_LRU` by `(n_LRU / (n_LRU - n_MIN + 1)) · F_MIN + n_MIN`.
+Specializing to equal online and offline fast-memory capacity (`n_LRU = n_MIN = k`, `0 < k`):
 
 * Concrete LRU memory is a duplicate-free list `q : List α` (`q.Nodup ∧ q.length ≤ k`) ordered from
   most recently used (`head`) to least recently used (`last`).

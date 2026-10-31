@@ -15,8 +15,8 @@ public import Complexity.Foundations.Semantics.Stateful.Amortized
 This file defines a shared action and cost model for deterministic online algorithms and offline
 reference schedules, following the amortized competitive-analysis framework of
 [Sleator and Tarjan, *Amortized Efficiency of List Update and Paging Rules*][SleatorTarjan1985]
-and [Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, Chapter 17 and
-Problem 17-5][CLRS2009].
+and [Cormen, Leiserson, Rivest, and Stein, *Introduction to Algorithms*, third edition, Chapter 17
+and Problem 17-5 ("Competitive analysis of self-organizing lists with move-to-front")][CLRS2009].
 
 An online `Problem` specifies an observable configuration type `State`, a request type `Req`, an
 initial-state predicate `ValidInit`, a single-step transition relation `ValidStep`, and a
