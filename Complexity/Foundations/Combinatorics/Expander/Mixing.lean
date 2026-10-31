@@ -48,6 +48,8 @@ says that spectral expanders are edge expanders [Arora and Barak, Section 21.2][
   expectations plus the correlation of the centered functions.
 * `Cslib.RotationMap.sq_expect_mul_walk_pow_sub_le`: the mixing lemma for functions and walks of
   any length.
+* `Cslib.RotationMap.expect_walk_pow_sub_expect_sq_le`: walks of length `t` contract the
+  variance by `λ(G) ^ (2 t)`.
 * `Cslib.RotationMap.abs_card_interedges_sub_le`,
   `Cslib.RotationMap.abs_card_interedges_sub_le_mul_sqrt`: the expander mixing lemma.
 * `Cslib.RotationMap.le_card_interedges_compl_of_expect_mul_walk_le`,
@@ -104,6 +106,18 @@ theorem expect_mul_walk_pow_eq (t : ℕ) (f g : V → ℝ) :
   simp only [hg, sub_mul, mul_sub, expect_sub_distrib, ← expect_mul, ← mul_expect, expect_walk_pow,
     Fintype.expect_const]
   ring
+
+/-- **Variance decay along walks**: a walk of length `t` multiplies the variance of a function,
+its second moment about the mean, by at most `λ(G) ^ (2 t)`; the mean is preserved by
+`expect_walk_pow`. -/
+theorem expect_walk_pow_sub_expect_sq_le (t : ℕ) (f : V → ℝ) :
+    𝔼 v, ((G.walk ^ t) f v - 𝔼 w, f w) ^ 2 ≤
+      G.spectralExpansion ^ (2 * t) * 𝔼 v, (f v - 𝔼 w, f w) ^ 2 := by
+  have hf : (G.walk ^ t) (fun w ↦ f w - 𝔼 u, f u) = fun v ↦ (G.walk ^ t) f v - 𝔼 u, f u := by
+    rw [show (fun w ↦ f w - 𝔼 u, f u) = f - fun _ ↦ 𝔼 u, f u from rfl, map_sub, walk_pow_const]
+    rfl
+  have h := G.expect_walk_pow_sq_le_spectralExpansion_pow_mul (expect_sub_expect f) t
+  rwa [hf] at h
 
 /-- **The mixing lemma for functions**: the correlation `𝔼 v, f v * (G.walk ^ t) g v` of `f` with
 `g` along walks of length `t` differs from the product of their expectations by at most
