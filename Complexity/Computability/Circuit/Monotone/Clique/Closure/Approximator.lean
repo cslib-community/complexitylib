@@ -70,13 +70,6 @@ or it is empty and `F` has a member of at most one vertex. -/
 def Derives (r l : ℕ) (F : Finset (Finset (Fin n))) (W : Finset (Fin n)) : Prop :=
   W.card ≤ l ∧ (ImpliedBy r F W ∨ (W = ∅ ∧ ∃ V ∈ F, V.card ≤ 1))
 
-/-- Derivation is monotone in the family. -/
-theorem Derives.mono {F G : Finset (Finset (Fin n))} {W : Finset (Fin n)} (h : Derives r l F W)
-    (hFG : F ⊆ G) : Derives r l G W := by
-  obtain ⟨hW, h | ⟨rfl, V, hV, hV1⟩⟩ := h
-  · exact ⟨hW, Or.inl (h.mono hFG)⟩
-  · exact ⟨hW, Or.inr ⟨rfl, V, hFG hV, hV1⟩⟩
-
 /-- A family is *closed* when it contains every set derived from it. -/
 def IsClosed (r l : ℕ) (F : Finset (Finset (Fin n))) : Prop :=
   ∀ W, Derives r l F W → W ∈ F
@@ -90,11 +83,6 @@ theorem IsClosed.mem_of_subset {F : Finset (Finset (Fin n))} (hF : IsClosed r l 
 theorem IsClosed.empty_mem {F : Finset (Finset (Fin n))} (hF : IsClosed r l F)
     {V : Finset (Fin n)} (hV : V ∈ F) (hV1 : V.card ≤ 1) : ∅ ∈ F :=
   hF ∅ ⟨by simp, Or.inr ⟨rfl, V, hV, hV1⟩⟩
-
-/-- The intersection of two closed families is closed. -/
-theorem IsClosed.inter {F G : Finset (Finset (Fin n))} (hF : IsClosed r l F)
-    (hG : IsClosed r l G) : IsClosed r l (F ∩ G) := fun W hW =>
-  mem_inter.2 ⟨hF W (hW.mono inter_subset_left), hG W (hW.mono inter_subset_right)⟩
 
 /-- The sets of at most `l` vertices. -/
 def smallSets (n l : ℕ) : Finset (Finset (Fin n)) :=
