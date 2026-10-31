@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Logics.Propositional.Resolution.Interpolation.Extraction
+import Complexity.Logics.Propositional.Resolution.Interpolation.PolyTime
 import Complexity.Computability.Circuit.Boolean.EvaluationTime
 
 /-!
@@ -17,12 +17,13 @@ circuit with one input, and the circuit computes `x`. The correctness theorem th
 
 With the polarities swapped, the only interpolant is `¬x`, and the extracted circuit computes it.
 A list without an empty line gives a code that does not decode, and a line without justification
-gets the constant `false`.
+gets the constant `false`. Finally, extracting the interpolant of a refutation and evaluating it on
+an input is computable in polynomial time.
 -/
 
 namespace ComplexityTests.ProofComplexity.InterpolationExtraction
 
-open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Logic.PL
+open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Logic.PL Turing.MultiTapeTM
 
 /-- `A(x, y) = y ∧ (¬y ∨ x)`, which forces `x`. -/
 private def A : CNF (ℕ ⊕ Unit) := [[(.inr (), true)], [(.inr (), false), (.inl 0, true)]]
@@ -121,5 +122,22 @@ line and decodes. -/
 example : CNF.interpolantCode 1 A B [[]] =
     ([(.const false, []), (.const false, []), (.const false, []), (.const false, [])], [4]) := by
   decide
+/-! ### Polynomial time -/
+
+/-- Extracting the interpolant circuit of a refutation and evaluating it on an input is
+polynomial-time, with natural-number private variables in binary. -/
+example : ComputableInPolyTime
+    (fun p : (ℕ × (CNF (ℕ ⊕ ℕ) × CNF (ℕ ⊕ ℕ)) × List (Clause (ℕ ⊕ (ℕ ⊕ ℕ)))) × List Bool =>
+      evalOutput p.2 (CNF.interpolantCode p.1.1 p.1.2.1.1 p.1.2.1.2 p.1.2.2).1
+        ((CNF.interpolantCode p.1.1 p.1.2.1.1 p.1.2.1.2 p.1.2.2).2.headD 0))
+    (encPair (encPair encUnary (encPair (encPair
+      (encList (encList (encPair (encSum encNat encNat) encBool)))
+      (encList (encList (encPair (encSum encNat encNat) encBool))))
+      (encList (encList (encPair (encSum encNat (encSum encNat encNat)) encBool))))) encBits)
+    encBool := by
+  have h := (CNF.computableInPolyTime_interpolantCode encNat encNat).comp
+    (ComputableInPolyTime.fst _ encBits)
+  exact computableInPolyTime_evalOutput (ComputableInPolyTime.snd _ _) h.fst'
+    ((ComputableInPolyTime.headD 0).comp h.snd')
 
 end ComplexityTests.ProofComplexity.InterpolationExtraction

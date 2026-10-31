@@ -338,8 +338,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
   certified DPLL solver runtimes.
-- **Feasible interpolation** ([#1817]): extraction-time bounds for Resolution interpolants over
-  an explicit circuit encoding; a sharper monotone separator bound (Alon–Boppana) for a
+- **Feasible interpolation** ([#1817]): a polynomial-time builder for the monotone interpolant
+  (the De Morgan builder is done); a sharper monotone separator bound (Alon–Boppana) for a
   stronger clique–coloring size lower bound; and the transfer of communication lower bounds to
   proof-size lower bounds.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and

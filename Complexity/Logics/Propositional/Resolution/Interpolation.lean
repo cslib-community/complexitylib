@@ -56,7 +56,9 @@ Line-based refutations (`Cslib.Logic.PL.CNF.IsProof`) are propositions, so the c
 obtained by induction on the refutation rather than computed from it; the existence statements
 here certify its size and correctness, not the running time of extracting it. The invariant of the
 construction is public (`Cslib.Logic.PL.CNF.IsInterpolantAt`), for an arbitrary type of shared
-variables, so that an algorithm extracting the circuit can reuse it.
+variables; `Complexity.Logics.Propositional.Resolution.Interpolation.Extraction` uses it to compute
+the circuit from the lines of a refutation, and
+`Complexity.Logics.Propositional.Resolution.Interpolation.PolyTime` bounds the running time.
 
 ## Main definitions
 
@@ -349,8 +351,9 @@ private theorem good_true {d : Clause (X ⊕ Z)} (hd : d ∈ B)
 /-! ### The invariant as a public notion -/
 
 /-- **The invariant of feasible interpolation** at a line `c` of a refutation of
-`A(x, y) ∧ B(x, z)` [Pudlák, proof of Theorem 1][Pudlak1997]. A Boolean function `f` of the shared
-variables is an *interpolant at* `c` when, for every assignment `a` of the shared variables:
+`A(x, y) ∧ B(x, z)`, a semantic form of the invariant in the proof of
+[Pudlák, Theorem 1][Pudlak1997]. A Boolean function `f` of the shared variables is an
+*interpolant at* `c` when, for every assignment `a` of the shared variables:
 `f a = false` implies that every model `y` of `A(a, ·)` makes true some literal of `c` on a shared
 or `A`-private variable, and `f a = true` implies that every model `z` of `B(a, ·)` makes true some
 literal of `c` on a shared or `B`-private variable. Clauses of `A` have the interpolant `false` and
