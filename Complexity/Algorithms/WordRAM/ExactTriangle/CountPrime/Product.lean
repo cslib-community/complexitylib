@@ -18,9 +18,9 @@ program in its low bank. Its 64-and-above metadata survives the existing native 
 renaming semantics. Monomial inputs have coefficient magnitude at most one; all recursive
 signed fits therefore follow from the explicit original cyclic-length/depth envelope.
 
-This is a stage contract. The complete counter must derive its actual monomial readback
-and computed pointer separation from its preceding matrix construction, not accept them
-as an input layout or multiplication certificate.
+This is an internal stage contract. The complete counter derives its monomial readback and
+pointer separation from preceding native setup and matrix construction, rather than taking
+a layout or multiplication certificate as an algorithm input.
 -/
 
 public section

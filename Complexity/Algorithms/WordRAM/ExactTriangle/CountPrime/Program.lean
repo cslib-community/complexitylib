@@ -27,8 +27,9 @@ last scan explicitly decodes the nonnegative product coefficients before unsigne
 The source algorithm is Programs/Sec3/Theorem17/Hashing/CountPrime.lean at pinned revision
 16a5ce41304fcdaea4e0be7c132e1c361dc26da5. This native adaptation uses the genuine standard
 division/remainder instructions and the existing signed remainder kernel instead of Light's
-bit-doubling residue table. This module defines code only; the complete general native
-correctness, logarithmic-width and charged subcubic resource claims need separate proofs.
+bit-doubling residue table. This module defines code; `Exec`, `Flat`,
+`SourceBounds` and `TimeBound` prove the complete native correctness, initialized execution,
+logarithmic admission, width-independent prefix bounds and charged subcubic resource claims.
 -/
 
 public section
