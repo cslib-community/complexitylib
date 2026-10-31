@@ -133,6 +133,12 @@ noncomputable def recoverFromValues (B : Subring K) (a u h : ℕ) {n : ℕ} (ζ 
     (v : ℤ → Fin n → B) : K :=
   taperedRecovery a u h fun t => (Lagrange.ringInterpolate univ ζ (v t)).map B.subtype
 
+theorem recoverFromValues_def (B : Subring K) (a u h : ℕ) {n : ℕ} (ζ : Fin n → B)
+    (v : ℤ → Fin n → B) :
+    recoverFromValues B a u h ζ v =
+      taperedRecovery a u h fun t => (Lagrange.ringInterpolate univ ζ (v t)).map B.subtype := by
+  rw [recoverFromValues]
+
 /-- A nonzero integer `t` of valuation `i` is divisible by `2 ^ i` but not by `2 ^ (i + 1)`. -/
 theorem two_pow_padicValInt_dvd_and_not_dvd {t : ℤ} (ht : t ≠ 0) :
     (2 : ℤ) ^ padicValInt 2 t ∣ t ∧ ¬ (2 : ℤ) ^ (padicValInt 2 t + 1) ∣ t := by
