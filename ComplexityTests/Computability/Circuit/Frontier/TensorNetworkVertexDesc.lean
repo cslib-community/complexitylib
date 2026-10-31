@@ -27,7 +27,8 @@ list come out in order. Reducing an element of `O` to `A_n` and mapping back alo
 namespace ComplexityTests.TensorNetworkVertexDesc
 
 open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.NativePacket
-open Turing.MultiTapeTM (encList encNat)
+open Turing.MultiTapeTM (encList encNat encPair encBits)
+open Cslib.GenericRAM (NativeCertificate)
 
 /-! ### Tables -/
 
@@ -86,16 +87,21 @@ example : sidePorts ([4, 1, 2].map fun c => (decide (c % 2 = 0), c)) ([4, 1, 2].
 
 /-! ### Resources -/
 
-example : ∃ K : ℕ, ∀ (q : VertexDesc (List ℕ) × List Bool) (Rv : ℕ), q.1.ReducedLE Rv →
-    VertexDesc.entryCertificate.time q ≤ K * (q.1.modes + 2) ^ q.1.rowPorts q.2 *
-        ((Turing.MultiTapeTM.encPair (VertexDesc.enc (encList encNat)) Turing.MultiTapeTM.encBits
-          q).length +
-          q.1.modes + Rv + 2) ^ K ∧
-      VertexDesc.entryCertificate.space q ≤
-        K * ((Turing.MultiTapeTM.encPair (VertexDesc.enc (encList encNat))
-          Turing.MultiTapeTM.encBits q).length +
-          q.1.modes + Rv + 2) ^ K :=
-  VertexDesc.entryCertificate_le
+-- The bounds of the evaluator, for every native certificate of the entry procedure of the roots:
+-- the root's own time and space are added.
+example {T : Type} {encT : T ↪ List Bool} {ev : T → List Bool → List ℕ}
+    (ce : NativeCertificate (fun q : T × List Bool => ev q.1 q.2) (encPair encT encBits)
+      (encList encNat)) :
+    ∃ K : ℕ, ∀ (q : VertexDesc T × List Bool) (Rv E ES : ℕ), q.1.ReducedLE Rv →
+      (∀ t, q.1 = .inl t → ce.time (t, q.2) ≤ E ∧ ce.space (t, q.2) ≤ ES) →
+      (VertexDesc.entryCertificate ce).time q ≤ K * (q.1.modes + 2) ^ q.1.rowPorts q.2 *
+          ((encPair (VertexDesc.enc encT) encBits q).length + q.1.modes + Rv + 2) ^ K + E ∧
+        (VertexDesc.entryCertificate ce).space q ≤
+          K * ((encPair (VertexDesc.enc encT) encBits q).length + q.1.modes + Rv + 2) ^ K + ES :=
+  VertexDesc.entryCertificate_le ce
+
+-- The entry procedure of tables has a polynomial native certificate.
+example : tableEntryCertificate.IsPolynomial := tableEntryCertificate_isPolynomial
 
 /-! ### Back from `A_n` to `O / (2 ^ n)` -/
 
