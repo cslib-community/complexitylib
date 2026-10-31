@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Classes.Oracle
+public import Complexity.Computability.Complexity.Classes.Oracle.QueryBit
 public import Complexity.Computability.Complexity.Problems.SAT
 import Complexity.Computability.Complexity.Classes.NP.Image
 import Complexity.Computability.Complexity.CookLevin.Completeness
@@ -34,7 +34,6 @@ is closed under complement.
 
 ## Main definitions
 
-* `Cslib.Complexity.queryBit`: one request, reading one bit of the reply.
 * `Cslib.Complexity.ComputableInPolyTimeWithOracleQueries`: polynomial time relative to an oracle
   with a bounded number of requests.
 * `Cslib.Complexity.PWithOracleQueries`: the problems so decided.
@@ -46,8 +45,8 @@ is closed under complement.
   `.mono`, `.map`: forgetting and weakening the bound, and postprocessing.
 * `Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithOracleQueries`: polynomial time
   makes no request.
-* `Cslib.Complexity.computableInPolyTimeWithOracleQueries_query`: one request decides membership
-  of a polynomial-time request word.
+* `Cslib.Complexity.computableInPolyTimeWithOracleQueries_query`: one request
+  (`Cslib.Complexity.queryBit`) decides membership of a polynomial-time request word.
 * `Cslib.Complexity.compl_mem_PWithOracleQueries`, `Cslib.Complexity.compl_mem_PNPLog`: closure
   under complement.
 * `Cslib.Complexity.NP_subset_PWithOracleQueries_image_SAT`: one request to `SAT` decides a
@@ -118,35 +117,6 @@ theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithO
     (h : ComputableInPolyTime f input output) (A : Set (List Bool)) (r : ℕ → ℕ) :
     ComputableInPolyTimeWithOracleQueries A r f input output :=
   ⟨fun a => pure (f a), h.isOraclePPTOn, fun _ => ⟨rfl, by simp⟩⟩
-
-/-- **One request**: submit the word `w` and read the first bit of the reply. -/
-def queryBit (w : List Bool) : WordQueryComp Unit Bool :=
-  (fun reply => decide (reply = [true])) <$> (List.take 1 <$> OracleComp.query ((), w))
-
-open Classical in
-/-- Against an oracle language, one request answers membership of its word. -/
-theorem interpret_queryBit (A : Set (List Bool)) (w : List Bool) :
-    OracleComp.interpret (m := Id) (languageOracle A) (queryBit w) = decide (w ∈ A) := by
-  change decide (List.take 1 (languageOracle A ((), w)) = [true]) = decide (w ∈ A)
-  rw [languageOracle_apply]
-  cases decide (w ∈ A) <;> rfl
-
-/-- One request makes one request. -/
-@[simp]
-theorem queriesWith_queryBit (answer : Unit × List Bool → List Bool) (w : List Bool) :
-    OracleComp.queriesWith answer (queryBit w) = [((), w)] := by
-  simp [queryBit]
-
-/-- One request for a polynomial-time word is strict oracle PPT: the word is written on the query
-buffer and one bit of the reply is read. -/
-theorem isOraclePPTOn_queryBit {req : α → List Bool} {input : α ↪ List Bool}
-    (hreq : ComputableInPolyTime req input encBits) :
-    IsOraclePPTOn input encBool
-      (fun a => OracleComp.interpret ProbOracleComp.query (queryBit (req a))) := by
-  simp only [queryBit, OracleComp.interpret_map, OracleComp.interpret_query]
-  exact (IsOraclePPTOn.query_take' () hreq (limit := fun _ => 1)
-    (ComputableInPolyTime.const 1)).map'
-    (ComputableInPolyTime.id'.decide_eq' (ComputableInPolyTime.const [true]))
 
 open Classical in
 /-- **One request** to `A` for the polynomial-time word `req a` decides whether `req a ∈ A`. -/
