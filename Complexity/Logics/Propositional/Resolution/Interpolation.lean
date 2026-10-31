@@ -54,7 +54,11 @@ refutations from below.
 
 Line-based refutations (`Cslib.Logic.PL.CNF.IsProof`) are propositions, so the circuit is
 obtained by induction on the refutation rather than computed from it; the existence statements
-here certify its size and correctness, not the running time of extracting it.
+here certify its size and correctness, not the running time of extracting it. The invariant of the
+construction is public (`Cslib.Logic.PL.CNF.IsInterpolantAt`), for an arbitrary type of shared
+variables; `Complexity.Logics.Propositional.Resolution.Interpolation.Extraction` uses it to compute
+the circuit from the lines of a refutation, and
+`Complexity.Logics.Propositional.Resolution.Interpolation.PolyTime` bounds the running time.
 
 ## Main definitions
 
@@ -62,6 +66,8 @@ here certify its size and correctness, not the running time of extracting it.
   `X ⊕ (Y ⊕ Z)`.
 * `Cslib.Logic.PL.CNF.IsInterpolant`: a Boolean function of the shared variables separating the
   assignments extendible to `A` from those extendible to `B`.
+* `Cslib.Logic.PL.CNF.IsInterpolantAt`: the invariant of the construction at a line of a
+  refutation.
 
 ## Main results
 
@@ -272,32 +278,30 @@ private theorem Satisfies.resolvent {ρ : V → Option Bool} {c₁ c₂ : Clause
 
 end Satisfies
 
-section Interpolant
-
-variable {n : ℕ}
+section LineInvariant
 
 /-! ### Partial assignments seen from each side -/
 
 /-- The partial assignment fixing the shared variables by `a` and the `A`-private variables by
 `y`. -/
-private def leftPart (a : Fin n → Bool) (y : Y → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
+private def leftPart (a : X → Bool) (y : Y → Bool) : X ⊕ (Y ⊕ Z) → Option Bool :=
   Sum.elim (some ∘ a) (Sum.elim (some ∘ y) fun _ => none)
 
 /-- The partial assignment fixing the shared variables by `a` and the `B`-private variables by
 `z`. -/
-private def rightPart (a : Fin n → Bool) (z : Z → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
+private def rightPart (a : X → Bool) (z : Z → Bool) : X ⊕ (Y ⊕ Z) → Option Bool :=
   Sum.elim (some ∘ a) (Sum.elim (fun _ => none) (some ∘ z))
 
 /-- The partial assignment fixing the `A`-private variables by `y` and the shared variables that
 `a` sets, leaving those that `a` clears free: it satisfies the positive shared literals true at
 `a`, and no negative shared literal. -/
-private def leftPos (a : Fin n → Bool) (y : Y → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
+private def leftPos (a : X → Bool) (y : Y → Bool) : X ⊕ (Y ⊕ Z) → Option Bool :=
   Sum.elim (fun i => if a i then some true else none) (Sum.elim (some ∘ y) fun _ => none)
 
 /-- The partial assignment fixing the `B`-private variables by `z` and the shared variables that
 `a` clears, leaving those that `a` sets free: it satisfies the negative shared literals true at
 `a`, and no positive shared literal. -/
-private def rightNeg (a : Fin n → Bool) (z : Z → Bool) : Fin n ⊕ (Y ⊕ Z) → Option Bool :=
+private def rightNeg (a : X → Bool) (z : Z → Bool) : X ⊕ (Y ⊕ Z) → Option Bool :=
   Sum.elim (fun i => if a i then none else some false) (Sum.elim (fun _ => none) (some ∘ z))
 
 /-! ### The invariant -/
@@ -306,19 +310,19 @@ private def rightNeg (a : Fin n → Bool) (z : Z → Bool) : Fin n ⊕ (Y ⊕ Z)
 assignments `ρA` and `ρB` through which each side sees the line: if `f a = false`, every model
 `y` of `A(a, ·)` makes `ρA a y` satisfy `c`; if `f a = true`, every model `z` of `B(a, ·)` makes
 `ρB a z` satisfy `c`. -/
-private def Good (ρA : (Fin n → Bool) → (Y → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool)
-    (ρB : (Fin n → Bool) → (Z → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool)
-    (A : CNF (Fin n ⊕ Y)) (B : CNF (Fin n ⊕ Z)) (c : Clause (Fin n ⊕ (Y ⊕ Z)))
-    (f : (Fin n → Bool) → Bool) : Prop :=
+private def Good (ρA : (X → Bool) → (Y → Bool) → X ⊕ (Y ⊕ Z) → Option Bool)
+    (ρB : (X → Bool) → (Z → Bool) → X ⊕ (Y ⊕ Z) → Option Bool)
+    (A : CNF (X ⊕ Y)) (B : CNF (X ⊕ Z)) (c : Clause (X ⊕ (Y ⊕ Z)))
+    (f : (X → Bool) → Bool) : Prop :=
   (∀ a y, A.eval (Sum.elim a y) = true → f a = false → Satisfies (ρA a y) c) ∧
     ∀ a z, B.eval (Sum.elim a z) = true → f a = true → Satisfies (ρB a z) c
 
-variable {ρA : (Fin n → Bool) → (Y → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool}
-  {ρB : (Fin n → Bool) → (Z → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool}
-  {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
+variable {ρA : (X → Bool) → (Y → Bool) → X ⊕ (Y ⊕ Z) → Option Bool}
+  {ρB : (X → Bool) → (Z → Bool) → X ⊕ (Y ⊕ Z) → Option Bool}
+  {A : CNF (X ⊕ Y)} {B : CNF (X ⊕ Z)}
 
 /-- At the empty clause the invariant is the interpolation property. -/
-private theorem isInterpolant_of_good {f : (Fin n → Bool) → Bool} (h : Good ρA ρB A B [] f) :
+private theorem isInterpolant_of_good {f : (X → Bool) → Bool} (h : Good ρA ρB A B [] f) :
     A.IsInterpolant B f := by
   refine ⟨fun a y hA => ?_, fun a z hB => ?_⟩
   · by_contra hf
@@ -328,7 +332,7 @@ private theorem isInterpolant_of_good {f : (Fin n → Bool) → Bool} (h : Good 
 
 /-- A clause of `A` gets the constant `false`, if `ρA a y` satisfies every literal of it true at
 `(a, y)`. -/
-private theorem good_false {d : Clause (Fin n ⊕ Y)} (hd : d ∈ A)
+private theorem good_false {d : Clause (X ⊕ Y)} (hd : d ∈ A)
     (hρ : ∀ a y, ∀ l ∈ d, Sum.elim a y l.1 = l.2 → ρA a y (Sum.map id Sum.inl l.1) = some l.2) :
     Good ρA ρB A B (d.relabel (Sum.map id Sum.inl)) fun _ => false := by
   refine ⟨fun a y hA _ => ?_, fun _ _ _ hf => Bool.noConfusion hf⟩
@@ -337,18 +341,52 @@ private theorem good_false {d : Clause (Fin n ⊕ Y)} (hd : d ∈ A)
 
 /-- A clause of `B` gets the constant `true`, if `ρB a z` satisfies every literal of it true at
 `(a, z)`. -/
-private theorem good_true {d : Clause (Fin n ⊕ Z)} (hd : d ∈ B)
+private theorem good_true {d : Clause (X ⊕ Z)} (hd : d ∈ B)
     (hρ : ∀ a z, ∀ l ∈ d, Sum.elim a z l.1 = l.2 → ρB a z (Sum.map id Sum.inr l.1) = some l.2) :
     Good ρA ρB A B (d.relabel (Sum.map id Sum.inr)) fun _ => true := by
   refine ⟨fun _ _ _ hf => Bool.noConfusion hf, fun a z hB _ => ?_⟩
   obtain ⟨l, hl, he⟩ := (Clause.eval_eq_true_iff _ _).1 ((CNF.eval_eq_true_iff _ _).1 hB d hd)
   exact satisfies_relabel hl (hρ a z l hl he)
 
-variable [DecidableEq Y] [DecidableEq Z]
+/-! ### The invariant as a public notion -/
+
+/-- **The invariant of feasible interpolation** at a line `c` of a refutation of
+`A(x, y) ∧ B(x, z)`, a semantic form of the invariant in the proof of
+[Pudlák, Theorem 1][Pudlak1997]. A Boolean function `f` of the shared variables is an
+*interpolant at* `c` when, for every assignment `a` of the shared variables:
+`f a = false` implies that every model `y` of `A(a, ·)` makes true some literal of `c` on a shared
+or `A`-private variable, and `f a = true` implies that every model `z` of `B(a, ·)` makes true some
+literal of `c` on a shared or `B`-private variable. Clauses of `A` have the interpolant `false` and
+clauses of `B` the interpolant `true`; resolution steps combine interpolants at their premises
+(`Cslib.Logic.PL.CNF.IsInterpolantAt.resolvent_inl` and its neighbours); and an interpolant at the
+empty clause is an interpolant of `A` and `B` (`Cslib.Logic.PL.CNF.IsInterpolantAt.isInterpolant`).
+-/
+def CNF.IsInterpolantAt (A : CNF (X ⊕ Y)) (B : CNF (X ⊕ Z)) (c : Clause (X ⊕ (Y ⊕ Z)))
+    (f : (X → Bool) → Bool) : Prop :=
+  Good leftPart rightPart A B c f
+
+/-- An interpolant at the empty clause is an interpolant of `A` and `B`. -/
+theorem CNF.IsInterpolantAt.isInterpolant {f : (X → Bool) → Bool}
+    (h : A.IsInterpolantAt B [] f) : A.IsInterpolant B f :=
+  isInterpolant_of_good h
+
+/-- A clause of `A` has the interpolant `false`. -/
+theorem CNF.isInterpolantAt_relabel_inl {d : Clause (X ⊕ Y)} (hd : d ∈ A) :
+    A.IsInterpolantAt B (d.relabel (Sum.map id Sum.inl)) fun _ => false :=
+  good_false (ρA := leftPart) (ρB := rightPart) hd fun _ _ l _ he => by
+    rcases l with ⟨_ | _, b⟩ <;> simpa [leftPart] using he
+
+/-- A clause of `B` has the interpolant `true`. -/
+theorem CNF.isInterpolantAt_relabel_inr {d : Clause (X ⊕ Z)} (hd : d ∈ B) :
+    A.IsInterpolantAt B (d.relabel (Sum.map id Sum.inr)) fun _ => true :=
+  good_true (ρA := leftPart) (ρB := rightPart) hd fun _ _ l _ he => by
+    rcases l with ⟨_ | _, b⟩ <;> simpa [rightPart] using he
+
+variable [DecidableEq X] [DecidableEq Y] [DecidableEq Z]
 
 /-- A resolution on an `A`-private variable gets the disjunction of the premises' gates. -/
 private theorem good_or (hρB : ∀ a z j, ρB a z (.inr (.inl j)) = none) {c₁ c₂ : Clause _}
-    {f₁ f₂ : (Fin n → Bool) → Bool} (j : Y) (h₁ : Good ρA ρB A B c₁ f₁)
+    {f₁ f₂ : (X → Bool) → Bool} (j : Y) (h₁ : Good ρA ρB A B c₁ f₁)
     (h₂ : Good ρA ρB A B c₂ f₂) :
     Good ρA ρB A B (c₁.resolvent c₂ (.inr (.inl j))) fun a => f₁ a || f₂ a := by
   refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩
@@ -360,7 +398,7 @@ private theorem good_or (hρB : ∀ a z j, ρB a z (.inr (.inl j)) = none) {c₁
 
 /-- A resolution on a `B`-private variable gets the conjunction of the premises' gates. -/
 private theorem good_and (hρA : ∀ a y k, ρA a y (.inr (.inr k)) = none) {c₁ c₂ : Clause _}
-    {f₁ f₂ : (Fin n → Bool) → Bool} (k : Z) (h₁ : Good ρA ρB A B c₁ f₁)
+    {f₁ f₂ : (X → Bool) → Bool} (k : Z) (h₁ : Good ρA ρB A B c₁ f₁)
     (h₂ : Good ρA ρB A B c₂ f₂) :
     Good ρA ρB A B (c₁.resolvent c₂ (.inr (.inr k))) fun a => f₁ a && f₂ a := by
   refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩
@@ -369,6 +407,54 @@ private theorem good_and (hρA : ∀ a y k, ρA a y (.inr (.inr k)) = none) {c�
     · exact (h₂.1 a y hA hf).resolvent_right (by simp [hρA])
   · rw [Bool.and_eq_true] at hf
     exact (h₁.2 a z hB hf.1).resolvent (h₂.2 a z hB hf.2)
+
+/-- A resolution on a shared variable `xᵢ` gets the selector `if xᵢ then g₂ else g₁` of the
+premises' gates: if `a i = false`, the literal `xᵢ` of `c₁` is false and the gate of `c₁` is
+selected; otherwise the literal `¬xᵢ` of `c₂` is false and the gate of `c₂` is. -/
+private theorem good_sel {c₁ c₂ : Clause _} {f₁ f₂ : (X → Bool) → Bool} (i : X)
+    (h₁ : Good leftPart rightPart A B c₁ f₁) (h₂ : Good leftPart rightPart A B c₂ f₂) :
+    Good leftPart rightPart A B (c₁.resolvent c₂ (.inl i))
+      fun a => (!a i && f₁ a) || (a i && f₂ a) := by
+  refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩ <;>
+    cases hi : a i <;> simp only [hi, Bool.not_false, Bool.not_true, Bool.true_and,
+      Bool.false_and, Bool.or_false, Bool.false_or] at hf
+  · exact (h₁.1 a y hA hf).resolvent_left (by simp [leftPart, hi])
+  · exact (h₂.1 a y hA hf).resolvent_right (by simp [leftPart, hi])
+  · exact (h₁.2 a z hB hf).resolvent_left (by simp [rightPart, hi])
+  · exact (h₂.2 a z hB hf).resolvent_right (by simp [rightPart, hi])
+
+/-- A resolution on a shared variable `xᵢ` has the interpolant `if xᵢ then f₂ else f₁`, for
+interpolants `f₁` and `f₂` at its premises. -/
+theorem CNF.IsInterpolantAt.resolvent_inl {c₁ c₂ : Clause (X ⊕ (Y ⊕ Z))}
+    {f₁ f₂ : (X → Bool) → Bool} (i : X) (h₁ : A.IsInterpolantAt B c₁ f₁)
+    (h₂ : A.IsInterpolantAt B c₂ f₂) :
+    A.IsInterpolantAt B (c₁.resolvent c₂ (.inl i)) fun a => (!a i && f₁ a) || (a i && f₂ a) :=
+  good_sel i h₁ h₂
+
+/-- A resolution on an `A`-private variable has the interpolant `f₁ ∨ f₂`, for interpolants `f₁`
+and `f₂` at its premises. -/
+theorem CNF.IsInterpolantAt.resolvent_inr_inl {c₁ c₂ : Clause (X ⊕ (Y ⊕ Z))}
+    {f₁ f₂ : (X → Bool) → Bool} (j : Y) (h₁ : A.IsInterpolantAt B c₁ f₁)
+    (h₂ : A.IsInterpolantAt B c₂ f₂) :
+    A.IsInterpolantAt B (c₁.resolvent c₂ (.inr (.inl j))) fun a => f₁ a || f₂ a :=
+  good_or (fun _ _ _ => rfl) j h₁ h₂
+
+/-- A resolution on a `B`-private variable has the interpolant `f₁ ∧ f₂`, for interpolants `f₁`
+and `f₂` at its premises. -/
+theorem CNF.IsInterpolantAt.resolvent_inr_inr {c₁ c₂ : Clause (X ⊕ (Y ⊕ Z))}
+    {f₁ f₂ : (X → Bool) → Bool} (k : Z) (h₁ : A.IsInterpolantAt B c₁ f₁)
+    (h₂ : A.IsInterpolantAt B c₂ f₂) :
+    A.IsInterpolantAt B (c₁.resolvent c₂ (.inr (.inr k))) fun a => f₁ a && f₂ a :=
+  good_and (fun _ _ _ => rfl) k h₁ h₂
+
+end LineInvariant
+
+section Interpolant
+
+variable {n : ℕ} [DecidableEq Y] [DecidableEq Z]
+  {ρA : (Fin n → Bool) → (Y → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool}
+  {ρB : (Fin n → Bool) → (Z → Bool) → Fin n ⊕ (Y ⊕ Z) → Option Bool}
+  {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
 
 /-- **Assembling the interpolant.** Fix how each side sees the lines (`ρA`, `ρB`), so that clauses
 of `A` and of `B` satisfy the invariant with the constants `false` and `true`. If constants,
@@ -427,21 +513,6 @@ private theorem synthesis_input {σ : Signature} {I : Interpretation σ Bool}
   Synthesis.of_mem (Or.inl ⟨i, rfl⟩)
 
 /-! ### The general interpolant -/
-
-/-- A resolution on a shared variable `xᵢ` gets the selector `if xᵢ then g₂ else g₁` of the
-premises' gates: if `a i = false`, the literal `xᵢ` of `c₁` is false and the gate of `c₁` is
-selected; otherwise the literal `¬xᵢ` of `c₂` is false and the gate of `c₂` is. -/
-private theorem good_sel {c₁ c₂ : Clause _} {f₁ f₂ : (Fin n → Bool) → Bool} (i : Fin n)
-    (h₁ : Good leftPart rightPart A B c₁ f₁) (h₂ : Good leftPart rightPart A B c₂ f₂) :
-    Good leftPart rightPart A B (c₁.resolvent c₂ (.inl i))
-      fun a => (!a i && f₁ a) || (a i && f₂ a) := by
-  refine ⟨fun a y hA hf => ?_, fun a z hB hf => ?_⟩ <;>
-    cases hi : a i <;> simp only [hi, Bool.not_false, Bool.not_true, Bool.true_and,
-      Bool.false_and, Bool.or_false, Bool.false_or] at hf
-  · exact (h₁.1 a y hA hf).resolvent_left (by simp [leftPart, hi])
-  · exact (h₂.1 a y hA hf).resolvent_right (by simp [leftPart, hi])
-  · exact (h₁.2 a z hB hf).resolvent_left (by simp [rightPart, hi])
-  · exact (h₂.2 a z hB hf).resolvent_right (by simp [rightPart, hi])
 
 /-- **Feasible interpolation for resolution** [Pudlák, Theorem 1][Pudlak1997],
 [Krajíček, Theorem 6.1][Krajicek1997]. A resolution refutation of `A(x, y) ∧ B(x, z)` with `s`

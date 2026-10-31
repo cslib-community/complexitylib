@@ -43,7 +43,7 @@ accepting count (`Turing.MultiTapePTM.sum_contraction_explicitBlockNetwork`).
 `2 * (q * (3 * k + 1) * m)` edges and maximum degree at most `2 * (3 * k + 1) * m`, both `O(b)` per
 interval. Its first `q * (3 * k + 2)` vertices are the rows of a bipartition: every edge has
 exactly one port at a row and one at a column
-(`Cslib.Circuits.Frontier.ExplicitTensorNetwork.IsRowsFirstBipartite`). Every table has length
+(`Cslib.Circuits.Frontier.DescribedNetwork.IsRowsFirstBipartite`). Every table has length
 `2 ^ (number of ports)`, and its entries are at most `2 ^ b`.
 
 These are the inputs of the Boolean tensor contraction theorem [OpenAI2026ETH, Theorem D.1]
