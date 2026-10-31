@@ -30,6 +30,12 @@ Each class is reduced to the accept count `A_M(x)` of a fair-coin machine `M` at
 `Cslib.Complexity.CountingSimulation.exists_computableInO_count`, and the comparison is a
 polynomial-time function of the padded time and the count.
 
+The network hypothesis is discharged for explicit networks by
+`Cslib.Complexity.CountingSimulation.networkFamilies_explicitAdmissible`, so the containments hold
+assuming only a contraction algorithm
+(`Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_of_contractionAlgorithm` and its
+siblings).
+
 ## Main definitions
 
 * `Cslib.Complexity.CountingSimulation.NetworkFamilies`: network families for all machines.
@@ -56,7 +62,8 @@ variable {N : Type} {encN : N ↪ List Bool} {value : N → ℕ} {Admissible : �
 family (`Cslib.Complexity.CountingSimulation.NetworkFamily`) for its accept count
 `Turing.MultiTapePTM.acceptCount`. This is the hypothesis supplied by the block-counting step of
 #1833. -/
-def NetworkFamilies (encN : N ↪ List Bool) (value : N → ℕ) (Admissible : ℕ → ℕ → N → Prop) :
+@[expose] def NetworkFamilies (encN : N ↪ List Bool) (value : N → ℕ)
+    (Admissible : ℕ → ℕ → N → Prop) :
     Prop :=
   ∀ (k : ℕ) (State : Type) [Finite State] (M : MultiTapePTM k Bool State),
     Nonempty (NetworkFamily encN value Admissible fun x τ => M.acceptCount x τ)
