@@ -796,6 +796,12 @@ and credited.
   subexponential-time `k`-SAT, zero SAT exponents, `¬ETH`, and `¬SETH`. This is the Sections 3–6 and
   Appendices A–B interpolation-scale bound, not the sharper Appendix D runtime. Integration,
   validation, and the curated formal abstract are tracked in #1226.
+- **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/complexitylib/issues/1538)):
+  `ContractionCounting.exists_modelCounter_fixedDensity` proves the fixed-density bound
+  `2^{O_{k,D}(n / √log n)}` by tensor contraction (Theorem D.1 with `ℓ = 1`), and
+  `DensityBranchCounting.exists_modelCounter` combines it with the interpolation-scale counter in
+  one machine. The arbitrary-density bound `2^{O_k(n log log n / √log n)}` still needs Theorem D.1
+  with truncation order `ℓ = n + 1` and Lemma D.2.
 
 ## Documentation and repository
 
