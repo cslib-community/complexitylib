@@ -5,6 +5,7 @@ Authors: Erik Demaine
 -/
 
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
+import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Powers
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Root
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Report
 import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.EmptyChild
@@ -133,6 +134,28 @@ example : controller = ram[ while nil < active do [ ⟪step⟫ ] ] := rfl
 -- Query codes use least-significant-first digits and retain the encoder's wildcard digit nine.
 example : queryAt (L := 2) (90 : Fin 100) = ![.z 0 0, .z0] := by decide +kernel
 example : (requested (L := 2) ([90, 9, 90] : List (Fin 100))).card = 2 := by decide +kernel
+
+private def powersTestInput (L : ℕ) : Data registers where
+  regs i := if i = inputDepth then L else if i = queryCount then 19 else 0
+  mem a := if a = 11 then 43 else 0
+
+-- Direct kernel-checked `exec_powers` regressions at depth zero and depth two, verifying the
+-- `4 * L + 10` step bound from `powerSetup` plus `Power.program.rename powerRegisters`, the
+-- computed `10^L` span, initialized constants, memory preservation, and `¬PowersLocal` frame.
+example :
+    (∃ y, ExecWithin 10 powers (powersTestInput 0) y 10 ∧
+      y.regs span = 1 ∧ y.regs index = 0 ∧ y.regs one = 1 ∧ y.regs frameWidth = 4 ∧
+      y.mem 11 = 43 ∧ y.regs queryCount = 19) ∧
+    (∃ y, ExecWithin 17 powers (powersTestInput 2) y 18 ∧
+      y.regs span = 100 ∧ y.regs index = 2 ∧ y.regs one = 1 ∧ y.regs frameWidth = 4 ∧
+      y.mem 11 = 43 ∧ y.regs queryCount = 19) := by
+  refine ⟨?_, ?_⟩
+  · obtain ⟨y, he, hm, _, hspan, hidx, _, hone, _, _, _, hfw, hf⟩ :=
+      exec_powers (w := 10) (L := 0) (Q := 0) (powersTestInput 0) rfl (by decide)
+    exact ⟨y, he, hspan, hidx, hone, hfw, congrFun hm 11, (hf queryCount (by decide)).trans rfl⟩
+  · obtain ⟨y, he, hm, _, hspan, hidx, _, hone, _, _, _, hfw, hf⟩ :=
+      exec_powers (w := 17) (L := 2) (Q := 0) (powersTestInput 2) rfl (by decide)
+    exact ⟨y, he, hspan, hidx, hone, hfw, congrFun hm 11, (hf queryCount (by decide)).trans rfl⟩
 
 private def observe (w L fuel : ℕ) (a b : Fin (10 ^ L) → ℤ) (qs : List (Fin (10 ^ L))) :=
   (program.eval w fuel (State.init (input L a b qs) : State registers).data).map fun (y, time) =>

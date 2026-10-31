@@ -9,8 +9,9 @@ module
 
 public import Complexity.Init
 public import Mathlib.Analysis.SpecialFunctions.Complex.CircleAddChar
-import Complexity.Foundations.Algebra.Shear
+public import Complexity.Foundations.Algebra.Shear
 import Mathlib.Analysis.Complex.Basic
+import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 import Mathlib.NumberTheory.LegendreSymbol.AddCharacter
 
 /-!
@@ -38,6 +39,12 @@ multiplies the transform at `ξ` by `e (ξ.1 * t.1 + ξ.2 * t.2)`, and the shear
 * `ZMod.dftProd_zero`: the transform at the zero frequency is the sum of the values.
 * `ZMod.dftProd_comp_add`: translation multiplies the transform by a character value.
 * `ZMod.dftProd_comp_shearFst`, `ZMod.dftProd_comp_shearSnd`: shears permute the frequencies.
+* `ZMod.dftProd_add`, `ZMod.dftProd_smul`, `ZMod.dftProd_injective`, `ZMod.dftProd_surjective`: the
+  transform is a linear bijection.
+* `ZMod.dftProd_const_of_ne_zero`: a constant has no nonzero frequencies.
+* `ZMod.sum_norm_sq_dftProd_translate`, `ZMod.sum_norm_sq_dftProd_shearFst_sub`,
+  `ZMod.sum_norm_sq_dftProd_shearSnd_sub`: Parseval's identity for the change along a translation,
+  and for the difference of two functions, one of them sheared.
 -/
 
 public section
@@ -132,5 +139,86 @@ theorem dftProd_comp_shearSnd (f : ZMod N × ZMod N → ℂ) (k : ZMod N) (ξ : 
   rw [Cslib.shearSnd_apply]
   congr 2
   ring
+
+/-- The transform is additive. -/
+theorem dftProd_add (f g : ZMod N × ZMod N → ℂ) : dftProd (f + g) = dftProd f + dftProd g := by
+  ext ξ
+  simp only [dftProd, Pi.add_apply, mul_add, sum_add_distrib]
+
+/-- The transform is homogeneous. -/
+theorem dftProd_smul (c : ℂ) (f : ZMod N × ZMod N → ℂ) : dftProd (c • f) = c • dftProd f := by
+  ext ξ
+  simp only [dftProd, Pi.smul_apply, smul_eq_mul, mul_sum]
+  exact sum_congr rfl fun _ _ ↦ by ring
+
+/-- The transform is injective, by Parseval's identity. -/
+theorem dftProd_injective : Function.Injective (dftProd (N := N)) := by
+  intro f g h
+  have hP := sum_norm_sq_dftProd (f - g)
+  rw [dftProd_sub, h, sub_self] at hP
+  simp only [Pi.zero_apply, norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
+    sum_const_zero] at hP
+  have hN : (N : ℝ) ^ 2 ≠ 0 := pow_ne_zero _ (Nat.cast_ne_zero.2 (NeZero.ne N))
+  have h0 := (mul_eq_zero.1 hP.symm).resolve_left hN
+  rw [sum_eq_zero_iff_of_nonneg fun _ _ ↦ by positivity] at h0
+  funext v
+  simpa [sub_eq_zero] using h0 v (mem_univ v)
+
+/-- The transform as a linear map. -/
+private noncomputable def dftProdLinearMap :
+    (ZMod N × ZMod N → ℂ) →ₗ[ℂ] (ZMod N × ZMod N → ℂ) where
+  toFun := dftProd
+  map_add' := dftProd_add
+  map_smul' := dftProd_smul
+
+/-- The transform is surjective: an injective linear endomorphism of a finite-dimensional space. -/
+theorem dftProd_surjective : Function.Surjective (dftProd (N := N)) :=
+  LinearMap.injective_iff_surjective.1 (show Function.Injective dftProdLinearMap from
+    dftProd_injective (N := N))
+
+/-- **A constant has no nonzero frequencies**: Parseval's identity puts all of its mass at `0`. -/
+theorem dftProd_const_of_ne_zero (c : ℂ) {ξ : ZMod N × ZMod N} (hξ : ξ ≠ 0) :
+    dftProd (fun _ ↦ c) ξ = 0 := by
+  have hP := sum_norm_sq_dftProd (N := N) fun _ ↦ c
+  rw [← add_sum_erase _ _ (mem_univ (0 : ZMod N × ZMod N)), dftProd_zero] at hP
+  simp only [sum_const, card_univ, Fintype.card_prod, ZMod.card, nsmul_eq_mul, norm_mul,
+    Complex.norm_natCast, Nat.cast_mul] at hP
+  have h0 : ∑ ζ ∈ univ.erase (0 : ZMod N × ZMod N), ‖dftProd (fun _ ↦ c) ζ‖ ^ 2 = 0 := by linarith
+  rw [sum_eq_zero_iff_of_nonneg fun _ _ ↦ by positivity] at h0
+  simpa using h0 ξ (mem_erase.2 ⟨hξ, mem_univ ξ⟩)
+
+/-- **Parseval's identity for the change along a translation**: the transform of the change of
+`f` along the translation by `t` is the transform of `f` times `e (ξ.1 * t.1 + ξ.2 * t.2) - 1`. -/
+theorem sum_norm_sq_dftProd_translate (f : ZMod N × ZMod N → ℂ) (t : ZMod N × ZMod N) :
+    ∑ ξ, ‖stdAddChar (ξ.1 * t.1 + ξ.2 * t.2) - 1‖ ^ 2 * ‖dftProd f ξ‖ ^ 2 =
+      N ^ 2 * ∑ v, ‖f (v + t) - f v‖ ^ 2 := by
+  rw [← sum_norm_sq_dftProd (fun v ↦ f (v + t) - f v)]
+  refine sum_congr rfl fun ξ _ ↦ ?_
+  have : (fun v ↦ f (v + t) - f v) = (fun v ↦ f (v + t)) - f := rfl
+  rw [this, dftProd_sub, Pi.sub_apply, dftProd_comp_add, ← sub_one_mul, norm_mul, mul_pow]
+
+/-- **Parseval's identity for the difference of two functions along the shear**
+`(x, y) ↦ (x + k * y, y)`: it acts on the frequencies by the dual shear `(a, b) ↦ (a, b - k * a)`.
+-/
+theorem sum_norm_sq_dftProd_shearFst_sub (f g : ZMod N × ZMod N → ℂ) (k : ZMod N) :
+    ∑ ξ, ‖dftProd f (Cslib.shearSnd (-k) ξ) - dftProd g ξ‖ ^ 2 =
+      N ^ 2 * ∑ v, ‖f (Cslib.shearFst k v) - g v‖ ^ 2 := by
+  rw [← sum_norm_sq_dftProd (fun v ↦ f (Cslib.shearFst k v) - g v)]
+  refine sum_congr rfl fun ξ _ ↦ ?_
+  have : (fun v ↦ f (Cslib.shearFst k v) - g v) = (fun v ↦ f (v.1 + k * v.2, v.2)) - g := rfl
+  rw [this, dftProd_sub, Pi.sub_apply, dftProd_comp_shearFst, Cslib.shearSnd_apply, neg_mul,
+    ← sub_eq_add_neg]
+
+/-- **Parseval's identity for the difference of two functions along the shear**
+`(x, y) ↦ (x, y + k * x)`: it acts on the frequencies by the dual shear `(a, b) ↦ (a - k * b, b)`.
+-/
+theorem sum_norm_sq_dftProd_shearSnd_sub (f g : ZMod N × ZMod N → ℂ) (k : ZMod N) :
+    ∑ ξ, ‖dftProd f (Cslib.shearFst (-k) ξ) - dftProd g ξ‖ ^ 2 =
+      N ^ 2 * ∑ v, ‖f (Cslib.shearSnd k v) - g v‖ ^ 2 := by
+  rw [← sum_norm_sq_dftProd (fun v ↦ f (Cslib.shearSnd k v) - g v)]
+  refine sum_congr rfl fun ξ _ ↦ ?_
+  have : (fun v ↦ f (Cslib.shearSnd k v) - g v) = (fun v ↦ f (v.1, v.2 + k * v.1)) - g := rfl
+  rw [this, dftProd_sub, Pi.sub_apply, dftProd_comp_shearSnd, Cslib.shearFst_apply, neg_mul,
+    ← sub_eq_add_neg]
 
 end ZMod

@@ -120,10 +120,10 @@ space linear in the description, the budget and the lengths of the clock and of 
 theorem computableInO_spaceDiagonal {G : ℕ → ℕ} (hG : SpaceConstructible G) :
     ∃ T, ComputableInO (spaceDiagonal G) encBits encBool T
       fun x => x.length + G x.length := by
-  obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
+  obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
   have hu : ComputableInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
     ComputableInO.of_linear (.of_unframe fun _ => rfl)
-  have hdesc := hdec.inO.computableInO.comp hu
+  have hdesc := hdec.inO.comp hu
   have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one.computableInO
   obtain ⟨TG, hGb⟩ := hG.computableInO
   have hGu := ComputableInO.natToUnary.comp hGb

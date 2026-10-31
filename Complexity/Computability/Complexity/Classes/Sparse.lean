@@ -26,8 +26,9 @@ connects to this definition. The count is an extended natural number (`Set.encar
 infinite set of members is not counted as `0`; since an encoding is injective, every such set is
 finite.
 
-Sparse problems cannot be hard for `coNP` (Fortune) unless `P = NP`; see
-`Complexity/Computability/Complexity/Classes/Sparse/Fortune.lean`.
+Sparse problems cannot be hard for `coNP` (Fortune) or for `NP` (Mahaney) unless `P = NP`; see
+`Complexity/Computability/Complexity/Classes/Sparse/Fortune.lean` and
+`Complexity/Computability/Complexity/Classes/Sparse/Mahaney.lean`.
 
 ## Main definitions
 

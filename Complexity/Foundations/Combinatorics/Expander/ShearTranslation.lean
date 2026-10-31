@@ -482,36 +482,6 @@ section Gap
 
 variable {n : ℕ} [NeZero n]
 
-/-- Parseval's identity for the change of `f` along a translation. -/
-private theorem sum_norm_sq_translate (f : ZMod n × ZMod n → ℂ) (t : ZMod n × ZMod n) :
-    ∑ ξ, ‖ZMod.stdAddChar (ξ.1 * t.1 + ξ.2 * t.2) - 1‖ ^ 2 * ‖ZMod.dftProd f ξ‖ ^ 2 =
-      n ^ 2 * ∑ v, ‖f (v + t) - f v‖ ^ 2 := by
-  rw [← ZMod.sum_norm_sq_dftProd (fun v ↦ f (v + t) - f v)]
-  refine sum_congr rfl fun ξ _ ↦ ?_
-  have : (fun v ↦ f (v + t) - f v) = (fun v ↦ f (v + t)) - f := rfl
-  rw [this, ZMod.dftProd_sub, Pi.sub_apply, ZMod.dftProd_comp_add, ← sub_one_mul, norm_mul,
-    mul_pow]
-
-/-- Parseval's identity for the change of `f` along the shear `(x, y) ↦ (x + k * y, y)`. -/
-private theorem sum_norm_sq_shearFst (f : ZMod n × ZMod n → ℂ) (k : ZMod n) :
-    ∑ ξ, ‖ZMod.dftProd f (shearSnd (-k) ξ) - ZMod.dftProd f ξ‖ ^ 2 =
-      n ^ 2 * ∑ v, ‖f (shearFst k v) - f v‖ ^ 2 := by
-  rw [← ZMod.sum_norm_sq_dftProd (fun v ↦ f (shearFst k v) - f v)]
-  refine sum_congr rfl fun ξ _ ↦ ?_
-  have : (fun v ↦ f (shearFst k v) - f v) = (fun v ↦ f (v.1 + k * v.2, v.2)) - f := rfl
-  rw [this, ZMod.dftProd_sub, Pi.sub_apply, ZMod.dftProd_comp_shearFst, shearSnd_apply, neg_mul,
-    ← sub_eq_add_neg]
-
-/-- Parseval's identity for the change of `f` along the shear `(x, y) ↦ (x, y + k * x)`. -/
-private theorem sum_norm_sq_shearSnd (f : ZMod n × ZMod n → ℂ) (k : ZMod n) :
-    ∑ ξ, ‖ZMod.dftProd f (shearFst (-k) ξ) - ZMod.dftProd f ξ‖ ^ 2 =
-      n ^ 2 * ∑ v, ‖f (shearSnd k v) - f v‖ ^ 2 := by
-  rw [← ZMod.sum_norm_sq_dftProd (fun v ↦ f (shearSnd k v) - f v)]
-  refine sum_congr rfl fun ξ _ ↦ ?_
-  have : (fun v ↦ f (shearSnd k v) - f v) = (fun v ↦ f (v.1, v.2 + k * v.1)) - f := rfl
-  rw [this, ZMod.dftProd_sub, Pi.sub_apply, ZMod.dftProd_comp_shearSnd, shearFst_apply, neg_mul,
-    ← sub_eq_add_neg]
-
 /-- The change along the shears by `4` and `-4` is at most `16` times that along the unit
 shear. -/
 private theorem sum_norm_sq_shearFst_four_le (f : ZMod n × ZMod n → ℂ) :
@@ -562,7 +532,8 @@ theorem sum_norm_sq_le_shearTranslation (f : ZMod n × ZMod n → ℂ) (hf : ∑
           sq_nonneg ‖ZMod.stdAddChar ξ.2 - 1‖]
       · linarith [one_div_eight_le_norm_stdAddChar_sub_one (not_le.1 hs),
           sq_nonneg ‖ZMod.stdAddChar ξ.1 - 1‖]
-    rw [← sum_norm_sq_translate, ← sum_norm_sq_translate, ← sum_add_distrib, mul_sum, sum_filter]
+    rw [← ZMod.sum_norm_sq_dftProd_translate, ← ZMod.sum_norm_sq_dftProd_translate,
+      ← sum_add_distrib, mul_sum, sum_filter]
     refine sum_le_sum fun ξ _ ↦ ?_
     have e₁ : ξ.1 * ((1, 0) : ZMod n × ZMod n).1 + ξ.2 * ((1, 0) : ZMod n × ZMod n).2 = ξ.1 := by
       simp
@@ -574,10 +545,10 @@ theorem sum_norm_sq_le_shearTranslation (f : ZMod n × ZMod n → ℂ) (hf : ∑
     · have := mul_le_mul_of_nonneg_right (hw ξ hs) (sq_nonneg ‖F ξ‖)
       linarith
   -- The dual shears are paid for by the primal shears.
-  have hD₁ := sum_norm_sq_shearFst f (-4 : ZMod n)
-  have hD₂ := sum_norm_sq_shearFst f (4 : ZMod n)
-  have hD₃ := sum_norm_sq_shearSnd f (-4 : ZMod n)
-  have hD₄ := sum_norm_sq_shearSnd f (4 : ZMod n)
+  have hD₁ := ZMod.sum_norm_sq_dftProd_shearFst_sub f f (-4 : ZMod n)
+  have hD₂ := ZMod.sum_norm_sq_dftProd_shearFst_sub f f (4 : ZMod n)
+  have hD₃ := ZMod.sum_norm_sq_dftProd_shearSnd_sub f f (-4 : ZMod n)
+  have hD₄ := ZMod.sum_norm_sq_dftProd_shearSnd_sub f f (4 : ZMod n)
   rw [neg_neg] at hD₁ hD₃
   rw [← hF] at hD₁ hD₂ hD₃ hD₄
   have e₁ := sum_norm_sq_shearFst_four_le f
