@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
 public import Complexity.Logics.Propositional.CNF.ModelCount
+import Complexity.Foundations.Data.List.Boole
 import Mathlib.Data.List.GetD
 
 /-!
@@ -40,9 +41,9 @@ equality vertices have degree at most four (`ClauseNetwork.length_qPorts_le`), w
 Theorem D.1 needs, and the subdivision is built in. It does not merge repeated variables of a
 clause; their edges are joined by the chain.
 
-The tables are listed from the first `2 ^ B` numbers (`ClauseNetwork.boundedTable`), for a bound
-`B` on the degrees, so that the network is computed from constant-length lists; for the clause
-network of width `k` formulas, `B = max k 4` (`ClauseNetwork.clauseNetwork`).
+The tables are listed from the first `2 ^ B` numbers (`ExplicitTensorNetwork.boundedTable`), for
+a bound `B` on the degrees, so that the network is computed from constant-length lists; for the
+clause network of width `k` formulas, `B = max k 4` (`ClauseNetwork.clauseNetwork`).
 
 ## Main definitions
 
@@ -73,6 +74,8 @@ network of width `k` formulas, `B = max k 4` (`ClauseNetwork.clauseNetwork`).
 public section
 
 namespace Cslib.Circuits.Frontier.ClauseNetwork
+
+open ExplicitTensorNetwork (boundedTable length_boundedTable entry_boundedTable)
 
 open Cslib.Logic.PL
 
@@ -128,11 +131,6 @@ end. -/
   ((List.range u).reverse.find? fun w => decide (var os w = var os u)).getD u
 
 /-! ### The network -/
-
-/-- A table of the `2 ^ w` values `f 0, …, f (2 ^ w - 1)` when `w ≤ B`, listed by keeping the
-numbers below `2 ^ w` among the first `2 ^ B`. -/
-@[expose] def boundedTable (B w : ℕ) (f : ℕ → ℕ) : List ℕ :=
-  ((List.range (2 ^ B)).filter fun idx => idx < 2 ^ w).map f
 
 /-- The equality tensor on `w` ports: one at the all-`false` and the all-`true` words. -/
 @[expose] def eqEntry (w idx : ℕ) : ℕ := if idx = 0 ∨ idx + 1 = 2 ^ w then 1 else 0
@@ -249,28 +247,6 @@ theorem eq_of_prev_eq {w u u' : ℕ} (hu : prev os u = w) (hu' : prev os u' = w)
   · exact (key u' u hu' hu hne' hne h).elim
 
 /-! ### Tables -/
-
-/-- For `w ≤ B`, the bounded table is the table of `f` on `0, …, 2 ^ w - 1`. -/
-theorem boundedTable_eq {B w : ℕ} (f : ℕ → ℕ) (h : w ≤ B) :
-    boundedTable B w f = (List.range (2 ^ w)).map f := by
-  have hle : 2 ^ w ≤ 2 ^ B := Nat.pow_le_pow_right (by norm_num) h
-  unfold boundedTable
-  congr 1
-  obtain ⟨c, hc⟩ := Nat.exists_eq_add_of_le hle
-  rw [hc, List.range_add, List.filter_append, List.filter_eq_self.mpr (by simp),
-    List.filter_eq_nil_iff.mpr (by simp), List.append_nil]
-
-theorem length_boundedTable {B w : ℕ} (f : ℕ → ℕ) (h : w ≤ B) :
-    (boundedTable B w f).length = 2 ^ w := by
-  simp [boundedTable_eq f h]
-
-/-- Looking up a bounded table at a word of length at most `B` evaluates its function at the
-value of the word. -/
-theorem entry_boundedTable {B : ℕ} (f : ℕ → ℕ) {bs : List Bool} (h : bs.length ≤ B) :
-    ExplicitTensorNetwork.entry (boundedTable B bs.length f) bs = f (BitString.lsbValue bs) := by
-  rw [ExplicitTensorNetwork.entry, boundedTable_eq f h,
-    List.getD_eq_getElem _ _ (by simpa using BitString.lsbValue_lt bs)]
-  simp
 
 private theorem eq_replicate_or_iff (bs : List Bool) :
     (bs = List.replicate bs.length false ∨ bs = List.replicate bs.length true) ↔
@@ -530,14 +506,6 @@ theorem length_table_network (B m : ℕ) (hB : ∀ i, (os.map Prod.fst).count i 
 
 /-! ### The contraction -/
 
-private theorem prod_map_boole {α : Type*} (l : List α) (p : α → Prop) [DecidablePred p] :
-    (l.map fun a => if p a then (1 : ℕ) else 0).prod = if ∀ a ∈ l, p a then 1 else 0 := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.map_cons, List.prod_cons, ih]
-    by_cases ha : p a <;> simp [ha]
-
 /-- The bits on the edges, read as a function of the edge numbers. -/
 private def bitAt {E : ℕ} (x : Fin E → Bool) (j : ℕ) : Bool := if h : j < E then x ⟨j, h⟩ else false
 
@@ -604,7 +572,7 @@ private theorem contraction_network_eq (B m : ℕ) (hB : ∀ i, (os.map Prod.fst
         if ∀ a ∈ qPorts os w, ∀ b ∈ qPorts os w, bitAt x a = bitAt x b then 1 else 0 :=
     List.map_congr_left fun w _ => entry_qVertex os (bitAt x)
       ((length_qPorts_le w).trans (le_max_right _ _))
-  rw [h1, h2, h3, prod_map_boole, prod_map_boole, prod_map_boole]
+  rw [h1, h2, h3, List.prod_map_boole, List.prod_map_boole, List.prod_map_boole]
   clear h1 h2 h3 hpb
   simp only [List.mem_range, Good]
   split_ifs <;> first | rfl | (exfalso; tauto)
