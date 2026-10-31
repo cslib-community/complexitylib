@@ -1,0 +1,419 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+
+module
+-- upstream: candidate
+
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildCursor
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeRecovery
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
+public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
+public import Complexity.Computability.PolyTime.PacketPacking
+import Mathlib.Data.List.GetD
+
+/-!
+# The native contraction recursion as a stack recursion
+
+The recursion of Theorem D.1 of [OpenAI2026ETH] (Appendix D.4.7, p. 64), as a depth-first stack
+recursion (`Cslib.GenericRAM.StackRecursion.Scheme`) over *calls*. A call
+(`FastContraction.Call`) is a described network (`DescribedNetwork VertexDesc`) whose first `r`
+vertices are its rows, with the schedule's scale `s` (the number of edges of the root, since the
+machine sees no other size), its depth `d`, an edge bound, its precision `p` and the coefficients
+`fl` of the modulus `f`.
+
+**Active calls and leaves.** A call with `M` edges is *active* (`FastContraction.active`) when the
+schedule makes it an active call (`ContractionSchedule.callParams`, with `a = slotBits s d`,
+`u = taper s d` and `h = ⌈3 M / u⌉`), its parameters satisfy the hypotheses of Lemma D.5, its
+degrees are at most `degreeBound s`, the `M (2 L - 1) + 1` interpolation points are distinct
+residues (`n ≤ 2 ^ e` for `e = deg f`), and `M` is below its edge bound. Every other call is a leaf,
+evaluated by direct summation over the coefficient lists of `A_p` (`FastContraction.leafValue`).
+A child receives its parent's number of edges as its bound, so the recursion terminates, as
+`TensorNetwork.contractRec` does; a child that is not smaller is a leaf.
+
+**An active call** walks the children `(t, k, β, g)` with the cursor of
+`Cslib.Circuits.Frontier.ChildCursor`, over the nodes `ts` of positive multiplicity
+(`FastContraction.nodes`), the points, the mode tuples of weight below `p_t` and the `64` groups.
+The child at a cursor state is given by a child builder `mk`, which computes the child's rows and
+network (the native child of §D.4.6). The call absorbs the children's values with the operations of
+`A_N` at the common precision `N = p + Δ'` (`FastContraction.wide`), where
+`Δ' = (a + 1) 2 ^ (a + 1) h u + 8 h 2 ^ a + 8 M (a + 1)` bounds both the shift of Lemma D.5 and
+every node precision `p_t - p`; it then stores the sums at the rows `ts[i]` of the table of native
+recovery (`FastContraction.table`) and recovers its value with
+`Cslib.Circuits.Frontier.NativeRecovery.recover`.
+
+**Values and derivations.** The values of the scheme are tagged with the depth.
+`FastContraction.value` is the value of a call by well-founded recursion on the edge bound, and
+`FastContraction.exists_eval` derives it in the scheme, so a run returning a value tagged `0` from a
+root at depth `0` returns `value` of the root, for every fuel (`FastContraction.eq_value_of_run`).
+**Correctness** (`FastContraction.val_value`): if the step of an active call is correct
+(`FastContraction.StepCorrect`, the correctness of one call from the correctness of its children,
+through Lemma D.5) and a well-formedness predicate passes to the children, then every well-formed
+call computes the contraction of its network in `A_p`.
+
+## Main definitions
+
+* `Cslib.Circuits.Frontier.FastContraction.Call`: a call.
+* `Cslib.Circuits.Frontier.FastContraction.active`: whether a call is active.
+* `Cslib.Circuits.Frontier.FastContraction.scheme`: the stack recursion.
+* `Cslib.Circuits.Frontier.FastContraction.value`: the value of a call.
+* `Cslib.Circuits.Frontier.FastContraction.StepCorrect`: the correctness of one active call.
+
+## Main results
+
+* `Cslib.Circuits.Frontier.FastContraction.exists_eval`: derivations of the values.
+* `Cslib.Circuits.Frontier.FastContraction.eq_value_of_run`: a tagged value returned by the run is
+  the root's value.
+* `Cslib.Circuits.Frontier.FastContraction.val_value`: correctness from the step.
+
+## References
+
+* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Appendix D.4.5–D.4.7
+  (pp. 62–64).
+-/
+
+public section
+
+namespace Cslib.Circuits.Frontier.FastContraction
+
+open GaloisRingArith ChildCursor NativeRecovery ContractionSchedule Cslib.GenericRAM
+  Cslib.GenericRAM.StackRecursion
+
+/-- The parameters of a call: the scale `s`, the depth `d`, the edge bound, the precision `p`, the
+coefficients `fl` of the modulus and the number `r` of rows. -/
+abbrev Params : Type := ℕ × ℕ × ℕ × ℕ × List ℕ × ℕ
+
+/-- **A call** of the recursion: its parameters and its network, whose first `r` vertices are its
+rows. -/
+abbrev Call : Type := Params × DescribedNetwork VertexDesc
+
+namespace Call
+
+variable (x : Call)
+
+/-- The scale `s` of the schedule. -/
+abbrev scale : ℕ := x.1.1
+/-- The depth. -/
+abbrev depth : ℕ := x.1.2.1
+/-- The edge bound: the call is a leaf unless it has fewer edges. -/
+abbrev bound : ℕ := x.1.2.2.1
+/-- The precision `p`. -/
+abbrev prec : ℕ := x.1.2.2.2.1
+/-- The coefficients of the modulus `f = monicOf fl`. -/
+abbrev fl : List ℕ := x.1.2.2.2.2.1
+/-- The number of rows. -/
+abbrev rows : ℕ := x.1.2.2.2.2.2
+/-- The network. -/
+abbrev net : DescribedNetwork VertexDesc := x.2
+/-- The number `M` of edges. -/
+abbrev edges : ℕ := x.2.numEdges
+
+end Call
+
+/-! ### The data of a call -/
+
+variable (x : Call)
+
+/-- The packets have `2 ^ a` slots, `a = slotBits s d`. -/
+@[expose] def slots : ℕ := slotBits x.scale x.depth
+
+/-- The number `u = taper s d` of levels of positive multiplicity. -/
+@[expose] def levels : ℕ := taper x.scale x.depth
+
+/-- The multiplicity step `h = ⌈3 M / u⌉`. -/
+@[expose] def step : ℕ := taperStep x.scale x.depth x.edges
+
+/-- The number `n = M (2 L - 1) + 1` of interpolation points. -/
+@[expose] def numPoints : ℕ := x.edges * (2 * 2 ^ slots x - 1) + 1
+
+/-- **Whether a call is active**: the schedule makes it an active call, its parameters satisfy
+Lemma D.5 (`1 ≤ u ≤ M`, `u ≤ a`), its degrees are at most `degreeBound s`, its interpolation
+points are distinct residues (`n ≤ 2 ^ e`), and it has fewer edges than its bound. -/
+@[expose] def active : Bool :=
+  decide (leafSize x.scale < x.edges ∧ 1 ≤ levels x ∧ levels x ≤ x.edges ∧ levels x ≤ slots x ∧
+    (∀ v ∈ x.net.vertices, v.1.length ≤ degreeBound x.scale) ∧ numPoints x ≤ 2 ^ x.fl.length ∧
+    x.edges < x.bound)
+
+/-- An active call has fewer edges than its bound. -/
+theorem edges_lt_bound_of_active {x : Call} (h : active x = true) : x.edges < x.bound := by
+  simp only [active, decide_eq_true_eq] at h
+  exact h.2.2.2.2.2.2
+
+/-- The level `v₂ (t)` of the node of grid index `k`, `t = k - 2 ^ a`. -/
+@[expose] def level (k : ℕ) : ℕ := twoVal (slots x + 1) (k - 2 ^ slots x + (2 ^ slots x - k))
+
+/-- **The nodes of positive multiplicity**, as increasing grid indices `k < 2 ^ (a + 1)`,
+`k ≠ 2 ^ a`; the node of index `k` is `NativeRecovery.node a k = k - 2 ^ a`. -/
+@[expose] def nodes : List ℕ :=
+  (List.range (2 ^ (slots x + 1))).filter fun k =>
+    decide (k ≠ 2 ^ slots x ∧ 0 < mult (slots x) (levels x) (step x) k)
+
+/-- The precision `p_t = nodePrecision p h a M (v₂ t)` of the `i`-th node. -/
+@[expose] def nodePrec (i : ℕ) : ℕ :=
+  nodePrecision x.prec (step x) (slots x) x.edges (level x ((nodes x).getD i 0))
+
+/-- The ports of the vertices. -/
+@[expose] def ports : List (List ℕ) := x.net.vertices.map Prod.fst
+
+/-- **The edges as `(row, column)` pairs**, the column numbered among the columns: edge `j` joins
+the first row and the first column whose ports contain it. -/
+@[expose] def edgeEnds : List (ℕ × ℕ) :=
+  (List.range x.edges).map fun j =>
+    (((List.range x.rows).find? fun v => ((ports x).getD v []).contains j).getD 0,
+      ((List.range (x.net.vertices.length - x.rows)).find? fun w =>
+        ((ports x).getD (x.rows + w) []).contains j).getD 0)
+
+/-- **The packing of Lemma D.3**, natively (`PacketPacking.nativePacking`, `r = 64`). -/
+@[expose] def packing : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ) :=
+  PacketPacking.nativePacking x.rows (x.net.vertices.length - x.rows) (slots x) 64 (edgeEnds x)
+
+/-- **The weights of the modes of the `i`-th node**, packet-major over `(q, y₀, b)` with
+`y₀ < 2 ^ (v₂ t + 1)` and `b < p_t`: mode `(q, y₀, b)` has weight `b + 1`. -/
+@[expose] def weights (i : ℕ) : List ℕ :=
+  (List.range ((packing x).2.1 * 2 ^ (level x ((nodes x).getD i 0) + 1) * nodePrec x i)).map
+    fun j => j % nodePrec x i + 1
+
+/-- The shift `Δ' = (a + 1) 2 ^ (a + 1) h u + 8 h 2 ^ a + 8 M (a + 1)`, which bounds the shift
+`(a + 1) ∑_t q_t` of Lemma D.5 and every `p_t - p`. -/
+@[expose] def shift : ℕ :=
+  (slots x + 1) * 2 ^ (slots x + 1) * step x * levels x + 8 * step x * 2 ^ slots x +
+    8 * x.edges * (slots x + 1)
+
+/-- The common precision `N = p + Δ'` of the accumulator. -/
+@[expose] def wide : ℕ := x.prec + shift x
+
+/-- The binary digits of `k`, as a coefficient list of length `e`: the lift of the `k`-th
+residue. -/
+@[expose] def digits (e k : ℕ) : List ℕ := (List.range e).map fun i => if k.testBit i then 1 else 0
+
+/-- **The interpolation points**: the lifts of the residues `0, …, n - 1`. -/
+@[expose] def points : List (List ℕ) := (List.range (numPoints x)).map (digits x.fl.length)
+
+/-- **The table of native recovery** from the stored values, node-major and point-minor: the
+`c`-th value goes to row `ts[c / n]`. -/
+@[expose] def table (V : List (List ℕ)) : List (List (List ℕ)) :=
+  (List.range V.length).foldl
+    (fun W c => storeValue W ((nodes x).getD (c / numPoints x) 0) (V.getD c [])) []
+
+/-- The cursor's list of children. -/
+@[expose] def children : List State :=
+  cursorList (weights x) (nodePrec x) (nodes x).length (numPoints x) 64
+
+/-- The accumulator after absorbing the values `vals` of the children in order. -/
+@[expose] def runLoop (vals : State → List ℕ) : Acc (List ℕ) :=
+  runAcc (weights x) (nodePrec x) 64 (mul (wide x) x.fl) (add (wide x) x.fl) (one x.fl)
+    (zero x.fl) vals (children x) (one x.fl, zero x.fl, [])
+
+/-- **The value of an active call** from its final accumulator: native recovery from the table of
+the stored values. -/
+@[expose] def finishValue (acc : Acc (List ℕ)) : List ℕ :=
+  recover x.prec (shift x) x.fl (slots x) (levels x) (step x) (points x) (table x acc.2.2)
+
+/-- **The value of a leaf**: direct summation in `A_p`. -/
+@[expose] def leafValue : List ℕ :=
+  DescribedNetwork.sumValue SumOps.galois VertexDesc.entry (x.prec, x.fl) x.net
+
+/-! ### The scheme -/
+
+variable (mk : Call → State → ℕ × DescribedNetwork VertexDesc)
+
+/-- **The child call** at a cursor state `c = (i, k, β, g)`: the rows and the network given by the
+child builder `mk`, at depth `d + 1`, with the parent's number of edges as its bound and the
+node's precision `p_i`. -/
+@[expose] def child (c : State) : Call :=
+  ((x.scale, x.depth + 1, x.edges, nodePrec x c.1, x.fl, (mk x c).1), (mk x c).2)
+
+/-- The accumulator of a call: the cursor state of the next child, if any, and the accumulator of
+the cursor. -/
+abbrev Frame : Type := Option State × Acc (List ℕ)
+
+/-- **The recursion as a stack recursion**, with values tagged by the depth. -/
+@[expose] def scheme : Scheme Call Frame (ℕ × List ℕ) where
+  isLeaf x := !active x
+  leaf x := (x.depth, leafValue x)
+  start x := (some (cursorStart (weights x)), (one x.fl, zero x.fl, []))
+  next x a := a.1.map (child x mk)
+  absorb x a y := match a.1 with
+    | none => a
+    | some c => (cursorNext (weights x) (nodePrec x) (nodes x).length (numPoints x) 64 c,
+        absorbAt (weights x) (nodePrec x) 64 (mul (wide x) x.fl) (add (wide x) x.fl) (one x.fl)
+          (zero x.fl) c a.2 y.2)
+  finish x a := (x.depth, finishValue x a.2)
+
+/-- **The value of a call**, by well-founded recursion on the edge bound: the leaf value, or the
+recovery from the values of the children. -/
+@[expose] def value (x : Call) : List ℕ :=
+  if _h : active x = true then
+    finishValue x (runLoop x fun c => value (child x mk c))
+  else leafValue x
+termination_by x.bound
+decreasing_by exact edges_lt_bound_of_active _h
+
+theorem value_of_active {x : Call} (h : active x = true) :
+    value mk x = finishValue x (runLoop x fun c => value mk (child x mk c)) := by
+  rw [value, dite_eq_left h]
+
+theorem value_of_not_active {x : Call} (h : active x = false) : value mk x = leafValue x := by
+  rw [value, dite_eq_right (by simp [h])]
+
+/-! ### Derivations -/
+
+section Walk
+
+variable {x}
+
+/-- Every node precision is positive at a call with an edge. -/
+theorem nodePrec_pos (hM : 1 ≤ x.edges) (i : ℕ) : 0 < nodePrec x i := by
+  unfold nodePrec nodePrecision
+  have : 0 < 8 * x.edges * (slots x + 1) := by positivity
+  omega
+
+/-- Every weight is positive. -/
+theorem weights_pos (i : ℕ) : ∀ w ∈ weights x i, 0 < w := by
+  intro w hw
+  simp only [weights, List.mem_map] at hw
+  obtain ⟨j, -, rfl⟩ := hw
+  omega
+
+/-- An active call has an edge. -/
+theorem one_le_edges_of_active (h : active x = true) : 1 ≤ x.edges := by
+  simp only [active, decide_eq_true_eq] at h
+  omega
+
+/-- An active call has a node of positive multiplicity: the index `2 ^ a + 1`, of level `0`. -/
+theorem nodes_ne_nil_of_active (h : active x = true) : nodes x ≠ [] := by
+  have h' := h
+  simp only [active, decide_eq_true_eq] at h'
+  obtain ⟨-, hu, huM, hua, -, -, -⟩ := h'
+  have hL : 2 ≤ 2 ^ slots x :=
+    (pow_one 2).symm.le.trans (Nat.pow_le_pow_right (by norm_num) (hu.trans hua))
+  have hlt : 2 ^ slots x + 1 < 2 ^ (slots x + 1) := by rw [pow_succ]; linarith
+  have hk : 2 ^ slots x + 1 ∈ nodes x := by
+    simp only [nodes, List.mem_filter, List.mem_range, decide_eq_true_eq]
+    refine ⟨hlt, Nat.succ_ne_self _, ?_⟩
+    rw [mult_eq _ _ hlt]
+    have h3 : 3 * x.edges ≤ step x * levels x := le_taperStep_mul hu
+    have hh : 0 < step x := by
+      rcases Nat.eq_zero_or_pos (step x) with h0 | h0
+      · rw [h0] at h3; omega
+      · exact h0
+    have hv : padicValInt 2 (node (slots x) (2 ^ slots x + 1)) = 0 := by
+      simp [node]
+    simp only [taperMult, hv, Nat.sub_zero]
+    positivity
+  intro hn
+  rw [hn] at hk
+  simp at hk
+
+end Walk
+
+/-- The frames of an active call along its children: the cursor at the `c`-th child, with the
+values `vals` of the earlier children absorbed. -/
+@[expose] def frameAt (vals : State → List ℕ) (c : ℕ) : Frame :=
+  ((children x)[c]?, runAcc (weights x) (nodePrec x) 64 (mul (wide x) x.fl) (add (wide x) x.fl)
+    (one x.fl) (zero x.fl) vals ((children x).take c) (one x.fl, zero x.fl, []))
+
+/-- **The loop of an active call walks its children**: from `start`, the `c`-th frame asks for the
+child at the `c`-th cursor state, absorbing it gives the next frame, and the last frame stops. -/
+theorem walk {x : Call} (h : active x = true) (vals : State → List ℕ) :
+    frameAt x vals 0 = (scheme mk).start x ∧
+      (∀ c < (children x).length, (scheme mk).next x (frameAt x vals c) =
+        some (child x mk ((children x).getD c (0, 0, [], 0)))) ∧
+      (scheme mk).next x (frameAt x vals (children x).length) = none ∧
+      (∀ c < (children x).length, (scheme mk).absorb x (frameAt x vals c)
+        (x.depth + 1, vals ((children x).getD c (0, 0, [], 0))) = frameAt x vals (c + 1)) ∧
+      runLoop x vals = (frameAt x vals (children x).length).2 := by
+  have hM := one_le_edges_of_active h
+  have hT : 0 < (nodes x).length := List.length_pos_iff.mpr (nodes_ne_nil_of_active h)
+  obtain ⟨hpos, h0, hstep, hlast⟩ := cursorList_walk (ws := weights x) (ps := nodePrec x)
+    (T := (nodes x).length) (n := numPoints x) (r := 64) (by norm_num) (by simp [numPoints])
+    (nodePrec_pos hM) weights_pos hT
+  unfold frameAt runLoop children
+  refine ⟨?_, fun c hc => ?_, ?_, fun c hc => ?_, ?_⟩
+  · simp only [scheme, List.take_zero, List.getElem?_eq_getElem hpos, h0, runAcc, List.foldl_nil]
+  · simp only [scheme, List.getElem?_eq_getElem hc, Option.map_some, List.getD_eq_getElem _ _ hc]
+  · simp only [scheme, List.getElem?_eq_none le_rfl, Option.map_none]
+  · simp only [scheme, List.getElem?_eq_getElem hc, List.getD_eq_getElem _ _ hc]
+    refine Prod.ext ?_ ?_
+    · by_cases hc' : c + 1 < (cursorList (weights x) (nodePrec x) (nodes x).length
+          (numPoints x) 64).length
+      · simp only [List.getElem?_eq_getElem hc']
+        exact hstep c hc'
+      · have hc'' : c = (cursorList (weights x) (nodePrec x) (nodes x).length (numPoints x)
+            64).length - 1 := by omega
+        simp only [List.getElem?_eq_none (show (cursorList (weights x) (nodePrec x)
+          (nodes x).length (numPoints x) 64).length ≤ c + 1 by omega)]
+        subst hc''
+        exact hlast
+    · rw [List.take_add_one, List.getElem?_eq_getElem hc]
+      simp only [runAcc, Option.toList_some, List.foldl_append, List.foldl_cons, List.foldl_nil]
+  · simp only [List.take_length]
+
+/-- The invariant of the derivation from a root `x₀` at depth `0`: the only node at depth `0` is
+the root, and a value tagged `0` is the root's value. -/
+@[expose] def inv (x₀ : Call) : Invariant Call Frame (ℕ × List ℕ) :=
+  ⟨fun x => x.depth = 0 → x = x₀, fun _ _ => True, fun y => y.1 = 0 → y.2 = value mk x₀⟩
+
+/-- **Derivations of the values.** Every call satisfying the invariant of a root `x₀` has a
+derivation of its tagged value. -/
+theorem exists_eval (x₀ : Call) (x : Call) (hx : (inv mk x₀).node x) :
+    ∃ n h, (scheme mk).Eval (inv mk x₀) x (x.depth, value mk x) n h := by
+  refine Scheme.exists_eval_of_measure (R := scheme mk) (I := inv mk x₀) Call.bound
+    (fun x => (x.depth, value mk x)) (fun x _ hl => ?_) (fun x _ hl => ?_) (fun x hx h0 => ?_) x hx
+  · have hl' : active x = false := by simpa [scheme] using hl
+    simp [scheme, value_of_not_active mk hl']
+  · have hl' : active x = true := by simpa [scheme] using hl
+    obtain ⟨h0, hnext, hdone, habs, hfin⟩ := walk mk hl' fun c => value mk (child x mk c)
+    refine ⟨(children x).length, frameAt x fun c => value mk (child x mk c),
+      fun c => child x mk ((children x).getD c (0, 0, [], 0)), h0, hnext, hdone, fun c hc => habs c hc,
+      fun c _ => ⟨trivial, fun h => absurd h (by simp [child]), edges_lt_bound_of_active hl'⟩, ?_⟩
+    simp only [scheme, Prod.mk.injEq, true_and]
+    rw [value_of_active mk hl', hfin]
+  · simp only at h0
+    rw [hx h0]
+
+/-- **A tagged value returned by the run is the root's value**, for any fuel: if the root is at
+depth `0` and the run returns `(0, y)`, then `y` is the value of the root. -/
+theorem eq_value_of_run {J : Type} {fuel : J → ℕ} {root : J → Call} {a : J} {y : List ℕ}
+    (hroot : (root a).depth = 0) (hrun : (scheme mk).run fuel root a = some (0, y)) :
+    y = value mk (root a) := by
+  obtain ⟨n, h, he⟩ := exists_eval mk (root a) (root a) fun _ => rfl
+  rw [hroot] at he
+  exact Scheme.value_of_run_eq_some he hrun rfl
+
+/-! ### Correctness -/
+
+/-- **The correctness of one active call** for a well-formedness predicate `WF`: at a well-formed
+active call, if the values `vals` of the children are their contractions in `A_{p_i}`, then the
+recovered value is the contraction of the call's network in `A_p`. -/
+@[expose] def StepCorrect (WF : Call → Prop) : Prop :=
+  ∀ x, WF x → active x = true → ∀ vals : State → List ℕ,
+    (∀ c ∈ children x, val (nodePrec x c.1) x.fl (vals c) =
+      (mk x c).2.contraction fun t bs => val (nodePrec x c.1) x.fl (VertexDesc.entry t bs)) →
+    val x.prec x.fl (finishValue x (runLoop x vals)) =
+      x.net.contraction fun t bs => val x.prec x.fl (VertexDesc.entry t bs)
+
+/-- **Well-formedness passes to the children** of an active call. -/
+@[expose] def WFChildren (WF : Call → Prop) : Prop :=
+  ∀ x, WF x → active x = true → ∀ c ∈ children x, WF (child x mk c)
+
+/-- **Correctness of the recursion.** If the step of an active call is correct and
+well-formedness passes to the children, every well-formed call computes the contraction of its
+network in `A_p`. -/
+theorem val_value {WF : Call → Prop} (hstep : StepCorrect mk WF) (hwf : WFChildren mk WF)
+    (x : Call) (hx : WF x) :
+    val x.prec x.fl (value mk x) =
+      x.net.contraction fun t bs => val x.prec x.fl (VertexDesc.entry t bs) := by
+  induction hb : x.bound using Nat.strong_induction_on generalizing x with
+  | _ b ih =>
+  cases ha : active x
+  · rw [value_of_not_active mk ha]
+    exact DescribedNetwork.val_sumValue_galois VertexDesc.entry (x.prec, x.fl) x.net
+  · rw [value_of_active mk ha]
+    refine hstep x hx ha _ fun c hc => ?_
+    exact ih _ (hb ▸ edges_lt_bound_of_active ha) (child x mk c) (hwf x hx ha c hc) rfl
+
+end Cslib.Circuits.Frontier.FastContraction
