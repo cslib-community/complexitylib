@@ -52,6 +52,7 @@ namespace Cslib.Circuits.Frontier.ClauseNetwork
 
 open Turing.MultiTapeTM ComputableInPolyTime Cslib.Logic.PL
 open Cslib.Complexity (encCNF)
+open ExplicitTensorNetwork (boundedTable)
 
 variable {α : Type} {inp : α ↪ List Bool}
 
