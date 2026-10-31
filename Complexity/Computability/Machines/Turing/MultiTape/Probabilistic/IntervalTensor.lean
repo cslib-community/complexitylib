@@ -238,8 +238,9 @@ variable (b : ℕ) [NeZero b]
 /-- **An interval step.** Replaying `coins` from the configuration embedded at block indices `J`
 with entering control record `cIn` and window contents `wIn` leaves the control record `cOut`,
 the contents `wOut` of the same windows, and moves the block of every head `h` by `δ h`. -/
-def IntervalStep (input : List Bool) (J : Option (Fin k) → ℤ) (δ : Option (Fin k) → SignType)
-    (cIn : BlockControl k State b) (wIn : Fin k → Fin 3 → ZMod b → Option Bool)
+@[expose] def IntervalStep (input : List Bool) (J : Option (Fin k) → ℤ)
+    (δ : Option (Fin k) → SignType) (cIn : BlockControl k State b)
+    (wIn : Fin k → Fin 3 → ZMod b → Option Bool)
     (coins : List Bool) (cOut : BlockControl k State b)
     (wOut : Fin k → Fin 3 → ZMod b → Option Bool) : Prop :=
   (machine.stepCoins coins (embedCfg (input := input) b J cIn wIn)).blockControl b = cOut ∧
@@ -252,7 +253,7 @@ open scoped Classical in
 step from the entering record `cIn` and contents `wIn` at block indices `J` to the leaving record
 `cOut` and contents `wOut`, moving the blocks by `δ`. This is the entry `F_i` of the note's
 equation (3). -/
-noncomputable def intervalCount (input : List Bool) (J : Option (Fin k) → ℤ)
+@[expose] noncomputable def intervalCount (input : List Bool) (J : Option (Fin k) → ℤ)
     (δ : Option (Fin k) → SignType) (cIn : BlockControl k State b)
     (wIn : Fin k → Fin 3 → ZMod b → Option Bool)
     (cOut : BlockControl k State b) (wOut : Fin k → Fin 3 → ZMod b → Option Bool) : ℕ :=

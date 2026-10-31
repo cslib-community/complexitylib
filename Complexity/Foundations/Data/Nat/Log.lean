@@ -31,6 +31,7 @@ stays polynomial after logarithmically many rounds. Similarly `2 ^ (⌊log₂ n�
 * `Nat.mul_log_le_add_sq`: `m * ⌊log_b n⌋ ≤ n + m * m` for `1 < b`.
 * `Nat.clog_two_le_two_mul_of_le_two_mul`: `⌈log₂ n⌉ ≤ 2 * ⌈log₂ n'⌉` when `n ≤ 2 * n'` and
   `2 ≤ n'`.
+* `Nat.clog_two_add_two_le_three_mul_log_two`: `⌈log₂ (n + 2)⌉ ≤ 3 ⌊log₂ n⌋` for `n ≥ 2`.
 -/
 
 @[expose] public section
@@ -108,5 +109,15 @@ theorem clog_two_le_two_mul_of_le_two_mul {n n' : ℕ} (hn : n ≤ 2 * n') (hn' 
       _ = 2 ^ (clog 2 n' + 1) := Nat.pow_succ'.symm
   have h3 : clog 2 n ≤ clog 2 n' + 1 := (clog_le_iff_le_pow Nat.one_lt_two).mpr h2
   omega
+
+/-- From `n = 2` on, `⌈log₂ (n + 2)⌉ ≤ 3 ⌊log₂ n⌋`: the left side is at most `⌊log₂ n⌋ + 2`, and
+`⌊log₂ n⌋ ≥ 1`. -/
+theorem clog_two_add_two_le_three_mul_log_two {n : ℕ} (hn : 2 ≤ n) :
+    clog 2 (n + 2) ≤ 3 * log 2 n := by
+  have hL : 1 ≤ log 2 n := le_log_of_pow_le Nat.one_lt_two (by simpa using hn)
+  have hlt : n < 2 ^ (log 2 n + 1) := lt_pow_succ_log_self Nat.one_lt_two n
+  refine (clog_le_iff_le_pow Nat.one_lt_two).mpr ?_
+  calc n + 2 ≤ 2 ^ (log 2 n + 2) := by rw [Nat.pow_succ]; omega
+    _ ≤ 2 ^ (3 * log 2 n) := Nat.pow_le_pow_right Nat.two_pos (by omega)
 
 end Nat

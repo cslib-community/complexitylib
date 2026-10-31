@@ -29,7 +29,7 @@ example : ({σ | correlated σ 1 ∧ correlated σ 2} : Finset (Fin 5)) = {0} :=
   decide
 
 private theorem heavy_iff (σ : Fin 5) :
-    heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ ↔ σ = 0 := by
+    heavyCountEvent correlated univ (fun _ => 1 / 3) 1 8 σ ↔ σ = 0 := by
   classical
   by_cases hσ : σ = 0
   · subst σ
@@ -41,9 +41,9 @@ private theorem heavy_iff (σ : Fin 5) :
 
 -- The rare event has positive probability, and the explicit upper bound is below one.
 open scoped Classical in
-example : (dens {σ | heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ} : ℝ) = 1 / 5 := by
+example : (dens {σ | heavyCountEvent correlated univ (fun _ => 1 / 3) 1 8 σ} : ℝ) = 1 / 5 := by
   classical
-  have hevent : ({σ | heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ} :
+  have hevent : ({σ | heavyCountEvent correlated univ (fun _ => 1 / 3) 1 8 σ} :
       Finset (Fin 5)) = {0} := by
     ext σ
     simp only [mem_filter, mem_univ, true_and, mem_singleton]
@@ -52,7 +52,7 @@ example : (dens {σ | heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ} : ℝ)
   norm_num
 
 open scoped Classical in
-example : (#{σ : Fin 5 | heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ} : ℝ) ≤
+example : (#{σ : Fin 5 | heavyCountEvent correlated univ (fun _ => 1 / 3) 1 8 σ} : ℝ) ≤
     (7 / 12) * Fintype.card (Fin 5) := by
   classical
   have hpair : ∀ y : Fin 5, y ≠ 0 →
@@ -63,13 +63,12 @@ example : (#{σ : Fin 5 | heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ} : 
       ext σ
       simp [correlated, hy]
     norm_num [hs]
-  have h := @card_filter_heavyCountEvent_le (Fin 5) (Fin 5) (inferInstance : Fintype (Fin 5))
-    correlated univ (0 : Fin 5)
+  have h := card_filter_heavyCountEvent_le correlated univ univ (0 : Fin 5)
     (a := 1 / 5) (ρ := 1) (c := 1) (M := 1 / 3) (d := fun _ => 1 / 3)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (fun _ => by norm_num) (by norm_num)
+    (fun _ _ => by norm_num) (by norm_num)
     (by
-      intro w hw
+      intro w _ _ hw
       convert hpair w hw using 1
       congr 2
       ext σ
@@ -79,17 +78,17 @@ example : (#{σ : Fin 5 | heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ} : 
 
 -- An odd capacity requires rounding up; equality with the heavy threshold is excluded.
 example : ¬ heavyCountEvent (fun (_ : Unit) (y : Fin 3) => y = 0)
-    (fun _ => 1) 1 3 () := by
+    univ (fun _ => 1) 1 3 () := by
   classical
   norm_num [heavyCountEvent, show ({y : Fin 3 | y = 0} : Finset (Fin 3)) = {0} by decide]
 
 example : heavyCountEvent (fun (_ : Unit) (y : Fin 3) => y ≠ 2)
-    (fun _ => 1) 1 3 () := by
+    univ (fun _ => 1) 1 3 () := by
   classical
   norm_num [heavyCountEvent, show ({y : Fin 3 | y ≠ 2} : Finset (Fin 3)) = {0, 1} by decide]
 
 example : ¬ heavyCountEvent (fun (_ : Unit) (_ : Fin 3) => True)
-    (fun _ => 1 / 4) 1 1 () := by
+    univ (fun _ => 1 / 4) 1 1 () := by
   classical
   norm_num [heavyCountEvent]
 
@@ -184,14 +183,14 @@ private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 open scoped Classical in
 example :
     (#{σ | affineRetains 5 1 1 σ 0 ∧ heavyCountEvent
-      (fun σ (y : ZMod 5) => affineRetains 5 1 1 σ y) (fun _ => 1 / 3) 1 8 σ} : ℝ) ≤
+      (fun σ (y : ZMod 5) => affineRetains 5 1 1 σ y) univ (fun _ => 1 / 3) 1 8 σ} : ℝ) ≤
       (11 / 12) * #{σ | affineRetains 5 1 1 σ 0} := by
   classical
-  have h := card_heavyCountEvent_affineRetains_le
+  have h := card_heavyCountEvent_affineRetains_le univ
     (V := ZMod 5) (P := 5) (H := 1) (ident := id) Function.injective_id
     (a := 1 / 5) (by norm_num) (by norm_num) (Lt := 1) (by norm_num)
     (d := fun _ => 1 / 3) (ρ := 1) (M := 1 / 3)
-    (by norm_num) (by norm_num) (fun _ => by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (fun _ _ => by norm_num) (by norm_num)
     (n := 8) (by decide) 0
   norm_num at h ⊢
   exact h
@@ -202,7 +201,7 @@ private abbrev forced (_ : Fin 5) (y : Fin 5) : Prop := y = 0
 open scoped Classical in
 example :
     vertexNormPow 4 5 1 (fun (_ _ : Fin 5) => True) (fun σ _ =>
-      if heavyCountEvent correlated (fun _ => 1 / 3) 1 8 σ then
+      if heavyCountEvent correlated univ (fun _ => 1 / 3) 1 8 σ then
         kthLargest 1 {y | forced σ y} (fun _ => |(2 : ℝ)|) else 0) ≤
       (7 / 12) * rowNormPow 4 5 1 (fun (_ _ : Fin 5) => True) forced (fun _ _ _ => 2) := by
   classical
@@ -224,7 +223,7 @@ example :
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by decide)
     (fun _ _ => 1 / 3) (fun _ _ => by norm_num) (fun _ => by norm_num)
     (by
-      intro x y w hwy
+      intro x y w _ hwy
       convert hpair x y w hwy using 1
       congr 2
       ext σ
