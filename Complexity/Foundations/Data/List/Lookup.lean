@@ -28,6 +28,7 @@ import Mathlib.Data.List.OfFn
 * `List.getD_take_drop`: reading an in-range entry of `(l.drop k).take w` reads index `k + i`
   of `l`.
 * `List.getD_ofFn_of_lt`, `List.getD_ofFn`: reading `List.ofFn f` at a valid index returns `f`.
+* `List.set_ofFn`: updating `List.ofFn f` tabulates the updated function.
 * `List.forall_mem_set_of_forall_mem`, `List.getD_le_of_forall_le`: preserve invariants under
   updates and bound defaulted reads of numeric register files.
 * `List.getD_map_range`: read a function tabulated over a bounded range.
@@ -86,6 +87,15 @@ theorem List.getD_ofFn_of_lt {α : Type*} {n : ℕ} (f : Fin n → α) {i : ℕ}
 theorem List.getD_ofFn {α : Type*} {n : ℕ} (f : Fin n → α) (i : Fin n) (d : α) :
     (List.ofFn f).getD i d = f i :=
   List.getD_ofFn_of_lt f i.isLt d
+
+/-- Updating `List.ofFn f` at `i : Fin n` tabulates the updated function. -/
+theorem List.set_ofFn {α : Type*} {n : ℕ} (f : Fin n → α) (i : Fin n) (a : α) :
+    (List.ofFn f).set i a = List.ofFn (Function.update f i a) := by
+  classical
+  apply List.ext_getElem (by simp)
+  intro j hj _
+  simp only [List.getElem_set, List.getElem_ofFn, Function.update_apply, Fin.ext_iff]
+  split_ifs <;> first | rfl | omega
 
 /-- A property of all the entries of a list holds of all the entries of an update by a value
 having it. -/
