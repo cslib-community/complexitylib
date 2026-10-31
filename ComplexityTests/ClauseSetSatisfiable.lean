@@ -56,6 +56,11 @@ example : ¬φ.toCNF.Satisfiable := by
   rw [ClauseSet.satisfiable_toCNF_iff]
   decide
 
+-- A formula listing the clauses of `φ` is unsatisfiable, and so is its clause set again.
+example : ¬φ.toCNF.toClauseSet.Satisfiable := by
+  rw [CNF.satisfiable_toClauseSet_iff, ClauseSet.satisfiable_toCNF_iff]
+  decide
+
 -- Relabelling keeps clauses of width at most `2`.
 example : ∀ C ∈ ψ.relabel (Fin.succ : Fin 2 → Fin 3), C.card ≤ 2 :=
   fun _ hC => ClauseSet.card_le_of_mem_relabel (by decide) hC

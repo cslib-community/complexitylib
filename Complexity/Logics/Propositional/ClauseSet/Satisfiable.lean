@@ -14,10 +14,11 @@ public import Complexity.Logics.Propositional.ClauseSet.Basic
 
 A clause set is *satisfiable* when some assignment satisfies all of its clauses
 (`ClauseSet.Satisfiable`). Over a finite type of variables this is decidable, and it agrees with
-satisfiability of a formula listing the clauses (`ClauseSet.satisfiable_toCNF_iff`). Satisfaction
-of unions, insertions, images and indexed unions of clause sets is characterized clause by clause,
-and renaming the variables along an injective map preserves satisfiability
-(`ClauseSet.satisfiable_relabel`), as for formulas (`CNF.satisfiable_relabel`).
+satisfiability of a formula listing the clauses, and a formula with satisfiability of its clause set
+(`ClauseSet.satisfiable_toCNF_iff`, `CNF.satisfiable_toClauseSet_iff`). Satisfaction of unions,
+insertions, images and indexed unions of clause sets is characterized clause by clause, and renaming
+the variables along an injective map preserves satisfiability (`ClauseSet.satisfiable_relabel`), as
+for formulas (`CNF.satisfiable_relabel`).
 
 ## Main definitions
 
@@ -26,7 +27,9 @@ and renaming the variables along an injective map preserves satisfiability
 
 ## Main results
 
-* `Cslib.Logic.PL.ClauseSet.satisfiable_toCNF_iff`: agreement with `CNF.Satisfiable`.
+* `Cslib.Logic.PL.ClauseSet.satisfiable_toCNF_iff`,
+  `Cslib.Logic.PL.CNF.satisfiable_toClauseSet_iff`: agreement with `CNF.Satisfiable`, in both
+  directions.
 * `Cslib.Logic.PL.ClauseSet.sat_union_iff`, `Cslib.Logic.PL.ClauseSet.sat_insert_iff`,
   `Cslib.Logic.PL.ClauseSet.sat_singleton_iff`, `Cslib.Logic.PL.ClauseSet.sat_empty`,
   `Cslib.Logic.PL.ClauseSet.sat_image_iff`, `Cslib.Logic.PL.ClauseSet.sat_biUnion_iff`:
@@ -59,6 +62,11 @@ instance [Fintype V] [DecidableEq V] (ψ : ClauseSet V) : Decidable ψ.Satisfiab
 /-- A clause set is satisfiable exactly when a formula listing its clauses is. -/
 theorem satisfiable_toCNF_iff (ψ : ClauseSet V) : ψ.toCNF.Satisfiable ↔ ψ.Satisfiable := by
   simp only [CNF.Satisfiable, ClauseSet.eval_toCNF_eq_true_iff, Satisfiable]
+
+/-- A formula is satisfiable exactly when its clause set is. -/
+theorem _root_.Cslib.Logic.PL.CNF.satisfiable_toClauseSet_iff [DecidableEq V] (φ : CNF V) :
+    φ.toClauseSet.Satisfiable ↔ φ.Satisfiable :=
+  exists_congr fun x => CNF.sat_toClauseSet_iff φ x
 
 /-! ### Satisfaction of combined clause sets -/
 
