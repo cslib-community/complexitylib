@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionShape
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.List.GetD
 
 /-!
@@ -48,11 +49,6 @@ variable {T : Type} {encT : T ↪ List Bool}
 theorem length_encNat_le {a b : ℕ} (h : a ≤ b) : (encNat a).length ≤ b := by
   rw [encNat_apply, Nat.size_eq_bits_len]
   exact Nat.size_le.mpr (h.trans_lt Nat.lt_two_pow_self)
-
-/-- A number below `2 ^ p` has at most `p` binary digits. -/
-theorem length_encNat_le_of_lt_two_pow {a p : ℕ} (h : a < 2 ^ p) : (encNat a).length ≤ p := by
-  rw [encNat_apply, Nat.size_eq_bits_len]
-  exact Nat.size_le.mpr h
 
 /-- **A list of elements of encoded length at most `B`** has encoded length at most
 `k (2 B + 1)` for `k` elements. -/
