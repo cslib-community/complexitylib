@@ -769,10 +769,10 @@ theorem guardedBranchSolver_le_two_pow
 theorem checkTopFeasible_eq_true_iff {inp : SparseSystemInput} :
     checkTopFeasible N₀_top inp = true ↔
       N₀_top ≤ inp.1 ∧ 1 ≤ inp.branchDiv ∧
-        (∀ eq ∈ inp.2.2, ∀ m ∈ eq, ∀ v ∈ m, v < inp.1) ∧
-        (∀ eq ∈ inp.2.2, IsCanonicalEquation eq) ∧
-        (∀ eq ∈ inp.2.2, ∀ m ∈ eq, m.length ≤ inp.degreeCap) ∧
-        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.2.2).length ≤
+        (∀ eq ∈ inp.equations, ∀ m ∈ eq, ∀ v ∈ m, v < inp.1) ∧
+        (∀ eq ∈ inp.equations, IsCanonicalEquation eq) ∧
+        (∀ eq ∈ inp.equations, ∀ m ∈ eq, m.length ≤ inp.degreeCap) ∧
+        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations).length ≤
           inp.1 / inp.branchDiv := by
   unfold checkTopFeasible
   simp only [Bool.and_eq_true, decide_eq_true_eq, checkVarsLt_eq_true_iff,
@@ -862,18 +862,18 @@ theorem reduced_branch_invariants {N₀_top : ℕ} {inp : SparseSystemInput} {va
     (hs2 : 2 ≤ inp.branchDiv)
     (hred :
       HeavyBranchFold.prepareBranch inp.1
-        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.2.2)
-        vals inp.2.2 = .reduced n' sys') :
+        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations)
+        vals inp.equations = .reduced n' sys') :
     n' = inp.1 -
-        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.2.2).length ∧
+        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations).length ∧
       inp.1 ≤ 2 * n' ∧ (∀ eq' ∈ sys', IsCanonicalEquation eq') ∧
       (∀ eq' ∈ sys', ∀ m' ∈ eq', ∀ v' ∈ m', v' < n') ∧
       (∀ eq' ∈ sys', ∀ m' ∈ eq', m'.length ≤ inp.degreeCap) ∧
       branchMaxFactorIncidence n' sys' ≤ inp.heavyThreshold + 1 ∧
-      branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.2.2 := by
+      branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.equations := by
   obtain ⟨_, _, hvars, hcan, hdeg, hS_le⟩ := checkTopFeasible_eq_true_iff.mp htop
-  have hS_nd := HeavyBranchFold.nodup_heavyVarList inp.1 inp.heavyThreshold inp.2.2
-  have hSn : ∀ s ∈ HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.2.2,
+  have hS_nd := HeavyBranchFold.nodup_heavyVarList inp.1 inp.heavyThreshold inp.equations
+  have hSn : ∀ s ∈ HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations,
       s < inp.1 :=
     fun _ hs => HeavyBranchFold.lt_of_mem_heavyVarList hs
   obtain ⟨hn'_eq, _, _, _, hcan', hvars'⟩ :=
@@ -888,10 +888,10 @@ theorem reduced_branch_invariants {N₀_top : ℕ} {inp : SparseSystemInput} {va
     refine ⟨Nat.zero_le _, fun x hx => ?_⟩
     obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx
     exact hvd' v (List.mem_range.mp hv)
-  have hw' : branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.2.2 := by
+  have hw' : branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.equations := by
     refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
     simp only [List.mem_cons, forall_eq_or_imp]
-    refine ⟨one_le_branchMaxFactorWidth inp.1 inp.2.2, fun x hx => ?_⟩
+    refine ⟨one_le_branchMaxFactorWidth inp.1 inp.equations, fun x hx => ?_⟩
     obtain ⟨eq', heq', rfl⟩ := List.mem_map.mp hx
     obtain ⟨eq₀, heq₀, _, hsc⟩ :=
       (HeavyBranchFold.prepareBranch_reduced_length_le hred).2 eq' heq'
