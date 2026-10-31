@@ -22,14 +22,19 @@ Bounds on `Nondeterministic.ecomplexityFun` for the standard functions on `v`-bi
 
 * equality: `N¹(EQ_v) = v`, from the fooling set of diagonal pairs and the cover by diagonal
   singletons [Kushilevitz and Nisan, Examples 1.21 and 2.5][KushilevitzNisan1997];
-* disjointness: `N¹(DISJ_v) = v`, from the fooling set of complementary pairs and the cover by the
-  rectangles `{x ⊆ w} × {y ⊆ wᶜ}`, so `N⁰(NDISJ_v) = v` for its negation;
+* disjointness: `N¹(DISJ_v) = v`, from the fooling set of complementary pairs
+  [Kushilevitz and Nisan, Example 1.23][KushilevitzNisan1997] and the cover by the rectangles
+  `{x ⊆ w} × {y ⊆ wᶜ}`, so `N⁰(NDISJ_v) = v` for its negation;
 * inner product modulo two: `N¹(IP_v) ≥ v - 1` and `N⁰(IP_v) ≥ v`. By Lindsey's
   lemma a rectangle on which the inner product is constant has at most `2^v` pairs
   (`BitString.card_mul_le_two_pow_of_dotProduct_eq`), while the inner product is `1` on
   `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So `C¹(IP_v) ≥ (2^v - 1)/2` and
   `C⁰(IP_v) ≥ (2^v + 1)/2`, which in the unrounded convention of Kushilevitz and Nisan give
   `N¹(IP_v) ≥ log₂ (2^v - 1) - 1` and `N⁰(IP_v) > v - 1`.
+
+The deterministic `Cslib.Communication.ecomplexityFun_equality` has the same final name as
+`Cslib.Communication.Nondeterministic.ecomplexityFun_equality`; with both namespaces open, write
+`Nondeterministic.ecomplexityFun_equality` to avoid an ambiguous name.
 
 ## Main results
 
@@ -103,10 +108,13 @@ theorem ecomplexityFun_not_disjointness (v : ℕ) :
 
 /-- A `z`-cover of the inner product by `2 ^ k` rectangles covers at most `2 ^ k * 2 ^ v` pairs. -/
 theorem HasCover.card_dotProduct_le {k : ℕ} {z : Bool}
-    (hk : HasCover (fun (x y : BitString v) b => x ⬝ᵥ y = b) z Set.univ Set.univ k) :
-    #{q : BitString v × BitString v | q.1 ⬝ᵥ q.2 = z} ≤ 2 ^ k * 2 ^ v :=
-  hk.card_le_two_pow_mul fun S T h => by
-    simpa using BitString.card_mul_le_two_pow_of_dotProduct_eq S T z h
+    (hk : HasCover z (fun (x y : BitString v) b => x ⬝ᵥ y = b) Set.univ Set.univ k) :
+    #{q : BitString v × BitString v | q.1 ⬝ᵥ q.2 = z} ≤ 2 ^ k * 2 ^ v := by
+  have h : #{q ∈ (univ : Finset (BitString v)) ×ˢ univ | q.1 ⬝ᵥ q.2 = z} ≤ 2 ^ k * 2 ^ v :=
+    HasCover.card_le_two_pow_mul
+      (fun S _ T _ h => by simpa using BitString.card_mul_le_two_pow_of_dotProduct_eq S T z h)
+      (by simpa only [coe_univ] using hk)
+  rwa [univ_product_univ] at h
 
 /-- The inner product is `1` on `(4^v - 2^v)/2` pairs. -/
 private theorem two_mul_card_dotProduct_eq_true_add_two_pow :
