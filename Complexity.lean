@@ -397,6 +397,9 @@ public import Complexity.Algorithms.WordRAM.NatGcd
 public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatNthRoot
 public import Complexity.Algorithms.WordRAM.NatSqrt
+public import Complexity.Algorithms.WordRAM.PPSZ.Clauses
+public import Complexity.Algorithms.WordRAM.PPSZ.Implied
+public import Complexity.Algorithms.WordRAM.PPSZ.Odometer
 public import Complexity.Algorithms.WordRAM.PPZ.Amplify
 public import Complexity.Algorithms.WordRAM.PPZ.Forced
 public import Complexity.Algorithms.WordRAM.PPZ.Round
@@ -566,6 +569,7 @@ public import Complexity.Computability.Circuit.Arithmetic.Pairing
 public import Complexity.Computability.Circuit.Arithmetic.Permanent
 public import Complexity.Computability.Circuit.Arithmetic.Permanent.BooleanSum
 public import Complexity.Computability.Circuit.Arithmetic.Permanent.Formula
+public import Complexity.Computability.Circuit.Arithmetic.Permanent.Projection
 public import Complexity.Computability.Circuit.Arithmetic.Power
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRank
 public import Complexity.Computability.Circuit.Arithmetic.RelativeRankUpper
@@ -1387,6 +1391,7 @@ public import Complexity.Computability.Complexity.FineGrained.PPSZ.General
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.GeneralK
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Limit
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Placement
+public import Complexity.Computability.Complexity.FineGrained.PPSZ.Search
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Unique
 public import Complexity.Computability.Complexity.FineGrained.PPZ
 public import Complexity.Computability.Complexity.FineGrained.PPZ.LazyOrder
