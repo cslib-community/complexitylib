@@ -30,6 +30,7 @@ deterministic machine in time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspac
 
 ## References
 
+* [J. Hopcroft, W. Paul, L. Valiant, *On Time Versus Space*][HopcroftPaulValiant1977]
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Theorem D.1 (p. 53).
 -/
 

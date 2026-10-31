@@ -29,8 +29,9 @@ of the counting simulation (milestone H3 of #1833), so the conditional class con
 `Complexity.Computability.Complexity.Classes.CountingSimulation.Containments` hold assuming only a
 contraction algorithm. The joint time-and-space forms keep a single deciding machine within
 time `2 ^ (C * T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`, for a time-constructible
-`T` with `max n 2 ≤ T n`. The contraction algorithm remains an explicit hypothesis; this
-module does not prove the unconditional simulation.
+`T` with `max n 2 ≤ T n`. The contraction algorithm remains an explicit hypothesis here;
+`Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two` and its
+siblings discharge it with the contraction algorithm of Theorem D.1.
 
 **The family.** At the input `x`, the clock `t` and the schedule number `σ`, the network
 (`Cslib.Complexity.CountingSimulation.blockNetworkOf`) is the explicit block-counting network
