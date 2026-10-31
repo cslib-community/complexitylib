@@ -24,6 +24,8 @@ public import Complexity.Algorithms.Lean.FusionTree.Sketch
 public import Complexity.Algorithms.Lean.FusionTree.Tree
 public import Complexity.Algorithms.Lean.FusionTree.XorCorrection
 public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.Algorithms.Lean.KMP.Basic
+public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.MinPQ
 public import Complexity.Algorithms.Lean.Queue
 public import Complexity.Algorithms.Lean.Retroactive
