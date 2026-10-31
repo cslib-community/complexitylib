@@ -31,75 +31,77 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 /-- Persistent high-register contents after the native layout calculation. -/
 public structure Parameters (L m N Q : ℕ) (x : Data 160) : Prop where
   /-- Original depth. -/
-  depth : x.regs depth = L
+  depth : x.regs Reg.depth = L
   /-- Original inner depth. -/
-  inner : x.regs inner = m
+  inner : x.regs Reg.inner = m
   /-- Original outer matrix dimension. -/
-  rows : x.regs rows = N
+  rows : x.regs Reg.rows = N
   /-- Original request count, including repetitions. -/
-  queryCount : x.regs queryCount = Q
+  queryCount : x.regs Reg.queryCount = Q
   /-- Original thin dimension. -/
-  columns : x.regs columns = D m
+  columns : x.regs Reg.columns = D m
   /-- Complete subset-scan size. -/
-  masks : x.regs masks = 2 ^ L
+  masks : x.regs Reg.masks = 2 ^ L
   /-- Original band-array size. -/
-  cells : x.regs cells = 7 ^ L
+  cells : x.regs Reg.cells = 7 ^ L
   /-- Shared encoding-array size. -/
-  leaves : x.regs leaves = 10 ^ L
+  leaves : x.regs Reg.leaves = 10 ^ L
   /-- Computed number of shared bands. -/
-  bands : x.regs bands = numBands L m N
+  bands : x.regs Reg.bands = numBands L m N
   /-- Computed number of tile calls. -/
-  tiles : x.regs tiles = numBands L m N ^ 2
+  tiles : x.regs Reg.tiles = numBands L m N ^ 2
   /-- Complete original prefix size. -/
-  inputSize : x.regs inputSize = inputEnd m N Q
+  inputSize : x.regs Reg.inputSize = inputEnd m N Q
   /-- Protected source snapshot. -/
-  snapshot : x.regs snapshot = snapshotBase L m N Q
+  snapshot : x.regs Reg.snapshot = snapshotBase L m N Q
   /-- Saved actual offsets. -/
-  offsets : x.regs offsets = offsetBase L m N Q
+  offsets : x.regs Reg.offsets = offsetBase L m N Q
   /-- Saved actual query codes. -/
-  codes : x.regs codes = codeBase L m N Q
+  codes : x.regs Reg.codes = codeBase L m N Q
   /-- Saved original-position permutation. -/
-  originals : x.regs originals = originalBase L m N Q
+  originals : x.regs Reg.originals = originalBase L m N Q
   /-- Grouped-answer block. -/
-  grouped : x.regs grouped = groupedBase L m N Q
+  grouped : x.regs Reg.grouped = groupedBase L m N Q
   /-- Original-order answer block. -/
-  output : x.regs output = outputBase L m N Q
+  output : x.regs Reg.output = outputBase L m N Q
   /-- Reusable native kernel scratch. -/
-  scratch : x.regs scratch = scratchBase L m N Q
+  scratch : x.regs Reg.scratch = scratchBase L m N Q
   /-- Shared timestamp directory. -/
-  stamps : x.regs stamps = stampBase L m N Q
+  stamps : x.regs Reg.stamps = stampBase L m N Q
   /-- One past the complete allocation. -/
-  memoryLimit : x.regs memoryLimit = memoryEnd L m N Q
+  memoryLimit : x.regs Reg.memoryLimit = memoryEnd L m N Q
   /-- Constant zero. -/
-  zero : x.regs zero = 0
+  zero : x.regs Reg.zero = 0
   /-- Constant one. -/
-  one : x.regs one = 1
+  one : x.regs Reg.one = 1
   /-- Unsigned multiplier for signed encoding. -/
-  two : x.regs two = 2
+  two : x.regs Reg.two = 2
   /-- Constant three. -/
-  three : x.regs three = 3
+  three : x.regs Reg.three = 3
   /-- Constant four. -/
-  four : x.regs four = 4
+  four : x.regs Reg.four = 4
   /-- Original matrix payload offset. -/
-  five : x.regs five = 5
+  five : x.regs Reg.five = 5
   /-- Constant six. -/
-  six : x.regs six = 6
+  six : x.regs Reg.six = 6
   /-- Both original matrix payloads. -/
-  matrixWords : x.regs matrixWords = 2 * (N * D m)
+  matrixWords : x.regs Reg.matrixWords = 2 * (N * D m)
   /-- Original coordinate-pair offset. -/
-  queryOffset : x.regs queryOffset = queryInputBase m N
+  queryOffset : x.regs Reg.queryOffset = queryInputBase m N
   /-- Low routing allocation end. -/
-  wantedEnd : x.regs wantedEnd = Wanted.memoryLimit L m N Q
+  wantedEnd : x.regs Reg.wantedEnd = Wanted.memoryLimit L m N Q
   /-- Low producer allocation end. -/
-  bandEnd : x.regs bandEnd = BandPreparation.memoryEnd L m N
+  bandEnd : x.regs Reg.bandEnd = BandPreparation.memoryEnd L m N
   /-- Computed low shared catalogue base. -/
-  catalogue : x.regs catalogue = BandPreparation.catalogueBase L m N
+  catalogue : x.regs Reg.catalogue = BandPreparation.catalogueBase L m N
 
 /-- Registers holding the persistent caller protocol. -/
 @[expose] public def parameterRegisters : Finset (Fin 160) :=
-  {depth, inner, rows, queryCount, columns, masks, cells, leaves, bands, tiles, inputSize,
-    snapshot, offsets, codes, originals, grouped, output, scratch, stamps, memoryLimit, zero, one,
-    two, three, four, five, six, matrixWords, queryOffset, wantedEnd, bandEnd, catalogue}
+  {Reg.depth, Reg.inner, Reg.rows, Reg.queryCount, Reg.columns, Reg.masks, Reg.cells, Reg.leaves,
+    Reg.bands, Reg.tiles, Reg.inputSize, Reg.snapshot, Reg.offsets, Reg.codes, Reg.originals,
+    Reg.grouped, Reg.output, Reg.scratch, Reg.stamps, Reg.memoryLimit, Reg.zero, Reg.one, Reg.two,
+    Reg.three, Reg.four, Reg.five, Reg.six, Reg.matrixWords, Reg.queryOffset, Reg.wantedEnd,
+    Reg.bandEnd, Reg.catalogue}
 
 /-- Preserve the protocol through operations on any of the other caller work registers. -/
 public theorem Parameters.of_frame {L m N Q : ℕ} {x y : Data 160}

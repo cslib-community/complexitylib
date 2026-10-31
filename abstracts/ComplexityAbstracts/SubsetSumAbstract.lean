@@ -96,7 +96,7 @@ theorem subsetSum_npComplete : NPComplete encSubsetSum SubsetSum :=
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.SubsetSumAbstract`:
-7 root declarations, 62 dependencies checked
+7 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.SubsetSumAbstract allowing [

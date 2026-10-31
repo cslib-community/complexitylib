@@ -78,6 +78,11 @@ subexponential time $2^{o(m \log m)} = N^{o(\log \log N)}$ (`¬DecidableInSubexp
      \iff \mathrm{ilangoInstance}\, G \in \mathrm{PartialMCSP.BinaryGate}
      \iff \mathrm{ilangoInstance}\, G \in \mathrm{PartialMCSP.MonotoneReadOnce}.$$
 
+**The hypothesis is refuted.** `Cslib.Complexity.CountingNativeEndpoint.not_ETH` proves that `ETH`
+is false, so the `ETH`-conditional lower bounds of this module hold vacuously. They are kept as
+conditional statements, as is the Partial MCSP catalogue entry; the reduction and the equivalences
+above are unconditional.
+
 ## Main definitions
 
 * `Cslib.PartialMCSP.MonotoneReadOnce`: partial-function MCSP restricted to read-once positive
