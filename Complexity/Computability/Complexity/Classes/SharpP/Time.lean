@@ -34,6 +34,7 @@ is distinct from a count of freely padded fair-coin strings.
 
 * `Cslib.Complexity.mem_SharpTIME`: the fixed-machine and exact terminal-count contract.
 * `Cslib.Complexity.SharpTIME_mono`: larger sufficient clocks preserve membership and counts.
+* `Cslib.Complexity.SharpTIME_mono_of_le_mul_add`: constant factors of the clock are absorbed.
 * `Cslib.Complexity.SharpTIME.subset_SharpP`: every polynomial-time slice belongs to `SharpP`.
 * `Cslib.Complexity.mem_SharpP_iff_exists_mem_SharpTIME`: their union is exactly `SharpP`.
 
@@ -82,6 +83,22 @@ theorem SharpTIME_mono {t₁ t₂ : ℕ → ℕ} (h : ∀ n, t₁ n ≤ t₂ n) 
   obtain ⟨hhalt, hcount⟩ := hm a
   have hle : c₁ * t₁ (enc a).length + c₂ ≤ c₁ * t₂ (enc a).length + c₂ :=
     Nat.add_le_add_right (Nat.mul_le_mul_left _ (h _)) _
+  refine ⟨hhalt.mono hle, ?_⟩
+  change machine.branchCount (· == [true]) _ _ = f a
+  rw [hhalt.branchCount_eq hle]
+  exact hcount
+
+/-- Constant factors and additive constants of the time bound are absorbed by the constants of
+`SharpTIME`. -/
+theorem SharpTIME_mono_of_le_mul_add {t₁ t₂ : ℕ → ℕ} {C : ℕ} (h : ∀ n, t₁ n ≤ C * t₂ n + C) :
+    SharpTIME enc t₁ ⊆ SharpTIME enc t₂ := by
+  rintro f ⟨c₁, c₂, k, State, hfinite, machine, hnon, hm⟩
+  refine ⟨c₁ * C, c₁ * C + c₂, k, State, hfinite, machine, hnon, fun a => ?_⟩
+  obtain ⟨hhalt, hcount⟩ := hm a
+  have hle : c₁ * t₁ (enc a).length + c₂ ≤ c₁ * C * t₂ (enc a).length + (c₁ * C + c₂) := by
+    have := Nat.mul_le_mul_left c₁ (h (enc a).length)
+    rw [Nat.mul_add, ← Nat.mul_assoc] at this
+    omega
   refine ⟨hhalt.mono hle, ?_⟩
   change machine.branchCount (· == [true]) _ _ = f a
   rw [hhalt.branchCount_eq hle]
