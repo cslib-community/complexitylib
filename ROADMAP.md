@@ -119,10 +119,6 @@ families and full-input native runtime.
 - **Sigma protocols and Fiat–Shamir** ([#581]): computational Schnorr signatures under discrete
   log against strict PPT forgers; eavesdropping security in the strict-PPT model, with the
   statistical-distance term from sampling `ZMod q`.
-- **Diffie–Hellman and ElGamal:** arbitrary-key-length standalone symmetric-cipher bridge for
-  general-cipher Hashed ElGamal (Boneh–Shoup Theorem 11.5; the general-cipher construction,
-  Game 0/1/2 hybrids, Equation `(11.14)` reductions, and normalized `n`-bit-key `DEMOneTimeINDCPAOn`
-  / `linearHashKDF` endpoints have landed) ([#1047]).
 - **Chosen-ciphertext security** ([#1885]): multi-challenge CCA from the single-challenge
   Cramer–Shoup theorem.
 - **Lattices**: Fiat–Shamir with aborts and signatures from SIS (Lyubashevsky 2009,
@@ -724,7 +720,6 @@ not planned, not as proved.
 [#999]: https://github.com/cslib-community/complexitylib/issues/999
 [#1001]: https://github.com/cslib-community/complexitylib/issues/1001
 [#1002]: https://github.com/cslib-community/complexitylib/issues/1002
-[#1047]: https://github.com/cslib-community/complexitylib/issues/1047
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
