@@ -209,6 +209,22 @@ theorem bitsIsEmpty : ComputableInPolyTime List.isEmpty encBits encBool := by
   exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
     k, Q, hfinite, tm, fun word => htm word⟩
 
+/-- Drop the head of a list in any list encoding, reusing the encoding's linear-time machine. -/
+@[fun_prop]
+theorem tail {α : Type} {encA : α ↪ List Bool} {encL : List α ↪ List Bool}
+    [ListEncoding encA encL] : ComputableInPolyTime (List.tail (α := α)) encL encL := by
+  obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.tail (enc₁ := encA) (enc := encL)
+  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
+    k, Q, hfinite, tm, fun word => htm word⟩
+
+/-- Test a list in any list encoding for emptiness, reusing the encoding's linear-time machine. -/
+@[fun_prop]
+theorem listIsEmpty {α : Type} {encA : α ↪ List Bool} {encL : List α ↪ List Bool}
+    [ListEncoding encA encL] : ComputableInPolyTime (List.isEmpty (α := α)) encL encBool := by
+  obtain ⟨c, k, Q, hfinite, tm, htm⟩ := ListEncoding.isEmpty (enc₁ := encA) (enc := encL)
+  exact ⟨fun n => c * (n + 1), fun n => c * (n + 1), by fun_prop, by fun_prop,
+    k, Q, hfinite, tm, fun word => htm word⟩
+
 private theorem rangeStepCertificate :
     ComputableInPolyTime (fun p : RangeState × Bool => rangeStep p.1 p.2)
       (encPair rangeEncoding encBool) rangeEncoding := by

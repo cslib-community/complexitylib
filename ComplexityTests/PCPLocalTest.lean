@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.PCP.LocalTest
+import Complexity.Computability.PCP.LocalTest.DecisionTree
 
 /-! Concrete regression clients for query padding and rejection of a random test family. -/
 
@@ -16,6 +16,9 @@ open Finset
 private def firstBitTest : LocalTest (Fin 2) Unit (Fin 1) Bool where
   query _ _ := 0
   Accepts _ answers := answers 0 = true
+
+private instance (r : Unit) (a : Fin 1 → Bool) : Decidable (firstBitTest.Accepts r a) :=
+  inferInstanceAs (Decidable (a 0 = true))
 
 private def honestProof : Fin 2 → Bool := fun _ => true
 
@@ -51,7 +54,25 @@ private def selectedBitTest (e : Bool) : LocalTest (Fin 2) Unit (Fin 1) Bool whe
   query _ _ := if e then 0 else 1
   Accepts _ answers := answers 0 = true
 
+private instance (r : Bool × Unit) (a : Fin 1 → Bool) :
+    Decidable ((LocalTest.mix selectedBitTest).Accepts r a) :=
+  inferInstanceAs (Decidable (a 0 = true))
+
 private def counterexampleProof : Fin 2 → Bool := fun i => if i = 0 then true else false
+
+-- The executable bridge reads the checked position and returns its value.
+example : (firstBitTest.decisionTree ()).eval honestProof = true := by decide
+
+example : (firstBitTest.decisionTree ()).eval (fun _ => false) = false := by decide
+
+example : (firstBitTest.decisionTree ()).depth = 1 := by decide
+
+-- Empty repetition makes no queries and accepts, even on the rejecting input.
+example : ((firstBitTest.repeatAll 0).decisionTree (fun i => i.elim0)).depth = 0 := by decide
+
+example :
+    ((firstBitTest.repeatAll 0).decisionTree (fun i => i.elim0)).eval (fun _ => false) = true := by
+  decide
 
 private theorem trueBranchCard :
     #{r : Bool × Unit | r.1 = true} = 1 := by
@@ -69,6 +90,23 @@ example : bothBitsTest.acceptProb counterexampleProof = 0 := by
 example : (LocalTest.mix selectedBitTest).acceptProb counterexampleProof = 1 / 2 := by
   norm_num [LocalTest.acceptProb_eq_card_div, LocalTest.Passes, LocalTest.mix,
     selectedBitTest, counterexampleProof, trueBranchCard]
+
+-- Three independent random-coordinate checks have acceptance (1/2)^3 and use three queries.
+example : ((LocalTest.mix selectedBitTest).repeatAll 3).acceptProb counterexampleProof = 1 / 8 := by
+  rw [LocalTest.acceptProb_repeatAll]
+  have h : (LocalTest.mix selectedBitTest).acceptProb counterexampleProof = 1 / 2 := by
+    norm_num [LocalTest.acceptProb_eq_card_div, LocalTest.Passes, LocalTest.mix,
+      selectedBitTest, counterexampleProof, trueBranchCard]
+  rw [h]
+  norm_num
+
+example :
+    (((LocalTest.mix selectedBitTest).repeatAll 3).decisionTree
+      (fun _ => (true, ()))).depth = 3 := by decide
+
+example :
+    (((LocalTest.mix selectedBitTest).repeatAll 3).decisionTree
+      (fun i => (decide (i.val = 0), ()))).eval counterexampleProof = false := by decide
 
 example :
     1 - bothBitsTest.acceptProb counterexampleProof =

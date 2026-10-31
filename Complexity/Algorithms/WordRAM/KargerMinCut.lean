@@ -112,6 +112,7 @@ three complete machine-level endpoints built on the workspace-relocatable subrou
 namespace Cslib.Algorithms.WordRAM.Karger
 
 open scoped ENNReal
+open Cslib.Probability.PMF
 open Cslib.WordRAM
 
 /-! ### Word-size sufficiency and `Data.init` matrix layout -/

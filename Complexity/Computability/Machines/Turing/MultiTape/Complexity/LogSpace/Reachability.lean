@@ -42,8 +42,8 @@ configuration graph, which has polynomially many vertices [Sipser, Section 8.4][
 
 * `Turing.MultiTapeNTM.reflTransGen_viewSucc_iff`: the successor lists give the reachable views.
 * `Turing.MultiTapeNTM.searchAccepts_iff`: enough rounds decide acceptance.
-* `Turing.MultiTapeNTM.computableTidilyInPolyTime_viewSucc`: the successors in polynomial time.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.expand`: a round in polynomial time.
+* `Turing.MultiTapeNTM.computableInPolyTime_viewSucc`: the successors in polynomial time.
+* `Turing.MultiTapeTM.ComputableInPolyTime.expand`: a round in polynomial time.
 * `Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`: under a logarithmic space
   bound, enough rounds of breadth-first search run in polynomial time.
 
@@ -133,12 +133,12 @@ end Turing.MultiTapeNTM
 
 /-! ### Breadth-first search in polynomial time -/
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
+namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α : Type} [DecidableEq α] {enc : α ↪ List Bool}
 
 /-- Appending an element unless it is already in the list is polynomial-time. -/
-theorem insertNew : ComputableTidilyInPolyTime
+theorem insertNew : ComputableInPolyTime
     (fun p : List α × α => Cslib.Reachability.insertNew p.1 p.2) (encPair (encList enc) enc)
     (encList enc) := by
   have hmem (l : List α) (a : α) : decide (a ∈ l) = l.any fun b => decide (b = a) := by
@@ -153,12 +153,12 @@ theorem insertNew : ComputableTidilyInPolyTime
 
 /-- **A round of breadth-first search is polynomial-time** when the successors are: the found
 elements and their successors are at most polynomially many and long. -/
-theorem expand {succ : α → List α} (hsucc : ComputableTidilyInPolyTime succ enc (encList enc)) :
-    ComputableTidilyInPolyTime (Cslib.Reachability.expand succ) (encList enc) (encList enc) := by
-  have hlist : ComputableTidilyInPolyTime (fun found : List α => found.flatMap succ)
+theorem expand {succ : α → List α} (hsucc : ComputableInPolyTime succ enc (encList enc)) :
+    ComputableInPolyTime (Cslib.Reachability.expand succ) (encList enc) (encList enc) := by
+  have hlist : ComputableInPolyTime (fun found : List α => found.flatMap succ)
       (encList enc) (encList enc) :=
     flatMapWithInput id' (hsucc.comp (snd _ _))
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun p : (List α × List α) × α => Cslib.Reachability.insertNew p.1.2 p.2)
       (encPair (encPair (encList enc) (encList enc)) enc) (encList enc) :=
     insertNew.comp (((snd _ _).comp (fst _ _)).prod (snd _ _))
@@ -176,7 +176,7 @@ theorem expand {succ : α → List α} (hsucc : ComputableTidilyInPolyTime succ 
       length_frame]
     omega
 
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+end Turing.MultiTapeTM.ComputableInPolyTime
 
 namespace Turing.MultiTapeNTM
 
@@ -185,8 +185,8 @@ open MultiTapeTM
 variable {k : ℕ} {State : Type} [Finite State] {ntm : MultiTapeNTM k Bool State}
 
 /-- **The successors of a view are polynomial-time.** -/
-theorem computableTidilyInPolyTime_viewSucc :
-    ComputableTidilyInPolyTime ntm.viewSucc encFiniteCfg (encList encFiniteCfg) := by
+theorem computableInPolyTime_viewSucc :
+    ComputableInPolyTime ntm.viewSucc encFiniteCfg (encList encFiniteCfg) := by
   classical
   let key (finite : FiniteCfg k Bool State) : Option State × Option Bool × (Fin k → Option Bool) :=
     (finite.state, finite.inputSymbol, finite.workTapeSymbols)
@@ -200,36 +200,24 @@ theorem computableTidilyInPolyTime_viewSucc :
     funext finite
     rfl
   rw [heq]
-  refine ComputableTidilyInPolyTime.finite_cases
+  refine ComputableInPolyTime.finite_cases
     (tagEncoding := encPair (encFinite _) (encPair (encFinEnum _) (encFinEnum _))) ?_ fun tag => ?_
-  · exact ComputableTidilyInPolyTime.finiteCfg_state.prod
-      (ComputableTidilyInPolyTime.finiteCfg_inputSymbol.prod
-        ComputableTidilyInPolyTime.finiteCfg_workTapeSymbols)
+  · exact ComputableInPolyTime.finiteCfg_state.prod
+      (ComputableInPolyTime.finiteCfg_inputSymbol.prod
+        ComputableInPolyTime.finiteCfg_workTapeSymbols)
   · rcases tag with ⟨_ | state, symbol, work⟩
-    · exact ComputableTidilyInPolyTime.const []
-    · exact ComputableTidilyInPolyTime.mapConst _ fun action _ =>
-        ComputableInPolyTime.finiteCfg_summarizeOutput.tidy.comp
-          (ComputableTidilyInPolyTime.finiteCfg_step action)
+    · exact ComputableInPolyTime.const []
+    · exact ComputableInPolyTime.mapConst _ fun action _ =>
+        ComputableInPolyTime.finiteCfg_summarizeOutput.comp
+          (ComputableInPolyTime.finiteCfg_step action)
 
 /-- Under a logarithmic space bound, the number of rounds that decides acceptance is at most a
 polynomial in the input length. -/
 private theorem rounds_le (k : ℕ) (State : Type) (c n : ℕ) :
     2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1) ≤
       2 * 2 ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) *
-        (n + 1) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) := by
-  set M := 8 + 2 * Nat.card (Option State) + 200 * k
-  set D := 2 * M * (c + 1)
-  have hexp : 2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1 ≤
-      (Nat.log2 n + 1) * D + 1 := by
-    simp only [coreLengthBound, D]
-    rw [← show M = 8 + 2 * Nat.card (Option State) + 200 * k from rfl]
-    nlinarith
-  calc 2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1)
-      ≤ 2 ^ ((Nat.log2 n + 1) * D + 1) := Nat.pow_le_pow_right (by norm_num) hexp
-    _ = 2 * (2 ^ (Nat.log2 n + 1)) ^ D := by rw [pow_succ, pow_mul, mul_comm]
-    _ ≤ 2 * (2 * (n + 1)) ^ D :=
-        Nat.mul_le_mul_left 2 (Nat.pow_le_pow_left (Nat.two_pow_log2_succ_le n) D)
-    _ = 2 * 2 ^ D * (n + 1) ^ D := by rw [mul_pow, mul_assoc]
+        (n + 1) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) :=
+  (two_pow_coreLengthBound_log_le k State c n).trans_eq (by rw [mul_pow, ← mul_assoc])
 
 open scoped Classical in
 /-- **Acceptance within logarithmic space is decided by breadth-first search in polynomial time.**
@@ -244,20 +232,19 @@ theorem exists_computableInPolyTime_searchAccepts {α : Type} {enc : α ↪ List
       ComputableInPolyTime (fun a => ntm.searchAccepts (rounds a) (enc a)) enc encBool := by
   set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
   set rounds : α → ℕ := fun a => 2 * 2 ^ D * ((enc a).length + 1) ^ D
-  refine ⟨rounds, fun a => rounds_le k State c _,
-    ComputableTidilyInPolyTime.computableInPolyTime ?_⟩
+  refine ⟨rounds, fun a => rounds_le k State c _, ?_⟩
   -- the number of rounds in unary
-  have hcount : ComputableTidilyInPolyTime rounds enc encUnary :=
-    ComputableTidilyInPolyTime.unary_mul.comp ((ComputableTidilyInPolyTime.const _).prod
-      ((ComputableTidilyInPolyTime.unary_pow D).comp (ComputableTidilyInPolyTime.unary_add.comp
-        ((ComputableTidilyInPolyTime.encoding_length enc).prod
-          (ComputableTidilyInPolyTime.const 1)))))
-  have hinit : ComputableTidilyInPolyTime (fun a => [ntm.initView (enc a)]) enc
+  have hcount : ComputableInPolyTime rounds enc encUnary :=
+    ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const _).prod
+      ((ComputableInPolyTime.unary_pow D).comp (ComputableInPolyTime.unary_add.comp
+        ((ComputableInPolyTime.encoding_length enc).prod
+          (ComputableInPolyTime.const 1)))))
+  have hinit : ComputableInPolyTime (fun a => [ntm.initView (enc a)]) enc
       (encList encFiniteCfg) :=
-    ComputableTidilyInPolyTime.cons' (ComputableTidilyInPolyTime.finiteCfg_init
-      (ComputableTidilyInPolyTime.of_eq (encIn := enc) (encMid := encBits) (f := fun a => enc a)
+    ComputableInPolyTime.cons' (ComputableInPolyTime.finiteCfg_init
+      (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) (f := fun a => enc a)
         fun _ => rfl) ntm.q₀)
-      (ComputableTidilyInPolyTime.const [])
+      (ComputableInPolyTime.const [])
   -- the found views are polynomially many, each of linear length
   set bound : α → ℕ := fun a => rounds a *
     (2 * viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1)) + 1)
@@ -282,17 +269,17 @@ theorem exists_computableInPolyTime_searchAccepts {α : Type} {enc : α ↪ List
     refine (length_encList_le encFiniteCfg _ fun finite hf =>
       length_encFiniteCfg_le (hs a) (hreach finite hf)).trans ?_
     exact Nat.mul_le_mul_right _ hlen
-  have hsearch := ComputableTidilyInPolyTime.iterate hcount hinit
-    (ComputableTidilyInPolyTime.expand computableTidilyInPolyTime_viewSucc) hbound hstates
-  have htest : ComputableTidilyInPolyTime
+  have hsearch := ComputableInPolyTime.iterate hcount hinit
+    (ComputableInPolyTime.expand computableInPolyTime_viewSucc) hbound hstates
+  have htest : ComputableInPolyTime
       (fun finite : FiniteCfg k Bool State =>
         decide (finite.state = none) && decide (finite.output = [true])) encFiniteCfg encBool :=
-    ComputableTidilyInPolyTime.bool_and.comp
-      (((ComputableTidilyInPolyTime.of_finite fun state : Option State =>
-          decide (state = none)).comp ComputableTidilyInPolyTime.finiteCfg_state).prod
-      (ComputableTidilyInPolyTime.decide_eq' ComputableTidilyInPolyTime.finiteCfg_output
-        (ComputableTidilyInPolyTime.const [true])))
-  exact ComputableTidilyInPolyTime.anyWithInput hsearch
-    (htest.comp (ComputableTidilyInPolyTime.snd _ _))
+    ComputableInPolyTime.bool_and.comp
+      (((ComputableInPolyTime.of_finite fun state : Option State =>
+          decide (state = none)).comp ComputableInPolyTime.finiteCfg_state).prod
+      (ComputableInPolyTime.decide_eq' ComputableInPolyTime.finiteCfg_output
+        (ComputableInPolyTime.const [true])))
+  exact ComputableInPolyTime.anyWithInput hsearch
+    (htest.comp (ComputableInPolyTime.snd _ _))
 
 end Turing.MultiTapeNTM

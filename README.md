@@ -23,6 +23,7 @@ examples. For setup or a particular task, start below.
 | --- | --- |
 | Use Complexitylib in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
+| Compare selected proofs with independently stated contracts | [Comparator suites](comparator/README.md) |
 | Certify functional programs and loops | [PolyTime examples](ComplexityTests/PolyTimeTactic.lean) |
 | State P/NP membership or prove a problem NP-complete | [Checked plain examples](ComplexityTests/NPCompleteness.lean), then [Clique](Complexity/Computability/Complexity/Problems/Clique.lean) |
 | Construct circuits for polynomial-time function families | [Uniform circuit examples](ComplexityTests/UniformCircuits.lean) |
@@ -97,6 +98,14 @@ Use `scripts/cache/ensure.sh --refresh` to retry immediately. See
 Import the specific modules you need. `import Complexity` imports the whole library. To contribute,
 follow [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [validation sequence](AGENTS.md#validation-sequence).
+
+### Compare theorem statements and proofs
+
+The optional [comparator suites](comparator/README.md) compare selected library proofs with
+independently stated contracts using `lake comparator --paranoid`. They cover reduction and
+circuit facts, two `polytime` proofs, and the fixed-width SAT counting and ETH endpoints.
+The guide explains the Linux sandbox requirement, the trusted definitions, and how to run a
+negative control that submits a valid proof of the wrong statement.
 
 ### Use from another Lean project
 
