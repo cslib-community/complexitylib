@@ -515,12 +515,14 @@ def modeIndex (i nb : ℕ) : Fin (2 ^ (i + 1)) × Fin nb ↪ ℕ :=
   rfl
 
 /-- The terms of the affine factor of a row port `r = (x, Y_x)`: its local term at `none`, and
-the coefficient of the mode `(k / nb, k % nb)` at `some k`. -/
+the coefficient of the mode `(k / nb, k % nb)` at `some k` (zero when there are no exponents,
+`nb = 0`, so that the exponent `k % nb` stays below `nb`). -/
 def rowTermList (p : ℕ) (fl : List ℕ) (a L i : ℕ) (t : ℤ) (nb : ℕ) (differ : Bool)
     (cols : List (ℕ × Bool)) (ζ : List ℕ) (r : ℕ × Bool) : Option ℕ → List ℕ
   | none => if r.2 then localFormList p fl a L t cols r.1 ζ
       else sub p fl (one fl) (localFormList p fl a L t cols r.1 ζ)
-  | some k => if r.2 then modeCoeffList p fl a L i t differ r.1 (k / nb) (k % nb) ζ
+  | some k => if nb = 0 then zero fl else
+      if r.2 then modeCoeffList p fl a L i t differ r.1 (k / nb) (k % nb) ζ
       else neg p fl (modeCoeffList p fl a L i t differ r.1 (k / nb) (k % nb) ζ)
 
 /-- Row terms are correct, at the dense indices of the modes of the packet. -/
@@ -541,7 +543,8 @@ theorem val_rowTermList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : ℤ}
     · rw [val_sub, val_one, val_localFormList hL ht hcols hr ζ]
   | some Z =>
     simp only [Function.comp_apply, Option.map_some, rowTermList, packetRowTerm, affineSign,
-      modeIndex_apply, modeIndex_div Z.2.isLt, modeIndex_mod Z.2.isLt]
+      modeIndex_apply, modeIndex_div Z.2.isLt, modeIndex_mod Z.2.isLt,
+      Nat.pos_iff_ne_zero.mp (Nat.zero_lt_of_lt Z.2.isLt), ↓reduceIte]
     have h := val_modeCoeffList (p := p) (fl := fl) hL hia ht hti hti' differ hr Z ζ
     split_ifs
     · rw [one_mul]; exact h
