@@ -1513,6 +1513,7 @@ public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Computability.GenericRAM.Native.MeasurementFold
 public import Complexity.Computability.GenericRAM.Native.Nat
 public import Complexity.Computability.GenericRAM.Native.StackRecursion
+public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
 public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
 public import Complexity.Computability.GenericRAM.Signed.Fits
