@@ -178,13 +178,13 @@ index links to canonical definitions rather than keeping a second set.
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
-  degrees `1 ≤ a < b`, and the `O(t log t)` universal simulation ([#800]) gives
-  `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once `(f + 1) * polylog f ≤ g`, with an
-  absolute exponent (`Hierarchy/TimePolylog`). For nondeterministic time, lazy diagonalization
-  separates degree `d` from degree `6 * d + 14`. Remaining targets include the textbook
-  `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal machine's own
-  steps, noninteger polynomial degrees, the nondeterministic hierarchy at every pair of integer
-  degrees by padding, and sharp nondeterministic and alternating time hierarchies with certified
+  degrees `1 ≤ a < b`, in deterministic and in nondeterministic time, and the `O(t log t)`
+  universal simulation ([#800]) gives `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once
+  `(f + 1) * polylog f ≤ g`, with an absolute exponent (`Hierarchy/TimePolylog`). For
+  nondeterministic time, padding amplifies the coarse lazy-diagonal hierarchy, which separates
+  degree `d` from degree `6 * d + 14`. Remaining targets include the textbook `f log f = o(g)`
+  hierarchy, which needs the diagonal to clock the universal machine's own steps, noninteger
+  polynomial degrees, and sharp nondeterministic and alternating time hierarchies with certified
   simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
