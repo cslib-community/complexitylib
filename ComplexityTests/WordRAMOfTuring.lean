@@ -13,7 +13,9 @@ A one-tape machine writes its input, with every bit flipped, leftward from the o
 tape, so it crosses into the negative half-tape; at the end of the input it turns around and emits
 the work tape back to the origin and one cell past it, so it crosses back. Its output is the input
 flipped and reversed. The compiled simulator is run concretely, by kernel evaluation, and returns
-that output read as a binary number within the instruction bound `simTime`. The headline
+that output read as a binary number within the instruction bound `simTime`. A two-tape machine
+copies its input rightward on one tape and leftward on the other, then reads both tapes back
+together, so each step dispatches on both work symbols. The headline
 theorem applies to the machine on every input it finishes, and the polynomial-time form applies to
 the identity on binary numbers.
 -/
@@ -68,6 +70,35 @@ example : run 16 revFlipProgram 1000 (State.init []) = some (0, 49) := by decide
 /-- On `[false, true, true, false, true]` the output is `[false, true, false, false, true]`,
 read as `18`. -/
 example : run 16 revFlipProgram 1000 (State.init [0, 1, 1, 0, 1]) = some (18, 292) := by
+  decide +kernel
+
+/-! ## Two work tapes -/
+
+/-- In state `0`, copy the input bit rightward on tape `0` and leftward on tape `1`; at the end of
+the input, turn both heads around. In state `1`, emit the conjunction of the two work symbols, which
+agree, and move the heads apart again; halt when either reads a blank. The output is the input
+reversed. -/
+def mirror (q : Fin 2) (a : Option Bool) (s : Fin 2 → Option Bool) : Action 2 Bool (Fin 2) :=
+  if q = 0 then
+    match a with
+    | some b => ⟨1, ![(some (some b), 1), (some (some b), -1)], none, some 0⟩
+    | none => ⟨0, ![(none, -1), (none, 1)], none, some 1⟩
+  else
+    match s 0, s 1 with
+    | some x, some y => ⟨0, ![(none, -1), (none, 1)], some (x && y), some 1⟩
+    | _, _ => ⟨0, ![(none, 0), (none, 0)], none, none⟩
+
+/-- The simulator of `mirror`. -/
+def mirrorProgram : Program .additive (regs 2) := simProgram mirror 0 (Equiv.refl _)
+
+/-- On `[true, false, false]` the output is `[false, false, true]`, read as `4`, after `8` machine
+steps. -/
+example : run 32 mirrorProgram 2000 (State.init [1, 0, 0]) = some (4, 253) := by decide +kernel
+
+example : 253 ≤ simTime 2 2 8 := by decide
+
+/-- On `[true, true, false, true]` the output is `[true, false, true, true]`, read as `13`. -/
+example : run 32 mirrorProgram 2000 (State.init [1, 1, 0, 1]) = some (13, 323) := by
   decide +kernel
 
 /-! ## The headline theorems -/
