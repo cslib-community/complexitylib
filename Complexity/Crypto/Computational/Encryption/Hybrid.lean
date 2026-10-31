@@ -267,8 +267,8 @@ noncomputable def demKeyGameOn {Msg : Type} (valid : ℕ → List Bool → Msg �
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) : ProbComp Bool := do
   let k ← BitString.sampleList (keyLen n)
   let choice ← adversary.choose n []
-  if valid n [] (Prod.fst choice.1) (Prod.snd choice.1) then
-    let ciphertext ← encryptSym n k (if bit then Prod.snd choice.1 else Prod.fst choice.1)
+  if valid n [] choice.1.1 choice.1.2 then
+    let ciphertext ← encryptSym n k (if bit then choice.1.2 else choice.1.1)
     adversary.guess n choice.2 ciphertext
   else
     return false
@@ -1287,7 +1287,7 @@ time in unary. -/
 theorem isPPTOn_otpKeyWordEncrypt {keyLen : ℕ → ℕ}
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => otpKeyWordEncrypt keyLen p.1 (Prod.fst p.2) (Prod.snd p.2)) := by
+      (fun p => otpKeyWordEncrypt keyLen p.1 p.2.1 p.2.2) := by
   have hk : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => keyLen p.1)
       (encPair encUnary (encPair encBits encBits)) encUnary :=
@@ -1302,7 +1302,7 @@ theorem computableInPolyTime_otpKeyWordDecrypt {keyLen : ℕ → ℕ}
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
     ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool =>
-        otpKeyWordDecrypt keyLen p.1 (Prod.fst p.2) (Prod.snd p.2))
+        otpKeyWordDecrypt keyLen p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBits := by
   have hk : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => keyLen p.1)
@@ -1384,14 +1384,14 @@ theorem otpWordDecrypt_otpWordEncrypt {n : ℕ} (k : List Bool) {m : List Bool}
 @[fun_prop]
 theorem isPPTOn_otpWordEncrypt :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => otpWordEncrypt p.1 (Prod.fst p.2) (Prod.snd p.2)) :=
+      (fun p => otpWordEncrypt p.1 p.2.1 p.2.2) :=
   isPPTOn_otpKeyWordEncrypt ComputableInPolyTime.id'
 
 /-- One-time pad word decryption is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_otpWordDecrypt :
     ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool => otpWordDecrypt p.1 (Prod.fst p.2) (Prod.snd p.2))
+      (fun p : ℕ × List Bool × List Bool => otpWordDecrypt p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) encBits :=
   computableInPolyTime_otpKeyWordDecrypt ComputableInPolyTime.id'
 
