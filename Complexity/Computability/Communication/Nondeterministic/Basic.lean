@@ -15,7 +15,7 @@ public import Complexity.Foundations.Data.BitString.Basic
 # Nondeterministic communication complexity
 
 Nondeterministic communication complexity for the answer `z : Bool` is defined by covers
-[Kushilevitz and Nisan, Definition 2.3][KushilevitzNisan1997]. For a relation
+[Kushilevitz and Nisan, Definition 2.3, p. 18][KushilevitzNisan1997]. For a relation
 `R : X → Y → Bool → Prop`, a *`z`-cover* of `R` on `A × B` by `2 ^ k` rectangles is a family of
 rectangles indexed by the `k`-bit guesses such that `z` is an acceptable answer on the part of each
 rectangle inside `A × B`, and every pair of `A × B` on which `!z` is not acceptable lies in some
@@ -26,14 +26,16 @@ pair of `A × B`, as for `Protocol.ecomplexity`. For a function `f : X → Y →
 `z`-covers are families of rectangles on which `f` is `z` inside `A × B` that contain every pair of
 `A × B` on which `f` is `z` (`Nondeterministic.isCover_fun_iff`). Thus `ecomplexityFun true f` and
 `ecomplexityFun false f` are `⌈log₂ C^z(f)⌉`, where `C^z(f)` is the least number of rectangles in a
-`z`-cover (and `0` when `f` never takes the value `z` on `A × B`). Kushilevitz and Nisan define
-`N^z(f) = log₂ C^z(f)` without rounding, so `ecomplexityFun z f A B` is their `N^z(f)` rounded up to
-an integer, and for `n ≥ 1` a lower bound `n ≤ ecomplexityFun z f A B` says
-`C^z(f) > 2 ^ (n - 1)`, that is, `N^z(f) > n - 1` in their convention.
+`z`-cover (and `0` when `f` never takes the value `z` on `A × B`).
 
-A partial function is a function together with the sets `A` and `B`: its value outside `A × B` does
-not matter, and rectangles are not required to lie inside `A × B`. A partial function whose domain
-is not a rectangle is a relation that accepts every answer outside its domain.
+Kushilevitz and Nisan define `N^z(f) = log₂ C^z(f)` for a Boolean function `f` on all of `X × Y`,
+without rounding. So for such `f`, `ecomplexityFun z f Set.univ Set.univ` is their `N^z(f)` rounded
+up to an integer, and for `n ≥ 1` a lower bound `n ≤ ecomplexityFun z f Set.univ Set.univ` says
+`C^z(f) > 2 ^ (n - 1)`, that is, `N^z(f) > n - 1` in their convention. The domain sets `A` and `B`
+and the relations are an extension made here. A partial function is a function together with the
+sets `A` and `B`: its value outside `A × B` does not matter, and rectangles are not required to lie
+inside `A × B`. A partial function whose domain is not a rectangle is a relation that accepts every
+answer outside its domain.
 
 ## Covers and protocols
 
