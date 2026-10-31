@@ -12,7 +12,7 @@ public import Complexity.Computability.Complexity.Classes.Oracle
 public import Complexity.Computability.Complexity.Classes.PH
 public import Complexity.Computability.Complexity.Classes.Sparse
 public import Complexity.Computability.Complexity.Problems.SAT
-public import Mathlib.Data.Set.Finite.List
+public import Complexity.Foundations.Data.BitString.ShortMembers
 import Complexity.Computability.Circuit.Boolean.Advice
 import Complexity.Computability.Circuit.Boolean.PolynomialTime
 import Complexity.Computability.Complexity.Classes.Oracle.ListOracle
@@ -25,7 +25,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 Polynomial time relative to a sparse oracle language `S` is in `P/poly`
 (`Cslib.Complexity.PWithOracle_subset_PPolyOn`): on inputs of length `n` the oracle is asked only
 words of length at most `q n` for a polynomial `q`, and the list of the members of `S` of length
-at most `q n` (`Cslib.Complexity.shortMembers`) has polynomial length because `S` is sparse. That
+at most `q n` (`Cslib.BitString.shortMembers`) has polynomial length because `S` is sparse. That
 list is the advice; a finite list replaces the oracle in polynomial time
 (`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_listOracle_bool`), and hardwiring the
 advice (`Cslib.Circuits.Boolean.PPoly.of_advice`) gives circuits of polynomial size. This is one
@@ -40,15 +40,11 @@ polynomial-time Turing-hard set, then `PH = NP^NP`
 [Hemaspaandra and Ogihara, Theorem 1.16][HemaspaandraOgihara2002] [Karp and Lipton][KarpLipton1980].
 The sparse set need not lie in `NP`.
 
-## Main definitions
-
-* `Cslib.Complexity.shortMembers`: a list of the members of a language of length at most `n`.
-
 ## Main results
 
-* `Cslib.Complexity.mem_shortMembers`: its members.
-* `Cslib.Complexity.exists_length_encList_shortMembers_le`: for a sparse language, the encoded list
-  has polynomial length.
+* `Cslib.Complexity.exists_length_shortMembers_le`,
+  `Cslib.Complexity.exists_length_encList_shortMembers_le`: for a sparse language, the list of short
+  members and its encoding have polynomial length.
 * `Cslib.Complexity.PWithOracle_subset_PPolyOn`: `P^S ⊆ P/poly` for sparse `S`.
 * `Cslib.Complexity.PH_eq_SigmaP_two_of_SAT_mem_PWithOracle`: a sparse Turing-hard set for `NP`
   collapses `PH` to `Σ₂`.
@@ -64,29 +60,27 @@ The sparse set need not lie in `NP`.
 
 namespace Cslib.Complexity
 
-open Circuits Circuits.Boolean Turing.MultiTapeTM Cslib.Logic.PL
+open Circuits Circuits.Boolean Turing.MultiTapeTM Cslib.Logic.PL BitString
 
 variable {α : Type} {S : Set (List Bool)}
 
-/-- The members of `S` of length at most `n`, listed in some order without repetition. -/
-noncomputable def shortMembers (S : Set (List Bool)) (n : ℕ) : List (List Bool) :=
-  ((List.finite_length_le Bool n).subset
-    (fun _ hw => hw.2 : {w | w ∈ S ∧ w.length ≤ n} ⊆ {w | w.length ≤ n})).toFinset.toList
-
-@[simp]
-theorem mem_shortMembers {n : ℕ} {w : List Bool} : w ∈ shortMembers S n ↔ w ∈ S ∧ w.length ≤ n := by
-  simp [shortMembers]
+/-- **The census of a sparse language is polynomially bounded**: it has at most `c (n + 1) ^ d`
+members of length at most `n`. -/
+theorem exists_length_shortMembers_le (hS : S ∈ SPARSE encBits) :
+    ∃ c d : ℕ, ∀ n, (shortMembers S n).length ≤ c * (n + 1) ^ d := by
+  classical
+  obtain ⟨c, d, hcard⟩ := exists_card_le_of_mem_SPARSE hS
+  refine ⟨c, d, fun n => ?_⟩
+  rw [length_shortMembers]
+  exact hcard n _ fun w hw => by simpa [and_comm] using hw
 
 /-- **Short members of a sparse language have a short listing**: the encoded list of the members
 of length at most `n` has length at most `c (n + 1) ^ d`. -/
 theorem exists_length_encList_shortMembers_le (hS : S ∈ SPARSE encBits) :
     ∃ c d : ℕ, ∀ n, (encList encBits (shortMembers S n)).length ≤ c * (n + 1) ^ d := by
-  obtain ⟨c, d, hcard⟩ := exists_card_le_of_mem_SPARSE hS
+  obtain ⟨c, d, hcensus⟩ := exists_length_shortMembers_le hS
   refine ⟨2 * c, d + 1, fun n => ?_⟩
-  have hlen : (shortMembers S n).length ≤ c * (n + 1) ^ d := by
-    unfold shortMembers
-    rw [Finset.length_toList]
-    exact hcard n _ fun w hw => by simpa using hw
+  have hlen := hcensus n
   have hsum : ((shortMembers S n).map fun w => 2 * (encBits w).length + 1).sum ≤
       (shortMembers S n).length * (2 * n + 1) := by
     have h := List.sum_le_length_nsmul ((shortMembers S n).map fun w => 2 * (encBits w).length + 1)
