@@ -941,6 +941,7 @@ public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
 public import Complexity.Computability.Circuit.Quantum.Counter
 public import Complexity.Computability.Circuit.Quantum.Parallel
+public import Complexity.Computability.Circuit.Quantum.Reversible
 public import Complexity.Computability.Circuit.Quantum.Uniform
 public import Complexity.Computability.Circuit.Rational
 public import Complexity.Computability.Circuit.Rational.Affine
@@ -1049,6 +1050,7 @@ public import Complexity.Computability.Complexity.Classes.BPP.WorstCaseHardness
 public import Complexity.Computability.Complexity.Classes.BPPpath
 public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
+public import Complexity.Computability.Complexity.Classes.BQP.Classical
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Closure
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Kadin
