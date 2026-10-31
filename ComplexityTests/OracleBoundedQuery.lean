@@ -21,12 +21,13 @@ example (A : Set (List Bool)) :
   computableInPolyTimeWithOracleQueries_query ComputableInPolyTime.id' A
 
 -- The single-request program asks exactly the word it decides: one request, answered by `A`.
-open Classical in
 example (A : Set (List Bool)) (w : List Bool) :
-    OracleComp.queriesWith (languageOracle A)
-        ((fun reply => decide (reply = [true])) <$>
-          (List.take 1 <$> OracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
-            ((), w))) = [((), w)] := by
+    OracleComp.queriesWith (languageOracle A) (queryBit w) = [((), w)] := by
+  simp
+
+open Classical in
+example : OracleComp.interpret (m := Id) (languageOracle {[true]}) (queryBit [true]) = true := by
+  rw [interpret_queryBit]
   simp
 
 -- `SAT` and its complement are in `P^{NP[O(log n)]}`.

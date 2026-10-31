@@ -34,6 +34,7 @@ is closed under complement.
 
 ## Main definitions
 
+* `Cslib.Complexity.queryBit`: one request, reading one bit of the reply.
 * `Cslib.Complexity.ComputableInPolyTimeWithOracleQueries`: polynomial time relative to an oracle
   with a bounded number of requests.
 * `Cslib.Complexity.PWithOracleQueries`: the problems so decided.
@@ -118,24 +119,44 @@ theorem _root_.Turing.MultiTapeTM.ComputableInPolyTime.computableInPolyTimeWithO
     ComputableInPolyTimeWithOracleQueries A r f input output :=
   ⟨fun a => pure (f a), h.isOraclePPTOn, fun _ => ⟨rfl, by simp⟩⟩
 
+/-- **One request**: submit the word `w` and read the first bit of the reply. -/
+def queryBit (w : List Bool) : WordQueryComp Unit Bool :=
+  (fun reply => decide (reply = [true])) <$> (List.take 1 <$> OracleComp.query ((), w))
+
 open Classical in
-/-- **One request.** The polynomial-time request `req a` is submitted and the first bit of the
-reply is read: this decides whether `req a ∈ A` with one request. -/
+/-- Against an oracle language, one request answers membership of its word. -/
+theorem interpret_queryBit (A : Set (List Bool)) (w : List Bool) :
+    OracleComp.interpret (m := Id) (languageOracle A) (queryBit w) = decide (w ∈ A) := by
+  change decide (List.take 1 (languageOracle A ((), w)) = [true]) = decide (w ∈ A)
+  rw [languageOracle_apply]
+  cases decide (w ∈ A) <;> rfl
+
+/-- One request makes one request. -/
+@[simp]
+theorem queriesWith_queryBit (answer : Unit × List Bool → List Bool) (w : List Bool) :
+    OracleComp.queriesWith answer (queryBit w) = [((), w)] := by
+  simp [queryBit]
+
+/-- One request for a polynomial-time word is strict oracle PPT: the word is written on the query
+buffer and one bit of the reply is read. -/
+theorem isOraclePPTOn_queryBit {req : α → List Bool} {input : α ↪ List Bool}
+    (hreq : ComputableInPolyTime req input encBits) :
+    IsOraclePPTOn input encBool
+      (fun a => OracleComp.interpret ProbOracleComp.query (queryBit (req a))) := by
+  simp only [queryBit, OracleComp.interpret_map, OracleComp.interpret_query]
+  exact (IsOraclePPTOn.query_take' () hreq (limit := fun _ => 1)
+    (ComputableInPolyTime.const 1)).map'
+    (ComputableInPolyTime.id'.decide_eq' (ComputableInPolyTime.const [true]))
+
+open Classical in
+/-- **One request** to `A` for the polynomial-time word `req a` decides whether `req a ∈ A`. -/
 theorem computableInPolyTimeWithOracleQueries_query {req : α → List Bool}
     {input : α ↪ List Bool} (hreq : ComputableInPolyTime req input encBits)
     (A : Set (List Bool)) :
     ComputableInPolyTimeWithOracleQueries A (fun _ => 1) (fun a => decide (req a ∈ A)) input
-      encBool := by
-  refine ⟨fun a => (fun reply => decide (reply = [true])) <$>
-    (List.take 1 <$> OracleComp.query ((), req a)), ?_, fun a => ⟨?_, ?_⟩⟩
-  · simp only [OracleComp.interpret_map, OracleComp.interpret_query]
-    exact (IsOraclePPTOn.query_take' () hreq (limit := fun _ => 1)
-      (ComputableInPolyTime.const 1)).map'
-      (ComputableInPolyTime.id'.decide_eq' (ComputableInPolyTime.const [true]))
-  · change decide (List.take 1 (languageOracle A ((), req a)) = [true]) = decide (req a ∈ A)
-    rw [languageOracle_apply]
-    cases decide (req a ∈ A) <;> rfl
-  · simp
+      encBool :=
+  ⟨fun a => queryBit (req a), isOraclePPTOn_queryBit hreq,
+    fun a => ⟨interpret_queryBit A (req a), by simp⟩⟩
 
 /-- The problems decided in polynomial time relative to the oracle language `A` with at most
 `r n` requests on instances of encoded length `n`. -/
