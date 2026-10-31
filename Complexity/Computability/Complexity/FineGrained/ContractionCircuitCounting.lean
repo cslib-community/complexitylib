@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.ContractionCounting
+import Complexity.Computability.Circuit.Program
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -39,10 +40,11 @@ This replaces the `interpolationScale` rate of `CircuitCounting.exists_circuitSa
 
 ### Source relation
 
-Appendix C.1 of [OpenAI2026ETH] (p. 51) compiles a De Morgan circuit with `s` gates to a 3-CNF
-with one variable per gate and `O(s)` clauses, to decide satisfiability; Theorem 1.1 (p. 2) gives
-the fixed-density counting rate `2 ^ O(n / √log n)` for `#k-SAT` with `O(n)` clauses. Combining
-the two for exact counting, over arbitrary finite signatures, is a library extension.
+Appendix C.1 of [OpenAI2026ETH] (p. 51) encodes a circuit with `n` inputs and `s` gates as a
+3-CNF with a variable for each gate and `O(n + s)` variables and clauses, to decide satisfiability
+of linear-size circuits in time `2 ^ o(n)`; Theorem 1.1 (p. 2) gives the fixed-density counting
+rate `2 ^ O(n / √log n)` for `#k-SAT` with at most `D n` clauses. Exact counting over arbitrary
+finite signatures, with the exponent in the number of gates, is a library extension.
 
 ## Main results
 
@@ -191,7 +193,8 @@ private theorem shiftedCount_inO {α : Type} {encA : α ↪ List Bool}
           Nat.mul_le_mul (by omega) (Nat.le_succ _)
   · -- space
     set b : ℕ := B₁ + B₁ * d₃
-    have hs1 := hSpair.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hY1 (by omega)))
+    have hs1 := hSpair.trans (Nat.mul_le_mul_left _
+      (Nat.pow_le_pow_right hY1 (show B₁ ≤ b by omega)))
     have hs2 := hpair_d₃.trans (Nat.mul_le_mul_left (M ^ d₃)
       (Nat.pow_le_pow_right hY1 (show B₁ * d₃ ≤ b by omega)))
     change Y ^ d₂ + (Y ^ d₁ + ((encCNF (φ x)).length + 1) ^ b₀) +
@@ -304,7 +307,7 @@ theorem exists_booleanCircuitSatCounter :
         (fun c => 2 ^ (A * (c.2.size + 1) / Nat.sqrt (Nat.log 2 (c.2.size + 2))) *
           ((Boolean.encCircuit 1 c).length + 1) ^ e)
         (fun c => ((Boolean.encCircuit 1 c).length + 1) ^ b) :=
-  exists_circuitSatCounter Boolean.encOp Boolean.interpretation
+  exists_circuitSatCounter (σ := Boolean.signature) Boolean.encOp Boolean.interpretation
 
 /-- **`#Circuit-SAT` for linear-size circuits.** For every finite Boolean signature `σ`, one
 machine computes `c.2.satCount I` on every circuit `c`, in polynomial space, and for each size
@@ -339,6 +342,6 @@ theorem exists_linearSizeBooleanCircuitSatCounter :
       ∀ C : ℕ, ∃ A : ℕ, ∀ c : Σ n, Circuit Boolean.signature n 1, c.2.size ≤ C * c.1 + C →
         T c ≤ 2 ^ (A * (c.1 + 1) / Nat.sqrt (Nat.log 2 (c.1 + 2))) *
           ((Boolean.encCircuit 1 c).length + 1) ^ e :=
-  exists_linearSizeCircuitSatCounter Boolean.encOp Boolean.interpretation
+  exists_linearSizeCircuitSatCounter (σ := Boolean.signature) Boolean.encOp Boolean.interpretation
 
 end Cslib.Complexity.ContractionCounting
