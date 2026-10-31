@@ -26,7 +26,8 @@ satisfying `I.node`, such that a leaf has its leaf value, and a call at depth `d
 `b d` counted children, all at depth `d + 1` and smaller in a measure, with its value the
 `finish` of the accumulated children's values. Then every node at depth `d ≤ D` has a derivation
 of its value, with at most `Nat.recursionBound b (D - d) d` nodes and at most `D - d` stack
-levels. This is the induction "from the leaves" of a recursive algorithm, with its node count.
+levels. This is the induction "from the leaves" of a recursive algorithm, with its node count;
+without the count, `Scheme.exists_eval_of_measure` is the induction alone.
 
 **What a run returns** (`Scheme.value_of_run_eq_some`). Every value the clocked run returns, for
 any fuel, satisfies the invariant of a derivation of the root. If the values carry a tag that
@@ -36,6 +37,8 @@ small to vouch for the run.
 ## Main results
 
 * `Cslib.GenericRAM.StackRecursion.Scheme.Loop.counted`: the loop over counted children.
+* `Cslib.GenericRAM.StackRecursion.Scheme.exists_eval_of_measure`: derivations by well-founded
+  recursion.
 * `Cslib.GenericRAM.StackRecursion.Scheme.exists_eval_of_counted`: derivations with the node count
   of the recursion tree.
 * `Cslib.GenericRAM.StackRecursion.Scheme.value_of_run_eq_some`: a returned value satisfies the
@@ -82,6 +85,37 @@ theorem Loop.counted {x : X} {acc : ℕ → A} {child : ℕ → X} {val : ℕ �
       refine ⟨max (height s) h, max_le (hH s hs') hh, ?_⟩
       rwa [sum_eq_sum_Ico_succ_bot hs']
   simpa using key bound 0 (by omega)
+
+/-- **Derivations by well-founded recursion.** Let `value` assign values to the nodes satisfying
+`I.node`, all satisfying `I.value`, such that a leaf has its leaf value, and a call has counted
+children: from the accumulators `acc c`, starting at `start`, it asks for `child c` for `c < cnt`
+and then stops, absorbing the children's values; the frames satisfy `I.frame`, the children
+satisfy `I.node` and are smaller in the measure `μ`; and its value is the `finish` of the last
+accumulator. Then every node has a derivation of its value. `exists_eval_of_counted` adds the node
+count. -/
+theorem exists_eval_of_measure (μ : X → ℕ) (value : X → Y)
+    (hleaf : ∀ x, I.node x → R.isLeaf x = true → value x = R.leaf x)
+    (hcall : ∀ x, I.node x → R.isLeaf x = false →
+      ∃ (cnt : ℕ) (acc : ℕ → A) (child : ℕ → X), acc 0 = R.start x ∧
+        (∀ c < cnt, R.next x (acc c) = some (child c)) ∧ R.next x (acc cnt) = none ∧
+        (∀ c < cnt, R.absorb x (acc c) (value (child c)) = acc (c + 1)) ∧
+        (∀ c < cnt, I.frame x (acc c) ∧ I.node (child c) ∧ μ (child c) < μ x) ∧
+        value x = R.finish x (acc cnt))
+    (hvalue : ∀ x, I.node x → I.value (value x)) (x : X) (hx : I.node x) :
+    ∃ n h, R.Eval I x (value x) n h := by
+  induction hμ : μ x using Nat.strong_induction_on generalizing x with
+  | _ k ih =>
+  cases hl : R.isLeaf x
+  · obtain ⟨cnt, acc, child, h0, hnext, hdone, habs, hkids, hfin⟩ := hcall x hx hl
+    have hev : ∀ c < cnt, ∃ n h, R.Eval I (child c) (value (child c)) n h := fun c hc =>
+      ih (μ (child c)) (hμ ▸ (hkids c hc).2.2) (child c) (hkids c hc).2.1 rfl
+    choose! nodes height hev using hev
+    obtain ⟨h, -, hloop⟩ := Loop.counted (I := I) (val := fun c => value (child c)) cnt
+      (∑ c ∈ range cnt, height c) hnext hdone habs hev (fun c hc => (hkids c hc).1)
+      (fun c hc => single_le_sum (fun _ _ => Nat.zero_le _) (mem_range.mpr hc))
+    rw [h0] at hloop
+    exact ⟨_, _, hfin ▸ Eval.call hx hl hloop (hfin ▸ hvalue x hx)⟩
+  · exact ⟨1, 0, by rw [hleaf x hx hl]; exact Eval.leaf hx hl (hleaf x hx hl ▸ hvalue x hx)⟩
 
 /-- A recursion tree has at least its root. -/
 private theorem one_le_recursionBound (b : ℕ → ℕ) (k d : ℕ) : 1 ≤ Nat.recursionBound b k d := by
