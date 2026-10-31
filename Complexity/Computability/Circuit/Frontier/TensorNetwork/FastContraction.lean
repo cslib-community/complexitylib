@@ -13,6 +13,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledR
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
 public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
 public import Complexity.Computability.PolyTime.PacketPacking
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeChild
 import Complexity.Computability.PolyTime.GaloisRingSeries
 import Mathlib.Data.List.GetD
 
@@ -85,7 +86,7 @@ public section
 
 namespace Cslib.Circuits.Frontier.FastContraction
 
-open GaloisRingArith ChildCursor NativeRecovery ContractionSchedule Cslib.GenericRAM
+open GaloisRingArith ChildCursor NativeRecovery ContractionSchedule NativeChild Cslib.GenericRAM
   Cslib.GenericRAM.StackRecursion
 
 /-- The parameters of a call: the scale `s`, the depth `d`, the edge bound, the precision `p`, the
@@ -161,26 +162,14 @@ theorem edges_lt_bound_of_active {x : Call} (h : active x = true) : x.edges < x.
 @[expose] def nodePrec (i : ℕ) : ℕ :=
   nodePrecision x.prec (step x) (slots x) x.edges (level x ((nodes x).getD i 0))
 
-/-- The ports of the vertices. -/
-@[expose] def ports : List (List ℕ) := x.net.vertices.map Prod.fst
-
-/-- **The edges as `(row, column)` pairs**, the column numbered among the columns: edge `j` joins
-the first row and the first column whose ports contain it. -/
-@[expose] def edgeEnds : List (ℕ × ℕ) :=
-  (List.range x.edges).map fun j =>
-    (((List.range x.rows).find? fun v => ((ports x).getD v []).contains j).getD 0,
-      ((List.range (x.net.vertices.length - x.rows)).find? fun w =>
-        ((ports x).getD (x.rows + w) []).contains j).getD 0)
-
-/-- **The packing of Lemma D.3**, natively (`PacketPacking.nativePacking`, `r = 64`). -/
+/-- **The packing of Lemma D.3**, natively (`nativeParentPacking`, `r = 64`). -/
 @[expose] def packing : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ) :=
-  PacketPacking.nativePacking x.rows (x.net.vertices.length - x.rows) (slots x) 64 (edgeEnds x)
+  nativeParentPacking x.rows (slots x) x.net
 
 /-- **The weights of the modes of the `i`-th node**, packet-major over `(q, y₀, b)` with
 `y₀ < 2 ^ (v₂ t + 1)` and `b < p_t`: mode `(q, y₀, b)` has weight `b + 1`. -/
 @[expose] def weights (i : ℕ) : List ℕ :=
-  (List.range ((packing x).2.1 * 2 ^ (level x ((nodes x).getD i 0) + 1) * nodePrec x i)).map
-    fun j => j % nodePrec x i + 1
+  modeWeights (packing x).2.1 (2 ^ (level x ((nodes x).getD i 0) + 1)) (nodePrec x i)
 
 /-- The shift `Δ' = (a + 1) 2 ^ (a + 1) h u + 8 h 2 ^ a + 8 M (a + 1)`, which bounds the shift
 `(a + 1) ∑_t q_t` of Lemma D.5 and every `p_t - p`. -/
@@ -280,7 +269,7 @@ theorem nodePrec_pos (hM : 1 ≤ x.edges) (i : ℕ) : 0 < nodePrec x i := by
 /-- Every weight is positive. -/
 theorem weights_pos (i : ℕ) : ∀ w ∈ weights x i, 0 < w := by
   intro w hw
-  simp only [weights, List.mem_map] at hw
+  simp only [weights, modeWeights, List.mem_map] at hw
   obtain ⟨j, -, rfl⟩ := hw
   omega
 
