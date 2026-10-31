@@ -9,6 +9,7 @@ import Complexity.Computability.Complexity.Classes.Sparse.Conjunctive
 import Complexity.Computability.Complexity.Classes.Sparse.Fortune
 import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
 import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
+import Complexity.Computability.Complexity.Classes.Sparse.Prune
 
 /-!
 # Sparse problems and the procedures of Fortune and Mahaney
@@ -21,7 +22,9 @@ procedures as exponential-time deciders for `SAT`, which satisfy the hypotheses 
 encodings of their members, or the negated one-query reduction of `SAT` to `UNSAT`, and an
 exponential bound. The left set of `SAT` on concrete formulas, `SEARCH-RIGHT` on concrete levels,
 and the conjunctive procedure with queries that decide satisfiability, which satisfy the hypotheses
-of `Cslib.Complexity.Conjunctive.accepts_iff` with the bound `0`.
+of `Cslib.Complexity.Conjunctive.accepts_iff` with the bound `0`. `SEARCH-RIGHT`, `SEARCH-LEFT`
+and `PRUNE` on a concrete level with a two-depth Hausdorff decomposition, which satisfies the
+hypotheses of `Cslib.Complexity.BTT.getElem_mem_prune`.
 -/
 
 namespace ComplexityTests.SparseHardSets
@@ -299,5 +302,35 @@ example (φ : CNF ℕ) :
   · split <;> simp_all
   · split at hw <;> simp_all
   · exact (Finset.card_eq_zero.2 (Finset.eq_empty_of_forall_notMem fun w hw => (hT w hw).1)).le
+
+/-! ### Pruning along a Hausdorff decomposition -/
+
+/-- The sets `C 0 = {0, …, 6}`, `C 1 = {2, …, 6}`, `C 2 = {2, 3}` and `C 3 = ∅`, a Hausdorff
+decomposition `(C 0 \ C 1) ∪ (C 2 \ C 3) = {0, 1, 2, 3}`. -/
+private def hausdorff : ℕ → ℕ → Bool
+  | 0, y => y ≤ 6
+  | 1, y => 2 ≤ y && y ≤ 6
+  | 2, y => 2 ≤ y && y ≤ 3
+  | _, _ => false
+
+/-- One query per node and set: `0` for the members of `C j`, and a query naming the node
+otherwise, so that each `C j` reduces conjunctively to `{0}`. -/
+private def hausdorffQueries (j y : ℕ) : List ℕ := [if hausdorff j y then 0 else y + 1]
+
+/-- On the level `0, …, 7`: `SEARCH-RIGHT` from `0` keeps `6`, the end of the run in `C 0`, and the
+last node; `SEARCH-LEFT` from `6` keeps `2`, the start of the run in `C 1`, and the first node;
+`PRUNE` keeps `3`, the last node of `{0, 1, 2, 3}`. -/
+example : BTT.searchRightFrom (hausdorffQueries 0) 1 (List.range 8) 0 = [6, 7] ∧
+    BTT.searchLeftFrom (hausdorffQueries 1) 1 (List.range 8) 6 = [2, 0] ∧
+    BTT.prune hausdorffQueries 1 2 (List.range 8) = [0, 1, 2, 3, 6, 7] := by
+  decide
+
+/-- The hypotheses of `BTT.getElem_mem_prune` hold for this decomposition, with the target `{0}`
+and the bound `1`. -/
+example : (List.range 8)[3] ∈ BTT.prune hausdorffQueries 1 2 (List.range 8) :=
+  BTT.getElem_mem_prune (C := fun j y => hausdorff j y = true) (K := fun _ => {w | w = 0})
+    (by decide) (fun j y _ h => by rcases j with _ | _ | _ | j <;> simp_all [hausdorff]; omega)
+    (by decide) (by decide)
+    fun _ _ T hT => Finset.card_le_one.2 fun a ha b hb => (hT a ha).trans (hT b hb).symm
 
 end ComplexityTests.SparseHardSets
