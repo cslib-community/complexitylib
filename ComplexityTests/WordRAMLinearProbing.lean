@@ -233,13 +233,13 @@ theorem collision_probeLen_pos :
 
 /-- Concrete `SubroutineDS` instance for `(U = 16, V = 100, n_max = 3, w = 64, base = 32)` on
 `Basis.exact`. -/
-noncomputable def sampleDS :
+noncomputable abbrev sampleDS :
     Cslib.WordRAM.Randomized.SubroutineDS (subroutineCode 16 3) (Dictionary.spec 16 100 3) 64 32
       Fin.elim0 (Dictionary.empty 16) :=
   subroutineDS 16 100 3 64 32 hw_example hfit_space_example hfit_V_example
 
 /-- Concrete `SubroutineDS` instance on `Basis.standard`. -/
-noncomputable def sampleDSStandard :
+noncomputable abbrev sampleDSStandard :
     Cslib.WordRAM.Randomized.SubroutineDS (subroutineCode 16 3).toStandard
       (Dictionary.spec 16 100 3) 64 32 Fin.elim0 (Dictionary.empty 16) :=
   subroutineDSStandard 16 100 3 64 32 hw_example hfit_space_example hfit_V_example
@@ -254,7 +254,7 @@ theorem sampleOps_seq_expected_amortized :
     ∃ (ν₀ _ν_f : PMF (Seed 16 3 × Data rLP)) (T_ops : ℝ≥0∞),
       ExecCodeDist 64 (subroutineCode 16 3).initFresh x₀
         (ν₀.map Prod.snd) (3 + setupTime 16 3 : ℕ) ∧
-      sampleDS.ExecSteps (Dictionary.empty 16) sampleOps ν₀ _ν_f T_ops ∧
+      sampleDS.ExecStepsOfFn (Dictionary.empty 16) sampleOps ν₀ _ν_f T_ops ∧
       ((3 + setupTime 16 3 : ℕ) : ℝ≥0∞) + T_ops ≤
         (3 + setupTime 16 3 + sampleOps.length * charge 16 3 : ℕ) := by
   intro x₀
@@ -321,9 +321,9 @@ theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
   have hle3 : hrep_miss_in.table_inv.probeLen (opKey (.get k2))
       (hashFn 16 3 θ (opKey (.get k2))) ≤ 3 :=
     hrep_miss_in.table_inv.probeLen_le_n_max _ _
-  have hhit_val : ((Dictionary.spec 16 100 3).step s4 (.get k3)).2 = some 25 :=
+  have hhit_val : ((Dictionary.spec 16 100 3).stepFn s4 (.get k3)).2 = some 25 :=
     s4_lookup_hit_and_miss.1
-  have hmiss_val : ((Dictionary.spec 16 100 3).step s4 (.get k2)).2 = none :=
+  have hmiss_val : ((Dictionary.spec 16 100 3).stepFn s4 (.get k2)).2 = none :=
     s4_lookup_hit_and_miss.2
   rw [hhit_val] at hdec_hit
   rw [hmiss_val] at hdec_miss

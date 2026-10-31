@@ -97,7 +97,8 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
   Vegas termination, expected step bound, and exact conditional-uniform exit law for full-table
   rehashing.
 * `Cslib.Algorithms.WordRAM.Dictionary.CuckooHashing.cuckoo_seq_expected_amortized`: end-to-end
-  expected-time bound across arbitrary valid `get`/`insert` histories.
+  expected-time bound across arbitrary valid `get`/`insert` histories, conditional on
+  `IsCuckooHashFamily` (proved for `n_max ≤ 2`, open for `n_max ≥ 3`).
 
 ## References
 
@@ -6141,8 +6142,8 @@ theorem opCode_execCodeDist {w base n_max U V : ℕ}
             (survivingSeeds evalHash1 evalHash2 (maxEvictions n_max) (stepKeys ks o)) hE') ∧
       ∀ y ∈ μ_op.support,
         decode (V := V) (n_max := n_max) o y.regs =
-          some ((Dictionary.spec U V n_max).step s o).2 ∧
-        RepWithKeys w base n_max U V (stepKeys ks o) ((Dictionary.spec U V n_max).step s o).1 y ∧
+          some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
+        RepWithKeys w base n_max U V (stepKeys ks o) ((Dictionary.spec U V n_max).stepFn s o).1 y ∧
         Modifies (Block.mk base (space n_max)).footprint x.mem y.mem := by
   classical
   intro θ_mem
@@ -6418,8 +6419,8 @@ theorem opCode_coupled_step_spec {w base n_max U V : ℕ}
         ExecCodeDist w cuckooCode.code p.2 ((μ_step p).map Prod.snd) (T_step p) ∧
         ∀ q ∈ (μ_step p).support,
           decode (V := V) (n_max := n_max) o q.2.regs =
-            some ((Dictionary.spec U V n_max).step s o).2 ∧
-          Rep w base n_max U V ((Dictionary.spec U V n_max).step s o).1 q.2 ∧
+            some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
+          Rep w base n_max U V ((Dictionary.spec U V n_max).stepFn s o).1 q.2 ∧
           Modifies (Block.mk base (space n_max)).footprint p.2.mem q.2.mem) ∧
       (∀ θ', ((ν.bind μ_step).map Prod.fst) θ' ≤ 2 * seedLaw U (tableBits n_max) θ') ∧
       (∑' p, ν p * (T_step p + ∑' q, (μ_step p) q * (0 : ℕ))) ≤
@@ -6529,39 +6530,40 @@ noncomputable def subroutineDS (w base n_max U V C_walk C_reh : ℕ)
     (hfit_U : Fits w (max U 2 + 1))
     (hfit_V : Fits w V) :
     Randomized.SubroutineDS cuckooCode (Dictionary.spec U V n_max)
-      w base ![n_max, U] (Dictionary.empty U) where
-  Seed := Seed U (tableBits n_max)
-  seedLaw := seedLaw U (tableBits n_max)
-  seedSlack := 2
-  space := space n_max
-  spanTime := spanSteps n_max
-  setupTime := setupSteps n_max U
-  initPotential := 0
-  charge := stepWorstCharge n_max U
-  rep _ := Rep w base n_max U V
-  potential _ _ := 0
-  encode := encode
-  argMatch := argMatch
-  decode := decode (V := V) (n_max := n_max)
-  bounded h := h.bounded
-  rep_unique h₁ h₂ := h₁.unique h₂
-  arguments_fit {_s} o hv i _ := cuckoo_arguments_fit hfit_U hfit_V o hv i
-  encode_matches o _regs := by cases o <;> simp +decide [argMatch, encode]
-  rep_supported hreg hmem hbdd hrep := Rep.supported (hreg 0 rfl) hmem hbdd hrep
-  potential_supported _ _ _ := rfl
-  clear_nodup := by decide
-  params_not_clear := by decide
-  incCur_eval {x} h1 hfit := by
-    change Data.put w x 16 (x.regs 16 + x.regs 18) =
-      some (x.set cuckooCode.curReg (x.regs cuckooCode.curReg + 1))
-    change x.regs 18 = 1 at h1
-    rw [h1]
-    exact Data.put_of_fits hfit
-  span_exec hx hfr hpar := cuckoo_span_exec hfit_end hfit_ev hx hfr hpar
-  setup_exec hx₁ hb hfr hpar hz :=
-    initSetup_coupled_spec hx₁ hb hfr hpar hz hw hfit_ev hfit_U
-  step_exec {_s} o ν hv hseed hsupp :=
-    opCode_coupled_step_spec o ν hfam.rehash_prob_le_half hv hseed hsupp hw hfit_end hfit_ev hfit_V
+      w base ![n_max, U] (Dictionary.empty U) :=
+  Randomized.SubroutineDS.ofFn
+    (Seed := Seed U (tableBits n_max))
+    (seedLaw := seedLaw U (tableBits n_max))
+    (seedSlack := 2)
+    (space := space n_max)
+    (spanTime := spanSteps n_max)
+    (setupTime := setupSteps n_max U)
+    (initPotential := 0)
+    (charge := stepWorstCharge n_max U)
+    (rep := fun _ => Rep w base n_max U V)
+    (potential := fun _ _ => 0)
+    (encode := encode)
+    (argMatch := argMatch)
+    (decode := decode (V := V) (n_max := n_max))
+    (bounded := fun h => h.bounded)
+    (arguments_fit := fun {_s} o hv i _ => cuckoo_arguments_fit hfit_U hfit_V o hv i)
+    (encode_matches := fun o _regs => by cases o <;> simp +decide [argMatch, encode])
+    (rep_supported := fun hreg hmem hbdd hrep => Rep.supported (hreg 0 rfl) hmem hbdd hrep)
+    (potential_supported := fun _ _ _ => rfl)
+    (clear_nodup := by decide)
+    (params_not_clear := by decide)
+    (incCur_eval := fun {x} h1 hfit => by
+      change Data.put w x 16 (x.regs 16 + x.regs 18) =
+        some (x.set cuckooCode.curReg (x.regs cuckooCode.curReg + 1))
+      change x.regs 18 = 1 at h1
+      rw [h1]
+      exact Data.put_of_fits hfit)
+    (span_exec := fun hx hfr hpar => cuckoo_span_exec hfit_end hfit_ev hx hfr hpar)
+    (setup_exec := fun hx₁ hb hfr hpar hz =>
+      initSetup_coupled_spec hx₁ hb hfr hpar hz hw hfit_ev hfit_U)
+    (step_exec := fun {_s} o ν hv hseed hsupp =>
+      opCode_coupled_step_spec o ν hfam.rehash_prob_le_half hv hseed hsupp hw hfit_end hfit_ev
+        hfit_V)
 
 /-- Standard-basis (`Basis.standard`) randomized `SubroutineDS` certificate for Pagh–Rodler cuckoo
 hashing. -/
@@ -6599,7 +6601,7 @@ private theorem cuckoo_steps_expected_amortized (w base n_max U V C_walk C_reh :
       RepWithKeys w base n_max U V ks s p.2) :
     let C := subroutineDS w base n_max U V C_walk C_reh hfam hw hfit_end hfit_ev hfit_U hfit_V
     ∃ (ν_final : PMF (Seed U (tableBits n_max) × Data 19)) (T_ops : ℝ≥0∞),
-      C.ExecSteps s ops ν ν_final T_ops ∧
+      C.ExecStepsOfFn s ops ν ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ 2 * seedLaw U (tableBits n_max) θ) ∧
       (∀ p ∈ ν_final.support,
         Rep w base n_max U V ((Dictionary.spec U V n_max).run s ops).1 p.2) ∧
@@ -6617,7 +6619,7 @@ private theorem cuckoo_steps_expected_amortized (w base n_max U V C_walk C_reh :
     have hrep₀ := (hsupp p₀ hp₀).2
     have hcard := (survivingSeeds_card_and_nonempty (U := U) (n_max := n_max)
       hfam.rehash_prob_le_half hrep₀.2.2.2.2.1.1 hrep₀.2.2.2.2.1.2.1).1
-    refine ⟨ν, 0, Randomized.SubroutineDS.ExecSteps.nil (C := C) s ν, ?_, ?_, by simp⟩
+    refine ⟨ν, 0, Randomized.SubroutineDS.ExecStepsOfFn.nil (C := C) s ν, ?_, ?_, by simp⟩
     · intro θ
       rw [hseed]
       exact uniformOfFinset_le_two_mul_uniformOfFintype hE hcard θ
@@ -6682,10 +6684,10 @@ private theorem cuckoo_steps_expected_amortized (w base n_max U V C_walk C_reh :
             PMF.uniformOfFinset
               (survivingSeeds evalHash1 evalHash2 (maxEvictions n_max) (stepKeys ks o)) hE') ∧
         ∀ q ∈ (μ_step p).support,
-          C.decode o q.2.regs = some ((Dictionary.spec U V n_max).step s o).2 ∧
+          C.decode o q.2.regs = some ((Dictionary.spec U V n_max).stepFn s o).2 ∧
           q.1 = extractSeed (hashBase base) n_max U (tableBits n_max) q.2.mem ∧
           RepWithKeys w base n_max U V (stepKeys ks o)
-            ((Dictionary.spec U V n_max).step s o).1 q.2 ∧
+            ((Dictionary.spec U V n_max).stepFn s o).1 q.2 ∧
           Modifies (Block.mk base C.space).footprint p.2.mem q.2.mem := by
       intro p hp_mem
       obtain ⟨hp1, hrep_prep, harg_prep⟩ := hprep_ok p hp_mem
@@ -6748,7 +6750,7 @@ private theorem cuckoo_steps_expected_amortized (w base n_max U V C_walk C_reh :
     have hsupp₁ : ∀ q ∈ ν₁.support,
         q.1 = extractSeed (hashBase base) n_max U (tableBits n_max) q.2.mem ∧
         RepWithKeys w base n_max U V (stepKeys ks o)
-          ((Dictionary.spec U V n_max).step s o).1 q.2 := by
+          ((Dictionary.spec U V n_max).stepFn s o).1 q.2 := by
       intro q hq
       dsimp only [ν₁] at hq
       rw [PMF.mem_support_bind_iff] at hq
@@ -6757,9 +6759,9 @@ private theorem cuckoo_steps_expected_amortized (w base n_max U V C_walk C_reh :
       exact ⟨hq1, hrep'⟩
     obtain ⟨ν_final, T_rest, hex_rest, hseed_final, hrep_final, hamort_rest⟩ :=
       ih ν₁ hvos hE' hseed₁ hsupp₁
-    have hex_cons : C.ExecSteps s (o :: os) ν ν_final ((∑' p, ν p * T_step p) + T_rest) := by
-      refine Randomized.SubroutineDS.ExecSteps.cons (C := C) (μ_step := μ_step) (T_step := T_step)
-        (fun p hp => ?_) hex_rest
+    have hex_cons : C.ExecStepsOfFn s (o :: os) ν ν_final ((∑' p, ν p * T_step p) + T_rest) := by
+      refine Randomized.SubroutineDS.ExecStepsOfFn.cons (C := C) (μ_step := μ_step)
+        (T_step := T_step) (fun p hp => ?_) hex_rest
       obtain ⟨hex, _, hpost⟩ := hstep_spec p hp
       refine ⟨hex, fun q hq => ?_⟩
       obtain ⟨hdec, _, hrep', hmod⟩ := hpost q hq
@@ -6799,18 +6801,23 @@ private theorem cuckoo_steps_expected_amortized (w base n_max U V C_walk C_reh :
     calc (∑' p, ν p * T_step p) + T_rest
       _ ≤ (charge n_max U C_walk C_reh s o : ℝ≥0∞) +
             ((Dictionary.spec U V n_max).totalCost (charge n_max U C_walk C_reh)
-              ((Dictionary.spec U V n_max).step s o).1 os : ℝ≥0∞) :=
+              ((Dictionary.spec U V n_max).stepFn s o).1 os : ℝ≥0∞) :=
           add_le_add hstep_cost hamort_rest
       _ = ((Dictionary.spec U V n_max).totalCost (charge n_max U C_walk C_reh) s (o :: os) :
             ℝ≥0∞) :=
           (Nat.cast_add _ _).symm
 
-/-- **End-to-end expected-amortized theorem for Pagh–Rodler cuckoo hashing.**
-Starting from zeroed memory in `[base, base + space n_max)`, initializing `cuckooCode` and
-executing any valid sequence `ops : List (Dictionary.Op U)` of `get` and `insert` operations takes
-expected instruction cost at most
+/-- **End-to-end expected-amortized theorem for Pagh–Rodler cuckoo hashing, conditional on the
+hash pair.** Assuming `hfam : IsCuckooHashFamily …` for the Word-RAM hash pair, starting from
+zeroed memory in `[base, base + space n_max)`, initializing `cuckooCode` and executing any valid
+sequence `ops : List (Dictionary.Op U)` of `get` and `insert` operations takes expected
+instruction cost at most
 `spanSteps n_max + setupSteps n_max U +
-  (Dictionary.spec U V n_max).totalCost (charge n_max U C_walk C_reh) (Dictionary.empty U) ops`. -/
+  (Dictionary.spec U V n_max).totalCost (charge n_max U C_walk C_reh) (Dictionary.empty U) ops`.
+
+`hfam` carries the walk-length and rehash bounds of Pagh and Rodler's analysis. It is proved only
+for `n_max ≤ 2` (`isCuckooHashFamily_le_two`) and is open for `n_max ≥ 3`, so this is not yet an
+unconditional expected-time bound for cuckoo hashing. -/
 theorem cuckoo_seq_expected_amortized (w base n_max U V C_walk C_reh : ℕ)
     (hfam : IsCuckooHashFamily U n_max (tableBits n_max) (maxEvictions n_max) C_walk C_reh)
     (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w)
@@ -6826,7 +6833,7 @@ theorem cuckoo_seq_expected_amortized (w base n_max U V C_walk C_reh : ℕ)
     let C := subroutineDS w base n_max U V C_walk C_reh hfam hw hfit_end hfit_ev hfit_U hfit_V
     ∃ (ν₀ ν_final : PMF (Seed U (tableBits n_max) × Data 19)) (T_ops : ℝ≥0∞),
       ExecCodeDist w cuckooCode.initFresh x (ν₀.map Prod.snd) C.initTime ∧
-      C.ExecSteps (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
+      C.ExecStepsOfFn (Dictionary.empty U) ops ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ 2 * seedLaw U (tableBits n_max) θ) ∧
       (∀ p ∈ ν_final.support,
         Rep w base n_max U V ((Dictionary.spec U V n_max).run (Dictionary.empty U) ops).1 p.2) ∧
@@ -6857,7 +6864,7 @@ theorem cuckoo_seq_expected_amortized (w base n_max U V C_walk C_reh : ℕ)
     rw [hsnd₀]
     have hseq := (ExecCodeDist.of_exec he_span).seq_pure hdist_setup
     refine hseq.mono ?_
-    dsimp only [C, subroutineDS, Randomized.SubroutineDS.initTime]
+    dsimp only [C, subroutineDS, Randomized.SubroutineDS.initTime, Randomized.SubroutineDS.ofFn]
     exact add_le_add (by exact_mod_cast ht_span) le_rfl
   have hE₀ :
       (survivingSeeds (Θ := Seed U (tableBits n_max)) evalHash1 evalHash2 (maxEvictions n_max)

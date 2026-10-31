@@ -165,7 +165,7 @@ theorem test_wordram_seq_expected_amortized :
     ∃ (ν₀ ν_final : PMF (Seed 16 2 × Data 12)) (T_ops : ℝ≥0∞),
       ExecCodeDist 64 (subroutineCode 16 2).initFresh x₀ (ν₀.map Prod.snd)
         (subroutineDS (V := 100) hS hw hV).initTime ∧
-      (subroutineDS (V := 100) hS hw hV).ExecSteps (Dictionary.empty 16) testOps ν₀ ν_final
+      (subroutineDS (V := 100) hS hw hV).ExecStepsOfFn (Dictionary.empty 16) testOps ν₀ ν_final
         T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ seedLaw 16 2 θ) ∧
       (∀ p ∈ ν_final.support,
