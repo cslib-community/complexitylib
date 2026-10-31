@@ -10,11 +10,15 @@ module
 public import Complexity.Computability.Complexity.Classes.Oracle.BoundedQuery
 public import Complexity.Computability.Complexity.Classes.PH
 public import Complexity.Computability.Complexity.Classes.Sparse.Turing
+public import Complexity.Languages.Probabilistic.Iteration
 import Complexity.Computability.Complexity.Classes.NP.Witness
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
+import Complexity.Computability.Probabilistic.Oracle.Composition
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Cslib.Foundations.Data.Polynomial.Monotone
 
@@ -303,6 +307,195 @@ theorem language_mem_NP (hS : S ∈ NP encBits) (hsparse : S ∈ SPARSE encBits)
   simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C,
     Polynomial.eval_one, Polynomial.eval_comp, Polynomial.eval_ofNat]
   omega
+
+/-! ### Binary search with one request per round -/
+
+/-- One round of binary search on the interval `(lo, hi)`: if `lo < hi`, test the midpoint
+`mid = ⌈(lo + hi) / 2⌉` with `P` and keep `(mid, hi)` or `(lo, mid - 1)`. -/
+def searchStep (P : ℕ → Bool) (st : ℕ × ℕ) : ℕ × ℕ :=
+  if st.1 < st.2 then
+    if P ((st.1 + st.2 + 1) / 2) then ((st.1 + st.2 + 1) / 2, st.2)
+    else (st.1, (st.1 + st.2 + 1) / 2 - 1)
+  else st
+
+/-- A round keeps the threshold `C` of `P k = (k ≤ C)` inside the interval and halves it. -/
+theorem searchStep_spec {C : ℕ} {st : ℕ × ℕ} (h₁ : st.1 ≤ C) (h₂ : C ≤ st.2) :
+    (searchStep (fun k => decide (k ≤ C)) st).1 ≤ C ∧ C ≤ (searchStep (fun k => decide (k ≤ C)) st).2 ∧
+      (searchStep (fun k => decide (k ≤ C)) st).2 - (searchStep (fun k => decide (k ≤ C)) st).1 ≤
+        (st.2 - st.1) / 2 := by
+  unfold searchStep
+  by_cases h : st.1 < st.2
+  · by_cases h' : (st.1 + st.2 + 1) / 2 ≤ C
+    · simp only [h, h', decide_true, ↓reduceIte]
+      refine ⟨trivial, ?_, ?_⟩ <;> omega
+    · simp only [h, h', decide_false, ↓reduceIte, Bool.false_eq_true]
+      refine ⟨?_, ?_, ?_⟩ <;> omega
+  · simp only [h, ↓reduceIte]
+    refine ⟨?_, ?_, ?_⟩ <;> omega
+
+/-- After `i` rounds from `(0, N)` the interval contains `C` and has length at most `N / 2 ^ i`. -/
+theorem iterate_searchStep_spec {C N : ℕ} (hC : C ≤ N) (i : ℕ) :
+    ((searchStep (fun k => decide (k ≤ C)))^[i] (0, N)).1 ≤ C ∧
+      C ≤ ((searchStep (fun k => decide (k ≤ C)))^[i] (0, N)).2 ∧
+      ((searchStep (fun k => decide (k ≤ C)))^[i] (0, N)).2 -
+        ((searchStep (fun k => decide (k ≤ C)))^[i] (0, N)).1 ≤ N / 2 ^ i := by
+  induction i with
+  | zero => exact ⟨Nat.zero_le _, hC, by simp⟩
+  | succ i ih =>
+    obtain ⟨h₁, h₂, h₃⟩ := ih
+    obtain ⟨h₁', h₂', h₃'⟩ := searchStep_spec h₁ h₂
+    rw [Function.iterate_succ_apply']
+    refine ⟨h₁', h₂', h₃'.trans ?_⟩
+    rw [pow_succ, ← Nat.div_div_eq_div_mul]
+    exact Nat.div_le_div_right h₃
+
+/-- **Binary search finds the threshold** after `count` rounds when `N < 2 ^ count`. -/
+theorem fst_iterate_searchStep {C N count : ℕ} (hC : C ≤ N) (hcount : N < 2 ^ count) :
+    ((searchStep (fun k => decide (k ≤ C)))^[count] (0, N)).1 = C := by
+  obtain ⟨h₁, h₂, h₃⟩ := iterate_searchStep_spec hC count
+  rw [Nat.div_eq_of_lt hcount] at h₃
+  omega
+
+/-- One round against an oracle: the midpoint `k` is tested by one request for `req (a, k)`. -/
+def searchStepProgram (req : α × ℕ → List Bool) (a : α) (st : ℕ × ℕ) :
+    WordQueryComp Unit (ℕ × ℕ) :=
+  if st.1 < st.2 then
+    (fun b => if b then ((st.1 + st.2 + 1) / 2, st.2) else (st.1, (st.1 + st.2 + 1) / 2 - 1)) <$>
+      queryBit (req (a, (st.1 + st.2 + 1) / 2))
+  else pure st
+
+open Classical in
+theorem interpret_searchStepProgram (A : Set (List Bool)) (req : α × ℕ → List Bool) (a : α)
+    (st : ℕ × ℕ) :
+    OracleComp.interpret (m := Id) (languageOracle A) (searchStepProgram req a st) =
+      searchStep (fun k => decide (req (a, k) ∈ A)) st := by
+  unfold searchStepProgram searchStep
+  by_cases h : st.1 < st.2
+  · simp only [h, ↓reduceIte, OracleComp.interpret_map, interpret_queryBit]
+    rfl
+  · simp only [h, ↓reduceIte]
+    rfl
+
+/-- A round makes at most one request. -/
+theorem length_queriesWith_searchStepProgram_le (answer : Unit × List Bool → List Bool)
+    (req : α × ℕ → List Bool) (a : α) (st : ℕ × ℕ) :
+    (OracleComp.queriesWith answer (searchStepProgram req a st)).length ≤ 1 := by
+  unfold searchStepProgram
+  split_ifs <;> simp
+
+/-- A loop whose rounds make at most one request each makes at most one request per round. -/
+theorem length_queriesWith_iterate_le {State : Type} (answer : Unit × List Bool → List Bool)
+    {step : State → WordQueryComp Unit State}
+    (h : ∀ st, (OracleComp.queriesWith answer (step st)).length ≤ 1) (n : ℕ) (st : State) :
+    (OracleComp.queriesWith answer (OracleComp.iterate n step st)).length ≤ n := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [OracleComp.iterate_succ, OracleComp.queriesWith_bind, List.length_append]
+    exact Nat.add_le_add ih (h _)
+
+/-- The algorithm: `count a` rounds of binary search from `(0, N a)` with the requests `req`,
+then one request `fin (a, lo)` at the threshold found. -/
+def program (req fin : α × ℕ → List Bool) (N count : α → ℕ) (a : α) : WordQueryComp Unit Bool :=
+  OracleComp.iterate (count a) (searchStepProgram req a) (0, N a) >>= fun st =>
+    queryBit (fin (a, st.1))
+
+open Classical in
+theorem interpret_program (A : Set (List Bool)) (req fin : α × ℕ → List Bool) (N count : α → ℕ)
+    (a : α) :
+    OracleComp.interpret (m := Id) (languageOracle A) (program req fin N count a) =
+      decide (fin (a, ((searchStep fun k => decide (req (a, k) ∈ A))^[count a] (0, N a)).1) ∈ A) := by
+  rw [program, OracleComp.interpret_bind, OracleComp.interpret_id_iterate]
+  simp only [interpret_searchStepProgram]
+  exact interpret_queryBit A _
+
+/-- The algorithm makes at most `count a + 1` requests. -/
+theorem length_queriesWith_program_le (answer : Unit × List Bool → List Bool)
+    (req fin : α × ℕ → List Bool) (N count : α → ℕ) (a : α) :
+    (OracleComp.queriesWith answer (program req fin N count a)).length ≤ count a + 1 := by
+  rw [program, OracleComp.queriesWith_bind, List.length_append, queriesWith_queryBit,
+    List.length_singleton]
+  exact Nat.add_le_add_right
+    (length_queriesWith_iterate_le answer (length_queriesWith_searchStepProgram_le answer req a) _ _) 1
+
+open Probability in
+/-- **The algorithm is strict oracle PPT** when the requests, the bound `N` and the count are
+polynomial-time. Every reachable interval lies within `[0, N a]`. -/
+theorem isOraclePPTOn_program {enc : α ↪ List Bool} {req fin : α × ℕ → List Bool}
+    {N count : α → ℕ} (hreq : ComputableInPolyTime req (encPair enc encUnary) encBits)
+    (hfin : ComputableInPolyTime fin (encPair enc encUnary) encBits)
+    (hN : ComputableInPolyTime N enc encUnary) (hcount : ComputableInPolyTime count enc encUnary) :
+    IsOraclePPTOn enc encBool
+      (fun a => OracleComp.interpret ProbOracleComp.query (program req fin N count a)) := by
+  have hmid : ComputableInPolyTime (fun pair : α × ℕ × ℕ => (pair.2.1 + pair.2.2 + 1) / 2)
+      (encPair enc (encPair encUnary encUnary)) encUnary :=
+    (ComputableInPolyTime.unary_div_const 2).comp
+      (g := fun pair : α × ℕ × ℕ => pair.2.1 + pair.2.2 + 1) (by fun_prop)
+  have hq : IsOraclePPTOn (encPair enc (encPair encUnary encUnary)) encBool
+      (fun pair : α × ℕ × ℕ => OracleComp.interpret ProbOracleComp.query
+        (queryBit (req (pair.1, (pair.2.1 + pair.2.2 + 1) / 2)))) :=
+    isOraclePPTOn_queryBit (input := encPair enc (encPair encUnary encUnary))
+      (req := fun pair : α × ℕ × ℕ => req (pair.1, (pair.2.1 + pair.2.2 + 1) / 2))
+      (hreq.comp (g := fun pair : α × ℕ × ℕ => (pair.1, (pair.2.1 + pair.2.2 + 1) / 2))
+        ((ComputableInPolyTime.fst _ _).prod hmid))
+  have hpost : ComputableInPolyTime (fun x : (α × ℕ × ℕ) × Bool =>
+      if x.2 then ((x.1.2.1 + x.1.2.2 + 1) / 2, x.1.2.2)
+      else (x.1.2.1, (x.1.2.1 + x.1.2.2 + 1) / 2 - 1))
+      (encPair (encPair enc (encPair encUnary encUnary)) encBool) (encPair encUnary encUnary) := by
+    have hmid' : ComputableInPolyTime (fun x : (α × ℕ × ℕ) × Bool => (x.1.2.1 + x.1.2.2 + 1) / 2)
+        (encPair (encPair enc (encPair encUnary encUnary)) encBool) encUnary :=
+      hmid.comp (g := fun x : (α × ℕ × ℕ) × Bool => x.1) (.fst _ _)
+    have hlo : ComputableInPolyTime (fun x : (α × ℕ × ℕ) × Bool => x.1.2.1)
+        (encPair (encPair enc (encPair encUnary encUnary)) encBool) encUnary := by fun_prop
+    have hhi : ComputableInPolyTime (fun x : (α × ℕ × ℕ) × Bool => x.1.2.2)
+        (encPair (encPair enc (encPair encUnary encUnary)) encBool) encUnary := by fun_prop
+    exact ComputableInPolyTime.ite' (ComputableInPolyTime.snd _ _) (hmid'.prod hhi)
+      (hlo.prod (ComputableInPolyTime.unary_sub' hmid' (ComputableInPolyTime.const 1)))
+  have hyes := hq.map_with' (f := fun pair b => if b then ((pair.2.1 + pair.2.2 + 1) / 2, pair.2.2)
+    else (pair.2.1, (pair.2.1 + pair.2.2 + 1) / 2 - 1)) hpost
+  have hno : IsOraclePPTOn (Operation := Unit) (encPair enc (encPair encUnary encUnary))
+      (encPair encUnary encUnary) (fun pair : α × ℕ × ℕ => pure pair.2) :=
+    (ComputableInPolyTime.snd _ _).isOraclePPTOn
+  have hcond : ComputableInPolyTime (fun pair : α × ℕ × ℕ => decide (pair.2.1 < pair.2.2))
+      (encPair enc (encPair encUnary encUnary)) encBool := by fun_prop
+  have hstep : IsOraclePPTOn (encPair enc (encPair encUnary encUnary)) (encPair encUnary encUnary)
+      (fun pair : α × ℕ × ℕ => OracleComp.interpret ProbOracleComp.query
+        (searchStepProgram req pair.1 pair.2)) := by
+    refine (IsOraclePPTOn.ite' (condition := fun pair : α × ℕ × ℕ => pair.2.1 < pair.2.2) hcond
+      hyes hno).congr fun pair State oracle s => ?_
+    unfold searchStepProgram
+    split_ifs <;> simp only [OracleComp.interpret_map, OracleComp.interpret_pure]
+  have hinit : ComputableInPolyTime (fun a => ((0 : ℕ), N a)) enc (encPair encUnary encUnary) :=
+    (ComputableInPolyTime.const 0).prod hN
+  have hsize : PolyBounded (fun a => (enc a).length) (fun a => 3 * N a + 1) :=
+    ((PolyBounded.const 3).mul hN.polyBounded).add (.const 1)
+  have hit := IsOraclePPTOn.iterateWith_spec' (input := enc)
+    (stateEncoding := encPair encUnary encUnary) (count := count)
+    (initial := fun a => ((0 : ℕ), N a))
+    (step := fun a st => OracleComp.interpret ProbOracleComp.query (searchStepProgram req a st))
+    hcount hinit hstep (fun a _ st => st.1 ≤ st.2 ∧ st.2 ≤ N a)
+    (fun a => ⟨Nat.zero_le _, le_rfl⟩) (fun a i st _ hinv next hnext => by
+      unfold searchStepProgram at hnext
+      by_cases h : st.1 < st.2
+      · rw [ite_eq_left_iff.mpr (fun h' => absurd h h'), OracleComp.interpret_map] at hnext
+        obtain ⟨b, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
+        cases b <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> omega
+      · rw [ite_eq_right_iff.mpr (fun h' => absurd h' h), OracleComp.interpret_pure] at hnext
+        rw [OracleComp.eq_of_mem_supportWith_pure hnext]
+        exact hinv)
+    hsize (fun a i st _ hinv => by
+      simp only [length_encPair, encUnary_apply, List.length_replicate]
+      omega)
+  have hfinal : IsOraclePPTOn (encPair enc (encPair encUnary encUnary)) encBool
+      (fun pair : α × ℕ × ℕ => OracleComp.interpret ProbOracleComp.query
+        (queryBit (fin (pair.1, pair.2.1)))) :=
+    isOraclePPTOn_queryBit (input := encPair enc (encPair encUnary encUnary))
+      (req := fun pair : α × ℕ × ℕ => fin (pair.1, pair.2.1))
+      (hfin.comp (g := fun pair : α × ℕ × ℕ => (pair.1, pair.2.1))
+        ((ComputableInPolyTime.fst _ _).prod (ComputableInPolyTime.snd _ _).fst'))
+  have hbind := hit.1.bind_with (second := fun a st => OracleComp.interpret ProbOracleComp.query
+    (queryBit (fin (a, st.1)))) hfinal
+  simpa only [program, OracleComp.interpret_bind, OracleComp.interpret_iterate] using hbind
 
 end KadinCensus
 
