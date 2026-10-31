@@ -478,7 +478,7 @@ noncomputable def gmwRealWithPads (generator : List Bool → List Bool) (s m : �
     (fun r => proverReply1 generator m r openFlags bits seeds pads)
     (fun _ => proverReply2 s φ ch_guess bits seeds)
     prog (0, [false, false, false])
-  return if p.2.2 == ch_guess then true :: p.1 else []
+  return if Prod.snd p.2 == ch_guess then true :: p.1 else []
 
 /-- Single-attempt hybrid with pseudorandom unopened pads. -/
 noncomputable def gmwRealPRGPads (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
@@ -918,14 +918,17 @@ theorem isPPTOn_gmwViewReduction {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+      (fun p => Vstar p.1 (Prod.fst p.2) (Prod.snd p.2)))
     (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-      (fun p => adversary p.1.1 p.1.2.1 p.1.2.2 p.2)) :
+      (fun p => adversary (Prod.fst p.1) (Prod.fst (Prod.snd p.1))
+        (Prod.snd (Prod.snd p.1)) p.2)) :
     IsPPTOn
       (encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits) encBool
       (fun p : (ℕ × (α × (List Bool × List Bool))) × List Bool =>
         gmwViewReduction generator length f Vstar adversary
-          p.1.1 p.1.2.1 p.1.2.2.1 p.1.2.2.2 p.2) := by
+          (Prod.fst p.1) (Prod.fst (Prod.snd p.1))
+          (Prod.fst (Prod.snd (Prod.snd p.1)))
+          (Prod.snd (Prod.snd (Prod.snd p.1))) p.2) := by
   have hgPlain := hg
   have hfPlain := hf
   have hg := hg.tidy
@@ -1027,9 +1030,10 @@ theorem gmwView_negligible_of_advice_prg {α : Type} {enc : α ↪ List Bool}
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+      (fun p => Vstar p.1 (Prod.fst p.2) (Prod.snd p.2)))
     (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-      (fun p => adversary p.1.1 p.1.2.1 p.1.2.2 p.2))
+      (fun p => adversary (Prod.fst p.1) (Prod.fst (Prod.snd p.1))
+        (Prod.snd (Prod.snd p.1)) p.2))
     (hPRG : ∀ test : (ℕ × (α × (List Bool × List Bool))) × List Bool → ProbComp Bool,
       IsPPTOn
         (encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits)
@@ -1111,9 +1115,10 @@ theorem AdvicePRG.gmwView_negligible {α : Type} {enc : α ↪ List Bool}
     (hAdv : AdvicePRG enc generator length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+      (fun p => Vstar p.1 (Prod.fst p.2) (Prod.snd p.2)))
     (hadv : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
-      (fun p => adversary p.1.1 p.1.2.1 p.1.2.2 p.2))
+      (fun p => adversary (Prod.fst p.1) (Prod.fst (Prod.snd p.1))
+        (Prod.snd (Prod.snd p.1)) p.2))
     {a : ℕ → α} {w z : ℕ → List Bool}
     (ha : PolynomiallyBounded (fun n => (enc (a n)).length))
     (hw : PolynomiallyBounded (fun n => (w n).length))
@@ -1139,7 +1144,7 @@ theorem gmwView_indistinguishable_gmwSimulator {α : Type} {enc : α ↪ List Bo
     {f : α → CNF ℕ} (hf : ComputableInPolyTime f enc encCNF)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hV : IsOraclePPTOn (encPair encUnary (encPair enc encBits)) encBits
-      (fun p => Vstar p.1 p.2.1 p.2.2))
+      (fun p => Vstar p.1 (Prod.fst p.2) (Prod.snd p.2)))
     {a : ℕ → α} {w z : ℕ → List Bool}
     (ha : ComputableInPolyTime a encUnary enc)
     (hw_comp : ComputableInPolyTime w encUnary encBits)

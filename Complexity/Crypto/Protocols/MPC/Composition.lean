@@ -429,15 +429,15 @@ first state component. -/
     .message (sender := parties s₀) (receiver := parties r₀)
       (fun st_sender => send (st_sender.2 s₀ rfl))
       ((Steps.embed parties Outer next).mapState fun _ st_i =>
-        (st_i.1.1, fun s hs =>
-          (st_i.1.2 s hs,
+        (Prod.fst st_i.1, fun s hs =>
+          (Prod.snd st_i.1 s hs,
             pullRoundReceived parties (.message s₀ r₀ Msg) hs st_i.2)))
   | .oracle (op := op) (parties := subParties) query next =>
     .oracle (op := op) (parties := subParties.trans parties)
       (fun t st_party => query t (st_party.2 (subParties t) rfl))
       ((Steps.embed parties Outer next).mapState fun _ st_i =>
-        (st_i.1.1, fun s hs =>
-          (st_i.1.2 s hs,
+        (Prod.fst st_i.1, fun s hs =>
+          (Prod.snd st_i.1 s hs,
             pullRoundReceived parties (.oracle op subParties) hs st_i.2)))
 
 @[simp] private theorem outputAt_embed {k m : ℕ} {spec : MultiOracleSpec}
@@ -515,16 +515,16 @@ execution of `(Sub op).steps` along `parties`. -/
     .message (sender := s₀) (receiver := r₀)
       (fun st_sender => send st_sender.1)
       ((Steps.compose Sub next).mapState fun _ st_i =>
-        ((st_i.1.1, st_i.2), st_i.1.2))
+        ((Prod.fst st_i.1, st_i.2), Prod.snd st_i.1))
   | .oracle (op := op) (parties := parties) (sc := rest) query next =>
     (((Steps.embed parties (fun i => State i × Schedule.SubCoins Coins₂ rest i)
         (Sub op).steps).mapState
-      (fun i st_i =>
-        ((st_i.1, st_i.2.2),
+      (fun i (st_i : State i × Schedule.SubCoins Coins₂ (.oracle op parties :: rest) i) =>
+        ((st_i.1, Prod.snd st_i.2),
           fun (s : Fin (spec₁.arity op)) (hs : parties s = i) =>
-            (query s (hs.symm ▸ st_i.1), st_i.2.1 s hs)))).append
+            (query s (hs.symm ▸ st_i.1), Prod.fst st_i.2 s hs)))).append
       ((Steps.compose Sub next).mapState fun _ st_i =>
-        ((st_i.1.1, st_i.2), st_i.1.2)))
+        ((Prod.fst st_i.1, st_i.2), Prod.snd st_i.1)))
 
 /-- Expand a simulated outer execution along `steps : Steps State Out sc₁` by invoking the inner
 simulator `S₂ op (subCoalition parties I)` at every `.oracle op parties` round (Goldreich Theorem
