@@ -43,6 +43,8 @@ at most as many variables as the vertex has neighbours
 * `Cslib.Complexity.Graph.count_vars_perfectMatchingInstance`: each variable occurs at most twice.
 * `Cslib.Complexity.Graph.length_le_of_mem_perfectMatchingInstance`: a vertex constraint has at
   most as many variables as the vertex has neighbours.
+* `Cslib.Complexity.Graph.card_neighborSet_le`: a vertex has at most as many neighbours as entries
+  of the edge list at it, which makes a degree bound checkable.
 -/
 
 public section
@@ -382,5 +384,36 @@ theorem length_le_of_mem_perfectMatchingInstance {d : ℕ}
     obtain ⟨p', q'⟩ := ej
     simp only [Prod.mk.injEq, Prod.swap_prod_mk] at hinci hincj hij ⊢
     split_ifs at hij <;> omega
+
+/-- **A vertex has at most as many neighbours as edge-list entries at it**, so a degree bound can
+be checked on the edge list. -/
+theorem card_neighborSet_le (v : {v // v ∈ G.1}) :
+    Nat.card (G.induced.neighborSet v) ≤ (G.edgeList.filter fun e => incident e v).length := by
+  classical
+  have hnd : (G.edgeList.filter fun e => incident e v).Nodup :=
+    ((pairwise_edgeList G).imp fun h => h.1.symm).filter _
+  -- send a neighbour `w` to the entry of the edge `vw`
+  have hedge : ∀ w : G.induced.neighborSet v, ∃ e ∈ G.edgeList.filter fun e => incident e v,
+      e = (v.1, w.1.1) ∨ e = (w.1.1, v.1) := fun w => by
+    rcases exists_mem_edgeList w.2 with h | h
+    · exact ⟨_, List.mem_filter.mpr ⟨h, by simp [incident]⟩, Or.inl rfl⟩
+    · exact ⟨_, List.mem_filter.mpr ⟨h, by simp [incident]⟩, Or.inr rfl⟩
+  let f (w : G.induced.neighborSet v) : (G.edgeList.filter fun e => incident e v).toFinset :=
+    ⟨(hedge w).choose, List.mem_toFinset.mpr (hedge w).choose_spec.1⟩
+  have hf : Function.Injective f := fun w w' h => by
+    have h' := congrArg Subtype.val h
+    have hw := (hedge w).choose_spec.2
+    have hw' := (hedge w').choose_spec.2
+    simp only [f] at h'
+    rw [h'] at hw
+    have hne : (w.1 : ℕ) ≠ v.1 := fun h => G.induced.ne_of_adj w.2 (Subtype.ext h).symm
+    have hne' : (w'.1 : ℕ) ≠ v.1 := fun h => G.induced.ne_of_adj w'.2 (Subtype.ext h).symm
+    refine Subtype.ext (Subtype.ext ?_)
+    rcases hw with hw | hw <;> rcases hw' with hw' | hw' <;> rw [hw] at hw' <;>
+      simp only [Prod.mk.injEq] at hw' <;> omega
+  calc Nat.card (G.induced.neighborSet v)
+      ≤ Nat.card (G.edgeList.filter fun e => incident e v).toFinset :=
+        Nat.card_le_card_of_injective f hf
+    _ = _ := by rw [Nat.card_eq_finsetCard, List.toFinset_card_of_nodup hnd]
 
 end Cslib.Complexity.Graph

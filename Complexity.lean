@@ -1426,6 +1426,7 @@ public import Complexity.Computability.Complexity.FineGrained.BruteForce
 public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.ContractionCircuitCounting
 public import Complexity.Computability.Complexity.FineGrained.ContractionCounting
+public import Complexity.Computability.Complexity.FineGrained.ContractionMatching
 public import Complexity.Computability.Complexity.FineGrained.ContractionPartitionFunction
 public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
@@ -1493,6 +1494,7 @@ public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawi
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalLayout
 public import Complexity.Computability.Complexity.Problems.Graph.OrthogonalPath
+public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 public import Complexity.Computability.Complexity.Problems.Graph.Ports
 public import Complexity.Computability.Complexity.Problems.GraphIsomorphism
 public import Complexity.Computability.Complexity.Problems.Hamiltonian
@@ -1743,6 +1745,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolynomialPadding
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Preprocess
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigOLe
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree
@@ -3313,8 +3316,10 @@ public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
+public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Complexity.Logics.Propositional.CSP.HardCore
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
+public import Complexity.Logics.Propositional.CSP.Permanent
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
 public import Complexity.Logics.Propositional.CSP.ToCNF.Count

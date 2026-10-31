@@ -22,6 +22,67 @@ import Mathlib.Data.List.GetD
 
 /-!
 # Permanents and perfect matchings of bounded degree by tensor contraction
+
+For each `d`, one machine computes the permanent of an `n × n` `0/1` matrix with at most `d`
+nonzero entries in each row and each column
+(`ContractionMatching.exists_permanentCounter`), and one machine computes the number of perfect
+matchings of a graph on `n` vertices of maximum degree `d`
+(`ContractionMatching.exists_perfectMatchingCounter`). Both run, on every input, in time
+`2 ^ (A (n + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding length, and in polynomial
+space, with constants depending only on `d`. The inputs are standard encodings: a matrix is a list
+of rows (`encList encBits`, read by `ContractionMatching.rowsMatrix`), and a graph is a vertex and
+edge list (`Cslib.Complexity.encGraph`, read as `Cslib.Complexity.Graph.induced`).
+
+Both problems are Holant problems: one Boolean variable per edge of a graph, and one exactly-one
+constraint per vertex on its incident edges. A polynomial-time reduction builds this instance
+(`Cslib.Logic.PL.CSP.permanentInstance`, `Cslib.Complexity.Graph.perfectMatchingInstance`), in which
+every variable occurs twice and every scope has at most `d` variables. Its exactly-one partition
+function is the permanent (`Cslib.Logic.PL.CSP.partitionFunction_permanentInstance`) or the number
+of perfect matchings (`Cslib.Complexity.Graph.partitionFunction_perfectMatchingInstance`). The
+counter of `ContractionPartitionFunction.exists_partitionFunctionCounter_of_finite`, which applies
+Theorem D.1 of [OpenAI2026ETH], then computes it. That counter excludes empty scopes, so an
+instance with an empty or overlong scope is first replaced by `ContractionMatching.zeroInstance`
+(`ContractionMatching.guarded`). Under the degree promise this happens only when a vertex has no
+edge, and then the count is zero. The time bound transfers from the instance's variables to `n` by
+`Nat.mul_succ_div_sqrt_log_two_le`, and through the reduction by
+`Turing.MultiTapeTM.ComputableInO.comp_polyTime`.
+
+### Source relation
+
+No novelty is claimed. Corollary 1.3 of [OpenAI2026ETH] (p. 2, proved on p. 3) counts perfect
+matchings in time `2 ^ o(v + e)` through a circuit-to-3-CNF encoding with `O(v + e)` variables and
+clauses, and the fixed-density case of its Theorem 1.1 (p. 2, proved in Appendix D.2, p. 54) gives
+the rate `2 ^ O(n / √log n)` for such formulas. At maximum degree `d` this is the rate here. The
+bounded-degree permanent is also Theorem 6.1 of [ODonnell2026ETHExposition] (p. 13), with the
+weaker exponent `n (log log n) ^ 2 / √log n` and by a different route. The formalization uses the
+Holant encoding with exactly-one tables instead of the 3-CNF encoding.
+
+## Main definitions
+
+* `Cslib.Complexity.ContractionMatching.zeroInstance`,
+  `Cslib.Complexity.ContractionMatching.guarded`: the instance answered in place of one with an
+  empty or overlong scope.
+* `Cslib.Complexity.ContractionMatching.rowEntry`,
+  `Cslib.Complexity.ContractionMatching.rowsMatrix`: the square `0/1` matrix of a list of rows.
+
+## Main results
+
+* `Cslib.Complexity.ContractionMatching.exists_exactlyOneCounter`: exactly-one counting on
+  instances in which every variable occurs at most twice, after a polynomial-time reduction.
+* `Cslib.Complexity.ContractionMatching.exists_permanentCounter`: the `0/1` permanent with at most
+  `d` nonzero entries per row and column.
+* `Cslib.Complexity.ContractionMatching.exists_perfectMatchingCounter`: perfect matchings of graphs
+  of maximum degree `d`.
+* `Cslib.Complexity.ContractionMatching.computableInPolyTime_permanentInstance`,
+  `Cslib.Complexity.ContractionMatching.computableInPolyTime_perfectMatchingInstance`: the
+  reductions are polynomial-time.
+
+## References
+
+* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], Theorem 1.1 and
+  Corollary 1.3 (pp. 2–3), Theorem D.1 (p. 53) and Appendix D.2 (p. 54).
+* [R. O'Donnell, *Some exposition of "The Exponential Time Hypothesis Is
+  False"*][ODonnell2026ETHExposition], Theorem 6.1 (p. 13).
 -/
 
 public section
