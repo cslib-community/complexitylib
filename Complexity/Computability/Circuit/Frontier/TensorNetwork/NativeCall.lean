@@ -117,7 +117,8 @@ theorem val_recover_eq_contraction {a u h p Δ : ℕ} (hu : 1 ≤ u) (huM : u �
             Fin (nodePrecision p h a (Fintype.card (Fin D.numEdges)) (padicValInt 2 t)) =>
               (Z.2.2 : ℕ) + 1)
             (nodePrecision p h a (Fintype.card (Fin D.numEdges)) (padicValInt 2 t)),
-          ∏ g, ((parentSplitting hirr hD a p u h hua ht hq (ζl.getD k [])).child β g).contraction := by
+          ∏ g, ((parentSplitting hirr hD a p u h hua ht hq (ζl.getD k [])).child β
+            g).contraction := by
     intro t ht hq k
     obtain ⟨kk, hkk, hkt⟩ : ∃ kk, (kk < 2 ^ (a + 1) ∧ kk ≠ 2 ^ a) ∧ node a kk = t := by
       rw [recoveryNodes_eq_image, mem_image] at ht

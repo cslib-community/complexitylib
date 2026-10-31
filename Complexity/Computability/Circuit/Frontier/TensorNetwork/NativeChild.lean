@@ -86,7 +86,8 @@ labels of the new ends read through `ρ` and `κ`, which agree with the old labe
 every edge. -/
 @[expose] def Packing.relabel (P : Packing rowOf colOf a r) (rowOf' : E → R') (colOf' : E → C')
     (ρ : R' → Fin a → Fin r) (κ : C' → Fin a → Fin r)
-    (hρ : ∀ e, ρ (rowOf' e) = P.rowLabel (rowOf e)) (hκ : ∀ e, κ (colOf' e) = P.colLabel (colOf e)) :
+    (hρ : ∀ e, ρ (rowOf' e) = P.rowLabel (rowOf e))
+    (hκ : ∀ e, κ (colOf' e) = P.colLabel (colOf e)) :
     Packing rowOf' colOf' a r where
   rowLabel := ρ
   colLabel := κ
@@ -479,7 +480,8 @@ theorem groupsOf_eq {a i : ℕ} (hK : 64 ^ a ≤ D.numEdges) (hia : i < a) :
     have hlt : v - r < D.vertices.length - r := by omega
     rw [ite_eq_right hv, decide_eq_false hv, ite_eq_right (by simp), dite_eq_left hvr,
       List.getD_ofFn (fun w : Fin (D.vertices.length - r) => BalancedSchedules.scheduleToWord _)
-        ⟨v - r, hlt⟩, BalancedSchedules.scheduleToWord, List.getD_ofFn (fun t : Fin a => _) ⟨i, hia⟩]
+        ⟨v - r, hlt⟩, BalancedSchedules.scheduleToWord,
+      List.getD_ofFn (fun t : Fin a => _) ⟨i, hia⟩]
 
 /-- **The mode splitting at a node of the parent** over `O`: `callSplitting` of the parent with
 its packing, at the node `t`, the precision `p`, and the lift of the interpolation value `ζ`. -/
@@ -530,7 +532,8 @@ variable {P : ℕ} (group : Fin D.vertices.length → Fin 64) (packet : Fin D.nu
   else none
 
 /-- **A parent port of a retained vertex is a child edge**, numbered by `childEdgeOf`. -/
-theorem retainedPort_spec (v : {v // group v = g}) {j : ℕ} (hj : j ∈ (D.vertices[(v.1 : ℕ)]'v.1.2).1) :
+theorem retainedPort_spec (v : {v // group v = g}) {j : ℕ}
+    (hj : j ∈ (D.vertices[(v.1 : ℕ)]'v.1.2).1) :
     ∃ c, retainedPort hD group g v j = some c ∧
       (childEdgeEquiv (D.srcFin hD) (D.tgtFin hD) group g c : ℕ) =
         childEdgeOf r (List.ofFn fun v => (group v : ℕ)) g
@@ -745,7 +748,9 @@ theorem mem_filterMap_retainedPort (x : {v // group v = g})
     constructor
     · rintro ⟨j, hj, hc⟩
       simp only [retainedPort] at hc
-      split_ifs at hc with hjm hxr hg hg <;> simp at hc
+      split_ifs at hc with hjm hxr hg hg <;>
+        simp only [Option.some.injEq, Sum.inl.injEq, reduceCtorEq,
+          Subtype.mk.injEq] at hc
       subst hc
       rcases (DescribedNetwork.mem_ports_iff hD x.1 ⟨j, hjm⟩).mp hj with h | h
       · exact h
@@ -761,7 +766,9 @@ theorem mem_filterMap_retainedPort (x : {v // group v = g})
     constructor
     · rintro ⟨j, hj, hc⟩
       simp only [retainedPort] at hc
-      split_ifs at hc with hjm hxr hg hg <;> simp at hc
+      split_ifs at hc with hjm hxr hg hg <;>
+        simp only [Option.some.injEq, Sum.inr.injEq, reduceCtorEq,
+          Subtype.mk.injEq] at hc
       subst hc
       rcases (DescribedNetwork.mem_ports_iff hD x.1 ⟨j, hjm⟩).mp hj with h | h
       · have := hsrcr ⟨j, hjm⟩
@@ -779,11 +786,10 @@ theorem val_of_retainedPort_eq_some {x : {v // group v = g}} {j : ℕ}
     {c : ChildEdge (D.srcFin hD) (D.tgtFin hD) group g} (h : retainedPort hD group g x j = some c) :
     (Sum.elim (fun e => (e.1 : ℕ)) (fun e => (e.1 : ℕ)) c) = j := by
   simp only [retainedPort] at h
-  split_ifs at h <;> simp at h <;> subst h <;> rfl
+  split_ifs at h <;> simp only [Option.some.injEq] at h <;> subst h <;> rfl
 
 include hD in
 /-- The ports of a vertex of a rows-first network are distinct. -/
-
 theorem nodup_ports (v : Fin D.vertices.length) : (D.vertices[v]).1.Nodup := by
   refine List.nodup_iff_count_le_one.mpr fun j => ?_
   by_cases hj : j ∈ (D.vertices[v]).1
@@ -873,7 +879,8 @@ theorem isRowsFirstBipartite_nativeChild (pt : ℕ) (t : ℤ) (ζ β : List ℕ)
       Fin _) : ℕ) < (members fun v =>
         packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩ v = g).length ↔
       ¬ ((childVertexEquiv (P := (parentPacking hD a).numPackets) _ g (N.tgt e) : Fin _) : ℕ) <
-        (members fun v => packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩ v = g).length := by
+        (members fun v =>
+          packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩ v = g).length := by
     rintro (e | e) <;> simp only [N, childSrc, childTgt, childVertexEquiv, Sum.elim_inl,
       Sum.elim_inr, Equiv.trans_apply, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply,
       finSumFinEquiv_apply_left, finSumFinEquiv_apply_right, Fin.val_castAdd, Fin.val_natAdd,
@@ -910,11 +917,13 @@ local notation "ptₜ" => nodePrecision p h a (Fintype.card (Fin D.numEdges)) (p
 /-- The mode splitting at the node. -/
 local notation "S₀" => parentSplitting hirr hD a p u h hua ht hq ζ
 /-- The mode tuple of `β`. -/
-local notation "β₀" => BudgetTuples.ofList (modeList (PacketPacking.Packing.numPackets (parentPacking hD a))
+local notation "β₀" => BudgetTuples.ofList
+  (modeList (PacketPacking.Packing.numPackets (parentPacking hD a))
   (2 ^ (padicValInt 2 t + 1)) (nodePrecision p h a (Fintype.card (Fin D.numEdges))
     (padicValInt 2 t))) β
 /-- The numbering of the child vertices. -/
-local notation "ev₀" => childVertexEquiv (P := PacketPacking.Packing.numPackets (parentPacking hD a))
+local notation "ev₀" =>
+  childVertexEquiv (P := PacketPacking.Packing.numPackets (parentPacking hD a))
   (TensorNetwork.ModeSplitting.group (parentSplitting hirr hD a p u h hua ht hq ζ)) g
 /-- The numbering of the child edges. -/
 local notation "ee₀" => childEdgeEquiv (D.srcFin hD) (D.tgtFin hD)
@@ -928,7 +937,8 @@ theorem entry_numbered_inl (v : {v // (S₀).group v = g})
           fl a iₜ ptₜ t ζ β (.inl v)).entry
           ((numberedPorts hD (S₀).group (S₀).packet g (.inl v)).map y))) =
       ((S₀).child β₀ g).tensor (.inl v) y := by
-  rw [TensorNetwork.ModeSplitting.child_tensor_inl_eq_tensor (S₀) β₀ g v y, TensorNetwork.map_tensor,
+  rw [TensorNetwork.ModeSplitting.child_tensor_inl_eq_tensor (S₀) β₀ g v y,
+    TensorNetwork.map_tensor,
     ← mk_liftO, parentSplitting_side hirr hD hua ht hq ζ]
   simp only [numberedDesc, numberedPorts, Sum.elim_inl, parentNetwork,
     DescribedNetwork.toNetwork, DescribedNetwork.wordBits]
@@ -989,7 +999,8 @@ theorem contraction_nativeChild :
           (d.entry bs))) =
     ((parentSplitting hirr hD a p u h hua ht hq ζ).child
       (BudgetTuples.ofList (modeList (parentPacking hD a).numPackets (2 ^ (padicValInt 2 t + 1))
-        (nodePrecision p h a (Fintype.card (Fin D.numEdges)) (padicValInt 2 t))) β) g).contraction := by
+        (nodePrecision p h a (Fintype.card (Fin D.numEdges)) (padicValInt 2 t))) β)
+      g).contraction := by
   have hia : iₜ < a := padicValInt_lt_of_taperMult_pos hq hua
   have hgroups : groupsOf r iₜ D.vertices.length (nativeParentPacking r a D).1 =
       List.ofFn fun v => ((S₀).group v : ℕ) := by

@@ -179,7 +179,8 @@ theorem isRowsFirstBipartite_explicit (d : ExplicitTensorNetwork ℕ) (r : ℕ) 
 
 /-- Being rows-first depends only on the ports, not on the descriptors. -/
 theorem isRowsFirstBipartite_map {T' : Type} (f : T → T') (r : ℕ) :
-    (⟨D.numEdges, D.vertices.map fun v => (v.1, f v.2)⟩ : DescribedNetwork T').IsRowsFirstBipartite r ↔
+    (⟨D.numEdges, D.vertices.map fun v => (v.1, f v.2)⟩ :
+      DescribedNetwork T').IsRowsFirstBipartite r ↔
       D.IsRowsFirstBipartite r := by
   simp only [IsRowsFirstBipartite, List.forall_mem_map, ← List.map_take, ← List.map_drop,
     List.map_map, Function.comp_def]
@@ -300,7 +301,8 @@ descriptor and the bits on its ports. -/
     have hv : (v : ℕ) ∈ D.incident i := by
       simp only [incident, List.mem_filter, List.mem_range, decide_eq_true_eq]
       exact ⟨v.2, by rw [getD_map_fst _ v.2]; exact hi⟩
-    rw [List.getD_eq_getElem _ _ (by simpa using hi'), List.getD_eq_getElem _ _ (by simpa using hi'),
+    rw [List.getD_eq_getElem _ _ (by simpa using hi'),
+      List.getD_eq_getElem _ _ (by simpa using hi'),
       List.getElem_ofFn, List.getElem_ofFn]
     refine hxy ⟨i, hi'⟩ ?_
     rw [hinc] at hv
