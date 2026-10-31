@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.FineGrained.CountingNativeModelCount
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.PolyTime.CSP.ToCNF
+public import Complexity.Computability.PolyTime.CSP.Vars
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -76,23 +77,6 @@ namespace CSP
 variable {Rel V : Type}
 
 open Cslib.Logic.PL.CSP ComputableInPolyTime
-
-/-- Extracting the variable-occurrence list `CSP.vars` is computable in polynomial time. -/
-@[fun_prop]
-theorem computableInPolyTime_vars (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
-    ComputableInPolyTime (CSP.vars (Rel := Rel) (V := V))
-      (encCSP encRel encV) (encList encV) := by
-  unfold CSP.vars
-  fun_prop
-
-/-- Constructing the auxiliary positive-clause CNF `CSP.varCNF` is computable in polynomial
-time. -/
-@[fun_prop]
-theorem computableInPolyTime_varCNF (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
-    ComputableInPolyTime (CSP.varCNF (Rel := Rel) (V := V))
-      (encCSP encRel encV) (encList (encList (encPair encV encBool))) := by
-  unfold CSP.varCNF
-  fun_prop
 
 /-- Listing the distinct occurring variables `CSP.distinctVars` in order of first occurrence is
 computable in polynomial time. -/

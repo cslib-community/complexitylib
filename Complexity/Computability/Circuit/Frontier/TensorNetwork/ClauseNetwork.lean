@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Logics.Propositional.CNF.ModelCount
+import Complexity.Foundations.Data.List.Boole
 import Mathlib.Data.List.GetD
 
 /-!
@@ -31,10 +32,15 @@ Number the literal occurrences of a formula `φ` with `m` clauses `0, …, N - 1
   (`ClauseNetwork.eqEntry`).
 
 So the occurrences of a variable form a chain of equality vertices, subdivided by the link
-vertices, and every edge joins a row to a column. An assignment of the edges has weight one
-exactly when the three edges of every occurrence carry the value of its variable and every clause
-has a true literal, so the contraction is the model count
-(`ClauseNetwork.contraction_clauseNetwork`).
+vertices, and every edge joins a row to a column. The links and equality vertices force the three
+edges of every occurrence to carry the value of its variable, so for any row tables the
+contraction is the sum, over the assignments of the variables, of the product of the row entries
+at the words the assignment puts on the rows (`ClauseNetwork.contraction_network`); the ports of
+a row carry the literals of its clause in order (`ClauseNetwork.map_clausePorts_occurrences`).
+With the clause tables (`ClauseNetwork.clauseRow`), a row entry is one exactly when the clause has
+a true literal, so the contraction is the model count (`ClauseNetwork.contraction_clauseNetwork`).
+Weighted tables give the constraint network of a weighted CSP
+(`Cslib.Circuits.Frontier.ClauseNetwork.cspNetwork`).
 This is the network of Appendix D.2 with equality chains in place of equality trees: its
 equality vertices have degree at most four (`ClauseNetwork.length_qPorts_le`), which is all that
 Theorem D.1 needs, and the subdivision is built in. It does not merge repeated variables of a
@@ -49,7 +55,10 @@ network of width `k` formulas, `B = max k 4` (`ClauseNetwork.clauseNetwork`).
 * `Cslib.Circuits.Frontier.ClauseNetwork.prev`: the previous occurrence of the same variable.
 * `Cslib.Circuits.Frontier.ClauseNetwork.clausePorts`,
   `Cslib.Circuits.Frontier.ClauseNetwork.qPorts`: the ports of the clause and equality vertices.
-* `Cslib.Circuits.Frontier.ClauseNetwork.network`: the network of an occurrence list.
+* `Cslib.Circuits.Frontier.ClauseNetwork.rowVertex`,
+  `Cslib.Circuits.Frontier.ClauseNetwork.network`: the row vertices and the network of an
+  occurrence list, for any row tables.
+* `Cslib.Circuits.Frontier.ClauseNetwork.clauseRow`: the clause tables.
 * `Cslib.Circuits.Frontier.ClauseNetwork.clauseNetwork`: the clause network of a formula, with
   its number of rows.
 
@@ -57,8 +66,12 @@ network of width `k` formulas, `B = max k 4` (`ClauseNetwork.clauseNetwork`).
 
 * `Cslib.Circuits.Frontier.ClauseNetwork.count_map_fst_occurrences`: a clause has as many
   occurrences as literals.
-* `Cslib.Circuits.Frontier.ClauseNetwork.contraction_clauseNetwork`: the contraction is the model
-  count.
+* `Cslib.Circuits.Frontier.ClauseNetwork.map_clausePorts_occurrences`: the ports of a clause carry
+  its literals in order.
+* `Cslib.Circuits.Frontier.ClauseNetwork.contraction_network`: the contraction of the network with
+  any row tables is a weighted sum over the assignments of the variables.
+* `Cslib.Circuits.Frontier.ClauseNetwork.contraction_clauseNetwork`: the contraction of the clause
+  network is the model count.
 * `Cslib.Circuits.Frontier.ClauseNetwork.isRowsFirstBipartite_clauseNetwork`: the bipartition.
 * `Cslib.Circuits.Frontier.ClauseNetwork.maxDegree_clauseNetwork_le`: degree at most `max k 4`.
 * `Cslib.Circuits.Frontier.ClauseNetwork.numEdges_clauseNetwork`,
@@ -120,6 +133,9 @@ end. -/
 /-- The polarity of occurrence `u`. -/
 @[expose] def pol (u : ℕ) : Bool := let (_, _, (_, b)) := occ os u; b
 
+/-- The literal of occurrence `u`. -/
+@[expose] def lit (u : ℕ) : Literal ℕ := let (_, _, l) := occ os u; l
+
 /-- The clause of occurrence `u`. -/
 @[expose] def clauseOf (u : ℕ) : ℕ := (occ os u).1
 
@@ -153,10 +169,13 @@ occurrences `u` whose previous occurrence is `w`. -/
 /-- The falsifying word of a clause vertex with the ports `ps`, as a number. -/
 @[expose] def falsifier (ps : List ℕ) : ℕ := BitString.lsbValue (ps.map fun j => !pol os (j / 3))
 
-/-- The clause vertex `i`. -/
-@[expose] def clauseVertex (B i : ℕ) : List ℕ × List ℕ :=
-  (clausePorts os i,
-    boundedTable B (clausePorts os i).length (clauseEntry (falsifier os (clausePorts os i))))
+/-- The row vertex `i` with the row tables `row`: its ports are those of clause `i`, and its entry
+at a word of value `idx` is `row i idx`. -/
+@[expose] def rowVertex (B : ℕ) (row : ℕ → ℕ → ℕ) (i : ℕ) : List ℕ × List ℕ :=
+  (clausePorts os i, boundedTable B (clausePorts os i).length (row i))
+
+/-- The clause tables: the table of clause `i` is zero exactly at its falsifying word. -/
+@[expose] def clauseRow (i : ℕ) : ℕ → ℕ := clauseEntry (falsifier os (clausePorts os i))
 
 /-- The link vertex of occurrence `u`. -/
 @[expose] def linkVertex (u : ℕ) : List ℕ × List ℕ := ([3 * u + 1, 3 * u + 2], [1, 0, 0, 1])
@@ -165,16 +184,17 @@ occurrences `u` whose previous occurrence is `w`. -/
 @[expose] def qVertex (B w : ℕ) : List ℕ × List ℕ :=
   (qPorts os w, boundedTable B (qPorts os w).length (eqEntry (qPorts os w).length))
 
-/-- **The network of an occurrence list** with `m` clauses and degree bound `B`, with its number
-of rows `m + N`: the clause vertices, the link vertices, and then the equality vertices. -/
-@[expose] def network (B m : ℕ) : ℕ × ExplicitTensorNetwork ℕ :=
+/-- **The network of an occurrence list** with `m` row vertices, row tables `row` and degree bound
+`B`, with its number of rows `m + N`: the row vertices, the link vertices, and then the equality
+vertices. -/
+@[expose] def network (B m : ℕ) (row : ℕ → ℕ → ℕ) : ℕ × ExplicitTensorNetwork ℕ :=
   (m + os.length, ⟨3 * os.length,
-    (List.range m).map (clauseVertex os B) ++ (List.range os.length).map linkVertex ++
+    (List.range m).map (rowVertex os B row) ++ (List.range os.length).map linkVertex ++
       (List.range os.length).map (qVertex os B)⟩)
 
 /-- **The clause network** of a formula, for clause width at most `k`. -/
 @[expose] def clauseNetwork (k : ℕ) (φ : CNF ℕ) : ℕ × ExplicitTensorNetwork ℕ :=
-  network (occurrences φ) (max k 4) φ.length
+  network (occurrences φ) (max k 4) φ.length (clauseRow (occurrences φ))
 
 /-! ### The occurrence data -/
 
@@ -347,6 +367,53 @@ theorem length_clausePorts (i : ℕ) :
   rw [List.map_map, List.countP_map]
   congr 1
 
+private theorem filter_flatMap_zipIdx (φ : CNF ℕ) (s i : ℕ) :
+    ((((φ.zipIdx s).flatMap fun c => c.1.zipIdx.map fun l => (c.2, l.2, l.1)).filter
+        fun o => decide (o.1 = i)).map fun o => o.2.2) =
+      if s ≤ i then φ.getD (i - s) [] else [] := by
+  induction φ generalizing s with
+  | nil => simp
+  | cons c φ ih =>
+    rw [List.zipIdx_cons, List.flatMap_cons, List.filter_append, List.map_append, ih]
+    have hc : ((c.zipIdx.map fun l => (s, l.2, l.1)).filter fun o => decide (o.1 = i)).map
+        (fun o => o.2.2) = if s = i then c else [] := by
+      by_cases hsi : s = i
+      · subst hsi
+        rw [List.filter_eq_self.mpr fun o ho => ?_, List.map_map]
+        · simp [Function.comp_def]
+        · obtain ⟨l, -, rfl⟩ := List.mem_map.mp ho
+          simp
+      · rw [List.filter_eq_nil_iff.mpr fun o ho => ?_]
+        · simp [hsi]
+        · obtain ⟨l, -, rfl⟩ := List.mem_map.mp ho
+          simp [hsi]
+    rw [hc]
+    rcases lt_trichotomy i s with h | rfl | h
+    · simp [show ¬ s = i by omega, show ¬ s + 1 ≤ i by omega, show ¬ s ≤ i by omega]
+    · simp
+    · have he : i - s = (i - (s + 1)) + 1 := by omega
+      simp [show ¬ s = i by omega, show s + 1 ≤ i by omega, show s ≤ i by omega, he]
+
+/-- **The ports of a clause carry its literals in order**: reading the literal of the occurrence
+of each port of clause `i` gives back the clause. -/
+theorem map_clausePorts_occurrences (φ : CNF ℕ) (i : ℕ) :
+    (clausePorts (occurrences φ) i).map (fun j => lit (occurrences φ) (j / 3)) =
+      φ.getD i [] := by
+  have h := filter_flatMap_zipIdx φ 0 i
+  simp only [Nat.zero_le, ↓reduceIte, Nat.sub_zero] at h
+  change (((occurrences φ).filter fun o => decide (o.1 = i)).map fun o => o.2.2) = _ at h
+  rw [← h, clausePorts, List.map_map]
+  have hf : ((fun j => lit (occurrences φ) (j / 3)) ∘ fun u => 3 * u) =
+      fun u => (occ (occurrences φ) u).2.2 := by
+    funext u
+    change lit (occurrences φ) (3 * u / 3) = _
+    rw [show 3 * u / 3 = u by omega]
+    rfl
+  rw [hf]
+  conv_rhs => rw [← map_occ_range (occurrences φ)]
+  rw [List.filter_map, List.map_map]
+  rfl
+
 /-- An equality vertex has at most four ports. -/
 theorem length_qPorts_le (w : ℕ) : (qPorts os w).length ≤ 4 := by
   classical
@@ -378,16 +445,19 @@ theorem length_qPorts_le (w : ℕ) : (qPorts os w).length ≤ 4 := by
 
 variable (os)
 
-@[simp] theorem fst_network (B m : ℕ) : (network os B m).1 = m + os.length := rfl
+variable (row : ℕ → ℕ → ℕ)
 
-@[simp] theorem numEdges_network (B m : ℕ) : (network os B m).2.numEdges = 3 * os.length := rfl
+@[simp] theorem fst_network (B m : ℕ) : (network os B m row).1 = m + os.length := rfl
 
-theorem vertices_network (B m : ℕ) : (network os B m).2.vertices =
-    (List.range m).map (clauseVertex os B) ++ (List.range os.length).map linkVertex ++
+@[simp] theorem numEdges_network (B m : ℕ) : (network os B m row).2.numEdges = 3 * os.length :=
+  rfl
+
+theorem vertices_network (B m : ℕ) : (network os B m row).2.vertices =
+    (List.range m).map (rowVertex os B row) ++ (List.range os.length).map linkVertex ++
       (List.range os.length).map (qVertex os B) := rfl
 
 @[simp] theorem length_vertices_network (B m : ℕ) :
-    (network os B m).2.vertices.length = m + 2 * os.length := by
+    (network os B m row).2.vertices.length = m + 2 * os.length := by
   simp only [vertices_network, List.length_append, List.length_map, List.length_range]
   omega
 
@@ -469,7 +539,7 @@ private theorem count_qPorts (w j : ℕ) :
 /-- **The network is rows-first bipartite** when every occurrence names one of the `m`
 clauses. -/
 theorem isRowsFirstBipartite_network (B m : ℕ) (hcl : ∀ o ∈ os, o.1 < m) :
-    (network os B m).2.IsRowsFirstBipartite (network os B m).1 := by
+    (network os B m row).2.IsRowsFirstBipartite (network os B m row).1 := by
   have hcl' : ∀ u < os.length, clauseOf os u < m := fun u hu => hcl _ (occ_mem os hu)
   refine ⟨?_, fun j hj => ⟨?_, ?_⟩⟩
   · intro v hv i hi
@@ -486,7 +556,7 @@ theorem isRowsFirstBipartite_network (B m : ℕ) (hcl : ∀ o ∈ os, o.1 < m) :
   · simp only [numEdges_network] at hj
     rw [fst_network, vertices_network, List.take_left' (by simp), List.map_append,
       List.sum_append, List.map_map, List.map_map]
-    simp only [Function.comp_def, clauseVertex, count_clausePorts, count_link]
+    simp only [Function.comp_def, rowVertex, count_clausePorts, count_link]
     rw [sum_range_ite, sum_range_ite]
     by_cases h0 : j % 3 = 0
     · simp [h0, hcl' (j / 3) (by omega), show j / 3 < os.length by omega]
@@ -507,21 +577,21 @@ theorem isRowsFirstBipartite_network (B m : ℕ) (hcl : ∀ o ∈ os, o.1 < m) :
 /-- **The degree bound**: if every clause has at most `B` occurrences, every vertex has at most
 `max B 4` ports. -/
 theorem maxDegree_network_le (B m : ℕ) (hB : ∀ i, (os.map Prod.fst).count i ≤ B) :
-    (network os (max B 4) m).2.maxDegree ≤ max B 4 := by
+    (network os (max B 4) m row).2.maxDegree ≤ max B 4 := by
   refine (ExplicitTensorNetwork.maxDegree_le_iff _).mpr fun v hv => ?_
   simp only [vertices_network, List.mem_append, List.mem_map, List.mem_range] at hv
   rcases hv with (⟨i, -, rfl⟩ | ⟨u, -, rfl⟩) | ⟨w, -, rfl⟩
-  · simp only [clauseVertex, length_clausePorts]
+  · simp only [rowVertex, length_clausePorts]
     exact (hB i).trans (le_max_left _ _)
   · simp [linkVertex]
   · exact (length_qPorts_le w).trans (le_max_right _ _)
 
 /-- **Full tables**: under the degree bound, every table lists `2 ^ (number of ports)` values. -/
 theorem length_table_network (B m : ℕ) (hB : ∀ i, (os.map Prod.fst).count i ≤ B) :
-    ∀ v ∈ (network os (max B 4) m).2.vertices, v.2.length = 2 ^ v.1.length := by
+    ∀ v ∈ (network os (max B 4) m row).2.vertices, v.2.length = 2 ^ v.1.length := by
   intro v hv
-  have hdeg := (network os (max B 4) m).2.length_le_maxDegree hv
-  have hmax := maxDegree_network_le os B m hB
+  have hdeg := (network os (max B 4) m row).2.length_le_maxDegree hv
+  have hmax := maxDegree_network_le os row B m hB
   simp only [vertices_network, List.mem_append, List.mem_map, List.mem_range] at hv
   rcases hv with (⟨i, -, rfl⟩ | ⟨u, -, rfl⟩) | ⟨w, -, rfl⟩
   · exact length_boundedTable _ (hdeg.trans hmax)
@@ -530,39 +600,31 @@ theorem length_table_network (B m : ℕ) (hB : ∀ i, (os.map Prod.fst).count i 
 
 /-! ### The contraction -/
 
-private theorem prod_map_boole {α : Type*} (l : List α) (p : α → Prop) [DecidablePred p] :
-    (l.map fun a => if p a then (1 : ℕ) else 0).prod = if ∀ a ∈ l, p a then 1 else 0 := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.map_cons, List.prod_cons, ih]
-    by_cases ha : p a <;> simp [ha]
-
 /-- The bits on the edges, read as a function of the edge numbers. -/
 private def bitAt {E : ℕ} (x : Fin E → Bool) (j : ℕ) : Bool := if h : j < E then x ⟨j, h⟩ else false
 
-/-- The weight conditions of an assignment: every clause has an edge differing from its falsifying
-word, every link vertex sees equal bits, and every equality vertex sees equal bits. -/
-private def Good (m : ℕ) (X : ℕ → Bool) : Prop :=
-  (∀ i < m, ¬ ∀ j ∈ clausePorts os i, X j = !pol os (j / 3)) ∧
-    (∀ u < os.length, X (3 * u + 1) = X (3 * u + 2)) ∧
+private theorem bitAt_eq {E : ℕ} (x : Fin E → Bool) {j : ℕ} (hj : j < E) :
+    bitAt x j = x ⟨j, hj⟩ := by
+  simp [bitAt, hj]
+
+/-- The consistency conditions of an assignment: every link vertex and every equality vertex sees
+equal bits. -/
+private def Consistent (X : ℕ → Bool) : Prop :=
+  (∀ u < os.length, X (3 * u + 1) = X (3 * u + 2)) ∧
     ∀ w < os.length, ∀ a ∈ qPorts os w, ∀ b ∈ qPorts os w, X a = X b
 
-private instance (m : ℕ) (X : ℕ → Bool) : Decidable (Good os m X) := by
-  unfold Good
+private instance (X : ℕ → Bool) : Decidable (Consistent os X) := by
+  unfold Consistent
   infer_instance
 
-/-- The entry of a clause vertex: one exactly when some port differs from the falsifying word. -/
-private theorem entry_clauseVertex {B i : ℕ} (X : ℕ → Bool) (h : (clausePorts os i).length ≤ B) :
-    ExplicitTensorNetwork.entry (clauseVertex os B i).2 ((clauseVertex os B i).1.map X) =
-      if ¬ ∀ j ∈ clausePorts os i, X j = !pol os (j / 3) then 1 else 0 := by
-  simp only [clauseVertex]
+/-- The entry of a row vertex: its table at the value of the word on its ports. -/
+private theorem entry_rowVertex {B i : ℕ} (row : ℕ → ℕ → ℕ) (X : ℕ → Bool)
+    (h : (clausePorts os i).length ≤ B) :
+    ExplicitTensorNetwork.entry (rowVertex os B row i).2 ((rowVertex os B row i).1.map X) =
+      row i (BitString.lsbValue ((clausePorts os i).map X)) := by
+  simp only [rowVertex]
   rw [show (clausePorts os i).length = ((clausePorts os i).map X).length by simp,
-    entry_boundedTable _ (by simpa using h), falsifier, clauseEntry_lsbValue (by simp)]
-  simp only [List.map_inj_left]
-  by_cases hc : ∀ j ∈ clausePorts os i, X j = !pol os (j / 3)
-  · simp only [eq_true hc, not_true_eq_false, ite_true, ite_false]
-  · simp only [eq_false hc, not_false_eq_true, ite_true, ite_false]
+    entry_boundedTable _ (by simpa using h)]
 
 private theorem entry_linkVertex (u : ℕ) (X : ℕ → Bool) :
     ExplicitTensorNetwork.entry (linkVertex u).2 ((linkVertex u).1.map X) =
@@ -579,21 +641,24 @@ private theorem entry_qVertex {B w : ℕ} (X : ℕ → Bool) (h : (qPorts os w).
     entry_boundedTable _ (by simpa using h), eqEntry_lsbValue]
   simp
 
-/-- The contraction counts the assignments satisfying the weight conditions. -/
-private theorem contraction_network_eq (B m : ℕ) (hB : ∀ i, (os.map Prod.fst).count i ≤ B) :
-    (network os (max B 4) m).2.contraction =
-      (Finset.univ.filter fun x : Fin (3 * os.length) → Bool => Good os m (bitAt x)).card := by
-  rw [ExplicitTensorNetwork.contraction, ← Nat.cast_id (Finset.card _), ← Finset.sum_boole]
+/-- The contraction sums the products of the row entries over the consistent assignments. -/
+private theorem contraction_network_eq (B m : ℕ) (row : ℕ → ℕ → ℕ)
+    (hB : ∀ i, (os.map Prod.fst).count i ≤ B) :
+    (network os (max B 4) m row).2.contraction =
+      ∑ x : Fin (3 * os.length) → Bool, if Consistent os (bitAt x) then
+        ((List.range m).map fun i => row i (BitString.lsbValue
+          ((clausePorts os i).map (bitAt x)))).prod else 0 := by
+  rw [ExplicitTensorNetwork.contraction]
   refine Finset.sum_congr rfl fun x _ => ?_
-  have hpb : ∀ ps : List ℕ, (network os (max B 4) m).2.portBits x ps = ps.map (bitAt x) :=
+  have hpb : ∀ ps : List ℕ, (network os (max B 4) m row).2.portBits x ps = ps.map (bitAt x) :=
     fun _ => rfl
   simp only [hpb]
   rw [vertices_network, List.map_append, List.map_append, List.prod_append, List.prod_append,
     List.map_map, List.map_map, List.map_map]
   have h1 : (List.range m).map ((fun v => ExplicitTensorNetwork.entry v.2 (v.1.map (bitAt x))) ∘
-      clauseVertex os (max B 4)) = (List.range m).map fun i =>
-        if ¬ ∀ j ∈ clausePorts os i, bitAt x j = !pol os (j / 3) then 1 else 0 :=
-    List.map_congr_left fun i _ => entry_clauseVertex os (bitAt x)
+      rowVertex os (max B 4) row) = (List.range m).map fun i =>
+        row i (BitString.lsbValue ((clausePorts os i).map (bitAt x))) :=
+    List.map_congr_left fun i _ => entry_rowVertex os row (bitAt x)
       ((length_clausePorts i).trans_le ((hB i).trans (le_max_left _ _)))
   have h2 : (List.range os.length).map ((fun v => ExplicitTensorNetwork.entry v.2
       (v.1.map (bitAt x))) ∘ linkVertex) = (List.range os.length).map fun u =>
@@ -604,25 +669,39 @@ private theorem contraction_network_eq (B m : ℕ) (hB : ∀ i, (os.map Prod.fst
         if ∀ a ∈ qPorts os w, ∀ b ∈ qPorts os w, bitAt x a = bitAt x b then 1 else 0 :=
     List.map_congr_left fun w _ => entry_qVertex os (bitAt x)
       ((length_qPorts_le w).trans (le_max_right _ _))
-  rw [h1, h2, h3, prod_map_boole, prod_map_boole, prod_map_boole]
+  rw [h1, h2, h3, List.prod_map_boole, List.prod_map_boole]
   clear h1 h2 h3 hpb
-  simp only [List.mem_range, Good]
-  split_ifs <;> first | rfl | (exfalso; tauto)
+  simp only [List.mem_range, Consistent]
+  by_cases hl : ∀ u < os.length, bitAt x (3 * u + 1) = bitAt x (3 * u + 2) <;>
+    by_cases hq : ∀ w < os.length, ∀ a ∈ qPorts os w, ∀ b ∈ qPorts os w, bitAt x a = bitAt x b
+  · simp only [eq_true hl, eq_true hq, ↓reduceIte, Nat.mul_one]
+    split_ifs with hc
+    · rfl
+    · exact absurd ⟨hl, hq⟩ hc
+  · simp only [eq_false hq, ↓reduceIte, Nat.mul_zero]
+    split_ifs with hc
+    · exact absurd hc.2 hq
+    · rfl
+  all_goals
+    simp only [eq_false hl, ↓reduceIte, Nat.mul_zero, Nat.zero_mul]
+    split_ifs with hc
+    · exact absurd hc.1 hl
+    · rfl
 
-/-- Under the weight conditions, the three edges of an occurrence carry equal bits, equal to the
-bit on the clause edge of the previous occurrence. -/
-private theorem consistent_of_good {m : ℕ} {X : ℕ → Bool} (h : Good os m X) {u : ℕ}
+/-- Under the consistency conditions, the three edges of an occurrence carry equal bits, equal to
+the bit on the row edge of the previous occurrence. -/
+private theorem consistent_edges {X : ℕ → Bool} (h : Consistent os X) {u : ℕ}
     (hu : u < os.length) :
     X (3 * u) = X (3 * u + 1) ∧ X (3 * u + 1) = X (3 * u + 2) ∧
       X (3 * u + 2) = X (3 * prev os u) := by
-  obtain ⟨-, hlink, hq⟩ := h
+  obtain ⟨hlink, hq⟩ := h
   refine ⟨hq u hu _ (by simp [qPorts]) _ (by simp [qPorts]), hlink u hu, ?_⟩
   exact hq (prev os u) ((prev_le os u).trans_lt hu) _
     (mem_qPorts.mpr (Or.inr (Or.inr ⟨u, hu, rfl, rfl⟩))) _ (mem_qPorts.mpr (Or.inl rfl))
 
-/-- Under the weight conditions, occurrences of the same variable carry equal bits on their
-clause edges. -/
-private theorem eq_of_var_eq {m : ℕ} {X : ℕ → Bool} (h : Good os m X) {u w : ℕ}
+/-- Under the consistency conditions, occurrences of the same variable carry equal bits on their
+row edges. -/
+private theorem eq_of_var_eq {X : ℕ → Bool} (h : Consistent os X) {u w : ℕ}
     (hu : u < os.length) (hw : w < os.length) (huw : var os u = var os w) :
     X (3 * u) = X (3 * w) := by
   have key : ∀ w, w < os.length → ∀ u ≤ w, var os u = var os w → X (3 * u) = X (3 * w) := by
@@ -636,30 +715,108 @@ private theorem eq_of_var_eq {m : ℕ} {X : ℕ → Bool} (h : Good os m X) {u w
       · have hup : u ≤ prev os w := by
           by_contra hc
           exact hbetween u (by omega) hlt hv
-        obtain ⟨h1, h2, h3⟩ := consistent_of_good os h hw
+        obtain ⟨h1, h2, h3⟩ := consistent_edges os h hw
         rw [ih (prev os w) hp (by omega) u hup (by rw [hv, hpv]), h1, h2, h3]
       · exact (hfirst u hlt hv).elim
   rcases le_total u w with h' | h'
   · exact key w hw u h' huw
   · exact (key u hu w h' huw.symm).symm
 
-private theorem bitAt_eq {E : ℕ} (x : Fin E → Bool) {j : ℕ} (hj : j < E) :
-    bitAt x j = x ⟨j, hj⟩ := by
-  simp [bitAt, hj]
+private theorem var_mem {u : ℕ} (hu : u < os.length) : var os u ∈ os.map fun (_, _, (v, _)) => v :=
+  List.mem_map.mpr ⟨_, occ_mem os hu, rfl⟩
 
-variable {φ : CNF ℕ}
-
-private theorem var_mem_vars {u : ℕ} (hu : u < (occurrences φ).length) :
-    var (occurrences φ) u ∈ φ.vars := by
-  rw [← map_occurrences]
-  exact List.mem_map.mpr ⟨_, occ_mem _ hu, rfl⟩
-
-private theorem exists_var_eq {v : ℕ} (hv : v ∈ φ.vars) :
-    ∃ u < (occurrences φ).length, var (occurrences φ) u = v := by
-  rw [← map_occurrences] at hv
+private theorem exists_var_eq {v : ℕ} (hv : v ∈ os.map fun (_, _, (y, _)) => y) :
+    ∃ u < os.length, var os u = v := by
   obtain ⟨o, ho, rfl⟩ := List.mem_map.mp hv
   obtain ⟨u, hu, rfl⟩ := List.mem_iff_getElem.mp ho
   exact ⟨u, hu, by simp [var, occ_eq_getElem _ hu]⟩
+
+/-- The assignment of the edges induced by an assignment of the variables: the three edges of an
+occurrence carry the value of its variable. -/
+private def edgeAssignment (σ : ℕ → Bool) : Fin (3 * os.length) → Bool :=
+  fun j => σ (var os (j.val / 3))
+
+/-- **The consistent assignments are the induced ones.** -/
+private theorem consistent_iff (x : Fin (3 * os.length) → Bool) :
+    Consistent os (bitAt x) ↔ ∃ σ : ℕ → Bool, edgeAssignment os σ = x := by
+  constructor
+  · intro h
+    have hrep : ∀ u < os.length,
+        bitAt x (3 * (os.map fun (_, _, (y, _)) => y).idxOf (var os u)) = bitAt x (3 * u) := by
+      intro u hu
+      have hm := var_mem os hu
+      have hlt := List.idxOf_lt_length_of_mem hm
+      have h1 := List.getElem_idxOf hlt
+      rw [List.length_map] at hlt
+      refine eq_of_var_eq os h hlt hu ?_
+      rw [List.getElem_map] at h1
+      rw [var, occ_eq_getElem os hlt]
+      exact h1
+    refine ⟨fun v => bitAt x (3 * (os.map fun (_, _, (y, _)) => y).idxOf v), ?_⟩
+    funext j
+    have hj := j.isLt
+    have hu : j.val / 3 < os.length := by omega
+    change bitAt x (3 * (os.map fun (_, _, (y, _)) => y).idxOf (var os (j.val / 3))) = x j
+    rw [hrep _ hu, ← bitAt_eq x hj]
+    obtain ⟨h1, h2, -⟩ := consistent_edges os h hu
+    have hcases : j.val = 3 * (j.val / 3) ∨ j.val = 3 * (j.val / 3) + 1 ∨
+        j.val = 3 * (j.val / 3) + 2 := by omega
+    rcases hcases with h' | h' | h'
+    · rw [← h']
+    · rw [h1, ← h']
+    · rw [h1, h2, ← h']
+  · rintro ⟨σ, rfl⟩
+    have hX : ∀ j < 3 * os.length, bitAt (edgeAssignment os σ) j = σ (var os (j / 3)) :=
+      fun j hj => bitAt_eq _ hj
+    refine ⟨fun u hu => ?_, fun w hw a ha b hb => ?_⟩
+    · rw [hX _ (by omega), hX _ (by omega), show (3 * u + 1) / 3 = u by omega,
+        show (3 * u + 2) / 3 = u by omega]
+    · have hval : ∀ c ∈ qPorts os w, bitAt (edgeAssignment os σ) c = σ (var os w) := by
+        intro c hc
+        rcases mem_qPorts.mp hc with rfl | rfl | ⟨u, hu, hpu, rfl⟩
+        · rw [hX _ (by omega), show 3 * w / 3 = w by omega]
+        · rw [hX _ (by omega), show (3 * w + 1) / 3 = w by omega]
+        · rw [hX _ (by omega), show (3 * u + 2) / 3 = u by omega, ← hpu, var_prev]
+      rw [hval a ha, hval b hb]
+
+/-- **The contraction of a network is its weighted sum over assignments.** For the set `S` of the
+variables of the occurrences, the contraction is the sum, over the assignments `τ` of `S`, of the
+product of the row entries at the values of the words that `τ` puts on the ports of the rows. -/
+theorem contraction_network (B m : ℕ) (row : ℕ → ℕ → ℕ)
+    (hB : ∀ i, (os.map Prod.fst).count i ≤ B) {S : Finset ℕ}
+    (hS : (os.map fun (_, _, (v, _)) => v).toFinset = S) :
+    (network os (max B 4) m row).2.contraction =
+      ∑ τ : S → Bool, ((List.range m).map fun i => row i (BitString.lsbValue
+        ((clausePorts os i).map fun j =>
+          if h : var os (j / 3) ∈ S then τ ⟨var os (j / 3), h⟩ else false))).prod := by
+  subst hS
+  set S := (os.map fun (_, _, (v, _)) => v).toFinset
+  let ext : (S → Bool) → ℕ → Bool := fun τ v => if h : v ∈ S then τ ⟨v, h⟩ else false
+  have hmemS : ∀ u < os.length, var os u ∈ S := fun u hu => List.mem_toFinset.mpr (var_mem os hu)
+  have hports : ∀ i, ∀ j ∈ clausePorts os i, j < 3 * os.length := by
+    intro i j hj
+    obtain ⟨u, hu, -, rfl⟩ := mem_clausePorts.mp hj
+    omega
+  rw [contraction_network_eq os B m row hB, ← Finset.sum_filter]
+  symm
+  refine Finset.sum_bij (fun τ _ => edgeAssignment os (ext τ)) (fun τ _ => ?_)
+    (fun τ₁ _ τ₂ _ h => ?_) (fun x hx => ?_) (fun τ _ => ?_)
+  · exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (consistent_iff os _).mpr ⟨_, rfl⟩⟩
+  · funext ⟨v, hv⟩
+    obtain ⟨u, hu, rfl⟩ := exists_var_eq os (List.mem_toFinset.mp hv)
+    have := congrFun h ⟨3 * u, by omega⟩
+    simpa [edgeAssignment, ext, show 3 * u / 3 = u by omega, hv] using this
+  · obtain ⟨σ, rfl⟩ := (consistent_iff os x).mp (Finset.mem_filter.mp hx).2
+    refine ⟨fun v => σ v.1, Finset.mem_univ _, funext fun j => ?_⟩
+    simp [edgeAssignment, ext, hmemS _ (show j.val / 3 < os.length by omega)]
+  · congr 1
+    refine List.map_congr_left fun i _ => congrArg (row i) (congrArg _ ?_)
+    refine List.map_congr_left fun j hj => ?_
+    exact (bitAt_eq (edgeAssignment os (ext τ)) (hports i j hj)).symm
+
+/-! ### The contraction of the clause network -/
+
+variable {φ : CNF ℕ}
 
 /-- An occurrence names a clause and one of its literals. -/
 private theorem mem_of_occ {u : ℕ} (hu : u < (occurrences φ).length) :
@@ -678,116 +835,46 @@ private theorem exists_occ {i : ℕ} (hi : i < φ.length) {l : Literal ℕ} (hl 
   exact ⟨u, hu, by simp [clauseOf, occ_eq_getElem _ hu, hou],
     by simp [occ_eq_getElem _ hu, hou]⟩
 
-/-- **The weight conditions describe the satisfying assignments**: an assignment of the edges has
-weight one exactly when it puts on the three edges of every occurrence the value of its variable
-under a satisfying assignment. -/
-private theorem good_iff
-    (hmem₁ : ∀ u < os.length, ∃ h : clauseOf os u < φ.length, (occ os u).2.2 ∈ φ[clauseOf os u])
-    (hmem₂ : ∀ i (hi : i < φ.length), ∀ l ∈ φ[i],
-      ∃ u < os.length, clauseOf os u = i ∧ (occ os u).2.2 = l)
-    (x : Fin (3 * os.length) → Bool) :
-    Good os φ.length (bitAt x) ↔
-      ∃ σ : ℕ → Bool, φ.eval σ = true ∧ (fun j => σ (var os (j.val / 3))) = x := by
-  constructor
-  · intro h
-    have hvs : ∀ u < os.length, (os.map fun o => o.2.2.1).idxOf (var os u) < os.length ∧
-        var os ((os.map fun o => o.2.2.1).idxOf (var os u)) = var os u := by
-      intro u hu
-      have hm : var os u ∈ os.map fun o => o.2.2.1 := List.mem_map.mpr ⟨_, occ_mem os hu, rfl⟩
-      have hlt := List.idxOf_lt_length_of_mem hm
-      have h1 := List.getElem_idxOf hlt
-      rw [List.length_map] at hlt
-      refine ⟨hlt, ?_⟩
-      rw [List.getElem_map] at h1
-      rw [var, occ_eq_getElem os hlt]
-      exact h1
-    have hrep : ∀ u < os.length,
-        bitAt x (3 * (os.map fun o => o.2.2.1).idxOf (var os u)) = bitAt x (3 * u) :=
-      fun u hu => eq_of_var_eq os h (hvs u hu).1 hu (hvs u hu).2
-    refine ⟨fun v => bitAt x (3 * (os.map fun o => o.2.2.1).idxOf v), ?_, ?_⟩
-    · rw [CNF.eval_eq_true_iff]
-      intro c hc
-      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hc
-      have hcl := h.1 i hi
-      simp only [not_forall] at hcl
-      obtain ⟨j, hj, hne⟩ := hcl
-      obtain ⟨u, hu, hci, rfl⟩ := mem_clausePorts.mp hj
-      rw [show 3 * u / 3 = u by omega] at hne
-      have hpol : bitAt x (3 * u) = pol os u := by
-        revert hne
-        cases bitAt x (3 * u) <;> cases pol os u <;> simp
-      subst hci
-      obtain ⟨_, hocc⟩ := hmem₁ u hu
-      rw [Clause.eval_eq_true_iff]
-      exact ⟨_, hocc, (hrep u hu).trans hpol⟩
-    · funext j
-      have hj := j.isLt
-      have hu : j.val / 3 < os.length := by omega
-      change bitAt x (3 * (os.map fun o => o.2.2.1).idxOf (var os (j.val / 3))) = x j
-      rw [hrep _ hu, ← bitAt_eq x hj]
-      obtain ⟨h1, h2, -⟩ := consistent_of_good os h hu
-      have hcases : j.val = 3 * (j.val / 3) ∨ j.val = 3 * (j.val / 3) + 1 ∨
-          j.val = 3 * (j.val / 3) + 2 := by omega
-      rcases hcases with h' | h' | h'
-      · rw [← h']
-      · rw [h1, ← h']
-      · rw [h1, h2, ← h']
-  · rintro ⟨σ, hσ, rfl⟩
-    have hX : ∀ j < 3 * os.length, bitAt (fun j : Fin (3 * os.length) =>
-        σ (var os (j.val / 3))) j = σ (var os (j / 3)) := fun j hj => bitAt_eq _ hj
-    refine ⟨fun i hi hall => ?_, fun u hu => ?_, fun w hw a ha b hb => ?_⟩
-    · have hc := (CNF.eval_eq_true_iff σ φ).mp hσ _ (List.getElem_mem hi)
+/-- The table of a clause at the word an assignment puts on its ports: one exactly when the
+assignment satisfies the clause. -/
+private theorem clauseRow_eq (σ : ℕ → Bool) {i : ℕ} (hi : i < φ.length) :
+    clauseRow (occurrences φ) i (BitString.lsbValue ((clausePorts (occurrences φ) i).map
+      fun j => σ (var (occurrences φ) (j / 3)))) = if (φ.getD i []).eval σ then 1 else 0 := by
+  rw [clauseRow, falsifier, clauseEntry_lsbValue (by simp), List.getD_eq_getElem _ _ hi]
+  have key : ((clausePorts (occurrences φ) i).map fun j => σ (var (occurrences φ) (j / 3))) =
+      (clausePorts (occurrences φ) i).map (fun j => !pol (occurrences φ) (j / 3)) ↔
+        φ[i].eval σ = false := by
+    rw [List.map_inj_left]
+    constructor
+    · intro h
+      rw [Bool.eq_false_iff]
+      intro hc
       obtain ⟨l, hl, hsl⟩ := (Clause.eval_eq_true_iff σ _).mp hc
-      obtain ⟨u, hu, hci, hocc⟩ := hmem₂ i hi l hl
-      have h3u : 3 * u ∈ clausePorts os i := mem_clausePorts.mpr ⟨u, hu, hci, rfl⟩
-      have := hall _ h3u
-      rw [hX _ (by omega), show 3 * u / 3 = u by omega] at this
-      have hv : var os u = l.1 := congrArg Prod.fst hocc
-      have hp : pol os u = l.2 := congrArg Prod.snd hocc
+      obtain ⟨u, hu, hci, hocc⟩ := exists_occ hi hl
+      have := h (3 * u) (mem_clausePorts.mpr ⟨u, hu, hci, rfl⟩)
+      rw [show 3 * u / 3 = u by omega] at this
+      have hv : var (occurrences φ) u = l.1 := congrArg Prod.fst hocc
+      have hp : pol (occurrences φ) u = l.2 := congrArg Prod.snd hocc
       rw [hv, hp, hsl] at this
       cases l.2 <;> simp at this
-    · rw [hX _ (by omega), hX _ (by omega), show (3 * u + 1) / 3 = u by omega,
-        show (3 * u + 2) / 3 = u by omega]
-    · have hval : ∀ c ∈ qPorts os w, bitAt (fun j : Fin (3 * os.length) =>
-          σ (var os (j.val / 3))) c = σ (var os w) := by
-        intro c hc
-        rcases mem_qPorts.mp hc with rfl | rfl | ⟨u, hu, hpu, rfl⟩
-        · rw [hX _ (by omega), show 3 * w / 3 = w by omega]
-        · rw [hX _ (by omega), show (3 * w + 1) / 3 = w by omega]
-        · rw [hX _ (by omega), show (3 * u + 2) / 3 = u by omega, ← hpu, var_prev]
-      rw [hval a ha, hval b hb]
-
-/-- **The contraction of the clause network is the model count**, for formulas whose clauses have
-at most `k` literals. -/
-theorem contraction_clauseNetwork {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) :
-    (clauseNetwork k φ).2.contraction = φ.modelCount := by
-  have hB : ∀ i, ((occurrences φ).map Prod.fst).count i ≤ k := by
-    intro i
-    rw [count_map_fst_occurrences]
-    by_cases hi : i < φ.length
-    · rw [List.getD_eq_getElem _ _ hi]
-      exact hk _ (List.getElem_mem hi)
-    · rw [List.getD_eq_default _ _ (by omega)]
-      exact Nat.zero_le _
-  rw [clauseNetwork, contraction_network_eq _ k _ hB]
-  symm
-  refine CNF.modelCount_eq_card_filter (fun σ (j : Fin (3 * (occurrences φ).length)) =>
-    σ (var (occurrences φ) (j.val / 3))) _ (fun σ τ _ _ => ?_)
-      fun x => good_iff _ (fun _ => mem_of_occ) (fun _ => exists_occ) x
-  constructor
-  · intro h v hv
-    obtain ⟨u, hu, rfl⟩ := exists_var_eq hv
-    have := congrFun h ⟨3 * u, by omega⟩
-    simpa [show 3 * u / 3 = u by omega] using this
-  · intro h
-    funext j
-    exact h _ (var_mem_vars (by have := j.isLt; omega))
-
-
-/-- **The clause network is rows-first bipartite.** -/
-theorem isRowsFirstBipartite_clauseNetwork (k : ℕ) (φ : CNF ℕ) :
-    (clauseNetwork k φ).2.IsRowsFirstBipartite (clauseNetwork k φ).1 :=
-  isRowsFirstBipartite_network _ _ _ fun _ ho => (mem_occurrences.mp ho).1
+    · intro hc j hj
+      obtain ⟨u, hu, hci, rfl⟩ := mem_clausePorts.mp hj
+      rw [show 3 * u / 3 = u by omega]
+      by_contra hne
+      have hpol : σ (var (occurrences φ) u) = pol (occurrences φ) u := by
+        revert hne
+        cases σ (var (occurrences φ) u) <;> cases pol (occurrences φ) u <;> simp
+      obtain ⟨_, hocc⟩ := mem_of_occ hu
+      subst hci
+      have : φ[clauseOf (occurrences φ) u].eval σ = true :=
+        (Clause.eval_eq_true_iff σ _).mpr ⟨_, hocc, hpol⟩
+      rw [hc] at this
+      exact Bool.false_ne_true this
+  by_cases h : φ[i].eval σ = true
+  · have hne := mt key.mp (by rw [h]; decide)
+    simp only [hne, h, ↓reduceIte]
+  · have heq := key.mpr (by simpa using h)
+    simp only [heq, h, Bool.false_eq_true, ↓reduceIte]
 
 private theorem count_le_of_width {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) (i : ℕ) :
     ((occurrences φ).map Prod.fst).count i ≤ k := by
@@ -798,16 +885,42 @@ private theorem count_le_of_width {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) 
   · rw [List.getD_eq_default _ _ (by omega)]
     exact Nat.zero_le _
 
+/-- **The contraction of the clause network is the model count**, for formulas whose clauses have
+at most `k` literals. -/
+theorem contraction_clauseNetwork {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) :
+    (clauseNetwork k φ).2.contraction = φ.modelCount := by
+  rw [clauseNetwork, contraction_network _ k _ _ (count_le_of_width hk)
+    (congrArg List.toFinset (map_occurrences φ)), CNF.modelCount, Finset.card_filter]
+  refine Finset.sum_congr rfl fun τ _ => ?_
+  refine (congrArg List.prod (List.map_congr_left fun i hi =>
+    clauseRow_eq (φ.extendAssignment τ) (List.mem_range.mp hi))).trans ?_
+  rw [List.prod_map_boole]
+  refine if_congr ?_ rfl rfl
+  rw [CNF.eval_eq_true_iff]
+  constructor
+  · intro h c hc
+    obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hc
+    have := h i (List.mem_range.mpr hi)
+    rwa [List.getD_eq_getElem _ _ hi] at this
+  · intro h i hi
+    rw [List.getD_eq_getElem _ _ (List.mem_range.mp hi)]
+    exact h _ (List.getElem_mem _)
+
+/-- **The clause network is rows-first bipartite.** -/
+theorem isRowsFirstBipartite_clauseNetwork (k : ℕ) (φ : CNF ℕ) :
+    (clauseNetwork k φ).2.IsRowsFirstBipartite (clauseNetwork k φ).1 :=
+  isRowsFirstBipartite_network _ _ _ _ fun _ ho => (mem_occurrences.mp ho).1
+
 /-- **The degree bound**: for clauses of at most `k` literals, every vertex has at most `max k 4`
 ports. -/
 theorem maxDegree_clauseNetwork_le {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) :
     (clauseNetwork k φ).2.maxDegree ≤ max k 4 :=
-  maxDegree_network_le _ k _ (count_le_of_width hk)
+  maxDegree_network_le _ _ k _ (count_le_of_width hk)
 
 /-- **Full tables**, for clauses of at most `k` literals. -/
 theorem length_table_clauseNetwork {k : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k) :
     ∀ v ∈ (clauseNetwork k φ).2.vertices, v.2.length = 2 ^ v.1.length :=
-  length_table_network _ k _ (count_le_of_width hk)
+  length_table_network _ _ k _ (count_le_of_width hk)
 
 /-- The clause network has three edges per literal occurrence. -/
 theorem numEdges_clauseNetwork (k : ℕ) (φ : CNF ℕ) :
