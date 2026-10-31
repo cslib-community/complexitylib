@@ -767,12 +767,8 @@ groups, searches each unrestricted group fiber via `BooleanMeasurements.search` 
 every fiber is nonempty streams restricted local-cube factor-jet sums via
 `CommonCountingAccum.streamGroupJetSum` and returns `some (prodJet J ℓ groupJets)` (Pass 2). -/
 def evalMeasPayload (wc : List ℤ × MeasStepCtx) : Option JetRows :=
-  let word := wc.1; let ctx := wc.2
-  let n' := ctx.1.1; let r_u := ctx.1.2.1; let m_rows := ctx.1.2.2
-  let J := ctx.2.1.1; let ℓ := ctx.2.1.2.1; let k' := ctx.2.1.2.2
-  let node := ctx.2.2.1.1; let dDen := ctx.2.2.1.2
-  let vGroups_t := ctx.2.2.2.1.1; let grpMeas_t := ctx.2.2.2.1.2
-  let indE := ctx.2.2.2.2.1.1; let indU := ctx.2.2.2.2.1.2; let grpEqLists := ctx.2.2.2.2.2
+  let (word, ((n', r_u, m_rows), (J, ℓ, k'), (node, dDen), (vGroups_t, grpMeas_t),
+    (indE, indU), grpEqLists)) := wc
   let repOpts := (List.range r_u).map fun g =>
     BooleanMeasurements.search Prod.fst Prod.snd
       ((grpMeas_t.getD g [], (word.drop (g * m_rows)).take m_rows),
@@ -788,12 +784,35 @@ def evalMeasPayload (wc : List ℤ × MeasStepCtx) : Option JetRows :=
     some (CommonCountingAccum.prodJet J ℓ groupJets)
   else none
 
+/-- Variable count `n'` in `MeasStepCtx`. -/
+abbrev MeasStepCtx.numVars (ctx : MeasStepCtx) : ℕ :=
+  let dims := ctx.1; dims.1
+
+/-- Group count `r_u` in `MeasStepCtx`. -/
+abbrev MeasStepCtx.numGroups (ctx : MeasStepCtx) : ℕ :=
+  let dims := ctx.1; let rg := dims.2; rg.1
+
+/-- Jet order `J` in `MeasStepCtx`. -/
+abbrev MeasStepCtx.jetOrder (ctx : MeasStepCtx) : ℕ :=
+  let r1 := ctx.2; let jetDims := r1.1; jetDims.1
+
+/-- Jet precision `ℓ` in `MeasStepCtx`. -/
+abbrev MeasStepCtx.precision (ctx : MeasStepCtx) : ℕ :=
+  let r1 := ctx.2; let jetDims := r1.1; let lk := jetDims.2; lk.1
+
+/-- Variable-group partition `vGroups_t` in `MeasStepCtx`. -/
+abbrev MeasStepCtx.varGroups (ctx : MeasStepCtx) : List (List ℕ) :=
+  let r1 := ctx.2; let r2 := r1.2; let r3 := r2.2; let vgMeas := r3.1; vgMeas.1
+
 /-- `measurementStepBody` factors into `evalMeasPayload` followed by optional `addJet`
 accumulation. -/
 theorem measurementStepBody_eq (inp : ((ℕ × ℕ) × List ℤ) × (MeasStepCtx × JetRows)) :
+    let pw := inp.1
+    let ca := inp.2
+    let ctx := ca.1
     measurementStepBody inp =
-      (evalMeasPayload (inp.1.2, inp.2.1)).elim inp.2
-        (fun y => (inp.2.1, addJet inp.2.1.2.1.1 inp.2.1.2.1.2.1 inp.2.2 y)) := by
+      (evalMeasPayload (pw.2, ctx)).elim ca
+        (fun y => (ctx, addJet ctx.jetOrder ctx.precision ca.2 y)) := by
   unfold measurementStepBody evalMeasPayload; dsimp only; split_ifs <;> rfl
 
 /-- Uniform `ComputableInO` runtime and global `PolyBounded` workspace bound for `evalMeasPayload`,
@@ -804,7 +823,9 @@ theorem exists_computableInO_measPayload :
       ComputableInO evalMeasPayload (encPair (encList encIntBin) encMeasStepCtx)
         (encOption (encList (encList encIntBin)))
         (fun wc =>
-          (wc.2.1.2.1 * (2 ^ maxGroupDim wc.2.1.1 wc.2.1.2.1 wc.2.2.2.2.1.1 + 1) + 1) * P wc)
+          let ctx := wc.2
+          (ctx.numGroups * (2 ^ maxGroupDim ctx.numVars ctx.numGroups ctx.varGroups + 1) + 1) *
+            P wc)
         P := by
   let eWC := encPair (encList encIntBin) encMeasStepCtx
   have hru_wc : ComputableInPolyTime (fun wc : List ℤ × MeasStepCtx => wc.2.1.2.1)

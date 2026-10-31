@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -21,7 +21,9 @@ results. Native execution itself permits an independent universe for client resu
 ## Main definitions
 
 * `Methods`: operation bodies over a lower interface.
-* `Module`: admissibility and representation simulation for those bodies.
+* `Module`: demonic lower-call admissibility and angelic representation simulation for those
+  bodies.
+* `Module.ofFn`: constructor for deterministic upper and lower specifications.
 * `link`: substitute lower method bodies into an adaptive client.
 
 ## Main results
@@ -48,21 +50,45 @@ abbrev Methods (D E : Spec.{u, v, w}) := (o : D.Op) → E.Client (D.Result o)
 /-- Substitution reuses upstream free-monad interpretation. -/
 def link (methods : Methods D E) (p : D.Client α) : E.Client α := p.liftM methods
 
-/-- Purely semantic module correctness; neither an execution model nor a cost appears. -/
+/-- Purely semantic module correctness over relational specifications; neither an execution model
+nor a cost appears. -/
 structure Module (D E : Spec.{u, v, w}) where
   /-- Bodies implementing the upper interface using lower-interface calls. -/
   methods : Methods D E
   /-- The relation between upper and lower mathematical states. -/
   rep : D.State → E.State → Prop
-  valid : ∀ {s e} o, rep s e → D.valid s o →
-    E.ValidHistory e (E.runClient e (methods o)).2.2
-  correct : ∀ {s e} o, rep s e → D.valid s o →
-    (E.runClient e (methods o)).1 = (D.step s o).2 ∧
-      rep (D.step s o).1 (E.runClient e (methods o)).2.1
+  /-- Demonic admissibility of each method body from related states. -/
+  valid : ∀ {s e} o, rep s e → D.valid s o → E.DemonicValid e (methods o)
+  /-- Angelic correctness of each method body: every lower `ClientRun` realizes some permitted
+  upper step `D.step s o s' a` maintaining `rep s' e'`. -/
+  correct : ∀ {s e} o {a e' tr}, rep s e → D.valid s o →
+    E.ClientRun e (methods o) a e' tr → ∃ s', D.step s o s' a ∧ rep s' e'
 
 namespace Module
 
 variable (M : Module D E) {exec : Execution E C τ}
+
+/-- Construct a `Module D E` for deterministic specifications (`[D.HasStepFn fD]`,
+`[E.HasStepFn fE]`) from functional `ValidHistory` and `runClient` obligations. -/
+abbrev ofFn {fD : (s : D.State) → (o : D.Op) → D.State × D.Result o}
+    {fE : (e : E.State) → (o : E.Op) → E.State × E.Result o}
+    [D.HasStepFn fD] [E.HasStepFn fE]
+    (methods : Methods D E)
+    (rep : D.State → E.State → Prop)
+    (valid : ∀ {s e} o, rep s e → D.valid s o →
+      E.ValidHistory e (E.clientHistory e (methods o)))
+    (correct : ∀ {s e} o, rep s e → D.valid s o →
+      E.clientResult e (methods o) = (D.stepFn s o).2 ∧
+        rep (D.stepFn s o).1 (E.clientState e (methods o))) :
+    Module D E where
+  methods := methods
+  rep := rep
+  valid {s e} o hr hv :=
+    (E.demonicValid_iff_validHistory_runClient e (methods o)).mpr (valid o hr hv)
+  correct {s e} o {a e' tr} hr hv hrun := by
+    obtain ⟨_, rfl, rfl, _⟩ := (E.clientRun_iff_runClient e (methods o) a e' tr).mp hrun
+    obtain ⟨ha, hr'⟩ := correct o hr hv
+    exact ⟨(D.stepFn s o).1, (D.step_iff_stepFn s o _ _).mpr (Prod.ext rfl ha), hr'⟩
 
 /-- Module realization hides the intermediate representation and composes at any backend. -/
 def realize (R : Realization E exec) :
@@ -70,13 +96,14 @@ def realize (R : Realization E exec) :
   rep s c := ∃ e, M.rep s e ∧ R.rep e c
   total o hr hv := by
     obtain ⟨e, hM, hR⟩ := hr
-    obtain ⟨c', traces, he, _⟩ := R.exists_executes (M.methods o) hR (M.valid o hM hv)
-    exact ⟨_, c', traces, he⟩
-  correct hr hv he := by
+    obtain ⟨a, c', traces, _, _, he, _, _, _⟩ :=
+      R.exists_demonic (M.methods o) hR (M.valid o hM hv)
+    exact ⟨a, c', traces, he⟩
+  correct {s c o a c' ts} hr hv he := by
     obtain ⟨e, hM, hR⟩ := hr
-    obtain ⟨ha, hr'⟩ := R.correct_client hR (M.valid _ hM hv) he
-    obtain ⟨ha', hm'⟩ := M.correct _ hM hv
-    exact ⟨ha.trans ha', ⟨_, hm', hr'⟩⟩
+    obtain ⟨e', tr, hrun, hR', _⟩ := R.correct_demonic hR (M.valid o hM hv) he
+    obtain ⟨s', hstep, hM'⟩ := M.correct o hM hv hrun
+    exact ⟨s', hstep, e', hM', hR'⟩
 
 end Module
 

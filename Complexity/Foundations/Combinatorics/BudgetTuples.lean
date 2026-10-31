@@ -55,6 +55,7 @@ along `budgetTuples` (`sum_filter_weight_lt_eq`).
 
 * `Cslib.BudgetTuples.mem_budgetTuples`, `Cslib.BudgetTuples.nodup_budgetTuples`: the list holds
   each tuple of weight below the budget once.
+* `Cslib.BudgetTuples.lt_of_mem_budgetTuples`: the entries of these tuples are below the budget.
 * `Cslib.BudgetTuples.head?_budgetTuples`, `Cslib.BudgetTuples.isChain_budgetTuples`,
   `Cslib.BudgetTuples.budgetNext_getLast?`: the successor walks the list from the zero tuple.
 * `Cslib.BudgetTuples.budgetNextScan_eq`: the scan computes the successor.
@@ -132,6 +133,26 @@ theorem mem_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ} {�
       · simp at hlen
       · simp only [List.length_cons, Nat.add_right_cancel_iff, weight_cons_cons] at hlen hwt
         exact ⟨b, by omega, γ, ih'.mpr ⟨hlen, by omega⟩, rfl⟩
+
+/-- Each entry of a tuple is at most its weight, for positive weights. -/
+theorem le_weight_of_mem : ∀ {ws β : List ℕ}, (∀ w ∈ ws, 0 < w) → β.length = ws.length →
+    ∀ b ∈ β, b ≤ weight ws β
+  | [], [], _, _, b, hb => by simp at hb
+  | [], _ :: _, _, hl, _, _ => by simp at hl
+  | _ :: _, [], _, hl, _, _ => by simp at hl
+  | w :: ws, b' :: β, hw, hl, b, hb => by
+    rw [weight_cons_cons]
+    rcases List.mem_cons.mp hb with rfl | hb
+    · exact (Nat.le_mul_of_pos_left b (hw w List.mem_cons_self)).trans (Nat.le_add_right _ _)
+    · have := le_weight_of_mem (fun w' hw' => hw w' (List.mem_cons_of_mem _ hw'))
+        (by simpa using hl) b hb
+      omega
+
+/-- **Every entry of a tuple of weight below `p` is below `p`**, for positive weights. -/
+theorem lt_of_mem_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ} {β : List ℕ}
+    (hβ : β ∈ budgetTuples ws p) {b : ℕ} (hb : b ∈ β) : b < p := by
+  obtain ⟨hl, hwt⟩ := (mem_budgetTuples hw).mp hβ
+  exact (le_weight_of_mem hw hl b hb).trans_lt hwt
 
 /-- **Each tuple appears once.** -/
 theorem nodup_budgetTuples (ws : List ℕ) (p : ℕ) : (budgetTuples ws p).Nodup := by

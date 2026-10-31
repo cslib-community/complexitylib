@@ -23,7 +23,7 @@ Formal abstracts and their bridges live in the dedicated `ComplexityAbstracts` L
 - **Abstract module**: `abstracts/ComplexityAbstracts/<Topic>Abstract.lean`
 - **Audit helper**: [Check.lean](../../../abstracts/ComplexityAbstracts/Check.lean) (`#check_abstract`)
 
-Import new `*Abstract.lean` modules from [ComplexityAbstracts.lean](../../../abstracts/ComplexityAbstracts.lean). The test driver imports that library, so `lake test --wfail --iofail` builds and audits every abstract in CI. Keep regression tests in `ComplexityTests/Abstracts/`; Lake's `ComplexityTests.+` glob discovers new modules automatically. Existing abstracts retain their `ComplexityTests.Abstracts.*` declaration namespaces for compatibility; new abstracts may use `ComplexityAbstracts.*`. Catalogue entries specify `namespace` when it differs from their module name.
+Import new `*Abstract.lean` modules from [ComplexityAbstracts.lean](../../../abstracts/ComplexityAbstracts.lean). The test driver imports that library, so `lake test --wfail --iofail` builds and audits every abstract in CI. Keep regression tests in `ComplexityTests/Abstracts/`; Lake's `ComplexityTests.+` glob discovers new modules automatically. Existing abstracts retain their `ComplexityTests.Abstracts.*` declaration namespaces for compatibility; new abstracts may use `ComplexityAbstracts.*`. Catalogue entries specify `namespace` when it differs from their module name. List each selected entry in the top-level `README.md` selected results and in the table of `abstracts/README.md`; `scripts/check_hygiene.py` checks that both READMEs link exactly the catalogue's abstract modules.
 
 ---
 

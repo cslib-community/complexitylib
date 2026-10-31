@@ -20,7 +20,7 @@ This module realizes the shared `Cslib.OrderedSet.spec (Fin (universeSize d))` i
 (`contains`, `insert`, `erase`, `minimum`, `successor`) using recursive minimum-excluded
 van Emde Boas trees `Tree d` over the bounded universe `Fin (universeSize d)` of size
 `universeSize d = 2 ^ (2 ^ d)`, and supplies an active-recursive-call depth certificate
-`callDepthBound` of `d + 1` per operation ([Demaine2015VanEmdeBoas], pp. 4–6; [CLRS2009],
+`callDepthBound` of `d + 1` per operation ([Demaine2015VanEmdeBoas], pp. 4–5; [CLRS2009],
 Section 20.3).
 
 Alongside `Cslib.Algorithms.Lean.SearchTree` (linear worst-case bound `s.card`), this provides a
@@ -490,31 +490,33 @@ theorem rep_empty (d : ℕ) : Rep (∅ : Finset (Fin (universeSize d))) (Tree.em
 
 /-- Semantic realization of `OrderedSet.spec (Fin (universeSize d))` by `Tree d`. -/
 @[expose] def realization (d : ℕ) :
-    Realization (spec (Fin (universeSize d))) (Exec d) where
-  rep := Rep
-  total {_ t} o _ _ :=
-    match h : step t o with
-    | (t', a, n) => ⟨a, t', n, h⟩
-  correct {s t o a t' n} hr _ he := by
-    obtain ⟨ht, rfl⟩ := hr
-    cases o with
-    | contains x =>
-      cases he
-      refine ⟨?_, ht, rfl⟩
-      have h := (Tree.member_iff_contains ht x.val).trans (Tree.mem_finElements_iff ht x).symm
-      by_cases hx : x ∈ t.finElements <;> simp_all
-    | insert x =>
-      cases he
-      exact ⟨rfl, Tree.valid_insert ht x.isLt, Tree.finElements_insert ht x⟩
-    | erase x =>
-      cases he
-      exact ⟨rfl, Tree.valid_erase ht x.val, Tree.finElements_erase ht x⟩
-    | minimum =>
-      cases he
-      exact ⟨(Tree.finMinimum_spec ht).eq_least, ht, rfl⟩
-    | successor x =>
-      cases he
-      exact ⟨(Tree.finSuccessor_spec ht x).eq_least, ht, rfl⟩
+    Realization (spec (Fin (universeSize d))) (Exec d) :=
+  Realization.ofFn
+    (rep := Rep)
+    (total := fun {_ t} o _ _ =>
+      match h : step t o with
+      | (t', a, n) => ⟨a, t', n, h⟩)
+    (correct := by
+      intro s t o a t' n hr _ he
+      obtain ⟨ht, rfl⟩ := hr
+      cases o with
+      | contains x =>
+        cases he
+        refine ⟨?_, ht, rfl⟩
+        have h := (Tree.member_iff_contains ht x.val).trans (Tree.mem_finElements_iff ht x).symm
+        by_cases hx : x ∈ t.finElements <;> simp_all
+      | insert x =>
+        cases he
+        exact ⟨rfl, Tree.valid_insert ht x.isLt, Tree.finElements_insert ht x⟩
+      | erase x =>
+        cases he
+        exact ⟨rfl, Tree.valid_erase ht x.val, Tree.finElements_erase ht x⟩
+      | minimum =>
+        cases he
+        exact ⟨(Tree.finMinimum_spec ht).eq_least, ht, rfl⟩
+      | successor x =>
+        cases he
+        exact ⟨(Tree.finSuccessor_spec ht x).eq_least, ht, rfl⟩)
 
 /-- `(realization d).rep` is definitionally `Rep`. -/
 @[simp] theorem realization_rep (d : ℕ) : (realization d).rep = Rep := rfl

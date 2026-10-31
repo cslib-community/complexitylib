@@ -31,7 +31,7 @@ Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Karger`:
 
 namespace ComplexityTests.WordRAMKargerMinCut
 
-open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.Karger
+open Cslib Cslib.WordRAM Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
 open scoped ENNReal
 
 /-! ## 1. Weighted 3-vertex triangle (`minCut = 5`) -/

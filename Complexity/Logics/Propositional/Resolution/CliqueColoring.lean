@@ -10,6 +10,7 @@ module
 public import Complexity.Logics.Propositional.CliqueColoring
 public import Complexity.Logics.Propositional.Resolution.Interpolation
 public import Complexity.Computability.Circuit.Monotone.Clique.Asymptotic
+public import Complexity.Computability.Circuit.Monotone.Clique.Closure.Asymptotic
 
 /-!
 # Resolution lower bounds for clique–colouring formulas
@@ -27,19 +28,29 @@ separating the two classes of graphs
 (`Cslib.Logic.PL.CNF.exists_separates_of_refutableInSize_cliqueColoring`). For `r = k - 1`,
 Razborov's method of approximations bounds such circuits from below, since it reads them only on
 complete graphs on `k`-sets and complete `(k - 1)`-partite graphs
-(`Cslib.Circuits.Monotone.lt_size_of_separates`). So every resolution refutation of the
-clique–colouring formula has more than half as many lines as the monotone bound: with explicit
-parameters (`Cslib.Logic.PL.CNF.lt_two_mul_of_refutableInSize_cliqueColoring`), more than
-`64 ^ w / 2` lines for `w ≥ 16`, `4 w² ≤ k - 1` and `64 w⁶ k ≤ n`
-(`Cslib.Logic.PL.CNF.sixtyFour_pow_lt_two_mul_of_refutableInSize_cliqueColoring`), and more than
-`2 ^ (2 ⌊√k⌋) / 2` lines for `k ≥ 1025` and `k⁴ ≤ n`
+(`Cslib.Circuits.Monotone.lt_size_of_separates`), and every edge is essential to them
+(`Cslib.Circuits.Clique.Separates.essentialAt`). So half of each monotone bound bounds the
+resolution refutations of the clique–colouring formula from below: with explicit parameters
+(`Cslib.Logic.PL.CNF.lt_two_mul_of_refutableInSize_cliqueColoring`), more than `64 ^ w / 2`
+lines for `w ≥ 16`, `4 w² ≤ k - 1` and `64 w⁶ k ≤ n`
+(`Cslib.Logic.PL.CNF.sixtyFour_pow_lt_two_mul_of_refutableInSize_cliqueColoring`), at least
+`(n.choose 2 - 1) / 2` lines for `2 ≤ k ≤ n`
+(`Cslib.Logic.PL.CNF.edgeCount_le_one_add_two_mul_of_refutableInSize_cliqueColoring`), and more
+than `2 ^ (2 ⌊√k⌋) / 2` lines for `2 ≤ k` and `k⁴ ≤ n`
 (`Cslib.Logic.PL.CNF.two_pow_two_mul_sqrt_lt_two_mul_of_refutableInSize_cliqueColoring`). Taking
-`k = ⌊√⌊√n⌋⌋` gives refutations of more than `2 ^ (2 m) / 2` lines with `m = ⌊√k⌋`, of order
-`n^{1/8}` (`Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_sqrt`).
+`k = ⌊√⌊√n⌋⌋` for `n ≥ 16` gives refutations of more than `2 ^ (2 m) / 2` lines with `m = ⌊√k⌋`,
+of order `n^{1/8}` (`Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_sqrt`).
 
-This is the argument of [Krajíček, Corollary 7.3(1)][Krajicek1997], which combines his Theorem 6.1
-with the Alon–Boppana bound (his Theorem 7.2) for `k = ⌈√n⌉ + 1` and obtains `2 ^ Ω(n^{1/4})`
-lines. The Razborov bound used here needs `k⁴ ≤ n`, and so gives the weaker `2 ^ Ω(n^{1/8})`.
+The closed approximators of Alon and Boppana bound separators for any `r < k` under the much
+weaker hypothesis `8 l (⌊log₂ n⌋ + 3) k ≤ n` besides `2 l² ≤ r`
+(`Cslib.Circuits.Monotone.two_pow_lt_size_of_separates`), so every refutation has more than
+`2 ^ l / 2` lines (`Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring`). For
+`n ≥ 2 ^ 40` and `⌊√n⌋ < k ≤ ⌊√n⌋ + 2`, every refutation of `Clique_{n,k} ∧ Color_{n,k-1}` has
+more than `2 ^ (⌊√⌊√n⌋⌋ / 2) / 2` lines, where `⌊√⌊√n⌋⌋ = ⌊n^{1/4}⌋`
+(`Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_of_sqrt_lt`). This is
+[Krajíček, Corollary 7.3(1)][Krajicek1997], which combines his Theorem 6.1 with the Alon–Boppana
+bound (his Theorem 7.2) for `k = ⌈√n⌉ + 1`, a value in this range, and obtains `2 ^ Ω(n^{1/4})`
+lines.
 
 ## Main definitions
 
@@ -55,15 +66,19 @@ lines. The Razborov bound used here needs `k⁴ ≤ n`, and so gives the weaker 
   for the clique–colouring formula.
 * `Cslib.Logic.PL.CNF.lt_two_mul_of_refutableInSize_cliqueColoring`,
   `Cslib.Logic.PL.CNF.sixtyFour_pow_lt_two_mul_of_refutableInSize_cliqueColoring`,
+  `Cslib.Logic.PL.CNF.edgeCount_le_one_add_two_mul_of_refutableInSize_cliqueColoring`,
   `Cslib.Logic.PL.CNF.two_pow_two_mul_sqrt_lt_two_mul_of_refutableInSize_cliqueColoring`,
-  `Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_sqrt`: **resolution
-  lower bounds** for the clique–colouring formula.
+  `Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_sqrt`,
+  `Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring`,
+  `Cslib.Logic.PL.CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_of_sqrt_lt`:
+  **resolution lower bounds** for the clique–colouring formula.
 
 ## References
 
 * [J. Krajíček, *Interpolation theorems, lower bounds for proof systems, and independence results
   for bounded arithmetic*][Krajicek1997]; Section 7, Theorem 7.2 and Corollary 7.3 are numbered as
   in the author's preprint.
+* [N. Alon, R. B. Boppana, *The monotone circuit complexity of Boolean functions*][AlonBoppana1987]
 * [P. Pudlák, *Lower bounds for resolution and cutting plane proofs and monotone
   computations*][Pudlak1997]
 * [A. A. Razborov, *Lower bounds on the monotone complexity of some Boolean
@@ -138,27 +153,57 @@ theorem CNF.sixtyFour_pow_lt_two_mul_of_refutableInSize_cliqueColoring {w s : �
   obtain ⟨C, hsize, hC⟩ := CNF.exists_separates_of_refutableInSize_cliqueColoring h
   exact (Monotone.pow_lt_size_of_separates hw hk hn hC).trans_le hsize
 
-/-- **Resolution lower bound for the clique–colouring formula.** For `1025 ≤ k` with `k ^ 4 ≤ n`,
+/-- **Resolution lower bound for the clique–colouring formula, small cliques.** For `2 ≤ k ≤ n`,
+every resolution refutation of `Clique_{n,k} ∧ Color_{n,k-1}` has at least `(n.choose 2 - 1) / 2`
+lines: every edge is essential to the interpolant. -/
+theorem CNF.edgeCount_le_one_add_two_mul_of_refutableInSize_cliqueColoring {s : ℕ}
+    (hk : 2 ≤ k) (hkn : k ≤ n) (h : (CNF.cliqueColoring n k (k - 1)).RefutableInSize s) :
+    edgeCount n ≤ 1 + 2 * s := by
+  obtain ⟨C, hsize, hC⟩ := CNF.exists_separates_of_refutableInSize_cliqueColoring h
+  exact (Monotone.edgeCount_le_succ_size_of_separates hk hkn hC).trans (by omega)
+
+/-- **Resolution lower bound for the clique–colouring formula.** For `2 ≤ k` with `k ^ 4 ≤ n`,
 every resolution refutation of `Clique_{n,k} ∧ Color_{n,k-1}` has more than `2 ^ (2 ⌊√k⌋) / 2`
 lines. -/
 theorem CNF.two_pow_two_mul_sqrt_lt_two_mul_of_refutableInSize_cliqueColoring {s : ℕ}
-    (hk : 1025 ≤ k) (hn : k ^ 4 ≤ n) (h : (CNF.cliqueColoring n k (k - 1)).RefutableInSize s) :
+    (hk : 2 ≤ k) (hn : k ^ 4 ≤ n) (h : (CNF.cliqueColoring n k (k - 1)).RefutableInSize s) :
     2 ^ (2 * Nat.sqrt k) < 2 * s := by
   obtain ⟨C, hsize, hC⟩ := CNF.exists_separates_of_refutableInSize_cliqueColoring h
   exact (Monotone.two_pow_two_mul_sqrt_lt_size_of_separates hk hn hC).trans_le hsize
 
-/-- **An exponential resolution lower bound for clique–colouring formulas.** For `n ≥ 1025 ^ 4`
-and `k = ⌊√⌊√n⌋⌋`, so that `k ^ 4 ≤ n`, every resolution refutation of
+/-- **An exponential resolution lower bound for clique–colouring formulas.** For `n ≥ 16` and
+`k = ⌊√⌊√n⌋⌋`, so that `2 ≤ k` and `k ^ 4 ≤ n`, every resolution refutation of
 `Clique_{n,k} ∧ Color_{n,k-1}` has more than `2 ^ (2 m) / 2` lines, where `m = ⌊√k⌋` is of order
 `n^{1/8}`. -/
 theorem CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_sqrt {s : ℕ}
-    (hn : 1025 ^ 4 ≤ n)
+    (hn : 16 ≤ n)
     (h : (CNF.cliqueColoring n n.sqrt.sqrt (n.sqrt.sqrt - 1)).RefutableInSize s) :
     2 ^ (2 * n.sqrt.sqrt.sqrt) < 2 * s := by
   refine CNF.two_pow_two_mul_sqrt_lt_two_mul_of_refutableInSize_cliqueColoring ?_ ?_ h
-  · exact Nat.le_sqrt.2 (Nat.le_sqrt.2 (by simpa [pow_succ, Nat.mul_assoc] using hn))
+  · exact Nat.le_sqrt.2 (Nat.le_sqrt.2 (by omega))
   · calc n.sqrt.sqrt ^ 4 = (n.sqrt.sqrt ^ 2) ^ 2 := by ring
       _ ≤ n.sqrt ^ 2 := Nat.pow_le_pow_left (Nat.sqrt_le' _) 2
       _ ≤ n := Nat.sqrt_le' n
+
+/-- **Resolution lower bound for the clique–colouring formula, Alon–Boppana form**
+[Krajíček, Theorem 7.2][Krajicek1997]. For `2 ≤ l` with `2 l ^ 2 ≤ r < k` and
+`8 l (⌊log₂ n⌋ + 3) k ≤ n`, every resolution refutation of `Clique_{n,k} ∧ Color_{n,r}` has more
+than `2 ^ l / 2` lines. -/
+theorem CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring {l s : ℕ} (hl : 2 ≤ l)
+    (hr : 2 * l ^ 2 ≤ r) (hrk : r < k) (hn : 8 * l * (Nat.log 2 n + 3) * k ≤ n)
+    (h : (CNF.cliqueColoring n k r).RefutableInSize s) : 2 ^ l < 2 * s := by
+  obtain ⟨C, hsize, hC⟩ := CNF.exists_separates_of_refutableInSize_cliqueColoring h
+  exact (Monotone.two_pow_lt_size_of_separates hl hr hrk hn hC).trans_le hsize
+
+/-- **An `n^{1/4}` exponential resolution lower bound for clique–colouring formulas**
+[Krajíček, Corollary 7.3(1)][Krajicek1997]. For `n ≥ 2 ^ 40` and `⌊√n⌋ < k ≤ ⌊√n⌋ + 2`, such as
+`k = ⌈√n⌉ + 1`, every resolution refutation of `Clique_{n,k} ∧ Color_{n,k-1}` has more than
+`2 ^ (⌊√⌊√n⌋⌋ / 2) / 2` lines. -/
+theorem CNF.two_pow_lt_two_mul_of_refutableInSize_cliqueColoring_of_sqrt_lt {s : ℕ}
+    (hn : 2 ^ 40 ≤ n) (hk : n.sqrt < k) (hk' : k ≤ n.sqrt + 2)
+    (h : (CNF.cliqueColoring n k (k - 1)).RefutableInSize s) :
+    2 ^ (n.sqrt.sqrt / 2) < 2 * s := by
+  obtain ⟨C, hsize, hC⟩ := CNF.exists_separates_of_refutableInSize_cliqueColoring h
+  exact (Monotone.two_pow_lt_size_of_separates_sqrt hn hk hk' hC).trans_le hsize
 
 end Cslib.Logic.PL

@@ -27,7 +27,11 @@ every finite-state fair-coin machine, with explicit networks encoded by
 `Cslib.Complexity.CountingSimulation.ExplicitAdmissible`. This discharges the network interface
 of the counting simulation (milestone H3 of #1833), so the conditional class containments of
 `Complexity.Computability.Complexity.Classes.CountingSimulation.Containments` hold assuming only a
-contraction algorithm.
+contraction algorithm. The joint time-and-space forms keep a single deciding machine within
+time `2 ^ (C * T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`, for a time-constructible
+`T` with `max n 2 ≤ T n`. The contraction algorithm remains an explicit hypothesis here;
+`Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_two_pow_div_sqrt_log_two` and its
+siblings discharge it with the contraction algorithm of Theorem D.1.
 
 **The family.** At the input `x`, the clock `t` and the schedule number `σ`, the network
 (`Cslib.Complexity.CountingSimulation.blockNetworkOf`) is the explicit block-counting network
@@ -61,6 +65,15 @@ heads), and the admissibility constant is `6 (3 k + 1) (s + k + 4)` for `s` stat
   `BPTIME_subset_iUnion_DTIME_of_contractionAlgorithm`,
   `PPTIME_subset_iUnion_DTIME_of_contractionAlgorithm`: the class containments assuming only a
   contraction algorithm.
+
+* `SharpTIME_subset_iUnion_FTIME_of_contractionAlgorithm`: exact terminal counting with binary
+  output, assuming only a contraction algorithm.
+* `exists_computableInTimeAndSpace_of_mem_SharpTIME_of_contractionAlgorithm`: its joint
+  time and polynomial-workspace bound.
+* `exists_decidableInTimeAndSpace_of_mem_NTIME_of_contractionAlgorithm`,
+  `exists_decidableInTimeAndSpace_of_mem_BPTIME_of_contractionAlgorithm`,
+  `exists_decidableInTimeAndSpace_of_mem_PPTIME_of_contractionAlgorithm`: the joint time and
+  polynomial-workspace bounds, assuming only a contraction algorithm.
 
 ## References
 
@@ -211,6 +224,65 @@ theorem networkFamilies_explicitAdmissible :
 /-! ### The class containments assuming a contraction algorithm -/
 
 variable {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
+
+/-- Exact terminal-path counting with subexponential time and polynomial workspace,
+conditional only on a contraction algorithm for admissible explicit networks. -/
+theorem exists_computableInTimeAndSpace_of_mem_SharpTIME_of_contractionAlgorithm
+    (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => G.2.contraction)
+      ExplicitAdmissible) (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n)
+    {f : α → ℕ} (hf : f ∈ SharpTIME enc T) :
+    ∃ C d : ℕ, ComputableInTimeAndSpace f enc encNat
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) :=
+  exists_computableInTimeAndSpace_of_mem_SharpTIME networkFamilies_explicitAdmissible A hT hTn hf
+
+/-- The functional counting containment, assuming only the explicit-network contraction
+algorithm. Output is the exact natural count in binary. -/
+theorem SharpTIME_subset_iUnion_FTIME_of_contractionAlgorithm
+    (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => G.2.contraction)
+      ExplicitAdmissible) (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
+    SharpTIME enc T ⊆ ⋃ C : ℕ,
+      FTIME enc encNat (fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n)))) :=
+  SharpTIME_subset_iUnion_FTIME networkFamilies_explicitAdmissible A hT hTn
+
+/-- **Nondeterministic time with polynomial workspace**, conditional only on a
+contraction algorithm for admissible explicit networks. For time-constructible `T` with
+`max n 2 ≤ T n`, one deterministic machine decides each problem in `NTIME[T]` within time
+`2 ^ (C * T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`. -/
+theorem exists_decidableInTimeAndSpace_of_mem_NTIME_of_contractionAlgorithm
+    (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => G.2.contraction)
+      ExplicitAdmissible) (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n)
+    {L : Set α} (hL : L ∈ NTIME enc T) :
+    ∃ C d : ℕ, DecidableInTimeAndSpace L enc
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) :=
+  exists_decidableInTimeAndSpace_of_mem_NTIME networkFamilies_explicitAdmissible A hT hTn hL
+
+/-- **Bounded-error probabilistic time with polynomial workspace**, conditional only on a
+contraction algorithm for admissible explicit networks. For time-constructible `T` with
+`max n 2 ≤ T n`, one deterministic machine decides each problem in `BPTIME[T]` within time
+`2 ^ (C * T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`. -/
+theorem exists_decidableInTimeAndSpace_of_mem_BPTIME_of_contractionAlgorithm
+    (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => G.2.contraction)
+      ExplicitAdmissible) (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n)
+    {L : Set α} (hL : L ∈ BPTIME enc T) :
+    ∃ C d : ℕ, DecidableInTimeAndSpace L enc
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) :=
+  exists_decidableInTimeAndSpace_of_mem_BPTIME networkFamilies_explicitAdmissible A hT hTn hL
+
+/-- **Strict-majority probabilistic time with polynomial workspace**, conditional only on a
+contraction algorithm for admissible explicit networks. For time-constructible `T` with
+`max n 2 ≤ T n`, one deterministic machine decides each problem in `PPTIME[T]` within time
+`2 ^ (C * T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`. -/
+theorem exists_decidableInTimeAndSpace_of_mem_PPTIME_of_contractionAlgorithm
+    (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => G.2.contraction)
+      ExplicitAdmissible) (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n)
+    {L : Set α} (hL : L ∈ PPTIME enc T) :
+    ∃ C d : ℕ, DecidableInTimeAndSpace L enc
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) :=
+  exists_decidableInTimeAndSpace_of_mem_PPTIME networkFamilies_explicitAdmissible A hT hTn hL
 
 /-- **`NTIME[T] ⊆ ⋃ C, DTIME[2 ^ (C * T / √⌊log₂ T⌋)]`**, conditional only on a contraction
 algorithm for admissible explicit networks, for a time-constructible `T` with `max n 2 ≤ T n`. -/

@@ -50,7 +50,7 @@ length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableInO.le
 ## References
 
 * [M. Sipser, *Introduction to the Theory of Computation*, Definition 9.1][Sipser2013]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 1.2][AroraBarak09]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 1.3][AroraBarak09]
 -/
 
 @[expose] public section
@@ -61,7 +61,7 @@ open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal
 
 /-- A bound `t` is time-constructible when some machine with a binary alphabet and finitely many
 states computes `t n` in binary from any word of length `n` within time `O(t n)`. Arora and Barak
-also ask for `n ≤ t n` [Arora and Barak, Section 1.2][AroraBarak09]; this definition omits that
+also ask for `n ≤ t n` [Arora and Barak, Section 1.3][AroraBarak09]; this definition omits that
 condition, and the results that need it, such as `Cslib.Complexity.DTIME_ssubset_DTIME`, assume it
 separately. -/
 def TimeConstructible (t : ℕ → ℕ) : Prop :=

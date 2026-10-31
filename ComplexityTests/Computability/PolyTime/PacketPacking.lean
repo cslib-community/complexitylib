@@ -65,7 +65,9 @@ theorem bigCol_degree : ∀ w, #{e | bigCol e = w} ≤ 1 := by decide +kernel
 
 theorem big_hK : 2 ^ 1 ≤ 32 := pow_le_card_of_packing (by norm_num) (by norm_num)
 
-example : (nativePacking 32 32 1 2 (edgeList bigRow bigCol)).2.1 * 2 ^ 1 ≤ 3 * 32 :=
+example :
+    let (_, numPackets, _) := nativePacking 32 32 1 2 (edgeList bigRow bigCol)
+    numPackets * 2 ^ 1 ≤ 3 * 32 :=
   numPackets_nativePacking_mul_le bigRow bigCol bigRow_degree bigCol_degree (by norm_num)
     (by norm_num)
 

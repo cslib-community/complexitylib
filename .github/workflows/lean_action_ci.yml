@@ -160,6 +160,8 @@ jobs:
           test -d .lake/packages
           python3 -B -m unittest scripts/test_check_tidy_surface.py
           python3 -B scripts/check_tidy_surface.py
+      - name: "Result registry references"
+        run: python3 -B scripts/results_registry.py --compiled
       # Lints for the files a pull request adds or changes: names in module docstrings' "Main …"
       # lists exist, and a new test file does more than restate signatures. See
       # scripts/check_changed_files.py. The checkout is shallow, so the base commit is fetched
