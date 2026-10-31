@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Computability.Complexity.Classes.CountingSimulation.CountingClasses
 import Complexity.Computability.Complexity.Classes.Constructible.Log
+import Complexity.Computability.Complexity.Classes.FunctionTime.Bounds
 
 /-! # Counting classes and strict containments in `DTIME[2 ^ T]`: checked instances
 
@@ -83,6 +84,17 @@ example : ModTIME 3 encBits (fun n => (n + 1) ^ 2 + 1) ⊂
 example : CeqTIME encBits (fun n => (n + 1) ^ 2 + 1) ⊂
     DTIME encBits fun n => 2 ^ ((n + 1) ^ 2 + 1) :=
   CeqTIME_ssubset_DTIME_two_pow timeConstructible_succ_sq_add_one max_le_succ_sq_add_one
+
+/-! ### Supporting API -/
+
+example {α : Type} {enc : α ↪ List Bool} : SharpTIME enc (· ^ 1) ⊆ SharpTIME enc (· ^ 2) :=
+  SharpTIME_pow_mono (by norm_num)
+
+example {α β : Type} {enc : α ↪ List Bool} {encOut : β ↪ List Bool} {f : α → β}
+    (hf : f ∈ FTIME enc encOut fun n => (n + 1) ^ 2 + 1) :
+    ∃ c, ∀ a, (encOut (f a)).length ≤ c * (((enc a).length + 1) ^ 2 + 1 + 1) := by
+  obtain ⟨c, -, -, hl⟩ := FTIME.exists_computableInO hf
+  exact ⟨c, hl⟩
 
 /-! ### Nonvacuity through the polynomial-time unions -/
 
