@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import Complexity.Logics.Propositional.CSP.ToBoolean
 import Complexity.Computability.Complexity.FineGrained.CountingFiniteCSP
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Bool
 
 /-!
 # Finite-domain CSP unit tests
@@ -100,10 +101,6 @@ example :
 
 example : (triangleCSP.toBoolean 3 3).numVars ≤ 3 * CSP.bitWidth 3 :=
   CSP.numVars_toBoolean_le (by decide)
-
-/-- Trivial encoding for the singleton relation alphabet `Unit`. -/
-def encUnit : Unit ↪ List Bool :=
-  ⟨fun _ => [], fun _ _ _ => rfl⟩
 
 -- Polynomial-time compilation and compiled encoding length bound
 example :

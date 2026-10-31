@@ -27,7 +27,9 @@ verifier (`BPP_subset_PP`).
 
 Gill requires a strict majority on members, as here; the variant with a non-strict majority
 defines the same class (`Cslib.Complexity.mem_PP_iff_decidesByNonstrictMajority`). The
-characterisation by probabilistic machines is not proved here.
+characterisation by fair-coin machines deciding by strict majority within polynomial time is
+`Cslib.Complexity.mem_PP_iff_exists_mem_PPTIME`, in
+`Complexity.Computability.Complexity.Classes.PP.Time`.
 
 ## Main definitions
 
