@@ -51,7 +51,7 @@ Chapter 5 (Sections 5.3 and 5.10) and Chapter 9 (Sections 9.1 and 9.2.2–9.2.3)
 2. **Ciphertext integrity and authenticated encryption (`ciGame`, `CiphertextIntegrity`,
    `AuthenticatedEncryption`, `ciOneTimeGame`, `OneTimeCiphertextIntegrity`,
    `OneTimeAuthenticatedEncryption`)** ([BonehShoup2023], Section 9.1, Attack Game 9.1 and
-   Definitions 9.1–9.4, printed pp. 358–359): in `ciGame` (and its single-query counterpart
+   Definitions 9.1–9.4, printed pp. 358–360): in `ciGame` (and its single-query counterpart
    `ciOneTimeGame`), an adaptive `CIAdversary` queries an encryption oracle on `n`-bit messages
    (logging returned ciphertexts in `queriedCiphertexts`) and wins by outputting a candidate
    ciphertext `ct` such that `!queriedCiphertexts.contains ct` and `(decrypt n k ct).isSome`. A
@@ -373,7 +373,7 @@ def INDCPA (E : SymmetricCipher) : Prop :=
     (IsOraclePPT encBool)
 
 /-- Stateful one-time left-or-right CPA encryption oracle ([BonehShoup2023], Section 2.2,
-Attack Game 2.1 and Definition 2.2; Section 9.1.1, Definition 9.4, printed p. 359): answers at most
+Attack Game 2.1 and Definition 2.2; Section 9.1.1, Definition 9.4, printed p. 360): answers at most
 one valid `n`-bit left-or-right encryption query (`!alreadyQueried && m0.length == n &&
 m1.length == n`), transitioning `alreadyQueried` from `false` to `true`, and returns `[]` on all
 subsequent or malformed queries. -/
@@ -502,7 +502,7 @@ theorem isPPT_cpaOneTimeGame (E : SymmetricCipher) {adversary : OracleDistinguis
 
 /-- One-time chosen-plaintext security (semantic security under a single encryption query,
 `OneTimeINDCPA`) for a symmetric cipher ([BonehShoup2023], Section 2.2, Attack Game 2.1 and
-Definition 2.2; Section 9.1.1, Definition 9.4, printed p. 359): every uniform strict
+Definition 2.2; Section 9.1.1, Definition 9.4, printed p. 360): every uniform strict
 `IsOraclePPT encBool` distinguisher has negligible advantage between
 `E.cpaOneTimeGame adversary false` and `E.cpaOneTimeGame adversary true`. -/
 def OneTimeINDCPA (E : SymmetricCipher) : Prop :=
@@ -1079,7 +1079,7 @@ def AuthenticatedEncryption (E : SymmetricCipher) : Prop :=
   E.INDCPA ∧ E.CiphertextIntegrity
 
 /-- Stateful one-time encryption oracle for the one-time ciphertext-integrity game
-([BonehShoup2023], Section 9.1.1, Definition 9.3, printed p. 359): if no ciphertext has been
+([BonehShoup2023], Section 9.1.1, Definition 9.3, printed p. 360): if no ciphertext has been
 returned yet (`queriedCiphertexts.isEmpty`) and `request.2.length == n`, encrypt `request.2` under
 `k`, record `[ct]`, and return `ct`; otherwise return `[]` without modifying
 `queriedCiphertexts`. -/
@@ -1093,7 +1093,7 @@ noncomputable def oneTimeCIEncryptionOracle (E : SymmetricCipher) (n : ℕ) (k :
       return ([], queriedCiphertexts)
 
 /-- The one-time ciphertext-integrity experiment ([BonehShoup2023], Section 9.1.1,
-Definition 9.3, printed p. 359): sample `k ← E.keyGen n`, run `adversary n []` with oracle access
+Definition 9.3, printed p. 360): sample `k ← E.keyGen n`, run `adversary n []` with oracle access
 to `E.oneTimeCIEncryptionOracle n k`, and accept when the adversary outputs a candidate ciphertext
 `ct` that was not returned by the encryption oracle (`!out.2.contains out.1`) and decrypts without
 rejection (`(E.decrypt n k out.1).isSome`). -/
@@ -1221,7 +1221,7 @@ theorem isPPT_ciOneTimeGame (E : SymmetricCipher) {adversary : CIAdversary}
   ((E.isPPTOn_ciOneTimeGame hadversary).preprocess (ComputableInPolyTime.fst _ _)).isPPT
 
 /-- One-time ciphertext integrity (`OneTimeCiphertextIntegrity`, or 1CI) for a symmetric cipher
-([BonehShoup2023], Section 9.1.1, Definition 9.3, printed p. 359): every uniform strict
+([BonehShoup2023], Section 9.1.1, Definition 9.3, printed p. 360): every uniform strict
 `IsOraclePPT encBits` adversary has negligible probability of outputting a fresh valid ciphertext
 in `ciOneTimeGame`. -/
 def OneTimeCiphertextIntegrity (E : SymmetricCipher) : Prop :=
@@ -1410,7 +1410,7 @@ theorem CiphertextIntegrity.oneTimeCiphertextIntegrity {E : SymmetricCipher}
   rw [eval_ciGame_ciLimitToOneQuery E ctBound adversary n (hctBound n)]
 
 /-- One-time authenticated encryption (`OneTimeAuthenticatedEncryption`, or `1AE`-security) for a
-symmetric cipher ([BonehShoup2023], Section 9.1.1, Definition 9.4, printed p. 359): the cipher
+symmetric cipher ([BonehShoup2023], Section 9.1.1, Definition 9.4, printed p. 360): the cipher
 satisfies both `OneTimeINDCPA` (semantic security under a single encryption query) and
 `OneTimeCiphertextIntegrity`. -/
 def OneTimeAuthenticatedEncryption (E : SymmetricCipher) : Prop :=
@@ -1637,7 +1637,7 @@ def INDCCA (E : SymmetricCipher) : Prop :=
     (IsOraclePPT encBool)
 
 /-- Stateful two-channel oracle for the one-time adaptive chosen-ciphertext experiment
-([BonehShoup2023], Section 9.2.2, Attack Game 9.2 and Definition 9.6, printed p. 363):
+([BonehShoup2023], Section 9.2.2, Attack Game 9.2 and Definition 9.6, printed pp. 362–363):
 * On an encryption query `(false, req)`: decode `m0 = unframe req` and `m1 = dropFrame req`; if
   no challenge ciphertext has been returned yet (`queriedCiphertexts.isEmpty`) and both messages
   have length `n`, encrypt `if bit then m1 else m0` under `k`, record `[ct]`, and return `ct`;
@@ -1662,7 +1662,7 @@ noncomputable def oneTimeCCAOracle (E : SymmetricCipher) (n : ℕ) (k : List Boo
         return ([], queriedCiphertexts)
 
 /-- The one-time adaptive chosen-ciphertext experiment ([BonehShoup2023], Section 9.2.2,
-Attack Game 9.2 and Definition 9.6, printed p. 363): sample `k ← E.keyGen n` and run
+Attack Game 9.2 and Definition 9.6, printed pp. 362–363): sample `k ← E.keyGen n` and run
 `adversary n []` against `E.oneTimeCCAOracle n k bit`. -/
 noncomputable def ccaOneTimeGame (E : SymmetricCipher) (adversary : CCAAdversary)
     (bit : Bool) (n : ℕ) : ProbComp Bool := do
