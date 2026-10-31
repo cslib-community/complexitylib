@@ -60,6 +60,11 @@ print pp. 645–648):
    every static coalition `I : Finset (Fin m)` for every circuit `C` without syntactic restrictions
    on `C.outputs`.
 
+Privacy is `PerfectSemiHonestPrivate` with the explicit simulators below: exact equality of
+distributions, with no certificate that the simulators run in probabilistic polynomial time as
+Goldreich's definitions require. Efficiency is certified only for the composed
+$\text{OT}_1^4$-hybrid protocol, in `Complexity.Crypto.Protocols.MPC.PolyTime`.
+
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.MPC.circuitFunctionality`: deterministic $m$-party functionality computed

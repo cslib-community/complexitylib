@@ -279,16 +279,16 @@ theorem toStepMachine_resourceCertificate (hhalt : ComputableInO m.halt encS enc
       (budget_prod hisN (budget_prod he (budget_prod hl (budget_prod ha hz)))) hst
     -- the three results
     have hres₁ := budget_prod (encB := encPair encS encNat) (budget_prod (fst' hr) hpos)
-      (budget_prod (encB := encMove) (budget_const (0 : SignType) hin hst) (snd' hr))
+      (budget_prod (encB := encSign) (budget_const (0 : SignType) hin hst) (snd' hr))
     have hres₂ := budget_prod (encB := encPair encS encNat) (budget_prod hq
       (budget_comp natSucc hpos (sq_bigOLe hpos.length_le)
         (.add hpos.length_le (.const 1 _))))
-      (budget_prod (encB := encMove) (budget_const (1 : SignType) hin hst)
+      (budget_prod (encB := encSign) (budget_const (1 : SignType) hin hst)
         (budget_const (encB := encBits) ([] : List Bool) hin hst))
     have hres₃ := budget_prod (encB := encPair encS encNat) (budget_prod hq
       (budget_comp natPred hpos (sq_bigOLe hpos.length_le)
         (.add hpos.length_le (.const 1 _))))
-      (budget_prod (encB := encMove) (budget_const (-1 : SignType) hin hst)
+      (budget_prod (encB := encSign) (budget_const (-1 : SignType) hin hst)
         (budget_const (encB := encBits) ([] : List Bool) hin hst))
     have hall := budget_ite hc hres₁ (budget_ite hl hres₂ hres₃)
     refine ((hall.of_enc_eq fun p => by rw [← stepBy_eq]; rfl).mono 4 (fun p => ?_)
