@@ -879,6 +879,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Binarize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildEntries
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffScheme
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
@@ -893,8 +894,10 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpans
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEvaluator
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketTerms
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ReductionLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Schedule
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
 public import Complexity.Computability.Circuit.Frontier.TwoSidedWitness
 public import Complexity.Computability.Circuit.Frontier.Unconditional
 public import Complexity.Computability.Circuit.Frontier.Witness
