@@ -86,21 +86,26 @@ def dom {U : ℕ} (s : State U) : Finset (Fin U) :=
 def ValuesBounded {U : ℕ} (V : ℕ) (s : State U) : Prop :=
   ∀ u v, s u = some v → v < V
 
+/-- Return type for each `Op U`. -/
+abbrev Op.Result {U : ℕ} : Op U → Type
+  | .get _ => Option ℕ
+  | .insert _ _ => Unit
+
+/-- Pure transition function for dictionary operations. -/
+abbrev step {U : ℕ} (s : State U) : (o : Op U) → State U × o.Result
+  | .get u => (s, s u)
+  | .insert u v => (Function.update s u (some v), ())
+
+/-- Admissibility precondition for dictionary operations. -/
+abbrev valid {U : ℕ} (V n_max : ℕ) (s : State U) : Op U → Prop
+  | .get _ => True
+  | .insert u v => ((dom s).card < n_max ∨ (s u).isSome) ∧ v < V
+
 /-- Bounded-capacity dictionary specification over key universe `Fin U`, value bound `V`, and
 maximum key count `n_max`. -/
-@[expose]
-def spec (U V n_max : ℕ) : Cslib.Stateful.Spec where
-  State := State U
-  Op := Op U
-  Result
-    | .get _ => Option ℕ
-    | .insert _ _ => Unit
-  step s
-    | .get u => (s, s u)
-    | .insert u v => (Function.update s u (some v), ())
-  valid s
-    | .get _ => True
-    | .insert u v => ((dom s).card < n_max ∨ (s u).isSome) ∧ v < V
+abbrev spec (U V n_max : ℕ) : Cslib.Stateful.Spec :=
+  Cslib.Stateful.Spec.ofFn (State := State U) (Op := Op U) (Result := Op.Result)
+    step (valid V n_max)
 
 /-! ### Domain, capacity, and value-bound lemmas -/
 
@@ -171,15 +176,15 @@ theorem card_dom_insert_eq_of_eq_none {U : ℕ} {s : State U} {u : Fin U}
 `(dom s).card ≤ n_max`. -/
 theorem card_dom_step_le_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
     (hs : (dom s).card ≤ n_max) (hval : (spec U V n_max).valid s o) :
-    (dom ((spec U V n_max).step s o).1).card ≤ n_max := by
+    (dom ((spec U V n_max).stepFn s o).1).card ≤ n_max := by
   cases o with
   | get u => exact hs
   | insert u v =>
     rcases hval.1 with hlt | hisSome
     · have hle := card_dom_insert_le s u v
-      dsimp only [spec]
+      dsimp only [spec, Cslib.Stateful.Spec.stepFn, step]
       omega
-    · dsimp only [spec]
+    · dsimp only [spec, Cslib.Stateful.Spec.stepFn, step]
       rw [card_dom_insert_eq_of_isSome hisSome]
       exact hs
 
@@ -207,12 +212,12 @@ theorem valuesBounded_empty (U V : ℕ) : ValuesBounded V (empty U) := by
 /-- Any single admissible dictionary operation preserves `ValuesBounded V`. -/
 theorem valuesBounded_step_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
     (hs : ValuesBounded V s) (hval : (spec U V n_max).valid s o) :
-    ValuesBounded V ((spec U V n_max).step s o).1 := by
+    ValuesBounded V ((spec U V n_max).stepFn s o).1 := by
   cases o with
   | get u => exact hs
   | insert u v =>
     intro x w hxw
-    dsimp only [spec] at hxw
+    dsimp only [spec, Cslib.Stateful.Spec.stepFn, step] at hxw
     by_cases hxu : x = u
     · subst hxu
       rw [Function.update_self] at hxw
