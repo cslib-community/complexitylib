@@ -4,17 +4,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Computability.Interactive.Efficient
+import Complexity.Computability.Interactive.Plain
 import Complexity.Crypto.Computational.SchnorrProtocol
 import Complexity.Crypto.Computational.DiscreteLog.SchnorrGroup
 import Complexity.Crypto.Negligible.Basic
 import Complexity.Probability.PMF.Bind
+import ComplexityTests.InteractiveKnowledgeSound
 import ComplexityTests.UnboundedSimulators
 
 /-!
-# Efficient special soundness and special HVZK
+# Efficient extractors and simulators
 
-Checks of `SigmaProtocol.EfficientSpecialSoundness` and `SigmaProtocol.EfficientSpecialHVZK` on
-both sides.
+Checks of `SigmaProtocol.EfficientSpecialSoundness`, `SigmaProtocol.EfficientSpecialHVZK`,
+`Interactive.Verifier.EfficientKnowledgeSound` and `Interactive.Reduction.EfficientHVZK` on both
+sides.
 
 * **Schnorr** satisfies both. The extractor computes `(c - c')⁻¹ (z - z')` with `extractNat`
   (evaluated here on concrete numbers), and the strict PPT simulator outputs an accepting
@@ -28,12 +32,19 @@ both sides.
   strict PPT algorithm computing discrete logarithms. So under `PrimeOrderGroupFamily.DiscreteLog`
   neither is efficient, for any simulator error at most `1/2`
   (`not_efficientSpecialHVZK_sendWitness`, `not_efficientSpecialSoundness_trustMe`).
+* **Interactive reductions.** Sending the witness is efficiently knowledge sound, and efficiently
+  HVZK when the witness is the statement. For discrete logarithms, the verifier that accepts
+  without interaction is knowledge sound and sending the witness is HVZK, both with unbounded
+  algorithms (`exists_knowledgeSound_dlTrustMe`, `hvzk_sendWitnessDL`); under the
+  discrete-logarithm assumption neither is efficient (`not_efficientKnowledgeSound_dlTrustMe`
+  for any error below `1`, `not_efficientHVZK_sendWitnessDL` for `ε + δ ≤ 1/2`).
 -/
 
 namespace ComplexityTests.EfficientSimulators
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.SigmaProtocol
   Cslib.Interactive Probability Turing.MultiTapeTM ComplexityTests.UnboundedSimulators.Sigma
+  Interactive.Spec
 open scoped ENNReal NNReal
 
 /-! ### Schnorr -/
@@ -192,5 +203,167 @@ theorem not_efficientSpecialSoundness_trustMe (hDL : F.DiscreteLog setup)
     rw [encNat_apply, ofBits, Nat.foldr_bit_bits, ZMod.natCast_zmod_val]
   rw [ProbComp.eval_pure, PMF.toOuterMeasure_pure_apply]
   simp [hmem]
+
+/-! ### Interactive reductions: sending the witness -/
+
+/-- Transcripts of one message, encoded by the message. -/
+def messageEncoding {W : Type} (enc : W ↪ List Bool) :
+    Transcript (InteractiveKnowledgeSound.witnessSpec W) ↪ List Bool :=
+  ⟨fun τ => enc τ.1, fun _ _ h => Prod.ext (enc.injective h) rfl⟩
+
+section SendWitness
+
+open ComplexityTests.InteractiveKnowledgeSound
+
+/-- The honest transcript of sending the witness is the witness. -/
+theorem sendWitness_transcript {X W : Type} (rel : X → W → Prop) [∀ x w, Decidable (rel x w)]
+    (x : X) (w : W) :
+    (World.plain.eval ((sendWitness rel).run x w)).map Prod.fst = PMF.pure (w, ()) := by
+  rw [Reduction.run, World.plain_eval_execute, PMF.map_comp]
+  simp only [sendWitness, runStrategy, plainLaw_bind, plainLaw_pure, PMF.pure_bind, PMF.pure_map]
+  rfl
+
+variable (rel : List Bool → List Bool → Prop) [∀ x w, Decidable (rel x w)]
+
+/-- The word encodings of sending a word witness for a word statement, over a unary security
+parameter that the protocol ignores. -/
+def wordEncoding :
+    Interactive.Encoding ℕ (fun _ => witnessSpec (List Bool)) (fun _ => List Bool) where
+  index := encUnary
+  statement _ := encBits
+  transcript _ := messageEncoding encBits
+
+/-- **Sending the witness is efficiently knowledge sound** with error `0`: the extractor reads
+the witness off the transcript. -/
+example : Verifier.EfficientKnowledgeSound (fun _ => (sendWitness rel).verifier) (fun _ => rel)
+    (fun _ => Accept) (wordEncoding) (fun _ => encUnit) (fun _ => encBits) (fun _ _ τ _ => τ.1)
+    (fun _ => 0) where
+  knowledgeSound _ := sendWitness_knowledgeSound rel
+  polyTime := ⟨fun p => p.2.2.1, by fun_prop, fun _ _ _ _ => by rfl⟩
+
+/-- **Sending the witness is efficiently perfectly HVZK when the witness is the statement**: the
+simulator echoes the statement. -/
+example : Reduction.EfficientHVZK (fun _ => sendWitness fun x w : List Bool => w = x)
+    (fun _ x w => w = x) wordEncoding (fun _ x => pure (x, ())) (fun _ => 0) (fun _ => 0) where
+  hvzk _ x w hxw := by
+    rw [sendWitness_transcript, hxw, ProbComp.eval_pure]
+    exact ComplexityTests.UnboundedSimulators.closeTo_refl _
+  realized := ⟨fun p => pure p.2, (ComputableInPolyTime.snd _ _).isPPTOn, fun _ x => by
+    rw [ProbComp.eval_pure, ProbComp.eval_pure, PMF.pure_map]
+    exact ComplexityTests.UnboundedSimulators.closeTo_refl (PMF.pure x)⟩
+
+end SendWitness
+
+/-! ### Interactive reductions for discrete logarithms -/
+
+section DiscreteLog
+
+open ComplexityTests.InteractiveKnowledgeSound
+
+/-- The discrete-logarithm relation with the statement first, as interactive reductions take
+it. -/
+abbrev dlStmtRel (F : PrimeOrderGroupFamily) (i : ℕ × F.Desc) (u : F.Carrier i.2)
+    (α : ZMod (F.order i.2)) : Prop :=
+  dlRel F i α u
+
+/-- The verifier for discrete logarithms that accepts without interaction. -/
+def dlTrustMe (F : PrimeOrderGroupFamily) (i : ℕ × F.Desc) :
+    Verifier OracleSpec.empty [] (F.Carrier i.2) Unit where
+  samplers := ()
+  decide _ _ := pure (some ())
+
+/-- Its word encodings: statements by the family's encoding, and the empty transcript. -/
+def dlTrustMeEncoding (F : PrimeOrderGroupFamily) :
+    Interactive.Encoding (ℕ × F.Desc) (fun _ => []) (fun i => F.Carrier i.2) where
+  index := encPair encUnary F.encDesc
+  statement i := F.encodeEmbedding i.2
+  transcript _ := encUnit
+
+/-- Accepting without interaction is knowledge sound with error `0` at every index, with an
+unbounded extractor: every statement has a witness. -/
+theorem exists_knowledgeSound_dlTrustMe (i : ℕ × F.Desc) :
+    ∃ E, (dlTrustMe F i).KnowledgeSound (dlStmtRel F i) Accept E 0 :=
+  ⟨fun u _ _ => (dlRel_total i u).choose, knowledgeSound_of_sound _
+    (fun u _ _ _ => (dlRel_total i u).choose_spec) fun u hu => absurd (dlRel_total i u) hu⟩
+
+/-- **Accepting without interaction is not efficiently knowledge sound** under the
+discrete-logarithm assumption, with any extractor and any error below `1`: the extractor would
+compute discrete logarithms from the statement alone. -/
+theorem not_efficientKnowledgeSound_dlTrustMe (hDL : F.DiscreteLog setup)
+    (E : ∀ i : ℕ × F.Desc, F.Carrier i.2 → Transcript [] → Unit → ZMod (F.order i.2))
+    {ε : ℕ × F.Desc → ℝ≥0∞} (hε : ∀ i, ε i < 1) :
+    ¬ Verifier.EfficientKnowledgeSound (dlTrustMe F) (dlStmtRel F) (fun _ => Accept)
+      (dlTrustMeEncoding F) (fun _ => encUnit) (fun i => F.encScalar i.2) E ε := by
+  intro h
+  obtain ⟨f, hf, hreal⟩ := h.polyTime
+  have hE (i : ℕ × F.Desc) (u : F.Carrier i.2) : dlStmtRel F i u (E i u () ()) := by
+    by_contra hnot
+    have hk := h.knowledgeSound i u (pure ())
+    rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hk
+    simp only [runStrategy, plainLaw_bind, plainLaw_pure, PMF.pure_bind] at hk
+    rw [PMF.toOuterMeasure_pure_apply, ite_eq_left (show _ from ⟨⟨(), rfl, trivial⟩, hnot⟩)] at hk
+    exact absurd hk (not_le.mpr (hε i))
+  let prepare : ℕ × F.Desc × List Bool → (ℕ × F.Desc) × List Bool × List Bool × List Bool :=
+    fun input => ((input.1, input.2.1), input.2.2, encUnit (), encUnit ())
+  refine not_half_le_discreteLog hDL (adversary := fun n input => pure (f (prepare (n, input))))
+    (hf.comp (show ComputableInPolyTime prepare _ _ by fun_prop)).isPPTOn fun n d α => ?_
+  have hα : E (n, d) (α • F.generator d) () () = α :=
+    dlRel_unique (n, d) (hE (n, d) _) rfl
+  have hmem : f (prepare (n, d, F.encode d (α • F.generator d))) ∈
+      {w : List Bool | (ofBits w : ZMod (F.order d)) = α} := by
+    change ((ofBits (f (prepare (n, d, F.encode d (α • F.generator d)))) : ℕ) :
+      ZMod (F.order d)) = α
+    rw [show f (prepare (n, d, F.encode d (α • F.generator d))) =
+      F.encScalar d (E (n, d) (α • F.generator d) () ()) from hreal (n, d) _ () (), hα]
+    change ((ofBits (encNat α.val) : ℕ) : ZMod (F.order d)) = α
+    rw [encNat_apply, ofBits, Nat.foldr_bit_bits, ZMod.natCast_zmod_val]
+  rw [ProbComp.eval_pure, PMF.toOuterMeasure_pure_apply]
+  simp [hmem]
+
+/-- Sending the witness, for discrete logarithms. -/
+noncomputable abbrev sendWitnessDL (F : PrimeOrderGroupFamily) (i : ℕ × F.Desc) :=
+  sendWitness (dlStmtRel F i)
+
+/-- Its word encodings: statements by the family's encoding, and the transcript by its scalar in
+binary. -/
+def sendWitnessDLEncoding (F : PrimeOrderGroupFamily) :
+    Interactive.Encoding (ℕ × F.Desc) (fun i => witnessSpec (ZMod (F.order i.2)))
+      (fun i => F.Carrier i.2) where
+  index := encPair encUnary F.encDesc
+  statement i := F.encodeEmbedding i.2
+  transcript i := messageEncoding (F.encScalar i.2)
+
+/-- Sending the witness is perfectly HVZK at every index, with an unbounded simulator: every
+statement has exactly one witness. -/
+theorem hvzk_sendWitnessDL (i : ℕ × F.Desc) :
+    (sendWitnessDL F i).HVZK (dlStmtRel F i)
+      (ComplexityTests.UnboundedSimulators.choiceSim (sendWitnessDL F i) (dlStmtRel F i)) 0 :=
+  ComplexityTests.UnboundedSimulators.hvzk_of_unique _ fun _ _ _ h h' => dlRel_unique i h h'
+
+/-- **Sending the witness is not efficiently HVZK** under the discrete-logarithm assumption, with
+any simulator and errors with `ε + δ ≤ 1/2`: the realizing program outputs the discrete
+logarithm. -/
+theorem not_efficientHVZK_sendWitnessDL (hDL : F.DiscreteLog setup)
+    (Sim : ∀ i : ℕ × F.Desc, F.Carrier i.2 → ProbComp (Transcript (witnessSpec
+      (ZMod (F.order i.2)))))
+    {ε δ : ℕ × F.Desc → ℝ≥0∞} (hεδ : ∀ i, ε i + δ i ≤ 1 / 2) :
+    ¬ Reduction.EfficientHVZK (sendWitnessDL F) (dlStmtRel F) (sendWitnessDLEncoding F) Sim ε
+      δ := by
+  intro h
+  obtain ⟨program, hppt, hreal⟩ := h.realized
+  refine not_half_le_discreteLog hDL
+    (adversary := fun n input => program ((n, input.1), input.2))
+    (hppt.preprocess (prepare := fun input : ℕ × F.Desc × List Bool =>
+      ((input.1, input.2.1), input.2.2)) (by fun_prop)) fun n d α => ?_
+  have hclose := hreal.closeTo_run h.hvzk (i := (n, d)) (x := α • F.generator d) (w := α) rfl
+    {w | (ofBits w : ZMod (F.order d)) = α}
+  rw [sendWitness_transcript, PMF.pure_map, PMF.toOuterMeasure_pure_apply, ite_eq_left (by
+    change ((ofBits (encNat α.val) : ℕ) : ZMod (F.order d)) = α
+    rw [encNat_apply, ofBits, Nat.foldr_bit_bits, ZMod.natCast_zmod_val])] at hclose
+  calc (1 / 2 : ℝ≥0∞) = 1 - 1 / 2 := by rw [one_div, ENNReal.one_sub_inv_two]
+    _ ≤ 1 - (ε (n, d) + δ (n, d)) := tsub_le_tsub_left (hεδ _) 1
+    _ ≤ _ := tsub_le_iff_right.mpr hclose
+
+end DiscreteLog
 
 end ComplexityTests.EfficientSimulators

@@ -1469,6 +1469,7 @@ public import Complexity.Computability.Geometry.Orthogonal.Encoding
 public import Complexity.Computability.Geometry.Orthogonal.Subdivision
 public import Complexity.Computability.Interactive.Basic
 public import Complexity.Computability.Interactive.Bundle
+public import Complexity.Computability.Interactive.Efficient
 public import Complexity.Computability.Interactive.GKR.Layered
 public import Complexity.Computability.Interactive.GKR.Protocol
 public import Complexity.Computability.Interactive.GKR.Summand
