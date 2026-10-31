@@ -1595,7 +1595,9 @@ noncomputable def prfMAC (family : List Bool → List Bool → List Bool)
   verify_polyTime := by
     have htidy := hpoly.tidy
     have hcall : ComputableTidilyInPolyTime
-        (fun p : List Bool × List Bool × List Bool => family p.1 p.2.1)
+        (fun p : List Bool × List Bool × List Bool =>
+          let rest := p.2
+          family p.1 rest.1)
         (encPair encBits (encPair encBits encBits)) encBits :=
       htidy.comp ((ComputableTidilyInPolyTime.fst _ _).prod
         ((ComputableTidilyInPolyTime.fst _ _).comp (ComputableTidilyInPolyTime.snd _ _)))
