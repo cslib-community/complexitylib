@@ -290,7 +290,7 @@ theorem orderedTableRep_runTableFrom {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_
   induction ops generalizing s T with
   | nil => exact hrep
   | cons o os ih =>
-    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).step s o).1).card ≤ n_max :=
+    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
     | get u =>

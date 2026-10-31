@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.PolyTime.CSP.ToCNF
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 /-!
 # Polynomial-time variable occurrences of CSP instances
@@ -21,6 +22,8 @@ The variable occurrences `F.vars` of a CSP instance, their number, and the auxil
 * `Cslib.Complexity.CSP.computableInPolyTime_vars`: the occurrence list `F.vars`.
 * `Cslib.Complexity.CSP.computableInPolyTime_length_vars`: its length, in unary.
 * `Cslib.Complexity.CSP.computableInPolyTime_varCNF`: the auxiliary formula `F.varCNF`.
+* `Cslib.Complexity.CSP.computableInPolyTime_unary_to_binary`: re-encoding natural-number
+  variables from unary to binary.
 -/
 
 @[expose] public section
@@ -54,5 +57,23 @@ theorem computableInPolyTime_varCNF (encRel : Rel ↪ List Bool) (encV : V ↪ L
       (encCSP encRel encV) (encList (encList (encPair encV encBool))) := by
   unfold CSP.varCNF
   fun_prop
+
+/-- Re-encoding the natural-number variables of a CSP instance from unary to binary is computable
+in polynomial time. -/
+theorem computableInPolyTime_unary_to_binary (encRel : Rel ↪ List Bool) :
+    ComputableInPolyTime (fun F : CSP Rel ℕ => F) (encCSP encRel encUnary)
+      (encCSP encRel encNat) := by
+  have h : ComputableInPolyTime (CSP.relabel (Rel := Rel) (V := ℕ) (W := ℕ) fun n => n)
+      (encCSP encRel encUnary) (encCSP encRel encNat) := by
+    unfold CSP.relabel Constraint.relabel
+    fun_prop
+  have heq : (CSP.relabel (Rel := Rel) (V := ℕ) (W := ℕ) fun n => n) = fun F => F := by
+    funext F
+    induction F with
+    | nil => rfl
+    | cons c F ih =>
+      simp only [CSP.relabel, List.map_cons, Constraint.relabel, List.map_id']
+      exact congrArg (c :: ·) ih
+  rwa [heq] at h
 
 end Cslib.Complexity.CSP
