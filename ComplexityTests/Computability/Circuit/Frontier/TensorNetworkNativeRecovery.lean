@@ -39,6 +39,11 @@ example : (mult 1 1 1 1, mult 1 1 1 3, mult 1 1 1 0) = (1, 1, 0) := by decide
 `E_{-1}(0) F(-1) + E_1(0) F(1) = (4 + 6) / 2 = 5` modulo `8`, computing modulo `2 ^ (3 + 2)`. -/
 example : recover 3 2 [1, 1] 1 1 1 [[0, 0]] [[], [[4, 0]], [], [[6, 0]]] = [5, 0] := by decide
 
+/-- The value table of that recovery, built by storing `F(-1)` at node index `1` and `F(1)` at
+node index `3`. -/
+example : storeValue (storeValue [] 1 [4, 0]) 3 [6, 0] = [[], [[4, 0]], [], [[6, 0]]] := by
+  decide
+
 /-- The same recovery with `Δ = (a + 1) ∑_t q_t = 4`, the shift that `val_recover` assumes. -/
 example : recover 3 4 [1, 1] 1 1 1 [[0, 0]] [[], [[4, 0]], [], [[6, 0]]] = [5, 0] := by decide
 
@@ -60,5 +65,10 @@ example : Turing.MultiTapeTM.ComputableInPolyTime (fun n : ℕ => twoVal n n)
     Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary :=
   computableInPolyTime_twoVal Turing.MultiTapeTM.ComputableInPolyTime.id'
     Turing.MultiTapeTM.ComputableInPolyTime.id'
+
+/-- A value computed at precision `3` lifts to precision `5` with an error divisible by `2 ^ 3`. -/
+example (y : Ring 5 [1, 1]) (hw : val 3 [1, 1] [5, 0] = reduce (by norm_num) [1, 1] y) :
+    ∃ c, val 5 [1, 1] [5, 0] = y + 2 ^ 3 * c :=
+  exists_val_eq_add_of_val_eq _ hw
 
 end ComplexityTests.TensorNetworkNativeRecovery

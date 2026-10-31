@@ -28,7 +28,7 @@ The resulting normalized bound uses the final state of the real compression recu
 the raw prefix at `j + 1`. The environment may jointly determine the increments, initial
 states, true rows, retained endpoints, and first overflow. No independence is assumed.
 
-This is the bounded-output integration of `buf-false-charge` in the proof of
+This is the bounded-output integration of (8.12) in the proof of
 [OpenAI2026LogSpace, Section 8.4, Proposition 8.5], on the fourth-moment route of issue #1721.
 It does not supply prefix mean/noise budgets, sum their geometric costs, prove post-overflow
 relative stability, or assert the complete integrated compression estimate.
@@ -43,7 +43,8 @@ relative stability, or assert the complete integrated compression estimate.
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 8.4, equations labelled `buf-false-charge` and `buf-false-sum`
+  Section 8.4, equations (8.12) on p. 48 and (8.16) on p. 49 (source labels
+  `buf-false-charge` and `buf-false-sum`)
   (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 
