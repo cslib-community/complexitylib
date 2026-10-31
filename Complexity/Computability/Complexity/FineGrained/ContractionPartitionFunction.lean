@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CSPNetworkPolyTime
 public import Complexity.Computability.Complexity.FineGrained.ContractionCounting
+public import Complexity.Logics.Propositional.CSP.HardCore
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -31,8 +32,9 @@ over a finite relation alphabet
 On instances in which every variable occurs at most `Δ` times, `N ≤ Δ n`, so the time is
 `2 ^ O_{k,W,Δ}(n / √log n)` times a polynomial
 (`ContractionPartitionFunction.exists_partitionFunctionCounter_boundedDegree`). Weighted counting
-problems on bounded-degree graphs, such as independent sets and the hard-core model, or perfect
-matchings with one Boolean variable per edge, are such instances.
+problems on bounded-degree graphs, such as independent sets and the hard-core model
+(`ContractionPartitionFunction.exists_hardCoreCounter`), or perfect matchings with one Boolean
+variable per edge, are such instances.
 
 The machine is that of `ContractionCounting.exists_modelCounter` with weighted tables: it writes
 out the constraint network of the instance
@@ -55,6 +57,8 @@ novelty is made for the application.
   for each occurrence bound `Δ`, exponent `A (n + 1) / √⌊log₂ (n + 2)⌋`.
 * `Cslib.Complexity.ContractionPartitionFunction.exists_partitionFunctionCounter_of_finite`: the
   counter over a finite relation alphabet.
+* `Cslib.Complexity.ContractionPartitionFunction.exists_hardCoreCounter`: the weighted count of
+  independent sets of bounded-degree graphs (the hard-core model with integer fugacity).
 
 ## References
 
@@ -418,5 +422,33 @@ theorem exists_partitionFunctionCounter_of_finite [Finite Rel] (encRel : Rel ↪
   obtain ⟨W, hW⟩ := hfin.bddAbove
   exact exists_partitionFunctionCounter_boundedDegree encRel k W wt (fun _ _ => of_finite _)
     fun R w hw => hW ⟨(R, w), ⟨Set.mem_univ _, hw⟩, rfl⟩
+
+/-- **Independent sets of bounded-degree graphs.** For each fugacity `t`, one machine computes, on
+the encoded hard-core instance `CSP.hardCore n E` of a graph on the vertices `0, …, n - 1` with
+edge list `E`, the sum of `t ^ |I|` over the independent sets `I` of the graph (for `t = 1`, their
+number), in polynomial space, and for each degree bound `Δ` in time
+`2 ^ (A (n + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding length on graphs whose
+vertices have at most `Δ` incident edges. -/
+theorem exists_hardCoreCounter (t : ℕ) :
+    ∃ (count : CSP Bool ℕ → ℕ) (T S : CSP Bool ℕ → ℕ) (e b : ℕ),
+      (∀ (n : ℕ) (E : List (ℕ × ℕ)), (∀ x ∈ E, x.1 < n ∧ x.2 < n) →
+        count (CSP.hardCore n E) =
+          ∑ I ∈ (Finset.range n).powerset with ∀ x ∈ E, ¬(x.1 ∈ I ∧ x.2 ∈ I), t ^ I.card) ∧
+      ComputableInO count (encCSP encBool encNat) encNat T S ∧
+      (∀ F, S F = ((encCSP encBool encNat F).length + 1) ^ b) ∧
+      ∀ Δ : ℕ, ∃ A : ℕ, ∀ (n : ℕ) (E : List (ℕ × ℕ)), (∀ x ∈ E, x.1 < n ∧ x.2 < n) →
+        (∀ v, (E.flatMap fun x => [x.1, x.2]).count v ≤ Δ) →
+        T (CSP.hardCore n E) ≤ 2 ^ (A * (n + 1) / Nat.sqrt (Nat.log 2 (n + 2))) *
+          ((encCSP encBool encNat (CSP.hardCore n E)).length + 1) ^ e := by
+  obtain ⟨count, T, S, e, b, hcount, hc, hS, hT⟩ :=
+    exists_partitionFunctionCounter_of_finite encBool 2 (CSP.hardCoreWeight t)
+  refine ⟨count, T, S, e, b, fun n E hE => ?_, hc, hS, fun Δ => ?_⟩
+  · rw [hcount _ fun c hc => ?_, CSP.partitionFunction_hardCore t hE]
+    simp only [CSP.hardCore, List.mem_append, List.mem_map] at hc
+    rcases hc with ⟨v, -, rfl⟩ | ⟨x, -, rfl⟩ <;> simp
+  · obtain ⟨A, hA⟩ := hT (Δ + 1)
+    refine ⟨A, fun n E hE hΔ => ?_⟩
+    have h := hA _ fun v => (CSP.count_vars_hardCore n E v).trans (by have := hΔ v; omega)
+    rwa [CSP.numVars_hardCore hE] at h
 
 end Cslib.Complexity.ContractionPartitionFunction

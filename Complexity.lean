@@ -3231,6 +3231,7 @@ public import Complexity.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import Complexity.Logics.Propositional.CNF.TwoCNF
 public import Complexity.Logics.Propositional.CNF.UnsatVal
 public import Complexity.Logics.Propositional.CSP
+public import Complexity.Logics.Propositional.CSP.HardCore
 public import Complexity.Logics.Propositional.CSP.PartitionFunction
 public import Complexity.Logics.Propositional.CSP.ToBoolean
 public import Complexity.Logics.Propositional.CSP.ToCNF
