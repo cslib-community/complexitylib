@@ -193,10 +193,10 @@ structure SymmetricCipher where
   keyGen_ppt : IsPPTOn encUnary encBits keyGen
   /-- Encryption is uniformly strict PPT in `(n, k, msg)`. -/
   encrypt_ppt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-    (fun p => encrypt p.1 p.2.1 p.2.2)
+    (fun ⟨n, k, msg⟩ => encrypt n k msg)
   /-- Decryption is computable in plain polynomial time on `(n, k, ct)`. -/
   decrypt_polyTime : ComputableInPolyTime
-    (fun p : ℕ × List Bool × List Bool => decrypt p.1 p.2.1 p.2.2)
+    (fun ⟨n, k, ct⟩ => decrypt n k ct)
     (encPair encUnary (encPair encBits encBits)) (encOption encBits)
   /-- Every ciphertext produced by `encrypt` on an `n`-bit message under a supported secret key at
   security parameter `n` decrypts to `some msg`. -/
@@ -2305,29 +2305,31 @@ maintains `(rem, (hasCaptured, capturedCt)) : ℕ × (Bool × List Bool)`.
 noncomputable def ccaToCIHandler (n ctBound : ℕ) (bit : Bool) (request : Bool × List Bool) :
     StateT (ℕ × (Bool × List Bool)) (WordOracleComp Unit) (List Bool) :=
   fun state =>
-    if state.2.1 then
-      pure ([], (state.1, (true, state.2.2)))
+    let rem := state.1
+    let cap := state.2
+    if cap.1 then
+      pure ([], (rem, (true, cap.2)))
     else
-      if state.1 == 0 then
+      if rem == 0 then
         if request.1 then
           pure ([], (0, (true, request.2)))
         else
           pure ([], (0, (true, [])))
       else
         if request.1 then
-          pure ([], (state.1 - 1, (false, [])))
+          pure ([], (rem - 1, (false, [])))
         else
           if ((unframe request.2).length == n) && ((dropFrame request.2).length == n) then
-            (fun ct => (ct, (state.1 - 1, (false, [])))) <$>
+            (fun ct => (ct, (rem - 1, (false, [])))) <$>
               (List.take ctBound <$>
                 ProbOracleComp.query ((), if bit then dropFrame request.2 else unframe request.2))
           else
-            pure ([], (state.1 - 1, (false, [])))
+            pure ([], (rem - 1, (false, [])))
 
 /-- Deterministic-index ciphertext-integrity reduction at query countdown `j`
 ([BonehShoup2023], Section 9.2.3, Theorem 9.1): run `adversary n []` against
 `ccaToCIHandler n (ctBound n) bit` starting from `(j, (false, []))` and output the captured
-ciphertext candidate `out.2.2.2`. -/
+ciphertext candidate `cap.2`. -/
 noncomputable def ccaToCIAtIndexAdversary (ctBound : ℕ → ℕ) (j : ℕ) (bit : Bool)
     (adversary : CCAAdversary) : CIAdversary :=
   fun n _ => do
@@ -2336,7 +2338,9 @@ noncomputable def ccaToCIAtIndexAdversary (ctBound : ℕ → ℕ) (j : ℕ) (bit
         (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
         (ccaToCIHandler n (ctBound n) bit))
       (adversary n [])).run (j, (false, []))
-    return out.2.2.2
+    let finalState := out.2
+    let cap := finalState.2
+    return cap.2
 
 /-- Reduction from decryption-oracle forgery in `ccaRejectGame` to the ciphertext-integrity game
 `ciGame` for fixed challenge bit `bit` ([BonehShoup2023], Section 9.2.3, adversary $B_{\mathrm{ci}}$

@@ -52,8 +52,9 @@ noncomputable def publicKeyGame (keys : PMF (List Bool))
     (adversary : Adversary) (bit : Bool) (security : ℕ) : Game := do
   let pk ← keys
   let choice ← ProbComp.eval (adversary.choose security pk)
+  let msgs := choice.1
   let ciphertext ← ProbComp.eval
-    (encrypt security pk (if bit then choice.1.2 else choice.1.1))
+    (encrypt security pk (if bit then msgs.2 else msgs.1))
   ProbComp.eval (adversary.guess security choice.2 ciphertext)
 
 /-- An honest key generator contributes precisely its public-key marginal. -/
@@ -70,8 +71,9 @@ noncomputable def keyDistinguisher
     (encrypt : ℕ → List Bool → Bool → ProbComp (List Bool))
     (adversary : Adversary) : Distinguisher := fun security pk => do
   let choice ← adversary.choose security pk
+  let msgs := choice.1
   let bit ← ProbComp.uniform Bool
-  let ciphertext ← encrypt security pk (if bit then choice.1.2 else choice.1.1)
+  let ciphertext ← encrypt security pk (if bit then msgs.2 else msgs.1)
   let guess ← adversary.guess security choice.2 ciphertext
   return guess ^^ bit
 
@@ -80,7 +82,7 @@ are certified on their complete inputs. -/
 theorem isPPT_keyDistinguisher
     {encrypt : ℕ → List Bool → Bool → ProbComp (List Bool)} {adversary : Adversary}
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
-      (fun input => encrypt input.1 input.2.1 input.2.2))
+      (fun ⟨security, pk, bit⟩ => encrypt security pk bit))
     (hadversary : adversary.IsPPT) : IsPPT encBool (keyDistinguisher encrypt adversary) := by
   let choiceEncoding := encPair (encPair encBool encBool) encBits
   let baseEncoding := encPair encUnary encBits
