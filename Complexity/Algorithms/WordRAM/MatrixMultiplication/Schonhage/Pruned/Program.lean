@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Codes
+public import Complexity.Computability.WordRAM.Power
 public import Complexity.Computability.WordRAM.Signed.Arithmetic
 
 /-!
@@ -134,18 +135,16 @@ abbrev nil : Fin registers := 52
 /-- Raw unsigned constant two, initialized with the fixed scalar constants. -/
 abbrev two : Fin registers := 53
 
-/-- Constant initialization, before the depth-controlled power loop. -/
+/-- Constant initialization, before the generic depth-controlled power routine. -/
 def powerSetup : Code .standard registers := ram[
-  nil ← #0; one ← #1; two ← #2; ten ← #10; nine ← #9; frameWidth ← #4;
-  span ← #1; index ← #0 ]
+  nil ← #0; two ← #2; ten ← #10; nine ← #9; frameWidth ← #4 ]
 
-/-- One charged power multiplication and counter increment. -/
-def powerStep : Code .standard registers := ram[
-  span ← span * ten; index ← index + one ]
+/-- Embed the five-register native power routine into the pruned-query register bank. -/
+def powerRegisters : Fin 5 → Fin registers := ![span, index, ten, inputDepth, one]
 
 /-- Initialize constants and compute the actual encoding-array length `10^L`. -/
-def powers : Code .standard registers := ram[
-  ⟪powerSetup⟫; while index < inputDepth do [ ⟪powerStep⟫ ] ]
+def powers : Code .standard registers :=
+  .seq powerSetup (Power.program.rename powerRegisters)
 
 /-- Separate stack frames, query lists, value directories and membership timestamps. -/
 def locate : Code .standard registers := ram[
