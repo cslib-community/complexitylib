@@ -40,8 +40,7 @@ single bit, independently of hierarchy theorems and Ladner's language.
 
 * `Turing.MultiTapeTM.Universal.computableTidilyInDegree_map_eBit`: input symbols in linear time
   and output size.
-* `Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_decodeDesc`,
-  `Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_map_eBit`,
+* `Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_map_eBit`,
   `Turing.MultiTapeTM.Universal.computableTidilyInPolyTime_eBit`,
   `Turing.MultiTapeTM.Universal.computableInPolyTime_decodeDesc`,
   `Turing.MultiTapeTM.Universal.computableInPolyTime_map_eBit`,
@@ -131,14 +130,6 @@ theorem computableTidilyInDegree_map_eBit :
     (symbolsT.computableTidilyInLinearTimeAndSpace fun x => (symbolsT_run x).symm)).comp
     (ComputableTidilyInDegree.of_linear (encIn := encBits) (encMid := encTrueDoubled) (f := id)
       (trueDoubleT.computableTidilyInLinearTimeAndSpace fun x => (trueDoubleT_run x).symm))
-
-
-/-- Decoding a machine description is polynomial-time in the input word. -/
-@[fun_prop]
-theorem computableTidilyInPolyTime_decodeDesc :
-    ComputableTidilyInPolyTime decodeDesc encBits eDesc :=
-  let ⟨_, _, h⟩ := exists_computableTidilyInDegree_decodeDesc
-  h.computableTidilyInPolyTime
 
 /-- The input of a machine as symbols is linear. -/
 @[fun_prop]
@@ -232,7 +223,8 @@ theorem computableTidilyInPolyTime_universal :
 @[fun_prop]
 theorem computableInPolyTime_decodeDesc :
     ComputableInPolyTime decodeDesc encBits eDesc :=
-  .of_tidy computableTidilyInPolyTime_decodeDesc
+  let ⟨_, _, h⟩ := exists_computableInDegree_decodeDesc
+  h.computableInPolyTime
 
 /-- Plain polynomial-time certificate for coding a bit string as unary symbol numbers. -/
 @[fun_prop]
