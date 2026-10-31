@@ -53,8 +53,8 @@ open Probability BitString Turing.MultiTapeTM
 def hashSamples (count seedBits bound observationBits labelBits remainingBits : ℕ)
     (samples : List ((List Bool × Bool) × List Bool))
     (firstKey middleKey lastKey : List Bool) : List Bool :=
-  let observations := ((samples.map (fun sample => sample.1.1)).map (padWord bound)).flatten
-  let labels := listRow count 0 (samples.map (fun sample => sample.1.2))
+  let observations := ((samples.map (fun sample => Prod.fst sample.1)).map (padWord bound)).flatten
+  let labels := listRow count 0 (samples.map (fun sample => Prod.snd sample.1))
   let seeds := listRow (count * seedBits) 0 (samples.map Prod.snd).flatten
   ((firstKey ++ LinearHash.wordHash observationBits firstKey observations) ++
     (middleKey ++ LinearHash.wordHash labelBits middleKey labels)) ++
@@ -202,12 +202,13 @@ theorem generate_distribution (count seedBits bound observationBits labelBits re
 probabilistic hashing calls exactly. Only the observation padding requires a size bound. -/
 theorem eval_hashSamples (count seedBits bound observationBits labelBits remainingBits : ℕ)
     (samples : List ((List Bool × Bool) × List Bool)) (hcount : samples.length = count)
-    (hbound : ∀ sample ∈ samples, sample.1.1.length ≤ bound) :
+    (hbound : ∀ sample ∈ samples, (Prod.fst sample.1).length ≤ bound) :
     ProbComp.eval (do
       let third ← extractWordSeeds count seedBits remainingBits samples
       let middle ← extractWordLabels count labelBits third.1
       let front ← finish bound observationBits middle
-      return front ++ (third.2.1 ++ third.2.2)) =
+      let thirdSd := third.2
+      return front ++ (thirdSd.1 ++ thirdSd.2)) =
       (do
         let lastKey ← uniformList (remainingBits * (count * seedBits))
         let middleKey ← uniformList (labelBits * count)

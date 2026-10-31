@@ -127,9 +127,10 @@ theorem isPolyTime_generate_of_realization {pair : SamplablePair} (saved : pair.
     {observationBound densityBound : ℕ → ℕ}
     (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
     (hdensity : ComputableInPolyTime densityBound encUnary encUnary) :
-    ComputableInPolyTime (fun input => generate input.1.1 (saved.length input.1.1)
-      (observationBound input.1.1) (densityBound input.1.1) input.1.2
-      (saved.evaluate input.1.1) input.2)
+    ComputableInPolyTime (fun input => generate (Prod.fst input.1)
+      (saved.length (Prod.fst input.1))
+      (observationBound (Prod.fst input.1)) (densityBound (Prod.fst input.1)) (Prod.snd input.1)
+      (saved.evaluate (Prod.fst input.1)) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits := by
   have hlength := saved.length_isPolyTime
   have hevaluate := saved.efficient
@@ -185,7 +186,7 @@ theorem exists_secure_choice {pair : SamplablePair} {gap : ℕ → ℝ}
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
       ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
         IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun input => test input.1.1 input.1.2 input.2) →
+          encBool (fun input => test (Prod.fst input.1) (Prod.snd input.1) input.2) →
         Negligible (fun n => Game.advantage
           (((uniformList (seedLength n (saved.length n) (observationBound n) (densityBound n)
             (choose n))).map (generate n (saved.length n) (observationBound n) (densityBound n)

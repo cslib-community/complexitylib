@@ -154,9 +154,12 @@ theorem computableInPolyTime_wordObservation {α : Type} {encode : α ↪ List B
 /-- Encode a finite public observation using the chosen image representation. -/
 def encodeObservation {n count : ℕ} {Image : Type*} (encodeImage : Image → List Bool)
     (observation : Observation n count Image) : List Bool :=
-  wordObservation (encodeImage observation.2.2.1) observation.1.val
-    (List.ofFn observation.2.1.1) (List.ofFn observation.2.2.2)
-    (List.ofFn observation.2.1.2)
+  let rest := observation.2
+  let mq := rest.1
+  let idig := rest.2
+  wordObservation (encodeImage idig.1) observation.1.val
+    (List.ofFn mq.1) (List.ofFn idig.2)
+    (List.ofFn mq.2)
 
 /-- Encoding loses none of the public information, even though the digest's width varies. -/
 theorem encodeObservation_injective {n count : ℕ} {Image : Type*}

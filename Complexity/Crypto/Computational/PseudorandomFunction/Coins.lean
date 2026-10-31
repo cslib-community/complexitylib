@@ -117,7 +117,8 @@ theorem length_prfCoins {family : List Bool → List Bool → List Bool}
 theorem computableInPolyTime_prfCoins {family : List Bool → List Bool → List Bool}
     (hF : ComputableInPolyTime (fun p : List Bool × List Bool => family p.1 p.2)
       (encPair encBits encBits) encBits) :
-    ComputableInPolyTime (fun p : List Bool × List Bool × ℕ => prfCoins family p.1 p.2.1 p.2.2)
+    ComputableInPolyTime
+      (fun p : List Bool × List Bool × ℕ => prfCoins family p.1 (Prod.fst p.2) (Prod.snd p.2))
       (encPair encBits (encPair encBits encUnary)) encBits := by
   unfold prfCoins padRequest
   polytime

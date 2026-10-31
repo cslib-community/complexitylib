@@ -101,9 +101,11 @@ theorem isPolyTime_paddedGenerate {pair : SamplablePair} (saved : pair.SeedReali
     (hobservation : ComputableInPolyTime observationBound encUnary encUnary)
     (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
     (hcommon : ComputableInPolyTime common encUnary encUnary) :
-    ComputableInPolyTime (fun input => paddedGenerate input.1.1 (saved.length input.1.1)
-      (observationBound input.1.1) (densityBound input.1.1) (common input.1.1) input.1.2
-      (saved.evaluate input.1.1) input.2)
+    ComputableInPolyTime (fun input => paddedGenerate (Prod.fst input.1)
+      (saved.length (Prod.fst input.1))
+      (observationBound (Prod.fst input.1)) (densityBound (Prod.fst input.1))
+      (common (Prod.fst input.1)) (Prod.snd input.1)
+      (saved.evaluate (Prod.fst input.1)) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits := by
   have hobservation := hobservation.tidy
   have hdensity := hdensity.tidy
@@ -143,7 +145,7 @@ theorem exists_secure_padded_choice {pair : SamplablePair} {gap : ℕ → ℝ}
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
       ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
         IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun input => test input.1.1 input.1.2 input.2) →
+          encBool (fun input => test (Prod.fst input.1) (Prod.snd input.1) input.2) →
         Negligible (fun n => Game.advantage
           (((uniformList (common n)).map (paddedGenerate n (saved.length n) (observationBound n)
             (densityBound n) (common n) (choose n) (saved.evaluate n))).bind
