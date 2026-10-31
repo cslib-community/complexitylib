@@ -879,6 +879,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpansion
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Recursion
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Reindex
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 public import Complexity.Computability.Circuit.Frontier.TwoSidedWitness
 public import Complexity.Computability.Circuit.Frontier.Unconditional
@@ -2829,6 +2831,7 @@ public import Complexity.Foundations.NumberTheory.AKS.Criterion
 public import Complexity.Foundations.NumberTheory.AKS.Introspective
 public import Complexity.Foundations.NumberTheory.AKS.SmallR
 public import Complexity.Foundations.NumberTheory.Harmonic
+public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootDigitLift
 public import Complexity.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import Complexity.Foundations.NumberTheory.Padics.RatValuation
 public import Complexity.Foundations.NumberTheory.PrimeCounting
