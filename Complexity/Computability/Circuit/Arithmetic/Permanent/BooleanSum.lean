@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Circuit.Arithmetic.Permanent.Formula
+public import Complexity.Computability.Circuit.Arithmetic.Permanent.Projection
 public import Complexity.Computability.Circuit.Arithmetic.VNP
 import Complexity.Foundations.Data.Matrix.Permanent.BooleanSum
 

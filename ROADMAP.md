@@ -180,9 +180,12 @@ index links to canonical definitions rather than keeping a second set.
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
-  degrees `1 ≤ a < b`. Remaining targets include the general deterministic `f log f` hierarchy
-  with its simulation bound ([#800]), noninteger polynomial degrees and finer logarithmic
-  gaps, and sharp nondeterministic and alternating time hierarchies with certified simulators.
+  degrees `1 ≤ a < b`, and the `O(t log t)` universal simulation ([#800]) gives
+  `DTIME f ⊂ DTIME g` for time-constructible `f ≥ n` once `(f + 1) * polylog f ≤ g`, with an
+  absolute exponent (`Hierarchy/TimePolylog`). Remaining targets include the textbook
+  `f log f = o(g)` hierarchy, which needs the diagonal to clock the universal machine's own
+  steps, noninteger polynomial degrees, and sharp nondeterministic and alternating time
+  hierarchies with certified simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
@@ -196,15 +199,18 @@ index links to canonical definitions rather than keeping a second set.
   `O(ℓ + H log(ℓ + 2))` parameter bound.
 - Alternating time and space classes and bounded-alternation characterizations of PH; sharp
   bounds for sublinear space, distinct from polynomial-space simulation.
+- **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with
+  `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from
+  results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
+  `BooleanHierarchy/Kadin.lean` proves only `PH = Σ₃ᴾ ∩ Π₃ᴾ`.
 
 ### Reducibilities and the structure of complete sets
 
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets** ([#1819]): TALLY; `P/poly = P^SPARSE` (Meyer), extending
-  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse NP-hard set under bounded
-  truth-table reductions gives `P = NP` (Ogihara and Watanabe).
+- **Sparse and tally sets:** `P/poly = P^SPARSE` (Meyer), extending
+  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`.
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
@@ -236,6 +242,11 @@ index links to canonical definitions rather than keeping a second set.
 
 ### Counting and modular classes
 
+- Complete the unconditional `SharpTIME(T)` to binary-output `FTIME(2^{O(T/√log T)})`
+  endpoint in [#1833](https://github.com/cslib-community/complexitylib/issues/1833). The native
+  terminal-path class agrees with `SharpP` at polynomial clocks; the count-first simulation
+  supplies joint time and polynomial workspace conditional on the explicit-network contraction
+  algorithm. Integration of the concrete contraction removes that remaining premise.
 - The Another Solution Problem (ASP) framework: certify polynomial-time forward and inverse
   witness maps. The parsimonious reductions to positive exact-one SAT and its planar
   three-occurrence variants already preserve counts over occurring variables; the new local
@@ -316,8 +327,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Parameterized:** strongly uniform variants (computable `f`), further explicit polynomial
   kernels, the W and A hierarchies, and parameterized lower bounds; connect these to
   [structural graph algorithms](#structural-graph-algorithms) and their decomposition costs.
-- **Exponential-time SAT** ([#894]): amplify Schöning's random walk, with a time bound, then
-  PPSZ. Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
+- **Exponential-time SAT** ([#894]): Schöning, PPZ and PPSZ run on the randomized word RAM with
+  exact laws, amplification and time bounds (PPSZ's round count takes an input bound
+  `a / b ≥ 1 - qbar k h`). Remaining: curated abstracts, and the uniform `o(n)` forms of the PPSZ
+  bounds with `w` growing in `n`.
+  Further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 
 ### Approximation and PCP
 
@@ -338,10 +352,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
   certified DPLL solver runtimes.
-- **Feasible interpolation:** from a Resolution refutation of `A(x,y) ∧ B(x,z)`, construct a
-  circuit separating the `x` assignments extendible to `A` from those extendible to `B`, with
-  proof-size and extraction-time bounds. Prove the monotone variant under its polarity
-  hypotheses and transfer circuit and communication lower bounds to proof-size lower bounds.
+- **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
+  lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
@@ -455,7 +467,7 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
   multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding.
-- **Quantum computation** ([#896]): BQP ⊆ PP; reusable
+- **Quantum computation** ([#896]): reusable
   circuit, channel and measurement semantics with uniformity and approximation costs, reusing
   suitable quantum foundations rather than incompatible models; BQP, QMA and related query,
   communication and interactive classes, with amplification, containments and complete
@@ -504,17 +516,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Spanning trees and matroids:** minimum spanning trees with sorting and disjoint-set costs;
   weighted matroid greedy optimality with an independence-oracle interface; then matroid
   intersection with explicit oracle and implementation costs.
-- **Submodular optimization:** the `1 - 1/e` approximation for nonnegative monotone submodular
-  maximization under a cardinality constraint, charging value-oracle calls separately from their
-  concrete realizations; then further constraints and approximation bounds.
+- **Submodular optimization:** further constraints and approximation bounds beyond the
+  cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
+  concrete realizations.
 
 ### Online algorithms and competitive analysis
 
 - Request sequences, online strategies, offline optima and competitive ratios with additive
   constants; distinguish deterministic and randomized strategies and oblivious and adaptive
   adversaries. Compare algorithms in the same action and cost model, including initialization.
-- **Paging:** an LRU competitive bound and a matching deterministic lower bound as the first
-  clients. Reuse native amortized certificates and make adversarial request generation explicit.
 - **Adaptive search trees:** a BST access-and-rotation model, the splay access lemma, static
   optimality, working-set and dynamic-finger bounds, and Wilber-style lower bounds. State dynamic
   optimality as a conjectural research target with explicit strategy and sequence quantifiers.
@@ -561,10 +571,12 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
   compact root descriptors, with derived logarithmic width and uniform
   `Oκ((n+1) log²(n+2))` charged cost. This frontend is composed into the complete native
   preprocessing and the conditional ordinary host described below.
-- **Efficient universal simulation** ([#800]): realize the buffered Hennie–Stearns backend
-  with time `O_M(t log(t + 2))`, together with a source-space-sensitive storage bound.
-  The current interpreter has a stronger polynomial certificate and a streaming input lookup;
-  the buffered representation, its native cleanup routines and their amortized bounds remain.
+- **Efficient universal simulation** ([#800]): the clocked universal function runs in time
+  `O(N + poly(D, M) · (t + 1) log(t + 2))`, for encoded input length `N`, description length `D`
+  and largest input symbol `M`, by a divide-and-conquer windowed simulation
+  (`computableInO_universal_nlogn`). Remaining: a source-space-sensitive storage bound (the
+  space is currently bounded only by the time), and an unclocked form that runs until the
+  simulated machine halts.
 - **Plain computability** ([#862]): complete the plain calculus ([#608]), delete the tidy
   calculus, keeping only a machine-level kernel inside the Machines layer, and switch the
   abstract bridges to the shared predicate.
@@ -757,13 +769,6 @@ reuse is demonstrated.
 
 - **One sensitivity API.** Define the sensitivity measures over any `Fintype` in CSLib and drop
   the separate measures of the sensitivity-separation development.
-- **Weighted multigraph cuts** ([#1336]): extract
-  `IsMultigraph` (renamed e.g. `IsSymmLoopless` or phrased via `Matrix.IsSymm` with zero diagonal),
-  `IsNonTrivialCut`,
-  `cutWeight`, `minCut`, `rowDeg`, `totalDoubledWeight`, `flattenMatrix`, and `IsContractionOf` from
-  `Complexity/Algorithms/WordRAM/Karger/Graph.lean` (shared by `KargerMinCut` and `KargerStein`) into
-  `Complexity/Foundations/Combinatorics/WeightedCut.lean` with a bridge lemma relating `cutWeight W C`
-  to `(Cslib.Multigraph.edgeCut ends C).card`.
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and
   formulas under a polynomial-time assignment, so clients stop passing `CNF.eval`,
   `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
@@ -857,7 +862,6 @@ not planned, not as proved.
 [#1104]: https://github.com/cslib-community/complexitylib/issues/1104
 [#1124]: https://github.com/cslib-community/complexitylib/issues/1124
 [#1155]: https://github.com/cslib-community/complexitylib/issues/1155
-[#1336]: https://github.com/cslib-community/complexitylib/issues/1336
 [#1351]: https://github.com/cslib-community/complexitylib/issues/1351
 [#1394]: https://github.com/cslib-community/complexitylib/issues/1394
 [#1435]: https://github.com/cslib-community/complexitylib/issues/1435
@@ -868,5 +872,6 @@ not planned, not as proved.
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
-[#1819]: https://github.com/cslib-community/complexitylib/issues/1819
+[#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
+[#2019]: https://github.com/cslib-community/complexitylib/issues/2019

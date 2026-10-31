@@ -149,8 +149,8 @@ def prepareBranchEvalInput (p : ℕ × List (List (List ℕ))) : BranchEvalInput
   let n' := p.1; let eqs' := p.2; let k' := sysMaxDegree eqs'
   let b := branchMaxFactorIncidence n' eqs'; let w := branchMaxFactorWidth n' eqs'
   let M' := branchAugmentedIncidence n' eqs'; let β := ParameterCheck.chooseBeta (Nat.clog 2 n') b w
-  let sched := ParameterCheck.computeScheduleParams β n'
-  ((n', k'), (b, w, M', β), (sched.2.2.1, sched.2.2.2.1, sched.2.2.2.2.1, sched.2.2.2.2.2), eqs')
+  let (_, _, r, Q, R, A₀) := ParameterCheck.computeScheduleParams β n'
+  ((n', k'), (b, w, M', β), (r, Q, R, A₀), eqs')
 
 /-- Per-branch exact feasibility guard (§5.5): `N₀_branch ≤ n'`, canonical `< n'`, schedule ok. -/
 def checkBranchFeasible (N₀_branch : ℕ) (p : ℕ × List (List (List ℕ))) : Bool :=
@@ -169,6 +169,42 @@ def guardedBranchSolver (N₀_branch : ℕ) (branchEval : BranchEvalInput → �
 /-- Top-level input `(n, (k_deg, s_div, b₀), eqs)` to the heavy-branched sparse `𝔽₂` counter. -/
 abbrev SparseSystemInput : Type := ℕ × (ℕ × ℕ × ℕ) × List (List (List ℕ))
 
+/-- Number of variables `n` of a `SparseSystemInput`. -/
+abbrev SparseSystemInput.numVars (inp : SparseSystemInput) : ℕ := inp.1
+
+/-- Degree cap `k_deg` of a `SparseSystemInput`. -/
+abbrev SparseSystemInput.degreeCap (inp : SparseSystemInput) : ℕ :=
+  let rest := inp.2; let params := rest.1
+  params.1
+
+/-- Branching divisor `s_div` of a `SparseSystemInput`. -/
+abbrev SparseSystemInput.branchDiv (inp : SparseSystemInput) : ℕ :=
+  let rest := inp.2; let params := rest.1; let sb := params.2
+  sb.1
+
+/-- Heavy-variable degree threshold `b₀` of a `SparseSystemInput`. -/
+abbrev SparseSystemInput.heavyThreshold (inp : SparseSystemInput) : ℕ :=
+  let rest := inp.2; let params := rest.1; let sb := params.2
+  sb.2
+
+/-- Equation list `eqs` of a `SparseSystemInput`. -/
+abbrev SparseSystemInput.equations (inp : SparseSystemInput) : List (List (List ℕ)) :=
+  let rest := inp.2
+  rest.2
+
+/-- Number of variables `n` of a `HeavyBranchFold.BranchInput`. -/
+abbrev branchInputNumVars (inp : HeavyBranchFold.BranchInput) : ℕ := inp.1
+
+/-- Branching variable list `S` of a `HeavyBranchFold.BranchInput`. -/
+abbrev branchInputVars (inp : HeavyBranchFold.BranchInput) : List ℕ :=
+  let rest := inp.2
+  rest.1
+
+/-- Equation list `eqs` of a `HeavyBranchFold.BranchInput`. -/
+abbrev branchInputEquations (inp : HeavyBranchFold.BranchInput) : List (List (List ℕ)) :=
+  let rest := inp.2
+  rest.2
+
 /-- Native encoding of `SparseSystemInput` (`n` and `k_deg` unary, `s_div` and `b₀` binary). -/
 def encSparseSystemInput : SparseSystemInput ↪ List Bool :=
   encPair encUnary (encPair (encPair encUnary (encPair encNat encNat)) encSys)
@@ -180,22 +216,22 @@ def mkPaperSparseInput (n k_deg : ℕ) (eqs : List (List (List ℕ))) : SparseSy
 
 /-- Top-level §5.5 feasibility guard: `N₀_top ≤ n`, `1 ≤ s_div`, canonical `< n`, `|S| ≤ n/s`. -/
 def checkTopFeasible (N₀_top : ℕ) (inp : SparseSystemInput) : Bool :=
-  let n := inp.1; let k_deg := inp.2.1.1; let s_div := inp.2.1.2.1
-  let b₀ := inp.2.1.2.2; let eqs := inp.2.2
+  let (n, (k_deg, s_div, b₀), eqs) := inp
   decide (N₀_top ≤ n) && decide (1 ≤ s_div) && checkVarsLt n eqs && checkCanonicalSystem eqs &&
     decide (sysMaxDegree eqs ≤ k_deg) &&
     decide ((HeavyBranchFold.heavyVarList n b₀ eqs).length ≤ n / s_div)
 
 /-- Assemble `HeavyBranchFold.BranchInput` `(n, heavyVarList n b₀ eqs, eqs)` from `inp`. -/
 def toBranchInput (inp : SparseSystemInput) : HeavyBranchFold.BranchInput :=
-  (inp.1, HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2, inp.2.2)
+  (inp.numVars, HeavyBranchFold.heavyVarList inp.numVars inp.heavyThreshold inp.equations,
+    inp.equations)
 
 /-- **Uniform heavy-branched sparse `𝔽₂` polynomial-system zero counter (§5.5, Theorem 2.2)**. -/
 def countSparsePolySystem (N₀_top N₀_branch : ℕ) (branchEval : BranchEvalInput → ℕ)
     (inp : SparseSystemInput) : ℕ :=
   if checkTopFeasible N₀_top inp then
     HeavyBranchFold.countByBranching (guardedBranchSolver N₀_branch branchEval) (toBranchInput inp)
-  else ExhaustiveCountFallback.countSystemExhaustive (inp.1, inp.2.2)
+  else ExhaustiveCountFallback.countSystemExhaustive (inp.numVars, inp.equations)
 
 /-- Compile `(ctx, rows)` into `SparseSystemInput` via `compileParitySystemBounded k_deg` (§6.3). -/
 def compileContextParityInput {C : Type} (k_deg : ℕ) (nOf sDivOf b₀Of : C → ℕ)
@@ -376,10 +412,10 @@ theorem branchAugmentedIncidence_le_mul (n' : ℕ) (eqs' : List (List (List ℕ)
 equations, and `ReplacementParams.Feasible` at `prepareBranchEvalInput`. -/
 theorem feasible_of_checkBranchFeasible {N₀_branch n' : ℕ} {eqs' : List (List (List ℕ))}
     (h : checkBranchFeasible N₀_branch (n', eqs') = true) :
-    let out := prepareBranchEvalInput (n', eqs')
+    let (_, (b, w, M', β), _, _) := prepareBranchEvalInput (n', eqs')
     N₀_branch ≤ n' ∧ (∀ eq ∈ eqs', IsCanonicalEquation eq) ∧
       (∀ eq ∈ eqs', ∀ m ∈ eq, ∀ v ∈ m, v < n') ∧
-      ReplacementParams.Feasible out.2.1.2.2.2 n' out.2.1.1 out.2.1.2.1 out.2.1.2.2.1 := by
+      ReplacementParams.Feasible β n' b w M' := by
   unfold checkBranchFeasible at h
   simp only [Bool.and_eq_true, decide_eq_true_eq, checkVarsLt_eq_true_iff,
     checkCanonicalSystem_eq_true_iff] at h
@@ -389,8 +425,8 @@ theorem feasible_of_checkBranchFeasible {N₀_branch n' : ℕ} {eqs' : List (Lis
 /-- Passing `checkBranchFeasible` yields a Section 4 `ReplacementDesign` on `branchNeutralScope`. -/
 theorem exists_replacementDesign_of_checkBranchFeasible {N₀_branch n' : ℕ}
     {eqs' : List (List (List ℕ))} (h : checkBranchFeasible N₀_branch (n', eqs') = true) :
-    let out := prepareBranchEvalInput (n', eqs'); let s := out.2.2.1
-    Nonempty (ReplacementDesign (branchNeutralScope n' eqs') s.2.1 s.1 s.2.2.2 s.2.2.1
+    let (_, _, (r, Q, R, A₀), _) := prepareBranchEvalInput (n', eqs')
+    Nonempty (ReplacementDesign (branchNeutralScope n' eqs') Q r A₀ R
       (ReplacementParams.tauRat n')) := by
   obtain ⟨_, _, _, hF⟩ := feasible_of_checkBranchFeasible h
   have hF' : ReplacementParams.Feasible (prepareBranchEvalInput (n', eqs')).2.1.2.2.2 n'
@@ -407,15 +443,15 @@ and `D` is any `ReplacementDesign` at `prepareBranchEvalInput (n', eqs')`, the c
 truncated parity quotient modulo `2 ^ ℓ` equals `rootCount n' eqs'`. -/
 theorem emod_ediv_design_eq_rootCount_of_checkBranchFeasible {N₀_branch n' ℓ : ℕ}
     {eqs' : List (List (List ℕ))} (h : checkBranchFeasible N₀_branch (n', eqs') = true)
-    (hℓ : n' < ℓ) (D : ReplacementDesign (branchNeutralScope n' eqs')
-      (prepareBranchEvalInput (n', eqs')).2.2.1.2.1 (prepareBranchEvalInput (n', eqs')).2.2.1.1
-      (prepareBranchEvalInput (n', eqs')).2.2.1.2.2.2
-      (prepareBranchEvalInput (n', eqs')).2.2.1.2.2.1 (ReplacementParams.tauRat n')) :
-    let out := prepareBranchEvalInput (n', eqs')
+    (hℓ : n' < ℓ) (D :
+      let (_, _, (r, Q, R, A₀), _) := prepareBranchEvalInput (n', eqs')
+      ReplacementDesign (branchNeutralScope n' eqs')
+        Q r A₀ R (ReplacementParams.tauRat n')) :
+    let ((_, k'), _, (_, Q, R, _), _) := prepareBranchEvalInput (n', eqs')
     let P := fun i : Fin eqs'.length => HeavyBranchFold.toFinsetEquation n' eqs'[i]
-    ((univariateClearedParityTruncatedSum univ P (commonDenom out.2.2.1.2.1 out.2.2.1.2.2.1 : ℤ)
-        out.1.2 ℓ (designReplacementScaledIntMap D Sum.inl)).eval 0 /
-      clearedProductDenom (commonDenom out.2.2.1.2.1 out.2.2.1.2.2.1 : ℤ) out.1.2 ℓ
+    ((univariateClearedParityTruncatedSum univ P (commonDenom Q R : ℤ)
+        k' ℓ (designReplacementScaledIntMap D Sum.inl)).eval 0 /
+      clearedProductDenom (commonDenom Q R : ℤ) k' ℓ
         eqs'.length) % ((2 : ℤ) ^ ℓ) = (HeavyBranchFold.rootCount n' eqs' : ℤ) := by
   obtain ⟨_, hcan, hvars, _⟩ := feasible_of_checkBranchFeasible h
   have hk : ∀ i ∈ (univ : Finset (Fin eqs'.length)),
@@ -684,7 +720,8 @@ theorem computableInPolyTime_toBranchInput :
 
 @[fun_prop]
 theorem computableInPolyTime_mkPaperSparseInput :
-    CPT (fun p : (ℕ × ℕ) × List (List (List ℕ)) => mkPaperSparseInput p.1.1 p.1.2 p.2)
+    CPT (fun (((n, k_deg), eqs) : (ℕ × ℕ) × List (List (List ℕ))) =>
+        mkPaperSparseInput n k_deg eqs)
       (encPair (encPair encUnary encUnary) encSys) encSparseSystemInput := by
   unfold mkPaperSparseInput encSparseSystemInput
   have hn_u := (fst encUnary encUnary).comp (fst (encPair encUnary encUnary) encSys)
@@ -731,10 +768,12 @@ theorem guardedBranchSolver_le_two_pow
 
 theorem checkTopFeasible_eq_true_iff {inp : SparseSystemInput} :
     checkTopFeasible N₀_top inp = true ↔
-      N₀_top ≤ inp.1 ∧ 1 ≤ inp.2.1.2.1 ∧
-        (∀ eq ∈ inp.2.2, ∀ m ∈ eq, ∀ v ∈ m, v < inp.1) ∧ (∀ eq ∈ inp.2.2, IsCanonicalEquation eq) ∧
-        (∀ eq ∈ inp.2.2, ∀ m ∈ eq, m.length ≤ inp.2.1.1) ∧
-        (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2).length ≤ inp.1 / inp.2.1.2.1 := by
+      N₀_top ≤ inp.1 ∧ 1 ≤ inp.branchDiv ∧
+        (∀ eq ∈ inp.equations, ∀ m ∈ eq, ∀ v ∈ m, v < inp.1) ∧
+        (∀ eq ∈ inp.equations, IsCanonicalEquation eq) ∧
+        (∀ eq ∈ inp.equations, ∀ m ∈ eq, m.length ≤ inp.degreeCap) ∧
+        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations).length ≤
+          inp.1 / inp.branchDiv := by
   unfold checkTopFeasible
   simp only [Bool.and_eq_true, decide_eq_true_eq, checkVarsLt_eq_true_iff,
     checkCanonicalSystem_eq_true_iff, sysMaxDegree_le_iff]; tauto
@@ -745,7 +784,7 @@ theorem countSparsePolySystem_eq_rootCount
       branchEval (prepareBranchEvalInput (n', eqs')) = HeavyBranchFold.rootCount n' eqs')
     (inp : SparseSystemInput) :
     countSparsePolySystem N₀_top N₀_branch branchEval inp =
-      HeavyBranchFold.rootCount inp.1 inp.2.2 := by
+      HeavyBranchFold.rootCount inp.numVars inp.equations := by
   unfold countSparsePolySystem; cases hx : checkTopFeasible N₀_top inp
   · simp only [Bool.false_eq_true, ↓reduceIte, countSystemExhaustive_eq_rootCount]
   · simp only [↓reduceIte]; obtain ⟨_, _, hvars, _, _, _⟩ := checkTopFeasible_eq_true_iff.mp hx
@@ -757,11 +796,13 @@ theorem countSparsePolySystem_eq_rootCount
 theorem countSparsePolySystem_eq_commonZeroCount
     (hbranch : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) = HeavyBranchFold.rootCount n' eqs')
-    (inp : SparseSystemInput) (hcan : ∀ eq ∈ inp.2.2, IsCanonicalEquation eq)
-    (hvars : ∀ eq ∈ inp.2.2, ∀ m ∈ eq, ∀ v ∈ m, v < inp.1) :
+    (inp : SparseSystemInput)
+    (hcan : ∀ eq ∈ inp.equations, IsCanonicalEquation eq)
+    (hvars : ∀ eq ∈ inp.equations, ∀ m ∈ eq, ∀ v ∈ m, v < inp.numVars) :
     countSparsePolySystem N₀_top N₀_branch branchEval inp =
-      commonZeroCount (univ : Finset (Fin inp.2.2.length))
-        (fun i : Fin inp.2.2.length => HeavyBranchFold.toFinsetEquation inp.1 inp.2.2[i]) := by
+      commonZeroCount (univ : Finset (Fin inp.equations.length))
+        (fun i : Fin inp.equations.length =>
+          HeavyBranchFold.toFinsetEquation inp.numVars inp.equations[i]) := by
   rw [countSparsePolySystem_eq_rootCount hbranch inp,
     HeavyBranchFold.rootCount_eq_commonZeroCount hcan hvars]
 
@@ -818,35 +859,39 @@ theorem checkTopFeasible_mkPaperSparseInput_of_le {N₀_top n k_deg : ℕ}
 /-- Invariants of `.reduced n' sys'` branches (`n ≤ 2 * n'`, canonical `< n'`, `b ≤ b₀ + 1`). -/
 theorem reduced_branch_invariants {N₀_top : ℕ} {inp : SparseSystemInput} {vals : List Bool}
     {n' : ℕ} {sys' : List (List (List ℕ))} (htop : checkTopFeasible N₀_top inp = true)
-    (hs2 : 2 ≤ inp.2.1.2.1)
-    (hred : HeavyBranchFold.prepareBranch inp.1
-      (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2) vals inp.2.2 = .reduced n' sys') :
-    n' = inp.1 - (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2).length ∧
+    (hs2 : 2 ≤ inp.branchDiv)
+    (hred :
+      HeavyBranchFold.prepareBranch inp.1
+        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations)
+        vals inp.equations = .reduced n' sys') :
+    n' = inp.1 -
+        (HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations).length ∧
       inp.1 ≤ 2 * n' ∧ (∀ eq' ∈ sys', IsCanonicalEquation eq') ∧
       (∀ eq' ∈ sys', ∀ m' ∈ eq', ∀ v' ∈ m', v' < n') ∧
-      (∀ eq' ∈ sys', ∀ m' ∈ eq', m'.length ≤ inp.2.1.1) ∧
-      branchMaxFactorIncidence n' sys' ≤ inp.2.1.2.2 + 1 ∧
-      branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.2.2 := by
+      (∀ eq' ∈ sys', ∀ m' ∈ eq', m'.length ≤ inp.degreeCap) ∧
+      branchMaxFactorIncidence n' sys' ≤ inp.heavyThreshold + 1 ∧
+      branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.equations := by
   obtain ⟨_, _, hvars, hcan, hdeg, hS_le⟩ := checkTopFeasible_eq_true_iff.mp htop
-  have hS_nd := HeavyBranchFold.nodup_heavyVarList inp.1 inp.2.1.2.2 inp.2.2
-  have hSn : ∀ s ∈ HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2, s < inp.1 :=
+  have hS_nd := HeavyBranchFold.nodup_heavyVarList inp.1 inp.heavyThreshold inp.equations
+  have hSn : ∀ s ∈ HeavyBranchFold.heavyVarList inp.1 inp.heavyThreshold inp.equations,
+      s < inp.1 :=
     fun _ hs => HeavyBranchFold.lt_of_mem_heavyVarList hs
   obtain ⟨hn'_eq, _, _, _, hcan', hvars'⟩ :=
     HeavyBranchFold.prepareBranch_reduced_canonical hS_nd hSn hcan hvars hred
   have hS_half := hS_le.trans (Nat.div_le_div_left hs2 (by omega))
   have hvd' := HeavyBranchFold.prepareBranch_reduced_varDegree_le hS_nd hSn
     (fun u hun huS => HeavyBranchFold.varDegree_le_of_not_mem_heavyVarList hun huS) hred
-  have hb' : branchMaxFactorIncidence n' sys' ≤ inp.2.1.2.2 + 1 := by
+  have hb' : branchMaxFactorIncidence n' sys' ≤ inp.heavyThreshold + 1 := by
     apply Nat.succ_le_succ
     refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
     simp only [List.mem_cons, forall_eq_or_imp]
     refine ⟨Nat.zero_le _, fun x hx => ?_⟩
     obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx
     exact hvd' v (List.mem_range.mp hv)
-  have hw' : branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.2.2 := by
+  have hw' : branchMaxFactorWidth n' sys' ≤ branchMaxFactorWidth inp.1 inp.equations := by
     refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
     simp only [List.mem_cons, forall_eq_or_imp]
-    refine ⟨one_le_branchMaxFactorWidth inp.1 inp.2.2, fun x hx => ?_⟩
+    refine ⟨one_le_branchMaxFactorWidth inp.1 inp.equations, fun x hx => ?_⟩
     obtain ⟨eq', heq', rfl⟩ := List.mem_map.mp hx
     obtain ⟨eq₀, heq₀, _, hsc⟩ :=
       (HeavyBranchFold.prepareBranch_reduced_length_le hred).2 eq' heq'
@@ -934,8 +979,9 @@ theorem exists_guardedBranchCertificate_time_le (N₀_branch N₁ : ℕ)
 /-- Maximum per-branch solver cost across all `.reduced` branches of `inp : BranchInput`. -/
 noncomputable def maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ)
     (inp : HeavyBranchFold.BranchInput) : ℕ :=
-  ((List.range (2 ^ inp.2.1.length)).map fun idx =>
-    match HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 with
+  let (n, S, eqs) := inp
+  ((List.range (2 ^ S.length)).map fun idx =>
+    match HeavyBranchFold.prepareBranch n S (lowBits S.length idx) eqs with
     | .reduced n' sys' => cost (n', sys')
     | _ => 0).foldl max 0
 
@@ -951,9 +997,11 @@ private theorem le_maxReducedCost (cost : ℕ × List (List (List ℕ)) → ℕ)
 
 theorem maxReducedCost_le {cost : ℕ × List (List (List ℕ)) → ℕ}
     {inp : HeavyBranchFold.BranchInput} {B : ℕ}
-    (hB : ∀ idx < 2 ^ inp.2.1.length, ∀ n' sys',
-      HeavyBranchFold.prepareBranch inp.1 inp.2.1 (lowBits inp.2.1.length idx) inp.2.2 =
-        .reduced n' sys' → cost (n', sys') ≤ B) : maxReducedCost cost inp ≤ B := by
+    (hB :
+      ∀ idx < 2 ^ (branchInputVars inp).length, ∀ n' sys',
+        HeavyBranchFold.prepareBranch (branchInputNumVars inp) (branchInputVars inp)
+          (lowBits (branchInputVars inp).length idx) (branchInputEquations inp) =
+          .reduced n' sys' → cost (n', sys') ≤ B) : maxReducedCost cost inp ≤ B := by
   unfold maxReducedCost
   refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
   simp only [List.mem_cons, forall_eq_or_imp]
@@ -971,10 +1019,11 @@ noncomputable def guardedBranchingCertificate (N₀_branch : ℕ)
     NativeCertificate (HeavyBranchFold.countByBranching (guardedBranchSolver N₀_branch branchEval))
       HeavyBranchFold.encBranchInput encNat :=
   let csolver := guardedBranchCertificate N₀_branch cBranch
-  { time := fun inp => HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
-      (2 ^ inp.2.1.length + 1) *
-        (HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
-          maxReducedCost csolver.time inp)
+  { time := fun inp =>
+      HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
+        (2 ^ (branchInputVars inp).length + 1) *
+          (HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
+            maxReducedCost csolver.time inp)
     space := fun inp => HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
       maxReducedCost csolver.space inp
     computes := HeavyBranchFold.countByBranching_computableInO csolver
@@ -1042,15 +1091,14 @@ theorem sparsePolyCounterCertificate_time_le_of_feasible (N₀_top N₀_branch :
     (hbound : ∀ n' eqs', checkBranchFeasible N₀_branch (n', eqs') = true →
       branchEval (prepareBranchEvalInput (n', eqs')) ≤ 2 ^ n') :
     ∃ C_ov d_ov : ℕ, ∀ (inp : SparseSystemInput) (R_branch : ℕ),
+      let S := HeavyBranchFold.heavyVarList inp.numVars inp.heavyThreshold inp.equations
       checkTopFeasible N₀_top inp = true →
-      (∀ idx < 2 ^ (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2).length,
-        ∀ n' sys', HeavyBranchFold.prepareBranch inp.1
-          (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2)
-          (lowBits (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2).length idx)
-          inp.2.2 = .reduced n' sys' →
+      (∀ idx < 2 ^ S.length,
+        ∀ n' sys', HeavyBranchFold.prepareBranch inp.numVars S (lowBits S.length idx)
+          inp.equations = .reduced n' sys' →
           (guardedBranchCertificate N₀_branch cBranch).time (n', sys') ≤ R_branch) →
       (sparsePolyCounterCertificate N₀_top N₀_branch cBranch hbound).time inp ≤
-        (2 ^ (HeavyBranchFold.heavyVarList inp.1 inp.2.1.2.2 inp.2.2).length + 1) *
+        (2 ^ S.length + 1) *
           (C_ov * ((encSparseSystemInput inp).length + 1) ^ d_ov + R_branch) := by
   have hok :=
     NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_checkTopFeasible N₀_top)

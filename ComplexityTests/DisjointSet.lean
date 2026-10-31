@@ -92,7 +92,7 @@ private def sampleGraph : List (Fin 6 × Fin 6) :=
 
 private def forestAndComponents :
     (spec 6).Client (List (Fin 6 × Fin 6) × ℕ × Bool × Bool) := do
-  let forest ← spanningForestEdges sampleGraph
+  let forest ← spanningForestEdges id sampleGraph
   let comps ← getNumComponents
   let c₀₂ ← same 0 2
   let c₀₃ ← same 0 3
@@ -105,22 +105,23 @@ example :
       total id (run (init 6) forestAndComponents).2.2 ≤
         (spec 6).totalCost (charge 6) (Partition.discrete 6)
           ((spec 6).runClient (Partition.discrete 6) forestAndComponents).2.2 ∧
-      total id (run (init 6) (spanningForestEdges sampleGraph)).2.2 ≤
+      total id (run (init 6) (spanningForestEdges id sampleGraph)).2.2 ≤
         sampleGraph.length * (2 * Nat.log 2 6 + 3) ∧
-      (eval (spec 6) (spanningForestEdges sampleGraph) (Partition.discrete 6)).2.numComponents +
-        (eval (spec 6) (spanningForestEdges sampleGraph) (Partition.discrete 6)).1.length = 6 := by
+      (eval (spec 6) (spanningForestEdges id sampleGraph) (Partition.discrete 6)).2.numComponents +
+        (eval (spec 6) (spanningForestEdges id sampleGraph)
+          (Partition.discrete 6)).1.length = 6 := by
   refine ⟨rfl,
     (run_correct forestAndComponents (rep_init 6)).1,
     (run_correct forestAndComponents (rep_init 6)).2.2.1, ?_, ?_⟩
-  · have h := (run_correct (spanningForestEdges sampleGraph) (rep_init 6)).2.2.2
+  · have h := (run_correct (spanningForestEdges id sampleGraph) (rep_init 6)).2.2.2
     rwa [runClient_spanningForestEdges_length] at h
-  · simpa using spanningForestEdges_numComponents_add_length sampleGraph (Partition.discrete 6)
+  · simpa using spanningForestEdges_numComponents_add_length id sampleGraph (Partition.discrete 6)
 
--- History-adaptive `connectIfNew`: after `spanningForestEdges sampleGraph`, `(0, 2)` is already
+-- History-adaptive `connectIfNew`: after `spanningForestEdges id sampleGraph`, `(0, 2)` is already
 -- connected (issuing 1 operation `[Op.same 0 2]`), whereas `(0, 3)` bridges two components
 -- (issuing 2 operations `[Op.same 0 3, Op.union 0 3]`).
 example :
-    let p := (eval (spec 6) (spanningForestEdges sampleGraph) (Partition.discrete 6)).2
+    let p := (eval (spec 6) (spanningForestEdges id sampleGraph) (Partition.discrete 6)).2
     ((spec 6).runClient p (connectIfNew 0 2)).1 = false ∧
       ((spec 6).runClient p (connectIfNew 0 2)).2.2 = [.same 0 2] ∧
       ((spec 6).runClient p (connectIfNew 0 3)).1 = true ∧
@@ -130,13 +131,14 @@ example :
 -- Existence form of `realized_client` instantiated at `rep_init`.
 example :
     ∃ s' traces,
-      Executes (Exec 6) (spanningForestEdges sampleGraph) (init 6)
-        ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges sampleGraph)).1 s' traces ∧
-      Rep ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges sampleGraph)).2.1 s' ∧
+      Executes (Exec 6) (spanningForestEdges id sampleGraph) (init 6)
+        ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges id sampleGraph)).1
+        s' traces ∧
+      Rep ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges id sampleGraph)).2.1 s' ∧
       total id traces ≤
         (spec 6).totalCost (charge 6) (Partition.discrete 6)
-          ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges sampleGraph)).2.2 :=
-  realized_client (spanningForestEdges sampleGraph) (rep_init 6)
+          ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges id sampleGraph)).2.2 :=
+  realized_client (spanningForestEdges id sampleGraph) (rep_init 6)
 
 -- Necessity of `ValidRank`: a 4-node chain `0 -> 1 -> 2 -> 3` with artificial ranks `0, 1, 2, 3`
 -- satisfies `Batteries.UnionFind`'s structural invariants (`parentD_lt` and `rankD_lt`), yet

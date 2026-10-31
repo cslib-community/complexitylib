@@ -114,4 +114,25 @@ theorem countUp_polySpace : ComputableInPolySpace countUp encNat encNat := by
 example (n : ℕ) : countUp n = n := by
   simp [countUp, ComputableInO.iterate_succ_eq]
 
+/-- Mapping may use a captured parameter; the resulting list remains charged to space. -/
+def fill (p : Bool × List Bool) : List Bool := p.2.map fun _ => p.1
+
+theorem fill_inSpace :
+    ComputableInSpace fill (encPair encBool (encList encBool)) (encList encBool)
+      fun p => 8 * ((encPair encBool (encList encBool) p).length + 1) := by
+  have hlen (xs : List Bool) : (encList encBool xs).length = 3 * xs.length := by
+    simp [length_encList, encBool_apply, Nat.mul_comm]
+  apply (ComputableInSpace.mapWith (ComputableInSpace.fst encBool encBool)
+    (ComputableInSpace.fst encBool (encList encBool))
+    (ComputableInSpace.snd encBool (encList encBool))).mono_le
+  intro p
+  have hmax : listMax (fun a : Bool => (encPair encBool encBool (p.1, a)).length) p.2 ≤ 5 :=
+    listMax_le fun a _ => by simp [encBool_apply]
+  simp only [length_encPair, encBool_apply, List.length_singleton, hlen, List.length_map] at hmax ⊢
+  omega
+
+example : fill (true, [false, true, false]) = [true, true, true] := rfl
+example : fill (false, [true, false]) = [false, false] := rfl
+example : fill (true, []) = [] := rfl
+
 end ComplexityTests.InSpacePlain
