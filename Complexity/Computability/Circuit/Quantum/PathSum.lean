@@ -326,9 +326,9 @@ private theorem sum_onesAt_pathGap_sq (S : List ℕ) (gs : List GateCode) (x : L
   rw [Finset.sum_comm]
   exact Finset.sum_congr rfl fun π' _ => sum_onesAt_pathTerm_mul S gs x _ _ hx
 
-/-- **The probability of an event of ones is a projected gap over `2^h`**: for well-formed codes,
-the probability that every qubit of `S` reads `1` is `onesGap S` divided by `2^h`, where `h` counts
-the Hadamard gates. -/
+/-- **Probabilities are projected gaps over `2^h`**: for well-formed codes, the probability that
+every qubit of `S` reads `1` is `onesGap S` divided by `2^h`, where `h` counts the Hadamard
+gates. -/
 theorem onesProb_eq_onesGap (gs : List GateCode) (hgs : ∀ g ∈ gs, g.WellFormed m) (S : List ℕ)
     (x : List Bool) :
     onesProb m gs S x =

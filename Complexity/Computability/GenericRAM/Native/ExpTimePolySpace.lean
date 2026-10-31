@@ -50,9 +50,6 @@ inputs `a` of encoded length `n`. -/
   ∃ C d : ℕ, ∀ a, c.time a ≤ C * 2 ^ E a * ((enc a).length + 1) ^ d ∧
     c.space a ≤ C * ((enc a).length + 1) ^ d
 
-private theorem pow_le_pow_of_le {a d d' : ℕ} (h : d ≤ d') : (a + 1) ^ d ≤ (a + 1) ^ d' :=
-  Nat.pow_le_pow_right (Nat.succ_pos a) h
-
 namespace ExpTimePolySpace
 
 variable {c : NativeCertificate f enc eβ} {E E' : α → ℕ}
@@ -68,8 +65,8 @@ theorem prod {c' : NativeCertificate g enc eγ} (h : c.ExpTimePolySpace E)
   obtain ⟨C, d, h⟩ := h
   obtain ⟨C', d', h'⟩ := h'
   refine ⟨C + C', d + d', fun a => ?_⟩
-  have hd := pow_le_pow_of_le (a := (enc a).length) (Nat.le_add_right d d')
-  have hd' := pow_le_pow_of_le (a := (enc a).length) (Nat.le_add_left d' d)
+  have hd := Nat.pow_le_pow_right (Nat.succ_pos (enc a).length) (Nat.le_add_right d d')
+  have hd' := Nat.pow_le_pow_right (Nat.succ_pos (enc a).length) (Nat.le_add_left d' d)
   have hE := Nat.le_mul_of_pos_right (2 ^ E a) (Nat.two_pow_pos (E' a))
   have hE' := Nat.le_mul_of_pos_left (2 ^ E' a) (Nat.two_pow_pos (E a))
   rw [prod_time, prod_space, pow_add 2 (E a) (E' a)]
@@ -114,7 +111,7 @@ theorem comp_ofPolyTime (h : c.ExpTimePolySpace E) {r : β → γ}
   refine ⟨C + ct * D ^ dt + cs * D ^ ds, d + d * dt + d * ds, fun a => ?_⟩
   set Y := ((enc a).length + 1) ^ (d + d * dt + d * ds)
   have hY {e : ℕ} (he : e ≤ d + d * dt + d * ds) : ((enc a).length + 1) ^ e ≤ Y :=
-    pow_le_pow_of_le he
+    Nat.pow_le_pow_right (Nat.succ_pos _) he
   have hZ : Y ≤ 2 ^ E a * Y := Nat.le_mul_of_pos_left Y (Nat.two_pow_pos (E a))
   rw [comp_time, comp_space]
   constructor
@@ -157,8 +154,9 @@ theorem expTimePolySpace_ofPolyTime (hf : ComputableInPolyTime f enc eβ) (E : �
   obtain ⟨cs, ds, hs⟩ := hp.2.exists_le
   refine ⟨ct + cs, dt + ds, fun a => ⟨(ht a).trans ?_, (hs a).trans ?_⟩⟩
   · rw [Nat.mul_assoc]
-    exact Nat.mul_le_mul (by omega) ((pow_le_pow_of_le (Nat.le_add_right _ _)).trans
-      (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _)))
-  · exact Nat.mul_le_mul (by omega) (pow_le_pow_of_le (Nat.le_add_left _ _))
+    exact Nat.mul_le_mul (by omega)
+      ((Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_add_right _ _)).trans
+        (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _)))
+  · exact Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_add_left _ _))
 
 end Cslib.GenericRAM.NativeCertificate

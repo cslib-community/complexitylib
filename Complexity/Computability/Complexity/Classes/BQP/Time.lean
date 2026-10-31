@@ -29,9 +29,10 @@ The same families with the same gate bounds define three more classes, by other 
 conditions:
 
 * **Nondeterministic quantum time** `NQTIME enc t` (`Cslib.Complexity.NQTIME`): members are the
-  instances accepted with nonzero probability. With polynomial `t` this is the class `NQP` of
-  Adleman, DeMarrais and Huang, as in [Fenner, Green, Homer,
-  Pruim][FennerGreenHomerPruim1999], Definition 2.1, who show `NQP = coC₌P` (Theorem 1.1).
+  instances accepted with nonzero probability. It is the time-`t` circuit analogue of the class
+  `NQP` of Adleman, DeMarrais and Huang, defined for quantum Turing machines in [Fenner, Green,
+  Homer, Pruim][FennerGreenHomerPruim1999], Definition 2.1, who show `NQP = coC₌P` (Theorem 1.1),
+  and in Section 4 that `coC₌P` is already in `NQP` with amplitudes in `{0, ±1/√2, ±1}`.
 * **Exact quantum time** `EQTIME enc t` (`Cslib.Complexity.EQTIME`): members are accepted with
   probability `1` and other instances with probability `0`, as `EQTime(T(n))` in
   [Bernstein, Vazirani][BernsteinVazirani1997], Definition 8.1, for quantum Turing machines.
@@ -42,9 +43,9 @@ conditions:
   `Cslib.Complexity.EQTIME_subset_BQTIME`).
 * **Postselected bounded-error quantum time** `PostBQTIME enc t` (`Cslib.Complexity.PostBQTIME`):
   qubit `1` reads `1` with nonzero probability, and conditioned on that, qubit `0` reads `1` with
-  probability at least `2 / 3` on members and at most `1 / 3` otherwise. With polynomial `t` this
-  is `PostBQP`, [Aaronson][Aaronson2005Postselection], Definition 1, with his first (postselected)
-  and second (output) qubits exchanged; he shows `PostBQP = PP` (Theorem 4).
+  probability at least `2 / 3` on members and at most `1 / 3` otherwise. It is the time-`t`
+  analogue of `PostBQP`, [Aaronson][Aaronson2005Postselection], Definition 1, with his first
+  (postselected) and second (output) qubits exchanged; he shows `PostBQP = PP` (Theorem 4).
 
 ## Main definitions
 

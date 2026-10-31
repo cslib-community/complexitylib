@@ -257,6 +257,28 @@ def inputState (m : ℕ) (x : List Bool) : Fin m → Bool := fun i => x.getD i f
 def onesAt (m : ℕ) (S : List ℕ) : Finset (Fin m → Bool) :=
   univ.filter fun y => ∀ j ∈ S, ∃ h : j < m, y ⟨j, h⟩ = true
 
+/-- The probability that the final measurement of the circuit with gate codes `gs` on `m` qubits,
+started in `|x 0^{m - n}⟩`, finds every qubit of `S` in state `1`. The acceptance probability is the
+case `S = [0]` (`Cslib.Quantum.acceptProb_eq_onesProb`). -/
+noncomputable def onesProb (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) : ℝ :=
+  measureProb (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (onesAt m S)
+
+theorem onesProb_nonneg (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) :
+    0 ≤ onesProb m gs S x :=
+  measureProb_nonneg _ _
+
+theorem onesProb_le_one (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) :
+    onesProb m gs S x ≤ 1 := by
+  have h := measureProb_le_measureProb_univ
+    (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (onesAt m S)
+  rwa [measureProb_univ, Circuit.norm_run, one_pow] at h
+
+/-- The event of no condition is certain. -/
+@[simp] theorem onesProb_nil (m : ℕ) (gs : List GateCode) (x : List Bool) :
+    onesProb m gs [] x = 1 := by
+  rw [onesProb, show onesAt m [] = univ by simp [onesAt], measureProb_univ, Circuit.norm_run,
+    one_pow]
+
 /-- The accepting outcomes: qubit `0` reads `1`. -/
 def accepting (m : ℕ) : Finset (Fin m → Bool) := onesAt m [0]
 
@@ -265,45 +287,21 @@ started in `|x 0^{m - n}⟩`, the final measurement finds qubit `0` in state `1`
 noncomputable def acceptProb (m : ℕ) (gs : List GateCode) (x : List Bool) : ℝ :=
   measureProb (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (accepting m)
 
-theorem acceptProb_nonneg (m : ℕ) (gs : List GateCode) (x : List Bool) :
-    0 ≤ acceptProb m gs x :=
-  measureProb_nonneg _ _
-
-theorem acceptProb_le_one (m : ℕ) (gs : List GateCode) (x : List Bool) :
-    acceptProb m gs x ≤ 1 := by
-  have h := measureProb_le_measureProb_univ
-    (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (accepting m)
-  rwa [measureProb_univ, Circuit.norm_run, one_pow] at h
-
-theorem mem_accepting (hm : 0 < m) {y : Fin m → Bool} :
-    y ∈ accepting m ↔ y ⟨0, hm⟩ = true := by
-  simp [accepting, onesAt, hm]
-
-/-- The probability that the final measurement of the circuit with gate codes `gs` on `m` qubits,
-started in `|x 0^{m - n}⟩`, finds every qubit of `S` in state `1`. The acceptance probability is the
-case `S = [0]` (`Cslib.Quantum.acceptProb_eq_onesProb`). -/
-noncomputable def onesProb (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) : ℝ :=
-  measureProb (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (onesAt m S)
-
 theorem acceptProb_eq_onesProb (m : ℕ) (gs : List GateCode) (x : List Bool) :
     acceptProb m gs x = onesProb m gs [0] x :=
   rfl
 
-theorem onesProb_nonneg (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) :
-    0 ≤ onesProb m gs S x :=
-  measureProb_nonneg _ _
+theorem acceptProb_nonneg (m : ℕ) (gs : List GateCode) (x : List Bool) :
+    0 ≤ acceptProb m gs x :=
+  onesProb_nonneg m gs [0] x
 
-/-- The event of no condition is certain. -/
-@[simp] theorem onesProb_nil (m : ℕ) (gs : List GateCode) (x : List Bool) :
-    onesProb m gs [] x = 1 := by
-  rw [onesProb, show onesAt m [] = univ by simp [onesAt], measureProb_univ, Circuit.norm_run,
-    one_pow]
+theorem acceptProb_le_one (m : ℕ) (gs : List GateCode) (x : List Bool) :
+    acceptProb m gs x ≤ 1 :=
+  onesProb_le_one m gs [0] x
 
-theorem onesProb_le_one (m : ℕ) (gs : List GateCode) (S : List ℕ) (x : List Bool) :
-    onesProb m gs S x ≤ 1 := by
-  have h := measureProb_le_measureProb_univ
-    (Circuit.run (Circuit.ofCodes m gs) (inputState m x)) (onesAt m S)
-  rwa [measureProb_univ, Circuit.norm_run, one_pow] at h
+theorem mem_accepting (hm : 0 < m) {y : Fin m → Bool} :
+    y ∈ accepting m ↔ y ⟨0, hm⟩ = true := by
+  simp [accepting, onesAt, hm]
 
 /-- The probability of the rejecting outcomes is one minus the acceptance probability. -/
 private theorem measureProb_compl_accepting (ψ : Qubits m) (hψ : ‖ψ‖ = 1) :
