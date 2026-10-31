@@ -26,14 +26,15 @@ monotone nondecreasing under nonnegative weights.
 
 This module implements:
 
-1. **Okasaki two-list functional FIFO queue (`FifoQueue γ`)**: `O(1)` worst-case `peek?`, `O(1)`
-   amortized `enqueue` / `dequeue?` under the canonical invariant `front = [] → back = []`, plus
-   explicit potential-method reversal cost bounds (`enqueue_revCost_bound`,
-   `dequeue?_revCost_bound`). Unlike `Std.Queue` (`Init.Data.Queue`, which does not maintain
-   `dList = [] → eList = []`, so inspecting the head without committing a dequeue would repeatedly
-   reverse `eList`) and `Cslib.Algorithms.Lean.Queue` (an abstract `Cslib.Stateful` two-stack
-   module without `peek?`), `FifoQueue` supports `O(1)` worst-case `peek?` needed when `popMinM`
-   compares the heads of `q₁` and `q₂` and pops `q₁` while leaving `q₂` unchanged.
+1. **Two-list functional FIFO queue (`FifoQueue γ`)** ([CLRS2009], Exercise 10.1-6): `O(1)`
+   worst-case `peek?`, `O(1)` amortized `enqueue` / `dequeue?` under the canonical invariant
+   `front = [] → back = []`, plus explicit potential-method reversal cost bounds
+   (`enqueue_revCost_bound`, `dequeue?_revCost_bound`). Unlike `Std.Queue` (`Init.Data.Queue`,
+   which does not maintain `dList = [] → eList = []`, so inspecting the head without committing a
+   dequeue would repeatedly reverse `eList`) and `Cslib.Algorithms.Lean.Queue` (an abstract
+   `Cslib.Stateful` two-stack module without `peek?`), `FifoQueue` supports `O(1)` worst-case
+   `peek?` needed when `popMinM` compares the heads of `q₁` and `q₂` and pops `q₁` while leaving
+   `q₂` unchanged.
 2. **Cached-weight trees (`WeightedTree α β`)**: each queue entry caches `wt = tree.weight w`, so
    each merge computes `a.wt + b.wt` in `O(1)` arithmetic operations without re-traversing subtrees.
 3. **Timed and pure van Leeuwen construction (`huffmanFromSortedM`, `huffmanFromSorted`)**:
@@ -75,7 +76,7 @@ This module implements:
 * [VanLeeuwen1976] Jan van Leeuwen, *On the Construction of Huffman Trees*, ICALP 1976, pp. 382–410.
 * [Huffman1952] David A. Huffman, *A Method for the Construction of Minimum-Redundancy Codes*, 1952.
 * [CLRS2009] Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein,
-  *Introduction to Algorithms* (3rd ed.), Section 16.3 and Exercise 16.3-4, 2009.
+  *Introduction to Algorithms* (3rd ed.), Exercise 10.1-6 and Section 16.3, 2009.
 -/
 
 public section
@@ -87,7 +88,7 @@ open Cslib.Algorithms.Lean (TimeM)
 
 /-! ## Two-list functional FIFO queue -/
 
-/-- Okasaki two-list functional FIFO queue representing `front ++ back.reverse`. -/
+/-- Two-list functional FIFO queue representing `front ++ back.reverse`. -/
 structure FifoQueue (γ : Type*) where
   /-- Dequeue-ready prefix in FIFO order. -/
   front : List γ
@@ -180,6 +181,20 @@ theorem front_cons_spec {q : FifoQueue γ} {x : γ} {f : List γ} (hf : q.front 
   refine ⟨?_, wf_checkf f q.back⟩
   rw [toList, hf, toList_checkf, List.cons_append]
 
+theorem peek?_eq_head? {q : FifoQueue γ} (hwf : q.WF) : q.peek? = q.toList.head? := by
+  cases hf : q.front with
+  | nil => simp [peek?, hf, toList_eq_nil_of_front_eq_nil hwf hf]
+  | cons x f => simp [peek?, toList, hf]
+
+theorem dequeue?_spec {q : FifoQueue γ} (hwf : q.WF) :
+    match q.dequeue? with
+    | none => q.toList = []
+    | some (x, q') => q.toList = x :: q'.toList ∧ q'.WF := by
+  unfold dequeue?
+  cases hf : q.front with
+  | nil => exact toList_eq_nil_of_front_eq_nil hwf hf
+  | cons x f => exact front_cons_spec hf
+
 /-- Amortized `O(1)` potential bound for `enqueue` with potential `Φ(q) = q.back.length`:
 actual reversal work plus `ΔΦ` is at most `1`. -/
 theorem enqueue_revCost_bound (q : FifoQueue γ) (x : γ) :
@@ -207,7 +222,8 @@ structure WeightedTree (α β : Type*) where
 
 /-- Pop a minimum-weight entry from leaf list `q₁` and internal-node queue `q₂`, charging `1` tick
 if and only if both `q₁` and `q₂` are non-empty (preferring `q₁` on ties, as in
-[VanLeeuwen1976]). -/
+[VanLeeuwen1976]). Matching directly on `q₂.front` ensures `FifoQueue.checkf` is evaluated under
+strict evaluation only in branches that actually dequeue from `q₂`. -/
 def popMinM {α β : Type u} [LE β] [DecidableRel (· ≤ · : β → β → Prop)]
     (q₁ : List (WeightedTree α β)) (q₂ : FifoQueue (WeightedTree α β)) :
     TimeM ℕ (Option (WeightedTree α β × List (WeightedTree α β) × FifoQueue (WeightedTree α β))) :=

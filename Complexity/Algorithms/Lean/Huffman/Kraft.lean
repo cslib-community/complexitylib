@@ -18,11 +18,12 @@ import Mathlib.Tactic.Ring
 /-!
 # Binary Kraft Converse, Prefix-Free Trie Compaction, and McMillan Reduction
 
-Mathlib's `Mathlib.InformationTheory.Coding.Kraft` and `KraftMcMillan` prove the forward Kraft and
-Kraft–McMillan inequalities `∑ w ∈ S, (1 / D) ^ w.length ≤ 1` for prefix-free and uniquely
-decodable codes. This module supplies the constructive binary converse and tree reductions needed
-for Huffman optimality ([Kraft1949]; [McMillan1956]; [CoverThomas2006], Theorems 5.2.1–5.2.2 and
-5.5.1):
+Mathlib's `Mathlib.InformationTheory.Coding.Kraft` and `KraftMcMillan` prove the forward $D$-ary
+Kraft and Kraft–McMillan inequalities `∑ w ∈ S, (1 / D) ^ w.length ≤ 1` for finite prefix-free and
+uniquely decodable codes. This module supplies the finite binary ($D = 2$, alphabet `Bool`)
+constructive converse and tree reductions needed for Huffman optimality ([Kraft1949];
+[McMillan1956]; [CoverThomas2006], Theorems 5.2.1 and 5.5.1, specialized from $D$-ary to binary
+codes and from real probability weights to arbitrary ordered additive commutative monoids `β`):
 
 1. **Prefix-free codebook compaction (`treeOfCodebook`)**: any nonempty prefix-free binary codebook
    contracts (by eliminating unary internal nodes) to a full binary `CodeTree α` with the same leaf
@@ -269,20 +270,6 @@ private theorem le_foldr_max_of_mem {xs : List ℕ} {k : ℕ} (hk : k ∈ xs) :
     · exact Nat.le_max_left k _
     · exact Nat.le_trans (ih htail) (Nat.le_max_right x _)
 
-private theorem pairwise_rel_of_ne' {γ : Type*} {R : γ → γ → Prop}
-    (hsym : ∀ {u v}, R u v → R v u) {L : List γ} (hpw : L.Pairwise R)
-    {x y : γ} (hx : x ∈ L) (hy : y ∈ L) (hne : x ≠ y) : R x y := by
-  induction hpw with
-  | nil => cases hx
-  | @cons a as ha _ ih =>
-    rcases List.mem_cons.mp hx with rfl | hx_as
-    · rcases List.mem_cons.mp hy with rfl | hy_as
-      · exact absurd rfl hne
-      · exact ha y hy_as
-    · rcases List.mem_cons.mp hy with rfl | hy_as
-      · exact hsym (ha x hx_as)
-      · exact ih hx_as hy_as
-
 private theorem lookup_kraftAssign_exists {α : Type*} [DecidableEq α]
     {pairs : List (α × List Bool)} {a : α}
     (ha : a ∈ pairs.map Prod.fst) :
@@ -374,13 +361,14 @@ theorem exists_isPrefixFree_of_kraft_nat {α : Type*} (s : Finset α) (ℓ : α 
         List.mem_map.mpr ⟨(a, code a), hcode_mem a ha, rfl⟩
       have hmb : code b ∈ pairs.map Prod.snd :=
         List.mem_map.mpr ⟨(b, code b), hcode_mem b hb, rfl⟩
-      have hrel := pairwise_rel_of_ne' (fun h => ⟨h.2, h.1⟩) hspec hma hmb hne
+      have hrel := CodeTree.pairwise_rel_of_ne (fun h => ⟨h.2, h.1⟩) hspec hma hmb hne
       exact hrel.1 hpref
   · intro a ha
     exact length_snd_of_mem_kraftAssign (hcode_mem a ha)
 
-/-- **Binary Kraft Theorem** ([Kraft1949]; [CoverThomas2006], Theorem 5.2.1): a finite symbol set
-`s : Finset α` admits an injective prefix-free binary code with codeword lengths `ℓ` if and only if
+/-- **Binary Kraft Theorem** ([Kraft1949]; [CoverThomas2006], Theorem 5.2.1 specialized to binary
+alphabet `Bool`, $D = 2$, on finite codebooks `s : Finset α`): a finite symbol set `s` admits an
+injective prefix-free binary code with codeword lengths `ℓ` if and only if
 `∑ a ∈ s, (1 / 2 : ℝ) ^ ℓ a ≤ 1`. -/
 theorem exists_isPrefixFree_iff_kraft_le_one {α : Type*} (s : Finset α) (ℓ : α → ℕ) :
     (∃ code : α → List Bool,
@@ -818,10 +806,12 @@ theorem exists_codeTree_of_isPrefixFree {α β : Type*}
   rw [hcost] at hwpl
   exact ⟨T, hperm, hwpl⟩
 
-/-- **McMillan Code Tree Reduction** ([McMillan1956]; [CoverThomas2006], Theorem 5.5.1): every
-nonempty finite injective uniquely decodable binary code on `syms` admits a full binary `CodeTree α`
-with the same leaf symbols and at most the same weighted path length under nonnegative weights over
-any ordered additive commutative monoid `β`. -/
+/-- **McMillan Code Tree Reduction** (derived from McMillan's forward inequality [McMillan1956] /
+[CoverThomas2006], Theorem 5.5.1 in Mathlib together with the finite binary Kraft converse of
+Theorem 5.2.1 and `exists_codeTree_of_isPrefixFree`): every nonempty finite injective uniquely
+decodable binary ($D = 2$) code on `syms` admits a full binary `CodeTree α` with the same leaf
+symbols and at most the same weighted path length under nonnegative weights over any ordered
+additive commutative monoid `β`. -/
 theorem exists_codeTree_of_isUniquelyDecodable {α β : Type*}
     [AddCommMonoid β] [PartialOrder β] [IsOrderedAddMonoid β]
     {syms : List α} (hne : syms ≠ []) (hnodup : syms.Nodup)

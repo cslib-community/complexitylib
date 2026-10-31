@@ -36,8 +36,9 @@ model to Mathlib's `InformationTheory.IsPrefixFree` and `InformationTheory.IsUni
 ## Main results
 
 * `CodeTree.weightedPathLength_eq_sum_leafDepths`,
-  `CodeTree.weightedPathLength_eq_sum_codewords`: Knuth's external-path-length identity equating
-  the recursive internal-weight sum with `∑ (a, d), d • w a`.
+  `CodeTree.weightedPathLength_eq_sum_codewords`: external-path-length identity ([CLRS2009],
+  Equation (16.4) and Exercise 16.3-4) equating the recursive internal-weight sum with
+  `∑ (a, d), d • w a`.
 * `CodeTree.weightedPathLength_join`: compositional path-length identity for grafting a forest of
   code trees onto a skeleton `CodeTree (CodeTree α)`.
 * `CodeTree.isPrefixFree_codewordSet`, `CodeTree.isUniquelyDecodable_codewordSet`: every
@@ -51,7 +52,7 @@ model to Mathlib's `InformationTheory.IsPrefixFree` and `InformationTheory.IsUni
 
 * [Huffman1952] David A. Huffman, *A Method for the Construction of Minimum-Redundancy Codes*, 1952.
 * [CLRS2009] Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein,
-  *Introduction to Algorithms* (3rd ed.), Section 16.3, 2009.
+  *Introduction to Algorithms* (3rd ed.), Section 16.3, Equation (16.4) and Exercise 16.3-4, 2009.
 * [CoverThomas2006] Thomas M. Cover and Joy A. Thomas, *Elements of Information Theory* (2nd ed.),
   Chapter 5, 2006.
 -/
@@ -196,7 +197,8 @@ variable {α β : Type*}
   | .leaf a => w a
   | .branch l r => l.weight w + r.weight w
 
-/-- Weighted external path length of `T` ([CLRS2009], Equation (16.4)): `0` at a leaf, and
+/-- Weighted external path length of `T`, defined recursively via internal child-weight sums
+([CLRS2009], Exercise 16.3-4): `0` at a leaf, and
 `l.weightedPathLength w + r.weightedPathLength w + (l.weight w + r.weight w)` at an internal
 branch. -/
 @[expose] def weightedPathLength [Add β] [Zero β] (w : α → β) : CodeTree α → β
@@ -238,8 +240,8 @@ theorem weight_nonneg [AddCommMonoid β] [PartialOrder β] [IsOrderedAddMonoid �
       (ihl fun a ha => hw a (List.mem_append_left _ ha))
       (ihr fun a ha => hw a (List.mem_append_right _ ha))
 
-/-- **External-Path-Length Identity**: the recursive internal-weight sum `weightedPathLength w`
-equals `∑ (a, d) ∈ T.leafDepths, d • w a`. -/
+/-- **External-Path-Length Identity** ([CLRS2009], Equation (16.4) and Exercise 16.3-4): the
+recursive internal-weight sum `weightedPathLength w` equals `∑ (a, d) ∈ T.leafDepths, d • w a`. -/
 theorem weightedPathLength_eq_sum_leafDepths [AddCommMonoid β] (w : α → β) (T : CodeTree α) :
     T.weightedPathLength w = (T.leafDepths.map fun p => p.2 • w p.1).sum := by
   induction T with
@@ -324,7 +326,7 @@ theorem weightedPathLength_eq_sum_codewords {β : Type*} [AddCommMonoid β]
   rw [weightedPathLength_eq_sum_leafDepths, ← map_length_codewords, List.map_map]
   rfl
 
-private theorem pairwise_rel_of_ne {γ : Type*} {R : γ → γ → Prop}
+theorem pairwise_rel_of_ne {γ : Type*} {R : γ → γ → Prop}
     (hsym : ∀ {u v}, R u v → R v u) {L : List γ} (hpw : L.Pairwise R)
     {x y : γ} (hx : x ∈ L) (hy : y ∈ L) (hne : x ≠ y) : R x y := by
   induction hpw with

@@ -25,7 +25,9 @@ and proves its optimality over:
 3. **All finite injective `InformationTheory.IsUniquelyDecodable` binary codes**
    (`IsHuffmanBuild.weightedPathLength_le_of_isUniquelyDecodable`) under nonnegative weights, via
    Mathlib's Kraft–McMillan inequality and our constructive binary Kraft converse
-   (`exists_codeTree_of_isUniquelyDecodable`, [McMillan1956]; [CoverThomas2006], Theorem 5.8.1).
+   (`exists_codeTree_of_isUniquelyDecodable`, [McMillan1956]; [CoverThomas2006], Theorem 5.8.1,
+   specialized to binary alphabet `Bool`, $D = 2$, and generalized from real probability weights to
+   any ordered additive commutative monoid `β`).
 
 ## Proof architecture
 
@@ -35,8 +37,9 @@ intermediate forest `F : List (CodeTree α)` as a *skeleton* `S : CodeTree (Code
 `S.leaves.Perm F`. Rotating deeper subtrees leftward (`rotateDeepestLeft`) places a maximum-depth
 sibling cherry at the first two leaf slots without changing `weightedPathLength`, relabeling moves a
 minimum-weight pair `(t₁, t₂)` into that cherry without increasing cost (Lemma 16.2), and
-contracting the cherry via `LeftCherryAtDepth` leaves `CodeTree.join` *definitionally unchanged*
-while also satisfying the additive shift identity of Lemma 16.3.
+contracting the cherry via `LeftCherryAtDepth` leaves `CodeTree.join` unchanged
+(`LeftCherryAtDepth.join_contract_eq`) while also satisfying the additive shift identity of
+Lemma 16.3.
 
 ## Main definitions
 
@@ -728,9 +731,10 @@ theorem IsHuffmanBuild.weightedPathLength_le_of_isPrefixFree {α β : Type*}
   exact le_trans (hbuild.weightedPathLength_le T' hperm) hwpl
 
 /-- **Optimality of Huffman Coding over All Uniquely Decodable Binary Codes** ([McMillan1956];
-[CoverThomas2006], Theorem 5.8.1): under nonnegative symbol weights, a Huffman tree `T` achieves
-weighted path length at most the weighted codeword length of *any* injective
-`InformationTheory.IsUniquelyDecodable` binary code on `syms`. -/
+[CoverThomas2006], Theorem 5.8.1 specialized to binary alphabet `Bool`, $D = 2$, and generalized to
+arbitrary ordered additive commutative monoid weights `β`): under nonnegative symbol weights, a
+Huffman tree `T` achieves weighted path length at most the weighted codeword length of *any*
+injective `InformationTheory.IsUniquelyDecodable` binary code on `syms`. -/
 theorem IsHuffmanBuild.weightedPathLength_le_of_isUniquelyDecodable {α β : Type*}
     [AddCommMonoid β] [PartialOrder β] [IsOrderedAddMonoid β]
     {syms : List α} (hne : syms ≠ []) (hnodup : syms.Nodup)
