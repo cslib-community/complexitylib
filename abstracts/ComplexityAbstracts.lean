@@ -47,6 +47,8 @@ import ComplexityAbstracts.ResolutionAbstract
 import ComplexityAbstracts.ResolutionBridge
 import ComplexityAbstracts.SavitchAbstract
 import ComplexityAbstracts.SavitchBridge
+import ComplexityAbstracts.SchoeningAbstract
+import ComplexityAbstracts.SchoeningBridge
 import ComplexityAbstracts.ShamirAbstract
 import ComplexityAbstracts.ShamirBridge
 import ComplexityAbstracts.SipserLautemannAbstract
