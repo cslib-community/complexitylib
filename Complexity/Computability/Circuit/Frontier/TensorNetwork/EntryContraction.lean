@@ -20,9 +20,10 @@ import Complexity.Foundations.Data.Nat.Asymptotics
 # Contraction with entry procedures: the interface
 
 Theorem D.1 of [OpenAI2026ETH] (p. 53) contracts Boolean tensor networks whose entries are not
-given as tables but computed: "uniformly for every vertex and Boolean choice of its ports, … its
-entry can be computed from the description in time `(s + L) ^ b 2 ^ (A s ^ (9/10))` and space
-`(s + L) ^ b`", with maximum degree at most `⌈s ^ (9/10)⌉`. At that degree a table has
+given as tables but computed: it assumes, uniformly over the vertices and the Boolean choices of
+their ports, that each entry is computable from the description in time
+`(s + L) ^ b 2 ^ (A s ^ (9/10))` and space `(s + L) ^ b` (a paraphrase), with maximum degree at
+most `⌈s ^ (9/10)⌉`. At that degree a table has
 `2 ^ ⌈s ^ (9/10)⌉` entries, so Lemma D.2 (p. 56), which applies the theorem with entries computed
 by procedures, needs this form for its polynomial-space bound. This file states the interface
 that the contraction algorithm provides for such networks, milestone E1 of #1538.
