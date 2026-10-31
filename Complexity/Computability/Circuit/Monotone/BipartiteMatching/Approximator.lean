@@ -33,8 +33,6 @@ are counted in
 
 ## Main definitions
 
-* `Cslib.Circuits.BipartiteMatching.IsMatching`: a set of edges is a matching.
-* `Cslib.Circuits.BipartiteMatching.Contains`: an input contains all edges of a set.
 * `Cslib.Circuits.BipartiteMatching.Razborov.matchings`: the matchings with at most `s` edges.
 * `Cslib.Circuits.BipartiteMatching.Razborov.Approximator`,
   `Cslib.Circuits.BipartiteMatching.Razborov.Approximator.input`,
@@ -61,46 +59,7 @@ namespace Cslib.Circuits.BipartiteMatching
 open Finset Cslib.ImplicationClosure
 open Cslib.Circuits.Monotone (signature Op)
 
-/-! ### Matchings -/
-
-section Matching
-
-variable {V W : Type*}
-
-/-- A set of edges of a bipartite graph is a *matching* when two of its edges sharing an endpoint
-are equal. -/
-def IsMatching (E : Finset (V × W)) : Prop :=
-  ∀ e ∈ E, ∀ e' ∈ E, (e.1 = e'.1 ∨ e.2 = e'.2) → e = e'
-
-/-- Whether a set of edges is a matching is decidable. -/
-instance [DecidableEq V] [DecidableEq W] (E : Finset (V × W)) : Decidable (IsMatching E) :=
-  inferInstanceAs (Decidable (∀ e ∈ E, ∀ e' ∈ E, (e.1 = e'.1 ∨ e.2 = e'.2) → e = e'))
-
-/-- A subset of a matching is a matching. -/
-theorem IsMatching.mono {E F : Finset (V × W)} (hE : IsMatching E) (hFE : F ⊆ E) :
-    IsMatching F :=
-  fun e he e' he' h => hE e (hFE he) e' (hFE he') h
-
-/-- A single edge is a matching. -/
-theorem isMatching_singleton (e : V × W) : IsMatching ({e} : Finset (V × W)) := by
-  simp [IsMatching]
-
-end Matching
-
 variable {n r s : ℕ}
-
-/-- The input `x` contains all edges of `E`. -/
-def Contains (x : BitString (n * n)) (E : Finset (Fin n × Fin n)) : Prop :=
-  ∀ e ∈ E, graph x e = true
-
-/-- Whether an input contains all edges of a set is decidable. -/
-instance (x : BitString (n * n)) (E : Finset (Fin n × Fin n)) : Decidable (Contains x E) :=
-  inferInstanceAs (Decidable (∀ e ∈ E, graph x e = true))
-
-/-- An input containing all edges of a set contains all edges of its subsets. -/
-theorem Contains.mono {x : BitString (n * n)} {E F : Finset (Fin n × Fin n)} (h : Contains x E)
-    (hFE : F ⊆ E) : Contains x F :=
-  fun e he => h e (hFE he)
 
 namespace Razborov
 
