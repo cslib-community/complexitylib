@@ -45,7 +45,7 @@ public theorem exec_parameters {w L m N Q : ℕ} (hm : m ≤ L) (x : Data 160)
     (hL : x.mem 1 = L) (hmemory : x.mem 2 = m) (hN : x.mem 3 = N)
     (hfit : Fits w (wordBudget L m N Q)) :
     ∃ y, ExecWithin w parameters x y
-        ((16 * L + 49) + ((6 * L + 16) * 2 ^ L + 14)) ∧
+        ((16 * L + 49) + ((6 * L + 16) * 2 ^ L + 16)) ∧
       BandPreparation.BandParameters L m N (y.comap bank) ∧ y.mem = x.mem ∧
       (∀ i, 96 ≤ i.val → y.regs i = x.regs i) := by
   obtain ⟨h, hh, hp, hm⟩ := BandPreparation.exec_header hm (x.comap bank) hL hmemory hN
@@ -53,7 +53,7 @@ public theorem exec_parameters {w L m N Q : ℕ} (hm : m ≤ L) (x : Data 160)
   obtain ⟨c, hc, cp, cm⟩ := BandPreparation.exec_countCode h hp (producer_fits hfit).1
   have he := (hh.seq hc).rename bank_injective
   change ExecWithin w parameters x (c.extend bank x)
-    ((16 * L + 49) + ((6 * L + 16) * 2 ^ L + 14)) at he
+    ((16 * L + 49) + ((6 * L + 16) * 2 ^ L + 16)) at he
   refine ⟨c.extend bank x, he, ?_, cm.trans hm, ?_⟩
   · simpa only [Data.comap_extend bank_injective] using cp
   · intro i hi

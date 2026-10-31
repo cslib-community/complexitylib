@@ -119,7 +119,7 @@ bound from the proof of Theorem 11.8 of [CLRS2009], third edition, pp. 274–276
 
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein,
   *Introduction to Algorithms*, third edition (MIT Press, 2009), Section 11.4,
-  pp. 270–277][CLRS2009]
+  pp. 269–277][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 -/
 
