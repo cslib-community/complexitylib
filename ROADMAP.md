@@ -202,7 +202,7 @@ index links to canonical definitions rather than keeping a second set.
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets** ([#1819]): `P/poly = P^SPARSE` (Meyer), extending
+- **Sparse and tally sets:** `P/poly = P^SPARSE` (Meyer), extending
   `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`.
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
@@ -866,5 +866,4 @@ not planned, not as proved.
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
-[#1819]: https://github.com/cslib-community/complexitylib/issues/1819
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
