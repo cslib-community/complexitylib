@@ -52,9 +52,10 @@ open ContractionSchedule ChildCursor NativeRecovery NativeChild
 
 /-- **A bounded packet descriptor** for a root with modulus `fl` and `m` edges, at precision at most
 `P`, on a vertex with `k` ports: its precision is at most `P` and is its number of exponents per
-tile, its modulus is `fl`, it has `2 ^ a` slots with `a ≤ ⌊log₂ m⌋`, `2 ^ (i + 1)` tiles with `i ≤ a`, a grid point
-of size at most `2 ^ a`, no column list, a 0/1 interpolation value with at most `e` coordinates,
-`k` tags with slots below `2 ^ a`, and at most `2 ^ (i + 1) p` exponents, each at most `p`. -/
+tile, its modulus is `fl`, it has `2 ^ a` slots with `a ≤ ⌊log₂ m⌋`, `2 ^ (i + 1)` tiles with
+`i ≤ a`, a grid point of size at most `2 ^ a`, no column list, a 0/1 interpolation value with at
+most `e` coordinates, `k` tags with slots below `2 ^ a`, and at most `2 ^ (i + 1) p` exponents, each
+at most `p`. -/
 @[expose] def PacketBound (fl : List ℕ) (m P k : ℕ) (d : NativePacket.PacketDesc) : Prop :=
   d.1.p ≤ P ∧ d.1.nb = d.1.p ∧ d.1.fl = fl ∧ d.1.a ≤ Nat.log 2 m ∧ d.1.L = 2 ^ d.1.a ∧
     d.1.i ≤ d.1.a ∧ d.1.tiles = 2 ^ (d.1.i + 1) ∧ d.1.t.natAbs ≤ 2 ^ d.1.a ∧ d.1.cols = [] ∧
