@@ -352,13 +352,13 @@ The choice is supplied only in the proof; each reduction receives its index as o
 theorem indexed_indistinguishable {generator : ℕ → ℕ → List Bool → List Bool}
     {seedBits count choose : ℕ → ℕ}
     (hgenerator : ComputableInPolyTime
-      (fun input => generator input.1.1 input.1.2 input.2)
+      (fun input => generator (Prod.fst input.1) (Prod.snd input.1) input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits)
     (hseedBits : ComputableInPolyTime seedBits encUnary encUnary)
     (hcount : ComputableInPolyTime count encUnary encUnary)
     (hsecure : ∀ adversary : ℕ → ℕ → List Bool → ProbComp Bool,
       IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-        encBool (fun input => adversary input.1.1 input.1.2 input.2) →
+        encBool (fun input => adversary (Prod.fst input.1) (Prod.snd input.1) input.2) →
       Negligible (fun n => Game.advantage
         (((uniformList (seedBits n)).map (generator n (choose n))).bind
           (fun word => ProbComp.eval (adversary n (choose n) word)))
@@ -366,7 +366,7 @@ theorem indexed_indistinguishable {generator : ℕ → ℕ → List Bool → Lis
           (fun word => ProbComp.eval (adversary n (choose n) word))))) :
     ∀ adversary : ℕ → ℕ → List Bool → ProbComp Bool,
       IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-        encBool (fun input => adversary input.1.1 input.1.2 input.2) →
+        encBool (fun input => adversary (Prod.fst input.1) (Prod.snd input.1) input.2) →
       Negligible (fun n => Game.advantage
         (((uniformList (seedBits n)).map
           (iterate (generator n (choose n)) (seedBits n) (count n))).bind

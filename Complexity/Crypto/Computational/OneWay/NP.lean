@@ -80,7 +80,7 @@ open Complexity Probability Turing.MultiTapeTM ComputableTidilyInPolyTime
 /-- **The preimage-prefix problem** of `f`: the instances `(n, y, u)` such that some input `x` of
 length `n` that starts with `u` satisfies `f x = y`. -/
 def preimagePrefix (f : List Bool → List Bool) : Set (ℕ × List Bool × List Bool) :=
-  {p | ∃ x : List Bool, x.length = p.1 ∧ p.2.2 <+: x ∧ f x = p.2.1}
+  {p | let yu := p.2; ∃ x : List Bool, x.length = p.1 ∧ yu.2 <+: x ∧ f x = yu.1}
 
 /-- The encoding of instances of the preimage-prefix problem: the length `n` in unary, then the
 image and the prefix. -/
@@ -95,7 +95,12 @@ variable {f : List Bool → List Bool}
 prefix. -/
 def preimagePrefixVerifier (f : List Bool → List Bool)
     (p : (ℕ × List Bool × List Bool) × List Bool) : Bool :=
-  decide (p.1.2.2.length ≤ p.1.1) && f (p.1.2.2 ++ p.2.take (p.1.1 - p.1.2.2.length)) == p.1.2.1
+  let inst := p.1
+  let n := inst.1
+  let yu := inst.2
+  let y := yu.1
+  let u := yu.2
+  decide (u.length ≤ n) && f (u ++ p.2.take (n - u.length)) == y
 
 /-- The unary length is at most as long as the encoded instance. -/
 private theorem le_length_encPreimagePrefix (p : ℕ × List Bool × List Bool) :

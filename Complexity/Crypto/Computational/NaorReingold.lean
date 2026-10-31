@@ -321,7 +321,8 @@ theorem computableInPolyTime_naorReingoldProdNat :
 theorem computableInPolyTime_naorReingoldWordSuffix :
     ComputableInPolyTime
       (fun input : F.Desc × List Bool × List ℕ × List Bool =>
-        F.naorReingoldWordSuffix input.1 input.2.1 input.2.2.1 input.2.2.2)
+        F.naorReingoldWordSuffix input.1 (Prod.fst input.2) (Prod.fst (Prod.snd input.2))
+          (Prod.snd (Prod.snd input.2)))
       (encPair F.encDesc (encPair encBits (encPair (encList encNat) encBits))) encBits := by
   have hd : ComputableInPolyTime
       (fun input : F.Desc × List Bool × List ℕ × List Bool => input.1)
@@ -358,7 +359,8 @@ theorem computableInPolyTime_naorReingoldWordSuffix :
 theorem computableInPolyTime_naorReingoldWordEval :
     ComputableInPolyTime
       (fun input : F.Desc × ℕ × List ℕ × List Bool =>
-        F.naorReingoldWordEval input.1 input.2.1 input.2.2.1 input.2.2.2)
+        F.naorReingoldWordEval input.1 (Prod.fst input.2) (Prod.fst (Prod.snd input.2))
+          (Prod.snd (Prod.snd input.2)))
       (encPair F.encDesc (encPair encNat (encPair (encList encNat) encBits))) encBits := by
   have hd : ComputableInPolyTime
       (fun input : F.Desc × ℕ × List ℕ × List Bool => input.1)
@@ -602,7 +604,8 @@ rerandomize it into a `BitString k`-indexed family via `multiDDHRerandomizeLaw` 
 noncomputable def naorReingoldLevelDDHDistinguisher (d : F.Desc) {n : ℕ} (k : ℕ) (hk : k < n)
     (adv : OracleComp (fun _ : BitString n => F.Carrier d) Bool)
     (t : F.Carrier d × F.Carrier d × F.Carrier d) : PMF Bool :=
-  (F.multiDDHRerandomizeLaw d (BitString k) t.1 t.2.1 t.2.2).bind
+  let vw := t.2
+  (F.multiDDHRerandomizeLaw d (BitString k) t.1 vw.1 vw.2).bind
     (F.naorReingoldLevelTest d k hk adv t.1)
 
 /-- Under `multiDDHRealTupleLaw`, `naorReingoldLevelTest` reproduces `naorReingoldHybridGame` at

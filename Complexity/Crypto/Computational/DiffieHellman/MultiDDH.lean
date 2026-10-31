@@ -76,8 +76,10 @@ theorem ddhFixedUWordRerandomize_encode (d : F.Desc) (u v w : F.Carrier d) (σ �
 theorem computableInPolyTime_ddhFixedUWordRerandomize :
     ComputableInPolyTime
       (fun input : F.Desc × List Bool × List Bool × List Bool × ℕ × ℕ =>
-        F.ddhFixedUWordRerandomize input.1 input.2.1 input.2.2.1 input.2.2.2.1
-          input.2.2.2.2.1 input.2.2.2.2.2)
+        F.ddhFixedUWordRerandomize input.1 (Prod.fst input.2) (Prod.fst (Prod.snd input.2))
+          (Prod.fst (Prod.snd (Prod.snd input.2)))
+          (Prod.fst (Prod.snd (Prod.snd (Prod.snd input.2))))
+          (Prod.snd (Prod.snd (Prod.snd (Prod.snd input.2)))))
       (encPair F.encDesc
         (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
       (encPair encBits encBits) := by
@@ -288,9 +290,11 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
         (F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) ≤
     Game.advantage
       ((F.ddhRealTupleLaw d).bind fun t =>
-        (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1))
+        let vw := t.2
+        (F.multiDDHRerandomizeLaw d ι t.1 vw.1 vw.2).bind (test t.1))
       ((F.ddhIdealTupleLaw d).bind fun t =>
-        (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) +
+        let vw := t.2
+        (F.multiDDHRerandomizeLaw d ι t.1 vw.1 vw.2).bind (test t.1)) +
       (F.order d : ℝ≥0)⁻¹ := by
   have hreal :
       ((F.ddhRealTupleLaw d).bind fun t =>

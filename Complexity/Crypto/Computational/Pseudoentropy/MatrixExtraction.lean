@@ -63,8 +63,9 @@ theorem extractMatrixLabels_result {Observation Label : Type} (inputBits outputB
     {result : List Observation × List Bool × List Bool}
     (hresult : result ∈ (ProbComp.eval
       (extractMatrixLabels inputBits outputBits prepare samples)).support) :
-    result.1 = samples.map Prod.fst ∧ result.2.1.length = outputBits * inputBits ∧
-      result.2.2.length = outputBits := by
+    let sd := result.2
+    result.1 = samples.map Prod.fst ∧ sd.1.length = outputBits * inputBits ∧
+      sd.2.length = outputBits := by
   simp only [extractMatrixLabels, extractLabels, bind_pure_comp, ProbComp.eval_map,
     BitString.eval_sampleList, PMF.mem_support_map_iff] at hresult
   obtain ⟨seed, hseed, rfl⟩ := hresult
@@ -104,7 +105,9 @@ theorem eval_extractMatrixLabels {Observation Label : Type} (inputBits outputBit
       (ProbComp.eval (extractLabels (ProbComp.uniform (BitString (outputBits * inputBits)))
         (fun seed labels => LinearHash.hash (blocksEquiv (m := outputBits) (k := inputBits) seed)
           (ofList inputBits (prepare labels))) samples)).map
-            (fun result => (result.1, List.ofFn result.2.1, List.ofFn result.2.2)) := by
+            (fun result =>
+              let sd := result.2
+              (result.1, List.ofFn sd.1, List.ofFn sd.2)) := by
   have hrow (word : List Bool) : listRow inputBits 0 word =
       List.ofFn (ofList inputBits word) :=
     listRow_eq_ofFn inputBits (0 : Fin 1) word
@@ -118,7 +121,9 @@ theorem eval_extractMatrixLabelsIdeal {Observation : Type} (source : ProbComp Ob
     ProbComp.eval (extractMatrixLabelsIdeal source count inputBits outputBits) =
       (extractLabelsIdeal (Output := BitString outputBits) source count
         (ProbComp.uniform (BitString (outputBits * inputBits)))).map
-          (fun result => (result.1, List.ofFn result.2.1, List.ofFn result.2.2)) := by
+          (fun result =>
+            let sd := result.2
+            (result.1, List.ofFn sd.1, List.ofFn sd.2)) := by
   simp only [extractMatrixLabelsIdeal, ProbComp.eval_bind, ProbComp.eval_pure,
     extractLabelsIdeal, ProbComp.eval_uniform, eval_sampleList, uniformList,
     Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind]
@@ -131,7 +136,8 @@ theorem eval_extractMatrixLabelsIdeal_bind {Observation Output : Type}
     (next : List Observation → List Bool → ProbComp Output) :
     ProbComp.eval (do
       let result ← extractMatrixLabelsIdeal source count inputBits outputBits
-      next result.1 (result.2.1 ++ result.2.2)) =
+      let sd := result.2
+      next result.1 (sd.1 ++ sd.2)) =
         ProbComp.eval (do
           let observations ← OracleComp.replicate count source
           let bits ← BitString.sampleList (outputBits * inputBits + outputBits)
@@ -147,7 +153,8 @@ theorem eval_extractMatrixLabelsIdeal_append {Observation : Type}
     (next : List Observation → ProbComp (List Bool)) :
     ProbComp.eval (do
       let result ← extractMatrixLabelsIdeal source count inputBits outputBits
-      (fun front => front ++ (result.2.1 ++ result.2.2)) <$> next result.1) =
+      let sd := result.2
+      (fun front => front ++ (sd.1 ++ sd.2)) <$> next result.1) =
         ProbComp.eval (do
           let observations ← OracleComp.replicate count source
           let front ← next observations

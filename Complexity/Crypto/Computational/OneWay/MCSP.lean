@@ -274,7 +274,8 @@ theorem computableInPolyTime_tableQueries (d : ℕ) :
 /-- The instance read from the answers is computed in polynomial time. -/
 theorem computableInPolyTime_tableInstance (d : ℕ) :
     ComputableInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
-      tableInstance (tableArity d pair.1.1) pair.2) (encPair (encPair encUnary encBits) encBits)
+      tableInstance (tableArity d (Prod.fst pair.1)) pair.2)
+      (encPair (encPair encUnary encBits) encBits)
       MCSP.encInstance := by
   refine .of_tidy ?_
   have harity : ComputableTidilyInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
