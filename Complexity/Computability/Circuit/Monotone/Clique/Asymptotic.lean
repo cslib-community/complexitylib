@@ -20,34 +20,39 @@ With width `w` and `w ^ 2` petals, `sunflowerBound (w ^ 2) w ≤ (w + 1) w ^ (3 
 budgets of Razborov's dichotomy (`Cslib.Circuits.Monotone.lt_size_of_computes_clique`) are
 satisfied by the size `64 ^ w = 2 ^ (6 w)` as soon as `w ≥ 16`, `4 w ^ 2 ≤ k - 1` and
 `64 w ^ 6 k ≤ n` (`pow_lt_size_of_computes_clique`). Taking `w = ⌊√(k - 1)⌋ / 2` handles
-`k ≥ 1025`; for `2 ≤ k ≤ 1024`, every edge is essential (`edgeCount_le_succ_size`), which already
-forces `(n / 2) ^ 2 - 1` gates.
+`k ≥ 1025`; for `2 ≤ k ≤ 1024`, every edge is essential (`edgeCount_le_succ_size_of_separates`),
+which already forces `(n / 2) ^ 2 - 1` gates.
 
 So for `2 ≤ k` with `k ^ 4 ≤ n`, every monotone circuit computing `k`-clique on `n` vertices has
 more than `2 ^ (2 ⌊√k⌋)` gates (`two_pow_two_mul_sqrt_lt_size`), hence more than `2 ^ √k`
 (`two_rpow_sqrt_lt_size`). This is the `2 ^ (ε √k)` bound of Razborov and of Alon and Boppana,
-in the form of [Arora and Barak, Theorem 14.7][AroraBarak09], with `ε = 1`.
+in the form of [Arora and Barak, Theorem 14.7][AroraBarak09], with `ε = 1`. The hypothesis
+`2 ≤ k` is needed: for `k ≤ 1` and `n ≥ 1`, `k`-clique is constantly `true`, which one gate
+computes.
 
 [LogarithmicPetals](Complexity/Computability/Circuit/Monotone/Clique/LogarithmicPetals.html)
 gives stronger finite parameter bounds by choosing
 `4 * w * t` petals for dyadic `w = 2 ^ t`: the lower bound becomes `w ^ w` when `k ^ 4 ≤ n`,
 or remains `64 ^ w` with only `1024 * t ^ 2 * w ^ 4 * k ≤ n` vertices.
 
-The method of approximations bounds the size of every monotone circuit separating the graphs with
-a `k`-clique from the `(k - 1)`-colourable graphs (`pow_lt_size_of_separates`,
-`two_pow_two_mul_sqrt_lt_size_of_separates`, the latter for `k ≥ 1025`); the essential-edge bound
-for small `k` is proved here only for circuits computing `k`-clique.
+Both the method of approximations and the essential-edge bound read a circuit only on graphs with a
+`k`-clique and on `(k - 1)`-colourable graphs. So all of these bounds hold for every monotone
+circuit separating the two classes (`pow_lt_size_of_separates`,
+`two_pow_two_mul_sqrt_lt_size_of_separates`, `two_rpow_sqrt_lt_size_of_separates`), and the bounds
+for circuits computing `k`-clique are their instances.
 
 ## Main results
 
 * `Cslib.Circuits.Monotone.pow_lt_size_of_separates`,
   `Cslib.Circuits.Monotone.pow_lt_size_of_computes_clique`: the `64 ^ w` lower bound for
   separating circuits and for circuits computing `k`-clique.
-* `Cslib.Circuits.Monotone.two_pow_two_mul_sqrt_lt_size_of_separates`: the `2 ^ (2 ⌊√k⌋)` lower
-  bound for separating circuits, for `k ≥ 1025`.
+* `Cslib.Circuits.Monotone.two_pow_two_mul_sqrt_lt_size_of_separates`,
+  `Cslib.Circuits.Monotone.two_pow_two_mul_sqrt_lt_size`: the `2 ^ (2 ⌊√k⌋)` lower bound for
+  separating circuits and for circuits computing `k`-clique.
 * `Cslib.Circuits.Monotone.two_pow_two_mul_sqrt_lt_ecomplexity_clique`: the lower bound for the
   monotone circuit complexity of `k`-clique.
-* `Cslib.Circuits.Monotone.two_rpow_sqrt_lt_size`: the real form.
+* `Cslib.Circuits.Monotone.two_rpow_sqrt_lt_size_of_separates`,
+  `Cslib.Circuits.Monotone.two_rpow_sqrt_lt_size`: the real form.
 
 ## References
 
@@ -246,10 +251,10 @@ theorem pow_lt_size_of_computes_clique {n k w : ℕ} (hw : 16 ≤ w) (hk : 4 * w
   have : 1 ≤ w ^ 2 := one_le_pow₀ (by omega)
   exact pow_lt_size_of_separates hw hk hn (separates_of_computes_clique (by omega) hC)
 
-/-- For `1025 ≤ k` with `k ^ 4 ≤ n`, every monotone circuit separating the graphs with a `k`-clique
-from the `(k - 1)`-colourable graphs on `n` vertices has more than `2 ^ (2 ⌊√k⌋)` gates. -/
-theorem two_pow_two_mul_sqrt_lt_size_of_separates {n k : ℕ} (hk : 1025 ≤ k) (hn : k ^ 4 ≤ n)
-    {C : Circuit signature (edgeCount n) 1}
+/-- For `1025 ≤ k` with `k ^ 4 ≤ n`, the width `⌊√(k - 1)⌋ / 2` gives the `2 ^ (2 ⌊√k⌋)` bound
+through `pow_lt_size_of_separates`. -/
+private theorem two_pow_two_mul_sqrt_lt_size_of_separates_of_large {n k : ℕ} (hk : 1025 ≤ k)
+    (hn : k ^ 4 ≤ n) {C : Circuit signature (edgeCount n) 1}
     (hC : Separates k (k - 1) fun x => C.eval interpretation x 0) :
     2 ^ (2 * Nat.sqrt k) < C.size := by
   let root := Nat.sqrt (k - 1)
@@ -296,14 +301,16 @@ private theorem fourPow_sqrt_add_two_le
   · exact le_trans (by norm_num) (monotone 2 two_le)
   all_goals exact le_trans (by norm_num) (monotone _ squareBelow)
 
-/-- **The monotone lower bound for cliques.** For `2 ≤ k` with `k ^ 4 ≤ n`, every monotone circuit
-computing `k`-clique on `n` vertices has more than `2 ^ (2 ⌊√k⌋)` gates. -/
-theorem two_pow_two_mul_sqrt_lt_size {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ n)
-    {C : Circuit signature (edgeCount n) 1} (hC : C.Computes interpretation (single (clique n k))) :
+/-- **The monotone lower bound for separating circuits.** For `2 ≤ k` with `k ^ 4 ≤ n`, every
+monotone circuit separating the graphs with a `k`-clique from the `(k - 1)`-colourable graphs on
+`n` vertices has more than `2 ^ (2 ⌊√k⌋)` gates. -/
+theorem two_pow_two_mul_sqrt_lt_size_of_separates {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ n)
+    {C : Circuit signature (edgeCount n) 1}
+    (hC : Separates k (k - 1) fun x => C.eval interpretation x 0) :
     2 ^ (2 * Nat.sqrt k) < C.size := by
   have hkn : k ≤ n := (Nat.le_self_pow (by norm_num) k).trans hn
   rcases Nat.lt_or_ge k 1025 with hk' | hk'
-  · have edges := edgeCount_le_succ_size hk hkn hC
+  · have edges := edgeCount_le_succ_size_of_separates hk hkn hC
     have pairs := sq_half_le_edgeCount n
     have arithmetic := fourPow_sqrt_add_two_le k hk (by omega)
     have scaled : (k ^ 4 / 2) ^ 2 ≤ (n / 2) ^ 2 :=
@@ -311,8 +318,14 @@ theorem two_pow_two_mul_sqrt_lt_size {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ 
     rw [pow_mul]
     norm_num
     omega
-  · exact two_pow_two_mul_sqrt_lt_size_of_separates hk' hn
-      (separates_of_computes_clique (by omega) hC)
+  · exact two_pow_two_mul_sqrt_lt_size_of_separates_of_large hk' hn hC
+
+/-- **The monotone lower bound for cliques.** For `2 ≤ k` with `k ^ 4 ≤ n`, every monotone circuit
+computing `k`-clique on `n` vertices has more than `2 ^ (2 ⌊√k⌋)` gates. -/
+theorem two_pow_two_mul_sqrt_lt_size {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ n)
+    {C : Circuit signature (edgeCount n) 1} (hC : C.Computes interpretation (single (clique n k))) :
+    2 ^ (2 * Nat.sqrt k) < C.size :=
+  two_pow_two_mul_sqrt_lt_size_of_separates hk hn (separates_of_computes_clique (by omega) hC)
 
 /-- **The monotone circuit complexity of cliques.** For `2 ≤ k` with `k ^ 4 ≤ n`, the monotone
 circuit complexity of `k`-clique on `n` vertices exceeds `2 ^ (2 ⌊√k⌋)`. -/
@@ -322,12 +335,14 @@ theorem two_pow_two_mul_sqrt_lt_ecomplexity_clique {n k : ℕ} (hk : 2 ≤ k) (h
   intro C hC
   exact_mod_cast two_pow_two_mul_sqrt_lt_size hk hn hC
 
-/-- **The monotone lower bound for cliques, real form.** For `2 ≤ k` with `k ^ 4 ≤ n`, every
-monotone circuit computing `k`-clique on `n` vertices has more than `2 ^ √k` gates. -/
-theorem two_rpow_sqrt_lt_size {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ n)
-    {C : Circuit signature (edgeCount n) 1} (hC : C.Computes interpretation (single (clique n k))) :
+/-- **The monotone lower bound for separating circuits, real form.** For `2 ≤ k` with `k ^ 4 ≤ n`,
+every monotone circuit separating the graphs with a `k`-clique from the `(k - 1)`-colourable graphs
+on `n` vertices has more than `2 ^ √k` gates. -/
+theorem two_rpow_sqrt_lt_size_of_separates {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ n)
+    {C : Circuit signature (edgeCount n) 1}
+    (hC : Separates k (k - 1) fun x => C.eval interpretation x 0) :
     (2 : ℝ) ^ Real.sqrt k < C.size := by
-  have natural := two_pow_two_mul_sqrt_lt_size hk hn hC
+  have natural := two_pow_two_mul_sqrt_lt_size_of_separates hk hn hC
   have sqrtPositive : 1 ≤ Nat.sqrt k := Nat.le_sqrt.2 (by omega)
   have exponentBound : Real.sqrt k ≤ ((2 * Nat.sqrt k : ℕ) : ℝ) := by
     have := Real.real_sqrt_lt_nat_sqrt_succ (a := k)
@@ -341,5 +356,12 @@ theorem two_rpow_sqrt_lt_size {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ n)
         push_cast
         rfl
     _ < C.size := by exact_mod_cast natural
+
+/-- **The monotone lower bound for cliques, real form.** For `2 ≤ k` with `k ^ 4 ≤ n`, every
+monotone circuit computing `k`-clique on `n` vertices has more than `2 ^ √k` gates. -/
+theorem two_rpow_sqrt_lt_size {n k : ℕ} (hk : 2 ≤ k) (hn : k ^ 4 ≤ n)
+    {C : Circuit signature (edgeCount n) 1} (hC : C.Computes interpretation (single (clique n k))) :
+    (2 : ℝ) ^ Real.sqrt k < C.size :=
+  two_rpow_sqrt_lt_size_of_separates hk hn (separates_of_computes_clique (by omega) hC)
 
 end Cslib.Circuits.Monotone

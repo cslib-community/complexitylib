@@ -22,11 +22,10 @@ run_elab do
 
 namespace ComplexityTests.Internal.BinaryPrimitives
 
--- Unbounded carry chains are verified for the actual folds, then specialized to long words.
+-- Unbounded carry chains are verified for `NatSucc.incr`, then specialized to long words.
 theorem carryChain (k : ℕ) :
-    NatSucc.succFinish ((List.replicate k true).foldl NatSucc.succStep (true, [])) =
+    NatSucc.incr true (List.replicate k true) =
       List.replicate k false ++ [true] := by
-  rw [NatSucc.succFinish_foldl, List.nil_append]
   induction k with
   | zero => rfl
   | succ k ih =>
@@ -49,14 +48,14 @@ example (n : ℕ) {f : ℕ → ℕ} {t s T S : ℕ → ℕ}
       (fun n => c * (((encNat n).length + 1) ^ 2 + 1))
       (fun n => c * ((encNat n).length + 1 + 1)) ∧
       ∀ n, (encNat (n - 1)).length ≤ c * ((encNat n).length + 1 + 1)) ∧
-    NatSucc.succFinish ([].foldl NatSucc.succStep (true, [])) = [true] ∧
-    NatSucc.succFinish ([true].foldl NatSucc.succStep (true, [])) = [false, true] ∧
+    NatSucc.incr true [] = [true] ∧
+    NatSucc.incr true [true] = [false, true] ∧
     NatSucc.incr true [true, true, true] = [false, false, false, true] ∧
-    NatSucc.succFinish ((List.replicate 128 true).foldl NatSucc.succStep (true, [])) =
+    NatSucc.incr true (List.replicate 128 true) =
       List.replicate 128 false ++ [true] ∧
     (encNat 0).isEmpty = true ∧
     (encNat 1).isEmpty = false ∧
-    encNat (n + 1) = NatSucc.succFinish ((encNat n).foldl NatSucc.succStep (true, [])) ∧
+    encNat (n + 1) = NatSucc.incr true (encNat n) ∧
     encNat 0 = [] ∧
     encNat 1 = [true] ∧
     (¬ ComputableInO (fun w : List Bool => w) encBits encBits
@@ -64,7 +63,7 @@ example (n : ℕ) {f : ℕ → ℕ} {t s T S : ℕ → ℕ}
     ComputableInO f encNat encNat T S := by
   refine ⟨.natSucc, .natPred, .natIsZero, ComputableInO.natPred,
     rfl, rfl, rfl, carryChain 128, rfl, rfl,
-    by simp only [encNat_apply, NatSucc.succFinish_foldl, List.nil_append, NatSucc.bits_succ],
+    by simp only [encNat_apply, NatSucc.bits_succ],
     rfl, rfl, ?_, ?_⟩
   · rintro ⟨c, _, hl'⟩
     have hlen := hl' (List.replicate (c + 1) true)
