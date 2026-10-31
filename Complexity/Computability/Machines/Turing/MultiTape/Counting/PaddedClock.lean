@@ -208,13 +208,6 @@ private theorem actions_config_of_clock (M : MultiTapePTM k Bool State)
     · simp [choices, hpos]
     · rw [apply_lift, step_withCoin_of_state M hc]
 
-/-- A terminal configuration counts once exactly when its output passes the verdict. -/
-private theorem branchCount_of_halted {State' : Type} (N : MultiTapeCTM (k + r + 1) Bool State')
-    {cfg : Cfg (k + r + 1) Bool State' input} (h : cfg.Halted) (verdict : List Bool → Bool)
-    (fuel : ℕ) : N.branchCount verdict fuel cfg = if verdict cfg.output then 1 else 0 := by
-  rw [← countP_runList, runList_halted _ h]
-  cases hv : verdict cfg.output <;> simp [h, hv]
-
 /-- The padded count splits over the first coin. -/
 theorem acceptCount_stepCoins_succ (M : MultiTapePTM k Bool State) (c : Cfg k Bool State input)
     (n : ℕ) :

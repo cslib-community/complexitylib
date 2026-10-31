@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Complexity.Classes.Constructible
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.OutputToTape
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Streaming
+import Complexity.Foundations.Data.Nat.Doubling
 import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.TransformsTapes
 import Complexity.Computability.Machines.Turing.MultiTape.Run
 
@@ -25,9 +26,8 @@ from binary to unary by counting down takes `O((T n + 1) ^ 2)` steps
 Rounding up to a power of two avoids the conversion. The binary word of `T n` has
 `Nat.size (T n)` digits, and doubling a unary counter once per digit writes
 `c * 2 ^ Nat.size (T n)` cells. The `i`-th doubling costs `O(c * 2 ^ i)`, so the doublings cost
-`O(c * 2 ^ Nat.size (T n)) = O(T n + 1)` together
-(`Turing.MultiTapeTM.ComputableTidilyInO.mul_two_pow_length`). The rounded clock lies between
-`c * (T n + 1)` and `c * (2 * T n + 1)`.
+`O(c * 2 ^ Nat.size (T n)) = O(T n + 1)` together. The rounded clock lies between
+`c * (T n + 1)` and `c * (2 * T n + 1)` (`Nat.two_pow_size_le`).
 
 `Cslib.Complexity.TimeConstructible.exists_prepare_unaryClock` packages this as one deterministic
 machine that writes the clock on its last work tape within `O(T n)` steps, leaving every other
@@ -36,8 +36,6 @@ budget of `MultiTape.Plumbing.PrepareClock`.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableTidilyInO.mul_two_pow_length`: `c * 2 ^ l.length` in unary within
-  time `O(c * 2 ^ l.length + l.length)`.
 * `Cslib.Complexity.TimeConstructible.exists_prepare_unaryClock`: a unary clock of
   `c * 2 ^ Nat.size (T n)` cells within `O(T n)` steps.
 -/
@@ -45,15 +43,6 @@ budget of `MultiTape.Plumbing.PrepareClock`.
 public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInO
-
-/-- Doubling a counter once per element of a list multiplies it by `2 ^ length`. -/
-private theorem foldl_double {α : Type} (l : List α) (m : ℕ) :
-    l.foldl (fun m _ => m + m) m = m * 2 ^ l.length := by
-  induction l generalizing m with
-  | nil => simp
-  | cons a l ih =>
-    rw [List.foldl_cons, ih, List.length_cons, pow_succ]
-    ring
 
 /-- The geometric sum of powers of two below `2 ^ n`. -/
 private theorem sum_range_two_pow_lt (n : ℕ) : ∑ i ∈ Finset.range n, 2 ^ i < 2 ^ n := by
@@ -65,15 +54,16 @@ private theorem sum_range_two_pow_lt (n : ℕ) : ∑ i ∈ Finset.range n, 2 ^ i
 
 /-- **`c * 2 ^ l.length` in unary in linear time.** A streaming fold doubles a unary counter once
 per bit of `l`. Round `i` costs `O(c * 2 ^ i)`, so the rounds cost `O(c * 2 ^ l.length)` in total,
-plus `O(l.length)` for the scan. -/
-theorem mul_two_pow_length (c : ℕ) :
+plus `O(l.length)` for the scan. The tidy realization is private to this file; the public result
+is the plain preparation theorem below. -/
+private theorem mul_two_pow_length (c : ℕ) :
     ComputableTidilyInO (fun l : List Bool => c * 2 ^ l.length) encBits encUnary
       (fun l => c * 2 ^ l.length + l.length) fun l => c * 2 ^ l.length + l.length := by
   obtain ⟨c₀, hstep, -⟩ := ((ComputableInDegree.unaryAdd (ComputableInDegree.fst encUnary encBool)
     (ComputableInDegree.fst encUnary encBool) le_rfl le_rfl).inO_one).tidy
   have hstate (l : List Bool) (i : ℕ) (hi : i ≤ l.length) :
       (encUnary ((l.take i).foldl (fun m _ => m + m) c)).length = c * 2 ^ i := by
-    rw [foldl_double, encUnary_apply, List.length_replicate, List.length_take,
+    rw [List.foldl_add_self_eq_mul_two_pow, encUnary_apply, List.length_replicate, List.length_take,
       Nat.min_eq_left hi]
   obtain ⟨K, hK⟩ := ComputableTidilyInTimeAndSpace.foldl_bits_stream_sum (enc := encUnary)
     (step := fun m (_ : Bool) => m + m) c hstep
@@ -95,8 +85,8 @@ theorem mul_two_pow_length (c : ℕ) :
       rw [hstate l i hi]
       exact Nat.mul_le_mul_left c (Nat.pow_le_pow_right (by norm_num) hi))
   refine of_bounds (hK.of_enc_eq (g := fun l : List Bool => c * 2 ^ l.length)
-    fun l => by rw [foldl_double]) (K * (5 * c₀ + 5) + K * (3 * c₀ + 3) + 1) (fun l => ?_)
-    (fun l => ?_) fun l => ?_
+    fun l => by rw [List.foldl_add_self_eq_mul_two_pow])
+    (K * (5 * c₀ + 5) + K * (3 * c₀ + 3) + 1) (fun l => ?_) (fun l => ?_) fun l => ?_
   · have hsum := sum_range_two_pow_lt l.length
     have hs : ∑ i ∈ Finset.range l.length, (5 * c₀ + 4) * (c * 2 ^ i + 1) ≤
         (5 * c₀ + 4) * (c * 2 ^ l.length + l.length) := by
@@ -135,24 +125,11 @@ namespace Cslib.Complexity
 
 open Turing Turing.MultiTapeTM
 
-/-- `2 ^ Nat.size m` is the least power of two above `m`, so it is at most `2 * m + 1`. -/
-theorem two_pow_size_le (m : ℕ) : 2 ^ Nat.size m ≤ 2 * m + 1 := by
-  rcases Nat.eq_zero_or_pos m with rfl | hm
-  · simp
-  · have hsize : 0 < Nat.size m := Nat.size_pos.mpr hm
-    have hle : 2 ^ (Nat.size m - 1) ≤ m := Nat.lt_size.mp (by omega)
-    have : 2 ^ Nat.size m = 2 * 2 ^ (Nat.size m - 1) := by
-      rw [← pow_succ']
-      congr 1
-      omega
-    omega
-
 /-- **A unary clock of linear length.** For a time-constructible `T` and a constant `c`, one
 deterministic machine with finitely many states writes `c * 2 ^ Nat.size (T n)` true cells on its
 last work tape within `C * T n + C` steps, on every input of length `n`. It halts with every other
 work tape blank, all heads at their starting cells and nothing emitted. The clock has between
-`c * (T n + 1)` and `c * (2 * T n + 1)` cells (`Nat.lt_size_self`,
-`Cslib.Complexity.two_pow_size_le`). -/
+`c * (T n + 1)` and `c * (2 * T n + 1)` cells (`Nat.lt_size_self`, `Nat.two_pow_size_le`). -/
 theorem TimeConstructible.exists_prepare_unaryClock {T : ℕ → ℕ} (hT : TimeConstructible T)
     (c : ℕ) :
     ∃ (r : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeTM (r + 1) Bool State)
@@ -171,7 +148,7 @@ theorem TimeConstructible.exists_prepare_unaryClock {T : ℕ → ℕ} (hT : Time
     rw [encNat_apply, Nat.size_eq_bits_len]
   have hlinear (x : List Bool) : T x.length + (c * 2 ^ (encNat (T x.length)).length +
       (encNat (T x.length)).length) ≤ (2 * c + 2) * (T x.length + 1) := by
-    have h₁ := Nat.mul_le_mul_left c (two_pow_size_le (T x.length))
+    have h₁ := Nat.mul_le_mul_left c (Nat.two_pow_size_le (T x.length))
     have h₂ : Nat.size (T x.length) ≤ T x.length := Nat.size_le.mpr Nat.lt_two_pow_self
     rw [hdigits]
     have e : (2 * c + 2) * (T x.length + 1) = c * (2 * T x.length + 1) + c +
@@ -185,7 +162,7 @@ theorem TimeConstructible.exists_prepare_unaryClock {T : ℕ → ℕ} (hT : Time
   have hbound : c₁ * (T input.length + 1) +
       (List.replicate (c * 2 ^ Nat.size (T input.length)) true).length + 2 ≤
       (c₁ + 2 * c + 2) * T input.length + (c₁ + 2 * c + 2) := by
-    have h₁ := Nat.mul_le_mul_left c (two_pow_size_le (T input.length))
+    have h₁ := Nat.mul_le_mul_left c (Nat.two_pow_size_le (T input.length))
     rw [List.length_replicate]
     have e : (c₁ + 2 * c + 2) * T input.length + (c₁ + 2 * c + 2) =
         c₁ * (T input.length + 1) + c * (2 * T input.length + 1) + c + 2 * T input.length + 2 := by

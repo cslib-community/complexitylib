@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 import Complexity.Computability.Complexity.Classes.SharpP.PaddedCount
 import Complexity.Computability.Complexity.Classes.Constructible.UnaryClock
 import Complexity.Computability.Machines.Turing.MultiTape.Counting.PaddedClock
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.HaltedReplay
+import Complexity.Foundations.Data.Nat.Doubling
 import ComplexityTests.CountingSeparation
 
 /-! # Padded coin counts as `SharpTIME` functions: checked instances
@@ -23,7 +25,7 @@ open Cslib.Complexity Turing ComplexityTests.CountingSeparation
 
 /-- The rounded clock is between `c * (m + 1)` and `c * (2 * m + 1)`. -/
 example (c m : ℕ) : c * (m + 1) ≤ c * 2 ^ Nat.size m ∧ c * 2 ^ Nat.size m ≤ c * (2 * m + 1) :=
-  ⟨Nat.mul_le_mul_left c (Nat.lt_size_self m), Nat.mul_le_mul_left c (two_pow_size_le m)⟩
+  ⟨Nat.mul_le_mul_left c (Nat.lt_size_self m), Nat.mul_le_mul_left c (Nat.two_pow_size_le m)⟩
 
 example : ∃ (r : ℕ) (State : Type) (_ : Finite State) (machine : MultiTapeTM (r + 1) Bool State)
     (C : ℕ), ∀ input,

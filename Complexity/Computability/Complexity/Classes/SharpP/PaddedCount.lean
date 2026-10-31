@@ -14,7 +14,9 @@ public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 import Complexity.Computability.Complexity.Classes.Constructible.UnaryClock
 import Complexity.Computability.Machines.Turing.MultiTape.Counting.PaddedClock
 import Complexity.Computability.Machines.Turing.MultiTape.Machine.Nondeterministic
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.HaltedReplay
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.PolynomialClock
+import Complexity.Foundations.Data.Nat.Doubling
 
 /-!
 # Padded coin counts in time-bounded counting
@@ -50,10 +52,6 @@ Hence:
 The converse direction, from terminal counts to padded counts, is
 `Turing.MultiTapeCTM.CountingChoice.acceptCount_table_of_halts`.
 
-## Main definitions
-
-* `Turing.MultiTapePTM.acceptAll`: the fair-coin table that emits `true` and halts.
-
 ## Main results
 
 * `Cslib.Complexity.exists_clock_acceptCount_mem_SharpTIME`: padded counts at a linear clock.
@@ -63,40 +61,6 @@ The converse direction, from terminal counts to padded counts, is
 -/
 
 public section
-
-namespace Turing.MultiTapePTM
-
-variable {k : ℕ} {State : Type} {input : List Bool}
-
-/-- A halted configuration ignores every coin. The same fact is public in
-`Classes.LogSpace.Randomized`, which this module does not import. -/
-private theorem stepCoins_halted (M : MultiTapePTM k Bool State) {c : Cfg k Bool State input}
-    (h : c.state = none) (coins : List Bool) : M.stepCoins coins c = c := by
-  induction coins with
-  | nil => rfl
-  | cons bit coins ih => rw [stepCoins_cons, MultiTapeTM.step_of_halt h, ih]
-
-/-- The fair-coin table that emits `true` and halts at its first step, whatever the coin. -/
-@[expose] def acceptAll : MultiTapePTM 0 Bool Unit where
-  initial := ()
-  tr _ _ _ _ _ := .step ⟨0, Fin.elim0, some true, none⟩ Empty.elim Empty.elim
-
-/-- Every coin string of positive length makes `acceptAll` accept. -/
-theorem acceptCount_acceptAll (input : List Bool) (n : ℕ) :
-    acceptAll.acceptCount input (n + 1) = 2 ^ (n + 1) := by
-  rw [acceptCount, Cslib.Complexity.acceptCount, Finset.filter_true_of_mem]
-  · simp
-  · intro w _
-    have hstep : (acceptAll.withCoin (w 0)).toTM.step (Cfg.init acceptAll.initial input) =
-        ⟨none, 1, fun _ _ => none, fun _ => 0, [true]⟩ := by
-      rw [MultiTapeTM.step_of_state rfl, MultiTapeMachine.toTM, MultiTapeTM.tr_ofTr]
-      exact Cfg.ext rfl (by simp [acceptAll, MultiTapeMachine.Action.emptyOracleEquiv,
-        withCoin]) (funext fun i => i.elim0) (funext fun i => i.elim0) rfl
-    rw [List.ofFn_succ, runClosedCoins_eq_output_stepCoins, stepCoins_cons, hstep,
-      stepCoins_halted _ rfl]
-    simp
-
-end Turing.MultiTapePTM
 
 namespace Cslib.Complexity
 
@@ -116,7 +80,7 @@ theorem exists_clock_acceptCount_mem_SharpTIME (hT : TimeConstructible T) (c₁ 
   obtain ⟨r, P, hP, prepare, C, hprepare⟩ := hT.exists_prepare_unaryClock (c₁ + c₂)
   have hupper (n : ℕ) : (c₁ + c₂) * 2 ^ Nat.size (T n) ≤
       2 * (c₁ + c₂) * T n + 2 * (c₁ + c₂) := by
-    have := Nat.mul_le_mul_left (c₁ + c₂) (two_pow_size_le (T n))
+    have := Nat.mul_le_mul_left (c₁ + c₂) (Nat.two_pow_size_le (T n))
     have e : 2 * (c₁ + c₂) * T n + 2 * (c₁ + c₂) =
         (c₁ + c₂) * (2 * T n + 1) + (c₁ + c₂) := by ring
     omega
