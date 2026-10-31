@@ -87,11 +87,11 @@ Start each conceptual block's docstring (`/-- ... -/` or `/-! ... -/`) with a co
 
 ## Verify and Integrate
 
-1. **Add `#check_abstract` at the end of `*Abstract.lean`**, wrapped in `#guard_msgs` so the success report (number of root declarations and dependencies) is pinned and the `hashCommand` linter is satisfied:
+1. **Add `#check_abstract` at the end of `*Abstract.lean`**, wrapped in `#guard_msgs` so the success report (number of root declarations) is pinned and the `hashCommand` linter is satisfied (the transitive dependency count is logged as silent information so it is not pinned by `#guard_msgs`):
    ```lean
    /--
    info: abstract audit passed for `ComplexityAbstracts.<Topic>Abstract`: <n> root
-   declarations, <m> dependencies checked
+   declarations
    -/
    #guard_msgs (whitespace := lax) in
    #check_abstract ComplexityAbstracts.<Topic>Abstract

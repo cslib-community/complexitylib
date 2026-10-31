@@ -18,6 +18,12 @@ protocols over pairwise private authenticated point-to-point channels with `k`-a
 calls (`MultiOracleSpec`), together with Goldreich's joint view-and-output definition of perfect
 semi-honest privacy against static coalitions (`PerfectSemiHonestPrivate`).
 
+`PerfectSemiHonestPrivate` departs from Goldreich's Definitions 7.2.1 and 7.5.1 in two ways.
+Privacy is exact equality of distributions, not computational indistinguishability. The coalition
+simulators are arbitrary `ProbComp` values with no efficiency requirement, whereas Goldreich asks
+for a probabilistic polynomial-time simulator. Efficient simulators for the $\text{OT}_1^4$
+completeness theorem are certified separately, in `Complexity.Crypto.Protocols.MPC.PolyTime`.
+
 Each party's view (`PartyView`) is derived from the protocol execution: it records only that
 party's own input `x i`, its own private coins `r i` drawn from `proto.sampleCoins i`, the messages
 addressed to `i`, and the oracle answer parts for slots assigned to `i`. In `Round.Received`,
@@ -519,7 +525,8 @@ def Functionality.ofDeterministic {m : ℕ} {In Out : Fin m → Type}
 
 /-- A simulator for a static coalition `I : Finset (Fin m)` receives the coalition's inputs
 `(i : I) → In i` and the coalition's outputs `(i : I) → Out i`, and samples simulated views
-`(i : I) → PartyView In Coins sc i`. -/
+`(i : I) → PartyView In Coins sc i`. It is an arbitrary `ProbComp`: unlike Goldreich's
+simulators, it need not run in probabilistic polynomial time. -/
 abbrev CoalitionSimulator {m : ℕ} {spec : MultiOracleSpec} (sc : Schedule m spec)
     (In Coins Out : Fin m → Type) (I : Finset (Fin m)) :=
   ((i : I) → In i) → ((i : I) → Out i) → ProbComp ((i : I) → PartyView In Coins sc i)
@@ -536,7 +543,9 @@ def idealJoint {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
   return (v, y)
 
 /-- Perfect semi-honest privacy for all static coalitions `I : Finset (Fin m)`
-(Goldreich Def. 7.5.1, Eq. 7.40, p. 696; cf. Def. 7.2.1, Eqs. 7.9–7.10, p. 620). -/
+(Goldreich Def. 7.5.1, Eq. 7.40, p. 696; cf. Def. 7.2.1, Eqs. 7.9–7.10, p. 620), with exact
+equality in place of computational indistinguishability. The simulators `S` are unrestricted:
+Goldreich requires a probabilistic polynomial-time simulator, and this definition does not. -/
 def PerfectSemiHonestPrivate {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins Out : Fin m → Type} (proto : Protocol m spec sc In Coins Out)
     (W : MultiOracleWorld spec) (f : Functionality m In Out)
@@ -544,7 +553,8 @@ def PerfectSemiHonestPrivate {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m
   ∀ (I : Finset (Fin m)) (x : (i : Fin m) → In i),
     ProbComp.eval (idealJoint f I (S I) x) = proto.realJoint W I x
 
-/-- Perfect semi-honest privacy against all proper static coalitions `I ≠ Finset.univ`. -/
+/-- Perfect semi-honest privacy against all proper static coalitions `I ≠ Finset.univ`, with the
+same exact equality and unrestricted simulators as `PerfectSemiHonestPrivate`. -/
 def PerfectSemiHonestPrivateProper {m : ℕ} {spec : MultiOracleSpec} {sc : Schedule m spec}
     {In Coins Out : Fin m → Type} (proto : Protocol m spec sc In Coins Out)
     (W : MultiOracleWorld spec) (f : Functionality m In Out)

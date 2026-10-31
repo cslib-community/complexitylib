@@ -45,6 +45,9 @@ instances, with a bound `t : ℕ → ℕ` of the length `n` of the encoded insta
   members and `[false]` for the others, with probability at least `2 / 3`
   [Arora and Barak, Definition 7.2][AroraBarak09].
 
+The unbounded-error class `Cslib.Complexity.PPTIME enc t`, decided by strict majority by the same
+fair-coin machines, is in `Complexity.Computability.Complexity.Classes.PP.Time`.
+
 Each polynomial class of the library is the union of the corresponding classes of time
 `O(n ^ k)`, as in the textbook [Arora and Barak, Definition 1.13, Theorem 2.6,
 Definition 7.2][AroraBarak09]:

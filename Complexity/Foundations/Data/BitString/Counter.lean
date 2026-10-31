@@ -35,6 +35,7 @@ their candidates in this way, storing only the current one.
 * `Cslib.BitString.iterate_increment`, `Cslib.BitString.iterate_increment_lsbValue`: counting from
   zero enumerates the words of a length.
 * `Cslib.BitString.lsbValue_eq_foldr_bit`: `lsbValue` is a right fold of `Nat.bit`.
+* `Cslib.BitString.testBit_lsbValue`: binary digit `i` of `lsbValue w` is the bit `w[i]`.
 -/
 
 @[expose] public section
@@ -153,5 +154,15 @@ theorem lsbValue_eq_foldr_bit (w : List Bool) : lsbValue w = w.foldr Nat.bit 0 :
   induction w with
   | nil => rfl
   | cons b w ih => rw [lsbValue, List.foldr_cons, ← ih, Nat.bit_val, Nat.add_comm]
+
+/-- Binary digit `i` of the value of a word is its bit `i`, or `false` past its end. -/
+@[simp] theorem testBit_lsbValue : ∀ (w : List Bool) (i : ℕ),
+    (lsbValue w).testBit i = w.getD i false
+  | [], _ => by simp [lsbValue]
+  | b :: w, i => by
+    rw [lsbValue_eq_foldr_bit, List.foldr_cons, ← lsbValue_eq_foldr_bit]
+    cases i with
+    | zero => simp
+    | succ i => simp [Nat.testBit_bit_succ, testBit_lsbValue w i]
 
 end Cslib.BitString
