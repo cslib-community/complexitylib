@@ -30,11 +30,10 @@ for.
   and reducing the lift modulo `2 ^ p` gives the value of `c` in `A_p`
   (`GaloisRingArith.reduction_liftO`). This is the canonical lifting of representatives of §D.4.1
   (p. 58): a retained vertex is read through the lift of its entry at every later precision.
-* **Rows first.** A described network is *rows-first bipartite* at `r`
-  (`DescribedNetwork.IsRowsFirstBipartite`, the condition of
-  `ExplicitTensorNetwork.IsRowsFirstBipartite`) when every port names an edge and every edge is a
-  port of exactly one of the first `r` vertices, once, and of exactly one of the others, once. The
-  ends of the edges are then computed by listing the vertices at each edge
+* **Rows first.** When a described network is *rows-first bipartite* at `r`
+  (`DescribedNetwork.IsRowsFirstBipartite`), every port names an edge and every edge is a port of
+  exactly one of the first `r` vertices, once, and of exactly one of the others, once. The ends of
+  the edges are then computed by listing the vertices at each edge
   (`DescribedNetwork.incident`, `DescribedNetwork.edgeEnds`), in polynomial time
   (`DescribedNetwork.computableInPolyTime_edgeEnds`).
 * **The network** (`DescribedNetwork.toNetwork`). A rows-first described network and an evaluator
@@ -47,7 +46,6 @@ for.
 ## Main definitions
 
 * `Cslib.GaloisRingArith.liftO`: the lift of a coefficient list to `O`.
-* `Cslib.Circuits.Frontier.DescribedNetwork.IsRowsFirstBipartite`: rows first.
 * `Cslib.Circuits.Frontier.DescribedNetwork.incident`,
   `Cslib.Circuits.Frontier.DescribedNetwork.edgeEnds`: the ends of the edges.
 * `Cslib.Circuits.Frontier.DescribedNetwork.toNetwork`: the network of a described network.
@@ -159,23 +157,6 @@ namespace DescribedNetwork
 variable {T : Type} (D : DescribedNetwork T)
 
 /-! ### Rows first -/
-
-/-- **Rows-first bipartite**: the first `r` vertices are the *rows* and the others the *columns*,
-every port names an edge, and every edge is a port of the rows exactly once and of the columns
-exactly once (the condition of `ExplicitTensorNetwork.IsRowsFirstBipartite`). -/
-@[expose] def IsRowsFirstBipartite (r : ℕ) : Prop :=
-  (∀ v ∈ D.vertices, ∀ i ∈ v.1, i < D.numEdges) ∧
-    ∀ i < D.numEdges, ((D.vertices.take r).map fun v => v.1.count i).sum = 1 ∧
-      ((D.vertices.drop r).map fun v => v.1.count i).sum = 1
-
-instance (r : ℕ) : Decidable (D.IsRowsFirstBipartite r) := by
-  unfold IsRowsFirstBipartite
-  infer_instance
-
-/-- An explicit network is rows-first exactly when it is as a described network. -/
-theorem isRowsFirstBipartite_explicit (d : ExplicitTensorNetwork ℕ) (r : ℕ) :
-    DescribedNetwork.IsRowsFirstBipartite d r ↔ ExplicitTensorNetwork.IsRowsFirstBipartite d r :=
-  Iff.rfl
 
 /-- Being rows-first depends only on the ports, not on the descriptors. -/
 theorem isRowsFirstBipartite_map {T' : Type} (f : T → T') (r : ℕ) :
