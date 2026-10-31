@@ -935,6 +935,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformatio
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContraction
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
@@ -1022,6 +1024,7 @@ public import Complexity.Computability.Circuit.Monotone.Clique.LowerBound
 public import Complexity.Computability.Circuit.Monotone.Clique.Negative
 public import Complexity.Computability.Circuit.Monotone.Clique.Positive
 public import Complexity.Computability.Circuit.Monotone.DualRail
+public import Complexity.Computability.Circuit.Monotone.Encoding
 public import Complexity.Computability.Circuit.Monotone.Formula
 public import Complexity.Computability.Circuit.Monotone.KarchmerWigderson
 public import Complexity.Computability.Circuit.Monotone.Set
@@ -1163,6 +1166,7 @@ public import Complexity.Computability.Complexity.Classes.CountingSimulation.Ass
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.BlockNetworks
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Containments
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Count
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.EntryAnalysis
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAlgorithm
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastAnalysis
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.FastLeaves
@@ -2301,6 +2305,7 @@ public import Complexity.Computability.WordRAM.Generic
 public import Complexity.Computability.WordRAM.GhostLoop
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.InputArray
+public import Complexity.Computability.WordRAM.Invariance
 public import Complexity.Computability.WordRAM.ListArray
 public import Complexity.Computability.WordRAM.MapOp
 public import Complexity.Computability.WordRAM.MemoryWindow
@@ -2322,6 +2327,7 @@ public import Complexity.Computability.WordRAM.Multiword.Transfer
 public import Complexity.Computability.WordRAM.Multiword.Workspace
 public import Complexity.Computability.WordRAM.Native
 public import Complexity.Computability.WordRAM.Notation
+public import Complexity.Computability.WordRAM.OfTuring
 public import Complexity.Computability.WordRAM.PackedCount
 public import Complexity.Computability.WordRAM.Power
 public import Complexity.Computability.WordRAM.RAM
@@ -3267,6 +3273,7 @@ public import Complexity.Logics.Propositional.Resolution
 public import Complexity.Logics.Propositional.Resolution.CliqueColoring
 public import Complexity.Logics.Propositional.Resolution.Interpolation
 public import Complexity.Logics.Propositional.Resolution.Interpolation.Extraction
+public import Complexity.Logics.Propositional.Resolution.Interpolation.MonotoneExtraction
 public import Complexity.Logics.Propositional.Resolution.Interpolation.PolyTime
 public import Complexity.Logics.Propositional.Resolution.Pigeonhole
 public import Complexity.Logics.Propositional.Resolution.Proof

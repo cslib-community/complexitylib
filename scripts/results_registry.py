@@ -4,6 +4,7 @@
 # Authors: Christian Reitwiessner
 """Collect named results alongside the selected abstracts; validate their declaration links.
 
+Authored entries come from the checked Lean registry, never a separately authored JSON file.
 This checks references, not mathematical correspondence or completeness of coverage.
 `--compiled` uses the same Lean output reader as the tidy/declaration audits.
 """
@@ -39,8 +40,25 @@ def module_citations(path: Path) -> list[str]:
                    for _, key in check_hygiene.docstring_citations(doc)})
 
 
+def load_lean_registry(root: Path = ROOT) -> dict:
+    """Export canonical Lean entries only after Lake confirms their outputs are current.
+
+    Checked declarations do not establish paper correspondence: recorded citations still
+    require source review, independently of successful elaboration and export.
+    """
+    subprocess.run(["lake", "build", "--no-build", "ComplexityResults"], cwd=root,
+                   text=True, check=True, capture_output=True)
+    exported = subprocess.run(["lake", "env", "lean", "--run", "scripts/ExportResults.lean"],
+                              cwd=root, text=True, check=True, capture_output=True)
+    try:
+        manifest = json.loads(exported.stdout)
+    except (json.JSONDecodeError, TypeError) as error:
+        raise ValueError("Lean registry exporter did not produce valid JSON") from error
+    return manifest
+
+
 def collect(root: Path = ROOT) -> list[dict]:
-    manifest = json.loads((root / "results/registry.json").read_text())
+    manifest = load_lean_registry(root)
     if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
         raise ValueError("Unsupported registry schema")
     if manifest.get("abstract_catalogue") != "abstracts/catalogue.json":
@@ -52,7 +70,7 @@ def collect(root: Path = ROOT) -> list[dict]:
                         "topic": "selected abstracts", "module": module,
                         "theorems": abstract["headline_theorems"], "scope": abstract["scope"],
                         "abstract_id": abstract["id"], "source_review": "module-citations",
-                        "sources": [{"bib_key": key, "locator": None}
+                        "sources": [{"bib_key": key, "source_theorem": None, "locator": None}
                                     for key in module_citations(module_path(module, root))]})
     if not isinstance(manifest.get("results"), list):
         raise ValueError("Registry results must be a list")
@@ -97,6 +115,12 @@ def validate(entries: list[dict], root: Path) -> None:
             if key in seen:
                 raise ValueError(f"Duplicate reference: {key}")
             seen.add(key)
+            if "source_theorem" not in reference:
+                raise ValueError(f"Missing source theorem identifier: {key}")
+            source_theorem = reference["source_theorem"]
+            if source_theorem is not None and (not isinstance(source_theorem, str) or
+                                               not source_theorem.strip()):
+                raise ValueError(f"Invalid source theorem identifier: {key}")
             locator = reference.get("locator")
             if locator is not None and (not isinstance(locator, str) or not locator.strip()):
                 raise ValueError(f"Invalid source locator: {key}")
@@ -152,7 +176,10 @@ def markdown(entries: list[dict], root: Path = ROOT, papers: bool = False) -> st
             if entry.get("abstract_id"):
                 lines.append(f"- [Formal abstract]({API}abstracts/{entry['abstract_id']}.pdf)")
             sources = [f"[{r['bib_key']}]({links[r['bib_key']]})" +
-                       (f" ({r['locator']})" if r.get("locator") else " (locator not collected)")
+                       (f" ({r['source_theorem']})" if r['source_theorem'] else
+                        " (source theorem not yet identified)") +
+                       (f" ({r['locator']})" if r.get("locator") else
+                        " (section/page locator not collected)")
                        for r in entry["sources"]]
             lines.extend(["", f"References ({entry['source_review']}): " + (", ".join(sources) or
                           "none collected; inspect the abstract and bridge documentation"), ""])
@@ -163,20 +190,24 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiled", action="store_true", help="require built public theorem metadata")
     parser.add_argument("--markdown", action="store_true", help="print the result/topic index")
+    parser.add_argument("--json", action="store_true", help="print the combined inventory as JSON")
     parser.add_argument("--papers", action="store_true", help="print the index grouped by bibliography key")
     args = parser.parse_args()
     try:
         entries = collect()
         if args.compiled:
             validate_constants(entries, compiled_constants(entries))
-        if args.markdown or args.papers:
+        if args.json:
+            print(json.dumps({"schema_version": 1, "abstract_catalogue": "abstracts/catalogue.json",
+                              "results": entries}, indent=2, ensure_ascii=False))
+        elif args.markdown or args.papers:
             print(markdown(entries, papers=args.papers))
         else:
             keys = {r["bib_key"] for e in entries for r in e["sources"]}
             print(f"{len(entries)} result groups; {sum(len(e['theorems']) for e in entries)} "
                   f"theorems; {len(keys)} bibliography keys. Coverage/source review remain incomplete.")
     except subprocess.CalledProcessError as error:
-        parser.exit(1, "Registry metadata check failed; build the registered modules first.\n" +
+        parser.exit(1, "Registry export/metadata check failed; build ComplexityResults and the registered modules first.\n" +
                     (error.stderr or str(error)))
     except (ValueError, OSError, KeyError, TypeError) as error:
         parser.exit(1, f"Registry error: {error}\n")

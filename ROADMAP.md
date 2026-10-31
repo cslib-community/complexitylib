@@ -345,9 +345,8 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
   certified DPLL solver runtimes.
-- **Feasible interpolation** ([#1817]): a polynomial-time builder for the monotone interpolant
-  (the De Morgan builder is done), and the transfer of communication lower bounds to proof-size
-  lower bounds.
+- **Feasible interpolation** ([#1817]): the transfer of communication lower bounds to proof-size
+  lower bounds ([#2019]).
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
@@ -866,3 +865,4 @@ not planned, not as proved.
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
+[#2019]: https://github.com/cslib-community/complexitylib/issues/2019
