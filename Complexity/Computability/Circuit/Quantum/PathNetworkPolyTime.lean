@@ -18,6 +18,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Unary
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -32,8 +33,8 @@ import Complexity.Foundations.Data.List.FilterMap
 # The network of a circuit in polynomial time
 
 The network of a list of gate codes (`Cslib.Quantum.PathNetwork.network`) is computable in
-polynomial time from the gate codes, the input register and the Hadamard sign, with its number of
-rows in binary and the network in the encoding of the contraction algorithm
+polynomial time from the gate codes, the measured qubits, the input register and the Hadamard sign,
+with its number of rows in binary and the network in the encoding of the contraction algorithm
 (`ExplicitTensorNetwork.encExplicitNetwork`). Every port and last occurrence is a search or a map
 over the occurrences of qubits, written in unary, and every table is a map over the first `2 ^ 6`
 numbers, a constant list.
@@ -81,11 +82,11 @@ private theorem inBit_eq (X : List Bool) (gs : List GateCode) (c i idx : ℕ) :
   unfold inBit inPort
   cases lastOcc (occurrences gs) j (base gs i) <;> rfl
 
-private theorem scalarVertex_eq (X : List Bool) (gs : List GateCode) :
-    (scalarVertex X gs : List ℕ × List ℕ) =
-      ([], [if ((occurrences gs).any fun q => decide (q = 0)) || X.getD 0 false then 1
+private theorem scalarVertex_eq (S : List ℕ) (X : List Bool) (gs : List GateCode) :
+    (scalarVertex S X gs : List ℕ × List ℕ) =
+      ([], [if (S.all fun j => decide (j ∈ occurrences gs) || X.getD j false) then 1
         else 0]) := by
-  simp only [scalarVertex, List.any_eq_true, decide_eq_true_eq, exists_eq_right, Bool.or_eq_true]
+  simp only [scalarVertex, List.all_eq_true, Bool.or_eq_true, decide_eq_true_eq]
 
 /-- The encoding of networks is the encoding of their number of edges and vertices. -/
 private theorem computableInPolyTime_equivProd_symm :
@@ -194,8 +195,10 @@ theorem computableInPolyTime_gateVertex {neg : α → ℕ} {X : α → List Bool
       (allWithInput htl (snd _ _)))) htl)) (const 1) (const 0)
 
 /-- **Glue vertices are polynomial-time.** -/
-theorem computableInPolyTime_glueVertex {w : α → ℕ} (hw : ComputableInPolyTime w inp encUnary) :
-    ComputableInPolyTime (fun a => (glueVertex (gs a) (w a) : List ℕ × List ℕ)) inp
+theorem computableInPolyTime_glueVertex {S : α → List ℕ}
+    (hS : ComputableInPolyTime S inp (encList encUnary)) {w : α → ℕ}
+    (hw : ComputableInPolyTime w inp encUnary) :
+    ComputableInPolyTime (fun a => (glueVertex (S a) (gs a) (w a) : List ℕ × List ℕ)) inp
       (encPair (encList encNat) (encList encNat)) := by
   have hqs := computableInPolyTime_occurrences hgs
   have hN := (length_list _).comp hqs
@@ -204,27 +207,30 @@ theorem computableInPolyTime_glueVertex {w : α → ℕ} (hw : ComputableInPolyT
   refine ite_decide (decide_eq' (computableInPolyTime_lastOcc hqs hq hN) (optionSome _ |>.comp hw))
     ((ports_unary_to_binary (cons' (unary_add' (unary_mul' (const 2) hw) (const 1))
       (cons' (unary_add' (unary_mul' (const 2) (unary_add' hN hw)) (const 1)) (const [])))).prod
-      (ite_decide (decide_eq' hq (const 0)) (const _) (const _))) (const _)
+      (ite_decide (decide_mem hS hq) (const _) (const _))) (const _)
 
 end Vertices
 
 /-- **The scalar vertex is polynomial-time.** -/
-theorem computableInPolyTime_scalarVertex {X : α → List Bool} {gs : α → List GateCode}
+theorem computableInPolyTime_scalarVertex {S : α → List ℕ} {X : α → List Bool}
+    {gs : α → List GateCode} (hS : ComputableInPolyTime S inp (encList encUnary))
     (hX : ComputableInPolyTime X inp encBits)
     (hgs : ComputableInPolyTime gs inp (encList encGateCode)) :
-    ComputableInPolyTime (fun a => (scalarVertex (X a) (gs a) : List ℕ × List ℕ)) inp
+    ComputableInPolyTime (fun a => (scalarVertex (S a) (X a) (gs a) : List ℕ × List ℕ)) inp
       (encPair (encList encNat) (encList encNat)) := by
   simp only [scalarVertex_eq]
-  refine (const []).prod (cons' (ite_decide (decide_eq' (bool_or.comp
-    ((anyWithInput (computableInPolyTime_occurrences hgs) (decide_eq' (snd _ _) (const 0))).prod
-    (bitsGetDWithInput hX (const 0) false))) (const true)) (const 1) (const 0)) (const []))
+  refine (const []).prod (cons' (ite_decide (decide_eq' (allWithInput hS (bool_or.comp
+    ((decide_mem (computableInPolyTime_occurrences (hgs.comp (fst _ _))) (snd _ _)).prod
+    (bitsGetDWithInput (hX.comp (fst _ _)) (snd _ _) false)))) (const true)) (const 1) (const 0))
+    (const []))
 
-/-- **The network of a circuit is polynomial-time** in the gate codes, the input register and the
-Hadamard sign, with its number of rows in binary. -/
-theorem computableInPolyTime_network {neg : α → ℕ} {X : α → List Bool} {gs : α → List GateCode}
-    (hneg : ComputableInPolyTime neg inp encNat) (hX : ComputableInPolyTime X inp encBits)
+/-- **The network of a circuit is polynomial-time** in the gate codes, the measured qubits, the
+input register and the Hadamard sign, with its number of rows in binary. -/
+theorem computableInPolyTime_network {neg : α → ℕ} {S : α → List ℕ} {X : α → List Bool}
+    {gs : α → List GateCode} (hneg : ComputableInPolyTime neg inp encNat)
+    (hS : ComputableInPolyTime S inp (encList encUnary)) (hX : ComputableInPolyTime X inp encBits)
     (hgs : ComputableInPolyTime gs inp (encList encGateCode)) :
-    ComputableInPolyTime (fun a => network (neg a) (X a) (gs a)) inp
+    ComputableInPolyTime (fun a => network (neg a) (S a) (X a) (gs a)) inp
       (encPair encNat ExplicitTensorNetwork.encExplicitNetwork) := by
   have hL := (length_list _).comp hgs
   have hN := (length_list _).comp (computableInPolyTime_occurrences hgs)
@@ -236,15 +242,15 @@ theorem computableInPolyTime_network {neg : α → ℕ} {X : α → List Bool} {
   have hverts : ComputableInPolyTime (fun a =>
       (List.range (gs a).length).map (gateVertex (neg a) (X a) (gs a) 0) ++
         (List.range (gs a).length).map (gateVertex (neg a) (X a) (gs a) 1) ++
-        (List.range (occurrences (gs a)).length).map (glueVertex (gs a)) ++
-        [scalarVertex (X a) (gs a)] ++
+        (List.range (occurrences (gs a)).length).map (glueVertex (S a) (gs a)) ++
+        [scalarVertex (S a) (X a) (gs a)] ++
       (List.range (2 * (occurrences (gs a)).length)).map fun w =>
         (([2 * w, 2 * w + 1], eqTable) : List ℕ × List ℕ)) inp
       (encList (encPair (encList encNat) (encList encNat))) :=
     listAppend' (listAppend' (listAppend' (listAppend' (hgate 0) (hgate 1))
       (mapWithInput (range.comp hN) (computableInPolyTime_glueVertex (hgs.comp (fst _ _))
-        (snd _ _))))
-      (cons' (computableInPolyTime_scalarVertex hX hgs) (const [])))
+        (hS.comp (fst _ _)) (snd _ _))))
+      (cons' (computableInPolyTime_scalarVertex hS hX hgs) (const [])))
       (mapWithInput (range.comp (unary_mul' (const 2) hN))
         ((ports_unary_to_binary (cons' (unary_mul' (const 2) (snd _ _))
           (cons' (unary_add' (unary_mul' (const 2) (snd _ _)) (const 1)) (const [])))).prod

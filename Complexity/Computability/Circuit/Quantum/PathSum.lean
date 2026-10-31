@@ -28,7 +28,10 @@ Squaring and summing over the accepting outcomes, the acceptance probability is 
 *pairs* of paths that end in the same accepting register, divided by `2^h`
 (`Cslib.Quantum.acceptProb_eq_acceptGap`). Both counts are integers computed from polynomial-time
 simulations, which places `BQP` in the counting classes
-(`Complexity/Computability/Complexity/Classes/BQP/Counting.lean`).
+(`Complexity/Computability/Complexity/Classes/BQP/Counting.lean`). The same holds for the
+probability that every qubit of a list `S` reads `1`, with the pairs of paths ending in the same
+register in which every qubit of `S` is one (`Cslib.Quantum.onesProb_eq_onesGap`); acceptance is
+the case `S = [0]` (`Cslib.Quantum.acceptGap_eq_onesGap`).
 
 ## Main definitions
 
@@ -37,13 +40,17 @@ simulations, which places `BQP` in the counting classes
 * `Cslib.Quantum.pathTerm`, `Cslib.Quantum.pathGap`: the signed path count of an amplitude.
 * `Cslib.Quantum.acceptTerm`, `Cslib.Quantum.acceptGap`: the signed count of pairs of paths of the
   acceptance probability.
+* `Cslib.Quantum.onesTerm`, `Cslib.Quantum.onesGap`: the same for the event that every qubit of a
+  list reads `1`.
 
 ## Main results
 
 * `Cslib.Quantum.ofFn_inputState`: the input basis state is the input word padded with zeros.
 * `Cslib.Quantum.run_ofCodes_apply`: amplitudes are path sums.
-* `Cslib.Quantum.acceptProb_eq_acceptGap`: the acceptance probability is `acceptGap / 2^h`.
-* `Cslib.Quantum.acceptGap_nonneg_and_le`: so the acceptance gap lies between `0` and `2^h`.
+* `Cslib.Quantum.onesProb_eq_onesGap`, `Cslib.Quantum.acceptProb_eq_acceptGap`: probabilities are
+  projected gaps over `2^h`.
+* `Cslib.Quantum.onesGap_nonneg_and_le`, `Cslib.Quantum.onesGap_nil_eq_two_pow`: so projected
+  gaps lie between `0` and `2^h`, with `2^h` for the empty list.
 * `Cslib.Quantum.acceptGap_nil`: the acceptance gap of the empty circuit is the bit of qubit `0`.
 
 ## References
@@ -128,6 +135,28 @@ def acceptTerm (gs : List GateCode) (x π π' : List Bool) : ℤ :=
 def acceptGap (gs : List GateCode) (x : List Bool) : ℤ :=
   ∑ π : Fin (hadamardCount gs) → Bool, ∑ π' : Fin (hadamardCount gs) → Bool,
     acceptTerm gs x (List.ofFn π) (List.ofFn π')
+
+/-- The signed contribution of a pair of paths to the probability that every qubit of `S` reads
+`1`: the product of their signs when both end in the same register with every qubit of `S` equal
+to one, and `0` otherwise. -/
+def onesTerm (S : List ℕ) (gs : List GateCode) (x π π' : List Bool) : ℤ :=
+  match pathRun gs x π, pathRun gs x π' with
+  | (s, σ), (s', σ') =>
+    if s = s' ∧ (S.all fun j => s.getD j false) = true then (if σ ^^ σ' then -1 else 1) else 0
+
+/-- The **projected gap** of `S`: the sum of `onesTerm S` over all pairs of paths. The acceptance
+gap is the case `S = [0]` (`Cslib.Quantum.acceptGap_eq_onesGap`). -/
+def onesGap (S : List ℕ) (gs : List GateCode) (x : List Bool) : ℤ :=
+  ∑ π : Fin (hadamardCount gs) → Bool, ∑ π' : Fin (hadamardCount gs) → Bool,
+    onesTerm S gs x (List.ofFn π) (List.ofFn π')
+
+theorem acceptGap_eq_onesGap (gs : List GateCode) (x : List Bool) :
+    acceptGap gs x = onesGap [0] gs x := by
+  refine Finset.sum_congr rfl fun π _ => Finset.sum_congr rfl fun π' _ => ?_
+  simp only [acceptTerm, onesTerm, List.all_cons, List.all_nil, Bool.and_true]
+  generalize pathRun gs x (List.ofFn π) = r
+  obtain ⟨s, σ⟩ := r
+  cases s <;> rfl
 
 /-- The acceptance gap of the empty circuit is the bit of qubit `0`. -/
 theorem acceptGap_nil (x : List Bool) : acceptGap [] x = if x.headD false then 1 else 0 := by
@@ -244,20 +273,21 @@ private theorem pathTerm_eq (gs : List GateCode) (x y π : List Bool) :
       if (pathRun gs x π).1 = y then (if (pathRun gs x π).2 then -1 else 1) else 0 :=
   rfl
 
-private theorem acceptTerm_eq (gs : List GateCode) (x π π' : List Bool) :
-    acceptTerm gs x π π' =
-      if (pathRun gs x π).1 = (pathRun gs x π').1 ∧ (pathRun gs x π).1.headD false = true then
+private theorem onesTerm_eq (S : List ℕ) (gs : List GateCode) (x π π' : List Bool) :
+    onesTerm S gs x π π' =
+      if (pathRun gs x π).1 = (pathRun gs x π').1 ∧
+          (S.all fun j => (pathRun gs x π).1.getD j false) = true then
         (if (pathRun gs x π).2 ^^ (pathRun gs x π').2 then -1 else 1) else 0 :=
   rfl
 
-/-- Summing the products of two path contributions over the accepting outcomes gives the
-contribution of the pair. -/
-private theorem sum_accepting_pathTerm_mul (hm : 0 < m) (gs : List GateCode) (x π π' : List Bool)
+/-- Summing the products of two path contributions over the outcomes in which every qubit of `S`
+reads `1` gives the contribution of the pair. -/
+private theorem sum_onesAt_pathTerm_mul (S : List ℕ) (gs : List GateCode) (x π π' : List Bool)
     (hx : x.length = m) :
-    ∑ y ∈ accepting m, pathTerm gs x (List.ofFn y) π * pathTerm gs x (List.ofFn y) π' =
-      acceptTerm gs x π π' := by
+    ∑ y ∈ onesAt m S, pathTerm gs x (List.ofFn y) π * pathTerm gs x (List.ofFn y) π' =
+      onesTerm S gs x π π' := by
   have hs : (pathRun gs x π).1.length = m := (length_foldl_pathStep gs x π false).trans hx
-  simp only [pathTerm_eq, acceptTerm_eq]
+  simp only [pathTerm_eq, onesTerm_eq]
   generalize pathRun gs x π = r at hs ⊢
   generalize pathRun gs x π' = r'
   obtain ⟨s, σ⟩ := r
@@ -271,14 +301,13 @@ private theorem sum_accepting_pathTerm_mul (hm : 0 < m) (gs : List GateCode) (x 
   have hiff (y : Fin m → Bool) : s = List.ofFn y ↔ y = y₀ := by
     rw [hs₀, List.ofFn_inj, eq_comm]
   simp only [hiff, ite_mul, zero_mul]
-  rw [Finset.sum_ite_eq' (accepting m) y₀]
-  have hacc : y₀ ∈ accepting m ↔ s.headD false = true := by
-    rw [mem_accepting hm]
-    simp only [y₀]
-    cases s with
-    | nil => simp at hs; omega
-    | cons b s => rfl
-  by_cases h₀ : y₀ ∈ accepting m
+  rw [Finset.sum_ite_eq' (onesAt m S) y₀]
+  have hacc : y₀ ∈ onesAt m S ↔ (S.all fun j => s.getD j false) = true := by
+    simp only [onesAt, Finset.mem_filter, Finset.mem_univ, true_and, List.all_eq_true, y₀]
+    refine forall₂_congr fun j _ => ⟨fun ⟨_, h⟩ => h, fun h => ⟨?_, h⟩⟩
+    by_contra hj
+    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none (show s.length ≤ j by omega)] at h
+  by_cases h₀ : y₀ ∈ onesAt m S
   · simp only [h₀, ite_true, ← hs₀, hacc.mp h₀, and_true]
     by_cases hss : s = s'
     · subst hss
@@ -286,23 +315,24 @@ private theorem sum_accepting_pathTerm_mul (hm : 0 < m) (gs : List GateCode) (x 
     · simp [hss, Ne.symm hss]
   · simp only [h₀, ite_false, mt hacc.mpr h₀, Bool.false_eq_true, and_false]
 
-/-- The squared amplitude gaps of the accepting outcomes sum to the acceptance gap. -/
-private theorem sum_accepting_pathGap_sq (hm : 0 < m) (gs : List GateCode) (x : List Bool)
+/-- The squared amplitude gaps of the outcomes in which every qubit of `S` reads `1` sum to the
+projected gap of `S`. -/
+private theorem sum_onesAt_pathGap_sq (S : List ℕ) (gs : List GateCode) (x : List Bool)
     (hx : x.length = m) :
-    ∑ y ∈ accepting m, pathGap gs x (List.ofFn y) ^ 2 = acceptGap gs x := by
-  simp only [pathGap, sq, Finset.sum_mul_sum, acceptGap]
+    ∑ y ∈ onesAt m S, pathGap gs x (List.ofFn y) ^ 2 = onesGap S gs x := by
+  simp only [pathGap, sq, Finset.sum_mul_sum, onesGap]
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun π _ => ?_
   rw [Finset.sum_comm]
-  exact Finset.sum_congr rfl fun π' _ => sum_accepting_pathTerm_mul hm gs x _ _ hx
+  exact Finset.sum_congr rfl fun π' _ => sum_onesAt_pathTerm_mul S gs x _ _ hx
 
-/-- **The acceptance probability is a gap over `2^h`**: for well-formed codes on `m > 0` qubits,
-the acceptance probability is `acceptGap` divided by `2^h`, where `h` counts the Hadamard
-gates. -/
-theorem acceptProb_eq_acceptGap (hm : 0 < m) (gs : List GateCode)
-    (hgs : ∀ g ∈ gs, g.WellFormed m) (x : List Bool) :
-    acceptProb m gs x =
-      (acceptGap gs (List.ofFn (inputState m x)) : ℝ) / 2 ^ hadamardCount gs := by
+/-- **The probability of an event of ones is a projected gap over `2^h`**: for well-formed codes,
+the probability that every qubit of `S` reads `1` is `onesGap S` divided by `2^h`, where `h` counts
+the Hadamard gates. -/
+theorem onesProb_eq_onesGap (gs : List GateCode) (hgs : ∀ g ∈ gs, g.WellFormed m) (S : List ℕ)
+    (x : List Bool) :
+    onesProb m gs S x =
+      (onesGap S gs (List.ofFn (inputState m x)) : ℝ) / 2 ^ hadamardCount gs := by
   have hnorm (g : ℤ) :
       ‖(g : ℂ) * (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) ^ hadamardCount gs‖ ^ 2 =
         (g : ℝ) ^ 2 / 2 ^ hadamardCount gs := by
@@ -310,25 +340,42 @@ theorem acceptProb_eq_acceptGap (hm : 0 < m) (gs : List GateCode)
       abs_of_nonneg (Real.sqrt_nonneg 2), Complex.norm_intCast, mul_pow, sq_abs, ← pow_mul,
       mul_comm (hadamardCount gs) 2, pow_mul, inv_pow, Real.sq_sqrt (by norm_num), inv_pow,
       div_eq_mul_inv]
-  rw [acceptProb, measureProb]
+  rw [onesProb, measureProb]
   simp only [run_ofCodes_apply gs hgs, hnorm, ← Finset.sum_div]
   congr 1
-  exact_mod_cast sum_accepting_pathGap_sq hm gs _ (by simp)
+  exact_mod_cast sum_onesAt_pathGap_sq S gs _ (by simp)
 
-/-- **The acceptance gap is a count between `0` and `2 ^ h`** for well-formed codes on a nonempty
-register `X`, since it is `2 ^ h` times a probability. -/
-theorem acceptGap_nonneg_and_le {X : List Bool} (hX : 0 < X.length) (gs : List GateCode)
+/-- **The acceptance probability is a gap over `2^h`**: for well-formed codes on `m` qubits, the
+acceptance probability is `acceptGap` divided by `2^h`, where `h` counts the Hadamard gates. -/
+theorem acceptProb_eq_acceptGap (gs : List GateCode) (hgs : ∀ g ∈ gs, g.WellFormed m)
+    (x : List Bool) :
+    acceptProb m gs x =
+      (acceptGap gs (List.ofFn (inputState m x)) : ℝ) / 2 ^ hadamardCount gs := by
+  rw [acceptGap_eq_onesGap, acceptProb_eq_onesProb, onesProb_eq_onesGap gs hgs]
+
+/-- **A projected gap is a count between `0` and `2 ^ h`** for well-formed codes on the register
+`X`, since it is `2 ^ h` times a probability. -/
+theorem onesGap_nonneg_and_le (S : List ℕ) {X : List Bool} (gs : List GateCode)
     (hgs : ∀ g ∈ gs, g.WellFormed X.length) :
-    0 ≤ acceptGap gs X ∧ acceptGap gs X ≤ 2 ^ hadamardCount gs := by
-  have h := acceptProb_eq_acceptGap hX gs hgs X
+    0 ≤ onesGap S gs X ∧ onesGap S gs X ≤ 2 ^ hadamardCount gs := by
+  have h := onesProb_eq_onesGap gs hgs S X
   rw [ofFn_inputState le_rfl, Nat.sub_self, List.replicate_zero, List.append_nil] at h
-  have h0 := acceptProb_nonneg X.length gs X
-  have h1 := acceptProb_le_one X.length gs X
+  have h0 := onesProb_nonneg X.length gs S X
+  have h1 := onesProb_le_one X.length gs S X
   have hpos : (0 : ℝ) < 2 ^ hadamardCount gs := by positivity
   rw [h] at h0 h1
   constructor
   · exact_mod_cast (div_nonneg_iff.mp h0).elim (fun h => h.1) fun h => absurd h.2 (not_le.mpr hpos)
   · rw [div_le_one hpos] at h1
     exact_mod_cast h1
+
+/-- **The projected gap of no condition is `2 ^ h`**, the squared norm of the final state. -/
+theorem onesGap_nil_eq_two_pow {X : List Bool} (gs : List GateCode)
+    (hgs : ∀ g ∈ gs, g.WellFormed X.length) :
+    onesGap [] gs X = 2 ^ hadamardCount gs := by
+  have h := onesProb_eq_onesGap gs hgs [] X
+  rw [ofFn_inputState le_rfl, Nat.sub_self, List.replicate_zero, List.append_nil,
+    onesProb_nil, eq_div_iff (by positivity), one_mul] at h
+  exact_mod_cast h.symm
 
 end Cslib.Quantum
