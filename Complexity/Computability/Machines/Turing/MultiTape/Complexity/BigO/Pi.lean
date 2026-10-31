@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
-public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 
 /-!
 # Parameterized resource bounds for finite tuples
@@ -34,8 +34,6 @@ cslib `crypto` branch at `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
 @[expose] public section
-
-attribute [fun_prop] Turing.MultiTapeTM.ComputableInO
 
 namespace Turing.MultiTapeTM.ComputableInO
 

@@ -46,10 +46,8 @@ public theorem thin_timeBound (m N : ℕ) (qs : List (Fin N × Fin N))
   have henc := encodings_total_le m N hN
   have htiles := minutiae_total_le m N qs.toFinset hN hW
   have hleaves := total_leaves_le (MaskTable.layout hm) qs.toFinset hN hW
-  have hc : (Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles (19 * m) m N).card =
-      numBands (19 * m) m N ^ 2 := by
-    simp only [Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles,
-      Finset.card_product, Finset.card_range, pow_two]
+  have hc : (tiles (19 * m) m N).card = numBands (19 * m) m N ^ 2 := by
+    simp only [tiles, Finset.card_product, Finset.card_range, pow_two]
   rw [hc] at htiles
   have hprepR : ((1 + N * D m + 2 ^ (19 * m) +
       2 * numBands (19 * m) m N * 10 ^ (19 * m) : ℕ) : ℝ) ≤
@@ -58,9 +56,8 @@ public theorem thin_timeBound (m N : ℕ) (qs : List (Fin N × Fin N))
       ((numBands (19 * m) m N * 10 ^ (19 * m) : ℕ) : ℝ) := by exact_mod_cast hH
   have hshape : ((1 + N * D m + qs.length + 2 ^ (19 * m) +
       (numBands (19 * m) m N + 1) * 10 ^ (19 * m) + numBands (19 * m) m N ^ 2 +
-        ∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles (19 * m) m N,
-          (Cslib.Algorithms.MatrixMultiplication.Schonhage.leaves
-            (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card : ℕ) : ℝ) ≤
+        ∑ T ∈ tiles (19 * m) m N,
+          (leaves (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card : ℕ) : ℝ) ≤
       65 * ((D m : ℝ) ^ (-(1 / 18 : ℝ)) * (N : ℝ) ^ 2) + qs.length := by
     have hnonneg : 0 ≤ (D m : ℝ) ^ (-(1 / 18 : ℝ)) * (N : ℝ) ^ 2 := by positivity
     push_cast at hprepR hHR henc htiles hleaves ⊢
@@ -72,8 +69,8 @@ public theorem thin_timeBound (m N : ℕ) (qs : List (Fin N × Fin N))
       65536 * ((19 * m + 1 : ℕ) : ℝ) *
         ((1 + N * D m + qs.length + 2 ^ (19 * m) +
           (numBands (19 * m) m N + 1) * 10 ^ (19 * m) + numBands (19 * m) m N ^ 2 +
-            ∑ T ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles (19 * m) m N,
-              (Cslib.Algorithms.MatrixMultiplication.Schonhage.leaves
+            ∑ T ∈ tiles (19 * m) m N,
+              (leaves
                 (wantedStrings (MaskTable.layout hm) qs.toFinset T.1 T.2)).card : ℕ) : ℝ) := by
     exact_mod_cast hcost
   exact hcostR.trans (mul_le_mul_of_nonneg_left hshape (by positivity))
