@@ -964,6 +964,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketTerm
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Recursion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ReductionLift
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Reindex
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.RowsFirstPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Schedule
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduleCount
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion

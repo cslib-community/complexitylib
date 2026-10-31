@@ -32,7 +32,8 @@ p. 64).
 * Labels have `a_d = 2 ∑_{j ≤ d} u_j` coordinates (`slotBits`), packets `L = 2 ^ a_d` slots, and
   there are `D_arr = 64 ^ (2 a_d)` pairs of labels (`r = 64`).
 * The degree bound is `Δ = 2 ^ (⌊9 λ / 10⌋ + 2)` (`degreeBound`), a power of two that is at least
-  `s ^ (9/10)` (`pow_nine_le_degreeBound_pow_ten`) and at most `2 ^ 20 s ^ 9` in tenth power.
+  `s ^ (9/10)` (`pow_nine_le_degreeBound_pow_ten`) and at most `2 ^ 20 s ^ 9` in tenth power,
+  and monotone in `s` (`degreeBound_mono`).
 * The node `t` of valuation `i` is recovered from its children at precision
   `p_t = p + 8 h 2 ^ (a - i) + 8 M (a + 1)` (`nodePrecision`), as in Lemma D.5, where
   `D_t = L / 2 ^ i`.
@@ -208,6 +209,10 @@ theorem degreeBound_pow_ten_le {s : ℕ} (hs : s ≠ 0) : degreeBound s ^ 10 ≤
     _ ≤ 2 ^ (9 * Nat.log 2 s + 20) := Nat.pow_le_pow_right two_pos (by omega)
     _ = 2 ^ 20 * (2 ^ Nat.log 2 s) ^ 9 := by rw [← pow_mul, ← pow_add]; ring_nf
     _ ≤ 2 ^ 20 * s ^ 9 := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left h2 9)
+
+/-- **The degree bound is monotone.** -/
+theorem degreeBound_mono {a b : ℕ} (h : a ≤ b) : degreeBound a ≤ degreeBound b :=
+  Nat.pow_le_pow_right (by norm_num) (by have := Nat.log_mono_right (b := 2) h; omega)
 
 /-- **The precision bound** of (D.11), `p ≤ s λ^{O(1)} 2 ^ (a_{d - 1})`:
 `precisionBound C s d ≤ C s 2 ^ (a_{d - 1}) (1 + d (8 λ + 40))`. -/
