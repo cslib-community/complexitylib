@@ -25,6 +25,11 @@ output degrees. The basic constructors preserve totality and the round-trip law.
 * `Turing.MultiTapeTM.Decoder`: total decoding with independent cost and output degrees.
 * `Turing.MultiTapeTM.Decoder.computableInPolyTime`: the ordinary polynomial-time certificate.
 * `Turing.MultiTapeTM.Decoder.bits`, `.unary`, `.bool`, `.option`, `.pair`, `.map`: basic decoders.
+
+## Main results
+
+* `Turing.MultiTapeTM.Decoder.option_computableInDegree`: option decoding preserves the
+  supplied output degree, including zero, with cost degree `max 1 (max d e)`.
 -/
 
 @[expose] public section
@@ -66,18 +71,34 @@ def bool : Decoder encBool where
   decode_enc _ := rfl
   computable := ⟨1, 1, Internal.DecoderWords.bool_degree⟩
 
+private theorem option_decode_degree {decode : List Bool → α} {d e : ℕ}
+    (h : ComputableInDegree decode encBits enc d e) :
+    ComputableInDegree (fun w => if w.isEmpty then none else some (decode w.tail))
+      encBits (encOption enc) (max 1 (max d e)) e := by
+  have hsome : ComputableInDegree (fun w => some (decode w.tail))
+      encBits (encOption enc) (max 1 (max d e)) e :=
+    ((ComputableInDegree.optionSome (enc₁ := enc) (enc := encOption enc)).comp
+      (h.comp Internal.DecoderWords.tail_degree)).mono (by omega) (by omega)
+  exact (ComputableInDegree.ite (f := fun _ => none)
+    (g := fun w => some (decode w.tail)) Internal.DecoderWords.empty_degree
+    (ComputableInDegree.const none)
+    (ComputableInDegree.of_encIn_eq Subtype.val (fun _ => rfl) hsome)).mono
+      (d' := max 1 (max d e)) (e' := e) (by omega) (by omega)
+
 /-- Options are decoded as `none` from the empty word, and otherwise from the tail. -/
 def option (D : Decoder enc) : Decoder (encOption enc) where
   decode w := if w.isEmpty then none else some (D.decode w.tail)
   decode_enc o := by cases o <;> simp [encOption, D.decode_enc]
   computable := by
     obtain ⟨d, e, hD⟩ := D.computable
-    have hsome := (ComputableInDegree.optionSome (enc₁ := enc)
-      (enc := encOption enc)).computableInPolyTime.comp
-      (hD.computableInPolyTime.comp Internal.DecoderWords.tail_degree.computableInPolyTime)
-    exact (ComputableInPolyTime.ite (encC := encBool)
-      Internal.DecoderWords.empty_degree.computableInPolyTime
-      (ComputableInDegree.const none).computableInPolyTime hsome).exists_degree
+    exact ⟨max 1 (max d e), e, option_decode_degree hD⟩
+
+/-- Option decoding preserves any supplied encoded-output degree, including zero. Its cost
+accounts for reading the input, running the decoder, and emitting the tagged decoded output. -/
+theorem option_computableInDegree (D : Decoder enc) {d e : ℕ}
+    (hD : ComputableInDegree D.decode encBits enc d e) :
+    ComputableInDegree (option D).decode encBits (encOption enc) (max 1 (max d e)) e :=
+  option_decode_degree hD
 
 /-- Pairs are decoded from the framed first component and what follows it. -/
 def pair {β₁ β₂ : Type} {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool} (D₁ : Decoder enc₁)

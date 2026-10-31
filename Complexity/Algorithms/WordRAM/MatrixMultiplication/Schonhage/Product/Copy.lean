@@ -38,23 +38,26 @@ private theorem copyBank_injective : Function.Injective copyBank := by
 source/destination/length registers, and every register beyond the seven-register callee,
 are preserved. Source and destination separation is a numerical layout obligation. -/
 public theorem exec_copyCall {w : ℕ} (x : Data 160) (h1 : Fits w 1)
-    (hs : Fits w (x.regs source + x.regs length))
-    (hd : Fits w (x.regs destination + x.regs length))
-    (hsep : x.regs source + x.regs length ≤ x.regs destination ∨
-      x.regs destination + x.regs length ≤ x.regs source ∨
-      x.regs source = x.regs destination) :
-    ∃ y, ExecWithin w copyCall x y (7 * x.regs length + 7) ∧
-      y.mem = ArrayCopy.copyPrefix x.mem (x.regs source) (x.regs destination) (x.regs length) ∧
+    (hs : Fits w (x.regs Reg.source + x.regs Reg.length))
+    (hd : Fits w (x.regs Reg.destination + x.regs Reg.length))
+    (hsep : x.regs Reg.source + x.regs Reg.length ≤ x.regs Reg.destination ∨
+      x.regs Reg.destination + x.regs Reg.length ≤ x.regs Reg.source ∨
+      x.regs Reg.source = x.regs Reg.destination) :
+    ∃ y, ExecWithin w copyCall x y (7 * x.regs Reg.length + 7) ∧
+      y.mem =
+        ArrayCopy.copyPrefix x.mem (x.regs Reg.source) (x.regs Reg.destination)
+          (x.regs Reg.length) ∧
       (∀ i, 7 ≤ i.val → y.regs i = x.regs i) := by
-  let x1 := x.set (0 : Fin 160) (x.regs source)
-  let x2 := x1.set (1 : Fin 160) (x.regs destination)
-  let x3 := x2.set (2 : Fin 160) (x.regs length)
-  have h0 : ExecWithin (B := .standard) w (.op (.copy (0 : Fin 160) source)) x x1 1 :=
+  let x1 := x.set (0 : Fin 160) (x.regs Reg.source)
+  let x2 := x1.set (1 : Fin 160) (x.regs Reg.destination)
+  let x3 := x2.set (2 : Fin 160) (x.regs Reg.length)
+  have h0 : ExecWithin (B := .standard) w (.op (.copy (0 : Fin 160) Reg.source)) x x1 1 :=
     ExecWithin.copy
-  have h01 : ExecWithin (B := .standard) w (.op (.copy (1 : Fin 160) destination)) x1 x2 1 := by
-    ram_eval [x1, x2, source, destination]
-  have h02 : ExecWithin (B := .standard) w (.op (.copy (2 : Fin 160) length)) x2 x3 1 := by
-    ram_eval [x1, x2, x3, source, destination, length]
+  have h01 :
+      ExecWithin (B := .standard) w (.op (.copy (1 : Fin 160) Reg.destination)) x1 x2 1 := by
+    ram_eval [x1, x2, Reg.source, Reg.destination]
+  have h02 : ExecWithin (B := .standard) w (.op (.copy (2 : Fin 160) Reg.length)) x2 x3 1 := by
+    ram_eval [x1, x2, x3, Reg.source, Reg.destination, Reg.length]
   obtain ⟨z, hz, hm, _, _, _⟩ := ArrayCopy.exec_of_separated_or_eq (x3.comap copyBank) h1
     (by simpa [x1, x2, x3, copyBank, ArrayCopy.src, ArrayCopy.len] using hs)
     (by simpa [x1, x2, x3, copyBank, ArrayCopy.dst, ArrayCopy.len] using hd)
@@ -62,7 +65,7 @@ public theorem exec_copyCall {w : ℕ} (x : Data 160) (h1 : Fits w 1)
   let y := z.extend copyBank x3
   have he := hz.rename copyBank_injective
   refine ⟨y, ?_, ?_, ?_⟩
-  · have hlen : (x3.comap copyBank).regs ArrayCopy.len = x.regs length := by
+  · have hlen : (x3.comap copyBank).regs ArrayCopy.len = x.regs Reg.length := by
       simp [x1, x2, x3, copyBank, ArrayCopy.len]
     rw [hlen] at he
     exact (h0.seq (h01.seq (h02.seq he))).mono (by omega)

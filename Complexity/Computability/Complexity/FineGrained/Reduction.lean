@@ -38,6 +38,9 @@ clauses shows that the target problem is not decidable in subexponential time in
 stronger: a lower bound for a measure gives one for every measure at most linear in it
 (`Cslib.Complexity.DecidableInSubexpTime.mono_measure`).
 
+`Cslib.Complexity.CountingNativeEndpoint.not_ETH` proves that `ETH` is false, so lower bounds
+obtained this way hold vacuously. The transfer theorems are unconditional.
+
 ## Main results
 
 * `Cslib.Complexity.DecidableInExpTime.mono_measure`,

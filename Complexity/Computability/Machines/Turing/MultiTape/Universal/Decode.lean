@@ -15,7 +15,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decod
 
 Every word decodes to a description of a machine (`Turing.MultiTapeTM.Universal.descDecoder`):
 the decoder inverts the encoding `Turing.MultiTapeTM.Universal.eDesc` of descriptions, returns a
-description of polynomial encoded length on every other word, and is tidily computable within
+description of polynomial encoded length on every other word, and is computable within
 bounds of fixed degrees. It is assembled from the generic decoders of
 `Complexity.Computability.Machines.Turing.MultiTape.Encodings.Decoder` along the fields of a
 description, its transitions, their keys and their actions.
@@ -32,7 +32,7 @@ to any length.
 
 * `Turing.MultiTapeTM.Universal.decodeDesc_eDesc`: decoding inverts the encoding.
 * `Turing.MultiTapeTM.Universal.decodeDesc_unframe_frame_append`: padded descriptions.
-* `Turing.MultiTapeTM.Universal.exists_computableTidilyInDegree_decodeDesc`: decoding is tidily
+* `Turing.MultiTapeTM.Universal.exists_computableInDegree_decodeDesc`: decoding is
   computable within bounds of fixed degrees.
 -/
 
@@ -91,13 +91,11 @@ theorem decodeDesc_unframe_frame_append (d : Desc) (pad : List Bool) :
     decodeDesc (unframe (frame (eDesc d) ++ pad)) = d := by
   rw [unframe_frame_append, decodeDesc_eDesc]
 
-/-- **Decoding is efficient.** It is tidily computable, and the decoded descriptions have
+/-- **Decoding is efficient.** It is computable, and the decoded descriptions have
 encoded length polynomial in the length of the word, within bounds of fixed degrees. -/
-theorem exists_computableTidilyInDegree_decodeDesc :
-    ∃ d e, ComputableTidilyInDegree decodeDesc encBits eDesc d e := by
-  obtain ⟨d, e, h⟩ := descDecoder.computable
-  obtain ⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩ := Internal.NormalForm.degree h
-  exact ⟨d, e, ⟨t, s, ht, hs, k, Q, hfin, tm, htm⟩, h.2⟩
+theorem exists_computableInDegree_decodeDesc :
+    ∃ d e, ComputableInDegree decodeDesc encBits eDesc d e :=
+  descDecoder.computable
 
 end Universal
 
