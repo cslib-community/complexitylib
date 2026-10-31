@@ -409,4 +409,185 @@ theorem computableInPolyTime_cursorStep :
   refine h.of_enc_eq fun x => ?_
   simp only [cursorStep, decide_eq_true_eq, Function.comp_apply]
 
+/-! ### Accumulating the values of the children -/
+
+section Accumulate
+
+variable (ws ps r)
+variable {S R : Type*} [CommSemiring R] (mul add : S → S → S) (one zero : S) (φ : S → R)
+  (hmul : ∀ x y, φ (mul x y) = φ x * φ y) (hadd : ∀ x y, φ (add x y) = φ x + φ y)
+  (hone : φ one = 1)
+
+/-- The accumulator of a call: the product over the groups so far, the sum over the exponent tuples
+so far, and the stored values, one per node and point. -/
+abbrev Acc (S : Type*) : Type _ := S × S × List S
+
+/-- **Absorb the value `y` of the child at `s`**: multiply it into the product over the groups;
+after the last group, add the product to the sum over the exponent tuples; after the last tuple,
+store the sum. -/
+@[expose] def absorbAt (s : State) (acc : Acc S) (y : S) : Acc S :=
+  if s.2.2.2 + 1 < r then (mul acc.1 y, acc.2.1, acc.2.2)
+  else if (budgetNext (ws s.1) (ps s.1) s.2.2.1).isNone then
+    (one, zero, acc.2.2 ++ [add acc.2.1 (mul acc.1 y)])
+  else (one, add acc.2.1 (mul acc.1 y), acc.2.2)
+
+/-- The accumulator after the children `l` with the values `val`. -/
+@[expose] def runAcc (val : State → S) (l : List State) (acc : Acc S) : Acc S :=
+  l.foldl (fun acc s => absorbAt ws ps r mul add one zero s acc (val s)) acc
+
+omit [CommSemiring R] in
+/-- Absorbing two lists of children absorbs one, then the other. -/
+theorem runAcc_append (val : State → S) (l₁ l₂ : List State) (acc : Acc S) :
+    runAcc ws ps r mul add one zero val (l₁ ++ l₂) acc =
+      runAcc ws ps r mul add one zero val l₂ (runAcc ws ps r mul add one zero val l₁ acc) := by
+  simp only [runAcc, List.foldl_append]
+
+include hmul in
+/-- Before the last group, the product over the groups accumulates. -/
+private theorem runAcc_groups (val : State → S) (t k : ℕ) (β : List ℕ) (j : ℕ) (hj : j + 1 ≤ r)
+    (acc : Acc S) :
+    (runAcc ws ps r mul add one zero val ((List.range j).map fun g => (t, k, β, g)) acc).2 =
+        acc.2 ∧
+      φ (runAcc ws ps r mul add one zero val ((List.range j).map fun g => (t, k, β, g)) acc).1 =
+        φ acc.1 * ((List.range j).map fun g => φ (val (t, k, β, g))).prod := by
+  induction j with
+  | zero => simp [runAcc]
+  | succ j ih =>
+    obtain ⟨h1, h2⟩ := ih (by omega)
+    have hsplit : runAcc ws ps r mul add one zero val
+        ((List.range (j + 1)).map fun g => (t, k, β, g)) acc =
+        absorbAt ws ps r mul add one zero (t, k, β, j) (runAcc ws ps r mul add one zero val
+          ((List.range j).map fun g => (t, k, β, g)) acc) (val (t, k, β, j)) := by
+      simp only [runAcc, List.range_succ, List.map_append, List.map_singleton, List.foldl_append,
+        List.foldl_cons, List.foldl_nil]
+    rw [hsplit]
+    simp only [absorbAt, show j + 1 < r by omega, ↓reduceIte]
+    refine ⟨h1, ?_⟩
+    rw [hmul, h2, List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+      List.prod_singleton, mul_assoc]
+
+include hmul hadd in
+/-- After the last group of a tuple, the product joins the sum, and after the last tuple the sum is
+stored. -/
+private theorem runAcc_groupBlock (hr : 0 < r) (val : State → S) (t k : ℕ) (β : List ℕ)
+    (acc : Acc S) :
+    ∃ q, φ q = φ acc.2.1 + φ acc.1 * ((List.range r).map fun g => φ (val (t, k, β, g))).prod ∧
+      runAcc ws ps r mul add one zero val (groupBlock r t k β) acc =
+        if (budgetNext (ws t) (ps t) β).isNone then (one, zero, acc.2.2 ++ [q])
+        else (one, q, acc.2.2) := by
+  obtain ⟨r, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hr.ne'
+  obtain ⟨h1, h2⟩ := runAcc_groups ws ps (r + 1) mul add one zero φ hmul val t k β r le_rfl acc
+  set mid := runAcc ws ps (r + 1) mul add one zero val
+    ((List.range r).map fun g => (t, k, β, g)) acc
+  refine ⟨add acc.2.1 (mul mid.1 (val (t, k, β, r))), ?_, ?_⟩
+  · rw [hadd, hmul, h2, List.range_succ, List.map_append, List.prod_append, List.map_singleton,
+      List.prod_singleton, mul_assoc]
+  · have hsplit : runAcc ws ps (r + 1) mul add one zero val (groupBlock (r + 1) t k β) acc =
+        absorbAt ws ps (r + 1) mul add one zero (t, k, β, r) mid (val (t, k, β, r)) := by
+      simp only [groupBlock, runAcc, mid, List.range_succ, List.map_append, List.map_singleton,
+        List.foldl_append, List.foldl_cons, List.foldl_nil]
+    rw [hsplit]
+    simp only [absorbAt, lt_irrefl, ↓reduceIte, h1]
+
+include hmul hadd hone in
+/-- Over a list of tuples whose last one alone has no successor, the sum over the tuples is
+stored. -/
+private theorem runAcc_tuples (hr : 0 < r) (val : State → S) (t k : ℕ) (B : List (List ℕ))
+    (hB : B ≠ []) (hsome : ∀ β ∈ B.dropLast, (budgetNext (ws t) (ps t) β).isSome)
+    (hlast : (budgetNext (ws t) (ps t) (B.getLast hB)).isNone) (sm : S) (V : List S) :
+    ∃ q, φ q = φ sm + (B.map fun β => ((List.range r).map fun g => φ (val (t, k, β, g))).prod).sum ∧
+      runAcc ws ps r mul add one zero val (B.flatMap (groupBlock r t k)) (one, sm, V) =
+        (one, zero, V ++ [q]) := by
+  induction B generalizing sm with
+  | nil => exact absurd rfl hB
+  | cons β B ih =>
+    obtain ⟨q₁, hq₁, hrun₁⟩ := runAcc_groupBlock ws ps r mul add one zero φ hmul hadd hr val t k β
+      (one, sm, V)
+    rcases B with _ | ⟨β', B⟩
+    · simp only [List.getLast_singleton] at hlast
+      refine ⟨q₁, ?_, ?_⟩
+      · simpa [hone] using hq₁
+      · simpa [runAcc, hlast] using hrun₁
+    · have hβ : (budgetNext (ws t) (ps t) β).isSome := hsome β (by simp)
+      have hnone : (budgetNext (ws t) (ps t) β).isNone = false := by
+        simpa [Option.isNone_iff_eq_none, Option.isSome_iff_ne_none] using hβ
+      obtain ⟨q, hq, hrun⟩ := ih (List.cons_ne_nil _ _)
+        (fun γ hγ => hsome γ (by
+          simp only [List.dropLast_cons_cons]; exact List.mem_cons_of_mem _ hγ))
+        (by simpa using hlast) q₁
+      refine ⟨q, ?_, ?_⟩
+      · simp only [hq, hq₁, hone, one_mul, List.map_cons, List.sum_cons, add_assoc]
+      · rw [List.flatMap_cons, runAcc_append, hrun₁, hnone]
+        simpa using hrun
+
+/-- The values stored for a node and point: the sum over the exponent tuples of the products over
+the groups. -/
+@[expose] def sumAt (val : State → S) (t k : ℕ) : R :=
+  ((budgetTuples (ws t) (ps t)).map fun β =>
+    ((List.range r).map fun g => φ (val (t, k, β, g))).prod).sum
+
+include hmul hadd hone
+
+/-- Over the points of a node, one sum is stored per point. -/
+private theorem runAcc_points (hzero : φ zero = 0) (hr : 0 < r) (hps : ∀ t, 0 < ps t)
+    (hws : ∀ t, ∀ w ∈ ws t, 0 < w) (val : State → S) (t j : ℕ) (V : List S) :
+    ∃ qs : List S, qs.map φ = (List.range j).map (sumAt ws ps r φ val t) ∧
+      runAcc ws ps r mul add one zero val ((List.range j).flatMap (pointBlock ws ps r t))
+        (one, zero, V) = (one, zero, V ++ qs) := by
+  induction j generalizing V with
+  | zero => exact ⟨[], rfl, by simp [runAcc]⟩
+  | succ j ih =>
+    obtain ⟨qs, hqs, hrun⟩ := ih V
+    set B := budgetTuples (ws t) (ps t)
+    have hB : B ≠ [] := by
+      rw [Ne, ← List.head?_eq_none_iff, head?_budgetTuples (hws t) (hps t)]
+      simp
+    have hsome : ∀ β ∈ B.dropLast, (budgetNext (ws t) (ps t) β).isSome := by
+      intro β hβ
+      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hβ
+      rw [List.length_dropLast] at hi
+      have hlen : B.length = (budgetTuples (ws t) (ps t)).length := rfl
+      rw [List.getElem_dropLast, (isChain_budgetTuples (hws t) (ps t)).getElem i (by omega)]
+      rfl
+    have hlast : (budgetNext (ws t) (ps t) (B.getLast hB)).isNone := by
+      rw [budgetNext_getLast? (hws t) _ (List.getLast?_eq_some_getLast hB ▸ rfl)]
+      rfl
+    obtain ⟨q, hq, hrunq⟩ := runAcc_tuples ws ps r mul add one zero φ hmul hadd hone hr val t j B
+      hB hsome hlast zero (V ++ qs)
+    refine ⟨qs ++ [q], ?_, ?_⟩
+    · rw [List.map_append, hqs, List.range_succ, List.map_append, List.map_singleton,
+        List.map_singleton, hq, hzero, zero_add]
+      rfl
+    · rw [List.range_succ, List.flatMap_append, runAcc_append, hrun, List.flatMap_singleton,
+        pointBlock, hrunq, List.append_assoc]
+
+/-- **The values stored by a call**: absorbing the values of the children along `cursorList`
+stores, for each node and point in order, the sum over the exponent tuples of the products over
+the groups (`sumAt`), as seen through `φ`. -/
+theorem runAcc_cursorList (hzero : φ zero = 0) (hr : 0 < r) (hps : ∀ t, 0 < ps t)
+    (hws : ∀ t, ∀ w ∈ ws t, 0 < w) (val : State → S) :
+    ∃ qs : List S, qs.map φ =
+        (List.range T).flatMap (fun t => (List.range n).map (sumAt ws ps r φ val t)) ∧
+      runAcc ws ps r mul add one zero val (cursorList ws ps T n r) (one, zero, []) =
+        (one, zero, qs) := by
+  have key : ∀ j, ∃ qs : List S, qs.map φ =
+      (List.range j).flatMap (fun t => (List.range n).map (sumAt ws ps r φ val t)) ∧
+      runAcc ws ps r mul add one zero val ((List.range j).flatMap (nodeBlock ws ps n r))
+        (one, zero, []) = (one, zero, qs) := by
+    intro j
+    induction j with
+    | zero => exact ⟨[], rfl, by simp [runAcc]⟩
+    | succ j ih =>
+      obtain ⟨qs, hqs, hrun⟩ := ih
+      obtain ⟨qs', hqs', hrun'⟩ := runAcc_points ws ps r mul add one zero φ hmul hadd hone hzero hr
+        hps hws val j n qs
+      refine ⟨qs ++ qs', ?_, ?_⟩
+      · rw [List.map_append, hqs, hqs', List.range_succ, List.flatMap_append,
+          List.flatMap_singleton]
+      · rw [List.range_succ, List.flatMap_append, runAcc_append, hrun, List.flatMap_singleton,
+          nodeBlock, hrun']
+  exact key T
+
+end Accumulate
+
 end Cslib.Circuits.Frontier.ChildCursor
