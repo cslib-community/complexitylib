@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.Classes.PP
 public import Complexity.Computability.Complexity.Classes.Time
 import Complexity.Computability.Complexity.Classes.SharpP.Probability
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape
 import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
 import Complexity.Computability.Probabilistic.PPT.Capture
@@ -126,16 +127,7 @@ theorem decidesByMajorityInTime_iff {machine : MultiTapePTM k Bool State}
         (fun x : List Bool × List Bool => decide (machine.runClosedCoins x.2 x.1 = [true]))
         (enc a) (t a)) := by
   refine forall_congr' fun a => and_congr_right' (iff_congr Iff.rfl ?_)
-  -- the probability of `[true]` is the accepted fraction of the coin strings
-  have hprob : ProbComp.eval (machine.runClosed (t a) (enc a)) [true] =
-      ((BitString.uniformList (t a)).map fun w =>
-        decide (machine.runClosedCoins w (enc a) = [true])) true := by
-    rw [eval_runClosed_eq_map_coins, BitString.uniformList_map_apply,
-      BitString.uniformList_map_apply]
-    simp only [decide_eq_true_eq]
-  rw [hprob]
-  exact half_lt_uniformList_map_iff
-    (fun x : List Bool × List Bool => decide (machine.runClosedCoins x.2 x.1 = [true])) _ _
+  simpa only [one_div] using machine.half_lt_eval_runClosed_apply_iff (enc a) (t a)
 
 end Turing.MultiTapePTM
 
