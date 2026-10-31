@@ -10,13 +10,12 @@ module
 public import Complexity.Computability.Complexity.FineGrained.ContractionPartitionFunction
 public import Complexity.Logics.Propositional.CSP.Permanent
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
+import Complexity.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Preprocess
 import Complexity.Computability.PolyTime.CSP.Vars
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import Complexity.Foundations.Data.List.OfFn
 import Complexity.Foundations.Data.Nat.SqrtLog.Shifted
 import Mathlib.Data.List.GetD
@@ -35,12 +34,15 @@ of rows (`encList encBits`, read by `ContractionMatching.rowsMatrix`), and a gra
 edge list (`Cslib.Complexity.encGraph`, read as `Cslib.Complexity.Graph.induced`).
 
 Both problems are Holant problems: one Boolean variable per edge of a graph, and one exactly-one
-constraint per vertex on its incident edges. A polynomial-time reduction builds this instance
-(`Cslib.Logic.PL.CSP.permanentInstance`, `Cslib.Complexity.Graph.perfectMatchingInstance`), in which
-every variable occurs twice and every scope has at most `d` variables. Its exactly-one partition
-function is the permanent (`Cslib.Logic.PL.CSP.partitionFunction_permanentInstance`) or the number
-of perfect matchings (`Cslib.Complexity.Graph.partitionFunction_perfectMatchingInstance`). The
-counter of `ContractionPartitionFunction.exists_partitionFunctionCounter_of_finite`, which applies
+constraint per vertex on its incident edges. A polynomial-time reduction builds this instance:
+`Cslib.Logic.PL.CSP.permanentInstance` for matrices, and
+`Cslib.Complexity.Graph.perfectMatchingInstance` for graphs, whose certificate
+`Cslib.Complexity.Graph.computableInPolyTime_perfectMatchingInstance` sits beside the graph API.
+In the instance every variable occurs twice, and every scope has at most `d` variables. Its
+exactly-one partition function is the permanent
+(`Cslib.Logic.PL.CSP.partitionFunction_permanentInstance`) or the number of perfect matchings
+(`Cslib.Complexity.Graph.partitionFunction_perfectMatchingInstance`). The counter of
+`ContractionPartitionFunction.exists_partitionFunctionCounter_of_finite`, which applies
 Theorem D.1 of [OpenAI2026ETH], then computes it. That counter excludes empty scopes, so an
 instance with an empty or overlong scope is first replaced by `ContractionMatching.zeroInstance`
 (`ContractionMatching.guarded`). Under the degree promise this happens only when a vertex has no
@@ -74,9 +76,8 @@ Holant encoding with exactly-one tables instead of the 3-CNF encoding.
   `d` nonzero entries per row and column.
 * `Cslib.Complexity.ContractionMatching.exists_perfectMatchingCounter`: perfect matchings of graphs
   of maximum degree `d`.
-* `Cslib.Complexity.ContractionMatching.computableInPolyTime_permanentInstance`,
-  `Cslib.Complexity.ContractionMatching.computableInPolyTime_perfectMatchingInstance`: the
-  reductions are polynomial-time.
+* `Cslib.Complexity.ContractionMatching.computableInPolyTime_permanentInstance`: the permanent
+  reduction is polynomial-time.
 
 ## References
 
@@ -270,21 +271,6 @@ theorem exists_permanentCounter (d : ℕ) :
 
 /-! ### Perfect matchings -/
 
-/-- Listing the edges of `G.induced` is polynomial-time. -/
-theorem computableInPolyTime_edgeList :
-    ComputableInPolyTime Graph.edgeList encGraph (encList (encPair encNat encNat)) := by
-  unfold Graph.edgeList encGraph
-  fun_prop
-
-/-- Building the perfect-matching instance of a graph is polynomial-time. -/
-theorem computableInPolyTime_perfectMatchingInstance :
-    ComputableInPolyTime Graph.perfectMatchingInstance encGraph (encCSP encUnit encNat) := by
-  have hE := computableInPolyTime_edgeList
-  refine (Complexity.CSP.computableInPolyTime_unary_to_binary encUnit).comp
-    (?_ : ComputableInPolyTime (fun G : Graph => G.perfectMatchingInstance) _ _)
-  unfold Graph.perfectMatchingInstance Graph.incident
-  fun_prop
-
 /-- **Perfect matchings of graphs of maximum degree `d` in time `2 ^ O(n / √log n)`.** For each
 `d`, one machine reads a graph `G` (encoded by `encGraph`) and, when every vertex of `G.induced`
 has at most `d` neighbours, outputs the number of perfect matchings of `G.induced`. On every
@@ -300,7 +286,8 @@ theorem exists_perfectMatchingCounter (d : ℕ) :
           ((encGraph G).length + 1) ^ e)
         (fun G => ((encGraph G).length + 1) ^ b) := by
   obtain ⟨count, A, e, b, hcount, hc⟩ := exists_exactlyOneCounter d 1
-    (size := fun G : Graph => G.1.toFinset.card) computableInPolyTime_perfectMatchingInstance
+    (size := fun G : Graph => G.1.toFinset.card)
+    Graph.computableInPolyTime_perfectMatchingInstance
     (fun G => Graph.count_vars_perfectMatchingInstance G) fun G => by
       rw [Graph.length_perfectMatchingInstance]
       omega
