@@ -21,8 +21,8 @@ import Mathlib.Tactic.FinCases
   `O = ℤ_(2)[U] / (f)` have unit differences, and `ℤ_(2)` lies in `O`.
 * **Correctness of the recursion over `O`**, with those four points and a constant schedule
   `a = u = 1`, `h = 3`. On a one-edge network these parameters are admissible (`3 M ≤ h u ≤ 3 M + u`
-  and `M (2 L - 1) = 3 < 4`), so the root call is active; its children are not smaller and are
-  evaluated directly.
+  and `M (2 L - 1) = 3 < 4`), so the root call is active (`contractRec_eq_callValue`); its children
+  are not smaller and are evaluated directly. Without parameters the call is a leaf.
 -/
 
 namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Recursion
@@ -123,11 +123,14 @@ example (p : ℕ) :
         (fun n' m' N' side' p' =>
           if m' < 1 then contractRec O hO sched pts 1 n' m' N' side' p' else N'.contraction)
         net₁ (fun v => decide (v = 0)) (fun _ => rfl) (fun _ => rfl)
-        (Cslib.PacketPacking.packing net₁.src net₁.tgt 1 64) p 1 3 le_rfl pts := by
-  rw [contractRec.eq_def]
-  simp only [sched]
-  rw [dite_eq_left ⟨by decide, fun _ => rfl, fun _ => rfl⟩]
-  rfl
+        (Cslib.PacketPacking.packing net₁.src net₁.tgt 1 64) p 1 3 le_rfl pts :=
+  contractRec_eq_callValue (θ := ⟨1, 1, 3⟩) rfl (by decide) (fun _ => rfl) (fun _ => rfl) p
+
+/-- With no parameters, a call is a leaf and returns the contraction. -/
+example (p : ℕ) :
+    contractRec O hO (fun _ _ => none) pts 0 2 1 net₁ (fun v => decide (v = 0)) p =
+      net₁.contraction :=
+  contractRec_of_sched_eq_none rfl p
 
 /-- **The recursion is correct**: at every precision, the root call returns the contraction of
 `net₁` modulo `2 ^ p`. -/

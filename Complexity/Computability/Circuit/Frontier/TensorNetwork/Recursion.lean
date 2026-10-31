@@ -77,6 +77,8 @@ binary-coordinate lifts are such points (`AdjoinRoot.isUnit_integerDigitLift_sub
   correct oracle.
 * `Cslib.Circuits.Frontier.TensorNetwork.mul_card_edges_child_callSplitting_le`: under (D.6), the
   children have at most `M / 16` edges.
+* `Cslib.Circuits.Frontier.TensorNetwork.contractRec_eq_callValue`,
+  `Cslib.Circuits.Frontier.TensorNetwork.contractRec_of_sched_eq_none`: an active call and a leaf.
 * `Cslib.Circuits.Frontier.TensorNetwork.exists_contractRec_eq_add`,
   `Cslib.Circuits.Frontier.TensorNetwork.mk_contractRec`: the recursion returns the contraction
   modulo `2 ^ p`.
@@ -447,6 +449,32 @@ noncomputable def contractRec (d n m : ℕ) (N : TensorNetwork B Bool (Fin n) (F
         fun k : Fin (m * (2 * 2 ^ θ.a - 1) + 1) => pts (Fin.castLE hθ.1.2.2.2.2.2 k)
     else N.contraction
 termination_by m
+
+variable {B hB sched pts} in
+/-- **An active call** of the recursion: when the schedule gives admissible parameters and the edges
+run from rows to columns, the call is `callValue` with the packing of Lemma D.3, the first
+`M (2 L - 1) + 1` points, and recursive calls at depth `d + 1` for the children with fewer edges. -/
+theorem contractRec_eq_callValue {d n m : ℕ} {N : TensorNetwork B Bool (Fin n) (Fin m)}
+    {side : Fin n → Bool} {θ : CallParams} (hs : sched d m = some θ) (hθ : θ.Admissible m N₀)
+    (hsrc : ∀ e, side (N.src e) = true) (htgt : ∀ e, side (N.tgt e) = false) (p : ℕ) :
+    contractRec B hB sched pts d n m N side p =
+      callValue B hB
+        (fun n' m' N' side' p' =>
+          if m' < m then contractRec B hB sched pts (d + 1) n' m' N' side' p' else N'.contraction)
+        N side hsrc htgt (PacketPacking.packing N.src N.tgt θ.a 64) p θ.u θ.h hθ.2.2.1
+        fun k : Fin (m * (2 * 2 ^ θ.a - 1) + 1) => pts (Fin.castLE hθ.2.2.2.2.2 k) := by
+  rw [contractRec.eq_def]
+  simp only [hs]
+  rw [dite_eq_left ⟨hθ, hsrc, htgt⟩]
+  rfl
+
+variable {B hB sched pts} in
+/-- **A leaf** of the recursion, where the schedule gives no parameters, is evaluated directly. -/
+theorem contractRec_of_sched_eq_none {d n m : ℕ} {N : TensorNetwork B Bool (Fin n) (Fin m)}
+    {side : Fin n → Bool} (hs : sched d m = none) (p : ℕ) :
+    contractRec B hB sched pts d n m N side p = N.contraction := by
+  rw [contractRec.eq_def]
+  simp only [hs]
 
 /-- **Correctness of the recursion** ([OpenAI2026ETH], §D.4.7, p. 64: correctness "by induction
 from the leaves"). For interpolation points with unit differences, every call returns the
