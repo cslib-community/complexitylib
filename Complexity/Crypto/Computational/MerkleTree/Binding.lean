@@ -189,7 +189,8 @@ theorem computableInPolyTime_merkleVerify
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime
       (fun p : (List Bool × ℕ) × (List Bool × ℕ) × (List Bool × List (List Bool)) =>
-        merkleVerify H p.1.1 p.1.2 p.2.1.1 p.2.1.2 p.2.2.1 p.2.2.2)
+        merkleVerify H (Prod.fst p.1) (Prod.snd p.1) (Prod.fst (Prod.fst p.2))
+          (Prod.snd (Prod.fst p.2)) (Prod.fst (Prod.snd p.2)) (Prod.snd (Prod.snd p.2)))
       (encPair (encPair encBits encUnary)
         (encPair (encPair encBits encUnary) (encPair encBits (encList encBits)))) encBool := by
   have hargs : ComputableInPolyTime
@@ -259,9 +260,10 @@ variable (H : List Bool → List Bool → List Bool)
 /-- `out` breaks position binding under the key `k`: both openings are accepted at the same
 position of the same root, at the depth of the first path, and their leaves differ. -/
 def merkleBreaksBinding (k : List Bool) (out : MerkleBindingOutput) : Bool :=
-  merkleVerify H k out.2.1.2.length out.1.1 out.1.2 out.2.1.1 out.2.1.2 &&
-    merkleVerify H k out.2.1.2.length out.1.1 out.1.2 out.2.2.1 out.2.2.2 &&
-      out.2.1.1 != out.2.2.1
+  let ((root, i), (leaf₁, path₁), (leaf₂, path₂)) := out
+  merkleVerify H k path₁.length root i leaf₁ path₁ &&
+    merkleVerify H k path₁.length root i leaf₂ path₂ &&
+      leaf₁ != leaf₂
 
 /-- The position-binding experiment ([BonehShoup2023], Attack Game 8.2, for a keyed hash): sample
 a uniform `n`-bit key `k`, run the adversary on `(n, k)`, and accept when its output breaks
@@ -283,7 +285,8 @@ def MerklePositionBinding : Prop :=
 from its two openings with `extractMerkleCollision`. -/
 def merkleCollisionFinder (adversary : MerkleBindingAdversary) : CollisionFinder := fun n k => do
   let out ← adversary n k
-  return extractMerkleCollision H k out.2.1.1 out.2.2.1 out.1.2 out.2.1.2 out.2.2.2
+  let ((_, i), (leaf₁, path₁), (leaf₂, path₂)) := out
+  return extractMerkleCollision H k leaf₁ leaf₂ i path₁ path₂
 
 variable {H}
 
@@ -291,9 +294,9 @@ variable {H}
 `extractMerkleCollision` finds two different inputs with the same hash under `k`. -/
 theorem isCollision_of_merkleBreaksBinding {k : List Bool} {out : MerkleBindingOutput}
     (h : merkleBreaksBinding H k out = true) (n : ℕ) :
-    isCollision H (fun _ _ => true) n k
-      (extractMerkleCollision H k out.2.1.1 out.2.2.1 out.1.2 out.2.1.2 out.2.2.2).1
-      (extractMerkleCollision H k out.2.1.1 out.2.2.1 out.1.2 out.2.1.2 out.2.2.2).2 = true := by
+    let ((_, i), (leaf₁, path₁), (leaf₂, path₂)) := out
+    let col := extractMerkleCollision H k leaf₁ leaf₂ i path₁ path₂
+    isCollision H (fun _ _ => true) n k col.1 col.2 = true := by
   simp only [merkleBreaksBinding, Bool.and_eq_true, bne_iff_ne, ne_eq] at h
   exact isCollision_of_merkleVerify h.1.1 h.1.2 h.2 n
 
