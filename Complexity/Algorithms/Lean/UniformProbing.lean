@@ -1135,7 +1135,7 @@ theorem tableRep_runTableFrom {U V n_max m : ℕ} (hm : 0 < m) (hcap : n_max ≤
   induction ops generalizing s T with
   | nil => exact hrep
   | cons o os ih =>
-    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).step s o).1).card ≤ n_max :=
+    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
     | get u =>
@@ -1165,7 +1165,7 @@ theorem probeCount_runTableFrom_of_isSome {U V n_max m : ℕ} (hm : 0 < m) (hcap
   induction ops generalizing s T with
   | nil => rfl
   | cons o os ih =>
-    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).step s o).1).card ≤ n_max :=
+    have hs' : (Dictionary.dom ((Dictionary.spec U V n_max).stepFn s o).1).card ≤ n_max :=
       Dictionary.card_dom_step_le_of_valid hs hvh.1
     cases o with
     | get u =>
@@ -1192,7 +1192,7 @@ theorem validHistory_and_runTableFrom_append {U V n_max m : ℕ} (hm : 0 < m)
   | o :: l₁, l₂, s, T, h => by
     obtain ⟨h₁, h₂, hrun⟩ :=
       validHistory_and_runTableFrom_append hm π
-        (s := ((Dictionary.spec U V n_max).step s o).1) (tableStep hm π T o).1 h.2
+        (s := ((Dictionary.spec U V n_max).stepFn s o).1) (tableStep hm π T o).1 h.2
     exact ⟨⟨h.1, h₁⟩, h₂, hrun⟩
 
 /-- **Pathwise insertion-cost identity from the proof of Theorem 11.8 of [CLRS2009], third edition,
@@ -1258,8 +1258,8 @@ private theorem isSome_run_of_isSome {U V n_max : ℕ} {u : Fin U} :
   | [], _, h => h
   | .get _ :: l, _, h => isSome_run_of_isSome l h
   | .insert w _ :: l, s₀, h => by
-    apply isSome_run_of_isSome l (s₀ := ((Dictionary.spec U V n_max).step s₀ (.insert w _)).1)
-    dsimp only [Dictionary.spec]
+    apply isSome_run_of_isSome l (s₀ := ((Dictionary.spec U V n_max).stepFn s₀ (.insert w _)).1)
+    dsimp only [Dictionary.spec, Dictionary.step, Cslib.Stateful.Spec.stepFn]
     by_cases hwu : u = w
     · subst hwu; simp
     · simpa [Function.update_of_ne hwu] using h
@@ -1276,16 +1276,18 @@ theorem not_mem_insert_of_run_eq_none {U V n_max : ℕ} {u : Fin U} :
     rcases List.mem_cons.mp hmem with rfl | htail
     · have his :
           (((Dictionary.spec U V n_max).run
-            (((Dictionary.spec U V n_max).step s (.insert u v)).1) os).1 u).isSome :=
+            (((Dictionary.spec U V n_max).stepFn s (.insert u v)).1) os).1 u).isSome :=
         isSome_run_of_isSome (V := V) (n_max := n_max) os
-          (by dsimp [Dictionary.spec]; rw [Function.update_self]; rfl)
+          (by
+            dsimp [Dictionary.spec, Dictionary.step, Cslib.Stateful.Spec.stepFn]
+            rw [Function.update_self]; rfl)
       have hnone' :
           (((Dictionary.spec U V n_max).run
-            (((Dictionary.spec U V n_max).step s (.insert u v)).1) os).1 u) = none := hnone
+            (((Dictionary.spec U V n_max).stepFn s (.insert u v)).1) os).1 u) = none := hnone
       rw [hnone'] at his
       cases his
     · exact not_mem_insert_of_run_eq_none
-        (s := ((Dictionary.spec U V n_max).step s o).1) hnone v htail
+        (s := ((Dictionary.spec U V n_max).stepFn s o).1) hnone v htail
 
 /-- **Theorem 11.6 (pp. 274–275) & Corollary 11.7 (p. 275) of [CLRS2009], third edition, over
 `PMF.uniformOfFintype`**:
