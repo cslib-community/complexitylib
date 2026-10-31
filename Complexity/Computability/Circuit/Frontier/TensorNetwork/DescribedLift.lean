@@ -30,10 +30,10 @@ for.
   and reducing the lift modulo `2 ^ p` gives the value of `c` in `A_p`
   (`GaloisRingArith.reduction_liftO`). This is the canonical lifting of representatives of §D.4.1
   (p. 58): a retained vertex is read through the lift of its entry at every later precision.
-* **Rows first.** When a described network is *rows-first bipartite* at `r`
-  (`DescribedNetwork.IsRowsFirstBipartite`), every port names an edge and every edge is a port of
-  exactly one of the first `r` vertices, once, and of exactly one of the others, once. The ends of
-  the edges are then computed by listing the vertices at each edge
+* **Rows first.** A described network is *rows-first bipartite* at `r`
+  (`DescribedNetwork.IsRowsFirstBipartite`) when every port names an edge and every edge is a port
+  of exactly one of the first `r` vertices, once, and of exactly one of the others, once. The ends
+  of the edges are then computed by listing the vertices at each edge
   (`DescribedNetwork.incident`, `DescribedNetwork.edgeEnds`), in polynomial time
   (`DescribedNetwork.computableInPolyTime_edgeEnds`).
 * **The network** (`DescribedNetwork.toNetwork`). A rows-first described network and an evaluator
