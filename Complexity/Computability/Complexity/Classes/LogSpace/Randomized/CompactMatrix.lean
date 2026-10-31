@@ -23,8 +23,9 @@ For a logarithmic-space run the box contains every reachable view; restriction t
 image therefore proves exact finite-time acceptance for the ambient matrix.
 
 This supplies the enumerated base matrix of [OpenAI2026LogSpace, Lemma 2.1]. Clocking and the
-terminal reward are treated separately. Native clocked serialization, paired ports and the
-recursive estimator are not asserted here.
+terminal reward are treated separately; `Randomized.ClockedTable` supplies the initialized native
+clocked matrix payload. Complete instance packaging, paired ports and the recursive estimator
+remain separate.
 
 ## Main definitions
 

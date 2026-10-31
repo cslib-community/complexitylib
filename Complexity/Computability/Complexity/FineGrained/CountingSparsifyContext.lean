@@ -74,8 +74,6 @@ section PolyTime
 
 open ComputableInPolyTime
 
-attribute [local fun_prop] computableInPolyTime_listIsEmpty computableInPolyTime_listTail
-
 /-- Search states with a context, encoded as framed tuples: the context, the weighting count in
 unary, the stack of formulas, and the accumulator in binary. -/
 local notation "encX" encC =>

@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -32,6 +32,7 @@ is at least `t` exactly when at least `k` values are at least `t` (`Finset.le_kt
 
 * `Finset.kthLargest_nonneg`, `Finset.kthLargest_le`: bounds.
 * `Finset.lt_kthLargest_iff`, `Finset.le_kthLargest_iff`: the threshold characterizations.
+* `Finset.kthLargest_eq_of_eq_or_gt`: replacing values strictly above a bounded rank preserves it.
 * `Finset.kthLargest_le_kthLargest_add`, `Finset.abs_kthLargest_sub_kthLargest_le`: stability
   under perturbation of the values.
 
@@ -115,6 +116,35 @@ theorem le_kthLargest_iff (hk : 0 < k) (ht : 0 < t) :
   · intro hcard
     obtain ⟨x, hxs, htx, hkx⟩ := exists_le_card hk (t ≤ ·) hcard
     exact htx.trans (le_kthLargest_of_le_card hxs hkx)
+
+/-- Changing only values strictly above a nonnegative ceiling preserves every positive-order
+rank at most that ceiling. The bound may be an equality, and other values may be negative. -/
+theorem kthLargest_eq_of_eq_or_gt {f g : α → R} (hk : 0 < k) (ht : 0 ≤ t)
+    (h : ∀ x ∈ s, f x = g x ∨ (t < f x ∧ t < g x))
+    (hg : kthLargest k s g ≤ t) : kthLargest k s f = kthLargest k s g := by
+  classical
+  have hfilter (a : R) (ha : a ≤ t) :
+      ({x ∈ s | a < f x} : Finset α) = {x ∈ s | a < g x} := by
+    ext x
+    by_cases hx : x ∈ s
+    · rcases h x hx with heq | ⟨hf, hg⟩
+      · simp [heq]
+      · simp [hx, ha.trans_lt hf, ha.trans_lt hg]
+    · simp [hx]
+  have hf : kthLargest k s f ≤ t := by
+    refine not_lt.mp fun hlt => ?_
+    have hc := (lt_kthLargest_iff hk ht).mp hlt
+    rw [hfilter t le_rfl] at hc
+    exact (not_lt_of_ge hg) ((lt_kthLargest_iff hk ht).mpr hc)
+  apply le_antisymm
+  · refine not_lt.mp fun hlt => ?_
+    have hc := (lt_kthLargest_iff hk kthLargest_nonneg).mp hlt
+    rw [hfilter _ hg] at hc
+    exact lt_irrefl _ ((lt_kthLargest_iff hk kthLargest_nonneg).mpr hc)
+  · refine not_lt.mp fun hlt => ?_
+    have hc := (lt_kthLargest_iff hk kthLargest_nonneg).mp hlt
+    rw [← hfilter _ hf] at hc
+    exact lt_irrefl _ ((lt_kthLargest_iff hk kthLargest_nonneg).mpr hc)
 
 section Stability
 
