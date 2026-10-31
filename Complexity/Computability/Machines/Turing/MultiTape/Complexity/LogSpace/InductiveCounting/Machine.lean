@@ -83,10 +83,6 @@ def encRuntime : Runtime ↪ List Bool :=
 
 variable {k : ℕ} {State : Type} [Fintype State] (ntm : MultiTapeNTM k Bool State)
 
-variable (k) in
-/-- Enough binary choices to guess every graph identifier, without retrying invalid guesses. -/
-def guessWidth (B : ℕ) : ℕ := (vertexBound (k := k) B).size
-
 /-- The bad vertices of a mode: those whose step leaves the radix while it is unchecked, the
 accepting ones once it is checked. -/
 noncomputable def modeBad (B n : ℕ) (checked : Bool) (u : ℕ) (symbol : Option Bool) : Bool :=
@@ -139,7 +135,7 @@ noncomputable def runtimeNext (s : Runtime) (symbol : Option Bool) (choice : Boo
       ⟨s.length, s.radix, true, some (install ntm s.radix)⟩
     else
       ⟨s.length, s.radix, s.checked, some (Cslib.InductiveCounting.advance
-        (vertexBound (k := k) s.radix) (guessWidth k s.radix) (startID ntm s.radix) c
+        (vertexBound (k := k) s.radix) (vertexWidth k s.radix) (startID ntm s.radix) c
         (localAnswer ntm s.radix s.length s.checked c symbol) choice)⟩
 
 /-- A runtime halts when its controller rejects, or accepts on a checked radix. -/
@@ -159,10 +155,6 @@ noncomputable def queryMachine : NondeterministicQueryMachine Runtime where
   halted := runtimeHalted
   accept := runtimeAccept
 
-/-- Every compact graph identifier can be expressed by the chosen number of choice bits. -/
-theorem vertexBound_lt_two_pow_guessWidth (B : ℕ) :
-    vertexBound (k := k) B < 2 ^ guessWidth k B := Nat.lt_size_self _
-
 /-! ### Steps of the machine -/
 
 variable (input : List Bool)
@@ -174,13 +166,13 @@ noncomputable def graphBad (B : ℕ) (checked : Bool) : ℕ → Bool :=
 /-- One controller step on the graph of radix `B`. -/
 noncomputable abbrev ctlStep (B : ℕ) (checked : Bool) (c : Cslib.InductiveCounting.State)
     (choice : Bool) : Cslib.InductiveCounting.State :=
-  Cslib.InductiveCounting.step (vertexBound (k := k) B) (guessWidth k B) (startID ntm B)
+  Cslib.InductiveCounting.step (vertexBound (k := k) B) (vertexWidth k B) (startID ntm B)
     (graphEdge ntm B input) (graphBad ntm input B checked) c choice
 
 /-- A controller replay on the graph of radix `B`. -/
 noncomputable abbrev ctlReplay (B : ℕ) (checked : Bool) (c : Cslib.InductiveCounting.State)
     (choices : List Bool) : Cslib.InductiveCounting.State :=
-  Cslib.InductiveCounting.replay (vertexBound (k := k) B) (guessWidth k B) (startID ntm B)
+  Cslib.InductiveCounting.replay (vertexBound (k := k) B) (vertexWidth k B) (startID ntm B)
     (graphEdge ntm B input) (graphBad ntm input B checked) c choices
 
 /-- A request reads the same original input symbol as the compact configuration graph. -/
@@ -282,7 +274,7 @@ theorem replay_unchecked_of_done {B : ℕ} (c : Cslib.InductiveCounting.State)
       have hh : Cslib.InductiveCounting.halted c = true := by
         simp [Cslib.InductiveCounting.halted, hp]
       have := Cslib.InductiveCounting.replay_halted (N := vertexBound (k := k) B)
-        (width := guessWidth k B) (source := startID ntm B) (edge := graphEdge ntm B input)
+        (width := vertexWidth k B) (source := startID ntm B) (edge := graphEdge ntm B input)
         (bad := graphBad ntm input B false) hh (choice :: choices)
       rw [ctlReplay, this, hp] at hd
       exact absurd hd.1 (by decide)
@@ -411,7 +403,7 @@ def RuntimeInvariant (s : Runtime) : Prop :=
       Cslib.InductiveCounting.Invariant (vertexBound (k := k) s.radix)
         (graphEdge ntm s.radix input) (graphBad ntm input s.radix s.checked)
         (startID ntm s.radix) c ∧
-      Cslib.InductiveCounting.Bounded (vertexBound (k := k) s.radix) (guessWidth k s.radix) c ∧
+      Cslib.InductiveCounting.Bounded (vertexBound (k := k) s.radix) (vertexWidth k s.radix) c ∧
       (s.checked = true → Closed ntm s.radix input)
 
 /-- A complete final count check meeting an overflowing vertex shows that the radix is not
@@ -530,11 +522,11 @@ private theorem exists_accepting_from_round (hJ : ∃ j, Closed ntm (roundRadix 
     have hcl := Nat.find_spec hJ
     generalize roundRadix State input.length (Nat.find hJ) = B at hcl hB ⊢
     obtain ⟨bs, hbs⟩ := Cslib.InductiveCounting.accepts_complete (startID_lt (ntm := ntm) hB)
-      (vertexBound_lt_two_pow_guessWidth (k := k) B).le hcl
+      (vertexBound_lt_two_pow_vertexWidth k B).le hcl
     obtain ⟨cs, t, hcs, ht⟩ := exists_replay_unchecked_of_accept ntm input
       (install ntm B) bs hbs
     obtain ⟨bs', hbs'⟩ := Cslib.InductiveCounting.accepts_complete (startID_lt (ntm := ntm) hB)
-      (vertexBound_lt_two_pow_guessWidth (k := k) B).le
+      (vertexBound_lt_two_pow_vertexWidth k B).le
       ((safe_iff_not_accepts hB hcl).mpr hna)
     refine ⟨cs ++ false :: bs', ?_, ?_⟩ <;>
     · rw [NondeterministicQueryMachine.replay_append, hcs,
@@ -550,8 +542,8 @@ private theorem exists_accepting_from_round (hJ : ∃ j, Closed ntm (roundRadix 
     generalize roundRadix State input.length j = B at hB hncl hcs ⊢
     obtain ⟨bs, hd, hf, hsel⟩ := Cslib.InductiveCounting.exists_replay_done_final
       (edge := graphEdge ntm B input) (bad := graphOverflow ntm B input)
-      (startID_lt (ntm := ntm) hB) (vertexBound_lt_two_pow_guessWidth (k := k) B).le
-    set t := Cslib.InductiveCounting.replay (vertexBound (k := k) B) (guessWidth k B)
+      (startID_lt (ntm := ntm) hB) (vertexBound_lt_two_pow_vertexWidth k B).le
+    set t := Cslib.InductiveCounting.replay (vertexBound (k := k) B) (vertexWidth k B)
       (startID ntm B) (graphEdge ntm B input) (graphOverflow ntm B input)
       (Cslib.InductiveCounting.initial (vertexBound (k := k) B) (startID ntm B)) bs with ht
     have hinv : Cslib.InductiveCounting.Invariant (vertexBound (k := k) B) (graphEdge ntm B input)
