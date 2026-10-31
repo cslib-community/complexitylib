@@ -504,17 +504,15 @@ reusing graph and matroid foundations and the shared data-structure interfaces.
 - **Spanning trees and matroids:** minimum spanning trees with sorting and disjoint-set costs;
   weighted matroid greedy optimality with an independence-oracle interface; then matroid
   intersection with explicit oracle and implementation costs.
-- **Submodular optimization:** the `1 - 1/e` approximation for nonnegative monotone submodular
-  maximization under a cardinality constraint, charging value-oracle calls separately from their
-  concrete realizations; then further constraints and approximation bounds.
+- **Submodular optimization:** further constraints and approximation bounds beyond the
+  cardinality-constrained `1 - 1/e` greedy, charging value-oracle calls separately from their
+  concrete realizations.
 
 ### Online algorithms and competitive analysis
 
 - Request sequences, online strategies, offline optima and competitive ratios with additive
   constants; distinguish deterministic and randomized strategies and oblivious and adaptive
   adversaries. Compare algorithms in the same action and cost model, including initialization.
-- **Paging:** an LRU competitive bound and a matching deterministic lower bound as the first
-  clients. Reuse native amortized certificates and make adversarial request generation explicit.
 - **Adaptive search trees:** a BST access-and-rotation model, the splay access lemma, static
   optimality, working-set and dynamic-finger bounds, and Wilber-style lower bounds. State dynamic
   optimality as a conjectural research target with explicit strategy and sequence quantifiers.
