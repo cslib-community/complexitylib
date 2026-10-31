@@ -50,9 +50,10 @@ summation of the manuscript's leaves. The recursion is well founded on the numbe
 **Correctness** (`TensorNetwork.exists_contractRec_eq_add`). For interpolation points with unit
 differences, every call returns the contraction modulo `2 ^ p`, for every schedule: the manuscript's
 "induction from the leaves" (p. 64) becomes strong induction on the number of edges. So the
-parameter schedule (D.4)–(D.6) matters only for the running time, which this file does not treat;
-under it, Lemma D.3 (3) and `ModeSplitting.mul_card_edges_child_le` make every child smaller, so the
-fallback for children is not taken. In the manuscript's ring `B = O = ℤ_(2)[U] / (f)`, the
+parameter schedule (D.4)–(D.6) matters only for the running time, which this file does not treat.
+Under the first inequality of (D.6), every child has at most `M / 16` edges
+(`TensorNetwork.mul_card_edges_child_callSplitting_le`, from Lemma D.3 (3)), so an active call with
+an edge never falls back for its children. In the manuscript's ring `B = O = ℤ_(2)[U] / (f)`, the
 binary-coordinate lifts are such points (`AdjoinRoot.isUnit_integerDigitLift_sub`).
 
 ## Main definitions
@@ -74,6 +75,8 @@ binary-coordinate lifts are such points (`AdjoinRoot.isUnit_integerDigitLift_sub
   correct when its values are the sums of the products of the children's contractions.
 * `Cslib.Circuits.Frontier.TensorNetwork.exists_callValue_eq_add`: one call is correct for a
   correct oracle.
+* `Cslib.Circuits.Frontier.TensorNetwork.mul_card_edges_child_callSplitting_le`: under (D.6), the
+  children have at most `M / 16` edges.
 * `Cslib.Circuits.Frontier.TensorNetwork.exists_contractRec_eq_add`,
   `Cslib.Circuits.Frontier.TensorNetwork.mk_contractRec`: the recursion returns the contraction
   modulo `2 ^ p`.
@@ -350,6 +353,50 @@ theorem exists_callValue_eq_add {rec : ContractionOracle B} (hrec : rec.Correct)
   exact Subtype.ext hx'
 
 end Call
+
+/-! ### Children are smaller under (D.6) -/
+
+section ChildSize
+
+variable {K : Type*} [CommRing K] [Algebra ℚ K] (B : Subring K)
+  (hB : ∀ c ∈ ℤ₍₂₎, algebraMap ℚ K c ∈ B) {V E : Type*} [Fintype V] [DecidableEq V] [FinEnum V]
+  [Fintype E] [DecidableEq E] [LinearOrder E]
+
+omit [Fintype V] [DecidableEq E] in
+/-- **Children have at most `M / 16` edges** under the size hypothesis `2 Δ D² ≤ M` of (D.6),
+`D = 64 ^ (2 a)`, for the packing of Lemma D.3 with `r = 64` and maximum degree `Δ`: each group has
+at most `2 M / 64` ports on each side (`PacketPacking.row_ports_packing_le`), and a child has one
+edge per port of its group. The source (§D.4.6, p. 63) bounds a child by `6M/r = 3M/32 < M/8`
+edges from the `3M/r` port bound of Lemma D.3 (3); `PacketPacking.packing` has the sharper port
+bound `2M/r`. -/
+theorem mul_card_edges_child_callSplitting_le (N : TensorNetwork B Bool V E) (side : V → Bool)
+    (hsrc : ∀ e, side (N.src e) = true) (htgt : ∀ e, side (N.tgt e) = false) {a Δ : ℕ}
+    (hrow : ∀ v, #{e | N.src e = v} ≤ Δ) (hcol : ∀ w, #{e | N.tgt e = w} ≤ Δ)
+    (hM : 2 * Δ * (64 ^ (2 * a)) ^ 2 ≤ Fintype.card E) (p u h : ℕ) (hua : u ≤ a) {t : ℤ}
+    (ht : t ∈ recoveryNodes a) (hq : 0 < taperMult u h t) (z : B) (g : Fin 64) :
+    64 * Fintype.card
+        ({e // (callSplitting B hB N side hsrc htgt (PacketPacking.packing N.src N.tgt a 64) p u h
+            hua ht hq z).group (N.src e) = g} ⊕
+          {e // (callSplitting B hB N side hsrc htgt (PacketPacking.packing N.src N.tgt a 64) p u h
+            hua ht hq z).group (N.tgt e) = g}) ≤
+      4 * Fintype.card E := by
+  have hg : (callSplitting B hB N side hsrc htgt (PacketPacking.packing N.src N.tgt a 64) p u h
+      hua ht hq z).group =
+        packingGroup side (PacketPacking.packing N.src N.tgt a 64)
+          ⟨_, padicValInt_lt_of_taperMult_pos hq hua⟩ := by
+    exact cauchyModeSplitting_group ..
+  have := ModeSplitting.mul_card_edges_child_le (c := 2) (r := 64)
+    (callSplitting B hB N side hsrc htgt (PacketPacking.packing N.src N.tgt a 64) p u h hua ht hq z)
+    g (by
+      rw [hg]
+      exact (congrArg (64 * ·) (card_packingGroup_src side hsrc _ _ g)).trans_le
+        (PacketPacking.row_ports_packing_le N.src N.tgt a 64 hrow hcol hM _ g)) (by
+      rw [hg]
+      exact (congrArg (64 * ·) (card_packingGroup_tgt side htgt _ _ g)).trans_le
+        (PacketPacking.col_ports_packing_le N.src N.tgt a 64 hrow hcol hM _ g))
+  exact this.trans_eq (by ring)
+
+end ChildSize
 
 /-! ### The recursion -/
 
