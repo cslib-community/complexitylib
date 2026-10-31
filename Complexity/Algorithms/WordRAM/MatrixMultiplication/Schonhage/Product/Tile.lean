@@ -37,8 +37,8 @@ epoch is passed to the next tile. Its answers are the original signed matrix pro
 public theorem exec_tileStep {w L m N A t E : ℕ} (hw : 0 < w) (hm : m ≤ L)
     (X : Matrix (Fin N) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin N) ℤ)
     (qs : List (Fin N × Fin N)) (old : ℕ → ℕ) (x : Data 160)
-    (hp : Parameters L m N qs.length x) (hx : x.regs index = t)
-    (ht : t < numBands L m N ^ 2) (hE : x.regs epoch = E) (hEbound : E ≤ epochBound L m N)
+    (hp : Parameters L m N qs.length x) (hx : x.regs Reg.index = t)
+    (ht : t < numBands L m N ^ 2) (hE : x.regs Reg.epoch = E) (hEbound : E ≤ epochBound L m N)
     (hg : SavedGroups L m N qs.length old x.mem) (he : EncodedBands hm X Y x.mem)
     (hvalues : ∀ i : Fin qs.length,
       old (Wanted.codeAddress L m N qs.length +
@@ -60,10 +60,10 @@ public theorem exec_tileStep {w L m N A t E : ℕ} (hw : 0 < w) (hm : m ≤ L)
       ExecWithin (w + 2) tileStep x y
         (4 * L + 29 * (b - a) +
           PrunedQuery.traceWeight (wantedStrings (MaskTable.layout hm) qs.toFinset β γ) + 64) ∧
-      Parameters L m N qs.length y ∧ y.regs index = t + 1 ∧
-      E + 1 ≤ y.regs epoch ∧ y.regs epoch ≤ E + 1 + PrunedQuery.epochAllowance L ∧
+      Parameters L m N qs.length y ∧ y.regs Reg.index = t + 1 ∧
+      E + 1 ≤ y.regs Reg.epoch ∧ y.regs Reg.epoch ≤ E + 1 + PrunedQuery.epochAllowance L ∧
       SavedGroups L m N qs.length old y.mem ∧ EncodedBands hm X Y y.mem ∧
-      (∀ j < 10 ^ L, y.mem (stampBase L m N qs.length + j) ≤ y.regs epoch) ∧
+      (∀ j < 10 ^ L, y.mem (stampBase L m N qs.length + j) ≤ y.regs Reg.epoch) ∧
       (∀ i : Fin qs.length,
         (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) i.val = t →
           y.mem (groupedBase L m N qs.length +
@@ -86,7 +86,7 @@ public theorem exec_tileStep {w L m N A t E : ℕ} (hw : 0 < w) (hm : m ≤ L)
   have hB : 0 < B := by dsimp only [B] at *; nlinarith only [ht, Nat.zero_le t]
   have hβ : β < B := (Nat.div_lt_iff_lt_mul hB).mpr (by simpa [B, pow_two] using ht)
   have hγ : γ < B := Nat.mod_lt t hB
-  have hT : (β, γ) ∈ Cslib.Algorithms.MatrixMultiplication.Schonhage.tiles L m N :=
+  have hT : (β, γ) ∈ tiles L m N :=
     Finset.mem_product.mpr ⟨Finset.mem_range.mpr hβ, Finset.mem_range.mpr hγ⟩
   have htnum : β * numBands L m N + γ = t := by
     simpa only [β, γ, B, Nat.mul_comm] using Nat.div_add_mod t B
@@ -179,20 +179,21 @@ public theorem exec_tileStep {w L m N A t E : ℕ} (hw : 0 < w) (hm : m ≤ L)
       omega
     exact Function.extend_apply' _ _ _ hnot
   have up : Parameters L m N qs.length u := arp.reframe hhigh
-  have ui : u.regs index = t := (hhigh _ (by decide)).trans ari
+  have ui : u.regs Reg.index = t := (hhigh _ (by decide)).trans ari
   have ue : u.regs (bank PrunedQuery.epoch) = k.regs PrunedQuery.epoch :=
     bank_injective.extend_apply _ _ _
   have hnext : Fits (w + 2) (t + 1) := allocated_fits hfit (by
     unfold memoryEnd stampBase scratchBase outputBase groupedBase originalBase codeBase offsetBase
     have h10 := Nat.zero_le (10 ^ L)
     omega)
-  let y := (u.set epoch (k.regs PrunedQuery.epoch)).set index (t + 1)
+  let y := (u.set Reg.epoch (k.regs PrunedQuery.epoch)).set Reg.index (t + 1)
   have hpost : ExecWithin (B := .standard) (w + 2)
-      (.seq (.op (.copy epoch (bank PrunedQuery.epoch))) (ram[index ← index + one])) u y 2 := by
-    ram_eval [y, ue, ui, up.one, hnext, epoch, index, one]
+      (.seq (.op (.copy Reg.epoch (bank PrunedQuery.epoch)))
+        (ram[Reg.index ← Reg.index + Reg.one])) u y 2 := by
+    ram_eval [y, ue, ui, up.one, hnext, Reg.epoch, Reg.index, Reg.one]
   have yp : Parameters L m N qs.length y :=
-    (up.set_work epoch (by decide) _).set_work index (by decide) _
-  have yepoch : y.regs epoch = k.regs PrunedQuery.epoch := by simp [y, epoch, index]
+    (up.set_work Reg.epoch (by decide) _).set_work Reg.index (by decide) _
+  have yepoch : y.regs Reg.epoch = k.regs PrunedQuery.epoch := by simp [y, Reg.epoch, Reg.index]
   have yframe (p : ℕ)
       (ho : ¬(groupedBase L m N qs.length + a ≤ p ∧
         p < groupedBase L m N qs.length + b))
@@ -209,7 +210,7 @@ public theorem exec_tileStep {w L m N A t E : ℕ} (hw : 0 < w) (hm : m ≤ L)
   · exact hg.reframe (fun p hp hbefore => yframe p (by omega) (by omega))
   · exact he.reframe (fun p hp => yframe p (by omega) (by omega))
   · intro j hj
-    change k.mem (stampBase L m N qs.length + j) ≤ y.regs epoch
+    change k.mem (stampBase L m N qs.length + j) ≤ y.regs Reg.epoch
     simpa only [stampBase, yepoch] using km j hj
   · intro i hkey
     let p := CountingSort.position (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) qs.length i

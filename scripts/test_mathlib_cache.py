@@ -166,7 +166,7 @@ class WorkflowWiringTests(unittest.TestCase):
                         docs.index("      - name: Generate API documentation"))
         self.assertIn("DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs", docs)
 
-    def test_comparator_restores_before_strict_contracts_and_tracks_its_helper(self):
+    def test_comparator_restores_before_strict_contracts_and_is_manual_only(self):
         text = (REPO / ".github/workflows/comparator.yml").read_text()
         self.assertLess(text.index("      - uses: leanprover/lean-action@v1"),
                         text.index("      - name: Restore Mathlib cache with retries"))
@@ -178,11 +178,11 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn("run: python3 scripts/check_comparator.py basic automation sat --negative-control",
                       contract_step)
         self.assertNotIn("continue-on-error", contract_step)
-        for event, following in (("pull_request", "push"), ("push", "workflow_dispatch")):
+        trigger = text.split("\non:\n", 1)[1].split("\npermissions:", 1)[0]
+        self.assertIn("  workflow_dispatch:", trigger)
+        for event in ("pull_request", "push", "merge_group", "schedule"):
             with self.subTest(event=event):
-                trigger = text.split(f"  {event}:\n", 1)[1].split(f"  {following}:", 1)[0]
-                for dependency in ("scripts/cache/get_mathlib.py", "scripts/test_mathlib_cache.py"):
-                    self.assertIn(f"      - '{dependency}'", trigger)
+                self.assertNotIn(f"  {event}:", trigger)
 
 
 if __name__ == "__main__":

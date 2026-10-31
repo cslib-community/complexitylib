@@ -127,7 +127,7 @@ theorem fagin {L : FirstOrder.Language} [L.IsRelational] {count : ℕ}
 
 /--
 info: abstract audit passed for `ComplexityTests.Abstracts.FaginAbstract`:
-12 root declarations, 101 dependencies checked
+12 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityTests.Abstracts.FaginAbstract allowing [

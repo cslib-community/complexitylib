@@ -576,8 +576,8 @@ polynomial time. -/
 theorem computableInPolyTime_selfHardwire :
     ComputableInPolyTime (fun y : List Bool => eDesc (hardwire (decodeDesc y) (frame y)))
       encBits encBits := by
-  obtain ⟨_, _, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
-  have hpair := hdec.computableTidilyInPolyTime.computableInPolyTime.prod
+  obtain ⟨_, _, hdec⟩ := exists_computableInDegree_decodeDesc
+  have hpair := hdec.computableInPolyTime.prod
     (ComputableInPolyTime.bitsFrame encBits)
   exact (ComputableInPolyTime.of_eq (f := fun d : Desc => eDesc d) (encIn := eDesc)
     (encOut := encBits) fun _ => rfl).comp (computableInPolyTime_hardwire.comp hpair)

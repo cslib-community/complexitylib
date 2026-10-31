@@ -555,7 +555,7 @@ theorem kargerSteinHighProb :
         stepRand, runRand])
 
 /-- info:
-abstract audit passed for `ComplexityAbstracts.KargerMinCutAbstract`: 288 root declarations, 269 dependencies checked
+abstract audit passed for `ComplexityAbstracts.KargerMinCutAbstract`: 288 root declarations
 -/
 #guard_msgs (whitespace := lax) in
 #check_abstract ComplexityAbstracts.KargerMinCutAbstract

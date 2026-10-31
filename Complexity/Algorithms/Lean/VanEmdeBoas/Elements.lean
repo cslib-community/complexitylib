@@ -7,8 +7,11 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import Complexity.Algorithms.Lean.VanEmdeBoas.Erase
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Insert
+public import Complexity.Algorithms.Lean.VanEmdeBoas.Predecessor
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Successor
+public import Mathlib.Data.Finset.Erase
 public import Mathlib.Data.Finset.Filter
 public import Mathlib.Data.Finset.Range
 
@@ -26,9 +29,12 @@ the observation.
 ## Main results
 
 * `Tree.mem_elements_iff`: the finite set agrees with the recursive mathematical interpretation.
-* `Tree.elements_insert`: insertion adds exactly one key to the finite set.
+* `Tree.elements_insert`, `Tree.elements_erase`: insertion and deletion commute with the
+  finite-set observation.
 * `Tree.successor_elements_some_iff`, `Tree.successor_elements_none_iff`: strict successor and
   its absence are characterized by the finite set.
+* `Tree.predecessor_elements_some_iff`, `Tree.predecessor_elements_none_iff`: strict predecessor
+  and its absence are characterized by the finite set.
 
 ## References
 
@@ -76,5 +82,25 @@ theorem successor_elements_none_iff {t : Tree d} (ht : t.Valid) (x : ℕ) :
     t.successor x = none ↔ ∀ z, z ∈ t.elements → z ≤ x := by
   simp only [mem_elements_iff ht]
   exact successor_eq_none_iff ht x
+
+/-- The finite-set observation commutes with deletion of any key `x : ℕ`. -/
+theorem elements_erase {t : Tree d} (ht : t.Valid) (x : ℕ) :
+    (t.erase x).elements = t.elements.erase x := by
+  ext y
+  rw [mem_elements_iff (valid_erase ht x), Finset.mem_erase, mem_elements_iff ht]
+  exact contains_erase ht x y
+
+/-- A successful predecessor is the greatest finite-set element strictly below the query. -/
+theorem predecessor_elements_some_iff {t : Tree d} (ht : t.Valid) (x y : ℕ) :
+    t.predecessor x = some y ↔ y ∈ t.elements ∧ y < x ∧
+      ∀ z, z ∈ t.elements → z < x → z ≤ y := by
+  simp only [mem_elements_iff ht]
+  exact predecessor_eq_some_iff ht x y
+
+/-- An absent predecessor means that every finite-set element is at least the query. -/
+theorem predecessor_elements_none_iff {t : Tree d} (ht : t.Valid) (x : ℕ) :
+    t.predecessor x = none ↔ ∀ z, z ∈ t.elements → x ≤ z := by
+  simp only [mem_elements_iff ht]
+  exact predecessor_eq_none_iff ht x
 
 end Cslib.Algorithms.Lean.VanEmdeBoas.Tree

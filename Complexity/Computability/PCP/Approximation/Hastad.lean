@@ -15,14 +15,17 @@ import Complexity.Foundations.Data.Finset.Expect
 /-!
 # Håstad's 3-bit linear test: soundness against Label Cover
 
-Håstad [Hastad2001] proved that, for every `ε > 0`, it is NP-hard to satisfy more than a
-`7 / 8 + ε` fraction of the clauses of a satisfiable E3-CNF formula, matching the random-assignment
-bound `Cslib.Logic.PL.CNF.IsExactThreeDistinct.unsatVal_le_one_eighth`. Together with its submodule
-`LinearTest`, this module formalizes the analytic core of that proof, the completeness and
-soundness of Håstad's noisy 3-bit linear test on folded Long Code tables over a Label Cover
-projection `π : β → γ`. It does not prove the hardness result: no reduction to MAX-E3LIN or
-MAX-E3SAT is constructed, and NP-hardness of Label Cover (the PCP theorem with parallel repetition)
-is not formalized.
+Håstad proved that, for every `ε > 0`, it is NP-hard to approximate MAX-E3LIN-2 within a factor
+`2 - ε` [Håstad, Theorem 5.4][Hastad2001]. His four-clause gadget turns this into NP-hardness of
+approximating MAX-E3SAT within `8 / 7 - ε` [Håstad, Theorem 6.1][Hastad2001], so the
+random-assignment bound `Cslib.Logic.PL.CNF.IsExactThreeDistinct.unsatVal_le_one_eighth` is
+optimal. Together with its submodule `LinearTest`, this module formalizes the analytic core of
+the MAX-E3LIN proof: the completeness and soundness of Håstad's noisy 3-bit linear test on folded
+Long Code tables over a Label Cover projection `π : β → γ`
+[Håstad, Lemmas 5.1 and 5.2][Hastad2001]. It does not prove a hardness result: no reduction to
+MAX-E3LIN or MAX-E3SAT is constructed, and NP-hardness of Label Cover (the PCP theorem with
+parallel repetition) is not formalized. The stronger statement for satisfiable E3-CNF formulas
+[Håstad, Theorem 6.5][Hastad2001] uses a different test and is not addressed here.
 
 1. The **Long Code** of `x : α` (`Cslib.BitString.longCode`) evaluates each Boolean function
    `g : α → Bool` at `x`. A table `B : (γ → Bool) → Bool` is **folded**, that is, odd
@@ -205,8 +208,8 @@ theorem graphLinearProb_longCode_of_satisfies {g : Graph (β → γ)} (hg : g.ed
     rw [← hℓr (g.edges.get i) (List.get_mem _ _), linearProb_longCode]
   simp only [hterm, expect_const hne]
 
-/-- **Multi-edge soundness bound for Håstad's 3-bit test over Label Cover**
-[Håstad, Theorem 5.6][Hastad2001]: for any Label Cover instance `g : Graph (β → γ)`, noise rate
+/-- **Multi-edge soundness bound for Håstad's 3-bit test over Label Cover**, adapting the proof of
+[Håstad, Lemma 5.2][Hastad2001]: for any Label Cover instance `g : Graph (β → γ)`, noise rate
 `0 ≤ δ ≤ 1 / 2`, degree cutoff `k`, folded right tables `B`, and left tables `A`, the squared
 average correlation `graphLinearCorr g δ B A ^ 2` is at most
 `(1 - 2 * δ) ^ (2 * k) + k ^ 2 * (1 - (g.toGraph projectionEval).unsatVal)`. -/
@@ -287,7 +290,7 @@ private theorem exists_params {ε δ : ℝ} (hε : 0 < ε) (hδ0 : 0 < δ) (hδ1
 end LabelCoverSoundness
 
 /-- **Completeness and soundness of Håstad's 3-bit linear test against Label Cover**
-[Håstad, Theorem 5.6][Hastad2001]:
+[Håstad, Lemmas 5.1 and 5.2][Hastad2001]:
 for every `ε > 0` and `0 < δ < 1 / 2`, there exists a Label Cover soundness parameter `0 < η < 1`,
 independent of the label sets `β` and `γ`, such that for every Label Cover instance
 `g : Graph (β → γ)` with `g.edges ≠ []`:

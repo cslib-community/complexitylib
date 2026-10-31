@@ -32,12 +32,12 @@ set_option maxRecDepth 4096 in
 Only the two real offset words are read. Every unsigned arithmetic fit follows from the
 original allocation bound and the computed span bounds. -/
 public theorem exec_tileArguments {w L m N Q t a b : ℕ} (x : Data 160)
-    (hp : Parameters L m N Q x) (hx : x.regs index = t) (ht : t < numBands L m N ^ 2)
+    (hp : Parameters L m N Q x) (hx : x.regs Reg.index = t) (ht : t < numBands L m N ^ 2)
     (ha : x.mem (offsetBase L m N Q + t) = a)
     (hb : x.mem (offsetBase L m N Q + t + 1) = b) (hab : a ≤ b) (hbQ : b ≤ Q)
     (hfit : Fits w (wordBudget L m N Q)) :
     ∃ y, ExecWithin w tileArguments x y 21 ∧ Parameters L m N Q y ∧ y.mem = x.mem ∧
-      y.regs index = t ∧ y.regs epoch = x.regs epoch ∧
+      y.regs Reg.index = t ∧ y.regs Reg.epoch = x.regs Reg.epoch ∧
       (y.comap bank).regs PrunedQuery.inputDepth = L ∧
       (y.comap bank).regs PrunedQuery.arrayA =
         BandPreparation.catalogueBase L m N + t / numBands L m N * 10 ^ L ∧
@@ -48,7 +48,7 @@ public theorem exec_tileArguments {w L m N Q t a b : ℕ} (x : Data 160)
       (y.comap bank).regs PrunedQuery.queryCount = b - a ∧
       (y.comap bank).regs PrunedQuery.output = groupedBase L m N Q + a ∧
       (y.comap bank).regs PrunedQuery.scratch = scratchBase L m N Q ∧
-      (y.comap bank).regs PrunedQuery.epoch = x.regs epoch := by
+      (y.comap bank).regs PrunedQuery.epoch = x.regs Reg.epoch := by
   let B := numBands L m N
   let H := 10 ^ L
   let C := BandPreparation.catalogueBase L m N
@@ -92,26 +92,26 @@ public theorem exec_tileArguments {w L m N Q t a b : ℕ} (x : Data 160)
   have fq : Fits w (codeBase L m N Q + a) := allocated_fits hfit (by omega)
   have fo : Fits w (groupedBase L m N Q + a) := allocated_fits hfit (by omega)
   have fn : Fits w (b - a) := allocated_fits hfit (by omega)
-  let y := (((((((((((((((((((((x.set address (offsetBase L m N Q + t)).set first a).set
-    address (offsetBase L m N Q + t + 1)).set stop b).set rowBand (t / B)).set colBand
-    (t % B)).set leftPointer (t / B * H)).set leftPointer (t / B * H + C)).set
-    rightPointer (t % B + B)).set rightPointer ((t % B + B) * H)).set rightPointer
-    ((t % B + B) * H + C)).set queryPointer (codeBase L m N Q + a)).set answerPointer
+  let y := (((((((((((((((((((((x.set Reg.address (offsetBase L m N Q + t)).set Reg.first a).set
+    Reg.address (offsetBase L m N Q + t + 1)).set Reg.stop b).set Reg.rowBand (t / B)).set
+    Reg.colBand (t % B)).set Reg.leftPointer (t / B * H)).set Reg.leftPointer (t / B * H + C)).set
+    Reg.rightPointer (t % B + B)).set Reg.rightPointer ((t % B + B) * H)).set Reg.rightPointer
+    ((t % B + B) * H + C)).set Reg.queryPointer (codeBase L m N Q + a)).set Reg.answerPointer
     (groupedBase L m N Q + a)).set (bank PrunedQuery.inputDepth) L).set
     (bank PrunedQuery.arrayA) (t / B * H + C)).set (bank PrunedQuery.arrayB)
     ((t % B + B) * H + C)).set (bank PrunedQuery.queries) (codeBase L m N Q + a)).set
     (bank PrunedQuery.queryCount) (b - a)).set (bank PrunedQuery.output)
     (groupedBase L m N Q + a)).set (bank PrunedQuery.scratch) (scratchBase L m N Q)).set
-    (bank PrunedQuery.epoch) (x.regs epoch))
+    (bank PrunedQuery.epoch) (x.regs Reg.epoch))
   have he : ExecWithin w tileArguments x y 21 := by
     ram_eval [tileArguments, y, hp.offsets, hp.one, hp.bands, hp.leaves, hp.catalogue,
       hp.codes, hp.grouped, hp.depth, hp.scratch, hx, ha, hb, foffset, fnext, frow, fcol,
       frowH, fleft, fcb, fcbH, fright, fq, fo, fn, B, H, C, bank, Fin.val_ofNat,
       PrunedQuery.inputDepth, PrunedQuery.arrayA, PrunedQuery.arrayB, PrunedQuery.queries,
       PrunedQuery.queryCount, PrunedQuery.output, PrunedQuery.scratch, PrunedQuery.epoch,
-      address, offsets, index, first, stop, one, rowBand, colBand, bands, leftPointer,
-      rightPointer, leaves, catalogue, queryPointer, answerPointer, codes, grouped, depth,
-      scratch, epoch, Fin.mk.injEq]
+      Reg.address, Reg.offsets, Reg.index, Reg.first, Reg.stop, Reg.one, Reg.rowBand, Reg.colBand,
+      Reg.bands, Reg.leftPointer, Reg.rightPointer, Reg.leaves, Reg.catalogue, Reg.queryPointer,
+      Reg.answerPointer, Reg.codes, Reg.grouped, Reg.depth, Reg.scratch, Reg.epoch, Fin.mk.injEq]
   have yp : Parameters L m N Q y := hp.of_frame (by
     intro i hi
     apply he.regs_eq
@@ -121,7 +121,7 @@ public theorem exec_tileArguments {w L m N Q t a b : ℕ} (x : Data 160)
   simp +decide [y, Data.comap_regs, hx, B, H, C, bank,
     PrunedQuery.inputDepth, PrunedQuery.arrayA, PrunedQuery.arrayB, PrunedQuery.queries,
     PrunedQuery.queryCount, PrunedQuery.output, PrunedQuery.scratch, PrunedQuery.epoch,
-    address, first, stop, rowBand, colBand, leftPointer, rightPointer, queryPointer,
-    answerPointer, index, epoch, Nat.add_comm]
+    Reg.address, Reg.first, Reg.stop, Reg.rowBand, Reg.colBand, Reg.leftPointer, Reg.rightPointer,
+    Reg.queryPointer, Reg.answerPointer, Reg.index, Reg.epoch, Nat.add_comm]
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

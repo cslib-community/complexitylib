@@ -78,7 +78,7 @@ theorem bandTime_le (L : ℕ) : bandTime L + 3 ≤ 512 * (L + 1) * 10 ^ L := by
 /-- The sum of the previously proved native component charges fits the generic bound. -/
 theorem execution_time_le (L m N : ℕ) :
     (16 * L + 49) + ((7 * inputEnd m N + 7) +
-      (((6 * L + 16) * 2 ^ L + 14) + (((6 * L + 17) * 2 ^ L + 4) +
+      (((6 * L + 16) * 2 ^ L + 16) + (((6 * L + 17) * 2 ^ L + 4) +
         ((numBands L m N * (bandTime L + 3) + 3) +
           ((numBands L m N * (bandTime L + 3) + 3) + (7 * inputEnd m N + 7)))))) ≤
       timeBound L m N := by
