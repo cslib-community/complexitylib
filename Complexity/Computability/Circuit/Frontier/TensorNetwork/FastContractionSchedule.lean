@@ -69,10 +69,12 @@ namespace Cslib.Circuits.Frontier.FastContraction
 
 open ContractionSchedule ChildCursor NativeRecovery NativeChild
 
+variable {T : Type}
+
 /-- **A call on the schedule** of a root with `m` edges, for the constant `C`: it keeps the root's
 scale and modulus, is well-formed, has maximum degree at most `degreeBound m` and fewer edges than
 its bound, and has at most `leafSize m` edges or is an active call of the schedule. -/
-structure OnSchedule (C m : ℕ) (x : Call) : Prop where
+structure OnSchedule (C m : ℕ) (x : Call T) : Prop where
   /-- The scale is the root's number of edges. -/
   scale_eq : x.scale = m
   /-- The modulus is the root's. -/
@@ -95,7 +97,7 @@ theorem four_mul_log_le_length_modulus (m : ℕ) : 4 * Nat.log 2 m ≤ (modulus 
   rw [pow_succ] at h1
   omega
 
-variable {C m : ℕ} {x : Call}
+variable {C m : ℕ} {x : Call T}
 
 namespace OnSchedule
 
@@ -202,7 +204,7 @@ end OnSchedule
 
 /-- **Every reached call is on the schedule**, from a root on the schedule, once the schedule's
 certificate holds. -/
-theorem Reach.onSchedule (hB : ∀ d M p, Active C m d M p → ActiveBounds C m d M p) {x₀ : Call}
+theorem Reach.onSchedule (hB : ∀ d M p, Active C m d M p → ActiveBounds C m d M p) {x₀ : Call T}
     (h₀ : OnSchedule C m x₀) (h : Reach nativeMk x₀ x) : OnSchedule C m x := by
   induction h with
   | root => exact h₀
@@ -211,7 +213,7 @@ theorem Reach.onSchedule (hB : ∀ d M p, Active C m d M p → ActiveBounds C m 
 /-- **The root is on the schedule**: a well-formed root with `m` edges, at scale `m` with the
 modulus of `m`, of maximum degree at most `degreeBound m`, with edge bound `m + 1` and precision at
 most `C m` for `1 ≤ C`. -/
-theorem onSchedule_root {x₀ : Call} (hC : 1 ≤ C) (hs : x₀.scale = m) (he : x₀.edges = m)
+theorem onSchedule_root {x₀ : Call T} (hC : 1 ≤ C) (hs : x₀.scale = m) (he : x₀.edges = m)
     (hfl : x₀.fl = modulus m) (hwf : WF x₀)
     (hdeg : ∀ v ∈ x₀.net.vertices, v.1.length ≤ degreeBound m)
     (hb : x₀.bound = m + 1) (hd : x₀.depth = 0) (hp : x₀.prec ≤ C * m) : OnSchedule C m x₀ := by
@@ -257,7 +259,7 @@ theorem length_cursorList_le {ws : ℕ → List ℕ} {ps : ℕ → ℕ} {T n r B
         rw [List.map_const', List.sum_replicate, smul_eq_mul, List.length_range]; ring
 
 /-- The nodes of positive multiplicity are at most `2 ^ (a + 1)`. -/
-theorem length_nodes_le (x : Call) : (nodes x).length ≤ 2 ^ (slots x + 1) :=
+theorem length_nodes_le (x : Call T) : (nodes x).length ≤ 2 ^ (slots x + 1) :=
   (List.length_filter_le _ _).trans List.length_range.le
 
 namespace OnSchedule
@@ -322,9 +324,10 @@ end OnSchedule
 schedule's certificate holds at scale `m ≥ 2`, a root on the schedule at depth `0` has a derivation
 of its tagged value over the reached calls with at most `2 ^ ((245760 C + 37) m / √⌊log₂ m⌋)` nodes
 and `⌊log₂ m⌋` stack levels. -/
-theorem exists_eval_onSchedule (hB : ∀ d M p, Active C m d M p → ActiveBounds C m d M p)
-    {x₀ : Call} (h₀ : OnSchedule C m x₀) (hd : x₀.depth = 0) (hm : 2 ≤ m) :
-    ∃ N H, (scheme nativeMk).Eval (reachInv nativeMk x₀) x₀ (0, value nativeMk x₀) N H ∧
+theorem exists_eval_onSchedule (ev : T → List Bool → List ℕ)
+    (hB : ∀ d M p, Active C m d M p → ActiveBounds C m d M p)
+    {x₀ : Call T} (h₀ : OnSchedule C m x₀) (hd : x₀.depth = 0) (hm : 2 ≤ m) :
+    ∃ N H, (scheme ev nativeMk).Eval (reachInv ev nativeMk x₀) x₀ (0, value ev nativeMk x₀) N H ∧
       N ≤ 2 ^ ((245760 * C + 37) * m / Nat.sqrt (Nat.log 2 m)) ∧ H ≤ Nat.log 2 m := by
   obtain ⟨N, H, he, hN, hH⟩ := exists_eval_reachInv_count hd (Nat.log 2 m)
     (fun d => 2 ^ (2 * Nat.log 2 m + branchExponent C m d)) fun x hx ha => by

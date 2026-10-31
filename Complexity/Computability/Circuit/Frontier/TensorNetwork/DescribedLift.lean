@@ -24,7 +24,7 @@ import Mathlib.Data.List.Sort
 
 The contraction recursion of [OpenAI2026ETH] (§D.4, pp. 57–64) is proved correct over the valuation
 ring `O = ℤ_(2)[U] / (f)`, while the native algorithm carries networks of descriptors
-(`DescribedNetwork VertexDesc`) and computes with coefficient lists in
+(`DescribedNetwork (VertexDesc T)`) and computes with coefficient lists in
 `A_p = (ℤ / 2 ^ p)[U] / (f)`. This file gives the network over `O` that a described network stands
 for.
 

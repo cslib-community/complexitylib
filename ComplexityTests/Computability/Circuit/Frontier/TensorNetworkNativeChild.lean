@@ -20,10 +20,10 @@ The row `0` joins the columns `1` and `2` by the edges `0` and `1`, and the vert
 The network is rows-first at `1`, and the ends of its edges are computed from the ports. -/
 
 /-- The tables of the vertices. -/
-def table (n : ℕ) : VertexDesc := .inl (List.replicate n 1)
+def table (n : ℕ) : VertexDesc (List ℕ) := .inl (List.replicate n 1)
 
 /-- The row `0` with ports `1, 0` (not in edge order), the columns `1` and `2`. -/
-def path : DescribedNetwork VertexDesc :=
+def path : DescribedNetwork (VertexDesc (List ℕ)) :=
   ⟨2, [([1, 0], table 4), ([0], table 2), ([1], table 2)]⟩
 
 example : path.IsRowsFirstBipartite 1 := by decide
@@ -34,7 +34,7 @@ example : path.edgeEnds = [(0, 1), (0, 2)] := by decide
 
 /-- The native child of group `0` for a packing that puts the row and the column `1` in group `0`,
 the column `2` in group `1`, and both edges in packet `0` with slots `0` and `1`. -/
-def child : DescribedNetwork VertexDesc :=
+def child : DescribedNetwork (VertexDesc (List ℕ)) :=
   nativeChild [1] 1 0 3 (-1) [0] 1 path (([[0]], [[0], [1]]), 1, [(0, 0), (0, 1)]) [] 0
 
 /-- The child keeps the row and the column `1`, and adds the packet: three child edges, the two

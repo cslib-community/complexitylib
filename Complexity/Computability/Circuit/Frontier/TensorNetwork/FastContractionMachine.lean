@@ -26,7 +26,10 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFr
 # The native machine of the fast contraction algorithm
 
 The stack recursion of `Cslib.Circuits.Frontier.FastContraction.scheme` as one native machine for
-the contraction modulo `2 ^ P` of an explicit network `(r, G)`, with the precision `P` in binary.
+the contraction modulo `2 ^ P` of an explicit network `(r, G)`, with the precision `P` in binary:
+the root descriptors are tables (`T = List ℕ`), read by the entry procedure `tableEntry`. The
+encodings, the root network (`FastContraction.rootNet`) and its polynomial-time construction are
+stated for every type of root descriptors.
 
 **The root.** The precision is first capped at the encoded length of the network
 (`ExplicitTensorNetwork.capPrecision`), which does not change the residue. The root call
@@ -81,6 +84,8 @@ namespace Cslib.Circuits.Frontier.FastContraction
 open GaloisRingArith ChildCursor Cslib.GenericRAM Cslib.GenericRAM.StackRecursion
   Turing.MultiTapeTM
 
+variable {T : Type}
+
 /-! ### Encodings -/
 
 /-- The encoding of the parameters of a call: the scale, the depth, the edge bound and the
@@ -90,9 +95,10 @@ abbrev encParams : Params ↪ List Bool :=
   encPair encUnary (encPair encUnary (encPair encUnary (encPair encUnary
     (encPair (encList encNat) encNat))))
 
-/-- The encoding of a call: its parameters and its network. -/
-abbrev encCall : Call ↪ List Bool :=
-  encPair encParams (DescribedNetwork.encDescribed VertexDesc.enc)
+/-- The encoding of a call: its parameters and its network, with the root descriptors encoded by
+`encT`. -/
+abbrev encCall (encT : T ↪ List Bool) : Call T ↪ List Bool :=
+  encPair encParams (DescribedNetwork.encDescribed (VertexDesc.enc encT))
 
 /-- The encoding of a frame: the cursor state and the accumulator, in binary. -/
 abbrev encFrame : Frame ↪ List Bool :=
@@ -104,41 +110,47 @@ abbrev encValue : ℕ × List ℕ ↪ List Bool := encPair encUnary (encList enc
 
 /-! ### The leaves -/
 
+variable (encT : T ↪ List Bool)
+
 /-- The depth of a call is polynomial-time. -/
-theorem depth_polyTime : ComputableInPolyTime Call.depth encCall encUnary := by
+theorem depth_polyTime : ComputableInPolyTime (Call.depth (T := T)) (encCall encT) encUnary := by
   unfold Call.depth; fun_prop
 
 /-- The input of direct summation at a call, `((p, fl), D)`, is polynomial-time. -/
 theorem leafInput_polyTime :
-    ComputableInPolyTime (fun x : Call => ((x.prec, x.fl), x.net)) encCall
-      (DescribedNetwork.encInput (encPair encUnary (encList encNat)) VertexDesc.enc) := by
+    ComputableInPolyTime (fun x : Call T => ((x.prec, x.fl), x.net)) (encCall encT)
+      (DescribedNetwork.encInput (encPair encUnary (encList encNat)) (VertexDesc.enc encT)) := by
   unfold Call.prec Call.fl Call.net; fun_prop
 
-variable (mk : Call → State → ℕ × DescribedNetwork VertexDesc)
+variable (mk : Call (List ℕ) → State → ℕ × DescribedNetwork (VertexDesc (List ℕ)))
 
-/-- **The leaf certificate**: direct summation over the coefficient lists of `A_p`, with the native
-evaluator of the vertex descriptors, tagged with the depth. -/
-@[expose] noncomputable def leafCertificate : NativeCertificate (scheme mk).leaf encCall encValue :=
-  ((NativeCertificate.ofPolyTime depth_polyTime).prod
-    ((DescribedNetwork.contractionCertificate VertexDesc.entry SumOps.galois_polyTime
-      VertexDesc.entryCertificate).comp (NativeCertificate.ofPolyTime leafInput_polyTime))).congr
+/-- **The leaf certificate** over tables: direct summation over the coefficient lists of `A_p`,
+with the native evaluator of the vertex descriptors, tagged with the depth. -/
+@[expose] noncomputable def leafCertificate :
+    NativeCertificate (scheme tableEntry mk).leaf (encCall (encList encNat)) encValue :=
+  ((NativeCertificate.ofPolyTime (depth_polyTime (encList encNat))).prod
+    ((DescribedNetwork.contractionCertificate (VertexDesc.entry tableEntry)
+      SumOps.galois_polyTime VertexDesc.entryCertificate).comp
+      (NativeCertificate.ofPolyTime (leafInput_polyTime (encList encNat))))).congr
     fun _ => rfl
 
 /-- The time of a leaf: the depth, the input of direct summation, and direct summation. -/
-theorem leafCertificate_time (x : Call) :
+theorem leafCertificate_time (x : Call (List ℕ)) :
     (leafCertificate mk).time x =
-      (NativeCertificate.ofPolyTime depth_polyTime).time x +
-        ((NativeCertificate.ofPolyTime leafInput_polyTime).time x +
-          (DescribedNetwork.contractionCertificate VertexDesc.entry SumOps.galois_polyTime
-            VertexDesc.entryCertificate).time ((x.prec, x.fl), x.net)) := rfl
+      (NativeCertificate.ofPolyTime (depth_polyTime (encList encNat))).time x +
+        ((NativeCertificate.ofPolyTime (leafInput_polyTime (encList encNat))).time x +
+          (DescribedNetwork.contractionCertificate (VertexDesc.entry tableEntry)
+            SumOps.galois_polyTime VertexDesc.entryCertificate).time ((x.prec, x.fl), x.net)) :=
+  rfl
 
 /-- The space of a leaf. -/
-theorem leafCertificate_space (x : Call) :
+theorem leafCertificate_space (x : Call (List ℕ)) :
     (leafCertificate mk).space x =
-      (NativeCertificate.ofPolyTime depth_polyTime).space x +
-        ((NativeCertificate.ofPolyTime leafInput_polyTime).space x +
-          (DescribedNetwork.contractionCertificate VertexDesc.entry SumOps.galois_polyTime
-            VertexDesc.entryCertificate).space ((x.prec, x.fl), x.net)) := rfl
+      (NativeCertificate.ofPolyTime (depth_polyTime (encList encNat))).space x +
+        ((NativeCertificate.ofPolyTime (leafInput_polyTime (encList encNat))).space x +
+          (DescribedNetwork.contractionCertificate (VertexDesc.entry tableEntry)
+            SumOps.galois_polyTime VertexDesc.entryCertificate).space ((x.prec, x.fl), x.net)) :=
+  rfl
 
 /-! ### The root -/
 
@@ -188,13 +200,14 @@ theorem irreducible_modulus (m : ℕ) :
   simpa [Polynomial.map_add, Polynomial.map_pow, Polynomial.map_X, Polynomial.map_one,
     Cslib.trinomial] using Cslib.irreducible_trinomial (modulusExp m)
 
-/-- **The tables of an explicit network as vertex descriptors.** -/
-@[expose] def rootNet (G : ExplicitTensorNetwork ℕ) : DescribedNetwork VertexDesc :=
+/-- **The root descriptors of a network as vertex descriptors**; for an explicit network, its
+tables. -/
+@[expose] def rootNet (G : DescribedNetwork T) : DescribedNetwork (VertexDesc T) :=
   ⟨G.numEdges, G.vertices.map fun v => (v.1, .inl v.2)⟩
 
 /-- **The root call** of a capped input `(p, r, G)`: scale `m`, depth `0`, edge bound `m + 1`,
 precision `p`, the modulus and the tables of `G`. -/
-@[expose] def root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : Call :=
+@[expose] def root (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : Call (List ℕ) :=
   ((q.2.2.numEdges, 0, q.2.2.numEdges + 1, q.1, modulus q.2.2.numEdges, q.2.1), rootNet q.2.2)
 
 /-- The constant of the clock. -/
@@ -207,7 +220,7 @@ precision `p`, the modulus and the tables of `G`. -/
 /-- **The root computes the contraction of `G`**: in `A_p`, the contraction of the tables read as
 constants is the image of the contraction of `G`. -/
 theorem val_rootNet (p : ℕ) (fl : List ℕ) (G : ExplicitTensorNetwork ℕ) :
-    (rootNet G).contraction (fun t bs => val p fl (VertexDesc.entry t bs)) =
+    (rootNet G).contraction (fun t bs => val p fl (VertexDesc.entry tableEntry t bs)) =
       (G.contraction : Ring p fl) := by
   rw [← DescribedNetwork.contraction_entry]
   have h := DescribedNetwork.map_contraction (Nat.castRingHom (Ring p fl))
@@ -287,33 +300,34 @@ private theorem network_polyTime :
   (ComputableInPolyTime.snd encNat ExplicitTensorNetwork.encExplicitNetwork).comp
     (ComputableInPolyTime.snd encUnary (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
 
-/-- **The tables as descriptors are polynomial-time.** -/
-theorem rootNet_polyTime : ComputableInPolyTime rootNet ExplicitTensorNetwork.encExplicitNetwork
-    (DescribedNetwork.encDescribed VertexDesc.enc) := by
-  have hpair : ComputableInPolyTime (DescribedNetwork.equivProd (T := List ℕ))
-      ExplicitTensorNetwork.encExplicitNetwork
-      (encPair encUnary (encList (encPair (encList encNat) (encList encNat)))) :=
+/-- **The root descriptors as vertex descriptors are polynomial-time.** -/
+theorem rootNet_polyTime :
+    ComputableInPolyTime rootNet (DescribedNetwork.encDescribed encT)
+      (DescribedNetwork.encDescribed (VertexDesc.enc encT)) := by
+  have hpair : ComputableInPolyTime (DescribedNetwork.equivProd (T := T))
+      (DescribedNetwork.encDescribed encT)
+      (encPair encUnary (encList (encPair (encList encNat) encT))) :=
     ComputableInPolyTime.of_eq fun _ => rfl
   have hm := (ComputableInPolyTime.fst _ _).comp hpair
   have hvs := (ComputableInPolyTime.snd _ _).comp hpair
-  have hv : ComputableInPolyTime (fun q : ExplicitTensorNetwork ℕ × (List ℕ × List ℕ) =>
-      (q.2.1, (Sum.inl q.2.2 : VertexDesc)))
-      (encPair ExplicitTensorNetwork.encExplicitNetwork (encPair (encList encNat) (encList encNat)))
-      (encPair (encList encNat) VertexDesc.enc) :=
+  have hv : ComputableInPolyTime (fun q : DescribedNetwork T × (List ℕ × T) =>
+      (q.2.1, (Sum.inl q.2.2 : VertexDesc T)))
+      (encPair (DescribedNetwork.encDescribed encT) (encPair (encList encNat) encT))
+      (encPair (encList encNat) (VertexDesc.enc encT)) :=
     ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)).prod
       ((ComputableInPolyTime.sumInl _ _).comp
         ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)))
-  have hmap := ComputableInPolyTime.mapWithInput (f := fun _ v => (v.1, (Sum.inl v.2 : VertexDesc)))
-    hvs hv
-  have hout : ComputableInPolyTime (DescribedNetwork.equivProd (T := VertexDesc)).symm
-      (encPair encUnary (encList (encPair (encList encNat) VertexDesc.enc)))
-      (DescribedNetwork.encDescribed VertexDesc.enc) :=
+  have hmap := ComputableInPolyTime.mapWithInput
+    (f := fun _ v => (v.1, (Sum.inl v.2 : VertexDesc T))) hvs hv
+  have hout : ComputableInPolyTime (DescribedNetwork.equivProd (T := VertexDesc T)).symm
+      (encPair encUnary (encList (encPair (encList encNat) (VertexDesc.enc encT))))
+      (DescribedNetwork.encDescribed (VertexDesc.enc encT)) :=
     ComputableInPolyTime.of_eq fun _ => rfl
   exact (hout.comp (hm.prod hmap)).of_enc_eq fun _ => rfl
 
 /-- **The root call is polynomial-time**, from a capped input. -/
 theorem root_polyTime : ComputableInPolyTime root ExplicitTensorNetwork.encContractionInput
-    encCall := by
+    (encCall (encList encNat)) := by
   have hp := ComputableInPolyTime.fst encUnary (encPair encNat
     ExplicitTensorNetwork.encExplicitNetwork)
   have hr := (ComputableInPolyTime.fst encNat ExplicitTensorNetwork.encExplicitNetwork).comp
@@ -321,7 +335,7 @@ theorem root_polyTime : ComputableInPolyTime root ExplicitTensorNetwork.encContr
   exact (edges_polyTime.prod ((ComputableInPolyTime.const 0).prod
     ((ComputableInPolyTime.unary_add' edges_polyTime (ComputableInPolyTime.const 1)).prod
       (hp.prod ((modulus_polyTime.comp edges_polyTime).prod hr))))).prod
-    (rootNet_polyTime.comp network_polyTime)
+    ((rootNet_polyTime (encList encNat)).comp network_polyTime)
 
 /-- **The clock is polynomial-time**, from a capped input. -/
 theorem fuel_polyTime : ComputableInPolyTime fuel ExplicitTensorNetwork.encContractionInput
@@ -337,7 +351,7 @@ theorem fuel_polyTime : ComputableInPolyTime fuel ExplicitTensorNetwork.encContr
 constant coordinate of a returned root value modulo `2 ^ p` if the run returns a value tagged
 `0`, and direct summation otherwise. -/
 @[expose] noncomputable def fastValue (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) : ℕ :=
-  ((scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+  ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
     (q.2.2.contraction % 2 ^ q.1)
     fun v => if v.1 = 0 then v.2.getD 0 0 % 2 ^ (ExplicitTensorNetwork.capPrecision q).1
       else q.2.2.contraction % 2 ^ q.1
@@ -345,23 +359,26 @@ constant coordinate of a returned root value modulo `2 ^ p` if the run returns a
 /-- **The machine is correct on well-formed inputs**, for every fuel. If the step of an active
 call is correct and well-formedness passes to the children, then on every input whose root is
 well-formed the result is the contraction modulo `2 ^ P`. -/
-theorem fastValue_eq {WF : Call → Prop} (hstep : StepCorrect mk WF) (hwf : WFChildren mk WF)
+theorem fastValue_eq {WF : Call (List ℕ) → Prop} (hstep : StepCorrect tableEntry mk WF)
+    (hwf : WFChildren mk WF)
     (q : ℕ × ℕ × ExplicitTensorNetwork ℕ)
     (hroot : WF (root (ExplicitTensorNetwork.capPrecision q))) :
     fastValue mk q = q.2.2.contraction % 2 ^ q.1 := by
   unfold fastValue
-  rcases hrun : (scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q) with _ | ⟨t, y⟩
+  rcases hrun : (scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q) with
+    _ | ⟨t, y⟩
   · rfl
   · simp only [Option.elim_some]
     split_ifs with ht
     · subst ht
-      have hy := eq_value_of_run mk (fuel := fuel) (root := root) rfl hrun
+      have hy := eq_value_of_run tableEntry mk (fuel := fuel) (root := root) rfl hrun
       have hval : val (ExplicitTensorNetwork.capPrecision q).1
           (modulus (ExplicitTensorNetwork.capPrecision q).2.2.numEdges) y =
           (rootNet (ExplicitTensorNetwork.capPrecision q).2.2).contraction fun t bs =>
             val (ExplicitTensorNetwork.capPrecision q).1
               (modulus (ExplicitTensorNetwork.capPrecision q).2.2.numEdges)
-              (VertexDesc.entry t bs) := hy ▸ val_value mk hstep hwf _ hroot
+              (VertexDesc.entry tableEntry t bs) :=
+        hy ▸ val_value tableEntry mk hstep hwf _ hroot
       rw [val_rootNet] at hval
       rw [getD_mod_of_val_eq (modulus_ne_nil _) hval]
       exact ExplicitTensorNetwork.contraction_mod_two_pow_min q.1 q.2.2
@@ -379,8 +396,9 @@ variable {mk}
 /-- **The clocked run** from a capped input, as one native machine, given polynomial-time
 components of the scheme. -/
 @[expose] noncomputable def runCertificate
-    (hpoly : (scheme mk).PolyTime encCall encFrame encValue) :
-    NativeCertificate ((scheme mk).run fuel root) ExplicitTensorNetwork.encContractionInput
+    (hpoly : (scheme tableEntry mk).PolyTime (encCall (encList encNat)) encFrame encValue) :
+    NativeCertificate ((scheme tableEntry mk).run fuel root)
+      ExplicitTensorNetwork.encContractionInput
       (encOption encValue) :=
   Scheme.certificate hpoly (leafCertificate mk) (NativeCertificate.ofPolyTime fuel_polyTime)
     (NativeCertificate.ofPolyTime root_polyTime)
@@ -409,7 +427,7 @@ theorem tag_polyTime :
 /-- **The fast machine**: cap the precision and run the recursion; on a value tagged `0`, read
 off its constant coordinate, and otherwise sum directly. It computes `fastValue`. -/
 @[expose] noncomputable def fastCertificate
-    (hpoly : (scheme mk).PolyTime encCall encFrame encValue) :
+    (hpoly : (scheme tableEntry mk).PolyTime (encCall (encList encNat)) encFrame encValue) :
     NativeCertificate (fastValue mk) encInput encNat :=
   (NativeCertificate.option
     ((runCertificate hpoly).comp
@@ -421,19 +439,20 @@ off its constant coordinate, and otherwise sum directly. It computes `fastValue`
         (NativeCertificate.ofPolyTime (ComputableInPolyTime.fst encInput encValue))))).congr
     fun q => by
       simp only [fastValue, Function.comp_apply]
-      cases (scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q) with
+      cases (scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q) with
       | none => rfl
       | some v => simp only [Option.elim_some, decide_eq_true_eq]
 
 /-- The time of the fast machine, unfolded: the capped run twice, the input, and the decoding or
 direct summation. -/
-theorem fastCertificate_time (hpoly : (scheme mk).PolyTime encCall encFrame encValue)
+theorem fastCertificate_time
+    (hpoly : (scheme tableEntry mk).PolyTime (encCall (encList encNat)) encFrame encValue)
     (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) :
     (fastCertificate hpoly).time q =
       2 * ((NativeCertificate.ofPolyTime ExplicitTensorNetwork.capPrecision_polyTime).time q +
         (runCertificate hpoly).time (ExplicitTensorNetwork.capPrecision q)) +
       (encInput q).length +
-      ((scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+      ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
         (ExplicitTensorNetwork.directContractionBinaryCertificate.time q) fun v =>
           (NativeCertificate.ofPolyTime tag_polyTime).time (q, v) +
             if decide (v.1 = 0) = true then
@@ -443,13 +462,14 @@ theorem fastCertificate_time (hpoly : (scheme mk).PolyTime encCall encFrame encV
               ExplicitTensorNetwork.directContractionBinaryCertificate.time q := rfl
 
 /-- The space of the fast machine, unfolded. -/
-theorem fastCertificate_space (hpoly : (scheme mk).PolyTime encCall encFrame encValue)
+theorem fastCertificate_space
+    (hpoly : (scheme tableEntry mk).PolyTime (encCall (encList encNat)) encFrame encValue)
     (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) :
     (fastCertificate hpoly).space q =
       2 * ((NativeCertificate.ofPolyTime ExplicitTensorNetwork.capPrecision_polyTime).space q +
         (runCertificate hpoly).space (ExplicitTensorNetwork.capPrecision q)) +
       (encInput q).length +
-      ((scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+      ((scheme tableEntry mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
         (ExplicitTensorNetwork.directContractionBinaryCertificate.space q) fun v =>
           (NativeCertificate.ofPolyTime tag_polyTime).space (q, v) +
             if decide (v.1 = 0) = true then
