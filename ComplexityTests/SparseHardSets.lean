@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import Complexity.Computability.Circuit.Boolean.Sparse
+import Complexity.Computability.Complexity.Classes.Sparse.Conjunctive
 import Complexity.Computability.Complexity.Classes.Sparse.Fortune
 import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
 import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
@@ -18,7 +19,9 @@ procedures as exponential-time deciders for `SAT`, which satisfy the hypotheses 
 `Cslib.Complexity.Fortune.accepts_iff`, `Cslib.Complexity.Mahaney.accepts_iff` and
 `Cslib.Complexity.OneQuery.accepts_iff` with the identity reductions of `UNSAT` and `SAT` to the
 encodings of their members, or the negated one-query reduction of `SAT` to `UNSAT`, and an
-exponential bound.
+exponential bound. The left set of `SAT` on concrete formulas, `SEARCH-RIGHT` on concrete levels,
+and the conjunctive procedure with queries that decide satisfiability, which satisfy the hypotheses
+of `Cslib.Complexity.Conjunctive.accepts_iff` with the bound `0`.
 -/
 
 namespace ComplexityTests.SparseHardSets
@@ -222,5 +225,79 @@ example (φ : CNF ℕ) :
     have : a.length * b.length * (16 * (encCNF φ).length + 21) ≤ L * L * (16 * L + 21) := by
       gcongr
     omega
+
+/-! ### The left set of `SAT` -/
+
+/-- The clauses of `SAT.atLeast`: one for each position with the value `true`, listing the
+variables at earlier positions with the value `false` and its own. -/
+example : SAT.atLeast [(0, true), (1, false), (2, true)] = [[(0, true)], [(1, true), (2, true)]] :=
+  by decide
+
+/-- `SAT.atLeast` compares lexicographically: the assignment `0 ↦ false, 1 ↦ true, 2 ↦ false`
+reads `[false, true, false]` along `0, 1, 2`, which is below `[true, false, true]` and above
+`[false, false, true]`. -/
+example : (SAT.atLeast [(0, true), (1, false), (2, true)]).eval (· == 1) = false ∧
+    (SAT.atLeast [(0, false), (1, false), (2, true)]).eval (· == 1) = true ∧
+    ¬([true, false, true] ≤ [false, true, false]) ∧ [false, false, true] ≤ [false, true, false] :=
+  by decide
+
+/-- The only witness of `¬x₀ ∧ x₁` is `[false, true]`, so its left set contains `[false, false]`
+and `[false, true]` but not `[true, false]`. -/
+example : ([[(0, false)], [(1, true)]], [false, false]) ∈ LeftSAT ∧
+    ([[(0, false)], [(1, true)]], [false, true]) ∈ LeftSAT ∧
+    ([[(0, false)], [(1, true)]], [true, false]) ∉ LeftSAT := by
+  refine ⟨⟨rfl, (· == 1), rfl, by decide⟩, ⟨rfl, (· == 1), rfl, by decide⟩, ?_⟩
+  rintro ⟨-, σ, hσ, hle⟩
+  have h0 : σ 0 = false := by
+    simpa [CNF.eval, Clause.eval, Literal.eval] using (List.all_eq_true.1 hσ) _ List.mem_cons_self
+  have hv : CNF.vars [[((0 : ℕ), false)], [(1, true)]] = [0, 1] := rfl
+  rw [hv, List.map_cons, List.map_cons, List.map_nil, h0] at hle
+  revert hle
+  cases σ 1 <;> decide
+
+/-- `SAT` and its left set reduce to each other. -/
+example : PolyTimeReducible encCNF (encPair encCNF encBits) SAT LeftSAT ∧
+    LeftSAT ∈ NP (encPair encCNF encBits) :=
+  ⟨SAT_polyTimeReducible_LeftSAT, LeftSAT_mem_NP⟩
+
+/-! ### Sparse sets hard under conjunctive reductions -/
+
+/-- `SEARCH-RIGHT` with the queries `n ↦ [n / 2]`: with the bound `1` it keeps `1`, whose successor
+`2` asks the new query `1` while one query has been seen, and the last node; with the bound `2` it
+also keeps `3`, whose successor asks the new query `2` while two have been seen. -/
+example : Conjunctive.searchRight (fun n : ℕ => [n / 2]) 1 [0, 1, 2, 3, 4, 5] = [1, 5] ∧
+    Conjunctive.searchRight (fun n : ℕ => [n / 2]) 2 [0, 1, 2, 3, 4, 5] = [1, 3, 5] ∧
+    Conjunctive.prune (fun n : ℕ => [n / 2]) 1 [5, 4, 3, 2, 1, 0] = [5, 1] := by
+  decide
+
+/-- `SEARCH-RIGHT` keeps the end of a run whose queries lie in a set with one member: the queries of
+`0` and `1` are `0`, and `2` asks `1`. -/
+example : 1 ∈ Conjunctive.searchRight (fun n : ℕ => [n / 2]) 1 [0, 1, 2, 3, 4, 5] :=
+  Conjunctive.mem_searchRight (K := {0}) (A := [0]) (B := [2, 3, 4, 5])
+    (fun T hT => (Finset.card_le_card (s := T) (t := {0}) fun u hu => by simpa using hT u hu).trans
+      (by simp))
+    (by decide) fun z hz => by
+      simp only [List.head?_cons, Option.mem_def, Option.some.injEq] at hz
+      subst hz
+      exact ⟨1, by decide, by simp⟩
+
+/-- With the encodings of the formulas as single queries, a bound larger than the tree keeps every
+node and the procedure is a brute-force search. -/
+example :
+    Conjunctive.accepts (fun ψ => [encCNF ψ]) 8 [[(0, true), (1, false)], [(1, true)]] = true ∧
+    Conjunctive.accepts (fun ψ => [encCNF ψ]) 8 [[(0, true)], [(0, false)]] = false := by
+  decide
+
+open Classical in
+/-- The hypotheses of `Conjunctive.accepts_iff` are satisfiable: queries that are empty for
+satisfiable formulas and the empty word otherwise reduce `SAT` conjunctively to the empty set, and
+the bound `0` keeps at most two nodes per level. -/
+example (φ : CNF ℕ) :
+    Conjunctive.accepts (fun ψ => if ψ ∈ SAT then [] else [[]]) 0 φ = true ↔ φ ∈ SAT := by
+  refine Conjunctive.accepts_iff (K := ∅) (M := 0) (fun ψ => ?_) (fun a _ _ w hw => ?_)
+    (fun T hT => ?_)
+  · split <;> simp_all
+  · split at hw <;> simp_all
+  · exact (Finset.card_eq_zero.2 (Finset.eq_empty_of_forall_notMem fun w hw => (hT w hw).1)).le
 
 end ComplexityTests.SparseHardSets

@@ -56,7 +56,7 @@ at most `c + 1` nodes of polynomial size, so the search runs in polynomial time
 * `Cslib.Complexity.Fortune.expand`, `Cslib.Complexity.Fortune.searchWith`,
   `Cslib.Complexity.Fortune.acceptsWith`: the levels of the self-reduction tree, and its search
   and decision procedure with any pruning rule, shared with Mahaney's theorem and its one-query
-  extension.
+  and conjunctive extensions.
 * `Cslib.Complexity.Fortune.search`, `Cslib.Complexity.Fortune.accepts`: the pruned search and
   the decision procedure for `SAT`.
 
@@ -67,6 +67,9 @@ at most `c + 1` nodes of polynomial size, so the search runs in polynomial time
   child, and the verifier decides the leaves.
 * `Cslib.Complexity.Fortune.mem_vars_and_length_le_of_map_fst_eq`: the nodes of a level fix
   variables of the formula.
+* `Cslib.Complexity.Fortune.searchWith_induction`,
+  `Cslib.Complexity.Fortune.acceptsWith_iff_of_searchWith`: induction along a pruned search, and
+  its correctness from its leaves.
 * `Cslib.Complexity.Fortune.acceptsWith_iff`,
   `Cslib.Complexity.Fortune.computableInPolyTime_acceptsWith`: a pruning rule that keeps a
   satisfiable node of every level decides `SAT`, in polynomial time when a level takes polynomial
@@ -227,42 +230,58 @@ theorem verifier_units_append_iff {a : List (Literal ℕ)} {φ : CNF ℕ}
 
 /-! ### Pruned searches
 
-Fortune's and Mahaney's procedures, and the one-query procedure, search the self-reduction tree
-level by level, with different pruning rules. A rule that keeps only nodes of the level it prunes,
-and keeps a satisfiable node of every level that has one, gives a decision procedure
-(`Cslib.Complexity.Fortune.acceptsWith_iff`); it is polynomial-time when a level is and the pruned
-levels are polynomially small (`Cslib.Complexity.Fortune.computableInPolyTime_acceptsWith`). -/
+Fortune's and Mahaney's procedures, and the one-query and conjunctive procedures, search the
+self-reduction tree level by level, with different pruning rules. A property of the levels that
+holds at the root and survives expanding and pruning a level holds at the leaves
+(`Cslib.Complexity.Fortune.searchWith_induction`); the search accepts exactly the satisfiable
+formulas when the leaves fix every occurrence and include a satisfiable one whenever there is one
+(`Cslib.Complexity.Fortune.acceptsWith_iff_of_searchWith`). In particular, a rule that keeps only
+nodes of the level it prunes, and keeps a satisfiable node of every level that has one, gives a
+decision procedure (`Cslib.Complexity.Fortune.acceptsWith_iff`); it is polynomial-time when a level
+is and the pruned levels are polynomially small
+(`Cslib.Complexity.Fortune.computableInPolyTime_acceptsWith`). -/
 
 section SearchWith
 
 variable {prune : List (List (Literal ℕ)) → List (List (Literal ℕ))} {φ : CNF ℕ}
 
-/-- The invariant of a pruned search after the occurrences `pre`: the nodes fix exactly `pre`,
-and one of them is satisfiable if `φ` is. -/
-private theorem searchWith_inv (hsub : ∀ l, ∀ a ∈ prune l, a ∈ l)
-    (hkeep : ∀ (pre : List ℕ) (l : List (List (Literal ℕ))), pre.IsPrefix φ.vars →
-      (∀ a ∈ l, a.map Prod.fst = pre) → (∃ a ∈ l, units a ++ φ ∈ SAT) →
-        ∃ a ∈ prune l, units a ++ φ ∈ SAT) :
-    ∀ (l pre : List ℕ) (nodes : List (List (Literal ℕ))), (pre ++ l).IsPrefix φ.vars →
-      (∀ a ∈ nodes, a.map Prod.fst = pre) → (φ ∈ SAT → ∃ a ∈ nodes, units a ++ φ ∈ SAT) →
-      (∀ a ∈ l.foldl (fun nodes v => prune (expand v nodes)) nodes, a.map Prod.fst = pre ++ l) ∧
-        (φ ∈ SAT → ∃ a ∈ l.foldl (fun nodes v => prune (expand v nodes)) nodes,
-          units a ++ φ ∈ SAT)
-  | [], pre, nodes, _, hfst, hsat => by
-    simp only [List.foldl_nil, List.append_nil]
-    exact ⟨hfst, hsat⟩
-  | v :: l, pre, nodes, hpre, hfst, hsat => by
+/-- **Induction along a pruned search.** A property `P pre nodes` of the levels, where the nodes
+`nodes` follow the occurrences `pre`, that holds at the root and is preserved by expanding and
+pruning a level holds for the leaves. -/
+theorem searchWith_induction (P : List ℕ → List (List (Literal ℕ)) → Prop) (hroot : P [] [[]])
+    (hstep : ∀ (pre : List ℕ) (v : ℕ) (nodes : List (List (Literal ℕ))),
+      (pre ++ [v]).IsPrefix φ.vars → P pre nodes → P (pre ++ [v]) (prune (expand v nodes))) :
+    P φ.vars (searchWith prune φ) := by
+  suffices h : ∀ (l pre : List ℕ) (nodes : List (List (Literal ℕ))), (pre ++ l).IsPrefix φ.vars →
+      P pre nodes → P (pre ++ l) (l.foldl (fun nodes v => prune (expand v nodes)) nodes) by
+    simpa [searchWith] using h φ.vars [] [[]] (by simp) hroot
+  intro l
+  induction l with
+  | nil =>
+    intro pre nodes _ h
+    simpa using h
+  | cons v l ih =>
+    intro pre nodes hpre h
     have hpre' : (pre ++ [v] ++ l).IsPrefix φ.vars := by simpa using hpre
-    have hexp : ∀ b ∈ expand v nodes, b.map Prod.fst = pre ++ [v] :=
-      fun b hb => map_fst_of_mem_expand hfst hb
-    have hstep := searchWith_inv hsub hkeep l (pre ++ [v]) _ hpre'
-      (fun b hb => hexp b (hsub _ b hb)) fun hφ => by
-        obtain ⟨a, ha, hasat⟩ := hsat hφ
-        obtain ⟨bv, hb⟩ := exists_child_mem_SAT v hasat
-        refine hkeep _ _ ((List.prefix_append _ l).trans hpre') hexp ⟨a ++ [(v, bv)], ?_, hb⟩
-        simp only [expand, List.mem_flatMap]
-        exact ⟨a, ha, by cases bv <;> simp⟩
-    simpa using hstep
+    simpa using ih (pre ++ [v]) _ hpre'
+      (hstep pre v nodes ((List.prefix_append _ l).trans hpre') h)
+
+/-- **Correctness of a pruned search from its leaves.** If the leaves of the search fix every
+occurrence of `φ`, and include a satisfiable one whenever `φ` is satisfiable, then the search
+accepts exactly the satisfiable `φ`. -/
+theorem acceptsWith_iff_of_searchWith
+    (hfst : ∀ a ∈ searchWith prune φ, a.map Prod.fst = φ.vars)
+    (hsat : φ ∈ SAT → ∃ a ∈ searchWith prune φ, units a ++ φ ∈ SAT) :
+    acceptsWith prune φ = true ↔ φ ∈ SAT := by
+  rw [acceptsWith, List.any_eq_true]
+  constructor
+  · rintro ⟨a, -, ha⟩
+    exact mem_SAT_of_units_append ⟨_, ha⟩
+  · intro hφ
+    obtain ⟨a, ha, hgood⟩ := hsat hφ
+    refine ⟨a, ha, (verifier_units_append_iff fun v hv => ?_).2 hgood⟩
+    rw [hfst a ha]
+    exact hv
 
 /-- **Correctness of a pruned search.** If the rule `prune` keeps only nodes of the level it
 prunes, and keeps a satisfiable node of every level of the tree of `φ` that has one, then the
@@ -272,18 +291,20 @@ theorem acceptsWith_iff (hsub : ∀ l, ∀ a ∈ prune l, a ∈ l)
       (∀ a ∈ l, a.map Prod.fst = pre) → (∃ a ∈ l, units a ++ φ ∈ SAT) →
         ∃ a ∈ prune l, units a ++ φ ∈ SAT) :
     acceptsWith prune φ = true ↔ φ ∈ SAT := by
-  obtain ⟨hfst, hsat⟩ := searchWith_inv hsub hkeep φ.vars [] [[]] (by simp) (by simp)
-    fun h => ⟨[], by simp, by simpa [units] using h⟩
-  rw [List.nil_append] at hfst
-  rw [acceptsWith, searchWith, List.any_eq_true]
-  constructor
-  · rintro ⟨a, -, ha⟩
-    exact mem_SAT_of_units_append ⟨_, ha⟩
-  · intro hφ
-    obtain ⟨a, ha, hgood⟩ := hsat hφ
-    refine ⟨a, ha, (verifier_units_append_iff fun v hv => ?_).2 hgood⟩
-    rw [hfst a ha]
-    exact hv
+  obtain ⟨hfst, hsat⟩ := searchWith_induction (prune := prune) (φ := φ)
+    (fun pre nodes => (∀ a ∈ nodes, a.map Prod.fst = pre) ∧
+      (φ ∈ SAT → ∃ a ∈ nodes, units a ++ φ ∈ SAT))
+    ⟨by simp, fun h => ⟨[], by simp, by simpa [units] using h⟩⟩
+    fun pre v nodes hpre ⟨hfst, hsat⟩ => by
+      have hexp : ∀ b ∈ expand v nodes, b.map Prod.fst = pre ++ [v] :=
+        fun b hb => map_fst_of_mem_expand hfst hb
+      refine ⟨fun b hb => hexp b (hsub _ b hb), fun hφ => ?_⟩
+      obtain ⟨a, ha, hasat⟩ := hsat hφ
+      obtain ⟨bv, hb⟩ := exists_child_mem_SAT v hasat
+      refine hkeep _ _ hpre hexp ⟨a ++ [(v, bv)], ?_, hb⟩
+      simp only [expand, List.mem_flatMap]
+      exact ⟨a, ha, by cases bv <;> simp⟩
+  exact acceptsWith_iff_of_searchWith hfst hsat
 
 end SearchWith
 
@@ -351,27 +372,23 @@ private theorem computableInPolyTime_step {key : CNF ℕ → List Bool}
   unfold prune expand units
   fun_prop
 
-/-- A node fixing a prefix of the occurrences of `φ` has an encoding of length at most
-`L (4 L + 5)`, where `L` is the length of the encoding of `φ`. -/
-theorem length_encNode_le {φ : CNF ℕ} {pre : List ℕ} (hpre : pre.IsPrefix φ.vars)
-    {a : List (Literal ℕ)} (ha : a.map Prod.fst = pre) :
+/-- A node fixing at most as many occurrences as `φ` has, all of variables of `φ`, has an encoding
+of length at most `L (4 L + 5)`, where `L` is the length of the encoding of `φ`. -/
+theorem length_encNode_le {φ : CNF ℕ} {a : List (Literal ℕ)} (ha : ∀ l ∈ a, l.1 ∈ φ.vars)
+    (hlen : a.length ≤ φ.vars.length) :
     (encList (encPair encNat encBool) a).length ≤
       (encCNF φ).length * (4 * (encCNF φ).length + 5) := by
   have hlit : ∀ l ∈ a, (encPair encNat encBool l).length ≤ 2 * (encCNF φ).length + 2 := by
     intro l hl
-    have := length_encNat_le_of_mem_vars ((mem_vars_and_length_le_of_map_fst_eq hpre ha).1 l hl)
+    have := length_encNat_le_of_mem_vars (ha l hl)
     rw [length_encPair, encBool_apply, List.length_singleton]
     omega
-  have hlen : a.length ≤ (encCNF φ).length := by
-    have := hpre.length_le
-    have := length_vars_le φ
-    rw [← ha, List.length_map] at *
-    omega
+  have hlen' : a.length ≤ (encCNF φ).length := hlen.trans (length_vars_le φ)
   calc (encList (encPair encNat encBool) a).length
       ≤ a.length * (2 * (2 * (encCNF φ).length + 2) + 1) := length_encList_le _ _ hlit
     _ ≤ (encCNF φ).length * (4 * (encCNF φ).length + 5) := by
       rw [show 2 * (2 * (encCNF φ).length + 2) + 1 = 4 * (encCNF φ).length + 5 by ring]
-      exact Nat.mul_le_mul_right _ hlen
+      exact Nat.mul_le_mul_right _ hlen'
 
 /-- Checking a leaf with the verifier is polynomial-time. -/
 theorem computableInPolyTime_verifier_units_append :
@@ -412,8 +429,8 @@ theorem computableInPolyTime_acceptsWith {π : Type} {encP : π ↪ List Bool} {
       ((hwidth.add (.const 1)).mul (((PolyBounded.const 2).mul (PolyBounded.self.mul
         (((PolyBounded.const 4).mul .self).add (.const 5)))).add (.const 1)))
       (fun φ pre nodes _ h => (length_encList_le _ _
-        fun a ha => length_encNode_le h.1 (h.2.1 a ha)).trans
-          (Nat.mul_le_mul_right _ h.2.2))).1
+        fun a ha => (mem_vars_and_length_le_of_map_fst_eq h.1 (h.2.1 a ha)).elim
+          length_encNode_le).trans (Nat.mul_le_mul_right _ h.2.2))).1
   exact anyWithInput hsearch computableInPolyTime_verifier_units_append
 
 /-- **Fortune's procedure is polynomial-time**, for a polynomial-time `key` and a bound `c`
