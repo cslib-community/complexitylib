@@ -92,4 +92,69 @@ theorem exists_le_of_fastGuard_eq_false (C : ℕ) :
       (Nat.pow_log_le_self 2 (by have := Nat.one_le_two_pow (n := L₀); omega)) 9
   omega
 
+/-! ### The clock -/
+
+open FastContraction in
+/-- **The clock is subexponential on admissible inputs**: with `m ≤ C s` edges and precision
+`P ≤ D s`, it is at most `2 ^ (K₀ (C + D) s / √⌊log₂ s⌋)`. -/
+theorem fuel_le {C D s P : ℕ} {G : ℕ × ExplicitTensorNetwork ℕ} (hA : ExplicitAdmissible C s G)
+    (hs : 2 ≤ s) (hP : P ≤ D * s) :
+    fuel (ExplicitTensorNetwork.capPrecision (P, G)) ≤
+      2 ^ (fuelConst * (C + D) * s / Nat.sqrt (Nat.log 2 s)) := by
+  obtain ⟨-, hm, -, -, -, hsm⟩ := hA
+  simp only [fuel, ExplicitTensorNetwork.capPrecision]
+  refine Nat.pow_le_pow_right (by norm_num) ?_
+  set x := G.2.numEdges + min (ExplicitTensorNetwork.encExplicitNetwork G.2).length P
+  have hx : x ≤ (C + D) * s := by
+    have := min_le_right (ExplicitTensorNetwork.encExplicitNetwork G.2).length P
+    rw [add_mul]; omega
+  have hsx : s ≤ x := by omega
+  have hq : 1 ≤ Nat.sqrt (Nat.log 2 s) := by
+    rw [Nat.le_sqrt, Nat.one_mul]; exact Nat.le_log_of_pow_le one_lt_two (by simpa using hs)
+  have hq' : Nat.sqrt (Nat.log 2 s) ≤ Nat.sqrt (Nat.log 2 x) :=
+    Nat.sqrt_le_sqrt (Nat.log_mono_right hsx)
+  calc fuelConst * x / Nat.sqrt (Nat.log 2 x) ≤ fuelConst * x / Nat.sqrt (Nat.log 2 s) :=
+        Nat.div_le_div_left hq' hq
+    _ ≤ fuelConst * (C + D) * s / Nat.sqrt (Nat.log 2 s) := by
+        refine Nat.div_le_div_right ?_
+        rw [Nat.mul_assoc]
+        exact Nat.mul_le_mul_left _ hx
+
+/-! ### The resources of the fast machine -/
+
+section Resources
+
+open FastContraction Cslib.GenericRAM Cslib.GenericRAM.StackRecursion Turing.MultiTapeTM
+
+variable (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc)
+
+/-- **The resource analysis of the fast machine**, the remaining obligation of the running time.
+For all constants `C` and `D` there are `K` and `s₀` such that on every input `(P, r, G)` with
+`2 ≤ s`, `1 ≤ P ≤ D s`, `G` admissible at size `s` with constant `C` and passing the guard, the
+root of the capped input has a derivation whose nodes, frames and values are at most `F` long,
+whose leaves take time at most `TL` and space at most `SL`, with `H` open calls, such that
+`H + F + SL ≤ K (n + 1) ^ K` and `TL ≤ K (n + 1) ^ K 2 ^ (K s / √⌊log₂ s⌋)` for the input length
+`n`; and from `s₀` on its `N` nodes fit in the clock, `2 N - 1 ≤ fuel`. -/
+@[expose] def FastAnalysis : Prop :=
+  ∀ C D : ℕ, ∃ K s₀ : ℕ, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s → 1 ≤ P →
+    P ≤ D * s → ExplicitAdmissible C s G → fastGuard G = true →
+    ∃ (I : Invariant Call Frame (ℕ × List ℕ)) (N H F TL SL : ℕ),
+      (scheme mk).Eval I (root (ExplicitTensorNetwork.capPrecision (P, G)))
+        (0, value mk (root (ExplicitTensorNetwork.capPrecision (P, G)))) N H ∧
+      (s₀ ≤ s → 2 * N - 1 ≤ fuel (ExplicitTensorNetwork.capPrecision (P, G))) ∧
+      (∀ x, I.node x → (encCall x).length ≤ F ∧ ((scheme mk).isLeaf x = true →
+        (leafCertificate mk).time x ≤ TL ∧ (leafCertificate mk).space x ≤ SL)) ∧
+      (∀ x a, I.frame x a → (encPair encCall encFrame (x, a)).length ≤ F) ∧
+      (∀ v, I.value v → (encValue v).length ≤ F) ∧
+      H + F + SL ≤ K * ((FastContraction.encInput (P, G)).length + 1) ^ K ∧
+      TL ≤ K * ((FastContraction.encInput (P, G)).length + 1) ^ K *
+        2 ^ (K * s / Nat.sqrt (Nat.log 2 s))
+
+/-- `c B ^ d ≤ c B ^ E X` for `1 ≤ B`, `d ≤ E` and `1 ≤ X`. -/
+private theorem lift_le {c B d E X : ℕ} (hB : 1 ≤ B) (hd : d ≤ E) (hX : 1 ≤ X) :
+    c * B ^ d ≤ c * B ^ E * X :=
+  (Nat.mul_le_mul_left c (Nat.pow_le_pow_right hB hd)).trans (Nat.le_mul_of_pos_right _ hX)
+
+end Resources
+
 end Cslib.Complexity.CountingSimulation

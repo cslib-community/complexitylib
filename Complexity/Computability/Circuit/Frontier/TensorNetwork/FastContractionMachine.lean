@@ -325,7 +325,8 @@ variable {mk}
 
 /-- **The clocked run** from a capped input, as one native machine, given polynomial-time
 components of the scheme. -/
-noncomputable def runCertificate (hpoly : (scheme mk).PolyTime encCall encFrame encValue) :
+@[expose] noncomputable def runCertificate
+    (hpoly : (scheme mk).PolyTime encCall encFrame encValue) :
     NativeCertificate ((scheme mk).run fuel root) ExplicitTensorNetwork.encContractionInput
       (encOption encValue) :=
   Scheme.certificate hpoly (leafCertificate mk) (NativeCertificate.ofPolyTime fuel_polyTime)
@@ -354,7 +355,8 @@ theorem tag_polyTime :
 
 /-- **The fast machine**: cap the precision and run the recursion; on a value tagged `0`, read
 off its constant coordinate, and otherwise sum directly. It computes `fastValue`. -/
-noncomputable def fastCertificate (hpoly : (scheme mk).PolyTime encCall encFrame encValue) :
+@[expose] noncomputable def fastCertificate
+    (hpoly : (scheme mk).PolyTime encCall encFrame encValue) :
     NativeCertificate (fastValue mk) encInput encNat :=
   (NativeCertificate.option
     ((runCertificate hpoly).comp
@@ -369,5 +371,38 @@ noncomputable def fastCertificate (hpoly : (scheme mk).PolyTime encCall encFrame
       cases (scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q) with
       | none => rfl
       | some v => simp only [Option.elim_some, decide_eq_true_eq]
+
+/-- The time of the fast machine, unfolded: the capped run twice, the input, and the decoding or
+direct summation. -/
+theorem fastCertificate_time (hpoly : (scheme mk).PolyTime encCall encFrame encValue)
+    (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) :
+    (fastCertificate hpoly).time q =
+      2 * ((NativeCertificate.ofPolyTime ExplicitTensorNetwork.capPrecision_polyTime).time q +
+        (runCertificate hpoly).time (ExplicitTensorNetwork.capPrecision q)) +
+      (encInput q).length +
+      ((scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+        (ExplicitTensorNetwork.directContractionBinaryCertificate.time q) fun v =>
+          (NativeCertificate.ofPolyTime tag_polyTime).time (q, v) +
+            if decide (v.1 = 0) = true then
+              (NativeCertificate.ofPolyTime decode_polyTime).time (q, v)
+            else (NativeCertificate.ofPolyTime
+                (ComputableInPolyTime.fst encInput encValue)).time (q, v) +
+              ExplicitTensorNetwork.directContractionBinaryCertificate.time q := rfl
+
+/-- The space of the fast machine, unfolded. -/
+theorem fastCertificate_space (hpoly : (scheme mk).PolyTime encCall encFrame encValue)
+    (q : ℕ × ℕ × ExplicitTensorNetwork ℕ) :
+    (fastCertificate hpoly).space q =
+      2 * ((NativeCertificate.ofPolyTime ExplicitTensorNetwork.capPrecision_polyTime).space q +
+        (runCertificate hpoly).space (ExplicitTensorNetwork.capPrecision q)) +
+      (encInput q).length +
+      ((scheme mk).run fuel root (ExplicitTensorNetwork.capPrecision q)).elim
+        (ExplicitTensorNetwork.directContractionBinaryCertificate.space q) fun v =>
+          (NativeCertificate.ofPolyTime tag_polyTime).space (q, v) +
+            if decide (v.1 = 0) = true then
+              (NativeCertificate.ofPolyTime decode_polyTime).space (q, v)
+            else (NativeCertificate.ofPolyTime
+                (ComputableInPolyTime.fst encInput encValue)).space (q, v) +
+              ExplicitTensorNetwork.directContractionBinaryCertificate.space q := rfl
 
 end Cslib.Circuits.Frontier.FastContraction
