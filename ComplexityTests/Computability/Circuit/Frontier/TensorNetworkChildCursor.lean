@@ -43,4 +43,12 @@ example : ∃ h : 0 < (cursorList ws ps 2 1 2).length,
   cursorList_walk (by norm_num) (by norm_num) (fun _ => by simp [ps])
     (fun t w hw => by unfold ws at hw; split_ifs at hw <;> simp at hw <;> omega) (by norm_num)
 
+/-- With the value `t + Σβ + g + 1` at each child, the call stores `1·2 + 2·3 = 8` for node `0` and
+`2·3 + 3·4 = 18` for node `1`. -/
+def val (s : State) : ℕ := s.1 + s.2.2.1.sum + s.2.2.2 + 1
+
+example : (runAcc ws ps 2 (· * ·) (· + ·) 1 0 val (cursorList ws ps 2 1 2) (1, 0, [])) =
+    (1, 0, [8, 18]) := by
+  decide +kernel
+
 end Cslib.Tests.TensorNetworkChildCursor

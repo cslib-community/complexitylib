@@ -34,6 +34,14 @@ over counted children consumes. One step reads only the current node's weights a
 next node's number of modes (`cursorNext_eq_cursorStep`), and it is polynomial-time
 (`computableInPolyTime_cursorStep`), so the children are enumerated with polynomial delay.
 
+**Accumulating.** `absorbAt` folds a child's value into the accumulator of the call: it multiplies
+it into the product over the groups, adds the product to the sum over the exponent tuples after the
+last group, and stores the sum after the last tuple. Along `cursorList` this stores, for each node
+and point in order, the sum over the tuples of the products over the groups (`runAcc_cursorList`),
+seen through any map to a commutative semiring that respects the operations, such as the value of
+a coefficient list. With the weights listed along the modes, that sum is the sum over the mode
+budget of the right side of (D.16) (`sumAt_eq_sum_filter`).
+
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.ChildCursor.cursorList`: the indices `(t, k, β, g)` in order.
@@ -42,6 +50,8 @@ next node's number of modes (`cursorNext_eq_cursorStep`), and it is polynomial-t
 * `Cslib.Circuits.Frontier.ChildCursor.cursorStep`,
   `Cslib.Circuits.Frontier.ChildCursor.encStepInput`: one step from the data of the nodes, and its
   input encoding.
+* `Cslib.Circuits.Frontier.ChildCursor.absorbAt`, `Cslib.Circuits.Frontier.ChildCursor.runAcc`,
+  `Cslib.Circuits.Frontier.ChildCursor.sumAt`: the accumulator of a call and the stored values.
 
 ## Main results
 
@@ -51,6 +61,9 @@ next node's number of modes (`cursorNext_eq_cursorStep`), and it is polynomial-t
   `Cslib.Circuits.Frontier.ChildCursor.cursorList_walk`: the cursor walks the list.
 * `Cslib.Circuits.Frontier.ChildCursor.isChain_flatMap`: a chain of nonempty chained blocks.
 * `Cslib.Circuits.Frontier.ChildCursor.computableInPolyTime_cursorStep`: polynomial delay.
+* `Cslib.Circuits.Frontier.ChildCursor.runAcc_cursorList`,
+  `Cslib.Circuits.Frontier.ChildCursor.sumAt_eq_sum_filter`: the stored values are the sums over
+  the mode budget.
 
 ## References
 
@@ -587,6 +600,24 @@ theorem runAcc_cursorList (hzero : φ zero = 0) (hr : 0 < r) (hps : ∀ t, 0 < p
       · rw [List.range_succ, List.flatMap_append, runAcc_append, hrun, List.flatMap_singleton,
           nodeBlock, hrun']
   exact key T
+
+omit hmul hadd hone in
+/-- **The stored sum is the sum over the mode budget.** If the weights of node `t` list the
+weights `w` of the modes along a duplicate-free list `ms` of all of them, and the product over the
+groups of the children of each tuple `l` is `F (ofList ms l)`, then the value stored for `t` and `k`
+is the sum of `F` over the tuples of weight below `ps t`, which is
+`Cslib.Circuits.Frontier.modeBudget w (ps t)`. -/
+theorem sumAt_eq_sum_filter {M : Type*} [Fintype M] [DecidableEq M] {ms : List M}
+    (hms : ms.Nodup) (hcover : ∀ Z, Z ∈ ms) {w : M → ℕ} (hw : ∀ Z, 0 < w Z) (val : State → S)
+    (t k : ℕ) (hwt : ws t = ms.map w) (F : (M → ℕ) → R)
+    (hF : ∀ l ∈ budgetTuples (ws t) (ps t),
+      ((List.range r).map fun g => φ (val (t, k, l, g))).prod = F (ofList ms l)) :
+    sumAt ws ps r φ val t k = ∑ β ∈ ({β ∈ Fintype.piFinset fun _ => Finset.range (ps t) |
+      ∑ Z, w Z * β Z < ps t} : Finset (M → ℕ)), F β := by
+  rw [sum_filter_weight_lt_eq hms hcover hw (ps t) F, sumAt, ← hwt]
+  congr 1
+  refine List.map_congr_left fun l hl => ?_
+  exact hF l hl
 
 end Accumulate
 
