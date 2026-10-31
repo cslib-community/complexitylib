@@ -180,11 +180,11 @@ index links to canonical definitions rather than keeping a second set.
   completeness, padding, self-reducibility, relativization and oracle separations, preserving
   each reduction's resource bound.
 - **Time hierarchies** ([#1572]): native polynomial padding separates every pair of integer
-  degrees `1 ≤ a < b`. For nondeterministic time, lazy diagonalization separates degree `d`
-  from degree `6 * d + 14`. Remaining targets include the general deterministic `f log f`
-  hierarchy with its simulation bound ([#800]), noninteger polynomial degrees and finer
-  logarithmic gaps, the nondeterministic hierarchy at every pair of integer degrees by padding,
-  and sharp nondeterministic and alternating time hierarchies with certified simulators.
+  degrees `1 ≤ a < b`, in deterministic and in nondeterministic time. For nondeterministic time,
+  padding amplifies the coarse lazy-diagonal hierarchy, which separates degree `d` from degree
+  `6 * d + 14`. Remaining targets include the general deterministic `f log f` hierarchy with its
+  simulation bound ([#800]), noninteger polynomial degrees and finer logarithmic gaps, and sharp
+  nondeterministic and alternating time hierarchies with certified simulators.
 - The space hierarchy for `log n ≤ g n`, which needs a universal simulation that does not hold
   its input.
 - **Space:** Savitch bounds for general space-constructible functions.
