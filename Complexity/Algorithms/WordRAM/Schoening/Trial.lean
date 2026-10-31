@@ -36,7 +36,9 @@ instruction counts, including loop tests and jumps.
 
 The trial body `Cslib.Algorithms.WordRAM.Schoening.trialCore` reads the clause region and the
 number of variables from registers, so the amplified algorithm reuses it with a different input
-layout.
+layout. It writes memory only in the assignment: `Cslib.Algorithms.WordRAM.Schoening.Frame` records
+that the memory after the assignment is unchanged, which is where the amplified algorithm keeps its
+trial counter.
 
 ## Main definitions
 
@@ -115,8 +117,10 @@ private theorem uniform_map_val_congr' {α : Type*} {m m' : ℕ} [NeZero m] [NeZ
 /-! ### The frame of a trial -/
 
 /-- The registers and memory a trial relies on: the constants, the clauses of `φ` stored in
-`[C, A)`, the assignment's address `A`, and `n`. -/
-structure Frame (φ : CNF (Fin n)) (C A : ℕ) (x : Data 24) : Prop where
+`[C, A)`, the assignment's address `A`, and `n`. The memory from address `A + n` on, just after
+the assignment, agrees with `M`; a trial never writes there, so callers can keep data such as a
+trial counter in it. -/
+structure Frame (φ : CNF (Fin n)) (C A : ℕ) (M : ℕ → ℕ) (x : Data 24) : Prop where
   zero_eq : x.regs zero = 0
   one_eq : x.regs one = 1
   cBeg_eq : x.regs cBeg = C
@@ -124,12 +128,36 @@ structure Frame (φ : CNF (Fin n)) (C A : ℕ) (x : Data 24) : Prop where
   nReg_eq : x.regs nReg = n
   clauses : HoldsList C (encodeClauses φ) x.mem
   span : C + (encodeClauses φ).length = A
+  rest : ∀ a, A + n ≤ a → x.mem a = M a
 
-/-- The frame survives any change that keeps its registers and the memory below `A`. -/
-theorem Frame.congr {φ : CNF (Fin n)} {C A : ℕ} {x y : Data 24} (h : Frame φ C A x)
-    (hz : y.regs zero = x.regs zero) (ho : y.regs one = x.regs one)
+/-- The frame survives any change that keeps its registers and the memory outside the assignment
+`[A, A + n)`. -/
+theorem Frame.congr {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : Data 24}
+    (h : Frame φ C A M x) (hz : y.regs zero = x.regs zero) (ho : y.regs one = x.regs one)
     (hc : y.regs cBeg = x.regs cBeg) (ha : y.regs aBase = x.regs aBase)
-    (hn : y.regs nReg = x.regs nReg) (hmem : ∀ a < A, y.mem a = x.mem a) : Frame φ C A y where
+    (hn : y.regs nReg = x.regs nReg) (hmem : ∀ a, a < A ∨ A + n ≤ a → y.mem a = x.mem a) :
+    Frame φ C A M y where
+  zero_eq := hz.trans h.zero_eq
+  one_eq := ho.trans h.one_eq
+  cBeg_eq := hc.trans h.cBeg_eq
+  aBase_eq := ha.trans h.aBase_eq
+  nReg_eq := hn.trans h.nReg_eq
+  clauses := h.clauses.frame fun a _ ha' => hmem a (Or.inl (h.span ▸ ha'))
+  span := h.span
+  rest a ha := (hmem a (Or.inr ha)).trans (h.rest a ha)
+
+/-- The frame with the memory after the assignment taken as it is. -/
+theorem Frame.self {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x : Data 24} (h : Frame φ C A M x) :
+    Frame φ C A x.mem x :=
+  { h with rest := fun _ _ => rfl }
+
+/-- The frame survives any change that keeps its registers and the memory below `A`, with the
+memory after the assignment taken as it is. -/
+theorem Frame.of_mem_lt {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : Data 24}
+    (h : Frame φ C A M x) (hz : y.regs zero = x.regs zero) (ho : y.regs one = x.regs one)
+    (hc : y.regs cBeg = x.regs cBeg) (ha : y.regs aBase = x.regs aBase)
+    (hn : y.regs nReg = x.regs nReg) (hmem : ∀ a < A, y.mem a = x.mem a) :
+    Frame φ C A y.mem y where
   zero_eq := hz.trans h.zero_eq
   one_eq := ho.trans h.one_eq
   cBeg_eq := hc.trans h.cBeg_eq
@@ -137,6 +165,7 @@ theorem Frame.congr {φ : CNF (Fin n)} {C A : ℕ} {x y : Data 24} (h : Frame φ
   nReg_eq := hn.trans h.nReg_eq
   clauses := h.clauses.frame fun a _ ha' => hmem a (h.span ▸ ha')
   span := h.span
+  rest _ _ := rfl
 
 /-- Code that writes none of the frame registers keeps the frame registers. -/
 def PreservesFrame (c : Code .standard 24) : Prop :=
@@ -145,10 +174,12 @@ def PreservesFrame (c : Code .standard 24) : Prop :=
 instance (c : Code .standard 24) : Decidable (PreservesFrame c) :=
   inferInstanceAs (Decidable (_ ∧ _))
 
-/-- A deterministic run of frame-preserving code that keeps memory below `A` keeps the frame. -/
-theorem Frame.of_execWithin {φ : CNF (Fin n)} {C A : ℕ} {c : Code .standard 24} {x y : Data 24}
-    {w T : ℕ} (h : Frame φ C A x) (hc : PreservesFrame c) (he : ExecWithin w c x y T)
-    (hmem : ∀ a < A, y.mem a = x.mem a) : Frame φ C A y :=
+/-- A deterministic run of frame-preserving code that keeps the memory outside the assignment
+keeps the frame. -/
+theorem Frame.of_execWithin {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {c : Code .standard 24}
+    {x y : Data 24} {w T : ℕ} (h : Frame φ C A M x) (hc : PreservesFrame c)
+    (he : ExecWithin w c x y T) (hmem : ∀ a, a < A ∨ A + n ≤ a → y.mem a = x.mem a) :
+    Frame φ C A M y :=
   h.congr (he.regs_eq hc.1) (he.regs_eq hc.2.1) (he.regs_eq hc.2.2.1) (he.regs_eq hc.2.2.2.1)
     (he.regs_eq hc.2.2.2.2) hmem
 
@@ -166,11 +197,12 @@ def initAssign : Code .standard 24 := ram[ cnt ← zero; ⟪initLoop⟫ ]
 
 /-- The rest of the initial assignment from variable `j`: the first `j` variables are kept and
 the others are uniform. -/
-private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n))
-    (hA : 1 ≤ A) : ∀ (d : ℕ) (x : Data 24), Frame φ C A x → x.regs cnt + d = n →
+private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
+    (hw : Fits w (A + 3 * n))
+    (hA : 1 ≤ A) : ∀ (d : ℕ) (x : Data 24), Frame φ C A M x → x.regs cnt + d = n →
       (∀ i < x.regs cnt, x.mem (A + i) ≤ 1) →
       ExecRandLaw w initLoop x
-        (fun y => Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) (6 * d + 2) d
+        (fun y => Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) (6 * d + 2) d
         (fun y => assignmentAt y.mem A n)
         ((Probability.PMF.uniformOfFintype (Fin n → Bool)).map fun τ i =>
           if i.val < x.regs cnt then assignmentAt x.mem A n i else τ i)
@@ -265,9 +297,10 @@ private theorem initLoop_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 
 
 /-- **The random initial assignment** is uniform, takes `6 n + 3` instructions and `n` `rand`
 calls, and keeps the frame. -/
-theorem initAssign_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A)
-    {x : Data 24} (hx : Frame φ C A x) :
-    ExecRandLaw w initAssign x (fun y => Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1)
+theorem initAssign_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
+    (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A)
+    {x : Data 24} (hx : Frame φ C A M x) :
+    ExecRandLaw w initAssign x (fun y => Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1)
       (6 * n + 3) n (fun y => assignmentAt y.mem A n)
       (Probability.PMF.uniformOfFintype (Fin n → Bool)) := by
   have h := initLoop_law (φ := φ) hw hA n (x.set cnt 0)
@@ -294,17 +327,17 @@ def flip : Code .standard 24 := ram[
   if zero < len then [ len ← len - one; var ← rand len; ⟪flipRest⟫ ] else [ len ← len ] ]
 
 /-- **One flip** has the law of `Cslib.Complexity.Schoening.flipStep`. -/
-theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) {x : Data 24}
-    (hx : Frame φ C A x) {σ : Fin n → Bool} (hσ : AssignAt x.mem A σ) {c : Clause (Fin n)}
+theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ} (hw : Fits w (A + 3 * n)) {x : Data 24}
+    (hx : Frame φ C A M x) {σ : Fin n → Bool} (hσ : AssignAt x.mem A σ) {c : Clause (Fin n)}
     (hcl : HoldsList (x.regs cPtr) (encodeClause c) x.mem) (hend : x.regs cPtr + c.length + 1 ≤ A) :
-    ExecRandLaw w flip x (fun y => Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) 12 1
+    ExecRandLaw w flip x (fun y => Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) 12 1
       (fun y => assignmentAt y.mem A n) (flipStep c σ) := by
   have hlen : x.mem (x.regs cPtr) = c.length := by simpa [encodeClause] using hcl.get 0 (by simp)
   have hbits : ∀ i < n, x.mem (A + i) ≤ 1 := fun i hi => by
     rw [show A + i = A + (⟨i, hi⟩ : Fin n).val from rfl, hσ]; cases σ ⟨i, hi⟩ <;> decide
   have hload := ExecWithin.load (B := .standard) (w := w) (d := len) (a := cPtr) (x := x)
   rw [hlen] at hload
-  have hx₁ : Frame φ C A (x.set len c.length) :=
+  have hx₁ : Frame φ C A M (x.set len c.length) :=
     hx.congr (by simp +decide) (by simp +decide) (by simp +decide) (by simp +decide)
       (by simp +decide) fun _ _ => rfl
   rcases hℓ : c.length with _ | ℓ
@@ -313,7 +346,7 @@ theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) {x :
       simp +decide [Cond.holds_lt, hℓ]
     have hneg := ExecRandLaw.branch_neg (pos := ram[ len ← len - one; var ← rand len; ⟪flipRest⟫ ])
       hc (ExecRandLaw.of_execWithin (f := fun y => assignmentAt y.mem A n)
-        (P := fun y => Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1)
+        (P := fun y => Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1)
         (ExecWithin.copy (B := .standard) (w := w) (d := len) (s := len)
           (x := x.set len c.length))
         ⟨hx₁.congr (by simp +decide) (by simp +decide) (by simp +decide) (by simp +decide)
@@ -334,7 +367,7 @@ theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) {x :
       ram_eval [x₂, hx.one_eq, hℓ, hf0, Nat.add_sub_cancel]
     -- the deterministic rest after drawing `k`
     have hrest : ∀ k : Fin (x₂.regs len + 1), ∃ y, ExecWithin w flipRest (x₂.set var k.val) y 8 ∧
-        (Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧ assignmentAt y.mem A n = F k.val := by
+        (Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧ assignmentAt y.mem A n = F k.val := by
       intro k
       have hk : k.val < c.length := by have := k.isLt; have := hx₂len; omega
       set l := c.get ⟨k.val, hk⟩ with hl
@@ -380,7 +413,7 @@ theorem flip_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) {x :
         · simp [hi]
     choose y hy hpost hlaw using hrest
     have hrand := ExecRandLaw.rand_seq (w := w) (f := fun y => assignmentAt y.mem A n)
-      (P := fun y => Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) (dst := var) (src := len)
+      (P := fun y => Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) (dst := var) (src := len)
       (x := x₂) (y := y) (by rw [hx₂len]; exact hf0) hy hpost
     have hpos := ExecRandLaw.branch_pos (neg := ram[ len ← len ]) hc
       (ExecRandLaw.seq_det hsub hrand)
@@ -423,11 +456,12 @@ theorem walk_succ_eq_bind (φ : CNF (Fin n)) (t : ℕ) (σ : Fin n → Bool) :
 
 /-- **One step** has the law `stepLaw φ σ`, within `12 E + 18` instructions and one `rand`
 call. -/
-theorem stepBody_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A)
-    {x : Data 24} (hx : Frame φ C A x) (hbits : ∀ i < n, x.mem (A + i) ≤ 1)
+theorem stepBody_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
+    (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A)
+    {x : Data 24} (hx : Frame φ C A M x) (hbits : ∀ i < n, x.mem (A + i) ≤ 1)
     (hcnt : Fits w (x.regs cnt + 1)) :
     ExecRandLaw w stepBody x
-      (fun y => (Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧ y.regs cnt = x.regs cnt + 1 ∧
+      (fun y => (Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧ y.regs cnt = x.regs cnt + 1 ∧
         y.regs steps = x.regs steps)
       (12 * (encodeClauses φ).length + 18) 1 (fun y => assignmentAt y.mem A n)
       (stepLaw φ (assignmentAt x.mem A n)) := by
@@ -438,7 +472,7 @@ theorem stepBody_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) 
     (by rw [hx.aBase_eq]; exact hσ) (by rw [hx.aBase_eq]; exact hw.of_le (by omega))
     (by rw [hx.aBase_eq]; omega)
   have hpf : PreservesFrame scan := by decide
-  have hx₁ : Frame φ C A y₁ := hx.of_execWithin hpf hy₁ fun a _ => by rw [hm₁]
+  have hx₁ : Frame φ C A M y₁ := hx.of_execWithin hpf hy₁ fun a _ => by rw [hm₁]
   have hc₁ : y₁.regs cnt = x.regs cnt := hy₁.regs_eq (by decide)
   have hs₁ : y₁.regs steps = x.regs steps := hy₁.regs_eq (by decide)
   rw [hx.aBase_eq] at hr₁
@@ -456,7 +490,7 @@ theorem stepBody_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) 
       (ExecWithin.copy (B := .standard) (w := w) (d := found) (s := found) (x := y₁))).seq
       (hinc _ (by simpa +decide using hx₁.one_eq) (by simpa +decide using hc₁)))
     have h := ExecRandLaw.of_execWithin (f := fun y => assignmentAt y.mem A n)
-      (P := fun y => (Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧
+      (P := fun y => (Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧
         y.regs cnt = x.regs cnt + 1 ∧ y.regs steps = x.regs steps) hrun
       ⟨⟨hx₁.congr (by simp +decide) (by simp +decide) (by simp +decide) (by simp +decide)
           (by simp +decide) fun _ _ => rfl, by simpa [hm₁] using hbits⟩,
@@ -474,7 +508,7 @@ theorem stepBody_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) 
       (by decide)).withPreserves (i := one) (by decide))
     have hb := ExecRandLaw.branch_pos (neg := ram[ found ← found ]) hc hflip'
     have hstep := ExecRandLaw.seq_det hy₁ (ExecRandLaw.seq_det_right
-      (Q := fun y => (Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧
+      (Q := fun y => (Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧
         y.regs cnt = x.regs cnt + 1 ∧ y.regs steps = x.regs steps) (T₂ := 1) hb
       fun z ⟨⟨⟨⟨hz, hzb⟩, hzc⟩, hzs⟩, hzo⟩ =>
         ⟨_, hinc z (by rw [hzo, hx₁.one_eq]) (by rw [hzc, hc₁]),
@@ -490,10 +524,11 @@ theorem stepBody_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) 
 def walkLoop : Code .standard 24 := .loop (.lt cnt steps) stepBody
 
 /-- **The local search** from `t` remaining steps has the law of `walk φ t`. -/
-theorem walkLoop_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A) :
-    ∀ (t : ℕ) (x : Data 24), Frame φ C A x → (∀ i < n, x.mem (A + i) ≤ 1) →
+theorem walkLoop_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
+    (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A) :
+    ∀ (t : ℕ) (x : Data 24), Frame φ C A M x → (∀ i < n, x.mem (A + i) ≤ 1) →
       x.regs cnt + t = x.regs steps → Fits w (x.regs steps) →
-      ExecRandLaw w walkLoop x (fun y => Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1)
+      ExecRandLaw w walkLoop x (fun y => Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1)
         (t * (12 * (encodeClauses φ).length + 20) + 2) t (fun y => assignmentAt y.mem A n)
         (walk φ t (assignmentAt x.mem A n))
   | 0, x, hx, hbits, ht, _ => by
@@ -523,10 +558,11 @@ def trialCoreTime (n E : ℕ) : ℕ := 36 * n * E + 66 * n + 12 * E + 13
 
 /-- **The body of a trial** has the law of `Cslib.Complexity.Schoening.trial`, keeps the frame,
 and sets `out` to whether the assignment it leaves satisfies the formula. -/
-theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A)
-    {x : Data 24} (hx : Frame φ C A x) :
+theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} {M : ℕ → ℕ}
+    (hw : Fits w (A + 3 * n)) (hA : 1 ≤ A)
+    {x : Data 24} (hx : Frame φ C A M x) :
     ExecRandLaw w trialCore x
-      (fun y => (Frame φ C A y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧
+      (fun y => (Frame φ C A M y ∧ ∀ i < n, y.mem (A + i) ≤ 1) ∧
         y.regs out = if φ.eval (assignmentAt y.mem A n) then 1 else 0)
       (trialCoreTime n (encodeClauses φ).length) (4 * n) (fun y => assignmentAt y.mem A n)
       (trial φ) := by
@@ -540,16 +576,16 @@ theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n))
     have hpre : ExecWithin w (ram[ steps ← nReg + nReg; steps ← steps + nReg; cnt ← zero ]) y y₃
         3 := by
       ram_eval [y₃, hy.nReg_eq, hy.zero_eq, hf2, hf3]
-    have hy₃ : Frame φ C A y₃ := hy.congr (by simp +decide [y₃]) (by simp +decide [y₃])
+    have hy₃ : Frame φ C A M y₃ := hy.congr (by simp +decide [y₃]) (by simp +decide [y₃])
       (by simp +decide [y₃]) (by simp +decide [y₃]) (by simp +decide [y₃]) fun _ _ => rfl
     have hwalk := walkLoop_law (φ := φ) hw hA (3 * n) y₃ hy₃ (by simpa [y₃] using hyb)
       (by simp +decide only [y₃, Data.set_regs, Function.update_apply, ↓reduceIte, Nat.zero_add]
           omega)
       (by simp +decide only [y₃, Data.set_regs, Function.update_apply, ↓reduceIte]; exact hf3)
-    have hpost : ∀ z, (Frame φ C A z ∧ ∀ i < n, z.mem (A + i) ≤ 1) →
+    have hpost : ∀ z, (Frame φ C A M z ∧ ∀ i < n, z.mem (A + i) ≤ 1) →
         ∃ z', ExecWithin w (ram[ ⟪scan⟫; out ← one - found ]) z z'
           (12 * (encodeClauses φ).length + 5) ∧
-          ((Frame φ C A z' ∧ ∀ i < n, z'.mem (A + i) ≤ 1) ∧
+          ((Frame φ C A M z' ∧ ∀ i < n, z'.mem (A + i) ≤ 1) ∧
             z'.regs out = if φ.eval (assignmentAt z'.mem A n) then 1 else 0) ∧
           assignmentAt z'.mem A n = assignmentAt z.mem A n := by
       intro z ⟨hz, hzb⟩
@@ -558,7 +594,7 @@ theorem trialCore_law {φ : CNF (Fin n)} {C A w : ℕ} (hw : Fits w (A + 3 * n))
         hz.one_eq (by rw [hz.cBeg_eq]; exact hz.clauses)
         (by rw [hz.cBeg_eq, hz.aBase_eq]; exact hz.span) (by rw [hz.aBase_eq]; exact hσ)
         (by rw [hz.aBase_eq]; exact hw.of_le (by omega)) (by rw [hz.aBase_eq]; omega)
-      have hzf₁ : Frame φ C A z₁ := hz.of_execWithin (by decide) hz₁ fun a _ => by rw [hm₁]
+      have hzf₁ : Frame φ C A M z₁ := hz.of_execWithin (by decide) hz₁ fun a _ => by rw [hm₁]
       have hfnd : z₁.regs found = if φ.eval (assignmentAt z.mem A n) then 0 else 1 := by
         unfold ScanResult at hr₁
         rcases hfu : firstUnsat φ (assignmentAt z.mem A n) with _ | c
@@ -621,7 +657,7 @@ def setupData (φ : CNF (Fin n)) : Data 24 :=
 /-- The setup establishes the frame of a trial on the input `encode φ`. -/
 theorem trialSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).length + 3 * n + 1)) :
     ExecWithin w trialSetup (Data.init (encode φ)) (setupData φ) 5 ∧
-      Frame φ 2 ((encode φ).length + 1) (setupData φ) := by
+      Frame φ 2 ((encode φ).length + 1) (setupData φ).mem (setupData φ) := by
   have hf1 : Fits w 1 := hw.of_le (by omega)
   have hf2 : Fits w ((encode φ).length + 1) := hw.of_le (by omega)
   have hf3 : Fits w 2 := hw.of_le (by simp [encode]; omega)
@@ -631,7 +667,7 @@ theorem trialSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).l
   case run => ram_eval [trialSetup, setupData, Data.init_regs, hm0, hm1, hf1, hf2, hf3]
   case frame =>
     refine ⟨by simp +decide [setupData], by simp +decide [setupData], by simp +decide [setupData],
-      by simp +decide [setupData], by simp +decide [setupData], ?_, ?_⟩
+      by simp +decide [setupData], by simp +decide [setupData], ?_, ?_, fun _ _ => rfl⟩
     · intro i
       change (Data.init (encode φ) : Data 24).mem (2 + i.val) = (encodeClauses φ)[i.val]
       rw [show 2 + i.val = (1 + i.val) + 1 by omega, Data.init_mem_succ]

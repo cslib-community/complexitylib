@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import pathlib
 import subprocess
 import sys
@@ -557,6 +558,64 @@ class BibliographyTests(unittest.TestCase):
     def test_repository_bibliography_is_sorted(self) -> None:
         text = (check_hygiene.ROOT / "references.bib").read_text(encoding="utf-8")
         self.assertEqual(check_hygiene.check_bibliography(text), [])
+
+
+class AbstractReadmeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = pathlib.Path(tmp.name)
+        (self.root / "abstracts").mkdir()
+        catalogue = {"entries": [
+            {"id": "a", "module": "ComplexityAbstracts.AAbstract"},
+            {"id": "b", "module": "ComplexityAbstracts.BAbstract"},
+        ]}
+        (self.root / "abstracts/catalogue.json").write_text(json.dumps(catalogue),
+                                                            encoding="utf-8")
+
+    def write_readmes(self, top: str, abstracts: str) -> None:
+        (self.root / "README.md").write_text(top, encoding="utf-8")
+        (self.root / "abstracts/README.md").write_text(abstracts, encoding="utf-8")
+
+    def test_every_entry_listed_passes(self) -> None:
+        self.write_readmes(
+            "* [A](abstracts/ComplexityAbstracts/AAbstract.lean)\n"
+            "* [B](abstracts/ComplexityAbstracts/BAbstract.lean); see also "
+            "[A](abstracts/ComplexityAbstracts/AAbstract.lean) and the shared "
+            "[encoding](abstracts/ComplexityAbstracts/Encoding.lean).\n",
+            "| [A](ComplexityAbstracts/AAbstract.lean) |\n"
+            "| [B](ComplexityAbstracts/BAbstract.lean) |\n",
+        )
+        self.assertEqual(check_hygiene.check_abstract_readmes(self.root), [])
+
+    def test_missing_stale_and_misrooted_links_fail(self) -> None:
+        self.write_readmes(
+            "* [A](abstracts/ComplexityAbstracts/AAbstract.lean)\n"
+            "* [C](abstracts/ComplexityAbstracts/CAbstract.lean)\n",
+            "| [A](ComplexityAbstracts/AAbstract.lean) |\n"
+            "| [B](abstracts/ComplexityAbstracts/BAbstract.lean) |\n",
+        )
+        self.assertEqual(check_hygiene.check_abstract_readmes(self.root), [
+            "README.md: catalogue entry `b` is not listed; add a line linking "
+            "`abstracts/ComplexityAbstracts/BAbstract.lean`",
+            "README.md: links `abstracts/ComplexityAbstracts/CAbstract.lean`, which is not a "
+            "catalogue entry of `abstracts/catalogue.json` (or uses the wrong relative path)",
+            "abstracts/README.md: catalogue entry `b` is not listed; add a line linking "
+            "`ComplexityAbstracts/BAbstract.lean`",
+            "abstracts/README.md: links `abstracts/ComplexityAbstracts/BAbstract.lean`, which is "
+            "not a catalogue entry of `abstracts/catalogue.json` (or uses the wrong relative path)",
+        ])
+
+    def test_malformed_catalogue_fails(self) -> None:
+        (self.root / "abstracts/catalogue.json").write_text('{"entries": [{"id": "a"}]}',
+                                                            encoding="utf-8")
+        self.write_readmes("", "")
+        errors = check_hygiene.check_abstract_readmes(self.root)
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].startswith("abstracts/catalogue.json: cannot read"))
+
+    def test_repository_readmes_list_the_catalogue(self) -> None:
+        self.assertEqual(check_hygiene.check_abstract_readmes(), [])
 
 
 class CitationTests(unittest.TestCase):

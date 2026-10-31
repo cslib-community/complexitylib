@@ -20,6 +20,11 @@ The hypotheses of the `64 ^ w` resolution bound hold at `w = 16`, `k = 1025` and
 `n = 64 * 16 ^ 6 * 1025`, where the formula does have refutations, each of more than `64 ^ 16 / 2`
 lines. Monotone circuits computing `k`-clique separate the two classes of graphs, so the circuit
 bound for separators applies to actual circuits.
+
+The bounds also hold for small cliques. At `k = 2` and `n = 16` the formula is refutable, and every
+refutation has more than `2 ^ (2 ⌊√2⌋) / 2 = 2` lines, indeed at least `60`, since all
+`C(16, 2) = 120` edges are essential to its interpolants. A monotone circuit detecting triangles on
+four vertices separates, so it has at least `C(4, 2) - 1 = 5` gates.
 -/
 
 namespace ComplexityTests.ProofComplexity.CliqueColoring
@@ -83,5 +88,33 @@ example : ∃ C : Circuit Monotone.signature (edgeCount vertices) 1,
   have hsep := Monotone.separates_of_computes_clique (r := 1024) (by norm_num) hC
   exact ⟨C, hsep, Monotone.pow_lt_size_of_separates (k := 1025) (by norm_num) (by norm_num)
     le_rfl hsep⟩
+
+/-- `⌊√2⌋ = 1`. -/
+private theorem sqrt_two : Nat.sqrt 2 = 1 := (Nat.eq_sqrt.2 ⟨by norm_num, by norm_num⟩).symm
+
+/-- **Small cliques**: at `k = 2` and `n = 16`, the clique–colouring formula is refutable, and every
+refutation with `s` lines has `2 ^ (2 ⌊√2⌋) < 2 s` and `C(16, 2) = 120 ≤ 1 + 2 s`, so `s ≥ 60`. -/
+example : (∃ s, (CNF.cliqueColoring 16 2 1).RefutableInSize s) ∧
+    ∀ s, (CNF.cliqueColoring 16 2 1).RefutableInSize s → 4 < 2 * s ∧ 60 ≤ s := by
+  refine ⟨CNF.exists_refutableInSize_iff_not_satisfiable.2
+    (CNF.not_satisfiable_cliqueColoring (by norm_num)), fun s h => ⟨?_, ?_⟩⟩
+  · simpa [sqrt_two] using
+      CNF.two_pow_two_mul_sqrt_lt_two_mul_of_refutableInSize_cliqueColoring (k := 2) le_rfl
+        (by norm_num) h
+  · have edges := CNF.edgeCount_le_one_add_two_mul_of_refutableInSize_cliqueColoring (k := 2)
+      le_rfl (by norm_num) h
+    rw [edgeCount_eq_choose, show Nat.choose 16 2 = 120 by decide] at edges
+    omega
+
+/-- A monotone circuit detecting triangles on four vertices separates the graphs with a triangle
+from the `2`-colourable graphs, so it has at least `C(4, 2) - 1 = 5` gates. -/
+example : ∃ C : Circuit Monotone.signature (edgeCount 4) 1,
+    Separates 3 2 (fun x => C.eval Monotone.interpretation x 0) ∧ 5 ≤ C.size := by
+  obtain ⟨C, hC⟩ := Monotone.exists_computes_clique 4 3
+  have hsep := Monotone.separates_of_computes_clique (r := 2) (by norm_num) hC
+  have edges := Monotone.edgeCount_le_succ_size_of_separates (k := 3) (by norm_num) (by norm_num)
+    hsep
+  have hcount : edgeCount 4 = 6 := by rw [edgeCount_eq_choose]; decide
+  exact ⟨C, hsep, by omega⟩
 
 end ComplexityTests.ProofComplexity.CliqueColoring
