@@ -58,22 +58,29 @@ example : packetEntryList 3 [1, 1] 1 0 1 2 true false true (fun _ => 0) [(0, fal
       (kernelValueList 3 [1, 1] 1 1 1 [0, 1]) := by
   decide
 
+-- Exponent `1` at the mode `(0, 1)`, of dense index `0 * 2 + 1 = 1`, which targets the group
+-- (digit `0` of `y₀ = 0` selects the first symbol): the single row factor contributes the
+-- coefficient of that mode, and no source mode has a positive exponent.
+example : packetEntryList 3 [1, 1] 1 0 1 2 true false true (fun k => if k = 1 then 1 else 0)
+    [(0, true)] [(1, true)] [0, 1] = modeCoeffList 3 [1, 1] 1 0 1 true 0 0 1 [0, 1] := by
+  decide
+
 /-- The hypotheses of the correctness theorem hold for these packets. -/
-theorem val_packetEntryList_tiny (β : ℕ × ℕ → ℕ) (ζ : List ℕ) :
+theorem val_packetEntryList_tiny (β : ℕ → ℕ) (ζ : List ℕ) :
     GaloisRingArith.val 3 [1, 1] (packetEntryList 3 [1, 1] 1 0 1 2 true false true β
         [(0, true), (1, false)] [(1, true), (0, true)] ζ) =
       packetEntry (p := 2) (scalarHom 3 [1, 1]) (GaloisRingArith.val 3 [1, 1] ζ) 1 0 1 true false
-        true (fun Z => β (Z.1, Z.2)) [(0, true), (1, false)] [(1, true), (0, true)] :=
+        true (fun Z => β (Z.1 * 2 + Z.2)) [(0, true), (1, false)] [(1, true), (0, true)] :=
   val_packetEntryList (by norm_num) (by simp [mem_cauchyGrid]) (by norm_num) (by norm_num) 2 true
     false true β (by simp) (by simp) ζ
 
 -- Transported to any ring with `2` nilpotent, at any ring map from `ℤ_(2)`.
 example {S : Type} [CommRing S] (ψ : GaloisRingArith.Ring 3 [1, 1] →+* S) {n : ℕ}
-    (hn : (2 : S) ^ n = 0) (κ : ℤ₍₂₎ →+* S) (β : ℕ × ℕ → ℕ) (ζ : List ℕ) :
+    (hn : (2 : S) ^ n = 0) (κ : ℤ₍₂₎ →+* S) (β : ℕ → ℕ) (ζ : List ℕ) :
     ψ (GaloisRingArith.val 3 [1, 1] (packetEntryList 3 [1, 1] 1 0 1 2 true false true β
         [(0, true)] [(1, true)] ζ)) =
       packetEntry (p := 2) κ (ψ (GaloisRingArith.val 3 [1, 1] ζ)) 1 0 1 true false true
-        (fun Z => β (Z.1, Z.2)) [(0, true)] [(1, true)] :=
+        (fun Z => β (Z.1 * 2 + Z.2)) [(0, true)] [(1, true)] :=
   map_val_packetEntryList ψ hn κ (by norm_num) (by simp [mem_cauchyGrid]) (by norm_num)
     (by norm_num) 2 true false true β (by simp) (by simp) ζ
 
