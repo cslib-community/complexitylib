@@ -36,7 +36,9 @@ instruction counts, including loop tests and jumps.
 
 The trial body `Cslib.Algorithms.WordRAM.Schoening.trialCore` reads the clause region and the
 number of variables from registers, so the amplified algorithm reuses it with a different input
-layout.
+layout. It writes memory only in the assignment: `Cslib.Algorithms.WordRAM.Schoening.Frame` records
+that the memory after the assignment is unchanged, which is where the amplified algorithm keeps its
+trial counter.
 
 ## Main definitions
 
