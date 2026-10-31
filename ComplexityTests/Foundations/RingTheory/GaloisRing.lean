@@ -10,7 +10,8 @@ import Mathlib.Tactic.ComputeDegree
 import Mathlib.Tactic.FinCases
 
 /-! Tests for Galois rings, on `(ℤ / 8)[U] / (U ^ 2 + U + 1)`: the case `p = 2`, `e = 2` and
-precision `3` of the coefficient ring of [OpenAI2026ETH], §D.4.1. -/
+precision `3` of the base coefficient ring `O / (2 ^ 3)` of [OpenAI2026ETH], §D.4.1, which is the
+manuscript's `A_3` when `ℓ = 1`. -/
 
 namespace ComplexityTests.GaloisRing
 

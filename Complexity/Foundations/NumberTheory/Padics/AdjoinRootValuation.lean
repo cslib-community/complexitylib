@@ -11,7 +11,8 @@ public import Complexity.Init
 public import Mathlib.NumberTheory.Padics.PadicNumbers
 public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.RingTheory.Valuation.Integers
-import Complexity.Foundations.RingTheory.GaloisRing
+import Complexity.Foundations.RingTheory.AdjoinRoot
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.GCDMonoid.IntegrallyClosed
 import Mathlib.Algebra.Polynomial.Eval.Irreducible
 import Mathlib.RingTheory.Localization.Integral
