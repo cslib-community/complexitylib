@@ -81,6 +81,7 @@ public import Complexity.Algorithms.ThreeSum.Convolution
 public import Complexity.Algorithms.ThreeSum.Defs
 public import Complexity.Algorithms.ThreeSum.ThreeSets
 public import Complexity.Algorithms.WordRAM.AKS.Congruence
+public import Complexity.Algorithms.WordRAM.AKS.CongruenceLoop
 public import Complexity.Algorithms.WordRAM.AKS.GcdTotient
 public import Complexity.Algorithms.WordRAM.AKS.OrderSearch
 public import Complexity.Algorithms.WordRAM.AKS.PerfectPower

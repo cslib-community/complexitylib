@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import Complexity.Algorithms.WordRAM.AKS.CongruenceLoop
 import Complexity.Algorithms.WordRAM.AKS.GcdTotient
 import Complexity.Algorithms.WordRAM.AKS.OrderSearch
 import Complexity.Foundations.NumberTheory.AKS.IntegerVariant
@@ -11,8 +12,9 @@ import Complexity.Foundations.NumberTheory.AKS.IntegerVariant
 /-!
 # The order search, step 3 and the integer thresholds of the AKS test
 
-Concrete runs of the search for `r` and of the step-3 and totient loop, instances of their
-correctness theorems, and checked instances of the integer-threshold conditions.
+Concrete runs of the search for `r`, of the step-3 and totient loop and of the step-5 loop,
+instances of their correctness theorems, and checked instances of the integer-threshold
+conditions.
 -/
 
 namespace ComplexityTests.WordRAMAKSSearch
@@ -65,6 +67,29 @@ example : ∃ y, ExecWithin 16 AKS.GcdTotient.program (gcdInput 7 4) y (AKS.GcdT
     (by decide)
     (by decide) (by decide) (by decide) (by decide)
   exact ⟨y, hy, hphi.trans (by decide)⟩
+
+/-! ## Step 5 -/
+
+/-- Blocks at `0`, `r` and `2r`, with `r`, `n` and the last tested value `A` in their registers. -/
+private def loopInput (r n A : ℕ) : Data 29 :=
+  ⟨fun j => if j = AKS.CongruenceLoop.B then r else if j = AKS.CongruenceLoop.T then 2 * r else
+      if j = AKS.CongruenceLoop.rr then r else if j = AKS.CongruenceLoop.nn then n else
+      if j = AKS.CongruenceLoop.A then A else 0,
+    fun _ => 0⟩
+
+/-- Modulo `X - 1`, `4` fails at `a = 1` (`2⁴ ≡ 0 ≢ 2`), so the flag is cleared. -/
+example : (Code.eval 16 4 AKS.CongruenceLoop.program (loopInput 1 4 1)).map
+      (·.1.regs AKS.CongruenceLoop.ok) = some 0 := by
+  decide +kernel
+
+/-- The correctness theorem: for the prime `5`, every `a ≤ 3` passes modulo `X² - 1`. -/
+example : ∃ y, ExecWithin 16 AKS.CongruenceLoop.program (loopInput 2 5 3) y
+    (AKS.CongruenceLoop.time 2 5 3) ∧ y.regs AKS.CongruenceLoop.ok = 1 := by
+  obtain ⟨y, hy, -, hiff, -⟩ := AKS.CongruenceLoop.exec (w := 16) (loopInput 2 5 3) (a := 0)
+    (b := 2) (t := 4) (r := 2) (n := 5) (A₀ := 3) rfl rfl rfl rfl rfl rfl (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
+  exact ⟨y, hy, hiff.mpr fun v _ _ => Cslib.AKS.congruence_of_prime (by decide) 2 v⟩
 
 /-! ## Integer thresholds -/
 
