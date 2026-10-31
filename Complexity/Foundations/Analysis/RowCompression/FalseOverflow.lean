@@ -46,7 +46,7 @@ after overflow, and the integrated compression theorem remain separate obligatio
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 8.4, equation labelled `buf-false-charge`
+  Section 8.4, equation (8.12) on p. 48 (source label `buf-false-charge`)
   (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 
