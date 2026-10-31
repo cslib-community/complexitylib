@@ -156,12 +156,12 @@ constants is the image of the contraction of `G`. -/
 theorem val_rootNet (p : ℕ) (fl : List ℕ) (G : ExplicitTensorNetwork ℕ) :
     (rootNet G).contraction (fun t bs => val p fl (VertexDesc.entry t bs)) =
       (G.contraction : Ring p fl) := by
-  rw [← DescribedNetwork.contraction_ofExplicit]
+  rw [← DescribedNetwork.contraction_entry]
   have h := DescribedNetwork.map_contraction (Nat.castRingHom (Ring p fl))
-    ExplicitTensorNetwork.entry (DescribedNetwork.ofExplicit G)
+    ExplicitTensorNetwork.entry G
   simp only [Nat.coe_castRingHom] at h
   rw [h]
-  simp only [DescribedNetwork.contraction, rootNet, DescribedNetwork.ofExplicit, List.map_map]
+  simp only [DescribedNetwork.contraction, rootNet, List.map_map]
   refine Finset.sum_congr rfl fun x _ => ?_
   congr 1
   refine List.map_congr_left fun v _ => ?_
@@ -237,7 +237,7 @@ private theorem network_polyTime :
 /-- **The tables as descriptors are polynomial-time.** -/
 theorem rootNet_polyTime : ComputableInPolyTime rootNet ExplicitTensorNetwork.encExplicitNetwork
     (DescribedNetwork.encDescribed VertexDesc.enc) := by
-  have hpair : ComputableInPolyTime ExplicitTensorNetwork.equivProd
+  have hpair : ComputableInPolyTime (DescribedNetwork.equivProd (T := List ℕ))
       ExplicitTensorNetwork.encExplicitNetwork
       (encPair encUnary (encList (encPair (encList encNat) (encList encNat)))) :=
     ComputableInPolyTime.of_eq fun _ => rfl
@@ -341,7 +341,8 @@ theorem decode_polyTime :
   have hy := (ComputableInPolyTime.snd encUnary (encList encNat)).comp
     (ComputableInPolyTime.snd encInput encValue)
   exact GaloisRingArith.computableInPolyTime_mod_two_pow
-    ((ComputableInPolyTime.listGetD (encA := encNat) 0).comp (hy.prod (ComputableInPolyTime.const 0)))
+    ((ComputableInPolyTime.listGetD (encA := encNat) 0).comp
+      (hy.prod (ComputableInPolyTime.const 0)))
     hcap
 
 /-- Whether a value is tagged `0`. -/

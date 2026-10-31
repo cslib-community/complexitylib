@@ -896,6 +896,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformatio
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IntegralCoordinates
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.KernelProduct
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.LocalDeformation
