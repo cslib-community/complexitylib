@@ -33,11 +33,15 @@ public import Complexity.Algorithms.Lean.Huffman.TwoQueue
 public import Complexity.Algorithms.Lean.IndexedMinPQ
 public import Complexity.Algorithms.Lean.KMP.Basic
 public import Complexity.Algorithms.Lean.KMP.Search
+public import Complexity.Algorithms.Lean.Matroid.Greedy
 public import Complexity.Algorithms.Lean.MinPQ
 public import Complexity.Algorithms.Lean.Online.Basic
 public import Complexity.Algorithms.Lean.Paging.Basic
 public import Complexity.Algorithms.Lean.Paging.LRU
 public import Complexity.Algorithms.Lean.Paging.LowerBound
+public import Complexity.Algorithms.Lean.Query.Matroid.Greedy
+public import Complexity.Algorithms.Lean.Query.Matroid.IndepQuery
+public import Complexity.Algorithms.Lean.Query.Matroid.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
 public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
 public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
@@ -394,6 +398,7 @@ public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatNthRoot
 public import Complexity.Algorithms.WordRAM.NatSqrt
 public import Complexity.Algorithms.WordRAM.PPZ.Forced
+public import Complexity.Algorithms.WordRAM.PPZ.Round
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
@@ -923,9 +928,11 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ModeExpans
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.NativeRecovery
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEntry
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketEvaluator
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.PacketTerms
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Recursion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Reindex
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Schedule
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduleCount
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 public import Complexity.Computability.Circuit.Frontier.TwoSidedWitness
@@ -1271,8 +1278,10 @@ public import Complexity.Computability.Complexity.Classes.Space.TQBF.Prenex
 public import Complexity.Computability.Complexity.Classes.Space.TQBF.Reduction
 public import Complexity.Computability.Complexity.Classes.Space.Time
 public import Complexity.Computability.Complexity.Classes.Sparse
+public import Complexity.Computability.Complexity.Classes.Sparse.BoundedTruthTable
 public import Complexity.Computability.Complexity.Classes.Sparse.Conjunctive
 public import Complexity.Computability.Complexity.Classes.Sparse.Fortune
+public import Complexity.Computability.Complexity.Classes.Sparse.Hausdorff
 public import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
 public import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
 public import Complexity.Computability.Complexity.Classes.Sparse.Prune
@@ -1281,6 +1290,7 @@ public import Complexity.Computability.Complexity.Classes.TFNP.SearchToDecision
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Completeness
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses.Principles
+public import Complexity.Computability.Complexity.Classes.Tally
 public import Complexity.Computability.Complexity.Classes.Time
 public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 public import Complexity.Computability.Complexity.Classes.Time.Polynomial

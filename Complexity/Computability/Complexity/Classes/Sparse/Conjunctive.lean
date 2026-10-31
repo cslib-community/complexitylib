@@ -75,6 +75,14 @@ so far, and the scan reads the whole level, so that every level is one fixed com
   `Cslib.Complexity.Conjunctive.mem_searchRight`: `SEARCH-RIGHT` keeps at most `s + 2` nodes of
   its level, among them the last node of every initial run of nodes whose queries lie in a set
   with at most `s` members, when the next node has a query outside it.
+* `Cslib.Complexity.Conjunctive.IsLargest`,
+  `Cslib.Complexity.Conjunctive.atLeast_append_mem_SAT_of_le`,
+  `Cslib.Complexity.Conjunctive.atLeast_append_notMem_SAT_of_lt`,
+  `Cslib.Complexity.Conjunctive.exists_isLargest_child`,
+  `Cslib.Complexity.Conjunctive.pairwise_expand`: the nodes of a level in the left set are those
+  at most its largest satisfiable node, which has a child that is the largest satisfiable node of
+  the next level; expanding keeps levels in decreasing order. The bounded truth-table procedure
+  reuses them.
 * `Cslib.Complexity.Conjunctive.accepts_iff`: the procedure decides satisfiability when the
   queries come from a conjunctive reduction of `SAT` and few queries of bounded length are in the
   target.
@@ -277,7 +285,7 @@ private theorem units_append_mem_SAT_iff {a : List (Literal ℕ)} :
   · exact (List.map_inj_left.1 h l hl).symm
 
 /-- `a` is the lexicographically largest satisfiable node fixing its occurrences. -/
-private def IsLargest (φ : CNF ℕ) (a : List (Literal ℕ)) : Prop :=
+def IsLargest (φ : CNF ℕ) (a : List (Literal ℕ)) : Prop :=
   units a ++ φ ∈ SAT ∧ ∀ b : List (Literal ℕ), b.map Prod.fst = a.map Prod.fst →
     units b ++ φ ∈ SAT → b.map Prod.snd ≤ a.map Prod.snd
 
@@ -288,7 +296,7 @@ private theorem eq_of_map_fst_eq_of_map_snd_eq {a b : List (Literal ℕ)}
     List.unzip_snd, hfst, hsnd]
 
 /-- A node at most the largest satisfiable node is in the left set. -/
-private theorem atLeast_append_mem_SAT_of_le {c x : List (Literal ℕ)} (hc : IsLargest φ c)
+theorem atLeast_append_mem_SAT_of_le {c x : List (Literal ℕ)} (hc : IsLargest φ c)
     (hfst : x.map Prod.fst = c.map Prod.fst) (hle : x.map Prod.snd ≤ c.map Prod.snd) :
     atLeast x ++ φ ∈ SAT := by
   obtain ⟨σ, hσ, hcσ⟩ := units_append_mem_SAT_iff.1 hc.1
@@ -298,7 +306,7 @@ private theorem atLeast_append_mem_SAT_of_le {c x : List (Literal ℕ)} (hc : Is
   rw [hcσ, hx, hc', hfst]
 
 /-- A node above the largest satisfiable node is not in the left set. -/
-private theorem atLeast_append_notMem_SAT_of_lt {c z : List (Literal ℕ)} (hc : IsLargest φ c)
+theorem atLeast_append_notMem_SAT_of_lt {c z : List (Literal ℕ)} (hc : IsLargest φ c)
     (hfst : z.map Prod.fst = c.map Prod.fst) (hlt : c.map Prod.snd < z.map Prod.snd) :
     atLeast z ++ φ ∉ SAT := by
   rintro hz
@@ -313,7 +321,7 @@ private theorem atLeast_append_notMem_SAT_of_lt {c z : List (Literal ℕ)} (hc :
 
 /-- Some child of the largest satisfiable node of a level is the largest satisfiable node of the
 next level. -/
-private theorem exists_isLargest_child {c : List (Literal ℕ)} (hc : IsLargest φ c) (v : ℕ) :
+theorem exists_isLargest_child {c : List (Literal ℕ)} (hc : IsLargest φ c) (v : ℕ) :
     ∃ x, IsLargest φ (c ++ [(v, x)]) := by
   /- A satisfiable node fixing the occurrences of `c` and then `v` is a child of `c`, or extends a
   node below `c`. -/
@@ -364,7 +372,7 @@ private theorem exists_isLargest_child {c : List (Literal ℕ)} (hc : IsLargest 
 /-- Expanding a level in decreasing order gives a level in decreasing order: the `true` child of a
 node comes before its `false` child, and the children of a larger node before those of a smaller
 one. -/
-private theorem pairwise_expand {pre : List ℕ} {nodes : List (List (Literal ℕ))} (v : ℕ)
+theorem pairwise_expand {pre : List ℕ} {nodes : List (List (Literal ℕ))} (v : ℕ)
     (hfst : ∀ a ∈ nodes, a.map Prod.fst = pre)
     (h : nodes.Pairwise fun a b => b.map Prod.snd < a.map Prod.snd) :
     (Fortune.expand v nodes).Pairwise fun a b => b.map Prod.snd < a.map Prod.snd := by

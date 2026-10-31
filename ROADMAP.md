@@ -202,9 +202,8 @@ index links to canonical definitions rather than keeping a second set.
 - **Reducibilities** ([#1351]): logspace Turing reductions, in an oracle model whose query tape is
   not charged to the space bound, and their transitivity; the rest of the inclusion hierarchy of
   Ladner, Lynch and Selman, and its separations.
-- **Sparse and tally sets** ([#1819]): TALLY; `P/poly = P^SPARSE` (Meyer), extending
-  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`; a sparse NP-hard set under bounded
-  truth-table reductions gives `P = NP` (Ogihara and Watanabe).
+- **Sparse and tally sets** ([#1819]): `P/poly = P^SPARSE` (Meyer), extending
+  `PPoly.of_sparse` in `Circuit/Boolean/Sparse.lean`.
 - **Berman–Hartmanis:** p-isomorphism and paddability; paddable NP-complete sets are p-isomorphic,
   so the standard NP-complete problems are all p-isomorphic to SAT; the isomorphism conjecture as a
   hypothesis; every many-one complete set for EXP is complete under one-one, length-increasing
@@ -338,10 +337,10 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 
 - Proof-space lower bounds, Frege, cutting planes, polynomial calculus and sum-of-squares, and
   certified DPLL solver runtimes.
-- **Feasible interpolation:** from a Resolution refutation of `A(x,y) ∧ B(x,z)`, construct a
-  circuit separating the `x` assignments extendible to `A` from those extendible to `B`, with
-  proof-size and extraction-time bounds. Prove the monotone variant under its polarity
-  hypotheses and transfer circuit and communication lower bounds to proof-size lower bounds.
+- **Feasible interpolation** ([#1817]): extraction-time bounds for Resolution interpolants over
+  an explicit circuit encoding; a sharper monotone separator bound (Alon–Boppana) for a
+  stronger clique–coloring size lower bound; and the transfer of communication lower bounds to
+  proof-size lower bounds.
 - **Proof search:** automatizability and weak automatizability with explicit encodings and
   runtime dependence on the shortest proof; proof-search reductions built on the Cook–Reckhow
   and p-simulation APIs; then reflection principles and bounded-arithmetic witnessing theorems.
@@ -455,7 +454,7 @@ each statement against the numbered result. Organize modules by subject, not cha
   `Kolmogorov/Conditional.lean`, and `Kolmogorov/MINcKT.lean`), as independently scoped
   developments; the reverse
   multi-tape-to-single-tape simulation and machine-backed Nisan–Wigderson decoding.
-- **Quantum computation** ([#896]): BQP ⊆ PP; reusable
+- **Quantum computation** ([#896]): reusable
   circuit, channel and measurement semantics with uniformity and approximation costs, reusing
   suitable quantum foundations rather than incompatible models; BQP, QMA and related query,
   communication and interactive classes, with amplification, containments and complete
@@ -868,5 +867,6 @@ not planned, not as proved.
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
+[#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1819]: https://github.com/cslib-community/complexitylib/issues/1819
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
