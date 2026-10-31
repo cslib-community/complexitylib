@@ -65,6 +65,10 @@ heads), and the admissibility constant is `6 (3 k + 1) (s + k + 4)` for `s` stat
   `PPTIME_subset_iUnion_DTIME_of_contractionAlgorithm`: the class containments assuming only a
   contraction algorithm.
 
+* `SharpTIME_subset_iUnion_FTIME_of_contractionAlgorithm`: exact terminal counting with binary
+  output, assuming only a contraction algorithm.
+* `exists_computableInTimeAndSpace_of_mem_SharpTIME_of_contractionAlgorithm`: its joint
+  time and polynomial-workspace bound.
 * `exists_decidableInTimeAndSpace_of_mem_NTIME_of_contractionAlgorithm`,
   `exists_decidableInTimeAndSpace_of_mem_BPTIME_of_contractionAlgorithm`,
   `exists_decidableInTimeAndSpace_of_mem_PPTIME_of_contractionAlgorithm`: the joint time and
@@ -219,6 +223,26 @@ theorem networkFamilies_explicitAdmissible :
 /-! ### The class containments assuming a contraction algorithm -/
 
 variable {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
+
+/-- Exact terminal-path counting with subexponential time and polynomial workspace,
+conditional only on a contraction algorithm for admissible explicit networks. -/
+theorem exists_computableInTimeAndSpace_of_mem_SharpTIME_of_contractionAlgorithm
+    (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => G.2.contraction)
+      ExplicitAdmissible) (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n)
+    {f : α → ℕ} (hf : f ∈ SharpTIME enc T) :
+    ∃ C d : ℕ, ComputableInTimeAndSpace f enc encNat
+      (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
+      (fun a => T (enc a).length ^ d) :=
+  exists_computableInTimeAndSpace_of_mem_SharpTIME networkFamilies_explicitAdmissible A hT hTn hf
+
+/-- The functional counting containment, assuming only the explicit-network contraction
+algorithm. Output is the exact natural count in binary. -/
+theorem SharpTIME_subset_iUnion_FTIME_of_contractionAlgorithm
+    (A : ContractionAlgorithm (encPair encNat encExplicitNetwork) (fun G => G.2.contraction)
+      ExplicitAdmissible) (hT : TimeConstructible T) (hTn : ∀ n, max n 2 ≤ T n) :
+    SharpTIME enc T ⊆ ⋃ C : ℕ,
+      FTIME enc encNat (fun n => 2 ^ (C * T n / Nat.sqrt (Nat.log 2 (T n)))) :=
+  SharpTIME_subset_iUnion_FTIME networkFamilies_explicitAdmissible A hT hTn
 
 /-- **Nondeterministic time with polynomial workspace**, conditional only on a
 contraction algorithm for admissible explicit networks. For time-constructible `T` with
