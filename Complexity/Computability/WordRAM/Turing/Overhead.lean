@@ -12,6 +12,7 @@ public import Complexity.Computability.WordRAM.NativeDegree
 public import Complexity.Computability.GenericRAM.Simulation.Degree
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 
 /-!
 # Explicit overhead of the word-RAM simulation by Turing machines
@@ -58,20 +59,12 @@ open Turing.MultiTapeTM Cslib.GenericRAM ComputableInDegree
 
 section Lengths
 
-theorem length_encNat_le_self (n : ℕ) : (encNat n).length ≤ n := by
-  rw [encNat_apply, Nat.size_eq_bits_len]
-  exact Nat.size_le.mpr n.lt_two_pow_self
-
-theorem length_encNat_le_of_lt {w v : ℕ} (hv : v < 2 ^ w) : (encNat v).length ≤ w := by
-  rw [encNat_apply, Nat.size_eq_bits_len]
-  exact Nat.size_le.mpr hv
-
 /-- A word list that fits `w`-bit words has encoded length at most `n (2 w + 1)`. -/
 theorem length_encList_le_of_inputFits {w : ℕ} {l : List ℕ} (h : InputFits w l) :
     (encList encNat l).length ≤ l.length * (2 * w + 1) := by
   rw [length_encList]
   have hle : ∀ x ∈ l, 2 * (encNat x).length + 1 ≤ 2 * w + 1 := fun x hx => by
-    have := length_encNat_le_of_lt (h.2 x hx)
+    have := length_encNat_le_of_lt_two_pow (h.2 x hx)
     omega
   calc (l.map fun x => 2 * (encNat x).length + 1).sum
       ≤ (l.map fun _ => 2 * w + 1).sum := List.sum_le_sum hle
@@ -125,12 +118,6 @@ private theorem length_encList_zipIdx_le (l : List ℕ) (k : ℕ) :
       List.length_cons, length_encPair] at h2 ⊢
     nlinarith
 
-private theorem length_encList_take_le (l : List ℕ) (i : ℕ) :
-    (encList encNat (l.take i)).length ≤ (encList encNat l).length := by
-  conv_rhs => rw [← List.take_append_drop i l]
-  rw [encList_append, List.length_append]
-  omega
-
 /-- The counted fold is cubic, with quadratic output. -/
 theorem initFold_degree :
     ComputableInDegree (fun l : List ℕ => l.foldl initStep (0, [])) (encList encNat)
@@ -158,7 +145,7 @@ theorem initFold_degree :
     (fun l i hi => by
       rw [foldl_initStep]
       have hlen := length_le_length_encList encNat l
-      have htake := length_encList_take_le l i
+      have htake := length_encList_take_le encNat l i
       have hti : (l.take i).length ≤ l.length := List.length_take_le' i l
       have hz := length_encList_zipIdx_le (l.take i) 0
       have hn := length_encNat_le_self (0 + (l.take i).length)
@@ -350,14 +337,6 @@ end Main
 
 section Bits
 
-/-- A linear-time, linear-space computation has cost and output degree one. -/
-private theorem degree_of_linear {α β : Type} {ei : α ↪ List Bool} {eo : β ↪ List Bool}
-    {f : α → β}
-    (h : Turing.MultiTapeTM.ComputableInO f ei eo (fun a => (ei a).length)
-      (fun a => (ei a).length)) :
-    ComputableInDegree f ei eo 1 1 :=
-  h.computableInDegree ⟨1, fun a => by simp⟩ ⟨1, fun a => by simp⟩ le_rfl
-
 private theorem foldl_snoc_map {β γ : Type} (g : β → γ) (l : List β) (acc : List γ) :
     l.foldl (fun acc b => acc ++ [g b]) acc = acc ++ l.map g := by
   induction l generalizing acc with
@@ -436,7 +415,8 @@ theorem logWidthBound_degree (k : ℕ) :
     ComputableInDegree (fun l : List Bool => k * (Nat.size l.length + 1)) encBits encUnary 2 1 := by
   have hsize : ComputableInDegree (fun l : List Bool => (encNat l.length).length) encBits
       encUnary 2 1 :=
-    ((degree_of_linear (ComputableInO.lengthUnary.comp_enc encNat)).comp lengthBinary_degree).mono
+    (((ComputableInO.lengthUnary.comp_enc encNat).computableInDegree (d := 1) (e := 1)
+      ⟨1, fun _ => by simp⟩ ⟨1, fun _ => by simp⟩ le_rfl).comp lengthBinary_degree).mono
   have h := ((unaryMulConst_degree k).comp (unary_succ.comp hsize)).mono (d' := 2) (e' := 1)
   convert h using 1
   funext l

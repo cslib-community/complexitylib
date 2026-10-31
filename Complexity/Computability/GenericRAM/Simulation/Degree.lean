@@ -87,8 +87,10 @@ theorem moveCertificate_hasDegree (enc : M.Encoding) (N : M.NativePrimitives enc
 theorem readRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     (⟨SparseMemory.readTime enc.address enc.value, SparseMemory.readSpace enc.address enc.value,
       SparseMemory.read_inO enc.address enc.value⟩ :
-        NativeCertificate (fun q : (M.Address × SparseMemory M.Address M.Value) × M.Value =>
-          SparseMemory.read q.2 q.1.1 q.1.2) _ _).HasDegree D := by
+        NativeCertificate
+          (fun (((address, memory), defaultValue) :
+              (M.Address × SparseMemory M.Address M.Value) × M.Value) =>
+            SparseMemory.read defaultValue address memory) _ _).HasDegree D := by
   refine hasDegree_of_space_linear _ (DegreeBounded.mono_deg ⟨32, fun q => ?_⟩ hD)
     ⟨32, fun q => ?_⟩ (by omega)
   · have hq : (SparseMemory.queryEncoding enc.address enc.value q.1).length ≤
@@ -110,8 +112,10 @@ theorem readRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
 theorem writeRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     (⟨SparseMemory.writeTime enc.address enc.value, SparseMemory.writeSpace enc.address enc.value,
       SparseMemory.insert_inO enc.address enc.value⟩ :
-        NativeCertificate (fun q : (M.Address × M.Value) × SparseMemory M.Address M.Value =>
-          q.2.insert q.1.1 q.1.2) _ _).HasDegree D := by
+        NativeCertificate
+          (fun (((address, value), memory) :
+              (M.Address × M.Value) × SparseMemory M.Address M.Value) =>
+            memory.insert address value) _ _).HasDegree D := by
   refine hasDegree_of_space_linear _ (DegreeBounded.mono_deg ⟨33, fun q => ?_⟩ hD)
     ⟨33, fun q => ?_⟩ (by omega)
   · have hq : (SparseMemory.queryEncoding enc.address enc.value (q.1.1, q.2)).length ≤
