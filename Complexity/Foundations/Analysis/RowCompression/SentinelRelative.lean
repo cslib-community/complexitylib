@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.Analysis.RowCompression.Perturbation
-public import Complexity.Foundations.Analysis.RowCompression.Preloss
+public import Complexity.Foundations.Analysis.RowCompression.ClippedError
 public import Complexity.Foundations.Analysis.RowCompression.SentinelIteration
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -50,8 +50,6 @@ devices, not objects stored by the compression algorithm.
 
 ## Main results
 
-* `Cslib.RowCompression.abs_sub_le_of_clippedError_le`: small clipped errors give the actual
-  relative first-channel and absolute second-channel bounds.
 * `Cslib.RowCompression.abs_increment_le_of_clippedError_le`: adjacent prefix errors bound
   the actual two-channel increment.
 * `Cslib.RowCompression.iterate_sentinelState_stability_of_clippedError_le`: quantitative
@@ -71,17 +69,6 @@ public section
 namespace Cslib.RowCompression
 
 open Finset
-
-/-- Below one, clipping discards no information. The first target may be arbitrarily large. -/
-theorem abs_sub_le_of_clippedError_le {d v ε : ℝ} {w : Fin 2 → ℝ}
-    (hd : 0 ≤ d) (hε : ε < 1) (he : clippedError d v w ≤ ε) :
-    |w 0 - d| ≤ (1 + d) * ε ∧ |w 1 - v| ≤ ε := by
-  have hfirst : |w 0 - d| / (1 + d) ≤ ε :=
-    (min_le_iff.mp ((le_max_left _ _).trans he)).resolve_left (not_le.mpr hε)
-  have hsecond : |w 1 - v| ≤ ε :=
-    (min_le_iff.mp ((le_max_right _ _).trans he)).resolve_left (not_le.mpr hε)
-  refine ⟨?_, hsecond⟩
-  simpa only [mul_comm] using (div_le_iff₀ (by linarith : 0 < 1 + d)).mp hfirst
 
 /-- Adjacent small clipped-prefix errors control the actual increment in both channels. -/
 theorem abs_increment_le_of_clippedError_le {ι : Type*} {Δ : ℕ → ι → Fin 2 → ℝ}

@@ -43,10 +43,11 @@ the number of pairs of labels and `Δ` the maximum degree:
 **Labels.** `rowLabels` and `colLabels` fix one whole label at a time by the method of conditional
 expectations, minimizing the closed-form average `partialIncidencePotential` of the potential
 `Φ = ∑_γ (X_γ - M / D)²`, where `X_γ` counts the edges with the pair of labels `γ`
-(`Cslib.BalancedSchedules.greedyLabelPassBy`). For independent uniform labels, `𝔼 Φ ≤ 2 M Δ`
-(`Cslib.BalancedSchedules.expect_incidence_potential_le`), so the chosen labels have `Φ ≤ 2 M Δ`
-(`potential_labels_le`), and with `2 Δ D² ≤ M` every class has at most `2M / D` edges
-(`occupancy_labels_mul_le`).
+(`Cslib.BalancedSchedules.greedyLabelPassBy`). Ties go to the first candidate in radix order
+(`labelCandidates`), the order in which a machine streams the candidates by counting. For
+independent uniform labels, `𝔼 Φ ≤ 2 M Δ` (`Cslib.BalancedSchedules.expect_incidence_potential_le`),
+so the chosen labels have `Φ ≤ 2 M Δ` (`potential_labels_le`), and with `2 Δ D² ≤ M` every class
+has at most `2M / D` edges (`occupancy_labels_mul_le`).
 
 **Packets.** `Packing.ofLabels` packs the edges for any labels. Number the edges with each pair
 of labels `γ` from zero in the order of `E` (`classIndex`), and pad each class to `h L` slots,
@@ -58,8 +59,8 @@ coordinates where the symbols differ. So each packet holds `2 ^ (a - a')` slots 
 `2 ^ a'` orientations of its pairs, as in the source, and there are `h D` packets.
 
 The source's padded size `H_pad` is our `h L`. All constructions are executable finite
-computations with mathematical correctness proofs; the polynomial time and space bound of the
-source is not certified here.
+computations with mathematical correctness proofs. A native polynomial-time computation of
+`packing` is in `Complexity/Computability/PolyTime/PacketPacking.lean`.
 
 ## Main definitions
 
@@ -69,6 +70,7 @@ source is not certified here.
   `Cslib.PacketPacking.numBlocks`: the pair of labels of an edge, its number within its class,
   and the number of blocks.
 * `Cslib.PacketPacking.Packing.ofLabels`: the packing for given labels.
+* `Cslib.PacketPacking.labelCandidates`: the candidate labels, in radix order.
 * `Cslib.PacketPacking.rowLabels`, `Cslib.PacketPacking.colLabels`: the labels chosen by
   conditional expectations.
 * `Cslib.PacketPacking.packing`: the packing of Lemma D.3.
@@ -426,16 +428,26 @@ end OfLabels
 
 section Labels
 
+/-- The candidate labels in radix order: the word numbered `j < r ^ a` has as its digit `i` the
+digit `i` of `j` in base `r`, least significant first (`finFunctionFinEquiv`). A machine streams
+them by counting `j`. -/
+@[expose] def labelCandidates (a r : ℕ) : List (Fin a → Fin r) :=
+  (List.finRange (r ^ a)).map finFunctionFinEquiv.symm
+
+/-- Every label is a candidate. -/
+theorem mem_labelCandidates {a r : ℕ} (word : Fin a → Fin r) : word ∈ labelCandidates a r :=
+  List.mem_map.mpr ⟨finFunctionFinEquiv word, List.mem_finRange _, Equiv.symm_apply_apply _ _⟩
+
 variable [Fintype E] [DecidableEq R] [FinEnum R] [DecidableEq C] [FinEnum C]
   (rowOf : E → R) (colOf : E → C) (a r : ℕ) [NeZero r]
 
 /-- The partial labels after the conditional-expectation pass: every row vertex, then every column
-vertex, receives the first whole label minimizing the conditional expectation of the collision
+vertex, receives the first candidate label minimizing the conditional expectation of the collision
 potential of the pairs of labels, `partialIncidencePotential`. (In the convention of
 `Cslib.BalancedSchedules`, rows are the variables and columns the factors.) -/
 @[expose] def partialLabels : (R → Option (Fin a → Fin r)) × (C → Option (Fin a → Fin r)) :=
   greedyLabelPassBy (partialIncidencePotential fun e => (colOf e, rowOf e))
-    (List.Pi.enum fun _ : Fin a => Fin r)
+    (labelCandidates a r)
     ((FinEnum.toList R).map Sum.inl ++ (FinEnum.toList C).map Sum.inr)
     (fun _ => none, fun _ => none)
 
@@ -460,7 +472,7 @@ theorem potential_labels_le {Δ : ℕ} (hrow : ∀ v, #{e | rowOf e = v} ≤ Δ)
   obtain ⟨hscore, hfill, -⟩ := greedyLabelPassBy_spec (partialIncidencePotential edge)
     (fun a d v hv => (expect_partialIncidencePotential_update_variable edge a d v hv).le)
     (fun a d f hf => (expect_partialIncidencePotential_update_factor edge a d f hf).le)
-    (List.Pi.enum fun _ : Fin a => Fin r) (fun word => List.Pi.mem_enum word) slots
+    (labelCandidates a r) mem_labelCandidates slots
     (fun _ => none, fun _ => none)
   have hv (v : R) : ∃ word, assigned.1 v = some word := hfill (.inl v) (by simp [slots])
   have hf (w : C) : ∃ word, assigned.2 w = some word := hfill (.inr w) (by simp [slots])
