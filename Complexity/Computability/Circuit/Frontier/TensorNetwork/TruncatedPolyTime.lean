@@ -35,7 +35,7 @@ the binary-digit points (`DescribedNetwork.digitPoints_polyTime`), the inputs of
 **The loop.** The machine visits the digit points with the binary-index fold
 `Cslib.GenericRAM.IndexFold`, keeping the index, the input and the values so far; each round
 calls the given certificate once (`engineStep`, `engineStepCertificate`, `run_engineStep`). Then it
-interpolates.
+interpolates (`engineRecover`).
 
 **Direct summation.** A native certificate of the entries gives one of the specialized entries
 (`specEntryCertificate`: the entry, then Horner's rule), hence direct summation over `A_P` of a
@@ -106,8 +106,8 @@ theorem constCoeffs_polyTime :
 coefficient list, with `P` and `ℓ` in unary. -/
 theorem horner_polyTime :
     ComputableInPolyTime
-      (fun q : (ℕ × ℕ × List ℕ × List ℕ) × List ℕ =>
-        peval q.1.1 q.1.2.2.1 (constCoeffs q.1.2.1 q.2) q.1.2.2.2)
+      (fun (((P, ℓ, fl, ζ), c) : (ℕ × ℕ × List ℕ × List ℕ) × List ℕ) =>
+        peval P fl (constCoeffs ℓ c) ζ)
       (encPair encSpecData (encList encNat)) (encList encNat) := by
   have hd := ComputableInPolyTime.fst encSpecData (encList encNat)
   have hc := ComputableInPolyTime.snd encSpecData (encList encNat)
@@ -141,8 +141,8 @@ namespace DescribedNetwork
 specialized network. -/
 theorem specNet_polyTime :
     ComputableInPolyTime
-      (fun q : (ℕ × ℕ × List ℕ × List ℕ) × DescribedNetwork T =>
-        specNet q.1.1 q.1.2.1 q.1.2.2.1 q.1.2.2.2 q.2)
+      (fun (((P, ℓ, fl, ζ), G) : (ℕ × ℕ × List ℕ × List ℕ) × DescribedNetwork T) =>
+        specNet P ℓ fl ζ G)
       (encPair encSpecData (encDescribed encT)) (encDescribed (encSpecDesc encT)) := by
   have hG := ComputableInPolyTime.snd encSpecData (encDescribed encT)
   have hd := ComputableInPolyTime.fst encSpecData (encDescribed encT)
@@ -183,8 +183,8 @@ end DescribedNetwork
 /-- **Reading off the interpolant is polynomial-time**, with `P` and `ℓ` in unary. -/
 theorem interpRecover_polyTime :
     ComputableInPolyTime
-      (fun q : ℕ × ℕ × List ℕ × List (List ℕ) × List (List ℕ) =>
-        interpRecover q.1 q.2.1 q.2.2.1 q.2.2.2.1 q.2.2.2.2)
+      (fun ((P, ℓ, fl, pts, ys) : ℕ × ℕ × List ℕ × List (List ℕ) × List (List ℕ)) =>
+        interpRecover P ℓ fl pts ys)
       (encPair encUnary (encPair encUnary (encPair (encList encNat)
         (encPair (encList (encList encNat)) (encList (encList encNat))))))
       (encList encNat) := by
@@ -230,21 +230,21 @@ abbrev encCore (encT : T ↪ List Bool) :
 abbrev encEngine (encT : T ↪ List Bool) : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T ↪ List Bool :=
   encPair (encList encNat) (encTrunc encT)
 
-/-- The input of the contraction at the `k`-th digit point, for a modulus `y.1` and an input
-`y.2 = (P, ℓ, r, G)`. -/
-@[expose] def coreInput (y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) (k : ℕ) :
-    ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) :=
-  (y.2.1, y.1, y.2.2.2.1,
-    DescribedNetwork.specNet y.2.1 y.2.2.1 y.1 (FastContraction.digits y.1.length k) y.2.2.2.2)
+/-- The input `(P, fl, r, G')` of the contraction at the `k`-th digit point, for a modulus `fl` and
+an input `(P, ℓ, r, G)`: `G'` is `G` specialized at that point. -/
+@[expose] def coreInput :
+    List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T → ℕ → ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T)
+  | (fl, P, ℓ, r, G), k =>
+    (P, fl, r, DescribedNetwork.specNet P ℓ fl (FastContraction.digits fl.length k) G)
 
 variable (core : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) → List ℕ)
 
-/-- **One round of the reduction** at the index `p.1`: append the contraction at the `p.1`-th digit
-point to the values so far. -/
-@[expose] def engineStep
-    (p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ))) :
-    (List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ) :=
-  (p.2.1, p.2.2 ++ [core (coreInput p.2.1 p.1)])
+/-- **One round of the reduction** at the index `k`, for the modulus and input `y` and the values
+`ys` so far: append the contraction at the `k`-th digit point. -/
+@[expose] def engineStep :
+    ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) →
+      (List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)
+  | (k, (y, ys)) => (y, ys ++ [core (coreInput y k)])
 
 /-- After `j` rounds, the values are the contractions at the first `j` digit points. -/
 theorem run_engineStep (y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) (j : ℕ) :
@@ -257,14 +257,19 @@ theorem run_engineStep (y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T)
     simp only [IndexFold.step, engineStep, List.range_succ, List.map_append, List.map_cons,
       List.map_nil]
 
+/-- **Recovery from a final state** `(k, ((fl, P, ℓ, r, G), ys))` of the loop: read the truncated
+contraction off the interpolant of the values `ys` at the digit points. -/
+@[expose] def engineRecover :
+    ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) → List ℕ
+  | (_, ((fl, P, ℓ, _, G), ys)) =>
+    interpRecover P ℓ fl
+      ((List.range (DescribedNetwork.pointCount ℓ G)).map (FastContraction.digits fl.length)) ys
+
 /-- **The reduction is the streaming loop followed by recovery.** -/
-theorem interpContract_eq_run (y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) :
-    DescribedNetwork.interpContract core y.1 y.2.1 y.2.2.1 y.2.2.2.1 y.2.2.2.2 =
-      interpRecover y.2.1 y.2.2.1 y.1
-        ((List.range (DescribedNetwork.pointCount y.2.2.1 y.2.2.2.2)).map
-          (FastContraction.digits y.1.length))
-        (IndexFold.run (engineStep core) (DescribedNetwork.pointCount y.2.2.1 y.2.2.2.2)
-          (y, [])).2.2 := by
+theorem interpContract_eq_run (fl : List ℕ) (P ℓ r : ℕ) (G : DescribedNetwork T) :
+    DescribedNetwork.interpContract core fl P ℓ r G =
+      engineRecover (IndexFold.run (engineStep core) (DescribedNetwork.pointCount ℓ G)
+        ((fl, P, ℓ, r, G), [])) := by
   rw [run_engineStep, DescribedNetwork.interpContract, List.map_map]
   rfl
 
@@ -282,8 +287,8 @@ theorem digits_polyTime_binary :
 
 /-- The number of points is polynomial-time, in unary. -/
 theorem pointCount_polyTime :
-    ComputableInPolyTime (fun y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T =>
-      DescribedNetwork.pointCount y.2.2.1 y.2.2.2.2) (encEngine encT) encUnary := by
+    ComputableInPolyTime (fun ((_, _, ℓ, _, G) : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) =>
+      DescribedNetwork.pointCount ℓ G) (encEngine encT) encUnary := by
   have hx := ComputableInPolyTime.snd (encList encNat) (encTrunc encT)
   have hℓ := (ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd _ _).comp hx)
   have hG := (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
@@ -297,8 +302,8 @@ theorem pointCount_polyTime :
 /-- The input of the contraction at a binary index is polynomial-time. -/
 theorem coreInput_polyTime :
     ComputableInPolyTime
-      (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) =>
-        coreInput p.2.1 p.1)
+      (fun ((k, (y, _)) : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ))) =>
+        coreInput y k)
       (encPair encNat (encPair (encEngine encT) (encList (encList encNat)))) (encCore encT) := by
   have hy := (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd encNat
     (encPair (encEngine encT) (encList (encList encNat))))
@@ -331,11 +336,7 @@ noncomputable def engineStepCertificate
 
 /-- Recovery from the final state of the loop is polynomial-time. -/
 theorem engineRecover_polyTime :
-    ComputableInPolyTime
-      (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) =>
-        interpRecover p.2.1.2.1 p.2.1.2.2.1 p.2.1.1
-          ((List.range (DescribedNetwork.pointCount p.2.1.2.2.1 p.2.1.2.2.2.2)).map
-            (FastContraction.digits p.2.1.1.length)) p.2.2)
+    ComputableInPolyTime (engineRecover (T := T))
       (encPair encNat (encPair (encEngine encT) (encList (encList encNat)))) (encList encNat) := by
   let encS := encPair encNat (encPair (encEngine encT) (encList (encList encNat)))
   have hy : ComputableInPolyTime
@@ -374,17 +375,17 @@ index, the input and the values so far, then recovery. On input `(fl, (P, ℓ, r
 `interpContract core fl P ℓ r G`. -/
 noncomputable def engineCertificate
     (cc : NativeCertificate core (encCore encT) (encList encNat)) :
-    NativeCertificate (fun y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T =>
-        DescribedNetwork.interpContract core y.1 y.2.1 y.2.2.1 y.2.2.2.1 y.2.2.2.2)
+    NativeCertificate (fun ((fl, P, ℓ, r, G) : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) =>
+        DescribedNetwork.interpContract core fl P ℓ r G)
       (encEngine encT) (encList encNat) :=
   ((NativeCertificate.ofPolyTime engineRecover_polyTime).comp
     (IndexFold.certificate
       (NativeCertificate.ofPolyTime (ComputableInPolyTime.unary_to_binary.comp pointCount_polyTime))
       (NativeCertificate.ofPolyTime
         (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const [])))
-      (engineStepCertificate core cc))).congr fun y => by
+      (engineStepCertificate core cc))).congr fun ⟨fl, P, ℓ, r, G⟩ => by
     simp only [Function.comp_apply]
-    rw [interpContract_eq_run, run_engineStep]
+    rw [interpContract_eq_run]
 
 /-! ### Direct summation as the contraction over `A_P` -/
 
@@ -394,8 +395,8 @@ noncomputable def directCoreCertificate
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) :
     NativeCertificate
-      (fun x : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) =>
-        DescribedNetwork.sumValue SumOps.galois (specEntry entry) (x.1, x.2.1) x.2.2.2)
+      (fun ((P, fl, _, G') : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T)) =>
+        DescribedNetwork.sumValue SumOps.galois (specEntry entry) (P, fl) G')
       (encCore encT) (encList encNat) :=
   ((DescribedNetwork.contractionCertificate (specEntry entry) SumOps.galois_polyTime
       (specEntryCertificate entry ce)).comp
@@ -405,7 +406,7 @@ noncomputable def directCoreCertificate
         ((ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
           (ComputableInPolyTime.snd _ _)))) :
         ComputableInPolyTime
-          (fun x : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) => ((x.1, x.2.1), x.2.2.2))
+          (fun ((P, fl, _, G') : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T)) => ((P, fl), G'))
           (encCore encT)
           (DescribedNetwork.encInput (encPair encUnary (encList encNat))
             (encSpecDesc encT))))).congr fun _ => rfl
@@ -424,8 +425,8 @@ theorem le_two_pow_length_modulus (n : ℕ) : n ≤ 2 ^ (FastContraction.modulus
 polynomial-time. -/
 theorem modulusChoice_polyTime :
     ComputableInPolyTime
-      (fun x : ℕ × ℕ × ℕ × DescribedNetwork T =>
-        (FastContraction.modulus (DescribedNetwork.pointCount x.2.1 x.2.2.2), x))
+      (fun ((P, ℓ, r, G) : ℕ × ℕ × ℕ × DescribedNetwork T) =>
+        (FastContraction.modulus (DescribedNetwork.pointCount ℓ G), (P, ℓ, r, G)))
       (encTrunc encT) (encEngine encT) := by
   have hpc : ComputableInPolyTime
       (fun x : ℕ × ℕ × ℕ × DescribedNetwork T => DescribedNetwork.pointCount x.2.1 x.2.2.2)
@@ -440,8 +441,8 @@ theorem modulusChoice_polyTime :
 `FastContraction.modulus n` for `n = (ℓ - 1) k + 1` points. -/
 theorem interpContract_direct_eq (P ℓ r : ℕ) (G : DescribedNetwork T) :
     DescribedNetwork.interpContract
-        (fun x : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) =>
-          DescribedNetwork.sumValue SumOps.galois (specEntry entry) (x.1, x.2.1) x.2.2.2)
+        (fun ((P, fl, _, G') : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T)) =>
+          DescribedNetwork.sumValue SumOps.galois (specEntry entry) (P, fl) G')
         (FastContraction.modulus (DescribedNetwork.pointCount ℓ G)) P ℓ r G =
       G.truncContraction entry P ℓ := by
   refine DescribedNetwork.interpContract_eq (entry := entry)
@@ -458,10 +459,10 @@ noncomputable def truncDirectCertificate
     (ce : NativeCertificate (fun q : T × List Bool => entry q.1 q.2) (encPair encT encBits)
       (encList encNat)) :
     NativeCertificate
-      (fun x : ℕ × ℕ × ℕ × DescribedNetwork T => x.2.2.2.truncContraction entry x.1 x.2.1)
+      (fun ((P, ℓ, _, G) : ℕ × ℕ × ℕ × DescribedNetwork T) => G.truncContraction entry P ℓ)
       (encTrunc encT) (encList encNat) :=
   ((engineCertificate _ (directCoreCertificate entry ce)).comp
-    (NativeCertificate.ofPolyTime modulusChoice_polyTime)).congr fun x =>
-      interpContract_direct_eq entry x.1 x.2.1 x.2.2.1 x.2.2.2
+    (NativeCertificate.ofPolyTime modulusChoice_polyTime)).congr fun ⟨P, ℓ, r, G⟩ =>
+      interpContract_direct_eq entry P ℓ r G
 
 end Cslib.Circuits.Frontier
