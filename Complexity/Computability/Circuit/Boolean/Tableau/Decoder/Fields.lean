@@ -41,7 +41,8 @@ with its gate (`allGates_consistentAt_fieldGates`), so it is the value the list 
 * `Cslib.Circuits.Boolean.Tableau.Decoder.AllGates`: a property of every gate of a list at its
   wire.
 * `Cslib.Circuits.Boolean.Tableau.Decoder.cmp`: the comparison computed by a chain.
-* `Cslib.Circuits.Boolean.Tableau.Decoder.chain`: the fourteen comparison chains.
+* `Cslib.Circuits.Boolean.Tableau.Decoder.Chain`, `Cslib.Circuits.Boolean.Tableau.Decoder.chain`:
+  the fourteen comparison chains.
 * `Cslib.Circuits.Boolean.Tableau.Decoder.fieldGates`: the gate list.
 * `Cslib.Circuits.Boolean.Tableau.Decoder.fieldVal`: the intended values of its wires.
 
@@ -213,25 +214,39 @@ theorem cmp_mod_of_lt {gt : Bool} {v K w : ℕ} {e : Bool} (hv : v < 2 ^ w) (hK 
 
 /-! ### The layout -/
 
+/-- A comparison chain: the offset and the width of the field it reads, its direction (`gt`:
+`K < v` rather than `v < K`), the constant `K` and the tie value `init`. -/
+structure Chain where
+  /-- The input offset of the field. -/
+  off : ℕ
+  /-- The width of the field. -/
+  width : ℕ
+  /-- Whether the chain decides `K < v` rather than `v < K`. -/
+  gt : Bool
+  /-- The constant. -/
+  K : ℕ
+  /-- The value on equal numbers. -/
+  init : Bool
+
 /-- The fourteen comparison chains, for slot, column and block widths `s`, `cb` and `tb`, an
 input bound `n`, a step bound `T` and a hardwired prefix of length `X`: the offset and the width
 of the field read, the direction, the constant and the tie value. Chains `0`, `1` and `2` give
 the borrows of `c - 1`, the carries of `c + 1` and the borrows of `t - 1`. -/
-def chain (s cb tb X n T : ℕ) (k : ℕ) : ℕ × ℕ × Bool × ℕ × Bool :=
-  if k = 0 then (4 + s, cb, false, 0, true)                  -- c % 2 ^ i = 0
-  else if k = 1 then (4 + s, cb, true, 2 ^ (s + cb + tb) - 1, true) -- c % 2 ^ i = 2 ^ i - 1
-  else if k = 2 then (4 + s + cb, tb, false, 0, true)        -- t % 2 ^ i = 0
-  else if k = 3 then (4 + s, cb, true, 1, false)             -- 1 < c
-  else if k = 4 then (4 + s, cb, true, n, false)             -- n < c
-  else if k = 5 then (4 + s, cb, true, n + 1, false)         -- n + 1 < c
-  else if k = 6 then (4 + s, cb, false, 2 * T, false)        -- c < 2 T
-  else if k = 7 then (4 + s, cb, true, 2 * T, false)         -- 2 T < c
-  else if k = 8 then (4 + s, cb, false, T, false)            -- c < T
-  else if k = 9 then (4 + s, cb, true, T, false)             -- T < c
-  else if k = 10 then (4 + s + cb, tb, true, T, false)       -- T < t
-  else if k = 11 then (4, s + cb + tb, false, X, false)      -- p < X
-  else if k = 12 then (4, s + cb + tb, false, 0, true)       -- p = 0
-  else (4, s + cb + tb, true, 1, false)                      -- 1 < p
+def chain (s cb tb X n T : ℕ) (k : ℕ) : Chain :=
+  if k = 0 then ⟨4 + s, cb, false, 0, true⟩                  -- c % 2 ^ i = 0
+  else if k = 1 then ⟨4 + s, cb, true, 2 ^ (s + cb + tb) - 1, true⟩ -- c % 2 ^ i = 2 ^ i - 1
+  else if k = 2 then ⟨4 + s + cb, tb, false, 0, true⟩        -- t % 2 ^ i = 0
+  else if k = 3 then ⟨4 + s, cb, true, 1, false⟩             -- 1 < c
+  else if k = 4 then ⟨4 + s, cb, true, n, false⟩             -- n < c
+  else if k = 5 then ⟨4 + s, cb, true, n + 1, false⟩         -- n + 1 < c
+  else if k = 6 then ⟨4 + s, cb, false, 2 * T, false⟩        -- c < 2 T
+  else if k = 7 then ⟨4 + s, cb, true, 2 * T, false⟩         -- 2 T < c
+  else if k = 8 then ⟨4 + s, cb, false, T, false⟩            -- c < T
+  else if k = 9 then ⟨4 + s, cb, true, T, false⟩             -- T < c
+  else if k = 10 then ⟨4 + s + cb, tb, true, T, false⟩       -- T < t
+  else if k = 11 then ⟨4, s + cb + tb, false, X, false⟩      -- p < X
+  else if k = 12 then ⟨4, s + cb + tb, false, 0, true⟩       -- p = 0
+  else ⟨4, s + cb + tb, true, 1, false⟩                      -- 1 < p
 
 /-- The start of the comparison chains, after the `N` inputs, the two constants and the `N`
 negations. -/
@@ -246,11 +261,11 @@ def orBase (N P m : ℕ) : ℕ := treeBase N P + (2 ^ (m + 1) - 1)
 /-- Gate `i` of chain `k`, comparing the field of width `w` at input offset `off`, padded with
 zeros to `P` bits, with the constant `K`: its literal is the bit of the field (`gt`) or its
 negation, and it combines it with the previous gate of the chain (or the tie value `init`). -/
-def chainGate (N P k : ℕ) (spec : ℕ × ℕ × Bool × ℕ × Bool) (i : ℕ) : Op × List ℕ :=
-  (andOr (spec.2.2.2.1.testBit i ^^ spec.2.2.1),
-    [if i < spec.2.1 then (if spec.2.2.1 then spec.1 + i else N + 2 + (spec.1 + i))
-      else (if spec.2.2.1 then N else N + 1),
-     if i = 0 then (if spec.2.2.2.2 then N + 1 else N) else chainBase N + k * P + (i - 1)])
+def chainGate (N P k : ℕ) (spec : Chain) (i : ℕ) : Op × List ℕ :=
+  (andOr (spec.K.testBit i ^^ spec.gt),
+    [if i < spec.width then (if spec.gt then spec.off + i else N + 2 + (spec.off + i))
+      else (if spec.gt then N else N + 1),
+     if i = 0 then (if spec.init then N + 1 else N) else chainBase N + k * P + (i - 1)])
 
 /-- Node `q` of level `ℓ` of the decoder tree: true at level `0`, and otherwise the node `q % 2 ^ ℓ`
 of the level below together with bit `ℓ` of the payload, negated when bit `ℓ` of `q` is clear. -/
@@ -298,8 +313,8 @@ theorem length_fieldGates (s cb tb : ℕ) (x : List Bool) (n T : ℕ) :
 /-! ### The intended values -/
 
 /-- The comparison of chain `spec` after `j` bits, on the clause number `idx`. -/
-def chainVal (spec : ℕ × ℕ × Bool × ℕ × Bool) (idx j : ℕ) : Bool :=
-  cmp spec.2.2.1 (idx / 2 ^ spec.1 % 2 ^ spec.2.1 % 2 ^ j) (spec.2.2.2.1 % 2 ^ j) spec.2.2.2.2
+def chainVal (spec : Chain) (idx j : ℕ) : Bool :=
+  cmp spec.gt (idx / 2 ^ spec.off % 2 ^ spec.width % 2 ^ j) (spec.K % 2 ^ j) spec.init
 
 /-- **The intended value of each wire** of the field stage on the bits of the clause number
 `idx`: the inputs, the constants, the negations, the chains after each bit, the indicators of
@@ -332,10 +347,11 @@ private theorem ite_pred {α : Type} {p : α → Prop} {c : Prop} [Decidable c] 
 
 /-- The fields read by the chains lie within the inputs. -/
 theorem chain_off_add_width_le (k : ℕ) :
-    (chain s cb tb x.length n T k).1 + (chain s cb tb x.length n T k).2.1 ≤ 4 + (s + cb + tb) := by
+    (chain s cb tb x.length n T k).off + (chain s cb tb x.length n T k).width ≤
+      4 + (s + cb + tb) := by
   unfold chain
-  repeat (refine ite_pred (p := fun spec : ℕ × ℕ × Bool × ℕ × Bool =>
-    spec.1 + spec.2.1 ≤ 4 + (s + cb + tb)) ?_ ?_; · dsimp only; omega)
+  repeat (refine ite_pred (p := fun spec : Chain =>
+    spec.off + spec.width ≤ 4 + (s + cb + tb)) ?_ ?_; · dsimp only; omega)
   dsimp only; omega
 
 private theorem chainWire_lt {k i P : ℕ} (hk : k < 14) (hi : i < P) : k * P + i < 14 * P := by
@@ -434,16 +450,16 @@ theorem fieldVal_or (idx : ℕ) (i : ℕ) :
 /-- The literal of a chain gate is the bit of its field, or its negation. -/
 private theorem fieldVal_chainLit (idx : ℕ) (k i : ℕ) :
     fieldVal s cb tb x n T idx
-        (if i < (chain s cb tb x.length n T k).2.1 then
-          (if (chain s cb tb x.length n T k).2.2.1 then (chain s cb tb x.length n T k).1 + i
-            else 4 + (s + cb + tb) + 2 + ((chain s cb tb x.length n T k).1 + i))
-        else (if (chain s cb tb x.length n T k).2.2.1 then 4 + (s + cb + tb)
+        (if i < (chain s cb tb x.length n T k).width then
+          (if (chain s cb tb x.length n T k).gt then (chain s cb tb x.length n T k).off + i
+            else 4 + (s + cb + tb) + 2 + ((chain s cb tb x.length n T k).off + i))
+        else (if (chain s cb tb x.length n T k).gt then 4 + (s + cb + tb)
           else 4 + (s + cb + tb) + 1)) =
-      if (chain s cb tb x.length n T k).2.2.1 then
-        (idx / 2 ^ (chain s cb tb x.length n T k).1 %
-          2 ^ (chain s cb tb x.length n T k).2.1).testBit i
-      else !(idx / 2 ^ (chain s cb tb x.length n T k).1 %
-        2 ^ (chain s cb tb x.length n T k).2.1).testBit i := by
+      if (chain s cb tb x.length n T k).gt then
+        (idx / 2 ^ (chain s cb tb x.length n T k).off %
+          2 ^ (chain s cb tb x.length n T k).width).testBit i
+      else !(idx / 2 ^ (chain s cb tb x.length n T k).off %
+        2 ^ (chain s cb tb x.length n T k).width).testBit i := by
   have hle := chain_off_add_width_le (s := s) (cb := cb) (tb := tb) (x := x) (n := n) (T := T) k
   generalize chain s cb tb x.length n T k = spec at hle ⊢
   obtain ⟨off, w, gt, K, init⟩ := spec
@@ -562,13 +578,13 @@ theorem allGates_consistentAt_fieldGates (hm : Nat.size x.length ≤ s + cb + tb
     (fun k hk i hi => ?_) (fun ℓ hℓ q hq => ?_) (fun i hi => ?_)
   · rw [chainGate, consistentAt_two, fieldVal_chain idx hk hi, fieldVal_chainLit]
     have hprev : fieldVal s cb tb x n T idx
-        (if i = 0 then (if (chain s cb tb x.length n T k).2.2.2.2 then 4 + (s + cb + tb) + 1
+        (if i = 0 then (if (chain s cb tb x.length n T k).init then 4 + (s + cb + tb) + 1
           else 4 + (s + cb + tb))
         else chainBase (4 + (s + cb + tb)) + k * (s + cb + tb) + (i - 1)) =
         chainVal (chain s cb tb x.length n T k) idx i := by
       by_cases h₀ : i = 0
       · subst h₀
-        cases h₁ : (chain s cb tb x.length n T k).2.2.2.2
+        cases h₁ : (chain s cb tb x.length n T k).init
         · simp only [↓reduceIte, Bool.false_eq_true, fieldVal_false, chainVal, cmp, pow_zero,
             Nat.mod_one, h₁]
           simp

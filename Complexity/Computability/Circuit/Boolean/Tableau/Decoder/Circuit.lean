@@ -411,7 +411,7 @@ theorem fieldVal_payload (idx : ℕ) {q : ℕ} (hq : q < s + cb + tb) :
 
 /-- The value of chain `k` after `q` bits, through `chainW`. -/
 theorem fieldVal_chainW (idx : ℕ) {k q : ℕ} (hk : k < 14) (hq : q ≤ s + cb + tb)
-    (hinit : (chain s cb tb x.length n T k).2.2.2.2 = true) :
+    (hinit : (chain s cb tb x.length n T k).init = true) :
     fieldVal s cb tb x n T idx (chainW (4 + (s + cb + tb)) (s + cb + tb) k q) =
       chainVal (chain s cb tb x.length n T k) idx q := by
   unfold chainW

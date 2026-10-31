@@ -253,8 +253,9 @@ def tautShape : List Shape :=
 noncomputable def posShape (κ : Key) (l : Loc k State) (j : Fin 3) : Clause LabelSrc :=
   if κ.t0 then tseitinClause (.const (κ.initBit tm l)) (.pos l.slot .same .same) (.const false)
     (.const false) j
-  else tseitinClause (table tm l).1 (.pos l.slot .same .same) (κ.refSrc (table tm l).2.1)
-    (κ.refSrc (table tm l).2.2) j
+  else
+    let (op, left, right) := table tm l
+    tseitinClause op (.pos l.slot .same .same) (κ.refSrc left) (κ.refSrc right) j
 
 /-- The symbolic label of the output. -/
 noncomputable def outSrc : LabelSrc :=
@@ -396,7 +397,10 @@ theorem clauseOf_eq_map_shapeOf (x : List Bool) (n T j tag p : ℕ) :
                 rw [hκ, Key.initBit_ofFields]
                 rfl
               · have hκt : κ.t0 = false := by simp [hκ, Key.ofFields, ht]
-                simp only [ht, hκt, ↓reduceIte, Bool.false_eq_true, relabel_tseitinClause]
+                simp only [ht, hκt, ↓reduceIte, Bool.false_eq_true]
+                generalize table tm l = e
+                obtain ⟨op, a, b⟩ := e
+                simp only [relabel_tseitinClause]
                 rw [hκ, refSrc_eval, refSrc_eval]
                 rfl
             · have hnot : ¬ (!κ.tGtT && κ.colOK l) = true := fun h => hok (hiff.1 h)
@@ -755,8 +759,11 @@ theorem inRange_of_mem_shapeOf {j tag p : ℕ} {sh : Shape}
         (T := T) j tag p l
       simp only [Bool.and_eq_true] at hok
       simpa [this] using hok.2
-    obtain ⟨hra, hrb⟩ := table_inWindow (n := n) hok'.lt tm l
+    have hw := table_inWindow (n := n) hok'.lt tm l
     unfold posShape at hlit
+    generalize table tm l = e at hw hlit
+    obtain ⟨op, a, b⟩ := e
+    obtain ⟨hra, hrb⟩ := hw
     split_ifs at hlit <;> rcases fst_mem_tseitinClause hlit with h | h | h <;> simp only [h]
     all_goals first
       | trivial
