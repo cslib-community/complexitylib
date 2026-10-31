@@ -40,7 +40,7 @@ example : 2 ^ 1 * (3 * 2) ≤ ∑ t ∈ recoveryNodes 1, taperMult 2 3 t :=
 
 /-- **Non-vacuity.** For `F = X` (degree `1 = M (2 L - 1)` with `M = 1`, `L = 1`), `u = 1` and
 `h = 3`, exact jets recover `F(0)` modulo every `2 ^ p`. -/
-example (p : ℕ) :
+theorem exists_taperedRecovery_X (p : ℕ) :
     ∃ b ∈ ℤ₍₂₎, taperedRecovery 0 1 3 (fun t => (X : ℚ[X]).comp (C (t : ℚ) + C (2 ^ (0 + 1)) * X)) =
       (X : ℚ[X]).eval 0 + 2 ^ p * b :=
   exists_taperedRecovery_eq_add_of_params (K := ℚ) (M := 1) ℤ₍₂₎ (fun c hc => hc) le_rfl le_rfl
