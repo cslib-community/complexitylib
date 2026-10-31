@@ -151,7 +151,7 @@ theorem natIsZero :
 theorem natEq :
     ComputableInSpace (fun p : ℕ × ℕ => decide (p.1 = p.2)) (encPair encNat encNat) encBool
       fun p => (encPair encNat encNat p).length :=
-  of_inO (ComputableInO.eq encNat)
+  of_inO (.of_linear ComputableInLinearTimeAndSpace.natEq)
 
 theorem natLt :
     ComputableInSpace (fun p : ℕ × ℕ => decide (p.1 < p.2)) (encPair encNat encNat) encBool

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Foundations.Probability.PolynomialAtomRows
+import Complexity.Foundations.Probability.PolynomialAtomRows.FirstOverflow
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
@@ -17,7 +17,9 @@ A nonzero first increment incurs actual preloss `1/2097152`. Adding it to a true
 of `260` moves the witness rank strictly into its transition interval `(260,270)`. The true
 high-endpoint witness is one, while the reference witness lies strictly between zero and one.
 The remaining group raises the default and erases a second-coordinate value of `1/4`, yet
-preserves that nonzero witness. Its fourth-root error satisfies the new weighted bound.
+preserves that nonzero witness. Its fourth-root error satisfies the weighted bound.
+Completing the second actual raw input to truth then gives a real first overflow at group one,
+zero tail error, and a strictly positive actual-to-truth error paid entirely by weighted preloss.
 -/
 
 namespace ComplexityTests.PolynomialAtomRows
@@ -250,5 +252,111 @@ example (G : Matrix (Fin 2) (Fin 2) ℝ) (x y : Fin 2) :
         (firstRank univ 2 0 fun z _ => G x z) := by
   rw [Matrix.auxScore_polynomial_eq, PolynomialAtomRow.eval_firstRank_zero]
   simp only [div_one]
+
+private noncomputable def completingIncrements (i : ℕ) : Fin 2 → Fin 2 → ℝ :=
+  if i = 0 then increments 0 else if i = 1 then truth - rawRow else 0
+
+private noncomputable def completedRun : ℕ → State (Fin 2) :=
+  iterate univ (fun _ => 2) (fun _ => 2) (dyadicFloor 1 2) completingIncrements initial
+
+private theorem completing_zero : completingIncrements 0 = increments 0 := by
+  simp [completingIncrements]
+
+private theorem completed_one : completedRun 1 =
+    iterate univ (fun _ => 2) (fun _ => 2) (dyadicFloor 1 2) increments initial 1 := by
+  change advance univ 2 2 (dyadicFloor 1 2 0) (completingIncrements 0) initial = _
+  rw [completing_zero]
+  rfl
+
+private theorem completing_raw_two :
+    uncompressedRow completingIncrements initial.row 2 = truth := by
+  funext y ν
+  fin_cases y <;> fin_cases ν <;>
+    norm_num [uncompressedRow, completingIncrements, increments, initial, truth, rawRow,
+      sum_range_succ]
+
+private theorem completing_input_one :
+    inputRow univ (fun _ => 2) (fun _ => 2) (dyadicFloor 1 2)
+      completingIncrements initial 1 = reference.row := by
+  change (completedRun 1).row + completingIncrements 1 = reference.row
+  rw [completed_one, actual_one, reference_eq]
+  funext y ν
+  fin_cases y <;> fin_cases ν <;> norm_num [completingIncrements, truth, rawRow]
+
+private theorem completed_two : completedRun 2 = continued := by
+  have hrow : (completedRun 1).row + completingIncrements 1 = reference.row := completing_input_one
+  have hdefault : (completedRun 1).defaultValue = reference.defaultValue := by
+    rw [completed_one, actual_one, reference_eq]
+  change advance univ 2 2 (dyadicFloor 1 2 1) (completingIncrements 1) (completedRun 1) =
+    advance univ 2 2 (dyadicFloor 1 2 1) 0 reference
+  unfold advance
+  rw [hrow, hdefault, add_zero]
+
+private theorem completing_first_overflow : IsFirstOverflow univ (fun _ => 2) (fun _ => 2)
+    (dyadicFloor 1 2) completingIncrements initial 1 := by
+  constructor
+  · intro i hi
+    have hi0 : i = 0 := by omega
+    subst i
+    simpa only [stepThreshold, inputRow, iterate_zero, completing_zero] using
+      no_overflow 0 (by norm_num)
+  · change dyadicFloor 1 2 1 < threshold univ 2 (dyadicFloor 1 2 1)
+      (completedRun 1).defaultValue
+      (inputRow univ (fun _ => 2) (fun _ => 2) (dyadicFloor 1 2) completingIncrements initial 1)
+    rw [completing_input_one]
+    have hr : dyadicFloor 1 2 1 < kthLargest 2 univ (fun y => entrySize (reference.row y)) := by
+      apply (lt_kthLargest_iff (by norm_num) (dyadicFloor_nonneg (by norm_num) 2 1)).mpr
+      have hs : ({y | dyadicFloor 1 2 1 < entrySize (reference.row y)} :
+          Finset (Fin 2)) = univ := by
+        ext y
+        rw [reference_eq]
+        fin_cases y <;> norm_num [dyadicFloor, dyadicSlack, entrySize]
+      rw [hs]
+      norm_num
+    exact hr.trans_le ((le_max_right _ _).trans (le_max_right _ _))
+
+-- An actual first overflow with zero tail error still has a positive output error: the
+-- preceding nonzero compression loss moved the witness rank into its transition interval.
+example : IsFirstOverflow univ (fun _ => 2) (fun _ => 2) (dyadicFloor 1 2)
+      completingIncrements initial 1 ∧
+    clippedError (truth 1 0) (truth 1 1)
+      (uncompressedRow completingIncrements initial.row 2 1) = 0 := by
+  rw [completing_raw_two]
+  exact ⟨completing_first_overflow, clippedError_self _ _ _ rfl rfl⟩
+
+example : ∃ C : ℝ, 0 ≤ C ∧
+    0 < |PolynomialAtomRow.witness.stateRootError 10000 univ 2 (completedRun 2) ⟨0, truth⟩ 0| ∧
+    |PolynomialAtomRow.witness.stateRootError 10000 univ 2 (completedRun 2) ⟨0, truth⟩ 0| ≤
+      C / 1048576 := by
+  obtain ⟨Ctail, _, hscales⟩ := PolynomialAtomRow.witness.exists_firstOverflow_truth_root_bound
+    (θ := 10000) (by norm_num)
+  obtain ⟨Cpre, hCpre, hbound⟩ := hscales 1 (by norm_num) (by norm_num)
+  refine ⟨Cpre, hCpre, ?_, ?_⟩
+  · rw [completed_two]
+    change 0 < |output continued ^ (4⁻¹ : ℝ) -
+      PolynomialAtomRow.witness.eval 10000 (truth 0 0) (firstRank univ 2 0 truth) ^ (4⁻¹ : ℝ)|
+    rw [preserved, true_output, Real.one_rpow]
+    exact abs_pos.mpr (sub_ne_zero.mpr (ne_of_lt (Real.rpow_lt_one
+      output_between.1.le output_between.2 (by norm_num))))
+  · have h := hbound univ (fun _ => 2) completingIncrements initial truth 2 (by norm_num) rfl
+      2 1 (by norm_num) completing_first_overflow
+      (fun y _ => by fin_cases y <;> norm_num [truth])
+      (fun y _ => by fin_cases y <;> norm_num [truth]) (by intros; norm_num)
+      (fun i => if i = 0 then 1 else 0) (by intro i _; split_ifs <;> norm_num)
+      (by
+        intro i hi y _ _
+        have hi0 : i = 0 := by omega
+        subst i
+        simpa only [↓reduceIte] using clippedError_le_one (truth y 0) (truth y 1)
+          (uncompressedRow completingIncrements initial.row 1 y))
+      (by
+        intro i hi hi' y _
+        have hi1 : i = 1 := by omega
+        subst i
+        change clippedError (truth y 0) (truth y 1)
+          (uncompressedRow completingIncrements initial.row 2 y) ≤ 0
+        rw [completing_raw_two, clippedError_self _ _ _ rfl rfl]) 0 (mem_univ 0)
+    norm_num [sum_range_succ, sum_Ico_eq_sum_range, floor_zero] at h
+    simpa only [div_eq_mul_inv, one_mul, completedRun] using h
 
 end ComplexityTests.PolynomialAtomRows
