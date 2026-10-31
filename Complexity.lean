@@ -899,6 +899,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectCont
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionLeaf
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionSchedule
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
