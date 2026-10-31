@@ -69,6 +69,7 @@ example [∀ d, DecidableEq (schnorrGroups.Carrier d)] :
     schnorrGroups.cramerShoupDecrypt testHash d23 sk badCt [] = none := by
   simp [PrimeOrderGroupFamily.cramerShoupDecrypt, PrimeOrderGroupFamily.cramerShoupEncrypt,
     PrimeOrderGroupFamily.cramerShoupPublicKey, ProjectiveHash.projHash2Aux,
+    csPkU, csPkH, csPkH₁, csPkH₂, csSkS₁, csSkT₁, csSkS₂, csSkT₂, csCtV, csCtW, csCtE, csCtZ,
     ProjectiveHash.projHash2_smul_generator, schnorrGroups.generator_ne_zero d23]
 
 /-- Framing roundtrips for `encBits3`, `encBits4`, `extractCramerShoupTuple`, and
