@@ -18,7 +18,7 @@ moment budgets into a budget for the actual first-overflow tail. All arrays and 
 depend on the same environment. No conditional rarity factor is applied to noise.
 
 This supplies the finite Minkowski step of [OpenAI2026LogSpace, Section 8.4], leading to
-`buf-noise-sum`. The individual prefix-noise estimates, propagation-weight bounds and the
+(8.18). The individual prefix-noise estimates, propagation-weight bounds and the
 uniform bound on their weighted budget sum remain separate obligations.
 
 ## Main results
@@ -29,7 +29,8 @@ uniform bound on their weighted budget sum remain separate obligations.
 ## References
 
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
-  Section 8.4, proof paragraph leading to equation labelled `buf-noise-sum`
+  Section 8.4, proof paragraph leading to equation (8.18) on p. 49 (source label
+  `buf-noise-sum`)
   (23 September 2026, revision `7ef5c0cc`, not peer reviewed).
 -/
 

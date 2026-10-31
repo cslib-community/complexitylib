@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Equali
 public import Mathlib.Tactic.FunProp
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.OLoops
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
+import Complexity.Foundations.Data.Nat.Doubling
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -688,11 +689,7 @@ theorem lengthUnary : ComputableInO (fun l : List Bool => l.length) encBits encU
 /-- Doubling `m` once for each element of a list of length `n` multiplies it by `2 ^ n`. -/
 private theorem foldl_double (n m : ℕ) :
     (List.replicate n true).foldl (fun m _ => m + m) m = m * 2 ^ n := by
-  induction n generalizing m with
-  | zero => simp
-  | succ n ih =>
-    rw [List.replicate_succ, List.foldl_cons, ih]
-    ring
+  rw [List.foldl_add_self_eq_mul_two_pow, List.length_replicate]
 
 /-- **`2 ^ n` in unary**, by doubling `n` times, within time `O((n + 1) * 2 ^ n)` and space
 `O(2 ^ n)`. -/
