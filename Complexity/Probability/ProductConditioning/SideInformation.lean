@@ -26,9 +26,9 @@ product `pi p`, and an event `W` about the pair. The conditioned marginal of `u`
 divergence at most `ln (1 / Pr[W])` from `pi p`, because its masses are at most those of `pi p`
 divided by `Pr[W]` (`sum_mul_log_div_le_log_of_le`), so the coordinates move by
 `∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖² ≤ ln (1 / Pr[W]) / 2` (`sum_sq_dist_map_filter_le`)
-[Holenstein, proof of Corollary 6][Holenstein2009].
+[Holenstein, proof of Corollary 4.3][Holenstein2009].
 
-**Holenstein's Corollary 6** (`sum_dist_filter_sideJoint_le`) lets the coordinates be independent
+**Holenstein's Corollary 4.3** (`sum_dist_filter_sideJoint_le`) lets the coordinates be independent
 only given a further random variable `t`, and lets the side information `v` depend on `t` and `u`:
 with `t ~ μ` and `(u, v) ~ J t`, where the first marginal of `J t` is the product `pi (K · t)`,
 `∑ⱼ ‖P_{TV Uⱼ | W} - P_{TV | W} P_{Uⱼ | T}‖ ≤ √(k · ln (|V| / Pr[W]) / 2)`. Each squared distance is
@@ -51,7 +51,7 @@ the factor `1 / 2` from Pinsker's inequality in nats makes it stronger, since
 * `Cslib.Probability.PMF.sum_sq_dist_map_filter_le`: Raz's conditioning lemma with side
   information.
 * `Cslib.Probability.PMF.dist_map_pair_bind_eq`: distance after revealing a first component.
-* `Cslib.Probability.PMF.sum_dist_filter_sideJoint_le`: Holenstein's Corollary 6.
+* `Cslib.Probability.PMF.sum_dist_filter_sideJoint_le`: Holenstein's Corollary 4.3.
 
 ## References
 
@@ -95,7 +95,7 @@ section Product
 variable {ι : Type*} [Fintype ι] {β : ι → Type*} [∀ i, Fintype (β i)] {V : Type*} [Finite V]
 
 /-- **Raz's conditioning lemma with side information** [Holenstein, proof of
-Corollary 6][Holenstein2009]. Let `(u, v)` be drawn from a joint distribution `J` whose first
+Corollary 4.3][Holenstein2009]. Let `(u, v)` be drawn from a joint distribution `J` whose first
 marginal is the product `pi p`, and let `W` be an event about `(u, v)`. Conditioned on `W`, the
 coordinates of `u` move by `∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖² ≤ ln (1 / Pr[W]) / 2`. -/
 theorem sum_sq_dist_map_filter_le (p : ∀ i, PMF (β i)) (J : PMF ((∀ i, β i) × V))
@@ -281,7 +281,7 @@ theorem conditionalSnd_filter_sideJoint [Finite ι] [∀ i, Finite (β i)] [Fini
     exact Finset.sum_eq_zero fun v' _ => ite_eq_right fun h => hu' h.symm
   · simp
 
-/-- **Holenstein's Corollary 6** [Holenstein, Corollary 6][Holenstein2009], with the alphabet of
+/-- **Holenstein's Corollary 4.3** [Holenstein, Corollary 4.3][Holenstein2009], with the alphabet of
 `V` in place of its support under `W` and the divergence in nats. Draw `t` from `μ`, then the
 coordinates `u_i` independently from `K i t` together with side information `v`
 (`(J t).map Prod.fst = pi (K · t)`), and condition on an event `W`. Then sampling each coordinate

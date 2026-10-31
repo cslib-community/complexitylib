@@ -42,6 +42,8 @@ namespace Cslib.Circuits.Frontier.FastContraction
 
 open Turing.MultiTapeTM NativePacket
 
+variable {T : Type} {encT : T ↪ List Bool}
+
 /-- A number at most `b` has at most `b` binary digits. -/
 theorem length_encNat_le {a b : ℕ} (h : a ≤ b) : (encNat a).length ≤ b := by
   rw [encNat_apply, Nat.size_eq_bits_len]
@@ -91,7 +93,7 @@ theorem two_pow_le_of_le_log {a m : ℕ} (ha : a ≤ Nat.log 2 m) (hm : m ≠ 0)
 modulus has 0/1 coefficients. -/
 theorem length_enc_inr_le {fl : List ℕ} {m P k : ℕ} {d : PacketDesc} (h : PacketBound fl m P k d)
     {B : ℕ} (hB : 2 * (m + 1) * (P + 1) ≤ B) (hfl : fl.length ≤ B) (hfl1 : ∀ z ∈ fl, z ≤ 1)
-    (hk : k ≤ B) : (VertexDesc.enc (.inr d)).length ≤ 200 * (B + 1) ^ 2 := by
+    (hk : k ≤ B) : (VertexDesc.enc encT (.inr d)).length ≤ 200 * (B + 1) ^ 2 := by
   obtain ⟨hp, hnb, hfl', ha, hL, hi, htl, ht, hcols, hζ, hζ1, htags, hslots, hβ, hβ'⟩ := h
   have h2m : 2 * (m + 1) ≤ B := le_trans (Nat.le_mul_of_pos_right _ (by omega)) hB
   have hP1 : P + 1 ≤ B := le_trans (Nat.le_mul_of_pos_left _ (by omega)) hB
@@ -132,14 +134,14 @@ theorem length_enc_inr_le {fl : List ℕ} {m P k : ℕ} {d : PacketDesc} (h : Pa
 bound, precision, number of edges, number of vertices, modulus length, the binary length of its
 rows and its ports are at most `B`, the modulus has 0/1 coefficients, and its descriptors are at
 most `R` long. -/
-theorem length_encCall_le {x : Call} {B R : ℕ} (hs : x.scale ≤ B) (hd : x.depth ≤ B)
+theorem length_encCall_le {x : Call T} {B R : ℕ} (hs : x.scale ≤ B) (hd : x.depth ≤ B)
     (hb : x.bound ≤ B) (hp : x.prec ≤ B) (hfl : x.fl.length ≤ B) (hfl1 : ∀ z ∈ x.fl, z ≤ 1)
     (hr : (encNat x.rows).length ≤ B) (hE : x.edges ≤ B) (hV : x.net.vertices.length ≤ B)
     (hports : ∀ v ∈ x.net.vertices, v.1.length ≤ B ∧ ∀ i ∈ v.1, i ≤ B)
-    (hdesc : ∀ v ∈ x.net.vertices, (VertexDesc.enc v.2).length ≤ R) :
-    (encCall x).length ≤ 64 * (B + 1) ^ 3 + 2 * B * R := by
+    (hdesc : ∀ v ∈ x.net.vertices, (VertexDesc.enc encT v.2).length ≤ R) :
+    (encCall encT x).length ≤ 64 * (B + 1) ^ 3 + 2 * B * R := by
   have h1 := length_encList_le_of_le_one hfl1
-  have hv : ∀ v ∈ x.net.vertices, (encPair (encList encNat) VertexDesc.enc v).length ≤
+  have hv : ∀ v ∈ x.net.vertices, (encPair (encList encNat) (VertexDesc.enc encT) v).length ≤
       2 * (B * (2 * B + 1)) + 1 + R := fun v hv => by
     rw [length_encPair]
     have := (length_encList_le encNat (B := B) fun i hi => length_encNat_le
@@ -180,15 +182,16 @@ theorem length_encList_le_of_reducedAt {p : ℕ} {fl c : List ℕ} (h : ReducedA
     ((h.2 z hz).trans_lt (Nat.pow_lt_pow_right (by norm_num) (Nat.lt_succ_self p)))
 
 /-- **The values of the calls are reduced** at their precision, for every child builder. -/
-theorem reducedAt_value (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc)
-    (x : Call) :
-    ReducedAt x.prec x.fl (value mk x) := by
+theorem reducedAt_value (ev : T → List Bool → List ℕ)
+    (mk : Call T → ChildCursor.State → ℕ × DescribedNetwork (VertexDesc T))
+    (x : Call T) :
+    ReducedAt x.prec x.fl (value ev mk x) := by
   cases ha : active x
-  · rw [value_of_not_active mk ha]
-    exact DescribedNetwork.reduced_sumValue (ops := SumOps.galois) (eval := VertexDesc.entry)
+  · rw [value_of_not_active ev mk ha]
+    exact DescribedNetwork.reduced_sumValue (ops := SumOps.galois) (eval := VertexDesc.entry ev)
       (x.prec, x.fl) x.net
-  · rw [value_of_active mk ha, finishValue, NativeRecovery.recover]
-    set W := table x (runLoop x fun c => value mk (child x mk c)).2.2
+  · rw [value_of_active ev mk ha, finishValue, NativeRecovery.recover]
+    set W := table x (runLoop x fun c => value ev mk (child x mk c)).2.2
     have hfold : ∀ (l : List ℕ) (S : List ℕ), ReducedAt (x.prec + shift x) x.fl S →
         ReducedAt (x.prec + shift x) x.fl (l.foldl (fun S k => if k = 2 ^ slots x then S else
           GaloisRingArith.add (x.prec + shift x) x.fl S
@@ -213,12 +216,13 @@ theorem reducedAt_value (mk : Call → ChildCursor.State → ℕ × DescribedNet
     exact Nat.le_of_lt_succ (Nat.lt_succ_of_le (Nat.div_le_of_le_mul (by linarith)))
 
 /-- **The encoded length of a tagged value** of a call. -/
-theorem length_encValue_le (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc)
-    (x : Call) :
-    (encValue (x.depth, value mk x)).length ≤
+theorem length_encValue_le (ev : T → List Bool → List ℕ)
+    (mk : Call T → ChildCursor.State → ℕ × DescribedNetwork (VertexDesc T))
+    (x : Call T) :
+    (encValue (x.depth, value ev mk x)).length ≤
       2 * x.depth + 1 + x.fl.length * (2 * (x.prec + 1) + 1) := by
   rw [length_encPair, encUnary_apply, List.length_replicate]
-  have := length_encList_le_of_reducedAt (reducedAt_value mk x)
+  have := length_encList_le_of_reducedAt (reducedAt_value ev mk x)
   simp only at this ⊢
   omega
 
@@ -292,11 +296,11 @@ end Frames
 
 section ActiveFrames
 
-variable {x : Call}
+variable {x : Call T}
 
 /-- The bound `256 (m + 1) ^ 5 (p + 1) + e` on the numbers of the frames of an active call at scale
 `m` with precision `p`. -/
-@[expose] def frameBound (x : Call) : ℕ := 256 * (x.scale + 1) ^ 5 * (x.prec + 1) + x.fl.length
+@[expose] def frameBound (x : Call T) : ℕ := 256 * (x.scale + 1) ^ 5 * (x.prec + 1) + x.fl.length
 
 /-- The numbers of an active call with at most `m` edges at scale `m`. -/
 theorem active_numbers (ha : active x = true) (hM : x.edges ≤ x.scale) :
@@ -431,24 +435,25 @@ end ActiveFrames
 
 section Sizes
 
-variable {x₀ x : Call}
+variable {x₀ x : Call T}
 
 /-- **The sizes of a call of a given shape**: from a root `x₀` at depth `0`, at scale its number
 `m` of edges, with bound `m + 1`, a 0/1 modulus and descriptors at most `200 (Z + 1) ^ 2` long, a
 call of its shape, its tagged value and, if it is active, its frames are at most
 `1000 (Z + 1) ^ 3` long, once `Z` dominates `256 (m + 1) ^ 5 (P + 1) + e` for the precision bound
 `P = p₀ + 40 m² (m + 1)` and the vertices, rows and their growth. -/
-theorem Shape.length_le (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound = x₀.edges + 1)
+theorem Shape.length_le (ev : T → List Bool → List ℕ) (h₀s : x₀.scale = x₀.edges)
+    (h₀b : x₀.bound = x₀.edges + 1)
     (h₀d : x₀.depth = 0) (h : Shape x₀ x) {Z : ℕ}
     (hZ1 : 256 * (x₀.edges + 1) ^ 5 * (x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1) +
       x₀.fl.length ≤ Z)
     (hZ2 : x₀.net.vertices.length + (x₀.edges + 1) * x₀.edges ^ 2 + (encNat x₀.rows).length ≤ Z)
     (hfl1 : ∀ z ∈ x₀.fl, z ≤ 1)
-    (hR₀ : ∀ w ∈ x₀.net.vertices, (VertexDesc.enc w.2).length ≤ 200 * (Z + 1) ^ 2) :
-    (encCall x).length ≤ 1000 * (Z + 1) ^ 3 ∧
-      (encValue (x.depth, value nativeMk x)).length ≤ 1000 * (Z + 1) ^ 3 ∧
+    (hR₀ : ∀ w ∈ x₀.net.vertices, (VertexDesc.enc encT w.2).length ≤ 200 * (Z + 1) ^ 2) :
+    (encCall encT x).length ≤ 1000 * (Z + 1) ^ 3 ∧
+      (encValue (x.depth, value ev nativeMk x)).length ≤ 1000 * (Z + 1) ^ 3 ∧
       (active x = true → ∀ vals c,
-        (encPair encCall encFrame (x, frameAt x vals c)).length ≤ 1000 * (Z + 1) ^ 3) := by
+        (encPair (encCall encT) encFrame (x, frameAt x vals c)).length ≤ 1000 * (Z + 1) ^ 3) := by
   set m := x₀.edges with hm
   set P := x₀.prec + (m + 1) * (40 * m ^ 2) with hP
   -- The numbers of `x`.
@@ -476,7 +481,7 @@ theorem Shape.length_le (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound = 
   have hports : ∀ v ∈ x.net.vertices, v.1.length ≤ Z ∧ ∀ i ∈ v.1, i ≤ Z := fun v hv =>
     ⟨(length_le_edges_of_wf h.wf hv).trans (hE.trans (by omega)),
       fun i hi => (h.wf.2.1 v hv i hi).le.trans (hE.trans (by omega))⟩
-  have hR : ∀ v ∈ x.net.vertices, (VertexDesc.enc v.2).length ≤ 200 * (Z + 1) ^ 2 := by
+  have hR : ∀ v ∈ x.net.vertices, (VertexDesc.enc encT v.2).length ≤ 200 * (Z + 1) ^ 2 := by
     intro v hv
     rcases h.desc v hv with ⟨w, hw, hvw⟩ | ⟨d, hvd, hb⟩
     · rw [hvw]; exact hR₀ w hw
@@ -492,7 +497,7 @@ theorem Shape.length_le (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound = 
   have hcall := length_encCall_le (B := Z) (R := 200 * (Z + 1) ^ 2) (x := x)
     (by rw [hsc]; omega) (hd.trans (by omega)) (by omega) (hprec.trans (by omega))
     (h.fl_eq ▸ hflZ) (h.fl_eq ▸ hfl1) hrows (hE.trans (by omega)) (hV.trans (by omega)) hports hR
-  have hcall' : (encCall x).length ≤ 464 * (Z + 1) ^ 3 := by
+  have hcall' : (encCall encT x).length ≤ 464 * (Z + 1) ^ 3 := by
     have : 2 * Z * (200 * (Z + 1) ^ 2) ≤ 400 * (Z + 1) ^ 3 := by
       have : Z ≤ Z + 1 := Nat.le_succ _
       calc 2 * Z * (200 * (Z + 1) ^ 2) = 400 * (Z * (Z + 1) ^ 2) := by ring
@@ -502,7 +507,7 @@ theorem Shape.length_le (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound = 
   have hZ3 : (Z + 1) ^ 2 ≤ (Z + 1) ^ 3 := Nat.pow_le_pow_right (by omega) (by norm_num)
   have hZ1' : Z + 1 ≤ (Z + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
   refine ⟨hcall'.trans (by omega), ?_, fun ha vals c => ?_⟩
-  · have hv := length_encValue_le nativeMk x
+  · have hv := length_encValue_le ev nativeMk x
     rw [h.fl_eq] at hv
     have : x₀.fl.length * (2 * (x.prec + 1) + 1) ≤ Z * (2 * Z + 1) :=
       Nat.mul_le_mul hflZ (by omega)
@@ -519,7 +524,7 @@ theorem Shape.length_le (h₀s : x₀.scale = x₀.edges) (h₀b : x₀.bound = 
         Nat.mul_le_mul_left _ (by omega)
       omega
     have hfZ : (frameBound x + 1) ^ 3 ≤ (Z + 1) ^ 3 := Nat.pow_le_pow_left (by omega) 3
-    have hl := length_encPair (enc₁ := encCall) (enc₂ := encFrame) (x, frameAt x vals c)
+    have hl := length_encPair (enc₁ := encCall encT) (enc₂ := encFrame) (x, frameAt x vals c)
     simp only at hl
     rw [hl]
     omega
