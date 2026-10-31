@@ -346,12 +346,13 @@ theorem callIsEmpty_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
       Function.update_of_ne h20, Function.update_of_ne h21, Function.update_of_ne h10]
     trivial
   obtain ⟨z, t, he, hdec, hrep_z, hmod, hregs_z, hpot⟩ :=
-    C.call_rename hf .isEmpty hr trivial hprep hb3 hreg (fun _ _ => rfl) harg
+    C.call_rename_ofFn hf .isEmpty hr trivial hprep hb3 hreg (fun _ _ => rfl) harg
   have hx3_out : ∀ j ∉ Set.range f, x₃.regs j = x.regs j := fun j hj =>
     (set_regs_out x₂ P.tag0 0 hj).trans
       ((set_regs_out x₁ P.tag1 0 hj).trans (set_regs_out x P.tag2 0 hj))
   rw [hdec_eq] at hdec
-  simp only [decode, IndexedMinPQ.spec, Option.some.injEq, decide_eq_decide] at hdec
+  simp only [decode, IndexedMinPQ.spec, IndexedMinPQ.step, Stateful.Spec.stepFn,
+    Option.some.injEq, decide_eq_decide] at hdec
   have hflag : z.regs (f P.outFlag) = 0 ↔ IndexedMinPQ.dom s ≠ ∅ := by
     change (z.comap f).regs P.outFlag = 0 ↔ IndexedMinPQ.dom s ≠ ∅
     exact ⟨fun h0 hd => absurd h0 (hdec.mpr hd),
@@ -371,8 +372,8 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     (hr : C.rep s (x.comap f)) (ho1 : x.regs oneReg_c = 1) :
     ∃ z t, ExecWithin w (P.callExtractMin f oneReg_c) x z t ∧
       P.decode (K_max := K_max) .extractMin (z.comap f).regs =
-        some ((IndexedMinPQ.spec n K_max).step s .extractMin).2 ∧
-      C.rep ((IndexedMinPQ.spec n K_max).step s .extractMin).1 (z.comap f) ∧
+        some ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).2 ∧
+      C.rep ((IndexedMinPQ.spec n K_max).stepFn s .extractMin).1 (z.comap f) ∧
       Modifies (Block.mk base C.space).footprint x.mem z.mem ∧
       (∀ j ∉ Set.range f, z.regs j = x.regs j) ∧
       t + C.potential (z.comap f) ≤ 1 + C.charge s .extractMin + C.potential (x.comap f) := by
@@ -395,7 +396,7 @@ theorem callExtractMin_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
     rw [harg_eq, hcomap]
     simp only [argMatch, Data.set_regs, Function.update_self, ne_eq, one_ne_zero, not_false_eq_true]
   obtain ⟨z, t, he, hdec, hrep_z, hmod, hregs_z, hpot⟩ :=
-    C.call_rename hf .extractMin hr trivial hprep hb1 hreg (fun _ _ => rfl) harg
+    C.call_rename_ofFn hf .extractMin hr trivial hprep hb1 hreg (fun _ _ => rfl) harg
   rw [hdec_eq] at hdec
   have hx1_out : ∀ j ∉ Set.range f, x₁.regs j = x.regs j :=
     fun j hj => set_regs_out x P.tag2 1 hj
@@ -479,7 +480,7 @@ theorem callInsert_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
       Function.update_of_ne hvk_ne, ne_eq, one_ne_zero, not_false_eq_true]
     trivial
   obtain ⟨z, t, he, _, hrep_z, hmod, hregs_z, hpot⟩ :=
-    C.call_rename hf (.insert v k) hr hval hprep hb5 hreg (fun _ _ => rfl) harg
+    C.call_rename_ofFn hf (.insert v k) hr hval hprep hb5 hreg (fun _ _ => rfl) harg
   exact ⟨z, t, he, hrep_z, hmod, fun j hj => (hregs_z j hj).trans (hout5 j hj), hpot⟩
 
 /-- Inline execution of `P.callDecreaseKey`: lowers `v`'s key to `k` and charges
@@ -561,7 +562,7 @@ theorem callDecreaseKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
       Function.update_of_ne hvk_ne, ne_eq, one_ne_zero, not_false_eq_true]
     trivial
   obtain ⟨z, t, he, _, hrep_z, hmod, hregs_z, hpot⟩ :=
-    C.call_rename hf (.decreaseKey v k) hr hval hprep hb5 hreg (fun _ _ => rfl) harg
+    C.call_rename_ofFn hf (.decreaseKey v k) hr hval hprep hb5 hreg (fun _ _ => rfl) harg
   exact ⟨z, t, he, hrep_z, hmod, fun j hj => (hregs_z j hj).trans (hout5 j hj), hpot⟩
 
 /-- Inline execution of `P.callGetKey`: queries `s v` and charges `4 + C.charge s (.getKey v)`. -/
@@ -633,7 +634,7 @@ theorem callGetKey_exec {P : PQCode B r_pq} {n K_max w base : ℕ}
       ne_eq, one_ne_zero, not_false_eq_true]
     trivial
   obtain ⟨z, t, he, hdec, hrep_z, hmod, hregs_z, hpot⟩ :=
-    C.call_rename hf (.getKey v) hr trivial hprep hb4 hreg (fun _ _ => rfl) harg
+    C.call_rename_ofFn hf (.getKey v) hr trivial hprep hb4 hreg (fun _ _ => rfl) harg
   rw [hdec_eq] at hdec
   exact ⟨z, t, he, hdec, hrep_z, hmod, fun j hj => (hregs_z j hj).trans (hout4 j hj), hpot⟩
 
@@ -670,6 +671,10 @@ structure PQPackage (B : Basis) (r_pq : ℕ) where
   cert : ∀ {n K_max w base : ℕ}, Fits w (base + space n) → Fits w K_max →
     SubroutineDS code.toSubroutineCode (IndexedMinPQ.spec n K_max) w base ![n]
       (IndexedMinPQ.empty n)
+  /-- Each concrete state represents at most one `IndexedMinPQ.State n`. -/
+  rep_unique : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max)
+    {s₁ s₂ : IndexedMinPQ.State n} {x : Data r_pq},
+    (cert hS hK).rep s₁ x → (cert hS hK).rep s₂ x → s₁ = s₂
   /-- Certificate footprint agrees with `space n`. -/
   cert_space : ∀ {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max),
     (cert hS hK).space = space n
@@ -718,6 +723,7 @@ def mapSimulates {B B' : Basis} {r_pq : ℕ} (φ : B.Simulates B') (pkg : PQPack
   decreaseTime := pkg.decreaseTime
   extractTime := pkg.extractTime
   cert hS hK := (pkg.cert hS hK).mapSimulates φ
+  rep_unique := pkg.rep_unique
   cert_space := pkg.cert_space
   cert_initTime := pkg.cert_initTime
   cert_initPotential := pkg.cert_initPotential

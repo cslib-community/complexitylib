@@ -79,14 +79,14 @@ theorem hw_64_16_2 : 2 * Probability.trinomialDeg 16 (tableBits 2) ≤ 64 := by
 
 /-- Concrete `Basis.exact` randomized `SubroutineDS` certificate for cuckoo hashing at `w = 64`,
 `base = 0`, `n_max = 2`, `U = 16`, `V = 256`. -/
-noncomputable def instSubroutineDS :
+noncomputable abbrev instSubroutineDS :
     Randomized.SubroutineDS cuckooCode (Dictionary.spec 16 256 2)
       64 0 ![2, 16] (Dictionary.empty 16) :=
   subroutineDS 64 0 2 16 256 1 0 instCuckooHashFamily_16_2
     hw_64_16_2 (by decide) (by decide) (by decide) (by decide)
 
 /-- Concrete `Basis.standard` randomized `SubroutineDS` certificate for cuckoo hashing. -/
-noncomputable def instSubroutineDSStandard :
+noncomputable abbrev instSubroutineDSStandard :
     Randomized.SubroutineDS cuckooCode.toStandard (Dictionary.spec 16 256 2)
       64 0 ![2, 16] (Dictionary.empty 16) :=
   subroutineDSStandard 64 0 2 16 256 1 0 instCuckooHashFamily_16_2
@@ -108,8 +108,8 @@ theorem sampleOps_validHistory :
   refine ⟨⟨Or.inl ?_, by decide⟩, ⟨Or.inl ?_, by decide⟩,
     trivial, trivial, ⟨Or.inr ?_, by decide⟩, trivial, trivial, trivial⟩
   · simp [Dictionary.dom_empty]
-  · simp [Dictionary.spec, Dictionary.dom_insert, Dictionary.dom_empty]
-  · simp [Dictionary.spec]
+  · simp [Dictionary.dom_insert, Dictionary.dom_empty]
+  · simp
 
 /-- Concrete end-to-end expected-amortized execution of `sampleOps` from `Data.init` with runtime
 parameters `(n_max, U) = (2, 16)` in registers `3` and `4`. -/
@@ -118,7 +118,7 @@ theorem inst_cuckoo_seq_expected_amortized :
     let C := instSubroutineDS
     ∃ (ν₀ ν_final : PMF (Seed 16 (tableBits 2) × Data 19)) (T_ops : ℝ≥0∞),
       ExecCodeDist 64 cuckooCode.initFresh x₀ (ν₀.map Prod.snd) C.initTime ∧
-      C.ExecSteps (Dictionary.empty 16) sampleOps ν₀ ν_final T_ops ∧
+      C.ExecStepsOfFn (Dictionary.empty 16) sampleOps ν₀ ν_final T_ops ∧
       (∀ θ, (ν_final.map Prod.fst) θ ≤ 2 * seedLaw 16 (tableBits 2) θ) ∧
       (∀ p ∈ ν_final.support,
         Rep 64 0 2 16 256 ((Dictionary.spec 16 256 2).run (Dictionary.empty 16) sampleOps).1
