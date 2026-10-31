@@ -46,7 +46,7 @@ attribute [aesop safe apply (rule_sets := [FODefinable])]
   Definable.relation₁ Definable.relation₂ Definable.rel_vars Definable.rel₁ Definable.rel₂
 
 /-- Construct a well-formed defining formula by composing registered semantic certificates. -/
-macro "fo_definable" : tactic =>
+macro (name := foDefinable) "fo_definable" : tactic =>
   `(tactic| aesop (rule_sets := [FODefinable])
     (config := { terminal := true, enableSimp := false }))
 

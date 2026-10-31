@@ -123,7 +123,7 @@ variable {L : Language.{u, v}} {Γ : List ℕ} {α : Type w} {M : Type z} [L.Str
         (fun i => (left args i).realize v) (fun i => (right args i).realize v) := Iff.rfl
 
 /-- Applying closure to concatenated endpoint terms realizes ordinary tuple reachability. -/
-@[simp, fo_realize] theorem realize_tc_pair {k : ℕ}
+@[fo_realize] theorem realize_tc_pair {k : ℕ}
     (body : Formula L shape Γ (α ⊕ Fin (2 * k))) (xs ys : Fin k → L.Term α)
     (ρ : RelEnv Γ M) (v : α → M) :
     (tc body (pair xs ys)).Realize interpretation ρ v ↔
