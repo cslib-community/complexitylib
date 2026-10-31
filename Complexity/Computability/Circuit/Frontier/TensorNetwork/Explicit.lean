@@ -16,18 +16,24 @@ import Mathlib.Data.Set.Card
 /-!
 # Explicit Boolean tensor networks
 
-An *explicit* Boolean tensor network (`ExplicitTensorNetwork R`) is the data an algorithm reads:
-the number of edges, numbered `0, 1, …`, and a list of vertices, each given by
+A Boolean tensor network as an algorithm reads it (`DescribedNetwork T`) is the number of edges,
+numbered `0, 1, …`, and a list of vertices, each given by its ordered list of *ports*, the numbers
+of the edges at the vertex, and a *descriptor* `t : T` of its tensor. For an evaluator
+`eval : T → List Bool → R`, the entry of the vertex when port `i` carries the bit `bs[i]` is
+`eval t bs`, and the contraction (`DescribedNetwork.contraction`) sums, over all assignments of
+bits to the edges, the product of the entries at the bits on the ports.
 
-* its ordered list of *ports*, the numbers of the edges at the vertex, and
-* its *table*: the value of its tensor when port `i` carries the bit `bs[i]` is the entry at
-  position `BitString.lsbValue bs`, the number whose binary digit `i` is `bs[i]`
-  (`BitString.testBit_lsbValue`).
+An *explicit* network (`ExplicitTensorNetwork R`) has tables as descriptors: the value of the
+tensor of a vertex when port `i` carries the bit `bs[i]` is the entry of its table at position
+`BitString.lsbValue bs`, the number whose binary digit `i` is `bs[i]`
+(`BitString.testBit_lsbValue`).
 
 So a vertex with `k` ports has a table of `2 ^ k` entries. The contraction of an explicit network
 (`ExplicitTensorNetwork.contraction`) sums, over all assignments of bits to the edges, the product
-of the table entries at the bits on the ports. It needs no well-formedness: a port naming no edge
-reads `false`, and a position past the end of a table has entry zero.
+of the table entries at the bits on the ports, which is the contraction of the described network
+with table lookup as the evaluator (`DescribedNetwork.contraction_entry`). It needs no
+well-formedness: a port naming no edge reads `false`, and a position past the end of a table has
+entry zero.
 
 Its size measures are the number of edges, the number of vertices, the maximum number of ports of
 a vertex (`ExplicitTensorNetwork.maxDegree`) and the total length of the tables
@@ -45,7 +51,12 @@ one end of every edge below `r` and the other at or above it gives a rows-first 
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.ExplicitTensorNetwork`: an explicit Boolean tensor network.
+* `Cslib.Circuits.Frontier.DescribedNetwork`: a Boolean tensor network given by the ports and
+  the descriptors of its vertices.
+* `Cslib.Circuits.Frontier.DescribedNetwork.contraction`: its contraction, for an evaluator of
+  the descriptors.
+* `Cslib.Circuits.Frontier.ExplicitTensorNetwork`: an explicit Boolean tensor network, with
+  tables as descriptors.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.entry`,
   `Cslib.Circuits.Frontier.ExplicitTensorNetwork.portBits`: table lookup and the bits on a list
   of ports.
@@ -60,6 +71,10 @@ one end of every edge below `r` and the other at or above it gives a rows-first 
 
 ## Main results
 
+* `Cslib.Circuits.Frontier.DescribedNetwork.map_contraction`: the contraction commutes with maps
+  of semirings.
+* `Cslib.Circuits.Frontier.DescribedNetwork.contraction_entry`: explicit networks are described
+  networks with table lookup as the evaluator.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.maxDegree_le_iff`: the degree bound.
 * `Cslib.Circuits.Frontier.TensorNetwork.entry_explicitTable`: a written-out table evaluates the
   tensor.
@@ -81,15 +96,53 @@ one end of every edge below `r` and the other at or above it gives a rows-first 
 
 namespace Cslib.Circuits.Frontier
 
-/-- An *explicit Boolean tensor network* over `R`: the number of edges, numbered from zero, and a
-list of vertices. A vertex is given by its ordered list of *ports*, the numbers of its edges, and
-its *table*, whose entry at position `BitString.lsbValue bs` is the value of its tensor when
-port `i` carries the bit `bs[i]`. -/
-structure ExplicitTensorNetwork (R : Type*) where
+/-- A Boolean tensor network with *described* tensors: the number of edges, numbered from zero,
+and a list of vertices. A vertex is given by its ordered list of *ports*, the numbers of its
+edges, and a descriptor `t : T` of its tensor. -/
+structure DescribedNetwork (T : Type*) where
   /-- The number of edges; the edges are numbered `0, …, numEdges - 1`. -/
   numEdges : ℕ
-  /-- The vertices, each given by its ports and its table. -/
-  vertices : List (List ℕ × List R)
+  /-- The vertices, each given by its ports and the descriptor of its tensor. -/
+  vertices : List (List ℕ × T)
+
+namespace DescribedNetwork
+
+variable {T : Type*}
+
+/-- A described network is its number of edges and its list of vertices. -/
+def equivProd : DescribedNetwork T ≃ ℕ × List (List ℕ × T) where
+  toFun d := (d.numEdges, d.vertices)
+  invFun p := ⟨p.1, p.2⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- The bits that a word, read as an assignment of bits to the edges, puts on a list of ports;
+a port past the end of the word reads `false`. -/
+def wordBits (word : List Bool) (ports : List ℕ) : List Bool :=
+  ports.map fun i => word.getD i false
+
+/-- The *contraction*: the sum over all assignments of bits to the edges of the product of the
+entries of the vertices at the bits on their ports, for entries in a commutative semiring. -/
+def contraction {R : Type*} [CommSemiring R] (eval : T → List Bool → R)
+    (d : DescribedNetwork T) : R :=
+  ∑ x : Fin d.numEdges → Bool,
+    (d.vertices.map fun v => eval v.2 (wordBits (List.ofFn x) v.1)).prod
+
+/-- The contraction commutes with maps of semirings. -/
+theorem map_contraction {R S : Type*} [CommSemiring R] [CommSemiring S] (ψ : R →+* S)
+    (eval : T → List Bool → R) (d : DescribedNetwork T) :
+    ψ (d.contraction eval) = d.contraction fun t bs => ψ (eval t bs) := by
+  rw [contraction, contraction, map_sum]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [map_list_prod, List.map_map]
+  rfl
+
+end DescribedNetwork
+
+/-- An *explicit Boolean tensor network* over `R`: a network whose descriptors are *tables*. The
+entry of the table of a vertex at position `BitString.lsbValue bs` is the value of its tensor
+when port `i` carries the bit `bs[i]`. -/
+abbrev ExplicitTensorNetwork (R : Type*) := DescribedNetwork (List R)
 
 namespace ExplicitTensorNetwork
 
@@ -150,6 +203,25 @@ instance (r : ℕ) : Decidable (d.IsRowsFirstBipartite r) := by
   infer_instance
 
 end ExplicitTensorNetwork
+
+private theorem getD_ofFn {n : ℕ} (x : Fin n → Bool) (i : ℕ) :
+    (List.ofFn x).getD i false = if h : i < n then x ⟨i, h⟩ else false := by
+  by_cases h : i < n
+  · rw [dite_eq_left h, List.getD_eq_getElem _ _ (by simpa using h), List.getElem_ofFn]
+  · rw [dite_eq_right h, List.getD_eq_default _ _ (by simp only [List.length_ofFn]; omega)]
+
+/-- **Explicit networks**: with table lookup as the evaluator, the contraction of a described
+network is that of the explicit network. -/
+theorem DescribedNetwork.contraction_entry {R : Type*} [CommSemiring R]
+    (d : ExplicitTensorNetwork R) :
+    DescribedNetwork.contraction ExplicitTensorNetwork.entry d = d.contraction := by
+  refine Finset.sum_congr rfl fun x _ => ?_
+  simp only [wordBits, ExplicitTensorNetwork.portBits]
+  congr 1
+  refine List.map_congr_left fun v _ => ?_
+  congr 2
+  funext i
+  exact getD_ofFn x i
 
 /-! ### Writing a tensor network out -/
 
