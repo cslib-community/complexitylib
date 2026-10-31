@@ -102,7 +102,7 @@ theorem isOraclePPTOn_step [Fintype Operation] {input : α ↪ List Bool}
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding)
-      (fun pair => handler pair.1 (Prod.fst pair.2) (Prod.snd pair.2))) :
+      (fun ⟨caller, request, state⟩ => handler caller request state)) :
     IsOraclePPTOn (encPair input (encPair encFiniteConfig stateEncoding))
       (encPair encFiniteConfig stateEncoding)
       (fun pair => step machine handler pair.1 pair.2) := by
@@ -162,7 +162,7 @@ theorem isOraclePPTOn_run [Finite Operation] {input : α ↪ List Bool}
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding)
-      (fun pair => handler pair.1 (Prod.fst pair.2) (Prod.snd pair.2)))
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : α → State → Prop) (hinit : ∀ a, invariant a (initial a))
     {resources : ℕ → ℕ} (hresources : PolynomiallyBounded resources)

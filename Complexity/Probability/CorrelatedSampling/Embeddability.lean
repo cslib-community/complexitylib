@@ -72,11 +72,11 @@ def IsEmbeddable (P₀ : PMF (X × Y)) (P₁ : PMF ((X × Y) × (S × T))) (ε :
 
 /-- The conditional law of `s` given `x` under a joint law `J` of `((x, y), s)`. -/
 noncomputable def condX (J : PMF ((X × Y) × S)) : X → PMF S :=
-  conditionalSnd (J.map fun z => (Prod.fst z.1, z.2))
+  conditionalSnd (J.map (Prod.map Prod.fst id))
 
 /-- The conditional law of `s` given `y` under a joint law `J` of `((x, y), s)`. -/
 noncomputable def condY (J : PMF ((X × Y) × S)) : Y → PMF S :=
-  conditionalSnd (J.map fun z => (Prod.snd z.1, z.2))
+  conditionalSnd (J.map (Prod.map Prod.snd id))
 
 /-- The joint law `P ⊗ K` of `((x, y), s)` with `(x, y) ~ P` and `s ~ K (x, y)`. -/
 noncomputable abbrev withKernel (P : PMF (X × Y)) (K : X × Y → PMF S) : PMF ((X × Y) × S) :=

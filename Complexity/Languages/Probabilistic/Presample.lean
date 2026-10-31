@@ -77,7 +77,7 @@ theorem IsQueryBounded.run_interpret_presample {program : ProbOracleComp spec α
     ((PMF.iid source n).map List.ofFn).bind (fun values =>
       ((interpret (handler (fun k => StateT.lift (ProbComp.unifOracle k))
         (withSampleList fallback oracle)) program).run (s, values)).map
-          fun result => (result.1, Prod.fst result.2)) =
+          fun (result, next, _) => (result, next)) =
       (interpret (handler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun q state => source.bind fun value => oracle value q state)) program).run s := by
   induction h generalizing s with
@@ -137,7 +137,7 @@ theorem OracleComp.IsQueryBounded.run_interpret_presample {Query State Value γ 
     (oracle : Value → (q : Query) → StateT State PMF (spec q)) (s : State) :
     ((Probability.PMF.iid source n).map List.ofFn).bind (fun values =>
       ((interpret (withSampleList fallback oracle) program).run (s, values)).map
-        fun result => (result.1, Prod.fst result.2)) =
+        fun (result, next, _) => (result, next)) =
       (interpret (m := StateT State PMF)
         (fun q state => source.bind fun value => oracle value q state) program).run s := by
   simpa only [interpret_interpret, ProbOracleComp.interpret_query] using

@@ -104,7 +104,7 @@ theorem IsOraclePPT.run_interpret_preprocess {Caller State : Type}
     (hhandler : IsPPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding)
-      (fun pair => handler pair.1 (Prod.fst pair.2) (Prod.snd pair.2)))
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
@@ -135,7 +135,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open {External Caller State : Type}
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding)
-      (fun pair => handler pair.1 (Prod.fst pair.2) (Prod.snd pair.2)))
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
@@ -166,7 +166,7 @@ theorem IsOraclePPT.run_interpret_preprocess_open' {External Caller State : Type
     (hhandler : IsOraclePPTOn
       (encPair input (encPair (encPair operationEncoding encBits) stateEncoding))
       (encPair encBits stateEncoding)
-      (fun pair => handler pair.1 (Prod.fst pair.2) (Prod.snd pair.2)))
+      (fun ⟨caller, request, state⟩ => handler caller request state))
     (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
     (hresources : ComputableInPolyTime (fun pair => resources pair.1 pair.2)
