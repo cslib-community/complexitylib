@@ -281,7 +281,7 @@ private theorem runtimeNext_budget (ntm : MultiTapeNTM k Bool State)
       (optionSome_budget (install_budget ntm hstart hin)))
   exact (budget_ite (optionIsSome_budget (runtimeCounting_budget hs)) hcounting hscan).of_enc_eq
     fun a => by
-      cases h : (s a).counting <;> simp [runtimeNext, h, guessWidth, startRadix]
+      cases h : (s a).counting <;> simp [runtimeNext, h, vertexWidth, startRadix]
 
 /-- Native linear workspace for the full runtime input-address callback. -/
 theorem query_inSpace :

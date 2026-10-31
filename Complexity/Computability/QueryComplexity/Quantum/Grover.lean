@@ -30,6 +30,17 @@ and the uniform superposition of the other items. So `z` is measured with probab
 `(2k + 1) θ` lies within `θ` of `π / 2`, and the success probability is at least `1 - 1 / N`
 (`Cslib.Quantum.grover_success`).
 
+**Source mapping.** The algorithm is Grover's (§3 of arXiv:quant-ph/9605043v3): it alternates the
+inversion of the phase of the marked item with the diffusion transform `D_ij = 2/N` for `i ≠ j`,
+`D_ii = -1 + 2/N` (equation (4.0)), the inversion about the average (§4). Grover takes `N = 2^n`
+and implements `D = WRW` with Walsh–Hadamard transforms (Theorem 1 in §5); here `D` is the
+reflection about `|s⟩` for every `N ≥ 2`, and only queries are counted. Grover shows a success
+probability of at least `1/2` after `O(√N)` iterations. The closed form `sin((2k + 1) θ)` and the
+choice `⌊π / (4θ)⌋`, with failure probability at most `1/N` and at most `π√N / 4` iterations, are
+from [Boyer, Brassard, Høyer, Tapp][BoyerBrassardHoyerTapp1998] (numbering of
+arXiv:quant-ph/9605034v1): §2, equation (2), and §3 with one solution. For `N = 4` the angle is
+`π / 6` and one query succeeds with certainty, their §3.1.
+
 ## Main definitions
 
 * `Cslib.Quantum.uniform`: the uniform superposition.
@@ -46,6 +57,8 @@ and the uniform superposition of the other items. So `z` is measured with probab
 ## References
 
 * [L. K. Grover, *A Fast Quantum Mechanical Algorithm for Database Search*][Grover1996]
+* [M. Boyer, G. Brassard, P. Høyer, A. Tapp, *Tight Bounds on Quantum
+  Searching*][BoyerBrassardHoyerTapp1998]
 -/
 
 @[expose] public section
@@ -224,7 +237,8 @@ theorem regProb_run_grover (hN : 2 ≤ N) (z : Fin N) (k : ℕ) :
     Complex.norm_real, Real.norm_eq_abs, sq_abs]
   ring
 
-/-- **Grover's algorithm** [Grover][Grover1996]: for `N ≥ 2` and every `z`, with
+/-- **Grover's algorithm** [Grover][Grover1996], with the analysis of [Boyer, Brassard, Høyer,
+Tapp][BoyerBrassardHoyerTapp1998]: for `N ≥ 2` and every `z`, with
 `T = ⌊π / (4θ)⌋` queries, where `θ = arcsin(1 / √N)`, the algorithm outputs the marked item `z`
 with probability at least `1 - 1 / N`, and `T ≤ π √N / 4`. -/
 theorem grover_success (hN : 2 ≤ N) (z : Fin N) :

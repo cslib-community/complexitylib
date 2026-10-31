@@ -15,8 +15,7 @@ import Mathlib.Tactic.Ring
 /-!
 # Finding, filtering and mapping with parameters
 
-Plain counterparts of `Turing.MultiTapeTM.ComputableTidilyInO.findWith`, `.filterWith` and
-`.mapWith`: one left fold over `list x` whose step applies a test or function to the parameter
+One left fold over `list x` applies a test or function to the parameter
 `par x` and the current element. The time bound charges each round for the parameter, the list,
 the accumulator and the largest cost of the test or function on an element.
 
@@ -28,8 +27,8 @@ the accumulator and the largest cost of the test or function on an element.
 
 ## References
 
-Restates Christian Reitwiessner's tidy list combinators
-(`Complexity/Computability/Machines/Turing/MultiTape/Complexity/BigO.lean`) in the plain calculus.
+Derived from Christian Reitwiessner's original list-combinator construction, using the plain
+fold rules and independent time and workspace bounds.
 -/
 
 public section

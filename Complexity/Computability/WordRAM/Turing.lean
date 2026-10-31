@@ -73,6 +73,8 @@ schedule chosen by the caller. Outputs are single words.
   `Cslib.WordRAM.WordBounded.length_resultEncoding_run_le`: from a fitting input, simulation states
   hold words and their encodings grow polynomially along a run.
 * `Cslib.WordRAM.inputFits_of_length_encList_le`: a word list fits its own encoded length.
+* `Cslib.WordRAM.exists_unary_majorant`: a quantity polynomially bounded in the input length has a
+  majorant computable in unary in polynomial time.
 * `Cslib.WordRAM.Program.DecidesInTime.computesInTime`: a decider computes the indicator.
 * `Cslib.WordRAM.Program.ComputesInTime.turingComputableInPolyTime_of_width`: the simulation at a
   supplied polynomial-time width schedule.
@@ -500,7 +502,7 @@ theorem Program.DecidesInTime.computesInTime {p : Program B r} {encode : ℕ →
 
 /-- A quantity polynomially bounded in the encoded input length has a majorant computable in
 unary in polynomial time: a fixed polynomial of the input length. -/
-private theorem exists_unary_majorant {u : α → ℕ}
+theorem exists_unary_majorant {u : α → ℕ}
     (h : PolyBounded (fun a => (encIn a).length) u) :
     ∃ g : α → ℕ, Turing.MultiTapeTM.ComputableInPolyTime g encIn encUnary ∧ ∀ a, u a ≤ g a := by
   obtain ⟨c, d, h⟩ := h.exists_le
