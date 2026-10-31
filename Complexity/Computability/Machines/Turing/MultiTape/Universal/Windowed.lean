@@ -727,7 +727,8 @@ private lemma cellAt_initWin_input (x : List ℕ) (z : ℤ) :
     simp [inCell, show z ≠ 0 by omega, show ¬0 < z by omega]
   · simp [cellAt, inCell]
   · rw [cellAt_of_nonneg _ (by omega)]
-    simp [inCell, show z ≠ 0 by omega, hz, List.getD_eq_getElem?_getD]
+    simp only [Nat.cast_one, Int.pred_toNat, List.getD_eq_getElem?_getD, List.getElem?_map,
+      inCell, show z ≠ 0 by omega, ↓reduceIte, hz]
     cases x[z.toNat - 1]? <;> simp
 
 /-- **The windowed simulation computes the universal function**: started from the radius-`t`
