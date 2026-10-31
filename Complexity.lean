@@ -929,6 +929,8 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildCurso
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildEntries
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildNumbering
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildSize
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetwork
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ClauseNetworkPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffScheme
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Deformation
@@ -1178,6 +1180,7 @@ public import Complexity.Computability.Complexity.Classes.Hierarchy.Polynomial
 public import Complexity.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Space
 public import Complexity.Computability.Complexity.Classes.Hierarchy.Time
+public import Complexity.Computability.Complexity.Classes.Hierarchy.TimePolylog
 public import Complexity.Computability.Complexity.Classes.IP
 public import Complexity.Computability.Complexity.Classes.IP.CoinFixing
 public import Complexity.Computability.Complexity.Classes.IP.GameTree
@@ -1242,6 +1245,7 @@ public import Complexity.Computability.Complexity.Classes.Oracle.Counting
 public import Complexity.Computability.Complexity.Classes.Oracle.CountingEquivalence
 public import Complexity.Computability.Complexity.Classes.Oracle.Deterministic
 public import Complexity.Computability.Complexity.Classes.Oracle.Diagonal
+public import Complexity.Computability.Complexity.Classes.Oracle.Exponential
 public import Complexity.Computability.Complexity.Classes.Oracle.Lowness
 public import Complexity.Computability.Complexity.Classes.Oracle.Monotone
 public import Complexity.Computability.Complexity.Classes.Oracle.PP
@@ -1381,6 +1385,7 @@ public import Complexity.Computability.Complexity.FineGrained
 public import Complexity.Computability.Complexity.FineGrained.Assignment
 public import Complexity.Computability.Complexity.FineGrained.BruteForce
 public import Complexity.Computability.Complexity.FineGrained.CircuitCounting
+public import Complexity.Computability.Complexity.FineGrained.ContractionCounting
 public import Complexity.Computability.Complexity.FineGrained.CountingCSP
 public import Complexity.Computability.Complexity.FineGrained.CountingEndpoint
 public import Complexity.Computability.Complexity.FineGrained.CountingFiniteCSP
@@ -1393,6 +1398,7 @@ public import Complexity.Computability.Complexity.FineGrained.CountingSparsifica
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsificationUniform
 public import Complexity.Computability.Complexity.FineGrained.CountingSparsifyContext
 public import Complexity.Computability.Complexity.FineGrained.CountingTreeBound
+public import Complexity.Computability.Complexity.FineGrained.DensityBranchCounting
 public import Complexity.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import Complexity.Computability.Complexity.FineGrained.Exponents
 public import Complexity.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
@@ -1664,6 +1670,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockTrace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Append
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Comp
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.CopyWord
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.DivConq
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Foldl
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Id
@@ -1671,8 +1678,10 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Ite
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.IterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.MultiPass
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Reverse
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StepMachine
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StreamFold
+public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.TidyZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Transducer
@@ -1680,6 +1689,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Zip
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Arith
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Bounds
+public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
@@ -1898,6 +1908,8 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Internal.Kernel
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelIterateWhile
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelNormalForm
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelStackLoop
+public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTakeDropUnary
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelTransducer
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZeroSpace
 public import Complexity.Computability.Machines.Turing.MultiTape.Internal.KernelZipTransducer
@@ -1965,6 +1977,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Prepar
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.ReadInput
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.RepeatUntilBlank
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.RewindWork
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.RunsBetween
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Sequential
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Shadow
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Basic
@@ -1974,6 +1987,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.Transf
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.TransformsWords
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileCond
 public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
+public import Complexity.Computability.Machines.Turing.MultiTape.Plumbing.WordMoves
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic
 public import Complexity.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
@@ -2037,6 +2051,11 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyT
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.ResourceBound
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Space
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.SpaceBudget
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.Windowed
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedBound
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedComplexity
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedInit
+public import Complexity.Computability.Machines.Turing.MultiTape.Universal.WindowedParts
 public import Complexity.Computability.Machines.Turing.SingleTape.Partrec
 public import Complexity.Computability.Machines.Turing.SingleTape.PostTuringMachine
 public import Complexity.Computability.Machines.Turing.TM2.ConfigBound
@@ -2294,7 +2313,6 @@ public import Complexity.Computability.WordRAM.Defs
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.ExactNotation
 public import Complexity.Computability.WordRAM.Function
-public import Complexity.Computability.WordRAM.Generic
 public import Complexity.Computability.WordRAM.GhostLoop
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.InputArray
