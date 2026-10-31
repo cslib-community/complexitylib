@@ -28,11 +28,15 @@ Bounds on `Nondeterministic.ecomplexityFun` for the standard functions on `v`-bi
   [Kushilevitz and Nisan, Example 1.23][KushilevitzNisan1997] and the cover by the rectangles
   `{x ⊆ w} × {y ⊆ wᶜ}`, so `N⁰(NDISJ_v) = v` for its negation;
 * inner product modulo two: `N¹(IP_v) ≥ v - 1` and `N⁰(IP_v) ≥ v`. A rectangle on which the inner
-  product is constant has at most `2^v` pairs: for the value `0` this is
-  [Kushilevitz and Nisan, Example 1.25][KushilevitzNisan1997], and for both values it follows from
-  Lindsey's lemma, stated for Hadamard matrices in [Jukna, Appendix A, p. 579][Jukna2012]
-  (`BitString.card_mul_le_two_pow_of_dotProduct_eq`). Meanwhile the inner product is `1` on
-  `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So `C¹(IP_v) ≥ (2^v - 1)/2` and
+  product is constant has at most `2^v` pairs. The matrix `(-1)^(x ⬝ᵥ y)` is a `2^v × 2^v` Hadamard
+  matrix, and the inner product is constant on a rectangle exactly when this matrix is, so this is
+  the final statement of Lindsey's lemma [Jukna, Appendix A, p. 579][Jukna2012]: no `a × b`
+  submatrix of an `n × n` Hadamard matrix with `a b > n` is monochromatic
+  (`BitString.card_mul_le_two_pow_of_dotProduct_eq`, proved from the bound on signed sums). For the
+  value `0` it is also [Kushilevitz and Nisan, Example 1.25][KushilevitzNisan1997], by linear
+  algebra over `𝔽₂`; the value `1` reduces to it by translating the two sides of the rectangle by
+  one of their elements, after which the inner product is `0` on it. Meanwhile the inner product is
+  `1` on `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So `C¹(IP_v) ≥ (2^v - 1)/2` and
   `C⁰(IP_v) ≥ (2^v + 1)/2`, which in the unrounded convention of Kushilevitz and Nisan give, for
   `v ≥ 1`, `N¹(IP_v) ≥ log₂ (2^v - 1) - 1` and `N⁰(IP_v) > v - 1`.
 
