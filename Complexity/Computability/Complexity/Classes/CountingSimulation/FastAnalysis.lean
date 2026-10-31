@@ -13,29 +13,33 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContra
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
-# The resource analysis of the native recursion: the recursion tree
+# The resource analysis of the native recursion: the recursion tree and the sizes
 
 The resource analysis `CountingSimulation.FastAnalysis` of the native recursion
 (`FastContraction.nativeMk`) of Theorem D.1 of [OpenAI2026ETH] (Appendix D.4.7, p. 64), reduced to
-two bounds about single calls (`CountingSimulation.fastAnalysis_nativeMk_of`):
+the leaf bounds (`CountingSimulation.fastAnalysis_nativeMk`): direct summation at a reached leaf
+takes time `poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and polynomial space (`CountingSimulation.FastLeaves`).
 
-* **sizes** (`CountingSimulation.FastSizes`): the calls reached from the root, their frames and
-  their values are polynomially long in the input;
-* **leaves** (`CountingSimulation.FastLeaves`): direct summation at a reached leaf takes time
-  `poly(n) 2 ^ O(s / √⌊log₂ s⌋)` and polynomial space.
+The rest of the analysis is proved here:
 
-The rest of the analysis is proved here: the derivation of the root over the reached calls
-(`FastContraction.reachInv`), with at most `m + 1` stack levels for every input
-(`FastContraction.exists_eval_reachInv`), and, from some size on, with at most
-`2 ^ ((245760 C' + 37) m / √⌊log₂ m⌋)` nodes for `C' = ⌊p / m⌋ + 1`
-(`FastContraction.exists_eval_onSchedule`), which fit in the clock
-(`CountingSimulation.two_mul_sub_one_le_fuel`). The clock's fixed constant serves every precision
-because the call count's exponent is linear in `C'`.
+* **the derivation** of the root over the reached calls (`FastContraction.reachInv`), with at most
+  `m + 1` stack levels for every input (`FastContraction.exists_eval_reachInv`), and, from some size
+  on, with at most `2 ^ ((245760 C' + 37) m / √⌊log₂ m⌋)` nodes for `C' = ⌊p / m⌋ + 1`
+  (`FastContraction.exists_eval_onSchedule`), which fit in the clock
+  (`CountingSimulation.two_mul_sub_one_le_fuel`). The clock's fixed constant serves every precision
+  because the call count's exponent is linear in `C'`;
+* **the sizes** (`CountingSimulation.fastSizes`): the reached calls, their frames and their values
+  are at most `2 ^ 55 (n + 1) ^ 24` long, from the structural shapes of the calls
+  (`FastContraction.Reach.shape`) and the encoded lengths of `FastContraction.Shape.length_le`.
+
+`CountingSimulation.reach_facts` collects what the leaf bounds may use about a reached call: its
+scale `m` with `s ≤ m ≤ C s`, at most `2 m` edges, and, from some size on, precision at most `m ^ 4`
+and at most `leafSize m` edges at a leaf.
 
 ## Main definitions
 
 * `Cslib.Complexity.CountingSimulation.FastSizes`: polynomial sizes along the recursion.
-* `Cslib.Complexity.CountingSimulation.FastLeaves`: the leaf bounds.
+* `Cslib.Complexity.CountingSimulation.FastLeaves`: the leaf bounds, the remaining obligation.
 
 ## Main results
 
@@ -44,6 +48,11 @@ because the call count's exponent is linear in `C'`.
   schedule.
 * `Cslib.Complexity.CountingSimulation.fastAnalysis_nativeMk_of`: the resource analysis from the
   sizes and the leaf bounds.
+* `Cslib.Complexity.CountingSimulation.fastSizes`: the sizes.
+* `Cslib.Complexity.CountingSimulation.fastAnalysis_nativeMk`: the resource analysis from the leaf
+  bounds.
+* `Cslib.Complexity.CountingSimulation.reach_facts`: the facts at the reached calls that the leaf
+  bounds use.
 
 ## References
 
@@ -297,7 +306,8 @@ theorem length_vertices_le (G : ExplicitTensorNetwork ℕ) :
       ∀ v ∈ G.vertices, (encList encNat v.2).length + 1 ≤
         (ExplicitTensorNetwork.encExplicitNetwork G).length := by
   have hl : (ExplicitTensorNetwork.encExplicitNetwork G).length = 2 * G.numEdges + 1 +
-      (G.vertices.map fun v => 2 * (encPair (encList encNat) (encList encNat) v).length + 1).sum := by
+      (G.vertices.map fun v =>
+        2 * (encPair (encList encNat) (encList encNat) v).length + 1).sum := by
     simp only [ExplicitTensorNetwork.encExplicitNetwork, encOfEquiv, Function.Embedding.trans_apply,
       Equiv.coe_toEmbedding, DescribedNetwork.equivProd, Equiv.coe_fn_mk, length_encPair,
       encUnary_apply, List.length_replicate, length_encList]
@@ -391,5 +401,60 @@ theorem fastSizes : FastSizes := by
 /-- **The resource analysis of the native recursion**, given the leaf bounds. -/
 theorem fastAnalysis_nativeMk (hL : FastLeaves) : FastAnalysis nativeMk :=
   fastAnalysis_nativeMk_of fastSizes hL
+
+/-! ### Facts at the leaves -/
+
+/-- `D m + 40 m ^ 2 (m + 1) ≤ m ^ 4` from `m = D + 81` on. -/
+private theorem prec_arith {m D : ℕ} (hm : D + 81 ≤ m) :
+    D * m + (m + 1) * (40 * m ^ 2) ≤ m ^ 4 := by
+  have h1 : D * m ≤ m * m := Nat.mul_le_mul_right _ (by omega)
+  have h2 : 81 * m ^ 3 ≤ m ^ 4 := by
+    rw [pow_succ m 3, mul_comm (m ^ 3) m]
+    exact Nat.mul_le_mul_right _ (by omega)
+  have h3 : m * m ≤ m ^ 3 := by nlinarith
+  have h4 : m ^ 2 ≤ m ^ 3 := Nat.pow_le_pow_right (by omega) (by norm_num)
+  have e : (m + 1) * (40 * m ^ 2) = 40 * m ^ 3 + 40 * m ^ 2 := by ring
+  have h5 : m * m = m ^ 2 := by ring
+  omega
+
+/-- **The facts at the reached calls that the leaf bounds use.** For all constants `C` and `D` there
+is `s₀` such that on every guarded input admissible at size `s ≥ 2` with constant `C` and with
+precision `1 ≤ P ≤ D s`, every call reached from the root has scale `m` with `s ≤ m ≤ C s`, at most
+`2 m` edges, and, from `s₀` on, precision at most `m ^ 4`, and at most `leafSize m` edges if the
+machine treats it as a leaf. -/
+theorem reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P : ℕ) (G : ℕ × ExplicitTensorNetwork ℕ), 2 ≤ s →
+    1 ≤ P → P ≤ D * s → ExplicitAdmissible C s G → fastGuard G = true →
+    ∀ x, Reach nativeMk (root (ExplicitTensorNetwork.capPrecision (P, G))) x →
+      s ≤ x.scale ∧ x.scale ≤ C * s ∧ x.edges ≤ 2 * x.scale ∧
+        (s₀ ≤ s → x.prec ≤ x.scale ^ 4 ∧ (active x = false → x.edges ≤ leafSize x.scale)) := by
+  obtain ⟨sA, hsA⟩ := exists_activeBounds_le D
+  refine ⟨max sA (D + 81), fun s P G hs hP hPD hA hg x hx => ?_⟩
+  set q := ExplicitTensorNetwork.capPrecision (P, G) with hq
+  set m := G.2.numEdges with hm
+  have hsm : s ≤ m := hA.2.2.2.2.2
+  have hmC : m ≤ C * s := hA.2.1
+  have hp₀ : q.1 ≤ D * m :=
+    (min_le_right _ _).trans (hPD.trans (Nat.mul_le_mul_left _ hsm))
+  have hsh := Reach.shape (x₀ := root q) rfl rfl (wf_root P hg) hx
+  have hsc : x.scale = m := hsh.scale_eq
+  refine ⟨hsc ▸ hsm, hsc ▸ hmC, hsc ▸ hsh.edges_le, fun hs₀ => ⟨?_, fun hl => ?_⟩⟩
+  · have hbd := hsh.bound_add_depth_le
+    change x.bound + x.depth ≤ (m + 1) + 0 at hbd
+    have hprec : x.prec ≤ q.1 + x.depth * (40 * m ^ 2) := hsh.prec_le
+    have : x.depth * (40 * m ^ 2) ≤ (m + 1) * (40 * m ^ 2) := Nat.mul_le_mul_right _ (by omega)
+    have := prec_arith (m := m) (D := D) (by omega)
+    rw [hsc]
+    omega
+  · have hm2 : D + 2 ≤ m := by omega
+    have hC1 : q.1 / m + 1 ≤ D + 1 := by
+      have := Nat.div_le_div_right (c := m) hp₀
+      rw [Nat.mul_div_cancel _ (by omega)] at this
+      omega
+    have hB := hsA m (by omega) (q.1 / m + 1) hC1
+    have hpC : q.1 ≤ (q.1 / m + 1) * m :=
+      (Nat.lt_div_mul_add (a := q.1) (b := m) (by omega)).le.trans (by rw [add_mul, one_mul])
+    have h := hx.onSchedule hB (onSchedule_root_capPrecision hg (Nat.le_add_left 1 _) hpC)
+    rw [hsc]
+    exact h.edges_le_leafSize hB hl
 
 end Cslib.Complexity.CountingSimulation
