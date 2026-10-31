@@ -55,7 +55,8 @@ at most `c + 1` nodes of polynomial size, so the search runs in polynomial time
 * `Cslib.Complexity.Fortune.prune`: Fortune's pruning rule.
 * `Cslib.Complexity.Fortune.expand`, `Cslib.Complexity.Fortune.searchWith`,
   `Cslib.Complexity.Fortune.acceptsWith`: the levels of the self-reduction tree, and its search
-  and decision procedure with any pruning rule, shared with Mahaney's theorem.
+  and decision procedure with any pruning rule, shared with Mahaney's theorem and its one-query
+  extension.
 * `Cslib.Complexity.Fortune.search`, `Cslib.Complexity.Fortune.accepts`: the pruned search and
   the decision procedure for `SAT`.
 
@@ -226,9 +227,9 @@ theorem verifier_units_append_iff {a : List (Literal ℕ)} {φ : CNF ℕ}
 
 /-! ### Pruned searches
 
-Fortune's and Mahaney's procedures search the self-reduction tree level by level, with different
-pruning rules. A rule that keeps only nodes of the level it prunes, and keeps a satisfiable node
-of every level that has one, gives a decision procedure
+Fortune's and Mahaney's procedures, and the one-query procedure, search the self-reduction tree
+level by level, with different pruning rules. A rule that keeps only nodes of the level it prunes,
+and keeps a satisfiable node of every level that has one, gives a decision procedure
 (`Cslib.Complexity.Fortune.acceptsWith_iff`); it is polynomial-time when a level is and the pruned
 levels are polynomially small (`Cslib.Complexity.Fortune.computableInPolyTime_acceptsWith`). -/
 
