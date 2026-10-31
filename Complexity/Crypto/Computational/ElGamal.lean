@@ -215,9 +215,11 @@ theorem computableInPolyTime_encodeElGamalPublicKey :
 `(encode (b • g), encode (b • u + m))`. -/
 def encodeElGamalEncrypt (input : F.Desc × List Bool × List Bool × ℕ) : List Bool × List Bool :=
   let d := input.1
-  let u := input.2.1
-  let m := input.2.2.1
-  let b := input.2.2.2
+  let umb := input.2
+  let mb := umb.2
+  let u := umb.1
+  let m := mb.1
+  let b := mb.2
   (F.smul (d, b, F.encode d (F.generator d)),
     F.add (d, F.smul (d, b, u), m))
 
@@ -251,8 +253,11 @@ theorem computableInPolyTime_encodeElGamalEncrypt :
 /-- Decryption on encoded group elements: given `(d, a, encode v, encode e)`, compute
 `encode (e - a • v)` as `F.add (d, encode e, F.smul (d, F.order d - a % F.order d, encode v))`. -/
 def decodeElGamal (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
-  F.add (input.1, input.2.2.2,
-    F.smul (input.1, F.order input.1 - input.2.1 % F.order input.1, input.2.2.1))
+  let d := input.1
+  let ave := input.2
+  let ve := ave.2
+  F.add (d, ve.2,
+    F.smul (d, F.order d - ave.1 % F.order d, ve.1))
 
 /-- `decodeElGamal` computes `encode (elGamalDecrypt d a (v, e))` on encoded group elements. -/
 theorem decodeElGamal_encode (d : F.Desc) (a : ℕ) (v e : F.Carrier d) :
@@ -330,8 +335,9 @@ noncomputable def elGamalMsgCPAGameOn {Msg : Type} (valid : ℕ → List Bool �
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
   let choice ← ProbComp.eval (adversary.choose n pk)
-  if valid n pk choice.1.1 choice.1.2 then
-    let m := if bit then choice.1.2 else choice.1.1
+  let msgs := choice.1
+  if valid n pk msgs.1 msgs.2 then
+    let m := if bit then msgs.2 else msgs.1
     let β ← PMF.uniformOfFintype (ZMod (F.order d))
     let ct := encPair encBits encBits
       (F.encode d (β • F.generator d),
@@ -348,12 +354,16 @@ def elGamalMsgToDDHDistinguisher {Msg : Type} (valid : ℕ → List Bool → Msg
     (encodeMsg : F.Desc → Msg → List Bool)
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ)
     (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, input.2.1)
+  let d := input.1
+  let uvw := input.2
+  let vw := uvw.2
+  let pk := encPair F.encDesc encBits (d, uvw.1)
   let choice ← adversary.choose n pk
-  if valid n pk choice.1.1 choice.1.2 then
-    let m := if bit then choice.1.2 else choice.1.1
+  let msgs := choice.1
+  if valid n pk msgs.1 msgs.2 then
+    let m := if bit then msgs.2 else msgs.1
     let ct := encPair encBits encBits
-      (input.2.2.1, F.add (input.1, input.2.2.2, encodeMsg input.1 m))
+      (vw.1, F.add (d, vw.2, encodeMsg d m))
     adversary.guess n choice.2 ct
   else
     return false
@@ -445,7 +455,10 @@ computable in polynomial time and `adversary` is uniform strict PPT. -/
 theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun p : ℕ × List Bool × Msg × Msg =>
+        let pkMsgs := p.2
+        let msgs := pkMsgs.2
+        valid p.1 pkMsgs.1 msgs.1 msgs.2)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     {encodeMsg : F.Desc → Msg → List Bool}
     (hencMsg : ComputableInPolyTime (fun p : F.Desc × Msg => encodeMsg p.1 p.2)
@@ -519,7 +532,10 @@ theorem DDH.negligible_elGamalMsgCPAGameOn {F : PrimeOrderGroupFamily} {setup : 
     {encodeMsg : F.Desc → Msg → List Bool}
     (hDDH : F.DDH setup)
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun p : ℕ × List Bool × Msg × Msg =>
+        let pkMsgs := p.2
+        let msgs := pkMsgs.2
+        valid p.1 pkMsgs.1 msgs.1 msgs.2)
       (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
     (hsound : F.AdmitsGroupElements encodeMsg valid)
     (hencMsg : ComputableInPolyTime (fun p : F.Desc × Msg => encodeMsg p.1 p.2)
@@ -594,7 +610,8 @@ noncomputable def elGamalCPAGame (setup : ℕ → PMF F.Desc)
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
   let choice ← ProbComp.eval (adversary.choose n pk)
-  let m := if bit then choice.1.2 else choice.1.1
+  let msgs := choice.1
+  let m := if bit then msgs.2 else msgs.1
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let ct := encPair encBits encBits
     (F.encode d (β • F.generator d),
@@ -722,7 +739,10 @@ theorem DDH.negligible_elGamalGroupCPAGameOn {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {valid : ℕ → List Bool → List Bool → List Bool → Bool}
     (hDDH : F.DDH setup)
     (hvalid : ComputableInPolyTime
-      (fun p : ℕ × List Bool × List Bool × List Bool => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
+      (fun p : ℕ × List Bool × List Bool × List Bool =>
+        let pkMsgs := p.2
+        let msgs := pkMsgs.2
+        valid p.1 pkMsgs.1 msgs.1 msgs.2)
       (encPair encUnary (encPair encBits (encPair encBits encBits))) encBool)
     (hsound : F.AdmitsGroupElements (fun _ m => m) valid)
     {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) :
@@ -776,9 +796,11 @@ key `α` recovers `m`. -/
 def encodeHashedElGamalEncrypt (H : F.Desc × List Bool → List Bool)
     (input : F.Desc × List Bool × List Bool × ℕ) : List Bool × List Bool :=
   let d := input.1
-  let u := input.2.1
-  let m := input.2.2.1
-  let b := input.2.2.2
+  let umb := input.2
+  let mb := umb.2
+  let u := umb.1
+  let m := mb.1
+  let b := mb.2
   let pad := H (d, F.smul (d, b, u))
   (F.smul (d, b, F.encode d (F.generator d)),
     Cslib.BitString.listXor pad.length [pad, m])
@@ -821,8 +843,11 @@ theorem computableInPolyTime_encodeHashedElGamalEncrypt {H : F.Desc × List Bool
 `pad = H (d, encode (a • v))` and compute `Cslib.BitString.listXor pad.length [pad, c]`. -/
 def decodeHashedElGamal (H : F.Desc × List Bool → List Bool)
     (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
-  let pad := H (input.1, F.smul (input.1, input.2.1, input.2.2.1))
-  Cslib.BitString.listXor pad.length [pad, input.2.2.2]
+  let d := input.1
+  let avc := input.2
+  let vc := avc.2
+  let pad := H (d, F.smul (d, avc.1, vc.1))
+  Cslib.BitString.listXor pad.length [pad, vc.2]
 
 /-- `decodeHashedElGamal` computes `hashedElGamalDecrypt` on encoded group elements. -/
 @[simp] theorem decodeHashedElGamal_encode (H : F.Desc × List Bool → List Bool)
@@ -859,7 +884,11 @@ theorem computableInPolyTime_decodeHashedElGamal {H : F.Desc × List Bool → Li
       (fun input : F.Desc × ℕ × List Bool × List Bool => input.2.2.2) encIn encBits := by fun_prop
   have hav := F.computableInPolyTime_smul.comp (hd.prod (ha.prod hv))
   have hpad := hH.comp (hd.prod hav)
-  unfold decodeHashedElGamal
+  change ComputableInPolyTime
+    (fun input : F.Desc × ℕ × List Bool × List Bool =>
+      let pad := H (input.1, F.smul (input.1, input.2.1, input.2.2.1))
+      Cslib.BitString.listXor pad.length [pad, input.2.2.2])
+    encIn encBits
   fun_prop
 
 /-- The IND-CPA experiment for Hashed ElGamal encryption ([BonehShoup2023], Section 11.5,
@@ -876,7 +905,8 @@ noncomputable def hashedElGamalCPAGame (setup : ℕ → PMF F.Desc)
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
   let choice ← ProbComp.eval (adversary.choose n pk)
-  let m := if bit then choice.1.2 else choice.1.1
+  let msgs := choice.1
+  let m := if bit then msgs.2 else msgs.1
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let pad := H (d, F.encode d ((α * β) • F.generator d))
   let ct := encPair encBits encBits
@@ -893,7 +923,8 @@ noncomputable def hashedElGamalIdealDDHGame (setup : ℕ → PMF F.Desc)
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
   let choice ← ProbComp.eval (adversary.choose n pk)
-  let m := if bit then choice.1.2 else choice.1.1
+  let msgs := choice.1
+  let m := if bit then msgs.2 else msgs.1
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let γ ← PMF.uniformOfFintype (ZMod (F.order d))
   let pad := H (d, F.encode d (γ • F.generator d))
@@ -910,7 +941,8 @@ noncomputable def hashedElGamalUniformPadGame (setup : ℕ → PMF F.Desc)
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
   let choice ← ProbComp.eval (adversary.choose n pk)
-  let m := if bit then choice.1.2 else choice.1.1
+  let msgs := choice.1
+  let m := if bit then msgs.2 else msgs.1
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let pad ← Cslib.BitString.uniformList (msgLen n)
   let ct := encPair encBits encBits
@@ -964,12 +996,16 @@ public key, mask the selected message word with `pad = H (d, w)` via
 def hashedElGamalToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
     (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, input.2.1)
+  let d := input.1
+  let uvw := input.2
+  let vw := uvw.2
+  let pk := encPair F.encDesc encBits (d, uvw.1)
   let choice ← adversary.choose n pk
-  let m := if bit then choice.1.2 else choice.1.1
-  let pad := H (input.1, input.2.2.2)
+  let msgs := choice.1
+  let m := if bit then msgs.2 else msgs.1
+  let pad := H (d, vw.2)
   let ct := encPair encBits encBits
-    (input.2.2.1, Cslib.BitString.listXor pad.length [pad, m])
+    (vw.1, Cslib.BitString.listXor pad.length [pad, m])
   adversary.guess n choice.2 ct
 
 /-- In the real DDH game, `hashedElGamalToDDHDistinguisher` simulates `hashedElGamalCPAGame`
@@ -1045,12 +1081,16 @@ public key, mask the selected message word with `pad` via
 `Cslib.BitString.listXor pad.length [pad, m]`, and return the adversary's guess. -/
 def hashedElGamalToKDFDistinguisher (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
     (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, input.2.1)
+  let d := input.1
+  let uvp := input.2
+  let vp := uvp.2
+  let pk := encPair F.encDesc encBits (d, uvp.1)
   let choice ← adversary.choose n pk
-  let m := if bit then choice.1.2 else choice.1.1
-  let pad := input.2.2.2
+  let msgs := choice.1
+  let m := if bit then msgs.2 else msgs.1
+  let pad := vp.2
   let ct := encPair encBits encBits
-    (input.2.2.1, Cslib.BitString.listXor pad.length [pad, m])
+    (vp.1, Cslib.BitString.listXor pad.length [pad, m])
   adversary.guess n choice.2 ct
 
 /-- In the real KDF game, `hashedElGamalToKDFDistinguisher` simulates `hashedElGamalIdealDDHGame`
