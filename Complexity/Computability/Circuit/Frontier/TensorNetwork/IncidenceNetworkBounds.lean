@@ -60,46 +60,6 @@ open Cslib.Complexity Finset
 @[expose] def numInc (sys : List (List (List ℕ))) : ℕ :=
   (sys.map fun eq => (equationVars eq).length).sum
 
-/-! ### Residue classes -/
-
-/-- Summing over the residue classes modulo `J > 0` sums over the list. -/
-theorem sum_filter_mod {J : ℕ} (hJ : 0 < J) (l : List ℕ) (f : ℕ → ℕ) :
-    ∑ h ∈ range J, ((l.filter (· % J = h)).map f).sum = (l.map f).sum := by
-  induction l with
-  | nil => simp
-  | cons x l ih =>
-    have hc : ∀ h, (((x :: l).filter (· % J = h)).map f).sum =
-        (if x % J = h then f x else 0) + ((l.filter (· % J = h)).map f).sum := by
-      intro h
-      by_cases hx : x % J = h <;> simp [hx]
-    rw [Finset.sum_congr rfl fun h _ => hc h, Finset.sum_add_distrib, ih,
-      Finset.sum_ite_eq (range J) (x % J) (fun _ => f x),
-      ite_eq_left (mem_range.mpr (Nat.mod_lt x hJ))]
-    simp
-
-/-- **A residue class below `a` has at most `a / J + 1` numbers.** -/
-theorem length_filter_mod_le (J a g : ℕ) :
-    ((List.range a).filter (· % J = g)).length ≤ a / J + 1 := by
-  rw [← List.toFinset_card_of_nodup ((List.nodup_range).filter _)]
-  calc #((List.range a).filter (· % J = g)).toFinset
-      ≤ #(range (a / J + 1)) := by
-        refine Finset.card_le_card_of_injOn (· / J) (fun x hx => ?_) (fun x hx y hy hxy => ?_)
-        · simp only [Finset.mem_coe, List.mem_toFinset, List.mem_filter, List.mem_range,
-            decide_eq_true_eq] at hx
-          simp only [Finset.coe_range, Set.mem_Iio]
-          exact Nat.lt_succ_of_le (Nat.div_le_div_right hx.1.le)
-        · simp only [Finset.mem_coe, List.mem_toFinset, List.mem_filter, List.mem_range,
-            decide_eq_true_eq] at hx hy
-          rw [← Nat.div_add_mod x J, ← Nat.div_add_mod y J, hx.2, hy.2]
-          exact congrArg (J * · + g) hxy
-    _ = a / J + 1 := card_range _
-
-/-- A list is its entries at `0, …, length - 1`. -/
-theorem map_getD_range {α : Type*} (l : List α) (x : α) :
-    (List.range l.length).map (l.getD · x) = l := by
-  refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
-  simp [List.getElem?_eq_getElem h₂]
-
 /-! ### Incidences -/
 
 variable {J : ℕ} {sys : List (List (List ℕ))} {d : List ℕ}
@@ -110,50 +70,27 @@ theorem width_le (g h : ℕ) : width J sys d g h ≤ (pairInc J sys g h).length 
 
 /-- The incidences of a pair, test by test. -/
 theorem length_pairInc (g h : ℕ) :
-    (pairInc J sys g h).length = ((testGroup J sys.length g).map fun i =>
+    (pairInc J sys g h).length = ((List.residueClass J sys.length g).map fun i =>
       ((equationVars (sys.getD i [])).filter (· % J = h)).length).sum := by
   rw [pairInc, List.length_flatMap]
-  conv_rhs => rw [← List.zipIdx_map_fst 0 (testGroup J sys.length g), List.map_map]
+  conv_rhs => rw [← List.zipIdx_map_fst 0 (List.residueClass J sys.length g), List.map_map]
   simp [Function.comp_def]
-
-/-- A `Finset` sum of list sums is the list sum of the `Finset` sums. -/
-theorem sum_list_sum_comm {ι α : Type*} (s : Finset ι) (l : List α) (f : ι → α → ℕ) :
-    ∑ h ∈ s, (l.map (f h)).sum = (l.map fun x => ∑ h ∈ s, f h x).sum := by
-  induction l with
-  | nil => simp
-  | cons x l ih => simp only [List.map_cons, List.sum_cons, Finset.sum_add_distrib, ih]
-
-/-- Summing the sizes of the residue classes modulo `J > 0` gives the length. -/
-theorem sum_length_filter_mod {J : ℕ} (hJ : 0 < J) (l : List ℕ) :
-    ∑ h ∈ range J, (l.filter (· % J = h)).length = l.length := by
-  simpa using sum_filter_mod hJ l fun _ => 1
 
 /-- **The incidences of a test group** are those of its tests. -/
 theorem sum_length_pairInc_row (hJ : 0 < J) (g : ℕ) :
     ∑ h ∈ range J, (pairInc J sys g h).length =
-      ((testGroup J sys.length g).map fun i => (equationVars (sys.getD i [])).length).sum := by
+      ((List.residueClass J sys.length g).map fun i =>
+        (equationVars (sys.getD i [])).length).sum := by
   simp only [length_pairInc]
-  rw [sum_list_sum_comm]
-  simp only [sum_length_filter_mod hJ]
+  rw [Finset.sum_list_sum_comm]
+  simp only [List.sum_length_filter_mod hJ]
 
-
-/-- The length of a filtered list counts its elements satisfying the predicate. -/
-theorem length_filter_eq_sum {α : Type*} (l : List α) (q : α → Bool) :
-    (l.filter q).length = (l.map fun x => if q x then 1 else 0).sum := by
-  induction l with
-  | nil => rfl
-  | cons x l ih => by_cases hx : q x <;> simp [hx, ih, Nat.add_comm]
-
-/-- Summing over the test groups sums over the tests. -/
-theorem sum_testGroup (hJ : 0 < J) (a : ℕ) (f : ℕ → ℕ) :
-    ∑ g ∈ range J, ((testGroup J a g).map f).sum = ((List.range a).map f).sum :=
-  sum_filter_mod hJ _ f
 
 /-- **The incidences of all pairs** are the incidences of the system. -/
 theorem sum_sum_length_pairInc (hJ : 0 < J) :
     ∑ g ∈ range J, ∑ h ∈ range J, (pairInc J sys g h).length = numInc sys := by
-  rw [Finset.sum_congr rfl fun g _ => sum_length_pairInc_row hJ g, sum_testGroup hJ, numInc]
-  conv_rhs => rw [← map_getD_range sys []]
+  rw [Finset.sum_congr rfl fun g _ => sum_length_pairInc_row hJ g, List.sum_residueClass hJ, numInc]
+  conv_rhs => rw [← List.map_getD_range sys []]
   rw [List.map_map]
   rfl
 
@@ -162,7 +99,7 @@ theorem sum_length_pairInc_col (hJ : 0 < J) (h : ℕ) :
     ∑ g ∈ range J, (pairInc J sys g h).length = ((List.range sys.length).map fun i =>
       ((equationVars (sys.getD i [])).filter (· % J = h)).length).sum := by
   simp only [length_pairInc]
-  exact sum_testGroup hJ _ _
+  exact List.sum_residueClass hJ _ _
 
 /-! ### Degrees -/
 
@@ -174,24 +111,25 @@ theorem length_rowPorts_le (hJ : 0 < J) (g : ℕ) {S : ℕ}
   rw [length_rowPorts]
   calc ∑ h ∈ range J, width J sys d g h ≤ ∑ h ∈ range J, (pairInc J sys g h).length :=
         Finset.sum_le_sum fun h _ => width_le g h
-    _ = ((testGroup J sys.length g).map fun i => (equationVars (sys.getD i [])).length).sum :=
+    _ = ((List.residueClass J sys.length g).map fun i =>
+          (equationVars (sys.getD i [])).length).sum :=
         sum_length_pairInc_row hJ g
-    _ ≤ (testGroup J sys.length g).length * S := by
+    _ ≤ (List.residueClass J sys.length g).length * S := by
         refine (List.sum_le_length_nsmul _ S fun x hx => ?_).trans (by simp)
         obtain ⟨i, hi, rfl⟩ := List.mem_map.mp hx
         have hi' : i < sys.length := List.mem_range.mp (List.mem_filter.mp hi).1
         rw [List.getD_eq_getElem _ _ hi']
         exact hS _ (List.getElem_mem hi')
     _ ≤ (sys.length / J + 1) * S :=
-        Nat.mul_le_mul_right _ (length_filter_mod_le J sys.length g)
+        Nat.mul_le_mul_right _ (List.length_residueClass_le J sys.length g)
 
 /-- The number of scopes containing a variable, as a sum over the tests. -/
 theorem varDegree_eq_sum (v : ℕ) :
     varDegree v sys = ((List.range sys.length).map fun i =>
       if v ∈ equationVars (sys.getD i []) then 1 else 0).sum := by
   rw [varDegree]
-  conv_lhs => rw [← map_getD_range sys []]
-  rw [List.countP_map, List.countP_eq_length_filter, length_filter_eq_sum]
+  conv_lhs => rw [← List.map_getD_range sys []]
+  rw [List.countP_map, List.countP_eq_length_filter, List.length_filter_eq_sum]
   simp
 
 /-- **The degree of a variable group** `h < J`: at most `(n / J + 1) D` if every variable is
@@ -202,7 +140,7 @@ theorem length_colPorts_le (hJ : 0 < J) {h : ℕ} (hh : h < J) {n D : ℕ}
   rw [length_colPorts h hh]
   -- Per test, the scope variables in group `h` are the variables of group `h` in the scope.
   have hper : ∀ i < sys.length, ((equationVars (sys.getD i [])).filter (· % J = h)).length =
-      ((varGroup J n h).filter fun v => v ∈ equationVars (sys.getD i [])).length := by
+      ((List.residueClass J n h).filter fun v => v ∈ equationVars (sys.getD i [])).length := by
     intro i hi
     refine List.Perm.length_eq ((List.perm_ext_iff_of_nodup ((nodup_sortDedup _).filter _)
       (((List.nodup_range).filter _).filter _)).mpr fun v => ?_)
@@ -221,16 +159,16 @@ theorem length_colPorts_le (hJ : 0 < J) {h : ℕ} (hh : h < J) {n D : ℕ}
     _ = ((List.range sys.length).map fun i =>
           ((equationVars (sys.getD i [])).filter (· % J = h)).length).sum :=
         sum_length_pairInc_col hJ h
-    _ = ((varGroup J n h).map fun v => varDegree v sys).sum := by
+    _ = ((List.residueClass J n h).map fun v => varDegree v sys).sum := by
         rw [List.map_congr_left fun i hi => hper i (List.mem_range.mp hi)]
-        simp only [length_filter_eq_sum, decide_eq_true_eq]
-        rw [sum_map_range_eq_sum_range, sum_list_sum_comm]
-        simp only [varDegree_eq_sum, sum_map_range_eq_sum_range]
-    _ ≤ (varGroup J n h).length * D := by
+        simp only [List.length_filter_eq_sum, decide_eq_true_eq]
+        rw [List.sum_map_range_eq_sum_range, Finset.sum_list_sum_comm]
+        simp only [varDegree_eq_sum, List.sum_map_range_eq_sum_range]
+    _ ≤ (List.residueClass J n h).length * D := by
         refine (List.sum_le_length_nsmul _ D fun x hx => ?_).trans (by simp)
         obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx
         exact hD v (List.mem_range.mp (List.mem_filter.mp hv).1)
-    _ ≤ (n / J + 1) * D := Nat.mul_le_mul_right _ (length_filter_mod_le J n h)
+    _ ≤ (n / J + 1) * D := Nat.mul_le_mul_right _ (List.length_residueClass_le J n h)
 
 /-! ### The wire bound (D.3) -/
 
@@ -253,19 +191,12 @@ theorem two_pow_clog_choose_le (N d : ℕ) :
   · rw [Nat.choose_eq_zero_of_lt (by omega)]
     simp
 
-/-- A sum over a `flatMap` sums the inner sums. -/
-theorem sum_map_flatMap {α β : Type*} (l : List α) (f : α → List β) (g : β → ℕ) :
-    ((l.flatMap f).map g).sum = (l.map fun x => ((f x).map g).sum).sum := by
-  induction l with
-  | nil => rfl
-  | cons x l ih => simp [List.flatMap_cons, ih]
-
 /-- The entries of the array below `J²`, pair by pair. -/
 theorem sum_getD_eq (J : ℕ) (d : List ℕ) :
     ∑ g ∈ range J, ∑ h ∈ range J, d.getD (g * J + h) 0 =
       ((List.range (J * J)).map (d.getD · 0)).sum := by
-  rw [← flatMap_range_mul, sum_map_flatMap, sum_map_range_eq_sum_range]
-  simp only [List.map_map, sum_map_range_eq_sum_range, Function.comp_def]
+  rw [← List.flatMap_range_mul, List.sum_map_flatMap, List.sum_map_range_eq_sum_range]
+  simp only [List.map_map, List.sum_map_range_eq_sum_range, Function.comp_def]
 
 /-- **The wire bound (D.3), exponential form**: a live array has `2 ^ M ≤ 2 ^ (J²) C(N + K, K)`
 for its `M` index wires and the `N` incidences of the system. -/

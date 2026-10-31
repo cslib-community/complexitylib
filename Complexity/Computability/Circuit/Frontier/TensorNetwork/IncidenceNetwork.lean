@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.PolyTime.CNF.SparsePolyCompile
+public import Complexity.Foundations.Data.List.Blocks
 import Complexity.Foundations.Data.List.OfFn
 
 /-!
@@ -27,7 +28,7 @@ of test `i` is `equationVars sys[i]`, its variables in increasing order without 
 *incidence* is a pair of a test and a variable of its scope.
 
 **Groups and arrays** (p. 55). The tests and the variables are split separately into `J` groups by
-their residues modulo `J` (`testGroup`, `varGroup`), so that group sizes differ by at most one. The
+their residues modulo `J` (`List.residueClass`), so that group sizes differ by at most one. The
 incidences between test group `g` and variable group `h` are listed by `pairInc J sys g h`, as
 pairs of the position of the test in its group and the variable. A *degree array* is a list `d`
 whose entry `g J + h` is the number `d_gh` of selected incidences of the pair `(g, h)`. It is *live*
@@ -37,9 +38,9 @@ whose entry `g J + h` is the number `d_gh` of selected incidences of the pair `(
 **Index wires** (p. 55). The pair `(g, h)` gets `⌈log₂ C_gh⌉` wires (`width`), where
 `C_gh = C(N_gh, d_gh)` is the number of subsets of size `d_gh` of its `N_gh` incidences; the bits on
 them index such a subset. The wires of the `J²` pairs are numbered consecutively in the order
-`g J + h` (`blockStart`, `blockRange`), and there are `numWires` of them. Test group `g` is a row
-whose ports are the wires of the pairs `(g, 0), …, (g, J - 1)` in order (`rowPorts`), and variable
-group `h` is a column whose ports are those of `(0, h), …, (J - 1, h)` (`colPorts`).
+`g J + h` (`List.blockStart`, `List.blockRange`), and there are `numWires` of them. Test group `g`
+is a row whose ports are the wires of the pairs `(g, 0), …, (g, J - 1)` in order (`rowPorts`), and
+variable group `h` is a column whose ports are those of `(0, h), …, (J - 1, h)` (`colPorts`).
 
 **Descriptors** (`Desc`). A row carries the precision `P`, the truncation order `ℓ`, the monomials
 of the tests of its group and, for each variable group, the incidences of the pair and their
@@ -56,8 +57,6 @@ without a validity test.
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.IncidenceNetwork.testGroup`,
-  `Cslib.Circuits.Frontier.IncidenceNetwork.varGroup`: the groups.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.pairInc`: the incidences of a pair of groups.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.width`: the number of index wires of a pair.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.live`: the arrays with `Σ d_gh ≤ K`.
@@ -67,7 +66,8 @@ without a validity test.
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.IncidenceNetwork.flatMap_blockRange`: consecutive blocks of wires.
+* `Cslib.Circuits.Frontier.IncidenceNetwork.flatMap_rowPorts`: the ports of the rows are the
+  index wires.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.isRowsFirstBipartite_network`: the network is
   rows-first bipartite.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.numEdges_network`: it has `max M s` edges.
@@ -87,57 +87,13 @@ namespace Cslib.Circuits.Frontier.IncidenceNetwork
 
 open Cslib.Complexity
 
-/-! ### Consecutive blocks of wires -/
-
-/-- The first number of block `b` when block `b'` has `w b'` numbers: `Σ_{b' < b} w b'`. -/
-@[expose] def blockStart (w : ℕ → ℕ) (b : ℕ) : ℕ := ((List.range b).map w).sum
-
-/-- The numbers of block `b`: `blockStart w b, …, blockStart w b + w b - 1`. -/
-@[expose] def blockRange (w : ℕ → ℕ) (b : ℕ) : List ℕ := List.range' (blockStart w b) (w b)
-
-theorem blockStart_succ (w : ℕ → ℕ) (b : ℕ) : blockStart w (b + 1) = blockStart w b + w b := by
-  simp [blockStart, List.range_succ]
-
-/-- **Consecutive blocks**: the numbers of the blocks below `B`, in order, are the numbers below
-`blockStart w B`. -/
-theorem flatMap_blockRange (w : ℕ → ℕ) (B : ℕ) :
-    (List.range B).flatMap (blockRange w) = List.range (blockStart w B) := by
-  induction B with
-  | zero => simp [blockStart]
-  | succ B ih =>
-    rw [List.range_succ, List.flatMap_append, ih, List.flatMap_singleton, blockRange,
-      List.range_eq_range', List.range_eq_range', blockStart_succ]
-    simpa using List.range'_append_1 (s := 0) (m := blockStart w B) (n := w B)
-
-/-- The pairs `g J + h` for `g < G` and `h < J`, in order, are the numbers below `G J`. -/
-theorem flatMap_range_mul (G J : ℕ) :
-    (List.range G).flatMap (fun g => (List.range J).map (g * J + ·)) = List.range (G * J) := by
-  induction G with
-  | zero => simp
-  | succ G ih =>
-    rw [List.range_succ, List.flatMap_append, ih, List.flatMap_singleton,
-      ← List.range'_eq_map_range, List.range_eq_range', List.range_eq_range', Nat.succ_mul]
-    simpa using List.range'_append_1 (s := 0) (m := G * J) (n := J)
-
-/-- A list sum over `List.range n` is the `Finset` sum over `range n` (`List.sum_map_range`). -/
-theorem sum_map_range_eq_sum_range (n : ℕ) (f : ℕ → ℕ) :
-    ((List.range n).map f).sum = ∑ i ∈ Finset.range n, f i :=
-  (List.sum_map_range n f).trans (Finset.sum_range f).symm
-
 /-! ### Groups and incidences -/
-
-/-- **The tests of group `g`** among `a` tests in `J` groups: those whose index is `g` modulo
-`J`, in increasing order. -/
-@[expose] def testGroup (J a g : ℕ) : List ℕ := (List.range a).filter (· % J = g)
-
-/-- **The variables of group `h`** among `n` variables in `J` groups. -/
-@[expose] def varGroup (J n h : ℕ) : List ℕ := (List.range n).filter (· % J = h)
 
 /-- **The incidences of the pair `(g, h)`**: for each test of group `g`, in order, the pairs
 `(t, v)` of its position `t` in the group and a variable `v` of its scope in group `h`, in
 increasing order. -/
 @[expose] def pairInc (J : ℕ) (sys : List (List (List ℕ))) (g h : ℕ) : List (ℕ × ℕ) :=
-  (testGroup J sys.length g).zipIdx.flatMap fun p =>
+  (List.residueClass J sys.length g).zipIdx.flatMap fun p =>
     ((equationVars (sys.getD p.1 [])).filter (· % J = h)).map fun v => (p.2, v)
 
 /-- **The number of index wires of the pair `(g, h)`** for the array `d`: `⌈log₂ C(N_gh, d_gh)⌉`,
@@ -151,15 +107,15 @@ where `N_gh` is the number of incidences of the pair and `d_gh` the entry `g J +
 
 /-- The number of index wires of all `J²` pairs. -/
 @[expose] def numWires (J : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) : ℕ :=
-  blockStart (blockWidth J sys d) (J * J)
+  List.blockStart (blockWidth J sys d) (J * J)
 
 /-- **The ports of test group `g`**: the wires of the pairs `(g, 0), …, (g, J - 1)`. -/
 @[expose] def rowPorts (J : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) (g : ℕ) : List ℕ :=
-  (List.range J).flatMap fun h => blockRange (blockWidth J sys d) (g * J + h)
+  (List.range J).flatMap fun h => List.blockRange (blockWidth J sys d) (g * J + h)
 
 /-- **The ports of variable group `h`**: the wires of the pairs `(0, h), …, (J - 1, h)`. -/
 @[expose] def colPorts (J : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) (h : ℕ) : List ℕ :=
-  (List.range J).flatMap fun g => blockRange (blockWidth J sys d) (g * J + h)
+  (List.range J).flatMap fun g => List.blockRange (blockWidth J sys d) (g * J + h)
 
 /-- **Live arrays**: the entries of `d` below `J²` sum to at most `K`. -/
 @[expose] def live (J K : ℕ) (d : List ℕ) : Bool :=
@@ -189,13 +145,13 @@ abbrev Desc : Type :=
 /-- The vertex of test group `g`. -/
 @[expose] def rowVertex (P ℓ J : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) (g : ℕ) :
     List ℕ × Desc :=
-  (rowPorts J sys d g, .inl (P, ℓ, (testGroup J sys.length g).map (sys.getD · []),
+  (rowPorts J sys d g, .inl (P, ℓ, (List.residueClass J sys.length g).map (sys.getD · []),
     rowBlocks J sys d g))
 
 /-- The vertex of variable group `h` among `n` variables. -/
 @[expose] def colVertex (P J n : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) (h : ℕ) :
     List ℕ × Desc :=
-  (colPorts J sys d h, .inr (.inl (P, varGroup J n h, colBlocks J sys d h)))
+  (colPorts J sys d h, .inr (.inl (P, List.residueClass J n h, colBlocks J sys d h)))
 
 /-- The padding row on edge `e`: the table `[1, 0]`, that is `[x = 0]`. -/
 @[expose] def padRow (e : ℕ) : List ℕ × Desc := ([e], .inr (.inr [1, 0]))
@@ -248,8 +204,9 @@ theorem blockWidth_mul_add {g h : ℕ} (hh : h < J) :
 /-- The ports of all test groups, in order, are the index wires. -/
 theorem flatMap_rowPorts (J : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) :
     (List.range J).flatMap (rowPorts J sys d) = List.range (numWires J sys d) := by
-  have h := congrArg (List.flatMap (blockRange (blockWidth J sys d))) (flatMap_range_mul J J)
-  rw [List.flatMap_assoc, flatMap_blockRange] at h
+  have h := congrArg (List.flatMap (List.blockRange (blockWidth J sys d)))
+    (List.flatMap_range_mul J J)
+  rw [List.flatMap_assoc, List.flatMap_blockRange] at h
   rw [numWires, ← h]
   simp only [List.flatMap_map]
   rfl
@@ -267,7 +224,8 @@ theorem sum_count_colPorts (i : ℕ) :
     ((List.range J).map fun h => (colPorts J sys d h).count i).sum =
       if i < numWires J sys d then 1 else 0 := by
   rw [← sum_count_rowPorts]
-  simp only [rowPorts, colPorts, List.count_flatMap, sum_map_range_eq_sum_range, Function.comp_def]
+  simp only [rowPorts, colPorts, List.count_flatMap, List.sum_map_range_eq_sum_range,
+    Function.comp_def]
   exact Finset.sum_comm
 
 /-- A port of a test group `g < J` is an index wire. -/
@@ -293,22 +251,22 @@ theorem lt_of_mem_colPorts {h i : ℕ} (hh : h < J) (hi : i ∈ colPorts J sys d
 /-- **The degree of a test group** `g`: the index wires of its pairs. -/
 theorem length_rowPorts (g : ℕ) :
     (rowPorts J sys d g).length = ∑ h ∈ Finset.range J, width J sys d g h := by
-  rw [rowPorts, List.length_flatMap, sum_map_range_eq_sum_range]
+  rw [rowPorts, List.length_flatMap, List.sum_map_range_eq_sum_range]
   exact Finset.sum_congr rfl fun h hh => by
-    rw [blockRange, List.length_range', blockWidth_mul_add (Finset.mem_range.mp hh)]
+    rw [List.blockRange, List.length_range', blockWidth_mul_add (Finset.mem_range.mp hh)]
 
 /-- **The degree of a variable group** `h`: the index wires of its pairs. -/
 theorem length_colPorts (h : ℕ) (hh : h < J) :
     (colPorts J sys d h).length = ∑ g ∈ Finset.range J, width J sys d g h := by
-  rw [colPorts, List.length_flatMap, sum_map_range_eq_sum_range]
+  rw [colPorts, List.length_flatMap, List.sum_map_range_eq_sum_range]
   exact Finset.sum_congr rfl fun g _ => by
-    rw [blockRange, List.length_range', blockWidth_mul_add hh]
+    rw [List.blockRange, List.length_range', blockWidth_mul_add hh]
 
 /-- **The number of index wires** is the sum over the pairs. -/
 theorem numWires_eq (J : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) :
     numWires J sys d = ∑ g ∈ Finset.range J, ∑ h ∈ Finset.range J, width J sys d g h := by
   have h := congrArg List.length (flatMap_rowPorts J sys d)
-  rw [List.length_range, List.length_flatMap, sum_map_range_eq_sum_range] at h
+  rw [List.length_range, List.length_flatMap, List.sum_map_range_eq_sum_range] at h
   rw [← h]
   exact Finset.sum_congr rfl fun g _ => length_rowPorts g
 

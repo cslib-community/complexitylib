@@ -9,17 +9,19 @@ module
 
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.EntryContraction
+public import Complexity.Foundations.Data.Nat.CeilQuarter
 import Complexity.Foundations.Data.Nat.Asymptotics
 
 /-!
 # The size of the incidence network at `s = n ν`
 
 Lemma D.2 of [OpenAI2026ETH] applies Theorem D.1 to the incidence network
-(`Cslib.Circuits.Frontier.IncidenceNetwork.network`) with `J = ⌈n ^ (1/4)⌉` groups, size parameter
-`s = n ν` and precision and truncation order `n + 1`, where `λ = ⌈log₂ n⌉` and `ν = ⌈log₂ λ⌉`
-(p. 56). This file fixes these parameters (`IncidenceNetwork.lemmaNetwork`) and proves the shape
-hypotheses of Theorem D.1 for all sufficiently large `n` (`IncidenceNetwork.exists_size`): at
-least `s` and at most `C s` edges, at most `C s` vertices, and degree at most `⌈s ^ (9/10)⌉`.
+(`Cslib.Circuits.Frontier.IncidenceNetwork.network`) with `J = ⌈n ^ (1/4)⌉` groups
+(`Nat.ceilQuarter`), size parameter `s = n ν` and precision and truncation order `n + 1`, where
+`λ = ⌈log₂ n⌉` and `ν = ⌈log₂ λ⌉` (p. 56). This file fixes these parameters
+(`IncidenceNetwork.lemmaNetwork`) and proves the shape hypotheses of Theorem D.1 for all
+sufficiently large `n` (`IncidenceNetwork.exists_size`): at least `s` and at most `C s` edges, at
+most `C s` vertices, and degree at most `⌈s ^ (9/10)⌉`.
 
 The hypotheses are those of a reduced branch of Lemma D.2 (p. 54), up to constants: at most `c n`
 tests, every scope with at most `λ ^ c` variables, every variable in at most `λ ^ c` scopes, and
@@ -35,7 +37,6 @@ the last for `k ≥ 1`.
 
 ## Main definitions
 
-* `Cslib.Circuits.Frontier.IncidenceNetwork.ceilQuarter`: `⌈n ^ (1/4)⌉`.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.sizeParam`: `s = n ν`.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.lemmaNetwork`: the network of Lemma D.2.
 
@@ -57,46 +58,6 @@ open Cslib.Complexity
 
 /-! ### Parameters -/
 
-theorem le_self_pow_four (n : ℕ) : n ≤ n ^ 4 := by
-  rcases n with _ | n
-  · simp
-  · exact Nat.le_self_pow (by norm_num) _
-
-theorem exists_le_pow_four (n : ℕ) : ∃ J, n ≤ J ^ 4 := ⟨n, le_self_pow_four n⟩
-
-/-- **`⌈n ^ (1/4)⌉`**, the least `J` with `n ≤ J ^ 4`: the number of groups of Lemma D.2. -/
-@[expose] def ceilQuarter (n : ℕ) : ℕ := Nat.find (exists_le_pow_four n)
-
-theorem le_ceilQuarter_pow (n : ℕ) : n ≤ ceilQuarter n ^ 4 := Nat.find_spec (exists_le_pow_four n)
-
-theorem ceilQuarter_pos {n : ℕ} (hn : 1 ≤ n) : 0 < ceilQuarter n := by
-  by_contra h
-  have h0 : ceilQuarter n = 0 := by omega
-  have := le_ceilQuarter_pow n
-  rw [h0] at this
-  simp at this
-  omega
-
-theorem ceilQuarter_le_self (n : ℕ) : ceilQuarter n ≤ n := Nat.find_min' _ (le_self_pow_four n)
-
-/-- `J² ≤ 4 n` for `J = ⌈n ^ (1/4)⌉` and `n ≥ 1`. -/
-theorem ceilQuarter_mul_self_le {n : ℕ} (hn : 1 ≤ n) : ceilQuarter n * ceilQuarter n ≤ 4 * n := by
-  set J := ceilQuarter n
-  have hJ := ceilQuarter_pos hn
-  have hmin : ¬ n ≤ (J - 1) ^ 4 :=
-    Nat.find_min (exists_le_pow_four n) (show J - 1 < ceilQuarter n by omega)
-  have h2 : (J - 1) * (J - 1) ≤ (J - 1) ^ 4 := by
-    rcases Nat.eq_zero_or_pos (J - 1) with h | h
-    · simp [h]
-    · calc (J - 1) * (J - 1) = (J - 1) ^ 2 := (sq _).symm
-        _ ≤ (J - 1) ^ 4 := Nat.pow_le_pow_right h (by norm_num)
-  rcases Nat.lt_or_ge J 2 with hJ2 | hJ2
-  · have : J = 1 := by omega
-    rw [this]
-    omega
-  · have : J ≤ 2 * (J - 1) := by omega
-    nlinarith
-
 /-- **The size parameter of Lemma D.2**: `s = n ν`, for `λ = ⌈log₂ n⌉` and `ν = ⌈log₂ λ⌉`. -/
 @[expose] def sizeParam (n : ℕ) : ℕ := n * Nat.clog 2 (Nat.clog 2 n)
 
@@ -104,7 +65,7 @@ theorem ceilQuarter_mul_self_le {n : ℕ} (hn : 1 ≤ n) : ceilQuarter n * ceilQ
 `K`: `⌈n ^ (1/4)⌉` groups, size `n ν`, precision and truncation order `n + 1` (p. 56). -/
 @[expose] def lemmaNetwork (K n : ℕ) (sys : List (List (List ℕ))) (d : List ℕ) :
     ℕ × DescribedNetwork Desc :=
-  network (n + 1) (n + 1) (ceilQuarter n) K (sizeParam n) n sys d
+  network (n + 1) (n + 1) (Nat.ceilQuarter n) K (sizeParam n) n sys d
 
 /-! ### Ports of all vertices -/
 
@@ -143,14 +104,6 @@ theorem length_ports_le (hJ : 0 < J) {S D : ℕ}
 
 /-! ### Asymptotics -/
 
-/-- `x ≤ ⌈s ^ (9/10)⌉` whenever `x ^ 10 ≤ s ^ 9` and `s ≥ 1`. -/
-theorem le_ceilNineTenths_of_pow_le {x s : ℕ} (hs : 1 ≤ s) (h : x ^ 10 ≤ s ^ 9) :
-    x ≤ ceilNineTenths s := by
-  rw [le_ceilNineTenths_iff hs]
-  rcases Nat.eq_zero_or_pos x with rfl | hx
-  · simpa using Nat.pow_pos (n := 9) hs
-  · exact (Nat.pow_lt_pow_left (by omega) (by norm_num)).trans_le h
-
 /-- `(c n / J) ^ 4 ≤ c ^ 4 n ³` when `n ≤ J ^ 4`. -/
 theorem div_pow_four_le {c n J : ℕ} (hJ : 0 < J) (hn : n ≤ J ^ 4) :
     (c * n / J) ^ 4 ≤ c ^ 4 * n ^ 3 := by
@@ -184,10 +137,10 @@ theorem exists_size (c : ℕ) : ∃ C n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ (K :
   refine ⟨5 + c * (A + c), 2 ^ (L₀ + 2) + 5, fun n hn K sys d hsys hnK hKn hS hvars hD => ?_⟩
   set lam := Nat.clog 2 n with hlam
   set nu := Nat.clog 2 lam with hnu
-  set J := ceilQuarter n with hJdef
+  set J := Nat.ceilQuarter n with hJdef
   have hn5 : 5 ≤ n := (Nat.le_add_left 5 _).trans hn
   have hn1 : 1 ≤ n := by omega
-  have hJ : 0 < J := ceilQuarter_pos hn1
+  have hJ : 0 < J := Nat.ceilQuarter_pos hn1
   -- `λ ≥ L₀ + 2 ≥ 2` and `ν ≥ 1`.
   have hlamL : L₀ + 2 ≤ lam := by
     have := Nat.clog_mono_right 2 ((Nat.le_add_right (2 ^ (L₀ + 2)) 5).trans hn)
@@ -214,7 +167,7 @@ theorem exists_size (c : ℕ) : ∃ C n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ (K :
           _ ≤ 2 ^ A * (2 ^ nu) ^ c := Nat.mul_le_mul hA (Nat.pow_le_pow_left hlamle _)
           _ = 2 ^ (A + nu * c) := by rw [← pow_mul, ← pow_add]
           _ ≤ 2 ^ ((A + c) * nu) := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
-      have hJJ := ceilQuarter_mul_self_le hn1
+      have hJJ := Nat.ceilQuarter_mul_self_le hn1
       calc numWires J sys d ≤ J * J + K * Nat.clog 2 (3 * (c * lam ^ c + 1)) := hW
         _ ≤ 4 * n + c * n * ((A + c) * nu) := Nat.add_le_add hJJ (Nat.mul_le_mul hKn hlog)
         _ ≤ (4 + c * (A + c)) * (n * nu) := by nlinarith
@@ -229,7 +182,7 @@ theorem exists_size (c : ℕ) : ∃ C n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ (K :
       (s := sizeParam n) (n := n) (sys := sys) (d := d)
     change (network (n + 1) (n + 1) J K (sizeParam n) n sys d).2.vertices.length ≤ _
     rw [hV]
-    have hJn : J ≤ n := ceilQuarter_le_self n
+    have hJn : J ≤ n := Nat.ceilQuarter_le_self n
     have : (if live J K d = true then 2 * J else 1) ≤ 2 * n := by split_ifs <;> omega
     have h5 : 5 * sizeParam n ≤ (5 + c * (A + c)) * sizeParam n :=
       Nat.mul_le_mul_right _ (by omega)
@@ -244,7 +197,7 @@ theorem exists_size (c : ℕ) : ∃ C n₀ : ℕ, ∀ n, n₀ ≤ n → ∀ (K :
     have hx : (a + 1) * lam ^ c ≤ ceilNineTenths (sizeParam n) := by
       refine le_ceilNineTenths_of_pow_le hs1
         ((Nat.pow_le_pow_iff_left (n := 4) (by norm_num)).mp ?_)
-      have ha4 : a ^ 4 ≤ c' ^ 4 * n ^ 3 := div_pow_four_le hJ (le_ceilQuarter_pow n)
+      have ha4 : a ^ 4 ≤ c' ^ 4 * n ^ 3 := div_pow_four_le hJ (Nat.le_ceilQuarter_pow n)
       have ha1 : (a + 1) ^ 4 ≤ 16 * (c' ^ 4 + 1) * n ^ 3 := by
         have hn3 : 1 ≤ n ^ 3 := Nat.one_le_pow _ _ hn1
         have h16 : (a + 1) ^ 4 ≤ 16 * (a ^ 4 + 1) := by

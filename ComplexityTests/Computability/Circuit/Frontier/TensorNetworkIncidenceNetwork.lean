@@ -31,7 +31,7 @@ abbrev sys : List (List (List ℕ)) := [[[0, 1], [2]], [[1]], [[0], [1, 2]]]
 truncation order `4`, three variables. -/
 abbrev G : ℕ × DescribedNetwork Desc := network 4 4 2 4 6 3 sys [1, 1, 0, 1]
 
-example : testGroup 2 3 0 = [0, 2] := by decide
+example : List.residueClass 2 3 0 = [0, 2] := by decide
 example : pairInc 2 sys 0 0 = [(0, 0), (0, 2), (1, 0), (1, 2)] := by decide
 example : pairInc 2 sys 0 1 = [(0, 1), (1, 1)] := by decide
 example : pairInc 2 sys 1 0 = [] := by decide
@@ -75,14 +75,14 @@ example : (7 + 4).choose 4 ≤ (3 * 3) ^ 4 := Nat.add_choose_le_three_mul_pow (b
 /-! ### The parameters of Lemma D.2 -/
 
 -- `⌈16 ^ (1/4)⌉ = 2` and `⌈17 ^ (1/4)⌉ = 3`.
-example : ceilQuarter 16 = 2 :=
+example : Nat.ceilQuarter 16 = 2 :=
   le_antisymm (Nat.find_min' _ (by norm_num)) (by
     by_contra h
-    have := le_ceilQuarter_pow 16
-    interval_cases (ceilQuarter 16) <;> simp_all)
+    have := Nat.le_ceilQuarter_pow 16
+    interval_cases (Nat.ceilQuarter 16) <;> simp_all)
 
 -- `16 ≤ J ^ 4` and `J ² ≤ 4 · 16` at `J = ⌈16 ^ (1/4)⌉`.
-example : 16 ≤ ceilQuarter 16 ^ 4 ∧ ceilQuarter 16 * ceilQuarter 16 ≤ 4 * 16 :=
-  ⟨le_ceilQuarter_pow 16, ceilQuarter_mul_self_le (by norm_num)⟩
+example : 16 ≤ Nat.ceilQuarter 16 ^ 4 ∧ Nat.ceilQuarter 16 * Nat.ceilQuarter 16 ≤ 4 * 16 :=
+  ⟨Nat.le_ceilQuarter_pow 16, Nat.ceilQuarter_mul_self_le (by norm_num)⟩
 
 end ComplexityTests.TensorNetworkIncidenceNetwork
