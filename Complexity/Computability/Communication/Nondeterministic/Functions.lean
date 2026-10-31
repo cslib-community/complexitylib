@@ -17,20 +17,20 @@ public import Complexity.Computability.Communication.Nondeterministic.Basic
 /-!
 # Nondeterministic complexity of equality, disjointness and inner product
 
-Bounds on `Nondeterministic.ecomplexityFun` for the standard functions on `v`-bit strings
-[Kushilevitz and Nisan, Chapters 1–3][KushilevitzNisan1997]:
+Bounds on `Nondeterministic.ecomplexityFun` for the standard functions on `v`-bit strings:
 
 * equality: `N¹(EQ_v) = v`, from the fooling set of diagonal pairs and the cover by diagonal
   singletons [Kushilevitz and Nisan, Examples 1.21 and 2.5][KushilevitzNisan1997];
 * disjointness: `N¹(DISJ_v) = v`, from the fooling set of complementary pairs
   [Kushilevitz and Nisan, Example 1.23][KushilevitzNisan1997] and the cover by the rectangles
   `{x ⊆ w} × {y ⊆ wᶜ}`, so `N⁰(NDISJ_v) = v` for its negation;
-* inner product modulo two: `N¹(IP_v) ≥ v - 1` and `N⁰(IP_v) ≥ v`. By Lindsey's
-  lemma a rectangle on which the inner product is constant has at most `2^v` pairs
-  (`BitString.card_mul_le_two_pow_of_dotProduct_eq`), while the inner product is `1` on
-  `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So `C¹(IP_v) ≥ (2^v - 1)/2` and
-  `C⁰(IP_v) ≥ (2^v + 1)/2`, which in the unrounded convention of Kushilevitz and Nisan give
-  `N¹(IP_v) ≥ log₂ (2^v - 1) - 1` and `N⁰(IP_v) > v - 1`.
+* inner product modulo two: `N¹(IP_v) ≥ v - 1` and `N⁰(IP_v) ≥ v`. A rectangle on which the inner
+  product is constant has at most `2^v` pairs: for the value `0` this is
+  [Kushilevitz and Nisan, Example 1.25][KushilevitzNisan1997], and for both values it follows from
+  Lindsey's lemma (`BitString.card_mul_le_two_pow_of_dotProduct_eq`). Meanwhile the inner product is
+  `1` on `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So `C¹(IP_v) ≥ (2^v - 1)/2` and
+  `C⁰(IP_v) ≥ (2^v + 1)/2`, which in the unrounded convention of Kushilevitz and Nisan give, for
+  `v ≥ 1`, `N¹(IP_v) ≥ log₂ (2^v - 1) - 1` and `N⁰(IP_v) > v - 1`.
 
 The deterministic `Cslib.Communication.ecomplexityFun_equality` has the same final name as
 `Cslib.Communication.Nondeterministic.ecomplexityFun_equality`; with both namespaces open, write
