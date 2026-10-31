@@ -662,14 +662,14 @@ private theorem classIndices_eq [NeZero r] :
     fun h => ⟨h.1 ▸ rfl, h.2 ▸ rfl⟩⟩
 
 /-- The largest class size. -/
-private theorem maxLoadOf_eq [NeZero r] :
+private theorem maxLoadOf_eq :
     maxLoadOf (List.ofFn (classIndex rowOf colOf ρ κ)) = maxLoad rowOf colOf ρ κ := by
   rw [maxLoadOf, foldl_max_eq, maxLoad, Finset.sup_def, Fin.univ_val_map, Multiset.sup_coe,
     List.map_ofFn]
   simp only [Function.comp_def, Nat.zero_max, Nat.bot_eq_zero]
 
 /-- The slots. -/
-private theorem slotOf_eq [NeZero r] (e : Fin m) :
+private theorem slotOf_eq (e : Fin m) :
     slotOf a (scheduleToWord (ρ (rowOf e))) (scheduleToWord (κ (colOf e)))
         (classIndex rowOf colOf ρ κ e) = ((Packing.ofLabels rowOf colOf ρ κ).slot e : ℕ) := by
   simp only [slotOf, List.sum_map_range, Packing.ofLabels, BitString.val_equivFin_eq_sum,
@@ -678,7 +678,7 @@ private theorem slotOf_eq [NeZero r] (e : Fin m) :
   split_ifs <;> simp_all
 
 /-- The packets. -/
-private theorem packetOf_eq [NeZero r] (e : Fin m) :
+private theorem packetOf_eq (e : Fin m) :
     packetOf a r (scheduleToWord (ρ (rowOf e))) (scheduleToWord (κ (colOf e)))
         (classIndex rowOf colOf ρ κ e) = ((Packing.ofLabels rowOf colOf ρ κ).packet e : ℕ) := by
   simp only [packetOf, List.sum_map_range, Packing.ofLabels, packetEquiv, packetData,
@@ -704,7 +704,7 @@ theorem packingOfWords_eq [NeZero r] :
     simp only [List.getElem_map, List.getElem_zip, List.getElem_ofFn, packetOf_eq, slotOf_eq]
 
 /-- **The symbols of a packet** are those of `Packing.ofLabels`. -/
-theorem packetSymbols_eq [NeZero r] (p : Fin (Packing.ofLabels rowOf colOf ρ κ).numPackets)
+theorem packetSymbols_eq (p : Fin (Packing.ofLabels rowOf colOf ρ κ).numPackets)
     (i : Fin a) :
     packetSymbols a r p i = ((((Packing.ofLabels rowOf colOf ρ κ).symbols p i).1 : ℕ),
       (((Packing.ofLabels rowOf colOf ρ κ).symbols p i).2 : ℕ)) := by
