@@ -38,6 +38,11 @@ reductions from Goldreich's *Foundations of Cryptography, Volume 2: Basic Applic
    `sharedMulSpec 2` over all ordered pairs $i < j$, proved perfectly semi-honest private against
    every static coalition `I : Finset (Fin m)`.
 
+Privacy is `PerfectSemiHonestPrivate` with the explicit simulators below: exact equality of
+distributions, with no certificate that the simulators run in probabilistic polynomial time as
+Goldreich's definitions require. Efficiency is certified only for the composed
+$\text{OT}_1^4$-hybrid protocol, in `Complexity.Crypto.Protocols.MPC.PolyTime`.
+
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.MPC.ot14Spec`, `Cslib.Crypto.Protocols.MPC.ot14World`: 2-party
