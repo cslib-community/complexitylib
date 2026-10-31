@@ -10,6 +10,7 @@ module
 public import Complexity.Logics.Propositional.CSP.ExactlyOne
 public import Mathlib.LinearAlgebra.Matrix.Permanent
 import Complexity.Foundations.Data.List.Range
+import Complexity.Foundations.Data.Nat.Div
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.Perm
@@ -64,10 +65,6 @@ theorem mem_vars_permanentInstance {x : ℕ} :
   · rintro ⟨i, hi, j, hj, hr, rfl⟩
     exact Or.inl ⟨i, hi, j, ⟨hj, hr⟩, rfl⟩
 
-private theorem div_mod_mul_add {i j : ℕ} (hj : j < n) :
-    (i * n + j) / n = i ∧ (i * n + j) % n = j :=
-  (Nat.div_mod_unique (by omega)).mpr ⟨by rw [Nat.mul_comm, Nat.add_comm], hj⟩
-
 /-- The row constraints of the permanent instance. -/
 private theorem nodup_rows (n : ℕ) (r : ℕ → ℕ → Bool) :
     ((List.range n).flatMap fun i =>
@@ -79,7 +76,7 @@ private theorem nodup_rows (n : ℕ) (r : ℕ → ℕ → Bool) :
     simp only [List.mem_map, List.mem_filter, List.mem_range] at hx hx'
     obtain ⟨j, ⟨hj, -⟩, rfl⟩ := hx
     obtain ⟨j', ⟨hj', -⟩, h⟩ := hx'
-    exact hne ((div_mod_mul_add hj').1.symm.trans (h ▸ (div_mod_mul_add hj).1)).symm
+    exact hne ((Nat.mul_add_div_of_lt i' hj').symm.trans (h ▸ Nat.mul_add_div_of_lt i hj)).symm
 
 /-- The column constraints of the permanent instance. -/
 private theorem nodup_cols (n : ℕ) (r : ℕ → ℕ → Bool) :
@@ -93,7 +90,7 @@ private theorem nodup_cols (n : ℕ) (r : ℕ → ℕ → Bool) :
     simp only [List.mem_map, List.mem_filter, List.mem_range] at hx hx' hj hj'
     obtain ⟨i, ⟨hi, -⟩, rfl⟩ := hx
     obtain ⟨i', ⟨hi', -⟩, h⟩ := hx'
-    exact hne ((div_mod_mul_add hj').2.symm.trans (h ▸ (div_mod_mul_add hj).2)).symm
+    exact hne ((Nat.mul_add_mod_of_lt hj').symm.trans (h ▸ Nat.mul_add_mod_of_lt hj)).symm
 
 /-- Every variable occurs at most twice: once in its row and once in its column. -/
 theorem count_vars_permanentInstance (n : ℕ) (r : ℕ → ℕ → Bool) (x : ℕ) :
@@ -163,12 +160,10 @@ theorem partitionFunction_permanentInstance (n : ℕ) (r : ℕ → ℕ → Bool)
     simp only [supp, Finset.mem_image, Finset.mem_univ, true_and]
     constructor
     · rintro ⟨k, hk⟩
-      have h1 := div_mod_mul_add (i := σ k) k.2
-      have h2 := div_mod_mul_add (i := i) hj
-      rw [hk] at h1
-      have hkj : k = ⟨j, hj⟩ := Fin.ext (h1.2.symm.trans h2.2)
+      have hkj : k = ⟨j, hj⟩ := Fin.ext ((Nat.mul_add_mod_of_lt (a := σ k) k.2).symm.trans
+        (hk ▸ Nat.mul_add_mod_of_lt hj))
       rw [← hkj]
-      exact h1.1.symm.trans h2.1
+      exact (Nat.mul_add_div_of_lt _ k.2).symm.trans (hk ▸ Nat.mul_add_div_of_lt i hj)
     · intro h
       exact ⟨⟨j, hj⟩, by rw [h]⟩
   symm

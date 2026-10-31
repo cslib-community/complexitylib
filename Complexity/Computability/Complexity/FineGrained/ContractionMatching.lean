@@ -11,6 +11,7 @@ public import Complexity.Computability.Complexity.FineGrained.ContractionPartiti
 public import Complexity.Logics.Propositional.CSP.Permanent
 public import Complexity.Computability.Complexity.Problems.Graph.PerfectMatching
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Preprocess
+import Complexity.Computability.PolyTime.CSP.Vars
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -193,23 +194,6 @@ theorem exists_exactlyOneCounter {α : Type} {enc : α ↪ List Bool} (d C : ℕ
     exact Nat.mul_le_mul_right _ (Nat.pow_le_pow_right two_pos
       (Nat.mul_succ_div_sqrt_log_two_le hle))
 
-/-- Recoding the variables of a CSP instance from unary to binary is polynomial-time. -/
-private theorem computableInPolyTime_unary_to_binary :
-    ComputableInPolyTime (fun F : CSP Unit ℕ => F) (encCSP encUnit encUnary)
-      (encCSP encUnit encNat) := by
-  have h : ComputableInPolyTime (CSP.relabel (Rel := Unit) (V := ℕ) (W := ℕ) fun n => n)
-      (encCSP encUnit encUnary) (encCSP encUnit encNat) := by
-    unfold CSP.relabel Constraint.relabel
-    fun_prop
-  have heq : (CSP.relabel (Rel := Unit) (V := ℕ) (W := ℕ) fun n => n) = fun F => F := by
-    funext F
-    induction F with
-    | nil => rfl
-    | cons c F ih =>
-      simp only [CSP.relabel, List.map_cons, Constraint.relabel, List.map_id']
-      exact congrArg (c :: ·) ih
-  rwa [heq] at h
-
 /-! ### Permanents -/
 
 /-- Entry `(i, j)` of the matrix with rows `rows`: entry `j` of row `i`, or `false` when it is
@@ -241,7 +225,7 @@ theorem computableInPolyTime_permanentInstance :
     ComputableInPolyTime (fun rows : List (List Bool) =>
         CSP.permanentInstance rows.length (rowEntry rows))
       (encList encBits) (encCSP encUnit encNat) := by
-  refine computableInPolyTime_unary_to_binary.comp ?_
+  refine (Complexity.CSP.computableInPolyTime_unary_to_binary encUnit).comp ?_
   unfold rowEntry
   fun_prop
 
@@ -295,7 +279,7 @@ theorem computableInPolyTime_edgeList :
 theorem computableInPolyTime_perfectMatchingInstance :
     ComputableInPolyTime Graph.perfectMatchingInstance encGraph (encCSP encUnit encNat) := by
   have hE := computableInPolyTime_edgeList
-  refine computableInPolyTime_unary_to_binary.comp
+  refine (Complexity.CSP.computableInPolyTime_unary_to_binary encUnit).comp
     (?_ : ComputableInPolyTime (fun G : Graph => G.perfectMatchingInstance) _ _)
   unfold Graph.perfectMatchingInstance Graph.incident
   fun_prop

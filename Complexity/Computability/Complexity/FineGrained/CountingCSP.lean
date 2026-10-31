@@ -116,25 +116,7 @@ theorem computableInPolyTime_denseRelabel [DecidableEq V] (encRel : Rel ↪ List
       (encCSP encRel encV) (encCSP encRel encUnary) := by
     unfold CSP.denseRelabel CSP.relabel Constraint.relabel
     fun_prop
-  have hbin : ComputableInPolyTime
-      (CSP.relabel (Rel := Rel) (V := ℕ) (W := ℕ) (fun n => n))
-      (encCSP encRel encUnary) (encCSP encRel encNat) := by
-    unfold CSP.relabel Constraint.relabel
-    fun_prop
-  have heq : (CSP.denseRelabel (Rel := Rel) (V := V)) =
-      fun F => (CSP.denseRelabel F).relabel (fun n => n) := by
-    have hid : ∀ G : CSP Rel ℕ, G.relabel (fun n => n) = G := by
-      intro G
-      induction G with
-      | nil => rfl
-      | cons c G ih =>
-        rcases c with ⟨r, vs⟩
-        simp only [CSP.relabel, List.map_cons, Constraint.relabel, List.map_id']
-        exact congrArg ((r, vs) :: ·) ih
-    funext F
-    exact (hid F.denseRelabel).symm
-  rw [heq]
-  exact hbin.comp hunary
+  exact (computableInPolyTime_unary_to_binary encRel).comp hunary
 
 private theorem computableInPolyTime_validDeclaredCSP (encRel : Rel ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime
