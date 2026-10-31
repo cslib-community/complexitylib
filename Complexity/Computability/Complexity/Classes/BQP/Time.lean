@@ -61,13 +61,6 @@ variable {enc : α ↪ List Bool}
 theorem BQTIME_subset_BQP (t : ℕ → ℕ) : BQTIME enc t ⊆ BQP enc :=
   fun _ ⟨F, _, _, _, hF⟩ => ⟨F, hF⟩
 
-private theorem length_le_length_encList {β : Type} (e : β ↪ List Bool) (l : List β) :
-    l.length ≤ (encList e l).length := by
-  rw [length_encList]
-  induction l with
-  | nil => simp
-  | cons b l ih => simp only [List.length_cons, List.map_cons, List.sum_cons]; omega
-
 /-- **`BQP` is the union of the polynomial quantum time classes** `BQTIME[n ^ k]`: the circuits of
 a polynomial-time uniform family have polynomially many gates. -/
 theorem BQP_eq_iUnion_BQTIME : BQP enc = ⋃ k : ℕ, BQTIME enc fun n => n ^ k := by
@@ -75,7 +68,7 @@ theorem BQP_eq_iUnion_BQTIME : BQP enc = ⋃ k : ℕ, BQTIME enc fun n => n ^ k 
     (Set.iUnion_subset fun k => BQTIME_subset_BQP _)
   obtain ⟨c, d, hc⟩ := F.computableInPolyTime_gates.polyBounded_length.exists_le
   refine Set.mem_iUnion.mpr ⟨d, F, c * 2 ^ d, c, fun n => ?_, hF⟩
-  have h1 := (length_le_length_encList encGateCode (F.gates n)).trans (hc n)
+  have h1 := (Turing.MultiTapeTM.length_le_length_encList encGateCode (F.gates n)).trans (hc n)
   rw [encUnary_apply, List.length_replicate] at h1
   have h2 : (n + 1) ^ d ≤ 2 ^ d * n ^ d + 1 := by
     rcases Nat.eq_zero_or_pos n with rfl | hn

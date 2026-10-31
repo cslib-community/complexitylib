@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Circuit.Quantum.PathNetwork
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTablesPolyTime
 public import Complexity.Computability.Circuit.Quantum.Uniform
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.List
@@ -25,6 +26,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListM
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
+import Complexity.Foundations.Data.List.FilterMap
 
 /-!
 # The network of a circuit in polynomial time
@@ -51,12 +53,9 @@ variable {α : Type} {inp : α ↪ List Bool}
 
 /-! ### Reformulations for the polynomial-time combinators -/
 
-private theorem filterMap_eq {β : Type} (l : List β) (f : β → Option ℕ) :
-    l.filterMap f = (l.filter fun b => (f b).isSome).map fun b => (f b).getD 0 := by
-  induction l with
-  | nil => rfl
-  | cons b l ih =>
-    cases h : f b <;> simp [h, ih]
+/-- The qubits of a gate code, read by projections, as the pair combinators compute them. -/
+private theorem qubits_eq_proj : qubits = fun g : GateCode => g.2.1 :: g.2.2 :=
+  funext fun ⟨_, _, _⟩ => rfl
 
 private theorem gatePorts_eq (gs : List GateCode) (c i : ℕ) :
     gatePorts gs c i =
@@ -66,7 +65,7 @@ private theorem gatePorts_eq (gs : List GateCode) (c i : ℕ) :
             fun j => (lastOcc (occurrences gs) j (base gs i)).isSome).map
           fun j => 2 * (c * (occurrences gs).length +
             (lastOcc (occurrences gs) j (base gs i)).getD 0) + 1 := by
-  rw [gatePorts, filterMap_eq]
+  rw [gatePorts, List.filterMap_eq_map_filter _ _ 0]
   congr 1
   simp only [inPort, Option.isSome_map]
   refine List.map_congr_left fun j hj => ?_
@@ -95,11 +94,6 @@ private theorem computableInPolyTime_equivProd_symm :
       ExplicitTensorNetwork.encExplicitNetwork :=
   ComputableInPolyTime.of_eq fun _ => rfl
 
-private theorem binaryPorts {ps : α → List ℕ}
-    (hps : ComputableInPolyTime ps inp (encList encUnary)) :
-    ComputableInPolyTime ps inp (encList encNat) := by
-  simpa only [Function.comp_def, List.map_id'] using (map unary_to_binary).comp hps
-
 /-! ### Occurrences -/
 
 section Data
@@ -111,12 +105,13 @@ theorem computableInPolyTime_qubits_getD {i : α → ℕ} (hi : ComputableInPoly
     ComputableInPolyTime (fun a => qubits ((gs a).getD (i a) default)) inp
       (encList encUnary) := by
   have hg := listGetDWithInput hgs hi default
-  unfold qubits
+  rw [qubits_eq_proj]
   exact cons' ((fst _ _).comp ((snd _ _).comp hg)) ((snd _ _).comp ((snd _ _).comp hg))
 
 theorem computableInPolyTime_occurrences :
     ComputableInPolyTime (fun a => occurrences (gs a)) inp (encList encUnary) := by
-  unfold occurrences qubits
+  unfold occurrences
+  rw [qubits_eq_proj]
   exact flatMapWithInput hgs (cons' ((fst _ _).comp ((snd _ _).comp (snd _ _)))
     ((snd _ _).comp ((snd _ _).comp (snd _ _))))
 
@@ -134,16 +129,6 @@ theorem computableInPolyTime_lastOcc {qs : α → List ℕ} {j p : α → ℕ}
   unfold lastOcc
   exact findWithInput (listReverseWithInput (range.comp hp))
     (decide_eq' (listGetDWithInput (hqs.comp (fst _ _)) (snd _ _) 0) (hj.comp (fst _ _)))
-
-/-- The table of a vertex with `w ≤ 6` ports whose entries are polynomial-time at every fixed
-position. -/
-theorem computableInPolyTime_table {w : α → ℕ} {f : α → ℕ → ℕ}
-    (hw : ComputableInPolyTime w inp encUnary)
-    (hf : ∀ idx, ComputableInPolyTime (fun a => f a idx) inp encNat) :
-    ComputableInPolyTime (fun a => table (w a) (f a)) inp (encList encNat) := by
-  unfold table
-  exact mapFilterConst _ (fun idx _ => binary_lt' (const idx) (binary_pow' (const 2) hw))
-    fun idx _ => hf idx
 
 /-! ### Vertices -/
 
@@ -182,8 +167,8 @@ theorem computableInPolyTime_gateVertex {neg : α → ℕ} {X : α → List Bool
   have hg := listGetDWithInput hgs hi default
   have hN := (length_list _).comp (computableInPolyTime_occurrences hgs)
   have hb := computableInPolyTime_base hgs hi
-  refine (binaryPorts hps).prod (computableInPolyTime_table ((length_list _).comp hps)
-    fun idx => ?_)
+  refine (ports_unary_to_binary hps).prod
+    (computableInPolyTime_boundedTable 6 ((length_list _).comp hps) fun idx => ?_)
   -- the bits entering the qubits of the gate
   have hins : ComputableInPolyTime (fun a => (qubits ((gs a).getD (i a) default)).map
       (inBit (X a) (gs a) (c a) (i a) idx)) inp (encList encBool) := by
@@ -217,7 +202,7 @@ theorem computableInPolyTime_glueVertex {w : α → ℕ} (hw : ComputableInPolyT
   have hq := listGetDWithInput hqs hw 0
   unfold glueVertex
   refine ite_decide (decide_eq' (computableInPolyTime_lastOcc hqs hq hN) (optionSome _ |>.comp hw))
-    ((binaryPorts (cons' (unary_add' (unary_mul' (const 2) hw) (const 1))
+    ((ports_unary_to_binary (cons' (unary_add' (unary_mul' (const 2) hw) (const 1))
       (cons' (unary_add' (unary_mul' (const 2) (unary_add' hN hw)) (const 1)) (const [])))).prod
       (ite_decide (decide_eq' hq (const 0)) (const _) (const _))) (const _)
 
@@ -261,7 +246,7 @@ theorem computableInPolyTime_network {neg : α → ℕ} {X : α → List Bool} {
         (snd _ _))))
       (cons' (computableInPolyTime_scalarVertex hX hgs) (const [])))
       (mapWithInput (range.comp (unary_mul' (const 2) hN))
-        ((binaryPorts (cons' (unary_mul' (const 2) (snd _ _))
+        ((ports_unary_to_binary (cons' (unary_mul' (const 2) (snd _ _))
           (cons' (unary_add' (unary_mul' (const 2) (snd _ _)) (const 1)) (const [])))).prod
           (const _)))
   unfold network

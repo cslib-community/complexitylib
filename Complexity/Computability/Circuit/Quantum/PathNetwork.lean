@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Quantum.PathSum
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
 import Complexity.Foundations.Data.List.Boole
+import Complexity.Foundations.Data.List.SumIndicator
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
 import Mathlib.Logic.Equiv.Fin.Basic
@@ -1046,17 +1047,6 @@ theorem mem_qubits_iff {gs : List GateCode} {i : ℕ} (hi : i < gs.length) (q : 
   · rintro ⟨k, hk, hq⟩
     exact ⟨k, hk, ((List.getD_eq_getElem _ _ hk).symm.trans (getD_occurrences hi hk).symm).trans hq⟩
 
-private theorem sum_range_ite_eq (L i₀ : ℕ) :
-    ((List.range L).map fun i => if i = i₀ then (1 : ℕ) else 0).sum = if i₀ < L then 1 else 0 := by
-  induction L with
-  | zero => simp
-  | succ L ih =>
-    rw [List.range_succ, List.map_append, List.sum_append, ih]
-    rcases lt_trichotomy i₀ L with h | rfl | h
-    · simp [h, Nat.lt_succ_of_lt h, h.ne']
-    · simp
-    · simp [show ¬ i₀ < L by omega, show ¬ i₀ < L + 1 by omega, show L ≠ i₀ by omega]
-
 /-- **The reader of a link edge.** Let `u` be an occurrence of the qubit `q`. If `u` is the last
 occurrence of `q`, no gate reads `q` from `u`; otherwise exactly one gate does, the gate of the
 next occurrence of `q`. -/
@@ -1144,7 +1134,7 @@ theorem sum_readers {gs : List GateCode} (hnd : ∀ g ∈ gs, (qubits g).Nodup) 
           omega
         · exact fun w h1 h2 => hmin w h1 (by omega)
     rw [List.map_congr_left fun i hi => if_congr (hiff i (List.mem_range.mp hi)) rfl rfl,
-      sum_range_ite_eq, ite_eq_left hi₀]
+      List.sum_map_range_ite_eq, ite_eq_left hi₀]
 
 /-- A gate whose qubits are distinct has distinct ports: the out edges are distinct and even, and
 the input ports are distinct and odd, since distinct qubits have distinct last occurrences. -/
@@ -1240,12 +1230,6 @@ private theorem count_glueVertex_link (gs : List GateCode) {w c u : ℕ}
       omega
   · simp only [hl, ↓reduceIte, false_and, List.count_nil]
 
-private theorem sum_range_ite_and (L : ℕ) (P : Prop) [Decidable P] (Q : ℕ → Prop)
-    [DecidablePred Q] :
-    ((List.range L).map fun i => if P ∧ Q i then (1 : ℕ) else 0).sum =
-      if P then ((List.range L).map fun i => if Q i then (1 : ℕ) else 0).sum else 0 := by
-  by_cases hP : P <;> simp [hP]
-
 /-- Every occurrence lies in exactly one gate. -/
 private theorem sum_range_base (gs : List GateCode) {u : ℕ} (hu : u < (occurrences gs).length) :
     ((List.range gs.length).map fun i =>
@@ -1253,7 +1237,7 @@ private theorem sum_range_base (gs : List GateCode) {u : ℕ} (hu : u < (occurre
   obtain ⟨i₀, hi₀, h1, h2⟩ := exists_base_le_lt hu
   rw [List.map_congr_left fun i _ => if_congr (show base gs i ≤ u ∧ u < base gs (i + 1) ↔
     i = i₀ from ⟨fun h => eq_of_base_le_lt h.1 h.2 h1 h2, fun h => h ▸ ⟨h1, h2⟩⟩) rfl rfl,
-    sum_range_ite_eq, ite_eq_left hi₀]
+    List.sum_map_range_ite_eq, ite_eq_left hi₀]
 
 /-- **The network is rows-first bipartite** with the gate, glue and scalar vertices as rows, when
 the qubits of every gate are distinct. -/
@@ -1306,7 +1290,7 @@ theorem isRowsFirstBipartite_network (neg : R) (X : List Bool) {gs : List GateCo
           hc (show 0 < 2 by omega) hu,
         List.map_congr_left fun i hi => count_gatePorts_out (List.mem_range.mp hi) (hnd' i hi)
           hc (show 1 < 2 by omega) hu,
-        sum_range_ite_and, sum_range_ite_and, sum_range_base gs hu]
+        List.sum_map_ite_and, List.sum_map_ite_and, sum_range_base gs hu]
       interval_cases c <;> simp
     · -- a link edge belongs to its reader or its glue vertex
       rw [List.map_congr_left fun i hi => count_gatePorts_link i (hnd' i hi) hc
@@ -1314,7 +1298,7 @@ theorem isRowsFirstBipartite_network (neg : R) (X : List Bool) {gs : List GateCo
         List.map_congr_left fun i hi => count_gatePorts_link i (hnd' i hi) hc
           (show 1 < 2 by omega) hu,
         List.map_congr_left fun w hw => count_glueVertex_link gs (List.mem_range.mp hw) hc hu,
-        sum_range_ite_and, sum_range_ite_and]
+        List.sum_map_ite_and, List.sum_map_ite_and]
       have hglue : ((List.range (occurrences gs).length).map fun w =>
           if lastOcc (occurrences gs) ((occurrences gs).getD w 0) (occurrences gs).length =
             some w ∧ w = u then (1 : ℕ) else 0).sum =
@@ -1325,9 +1309,9 @@ theorem isRowsFirstBipartite_network (neg : R) (X : List Bool) {gs : List GateCo
               (lastOcc (occurrences gs) ((occurrences gs).getD u 0) (occurrences gs).length =
                 some u ∧ w = u) from
             ⟨fun ⟨h1, h2⟩ => ⟨h2 ▸ h1, h2⟩, fun ⟨h1, h2⟩ => ⟨h2 ▸ h1, h2⟩⟩) rfl rfl,
-          sum_range_ite_and]
+          List.sum_map_ite_and]
         split_ifs
-        · rw [sum_range_ite_eq, ite_eq_left hu]
+        · rw [List.sum_map_range_ite_eq, ite_eq_left hu]
         · rfl
       rw [hglue]
       have := sum_readers hnd hu
@@ -1339,6 +1323,6 @@ theorem isRowsFirstBipartite_network (neg : R) (X : List Bool) {gs : List GateCo
       simp only [List.count_cons, List.count_nil, beq_iff_eq]
       split_ifs <;> omega
     simp only [List.map_map, Function.comp_def]
-    rw [List.map_congr_left fun w _ => hcount w, sum_range_ite_eq, ite_eq_left (by omega)]
+    rw [List.map_congr_left fun w _ => hcount w, List.sum_map_range_ite_eq, ite_eq_left (by omega)]
 
 end Cslib.Quantum.PathNetwork

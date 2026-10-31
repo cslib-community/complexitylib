@@ -20,7 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
-import Complexity.Foundations.Data.Nat.SqrtLog
+import Complexity.Foundations.Data.Nat.SqrtLog.Linear
 
 /-!
 # Quantum circuits by tensor contraction: `BQTIME[T] ⊆ DTIME[2 ^ O(T / √log T)]`
@@ -123,15 +123,10 @@ network with Hadamard sign `2 ^ (h + 1) - 1` on the input register `X`. -/
 /-- **The acceptance gap as the simulator computes it**: the residue of the contraction of the
 network modulo `2 ^ (h + 1)`, or the bit of qubit `0` for a circuit without gates. -/
 @[expose] def gapValue (gs : List GateCode) (X : List Bool) : ℕ :=
-  if guard gs then (contractionInput gs X).2.2.contraction % 2 ^ (contractionInput gs X).1
+  if guard gs then
+    let (precision, _, network) := contractionInput gs X
+    network.contraction % 2 ^ precision
   else fallback X
-
-private theorem acceptGap_nil (X : List Bool) :
-    acceptGap [] X = if X.headD false then 1 else 0 := by
-  simp only [acceptGap, hadamardCount_nil, acceptTerm,
-    pathRun, List.ofFn_zero, List.foldl_nil, true_and, Bool.xor_self, Bool.false_eq_true,
-    ↓reduceIte]
-  cases X.headD false <;> rfl
 
 /-- **The simulator computes the acceptance gap** of well-formed gate codes on a nonempty input
 register. -/
@@ -395,33 +390,6 @@ theorem acceptProb_eq_gapValue {m : ℕ} (hm : 0 < m) {gs : List GateCode}
 
 /-! ### The class containments -/
 
-/-- The exponent in terms of a bound `c₁ T + c₂` on the number of gates `L`. -/
-private theorem exponent_le_of_le (A c₁ c₂ : ℕ) {T L : ℕ} (hT : 2 ≤ T) (hL : L ≤ c₁ * T + c₂) :
-    A * (L + 1) / Nat.sqrt (Nat.log 2 (L + 2)) ≤
-      2 * A * (c₁ + c₂ + 2) * (T / Nat.sqrt (Nat.log 2 T)) + (2 * A * (c₁ + c₂ + 2) + 3 * A) := by
-  have hM : L + 2 ≤ (c₁ + c₂ + 2) * T := by nlinarith
-  calc A * (L + 1) / Nat.sqrt (Nat.log 2 (L + 2))
-      ≤ A * (L + 2) / Nat.sqrt (Nat.log 2 (L + 2)) :=
-        Nat.div_le_div_right (Nat.mul_le_mul_left _ (by omega))
-    _ ≤ A * ((L + 2) / Nat.sqrt (Nat.log 2 (L + 2))) + A := Nat.mul_div_le_mul_div_add _ _ _
-    _ ≤ A * (2 * ((c₁ + c₂ + 2) * T / Nat.sqrt (Nat.log 2 ((c₁ + c₂ + 2) * T))) + 2) + A := by
-        gcongr
-        exact Nat.div_sqrt_log_two_le_of_le hM
-    _ ≤ A * (2 * ((c₁ + c₂ + 2) * (T / Nat.sqrt (Nat.log 2 T)) + (c₁ + c₂ + 2)) + 2) + A := by
-        gcongr
-        exact Nat.mul_div_sqrt_log_two_le _ T
-    _ = _ := by ring
-
-/-- A polynomial in `n + 1 ≤ T + 1` is at most `2 ^ (2 e T / √⌊log₂ T⌋)`. -/
-private theorem add_one_pow_le {n T : ℕ} (e : ℕ) (hT : 2 ≤ T) (hn : n ≤ T) :
-    (n + 1) ^ e ≤ 2 ^ (2 * e * (T / Nat.sqrt (Nat.log 2 T))) := by
-  have h1 := Nat.one_le_div_sqrt_log_two hT
-  have h2 := Nat.log_two_le_div_sqrt_log_two T
-  calc (n + 1) ^ e ≤ (2 ^ (Nat.log 2 T + 1)) ^ e :=
-        Nat.pow_le_pow_left ((Nat.succ_le_succ hn).trans (Nat.lt_pow_succ_log_self one_lt_two T)) e
-    _ = 2 ^ (e * (Nat.log 2 T + 1)) := by rw [← pow_mul, mul_comm]
-    _ ≤ _ := Nat.pow_le_pow_right (by norm_num) (by nlinarith)
-
 variable {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
 
 /-- **Bounded-error quantum time `T` in time `2 ^ O(T / √log T)` and space `T ^ O(1)`.** For `T`
@@ -486,8 +454,8 @@ theorem exists_decidableInTimeAndSpace_of_mem_BQTIME (hTn : ∀ n, max n 2 ≤ T
     have hnT : (enc a).length ≤ T (enc a).length := (le_max_left _ _).trans (hTn _)
   · -- time
     set S := T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))
-    have hE := exponent_le_of_le A c₁ c₂ hT2 (hgates (enc a).length)
-    have hY := add_one_pow_le e hT2 hnT
+    have hE := Nat.mul_succ_div_sqrt_log_two_le_of_le A c₁ c₂ hT2 (hgates (enc a).length)
+    have hY := Nat.add_one_pow_le_two_pow_div_sqrt_log_two e hT2 hnT
     have hZ : 2 ^ (A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
         ((enc a).length + 1) ^ e ≤ 2 ^ D₀ * 2 ^ (C₀ * S) := by
       calc _ ≤ 2 ^ (2 * A * (c₁ + c₂ + 2) * S + D₀) * 2 ^ (2 * e * S) :=

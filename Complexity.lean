@@ -939,6 +939,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DescribedL
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ExplicitTablesPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionDerivation
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionLeaf
@@ -2893,6 +2894,7 @@ public import Complexity.Foundations.Data.List.Equiv
 public import Complexity.Foundations.Data.List.EraseDups
 public import Complexity.Foundations.Data.List.EraseDupsBy
 public import Complexity.Foundations.Data.List.Filter
+public import Complexity.Foundations.Data.List.FilterMap
 public import Complexity.Foundations.Data.List.Fold
 public import Complexity.Foundations.Data.List.Last
 public import Complexity.Foundations.Data.List.Lex
@@ -2901,6 +2903,7 @@ public import Complexity.Foundations.Data.List.OfFn
 public import Complexity.Foundations.Data.List.Range
 public import Complexity.Foundations.Data.List.RowMajor
 public import Complexity.Foundations.Data.List.SelectDistinct
+public import Complexity.Foundations.Data.List.SumIndicator
 public import Complexity.Foundations.Data.List.TwoBitTable
 public import Complexity.Foundations.Data.Matrix.Binary
 public import Complexity.Foundations.Data.Matrix.IntegerBits
@@ -2952,6 +2955,7 @@ public import Complexity.Foundations.Data.Nat.Radix.Measurement
 public import Complexity.Foundations.Data.Nat.RecursionTree
 public import Complexity.Foundations.Data.Nat.ResidueSum
 public import Complexity.Foundations.Data.Nat.SqrtLog
+public import Complexity.Foundations.Data.Nat.SqrtLog.Linear
 public import Complexity.Foundations.Data.Nat.SqrtRatio
 public import Complexity.Foundations.Data.Nat.Subexponential
 public import Complexity.Foundations.Data.Option
