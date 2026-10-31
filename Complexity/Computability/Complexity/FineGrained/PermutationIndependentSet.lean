@@ -77,6 +77,10 @@ using a library proof based on monotone threshold enumeration (`Tuple.sort` and
   and querying a purported $2^{o(n \log n)}$ decider for `BipartitePermutationIndependentSet`
   decides `ThreeColoring` in time $2^{o(N)}$, contradicting `ETH`.
 
+**The hypothesis is refuted.** `Cslib.Complexity.CountingNativeEndpoint.not_ETH` proves that `ETH`
+is false, so the `ETH`-conditional lower bound of this module holds vacuously. It is kept as a
+conditional statement; the Turing reduction from `ThreeColoring` behind it is unconditional.
+
 ## Main definitions
 
 * `Cslib.Complexity.BipartitePermutationGraph`: instance $(n, E)$ of parameter $n$ and directed
