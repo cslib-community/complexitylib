@@ -1126,4 +1126,167 @@ theorem length_table_network (neg : R) (X : List Bool) {gs : List GateCode}
   · rfl
   · rfl
 
+/-! ### The bipartition -/
+
+/-- The converse of `lastOcc_eq_some`. -/
+theorem lastOcc_eq_some_of {qs : List ℕ} {j p w : ℕ} (hw : w < p) (hwj : qs.getD w 0 = j)
+    (hnext : ∀ w', w < w' → w' < p → qs.getD w' 0 ≠ j) : lastOcc qs j p = some w := by
+  induction p with
+  | zero => omega
+  | succ p ih =>
+    rw [lastOcc_succ]
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hw with hw' | rfl
+    · rw [ite_eq_right (hnext p hw' (by omega))]
+      exact ih hw' fun w' h1 h2 => hnext w' h1 (by omega)
+    · rw [ite_eq_left hwj]
+
+theorem base_mono (gs : List GateCode) {i i' : ℕ} (h : i ≤ i') : base gs i ≤ base gs i' := by
+  unfold base
+  rw [← List.take_append_drop i (gs.take i'), List.take_take, Nat.min_eq_left h,
+    occurrences_append, List.length_append]
+  exact Nat.le_add_right _ _
+
+/-- **The gate of an occurrence**: every occurrence lies in one gate. -/
+theorem exists_base_le_lt {gs : List GateCode} {p : ℕ} (hp : p < (occurrences gs).length) :
+    ∃ i < gs.length, base gs i ≤ p ∧ p < base gs (i + 1) := by
+  classical
+  have hex : ∃ i, p < base gs (i + 1) ∧ i < gs.length := by
+    refine ⟨gs.length - 1, ?_, ?_⟩
+    · rcases Nat.eq_zero_or_pos gs.length with h | h
+      · simp [List.length_eq_zero_iff.mp h, occurrences] at hp
+      · rw [Nat.sub_add_cancel h, base_length]
+        exact hp
+    · rcases Nat.eq_zero_or_pos gs.length with h | h
+      · simp [List.length_eq_zero_iff.mp h, occurrences] at hp
+      · omega
+  refine ⟨Nat.find hex, (Nat.find_spec hex).2, ?_, (Nat.find_spec hex).1⟩
+  rcases Nat.eq_zero_or_pos (Nat.find hex) with h | h
+  · rw [h]
+    simp [base, occurrences]
+  · have hmin := Nat.find_min hex (show Nat.find hex - 1 < Nat.find hex by omega)
+    rw [Nat.sub_add_cancel h] at hmin
+    have : Nat.find hex - 1 < gs.length := by have := (Nat.find_spec hex).2; omega
+    simp only [this, and_true, not_lt] at hmin
+    exact hmin
+
+theorem eq_of_base_le_lt {gs : List GateCode} {p i i' : ℕ} (h1 : base gs i ≤ p)
+    (h2 : p < base gs (i + 1)) (h1' : base gs i' ≤ p) (h2' : p < base gs (i' + 1)) : i = i' := by
+  rcases lt_trichotomy i i' with h | h | h
+  · have := base_mono gs (show i + 1 ≤ i' by omega)
+    omega
+  · exact h
+  · have := base_mono gs (show i' + 1 ≤ i by omega)
+    omega
+
+/-- Gate `i` holds the qubit `q` exactly when one of its occurrences does. -/
+theorem mem_qubits_iff {gs : List GateCode} {i : ℕ} (hi : i < gs.length) (q : ℕ) :
+    q ∈ qubits (gs.getD i default) ↔
+      ∃ k < (qubits (gs.getD i default)).length, (occurrences gs).getD (base gs i + k) 0 = q := by
+  rw [List.mem_iff_getElem]
+  constructor
+  · rintro ⟨k, hk, rfl⟩
+    exact ⟨k, hk, (getD_occurrences hi hk).trans (List.getD_eq_getElem _ _ hk)⟩
+  · rintro ⟨k, hk, hq⟩
+    exact ⟨k, hk, ((List.getD_eq_getElem _ _ hk).symm.trans (getD_occurrences hi hk).symm).trans hq⟩
+
+private theorem sum_range_ite_eq (L i₀ : ℕ) :
+    ((List.range L).map fun i => if i = i₀ then (1 : ℕ) else 0).sum = if i₀ < L then 1 else 0 := by
+  induction L with
+  | zero => simp
+  | succ L ih =>
+    rw [List.range_succ, List.map_append, List.sum_append, ih]
+    rcases lt_trichotomy i₀ L with h | rfl | h
+    · simp [h, Nat.lt_succ_of_lt h, h.ne']
+    · simp
+    · simp [show ¬ i₀ < L by omega, show ¬ i₀ < L + 1 by omega, show L ≠ i₀ by omega]
+
+/-- **The reader of a link edge.** Let `u` be an occurrence of the qubit `q`. If `u` is the last
+occurrence of `q`, no gate reads `q` from `u`; otherwise exactly one gate does, the gate of the
+next occurrence of `q`. -/
+theorem sum_readers {gs : List GateCode} (hnd : ∀ g ∈ gs, (qubits g).Nodup) {u : ℕ}
+    (hu : u < (occurrences gs).length) :
+    ((List.range gs.length).map fun i =>
+        if (occurrences gs).getD u 0 ∈ qubits (gs.getD i default) ∧
+          lastOcc (occurrences gs) ((occurrences gs).getD u 0) (base gs i) = some u
+        then (1 : ℕ) else 0).sum +
+      (if lastOcc (occurrences gs) ((occurrences gs).getD u 0) (occurrences gs).length = some u
+        then 1 else 0) = 1 := by
+  classical
+  set qs := occurrences gs with hqs
+  set q := qs.getD u 0
+  have hgate (i : ℕ) (hi : i < gs.length) :
+      (qubits (gs.getD i default)).Nodup :=
+    hnd _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+  by_cases hlast : lastOcc qs q qs.length = some u
+  · -- the last occurrence: no gate reads it
+    rw [ite_eq_left hlast]
+    suffices h : ∀ i ∈ List.range gs.length, ¬ (q ∈ qubits (gs.getD i default) ∧
+        lastOcc qs q (base gs i) = some u) by
+      rw [List.map_congr_left fun i hi => ite_eq_right (h i hi)]
+      simp
+    rintro i hi ⟨hq, hl⟩
+    have hi' := List.mem_range.mp hi
+    obtain ⟨k, hk, hkq⟩ := (mem_qubits_iff hi' q).mp hq
+    have h1 := (lastOcc_eq_some hl).1
+    have h2 := base_add_le hi'
+    rw [← hqs] at h2
+    exact (lastOcc_eq_some hlast).2.2 (base gs i + k) (by omega) (by omega) hkq
+  · rw [ite_eq_right hlast, Nat.add_zero]
+    -- the next occurrence of `q` after `u`
+    obtain ⟨w', hw'⟩ : ∃ w', lastOcc qs q qs.length = some w' := by
+      cases h : lastOcc qs q qs.length with
+      | none => exact absurd rfl (lastOcc_eq_none.mp h u hu)
+      | some w' => exact ⟨w', rfl⟩
+    obtain ⟨hw'N, hw'q, hw'next⟩ := lastOcc_eq_some hw'
+    have huw' : u < w' := by
+      rcases lt_trichotomy u w' with h | rfl | h
+      · exact h
+      · exact absurd hw' hlast
+      · exact absurd rfl (hw'next u h hu)
+    have hex : ∃ p, u < p ∧ p < qs.length ∧ qs.getD p 0 = q := ⟨w', huw', hw'N, hw'q⟩
+    set p₀ := Nat.find hex
+    obtain ⟨hup, hpN, hpq⟩ := Nat.find_spec hex
+    have hmin : ∀ p, u < p → p < p₀ → qs.getD p 0 ≠ q := fun p h1 h2 h3 =>
+      Nat.find_min hex h2 ⟨h1, by omega, h3⟩
+    obtain ⟨i₀, hi₀, hb₀, hb₀'⟩ := exists_base_le_lt hpN
+    rw [base_succ hi₀] at hb₀'
+    -- gate `i₀` reads `q` from `u`, and no other gate does
+    have hiff : ∀ i < gs.length, (q ∈ qubits (gs.getD i default) ∧
+        lastOcc qs q (base gs i) = some u) ↔ i = i₀ := by
+      intro i hi
+      constructor
+      · rintro ⟨hq, hl⟩
+        obtain ⟨k, hk, hkq⟩ := (mem_qubits_iff hi q).mp hq
+        obtain ⟨hub, -, hnext⟩ := lastOcc_eq_some hl
+        have hp₀ : p₀ ≤ base gs i + k := Nat.find_min' hex ⟨by omega, by
+          have := base_add_le hi; rw [← hqs] at this; omega, hkq⟩
+        have hbi := base_succ hi
+        rcases lt_trichotomy i i₀ with h | h | h
+        · have := base_mono gs (show i + 1 ≤ i₀ by omega)
+          omega
+        · exact h
+        · have := base_mono gs (show i₀ + 1 ≤ i by omega)
+          rw [base_succ hi₀] at this
+          exact absurd hpq (hnext p₀ hup (by omega))
+      · intro h
+        rw [h]
+        have hk : p₀ - base gs i₀ < (qubits (gs.getD i₀ default)).length := by omega
+        refine ⟨(mem_qubits_iff hi₀ q).mpr ⟨p₀ - base gs i₀, hk, by
+          rw [Nat.add_sub_cancel' hb₀]; exact hpq⟩, lastOcc_eq_some_of ?_ rfl ?_⟩
+        · -- `u` lies before gate `i₀`, whose qubits are distinct
+          by_contra hub
+          replace hub := Nat.le_of_not_lt hub
+          have hku : u - base gs i₀ < (qubits (gs.getD i₀ default)).length := by omega
+          have e1 := getD_occurrences hi₀ hku
+          have e2 := getD_occurrences hi₀ hk
+          rw [Nat.add_sub_cancel' hub] at e1
+          rw [Nat.add_sub_cancel' hb₀, hpq] at e2
+          rw [List.getD_eq_getElem _ _ hku] at e1
+          rw [List.getD_eq_getElem _ _ hk] at e2
+          have := (List.Nodup.getElem_inj_iff (hgate i₀ hi₀)).mp (e1.symm.trans e2)
+          omega
+        · exact fun w h1 h2 => hmin w h1 (by omega)
+    rw [List.map_congr_left fun i hi => if_congr (hiff i (List.mem_range.mp hi)) rfl rfl,
+      sum_range_ite_eq, ite_eq_left hi₀]
+
 end Cslib.Quantum.PathNetwork
