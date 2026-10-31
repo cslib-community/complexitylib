@@ -21,8 +21,8 @@ the schedule: they are what makes the calls, frames and values polynomially long
 **The invariant** (`FastContraction.Shape`). A reached call at depth `d` keeps the root's scale and
 modulus, is well-formed, has at most `2 m` edges, precision at most `p₀ + 40 m² d` for the root's
 precision `p₀`, at most `V₀ + m² d` vertices for the root's `V₀` vertices, as many rows (unless it
-is the root), and every vertex descriptor is a table of the root or a packet descriptor whose fields
-are bounded (`FastContraction.PacketBound`). It passes to the native children
+is the root), and every vertex descriptor is a descriptor of the root or a packet descriptor whose
+fields are bounded (`FastContraction.PacketBound`). It passes to the native children
 (`FastContraction.Shape.child`): a child has at most twice the edges of its parent
 (`NativeChild.numEdges_nativeChild_le`), its precision `p_t = p + 8 h 2 ^ (a - i) + 8 M (a + 1)` is
 at most `p + 40 m²` since `2 ^ a ≤ m`, and it adds at most `M (2 ^ a) ^ 12 ≤ m²` packet vertices
@@ -50,6 +50,8 @@ namespace Cslib.Circuits.Frontier.FastContraction
 
 open ContractionSchedule ChildCursor NativeRecovery NativeChild
 
+variable {T : Type}
+
 /-- **A bounded packet descriptor** for a root with modulus `fl` and `m` edges, at precision at most
 `P`, on a vertex with `k` ports: its precision is at most `P` and is its number of exponents per
 tile, its modulus is `fl`, it has `2 ^ a` slots with `a ≤ ⌊log₂ m⌋`, `2 ^ (i + 1)` tiles with
@@ -68,7 +70,7 @@ theorem PacketBound.mono {fl : List ℕ} {m P P' k : ℕ} {d : NativePacket.Pack
 
 /-- **The shape of a call** reached from a root `x₀` with `m` edges, precision `p₀` and `V₀`
 vertices, at depth `d`. -/
-structure Shape (x₀ x : Call) : Prop where
+structure Shape (x₀ x : Call T) : Prop where
   /-- The scale is the root's. -/
   scale_eq : x.scale = x₀.scale
   /-- The modulus is the root's. -/
@@ -91,7 +93,7 @@ structure Shape (x₀ x : Call) : Prop where
       PacketBound x₀.fl x₀.edges (x₀.prec + x.depth * (40 * x₀.edges ^ 2)) v.1.length d
 
 /-- The exponent tuple of a child of an active call has entries below the node's precision. -/
-theorem lt_nodePrec_of_mem_children {x : Call} {c : State} (hc : c ∈ children x) :
+theorem lt_nodePrec_of_mem_children {x : Call T} {c : State} (hc : c ∈ children x) :
     ∀ b ∈ c.2.2.1, b < nodePrec x c.1 := by
   simp only [children, cursorList, nodeBlock, pointBlock, groupBlock, List.mem_flatMap,
     List.mem_range, List.mem_map] at hc
@@ -99,7 +101,7 @@ theorem lt_nodePrec_of_mem_children {x : Call} {c : State} (hc : c ∈ children 
   exact fun b hb => BudgetTuples.lt_of_mem_budgetTuples (weights_pos j) hβ hb
 
 /-- The ports of a vertex of a well-formed call are at most its edges. -/
-theorem length_le_edges_of_wf {x : Call} (hx : WF x) {v : List ℕ × VertexDesc}
+theorem length_le_edges_of_wf {x : Call T} (hx : WF x) {v : List ℕ × VertexDesc T}
     (hv : v ∈ x.net.vertices) : v.1.length ≤ x.edges := by
   obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hv
   have hnd : (x.net.vertices[k]).1.Nodup := nodup_ports hx.2 ⟨k, hk⟩
@@ -111,7 +113,7 @@ theorem length_le_edges_of_wf {x : Call} (hx : WF x) {v : List ℕ × VertexDesc
 
 section Child
 
-variable {x₀ x : Call}
+variable {x₀ x : Call T}
 
 /-- The schedule's numbers at an active call at scale `m`: `a ≤ ⌊log₂ m⌋`, `2 ^ (12 a) ≤ m`,
 `u ≤ ⌊log₂ m⌋ < m`, and `h ≤ 3 M + u`. -/
@@ -183,7 +185,7 @@ theorem level_le_slots_of_mem_children (ha : active x = true) {c : State} (hc : 
   omega
 
 /-- The interpolation points are 0/1 lists with `e` coordinates. -/
-theorem getD_points_facts (x : Call) (i : ℕ) :
+theorem getD_points_facts (x : Call T) (i : ℕ) :
     ((points x).getD i []).length ≤ x.fl.length ∧ ∀ z ∈ (points x).getD i [], z ≤ 1 := by
   by_cases hi : i < (points x).length
   · rw [List.getD_eq_getElem _ _ hi]
@@ -195,7 +197,7 @@ theorem getD_points_facts (x : Call) (i : ℕ) :
     simp
 
 /-- The rows of a native child are at most the parent's vertices. -/
-theorem childRows_le (r i : ℕ) (D : DescribedNetwork VertexDesc)
+theorem childRows_le (r i : ℕ) (D : DescribedNetwork (VertexDesc T))
     (pk : (List (List ℕ) × List (List ℕ)) × ℕ × List (ℕ × ℕ)) (g : ℕ) :
     childRows r i D pk g ≤ D.vertices.length := by
   unfold childRows

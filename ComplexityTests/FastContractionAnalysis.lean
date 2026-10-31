@@ -22,11 +22,11 @@ def tiny : ℕ × ExplicitTensorNetwork ℕ := (1, ⟨1, [([0], [1, 2]), ([0], [
 example : fastGuard tiny = true := by decide
 
 /-- The root of `tiny` at precision `3`. -/
-abbrev tinyRoot : Call := root (ExplicitTensorNetwork.capPrecision (3, tiny))
+abbrev tinyRoot : Call (List ℕ) := root (ExplicitTensorNetwork.capPrecision (3, tiny))
 
 -- The root is reached, and it is the only reached call at depth `0`.
 example : Reach nativeMk tinyRoot tinyRoot := .root
-example (x : Call) (hx : Reach nativeMk tinyRoot x) (h0 : x.depth = 0) : x = tinyRoot :=
+example (x : Call (List ℕ)) (hx : Reach nativeMk tinyRoot x) (h0 : x.depth = 0) : x = tinyRoot :=
   hx.eq_root_of_depth_le (by rw [h0]; rfl)
 
 -- The root is a leaf, so its derivation has one node and no open call.
@@ -41,8 +41,8 @@ example : OnSchedule 3 tiny.2.numEdges tinyRoot :=
   onSchedule_root_capPrecision (by decide) (by norm_num) (by decide)
 
 -- Values are reduced at their precision: at most `e` coordinates below `2 ^ p`.
-example : ReducedAt tinyRoot.prec tinyRoot.fl (value nativeMk tinyRoot) :=
-  reducedAt_value nativeMk tinyRoot
+example : ReducedAt tinyRoot.prec tinyRoot.fl (value tableEntry nativeMk tinyRoot) :=
+  reducedAt_value tableEntry nativeMk tinyRoot
 
 -- The modulus at `m = 1` has `2 ⬝ 3 ^ 1 = 6` coefficients, within `32 (m + 1) ^ 2`.
 example : (modulus 1).length = 6 := by decide
@@ -55,7 +55,7 @@ example (N : ℕ) (hN : N ≤ 2 ^ ((245760 * (50 / 100 + 1) + 37) * 100 / Nat.sq
   two_mul_sub_one_le_fuel (D := 1) (by norm_num) (by norm_num) hN
 
 -- A child of a parent with `M` edges under (D.6) has at most `M / 16` edges.
-example {r a i Δ : ℕ} {D : DescribedNetwork VertexDesc} (hD : D.IsRowsFirstBipartite r)
+example {r a i Δ : ℕ} {D : DescribedNetwork (VertexDesc (List ℕ))} (hD : D.IsRowsFirstBipartite r)
     (hK : 64 ^ a ≤ D.numEdges) (hia : i < a) (hdeg : ∀ v ∈ D.vertices, v.1.length ≤ Δ)
     (hM : 2 * Δ * (64 ^ (2 * a)) ^ 2 ≤ D.numEdges) (fl : List ℕ) (pt : ℕ) (t : ℤ)
     (ζ β : List ℕ) (g : Fin 64) :
