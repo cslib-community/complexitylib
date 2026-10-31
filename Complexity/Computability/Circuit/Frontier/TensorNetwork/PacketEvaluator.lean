@@ -27,7 +27,8 @@ ring that `A_p` maps to.
   `ℤ_(2)` to a ring in which `2` is nilpotent agree (`padicInteger_ringHom_ext`). An integer is a
   constant list (`NativePacket.intConst`).
 * **Kernel values** (`NativePacket.kernelValueList`) follow Lemma D.4's evaluation
-  (`kernelValue_eq_prod`, p. 60): the inverse of the odd part of `C'(0)`, times
+  (`kernelValue_eq_prod`, p. 60), over the grid of `L = 2 ^ a` slots, with `L` a parameter so that
+  it can be read in unary: the inverse of the odd part of `C'(0)`, times
   `2 ^ (a + 1 - v_d) ζ` when `d ≠ t`, times the `2 ^ (a + 1) - 2` linear factors
   `u_q + 2 ^ (a + 1 - v_q) ζ`. The odd part of `C'(0)` is a product of odd integers, so it is `1`
   modulo `2` and `GaloisRingArith.inv` inverts it.
@@ -298,16 +299,16 @@ theorem exists_val_linFactor_eq {u : ℤ} (hu : Odd u) {k : ℕ} (hk : 1 ≤ k) 
   obtain ⟨k', rfl⟩ := Nat.exists_eq_add_of_le hk
   exact ⟨w + 2 ^ k' * val p fl ζ, by rw [val_linFactor, hw, pow_add]; ring⟩
 
-/-- The grid `[-2 ^ a, 2 ^ a)` of `2 ^ a` slots, in increasing order. -/
-def gridList (a : ℕ) : List ℤ :=
-  (List.range (2 ^ (a + 1))).map fun j : ℕ => (j : ℤ) - ((2 ^ a : ℕ) : ℤ)
+/-- The grid `[-L, L)` of `L` slots, in increasing order. The number of slots is a parameter, in
+place of `2 ^ a`, so that it can be read in unary. -/
+def gridList (L : ℕ) : List ℤ :=
+  (List.range (2 * L)).map fun j : ℕ => (j : ℤ) - (L : ℤ)
 
-theorem nodup_gridList (a : ℕ) : (gridList a).Nodup :=
+theorem nodup_gridList (L : ℕ) : (gridList L).Nodup :=
   List.Nodup.map (fun x y h => by simpa using h) List.nodup_range
 
-theorem mem_gridList {a : ℕ} {q : ℤ} : q ∈ gridList a ↔ q ∈ cauchyGrid (2 ^ a) := by
-  rw [gridList, List.mem_map, mem_cauchyGrid, pow_succ]
-  generalize 2 ^ a = L
+theorem mem_gridList {L : ℕ} {q : ℤ} : q ∈ gridList L ↔ q ∈ cauchyGrid L := by
+  rw [gridList, List.mem_map, mem_cauchyGrid]
   constructor
   · rintro ⟨j, hj, rfl⟩
     rw [List.mem_range] at hj
@@ -316,29 +317,30 @@ theorem mem_gridList {a : ℕ} {q : ℤ} : q ∈ gridList a ↔ q ∈ cauchyGrid
     refine ⟨(q + L).toNat, List.mem_range.mpr ?_, ?_⟩ <;> omega
 
 /-- The odd part of `C'(0) = ∏_{q ≠ 0} (0 - q)`, as a coefficient list. -/
-def kernelUnitDen (p : ℕ) (fl : List ℕ) (a : ℕ) : List ℕ :=
-  prodList p fl (((gridList a).filter (· ≠ 0)).map fun q =>
+def kernelUnitDen (p : ℕ) (fl : List ℕ) (L : ℕ) : List ℕ :=
+  prodList p fl (((gridList L).filter (· ≠ 0)).map fun q =>
     intConst p fl ((0 - q) / 2 ^ twoVal (0 - q)))
 
 /-- `κ (kernelUnit a)`, the inverse of the odd part of `C'(0)`. -/
-def kernelUnitList (p : ℕ) (fl : List ℕ) (a : ℕ) : List ℕ :=
-  inv p fl (kernelUnitDen p fl a)
+def kernelUnitList (p : ℕ) (fl : List ℕ) (L : ℕ) : List ℕ :=
+  inv p fl (kernelUnitDen p fl L)
 
 /-- The value of `kernelUnitDen`. -/
-private theorem val_kernelUnitDen (a : ℕ) :
-    val p fl (kernelUnitDen p fl a) = ∏ q ∈ (cauchyGrid (2 ^ a)).erase 0,
+private theorem val_kernelUnitDen (L : ℕ) :
+    val p fl (kernelUnitDen p fl L) = ∏ q ∈ (cauchyGrid L).erase 0,
       (((0 - q) / 2 ^ padicValInt 2 (0 - q) : ℤ) : Ring p fl) := by
   simp only [kernelUnitDen, twoVal_eq]
   rw [val_prodList, List.map_map, ← List.prod_toFinset _
-    ((nodup_gridList a).filter _)]
+    ((nodup_gridList L).filter _)]
   refine prod_congr ?_ fun q _ => val_intConst _
   ext q
   simp only [List.mem_toFinset, List.mem_filter, mem_gridList, mem_erase, decide_eq_true_eq]
   tauto
 
 /-- **The kernel unit**: `kernelUnitList` is the reduction of `kernelUnit a`. -/
-theorem val_kernelUnitList (a : ℕ) :
-    val p fl (kernelUnitList p fl a) = scalarHom p fl (kernelUnit a) := by
+theorem val_kernelUnitList {a L : ℕ} (hL : L = 2 ^ a) :
+    val p fl (kernelUnitList p fl L) = scalarHom p fl (kernelUnit a) := by
+  subst hL
   have hne (q : ℤ) (hq : q ∈ (cauchyGrid (2 ^ a)).erase 0) : (0 : ℤ) - q ≠ 0 :=
     sub_ne_zero.mpr (Ne.symm (ne_of_mem_erase hq))
   -- The odd part of `C'(0)` is one modulo two.
@@ -348,7 +350,8 @@ theorem val_kernelUnitList (a : ℕ) :
       obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hy
       exact intCast_odd (odd_ediv_two_pow (hne q (Finset.mem_toList.mp hq)))
   rw [Finset.prod_map_toList] at hw
-  have hinv := val_mul_inv_of_eq (kernelUnitDen p fl a) (w := w) (by rw [val_kernelUnitDen, hw])
+  have hinv := val_mul_inv_of_eq (kernelUnitDen p fl (2 ^ a)) (w := w)
+    (by rw [val_kernelUnitDen, hw])
   refine eq_of_mul_eq_one hinv ?_
   -- `kernelUnit a` inverts the odd part of `C'(0)` in `ℤ_(2)`.
   have hunit : kernelUnit a * ∏ q ∈ (cauchyGrid (2 ^ a)).erase 0,
@@ -369,21 +372,23 @@ theorem val_kernelUnitList (a : ℕ) :
 /-- **Kernel values on coefficient lists** (Lemma D.4's evaluation, p. 60): the kernel unit,
 times `2 ^ (a + 1 - v_d) ζ` when `d ≠ t`, times the linear factors `u_q + 2 ^ (a + 1 - v_q) ζ`
 over the grid points `q ≠ d, t`. -/
-def kernelValueList (p : ℕ) (fl : List ℕ) (a : ℕ) (t d : ℤ) (ζ : List ℕ) : List ℕ :=
-  mul p fl (mul p fl (kernelUnitList p fl a)
+def kernelValueList (p : ℕ) (fl : List ℕ) (a L : ℕ) (t d : ℤ) (ζ : List ℕ) : List ℕ :=
+  mul p fl (mul p fl (kernelUnitList p fl L)
       (if d = t then one fl else
         mul p fl (intConst p fl (2 ^ (a + 1 - twoVal (t - d)))) ζ))
-    (prodList p fl (((gridList a).filter fun q => q ≠ d ∧ q ≠ t).map fun q =>
+    (prodList p fl (((gridList L).filter fun q => q ≠ d ∧ q ≠ t).map fun q =>
       linFactor p fl ((t - q) / 2 ^ twoVal (t - q)) (a + 1 - twoVal (t - q)) ζ))
 
 /-- **Kernel values are correct**: for grid points `t` and `d`, the value is
 `kernelValue` at the reduction of `ℤ_(2)` and the value of `ζ`. -/
-theorem val_kernelValueList {a : ℕ} {t d : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
+theorem val_kernelValueList {a L : ℕ} (hL : L = 2 ^ a) {t d : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
     (hd : d ∈ cauchyGrid (2 ^ a)) (ζ : List ℕ) :
-    val p fl (kernelValueList p fl a t d ζ) = kernelValue (scalarHom p fl) (val p fl ζ) a t d := by
+    val p fl (kernelValueList p fl a L t d ζ) =
+      kernelValue (scalarHom p fl) (val p fl ζ) a t d := by
+  subst hL
   simp only [kernelValueList, twoVal_eq]
-  rw [kernelValue_eq_prod _ _ ht hd, val_mul, val_mul, val_kernelUnitList,
-    val_prodList, List.map_map, ← List.prod_toFinset _ ((nodup_gridList a).filter _)]
+  rw [kernelValue_eq_prod _ _ ht hd, val_mul, val_mul, val_kernelUnitList rfl,
+    val_prodList, List.map_map, ← List.prod_toFinset _ ((nodup_gridList _).filter _)]
   congr 1
   · congr 1
     split_ifs
@@ -425,42 +430,43 @@ theorem val_crossRatioList {a i : ℕ} (hia : i ≤ a) {t d₀ : ℤ}
 
 /-- The local form of a row port in slot `x`: the sum of the kernel values at the column ports
 set to one. -/
-def localFormList (p : ℕ) (fl : List ℕ) (a : ℕ) (t : ℤ) (cols : List (ℕ × Bool)) (x : ℕ)
+def localFormList (p : ℕ) (fl : List ℕ) (a L : ℕ) (t : ℤ) (cols : List (ℕ × Bool)) (x : ℕ)
     (ζ : List ℕ) : List ℕ :=
-  sumList p fl (cols.map fun c => if c.2 then kernelValueList p fl a t ((c.1 : ℤ) - x) ζ
+  sumList p fl (cols.map fun c => if c.2 then kernelValueList p fl a L t ((c.1 : ℤ) - x) ζ
     else zero fl)
 
-theorem val_localFormList {a : ℕ} {t : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
+theorem val_localFormList {a L : ℕ} (hL : L = 2 ^ a) {t : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
     {cols : List (ℕ × Bool)} (hcols : ∀ c ∈ cols, c.1 < 2 ^ a) {x : ℕ} (hx : x < 2 ^ a)
     (ζ : List ℕ) :
-    val p fl (localFormList p fl a t cols x ζ) =
+    val p fl (localFormList p fl a L t cols x ζ) =
       packetLocalForm (scalarHom p fl) (val p fl ζ) a t cols x := by
   rw [localFormList, val_sumList, List.map_map, packetLocalForm]
   congr 1
   refine List.map_congr_left fun c hc => ?_
   simp only [Function.comp_apply]
   split_ifs
-  · exact val_kernelValueList ht (sub_mem_cauchyGrid hx (hcols c hc)) ζ
+  · exact val_kernelValueList hL ht (sub_mem_cauchyGrid hx (hcols c hc)) ζ
   · exact val_zero
 
 /-- The coefficient of the mode `(y₀, b)` in the form of a row port in slot `x`. -/
-def modeCoeffList (p : ℕ) (fl : List ℕ) (a i : ℕ) (t : ℤ) (differ : Bool) (x y₀ b : ℕ)
+def modeCoeffList (p : ℕ) (fl : List ℕ) (a L i : ℕ) (t : ℤ) (differ : Bool) (x y₀ b : ℕ)
     (ζ : List ℕ) : List ℕ :=
   if differ = true ∧ x.testBit i = y₀.testBit i then
-    mul p fl (kernelValueList p fl a t ((y₀ : ℤ) - x) ζ)
+    mul p fl (kernelValueList p fl a L t ((y₀ : ℤ) - x) ζ)
       (pow p fl (crossRatioList p fl a i t ((y₀ : ℤ) - x) ζ) b)
   else zero fl
 
-theorem val_modeCoeffList {a i : ℕ} (hia : i < a) {t : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
+theorem val_modeCoeffList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : ℤ}
+    (ht : t ∈ cauchyGrid (2 ^ a))
     (hti : (2 : ℤ) ^ i ∣ t) (hti' : ¬ (2 : ℤ) ^ (i + 1) ∣ t) (differ : Bool) {x : ℕ}
     (hx : x < 2 ^ a) {nb : ℕ} (Z : Fin (2 ^ (i + 1)) × Fin nb) (ζ : List ℕ) :
-    val p fl (modeCoeffList p fl a i t differ x Z.1 Z.2 ζ) =
+    val p fl (modeCoeffList p fl a L i t differ x Z.1 Z.2 ζ) =
       packetModeCoeff (scalarHom p fl) (val p fl ζ) a i t differ x Z := by
   have hy : (Z.1 : ℕ) < 2 ^ a :=
     Z.1.isLt.trans_le (Nat.pow_le_pow_right (by norm_num) (by omega))
   rw [modeCoeffList, packetModeCoeff]
   split_ifs with h
-  · rw [val_mul, val_pow, val_kernelValueList ht (sub_mem_cauchyGrid hx hy),
+  · rw [val_mul, val_pow, val_kernelValueList hL ht (sub_mem_cauchyGrid hx hy),
       val_crossRatioList hia.le (not_dvd_sub_sub_of_testBit_eq hti hti' Z.1.isLt h.2)]
   · exact val_zero
 
@@ -510,19 +516,20 @@ def modeIndex (i nb : ℕ) : Fin (2 ^ (i + 1)) × Fin nb ↪ ℕ :=
 
 /-- The terms of the affine factor of a row port `r = (x, Y_x)`: its local term at `none`, and
 the coefficient of the mode `(k / nb, k % nb)` at `some k`. -/
-def rowTermList (p : ℕ) (fl : List ℕ) (a i : ℕ) (t : ℤ) (nb : ℕ) (differ : Bool)
+def rowTermList (p : ℕ) (fl : List ℕ) (a L i : ℕ) (t : ℤ) (nb : ℕ) (differ : Bool)
     (cols : List (ℕ × Bool)) (ζ : List ℕ) (r : ℕ × Bool) : Option ℕ → List ℕ
-  | none => if r.2 then localFormList p fl a t cols r.1 ζ
-      else sub p fl (one fl) (localFormList p fl a t cols r.1 ζ)
-  | some k => if r.2 then modeCoeffList p fl a i t differ r.1 (k / nb) (k % nb) ζ
-      else neg p fl (modeCoeffList p fl a i t differ r.1 (k / nb) (k % nb) ζ)
+  | none => if r.2 then localFormList p fl a L t cols r.1 ζ
+      else sub p fl (one fl) (localFormList p fl a L t cols r.1 ζ)
+  | some k => if r.2 then modeCoeffList p fl a L i t differ r.1 (k / nb) (k % nb) ζ
+      else neg p fl (modeCoeffList p fl a L i t differ r.1 (k / nb) (k % nb) ζ)
 
 /-- Row terms are correct, at the dense indices of the modes of the packet. -/
-theorem val_rowTermList {a i : ℕ} (hia : i < a) {t : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
+theorem val_rowTermList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : ℤ}
+    (ht : t ∈ cauchyGrid (2 ^ a))
     (hti : (2 : ℤ) ^ i ∣ t) (hti' : ¬ (2 : ℤ) ^ (i + 1) ∣ t) (nb : ℕ) (differ : Bool)
     {cols : List (ℕ × Bool)} (hcols : ∀ c ∈ cols, c.1 < 2 ^ a) {r : ℕ × Bool} (hr : r.1 < 2 ^ a)
     (ζ : List ℕ) :
-    (fun o => val p fl (rowTermList p fl a i t nb differ cols ζ r o)) ∘
+    (fun o => val p fl (rowTermList p fl a L i t nb differ cols ζ r o)) ∘
         Option.map (modeIndex i nb) =
       packetRowTerm (p := nb) (scalarHom p fl) (val p fl ζ) a i t differ cols r := by
   funext o
@@ -530,12 +537,12 @@ theorem val_rowTermList {a i : ℕ} (hia : i < a) {t : ℤ} (ht : t ∈ cauchyGr
   | none =>
     simp only [Function.comp_apply, Option.map_none, rowTermList, packetRowTerm, affineFactor]
     split_ifs
-    · exact val_localFormList ht hcols hr ζ
-    · rw [val_sub, val_one, val_localFormList ht hcols hr ζ]
+    · exact val_localFormList hL ht hcols hr ζ
+    · rw [val_sub, val_one, val_localFormList hL ht hcols hr ζ]
   | some Z =>
     simp only [Function.comp_apply, Option.map_some, rowTermList, packetRowTerm, affineSign,
       modeIndex_apply, modeIndex_div Z.2.isLt, modeIndex_mod Z.2.isLt]
-    have h := val_modeCoeffList (p := p) (fl := fl) hia ht hti hti' differ hr Z ζ
+    have h := val_modeCoeffList (p := p) (fl := fl) hL hia ht hti hti' differ hr Z ζ
     split_ifs
     · rw [one_mul]; exact h
     · rw [val_neg, h, neg_one_mul]
@@ -596,12 +603,12 @@ private theorem toFinset_filter_range (i nb : ℕ) (P : ℕ → Bool) :
 along the row terms, at the exponents `β` of the modes targeting the group, times the powers of
 the values of the modes with the group as source. A mode `(y₀, b)` is its dense index
 `y₀ nb + b`, so `β` is read at dense indices, as from a dense list of exponents. -/
-def packetEntryList (p : ℕ) (fl : List ℕ) (a i : ℕ) (t : ℤ) (nb : ℕ) (e₁ e₂ differ : Bool)
+def packetEntryList (p : ℕ) (fl : List ℕ) (a L i : ℕ) (t : ℤ) (nb : ℕ) (e₁ e₂ differ : Bool)
     (β : ℕ → ℕ) (rows cols : List (ℕ × Bool)) (ζ : List ℕ) : List ℕ :=
   mul p fl
     (listCoeffList p fl ((List.range (2 ^ (i + 1) * nb)).filter fun k =>
         modeTargets i e₁ e₂ (k / nb))
-      (rows.map (rowTermList p fl a i t nb differ cols ζ)) β)
+      (rows.map (rowTermList p fl a L i t nb differ cols ζ)) β)
     (prodList p fl (((List.range (2 ^ (i + 1) * nb)).filter fun k =>
         modeSources i e₁ e₂ (k / nb)).map fun k =>
       pow p fl (modeValueList p fl i differ cols (k / nb) (k % nb)) (β k)))
@@ -609,11 +616,12 @@ def packetEntryList (p : ℕ) (fl : List ℕ) (a i : ℕ) (t : ℤ) (nb : ℕ) (
 /-- **Packet entries are correct.** For a grid point `t` of valuation `i < a` and ports in slots
 below `2 ^ a`, the value of `packetEntryList` in `A_p` is `packetEntry` at the reduction of
 `ℤ_(2)`, the value of `ζ` and the exponents `β` at the dense indices of the modes. -/
-theorem val_packetEntryList {a i : ℕ} (hia : i < a) {t : ℤ} (ht : t ∈ cauchyGrid (2 ^ a))
+theorem val_packetEntryList {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : ℤ}
+    (ht : t ∈ cauchyGrid (2 ^ a))
     (hti : (2 : ℤ) ^ i ∣ t) (hti' : ¬ (2 : ℤ) ^ (i + 1) ∣ t) (nb : ℕ) (e₁ e₂ differ : Bool)
     (β : ℕ → ℕ) {rows cols : List (ℕ × Bool)} (hrows : ∀ r ∈ rows, r.1 < 2 ^ a)
     (hcols : ∀ c ∈ cols, c.1 < 2 ^ a) (ζ : List ℕ) :
-    val p fl (packetEntryList p fl a i t nb e₁ e₂ differ β rows cols ζ) =
+    val p fl (packetEntryList p fl a L i t nb e₁ e₂ differ β rows cols ζ) =
       packetEntry (p := nb) (scalarHom p fl) (val p fl ζ) a i t e₁ e₂ differ
         (fun Z => β (Z.1 * nb + Z.2)) rows cols := by
   rw [packetEntryList, packetEntry, val_mul]
@@ -621,7 +629,7 @@ theorem val_packetEntryList {a i : ℕ} (hia : i < a) {t : ℤ} (ht : t ∈ cauc
   · rw [val_listCoeffList (List.nodup_range.filter _), toFinset_filter_range,
       TensorNetwork.listCoeff_map, List.map_map, List.map_map]
     refine congrArg₂ _ (List.map_congr_left fun r hr => ?_) rfl
-    exact val_rowTermList hia ht hti hti' nb differ hcols (hrows r hr) ζ
+    exact val_rowTermList hL hia ht hti hti' nb differ hcols (hrows r hr) ζ
   · rw [val_prodList, List.map_map, ← List.prod_toFinset _ (List.nodup_range.filter _),
       toFinset_filter_range, prod_map]
     refine prod_congr rfl fun Z _ => ?_
@@ -633,14 +641,14 @@ theorem val_packetEntryList {a i : ℕ} (hia : i < a) {t : ℤ} (ht : t ∈ cauc
 nilpotent in `S`, the value of `packetEntryList` is `packetEntry` over `S` at any ring map
 `κ : ℤ_(2) → S` and at the image of `ζ`. -/
 theorem map_val_packetEntryList {S : Type*} [CommRing S] (ψ : Ring p fl →+* S) {n : ℕ}
-    (hn : (2 : S) ^ n = 0) (κ : ℤ₍₂₎ →+* S) {a i : ℕ} (hia : i < a) {t : ℤ}
+    (hn : (2 : S) ^ n = 0) (κ : ℤ₍₂₎ →+* S) {a L i : ℕ} (hL : L = 2 ^ a) (hia : i < a) {t : ℤ}
     (ht : t ∈ cauchyGrid (2 ^ a)) (hti : (2 : ℤ) ^ i ∣ t) (hti' : ¬ (2 : ℤ) ^ (i + 1) ∣ t)
     (nb : ℕ) (e₁ e₂ differ : Bool) (β : ℕ → ℕ) {rows cols : List (ℕ × Bool)}
     (hrows : ∀ r ∈ rows, r.1 < 2 ^ a) (hcols : ∀ c ∈ cols, c.1 < 2 ^ a) (ζ : List ℕ) :
-    ψ (val p fl (packetEntryList p fl a i t nb e₁ e₂ differ β rows cols ζ)) =
+    ψ (val p fl (packetEntryList p fl a L i t nb e₁ e₂ differ β rows cols ζ)) =
       packetEntry (p := nb) κ (ψ (val p fl ζ)) a i t e₁ e₂ differ (fun Z => β (Z.1 * nb + Z.2))
         rows cols := by
-  rw [val_packetEntryList hia ht hti hti' nb e₁ e₂ differ β hrows hcols ζ,
+  rw [val_packetEntryList hL hia ht hti hti' nb e₁ e₂ differ β hrows hcols ζ,
     map_packetEntry ψ two_pow_eq_zero _ _ hia.le hti hti',
     padicInteger_ringHom_ext hn (ψ.comp (scalarHom p fl)) κ]
 
