@@ -145,10 +145,11 @@ theorem twoVal_eq {b d : ℕ} (hd : d < 2 ^ b) : twoVal b d = padicValNat 2 d :=
       have hiff : d % 2 ^ (m + 1) = 0 ↔ m + 1 ≤ v := by
         rw [← Nat.dvd_iff_mod_eq_zero]
         exact padicValNat_dvd_iff_le h0
+      rw [List.filter_singleton]
       by_cases hm : m + 1 ≤ v
-      · simp [hiff.mpr hm]
+      · rw [decide_eq_true (hiff.mpr hm), Bool.cond_true, List.length_singleton]
         omega
-      · simp [mt hiff.mp hm]
+      · rw [decide_eq_false (mt hiff.mp hm), Bool.cond_false, List.length_nil]
         omega
   rw [key, min_eq_right hvb.le]
 
