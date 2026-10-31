@@ -41,7 +41,7 @@ within time `TL` and space `SL`, the time is at most `fuel a + 1` times
 the cost of computing the fuel and the root and of the binary clock, for one constant `K` of the
 scheme (`Scheme.certificate_le`). Only the stack is kept, so the workspace grows with the depth,
 not with the number of nodes. The number of nodes of a recursion tree is bounded in
-`Foundations/Data/Nat/RecursionTree.lean`.
+`Complexity/Foundations/Data/Nat/RecursionTree.lean`.
 
 This is the depth-first evaluation of the recursion in the proof of Theorem D.1 of
 [OpenAI2026ETH] (Appendix D.4.7, p. 64), which keeps one sum over mode tuples and one product
