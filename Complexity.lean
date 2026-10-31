@@ -1154,6 +1154,7 @@ public import Complexity.Computability.Complexity.Classes.CeqP.Time
 public import Complexity.Computability.Complexity.Classes.Constructible
 public import Complexity.Computability.Complexity.Classes.Constructible.Log
 public import Complexity.Computability.Complexity.Classes.Constructible.TwoPow
+public import Complexity.Computability.Complexity.Classes.Constructible.UnaryClock
 public import Complexity.Computability.Complexity.Classes.Counting.OracleSpace
 public import Complexity.Computability.Complexity.Classes.Counting.Space
 public import Complexity.Computability.Complexity.Classes.CountingSimulation.Accumulate
@@ -1302,6 +1303,7 @@ public import Complexity.Computability.Complexity.Classes.SharpP.GapMachine
 public import Complexity.Computability.Complexity.Classes.SharpP.Lowness
 public import Complexity.Computability.Complexity.Classes.SharpP.Machine
 public import Complexity.Computability.Complexity.Classes.SharpP.Oracle
+public import Complexity.Computability.Complexity.Classes.SharpP.PaddedCount
 public import Complexity.Computability.Complexity.Classes.SharpP.PolyTime
 public import Complexity.Computability.Complexity.Classes.SharpP.Power
 public import Complexity.Computability.Complexity.Classes.SharpP.Probability
@@ -1824,6 +1826,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Guess
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Oracle.Program
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Oracle.Replay
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.OutputPrefix
+public import Complexity.Computability.Machines.Turing.MultiTape.Counting.PaddedClock
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Program
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Sequential
 public import Complexity.Computability.Machines.Turing.MultiTape.Counting.Verdict
