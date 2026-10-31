@@ -331,7 +331,11 @@ private theorem findBucket_of_le {n q j : ℕ} (hj : subsetPairCount n q ≤ j) 
   have hnot : ¬(j < subsetPairCount n q) := by omega
   simp only [hnot, ↓reduceIte] at hspec; simp only [Internal.findBucket, hspec]
 
-private def pureUnrankComb : ℕ → ℕ → ℕ → List Bool
+/-- **The combination of rank `r`** among the weight-`k` indicators of length `m`, in the
+lexicographic order with `false` first: the specification of `Internal.unrankComb`. A rank
+`r < C(m, k)` gives an indicator of weight `k` (`count_true_pureUnrankComb`), and distinct ranks
+give distinct indicators (`pureUnrankComb_injective`). -/
+def pureUnrankComb : ℕ → ℕ → ℕ → List Bool
   | 0, _, _ => []
   | m + 1, k, r =>
     if r < m.choose k then false :: pureUnrankComb m k r
@@ -351,16 +355,18 @@ private theorem foldl_unrankCombStep_eq {N m : ℕ} (hm : m ≤ N) (k r : ℕ) (
     · rw [ih hm_le (k - 1) (r - m.choose k) (acc ++ [true]), List.append_assoc,
         List.singleton_append]
 
-private theorem unrankComb_eq_pure (n k r : ℕ) :
+/-- The table-driven unranker computes `pureUnrankComb`. -/
+theorem unrankComb_eq_pure (n k r : ℕ) :
     Internal.unrankComb n k r (pascalTable n) = pureUnrankComb n k r := by
   simpa only [Internal.unrankComb, List.nil_append] using foldl_unrankCombStep_eq le_rfl k r []
 
-private theorem length_pureUnrankComb (m k r : ℕ) : (pureUnrankComb m k r).length = m := by
+@[simp] theorem length_pureUnrankComb (m k r : ℕ) : (pureUnrankComb m k r).length = m := by
   induction m generalizing k r with
   | zero => rfl
   | succ m ih => simp only [pureUnrankComb]; split_ifs <;> simp [ih]
 
-private theorem count_true_pureUnrankComb {m k r : ℕ} (hr : r < m.choose k) :
+/-- A rank below `C(m, k)` unranks to an indicator of weight `k`. -/
+theorem count_true_pureUnrankComb {m k r : ℕ} (hr : r < m.choose k) :
     (pureUnrankComb m k r).count true = k := by
   induction m generalizing k r with
   | zero => cases k with | zero => rfl | succ k => simp at hr
@@ -373,7 +379,8 @@ private theorem count_true_pureUnrankComb {m k r : ℕ} (hr : r < m.choose k) :
         rw [Nat.choose_succ_succ, Nat.succ_eq_add_one] at hr
         simp [ih (by omega : r - m.choose (k + 1) < m.choose k)]
 
-private theorem pureUnrankComb_injective {m k r₁ r₂ : ℕ}
+/-- Distinct ranks below `C(m, k)` unrank to distinct indicators. -/
+theorem pureUnrankComb_injective {m k r₁ r₂ : ℕ}
     (hr₁ : r₁ < m.choose k) (hr₂ : r₂ < m.choose k)
     (heq : pureUnrankComb m k r₁ = pureUnrankComb m k r₂) : r₁ = r₂ := by
   induction m generalizing k r₁ r₂ with
@@ -782,7 +789,9 @@ private theorem computableInPolyTime_findBucket :
         (by omega) hj_le hn_le)
   exact hfold.snd'
 
-private theorem computableInPolyTime_unrankComb :
+/-- The table-driven unranker is polynomial-time, from `(n, k)` in unary, the rank in binary and
+the table. -/
+@[fun_prop, program_certificate] theorem unrankComb_polyTime :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => Internal.unrankComb p.1.1.1 p.1.1.2 p.1.2 p.2)
       (encPair (encPair encParams encNat) (encList (encList encNat))) encBits := by
@@ -859,7 +868,7 @@ private theorem computableInPolyTime_scatterMask :
   have hq_fst := fst encIn (encPair encUnary encNat)
   have hq_snd := snd encIn (encPair encUnary encNat)
   have hq_pow := binary_two_pow.comp hq_snd.fst'
-  have hq_indE := computableInPolyTime_unrankComb.comp
+  have hq_indE := unrankComb_polyTime.comp
     ((((hn_in.comp hq_fst).prod hq_snd.fst').prod (binary_div.comp (hq_snd.snd'.prod hq_pow))).prod
       (htab.comp hq_fst))
   have hq_indU := computableInPolyTime_scatterMask.comp
@@ -868,6 +877,15 @@ private theorem computableInPolyTime_scatterMask :
     ((bitsCountWithInput hq_indE (const true)).prod (bitsCountWithInput hq_indU (const true)))
   have hq_sign := (binary_mod.comp ((unary_to_binary.comp hq_diff).prod (const 2))).beq (const 1)
   exact optionElimWithInput hfb hfall (hq_indE.prod (hq_indU.prod hq_sign))
+
+/-- **Unranking combinations is polynomial-time**, from `(m, k)` in unary and the rank in
+binary. -/
+@[fun_prop, program_certificate] theorem pureUnrankComb_polyTime :
+    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => pureUnrankComb p.1.1 p.1.2 p.2)
+      (encPair encParams encNat) encBits :=
+  (unrankComb_polyTime.comp
+    (id'.prod (pascalTable_polyTime.comp (fst encParams encNat).fst'))).of_enc_eq
+      fun p => congrArg encBits (unrankComb_eq_pure p.1.1 p.1.2 p.2).symm
 
 end PlainProofs
 
