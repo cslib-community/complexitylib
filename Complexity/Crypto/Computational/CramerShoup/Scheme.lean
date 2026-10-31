@@ -38,24 +38,21 @@ against an adaptive `ADCCA2AdversaryOf Msg AD`. Groups are written additively as
 ## Source Statements ([BonehShoup2023], Sections 12.5.1–12.5.3, 12.7 & Exercise 12.27)
 
 Verbatim from [BonehShoup2023], Section 12.7, Definition 12.7 (printed pp. 501–502):
-> **Definition 12.7.** Let $\mathcal{E} = (G, E, D)$ be a public-key encryption scheme defined over
-> $(\mathcal{M}, \mathcal{D}, \mathcal{C})$. We modify Attack Game 12.1 as follows.
-> - **Encryption query:** for $i = 1, 2, \ldots$, the $i$th encryption query consists of a pair of
->   messages $(m_{i0}, m_{i1}) \in \mathcal{M}^2$, of the same length, along with associated data
->   $d_i \in \mathcal{D}$. The challenger computes $c_i \xleftarrow{R} E(pk, m_{ib}, d_i)$ and sends
->   $c_i$ to $\mathcal{A}$.
-> - **Decryption query:** for $j = 1, 2, \ldots$, the $j$th decryption query consists of a
->   ciphertext $\hat{c}_j \in \mathcal{C}$ and associated data $\hat{d}_j \in \mathcal{D}$ such that
->   the pair $(\hat{c}_j, \hat{d}_j)$ is not among the pairs $(c_i, d_i)$ from the previous
->   encryption queries, i.e., $(\hat{c}_j, \hat{d}_j) \notin \{(c_1, d_1), (c_2, d_2), \ldots\}$.
->   The challenger computes $\hat{m}_j \leftarrow D(sk, \hat{c}_j, \hat{d}_j)$, and sends
->   $\hat{m}_j$ to $\mathcal{A}$.
->
-> All other aspects of the attack game remain unchanged. We say that $\mathcal{E}$ is **CCA secure
-> with associated data** if for all efficient adversaries $\mathcal{A}$, the advantage of
-> $\mathcal{A}$ in this modified game is negligible. Just as in Definition 12.2, we can restrict the
-> adversary to a single encryption query, and if the advantage is negligible for all such
-> adversaries, we say that $\mathcal{E}$ is **1CCA secure with associated data**.
+> **Definition 12.7 (CCA and 1CCA security with associated data).** The definition of CCA
+> security for ordinary public-key encryption schemes carries over naturally to AD public-key
+> encryption schemes. Attack Game 12.1 is modified as follows. For encryption queries, in
+> addition to a pair of messages $(m_{i0}, m_{i1})$, the adversary also submits associated data
+> $d_i$, and the challenger computes $c_i \xleftarrow{R} E(pk, m_{ib}, d_i)$. For decryption
+> queries, in addition to a ciphertext $\hat{c}_j$, the adversary submits associated data
+> $\hat{d}_j$, and the challenger computes $\hat{m}_j \leftarrow D(sk, \hat{c}_j, \hat{d}_j)$.
+> The restriction is that the pair $(\hat{c}_j, \hat{d}_j)$ may not be among the pairs
+> $(c_1, d_1), (c_2, d_2), \ldots$ corresponding to previous encryption queries. An adversary
+> $\mathcal{A}$'s advantage in this game is denoted
+> $\text{CCA}^{\text{ad}}\text{adv}[\mathcal{A}, \mathcal{E}]$, and the scheme is said to be CCA
+> secure if this advantage is negligible for all efficient adversaries $\mathcal{A}$. If we
+> restrict the adversary to a single encryption query, as in Definition 12.2, the advantage is
+> denoted $\text{1CCA}^{\text{ad}}\text{adv}[\mathcal{A}, \mathcal{E}]$, and the scheme is said
+> to be 1CCA secure if this advantage is negligible for all efficient adversaries $\mathcal{A}$.
 
 Verbatim from [BonehShoup2023], Sections 12.5.1–12.5.2 (Lemma 12.6 in §12.5.1, printed p. 486;
 Lemma 12.8 in §12.5.2, printed p. 488):
