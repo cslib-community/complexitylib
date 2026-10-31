@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
-public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkBounds
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.IncidenceNetworkSize
 
 /-!
 # Tests for the incidence network of Lemma D.2
@@ -71,5 +71,18 @@ example : numWires 2 sys [1, 1, 0, 1] ≤ 2 * 2 + 4 * Nat.clog 2 (3 * 3) :=
 
 -- Stars and bars: `C(11, 4) = 330 ≤ 9 ^ 4`.
 example : (7 + 4).choose 4 ≤ (3 * 3) ^ 4 := Nat.add_choose_le_three_mul_pow (by norm_num)
+
+/-! ### The parameters of Lemma D.2 -/
+
+-- `⌈16 ^ (1/4)⌉ = 2` and `⌈17 ^ (1/4)⌉ = 3`.
+example : ceilQuarter 16 = 2 :=
+  le_antisymm (Nat.find_min' _ (by norm_num)) (by
+    by_contra h
+    have := le_ceilQuarter_pow 16
+    interval_cases (ceilQuarter 16) <;> simp_all)
+
+-- `16 ≤ J ^ 4` and `J ² ≤ 4 · 16` at `J = ⌈16 ^ (1/4)⌉`.
+example : 16 ≤ ceilQuarter 16 ^ 4 ∧ ceilQuarter 16 * ceilQuarter 16 ≤ 4 * 16 :=
+  ⟨le_ceilQuarter_pow 16, ceilQuarter_mul_self_le (by norm_num)⟩
 
 end ComplexityTests.TensorNetworkIncidenceNetwork
