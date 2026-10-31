@@ -544,14 +544,6 @@ private theorem exists_computableInO_brute (k : ℕ) : ∃ K, ComputableInO
     simp only [e₁, e₂, certLen] at h ⊢
     omega
 
-/-- Weaken only the time bound, keeping the space bound. -/
-private theorem computableInO_mono_time {α β : Type*} {f : α → β}
-    {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {T S T' : α → ℕ}
-    (h : ComputableInO f encIn encOut T S) (k : ℕ) (hT : ∀ a, T a ≤ k * (T' a + 1)) :
-    ComputableInO f encIn encOut T' S :=
-  h.mono (k + 1) (fun a => (hT a).trans (Nat.mul_le_mul_right _ (Nat.le_succ k)))
-    fun _ => (Nat.le_succ _).trans (Nat.le_mul_of_pos_left _ (Nat.succ_pos k))
-
 /-- The cost of the tests of the verifier: quadratic in the encoded input, times the square of a
 bound `4 ^ ((k + 2) * (n + 1))` on the horizon, which the tests write in unary. -/
 private def cheap (k : ℕ) (p : List Bool × List Bool) : ℕ :=
@@ -670,7 +662,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
   set A := 8 + 4 * 25 + (2 * CE + 1)
   have e (p : List Bool × List Bool) : A * (cheap k p + 1) =
       8 * cheap k p + 4 * (25 * cheap k p) + (2 * CE + 1) * cheap k p + A := by ring
-  have hc₀ := computableInO_mono_time (Diagonal.computableInO_shortDesc.comp hw) (T' := cheap k)
+  have hc₀ := ComputableInO.mono_time (Diagonal.computableInO_shortDesc.comp hw) (T' := cheap k)
       A fun p => by
     obtain ⟨hu, hn, h₁, -, h₃, -⟩ := hfacts p
     have : ((unframe p.1).length + 1) ^ 2 ≤ (2 * (encPair encBits encBits p).length + 4 +
@@ -678,7 +670,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
     simp only [Function.comp_apply] at ⊢
     have := e p
     omega
-  have hc₁ := computableInO_mono_time (ComputableInO.unaryLe.comp ((hsz.comp hsnoc).prod hE))
+  have hc₁ := ComputableInO.mono_time (ComputableInO.unaryLe.comp ((hsz.comp hsnoc).prod hE))
       (T' := cheap k) A fun p => by
     obtain ⟨hu, hn, h₁, h₂, h₃, h₄⟩ := hfacts p
     have hs := Nat.size_le.mpr (Nat.lt_two_pow_self (n := p.1.length + 1))
@@ -695,7 +687,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
     simp only [horizon] at hsq hsq' h₂ h₃
     have := e p
     omega
-  have hc₂ := computableInO_mono_time (ComputableInO.unaryLe.comp ((hsz.comp hx).prod hE))
+  have hc₂ := ComputableInO.mono_time (ComputableInO.unaryLe.comp ((hsz.comp hx).prod hE))
       (T' := cheap k) A fun p => by
     obtain ⟨hu, hn, h₁, h₂, h₃, h₄⟩ := hfacts p
     have hs := Nat.size_le.mpr (Nat.lt_two_pow_self (n := p.1.length))
@@ -720,7 +712,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
       decide (Nat.size p.1.length ≤ horizon k (2 * (unframe p.1).length + 1))) fun p => by
     simp only [Function.comp_apply, horizon, length_frame]
     rfl
-  have hf₁ := computableInO_mono_time
+  have hf₁ := ComputableInO.mono_time
       (hacc.comp (hcode.prod (hsnoc.prod (ComputableInO.snd encBits encBits))))
       (T' := fun p => cheap k p + accBound D (unframe (unframe p.1), p.1 ++ [false], p.2)) 7
       fun p => by
@@ -730,7 +722,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
         7 * cheap k p + 7 * accBound D (unframe (unframe p.1), p.1 ++ [false], p.2) + 7 := by
       ring
     omega
-  have hf₂ := computableInO_mono_time ((ComputableInDegree.of_finite (encIn := encBool)
+  have hf₂ := ComputableInO.mono_time ((ComputableInDegree.of_finite (encIn := encBool)
     (encMid := encBool) (fun b : Bool => !b)).inO_one.comp (hbrute.comp (hcode.prod hbase)))
       (T' := fun p => cheap k p + 2 ^ (K * ((encPair encBits encBits (unframe (unframe p.1),
         frame (unframe p.1))).length + certLen k (2 * (unframe p.1).length + 1)))) 7
@@ -744,7 +736,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
         frame (unframe p.1))).length + certLen k (2 * (unframe p.1).length + 1)))
     have e : 7 * (cheap k p + B + 1) = 7 * cheap k p + 7 * B + 7 := by ring
     omega
-  have hfalse := computableInO_mono_time (ComputableInO.const (encIn := encPair encBits encBits)
+  have hfalse := ComputableInO.mono_time (ComputableInO.const (encIn := encPair encBits encBits)
     (encMid := encBool) false) (T' := cheap k) 1 fun p => by
     obtain ⟨hu, hn, h₁, -⟩ := hfacts p
     omega
