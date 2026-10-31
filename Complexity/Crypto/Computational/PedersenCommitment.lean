@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Crypto.Computational.Commitment
+public import Complexity.Crypto.Computational.Commitment.Basic
 public import Complexity.Crypto.Computational.DiscreteLog
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
