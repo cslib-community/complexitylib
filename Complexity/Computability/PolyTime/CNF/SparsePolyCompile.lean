@@ -1222,7 +1222,9 @@ theorem computableInPolyTime_varDegree :
 binary, result in `encOption encNat`) is polynomial-time. -/
 theorem computableInPolyTime_findHeavyVar :
     ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × List (List (List ℕ)) => findHeavyVar p.1.1 p.1.2 p.2)
+      (fun p : (ℕ × ℕ) × List (List (List ℕ)) =>
+        let nb := p.1
+        findHeavyVar nb.1 nb.2 p.2)
       (encPair (encPair encUnary encNat) encSys) (encOption encNat) := by
   have hdeg := computableInPolyTime_varDegree
   have hrange : ComputableInPolyTime
@@ -1250,9 +1252,11 @@ theorem computableInPolyTime_findHeavyVar_apply {α : Type} {encIn : α ↪ List
 /-- Substituting `x_v = val` into a sparse `𝔽₂` equation (`restrictEquation`) is polynomial-time. -/
 theorem computableInPolyTime_restrictEquation :
     ComputableInPolyTime
-      (fun p : (ℕ × Bool) × List (List ℕ) => restrictEquation p.1.1 p.1.2 p.2)
+      (fun p : (ℕ × Bool) × List (List ℕ) =>
+        let vval := p.1
+        restrictEquation vval.1 vval.2 p.2)
       (encPair (encPair encNat encBool) encEq) encEq := by
-  unfold restrictEquation; fun_prop
+  unfold restrictEquation; dsimp only; fun_prop
 
 @[fun_prop]
 theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ List Bool}
@@ -1267,7 +1271,9 @@ theorem computableInPolyTime_restrictEquation_apply {α : Type} {encIn : α ↪ 
 /-- Substituting `x_v = val` across a sparse `𝔽₂` system (`restrictSystem`) is polynomial-time. -/
 theorem computableInPolyTime_restrictSystem :
     ComputableInPolyTime
-      (fun p : (ℕ × Bool) × List (List (List ℕ)) => restrictSystem p.1.1 p.1.2 p.2)
+      (fun p : (ℕ × Bool) × List (List (List ℕ)) =>
+        let vval := p.1
+        restrictSystem vval.1 vval.2 p.2)
       (encPair (encPair encNat encBool) encSys) encSys :=
   mapWithInput (snd (encPair encNat encBool) encSys)
     (computableInPolyTime_restrictEquation.comp (((fst _ _).fst').prod (snd _ _)))

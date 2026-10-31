@@ -274,8 +274,11 @@ local notation "encJet" => encList encIntBin
   unfold add; fun_prop
 
 theorem computableInPolyTime_add :
-    ComputableInPolyTime (fun p : (ℕ × List ℤ) × List ℤ => add p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encJet) encJet) encJet := by fun_prop
+    ComputableInPolyTime
+      (fun p : (ℕ × List ℤ) × List ℤ =>
+        let ja := p.1
+        add ja.1 ja.2 p.2)
+      (encPair (encPair encUnary encJet) encJet) encJet := by dsimp only; fun_prop
 
 @[fun_prop] theorem computableInPolyTime_sub' {γ : Type} {encIn : γ ↪ List Bool}
     {J : γ → ℕ} {a b : γ → List ℤ} (hJ : ComputableInPolyTime J encIn encUnary)
@@ -288,8 +291,11 @@ theorem computableInPolyTime_add :
       (((ha.comp hx).listGetDWithInput hk 0).prod ((hb.comp hx).listGetDWithInput hk 0)))
 
 theorem computableInPolyTime_sub :
-    ComputableInPolyTime (fun p : (ℕ × List ℤ) × List ℤ => sub p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encJet) encJet) encJet := by fun_prop
+    ComputableInPolyTime
+      (fun p : (ℕ × List ℤ) × List ℤ =>
+        let ja := p.1
+        sub ja.1 ja.2 p.2)
+      (encPair (encPair encUnary encJet) encJet) encJet := by dsimp only; fun_prop
 
 @[fun_prop] theorem computableInPolyTime_subConst' {γ : Type} {encIn : γ ↪ List Bool}
     {J : γ → ℕ} {c : γ → ℤ} {a : γ → List ℤ} (hJ : ComputableInPolyTime J encIn encUnary)
@@ -299,8 +305,11 @@ theorem computableInPolyTime_sub :
     ((ComputableInPolyTime.snoc encIntBin).comp ((ComputableInPolyTime.const []).prod hc)) ha
 
 theorem computableInPolyTime_subConst :
-    ComputableInPolyTime (fun p : (ℕ × ℤ) × List ℤ => subConst p.1.1 p.1.2 p.2)
-      (encPair (encPair encUnary encIntBin) encJet) encJet := by fun_prop
+    ComputableInPolyTime
+      (fun p : (ℕ × ℤ) × List ℤ =>
+        let jc := p.1
+        subConst jc.1 jc.2 p.2)
+      (encPair (encPair encUnary encIntBin) encJet) encJet := by dsimp only; fun_prop
 
 /-- Plain polynomial-time combinator for folding `Cslib.mulZJet` over `xs` from
 `Cslib.truncZJet J [1]`, given a polynomial bound `K` on the bit-sizes of the step factors' `ℓ₁`
@@ -311,7 +320,9 @@ theorem computableInPolyTime_foldl_mulZJet {γ α : Type} {encIn : γ ↪ List B
     (hJ : ComputableInPolyTime J encIn encUnary) (hδ : ComputableInPolyTime δ encIn encIntBin)
     (hxs : ComputableInPolyTime xs encIn (encList encA))
     (hfac : ComputableInPolyTime
-      (fun q : ((ℕ × ℤ) × List ℤ) × α => factor q.1.1.1 q.1.1.2 q.2)
+      (fun q : ((ℕ × ℤ) × List ℤ) × α =>
+        let pacc := q.1; let par := pacc.1
+        factor par.1 par.2 q.2)
       (encPair (encPair (encPair encUnary encIntBin) encJet) encA) encJet)
     {K : γ → ℕ} (hK : PolyBounded (fun x => (encIn x).length) K)
     (hsz : ∀ x, ∀ a ∈ xs x,

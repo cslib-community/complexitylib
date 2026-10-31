@@ -180,7 +180,10 @@ in polynomial time. -/
 theorem computableInPolyTime_tabulateTable {r c : α → ℕ} {g : α → ℕ → ℕ → ℤ}
     (hr : ComputableInPolyTime r encIn encUnary)
     (hc : ComputableInPolyTime c encIn encUnary)
-    (hg : ComputableInPolyTime (fun p : (α × ℕ) × ℕ => g p.1.1 p.1.2 p.2)
+    (hg : ComputableInPolyTime
+      (fun p : (α × ℕ) × ℕ =>
+        let xi := p.1
+        g xi.1 xi.2 p.2)
       (encPair (encPair encIn encUnary) encUnary) encIntBin) :
     ComputableInPolyTime (fun x => tabulateTable (r x) (c x) (g x))
       encIn (encList (encList encIntBin)) :=
