@@ -356,6 +356,11 @@ DLOGTIME-uniform AC⁰ under explicit conventions.
 - **Williams's NEXP ⊄ ACC⁰ and Murray–Williams's NQP ⊄ ACC⁰** ([#889]): no polynomial-size,
   constant-depth circuits over AND, OR, NOT and fixed-modulus counting gates for some language in
   NEXP.
+- **Circuit lower bounds from refuting ETH** ([#1539]): `E^NP ⊄ SIZE(O(n))`, and a language in
+  `E^NP` whose fan-in-two circuits need more than `c n √log n` gates infinitely often, by
+  Williams's witness-circuit argument with the library's #CircuitSAT counters. `E^NP` is defined;
+  still open are an exponential nondeterministic time separation, a succinct tableau reduction
+  with a linear-size decoder, the lexicographically first witness in `E^NP`, and the core theorem.
 - Uniform and nonuniform NC, AC and TC, circuit-to-machine bridges, algorithm-to-lower-bound
   arguments, and barriers such as natural proofs and algebrization. NC simulation of unrestricted
   `TCⁱ` needs Muroga's threshold weight-bounding theorem.
@@ -862,6 +867,7 @@ not planned, not as proved.
 [#1447]: https://github.com/cslib-community/complexitylib/issues/1447
 [#1449]: https://github.com/cslib-community/complexitylib/issues/1449
 [#1524]: https://github.com/cslib-community/complexitylib/issues/1524
+[#1539]: https://github.com/cslib-community/complexitylib/issues/1539
 [#1572]: https://github.com/cslib-community/complexitylib/issues/1572
 [#1817]: https://github.com/cslib-community/complexitylib/issues/1817
 [#1824]: https://github.com/cslib-community/complexitylib/issues/1824
