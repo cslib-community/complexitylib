@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Computability.Circuit.Frontier.TensorNetwork.Recursion
+import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion
 import Complexity.Foundations.NumberTheory.Padics.AdjoinRootDigitLift
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Polynomial.SpecificDegree
@@ -23,6 +23,8 @@ import Mathlib.Tactic.FinCases
   `a = u = 1`, `h = 3`. On a one-edge network these parameters are admissible (`3 M ≤ h u ≤ 3 M + u`
   and `M (2 L - 1) = 3 < 4`), so the root call is active (`contractRec_eq_callValue`); its children
   are not smaller and are evaluated directly. Without parameters the call is a leaf.
+* **The scheduled recursion** (`ContractionSchedule.callParams`): small calls are leaves, the
+  recursion is correct, and for large `s` the parameters of every active call are admissible.
 -/
 
 namespace ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Recursion
@@ -104,11 +106,11 @@ theorem pts_pairwise : Pairwise fun k l => IsUnit (pts k - pts l) := fun _ _ hkl
 example : ContractionOracle.Correct (B := O) fun _ _ N _ _ => N.contraction :=
   fun _ _ _ _ _ => ⟨0, by simp⟩
 
-/-- The constant schedule `a = u = 1`, `h = 3`. -/
-def sched (_ _ : ℕ) : Option TensorNetwork.CallParams := some ⟨1, 1, 3⟩
+/-- The constant schedule `a = u = 1`, `h = 3`, with degree bound `1`. -/
+def sched (_ _ : ℕ) : Option TensorNetwork.CallParams := some ⟨1, 1, 3, 1⟩
 
 /-- On one edge with four points the schedule is admissible. -/
-example : (TensorNetwork.CallParams.mk 1 1 3).Admissible 1 4 := by decide
+example : (TensorNetwork.CallParams.mk 1 1 3 1).Admissible 1 4 := by decide
 
 /-- One edge from row `0` to column `1`, with tensor `(1, 2)` at the row and `(1, 1)` at the
 column. -/
@@ -128,7 +130,9 @@ example (p : ℕ) :
           if m' < 1 then contractRec O hO sched pts 1 n' m' N' side' p' else N'.contraction)
         net₁ (fun v => decide (v = 0)) (fun _ => rfl) (fun _ => rfl)
         (Cslib.PacketPacking.packing net₁.src net₁.tgt 1 64) p 1 3 le_rfl pts :=
-  contractRec_eq_callValue (θ := ⟨1, 1, 3⟩) rfl (by decide) (fun _ => rfl) (fun _ => rfl) p
+  contractRec_eq_callValue (θ := ⟨1, 1, 3, 1⟩) rfl
+    ⟨⟨fun _ => rfl, fun _ => rfl, fun _ => (Finset.card_filter_le _ _).trans (by simp),
+      fun _ => (Finset.card_filter_le _ _).trans (by simp)⟩, by decide⟩ p
 
 /-- With no parameters, a call is a leaf and returns the contraction. -/
 example (p : ℕ) :
@@ -149,5 +153,30 @@ example (sched' : ℕ → ℕ → Option TensorNetwork.CallParams) (n m p : ℕ)
     (N : TensorNetwork O Bool (Fin n) (Fin m)) (side : Fin n → Bool) :
     ∃ c : O, contractRec O hO sched' pts 0 n m N side p = N.contraction + 2 ^ p * c :=
   exists_contractRec_eq_add O hO sched' pts pts_pairwise 0 n m N side p
+
+/-! ### The scheduled recursion -/
+
+open Cslib.Circuits.Frontier.ContractionSchedule in
+/-- With the parameter schedule, a call with at most `leafSize s` edges is a leaf. -/
+example (s n m p : ℕ) (hm : m ≤ leafSize s) (N : TensorNetwork O Bool (Fin n) (Fin m))
+    (side : Fin n → Bool) :
+    contractRec O hO (callParams s) pts 0 n m N side p = N.contraction :=
+  contractRec_of_sched_eq_none (callParams_of_le hm) p
+
+open Cslib.Circuits.Frontier.ContractionSchedule in
+/-- With the parameter schedule, the recursion is correct. -/
+example (s n m p : ℕ) (N : TensorNetwork O Bool (Fin n) (Fin m)) (side : Fin n → Bool) :
+    ∃ c : O, contractRec O hO (callParams s) pts 0 n m N side p = N.contraction + 2 ^ p * c :=
+  exists_contractRec_eq_add O hO (callParams s) pts pts_pairwise 0 n m N side p
+
+open Cslib.Circuits.Frontier.ContractionSchedule in
+/-- For large `s`, the parameters of every active call are admissible with `2 ^ (4 ⌊log₂ s⌋)`
+points, so its guard reduces to the network running from rows to columns within the degree
+bound. -/
+example (C : ℕ) : ∃ s₀, ∀ s, s₀ ≤ s → ∀ d M p, Active C s d M p →
+    (TensorNetwork.CallParams.mk (slotBits s d) (taper s d) (taperStep s d M)
+      (degreeBound s)).Admissible M (2 ^ (4 * Nat.log 2 s)) := by
+  obtain ⟨s₀, hs₀⟩ := exists_activeBounds C
+  exact ⟨s₀, fun s hs d M p hA => ((hs₀ s hs).2 d M p hA).admissible le_rfl⟩
 
 end ComplexityTests.Computability.Circuit.Frontier.TensorNetwork.Recursion

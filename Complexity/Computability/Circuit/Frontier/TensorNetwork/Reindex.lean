@@ -32,7 +32,8 @@ coefficient ring change.
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.TensorNetwork.contraction_reindex`: renaming preserves the contraction.
+* `Cslib.Circuits.Frontier.TensorNetwork.contraction_reindex`: renaming preserves the contraction,
+  and `card_reindex_src`, `card_reindex_tgt` the degrees.
 * `Cslib.Circuits.Frontier.TensorNetwork.map_mapFun`: reducing a lift along `f` recovers the
   network.
 * `Cslib.Circuits.Frontier.TensorNetwork.contraction_map_mapFun`: the contraction of a lift
@@ -47,6 +48,8 @@ coefficient ring change.
 public section
 
 namespace Cslib.Circuits.Frontier.TensorNetwork
+
+open Finset
 
 variable {R S U V E V' E' : Type*}
 
@@ -77,6 +80,20 @@ variable (eV : V ≃ V') (eE : E ≃ E') (N : TensorNetwork R U V E)
 @[simp] theorem reindex_tensor (v : V') (x : E' → U) :
     (N.reindex eV eE).tensor v x = N.tensor (eV.symm v) (x ∘ eE) :=
   rfl
+
+/-- Renaming keeps the number of edges leaving each vertex. -/
+theorem card_reindex_src [Fintype E] [Fintype E'] [DecidableEq V] [DecidableEq V'] (v : V') :
+    #{e | (N.reindex eV eE).src e = v} = #{e | N.src e = eV.symm v} := by
+  refine Finset.card_equiv eE.symm fun e => ?_
+  rw [Finset.mem_filter, Finset.mem_filter]
+  simp [Equiv.eq_symm_apply]
+
+/-- Renaming keeps the number of edges entering each vertex. -/
+theorem card_reindex_tgt [Fintype E] [Fintype E'] [DecidableEq V] [DecidableEq V'] (v : V') :
+    #{e | (N.reindex eV eE).tgt e = v} = #{e | N.tgt e = eV.symm v} := by
+  refine Finset.card_equiv eE.symm fun e => ?_
+  rw [Finset.mem_filter, Finset.mem_filter]
+  simp [Equiv.eq_symm_apply]
 
 /-- **Renaming preserves the contraction.** -/
 theorem contraction_reindex [CommSemiring R] [Fintype U] [Fintype V] [Fintype E] [DecidableEq E]
