@@ -30,10 +30,11 @@ Bounds on `Nondeterministic.ecomplexityFun` for the standard functions on `v`-bi
 * inner product modulo two: `N¹(IP_v) ≥ v - 1` and `N⁰(IP_v) ≥ v`. A rectangle on which the inner
   product is constant has at most `2^v` pairs: for the value `0` this is
   [Kushilevitz and Nisan, Example 1.25][KushilevitzNisan1997], and for both values it follows from
-  Lindsey's lemma, the Hadamard rectangle bound (`BitString.card_mul_le_two_pow_of_dotProduct_eq`).
-  Meanwhile the inner product is `1` on `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So
-  `C¹(IP_v) ≥ (2^v - 1)/2` and `C⁰(IP_v) ≥ (2^v + 1)/2`, which in the unrounded convention of
-  Kushilevitz and Nisan give, for `v ≥ 1`, `N¹(IP_v) ≥ log₂ (2^v - 1) - 1` and `N⁰(IP_v) > v - 1`.
+  Lindsey's lemma, stated for Hadamard matrices in [Jukna, Appendix A, p. 579][Jukna2012]
+  (`BitString.card_mul_le_two_pow_of_dotProduct_eq`). Meanwhile the inner product is `1` on
+  `(4^v - 2^v)/2` pairs and `0` on `(4^v + 2^v)/2` pairs. So `C¹(IP_v) ≥ (2^v - 1)/2` and
+  `C⁰(IP_v) ≥ (2^v + 1)/2`, which in the unrounded convention of Kushilevitz and Nisan give, for
+  `v ≥ 1`, `N¹(IP_v) ≥ log₂ (2^v - 1) - 1` and `N⁰(IP_v) > v - 1`.
 
 The deterministic `Cslib.Communication.ecomplexityFun_equality` has the same final name as
 `Cslib.Communication.Nondeterministic.ecomplexityFun_equality`; with both namespaces open, write
@@ -50,6 +51,7 @@ The deterministic `Cslib.Communication.ecomplexityFun_equality` has the same fin
 
 ## References
 
+* [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 * [E. Kushilevitz, N. Nisan, *Communication Complexity*][KushilevitzNisan1997]
 -/
 
