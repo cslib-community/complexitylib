@@ -1997,6 +1997,7 @@ public import Complexity.Computability.PolyTime.CSP.ToCNF
 public import Complexity.Computability.PolyTime.CommonCountingAccum
 public import Complexity.Computability.PolyTime.FineGrained.ParameterCheck
 public import Complexity.Computability.PolyTime.GaloisRingArithmetic
+public import Complexity.Computability.PolyTime.GaloisRingUnits
 public import Complexity.Computability.PolyTime.GreedyLabelSchedule
 public import Complexity.Computability.PolyTime.GreedySlotScore
 public import Complexity.Computability.PolyTime.Int.ExactDiv
