@@ -38,9 +38,10 @@ Each step is a subroutine run on the low registers. The search in step 2 stops b
 paper with integer thresholds (`Cslib.AKS.prime_iff_passesUpTo_numTestsNat`).
 
 The word size must hold the numbers the steps compute; for an input of `s` bits, the width
-`8 (s + 1)` suffices. The program then answers within `time s` instructions, an explicit
-polynomial in `s` of degree `15`. Its dominant term is step 5: at most `2 s⁴` values of `a`, each
-tested by `s` rounds of schoolbook multiplication of polynomials with `r ≤ 4 s⁵` coefficients.
+`8 (s + 1)` suffices. The program then answers within `time s ≤ 4096 (s + 1)¹⁵` instructions
+(`Cslib.Algorithms.WordRAM.AKS.time_le`). The dominant term is step 5: at most `2 s⁴` values of
+`a`, each tested by `s` rounds of schoolbook multiplication of polynomials with `r ≤ 4 s⁵`
+coefficients.
 Theorem 5.1 of the paper bounds the bit complexity of the algorithm by `Õ(log^{21/2} n)`, using
 fast multiplication of integers and polynomials.
 
@@ -54,7 +55,8 @@ fast multiplication of integers and polynomials.
 * `Cslib.Algorithms.WordRAM.AKS.answers`: at a word size of at least `8 (size n + 1)`, the
   program answers whether `n` is prime within `time (size n)` instructions.
 * `Cslib.Algorithms.WordRAM.AKS.decidesInTime`: its compiled program decides the primes.
-* `Cslib.Algorithms.WordRAM.AKS.polynomiallyBounded_time`: the instruction bound is polynomial.
+* `Cslib.Algorithms.WordRAM.AKS.time_le`, `Cslib.Algorithms.WordRAM.AKS.polynomiallyBounded_time`:
+  the instruction bound is at most `4096 (s + 1)¹⁵`, so it is polynomial.
 
 ## References
 
@@ -182,10 +184,25 @@ def time (s : ℕ) : ℕ :=
     GcdTotient.time (4 * s ^ 5) + 10 * s ^ 4 +
     2 * s ^ 4 * (s * (2 * PolyPow.mulTime (4 * s ^ 5) + 6) + 104 * s ^ 5 + 67) + 70
 
-/-- The instruction bound is polynomial in the number of bits. -/
-theorem polynomiallyBounded_time : PolynomiallyBounded time := by
+/-- The instruction bound is a polynomial of degree `15`: `time s ≤ 4096 (s + 1)¹⁵`. -/
+theorem time_le (s : ℕ) : time s ≤ 4096 * (s + 1) ^ 15 := by
+  have h (k : ℕ) (hk : k ≤ 15) : s ^ k ≤ (s + 1) ^ 15 :=
+    (Nat.pow_le_pow_left (Nat.le_succ s) k).trans (Nat.pow_le_pow_right (Nat.succ_pos s) hk)
+  have h0 : 1 ≤ (s + 1) ^ 15 := Nat.one_le_pow _ _ (Nat.succ_pos s)
+  have h1 : s ≤ (s + 1) ^ 15 := by simpa using h 1 (by norm_num)
+  have h2 := h 2 (by norm_num); have h3 := h 3 (by norm_num); have h4 := h 4 (by norm_num)
+  have h5 := h 5 (by norm_num); have h6 := h 6 (by norm_num); have h7 := h 7 (by norm_num)
+  have h8 := h 8 (by norm_num); have h9 := h 9 (by norm_num); have h10 := h 10 (by norm_num)
+  have h11 := h 11 (by norm_num); have h12 := h 12 (by norm_num)
+  have h13 := h 13 (by norm_num); have h14 := h 14 (by norm_num); have h15 := h 15 le_rfl
+  generalize (s + 1) ^ 15 = S at *
   unfold time OrderSearch.time GcdTotient.time PolyPow.mulTime
-  fun_prop
+  ring_nf
+  omega
+
+/-- The instruction bound is polynomial in the number of bits. -/
+theorem polynomiallyBounded_time : PolynomiallyBounded time :=
+  PolynomiallyBounded.of_forall_le 4096 15 time_le
 
 /-! ### Word sizes -/
 
