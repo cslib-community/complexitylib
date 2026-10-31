@@ -62,6 +62,8 @@ lowest nonzero one, which costs a constant amortized number of instructions per 
 
 * `Cslib.Algorithms.WordRAM.Schoening.repeatTrial_false_toReal`: `R` trials all fail with
   probability `(1 - p) ^ R`.
+* `Cslib.Algorithms.WordRAM.Schoening.ampTime_le`: the time bound is
+  `O((n + k + L) ^ 3 (2 - 2 / k) ^ n (c + 1))`.
 * `Cslib.Algorithms.WordRAM.Schoening.ampProgram_spec`: halting, time and `rand` bounds, no false
   positives, and the exact law of the output.
 * `Cslib.Algorithms.WordRAM.Schoening.ampProgram_failure_eq`: the program fails with probability
@@ -220,6 +222,66 @@ noncomputable def ampTime (k n c L : ℕ) : ℕ :=
 def cfgSuccess {r : ℕ} : RandCfg r → Bool
   | .halted v _ => decide (v = 1)
   | _ => false
+
+/-- **The running time** of Schöning's algorithm is `O((n + k + L) ^ 3 (2 - 2 / k) ^ n (c + 1))`:
+explicitly, at most `900 (n + k + L + 1) ^ 3 (2 (k - 1) / k) ^ n (c + 1)` instructions. For
+`k = 3` this is `O((n + L) ^ 3 (4 / 3) ^ n (c + 1))`. -/
+theorem ampTime_le {k : ℕ} (hk : 3 ≤ k) (n c L : ℕ) :
+    (ampTime k n c L : ℝ) ≤
+      900 * ((n + k + L + 1 : ℕ) : ℝ) ^ 3 * (2 * ((k : ℝ) - 1) / k) ^ n * (c + 1) := by
+  set r := (2 * ((k : ℝ) - 1) / k) ^ n with hr
+  obtain ⟨N, hN⟩ : ∃ N, n + k + L + 1 = N := ⟨_, rfl⟩
+  rw [hN]
+  have hk3 : (3 : ℝ) ≤ k := by exact_mod_cast hk
+  have hr1 : 1 ≤ r := one_le_pow₀ (by rw [le_div_iff₀ (by linarith)]; linarith)
+  have hR := schoeningTrials_le hk n c
+  rw [← hr] at hR
+  -- the setup
+  have hS : setupTime k n c + 9 * counterLen k n c + 45 ≤ 305 * N ^ 3 * (c + 1) := by
+    obtain ⟨m, hm⟩ : ∃ m, n + k = m := ⟨_, rfl⟩
+    have hℓ : counterLen k n c ≤ 6 * m ^ 2 + c := hm ▸ counterLen_le k n c
+    have h1 : setupTime k n c + 9 * counterLen k n c + 45 ≤
+        (m + 1) * (30 * counterLen k n c + 95) := by
+      simp only [setupTime, hm]; ring_nf; omega
+    have h2 : (m + 1) * (30 * counterLen k n c + 95) ≤ (m + 1) * (180 * m ^ 2 + 30 * c + 95) :=
+      Nat.mul_le_mul_left _ (by omega)
+    have h3 : (m + 1) * (180 * m ^ 2 + 30 * c + 95) ≤ 305 * (m + 1) ^ 3 * (c + 1) := by
+      ring_nf; omega
+    have h4 : (m + 1) ^ 3 ≤ N ^ 3 := Nat.pow_le_pow_left (by omega) 3
+    have h5 := Nat.mul_le_mul_right (c + 1) (Nat.mul_le_mul_left 305 h4)
+    omega
+  -- the trials
+  have hP : 9 * n + 4 ≤ 9 * (n + 1) ∧ 36 * n * L + 66 * n + 12 * L + 43 ≤ 66 * (n + 1) * (L + 1) :=
+    ⟨by omega, by ring_nf; omega⟩
+  have hPN : 9 * (n + 1) * (66 * (n + 1) * (L + 1)) ≤ 594 * N ^ 3 := by
+    have h1 : n + 1 ≤ N := by omega
+    have h2 : L + 1 ≤ N := by omega
+    have h3 : (n + 1) * (n + 1) * (L + 1) ≤ N * N * N :=
+      Nat.mul_le_mul (Nat.mul_le_mul h1 h1) h2
+    calc 9 * (n + 1) * (66 * (n + 1) * (L + 1)) = 594 * ((n + 1) * (n + 1) * (L + 1)) := by ring
+      _ ≤ 594 * (N * N * N) := Nat.mul_le_mul_left _ h3
+      _ = 594 * N ^ 3 := by ring
+  have hPr : ((36 * n * L + 66 * n + 12 * L + 43 : ℕ) : ℝ) ≤ 66 * (n + 1) * (L + 1) := by
+    exact_mod_cast hP.2
+  have hPN' : (9 * n + 4 : ℝ) * (66 * (n + 1) * (L + 1)) ≤ 594 * (N : ℝ) ^ 3 := by
+    have : ((9 * n + 4) * (66 * (n + 1) * (L + 1)) : ℕ) ≤ 594 * N ^ 3 :=
+      (Nat.mul_le_mul_right _ hP.1).trans hPN
+    exact_mod_cast this
+  have hSr : ((setupTime k n c + 9 * counterLen k n c + 45 : ℕ) : ℝ) ≤
+      305 * (N : ℝ) ^ 3 * (c + 1) := by
+    exact_mod_cast hS
+  have hexp : (ampTime k n c L : ℝ) =
+      (schoeningTrials k n c : ℝ) * ((36 * n * L + 66 * n + 12 * L + 43 : ℕ) : ℝ) +
+        ((setupTime k n c + 9 * counterLen k n c + 45 : ℕ) : ℝ) := by
+    simp only [ampTime]; push_cast; ring
+  have hT : (schoeningTrials k n c : ℝ) * ((36 * n * L + 66 * n + 12 * L + 43 : ℕ) : ℝ) ≤
+      (9 * n + 4) * r * c * (66 * (n + 1) * (L + 1)) :=
+    mul_le_mul hR hPr (Nat.cast_nonneg _) (by positivity)
+  have hN0 : (0 : ℝ) ≤ (N : ℝ) ^ 3 := by positivity
+  have hc0 : (0 : ℝ) ≤ c := Nat.cast_nonneg c
+  rw [hexp]
+  nlinarith [mul_le_mul_of_nonneg_right hPN' (mul_nonneg (by linarith : (0 : ℝ) ≤ r) hc0),
+    mul_le_mul_of_nonneg_left hr1 (mul_nonneg hN0 (by linarith : (0 : ℝ) ≤ c + 1))]
 
 /-! ### The setup -/
 

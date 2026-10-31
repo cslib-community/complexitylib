@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Complexity.Algorithms.WordRAM.Schoening.Counter
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
 # The trial count of Schöning's algorithm
@@ -42,6 +43,8 @@ this quotient of natural numbers.
   `schoeningTrials k n c`.
 * `Cslib.Algorithms.WordRAM.Schoening.length_counterDigits_le`: there are at most
   `counterLen k n c = O((n + k) log (n + k) + log c)` of them.
+* `Cslib.Algorithms.WordRAM.Schoening.schoeningTrials_le`: the trial count is at most
+  `(9 n + 4) (2 (k - 1) / k) ^ n c`.
 
 ## References
 
@@ -284,6 +287,59 @@ theorem length_stages_le (k n c : ℕ) :
       (mulAddDigits 0 (3 * n + 1) []))).length ≤ (counterDigits k n c).length := fun i hi =>
     (length_iterate_mono (hm _) hi _).trans (h3 0 (Nat.zero_le _))
   exact ⟨fun i hi => (length_iterate_mono (hm _) hi _).trans (h2 0 (Nat.zero_le _)), h2, h3, h4⟩
+
+/-! ### Size bounds -/
+
+/-- `(k / (k - 1)) ^ (k - 3) ≤ 3` for `k ≥ 3`: the constant factor of the trial count. -/
+theorem div_sub_one_pow_le_three {k : ℕ} (hk : 3 ≤ k) :
+    ((k : ℝ) / ((k : ℝ) - 1)) ^ (k - 3) ≤ 3 := by
+  have hk3 : (3 : ℝ) ≤ k := by exact_mod_cast hk
+  have hk1 : (0 : ℝ) < (k : ℝ) - 1 := by linarith
+  have h1 : (k : ℝ) / ((k : ℝ) - 1) = 1 / ((k : ℝ) - 1) + 1 := by field_simp; ring
+  have hcast : ((k - 3 : ℕ) : ℝ) = (k : ℝ) - 3 := by rw [Nat.cast_sub hk]; norm_num
+  calc ((k : ℝ) / ((k : ℝ) - 1)) ^ (k - 3) ≤ Real.exp (1 / ((k : ℝ) - 1)) ^ (k - 3) := by
+        rw [h1]
+        exact pow_le_pow_left₀ (by positivity) (Real.add_one_le_exp _) _
+    _ = Real.exp ((k - 3 : ℕ) * (1 / ((k : ℝ) - 1))) := by rw [Real.exp_nat_mul]
+    _ ≤ Real.exp 1 := by
+        rw [Real.exp_le_exp, hcast, ← mul_div_assoc, mul_one, div_le_one hk1]
+        linarith
+    _ ≤ 3 := Real.exp_one_lt_three.le
+
+/-- **The size of the trial count**: at most `(9 n + 4) (2 (k - 1) / k) ^ n c`. -/
+theorem schoeningTrials_le {k : ℕ} (hk : 3 ≤ k) (n c : ℕ) :
+    (schoeningTrials k n c : ℝ) ≤ (9 * n + 4) * (2 * ((k : ℝ) - 1) / k) ^ n * c := by
+  have hk3 : (3 : ℝ) ≤ k := by exact_mod_cast hk
+  have hr : 1 ≤ 2 * ((k : ℝ) - 1) / k := by
+    rw [le_div_iff₀ (by linarith)]
+    linarith
+  have hrn : 1 ≤ (2 * ((k : ℝ) - 1) / k) ^ n := one_le_pow₀ hr
+  have hq := div_sub_one_pow_le_three hk
+  have hq0 : 0 ≤ ((k : ℝ) / ((k : ℝ) - 1)) ^ (k - 3) := by
+    apply pow_nonneg; apply div_nonneg <;> linarith
+  set A := (3 * n + 1 : ℝ) * (2 * ((k : ℝ) - 1) / k) ^ n * ((k : ℝ) / ((k : ℝ) - 1)) ^ (k - 3)
+  have hA0 : 0 ≤ A := by positivity
+  have hA : A ≤ 3 * (3 * n + 1) * (2 * ((k : ℝ) - 1) / k) ^ n := by
+    have : (3 * n + 1 : ℝ) * (2 * ((k : ℝ) - 1) / k) ^ n * ((k : ℝ) / ((k : ℝ) - 1)) ^ (k - 3) ≤
+        (3 * n + 1 : ℝ) * (2 * ((k : ℝ) - 1) / k) ^ n * 3 :=
+      mul_le_mul_of_nonneg_left hq (by positivity)
+    linarith
+  have hceil : (⌈A⌉₊ : ℝ) ≤ (9 * n + 4) * (2 * ((k : ℝ) - 1) / k) ^ n := by
+    have := Nat.ceil_lt_add_one hA0
+    nlinarith
+  rw [schoeningTrials]
+  push_cast
+  exact mul_le_mul_of_nonneg_right hceil (Nat.cast_nonneg c)
+
+/-- The number of counter digits is at most `6 (n + k) ^ 2 + c`. -/
+theorem counterLen_le (k n c : ℕ) : counterLen k n c ≤ 6 * (n + k) ^ 2 + c := by
+  have h1 : (Nat.digits 2 (3 * n + 2 * k)).length ≤ 3 * n + 2 * k :=
+    (Nat.digits_length_le_iff (by decide) _).mpr Nat.lt_two_pow_self
+  have h2 : (Nat.digits 2 c).length ≤ c := (Nat.digits_length_le_iff (by decide) _).mpr
+    Nat.lt_two_pow_self
+  have h3 := Nat.mul_le_mul_left (2 * n + 2 * k) h1
+  rw [counterLen]
+  nlinarith
 
 end Cslib.Algorithms.WordRAM.Schoening
 
