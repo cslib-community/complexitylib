@@ -885,6 +885,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Binarize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildEntries
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildNumbering
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildCursor
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffScheme
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Constraint
@@ -2043,6 +2044,7 @@ public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidence
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
 public import Complexity.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceStepCert
 public import Complexity.Computability.PolyTime.BooleanAnalysis.SparsePolyCounter
+public import Complexity.Computability.PolyTime.BudgetTuples
 public import Complexity.Computability.PolyTime.CNF.BranchedSparseCNFCounter
 public import Complexity.Computability.PolyTime.CNF.GreedyParityContext
 public import Complexity.Computability.PolyTime.CNF.GreedyParitySearch
@@ -2586,6 +2588,7 @@ public import Complexity.Foundations.Combinatorics.AffineDisperser.IndependentSo
 public import Complexity.Foundations.Combinatorics.AffineDisperser.Threshold
 public import Complexity.Foundations.Combinatorics.BalancedSchedules
 public import Complexity.Foundations.Combinatorics.BinomialTail
+public import Complexity.Foundations.Combinatorics.BudgetTuples
 public import Complexity.Foundations.Combinatorics.CentralBinomial
 public import Complexity.Foundations.Combinatorics.DepthReduction
 public import Complexity.Foundations.Combinatorics.Expander.AffineFamily
