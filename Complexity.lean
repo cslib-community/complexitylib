@@ -15,6 +15,9 @@ public import Complexity.Algorithms.Lean.CuckooHashing
 public import Complexity.Algorithms.Lean.Dictionary
 public import Complexity.Algorithms.Lean.DisjointSet
 public import Complexity.Algorithms.Lean.DisjointSet.UnionFind
+public import Complexity.Algorithms.Lean.FenwickTree.Basic
+public import Complexity.Algorithms.Lean.FenwickTree.Lowbit
+public import Complexity.Algorithms.Lean.FenwickTree.Stateful
 public import Complexity.Algorithms.Lean.FusionTree.Capacity
 public import Complexity.Algorithms.Lean.FusionTree.Compression
 public import Complexity.Algorithms.Lean.FusionTree.Correction
@@ -23,8 +26,21 @@ public import Complexity.Algorithms.Lean.FusionTree.Routing
 public import Complexity.Algorithms.Lean.FusionTree.Sketch
 public import Complexity.Algorithms.Lean.FusionTree.Tree
 public import Complexity.Algorithms.Lean.FusionTree.XorCorrection
+public import Complexity.Algorithms.Lean.Huffman.Basic
+public import Complexity.Algorithms.Lean.Huffman.Kraft
+public import Complexity.Algorithms.Lean.Huffman.Optimality
+public import Complexity.Algorithms.Lean.Huffman.TwoQueue
 public import Complexity.Algorithms.Lean.IndexedMinPQ
+public import Complexity.Algorithms.Lean.KMP.Basic
+public import Complexity.Algorithms.Lean.KMP.Search
 public import Complexity.Algorithms.Lean.MinPQ
+public import Complexity.Algorithms.Lean.Online.Basic
+public import Complexity.Algorithms.Lean.Paging.Basic
+public import Complexity.Algorithms.Lean.Paging.LRU
+public import Complexity.Algorithms.Lean.Paging.LowerBound
+public import Complexity.Algorithms.Lean.Query.Submodular.Greedy
+public import Complexity.Algorithms.Lean.Query.Submodular.LowerBound
+public import Complexity.Algorithms.Lean.Query.Submodular.ValueQuery
 public import Complexity.Algorithms.Lean.Queue
 public import Complexity.Algorithms.Lean.Retroactive
 public import Complexity.Algorithms.Lean.SearchTree.Basic
@@ -35,6 +51,8 @@ public import Complexity.Algorithms.Lean.Sort.Bitonic.Basic
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Correctness
 public import Complexity.Algorithms.Lean.Sort.Bitonic.Trace
 public import Complexity.Algorithms.Lean.Sort.Bitonic.ZeroOne
+public import Complexity.Algorithms.Lean.Submodular.Basic
+public import Complexity.Algorithms.Lean.Submodular.Greedy
 public import Complexity.Algorithms.Lean.UniformProbing
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Basic
 public import Complexity.Algorithms.Lean.VanEmdeBoas.Elements
@@ -375,6 +393,7 @@ public import Complexity.Algorithms.WordRAM.NatGcd
 public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Algorithms.WordRAM.NatNthRoot
 public import Complexity.Algorithms.WordRAM.NatSqrt
+public import Complexity.Algorithms.WordRAM.PPZ.Forced
 public import Complexity.Algorithms.WordRAM.PrefixSums.Dynamic
 public import Complexity.Algorithms.WordRAM.PrefixSums.Query
 public import Complexity.Algorithms.WordRAM.PrefixSums.Tree
@@ -406,8 +425,10 @@ public import Complexity.Algorithms.WordRAM.RadixSort.Model
 public import Complexity.Algorithms.WordRAM.RadixSort.Program
 public import Complexity.Algorithms.WordRAM.RadixSort.Scan
 public import Complexity.Algorithms.WordRAM.Schoening.Amplify
+public import Complexity.Algorithms.WordRAM.Schoening.Counter
 public import Complexity.Algorithms.WordRAM.Schoening.Scan
 public import Complexity.Algorithms.WordRAM.Schoening.Trial
+public import Complexity.Algorithms.WordRAM.Schoening.TrialCount
 public import Complexity.Algorithms.WordRAM.Stack
 public import Complexity.Algorithms.WordRAM.Stack.Controller
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
@@ -886,6 +907,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Binarize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CauchyModes
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildCursor
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildNumbering
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ChildSize
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.CoeffScheme
@@ -967,6 +989,7 @@ public import Complexity.Computability.Circuit.Quantum.Classical
 public import Complexity.Computability.Circuit.Quantum.Code
 public import Complexity.Computability.Circuit.Quantum.Counter
 public import Complexity.Computability.Circuit.Quantum.Parallel
+public import Complexity.Computability.Circuit.Quantum.PathSum
 public import Complexity.Computability.Circuit.Quantum.Reversible
 public import Complexity.Computability.Circuit.Quantum.Uniform
 public import Complexity.Computability.Circuit.Rational
@@ -1031,6 +1054,7 @@ public import Complexity.Computability.Communication.Lifting.Partition
 public import Complexity.Computability.Communication.Lifting.Simulation
 public import Complexity.Computability.Communication.Newman
 public import Complexity.Computability.Communication.Nondeterministic.Basic
+public import Complexity.Computability.Communication.Nondeterministic.Functions
 public import Complexity.Computability.Communication.Operations
 public import Complexity.Computability.Communication.Protocol
 public import Complexity.Computability.Communication.Randomized
@@ -1078,6 +1102,7 @@ public import Complexity.Computability.Complexity.Classes.BPPpath
 public import Complexity.Computability.Complexity.Classes.BQP
 public import Complexity.Computability.Complexity.Classes.BQP.Amplification
 public import Complexity.Computability.Complexity.Classes.BQP.Classical
+public import Complexity.Computability.Complexity.Classes.BQP.Counting
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Closure
 public import Complexity.Computability.Complexity.Classes.BooleanHierarchy.Kadin
@@ -1247,9 +1272,11 @@ public import Complexity.Computability.Complexity.Classes.Space.TQBF.Prenex
 public import Complexity.Computability.Complexity.Classes.Space.TQBF.Reduction
 public import Complexity.Computability.Complexity.Classes.Space.Time
 public import Complexity.Computability.Complexity.Classes.Sparse
+public import Complexity.Computability.Complexity.Classes.Sparse.Conjunctive
 public import Complexity.Computability.Complexity.Classes.Sparse.Fortune
 public import Complexity.Computability.Complexity.Classes.Sparse.Mahaney
 public import Complexity.Computability.Complexity.Classes.Sparse.OneQuery
+public import Complexity.Computability.Complexity.Classes.Sparse.Prune
 public import Complexity.Computability.Complexity.Classes.TFNP
 public import Complexity.Computability.Complexity.Classes.TFNP.SearchToDecision
 public import Complexity.Computability.Complexity.Classes.TFNP.Subclasses
@@ -1331,6 +1358,7 @@ public import Complexity.Computability.Complexity.FineGrained.PPSZ.Limit
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Placement
 public import Complexity.Computability.Complexity.FineGrained.PPSZ.Unique
 public import Complexity.Computability.Complexity.FineGrained.PPZ
+public import Complexity.Computability.Complexity.FineGrained.PPZ.LazyOrder
 public import Complexity.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import Complexity.Computability.Complexity.FineGrained.Reduction
 public import Complexity.Computability.Complexity.FineGrained.ReplacementParams
@@ -1422,6 +1450,7 @@ public import Complexity.Computability.Complexity.Problems.SAT.ExactOne.Geometry
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Compact
 public import Complexity.Computability.Complexity.Problems.SAT.Incidence.Degree
+public import Complexity.Computability.Complexity.Problems.SAT.LeftSet
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayout
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayoutChecks
 public import Complexity.Computability.Complexity.Problems.SAT.Planar.CrossoverLayoutData
@@ -1517,6 +1546,7 @@ public import Complexity.Computability.GenericRAM.Native.IndexFold
 public import Complexity.Computability.GenericRAM.Native.MeasurementFold
 public import Complexity.Computability.GenericRAM.Native.Nat
 public import Complexity.Computability.GenericRAM.Native.StackRecursion
+public import Complexity.Computability.GenericRAM.Native.StackRecursionTree
 public import Complexity.Computability.GenericRAM.Native.SubsetPairFold
 public import Complexity.Computability.GenericRAM.Signed
 public import Complexity.Computability.GenericRAM.Signed.Fits

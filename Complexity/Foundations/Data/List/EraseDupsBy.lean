@@ -25,6 +25,8 @@ certify it.
 
 * `List.eraseDupsBy_eq_foldl`: `eraseDupsBy` as a left fold.
 * `List.eraseDupsBy_sublist`, `List.pairwise_eraseDupsBy`, `List.exists_mem_eraseDupsBy`.
+* `List.nodup_eraseDupsBy_eq`, `List.mem_eraseDupsBy_eq`: erasing duplicates by equality keeps
+  one copy of each entry.
 -/
 
 @[expose] public section
@@ -85,5 +87,23 @@ theorem exists_mem_eraseDupsBy : ∀ {l : List α} {a : α}, a ∈ l →
         exact ⟨b, mem_cons_of_mem _ hb, hab⟩
       · exact ⟨c, mem_cons_self .., .inr hrc⟩
 termination_by l => l.length
+
+section Eq
+
+variable [DecidableEq α]
+
+/-- Erasing duplicates by equality leaves no duplicates. -/
+theorem nodup_eraseDupsBy_eq (l : List α) : (l.eraseDupsBy fun a b => decide (a = b)).Nodup :=
+  (pairwise_eraseDupsBy l).imp fun h => by simpa [eq_comm] using h
+
+/-- Erasing duplicates by equality keeps every entry. -/
+theorem mem_eraseDupsBy_eq {l : List α} {a : α} :
+    a ∈ l.eraseDupsBy (fun a b => decide (a = b)) ↔ a ∈ l := by
+  refine ⟨fun h => (eraseDupsBy_sublist l).subset h, fun h => ?_⟩
+  obtain ⟨b, hb, rfl | hab⟩ := exists_mem_eraseDupsBy (r := fun a b => decide (a = b)) h
+  · exact hb
+  · rwa [of_decide_eq_true hab]
+
+end Eq
 
 end List

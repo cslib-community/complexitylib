@@ -111,23 +111,43 @@ abbrev ScheduleParams : Type := (ℕ × ℕ × ℕ) × (ℕ × ℕ) × List (ℕ
 def pendingSlotOfState
     (state : ℕ × (ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ))))) :
     Option (Bool × ℕ) :=
-  (slotOfIndex state.2.1.1.1 state.2.1.1.2.1 state.1).elim none fun slot =>
-    if (readSlotSchedule slot state.2.2).isSome then none else some slot
+  let s := state.1
+  let acc := state.2
+  let p := acc.1
+  let scheds := acc.2
+  let nmQ := p.1
+  let n := nmQ.1
+  let mQ := nmQ.2
+  let m := mQ.1
+  (slotOfIndex n m s).elim none fun slot =>
+    if (readSlotSchedule slot scheds).isSome then none else some slot
 
 /-- Outer `IndexFold.run` callback fixing unassigned slot `s < n + m` via `streamBestSlotLabel`. -/
 def greedySlotStepBody
     (state : ℕ × (ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ))))) :
     ScheduleParams × (List (Option (List ℕ)) × List (Option (List ℕ))) :=
-  (pendingSlotOfState state).elim state.2 fun slot =>
-    let p := state.2.1
-    let chosen := streamBestSlotLabel p.1.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2 state.2.2 slot
-    (p, updateSlotSchedules slot (some chosen) state.2.2)
+  let acc := state.2
+  let p := acc.1
+  let scheds := acc.2
+  (pendingSlotOfState state).elim acc fun slot =>
+    let nmQ := p.1
+    let n := nmQ.1
+    let mQ := nmQ.2
+    let Q := mQ.2
+    let rC_edges := p.2
+    let rC := rC_edges.1
+    let r := rC.1
+    let C := rC.2
+    let edges := rC_edges.2
+    let chosen := streamBestSlotLabel n Q r C edges scheds slot
+    (p, updateSlotSchedules slot (some chosen) scheds)
 
 /-- Full `(n + m)`-slot greedy partial-schedule pass implemented with `IndexFold.run`. -/
 def greedySchedulePass (n m Q r C : ℕ) (edges : List (ℕ × ℕ)) :
     List (Option (List ℕ)) × List (Option (List ℕ)) :=
-  (IndexFold.run greedySlotStepBody (n + m)
-    (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2.2
+  let acc := (IndexFold.run greedySlotStepBody (n + m)
+    (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2
+  acc.2
 
 /-- Replace schedules of empty-scope factors (`∀ e ∈ edges, e.1 ≠ f`) with `List.replicate Q 0`. -/
 def normalizeEmptyFactorSchedules (Q : ℕ) (edges : List (ℕ × ℕ))
@@ -157,8 +177,9 @@ private theorem run_greedySlotStepBody_params (params : ScheduleParams)
 /-- Outer-loop prefix invariant: at every slot prefix `s`, `varSched` has length `n`, `facSched`
 has length `m`, and every assigned word has length `Q` with digits `< max r 1`. -/
 theorem run_greedySlotStepBody_wf (n m Q r C : ℕ) (edges : List (ℕ × ℕ)) (s : ℕ) :
-    let scheds := (IndexFold.run greedySlotStepBody s
-      (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2.2
+    let acc := (IndexFold.run greedySlotStepBody s
+      (((n, m, Q), (r, C), edges), (List.replicate n none, List.replicate m none))).2
+    let scheds := acc.2
     scheds.1.length = n ∧ scheds.2.length = m ∧
       (∀ o ∈ scheds.1, ∀ w, o = some w → w.length = Q ∧ ∀ x ∈ w, x < max r 1) ∧
       (∀ o ∈ scheds.2, ∀ w, o = some w → w.length = Q ∧ ∀ x ∈ w, x < max r 1) := by
@@ -719,10 +740,11 @@ private theorem scheduleParams_parts_le (p : ScheduleParams) :
 
 /-- Unconditional all-prefix live-state bit-length bound for the outer `(n + m)`-slot
 `IndexFold.run` loop in terms of input bit length `L = |encScheduleParams p|`. -/
-theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ} (hs : s ≤ p.1.1 + p.1.2.1) :
+theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ}
+    (hs : let ((n, m, _), _) := p; s ≤ n + m) :
     (encPair encNat encOuterAcc
       (IndexFold.run greedySlotStepBody s
-        (p, (List.replicate p.1.1 none, List.replicate p.1.2.1 none)))).length ≤
+        (let ((n, m, _), _) := p; (p, (List.replicate n none, List.replicate m none))))).length ≤
       8 * (encScheduleParams p).length ^ 3 + 4 * (encScheduleParams p).length ^ 2 +
         10 * (encScheduleParams p).length + 3 := by
   let L := (encScheduleParams p).length; have hparts := scheduleParams_parts_le p
@@ -750,7 +772,7 @@ theorem length_encOuterState_run_le (p : ScheduleParams) {s : ℕ} (hs : s ≤ p
 
 /-- `slotOfIndex` is computable in polynomial time. -/
 @[fun_prop] theorem computableInPolyTime_slotOfIndex :
-    ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => slotOfIndex p.1.1 p.1.2 p.2)
+    ComputableInPolyTime (fun ((n, m), s) => slotOfIndex n m s)
       (encPair (encPair encUnary encUnary) encNat) (encOption (encPair encBool encUnary)) := by
   let eIn := encPair (encPair encUnary encUnary) encNat
   have hsCap : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => min (p.1.1 + p.1.2) p.2)
@@ -938,7 +960,7 @@ private noncomputable def mkConstructCert
 /-- Uniform native machine certificate for `greedySchedulePass`. -/
 noncomputable def greedySchedulePassCertificate :
     NativeCertificate
-      (fun p : ScheduleParams => greedySchedulePass p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+      (fun ((n, m, Q), (r, C), edges) => greedySchedulePass n m Q r C edges)
       encScheduleParams encPartialSchedules :=
   NativeCertificate.snd (mkOuterAccCert
     (NativeCertificate.ofPolyTime computableInPolyTime_outerCount)
@@ -949,8 +971,8 @@ noncomputable def greedySchedulePassCertificate :
 Lemma 4.5, p. 31). -/
 noncomputable def constructBalancedSchedulesCertificate :
     NativeCertificate
-      (fun p : ScheduleParams =>
-        constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+      (fun ((n, m, Q), (r, C), edges) =>
+        constructBalancedSchedules n m Q r C edges)
       encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) :=
   mkConstructCert
     (mkOuterAccCert
@@ -1195,8 +1217,10 @@ private theorem mkOuterAccCert_bounds
 `O((r ^ Q + 1) * poly(|input|))` native time and polynomial workspace. -/
 theorem greedySchedulePassCertificate_bounds :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧ Monotone poly ∧
-      ∀ p : ScheduleParams, greedySchedulePassCertificate.time p ≤
-          (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length ∧
+      ∀ p : ScheduleParams,
+        let ((_, _, Q), (r, _), _) := p
+        greedySchedulePassCertificate.time p ≤
+          (r ^ Q + 1) * poly (encScheduleParams p).length ∧
         greedySchedulePassCertificate.space p ≤ poly (encScheduleParams p).length := by
   obtain ⟨cC, dC, hCnt⟩ := ofPolyTime_exists_bound computableInPolyTime_outerCount
   obtain ⟨cI, dI, hInit⟩ := ofPolyTime_exists_bound computableInPolyTime_outerInit
@@ -1213,9 +1237,9 @@ workspace. -/
 theorem computableInO_greedySchedulePass :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
-        (fun p : ScheduleParams => greedySchedulePass p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+        (fun ((n, m, Q), (r, C), edges) => greedySchedulePass n m Q r C edges)
         encScheduleParams encPartialSchedules
-        (fun p => (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length)
+        (fun p => let ((_, _, Q), (r, _), _) := p; (r ^ Q + 1) * poly (encScheduleParams p).length)
         (fun p => poly (encScheduleParams p).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := greedySchedulePassCertificate_bounds
   exact ⟨poly, hpoly, greedySchedulePassCertificate.computes.mono_le
@@ -1224,7 +1248,7 @@ theorem computableInO_greedySchedulePass :
 /-- `greedySchedulePass` runs in polynomial workspace (`ComputableInPolySpace`). -/
 theorem computableInPolySpace_greedySchedulePass :
     ComputableInPolySpace
-      (fun p : ScheduleParams => greedySchedulePass p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+      (fun ((n, m, Q), (r, C), edges) => greedySchedulePass n m Q r C edges)
       encScheduleParams encPartialSchedules := by
   obtain ⟨poly, hpoly, c, hc, hl⟩ := computableInO_greedySchedulePass
   exact ⟨_, fun n => c * (poly n + 1), by fun_prop, hc, hl⟩
@@ -1278,8 +1302,10 @@ private theorem mkConstructCert_bounds
 `constructBalancedSchedulesCertificate` ([OpenAI2026ETH], Lemma 4.5, pp. 30–31). -/
 theorem constructBalancedSchedulesCertificate_bounds :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧ Monotone poly ∧
-      ∀ p : ScheduleParams, constructBalancedSchedulesCertificate.time p ≤
-          (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length ∧
+      ∀ p : ScheduleParams,
+        let ((_, _, Q), (r, _), _) := p
+        constructBalancedSchedulesCertificate.time p ≤
+          (r ^ Q + 1) * poly (encScheduleParams p).length ∧
         constructBalancedSchedulesCertificate.space p ≤ poly (encScheduleParams p).length := by
   obtain ⟨pPass, hpPass, hmPass, hPass⟩ := greedySchedulePassCertificate_bounds
   obtain ⟨cFinal, dFinal, hFinal⟩ :=
@@ -1292,10 +1318,10 @@ and polynomial workspace. For valid incidence endpoints, this gives
 theorem computableInO_constructBalancedSchedules :
     ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
       ComputableInO
-        (fun p : ScheduleParams =>
-          constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+        (fun ((n, m, Q), (r, C), edges) =>
+          constructBalancedSchedules n m Q r C edges)
         encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat)))
-        (fun p => (p.2.1.1 ^ p.1.2.2 + 1) * poly (encScheduleParams p).length)
+        (fun p => let ((_, _, Q), (r, _), _) := p; (r ^ Q + 1) * poly (encScheduleParams p).length)
         (fun p => poly (encScheduleParams p).length) := by
   obtain ⟨poly, hpoly, _, hB⟩ := constructBalancedSchedulesCertificate_bounds
   exact ⟨poly, hpoly, constructBalancedSchedulesCertificate.computes.mono_le
@@ -1305,8 +1331,8 @@ theorem computableInO_constructBalancedSchedules :
 materializing `r ^ Q` candidate words. -/
 theorem computableInPolySpace_constructBalancedSchedules :
     ComputableInPolySpace
-      (fun p : ScheduleParams =>
-        constructBalancedSchedules p.1.1 p.1.2.1 p.1.2.2 p.2.1.1 p.2.1.2 p.2.2)
+      (fun ((n, m, Q), (r, C), edges) =>
+        constructBalancedSchedules n m Q r C edges)
       encScheduleParams (encPair (encList (encList encNat)) (encList (encList encNat))) := by
   obtain ⟨poly, hpoly, c, hc, hl⟩ := computableInO_constructBalancedSchedules
   exact ⟨_, fun n => c * (poly n + 1), by fun_prop, hc, hl⟩
