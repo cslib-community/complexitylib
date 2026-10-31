@@ -251,10 +251,10 @@ theorem computableInO_timeDiagonal {J : ℕ → ℕ} (hJ : TimeConstructible J) 
   have this : ComputableTidilyInO (timeDiagonal J) encBits encBool
       (fun x => (x.length + 1) ^ 5 * (J x.length + 1) ^ 3) fun x => (x.length + 1) ^ 5 *
       (J x.length + 1) ^ 3 := by
-    obtain ⟨dd, ed, hdec⟩ := exists_computableTidilyInDegree_decodeDesc
+    obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
     have hu : ComputableTidilyInO unframe encBits encBits (fun x => x.length) fun x => x.length :=
       ComputableTidilyInO.of_linear (.of_unframe fun _ => rfl)
-    have hdesc := hdec.inO.comp hu
+    have hdesc := hdec.inO.tidy.comp hu
     have hsym := Universal.computableTidilyInDegree_map_eBit.inO_one
     have hclock := hJ.computableInO.tidy
     have hU := computableTidilyInO_universal.comp (hdesc.prod (hsym.prod hclock))

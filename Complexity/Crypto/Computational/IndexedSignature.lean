@@ -25,7 +25,7 @@ An indexed signature scheme ([BonehShoup2023], Definition 14.6) signs pairs `(u,
 `u < q` and a message. Its security game lets the adversary choose the indices of its signing
 queries, but never the same index twice; it wins with a valid signature on any pair `(u, msg)` it
 never had signed. An indexed scheme is what a stateful signer that never reuses an index needs:
-Merkle's tree signature uses the index of the next unused leaf ([Merkle1989], Section 6;
+Merkle's tree signature uses the index of the next unused leaf ([Merkle1989], Sections 6–7;
 [BonehShoup2023], Section 14.6.4, where the index is a nonce). The index is an explicit input, so
 the syntax is stateless; the state is the signer's obligation never to repeat an index, which the
 game enforces.
@@ -67,7 +67,7 @@ every word with the total decoder `requestDecoder`.
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
   Section 14.6.1 (Definition 14.6) and Section 14.6.4.
-* [R. C. Merkle, *A Certified Digital Signature*][Merkle1989], Section 6.
+* [R. C. Merkle, *A Certified Digital Signature*][Merkle1989], Sections 6–7.
 -/
 
 @[expose] public section
