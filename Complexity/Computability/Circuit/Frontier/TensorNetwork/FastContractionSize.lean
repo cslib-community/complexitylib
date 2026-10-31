@@ -180,7 +180,8 @@ theorem length_encList_le_of_reducedAt {p : ℕ} {fl c : List ℕ} (h : ReducedA
     ((h.2 z hz).trans_lt (Nat.pow_lt_pow_right (by norm_num) (Nat.lt_succ_self p)))
 
 /-- **The values of the calls are reduced** at their precision, for every child builder. -/
-theorem reducedAt_value (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc) (x : Call) :
+theorem reducedAt_value (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc)
+    (x : Call) :
     ReducedAt x.prec x.fl (value mk x) := by
   cases ha : active x
   · rw [value_of_not_active mk ha]
@@ -190,7 +191,8 @@ theorem reducedAt_value (mk : Call → ChildCursor.State → ℕ × DescribedNet
     set W := table x (runLoop x fun c => value mk (child x mk c)).2.2
     have hfold : ∀ (l : List ℕ) (S : List ℕ), ReducedAt (x.prec + shift x) x.fl S →
         ReducedAt (x.prec + shift x) x.fl (l.foldl (fun S k => if k = 2 ^ slots x then S else
-          GaloisRingArith.add (x.prec + shift x) x.fl S (NativeRecovery.nodeTerm (x.prec + shift x) x.fl
+          GaloisRingArith.add (x.prec + shift x) x.fl S
+            (NativeRecovery.nodeTerm (x.prec + shift x) x.fl
             (slots x) (levels x) (step x) (shift x) (points x) k (W.getD k []))) S) := by
       intro l
       induction l with
@@ -211,7 +213,8 @@ theorem reducedAt_value (mk : Call → ChildCursor.State → ℕ × DescribedNet
     exact Nat.le_of_lt_succ (Nat.lt_succ_of_le (Nat.div_le_of_le_mul (by linarith)))
 
 /-- **The encoded length of a tagged value** of a call. -/
-theorem length_encValue_le (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc) (x : Call) :
+theorem length_encValue_le (mk : Call → ChildCursor.State → ℕ × DescribedNetwork VertexDesc)
+    (x : Call) :
     (encValue (x.depth, value mk x)).length ≤
       2 * x.depth + 1 + x.fl.length * (2 * (x.prec + 1) + 1) := by
   rw [length_encPair, encUnary_apply, List.length_replicate]
