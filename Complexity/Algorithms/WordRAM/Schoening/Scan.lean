@@ -181,8 +181,6 @@ abbrev cnt : Fin 24 := 17
 abbrev steps : Fin 24 := 18
 /-- Output. -/
 abbrev out : Fin 24 := 19
-/-- Remaining trials of the amplified algorithm. -/
-abbrev rem : Fin 24 := 20
 
 end Reg
 

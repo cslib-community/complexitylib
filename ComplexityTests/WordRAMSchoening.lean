@@ -6,9 +6,9 @@ Authors: Samuel Schlesinger
 
 import Complexity.Algorithms.WordRAM.Schoening.Amplify
 
-/-! Schöning's algorithm on the randomized word RAM: the encoding of a small 3-CNF, a concrete
-run of the deterministic scan, and the hypotheses of the trial and amplification theorems at word
-size `16`. -/
+/-! Schöning's algorithm on the randomized word RAM: the encoding of a small 3-CNF, concrete runs
+of the deterministic scan and of the multiword counter, the trial count, and the hypotheses of the
+trial and amplification theorems at small word sizes. -/
 
 namespace ComplexityTests.WordRAMSchoening
 
@@ -57,19 +57,66 @@ example : trialTime 3 (encode φ).length = 1177 := by decide
 -- Zero trials never succeed.
 example : repeatTrial φ 0 = PMF.pure false := rfl
 
-/-- `⌈10 (4 / 3) ^ 3⌉ = 24` trials for confidence `1` on three variables. -/
-theorem schoeningTrials_three : schoeningTrials 3 3 1 ≤ 30 := by
-  rw [schoeningTrials, mul_one, Nat.ceil_le]
-  norm_num
+/-! The multiword counter on concrete digits. -/
 
--- On the satisfiable `φ`, `schoeningTrials 3 3 1` trials fail with probability at most `e⁻¹`.
-example : ((evalRand 16 ampProgram (ampTime (schoeningTrials 3 3 1) 3
-        (schoeningTrials 3 3 1 :: encode φ).length)
-      (.init (schoeningTrials 3 3 1 :: encode φ))).map cfgSuccess false).toReal ≤
-      Real.exp (-1) := by
-  have hR : Fits 16 (schoeningTrials 3 3 1) :=
-    (show Fits 16 30 by decide).of_le schoeningTrials_three
-  simpa using ampProgram_failure_le_exp (k := 3) (c := 1) le_rfl φ_satisfiable φ_three
-    (w := 16) (by simp only [List.length_cons]; decide) hR
+/-- A counter of value `5`, digits `[1, 0, 1]` at address `10`, with multiplier `3`, carry `1`
+and divisor `3`. -/
+def counter5 : Data 24 where
+  regs i := if i = Reg.one then 1 else if i = Reg.bBase then 10 else if i = Reg.bLen then 3
+    else if i = Reg.mulr then 3 else if i = Reg.carry then 1 else if i = Reg.dvs then 3 else 0
+  mem a := if a = 10 then 1 else if a = 12 then 1 else 0
+
+-- `5 · 3 + 1 = 16`: two digits are appended (the bound of `mulAdd_spec` is `10 · 5 + 5 = 55`).
+example : (mulAdd.eval 16 8 counter5).map
+    (fun z => (z.1.regs Reg.bLen, (List.range 5).map fun i => z.1.mem (10 + i), z.2)) =
+    some (5, [0, 0, 0, 0, 1], 49) := by
+  decide
+
+example : mulAddDigits 3 1 [1, 0, 1] = [0, 0, 0, 0, 1] := by decide
+
+/-- A counter of value `16`, digits `[0, 0, 0, 0, 1]`. -/
+def counter16 : Data 24 :=
+  { counter5 with
+    regs := fun i => if i = Reg.bLen then 5 else counter5.regs i
+    mem := fun a => if a = 14 then 1 else 0 }
+
+-- `⌊16 / 3⌋ = 5` with remainder `1`, in exactly the `10 · 5 + 4` instructions of
+-- `divFloor_spec`.
+example : (divFloor.eval 16 8 counter16).map
+    (fun z => ((List.range 5).map fun i => z.1.mem (10 + i), z.1.regs Reg.rmd, z.2)) =
+    some ([1, 0, 1, 0, 0], 1, 54) := by
+  decide
+
+-- `16 - 1 = 15`: the decrement reads all five digits and reports a nonzero counter.
+example : (decCounter.eval 16 8 counter16).map
+    (fun z => ((List.range 5).map fun i => z.1.mem (10 + i), z.1.regs Reg.found)) =
+    some ([1, 1, 1, 1, 0], 1) := by
+  decide
+
+-- A zero counter is reported as zero.
+example : (decCounter.eval 16 8 { counter16 with mem := fun _ => 0 }).map
+    (fun z => z.1.regs Reg.found) = some 0 := by
+  decide
+
+/-! The trial count and the amplified algorithm. -/
+
+/-- The program computes `⌈10 (4 / 3) ^ 3⌉ = 24` trials for confidence `1` on three
+variables. -/
+theorem counterDigits_three : Nat.ofDigits 2 (counterDigits 3 3 1) = 24 := by decide
+
+example : schoeningTrials 3 3 1 = 24 := by
+  rw [← ofDigits_counterDigits le_rfl, counterDigits_three]
+
+example : counterLen 3 3 1 = 49 := by decide
+
+-- On the satisfiable `φ`, the program with `k = 3` and `c = 1` fails with probability at most
+-- `e⁻¹`, already at word size `8`.
+example : ((evalRand 8 ampProgram (ampTime 3 3 1 (3 :: 1 :: encode φ).length)
+      (.init (3 :: 1 :: encode φ))).map cfgSuccess false).toReal ≤ Real.exp (-1) := by
+  have hw : Fits 8
+      ((3 :: 1 :: encode φ).length + 6 * 3 + 4 * 3 + 2 * 1 + counterLen 3 3 1 + 2) := by
+    decide
+  have h := ampProgram_failure_le_exp (k := 3) (c := 1) le_rfl φ_satisfiable φ_three hw
+  rwa [Nat.cast_one] at h
 
 end ComplexityTests.WordRAMSchoening
