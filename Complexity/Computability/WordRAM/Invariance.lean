@@ -109,17 +109,6 @@ section LogWidth
 
 open OfTuring
 
-/-- A word of `logWidth k n` bits holds a number polynomial in `n`. -/
-private theorem two_pow_logWidth_le (k n : ℕ) : 2 ^ logWidth k n ≤ 2 ^ k * (n + 1) ^ k := by
-  unfold logWidth
-  rw [mul_comm, pow_mul, ← mul_pow]
-  refine Nat.pow_le_pow_left ?_ k
-  rw [pow_succ, mul_comm]
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp
-  · have := Nat.pow_log_le_self 2 hn.ne'
-    omega
-
 /-- The bits of an instance fit every word size above a positive logarithmic threshold. -/
 private theorem inputFits_map_toNat {k : ℕ} (hk : 0 < k) {w : ℕ} (a : α)
     (hw : logWidth k (encIn a).length ≤ w) : InputFits w ((encIn a).map Bool.toNat) := by
