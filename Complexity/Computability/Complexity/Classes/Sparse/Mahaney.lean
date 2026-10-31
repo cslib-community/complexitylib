@@ -12,7 +12,6 @@ import Complexity.Computability.Complexity.CookLevin.Completeness
 import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
-import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -196,13 +195,13 @@ end Prune
 bound `t`: one level for each literal occurrence of `φ`, pruned by `prune`. -/
 def search (label : List (Literal ℕ) → List (Literal ℕ) → List Bool) (t : ℕ) (φ : CNF ℕ) :
     List (List (Literal ℕ)) :=
-  φ.vars.foldl (fun nodes v => prune label t (Fortune.expand v nodes)) [[]]
+  Fortune.searchWith (prune label t) φ
 
 /-- **The decision procedure for Mahaney's theorem** with the reduction `key` and the bound `t`:
 search the self-reduction tree of `φ`, labelling the pair of nodes `a`, `b` with
 `key (disj φ a b)`, and accept when a leaf is satisfied by the values it fixes. -/
 def accepts (key : CNF ℕ → List Bool) (t : ℕ) (φ : CNF ℕ) : Bool :=
-  (search (fun a b => key (disj φ a b)) t φ).any fun a => verifier (units a ++ φ, a.map Prod.snd)
+  Fortune.acceptsWith (prune (fun a b => key (disj φ a b)) t) φ
 
 /-! ### Correctness -/
 
@@ -279,40 +278,6 @@ private theorem exists_mem_prune (hkey : ∀ ψ, ψ ∈ SAT ↔ key ψ ∈ K)
     have hsub := (iterate_stage_sublist (label := fun a b => key (disj φ a b)) (t := t) i l).subset
     exact exists_mem_stage hkey hc (fun a ha b hb => hM a (hsub ha) b (hsub hb)) ih
 
-/-- The invariant of the search after the occurrences `pre`: the nodes fix exactly `pre`, and one
-of them is satisfiable if `φ` is. -/
-private def Inv (φ : CNF ℕ) (pre : List ℕ) (nodes : List (List (Literal ℕ))) : Prop :=
-  (∀ a ∈ nodes, a.map Prod.fst = pre) ∧ (φ ∈ SAT → ∃ a ∈ nodes, units a ++ φ ∈ SAT)
-
-private theorem inv_foldl (hkey : ∀ ψ, ψ ∈ SAT ↔ key ψ ∈ K)
-    (hM : ∀ a b : List (Literal ℕ), (∀ l ∈ a, l.1 ∈ φ.vars) → (∀ l ∈ b, l.1 ∈ φ.vars) →
-      a.length ≤ φ.vars.length → b.length ≤ φ.vars.length → (key (disj φ a b)).length ≤ M)
-    (hc : ∀ s : Finset (List Bool), (∀ w ∈ s, w ∈ K ∧ w.length ≤ M) → s.card ≤ t) :
-    ∀ (l pre : List ℕ) (nodes : List (List (Literal ℕ))), (pre ++ l).IsPrefix φ.vars →
-      Inv φ pre nodes → Inv φ (pre ++ l)
-        (l.foldl (fun nodes v => prune (fun a b => key (disj φ a b)) t (Fortune.expand v nodes))
-          nodes)
-  | [], pre, nodes, _, h => by simpa using h
-  | v :: l, pre, nodes, hpre, h => by
-    have hpre' : (pre ++ [v] ++ l).IsPrefix φ.vars := by simpa using hpre
-    have hprefix : (pre ++ [v]).IsPrefix φ.vars := (List.prefix_append _ l).trans hpre'
-    have hexp : ∀ b ∈ Fortune.expand v nodes, b.map Prod.fst = pre ++ [v] :=
-      fun b hb => Fortune.map_fst_of_mem_expand h.1 hb
-    have hvars : ∀ b ∈ Fortune.expand v nodes, (∀ l ∈ b, l.1 ∈ φ.vars) ∧
-        b.length ≤ φ.vars.length := fun b hb =>
-      ⟨fun l hl => hprefix.subset (hexp b hb ▸ List.mem_map_of_mem hl),
-        by simpa [← hexp b hb] using hprefix.length_le⟩
-    have hstep : Inv φ (pre ++ [v])
-        (prune (fun a b => key (disj φ a b)) t (Fortune.expand v nodes)) := by
-      refine ⟨fun b hb => hexp b ((prune_sublist _).subset hb), fun hφ => ?_⟩
-      obtain ⟨a, ha, hasat⟩ := h.2 hφ
-      obtain ⟨bv, hb⟩ := Fortune.exists_child_mem_SAT v hasat
-      refine exists_mem_prune hkey hc (fun a ha b hb => hM a b (hvars a ha).1 (hvars b hb).1
-        (hvars a ha).2 (hvars b hb).2) ⟨a ++ [(v, bv)], ?_, hb⟩
-      simp only [Fortune.expand, List.mem_flatMap]
-      exact ⟨a, ha, by cases bv <;> simp⟩
-    simpa using inv_foldl hkey hM hc l (pre ++ [v]) _ hpre' hstep
-
 /-- **Correctness of the procedure.** If `key` reduces `SAT` to `K`, the labels of the pairs of
 nodes of the tree of `φ` have length at most `M`, and every finite set of members of `K` of length
 at most `M` has at most `t` elements, then the procedure accepts exactly the satisfiable `φ`. -/
@@ -321,19 +286,11 @@ theorem accepts_iff (hkey : ∀ ψ, ψ ∈ SAT ↔ key ψ ∈ K)
       a.length ≤ φ.vars.length → b.length ≤ φ.vars.length → (key (disj φ a b)).length ≤ M)
     (hc : ∀ s : Finset (List Bool), (∀ w ∈ s, w ∈ K ∧ w.length ≤ M) → s.card ≤ t) :
     accepts key t φ = true ↔ φ ∈ SAT := by
-  have hinv := inv_foldl hkey hM hc φ.vars [] [[]] (by simp)
-    ⟨by simp, fun h => ⟨[], by simp, by simpa [units] using h⟩⟩
-  rw [List.nil_append] at hinv
-  obtain ⟨hfst, hsat⟩ := hinv
-  rw [accepts, search, List.any_eq_true]
-  constructor
-  · rintro ⟨a, -, ha⟩
-    exact Fortune.mem_SAT_of_units_append ⟨_, ha⟩
-  · intro hφ
-    obtain ⟨a, ha, hgood⟩ := hsat hφ
-    refine ⟨a, ha, (Fortune.verifier_units_append_iff fun v hv => ?_).2 hgood⟩
-    rw [hfst a ha]
-    exact hv
+  refine Fortune.acceptsWith_iff (fun l _ ha => (prune_sublist l).subset ha)
+    fun pre l hpre hfst h => exists_mem_prune hkey hc (fun a ha b hb => ?_) h
+  have ha' := Fortune.mem_vars_and_length_le_of_map_fst_eq hpre (hfst a ha)
+  have hb' := Fortune.mem_vars_and_length_le_of_map_fst_eq hpre (hfst b hb)
+  exact hM a b ha'.1 hb'.1 ha'.2 hb'.2
 
 end Correctness
 
@@ -396,25 +353,11 @@ has. -/
 theorem computableInPolyTime_accepts {key : CNF ℕ → List Bool}
     (hkey : ComputableInPolyTime key encCNF encBits) {t : CNF ℕ → ℕ}
     (ht : ComputableInPolyTime t encCNF encUnary) :
-    ComputableInPolyTime (fun φ => accepts key (t φ) φ) encCNF encBool := by
-  have hsearch : ComputableInPolyTime (fun φ => search (fun a b => key (disj φ a b)) (t φ) φ)
-      encCNF encNodes :=
-    (foldlWith_spec (par := fun φ => (φ, t φ)) (init := fun _ => [[]])
-      (step := fun p nodes v => prune (fun a b => key (disj p.1 a b)) p.2
-        (Fortune.expand v nodes))
-      (id'.prod ht) computableInPolyTime_vars (const _) (computableInPolyTime_level hkey)
-      (fun φ pre nodes => pre.IsPrefix φ.vars ∧ (∀ a ∈ nodes, a.map Prod.fst = pre) ∧
-        nodes.length ≤ t φ + 1)
-      (fun φ => ⟨List.nil_prefix, by simp, by simp⟩)
-      (fun φ pre nodes v hpre h => ⟨hpre, fun b hb => Fortune.map_fst_of_mem_expand h.2.1
-        ((prune_sublist _).subset hb), length_prune_le _⟩)
-      (size := fun φ => (t φ + 1) * (2 * ((encCNF φ).length * (4 * (encCNF φ).length + 5)) + 1))
-      ((ht.polyBounded.add (.const 1)).mul (((PolyBounded.const 2).mul (PolyBounded.self.mul
-        (((PolyBounded.const 4).mul .self).add (.const 5)))).add (.const 1)))
-      (fun φ pre nodes _ h => (length_encList_le _ _
-        fun a ha => Fortune.length_encNode_le h.1 (h.2.1 a ha)).trans
-          (Nat.mul_le_mul_right _ h.2.2))).1
-  exact anyWithInput hsearch Fortune.computableInPolyTime_verifier_units_append
+    ComputableInPolyTime (fun φ => accepts key (t φ) φ) encCNF encBool :=
+  Fortune.computableInPolyTime_acceptsWith (par := fun φ => (φ, t φ))
+    (prune := fun p => prune (fun a b => key (disj p.1 a b)) p.2) (id'.prod ht)
+    (computableInPolyTime_level hkey) (fun _ l _ ha => (prune_sublist l).subset ha)
+    (ht.polyBounded.add (.const 1)) fun _ _ => length_prune_le _
 
 /-! ### Mahaney's theorem -/
 

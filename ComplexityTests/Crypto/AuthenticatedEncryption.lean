@@ -207,4 +207,124 @@ example (n : ℕ) :
     echoCipher.advantage_ccaGame_le_two_mul id (fun _ => 0) zeroCCAAdversary n
       (isQueryBounded_zeroCCAAdversary n) hct
 
+/-! ### One-Time Oracles, Games, and 1AE ⇒ 1CCA Bounds on `echoCipher` -/
+
+-- First valid query to `oneTimeCPAEncryptionOracle` transitions `alreadyQueried` to `true`, and a
+-- second valid query returns `[]`.
+example :
+    echoCipher.oneTimeCPAEncryptionOracle 2 [] false
+      ((), encPair encBits encBits ([true, false], [false, true])) false =
+      pure ([true, false], true) ∧
+    echoCipher.oneTimeCPAEncryptionOracle 2 [] false
+      ((), encPair encBits encBits ([true, false], [false, true])) true =
+      pure ([], true) := by
+  exact ⟨rfl, rfl⟩
+
+-- First valid query to `oneTimeCIEncryptionOracle` records `[ct]`, and a second valid query returns
+-- `[]` without modifying the queried list.
+example :
+    echoCipher.oneTimeCIEncryptionOracle 2 [] ((), [true, false]) [] =
+      pure ([true, false], [[true, false]]) ∧
+    echoCipher.oneTimeCIEncryptionOracle 2 [] ((), [false, true]) [[true, false]] =
+      pure ([], [[true, false]]) := by
+  exact ⟨rfl, rfl⟩
+
+-- In `oneTimeCCAOracle`, the first encryption query succeeds, a second encryption query is
+-- rejected, and decryption of the challenge ciphertext is rejected while fresh ciphertexts decrypt.
+example :
+    echoCipher.oneTimeCCAOracle 2 [] false
+      (false, encPair encBits encBits ([true, false], [false, true])) [] =
+      pure ([true, false], [[true, false]]) ∧
+    echoCipher.oneTimeCCAOracle 2 [] false
+      (false, encPair encBits encBits ([false, true], [true, false])) [[true, false]] =
+      pure ([], [[true, false]]) ∧
+    echoCipher.oneTimeCCAOracle 2 [] false (true, [true, false]) [[true, false]] =
+      pure ([], [[true, false]]) ∧
+    echoCipher.oneTimeCCAOracle 2 [] false (true, [false, true]) [[true, false]] =
+      pure (encOption encBits (some [false, true]), [[true, false]]) := by
+  exact ⟨rfl, rfl, rfl, rfl⟩
+
+/-- `echoCipher` also fails `OneTimeCiphertextIntegrity` and `OneTimeAuthenticatedEncryption`. -/
+theorem not_oneTimeCiphertextIntegrity_echoCipher :
+    ¬ echoCipher.OneTimeCiphertextIntegrity := by
+  intro hci
+  let adversary : CIAdversary := fun n _ =>
+    ProbOracleComp.sample (pure (List.replicate n false))
+  have hadvBody : IsPPTOn (encPair encUnary encBits) encBits
+      (fun p : ℕ × List Bool => (pure (List.replicate p.1 false) : ProbComp (List Bool))) := by
+    have hrep : ComputableInPolyTime
+        (fun p : ℕ × List Bool => List.replicate p.1 false)
+        (encPair encUnary encBits) encBits := by polytime
+    exact hrep.isPPTOn
+  have hadv : IsOraclePPT encBits adversary :=
+    hadvBody.isOraclePPTOn.isOraclePPT
+  have hneg := hci.negligible adversary hadv
+  have heval (n : ℕ) :
+      Game.succProbability (ProbComp.eval (echoCipher.ciOneTimeGame adversary n)) = 1 := by
+    simp [SymmetricCipher.ciOneTimeGame, echoCipher, adversary, Game.succProbability]
+  simp only [heval] at hneg
+  exact not_negligible_const one_ne_zero hneg
+
+theorem not_oneTimeAuthenticatedEncryption_echoCipher :
+    ¬ echoCipher.OneTimeAuthenticatedEncryption :=
+  fun hae => not_oneTimeCiphertextIntegrity_echoCipher hae.2
+
+-- Composed closed-game `IsPPT` certificates for one-time games and encryption-query preservation
+-- certificates for the Theorem 9.1 reductions.
+example (bit : Bool) (n : ℕ) :
+    IsPPT encBool (fun n _ => echoCipher.cpaOneTimeGame
+      (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) bit n) ∧
+    IsPPT encBool (fun n _ => echoCipher.ciOneTimeGame
+      (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary) n) ∧
+    IsPPT encBool (fun n _ => echoCipher.ccaOneTimeGame zeroCCAAdversary bit n) ∧
+    (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary n []).IsQueryBounded 0 ∧
+    (SymmetricCipher.ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary n []).IsQueryBounded 0 ∧
+    (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary n []).IsQueryBounded
+      0 :=
+  ⟨echoCipher.isPPT_cpaOneTimeGame
+    (SymmetricCipher.isOraclePPT_ccaToCPAAdversary ComputableInPolyTime.id'
+      isOraclePPT_zeroCCAAdversary)
+    bit,
+   echoCipher.isPPT_ciOneTimeGame
+    (SymmetricCipher.isOraclePPT_ccaToCIAdversary ComputableInPolyTime.id'
+      (ComputableInPolyTime.const 0) bit isOraclePPT_zeroCCAAdversary),
+   echoCipher.isPPT_ccaOneTimeGame isOraclePPT_zeroCCAAdversary bit,
+   SymmetricCipher.isQueryBounded_ccaToCPAAdversary id zeroCCAAdversary n []
+    (isQueryBounded_zeroCCAAdversary n),
+   SymmetricCipher.isQueryBounded_ccaToCIAdversary id (fun _ => 0) bit zeroCCAAdversary n []
+    (isQueryBounded_zeroCCAAdversary n),
+   SymmetricCipher.isQueryBounded_ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary n []
+    (isQueryBounded_zeroCCAAdversary n)⟩
+
+-- Quantitative 1AE ⇒ 1CCA Theorem 9.1 bounds instantiated on `echoCipher` and `zeroCCAAdversary`.
+example (n : ℕ) :
+    (Game.advantage (ProbComp.eval (echoCipher.ccaOneTimeGame zeroCCAAdversary false n))
+        (ProbComp.eval (echoCipher.ccaOneTimeGame zeroCCAAdversary true n)) : ℝ) ≤
+      4 *
+        (Game.succProbability
+          (ProbComp.eval
+            (echoCipher.ciOneTimeGame
+              (SymmetricCipher.ccaToCIHiddenBitAdversary id (fun _ => 0) zeroCCAAdversary) n)) :
+            ℝ) +
+      (Game.advantage
+        (ProbComp.eval
+          (echoCipher.cpaOneTimeGame
+            (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) false n))
+        (ProbComp.eval
+          (echoCipher.cpaOneTimeGame
+            (SymmetricCipher.ccaToCPAAdversary id zeroCCAAdversary) true n)) :
+          ℝ) := by
+  have hct (k : List Bool) (hk : k ∈ (ProbComp.eval (echoCipher.keyGen n)).support)
+      (msg : List Bool) (hmsg : msg.length = n)
+      (ct : List Bool) (hct : ct ∈ (ProbComp.eval (echoCipher.encrypt n k msg)).support) :
+      ct.length ≤ id n :=
+    (echoCipher_ctLen n k hk msg hmsg ct hct).le
+  have hd : 2 * (dyadicSize 0 : ℝ) = 4 := by
+    have h0 : dyadicSize 0 = 2 := by decide
+    rw [h0]
+    norm_num
+  simpa [hd] using
+    echoCipher.advantage_ccaOneTimeGame_le_two_mul id (fun _ => 0) zeroCCAAdversary n
+      (isQueryBounded_zeroCCAAdversary n) hct
+
 end ComplexityTests.Crypto.AuthenticatedEncryption

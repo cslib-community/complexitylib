@@ -56,11 +56,11 @@ example (D : ℕ) :
 /-- The recursion on the graph on words decides acceptance, here of every input. -/
 example (w : List Bool) :
     Cslib.Reachability.reach (inputEdge acceptMachine (radix (radixExponent Unit 0) w.length) w)
-      (width 0 (radix (radixExponent Unit 0) w.length))
-      (width 0 (radix (radixExponent Unit 0) w.length))
-      (lowBits (width 0 (radix (radixExponent Unit 0) w.length))
+      (vertexWidth 0 (radix (radixExponent Unit 0) w.length))
+      (vertexWidth 0 (radix (radixExponent Unit 0) w.length))
+      (lowBits (vertexWidth 0 (radix (radixExponent Unit 0) w.length))
         (startID acceptMachine (radix (radixExponent Unit 0) w.length)))
-      (List.replicate (width 0 (radix (radixExponent Unit 0) w.length)) true) = true :=
+      (List.replicate (vertexWidth 0 (radix (radixExponent Unit 0) w.length)) true) = true :=
   (reach_eq_true_iff (MultiTapeNTM.runsInSpace_zero_tapes _ _ _)).mpr (accepts_acceptMachine w)
 
 /-- The machine-level theorem applies to a concrete recognizer. -/
