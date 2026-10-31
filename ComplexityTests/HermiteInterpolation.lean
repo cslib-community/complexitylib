@@ -12,7 +12,11 @@ import Mathlib.Data.ZMod.Defs
 import Mathlib.Tactic.ComputeDegree
 import Mathlib.Tactic.FinCases
 
-/-! Tests for confluent Hermite interpolation from Taylor jets. -/
+-- Regression tests intentionally export no declarations.
+set_option linter.privateModule false
+
+/-! Tests for confluent Hermite interpolation: Taylor jets, node-varying multiplicities and the
+Chinese-remainder form. -/
 
 namespace ComplexityTests.HermiteInterpolation
 
@@ -89,5 +93,73 @@ example : (3 : ℚ) = ((hermiteMatrix ![1, 2] 2).det : ℚ)⁻¹ •
       exact WithBot.coe_lt_coe.mpr (by norm_num))
   rw [← h]
   simp
+
+
+/-! ### Node-varying multiplicities
+
+Two nodes `1, 2` with multiplicities `1, 2`, and polynomials of degree less than `1 + 2 = 3`. The
+Hermite basis polynomials are `E₀ = ((X - 2) / (1 - 2)) ^ 2 = (X - 2) ^ 2` and
+`E₁ = (X - 1) / (2 - 1) = X - 1`, so `E₀ (0) = 4` and `E₁ (0) = -1`. For `p = X ^ 2 + 3`, at node
+`1`, `p (1 + z) / E₀ (1 + z) = (4 + 2 z + z ^ 2) / (1 - z) ^ 2 ≡ 4 (mod z)`; at node `2`,
+`p (2 + z) / E₁ (2 + z) = (7 + 4 z + z ^ 2) / (1 + z) ≡ 7 - 3 z (mod z ^ 2)`. Hence
+`p = 4 (X - 2) ^ 2 + (X - 1) (7 - 3 (X - 2))`, and at `0`, `3 = 4 * 4 + (-1) * 13`. -/
+
+/-- The nodes `1, 2`. -/
+private abbrev node : Fin 2 → ℚ := ![1, 2]
+
+/-- The multiplicities `1, 2`. -/
+private abbrev mult : Fin 2 → ℕ := ![1, 2]
+
+private theorem node_pairwise :
+    ((Finset.univ : Finset (Fin 2)) : Set (Fin 2)).Pairwise fun i j => IsUnit (node i - node j) :=
+  fun i _ j _ hij => isUnit_iff_ne_zero.mpr <| by
+    fin_cases i <;> fin_cases j <;> first | exact absurd rfl hij | norm_num
+
+private theorem hermiteBasis_zero : hermiteBasis Finset.univ node mult 0 = (X - C 2) ^ 2 := by
+  rw [hermiteBasis, show (Finset.univ : Finset (Fin 2)).erase 0 = {1} by decide,
+    Finset.prod_singleton]
+  norm_num [Ring.inverse_eq_inv']
+  ring
+
+private theorem hermiteBasis_one : hermiteBasis Finset.univ node mult 1 = X - C 1 := by
+  rw [hermiteBasis, show (Finset.univ : Finset (Fin 2)).erase 1 = {0} by decide,
+    Finset.prod_singleton]
+  norm_num [Ring.inverse_eq_inv']
+
+/-- The Hermite quotient of `X ^ 2 + 3` at the node `1` of multiplicity `1` is `4`. -/
+example : hermiteQuotient Finset.univ node mult 1 0 ((X ^ 2 + C 3 : ℚ[X]).comp (C 1 + C 1 * X)) =
+    C 4 := by
+  refine hermiteQuotient_eq_of_X_pow_dvd node_pairwise 1 (Finset.mem_univ 0)
+    ((degree_C_le).trans_lt (by decide)) ⟨C 10 - C 3 * X, ?_⟩
+  rw [hermiteBasis_zero]
+  simp only [node, Matrix.cons_val_zero, add_comp, pow_comp, sub_comp, X_comp, C_comp]
+  simp only [map_ofNat, map_one]
+  ring
+
+/-- The Hermite quotient of `X ^ 2 + 3` at the node `2` of multiplicity `2` is `7 - 3 z`. -/
+example : hermiteQuotient Finset.univ node mult 1 1 ((X ^ 2 + C 3 : ℚ[X]).comp (C 2 + C 1 * X)) =
+    C 7 - C 3 * X := by
+  refine hermiteQuotient_eq_of_X_pow_dvd node_pairwise 1 (Finset.mem_univ 1) ?_ ⟨C 4, ?_⟩
+  · refine (degree_sub_le _ _).trans_lt (max_lt ((degree_C_le).trans_lt (by decide)) ?_)
+    exact (degree_C_mul_X_le _).trans_lt (by decide)
+  · rw [hermiteBasis_one]
+    simp only [node, Matrix.cons_val_one, Matrix.cons_val_zero, add_comp, pow_comp, sub_comp,
+      X_comp, C_comp]
+    simp only [map_ofNat, map_one]
+    ring
+
+/-- **(D.9) at two nodes of multiplicities `1, 2`.** Every polynomial of degree less than `3` has
+`p (0) = E₀ (0) Q₀ (-1) + E₁ (0) Q₁ (-2) = 4 Q₀ (-1) - Q₁ (-2)`, where `Q_i` is the Hermite quotient
+of `p` at the node `i`. -/
+example (p : ℚ[X]) (hp : p.degree < 3) :
+    p.eval 0 =
+      4 * (hermiteQuotient Finset.univ node mult 1 0 (p.comp (C 1 + C 1 * X))).eval (-1) -
+        (hermiteQuotient Finset.univ node mult 1 1 (p.comp (C 2 + C 1 * X))).eval (-2) := by
+  have h3 : ∑ i ∈ Finset.univ, mult i = 3 := by decide
+  rw [eval_eq_sum_hermiteBasis_mul_hermiteQuotient (J := mult) node_pairwise 1
+      (by rw [h3]; exact_mod_cast hp) 0,
+    Fin.sum_univ_two, hermiteBasis_zero, hermiteBasis_one]
+  norm_num
+  ring
 
 end ComplexityTests.HermiteInterpolation

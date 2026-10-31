@@ -423,7 +423,7 @@ lemma wTime_le (s : St) : wTime (s.1, symAt s) ≤ 9 * ((eSt s).length + 1) ^ 3 
     Nat.mul_le_mul (Nat.mul_le_mul hl (by omega)) (by omega)
   have hdigits := Nat.pow_le_pow_left (Nat.succ_le_succ hpos) 2
   unfold wTime
-  dsimp only at hproduct hdigits ⊢
+  dsimp only [WCtx.desc, WCtx.cfg] at hproduct hdigits ⊢
   nlinarith [Nat.le_self_pow (show 2 ≠ 0 by decide) ((eSt s).length + 1)]
 
 /-- The step at the end of a pass. -/
@@ -446,7 +446,8 @@ public lemma stepAt_inO : ComputableTidilyInO stepAt eSt (encPair eCfg eSym)
       (enc := eSym)).inO_one.comp_linear hcur)).of_enc_eq fun s => by
         simp only [symAt, Function.comp_apply]
         split_ifs <;> simp_all
-  have hstep := stepWith_inO.comp (hdc.prod hsym)
+  -- bridge for #862: tidy client of the plain `stepWith_inO`
+  have hstep := stepWith_inO.tidy.comp (hdc.prod hsym)
   have hidle := hc.prod (const (encMid := eSym) none)
   refine (((ComputableInO.natIsZero.tidy.comp_linear hr).ite hidle hstep).of_enc_eq (g := stepAt)
     fun s => ?_).mono 100 (fun s => ?_) fun s => ?_
@@ -527,7 +528,8 @@ public lemma foldFinish_inO : ComputableTidilyInO foldFinish eSt eHalted
   refine (((ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := eHalted)
     fun b : Bool => !b).inO_one.comp_linear
       ((ComputableTidilyInDegree.isSome encUnary).inO_one.comp_linear
-        (state_inO.comp_linear hc))).of_enc_eq (g := foldFinish) fun s => by
+        -- bridge for #862: tidy client of the plain `state_inO`
+        (state_inO.tidy.comp_linear hc))).of_enc_eq (g := foldFinish) fun s => by
         simp only [foldFinish, Function.comp_apply]
         cases s.1.2.state <;> rfl).mono 1 (fun s => ?_) fun s => ?_ <;>
   · have hL : (eSt s).length + 1 ≤ ((eSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
