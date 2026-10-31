@@ -258,12 +258,23 @@ residue or padding sentinel, write every coefficient, and advance the original c
   Reg.result ← #0; Reg.index ← #0;
   while Reg.index < Reg.cells do [ ⟪countStep⟫ ] ]
 
+/-- Compute the actual logarithm and all runtime layout metadata. -/
+@[expose] def setup : Code .standard 128 := .seq logarithm layout
+
+/-- Compute all three original residue matrices by actual signed-remainder calls. -/
+@[expose] def residueArrays : Code .standard 128 := ram[
+  ⟪residues Reg.inputAB Reg.residueAB⟫; ⟪residues Reg.inputBC Reg.residueBC⟫;
+  ⟪residues Reg.inputAC Reg.residueAC⟫ ]
+
+/-- Compute the spread table and both complete padded coefficient matrices. -/
+@[expose] def coefficientMatrices : Code .standard 128 := ram[
+  ⟪spreadTable⟫; ⟪matrix Reg.residueAC Reg.matrixP false⟫;
+  ⟪matrix Reg.residueBC Reg.matrixQ true⟫ ]
+
 /-- Concrete runtime-parameter counter; every multiplication is actual native code. -/
 @[expose] def program : Code .standard 128 := ram[
-  ⟪logarithm⟫; ⟪layout⟫;
-  ⟪residues Reg.inputAB Reg.residueAB⟫; ⟪residues Reg.inputBC Reg.residueBC⟫;
-  ⟪residues Reg.inputAC Reg.residueAC⟫; ⟪spreadTable⟫;
-  ⟪matrix Reg.residueAC Reg.matrixP false⟫; ⟪matrix Reg.residueBC Reg.matrixQ true⟫;
+  ⟪setup⟫;
+  ⟪residueArrays⟫; ⟪coefficientMatrices⟫;
   ⟪product⟫; ⟪count⟫ ]
 
 /-- Ordinary initialized input: raw `(n,p)`, followed by the three canonical signed arrays. -/
