@@ -173,9 +173,16 @@ instance (r : ℕ) : Decidable (D.IsRowsFirstBipartite r) := by
   infer_instance
 
 /-- An explicit network is rows-first exactly when it is as a described network. -/
-theorem isRowsFirstBipartite_ofExplicit (d : ExplicitTensorNetwork ℕ) (r : ℕ) :
-    (ofExplicit d).IsRowsFirstBipartite r ↔ d.IsRowsFirstBipartite r :=
+theorem isRowsFirstBipartite_explicit (d : ExplicitTensorNetwork ℕ) (r : ℕ) :
+    DescribedNetwork.IsRowsFirstBipartite d r ↔ ExplicitTensorNetwork.IsRowsFirstBipartite d r :=
   Iff.rfl
+
+/-- Being rows-first depends only on the ports, not on the descriptors. -/
+theorem isRowsFirstBipartite_map {T' : Type} (f : T → T') (r : ℕ) :
+    (⟨D.numEdges, D.vertices.map fun v => (v.1, f v.2)⟩ : DescribedNetwork T').IsRowsFirstBipartite r ↔
+      D.IsRowsFirstBipartite r := by
+  simp only [IsRowsFirstBipartite, List.forall_mem_map, ← List.map_take, ← List.map_drop,
+    List.map_map, Function.comp_def]
 
 /-- The vertices at the edge `j`: those having `j` among their ports, in increasing order. -/
 @[expose] def incident (j : ℕ) : List ℕ :=

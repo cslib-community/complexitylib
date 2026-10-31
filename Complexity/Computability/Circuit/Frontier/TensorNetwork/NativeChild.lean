@@ -246,20 +246,17 @@ theorem map_modeList_weight (P T p : ℕ) :
   simp only [modeList, List.getElem_map, List.getElem_ofFn, modeWeights, List.getElem_range,
     val_modeEquiv_symm_snd_snd]
 
-/-- **The slice of a packet** reads the mode tuple of `β`: entry `y · p + b` of the slice of `q` is
+/-- **The slice of a packet** reads the mode tuple of `β`: entry `b + p y` of the slice of `q` is
 the exponent of the mode `(q, y, b)`. -/
 theorem getD_betaSlice {P i pt : ℕ} (β : List ℕ) (q : Fin P) (Z : Fin (2 ^ (i + 1)) × Fin pt) :
-    (betaSlice i pt β q).getD (Z.1 * pt + Z.2) 0 =
+    (betaSlice i pt β q).getD (finProdFinEquiv Z) 0 =
       BudgetTuples.ofList (modeList P (2 ^ (i + 1)) pt) β (q, Z) := by
-  have hZ : (Z.1 : ℕ) * pt + Z.2 < 2 ^ (i + 1) * pt := by
-    have h1 := Z.1.2
-    have h2 := Z.2.2
-    calc (Z.1 : ℕ) * pt + Z.2 < Z.1 * pt + pt := by omega
-      _ = (Z.1 + 1) * pt := by ring
-      _ ≤ 2 ^ (i + 1) * pt := Nat.mul_le_mul_right _ h1
+  have hZ : (finProdFinEquiv Z : ℕ) < 2 ^ (i + 1) * pt := (finProdFinEquiv Z).2
   rw [BudgetTuples.ofList, idxOf_modeList, modeEquiv_apply_val, betaSlice,
     List.getD_eq_getElem?_getD, List.getElem?_take_of_lt hZ, List.getElem?_drop,
-    ← List.getD_eq_getElem?_getD]
+    ← List.getD_eq_getElem?_getD, finProdFinEquiv_apply_val]
+  congr 2
+  ring
 
 /-! ### The native lists in a numbered network -/
 
