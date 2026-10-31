@@ -67,6 +67,8 @@ vertices as rows (`NativeChild.isRowsFirstBipartite_nativeChild`).
 * `Cslib.Circuits.Frontier.NativeChild.contraction_nativeChild`: the native child has the
   contraction of the child.
 * `Cslib.Circuits.Frontier.NativeChild.isRowsFirstBipartite_nativeChild`: it is rows-first.
+* `Cslib.Circuits.Frontier.NativeChild.desc_of_mem_nativeChild`: its retained and packet
+  descriptors.
 
 ## References
 
@@ -1021,6 +1023,59 @@ theorem contraction_nativeChild :
 end Child
 
 end Parent
+
+/-! ### The descriptors of the native children -/
+
+variable {D : DescribedNetwork VertexDesc} {r : ℕ}
+
+/-- **The descriptors of the native child.** A vertex of the native child of a rows-first parent
+with at least `64 ^ a` edges keeps the descriptor of a parent vertex, or is the packet `q`, with
+the packet context of `q`, the slice of `β` at `q`, and tags whose slots are below `2 ^ a` and
+distinct among its row ports. -/
+theorem desc_of_mem_nativeChild (hD : D.IsRowsFirstBipartite r) {fl : List ℕ} {a i : ℕ}
+    (hK : 64 ^ a ≤ D.numEdges) (hia : i < a) (pt : ℕ) (t : ℤ) (ζ β : List ℕ) (g : Fin 64)
+    {v : List ℕ × VertexDesc}
+    (hv : v ∈ (nativeChild fl a i pt t ζ r D (nativeParentPacking r a D) β g).vertices) :
+    (∃ w ∈ D.vertices, v.2 = w.2) ∨
+      ∃ q tags, v.2 = .inr (packetCtx fl a i pt t ζ g q, tags, betaSlice i pt β q) ∧
+        (∀ y ∈ tags, y.2 < 2 ^ a) ∧ ((tags.filter (·.1)).map (·.2)).Nodup := by
+  have hgroups := groupsOf_eq hD hK hia
+  have hpk1 : (nativeParentPacking r a D).2.1 = (parentPacking hD a).numPackets := by
+    rw [nativeParentPacking_eq hD hK]
+  have hpk2 : (nativeParentPacking r a D).2.2 = List.ofFn fun e =>
+      (((parentPacking hD a).packet e : ℕ), ((parentPacking hD a).slot e : ℕ)) := by
+    rw [nativeParentPacking_eq hD hK]
+  rw [nativeChild_eq hD _ (parentPacking hD a).packet (fun e => ((parentPacking hD a).slot e : ℕ))
+    g fl a i pt t ζ β _ hgroups hpk1 hpk2] at hv
+  simp only [List.mem_ofFn] at hv
+  obtain ⟨c, rfl⟩ := hv
+  rcases hc : (childVertexEquiv (P := (parentPacking hD a).numPackets)
+      (packingGroup (parentSide r) (parentPacking hD a) ⟨i, hia⟩) g).symm c with w | q
+  · left
+    refine ⟨D.vertices[(w.1 : ℕ)], List.getElem_mem _, ?_⟩
+    simp only [numberedDesc, Sum.elim_inl]
+  · right
+    simp only [numberedDesc, Sum.elim_inr]
+    refine ⟨q, _, rfl, ?_, ?_⟩
+    · intro y hy
+      simp only [List.mem_map] at hy
+      obtain ⟨e, -, rfl⟩ := hy
+      exact Fin.isLt _
+    · rw [List.filter_map, List.map_map]
+      refine List.Nodup.map_on ?_ ((nodup_packetPorts hD _ _ g q).filter _)
+      intro c₁ hc₁ c₂ hc₂ heq
+      simp only [List.mem_filter, Function.comp_apply] at hc₁ hc₂
+      obtain ⟨hm₁, hl₁⟩ := hc₁
+      obtain ⟨hm₂, hl₂⟩ := hc₂
+      rw [mem_packetPorts] at hm₁ hm₂
+      rcases c₁ with e₁ | e₁
+      · rcases c₂ with e₂ | e₂
+        · simp only [Function.comp_apply, Sum.elim_inl] at heq hm₁ hm₂
+          have hinj := (parentPacking hD a).injective (a₁ := e₁.1) (a₂ := e₂.1)
+            (Prod.ext (hm₁.trans hm₂.symm) (Fin.ext heq))
+          rw [Subtype.ext hinj]
+        · simp at hl₂
+      · simp at hl₁
 
 end NativeChild
 

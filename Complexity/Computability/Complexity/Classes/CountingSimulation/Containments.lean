@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Computability.Complexity.Classes.CountingSimulation.Assembly
+public import Complexity.Computability.Complexity.Classes.CountingSimulation.Count
 public import Complexity.Computability.Complexity.Classes.Time.AcceptCount
 public import Complexity.Computability.Complexity.Classes.PP.Time
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -27,7 +27,7 @@ Each class is reduced to the accept count `A_M(x)` of a fair-coin machine `M` at
 `BPTIME` and `PPTIME` (`Cslib.Complexity.exists_acceptCount_of_mem_NTIME`,
 `Cslib.Complexity.exists_acceptCount_of_mem_BPTIME`,
 `Turing.MultiTapePTM.decidesByMajorityInTime_iff`). The count is computed by the simulation of
-`Cslib.Complexity.CountingSimulation.exists_computableInO_count`, and the comparison is a
+`Cslib.Complexity.CountingSimulation.exists_computableInO_countPair`, and the comparison is a
 polynomial-time function of the padded time and the count.
 
 The network hypothesis is discharged for explicit networks by
@@ -35,10 +35,6 @@ The network hypothesis is discharged for explicit networks by
 assuming only a contraction algorithm
 (`Cslib.Complexity.CountingSimulation.NTIME_subset_iUnion_DTIME_of_contractionAlgorithm` and its
 siblings).
-
-## Main definitions
-
-* `Cslib.Complexity.CountingSimulation.NetworkFamilies`: network families for all machines.
 
 ## Main results
 
@@ -53,20 +49,10 @@ public section
 
 namespace Cslib.Complexity.CountingSimulation
 
-open Turing Turing.MultiTapeTM
+open _root_.Turing _root_.Turing.MultiTapeTM
 
 variable {N : Type} {encN : N ↪ List Bool} {value : N → ℕ} {Admissible : ℕ → ℕ → N → Prop}
   {α : Type} {enc : α ↪ List Bool} {T : ℕ → ℕ}
-
-/-- **Network families for all machines**: for every finite-state fair-coin machine, a network
-family (`Cslib.Complexity.CountingSimulation.NetworkFamily`) for its accept count
-`Turing.MultiTapePTM.acceptCount`. This is the hypothesis supplied by the block-counting step of
-#1833. -/
-@[expose] def NetworkFamilies (encN : N ↪ List Bool) (value : N → ℕ)
-    (Admissible : ℕ → ℕ → N → Prop) :
-    Prop :=
-  ∀ (k : ℕ) (State : Type) [Finite State] (M : MultiTapePTM k Bool State),
-    Nonempty (NetworkFamily encN value Admissible fun x τ => M.acceptCount x τ)
 
 /-- A problem decided by a polynomial-time comparison of the padded time with the accept count of
 a finite-state fair-coin machine, at every padded time past a linear clock, is decided within time
@@ -82,32 +68,15 @@ private theorem exists_decidableInTimeAndSpace_of_rule
     ∃ C d : ℕ, DecidableInTimeAndSpace L enc
       (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
       (fun a => T (enc a).length ^ d) := by
-  obtain ⟨F⟩ := hnet k State M
-  obtain ⟨C, d, h⟩ := exists_computableInO_count F A
-    (fun x τ => Complexity.acceptCount_le_two_pow) hT hTn (c := c₁ + c₂ + 1) (by omega) hrule
-  obtain ⟨K, hK, -⟩ := h.of_encIn_eq enc fun a => rfl
-  refine ⟨(K + K + 1) * (C + 1), K + K + 2 * d,
-    decidableInTimeAndSpace_iff.mpr ⟨_, hK.mono (fun a => ?_) fun a => ?_, fun a => ?_⟩⟩
-  · have h2 : 2 ≤ T (enc a).length := (le_max_right _ _).trans (hTn _)
-    have := Nat.mul_two_pow_div_sqrt_log_two_add_le (a := K) (b := K) (C := C) h2
-    simp only [Function.comp_apply, Nat.mul_add, Nat.mul_one] at this ⊢
-    exact this
-  · have h2 : 2 ≤ T (enc a).length := (le_max_right _ _).trans (hTn _)
-    have hpow : T (enc a).length ^ d ≤ (T (enc a).length + 1) ^ d :=
-      Nat.pow_le_pow_left (Nat.le_succ _) d
-    have := Nat.mul_add_one_pow_add_le_pow (a := K) (b := K) (d := d) h2
-    simp only [Function.comp_apply]
-    calc K * (T (enc a).length ^ d + 1) ≤ K * (T (enc a).length + 1) ^ d + K := by
-          rw [Nat.mul_add, Nat.mul_one]
-          exact Nat.add_le_add_right (Nat.mul_le_mul_left _ hpow) _
-      _ ≤ _ := this
-  · have h2 : 2 ≤ T (enc a).length := (le_max_right _ _).trans (hTn _)
-    have hτ : c₁ * T (enc a).length + c₂ ≤
-        paddedTime ((c₁ + c₂ + 1) * T (enc a).length) := by
-      refine le_trans ?_ (le_paddedTime _)
-      nlinarith
-    simp only [Function.comp_apply]
-    exact hL a _ hτ
+  obtain ⟨C, d, h⟩ := exists_computableInTimeAndSpace_countWith hnet A hT hTn M
+    (c := c₁ + c₂ + 1) (by omega) hrule
+  refine ⟨C, d, decidableInTimeAndSpace_iff.mpr ⟨_, h, fun a => ?_⟩⟩
+  have h2 : 2 ≤ T (enc a).length := (le_max_right _ _).trans (hTn _)
+  have hτ : c₁ * T (enc a).length + c₂ ≤
+      paddedTime ((c₁ + c₂ + 1) * T (enc a).length) := by
+    refine le_trans ?_ (le_paddedTime _)
+    nlinarith
+  exact hL a _ hτ
 
 /-- **Nondeterministic time, deterministically** (conditional on the interfaces). For a
 time-constructible `T` with `max n 2 ≤ T n`, every problem in `NTIME[T]` is decided within time

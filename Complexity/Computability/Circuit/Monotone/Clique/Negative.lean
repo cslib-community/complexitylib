@@ -101,26 +101,27 @@ private def selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)} (π : Pr
     Finset (Fin n) :=
   univ.image fun s => (π s).1.1
 
-/-- In a sunflower, the first vertex of a collision pair is private to its petal. -/
-theorem fst_injective {S : Finset (Finset (Fin n))} {K : Finset (Fin n)} (hS : IsSunflower S K)
+/-- When distinct members of `S` meet only inside `K`, as the petals of a sunflower with core `K`
+do, the first vertex of a collision pair is private to its petal. -/
+theorem fst_injective {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
+    (hS : (S : Set (Finset (Fin n))).Pairwise fun s t => s ∩ t ⊆ K)
     (π : Profile S K) : Function.Injective fun s : S => (π s).1.1 := by
   intro s t hst
   by_contra hne
   have hst' : (π s).1.1 = (π t).1.1 := hst
   have hs := mem_collisionPairs.1 (π s).2
   have ht := mem_collisionPairs.1 (π t).2
-  have : (π s).1.1 ∈ s.1 ∩ t.1 := mem_inter.2 ⟨hs.1, hst' ▸ ht.1⟩
-  rw [hS s.2 t.2 fun e => hne (Subtype.ext e)] at this
-  exact hs.2.1 this
+  exact hs.2.1 (hS s.2 t.2 (fun e => hne (Subtype.ext e)) (mem_inter.2 ⟨hs.1, hst' ▸ ht.1⟩))
 
 private theorem card_selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
-    (hS : IsSunflower S K)
+    (hS : (S : Set (Finset (Fin n))).Pairwise fun s t => s ∩ t ⊆ K)
     (π : Profile S K) : (selected π).card = S.card := by
   rw [selected, card_image_of_injective _ (fst_injective hS π), card_univ, Fintype.card_coe]
 
 /-- The second vertex of a collision pair is not selected. -/
 private theorem snd_notMem_selected {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
-    (hS : IsSunflower S K) (π : Profile S K) (s : S) : (π s).1.2 ∉ selected π := by
+    (hS : (S : Set (Finset (Fin n))).Pairwise fun s t => s ∩ t ⊆ K)
+    (π : Profile S K) (s : S) : (π s).1.2 ∉ selected π := by
   intro h
   obtain ⟨t, -, hts⟩ := mem_image.1 h
   have hs := mem_collisionPairs.1 (π s).2
@@ -128,9 +129,8 @@ private theorem snd_notMem_selected {S : Finset (Finset (Fin n))} {K : Finset (F
   by_cases hst : s = t
   · subst hst
     exact hs.2.2.2 hts
-  · have : (π t).1.1 ∈ s.1 ∩ t.1 := mem_inter.2 ⟨hts ▸ hs.2.2.1, ht.1⟩
-    rw [hS s.2 t.2 fun e => hst (Subtype.ext e)] at this
-    exact ht.2.1 this
+  · exact ht.2.1 (hS s.2 t.2 (fun e => hst (Subtype.ext e))
+      (mem_inter.2 ⟨hts ▸ hs.2.2.1, ht.1⟩))
 
 /-- The colourings giving both vertices of every pair of a profile the same colour. -/
 private def profileColorings (r : ℕ) {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
@@ -139,7 +139,7 @@ private def profileColorings (r : ℕ) {S : Finset (Finset (Fin n))} {K : Finset
 
 /-- The colourings of a profile are determined by their colours outside the selected vertices. -/
 private theorem card_profileColorings_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
-    (hS : IsSunflower S K) (π : Profile S K) :
+    (hS : (S : Set (Finset (Fin n))).Pairwise fun s t => s ∩ t ⊆ K) (π : Profile S K) :
     (profileColorings r π).card ≤ r ^ (n - S.card) := by
   let O := univ \ selected π
   let f : profileColorings r π → O → Fin r := fun c v => c.1 v.1
@@ -177,9 +177,11 @@ def sunflowerBad (r : ℕ) (S : Finset (Finset (Fin n))) (K : Finset (Fin n)) :
 def pluckErrorCap (n r p w : ℕ) : ℕ := (w ^ 2) ^ p * r ^ (n - p)
 
 /-- **Bad colourings of a sunflower.** At most `(w ^ 2) ^ p * r ^ (n - p)` colourings are injective
-on the core of a sunflower with `p` petals of at most `w` vertices but on none of the petals. -/
+on the core of a sunflower with `p` petals of at most `w` vertices but on none of the petals. The
+petals need only meet inside the core, not exactly in it. -/
 theorem card_sunflowerBad_le {S : Finset (Finset (Fin n))} {K : Finset (Fin n)}
-    (hSp : S.card = p) (hS : IsSunflower S K) (hSw : ∀ s ∈ S, s.card ≤ w) :
+    (hSp : S.card = p) (hS : (S : Set (Finset (Fin n))).Pairwise fun s t => s ∩ t ⊆ K)
+    (hSw : ∀ s ∈ S, s.card ≤ w) :
     (sunflowerBad r S K).card ≤ pluckErrorCap n r p w := by
   classical
   have hcover : sunflowerBad r S K ⊆ (univ : Finset (Profile S K)).biUnion (profileColorings r) :=
@@ -213,7 +215,7 @@ private theorem card_stepExceptions_le_of_pluck {F G : Finset (Finset (Fin n))} 
     (hF : ∀ s ∈ F, s.card ≤ w) : (stepExceptions r F G).card ≤ pluckErrorCap n r p w := by
   obtain ⟨S, hSF, hSp, K, hSK, rfl⟩ := h
   refine (card_le_card fun c hc => ?_).trans
-    (card_sunflowerBad_le hSp hSK fun s hs => hF s (hSF hs))
+    (card_sunflowerBad_le hSp (hSK.imp fun _ _ h => h.subset) fun s hs => hF s (hSF hs))
   obtain ⟨⟨t, ht, hct⟩, hF'⟩ := mem_stepExceptions.1 hc
   refine mem_filter.2 ⟨mem_univ _, ?_, fun s hs hcs =>
     hF' ⟨s, hSF hs, contains_ofColoring_iff.2 hcs⟩⟩
@@ -342,7 +344,8 @@ noncomputable def acceptedColorings (r : ℕ) (F : Finset (Finset (Fin n))) : Fi
 vertices. -/
 private theorem card_filter_not_injOn_le {s : Finset (Fin n)} (hs : s.card ≤ w) :
     (univ.filter fun c : Coloring n r => ¬Set.InjOn c s).card ≤ w ^ 2 * r ^ (n - 1) := by
-  have hS : IsSunflower ({s} : Finset (Finset (Fin n))) ∅ := fun t ht u hu htu => by
+  have hS : (({s} : Finset (Finset (Fin n))) : Set (Finset (Fin n))).Pairwise
+      fun t u => t ∩ u ⊆ ∅ := fun t ht u hu htu => by
     rw [coe_singleton, Set.mem_singleton_iff] at ht hu
     exact absurd (ht.trans hu.symm) htu
   refine (card_le_card fun c hc => ?_).trans ((card_sunflowerBad_le (card_singleton s) hS

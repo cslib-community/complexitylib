@@ -274,7 +274,7 @@ theorem length_children_le (hB : ∀ d M p, Active C m d M p → ActiveBounds C 
   have hK := pow_slots_le_edges_of_active ha
   have hslots : slots x = slotBits m x.depth := by rw [slots, h.scale_eq]
   have hlevels : levels x = taper m x.depth := by rw [levels, h.scale_eq]
-  have hr := rows_le_of_isRowsFirstBipartite h.wf.2 (one_le_edges_of_active ha)
+  have hr := DescribedNetwork.rows_le_of_isRowsFirstBipartite h.wf.2 (one_le_edges_of_active ha)
   have hP : (packing x).2.1 * 2 ^ slots x ≤ 3 * x.edges :=
     packing_eq hr ▸ numPackets_nativeParentPacking_mul_le h.wf.2 hK h.degree_le
       (by rw [hslots]; exact hb.degree_mul_pairs_sq_le)
