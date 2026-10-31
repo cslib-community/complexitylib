@@ -10,6 +10,8 @@ module
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContraction
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.DirectContraction
 import Complexity.Computability.PolyTime.GaloisRingSeries
+import Complexity.Foundations.FieldTheory.Finite.Trinomial
+import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.SqrtLog
@@ -51,14 +53,21 @@ result is correct on every well-formed input, whatever the fuel
 * `Cslib.Circuits.Frontier.FastContraction.modulus`, `rootNet`, `root`, `fuel`: the root call and
   the clock.
 * `Cslib.Circuits.Frontier.FastContraction.fastValue`: the result of the machine.
+* `Cslib.Circuits.Frontier.FastContraction.fastCertificate`: the machine, given polynomial-time
+  components of the scheme.
 
 ## Main results
 
+* `Cslib.Circuits.Frontier.FastContraction.irreducible_modulus`: the modulus is irreducible modulo
+  `2`.
 * `Cslib.Circuits.Frontier.FastContraction.val_rootNet`: the root computes the contraction of `G`.
 * `Cslib.Circuits.Frontier.FastContraction.getD_mod_of_val_eq`: reading off the constant
   coordinate.
 * `Cslib.Circuits.Frontier.FastContraction.fastValue_eq`: the machine is correct on well-formed
   inputs, for every fuel.
+* `Cslib.Circuits.Frontier.FastContraction.root_polyTime`,
+  `Cslib.Circuits.Frontier.FastContraction.fuel_polyTime`: the root and the clock in polynomial
+  time.
 
 ## References
 
@@ -134,6 +143,34 @@ theorem length_modulus (m : ℕ) : (modulus m).length = 2 * 3 ^ modulusExp m := 
 theorem modulus_ne_nil (m : ℕ) : modulus m ≠ [] := by
   rw [← List.length_pos_iff, length_modulus]
   positivity
+
+/-- **The modulus is the trinomial** `X ^ (2 ⬝ 3 ^ t) + X ^ (3 ^ t) + 1` over `ℤ`. -/
+theorem monicOf_modulus (m : ℕ) :
+    monicOf (modulus m) = Polynomial.X ^ (2 * 3 ^ modulusExp m) +
+      Polynomial.X ^ (3 ^ modulusExp m) + 1 := by
+  set t := modulusExp m
+  have h3 : 0 < 3 ^ t := by positivity
+  have hsum : ∑ i ∈ Finset.range (2 * 3 ^ t),
+      Polynomial.C (((modulus m).getD i 0 : ℕ) : ℤ) * Polynomial.X ^ i =
+      Polynomial.X ^ (3 ^ t) + 1 := by
+    have hget (i : ℕ) (hi : i < 2 * 3 ^ t) :
+        (modulus m).getD i 0 = if i = 0 ∨ i = 3 ^ t then 1 else 0 := by
+      rw [List.getD_eq_getElem _ _ (by rw [length_modulus]; exact hi)]
+      simp [modulus, t]
+    rw [Finset.sum_congr rfl fun i hi => by rw [hget i (Finset.mem_range.mp hi)]]
+    rw [Finset.sum_eq_add (0 : ℕ) (3 ^ t) (by omega) (fun i _ hi => by
+      simp only [hi.1, hi.2, or_self, ↓reduceIte, Nat.cast_zero, map_zero, zero_mul])
+      (fun h => absurd (Finset.mem_range.mpr (by omega)) h)
+      (fun h => absurd (Finset.mem_range.mpr (by omega)) h)]
+    simp [add_comm]
+  rw [monicOf, length_modulus, hsum, add_assoc]
+
+/-- **The modulus is irreducible modulo `2`**: its reduction is `Cslib.trinomial t`. -/
+theorem irreducible_modulus (m : ℕ) :
+    Irreducible ((monicOf (modulus m)).map (Int.castRingHom (ZMod 2))) := by
+  rw [monicOf_modulus]
+  simpa [Polynomial.map_add, Polynomial.map_pow, Polynomial.map_X, Polynomial.map_one,
+    Cslib.trinomial] using Cslib.irreducible_trinomial (modulusExp m)
 
 /-- **The tables of an explicit network as vertex descriptors.** -/
 @[expose] def rootNet (G : ExplicitTensorNetwork ℕ) : DescribedNetwork VertexDesc :=
