@@ -17,7 +17,7 @@ It uses the existing cyclic convolution, seven recursive products, and the ordin
 signs. The arrays are functions on natural indices; only their first `4^k*p` entries matter.
 No execution or resource contract is bundled into this mathematical definition.
 
-The recursion adapts Spec/Sec3/Theorem17/Strassen.lean, lines 91–108, at Anthropic formal-math
+The recursion adapts Spec/Sec3/Theorem17/Strassen.lean, lines 81–96, at Anthropic formal-math
 revision 16a5ce41304fcdaea4e0be7c132e1c361dc26da5. The coefficient bound below also controls
 the native intermediate operand forms and partial output accumulations.
 -/

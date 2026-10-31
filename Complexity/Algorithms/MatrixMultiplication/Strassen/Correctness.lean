@@ -17,7 +17,7 @@ The finite recursion computes coefficients of ordinary matrix multiplication ove
 existing cyclic integer quotient. Its inputs need agree with the matrix only inside the
 occupied native coefficient blocks. There is no assumed multiplication implementation.
 
-The block identity adapts pinned Spec/Sec3/Theorem17/Strassen.lean, lines 117–142, at revision
+The block identity adapts pinned Spec/Sec3/Theorem17/Strassen.lean, lines 105–126, at revision
 16a5ce41304fcdaea4e0be7c132e1c361dc26da5. This theorem is mathematical; the independent native
 controller execution proof must additionally account for its actual forms, stack and calls.
 -/
