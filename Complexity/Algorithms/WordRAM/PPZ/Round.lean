@@ -43,6 +43,13 @@ the law of that assignment is exactly `Cslib.Complexity.PPZ.round φ`. The PPZ s
 instruction count of the word RAM with unit-cost `rand` (`Cslib.WordRAM.stepRand`); every
 instruction counts, including loop tests and jumps.
 
+The loop takes its oracle as a parameter: `Cslib.Algorithms.WordRAM.PPZ.roundCoreWith oc` runs
+the round with any oracle code `oc` that meets the contract
+`Cslib.Algorithms.WordRAM.PPZ.IsOracleCode` for an oracle `O`, and has the law of
+`Cslib.Complexity.PPZ.roundWith O` (`Cslib.Algorithms.WordRAM.PPZ.roundCoreWith_law`). PPZ is the
+case `oc = forcedCode` (`Cslib.Algorithms.WordRAM.PPZ.forcedCode_isOracleCode`); PPSZ uses the
+w-implication search (`Cslib.Algorithms.WordRAM.PPSZ.roundProgram`).
+
 The final check reuses Schöning's clause scan `Cslib.Algorithms.WordRAM.Schoening.scan`, renamed
 into the register file of this program along `Cslib.Algorithms.WordRAM.PPZ.embed`.
 
@@ -50,9 +57,12 @@ into the register file of this program along `Cslib.Algorithms.WordRAM.PPZ.embed
 
 * `Cslib.Algorithms.WordRAM.PPZ.partialAssignmentAt`: reading back a stored partial assignment.
 * `Cslib.Algorithms.WordRAM.PPZ.RoundFrame`: the registers and memory a round relies on.
+* `Cslib.Algorithms.WordRAM.PPZ.IsOracleCode`: the contract of an oracle code.
+* `Cslib.Algorithms.WordRAM.PPZ.roundBodyWith`, `Cslib.Algorithms.WordRAM.PPZ.roundLoopWith`,
+  `Cslib.Algorithms.WordRAM.PPZ.roundCoreWith`: the parts of a round with an oracle code.
 * `Cslib.Algorithms.WordRAM.PPZ.roundBody`, `Cslib.Algorithms.WordRAM.PPZ.roundLoop`,
   `Cslib.Algorithms.WordRAM.PPZ.roundCore`, `Cslib.Algorithms.WordRAM.PPZ.roundCheck`: the parts of
-  a round.
+  a round of PPZ.
 * `Cslib.Algorithms.WordRAM.PPZ.embed`: Schöning's registers inside the register file of PPZ.
 * `Cslib.Algorithms.WordRAM.PPZ.roundCode`, `Cslib.Algorithms.WordRAM.PPZ.roundProgram`: a round on
   the input `encode φ`, structured and compiled.
@@ -61,10 +71,15 @@ into the register file of this program along `Cslib.Algorithms.WordRAM.PPZ.embed
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.PPZ.roundBody_law`: one step of the loop is one step of the lazy order.
-* `Cslib.Algorithms.WordRAM.PPZ.roundLoop_law`: the loop has the law of
+* `Cslib.Algorithms.WordRAM.PPZ.forcedCode_isOracleCode`: the forced-value scan is an oracle code.
+* `Cslib.Algorithms.WordRAM.PPZ.roundBodyWith_law`: one step of the loop is one step of the lazy
+  order.
+* `Cslib.Algorithms.WordRAM.PPZ.roundLoopWith_law`: the loop has the law of
   `Cslib.Complexity.PPZ.roundOn`.
-* `Cslib.Algorithms.WordRAM.PPZ.roundCore_law`: the round body has the law of
+* `Cslib.Algorithms.WordRAM.PPZ.roundCoreWith_law`: the round body has the law of
+  `Cslib.Complexity.PPZ.roundWith`.
+* `Cslib.Algorithms.WordRAM.PPZ.roundBody_law`, `Cslib.Algorithms.WordRAM.PPZ.roundLoop_law`,
+  `Cslib.Algorithms.WordRAM.PPZ.roundCore_law`: the same for PPZ; the round body has the law of
   `Cslib.Complexity.PPZ.round`.
 * `Cslib.Algorithms.WordRAM.PPZ.roundCheck_exec`: the satisfaction check.
 * `Cslib.Algorithms.WordRAM.PPZ.roundProgram_spec`: halting, time and `rand` bounds, a correct
@@ -268,14 +283,22 @@ def bitCode : Code .standard 32 := ram[ if res = two then [ res ← rand one ] e
 /-- Store the value of `x` and count the step. -/
 def storeCode : Code .standard 32 := ram[ addr ← tBase + xReg; *addr ← res; iReg ← iReg + one ]
 
-/-- **One step of a round**: draw `j - i` uniformly from `[0, n - 1 - i]`, swap `P[i]` and `P[j]`,
-and set `x = P[i]` to its forced value or to a uniform bit. -/
-def roundBody : Code .standard 32 := ram[
-  jReg ← nReg - iReg; jReg ← jReg - one; jReg ← rand jReg; ⟪swapCode⟫; ⟪forcedCode⟫; ⟪bitCode⟫;
+/-- **One step of a round with the oracle code `oc`**: draw `j - i` uniformly from
+`[0, n - 1 - i]`, swap `P[i]` and `P[j]`, and set `x = P[i]` to the oracle's value or to a uniform
+bit. -/
+def roundBodyWith (oc : Code .standard 32) : Code .standard 32 := ram[
+  jReg ← nReg - iReg; jReg ← jReg - one; jReg ← rand jReg; ⟪swapCode⟫; ⟪oc⟫; ⟪bitCode⟫;
   ⟪storeCode⟫ ]
 
-/-- **The steps of a round**: steps `iReg, …, n - 1`. -/
-def roundLoop : Code .standard 32 := .loop (.lt iReg nReg) roundBody
+/-- **One step of a round of PPZ**: set `x = P[i]` to its forced value or to a uniform bit. -/
+def roundBody : Code .standard 32 := roundBodyWith forcedCode
+
+/-- **The steps of a round with the oracle code `oc`**: steps `iReg, …, n - 1`. -/
+def roundLoopWith (oc : Code .standard 32) : Code .standard 32 :=
+  .loop (.lt iReg nReg) (roundBodyWith oc)
+
+/-- **The steps of a round of PPZ**: steps `iReg, …, n - 1`. -/
+def roundLoop : Code .standard 32 := roundLoopWith forcedCode
 
 /-- The state at the head of the round loop at step `i`: the frame, `iReg = i`, the partial
 assignment `τ` stored at `Tb`, and the unprocessed variables `g 0, …, g (d - 1)` stored at
@@ -351,7 +374,37 @@ theorem RoundFrame.scanFrame {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ}
   fits := by rw [h.tBase_eq]; exact hw
   pos := by rw [h.tBase_eq]; exact hT
 
-/-- The postcondition of the step from step `i`: for the drawn position `p` and the value `b` set,
+/-- **The contract of an oracle code** `oc` for the oracle `O` within `T` instructions, on rounds
+with the frame `RoundFrame φ C Tb M`: from the frame, with a variable `v` in `xReg` and a partial
+assignment `τ` stored at `Tb`, the code stores `optCode (O τ v)` in `res` and leaves memory
+unchanged. It writes none of the frame registers, `xReg`, `iReg` or `jReg`. -/
+structure IsOracleCode (w : ℕ) (φ : CNF (Fin n)) (C Tb : ℕ) (M : ℕ → ℕ)
+    (O : (Fin n → Option Bool) → Fin n → Option Bool) (oc : Code .standard 32) (T : ℕ) :
+    Prop where
+  preserves : PreservesRound oc
+  preserves_x : oc.Preserves xReg
+  preserves_i : oc.Preserves iReg
+  preserves_j : oc.Preserves jReg
+  exec : ∀ (τ : Fin n → Option Bool) (v : Fin n) (y : Data 32), RoundFrame φ C Tb M y →
+    y.regs xReg = v → PartialAt y.mem Tb τ →
+    ∃ z, ExecWithin w oc y z T ∧ z.mem = y.mem ∧ z.regs res = optCode (O τ v)
+
+/-- **The forced-value scan is an oracle code** for `Cslib.Complexity.PPZ.forced φ`, within
+`28 E + 15` instructions (`Cslib.Algorithms.WordRAM.PPZ.forcedCode_spec`). -/
+theorem forcedCode_isOracleCode {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ}
+    (hw : Fits w (Tb + 2 * n)) (hT : 1 ≤ Tb) :
+    IsOracleCode w φ C Tb M (forced φ) forcedCode (28 * (encodeClauses φ).length + 15) where
+  preserves := by decide
+  preserves_x := by decide
+  preserves_i := by decide
+  preserves_j := by decide
+  exec τ v y hf hv hs := by
+    obtain ⟨z, hz, hzm, hzr, -⟩ := forcedCode_spec φ τ v y (hf.scanFrame hv hs hw hT)
+      (by rw [hf.cBeg_eq]; exact hf.clauses) (by rw [hf.cBeg_eq, hf.cEnd_eq]; exact hf.span)
+      (by rw [hf.cEnd_eq]; exact hw.of_le (by omega))
+    exact ⟨z, hz, hzm, hzr⟩
+
+/-- The postcondition of the step from step `i`:for the drawn position `p` and the value `b` set,
 `jReg = i + p`, `res = b`, and the loop state at step `i + 1` after processing `g p`. -/
 def StepPost (φ : CNF (Fin n)) (C Tb : ℕ) (M : ℕ → ℕ) (i : ℕ) (τ : Fin n → Option Bool) {m : ℕ}
     (g : Fin (m + 1) → Fin n) (y : Data 32) : Prop :=
@@ -359,16 +412,18 @@ def StepPost (φ : CNF (Fin n)) (C Tb : ℕ) (M : ℕ → ℕ) (i : ℕ) (τ : F
     LoopState φ C Tb M (i + 1) (Function.update τ (g p) (some b))
       (fun t : Fin m => g (Equiv.swap 0 p t.succ)) y
 
-/-- **One step of a round** draws the position `p` uniformly from the `m + 1` unprocessed
-positions and sets `g p` with the law of `Cslib.Complexity.PPZ.step`, within `28 E + 31`
-instructions and two `rand` calls. -/
-theorem roundBody_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : Fits w (Tb + 2 * n))
-    (hT : 1 ≤ Tb) {i m : ℕ} {τ : Fin n → Option Bool} {g : Fin (m + 1) → Fin n} {x : Data 32}
+/-- **One step of a round with an oracle code** draws the position `p` uniformly from the `m + 1`
+unprocessed positions and sets `g p` with the law of `Cslib.Complexity.PPZ.stepWith O`, within
+`T + 16` instructions and two `rand` calls, where `T` bounds the oracle code. -/
+theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
+    {O : (Fin n → Option Bool) → Fin n → Option Bool} {oc : Code .standard 32}
+    (hoc : IsOracleCode w φ C Tb M O oc T) (hw : Fits w (Tb + 2 * n)) {i m : ℕ}
+    {τ : Fin n → Option Bool} {g : Fin (m + 1) → Fin n} {x : Data 32}
     (hx : LoopState φ C Tb M i τ g x) (hd : i + (m + 1) = n) :
-    ExecRandLaw w roundBody x (StepPost φ C Tb M i τ g) (28 * (encodeClauses φ).length + 31) 2
+    ExecRandLaw w (roundBodyWith oc) x (StepPost φ C Tb M i τ g) (T + 16) 2
       (fun y => (y.regs jReg - i, decide (y.regs res = 1)))
       ((Probability.PMF.uniformOfFintype (Fin (m + 1))).bind fun p =>
-        (stepWith (forced φ) τ (g p)).map fun b => (p.val, b)) := by
+        (stepWith O τ (g p)).map fun b => (p.val, b)) := by
   have hf := hx.frame
   have hf1 : Fits w (n - i) := hw.of_le (by omega)
   have hf2 : Fits w (n - i - 1) := hw.of_le (by omega)
@@ -382,12 +437,12 @@ theorem roundBody_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
   have hx₂j : x₂.regs jReg = m := by simp [x₂]; omega
   let F : Data 32 → ℕ × Bool := fun y => (y.regs jReg - i, decide (y.regs res = 1))
   let κ : ℕ → PMF (ℕ × Bool) := fun v =>
-    if hv : v < m + 1 then (stepWith (forced φ) τ (g ⟨v, hv⟩)).map fun b => (v, b)
+    if hv : v < m + 1 then (stepWith O τ (g ⟨v, hv⟩)).map fun b => (v, b)
     else PMF.pure (0, false)
   -- after drawing `k`: the rest of the step
   have hrest : ∀ y, (∃ k : Fin (x₂.regs jReg + 1), y = x₂.set jReg k.val) →
-      ExecRandLaw w (ram[ ⟪swapCode⟫; ⟪forcedCode⟫; ⟪bitCode⟫; ⟪storeCode⟫ ]) y
-        (StepPost φ C Tb M i τ g) (28 * (encodeClauses φ).length + 28) 1 F (κ (y.regs jReg)) := by
+      ExecRandLaw w (ram[ ⟪swapCode⟫; ⟪oc⟫; ⟪bitCode⟫; ⟪storeCode⟫ ]) y
+        (StepPost φ C Tb M i τ g) (T + 13) 1 F (κ (y.regs jReg)) := by
     rintro y ⟨k', rfl⟩
     have hk : k'.val < m + 1 := by have := k'.isLt; omega
     set k : Fin (m + 1) := ⟨k'.val, hk⟩ with hkdef
@@ -422,15 +477,12 @@ theorem roundBody_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
     have hxr₁ : y₁.regs xReg = (g k : ℕ) := by simp [y₁]
     have hj₁ : y₁.regs jReg = k'.val + i := by simp +decide [y₁]
     have hi₁ : y₁.regs iReg = i := by simp +decide [y₁, x₂, hx.i_eq]
-    -- the forced value
-    obtain ⟨z, hz, hzm, hzr, hzs, hzce, hzcb⟩ := forcedCode_spec φ τ (g k) y₁
-      (hfy₁.scanFrame hxr₁ hst₁ hw hT) (by rw [hfy₁.cBeg_eq]; exact hfy₁.clauses)
-      (by rw [hfy₁.cBeg_eq, hfy₁.cEnd_eq]; exact hfy₁.span)
-      (by rw [hfy₁.cEnd_eq]; exact hw.of_le (by omega))
-    have hfz : RoundFrame φ C Tb M z := hfy₁.of_execWithin (by decide) hz fun a _ => by rw [hzm]
-    have hjz : z.regs jReg = k'.val + i := (hz.regs_eq (by decide)).trans hj₁
-    have hiz : z.regs iReg = i := (hz.regs_eq (by decide)).trans hi₁
-    have hxz : z.regs xReg = (g k : ℕ) := hzs.x_eq
+    -- the oracle's value
+    obtain ⟨z, hz, hzm, hzr⟩ := hoc.exec τ (g k) y₁ hfy₁ hxr₁ hst₁
+    have hfz : RoundFrame φ C Tb M z := hfy₁.of_execWithin hoc.preserves hz fun a _ => by rw [hzm]
+    have hjz : z.regs jReg = k'.val + i := (hz.regs_eq hoc.preserves_j).trans hj₁
+    have hiz : z.regs iReg = i := (hz.regs_eq hoc.preserves_i).trans hi₁
+    have hxz : z.regs xReg = (g k : ℕ) := (hz.regs_eq hoc.preserves_x).trans hxr₁
     -- the value set, and the store
     have hfs : Fits w (Tb + (g k : ℕ)) := hw.of_le (by omega)
     have hfi : Fits w (i + 1) := hw.of_le (by omega)
@@ -462,8 +514,8 @@ theorem roundBody_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
         exact swap_order g k x.mem (Tb + n + i) (fun t => by simpa using hx.order t) t.succ
     -- the law of the value set
     have hbit : ExecRandLaw w bitCode z (fun z' => ∃ b : Bool, z' = z.set res b.toNat) 3 1 F
-        ((stepWith (forced φ) τ (g k)).map fun b => (k'.val, b)) := by
-      rcases hfo : forced φ τ (g k) with _ | b
+        ((stepWith O τ (g k)).map fun b => (k'.val, b)) := by
+      rcases hfo : O τ (g k) with _ | b
       · rw [hfo] at hzr
         have hc : (Cond.eq res two).Holds z := by simp [Cond.holds_eq, hzr, hfz.two_eq, optCode]
         have hr := ExecRandLaw.rand (w := w) (B := .standard) (dst := res) (src := one) (x := z)
@@ -506,16 +558,29 @@ theorem roundBody_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
   funext p
   simp only [Function.comp_apply, κ, p.isLt, ↓reduceDIte]
 
-/-- **The steps of a round** from step `i`, with the unprocessed variables `g 0, …, g (d - 1)`,
-have the law of `roundOn (forced φ) g τ`, take `d (28 E + 33) + 2` instructions and `2 d` `rand`
-calls, and leave every variable set. -/
-theorem roundLoop_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : Fits w (Tb + 2 * n))
-    (hT : 1 ≤ Tb) :
+/-- **One step of a round of PPZ** draws the position `p` uniformly from the `m + 1` unprocessed
+positions and sets `g p` with the law of `Cslib.Complexity.PPZ.step`, within `28 E + 31`
+instructions and two `rand` calls. -/
+theorem roundBody_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : Fits w (Tb + 2 * n))
+    (hT : 1 ≤ Tb) {i m : ℕ} {τ : Fin n → Option Bool} {g : Fin (m + 1) → Fin n} {x : Data 32}
+    (hx : LoopState φ C Tb M i τ g x) (hd : i + (m + 1) = n) :
+    ExecRandLaw w roundBody x (StepPost φ C Tb M i τ g) (28 * (encodeClauses φ).length + 31) 2
+      (fun y => (y.regs jReg - i, decide (y.regs res = 1)))
+      ((Probability.PMF.uniformOfFintype (Fin (m + 1))).bind fun p =>
+        (stepWith (forced φ) τ (g p)).map fun b => (p.val, b)) :=
+  roundBodyWith_law (forcedCode_isOracleCode hw hT) hw hx hd
+
+/-- **The steps of a round with an oracle code** from step `i`, with the unprocessed variables
+`g 0, …, g (d - 1)`, have the law of `roundOn O g τ`, take `d (T + 18) + 2` instructions and `2 d`
+`rand` calls, and leave every variable set, where `T` bounds the oracle code. -/
+theorem roundLoopWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
+    {O : (Fin n → Option Bool) → Fin n → Option Bool} {oc : Code .standard 32}
+    (hoc : IsOracleCode w φ C Tb M O oc T) (hw : Fits w (Tb + 2 * n)) :
     ∀ (d i : ℕ) (τ : Fin n → Option Bool) (g : Fin d → Fin n) (x : Data 32),
       LoopState φ C Tb M i τ g x → i + d = n →
-      ExecRandLaw w roundLoop x (fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
-        (d * (28 * (encodeClauses φ).length + 33) + 2) (2 * d)
-        (fun y => partialAssignmentAt y.mem Tb n) (roundOn (forced φ) g τ)
+      ExecRandLaw w (roundLoopWith oc) x
+        (fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
+        (d * (T + 18) + 2) (2 * d) (fun y => partialAssignmentAt y.mem Tb n) (roundOn O g τ)
   | 0, i, τ, g, x, hx, hd => by
     have hc : ¬(Cond.lt iReg nReg).Holds x := by
       simp [Cond.holds_lt, hx.frame.nReg_eq, hx.i_eq]; omega
@@ -530,29 +595,29 @@ theorem roundLoop_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
       simp only [hb, optCode] at h
       rw [h]
       cases b <;> decide
-    have h := ExecRandLaw.loop_exit (w := w) (body := roundBody)
+    have h := ExecRandLaw.loop_exit (w := w) (body := roundBodyWith oc)
       (P := fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
       (f := fun y => partialAssignmentAt y.mem Tb n) hc hpost
-    rw [partialAssignmentAt_eq hx.stored, ← roundOn_zero (forced φ) g τ] at h
+    rw [partialAssignmentAt_eq hx.stored, ← roundOn_zero O g τ] at h
     exact h.mono (fun _ h => h) (by omega) le_rfl
   | m + 1, i, τ, g, x, hx, hd => by
     have hc : (Cond.lt iReg nReg).Holds x := by
       simp [Cond.holds_lt, hx.frame.nReg_eq, hx.i_eq]; omega
     let κ : ℕ × Bool → PMF (Fin n → Option Bool) := fun q =>
       if hq : q.1 < m + 1 then
-        roundOn (forced φ) (fun t : Fin m => g (Equiv.swap 0 ⟨q.1, hq⟩ t.succ))
+        roundOn O (fun t : Fin m => g (Equiv.swap 0 ⟨q.1, hq⟩ t.succ))
           (Function.update τ (g ⟨q.1, hq⟩) (some q.2))
       else PMF.pure τ
-    have h := ExecRandLaw.loop_iter (κ := κ) hc (roundBody_law hw hT hx hd)
+    have h := ExecRandLaw.loop_iter (κ := κ) hc (roundBodyWith_law hoc hw hx hd)
       fun y ⟨p, b, hj, hr, hy⟩ => by
         have hobs : (y.regs jReg - i, decide (y.regs res = 1)) = (p.val, b) := by
           rw [hj, hr]
           cases b <;> simp
         rw [hobs]
         simp only [κ, p.isLt, ↓reduceDIte]
-        exact roundLoop_law hw hT m (i + 1) _ _ y hy (by omega)
+        exact roundLoopWith_law hoc hw m (i + 1) _ _ y hy (by omega)
     rw [roundOn_succ]
-    have hT' := Nat.add_mul m 1 (28 * (encodeClauses φ).length + 33)
+    have hT' := Nat.add_mul m 1 (T + 18)
     refine (h.congr_law ?_).mono (fun _ h => h) (by omega) (by omega)
     rw [PMF.bind_bind]
     congr 1
@@ -562,25 +627,43 @@ theorem roundLoop_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
     funext b
     simp only [Function.comp_apply, κ, p.isLt, ↓reduceDIte]
 
+/-- **The steps of a round of PPZ** from step `i`, with the unprocessed variables
+`g 0, …, g (d - 1)`, have the law of `roundOn (forced φ) g τ`, take `d (28 E + 33) + 2` instructions
+and `2 d` `rand` calls, and leave every variable set. -/
+theorem roundLoop_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : Fits w (Tb + 2 * n))
+    (hT : 1 ≤ Tb) (d i : ℕ) (τ : Fin n → Option Bool) (g : Fin d → Fin n) (x : Data 32)
+    (hx : LoopState φ C Tb M i τ g x) (hd : i + d = n) :
+    ExecRandLaw w roundLoop x (fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
+      (d * (28 * (encodeClauses φ).length + 33) + 2) (2 * d)
+      (fun y => partialAssignmentAt y.mem Tb n) (roundOn (forced φ) g τ) :=
+  roundLoopWith_law (forcedCode_isOracleCode hw hT) hw d i τ g x hx hd
+
 /-! ### The round -/
 
-/-- **The body of a round**: store the empty partial assignment and the array `P[i] = i`, then
-process the variables in a lazily drawn uniform order. The clauses are read from `[cBeg, cEnd)`,
-the partial assignment is stored from `tBase` and the order array from `pBase`, and `n` is read
-from `nReg`. -/
-def roundCore : Code .standard 32 := ram[ iReg ← zero; ⟪initLoop⟫; iReg ← zero; ⟪roundLoop⟫ ]
+/-- **The body of a round with the oracle code `oc`**: store the empty partial assignment and the
+array `P[i] = i`, then process the variables in a lazily drawn uniform order. The clauses are read
+from `[cBeg, cEnd)`, the partial assignment is stored from `tBase` and the order array from
+`pBase`, and `n` is read from `nReg`. -/
+def roundCoreWith (oc : Code .standard 32) : Code .standard 32 :=
+  ram[ iReg ← zero; ⟪initLoop⟫; iReg ← zero; ⟪roundLoopWith oc⟫ ]
+
+/-- **The body of a round of PPZ.** -/
+def roundCore : Code .standard 32 := roundCoreWith forcedCode
 
 /-- The instruction bound of a round body on `n` variables and a clause encoding of length
 `E`. -/
 def roundCoreTime (n E : ℕ) : ℕ := n * (28 * E + 40) + 6
 
-/-- **The body of a round** has the law of `Cslib.Complexity.PPZ.round`, keeps the frame, and
-leaves every variable set. -/
-theorem roundCore_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : Fits w (Tb + 2 * n))
-    (hT : 1 ≤ Tb) {x : Data 32} (hx : RoundFrame φ C Tb M x) :
-    ExecRandLaw w roundCore x (fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
-      (roundCoreTime n (encodeClauses φ).length) (2 * n)
-      (fun y => partialAssignmentAt y.mem Tb n) (round φ) := by
+/-- **The body of a round with an oracle code** has the law of `Cslib.Complexity.PPZ.roundWith O`,
+takes `n (T + 25) + 6` instructions, where `T` bounds the oracle code, keeps the frame, and leaves
+every variable set. -/
+theorem roundCoreWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
+    {O : (Fin n → Option Bool) → Fin n → Option Bool} {oc : Code .standard 32}
+    (hoc : IsOracleCode w φ C Tb M O oc T) (hw : Fits w (Tb + 2 * n)) {x : Data 32}
+    (hx : RoundFrame φ C Tb M x) :
+    ExecRandLaw w (roundCoreWith oc) x
+      (fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
+      (n * (T + 25) + 6) (2 * n) (fun y => partialAssignmentAt y.mem Tb n) (roundWith O) := by
   have h₀ := ExecWithin.copy (B := .standard) (w := w) (d := iReg) (s := zero) (x := x)
   rw [hx.zero_eq] at h₀
   obtain ⟨y, hy, hfy, hyv⟩ := initLoop_spec hw n (x.set iReg 0) (hx.set (by decide) 0)
@@ -593,10 +676,20 @@ theorem roundCore_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : 
       stored := fun v => (hyv v v.isLt).1
       order := fun t => by simpa using (hyv t t.isLt).2
       cover := fun v _ => ⟨v, rfl⟩ }
-  have hloop := roundLoop_law hw hT n 0 _ _ _ hst (by omega)
+  have hloop := roundLoopWith_law hoc hw n 0 _ _ _ hst (by omega)
   rw [← roundWith_eq_roundOn] at hloop
   exact (ExecRandLaw.seq_det h₀ (ExecRandLaw.seq_det hy (ExecRandLaw.seq_det h₁ hloop))).mono
-    (fun _ h => h) (by simp only [roundCoreTime]; ring_nf; omega) le_rfl
+    (fun _ h => h) (by ring_nf; omega) le_rfl
+
+/-- **The body of a round of PPZ** has the law of `Cslib.Complexity.PPZ.round`, keeps the frame,
+and leaves every variable set. -/
+theorem roundCore_law {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw : Fits w (Tb + 2 * n))
+    (hT : 1 ≤ Tb) {x : Data 32} (hx : RoundFrame φ C Tb M x) :
+    ExecRandLaw w roundCore x (fun y => RoundFrame φ C Tb M y ∧ ∀ v < n, y.mem (Tb + v) ≤ 1)
+      (roundCoreTime n (encodeClauses φ).length) (2 * n)
+      (fun y => partialAssignmentAt y.mem Tb n) (round φ) :=
+  (roundCoreWith_law (forcedCode_isOracleCode hw hT) hw hx).mono (fun _ h => h)
+    (by simp only [roundCoreTime]; ring_nf; omega) le_rfl
 
 /-! ### The satisfaction check -/
 
