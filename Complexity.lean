@@ -977,6 +977,7 @@ public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduleCo
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.Truncated
+public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgorithm
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.TruncatedResources
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.VertexDesc
